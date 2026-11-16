@@ -30,3 +30,28 @@ describe('lịch sử query', () => {
     expect(loadHistory({ getItem: (k) => (k === HISTORY_KEY ? '{"a":[]}' : null), setItem: () => {} })).toEqual({ a: [] });
   });
 });
+
+describe('loadHistory với dữ liệu hỏng', () => {
+  const load = (raw: string) => loadHistory({ getItem: (k) => (k === HISTORY_KEY ? raw : null), setItem: () => {} });
+
+  it('bỏ ticket có giá trị không phải mảng', () => {
+    expect(load('{"a":"x","b":{"sql":"SELECT 1"},"c":null,"d":[]}')).toEqual({ d: [] });
+  });
+
+  it('bỏ mục sai dạng, giữ mục đúng', () => {
+    const good = { sql: 'SELECT 1', at: 5, ok: true, rows: 2 };
+    const noRows = { sql: 'SELECT 2', at: 6, ok: false };
+    const raw = JSON.stringify({ a: [good, null, 'x', { sql: 1, at: 1, ok: true }, { sql: 'S', at: 'x', ok: true }, { sql: 'S', at: 1, ok: 'yes' }, { sql: 'S', at: 1, ok: true, rows: 'many' }, noRows] });
+    expect(load(raw)).toEqual({ a: [good, noRows] });
+  });
+
+  it('cắt còn HISTORY_MAX mục', () => {
+    const many = Array.from({ length: 30 }, (_, i) => entry(`SELECT ${i}`));
+    expect(load(JSON.stringify({ a: many })).a).toHaveLength(HISTORY_MAX);
+  });
+
+  it('mảng hoặc giá trị nguyên thủy ở gốc → {}', () => {
+    expect(load('[1,2]')).toEqual({});
+    expect(load('42')).toEqual({});
+  });
+});
