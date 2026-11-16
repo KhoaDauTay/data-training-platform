@@ -1,5 +1,8 @@
-import { currentChapter, nextTicket, type Chapter, type Skill } from './progress';
-import type { Ticket } from './tickets';
+import { parse as parseYaml } from 'yaml';
+import kpiSource from '../content/kpis.yml?raw';
+import type { QueryResult } from './db/run';
+import { currentChapter, nextTicket, type Bilingual, type Chapter, type Skill } from './progress';
+import type { Lang, Ticket } from './tickets';
 
 /** soon = the chapter has no tickets yet ("Sắp có"); locked = it has tickets the player has not reached (🔒). */
 export type ChapterStatus = 'done' | 'current' | 'locked' | 'soon';
@@ -53,4 +56,52 @@ export function homeModel(
       return { skill: s, state, level: state === 'learned' ? Math.min(LEVELS, Math.max(1, levelOf(s.id))) : 0 };
     }),
   };
+}
+
+export type KpiKind = 'number' | 'rowcount' | 'bar';
+/** A company dashboard tile (L18 ★5): opens when `ticket` is completed; its value comes from that ticket's Solution (step `step`). */
+export interface Kpi { id: string; ticket: string; step: number; col: number; kind: KpiKind; label: Bilingual }
+const KPI_KINDS: KpiKind[] = ['number', 'rowcount', 'bar'];
+
+export function parseKpis(src: string, origin = 'kpis.yml'): Kpi[] {
+  const data = parseYaml(src) as unknown;
+  if (!Array.isArray(data)) throw new Error(`${origin}: cần một danh sách`);
+  return data.map((raw: unknown, i) => {
+    const k = (raw ?? {}) as Record<string, unknown>;
+    const label = (k.label ?? {}) as Record<string, unknown>;
+    if (typeof k.id !== 'string' || typeof k.ticket !== 'string' || !KPI_KINDS.includes(k.kind as KpiKind)
+      || typeof label.vi !== 'string' || typeof label.en !== 'string') {
+      throw new Error(`${origin}: mục ${i} cần id, ticket, kind (${KPI_KINDS.join(' | ')}) và label { vi, en }`);
+    }
+    return {
+      id: k.id, ticket: k.ticket, kind: k.kind as KpiKind, label: { vi: label.vi, en: label.en },
+      step: typeof k.step === 'number' ? k.step : 0, col: typeof k.col === 'number' ? k.col : 0,
+    };
+  });
+}
+export const KPIS: Kpi[] = parseKpis(kpiSource);
+
+/** `ticket` undefined: its chapter has no content yet (the Q3 margin waits for chapter 12). Never opens before completion. */
+export interface KpiTile { kpi: Kpi; ticket?: Ticket; open: boolean }
+export const kpiTiles = (kpis: Kpi[], tickets: Ticket[], completed: Set<string>): KpiTile[] =>
+  kpis.map((kpi) => {
+    const ticket = tickets.find((x) => x.id === kpi.ticket);
+    return { kpi, ticket, open: !!ticket && completed.has(ticket.id) };
+  });
+
+/** "ch12-06" → 12: chapter of a tile whose ticket is not written yet. */
+export const chapterOfId = (id: string): number => Number(/^ch(\d+)-/.exec(id)?.[1] ?? 0);
+
+export type KpiValue = { text: string } | { bars: { label: string; value: number; text: string }[] };
+const BARS = 5;
+/** PGlite returns numeric as strings and bigint counts as bigint: Number() covers both. */
+export function kpiValue(k: Kpi, r: QueryResult, lang: Lang): KpiValue {
+  const fmt = new Intl.NumberFormat(lang === 'vi' ? 'vi-VN' : 'en-US', { maximumFractionDigits: 2 });
+  if (k.kind === 'rowcount') return { text: fmt.format(r.rows.length) };
+  if (k.kind === 'number') return { text: fmt.format(Number(r.rows[0]?.[k.col] ?? 0)) };
+  const bars = r.rows
+    .map((row) => ({ label: row.slice(0, -1).map(String).join(' · '), value: Number(row[row.length - 1]) }))
+    .sort((a, b) => b.value - a.value || a.label.localeCompare(b.label))
+    .slice(0, BARS);
+  return { bars: bars.map((b) => ({ ...b, text: fmt.format(b.value) })) };
 }

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { loadTickets } from '../src/content';
-import { homeModel, LEVELS } from '../src/home';
+import { chapterOfId, homeModel, KPIS, kpiTiles, kpiValue, LEVELS, parseKpis, type Kpi } from '../src/home';
 import { CHAPTERS, SKILLS } from '../src/progress';
 
 const tickets = loadTickets();
@@ -50,5 +50,45 @@ describe('homeModel', () => {
     expect(m.done).toBe(tickets.length);
     expect(m.chapters.filter((c) => c.total > 0).every((c) => c.status === 'done')).toBe(true);
     expect(m.chapters.filter((c) => c.total === 0).every((c) => c.status === 'soon')).toBe(true);
+  });
+});
+
+describe('Bảng điều hành KPI (L18 ★5, L23)', () => {
+  const res = (rows: unknown[][]) => ({ columns: (rows[0] ?? []).map((_, i) => `c${i}`), types: [], rows });
+  const kpi = (kind: Kpi['kind'], col = 0): Kpi => ({ id: 'x', ticket: 'ch2-01', step: 0, col, kind, label: { vi: 'a', en: 'a' } });
+
+  it('ô chỉ mở khi xong đúng việc tính ra nó; ô của chương chưa có nội dung luôn khóa', () => {
+    const tiles = kpiTiles(KPIS, tickets, new Set([...ids(1), ...ids(2)]));
+    const by = (id: string) => tiles.find((x) => x.kpi.id === id)!;
+    expect(by('shipments2025')).toMatchObject({ open: true, ticket: { id: 'ch2-01' } });
+    expect(by('teuByCarrier')).toMatchObject({ open: false, ticket: { id: 'ch3-02' } });
+    expect(by('q3margin')).toMatchObject({ open: false, ticket: undefined });
+    expect(chapterOfId('ch12-06')).toBe(12);
+    expect(KPIS[KPIS.length - 1].id).toBe('q3margin');
+    expect(new Set(KPIS.map((k) => k.id)).size).toBe(KPIS.length);
+  });
+
+  it('mọi ô trỏ tới ticket có thật, hoặc tới chương chưa có ticket nào', () => {
+    const chapters = new Set(tickets.map((t) => t.chapter));
+    const bad = KPIS.filter((k) => !tickets.some((t) => t.id === k.ticket) && chapters.has(chapterOfId(k.ticket)));
+    expect(bad).toEqual([]);
+  });
+
+  it('kpiValue: số theo locale, đếm dòng, 5 thanh lớn nhất', () => {
+    expect(kpiValue(kpi('number'), res([[9694, '123.5']]), 'vi')).toEqual({ text: '9.694' });
+    expect(kpiValue(kpi('number', 1), res([[9694, '1234567.5']]), 'en')).toEqual({ text: '1,234,567.5' });
+    expect(kpiValue(kpi('rowcount'), res([[1], [2], [3]]), 'en')).toEqual({ text: '3' });
+    const bars = kpiValue(kpi('bar'), res([['SEA', 'EXPORT', 5], ['AIR', 'IMPORT', 9], ['A', 'B', 1], ['C', 'D', 2], ['E', 'F', 3], ['G', 'H', 4]]), 'en');
+    expect(bars).toEqual({ bars: [
+      { label: 'AIR · IMPORT', value: 9, text: '9' }, { label: 'SEA · EXPORT', value: 5, text: '5' }, { label: 'G · H', value: 4, text: '4' },
+      { label: 'E · F', value: 3, text: '3' }, { label: 'C · D', value: 2, text: '2' },
+    ] });
+  });
+
+  it('parseKpis báo lỗi cấu trúc', () => {
+    expect(parseKpis('- { id: a, ticket: ch1-01, kind: rowcount, label: { vi: "a", en: "b" } }')[0]).toMatchObject({ step: 0, col: 0 });
+    expect(() => parseKpis('- { id: a, ticket: ch1-01, kind: pie, label: { vi: "a", en: "b" } }')).toThrow(/kind/);
+    expect(() => parseKpis('- { id: a, ticket: ch1-01, kind: bar }')).toThrow(/label/);
+    expect(() => parseKpis('id: a')).toThrow(/danh sách/);
   });
 });
