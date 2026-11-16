@@ -133,13 +133,14 @@ Mockup dùng mã lô/tờ khai/hóa đơn bịa (CQ2610-0412, 105938471, INV-261
 ```
 derive(completed, tickets) -> {
   bays[ch]   = số ticket của chương ch nằm trong completed          // bãi
-  trips[to]  = số ticket kind=ship|promotion có to, đã xong          // nhãn chuyến
+  trips[port] = số ticket ship có to + số ticket cột mốc (tới to, không có to thì tới tuyến vừa mở)
   routesOpen = tuyến mở theo số chương đã qua (rankOf / boss đã xong)
 }
 ```
 
 - **Bãi chứa 60+ container**: mỗi chương một **cột xếp (bay)** cao tối đa 5 tầng (5 ticket/chương), màu chương. 12 bay chia hai dãy: chương 1–6 dãy trước, 7–12 dãy sau (lệch lên, nhỏ hơn). Chương có > 5 ticket thì tầng thứ 6 trở đi gộp thành nhãn "+n" trên đỉnh bay.
-- Card phủ (`quote`, `ledger`, `chat`) không để lại gì ngoài container. Số chuyến chỉ đếm ticket có `to`.
+- Card phủ (`quote`, `ledger`, `chat`) không để lại gì ngoài container. `ship` không có `to` không cộng chuyến cho cảng nào.
+- **`to` trỏ vào tuyến chưa mở**: tàu vẫn chạy theo nét đứt và cộng chuyến, nhưng tuyến vẫn nét đứt và khóa; chỉ thăng tiến mới mở tuyến. Ở màn thăng tiến, `{port}` trong câu báo luôn là **tuyến vừa mở**; nếu ticket có `to` khác thì tàu chạy tới `to`, câu báo thêm "Tàu đã rời Tiên Sa đi {to}.". Ví dụ ch1-05: tàu đi Rotterdam, câu báo nêu tuyến mà chương 1 mở.
 - Màn hẹp (< 640px): dải bản đồ và cảnh thu như product-design-v2 ★2; hoạt cảnh giữ nguyên thời lượng.
 
 ## 8. Cài đặt (phác)
@@ -154,3 +155,5 @@ derive(completed, tickets) -> {
 2. **Tuyến mở theo chương**: mockup mở Thượng Hải + Laem Chabang từ đầu, rồi Singapore, Rotterdam, Busan, Los Angeles, Sydney sau mỗi lần thăng tiến. Cần khớp với chương trình 12 chương.
 3. Đồng ý thay animation mở màn Tổng kết chương (v2 #4, 1,5 s) bằng `promotion` 3,0 s?
 4. Ba dòng `scene:` đề xuất ở §3.3.
+5. **Câu báo**: mockup dùng số lô/tờ khai/hóa đơn bịa cho dễ hình dung; bản thật theo mẫu `{title}` ở §6. Duyệt v5 là duyệt hoạt cảnh và mẫu §6, không phải câu chữ trong mockup. Nếu muốn có số thật thì cần thêm field `scene.ref` (chuỗi cố định trong ticket).
+6. Mockup mở Rotterdam sau 2 lần thăng tiến nên ch1-05 chạy trên tuyến còn khóa. Nếu muốn tuyến Rotterdam mở ngay khi xong chương 1 thì đổi thứ tự mở tuyến (câu 2).
