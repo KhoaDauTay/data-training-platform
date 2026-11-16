@@ -21,7 +21,7 @@ function shapeCard(tk: Ticket, stepIndex: number): HTMLElement {
   const card = h('section', { class: 'shape', 'aria-label': t('shape.title') });
   const draw = (exp?: Shape) => {
     const n = exp?.kinds.length ?? labels.length;
-    const run = app.lastRun?.key === stepKey(tk, stepIndex) ? app.lastRun.result : undefined;
+    const run = app.lastRun?.key === stepKey(tk.id, stepIndex) ? app.lastRun.result : undefined;
     const cmp = exp && run ? compareShape(exp, shapeOf(run)) : undefined;
     card.replaceChildren(...nodes(
       h('h3', {}, t('shape.title')),
@@ -58,10 +58,11 @@ function conclusion(tk: Ticket, x: TicketText): HTMLElement {
   const msg = h('p', { role: 'status', class: 'feedback bad' });
   const form = h('form', { class: 'conclusion' },
     h('h3', {}, t('brief.conclusion')),
-    h('p', {}, c.question),
-    ...c.options.map((o, i) => h('label', {},
-      h('input', { type: 'radio', name: 'conclusion', value: String(i), checked: picked.get(tk.id) === i, onchange: () => picked.set(tk.id, i) }),
-      ' ', o)),
+    h('fieldset', {},
+      h('legend', {}, c.question),
+      ...c.options.map((o, i) => h('label', {},
+        h('input', { type: 'radio', name: 'conclusion', value: String(i), checked: picked.get(tk.id) === i, onchange: () => picked.set(tk.id, i) }),
+        ' ', o))),
     h('button', { class: 'primary', type: 'submit' }, t('brief.conclude')),
     msg);
   form.addEventListener('submit', (e) => {
@@ -74,6 +75,9 @@ function conclusion(tk: Ticket, x: TicketText): HTMLElement {
   return form;
 }
 
+/** The SQL that passed the grader; saves from before `graded` existed fall back to the draft. */
+const gradedSql = (tk: Ticket, i: number): string => app.save.graded[stepKey(tk.id, i)] ?? app.save.drafts[stepKey(tk.id, i)] ?? '';
+
 /** On a closed ticket: skills learned (or reviewed), your SQL next to the reference, XP, "Next ticket". */
 function recap(tk: Ticket, x: TicketText): HTMLElement {
   const lang = getLang();
@@ -81,13 +85,8 @@ function recap(tk: Ticket, x: TicketText): HTMLElement {
   const skills = SKILLS.filter((s) => ids.includes(s.id));
   const next = nextTicket(app.tickets, done());
   const hintsUsed = app.save.hintsUsed[tk.id] ?? 0;
-  const heading = h('h3', { tabindex: '-1' }, t('recap.title'));
-  if (app.justCompleted === tk.id) {
-    app.justCompleted = '';
-    queueMicrotask(() => heading.focus());
-  }
   return h('section', { class: 'recap' },
-    heading,
+    h('h3', { tabindex: '-1' }, t('recap.title')),
     coach('recap'),
     h('p', {}, t('recap.xp', { n: xpFor(tk, hintsUsed), hints: hintsUsed })),
     h('h4', {}, t(tk.grants.length ? 'recap.learned' : 'recap.review')),
@@ -95,7 +94,7 @@ function recap(tk: Ticket, x: TicketText): HTMLElement {
       h('li', {}, h('b', {}, s.label[lang]), ' ', h('code', {}, s.syntax), h('p', { class: 'muted' }, s.when[lang])))),
     ...tk.steps.map((s, i) => h('div', { class: 'compare' },
       tk.steps.length > 1 ? h('h4', {}, x.steps[i].title) : null,
-      h('figure', {}, h('figcaption', {}, t('recap.yours')), h('pre', { class: 'sql' }, app.save.drafts[stepKey(tk, i)] ?? '')),
+      h('figure', {}, h('figcaption', {}, t('recap.yours')), h('pre', { class: 'sql' }, gradedSql(tk, i))),
       h('figure', {}, h('figcaption', {}, t('recap.reference')), h('pre', { class: 'sql' }, s.solution)))),
     next
       ? h('button', { type: 'button', class: 'primary', onclick: () => actions.selectTicket(next.id) }, t('recap.next'))

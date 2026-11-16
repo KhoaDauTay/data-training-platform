@@ -31,7 +31,8 @@ export function isMacPlatform(nav: NavLike | undefined): boolean {
 export const keyLabels = (mac: boolean): { mod: string; alt: string } => (mac ? { mod: '⌘', alt: '⌥' } : { mod: 'Ctrl', alt: 'Alt' });
 
 /** {mod} and {alt} are filled into every message, so shortcut labels follow the OS. */
-const KEYS = keyLabels(isMacPlatform(typeof navigator === 'undefined' ? undefined : (navigator as NavLike)));
+export const isMac = isMacPlatform(typeof navigator === 'undefined' ? undefined : (navigator as NavLike));
+const KEYS = keyLabels(isMac);
 
 let lang: Lang | undefined;
 export const getLang = (): Lang => (lang ??= initialLang());

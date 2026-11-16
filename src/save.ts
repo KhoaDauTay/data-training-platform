@@ -10,6 +10,11 @@ export interface Save {
   hintsUsed: Record<string, number>;
   /** Key: "<ticketId>#<stepIndex>". */
   drafts: Record<string, string>;
+  /**
+   * SQL that passed the grader, same key as drafts (the Recap shows it). Optional on disk: a save without it
+   * (older build) reads as {} and the Recap falls back to the draft, so no SAVE_VERSION bump is needed.
+   */
+  graded: Record<string, string>;
 }
 
 /** Ids that exist in the current content; saved ids not in here are dropped. `skills` is used from v2 (review). */
@@ -31,7 +36,7 @@ export type Migration = (data: Record<string, unknown>, known: Known) => Record<
 /** Key = version migrated FROM. Keep every migration forever; deleting one strands old saves. */
 export const MIGRATIONS: Record<number, Migration> = {};
 
-export const emptySave = (): Save => ({ version: SAVE_VERSION, completed: [], xp: 0, hintsUsed: {}, drafts: {} });
+export const emptySave = (): Save => ({ version: SAVE_VERSION, completed: [], xp: 0, hintsUsed: {}, drafts: {}, graded: {} });
 export const serializeSave = (s: Save): string => JSON.stringify(s);
 
 /** An old save is kept here (one per old version) before migrating, so a rolled-back build can still read it. */
@@ -54,12 +59,15 @@ function versionOf(data: Record<string, unknown>): number {
   return v;
 }
 
-const ticketOf = (key: string) => key.split('#')[0];
+/** The one place the "<ticketId>#<stepIndex>" key of drafts, graded SQL and LastRun is built and read. */
+export const stepKey = (ticketId: string, stepIndex: number): string => `${ticketId}#${stepIndex}`;
+export const ticketOfKey = (key: string): string => key.split('#')[0];
+const isString = (x: unknown): x is string => typeof x === 'string';
 
 function pickRecord<T>(v: unknown, ok: (x: unknown) => x is T, ticketIds: ReadonlySet<string>): Record<string, T> {
   const out: Record<string, T> = {};
   if (v && typeof v === 'object' && !Array.isArray(v)) {
-    for (const [k, x] of Object.entries(v)) if (ticketIds.has(ticketOf(k)) && ok(x)) out[k] = x;
+    for (const [k, x] of Object.entries(v)) if (ticketIds.has(ticketOfKey(k)) && ok(x)) out[k] = x;
   }
   return out;
 }
@@ -86,7 +94,8 @@ export function parseSave(raw: string, known: Known, migrations = MIGRATIONS, ve
     completed: [...new Set(completed)],
     xp: typeof d.xp === 'number' && Number.isFinite(d.xp) && d.xp >= 0 ? d.xp : 0,
     hintsUsed: pickRecord(d.hintsUsed, (x): x is number => typeof x === 'number' && Number.isInteger(x) && x >= 0, known.ticketIds),
-    drafts: pickRecord(d.drafts, (x): x is string => typeof x === 'string', known.ticketIds),
+    drafts: pickRecord(d.drafts, isString, known.ticketIds),
+    graded: pickRecord(d.graded, isString, known.ticketIds),
   };
 }
 

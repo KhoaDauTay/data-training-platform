@@ -132,6 +132,8 @@ dialog::backdrop { background: #0006; }
 .mail span { display: block; }
 .mail .subject { font-weight: 600; }
 .conclusion label { display: block; margin: 4px 0; }
+.conclusion fieldset { border: 0; margin: 0 0 1em; padding: 0; }
+.conclusion legend { padding: 0; margin-bottom: 0.5em; }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; animation: none !important; scroll-behavior: auto !important; }

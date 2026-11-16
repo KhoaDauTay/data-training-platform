@@ -82,13 +82,14 @@ function rerender(): void {
   work.relabel();
 }
 
-function selectTicket(id: string): void {
+/** `force`: rebuild the editor even for the same ticket id (an imported save brings its own draft). */
+function selectTicket(id: string, force = false): void {
   app.selectedId = id;
   app.stepIndex = 0;
   app.conclusionFor = '';
   (byId('inbox-dialog') as HTMLDialogElement).close();
   rerender();
-  work.setTicket(selected(), app.stepIndex);
+  work.setTicket(selected(), app.stepIndex, force);
   byId('brief-title').focus();
 }
 
@@ -107,8 +108,8 @@ function complete(t: Ticket): void {
   app.save.xp += gained;
   persist(true);
   app.conclusionFor = '';
-  app.justCompleted = t.id;
   rerender();
+  byId('ticket').querySelector<HTMLElement>('.recap h3')?.focus(); // the Submit button just disappeared
   work.setSchema(editorSchema()); // a boss may open the next chapter's tables
   panel.refresh();
 }
@@ -140,9 +141,7 @@ byId('export-btn').addEventListener('click', () => {
     app.save = parseSave(await file.text(), known);
     persist(true);
     app.notice = { key: 'save.imported' };
-    selectTicket(firstOpen());
-    work.setTicket(selected(), app.stepIndex, true); // same ticket id: the imported draft still needs a fresh editor
-    work.setSchema(editorSchema());
+    selectTicket(firstOpen(), true); // the new editor gets the imported draft and editorSchema()
     panel.refresh();
   } catch (err) {
     app.notice = { key: 'save.importFailed', params: { reason: errorText(err) } };
