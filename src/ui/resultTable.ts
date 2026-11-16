@@ -26,15 +26,15 @@ export function renderResult(r: QueryResult, mark?: unknown[]): HTMLElement {
       ? t('res.shown', { n: r.rows.length, max: MAX_ROWS })
       : t('res.rows', { n: r.rows.length });
   const cell = (row: unknown[], v: unknown, i: number) =>
-    h('td', { class: v === null ? 'null' : '' },
+    h('td', { class: v === null ? 'italic text-muted' : '' },
       i === 0 && row === mark ? h('span', { class: 'tag' }, t('res.mismatch')) : null,
       formatCell(v, r.types[i]));
-  const body = shown.map((row) => h('tr', { class: row === mark ? 'mismatch' : '' }, ...row.map((v, i) => cell(row, v, i))));
+  const body = shown.map((row) => h('tr', { class: row === mark ? 'bg-accent-soft' : '' }, ...row.map((v, i) => cell(row, v, i))));
   return h('div', { class: 'result' },
     r.rows.length === 0 ? h('p', { class: 'muted' }, t('res.empty')) : null,
-    h('div', { class: 'table-wrap' },
+    h('div', { class: 'max-h-[420px] overflow-auto rounded-xl ring-1 ring-line' },
       h('table', {},
         h('caption', {}, caption),
-        h('thead', {}, h('tr', {}, ...r.columns.map((c) => h('th', { scope: 'col' }, c)))),
+        h('thead', {}, h('tr', {}, ...r.columns.map((c) => h('th', { scope: 'col', class: 'sticky top-0 bg-canvas font-semibold text-muted' }, c)))),
         h('tbody', {}, ...body))));
 }

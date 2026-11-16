@@ -1,5 +1,6 @@
 import { t, type Key } from '../i18n';
 import { app, unlockedTables } from '../state';
+import { cx } from '../theme';
 import { coach } from './coach';
 import { h } from './dom';
 import { errorText, errorView } from './feedback';
@@ -24,6 +25,8 @@ export interface Panel {
   readonly active: string;
 }
 
+/** Underline colour on the open tab (aria-selected): blue-700 on white 6.7:1, blue-300 on the dark panel 9:1. */
+const TAB = 'rounded-t-lg rounded-b-none border-x-0 border-t-0 border-b-2 border-transparent bg-transparent px-3 py-1.5 text-muted hover:bg-code aria-selected:border-blue-600 aria-selected:font-semibold aria-selected:text-blue-700 dark:aria-selected:border-blue-400 dark:aria-selected:text-blue-300';
 const GROUPS: TabGroup[] = ['output', 'query', 'schema'];
 const specs: TabSpec[] = [];
 
@@ -42,10 +45,10 @@ export function createPanel(host: HTMLElement): Panel {
       role: 'tab',
       id: `tab-${tab.id}`,
       'aria-controls': 'tabpanel',
-      class: i > 0 && tab.group !== tabs[i - 1].group ? 'group-start' : '',
+      class: cx(TAB, i > 0 && tab.group !== tabs[i - 1].group && 'ml-4'),
       onclick: () => show(tab.id),
     }));
-  const bar = h('div', { class: 'tabs', role: 'tablist', 'data-i18n-aria': 'tab.list', 'aria-label': t('tab.list') }, ...buttons);
+  const bar = h('div', { class: 'mb-2.5 flex flex-wrap gap-1 border-b border-line max-sm:flex-nowrap max-sm:overflow-x-auto', role: 'tablist', 'data-i18n-aria': 'tab.list', 'aria-label': t('tab.list') }, ...buttons);
   host.replaceChildren(bar, body);
   let active = tabs.some((x) => x.id === 'columns') ? 'columns' : tabs[0].id;
 
@@ -65,8 +68,7 @@ export function createPanel(host: HTMLElement): Panel {
       const b = buttons[i];
       b.setAttribute('aria-selected', String(on));
       b.tabIndex = on ? 0 : -1;
-      b.classList.toggle('on', on);
-      b.replaceChildren(t(tab.label), tab.newAt === app.selectedId ? h('span', { class: 'new' }, t('tab.new')) : '');
+      b.replaceChildren(t(tab.label), tab.newAt === app.selectedId ? h('span', { class: 'ml-1.5 rounded bg-accent px-1 text-[11px] text-on-accent' }, t('tab.new')) : '');
     });
   }
 
@@ -96,10 +98,10 @@ export function createPanel(host: HTMLElement): Panel {
 function schemaList(): HTMLElement {
   const tables = unlockedTables().filter((x) => app.columns[x]);
   if (tables.length === 0) return h('p', { class: 'muted' }, t('cols.loading'));
-  return h('div', { class: 'schema-list' }, ...tables.map((table) =>
+  return h('div', { class: 'grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-2' }, ...tables.map((table) =>
     h('div', {},
-      h('h3', {}, table),
-      h('ul', {}, ...app.columns[table].map((c) => h('li', {}, h('code', {}, c.name), ' ', h('span', { class: 'muted' }, c.type)))))));
+      h('h3', { class: 'm-0' }, table),
+      h('ul', { class: 'mt-1 mb-2 list-none pl-2 text-sm' }, ...app.columns[table].map((c) => h('li', {}, h('code', {}, c.name), ' ', h('span', { class: 'muted' }, c.type)))))));
 }
 
 /** Plan 1 tabs. `editorSql` = what Ctrl+Enter would run now, to flag a stale result. */
