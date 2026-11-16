@@ -24,6 +24,7 @@ vi.mock('../src/ui/editor', () => ({
 
 const fakeEl = () => ({
   replaceChildren() {}, append() {}, setAttribute() {}, addEventListener() {}, focus() {},
+  classList: { add() {}, remove() {} },
   hidden: false, disabled: false, textContent: '', className: '',
 });
 vi.mock('../src/ui/dom', () => ({

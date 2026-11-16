@@ -41,4 +41,13 @@ describe('theme', () => {
     expect(initials('an')).toBe('A');
     expect(initials('   ')).toBe('');
   });
+
+  it('src không ghép class bằng template literal hay mảnh tên (scanner Tailwind chỉ thấy tên nguyên vẹn)', () => {
+    const sources = import.meta.glob<string>('../src/**/*.ts', { query: '?raw', import: 'default', eager: true });
+    const bad = Object.entries(sources).flatMap(([file, src]) => src.split('\n')
+      .map((line, i) => `${file.replace('../src/', '')}:${i + 1}: ${line.trim()}`)
+      .filter((line) => /\bclass(Name)?\s*[:=]\s*`/.test(line) || /\b(bg|text|ring|border|from|via|to|fill|stroke)-\$\{/.test(line)));
+    expect(Object.keys(sources).length).toBeGreaterThan(20);
+    expect(bad).toEqual([]);
+  });
 });
