@@ -58,8 +58,8 @@ describe('song ngữ', () => {
     }
   });
 
-  // Table names are plain English words ("customers"), so only SQL keywords, coded values and snake_case columns are caught.
-  const SQLISH = /\b(SELECT|FROM|WHERE|GROUP BY|ORDER BY|JOIN|HAVING|LIMIT|COUNT|SUM|AVG|DISTINCT|BOOKED|IN_TRANSIT|ARRIVED|DELIVERED|CANCELLED|EXPORT|IMPORT|SEA|AIR|FCL|LCL)\b|\b[a-z]+_[a-z_]+\b/g;
+  // FCL/LCL are everyday freight terms, so prompts may use them. Table names are plain English words ("customers"), so only SQL keywords, coded values and snake_case columns are caught.
+  const SQLISH = /\b(SELECT|FROM|WHERE|GROUP BY|ORDER BY|JOIN|HAVING|LIMIT|COUNT|SUM|AVG|DISTINCT|BOOKED|IN_TRANSIT|ARRIVED|DELIVERED|CANCELLED|EXPORT|IMPORT|SEA|AIR)\b|\b[a-z]+_[a-z_]+\b/g;
   it.each(tickets)('$id: đề không có từ khóa SQL, mã trạng thái hay tên cột snake_case (problem-design §1)', (t) => {
     for (const lang of ['vi', 'en'] as const) {
       const x = textOf(t, lang);
