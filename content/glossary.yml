@@ -1,0 +1,150 @@
+# Thuật ngữ freight cho Sổ tay. term = mã/viết tắt dùng chung; vi/en = định nghĩa ngắn.
+# columns: chỉ cột đang có trong DB (table.column). Thuật ngữ của chương sau để [] cho tới khi có bảng.
+- term: TEU
+  vi: "Đơn vị tương đương một container 20 feet. Container 40 feet tính là 2 TEU."
+  en: "Twenty-foot Equivalent Unit: one 20 ft container. A 40 ft container counts as 2 TEU."
+  columns: [containers.teu]
+- term: FEU
+  vi: "Đơn vị tương đương một container 40 feet, bằng 2 TEU."
+  en: "Forty-foot Equivalent Unit: one 40 ft container, equal to 2 TEU."
+  columns: [containers.container_type]
+- term: 20GP / 40GP / 40HC / 40RF
+  vi: "Loại container: khô thường 20 hoặc 40 feet (GP), 40 feet cao (HC, High Cube), 40 feet lạnh (RF, Reefer)."
+  en: "Container types: standard dry 20 or 40 ft (GP), 40 ft High Cube (HC), 40 ft refrigerated (RF, reefer)."
+  columns: [containers.container_type]
+- term: ETD
+  vi: "Ngày tàu hoặc chuyến bay dự kiến khởi hành (Estimated Time of Departure)."
+  en: "Estimated Time of Departure of the vessel or flight."
+  columns: [shipments.etd]
+- term: ETA
+  vi: "Ngày tàu hoặc chuyến bay dự kiến đến (Estimated Time of Arrival)."
+  en: "Estimated Time of Arrival of the vessel or flight."
+  columns: [shipments.eta]
+- term: ATD
+  vi: "Ngày khởi hành thực tế (Actual Time of Departure). NULL nghĩa là lô chưa đi."
+  en: "Actual Time of Departure. NULL means the shipment has not left yet."
+  columns: [shipments.atd]
+- term: ATA
+  vi: "Ngày đến thực tế (Actual Time of Arrival). NULL nghĩa là lô chưa đến."
+  en: "Actual Time of Arrival. NULL means the shipment has not arrived yet."
+  columns: [shipments.ata]
+- term: POL
+  vi: "Cảng xếp hàng (Port of Loading): nơi hàng lên tàu hoặc máy bay."
+  en: "Port of Loading: where the cargo is loaded."
+  columns: [shipments.pol]
+- term: POD
+  vi: "Cảng dỡ hàng (Port of Discharge): nơi hàng được dỡ xuống."
+  en: "Port of Discharge: where the cargo is unloaded."
+  columns: [shipments.pod]
+- term: FCL
+  vi: "Hàng nguyên container (Full Container Load): một khách dùng trọn container."
+  en: "Full Container Load: one customer uses whole containers."
+  columns: [shipments.load_type]
+- term: LCL
+  vi: "Hàng lẻ (Less than Container Load): nhiều khách ghép chung một container."
+  en: "Less than Container Load: several customers share one container."
+  columns: [shipments.load_type]
+- term: Incoterms
+  vi: "Bộ điều kiện giao hàng quốc tế: ai trả cước, ai chịu rủi ro tới điểm nào."
+  en: "International delivery terms: who pays the freight and where the risk passes."
+  columns: [shipments.incoterm]
+- term: EXW
+  vi: "Giao tại xưởng (Ex Works): người mua lo gần như toàn bộ việc vận chuyển."
+  en: "Ex Works: the buyer arranges almost all of the transport."
+  columns: [shipments.incoterm]
+- term: FCA
+  vi: "Giao cho người chuyên chở (Free Carrier) tại nơi thỏa thuận; dùng được cho mọi phương thức."
+  en: "Free Carrier: goods are handed to the buyer's carrier at an agreed place; any transport mode."
+  columns: [shipments.incoterm]
+- term: FOB
+  vi: "Giao lên tàu (Free On Board): rủi ro chuyển khi hàng đã lên tàu. Chỉ dùng cho đường biển."
+  en: "Free On Board: risk passes once the goods are on the vessel. Sea freight only."
+  columns: [shipments.incoterm]
+- term: CFR
+  vi: "Tiền hàng và cước (Cost and Freight): người bán trả cước biển tới cảng đích."
+  en: "Cost and Freight: the seller pays sea freight to the destination port."
+  columns: [shipments.incoterm]
+- term: CIF
+  vi: "Tiền hàng, bảo hiểm và cước (Cost, Insurance and Freight); chỉ dùng cho đường biển."
+  en: "Cost, Insurance and Freight; sea freight only."
+  columns: [shipments.incoterm]
+- term: CPT / CIP
+  vi: "Cước trả tới / cước và bảo hiểm trả tới: bản dùng cho mọi phương thức của CFR / CIF."
+  en: "Carriage Paid To / Carriage and Insurance Paid To: the any-mode versions of CFR / CIF."
+  columns: [shipments.incoterm]
+- term: DAP
+  vi: "Giao tại nơi đến (Delivered At Place): người bán lo vận chuyển tới địa điểm của người mua."
+  en: "Delivered At Place: the seller delivers to the buyer's named place."
+  columns: [shipments.incoterm]
+- term: Booking
+  vi: "Đặt chỗ trên tàu hoặc chuyến bay cho một lô hàng; ngày đặt là booking_date."
+  en: "Space reservation on a vessel or flight for one shipment; its date is booking_date."
+  columns: [shipments.booking_date]
+- term: Carrier
+  vi: "Hãng vận chuyển thực tế: hãng tàu (SEA) hoặc hãng bay (AIR)."
+  en: "The actual transport company: a shipping line (SEA) or an airline (AIR)."
+  columns: [shipments.carrier_id, carriers.name, carriers.mode]
+- term: Forwarder
+  vi: "Công ty giao nhận như Cargo Query: thay khách đặt chỗ với hãng vận chuyển và lo chứng từ."
+  en: "Freight forwarder such as Cargo Query: books space with carriers and handles documents for customers."
+  columns: []
+- term: Shipper / Consignee
+  vi: "Người gửi hàng / người nhận hàng ghi trên vận đơn."
+  en: "The sender / the receiver of the goods named on the bill of lading."
+  columns: []
+- term: Gross weight
+  vi: "Trọng lượng cả bì (hàng cộng bao bì), đơn vị kg."
+  en: "Weight of the goods plus packaging, in kg."
+  columns: [shipments.gross_weight_kg, containers.gross_weight_kg]
+- term: CBM
+  vi: "Mét khối, đơn vị thể tích hàng; quan trọng với hàng lẻ LCL."
+  en: "Cubic meter, the unit of cargo volume; key for LCL."
+  columns: [shipments.volume_cbm]
+- term: Transit time
+  vi: "Số ngày vận chuyển từ cảng đi tới cảng đến."
+  en: "Number of days from the origin port to the destination port."
+  columns: [ports.base_transit_days]
+- term: EXPORT / IMPORT
+  vi: "Chiều của lô hàng so với Việt Nam: xuất khẩu hoặc nhập khẩu."
+  en: "Direction of the shipment relative to Vietnam: outbound or inbound."
+  columns: [shipments.direction]
+- term: SEA / AIR
+  vi: "Phương thức vận chuyển: đường biển hoặc hàng không."
+  en: "Transport mode: ocean freight or air freight."
+  columns: [shipments.mode, carriers.mode]
+- term: B/L
+  vi: "Vận đơn (Bill of Lading): chứng từ vận chuyển, vừa là biên nhận vừa là chứng từ sở hữu hàng."
+  en: "Bill of Lading: the transport document, both a receipt and a document of title."
+  columns: []
+- term: HBL
+  vi: "Vận đơn nhà (House B/L) do forwarder phát cho khách."
+  en: "House Bill of Lading, issued by the forwarder to its customer."
+  columns: []
+- term: MBL
+  vi: "Vận đơn chủ (Master B/L) do hãng tàu phát cho forwarder."
+  en: "Master Bill of Lading, issued by the carrier to the forwarder."
+  columns: []
+- term: CFS
+  vi: "Kho gom và chia hàng lẻ (Container Freight Station)."
+  en: "Container Freight Station: the warehouse where LCL cargo is consolidated or split."
+  columns: []
+- term: Demurrage
+  vi: "Phí lưu container trong cảng quá số ngày miễn phí."
+  en: "Charge for keeping a container inside the port beyond the free time."
+  columns: []
+- term: Detention
+  vi: "Phí giữ container bên ngoài cảng quá số ngày miễn phí."
+  en: "Charge for keeping a container outside the port beyond the free time."
+  columns: []
+- term: Free time
+  vi: "Số ngày được dùng container miễn phí trước khi bắt đầu tính D&D."
+  en: "Days a container may be used free of charge before D&D charges start."
+  columns: []
+- term: Green / Yellow / Red lane
+  vi: "Luồng hải quan: xanh (miễn kiểm), vàng (kiểm hồ sơ), đỏ (kiểm thực tế hàng)."
+  en: "Customs lanes: green (no check), yellow (document check), red (physical inspection)."
+  columns: []
+- term: HS code
+  vi: "Mã phân loại hàng hóa theo Hệ thống hài hòa, quyết định thuế suất."
+  en: "Harmonized System code that classifies goods and sets the duty rate."
+  columns: []
