@@ -18,7 +18,7 @@ export const vi = {
   'home.progress': '{done}/{total} việc đã xong',
   'home.resume': 'Mở việc này',
   'home.chapters': 'Lộ trình {n} chương',
-  'home.chaptersIntro': 'Mỗi chương mở thêm phòng ban và bảng dữ liệu. Rê chuột hoặc Tab vào chương đang khóa để xem cần làm gì.',
+  'home.chaptersIntro': 'Mỗi chương mở thêm phòng ban và bảng dữ liệu. Chương đang khóa ghi rõ cần làm gì để mở.',
   'home.status.done': 'Hoàn thành · {done}/{total}',
   'home.status.current': 'Đang làm · {done}/{total}',
   'home.status.locked': 'Chưa mở',

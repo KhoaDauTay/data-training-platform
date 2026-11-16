@@ -21,7 +21,7 @@ export const en: Record<Key, Msg> = {
   'home.progress': '{done}/{total} tasks done',
   'home.resume': 'Open this task',
   'home.chapters': 'The {n}-chapter path',
-  'home.chaptersIntro': 'Each chapter opens new departments and data tables. Hover or Tab onto a locked chapter to see what opens it.',
+  'home.chaptersIntro': 'Each chapter opens new departments and data tables. Each locked chapter says what opens it.',
   'home.status.done': 'Done · {done}/{total}',
   'home.status.current': 'In progress · {done}/{total}',
   'home.status.locked': 'Locked',
