@@ -1,6 +1,7 @@
 import { getLang, t, type Key } from '../i18n';
 import { cx } from '../theme';
-import { STEP_HELP, STEP_LABELS, type StepKey, type StepsFailure, type StepsResult } from '../viz/steps';
+import type { StepsResult } from '../viz/steps';
+import { STEP_HELP, STEP_LABELS, type StepKey, type StepsFailure } from '../viz/stepText';
 import { fmt, h } from './dom';
 import { renderResult } from './resultTable';
 
