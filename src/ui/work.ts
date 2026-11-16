@@ -12,7 +12,8 @@ import type { Ticket } from '../tickets';
 import { celebrate } from './celebrate';
 import { h } from './dom';
 import { createEditor, type Editor } from './editor';
-import { errorText, errorView, gradeMessage } from './feedback';
+import { avatar } from './avatar';
+import { errorText, errorView, gradeMessage, voiceKey } from './feedback';
 import { pageShortcutOf } from './shortcuts';
 import type { Panel } from './tabs';
 
@@ -219,12 +220,15 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
       deps.onWrong?.();
       const fail = r;
       const err = played?.error;
+      // The sender answers in the chat under the grader's facts (re-translated on a language switch like every message).
+      const voice = (): HTMLElement => h('p', { class: 'mt-2 mb-0 flex items-start gap-2' },
+        avatar(tk.from), h('span', { class: 'rounded-2xl rounded-tl-sm bg-panel px-3 py-1.5 text-ink' }, t(voiceKey(fail))));
       if (fail.reason === 'error') {
         underline(err, 0);
-        say('bad', () => (err !== undefined ? errorView(err) : gradeMessage(fail)));
+        say('bad', () => h('div', {}, err !== undefined ? errorView(err) : gradeMessage(fail), voice()));
       } else {
         if (fail.reason === 'rows' && played?.result) played.mark = fail.sample;
-        say('bad', () => gradeMessage(fail));
+        say('bad', () => h('div', {}, gradeMessage(fail), voice()));
       }
       deps.panel.show('result');
       return;
