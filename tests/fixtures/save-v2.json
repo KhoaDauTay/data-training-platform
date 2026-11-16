@@ -1,0 +1,15 @@
+{
+  "version": 2,
+  "completed": ["ch1-01", "ch1-02", "ch1-03"],
+  "xp": 500,
+  "hintsUsed": { "ch1-02": 1 },
+  "drafts": { "ch1-04#0": "SELECT full_name FROM employees" },
+  "graded": { "ch1-02#0": "SELECT code, name, country FROM ports WHERE region = 'Europe' AND kind = 'SEAPORT'" },
+  "review": {
+    "select": { "box": 3, "due": "2026-11-20" },
+    "where": { "box": 1, "due": "2026-11-17" }
+  },
+  "practice": { "solved": 4, "failed": 1 },
+  "sandboxDraft": "SELECT count(*) FROM shipments",
+  "bossStep": { "ch1-05": 1 }
+}

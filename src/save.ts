@@ -1,6 +1,7 @@
 import type { KV } from './storage';
 
-export const SAVE_VERSION = 1;
+export const SAVE_VERSION = 2;
+export const SANDBOX_DRAFT_MAX = 20_000;
 export const SAVE_KEY = 'cargo-query-save';
 
 export interface Save {
@@ -15,6 +16,15 @@ export interface Save {
    * (older build) reads as {} and the Recap falls back to the draft, so no SAVE_VERSION bump is needed.
    */
   graded: Record<string, string>;
+  // --- v2 (Plan 1c) ---
+  /** Leitner card per skill id. `due` = real local day 'YYYY-MM-DD' of the player's machine, never the in-game date. */
+  review: Record<string, { box: number; due: string }>;
+  /** Practice totals for display only; never affect unlocking or XP. */
+  practice: { solved: number; failed: number };
+  /** Sandbox editor content, at most SANDBOX_DRAFT_MAX chars. */
+  sandboxDraft: string;
+  /** Promotion-review step reached (0-based) for tickets not completed yet. Clamped to steps.length - 1 on use. */
+  bossStep: Record<string, number>;
 }
 
 /** Ids that exist in the current content; saved ids not in here are dropped. `skills` is used from v2 (review). */
@@ -34,9 +44,23 @@ export interface SaveWarning { kind: 'corrupt' | 'newer'; version?: number }
 
 export type Migration = (data: Record<string, unknown>, known: Known) => Record<string, unknown>;
 /** Key = version migrated FROM. Keep every migration forever; deleting one strands old saves. */
-export const MIGRATIONS: Record<number, Migration> = {};
+export const MIGRATIONS: Record<number, Migration> = {
+  // v1 → v2: pure, needs no content. Learned skills missing from `review` count as box 1 due today (practice.ts cardOf).
+  1: (d) => ({ ...d, review: {}, practice: { solved: 0, failed: 0 }, sandboxDraft: '', bossStep: {} }),
+};
 
-export const emptySave = (): Save => ({ version: SAVE_VERSION, completed: [], xp: 0, hintsUsed: {}, drafts: {}, graded: {} });
+export const emptySave = (): Save => ({
+  version: SAVE_VERSION,
+  completed: [],
+  xp: 0,
+  hintsUsed: {},
+  drafts: {},
+  graded: {},
+  review: {},
+  practice: { solved: 0, failed: 0 },
+  sandboxDraft: '',
+  bossStep: {},
+});
 export const serializeSave = (s: Save): string => JSON.stringify(s);
 
 /** An old save is kept here (one per old version) before migrating, so a rolled-back build can still read it. */
@@ -72,9 +96,38 @@ function pickRecord<T>(v: unknown, ok: (x: unknown) => x is T, ticketIds: Readon
   return out;
 }
 
+const DAY_RE = /^\d{4}-\d{2}-\d{2}$/;
+const isRecord = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v);
+const isCount = (v: unknown): v is number => typeof v === 'number' && Number.isInteger(v) && v >= 0;
+
+type V2Fields = Pick<Save, 'review' | 'practice' | 'sandboxDraft' | 'bossStep'>;
+
+/** Runs for every version, so tests with custom `migrations`/`version` still get a complete Save. */
+function readV2(d: Record<string, unknown>, known: Known): V2Fields {
+  const review: Save['review'] = {};
+  if (isRecord(d.review)) {
+    for (const [skill, c] of Object.entries(d.review)) {
+      if (known.skills.has(skill) && isRecord(c) && isCount(c.box) && c.box >= 1 && c.box <= 5 && typeof c.due === 'string' && DAY_RE.test(c.due)) {
+        review[skill] = { box: c.box, due: c.due };
+      }
+    }
+  }
+  const bossStep: Save['bossStep'] = {};
+  if (isRecord(d.bossStep)) {
+    for (const [id, n] of Object.entries(d.bossStep)) if (known.ticketIds.has(id) && isCount(n)) bossStep[id] = n;
+  }
+  const p = isRecord(d.practice) ? d.practice : {};
+  return {
+    review,
+    practice: { solved: isCount(p.solved) ? p.solved : 0, failed: isCount(p.failed) ? p.failed : 0 },
+    sandboxDraft: typeof d.sandboxDraft === 'string' ? d.sandboxDraft.slice(0, SANDBOX_DRAFT_MAX) : '',
+    bossStep,
+  };
+}
+
 /**
  * Throws InvalidSaveError (not JSON, bad version, missing migration) or NewerSaveError.
- * `migrations`/`version` let tests exercise the migration path while SAVE_VERSION is 1.
+ * `migrations`/`version` let tests exercise the migration path with made-up versions.
  */
 export function parseSave(raw: string, known: Known, migrations = MIGRATIONS, version = SAVE_VERSION): Save {
   let d = parseObject(raw);
@@ -96,6 +149,7 @@ export function parseSave(raw: string, known: Known, migrations = MIGRATIONS, ve
     hintsUsed: pickRecord(d.hintsUsed, (x): x is number => typeof x === 'number' && Number.isInteger(x) && x >= 0, known.ticketIds),
     drafts: pickRecord(d.drafts, isString, known.ticketIds),
     graded: pickRecord(d.graded, isString, known.ticketIds),
+    ...readV2(d, known),
   };
 }
 
