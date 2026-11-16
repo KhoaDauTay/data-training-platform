@@ -1,0 +1,13 @@
+# Bảng điều hành công ty (L18 ★5, L23). Mỗi ô mở khi người chơi xong `ticket`; số tính lúc chạy từ Solution
+# của ticket đó (bước `step`, mặc định 0). Không ghi cứng số (seed có thể đổi); không lộ đáp án trước khi xong.
+# kind: number = ô số ở cột `col` (mặc định 0) của dòng đầu · rowcount = số dòng · bar = các cột trước là nhãn,
+# cột cuối là số (vẽ 5 thanh lớn nhất). Ô trỏ tới ticket chưa viết (ch12-06) khóa tới khi chương đó có nội dung.
+- { id: shipments2025, ticket: ch2-01, kind: number, col: 0, label: { vi: "Lô hàng năm 2025 (không tính lô hủy)", en: "Shipments in 2025 (cancelled excluded)" } }
+- { id: weight2025, ticket: ch2-01, kind: number, col: 1, label: { vi: "Tổng trọng lượng năm 2025 (kg)", en: "Total weight in 2025 (kg)" } }
+- { id: inTransit, ticket: ch2-04, kind: number, label: { vi: "Lô đang trên đường", en: "Shipments in transit" } }
+- { id: keyAccounts, ticket: ch2-03, kind: rowcount, label: { vi: "Khách chủ lực năm 2025 (hơn 150 lô)", en: "Key accounts of 2025 (over 150 shipments)" } }
+- { id: modeMix, ticket: ch2-02, kind: bar, label: { vi: "Số lô 2025 theo phương thức và chiều hàng", en: "2025 shipments by mode and direction" } }
+- { id: teuByCarrier, ticket: ch3-02, kind: bar, label: { vi: "TEU quý 3/2026 theo hãng tàu", en: "Q3 2026 TEU by carrier" } }
+- { id: quietCustomers, ticket: ch3-03, kind: rowcount, label: { vi: "Khách không gửi hàng từ 01/03/2026", en: "Customers with no booking since 1 March 2026" } }
+- { id: topCustomers, ticket: ch3-05, step: 0, kind: bar, label: { vi: "Năm khách lớn nhất năm 2025 (TEU)", en: "Top five customers of 2025 (TEU)" } }
+- { id: q3margin, ticket: ch12-06, kind: number, label: { vi: "Biên lợi nhuận quý 3/2026", en: "Q3 2026 gross margin" } }

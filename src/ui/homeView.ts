@@ -1,10 +1,14 @@
-import { homeModel, LEVELS, type ChapterCard, type HomeModel, type SkillCard } from '../home';
+import type { QueryResult } from '../db/run';
+import { chapterOfId, homeModel, KPIS, kpiTiles, kpiValue, LEVELS, type ChapterCard, type HomeModel, type KpiTile, type KpiValue, type SkillCard } from '../home';
 import { getLang, t, type Key } from '../i18n';
 import { CHAPTERS, chapterTitle, rankOf, SKILLS } from '../progress';
 import { derive } from '../scene';
 import { actions, app, done } from '../state';
 import { BTN_GO, CARD, chapterColor, cx, DONE_PILL, PILL } from '../theme';
-import { textOf } from '../tickets';
+import { personOf } from '../people';
+import { stepKey } from '../save';
+import { textOf, type Ticket } from '../tickets';
+import { avatar } from './avatar';
 import { byId, h, nodes } from './dom';
 import { harborScene } from './harbor';
 import { routeMap } from './routeMap';
@@ -65,21 +69,28 @@ function progress(value: number, label: string, track: string, fill: string): HT
   }, h('div', { class: cx('h-full rounded-full', fill), style: `width:${value}%` }));
 }
 
+/** "New message" (home-v3, L18 ★1): the next task as the sender's chat bubble, first paragraph of the business question. */
 function continueCard(m: HomeModel): HTMLElement {
   const lang = getLang();
   const label = t('home.progress', { done: m.done, total: m.total });
+  const next = m.next;
+  const x = next ? textOf(next, lang) : undefined;
   return h('section', { class: cx(CARD, 'flex h-full flex-col gap-4 p-6'), 'aria-labelledby': 'continue-title' },
-    h('div', {},
-      h('p', { class: cx('m-0 text-sm font-semibold', chapterColor(m.chapter).text) },
-        t('home.kicker', { n: m.chapter, title: chapterTitle(m.chapter, lang) })),
-      h('h2', { id: 'continue-title', class: 'mt-1 mb-0 text-2xl font-bold' },
-        m.next ? t('home.continue', { title: textOf(m.next, lang).title }) : t('inbox.empty')),
-      m.next ? h('p', { class: 'mt-1 mb-0 text-muted' }, t('home.from', { name: m.next.from.name, dept: m.next.from.dept })) : null),
+    h('p', { class: cx('m-0 text-sm font-semibold', chapterColor(m.chapter).text) }, t('home.kicker', { n: m.chapter, title: chapterTitle(m.chapter, lang) })),
+    h('h2', { id: 'continue-title', class: 'm-0 text-xl font-bold' }, x ? x.title : t('inbox.empty')),
+    next && x
+      ? h('div', { class: 'flex gap-3' },
+        avatar(next.from, 'lg'),
+        h('div', { class: 'min-w-0 flex-1' },
+          h('p', { class: 'm-0 text-[15px]' }, h('b', {}, next.from.name), ' · ', h('span', { class: 'text-muted' }, personOf(next.from.name)?.role[lang] ?? next.from.dept)),
+          h('p', { class: 'mt-1 mb-0 rounded-2xl rounded-tl-sm bg-code px-4 py-3 text-[15px] leading-relaxed' },
+            x.body.split(/\n\s*\n/)[0].replace(/\s*\n\s*/g, ' '))))
+      : null,
     h('div', { class: 'flex items-center gap-3' },
       progress(percent(m.done, m.total), label, 'h-2.5 flex-1 bg-code', 'bg-linear-to-r from-blue-600 to-cyan-500'),
       h('span', { class: 'text-sm tabular-nums text-muted' }, label)),
     h('div', { class: 'flex flex-wrap gap-2' },
-      m.next ? h('button', { type: 'button', class: cx(BTN_GO, 'px-4 py-2'), onclick: () => resume(m.next!.id) }, t('home.resume')) : null,
+      next ? h('button', { type: 'button', class: cx(BTN_GO, 'px-4 py-2'), onclick: () => resume(next.id) }, t('home.resume')) : null,
       h('button', { type: 'button', class: 'px-4 py-2 font-semibold', onclick: openInbox }, t('top.inbox'))));
 }
 
@@ -224,6 +235,60 @@ function routesSection(): HTMLElement {
     routeMap(derive(app.tickets, done())).svg);
 }
 
+/** Solution results per step, run once per session and only for open tiles (an open tile = task already solved: nothing leaks). */
+const kpiRuns = new Map<string, Promise<QueryResult>>();
+function kpiResult(tk: Ticket, step: number): Promise<QueryResult> {
+  const key = stepKey(tk.id, step);
+  let run = kpiRuns.get(key);
+  if (!run) {
+    run = app.run(tk.steps[step].solution); // DbClient queues it until the database is ready
+    kpiRuns.set(key, run);
+    run.catch(() => kpiRuns.delete(key)); // a failed run is retried on the next draw
+  }
+  return run;
+}
+
+const BIG = 'm-0 text-3xl font-bold tabular-nums';
+
+/** L23: neutral text and bars, numbers in tabular figures; colour stays in small badges. */
+function kpiView(v: KpiValue): HTMLElement {
+  if ('text' in v) return h('p', { class: BIG }, v.text);
+  const max = Math.max(1, ...v.bars.map((b) => b.value));
+  return h('ul', { class: 'm-0 list-none space-y-1 p-0' }, ...v.bars.map((b) =>
+    h('li', { class: 'grid grid-cols-[minmax(0,8rem)_1fr_auto] items-center gap-2 text-sm' },
+      h('span', { class: 'truncate' }, b.label),
+      h('span', { class: 'h-2.5 rounded bg-slate-500 dark:bg-slate-400', style: `width:${Math.round((b.value / max) * 100)}%`, 'aria-hidden': 'true' }),
+      h('span', { class: 'tabular-nums' }, b.text))));
+}
+
+function kpiTile(tile: KpiTile): HTMLElement {
+  const lang = getLang();
+  const { kpi, ticket } = tile;
+  const value = h('div', { class: 'mt-1 min-h-9' });
+  if (tile.open && ticket) {
+    value.append(h('p', { class: cx(BIG, 'text-muted') }, '…'));
+    kpiResult(ticket, kpi.step).then(
+      (r) => value.replaceChildren(kpiView(kpiValue(kpi, r, lang))),
+      () => value.replaceChildren(h('p', { class: cx(BIG, 'text-muted') }, '—')));
+  } else {
+    value.append(h('p', { class: cx(BIG, 'text-muted') }, ticket ? '—' : '???'));
+  }
+  const foot = tile.open && ticket ? t('home.kpiFrom', { title: textOf(ticket, lang).title })
+    : ticket ? t('home.kpiLocked', { n: ticket.chapter, title: textOf(ticket, lang).title, name: ticket.from.name })
+      : t('home.kpiLater', { n: chapterOfId(kpi.ticket) });
+  return h('div', { class: 'rounded-xl bg-panel p-4 ring-1 ring-line' },
+    h('p', { class: 'm-0 text-sm font-medium' }, kpi.label[lang]),
+    value,
+    h('p', { class: 'mt-1 mb-0 text-sm text-muted' }, foot));
+}
+
+function kpiSection(): HTMLElement {
+  return h('section', { 'aria-labelledby': 'kpi-title' },
+    h('h2', { id: 'kpi-title', class: 'm-0 text-lg font-bold' }, t('home.kpi')),
+    h('p', { class: 'mt-1 mb-3 text-[15px] text-muted' }, t('home.kpiIntro')),
+    h('div', { class: 'grid gap-4 sm:grid-cols-2 lg:grid-cols-4' }, ...kpiTiles(KPIS, app.tickets, done()).map(kpiTile)));
+}
+
 registerHomeSection({ id: 'continue', order: 10, span: 'wide', render: continueCard });
 registerHomeSection({ id: 'career', order: 20, span: 'narrow', render: careerCard });
 registerHomeSection({ id: 'chapters', order: 30, span: 'full', render: chaptersSection });
@@ -231,6 +296,7 @@ registerHomeSection({ id: 'skills', order: 40, span: 'full', render: skillsSecti
 registerHomeSection({ id: 'modes', order: 50, span: 'full', render: modesSection });
 registerHomeSection({ id: 'harbor', order: 5, span: 'full', render: harborSection });
 registerHomeSection({ id: 'routes', order: 25, span: 'full', render: routesSection });
+registerHomeSection({ id: 'kpi', order: 35, span: 'full', render: kpiSection });
 
 /** Redrawn by rerender() (language switch, progress). Pure DOM from homeModel(); keeps no state of its own. */
 export function renderHome(host: HTMLElement): void {

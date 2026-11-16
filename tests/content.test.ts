@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import template from '../content/TEMPLATE.md?raw';
 import { loadTickets } from '../src/content';
+import { KPIS } from '../src/home';
 import { CHAPTER_TABLES, contentProblems } from '../src/progress';
 import { parseTicket, textOf, type TicketText } from '../src/tickets';
 import { runner } from './helpers';
@@ -89,5 +90,23 @@ describe('Solution', () => {
     const run = await runner();
     const boss = tickets.find((t) => t.id === 'ch1-05');
     expect((await run(boss!.steps[0].solution)).rows.length).toBeGreaterThanOrEqual(4);
+  });
+});
+
+describe('KPI (content/kpis.yml)', () => {
+  const live = KPIS.filter((k) => tickets.some((t) => t.id === k.ticket));
+  it.each(live)('$id: Solution của việc nguồn ra đúng dạng ô', async (k) => {
+    const t = tickets.find((x) => x.id === k.ticket)!;
+    expect(k.step).toBeLessThan(t.steps.length);
+    const r = await (await runner())(t.steps[k.step].solution);
+    if (k.kind === 'number') {
+      expect(r.rows).toHaveLength(1);
+      expect(Number.isFinite(Number(r.rows[0][k.col]))).toBe(true);
+    }
+    if (k.kind === 'rowcount') expect(r.rows.length).toBeGreaterThan(0);
+    if (k.kind === 'bar') {
+      expect(r.columns.length).toBeGreaterThanOrEqual(2);
+      expect(r.rows.every((row) => Number.isFinite(Number(row[row.length - 1])))).toBe(true);
+    }
   });
 });
