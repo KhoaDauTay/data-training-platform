@@ -13,7 +13,7 @@ import { textOf } from '../src/tickets';
 /** Every string inside a parsed value (keys and YAML comments are not player text). */
 const strings = (v: unknown): string[] =>
   typeof v === 'string' ? [v] : v && typeof v === 'object' ? Object.values(v).flatMap(strings) : [];
-const GAME_TONE = /boss|sự cố/i;
+const GAME_TONE = /boss|sự cố/i;
 
 /** Keys whose EN text is intentionally the same as VI (SQL keywords, product names). */
 const SAME_OK = new Set<string>(['tab.explain', 'top.xp']);
@@ -50,6 +50,15 @@ describe('từ điển i18n', () => {
       .filter(([, v]) => typeof v === 'string' && /\bboss\b|sự cố/i.test(v))
       .map(([k]) => k);
     expect(bad).toEqual([]);
+  });
+
+  it('L22: chapters.yml, people.yml, kpis.yml và chữ ticket (VI + EN) không có "boss" / "sự cố"', () => {
+    const texts = [
+      ...[chaptersYml, peopleYml, kpisYml].flatMap((y) => strings(parseYaml(y))),
+      ...loadTickets().flatMap((tk) => (['vi', 'en'] as const).flatMap((lang) => strings(textOf(tk, lang)))),
+    ];
+    expect(texts.length).toBeGreaterThan(100);
+    expect(texts.filter((x) => GAME_TONE.test(x))).toEqual([]);
   });
 
   it('mọi khóa data-i18n / data-i18n-aria trong index.html có trong vi', () => {
