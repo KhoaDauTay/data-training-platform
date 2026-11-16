@@ -5,6 +5,7 @@ const num = (v: Params[string] | undefined): string => Number(v).toLocaleString(
 const count = (one: string, many: string) => (p: Params): string => `${num(p.n)} ${p.n === 1 ? one : many}`;
 
 export const en: Record<Key, Msg> = {
+  'brief.hintFree': 'Hint {i} of {n}',
   'app.close': 'Close',
   'app.dismiss': 'Dismiss',
   'app.reload': 'Reload page',

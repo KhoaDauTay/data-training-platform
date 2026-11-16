@@ -5,6 +5,9 @@ import { applyStatic, setLang, type Lang } from './i18n';
 import { contentProblems, currentChapter, nextTicket, SKILLS, xpFor } from './progress';
 import { loadSave, parseSave, serializeSave, type Known } from './save';
 import { actions, app, done, editorSchema, persist, selected, type Column } from './state';
+import { resumeStep } from './overview';
+import { localDay, seedReview } from './practice';
+import { isStory, session } from './session';
 import { localStore } from './storage';
 import type { Route } from './route';
 import type { Ticket } from './tickets';
@@ -35,6 +38,7 @@ if (loaded.warning?.kind === 'corrupt') app.notice = { key: 'save.corrupt' };
 
 const firstOpen = (): string => (nextTicket(app.tickets, done()) ?? app.tickets[app.tickets.length - 1]).id;
 app.selectedId = firstOpen();
+app.stepIndex = resumeStep(app.save, selected()); // reloading mid-review keeps the step reached
 applyStatic();
 
 async function loadColumns(): Promise<void> {
@@ -105,18 +109,22 @@ function rerender(): void {
 
 /** `force`: rebuild the editor even for the same ticket id (an imported save brings its own draft). */
 function selectTicket(id: string, force = false): void {
+  const fromMode = !isStory(); // leaving Practice/Sandbox: new editor, and the practice run's lastRun is dropped
+  session.mode = { kind: 'story' };
   app.selectedId = id;
-  app.stepIndex = 0;
+  app.stepIndex = resumeStep(app.save, selected()); // a promotion review reopens at the step reached
   app.conclusionFor = '';
   (byId('inbox-dialog') as HTMLDialogElement).close();
   rerender();
-  work.setTicket(selected(), app.stepIndex, force);
+  work.setTicket(selected(), app.stepIndex, force || fromMode);
   go('play'); // from Home or the inbox on Home: the hashchange then focuses the brief (it is hidden until then)
   byId('brief-title').focus();
 }
 
 function nextStep(): void {
   app.stepIndex++;
+  app.save.bossStep[app.selectedId] = app.stepIndex;
+  persist();
   rerender();
   work.setTicket(selected(), app.stepIndex);
   work.focus(); // the new step's editor replaces the one that had focus
@@ -139,6 +147,8 @@ function complete(t: Ticket): void {
   const gained = xpFor(t, app.save.hintsUsed[t.id] ?? 0);
   app.save.completed.push(t.id);
   app.save.xp += gained;
+  app.save.review = seedReview(app.save.review, t.grants, localDay(new Date())); // first review tomorrow
+  delete app.save.bossStep[t.id];
   persist(true);
   playCompletion(t, before, done()); // first completion only: the early return above skips re-solves
   app.conclusionFor = '';

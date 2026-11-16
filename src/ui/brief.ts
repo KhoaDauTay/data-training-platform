@@ -2,6 +2,7 @@ import { getLang, t, type Key } from '../i18n';
 import { roleLine } from '../people';
 import { CHAPTERS, nextTicket, SKILLS, xpFor } from '../progress';
 import { compareShape, shapeOf, type Kind, type Shape } from '../shape';
+import { hintsShown, isClosed, isStory, useHint } from '../session';
 import { actions, app, done, expectedShape, persist, stepKey, unlockedTables } from '../state';
 import { chapterColor, cx, DEPT_CHIP, deptColor, deptOf, PILL } from '../theme';
 import { textOf, type Beat, type Ticket, type TicketText } from '../tickets';
@@ -43,15 +44,17 @@ function shapeCard(tk: Ticket, stepIndex: number): HTMLElement {
 }
 
 function hints(tk: Ticket, x: TicketText, isDone: boolean): HTMLElement {
-  const shown = app.save.hintsUsed[tk.id] ?? 0;
+  const shown = hintsShown(tk.id);
   const btn = h('button', {
     type: 'button',
     onclick: () => {
-      app.save.hintsUsed[tk.id] = shown + 1;
+      useHint(tk.id);
       persist();
       actions.rerender();
     },
-  }, t('brief.hint', { i: shown + 1, n: x.hints.length, cost: xpFor(tk, shown) - xpFor(tk, shown + 1) }));
+  }, isStory()
+    ? t('brief.hint', { i: shown + 1, n: x.hints.length, cost: xpFor(tk, shown) - xpFor(tk, shown + 1) })
+    : t('brief.hintFree', { i: shown + 1, n: x.hints.length })); // Practice: 0 XP, so no cost (P9)
   return h('section', { class: 'hints my-3' },
     shown ? h('ol', { class: 'space-y-1' }, ...x.hints.slice(0, shown).map((s) => h('li', {}, richText(s)))) : null,
     isDone || shown >= x.hints.length ? null : btn);
@@ -128,7 +131,7 @@ function recap(tk: Ticket, x: TicketText): HTMLElement {
 /** Left pane for `tk` (not necessarily the selected ticket: Plan 1c renders practice tickets here). Replaces host's children. */
 export function renderBrief(host: HTMLElement, tk: Ticket, stepIndex: number): void {
   const x = textOf(tk, getLang());
-  const isDone = done().has(tk.id);
+  const isDone = isClosed(tk.id); // Practice replays a done ticket open: shape card, hints and Submit, no Recap
   const boss = tk.steps.length > 1;
   host.replaceChildren(...nodes(
     h('header', { class: 'space-y-2' },
