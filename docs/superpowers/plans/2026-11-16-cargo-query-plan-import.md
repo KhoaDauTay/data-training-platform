@@ -2,13 +2,58 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Trong chế độ Sandbox, người học nạp file CSV của mình (≤ 20 MB / 200.000 dòng / 50 cột mỗi file, ≤ 5 bảng) vào schema `sandbox` của PGlite, rồi dùng Chạy, Biểu đồ, EXPLAIN, Luồng dữ liệu, Thứ tự thực thi và Sơ đồ ER trên dữ liệu đó. File gốc được lưu trong IndexedDB và tự nạp lại khi mở trang và sau mỗi `DbClient.restart()`. Có nút xóa từng bảng và xóa toàn bộ. Không hỗ trợ SQL dump.
+**Goal:** Trong chế độ Sandbox, người học nạp file CSV của mình vào schema `sandbox` của PGlite. Giới hạn: ≤ 20 MB, ≤ 200.000 dòng, ≤ 50 cột mỗi file, ≤ 5 bảng. Sau đó họ dùng Chạy, Biểu đồ, EXPLAIN, Luồng dữ liệu, Thứ tự thực thi và Sơ đồ ER trên dữ liệu đó. File gốc được lưu trong IndexedDB và **không bao giờ rời trình duyệt**. File tự nạp lại khi mở trang và sau mỗi `DbClient.restart()`. Có nút xóa từng bảng và xóa toàn bộ. Không hỗ trợ SQL dump.
 
-**Architecture:** Main thread kiểm mọi giới hạn và sanitize tên bằng hàm thuần (`src/import/csv.ts`) trước khi gửi gì xuống worker. Worker nhận request `kind: 'import'` (kèm `Blob`) và chạy `importCsv()` (`src/db/import.ts`) **ngoài** `runSandboxed`, trong một transaction riêng: `CREATE UNLOGGED TABLE` toàn cột `text` → `COPY … FROM '/dev/blob'` (parser CSV của Postgres) → suy kiểu bằng một lượt quét SQL → `ALTER COLUMN … TYPE`. `DbClient` giữ danh sách bảng đã nạp (kèm kiểu đã suy) và nạp lại ngay sau khi worker khởi động lại. `MyData` (`src/import/myData.ts`) điều phối inspect → import → lưu IndexedDB (`src/import/store.ts`). Giao diện là một mục trong khung trái của Sandbox (`src/ui/myDataView.ts`). Truy vấn của người chơi trên bảng nạp vẫn đi qua `runSandboxed` (BEGIN … ROLLBACK, chỉ đọc).
+**Architecture:**
+- Main thread kiểm mọi giới hạn và sanitize tên bằng hàm thuần (`src/import/csv.ts`) trước khi gửi gì xuống worker.
+- Worker nhận request `kind: 'import'` (kèm `Blob`) và chạy `importCsv()` (`src/db/import.ts`) **ngoài** `runSandboxed`, trong một transaction riêng: `CREATE UNLOGGED TABLE` toàn cột `text` → `COPY … FROM '/dev/blob'` (parser CSV của Postgres) → suy kiểu bằng một lượt quét SQL → `ALTER COLUMN … TYPE`.
+- `DbClient` giữ danh sách bảng đã nạp (kèm kiểu đã suy) và nạp lại ngay sau khi worker khởi động lại. Import đi qua **hàng đợi query** (không đi đường riêng như `parser`), nên không bao giờ chạy xen với `BEGIN … ROLLBACK` của người chơi.
+- `MyData` (`src/import/myData.ts`) điều phối inspect → import → lưu IndexedDB (`src/import/store.ts`).
+- Giao diện là một mục trong khung trái của Sandbox (`src/ui/myDataView.ts`, Tailwind), cộng một card "Dữ liệu của tôi" trên Trang chủ.
+- Truy vấn của người chơi trên bảng nạp vẫn đi qua `runSandboxed` (BEGIN … ROLLBACK, chỉ đọc).
 
-**Tech Stack:** như Plan 1, 1b, 1c. **Không thêm dependency** (không thư viện CSV, không `fake-indexeddb`).
+**Tech Stack:** như HEAD. **Không thêm dependency** (không thư viện CSV, không `fake-indexeddb`).
 
-**Spec:** `docs/superpowers/specs/2026-11-16-cargo-query-design.md` §1, §6b (Sandbox), §7, **§7b**, §8. **Nguồn quyết định:** `docs/team/amendments.md` mục "Quyết định của user (2026-11-16)" **D3** (ghi đè đề xuất D3-A ở trên nó), cùng `docs/team/product-design.md` §4. **Tiền đề:** Plan 1 (Task 1–11), Plan 1b (Task 1–8) và Plan 1c (Task 0–10) đã xong.
+**Spec:** `docs/superpowers/specs/2026-11-16-cargo-query-design.md` §1, §6b (Sandbox), §7, **§7b**, §8.
+
+**Nguồn quyết định:**
+- `docs/team/amendments.md`, mục "Quyết định của user (2026-11-16)", **D3** (ghi đè đề xuất D3-A ở trên nó).
+- `docs/team/decision-log.md`: **L5** (giữ giới hạn D3, đo bộ nhớ trên Edge, vượt thì cảnh báo trong UI + cần user xem), L7 (code trên đĩa thắng listing), L16 (Sandbox không có lịch sử), L17 (card chế độ trên Trang chủ), L22 (không dùng chữ "boss"), **L36** (tên vào Mermaid đã được `mermaidName()` escape), L37.
+- Quyết định sản phẩm mới của plan này: I1–I8 (mục dưới).
+
+**Tiền đề:** Plan 1, 1d, 1b và 1c đã xong. Plan này viết lại trên HEAD `2f917b5`: áp toàn bộ plan lên bản sao HEAD thì `tsc`, 490 test và `npm run build` đều sạch. Chạy sau Plan 1c, trước Plan 2.
+
+## Đã bỏ / đổi vì Plans 1d/1b/1c
+
+So với bản viết trước khi có Plan 1d/1b/1c:
+1. **Task 3 không còn listing cả file `client.ts`** (L7). HEAD đã có `'parser'`, `WorkerTaskError`, message `fault`, hàng phụ `side`/`waitingSide`/`postSide`/`loadParser` và `steps<T>` generic. Listing cũ sẽ xóa mất chúng. Task 3 nay chỉ gồm các bước "Sửa" nhỏ. `Job` đổi `kind`+`sql` thành `body: WorkerBody`, kể cả job `parser`. Worker vẫn tách `parser` ra trước hàng đợi và vẫn gửi `error`/`fault` như cũ.
+2. **Ba điểm neo giao diện đã đổi:**
+   - tab ER (`vizTabs.ts`) giờ là `erMetadata('public').then(… erdSvg(erDefinition(…, ticketColor().hex)))`, được truyền vào `load(…, drawErd)`;
+   - `enter()` (`modes.ts`) gọi `setTicket(…, true)`;
+   - đoạn giới thiệu Sandbox có class Tailwind.
+3. **`editorSchema()` không thêm tham số `extra`.** `work.ts` gọi `editorSchema()` mỗi lần tạo editor, còn `selectTicket()` (main.ts) đổi chế độ mà không qua `enter()`. Vì vậy `state.ts` có hook `schemaHooks.extra`, do `initMyData` gắn (I1). Không phải sửa lời gọi nào, `modes.ts`/`main.ts` không phải gọi `setSchema` khi đổi chế độ, và `work.ts` (được test mock DOM nạp) không thêm import.
+4. **Bỏ bước CSS trong `style.css`** (`.mydata*`, `.visually-hidden`). Plan 1c đã chốt không thêm CSS: `myDataView.ts` dùng class Tailwind nguyên vẹn, ô file dùng `sr-only` + `peer`.
+5. **Bỏ khóa `mydata.dbFailed`.** `importErrorText` dùng lại `errorText()` (`src/ui/feedback.ts`) cho `DbFailedError` và `WorkerTaskError` (lỗi không phải Postgres trong worker, ví dụ `invalid identifier`). Chỉ giữ `mydata.timeout` (30 s, không nhắc JOIN như `err.timeout`), `mydata.restarted` ("nạp lại file") và `mydata.copyError`.
+6. **Checklist kiểm tay sửa theo Plan 1c:** vào Sandbox bằng nav "Sandbox" hoặc card Trang chủ (Sandbox không nằm trong Hộp thư, P6). Nút thoát là "Về Làm việc" (`prac.exit`). Đo bộ nhớ trên **Edge** (L5), không phải Chrome.
+7. **Bỏ Task 6 Step 0 riêng.** Mọi điểm neo được Task 0 kiểm một lần, và mỗi bước "Sửa" tự báo khi điểm neo không khớp đúng một lần.
+8. **`clearMemos()` chỉ xóa cache dữ liệu.** `once()` (Mermaid, parser) trước đây dựng trên `memoByKey`, nay có cache riêng nên không bị xóa.
+9. Ghi chú Plan 1d cũ ("Sau Plan 1d: điều chỉnh khi thực hiện") đã được đưa vào Task 6: card Trang chủ đăng ký trong `modes.ts` cạnh card Sandbox (I2), class `sr-only`.
+10. Ràng buộc `innerHTML` nay dựa vào `mermaidName()` (L36), không dựa vào giả định "tên đã sanitize". `importViz.test.ts` thêm một test cho tên cột `class`/`style`: hai tên này qua được `sanitizeIdent` nhưng là từ khóa của Mermaid.
+11. Thêm hai chỗ phòng thủ. Trong worker, `importCsv` kiểm `types` trước khi ghép vào `ALTER … TYPE`. Khi đọc, `isStoredImport` kiểm tên cột theo regex định danh (luật "mọi giá trị lưu trữ đều được kiểm khi đọc").
+12. `restore()` giữ bản ghi IndexedDB cả khi gặp `DbFailedError`, không chỉ `DbRestartError`. Lý do: PGlite boot hỏng thì `retryDb` cứu được, và file của người dùng không được mất vì lỗi đó.
+
+## Quyết định sản phẩm của plan này (I1–I8)
+
+| # | Quyết định | Lý do |
+|---|---|---|
+| I1 | Autocomplete lấy bảng nạp qua hook `schemaHooks.extra` trong `state.ts`. `initMyData` gắn hook, hook trả `{}` ngoài Sandbox. | Đơn giản nhất: không sửa lời gọi `editorSchema()` nào. Editor được dựng lại mỗi lần đổi chế độ (`force`), nên tự đúng. |
+| I2 | Card "Dữ liệu của tôi" (📂, order 20, cyan) trên Trang chủ mở **Sandbox**. Mục nạp CSV nằm trong khung trái của Sandbox, không có route riêng. | Spec §7b: mục con của Sandbox. L17: card chế độ. |
+| I3 | **Cảnh báo bộ nhớ** (L5) là một dòng `mydata.memoryWarn`. Dòng này hiện khi tổng `dòng × cột` của các bảng nạp ≥ `MEMORY_WARN_CELLS` = **20 triệu ô**. Giới hạn D3 giữ nguyên. **Cần user xem:** spike Node đo được 5 × 50 cột (50 triệu ô) = +364–463 MB, cộng seed thì vượt ngân sách 400 MB. Task 6 Step 9 đo trên Edge và ghi số vào `decision-log.md`. | L5: không tự hạ giới hạn, chỉ cảnh báo và báo user. Ngưỡng 20 triệu ô (khoảng 2 file 50 cột lớn nhất) lấy từ spike: 10 triệu ô ≈ +137 MB. |
+| I4 | Bảng nạp chỉ hiện trong Sandbox (mục "Dữ liệu của tôi", tab ER, autocomplete). Luyện tập và Làm việc không thấy chúng. Tab **Cột** giữ nguyên (chỉ bảng game đã mở). | Spec §7b "Hiển thị". Danh sách cột của bảng nạp đã có trong mục "Dữ liệu của tôi". |
+| I5 | Nạp nhiều file một lượt: chạy **tuần tự**, mỗi file một dòng trạng thái. Đang nạp thì ô chọn file bị khóa. | Hàng đợi worker vốn tuần tự. Tránh hai lượt nạp chạy chồng nhau. |
+| I6 | Dòng trạng thái chỉ nằm trong bộ nhớ (không lưu, tải lại trang thì mất). Bảng nạp lại thất bại khi mở trang được báo bằng **một** dòng `mydata.restoreFailed`. | Không thêm khóa lưu trữ nào. |
+| I7 | Lúc mở trang, bản ghi IndexedDB có tên trùng một bảng game (ví dụ Plan 2 thêm bảng mới trùng tên) bị **bỏ** và báo trong `restoreFailed`. | Bảng game luôn thắng. Nếu giữ lại, tab ER sẽ trộn cột của hai bảng cùng tên. |
+| I8 | Lượt nạp lại lúc mở trang đi trước các query xếp sau nó trong hàng đợi. Người chơi bấm Chạy ngay khi mở trang có thể phải chờ vài giây (spike: ~0,9–3,4 s mỗi bảng). | Hàng đợi một query mỗi lần (CLAUDE.md). Chấp nhận; trạng thái DB vẫn là `ready`. |
 
 ## Kết quả spike (2026-11-16, trước khi viết plan)
 
@@ -19,69 +64,75 @@
 | 1 | `COPY … FROM '/dev/blob'` với `db.query(sql, [], { blob })` | **Chạy được.** `affectedRows` = số dòng. Chạy được trong `BEGIN … COMMIT`, lỗi thì `ROLLBACK` không để lại gì. Xử lý đúng BOM, CRLF, phân cách `;`, ô có ngoặc kép chứa dấu phẩy. Lỗi trả SQLSTATE: dòng thiếu cột / thừa cột `22P04`, byte không phải UTF-8 `22021`. |
 | 1a | Thời gian, CSV 18,7 MB / 200.000 dòng / 10 cột (chữ, ngày, timestamp, số, bool) | đọc + kiểm giới hạn ở main ~0,3 s; nạp đủ (COPY + suy kiểu + ALTER) **~3,0–3,3 s**/bảng; nạp lại khi đã biết kiểu **~0,9 s** |
 | 1b | Thời gian, trường hợp xấu nhất 19,1 MB / 200.000 dòng / **50 cột** số ngắn | nạp đủ **~5,9–6,5 s**/bảng (COPY ~0,8 s, suy kiểu ~3–4 s, ALTER ~1,9 s); nạp lại khi đã biết kiểu **~3,4 s**. Timeout 30 s còn dư khoảng 4 lần. |
-| 1c | Bộ nhớ (`arrayBuffers` của Node, tính từ sau seed; seed ≈ 94 MB) | 5 × 10 cột: **+137 MB** với `UNLOGGED` so với **+355 MB** khi bảng thường (WAL). → **Quyết định: bảng `UNLOGGED`.** 5 × 50 cột (UNLOGGED): **+364 MB** (có gc) đến +463 MB (không gc). Cộng seed, trường hợp xấu nhất khoảng **460–560 MB, vượt ngân sách tab 400 MB (F4)**. Theo spec §7b: **không tự hạ giới hạn**. Task 6 đo lại trong trình duyệt; nếu vẫn vượt thì báo user quyết. |
-| 2 | Suy kiểu | Cách đầu tiên là 5 lần `pg_input_is_valid` cho mỗi ô: chậm (10,2 s với 50 cột) và **quá dễ dãi**, vì `'0901234567'`, `'007'`, `'0x1F'`, `'1_000'` đều thành bigint (số 0 đầu của số điện thoại/mã bưu chính sẽ mất), còn `'NaN'`, `'Infinity'`, `'1e5'`, `'.5'` đều thành numeric. **Chọn:** một lượt quét `bit_and(CASE <regex> …)` cho mọi cột (bigint ≤ 18 chữ số, không có số 0 đầu; numeric dạng `-?d+(.d+)?`; date `YYYY-MM-DD`; timestamp `YYYY-MM-DD[ T]HH:MM[:SS[.f]]`; boolean `true/false`), sau đó chỉ cột ứng viên date/timestamp mới qua `pg_input_is_valid` (để bắt `2026-02-30`). Nhanh gấp đôi. Chỉ nhận ngày ISO, vì `DateStyle` là `ISO, MDY` nên `11/12/2026` sẽ bị đọc thành ngày 12/11. Ô rỗng → `NULL`. |
-| 3 | `search_path` + schema `sandbox` | `SET search_path = public, sandbox` ở cấp phiên **giữ nguyên** qua mọi `BEGIN … ROLLBACK`. Người chơi gọi `set_config('search_path', …, false)` bên trong sandbox thì bị rollback. Trùng tên thì bảng game thắng. `DELETE` / `DROP SCHEMA sandbox` / `CREATE TABLE` của người chơi đều bị rollback. `DROP SCHEMA sandbox CASCADE; CREATE SCHEMA sandbox` reset sạch trong ~3 ms, `public` không đổi, `search_path` vẫn đúng. EXPLAIN, `information_schema` (ERD) và Biểu đồ chạy được trên bảng `sandbox` (có test ở Task 5). |
-| 3a | Thứ tự thực thi (`runSteps`) trên bảng `sandbox` | **Chưa chạy được trong spike** vì `libpg-query` chưa cài (Plan 1b Task 3 cài). Về lý thuyết là chạy được: `runSteps` chỉ chạy các câu con qua `runSandboxed`, mà tên bảng được phân giải qua `search_path` (đã kiểm ở #3). Task 5 có test thật cho phần này. |
+| 1c | Bộ nhớ (`arrayBuffers` của Node, tính từ sau seed; seed ≈ 94 MB) | 5 × 10 cột: **+137 MB** với `UNLOGGED` so với **+355 MB** khi bảng thường (WAL). → **Quyết định: bảng `UNLOGGED`.** 5 × 50 cột (UNLOGGED): **+364 MB** (có gc) đến +463 MB (không gc). Cộng seed, trường hợp xấu nhất khoảng **460–560 MB, vượt ngân sách tab 400 MB (F4)**. Theo spec §7b và L5: **không tự hạ giới hạn**; cảnh báo trong UI (I3) và báo user. |
+| 2 | Suy kiểu | Cách đầu tiên là 5 lần `pg_input_is_valid` cho mỗi ô. Cách này chậm (10,2 s với 50 cột) và **quá dễ dãi**: `'0901234567'`, `'007'`, `'0x1F'`, `'1_000'` đều thành bigint (số 0 đầu của số điện thoại/mã bưu chính sẽ mất), còn `'NaN'`, `'Infinity'`, `'1e5'`, `'.5'` đều thành numeric. **Chọn:** một lượt quét `bit_and(CASE <regex> …)` cho mọi cột, với các dạng: bigint ≤ 18 chữ số, không có số 0 đầu; numeric dạng `-?d+(.d+)?`; date `YYYY-MM-DD`; timestamp `YYYY-MM-DD[ T]HH:MM[:SS[.f]]`; boolean `true/false`. Sau đó chỉ cột ứng viên date/timestamp mới qua `pg_input_is_valid` (để bắt `2026-02-30`). Cách này nhanh gấp đôi. Chỉ nhận ngày ISO, vì `DateStyle` là `ISO, MDY` nên `11/12/2026` sẽ bị đọc thành ngày 12/11. Ô rỗng → `NULL`. |
+| 3 | `search_path` + schema `sandbox` | `SET search_path = public, sandbox` ở cấp phiên **giữ nguyên** qua mọi `BEGIN … ROLLBACK`. Người chơi gọi `set_config('search_path', …, false)` bên trong sandbox thì bị rollback. Trùng tên thì bảng game thắng. `DELETE` / `DROP SCHEMA sandbox` / `CREATE TABLE` của người chơi đều bị rollback. `DROP SCHEMA sandbox CASCADE; CREATE SCHEMA sandbox` reset sạch trong ~3 ms; `public` không đổi, `search_path` vẫn đúng. EXPLAIN, `information_schema` (ERD) và Biểu đồ chạy được trên bảng `sandbox` (có test ở Task 5). |
+| 3a | Thứ tự thực thi (`runSteps`) trên bảng `sandbox` | Spike chưa chạy được vì lúc đó chưa có parser. Nay HEAD đã có `runSteps`, và Task 5 có test thật cho phần này. |
 | 4 | IndexedDB | Chỉ có trong trình duyệt, Node không có (`indexedDB` undefined). Thiết kế: DB `cargo-query`, object store `imports`, keyPath `table`, bản ghi `{ table, fileName, delimiter, columns, types, rows, file: Blob }`. Lưu **kiểu đã suy** để lúc nạp lại bỏ qua bước suy kiểu. Mọi lời gọi bọc try/catch và trả `[]`/`false` khi lỗi (Node, chế độ riêng tư, hết quota). Test Node chỉ kiểm được nhánh "không có IndexedDB"; nhánh có IndexedDB **phải kiểm tay trong trình duyệt** (Task 6). Không dùng chế độ lưu IndexedDB của PGlite (seed game phải luôn tất định). |
 | — | Từ khóa | `pg_get_keywords()` có 101 từ loại R + T. Từ loại T (`left`, `join`…) cũng không dùng trần làm tên cột được (`SELECT left FROM t` lỗi cú pháp). Tên cột/bảng sau khi sanitize mà trùng các từ này thì **thêm `_` ở cuối** (`order` → `order_`), để người chơi không phải đặt ngoặc kép. |
 
-## Tên dùng từ Plan 1 / 1b / 1c (Task 0 và Task 6 Step 0 kiểm bằng grep)
-
-Đã đối chiếu với văn bản Plan 1 (Task 1–11, gồm Task 10 tách `state.ts` + `ui/*`), Plan 1b và Plan 1c. Nếu Task 0 thấy thiếu tên nào: **dừng lại và báo**, không tự chế tên khác.
+## Tên dùng từ HEAD (Task 0 kiểm bằng grep)
 
 | File | Tên dùng trong plan này |
 |---|---|
-| `src/db/client.ts` | `DbClient` có hàng đợi `queue: Job[]`, `inFlight`, `pump()`, `rejectAll()`, `restart()`; `RequestKind = 'run' \| 'explain' \| 'steps'`; `request<T>(kind, sql, timeoutMs?)`, `run`, `explain`, `steps`; `QueryTimeoutError(timeoutMs)`, `DbRestartError`, `DbFailedError(detail)`; `onProgress` + message `progress` (Plan 1 Task 2 đã commit + Plan 1 Task 10 + Plan 1b Task 1) |
-| `src/db/worker.ts` | `ready` trả `{ db, timings }`; `handle(db, kind, sql)`; hàng đợi `queue`; message lỗi `{ type: 'error', id, error: SqlErrorInfo }` |
-| `src/db/run.ts` | `runSandboxed`, `runExplain`, `sqlErrorInfo`, `SqlError`, `QueryResult` |
+| `src/db/client.ts` | `RequestKind = 'run' \| 'explain' \| 'steps' \| 'parser'`; `PARSER_TIMEOUT_MS`; `interface Job { kind; sql; timeoutMs; resolve; reject }`; `DbClient` có `queue`, `inFlight`, `side`, `waitingSide`, `postSide`, `loadParser`, `pump()`, `rejectAll()`, `restart()`, `request<T>(kind, sql, timeoutMs?)`, `run`, `explain`, `steps<T>`; lỗi `QueryTimeoutError(timeoutMs)`, `DbRestartError`, `WorkerTaskError(detail?)`, `DbFailedError(detail)`; message `fault` |
+| `src/db/worker.ts` | `ready` trả `{ db, timings }`; `handle(db, kind, sql)`; `loadParser(id)` chạy ngoài hàng đợi; `onmessage` nhận `{ id, kind, sql }`; lỗi Postgres → `error`, lỗi khác → `fault` |
+| `src/db/run.ts` | `runSandboxed`, `runExplain`, `sqlErrorInfo`, `SqlError`, `QueryResult { columns, types, rows }` |
 | `src/db/init.ts` | `initDb(db)` chạy `schema` rồi `seed` |
-| `src/viz/memo.ts` | `memoByKey`, `MEMO_MAX` (Plan 1b Task 2) |
-| `src/viz/erd.ts` | `loadErMetadata(run, schema)`, `erDefinition`, `tablesInQuery` (Plan 1b Task 6) |
-| `src/viz/plan.ts`, `steps.ts`, `chart.ts` | `flattenPlan`, `runSteps`, `chartSpec` (Plan 1b Task 1, 3, 5) |
-| `src/ui/vizTabs.ts` | hàm `registerErdTab(deps)` có `const erMetadata = memoByKey(…)` và trong `render` dòng `const tables = unlockedTables();` (Plan 1b Task 6 Step 8) |
-| `src/i18n/index.ts`, `vi.ts`, `en.ts` | `t(key, params?)`, `Key`, `Msg`; dòng mở `export const vi = {` và `export const en: Record<Key, Msg> = {` |
-| `src/state.ts` | `unlockedTables(): string[]`, `editorSchema(): SQLNamespace`, `interface Column { name: string; type: string }`, `app.columns` (Plan 1 Task 10). Task 6 Step 2b của plan này thêm tham số `extra` cho `editorSchema`. |
-| `src/ui/work.ts` | `WorkArea.setSchema(ns)` (Plan 1 Task 10, C14) |
-| `src/ui/dom.ts` | `h()` |
-| `src/grader.ts` | `errorMessage(e)` (đã có trong repo) |
-| `src/session.ts` | `session.mode.kind` có `'sandbox'` (Plan 1c Task 6) |
-| `src/ui/modes.ts` | `function enter(mode: Mode)` có dòng `ctx?.work.setTicket(activeTicket(), activeStep());`; `function sandboxPane(host)` có dòng `h('p', {}, t('sbx.intro')),` (Plan 1c Task 7) |
-| `src/main.ts` | `const db = new DbClient(…)`, các biến `work`, `panel`, hàm `rerender()`, `panel.refresh()`, các lời gọi `editorSchema(` |
-| `tests/helpers.ts` | `freshDb()`, `seededDb()` (đã có trong repo) |
+| `src/viz/memo.ts` | `MEMO_MAX`, `memoByKey`, `once` |
+| `src/viz/erd.ts` | `loadErMetadata(run, schema)`, `erDefinition(cols, cons, tables, highlight, color?)`, `tablesInQuery`, `mermaidName` (L36) |
+| `src/viz/plan.ts`, `steps.ts`, `chart.ts` | `flattenPlan` (`nodes[].type/relation/rows`), `runSteps(db, sql)` (`{ ok, steps[].key/skipped/count }` hoặc `{ ok: false, reason }`), `chartSpec` |
+| `src/ui/vizTabs.ts` | `registerErdTab` có `const erMetadata = memoByKey(…)` và trong `render` dòng `const tables = unlockedTables();`, `ticketColor()`, `load`, `erdSvg`, `drawErd` |
+| `src/state.ts` | `unlockedTables()`, `editorSchema(): SQLNamespace`, `interface Column`, `app.columns` |
+| `src/session.ts` | `session.mode.kind` có `'sandbox'` |
+| `src/ui/modes.ts` | `sandboxPane(host)` có dòng `h('p', { class: 'text-[15px] leading-relaxed' }, t('sbx.intro')),`; `startSandbox`; `registerMode` (card `sandbox`, order 10) |
+| `src/ui/homeView.ts` | `registerMode(m: ModeCard)` với `{ id, order, icon, tint, title, desc, open }` |
+| `src/ui/feedback.ts` | `errorText(e)` |
+| `src/ui/dom.ts`, `src/theme.ts` | `h()`, `cx()` |
+| `src/i18n/*` | `t(key, params?)` (số trong message dạng chuỗi được format theo locale; message dạng hàm nhận số thô); `en.ts` có `num()` và `count(one, many)`; dòng mở `export const vi = {` và `export const en: Record<Key, Msg> = {` |
+| `src/main.ts` | `const db = new DbClient(onDbStatus);`, `work`, `panel.refresh()`, `rerender()`, `editorSchema` đã import, dòng `import { applyStatic, setLang, type Lang } from './i18n';` |
+| `tests/helpers.ts` | `freshDb()`, `seededDb()` |
 
-> **Sau Plan 1d (Tailwind + Trang chủ, L17): điều chỉnh khi thực hiện:**
-> - Task 6 Step 5: ở khối cuối `main.ts` thêm card "Dữ liệu của tôi": `registerMode({ id: 'mydata', order: 20, icon: '📂', tint: 'bg-cyan-100 dark:bg-cyan-950', title: 'mode.mydata', desc: 'mode.mydataDesc', open: () => { startSandbox(); go('play'); } })`. Import `registerMode` từ `./ui/homeView`, `go` từ `./ui/router`, `startSandbox` từ `./ui/modes`; khóa `mode.mydata*` thêm vào vi/en.
-> - Task 6 Step 6: bỏ rule `.visually-hidden`, dùng class Tailwind `sr-only` cho ô `input[type=file]`. Các rule `.mydata*` còn lại vẫn dùng được (token còn nguyên); ưu tiên chuyển thành class Tailwind nguyên vẹn trong `myDataView.ts`.
+**Cách đọc các bước sửa code.** Mỗi bước dùng một trong ba dạng dưới đây, áp đúng thứ tự trong plan.
+- **Tạo `path`:** ghi cả file, ghi đè nếu file đã có.
+- **Sửa `path`** — thay: khối thứ nhất phải xuất hiện **đúng một lần** trong file. Thay nó bằng khối sau chữ "bằng:".
+- **Thêm vào cuối `path`:** nối khối vào cuối file.
+
+Nếu một khối "thay" không khớp đúng một lần (HEAD đã đổi), thì áp ý của bước vào code trên đĩa (L7) và ghi lại chỗ lệch trong mô tả commit.
 
 ## Global Constraints
 
-- Mọi ràng buộc của Plan 1, 1b, 1c vẫn áp dụng: PGlite **0.5.16** pin; không đưa dữ liệu vào `innerHTML` (ngoại lệ duy nhất: SVG Mermaid ở tab ER, tên bảng/cột `sandbox` đã sanitize về `[a-z0-9_]`); mọi truy cập `localStorage`/IndexedDB bọc try/catch; mọi bước "xác nhận PASS" chạy thêm `npx tsc --noEmit` và phải không lỗi.
-- **Giới hạn D3:** file ≤ 20 MB, ≤ 200.000 dòng dữ liệu, ≤ 50 cột, ≤ 5 bảng. Kiểm ở main thread **trước khi** gửi xuống worker. Vượt thì từ chối cả file và nói rõ giới hạn nào (không cắt ngầm). Không tự hạ giới hạn vì lý do bộ nhớ: báo user.
-- Nội dung CSV **chỉ là dữ liệu**: không bao giờ ghép giá trị vào SQL (chỉ đi qua `COPY` + `blob`), không render bằng `innerHTML`, không gửi ra mạng. Định danh chỉ được ghép vào SQL sau khi qua `ident()` (regex `^[a-z_][a-z0-9_]{0,62}$`).
-- Import chạy **ngoài** `runSandboxed`, trong transaction riêng, timeout riêng **30 s** (`IMPORT_TIMEOUT_MS`). Nạp lại sau restart mà lỗi hoặc quá hạn → bỏ bảng đó, báo người dùng, không đưa vào lượt nạp lại sau (không có vòng lặp terminate → nạp lại → terminate).
+- Mọi ràng buộc của Plan 1, 1d, 1b, 1c vẫn áp dụng: PGlite **0.5.16** pin. Không đưa dữ liệu vào `innerHTML`. Ngoại lệ duy nhất là SVG Mermaid ở tab ER: mọi tên bảng/cột/kiểu đi vào văn bản Mermaid qua `mermaidName()` (L36), nên tên `sandbox` nào cũng không thêm được cú pháp. Mọi truy cập `localStorage`/IndexedDB bọc try/catch, và mọi giá trị đọc ra đều được kiểm (`isStoredImport`). Mọi bước "xác nhận PASS" chạy thêm `npx tsc --noEmit` và phải không lỗi.
+- **Giới hạn D3:** file ≤ 20 MB, ≤ 200.000 dòng dữ liệu, ≤ 50 cột, ≤ 5 bảng. Kiểm ở main thread **trước khi** gửi xuống worker. Vượt thì từ chối cả file và nói rõ vượt giới hạn nào (không cắt ngầm). Không tự hạ giới hạn vì lý do bộ nhớ (L5): cảnh báo (I3) và báo user.
+- Nội dung CSV **chỉ là dữ liệu và không rời trình duyệt**:
+  - không bao giờ ghép giá trị vào SQL (chỉ đi qua `COPY` + `blob`);
+  - không render bằng `innerHTML`;
+  - không gửi ra mạng, không đưa vào thông tin chẩn đoán.
+  
+  Định danh chỉ được ghép vào SQL sau khi qua `ident()` (regex `^[a-z_][a-z0-9_]{0,62}$`), và kiểu cột chỉ sau khi qua `COLUMN_TYPES`.
+- Import chạy **ngoài** `runSandboxed`, trong transaction riêng, với timeout riêng **30 s** (`IMPORT_TIMEOUT_MS`). Nạp lại sau restart mà lỗi hoặc quá hạn thì bỏ bảng đó, báo người dùng, và không đưa nó vào lượt nạp lại sau. Không có vòng lặp terminate → nạp lại → terminate.
 - Bảng nạp là `UNLOGGED` (spike: bộ nhớ chỉ bằng khoảng một nửa).
-- i18n: mọi chữ mới đi qua `t()`; khóa thêm vào **cả** `vi.ts` và `en.ts` trong cùng task. Lỗi có kiểu, không kèm chữ; message gốc của Postgres hiển thị nguyên văn.
-- `src/ui/*`, `src/session.ts`, `src/state.ts` không có unit test (Vitest chạy Node, không DOM). Kiểm tay theo checklist ở Task 6.
-- Mỗi task một commit (bước cuối của task).
+- i18n: mọi chữ mới đi qua `t()`; khóa thêm vào **cả** `vi.ts` và `en.ts` trong cùng task; message EN dạng hàm dùng `num()`/`count()`. Không dùng chữ "boss" (L22). Lỗi có kiểu, không kèm chữ; message gốc của Postgres hiển thị nguyên văn.
+- `src/ui/*`, `src/session.ts`, `src/state.ts` không có unit test mới (Vitest chạy Node, không DOM). Kiểm tay theo checklist ở Task 6.
+- Mỗi task một commit (bước cuối của task). Chỉ `git add` đúng các file của task.
 
 ## File Structure
 
 ```
-src/db/import.ts         SANDBOX_SETUP_SQL, Delimiter, ColumnType, ImportRequest, ImportedTable, inferTypes, importCsv, dropImport (worker + Node)
+src/db/import.ts         SANDBOX_SETUP_SQL, Delimiter, ColumnType, COLUMN_TYPES, ImportRequest, ImportedTable, inferTypes, importCsv, dropImport (worker + Node)
 src/db/init.ts           + chạy SANDBOX_SETUP_SQL sau seed                                          (sửa)
-src/db/client.ts         + WorkerBody, IMPORT_TIMEOUT_MS, importCsv, dropImport, importedTables, onImportDropped, nạp lại sau restart (sửa)
-src/db/worker.ts         handle(db, body): run | explain | steps | import | dropImport              (sửa)
-src/import/csv.ts        IMPORT_LIMITS, RESERVED, sanitizeIdent, uniqueNames, tableNameFor, detectDelimiter, splitCsvLine, scanRecords, inspectCsv
+src/db/client.ts         + WorkerBody, IMPORT_TIMEOUT_MS, Job.body, enqueue, importCsv, dropImport, importedTables, onImportDropped, nạp lại sau restart (sửa)
+src/db/worker.ts         handle(db, body): run | explain | steps | import | dropImport; parser vẫn ngoài hàng đợi (sửa)
+src/import/csv.ts        IMPORT_LIMITS, MEMORY_WARN_CELLS, RESERVED, sanitizeIdent, uniqueNames, tableNameFor, detectDelimiter, splitCsvLine, scanRecords, inspectCsv
 src/import/store.ts      StoredImport, ImportStore, idbStore (IndexedDB), memoryStore, isStoredImport
-src/import/myData.ts     ImportDb, AddOutcome, MyData (restore / add / remove / clear / dropped)
-src/viz/memo.ts          + clearMemos()                                                              (sửa)
+src/import/myData.ts     ImportDb, AddOutcome, importedCells, MyData (restore / add / remove / clear / dropped)
+src/viz/memo.ts          + clearMemos(); once() có cache riêng                                      (sửa)
+src/state.ts             + schemaHooks.extra cho editorSchema()                                      (sửa)
+src/ui/myDataView.ts     initMyData, setMyDataStatus, sandboxTables, visibleTables, importErrorText, renderMyData
 src/ui/vizTabs.ts        tab ER vẽ thêm bảng sandbox trong chế độ Sandbox                            (sửa)
-src/ui/myDataView.ts     renderMyData, initMyData, setMyDataStatus, sandboxTables, visibleTables, sandboxColumns, importErrorText
-src/ui/modes.ts          Sandbox pane có mục "Dữ liệu của tôi"; đổi chế độ cập nhật schema editor   (sửa)
+src/ui/modes.ts          Sandbox pane có mục "Dữ liệu của tôi"; card Trang chủ `mydata`             (sửa)
 src/main.ts              tạo MyData + idbStore, restore khi mở trang, onImportDropped                (sửa)
-src/i18n/vi.ts, en.ts    + khóa mydata.*                                                              (sửa)
-src/style.css            + .mydata*, .visually-hidden                                                 (sửa)
+src/i18n/vi.ts, en.ts    + khóa mode.mydata*, mydata.*                                               (sửa)
 tests/import.test.ts, csv.test.ts, clientImport.test.ts, myData.test.ts, importViz.test.ts
 tests/memo.test.ts       + test clearMemos                                                            (sửa)
 CLAUDE.md                + mục "Imported data"                                                        (sửa)
@@ -94,7 +145,7 @@ CLAUDE.md                + mục "Imported data"                                
 **Files:** không có.
 
 **Interfaces:**
-- Consumes: toàn bộ bảng "Giả định về tên" ở trên.
+- Consumes: toàn bộ bảng "Tên dùng từ HEAD" ở trên.
 - Produces: không có.
 
 - [ ] **Step 1: Test và kiểu đang sạch**
@@ -106,20 +157,24 @@ Expected: mọi test PASS, `tsc` không in lỗi.
 
 Run:
 ```bash
-grep -c "export type RequestKind\|request<T>(kind: RequestKind\|private pump(): void\|private rejectAll(e: Error)\|restart(): void {\|steps(sql: string)" src/db/client.ts
-grep -c "async function handle(db: PGlite, kind: RequestKind, sql: string)" src/db/worker.ts
-grep -c "export function memoByKey" src/viz/memo.ts
-grep -c "export async function loadErMetadata\|export function erDefinition\|export function tablesInQuery" src/viz/erd.ts
-grep -c "export async function runSteps\|export function chartSpec\|export function flattenPlan" src/viz/steps.ts src/viz/chart.ts src/viz/plan.ts
+grep -c "export type RequestKind = 'run' | 'explain' | 'steps' | 'parser';\|export const PARSER_TIMEOUT_MS\|private postSide(job: Job)\|const job: Job = { kind: 'parser'\|restart(): void {" src/db/client.ts
+grep -c "async function handle(db: PGlite, kind: RequestKind, sql: string)\|if (kind === 'parser') return void loadParser(id);" src/db/worker.ts
+grep -c "export function memoByKey\|export function once" src/viz/memo.ts
+grep -c "export async function loadErMetadata\|export function erDefinition\|export function tablesInQuery\|export function mermaidName" src/viz/erd.ts
 grep -c "export async function freshDb\|export function seededDb" tests/helpers.ts
+grep -c "const tables = unlockedTables();\|erdSvg(erDefinition(cols, cons, tables" src/ui/vizTabs.ts
+grep -c "export function editorSchema(): SQLNamespace {" src/state.ts
+grep -c "t('sbx.intro')),\|export const startSandbox" src/ui/modes.ts
+grep -c "export function errorText" src/ui/feedback.ts
+grep -c "const db = new DbClient(onDbStatus);\|import { applyStatic, setLang, type Lang } from './i18n';" src/main.ts
 ```
-Expected: `client.ts` → `6`, `worker.ts` → `1`, `memo.ts` → `1`, `erd.ts` → `3`, ba file viz mỗi file `1`, `helpers.ts` → `2`.
+Expected (theo thứ tự): `5`, `2`, `2`, `4`, `2`, `2`, `1`, `2`, `1`, `2`.
 
-Nếu có dòng ra `0`: **dừng plan và báo** tên thiếu cho người điều phối. Các điểm neo giao diện (Task 6) được kiểm riêng ở Task 6 Step 0, nên Task 1–5 vẫn chạy được khi phần UI của Plan 1/1c chưa khớp.
+Nếu có dòng ra số khác: đối chiếu với các bước "Sửa" liên quan, áp ý của bước vào code trên đĩa (L7) và ghi lại chỗ lệch.
 
-- [ ] **Step 3: Không có test nào của người khác đang dùng tên mới**
+- [ ] **Step 3: Không có code nào đang dùng tên mới**
 
-Run: `grep -rn "importCsv\|SANDBOX_SETUP_SQL\|clearMemos" src tests`
+Run: `grep -rn "importCsv\|SANDBOX_SETUP_SQL\|clearMemos\|schemaHooks\|mydata" src tests`
 Expected: không in dòng nào.
 
 Task này không commit.
@@ -138,17 +193,17 @@ Task này không commit.
 - Produces:
   - `SANDBOX_SETUP_SQL: string`
   - `type Delimiter = ',' | ';'`
-  - `type ColumnType = 'bigint' | 'numeric' | 'date' | 'timestamp' | 'boolean' | 'text'`
+  - `type ColumnType = 'bigint' | 'numeric' | 'date' | 'timestamp' | 'boolean' | 'text'`, `COLUMN_TYPES: readonly ColumnType[]`
   - `interface ImportRequest { table: string; columns: string[]; delimiter: Delimiter; types?: ColumnType[] }`
   - `interface ImportedTable { table: string; columns: { name: string; type: ColumnType }[]; rows: number }`
   - `inferTypes(db: PGlite, table: string, columns: string[]): Promise<ColumnType[]>`
-  - `importCsv(db: PGlite, req: ImportRequest, file: Blob): Promise<ImportedTable>` — ném lỗi gốc của PGlite (có `code`) hoặc `Error('invalid identifier: …')`
+  - `importCsv(db: PGlite, req: ImportRequest, file: Blob): Promise<ImportedTable>`. Lỗi ném ra là lỗi gốc của PGlite (có `code`), hoặc `Error('invalid identifier: …')` / `Error('invalid column types')`.
   - `dropImport(db: PGlite, table?: string): Promise<void>`
   - `initDb` chạy thêm `SANDBOX_SETUP_SQL` (idempotent nhờ `IF NOT EXISTS`)
 
 - [ ] **Step 1: Viết test**
 
-`tests/import.test.ts`:
+**Tạo `tests/import.test.ts`:**
 ```ts
 import { describe, expect, it } from 'vitest';
 import { dropImport, importCsv, inferTypes } from '../src/db/import';
@@ -197,12 +252,16 @@ describe('importCsv', () => {
     expect((await runSandboxed(db, 'SELECT count(*) FROM orders_csv')).rows).toEqual([[3]]);
   });
 
-  it('từ chối định danh chưa sanitize', async () => {
+  it('từ chối định danh chưa sanitize và kiểu lạ trước khi ghép vào SQL', async () => {
     const db = await freshDb();
     await expect(importCsv(db, { table: 'x"; DROP TABLE ports; --', columns: ['a'], delimiter: ',' }, csv('a', '1')))
       .rejects.toThrow('invalid identifier');
     await expect(importCsv(db, { table: 'ok', columns: ['Bad Name'], delimiter: ',' }, csv('a', '1')))
       .rejects.toThrow('invalid identifier');
+    const evil = ['text; DROP TABLE ports'] as unknown as ('text')[];
+    await expect(importCsv(db, { table: 'ok', columns: ['a'], delimiter: ',', types: evil }, csv('a', '1')))
+      .rejects.toThrow('invalid column types');
+    expect((await runSandboxed(db, 'SELECT count(*) > 0 FROM ports')).rows).toEqual([[true]]);
   });
 
   it('bảng game thắng khi trùng tên; dropImport xóa một bảng hoặc cả schema, public không đổi', async () => {
@@ -237,6 +296,7 @@ Expected: FAIL — `Failed to resolve import "../src/db/import"`.
 
 - [ ] **Step 3: Viết `src/db/import.ts`**
 
+**Tạo `src/db/import.ts`:**
 ```ts
 import type { PGlite } from '@electric-sql/pglite';
 
@@ -245,6 +305,8 @@ export const SANDBOX_SETUP_SQL = 'CREATE SCHEMA IF NOT EXISTS sandbox; SET searc
 
 export type Delimiter = ',' | ';';
 export type ColumnType = 'bigint' | 'numeric' | 'date' | 'timestamp' | 'boolean' | 'text';
+/** Every type inference can produce; the only type names ever inlined into SQL. */
+export const COLUMN_TYPES: readonly ColumnType[] = ['bigint', 'numeric', 'date', 'timestamp', 'boolean', 'text'];
 
 export interface ImportRequest {
   table: string;
@@ -304,6 +366,9 @@ export async function inferTypes(db: PGlite, table: string, columns: string[]): 
 export async function importCsv(db: PGlite, req: ImportRequest, file: Blob): Promise<ImportedTable> {
   const table = `sandbox.${ident(req.table)}`;
   const cols = req.columns.map(ident);
+  if (req.types && (req.types.length !== cols.length || !req.types.every((ty) => COLUMN_TYPES.includes(ty)))) {
+    throw new Error('invalid column types');
+  }
   const delimiter = req.delimiter === ';' ? ';' : ',';
   await db.exec('BEGIN');
   try {
@@ -330,16 +395,26 @@ export async function dropImport(db: PGlite, table?: string): Promise<void> {
 
 - [ ] **Step 4: Tạo schema `sandbox` lúc init**
 
-Trong `src/db/init.ts`:
-1. Ngay dưới dòng `import seed from './seed.sql?raw';` thêm:
+**Sửa `src/db/init.ts`** — thay:
 ```ts
+import seed from './seed.sql?raw';
+```
+bằng:
+```ts
+import seed from './seed.sql?raw';
 import { SANDBOX_SETUP_SQL } from './import';
 ```
-2. Ngay dưới dòng `  await db.exec(seed);` thêm:
+
+**Sửa `src/db/init.ts`** — thay:
 ```ts
+  await db.exec(seed);
+```
+bằng:
+```ts
+  await db.exec(seed);
   await db.exec(SANDBOX_SETUP_SQL);
 ```
-Plan 1/1b không tạo schema `sandbox`; dòng trên là nguồn duy nhất.
+Plan 1/1b/1c không tạo schema `sandbox`; dòng trên là nguồn duy nhất.
 
 - [ ] **Step 5: Chạy test, xác nhận PASS**
 
@@ -365,6 +440,7 @@ git commit -m "feat: CSV import pipeline into sandbox schema (COPY from blob, ty
 - Consumes: `Delimiter` (Task 1); `seededDb` (tests)
 - Produces:
   - `IMPORT_LIMITS = { maxBytes: 20971520, maxRows: 200000, maxColumns: 50, maxTables: 5 }`
+  - `MEMORY_WARN_CELLS = 20_000_000` (I3)
   - `RESERVED: Set<string>` (101 từ khóa R + T của Postgres 18)
   - `withSuffix(base: string, suffix: string): string`, `sanitizeIdent(raw: string, fallback: string): string`, `uniqueNames(names: string[]): string[]`, `tableNameFor(fileName: string, gameTables: ReadonlySet<string>): string`
   - `detectDelimiter(header: string): Delimiter`, `splitCsvLine(line: string, delimiter: Delimiter): string[]`, `scanRecords(bytes: Uint8Array): { records: number; headerEnd: number }`
@@ -373,11 +449,18 @@ git commit -m "feat: CSV import pipeline into sandbox schema (COPY from blob, ty
   - `type CsvInspection = { ok: true; spec: ImportSpec } | { ok: false; problem: ImportProblem }`
   - `inspectCsv(file: Blob, fileName: string, gameTables: ReadonlySet<string>, imported: readonly string[]): Promise<CsvInspection>`
 
-Luật tên (spec §7b + từ khóa): bỏ dấu tiếng Việt (`đ` → `d`), chữ thường, ký tự ngoài `[a-z0-9_]` → `_`, gộp `_`, bỏ `_` ở đầu/cuối; rỗng → tên dự phòng (`col_N`, `my_data`); bắt đầu bằng số → `c_`; cắt 63 ký tự; trùng từ khóa → thêm `_`; cột trùng → `_2`, `_3`… (vẫn ≤ 63); bảng trùng bảng game → `_my`. Nạp file có cùng tên bảng với bảng đã nạp = **thay** bảng đó (không tính thêm vào giới hạn 5).
+Luật tên (spec §7b + từ khóa):
+- bỏ dấu tiếng Việt (`đ` → `d`), chuyển chữ thường;
+- ký tự ngoài `[a-z0-9_]` → `_`, gộp các `_` liền nhau, bỏ `_` ở đầu/cuối;
+- rỗng → tên dự phòng (`col_N`, `my_data`); bắt đầu bằng số → thêm `c_`;
+- cắt còn 63 ký tự; trùng từ khóa → thêm `_`;
+- cột trùng tên → `_2`, `_3`… (vẫn ≤ 63 ký tự); bảng trùng bảng game → `_my`.
+
+Nạp file có cùng tên bảng với bảng đã nạp = **thay** bảng đó (không tính thêm vào giới hạn 5).
 
 - [ ] **Step 1: Viết test**
 
-`tests/csv.test.ts`:
+**Tạo `tests/csv.test.ts`:**
 ```ts
 import { describe, expect, it } from 'vitest';
 import { IMPORT_LIMITS, RESERVED, inspectCsv, sanitizeIdent, scanRecords, splitCsvLine, tableNameFor, uniqueNames } from '../src/import/csv';
@@ -464,10 +547,17 @@ Expected: FAIL — `Failed to resolve import "../src/import/csv"`.
 
 - [ ] **Step 3: Viết `src/import/csv.ts`**
 
+**Tạo `src/import/csv.ts`:**
 ```ts
 import type { Delimiter } from '../db/import';
 
 export const IMPORT_LIMITS = { maxBytes: 20 * 1024 * 1024, maxRows: 200_000, maxColumns: 50, maxTables: 5 } as const;
+
+/**
+ * Imported rows × columns from which the My data panel warns about memory (L5, I3). The D3 limits stay:
+ * the spike measured +137 MB for 10M cells and +364–463 MB for 50M cells, over the 400 MB tab budget with the seed.
+ */
+export const MEMORY_WARN_CELLS = 20_000_000;
 
 /**
  * Postgres 18 keywords that cannot be a bare column name (pg_get_keywords() catcode R and T).
@@ -599,6 +689,7 @@ export async function inspectCsv(file: Blob, fileName: string, gameTables: Reado
   return { ok: true, spec: { table, fileName, delimiter, headers, columns, rows, bytes: file.size } };
 }
 ```
+Lưu ý: `TextDecoder` mặc định đã bỏ BOM, nên `.replace(/^﻿/, '')` chỉ là lớp phòng thủ thứ hai. Không viết ký tự BOM hay dấu kết hợp trực tiếp trong code: dùng escape `﻿`, `̀-ͯ`.
 
 - [ ] **Step 4: Chạy test, xác nhận PASS**
 
@@ -621,22 +712,27 @@ git commit -m "feat: CSV limits, header parsing and identifier sanitising on the
 - Test: `tests/clientImport.test.ts`
 
 **Interfaces:**
-- Consumes: `ImportRequest`, `ImportedTable`, `importCsv`, `dropImport` (Task 1); hàng đợi `DbClient` (Plan 1 Task 2 + Plan 1b Task 1); `runExplain`, `runSteps` (Plan 1b)
+- Consumes: `ImportRequest`, `ImportedTable`, `importCsv`, `dropImport` (Task 1); hàng đợi và hàng phụ `parser` của `DbClient` (HEAD)
 - Produces:
   - `IMPORT_TIMEOUT_MS = 30000`
   - `type WorkerBody = { kind: RequestKind; sql: string } | { kind: 'import'; req: ImportRequest; file: Blob } | { kind: 'dropImport'; table?: string }`
-  - `DbClient.importCsv(req: ImportRequest, file: Blob): Promise<ImportedTable>` — chỉ ghi vào danh sách nạp lại khi thành công
-  - `DbClient.dropImport(table?: string): Promise<void>` — bỏ khỏi danh sách nạp lại **trước khi** gửi
+  - `Job.body: WorkerBody` (thay hai trường `kind` + `sql`; job `parser` dùng `{ kind: 'parser', sql: '' }`)
+  - `DbClient.importCsv(req: ImportRequest, file: Blob): Promise<ImportedTable>`: chỉ ghi vào danh sách nạp lại khi thành công
+  - `DbClient.dropImport(table?: string): Promise<void>`: bỏ khỏi danh sách nạp lại **trước khi** gửi
   - `DbClient.importedTables(): string[]`
-  - `DbClient.onImportDropped: (table: string, error: Error) => void` — gọi khi nạp lại sau restart bị lỗi/quá hạn
+  - `DbClient.onImportDropped: (table: string, error: Error) => void`: gọi khi nạp lại sau restart bị lỗi/quá hạn
   - `restart()` nạp lại mọi bảng đã đăng ký (kèm `types` đã suy), xếp trước mọi request gửi sau đó
-  - worker nhận `{ id } & WorkerBody`
+  - worker nhận `{ id } & WorkerBody`. Lỗi Postgres (`COPY` → `22P04`, `22021`) đi qua `error` → `SqlError`. Lỗi khác (`invalid identifier`) đi qua `fault` → `WorkerTaskError`.
 
-Luật nạp lại: (1) import do người dùng bấm chỉ được đăng ký khi thành công; (2) lượt nạp lại bị **quá hạn** thì bảng bị xóa khỏi danh sách **đồng bộ, trước** `restart()`, nên lần restart đó không nạp lại nó nữa (không lặp); (3) nạp lại bị lỗi SQL thì xóa khỏi danh sách và báo; (4) nạp lại bị một restart khác cắt ngang (`DbRestartError`) thì giữ lại, vì restart đó đã xếp lượt nạp lại cho nó.
+Luật nạp lại:
+1. Import do người dùng bấm chỉ được đăng ký khi thành công.
+2. Lượt nạp lại bị **quá hạn** thì bảng bị xóa khỏi danh sách **đồng bộ, trước** `restart()`. Nhờ vậy lần restart đó không nạp lại nó nữa (không lặp).
+3. Nạp lại bị lỗi (SQL hoặc worker) thì xóa bảng khỏi danh sách và báo.
+4. Nạp lại bị một restart khác cắt ngang (`DbRestartError`) thì giữ lại, vì restart đó đã xếp lượt nạp lại cho nó.
 
 - [ ] **Step 1: Viết test**
 
-`tests/clientImport.test.ts`:
+**Tạo `tests/clientImport.test.ts`:**
 ```ts
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { DbClient, DbRestartError, IMPORT_TIMEOUT_MS, QueryTimeoutError } from '../src/db/client';
@@ -794,6 +890,17 @@ describe('DbClient import', () => {
     expect(await imp).toBeInstanceOf(DbRestartError);
     expect(db.importedTables()).toEqual([]);
   });
+
+  it('tải parser vẫn đi ngoài hàng đợi, gửi { kind: parser, sql: "" } như cũ', async () => {
+    const db = new DbClient(() => {}, 5000);
+    last().ready();
+    void db.importCsv(REQ, FILE);
+    const p = db.loadParser();
+    expect(last().posted.map((x) => x.kind)).toEqual(['import', 'parser']);
+    expect(last().posted[1]).toMatchObject({ kind: 'parser', sql: '' });
+    last().answer(1, null);
+    await expect(p).resolves.toBeUndefined();
+  });
 });
 ```
 
@@ -804,149 +911,79 @@ Expected: FAIL — `IMPORT_TIMEOUT_MS` không được export / `db.importCsv is
 
 - [ ] **Step 3: Sửa `src/db/client.ts`**
 
-Sau sửa, file phải có đúng hình dạng dưới đây. Các dòng có chú thích `// import` là của plan này; phần còn lại là bản trên đĩa sau Plan 1 Task 2 + Plan 1 Task 10 (tiến độ tải: `LoadProgress`, `progress`, `onProgress`) + Plan 1b Task 1. Nếu file trên đĩa khác ở những dòng **không** đánh dấu (ví dụ thêm `performance.mark`, đổi tên biến cục bộ) thì **giữ bản trên đĩa** và chỉ áp các dòng `// import` vào đúng chỗ tương ứng: import kiểu, `IMPORT_TIMEOUT_MS`, `WorkerBody`, `Job.body` (thay hai trường `kind` + `sql`), `onImportDropped`, `imports`, `request()` gọi `enqueue()`, `importCsv`, `dropImport`, `importedTables`, dòng `replayImports()` trong `restart()`, `replayImports`, `enqueue`, nhánh xóa import trong timer của `pump()`, và `postMessage({ id, ...job.body })`.
-
+**Sửa `src/db/client.ts`** — thay:
 ```ts
-import type { StepsResult } from '../viz/steps';
-import type { ImportedTable, ImportRequest } from './import'; // import
 import type { LoadProgress } from './loadProgress';
-import { SqlError, type QueryResult, type SqlErrorInfo } from './run';
+```
+bằng:
+```ts
+import type { ImportedTable, ImportRequest } from './import';
+import type { LoadProgress } from './loadProgress';
+```
 
-export type DbStatus = 'loading' | 'ready' | 'failed';
-export interface DbTimings { bootMs: number; seedMs: number }
-export type RequestKind = 'run' | 'explain' | 'steps';
+**Sửa `src/db/client.ts`** — thay:
+```ts
+export const PARSER_TIMEOUT_MS = 60_000;
+```
+bằng:
+```ts
+export const PARSER_TIMEOUT_MS = 60_000;
+/** Worst case in the spike (20 MB, 200k rows, 50 columns) took ~6.5 s in Node; the browser is slower. */
+export const IMPORT_TIMEOUT_MS = 30_000;
 
-/** Worst case in the spike (20 MB, 200k rows, 50 columns) took ~6.5 s in Node; the browser is slower. */ // import
-export const IMPORT_TIMEOUT_MS = 30_000; // import
+/** Everything the worker accepts, minus the request id. */
+export type WorkerBody =
+  | { kind: RequestKind; sql: string }
+  | { kind: 'import'; req: ImportRequest; file: Blob }
+  | { kind: 'dropImport'; table?: string };
+```
 
-/** Everything the worker accepts, minus the request id. */ // import
-export type WorkerBody = // import
-  | { kind: RequestKind; sql: string } // import
-  | { kind: 'import'; req: ImportRequest; file: Blob } // import
-  | { kind: 'dropImport'; table?: string }; // import
-
-// Errors carry no user-facing text: the UI translates them by class (instanceof).
-export class QueryTimeoutError extends Error {
-  name = 'QueryTimeoutError';
-  constructor(readonly timeoutMs: number) {
-    super();
-  }
-}
-/** The query was waiting or running when the worker was restarted. */
-export class DbRestartError extends Error {
-  name = 'DbRestartError';
-}
-/** The worker failed to boot or crashed. `detail` is the raw technical message (not translated). */
-export class DbFailedError extends Error {
-  name = 'DbFailedError';
-  constructor(readonly detail: string) {
-    super();
-  }
-}
-
-type WorkerMessage =
-  | { type: 'ready'; timings: DbTimings }
-  | { type: 'initError'; message: string }
-  | ({ type: 'progress' } & LoadProgress)
-  | { type: 'result'; id: number; result: unknown }
-  | { type: 'error'; id: number; error: SqlErrorInfo };
-
+**Sửa `src/db/client.ts`** — thay:
+```ts
 interface Job {
-  body: WorkerBody; // import: replaces `kind` + `sql`
+  kind: RequestKind;
+  sql: string;
   timeoutMs: number;
-  resolve: (r: unknown) => void;
-  reject: (e: Error) => void;
-}
+```
+bằng:
+```ts
+interface Job {
+  body: WorkerBody;
+  timeoutMs: number;
+```
 
-/**
- * Owns the PGlite worker. statement_timeout does not work in PGlite, so a runaway query
- * is stopped by terminating the worker and booting a fresh one (re-seeds, ~3s).
- * Requests are queued here and posted one at a time, so the timeout measures only the request
- * that is actually executing.
- */
-export class DbClient {
-  timings?: DbTimings;
-  /** PGlite asset download progress while booting (bytes). */
+**Sửa `src/db/client.ts`** — thay:
+```ts
   onProgress?: (p: LoadProgress) => void;
-  /** Called when an imported table could not be re-imported after a restart; it is no longer replayed. */ // import
-  onImportDropped: (table: string, error: Error) => void = () => {}; // import
   private worker!: Worker;
-  private status: DbStatus = 'loading';
-  private failure?: DbFailedError;
-  private queue: Job[] = [];
-  private inFlight?: { id: number; job: Job; timer: ReturnType<typeof setTimeout> };
-  private nextId = 1;
-  /** Imported tables (with their inferred types), replayed after every restart. */ // import
-  private imports = new Map<string, { req: ImportRequest; file: Blob }>(); // import
+```
+bằng:
+```ts
+  onProgress?: (p: LoadProgress) => void;
+  /** Called when an imported table could not be re-imported after a restart; it is no longer replayed. */
+  onImportDropped: (table: string, error: Error) => void = () => {};
+  /** Imported tables (with their inferred types), replayed after every restart. */
+  private imports = new Map<string, { req: ImportRequest; file: Blob }>();
+  private worker!: Worker;
+```
 
-  constructor(
-    private readonly onStatus: (s: DbStatus, detail?: string) => void,
-    private readonly timeoutMs = 5000,
-  ) {
-    this.start();
-  }
-
+**Sửa `src/db/client.ts`** — thay:
+```ts
   request<T>(kind: RequestKind, sql: string, timeoutMs = this.timeoutMs): Promise<T> {
-    return this.enqueue<T>({ kind, sql }, timeoutMs); // import: via enqueue()
+    if (this.failure) return Promise.reject(this.failure);
+    return new Promise<T>((resolve, reject) => {
+      this.queue.push({ kind, sql, timeoutMs, resolve: (r) => resolve(r as T), reject });
+      this.pump();
+    });
+  }
+```
+bằng:
+```ts
+  request<T>(kind: RequestKind, sql: string, timeoutMs = this.timeoutMs): Promise<T> {
+    return this.enqueue<T>({ kind, sql }, timeoutMs);
   }
 
-  /** Rejects with SqlError, QueryTimeoutError, DbRestartError or DbFailedError. */
-  run(sql: string): Promise<QueryResult> {
-    return this.request<QueryResult>('run', sql);
-  }
-
-  explain(sql: string): Promise<unknown> {
-    return this.request<unknown>('explain', sql);
-  }
-
-  /** Several sub-queries per call, so it gets a longer budget. */
-  steps(sql: string): Promise<StepsResult> {
-    return this.request<StepsResult>('steps', sql, this.timeoutMs * 3);
-  }
-
-  /** CSV → sandbox.<req.table>. Only a successful import is registered for replay. */ // import
-  async importCsv(req: ImportRequest, file: Blob): Promise<ImportedTable> { // import
-    const t = await this.enqueue<ImportedTable>({ kind: 'import', req, file }, IMPORT_TIMEOUT_MS); // import
-    this.imports.set(req.table, { req: { ...req, types: t.columns.map((c) => c.type) }, file }); // import
-    return t; // import
-  } // import
-
-  /** Drops one imported table, or every imported table when `table` is omitted. */ // import
-  dropImport(table?: string): Promise<void> { // import
-    if (table === undefined) this.imports.clear(); // import
-    else this.imports.delete(table); // import
-    return this.enqueue<void>({ kind: 'dropImport', table }, this.timeoutMs); // import
-  } // import
-
-  importedTables(): string[] { // import
-    return [...this.imports.keys()]; // import
-  } // import
-
-  /** Kills the worker, rejects every waiting request with DbRestartError, boots a fresh worker, replays imports. */
-  restart(): void {
-    performance.mark('db:restart');
-    this.worker.terminate();
-    this.rejectAll(new DbRestartError());
-    this.start();
-    this.replayImports(); // import
-  }
-
-  /** // import
-   * Queued right after start(), so replays run before anything sent later. A replay that fails
-   * or times out is forgotten and reported (no restart loop); one cut short by another restart
-   * stays registered and that restart replays it.
-   */
-  private replayImports(): void { // import
-    for (const [table, { req, file }] of this.imports) { // import
-      this.enqueue<ImportedTable>({ kind: 'import', req, file }, IMPORT_TIMEOUT_MS).catch((e: Error) => { // import
-        if (e instanceof DbRestartError) return; // import
-        this.imports.delete(table); // import
-        this.onImportDropped(table, e); // import
-      }); // import
-    } // import
-  } // import
-
-  private enqueue<T>(body: WorkerBody, timeoutMs: number): Promise<T> { // import: was the body of request()
+  private enqueue<T>(body: WorkerBody, timeoutMs: number): Promise<T> {
     if (this.failure) return Promise.reject(this.failure);
     return new Promise<T>((resolve, reject) => {
       this.queue.push({ body, timeoutMs, resolve: (r) => resolve(r as T), reject });
@@ -954,95 +991,132 @@ export class DbClient {
     });
   }
 
-  private start(): void {
-    this.failure = undefined;
-    this.setStatus('loading');
-    performance.mark('db:spawn');
-    const w = new Worker(new URL('./worker.ts', import.meta.url), { type: 'module' });
-    this.worker = w;
-    // Ignore anything a terminated worker still delivers.
-    w.onmessage = (e: MessageEvent<WorkerMessage>) => {
-      if (w === this.worker) this.receive(e.data);
-    };
-    w.onerror = (e) => {
-      if (w === this.worker) this.fail(e.message || 'worker error');
-    };
+  /** CSV → sandbox.<req.table>, through the query queue (never between a player's BEGIN and ROLLBACK). Only a successful import is replayed. */
+  async importCsv(req: ImportRequest, file: Blob): Promise<ImportedTable> {
+    const t = await this.enqueue<ImportedTable>({ kind: 'import', req, file }, IMPORT_TIMEOUT_MS);
+    this.imports.set(req.table, { req: { ...req, types: t.columns.map((c) => c.type) }, file });
+    return t;
   }
 
-  private receive(m: WorkerMessage): void {
-    if (m.type === 'ready') {
-      this.timings = m.timings;
-      performance.mark('db:ready');
-      performance.measure('db:time-to-ready', 'db:spawn', 'db:ready');
-      this.setStatus('ready');
-      this.pump();
-    } else if (m.type === 'initError') {
-      this.fail(m.message);
-    } else if (m.type === 'progress') {
-      this.onProgress?.({ loaded: m.loaded, total: m.total });
-    } else {
-      const f = this.inFlight;
-      if (!f || f.id !== m.id) return;
-      clearTimeout(f.timer);
-      this.inFlight = undefined;
-      if (m.type === 'result') f.job.resolve(m.result);
-      else f.job.reject(new SqlError(m.error));
-      this.pump();
+  /** Drops one imported table, or every imported table when `table` is omitted. Forgotten for replay before it is sent. */
+  dropImport(table?: string): Promise<void> {
+    if (table === undefined) this.imports.clear();
+    else this.imports.delete(table);
+    return this.enqueue<void>({ kind: 'dropImport', table }, this.timeoutMs);
+  }
+
+  importedTables(): string[] {
+    return [...this.imports.keys()];
+  }
+
+  /**
+   * Queued right after start(), so replays run before anything sent later. A replay that fails
+   * or times out is forgotten and reported (no restart loop); one cut short by another restart
+   * stays registered and that restart replays it.
+   */
+  private replayImports(): void {
+    for (const [table, { req, file }] of this.imports) {
+      this.enqueue<ImportedTable>({ kind: 'import', req, file }, IMPORT_TIMEOUT_MS).catch((e: Error) => {
+        if (e instanceof DbRestartError) return;
+        this.imports.delete(table);
+        this.onImportDropped(table, e);
+      });
     }
   }
+```
 
-  /** Posts the next queued request when the worker is ready and idle; its timer starts now. */
-  private pump(): void {
-    if (this.status !== 'ready' || this.inFlight) return;
-    const job = this.queue.shift();
-    if (!job) return;
-    const id = this.nextId++;
-    const timer = setTimeout(() => {
-      this.inFlight = undefined;
-      // Forget a timed-out import before restart() replays the others, or it would loop. // import
-      // Only the registered entry: a timed-out *replacement* keeps the old file replayable. // import
-      const b = job.body; // import
-      if (b.kind === 'import' && this.imports.get(b.req.table)?.file === b.file) this.imports.delete(b.req.table); // import
-      job.reject(new QueryTimeoutError(job.timeoutMs));
-      this.restart();
-    }, job.timeoutMs);
-    this.inFlight = { id, job, timer };
-    this.worker.postMessage({ id, ...job.body }); // import: kind + payload
-  }
+**Sửa `src/db/client.ts`** — thay:
+```ts
+      const job: Job = { kind: 'parser', sql: '', timeoutMs: PARSER_TIMEOUT_MS, resolve: () => resolve(), reject };
+```
+bằng:
+```ts
+      const job: Job = { body: { kind: 'parser', sql: '' }, timeoutMs: PARSER_TIMEOUT_MS, resolve: () => resolve(), reject };
+```
 
-  private fail(detail: string): void {
+**Sửa `src/db/client.ts`** — thay:
+```ts
+    this.side.set(id, { job, timer });
+    this.worker.postMessage({ id, kind: job.kind, sql: job.sql });
+```
+bằng:
+```ts
+    this.side.set(id, { job, timer });
+    this.worker.postMessage({ id, ...job.body });
+```
+
+**Sửa `src/db/client.ts`** — thay:
+```ts
+  /** Kills the worker, rejects every waiting query with DbRestartError, boots a fresh worker. */
+  restart(): void {
+    performance.mark('db:restart');
     this.worker.terminate();
-    this.failure = new DbFailedError(detail);
-    this.rejectAll(this.failure);
-    this.setStatus('failed', detail);
+    this.rejectAll(new DbRestartError());
+    this.start();
   }
+```
+bằng:
+```ts
+  /** Kills the worker, rejects every waiting query with DbRestartError, boots a fresh worker and replays imported tables. */
+  restart(): void {
+    performance.mark('db:restart');
+    this.worker.terminate();
+    this.rejectAll(new DbRestartError());
+    this.start();
+    this.replayImports();
+  }
+```
 
-  private rejectAll(e: Error): void {
-    if (this.inFlight) {
-      clearTimeout(this.inFlight.timer);
-      this.inFlight.job.reject(e);
+**Sửa `src/db/client.ts`** — thay:
+```ts
       this.inFlight = undefined;
-    }
-    for (const job of this.queue.splice(0)) job.reject(e);
-  }
+      job.reject(new QueryTimeoutError(job.timeoutMs));
+```
+bằng:
+```ts
+      this.inFlight = undefined;
+      // Forget a timed-out import before restart() replays the others, or it would loop.
+      // Only the registered entry: a timed-out *replacement* keeps the old file replayable.
+      const b = job.body;
+      if (b.kind === 'import' && this.imports.get(b.req.table)?.file === b.file) this.imports.delete(b.req.table);
+      job.reject(new QueryTimeoutError(job.timeoutMs));
+```
 
-  private setStatus(s: DbStatus, detail?: string): void {
-    this.status = s;
-    this.onStatus(s, detail);
-  }
-}
+**Sửa `src/db/client.ts`** — thay:
+```ts
+    this.inFlight = { id, job, timer };
+    this.worker.postMessage({ id, kind: job.kind, sql: job.sql });
+```
+bằng:
+```ts
+    this.inFlight = { id, job, timer };
+    this.worker.postMessage({ id, ...job.body });
 ```
 
 - [ ] **Step 4: Sửa `src/db/worker.ts`**
 
-1. Thêm hai dòng import (giữ các import đang có):
+**Sửa `src/db/worker.ts`** — thay:
+```ts
+import type { RequestKind } from './client';
+```
+bằng:
 ```ts
 import type { WorkerBody } from './client';
 import { dropImport, importCsv } from './import';
 ```
-Nếu file đang có `import type { RequestKind } from './client';` thì xóa dòng đó (không còn dùng).
 
-2. Thay toàn bộ hàm `handle` của Plan 1b bằng:
+**Sửa `src/db/worker.ts`** — thay:
+```ts
+async function handle(db: PGlite, kind: RequestKind, sql: string): Promise<unknown> {
+  if (kind === 'explain') return runExplain(db, sql);
+  if (kind === 'steps') {
+    const { runSteps } = await import('../viz/steps'); // loads the parser only when this tab is used
+    return runSteps(db, sql);
+  }
+  return runSandboxed(db, sql);
+}
+```
+bằng:
 ```ts
 async function handle(db: PGlite, body: WorkerBody): Promise<unknown> {
   if (body.kind === 'import') return importCsv(db, body.req, body.file);
@@ -1056,16 +1130,34 @@ async function handle(db: PGlite, body: WorkerBody): Promise<unknown> {
 }
 ```
 
-3. Trong `onmessage`: đổi kiểu tham số thành `MessageEvent<{ id: number } & WorkerBody>`, thay dòng lấy dữ liệu `const { id, kind = 'run', sql } = e.data;` (Plan 1b Task 1) bằng:
+**Sửa `src/db/worker.ts`** — thay:
 ```ts
-  const { id, ...body } = e.data;
+onmessage = (e: MessageEvent<{ id: number; kind: RequestKind; sql: string }>) => {
+  const { id, kind, sql } = e.data;
+  if (kind === 'parser') return void loadParser(id);
 ```
-và thay lời gọi `handle(db, kind, sql)` bằng `handle(db, body)`. Phần gửi lỗi (`sqlErrorInfo(err) ?? { message: … }`) giữ nguyên: lỗi `COPY` mang theo `code` (`22P04`, `22021`) giống lỗi query.
+bằng:
+```ts
+onmessage = (e: MessageEvent<{ id: number } & WorkerBody>) => {
+  const { id } = e.data;
+  const body: WorkerBody = e.data;
+  if (body.kind === 'parser') return void loadParser(id);
+```
+
+**Sửa `src/db/worker.ts`** — thay:
+```ts
+      postMessage({ type: 'result', id, result: await handle(db, kind, sql) });
+```
+bằng:
+```ts
+      postMessage({ type: 'result', id, result: await handle(db, body) });
+```
+Phần gửi lỗi (`sqlErrorInfo(err)` → `error`, còn lại → `fault`) giữ nguyên. Lỗi `COPY` mang theo `code` (`22P04`, `22021`) giống lỗi query, và đến main thread thành `SqlError`.
 
 - [ ] **Step 5: Chạy test, xác nhận PASS**
 
 Run: `npx vitest run tests/clientImport.test.ts tests/client.test.ts && npx tsc --noEmit`
-Expected: PASS (8 test mới + toàn bộ test client cũ: tin nhắn cũ vẫn có `sql`), `tsc` không lỗi.
+Expected: PASS (9 test mới + toàn bộ test client cũ, vì tin nhắn `run`/`parser` vẫn có `kind` + `sql`), `tsc` không lỗi.
 
 - [ ] **Step 6: Commit**
 
@@ -1083,29 +1175,36 @@ git commit -m "feat: worker import request with 30s timeout and replay after res
 - Test: `tests/myData.test.ts`
 
 **Interfaces:**
-- Consumes: `ColumnType`, `Delimiter`, `ImportRequest`, `ImportedTable`, `importCsv`, `dropImport` (Task 1); `inspectCsv`, `ImportProblem` (Task 2); `DbRestartError` (`src/db/client.ts`); `runSandboxed`, `QueryResult`; `freshDb` (tests)
+- Consumes: `ColumnType`, `COLUMN_TYPES`, `Delimiter`, `ImportRequest`, `ImportedTable`, `importCsv`, `dropImport` (Task 1); `inspectCsv`, `ImportProblem` (Task 2); `DbRestartError`, `DbFailedError` (`src/db/client.ts`); `runSandboxed`, `QueryResult`; `freshDb` (tests)
 - Produces:
   - `interface StoredImport { table: string; fileName: string; delimiter: Delimiter; columns: string[]; types: ColumnType[]; rows: number; file: Blob }`
-  - `interface ImportStore { list(): Promise<StoredImport[]>; put(r: StoredImport): Promise<boolean>; remove(table: string): Promise<boolean>; clear(): Promise<boolean> }` — không bao giờ reject
+  - `interface ImportStore { list(): Promise<StoredImport[]>; put(r: StoredImport): Promise<boolean>; remove(table: string): Promise<boolean>; clear(): Promise<boolean> }`: không bao giờ reject
   - `IDB_NAME = 'cargo-query'`, `IDB_STORE = 'imports'`, `isStoredImport(x: unknown): x is StoredImport`
   - `idbStore(): ImportStore`, `memoryStore(initial?: StoredImport[]): ImportStore & { records: Map<string, StoredImport> }`
-  - `interface ImportDb { run(sql): Promise<QueryResult>; importCsv(req, file): Promise<ImportedTable>; dropImport(table?): Promise<void> }` — `DbClient` khớp theo cấu trúc
+  - `interface ImportDb { run(sql): Promise<QueryResult>; importCsv(req, file): Promise<ImportedTable>; dropImport(table?): Promise<void> }`: `DbClient` khớp theo cấu trúc
   - `type AddOutcome = { ok: true; table: ImportedTable; persisted: boolean } | { ok: false; problem: ImportProblem } | { ok: false; error: unknown }`
+  - `importedCells(tables: ImportedTable[]): number` (I3)
   - `class MyData { tables: ImportedTable[]; constructor(db: ImportDb, store: ImportStore, onChange: (tables: ImportedTable[]) => void); restore(): Promise<{ table: string; error: unknown }[]>; add(file: Blob, fileName: string): Promise<AddOutcome>; remove(table: string): Promise<void>; clear(): Promise<void>; dropped(table: string): Promise<void> }`
 
-Bản ghi IndexedDB: DB `cargo-query` version 1, store `imports`, `keyPath: 'table'`, giá trị là `StoredImport` (Blob/File lưu trực tiếp nhờ structured clone). Lưu cả `types` để lúc nạp lại không phải suy kiểu (spike: 0,9–3,4 s thay vì 3,0–6,5 s mỗi bảng). `restore()` nạp **tuần tự**, nên nếu một file làm worker quá hạn thì các file sau không bị `DbRestartError` hàng loạt.
+Bản ghi IndexedDB:
+- DB `cargo-query` version 1, store `imports`, `keyPath: 'table'`. Giá trị là `StoredImport` (Blob/File lưu trực tiếp nhờ structured clone).
+- Lưu cả `types`, để lúc nạp lại không phải suy kiểu (spike: 0,9–3,4 s thay vì 3,0–6,5 s mỗi bảng).
+- Đọc ra bản ghi nào cũng qua `isStoredImport`. Tên bảng và tên cột phải khớp regex định danh, kiểu phải thuộc `COLUMN_TYPES`.
+- `restore()` nạp **tuần tự**, nên nếu một file làm worker quá hạn thì các file sau không bị `DbRestartError` hàng loạt.
+- `DbRestartError`/`DbFailedError` (DB chưa sẵn sàng) thì **giữ** bản ghi.
+- Bản ghi trùng tên bảng game thì bỏ (I7).
 
 - [ ] **Step 1: Viết test**
 
-`tests/myData.test.ts`:
+**Tạo `tests/myData.test.ts`:**
 ```ts
 import type { PGlite } from '@electric-sql/pglite';
 import { describe, expect, it } from 'vitest';
-import { DbRestartError } from '../src/db/client';
+import { DbFailedError, DbRestartError } from '../src/db/client';
 import { dropImport, importCsv } from '../src/db/import';
 import { runSandboxed } from '../src/db/run';
-import { MyData, type ImportDb } from '../src/import/myData';
-import { idbStore, memoryStore, type StoredImport } from '../src/import/store';
+import { MyData, importedCells, type ImportDb } from '../src/import/myData';
+import { idbStore, isStoredImport, memoryStore, type StoredImport } from '../src/import/store';
 import { freshDb } from './helpers';
 
 const adapter = (pg: PGlite): ImportDb => ({
@@ -1115,6 +1214,7 @@ const adapter = (pg: PGlite): ImportDb => ({
 });
 
 const CSV = new Blob(['Mã lô,Số lượng\nA,3\nB,4\n']);
+const REC: StoredImport = { table: 'orders', fileName: 'orders.csv', delimiter: ',', columns: ['ref', 'qty'], types: ['text', 'text'], rows: 2, file: new Blob(['ref,qty\nA,1\nB,2\n']) };
 
 async function setup(initial: StoredImport[] = []) {
   const pg = await freshDb();
@@ -1126,6 +1226,13 @@ async function setup(initial: StoredImport[] = []) {
 
 const count = async (pg: PGlite, table: string) => (await runSandboxed(pg, `SELECT count(*) FROM ${table}`)).rows[0][0];
 
+/** A DbClient stand-in whose imports always fail with `error`. */
+const failingDb = (error: Error): ImportDb => ({
+  run: async () => ({ columns: ['table_name'], types: [25], rows: [['ports']] }),
+  importCsv: async () => { throw error; },
+  dropImport: async () => {},
+});
+
 describe('MyData', () => {
   it('add: nạp, lưu file gốc + kiểu cột vào store, báo thay đổi', async () => {
     const { pg, store, my, changes } = await setup();
@@ -1134,6 +1241,7 @@ describe('MyData', () => {
     expect(await count(pg, 'lo_hang')).toBe(2);
     expect(store.records.get('lo_hang')).toMatchObject({ fileName: 'Lô hàng.csv', delimiter: ',', columns: ['ma_lo', 'so_luong'], types: ['text', 'bigint'], rows: 2, file: CSV });
     expect(changes).toEqual([['lo_hang']]);
+    expect(importedCells(my.tables)).toBe(4);
   });
 
   it('add: tên trùng bảng game thêm _my; cùng tên file thì thay bảng cũ', async () => {
@@ -1153,24 +1261,25 @@ describe('MyData', () => {
     expect([...store.records.keys()]).toEqual(['a', 'b', 'c', 'd', 'e']);
   });
 
-  it('restore: nạp lại với kiểu đã lưu (không suy lại), bỏ bản ghi hỏng khỏi store', async () => {
-    const good: StoredImport = { table: 'orders', fileName: 'orders.csv', delimiter: ',', columns: ['ref', 'qty'], types: ['text', 'text'], rows: 2, file: new Blob(['ref,qty\nA,1\nB,2\n']) };
-    const broken: StoredImport = { ...good, table: 'broken', file: new Blob(['ref,qty\nA\n']) };
-    const { pg, store, my, changes } = await setup([good, broken]);
+  it('restore: nạp lại với kiểu đã lưu (không suy lại), bỏ bản ghi hỏng và bản ghi trùng bảng game', async () => {
+    const broken: StoredImport = { ...REC, table: 'broken', file: new Blob(['ref,qty\nA\n']) };
+    const clash: StoredImport = { ...REC, table: 'ports' };
+    const { pg, store, my, changes } = await setup([REC, broken, clash]);
     const failed = await my.restore();
-    expect(failed.map((f) => f.table)).toEqual(['broken']);
+    expect(failed.map((f) => f.table)).toEqual(['broken', 'ports']);
     expect([...store.records.keys()]).toEqual(['orders']);
     expect(changes).toEqual([['orders']]);
     expect((await runSandboxed(pg, 'SELECT max(qty) FROM orders')).types).toEqual([25]); // text: types from the store
+    expect((await runSandboxed(pg, "SELECT to_regclass('sandbox.ports') IS NULL")).rows).toEqual([[true]]);
   });
 
-  it('restore: DbRestartError giữ bản ghi để thử lại lần tải trang sau', async () => {
-    const rec: StoredImport = { table: 'orders', fileName: 'o.csv', delimiter: ',', columns: ['a'], types: ['text'], rows: 1, file: new Blob(['a\n1\n']) };
-    const store = memoryStore([rec]);
-    const db: ImportDb = { run: async () => ({ columns: [], types: [], rows: [] }), importCsv: async () => { throw new DbRestartError(); }, dropImport: async () => {} };
-    const my = new MyData(db, store, () => {});
-    expect((await my.restore()).map((f) => f.error instanceof DbRestartError)).toEqual([true]);
-    expect(store.records.has('orders')).toBe(true);
+  it('restore: DbRestartError và DbFailedError giữ bản ghi để thử lại lần tải trang sau', async () => {
+    for (const error of [new DbRestartError(), new DbFailedError('boot failed')]) {
+      const store = memoryStore([REC]);
+      const my = new MyData(failingDb(error), store, () => {});
+      expect((await my.restore()).map((f) => f.error)).toEqual([error]);
+      expect(store.records.has('orders')).toBe(true);
+    }
   });
 
   it('remove / clear / dropped: xóa khỏi DB, store và danh sách', async () => {
@@ -1190,11 +1299,22 @@ describe('MyData', () => {
   });
 });
 
-describe('idbStore', () => {
-  it('không có IndexedDB (Node, chế độ riêng tư bị chặn) thì không ném lỗi', async () => {
+describe('store', () => {
+  it('isStoredImport chỉ nhận bản ghi hợp lệ (tên định danh, kiểu đã biết, đủ kiểu cho mỗi cột)', () => {
+    expect(isStoredImport(REC)).toBe(true);
+    expect(isStoredImport({ ...REC, columns: ['ref', 'Bad Name'] })).toBe(false);
+    expect(isStoredImport({ ...REC, table: 'x"; DROP' })).toBe(false);
+    expect(isStoredImport({ ...REC, types: ['text', 'json'] })).toBe(false);
+    expect(isStoredImport({ ...REC, types: ['text'] })).toBe(false);
+    expect(isStoredImport({ ...REC, rows: -1 })).toBe(false);
+    expect(isStoredImport({ ...REC, file: 'abc' })).toBe(false);
+    expect(isStoredImport(null)).toBe(false);
+  });
+
+  it('idbStore: không có IndexedDB (Node, chế độ riêng tư bị chặn) thì không ném lỗi', async () => {
     const s = idbStore();
     expect(await s.list()).toEqual([]);
-    expect(await s.put({ table: 'a', fileName: 'a.csv', delimiter: ',', columns: [], types: [], rows: 0, file: new Blob([]) })).toBe(false);
+    expect(await s.put(REC)).toBe(false);
     expect(await s.remove('a')).toBe(false);
     expect(await s.clear()).toBe(false);
   });
@@ -1208,10 +1328,11 @@ Expected: FAIL — `Failed to resolve import "../src/import/myData"`.
 
 - [ ] **Step 3: Viết `src/import/store.ts`**
 
+**Tạo `src/import/store.ts`:**
 ```ts
-import type { ColumnType, Delimiter } from '../db/import';
+import { COLUMN_TYPES, type ColumnType, type Delimiter } from '../db/import';
 
-/** One imported CSV as kept in IndexedDB: the original file plus everything needed to replay it. */
+/** One imported CSV as kept in IndexedDB: the original file plus everything needed to replay it. Never leaves the browser. */
 export interface StoredImport {
   table: string;
   fileName: string;
@@ -1233,18 +1354,19 @@ export interface ImportStore {
 export const IDB_NAME = 'cargo-query';
 export const IDB_STORE = 'imports';
 
-const TYPES = new Set<string>(['bigint', 'numeric', 'date', 'timestamp', 'boolean', 'text']);
+const IDENT = /^[a-z_][a-z0-9_]{0,62}$/;
+const isIdent = (s: unknown): boolean => typeof s === 'string' && IDENT.test(s);
 
 /** IndexedDB content is outside our control (old versions, devtools edits): keep only well-formed records. */
 export function isStoredImport(x: unknown): x is StoredImport {
   const r = x as StoredImport;
   return !!r && typeof r === 'object'
-    && typeof r.table === 'string' && /^[a-z_][a-z0-9_]{0,62}$/.test(r.table)
+    && isIdent(r.table)
     && typeof r.fileName === 'string'
     && (r.delimiter === ',' || r.delimiter === ';')
-    && Array.isArray(r.columns) && r.columns.every((c) => typeof c === 'string')
-    && Array.isArray(r.types) && r.types.length === r.columns.length && r.types.every((t) => TYPES.has(t))
-    && typeof r.rows === 'number'
+    && Array.isArray(r.columns) && r.columns.length > 0 && r.columns.every(isIdent)
+    && Array.isArray(r.types) && r.types.length === r.columns.length && r.types.every((t) => COLUMN_TYPES.includes(t))
+    && Number.isInteger(r.rows) && r.rows >= 0
     && r.file instanceof Blob;
 }
 
@@ -1325,14 +1447,15 @@ export function memoryStore(initial: StoredImport[] = []): ImportStore & { recor
 
 - [ ] **Step 4: Viết `src/import/myData.ts`**
 
+**Tạo `src/import/myData.ts`:**
 ```ts
-import { DbRestartError } from '../db/client';
+import { DbFailedError, DbRestartError } from '../db/client';
 import type { ImportedTable, ImportRequest } from '../db/import';
 import type { QueryResult } from '../db/run';
 import { inspectCsv, type ImportProblem } from './csv';
 import type { ImportStore, StoredImport } from './store';
 
-/** The part of DbClient that "Dữ liệu của tôi" needs (a PGlite adapter in tests). */
+/** The part of DbClient that "My data" needs (a PGlite adapter in tests). */
 export interface ImportDb {
   run(sql: string): Promise<QueryResult>;
   importCsv(req: ImportRequest, file: Blob): Promise<ImportedTable>;
@@ -1343,6 +1466,9 @@ export type AddOutcome =
   | { ok: true; table: ImportedTable; persisted: boolean }
   | { ok: false; problem: ImportProblem }
   | { ok: false; error: unknown };
+
+/** Rows × columns over every imported table: the memory warning's measure (I3). */
+export const importedCells = (tables: ImportedTable[]): number => tables.reduce((n, x) => n + x.rows * x.columns.length, 0);
 
 /** A restart already forgot the table (DbClient drops it from the replay list before sending). */
 function ignoreRestart(e: unknown): void {
@@ -1369,20 +1495,33 @@ export class MyData {
     this.onChange(tables);
   }
 
+  private async gameTables(): Promise<Set<string>> {
+    return new Set((await this.db.run(GAME_TABLES_SQL)).rows.map((r) => String(r[0])));
+  }
+
   /**
    * Page load: replays the stored files one by one (sequentially, so a timeout restart cannot
-   * reject the ones after it). A file that fails is removed from the store; one that only hit a
-   * DbRestartError stays stored and is tried again on the next page load.
+   * reject the ones after it). A file that fails, or whose name is now a game table (I7), is removed
+   * from the store; one that only hit a restart or a failed boot stays stored for the next page load.
    */
   async restore(): Promise<{ table: string; error: unknown }[]> {
     const failed: { table: string; error: unknown }[] = [];
-    for (const r of await this.store.list()) {
+    const stored = await this.store.list();
+    if (stored.length === 0) return failed;
+    let game: Set<string>;
+    try {
+      game = await this.gameTables();
+    } catch (error) {
+      return stored.map((r) => ({ table: r.table, error })); // DB not usable: keep every record
+    }
+    for (const r of stored) {
       try {
+        if (game.has(r.table)) throw new Error(`name taken by a game table: ${r.table}`);
         const t = await this.db.importCsv({ table: r.table, columns: r.columns, delimiter: r.delimiter, types: r.types }, r.file);
         // Incremental, so a file the player adds while restore is still running is not wiped from the list.
         this.set([...this.tables.filter((x) => x.table !== t.table), t]);
       } catch (error) {
-        if (!(error instanceof DbRestartError)) await this.store.remove(r.table);
+        if (!(error instanceof DbRestartError || error instanceof DbFailedError)) await this.store.remove(r.table);
         failed.push({ table: r.table, error });
       }
     }
@@ -1393,8 +1532,7 @@ export class MyData {
     let imported: ImportedTable;
     let record: StoredImport;
     try {
-      const game = new Set((await this.db.run(GAME_TABLES_SQL)).rows.map((r) => String(r[0])));
-      const inspection = await inspectCsv(file, fileName, game, this.tables.map((t) => t.table));
+      const inspection = await inspectCsv(file, fileName, await this.gameTables(), this.tables.map((t) => t.table));
       if (!inspection.ok) return inspection;
       const { table, columns, delimiter } = inspection.spec;
       imported = await this.db.importCsv({ table, columns, delimiter }, file);
@@ -1431,7 +1569,7 @@ export class MyData {
 - [ ] **Step 5: Chạy test, xác nhận PASS**
 
 Run: `npx vitest run tests/myData.test.ts && npx tsc --noEmit`
-Expected: PASS (7 test), `tsc` không lỗi.
+Expected: PASS (8 test), `tsc` không lỗi.
 
 - [ ] **Step 6: Commit**
 
@@ -1449,18 +1587,19 @@ git commit -m "feat: keep imported CSV files in IndexedDB and replay them on loa
 - Test: `tests/importViz.test.ts`
 
 **Interfaces:**
-- Consumes: `importCsv` (Task 1); `runExplain`, `runSandboxed`; `flattenPlan`, `runSteps`, `chartSpec`, `loadErMetadata`, `erDefinition`, `memoByKey` (Plan 1b); `seededDb` (tests)
-- Produces: `clearMemos(): void` trong `src/viz/memo.ts` — xóa cache của mọi `memoByKey` (EXPLAIN, Thứ tự thực thi, metadata ERD theo schema)
+- Consumes: `importCsv` (Task 1); `sanitizeIdent` (Task 2); `runExplain`, `runSandboxed`; `flattenPlan`, `runSteps`, `chartSpec`, `loadErMetadata`, `erDefinition`, `memoByKey`, `once` (HEAD); `seededDb` (tests)
+- Produces: `clearMemos(): void` trong `src/viz/memo.ts`. Hàm này xóa cache của mọi `memoByKey` (EXPLAIN, Thứ tự thực thi, metadata ERD theo schema), **không** xóa `once()` (Mermaid, parser).
 
-Lý do cần `clearMemos`: cache của Plan 1b theo **chuỗi SQL** (và metadata ERD theo **tên schema**). Khi người dùng thay một bảng nạp bằng file khác cùng tên, cùng một câu SQL sẽ cho plan và số dòng khác, nên cache phải bị xóa ở mỗi lần dữ liệu nạp thay đổi (Task 6 gọi hàm này).
+Lý do cần `clearMemos`: cache của Plan 1b đánh khóa theo **chuỗi SQL** (metadata ERD theo **tên schema**). Khi người dùng thay một bảng nạp bằng file khác cùng tên, cùng một câu SQL sẽ cho plan và số dòng khác. Vì vậy cache phải bị xóa mỗi lần dữ liệu nạp thay đổi (Task 6 gọi hàm này).
 
 - [ ] **Step 1: Viết test**
 
-`tests/importViz.test.ts`:
+**Tạo `tests/importViz.test.ts`:**
 ```ts
 import { describe, expect, it } from 'vitest';
 import { importCsv } from '../src/db/import';
 import { runExplain, runSandboxed } from '../src/db/run';
+import { sanitizeIdent } from '../src/import/csv';
 import { chartSpec } from '../src/viz/chart';
 import { erDefinition, loadErMetadata } from '../src/viz/erd';
 import { flattenPlan } from '../src/viz/plan';
@@ -1471,10 +1610,14 @@ const LINES = ['ref,customer,eta,teu'];
 for (let i = 1; i <= 300; i++) LINES.push(`R${i},KH ${i % 7},2026-${String((i % 12) + 1).padStart(2, '0')}-01,${i % 4}`);
 const FILE = new Blob([LINES.join('\n') + '\n']);
 
-async function db() {
-  const pg = await seededDb();
-  await importCsv(pg, { table: 'my_orders', columns: ['ref', 'customer', 'eta', 'teu'], delimiter: ',' }, FILE);
-  return pg;
+let loaded: ReturnType<typeof seededDb> | undefined;
+/** One seeded DB per file with my_orders imported once (Vitest runs a file's tests in order). */
+function db() {
+  loaded ??= seededDb().then(async (pg) => {
+    await importCsv(pg, { table: 'my_orders', columns: ['ref', 'customer', 'eta', 'teu'], delimiter: ',' }, FILE);
+    return pg;
+  });
+  return loaded;
 }
 
 describe('tính năng trực quan trên bảng ở schema sandbox (không ghi tên schema trong SQL)', () => {
@@ -1506,23 +1649,50 @@ describe('tính năng trực quan trên bảng ở schema sandbox (không ghi t�
     expect(def).toContain('date eta');
     expect(def).not.toContain('--');
   });
+
+  it('ERD (L36): tên cột hợp lệ với Postgres nhưng là từ khóa Mermaid đi qua mermaidName()', async () => {
+    const pg = await db();
+    const columns = ['Class', 'style', 'end'].map((h) => sanitizeIdent(h, 'x'));
+    expect(columns).toEqual(['class', 'style', 'end_']);
+    await importCsv(pg, { table: 'tags', columns, delimiter: ',' }, new Blob(['a,b,c\nx,y,z\n']));
+    const { cols, cons } = await loadErMetadata((sql) => runSandboxed(pg, sql), 'sandbox');
+    const def = erDefinition(cols, cons, ['tags'], new Set());
+    expect(def).toContain('text _class');
+    expect(def).toContain('text _style');
+    expect(def).toContain('text end_');
+    expect(def).not.toMatch(/^\s*style /m); // no highlight requested: no style line at all
+  });
 });
 ```
 
-Thêm vào **cuối** `tests/memo.test.ts`, và sửa dòng import đầu file thành `import { clearMemos, memoByKey } from '../src/viz/memo';`:
+**Sửa `tests/memo.test.ts`** — thay:
 ```ts
+import { memoByKey, once } from '../src/viz/memo';
+```
+bằng:
+```ts
+import { clearMemos, memoByKey, once } from '../src/viz/memo';
+```
+
+**Thêm vào cuối `tests/memo.test.ts`:**
+```ts
+
 describe('clearMemos', () => {
-  it('xóa cache của mọi memoByKey, lần gọi sau nạp lại', async () => {
+  it('xóa cache của mọi memoByKey, lần gọi sau nạp lại; once() giữ nguyên', async () => {
     let a = 0;
     let b = 0;
+    let c = 0;
     const fa = memoByKey(async (k) => { a++; return k; });
     const fb = memoByKey(async (k) => { b++; return k; });
+    const fc = once(async () => { c++; return 1; });
     await fa('sandbox');
     await fb('SELECT 1');
+    await fc();
     clearMemos();
     await fa('sandbox');
     await fb('SELECT 1');
-    expect([a, b]).toEqual([2, 2]);
+    await fc();
+    expect([a, b, c]).toEqual([2, 2, 1]);
   });
 });
 ```
@@ -1530,30 +1700,67 @@ describe('clearMemos', () => {
 - [ ] **Step 2: Chạy test, xác nhận trạng thái**
 
 Run: `npx vitest run tests/importViz.test.ts tests/memo.test.ts`
-Expected: `memo.test.ts` FAIL — `clearMemos` không được export. `importViz.test.ts` nên PASS ngay (search_path đã có từ Task 1). Nếu test "Thứ tự thực thi" FAIL thì dừng và báo: spike chưa kiểm được `runSteps` trên schema `sandbox` (mục 3a ở đầu plan). Không sửa `src/viz/steps.ts` trong plan này.
+Expected:
+- `memo.test.ts` FAIL — `clearMemos` không được export.
+- `importViz.test.ts` nên PASS ngay (search_path đã có từ Task 1, `mermaidName` từ L36). Nếu test "Thứ tự thực thi" FAIL thì dừng và báo: spike chưa kiểm được `runSteps` trên schema `sandbox` (mục 3a). Không sửa `src/viz/steps.ts` trong plan này.
 
 - [ ] **Step 3: Thêm `clearMemos` vào `src/viz/memo.ts`**
 
-1. Ngay dưới dòng `export const MEMO_MAX = 20;` thêm:
+**Sửa `src/viz/memo.ts`** — thay:
 ```ts
+export const MEMO_MAX = 20;
+```
+bằng:
+```ts
+export const MEMO_MAX = 20;
 
-/** Every cache made by memoByKey, so imported data changes can drop them all at once. */
-const caches = new Set<Map<string, unknown>>();
+/** Every cache made by memoByKey (plans, steps, ER metadata), so imported data changes can drop them at once. */
+const dataCaches = new Set<Map<string, unknown>>();
 
-/** Drops every cached value: plans, steps and ER metadata are stale once imported tables change. */
+/** Drops every memoByKey cache: plans, steps and ER metadata are stale once imported tables change. once() is kept. */
 export function clearMemos(): void {
-  for (const c of caches) c.clear();
+  for (const c of dataCaches) c.clear();
 }
 ```
-2. Trong `memoByKey`, ngay dưới dòng `const cache = new Map<string, Promise<T>>();` thêm:
+
+**Sửa `src/viz/memo.ts`** — thay:
 ```ts
-  caches.add(cache);
+  const cache = new Map<string, Promise<T>>();
+```
+bằng:
+```ts
+  const cache = new Map<string, Promise<T>>();
+  dataCaches.add(cache);
+```
+
+**Sửa `src/viz/memo.ts`** — thay:
+```ts
+export function once<T>(load: () => Promise<T>): () => Promise<T> {
+  const memo = memoByKey(() => load(), 1);
+  return () => memo('');
+}
+```
+bằng:
+```ts
+export function once<T>(load: () => Promise<T>): () => Promise<T> {
+  // Its own slot, not memoByKey: clearMemos() must not reload Mermaid or the parser.
+  let p: Promise<T> | undefined;
+  return () => {
+    if (p) return p;
+    const q = load();
+    p = q;
+    q.catch(() => {
+      if (p === q) p = undefined;
+    });
+    return q;
+  };
+}
 ```
 
 - [ ] **Step 4: Chạy test, xác nhận PASS**
 
 Run: `npx vitest run tests/importViz.test.ts tests/memo.test.ts && npx tsc --noEmit`
-Expected: PASS (4 test `importViz` + test `memo` cũ và mới), `tsc` không lỗi.
+Expected: PASS (5 test `importViz` + test `memo` cũ và mới), `tsc` không lỗi.
 
 - [ ] **Step 5: Commit**
 
@@ -1568,44 +1775,41 @@ git commit -m "feat: viz tabs on sandbox tables; clearMemos for imported data ch
 
 **Files:**
 - Create: `src/ui/myDataView.ts`
-- Modify: `src/state.ts`, `src/ui/modes.ts`, `src/ui/vizTabs.ts`, `src/main.ts`, `src/i18n/vi.ts`, `src/i18n/en.ts`, `src/style.css`
+- Modify: `src/state.ts`, `src/ui/modes.ts`, `src/ui/vizTabs.ts`, `src/main.ts`, `src/i18n/vi.ts`, `src/i18n/en.ts`
 
 **Interfaces:**
-- Consumes: `MyData`, `AddOutcome` (Task 4); `idbStore` (Task 4); `IMPORT_LIMITS`, `ImportProblem` (Task 2); `QueryTimeoutError`, `DbRestartError`, `DbFailedError`, `DbClient.onImportDropped` (Task 3); `clearMemos` (Task 5); `errorMessage` (`src/grader.ts`); `t` (`src/i18n`); `h` (`src/ui/dom.ts`); `session` (Plan 1c); `unlockedTables`, `editorSchema` (`src/state.ts`); `WorkArea.setSchema`, `panel.refresh`, `rerender` (Plan 1); `loadErMetadata`, `erDefinition`, `tablesInQuery`, `registerErdTab` (Plan 1b)
+- Consumes:
+  - `MyData`, `AddOutcome`, `importedCells`, `idbStore` (Task 4);
+  - `IMPORT_LIMITS`, `MEMORY_WARN_CELLS`, `ImportProblem` (Task 2);
+  - `QueryTimeoutError`, `DbRestartError`, `DbClient.onImportDropped` (Task 3);
+  - `clearMemos` (Task 5);
+  - từ HEAD: `SqlError` (`src/db/run.ts`), `errorText` (`src/ui/feedback.ts`), `t`, `h`, `cx`, `session`, `unlockedTables`, `editorSchema`, `Column`, `WorkArea.setSchema`, `panel.refresh`, `rerender`, `registerMode`, `startSandbox`, `erdSvg`/`drawErd`/`load`/`ticketColor` (vizTabs)
 - Produces:
-  - `initMyData(m: MyData, onRerender: () => void): void`, `setMyDataStatus(text: string): void`
-  - `sandboxTables(): ImportedTable[]` — bảng nạp, **chỉ** khi đang ở Sandbox (ngoài Sandbox trả `[]`)
-  - `visibleTables(): string[]` — `unlockedTables()` + bảng nạp trong Sandbox
-  - `sandboxColumns(): Record<string, { name: string; type: string }[]>` — tham số `extra` cho `editorSchema`
-  - `src/state.ts` (sửa Plan 1): `editorSchema(extra: Record<string, Column[]> = {}): SQLNamespace` — gọi không tham số vẫn y như cũ
-  - `importErrorText(e: unknown): string`, `renderMyData(): HTMLElement`
-  - khóa i18n `mydata.*`
+  - `src/state.ts`: `schemaHooks: { extra?: () => Record<string, Column[]> }`; `editorSchema()` gộp thêm `schemaHooks.extra?.()`
+  - `src/ui/myDataView.ts`: `initMyData(m: MyData, onRerender: () => void)`, `setMyDataStatus(text: string)`, `sandboxTables(): ImportedTable[]` (ngoài Sandbox trả `[]`), `visibleTables(): string[]`, `importErrorText(e: unknown): string`, `renderMyData(): HTMLElement`
+  - card Trang chủ `mydata` (I2)
+  - khóa i18n `mode.mydata`, `mode.mydataDesc`, `mydata.*`
 
-Vị trí trên giao diện (spec §6b: "sidebar chỉ có bảng đã mở và bảng trong `sandbox`"): mục "Dữ liệu của tôi" nằm trong khung trái của Sandbox, ngay dưới phần giới thiệu. Mục này liệt kê từng bảng nạp kèm cột và kiểu, có nút Xóa. Tab **Cột** giữ nguyên (bảng game đã mở). Tab **ER** trong Sandbox vẽ thêm các bảng nạp. Autocomplete của editor trong Sandbox có thêm các bảng nạp. Ngoài Sandbox, bảng nạp vẫn truy vấn được (cùng `search_path`) nhưng không hiện ở đâu, và không ảnh hưởng chấm điểm vì bảng game luôn thắng khi trùng tên.
-
-- [ ] **Step 0: Kiểm điểm neo giao diện**
-
-Run:
-```bash
-grep -c "function registerErdTab\|const tables = unlockedTables();" src/ui/vizTabs.ts
-grep -c "export function editorSchema(): SQLNamespace {" src/state.ts
-grep -c "export function unlockedTables\|export const unlockedTables" src/state.ts
-grep -c "setSchema(" src/ui/work.ts
-grep -c "kind: 'sandbox'" src/session.ts
-grep -c "ctx?.work.setTicket(activeTicket(), activeStep());\|h('p', {}, t('sbx.intro'))," src/ui/modes.ts
-grep -c "new DbClient(\|function rerender\|panel.refresh()" src/main.ts
-grep -c "export const vi = {" src/i18n/vi.ts
-grep -c "export const en: Record<Key, Msg> = {" src/i18n/en.ts
-```
-Expected: `vizTabs.ts` → `2`, `modes.ts` → `2`, `main.ts` → `≥ 3`, các dòng còn lại `≥ 1`.
-Nếu có dòng ra `0`: **dừng Task 6 và báo** tên thiếu (Task 1–5 đã commit vẫn giữ). Kiểm thêm: nếu `t()` của Plan 1 **không** format số trong params trước khi gọi message dạng hàm, thì ở mục 12 của Step 9 chữ sẽ là "1000 rows" thay vì "1,000 rows". Đó là hành vi của `t()`, không sửa trong plan này.
+Vị trí trên giao diện (spec §6b, §7b; I2, I4):
+- Mục "Dữ liệu của tôi" nằm trong khung trái của Sandbox, ngay dưới phần giới thiệu. Mục này liệt kê từng bảng nạp kèm cột và kiểu, mỗi bảng có nút Xóa.
+- Tab **Cột** giữ nguyên.
+- Trong Sandbox, tab **ER** vẽ thêm các bảng nạp và autocomplete có thêm các bảng nạp.
+- Ngoài Sandbox, bảng nạp vẫn truy vấn được (cùng `search_path`) nhưng không hiện ở đâu. Chấm điểm không bị ảnh hưởng vì bảng game luôn thắng khi trùng tên.
 
 - [ ] **Step 1: Thêm khóa i18n**
 
-Trong `src/i18n/vi.ts`, ngay sau dòng `export const vi = {`:
+**Sửa `src/i18n/vi.ts`** — thay:
 ```ts
+export const vi = {
+```
+bằng:
+```ts
+export const vi = {
+  'mode.mydata': 'Dữ liệu của tôi',
+  'mode.mydataDesc': 'Nạp file CSV của bạn rồi thử SQL, Biểu đồ, EXPLAIN và Sơ đồ ER trên chính dữ liệu đó.',
   'mydata.title': 'Dữ liệu của tôi',
-  'mydata.intro': 'Nạp file CSV (UTF-8, phân cách , hoặc ;, có dòng tiêu đề) để thử Chạy, Biểu đồ, EXPLAIN, Luồng, Thứ tự thực thi và Sơ đồ ER trên dữ liệu của bạn. Tối đa {mb} MB, {rows} dòng, {cols} cột mỗi file và {tables} bảng. File chỉ nằm trong trình duyệt này, không gửi đi đâu, và được tự nạp lại khi mở trang.',
+  'mydata.intro': 'Nạp file CSV (UTF-8, phân cách , hoặc ;, có dòng tiêu đề) để thử Chạy, Biểu đồ, Thứ tự thực thi, EXPLAIN, Luồng dữ liệu và Sơ đồ ER trên dữ liệu của bạn. Tối đa {mb} MB, {rows} dòng, {cols} cột mỗi file và {tables} bảng. File chỉ nằm trong trình duyệt này, không gửi đi đâu, và được tự nạp lại khi mở trang.',
+  'mydata.memoryWarn': 'Dữ liệu đã nạp khá lớn: tab có thể dùng hơn 400 MB bộ nhớ và chạy chậm trên máy yếu. Nếu trang bị giật, hãy xóa bớt bảng không dùng.',
   'mydata.drop': 'Chọn file CSV hoặc kéo thả vào đây',
   'mydata.loading': 'Đang nạp {name}…',
   'mydata.done': 'đã nạp bảng {table} ({rows} dòng, {cols} cột). Gõ SELECT * FROM {table} để xem.',
@@ -1623,20 +1827,28 @@ Trong `src/i18n/vi.ts`, ngay sau dòng `export const vi = {`:
   'mydata.tooManyTables': 'Đã có {max} bảng, là số tối đa. Xóa bớt một bảng rồi nạp lại.',
   'mydata.timeout': 'Nạp quá {s} giây nên đã dừng. Database đang được khởi động lại.',
   'mydata.restarted': 'Database vừa khởi động lại giữa chừng. Hãy nạp lại file.',
-  'mydata.dbFailed': 'Database không chạy được nên không nạp được file.',
   'mydata.copyError': 'Postgres không đọc được file (lỗi gốc bên dưới). Kiểm tra mọi dòng có cùng số cột với dòng tiêu đề và file được lưu dạng UTF-8.',
   'mydata.lost': 'Bảng {table} không nạp lại được sau khi database khởi động lại, nên đã bị bỏ.',
   'mydata.restoreFailed': 'Không nạp lại được: {tables}.',
 ```
-Trong `src/i18n/en.ts`, ngay sau dòng `export const en: Record<Key, Msg> = {`:
+
+**Sửa `src/i18n/en.ts`** — thay:
 ```ts
+export const en: Record<Key, Msg> = {
+```
+bằng:
+```ts
+export const en: Record<Key, Msg> = {
+  'mode.mydata': 'My data',
+  'mode.mydataDesc': 'Load your own CSV files, then try SQL, Chart, EXPLAIN and the ER diagram on that data.',
   'mydata.title': 'My data',
-  'mydata.intro': 'Load a CSV file (UTF-8, comma or semicolon separated, with a header row) to try Run, Chart, EXPLAIN, Flow, Execution order and the ER diagram on your own data. Up to {mb} MB, {rows} rows and {cols} columns per file, {tables} tables in total. Files stay in this browser, are never uploaded, and are reloaded when you open the page.',
+  'mydata.intro': 'Load a CSV file (UTF-8, comma or semicolon separated, with a header row) to try Run, Chart, Execution order, EXPLAIN, Data flow and the ER diagram on your own data. Up to {mb} MB, {rows} rows and {cols} columns per file, {tables} tables in total. Files stay in this browser, are never uploaded, and are reloaded when you open the page.',
+  'mydata.memoryWarn': 'Your imported data is large: this tab may use more than 400 MB of memory and run slowly on a weak machine. If the page stutters, delete the tables you do not need.',
   'mydata.drop': 'Choose a CSV file or drop it here',
   'mydata.loading': 'Loading {name}…',
-  'mydata.done': (p) => `loaded table ${p.table} (${p.rows} row${p.rows === 1 ? '' : 's'}, ${p.cols} column${p.cols === 1 ? '' : 's'}). Type SELECT * FROM ${p.table} to see it.`,
+  'mydata.done': (p) => `loaded table ${p.table} (${count('row', 'rows')({ n: p.rows })}, ${count('column', 'columns')({ n: p.cols })}). Type SELECT * FROM ${p.table} to see it.`,
   'mydata.notPersisted': 'This browser does not allow saving files, so the table will be gone after a reload.',
-  'mydata.rows': (p) => `${p.n} row${p.n === 1 ? '' : 's'}`,
+  'mydata.rows': count('row', 'rows'),
   'mydata.delete': 'Delete',
   'mydata.deleteAria': 'Delete table {table}',
   'mydata.clear': 'Delete all imported data',
@@ -1649,66 +1861,115 @@ Trong `src/i18n/en.ts`, ngay sau dòng `export const en: Record<Key, Msg> = {`:
   'mydata.tooManyTables': 'You already have {max} tables, the maximum. Delete one and try again.',
   'mydata.timeout': 'Loading took more than {s} seconds and was stopped. The database is restarting.',
   'mydata.restarted': 'The database restarted in the middle of loading. Please load the file again.',
-  'mydata.dbFailed': 'The database is not running, so the file could not be loaded.',
   'mydata.copyError': 'Postgres could not read the file (original error below). Check that every row has as many columns as the header and that the file is saved as UTF-8.',
   'mydata.lost': 'Table {table} could not be reloaded after the database restarted, so it was dropped.',
   'mydata.restoreFailed': 'Could not reload: {tables}.',
 ```
+`count`/`num` đã có ở đầu `en.ts`. Message dạng hàm nhận số thô, nên phải tự format ("1,000 rows").
 
-- [ ] **Step 2: Viết `src/ui/myDataView.ts`**
+- [ ] **Step 2: Hook bảng nạp cho autocomplete (`src/state.ts`, I1)**
 
+**Sửa `src/state.ts`** — thay:
 ```ts
-import { DbFailedError, DbRestartError, QueryTimeoutError } from '../db/client';
-import type { ImportedTable } from '../db/import';
-import { errorMessage } from '../grader';
-import { t } from '../i18n';
-import { IMPORT_LIMITS, type ImportProblem } from '../import/csv';
-import type { AddOutcome, MyData } from '../import/myData';
-import { session } from '../session';
-import { unlockedTables } from '../state';
-import { h } from './dom';
+/** Autocomplete: only unlocked tables (spec §4), with column types as detail. */
+export function editorSchema(): SQLNamespace {
+  const out: Record<string, SQLNamespace> = {};
+  for (const table of unlockedTables()) {
+    const cols = app.columns[table];
+    if (cols) {
+      out[table] = {
+        self: { label: table, type: 'type', detail: 'table' },
+        children: cols.map((c) => ({ label: c.name, type: 'property', detail: c.type })),
+      };
+    }
+  }
+  return out;
+}
+```
+bằng:
+```ts
+/** Plan Import: imported tables for autocomplete, set by initMyData; returns {} outside Sandbox (I1). */
+export const schemaHooks: { extra?: () => Record<string, Column[]> } = {};
 
+/** Autocomplete: only unlocked tables (spec §4), with column types as detail, plus imported tables in Sandbox. */
+export function editorSchema(): SQLNamespace {
+  const tables: Record<string, Column[]> = {};
+  for (const table of unlockedTables()) {
+    const cols = app.columns[table];
+    if (cols) tables[table] = cols;
+  }
+  Object.assign(tables, schemaHooks.extra?.()); // imported names never clash with game tables (`_my`)
+  const out: Record<string, SQLNamespace> = {};
+  for (const [table, cols] of Object.entries(tables)) {
+    out[table] = {
+      self: { label: table, type: 'type', detail: 'table' },
+      children: cols.map((c) => ({ label: c.name, type: 'property', detail: c.type })),
+    };
+  }
+  return out;
+}
+```
+Không lời gọi `editorSchema()` nào phải sửa. `work.setTicket(…, force)` dựng lại editor mỗi khi đổi chế độ (`enter()` trong `modes.ts`, `selectTicket()` trong `main.ts`), và lúc đó `session.mode` đã đổi.
+
+- [ ] **Step 3: Viết `src/ui/myDataView.ts`**
+
+**Tạo `src/ui/myDataView.ts`:**
+```ts
+import { DbRestartError, QueryTimeoutError } from '../db/client';
+import type { ImportedTable } from '../db/import';
+import { SqlError } from '../db/run';
+import { t } from '../i18n';
+import { IMPORT_LIMITS, MEMORY_WARN_CELLS, type ImportProblem } from '../import/csv';
+import { importedCells, type AddOutcome, type MyData } from '../import/myData';
+import { session } from '../session';
+import { schemaHooks, unlockedTables, type Column } from '../state';
+import { cx } from '../theme';
+import { h } from './dom';
+import { errorText } from './feedback';
+
+const MB = 1024 * 1024;
 let my: MyData | undefined;
 let rerender: () => void = () => {};
 let status = '';
 let busy = false;
 
-/** Called once from main.ts after the MyData instance exists. */
-export function initMyData(m: MyData, onRerender: () => void): void {
-  my = m;
-  rerender = onRerender;
-}
-
-export function setMyDataStatus(text: string): void {
-  status = text;
-  rerender();
-}
-
-/** Imported tables count only in Sandbox (spec §6b: sidebar = unlocked tables + sandbox tables). */
+/** Imported tables count only in Sandbox (spec §7b "Hiển thị", I4). */
 export const sandboxTables = (): ImportedTable[] => (session.mode.kind === 'sandbox' && my ? my.tables : []);
 
 /** Unlocked game tables, plus imported ones in Sandbox: what the ER tab draws. */
 export const visibleTables = (): string[] => [...unlockedTables(), ...sandboxTables().map((x) => x.table)];
 
-/** `extra` argument for editorSchema(): imported columns with their types, Sandbox only. */
-export const sandboxColumns = (): Record<string, { name: string; type: string }[]> =>
-  Object.fromEntries(sandboxTables().map((x) => [x.table, x.columns]));
+const sandboxColumns = (): Record<string, Column[]> => Object.fromEntries(sandboxTables().map((x) => [x.table, x.columns]));
+
+/** Called once from main.ts after the MyData instance exists. */
+export function initMyData(m: MyData, onRerender: () => void): void {
+  my = m;
+  rerender = onRerender;
+  schemaHooks.extra = sandboxColumns; // editorSchema() adds imported tables in Sandbox (I1)
+}
+
+/** In memory only (I6). */
+export function setMyDataStatus(text: string): void {
+  status = text;
+  rerender();
+}
 
 function problemText(p: ImportProblem): string {
   switch (p.kind) {
     case 'empty': return t('mydata.empty');
-    case 'tooLarge': return t('mydata.tooLarge', { mb: Math.ceil(p.bytes / 1048576), max: IMPORT_LIMITS.maxBytes / 1048576 });
+    case 'tooLarge': return t('mydata.tooLarge', { mb: Math.ceil(p.bytes / MB), max: IMPORT_LIMITS.maxBytes / MB });
     case 'tooManyRows': return t('mydata.tooManyRows', { n: p.rows, max: IMPORT_LIMITS.maxRows });
     case 'tooManyColumns': return t('mydata.tooManyColumns', { n: p.columns, max: IMPORT_LIMITS.maxColumns });
     case 'tooManyTables': return t('mydata.tooManyTables', { max: IMPORT_LIMITS.maxTables });
   }
 }
 
+/** Postgres' own message is shown unchanged under the explanation; other failures reuse the app's error text. */
 export function importErrorText(e: unknown): string {
   if (e instanceof QueryTimeoutError) return t('mydata.timeout', { s: e.timeoutMs / 1000 });
   if (e instanceof DbRestartError) return t('mydata.restarted');
-  if (e instanceof DbFailedError) return `${t('mydata.dbFailed')}\n${e.detail}`;
-  return `${t('mydata.copyError')}\n${errorMessage(e)}`; // Postgres' own message, never translated
+  if (e instanceof SqlError) return `${t('mydata.copyError')}\n${e.message}`;
+  return errorText(e); // WorkerTaskError, DbFailedError, anything else
 }
 
 function outcomeText(r: AddOutcome): string {
@@ -1717,16 +1978,20 @@ function outcomeText(r: AddOutcome): string {
   return r.persisted ? done : `${done} ${t('mydata.notPersisted')}`;
 }
 
+/** One file after another (I5); the file input is disabled meanwhile. */
 async function addFiles(files: FileList | null | undefined): Promise<void> {
   if (!my || busy || !files || files.length === 0) return;
   busy = true;
   const lines: string[] = [];
-  for (const f of Array.from(files)) {
-    setMyDataStatus(t('mydata.loading', { name: f.name }));
-    lines.push(`${f.name}: ${outcomeText(await my.add(f, f.name))}`);
+  try {
+    for (const f of Array.from(files)) {
+      setMyDataStatus(t('mydata.loading', { name: f.name }));
+      lines.push(`${f.name}: ${outcomeText(await my.add(f, f.name))}`);
+    }
+  } finally {
+    busy = false;
+    setMyDataStatus(lines.join('\n'));
   }
-  busy = false;
-  setMyDataStatus(lines.join('\n'));
 }
 
 async function act(fn: () => Promise<void>): Promise<void> {
@@ -1738,39 +2003,48 @@ async function act(fn: () => Promise<void>): Promise<void> {
 }
 
 function tableItem(x: ImportedTable): HTMLElement {
-  return h('li', {},
-    h('details', {},
-      h('summary', {}, h('code', {}, x.table), ' ', h('span', { class: 'muted' }, t('mydata.rows', { n: x.rows }))),
-      h('ul', { class: 'mydata-cols' }, ...x.columns.map((c) => h('li', {}, h('code', {}, c.name), ' ', h('span', { class: 'muted' }, c.type))))),
+  return h('li', { class: 'flex items-start justify-between gap-2 border-b border-line py-1' },
+    h('details', { class: 'min-w-0' },
+      h('summary', { class: 'cursor-pointer' }, h('code', {}, x.table), ' ', h('span', { class: 'text-sm text-muted' }, t('mydata.rows', { n: x.rows }))),
+      h('ul', { class: 'mt-1 mb-0 list-none pl-4' },
+        ...x.columns.map((c) => h('li', {}, h('code', {}, c.name), ' ', h('span', { class: 'text-sm text-muted' }, c.type))))),
     h('button', {
       type: 'button',
-      class: 'mydata-del',
       'aria-label': t('mydata.deleteAria', { table: x.table }),
       onclick: () => void act(() => my!.remove(x.table)),
     }, t('mydata.delete')));
 }
 
-/** "Dữ liệu của tôi" section of the Sandbox pane. Everything from the file is rendered as text. */
+/** "My data" section of the Sandbox pane. Everything from the file (names, types, Postgres messages) is rendered as text. */
 export function renderMyData(): HTMLElement {
-  const input = h('input', { type: 'file', accept: '.csv,text/csv', multiple: true, class: 'visually-hidden', id: 'mydata-file' });
+  // `peer` + sr-only: the input keeps keyboard focus, the label shows the focus ring.
+  const input = h('input', { type: 'file', accept: '.csv,text/csv', multiple: true, class: 'peer sr-only', id: 'mydata-file' });
   input.disabled = busy;
-  input.addEventListener('change', () => void addFiles(input.files).finally(() => (input.value = '')));
-  const drop = h('label', { class: 'mydata-drop', for: 'mydata-file' }, t('mydata.drop'));
+  input.addEventListener('change', () => void addFiles(input.files));
+  const drop = h('label', {
+    for: 'mydata-file',
+    class: cx('block rounded-xl border-2 border-dashed border-line p-4 text-center',
+      busy ? 'cursor-wait opacity-60' : 'cursor-pointer hover:border-accent',
+      'peer-focus-visible:border-accent peer-focus-visible:ring-2 peer-focus-visible:ring-accent'),
+  }, t('mydata.drop'));
   drop.addEventListener('dragover', (e) => e.preventDefault());
   drop.addEventListener('drop', (e) => {
     e.preventDefault();
     void addFiles(e.dataTransfer?.files);
   });
   const tables = my?.tables ?? [];
-  return h('section', { class: 'mydata', 'aria-labelledby': 'mydata-title' },
-    h('h3', { id: 'mydata-title' }, t('mydata.title')),
-    h('p', { class: 'muted' }, t('mydata.intro', { mb: IMPORT_LIMITS.maxBytes / 1048576, rows: IMPORT_LIMITS.maxRows, cols: IMPORT_LIMITS.maxColumns, tables: IMPORT_LIMITS.maxTables })),
+  return h('section', { class: 'mt-4 border-t border-line pt-3', 'aria-labelledby': 'mydata-title' },
+    h('h3', { id: 'mydata-title', class: 'mt-0' }, t('mydata.title')),
+    h('p', { class: 'mt-1 text-sm text-muted' }, t('mydata.intro', { mb: IMPORT_LIMITS.maxBytes / MB, rows: IMPORT_LIMITS.maxRows, cols: IMPORT_LIMITS.maxColumns, tables: IMPORT_LIMITS.maxTables })),
+    importedCells(tables) >= MEMORY_WARN_CELLS
+      ? h('p', { class: 'rounded-lg bg-accent-soft p-2 text-sm ring-1 ring-accent', role: 'note' }, t('mydata.memoryWarn'))
+      : null,
     input,
     drop,
-    h('p', { class: 'mydata-status', role: 'status' }, status),
+    h('p', { class: 'min-h-[1.5em] whitespace-pre-wrap text-sm', role: 'status' }, status),
     tables.length
-      ? h('ul', { class: 'mydata-list' }, ...tables.map(tableItem))
-      : h('p', { class: 'muted' }, t('mydata.none')),
+      ? h('ul', { class: 'my-2 list-none p-0' }, ...tables.map(tableItem))
+      : h('p', { class: 'text-sm text-muted' }, t('mydata.none')),
     tables.length
       ? h('button', {
           type: 'button',
@@ -1783,91 +2057,107 @@ export function renderMyData(): HTMLElement {
 }
 ```
 
-- [ ] **Step 2b: Cho `editorSchema` nhận bảng nạp (`src/state.ts`)**
+- [ ] **Step 4: Gắn vào khung Sandbox và Trang chủ (`src/ui/modes.ts`)**
 
-Plan 1 Task 10 viết `editorSchema()` không tham số. Thay toàn bộ hàm đó (cùng comment JSDoc phía trên) bằng:
+**Sửa `src/ui/modes.ts`** — thay:
 ```ts
-/** Autocomplete: only unlocked tables (spec §4), with column types as detail; `extra` = imported tables (Sandbox only). */
-export function editorSchema(extra: Record<string, Column[]> = {}): SQLNamespace {
-  const tables: Record<string, Column[]> = {};
-  for (const table of unlockedTables()) {
-    const cols = app.columns[table];
-    if (cols) tables[table] = cols;
-  }
-  const out: Record<string, SQLNamespace> = {};
-  for (const [table, cols] of Object.entries({ ...tables, ...extra })) {
-    out[table] = {
-      self: { label: table, type: 'type', detail: 'table' },
-      children: cols.map((c) => ({ label: c.name, type: 'property', detail: c.type })),
-    };
-  }
-  return out;
-}
-```
-Tên bảng nạp không trùng bảng game (hậu tố `_my`, Task 2), nên `extra` không ghi đè bảng nào. Chạy `npx tsc --noEmit`: không lỗi (các lời gọi `editorSchema()` cũ vẫn hợp lệ).
-
-- [ ] **Step 3: Gắn vào khung Sandbox (`src/ui/modes.ts`)**
-
-1. Thêm import:
-```ts
-import { editorSchema } from '../state';
-import { renderMyData, sandboxColumns } from './myDataView';
-```
-(Nếu `modes.ts` đã import từ `'../state'` thì thêm `editorSchema` vào dòng import đó, không tạo dòng thứ hai.)
-2. Trong `function sandboxPane`, ngay dưới dòng `    h('p', {}, t('sbx.intro')),` thêm:
-```ts
-    renderMyData(),
-```
-3. Trong `function enter`, ngay dưới dòng `  ctx?.work.setTicket(activeTicket(), activeStep());` thêm:
-```ts
-  ctx?.work.setSchema(editorSchema(sandboxColumns())); // imported tables autocomplete only in Sandbox
-```
-
-- [ ] **Step 4: Tab ER vẽ bảng nạp trong Sandbox (`src/ui/vizTabs.ts`)**
-
-1. Thêm import:
-```ts
-import { sandboxTables, visibleTables } from './myDataView';
-```
-2. Trong `registerErdTab`, thay ba dòng:
-```ts
-      const tables = unlockedTables();
-      const { cols, cons } = await erMetadata('public');
-      await renderErd(host, erDefinition(cols, cons, tables, tablesInQuery(app.lastRun?.sql ?? '', tables)));
+import type { WorkArea } from './work';
 ```
 bằng:
 ```ts
-      const tables = visibleTables();
-      const pub = await erMetadata('public');
-      const own = sandboxTables().length ? await erMetadata('sandbox') : { cols: [], cons: [] };
-      const cols = [...pub.cols, ...own.cols];
-      const cons = [...pub.cons, ...own.cons];
-      await renderErd(host, erDefinition(cols, cons, tables, tablesInQuery(app.lastRun?.sql ?? '', tables)));
+import { renderMyData } from './myDataView';
+import type { WorkArea } from './work';
 ```
-3. Nếu `unlockedTables` không còn được dùng trong file, đổi dòng import về `import { app } from '../state';` (tsc báo lỗi "declared but never read" chỉ khi bật `noUnusedLocals`; vẫn sửa cho gọn).
 
-Tên bảng nạp không bao giờ trùng tên bảng game (hậu tố `_my`), nên ghép hai danh sách cột theo tên bảng là an toàn.
-
-- [ ] **Step 5: Nối vào `src/main.ts`**
-
-1. Thêm import:
+**Sửa `src/ui/modes.ts`** — thay:
 ```ts
+    h('p', { class: 'text-[15px] leading-relaxed' }, t('sbx.intro')),
+```
+bằng:
+```ts
+    h('p', { class: 'text-[15px] leading-relaxed' }, t('sbx.intro')),
+    renderMyData(),
+```
+
+**Thêm vào cuối `src/ui/modes.ts`:**
+```ts
+// Plan Import (L17, I2): "My data" opens the Sandbox, whose left pane holds the CSV import.
+registerMode({
+  id: 'mydata', order: 20, icon: '📂', tint: 'bg-cyan-100 dark:bg-cyan-950',
+  title: 'mode.mydata', desc: 'mode.mydataDesc', open: () => startSandbox(),
+});
+```
+
+- [ ] **Step 5: Tab ER vẽ bảng nạp trong Sandbox (`src/ui/vizTabs.ts`)**
+
+**Sửa `src/ui/vizTabs.ts`** — thay:
+```ts
+import { app, selected, unlockedTables } from '../state';
+```
+bằng:
+```ts
+import { app, selected } from '../state';
+```
+
+**Sửa `src/ui/vizTabs.ts`** — thay:
+```ts
+import { renderFlow } from './flowView';
+```
+bằng:
+```ts
+import { renderFlow } from './flowView';
+import { sandboxTables, visibleTables } from './myDataView';
+```
+
+**Sửa `src/ui/vizTabs.ts`** — thay:
+```ts
+      const tables = unlockedTables();
+      // Tables the last run used: bold border in the open ticket's chapter colour (L36).
+      const svg = erMetadata('public').then(({ cols, cons }) =>
+        erdSvg(erDefinition(cols, cons, tables, tablesInQuery(app.lastRun?.sql ?? '', tables), ticketColor().hex)));
+```
+bằng:
+```ts
+      // Sandbox: imported tables too (schema `sandbox`); every name reaches Mermaid through mermaidName() (L36).
+      const tables = visibleTables();
+      const own = sandboxTables().length > 0 ? erMetadata('sandbox') : Promise.resolve({ cols: [], cons: [] });
+      // Tables the last run used: bold border in the open ticket's chapter colour (L36).
+      const svg = Promise.all([erMetadata('public'), own]).then(([pub, mine]) =>
+        erdSvg(erDefinition([...pub.cols, ...mine.cols], [...pub.cons, ...mine.cons], tables, tablesInQuery(app.lastRun?.sql ?? '', tables), ticketColor().hex)));
+```
+Tên bảng nạp không bao giờ trùng tên bảng game (hậu tố `_my`; I7 cho bản ghi cũ), nên ghép hai danh sách cột theo tên bảng là an toàn.
+
+- [ ] **Step 6: Nối vào `src/main.ts`**
+
+**Sửa `src/main.ts`** — thay:
+```ts
+import { applyStatic, setLang, type Lang } from './i18n';
+```
+bằng:
+```ts
+import { applyStatic, setLang, t, type Lang } from './i18n';
 import { MyData } from './import/myData';
 import { idbStore } from './import/store';
-import { initMyData, sandboxColumns, setMyDataStatus } from './ui/myDataView';
+```
+
+**Sửa `src/main.ts`** — thay:
+```ts
+import { registerVizTabs } from './ui/vizTabs';
+```
+bằng:
+```ts
+import { registerVizTabs } from './ui/vizTabs';
+import { initMyData, setMyDataStatus } from './ui/myDataView';
 import { clearMemos } from './viz/memo';
 ```
-2. Thay **mọi** lời gọi `editorSchema()` trong `src/main.ts` bằng `editorSchema(sandboxColumns())`. Kiểm bằng:
-```bash
-grep -n "editorSchema()" src/main.ts
-```
-Expected: không in dòng nào.
-3. Thêm vào **cuối** `src/main.ts` (lúc đó `db`, `work`, `panel`, `rerender` đều đã có):
+
+**Thêm vào cuối `src/main.ts`:**
 ```ts
-// "Dữ liệu của tôi" (Plan Import): imported CSVs live in IndexedDB and are replayed into the sandbox schema.
+
+// "My data" (Plan Import): imported CSVs stay in this browser (IndexedDB) and are replayed into the sandbox schema.
 const myData = new MyData(db, idbStore(), () => {
-  clearMemos(); // cached plans / steps / ER metadata describe the old data
-  work.setSchema(editorSchema(sandboxColumns()));
+  clearMemos(); // cached plans, steps and ER metadata describe the old data
+  work.setSchema(editorSchema());
   panel.refresh();
   rerender();
 });
@@ -1880,27 +2170,15 @@ void myData.restore().then((failed) => {
   if (failed.length) setMyDataStatus(t('mydata.restoreFailed', { tables: failed.map((f) => f.table).join(', ') }));
 });
 ```
-Nếu `main.ts` chưa import `t` hoặc `editorSchema` thì thêm chúng vào dòng import sẵn có từ `'./i18n'` / `'./state'`.
-
-- [ ] **Step 6: CSS, thêm vào cuối `src/style.css`**
-
-```css
-.mydata { border-top: 1px solid var(--border); margin-top: 12px; padding-top: 8px; }
-.mydata h3 { margin: 0 0 4px; }
-.mydata-drop { display: block; border: 2px dashed var(--border); border-radius: 8px; padding: 16px; text-align: center; cursor: pointer; }
-.mydata-drop:hover, .mydata:focus-within .mydata-drop { border-color: var(--accent); }
-.mydata-status { white-space: pre-wrap; min-height: 1.4em; }
-.mydata-list { list-style: none; padding: 0; margin: 8px 0; }
-.mydata-list > li { display: flex; gap: 8px; align-items: flex-start; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid var(--border); }
-.mydata-cols { margin: 4px 0 0; padding-left: 16px; }
-.visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; }
-```
-(`style.css` của Plan 1/1b/1c chưa có `.visually-hidden`.)
+Trong `main.ts`, tham số `t` của `onConclusion: (t) => …` và `complete(t: Ticket)` che hàm `t` đã import, nhưng chỉ trong phạm vi hai hàm đó. Khối mới nằm ở cấp module nên dùng đúng hàm `t`.
 
 - [ ] **Step 7: Kiểm kiểu, test, build**
 
 Run: `npx tsc --noEmit && npm test && npm run build`
-Expected: `tsc` không lỗi (kể cả `en.ts` đủ khóa `mydata.*`); mọi test PASS (gồm `tests/i18n.test.ts` của Plan 1: placeholder `{x}` của VI và EN khớp nhau với các khóa dạng chuỗi); build OK.
+Expected:
+- `tsc` không lỗi (kể cả `en.ts` đủ khóa `mode.mydata*`/`mydata.*`).
+- Mọi test PASS, gồm `tests/i18n.test.ts`: placeholder VI/EN khớp, EN khác VI, không có chữ "boss".
+- Build OK.
 
 - [ ] **Step 8: Tạo file CSV mẫu để kiểm tay (ngoài repo)**
 
@@ -1923,27 +2201,38 @@ fs.writeFileSync(d+'/bad.csv','a,b\n1\n');
 ```
 Expected: 5 file; `big_10col.csv` khoảng 18–19 MB, `wide_50col.csv` khoảng 19 MB. (Nếu `$TMPDIR` rỗng thì dùng một thư mục tạm bất kỳ ngoài repo.)
 
-- [ ] **Step 9: Kiểm tay trong trình duyệt (bắt buộc: IndexedDB và số đo trình duyệt không kiểm được trong Node)**
+- [ ] **Step 9: Kiểm tay trên Edge (bắt buộc: IndexedDB và số đo trình duyệt không kiểm được trong Node)**
 
-Run: `npm run dev`, mở Chrome. Vào Hộp thư → "Sandbox: SQL tự do".
-1. Khung trái có mục **Dữ liệu của tôi**, ô kéo thả, dòng "Chưa có bảng nào." Dùng Tab: focus vào ô chọn file thì viền ô đổi màu; Enter/Space mở hộp chọn file.
-2. Nạp `don_hang.csv` → trạng thái "don_hang.csv: đã nạp bảng don_hang (1.000 dòng, 5 cột)…". Mở `<details>` của bảng → cột `ma_lo text`, `khach_hang text`, `ngay_eta date`, `teu bigint`, `da_thanh_toan boolean`.
-3. Gõ `SELECT khach_hang, sum(teu) FROM don_hang GROUP BY 1 ORDER BY 1` → Chạy: tab Kết quả có 7 dòng; **Biểu đồ** vẽ cột; **EXPLAIN** và **Luồng dữ liệu** có `Seq Scan don_hang`; **Thứ tự thực thi** có số dòng từng bước (1.000 → … → 7); **Sơ đồ ER** có hộp `don_hang` cạnh các bảng game đã mở, viền đậm. Autocomplete gợi ý `don_hang` và các cột của nó.
-4. Nạp `shipments.csv` → bảng tên `shipments_my`; `SELECT count(*) FROM shipments` vẫn ra 20.000.
-5. Nạp `bad.csv` → trạng thái là câu giải thích + lỗi gốc `missing data for column "b"`; danh sách không có `bad`.
-6. **IndexedDB:** DevTools → Application → IndexedDB → `cargo-query` → `imports` có 2 bản ghi (`don_hang`, `shipments_my`), mỗi bản ghi có `file` (Blob) và `types`. **Tải lại trang** → vào Sandbox → 2 bảng vẫn còn, `SELECT count(*) FROM don_hang` = 1000.
-7. Bấm **Xóa** ở `shipments_my` → bảng biến mất khỏi danh sách và khỏi IndexedDB; tải lại → vẫn không còn. Bấm "Xóa toàn bộ dữ liệu đã nhập" → hộp xác nhận → OK → danh sách rỗng, store rỗng, `SELECT * FROM don_hang` báo lỗi `42P01`.
-8. **Timeout + nạp lại:** nạp lại `don_hang.csv`, chạy `SELECT count(*) FROM shipments a, shipments b` → sau 5 s báo quá hạn, database khởi động lại → ngay sau đó `SELECT count(*) FROM don_hang` vẫn ra 1000 (đã được nạp lại trước query này).
-9. **Thời gian và bộ nhớ (ghi số đo vào mô tả commit):** nạp `big_10col.csv` và đo bằng đồng hồ từ lúc chọn file tới lúc có dòng "đã nạp". Mong đợi < 30 s; spike Node là ~3 s. Xóa toàn bộ, tải lại trang, rồi nạp `wide_50col.csv` 5 lần, mỗi lần đổi tên file (`w1.csv` … `w5.csv`). Mở Chrome Task Manager (Shift+Esc) và đọc cột "Memory footprint" của tab cộng với dedicated worker. **Nếu > 400 MB: không đổi giới hạn trong code; ghi số đo và báo user quyết** (spec §7b). Sau đó tải lại trang và đo thời gian từ lúc trang mở tới lúc 5 bảng nạp lại xong (spike Node: ~3,4 s mỗi bảng).
-10. Nạp file thứ 6 (`don_hang.csv` khi đã có `w1`…`w5`) → "Đã có 5 bảng, là số tối đa…". Nạp `big_10col.csv` sau khi đổi tên thành `w3.csv` → thay bảng `w3`, không báo vượt.
-11. **Chế độ riêng tư:** mở cửa sổ ẩn danh của Firefox, vào Sandbox, nạp `don_hang.csv`. Nếu trình duyệt chặn IndexedDB thì trạng thái có thêm "Trình duyệt không cho lưu file…" và bảng vẫn dùng được. Console không có lỗi chưa bắt.
-12. Bấm `EN` → mọi chữ trong mục chuyển sang tiếng Anh ("My data", "1,000 rows"…); tên bảng/cột và lỗi Postgres giữ nguyên.
-13. "Về Học chính" → tab ER và autocomplete không còn bảng nạp; ticket chấm điểm như cũ.
+Run: `npm run dev`, mở **Edge** (L5).
+1. **Trang chủ:** dưới "Chế độ khác" có card **Dữ liệu của tôi** (📂) nằm giữa Sandbox và Sổ tay. Bấm card → vào Sandbox. Nav "Sandbox" cũng vào đúng chỗ đó.
+2. Khung trái có mục **Dữ liệu của tôi**, ô kéo thả và dòng "Chưa có bảng nào." Dùng Tab: khi focus vào ô chọn file thì viền ô đổi màu; Enter/Space mở hộp chọn file.
+3. Nạp `don_hang.csv` → trạng thái "don_hang.csv: đã nạp bảng don_hang (1.000 dòng, 5 cột)…". Mở `<details>` của bảng → các cột `ma_lo text`, `khach_hang text`, `ngay_eta date`, `teu bigint`, `da_thanh_toan boolean`.
+4. Gõ `SELECT khach_hang, sum(teu) FROM don_hang GROUP BY 1 ORDER BY 1` → Chạy. Kiểm:
+   - tab Kết quả có 7 dòng;
+   - **Biểu đồ** vẽ cột;
+   - **EXPLAIN** và **Luồng dữ liệu** có `Seq Scan don_hang`;
+   - **Thứ tự thực thi** có số dòng từng bước (1.000 → … → 7);
+   - **Sơ đồ ER** có hộp `don_hang` cạnh các bảng game đã mở, viền đậm màu chương;
+   - autocomplete gợi ý `don_hang` và các cột của nó.
+5. Nạp `shipments.csv` → bảng tên `shipments_my`; `SELECT count(*) FROM shipments` vẫn ra 20.000.
+6. Nạp `bad.csv` → trạng thái là câu giải thích + lỗi gốc `missing data for column "b"`; danh sách không có `bad`.
+7. **IndexedDB:** mở DevTools → Application → IndexedDB → `cargo-query` → `imports`. Store có 2 bản ghi (`don_hang`, `shipments_my`), mỗi bản ghi có `file` (Blob) và `types`. Tab Network **không** có request nào mang nội dung file. **Tải lại trang** → vào Sandbox → 2 bảng vẫn còn, `SELECT count(*) FROM don_hang` = 1000.
+8. Bấm **Xóa** ở `shipments_my` → bảng biến mất khỏi danh sách và khỏi IndexedDB; tải lại trang → vẫn không còn. Bấm "Xóa toàn bộ dữ liệu đã nhập" → hộp xác nhận → OK → danh sách rỗng, store rỗng, `SELECT * FROM don_hang` báo lỗi `42P01`.
+9. **Timeout + nạp lại:** nạp lại `don_hang.csv`, rồi chạy `SELECT count(*) FROM shipments a, shipments b`. Sau 5 s app báo quá hạn và database khởi động lại. Ngay sau đó chạy `SELECT count(*) FROM don_hang` → vẫn ra 1000 (bảng đã được nạp lại trước query này).
+10. **Thời gian và bộ nhớ (L5, I3).** Ghi số đo vào mô tả commit **và** thêm một dòng vào `docs/team/decision-log.md`, đánh dấu "cần user xem".
+    - Nạp `big_10col.csv`, đo bằng đồng hồ từ lúc chọn file tới lúc có dòng "đã nạp". Mong đợi < 30 s (spike Node ~3 s).
+    - Xóa toàn bộ, tải lại trang, rồi nạp `wide_50col.csv` 5 lần, mỗi lần đổi tên file (`w1.csv` … `w5.csv`). Từ file thứ 2 (≥ 20 triệu ô), dòng cảnh báo bộ nhớ phải hiện.
+    - Mở Task Manager của Edge (Shift+Esc), đọc cột "Memory footprint" của tab cộng với dedicated worker. **Nếu > 400 MB: không đổi giới hạn trong code** (L5); chỉ ghi số đo. Nếu số đo cho thấy ngưỡng 20 triệu ô quá sớm hoặc quá muộn, ghi ngưỡng đề xuất vào cùng dòng log; đổi `MEMORY_WARN_CELLS` là việc của user.
+    - Tải lại trang, đo thời gian từ lúc trang mở tới lúc 5 bảng nạp lại xong (spike Node: ~3,4 s mỗi bảng). Trong lúc đó bấm Chạy một query: query chờ rồi chạy (I8), không lỗi.
+11. Nạp file thứ 6 (`don_hang.csv` khi đã có `w1`…`w5`) → "Đã có 5 bảng, là số tối đa…". Nạp `big_10col.csv` sau khi đổi tên thành `w3.csv` → thay bảng `w3`, không báo vượt.
+12. **Chế độ riêng tư:** mở cửa sổ InPrivate (Edge) hoặc cửa sổ riêng tư của Firefox, vào Sandbox, nạp `don_hang.csv`. Nếu trình duyệt chặn IndexedDB thì trạng thái có thêm "Trình duyệt không cho lưu file…" và bảng vẫn dùng được. Console không có lỗi chưa bắt.
+13. Bấm `EN` → mọi chữ trong mục chuyển sang tiếng Anh ("My data", "1,000 rows"…). Tên bảng/cột và lỗi Postgres giữ nguyên.
+14. Bấm "Về Làm việc" (hoặc nav "Làm việc") → tab ER và autocomplete không còn bảng nạp; ticket chấm điểm như cũ. Vào Luyện tập → cũng không thấy bảng nạp.
 
 - [ ] **Step 10: Commit**
 
 ```bash
-git add src/ui/myDataView.ts src/ui/modes.ts src/ui/vizTabs.ts src/main.ts src/i18n/vi.ts src/i18n/en.ts src/style.css
+git add src/ui/myDataView.ts src/ui/modes.ts src/ui/vizTabs.ts src/state.ts src/main.ts src/i18n/vi.ts src/i18n/en.ts docs/team/decision-log.md
 git commit -m "feat: My data panel in Sandbox (CSV import, IndexedDB persistence, delete)"
 ```
 
@@ -1960,14 +2249,17 @@ git commit -m "feat: My data panel in Sandbox (CSV import, IndexedDB persistence
 
 - [ ] **Step 1: Thêm vào cuối `CLAUDE.md`**
 
+**Thêm vào cuối `CLAUDE.md`:**
 ```markdown
+
 ## Imported data (Plan Import)
 
-- Player CSVs go to schema `sandbox` (`search_path = public, sandbox`, set once in `initDb`; game tables win on name clashes). Tables are `UNLOGGED`.
-- Flow: `inspectCsv` (main thread, every D3 limit: 20 MB / 200k rows / 50 columns / 5 tables, names sanitised to `[a-z0-9_]`, reserved words get `_`, game names get `_my`) → `DbClient.importCsv` (worker `kind: 'import'`, 30 s timeout, `COPY … FROM '/dev/blob'`, type inference in SQL) → `idbStore().put` (IndexedDB `cargo-query` / `imports`, original file + inferred types).
-- `DbClient` replays imported tables after every `restart()`; a replay that fails or times out is dropped and reported (`onImportDropped`), never retried in a loop. `MyData.restore()` replays IndexedDB on page load, one file at a time.
-- CSV content is data only: never concatenated into SQL, never rendered with `innerHTML`, never sent over the network. Identifiers are inlined only through `ident()` in `src/db/import.ts`.
-- When imported data changes, call `clearMemos()` (EXPLAIN / steps / ER caches are keyed by SQL text and schema name).
+- Player CSVs go to schema `sandbox` (`search_path = public, sandbox`, set once in `initDb`; game tables win on name clashes). Tables are `UNLOGGED`. The files never leave the browser: IndexedDB only, never uploaded, never in diagnostics.
+- Flow: `inspectCsv` (`src/import/csv.ts`, main thread) checks every D3 limit (20 MB / 200k rows / 50 columns / 5 tables) and sanitises names to `[a-z0-9_]`: reserved words get `_`, game table names get `_my`. Then `DbClient.importCsv` runs worker `kind: 'import'` through the query queue (30 s timeout, `COPY … FROM '/dev/blob'`, type inference in SQL). Then `idbStore().put` keeps the original file plus the inferred types (IndexedDB `cargo-query` / `imports`, records checked by `isStoredImport` on read).
+- `DbClient` replays imported tables after every `restart()`. A replay that fails or times out is dropped and reported (`onImportDropped`), never retried in a loop. `MyData.restore()` replays IndexedDB on page load, one file at a time; a restart or failed boot keeps the stored file.
+- Identifiers are inlined into SQL only through `ident()` and types only through `COLUMN_TYPES` (`src/db/import.ts`). Names reach Mermaid only through `mermaidName()`.
+- Imported tables show only in Sandbox (`src/ui/myDataView.ts`): the "My data" section, the ER tab (`visibleTables()`), and autocomplete (via `schemaHooks.extra` in `src/state.ts`). Home has a "My data" mode card. When imported data changes, call `clearMemos()` (EXPLAIN / steps / ER caches are keyed by SQL text and schema name; `once()` is not cleared).
+- Memory: the D3 limits stay (L5). The panel warns from `MEMORY_WARN_CELLS` imported cells (I3).
 - IndexedDB code has no Node test beyond "no IndexedDB → no throw"; check it by hand (Plan Import Task 6 Step 9).
 ```
 
