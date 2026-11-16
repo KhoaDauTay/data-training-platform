@@ -1,15 +1,35 @@
-import type { QueryResult } from './run';
+import { SqlError, type QueryResult, type SqlErrorInfo } from './run';
 
 export type DbStatus = 'loading' | 'ready' | 'failed';
-export class QueryTimeoutError extends Error {}
+export interface DbTimings { bootMs: number; seedMs: number }
+
+// Errors carry no user-facing text: the UI translates them by class (instanceof).
+export class QueryTimeoutError extends Error {
+  name = 'QueryTimeoutError';
+  constructor(readonly timeoutMs: number) {
+    super();
+  }
+}
+/** The query was waiting or running when the worker was restarted. */
+export class DbRestartError extends Error {
+  name = 'DbRestartError';
+}
+/** The worker failed to boot or crashed. `detail` is the raw technical message (not translated). */
+export class DbFailedError extends Error {
+  name = 'DbFailedError';
+  constructor(readonly detail: string) {
+    super();
+  }
+}
 
 type WorkerMessage =
-  | { type: 'ready' }
+  | { type: 'ready'; timings: DbTimings }
   | { type: 'initError'; message: string }
   | { type: 'result'; id: number; result: QueryResult }
-  | { type: 'error'; id: number; message: string };
+  | { type: 'error'; id: number; error: SqlErrorInfo };
 
-interface Pending {
+interface Job {
+  sql: string;
   resolve: (r: QueryResult) => void;
   reject: (e: Error) => void;
 }
@@ -17,69 +37,110 @@ interface Pending {
 /**
  * Owns the PGlite worker. statement_timeout does not work in PGlite, so a runaway query
  * is stopped by terminating the worker and booting a fresh one (re-seeds, ~3s).
+ * Queries are queued here and posted one at a time, so the timeout measures only the query
+ * that is actually executing.
  */
 export class DbClient {
+  timings?: DbTimings;
   private worker!: Worker;
-  private ready!: Promise<void>;
-  private pending = new Map<number, Pending>();
+  private status: DbStatus = 'loading';
+  private failure?: DbFailedError;
+  private queue: Job[] = [];
+  private inFlight?: { id: number; job: Job; timer: ReturnType<typeof setTimeout> };
   private nextId = 1;
 
   constructor(
-    private readonly onStatus: (s: DbStatus, message?: string) => void,
+    private readonly onStatus: (s: DbStatus, detail?: string) => void,
     private readonly timeoutMs = 5000,
   ) {
     this.start();
   }
 
-  private start(): void {
-    this.onStatus('loading');
-    this.worker = new Worker(new URL('./worker.ts', import.meta.url), { type: 'module' });
-    this.ready = new Promise<void>((resolve, reject) => {
-      this.worker.onmessage = (e: MessageEvent<WorkerMessage>) => {
-        const m = e.data;
-        if (m.type === 'ready') {
-          this.onStatus('ready');
-          resolve();
-        } else if (m.type === 'initError') {
-          this.onStatus('failed', m.message);
-          reject(new Error(m.message));
-        } else {
-          const p = this.pending.get(m.id);
-          if (!p) return;
-          this.pending.delete(m.id);
-          if (m.type === 'result') p.resolve(m.result);
-          else p.reject(new Error(m.message));
-        }
-      };
-      this.worker.onerror = (e) => {
-        this.onStatus('failed', e.message);
-        reject(new Error(e.message || 'Worker lỗi'));
-      };
-    });
-    this.ready.catch(() => {}); // surfaced through run() and onStatus
-  }
-
-  async run(sql: string): Promise<QueryResult> {
-    await this.ready;
-    const id = this.nextId++;
+  /** Rejects with SqlError, QueryTimeoutError, DbRestartError or DbFailedError. */
+  run(sql: string): Promise<QueryResult> {
+    if (this.failure) return Promise.reject(this.failure);
     return new Promise<QueryResult>((resolve, reject) => {
-      const timer = setTimeout(() => {
-        this.pending.delete(id);
-        this.restart();
-        reject(new QueryTimeoutError(`Query chạy quá ${this.timeoutMs / 1000} giây nên đã bị dừng. Database đang được nạp lại.`));
-      }, this.timeoutMs);
-      this.pending.set(id, {
-        resolve: (r) => { clearTimeout(timer); resolve(r); },
-        reject: (e) => { clearTimeout(timer); reject(e); },
-      });
-      this.worker.postMessage({ id, sql });
+      this.queue.push({ sql, resolve, reject });
+      this.pump();
     });
   }
 
+  /** Kills the worker, rejects every waiting query with DbRestartError, boots a fresh worker. */
   restart(): void {
+    performance.mark('db:restart');
     this.worker.terminate();
-    for (const p of this.pending.values()) p.reject(new Error('Database đang khởi động lại.'));
-    this.pending.clear();
+    this.rejectAll(new DbRestartError());
     this.start();
+  }
+
+  private start(): void {
+    this.failure = undefined;
+    this.setStatus('loading');
+    performance.mark('db:spawn');
+    const w = new Worker(new URL('./worker.ts', import.meta.url), { type: 'module' });
+    this.worker = w;
+    // Ignore anything a terminated worker still delivers.
+    w.onmessage = (e: MessageEvent<WorkerMessage>) => {
+      if (w === this.worker) this.receive(e.data);
+    };
+    w.onerror = (e) => {
+      if (w === this.worker) this.fail(e.message || 'worker error');
+    };
+  }
+
+  private receive(m: WorkerMessage): void {
+    if (m.type === 'ready') {
+      this.timings = m.timings;
+      performance.mark('db:ready');
+      performance.measure('db:time-to-ready', 'db:spawn', 'db:ready');
+      this.setStatus('ready');
+      this.pump();
+    } else if (m.type === 'initError') {
+      this.fail(m.message);
+    } else {
+      const f = this.inFlight;
+      if (!f || f.id !== m.id) return;
+      clearTimeout(f.timer);
+      this.inFlight = undefined;
+      if (m.type === 'result') f.job.resolve(m.result);
+      else f.job.reject(new SqlError(m.error));
+      this.pump();
+    }
+  }
+
+  /** Posts the next queued query when the worker is ready and idle; its timer starts now. */
+  private pump(): void {
+    if (this.status !== 'ready' || this.inFlight) return;
+    const job = this.queue.shift();
+    if (!job) return;
+    const id = this.nextId++;
+    const timer = setTimeout(() => {
+      this.inFlight = undefined;
+      job.reject(new QueryTimeoutError(this.timeoutMs));
+      this.restart();
+    }, this.timeoutMs);
+    this.inFlight = { id, job, timer };
+    this.worker.postMessage({ id, sql: job.sql });
+  }
+
+  private fail(detail: string): void {
+    this.worker.terminate();
+    this.failure = new DbFailedError(detail);
+    this.rejectAll(this.failure);
+    this.setStatus('failed', detail);
+  }
+
+  private rejectAll(e: Error): void {
+    if (this.inFlight) {
+      clearTimeout(this.inFlight.timer);
+      this.inFlight.job.reject(e);
+      this.inFlight = undefined;
+    }
+    for (const job of this.queue.splice(0)) job.reject(e);
+  }
+
+  private setStatus(s: DbStatus, detail?: string): void {
+    this.status = s;
+    this.onStatus(s, detail);
   }
 }
