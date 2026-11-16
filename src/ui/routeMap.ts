@@ -26,7 +26,7 @@ export interface MapParts {
   labels: Record<string, SVGTextElement>;
 }
 
-/** One line per lane ("Rotterdam: open (3 trips)"): the map's accessible description, and Home's legend below sm. */
+/** One line per lane ("Rotterdam: open (3 trips)"): the map's accessible description, and Home's legend below lg. */
 export const routeItems = (h: Harbor): string[] => ROUTES.map((r) => {
   const n = h.trips[r.port] ?? 0;
   return t(h.open.has(r.port) ? 'routes.open' : 'routes.locked', { name: r.name }) + (n ? ` (${t('routes.trips', { n })})` : '');
@@ -64,8 +64,8 @@ export function routeMap(h: Harbor): MapParts {
     s('path', { d: 'M-11 -2 L11 -2 L8 5 L-8 5 Z', fill: '#1e3a8a' }),
     s('rect', { x: -7, y: -7, width: 8, height: 5, fill: '#d97706' }),
     s('rect', { x: 2, y: -9, width: 5, height: 7, fill: '#f8fafc', stroke: '#1e3a8a', 'stroke-width': 0.8 }));
-  // L23/L34: labels are ~4px at 375px, so they hide below sm (Home lists routeItems() as HTML there)
-  const svg = s('svg', { viewBox: '0 0 980 260', class: 'block w-full max-sm:[&_text]:hidden', role: 'img' },
+  // L23/L34: 14-unit labels are ≥ ~13px from lg (≥ 937px for 980 units) and too small below it, so they hide below lg (Home lists routeItems() as HTML there)
+  const svg = s('svg', { viewBox: '0 0 980 260', class: 'block w-full max-lg:[&_text]:hidden', role: 'img' },
     s('rect', { width: 980, height: 260, rx: 12, class: 'fill-sky-100 dark:fill-slate-800' }),
     ...LAND.map((d) => s('path', { d, class: 'fill-slate-300 dark:fill-slate-700' })),
     s('g', {}, ...Object.values(routes)),

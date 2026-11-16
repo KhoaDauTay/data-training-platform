@@ -3,7 +3,7 @@ import { rankOf, type Rank } from '../progress';
 import { derive, GATE_WAIT, routeOpenedBy, ROUTES, sceneOf, STEPS, type Harbor, type Lane, type Scene } from '../scene';
 import { app } from '../state';
 import { CHAPTER_COLOR, chapterColor, cx, DONE_PILL, PILL } from '../theme';
-import { textOf, type Ticket } from '../tickets';
+import { textOf, type Lang, type Ticket } from '../tickets';
 import { avatar } from './avatar';
 import { byId, h, nodes } from './dom';
 import { bayBox, CRANE, drawYard, harborScene, MAX_TIERS, type HarborParts } from './harbor';
@@ -22,6 +22,8 @@ interface Ctx {
   rankBefore: Rank;
   rankAfter: Rank;
   art: HTMLElement;
+  /** Language the art was drawn in: relabelStage() redraws it after a switch. */
+  lang: Lang;
   harbor?: HarborParts;
   map?: MapParts;
 }
@@ -417,9 +419,23 @@ function setSkipLabel(key: Key): void {
   b.dataset.i18n = key; // applyStatic() relabels it on a language switch
   b.textContent = t(key);
 }
-/** rerender() calls this: the open dock's sentence follows the language switch (the Skip/Close label follows data-i18n). */
+/**
+ * rerender() calls this: the open dock follows a language switch (the Skip/Close label follows data-i18n). The sentence
+ * changes at once; the art (labels, aria-labels, cards) is redrawn as its end state once a running animation has finished.
+ */
 export function relabelStage(): void {
-  if (shown && !byId('stage').hidden) byId('stage-text').textContent = sentence(shown);
+  const c = shown;
+  if (!c || byId('stage').hidden) return;
+  byId('stage-text').textContent = sentence(c);
+  if (c.lang === getLang()) return;
+  c.lang = getLang();
+  queue = queue
+    .then(async () => {
+      if (shown !== c) return; // hidden, or a newer completion took the dock
+      build(c);
+      await PLAY[c.scene.kind]({ ...c, run: { fast: true, done: true } }); // end state only, no replay
+    })
+    .catch((e: unknown) => console.warn('Completion redraw failed:', e));
 }
 function skip(): void {
   if (!current.done) current.fast = true; // jump to the end state; the sentence was already announced
@@ -432,7 +448,7 @@ export function initStage(): void {
   byId('stage-skip').addEventListener('click', skip);
   stage.addEventListener('focusin', (e) => {
     const from = e.relatedTarget;
-    if (from instanceof HTMLElement && !stage.contains(from)) returnFocus = from;
+    if (!(from instanceof Node && stage.contains(from))) returnFocus = from instanceof HTMLElement ? from : null; // never a stale target
   });
   document.addEventListener('keydown', (e) => {
     if (stageEsc(e, !stage.hidden, Boolean(document.querySelector('dialog[open]')))) skip();
@@ -449,7 +465,7 @@ export function playCompletion(tk: Ticket, before: Set<string>, after: Set<strin
   const run: Run = { fast: reduced(), done: false };
   current = run;
   const c: Ctx = {
-    run, tk, scene: sceneOf(tk), art: byId('stage-art'),
+    run, tk, scene: sceneOf(tk), art: byId('stage-art'), lang: getLang(),
     before: derive(app.tickets, before), after: derive(app.tickets, after),
     rankBefore: rankOf(app.tickets, before), rankAfter: rankOf(app.tickets, after),
   };
