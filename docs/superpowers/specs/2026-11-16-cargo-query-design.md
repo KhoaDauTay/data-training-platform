@@ -238,7 +238,7 @@ Toàn UI dùng **Tailwind CSS v4** (L17): topbar gradient indigo→blue→cyan, 
 **Trang chủ** (`#/`, mockup v4; màn làm bài ở `#/play`, hai view cùng mount, chỉ bật/tắt `hidden`):
 
 - **Cảnh cảng Tiên Sa** (SVG tự vẽ, L26): bán đảo Sơn Trà phía sau, cẩu bờ STS, tàu ra vào, bãi container 12 bay (mỗi chương một cột màu chương, +1 container mỗi ticket xong); hoạt cảnh nền sóng, tàu, cẩu, khói, đèn hiệu, tắt khi giảm chuyển động.
-- Card **Tiếp tục ticket** + tiến độ, card **Ôn hôm nay** / **Ôn đầu chương**, **bản đồ tuyến tỏa ra từ Tiên Sa**.
+- Card **Tiếp tục ticket** + tiến độ, **bản đồ tuyến tỏa ra từ Tiên Sa**; card **Ôn đầu chương** để Plan 2 (P4).
 - **Lưới 12 card chương** (4 × 3 desktop, 2 cột mobile; L21): tên chương căn giữa, cỡ lớn; chương khóa có 🔒 căn giữa có padding, chữ nhạt hơn (bằng màu, vẫn đạt AA); hover/focus hiện "bước tiếp theo" để mở chương.
 - **Thang nghề** (chức danh hiện tại, bước kế) và chip chức danh trên topbar.
 - **Bảng điều hành KPI** (L18, L23): ô mở dần theo ticket đã xong, số lấy từ chính Solution, mô tả rõ nghĩa; ô "Margin Q3: ???" mở ở ch12.
@@ -275,7 +275,7 @@ Lần đầu Nộp đúng một ticket: +1 container màu chương vào bãi Ti�
 | `quote` | pricing | thẻ báo giá lật "Khách đã chấp nhận" |
 | `ledger` | kế toán | hóa đơn "Đã thu" |
 | `chat` | CSKH | khách gửi lời cảm ơn |
-| `promotion` | cột mốc (`beat: boss`) | tàu + tuyến mới mở + confetti CSS + thẻ thăng tiến (mở màn Tổng kết chương) |
+| `promotion` | cột mốc (`beat: boss`) | tàu + tuyến mới mở + confetti CSS + thẻ thăng tiến (Tổng kết chương hiện thành khối tĩnh dưới Recap, P2) |
 
 - Chọn bằng `scene:` hoặc `sceneOf(ticket)` (boss → `promotion`; `from.dept` Customs → `customs`, Finance → `ledger`, CS → `chat`, Ops + `shipments` → `ship` không đích; còn lại `yard`). Cảng đích là cảng `SEAPORT` của seed (Laem Chabang `THLCH`, không "Bangkok").
 - ≤ 3 s, bỏ qua được (nút + Esc → nhảy tới trạng thái cuối), không chặn (`pointer-events: none`), không xếp hàng. Không chạy ở Luyện tập/Làm lại.
@@ -290,7 +290,7 @@ Mọi trạng thái hiển thị dưới đây **tính lại từ save**, không
 - **Inbox:** hội thoại theo người gửi, chỉ ticket theo chương. Luyện tập và Sandbox **không nằm trong Inbox** (P6): vào bằng nav trên thanh trên và card trên Trang chủ. Ba lối vào Luyện tập: Ôn hôm nay (`#review-btn`, card Ôn tập), Luyện kỹ năng (Chủ đề kỹ năng trên Trang chủ), Làm lại việc (nút dưới Recap, P8). Nav Luyện tập: có bài ôn → Ôn hôm nay; không có → một kỹ năng đã học ngẫu nhiên; chưa học gì → Trang chủ. Bấm Ôn khi hàng ôn rỗng → về Trang chủ kèm thông báo (L37).
 - **Hàng ôn hôm nay** (L37): mỗi ticket một mục mỗi lượt, gom mọi kỹ năng đến hạn mà ticket đó luyện (`requires` ∪ `grants`), không lặp (ticket, biến thể), ưu tiên biến thể khác 0; tối đa 5 mục.
 - **Ticket:** chip "Dạy: X · Cần: Y"; thẻ "Mục tiêu chương" ở ticket teach; thẻ **Kết quả mong đợi** (số cột, loại cột chữ/số/ngày/đúng-sai, số dòng, có thứ tự hay không, nhãn từ `columns:`; không bao giờ hiện tên cột của Solution), so với kết quả sau mỗi lần Chạy; thẻ **Recap** khi nộp đúng (kèm `reflect:` từ Plan 2); **Tổng kết chương** là khối tĩnh dưới Recap của đánh giá thăng tiến (P2, đọc `career`), không phải màn hay dialog riêng.
-- **Skill map** (`<dialog>`): khóa / đã học / đang vững / thuộc.
+- **Skill map:** lưới Chủ đề kỹ năng trên Trang chủ (khóa / đã học / đang vững / thuộc theo hộp Leitner); không có dialog hay nút `#skills-btn` trên thanh trên (P3).
 - **Sổ tay** (`<dialog>` không modal, để vừa đọc vừa gõ; mở bằng `#notebook-btn` trên thanh trên hoặc card chế độ trên Trang chủ): Thẻ kỹ năng / Thuật ngữ, có ô lọc. Vẽ lại khi đổi ngôn ngữ/học kỹ năng mới lúc đang mở; đóng thì trả focus về nút mở; không chặn Esc của hoạt cảnh.
 - **Panel:** tablist theo ARIA (roving tabindex, ←/→/Home/End). Nhóm tab [Kết quả · Biểu đồ] | [Thứ tự · EXPLAIN · Luồng] | [ER · Cột]; **không ẩn tab nào**, chỉ chấm "mới" trên Biểu đồ ở `ch2-01` (chấm "mới" của EXPLAIN do Plan 4 thêm ở ch11, L35). Tab mặc định: Cột khi chưa chạy; sau khi Nộp sai thì mở tab theo loại sai. Mọi tab đọc SQL của lần chạy gần nhất; editor khác SQL đó thì hiện dải "SQL đã thay đổi — Ctrl+Enter để cập nhật".
 - **Editor:** gợi ý tên bảng/cột có kiểu (chỉ bảng đã mở), chạy vùng chọn, gạch lỗi tại vị trí Postgres báo, lịch sử query (≤ 15 mục mỗi ticket, `<details>`), **Format SQL** bằng `sql-formatter` (pin version, tải lười). Phím tắt chỉ có `Mod-Enter` Chạy, `Mod-Shift-Enter` Nộp, `Shift-Alt-F` Format (L11). Bước cột mốc chỉ báo bằng dòng `Bước i/n: …`. Đổi ngôn ngữ không remount editor.
