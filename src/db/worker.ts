@@ -1,6 +1,10 @@
 import { PGlite } from '@electric-sql/pglite';
 import { initDb } from './init';
+import { countingFetch } from './loadProgress';
 import { runSandboxed, sqlErrorInfo } from './run';
+
+// PGlite fetches its .wasm/.data with the global fetch; count the bytes for the loading status.
+globalThis.fetch = countingFetch(fetch.bind(globalThis), (p) => postMessage({ type: 'progress', ...p }));
 
 const ready = (async () => {
   const t0 = performance.now();

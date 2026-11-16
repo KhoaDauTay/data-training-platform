@@ -1,8 +1,40 @@
 <!doctype html>
 <html lang="vi">
-  <head><meta charset="UTF-8" /><title>Cargo Query smoke</title></head>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Cargo Query</title>
+  </head>
   <body>
-    <pre id="out">smoke test</pre>
+    <header class="topbar">
+      <h1>Cargo Query</h1>
+      <span id="chapter"></span>
+      <span id="xp"></span>
+      <button id="inbox-btn" type="button" data-i18n="top.inbox">Hộp thư</button>
+      <div class="lang" role="group" data-i18n-aria="top.lang" aria-label="Ngôn ngữ">
+        <button type="button" data-lang="vi" aria-pressed="true">VI</button>
+        <button type="button" data-lang="en" aria-pressed="false">EN</button>
+      </div>
+      <button id="export-btn" type="button" data-i18n="top.export">Xuất tiến độ</button>
+      <label class="file-btn"><span data-i18n="top.import">Nhập tiến độ</span><input id="import-input" type="file" accept="application/json" hidden /></label>
+      <span id="db-status" role="status"></span>
+    </header>
+    <div id="map" class="map-strip" data-i18n-aria="top.map" aria-label="Bản đồ tuyến" hidden></div>
+    <div id="notice" role="status" hidden></div>
+    <main id="shell" class="shell">
+      <div class="workspace">
+        <section id="ticket" data-i18n-aria="area.ticket" aria-label="Đề bài"></section>
+        <div id="split-col" class="split split-col" data-i18n-aria="area.splitCol" aria-label="Độ rộng cột đề bài"></div>
+        <section id="work" data-i18n-aria="area.work" aria-label="SQL editor"></section>
+      </div>
+      <div id="split-row" class="split split-row" data-i18n-aria="area.splitRow" aria-label="Chiều cao panel kết quả"></div>
+      <section id="panel" class="panel" data-i18n-aria="area.panel" aria-label="Kết quả và trực quan hóa"></section>
+    </main>
+    <dialog id="inbox-dialog" aria-labelledby="inbox-title">
+      <h2 id="inbox-title" data-i18n="top.inbox">Hộp thư</h2>
+      <div id="inbox-list"></div>
+      <form method="dialog"><button data-i18n="app.close">Đóng</button></form>
+    </dialog>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>
