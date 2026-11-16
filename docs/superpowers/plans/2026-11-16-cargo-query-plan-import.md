@@ -21,7 +21,7 @@
 - `docs/team/decision-log.md`: **L5** (giữ giới hạn D3, đo bộ nhớ trên Edge, vượt thì cảnh báo trong UI + cần user xem), L7 (code trên đĩa thắng listing), L16 (Sandbox không có lịch sử), L17 (card chế độ trên Trang chủ), L22 (không dùng chữ "boss"), **L36** (tên vào Mermaid đã được `mermaidName()` escape), L37.
 - Quyết định sản phẩm mới của plan này: I1–I8 (mục dưới).
 
-**Tiền đề:** Plan 1, 1d, 1b và 1c đã xong. Plan này viết lại trên HEAD `2f917b5`: áp toàn bộ plan lên bản sao HEAD thì `tsc`, 490 test và `npm run build` đều sạch. Chạy sau Plan 1c, trước Plan 2.
+**Tiền đề:** Plan 1, 1d, 1b và 1c đã xong. Plan này viết lại trên HEAD `2f917b5`: áp toàn bộ plan lên bản sao HEAD thì `tsc`, 491 test và `npm run build` đều sạch. Chạy sau Plan 1c, trước Plan 2.
 
 ## Đã bỏ / đổi vì Plans 1d/1b/1c
 
@@ -107,7 +107,7 @@ Nếu một khối "thay" không khớp đúng một lần (HEAD đã đổi), t
 - Nội dung CSV **chỉ là dữ liệu và không rời trình duyệt**:
   - không bao giờ ghép giá trị vào SQL (chỉ đi qua `COPY` + `blob`);
   - không render bằng `innerHTML`;
-  - không gửi ra mạng, không đưa vào thông tin chẩn đoán.
+  - không gửi ra mạng; nút "Sao chép thông tin chẩn đoán" (Plan 1c Task 11, chưa có trên HEAD) cũng không được chép tên hay nội dung file.
   
   Định danh chỉ được ghép vào SQL sau khi qua `ident()` (regex `^[a-z_][a-z0-9_]{0,62}$`), và kiểu cột chỉ sau khi qua `COLUMN_TYPES`.
 - Import chạy **ngoài** `runSandboxed`, trong transaction riêng, với timeout riêng **30 s** (`IMPORT_TIMEOUT_MS`). Nạp lại sau restart mà lỗi hoặc quá hạn thì bỏ bảng đó, báo người dùng, và không đưa nó vào lượt nạp lại sau. Không có vòng lặp terminate → nạp lại → terminate.
@@ -1191,6 +1191,7 @@ Bản ghi IndexedDB:
 - Lưu cả `types`, để lúc nạp lại không phải suy kiểu (spike: 0,9–3,4 s thay vì 3,0–6,5 s mỗi bảng).
 - Đọc ra bản ghi nào cũng qua `isStoredImport`. Tên bảng và tên cột phải khớp regex định danh, kiểu phải thuộc `COLUMN_TYPES`.
 - `restore()` nạp **tuần tự**, nên nếu một file làm worker quá hạn thì các file sau không bị `DbRestartError` hàng loạt.
+- `main.ts` gọi `restore()` mà không chờ, nên `add`/`remove`/`clear` phải chờ nó xong trước. Nếu không: `tables` còn thiếu nên bảng thứ 6 lọt qua giới hạn, file mới cùng tên bị bản cũ ghi đè, và "Xóa toàn bộ" bị lượt nạp lại hồi sinh.
 - `DbRestartError`/`DbFailedError` (DB chưa sẵn sàng) thì **giữ** bản ghi.
 - Bản ghi trùng tên bảng game thì bỏ (I7).
 
@@ -1280,6 +1281,22 @@ describe('MyData', () => {
       expect((await my.restore()).map((f) => f.error)).toEqual([error]);
       expect(store.records.has('orders')).toBe(true);
     }
+  });
+
+  it('add / clear chờ restore xong: không lọt bảng thứ 6, xóa hết không bị lượt nạp lại hồi sinh', async () => {
+    const five = ['t1', 't2', 't3', 't4', 't5'].map((table) => ({ ...REC, table }));
+    const a = await setup(five);
+    const restoring = a.my.restore(); // not awaited, like main.ts
+    expect(await a.my.add(CSV, 'f.csv')).toEqual({ ok: false, problem: { kind: 'tooManyTables' } });
+    await restoring;
+    expect(a.my.tables).toHaveLength(5);
+    const b = await setup(five);
+    const again = b.my.restore();
+    await b.my.clear();
+    await again;
+    expect(b.my.tables).toEqual([]);
+    expect(b.store.records.size).toBe(0);
+    expect((await runSandboxed(b.pg, "SELECT count(*) FROM information_schema.tables WHERE table_schema = 'sandbox'")).rows).toEqual([[0]]);
   });
 
   it('remove / clear / dropped: xóa khỏi DB, store và danh sách', async () => {
@@ -1483,6 +1500,8 @@ const GAME_TABLES_SQL = "SELECT table_name FROM information_schema.tables WHERE 
  */
 export class MyData {
   tables: ImportedTable[] = [];
+  /** add/remove/clear wait for it: mid-restore, `tables` is partial (a 6th table would pass the limit, a cleared table would come back). */
+  private restoring: Promise<unknown> = Promise.resolve();
 
   constructor(
     private readonly db: ImportDb,
@@ -1504,7 +1523,17 @@ export class MyData {
    * reject the ones after it). A file that fails, or whose name is now a game table (I7), is removed
    * from the store; one that only hit a restart or a failed boot stays stored for the next page load.
    */
-  async restore(): Promise<{ table: string; error: unknown }[]> {
+  restore(): Promise<{ table: string; error: unknown }[]> {
+    const p = this.replayStored();
+    this.restoring = p;
+    return p;
+  }
+
+  private async settled(): Promise<void> {
+    await this.restoring.catch(() => {});
+  }
+
+  private async replayStored(): Promise<{ table: string; error: unknown }[]> {
     const failed: { table: string; error: unknown }[] = [];
     const stored = await this.store.list();
     if (stored.length === 0) return failed;
@@ -1529,6 +1558,7 @@ export class MyData {
   }
 
   async add(file: Blob, fileName: string): Promise<AddOutcome> {
+    await this.settled();
     let imported: ImportedTable;
     let record: StoredImport;
     try {
@@ -1547,12 +1577,14 @@ export class MyData {
 
   /** Store first: the delete must survive a reload even if the worker is restarting right now. */
   async remove(table: string): Promise<void> {
+    await this.settled();
     await this.store.remove(table);
     this.set(this.tables.filter((t) => t.table !== table));
     await this.db.dropImport(table).catch(ignoreRestart);
   }
 
   async clear(): Promise<void> {
+    await this.settled();
     await this.store.clear();
     this.set([]);
     await this.db.dropImport().catch(ignoreRestart);
@@ -1569,7 +1601,7 @@ export class MyData {
 - [ ] **Step 5: Chạy test, xác nhận PASS**
 
 Run: `npx vitest run tests/myData.test.ts && npx tsc --noEmit`
-Expected: PASS (8 test), `tsc` không lỗi.
+Expected: PASS (9 test), `tsc` không lỗi.
 
 - [ ] **Step 6: Commit**
 
@@ -1775,7 +1807,7 @@ git commit -m "feat: viz tabs on sandbox tables; clearMemos for imported data ch
 
 **Files:**
 - Create: `src/ui/myDataView.ts`
-- Modify: `src/state.ts`, `src/ui/modes.ts`, `src/ui/vizTabs.ts`, `src/main.ts`, `src/i18n/vi.ts`, `src/i18n/en.ts`
+- Modify: `src/state.ts`, `src/ui/modes.ts`, `src/ui/vizTabs.ts`, `src/main.ts`, `src/i18n/vi.ts`, `src/i18n/en.ts`, `docs/team/decision-log.md` (số đo bộ nhớ ở Step 9)
 
 **Interfaces:**
 - Consumes:
@@ -2002,9 +2034,16 @@ async function act(fn: () => Promise<void>): Promise<void> {
   }
 }
 
+/** Tables whose column list is open: rerender() (every Run) rebuilds the pane, so the open state lives here. */
+const openTables = new Set<string>();
+
 function tableItem(x: ImportedTable): HTMLElement {
+  const toggle = (e: Event): void => {
+    if ((e.currentTarget as HTMLDetailsElement).open) openTables.add(x.table);
+    else openTables.delete(x.table);
+  };
   return h('li', { class: 'flex items-start justify-between gap-2 border-b border-line py-1' },
-    h('details', { class: 'min-w-0' },
+    h('details', { class: 'min-w-0', open: openTables.has(x.table), ontoggle: toggle },
       h('summary', { class: 'cursor-pointer' }, h('code', {}, x.table), ' ', h('span', { class: 'text-sm text-muted' }, t('mydata.rows', { n: x.rows }))),
       h('ul', { class: 'mt-1 mb-0 list-none pl-4' },
         ...x.columns.map((c) => h('li', {}, h('code', {}, c.name), ' ', h('span', { class: 'text-sm text-muted' }, c.type))))),
@@ -2254,7 +2293,7 @@ git commit -m "feat: My data panel in Sandbox (CSV import, IndexedDB persistence
 
 ## Imported data (Plan Import)
 
-- Player CSVs go to schema `sandbox` (`search_path = public, sandbox`, set once in `initDb`; game tables win on name clashes). Tables are `UNLOGGED`. The files never leave the browser: IndexedDB only, never uploaded, never in diagnostics.
+- Player CSVs go to schema `sandbox` (`search_path = public, sandbox`, set once in `initDb`; game tables win on name clashes). Tables are `UNLOGGED`. The files never leave the browser: IndexedDB only, never uploaded, never copied into diagnostics (Plan 1c Task 11, if added).
 - Flow: `inspectCsv` (`src/import/csv.ts`, main thread) checks every D3 limit (20 MB / 200k rows / 50 columns / 5 tables) and sanitises names to `[a-z0-9_]`: reserved words get `_`, game table names get `_my`. Then `DbClient.importCsv` runs worker `kind: 'import'` through the query queue (30 s timeout, `COPY … FROM '/dev/blob'`, type inference in SQL). Then `idbStore().put` keeps the original file plus the inferred types (IndexedDB `cargo-query` / `imports`, records checked by `isStoredImport` on read).
 - `DbClient` replays imported tables after every `restart()`. A replay that fails or times out is dropped and reported (`onImportDropped`), never retried in a loop. `MyData.restore()` replays IndexedDB on page load, one file at a time; a restart or failed boot keeps the stored file.
 - Identifiers are inlined into SQL only through `ident()` and types only through `COLUMN_TYPES` (`src/db/import.ts`). Names reach Mermaid only through `mermaidName()`.
