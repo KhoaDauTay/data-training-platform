@@ -12,6 +12,7 @@ import { localStore } from './storage';
 import type { Route } from './route';
 import type { Ticket } from './tickets';
 import { initModes, onPracticeSolved, onPracticeWrong, renderLeft, renderReviewButton } from './ui/modes';
+import { toggleNotebook } from './ui/notebook';
 import { byId, h } from './ui/dom';
 import { errorText } from './ui/feedback';
 import { leftHome, renderHome } from './ui/homeView';
@@ -164,6 +165,7 @@ function complete(t: Ticket): void {
 Object.assign(actions, { rerender, selectTicket, complete, retryDb: () => db.restart() });
 
 byId('inbox-btn').addEventListener('click', () => (byId('inbox-dialog') as HTMLDialogElement).showModal());
+byId('notebook-btn').addEventListener('click', () => toggleNotebook(byId('notebook-dialog') as HTMLDialogElement));
 
 for (const b of document.querySelectorAll<HTMLButtonElement>('[data-lang]')) {
   b.addEventListener('click', () => {

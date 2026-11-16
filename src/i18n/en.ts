@@ -5,6 +5,18 @@ const num = (v: Params[string] | undefined): string => Number(v).toLocaleString(
 const count = (one: string, many: string) => (p: Params): string => `${num(p.n)} ${p.n === 1 ? one : many}`;
 
 export const en: Record<Key, Msg> = {
+  'nb.open': 'Notebook',
+  'nb.title': 'SQL & freight notebook',
+  'nb.filter': 'Filter cards and terms',
+  'nb.cards': 'Skill cards',
+  'nb.terms': 'Terms',
+  'nb.when': 'When:',
+  'nb.trap': 'Trap:',
+  'nb.columns': 'Columns: {list}',
+  'nb.empty': 'Nothing matches "{q}".',
+  'nb.unlockAt': 'Unlocks after task {id}',
+  'mode.notebook': 'Notebook',
+  'mode.notebookDesc': 'SQL skill cards and freight terms, open beside the editor.',
   'goal.title': 'Chapter {n} goals: {title}',
   'goal.intro': 'After this chapter you can:',
   'chip.teaches': 'Teaches: {list}',
