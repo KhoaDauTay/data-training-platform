@@ -4,7 +4,8 @@ import { sqlErrorInfo } from '../db/run';
 import { grade, type GradeResult } from '../grader';
 import { loadHistory, pushHistory, writeHistory } from '../history';
 import { isMac, t } from '../i18n';
-import { app, done, draftKey, editorSchema, initialDoc, persist, stepKey, type LastRun } from '../state';
+import { isClosed, isStory, readDraft, workKey, writeDraft } from '../session';
+import { app, editorSchema, initialDoc, persist, stepKey, type LastRun } from '../state';
 import { localStore } from '../storage';
 import { BTN_SUBMIT } from '../theme';
 import type { Ticket } from '../tickets';
@@ -26,11 +27,14 @@ export interface WorkDeps {
   onConclusion(t: Ticket): void;
   /** After every Run/Submit (the brief redraws its shape card). */
   onRun(): void;
+  /** Every wrong submit (Practice counts them for the Leitner result). */
+  onWrong?(): void;
 }
 
 export interface WorkArea {
   /** Recreates the editor only when ticketId#step changes (or `force`, after importing a save); otherwise keeps cursor, selection and undo. */
-  setTicket(t: Ticket, stepIndex: number, force?: boolean): void;
+  /** `undefined` = Sandbox: no Submit, no history; Run, EXPLAIN, error underline and the tabs work as usual. */
+  setTicket(t: Ticket | undefined, stepIndex: number, force?: boolean): void;
   /** Language switch: labels and the last message only, never the editor. */
   relabel(): void;
   setSchema(ns: SQLNamespace): void;
@@ -98,11 +102,11 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
     runBtn.disabled = busy;
     explainBtn.disabled = busy;
     submitBtn.disabled = busy;
-    submitBtn.hidden = !ticket || done().has(ticket.id);
+    submitBtn.hidden = !ticket || isClosed(ticket.id);
   }
 
   function drawHistory(): void {
-    const list = ticket ? history[ticket.id] ?? [] : [];
+    const list = ticket && isStory() ? history[ticket.id] ?? [] : []; // in Practice it would show the story's passing SQL
     historyBox.hidden = list.length === 0;
     historyBox.replaceChildren(
       h('summary', { class: 'cursor-pointer text-muted' }, t('hist.title', { n: list.length })),
@@ -137,6 +141,7 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
     const tk = ticket;
     const { sql, offset } = ed.runTarget();
     const k = tk ? stepKey(tk.id, stepIndex) : '';
+    const historyId = isStory() ? tk?.id : undefined; // a practice variant shares the ticket id: keep it out of that history (P5)
     ed.closeCompletion();
     ed.clearError();
     busy = true;
@@ -151,7 +156,7 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
       busy = false;
       setButtons();
     }
-    record(tk?.id, r);
+    record(historyId, r);
     if (editor !== ed) return;
     app.lastRun = r;
     const failed = r.error !== undefined;
@@ -172,6 +177,7 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
     const tk = ticket;
     const i = stepIndex;
     const k = stepKey(tk.id, i);
+    const story = isStory(); // captured at click time, like the ticket
     const sql = ed.getValue(); // Submit always grades the whole editor
     ed.closeCompletion();
     ed.clearError();
@@ -201,7 +207,7 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
       busy = false;
       setButtons();
     }
-    if (played) record(tk.id, played);
+    if (played) record(story ? tk.id : undefined, played);
     if (editor !== ed) return; // stale: never credit or message a ticket the player has left
     if (played) app.lastRun = played;
     deps.onRun();
@@ -210,6 +216,7 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
       return;
     }
     if (!r.ok) {
+      deps.onWrong?.();
       const fail = r;
       const err = played?.error;
       if (fail.reason === 'error') {
@@ -223,14 +230,16 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
       return;
     }
     deps.panel.show('result'); // the graded run, not the Columns tab left open from before
-    app.save.graded[k] = sql; // the Recap shows what was graded, not the draft edited afterwards
-    persist();
+    if (story) {
+      app.save.graded[k] = sql; // the Recap shows what was graded, not the draft edited afterwards
+      persist();
+    }
     if (i < tk.steps.length - 1) {
       deps.onStepSolved(); // setTicket() for the next step clears the message, so say it afterwards
       say('good', () => t('work.stepDone', { i: i + 1 }));
       celebrate(feedback);
     } else if (tk.conclusion) {
-      say('good', () => t(done().has(tk.id) ? 'work.correct' : 'work.conclusionNext')); // redrawn after the conclusion is submitted
+      say('good', () => t(isClosed(tk.id) ? 'work.correct' : 'work.conclusionNext')); // redrawn after the conclusion is submitted
       deps.onConclusion(tk);
     } else {
       say('good', () => t('work.correct'));
@@ -252,11 +261,11 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
 
   return {
     setTicket(tk, i, force = false) {
-      const sameTicket = ticket?.id === tk.id && !force;
+      const sameTicket = ticket?.id === tk?.id && !force;
       ticket = tk;
       stepIndex = i;
-      if (!editor || draftKey() !== key || force) {
-        key = draftKey();
+      if (!editor || workKey() !== key || force) {
+        key = workKey();
         if (!sameTicket) {
           app.lastRun = undefined;
           deps.panel.show('columns'); // nothing run yet: show the tables first
@@ -265,11 +274,11 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
         selection = false; // the new editor starts with an empty selection
         editor?.destroy();
         editor = createEditor(editorHost, {
-          doc: initialDoc(app.save.drafts[draftKey()], tk.starter),
+          doc: initialDoc(readDraft(), tk?.starter),
           schema: editorSchema(),
           label: t('work.editorLabel'),
           onChange: (v) => {
-            app.save.drafts[draftKey()] = v;
+            writeDraft(v);
             persist();
           },
           onRun: () => void run(),

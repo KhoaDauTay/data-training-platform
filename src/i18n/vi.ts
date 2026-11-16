@@ -2,6 +2,7 @@ import type { Msg } from './index';
 
 /** Source of keys (VI is the original). Plan 1b/1c add keys here and in en.ts in the same task. */
 export const vi = {
+  'brief.hintFree': 'Gợi ý {i}/{n}',
   'app.close': 'Đóng',
   'app.dismiss': 'Ẩn thông báo',
   'app.reload': 'Tải lại trang',
