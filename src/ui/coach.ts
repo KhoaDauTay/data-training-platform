@@ -38,8 +38,8 @@ export function coach(spot: CoachSpot): HTMLElement | null {
     (e.currentTarget as HTMLElement).closest('.coach')?.remove();
     (document.querySelector<HTMLElement>(FOCUS_NEXT[spot]) ?? document.getElementById('brief-title'))?.focus();
   };
-  return h('aside', { class: 'coach', role: 'note' },
-    h('p', {}, t(TEXT[spot])),
-    h('button', { type: 'button', onclick: (e) => { dismissed.add(spot); close(e); } }, t('coach.ok')),
+  return h('aside', { class: 'coach my-3 rounded-xl bg-accent-soft p-3 ring-1 ring-accent', role: 'note' },
+    h('p', { class: 'mt-0 mb-2' }, t(TEXT[spot])),
+    h('button', { type: 'button', class: 'mr-1.5', onclick: (e) => { dismissed.add(spot); close(e); } }, t('coach.ok')),
     h('button', { type: 'button', onclick: (e) => { writeJson(COACH_KEY, true); close(e); } }, t('coach.skip')));
 }
