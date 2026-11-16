@@ -17,10 +17,10 @@ export class QueryTimeoutError extends Error {
 export class DbRestartError extends Error {
   name = 'DbRestartError';
 }
-/** A request failed in the worker for a non-Postgres reason (asset download, lazy chunk import). `detail` is the raw message. */
+/** A request failed in the worker for a non-Postgres reason (asset download, lazy chunk import). `detail` is the raw message, if any. */
 export class WorkerTaskError extends Error {
   name = 'WorkerTaskError';
-  constructor(readonly detail: string) {
+  constructor(readonly detail?: string) {
     super();
   }
 }
@@ -159,7 +159,7 @@ export class DbClient {
     const timer = setTimeout(() => {
       this.inFlight = undefined;
       // A slow parser download is not a slow query: no "JOIN without ON" advice for it.
-      job.reject(job.kind === 'parser' ? new WorkerTaskError(`parser download timed out after ${job.timeoutMs / 1000}s`) : new QueryTimeoutError(job.timeoutMs));
+      job.reject(job.kind === 'parser' ? new WorkerTaskError() : new QueryTimeoutError(job.timeoutMs));
       this.restart();
     }, job.timeoutMs);
     this.inFlight = { id, job, timer };

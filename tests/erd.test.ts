@@ -63,6 +63,14 @@ describe('erDefinition escape tên (header CSV, L36)', () => {
     expect(mermaidName('')).toBe('_');
   });
 
+  it('từ khóa Mermaid (kể cả khi theo sau là chữ có dấu) được thêm _ ở đầu', () => {
+    expect(mermaidName('class')).toBe('_class');
+    expect(mermaidName('toán')).toBe('_toán');
+    expect(mermaidName('PK')).toBe('_PK');
+    expect(mermaidName('tons')).toBe('tons');
+    expect(mermaidName('endpoint')).toBe('endpoint');
+  });
+
   it('không chèn được cú pháp Mermaid; style dùng màu hex hợp lệ', () => {
     const def = erDefinition(cols, cons, ['bad table}', '2026 orders'], new Set(['bad table}']), '#0284c7');
     const lines = def.split('\n');
