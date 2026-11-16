@@ -225,7 +225,7 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
       say('good', () => t('work.stepDone', { i: i + 1 }));
       celebrate(feedback);
     } else if (tk.conclusion) {
-      say('good', () => t('work.conclusionNext'));
+      say('good', () => t(done().has(tk.id) ? 'work.correct' : 'work.conclusionNext')); // redrawn after the conclusion is submitted
       deps.onConclusion(tk);
     } else {
       say('good', () => t('work.correct'));
