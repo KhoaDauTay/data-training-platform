@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { memoByKey, once } from '../src/viz/memo';
+import { clearMemos, memoByKey, once } from '../src/viz/memo';
 
 describe('memoByKey', () => {
   it('cùng key chỉ gọi load một lần', async () => {
@@ -44,5 +44,24 @@ describe('once (ensureParser dùng cái này)', () => {
     await expect(load()).resolves.toBeUndefined();
     await load();
     expect(calls).toBe(2);
+  });
+});
+
+describe('clearMemos', () => {
+  it('xóa cache của mọi memoByKey, lần gọi sau nạp lại; once() giữ nguyên', async () => {
+    let a = 0;
+    let b = 0;
+    let c = 0;
+    const fa = memoByKey(async (k) => { a++; return k; });
+    const fb = memoByKey(async (k) => { b++; return k; });
+    const fc = once(async () => { c++; return 1; });
+    await fa('sandbox');
+    await fb('SELECT 1');
+    await fc();
+    clearMemos();
+    await fa('sandbox');
+    await fb('SELECT 1');
+    await fc();
+    expect([a, b, c]).toEqual([2, 2, 1]);
   });
 });
