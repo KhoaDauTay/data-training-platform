@@ -1,15 +1,16 @@
 import { loadTicketTemplates } from '../content';
 import { learnedSkills, type HomeModel } from '../home';
 import { t } from '../i18n';
-import { applyResult, isSuccess, pickForSkill, retryItem, todayQueue, type PracticeItem } from '../practice';
+import { applyResult, isSuccess, pickForSkill, retryItem, type PracticeItem } from '../practice';
 import { hashOf } from '../route';
-import { activeStep, activeTicket, dueToday, isStory, session, today, type Mode, type PracticeRun } from '../session';
-import { app, done, persist, selected } from '../state';
+import { activeStep, activeTicket, isStory, practiceFinished, reviewCount, reviewToday, session, today, type Mode, type PracticeRun } from '../session';
+import { actions, app, done, persist, selected } from '../state';
+import type { Ticket } from '../tickets';
 import { BTN_GO, CARD, cx } from '../theme';
 import { applyVariant } from '../variants';
 import { renderBrief } from './brief';
 import { goalCard, skillChips, wrapUp } from './chapterView';
-import { h } from './dom';
+import { byId, h } from './dom';
 import { homeHooks, registerHomeSection, registerMode } from './homeView';
 import { go } from './router';
 import { registerNav } from './topbar';
@@ -58,10 +59,13 @@ export function startPractice(items: PracticeItem[]): boolean {
 export const startSandbox = (): void => enter({ kind: 'sandbox' });
 export const backToStory = (): void => enter({ kind: 'story' });
 
-/** Entry 1: today's due skills (D2). */
+/** Entry 1: today's review (D2). Nothing due (e.g. the day changed since the button was drawn): Home with a notice (L37). */
 export function startToday(): boolean {
-  const d = done();
-  return startPractice(todayQueue(app.save.review, learnedSkills(app.tickets, d), [...templates.values()], d, today(), Math.random));
+  if (startPractice(reviewToday())) return true;
+  app.notice = { key: 'prac.nothingDue' };
+  go('home'); // already on Home: no hashchange, so redraw ourselves
+  ctx?.rerender();
+  return false;
 }
 
 /** Entry 2: one skill (Home skill topics). */
@@ -78,10 +82,13 @@ export function startRetry(ticketId: string): boolean {
 
 /** Nav "Practice" (P6): today's due skills, else one learned skill at random; false when nothing is learned yet. */
 function startAny(): boolean {
-  if (startToday()) return true;
+  if (startPractice(reviewToday())) return true;
   const learned = [...learnedSkills(app.tickets, done())];
   return learned.length > 0 && startSkill(learned[Math.floor(Math.random() * learned.length)]);
 }
+
+/** work.ts onSolved: Practice moves Leitner boxes only; the story completes the ticket (XP, animation). */
+export const onSolved = (tk: Ticket): void => (session.mode.kind === 'practice' ? onPracticeSolved() : actions.complete(tk));
 
 export function onPracticeWrong(): void {
   if (session.mode.kind === 'practice') session.mode.run.wrong++;
@@ -111,8 +118,8 @@ function nextItem(): void {
   run.hints = 0;
   run.draft = '';
   run.result = undefined;
-  ctx?.rerender();
-  ctx?.work.setTicket(activeTicket(), 0, true);
+  ctx?.rerender(); // finished: renderLeft hides the editor, which is kept (never a ticketless editor writing run.draft)
+  if (!practiceFinished()) ctx?.work.setTicket(activeTicket(), 0, true);
   focusTitle();
 }
 
@@ -158,9 +165,9 @@ function storyPane(host: HTMLElement): void {
   host.append(wrapUp(tk.chapter, quick.length ? () => startRetry(quick[Math.floor(Math.random() * quick.length)].id) : undefined));
 }
 
-/** Top-bar "Review: N" (P3): shown only while a learned skill is due today. */
+/** Top-bar "Review: N" (P3): N = items in today's queue; hidden when the queue is empty. */
 export function renderReviewButton(btn: HTMLButtonElement): void {
-  const n = dueToday().length;
+  const n = reviewCount();
   btn.hidden = n === 0;
   btn.textContent = t('prog.due', { n });
   btn.title = t('prog.dueTitle');
@@ -170,6 +177,7 @@ export function renderReviewButton(btn: HTMLButtonElement): void {
 /** Left pane for the current mode; main.ts rerender() calls this instead of renderBrief(). */
 export function renderLeft(host: HTMLElement): void {
   const m = session.mode;
+  byId('work').hidden = practiceFinished();
   if (m.kind === 'sandbox') sandboxPane(host);
   else if (m.kind === 'practice') practicePane(host, m.run);
   else storyPane(host);
@@ -177,12 +185,14 @@ export function renderLeft(host: HTMLElement): void {
 
 /** Home "Review" card (D2 entry 1). Always shown, so nav "Practice" on a fresh save lands on its explanation (P6). */
 function reviewCard(m: HomeModel): HTMLElement {
-  const due = dueToday().length;
+  const due = reviewCount();
   const intro = m.learned === 0 ? t('prac.locked') : t(due ? 'prac.dueIntro' : 'prac.noneDue', { n: due });
+  const p = app.save.practice;
   return h('section', { class: cx(CARD, 'flex flex-wrap items-center gap-4 p-5'), 'aria-labelledby': 'review-title' },
     h('div', { class: 'min-w-0 flex-1' },
       h('h2', { id: 'review-title', class: 'm-0 text-lg font-bold' }, t('prac.section')),
-      h('p', { class: 'mt-1 mb-0 text-[15px] text-muted' }, intro)),
+      h('p', { class: 'mt-1 mb-0 text-[15px] text-muted' }, intro),
+      p.solved + p.weak ? h('p', { class: 'mt-1 mb-0 text-sm text-muted' }, t('prac.stats', { solved: p.solved, weak: p.weak })) : null),
     due ? h('button', { type: 'button', class: cx(BTN_GO, 'px-4 py-2'), onclick: () => startToday() }, t('prac.today', { n: due })) : null);
 }
 

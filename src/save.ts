@@ -1,3 +1,4 @@
+import { addDays, MAX_BOX, type PracticeStats, type Review } from './practice';
 import type { KV } from './storage';
 
 export const SAVE_VERSION = 2;
@@ -18,9 +19,9 @@ export interface Save {
   graded: Record<string, string>;
   // --- v2 (Plan 1c) ---
   /** Leitner card per skill id. `due` = real local day 'YYYY-MM-DD' of the player's machine, never the in-game date. */
-  review: Record<string, { box: number; due: string }>;
-  /** Practice totals for display only; never affect unlocking or XP. */
-  practice: { solved: number; failed: number };
+  review: Review;
+  /** Practice totals shown on Home's Review card; never affect unlocking or XP. */
+  practice: PracticeStats;
   /** Sandbox editor content, at most SANDBOX_DRAFT_MAX chars. */
   sandboxDraft: string;
   /** Promotion-review step reached (0-based) for tickets not completed yet. Clamped to steps.length - 1 on use. */
@@ -46,7 +47,7 @@ export type Migration = (data: Record<string, unknown>, known: Known) => Record<
 /** Key = version migrated FROM. Keep every migration forever; deleting one strands old saves. */
 export const MIGRATIONS: Record<number, Migration> = {
   // v1 → v2: pure, needs no content. Learned skills missing from `review` count as box 1 due today (practice.ts cardOf).
-  1: (d) => ({ ...d, review: {}, practice: { solved: 0, failed: 0 }, sandboxDraft: '', bossStep: {} }),
+  1: (d) => ({ ...d, review: {}, practice: { solved: 0, weak: 0 }, sandboxDraft: '', bossStep: {} }),
 };
 
 export const emptySave = (): Save => ({
@@ -57,7 +58,7 @@ export const emptySave = (): Save => ({
   drafts: {},
   graded: {},
   review: {},
-  practice: { solved: 0, failed: 0 },
+  practice: { solved: 0, weak: 0 },
   sandboxDraft: '',
   bossStep: {},
 });
@@ -97,6 +98,8 @@ function pickRecord<T>(v: unknown, ok: (x: unknown) => x is T, ticketIds: Readon
 }
 
 const DAY_RE = /^\d{4}-\d{2}-\d{2}$/;
+/** A real calendar day: the round-trip through Date rejects 2026-13-45 and 2026-02-30. */
+const isDay = (v: unknown): v is string => typeof v === 'string' && DAY_RE.test(v) && addDays(v, 0) === v;
 const isRecord = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v);
 const isCount = (v: unknown): v is number => typeof v === 'number' && Number.isInteger(v) && v >= 0;
 
@@ -107,7 +110,7 @@ function readV2(d: Record<string, unknown>, known: Known): V2Fields {
   const review: Save['review'] = {};
   if (isRecord(d.review)) {
     for (const [skill, c] of Object.entries(d.review)) {
-      if (known.skills.has(skill) && isRecord(c) && isCount(c.box) && c.box >= 1 && c.box <= 5 && typeof c.due === 'string' && DAY_RE.test(c.due)) {
+      if (known.skills.has(skill) && isRecord(c) && isCount(c.box) && c.box >= 1 && c.box <= MAX_BOX && isDay(c.due)) {
         review[skill] = { box: c.box, due: c.due };
       }
     }
@@ -119,7 +122,7 @@ function readV2(d: Record<string, unknown>, known: Known): V2Fields {
   const p = isRecord(d.practice) ? d.practice : {};
   return {
     review,
-    practice: { solved: isCount(p.solved) ? p.solved : 0, failed: isCount(p.failed) ? p.failed : 0 },
+    practice: { solved: isCount(p.solved) ? p.solved : 0, weak: isCount(p.weak) ? p.weak : 0 },
     sandboxDraft: typeof d.sandboxDraft === 'string' ? d.sandboxDraft.slice(0, SANDBOX_DRAFT_MAX) : '',
     bossStep,
   };

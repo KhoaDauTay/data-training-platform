@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import v1 from './fixtures/save-v1.json?raw';
 import v2 from './fixtures/save-v2.json?raw';
-import { emptySave, loadSave, NewerSaveError, oldSaveKey, parseSave, SANDBOX_DRAFT_MAX, SAVE_KEY, type Known } from '../src/save';
+import { loadTickets } from '../src/content';
+import { resumeStep } from '../src/overview';
+import { emptySave, loadSave, NewerSaveError, oldSaveKey, parseSave, SANDBOX_DRAFT_MAX, SAVE_KEY, serializeSave, writeSave, type Known } from '../src/save';
 import type { KV } from '../src/storage';
 
 const known: Known = {
@@ -16,7 +18,7 @@ function memStore(initial: Record<string, string> = {}): KV & { data: Record<str
 
 describe('save v2', () => {
   it('emptySave có đủ trường v2 và giữ graded', () => {
-    expect(emptySave()).toMatchObject({ version: 2, graded: {}, review: {}, practice: { solved: 0, failed: 0 }, sandboxDraft: '', bossStep: {} });
+    expect(emptySave()).toMatchObject({ version: 2, graded: {}, review: {}, practice: { solved: 0, weak: 0 }, sandboxDraft: '', bossStep: {} });
   });
 
   it('đọc save mẫu v2 nguyên vẹn', () => {
@@ -41,14 +43,15 @@ describe('save v2', () => {
         gone: { box: 1, due: '2026-11-20' },
         where: { box: 6, due: '2026-11-20' },
         limit: { box: 1, due: '20/11/2026' },
+        order_by: { box: 1, due: '2026-13-45' },
       },
-      practice: { solved: -1, failed: 2.5 },
+      practice: { solved: -1, weak: 2.5 },
       sandboxDraft: 'x'.repeat(SANDBOX_DRAFT_MAX + 10),
       bossStep: { 'ch1-05': 1, gone: 1, 'ch1-04': -1 },
     });
     const s = parseSave(raw, known);
     expect(s.review).toEqual({ select: { box: 2, due: '2026-11-20' } });
-    expect(s.practice).toEqual({ solved: 0, failed: 0 });
+    expect(s.practice).toEqual({ solved: 0, weak: 0 });
     expect(s.sandboxDraft).toHaveLength(SANDBOX_DRAFT_MAX);
     expect(s.bossStep).toEqual({ 'ch1-05': 1 });
   });
@@ -63,5 +66,26 @@ describe('save v2', () => {
     expect(r.warning).toBeUndefined();
     expect(r.save).toMatchObject({ version: 2, completed: ['ch1-01', 'ch1-02'], review: {}, bossStep: {}, graded: {} });
     expect(store.data[oldSaveKey(1)]).toBe(v1);
+  });
+
+  it('Xuất → Nhập (round-trip) giữ review/practice/sandboxDraft/bossStep/graded', () => {
+    const save = {
+      ...emptySave(),
+      completed: ['ch1-01'],
+      graded: { 'ch1-01#0': 'SELECT * FROM ports' },
+      review: { select: { box: 3, due: '2026-11-20' } },
+      practice: { solved: 4, weak: 2 },
+      sandboxDraft: 'SELECT 1',
+      bossStep: { 'ch1-05': 1 },
+    };
+    expect(parseSave(serializeSave(save), known)).toEqual(save);
+  });
+
+  it('bossStep: lưu xuống storage rồi mở lại đúng bước đánh giá', () => {
+    const boss = loadTickets().find((t) => t.id === 'ch1-05')!;
+    const store = memStore();
+    writeSave(store, { ...emptySave(), completed: ['ch1-01', 'ch1-02', 'ch1-03', 'ch1-04'], bossStep: { 'ch1-05': 1 } });
+    const { save } = loadSave(store, known);
+    expect(resumeStep(save, boss)).toBe(1);
   });
 });

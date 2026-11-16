@@ -6,12 +6,12 @@ import { contentProblems, currentChapter, nextTicket, SKILLS, xpFor } from './pr
 import { loadSave, parseSave, serializeSave, type Known } from './save';
 import { actions, app, done, editorSchema, persist, selected, type Column } from './state';
 import { resumeStep } from './overview';
-import { localDay, seedReview } from './practice';
-import { isStory, session } from './session';
+import { seedReview } from './practice';
+import { isStory, session, today } from './session';
 import { localStore } from './storage';
 import type { Route } from './route';
 import type { Ticket } from './tickets';
-import { initModes, onPracticeSolved, onPracticeWrong, renderLeft, renderReviewButton } from './ui/modes';
+import { initModes, onPracticeWrong, onSolved, renderLeft, renderReviewButton } from './ui/modes';
 import { toggleNotebook } from './ui/notebook';
 import { byId, h } from './ui/dom';
 import { errorText } from './ui/feedback';
@@ -79,7 +79,7 @@ const panel = createPanel(byId('panel'));
 const work = mountWork(byId('work'), {
   db,
   panel,
-  onSolved: (t) => (session.mode.kind === 'practice' ? onPracticeSolved() : complete(t)), // practice: no complete(), no animation
+  onSolved, // practice: Leitner only, no complete(), no animation
   onWrong: onPracticeWrong,
   onStepSolved: nextStep,
   onConclusion: (t) => {
@@ -108,7 +108,9 @@ function rerender(): void {
   renderLeft(byId('ticket'));
   work.relabel();
   relabelStage();
-  if (!byId('map').hidden) syncMap(); // like Home: the hidden strip is redrawn by showRoute()
+  // Story workspace only (L37): Home has the route map itself; Sandbox and Practice have no chapter progress.
+  byId('map').hidden = byId('shell').hidden || !isStory();
+  if (!byId('map').hidden) syncMap();
 }
 
 /** `force`: rebuild the editor even for the same ticket id (an imported save brings its own draft). */
@@ -138,7 +140,6 @@ function nextStep(): void {
 function showRoute(r: Route, initial: boolean): void {
   byId('home').hidden = r !== 'home';
   byId('shell').hidden = r !== 'play';
-  byId('map').hidden = r !== 'play'; // Home has the route map itself
   if (r !== 'home') leftHome(); // Home marks containers added after this moment as "New"
   rerender(); // nav aria-current, Home numbers
   if (!initial) byId(r === 'home' ? 'home-title' : 'brief-title').focus();
@@ -151,7 +152,7 @@ function complete(t: Ticket): void {
   const gained = xpFor(t, app.save.hintsUsed[t.id] ?? 0);
   app.save.completed.push(t.id);
   app.save.xp += gained;
-  app.save.review = seedReview(app.save.review, t.grants, localDay(new Date())); // first review tomorrow
+  app.save.review = seedReview(app.save.review, t.grants, today()); // first review tomorrow
   delete app.save.bossStep[t.id];
   persist(true);
   playCompletion(t, before, done()); // first completion only: the early return above skips re-solves

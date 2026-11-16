@@ -9,7 +9,7 @@
     "select": { "box": 3, "due": "2026-11-20" },
     "where": { "box": 1, "due": "2026-11-17" }
   },
-  "practice": { "solved": 4, "failed": 1 },
+  "practice": { "solved": 4, "weak": 1 },
   "sandboxDraft": "SELECT count(*) FROM shipments",
   "bossStep": { "ch1-05": 1 }
 }
