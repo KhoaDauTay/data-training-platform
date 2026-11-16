@@ -60,6 +60,7 @@ function onDbStatus(s: DbStatus): void {
 }
 const db = new DbClient(onDbStatus);
 db.onProgress = (p) => {
+  if (app.dbStatus !== 'loading') return; // the steps tab fetches the parser .wasm through the same counting fetch later
   app.loadProgress = p;
   renderTopbar();
 };
