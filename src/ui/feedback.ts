@@ -1,4 +1,4 @@
-import { DbFailedError, DbRestartError, QueryTimeoutError } from '../db/client';
+import { DbFailedError, DbRestartError, QueryTimeoutError, WorkerTaskError } from '../db/client';
 import { sqlErrorInfo } from '../db/run';
 import { errorMessage, type GradeResult } from '../grader';
 import { t } from '../i18n';
@@ -32,6 +32,7 @@ export function gradeMessage(r: Exclude<GradeResult, { ok: true }>): string {
 export function errorText(e: unknown): string {
   if (e instanceof QueryTimeoutError) return t('err.timeout', { s: e.timeoutMs / 1000 });
   if (e instanceof DbRestartError) return t('err.restart');
+  if (e instanceof WorkerTaskError) return `${t('err.task')}\n${e.detail}`;
   if (e instanceof DbFailedError) return `${t('err.dbFailed')}\n${e.detail}`;
   if (e instanceof NewerSaveError) return t('save.newer', { v: e.version });
   if (e instanceof InvalidSaveError) return t('save.invalid');

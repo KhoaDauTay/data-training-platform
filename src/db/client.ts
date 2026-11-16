@@ -1,9 +1,9 @@
 import type { LoadProgress } from './loadProgress';
 import { SqlError, type QueryResult, type SqlErrorInfo } from './run';
-import type { StepsResult } from '../viz/steps';
 
 export type DbStatus = 'loading' | 'ready' | 'failed';
-export type RequestKind = 'run' | 'explain' | 'steps';
+/** `parser`: loads the SQL parser (wasm + lazy chunk) for `steps`, with its own long budget. */
+export type RequestKind = 'run' | 'explain' | 'steps' | 'parser';
 export interface DbTimings { bootMs: number; seedMs: number }
 
 // Errors carry no user-facing text: the UI translates them by class (instanceof).
@@ -17,6 +17,13 @@ export class QueryTimeoutError extends Error {
 export class DbRestartError extends Error {
   name = 'DbRestartError';
 }
+/** A request failed in the worker for a non-Postgres reason (asset download, lazy chunk import). `detail` is the raw message. */
+export class WorkerTaskError extends Error {
+  name = 'WorkerTaskError';
+  constructor(readonly detail: string) {
+    super();
+  }
+}
 /** The worker failed to boot or crashed. `detail` is the raw technical message (not translated). */
 export class DbFailedError extends Error {
   name = 'DbFailedError';
@@ -25,12 +32,15 @@ export class DbFailedError extends Error {
   }
 }
 
+export const PARSER_TIMEOUT_MS = 60_000;
+
 type WorkerMessage =
   | { type: 'ready'; timings: DbTimings }
   | { type: 'initError'; message: string }
   | ({ type: 'progress' } & LoadProgress)
   | { type: 'result'; id: number; result: unknown }
-  | { type: 'error'; id: number; error: SqlErrorInfo };
+  | { type: 'error'; id: number; error: SqlErrorInfo }
+  | { type: 'fault'; id: number; message: string };
 
 interface Job {
   kind: RequestKind;
@@ -64,7 +74,7 @@ export class DbClient {
     this.start();
   }
 
-  /** One queued entry point for every kind of request. Rejects with SqlError, QueryTimeoutError, DbRestartError or DbFailedError. */
+  /** One queued entry point for every kind of request. Rejects with SqlError, WorkerTaskError, QueryTimeoutError, DbRestartError or DbFailedError. */
   request<T>(kind: RequestKind, sql: string, timeoutMs = this.timeoutMs): Promise<T> {
     if (this.failure) return Promise.reject(this.failure);
     return new Promise<T>((resolve, reject) => {
@@ -81,9 +91,17 @@ export class DbClient {
     return this.request<unknown>('explain', sql);
   }
 
-  /** Several sub-queries per call, so it gets a longer budget. */
-  steps(sql: string): Promise<StepsResult> {
-    return this.request<StepsResult>('steps', sql, this.timeoutMs * 3);
+  /** Several sub-queries per call, so it gets a longer budget. Call loadParser() first so the download is not counted here. */
+  steps<T>(sql: string): Promise<T> {
+    return this.request<T>('steps', sql, this.timeoutMs * 3);
+  }
+
+  /**
+   * Downloads the parser (~1.7 MB wasm) under its own long budget. Not cached here: a restarted worker
+   * needs it again, and the worker itself answers at once when the parser is already loaded.
+   */
+  loadParser(): Promise<void> {
+    return this.request<void>('parser', '', PARSER_TIMEOUT_MS);
   }
 
   /** Kills the worker, rejects every waiting query with DbRestartError, boots a fresh worker. */
@@ -126,7 +144,8 @@ export class DbClient {
       clearTimeout(f.timer);
       this.inFlight = undefined;
       if (m.type === 'result') f.job.resolve(m.result);
-      else f.job.reject(new SqlError(m.error));
+      else if (m.type === 'error') f.job.reject(new SqlError(m.error));
+      else f.job.reject(new WorkerTaskError(m.message));
       this.pump();
     }
   }
@@ -139,7 +158,8 @@ export class DbClient {
     const id = this.nextId++;
     const timer = setTimeout(() => {
       this.inFlight = undefined;
-      job.reject(new QueryTimeoutError(job.timeoutMs));
+      // A slow parser download is not a slow query: no "JOIN without ON" advice for it.
+      job.reject(job.kind === 'parser' ? new WorkerTaskError(`parser download timed out after ${job.timeoutMs / 1000}s`) : new QueryTimeoutError(job.timeoutMs));
       this.restart();
     }, job.timeoutMs);
     this.inFlight = { id, job, timer };

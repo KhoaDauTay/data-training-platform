@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { DbClient, DbFailedError, DbRestartError, QueryTimeoutError, type DbStatus } from '../src/db/client';
+import { DbClient, DbFailedError, DbRestartError, PARSER_TIMEOUT_MS, QueryTimeoutError, WorkerTaskError, type DbStatus } from '../src/db/client';
 import { SqlError } from '../src/db/run';
 
 /** Stand-in for the PGlite worker: records posted queries, the test answers them by hand. */
@@ -7,12 +7,12 @@ class FakeWorker {
   static all: FakeWorker[] = [];
   onmessage: ((e: { data: unknown }) => void) | null = null;
   onerror: ((e: { message: string }) => void) | null = null;
-  posted: { id: number; sql: string }[] = [];
+  posted: { id: number; kind: string; sql: string }[] = [];
   terminated = false;
   constructor() {
     FakeWorker.all.push(this);
   }
-  postMessage(m: { id: number; sql: string }) {
+  postMessage(m: { id: number; kind: string; sql: string }) {
     this.posted.push(m);
   }
   terminate() {
@@ -170,5 +170,53 @@ describe('DbClient', () => {
     last().send({ type: 'progress', loaded: 2_100_000, total: 5_400_000 });
     expect(seen).toEqual([{ loaded: 2_100_000, total: 5_400_000 }]);
     expect(statuses).toEqual(['loading']);
+  });
+  it('mỗi loại yêu cầu gửi kèm kind; steps có hạn 3×, tải parser có hạn dài riêng', async () => {
+    const { db } = client();
+    const w = last();
+    w.ready();
+    const parser = db.loadParser();
+    const steps = db.steps('S').catch((e: unknown) => e);
+    expect(w.posted).toEqual([{ id: 1, kind: 'parser', sql: '' }]);
+    await vi.advanceTimersByTimeAsync(PARSER_TIMEOUT_MS - 1000); // tải chậm vẫn chưa bị giết
+    expect(w.terminated).toBe(false);
+    w.send({ type: 'result', id: 1, result: null });
+    await expect(parser).resolves.toBeNull();
+    expect(w.posted[1]).toMatchObject({ kind: 'steps', sql: 'S' });
+    await vi.advanceTimersByTimeAsync(14_999);
+    expect(w.terminated).toBe(false);
+    await vi.advanceTimersByTimeAsync(1);
+    expect(await steps).toBeInstanceOf(QueryTimeoutError);
+    expect(((await steps) as QueryTimeoutError).timeoutMs).toBe(15_000);
+  });
+
+  it('explain và run gửi đúng kind', () => {
+    const { db } = client();
+    const w = last();
+    w.ready();
+    void db.explain('E');
+    w.send({ type: 'result', id: 1, result: [] });
+    void db.run('R');
+    expect(w.posted.map((p) => p.kind)).toEqual(['explain', 'run']);
+  });
+
+  it('tải parser quá hạn: WorkerTaskError, không phải lỗi query chậm', async () => {
+    const { db } = client();
+    last().ready();
+    const p = db.loadParser().catch((e: unknown) => e);
+    await vi.advanceTimersByTimeAsync(PARSER_TIMEOUT_MS);
+    expect(await p).toBeInstanceOf(WorkerTaskError);
+  });
+
+  it('lỗi không phải Postgres (fault) thành WorkerTaskError, không phải SqlError', async () => {
+    const { db } = client();
+    const w = last();
+    w.ready();
+    const a = db.loadParser().catch((e: unknown) => e);
+    w.send({ type: 'fault', id: w.posted[0].id, message: 'Failed to fetch' });
+    const e = await a;
+    expect(e).toBeInstanceOf(WorkerTaskError);
+    expect(e).not.toBeInstanceOf(SqlError);
+    expect((e as WorkerTaskError).detail).toBe('Failed to fetch');
   });
 });

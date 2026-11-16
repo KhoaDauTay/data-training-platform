@@ -24,6 +24,12 @@ ready.then(
 
 async function handle(db: PGlite, kind: RequestKind, sql: string): Promise<unknown> {
   if (kind === 'explain') return runExplain(db, sql);
+  if (kind === 'parser') {
+    // Both downloads (wasm + the steps chunk) happen here, under the long parser budget.
+    const [{ ensureParser }] = await Promise.all([import('../viz/parser'), import('../viz/steps')]);
+    await ensureParser();
+    return null;
+  }
   if (kind === 'steps') {
     const { runSteps } = await import('../viz/steps'); // loads the parser only when this tab is used
     return runSteps(db, sql);
@@ -35,16 +41,17 @@ async function handle(db: PGlite, kind: RequestKind, sql: string): Promise<unkno
 // DbClient also sends one query at a time; this queue is the second line of defence.
 let queue: Promise<void> = Promise.resolve();
 
-onmessage = (e: MessageEvent<{ id: number; kind?: RequestKind; sql: string }>) => {
-  const { id, kind = 'run', sql } = e.data;
+onmessage = (e: MessageEvent<{ id: number; kind: RequestKind; sql: string }>) => {
+  const { id, kind, sql } = e.data;
   queue = queue.then(async () => {
     try {
       const { db } = await ready;
       postMessage({ type: 'result', id, result: await handle(db, kind, sql) });
     } catch (err) {
-      // Custom Error fields do not survive postMessage, so send plain fields.
-      const error = sqlErrorInfo(err) ?? { message: err instanceof Error ? err.message : String(err) };
-      postMessage({ type: 'error', id, error });
+      // Custom Error fields do not survive postMessage, so send plain fields. Only Postgres errors are SQL errors.
+      const error = sqlErrorInfo(err);
+      if (error) postMessage({ type: 'error', id, error });
+      else postMessage({ type: 'fault', id, message: err instanceof Error ? err.message : String(err) });
     }
   });
 };
