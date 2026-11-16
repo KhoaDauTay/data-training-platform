@@ -2,6 +2,18 @@ import type { Msg } from './index';
 
 /** Source of keys (VI is the original). Plan 1b/1c add keys here and in en.ts in the same task. */
 export const vi = {
+  'nb.open': 'Sổ tay',
+  'nb.title': 'Sổ tay SQL & nghiệp vụ',
+  'nb.filter': 'Lọc thẻ và thuật ngữ',
+  'nb.cards': 'Thẻ kỹ năng',
+  'nb.terms': 'Thuật ngữ',
+  'nb.when': 'Khi nào:',
+  'nb.trap': 'Bẫy:',
+  'nb.columns': 'Cột: {list}',
+  'nb.empty': 'Không có mục khớp "{q}".',
+  'nb.unlockAt': 'Mở sau việc {id}',
+  'mode.notebook': 'Sổ tay',
+  'mode.notebookDesc': 'Thẻ kỹ năng SQL và thuật ngữ freight, mở cạnh editor.',
   'goal.title': 'Mục tiêu chương {n}: {title}',
   'goal.intro': 'Sau chương này bạn có thể:',
   'chip.teaches': 'Dạy: {list}',
