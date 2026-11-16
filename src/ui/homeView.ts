@@ -13,6 +13,7 @@ import { avatar } from './avatar';
 import { byId, h, nodes } from './dom';
 import { callout, harborScene } from './harbor';
 import { routeItems, routeMap } from './routeMap';
+import { isStory } from '../session';
 import { go } from './router';
 
 /** Width on >= lg screens (3-column grid); every section is full width below lg. */
@@ -52,7 +53,7 @@ const percent = (n: number, of: number): number => (of ? Math.round((n / of) * 1
 
 /** The ticket is already selected: only switch view (selectTicket would restart a boss at step 1). */
 function resume(id: string): void {
-  if (app.selectedId === id) go('play');
+  if (app.selectedId === id && isStory()) go('play'); // from Practice/Sandbox, selectTicket() switches back to work
   else actions.selectTicket(id);
 }
 
