@@ -39,7 +39,7 @@ const KEY_TAG: Record<ErConstraint['kind'], string> = { 'PRIMARY KEY': 'PK', 'FO
 /** Mermaid erDiagram (crow's foot): parent ||--o{ child, or |o--o{ when the FK column is nullable. */
 export function erDefinition(cols: ErColumn[], cons: ErConstraint[], tables: string[], highlight: Set<string>): string {
   const shown = new Set(tables);
-  const lines = ['erDiagram'];
+  const lines = ['erDiagram', '  direction LR']; // the bottom panel is wide and short
   for (const c of cons) {
     if (c.kind !== 'FOREIGN KEY' || !c.refTable || !shown.has(c.table) || !shown.has(c.refTable)) continue;
     const nullable = cols.find((x) => x.table === c.table && x.name === c.column)?.nullable;
