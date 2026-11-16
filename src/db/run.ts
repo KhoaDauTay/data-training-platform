@@ -76,3 +76,17 @@ export async function runSandboxed(db: PGlite, sql: string, maxRows = MAX_ROWS_W
     await db.exec('ROLLBACK');
   }
 }
+
+/** EXPLAIN ANALYZE executes the statement, so it gets the same BEGIN … ROLLBACK sandbox. */
+export async function runExplain(db: PGlite, sql: string): Promise<unknown> {
+  await db.exec('BEGIN');
+  try {
+    const r = await db.query<unknown[]>(`EXPLAIN (ANALYZE, FORMAT JSON) ${sql}`, [], { rowMode: 'array' });
+    return r.rows[0][0];
+  } catch (e) {
+    const info = sqlErrorInfo(e);
+    throw info ? new SqlError({ ...info, position: undefined }) : e;
+  } finally {
+    await db.exec('ROLLBACK');
+  }
+}

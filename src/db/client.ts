@@ -1,7 +1,9 @@
 import type { LoadProgress } from './loadProgress';
 import { SqlError, type QueryResult, type SqlErrorInfo } from './run';
+import type { StepsResult } from '../viz/steps';
 
 export type DbStatus = 'loading' | 'ready' | 'failed';
+export type RequestKind = 'run' | 'explain' | 'steps';
 export interface DbTimings { bootMs: number; seedMs: number }
 
 // Errors carry no user-facing text: the UI translates them by class (instanceof).
@@ -27,12 +29,14 @@ type WorkerMessage =
   | { type: 'ready'; timings: DbTimings }
   | { type: 'initError'; message: string }
   | ({ type: 'progress' } & LoadProgress)
-  | { type: 'result'; id: number; result: QueryResult }
+  | { type: 'result'; id: number; result: unknown }
   | { type: 'error'; id: number; error: SqlErrorInfo };
 
 interface Job {
+  kind: RequestKind;
   sql: string;
-  resolve: (r: QueryResult) => void;
+  timeoutMs: number;
+  resolve: (r: unknown) => void;
   reject: (e: Error) => void;
 }
 
@@ -60,13 +64,26 @@ export class DbClient {
     this.start();
   }
 
-  /** Rejects with SqlError, QueryTimeoutError, DbRestartError or DbFailedError. */
-  run(sql: string): Promise<QueryResult> {
+  /** One queued entry point for every kind of request. Rejects with SqlError, QueryTimeoutError, DbRestartError or DbFailedError. */
+  request<T>(kind: RequestKind, sql: string, timeoutMs = this.timeoutMs): Promise<T> {
     if (this.failure) return Promise.reject(this.failure);
-    return new Promise<QueryResult>((resolve, reject) => {
-      this.queue.push({ sql, resolve, reject });
+    return new Promise<T>((resolve, reject) => {
+      this.queue.push({ kind, sql, timeoutMs, resolve: (r) => resolve(r as T), reject });
       this.pump();
     });
+  }
+
+  run(sql: string): Promise<QueryResult> {
+    return this.request<QueryResult>('run', sql);
+  }
+
+  explain(sql: string): Promise<unknown> {
+    return this.request<unknown>('explain', sql);
+  }
+
+  /** Several sub-queries per call, so it gets a longer budget. */
+  steps(sql: string): Promise<StepsResult> {
+    return this.request<StepsResult>('steps', sql, this.timeoutMs * 3);
   }
 
   /** Kills the worker, rejects every waiting query with DbRestartError, boots a fresh worker. */
@@ -122,11 +139,11 @@ export class DbClient {
     const id = this.nextId++;
     const timer = setTimeout(() => {
       this.inFlight = undefined;
-      job.reject(new QueryTimeoutError(this.timeoutMs));
+      job.reject(new QueryTimeoutError(job.timeoutMs));
       this.restart();
-    }, this.timeoutMs);
+    }, job.timeoutMs);
     this.inFlight = { id, job, timer };
-    this.worker.postMessage({ id, sql: job.sql });
+    this.worker.postMessage({ id, kind: job.kind, sql: job.sql });
   }
 
   private fail(detail: string): void {
