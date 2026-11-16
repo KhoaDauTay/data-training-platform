@@ -1,134 +1,167 @@
-# Cargo Query — Plan 1c: Product layer (save v2, tiến độ, Sổ tay, Luyện tập, Sandbox)
+# Cargo Query — Plan 1c: Product layer (save v2, Luyện tập, Sandbox, mục tiêu chương, Sổ tay)
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Thêm lớp sản phẩm lên engine đã có: save v2 (một lần nâng duy nhất), thanh tiến độ + thẻ mục tiêu chương + tổng kết chương + skill map + chip Dạy/Cần, Sổ tay (thẻ kỹ năng + thuật ngữ freight), Luyện tập theo D2 (biến thể `{{x}}`, Leitner 5 hộp, 3 lối vào, "Ôn: N", 0 XP), Sandbox (SQL tự do không chấm), và cổng phát hành "0 ticket thiếu EN".
+**Goal:** Thêm lớp sản phẩm lên app đã có (Plan 1 + 1d + 1b):
+- save v2, nâng một lần duy nhất;
+- Luyện tập theo D2: biến thể `{{x}}`, Leitner 5 hộp `[1, 2, 4, 8, 16]`, 3 lối vào (Ôn hôm nay / Luyện kỹ năng / Làm lại việc), nút "Ôn: N", 0 XP;
+- Sandbox: SQL tự do, không chấm;
+- thẻ mục tiêu chương, chip Dạy/Cần, khối tổng kết chương dưới Recap của đánh giá thăng tiến;
+- Sổ tay: thẻ kỹ năng + thuật ngữ freight;
+- nút "Sao chép thông tin chẩn đoán" (L8).
 
-**Architecture:** Mọi logic nằm trong module thuần có unit test (`src/variants.ts`, `src/practice.ts`, `src/overview.ts`, `src/glossary.ts`). Trạng thái chế độ (Học chính / Luyện tập / Sandbox) nằm trong `src/session.ts`, không DOM. Giao diện là các module DOM mới trong `src/ui/` dùng `h()`. Code của Plan 1 chỉ bị sửa ở các điểm neo có tên rõ ràng (Task 0 kiểm trước), mỗi lần sửa đều chạy `npx tsc --noEmit`. Mọi trạng thái tiến độ được **tính lại từ save** (`completed`, `hintsUsed`, `review`, `bossStep`) cộng nội dung, không lưu thêm.
+**Architecture:**
+- Logic nằm trong module thuần có unit test: `src/variants.ts`, `src/practice.ts`, `src/overview.ts`, `src/glossary.ts`.
+- Chế độ (Làm việc / Luyện tập / Sandbox) nằm trong `src/session.ts`, không DOM. Practice/Sandbox là **chế độ bên trong route `#/play`**, không phải route mới (CLAUDE.md).
+- Giao diện: module DOM mới trong `src/ui/` dùng `h()` và class Tailwind nguyên vẹn (`cx()` từ `src/theme.ts`). Không thêm CSS vào `src/style.css`.
+- Mọi lối vào gắn qua hook đã có của Plan 1d:
+  - nav: `registerNav` (`src/ui/topbar.ts`);
+  - Trang chủ: `registerHomeSection`, `registerMode`, `homeHooks.levelOf` / `homeHooks.onSkill` (`src/ui/homeView.ts`).
+- Mọi trạng thái tiến độ được **tính lại từ save** (`completed`, `hintsUsed`, `review`, `bossStep`) cộng nội dung, không lưu thêm.
 
-**Tech Stack:** như Plan 1 + Plan 1b. **Không thêm dependency** (YAML dùng gói `yaml` đã có).
+**Tech Stack:** như HEAD. **Không thêm dependency.**
 
-**Spec:** `docs/superpowers/specs/2026-11-16-cargo-query-design.md` §1, §6b, §8, §9. **Nguồn quyết định:** `docs/team/amendments.md` A4–A9, B7, E1, E2 và phần "Quyết định của user (2026-11-16)" D1, D2. **Tiền đề:** Plan 1 (Task 1–11) và Plan 1b (Task 1–8) đã xong. Chạy trước Plan 2.
+**Spec:** `docs/superpowers/specs/2026-11-16-cargo-query-design.md` §1, §6b, §8, §9. **Nguồn quyết định:** `docs/team/amendments.md` A4–A9, B7, E1, E2, D1, D2; `docs/team/decision-log.md` L8, L10, L12, L16, L19, L20, L22, L29–L32, L35 (dòng mới thắng).
 
-**Ngoài phạm vi plan này (đã có chủ khác):** hạ tầng i18n (`src/i18n/*`, nút VI|EN — Plan 1 Task 10), tách `main.ts` (Plan 1 Task 10), lịch sử query C15, Format SQL (D5), nạp CSV (Plan Import), dịch bù EN ch1–3 (Plan 1), tự gắn link thuật ngữ trong đề và badge ở tab Cột (B7: để bản sau), chấm beat trên dải bản đồ (Plan 1b Task 7).
+**Tiền đề:** Plan 1, Plan 1d (Tailwind, Trang chủ, 12 chương, `people.yml`, hoạt cảnh, KPI, bản đồ tuyến) và Plan 1b (tab trực quan, dải tiến độ) đã xong. Plan này viết lại trên HEAD `a167190`. Task 11 cần thêm Plan Deploy Task 1 + 3. Chạy trước Plan 2.
 
-> **Sau Plan 1d (Tailwind, Trang chủ Tiên Sa, 12 chương, hoạt cảnh; L17–L31): điều chỉnh khi thực hiện:**
-> - **Topbar.** Task 0, bảng điểm neo `index.html`: dòng XP nay là `<span id="xp" class="rounded-full bg-amber-400 px-3 py-1 font-semibold text-amber-950"></span>`, và ngay trước nó có `<span id="rank" …>`, tức chip chức danh. Chip này giữ nguyên.
->   - Task 8 Step 6a: xóa **dòng chứa `id="xp"`**.
->   - Task 8 Step 6b: thêm `class="… text-white"` cho `#progress` và `class="border-0 bg-black/20 text-white ring-1 ring-white/40 hover:bg-black/30"` cho `#skills-btn`. Task 9: `#notebook-btn` cũng vậy.
->   - Dòng `byId('xp').textContent = …` trong `topbar.ts` vẫn còn để xóa.
-> - **12 chương.** `CHAPTERS.length` = 12 và `top.chapter` = `Chương {n}/{total}: {title}`. `progressLine` truyền `CHAPTERS.length`; tổng ticket luôn tính từ nội dung, không ghi cứng 7/35. Mọi test/ví dụ ghi `Ch x/7` sửa theo.
-> - **Thang nghề.** `rankOf()` đã có trong `src/progress.ts` (Plan 1d Task 11); `overview.ts` không viết lại.
-> - **Tổng kết chương** (Task 8):
->   - hoạt cảnh `promotion` của Plan 1d (thẻ thăng tiến + tàu + confetti, 3 s) **thay** animation mở màn 1,5 s; một ticket cuối chương chỉ có một màn ăn mừng (completion-animations §4);
->   - màn Tổng kết mở sau khi `playCompletion` đã chạy, không thêm hiệu ứng;
->   - tiêu đề màn dùng `career` của chương (`chapters.yml`);
->   - không chữ "boss" (L22).
-> - **Hoạt cảnh chỉ ở lần đầu.** Luyện tập, Ôn, Làm lại không gọi `complete()`/`playCompletion` và không thêm container (completion-animations §1.4). `Save.completed` giữ nghĩa cũ (bãi, tuyến, chức danh tính lại từ đó).
-> - **Điều hướng.** `selectTicket()` nay gọi `go('play')`; `enter(mode)` trong `src/ui/modes.ts` cũng gọi `go('play')` (import từ `./router`) để vào Luyện tập/Sandbox từ Trang chủ.
-> - **Nav.** Đăng ký Luyện tập/Sandbox:
->   - `registerNav({ id: 'practice', order: 30, label: 'nav.practice', href: hashOf('play'), current: (r) => r === 'play' && session.mode.kind === 'practice', onclick: startToday })`;
->   - `{ id: 'sandbox', order: 40, … onclick: startSandbox }`;
->   - đăng ký lại `{ id: 'play', order: 20, label: 'nav.play', href: hashOf('play'), current: (r) => r === 'play' && session.mode.kind === 'story', onclick: backToStory }` (cùng id thì thay thế).
->
->   Khóa `nav.practice`, `nav.sandbox` thêm vào vi/en. "Sandbox" giống nhau ở hai ngôn ngữ, nên thêm khóa vào `SAME_OK`.
-> - **Trang chủ.**
->   - Card "Ôn hôm nay" là section mới `registerHomeSection({ id: 'review', order: 15, span: 'full', render: reviewCard })` (`startToday`, `go('play')`). Id `side` không còn: Plan 1d đã thay bằng `career`, tức lộ trình sự nghiệp; không ghi đè `career`.
->   - Card "Ôn đầu chương" (curriculum §5.2) cũng là một section.
->   - `homeHooks.levelOf = (id) => app.save.review[id]?.box ?? 1`; `homeHooks.onSkill = (id) => { startSkill(id); go('play'); }`.
->   - Card chế độ:
->     - `registerMode({ id: 'sandbox', order: 10, icon: '🧪', tint: 'bg-orange-100 dark:bg-orange-950', title: 'mode.sandbox', desc: 'mode.sandboxDesc', open: () => { startSandbox(); go('play'); } })`;
->     - `registerMode({ id: 'notebook', order: 30, icon: '📒', tint: 'bg-fuchsia-100 dark:bg-fuchsia-950', title: 'mode.notebook', desc: 'mode.notebookDesc', open: () => toggleNotebook(document.getElementById('notebook-dialog') as HTMLDialogElement) })`;
->     - khóa `mode.*` thêm vào vi/en.
->   - Không tạo trùng logic `learnedSkills` trong `src/home.ts`.
-> - **Phản hồi sai "có giọng người"** (Task 8): người gửi lấy từ `personOf(tk.from.name)` (`src/people.ts`), chân dung `avatar(tk.from)`.
-> - **CSS.** "Thêm vào cuối `src/style.css`" vẫn chạy: token và class chung còn nguyên, `.topbar` vẫn là class của header. Class Tailwind viết trong `.ts` phải là chuỗi nguyên vẹn (`cx()`), không `` `chip ${x}` ``.
+**Ngoài phạm vi:**
+- Đã có chủ khác: hạ tầng i18n, tách `main.ts`, lịch sử query, Format SQL, nạp CSV (Plan Import).
+- Để bản sau (B7): tự gắn link thuật ngữ trong đề, badge ở tab Cột.
+- Thuộc Plan 2 theo curriculum §5.7 (xem quyết định P4):
+  - card "Ôn đầu chương" (§5.2);
+  - "Thẻ úp" (§5.3);
+  - `reflect:`, `wrong:`, `format:`.
+
+## Đã bỏ vì Plan 1d/1b
+
+Các phần của bản plan cũ dưới đây **không làm**, vì HEAD đã có phần tương đương:
+
+| Bản cũ | Thay bằng (đã có trên HEAD) |
+|---|---|
+| Task 4 `progressLine`, Task 8 `src/ui/progressView.ts`, `#progress` "Ch x/7 · n/35 ticket · XP" | Topbar đã có `#chapter` (`Chương {n}/{total}: {title}`, L12, 12 chương), `#rank`, `#xp`. Trang chủ hiện `{done}/{total} việc`, dải `#map` hiện chấm chương. Plan này chỉ thêm nút `#review-btn` "Ôn: N". |
+| Task 4 `skillLevel`, Task 8 `src/ui/skillMap.ts`, `#skills-btn`, `#skills-dialog`, khóa `skill.*` | Mục "Chủ đề kỹ năng" của Trang chủ (`skillsSection` trong `homeView.ts`): lưới kỹ năng theo chương, mức nhớ 1–5 qua `homeHooks.levelOf`, bấm kỹ năng đã học qua `homeHooks.onSkill`. Plan này chỉ gắn hai hook. |
+| Task 4 `learnedSkills` riêng trong `overview.ts` | `learnedSkills` export từ `src/home.ts`; `homeModel` dùng lại hàm đó. |
+| Task 7 `renderModes`, `<div id="modes">` trong hộp thư | Nav "Luyện tập"/"Sandbox" (`registerNav`), card "Ôn tập" trên Trang chủ (`registerHomeSection`), card chế độ Sandbox/Sổ tay (`registerMode`), nút "Ôn: N", nút "Luyện lại việc này" dưới Recap. |
+| Task 8 animation mở màn 1,5 s của Tổng kết chương và dialog `#summary-dialog` | Hoạt cảnh `promotion` 3 s của Plan 1d (L32). Tổng kết là một khối tĩnh dưới Recap (quyết định P2). |
+| Task 8 thay `#xp` bằng `#progress` | Giữ chip `#xp` (quyết định P3). |
+| Task 10 `tests/release.test.ts` | `tests/content.test.ts` › "song ngữ › có khối # EN" đã chặn ticket thiếu EN cho mọi ticket. |
+| Mọi bước "Thêm CSS vào cuối `src/style.css`" | Class Tailwind nguyên vẹn trong `h()` / `index.html`; `tests/theme.test.ts` chặn ghép class. |
+| Task 2 biến thể `ch2-04` (đếm lô theo `{{status}}`) | Plan 1d Task 14 đã viết lại đề thành câu hỏi nghiệp vụ, trạng thái giờ là chữ ("đang trên đường"). `VARIANT_VALUE_RE` chỉ nhận ASCII, `tests/content.test.ts` cấm mã trạng thái trong đề. Biến thể chuyển sang `ch2-03` (ngưỡng số lô). |
+| Ghi chú "Sau Plan 1d" ở đầu bản cũ | Đã áp vào từng task bên dưới. |
+
+## Quyết định sản phẩm trong plan này (để orchestrator ghi L-số)
+
+| # | Quyết định | Lý do |
+|---|---|---|
+| P1 | Biến thể ch1–3 nằm ở `ch1-03` (tháng: `month`, `month_en`, `from`, `to`) và `ch2-03` (ngưỡng `min`: 150 / 120 / 200). `ch2-04` không có biến thể. | Đề mới là văn xuôi VI/EN. Giá trị biến thể phải ASCII (`VARIANT_VALUE_RE`) và không được là mã trạng thái (test nội dung). Số và tháng thì dùng được ở cả hai ngôn ngữ. |
+| P2 | Tổng kết chương là **khối tĩnh dưới Recap** của đánh giá thăng tiến (`wrapUp`), không phải dialog. | `showModal()` nằm ở top layer, sẽ che dock `#stage` đang chạy hoạt cảnh `promotion`, và `playCompletion` không có hook "đã xong". Khối trong Recap tự hiện sau khi nộp, không thêm hiệu ứng. Tiêu đề dùng `career` của chương. |
+| P3 | Giữ chip `#xp`. Không thêm `#progress` và `#skills-btn`. "Ôn: N" là nút `#review-btn`, **chỉ hiện khi N > 0**. | Số chương, chức danh và XP đã có trên topbar; số việc nằm ở Trang chủ. Một nút bị khóa trên nền gradient khó đạt tương phản AA. |
+| P4 | Card "Ôn đầu chương" (curriculum §5.2) **không làm ở 1c**. | Curriculum §5.7 xếp nó vào Plan 2. Ghi chú Plan 1d Task 19 có nhắc, nhưng curriculum là tài liệu chốt sau. |
+| P5 | Lịch sử query và `save.graded` chỉ ghi ở chế độ Làm việc. | Bài luyện dùng chung id với ticket gốc nhưng SQL là của biến thể khác. Nếu ghi, Recap và lịch sử của ticket gốc bị ghi đè. |
+| P6 | Nav "Luyện tập": có kỹ năng đến hạn thì vào Ôn hôm nay, không có thì về Trang chủ. Card "Ôn tập" trên Trang chủ giải thích cách luyện riêng một kỹ năng. | Không có nút bấm mà không có phản hồi. |
+| P7 | Card "Ôn tập" đặt ở `order: 22`, sau `career` (20). | Section rộng `full` đặt ở 15 sẽ chen giữa `continue` (wide) và `career` (narrow), làm vỡ hàng. |
+| P8 | "Làm lại việc" là nút "Luyện lại việc này (0 XP)" dưới Recap của việc thường đã xong. Đánh giá thăng tiến không có nút này (L10). | Lối vào thứ 3 của D2, đặt ngay chỗ người chơi vừa xong việc. |
+| P9 | Gợi ý khi luyện tập hiện "Gợi ý i/n", không ghi "−x XP". | Luyện tập 0 XP; ghi "−25 XP" sẽ sai. |
+| P10 | Nút chẩn đoán: DB hỏng trước lần `ready` đầu → `db-init-failed`, sau đó → `worker-crash`. Clipboard bị chặn thì nội dung hiện trong banner `#notice` để tự chép. | `DbClient` gộp `initError` và `onerror` vào cùng một trạng thái `failed`. Banner có sẵn và hiện chữ bằng `textContent`. |
 
 ## Global Constraints
 
-- Mọi ràng buộc của Plan 1 và Plan 1b vẫn áp dụng: PGlite **0.5.16** pin; Solution không dùng `CURRENT_DATE`/`now()`; không đưa dữ liệu vào `innerHTML` (ngoại lệ duy nhất: SVG Mermaid ở tab ER); mọi truy cập `localStorage`/IndexedDB bọc try/catch; mọi bước "xác nhận PASS" chạy thêm `npx tsc --noEmit` và phải không lỗi.
-- UI và nội dung VI + EN, VI là bản gốc. Mọi chuỗi UI mới đi qua `t(key)`; khóa mới thêm vào **cả** `src/i18n/vi.ts` và `src/i18n/en.ts` trong **cùng task** dùng khóa đó (nếu không `tsc` của task đó báo lỗi). Bản EN không được trùng y hệt bản VI (test B5 của Plan 1).
-- **Save chỉ nâng một lần lên v2** qua `MIGRATIONS[1]`. `tests/fixtures/save-v1.json` **không bao giờ sửa**; thêm `tests/fixtures/save-v2.json` và cũng không bao giờ sửa sau khi commit.
-- "Hôm nay" của lịch ôn = **ngày thật theo giờ máy** (`localDay(new Date())`), khác "hôm nay trong game" 2026-10-31. Ngày lịch ôn không bao giờ đi vào SQL. Hàm thuần nhận `today: string` và `rnd: () => number` làm tham số để test được.
-- Luyện tập: **0 XP**; draft luyện tập **không lưu**; gợi ý mở khi luyện tập **không ghi** vào `save.hintsUsed`. Boss không có biến thể và không vào Luyện tập.
-- Story luôn chơi `variants[0]`. Template `{{x}}` chỉ được thấy qua `loadTicketTemplates()`.
-- Không viết test import `src/ui/*` hoặc `src/session.ts`/`src/state.ts` (Vitest chạy Node, không DOM, không thêm jsdom). UI kiểm tay theo checklist ở Task 10.
-- Commit: mỗi task một commit (bước cuối mỗi task).
+- PGlite **0.5.16** pin. Solution không dùng `CURRENT_DATE`/`now()`. Không đưa dữ liệu vào `innerHTML`. Mọi truy cập `localStorage` bọc try/catch. Mọi bước "xác nhận PASS" chạy thêm `npx tsc --noEmit` và phải không lỗi.
+- UI và nội dung VI + EN, VI là bản gốc. Mọi chuỗi UI mới đi qua `t(key)`. Khóa mới thêm vào **cả** `src/i18n/vi.ts` và `src/i18n/en.ts` trong cùng task. EN không trùng y hệt VI, trừ khóa đưa vào `SAME_OK` của `tests/i18n.test.ts`.
+- **Không có chữ "boss" / "sự cố"** trong chuỗi hiển thị (L22, `tests/i18n.test.ts`). Ticket cuối chương là "đánh giá thăng tiến".
+- Class Tailwind là chuỗi nguyên vẹn. Ghép điều kiện dùng `cx()`, không viết `` class: `…${x}` `` (`tests/theme.test.ts`). Chữ đọc ≥ 14px (`text-sm` trở lên, L23).
+- **Save chỉ nâng một lần lên v2** qua `MIGRATIONS[1]` (L20). `Save.graded` giữ nguyên. `tests/fixtures/save-v1.json` **không bao giờ sửa**. Thêm `tests/fixtures/save-v2.json`, và cũng không bao giờ sửa sau khi commit.
+- "Hôm nay" của lịch ôn = **ngày thật theo giờ máy** (`localDay(new Date())`), khác "hôm nay trong game" 2026-10-31. Ngày lịch ôn không bao giờ đi vào SQL. Hàm thuần nhận `today: string` và `rnd: () => number` làm tham số.
+- Luyện tập:
+  - **0 XP**;
+  - draft luyện tập **không lưu**;
+  - gợi ý **không ghi** vào `save.hintsUsed`;
+  - không gọi `complete()`/`playCompletion`, nên không có hoạt cảnh và không thêm container (completion-animations §1.4);
+  - đánh giá thăng tiến (`beat: boss`) không có biến thể và không vào Luyện tập (L10).
+- Làm việc (story) luôn chơi `variants[0]`. Template `{{x}}` chỉ thấy qua `loadTicketTemplates()`.
+- Không viết test mới import `src/ui/*` hoặc `src/session.ts`: Vitest chạy Node, không DOM. Hai test cũ `tests/workRace.test.ts` và `tests/coach.test.ts` đã mock DOM, chỉ sửa chỗ tạo `Save`. UI kiểm tay theo checklist ở mỗi task.
+- Mỗi task một commit (bước cuối mỗi task).
 
-## Tên dùng từ Plan 1 / 1b (interface tiêu thụ — Task 0 và Task 6 Step 0 kiểm bằng grep)
+**Cách đọc các bước sửa code.** Mỗi bước dùng một trong ba dạng dưới đây, áp đúng thứ tự trong plan.
+- **Tạo `path`:** ghi cả file, ghi đè nếu file đã có.
+- **Sửa `path`** — thay: khối thứ nhất phải xuất hiện **đúng một lần** trong file. Thay nó bằng khối sau chữ "bằng:".
+- **Thêm vào cuối `path`:** nối khối vào cuối file.
 
-Đã đối chiếu với văn bản Plan 1 Task 4–10 (Task 10 đã viết lại theo cấu trúc tách `state.ts` + `ui/*`). Plan này dựa vào đúng các tên dưới đây. Nếu Task 0 thấy thiếu tên nào: **dừng lại và báo**, không tự chế tên khác.
+## Tên dùng từ HEAD (Task 0 kiểm bằng grep)
 
 | File | Tên dùng trong plan này |
 |---|---|
-| `src/i18n/index.ts` | `type Key`, `type Msg`, `t(key: Key, p?: Record<string, string \| number>): string`, `getLang(): Lang` |
-| `src/i18n/vi.ts`, `en.ts` | dòng mở `export const vi = {` và `export const en: Record<Key, Msg> = {` |
-| `src/tickets.ts` (P1 T4) | `type Lang = 'vi' \| 'en'`, `type Beat`, `type Variant = Record<string, string>`, `Ticket` (`id, chapter, title, from, difficulty, beat, requires, grants, tables, ordered, body, task, hints, steps: { title; prompt; solution; columns? }[], conclusion?, starter?, variants?: Variant[], en?: TicketText`), `textOf(t: Ticket, lang: Lang): TicketText & { fallback: boolean }`. Parser đã kiểm `variants` (2–4 bộ, giá trị an toàn, đúng các khóa `{{x}}`, boss không có) |
-| `src/content.ts` (P1 T7) | `loadTickets(): Ticket[]` với thân `Object.entries(files).map(…).sort(byOrder)` |
-| `src/progress.ts` (P1 T5) | `SKILLS: Skill[]`, `CHAPTERS: Chapter[]`, `Skill { id; chapter; label: Bilingual; syntax: string; when: Bilingual; trap: Bilingual }`, `Chapter { chapter; title: Bilingual; outcomes: (Bilingual & { skills: string[] })[] }`, `chapterTitle(chapter: number, lang: Lang): string`, `CHAPTER_TABLES`, `currentChapter(tickets, completed)`, `xpFor(ticket, hintsUsed)` |
-| `src/save.ts` (P1 T6) | `SAVE_VERSION = 1`, `SAVE_KEY = 'cargo-query-save'`, `oldSaveKey(v)`, `Save`, `Known { ticketIds: ReadonlySet<string>; skills: ReadonlySet<string> }`, `KV`, `NewerSaveError`, `Migration = (data, known) => …`, `export const MIGRATIONS: Record<number, Migration> = {};`, `emptySave()` (một dòng), `serializeSave`, `parseSave(raw, known, migrations?, version?)` (trong thân: biến `d`, tham số `known`, thuộc tính `drafts: pickRecord(`), `loadSave(storage, known, …)` |
-| `src/state.ts` | `app` (`tickets, save, selectedId, stepIndex, …`), `done()`, `selected()`, `draftKey()`, `persist(now?)` |
-| `src/ui/work.ts` | `mountWork(host, deps): WorkArea`, `WorkArea.setTicket(t, stepIndex, force?)`, deps có `onSolved(t)`, `onStepSolved()`, `onConclusion(t)`, `onRun()`; trong `submit()` có nhánh `if (!r.ok) {`; đọc/ghi draft bằng `app.save.drafts[draftKey()]` |
-| `src/ui/brief.ts` | `renderBrief(host: HTMLElement, ticket: Ticket, stepIndex: number): void` (thay toàn bộ con của `host`); đọc/ghi gợi ý bằng `app.save.hintsUsed[...]` |
-| `src/ui/topbar.ts` | `renderTopbar(): void` (ghi XP bằng dòng `byId('xp').textContent = t('top.xp', { n: app.save.xp });`) |
-| `src/main.ts` | `function rerender()` gọi `renderBrief(` và `renderInbox(`; `function selectTicket(id)`; `function complete(t)` có `app.save.completed.push(t.id)`; bước boss tăng bằng `app.stepIndex++` trong `nextStep()`; `const work = mountWork(` với `onSolved: (t) => complete(t),`; lúc mở trang `app.selectedId = firstOpen();` |
-| `index.html` | `id="inbox-btn"`, `id="inbox-list"`, `<script type="module"`, `<span id="xp"></span>` |
-| `tests/helpers.ts` | `runner()` (đã có trong repo) |
-| `src/grader.ts` | `cellKey(v)` (đã có trong repo) |
+| `src/save.ts` | `SAVE_VERSION = 1`, `Save` (có `graded`), `Known { ticketIds; skills }`, `Migration`, `MIGRATIONS = {}`, `emptySave()` (một dòng), `serializeSave`, `parseSave(raw, known, migrations?, version?)` (biến `d`, `pickRecord`, `isString`), `loadSave`, `oldSaveKey`, `NewerSaveError`, `stepKey`, `ticketOfKey` |
+| `src/storage.ts` | `type KV` |
+| `src/tickets.ts` | `Lang`, `Beat`, `Variant`, `Ticket` (`variants?`, `en?`, `scene?`, `steps[].columns?: Bilingual[]`), `textOf`, `byOrder`, `parseTicket` (kiểm `variants`: 2–4 bộ, giá trị khớp `/^[\w .:/-]{1,40}$/`, đúng các khóa `{{x}}`, boss không có) |
+| `src/content.ts` | `loadTickets()` |
+| `src/progress.ts` | `SKILLS`, `CHAPTERS` (`Chapter { chapter, title, career, tier, story, outcomes }`), `chapterTitle`, `CHAPTER_TABLES`, `xpFor`, `nextTicket`, `currentChapter`, `rankOf` |
+| `src/home.ts` | `homeModel(tickets, completed, chapters, skills, levelOf?)`, `HomeModel` (`learned`, `skills[].level`), `LEVELS = 5` |
+| `src/state.ts` | `app` (`tickets, save, selectedId, stepIndex, conclusionFor, notice, lastRun, …`), `actions`, `done()`, `selected()`, `draftKey()`, `initialDoc()`, `persist()` |
+| `src/ui/work.ts` | `mountWork(host, deps: WorkDeps): WorkArea`; `WorkDeps { db, panel, onSolved, onStepSolved, onConclusion, onRun }`; `WorkArea.setTicket(t, stepIndex, force?)` |
+| `src/ui/brief.ts` | `renderBrief(host, tk, stepIndex)` (header là con đầu tiên; Recap khi ticket đã xong) |
+| `src/ui/topbar.ts` | `registerNav(NavItem)` (cùng id thì thay), nav `home` (10) và `play` (20) |
+| `src/ui/homeView.ts` | `registerHomeSection({ id, order, span, render })`, `registerMode(ModeCard)`, `homeHooks.levelOf`, `homeHooks.onSkill`, `resume(id)` |
+| `src/ui/router.ts` | `go(route)`, `currentRoute()` |
+| `src/route.ts` | `hashOf(route)` |
+| `src/theme.ts` | `cx`, `CARD`, `PILL`, `BTN_GO`, `TOP_BTN`, `chapterColor(n).chip` |
+| `src/main.ts` | `rerender()` gọi `renderBrief(byId('ticket'), …)`; `selectTicket(id, force)`; `nextStep()`; `complete(t)`; `const work = mountWork(`; `app.selectedId = firstOpen();` |
+| `index.html` | `id="inbox-btn"`, `<p id="announce"` |
+| `tests/helpers.ts` / `src/grader.ts` | `runner()` / `cellKey(v)` |
 
 ## File Structure
 
 ```
-content/glossary.yml           ~35 thuật ngữ freight { term, vi, en, columns }
-content/tickets/ch1/ch1-03.md  + variants (tháng)            (sửa)
-content/tickets/ch2/ch2-04.md  + variants (trạng thái lô)    (sửa)
-src/save.ts                    v2: review, practice, sandboxDraft, bossStep; MIGRATIONS[1]; SANDBOX_DRAFT_MAX (sửa)
-src/content.ts                 loadTicketTemplates(); loadTickets() = variants[0]   (sửa)
-src/variants.ts                renderTemplate, applyVariant, templateVars, variantsOf
-src/practice.ts                Leitner [1,2,4,8,16] + chọn bài luyện (hàm thuần)
-src/overview.ts                learnedSkills, progressLine, skillLevel, outcomeDone, chapterSummary, grantedBy, resumeStep
-src/glossary.ts                parseGlossary, GLOSSARY, normalize, matches
-src/session.ts                 chế độ story/practice/sandbox + accessor draft/gợi ý/đóng ticket
-src/ui/modes.ts                vào/ra Luyện tập & Sandbox, renderLeft, renderModes
-src/ui/progressView.ts         renderProgress (Ch x/7 · n/35 ticket · XP · Ôn: N)
-src/ui/chapterView.ts          goalCard, skillChips, openChapterSummary, skillLabel
-src/ui/skillMap.ts             openSkillMap
-src/ui/notebook.ts             toggleNotebook (dialog không modal)
-src/ui/work.ts, brief.ts, topbar.ts, src/main.ts, index.html, src/style.css, src/i18n/{vi,en}.ts   (sửa ở điểm neo)
+content/glossary.yml            37 thuật ngữ freight { term, vi, en, columns }
+content/tickets/ch1/ch1-03.md   + variants (tháng)                    (sửa)
+content/tickets/ch2/ch2-03.md   + variants (ngưỡng số lô)             (sửa)
+src/save.ts                     v2: review, practice, sandboxDraft, bossStep; MIGRATIONS[1]   (sửa)
+src/content.ts                  loadTicketTemplates(); loadTickets() = variants[0]           (sửa)
+src/home.ts                     export learnedSkills (homeModel dùng lại)                    (sửa)
+src/variants.ts                 renderTemplate, applyVariant, templateVars, variantsOf
+src/practice.ts                 Leitner [1,2,4,8,16] + chọn bài luyện (hàm thuần)
+src/overview.ts                 outcomeDone, chapterSummary, grantedBy, resumeStep
+src/glossary.ts                 parseGlossary, GLOSSARY, normalize, matches
+src/session.ts                  chế độ story/practice/sandbox + draft/gợi ý/đóng ticket, today(), dueToday()
+src/ui/modes.ts                 vào/ra Luyện tập & Sandbox, nav, card Ôn tập, renderLeft, nút Ôn: N
+src/ui/chapterView.ts           goalCard, skillChips, wrapUp, skillLabel
+src/ui/notebook.ts              toggleNotebook (dialog không modal) + card chế độ
+src/ui/work.ts, brief.ts, homeView.ts, topbar.ts, src/main.ts, src/state.ts, src/db/client.ts, index.html, src/i18n/{vi,en}.ts   (sửa ở điểm neo)
 tests/fixtures/save-v2.json, tests/saveV2.test.ts, tests/variants.test.ts, tests/practice.test.ts,
-tests/overview.test.ts, tests/glossary.test.ts, tests/release.test.ts
-tests/save.test.ts             (sửa kỳ vọng v1 → v2)
-CLAUDE.md                      (thêm mục Plan 1c)
+tests/overview.test.ts, tests/glossary.test.ts
+tests/save.test.ts, tests/workRace.test.ts, tests/coach.test.ts, tests/i18n.test.ts   (sửa)
+CLAUDE.md                       (ghi chú lớp sản phẩm)
 ```
 
 ---
 
 ### Task 0: Kiểm tiền đề (không sửa file)
 
-**Files:** không có.
-
-**Interfaces:**
-- Consumes: toàn bộ bảng "Giả định về Plan 1 / 1b" ở trên.
-- Produces: không có.
-
 - [ ] **Step 1: Test và kiểu đang sạch**
 
 Run: `npm test && npx tsc --noEmit`
 Expected: mọi test PASS, `tsc` không in lỗi.
 
-- [ ] **Step 2: Grep các điểm neo của Task 1–5 (logic thuần)**
+- [ ] **Step 2: Grep các điểm neo**
 
 Run:
 ```bash
-grep -c "export function textOf\|export type Lang\|variants?: Variant\[\]" src/tickets.ts
+grep -c "export const SAVE_VERSION = 1;\|export const MIGRATIONS: Record<number, Migration> = {};\|export const emptySave = \|graded: pickRecord(d.graded" src/save.ts
 grep -c "export function loadTickets(): Ticket\[\] {" src/content.ts
-grep -c "export const SKILLS\|export const CHAPTERS\|export function chapterTitle\|export const CHAPTER_TABLES\|export function currentChapter\|export function xpFor" src/progress.ts
-grep -c "export const SAVE_VERSION = 1;\|export const MIGRATIONS: Record<number, Migration> = {};\|export const emptySave = \|export function parseSave(raw: string, known: Known\|drafts: pickRecord\|export const oldSaveKey" src/save.ts
-ls content/skills.yml content/chapters.yml
+grep -c "const VARIANT_VALUE_RE\|variants?: Variant\[\]" src/tickets.ts
+grep -c "export function homeModel\|const learned = new Set(solved.flatMap" src/home.ts
+grep -c "export const registerHomeSection\|export const registerMode\|export const homeHooks\|function resume(id: string)" src/ui/homeView.ts
+grep -c "export const registerNav" src/ui/topbar.ts
+grep -c "submitBtn.hidden = !ticket || done().has(ticket.id);\|doc: initialDoc(app.save.drafts\[draftKey()\], tk.starter),\|app.save.graded\[k\] = sql;" src/ui/work.ts
+grep -c "const shown = app.save.hintsUsed\[tk.id\] ?? 0;\|const isDone = done().has(tk.id);" src/ui/brief.ts
+grep -c "renderBrief(byId('ticket'), selected(), app.stepIndex);\|app.stepIndex = 0;\|app.save.completed.push(t.id);\|onSolved: (t) => complete(t)," src/main.ts
+grep -c 'id="inbox-btn"\|<p id="announce"' index.html
+ls tests/fixtures/save-v1.json content/skills.yml content/chapters.yml
 ```
-Expected (số dòng khớp, lần lượt): `3`, `1`, `6`, `6`, và `ls` in ra 2 đường dẫn.
+Expected, lần lượt: `4`, `1`, `2`, `2`, `4`, `1`, `3`, `2`, `4`, `2`; `ls` in ra 3 đường dẫn.
 
-Nếu một dòng ra `0` hoặc `ls` báo không có file: **dừng plan và báo** tên thiếu cho người điều phối. Không tự chế tên thay thế. Điểm neo của giao diện (Task 6–9) được kiểm ở Task 6 Step 0, nên Task 1–5 vẫn chạy được khi phần UI của Plan 1 chưa khớp.
+Nếu một số không khớp: **dừng plan và báo** tên thiếu cho người điều phối. Không tự chế tên thay thế (L7: code trên đĩa thắng plan, chỉ áp phần chênh).
 
 Task này không commit.
 
@@ -137,22 +170,23 @@ Task này không commit.
 ### Task 1: Save v2 (một lần nâng duy nhất)
 
 **Files:**
-- Modify: `src/save.ts`, `tests/save.test.ts`
+- Modify: `src/save.ts`, `tests/save.test.ts`, `tests/workRace.test.ts`, `tests/coach.test.ts`
 - Create: `tests/fixtures/save-v2.json`, `tests/saveV2.test.ts`
 
 **Interfaces:**
-- Consumes: `Save`, `Known`, `emptySave`, `serializeSave`, `parseSave`, `loadSave`, `oldSaveKey`, `NewerSaveError`, `SAVE_KEY`, `KV`, `Migration`, `MIGRATIONS` (Plan 1 Task 6)
 - Produces:
-  - `SAVE_VERSION = 2`
-  - `Save` thêm: `review: Record<string, { box: number; due: string }>`, `practice: { solved: number; failed: number }`, `sandboxDraft: string`, `bossStep: Record<string, number>`
-  - `SANDBOX_DRAFT_MAX = 20_000`
-  - `MIGRATIONS[1]`: v1 → v2 thêm 4 trường rỗng (hàm thuần, không cần biết nội dung)
-  - `parseSave` validate v2: `review` chỉ giữ skill trong `known.skills`, `box` nguyên 1..5, `due` khớp `^\d{4}-\d{2}-\d{2}$`; `practice.*` nguyên ≥ 0 (sai → 0); `sandboxDraft` string, cắt ở 20.000 ký tự; `bossStep` chỉ giữ ticket trong `known.ticketIds`, giá trị nguyên ≥ 0
+  - `SAVE_VERSION = 2`, `SANDBOX_DRAFT_MAX = 20_000`
+  - `Save` thêm: `review: Record<string, { box: number; due: string }>`, `practice: { solved: number; failed: number }`, `sandboxDraft: string`, `bossStep: Record<string, number>` (giữ `graded`)
+  - `MIGRATIONS[1]`: v1 → v2 thêm 4 trường rỗng (hàm thuần)
+  - `parseSave` validate v2:
+    - `review` chỉ giữ skill trong `known.skills`, `box` nguyên 1..5, `due` khớp `^\d{4}-\d{2}-\d{2}$`;
+    - `practice.*` nguyên ≥ 0 (sai → 0);
+    - `sandboxDraft` là string, cắt ở 20.000 ký tự;
+    - `bossStep` chỉ giữ ticket trong `known.ticketIds`, giá trị nguyên ≥ 0.
 
-- [ ] **Step 1: Tạo fixture `tests/fixtures/save-v2.json`**
+- [ ] **Step 1: Fixture v2** (không bao giờ sửa sau khi commit)
 
-Mẫu save v2 thật. **Không bao giờ sửa file này** sau khi commit.
-
+**Tạo `tests/fixtures/save-v2.json`:**
 ```json
 {
   "version": 2,
@@ -160,6 +194,7 @@ Mẫu save v2 thật. **Không bao giờ sửa file này** sau khi commit.
   "xp": 500,
   "hintsUsed": { "ch1-02": 1 },
   "drafts": { "ch1-04#0": "SELECT full_name FROM employees" },
+  "graded": { "ch1-02#0": "SELECT code, name, country FROM ports WHERE region = 'Europe' AND kind = 'SEAPORT'" },
   "review": {
     "select": { "box": 3, "due": "2026-11-20" },
     "where": { "box": 1, "due": "2026-11-17" }
@@ -170,15 +205,15 @@ Mẫu save v2 thật. **Không bao giờ sửa file này** sau khi commit.
 }
 ```
 
-- [ ] **Step 2: Viết test `tests/saveV2.test.ts`**
+- [ ] **Step 2: Test v2**
 
+**Tạo `tests/saveV2.test.ts`:**
 ```ts
 import { describe, expect, it } from 'vitest';
 import v1 from './fixtures/save-v1.json?raw';
 import v2 from './fixtures/save-v2.json?raw';
-import {
-  emptySave, loadSave, NewerSaveError, oldSaveKey, parseSave, SANDBOX_DRAFT_MAX, SAVE_KEY, type Known, type KV,
-} from '../src/save';
+import { emptySave, loadSave, NewerSaveError, oldSaveKey, parseSave, SANDBOX_DRAFT_MAX, SAVE_KEY, type Known } from '../src/save';
+import type { KV } from '../src/storage';
 
 const known: Known = {
   ticketIds: new Set(['ch1-01', 'ch1-02', 'ch1-03', 'ch1-04', 'ch1-05']),
@@ -191,8 +226,8 @@ function memStore(initial: Record<string, string> = {}): KV & { data: Record<str
 }
 
 describe('save v2', () => {
-  it('emptySave có đủ trường v2', () => {
-    expect(emptySave()).toMatchObject({ version: 2, review: {}, practice: { solved: 0, failed: 0 }, sandboxDraft: '', bossStep: {} });
+  it('emptySave có đủ trường v2 và giữ graded', () => {
+    expect(emptySave()).toMatchObject({ version: 2, graded: {}, review: {}, practice: { solved: 0, failed: 0 }, sandboxDraft: '', bossStep: {} });
   });
 
   it('đọc save mẫu v2 nguyên vẹn', () => {
@@ -211,7 +246,7 @@ describe('save v2', () => {
 
   it('bỏ giá trị v2 sai kiểu hoặc không còn tồn tại', () => {
     const raw = JSON.stringify({
-      version: 2, completed: [], xp: 0, hintsUsed: {}, drafts: {},
+      version: 2, completed: [], xp: 0, hintsUsed: {}, drafts: {}, graded: {},
       review: {
         select: { box: 2, due: '2026-11-20' },
         gone: { box: 1, due: '2026-11-20' },
@@ -237,7 +272,7 @@ describe('save v2', () => {
     const store = memStore({ [SAVE_KEY]: v1 });
     const r = loadSave(store, known);
     expect(r.warning).toBeUndefined();
-    expect(r.save).toMatchObject({ version: 2, completed: ['ch1-01', 'ch1-02'], review: {}, bossStep: {} });
+    expect(r.save).toMatchObject({ version: 2, completed: ['ch1-01', 'ch1-02'], review: {}, bossStep: {}, graded: {} });
     expect(store.data[oldSaveKey(1)]).toBe(v1);
   });
 });
@@ -246,18 +281,28 @@ describe('save v2', () => {
 - [ ] **Step 3: Chạy test, xác nhận FAIL**
 
 Run: `npx vitest run tests/saveV2.test.ts`
-Expected: FAIL — `SANDBOX_DRAFT_MAX` không được export (hoặc `emptySave().version` là 1).
+Expected: FAIL. Lý do: `SANDBOX_DRAFT_MAX` chưa được export, và `emptySave().version` vẫn là 1.
 
 - [ ] **Step 4: Sửa `src/save.ts`**
 
-4a. Đổi dòng `export const SAVE_VERSION = 1;` thành:
+**Sửa `src/save.ts`** — thay:
+```ts
+export const SAVE_VERSION = 1;
+```
+bằng:
 ```ts
 export const SAVE_VERSION = 2;
 export const SANDBOX_DRAFT_MAX = 20_000;
 ```
 
-4b. Trong `export interface Save { … }`, thêm ngay sau dòng khai báo `drafts: Record<string, string>;`:
+**Sửa `src/save.ts`** — thay:
 ```ts
+  graded: Record<string, string>;
+}
+```
+bằng:
+```ts
+  graded: Record<string, string>;
   // --- v2 (Plan 1c) ---
   /** Leitner card per skill id. `due` = real local day 'YYYY-MM-DD' of the player's machine, never the in-game date. */
   review: Record<string, { box: number; due: string }>;
@@ -265,26 +310,31 @@ export const SANDBOX_DRAFT_MAX = 20_000;
   practice: { solved: number; failed: number };
   /** Sandbox editor content, at most SANDBOX_DRAFT_MAX chars. */
   sandboxDraft: string;
-  /** Boss step reached (0-based) for tickets not completed yet. Clamped to steps.length - 1 on use. */
+  /** Promotion-review step reached (0-based) for tickets not completed yet. Clamped to steps.length - 1 on use. */
   bossStep: Record<string, number>;
+}
 ```
 
-4c. Thay dòng `export const MIGRATIONS: Record<number, Migration> = {};` bằng:
+**Sửa `src/save.ts`** — thay:
+```ts
+export const MIGRATIONS: Record<number, Migration> = {};
+
+export const emptySave = (): Save => ({ version: SAVE_VERSION, completed: [], xp: 0, hintsUsed: {}, drafts: {}, graded: {} });
+```
+bằng:
 ```ts
 export const MIGRATIONS: Record<number, Migration> = {
-  // v1 → v2: pure, needs no content. Learned skills missing from `review` are treated as box 1 due today at read time.
+  // v1 → v2: pure, needs no content. Learned skills missing from `review` count as box 1 due today (practice.ts cardOf).
   1: (d) => ({ ...d, review: {}, practice: { solved: 0, failed: 0 }, sandboxDraft: '', bossStep: {} }),
 };
-```
 
-4d. Thay toàn bộ định nghĩa `export const emptySave = …` (một biểu thức) bằng:
-```ts
 export const emptySave = (): Save => ({
   version: SAVE_VERSION,
   completed: [],
   xp: 0,
   hintsUsed: {},
   drafts: {},
+  graded: {},
   review: {},
   practice: { solved: 0, failed: 0 },
   sandboxDraft: '',
@@ -292,7 +342,14 @@ export const emptySave = (): Save => ({
 });
 ```
 
-4e. Thêm ngay **trước** dòng `export function parseSave(`:
+**Sửa `src/save.ts`** — thay:
+```ts
+/**
+ * Throws InvalidSaveError (not JSON, bad version, missing migration) or NewerSaveError.
+ * `migrations`/`version` let tests exercise the migration path while SAVE_VERSION is 1.
+ */
+```
+bằng:
 ```ts
 const DAY_RE = /^\d{4}-\d{2}-\d{2}$/;
 const isRecord = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v);
@@ -300,6 +357,7 @@ const isCount = (v: unknown): v is number => typeof v === 'number' && Number.isI
 
 type V2Fields = Pick<Save, 'review' | 'practice' | 'sandboxDraft' | 'bossStep'>;
 
+/** Runs for every version, so tests with custom `migrations`/`version` still get a complete Save. */
 function readV2(d: Record<string, unknown>, known: Known): V2Fields {
   const review: Save['review'] = {};
   if (isRecord(d.review)) {
@@ -321,68 +379,131 @@ function readV2(d: Record<string, unknown>, known: Known): V2Fields {
     bossStep,
   };
 }
+
+/**
+ * Throws InvalidSaveError (not JSON, bad version, missing migration) or NewerSaveError.
+ * `migrations`/`version` let tests exercise the migration path with made-up versions.
+ */
 ```
 
-4f. Trong object mà `parseSave` trả về, thêm ngay sau thuộc tính `drafts: pickRecord(…),`:
+**Sửa `src/save.ts`** — thay:
 ```ts
+    graded: pickRecord(d.graded, isString, known.ticketIds),
+  };
+```
+bằng:
+```ts
+    graded: pickRecord(d.graded, isString, known.ticketIds),
     ...readV2(d, known),
+  };
 ```
-(`d` là dữ liệu sau vòng migration, `known` là tham số thứ hai của `parseSave`.) `readV2` chạy với mọi `version`, nên các test dùng `migrations`/`version` tùy biến của Plan 1 vẫn nhận save có đủ trường v2.
 
-- [ ] **Step 5: Sửa kỳ vọng v1 trong `tests/save.test.ts`**
+- [ ] **Step 5: Sửa các test tạo `Save` bằng object literal**
 
-Sau khi nâng version, các object kỳ vọng viết tay có `version: 1` (kết quả của `parseSave`) không còn đúng. Với **mỗi** object như vậy trong `tests/save.test.ts`: bỏ `version: 1` và đặt `...emptySave(),` lên đầu object, giữ nguyên các trường còn lại. Ví dụ:
+Các object kỳ vọng có `version: 1` (kết quả `parseSave`) nay sai. Test "đúng version hiện tại" đang nạp v1, mà v1 giờ cũ hơn nên sẽ tạo `.v1`. Hai test mock DOM tạo `app.save` thiếu trường v2, nên `tsc` báo lỗi.
+
+**Sửa `tests/save.test.ts`** — thay:
 ```ts
-// trước
-expect(parseSave(v1, known)).toEqual({ version: 1, completed: ['ch1-01', 'ch1-02'], xp: 350, hintsUsed: { 'ch1-02': 1 }, drafts: { 'ch1-03#0': 'SELECT ref FROM shipments' } });
-// sau
-expect(parseSave(v1, known)).toEqual({ ...emptySave(), completed: ['ch1-01', 'ch1-02'], xp: 350, hintsUsed: { 'ch1-02': 1 }, drafts: { 'ch1-03#0': 'SELECT ref FROM shipments' } });
+    expect(parseSave(v1, known)).toEqual({
+      version: 1, completed: ['ch1-01', 'ch1-02'], xp: 350, hintsUsed: { 'ch1-02': 1 }, drafts: { 'ch1-03#0': 'SELECT ref FROM shipments' }, graded: {},
+    });
 ```
-Áp cho hai test `đọc được save mẫu v1` và `bỏ ticket không còn tồn tại và giá trị sai kiểu`.
+bằng:
+```ts
+    expect(parseSave(v1, known)).toEqual({
+      ...emptySave(), completed: ['ch1-01', 'ch1-02'], xp: 350, hintsUsed: { 'ch1-02': 1 }, drafts: { 'ch1-03#0': 'SELECT ref FROM shipments' },
+    });
+```
 
-Test `save đúng version hiện tại → không tạo bản .v<old>` đang nạp `v1`, mà v1 giờ cũ hơn bản hiện tại nên sẽ tạo `.v1`. Trong test đó đổi `memoryStorage({ [SAVE_KEY]: v1 })` thành `memoryStorage({ [SAVE_KEY]: serializeSave(emptySave()) })` (cả hai hàm đã được import ở đầu file).
+**Sửa `tests/save.test.ts`** — thay:
+```ts
+    expect(parseSave(raw, known)).toEqual({ version: 1, completed: ['ch1-01'], xp: 0, hintsUsed: {}, drafts: {}, graded: {} });
+```
+bằng:
+```ts
+    expect(parseSave(raw, known)).toEqual({ ...emptySave(), completed: ['ch1-01'] });
+```
+
+**Sửa `tests/save.test.ts`** — thay:
+```ts
+  it('save đúng version hiện tại → không tạo bản .v<old>', () => {
+    const store = memoryStorage({ [SAVE_KEY]: v1 });
+```
+bằng:
+```ts
+  it('save đúng version hiện tại → không tạo bản .v<old>', () => {
+    const store = memoryStorage({ [SAVE_KEY]: serializeSave(emptySave()) });
+```
+
+**Sửa `tests/workRace.test.ts`** — thay:
+```ts
+import type { QueryResult } from '../src/db/run';
+```
+bằng:
+```ts
+import type { QueryResult } from '../src/db/run';
+import { emptySave } from '../src/save';
+```
+
+**Sửa `tests/workRace.test.ts`** — thay:
+```ts
+  app.save = { version: 1, completed: [], xp: 0, hintsUsed: {}, drafts: { 'A#0': 'SELECT 1  AS n', 'B#0': 'SELECT 2' }, graded: {} };
+```
+bằng:
+```ts
+  app.save = { ...emptySave(), drafts: { 'A#0': 'SELECT 1  AS n', 'B#0': 'SELECT 2' } };
+```
+
+**Sửa `tests/coach.test.ts`** — thay:
+```ts
+  app.save = { version: 1, completed: [], xp: 0, hintsUsed: {}, drafts: {}, graded: {} };
+```
+bằng:
+```ts
+  app.save = (await import('../src/save')).emptySave();
+```
 
 Không sửa `tests/fixtures/save-v1.json`.
 
 - [ ] **Step 6: Chạy test, xác nhận PASS**
 
-Run: `npx vitest run tests/save.test.ts tests/saveV2.test.ts && npx tsc --noEmit`
-Expected: mọi test PASS; `tsc` không lỗi. Nếu `tsc` báo nơi khác tạo `Save` bằng object literal thiếu trường v2: sửa nơi đó thành `{ ...emptySave(), … }`.
+Run: `npx vitest run tests/save.test.ts tests/saveV2.test.ts tests/workRace.test.ts tests/coach.test.ts && npx tsc --noEmit`
+Expected: mọi test PASS; `tsc` không lỗi.
 
-- [ ] **Step 7: Chạy toàn bộ**
+- [ ] **Step 7: Chạy toàn bộ rồi commit**
 
 Run: `npm test && npx tsc --noEmit`
 Expected: tất cả PASS.
 
-- [ ] **Step 8: Commit**
-
-Theo luật A8 (release nâng save đi riêng), commit này chỉ chứa save v2.
+Theo luật A8 (release nâng save đi riêng), commit này chỉ chứa save v2:
 ```bash
-git add src/save.ts tests/save.test.ts tests/saveV2.test.ts tests/fixtures/save-v2.json
+git add src/save.ts tests/save.test.ts tests/saveV2.test.ts tests/fixtures/save-v2.json tests/workRace.test.ts tests/coach.test.ts
 git commit -m "feat: save v2 (review, practice, sandboxDraft, bossStep) via migration 1->2"
 ```
 
 ---
+
 ### Task 2: Biến thể ticket (`{{x}}`) và nội dung biến thể ch1–3
 
 **Files:**
 - Create: `src/variants.ts`, `tests/variants.test.ts`
-- Modify: `src/content.ts`, `content/tickets/ch1/ch1-03.md`, `content/tickets/ch2/ch2-04.md`
+- Modify: `src/content.ts`, `content/tickets/ch1/ch1-03.md`, `content/tickets/ch2/ch2-03.md`
 
 **Interfaces:**
-- Consumes: `Ticket`, `Variant`, `variants?` (Plan 1 Task 4 — parser đã kiểm 2–4 bộ, giá trị an toàn, đúng khóa, boss không có); `loadTickets` (Plan 1 Task 7); `runner` (tests/helpers.ts); `cellKey` (`src/grader.ts`)
+- Consumes: `Ticket`, `variants?` (parser đã kiểm định dạng); `runner`; `cellKey`
 - Produces:
   - `type VariantVars = Record<string, string>`
   - `variantsOf(t: Ticket): VariantVars[]`
-  - `renderTemplate(s: string, vars: VariantVars): string` — biến không có giá trị giữ nguyên `{{x}}`
-  - `applyVariant(t: Ticket, index: number): Ticket` — thay `{{x}}` trong **mọi** chuỗi của ticket (VI, EN, Solution, `starter`, kết luận…) trừ khóa `variants`; ticket không có biến thể trả về chính nó
-  - `templateVars(t: Ticket): string[]` — tên biến xuất hiện trong ticket, sắp xếp, không trùng
-  - `loadTicketTemplates(): Ticket[]` (template thô, đã sắp theo `byOrder`); `loadTickets()` đổi thành `loadTicketTemplates().map((t) => applyVariant(t, 0))`
+  - `renderTemplate(s, vars)`: biến không có giá trị thì giữ nguyên `{{x}}`
+  - `applyVariant(t, index)`: thay `{{x}}` trong **mọi** chuỗi của ticket (VI, EN, Solution, `columns`, `starter`, kết luận…) trừ khóa `variants`. Ticket không có biến thể thì trả về chính nó.
+  - `templateVars(t)`: tên biến, sắp xếp, không trùng
+  - `loadTicketTemplates(): Ticket[]` (template thô, sắp theo `byOrder`). `loadTickets()` = `loadTicketTemplates().map((t) => applyVariant(t, 0))`
 
-Lý do đặt chỗ render ở loader: Học chính luôn chơi `variants[0]`, nên toàn bộ UI và test nội dung của Plan 1 không bao giờ thấy `{{x}}`. Chỉ Luyện tập đọc template.
+Lý do đặt chỗ render ở loader: Làm việc luôn chơi `variants[0]`, nên UI, KPI và test nội dung đã có không bao giờ thấy `{{x}}`. Chỉ Luyện tập đọc template.
 
-- [ ] **Step 1: Viết test `tests/variants.test.ts`**
+- [ ] **Step 1: Viết test**
 
+**Tạo `tests/variants.test.ts`:**
 ```ts
 import { describe, expect, it } from 'vitest';
 import { loadTicketTemplates, loadTickets } from '../src/content';
@@ -391,7 +512,7 @@ import { applyVariant, renderTemplate, templateVars, variantsOf } from '../src/v
 import { runner } from './helpers';
 
 /** Strings a player reads or the grader runs; excludes ids and metadata. */
-const SKIP_KEYS = new Set(['id', 'from', 'variants', 'tables', 'requires', 'grants', 'beat']);
+const SKIP_KEYS = new Set(['id', 'from', 'variants', 'tables', 'requires', 'grants', 'beat', 'scene']);
 function texts(v: unknown, key = ''): string[] {
   if (SKIP_KEYS.has(key)) return [];
   if (typeof v === 'string') return [v];
@@ -411,13 +532,14 @@ describe('renderTemplate / applyVariant', () => {
       ...base,
       title: 'T {{m}}',
       hints: ['h {{m}}', 'b', 'c'],
-      steps: [{ ...base.steps[0], solution: "SELECT '{{m}}'" }],
+      steps: [{ ...base.steps[0], solution: "SELECT '{{m}}'", columns: [{ vi: 'Cột {{m}}', en: 'Col {{m}}' }] }],
       variants: [{ m: 'A' }, { m: 'B' }],
     };
     const v1 = applyVariant(tpl, 1);
     expect(v1.title).toBe('T B');
     expect(v1.hints[0]).toBe('h B');
     expect(v1.steps[0].solution).toBe("SELECT 'B'");
+    expect(v1.steps[0].columns?.[0]).toEqual({ vi: 'Cột B', en: 'Col B' });
     expect(tpl.title).toBe('T {{m}}');
     expect(templateVars(tpl)).toEqual(['m']);
   });
@@ -427,7 +549,7 @@ describe('renderTemplate / applyVariant', () => {
     expect(applyVariant(plain, 0)).toBe(plain);
   });
 
-  it('Học chính không còn {{…}}', () => {
+  it('Làm việc (loadTickets) không còn {{…}}', () => {
     for (const t of loadTickets()) expect(texts(t).join('\n'), t.id).not.toMatch(/\{\{\w+\}\}/);
   });
 });
@@ -435,7 +557,11 @@ describe('renderTemplate / applyVariant', () => {
 describe('biến thể trong nội dung', () => {
   const templates = loadTicketTemplates();
 
-  // Format rules (2–4 sets, safe values, exact keys, no boss) are enforced by parseTicket (Plan 1 Task 4).
+  it('ch1–3 có ít nhất 2 ticket có biến thể (D2)', () => {
+    expect(templates.filter((t) => variantsOf(t).length >= 2).length).toBeGreaterThanOrEqual(2);
+  });
+
+  // Format rules (2–4 sets, safe values, exact keys, no promotion review) are enforced by parseTicket.
   it('không sót giá trị cứng của biến thể 0 ở chỗ lẽ ra phải là {{x}}', () => {
     const problems: string[] = [];
     for (const t of templates) {
@@ -474,8 +600,9 @@ describe('biến thể trong nội dung', () => {
 Run: `npx vitest run tests/variants.test.ts`
 Expected: FAIL — không resolve được `../src/variants`.
 
-- [ ] **Step 3: Viết `src/variants.ts`**
+- [ ] **Step 3: Viết `src/variants.ts` và tách loader**
 
+**Tạo `src/variants.ts`:**
 ```ts
 import type { Ticket } from './tickets';
 
@@ -484,13 +611,13 @@ export type VariantVars = Record<string, string>;
 
 const VAR_RE = /\{\{(\w+)\}\}/g;
 
-export const variantsOf = (t: Ticket): VariantVars[] => (t.variants ?? []) as VariantVars[];
+export const variantsOf = (t: Ticket): VariantVars[] => t.variants ?? [];
 
 export function renderTemplate(s: string, vars: VariantVars): string {
-  return s.replace(VAR_RE, (m, k: string) => (Object.hasOwn(vars, k) ? String(vars[k]) : m));
+  return s.replace(VAR_RE, (m, k: string) => (Object.hasOwn(vars, k) ? vars[k] : m));
 }
 
-/** Applies `f` to every string in a ticket, including fields added later (EN block, starter...). */
+/** Applies `f` to every string in a ticket, including fields added later (EN block, columns, starter...). */
 function mapStrings<T>(v: T, f: (s: string) => string): T {
   if (typeof v === 'string') return f(v) as T;
   if (Array.isArray(v)) return v.map((x) => mapStrings(x, f)) as T;
@@ -515,72 +642,163 @@ export function templateVars(t: Ticket): string[] {
 }
 ```
 
-- [ ] **Step 4: Tách loader trong `src/content.ts`**
-
-4a. Thêm import ở đầu file:
+**Tạo `src/content.ts`:**
 ```ts
+import { byOrder, parseTicket, type Ticket } from './tickets';
 import { applyVariant } from './variants';
-```
 
-4b. Đổi tên hàm hiện có `export function loadTickets(): Ticket[] {` thành `export function loadTicketTemplates(): Ticket[] {` (giữ nguyên thân hàm), rồi thêm ngay bên dưới hàm đó:
-```ts
-/** Story mode always plays variants[0]; Practice reads the raw templates via loadTicketTemplates(). */
+const files = import.meta.glob<string>('../content/tickets/**/*.md', { query: '?raw', import: 'default', eager: true });
+
+/** Raw tickets with their {{x}} templates; only Practice reads these. */
+export function loadTicketTemplates(): Ticket[] {
+  return Object.entries(files)
+    .map(([path, source]) => parseTicket(source, path))
+    .sort(byOrder);
+}
+
+/** Story mode always plays variants[0]. */
 export function loadTickets(): Ticket[] {
   return loadTicketTemplates().map((t) => applyVariant(t, 0));
 }
 ```
 
-- [ ] **Step 5: Chạy test, xác nhận PASS (chưa có ticket nào có biến thể)**
+- [ ] **Step 4: Chạy test (chưa ticket nào có biến thể)**
 
 Run: `npx vitest run tests/variants.test.ts && npx tsc --noEmit`
-Expected: PASS (hai test nội dung chạy qua danh sách rỗng); `tsc` không lỗi.
+Expected: chỉ test "ch1–3 có ít nhất 2 ticket có biến thể" FAIL; các test khác PASS; `tsc` không lỗi.
 
-- [ ] **Step 6: Thêm biến thể cho `ch2-04` (đếm lô theo trạng thái)**
+- [ ] **Step 5: Biến thể cho `ch1-03` (lô nặng nhất theo tháng)**
 
-Trong `content/tickets/ch2/ch2-04.md`:
-1. Thay dòng `title:` bằng `title: Bao nhiêu lô ở trạng thái {{status}}?`
-2. Thay dòng `title_en:` bằng `title_en: How many shipments are {{status}}?`
-3. Thêm vào frontmatter (ngay trước dòng `---` đóng):
-```yaml
+Biến thể đổi tháng ở bốn chỗ:
+- `month`: chữ VI;
+- `month_en`: chữ EN;
+- `from`, `to`: ngày trong SQL.
+
+Câu phá hòa nằm ở phần không template, nên biến thể nào cũng có (luật PD §3.1.5). Đề vẫn không có backtick và tên cột (`tests/content.test.ts`).
+
+**Tạo `content/tickets/ch1/ch1-03.md`:**
+````markdown
+---
+id: ch1-03
+chapter: 1
+title: Năng lực hàng nặng tháng {{month}}
+title_en: Heavy cargo in {{month_en}}
+from: { name: Lê Bình, dept: Sales }
+difficulty: 2
+beat: twist
+requires: [select, where]
+grants: [order_by, limit]
+tables: [shipments]
+ordered: true
+columns:
+  - { vi: "Mã lô", en: "Shipment ref" }
+  - { vi: "Tổng trọng lượng (kg)", en: "Gross weight (kg)" }
 variants:
-  - { status: IN_TRANSIT }
-  - { status: BOOKED }
-  - { status: DELIVERED }
+  - { month: "10/2026", month_en: "October 2026", from: "2026-10-01", to: "2026-11-01" }
+  - { month: "08/2026", month_en: "August 2026", from: "2026-08-01", to: "2026-09-01" }
+  - { month: "05/2026", month_en: "May 2026", from: "2026-05-01", to: "2026-06-01" }
+---
+Một nhà máy thép đang cân nhắc chuyển hàng sang mình. Họ hỏi mình đã từng nhận những lô nặng cỡ nào, và mình muốn trả lời bằng chính các lô gần đây.
+
+## Task
+Gửi mình 10 lô hàng xuất khẩu đi đường biển nặng nhất, trong số các lô booking trong tháng {{month}}: mã lô và tổng trọng lượng (kg). Tính mọi booking trong tháng, kể cả lô sau đó bị hủy, vì khách chỉ hỏi mình đã nhận booking cỡ nào. Lô nặng nhất lên đầu; hai lô nặng bằng nhau thì lô có mã nhỏ hơn đứng trước.
+
+## Hints
+1. Có ba điều kiện lọc: hàng xuất, đi đường biển, ngày booking trong tháng {{month}}. Sau đó xếp theo trọng lượng giảm dần, phá hòa bằng mã lô, rồi chỉ giữ 10 dòng đầu.
+2. Bảng `shipments`: chiều hàng ở `direction` (`'EXPORT'`), phương thức ở `mode` (`'SEA'`), ngày booking ở `booking_date`, trọng lượng ở `gross_weight_kg`, mã lô ở `ref`. Tháng {{month}}: `booking_date >= '{{from}}' AND booking_date < '{{to}}'`. Giảm dần dùng `DESC`.
+3. `SELECT ref, gross_weight_kg FROM shipments WHERE ... ORDER BY gross_weight_kg DESC, ref LIMIT 10`
+
+## Solution
+```sql
+SELECT ref, gross_weight_kg
+FROM shipments
+WHERE direction = 'EXPORT' AND mode = 'SEA'
+  AND booking_date >= '{{from}}' AND booking_date < '{{to}}'
+ORDER BY gross_weight_kg DESC, ref
+LIMIT 10
 ```
-4. Trong toàn file (phần VI, khối `# EN`, gợi ý, Solution): thay mọi `` `IN_TRANSIT` `` bằng `` `{{status}}` `` và mọi `'IN_TRANSIT'` bằng `'{{status}}'`.
 
-- [ ] **Step 7: Thêm biến thể cho `ch1-03` (lô nặng nhất theo tháng)**
+# EN
+A steel plant is thinking about moving its cargo to us. They asked how heavy the shipments we have handled are, and I want to answer with our own recent shipments.
 
-Trong `content/tickets/ch1/ch1-03.md`:
-1. Thay dòng `title:` bằng `title: Lô hàng nặng nhất tháng {{month}}`
-2. Thay dòng `title_en:` bằng `title_en: Heaviest shipments in {{month}}`
-3. Thêm vào frontmatter (ngay trước dòng `---` đóng):
-```yaml
+## Task
+Send me the 10 heaviest export shipments by sea among those booked in {{month_en}}: shipment ref and gross weight (kg). Count every booking of the month, including ones cancelled later, because the customer only asks what size of booking we take on. Heaviest first; if two weigh the same, the one with the smaller ref comes first.
+
+## Hints
+1. There are three filters: exports, by sea, booking date in {{month_en}}. Then sort by weight from heaviest to lightest, break ties by shipment ref, and keep only the first 10 rows.
+2. Table `shipments`: the direction is in `direction` (`'EXPORT'`), the mode in `mode` (`'SEA'`), the booking date in `booking_date`, the weight in `gross_weight_kg`, the shipment ref in `ref`. {{month_en}}: `booking_date >= '{{from}}' AND booking_date < '{{to}}'`. Descending order uses `DESC`.
+3. `SELECT ref, gross_weight_kg FROM shipments WHERE ... ORDER BY gross_weight_kg DESC, ref LIMIT 10`
+````
+
+- [ ] **Step 6: Biến thể cho `ch2-03` (khách chủ lực theo ngưỡng số lô)**
+
+Ngưỡng 150 / 120 / 200 lần lượt cho 7 / 10 / 4 khách. Không khách nào có đúng 120, 150 hay 200 lô, nên câu "không tính khách đúng {{min}} lô" vẫn đúng với mọi biến thể. KPI `keyAccounts` đọc bản Làm việc (`variants[0]` = 150), nên khớp nhãn "hơn 150 lô".
+
+**Tạo `content/tickets/ch2/ch2-03.md`:**
+````markdown
+---
+id: ch2-03
+chapter: 2
+title: Khách hàng chủ lực 2025
+title_en: Key accounts of 2025
+from: { name: Lê Bình, dept: Sales }
+difficulty: 2
+beat: twist
+requires: [group_by]
+grants: [having]
+tables: [shipments]
+columns:
+  - { vi: "Mã khách hàng", en: "Customer code" }
+  - { vi: "Số lô năm 2025", en: "Shipments in 2025" }
 variants:
-  - { month: "10/2026", from: "2026-10-01", to: "2026-11-01" }
-  - { month: "08/2026", from: "2026-08-01", to: "2026-09-01" }
-  - { month: "05/2026", from: "2026-05-01", to: "2026-06-01" }
+  - { min: 150 }
+  - { min: 120 }
+  - { min: 200 }
+---
+Ban giám đốc sắp mời các khách chủ lực dự hội nghị khách hàng cuối năm. Tiêu chí là khách đã đặt hơn {{min}} lô trong năm 2025. Tính cả lô bị hủy: đó vẫn là nhu cầu thật của khách, và team booking vẫn mất công xử lý.
+
+## Task
+Gửi mình mã khách hàng và số lô năm 2025 của từng khách đạt tiêu chí (hơn {{min}} lô, không tính khách đúng {{min}} lô). Tên khách thì CSKH sẽ tra sau, lúc này mã khách là đủ. Không cần sắp xếp.
+
+## Hints
+1. Bạn cần đếm số lô của từng khách trong năm 2025, rồi chỉ giữ khách có kết quả đếm lớn hơn {{min}}. Điều kiện "hơn {{min}}" áp lên con số sau khi đếm, không áp lên từng lô.
+2. Bảng `shipments`, gom theo `customer_id`. `WHERE` lọc từng lô trước khi gom; điều kiện trên kết quả đếm đặt ở `HAVING COUNT(*) > {{min}}`, sau `GROUP BY`.
+3. `SELECT customer_id, COUNT(*) FROM shipments WHERE ... GROUP BY customer_id HAVING ...`
+
+## Solution
+```sql
+SELECT customer_id, COUNT(*)
+FROM shipments
+WHERE booking_date >= '2025-01-01' AND booking_date < '2026-01-01'
+GROUP BY customer_id
+HAVING COUNT(*) > {{min}}
 ```
-4. Trong toàn file: thay `'2026-10-01'` bằng `'{{from}}'`, `'2026-11-01'` bằng `'{{to}}'`, và `10/2026` bằng `{{month}}`.
-5. Trong khối `# EN`: mọi cụm chỉ tháng 10/2026 bằng chữ (ví dụ `October 2026`, `Oct 2026`) thay bằng `{{month}}`.
 
-Câu phá hòa ("bằng cân thì xếp theo `ref`") nằm ở phần không template nên mọi biến thể đều có (luật PD §3.1.5).
+# EN
+The board is about to invite our key accounts to the year-end customer conference. The rule is: customers who booked more than {{min}} shipments in 2025. Cancelled shipments count too: they are still real demand from the customer, and the booking team still had to handle them.
 
-- [ ] **Step 8: Chạy test, xác nhận PASS**
+## Task
+Send me the customer code and the number of 2025 shipments of every customer who meets the rule (more than {{min}} shipments; exactly {{min}} does not qualify). Customer service will look up the names later, so the customer code is enough for now. Any order of rows is fine.
 
-Run: `npx vitest run tests/variants.test.ts tests/content.test.ts && npx tsc --noEmit`
-Expected: tất cả PASS. Nếu test "còn sót" báo một giá trị của biến thể 0 (ví dụ `2026-10-01` trong một gợi ý), sửa đúng chỗ đó thành `{{biến}}` tương ứng rồi chạy lại. Không sửa test.
+## Hints
+1. You need to count each customer's shipments in 2025, then keep only the customers whose count is above {{min}}. The "above {{min}}" condition applies to the number after counting, not to single shipments.
+2. Table `shipments`, grouped by `customer_id`. `WHERE` filters single shipments before grouping; a condition on the count goes in `HAVING COUNT(*) > {{min}}`, after `GROUP BY`.
+3. `SELECT customer_id, COUNT(*) FROM shipments WHERE ... GROUP BY customer_id HAVING ...`
+````
 
-- [ ] **Step 9: Chạy toàn bộ**
+- [ ] **Step 7: Chạy test, xác nhận PASS**
+
+Run: `npx vitest run tests/variants.test.ts tests/content.test.ts tests/tickets.test.ts tests/home.test.ts tests/i18n.test.ts && npx tsc --noEmit`
+Expected: tất cả PASS. Nếu test "còn sót" báo một giá trị của biến thể 0, sửa đúng chỗ đó thành `{{biến}}` rồi chạy lại. Không sửa test.
+
+- [ ] **Step 8: Chạy toàn bộ rồi commit**
 
 Run: `npm test && npx tsc --noEmit`
 Expected: tất cả PASS.
 
-- [ ] **Step 10: Commit**
-
 ```bash
-git add src/variants.ts src/content.ts tests/variants.test.ts content/tickets/ch1/ch1-03.md content/tickets/ch2/ch2-04.md
-git commit -m "feat: ticket variants with {{x}} templates; story plays variants[0]"
+git add src/variants.ts src/content.ts tests/variants.test.ts content/tickets/ch1/ch1-03.md content/tickets/ch2/ch2-03.md
+git commit -m "feat: ticket variants with {{x}} templates (ch1-03 month, ch2-03 threshold); story plays variants[0]"
 ```
 
 ---
@@ -591,26 +809,29 @@ git commit -m "feat: ticket variants with {{x}} templates; story plays variants[
 - Create: `src/practice.ts`, `tests/practice.test.ts`
 
 **Interfaces:**
-- Consumes: `Ticket`, `Beat` (Plan 1 Task 4); `variantsOf`, `loadTickets` (Task 2)
+- Consumes: `Ticket`, `Beat`; `variantsOf`, `loadTickets` (Task 2)
 - Produces:
-  - `interface Card { box: number; due: string }`, `type Review = Record<string, Card>`, `interface PracticeStats { solved: number; failed: number }`
-  - `interface PracticeItem { ticketId: string; variant: number; skills: string[] }`
-  - `INTERVALS = [1, 2, 4, 8, 16]` (ngày, chỉ số = `box - 1`), `MAX_BOX = 5`, `QUEUE_MAX = 5`
-  - `localDay(d: Date): string` — ngày theo giờ máy, `YYYY-MM-DD`
-  - `addDays(day: string, n: number): string`
-  - `cardOf(review: Review, skill: string, today: string): Card` — kỹ năng đã học mà chưa có thẻ (save migrate từ v1) = `{ box: 1, due: today }`
-  - `nextCard(card: Card | undefined, success: boolean, today: string): Card` — đạt: `box = min(box + 1, 5)`, `due = today + INTERVALS[box - 1]` (theo hộp mới); chưa đạt: `{ box: 1, due: today + 1 }`
-  - `isSuccess(wrongSubmits: number, hints: number): boolean` — gọi khi đã nộp đúng; đạt khi 0 lần sai và ≤ 1 gợi ý
-  - `seedReview(review: Review, skills: string[], today: string): Review` — kỹ năng mới học: `{ box: 1, due: ngày mai }`; không đè thẻ đã có
-  - `dueSkills(review: Review, learned: Iterable<string>, today: string): string[]` — sắp theo `due` rồi id
-  - `variantFor(t: Ticket, rnd: () => number): number` — có ≥ 2 biến thể thì chọn ngẫu nhiên ≠ 0, ngược lại 0
-  - `pickForSkill(skill: string, templates: Ticket[], completed: Set<string>, rnd: () => number): PracticeItem | undefined` — ticket đã xong, không phải boss, kỹ năng nằm trong `grants ∪ requires`, ưu tiên ticket có biến thể
-  - `todayQueue(review: Review, learned: Iterable<string>, templates: Ticket[], completed: Set<string>, today: string, rnd: () => number): PracticeItem[]` — tối đa `QUEUE_MAX`
-  - `retryItem(t: Ticket, rnd: () => number): PracticeItem` — `skills = t.grants`
-  - `applyResult(state: { review: Review; practice: PracticeStats }, skills: string[], success: boolean, today: string): { review: Review; practice: PracticeStats }` — không đổi input
+  - `Card { box; due }`, `Review = Record<string, Card>`, `PracticeStats { solved; failed }`, `PracticeItem { ticketId; variant; skills }`
+  - `INTERVALS = [1, 2, 4, 8, 16]` (ngày; chỉ số = `box - 1`), `MAX_BOX = 5`, `QUEUE_MAX = 5`
+  - `localDay(d)`: ngày theo giờ máy, dạng `YYYY-MM-DD`; `addDays(day, n)`
+  - `cardOf(review, skill, today)`: kỹ năng đã học mà chưa có thẻ (save migrate từ v1) = `{ box: 1, due: today }`
+  - `nextCard(card, success, today)`:
+    - đạt: `box = min(box + 1, 5)`, `due = today + INTERVALS[box - 1]` (theo hộp mới);
+    - chưa đạt: `{ box: 1, due: today + 1 }`.
+  - `isSuccess(wrongSubmits, hints)`: gọi khi đã nộp đúng; đạt khi 0 lần sai và ≤ 1 gợi ý
+  - `seedReview(review, skills, today)`: kỹ năng mới học = `{ box: 1, due: ngày mai }`, không đè thẻ đã có
+  - `dueSkills(review, learned, today)`: sắp theo `due` rồi id
+  - `variantFor(t, rnd)`: có ≥ 2 biến thể thì chọn ngẫu nhiên một biến thể ≠ 0, ngược lại 0
+  - `pickForSkill(skill, templates, completed, rnd)`:
+    - lọc ticket đã xong, không phải đánh giá thăng tiến, có kỹ năng trong `grants ∪ requires`;
+    - ưu tiên ticket có biến thể.
+  - `todayQueue(review, learned, templates, completed, today, rnd)`: tối đa `QUEUE_MAX` bài
+  - `retryItem(t, rnd)`: `skills = t.grants` (ticket rest không dạy gì thì dùng `t.requires`)
+  - `applyResult(state, skills, success, today)`: không đổi input
 
-- [ ] **Step 1: Viết test `tests/practice.test.ts`**
+- [ ] **Step 1: Viết test**
 
+**Tạo `tests/practice.test.ts`:**
 ```ts
 import { describe, expect, it } from 'vitest';
 import { loadTickets } from '../src/content';
@@ -712,7 +933,7 @@ describe('chọn bài luyện', () => {
     expect(variantFor(plain, () => 0.5)).toBe(0);
   });
 
-  it('pickForSkill ưu tiên ticket đã xong có biến thể; bỏ boss và ticket chưa xong', () => {
+  it('pickForSkill ưu tiên ticket đã xong có biến thể; bỏ đánh giá thăng tiến và ticket chưa xong', () => {
     expect(pickForSkill('select', templates, completed, () => 0)).toEqual({ ticketId: 'ch1-02', variant: 1, skills: ['select'] });
     expect(pickForSkill('where', templates, completed, () => 0)).toEqual({ ticketId: 'ch1-02', variant: 1, skills: ['where'] });
     expect(pickForSkill('order_by', templates, completed, () => 0)).toBeUndefined();
@@ -726,8 +947,9 @@ describe('chọn bài luyện', () => {
     expect(q.every((i) => i.ticketId === 'ch1-04')).toBe(true);
   });
 
-  it('retryItem luyện các kỹ năng ticket đó dạy', () => {
+  it('retryItem luyện các kỹ năng ticket đó dạy; ticket rest không dạy gì thì luyện kỹ năng nó cần', () => {
     expect(retryItem(varied, () => 0)).toEqual({ ticketId: 'ch1-02', variant: 1, skills: ['where'] });
+    expect(retryItem(wide, () => 0).skills).toEqual(wide.requires);
   });
 });
 ```
@@ -739,6 +961,7 @@ Expected: FAIL — không resolve được `../src/practice`.
 
 - [ ] **Step 3: Viết `src/practice.ts`**
 
+**Tạo `src/practice.ts`:**
 ```ts
 import type { Ticket } from './tickets';
 import { variantsOf } from './variants';
@@ -813,7 +1036,9 @@ export function todayQueue(
   return out;
 }
 
-export const retryItem = (t: Ticket, rnd: () => number): PracticeItem => ({ ticketId: t.id, variant: variantFor(t, rnd), skills: [...t.grants] });
+/** "Practise this task again": the skills it teaches, or (a rest ticket teaches none) the skills it needs. */
+export const retryItem = (t: Ticket, rnd: () => number): PracticeItem =>
+  ({ ticketId: t.id, variant: variantFor(t, rnd), skills: [...(t.grants.length ? t.grants : t.requires)] });
 
 export function applyResult(
   state: { review: Review; practice: PracticeStats }, skills: string[], success: boolean, today: string,
@@ -830,12 +1055,10 @@ export function applyResult(
 }
 ```
 
-- [ ] **Step 4: Chạy test, xác nhận PASS**
+- [ ] **Step 4: Chạy test, xác nhận PASS rồi commit**
 
 Run: `npx vitest run tests/practice.test.ts && npx tsc --noEmit`
 Expected: tất cả PASS; `tsc` không lỗi.
-
-- [ ] **Step 5: Commit**
 
 ```bash
 git add src/practice.ts tests/practice.test.ts
@@ -844,38 +1067,37 @@ git commit -m "feat: Leitner review schedule and practice item selection"
 
 ---
 
-### Task 4: Tính tiến độ từ save (`src/overview.ts`)
+### Task 4: Mục tiêu chương, tổng kết, bước đánh giá (`src/overview.ts`) và `learnedSkills` dùng chung
 
 **Files:**
 - Create: `src/overview.ts`, `tests/overview.test.ts`
+- Modify: `src/home.ts`
 
 **Interfaces:**
-- Consumes: `CHAPTER_TABLES`, `currentChapter`, `xpFor` (Plan 1 Task 5); `Save`, `emptySave` (Task 1); `cardOf`, `dueSkills`, `Review` (Task 3)
+- Consumes: `CHAPTER_TABLES`, `xpFor` (`progress.ts`); `Save` (Task 1)
 - Produces:
-  - `type SkillLevel = 'locked' | 'learned' | 'steady' | 'mastered'`
-  - `learnedSkills(tickets: Ticket[], completed: Set<string>): Set<string>` — hợp các `grants` của ticket đã xong
-  - `interface ProgressLine { chapter: number; chapters: number; done: number; total: number; xp: number; learned: number; due: number }`
-  - `progressLine(tickets: Ticket[], chapterCount: number, save: Save, today: string): ProgressLine` — `chapters = max(chapterCount, chương lớn nhất có ticket)`; `total = tickets.length` (không hard-code 7/35)
-  - `skillLevel(skill: string, learned: Set<string>, review: Review, today: string): SkillLevel` — box 1–2 đã học, 3–4 đang vững, 5 thuộc
-  - `outcomeDone(skills: string[], chapter: number, tickets: Ticket[], completed: Set<string>, learned: Set<string>): boolean` — outcome `skills: []` (chương 7) tick khi mọi ticket của chương đã xong
-  - `interface ChapterSummary { xp: number; hints: number; skills: string[]; newTables: string[] }`
-  - `chapterSummary(tickets: Ticket[], save: Save, chapter: number): ChapterSummary`
-  - `grantedBy(tickets: Ticket[], skill: string): Ticket | undefined`
-  - `resumeStep(save: Save, t: Ticket | undefined): number` — bước boss đã lưu, kẹp trong `[0, steps.length - 1]`; ticket đã xong → 0
+  - `learnedSkills(tickets, completed): Set<string>` trong **`src/home.ts`**: hợp các `grants` của ticket đã xong. `homeModel` dùng lại, để logic này không bị nhân đôi.
+  - `outcomeDone(skills, chapter, tickets, completed, learned)`:
+    - outcome có kỹ năng: tick khi đã học đủ kỹ năng;
+    - outcome `skills: []` (ví dụ ch12 không dạy kỹ năng mới): tick khi mọi ticket của chương đã xong.
+  - `ChapterSummary { xp; hints; skills; newTables }`, `chapterSummary(tickets, save, chapter)`: XP tính lại bằng `xpFor`; `newTables` = `CHAPTER_TABLES[chapter + 1]`
+  - `grantedBy(tickets, skill)`
+  - `resumeStep(save, t)`: bước đánh giá đã lưu, kẹp trong `[0, steps.length - 1]`; ticket đã xong → 0
 
-- [ ] **Step 1: Viết test `tests/overview.test.ts`**
+Mức nhớ kỹ năng **không** có hàm riêng: Trang chủ đọc thẳng hộp Leitner qua `homeHooks.levelOf` (Task 7).
 
+- [ ] **Step 1: Viết test**
+
+**Tạo `tests/overview.test.ts`:**
 ```ts
 import { describe, expect, it } from 'vitest';
 import { loadTickets } from '../src/content';
-import {
-  chapterSummary, grantedBy, learnedSkills, outcomeDone, progressLine, resumeStep, skillLevel,
-} from '../src/overview';
+import { learnedSkills } from '../src/home';
+import { chapterSummary, grantedBy, outcomeDone, resumeStep } from '../src/overview';
 import { CHAPTER_TABLES, xpFor } from '../src/progress';
 import { emptySave } from '../src/save';
 import type { Beat, Ticket } from '../src/tickets';
 
-const T = '2026-11-16';
 const base = loadTickets()[0];
 const step = base.steps[0];
 const mk = (id: string, beat: Beat, extra: Partial<Ticket> = {}): Ticket => ({
@@ -889,23 +1111,8 @@ const t4 = mk('ch2-01', 'teach', { grants: ['aggregate'] });
 const tickets = [t1, t2, boss, t4];
 
 describe('overview', () => {
-  it('learnedSkills = grants của ticket đã xong', () => {
+  it('learnedSkills (home.ts) = grants của ticket đã xong', () => {
     expect([...learnedSkills(tickets, new Set(['ch1-01']))]).toEqual(['select']);
-  });
-
-  it('progressLine tính lại mọi số từ save', () => {
-    const save = { ...emptySave(), completed: ['ch1-01', 'ch1-02'], xp: 300, review: { select: { box: 3, due: '2026-11-20' } } };
-    expect(progressLine(tickets, 7, save, T)).toEqual({ chapter: 1, chapters: 7, done: 2, total: 4, xp: 300, learned: 2, due: 1 });
-    expect(progressLine(tickets, 0, save, T).chapters).toBe(2);
-  });
-
-  it('skillLevel theo hộp', () => {
-    const learned = new Set(['select', 'where', 'limit']);
-    const review = { where: { box: 3, due: T }, limit: { box: 5, due: T } };
-    expect(skillLevel('aggregate', learned, review, T)).toBe('locked');
-    expect(skillLevel('select', learned, review, T)).toBe('learned');
-    expect(skillLevel('where', learned, review, T)).toBe('steady');
-    expect(skillLevel('limit', learned, review, T)).toBe('mastered');
   });
 
   it('outcomeDone: theo kỹ năng; outcome rỗng tick khi xong cả chương có ticket', () => {
@@ -915,7 +1122,7 @@ describe('overview', () => {
     expect(outcomeDone(['aggregate'], 1, tickets, all, learned)).toBe(false);
     expect(outcomeDone([], 1, tickets, all, learned)).toBe(true);
     expect(outcomeDone([], 1, tickets, new Set(['ch1-01']), learned)).toBe(false);
-    expect(outcomeDone([], 7, tickets, all, learned)).toBe(false);
+    expect(outcomeDone([], 12, tickets, all, learned)).toBe(false);
   });
 
   it('chapterSummary: XP tính lại bằng xpFor, tổng gợi ý, kỹ năng, bảng chương sau', () => {
@@ -933,7 +1140,7 @@ describe('overview', () => {
     expect(grantedBy(tickets, 'cte')).toBeUndefined();
   });
 
-  it('resumeStep: kẹp bước boss, ticket đã xong về 0', () => {
+  it('resumeStep: kẹp bước đánh giá, ticket đã xong về 0', () => {
     expect(resumeStep({ ...emptySave(), bossStep: { 'ch1-05': 1 } }, boss)).toBe(1);
     expect(resumeStep({ ...emptySave(), bossStep: { 'ch1-05': 9 } }, boss)).toBe(2);
     expect(resumeStep({ ...emptySave(), completed: ['ch1-05'], bossStep: { 'ch1-05': 1 } }, boss)).toBe(0);
@@ -945,44 +1152,39 @@ describe('overview', () => {
 - [ ] **Step 2: Chạy test, xác nhận FAIL**
 
 Run: `npx vitest run tests/overview.test.ts`
-Expected: FAIL — không resolve được `../src/overview`.
+Expected: FAIL — không resolve được `../src/overview` (và `learnedSkills` chưa được export).
 
-- [ ] **Step 3: Viết `src/overview.ts`**
+- [ ] **Step 3: Viết code**
 
+**Sửa `src/home.ts`** — thay:
 ```ts
-import { cardOf, dueSkills, type Review } from './practice';
-import { CHAPTER_TABLES, currentChapter, xpFor } from './progress';
+export const LEVELS = 5;
+```
+bằng:
+```ts
+export const LEVELS = 5;
+
+/** Skills taught by the completed tickets. Shared by Home, Practice and the chapter goals (Plan 1c). */
+export const learnedSkills = (tickets: Ticket[], completed: Set<string>): Set<string> =>
+  new Set(tickets.filter((t) => completed.has(t.id)).flatMap((t) => t.grants));
+```
+
+**Sửa `src/home.ts`** — thay:
+```ts
+  const learned = new Set(solved.flatMap((t) => t.grants));
+```
+bằng:
+```ts
+  const learned = learnedSkills(tickets, completed);
+```
+
+**Tạo `src/overview.ts`:**
+```ts
+import { CHAPTER_TABLES, xpFor } from './progress';
 import type { Save } from './save';
 import type { Ticket } from './tickets';
 
-export type SkillLevel = 'locked' | 'learned' | 'steady' | 'mastered';
-
-export function learnedSkills(tickets: Ticket[], completed: Set<string>): Set<string> {
-  return new Set(tickets.filter((t) => completed.has(t.id)).flatMap((t) => t.grants));
-}
-
-export interface ProgressLine { chapter: number; chapters: number; done: number; total: number; xp: number; learned: number; due: number }
-
-export function progressLine(tickets: Ticket[], chapterCount: number, save: Save, today: string): ProgressLine {
-  const completed = new Set(save.completed);
-  const learned = learnedSkills(tickets, completed);
-  return {
-    chapter: currentChapter(tickets, completed),
-    chapters: Math.max(chapterCount, ...tickets.map((t) => t.chapter)),
-    done: tickets.filter((t) => completed.has(t.id)).length,
-    total: tickets.length,
-    xp: save.xp,
-    learned: learned.size,
-    due: dueSkills(save.review, learned, today).length,
-  };
-}
-
-export function skillLevel(skill: string, learned: Set<string>, review: Review, today: string): SkillLevel {
-  if (!learned.has(skill)) return 'locked';
-  const box = cardOf(review, skill, today).box;
-  return box >= 5 ? 'mastered' : box >= 3 ? 'steady' : 'learned';
-}
-
+/** An outcome without skills (a chapter that teaches nothing new, e.g. ch12) is ticked once the whole chapter is done. */
 export function outcomeDone(skills: string[], chapter: number, tickets: Ticket[], completed: Set<string>, learned: Set<string>): boolean {
   if (skills.length) return skills.every((s) => learned.has(s));
   const inChapter = tickets.filter((t) => t.chapter === chapter);
@@ -991,6 +1193,7 @@ export function outcomeDone(skills: string[], chapter: number, tickets: Ticket[]
 
 export interface ChapterSummary { xp: number; hints: number; skills: string[]; newTables: string[] }
 
+/** Recomputed from the save: XP via xpFor (never stored per chapter). */
 export function chapterSummary(tickets: Ticket[], save: Save, chapter: number): ChapterSummary {
   const done = tickets.filter((t) => t.chapter === chapter && save.completed.includes(t.id));
   return {
@@ -1003,22 +1206,21 @@ export function chapterSummary(tickets: Ticket[], save: Save, chapter: number): 
 
 export const grantedBy = (tickets: Ticket[], skill: string): Ticket | undefined => tickets.find((t) => t.grants.includes(skill));
 
+/** Promotion-review step to reopen at (save.bossStep), clamped; 0 for normal or completed tickets. */
 export function resumeStep(save: Save, t: Ticket | undefined): number {
   if (!t || save.completed.includes(t.id)) return 0;
   return Math.min(Math.max(save.bossStep[t.id] ?? 0, 0), t.steps.length - 1);
 }
 ```
 
-- [ ] **Step 4: Chạy test, xác nhận PASS**
+- [ ] **Step 4: Chạy test, xác nhận PASS rồi commit**
 
-Run: `npx vitest run tests/overview.test.ts && npx tsc --noEmit`
+Run: `npx vitest run tests/overview.test.ts tests/home.test.ts && npx tsc --noEmit`
 Expected: tất cả PASS; `tsc` không lỗi.
 
-- [ ] **Step 5: Commit**
-
 ```bash
-git add src/overview.ts tests/overview.test.ts
-git commit -m "feat: progress, skill levels and chapter summary recomputed from save"
+git add src/overview.ts src/home.ts tests/overview.test.ts
+git commit -m "feat: chapter goals, summary and review step recomputed from save; shared learnedSkills"
 ```
 
 ---
@@ -1029,18 +1231,26 @@ git commit -m "feat: progress, skill levels and chapter summary recomputed from 
 - Create: `content/glossary.yml`, `src/glossary.ts`, `tests/glossary.test.ts`
 
 **Interfaces:**
-- Consumes: gói `yaml` (đã có); `runner` (tests/helpers.ts)
 - Produces:
-  - `interface Term { term: string; vi: string; en: string; columns: string[] }` — `vi`/`en` là định nghĩa ngắn; `columns` dạng `table.column`, chỉ gồm cột **đang có** trong DB (thuật ngữ của chương 4+ để `columns: []`, Plan 2/3 bổ sung khi tạo bảng)
-  - `parseGlossary(source: string): Term[]` — throw `Error` có số thứ tự mục khi thiếu trường
-  - `GLOSSARY: Term[]` — nạp từ `content/glossary.yml?raw`
-  - `normalize(s: string): string` — chữ thường, bỏ dấu tiếng Việt (`đ` → `d`)
-  - `matches(query: string, ...texts: string[]): boolean` — query rỗng khớp mọi thứ
+  - `Term { term; vi; en; columns }`:
+    - `vi`/`en` là định nghĩa ngắn;
+    - `columns` dạng `table.column`, chỉ gồm cột **đang có** trong DB. Thuật ngữ của chương sau để `columns: []`; Plan 2–4 bổ sung khi tạo bảng.
+  - `parseGlossary(source)`: throw `Error` có số thứ tự mục khi thiếu trường
+  - `GLOSSARY: Term[]` (nạp từ `content/glossary.yml?raw`)
+  - `normalize(s)`: chữ thường, bỏ dấu tiếng Việt (`đ` → `d`)
+  - `matches(query, ...texts)`: query rỗng khớp mọi thứ
 
-Thiết kế nội dung (vai Product): thuật ngữ **không khóa** (tra cứu không bị chặn); mỗi mục ≤ 1–2 câu; `term` là mã/viết tắt dùng chung VI–EN; nghĩa VI và EN đều hiện trong Sổ tay (ngôn ngữ đang chọn lên trước). Danh sách bám dữ liệu đang có (`shipments`, `containers`, `ports`, `carriers`) trước, rồi tới thuật ngữ các chương sau để người học có lộ trình.
+Thiết kế nội dung (vai Product):
+- thuật ngữ **không khóa**;
+- mỗi mục 1–2 câu;
+- `term` là mã/viết tắt dùng chung VI–EN;
+- Sổ tay hiện nghĩa ở ngôn ngữ đang chọn trước, nghĩa ở ngôn ngữ còn lại sau.
 
-- [ ] **Step 1: Viết test `tests/glossary.test.ts`**
+Tên bảng, tên cột và mã giá trị giữ nguyên (luật i18n).
 
+- [ ] **Step 1: Viết test**
+
+**Tạo `tests/glossary.test.ts`:**
 ```ts
 import { describe, expect, it } from 'vitest';
 import { GLOSSARY, matches, normalize, parseGlossary } from '../src/glossary';
@@ -1095,8 +1305,9 @@ describe('content/glossary.yml', () => {
 Run: `npx vitest run tests/glossary.test.ts`
 Expected: FAIL — không resolve được `../src/glossary`.
 
-- [ ] **Step 3: Tạo `content/glossary.yml`**
+- [ ] **Step 3: Nội dung và parser**
 
+**Tạo `content/glossary.yml`:**
 ```yaml
 # Thuật ngữ freight cho Sổ tay. term = mã/viết tắt dùng chung; vi/en = định nghĩa ngắn.
 # columns: chỉ cột đang có trong DB (table.column). Thuật ngữ của chương sau để [] cho tới khi có bảng.
@@ -1250,8 +1461,7 @@ Expected: FAIL — không resolve được `../src/glossary`.
   columns: []
 ```
 
-- [ ] **Step 4: Viết `src/glossary.ts`**
-
+**Tạo `src/glossary.ts`:**
 ```ts
 import { parse as parseYaml } from 'yaml';
 import raw from '../content/glossary.yml?raw';
@@ -1289,12 +1499,10 @@ export function matches(query: string, ...texts: string[]): boolean {
 }
 ```
 
-- [ ] **Step 5: Chạy test, xác nhận PASS**
+- [ ] **Step 4: Chạy test, xác nhận PASS rồi commit**
 
 Run: `npx vitest run tests/glossary.test.ts && npx tsc --noEmit`
 Expected: tất cả PASS (37 mục); `tsc` không lỗi.
-
-- [ ] **Step 6: Commit**
 
 ```bash
 git add content/glossary.yml src/glossary.ts tests/glossary.test.ts
@@ -1303,51 +1511,54 @@ git commit -m "feat: freight glossary content with column and language checks"
 
 ---
 
-### Task 6: Nối chế độ và save v2 vào khung UI của Plan 1 (`src/session.ts`)
+### Task 6: Nối chế độ và save v2 vào khu làm bài (`src/session.ts`)
 
 **Files:**
 - Create: `src/session.ts`
-- Modify: `src/ui/work.ts`, `src/ui/brief.ts`, `src/main.ts`
+- Modify: `src/ui/work.ts`, `src/ui/brief.ts`, `src/main.ts`, `src/i18n/vi.ts`, `src/i18n/en.ts`
 
 **Interfaces:**
-- Consumes: `app`, `done`, `draftKey`, `selected`, `persist` (Plan 1 `state.ts`); `SANDBOX_DRAFT_MAX` (Task 1); `PracticeItem`, `seedReview`, `localDay` (Task 3); `resumeStep` (Task 4)
+- Consumes:
+  - từ `state.ts`: `app`, `done`, `draftKey`, `selected`;
+  - `SANDBOX_DRAFT_MAX` (Task 1);
+  - `PracticeItem`, `dueSkills`, `localDay`, `seedReview` (Task 3);
+  - `learnedSkills`, `resumeStep` (Task 4).
 - Produces:
-  - `interface PracticeRun { id: number; items: PracticeItem[]; tickets: Ticket[]; index: number; wrong: number; hints: number; passed: number; result?: 'ok' | 'weak'; draft: string }`
-  - `type Mode = { kind: 'story' } | { kind: 'practice'; run: PracticeRun } | { kind: 'sandbox' }`
-  - `session: { mode: Mode }`
-  - `activeTicket(): Ticket | undefined` — story: `selected()`; practice: ticket đã áp biến thể; sandbox: `undefined`
-  - `activeStep(): number`
-  - `workKey(): string` — story: `draftKey()`; practice: `practice#<runId>#<index>`; sandbox: `'sandbox'`. Editor chỉ tạo lại khi giá trị này đổi.
-  - `readDraft(): string | undefined`, `writeDraft(v: string): void` — story → `save.drafts`; practice → bộ nhớ (không lưu); sandbox → `save.sandboxDraft` (cắt 20.000 ký tự)
-  - `isClosed(ticketId: string): boolean` — chỉ đúng ở story khi ticket đã xong (practice luôn mở Nộp)
-  - `hintsShown(ticketId: string): number`, `useHint(ticketId: string): void` — practice đếm trong `run.hints`, không ghi `save.hintsUsed`
-  - Hợp đồng mới của `WorkArea` (sửa Plan 1): `setTicket(t: Ticket | undefined, stepIndex: number)` — `undefined` = Sandbox: ẩn Nộp, không có shape card, Chạy/EXPLAIN vẫn đi qua `runSandboxed`; deps thêm `onWrong?(): void` (gọi mỗi lần Nộp sai)
-  - Trong `main.ts`: đóng ticket ghi `review` (kỹ năng mới học hẹn ngày mai) và xóa `bossStep[id]`; qua bước boss ghi `bossStep[id]`; chọn ticket khôi phục bước bằng `resumeStep`
+  - Kiểu và trạng thái:
+    - `PracticeRun { id; items; tickets; index; wrong; hints; passed; result?; draft }`;
+    - `type Mode = { kind: 'story' } | { kind: 'practice'; run: PracticeRun } | { kind: 'sandbox' }`;
+    - `session: { mode: Mode }`, `isStory()`.
+  - `activeTicket()`:
+    - story: `selected()`;
+    - practice: ticket đã áp biến thể;
+    - sandbox: `undefined`.
+  - `activeStep()`.
+  - `workKey()`: `draftKey()` / `practice#<runId>#<index>` / `'sandbox'`. Editor chỉ tạo lại khi giá trị này đổi.
+  - `readDraft()`, `writeDraft(v)`:
+    - story: `save.drafts`;
+    - practice: chỉ trong bộ nhớ;
+    - sandbox: `save.sandboxDraft`, cắt 20.000 ký tự.
+  - `isClosed(id)`: chỉ đúng ở story khi ticket đã xong, nên Luyện tập luôn mở nút Nộp.
+  - `hintsShown(id)`, `useHint(id)`: practice đếm trong `run.hints`, không ghi `save.hintsUsed`.
+  - `today()`, `dueToday()`: kỹ năng đã học đến hạn ôn hôm nay (ngày thật).
+  - Hợp đồng mới của `WorkArea`:
+    - `setTicket(t: Ticket | undefined, …)`: `undefined` = Sandbox. Ẩn Nộp, không lịch sử; Chạy/EXPLAIN vẫn qua `runSandboxed`.
+    - `WorkDeps.onWrong?()`: gọi mỗi lần Nộp sai.
+  - Ngoài Làm việc, `work.ts` không ghi lịch sử và `save.graded` (P5).
+  - Trong `main.ts`:
+    - đóng ticket: ghi `review` (kỹ năng mới học hẹn ngày mai) và xóa `bossStep[id]`;
+    - qua một bước đánh giá: ghi `bossStep[id]`;
+    - chọn ticket hoặc tải trang: khôi phục bước bằng `resumeStep`.
+  - Khóa i18n: `brief.hintFree`.
 
-Task này không thêm chuỗi UI. Học chính phải chạy y hệt trước, cộng thêm việc nhớ bước boss.
-
-- [ ] **Step 0: Grep các điểm neo giao diện (Task 6–9)**
-
-Run:
-```bash
-grep -c "export function t(\|export function getLang\|export const getLang\|export type Key\|export type Msg" src/i18n/index.ts
-grep -c "export const vi = {" src/i18n/vi.ts
-grep -c "export const en: Record<Key, Msg> = {" src/i18n/en.ts
-grep -c "export const app\|export function persist\|export const selected\|export const done\|export const draftKey" src/state.ts
-grep -c "export function mountWork\|setTicket(\|if (!r.ok) {\|app.save.drafts\[draftKey()\]" src/ui/work.ts
-grep -c "export function renderBrief\|app.save.hintsUsed\[" src/ui/brief.ts
-grep -c "export function renderTopbar" src/ui/topbar.ts
-grep -c "renderBrief(\|renderInbox(\|function selectTicket\|function complete\|app.save.completed.push(t.id)\|app.stepIndex++\|mountWork(" src/main.ts
-grep -c 'id="inbox-btn"\|id="inbox-list"\|<script type="module"' index.html
-```
-Expected (lần lượt): `≥ 4`, `1`, `1`, `5`, `≥ 4`, `≥ 2`, `1`, `≥ 7`, `3`.
-
-Nếu một dòng ra `0`: **dừng ở đây và báo** tên thiếu cho người điều phối (Task 10 của Plan 1 đã đặt tên khác). Task 1–5 đã commit vẫn giữ nguyên.
+Làm việc phải chạy y hệt trước, chỉ thêm việc nhớ bước đánh giá.
 
 - [ ] **Step 1: Viết `src/session.ts`**
 
+**Tạo `src/session.ts`:**
 ```ts
-import type { PracticeItem } from './practice';
+import { learnedSkills } from './home';
+import { dueSkills, localDay, type PracticeItem } from './practice';
 import { SANDBOX_DRAFT_MAX } from './save';
 import { app, done, draftKey, selected } from './state';
 import type { Ticket } from './tickets';
@@ -1361,7 +1572,7 @@ export interface PracticeRun {
   index: number;
   /** Wrong submits on the current item. */
   wrong: number;
-  /** Hints opened on the current item. Never written to save.hintsUsed (chapter summary reads that). */
+  /** Hints opened on the current item. Never written to save.hintsUsed (XP and the chapter summary read that). */
   hints: number;
   passed: number;
   result?: 'ok' | 'weak';
@@ -1369,9 +1580,16 @@ export interface PracticeRun {
   draft: string;
 }
 
+/** Modes inside the #/play route (not routes of their own). */
 export type Mode = { kind: 'story' } | { kind: 'practice'; run: PracticeRun } | { kind: 'sandbox' };
 
 export const session: { mode: Mode } = { mode: { kind: 'story' } };
+export const isStory = (): boolean => session.mode.kind === 'story';
+
+/** Real local day for the Leitner schedule (never the in-game date). */
+export const today = (): string => localDay(new Date());
+/** Learned skills whose review is due today. */
+export const dueToday = (): string[] => dueSkills(app.save.review, learnedSkills(app.tickets, done()), today());
 
 export function activeTicket(): Ticket | undefined {
   const m = session.mode;
@@ -1389,7 +1607,7 @@ export function workKey(): string {
   return draftKey();
 }
 
-/** `undefined` lets the caller fall back (e.g. to the ticket's `starter`). */
+/** `undefined` lets the caller fall back (initialDoc: the ticket's `starter`). */
 export function readDraft(): string | undefined {
   const m = session.mode;
   if (m.kind === 'sandbox') return app.save.sandboxDraft;
@@ -1404,6 +1622,7 @@ export function writeDraft(v: string): void {
   else app.save.drafts[draftKey()] = v;
 }
 
+/** Closed = no Submit, Recap shown. Only story tickets close; Practice always grades. */
 export const isClosed = (ticketId: string): boolean => session.mode.kind === 'story' && done().has(ticketId);
 
 export function hintsShown(ticketId: string): number {
@@ -1418,99 +1637,338 @@ export function useHint(ticketId: string): void {
 
 - [ ] **Step 2: Sửa `src/ui/work.ts`**
 
-2a. Thêm import:
+**Sửa `src/ui/work.ts`** — thay:
 ```ts
-import { isClosed, readDraft, workKey, writeDraft } from '../session';
+import { app, done, draftKey, editorSchema, initialDoc, persist, stepKey, type LastRun } from '../state';
 ```
-2b. Đổi theo thứ tự (thứ tự quan trọng vì biểu thức đọc nằm trong câu gán):
-- Câu gán `app.save.drafts[draftKey()] = <biểu thức>;` → `writeDraft(<biểu thức>);`
-- Mọi biểu thức đọc còn lại `app.save.drafts[draftKey()]` → `readDraft()` (giữ nguyên fallback phía sau, ví dụ `?? t.starter ?? ''`).
-- Mọi `draftKey()` còn lại (so sánh để quyết định có tạo lại editor) → `workKey()`.
-- Mọi `done().has(<x>.id)` → `isClosed(<x>.id)`.
-2c. Trong kiểu deps của `mountWork`, thêm thuộc tính:
+bằng:
 ```ts
-  /** Called on every wrong submit (Practice counts them for the Leitner result). */
+import { isClosed, isStory, readDraft, workKey, writeDraft } from '../session';
+import { app, editorSchema, initialDoc, persist, stepKey, type LastRun } from '../state';
+```
+
+**Sửa `src/ui/work.ts`** — thay:
+```ts
+  /** After every Run/Submit (the brief redraws its shape card). */
+  onRun(): void;
+}
+```
+bằng:
+```ts
+  /** After every Run/Submit (the brief redraws its shape card). */
+  onRun(): void;
+  /** Every wrong submit (Practice counts them for the Leitner result). */
   onWrong?(): void;
+}
 ```
-và ngay sau dòng `if (!r.ok) {` trong `submit()` thêm:
-```ts
-        deps.onWrong?.();
-```
-2d. Cho phép `setTicket(undefined, 0)` (Sandbox). Trong `interface WorkArea`, thay dòng
+
+**Sửa `src/ui/work.ts`** — thay:
 ```ts
   setTicket(t: Ticket, stepIndex: number, force?: boolean): void;
 ```
-bằng
+bằng:
 ```ts
   /** `undefined` = Sandbox: no Submit, no history; Run, EXPLAIN, error underline and the tabs work as usual. */
   setTicket(t: Ticket | undefined, stepIndex: number, force?: boolean): void;
 ```
-Trong phần cài đặt `setTicket(tk, i, force = false) {`, thay dòng
+
+**Sửa `src/ui/work.ts`** — thay:
+```ts
+    submitBtn.hidden = !ticket || done().has(ticket.id);
+```
+bằng:
+```ts
+    submitBtn.hidden = !ticket || isClosed(ticket.id);
+```
+
+**Sửa `src/ui/work.ts`** — thay:
+```ts
+    const k = tk ? stepKey(tk.id, stepIndex) : '';
+```
+bằng:
+```ts
+    const k = tk ? stepKey(tk.id, stepIndex) : '';
+    const historyId = isStory() ? tk?.id : undefined; // a practice variant shares the ticket id: keep it out of that history (P5)
+```
+
+**Sửa `src/ui/work.ts`** — thay:
+```ts
+    record(tk?.id, r);
+```
+bằng:
+```ts
+    record(historyId, r);
+```
+
+**Sửa `src/ui/work.ts`** — thay:
+```ts
+    const k = stepKey(tk.id, i);
+    const sql = ed.getValue(); // Submit always grades the whole editor
+```
+bằng:
+```ts
+    const k = stepKey(tk.id, i);
+    const story = isStory(); // captured at click time, like the ticket
+    const sql = ed.getValue(); // Submit always grades the whole editor
+```
+
+**Sửa `src/ui/work.ts`** — thay:
+```ts
+    if (played) record(tk.id, played);
+```
+bằng:
+```ts
+    if (played) record(story ? tk.id : undefined, played);
+```
+
+**Sửa `src/ui/work.ts`** — thay:
+```ts
+    if (!r.ok) {
+      const fail = r;
+```
+bằng:
+```ts
+    if (!r.ok) {
+      deps.onWrong?.();
+      const fail = r;
+```
+
+**Sửa `src/ui/work.ts`** — thay:
+```ts
+    app.save.graded[k] = sql; // the Recap shows what was graded, not the draft edited afterwards
+    persist();
+```
+bằng:
+```ts
+    if (story) {
+      app.save.graded[k] = sql; // the Recap shows what was graded, not the draft edited afterwards
+      persist();
+    }
+```
+
+**Sửa `src/ui/work.ts`** — thay:
+```ts
+      say('good', () => t(done().has(tk.id) ? 'work.correct' : 'work.conclusionNext')); // redrawn after the conclusion is submitted
+```
+bằng:
+```ts
+      say('good', () => t(isClosed(tk.id) ? 'work.correct' : 'work.conclusionNext')); // redrawn after the conclusion is submitted
+```
+
+**Sửa `src/ui/work.ts`** — thay:
 ```ts
       const sameTicket = ticket?.id === tk.id && !force;
+      ticket = tk;
+      stepIndex = i;
+      if (!editor || draftKey() !== key || force) {
+        key = draftKey();
 ```
-bằng
+bằng:
 ```ts
       const sameTicket = ticket?.id === tk?.id && !force;
+      ticket = tk;
+      stepIndex = i;
+      if (!editor || workKey() !== key || force) {
+        key = workKey();
 ```
-và trong `doc:` của `createEditor`, đổi `tk.starter` thành `tk?.starter` (sau bước 2b dòng đó là `doc: readDraft() ?? tk?.starter ?? '',`). Các chỗ khác đã chịu được `ticket === undefined`: `setButtons()` ẩn Nộp khi `!ticket`, `submit()` `return` ngay khi `!ticket`, `run()` dùng key `''`, `record()`/`drawHistory()` bỏ qua. Shape card nằm ở `brief.ts`, mà Sandbox không vẽ `renderBrief`.
+
+**Sửa `src/ui/work.ts`** — thay:
+```ts
+          doc: initialDoc(app.save.drafts[draftKey()], tk.starter),
+```
+bằng:
+```ts
+          doc: initialDoc(readDraft(), tk?.starter),
+```
+
+**Sửa `src/ui/work.ts`** — thay:
+```ts
+            app.save.drafts[draftKey()] = v;
+            persist();
+```
+bằng:
+```ts
+            writeDraft(v);
+            persist();
+```
+
+Những chỗ khác đã chịu được `ticket === undefined`:
+- `setButtons()` ẩn Nộp khi `!ticket`;
+- `submit()` `return` ngay khi `!ticket`;
+- `run()` dùng key `''`;
+- `record(undefined, …)` bỏ qua;
+- `drawHistory()` vẽ danh sách rỗng.
+
+Sandbox không vẽ `renderBrief`, nên không có shape card.
 
 - [ ] **Step 3: Sửa `src/ui/brief.ts`**
 
-3a. Thêm import:
+**Sửa `src/ui/brief.ts`** — thay:
 ```ts
-import { hintsShown, isClosed, useHint } from '../session';
+import { actions, app, done, expectedShape, persist, stepKey, unlockedTables } from '../state';
 ```
-3b. Đổi theo thứ tự:
-- Câu gán tăng gợi ý `app.save.hintsUsed[<x>] = <…> + 1;` → `useHint(<x>);`
-- Mọi biểu thức đọc `app.save.hintsUsed[<x>] ?? 0` → `hintsShown(<x>)`.
-- Mọi `done().has(<x>.id)` → `isClosed(<x>.id)`.
-
-- [ ] **Step 4: Sửa `src/main.ts`**
-
-4a. Thêm import:
+bằng:
 ```ts
-import { localDay, seedReview } from './practice';
+import { hintsShown, isClosed, isStory, useHint } from '../session';
+import { actions, app, done, expectedShape, persist, stepKey, unlockedTables } from '../state';
+```
+
+**Sửa `src/ui/brief.ts`** — thay:
+```ts
+  const shown = app.save.hintsUsed[tk.id] ?? 0;
+  const btn = h('button', {
+    type: 'button',
+    onclick: () => {
+      app.save.hintsUsed[tk.id] = shown + 1;
+      persist();
+      actions.rerender();
+    },
+  }, t('brief.hint', { i: shown + 1, n: x.hints.length, cost: xpFor(tk, shown) - xpFor(tk, shown + 1) }));
+```
+bằng:
+```ts
+  const shown = hintsShown(tk.id);
+  const btn = h('button', {
+    type: 'button',
+    onclick: () => {
+      useHint(tk.id);
+      persist();
+      actions.rerender();
+    },
+  }, isStory()
+    ? t('brief.hint', { i: shown + 1, n: x.hints.length, cost: xpFor(tk, shown) - xpFor(tk, shown + 1) })
+    : t('brief.hintFree', { i: shown + 1, n: x.hints.length })); // Practice: 0 XP, so no cost (P9)
+```
+
+**Sửa `src/ui/brief.ts`** — thay:
+```ts
+  const isDone = done().has(tk.id);
+  const boss = tk.steps.length > 1;
+```
+bằng:
+```ts
+  const isDone = isClosed(tk.id); // Practice replays a done ticket open: shape card, hints and Submit, no Recap
+  const boss = tk.steps.length > 1;
+```
+
+- [ ] **Step 4: Khóa i18n `brief.hintFree`**
+
+**Sửa `src/i18n/vi.ts`** — thay:
+```ts
+export const vi = {
+```
+bằng:
+```ts
+export const vi = {
+  'brief.hintFree': 'Gợi ý {i}/{n}',
+```
+
+**Sửa `src/i18n/en.ts`** — thay:
+```ts
+export const en: Record<Key, Msg> = {
+```
+bằng:
+```ts
+export const en: Record<Key, Msg> = {
+  'brief.hintFree': 'Hint {i} of {n}',
+```
+
+- [ ] **Step 5: Sửa `src/main.ts`**
+
+**Sửa `src/main.ts`** — thay:
+```ts
+import { localStore } from './storage';
+```
+bằng:
+```ts
 import { resumeStep } from './overview';
-import { session } from './session';
+import { localDay, seedReview } from './practice';
+import { isStory, session } from './session';
+import { localStore } from './storage';
 ```
-4b. Dòng đầu thân hàm `selectTicket(id)`:
+
+**Sửa `src/main.ts`** — thay:
 ```ts
+app.selectedId = firstOpen();
+```
+bằng:
+```ts
+app.selectedId = firstOpen();
+app.stepIndex = resumeStep(app.save, selected()); // reloading mid-review keeps the step reached
+```
+
+**Sửa `src/main.ts`** — thay:
+```ts
+function selectTicket(id: string, force = false): void {
+  app.selectedId = id;
+  app.stepIndex = 0;
+  app.conclusionFor = '';
+  (byId('inbox-dialog') as HTMLDialogElement).close();
+  rerender();
+  work.setTicket(selected(), app.stepIndex, force);
+```
+bằng:
+```ts
+function selectTicket(id: string, force = false): void {
+  const fromMode = !isStory(); // leaving Practice/Sandbox: new editor, and the practice run's lastRun is dropped
   session.mode = { kind: 'story' };
+  app.selectedId = id;
+  app.stepIndex = resumeStep(app.save, selected()); // a promotion review reopens at the step reached
+  app.conclusionFor = '';
+  (byId('inbox-dialog') as HTMLDialogElement).close();
+  rerender();
+  work.setTicket(selected(), app.stepIndex, force || fromMode);
 ```
-4c. Mọi câu `app.stepIndex = 0;` trong `main.ts` → `app.stepIndex = resumeStep(app.save, selected());` (câu này phải đứng **sau** dòng gán `app.selectedId` tương ứng; nếu đang đứng trước thì đổi chỗ hai dòng).
-4d. Ngay sau dòng `app.stepIndex++;` trong `nextStep()` (qua bước boss):
+
+**Sửa `src/main.ts`** — thay:
 ```ts
-    app.save.bossStep[app.selectedId] = app.stepIndex;
-    persist();
+  app.stepIndex++;
+  rerender();
 ```
-4e. Trong `complete(t)`, ngay sau dòng `app.save.completed.push(t.id);`:
+bằng:
 ```ts
-  app.save.review = seedReview(app.save.review, t.grants, localDay(new Date()));
+  app.stepIndex++;
+  app.save.bossStep[app.selectedId] = app.stepIndex;
+  persist();
+  rerender();
+```
+
+**Sửa `src/main.ts`** — thay:
+```ts
+  app.save.completed.push(t.id);
+  app.save.xp += gained;
+```
+bằng:
+```ts
+  app.save.completed.push(t.id);
+  app.save.xp += gained;
+  app.save.review = seedReview(app.save.review, t.grants, localDay(new Date())); // first review tomorrow
   delete app.save.bossStep[t.id];
 ```
-4f. Lúc mở trang, ngay sau dòng `app.selectedId = firstOpen();`, thêm (để tải lại trang giữa boss vẫn ở đúng bước):
-```ts
-app.stepIndex = resumeStep(app.save, selected());
-```
 
-- [ ] **Step 5: Kiểm kiểu và test**
+- [ ] **Step 6: Kiểm kiểu và test**
 
 Run: `npx tsc --noEmit && npm test`
-Expected: `tsc` không lỗi; tất cả test PASS.
+Expected: `tsc` không lỗi; tất cả test PASS (gồm `tests/workRace.test.ts`: chế độ mặc định là story nên vẫn ghi `graded` và lịch sử như cũ).
 
-- [ ] **Step 6: Kiểm tay (Học chính không đổi + nhớ bước boss)**
+- [ ] **Step 7: Kiểm tay (Làm việc không đổi, nhớ bước đánh giá)**
 
 Run: `npm run dev`, mở URL Vite in ra.
-1. Chạy lại checklist Plan 1 Task 10 Step 10 mục 1–5, 7, 8: kết quả y hệt trước (ticket thường, gợi ý, draft giữ sau tải lại, nút Nộp ẩn ở ticket đã xong).
-2. Chơi tới `ch1-05`, đúng bước 1 → đang ở bước 2 → tải lại trang → vẫn ở bước 2, draft bước 2 còn.
-3. Xong `ch1-05` → DevTools > Application > Local Storage > `cargo-query-save`: `bossStep` không còn `ch1-05`; `review` có `select`, `where`, `order_by`, `limit` với `box: 1` và `due` = ngày mai theo giờ máy.
+1. Làm `ch1-01` → `ch1-04` như trước. Kiểm:
+   - gợi ý ghi "(−25 XP)";
+   - draft còn sau khi tải lại;
+   - ticket đã xong không có nút Nộp;
+   - hoạt cảnh chạy ở lần xong đầu tiên.
+2. `ch1-05`: đúng bước 1, đang ở bước 2 thì tải lại trang → vẫn ở bước 2 và còn draft bước 2. Về Trang chủ, bấm "Mở việc này" → vẫn bước 2.
+3. Xong `ch1-05`. Mở DevTools > Application > Local Storage > `cargo-query-save`:
+   - `bossStep` không còn `ch1-05`;
+   - `review` có `select`, `where`, `order_by`, `limit` với `box: 1` và `due` = ngày mai theo giờ máy.
 
-- [ ] **Step 7: Commit**
+- [ ] **Step 8: Commit**
 
 ```bash
-git add src/session.ts src/ui/work.ts src/ui/brief.ts src/main.ts
-git commit -m "feat: mode-aware session seam, boss step resume and review seeding"
+git add src/session.ts src/ui/work.ts src/ui/brief.ts src/main.ts src/i18n/vi.ts src/i18n/en.ts
+git commit -m "feat: mode-aware session seam, review step resume and review seeding"
 ```
 
 ---
@@ -1519,93 +1977,148 @@ git commit -m "feat: mode-aware session seam, boss step resume and review seedin
 
 **Files:**
 - Create: `src/ui/modes.ts`
-- Modify: `src/i18n/vi.ts`, `src/i18n/en.ts`, `index.html`, `src/main.ts`, `src/style.css`
+- Modify: `src/main.ts`, `src/ui/homeView.ts`, `src/i18n/vi.ts`, `src/i18n/en.ts`, `tests/i18n.test.ts`
 
 **Interfaces:**
-- Consumes: `session`, `activeTicket`, `activeStep`, `Mode` (Task 6); `loadTicketTemplates` (Task 2); `applyVariant` (Task 2); `todayQueue`, `pickForSkill`, `retryItem`, `applyResult`, `isSuccess`, `dueSkills`, `localDay`, `PracticeItem` (Task 3); `learnedSkills` (Task 4); `renderBrief` (Plan 1 `brief.ts`); `WorkArea` (Plan 1 `work.ts`, đã sửa ở Task 6); `textOf`, `t`, `getLang`, `h`
+- Consumes:
+  - Task 6: `session`, `isStory`, `activeTicket`, `activeStep`, `today`, `dueToday`, `Mode`, `PracticeRun`;
+  - Task 2: `loadTicketTemplates`, `applyVariant`;
+  - Task 3: `todayQueue`, `pickForSkill`, `retryItem`, `applyResult`, `isSuccess`;
+  - Task 4: `learnedSkills`;
+  - HEAD: `renderBrief`, `WorkArea`, `registerNav`, `registerHomeSection`, `registerMode`, `homeHooks`, `go`, `hashOf`, `BTN_GO`, `CARD`, `cx`.
 - Produces:
-  - `initModes(c: { work: WorkArea; rerender(): void }): void` — gọi một lần trong `main.ts` ngay sau khi tạo `work`
-  - `today(): string`
-  - `startPractice(items: PracticeItem[]): void`, `startToday(): void` (lối vào 1: Ôn hôm nay), `startSkill(skill: string): void` (lối vào 2: Luyện kỹ năng, dùng ở Task 8), `startRetry(ticketId: string): void` (lối vào 3: Làm lại ticket), `startSandbox(): void`, `backToStory(): void`
-  - `onPracticeSolved(): void`, `onPracticeWrong(): void` — gắn vào deps của `mountWork`
-  - `renderLeft(host: HTMLElement): void` — khung trái theo chế độ (story: `renderBrief`; practice: dải Luyện tập + đề; sandbox: giới thiệu Sandbox)
-  - `renderModes(host: HTMLElement, close: () => void): void` — mục Luyện tập / Sandbox trong hộp thư
-  - Khóa i18n: `prac.section`, `prac.today`, `prac.retry`, `prac.none`, `prac.banner`, `prac.exit`, `prac.ok`, `prac.weak`, `prac.next`, `prac.done`, `sbx.open`, `sbx.title`, `sbx.intro`
+  - `initModes(c: { work; rerender })`: gọi một lần trong `main.ts`, ngay sau `mountWork`.
+  - `startPractice(items): boolean`.
+  - Ba lối vào, mỗi hàm trả `false` khi không có bài:
+    - `startToday()`: Ôn hôm nay;
+    - `startSkill(skill)`: Luyện kỹ năng;
+    - `startRetry(ticketId)`: Làm lại việc.
+  - `startSandbox()`, `backToStory()`. Mọi lối vào đều gọi `go('play')`.
+  - `onPracticeSolved()`, `onPracticeWrong()`: gắn vào deps của `mountWork`.
+  - `renderLeft(host)`: khung trái theo chế độ.
+    - story: `renderBrief`, cộng nút "Luyện lại việc này" dưới Recap của việc thường (P8);
+    - practice: dải Luyện tập + đề;
+    - sandbox: giới thiệu Sandbox.
 
-Luật sản phẩm (D2, PD §3.2): 3 lối vào, 0 XP, chấm bằng grader sẵn có với Solution đã áp biến thể, draft không lưu, không ghi `hintsUsed`. Đạt (0 lần sai, ≤ 1 gợi ý) → mọi kỹ năng của bài lên 1 hộp; ngược lại → hộp 1, ôn ngày mai. Boss không vào Luyện tập (nhiều bước + kết luận theo câu chuyện). Sandbox (E2): work area không ticket, không Nộp, vẫn qua `runSandboxed`, draft ở `save.sandboxDraft`.
+    Mọi nhánh đều có `#brief-title` để `showRoute` focus vào.
+  - Đăng ký lúc nạp module:
+    - nav `play` (thay bản của topbar: chỉ "đang chọn" ở story), `practice` (30), `sandbox` (40);
+    - section Trang chủ `review` (order 22, P7);
+    - card chế độ `sandbox` (10);
+    - `homeHooks.levelOf` (hộp Leitner) và `homeHooks.onSkill` (Luyện kỹ năng).
+  - Khóa i18n: `nav.practice`, `nav.sandbox`, `mode.sandbox`, `mode.sandboxDesc`, `prac.section`, `prac.today`, `prac.dueIntro`, `prac.noneDue`, `prac.retry`, `prac.banner`, `prac.exit`, `prac.ok`, `prac.weak`, `prac.next`, `prac.done`, `sbx.title`, `sbx.intro`.
 
-- [ ] **Step 1: Thêm khóa i18n**
+Luật sản phẩm (D2, PD §3.2):
+- chấm bằng grader có sẵn với Solution đã áp biến thể; 0 XP; draft không lưu; không ghi `hintsUsed`;
+- đạt (0 lần sai, ≤ 1 gợi ý) → mọi kỹ năng của bài lên 1 hộp; ngược lại → về hộp 1, ôn ngày mai;
+- đánh giá thăng tiến không vào Luyện tập (L10);
+- Sandbox (E2): khu làm bài không ticket, không Nộp, không lịch sử (L16); vẫn qua `runSandboxed`; draft ở `save.sandboxDraft`.
 
-Trong `src/i18n/vi.ts`, ngay sau dòng `export const vi = {`:
+- [ ] **Step 1: Khóa i18n**
+
+**Sửa `src/i18n/vi.ts`** — thay:
 ```ts
-  'prac.section': 'Luyện tập · 0 XP',
+export const vi = {
+```
+bằng:
+```ts
+export const vi = {
+  'nav.practice': 'Luyện tập',
+  'nav.sandbox': 'Sandbox',
+  'mode.sandbox': 'Sandbox: SQL tự do',
+  'mode.sandboxDesc': 'Viết SQL bất kỳ trên dữ liệu công ty, không chấm điểm.',
+  'prac.section': 'Ôn tập · 0 XP',
   'prac.today': 'Ôn hôm nay ({n})',
-  'prac.retry': 'Làm lại ticket đã xong',
-  'prac.none': 'Chưa có bài để luyện. Xong vài ticket trước đã.',
+  'prac.dueIntro': '{n} kỹ năng đến hạn ôn hôm nay. Mỗi bài là một việc bạn đã làm, có thể với số liệu khác; làm đúng thì lần ôn sau giãn ra.',
+  'prac.noneDue': 'Hôm nay chưa có kỹ năng nào đến hạn ôn. Muốn luyện thêm, bấm một kỹ năng đã học ở mục Chủ đề kỹ năng.',
+  'prac.retry': 'Luyện lại việc này (0 XP)',
   'prac.banner': 'Luyện tập · bài {i}/{n} · 0 XP',
-  'prac.exit': 'Về Học chính',
+  'prac.exit': 'Về Làm việc',
   'prac.ok': 'Đúng! Kỹ năng lên một hộp ôn, lần ôn sau giãn ra.',
   'prac.weak': 'Đúng, nhưng có lần nộp sai hoặc đã mở từ 2 gợi ý, nên kỹ năng về hộp 1 (ôn lại ngày mai).',
   'prac.next': 'Bài tiếp →',
   'prac.done': 'Xong lượt luyện: {ok}/{n} bài đạt.',
-  'sbx.open': 'Sandbox: SQL tự do',
-  'sbx.title': 'Sandbox — SQL tự do',
-  'sbx.intro': 'Viết SQL bất kỳ trên database của game: không chấm, không XP. Mọi câu lệnh chạy trong BEGIN … ROLLBACK nên dữ liệu không đổi. Tab Cột chỉ liệt kê bảng đã mở; nội dung editor được lưu cùng tiến độ.',
+  'sbx.title': 'Sandbox: SQL tự do',
+  'sbx.intro': 'Viết SQL bất kỳ trên dữ liệu của công ty: không chấm, không XP. Mọi câu lệnh chạy trong BEGIN … ROLLBACK nên dữ liệu không đổi. Tab Cột chỉ liệt kê bảng đã mở; nội dung editor được lưu cùng tiến độ.',
 ```
-Trong `src/i18n/en.ts`, ngay sau dòng `export const en: Record<Key, Msg> = {`:
+
+**Sửa `src/i18n/en.ts`** — thay:
 ```ts
-  'prac.section': 'Practice · 0 XP',
+export const en: Record<Key, Msg> = {
+```
+bằng:
+```ts
+export const en: Record<Key, Msg> = {
+  'nav.practice': 'Practice',
+  'nav.sandbox': 'Sandbox',
+  'mode.sandbox': 'Sandbox: free SQL',
+  'mode.sandboxDesc': 'Write any SQL against the company data, with no grading.',
+  'prac.section': 'Review · 0 XP',
   'prac.today': 'Review today ({n})',
-  'prac.retry': 'Redo a finished ticket',
-  'prac.none': 'Nothing to practice yet. Finish a few tickets first.',
+  'prac.dueIntro': (p) => `${p.n} skill${Number(p.n) === 1 ? ' is' : 's are'} due for review today. Each one is a task you have done, possibly with different figures; get it right and the next review comes later.`,
+  'prac.noneDue': 'No skill is due for review today. To practise more, click a learned skill under Skill topics.',
+  'prac.retry': 'Practise this task again (0 XP)',
   'prac.banner': 'Practice · {i} of {n} · 0 XP',
-  'prac.exit': 'Back to the story',
+  'prac.exit': 'Back to work',
   'prac.ok': 'Correct! The skill moves up one review box, so the next review comes later.',
   'prac.weak': 'Correct, but after a wrong submit or 2+ hints, so the skill goes back to box 1 (review tomorrow).',
   'prac.next': 'Next →',
   'prac.done': 'Practice done: {ok}/{n} passed.',
-  'sbx.open': 'Sandbox: free SQL',
-  'sbx.title': 'Sandbox — free SQL',
-  'sbx.intro': 'Write any SQL against the game database: no grading, no XP. Every statement runs inside BEGIN … ROLLBACK, so the data never changes. The Columns tab lists unlocked tables only; the editor content is saved with your progress.',
+  'sbx.title': 'Sandbox: free SQL',
+  'sbx.intro': 'Write any SQL against the company data: no grading, no XP. Every statement runs inside BEGIN … ROLLBACK, so the data never changes. The Columns tab lists unlocked tables only; the editor content is saved with your progress.',
+```
+
+"Sandbox" giống nhau ở hai ngôn ngữ:
+
+**Sửa `tests/i18n.test.ts`** — thay:
+```ts
+const SAME_OK = new Set<string>(['tab.explain', 'top.xp']);
+```
+bằng:
+```ts
+const SAME_OK = new Set<string>(['tab.explain', 'top.xp', 'nav.sandbox']);
 ```
 
 - [ ] **Step 2: Viết `src/ui/modes.ts`**
 
+**Tạo `src/ui/modes.ts`:**
 ```ts
 import { loadTicketTemplates } from '../content';
-import { getLang, t } from '../i18n';
-import { learnedSkills } from '../overview';
-import {
-  applyResult, dueSkills, isSuccess, localDay, pickForSkill, retryItem, todayQueue, type PracticeItem,
-} from '../practice';
-import { activeStep, activeTicket, session, type Mode } from '../session';
+import { learnedSkills, type HomeModel } from '../home';
+import { t } from '../i18n';
+import { applyResult, isSuccess, pickForSkill, retryItem, todayQueue, type PracticeItem } from '../practice';
+import { hashOf } from '../route';
+import { activeStep, activeTicket, dueToday, isStory, session, today, type Mode, type PracticeRun } from '../session';
 import { app, done, persist, selected } from '../state';
-import { textOf } from '../tickets';
+import { BTN_GO, CARD, cx } from '../theme';
 import { applyVariant } from '../variants';
 import { renderBrief } from './brief';
 import { h } from './dom';
+import { homeHooks, registerHomeSection, registerMode } from './homeView';
+import { go } from './router';
+import { registerNav } from './topbar';
 import type { WorkArea } from './work';
 
 const templates = new Map(loadTicketTemplates().map((tk) => [tk.id, tk]));
 let ctx: { work: WorkArea; rerender(): void } | undefined;
 let runSeq = 0;
 
-export const today = (): string => localDay(new Date());
-
 /** Called once from main.ts, right after mountWork(). */
 export function initModes(c: { work: WorkArea; rerender(): void }): void {
   ctx = c;
 }
 
+/** Every mode switch rebuilds the editor (`force`): a practice item may share the story ticket's id. */
 function enter(mode: Mode): void {
   session.mode = mode;
   ctx?.rerender();
-  ctx?.work.setTicket(activeTicket(), activeStep());
+  ctx?.work.setTicket(activeTicket(), activeStep(), true);
+  go('play');
 }
 
-export function startPractice(items: PracticeItem[]): void {
+export function startPractice(items: PracticeItem[]): boolean {
   const usable = items.filter((i) => templates.has(i.ticketId));
-  if (usable.length === 0) return;
+  if (usable.length === 0) return false;
   enter({
     kind: 'practice',
     run: {
@@ -1619,31 +2132,35 @@ export function startPractice(items: PracticeItem[]): void {
       draft: '',
     },
   });
+  return true;
 }
 
 export const startSandbox = (): void => enter({ kind: 'sandbox' });
 export const backToStory = (): void => enter({ kind: 'story' });
 
-export function startToday(): void {
+/** Entry 1: today's due skills (D2). */
+export function startToday(): boolean {
   const d = done();
-  startPractice(todayQueue(app.save.review, learnedSkills(app.tickets, d), [...templates.values()], d, today(), Math.random));
+  return startPractice(todayQueue(app.save.review, learnedSkills(app.tickets, d), [...templates.values()], d, today(), Math.random));
 }
 
-export function startSkill(skill: string): void {
+/** Entry 2: one skill (Home skill topics). */
+export function startSkill(skill: string): boolean {
   const item = pickForSkill(skill, [...templates.values()], done(), Math.random);
-  if (item) startPractice([item]);
+  return item ? startPractice([item]) : false;
 }
 
-export function startRetry(ticketId: string): void {
+/** Entry 3: redo a finished task, another variant when it has one. Never a promotion review (L10). */
+export function startRetry(ticketId: string): boolean {
   const tpl = templates.get(ticketId);
-  if (tpl && tpl.beat !== 'boss') startPractice([retryItem(tpl, Math.random)]);
+  return !!tpl && tpl.beat !== 'boss' && done().has(ticketId) && startPractice([retryItem(tpl, Math.random)]);
 }
 
 export function onPracticeWrong(): void {
   if (session.mode.kind === 'practice') session.mode.run.wrong++;
 }
 
-/** Correct submit in Practice: 0 XP, update the Leitner boxes of the item's skills. */
+/** Correct submit in Practice: 0 XP, no completion animation; moves the Leitner boxes of the item's skills. */
 export function onPracticeSolved(): void {
   if (session.mode.kind !== 'practice') return;
   const run = session.mode.run;
@@ -1668,472 +2185,445 @@ function nextItem(): void {
   run.draft = '';
   run.result = undefined;
   ctx?.rerender();
-  ctx?.work.setTicket(activeTicket(), 0);
+  ctx?.work.setTicket(activeTicket(), 0, true);
 }
+
+const TITLE = { id: 'brief-title', tabindex: '-1', class: 'm-0 text-lg font-bold' };
 
 function sandboxPane(host: HTMLElement): void {
   host.replaceChildren(
-    h('h2', {}, t('sbx.title')),
-    h('p', {}, t('sbx.intro')),
-    h('button', { type: 'button', onclick: () => backToStory() }, t('prac.exit')),
+    h('h2', TITLE, t('sbx.title')),
+    h('p', { class: 'text-[15px] leading-relaxed' }, t('sbx.intro')),
+    h('div', { class: 'actions' }, h('button', { type: 'button', onclick: () => backToStory() }, t('prac.exit'))),
   );
 }
 
-function practicePane(host: HTMLElement, run: Extract<Mode, { kind: 'practice' }>['run']): void {
+function practicePane(host: HTMLElement, run: PracticeRun): void {
   const finished = run.index >= run.items.length;
-  const banner = h('div', { class: 'practice-banner', role: 'status' },
-    h('b', {}, finished ? t('prac.done', { ok: run.passed, n: run.items.length }) : t('prac.banner', { i: run.index + 1, n: run.items.length })),
-    run.result ? h('p', {}, t(run.result === 'ok' ? 'prac.ok' : 'prac.weak')) : null,
-    h('div', { class: 'actions' },
+  const status = finished ? t('prac.done', { ok: run.passed, n: run.items.length }) : t('prac.banner', { i: run.index + 1, n: run.items.length });
+  const banner = h('div', { class: 'mb-3 rounded-xl bg-accent-soft p-3 ring-1 ring-accent', role: 'status' },
+    finished ? h('h2', TITLE, status) : h('p', { class: 'm-0 font-semibold' }, status),
+    run.result ? h('p', { class: 'mt-1 mb-0' }, t(run.result === 'ok' ? 'prac.ok' : 'prac.weak')) : null,
+    h('div', { class: 'actions mb-0' },
       run.result && !finished ? h('button', { type: 'button', class: 'primary', onclick: () => nextItem() }, t('prac.next')) : null,
-      h('button', { type: 'button', onclick: () => backToStory() }, t('prac.exit'))),
-  );
+      h('button', { type: 'button', onclick: () => backToStory() }, t('prac.exit'))));
   const body = h('div');
   if (!finished) renderBrief(body, run.tickets[run.index], 0);
   host.replaceChildren(banner, body);
 }
 
-/** Left pane for the current mode. main.ts calls this instead of renderBrief(). */
+function storyPane(host: HTMLElement): void {
+  const tk = selected();
+  renderBrief(host, tk, app.stepIndex);
+  if (done().has(tk.id) && tk.beat !== 'boss') {
+    host.append(h('div', { class: 'actions' }, h('button', { type: 'button', onclick: () => startRetry(tk.id) }, t('prac.retry'))));
+  }
+}
+
+/** Left pane for the current mode; main.ts rerender() calls this instead of renderBrief(). */
 export function renderLeft(host: HTMLElement): void {
   const m = session.mode;
   if (m.kind === 'sandbox') sandboxPane(host);
   else if (m.kind === 'practice') practicePane(host, m.run);
-  else renderBrief(host, selected(), app.stepIndex);
+  else storyPane(host);
 }
 
-/** Practice and Sandbox entries at the top of the inbox dialog. */
-export function renderModes(host: HTMLElement, close: () => void): void {
-  const d = done();
-  const due = dueSkills(app.save.review, learnedSkills(app.tickets, d), today()).length;
-  const retryable = app.tickets.filter((tk) => d.has(tk.id) && tk.beat !== 'boss');
-  const go = (fn: () => void) => () => {
-    close();
-    fn();
-  };
-  const todayBtn = h('button', { type: 'button', onclick: go(startToday) }, t('prac.today', { n: due }));
-  todayBtn.disabled = due === 0;
-  host.replaceChildren(
-    h('h3', {}, t('prac.section')),
-    h('div', { class: 'actions' }, todayBtn, h('button', { type: 'button', onclick: go(startSandbox) }, t('sbx.open'))),
-    retryable.length
-      ? h('details', {},
-          h('summary', {}, t('prac.retry')),
-          h('ul', { class: 'retry-list' }, ...retryable.map((tk) =>
-            h('li', {}, h('button', { type: 'button', onclick: go(() => startRetry(tk.id)) }, `${tk.id} · ${textOf(tk, getLang()).title}`)))))
-      : h('p', { class: 'muted' }, t('prac.none')),
-  );
+/** Home "Review" card (D2 entry 1). Hidden until a skill is learned. */
+function reviewCard(m: HomeModel): HTMLElement | null {
+  if (m.learned === 0) return null;
+  const due = dueToday().length;
+  return h('section', { class: cx(CARD, 'flex flex-wrap items-center gap-4 p-5'), 'aria-labelledby': 'review-title' },
+    h('div', { class: 'min-w-0 flex-1' },
+      h('h2', { id: 'review-title', class: 'm-0 text-lg font-bold' }, t('prac.section')),
+      h('p', { class: 'mt-1 mb-0 text-[15px] text-muted' }, t(due ? 'prac.dueIntro' : 'prac.noneDue', { n: due }))),
+    due ? h('button', { type: 'button', class: cx(BTN_GO, 'px-4 py-2'), onclick: () => startToday() }, t('prac.today', { n: due })) : null);
 }
+
+// Same id replaces topbar.ts's 'play' entry: "Workspace" is current only in story mode.
+registerNav({
+  id: 'play', order: 20, label: 'nav.play', href: hashOf('play'),
+  current: (r) => r === 'play' && isStory(),
+  onclick: () => (isStory() ? go('play') : backToStory()),
+});
+registerNav({
+  id: 'practice', order: 30, label: 'nav.practice', href: hashOf('play'),
+  current: (r) => r === 'play' && session.mode.kind === 'practice',
+  // Nothing due: Home's Review card explains how to practise one skill (P6).
+  onclick: () => (session.mode.kind === 'practice' ? go('play') : startToday() || go('home')),
+});
+registerNav({
+  id: 'sandbox', order: 40, label: 'nav.sandbox', href: hashOf('play'),
+  current: (r) => r === 'play' && session.mode.kind === 'sandbox',
+  onclick: () => (session.mode.kind === 'sandbox' ? go('play') : startSandbox()),
+});
+registerHomeSection({ id: 'review', order: 22, span: 'full', render: reviewCard });
+registerMode({
+  id: 'sandbox', order: 10, icon: '🧪', tint: 'bg-orange-100 dark:bg-orange-950',
+  title: 'mode.sandbox', desc: 'mode.sandboxDesc', open: () => startSandbox(),
+});
+homeHooks.levelOf = (skill) => app.save.review[skill]?.box ?? 1;
+homeHooks.onSkill = (skill) => void startSkill(skill);
 ```
 
-- [ ] **Step 3: Sửa `index.html`**
+- [ ] **Step 3: Trang chủ "Tiếp tục" luôn về Làm việc**
 
-Ngay trước dòng chứa `id="inbox-list"`, thêm:
-```html
-      <div id="modes" class="modes"></div>
+`resume()` chỉ đổi route khi ticket đã được chọn. Đang ở Luyện tập/Sandbox mà bấm "Mở việc này" thì phải về Làm việc.
+
+**Sửa `src/ui/homeView.ts`** — thay:
+```ts
+import { go } from './router';
+```
+bằng:
+```ts
+import { isStory } from '../session';
+import { go } from './router';
+```
+
+**Sửa `src/ui/homeView.ts`** — thay:
+```ts
+  if (app.selectedId === id) go('play');
+```
+bằng:
+```ts
+  if (app.selectedId === id && isStory()) go('play'); // from Practice/Sandbox, selectTicket() switches back to work
 ```
 
 - [ ] **Step 4: Sửa `src/main.ts`**
 
-4a. Thêm import:
+**Sửa `src/main.ts`** — thay:
 ```ts
-import { initModes, onPracticeSolved, onPracticeWrong, renderLeft, renderModes } from './ui/modes';
+import { renderBrief } from './ui/brief';
 ```
-4b. Trong object deps truyền cho `mountWork(…)`:
-- giá trị của `onSolved` đổi thành `(t) => (session.mode.kind === 'practice' ? onPracticeSolved() : complete(t))`
-- thêm thuộc tính `onWrong: onPracticeWrong,`
-4c. Ngay sau câu lệnh tạo work area (`const work = mountWork(…);`, hết dấu `;`), thêm:
+bằng:
 ```ts
+import { initModes, onPracticeSolved, onPracticeWrong, renderLeft } from './ui/modes';
+```
+
+**Sửa `src/main.ts`** — thay:
+```ts
+  onSolved: (t) => complete(t),
+```
+bằng:
+```ts
+  onSolved: (t) => (session.mode.kind === 'practice' ? onPracticeSolved() : complete(t)), // practice: no complete(), no animation
+  onWrong: onPracticeWrong,
+```
+
+**Sửa `src/main.ts`** — thay:
+```ts
+  onRun: () => rerender(),
+});
+```
+bằng:
+```ts
+  onRun: () => rerender(),
+});
 initModes({ work, rerender });
 ```
-(`rerender` là `function rerender()` của Plan 1 nên dùng được trước dòng khai báo.)
-4d. Trong `rerender()`: thay lời gọi `renderBrief(<host>, <ticket>, <step>)` bằng `renderLeft(<host>)` (giữ nguyên biểu thức `<host>`), và ngay sau dòng gọi `renderInbox(`… thêm:
+
+**Sửa `src/main.ts`** — thay:
 ```ts
-  renderModes(document.getElementById('modes')!, () => (document.getElementById('inbox-dialog') as HTMLDialogElement).close());
+  renderBrief(byId('ticket'), selected(), app.stepIndex);
+```
+bằng:
+```ts
+  renderLeft(byId('ticket'));
 ```
 
-- [ ] **Step 5: Thêm CSS vào cuối `src/style.css`**
-
-```css
-.modes { border-bottom: 1px solid var(--border); padding-bottom: 8px; margin-bottom: 8px; }
-.modes h3 { margin-top: 0; }
-.retry-list { list-style: none; padding: 0; margin: 4px 0 0; }
-.retry-list button { width: 100%; text-align: left; margin-top: 4px; }
-.practice-banner { border: 1px solid var(--accent); border-radius: 8px; padding: 8px 12px; margin-bottom: 12px; background: var(--accent-soft); }
-.practice-banner p { margin: 4px 0; }
-```
-
-- [ ] **Step 6: Kiểm kiểu và test**
+- [ ] **Step 5: Kiểm kiểu và test**
 
 Run: `npx tsc --noEmit && npm test`
-Expected: `tsc` không lỗi (kể cả `en.ts` đủ khóa); tất cả test PASS.
+Expected: `tsc` không lỗi (kể cả `en.ts` đủ khóa); tất cả test PASS (gồm `tests/i18n.test.ts`: không chữ "boss", placeholder khớp).
 
-- [ ] **Step 7: Kiểm tay**
+- [ ] **Step 6: Kiểm tay**
 
 Run: `npm run dev`.
-1. Xong `ch1-01`…`ch1-03`. Mở Hộp thư: phần đầu có "Luyện tập · 0 XP", nút "Ôn hôm nay (0)" bị khóa (kỹ năng mới học hẹn ngày mai), nút "Sandbox: SQL tự do", mục gập "Làm lại ticket đã xong" liệt kê 3 ticket.
-2. Làm lại `ch1-03`: khung trái có dải "Luyện tập · bài 1/1 · 0 XP", đề hiện tháng **khác** `10/2026`; editor trống; nút Nộp hiện. Nộp câu của tháng 10 → báo sai (lệch dòng). Sửa đúng tháng → dải báo "Đúng, nhưng có lần nộp sai…"; XP trên thanh trên không đổi; `cargo-query-save` có `review.order_by.box = 1`, `practice.failed = 1`; `hintsUsed` không đổi.
-3. "Bài tiếp →" → "Xong lượt luyện: 0/1 bài đạt." → "Về Học chính" → quay lại đúng ticket và draft Học chính trước đó.
-4. Đổi ngày máy (hoặc sửa `due` trong Local Storage thành hôm qua) → tải lại → "Ôn hôm nay (n)" bật; bấm → chạy lần lượt tối đa 5 bài, đúng không gợi ý → `box` tăng, `due` giãn theo `[1, 2, 4, 8, 16]`.
-5. Sandbox: không có nút Nộp; `SELECT count(*) FROM shipments` → tab Kết quả có số; `UPDATE ports SET name = 'x'` rồi `SELECT count(*) FROM ports WHERE name = 'x'` → 0; tab Cột chỉ có bảng đã mở; tải lại trang, vào lại Sandbox → SQL còn nguyên. "Về Học chính" → editor trở lại draft của ticket.
-6. Trong Luyện tập/Sandbox bấm VI|EN: chữ đổi, editor không mất nội dung.
+1. Save trống: Trang chủ chưa có card "Ôn tập". Nav có Trang chủ · Làm việc · Luyện tập · Sandbox. "Chế độ khác" có card Sandbox.
+2. Xong `ch1-01` → `ch1-03`. Trang chủ có card "Ôn tập · 0 XP" ghi "Hôm nay chưa có kỹ năng nào đến hạn ôn…", không có nút. Ở "Chủ đề kỹ năng", kỹ năng đã học là nút bấm được, mức nhớ 1/5.
+3. Mở lại `ch1-03`. Dưới Recap có "Luyện lại việc này (0 XP)"; bấm vào thì:
+   - khung trái có dải "Luyện tập · bài 1/1 · 0 XP";
+   - đề ghi một tháng **khác** 10/2026;
+   - editor trống, nút Nộp hiện, gợi ý ghi "Gợi ý 1/3" (không có XP).
 
-- [ ] **Step 8: Commit**
+   Nộp câu của tháng 10 → báo sai. Sửa đúng tháng → dải báo "Đúng, nhưng có lần nộp sai…". Kiểm:
+   - XP trên topbar không đổi, không có hoạt cảnh;
+   - `cargo-query-save` có `review.order_by.box = 1` và `practice.failed = 1`;
+   - `hintsUsed`, `graded["ch1-03#0"]` và lịch sử query của `ch1-03` không đổi.
+4. "Bài tiếp →" → "Xong lượt luyện: 0/1 bài đạt." → "Về Làm việc" → đúng ticket và draft Làm việc trước đó; nav "Làm việc" sáng.
+5. Sửa `due` của một kỹ năng trong Local Storage thành hôm qua, tải lại. Card "Ôn tập" có nút "Ôn hôm nay (n)"; nav "Luyện tập" vào thẳng lượt ôn, tối đa 5 bài. Đúng không gợi ý → `box` tăng, `due` giãn theo `[1, 2, 4, 8, 16]`.
+6. Bấm một kỹ năng đã học ở Trang chủ → vào Luyện tập một bài có kỹ năng đó.
+7. Sandbox (nav hoặc card):
+   - không có nút Nộp; `SELECT count(*) FROM shipments` → tab Kết quả có số;
+   - `UPDATE ports SET name = 'x'` rồi `SELECT count(*) FROM ports WHERE name = 'x'` → 0;
+   - tab Cột chỉ có bảng đã mở;
+   - tải lại, vào lại Sandbox → SQL còn nguyên;
+   - không có lịch sử query;
+   - "Về Làm việc" → editor trở lại draft của ticket.
+8. Đang ở Luyện tập/Sandbox, về Trang chủ bấm "Mở việc này" → về Làm việc đúng ticket.
+9. Đổi VI|EN trong Luyện tập/Sandbox: chữ đổi, editor giữ nội dung.
+
+- [ ] **Step 7: Commit**
 
 ```bash
-git add src/ui/modes.ts src/i18n/vi.ts src/i18n/en.ts index.html src/main.ts src/style.css
-git commit -m "feat: practice (review today, redo ticket) and sandbox modes"
+git add src/ui/modes.ts src/ui/homeView.ts src/main.ts src/i18n/vi.ts src/i18n/en.ts tests/i18n.test.ts
+git commit -m "feat: practice (review today, skill, redo task) and sandbox modes via nav and Home"
 ```
 
 ---
 
-### Task 8: Tiến độ, mục tiêu chương, tổng kết chương, skill map, chip Dạy/Cần
+### Task 8: Mục tiêu chương, chip Dạy/Cần, tổng kết chương, nút "Ôn: N"
 
 **Files:**
-- Create: `src/ui/progressView.ts`, `src/ui/chapterView.ts`, `src/ui/skillMap.ts`
-- Modify: `src/i18n/vi.ts`, `src/i18n/en.ts`, `index.html`, `src/ui/topbar.ts`, `src/ui/modes.ts`, `src/main.ts`, `src/style.css`
+- Create: `src/ui/chapterView.ts`
+- Modify: `src/ui/modes.ts`, `src/main.ts`, `index.html`, `src/i18n/vi.ts`, `src/i18n/en.ts`
 
 **Interfaces:**
-- Consumes: `SKILLS`, `CHAPTERS`, `chapterTitle` (Plan 1 `progress.ts`); `progressLine, `learnedSkills`, `skillLevel`, `outcomeDone`, `chapterSummary`, `grantedBy`, `SkillLevel` (Task 4); `cardOf` (Task 3); `startToday`, `startSkill`, `startRetry`, `today`, `renderLeft` (Task 7); `app`, `done`, `selected` (Plan 1 `state.ts`)
+- Consumes: `CHAPTERS`, `chapterTitle`, `SKILLS`; `learnedSkills`; `outcomeDone`, `chapterSummary` (Task 4); `dueToday`, `startToday`, `startRetry` (Task 6–7)
 - Produces:
-  - `renderProgress(host: HTMLElement): void` — `Ch 2/7 · 7/35 ticket · 1.250 XP · [Ôn: 3]`; nút "Ôn: N" là lối vào Ôn hôm nay, khóa khi N = 0, ẩn khi chưa học kỹ năng nào
-  - `skillLabel(id: string): string` (tiêu đề chương dùng `chapterTitle(n, getLang())` của Plan 1)
-  - `goalCard(chapter: number): HTMLElement | null` — thẻ "Mục tiêu chương" (outcome có ✓ khi đủ kỹ năng), hiện ở ticket `teach` trong Học chính
-  - `skillChips(t: Ticket): HTMLElement | null` — chip "Dạy: … · Cần: …" từ `grants`/`requires`, nhãn lấy từ `skills.yml`
-  - `openChapterSummary(dialog: HTMLDialogElement, chapter: number): void` — mở sau khi đóng boss; Recap của Plan 1 (C2) vẫn nằm ở khung trái phía sau dialog
-  - `openSkillMap(dialog: HTMLDialogElement): void` — lưới kỹ năng theo chương, 4 trạng thái + nhãn "Đến hạn ôn"; bấm kỹ năng đã học → Luyện kỹ năng đó (lối vào 2)
-  - Khóa i18n: `prog.line`, `prog.due`, `prog.dueTitle`, `skill.open`, `skill.title`, `skill.hint`, `skill.chapter`, `skill.learned`, `skill.steady`, `skill.mastered`, `skill.due`, `skill.unlockAt`, `chip.teaches`, `chip.needs`, `goal.title`, `goal.intro`, `sum.title`, `sum.skills`, `sum.tables`, `sum.stats`, `sum.last`, `sum.quick`, `dlg.close`
+  - `skillLabel(id)`: nhãn kỹ năng theo ngôn ngữ đang chọn.
+  - `goalCard(chapter)`: thẻ "Mục tiêu chương"; outcome có ✓ khi đủ kỹ năng. Hiện ở ticket `teach` (Làm việc).
+  - `skillChips(tk)`: chip "Dạy: …" (màu chương) và "Cần: …", lấy từ `grants`/`requires`.
+  - `wrapUp(chapter, onQuick?)`: khối "Tổng kết chương" dưới Recap của đánh giá thăng tiến (P2). Gồm:
+    - bước nghề mới (`career`);
+    - outcome;
+    - kỹ năng;
+    - XP + số gợi ý (tính lại);
+    - bảng mới ở chương sau;
+    - nút "Ôn nhanh 1 việc".
 
-Mọi con số và trạng thái tính lại từ save + nội dung mỗi lần render (A4); không lưu thêm gì.
+    Khối không có hiệu ứng: hoạt cảnh `promotion` là màn ăn mừng duy nhất (L32).
+  - `renderReviewButton(btn)` (trong `modes.ts`): `#review-btn` "Ôn: N", chỉ hiện khi N > 0 (P3).
+  - Khóa i18n: `goal.title`, `goal.intro`, `chip.teaches`, `chip.needs`, `sum.title`, `sum.career`, `sum.skills`, `sum.stats`, `sum.tables`, `sum.last`, `sum.quick`, `prog.due`, `prog.dueTitle`.
 
-- [ ] **Step 1: Thêm khóa i18n**
+Mọi con số và trạng thái tính lại từ save + nội dung mỗi lần render (A4).
 
-Trong `src/i18n/vi.ts`, ngay sau dòng `export const vi = {`:
+- [ ] **Step 1: Khóa i18n**
+
+**Sửa `src/i18n/vi.ts`** — thay:
 ```ts
-  'prog.line': 'Ch {ch}/{chs} · {done}/{total} ticket · {xp} XP',
-  'prog.due': 'Ôn: {n}',
-  'prog.dueTitle': 'Ôn các kỹ năng đến hạn (0 XP)',
-  'skill.open': 'Kỹ năng',
-  'skill.title': 'Bản đồ kỹ năng',
-  'skill.hint': 'Bấm một kỹ năng đã học để luyện riêng nó (0 XP).',
-  'skill.chapter': 'Chương {n}: {title}',
-  'skill.learned': 'Đã học',
-  'skill.steady': 'Đang vững',
-  'skill.mastered': 'Thuộc',
-  'skill.due': 'Đến hạn ôn',
-  'skill.unlockAt': 'Mở sau {id}',
-  'chip.teaches': 'Dạy: {list}',
-  'chip.needs': 'Cần: {list}',
+export const vi = {
+```
+bằng:
+```ts
+export const vi = {
   'goal.title': 'Mục tiêu chương {n}: {title}',
   'goal.intro': 'Sau chương này bạn có thể:',
+  'chip.teaches': 'Dạy: {list}',
+  'chip.needs': 'Cần: {list}',
   'sum.title': 'Tổng kết chương {n}: {title}',
-  'sum.skills': 'Kỹ năng đã học trong chương',
-  'sum.tables': 'Bảng mới ở chương sau: {list}',
+  'sum.career': 'Bước nghề mới: {career}',
+  'sum.skills': 'Kỹ năng đã học trong chương: {list}',
   'sum.stats': '{xp} XP · {hints} gợi ý đã dùng',
+  'sum.tables': 'Bảng mới ở chương sau: {list}',
   'sum.last': 'Bạn đã xong mọi chương hiện có. Vào Luyện tập để ôn lại.',
-  'sum.quick': 'Ôn nhanh 1 câu',
-  'dlg.close': 'Đóng',
+  'sum.quick': 'Ôn nhanh 1 việc của chương',
+  'prog.due': 'Ôn: {n}',
+  'prog.dueTitle': 'Ôn các kỹ năng đến hạn hôm nay (0 XP)',
 ```
-Trong `src/i18n/en.ts`, ngay sau dòng `export const en: Record<Key, Msg> = {`:
+
+**Sửa `src/i18n/en.ts`** — thay:
 ```ts
-  'prog.line': 'Ch {ch}/{chs} · {done}/{total} tickets · {xp} XP',
-  'prog.due': 'Review: {n}',
-  'prog.dueTitle': 'Review the skills that are due (0 XP)',
-  'skill.open': 'Skills',
-  'skill.title': 'Skill map',
-  'skill.hint': 'Click a learned skill to practice just that skill (0 XP).',
-  'skill.chapter': 'Chapter {n}: {title}',
-  'skill.learned': 'Learned',
-  'skill.steady': 'Getting solid',
-  'skill.mastered': 'Mastered',
-  'skill.due': 'Due for review',
-  'skill.unlockAt': 'Unlocks after {id}',
-  'chip.teaches': 'Teaches: {list}',
-  'chip.needs': 'Needs: {list}',
+export const en: Record<Key, Msg> = {
+```
+bằng:
+```ts
+export const en: Record<Key, Msg> = {
   'goal.title': 'Chapter {n} goals: {title}',
   'goal.intro': 'After this chapter you can:',
+  'chip.teaches': 'Teaches: {list}',
+  'chip.needs': 'Needs: {list}',
   'sum.title': 'Chapter {n} wrap-up: {title}',
-  'sum.skills': 'Skills learned in this chapter',
-  'sum.tables': 'New tables next chapter: {list}',
+  'sum.career': 'New career step: {career}',
+  'sum.skills': 'Skills learned in this chapter: {list}',
   'sum.stats': (p) => `${p.xp} XP · ${p.hints} hint${Number(p.hints) === 1 ? '' : 's'} used`,
+  'sum.tables': 'New tables next chapter: {list}',
   'sum.last': "You've finished every chapter available. Use Practice to review.",
-  'sum.quick': 'Quick review: 1 ticket',
-  'dlg.close': 'Close',
+  'sum.quick': 'Quick review: 1 task from this chapter',
+  'prog.due': 'Review: {n}',
+  'prog.dueTitle': 'Review the skills due today (0 XP)',
 ```
 
 - [ ] **Step 2: Viết `src/ui/chapterView.ts`**
 
+**Tạo `src/ui/chapterView.ts`:**
 ```ts
+import { learnedSkills } from '../home';
 import { getLang, t } from '../i18n';
-import { chapterSummary, learnedSkills, outcomeDone } from '../overview';
+import { chapterSummary, outcomeDone } from '../overview';
 import { CHAPTERS, chapterTitle, SKILLS } from '../progress';
 import { app, done } from '../state';
+import { chapterColor, cx, PILL } from '../theme';
 import type { Ticket } from '../tickets';
 import { h } from './dom';
-import { startRetry } from './modes';
 
-export function skillLabel(id: string): string {
-  return SKILLS.find((s) => s.id === id)?.label[getLang()] ?? id;
-}
+export const skillLabel = (id: string): string => SKILLS.find((s) => s.id === id)?.label[getLang()] ?? id;
 
+/** "After this chapter you can…" (chapters.yml outcomes), ticked from the skills learned so far. */
 function outcomeList(chapter: number): HTMLElement | null {
   const c = CHAPTERS.find((x) => x.chapter === chapter);
-  if (!c) return null;
+  if (!c?.outcomes.length) return null;
   const d = done();
   const learned = learnedSkills(app.tickets, d);
   const lang = getLang();
-  return h('ul', { class: 'outcomes' }, ...c.outcomes.map((o) => {
+  return h('ul', { class: 'my-1 list-none space-y-1 p-0' }, ...c.outcomes.map((o) => {
     const ok = outcomeDone(o.skills, chapter, app.tickets, d, learned);
-    return h('li', { class: ok ? 'ok' : '' }, ok ? '✓ ' : '○ ', o[lang]);
+    return h('li', { class: 'flex gap-2' }, h('span', { class: ok ? 'good' : 'text-muted', 'aria-hidden': 'true' }, ok ? '✓' : '○'), o[lang]);
   }));
 }
 
-/** "Chapter goals" card shown on the chapter's teach ticket. */
+/** "Chapter goals" card on the chapter's teach ticket. */
 export function goalCard(chapter: number): HTMLElement | null {
   const list = outcomeList(chapter);
   if (!list) return null;
-  return h('section', { class: 'goal' },
-    h('h3', {}, t('goal.title', { n: chapter, title: chapterTitle(chapter, getLang()) })),
-    h('p', { class: 'muted' }, t('goal.intro')),
+  return h('section', { class: 'my-3 rounded-xl bg-panel p-3 ring-1 ring-line', 'aria-labelledby': 'goal-title' },
+    h('h3', { id: 'goal-title', class: 'mt-0' }, t('goal.title', { n: chapter, title: chapterTitle(chapter, getLang()) })),
+    h('p', { class: 'my-1 text-sm text-muted' }, t('goal.intro')),
     list);
 }
 
+/** "Teaches: … · Needs: …" from grants/requires; colour only on the small chips (L23). */
 export function skillChips(tk: Ticket): HTMLElement | null {
   if (tk.grants.length === 0 && tk.requires.length === 0) return null;
   const list = (ids: string[]) => ids.map(skillLabel).join(', ');
-  return h('p', { class: 'chips' },
-    tk.grants.length ? h('span', { class: 'chip teach' }, t('chip.teaches', { list: list(tk.grants) })) : null,
-    tk.requires.length ? h('span', { class: 'chip need' }, t('chip.needs', { list: list(tk.requires) })) : null);
+  return h('p', { class: 'my-2 flex flex-wrap gap-1.5' },
+    tk.grants.length ? h('span', { class: cx(PILL, chapterColor(tk.chapter).chip) }, t('chip.teaches', { list: list(tk.grants) })) : null,
+    tk.requires.length ? h('span', { class: cx(PILL, 'bg-code text-ink') }, t('chip.needs', { list: list(tk.requires) })) : null);
 }
 
-/** Opened after the boss closes; Plan 1's Recap card stays behind it in the left pane. */
-export function openChapterSummary(dialog: HTMLDialogElement, chapter: number): void {
-  const s = chapterSummary(app.tickets, app.save, chapter);
-  const d = done();
-  const last = !app.tickets.some((tk) => tk.chapter > chapter);
-  const quick = app.tickets.filter((tk) => tk.chapter === chapter && tk.beat !== 'boss' && d.has(tk.id));
-  const close = h('button', { type: 'button', class: 'primary', onclick: () => dialog.close() }, t('dlg.close'));
-  dialog.replaceChildren(
-    h('h2', { id: 'summary-title' }, t('sum.title', { n: chapter, title: chapterTitle(chapter, getLang()) })),
-    outcomeList(chapter) ?? '',
-    s.skills.length ? h('h3', {}, t('sum.skills')) : '',
-    s.skills.length ? h('ul', {}, ...s.skills.map((id) => h('li', {}, skillLabel(id)))) : '',
-    s.newTables.length && !last ? h('p', {}, t('sum.tables', { list: s.newTables.join(', ') })) : '',
-    h('p', {}, t('sum.stats', { xp: s.xp, hints: s.hints })),
-    last ? h('p', {}, t('sum.last')) : '',
-    h('div', { class: 'actions' },
-      quick.length
-        ? h('button', {
-            type: 'button',
-            onclick: () => {
-              dialog.close();
-              startRetry(quick[Math.floor(Math.random() * quick.length)].id);
-            },
-          }, t('sum.quick'))
-        : '',
-      close),
-  );
-  dialog.showModal();
-  close.focus();
-}
-```
-
-- [ ] **Step 3: Viết `src/ui/progressView.ts`**
-
-```ts
-import { t } from '../i18n';
-import { progressLine } from '../overview';
-import { CHAPTERS } from '../progress';
-import { app } from '../state';
-import { h } from './dom';
-import { startToday, today } from './modes';
-
-/** Top bar progress: "Ch 2/7 · 7/35 ticket · 1.250 XP · [Review: 3]", recomputed from the save. */
-export function renderProgress(host: HTMLElement): void {
-  const p = progressLine(app.tickets, CHAPTERS.length, app.save, today());
-  const line = t('prog.line', { ch: p.chapter, chs: p.chapters, done: p.done, total: p.total, xp: p.xp });
-  if (p.learned === 0) {
-    host.replaceChildren(line);
-    return;
-  }
-  const due = h('button', { type: 'button', class: 'due-btn', title: t('prog.dueTitle'), onclick: () => startToday() }, t('prog.due', { n: p.due }));
-  due.disabled = p.due === 0;
-  host.replaceChildren(line, ' · ', due);
-}
-```
-
-- [ ] **Step 4: Viết `src/ui/skillMap.ts`**
-
-```ts
-import { getLang, t, type Key } from '../i18n';
-import { grantedBy, learnedSkills, skillLevel, type SkillLevel } from '../overview';
-import { cardOf } from '../practice';
-import { chapterTitle, SKILLS } from '../progress';
-import { app, done } from '../state';
-import { h } from './dom';
-import { startSkill, today } from './modes';
-
-const LEVEL_KEY: Record<Exclude<SkillLevel, 'locked'>, Key> = {
-  learned: 'skill.learned',
-  steady: 'skill.steady',
-  mastered: 'skill.mastered',
-};
-
-export function openSkillMap(dialog: HTMLDialogElement): void {
+/** Under the promotion review's Recap (P2). The promotion animation already celebrated: no effect here. */
+export function wrapUp(chapter: number, onQuick?: () => void): HTMLElement {
   const lang = getLang();
-  const day = today();
-  const learned = learnedSkills(app.tickets, done());
-  const skills = SKILLS;
-  const chapters = [...new Set(skills.map((s) => s.chapter))].sort((a, b) => a - b);
-  dialog.replaceChildren(
-    h('h2', { id: 'skills-title' }, t('skill.title')),
-    h('p', { class: 'muted' }, t('skill.hint')),
-    ...chapters.map((ch) =>
-      h('section', { class: 'skill-chapter' },
-        h('h3', {}, t('skill.chapter', { n: ch, title: chapterTitle(ch, lang) })),
-        h('div', { class: 'skill-grid' }, ...skills.filter((s) => s.chapter === ch).map((s) => {
-          const level = skillLevel(s.id, learned, app.save.review, day);
-          const due = level !== 'locked' && cardOf(app.save.review, s.id, day).due <= day;
-          const btn = h('button', {
-            type: 'button',
-            class: `skill ${level}`,
-            onclick: () => {
-              dialog.close();
-              startSkill(s.id);
-            },
-          },
-            h('span', { class: 'skill-label' }, s.label[lang]),
-            h('span', { class: 'skill-level' },
-              level === 'locked' ? t('skill.unlockAt', { id: grantedBy(app.tickets, s.id)?.id ?? '—' }) : t(LEVEL_KEY[level])),
-            due ? h('span', { class: 'badge' }, t('skill.due')) : null);
-          btn.disabled = level === 'locked';
-          return btn;
-        })))),
-    h('form', { method: 'dialog' }, h('button', {}, t('dlg.close'))),
-  );
-  dialog.showModal();
+  const s = chapterSummary(app.tickets, app.save, chapter);
+  const last = !app.tickets.some((tk) => tk.chapter > chapter);
+  const career = CHAPTERS.find((c) => c.chapter === chapter)?.career[lang];
+  return h('section', { class: 'my-3 rounded-xl bg-panel p-4 ring-1 ring-line', 'aria-labelledby': 'wrapup-title' },
+    h('h3', { id: 'wrapup-title', class: 'mt-0' }, t('sum.title', { n: chapter, title: chapterTitle(chapter, lang) })),
+    career ? h('p', { class: 'font-semibold' }, t('sum.career', { career })) : null,
+    outcomeList(chapter),
+    s.skills.length ? h('p', {}, t('sum.skills', { list: s.skills.map(skillLabel).join(', ') })) : null,
+    h('p', {}, t('sum.stats', { xp: s.xp, hints: s.hints })),
+    !last && s.newTables.length ? h('p', {}, t('sum.tables', { list: s.newTables.join(', ') })) : null,
+    last ? h('p', {}, t('sum.last')) : null,
+    onQuick ? h('div', { class: 'actions' }, h('button', { type: 'button', onclick: onQuick }, t('sum.quick'))) : null);
 }
 ```
 
-- [ ] **Step 5: Thêm chip và thẻ mục tiêu vào `renderLeft` (`src/ui/modes.ts`)**
+- [ ] **Step 3: Gắn vào `src/ui/modes.ts`**
 
-5a. Thêm import:
+**Sửa `src/ui/modes.ts`** — thay:
 ```ts
-import { goalCard, skillChips } from './chapterView';
+import { renderBrief } from './brief';
 ```
-5b. Trong `practicePane`, thay dòng
+bằng:
+```ts
+import { renderBrief } from './brief';
+import { goalCard, skillChips, wrapUp } from './chapterView';
+```
+
+**Sửa `src/ui/modes.ts`** — thay:
 ```ts
   if (!finished) renderBrief(body, run.tickets[run.index], 0);
 ```
-bằng
+bằng:
 ```ts
   if (!finished) {
     const tk = run.tickets[run.index];
     renderBrief(body, tk, 0);
-    const chips = skillChips(tk);
-    if (chips) body.prepend(chips);
-  }
-```
-5c. Trong `renderLeft`, thay dòng
-```ts
-  else renderBrief(host, selected(), app.stepIndex);
-```
-bằng
-```ts
-  else {
-    const tk = selected();
-    renderBrief(host, tk, app.stepIndex);
-    const chips = skillChips(tk);
-    if (chips) host.prepend(chips);
-    const goal = tk.beat === 'teach' ? goalCard(tk.chapter) : null;
-    if (goal) host.prepend(goal);
+    body.querySelector('header')?.after(skillChips(tk) ?? '');
   }
 ```
 
-- [ ] **Step 6: Sửa `index.html`**
+**Sửa `src/ui/modes.ts`** — thay:
+```ts
+  renderBrief(host, tk, app.stepIndex);
+  if (done().has(tk.id) && tk.beat !== 'boss') {
+    host.append(h('div', { class: 'actions' }, h('button', { type: 'button', onclick: () => startRetry(tk.id) }, t('prac.retry'))));
+  }
+}
+```
+bằng:
+```ts
+  renderBrief(host, tk, app.stepIndex);
+  host.querySelector('header')?.after(skillChips(tk) ?? '', (tk.beat === 'teach' && goalCard(tk.chapter)) || '');
+  if (!done().has(tk.id)) return;
+  if (tk.beat !== 'boss') {
+    host.append(h('div', { class: 'actions' }, h('button', { type: 'button', onclick: () => startRetry(tk.id) }, t('prac.retry'))));
+    return;
+  }
+  const d = done();
+  const quick = app.tickets.filter((x) => x.chapter === tk.chapter && x.beat !== 'boss' && d.has(x.id));
+  host.append(wrapUp(tk.chapter, quick.length ? () => startRetry(quick[Math.floor(Math.random() * quick.length)].id) : undefined));
+}
 
-6a. Xóa dòng `<span id="xp"></span>` (XP chuyển vào dòng tiến độ).
-6b. Ngay sau dòng chứa `id="inbox-btn"`, thêm:
+/** Top-bar "Review: N" (P3): shown only while a learned skill is due today. */
+export function renderReviewButton(btn: HTMLButtonElement): void {
+  const n = dueToday().length;
+  btn.hidden = n === 0;
+  btn.textContent = t('prog.due', { n });
+  btn.title = t('prog.dueTitle');
+  btn.onclick = () => void startToday();
+}
+```
+
+- [ ] **Step 4: Nút "Ôn: N" trên topbar**
+
+**Sửa `index.html`** — thay:
 ```html
-      <span id="progress" class="progress"></span>
-      <button id="skills-btn" type="button" data-i18n="skill.open">Kỹ năng</button>
+        <button id="inbox-btn" type="button" class="border-0 bg-black/20 text-white ring-1 ring-white/40 hover:bg-black/30" data-i18n="top.inbox">Hộp thư</button>
 ```
-6c. Ngay trước dòng `<script type="module"`, thêm:
+bằng:
 ```html
-    <dialog id="skills-dialog" aria-labelledby="skills-title"></dialog>
-    <dialog id="summary-dialog" aria-labelledby="summary-title"></dialog>
+        <button id="inbox-btn" type="button" class="border-0 bg-black/20 text-white ring-1 ring-white/40 hover:bg-black/30" data-i18n="top.inbox">Hộp thư</button>
+        <button id="review-btn" type="button" class="border-0 bg-black/20 text-white ring-1 ring-white/40 hover:bg-black/30" hidden></button>
 ```
 
-- [ ] **Step 7: Sửa `src/ui/topbar.ts`**
-
-7a. Thêm import:
+**Sửa `src/main.ts`** — thay:
 ```ts
-import { renderProgress } from './progressView';
+import { initModes, onPracticeSolved, onPracticeWrong, renderLeft } from './ui/modes';
 ```
-7b. Trong `renderTopbar()`: xóa dòng `byId('xp').textContent = t('top.xp', { n: app.save.xp });`, rồi thêm ở cuối thân hàm:
+bằng:
 ```ts
-  renderProgress(document.getElementById('progress')!);
+import { initModes, onPracticeSolved, onPracticeWrong, renderLeft, renderReviewButton } from './ui/modes';
 ```
 
-- [ ] **Step 8: Sửa `src/main.ts`**
-
-8a. Thêm import:
+**Sửa `src/main.ts`** — thay:
 ```ts
-import { openChapterSummary } from './ui/chapterView';
-import { openSkillMap } from './ui/skillMap';
+  renderInbox();
+  if (!byId('home').hidden)
 ```
-8b. Ở cuối thân `complete(t)` (sau lời gọi `persist(true)` và render của Recap):
+bằng:
 ```ts
-  if (t.beat === 'boss') openChapterSummary(document.getElementById('summary-dialog') as HTMLDialogElement, t.chapter);
-```
-8c. Cạnh chỗ gắn sự kiện cho `inbox-btn`, thêm:
-```ts
-document.getElementById('skills-btn')!.addEventListener('click', () =>
-  openSkillMap(document.getElementById('skills-dialog') as HTMLDialogElement));
+  renderInbox();
+  renderReviewButton(byId('review-btn') as HTMLButtonElement);
+  if (!byId('home').hidden)
 ```
 
-- [ ] **Step 9: Thêm CSS vào cuối `src/style.css`**
-
-```css
-.progress { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; }
-.topbar .due-btn { padding: 2px 8px; }
-.chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 8px; }
-.chip { font-size: 12px; padding: 2px 8px; border: 1px solid var(--border); border-radius: 999px; background: var(--code); }
-.chip.teach { border-color: var(--accent); }
-.goal { border: 1px solid var(--accent); border-radius: 8px; padding: 8px 12px; margin-bottom: 12px; background: var(--accent-soft); }
-.goal h3 { margin-top: 0; }
-.outcomes { list-style: none; padding: 0; margin: 4px 0 0; }
-.outcomes li.ok { color: var(--good); }
-.skill-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 6px; }
-.skill { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; text-align: left; }
-.skill .skill-level { font-size: 12px; color: var(--muted); }
-.skill.learned { border-color: var(--warn); }
-.skill.steady { border-color: var(--accent); }
-.skill.mastered { border-color: var(--good); box-shadow: inset 3px 0 var(--good); }
-.skill:disabled { opacity: 1; color: var(--muted); background: var(--code); }
-.badge { font-size: 11px; padding: 0 6px; border-radius: 999px; background: var(--warn); color: var(--bg); }
-#skills-dialog { width: min(720px, calc(100vw - 32px)); }
-```
-
-- [ ] **Step 10: Kiểm kiểu và test**
+- [ ] **Step 5: Kiểm kiểu và test**
 
 Run: `npx tsc --noEmit && npm test`
 Expected: `tsc` không lỗi; tất cả test PASS.
 
-- [ ] **Step 11: Kiểm tay**
+- [ ] **Step 6: Kiểm tay**
 
 Run: `npm run dev`.
-1. Save trống: thanh trên hiện `Ch 1/7 · 0/15 ticket · 0 XP` (7 = số chương trong `CHAPTERS`), chưa có nút Ôn. `ch1-01` có thẻ "Mục tiêu chương 1: …" (3 outcome, đều ○) và chip "Dạy: Chọn cột".
-2. Xong `ch1-01` → outcome "Lấy đúng cột…" có ✓; thanh trên `Ch 1/7 · 1/15 ticket · 100 XP · Ôn: 0` (nút khóa).
-3. Xong `ch1-05` → dialog "Tổng kết chương 1" mở trên Recap: outcome đều ✓, danh sách kỹ năng chương 1, "Bảng mới ở chương sau: containers", XP chương + số gợi ý khớp tay. "Ôn nhanh 1 câu" → vào Luyện tập một ticket ch1 (không boss). Esc / "Đóng" → về Recap.
-4. Bấm "Kỹ năng": lưới theo chương; kỹ năng ch1 "Đã học", ch2+ khóa với "Mở sau ch2-0x"; bấm `where` → vào Luyện tập. Đổi `review.where.box` thành 4 trong Local Storage, tải lại → `where` hiện "Đang vững".
-5. Đổi ngôn ngữ EN: thanh trên `Ch 2/7 · 5/15 tickets · …`, chip "Teaches/Needs", dialog dịch đủ; không chuỗi nào dính tiếng Việt.
-6. Màn 375px: thanh trên xuống dòng gọn, không cuộn ngang; Tab đi qua được nút Ôn, Kỹ năng và các nút trong dialog.
+1. Save trống, `ch1-01`:
+   - dưới đầu đề có chip "Dạy: …" (màu chương 1);
+   - có thẻ "Mục tiêu chương 1: Tuần thử việc", các outcome đều ○;
+   - topbar không có nút "Ôn".
+2. Xong `ch1-01` → outcome tương ứng có ✓. `ch1-02` có chip "Dạy" và "Cần", không có thẻ mục tiêu.
+3. Xong `ch1-05`:
+   - hoạt cảnh `promotion` chạy trong dock góc dưới phải, không bị che;
+   - dưới Recap có khối "Tổng kết chương 1: Tuần thử việc" với "Bước nghề mới: …", outcome đều ✓, kỹ năng chương 1, XP + gợi ý khớp tay, "Bảng mới ở chương sau: …";
+   - "Ôn nhanh 1 việc của chương" vào Luyện tập một việc ch1 (không phải đánh giá).
+4. Sửa `due` một kỹ năng thành hôm qua, tải lại. Topbar có "Ôn: 1" (chữ trắng trên nền tối, đủ tương phản); bấm vào → lượt ôn.
+5. EN: chip "Teaches/Needs", "Chapter 1 wrap-up", "Review: 1"; không chuỗi nào dính tiếng Việt, không chữ "boss".
+6. Màn 375px: topbar xuống dòng gọn, không cuộn ngang. Tab đi qua được nút Ôn và nút trong khối tổng kết.
 
-- [ ] **Step 12: Commit**
+- [ ] **Step 7: Commit**
 
 ```bash
-git add src/ui/progressView.ts src/ui/chapterView.ts src/ui/skillMap.ts src/ui/modes.ts src/ui/topbar.ts src/i18n/vi.ts src/i18n/en.ts index.html src/main.ts src/style.css
-git commit -m "feat: progress line, chapter goals and wrap-up, skill map, teaches/needs chips"
+git add src/ui/chapterView.ts src/ui/modes.ts src/main.ts index.html src/i18n/vi.ts src/i18n/en.ts
+git commit -m "feat: chapter goals, teaches/needs chips, chapter wrap-up under the review recap, review button"
 ```
 
 ---
@@ -2142,19 +2632,29 @@ git commit -m "feat: progress line, chapter goals and wrap-up, skill map, teache
 
 **Files:**
 - Create: `src/ui/notebook.ts`
-- Modify: `src/i18n/vi.ts`, `src/i18n/en.ts`, `index.html`, `src/main.ts`, `src/style.css`
+- Modify: `src/main.ts`, `index.html`, `src/i18n/vi.ts`, `src/i18n/en.ts`
 
 **Interfaces:**
-- Consumes: `SKILLS` (Plan 1 `progress.ts`); `Lang` (Plan 1 `tickets.ts`); `GLOSSARY`, `matches` (Task 5); `learnedSkills`, `grantedBy` (Task 4); `app`, `done` (Plan 1 `state.ts`)
+- Consumes: `SKILLS`; `GLOSSARY`, `matches` (Task 5); `learnedSkills`; `grantedBy` (Task 4); `registerMode`
 - Produces:
-  - `toggleNotebook(dialog: HTMLDialogElement): void` — mở bằng `show()` (không modal, vừa đọc vừa gõ editor), bấm lần nữa thì đóng; có nút Đóng và Esc tự xử lý (dialog không modal không tự đóng bằng Esc ở mọi trình duyệt)
-  - Hai mục: **Thẻ kỹ năng** (khóa đến khi ticket dạy nó đã xong: chỉ hiện tên + "Mở sau chX-YY"; mở: tên, cú pháp, Khi nào, Bẫy) và **Thuật ngữ** (không khóa; `term`, nghĩa theo ngôn ngữ đang chọn, nghĩa ngôn ngữ còn lại, cột liên quan); một ô lọc chung, không phân biệt dấu
-  - Khóa i18n: `nb.open`, `nb.title`, `nb.filter`, `nb.cards`, `nb.terms`, `nb.when`, `nb.trap`, `nb.columns`, `nb.empty`
+  - `toggleNotebook(dialog)`:
+    - mở bằng `show()` (không modal, vừa đọc vừa gõ editor); bấm lần nữa thì đóng;
+    - có nút Đóng, và Esc tự xử lý vì dialog không modal không tự đóng bằng Esc ở mọi trình duyệt.
+  - Hai mục, một ô lọc chung không phân biệt dấu:
+    - **Thẻ kỹ năng**: khóa đến khi ticket dạy nó đã xong; lúc khóa chỉ hiện tên + "Mở sau chX-YY"; lúc mở hiện tên, cú pháp, Khi nào, Bẫy;
+    - **Thuật ngữ**: không khóa; hiện `term`, nghĩa theo ngôn ngữ đang chọn, nghĩa ngôn ngữ còn lại, cột liên quan.
+  - Card chế độ `notebook` (order 30) trên Trang chủ.
+  - Khóa i18n: `nb.open`, `nb.title`, `nb.filter`, `nb.cards`, `nb.terms`, `nb.when`, `nb.trap`, `nb.columns`, `nb.empty`, `nb.unlockAt`, `mode.notebook`, `mode.notebookDesc`.
 
-- [ ] **Step 1: Thêm khóa i18n**
+- [ ] **Step 1: Khóa i18n**
 
-Trong `src/i18n/vi.ts`, ngay sau dòng `export const vi = {`:
+**Sửa `src/i18n/vi.ts`** — thay:
 ```ts
+export const vi = {
+```
+bằng:
+```ts
+export const vi = {
   'nb.open': 'Sổ tay',
   'nb.title': 'Sổ tay SQL & nghiệp vụ',
   'nb.filter': 'Lọc thẻ và thuật ngữ',
@@ -2164,9 +2664,18 @@ Trong `src/i18n/vi.ts`, ngay sau dòng `export const vi = {`:
   'nb.trap': 'Bẫy:',
   'nb.columns': 'Cột: {list}',
   'nb.empty': 'Không có mục khớp "{q}".',
+  'nb.unlockAt': 'Mở sau việc {id}',
+  'mode.notebook': 'Sổ tay',
+  'mode.notebookDesc': 'Thẻ kỹ năng SQL và thuật ngữ freight, mở cạnh editor.',
 ```
-Trong `src/i18n/en.ts`, ngay sau dòng `export const en: Record<Key, Msg> = {`:
+
+**Sửa `src/i18n/en.ts`** — thay:
 ```ts
+export const en: Record<Key, Msg> = {
+```
+bằng:
+```ts
+export const en: Record<Key, Msg> = {
   'nb.open': 'Notebook',
   'nb.title': 'SQL & freight notebook',
   'nb.filter': 'Filter cards and terms',
@@ -2176,19 +2685,28 @@ Trong `src/i18n/en.ts`, ngay sau dòng `export const en: Record<Key, Msg> = {`:
   'nb.trap': 'Trap:',
   'nb.columns': 'Columns: {list}',
   'nb.empty': 'Nothing matches "{q}".',
+  'nb.unlockAt': 'Unlocks after task {id}',
+  'mode.notebook': 'Notebook',
+  'mode.notebookDesc': 'SQL skill cards and freight terms, open beside the editor.',
 ```
 
 - [ ] **Step 2: Viết `src/ui/notebook.ts`**
 
+**Tạo `src/ui/notebook.ts`:**
 ```ts
 import { GLOSSARY, matches } from '../glossary';
+import { learnedSkills } from '../home';
 import { getLang, t } from '../i18n';
-import { grantedBy, learnedSkills } from '../overview';
+import { grantedBy } from '../overview';
 import { SKILLS } from '../progress';
 import { app, done } from '../state';
 import type { Lang } from '../tickets';
-import { h } from './dom';
+import { byId, h, nodes } from './dom';
+import { registerMode } from './homeView';
 
+const ITEM = 'border-b border-line py-2';
+
+/** Non-modal (show(), not showModal()): the player keeps typing in the editor while it is open. */
 export function toggleNotebook(dialog: HTMLDialogElement): void {
   if (dialog.open) {
     dialog.close();
@@ -2197,41 +2715,44 @@ export function toggleNotebook(dialog: HTMLDialogElement): void {
   const lang = getLang();
   const other: Lang = lang === 'vi' ? 'en' : 'vi';
   const learned = learnedSkills(app.tickets, done());
-  const input = h('input', { type: 'search', placeholder: t('nb.filter'), 'aria-label': t('nb.filter') });
-  const list = h('div', { class: 'nb-list' });
+  const input = h('input', {
+    type: 'search', placeholder: t('nb.filter'), 'aria-label': t('nb.filter'),
+    class: 'w-full rounded-lg bg-panel px-2 py-1.5 ring-1 ring-line',
+  });
+  const list = h('div', {});
 
   const draw = (): void => {
     const q = input.value;
     const cards = SKILLS.filter((s) => matches(q, s.id, s.label.vi, s.label.en));
     const terms = GLOSSARY.filter((g) => matches(q, g.term, g.vi, g.en, ...g.columns));
-    list.replaceChildren(
+    list.replaceChildren(...nodes(
       h('h3', {}, t('nb.cards')),
       ...cards.map((s) =>
         learned.has(s.id)
-          ? h('article', { class: 'card' },
-              h('h4', {}, s.label[lang]),
-              h('pre', { class: 'sql' }, s.syntax),
-              h('p', {}, h('b', {}, t('nb.when')), ' ', s.when[lang]),
-              h('p', {}, h('b', {}, t('nb.trap')), ' ', s.trap[lang]))
-          : h('article', { class: 'card locked' },
-              h('h4', {}, s.label[lang]),
-              h('p', { class: 'muted' }, t('skill.unlockAt', { id: grantedBy(app.tickets, s.id)?.id ?? '—' })))),
+          ? h('article', { class: ITEM },
+              h('h4', { class: 'm-0' }, s.label[lang]),
+              h('pre', { class: 'sql my-1' }, s.syntax),
+              h('p', { class: 'my-0.5 text-sm' }, h('b', {}, t('nb.when')), ' ', s.when[lang]),
+              h('p', { class: 'my-0.5 text-sm' }, h('b', {}, t('nb.trap')), ' ', s.trap[lang]))
+          : h('article', { class: ITEM },
+              h('h4', { class: 'm-0 text-muted' }, s.label[lang]),
+              h('p', { class: 'my-0.5 text-sm text-muted' }, t('nb.unlockAt', { id: grantedBy(app.tickets, s.id)?.id ?? '—' })))),
       h('h3', {}, t('nb.terms')),
       ...terms.map((g) =>
-        h('article', { class: 'term' },
-          h('h4', {}, g.term),
-          h('p', {}, g[lang]),
-          h('p', { class: 'muted' }, g[other]),
-          g.columns.length ? h('p', { class: 'muted' }, t('nb.columns', { list: g.columns.join(', ') })) : null)),
-      cards.length + terms.length === 0 ? h('p', { class: 'muted' }, t('nb.empty', { q })) : null,
-    );
+        h('article', { class: ITEM },
+          h('h4', { class: 'm-0' }, g.term),
+          h('p', { class: 'my-0.5 text-sm' }, g[lang]),
+          h('p', { class: 'my-0.5 text-sm text-muted' }, g[other]),
+          g.columns.length ? h('p', { class: 'my-0.5 text-sm text-muted' }, t('nb.columns', { list: g.columns.join(', ') })) : null)),
+      cards.length + terms.length === 0 ? h('p', { class: 'text-sm text-muted' }, t('nb.empty', { q })) : null,
+    ));
   };
 
   input.addEventListener('input', draw);
   dialog.replaceChildren(
-    h('div', { class: 'nb-head' },
-      h('h2', { id: 'notebook-title' }, t('nb.title')),
-      h('button', { type: 'button', onclick: () => dialog.close() }, t('dlg.close'))),
+    h('div', { class: 'mb-2 flex items-center justify-between gap-2' },
+      h('h2', { id: 'notebook-title', class: 'm-0' }, t('nb.title')),
+      h('button', { type: 'button', onclick: () => dialog.close() }, t('app.close'))),
     input,
     list,
   );
@@ -2245,130 +2766,386 @@ export function toggleNotebook(dialog: HTMLDialogElement): void {
   dialog.show();
   input.focus();
 }
+
+registerMode({
+  id: 'notebook', order: 30, icon: '📒', tint: 'bg-fuchsia-100 dark:bg-fuchsia-950',
+  title: 'mode.notebook', desc: 'mode.notebookDesc', open: () => toggleNotebook(byId('notebook-dialog') as HTMLDialogElement),
+});
 ```
 
 - [ ] **Step 3: Sửa `index.html`**
 
-3a. Ngay sau dòng chứa `id="skills-btn"`, thêm:
+**Sửa `index.html`** — thay:
 ```html
-      <button id="notebook-btn" type="button" data-i18n="nb.open" aria-controls="notebook-dialog">Sổ tay</button>
+        <button id="review-btn" type="button" class="border-0 bg-black/20 text-white ring-1 ring-white/40 hover:bg-black/30" hidden></button>
 ```
-3b. Ngay trước dòng `<script type="module"`, thêm:
+bằng:
 ```html
-    <dialog id="notebook-dialog" class="notebook" aria-labelledby="notebook-title"></dialog>
+        <button id="review-btn" type="button" class="border-0 bg-black/20 text-white ring-1 ring-white/40 hover:bg-black/30" hidden></button>
+        <button id="notebook-btn" type="button" class="border-0 bg-black/20 text-white ring-1 ring-white/40 hover:bg-black/30" data-i18n="nb.open" aria-controls="notebook-dialog">Sổ tay</button>
+```
+
+**Sửa `index.html`** — thay:
+```html
+    <p id="announce" class="sr-only" aria-live="polite"></p>
+```
+bằng:
+```html
+    <dialog id="notebook-dialog" class="fixed inset-auto top-16 right-4 z-30 m-0 max-h-[calc(100dvh-6rem)] w-[min(380px,calc(100vw-2rem))] overflow-auto max-sm:inset-x-4 max-sm:top-auto max-sm:bottom-4 max-sm:max-h-[60dvh] max-sm:w-auto" aria-labelledby="notebook-title"></dialog>
+    <p id="announce" class="sr-only" aria-live="polite"></p>
 ```
 
 - [ ] **Step 4: Sửa `src/main.ts`**
 
-4a. Thêm import:
+**Sửa `src/main.ts`** — thay:
 ```ts
+import { initModes, onPracticeSolved, onPracticeWrong, renderLeft, renderReviewButton } from './ui/modes';
+```
+bằng:
+```ts
+import { initModes, onPracticeSolved, onPracticeWrong, renderLeft, renderReviewButton } from './ui/modes';
 import { toggleNotebook } from './ui/notebook';
 ```
-4b. Cạnh chỗ gắn sự kiện cho `skills-btn`, thêm:
+
+**Sửa `src/main.ts`** — thay:
 ```ts
-document.getElementById('notebook-btn')!.addEventListener('click', () =>
-  toggleNotebook(document.getElementById('notebook-dialog') as HTMLDialogElement));
+byId('inbox-btn').addEventListener('click', () => (byId('inbox-dialog') as HTMLDialogElement).showModal());
+```
+bằng:
+```ts
+byId('inbox-btn').addEventListener('click', () => (byId('inbox-dialog') as HTMLDialogElement).showModal());
+byId('notebook-btn').addEventListener('click', () => toggleNotebook(byId('notebook-dialog') as HTMLDialogElement));
 ```
 
-- [ ] **Step 5: Thêm CSS vào cuối `src/style.css`**
-
-```css
-dialog.notebook { position: fixed; inset: 64px 16px auto auto; margin: 0; width: min(360px, calc(100vw - 32px)); max-height: calc(100dvh - 96px); overflow: auto; z-index: 10; }
-@media (max-width: 600px) { dialog.notebook { inset: auto 16px 16px 16px; width: auto; max-height: 60dvh; } }
-.nb-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
-.notebook input[type='search'] { width: 100%; font: inherit; padding: 6px 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--panel); color: var(--text); }
-.nb-list article { border-bottom: 1px solid var(--border); padding: 6px 0; }
-.nb-list h4 { margin: 0; font-size: 14px; }
-.nb-list p { margin: 2px 0; font-size: 13px; }
-.nb-list pre.sql { margin: 4px 0; padding: 4px 6px; background: var(--code); border-radius: 4px; white-space: pre-wrap; font-size: 12px; }
-.card.locked h4 { color: var(--muted); }
-```
-
-- [ ] **Step 6: Kiểm kiểu và test**
+- [ ] **Step 5: Kiểm kiểu và test**
 
 Run: `npx tsc --noEmit && npm test`
-Expected: `tsc` không lỗi; tất cả test PASS.
+Expected: `tsc` không lỗi; tất cả test PASS (gồm `tests/i18n.test.ts` › "mọi khóa data-i18n trong index.html có trong vi").
 
-- [ ] **Step 7: Kiểm tay**
+- [ ] **Step 6: Kiểm tay**
 
 Run: `npm run dev`.
-1. Bấm "Sổ tay": dialog neo phải, **không** che backdrop; vẫn gõ được trong editor và bấm Chạy khi Sổ tay đang mở.
-2. Save trống: mọi thẻ kỹ năng khóa ("Mở sau ch1-01"…); mục Thuật ngữ đủ 37 mục. Xong `ch1-01` → mở lại Sổ tay: thẻ "Chọn cột" có cú pháp, Khi nào, Bẫy.
-3. Gõ `luong` → còn "Green / Yellow / Red lane"; gõ `pod` → còn POD (khớp theo cột `shipments.pod`); gõ `zzz` → "Không có mục khớp "zzz"."
-4. Esc và nút "Đóng" đều đóng; bấm "Sổ tay" lần nữa khi đang mở cũng đóng. Màn < 600px: dialog nằm dưới, không cuộn ngang.
-5. EN: nhãn và nghĩa EN lên trước, nghĩa VI ở dòng mờ.
+1. Bấm "Sổ tay" trên topbar. Dialog neo phải, dưới topbar, **không** có backdrop. Khi Sổ tay đang mở, vẫn gõ được trong editor và bấm Chạy được. Card "Sổ tay" ở "Chế độ khác" trên Trang chủ cũng mở được.
+2. Save trống: mọi thẻ kỹ năng khóa ("Mở sau việc ch1-01"…), mục Thuật ngữ đủ 37 mục. Xong `ch1-01` → mở lại Sổ tay: thẻ "Chọn cột" có cú pháp, Khi nào, Bẫy.
+3. Lọc:
+   - gõ `luong` → còn "Green / Yellow / Red lane";
+   - gõ `pod` → còn POD (khớp theo cột `shipments.pod`);
+   - gõ `zzz` → "Không có mục khớp "zzz"."
+4. Esc và nút "Đóng" đều đóng; bấm "Sổ tay" lần nữa khi đang mở cũng đóng. Esc khi Sổ tay mở không làm dock hoạt cảnh mất trạng thái. Màn < 640px: dialog nằm dưới, không cuộn ngang.
+5. EN: nhãn và nghĩa EN lên trước, nghĩa VI ở dòng mờ. Kiểm cả nền sáng và tối: chữ đủ tương phản (`text-muted` trên `bg-panel`).
 
-- [ ] **Step 8: Commit**
+- [ ] **Step 7: Commit**
 
 ```bash
-git add src/ui/notebook.ts src/i18n/vi.ts src/i18n/en.ts index.html src/main.ts src/style.css
+git add src/ui/notebook.ts src/main.ts index.html src/i18n/vi.ts src/i18n/en.ts
 git commit -m "feat: non-modal notebook with skill cards and freight glossary"
 ```
 
 ---
 
-### Task 10: Cổng phát hành EN, test từ điển, ghi chú dự án, kiểm tổng
+### Task 10: Ghi chú dự án và kiểm tổng
 
 **Files:**
-- Create: `tests/release.test.ts`
 - Modify: `CLAUDE.md`
 
-**Interfaces:**
-- Consumes: `loadTickets` (Task 2); `textOf` (Plan 1 Task 4); `vi` (`src/i18n/vi.ts`), `en` (`src/i18n/en.ts`)
-- Produces:
-  - test `cổng phát hành › 0 ticket thiếu bản EN` (D1: release yêu cầu 0 ticket thiếu EN; ở dev UI vẫn fallback VI có nhãn — việc đó thuộc Plan 1)
-  - Test từ điển i18n (B5) đã có ở Plan 1 Task 10 (`tests/i18n.test.ts`, `SAME_OK` gồm `tab.explain`); task này chỉ chạy lại nó. Kiểm `NODE_HELP`/`STEP_*` cùng tập khóa nằm ở test của Plan 1b.
+- [ ] **Step 1: `CLAUDE.md`**
 
-- [ ] **Step 1: Viết `tests/release.test.ts`**
-
-```ts
-import { describe, expect, it } from 'vitest';
-import { loadTickets } from '../src/content';
-import { textOf } from '../src/tickets';
-
-describe('cổng phát hành', () => {
-  it('0 ticket thiếu bản EN', () => {
-    expect(loadTickets().filter((t) => textOf(t, 'en').fallback).map((t) => t.id)).toEqual([]);
-  });
-});
-```
-
-- [ ] **Step 2: Chạy test**
-
-Run: `npx vitest run tests/release.test.ts tests/i18n.test.ts && npx tsc --noEmit`
-
-(`tests/i18n.test.ts` là của Plan 1 Task 10; nó bắt mọi khóa `prac.*`, `sbx.*`, `prog.*`, `skill.*`, `chip.*`, `goal.*`, `sum.*`, `dlg.*`, `nb.*` mà bản EN chép y nguyên VI hoặc lệch placeholder.)
-Expected: PASS (Plan 1 đã dịch bù EN cho 15 ticket ch1–3). Nếu FAIL, danh sách id in ra là ticket thiếu khối `# EN`: **không** phát hành; báo cho chủ nội dung, không sửa test.
-
-- [ ] **Step 3: Thêm mục vào cuối `CLAUDE.md`**
-
+**Sửa `CLAUDE.md`** — thay:
 ```markdown
-## Product layer (Plan 1c)
-
-- Save is v2 (`src/save.ts`): `review` (Leitner card per skill), `practice` totals, `sandboxDraft` (≤ 20,000 chars), `bossStep`. Never edit `tests/fixtures/save-v1.json` or `save-v2.json`; a future v3 adds `MIGRATIONS[2]` + `save-v3.json` and ships in its own release.
-- Progress, skill levels, chapter goals and chapter summary are recomputed from the save + content (`src/overview.ts`); do not store derived state.
-- Practice (`src/practice.ts`, `src/ui/modes.ts`): 0 XP, drafts not saved, practice hints never touch `save.hintsUsed`, bosses excluded. Leitner boxes `[1, 2, 4, 8, 16]` days on the machine's real local date (`localDay`), never the in-game date.
-- Variants: frontmatter `variants` + `{{x}}` templates; story plays `variants[0]` (`loadTickets()`), practice reads `loadTicketTemplates()`. Format is validated by `parseTicket`; `tests/variants.test.ts` checks every variant runs, differs, and leaves no variant-0 value behind.
-- Modes live in `src/session.ts` (`story | practice | sandbox`). `work.setTicket(undefined, 0)` is Sandbox: no Submit, still `runSandboxed`.
-- Glossary: `content/glossary.yml` `{ term, vi, en, columns }`; `columns` must exist in the DB (`tests/glossary.test.ts`).
-- Release gate: `tests/release.test.ts` fails while any ticket lacks its `# EN` block.
+- UI: plain TypeScript DOM via `h()`
+```
+bằng:
+```markdown
+- Product layer (Plan 1c):
+  - Save v2 adds `review` (Leitner card per skill), `practice` totals, `sandboxDraft` (≤ 20,000 chars) and `bossStep` (promotion-review step reached; `resumeStep` in `src/overview.ts`). Never edit `tests/fixtures/save-v1.json` or `save-v2.json`; a v3 adds `MIGRATIONS[2]` + `save-v3.json` and ships in its own release.
+  - Modes live in `src/session.ts` (`story | practice | sandbox`, inside `#/play`). `work.setTicket(undefined, 0)` is Sandbox: no Submit, no history, still `runSandboxed`. Outside story mode `work.ts` writes neither history nor `save.graded`.
+  - Practice (`src/practice.ts`, `src/ui/modes.ts`): 0 XP, drafts not saved, hints never touch `save.hintsUsed`, promotion reviews excluded (L10), no `complete()` and no completion animation. Leitner boxes `[1, 2, 4, 8, 16]` days on the machine's real local date (`localDay`), never the in-game date.
+  - Entries: nav (`registerNav` practice/sandbox; `play` is current only in story mode), the Home `review` section, `homeHooks.levelOf` (box) / `homeHooks.onSkill`, the top-bar `#review-btn` (shown only when a skill is due) and "Practise this task again" under a Recap. Sandbox and Notebook are `registerMode` cards.
+  - Variants: frontmatter `variants` + `{{x}}` templates (values ASCII, `VARIANT_VALUE_RE`; use a separate key such as `month_en` for EN prose). Story plays `variants[0]` (`loadTickets()`); Practice reads `loadTicketTemplates()`. `tests/variants.test.ts` checks every variant runs, differs, and leaves no variant-0 value behind.
+  - Chapter goals, teaches/needs chips and the chapter wrap-up (`src/ui/chapterView.ts`) are recomputed from the save; the wrap-up sits under the promotion review's Recap (the `promotion` animation is the celebration, L32).
+  - Glossary: `content/glossary.yml` `{ term, vi, en, columns }`; `columns` must exist in the DB (`tests/glossary.test.ts`). The notebook (`src/ui/notebook.ts`) is a non-modal `<dialog>`.
+- UI: plain TypeScript DOM via `h()`
 ```
 
-- [ ] **Step 4: Chạy toàn bộ và build**
+- [ ] **Step 2: Chạy toàn bộ và build**
 
-Run: `npm test && npm run build`
-Expected: tất cả test PASS; `tsc --noEmit` không lỗi; Vite build xong.
+Run:
+```bash
+npx tsc --noEmit
+npm test
+npm run build
+grep -rnE "\.innerHTML\s*=|insertAdjacentHTML" src/ui/modes.ts src/ui/chapterView.ts src/ui/notebook.ts; echo "exit=$?"
+grep -rnE "text-xs|text-\[1[0-3]px\]" src/ui/modes.ts src/ui/chapterView.ts src/ui/notebook.ts; echo "exit=$?"
+```
+Expected:
+- `tsc` không lỗi;
+- tất cả test PASS;
+- build xong;
+- hai lệnh grep đều in `exit=1`: không dùng `innerHTML`, không có chữ < 14px (L23).
 
-- [ ] **Step 5: Kiểm tay tổng (save cũ → mới)**
+- [ ] **Step 3: Kiểm tay tổng (save cũ → mới), trên Edge, sáng và tối**
 
-1. DevTools: đặt `cargo-query-save` = nội dung `tests/fixtures/save-v1.json` → tải lại: không có cảnh báo; tiến độ `ch1-01`, `ch1-02` còn; Local Storage có thêm key `cargo-query-save.v1` chứa nguyên bản v1; `cargo-query-save` giờ có `"version":2`.
-2. Thanh trên hiện "Ôn: 2" (kỹ năng `select`, `where` đã học từ v1 nhưng chưa có thẻ → đến hạn hôm nay); bấm → lượt ôn 2 bài.
-3. Xuất tiến độ → file JSON có `review`, `practice`, `sandboxDraft`, `bossStep`; Nhập lại file đó → mọi thứ như trước.
-4. Lặp nhanh checklist Plan 1 Task 10 Step 10 (mục 1–13): Học chính chạy y như trước.
+1. DevTools: đặt `cargo-query-save` = nội dung `tests/fixtures/save-v1.json`, rồi tải lại. Kiểm:
+   - không có cảnh báo;
+   - tiến độ `ch1-01`, `ch1-02` còn;
+   - Local Storage có thêm key `cargo-query-save.v1` chứa nguyên bản v1;
+   - `cargo-query-save` giờ có `"version":2`.
+2. Topbar hiện "Ôn: 2": `select` và `where` đã học từ v1 nhưng chưa có thẻ, nên đến hạn hôm nay. Bấm → lượt ôn 2 bài. Card "Ôn tập" trên Trang chủ có nút "Ôn hôm nay (2)".
+3. Xuất tiến độ → file JSON có `review`, `practice`, `sandboxDraft`, `bossStep`, `graded`. Nhập lại file đó → mọi thứ như trước.
+4. Chạy lại checklist Edge của Plan 1d Task 19 Step 4, mục "Luồng chơi" và "Bàn phím và trợ năng". Kết quả phải y như trước, có thêm:
+   - nav Luyện tập/Sandbox;
+   - không chữ "boss"/"sự cố" ở mọi màn mới (Luyện tập, Sandbox, Tổng kết, Sổ tay), cả VI và EN.
 
-- [ ] **Step 6: Commit**
+- [ ] **Step 4: Commit**
 
 ```bash
-git add tests/release.test.ts CLAUDE.md
-git commit -m "test: release gate for missing EN tickets; document product layer"
+git add CLAUDE.md
+git commit -m "docs: document the product layer (save v2, modes, practice, notebook)"
+```
+
+---
+
+### Task 11: Nút "Sao chép thông tin chẩn đoán" (L8)
+
+**Tiền đề:** Plan Deploy Task 1 (`__BUILD__`, `src/env.d.ts`) và Task 3 (`src/diagnostics.ts`: `buildDiagnostics`, `diagnosticsText`, `DiagnosticKind`) đã commit. Kiểm:
+```bash
+grep -c "export function buildDiagnostics\|export function diagnosticsText\|export type DiagnosticKind" src/diagnostics.ts
+grep -c "__BUILD__" src/env.d.ts
+```
+Expected: `3`, `1`. Nếu chưa có: chạy Plan Deploy Task 1 + 3 trước, hoặc để task này lại và báo người điều phối. Không tự viết `diagnostics.ts`.
+
+**Files:**
+- Modify: `src/db/client.ts`, `src/state.ts`, `src/ui/topbar.ts`, `src/main.ts`, `src/i18n/vi.ts`, `src/i18n/en.ts`
+
+**Interfaces:**
+- Produces:
+  - `DbClient.onTimeout?: (e: QueryTimeoutError) => void`: gọi khi một query bị dừng vì quá giờ, trước khi khởi động lại worker.
+  - `app.problem?: { kind: DiagnosticKind; error?: unknown }`: sự cố gần nhất. Lỗi SQL của người chơi **không** tính.
+  - `actions.copyDiagnostics()`.
+  - Nút trong `#db-status`, chỉ hiện khi `app.problem` có giá trị. Cách gán `kind` theo P10:
+
+    | Sự kiện | `kind` |
+    |---|---|
+    | DB `failed` trước lần `ready` đầu | `db-init-failed` |
+    | DB `failed` sau lần `ready` đầu | `worker-crash` |
+    | `QueryTimeoutError` | `db-timeout` |
+    | `vite:preloadError` | `chunk-load-failed` |
+    | `window` `error` / `unhandledrejection` | `js-error` |
+
+  - Payload theo spec nút của Plan Deploy Task 3:
+    - `timings` = `db.timings` + `readyMs` (`performance` measure `db:time-to-ready`);
+    - không có `fetch`;
+    - clipboard bị chặn thì nội dung hiện trong banner (P10).
+  - Khóa i18n: `diag.copy`, `diag.copied`, `diag.manual`.
+
+- [ ] **Step 1: Khóa i18n**
+
+**Sửa `src/i18n/vi.ts`** — thay:
+```ts
+export const vi = {
+```
+bằng:
+```ts
+export const vi = {
+  'diag.copy': 'Sao chép thông tin chẩn đoán',
+  'diag.copied': 'Đã chép thông tin chẩn đoán. Dán vào báo lỗi giúp mình nhé (không có SQL hay dữ liệu của bạn trong đó).',
+  'diag.manual': 'Không chép tự động được. Hãy tự chép đoạn sau vào báo lỗi: {text}',
+```
+
+**Sửa `src/i18n/en.ts`** — thay:
+```ts
+export const en: Record<Key, Msg> = {
+```
+bằng:
+```ts
+export const en: Record<Key, Msg> = {
+  'diag.copy': 'Copy diagnostics',
+  'diag.copied': 'Diagnostics copied. Please paste them into your bug report (they contain no SQL and none of your data).',
+  'diag.manual': 'Could not copy automatically. Please copy this into your bug report: {text}',
+```
+
+- [ ] **Step 2: Hook quá giờ trong `src/db/client.ts`**
+
+**Sửa `src/db/client.ts`** — thay:
+```ts
+  onProgress?: (p: LoadProgress) => void;
+```
+bằng:
+```ts
+  onProgress?: (p: LoadProgress) => void;
+  /** A query ran past its budget; called before the worker restarts (the diagnostics button). */
+  onTimeout?: (e: QueryTimeoutError) => void;
+```
+
+**Sửa `src/db/client.ts`** — thay:
+```ts
+      this.inFlight = undefined;
+      job.reject(new QueryTimeoutError(job.timeoutMs));
+      this.restart();
+```
+bằng:
+```ts
+      this.inFlight = undefined;
+      const err = new QueryTimeoutError(job.timeoutMs);
+      job.reject(err);
+      this.onTimeout?.(err);
+      this.restart();
+```
+
+- [ ] **Step 3: Trạng thái và nút**
+
+**Sửa `src/state.ts`** — thay:
+```ts
+import type { DbStatus } from './db/client';
+```
+bằng:
+```ts
+import type { DbStatus } from './db/client';
+import type { DiagnosticKind } from './diagnostics';
+```
+
+**Sửa `src/state.ts`** — thay:
+```ts
+  notice: undefined as Notice | undefined,
+```
+bằng:
+```ts
+  notice: undefined as Notice | undefined,
+  /** Last app/DB fault (never a player's SQL error): shows the "Copy diagnostics" button. */
+  problem: undefined as { kind: DiagnosticKind; error?: unknown } | undefined,
+```
+
+**Sửa `src/state.ts`** — thay:
+```ts
+  retryDb(): void {},
+};
+```
+bằng:
+```ts
+  retryDb(): void {},
+  copyDiagnostics(): void {},
+};
+```
+
+**Sửa `src/ui/topbar.ts`** — thay:
+```ts
+  byId('db-status').replaceChildren(dbStatusView());
+```
+bằng:
+```ts
+  byId('db-status').replaceChildren(...nodes(
+    dbStatusView(),
+    app.problem ? h('button', { type: 'button', class: cx(TOP_BTN, 'ml-2'), onclick: () => actions.copyDiagnostics() }, t('diag.copy')) : null));
+```
+
+**Sửa `src/ui/topbar.ts`** — thay:
+```ts
+import { NAV_LINK, TOP_BTN } from '../theme';
+```
+bằng:
+```ts
+import { cx, NAV_LINK, TOP_BTN } from '../theme';
+```
+
+- [ ] **Step 4: Ghi sự cố và chép payload trong `src/main.ts`**
+
+**Sửa `src/main.ts`** — thay:
+```ts
+import { loadSave, parseSave, serializeSave, type Known } from './save';
+```
+bằng:
+```ts
+import { buildDiagnostics, diagnosticsText } from './diagnostics';
+import { loadSave, parseSave, serializeSave, type Known } from './save';
+```
+
+**Sửa `src/main.ts`** — thay:
+```ts
+function onDbStatus(s: DbStatus): void {
+  app.dbStatus = s;
+```
+bằng:
+```ts
+let dbWasReady = false;
+function onDbStatus(s: DbStatus): void {
+  app.dbStatus = s;
+  if (s === 'ready') dbWasReady = true;
+  if (s === 'failed') app.problem = { kind: dbWasReady ? 'worker-crash' : 'db-init-failed' }; // P10
+```
+
+**Sửa `src/main.ts`** — thay:
+```ts
+app.run = (sql) => db.run(sql);
+```
+bằng:
+```ts
+app.run = (sql) => db.run(sql);
+db.onTimeout = (e) => {
+  app.problem = { kind: 'db-timeout', error: e };
+  renderTopbar();
+};
+```
+
+**Sửa `src/main.ts`** — thay:
+```ts
+window.addEventListener('vite:preloadError', () => {
+  app.notice = { key: 'app.newVersion', reload: true };
+```
+bằng:
+```ts
+window.addEventListener('vite:preloadError', () => {
+  app.problem = { kind: 'chunk-load-failed' };
+  app.notice = { key: 'app.newVersion', reload: true };
+```
+
+**Sửa `src/main.ts`** — thay:
+```ts
+Object.assign(actions, { rerender, selectTicket, complete, retryDb: () => db.restart() });
+```
+bằng:
+```ts
+/** Allowlisted payload only (Plan Deploy Task 3): never SQL, messages, drafts or data. Nothing is sent anywhere. */
+async function copyDiagnostics(): Promise<void> {
+  const p = app.problem;
+  if (!p) return;
+  const readyMs = performance.getEntriesByName('db:time-to-ready').at(-1)?.duration;
+  const text = diagnosticsText(buildDiagnostics({
+    build: __BUILD__, kind: p.kind, error: p.error, timings: { ...db.timings, readyMs }, userAgent: navigator.userAgent,
+  }));
+  try {
+    await navigator.clipboard.writeText(text);
+    app.notice = { key: 'diag.copied' };
+  } catch {
+    app.notice = { key: 'diag.manual', params: { text } }; // shown with textContent (renderNotice)
+  }
+  renderTopbar();
+}
+
+const fault = (error: unknown): void => {
+  app.problem = { kind: 'js-error', error };
+  renderTopbar();
+};
+window.addEventListener('error', (e) => fault(e.error));
+window.addEventListener('unhandledrejection', (e) => fault(e.reason));
+
+Object.assign(actions, { rerender, selectTicket, complete, retryDb: () => db.restart(), copyDiagnostics: () => void copyDiagnostics() });
+```
+
+- [ ] **Step 5: Kiểm kiểu, test, build**
+
+Run: `npx tsc --noEmit && npm test && npm run build`
+Expected: `tsc` không lỗi; tất cả test PASS (gồm `tests/diagnostics.test.ts` của Plan Deploy); build xong.
+
+- [ ] **Step 6: Kiểm tay**
+
+1. Bình thường: không có nút chẩn đoán. Lỗi cú pháp SQL cũng không làm nút hiện.
+2. `SELECT count(*) FROM generate_series(1, 100000000)` → quá giờ, nút "Sao chép thông tin chẩn đoán" hiện. Bấm → clipboard chứa JSON chỉ gồm `build`, `kind: "db-timeout"`, `errorName: "QueryTimeoutError"`, `timings`, `ua`; không có SQL.
+3. DevTools > Network: chặn `pglite*.wasm`, tải lại → DB `failed` → nút hiện, `kind: "db-init-failed"`.
+4. Chặn quyền clipboard → banner hiện "Không chép tự động được…" kèm JSON.
+
+- [ ] **Step 7: Commit**
+
+```bash
+git add src/db/client.ts src/state.ts src/ui/topbar.ts src/main.ts src/i18n/vi.ts src/i18n/en.ts
+git commit -m "feat: copy-diagnostics button for DB and app faults (L8)"
 ```
