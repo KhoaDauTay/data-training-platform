@@ -114,3 +114,12 @@ Vòng 1/3 (2026-11-17): `code-review` (Standards + Spec) + cổng trình duyệt
 | docs | Spec §6b còn chấm "mới" EXPLAIN ở ch3-01 và công tắc "Giảm chuyển động" (trái L35); `er.layoutDirection` thừa sau 7f33842; chú thích `fmt` sai với số lẻ | cả hai | Đã sửa 1b200dd (spec, CLAUDE.md), 890f3c7 (`er.layoutDirection`, chú thích `fmt`) |
 
 Sửa vòng 1: commits eb3b733 (db/parser), 890f3c7 (viz/ui), 1b200dd (docs), 777ed49 (lỗi worker, từ khóa Mermaid).
+
+Vòng 2/3 (2026-11-17, chỉ diff 98532fa..2e85fd3): các bản sửa vòng 1 đạt (Spec: không phát hiện mới). Kiểm Edge: biểu đồ giá trị âm, Thứ tự thực thi, ERD viền màu chương, không lỗi console. Bug mới:
+
+| Loại | Bug | Trạng thái |
+|---|---|---|
+| correctness | Yêu cầu `parser` đi chung hàng đợi query với hạn 60s → Run/Nộp chờ tới 60s rồi bị hủy (`DbRestartError`) khi tải quá hạn, DB bị seed lại vì lỗi mạng | Đã sửa (tải parser chạy bên cạnh hàng đợi ở client + worker, quá hạn không restart) |
+| correctness | `valueRange()` không chặn NaN/Infinity (`'NaN'::numeric`) → SVG biểu đồ vỡ | Đã sửa (bỏ giá trị không hữu hạn khỏi trục) |
+
+**Plan 1b đóng sau 2 vòng.**

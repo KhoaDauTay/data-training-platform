@@ -24,12 +24,6 @@ ready.then(
 
 async function handle(db: PGlite, kind: RequestKind, sql: string): Promise<unknown> {
   if (kind === 'explain') return runExplain(db, sql);
-  if (kind === 'parser') {
-    // Both downloads (wasm + the steps chunk) happen here, under the long parser budget.
-    const [{ ensureParser }] = await Promise.all([import('../viz/parser'), import('../viz/steps')]);
-    await ensureParser();
-    return null;
-  }
   if (kind === 'steps') {
     const { runSteps } = await import('../viz/steps'); // loads the parser only when this tab is used
     return runSteps(db, sql);
@@ -41,8 +35,20 @@ async function handle(db: PGlite, kind: RequestKind, sql: string): Promise<unkno
 // DbClient also sends one query at a time; this queue is the second line of defence.
 let queue: Promise<void> = Promise.resolve();
 
+/** Downloads the parser (wasm + the steps chunk). Needs no DB, so it runs beside the query queue, not in it. */
+async function loadParser(id: number): Promise<void> {
+  try {
+    const [{ ensureParser }] = await Promise.all([import('../viz/parser'), import('../viz/steps')]);
+    await ensureParser();
+    postMessage({ type: 'result', id, result: null });
+  } catch (err) {
+    postMessage({ type: 'fault', id, message: err instanceof Error ? err.message : String(err) });
+  }
+}
+
 onmessage = (e: MessageEvent<{ id: number; kind: RequestKind; sql: string }>) => {
   const { id, kind, sql } = e.data;
+  if (kind === 'parser') return void loadParser(id);
   queue = queue.then(async () => {
     try {
       const { db } = await ready;

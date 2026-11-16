@@ -30,6 +30,7 @@ describe('chartSpec', () => {
 describe('valueRange (trục giá trị luôn chứa 0)', () => {
   it('tỉ lệ 0–1 không bị ép về đáy', () => {
     expect(valueRange([0.2, 0.5, 0.35])).toEqual([0, 0.5]);
+    expect(valueRange([NaN, Infinity, 2])).toEqual([0, 2]); // non-finite Postgres values are left out of the scale
   });
   it('giá trị âm: miền kéo xuống dưới 0, mốc 0 nằm trong miền', () => {
     expect(valueRange([-3, 2])).toEqual([-3, 2]);

@@ -65,6 +65,9 @@ export class DbClient {
   private failure?: DbFailedError;
   private queue: Job[] = [];
   private inFlight?: { id: number; job: Job; timer: ReturnType<typeof setTimeout> };
+  /** Parser loads: posted beside the query queue, answered by id. */
+  private side = new Map<number, { job: Job; timer: ReturnType<typeof setTimeout> }>();
+  private waitingSide: Job[] = [];
   private nextId = 1;
 
   constructor(
@@ -101,7 +104,23 @@ export class DbClient {
    * needs it again, and the worker itself answers at once when the parser is already loaded.
    */
   loadParser(): Promise<void> {
-    return this.request<void>('parser', '', PARSER_TIMEOUT_MS);
+    // Bypasses the query queue (Run/Submit never wait for the download) and never restarts the worker.
+    if (this.failure) return Promise.reject(this.failure);
+    return new Promise<void>((resolve, reject) => {
+      const job: Job = { kind: 'parser', sql: '', timeoutMs: PARSER_TIMEOUT_MS, resolve: () => resolve(), reject };
+      if (this.status === 'ready') this.postSide(job);
+      else this.waitingSide.push(job);
+    });
+  }
+
+  private postSide(job: Job): void {
+    const id = this.nextId++;
+    const timer = setTimeout(() => {
+      this.side.delete(id);
+      job.reject(new WorkerTaskError());
+    }, job.timeoutMs);
+    this.side.set(id, { job, timer });
+    this.worker.postMessage({ id, kind: job.kind, sql: job.sql });
   }
 
   /** Kills the worker, rejects every waiting query with DbRestartError, boots a fresh worker. */
@@ -133,11 +152,18 @@ export class DbClient {
       performance.mark('db:ready');
       performance.measure('db:time-to-ready', 'db:spawn', 'db:ready');
       this.setStatus('ready');
+      for (const job of this.waitingSide.splice(0)) this.postSide(job);
       this.pump();
     } else if (m.type === 'initError') {
       this.fail(m.message);
     } else if (m.type === 'progress') {
       this.onProgress?.({ loaded: m.loaded, total: m.total });
+    } else if (this.side.has(m.id)) {
+      const { job, timer } = this.side.get(m.id)!;
+      clearTimeout(timer);
+      this.side.delete(m.id);
+      if (m.type === 'result') job.resolve(m.result);
+      else job.reject(new WorkerTaskError(m.type === 'fault' ? m.message : undefined));
     } else {
       const f = this.inFlight;
       if (!f || f.id !== m.id) return;
@@ -158,8 +184,7 @@ export class DbClient {
     const id = this.nextId++;
     const timer = setTimeout(() => {
       this.inFlight = undefined;
-      // A slow parser download is not a slow query: no "JOIN without ON" advice for it.
-      job.reject(job.kind === 'parser' ? new WorkerTaskError() : new QueryTimeoutError(job.timeoutMs));
+      job.reject(new QueryTimeoutError(job.timeoutMs));
       this.restart();
     }, job.timeoutMs);
     this.inFlight = { id, job, timer };
@@ -180,6 +205,12 @@ export class DbClient {
       this.inFlight = undefined;
     }
     for (const job of this.queue.splice(0)) job.reject(e);
+    for (const { job, timer } of this.side.values()) {
+      clearTimeout(timer);
+      job.reject(e);
+    }
+    this.side.clear();
+    for (const job of this.waitingSide.splice(0)) job.reject(e);
   }
 
   private setStatus(s: DbStatus, detail?: string): void {
