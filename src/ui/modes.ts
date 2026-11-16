@@ -14,6 +14,7 @@ import { byId, h } from './dom';
 import { homeHooks, registerHomeSection, registerMode } from './homeView';
 import { go } from './router';
 import { registerNav } from './topbar';
+import { renderMyData } from './myDataView';
 import type { WorkArea } from './work';
 
 const templates = new Map(loadTicketTemplates().map((tk) => [tk.id, tk]));
@@ -129,6 +130,7 @@ function sandboxPane(host: HTMLElement): void {
   host.replaceChildren(
     h('h2', TITLE, t('sbx.title')),
     h('p', { class: 'text-[15px] leading-relaxed' }, t('sbx.intro')),
+    renderMyData(),
     h('div', { class: 'actions' }, h('button', { type: 'button', onclick: () => backToStory() }, t('prac.exit'))),
   );
 }
@@ -222,3 +224,8 @@ registerMode({
 });
 homeHooks.levelOf = (skill) => app.save.review[skill]?.box ?? 1;
 homeHooks.onSkill = (skill) => void startSkill(skill);
+// Plan Import (L17, I2): "My data" opens the Sandbox, whose left pane holds the CSV import.
+registerMode({
+  id: 'mydata', order: 20, icon: '📂', tint: 'bg-cyan-100 dark:bg-cyan-950',
+  title: 'mode.mydata', desc: 'mode.mydataDesc', open: () => startSandbox(),
+});
