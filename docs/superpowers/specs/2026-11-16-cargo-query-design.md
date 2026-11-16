@@ -7,7 +7,7 @@ Ngày: 2026-11-16 · Trạng thái: chờ review
 Web game học PostgreSQL, chia sẻ cho team/công khai. Hai nhánh:
 
 - **DA (Data Analyst)** — làm trong bản này: giải ticket nghiệp vụ bằng SQL trên dữ liệu domain.
-- **DE (Data Engineer)** — bản sau: kỹ thuật Postgres (index, EXPLAIN, MVCC, isolation…). Có thể cần backend nhỏ cho bài concurrency; không thuộc phạm vi spec này.
+- **DE (Data Engineer)** — bản sau: kỹ thuật Postgres (index, EXPLAIN, MVCC, isolation…). Có thể cần backend nhỏ cho bài concurrency — nếu có backend thì viết bằng **Python**; không thuộc phạm vi spec này.
 
 Bản đầu tiên: nhánh DA đầy đủ **7 chương, ~35 ticket**.
 
@@ -147,4 +147,4 @@ Mỗi chương theo nhịp **teach → develop → twist → rest → boss** (r�
 
 ## 10. Ngoài phạm vi
 
-Nhánh DE · tài khoản/leaderboard/backend · PWA/offline install · âm thanh · hiệu ứng canvas · đa ngôn ngữ (nội dung tiếng Việt, tên bảng/cột tiếng Anh).
+Nhánh DE · tài khoản/leaderboard/backend (khi làm: Python) · PWA/offline install · âm thanh · hiệu ứng canvas · đa ngôn ngữ (nội dung tiếng Việt, tên bảng/cột tiếng Anh).
