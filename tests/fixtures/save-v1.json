@@ -1,0 +1,7 @@
+{
+  "version": 1,
+  "completed": ["ch1-01", "ch1-02"],
+  "xp": 350,
+  "hintsUsed": { "ch1-02": 1 },
+  "drafts": { "ch1-03#0": "SELECT ref FROM shipments" }
+}
