@@ -242,6 +242,7 @@ Toàn UI dùng **Tailwind CSS v4** (L17): topbar gradient indigo→blue→cyan, 
 - **Lưới 12 card chương** (4 × 3 desktop, 2 cột mobile; L21): tên chương căn giữa, cỡ lớn; chương khóa có 🔒 căn giữa có padding, chữ nhạt hơn (bằng màu, vẫn đạt AA); hover/focus hiện "bước tiếp theo" để mở chương.
 - **Thang nghề** (chức danh hiện tại, bước kế) và chip chức danh trên topbar.
 - **Bảng điều hành KPI** (L18, L23): ô mở dần theo ticket đã xong, số lấy từ chính Solution, mô tả rõ nghĩa; ô "Margin Q3: ???" mở ở ch12.
+- Card **Ôn tập** (`order: 22`, P7; luôn hiện, P6): số bài ôn hôm nay (= độ dài hàng ôn, L37) + nút Ôn hôm nay, thống kê luyện tập (đạt / chưa tốt), hoặc lời giải thích khi chưa có gì để ôn.
 - Card chế độ: Sandbox / Dữ liệu của tôi / Sổ tay (bật khi tính năng có).
 - **Dàn nhân vật** (L18): chân dung SVG, hộp thư dạng chat nhóm theo người; đoạn mở ticket là bong bóng tin nhắn, `## Task` là thẻ yêu cầu ghim. Cột mốc cuối chương trình bày "Đánh giá thăng tiến", không banner "Sự cố" (L22).
 
@@ -285,16 +286,18 @@ Lần đầu Nộp đúng một ticket: +1 container màu chương vào bãi Ti�
 
 Mọi trạng thái hiển thị dưới đây **tính lại từ save**, không lưu thêm.
 
-- **Thanh trên:** `Chương n/12: <tên>` (L12), chip chức danh, `n/69 ticket · 1.250 XP · Ôn: N` (tổng chương/ticket tính từ nội dung, không gắn cứng), nút Hộp thư (`<dialog>`), trạng thái DB (tiến độ tải theo byte), nút `VI | EN` (nhóm 2 nút `aria-pressed`), xuất/nhập tiến độ, nút Sổ tay.
-- **Inbox:** hội thoại theo người gửi; ngoài ticket theo chương có mục **Luyện tập** (Ôn hôm nay / Luyện kỹ năng / Làm lại ticket) và **Sandbox** (kèm Dữ liệu của tôi).
-- **Ticket:** chip "Dạy: X · Cần: Y"; thẻ "Mục tiêu chương" ở ticket teach; thẻ **Kết quả mong đợi** (số cột, loại cột chữ/số/ngày/đúng-sai, số dòng, có thứ tự hay không, nhãn từ `columns:`; không bao giờ hiện tên cột của Solution), so với kết quả sau mỗi lần Chạy; thẻ **Recap** khi nộp đúng (kèm `reflect:` từ Plan 2); màn **Tổng kết chương** sau cột mốc (đọc `career`).
+- **Thanh trên** (P3, L37): nav Trang chủ / Làm việc / Luyện tập / Sandbox; `Chương n/12: <tên>` (L12), chip chức danh, chip `#xp`, nút `#review-btn` "Ôn: N" **chỉ hiện khi N > 0** (N = số bài thật trong hàng ôn hôm nay; không có `#progress` `n/69` và không có `#skills-btn`), nút Hộp thư (`<dialog>`), nút Sổ tay `#notebook-btn`, trạng thái DB (tiến độ tải theo byte), nút `VI | EN` (nhóm 2 nút `aria-pressed`), xuất/nhập tiến độ.
+- **Inbox:** hội thoại theo người gửi, chỉ ticket theo chương. Luyện tập và Sandbox **không nằm trong Inbox** (P6): vào bằng nav trên thanh trên và card trên Trang chủ. Ba lối vào Luyện tập: Ôn hôm nay (`#review-btn`, card Ôn tập), Luyện kỹ năng (Chủ đề kỹ năng trên Trang chủ), Làm lại việc (nút dưới Recap, P8). Nav Luyện tập: có bài ôn → Ôn hôm nay; không có → một kỹ năng đã học ngẫu nhiên; chưa học gì → Trang chủ. Bấm Ôn khi hàng ôn rỗng → về Trang chủ kèm thông báo (L37).
+- **Hàng ôn hôm nay** (L37): mỗi ticket một mục mỗi lượt, gom mọi kỹ năng đến hạn mà ticket đó luyện (`requires` ∪ `grants`), không lặp (ticket, biến thể), ưu tiên biến thể khác 0; tối đa 5 mục.
+- **Ticket:** chip "Dạy: X · Cần: Y"; thẻ "Mục tiêu chương" ở ticket teach; thẻ **Kết quả mong đợi** (số cột, loại cột chữ/số/ngày/đúng-sai, số dòng, có thứ tự hay không, nhãn từ `columns:`; không bao giờ hiện tên cột của Solution), so với kết quả sau mỗi lần Chạy; thẻ **Recap** khi nộp đúng (kèm `reflect:` từ Plan 2); **Tổng kết chương** là khối tĩnh dưới Recap của đánh giá thăng tiến (P2, đọc `career`), không phải màn hay dialog riêng.
 - **Skill map** (`<dialog>`): khóa / đã học / đang vững / thuộc.
-- **Sổ tay** (`<dialog>` không modal, để vừa đọc vừa gõ): Thẻ kỹ năng / Thuật ngữ, có ô lọc.
+- **Sổ tay** (`<dialog>` không modal, để vừa đọc vừa gõ; mở bằng `#notebook-btn` trên thanh trên hoặc card chế độ trên Trang chủ): Thẻ kỹ năng / Thuật ngữ, có ô lọc. Vẽ lại khi đổi ngôn ngữ/học kỹ năng mới lúc đang mở; đóng thì trả focus về nút mở; không chặn Esc của hoạt cảnh.
 - **Panel:** tablist theo ARIA (roving tabindex, ←/→/Home/End). Nhóm tab [Kết quả · Biểu đồ] | [Thứ tự · EXPLAIN · Luồng] | [ER · Cột]; **không ẩn tab nào**, chỉ chấm "mới" trên Biểu đồ ở `ch2-01` (chấm "mới" của EXPLAIN do Plan 4 thêm ở ch11, L35). Tab mặc định: Cột khi chưa chạy; sau khi Nộp sai thì mở tab theo loại sai. Mọi tab đọc SQL của lần chạy gần nhất; editor khác SQL đó thì hiện dải "SQL đã thay đổi — Ctrl+Enter để cập nhật".
 - **Editor:** gợi ý tên bảng/cột có kiểu (chỉ bảng đã mở), chạy vùng chọn, gạch lỗi tại vị trí Postgres báo, lịch sử query (≤ 15 mục mỗi ticket, `<details>`), **Format SQL** bằng `sql-formatter` (pin version, tải lười). Phím tắt chỉ có `Mod-Enter` Chạy, `Mod-Shift-Enter` Nộp, `Shift-Alt-F` Format (L11). Bước cột mốc chỉ báo bằng dòng `Bước i/n: …`. Đổi ngôn ngữ không remount editor.
 - **Bố cục:** app shell `100dvh` khi màn ≥ 1024×700; dải tiến độ một dòng (≥ 28px); splitter kéo được (`role=separator`, phím ±5%); màn < 600px thanh Chạy/Nộp sticky.
 - **Onboarding:** 4 coach mark trong `ch1-01` → `ch1-02`; bấm Chạy khi DB chưa sẵn sàng thì xếp hàng; có empty state cho các bảng/tab.
-- **Sandbox:** như màn ticket nhưng không có đề và nút Nộp; sidebar chỉ có bảng đã mở và bảng trong `sandbox`; chấm điểm và dải tiến độ không áp dụng.
+- **Sandbox:** như màn ticket nhưng không có đề và nút Nộp; sidebar chỉ có bảng đã mở và bảng trong `sandbox`; chấm điểm, lịch sử query (L16) và dải tiến độ không áp dụng.
+- **Luyện tập:** dải tiến độ ẩn (L37); hết lượt thì khu editor ẩn, chỉ còn khung tổng kết lượt. Chế độ (Làm việc/Luyện tập/Sandbox) chỉ ở trong bộ nhớ, tải lại trang về Làm việc; draft luyện tập không lưu.
 - **Tương phản:** đạt WCAG AA ở cả light/dark; trạng thái mờ dùng màu, không dùng `opacity`.
 - **Phiên bản mới:** bắt `vite:preloadError` → "Có phiên bản mới, tải lại trang".
 
@@ -335,7 +338,7 @@ Cần spike trước khi viết plan Import: `COPY … FROM '/dev/blob'` trong w
 - **v1:** `{ version: 1, completed: [ticketId], xp, hintsUsed: {ticketId: n}, drafts: {"ticketId#stepIndex": sql} }`, cộng `graded` tùy chọn (SQL đã qua grader, cho Recap; thiếu → `{}`, không tăng version, L20).
 - **v2** (một lần nâng duy nhất, `MIGRATIONS[1]`, Plan 1c), thêm:
   - `review: Record<skillId, { box, due }>` — hộp Leitner và ngày đến hạn;
-  - `practice: { solved, failed }` — thống kê luyện tập;
+  - `practice: { solved, weak }` — thống kê luyện tập (`solved` = đạt, `weak` = đúng nhưng có lần nộp sai hoặc từ 2 gợi ý), hiện trên card Ôn tập;
   - `sandboxDraft: string` (≤ 20.000 ký tự);
   - `bossStep: Record<ticketId, number>` — bước boss đang làm (câu kết luận đang chọn dở không lưu).
 - Đọc save: parse → kiểm `version` → từ chối nếu mới hơn bản game → **giữ bản cũ ở key `cargo-query-save.v<old>`** (1 bản) → migration tuần tự vN→vN+1 → validate với danh sách ticket id và skill id hiện có (bỏ id không còn tồn tại). Lỗi có kiểu (`NewerSaveError`, `InvalidSaveError`, cảnh báo `corrupt`/`newer`), không kèm chữ. Save hỏng hoặc mới hơn bản game được chép sang `cargo-query-save.bak` trước khi bắt đầu lại.

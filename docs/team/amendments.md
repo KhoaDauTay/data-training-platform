@@ -80,7 +80,7 @@ User đã yêu cầu EN/VI ở vòng này, nên yêu cầu này **thay** quyết
 | # | Thay đổi | Vai | Sửa ở đâu |
 |---|---|---|---|
 | E1 | 3 chế độ dùng chung một engine: **Học chính / Luyện tập / Sandbox**. Inbox có thêm mục Luyện tập và Sandbox. | PD, UX | spec §1, §6b |
-| E2 | Sandbox = `mountWork` với `ticket: undefined`: không có nút Nộp, vẫn chạy qua `runSandboxed` (BEGIN…ROLLBACK, 5s), hiện đủ các tab, sidebar chỉ có bảng đã mở, draft lưu ở `save.sandboxDraft`, lịch sử dùng key `'sandbox'`. | PD, FE | spec §6b; Plan 1c |
+| E2 | Sandbox = `mountWork` với `ticket: undefined`: không có nút Nộp, vẫn chạy qua `runSandboxed` (BEGIN…ROLLBACK, 5s), hiện đủ các tab, sidebar chỉ có bảng đã mở, draft lưu ở `save.sandboxDraft`, không có lịch sử query (L16). Vào bằng nav Sandbox và card chế độ trên Trang chủ (P6), không qua Inbox. | PD, FE | spec §6b; Plan 1c |
 
 ### 1.5 Hiệu năng, deploy, RPS
 
