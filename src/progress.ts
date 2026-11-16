@@ -8,7 +8,8 @@ export interface Bilingual { vi: string; en: string }
 export interface Skill { id: string; chapter: number; label: Bilingual; syntax: string; when: Bilingual; trap: Bilingual }
 /** "After this chapter you can…"; ticked once every skill in `skills` is learned. */
 export interface Outcome extends Bilingual { skills: string[] }
-export interface Chapter { chapter: number; title: Bilingual; outcomes: Outcome[] }
+/** career: the step reached by passing this chapter's promotion review; tier: a ★ chapter that changes the job title (L30). */
+export interface Chapter { chapter: number; title: Bilingual; career: Bilingual; tier: boolean; story: Bilingual; outcomes: Outcome[] }
 
 const str = (v: unknown): string => (typeof v === 'string' ? v.trim() : '');
 const strings = (v: unknown): string[] => (Array.isArray(v) ? v.map(String) : []);
@@ -53,6 +54,9 @@ export function parseChapters(source: string, origin = 'chapters.yml'): Chapter[
     return {
       chapter: c.chapter,
       title: bilingual(c.title),
+      career: bilingual(c.career),
+      tier: c.tier === true,
+      story: bilingual(c.story),
       outcomes: outcomes.map((o) => ({ ...bilingual(o), skills: strings((o as { skills?: unknown } | null)?.skills) })),
     };
   });
@@ -70,10 +74,15 @@ export const CHAPTER_TABLES: Record<number, string[]> = {
   1: ['ports', 'carriers', 'employees', 'customers', 'shipments'],
   2: ['containers'],
   3: [],
-  4: ['shipment_events', 'trucking_orders', 'cfs_receipts', 'customs_declarations', 'hs_codes', 'duties_taxes'],
-  5: ['charges', 'invoices', 'payments', 'vendor_bills', 'exchange_rates', 'rate_contracts', 'quotations'],
-  6: ['master_bills', 'house_bills', 'incoterms', 'free_time_terms', 'container_events'],
-  7: ['claims'],
+  4: ['shipment_events', 'trucking_orders', 'cfs_receipts'],
+  5: ['customs_declarations', 'hs_codes', 'duties_taxes'],
+  6: ['incoterms'],
+  7: ['rate_contracts', 'quotations'],
+  8: ['charges', 'invoices', 'payments', 'vendor_bills', 'exchange_rates'],
+  9: ['master_bills', 'house_bills'],
+  10: ['free_time_terms', 'container_events'],
+  11: [],
+  12: ['claims'],
 };
 
 export function tablesUnlocked(chapter: number): string[] {
@@ -97,6 +106,24 @@ export function currentChapter(tickets: Ticket[], completed: Set<string>): numbe
 
 export function xpFor(ticket: Ticket, hintsUsed: number): number {
   return Math.round(ticket.difficulty * 100 * (1 - 0.25 * Math.min(hintsUsed, 3)));
+}
+
+/** Career after the promotion reviews passed so far (L19: one step per review; the title changes only at ★ chapters). */
+export interface Rank {
+  /** Chapters whose promotion review (beat: boss) is done, ascending. */
+  passed: number[];
+  /** Job title: career of the highest ★ chapter passed. undefined = DA intern (i18n `career.intern`). */
+  tier?: Bilingual;
+  /** Career step of the highest chapter passed. */
+  career?: Bilingual;
+}
+
+export function rankOf(tickets: Ticket[], completed: Set<string>, chapters: Chapter[] = CHAPTERS): Rank {
+  const passed = tickets.filter((t) => t.beat === 'boss' && completed.has(t.id)).map((t) => t.chapter).sort((a, b) => a - b);
+  const reached = chapters.filter((c) => passed.includes(c.chapter));
+  const tier = reached.filter((c) => c.tier).pop()?.career;
+  const career = reached[reached.length - 1]?.career;
+  return { passed, ...(tier ? { tier } : {}), ...(career ? { career } : {}) };
 }
 
 /**
@@ -142,6 +169,7 @@ export function contentProblems(tickets: Ticket[], skills: Skill[] = SKILLS, cha
 
   for (const c of chapters) {
     if (!c.title.vi || !c.title.en) problems.push(`chương ${c.chapter}: thiếu tiêu đề vi/en`);
+    if (!c.career.vi || !c.career.en || !c.story.vi || !c.story.en) problems.push(`chương ${c.chapter}: thiếu career/story vi/en`);
     for (const o of c.outcomes) {
       if (!o.vi || !o.en) problems.push(`chương ${c.chapter}: outcome thiếu vi/en`);
       for (const skill of o.skills) {

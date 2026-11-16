@@ -1,10 +1,17 @@
-# Tiêu đề chương và mục tiêu "sau chương này bạn có thể…".
-# Outcome được tick khi mọi kỹ năng trong skills đã học; chỉ dùng kỹ năng của chương này hoặc chương trước.
-# Outcome chương 4–7 thêm cùng lúc với kỹ năng của chương đó (Plan 2/3).
-# Mọi chuỗi đặt trong nháy kép.
+# 12 chương (L27, L30, docs/team/curriculum.md).
+# career: bước nghề đạt được khi qua "Đánh giá thăng tiến" (ticket beat: boss) của chương (L19, L22).
+# tier: true = chương ★ đổi chức danh (ch1, 3, 6, 9, 12); career của chương ★ là chức danh mới.
+# story: đoạn mở chương, hiện trên ticket đầu tiên của chương (product-design-v2 ★4).
+# Outcome chỉ dùng kỹ năng của chương này hoặc chương trước; ch4–12 thêm cùng plan viết ticket của chương đó.
+# Màu chương nằm ở src/theme.ts (CHAPTER_COLOR): Tailwind không quét file YAML. Mọi chuỗi đặt trong nháy kép.
 
 - chapter: 1
   title: { vi: "Tuần thử việc", en: "Probation week" }
+  career: { vi: "Junior DA", en: "Junior DA" }
+  tier: true
+  story:
+    vi: "Tuần đầu ở Cargo Query Logistics, trụ sở Đà Nẵng ngay cạnh cảng Tiên Sa. Trưởng phòng Ops kèm bạn làm quen danh mục cảng và lô hàng; cuối tuần, Giám đốc đánh giá thử việc."
+    en: "Your first week at Cargo Query Logistics, headquartered in Da Nang right next to Tien Sa port. The head of Ops walks you through the port and shipment records; at the end of the week the director runs your probation review."
   outcomes:
     - { vi: "Lấy đúng cột cần từ một bảng", en: "Pull exactly the columns you need", skills: [select] }
     - { vi: "Lọc lô hàng theo nhiều điều kiện", en: "Filter shipments by several conditions", skills: [where] }
@@ -12,6 +19,11 @@
 
 - chapter: 2
   title: { vi: "Báo cáo sản lượng", en: "Volume reports" }
+  career: { vi: "Junior DA · phụ trách báo cáo sản lượng", en: "Junior DA · volume reporting" }
+  tier: false
+  story:
+    vi: "Mùa chốt sổ cuối năm. Kế toán và Sales cần những con số sản lượng thật cho báo cáo năm và kế hoạch 2026."
+    en: "Year-end closing season. Accounting and Sales need real volume figures for the annual report and the 2026 plan."
   outcomes:
     - { vi: "Đếm, tính tổng và trung bình cho một tập lô hàng", en: "Count, sum and average a set of shipments", skills: [aggregate] }
     - { vi: "Lập báo cáo theo hãng tàu hoặc phương thức", en: "Report by carrier or by mode", skills: [group_by] }
@@ -19,23 +31,93 @@
 
 - chapter: 3
   title: { vi: "Nối dữ liệu", en: "Joining data" }
+  career: { vi: "Data Analyst", en: "Data Analyst" }
+  tier: true
+  story:
+    vi: "Dữ liệu nằm ở nhiều bảng: lô hàng, khách hàng, hãng tàu, container. CSKH và Sales cần bạn ghép chúng lại để biết ai gửi gì, đi với hãng nào."
+    en: "The data lives in several tables: shipments, customers, carriers, containers. Customer service and Sales need you to put them together to see who ships what, with which carrier."
   outcomes:
     - { vi: "Ghép lô hàng với khách hàng và hãng tàu", en: "Match shipments with customers and carriers", skills: [join] }
     - { vi: "Nối từ 3 bảng trở lên", en: "Join three or more tables", skills: [multi_join] }
     - { vi: "Tìm khách không book bằng LEFT JOIN hoặc anti-join", en: "Find customers who never booked with a LEFT JOIN or an anti-join", skills: [left_join, anti_join] }
 
 - chapter: 4
-  title: { vi: "Thời gian & phân loại", en: "Time and classification" }
+  title: { vi: "Lịch tàu & thời gian", en: "Schedules and time" }
+  career: { vi: "Data Analyst · phụ trách số liệu Ops & lịch tàu", en: "Data Analyst · Ops and schedule data" }
+  tier: false
+  story:
+    vi: "Tàu đến trễ, xe kéo phải chờ, kho CFS đầy dần. Điều độ vận tải cần bạn tính theo ngày tháng và xử lý cả những ngày chưa ai ghi."
+    en: "Ships run late, trucks wait, the CFS warehouse fills up. The dispatchers need you to work with dates, including the dates nobody has filled in yet."
   outcomes: []
 
 - chapter: 5
-  title: { vi: "Câu hỏi nhiều bước", en: "Multi-step questions" }
+  title: { vi: "Hải quan & phân loại", en: "Customs and classification" }
+  career: { vi: "Data Analyst · phụ trách số liệu Hải quan", en: "Data Analyst · customs data" }
+  tier: false
+  story:
+    vi: "Mùa cao điểm hải quan: tờ khai luồng xanh, vàng, đỏ và những tờ khai phải sửa. Phòng Hải quan cần bạn phân loại và đếm theo điều kiện."
+    en: "Customs peak season: green, yellow and red lanes, and declarations that had to be amended. The customs team needs you to classify and count by condition."
   outcomes: []
 
 - chapter: 6
-  title: { vi: "Xu hướng", en: "Trends" }
+  title: { vi: "Làm sạch dữ liệu", en: "Cleaning the data" }
+  career: { vi: "Senior DA", en: "Senior DA" }
+  tier: true
+  story:
+    vi: "Tên khách mỗi nơi viết một kiểu, có khách bị nhập hai lần. Trước báo cáo năm, việc làm sạch dữ liệu thuộc về bạn."
+    en: "Customer names are spelled differently in every place, and some customers were entered twice. Before the annual report, the clean-up is yours."
   outcomes: []
 
 - chapter: 7
-  title: { vi: "Điều tra", en: "Investigation" }
+  title: { vi: "Báo giá & so sánh", en: "Quotes and comparisons" }
+  career: { vi: "Senior DA · phụ trách phân tích giá", en: "Senior DA · pricing analysis" }
+  tier: false
+  story:
+    vi: "Pricing gửi báo giá mỗi ngày. Có báo giá nào đang bán dưới giá mua không? Bạn so sánh bằng truy vấn con."
+    en: "Pricing sends quotes every day. Is any of them selling below cost? You compare them with subqueries."
+  outcomes: []
+
+- chapter: 8
+  title: { vi: "Công nợ & tỷ giá", en: "Receivables and exchange rates" }
+  career: { vi: "Senior DA · phụ trách báo cáo tài chính", en: "Senior DA · financial reporting" }
+  tier: false
+  story:
+    vi: "Công nợ phải thu, phải trả, nhiều loại tiền, tỷ giá chỉ có vào ngày làm việc. Kế toán cần những phép tính chia thành từng bước rõ ràng."
+    en: "Receivables, payables, several currencies, exchange rates only on working days. Accounting needs calculations broken into clear steps."
+  outcomes: []
+
+- chapter: 9
+  title: { vi: "Đối soát chứng từ", en: "Document reconciliation" }
+  career: { vi: "Lead DA", en: "Lead DA" }
+  tier: true
+  story:
+    vi: "Vận đơn chủ, vận đơn nhà, sổ booking và hóa đơn phải khớp nhau. Bạn đối soát để không lô nào lọt sổ."
+    en: "Master bills, house bills, the booking book and the invoices must all agree. You reconcile them so no shipment slips through."
+  outcomes: []
+
+- chapter: 10
+  title: { vi: "Xu hướng & xếp hạng", en: "Trends and rankings" }
+  career: { vi: "Lead DA · phụ trách báo cáo điều hành", en: "Lead DA · executive reporting" }
+  tier: false
+  story:
+    vi: "Ban giám đốc muốn thấy xu hướng: khách nào tăng, khách nào giảm, tháng này so với tháng trước."
+    en: "The board wants to see trends: which customers grow, which shrink, this month against last month."
+  outcomes: []
+
+- chapter: 11
+  title: { vi: "Truy vấn nhanh hơn", en: "Faster queries" }
+  career: { vi: "Lead DA · phụ trách hiệu năng dữ liệu", en: "Lead DA · data performance" }
+  tier: false
+  story:
+    vi: "Báo cáo chạy chậm dần khi dữ liệu lớn lên. Cùng IT, bạn đọc kế hoạch thực thi và đề xuất chỉ mục."
+    en: "Reports get slower as the data grows. Together with IT, you read execution plans and propose indexes."
+  outcomes: []
+
+- chapter: 12
+  title: { vi: "Điều tra cuối năm", en: "Year-end investigation" }
+  career: { vi: "Trưởng nhóm Phân tích", en: "Head of Analytics" }
+  tier: true
+  story:
+    vi: "Biên lợi nhuận quý 3/2026 giảm. Hội đồng quản trị cần ba nguyên nhân, mỗi nguyên nhân kèm một con số chứng minh."
+    en: "The Q3 2026 margin fell. The board needs three causes, each backed by a number."
   outcomes: []

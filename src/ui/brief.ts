@@ -1,5 +1,5 @@
 import { getLang, t, type Key } from '../i18n';
-import { nextTicket, SKILLS, xpFor } from '../progress';
+import { CHAPTERS, nextTicket, SKILLS, xpFor } from '../progress';
 import { compareShape, shapeOf, type Kind, type Shape } from '../shape';
 import { actions, app, done, expectedShape, persist, stepKey } from '../state';
 import { chapterColor, cx, DEPT_CHIP, deptColor, PILL } from '../theme';
@@ -77,6 +77,17 @@ function conclusion(tk: Ticket, x: TicketText): HTMLElement {
   return form;
 }
 
+/** "This week at Cargo Query" (product-design-v2 ★4): the chapter's story, shown on its first ticket only. */
+function story(tk: Ticket): HTMLElement | null {
+  const c = CHAPTERS.find((x) => x.chapter === tk.chapter);
+  if (!c?.story.vi || app.tickets.find((x) => x.chapter === tk.chapter) !== tk) return null;
+  return h('section', { class: 'my-3 overflow-hidden rounded-xl bg-panel ring-1 ring-line' },
+    h('div', { class: cx('h-1.5', chapterColor(tk.chapter).bar) }),
+    h('div', { class: 'p-3' },
+      h('h3', { class: 'mt-0' }, t('brief.story')),
+      h('p', { class: 'm-0' }, c.story[getLang()])));
+}
+
 /** The SQL that passed the grader; saves from before `graded` existed fall back to the draft. */
 const gradedSql = (tk: Ticket, i: number): string => app.save.graded[stepKey(tk.id, i)] ?? app.save.drafts[stepKey(tk.id, i)] ?? '';
 
@@ -118,6 +129,7 @@ export function renderBrief(host: HTMLElement, tk: Ticket, stepIndex: number): v
         isDone ? `✓ ${t('inbox.done')}` : ''),
       h('h2', { id: 'brief-title', tabindex: '-1', class: 'm-0 text-lg font-bold' }, x.title),
       x.fallback ? h('p', { class: 'tag' }, t('brief.untranslated')) : null),
+    story(tk),
     coach('brief'),
     richText(x.body),
     x.task ? h('section', { class: 'my-3 rounded-lg border-l-4 border-accent bg-accent-soft p-3' }, h('h3', { class: 'mt-0' }, t('brief.task')), richText(x.task)) : null,
