@@ -60,8 +60,8 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
 
   const editorHost = h('div', { class: 'editor overflow-hidden rounded-xl ring-1 ring-line' });
   const runBtn = h('button', { type: 'button', onclick: () => void run() });
-  // EXPLAIN always describes what was just run: run the editor SQL first, then open the tab.
-  const explainBtn = h('button', { type: 'button', onclick: () => void run().then(() => deps.panel.show('explain')) }, t('tab.explain'));
+  // EXPLAIN always describes what was just run: run the editor SQL, and open the tab only if that run succeeded for this editor.
+  const explainBtn = h('button', { type: 'button', onclick: () => void run('explain') });
   const formatBtn = h('button', { type: 'button', onclick: () => void format() });
   const submitBtn = h('button', { type: 'button', class: BTN_SUBMIT, onclick: () => void submit() });
   const feedback = h('div', { role: 'status' });
@@ -92,9 +92,11 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
 
   function setButtons(): void {
     runBtn.textContent = busy && app.dbStatus === 'loading' ? t('work.waitingDb') : t(selection ? 'work.runSel' : 'work.run');
+    explainBtn.textContent = t('tab.explain');
     formatBtn.textContent = t('work.format');
     submitBtn.textContent = t('work.submit');
     runBtn.disabled = busy;
+    explainBtn.disabled = busy;
     submitBtn.disabled = busy;
     submitBtn.hidden = !ticket || done().has(ticket.id);
   }
@@ -127,8 +129,9 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
   /**
    * Everything is captured at click time. If the editor was replaced while the query ran (other ticket or step,
    * or an imported save), the run is only added to its ticket's history: no lastRun, message, underline or credit.
+   * `tab`: the tab to open after a successful run (the EXPLAIN button); a failed or stale run never switches to it.
    */
-  async function run(): Promise<void> {
+  async function run(tab?: string): Promise<void> {
     if (busy || !editor) return;
     const ed = editor;
     const tk = ticket;
@@ -159,7 +162,7 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
       message = undefined;
       drawMessage();
     }
-    deps.panel.show(failed || SCHEMA_TABS.has(deps.panel.active) ? 'result' : deps.panel.active);
+    deps.panel.show(failed || (!tab && SCHEMA_TABS.has(deps.panel.active)) ? 'result' : tab ?? deps.panel.active);
     deps.onRun();
   }
 

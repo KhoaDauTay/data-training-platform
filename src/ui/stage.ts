@@ -5,7 +5,7 @@ import { app } from '../state';
 import { CHAPTER_COLOR, chapterColor, cx, DONE_PILL, PILL } from '../theme';
 import { textOf, type Lang, type Ticket } from '../tickets';
 import { avatar } from './avatar';
-import { byId, h, nodes } from './dom';
+import { byId, h, nodes, reducedMotion } from './dom';
 import { bayBox, CRANE, drawYard, harborScene, MAX_TIERS, type HarborParts } from './harbor';
 import { paintRoutes, routeMap, type MapParts } from './routeMap';
 import { stageEsc } from './shortcuts';
@@ -36,7 +36,6 @@ let shown: Ctx | undefined;
 /** Where focus came from when it entered the stage (the Skip button): hide() hands it back there. */
 let returnFocus: HTMLElement | null = null;
 
-const reduced = (): boolean => matchMedia('(prefers-reduced-motion: reduce)').matches;
 const easeInOut = (x: number): number => (x < 0.5 ? 2 * x * x : 1 - (-2 * x + 2) ** 2 / 2);
 const easeIn = (x: number): number => x * x;
 const easeOut = (x: number): number => 1 - (1 - x) * (1 - x);
@@ -183,7 +182,7 @@ const fadeIn = (run: Run, el: HTMLElement, ms: number): Promise<void> =>
   });
 /** Under reduced motion the final card stays until Close or the next completion (§5). */
 const fadeOut = (run: Run, el: HTMLElement, ms: number): Promise<void> =>
-  reduced() ? Promise.resolve() : tween(run, ms, (x) => { el.style.opacity = String(1 - x); });
+  reducedMotion() ? Promise.resolve() : tween(run, ms, (x) => { el.style.opacity = String(1 - x); });
 
 function confetti(c: Ctx, ms: number): Promise<void> {
   const box = h('div', { class: 'pointer-events-none absolute inset-0 overflow-hidden' });
@@ -462,7 +461,7 @@ export function initStage(): void {
  */
 export function playCompletion(tk: Ticket, before: Set<string>, after: Set<string>): void {
   current.fast = true;
-  const run: Run = { fast: reduced(), done: false };
+  const run: Run = { fast: reducedMotion(), done: false };
   current = run;
   const c: Ctx = {
     run, tk, scene: sceneOf(tk), art: byId('stage-art'), lang: getLang(),
@@ -487,7 +486,7 @@ export function playCompletion(tk: Ticket, before: Set<string>, after: Set<strin
       }
       if (current !== run) return;
       setSkipLabel('app.close');
-      if (!reduced()) hideTimer = window.setTimeout(hide, 4000);
+      if (!reducedMotion()) hideTimer = window.setTimeout(hide, 4000);
     })
     .catch((e: unknown) => console.warn('Completion animation failed:', e));
 }

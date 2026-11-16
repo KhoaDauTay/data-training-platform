@@ -23,7 +23,7 @@ vi.mock('../src/ui/editor', () => ({
 }));
 
 /** Every fake element, with a real class set: celebrate() adds a class, drawMessage() reassigns className. */
-const els: { classes: Set<string> }[] = [];
+const els: { classes: Set<string>; textContent: string; disabled: boolean; onclick?: unknown }[] = [];
 const fakeEl = () => {
   const classes = new Set<string>();
   const el = {
@@ -37,7 +37,8 @@ const fakeEl = () => {
   return el;
 };
 vi.mock('../src/ui/dom', () => ({
-  h: () => fakeEl(),
+  // Keeps onclick so a test can press a button.
+  h: (_tag: string, attrs?: { onclick?: unknown }) => Object.assign(fakeEl(), { onclick: attrs?.onclick }),
   nodes: (...c: unknown[]) => c.filter((x) => x !== null && x !== undefined && x !== false),
   richText: () => fakeEl(),
   byId: () => fakeEl(),
@@ -157,5 +158,33 @@ describe('hiệu ứng mừng', () => {
     await flush();
     expect(deps.onSolved).toHaveBeenCalledOnce();
     expect(els.some((e) => e.classes.has('motion-safe:animate-pop'))).toBe(true);
+  });
+});
+
+describe('nút EXPLAIN', () => {
+  const explainBtn = () => els.find((e) => e.textContent === 'EXPLAIN')!;
+  const press = () => (explainBtn().onclick as () => void)();
+
+  it('có nhãn, bị khóa khi đang chạy, mở tab EXPLAIN khi chạy xong trên cùng editor', async () => {
+    const { work, deps } = setup();
+    open(work, ticket('A'));
+    expect(explainBtn()).toBeDefined();
+    press();
+    expect(explainBtn().disabled).toBe(true);
+    release();
+    await flush();
+    expect(explainBtn().disabled).toBe(false);
+    expect(deps.panel.show).toHaveBeenLastCalledWith('explain');
+  });
+
+  it('đổi ticket khi đang chạy: không chuyển sang tab EXPLAIN', async () => {
+    const { work, deps } = setup();
+    open(work, ticket('A'));
+    press();
+    open(work, ticket('B'));
+    deps.panel.show.mockClear();
+    release();
+    await flush();
+    expect(deps.panel.show).not.toHaveBeenCalled();
   });
 });

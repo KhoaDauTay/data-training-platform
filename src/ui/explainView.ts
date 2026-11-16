@@ -1,6 +1,6 @@
-import { getLang, t, type Key } from '../i18n';
+import { t, type Key } from '../i18n';
 import { cx } from '../theme';
-import { isHeavyScan, nodeExplanation, type Plan, type PlanDetail } from '../viz/plan';
+import { isHeavyScan, nodeHelpKey, type Plan, type PlanDetail } from '../viz/plan';
 import { fmt, h } from './dom';
 
 const DETAIL_KEY: Record<PlanDetail['kind'], Key> = {
@@ -18,7 +18,6 @@ const detailText = (d: PlanDetail): string =>
 
 export function renderExplain(host: HTMLElement, plan: Plan): void {
   const max = Math.max(1, ...plan.nodes.map((n) => n.scanned));
-  const lang = getLang();
   host.append(
     h('p', { class: 'muted' }, t('explain.intro', { ms: fmt(plan.executionMs, 1) })),
     h('div', { class: 'space-y-1' }, ...plan.nodes.map((n) =>
@@ -31,8 +30,8 @@ export function renderExplain(host: HTMLElement, plan: Plan): void {
           h('span', { class: 'min-w-[90px] tabular-nums' }, t('viz.rows', { n: n.rows })),
           h('span', { class: 'muted tabular-nums' }, `${fmt(n.ms, 2)} ms`),
           isHeavyScan(n) ? h('span', { class: 'warn', role: 'img', 'aria-label': t('explain.heavy'), title: t('explain.heavy') }, '⚠') : null),
-        h('p', { class: 'my-1' }, nodeExplanation(n.type, lang)),
-        n.estRows !== n.rows ? h('p', { class: 'muted my-1' }, t('explain.estimate', { est: n.estRows, actual: n.rows })) : null,
+        h('p', { class: 'my-1' }, t(nodeHelpKey(n.type))),
+        n.estRows !== n.rows ? h('p', { class: 'muted my-1' }, t('explain.estimate', { est: fmt(n.estRows), actual: fmt(n.rows) })) : null,
         ...n.detail.map((d) => h('p', { class: 'my-1' }, h('code', {}, detailText(d))))))),
   );
 }

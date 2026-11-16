@@ -5,7 +5,7 @@ import { runSandboxed, type QueryResult } from '../db/run';
 import { ensureParser } from './parser';
 
 // Labels and help live in a parser-free module so the UI bundle never pulls in libpg-query.
-export { STEP_HELP, STEP_LABELS, type StepKey, type StepsFailure } from './stepText';
+export { STEP_LABELS, type StepKey, type StepsFailure } from './stepText';
 import type { StepKey, StepsFailure } from './stepText';
 
 export interface StepRun { key: StepKey; skipped: boolean; count?: number; sample?: QueryResult; sql?: string; error?: string }
@@ -36,6 +36,13 @@ function groupKeys(sel: Ast): Ast[] {
     }
     return g;
   });
+}
+
+/** A window function is a FuncCall with an `over` clause anywhere in the subtree (not the word "over" in a string). */
+function hasWindow(node: Ast): boolean {
+  if (!node || typeof node !== 'object') return false;
+  if (node.FuncCall?.over) return true;
+  return Object.values(node).some(hasWindow);
 }
 
 const CLAUSE: Record<string, StepKey> = {
@@ -76,7 +83,7 @@ export async function buildSteps(sql: string): Promise<Built> {
   const sel: Ast = tree.stmts[0].stmt?.SelectStmt;
   if (!sel) return { ok: false, reason: 'notSelect' };
   if (sel.withClause || (sel.op && sel.op !== 'SETOP_NONE')) return { ok: false, reason: 'withUnion' };
-  if (JSON.stringify(sel.targetList ?? []).includes('"over"')) return { ok: false, reason: 'window' };
+  if (hasWindow([sel.targetList, sel.sortClause])) return { ok: false, reason: 'window' };
 
   const wrap = async (o: Ast) =>
     deparse({ version: tree.version, stmts: [{ stmt: { SelectStmt: { limitOption: 'LIMIT_OPTION_DEFAULT', op: 'SETOP_NONE', ...o } } }] });

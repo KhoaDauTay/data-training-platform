@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildSteps, runSteps, STEP_HELP, STEP_LABELS } from '../src/viz/steps';
+import { buildSteps, runSteps } from '../src/viz/steps';
 import { seededDb } from './helpers';
 
 const Q = `SELECT ca.name, SUM(ct.teu) AS teu
@@ -73,11 +73,10 @@ describe('runSteps', () => {
       if (!r.ok) expect(r.reason, q).toBe(reason);
     }
   });
-});
 
-describe('STEP_LABELS / STEP_HELP theo ngôn ngữ', () => {
-  it('VI và EN cùng tập khóa', () => {
-    expect(Object.keys(STEP_LABELS.en).sort()).toEqual(Object.keys(STEP_LABELS.vi).sort());
-    expect(Object.keys(STEP_HELP.en).sort()).toEqual(Object.keys(STEP_HELP.vi).sort());
+  it('chữ "over" trong chuỗi hay tên cột không phải window; OVER trong ORDER BY thì là', async () => {
+    expect((await buildSteps("SELECT 'over' AS over FROM ports")).ok).toBe(true);
+    const r = await buildSteps('SELECT code FROM ports ORDER BY row_number() OVER (ORDER BY code)');
+    expect(r.ok ? 'ok' : r.reason).toBe('window');
   });
 });

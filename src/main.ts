@@ -69,7 +69,7 @@ db.onProgress = (p) => {
 app.run = (sql) => db.run(sql);
 
 registerCoreTabs(() => work.currentSql());
-registerVizTabs({ db, show: (id) => panel.show(id), editorSql: () => work.currentSql() });
+registerVizTabs({ db, show: (id) => panel.show(id), active: () => panel.active, editorSql: () => work.currentSql() });
 const panel = createPanel(byId('panel'));
 const work = mountWork(byId('work'), {
   db,
@@ -87,7 +87,8 @@ const work = mountWork(byId('work'), {
 const mapStrip = createMapStrip(byId('map'));
 function syncMap(): void {
   const completed = done();
-  const chapter = currentChapter(app.tickets, completed);
+  // The open ticket's chapter (a reopened old ticket shows its own chapter), else the player's current one.
+  const chapter = app.tickets.find((x) => x.id === app.selectedId)?.chapter ?? currentChapter(app.tickets, completed);
   mapStrip.update({ chapter, completed, tickets: app.tickets, dots: chapterDots(app.tickets, completed, app.selectedId, chapter) });
 }
 
