@@ -1,3 +1,4 @@
+import type { LoadProgress } from './loadProgress';
 import { SqlError, type QueryResult, type SqlErrorInfo } from './run';
 
 export type DbStatus = 'loading' | 'ready' | 'failed';
@@ -25,6 +26,7 @@ export class DbFailedError extends Error {
 type WorkerMessage =
   | { type: 'ready'; timings: DbTimings }
   | { type: 'initError'; message: string }
+  | ({ type: 'progress' } & LoadProgress)
   | { type: 'result'; id: number; result: QueryResult }
   | { type: 'error'; id: number; error: SqlErrorInfo };
 
@@ -42,6 +44,8 @@ interface Job {
  */
 export class DbClient {
   timings?: DbTimings;
+  /** PGlite asset download progress while booting (bytes). */
+  onProgress?: (p: LoadProgress) => void;
   private worker!: Worker;
   private status: DbStatus = 'loading';
   private failure?: DbFailedError;
@@ -97,6 +101,8 @@ export class DbClient {
       this.pump();
     } else if (m.type === 'initError') {
       this.fail(m.message);
+    } else if (m.type === 'progress') {
+      this.onProgress?.({ loaded: m.loaded, total: m.total });
     } else {
       const f = this.inFlight;
       if (!f || f.id !== m.id) return;

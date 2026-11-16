@@ -162,4 +162,13 @@ describe('DbClient', () => {
     expect(e).toBeInstanceOf(SqlError);
     expect(e).toMatchObject({ message: 'column "cde" does not exist', position: 8, code: '42703', hint: 'h' });
   });
+
+  it('tiến độ tải từ worker đi tới onProgress, không đổi trạng thái', () => {
+    const { db, statuses } = client();
+    const seen: unknown[] = [];
+    db.onProgress = (p) => seen.push(p);
+    last().send({ type: 'progress', loaded: 2_100_000, total: 5_400_000 });
+    expect(seen).toEqual([{ loaded: 2_100_000, total: 5_400_000 }]);
+    expect(statuses).toEqual(['loading']);
+  });
 });
