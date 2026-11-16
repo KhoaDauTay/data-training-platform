@@ -23,6 +23,10 @@ export interface HomeModel {
 
 export const LEVELS = 5;
 
+/** Skills taught by the completed tickets. Shared by Home, Practice and the chapter goals (Plan 1c). */
+export const learnedSkills = (tickets: Ticket[], completed: Set<string>): Set<string> =>
+  new Set(tickets.filter((t) => completed.has(t.id)).flatMap((t) => t.grants));
+
 /** Everything on Home, recomputed from the save and the content (nothing extra is stored). */
 export function homeModel(
   tickets: Ticket[],
@@ -33,7 +37,7 @@ export function homeModel(
 ): HomeModel {
   const chapter = currentChapter(tickets, completed);
   const solved = tickets.filter((t) => completed.has(t.id));
-  const learned = new Set(solved.flatMap((t) => t.grants));
+  const learned = learnedSkills(tickets, completed);
   return {
     next: nextTicket(tickets, completed),
     chapter,
