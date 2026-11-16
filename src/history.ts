@@ -1,5 +1,4 @@
-import type { KV } from './save';
-import { readJson, writeJson } from './storage';
+import { readJson, writeJson, type KV } from './storage';
 
 export interface HistoryEntry { sql: string; at: number; ok: boolean; rows?: number }
 /** Key: ticket id (Sandbox keeps no history). Not part of Save: losing it costs nothing. */

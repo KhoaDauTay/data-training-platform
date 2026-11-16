@@ -2,8 +2,9 @@ import { describe, expect, it } from 'vitest';
 import v1 from './fixtures/save-v1.json?raw';
 import {
   emptySave, InvalidSaveError, loadSave, NewerSaveError, oldSaveKey, parseSave, SAVE_KEY, serializeSave, writeSave,
-  type Known, type KV, type Migration,
+  type Known, type Migration,
 } from '../src/save';
+import type { KV } from '../src/storage';
 
 const known: Known = { ticketIds: new Set(['ch1-01', 'ch1-02', 'ch1-03']), skills: new Set(['select', 'where']) };
 
