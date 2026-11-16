@@ -73,3 +73,15 @@ Vòng 1/3 (2026-11-17): `code-review` (Standards + Spec) + cổng trình duyệt
 | product | Đánh giá chương 2 không mở tuyến mới (Rotterdam đã mở bởi ch1-05) | Spec | Chấp nhận — L34 |
 
 Sửa vòng 1: commits 0ebf933 (fix), ba01594 (test), 6770add (docs).
+
+Vòng 2/3 (2026-11-17, chỉ diff 60c5257..6770add): các bản sửa vòng 1 đạt, trừ dòng test L22. Bug mới:
+
+| Loại | Bug | Trạng thái |
+|---|---|---|
+| correctness | `stage.ts` `returnFocus` không bị xóa khi vào dock từ body → `hide()` trả focus về phần tử của lần hoạt cảnh trước | Đã sửa 78fda81 (mỗi lần focus vào dock đặt lại `returnFocus`, null nếu không có nguồn) |
+| i18n | `relabelStage()` chỉ dựng lại `#stage-text`; SVG trong `#stage-art` (nhãn, `aria-label`) giữ ngôn ngữ cũ khi dock reduced-motion còn mở | Đã sửa 78fda81 (đổi ngôn ngữ → vẽ lại khung cuối, không phát lại; chờ hoạt cảnh đang chạy xong) |
+| test-gap | Test L22 quét content YAML + chữ ticket chưa được viết (`tests/i18n.test.ts` chỉ có import thừa) — dòng vòng 1 ghi "đã sửa" là sai | Đã sửa d29d21a (regex cũ chứa ký tự backspace thật thay vì `` nên không bắt được gì; đã kiểm test đỏ khi thêm "boss" vào people.yml) |
+| ux | Chữ SVG chỉ ẩn dưới `sm`: ở 640–870px nhãn còn ~5,5–9px (L23) | Đã sửa 78fda81 (chữ SVG ẩn dưới `lg`, cỡ nhỏ nhất 12 đơn vị, dock `lg:w-[640px]` → ≥ ~10,7px Trang chủ / ~11,6px dock; HTML thay thế `lg:hidden`; chưa kiểm trên trình duyệt) |
+| content | Test SQLISH cấm cả `FCL`/`LCL` (thuật ngữ nghiệp vụ thường dùng) | Đã sửa d29d21a |
+
+Sửa vòng 2: commits 78fda81 (fix), d29d21a (test).
