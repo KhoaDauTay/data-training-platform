@@ -1,4 +1,5 @@
-import type { KV } from './save';
+/** The part of Storage this app uses; tests pass a fake. */
+export type KV = Pick<Storage, 'getItem' | 'setItem'>;
 
 /** window.localStorage, or undefined when blocked (private mode, sandboxed iframe) or outside a browser. */
 export function localStore(): KV | undefined {

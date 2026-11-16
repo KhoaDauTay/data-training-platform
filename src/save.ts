@@ -1,3 +1,5 @@
+import type { KV } from './storage';
+
 export const SAVE_VERSION = 1;
 export const SAVE_KEY = 'cargo-query-save';
 
@@ -12,7 +14,6 @@ export interface Save {
 
 /** Ids that exist in the current content; saved ids not in here are dropped. `skills` is used from v2 (review). */
 export interface Known { ticketIds: ReadonlySet<string>; skills: ReadonlySet<string> }
-export type KV = Pick<Storage, 'getItem' | 'setItem'>;
 
 // Errors carry no user-facing text: the UI translates them by class / warning.kind.
 export class NewerSaveError extends Error {
@@ -36,7 +37,7 @@ export const serializeSave = (s: Save): string => JSON.stringify(s);
 /** An old save is kept here (one per old version) before migrating, so a rolled-back build can still read it. */
 export const oldSaveKey = (version: number): string => `${SAVE_KEY}.v${version}`;
 
-function readJson(raw: string): Record<string, unknown> {
+function parseObject(raw: string): Record<string, unknown> {
   let data: unknown;
   try {
     data = JSON.parse(raw);
@@ -68,7 +69,7 @@ function pickRecord<T>(v: unknown, ok: (x: unknown) => x is T, ticketIds: Readon
  * `migrations`/`version` let tests exercise the migration path while SAVE_VERSION is 1.
  */
 export function parseSave(raw: string, known: Known, migrations = MIGRATIONS, version = SAVE_VERSION): Save {
-  let d = readJson(raw);
+  let d = parseObject(raw);
   let v = versionOf(d);
   if (v > version) throw new NewerSaveError(v);
   while (v < version) {
@@ -115,7 +116,7 @@ export function loadSave(
   }
   if (!raw) return { save: emptySave() };
   try {
-    const old = versionOf(readJson(raw));
+    const old = versionOf(parseObject(raw));
     if (old < version) keep(storage, oldSaveKey(old), raw);
     return { save: parseSave(raw, known, migrations, version) };
   } catch (e) {
