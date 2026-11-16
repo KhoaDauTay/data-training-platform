@@ -205,8 +205,17 @@ describe('variants', () => {
     expect(bad(BOSS.replace('ordered: true\n', 'ordered: true\nvariants:\n  - { a: x }\n  - { a: y }\n'))).toThrow(/boss không có variants/);
   });
 
+  it('khóa biến thể so theo từng tên, không theo chuỗi ghép (khóa YAML có dấu phẩy không lọt)', () => {
+    const two = VARIANT
+      .replace("region = '{{region}}'", "region = '{{region}}' AND '{{zone}}' <> ''")
+      .replace('  - { region: Europe }\n  - { region: Asia }\n', '  - { region: Europe, zone: x }\n  - { "region,zone": y }\n');
+    expect(() => parseTicket(two, 'v.md')).toThrow(/variants\[1\] phải có đúng các khóa/);
+  });
+
   it('các biến thể phải khác nhau từng đôi', () => {
     const dup = VARIANT.replace('{ region: Asia }', '{ region: Europe }');
     expect(() => parseTicket(dup, 'v.md')).toThrow(/variants\[1\] trùng variants\[0\]/);
+    const typed = VARIANT.replace('{ region: Europe }', '{ region: 2026 }').replace('{ region: Asia }', '{ region: "2026" }');
+    expect(() => parseTicket(typed, 'v.md')).toThrow(/variants\[1\] trùng variants\[0\]/); // same SQL once rendered
   });
 });

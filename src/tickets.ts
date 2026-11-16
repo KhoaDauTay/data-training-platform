@@ -196,10 +196,11 @@ export function parseTicket(source: string, origin: string): Ticket {
         if (typeof s !== 'string' || !VARIANT_VALUE_RE.test(s)) fail(`variants[${i}].${k}: giá trị phải khớp ${VARIANT_VALUE_RE}`);
         out[k] = s as string;
       }
-      if (Object.keys(out).sort().join() !== names.join()) fail(`variants[${i}] phải có đúng các khóa: ${names.join(', ')}`);
+      if (JSON.stringify(Object.keys(out).sort()) !== JSON.stringify(names)) fail(`variants[${i}] phải có đúng các khóa: ${names.join(', ')}`);
       return out;
     });
-    const seenVariant = t.variants.map((v) => names.map((n) => v[n]).join('\u0000'));
+    // Values after number → string: 2026 and "2026" render the same SQL, so they are duplicates.
+    const seenVariant = t.variants.map((v) => JSON.stringify(names.map((n) => v[n])));
     seenVariant.forEach((s, i) => {
       const j = seenVariant.indexOf(s);
       if (j < i) fail(`variants[${i}] trùng variants[${j}]`);
