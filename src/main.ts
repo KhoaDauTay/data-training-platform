@@ -11,7 +11,7 @@ import { isStory, session } from './session';
 import { localStore } from './storage';
 import type { Route } from './route';
 import type { Ticket } from './tickets';
-import { renderBrief } from './ui/brief';
+import { initModes, onPracticeSolved, onPracticeWrong, renderLeft } from './ui/modes';
 import { byId, h } from './ui/dom';
 import { errorText } from './ui/feedback';
 import { leftHome, renderHome } from './ui/homeView';
@@ -78,7 +78,8 @@ const panel = createPanel(byId('panel'));
 const work = mountWork(byId('work'), {
   db,
   panel,
-  onSolved: (t) => complete(t),
+  onSolved: (t) => (session.mode.kind === 'practice' ? onPracticeSolved() : complete(t)), // practice: no complete(), no animation
+  onWrong: onPracticeWrong,
   onStepSolved: nextStep,
   onConclusion: (t) => {
     app.conclusionFor = t.id;
@@ -86,6 +87,7 @@ const work = mountWork(byId('work'), {
   },
   onRun: () => rerender(),
 });
+initModes({ work, rerender });
 
 // Progress dots and lane count need no query: the strip is drawn before the DB is ready.
 const mapStrip = createMapStrip(byId('map'));
@@ -101,7 +103,7 @@ function rerender(): void {
   renderTopbar();
   renderInbox();
   if (!byId('home').hidden) renderHome(byId('home')); // hidden Home is redrawn by showRoute(); Run/Submit in the workspace never rebuild it
-  renderBrief(byId('ticket'), selected(), app.stepIndex);
+  renderLeft(byId('ticket'));
   work.relabel();
   relabelStage();
   if (!byId('map').hidden) syncMap(); // like Home: the hidden strip is redrawn by showRoute()
