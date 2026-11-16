@@ -1,7 +1,9 @@
 import './style.css';
 import { loadTickets } from './content';
 import { DbClient, type DbStatus } from './db/client';
-import { applyStatic, setLang, type Lang } from './i18n';
+import { applyStatic, setLang, t, type Lang } from './i18n';
+import { MyData } from './import/myData';
+import { idbStore } from './import/store';
 import { contentProblems, currentChapter, nextTicket, SKILLS, xpFor } from './progress';
 import { loadSave, parseSave, serializeSave, type Known } from './save';
 import { actions, app, done, editorSchema, persist, selected, type Column } from './state';
@@ -24,6 +26,8 @@ import { go, startRouter } from './ui/router';
 import { renderTopbar } from './ui/topbar';
 import { mountWork } from './ui/work';
 import { registerVizTabs } from './ui/vizTabs';
+import { initMyData, setMyDataStatus } from './ui/myDataView';
+import { clearMemos } from './viz/memo';
 import { createMapStrip } from './ui/mapStrip';
 import { chapterDots } from './viz/progressDots';
 
@@ -211,3 +215,19 @@ initStage();
 rerender();
 work.setTicket(selected(), app.stepIndex);
 startRouter(showRoute);
+
+// "My data" (Plan Import): imported CSVs stay in this browser (IndexedDB) and are replayed into the sandbox schema.
+const myData = new MyData(db, idbStore(), () => {
+  clearMemos(); // cached plans, steps and ER metadata describe the old data
+  work.setSchema(editorSchema());
+  panel.refresh();
+  rerender();
+});
+initMyData(myData, rerender);
+db.onImportDropped = (table) => {
+  void myData.dropped(table);
+  setMyDataStatus(t('mydata.lost', { table }));
+};
+void myData.restore().then((failed) => {
+  if (failed.length) setMyDataStatus(t('mydata.restoreFailed', { tables: failed.map((f) => f.table).join(', ') }));
+});

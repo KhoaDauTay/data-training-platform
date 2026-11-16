@@ -1,6 +1,6 @@
 import type { DbClient } from '../db/client';
 import { t } from '../i18n';
-import { app, selected, unlockedTables } from '../state';
+import { app, selected } from '../state';
 import { chapterColor } from '../theme';
 import { erDefinition, loadErMetadata, tablesInQuery } from '../viz/erd';
 import { memoByKey } from '../viz/memo';
@@ -12,6 +12,7 @@ import { DARK, drawErd, erdSvg } from './erdView';
 import { renderExplain } from './explainView';
 import { errorView } from './feedback';
 import { renderFlow } from './flowView';
+import { sandboxTables, visibleTables } from './myDataView';
 import { renderSteps } from './stepsView';
 import { registerTab } from './tabs';
 
@@ -106,10 +107,12 @@ function registerErdTab(deps: VizDeps): void {
     group: 'schema',
     order: 10,
     render: (host) => {
-      const tables = unlockedTables();
+      // Sandbox: imported tables too (schema `sandbox`); every name reaches Mermaid through mermaidName() (L36).
+      const tables = visibleTables();
+      const own = sandboxTables().length > 0 ? erMetadata('sandbox') : Promise.resolve({ cols: [], cons: [] });
       // Tables the last run used: bold border in the open ticket's chapter colour (L36).
-      const svg = erMetadata('public').then(({ cols, cons }) =>
-        erdSvg(erDefinition(cols, cons, tables, tablesInQuery(app.lastRun?.sql ?? '', tables), ticketColor().hex)));
+      const svg = Promise.all([erMetadata('public'), own]).then(([pub, mine]) =>
+        erdSvg(erDefinition([...pub.cols, ...mine.cols], [...pub.cons, ...mine.cons], tables, tablesInQuery(app.lastRun?.sql ?? '', tables), ticketColor().hex)));
       return load(host, t('erd.drawing'), svg, drawErd);
     },
   });

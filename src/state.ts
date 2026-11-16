@@ -73,17 +73,23 @@ export function persist(now = false): void {
   else persistTimer = setTimeout(write, 500);
 }
 
-/** Autocomplete: only unlocked tables (spec §4), with column types as detail. */
+/** Plan Import: imported tables for autocomplete, set by initMyData; returns {} outside Sandbox (I1). */
+export const schemaHooks: { extra?: () => Record<string, Column[]> } = {};
+
+/** Autocomplete: only unlocked tables (spec §4), with column types as detail, plus imported tables in Sandbox. */
 export function editorSchema(): SQLNamespace {
-  const out: Record<string, SQLNamespace> = {};
+  const tables: Record<string, Column[]> = {};
   for (const table of unlockedTables()) {
     const cols = app.columns[table];
-    if (cols) {
-      out[table] = {
-        self: { label: table, type: 'type', detail: 'table' },
-        children: cols.map((c) => ({ label: c.name, type: 'property', detail: c.type })),
-      };
-    }
+    if (cols) tables[table] = cols;
+  }
+  Object.assign(tables, schemaHooks.extra?.()); // imported names never clash with game tables (`_my`)
+  const out: Record<string, SQLNamespace> = {};
+  for (const [table, cols] of Object.entries(tables)) {
+    out[table] = {
+      self: { label: table, type: 'type', detail: 'table' },
+      children: cols.map((c) => ({ label: c.name, type: 'property', detail: c.type })),
+    };
   }
   return out;
 }
