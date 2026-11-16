@@ -204,4 +204,9 @@ describe('variants', () => {
     expect(bad(VARIANT.replace(/variants:\n(.*\n){2}/, ''))).toThrow(/\{\{region\}\} nhưng không có variants/);
     expect(bad(BOSS.replace('ordered: true\n', 'ordered: true\nvariants:\n  - { a: x }\n  - { a: y }\n'))).toThrow(/boss không có variants/);
   });
+
+  it('các biến thể phải khác nhau từng đôi', () => {
+    const dup = VARIANT.replace('{ region: Asia }', '{ region: Europe }');
+    expect(() => parseTicket(dup, 'v.md')).toThrow(/variants\[1\] trùng variants\[0\]/);
+  });
 });
