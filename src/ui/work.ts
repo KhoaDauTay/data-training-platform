@@ -10,7 +10,7 @@ import type { Ticket } from '../tickets';
 import { h } from './dom';
 import { createEditor, type Editor } from './editor';
 import { errorText, errorView, gradeMessage } from './feedback';
-import { shortcutOf } from './shortcuts';
+import { pageShortcutOf } from './shortcuts';
 import type { Panel } from './tabs';
 
 export interface WorkDeps {
@@ -63,11 +63,11 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
   // (on a button after a click, the brief heading after picking a ticket). Inside the editor CodeMirror's
   // keymap handles them first and calls preventDefault, so they never fire twice.
   document.addEventListener('keydown', (e) => {
-    if (e.defaultPrevented || e.isComposing) return;
-    const action = shortcutOf(e, isMac);
+    const action = pageShortcutOf(e, isMac, {
+      workspaceHidden: !!host.closest('[hidden]'), // Home route
+      conclusionOpen: !!ticket && app.conclusionFor === ticket.id,
+    });
     if (!action) return;
-    const target = e.target instanceof Element ? e.target : null;
-    if (target?.closest('dialog, input, textarea, select')) return;
     e.preventDefault();
     void (action === 'run' ? run() : submit());
   });

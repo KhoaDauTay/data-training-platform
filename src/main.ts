@@ -6,13 +6,16 @@ import { contentProblems, nextTicket, SKILLS, xpFor } from './progress';
 import { loadSave, parseSave, serializeSave, type Known } from './save';
 import { actions, app, done, editorSchema, persist, selected, type Column } from './state';
 import { localStore } from './storage';
+import type { Route } from './route';
 import type { Ticket } from './tickets';
 import { renderBrief } from './ui/brief';
 import { byId, h } from './ui/dom';
 import { errorText } from './ui/feedback';
+import { renderHome } from './ui/homeView';
 import { renderInbox } from './ui/inbox';
 import { createPanel, registerCoreTabs } from './ui/tabs';
 import { initLayout } from './ui/splitter';
+import { go, startRouter } from './ui/router';
 import { renderTopbar } from './ui/topbar';
 import { mountWork } from './ui/work';
 
@@ -78,6 +81,7 @@ const work = mountWork(byId('work'), {
 function rerender(): void {
   renderTopbar();
   renderInbox();
+  if (!byId('home').hidden) renderHome(byId('home')); // hidden Home is redrawn by showRoute(); Run/Submit in the workspace never rebuild it
   renderBrief(byId('ticket'), selected(), app.stepIndex);
   work.relabel();
 }
@@ -90,6 +94,7 @@ function selectTicket(id: string, force = false): void {
   (byId('inbox-dialog') as HTMLDialogElement).close();
   rerender();
   work.setTicket(selected(), app.stepIndex, force);
+  go('play'); // from Home or the inbox on Home: the hashchange then focuses the brief (it is hidden until then)
   byId('brief-title').focus();
 }
 
@@ -98,6 +103,14 @@ function nextStep(): void {
   rerender();
   work.setTicket(selected(), app.stepIndex);
   work.focus(); // the new step's editor replaces the one that had focus
+}
+
+/** #/ = Home, #/play = workspace. Both stay mounted and only toggle `hidden`, so the editor is never recreated. */
+function showRoute(r: Route, initial: boolean): void {
+  byId('home').hidden = r !== 'home';
+  byId('shell').hidden = r !== 'play';
+  rerender(); // nav aria-current, Home numbers
+  if (!initial) byId(r === 'home' ? 'home-title' : 'brief-title').focus();
 }
 
 /** Correct answer: save at once, stay on the ticket and show the Recap (no auto-jump). */
@@ -158,3 +171,4 @@ window.addEventListener('vite:preloadError', () => {
 initLayout(byId('shell'), { col: byId('split-col'), row: byId('split-row') });
 rerender();
 work.setTicket(selected(), app.stepIndex);
+startRouter(showRoute);
