@@ -50,6 +50,10 @@
 | `src/main.ts` | `const db = new DbClient(…)`, các biến `work`, `panel`, hàm `rerender()`, `panel.refresh()`, các lời gọi `editorSchema(` |
 | `tests/helpers.ts` | `freshDb()`, `seededDb()` (đã có trong repo) |
 
+> **Sau Plan 1d (Tailwind + Trang chủ, L17): điều chỉnh khi thực hiện:**
+> - Task 6 Step 5: ở khối cuối `main.ts` thêm card "Dữ liệu của tôi": `registerMode({ id: 'mydata', order: 20, icon: '📂', tint: 'bg-cyan-100 dark:bg-cyan-950', title: 'mode.mydata', desc: 'mode.mydataDesc', open: () => { startSandbox(); go('play'); } })`. Import `registerMode` từ `./ui/homeView`, `go` từ `./ui/router`, `startSandbox` từ `./ui/modes`; khóa `mode.mydata*` thêm vào vi/en.
+> - Task 6 Step 6: bỏ rule `.visually-hidden`, dùng class Tailwind `sr-only` cho ô `input[type=file]`. Các rule `.mydata*` còn lại vẫn dùng được (token còn nguyên); ưu tiên chuyển thành class Tailwind nguyên vẹn trong `myDataView.ts`.
+
 ## Global Constraints
 
 - Mọi ràng buộc của Plan 1, 1b, 1c vẫn áp dụng: PGlite **0.5.16** pin; không đưa dữ liệu vào `innerHTML` (ngoại lệ duy nhất: SVG Mermaid ở tab ER, tên bảng/cột `sandbox` đã sanitize về `[a-z0-9_]`); mọi truy cập `localStorage`/IndexedDB bọc try/catch; mọi bước "xác nhận PASS" chạy thêm `npx tsc --noEmit` và phải không lỗi.

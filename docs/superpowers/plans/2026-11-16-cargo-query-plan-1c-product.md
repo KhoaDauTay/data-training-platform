@@ -12,6 +12,38 @@
 
 **Ngoài phạm vi plan này (đã có chủ khác):** hạ tầng i18n (`src/i18n/*`, nút VI|EN — Plan 1 Task 10), tách `main.ts` (Plan 1 Task 10), lịch sử query C15, Format SQL (D5), nạp CSV (Plan Import), dịch bù EN ch1–3 (Plan 1), tự gắn link thuật ngữ trong đề và badge ở tab Cột (B7: để bản sau), chấm beat trên dải bản đồ (Plan 1b Task 7).
 
+> **Sau Plan 1d (Tailwind, Trang chủ Tiên Sa, 12 chương, hoạt cảnh; L17–L31): điều chỉnh khi thực hiện:**
+> - **Topbar.** Task 0, bảng điểm neo `index.html`: dòng XP nay là `<span id="xp" class="rounded-full bg-amber-400 px-3 py-1 font-semibold text-amber-950"></span>`, và ngay trước nó có `<span id="rank" …>`, tức chip chức danh. Chip này giữ nguyên.
+>   - Task 8 Step 6a: xóa **dòng chứa `id="xp"`**.
+>   - Task 8 Step 6b: thêm `class="… text-white"` cho `#progress` và `class="border-0 bg-black/20 text-white ring-1 ring-white/40 hover:bg-black/30"` cho `#skills-btn`. Task 9: `#notebook-btn` cũng vậy.
+>   - Dòng `byId('xp').textContent = …` trong `topbar.ts` vẫn còn để xóa.
+> - **12 chương.** `CHAPTERS.length` = 12 và `top.chapter` = `Chương {n}/{total}: {title}`. `progressLine` truyền `CHAPTERS.length`; tổng ticket luôn tính từ nội dung, không ghi cứng 7/35. Mọi test/ví dụ ghi `Ch x/7` sửa theo.
+> - **Thang nghề.** `rankOf()` đã có trong `src/progress.ts` (Plan 1d Task 11); `overview.ts` không viết lại.
+> - **Tổng kết chương** (Task 8):
+>   - hoạt cảnh `promotion` của Plan 1d (thẻ thăng tiến + tàu + confetti, 3 s) **thay** animation mở màn 1,5 s; một ticket cuối chương chỉ có một màn ăn mừng (completion-animations §4);
+>   - màn Tổng kết mở sau khi `playCompletion` đã chạy, không thêm hiệu ứng;
+>   - tiêu đề màn dùng `career` của chương (`chapters.yml`);
+>   - không chữ "boss" (L22).
+> - **Hoạt cảnh chỉ ở lần đầu.** Luyện tập, Ôn, Làm lại không gọi `complete()`/`playCompletion` và không thêm container (completion-animations §1.4). `Save.completed` giữ nghĩa cũ (bãi, tuyến, chức danh tính lại từ đó).
+> - **Điều hướng.** `selectTicket()` nay gọi `go('play')`; `enter(mode)` trong `src/ui/modes.ts` cũng gọi `go('play')` (import từ `./router`) để vào Luyện tập/Sandbox từ Trang chủ.
+> - **Nav.** Đăng ký Luyện tập/Sandbox:
+>   - `registerNav({ id: 'practice', order: 30, label: 'nav.practice', href: hashOf('play'), current: (r) => r === 'play' && session.mode.kind === 'practice', onclick: startToday })`;
+>   - `{ id: 'sandbox', order: 40, … onclick: startSandbox }`;
+>   - đăng ký lại `{ id: 'play', order: 20, label: 'nav.play', href: hashOf('play'), current: (r) => r === 'play' && session.mode.kind === 'story', onclick: backToStory }` (cùng id thì thay thế).
+>
+>   Khóa `nav.practice`, `nav.sandbox` thêm vào vi/en. "Sandbox" giống nhau ở hai ngôn ngữ, nên thêm khóa vào `SAME_OK`.
+> - **Trang chủ.**
+>   - Card "Ôn hôm nay" là section mới `registerHomeSection({ id: 'review', order: 15, span: 'full', render: reviewCard })` (`startToday`, `go('play')`). Id `side` không còn: Plan 1d đã thay bằng `career`, tức lộ trình sự nghiệp; không ghi đè `career`.
+>   - Card "Ôn đầu chương" (curriculum §5.2) cũng là một section.
+>   - `homeHooks.levelOf = (id) => app.save.review[id]?.box ?? 1`; `homeHooks.onSkill = (id) => { startSkill(id); go('play'); }`.
+>   - Card chế độ:
+>     - `registerMode({ id: 'sandbox', order: 10, icon: '🧪', tint: 'bg-orange-100 dark:bg-orange-950', title: 'mode.sandbox', desc: 'mode.sandboxDesc', open: () => { startSandbox(); go('play'); } })`;
+>     - `registerMode({ id: 'notebook', order: 30, icon: '📒', tint: 'bg-fuchsia-100 dark:bg-fuchsia-950', title: 'mode.notebook', desc: 'mode.notebookDesc', open: () => toggleNotebook(document.getElementById('notebook-dialog') as HTMLDialogElement) })`;
+>     - khóa `mode.*` thêm vào vi/en.
+>   - Không tạo trùng logic `learnedSkills` trong `src/home.ts`.
+> - **Phản hồi sai "có giọng người"** (Task 8): người gửi lấy từ `personOf(tk.from.name)` (`src/people.ts`), chân dung `avatar(tk.from)`.
+> - **CSS.** "Thêm vào cuối `src/style.css`" vẫn chạy: token và class chung còn nguyên, `.topbar` vẫn là class của header. Class Tailwind viết trong `.ts` phải là chuỗi nguyên vẹn (`cx()`), không `` `chip ${x}` ``.
+
 ## Global Constraints
 
 - Mọi ràng buộc của Plan 1 và Plan 1b vẫn áp dụng: PGlite **0.5.16** pin; Solution không dùng `CURRENT_DATE`/`now()`; không đưa dữ liệu vào `innerHTML` (ngoại lệ duy nhất: SVG Mermaid ở tab ER); mọi truy cập `localStorage`/IndexedDB bọc try/catch; mọi bước "xác nhận PASS" chạy thêm `npx tsc --noEmit` và phải không lỗi.

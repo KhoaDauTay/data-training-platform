@@ -26,6 +26,17 @@ Plan 1b chỉ dùng các tên dưới đây từ Plan 1. Tất cả đã có tro
 | `src/main.ts` | `const db = new DbClient(onDbStatus)`, `registerCoreTabs(…)` ngay trước `const panel = createPanel(…)`, hàm `loadColumns()` (gọi một lần khi DB `ready`), hàm `rerender()`, hàm `complete(t: Ticket)` (đóng mọi ticket, kể cả boss qua `actions.complete`), biến `panel` và `work` |
 | `src/progress.ts` | `currentChapter(tickets, completed): number` |
 
+> **Sau Plan 1d (Tailwind, Trang chủ Tiên Sa, hoạt cảnh; L17–L31): điều chỉnh khi thực hiện:**
+> - `registerTab`/`TabSpec` không đổi; tab tự có kiểu mới (gạch chân theo `aria-selected`). Hàng nút vẫn là `h('div', { class: 'actions' }, runBtn, formatBtn, submitBtn)`, nay nằm trong một div bọc dính đáy: chèn `explainBtn` sau `runBtn` như cũ.
+> - Các bước "Thêm CSS vào cuối `src/style.css`" vẫn dùng được: token `var(--…)` và class `.muted .stale .error pre.sql .actions button.primary .tag .warn` còn nguyên. Ưu tiên viết class Tailwind ngay trong `h()`; khi đó class phải là chuỗi nguyên vẹn (map tên đầy đủ, nối bằng `cx()` từ `src/theme.ts`). `tests/theme.test.ts` chặn `` class: `…${x}` ``. SVG dựng bằng `s()` của `src/ui/svg.ts` (Plan 1d) thay vì một builder thứ hai.
+> - Preflight làm `svg` thành `display: block`: SVG nằm giữa dòng chữ cần class `inline`.
+> - **Task 7 (dải bản đồ tuyến d3-geo):** Plan 1d đã có bản đồ tuyến từ Tiên Sa (`src/ui/routeMap.ts`, `ROUTES` trong `src/scene.ts`) trên Trang chủ và hoạt cảnh tàu chạy khi xong việc (`src/ui/stage.ts`).
+>   - **Bỏ** `map.celebrate()` trong `complete()`: một lần xong việc chỉ có một hoạt cảnh (completion-animations §4).
+>   - Nếu vẫn làm dải `#map` trong khu làm việc: dùng lại `routeMap(derive(app.tickets, done()))` thay vì vẽ bản đồ thứ hai, giữ `chapterDots` làm thanh tiến độ, và ẩn `#map` khi `currentRoute() !== 'play'` (import từ `./ui/router`).
+>   - `laneUnlocked` phải khớp `derive().open` (`ROUTES[].opens`, hoặc đã có chuyến tàu tới cảng đó, L32). Laem Chabang (`THLCH`), không "Bangkok".
+>   - Khóa i18n `map.*` của plan này không trùng `routes.*` của 1d. Đổi `'map.beat.boss'` thành `'đánh giá thăng tiến'` / `'promotion review'`: `tests/i18n.test.ts` (Plan 1d Task 5) chặn chữ "boss" (L22).
+> - Màu biểu đồ theo chương lấy `CHAPTER_COLOR[n].bar` (12 chương).
+
 ## Global Constraints
 
 - Mọi ràng buộc của Plan 1 vẫn áp dụng (PGlite 0.5.16 pin, ngày cố định, không `innerHTML` với dữ liệu, try/catch mọi truy cập `localStorage`/IndexedDB, `npx tsc --noEmit` ở mọi bước xác nhận PASS).
