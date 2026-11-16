@@ -1,6 +1,6 @@
 /**
  * L17 colours as whole Tailwind class names. Tailwind's scanner only sees complete literals, so never build a
- * class from pieces (`bg-${c}-500`): pick from these maps and join whole names with cx().
+ * class from pieces (bg- + colour + -500): pick from these maps and join whole names with cx().
  * WCAG AA (>= 4.5:1): chips are -800 on -100 (light) and -200 on -950 (dark); white text only on -700 or darker.
  */
 export const cx = (...parts: (string | false | null | undefined)[]): string => parts.filter(Boolean).join(' ');

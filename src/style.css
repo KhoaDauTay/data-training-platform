@@ -131,23 +131,7 @@
 }
 
 /* ==== LEGACY (Plan 1 style.css). Unlayered, so it still beats utilities: Tasks 6–9 delete it rule by rule, Task 9 removes the block. ==== */
-@media (max-width: 599px) {
-  .actions { position: sticky; bottom: 0; background: var(--panel); padding: 8px 0; z-index: 1; }
-  .tabs { flex-wrap: nowrap; overflow-x: auto; }
-}
-.from, .meta { color: var(--muted); font-size: 13px; }
-.editor { border: 1px solid var(--border); border-radius: 6px; }
 .sql-error .explain { border-left: 3px solid var(--accent); padding-left: 8px; }
-.feedback.bad { color: var(--bad); }
-.feedback.good { color: var(--good); }
-.history summary { cursor: pointer; color: var(--muted); }
-.history ul { list-style: none; padding: 0; margin: 4px 0; }
-.history .hist { width: 100%; text-align: left; font-family: ui-monospace, monospace; font-size: 12px; border: 0; padding: 2px 4px; }
-.mail { display: block; width: 100%; text-align: left; padding: 8px; margin-bottom: 6px; }
-.mail.active { border-color: var(--accent); box-shadow: inset 3px 0 var(--accent); }
-.mail.done { background: var(--code); }
-.mail span { display: block; }
-.mail .subject { font-weight: 600; }
 .tabs { display: flex; flex-wrap: wrap; gap: 4px; border-bottom: 1px solid var(--border); margin-bottom: 10px; }
 .tabs button { border-radius: 6px 6px 0 0; border-bottom: 0; background: var(--code); }
 .tabs button.on { background: var(--panel); font-weight: 600; box-shadow: inset 0 2px var(--accent); }

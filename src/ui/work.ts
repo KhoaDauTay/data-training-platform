@@ -6,7 +6,9 @@ import { loadHistory, pushHistory, writeHistory } from '../history';
 import { isMac, t } from '../i18n';
 import { app, done, draftKey, editorSchema, initialDoc, persist, stepKey, type LastRun } from '../state';
 import { localStore } from '../storage';
+import { BTN_SUBMIT } from '../theme';
 import type { Ticket } from '../tickets';
+import { celebrate } from './celebrate';
 import { h } from './dom';
 import { createEditor, type Editor } from './editor';
 import { errorText, errorView, gradeMessage } from './feedback';
@@ -40,6 +42,11 @@ export interface WorkArea {
 /** After a run, these tabs say nothing about the result, so the Result tab opens instead. */
 const SCHEMA_TABS = new Set(['erd', 'columns']);
 
+const FEEDBACK: Record<'good' | 'bad', string> = {
+  good: 'mt-2 rounded-xl bg-emerald-50 p-3 text-sm text-emerald-900 ring-1 ring-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-100 dark:ring-emerald-800',
+  bad: 'mt-2 rounded-xl bg-rose-50 p-3 text-sm text-rose-900 ring-1 ring-rose-200 dark:bg-rose-950/40 dark:text-rose-100 dark:ring-rose-800',
+};
+
 export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
   let ticket: Ticket | undefined;
   let stepIndex = 0;
@@ -51,13 +58,13 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
   let message: { kind: 'good' | 'bad'; view: () => Node | string } | undefined;
   let history = loadHistory(localStore());
 
-  const editorHost = h('div', { class: 'editor' });
+  const editorHost = h('div', { class: 'editor overflow-hidden rounded-xl ring-1 ring-line' });
   const runBtn = h('button', { type: 'button', onclick: () => void run() });
   const formatBtn = h('button', { type: 'button', onclick: () => void format() });
-  const submitBtn = h('button', { type: 'button', class: 'primary', onclick: () => void submit() });
-  const feedback = h('div', { class: 'feedback', role: 'status' });
-  const historyBox = h('details', { class: 'history' });
-  host.replaceChildren(editorHost, h('div', { class: 'actions' }, runBtn, formatBtn, submitBtn), feedback, historyBox);
+  const submitBtn = h('button', { type: 'button', class: BTN_SUBMIT, onclick: () => void submit() });
+  const feedback = h('div', { role: 'status' });
+  const historyBox = h('details', { class: 'mt-2 text-sm' });
+  host.replaceChildren(editorHost, h('div', { class: 'max-sm:sticky max-sm:bottom-0 max-sm:z-10 max-sm:bg-panel' }, h('div', { class: 'actions' }, runBtn, formatBtn, submitBtn)), feedback, historyBox);
 
   // The buttons advertise Mod+Enter / Mod+Shift+Enter: honour them when focus is outside the editor too
   // (on a button after a click, the brief heading after picking a ticket). Inside the editor CodeMirror's
@@ -77,7 +84,7 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
     drawMessage();
   }
   function drawMessage(): void {
-    feedback.className = `feedback ${message?.kind ?? ''}`;
+    feedback.className = message ? FEEDBACK[message.kind] : '';
     feedback.replaceChildren(message ? message.view() : '');
   }
 
@@ -94,9 +101,9 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
     const list = ticket ? history[ticket.id] ?? [] : [];
     historyBox.hidden = list.length === 0;
     historyBox.replaceChildren(
-      h('summary', {}, t('hist.title', { n: list.length })),
-      h('ul', {}, ...list.map((e) => h('li', {},
-        h('button', { type: 'button', class: 'hist', onclick: () => { editor?.setValue(e.sql); editor?.focus(); } },
+      h('summary', { class: 'cursor-pointer text-muted' }, t('hist.title', { n: list.length })),
+      h('ul', { class: 'my-1 list-none p-0' }, ...list.map((e) => h('li', {},
+        h('button', { type: 'button', class: 'w-full border-0 bg-transparent px-1 py-0.5 text-left font-mono text-xs hover:bg-code', onclick: () => { editor?.setValue(e.sql); editor?.focus(); } },
           h('span', { class: e.ok ? 'good' : 'bad' }, e.ok ? '✓' : '✗'),
           ` ${e.sql.replace(/\s+/g, ' ').slice(0, 60)}`,
           e.rows === undefined ? '' : h('span', { class: 'muted' }, ` · ${t('hist.rows', { n: e.rows })}`))))));
@@ -216,11 +223,13 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
     if (i < tk.steps.length - 1) {
       deps.onStepSolved(); // setTicket() for the next step clears the message, so say it afterwards
       say('good', () => t('work.stepDone', { i: i + 1 }));
+      celebrate(feedback);
     } else if (tk.conclusion) {
       say('good', () => t('work.conclusionNext'));
       deps.onConclusion(tk);
     } else {
       say('good', () => t('work.correct'));
+      celebrate(feedback);
       deps.onSolved(tk);
     }
   }
