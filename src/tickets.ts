@@ -2,12 +2,14 @@ import { parse as parseYaml } from 'yaml';
 
 export type Lang = 'vi' | 'en';
 export type Beat = 'teach' | 'develop' | 'twist' | 'rest' | 'boss';
+/** Expected-result column label (L25): business meaning in both languages, never the Solution's column name. */
+export interface Label { vi: string; en: string }
 export interface Step {
   title: string;
   prompt: string;
   solution: string;
   /** Expected result column labels from `columns:` (shape card only; the grader compares by position). */
-  columns?: string[];
+  columns?: Label[];
 }
 export interface Conclusion { question: string; options: string[]; answer: number }
 /** Player-facing text in one language. `steps` runs parallel to Ticket.steps. */
@@ -95,7 +97,7 @@ function templateNames(t: Ticket): Set<string> {
   const all = [
     ...texts(textOf(t, 'vi')),
     ...(t.en ? texts(t.en) : []),
-    ...t.steps.flatMap((s) => [s.solution, ...(s.columns ?? [])]),
+    ...t.steps.flatMap((s) => [s.solution, ...(s.columns ?? []).flatMap((l) => [l.vi, l.en])]),
     t.starter ?? '',
   ];
   return new Set(all.flatMap((s) => [...s.matchAll(VAR_RE)].map((m) => m[1])));
@@ -144,12 +146,17 @@ export function parseTicket(source: string, origin: string): Ticket {
   }
 
   if (fm.columns !== undefined) {
-    // Normal ticket: one list of labels. Boss: one list per step.
+    // Normal ticket: one list of labels. Boss: one list per step. Each label is { vi, en } (L25).
+    const isLabel = (c: unknown): c is Label => {
+      const o = c as Partial<Label> | null;
+      return !!o && typeof o === 'object' && !Array.isArray(o)
+        && typeof o.vi === 'string' && o.vi.trim() !== '' && typeof o.en === 'string' && o.en.trim() !== '';
+    };
     const lists = t.beat === 'boss' ? fm.columns : [fm.columns];
     const ok = Array.isArray(lists) && lists.length === t.steps.length
-      && lists.every((l) => Array.isArray(l) && l.length > 0 && l.every((c) => typeof c === 'string' && c.trim() !== ''));
-    if (!ok) fail('columns: ticket thường là danh sách nhãn cột; boss là danh sách nhãn cột cho từng bước');
-    (lists as string[][]).forEach((l, i) => (t.steps[i].columns = l));
+      && lists.every((l) => Array.isArray(l) && l.length > 0 && l.every(isLabel));
+    if (!ok) fail('columns: mỗi nhãn là { vi, en }; ticket thường một danh sách, cột mốc một danh sách cho mỗi bước');
+    (lists as Label[][]).forEach((l, i) => (t.steps[i].columns = l.map((x) => ({ vi: x.vi.trim(), en: x.en.trim() }))));
   }
 
   if (fm.starter !== undefined) {

@@ -49,6 +49,13 @@ describe('song ngữ', () => {
   it.each(tickets)('$id: EN không còn chữ tiếng Việt có dấu (ngoài code span)', (t) => {
     expect(allText(textOf(t, 'en')).replace(/`[^`]+`/g, '')).not.toMatch(VI_DIACRITIC);
   });
+
+  it.each(tickets)('$id: thân đề, Task và đề bước không có backtick (problem-design §1.2)', (t) => {
+    for (const lang of ['vi', 'en'] as const) {
+      const x = textOf(t, lang);
+      expect([x.body, x.task, ...x.steps.map((s) => s.prompt)].join('\n')).not.toContain('`');
+    }
+  });
 });
 
 describe('Solution', () => {
@@ -64,11 +71,18 @@ describe('Solution', () => {
     expect(tablesIn(sql).filter((x) => !tables.includes(x))).toEqual([]);
   });
 
-  it.each(steps)('$name: Solution chạy được, có dữ liệu, số nhãn columns bằng số cột', async ({ sql, columns }) => {
+  it.each(steps)('$name: Solution chạy được; columns là nhãn nghiệp vụ VI/EN, đủ số cột, không đọc hộ tên cột (L25)', async ({ sql, columns }) => {
     const run = await runner();
     const r = await run(sql);
     expect(r.rows.length).toBeGreaterThan(0);
     expect(columns?.length).toBe(r.columns.length);
+    for (const label of columns ?? []) {
+      expect(label.en).not.toMatch(VI_DIACRITIC);
+      for (const text of [label.vi, label.en]) {
+        expect(text).not.toMatch(/^[a-z0-9_]+$/);
+        expect(r.columns).not.toContain(text);
+      }
+    }
   });
 
   it('ch1-05: bước 1 trả ≥ 4 dòng để LIMIT 3 ở bước 3 có nghĩa (L14)', async () => {

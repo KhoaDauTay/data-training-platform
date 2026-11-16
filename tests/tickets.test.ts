@@ -65,7 +65,7 @@ SELECT ref FROM shipments WHERE status = 'IN_TRANSIT' AND eta < '2026-11-15'
 
 /** NORMAL + title_en, columns, "## Task" and an EN block. */
 const NORMAL_BI = NORMAL
-  .replace('title: Cảng châu Âu\n', 'title: Cảng châu Âu\ntitle_en: European ports\ncolumns: [port]\n')
+  .replace('title: Cảng châu Âu\n', 'title: Cảng châu Âu\ntitle_en: European ports\ncolumns: [{ vi: "Cảng", en: "Port" }]\n')
   .replace('Dòng thứ hai.\n', 'Dòng thứ hai.\n\n## Task\nLấy mã cảng.\n') + `
 # EN
 Please list the ports in \`Europe\`.
@@ -80,7 +80,7 @@ Return the port codes.
 `;
 
 const BOSS_BI = BOSS
-  .replace('title: Lô đi Rotterdam\n', 'title: Lô đi Rotterdam\ntitle_en: Shipments to Rotterdam\ncolumns: [[ref], [ref]]\n')
+  .replace('title: Lô đi Rotterdam\n', 'title: Lô đi Rotterdam\ntitle_en: Shipments to Rotterdam\ncolumns: [[{ vi: "Mã lô", en: "Ref" }], [{ vi: "Mã lô", en: "Ref" }]]\n')
   .replace('  answer: 0\n', '  answer: 0\nconclusion_en:\n  question: Which column do you filter on?\n  options: [status, eta]\n') + `
 # EN
 Intro.
@@ -145,7 +145,7 @@ describe('song ngữ (# EN), ## Task, columns, starter', () => {
     const t = parseTicket(NORMAL_BI, 'bi.md');
     expect(t.body).toBe('Lọc giúp mình các cảng ở `Europe`.\n\nDòng thứ hai.');
     expect(t.task).toBe('Lấy mã cảng.');
-    expect(t.steps[0].columns).toEqual(['port']);
+    expect(t.steps[0].columns).toEqual([{ vi: 'Cảng', en: 'Port' }]);
     expect(t.en).toEqual({
       title: 'European ports', body: 'Please list the ports in `Europe`.', task: 'Return the port codes.',
       hints: ['Hint one', 'Hint two', 'Hint three'], steps: [{ title: '', prompt: '' }],
@@ -161,7 +161,7 @@ describe('song ngữ (# EN), ## Task, columns, starter', () => {
 
   it('boss: EN có cùng các bước, conclusion_en dùng chung answer', () => {
     const t = parseTicket(BOSS_BI, 'boss.md');
-    expect(t.steps.map((s) => s.columns)).toEqual([['ref'], ['ref']]);
+    expect(t.steps.map((s) => s.columns)).toEqual([[{ vi: 'Mã lô', en: 'Ref' }], [{ vi: 'Mã lô', en: 'Ref' }]]);
     expect(t.en?.steps).toEqual([{ title: 'In transit', prompt: 'List the shipments.' }, { title: 'Arriving soon', prompt: 'Add a condition.' }]);
     expect(textOf(t, 'en').conclusion).toEqual({ question: 'Which column do you filter on?', options: ['status', 'eta'] });
     expect(textOf(t, 'vi').conclusion).toEqual({ question: 'Lọc theo cột nào?', options: ['status', 'eta'] });
@@ -183,8 +183,14 @@ describe('song ngữ (# EN), ## Task, columns, starter', () => {
     expect(bad(NORMAL.replace('title: Cảng châu Âu\n', 'title: Cảng châu Âu\ntitle_en: x\n'))).toThrow(/# EN/);
     expect(bad(BOSS_BI.replace('## Step 2: Arriving soon\nAdd a condition.\n', ''))).toThrow(/Step N/);
     expect(bad(BOSS_BI.replace(/(conclusion_en:\n.*\n  options:) \[status, eta\]/, '$1 [status]'))).toThrow(/conclusion_en/);
-    expect(bad(BOSS_BI.replace('columns: [[ref], [ref]]', 'columns: [[ref]]'))).toThrow(/columns/);
-    expect(bad(NORMAL_BI.replace('columns: [port]', 'columns: port'))).toThrow(/columns/);
+    const boss2 = 'columns: [[{ vi: "Mã lô", en: "Ref" }], [{ vi: "Mã lô", en: "Ref" }]]';
+    const normal1 = 'columns: [{ vi: "Cảng", en: "Port" }]';
+    expect(bad(BOSS_BI.replace(boss2, 'columns: [[{ vi: "Mã lô", en: "Ref" }]]'))).toThrow(/columns/);
+    expect(bad(NORMAL_BI.replace(normal1, 'columns: port'))).toThrow(/columns/);
+    // L25: plain string labels, a missing or blank `en` are rejected
+    expect(bad(NORMAL_BI.replace(normal1, 'columns: [port]'))).toThrow(/\{ vi, en \}/);
+    expect(bad(NORMAL_BI.replace(normal1, 'columns: [{ vi: "Cảng" }]'))).toThrow(/\{ vi, en \}/);
+    expect(bad(NORMAL_BI.replace(normal1, 'columns: [{ vi: "Cảng", en: " " }]'))).toThrow(/\{ vi, en \}/);
   });
 });
 
