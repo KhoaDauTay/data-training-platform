@@ -1,0 +1,41 @@
+# Tiêu đề chương và mục tiêu "sau chương này bạn có thể…".
+# Outcome được tick khi mọi kỹ năng trong skills đã học; chỉ dùng kỹ năng của chương này hoặc chương trước.
+# Outcome chương 4–7 thêm cùng lúc với kỹ năng của chương đó (Plan 2/3).
+# Mọi chuỗi đặt trong nháy kép.
+
+- chapter: 1
+  title: { vi: "Tuần thử việc", en: "Probation week" }
+  outcomes:
+    - { vi: "Lấy đúng cột cần từ một bảng", en: "Pull exactly the columns you need", skills: [select] }
+    - { vi: "Lọc lô hàng theo nhiều điều kiện", en: "Filter shipments by several conditions", skills: [where] }
+    - { vi: "Xếp hạng có tiêu chí phá hòa và lấy top N", en: "Rank with a tie-break and take the top N", skills: [order_by, limit] }
+
+- chapter: 2
+  title: { vi: "Báo cáo sản lượng", en: "Volume reports" }
+  outcomes:
+    - { vi: "Đếm, tính tổng và trung bình cho một tập lô hàng", en: "Count, sum and average a set of shipments", skills: [aggregate] }
+    - { vi: "Lập báo cáo theo hãng tàu hoặc phương thức", en: "Report by carrier or by mode", skills: [group_by] }
+    - { vi: "Lọc nhóm bằng HAVING và phân biệt với WHERE", en: "Filter groups with HAVING and tell it apart from WHERE", skills: [having] }
+
+- chapter: 3
+  title: { vi: "Nối dữ liệu", en: "Joining data" }
+  outcomes:
+    - { vi: "Ghép lô hàng với khách hàng và hãng tàu", en: "Match shipments with customers and carriers", skills: [join] }
+    - { vi: "Nối từ 3 bảng trở lên", en: "Join three or more tables", skills: [multi_join] }
+    - { vi: "Tìm khách không book bằng LEFT JOIN hoặc anti-join", en: "Find customers who never booked with a LEFT JOIN or an anti-join", skills: [left_join, anti_join] }
+
+- chapter: 4
+  title: { vi: "Thời gian & phân loại", en: "Time and classification" }
+  outcomes: []
+
+- chapter: 5
+  title: { vi: "Câu hỏi nhiều bước", en: "Multi-step questions" }
+  outcomes: []
+
+- chapter: 6
+  title: { vi: "Xu hướng", en: "Trends" }
+  outcomes: []
+
+- chapter: 7
+  title: { vi: "Điều tra", en: "Investigation" }
+  outcomes: []
