@@ -32,7 +32,7 @@ export function gradeMessage(r: Exclude<GradeResult, { ok: true }>): string {
 export function errorText(e: unknown): string {
   if (e instanceof QueryTimeoutError) return t('err.timeout', { s: e.timeoutMs / 1000 });
   if (e instanceof DbRestartError) return t('err.restart');
-  if (e instanceof WorkerTaskError) return `${t('err.task')}\n${e.detail}`;
+  if (e instanceof WorkerTaskError) return e.detail ? `${t('err.task')}\n${e.detail}` : t('err.task');
   if (e instanceof DbFailedError) return `${t('err.dbFailed')}\n${e.detail}`;
   if (e instanceof NewerSaveError) return t('save.newer', { v: e.version });
   if (e instanceof InvalidSaveError) return t('save.invalid');

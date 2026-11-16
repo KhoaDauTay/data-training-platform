@@ -35,7 +35,9 @@ export async function loadErMetadata(run: (sql: string) => Promise<QueryResult>,
 }
 
 /** Latin letters with diacritics (Vietnamese headers) are kept: Mermaid's name token accepts U+00C0 and up. */
-const UNSAFE = /[^A-Za-z0-9_À-ɏḀ-ỿ]/g;
+const UNSAFE = /[^A-Za-z0-9_\u00C0-\u024F\u1E00-\u1EFF]/g;
+/** Mermaid lexes these before names (a following accented letter does not end its \b), so `class` or `toán` would not parse. */
+const RESERVED = /^(style|classdef|class|subgraph|end|one|many|to|erdiagram|pk|fk|uk)(?![A-Za-z0-9_])/i;
 
 /**
  * Every name written into the Mermaid text goes through this: a safe identifier passes unchanged,
@@ -45,7 +47,7 @@ const UNSAFE = /[^A-Za-z0-9_À-ɏḀ-ỿ]/g;
 // ponytail: two names that differ only in unsafe characters collide; add a numeric suffix if imports hit it.
 export function mermaidName(name: string): string {
   const safe = name.replace(UNSAFE, '_');
-  return /^[0-9]/.test(safe) || safe === '' ? `_${safe}` : safe;
+  return /^[0-9]/.test(safe) || safe === '' || RESERVED.test(safe) ? `_${safe}` : safe;
 }
 
 const HEX = /^#[0-9a-f]{3,8}$/i;
