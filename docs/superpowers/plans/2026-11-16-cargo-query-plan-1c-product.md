@@ -56,14 +56,15 @@ Các phần của bản plan cũ dưới đây **không làm**, vì HEAD đã c�
 |---|---|---|
 | P1 | Biến thể ch1–3 nằm ở `ch1-03` (tháng: `month`, `month_en`, `from`, `to`) và `ch2-03` (ngưỡng `min`: 150 / 120 / 200). `ch2-04` không có biến thể. | Đề mới là văn xuôi VI/EN. Giá trị biến thể phải ASCII (`VARIANT_VALUE_RE`) và không được là mã trạng thái (test nội dung). Số và tháng thì dùng được ở cả hai ngôn ngữ. |
 | P2 | Tổng kết chương là **khối tĩnh dưới Recap** của đánh giá thăng tiến (`wrapUp`), không phải dialog. | `showModal()` nằm ở top layer, sẽ che dock `#stage` đang chạy hoạt cảnh `promotion`, và `playCompletion` không có hook "đã xong". Khối trong Recap tự hiện sau khi nộp, không thêm hiệu ứng. Tiêu đề dùng `career` của chương. |
-| P3 | Giữ chip `#xp`. Không thêm `#progress` và `#skills-btn`. "Ôn: N" là nút `#review-btn`, **chỉ hiện khi N > 0**. | Số chương, chức danh và XP đã có trên topbar; số việc nằm ở Trang chủ. Một nút bị khóa trên nền gradient khó đạt tương phản AA. |
+| P3 | **Đảo một phần L12 và ghi chú Plan 1d Task 19** (`#xp` thay bằng `#progress` "n/N ticket · XP · Ôn: N"; nút `#skills-btn`). Giữ chip `#xp`; không thêm `#progress` và `#skills-btn`. "Ôn: N" là nút `#review-btn`, **chỉ hiện khi N > 0**. | Số chương, chức danh và XP đã có trên topbar; số việc nằm ở Trang chủ; lưới kỹ năng nằm ở Trang chủ. Một nút "Ôn: 0" bị khóa trên nền gradient khó đạt tương phản AA. Muốn quay về L12: thêm `#progress` lấy `done/total` từ `homeModel`. |
 | P4 | Card "Ôn đầu chương" (curriculum §5.2) **không làm ở 1c**. | Curriculum §5.7 xếp nó vào Plan 2. Ghi chú Plan 1d Task 19 có nhắc, nhưng curriculum là tài liệu chốt sau. |
-| P5 | Lịch sử query và `save.graded` chỉ ghi ở chế độ Làm việc. | Bài luyện dùng chung id với ticket gốc nhưng SQL là của biến thể khác. Nếu ghi, Recap và lịch sử của ticket gốc bị ghi đè. |
-| P6 | Nav "Luyện tập": có kỹ năng đến hạn thì vào Ôn hôm nay, không có thì về Trang chủ. Card "Ôn tập" trên Trang chủ giải thích cách luyện riêng một kỹ năng. | Không có nút bấm mà không có phản hồi. |
+| P5 | Lịch sử query và `save.graded` chỉ ghi và chỉ hiện ở chế độ Làm việc. | Bài luyện dùng chung id với ticket gốc nhưng SQL là của biến thể khác. Nếu ghi, Recap và lịch sử của ticket gốc bị ghi đè. Nếu hiện, người chơi thấy ngay SQL đã đạt của chính mình. |
+| P6 | Nav "Luyện tập" chọn theo thứ tự:<br>• có kỹ năng đến hạn → Ôn hôm nay;<br>• không có → luyện một kỹ năng đã học, chọn ngẫu nhiên;<br>• chưa học gì → về Trang chủ.<br>Card "Ôn tập" luôn hiện trên Trang chủ và nói cách mở phần ôn. | Không có nút bấm mà không có phản hồi. |
 | P7 | Card "Ôn tập" đặt ở `order: 22`, sau `career` (20). | Section rộng `full` đặt ở 15 sẽ chen giữa `continue` (wide) và `career` (narrow), làm vỡ hàng. |
 | P8 | "Làm lại việc" là nút "Luyện lại việc này (0 XP)" dưới Recap của việc thường đã xong. Đánh giá thăng tiến không có nút này (L10). | Lối vào thứ 3 của D2, đặt ngay chỗ người chơi vừa xong việc. |
 | P9 | Gợi ý khi luyện tập hiện "Gợi ý i/n", không ghi "−x XP". | Luyện tập 0 XP; ghi "−25 XP" sẽ sai. |
 | P10 | Nút chẩn đoán: DB hỏng trước lần `ready` đầu → `db-init-failed`, sau đó → `worker-crash`. Clipboard bị chặn thì nội dung hiện trong banner `#notice` để tự chép. | `DbClient` gộp `initError` và `onerror` vào cùng một trạng thái `failed`. Banner có sẵn và hiện chữ bằng `textContent`. |
+| P11 | Phản hồi sai "có giọng người" (product-design-v2 #9): mỗi lý do sai (`voiceKey`: lỗi, số cột, thứ tự, thiếu dòng, thừa dòng, sai giá trị) có **một câu** của người gửi, kèm chân dung `avatar(tk.from)`. Câu dùng chung cho mọi phòng ban, nên có 6 câu × 2 ngôn ngữ thay vì bảng lý do × phòng (30 câu). | Đủ để phản hồi bớt cảm giác "bị chấm trượt", với 1/5 khối lượng chữ. Muốn thêm giọng riêng từng phòng: đổi `voiceKey` thành `(reason, dept)`. |
 
 ## Global Constraints
 
@@ -1544,7 +1545,7 @@ git commit -m "feat: freight glossary content with column and language checks"
   - Hợp đồng mới của `WorkArea`:
     - `setTicket(t: Ticket | undefined, …)`: `undefined` = Sandbox. Ẩn Nộp, không lịch sử; Chạy/EXPLAIN vẫn qua `runSandboxed`.
     - `WorkDeps.onWrong?()`: gọi mỗi lần Nộp sai.
-  - Ngoài Làm việc, `work.ts` không ghi lịch sử và `save.graded` (P5).
+  - Ngoài Làm việc, `work.ts` không ghi lịch sử và `save.graded`, và không hiện lịch sử. Nếu hiện, bài luyện sẽ lộ SQL đã đạt của ticket gốc (P5).
   - Trong `main.ts`:
     - đóng ticket: ghi `review` (kỹ năng mới học hẹn ngày mai) và xóa `bossStep[id]`;
     - qua một bước đánh giá: ghi `bossStep[id]`;
@@ -1679,6 +1680,15 @@ bằng:
 bằng:
 ```ts
     submitBtn.hidden = !ticket || isClosed(ticket.id);
+```
+
+**Sửa `src/ui/work.ts`** — thay:
+```ts
+    const list = ticket ? history[ticket.id] ?? [] : [];
+```
+bằng:
+```ts
+    const list = ticket && isStory() ? history[ticket.id] ?? [] : []; // in Practice it would show the story's passing SQL
 ```
 
 **Sửa `src/ui/work.ts`** — thay:
@@ -2006,7 +2016,7 @@ git commit -m "feat: mode-aware session seam, review step resume and review seed
     - section Trang chủ `review` (order 22, P7);
     - card chế độ `sandbox` (10);
     - `homeHooks.levelOf` (hộp Leitner) và `homeHooks.onSkill` (Luyện kỹ năng).
-  - Khóa i18n: `nav.practice`, `nav.sandbox`, `mode.sandbox`, `mode.sandboxDesc`, `prac.section`, `prac.today`, `prac.dueIntro`, `prac.noneDue`, `prac.retry`, `prac.banner`, `prac.exit`, `prac.ok`, `prac.weak`, `prac.next`, `prac.done`, `sbx.title`, `sbx.intro`.
+  - Khóa i18n: `nav.practice`, `nav.sandbox`, `mode.sandbox`, `mode.sandboxDesc`, `prac.section`, `prac.today`, `prac.dueIntro`, `prac.noneDue`, `prac.locked`, `prac.retry`, `prac.banner`, `prac.exit`, `prac.ok`, `prac.weak`, `prac.next`, `prac.done`, `sbx.title`, `sbx.intro`.
 
 Luật sản phẩm (D2, PD §3.2):
 - chấm bằng grader có sẵn với Solution đã áp biến thể; 0 XP; draft không lưu; không ghi `hintsUsed`;
@@ -2031,6 +2041,7 @@ export const vi = {
   'prac.today': 'Ôn hôm nay ({n})',
   'prac.dueIntro': '{n} kỹ năng đến hạn ôn hôm nay. Mỗi bài là một việc bạn đã làm, có thể với số liệu khác; làm đúng thì lần ôn sau giãn ra.',
   'prac.noneDue': 'Hôm nay chưa có kỹ năng nào đến hạn ôn. Muốn luyện thêm, bấm một kỹ năng đã học ở mục Chủ đề kỹ năng.',
+  'prac.locked': 'Xong việc đầu tiên thì kỹ năng bạn học được sẽ vào lịch ôn ở đây.',
   'prac.retry': 'Luyện lại việc này (0 XP)',
   'prac.banner': 'Luyện tập · bài {i}/{n} · 0 XP',
   'prac.exit': 'Về Làm việc',
@@ -2057,6 +2068,7 @@ export const en: Record<Key, Msg> = {
   'prac.today': 'Review today ({n})',
   'prac.dueIntro': (p) => `${p.n} skill${Number(p.n) === 1 ? ' is' : 's are'} due for review today. Each one is a task you have done, possibly with different figures; get it right and the next review comes later.`,
   'prac.noneDue': 'No skill is due for review today. To practise more, click a learned skill under Skill topics.',
+  'prac.locked': 'Once you finish your first task, the skills you learn are scheduled for review here.',
   'prac.retry': 'Practise this task again (0 XP)',
   'prac.banner': 'Practice · {i} of {n} · 0 XP',
   'prac.exit': 'Back to work',
@@ -2108,12 +2120,16 @@ export function initModes(c: { work: WorkArea; rerender(): void }): void {
   ctx = c;
 }
 
+/** The clicked button is gone after a redraw: focus the new left pane's title (showRoute does the same after a route change). */
+const focusTitle = (): void => document.getElementById('brief-title')?.focus();
+
 /** Every mode switch rebuilds the editor (`force`): a practice item may share the story ticket's id. */
 function enter(mode: Mode): void {
   session.mode = mode;
   ctx?.rerender();
   ctx?.work.setTicket(activeTicket(), activeStep(), true);
   go('play');
+  focusTitle();
 }
 
 export function startPractice(items: PracticeItem[]): boolean {
@@ -2156,6 +2172,13 @@ export function startRetry(ticketId: string): boolean {
   return !!tpl && tpl.beat !== 'boss' && done().has(ticketId) && startPractice([retryItem(tpl, Math.random)]);
 }
 
+/** Nav "Practice" (P6): today's due skills, else one learned skill at random; false when nothing is learned yet. */
+function startAny(): boolean {
+  if (startToday()) return true;
+  const learned = [...learnedSkills(app.tickets, done())];
+  return learned.length > 0 && startSkill(learned[Math.floor(Math.random() * learned.length)]);
+}
+
 export function onPracticeWrong(): void {
   if (session.mode.kind === 'practice') session.mode.run.wrong++;
 }
@@ -2186,6 +2209,7 @@ function nextItem(): void {
   run.result = undefined;
   ctx?.rerender();
   ctx?.work.setTicket(activeTicket(), 0, true);
+  focusTitle();
 }
 
 const TITLE = { id: 'brief-title', tabindex: '-1', class: 'm-0 text-lg font-bold' };
@@ -2228,14 +2252,14 @@ export function renderLeft(host: HTMLElement): void {
   else storyPane(host);
 }
 
-/** Home "Review" card (D2 entry 1). Hidden until a skill is learned. */
-function reviewCard(m: HomeModel): HTMLElement | null {
-  if (m.learned === 0) return null;
+/** Home "Review" card (D2 entry 1). Always shown, so nav "Practice" on a fresh save lands on its explanation (P6). */
+function reviewCard(m: HomeModel): HTMLElement {
   const due = dueToday().length;
+  const intro = m.learned === 0 ? t('prac.locked') : t(due ? 'prac.dueIntro' : 'prac.noneDue', { n: due });
   return h('section', { class: cx(CARD, 'flex flex-wrap items-center gap-4 p-5'), 'aria-labelledby': 'review-title' },
     h('div', { class: 'min-w-0 flex-1' },
       h('h2', { id: 'review-title', class: 'm-0 text-lg font-bold' }, t('prac.section')),
-      h('p', { class: 'mt-1 mb-0 text-[15px] text-muted' }, t(due ? 'prac.dueIntro' : 'prac.noneDue', { n: due }))),
+      h('p', { class: 'mt-1 mb-0 text-[15px] text-muted' }, intro)),
     due ? h('button', { type: 'button', class: cx(BTN_GO, 'px-4 py-2'), onclick: () => startToday() }, t('prac.today', { n: due })) : null);
 }
 
@@ -2248,8 +2272,8 @@ registerNav({
 registerNav({
   id: 'practice', order: 30, label: 'nav.practice', href: hashOf('play'),
   current: (r) => r === 'play' && session.mode.kind === 'practice',
-  // Nothing due: Home's Review card explains how to practise one skill (P6).
-  onclick: () => (session.mode.kind === 'practice' ? go('play') : startToday() || go('home')),
+  // Nothing learned yet: Home's Review card explains how practice opens (P6).
+  onclick: () => (session.mode.kind === 'practice' ? go('play') : startAny() || go('home')),
 });
 registerNav({
   id: 'sandbox', order: 40, label: 'nav.sandbox', href: hashOf('play'),
@@ -2338,8 +2362,14 @@ Expected: `tsc` không lỗi (kể cả `en.ts` đủ khóa); tất cả test PA
 - [ ] **Step 6: Kiểm tay**
 
 Run: `npm run dev`.
-1. Save trống: Trang chủ chưa có card "Ôn tập". Nav có Trang chủ · Làm việc · Luyện tập · Sandbox. "Chế độ khác" có card Sandbox.
-2. Xong `ch1-01` → `ch1-03`. Trang chủ có card "Ôn tập · 0 XP" ghi "Hôm nay chưa có kỹ năng nào đến hạn ôn…", không có nút. Ở "Chủ đề kỹ năng", kỹ năng đã học là nút bấm được, mức nhớ 1/5.
+1. Save trống:
+   - Trang chủ có card "Ôn tập" ghi "Xong việc đầu tiên thì…", không có nút;
+   - nav có Trang chủ · Làm việc · Luyện tập · Sandbox; bấm "Luyện tập" thì về Trang chủ;
+   - "Chế độ khác" có card Sandbox.
+2. Xong `ch1-01` → `ch1-03`:
+   - card "Ôn tập · 0 XP" ghi "Hôm nay chưa có kỹ năng nào đến hạn ôn…", không có nút;
+   - ở "Chủ đề kỹ năng", kỹ năng đã học là nút bấm được, mức nhớ 1/5;
+   - nav "Luyện tập" vào một bài luyện một kỹ năng đã học, focus ở tiêu đề bài.
 3. Mở lại `ch1-03`. Dưới Recap có "Luyện lại việc này (0 XP)"; bấm vào thì:
    - khung trái có dải "Luyện tập · bài 1/1 · 0 XP";
    - đề ghi một tháng **khác** 10/2026;
@@ -2371,11 +2401,11 @@ git commit -m "feat: practice (review today, skill, redo task) and sandbox modes
 
 ---
 
-### Task 8: Mục tiêu chương, chip Dạy/Cần, tổng kết chương, nút "Ôn: N"
+### Task 8: Mục tiêu chương, chip Dạy/Cần, tổng kết chương, nút "Ôn: N", phản hồi sai có giọng người
 
 **Files:**
 - Create: `src/ui/chapterView.ts`
-- Modify: `src/ui/modes.ts`, `src/main.ts`, `index.html`, `src/i18n/vi.ts`, `src/i18n/en.ts`
+- Modify: `src/ui/modes.ts`, `src/ui/feedback.ts`, `src/ui/work.ts`, `src/main.ts`, `index.html`, `src/i18n/vi.ts`, `src/i18n/en.ts`
 
 **Interfaces:**
 - Consumes: `CHAPTERS`, `chapterTitle`, `SKILLS`; `learnedSkills`; `outcomeDone`, `chapterSummary` (Task 4); `dueToday`, `startToday`, `startRetry` (Task 6–7)
@@ -2393,7 +2423,8 @@ git commit -m "feat: practice (review today, skill, redo task) and sandbox modes
 
     Khối không có hiệu ứng: hoạt cảnh `promotion` là màn ăn mừng duy nhất (L32).
   - `renderReviewButton(btn)` (trong `modes.ts`): `#review-btn` "Ôn: N", chỉ hiện khi N > 0 (P3).
-  - Khóa i18n: `goal.title`, `goal.intro`, `chip.teaches`, `chip.needs`, `sum.title`, `sum.career`, `sum.skills`, `sum.stats`, `sum.tables`, `sum.last`, `sum.quick`, `prog.due`, `prog.dueTitle`.
+  - `voiceKey(r)` (trong `feedback.ts`): câu của người gửi khi Nộp sai. `work.ts` vẽ câu đó dưới khối kỹ thuật, kèm `avatar(tk.from)` (P11).
+  - Khóa i18n: `goal.title`, `goal.intro`, `chip.teaches`, `chip.needs`, `sum.title`, `sum.career`, `sum.skills`, `sum.stats`, `sum.tables`, `sum.last`, `sum.quick`, `prog.due`, `prog.dueTitle`, `voice.error`, `voice.columns`, `voice.order`, `voice.missing`, `voice.extra`, `voice.values`.
 
 Mọi con số và trạng thái tính lại từ save + nội dung mỗi lần render (A4).
 
@@ -2419,6 +2450,12 @@ export const vi = {
   'sum.quick': 'Ôn nhanh 1 việc của chương',
   'prog.due': 'Ôn: {n}',
   'prog.dueTitle': 'Ôn các kỹ năng đến hạn hôm nay (0 XP)',
+  'voice.error': 'Câu lệnh chưa chạy được, bạn xem dòng báo lỗi giúp mình nhé.',
+  'voice.columns': 'Mình cần đúng các cột như thẻ Kết quả mong đợi, bạn đối chiếu lại nhé.',
+  'voice.order': 'Số liệu đúng rồi, chỉ là thứ tự chưa đúng như mình dặn.',
+  'voice.missing': 'Hình như còn thiếu vài dòng, bạn xem lại điều kiện lọc nhé?',
+  'voice.extra': 'Hình như có vài dòng mình không cần, bạn xem lại điều kiện lọc nhé?',
+  'voice.values': 'Số dòng thì đủ nhưng vài giá trị chưa khớp, bạn kiểm lại cách tính nhé.',
 ```
 
 **Sửa `src/i18n/en.ts`** — thay:
@@ -2441,6 +2478,12 @@ export const en: Record<Key, Msg> = {
   'sum.quick': 'Quick review: 1 task from this chapter',
   'prog.due': 'Review: {n}',
   'prog.dueTitle': 'Review the skills due today (0 XP)',
+  'voice.error': "The query didn't run. Could you check the error line for me?",
+  'voice.columns': 'I need exactly the columns on the Expected result card. Could you compare them?',
+  'voice.order': 'The figures are right, just not in the order I asked for.',
+  'voice.missing': 'Looks like a few rows are missing. Could you check the filters?',
+  'voice.extra': "Looks like there are rows I don't need. Could you check the filters?",
+  'voice.values': 'The row count is right but some values are off. Could you check the calculation?',
 ```
 
 - [ ] **Step 2: Viết `src/ui/chapterView.ts`**
@@ -2598,12 +2641,80 @@ bằng:
   if (!byId('home').hidden)
 ```
 
-- [ ] **Step 5: Kiểm kiểu và test**
+- [ ] **Step 5: Phản hồi sai "có giọng người" (product-design-v2 #9, P11)**
+
+Khối kỹ thuật của grader giữ nguyên. Dưới khối đó, người gửi trả lời một câu trong bong bóng chat, kèm chân dung.
+
+**Sửa `src/ui/feedback.ts`** — thay:
+```ts
+import { t } from '../i18n';
+```
+bằng:
+```ts
+import { t, type Key } from '../i18n';
+```
+
+**Sửa `src/ui/feedback.ts`** — thay:
+```ts
+export function gradeMessage(r: Exclude<GradeResult, { ok: true }>): string {
+```
+bằng:
+```ts
+/** product-design-v2 #9: the sender's one-line reaction to a wrong answer, by reason (one voice for every department, P11). */
+export function voiceKey(r: Exclude<GradeResult, { ok: true }>): Key {
+  if (r.reason === 'error') return 'voice.error';
+  if (r.reason === 'columns') return 'voice.columns';
+  if (r.reason === 'order') return 'voice.order';
+  if (r.missing && !r.extra) return 'voice.missing';
+  if (r.extra && !r.missing) return 'voice.extra';
+  return 'voice.values';
+}
+
+export function gradeMessage(r: Exclude<GradeResult, { ok: true }>): string {
+```
+
+**Sửa `src/ui/work.ts`** — thay:
+```ts
+import { errorText, errorView, gradeMessage } from './feedback';
+```
+bằng:
+```ts
+import { avatar } from './avatar';
+import { errorText, errorView, gradeMessage, voiceKey } from './feedback';
+```
+
+**Sửa `src/ui/work.ts`** — thay:
+```ts
+      const err = played?.error;
+      if (fail.reason === 'error') {
+        underline(err, 0);
+        say('bad', () => (err !== undefined ? errorView(err) : gradeMessage(fail)));
+      } else {
+        if (fail.reason === 'rows' && played?.result) played.mark = fail.sample;
+        say('bad', () => gradeMessage(fail));
+      }
+```
+bằng:
+```ts
+      const err = played?.error;
+      // The sender answers in the chat under the grader's facts (re-translated on a language switch like every message).
+      const voice = (): HTMLElement => h('p', { class: 'mt-2 mb-0 flex items-start gap-2' },
+        avatar(tk.from), h('span', { class: 'rounded-2xl rounded-tl-sm bg-panel px-3 py-1.5 text-ink' }, t(voiceKey(fail))));
+      if (fail.reason === 'error') {
+        underline(err, 0);
+        say('bad', () => h('div', {}, err !== undefined ? errorView(err) : gradeMessage(fail), voice()));
+      } else {
+        if (fail.reason === 'rows' && played?.result) played.mark = fail.sample;
+        say('bad', () => h('div', {}, gradeMessage(fail), voice()));
+      }
+```
+
+- [ ] **Step 6: Kiểm kiểu và test**
 
 Run: `npx tsc --noEmit && npm test`
 Expected: `tsc` không lỗi; tất cả test PASS.
 
-- [ ] **Step 6: Kiểm tay**
+- [ ] **Step 7: Kiểm tay**
 
 Run: `npm run dev`.
 1. Save trống, `ch1-01`:
@@ -2616,14 +2727,19 @@ Run: `npm run dev`.
    - dưới Recap có khối "Tổng kết chương 1: Tuần thử việc" với "Bước nghề mới: …", outcome đều ✓, kỹ năng chương 1, XP + gợi ý khớp tay, "Bảng mới ở chương sau: …";
    - "Ôn nhanh 1 việc của chương" vào Luyện tập một việc ch1 (không phải đánh giá).
 4. Sửa `due` một kỹ năng thành hôm qua, tải lại. Topbar có "Ôn: 1" (chữ trắng trên nền tối, đủ tương phản); bấm vào → lượt ôn.
-5. EN: chip "Teaches/Needs", "Chapter 1 wrap-up", "Review: 1"; không chuỗi nào dính tiếng Việt, không chữ "boss".
-6. Màn 375px: topbar xuống dòng gọn, không cuộn ngang. Tab đi qua được nút Ôn và nút trong khối tổng kết.
+5. Nộp sai ở `ch1-02` (bỏ điều kiện sân bay):
+   - khối đỏ vẫn có "Thừa n dòng";
+   - bên dưới là chân dung người gửi và câu "Hình như có vài dòng mình không cần…";
+   - lỗi cú pháp → câu "Câu lệnh chưa chạy được…";
+   - đổi EN → câu dịch theo.
+6. EN: chip "Teaches/Needs", "Chapter 1 wrap-up", "Review: 1"; không chuỗi nào dính tiếng Việt, không chữ "boss".
+7. Màn 375px: topbar xuống dòng gọn, không cuộn ngang. Tab đi qua được nút Ôn và nút trong khối tổng kết.
 
-- [ ] **Step 7: Commit**
+- [ ] **Step 8: Commit**
 
 ```bash
-git add src/ui/chapterView.ts src/ui/modes.ts src/main.ts index.html src/i18n/vi.ts src/i18n/en.ts
-git commit -m "feat: chapter goals, teaches/needs chips, chapter wrap-up under the review recap, review button"
+git add src/ui/chapterView.ts src/ui/modes.ts src/ui/feedback.ts src/ui/work.ts src/main.ts index.html src/i18n/vi.ts src/i18n/en.ts
+git commit -m "feat: chapter goals, teaches/needs chips, chapter wrap-up, review button, wrong answers in the sender's voice"
 ```
 
 ---
@@ -2914,6 +3030,8 @@ grep -c "__BUILD__" src/env.d.ts
 ```
 Expected: `3`, `1`. Nếu chưa có: chạy Plan Deploy Task 1 + 3 trước, hoặc để task này lại và báo người điều phối. Không tự viết `diagnostics.ts`.
 
+**Cảnh báo khi chạy Plan Deploy Task 1:** bước đó ghi đè **cả** `vite.config.ts` bằng một bản viết trước Plan 1d, không có `plugins: [tailwindcss()]` và `import tailwindcss from '@tailwindcss/vite'`. Phải giữ hai dòng đó (L7: code trên đĩa thắng plan) và chỉ thêm `define: { __BUILD__: … }`. Nếu không, `npm run build` ra trang không có CSS.
+
 **Files:**
 - Modify: `src/db/client.ts`, `src/state.ts`, `src/ui/topbar.ts`, `src/main.ts`, `src/i18n/vi.ts`, `src/i18n/en.ts`
 
@@ -2930,7 +3048,7 @@ Expected: `3`, `1`. Nếu chưa có: chạy Plan Deploy Task 1 + 3 trước, ho�
     | DB `failed` sau lần `ready` đầu | `worker-crash` |
     | `QueryTimeoutError` | `db-timeout` |
     | `vite:preloadError` | `chunk-load-failed` |
-    | `window` `error` / `unhandledrejection` | `js-error` |
+    | `window` `error` / `unhandledrejection`, trừ lỗi của query (`SqlError`, `QueryTimeoutError`, `DbRestartError`, `WorkerTaskError`) | `js-error` |
 
   - Payload theo spec nút của Plan Deploy Task 3:
     - `timings` = `db.timings` + `readyMs` (`performance` measure `db:time-to-ready`);
@@ -3051,6 +3169,16 @@ import { cx, NAV_LINK, TOP_BTN } from '../theme';
 
 **Sửa `src/main.ts`** — thay:
 ```ts
+import { DbClient, type DbStatus } from './db/client';
+```
+bằng:
+```ts
+import { DbClient, DbRestartError, QueryTimeoutError, WorkerTaskError, type DbStatus } from './db/client';
+import { SqlError } from './db/run';
+```
+
+**Sửa `src/main.ts`** — thay:
+```ts
 import { loadSave, parseSave, serializeSave, type Known } from './save';
 ```
 bằng:
@@ -3121,7 +3249,9 @@ async function copyDiagnostics(): Promise<void> {
   renderTopbar();
 }
 
+/** Uncaught app errors only: query outcomes (player SQL errors, timeouts, restarts, worker task failures) are normal play. */
 const fault = (error: unknown): void => {
+  if (error instanceof SqlError || error instanceof QueryTimeoutError || error instanceof DbRestartError || error instanceof WorkerTaskError) return;
   app.problem = { kind: 'js-error', error };
   renderTopbar();
 };
