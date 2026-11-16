@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import html from '../index.html?raw';
 import { isMacPlatform, keyLabels, t } from '../src/i18n';
 import { en } from '../src/i18n/en';
 import { vi } from '../src/i18n/vi';
@@ -38,6 +39,12 @@ describe('từ điển i18n', () => {
       .filter(([, v]) => typeof v === 'string' && /\bboss\b|sự cố/i.test(v))
       .map(([k]) => k);
     expect(bad).toEqual([]);
+  });
+
+  it('mọi khóa data-i18n / data-i18n-aria trong index.html có trong vi', () => {
+    const keys = [...html.matchAll(/data-i18n(?:-aria)?="([^"]+)"/g)].map((m) => m[1]);
+    expect(keys).toContain('nav.label');
+    expect(keys.filter((k) => !(k in vi))).toEqual([]);
   });
 });
 

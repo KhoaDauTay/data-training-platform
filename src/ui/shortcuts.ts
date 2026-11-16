@@ -9,3 +9,18 @@ export function shortcutOf(e: KeyLike, mac: boolean): Shortcut | undefined {
   if (e.key !== 'Enter' || e.altKey || (mac ? !e.metaKey || e.ctrlKey : !e.ctrlKey || e.metaKey)) return undefined;
   return e.shiftKey ? 'submit' : 'run';
 }
+
+type PageKey = KeyLike & Pick<KeyboardEvent, 'defaultPrevented' | 'isComposing'> & { target: unknown };
+
+/**
+ * The page-level listener's whole decision. Skips keys the editor already handled (`defaultPrevented`), IME composition,
+ * focus in a dialog or form field, a hidden workspace (Home route), and Submit while the promotion-review conclusion
+ * form is open (the last step is already graded; only the form finishes the ticket).
+ */
+export function pageShortcutOf(e: PageKey, mac: boolean, at: { workspaceHidden: boolean; conclusionOpen: boolean }): Shortcut | undefined {
+  if (e.defaultPrevented || e.isComposing || at.workspaceHidden) return undefined;
+  const action = shortcutOf(e, mac);
+  const target = e.target as { closest?: (sel: string) => unknown } | null;
+  if (!action || target?.closest?.('dialog, input, textarea, select')) return undefined;
+  return action === 'submit' && at.conclusionOpen ? undefined : action;
+}
