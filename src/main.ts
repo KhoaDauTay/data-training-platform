@@ -12,6 +12,7 @@ import { renderBrief } from './ui/brief';
 import { byId, h } from './ui/dom';
 import { errorText } from './ui/feedback';
 import { leftHome, renderHome } from './ui/homeView';
+import { initStage, playCompletion } from './ui/stage';
 import { renderInbox } from './ui/inbox';
 import { createPanel, registerCoreTabs } from './ui/tabs';
 import { initLayout } from './ui/splitter';
@@ -117,10 +118,12 @@ function showRoute(r: Route, initial: boolean): void {
 /** Correct answer: save at once, stay on the ticket and show the Recap (no auto-jump). */
 function complete(t: Ticket): void {
   if (done().has(t.id)) return;
+  const before = done();
   const gained = xpFor(t, app.save.hintsUsed[t.id] ?? 0);
   app.save.completed.push(t.id);
   app.save.xp += gained;
   persist(true);
+  playCompletion(t, before, done()); // first completion only: the early return above skips re-solves
   app.conclusionFor = '';
   rerender();
   byId('ticket').querySelector<HTMLElement>('.recap h3')?.focus(); // the Submit button just disappeared
@@ -170,6 +173,7 @@ window.addEventListener('vite:preloadError', () => {
 });
 
 initLayout(byId('shell'), { col: byId('split-col'), row: byId('split-row') });
+initStage();
 rerender();
 work.setTicket(selected(), app.stepIndex);
 startRouter(showRoute);
