@@ -201,8 +201,8 @@ export function harborScene(h: Harbor, opts: { ambient: boolean; current: number
     shutter,
     text(1057, 306, 12, '#0f172a', t('harbor.cfs'), 'middle'),
     // customs gate
-    s('rect', { x: 902, y: 362, width: 38, height: 26, rx: 2, fill: '#f8fafc', stroke: '#334155' }),
-    s('rect', { x: 902, y: 356, width: 38, height: 7, fill: '#1d4ed8' }),
+    s('rect', { x: 881, y: 362, width: 80, height: 26, rx: 2, fill: '#f8fafc', stroke: '#334155' }),
+    s('rect', { x: 881, y: 356, width: 80, height: 7, fill: '#1d4ed8' }),
     text(921, 380, 12, '#1e3a8a', t('harbor.customs'), 'middle'),
     s('rect', { x: 902, y: 330, width: 6, height: 30, fill: '#334155' }),
     barrier,
