@@ -2,54 +2,57 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Thêm các tab trực quan vào panel dưới (Biểu đồ, Thứ tự thực thi, EXPLAIN, Luồng dữ liệu, Sơ đồ ER) và dải bản đồ tuyến 2D kiêm thanh tiến độ chương, đúng spec §6b, song ngữ VI/EN.
+**Goal:** Thêm các tab trực quan vào panel dưới (Biểu đồ, Thứ tự thực thi, EXPLAIN, Luồng dữ liệu, Sơ đồ ER) và dải tiến độ chương trong khu làm việc (L35), đúng spec §6b, song ngữ VI/EN.
 
-**Architecture:** Dữ liệu trực quan được tính bằng hàm thuần trong `src/viz/*` (có unit test chạy PGlite thật trong Node, không chứa chữ đã dịch) rồi vẽ bằng DOM/SVG trong `src/ui/*View.ts` (mọi chữ qua `t()`). EXPLAIN và "thứ tự thực thi" chạy trong worker DB (cùng sandbox `BEGIN … ROLLBACK`), đi qua hàng đợi request của `DbClient`. Các tab đăng ký qua `registerTab()` của `src/ui/tabs.ts` trong một file riêng `src/ui/vizTabs.ts`; mọi tab mô tả **lần chạy gần nhất** (`app.lastRun.sql` trong `src/state.ts`), không đọc editor. Kết quả EXPLAIN / thứ tự thực thi / metadata ERD được cache theo SQL (hoặc theo schema) bằng `memoByKey`. Thư viện nặng (Mermaid, parser `libpg-query`) chỉ tải khi mở tab cần.
+**Architecture:** Dữ liệu trực quan được tính bằng hàm thuần trong `src/viz/*` (có unit test chạy PGlite thật trong Node, không chứa chữ đã dịch) rồi vẽ bằng DOM/SVG trong `src/ui/*View.ts` (mọi chữ qua `t()`, class Tailwind nguyên vẹn, SVG dựng bằng `s()` của `src/ui/svg.ts`). EXPLAIN và "thứ tự thực thi" chạy trong worker DB (cùng sandbox `BEGIN … ROLLBACK`), đi qua hàng đợi request của `DbClient`. Các tab đăng ký qua `registerTab()` của `src/ui/tabs.ts` trong một file riêng `src/ui/vizTabs.ts`; mọi tab mô tả **lần chạy gần nhất** (`app.lastRun.sql` trong `src/state.ts`), không đọc editor. Kết quả EXPLAIN / thứ tự thực thi / metadata ERD được cache theo SQL (hoặc theo schema) bằng `memoByKey`. Thư viện nặng (Mermaid, parser `libpg-query`) chỉ tải khi mở tab cần. Bản đồ tuyến là bản đồ Tiên Sa của Plan 1d (Trang chủ + hoạt cảnh); khu làm việc chỉ có dải tiến độ một dòng, số tuyến lấy từ `derive()` (L35).
 
-**Tech Stack:** như Plan 1, thêm `libpg-query` 18.2.4 + `pgsql-deparser` 18.4.5 (parser/deparser Postgres, WASM), `mermaid` 12.3.0, `d3-geo` 3.1.2 + `topojson-client` 3.1.0 + `world-atlas` 2.0.2 (dev: `@types/d3-geo` 3.1.1, `@types/topojson-client` 3.1.5, `@types/topojson-specification` 1.0.5).
+**Tech Stack:** như Plan 1 + Plan 1d (Tailwind v4), thêm `libpg-query` 18.2.4 + `pgsql-deparser` 18.4.5 (parser/deparser Postgres, WASM), `mermaid` 12.3.0. Không thêm thư viện bản đồ (xem "Đã bỏ vì Plan 1d").
 
-**Spec:** `docs/superpowers/specs/2026-11-16-cargo-query-design.md` §6b. **Tiền đề:** Plan 1 đã xong (Task 1–11), gồm cả bản sửa `src/db/{client,worker,run}.ts` của BE đã commit (Task 2: hàng đợi request trong `DbClient`, `SqlError`/`sqlErrorInfo` trong `run.ts`, `QueryTimeoutError`/`DbRestartError`/`DbFailedError` không kèm chữ, `MAX_ROWS_WORKER`) và Task 10 viết theo cấu trúc tách `src/state.ts` + `src/ui/{topbar,inbox,brief,work,tabs}.ts` + `src/i18n/*`. Quyết định nguồn: `docs/team/amendments.md` (B3, C1, C4, C5, C7, F10 và mục "Quyết định của user").
+**Spec:** `docs/superpowers/specs/2026-11-16-cargo-query-design.md` §6b. **Tiền đề:** Plan 1 và Plan 1d đã xong (code ở HEAD). Quyết định nguồn: `docs/team/amendments.md` (B3, C1, C4, C5, C7, F10 và mục "Quyết định của user"), `docs/team/decision-log.md` (L17, L22, L23, L26, L30–L34 thắng chữ cũ của plan này). **Code trên đĩa thắng listing trong plan** (L7): mọi điểm neo dưới đây đã đối chiếu với HEAD; nếu lúc chạy thấy khác, sửa ở chỗ gọi trong Plan 1b.
 
-### Tên dùng từ Plan 1 (đã đối chiếu với văn bản Plan 1 Task 10)
+> **Đã bỏ vì Plan 1d** (đã áp vào thân plan, không áp lại):
+> - Task 7 cũ "dải bản đồ d3-geo": bỏ `d3-geo`, `topojson-client`, `world-atlas` (+ `@types/*`), `resolveJsonModule`, `PORTS`/`HUB`/`laneUnlocked`/`SEA_REGION_CHAPTER` (tuyến biển ch1–5 + đường hàng không ch6), `VOLUMES_SQL`/`setVolumes`, tàu chạy thường trực trên dải và `map.celebrate()` trong `complete()`. Plan 1d đã có bản đồ tuyến tỏa từ Tiên Sa (`routeMap()`, `ROUTES`, `derive().open` mở tuyến theo chương **và** theo chuyến tàu, L32) và hoạt cảnh tàu khi xong việc (`playCompletion` trong `src/ui/stage.ts`; mỗi lần xong việc chỉ một hoạt cảnh). L35: Task 7 mới chỉ còn dải tiến độ thu gọn (chấm chương + `Tuyến đã mở n/7` + liên kết về Trang chủ); bỏ nút mở rộng, bản đồ 120px, vòng khoanh cảng (`ticketPorts`) và key `cargo-query/map-collapsed`.
+> - `newAt: 'ch3-01'` của tab EXPLAIN (L35): EXPLAIN được dạy ở chương 11 (L30), chưa có ticket. Bỏ badge; Plan 4 thêm `newAt` khi có ticket ch11.
+> - Hàm `svg()` mới trong `src/ui/dom.ts`: dùng `s()` của `src/ui/svg.ts`.
+> - Mọi bước "Thêm CSS vào cuối `src/style.css`": class Tailwind viết thẳng trong `h()`/`s()` (chuỗi nguyên vẹn, nối bằng `cx()`; `tests/theme.test.ts` chặn `` class: `…${x}` ``). Plan 1b không sửa `src/style.css`; không định nghĩa lại `pre.sql` (class dùng chung).
+> - Khóa `viz.runFirst`, `viz.stale` (ghi cứng "Ctrl", `tests/i18n.test.ts` chặn), `viz.timeout`, `viz.restarted`, `viz.dbFailed`: dùng `res.runFirst`/`res.stale` và `errorView()`/`errorText()` của `src/ui/feedback.ts`.
+> - Khóa `map.beat.boss` ("ticket boss", L22 chặn): dùng `beat.boss` có sẵn ("Đánh giá thăng tiến" / "Promotion review"). Khóa `map.aria`, `map.hub`, `map.portOpen`, `map.portClosed`, `map.colShipments`, `map.open`, `map.closed`: thay bằng `top.map`, `routes.*` và `routeItems()` có sẵn.
 
-Plan 1b chỉ dùng các tên dưới đây từ Plan 1. Tất cả đã có trong code mẫu của Plan 1 Task 10; nếu lúc chạy thấy khác, sửa ở chỗ gọi trong Plan 1b, không đổi Plan 1.
+### Tên có sẵn ở HEAD mà Plan 1b dùng (đã grep)
 
-| File (Plan 1) | Tên Plan 1b dùng |
+| File | Tên Plan 1b dùng |
 |---|---|
-| `src/i18n/index.ts` | `type Lang = 'vi' \| 'en'`, `type Key`, `type Params = Record<string, string \| number>`, `type Msg = string \| ((p: Params) => string)`, `t(key: Key, p?: Params): string`, `getLang(): Lang`, `locale(): string` |
-| `src/i18n/vi.ts`, `src/i18n/en.ts` | object literal `vi` (nguồn khóa) và `en: Record<Key, Msg>`; Plan 1b thêm khóa vào cả hai |
-| `src/state.ts` | `app.lastRun: { sql: string; result?: QueryResult; error?: … } \| undefined`, `app.tickets`, `app.selectedId`, `done(): Set<string>`, `unlockedTables(): string[]` |
-| `src/ui/tabs.ts` | `registerTab(spec: TabSpec): void` với `TabSpec { id: string; label: Key; group: 'output' \| 'query' \| 'schema'; order: number; newAt?: string; render(host: HTMLElement): void \| Promise<void> }`; panel sắp tab theo nhóm `output \| query \| schema` rồi theo `order`. Plan 1 đăng ký `result` (output, 10) và `columns` (schema, 20). `registerTab` phải được gọi trước khi panel được tạo. |
-| `src/ui/work.ts` | trong `mountWork(host, deps)`: hàm cục bộ `run(): Promise<void>` (chạy SQL editor/vùng chọn, ghi `app.lastRun`), nút `runBtn`, hàng nút `h('div', { class: 'actions' }, runBtn, …)`, `deps.panel.show(id)`; `WorkArea.currentSql(): string` = đúng đoạn SQL mà Ctrl+Enter sẽ chạy lúc này (vùng chọn nếu có, không thì cả editor), để so được với `app.lastRun.sql` |
-| `src/ui/dom.ts` | `h()` (Plan 1 Task 10) |
+| `src/i18n/index.ts` | `type Lang`, `type Key`, `type Params`, `type Msg`, `t(key, p?)` (số trong `p` tự định dạng theo `locale()`; `{mod}`/`{alt}` tự điền), `getLang()`, `locale()` |
+| `src/i18n/vi.ts`, `src/i18n/en.ts` | object `vi` (nguồn khóa, kết thúc bằng `} satisfies Record<string, Msg>;`) và `en: Record<Key, Msg>`; trong `en.ts` có helper `num(v)` và `count(one, many)` cho số nhiều (nhận **số**, không nhận chuỗi đã định dạng). Khóa có sẵn dùng lại: `res.runFirst`, `res.stale`, `top.map`, `beat.boss`, `routes.*` |
+| `src/state.ts` | `app.lastRun: LastRun \| undefined` với `LastRun { key; sql; offset; result?; error?; mark? }`, `app.tickets`, `app.selectedId`, `done(): Set<string>`, `unlockedTables(): string[]` |
+| `src/ui/tabs.ts` | `registerTab(spec: TabSpec)` với `TabSpec { id; label: Key; group: 'output' \| 'query' \| 'schema'; order; newAt?; render(host): void \| Promise<void> }`, gọi trước `createPanel()`; `registerCoreTabs(editorSql)` đăng ký `result` (output, 10) và `columns` (schema, 20); `Panel { show(id); refresh(); readonly active }`. `createPanel` tự bắt lỗi render và hiện `errorText(e)` |
+| `src/ui/work.ts` | trong `mountWork(host, deps: WorkDeps)`: hàm cục bộ `run(): Promise<void>`, nút `runBtn`, hàng nút `h('div', { class: 'actions' }, runBtn, formatBtn, submitBtn)` (nằm trong một div bọc dính đáy), `deps.panel.show(id)`, `SCHEMA_TABS = new Set(['erd', 'columns'])` (đã có `erd`); `WorkArea.currentSql()` |
+| `src/ui/dom.ts` | `h()`, `nodes()`, `richText()`, `byId()` |
+| `src/ui/svg.ts` | `s(tag, attrs: Record<string, string \| number \| false>, ...children: (SVGElement \| string \| null \| undefined \| false)[])` |
+| `src/ui/feedback.ts` | `errorText(e): string`, `errorView(e): HTMLElement` (lỗi Postgres nguyên văn + HINT + giải thích theo SQLSTATE) |
 | `src/ui/resultTable.ts` | `renderResult(r: QueryResult, mark?: unknown[]): HTMLElement`, `formatCell(v: unknown, type?: number): string` |
-| `src/main.ts` | `const db = new DbClient(onDbStatus)`, `registerCoreTabs(…)` ngay trước `const panel = createPanel(…)`, hàm `loadColumns()` (gọi một lần khi DB `ready`), hàm `rerender()`, hàm `complete(t: Ticket)` (đóng mọi ticket, kể cả boss qua `actions.complete`), biến `panel` và `work` |
+| `src/theme.ts` | `cx(...)`, `chapterColor(n): ChapterColor` (`bar` là class `bg-*`; cho SVG dùng `fill`/`stroke`) |
+| `src/scene.ts` | `ROUTES: RouteInfo[]` (7 tuyến từ Tiên Sa `VNDAD`), `derive(tickets, completed): Harbor` (`open: Set<string>` = tuyến đã mở) |
+| `src/ui/router.ts` | `currentRoute()`; `main.ts` có `showRoute(r, initial)` bật/tắt `#home`/`#shell` |
+| `src/route.ts` | `hashOf(r: Route)` (`'home'` → `#/`) |
+| `src/main.ts` | `const db = new DbClient(onDbStatus)`, dòng `registerCoreTabs(() => work.currentSql());` ngay trước `const panel = createPanel(byId('panel'));`, `const work = mountWork(…)`, `rerender()`, `showRoute()`, `complete(t)` (đã gọi `playCompletion` và `panel.refresh()`) |
 | `src/progress.ts` | `currentChapter(tickets, completed): number` |
-
-> **Sau Plan 1d (Tailwind, Trang chủ Tiên Sa, hoạt cảnh; L17–L31): điều chỉnh khi thực hiện:**
-> - `registerTab`/`TabSpec` không đổi; tab tự có kiểu mới (gạch chân theo `aria-selected`). Hàng nút vẫn là `h('div', { class: 'actions' }, runBtn, formatBtn, submitBtn)`, nay nằm trong một div bọc dính đáy: chèn `explainBtn` sau `runBtn` như cũ.
-> - Các bước "Thêm CSS vào cuối `src/style.css`" vẫn dùng được: token `var(--…)` và class `.muted .stale .error pre.sql .actions button.primary .tag .warn` còn nguyên. Ưu tiên viết class Tailwind ngay trong `h()`; khi đó class phải là chuỗi nguyên vẹn (map tên đầy đủ, nối bằng `cx()` từ `src/theme.ts`). `tests/theme.test.ts` chặn `` class: `…${x}` ``. SVG dựng bằng `s()` của `src/ui/svg.ts` (Plan 1d) thay vì một builder thứ hai.
-> - Preflight làm `svg` thành `display: block`: SVG nằm giữa dòng chữ cần class `inline`.
-> - **Task 7 (dải bản đồ tuyến d3-geo):** Plan 1d đã có bản đồ tuyến từ Tiên Sa (`src/ui/routeMap.ts`, `ROUTES` trong `src/scene.ts`) trên Trang chủ và hoạt cảnh tàu chạy khi xong việc (`src/ui/stage.ts`).
->   - **Bỏ** `map.celebrate()` trong `complete()`: một lần xong việc chỉ có một hoạt cảnh (completion-animations §4).
->   - Nếu vẫn làm dải `#map` trong khu làm việc: dùng lại `routeMap(derive(app.tickets, done()))` thay vì vẽ bản đồ thứ hai, giữ `chapterDots` làm thanh tiến độ, và ẩn `#map` khi `currentRoute() !== 'play'` (import từ `./ui/router`).
->   - `laneUnlocked` phải khớp `derive().open` (`ROUTES[].opens`, hoặc đã có chuyến tàu tới cảng đó, L32). Laem Chabang (`THLCH`), không "Bangkok".
->   - Khóa i18n `map.*` của plan này không trùng `routes.*` của 1d. Đổi `'map.beat.boss'` thành `'đánh giá thăng tiến'` / `'promotion review'`: `tests/i18n.test.ts` (Plan 1d Task 5) chặn chữ "boss" (L22).
-> - Màu biểu đồ theo chương lấy `CHAPTER_COLOR[n].bar` (12 chương).
+| `index.html` | `<div id="map" class="map-strip border-b border-line bg-sea" data-i18n-aria="top.map" … hidden>` ngay dưới topbar |
+| `tests/helpers.ts` | `freshDb()`, `seededDb()`, `runner()` |
 
 ## Global Constraints
 
 - Mọi ràng buộc của Plan 1 vẫn áp dụng (PGlite 0.5.16 pin, ngày cố định, không `innerHTML` với dữ liệu, try/catch mọi truy cập `localStorage`/IndexedDB, `npx tsc --noEmit` ở mọi bước xác nhận PASS).
 - Ngoại lệ `innerHTML` duy nhất: SVG do Mermaid sinh từ tên bảng/cột (schema game, hoặc tên đã sanitize về `[a-z0-9_]` của schema `sandbox`), với `securityLevel: 'strict'`.
-- Pin chính xác (`--save-exact`): `libpg-query@18.2.4`, `pgsql-deparser@18.4.5`, `mermaid@12.3.0`, `d3-geo@3.1.2`, `topojson-client@3.1.0`, `world-atlas@2.0.2`, `@types/d3-geo@3.1.1`, `@types/topojson-client@3.1.5`, `@types/topojson-specification@1.0.5`.
-- File `libpg-query.wasm` phải được import qua `?url` và nạp bằng `loadModule({ wasm })` — Vite không tự đóng gói nó (đã xác nhận bằng spike).
+- Pin chính xác (`--save-exact`): `libpg-query@18.2.4`, `pgsql-deparser@18.4.5`, `mermaid@12.3.0`.
+- File `libpg-query.wasm` phải được import qua `?url` và nạp bằng `loadModule({ wasm })` — Vite không tự đóng gói nó (đã xác nhận bằng spike). `vite.config.ts` đã có `worker: { format: 'es' }` nên `import()` động trong worker build được.
 - Sau mỗi lần cài dependency: grep `SharedArrayBuffer` (F10). Không bật COOP/COEP; GitHub Pages (D6) không đặt được header này.
-- **i18n:** mọi chữ hiển thị đi qua `t()`; khóa mới được thêm vào **cả** `src/i18n/vi.ts` và `src/i18n/en.ts` trong cùng task. `src/viz/*` chạy trong worker và Node nên chỉ được `import type` từ `src/i18n` (không gọi `t()`/`getLang()`). Dữ liệu được cache (`planFor`, `stepsFor`) không chứa chữ đã dịch: mã + giá trị thô, dịch lúc vẽ. Bảng chú thích theo ngôn ngữ (`NODE_HELP`, `STEP_LABELS`, `STEP_HELP`) là `Record<Lang, …>` cùng tập khóa (có test).
+- **i18n:** mọi chữ hiển thị đi qua `t()`; khóa mới được thêm vào **cả** `src/i18n/vi.ts` và `src/i18n/en.ts` trong cùng task. `src/viz/*` chạy trong worker và Node nên chỉ được `import type` từ `src/i18n` (không gọi `t()`/`getLang()`). Dữ liệu được cache (`planFor`, `stepsFor`) không chứa chữ đã dịch: mã + giá trị thô, dịch lúc vẽ. Bảng chú thích theo ngôn ngữ (`NODE_HELP`, `STEP_LABELS`, `STEP_HELP`) là `Record<Lang, …>` cùng tập khóa (có test). Không chuỗi nào ghi cứng `Ctrl`/`Alt` (dùng `{mod}`), không chữ "boss"/"sự cố" (L22); EN khác VI trừ `SAME_OK` (`tests/i18n.test.ts`).
 - Không dịch: tên bảng/cột, SQL, giá trị dữ liệu, lỗi gốc Postgres, tên cảng.
-- Mọi tab trực quan đọc `app.lastRun.sql`; khi editor khác SQL đó thì hiện dải "SQL đã thay đổi — Ctrl+Enter để cập nhật".
-- Số hiển thị qua `fmt()` (`toLocaleString(locale())`).
-- Mọi animation tắt khi `prefers-reduced-motion: reduce`.
-- Màu lấy từ CSS token (`var(--accent)`, `var(--land)`…), không hard-code ngoài `:root`. Trạng thái (bước bỏ qua, SQL mờ, tuyến chưa mở, cạnh luồng) thể hiện bằng **màu/nét**, không bằng `opacity`.
+- Mọi tab trực quan đọc `app.lastRun.sql`; khi editor khác SQL đó thì hiện dải `res.stale` ("SQL đã thay đổi — {mod}+Enter để cập nhật.").
+- Số trong `t()` truyền dạng **number** (tự định dạng theo ngôn ngữ, và `count()` của EN cần số). `fmt()` chỉ cho số ngoài `t()` (ms có phần lẻ, nhãn biểu đồ, `<title>`).
+- Mọi animation tắt khi `prefers-reduced-motion: reduce` (`<animateMotion>` không theo CSS nên kiểm bằng `reducedMotion()`).
+- **Giao diện (L17, L23):** class Tailwind là chuỗi nguyên vẹn, nối bằng `cx()` từ `src/theme.ts`; màu lấy từ token đã map trong `@theme inline` (`bg-code`, `bg-accent-soft`, `text-muted`, `text-ink`, `ring-line`, `fill-accent`, `fill-panel`, `fill-ink`, `fill-muted`, `stroke-line`, `border-accent`, `border-bad`, `ring-warn`…), không hard-code hex. Số dùng `tabular-nums`, màu chỉ cho nhãn/badge/thanh nhỏ, không tô màu số lớn. Trạng thái (bước bỏ qua, SQL mờ, tuyến chưa mở, cạnh luồng) thể hiện bằng **màu/nét**, không bằng `opacity`. Preflight làm `svg` thành `display: block`: SVG giữa dòng chữ cần class `inline`.
 
 ## File Structure
 
@@ -63,9 +66,9 @@ src/viz/parser.ts      ensureParser(): nạp wasm libpg-query trong trình duy�
 src/viz/steps.ts       STEP_LABELS, STEP_HELP, buildSteps, clauseRanges, runSteps
 src/viz/chart.ts       chartSpec — chọn kiểu biểu đồ theo OID cột
 src/viz/erd.ts         erColumnsSql(schema), erConstraintsSql(schema), loadErMetadata, erDefinition, tablesInQuery
-src/viz/ports.ts       PORTS, HUB, laneUnlocked, VOLUMES_SQL, toVolumes, chapterDots, ticketPorts
-src/i18n/vi.ts, en.ts  + khóa viz.*, plan.*, explain.*, flow.*, steps.*, chart.*, erd.*, map.*, tab.*
-src/ui/dom.ts          + svg(), reducedMotion(), fmt()
+src/viz/progressDots.ts chapterDots (thanh tiến độ chương)
+src/i18n/vi.ts, en.ts  + khóa viz.rows, plan.*, explain.*, flow.*, steps.*, chart.*, erd.*, map.*, tab.*
+src/ui/dom.ts          + reducedMotion(), fmt()
 src/ui/vizTabs.ts      registerVizTabs(deps): đăng ký 5 tab qua registerTab, cache planFor/stepsFor/erMetadata
 src/ui/work.ts         + nút EXPLAIN
 src/ui/explainView.ts  tab EXPLAIN
@@ -73,9 +76,9 @@ src/ui/flowView.ts     tab Luồng dữ liệu
 src/ui/stepsView.ts    tab Thứ tự thực thi
 src/ui/chartView.ts    tab Biểu đồ
 src/ui/erdView.ts      tab Sơ đồ ER (Mermaid, tải lười)
-src/ui/mapView.ts      dải bản đồ tuyến + thanh tiến độ chương
-src/main.ts            + registerVizTabs(...), createMap/syncMap
-tests/memo.test.ts, plan.test.ts, steps.test.ts, chart.test.ts, erd.test.ts, ports.test.ts
+src/ui/mapStrip.ts     dải #map: một dòng tiến độ chương + số tuyến + liên kết về Trang chủ
+src/main.ts            + registerVizTabs(...), createMapStrip/syncMap, ẩn #map ngoài #/play
+tests/memo.test.ts, plan.test.ts, steps.test.ts, chart.test.ts, erd.test.ts, progressDots.test.ts
 ```
 
 Thứ tự tab cuối cùng: [`result` · `chart`] | [`steps` · `explain` · `flow`] | [`erd` · `columns`].
@@ -501,19 +504,19 @@ git commit -m "feat: EXPLAIN ANALYZE in worker and plan tree model"
 
 **Files:**
 - Create: `src/viz/memo.ts`, `src/ui/vizTabs.ts`, `src/ui/explainView.ts`, `src/ui/flowView.ts`
-- Modify: `src/ui/dom.ts`, `src/ui/work.ts`, `src/main.ts`, `src/i18n/vi.ts`, `src/i18n/en.ts`, `src/style.css`
+- Modify: `src/ui/dom.ts`, `src/ui/work.ts`, `src/main.ts`, `src/i18n/vi.ts`, `src/i18n/en.ts`
 - Test: `tests/memo.test.ts`
 
 **Interfaces:**
-- Consumes: `flattenPlan`, `nodeExplanation`, `isHeavyScan`, `Plan`, `PlanDetail` (Task 1); `DbClient.explain`, `QueryTimeoutError`, `DbRestartError` (Task 1); `registerTab` (`src/ui/tabs.ts`), `app.lastRun` (`src/state.ts`), `t`, `getLang`, `locale`, `Key` (`src/i18n`), `h` (`src/ui/dom.ts`), `errorMessage` (`src/grader.ts`) — Plan 1
+- Consumes: `flattenPlan`, `nodeExplanation`, `isHeavyScan`, `Plan`, `PlanDetail` (Task 1); `DbClient.explain` (Task 1); `registerTab` (`src/ui/tabs.ts`), `app.lastRun` (`src/state.ts`), `t`, `getLang`, `locale`, `Key` (`src/i18n`), `h` (`src/ui/dom.ts`), `s` (`src/ui/svg.ts`), `errorView` (`src/ui/feedback.ts`), `cx` (`src/theme.ts`) — có sẵn ở HEAD
 - Produces:
   - `memoByKey<T>(load: (key: string) => Promise<T>, max?: number): (key: string) => Promise<T>`; `MEMO_MAX = 20`
-  - `svg<K extends keyof SVGElementTagNameMap>(tag: K, attrs?: Record<string, string | number>, ...children: (Node | string)[]): SVGElementTagNameMap[K]`
   - `reducedMotion(): boolean`, `fmt(n: number, digits?: number): string`
   - `renderExplain(host: HTMLElement, plan: Plan): void`, `renderFlow(host: HTMLElement, plan: Plan): void`
   - `interface VizDeps { db: DbClient; show(id: string): void; editorSql(): string }`
-  - `registerVizTabs(deps: VizDeps): void` — Task 2 đăng ký `explain` (query, 20, `newAt: 'ch3-01'`) và `flow` (query, 30)
-  - khóa i18n: `viz.*`, `plan.*`, `explain.*`, `flow.*`, `tab.explain`, `tab.flow`
+  - `lastRunSql(host, deps)`, `load(host, loading, data, draw)` (cục bộ trong `vizTabs.ts`, Task 4–5 dùng lại)
+  - `registerVizTabs(deps: VizDeps): void` — Task 2 đăng ký `explain` (query, 20, không `newAt`: L35, Plan 4 thêm khi có ticket ch11) và `flow` (query, 30)
+  - khóa i18n: `viz.rows`, `viz.explaining`, `plan.*`, `explain.*`, `flow.*`, `tab.explain`, `tab.flow`
 
 - [ ] **Step 1: Viết test cho cache**
 
@@ -590,24 +593,12 @@ export function memoByKey<T>(load: (key: string) => Promise<T>, max = MEMO_MAX):
 Run: `npx vitest run tests/memo.test.ts && npx tsc --noEmit`
 Expected: PASS.
 
-- [ ] **Step 5: Thêm `svg()`, `reducedMotion()`, `fmt()` vào cuối `src/ui/dom.ts`**
+- [ ] **Step 5: Thêm `reducedMotion()`, `fmt()` vào cuối `src/ui/dom.ts`**
 
-Plan 1 Task 10 chỉ có `h`, `nodes`, `richText`, `byId` trong file này. Thêm `import { locale } from '../i18n';` vào đầu file.
+File này hiện có `h`, `nodes`, `richText`, `byId`. SVG dùng `s()` có sẵn trong `src/ui/svg.ts`, không thêm builder thứ hai. Thêm `import { locale } from '../i18n';` vào đầu file.
 
 ```ts
-const SVG_NS = 'http://www.w3.org/2000/svg';
-
-export function svg<K extends keyof SVGElementTagNameMap>(
-  tag: K,
-  attrs: Record<string, string | number> = {},
-  ...children: (Node | string)[]
-): SVGElementTagNameMap[K] {
-  const el = document.createElementNS(SVG_NS, tag);
-  for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, String(v));
-  el.append(...children);
-  return el;
-}
-
+/** `<animateMotion>` ignores the CSS reduced-motion rule in style.css, so SVG animations check this. */
 export function reducedMotion(): boolean {
   return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 }
@@ -618,16 +609,11 @@ export const fmt = (n: number, digits = 2): string => n.toLocaleString(locale(),
 
 - [ ] **Step 6: Thêm khóa i18n**
 
-Thêm vào object `vi` trong `src/i18n/vi.ts` (Plan 1 chỉ khai `tab.result`, `tab.columns`, `tab.list`, `tab.new`, nên không trùng):
+Thêm vào object `vi` trong `src/i18n/vi.ts`, ngay trên dòng `} satisfies Record<string, Msg>;` (HEAD chỉ có `tab.list`, `tab.result`, `tab.columns`, `tab.new` trong nhóm `tab.*` và chưa có `viz.*`/`plan.*`/`explain.*`/`flow.*`, nên không trùng). Câu "chạy trước" và "SQL đã thay đổi" dùng lại `res.runFirst`/`res.stale` (có `{mod}`); lỗi timeout/khởi động lại dùng `errorView()`, nên không thêm khóa cho chúng:
 ```ts
   'tab.explain': 'EXPLAIN',
   'tab.flow': 'Luồng dữ liệu',
-  'viz.runFirst': 'Chạy query trước (Ctrl+Enter).',
-  'viz.stale': 'SQL đã thay đổi — Ctrl+Enter để cập nhật.',
   'viz.rows': '{n} dòng',
-  'viz.timeout': 'Quá {s} giây nên đã dừng. Database đang được nạp lại.',
-  'viz.restarted': 'Database vừa khởi động lại, mở lại tab này để thử lại.',
-  'viz.dbFailed': 'Database không khởi động được.',
   'viz.explaining': 'Đang chạy EXPLAIN ANALYZE…',
   'explain.intro': 'Giai đoạn Optimize chọn kế hoạch dưới đây; Execute chạy hết trong {ms} ms. Thanh xanh = số dòng node xử lý. Bấm vào một node để đọc giải thích.',
   'explain.heavy': 'Đọc nhiều dòng',
@@ -644,16 +630,11 @@ Thêm vào object `vi` trong `src/i18n/vi.ts` (Plan 1 chỉ khai `tab.result`, `
   'flow.intro': 'Dữ liệu chảy từ trái (đọc bảng) sang phải (kết quả). Đường càng dày càng nhiều dòng — số liệu thật từ EXPLAIN ANALYZE.',
 ```
 
-Thêm vào object `en` trong `src/i18n/en.ts`:
+Thêm vào object `en` trong `src/i18n/en.ts`, ngay trên dòng `};` cuối file (`count` là helper có sẵn đầu file, nhận số):
 ```ts
   'tab.explain': 'EXPLAIN',
   'tab.flow': 'Data flow',
-  'viz.runFirst': 'Run a query first (Ctrl+Enter).',
-  'viz.stale': 'The SQL has changed — press Ctrl+Enter to update.',
-  'viz.rows': (p) => `${p.n} ${p.n === 1 || p.n === '1' ? 'row' : 'rows'}`,
-  'viz.timeout': 'Stopped after {s} seconds. The database is reloading.',
-  'viz.restarted': 'The database just restarted; open this tab again to retry.',
-  'viz.dbFailed': 'The database failed to start.',
+  'viz.rows': count('row', 'rows'),
   'viz.explaining': 'Running EXPLAIN ANALYZE…',
   'explain.intro': 'The Optimize stage chose the plan below; Execute finished in {ms} ms. Blue bar = rows the node processed. Click a node to read what it does.',
   'explain.heavy': 'Reads many rows',
@@ -663,18 +644,19 @@ Thêm vào object `en` trong `src/i18n/en.ts`:
   'plan.hashCond': 'Join condition: {v}',
   'plan.joinFilter': 'Join filter: {v}',
   'plan.filter': 'Filter: {v}',
-  'plan.removed': ' — removed {n} rows',
+  'plan.removed': (p) => ` — removed ${count('row', 'rows')(p)}`,
   'plan.groupKey': 'Group key: {v}',
   'plan.sortKey': 'Sort key: {v}',
   'flow.aria': 'Data flow through the execution plan',
   'flow.intro': 'Data flows from the left (table reads) to the right (result). Thicker lines carry more rows — real numbers from EXPLAIN ANALYZE.',
 ```
-`tab.explain` giống nhau ở hai ngôn ngữ; khóa này đã nằm trong `SAME_OK` của `tests/i18n.test.ts` (Plan 1 Task 10).
+`tab.explain` giống nhau ở hai ngôn ngữ; khóa này đã nằm trong `SAME_OK` của `tests/i18n.test.ts`. Mọi `{n}` ở trên nhận **số** (`t()` tự định dạng `25.677` / `25,677`; `count()` của EN cần số để chọn số ít/nhiều).
 
 - [ ] **Step 7: Viết `src/ui/explainView.ts`**
 
 ```ts
 import { getLang, t, type Key } from '../i18n';
+import { cx } from '../theme';
 import { isHeavyScan, nodeExplanation, type Plan, type PlanDetail } from '../viz/plan';
 import { fmt, h } from './dom';
 
@@ -689,24 +671,26 @@ const DETAIL_KEY: Record<PlanDetail['kind'], Key> = {
 };
 
 const detailText = (d: PlanDetail): string =>
-  t(DETAIL_KEY[d.kind], { v: d.text }) + (d.removed ? t('plan.removed', { n: fmt(d.removed) }) : '');
+  t(DETAIL_KEY[d.kind], { v: d.text }) + (d.removed ? t('plan.removed', { n: d.removed }) : '');
 
 export function renderExplain(host: HTMLElement, plan: Plan): void {
   const max = Math.max(1, ...plan.nodes.map((n) => n.scanned));
   const lang = getLang();
   host.append(
     h('p', { class: 'muted' }, t('explain.intro', { ms: fmt(plan.executionMs, 1) })),
-    h('div', { class: 'plan' }, ...plan.nodes.map((n) =>
-      h('details', { class: `plan-node${isHeavyScan(n) ? ' heavy' : ''}`, style: `margin-left:${n.depth * 20}px` },
-        h('summary', {},
-          h('span', { class: 'plan-label' }, n.label),
-          h('span', { class: 'meter', 'aria-hidden': 'true' }, h('i', { style: `width:${Math.max(2, (n.scanned / max) * 100)}%` })),
-          h('span', { class: 'plan-rows' }, t('viz.rows', { n: fmt(n.rows) })),
-          h('span', { class: 'muted' }, `${fmt(n.ms, 2)} ms`),
+    h('div', { class: 'space-y-1' }, ...plan.nodes.map((n) =>
+      // Indent is per node data, so it is an inline style, not a class.
+      h('details', { class: cx('rounded-md bg-code px-2 py-1 ring-1', isHeavyScan(n) ? 'ring-warn' : 'ring-line'), style: `margin-left:${n.depth * 20}px` },
+        h('summary', { class: 'flex cursor-pointer flex-wrap items-center gap-2' },
+          h('span', { class: 'min-w-[200px] font-semibold' }, n.label),
+          h('span', { class: 'h-2 min-w-20 flex-1 overflow-hidden rounded bg-line', 'aria-hidden': 'true' },
+            h('i', { class: 'block h-full bg-accent', style: `width:${Math.max(2, (n.scanned / max) * 100)}%` })),
+          h('span', { class: 'min-w-[90px] tabular-nums' }, t('viz.rows', { n: n.rows })),
+          h('span', { class: 'muted tabular-nums' }, `${fmt(n.ms, 2)} ms`),
           isHeavyScan(n) ? h('span', { class: 'warn', role: 'img', 'aria-label': t('explain.heavy'), title: t('explain.heavy') }, '⚠') : null),
-        h('p', {}, nodeExplanation(n.type, lang)),
-        n.estRows !== n.rows ? h('p', { class: 'muted' }, t('explain.estimate', { est: fmt(n.estRows), actual: fmt(n.rows) })) : null,
-        ...n.detail.map((d) => h('p', {}, h('code', {}, detailText(d))))))),
+        h('p', { class: 'my-1' }, nodeExplanation(n.type, lang)),
+        n.estRows !== n.rows ? h('p', { class: 'muted my-1' }, t('explain.estimate', { est: n.estRows, actual: n.rows })) : null,
+        ...n.detail.map((d) => h('p', { class: 'my-1' }, h('code', {}, detailText(d))))))),
   );
 }
 ```
@@ -716,7 +700,8 @@ export function renderExplain(host: HTMLElement, plan: Plan): void {
 ```ts
 import { t } from '../i18n';
 import type { Plan, PlanNode } from '../viz/plan';
-import { fmt, h, reducedMotion, svg } from './dom';
+import { h, reducedMotion } from './dom';
+import { s } from './svg';
 
 const COL = 210;
 const ROW = 64;
@@ -743,7 +728,7 @@ export function renderFlow(host: HTMLElement, plan: Plan): void {
   const height = Math.max(1, leaf) * ROW;
   const animate = !reducedMotion();
 
-  const root = svg('svg', { viewBox: `-10 -10 ${width} ${height + 10}`, role: 'img', 'aria-label': t('flow.aria'), class: 'flow' });
+  const root = s('svg', { viewBox: `-10 -10 ${width} ${height + 10}`, role: 'img', 'aria-label': t('flow.aria'), class: 'h-auto w-full min-w-[480px]' });
   for (const n of nodes.slice(1)) {
     const p = nodes[n.parent!];
     const x1 = x(n) + BOX_W;
@@ -752,24 +737,24 @@ export function renderFlow(host: HTMLElement, plan: Plan): void {
     const y2 = y.get(p.id)! + BOX_H / 2;
     const d = `M${x1},${y1} C${(x1 + x2) / 2},${y1} ${(x1 + x2) / 2},${y2} ${x2},${y2}`;
     const w = 1.5 + (8 * Math.log10(n.rows + 1)) / Math.log10(maxRows + 1);
-    root.append(svg('path', { d, class: 'flow-edge', 'stroke-width': w.toFixed(1) }));
+    root.append(s('path', { d, class: 'fill-none stroke-sky-300 dark:stroke-sky-800', 'stroke-width': w.toFixed(1) }));
     if (animate && n.rows > 0) {
-      root.append(svg('circle', { r: 4, class: 'flow-dot' },
-        svg('animateMotion', { dur: '1.6s', repeatCount: 'indefinite', path: d, begin: `${(n.id % 4) * 0.4}s` })));
+      root.append(s('circle', { r: 4, class: 'fill-accent' },
+        s('animateMotion', { dur: '1.6s', repeatCount: 'indefinite', path: d, begin: `${(n.id % 4) * 0.4}s` })));
     }
   }
   for (const n of nodes) {
     const label = n.label.length > 24 ? `${n.label.slice(0, 23)}…` : n.label;
-    const rows = t('viz.rows', { n: fmt(n.rows) });
-    root.append(svg('g', { transform: `translate(${x(n)},${y.get(n.id)})` },
-      svg('title', {}, `${n.label}: ${rows}`),
-      svg('rect', { width: BOX_W, height: BOX_H, rx: 6, class: 'flow-box' }),
-      svg('text', { x: 8, y: 16, class: 'flow-label' }, label),
-      svg('text', { x: 8, y: 32, class: 'flow-rows' }, rows)));
+    const rows = t('viz.rows', { n: n.rows });
+    root.append(s('g', { transform: `translate(${x(n)},${y.get(n.id)})` },
+      s('title', {}, `${n.label}: ${rows}`),
+      s('rect', { width: BOX_W, height: BOX_H, rx: 6, class: 'fill-panel stroke-line' }),
+      s('text', { x: 8, y: 16, class: 'fill-ink text-xs font-semibold' }, label),
+      s('text', { x: 8, y: 32, class: 'fill-ink text-xs tabular-nums' }, rows)));
   }
   host.append(
     h('p', { class: 'muted' }, t('flow.intro')),
-    h('div', { class: 'flow-wrap' }, root),
+    h('div', { class: 'overflow-auto' }, root),
   );
 }
 ```
@@ -777,14 +762,14 @@ export function renderFlow(host: HTMLElement, plan: Plan): void {
 - [ ] **Step 9: Viết `src/ui/vizTabs.ts`**
 
 ```ts
-import { DbFailedError, DbRestartError, QueryTimeoutError, type DbClient } from '../db/client';
-import { errorMessage } from '../grader';
+import type { DbClient } from '../db/client';
 import { t } from '../i18n';
 import { app } from '../state';
 import { memoByKey } from '../viz/memo';
 import { flattenPlan, type Plan } from '../viz/plan';
 import { h } from './dom';
 import { renderExplain } from './explainView';
+import { errorView } from './feedback';
 import { renderFlow } from './flowView';
 import { registerTab } from './tabs';
 
@@ -792,25 +777,18 @@ export interface VizDeps {
   db: DbClient;
   /** Switches the bottom panel to a tab (Panel.show). */
   show(id: string): void;
-  /** Current editor text — only used to flag that lastRun is out of date. */
+  /** What Ctrl+Enter would run now — only used to flag that lastRun is out of date. */
   editorSql(): string;
 }
 
-function errorText(e: unknown): string {
-  if (e instanceof QueryTimeoutError) return t('viz.timeout', { s: e.timeoutMs / 1000 });
-  if (e instanceof DbRestartError) return t('viz.restarted');
-  if (e instanceof DbFailedError) return `${t('viz.dbFailed')}\n${e.detail}`;
-  return errorMessage(e); // Postgres' own message, never translated
-}
-
-/** Every viz tab describes the last run, not the editor. Returns its SQL, or undefined after drawing the empty state. */
+/** Every viz tab describes the last run, not the editor (same strip as the Result tab). Returns its SQL, or undefined after drawing the empty state. */
 function lastRunSql(host: HTMLElement, deps: VizDeps): string | undefined {
   const run = app.lastRun;
   if (!run) {
-    host.append(h('p', { class: 'muted' }, t('viz.runFirst')));
+    host.append(h('p', { class: 'muted' }, t('res.runFirst')));
     return undefined;
   }
-  if (deps.editorSql().trim() !== run.sql.trim()) host.append(h('p', { class: 'stale', role: 'note' }, t('viz.stale')));
+  if (deps.editorSql().trim() !== run.sql.trim()) host.append(h('p', { class: 'stale', role: 'note' }, t('res.stale')));
   return run.sql;
 }
 
@@ -823,7 +801,8 @@ async function load<T>(host: HTMLElement, loading: string, data: Promise<T>, dra
     body.replaceChildren();
     draw(body, value);
   } catch (e) {
-    body.replaceChildren(h('pre', { class: 'error' }, errorText(e)));
+    // Postgres' message unchanged + teaching note; timeout/restart/DB failure translated by class (src/ui/feedback.ts).
+    body.replaceChildren(errorView(e));
   }
 }
 
@@ -833,7 +812,7 @@ function registerPlanTabs(deps: VizDeps): void {
     const sql = lastRunSql(host, deps);
     return sql === undefined ? undefined : load(host, t('viz.explaining'), planFor(sql), draw);
   };
-  registerTab({ id: 'explain', label: 'tab.explain', group: 'query', order: 20, newAt: 'ch3-01', render: withPlan(renderExplain) });
+  registerTab({ id: 'explain', label: 'tab.explain', group: 'query', order: 20, render: withPlan(renderExplain) }); // newAt: Plan 4 (EXPLAIN is taught in ch11, L30/L35)
   registerTab({ id: 'flow', label: 'tab.flow', group: 'query', order: 30, render: withPlan(renderFlow) });
 }
 
@@ -849,60 +828,44 @@ export function registerVizTabs(deps: VizDeps): void {
 ```ts
 import { registerVizTabs } from './ui/vizTabs';
 ```
-và ngay sau dòng `const db = new DbClient(…);`, **trước** chỗ panel được tạo, thêm:
+và thay dòng
 ```ts
+registerCoreTabs(() => work.currentSql());
+```
+(ngay trước `const panel = createPanel(byId('panel'));`) bằng:
+```ts
+registerCoreTabs(() => work.currentSql());
 registerVizTabs({ db, show: (id) => panel.show(id), editorSql: () => work.currentSql() });
 ```
 (`panel` và `work` chỉ được đọc khi tab render, lúc đó cả hai đã được tạo.)
 
-2. `src/ui/work.ts` — trong `mountWork`, ngay sau khi tạo `runBtn`, thêm:
+2. `src/ui/work.ts` — trong `mountWork`, ngay sau dòng `const runBtn = h('button', { type: 'button', onclick: () => void run() });`, thêm:
 ```ts
   // EXPLAIN always describes what was just run: run the editor SQL first, then open the tab.
   const explainBtn = h('button', { type: 'button', onclick: () => void run().then(() => deps.panel.show('explain')) }, t('tab.explain'));
 ```
-và trong hàng `h('div', { class: 'actions' }, runBtn, …)` chèn `explainBtn` ngay sau `runBtn`. Nhãn `EXPLAIN` giống nhau ở hai ngôn ngữ nên `relabel()` không cần đổi nút này.
+và trong `h('div', { class: 'actions' }, runBtn, formatBtn, submitBtn)` (nằm trong div bọc dính đáy) chèn `explainBtn` ngay sau `runBtn`. Nhãn `EXPLAIN` giống nhau ở hai ngôn ngữ nên `setButtons()`/`relabel()` không cần đổi nút này. `run()` tự bỏ qua khi `busy`; khi lần chạy lỗi, tab EXPLAIN hiện lỗi đó (cùng SQL).
 
-- [ ] **Step 11: Thêm CSS vào cuối `src/style.css`**
+- [ ] **Step 11: Không thêm CSS**
 
-```css
-:root {
-  --sql-bg: #1e1e1e; --sql-text: #d4d4d4; --sql-dim: #9a9aa0; --sql-mark: #264f78; --on-dark: #ffffff;
-  --edge: #9cc3e8; --lane-closed: #a9b4bf;
-}
-@media (prefers-color-scheme: dark) {
-  :root { --edge: #2f5d8a; --lane-closed: #59636d; }
-}
-.plan-node { border: 1px solid var(--border); border-radius: 6px; margin: 4px 0; padding: 4px 8px; background: var(--code); }
-.plan-node summary { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; cursor: pointer; }
-.plan-node.heavy { border-color: var(--warn); }
-.plan-label { font-weight: 600; min-width: 200px; }
-.plan-rows { min-width: 90px; }
-.meter { flex: 1; min-width: 80px; height: 8px; background: var(--border); border-radius: 4px; overflow: hidden; }
-.meter i { display: block; height: 100%; background: var(--accent); }
-.flow-wrap { overflow: auto; }
-.flow { min-width: 480px; width: 100%; height: auto; }
-.flow-edge { fill: none; stroke: var(--edge); }
-.flow-dot { fill: var(--accent); }
-.flow-box { fill: var(--panel); stroke: var(--border); }
-.flow-label { font: 600 12px system-ui, sans-serif; fill: var(--text); }
-.flow-rows { font: 12px system-ui, sans-serif; fill: var(--accent); }
-```
+Mọi class ở Step 7–9 là utility Tailwind (`@source "./**/*.ts"` trong `src/style.css` đã quét `src/ui/*.ts`) hoặc class dùng chung có sẵn trong `@layer components` (`.muted`, `.stale`, `.warn`, `.error`). Không sửa `src/style.css`.
 
 - [ ] **Step 12: Kiểm tra kiểu, build và kiểm thủ công**
 
 Run: `npx vitest run && npx tsc --noEmit && npm run build`, rồi `npm run dev`.
 Kiểm:
-1. Thanh tab có EXPLAIN và Luồng dữ liệu trong nhóm giữa. Mở EXPLAIN khi chưa chạy gì → "Chạy query trước (Ctrl+Enter)."
+1. Thanh tab có EXPLAIN và Luồng dữ liệu trong nhóm giữa. Mở EXPLAIN khi chưa chạy gì → "Chạy query (Ctrl+Enter) để xem kết quả." (`res.runFirst`; trên macOS là ⌘).
 2. Gõ query TEU theo hãng tàu ở test Task 1 → bấm nút **EXPLAIN** cạnh nút Chạy → query chạy (tab Kết quả có dữ liệu nếu mở) rồi tab EXPLAIN hiện cây thụt lề; node `Seq Scan containers` có ⚠ và `25.677 dòng`; bấm node → giải thích tiếng Việt, dòng `Lọc: … — bỏ N dòng`.
 3. Sang tab **Luồng dữ liệu** → sơ đồ trái→phải, đường dày ở các scan lớn, chấm chạy dọc cạnh. Tab hiện ngay, không qua dòng "Đang chạy EXPLAIN ANALYZE…" (đã cache theo SQL).
 4. Sửa một ký tự trong editor (không chạy) → mở lại tab EXPLAIN → dải "SQL đã thay đổi — Ctrl+Enter để cập nhật" ở trên, cây vẫn là của SQL cũ. Ctrl+Enter → dải biến mất, cây theo SQL mới.
 5. Bấm `EN` trên topbar → tab EXPLAIN vẽ lại bằng tiếng Anh, số thành `25,677 rows`, không chạy lại EXPLAIN; editor giữ nguyên con trỏ.
-6. Bật "Reduce motion" trong hệ điều hành → chấm không chạy. Query lỗi cú pháp → Chạy → tab EXPLAIN hiện lỗi gốc Postgres.
+6. Bật "Reduce motion" trong hệ điều hành → chấm không chạy. Query lỗi cú pháp → Chạy → tab EXPLAIN hiện lỗi gốc Postgres kèm dòng giải thích (như tab Kết quả, qua `errorView`).
+7. Bật dark mode → hộp node, cạnh luồng và chữ đều đọc được (token `bg-code`, `fill-panel`, `stroke-sky-800`…).
 
 - [ ] **Step 13: Commit**
 
 ```bash
-git add src/viz/memo.ts src/ui src/main.ts src/i18n src/style.css tests/memo.test.ts
+git add src/viz/memo.ts src/ui src/main.ts src/i18n tests/memo.test.ts
 git commit -m "feat: EXPLAIN tree and data-flow tabs from the last run"
 ```
 
@@ -1232,10 +1195,10 @@ git commit -m "feat: logical query order steps via Postgres parser"
 
 **Files:**
 - Create: `src/ui/stepsView.ts`
-- Modify: `src/ui/vizTabs.ts`, `src/i18n/vi.ts`, `src/i18n/en.ts`, `src/style.css`
+- Modify: `src/ui/vizTabs.ts`, `src/i18n/vi.ts`, `src/i18n/en.ts`
 
 **Interfaces:**
-- Consumes: `StepsResult`, `StepsFailure`, `STEP_LABELS`, `STEP_HELP`, `StepKey` (Task 3); `DbClient.steps` (Task 1); `memoByKey`, `registerVizTabs`, `lastRunSql`, `load` (Task 2); `renderResult` (Plan 1); `fmt`, `h` (Task 2); `t`, `getLang`, `Key` (Plan 1)
+- Consumes: `StepsResult`, `StepsFailure`, `STEP_LABELS`, `STEP_HELP`, `StepKey` (Task 3); `DbClient.steps` (Task 1); `memoByKey`, `registerVizTabs`, `lastRunSql`, `load` (Task 2); `renderResult` (`src/ui/resultTable.ts`); `h`, `fmt` (`src/ui/dom.ts`, `fmt` từ Task 2); `cx` (`src/theme.ts`); `t`, `getLang`, `Key` (`src/i18n`)
 - Produces:
   - `renderSteps(host: HTMLElement, sql: string, result: StepsResult, goExplain: () => void): void`
   - tab `steps` (query, 10) với cache `stepsFor(sql)` trong `vizTabs.ts`
@@ -1291,7 +1254,7 @@ git commit -m "feat: logical query order steps via Postgres parser"
   'steps.pipe': 'Execution steps',
   'steps.unused': 'not used',
   'steps.error': 'error',
-  'steps.groups': (p) => `${p.n} ${p.n === 1 || p.n === '1' ? 'group' : 'groups'}`,
+  'steps.groups': count('group', 'groups'),
   'steps.title': 'Step {i} · {label}',
   'steps.before': 'Before',
   'steps.after': 'After',
@@ -1303,6 +1266,7 @@ git commit -m "feat: logical query order steps via Postgres parser"
 
 ```ts
 import { getLang, t, type Key } from '../i18n';
+import { cx } from '../theme';
 import { STEP_HELP, STEP_LABELS, type StepKey, type StepsFailure, type StepsResult } from '../viz/steps';
 import { fmt, h } from './dom';
 import { renderResult } from './resultTable';
@@ -1311,14 +1275,19 @@ const STAGES: Key[] = ['steps.stage1', 'steps.stage2', 'steps.stage3', 'steps.st
 const REASON: Record<StepsFailure, Key> = {
   syntax: 'steps.syntax', multi: 'steps.multi', notSelect: 'steps.notSelect', withUnion: 'steps.withUnion', window: 'steps.window',
 };
+const PILL = 'rounded-full px-2.5 py-0.5';
+/** Execute is the stage this tab shows: dark pill (white on --bar ≥ 10:1 in both themes). */
+const STAGE_ON = 'bg-[var(--bar)] text-white';
+const STAGE_OFF = 'bg-code ring-1 ring-line';
+const STEP_BTN = 'flex min-w-24 flex-col items-start';
 
 export function renderSteps(host: HTMLElement, sql: string, result: StepsResult, goExplain: () => void): void {
   const labels = STEP_LABELS[getLang()];
   const help = STEP_HELP[getLang()];
-  const stages = h('div', { class: 'stages' }, ...STAGES.map((key, i) =>
+  const stages = h('div', { class: 'mb-2 flex flex-wrap gap-1.5 text-sm' }, ...STAGES.map((key, i) =>
     i === 2
-      ? h('button', { type: 'button', class: 'stage', onclick: goExplain, title: t('steps.toExplain') }, `${t(key)} → EXPLAIN`)
-      : h('span', { class: `stage${i === 3 ? ' on' : ''}` }, t(key))));
+      ? h('button', { type: 'button', class: PILL, onclick: goExplain, title: t('steps.toExplain') }, `${t(key)} → EXPLAIN`)
+      : h('span', { class: cx(PILL, i === 3 ? STAGE_ON : STAGE_OFF) }, t(key))));
   if (!result.ok) {
     host.append(stages, h('p', { class: 'muted' }, t(REASON[result.reason], { msg: result.detail ?? '' })));
     if (result.reason === 'withUnion' || result.reason === 'window') {
@@ -1331,53 +1300,58 @@ export function renderSteps(host: HTMLElement, sql: string, result: StepsResult,
   let current = steps.indexOf(live[1] ?? live[0] ?? steps[0]);
   let timer: number | undefined;
 
-  const pipe = h('div', { class: 'pipe', role: 'group', 'aria-label': t('steps.pipe') });
-  const detail = h('div', { class: 'step-detail' });
+  const pipe = h('div', { class: 'my-2 flex flex-wrap items-center gap-1.5', role: 'group', 'aria-label': t('steps.pipe') });
+  const detail = h('div');
   const playBtn = h('button', { type: 'button' }, t('steps.play'));
 
   const prevCount = (i: number) => {
     for (let j = i - 1; j >= 0; j--) if (steps[j].count !== undefined) return steps[j].count!;
     return undefined;
   };
-  const unit = (key: StepKey, n: number) =>
-    key === 'group' || key === 'having' ? t('steps.groups', { n: fmt(n) }) : t('viz.rows', { n: fmt(n) });
+  const unit = (key: StepKey, n: number) => t(key === 'group' || key === 'having' ? 'steps.groups' : 'viz.rows', { n });
 
   function highlighted(key: StepKey): HTMLElement {
     const r = ranges[key];
     if (!r) return h('pre', { class: 'sql' }, sql);
+    // The rest of the SQL is grey text, not faded (no opacity).
     return h('pre', { class: 'sql' },
-      h('span', { class: 'dim' }, sql.slice(0, r[0])), h('mark', {}, sql.slice(r[0], r[1])), h('span', { class: 'dim' }, sql.slice(r[1])));
+      h('span', { class: 'text-muted' }, sql.slice(0, r[0])),
+      h('mark', { class: 'rounded-sm bg-accent-soft text-ink' }, sql.slice(r[0], r[1])),
+      h('span', { class: 'text-muted' }, sql.slice(r[1])));
   }
 
   function draw(): void {
     pipe.replaceChildren(...steps.flatMap((s, i) => [
-      i ? h('span', { class: 'arrow', 'aria-hidden': 'true' }, '→') : null,
+      i ? h('span', { class: 'text-muted', 'aria-hidden': 'true' }, '→') : null,
       h('button', {
         type: 'button',
-        class: `st${i === current ? ' on' : ''}${s.skipped ? ' skip' : ''}${s.error ? ' err' : ''}`,
+        class: cx(STEP_BTN, i === current ? 'border-accent bg-accent-soft' : 'bg-code', s.skipped && 'border-dashed text-muted', s.error && 'border-bad'),
         'aria-current': i === current ? 'step' : false,
         onclick: () => { stop(); current = i; draw(); },
       },
         h('b', {}, labels[s.key]),
         s.skipped ? h('span', {}, t('steps.unused'))
           : s.error ? h('span', {}, t('steps.error'))
-          : h('span', { class: 'n' }, unit(s.key, s.count!))),
+          : h('span', { class: 'text-base font-bold tabular-nums' }, unit(s.key, s.count!))),
     ].filter((x): x is HTMLElement => x !== null)));
 
     const s = steps[current];
     const before = prevCount(current);
+    const bar = (label: Key, n: number, width: number) =>
+      h('div', { class: 'grid grid-cols-[48px_1fr_80px] items-center gap-2 text-sm' },
+        h('span', {}, t(label)), h('i', { class: 'block h-2.5 rounded bg-accent', style: `width:${width}%` }), h('span', { class: 'text-right tabular-nums' }, fmt(n)));
     detail.replaceChildren(
       h('h3', {}, t('steps.title', { i: current + 1, label: labels[s.key] })),
       h('p', {}, help[s.key]),
       s.count !== undefined && before !== undefined
-        ? h('div', { class: 'compare', 'aria-label': `${fmt(before)} → ${fmt(s.count)}` },
-            h('div', { class: 'bar-row' }, h('span', {}, t('steps.before')), h('i', { style: 'width:100%' }), h('span', {}, fmt(before))),
-            h('div', { class: 'bar-row' }, h('span', {}, t('steps.after')), h('i', { style: `width:${before ? Math.max(1, (s.count / before) * 100) : 100}%` }), h('span', {}, fmt(s.count))))
+        ? h('div', { class: 'my-2 max-w-[520px]' },
+            bar('steps.before', before, 100),
+            bar('steps.after', s.count, before ? Math.max(1, (s.count / before) * 100) : 100))
         : '',
       highlighted(s.key),
       s.error ? h('pre', { class: 'error' }, s.error) : '',
       s.sample ? h('div', {}, h('p', { class: 'muted' }, t('steps.sample')), renderResult(s.sample)) : '',
-      s.sql ? h('details', {}, h('summary', {}, t('steps.sql')), h('pre', { class: 'sql' }, s.sql)) : '',
+      s.sql ? h('details', { class: 'mt-2' }, h('summary', { class: 'cursor-pointer' }, t('steps.sql')), h('pre', { class: 'sql' }, s.sql)) : '',
     );
   }
 
@@ -1430,27 +1404,9 @@ function registerStepsTab(deps: VizDeps): void {
 ```
 3. Trong `registerVizTabs`, thêm dòng `registerStepsTab(deps);` ngay **trước** `registerPlanTabs(deps);`.
 
-- [ ] **Step 4: Thêm CSS vào cuối `src/style.css`**
+- [ ] **Step 4: Không thêm CSS**
 
-```css
-.stages { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; font-size: 13px; }
-.stage { padding: 3px 10px; border-radius: 12px; background: var(--code); border: 1px solid var(--border); }
-.stage.on { background: var(--bar); color: var(--on-dark); }
-.pipe { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 8px 0; }
-.st { display: flex; flex-direction: column; align-items: flex-start; min-width: 96px; background: var(--code); }
-.st .n { font-size: 16px; font-weight: 700; color: var(--accent); }
-.st.on { border-color: var(--accent); background: var(--accent-soft); }
-.st.skip { border-style: dashed; color: var(--muted); }
-.st.err { border-color: var(--bad); }
-.arrow { color: var(--muted); }
-pre.sql { background: var(--sql-bg); color: var(--sql-text); padding: 8px; border-radius: 6px; font-size: 12px; overflow: auto; white-space: pre-wrap; }
-pre.sql mark { background: var(--sql-mark); color: var(--on-dark); border-radius: 2px; }
-pre.sql .dim { color: var(--sql-dim); }
-.compare { margin: 8px 0; max-width: 520px; }
-.bar-row { display: grid; grid-template-columns: 48px 1fr 80px; gap: 8px; align-items: center; font-size: 13px; }
-.bar-row i { display: block; height: 10px; background: var(--accent); border-radius: 4px; }
-@media (prefers-reduced-motion: no-preference) { .bar-row i { transition: width 0.4s ease; } }
-```
+Class ở Step 2 là utility Tailwind hoặc class dùng chung (`pre.sql`, `.muted`, `.error`, `.actions`). **Không** định nghĩa lại `pre.sql` (Recap và các plan khác dùng chung): đoạn đang xét tô bằng `mark` `bg-accent-soft`, phần còn lại `text-muted` (xám, không mờ).
 
 - [ ] **Step 5: Kiểm tra kiểu, build, kiểm thủ công**
 
@@ -1465,7 +1421,7 @@ Run: `npx vitest run && npx tsc --noEmit && npm run build` — xác nhận `dist
 - [ ] **Step 6: Commit**
 
 ```bash
-git add src/ui/stepsView.ts src/ui/vizTabs.ts src/i18n src/style.css
+git add src/ui/stepsView.ts src/ui/vizTabs.ts src/i18n
 git commit -m "feat: logical execution order tab"
 ```
 
@@ -1475,15 +1431,15 @@ git commit -m "feat: logical execution order tab"
 
 **Files:**
 - Create: `src/viz/chart.ts`, `src/ui/chartView.ts`
-- Modify: `src/ui/vizTabs.ts`, `src/i18n/vi.ts`, `src/i18n/en.ts`, `src/style.css`
+- Modify: `src/ui/vizTabs.ts`, `src/i18n/vi.ts`, `src/i18n/en.ts`
 - Test: `tests/chart.test.ts`
 
 **Interfaces:**
-- Consumes: `QueryResult` (Plan 1); `svg`, `fmt`, `h`, `lastRunSql`, `registerVizTabs` (Task 2); `formatCell` (Plan 1); `app.lastRun`, `t` (Plan 1); `runner` (tests)
+- Consumes: `QueryResult` (`src/db/run.ts`); `fmt`, `lastRunSql`, `registerVizTabs` (Task 2); `h` (`src/ui/dom.ts`), `s` (`src/ui/svg.ts`), `formatCell` (`src/ui/resultTable.ts`); `app.lastRun`, `app.selectedId`, `app.tickets` (`src/state.ts`); `chapterColor`, `type ChapterColor` (`src/theme.ts`); `t`; `runner` (tests)
 - Produces:
   - `type ChartSpec = { kind: 'bar' | 'line'; label: number; values: number[] }`
   - `MAX_POINTS = 60`, `chartSpec(r: QueryResult): ChartSpec | null`
-  - `renderChart(host: HTMLElement, r: QueryResult): void`
+  - `renderChart(host: HTMLElement, r: QueryResult, color: ChapterColor): void` — cột/đường tô màu chương của ticket đang mở (`color.fill`/`color.stroke`; `bar` là class `bg-*`, không tô được SVG)
   - tab `chart` (output, 20, `newAt: 'ch2-01'`); khóa i18n `tab.chart`, `chart.*`
 
 - [ ] **Step 1: Viết test**
@@ -1579,31 +1535,36 @@ Expected: PASS.
 ```ts
 import type { QueryResult } from '../db/run';
 import { t } from '../i18n';
+import { cx, type ChapterColor } from '../theme';
 import { chartSpec, MAX_POINTS, type ChartSpec } from '../viz/chart';
-import { fmt, h, svg } from './dom';
+import { fmt, h } from './dom';
 import { formatCell } from './resultTable';
+import { s } from './svg';
 
 const W = 720;
+const SVG = 'h-auto w-full max-w-[900px]';
+const LABEL = 'fill-muted text-xs';
+const VALUE = 'fill-ink text-xs tabular-nums';
 
-function bars(r: QueryResult, spec: ChartSpec, col: number): SVGSVGElement {
+function bars(r: QueryResult, spec: ChartSpec, col: number, color: ChapterColor): SVGSVGElement {
   const rowH = 24;
   const labelW = 200;
   const vals = r.rows.map((row) => Number(row[col] ?? 0));
   const max = Math.max(1, ...vals.map(Math.abs));
   const height = r.rows.length * rowH + 8;
-  return svg('svg', { viewBox: `0 0 ${W} ${height}`, class: 'chart', role: 'img', 'aria-label': t('chart.barAria', { col: r.columns[col] }) },
+  return s('svg', { viewBox: `0 0 ${W} ${height}`, class: SVG, role: 'img', 'aria-label': t('chart.barAria', { col: r.columns[col] }) },
     ...r.rows.map((row, i) => {
       const label = formatCell(row[spec.label], r.types[spec.label]);
       const w = (Math.abs(vals[i]) / max) * (W - labelW - 90);
-      return svg('g', { transform: `translate(0,${i * rowH + 4})` },
-        svg('title', {}, `${label}: ${fmt(vals[i])}`),
-        svg('text', { x: labelW - 8, y: 15, 'text-anchor': 'end', class: 'chart-label' }, label.length > 28 ? `${label.slice(0, 27)}…` : label),
-        svg('rect', { x: labelW, y: 3, width: Math.max(1, w).toFixed(1), height: rowH - 8, rx: 3, class: 'chart-bar' }),
-        svg('text', { x: labelW + w + 6, y: 15, class: 'chart-value' }, fmt(vals[i])));
+      return s('g', { transform: `translate(0,${i * rowH + 4})` },
+        s('title', {}, `${label}: ${fmt(vals[i])}`),
+        s('text', { x: labelW - 8, y: 15, 'text-anchor': 'end', class: LABEL }, label.length > 28 ? `${label.slice(0, 27)}…` : label),
+        s('rect', { x: labelW, y: 3, width: Math.max(1, w).toFixed(1), height: rowH - 8, rx: 3, class: color.fill }),
+        s('text', { x: labelW + w + 6, y: 15, class: VALUE }, fmt(vals[i])));
     }));
 }
 
-function line(r: QueryResult, spec: ChartSpec, col: number): SVGSVGElement {
+function line(r: QueryResult, spec: ChartSpec, col: number, color: ChapterColor): SVGSVGElement {
   const H = 260;
   const pad = { l: 64, r: 16, t: 12, b: 32 };
   const pts = r.rows
@@ -1615,28 +1576,28 @@ function line(r: QueryResult, spec: ChartSpec, col: number): SVGSVGElement {
   const vmin = Math.min(0, ...pts.map((p) => p.v));
   const x = (tm: number) => pad.l + ((tm - t0) / Math.max(1, t1 - t0)) * (W - pad.l - pad.r);
   const y = (v: number) => pad.t + (1 - (v - vmin) / Math.max(1, vmax - vmin)) * (H - pad.t - pad.b);
-  return svg('svg', { viewBox: `0 0 ${W} ${H}`, class: 'chart', role: 'img', 'aria-label': t('chart.lineAria', { col: r.columns[col] }) },
-    svg('line', { x1: pad.l, y1: y(vmin), x2: W - pad.r, y2: y(vmin), class: 'chart-axis' }),
-    svg('text', { x: pad.l - 6, y: y(vmax) + 4, 'text-anchor': 'end', class: 'chart-label' }, fmt(vmax)),
-    svg('text', { x: pad.l - 6, y: y(vmin) + 4, 'text-anchor': 'end', class: 'chart-label' }, fmt(vmin)),
-    svg('text', { x: pad.l, y: H - 8, class: 'chart-label' }, pts[0] ? formatCell(pts[0].raw, r.types[spec.label]) : ''),
-    svg('text', { x: W - pad.r, y: H - 8, 'text-anchor': 'end', class: 'chart-label' }, pts.at(-1) ? formatCell(pts.at(-1)!.raw, r.types[spec.label]) : ''),
-    svg('polyline', { points: pts.map((p) => `${x(p.t).toFixed(1)},${y(p.v).toFixed(1)}`).join(' '), class: 'chart-line' }),
-    ...pts.map((p) => svg('circle', { cx: x(p.t).toFixed(1), cy: y(p.v).toFixed(1), r: 3, class: 'chart-dot' },
-      svg('title', {}, `${formatCell(p.raw, r.types[spec.label])}: ${fmt(p.v)}`))));
+  return s('svg', { viewBox: `0 0 ${W} ${H}`, class: SVG, role: 'img', 'aria-label': t('chart.lineAria', { col: r.columns[col] }) },
+    s('line', { x1: pad.l, y1: y(vmin), x2: W - pad.r, y2: y(vmin), class: 'stroke-line' }),
+    s('text', { x: pad.l - 6, y: y(vmax) + 4, 'text-anchor': 'end', class: LABEL }, fmt(vmax)),
+    s('text', { x: pad.l - 6, y: y(vmin) + 4, 'text-anchor': 'end', class: LABEL }, fmt(vmin)),
+    s('text', { x: pad.l, y: H - 8, class: LABEL }, pts[0] ? formatCell(pts[0].raw, r.types[spec.label]) : ''),
+    s('text', { x: W - pad.r, y: H - 8, 'text-anchor': 'end', class: LABEL }, pts.at(-1) ? formatCell(pts.at(-1)!.raw, r.types[spec.label]) : ''),
+    s('polyline', { points: pts.map((p) => `${x(p.t).toFixed(1)},${y(p.v).toFixed(1)}`).join(' '), 'stroke-width': 2, class: cx('fill-none', color.stroke) }),
+    ...pts.map((p) => s('circle', { cx: x(p.t).toFixed(1), cy: y(p.v).toFixed(1), r: 3, class: color.fill },
+      s('title', {}, `${formatCell(p.raw, r.types[spec.label])}: ${fmt(p.v)}`))));
 }
 
-export function renderChart(host: HTMLElement, r: QueryResult): void {
+export function renderChart(host: HTMLElement, r: QueryResult, color: ChapterColor): void {
   const spec = chartSpec(r);
   if (!spec) {
     host.append(h('p', { class: 'muted' }, t('chart.empty', { max: MAX_POINTS })));
     return;
   }
-  const area = h('div', { class: 'chart-wrap' });
-  const draw = (col: number) => area.replaceChildren(spec.kind === 'bar' ? bars(r, spec, col) : line(r, spec, col));
+  const area = h('div', { class: 'overflow-auto' });
+  const draw = (col: number) => area.replaceChildren(spec.kind === 'bar' ? bars(r, spec, col, color) : line(r, spec, col, color));
   const picker = spec.values.length > 1
-    ? h('label', {}, t('chart.valueCol'), (() => {
-        const sel = h('select', {}, ...spec.values.map((i) => h('option', { value: String(i) }, r.columns[i])));
+    ? h('label', { class: 'mb-2 inline-flex items-center gap-2 text-sm' }, t('chart.valueCol'), (() => {
+        const sel = h('select', { class: 'rounded-md bg-panel px-2 py-1 ring-1 ring-line' }, ...spec.values.map((i) => h('option', { value: String(i) }, r.columns[i])));
         sel.addEventListener('change', () => draw(Number(sel.value)));
         return sel;
       })())
@@ -1646,10 +1607,11 @@ export function renderChart(host: HTMLElement, r: QueryResult): void {
 }
 ```
 
-- [ ] **Step 7: Đăng ký tab trong `src/ui/vizTabs.ts` và CSS**
+- [ ] **Step 7: Đăng ký tab trong `src/ui/vizTabs.ts`**
 
 1. Thêm import:
 ```ts
+import { chapterColor } from '../theme';
 import { renderChart } from './chartView';
 ```
 2. Thêm hàm ngay trên `export function registerVizTabs`:
@@ -1664,36 +1626,28 @@ function registerChartTab(deps: VizDeps): void {
     render: (host) => {
       if (lastRunSql(host, deps) === undefined) return;
       const result = app.lastRun?.result;
-      if (result) renderChart(host, result);
+      // Chapter colour of the open ticket; chapterColor(0) is the neutral slate (no ticket).
+      const chapter = app.tickets.find((x) => x.id === app.selectedId)?.chapter ?? 0;
+      if (result) renderChart(host, result, chapterColor(chapter));
       else host.append(h('p', { class: 'muted' }, t('chart.runError')));
     },
   });
 }
 ```
 3. Trong `registerVizTabs`, thêm `registerChartTab(deps);` làm dòng đầu tiên.
-4. Cuối `src/style.css`:
-```css
-.chart-wrap { overflow: auto; }
-.chart { width: 100%; max-width: 900px; height: auto; }
-.chart-bar { fill: var(--accent); }
-.chart-line { fill: none; stroke: var(--accent); stroke-width: 2; }
-.chart-dot { fill: var(--accent); }
-.chart-axis { stroke: var(--border); }
-.chart-label, .chart-value { font: 12px system-ui, sans-serif; fill: var(--muted); }
-.chart-value { fill: var(--text); }
-```
+4. Không thêm CSS: màu cột/đường là `fill-*`/`stroke-*` của `CHAPTER_COLOR` (12 chương, `src/theme.ts`), chữ dùng `fill-muted`/`fill-ink`.
 
 - [ ] **Step 8: Kiểm thủ công và commit**
 
 Run: `npx vitest run && npx tsc --noEmit && npm run dev`.
 1. Tab **Biểu đồ** nằm ngay sau Kết quả (nhóm đầu).
-2. Chạy `ch3-02` → tab **Biểu đồ** → 6 cột ngang theo hãng tàu, rê chuột thấy số.
+2. Chạy Solution của `ch3-02` → tab **Biểu đồ** → 6 cột ngang theo hãng tàu, màu hổ phách (chương 3, `fill-amber-600`), rê chuột thấy số. Mở ticket chương 1 rồi chạy lại → cột màu sky.
 3. Chạy `SELECT date_trunc('month', booking_date)::date, count(*), SUM(gross_weight_kg) FROM shipments GROUP BY 1 ORDER BY 1` → biểu đồ đường 24 điểm, có ô chọn "Cột giá trị".
 4. Chạy `SELECT * FROM ports` → thông báo không vẽ. Chạy SQL lỗi → "Lần chạy gần nhất bị lỗi — xem tab Kết quả."
 5. Bấm `EN` → nhãn số đổi `1.234,5` → `1,234.5`.
 
 ```bash
-git add src/viz/chart.ts src/ui/chartView.ts src/ui/vizTabs.ts src/i18n src/style.css tests/chart.test.ts
+git add src/viz/chart.ts src/ui/chartView.ts src/ui/vizTabs.ts src/i18n tests/chart.test.ts
 git commit -m "feat: automatic bar/line chart for the last run"
 ```
 
@@ -1703,11 +1657,11 @@ git commit -m "feat: automatic bar/line chart for the last run"
 
 **Files:**
 - Create: `src/viz/erd.ts`, `src/ui/erdView.ts`
-- Modify: `src/ui/vizTabs.ts`, `src/i18n/vi.ts`, `src/i18n/en.ts`, `src/style.css`
+- Modify: `src/ui/vizTabs.ts`, `src/i18n/vi.ts`, `src/i18n/en.ts`
 - Test: `tests/erd.test.ts`
 
 **Interfaces:**
-- Consumes: `unlockedTables`, `app.lastRun` (`src/state.ts`, Plan 1); `runSandboxed`, `QueryResult` (Plan 1); `DbClient.run`; `memoByKey`, `registerVizTabs` (Task 2); `runner`, `freshDb` (tests)
+- Consumes: `unlockedTables`, `app.lastRun` (`src/state.ts`; `unlockedTables()` theo `CHAPTER_TABLES` 1–12); `runSandboxed`, `QueryResult` (`src/db/run.ts`); `DbClient.run`; `memoByKey`, `registerVizTabs` (Task 2); `runner`, `freshDb` (tests). `SCHEMA_TABS` trong `src/ui/work.ts` đã chứa `'erd'` (chạy query khi đang mở tab ER thì chuyển sang Kết quả), không cần sửa.
 - Produces:
   - `erColumnsSql(schema: string): string`, `erConstraintsSql(schema: string): string` — throw `Error` khi tên schema không khớp `/^[a-z_][a-z0-9_]*$/`
   - `interface ErColumn { table: string; name: string; type: string; nullable: boolean }`
@@ -1914,7 +1868,8 @@ function mermaid(): Promise<typeof import('mermaid').default> {
 export async function renderErd(host: HTMLElement, definition: string): Promise<void> {
   host.append(h('p', { class: 'muted' }, t('erd.drawing')));
   const { svg } = await (await mermaid()).render(`erd-${++seq}`, definition);
-  const figure = h('div', { class: 'erd' });
+  // Mermaid sets its own width/max-width inline; the wrapper scrolls instead of squeezing the diagram.
+  const figure = h('div', { class: 'overflow-auto [&_svg]:h-auto' });
   // Only innerHTML in the app: SVG generated by Mermaid (strict mode) from schema identifiers.
   figure.innerHTML = svg;
   host.replaceChildren(
@@ -1956,11 +1911,7 @@ function registerErdTab(deps: VizDeps): void {
 }
 ```
 3. Trong `registerVizTabs`, thêm `registerErdTab(deps);` làm dòng cuối.
-4. Cuối `src/style.css`:
-```css
-.erd { overflow: auto; }
-.erd svg { max-width: 100%; height: auto; }
-```
+4. Không thêm CSS (khung ER dùng utility Tailwind ở Step 7).
 
 - [ ] **Step 9: Kiểm thủ công và commit**
 
@@ -1972,76 +1923,36 @@ Run: `npx vitest run && npx tsc --noEmit && npm run build && npm run dev`.
 5. DevTools Network: chunk `mermaid*`/`erDiagram*` chỉ tải khi mở tab.
 
 ```bash
-git add package.json package-lock.json src/viz/erd.ts src/ui/erdView.ts src/ui/vizTabs.ts src/i18n src/style.css tests/erd.test.ts
+git add package.json package-lock.json src/viz/erd.ts src/ui/erdView.ts src/ui/vizTabs.ts src/i18n tests/erd.test.ts
 git commit -m "feat: crow's foot ER diagram via Mermaid, per schema"
 ```
 
 ---
 
-### Task 7: Dải bản đồ tuyến 2D kiêm thanh tiến độ chương
+### Task 7: Dải tiến độ chương trong khu làm việc
+
+L35: bản đồ tuyến chỉ có một, là bản đồ Tiên Sa của Plan 1d (`routeMap()` trên Trang chủ và trong hoạt cảnh khi xong việc). Khu làm việc **không** vẽ bản đồ. Dải `#map` (đã có trong `index.html`, đang `hidden`) chỉ là một dòng thu gọn: tiến độ chương (một chấm mỗi việc của chương, ◆ = đánh giá thăng tiến) + `Tuyến đã mở n/7` + liên kết về bản đồ trên Trang chủ. Số tuyến mở lấy từ `derive().open` (theo chương **và** theo chuyến tàu, L32). Không có nút mở rộng, không lưu trạng thái thu gọn, không khoanh cảng.
 
 **Files:**
-- Create: `src/viz/ports.ts`, `src/ui/mapView.ts`
-- Modify: `tsconfig.json`, `src/main.ts`, `src/i18n/vi.ts`, `src/i18n/en.ts`, `src/style.css`
-- Test: `tests/ports.test.ts`
+- Create: `src/viz/progressDots.ts`, `src/ui/mapStrip.ts`
+- Modify: `src/main.ts`, `src/i18n/vi.ts`, `src/i18n/en.ts`
+- Test: `tests/progressDots.test.ts`
 
 **Interfaces:**
-- Consumes: `svg`, `h`, `fmt`, `reducedMotion` (Task 2); `QueryResult` (Plan 1); `app`, `done` (`src/state.ts`), `currentChapter` (`src/progress.ts`), `t` (Plan 1); `runner` (tests)
+- Consumes: `ROUTES`, `derive` (`src/scene.ts`); `hashOf` (`src/route.ts`); `cx` (`src/theme.ts`); `h` (`src/ui/dom.ts`); `app`, `done` (`src/state.ts`); `currentChapter` (`src/progress.ts`); `t`, `Key`; khóa có sẵn `top.map` (aria của `#map`), `beat.boss`
 - Produces:
-  - `interface Port { code: string; name: string; lon: number; lat: number; region: string; kind: 'SEAPORT' | 'AIRPORT' }`
-  - `PORTS: Port[]`, `HUB: Record<Port['kind'], string>`
-  - `laneUnlocked(port: Port, chapter: number): boolean`
-  - `VOLUMES_SQL: string`, `toVolumes(r: QueryResult): Map<string, number>`
-  - `type BeatState = 'done' | 'current' | 'todo'`, `interface ChapterDot { id: string; state: BeatState; boss: boolean }`
-  - `chapterDots(tickets: { id: string; chapter: number; beat: string }[], completed: Set<string>, selectedId: string, chapter: number): ChapterDot[]`
-  - `ticketPorts(ticket: { body: string; steps: { solution: string }[] }): Set<string>`
-  - `interface MapView { chapter: number; dots: ChapterDot[]; focus: Set<string> }`
-  - `interface RouteMap { update(view: MapView): void; setVolumes(v: Map<string, number>): void; celebrate(): void }`
-  - `createMap(host: HTMLElement): RouteMap`
+  - `type BeatState = 'done' | 'current' | 'todo'`, `interface ChapterDot { id: string; state: BeatState; review: boolean }`
+  - `chapterDots(tickets: Pick<Ticket, 'id' | 'chapter' | 'beat'>[], completed: Set<string>, selectedId: string, chapter: number): ChapterDot[]`
+  - `interface StripView { chapter: number; dots: ChapterDot[]; tickets: Ticket[]; completed: Set<string> }`
+  - `createMapStrip(host: HTMLElement): { update(view: StripView): void }`
   - trong `main.ts`: `syncMap(): void`; khóa i18n `map.*`
 
 - [ ] **Step 1: Viết test**
 
-`tests/ports.test.ts`:
+`tests/progressDots.test.ts`:
 ```ts
 import { describe, expect, it } from 'vitest';
-import { chapterDots, HUB, laneUnlocked, PORTS, ticketPorts, toVolumes, VOLUMES_SQL } from '../src/viz/ports';
-import { runner } from './helpers';
-
-const port = (code: string) => PORTS.find((p) => p.code === code)!;
-
-describe('ports', () => {
-  it('khớp đúng 24 mã cảng trong seed', async () => {
-    const run = await runner();
-    const codes = (await run('SELECT code FROM ports ORDER BY code')).rows.map((r) => r[0]);
-    expect(PORTS.map((p) => p.code).sort()).toEqual(codes);
-  });
-
-  it('tuyến mở dần theo chương', () => {
-    expect(laneUnlocked(port('CNSHA'), 1)).toBe(true);
-    expect(laneUnlocked(port('INNSA'), 1)).toBe(false);
-    expect(laneUnlocked(port('INNSA'), 2)).toBe(true);
-    expect(laneUnlocked(port('NLRTM'), 2)).toBe(false);
-    expect(laneUnlocked(port('NLRTM'), 3)).toBe(true);
-    expect(laneUnlocked(port('USLAX'), 4)).toBe(true);
-    expect(laneUnlocked(port('AUSYD'), 5)).toBe(true);
-    expect(laneUnlocked(port('FRA'), 5)).toBe(false);
-    expect(laneUnlocked(port('FRA'), 6)).toBe(true);
-  });
-
-  it('hub Việt Nam không phải là tuyến', () => {
-    expect(laneUnlocked(port(HUB.SEAPORT), 7)).toBe(false);
-    expect(laneUnlocked(port('HAN'), 7)).toBe(false);
-  });
-
-  it('số lô theo cảng nước ngoài cộng lại bằng tổng số lô', async () => {
-    const run = await runner();
-    const volumes = toVolumes(await run(VOLUMES_SQL));
-    const total = Number((await run('SELECT count(*) FROM shipments')).rows[0][0]);
-    expect([...volumes.values()].reduce((a, b) => a + b, 0)).toBe(total);
-    expect(volumes.get('CNSHA')).toBeGreaterThan(0);
-  });
-});
+import { chapterDots } from '../src/viz/progressDots';
 
 describe('thanh tiến độ chương', () => {
   const tickets = [
@@ -2050,92 +1961,38 @@ describe('thanh tiến độ chương', () => {
     { id: 'ch1-03', chapter: 1, beat: 'twist' },
     { id: 'ch1-05', chapter: 1, beat: 'boss' },
     { id: 'ch2-01', chapter: 2, beat: 'teach' },
-  ];
-  it('một chấm mỗi ticket của chương, theo thứ tự; boss được đánh dấu', () => {
-    expect(chapterDots(tickets, new Set(['ch1-01']), 'ch1-02', 1)).toEqual([
-      { id: 'ch1-01', state: 'done', boss: false },
-      { id: 'ch1-02', state: 'current', boss: false },
-      { id: 'ch1-03', state: 'todo', boss: false },
-      { id: 'ch1-05', state: 'todo', boss: true },
+  ] as const;
+  it('một chấm mỗi việc của chương, theo thứ tự; đánh giá thăng tiến được đánh dấu', () => {
+    expect(chapterDots([...tickets], new Set(['ch1-01']), 'ch1-02', 1)).toEqual([
+      { id: 'ch1-01', state: 'done', review: false },
+      { id: 'ch1-02', state: 'current', review: false },
+      { id: 'ch1-03', state: 'todo', review: false },
+      { id: 'ch1-05', state: 'todo', review: true },
     ]);
   });
-  it('ticket đã xong vẫn là done dù đang được chọn', () => {
-    expect(chapterDots(tickets, new Set(['ch1-01']), 'ch1-01', 1)[0].state).toBe('done');
-  });
-});
-
-describe('cảng của ticket hiện tại', () => {
-  it('chỉ lấy mã có trong cả Solution và đề bài', () => {
-    const steps = [{ solution: "SELECT * FROM shipments WHERE pod = 'NLRTM' AND pol = 'VNSGN'" }];
-    expect(ticketPorts({ body: 'Các lô đi `NLRTM` tháng này?', steps })).toEqual(new Set(['NLRTM']));
-    expect(ticketPorts({ body: 'Các lô đi châu Âu?', steps })).toEqual(new Set());
-    expect(ticketPorts({ body: 'NLRTM', steps: [{ solution: 'SELECT 1' }] })).toEqual(new Set());
+  it('việc đã xong vẫn là done dù đang được chọn', () => {
+    expect(chapterDots([...tickets], new Set(['ch1-01']), 'ch1-01', 1)[0].state).toBe('done');
   });
 });
 ```
 
 - [ ] **Step 2: Chạy test, xác nhận FAIL**
 
-Run: `npx vitest run tests/ports.test.ts`
-Expected: FAIL — không resolve `../src/viz/ports`.
+Run: `npx vitest run tests/progressDots.test.ts`
+Expected: FAIL — không resolve `../src/viz/progressDots`.
 
-- [ ] **Step 3: Viết `src/viz/ports.ts`**
+- [ ] **Step 3: Viết `src/viz/progressDots.ts`**
 
 ```ts
-import type { QueryResult } from '../db/run';
-
-export interface Port { code: string; name: string; lon: number; lat: number; region: string; kind: 'SEAPORT' | 'AIRPORT' }
-
-export const PORTS: Port[] = [
-  { code: 'VNSGN', name: 'Cát Lái', lon: 106.75, lat: 10.76, region: 'Vietnam', kind: 'SEAPORT' },
-  { code: 'VNHPH', name: 'Hải Phòng', lon: 106.69, lat: 20.86, region: 'Vietnam', kind: 'SEAPORT' },
-  { code: 'VNDAD', name: 'Đà Nẵng', lon: 108.22, lat: 16.07, region: 'Vietnam', kind: 'SEAPORT' },
-  { code: 'CNSHA', name: 'Shanghai', lon: 121.5, lat: 31.23, region: 'Asia', kind: 'SEAPORT' },
-  { code: 'CNNGB', name: 'Ningbo', lon: 121.55, lat: 29.87, region: 'Asia', kind: 'SEAPORT' },
-  { code: 'SGSIN', name: 'Singapore', lon: 103.82, lat: 1.26, region: 'Asia', kind: 'SEAPORT' },
-  { code: 'KRPUS', name: 'Busan', lon: 129.04, lat: 35.1, region: 'Asia', kind: 'SEAPORT' },
-  { code: 'JPTYO', name: 'Tokyo', lon: 139.77, lat: 35.62, region: 'Asia', kind: 'SEAPORT' },
-  { code: 'THLCH', name: 'Laem Chabang', lon: 100.88, lat: 13.08, region: 'Asia', kind: 'SEAPORT' },
-  { code: 'INNSA', name: 'Nhava Sheva', lon: 72.95, lat: 18.95, region: 'South Asia', kind: 'SEAPORT' },
-  { code: 'NLRTM', name: 'Rotterdam', lon: 4.4, lat: 51.9, region: 'Europe', kind: 'SEAPORT' },
-  { code: 'DEHAM', name: 'Hamburg', lon: 9.97, lat: 53.55, region: 'Europe', kind: 'SEAPORT' },
-  { code: 'BEANR', name: 'Antwerp', lon: 4.4, lat: 51.22, region: 'Europe', kind: 'SEAPORT' },
-  { code: 'USLAX', name: 'Los Angeles', lon: -118.27, lat: 33.74, region: 'North America', kind: 'SEAPORT' },
-  { code: 'USNYC', name: 'New York', lon: -74.0, lat: 40.68, region: 'North America', kind: 'SEAPORT' },
-  { code: 'AUSYD', name: 'Sydney', lon: 151.2, lat: -33.86, region: 'Oceania', kind: 'SEAPORT' },
-  { code: 'SGN', name: 'Tân Sơn Nhất', lon: 106.65, lat: 10.82, region: 'Vietnam', kind: 'AIRPORT' },
-  { code: 'HAN', name: 'Nội Bài', lon: 105.8, lat: 21.22, region: 'Vietnam', kind: 'AIRPORT' },
-  { code: 'PVG', name: 'Pudong', lon: 121.8, lat: 31.14, region: 'Asia', kind: 'AIRPORT' },
-  { code: 'ICN', name: 'Incheon', lon: 126.44, lat: 37.46, region: 'Asia', kind: 'AIRPORT' },
-  { code: 'NRT', name: 'Narita', lon: 140.39, lat: 35.77, region: 'Asia', kind: 'AIRPORT' },
-  { code: 'FRA', name: 'Frankfurt', lon: 8.57, lat: 50.04, region: 'Europe', kind: 'AIRPORT' },
-  { code: 'LAX', name: 'Los Angeles (air)', lon: -118.41, lat: 33.94, region: 'North America', kind: 'AIRPORT' },
-  { code: 'SYD', name: 'Sydney (air)', lon: 151.18, lat: -33.94, region: 'Oceania', kind: 'AIRPORT' },
-];
-
-export const HUB: Record<Port['kind'], string> = { SEAPORT: 'VNSGN', AIRPORT: 'SGN' };
-
-/** Chapter from which each sea region's lanes light up; every air lane opens at chapter 6. */
-const SEA_REGION_CHAPTER: Record<string, number> = { Asia: 1, 'South Asia': 2, Europe: 3, 'North America': 4, Oceania: 5 };
-const AIR_CHAPTER = 6;
-
-export function laneUnlocked(port: Port, chapter: number): boolean {
-  if (port.region === 'Vietnam') return false;
-  return chapter >= (port.kind === 'AIRPORT' ? AIR_CHAPTER : SEA_REGION_CHAPTER[port.region] ?? 99);
-}
-
-/** Shipments per foreign end of the lane (export → POD, import → POL). */
-export const VOLUMES_SQL = "SELECT CASE WHEN direction = 'EXPORT' THEN pod ELSE pol END, count(*) FROM shipments GROUP BY 1";
-
-export const toVolumes = (r: QueryResult): Map<string, number> =>
-  new Map(r.rows.map(([code, n]) => [String(code), Number(n)]));
+import type { Ticket } from '../tickets';
 
 export type BeatState = 'done' | 'current' | 'todo';
-export interface ChapterDot { id: string; state: BeatState; boss: boolean }
+/** `review`: the chapter's promotion review (beat: boss; the UI never says "boss", L22). */
+export interface ChapterDot { id: string; state: BeatState; review: boolean }
 
-/** One dot per ticket of the chapter, in content order — the collapsed map strip's progress bar. */
+/** One dot per ticket of the chapter, in content order: the workspace strip's progress bar. */
 export function chapterDots(
-  tickets: { id: string; chapter: number; beat: string }[],
+  tickets: Pick<Ticket, 'id' | 'chapter' | 'beat'>[],
   completed: Set<string>,
   selectedId: string,
   chapter: number,
@@ -2145,309 +2002,128 @@ export function chapterDots(
     .map((t) => ({
       id: t.id,
       state: completed.has(t.id) ? 'done' : t.id === selectedId ? 'current' : 'todo',
-      boss: t.beat === 'boss',
+      review: t.beat === 'boss',
     }));
-}
-
-/**
- * Ports the current ticket is about: quoted in a Solution AND named in the brief, so the map
- * never reveals a port the player has to find themselves.
- */
-export function ticketPorts(ticket: { body: string; steps: { solution: string }[] }): Set<string> {
-  const solutions = ticket.steps.map((s) => s.solution).join('\n');
-  return new Set(PORTS.map((p) => p.code).filter((code) =>
-    solutions.includes(`'${code}'`) && new RegExp(`\\b${code}\\b`).test(ticket.body)));
 }
 ```
 
 - [ ] **Step 4: Chạy test, xác nhận PASS**
 
-Run: `npx vitest run tests/ports.test.ts && npx tsc --noEmit`
+Run: `npx vitest run tests/progressDots.test.ts && npx tsc --noEmit`
 Expected: PASS.
 
-- [ ] **Step 5: Cài thư viện bản đồ (pin), bật JSON import**
+- [ ] **Step 5: Thêm khóa i18n**
 
-Run:
-```bash
-npm i --save-exact d3-geo@3.1.2 topojson-client@3.1.0 world-atlas@2.0.2
-npm i -D --save-exact @types/d3-geo@3.1.1 @types/topojson-client@3.1.5 @types/topojson-specification@1.0.5
-grep -rl "SharedArrayBuffer" node_modules/d3-geo/dist node_modules/topojson-client/dist
-```
-Expected: các version trong `package.json` không có `^`; grep không in dòng nào.
-
-Trong `tsconfig.json`, thêm vào `compilerOptions`: `"resolveJsonModule": true`.
-
-- [ ] **Step 6: Thêm khóa i18n**
+Nhãn đánh giá dùng `beat.boss` có sẵn ("Đánh giá thăng tiến" / "Promotion review"); aria của `#map` là `top.map` có sẵn.
 
 `src/i18n/vi.ts`:
 ```ts
-  'map.aria': 'Bản đồ tuyến vận chuyển của công ty',
   'map.chapter': 'Chương {n}',
-  'map.progress': 'Tiến độ chương: xong {done}/{total} ticket',
+  'map.progress': 'Tiến độ chương: xong {done}/{total} việc',
   'map.lanes': 'Tuyến đã mở {n}/{total}',
-  'map.hub': '{name} ({code}) — cảng nhà',
-  'map.portOpen': '{name} ({code}) — {n} lô',
-  'map.portClosed': '{name} ({code}) — chưa mở',
-  'map.expand': '▾ Bản đồ',
-  'map.collapse': '▴ Thu gọn',
-  'map.list': 'Danh sách tuyến',
-  'map.colPort': 'Cảng',
-  'map.colShipments': 'Số lô',
-  'map.colStatus': 'Trạng thái',
-  'map.open': 'đã mở',
-  'map.closed': 'chưa mở',
+  'map.toHome': 'Xem bản đồ',
   'map.beat.done': 'đã xong',
   'map.beat.current': 'đang làm',
   'map.beat.todo': 'chưa làm',
-  'map.beat.boss': 'ticket boss',
 ```
 `src/i18n/en.ts`:
 ```ts
-  'map.aria': "The company's shipping lanes",
   'map.chapter': 'Ch. {n}',
-  'map.progress': 'Chapter progress: {done}/{total} tickets done',
+  'map.progress': (p) => `Chapter progress: ${num(p.done)}/${count('task', 'tasks')({ n: p.total })} done`,
   'map.lanes': 'Lanes open {n}/{total}',
-  'map.hub': '{name} ({code}) — home port',
-  'map.portOpen': (p) => `${p.name} (${p.code}) — ${p.n} ${p.n === 1 || p.n === '1' ? 'shipment' : 'shipments'}`,
-  'map.portClosed': '{name} ({code}) — not open yet',
-  'map.expand': '▾ Map',
-  'map.collapse': '▴ Collapse',
-  'map.list': 'Lane list',
-  'map.colPort': 'Port',
-  'map.colShipments': 'Shipments',
-  'map.colStatus': 'Status',
-  'map.open': 'open',
-  'map.closed': 'not open',
+  'map.toHome': 'See the map',
   'map.beat.done': 'done',
   'map.beat.current': 'in progress',
   'map.beat.todo': 'to do',
-  'map.beat.boss': 'boss ticket',
 ```
 
-- [ ] **Step 7: Viết `src/ui/mapView.ts`**
+- [ ] **Step 6: Viết `src/ui/mapStrip.ts`**
 
 ```ts
-import { geoNaturalEarth1, geoPath } from 'd3-geo';
-import { feature } from 'topojson-client';
-import type { GeometryCollection, Topology } from 'topojson-specification';
-import land110 from 'world-atlas/land-110m.json';
 import { t, type Key } from '../i18n';
-import { HUB, laneUnlocked, PORTS, type BeatState, type ChapterDot, type Port } from '../viz/ports';
-import { fmt, h, reducedMotion, svg } from './dom';
+import { hashOf } from '../route';
+import { derive, ROUTES } from '../scene';
+import { cx } from '../theme';
+import type { Ticket } from '../tickets';
+import type { BeatState, ChapterDot } from '../viz/progressDots';
+import { h } from './dom';
 
-const W = 960;
-const H = 170;
-const COLLAPSE_KEY = 'cargo-query/map-collapsed';
 const BEAT_KEY: Record<BeatState, Key> = { done: 'map.beat.done', current: 'map.beat.current', todo: 'map.beat.todo' };
 const BEAT_SYMBOL: Record<BeatState, string> = { done: '●', current: '◐', todo: '○' };
+/** Colour only on the small dots (L23). */
+const BEAT_CLASS: Record<BeatState, string> = { done: 'text-good', current: 'text-accent', todo: 'text-muted' };
 
-export interface MapView { chapter: number; dots: ChapterDot[]; focus: Set<string> }
-export interface RouteMap {
-  update(view: MapView): void;
-  setVolumes(v: Map<string, number>): void;
-  celebrate(): void;
-}
+export interface StripView { chapter: number; dots: ChapterDot[]; tickets: Ticket[]; completed: Set<string> }
 
-/** Saved choice wins; otherwise collapsed on short screens (< 800px). */
-function readCollapsed(): boolean {
-  try {
-    const v = window.localStorage.getItem(COLLAPSE_KEY);
-    if (v !== null) return v === '1';
-  } catch {
-    /* convenience only */
-  }
-  return window.innerHeight < 800;
-}
-function writeCollapsed(v: boolean): void {
-  try {
-    window.localStorage.setItem(COLLAPSE_KEY, v ? '1' : '0');
-  } catch {
-    /* convenience only */
-  }
-}
-
-export function createMap(host: HTMLElement): RouteMap {
-  // Centred on the Pacific (150°E) so lanes to Europe go left and lanes to the Americas go right.
-  const projection = geoNaturalEarth1().rotate([-150, 0])
-    .fitExtent([[24, 14], [W - 24, H - 10]], { type: 'MultiPoint', coordinates: PORTS.map((p) => [p.lon, p.lat]) });
-  const path = geoPath(projection);
-  const topo = land110 as unknown as Topology<{ land: GeometryCollection }>;
-  const landD = path(feature(topo, topo.objects.land)) ?? '';
-  const hub = (p: Port) => PORTS.find((x) => x.code === HUB[p.kind])!;
-  const laneD = (p: Port) => path({ type: 'LineString', coordinates: [[hub(p).lon, hub(p).lat], [p.lon, p.lat]] }) ?? '';
-  const lanes = PORTS.filter((p) => p.region !== 'Vietnam');
-
-  let view: MapView = { chapter: 1, dots: [], focus: new Set() };
-  let volumes = new Map<string, number>();
-  let collapsed = readCollapsed();
-  const stage = svg('svg', { id: 'map-stage', viewBox: `0 0 ${W} ${H}`, class: 'map', role: 'img' });
-  const progress = h('span', { class: 'map-progress', role: 'img' });
-  const caption = h('span', { class: 'map-caption' });
-  const list = h('details', { class: 'map-list' });
-  const toggle = h('button', { type: 'button', class: 'map-toggle', 'aria-controls': 'map-stage' });
-
-  const shipments = (p: Port) => fmt(volumes.get(p.code) ?? 0);
-  function portTitle(p: Port, open: boolean): string {
-    if (p.region === 'Vietnam') return t('map.hub', { name: p.name, code: p.code });
-    return open ? t('map.portOpen', { name: p.name, code: p.code, n: shipments(p) }) : t('map.portClosed', { name: p.name, code: p.code });
-  }
-
-  function draw(): void {
-    const { chapter, dots, focus } = view;
-    const open = lanes.filter((p) => laneUnlocked(p, chapter));
-
-    progress.setAttribute('aria-label', t('map.progress', { done: dots.filter((d) => d.state === 'done').length, total: dots.length }));
-    progress.replaceChildren(t('map.chapter', { n: chapter }), ...dots.map((d) =>
-      h('span', {
-        class: `beat ${d.state}${d.boss ? ' boss' : ''}`,
-        title: `${d.id}: ${t(BEAT_KEY[d.state])}${d.boss ? ` · ${t('map.beat.boss')}` : ''}`,
-        'aria-hidden': 'true',
-      }, d.boss ? '◆' : BEAT_SYMBOL[d.state])));
-    caption.textContent = t('map.lanes', { n: open.length, total: lanes.length });
-
-    // Text alternative to the SVG tooltips (keyboard and screen reader).
-    list.replaceChildren(
-      h('summary', {}, t('map.list')),
-      h('table', {},
-        h('thead', {}, h('tr', {},
-          h('th', { scope: 'col' }, t('map.colPort')), h('th', { scope: 'col' }, t('map.colShipments')), h('th', { scope: 'col' }, t('map.colStatus')))),
-        h('tbody', {}, ...lanes.map((p) => {
-          const isOpen = laneUnlocked(p, chapter);
-          return h('tr', {},
-            h('td', {}, `${p.name} (${p.code})`),
-            h('td', {}, isOpen ? shipments(p) : '—'),
-            h('td', {}, t(isOpen ? 'map.open' : 'map.closed')));
-        }))));
-
-    stage.setAttribute('aria-label', t('map.aria'));
-    stage.replaceChildren(
-      svg('path', { d: landD, class: 'map-land' }),
-      ...lanes.map((p) => svg('path', { d: laneD(p), class: `map-lane${laneUnlocked(p, chapter) ? ' open' : ''}${p.kind === 'AIRPORT' ? ' air' : ''}` })),
-      ...PORTS.map((p) => {
-        const [x, y] = projection([p.lon, p.lat]) ?? [0, 0];
-        const isHub = p.region === 'Vietnam';
-        const isOpen = isHub || laneUnlocked(p, chapter);
-        const isFocus = focus.has(p.code);
-        return svg('g', { class: `map-port${isOpen ? ' open' : ''}${isHub ? ' hub' : ''}${isFocus ? ' focus' : ''}` },
-          svg('title', {}, portTitle(p, isOpen)),
-          svg('circle', { cx: x.toFixed(1), cy: y.toFixed(1), r: isHub || isFocus ? 5 : 3.5 }));
-      }),
-    );
-    const newest = open.at(-1);
-    if (newest && !reducedMotion()) {
-      stage.append(svg('text', { class: 'map-ship', 'font-size': 14 }, '🚢',
-        svg('animateMotion', { dur: '14s', repeatCount: 'indefinite', path: laneD(newest), rotate: '0' })));
-    }
-    applyCollapsed();
-  }
-
-  function applyCollapsed(): void {
-    host.classList.toggle('collapsed', collapsed);
-    toggle.textContent = t(collapsed ? 'map.expand' : 'map.collapse');
-    toggle.setAttribute('aria-expanded', String(!collapsed));
-  }
-  toggle.addEventListener('click', () => {
-    collapsed = !collapsed;
-    writeCollapsed(collapsed);
-    applyCollapsed();
-  });
-
-  host.replaceChildren(h('div', { class: 'map-bar' }, progress, caption, list, toggle), stage);
-  host.hidden = false;
-  draw();
+/**
+ * #map under the top bar (index.html), shown only on #/play by main.ts. One line (L35): the chapter's dots,
+ * the open-lane count (derive().open, L32) and a link to the Tien Sa map on Home. No map is drawn here.
+ */
+export function createMapStrip(host: HTMLElement): { update(view: StripView): void } {
+  const progress = h('span', { class: 'text-ink', role: 'img' });
+  const caption = h('span', { class: 'mr-auto' });
+  const link = h('a', { href: hashOf('home'), class: 'text-accent' });
+  host.replaceChildren(h('div', { class: 'flex min-h-7 flex-wrap items-center gap-x-3 gap-y-0.5 px-4 py-0.5 text-sm text-muted' }, progress, caption, link));
 
   return {
-    update(next) {
-      view = next;
-      draw();
-    },
-    setVolumes(next) {
-      volumes = next;
-      draw();
-    },
-    celebrate() {
-      const open = lanes.filter((p) => laneUnlocked(p, view.chapter));
-      if (open.length === 0 || collapsed || reducedMotion()) return;
-      const lane = open[Math.floor(Math.random() * open.length)];
-      const ship = svg('text', { class: 'map-ship', 'font-size': 18 }, '🚢',
-        svg('animateMotion', { dur: '3s', repeatCount: '1', fill: 'freeze', path: laneD(lane), rotate: '0' }));
-      stage.append(ship);
-      setTimeout(() => ship.remove(), 3500);
+    update({ chapter, dots, tickets, completed }) {
+      progress.setAttribute('aria-label', t('map.progress', { done: dots.filter((d) => d.state === 'done').length, total: dots.length }));
+      progress.replaceChildren(t('map.chapter', { n: chapter }), ...dots.map((d) =>
+        h('span', {
+          class: cx('ml-1', BEAT_CLASS[d.state]),
+          title: `${d.id}: ${t(BEAT_KEY[d.state])}${d.review ? ` · ${t('beat.boss')}` : ''}`,
+          'aria-hidden': 'true',
+        }, d.review ? '◆' : BEAT_SYMBOL[d.state])));
+      caption.textContent = t('map.lanes', { n: derive(tickets, completed).open.size, total: ROUTES.length });
+      link.textContent = t('map.toHome');
     },
   };
 }
 ```
 
-- [ ] **Step 8: Gắn vào `src/main.ts`**
+- [ ] **Step 7: Gắn vào `src/main.ts`**
 
-1. Thêm import (gộp vào import có sẵn nếu `main.ts` đã import cùng module):
+1. Thêm `currentChapter` vào import có sẵn:
 ```ts
-import { createMap } from './ui/mapView';
-import { chapterDots, ticketPorts, toVolumes, VOLUMES_SQL } from './viz/ports';
-import { currentChapter } from './progress';
-import { app, done } from './state';
+import { contentProblems, currentChapter, nextTicket, SKILLS, xpFor } from './progress';
 ```
-2. Ngay sau dòng `registerVizTabs(…);` (Task 2), thêm:
+và thêm hai import:
 ```ts
-// The strip renders before the DB is ready: progress dots and lanes need no query.
-const map = createMap(document.getElementById('map')!);
+import { createMapStrip } from './ui/mapStrip';
+import { chapterDots } from './viz/progressDots';
+```
+2. Ngay sau khối `const work = mountWork(byId('work'), { … });`, thêm:
+```ts
+// Progress dots and lane count need no query: the strip is drawn before the DB is ready.
+const mapStrip = createMapStrip(byId('map'));
 function syncMap(): void {
-  const chapter = currentChapter(app.tickets, done());
-  const ticket = app.tickets.find((t) => t.id === app.selectedId); // undefined in Sandbox
-  map.update({
-    chapter,
-    dots: chapterDots(app.tickets, done(), app.selectedId, chapter),
-    focus: ticket ? ticketPorts(ticket) : new Set(),
-  });
+  const completed = done();
+  const chapter = currentChapter(app.tickets, completed);
+  mapStrip.update({ chapter, completed, tickets: app.tickets, dots: chapterDots(app.tickets, completed, app.selectedId, chapter) });
 }
 ```
-3. Trong `async function loadColumns()` (Plan 1 gọi nó một lần khi DB `ready`), ngay trên dòng `try {`, thêm:
+3. Thêm dòng cuối của `rerender()` (đổi việc, xong việc, đổi ngôn ngữ, nhập tiến độ, đổi route đều đi qua đây):
 ```ts
-  void db.run(VOLUMES_SQL).then((r) => map.setVolumes(toVolumes(r)), () => { /* tooltips show 0 until next ready */ });
+  if (!byId('map').hidden) syncMap(); // like Home: the hidden strip is redrawn by showRoute()
 ```
-4. Thêm `syncMap();` làm dòng cuối của `rerender()` (đổi ticket, đóng ticket, đổi ngôn ngữ, nhập tiến độ đều đi qua đây).
-5. Trong `function complete(t: Ticket)`, ngay sau dòng `persist(true);`, thêm `map.celebrate();` (boss cũng đóng qua `complete`, nên tàu chạy cả khi xong boss).
-
-- [ ] **Step 9: Thêm CSS vào cuối `src/style.css`**
-
-```css
-.map-strip { position: relative; }
-.map-bar { display: flex; flex-wrap: wrap; gap: 2px 12px; align-items: center; min-height: 28px; padding: 2px 16px; font-size: 13px; color: var(--muted); }
-.map-progress { color: var(--text); }
-.map-progress .beat { margin-left: 4px; color: var(--muted); }
-.map-progress .beat.done { color: var(--good); }
-.map-progress .beat.current { color: var(--accent); }
-.map-caption { margin-right: auto; }
-.map-list summary { cursor: pointer; }
-.map-list table { width: auto; font-size: 12px; }
-.map-strip.collapsed .map, .map-strip.collapsed .map-list { display: none; }
-.map { display: block; width: 100%; height: 120px; }
-.map-land { fill: var(--land); }
-.map-lane { fill: none; stroke: var(--lane-closed); stroke-width: 1; stroke-dasharray: 3 4; }
-.map-lane.open { stroke: var(--accent); stroke-width: 1.8; stroke-dasharray: none; }
-.map-lane.air.open { stroke-dasharray: 6 3; }
-.map-port circle { fill: var(--muted); }
-.map-port.open circle { fill: var(--good); }
-.map-port.hub circle { fill: var(--accent); }
-.map-port.focus circle { stroke: var(--warn); stroke-width: 2.5; }
-.map-toggle { padding: 2px 8px; font-size: 12px; }
+4. Trong `showRoute()`, ngay sau dòng `byId('shell').hidden = r !== 'play';`, thêm:
+```ts
+  byId('map').hidden = r !== 'play'; // Home has the route map itself
 ```
+5. **Không** sửa `complete()`: `playCompletion(t, before, done())` đã chạy hoạt cảnh (tàu chạy trên bản đồ trong `#stage`), rồi `rerender()` vẽ lại dải với chấm và số tuyến mới.
 
-- [ ] **Step 10: Kiểm thủ công và commit**
+- [ ] **Step 8: Kiểm thủ công và commit**
 
 Run: `npx vitest run && npx tsc --noEmit && npm run build && npm run dev`.
-1. Dải dưới thanh trên hiện ngay khi tải trang (trước khi DB sẵn sàng): `Chương 1 ◐ ○ ○ ○ ◆ · Tuyến đã mở 6/19` + nút. Mở rộng: lục địa nhạt, Cát Lái chấm màu accent (không đỏ); chương 1 chỉ các tuyến châu Á sáng, còn lại nét đứt xám; tàu chạy chậm trên tuyến mới nhất.
-2. Rê chuột vào Shanghai → "Shanghai (CNSHA) — N lô" (N > 0 sau khi DB sẵn sàng); vào Rotterdam (chương 1) → "chưa mở". Mở "Danh sách tuyến" → bảng 19 tuyến, dùng được bằng bàn phím.
-3. Mở `ch1-05` (boss): nếu đề có nhắc mã cảng có trong Solution (ví dụ `NLRTM`) thì chấm cảng đó có viền cam.
-4. Đóng một ticket → chấm thành `●`, tàu lớn chạy nhanh một lượt trên một tuyến đã mở (khi bản đồ đang mở).
-5. Hoàn thành chương 2 (hoặc nhập save đã xong ch1–2) → tuyến Ấn Độ sáng thêm, chấm đổi sang ticket chương 3. Chương 3 → châu Âu.
-6. Bấm "▴ Thu gọn" → còn một dòng 28px vẫn có chấm tiến độ; tải lại trang vẫn thu gọn. Xóa key `cargo-query/map-collapsed`, thu cửa sổ cao < 800px, tải lại → mặc định thu gọn.
-7. Bấm `EN` → `Ch. 1`, `Lanes open 6/19`, tooltip "— N shipments"; editor không mất con trỏ.
-8. Bật "Reduce motion" → không có tàu chạy. Màn hình < 600px → bản đồ co theo chiều ngang, không cuộn ngang.
+1. Ở `#/play`, dải dưới thanh trên hiện ngay khi tải trang (trước khi DB sẵn sàng): `Chương 1 ◐ ○ ○ ○ ◆ … Tuyến đã mở 2/7 · Xem bản đồ`, cao một dòng (≥ 28px). Về Trang chủ (`#/`) → dải ẩn.
+2. Bấm "Xem bản đồ" → về Trang chủ, thấy bản đồ tuyến Tiên Sa.
+3. Xong `ch1-05` (hoặc nhập save đã xong chương 1) → chỉ có **một** hoạt cảnh (thẻ thăng tiến + tàu tới Rotterdam ở góc dưới phải). Sau đó dải: `Tuyến đã mở 4/7` (Singapore mở theo chương, Rotterdam mở theo chuyến tàu, L32), chấm chuyển sang 5 việc của chương 2.
+4. Bấm `EN` → `Ch. 1`, `Lanes open 2/7`, `See the map`, tooltip chấm cuối "… · Promotion review"; editor không mất con trỏ.
+5. Màn hình < 600px → dải xuống dòng, không cuộn ngang.
 
 ```bash
-git add package.json package-lock.json tsconfig.json src/viz/ports.ts src/ui/mapView.ts src/main.ts src/i18n src/style.css tests/ports.test.ts
-git commit -m "feat: route map strip doubling as chapter progress bar"
+git add src/viz/progressDots.ts src/ui/mapStrip.ts src/main.ts src/i18n tests/progressDots.test.ts
+git commit -m "feat: chapter progress strip in the workspace (lanes from derive)"
 ```
 
 ---
@@ -2457,16 +2133,18 @@ git commit -m "feat: route map strip doubling as chapter progress bar"
 **Files:**
 - Modify: `CLAUDE.md`
 
-- [ ] **Step 1: Thêm vào cuối mục `## Architecture`**
+- [ ] **Step 1: Thêm vào mục `## Architecture`, ngay sau gạch đầu dòng bắt đầu bằng `- Bottom-panel tabs register through`** (gạch đó đã nói "mọi tab mô tả `app.lastRun` + dải SQL changed", không lặp lại)
 
 ```markdown
-- Visualizations (spec §6b) live in two layers: pure data builders in `src/viz/` (tested in Node against a real seeded PGlite; no translated text, only `import type` from `src/i18n`) and DOM/SVG renderers in `src/ui/*View.ts` (all text through `t()`). `src/ui/vizTabs.ts` registers the five viz tabs through `registerTab()` of `src/ui/tabs.ts`. Every viz tab describes `app.lastRun.sql` (the last run, never the live editor) and shows a "SQL changed" strip when the editor differs. EXPLAIN, execution steps and ER metadata are cached per SQL / schema with `memoByKey` (`src/viz/memo.ts`), so a language switch never re-runs them.
+- Visualizations (spec §6b) live in two layers: pure data builders in `src/viz/` (tested in Node against a real seeded PGlite; no translated text, only `import type` from `src/i18n`) and DOM/SVG renderers in `src/ui/*View.ts` (all text through `t()`, Tailwind classes, SVG via `s()`). `src/ui/vizTabs.ts` registers the five viz tabs (`chart`, `steps`, `explain`, `flow`, `erd`); load errors go through `errorView()`. EXPLAIN, execution steps and ER metadata are cached per SQL / schema with `memoByKey` (`src/viz/memo.ts`), so a language switch never re-runs them.
 - Worker requests carry `kind: 'run' | 'explain' | 'steps'` and go through `DbClient.request()` (one queued request at a time; `steps` gets 3× the timeout).
-- "Thứ tự thực thi" (`src/viz/steps.ts`) parses the player's SQL with `libpg-query` (Postgres' own parser, WASM), rebuilds one sub-query per logical clause with `pgsql-deparser`, and counts rows for each inside the sandbox. In the browser the `.wasm` must be imported via `?url` and passed to `loadModule` (`src/viz/parser.ts`); Vite does not bundle it otherwise. Failures are codes (`StepsFailure`), translated in the view.
+- "Thứ tự thực thi" (`src/viz/steps.ts`) parses the player's SQL with `libpg-query` (Postgres' own parser, WASM), rebuilds one sub-query per logical clause with `pgsql-deparser`, and counts rows for each inside the sandbox. In the browser the `.wasm` must be imported via `?url` and passed to `loadModule` (`src/viz/parser.ts`); Vite does not bundle it otherwise. Failures are codes (`StepsFailure`), translated in the view. WITH/UNION/window are not supported (curriculum §5.6).
 - EXPLAIN uses `EXPLAIN (ANALYZE, FORMAT JSON)` inside `BEGIN … ROLLBACK` (`runExplain`); `src/viz/plan.ts` flattens it into nodes with typed `detail` and holds the VI/EN node glossary `NODE_HELP`.
 - The ER tab renders a Mermaid `erDiagram` built from `information_schema` for a given schema (`loadErMetadata(run, schema)` in `src/viz/erd.ts`; `'public'` for the game, `'sandbox'` for imported data); it is the only place that uses `innerHTML` (Mermaid strict mode, schema identifiers only). Mermaid and the SQL parser are lazy-loaded.
-- The route map (`src/ui/mapView.ts`) projects `PORTS` (`src/viz/ports.ts`, must match the `ports` seed rows) with d3-geo over world-atlas land; lanes open by chapter via `laneUnlocked`. Its collapsed 28px bar is the chapter progress bar (`chapterDots`), and ports named in both the brief and the Solution are ringed (`ticketPorts`). `main.ts` keeps it in sync via `syncMap()` from `rerender()`.
+- The workspace strip (`#map`, `src/ui/mapStrip.ts`, shown only on `#/play`) is one line (L35): the chapter's progress dots (`chapterDots`, `src/viz/progressDots.ts`), the open-lane count from `derive().open` and a link to Home. It draws no map: the Tien Sa route map lives on Home and in `playCompletion`. `main.ts` redraws it via `syncMap()` from `rerender()`.
 ```
+
+Trong gạch đầu dòng `- Dependencies are pinned exactly: …`, thêm trước câu `Add new ones with`: `` `libpg-query` 18.2.4 and `pgsql-deparser` 18.4.5 (lazy, loaded in the worker by the Execution order tab), `mermaid` 12.3.0 (lazy chunk, ER tab). ``
 
 - [ ] **Step 2: Chạy toàn bộ test và build**
 
