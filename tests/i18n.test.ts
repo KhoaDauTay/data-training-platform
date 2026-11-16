@@ -4,7 +4,7 @@ import { en } from '../src/i18n/en';
 import { vi } from '../src/i18n/vi';
 
 /** Keys whose EN text is intentionally the same as VI (SQL keywords, product names). */
-const SAME_OK = new Set<string>(['tab.explain', 'top.xp', 'beat.boss']);
+const SAME_OK = new Set<string>(['tab.explain', 'top.xp']);
 const placeholders = (s: string): string => [...s.matchAll(/\{(\w+)\}/g)].map((m) => m[1]).sort().join();
 
 describe('từ điển i18n', () => {
@@ -31,6 +31,13 @@ describe('từ điển i18n', () => {
 
   it('nhãn EN của tab Cột là "Columns" (gợi ý EN của ch1-01 nhắc đúng chữ này)', () => {
     expect(en['tab.columns']).toBe('Columns');
+  });
+
+  it('L22: không chuỗi hiển thị nào dùng giọng game "boss" / "sự cố"', () => {
+    const bad = [...Object.entries(vi), ...Object.entries(en)]
+      .filter(([, v]) => typeof v === 'string' && /\bboss\b|sự cố/i.test(v))
+      .map(([k]) => k);
+    expect(bad).toEqual([]);
   });
 });
 
