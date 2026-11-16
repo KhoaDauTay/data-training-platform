@@ -815,7 +815,7 @@ bash scripts/check-deploy.sh https://<user>.github.io/<repo>/
 ```
 
 - `FAIL` (exit 1) nghĩa là thiếu file hoặc sai base. Phải rollback (mục 4).
-- `WARN` thiếu `content-encoding` trên `.data` hoặc `.wasm` (`pglite-*.data`, `pglite-*.wasm`, `initdb-*.wasm`, `libpg-query-*.wasm`): GitHub Pages **không cho đặt header**, nên không sửa được bằng cấu hình. **User phải xem** (L6). Ghi kết quả vào bảng dưới, rồi chọn một trong ba hướng: (a) chấp nhận lần tải đầu ~15 MB không nén thay vì ~5,4 MB nén cho PGlite (devops §1.3); (b) chuyển sang Cloudflare Pages (mục 6) và nghiệm thu bằng `STRICT=1`; (c) spike: build `pglite.data.gz`, worker giải nén bằng `DecompressionStream` rồi truyền `fsBundle` (amendments F2, ngoài phạm vi plan deploy).
+- `WARN` thiếu `content-encoding` trên `.data` hoặc `.wasm` (`pglite-*.data`, `pglite-*.wasm`, `initdb-*.wasm`, `libpg-query-*.wasm`): GitHub Pages **không cho đặt header**, nên không sửa được bằng cấu hình. **User phải xem** (L6). Ghi kết quả vào bảng dưới, rồi chọn một trong ba hướng: (a) chấp nhận lần tải đầu ~9,8 MB thay vì ~5,4 MB khi `.data` không nén (devops §1, §1.3; thêm ~1,7 MB nếu `libpg-query-*.wasm` cũng không nén); (b) chuyển sang Cloudflare Pages (mục 6) và nghiệm thu bằng `STRICT=1`; (c) spike: build `pglite.data.gz`, worker giải nén bằng `DecompressionStream` rồi truyền `fsBundle` (amendments F2, ngoài phạm vi plan deploy).
 - Mở trang và chờ trạng thái DB "sẵn sàng"; mở tab Thứ tự thực thi và Sơ đồ ER một lần (chunk lazy).
 
 | Ngày | URL | `.wasm` type / enc | `.data` type / enc | cache-control | Kết luận |
@@ -898,13 +898,13 @@ Run:
 ```bash
 grep -c "export function buildDiagnostics\|export function diagnosticsText\|export type DiagnosticKind" src/diagnostics.ts
 grep -c "__BUILD__" src/env.d.ts
-grep -c "diag.copy" src/i18n/vi.ts
+grep -c "'diag.copy'" src/i18n/vi.ts
 grep -c "      job.reject(new QueryTimeoutError(job.timeoutMs));" src/db/client.ts
 grep -c "^export class DbClient {$" src/db/client.ts
 grep -c "byId('db-status').replaceChildren(dbStatusView());" src/ui/topbar.ts
 grep -c "^Object.assign(actions, { rerender, selectTicket, complete, retryDb: () => db.restart() });$" src/main.ts
 ```
-Expected: `3`, `1`, `0`, `1`, `1`, `1`, `1`. Nếu `diag.copy` đã có (`1`): Plan 1c Task 11 đã chạy, bỏ task này và chỉ kiểm P-D6. Nếu dòng `Object.assign(actions, …)` đã khác (plan khác thêm action), thêm `copyDiagnostics` vào dòng hiện có thay vì thay cả dòng.
+Expected: `3`, `1`, `0`, `1`, `1`, `1`, `1`. Nếu `'diag.copy'` đã có (`1`): Plan 1c Task 11 đã chạy, bỏ task này và chỉ kiểm P-D6. Nếu dòng `Object.assign(actions, …)` đã khác (plan khác thêm action), thêm `copyDiagnostics` vào dòng hiện có thay vì thay cả dòng.
 
 - [ ] **Step 1: Khóa i18n**
 
