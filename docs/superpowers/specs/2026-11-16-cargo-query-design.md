@@ -245,7 +245,7 @@ Toàn UI dùng **Tailwind CSS v4** (L17): topbar gradient indigo→blue→cyan, 
 - Card chế độ: Sandbox / Dữ liệu của tôi / Sổ tay (bật khi tính năng có).
 - **Dàn nhân vật** (L18): chân dung SVG, hộp thư dạng chat nhóm theo người; đoạn mở ticket là bong bóng tin nhắn, `## Task` là thẻ yêu cầu ghim. Cột mốc cuối chương trình bày "Đánh giá thăng tiến", không banner "Sự cố" (L22).
 
-**Khu làm việc** (đã chọn qua mockup): thanh trên → **dải bản đồ tuyến** mỏng, thu gọn được → hàng giữa: **đề bài trái**, **editor phải** (Chạy / EXPLAIN / Nộp) → **panel dưới rộng** có các tab:
+**Khu làm việc** (đã chọn qua mockup): thanh trên → **dải tiến độ chương** một dòng (L35) → hàng giữa: **đề bài trái**, **editor phải** (Chạy / EXPLAIN / Nộp) → **panel dưới rộng** có các tab:
 
 | Tab | Nội dung | Nguồn dữ liệu |
 |---|---|---|
@@ -258,7 +258,7 @@ Toàn UI dùng **Tailwind CSS v4** (L17): topbar gradient indigo→blue→cyan, 
 | Cột | danh sách bảng/cột đã mở khóa | `information_schema` |
 
 - Query có `WITH`, `UNION`… hoặc window function: tab Thứ tự thực thi báo "chưa hỗ trợ, xem EXPLAIN" (mở rộng là mục tùy chọn của Plan 3; ví dụ mẫu ch8–10 không dựa vào tab này).
-- **Bản đồ tuyến** (tỏa ra từ Tiên Sa `VNDAD`, L26): SVG từ `world-atlas` (land 110m) + `d3-geo` (Natural Earth, xoay tâm 150°E để thấy cả châu Âu lẫn Mỹ); cảng là chấm, tuyến từ Tiên Sa là đường tròn lớn; tuyến mở theo chương (Asia → South Asia → Europe → North America → Oceania → đường hàng không); rê chuột xem số lô của tuyến; tàu chỉ chạy trong hoạt cảnh `ship`/`promotion` (mục dưới). Dải thu gọn kiêm thanh tiến độ: một chấm mỗi ticket của chương (ch1–3: 5, ch4–12: 6; ◆ = cột mốc) + `Tuyến đã mở n/N`.
+- **Bản đồ tuyến** (tỏa ra từ Tiên Sa `VNDAD`, L26, L35): bản đồ SVG cách điệu của Plan 1d (`src/ui/routeMap.ts`, `ROUTES` trong `src/scene.ts`: 7 tuyến biển Shanghai, Laem Chabang, Singapore, Rotterdam, Busan, Los Angeles, Sydney), vẽ trên Trang chủ và trong hoạt cảnh `ship`/`promotion` (mục dưới); không dùng `d3-geo`/`world-atlas`, không có đường hàng không. Tuyến mở theo `derive().open` (L32): Shanghai + Laem Chabang từ đầu, mỗi đánh giá thăng tiến ch1–5 mở một tuyến, **và** một việc `scene: ship` tới cảng X mở tuyến X. Không rê chuột xem số lô (bỏ theo L35). **Dải tiến độ** trong khu làm việc (chỉ ở `#/play`, không vẽ bản đồ, không mở rộng): một chấm mỗi ticket của chương (ch1–3: 5, ch4–12: 6; ◆ = cột mốc) + `Tuyến đã mở n/7` + liên kết về bản đồ trên Trang chủ.
 - Mọi animation tắt khi `prefers-reduced-motion` hoặc công tắc "Giảm chuyển động" trong Cài đặt. Không dùng 3D.
 
 ### Hoạt cảnh khi xong việc (L29, L31; `completion-animations.md`)
@@ -279,7 +279,7 @@ Lần đầu Nộp đúng một ticket: +1 container màu chương vào bãi Ti�
 - Chọn bằng `scene:` hoặc `sceneOf(ticket)` (boss → `promotion`; `from.dept` Customs → `customs`, Finance → `ledger`, CS → `chat`, Ops + `shipments` → `ship` không đích; còn lại `yard`). Cảng đích là cảng `SEAPORT` của seed (Laem Chabang `THLCH`, không "Bangkok").
 - ≤ 3 s, bỏ qua được (nút + Esc → nhảy tới trạng thái cuối), không chặn (`pointer-events: none`), không xếp hàng. Không chạy ở Luyện tập/Làm lại.
 - Giảm chuyển động: chỉ đổi trạng thái tĩnh + câu chữ. Câu báo VI/EN ghi ngay vào một `aria-live="polite"` có sẵn và hiện thành chữ.
-- Bãi, số chuyến, tuyến mở là hàm thuần `derive(completed, tickets)` (`src/scene.ts`); **không lưu gì mới**. `src/ui/harbor.ts` vẽ cảnh (Plan 1d); `playCompletion` (một bộ tween `requestAnimationFrame`, không thư viện) cài sau khi có cảnh (1d) và bản đồ (1b).
+- Bãi, số chuyến, tuyến mở là hàm thuần `derive(completed, tickets)` (`src/scene.ts`); **không lưu gì mới**. `src/ui/harbor.ts` vẽ cảnh (Plan 1d); `playCompletion` (một bộ tween `requestAnimationFrame`, không thư viện) cài sau khi có cảnh và bản đồ tuyến (cả hai ở Plan 1d).
 
 ### Bổ sung (vòng 2)
 
@@ -292,9 +292,9 @@ Mọi trạng thái hiển thị dưới đây **tính lại từ save**, không
 - **Sổ tay** (`<dialog>` không modal, để vừa đọc vừa gõ): Thẻ kỹ năng / Thuật ngữ, có ô lọc.
 - **Panel:** tablist theo ARIA (roving tabindex, ←/→/Home/End). Nhóm tab [Kết quả · Biểu đồ] | [Thứ tự · EXPLAIN · Luồng] | [ER · Cột]; **không ẩn tab nào**, chỉ chấm "mới" trên Biểu đồ ở `ch2-01` và EXPLAIN ở `ch3-01`. Tab mặc định: Cột khi chưa chạy; sau khi Nộp sai thì mở tab theo loại sai. Mọi tab đọc SQL của lần chạy gần nhất; editor khác SQL đó thì hiện dải "SQL đã thay đổi — Ctrl+Enter để cập nhật".
 - **Editor:** gợi ý tên bảng/cột có kiểu (chỉ bảng đã mở), chạy vùng chọn, gạch lỗi tại vị trí Postgres báo, lịch sử query (≤ 15 mục mỗi ticket, `<details>`), **Format SQL** bằng `sql-formatter` (pin version, tải lười). Phím tắt chỉ có `Mod-Enter` Chạy, `Mod-Shift-Enter` Nộp, `Shift-Alt-F` Format (L11). Bước cột mốc chỉ báo bằng dòng `Bước i/n: …`. Đổi ngôn ngữ không remount editor.
-- **Bố cục:** app shell `100dvh` khi màn ≥ 1024×700; bản đồ 28px (thu gọn) / 120px (mở); splitter kéo được (`role=separator`, phím ±5%); màn < 600px thanh Chạy/Nộp sticky.
+- **Bố cục:** app shell `100dvh` khi màn ≥ 1024×700; dải tiến độ một dòng (≥ 28px); splitter kéo được (`role=separator`, phím ±5%); màn < 600px thanh Chạy/Nộp sticky.
 - **Onboarding:** 4 coach mark trong `ch1-01` → `ch1-02`; bấm Chạy khi DB chưa sẵn sàng thì xếp hàng; có empty state cho các bảng/tab.
-- **Sandbox:** như màn ticket nhưng không có đề và nút Nộp; sidebar chỉ có bảng đã mở và bảng trong `sandbox`; chấm điểm và bản đồ không áp dụng.
+- **Sandbox:** như màn ticket nhưng không có đề và nút Nộp; sidebar chỉ có bảng đã mở và bảng trong `sandbox`; chấm điểm và dải tiến độ không áp dụng.
 - **Tương phản:** đạt WCAG AA ở cả light/dark; trạng thái mờ dùng màu, không dùng `opacity`.
 - **Phiên bản mới:** bắt `vite:preloadError` → "Có phiên bản mới, tải lại trang".
 
@@ -341,7 +341,7 @@ Cần spike trước khi viết plan Import: `COPY … FROM '/dev/blob'` trong w
 - Đọc save: parse → kiểm `version` → từ chối nếu mới hơn bản game → **giữ bản cũ ở key `cargo-query-save.v<old>`** (1 bản) → migration tuần tự vN→vN+1 → validate với danh sách ticket id và skill id hiện có (bỏ id không còn tồn tại). Lỗi có kiểu (`NewerSaveError`, `InvalidSaveError`, cảnh báo `corrupt`/`newer`), không kèm chữ. Save hỏng hoặc mới hơn bản game được chép sang `cargo-query-save.bak` trước khi bắt đầu lại.
 - Release nâng save version **đi riêng**, không gộp với thay đổi rủi ro khác.
 - Thang nghề, bãi container, tuyến mở, ô KPI, Ôn đầu chương đều tính lại từ save + nội dung, không thêm field.
-- **Không nằm trong save** (key riêng, đọc trước khi render): `cargo-query/prefs` = `{ lang }`, `cargo-query/layout` (splitter), `cargo-query/map-collapsed`, `cargo-query/coach-done`, `cargo-query/history` (lịch sử query). Dữ liệu import nằm trong IndexedDB.
+- **Không nằm trong save** (key riêng, đọc trước khi render): `cargo-query/prefs` = `{ lang }`, `cargo-query/layout` (splitter), `cargo-query/coach-done`, `cargo-query/history` (lịch sử query). Dữ liệu import nằm trong IndexedDB.
 - Mọi truy cập `localStorage`/IndexedDB bọc try/catch; lỗi thì chơi tiếp không lưu và báo người chơi.
 - Nút **Xuất/Nhập tiến độ** (file JSON).
 

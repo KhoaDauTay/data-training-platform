@@ -572,6 +572,6 @@ Luật seed giữ nguyên:
 | Plan 1d Trang chủ | "lưới 7 chương", L18 "cảnh cảng 7 trạm" | lưới 12 card (4 × 3 trên desktop, 2 cột trên mobile); hành trình 12 trạm |
 | Plan 1d `LEVELS = 5` | mức nhớ Leitner | giữ (đây là hộp Leitner, không phải bậc nghề) |
 | Thang nghề (Plan 1c Task 4 `rankOf`, `product-design-v2.md` ★3) | 5 bậc, ch1/3/5/7 | 6 tier + 12 bước theo §1 |
-| Plan 1b `SEA_REGION_CHAPTER` | tuyến biển mở ch1–5, air ch6 | giữ (bản đồ đã mở hết ở ch6; ch7–12 thêm hoạt cảnh theo L29, không thêm tuyến) |
+| Plan 1b `SEA_REGION_CHAPTER` (bản đồ d3-geo) | tuyến biển mở ch1–5 theo vùng, air ch6 | **bỏ** (L35): dùng bản đồ Tiên Sa của Plan 1d, tuyến theo `derive().open` (L32: `ROUTES[].opens` ch0–5 hoặc chuyến tàu `scene: ship` tới cảng đó); không đường hàng không, không số lô khi rê chuột; ch6–12 thêm hoạt cảnh theo L29, không thêm tuyến |
 | Spec §4 cột "Mở ở chương", §5 bảng lộ trình 7 chương; `problem-design.md` §4 (đánh số ch4–7) | bản 7 chương | sửa theo tài liệu này ở lần sửa spec tới. Ngân hàng câu hỏi §4 dùng lại: 4.x → ch4/5, 5.x → ch7/8, 6.x → ch9/10, 7.x → ch12. |
 | `content/skills.yml` | chú thích "chương 4–6" | 27 kỹ năng mới theo §4, thêm trước khi viết ticket của chương đó |
