@@ -1,8 +1,9 @@
-import type { QueryResult } from './db/run';
+import { sqlErrorInfo, type QueryResult, type SqlErrorInfo } from './db/run';
 
 export type GradeResult =
   | { ok: true }
-  | { ok: false; reason: 'error'; message: string }
+  /** `error` is set when the player's query failed with a Postgres error (position for the editor). */
+  | { ok: false; reason: 'error'; message: string; error?: SqlErrorInfo }
   | { ok: false; reason: 'columns'; expected: number; actual: number }
   | { ok: false; reason: 'rows'; missing: number; extra: number; sample?: unknown[] }
   | { ok: false; reason: 'order' };
@@ -63,7 +64,8 @@ export async function grade(run: Runner, solutionSql: string, playerSql: string,
   try {
     actual = await run(playerSql);
   } catch (e) {
-    return { ok: false, reason: 'error', message: errorMessage(e) };
+    const error = sqlErrorInfo(e);
+    return error ? { ok: false, reason: 'error', message: error.message, error } : { ok: false, reason: 'error', message: errorMessage(e) };
   }
   const expected = await run(solutionSql); // throws on a broken Solution: content bug, surfaced to the caller
   return compareResults(expected, actual, ordered);

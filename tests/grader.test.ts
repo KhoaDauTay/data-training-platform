@@ -67,6 +67,20 @@ describe('grade trên DB thật', () => {
     expect(r).toMatchObject({ ok: false, reason: 'error' });
   });
 
+  it('lỗi SQL khi Nộp kèm error (position, code) để editor gạch lỗi', async () => {
+    const run = await runner();
+    const r = await grade(run, sol, 'SELECT cde FROM ports', false);
+    expect(r).toMatchObject({
+      ok: false, reason: 'error', message: 'column "cde" does not exist',
+      error: { message: 'column "cde" does not exist', position: 8, code: '42703' },
+    });
+  });
+
+  it('lỗi không phải SQL → reason error, không có error', async () => {
+    const r = await grade(() => Promise.reject(new Error('worker chết')), sol, 'SELECT 1', false);
+    expect(r).toEqual({ ok: false, reason: 'error', message: 'worker chết' });
+  });
+
   it('nhiều câu lệnh bị từ chối', async () => {
     const run = await runner();
     const r = await grade(run, sol, 'SELECT 1; SELECT 2', false);
