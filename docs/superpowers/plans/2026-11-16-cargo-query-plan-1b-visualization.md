@@ -2,44 +2,72 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Thêm các tab trực quan vào panel dưới (Biểu đồ, Thứ tự thực thi, EXPLAIN, Luồng dữ liệu, Sơ đồ ER) và dải bản đồ tuyến 2D, đúng spec §6b.
+**Goal:** Thêm các tab trực quan vào panel dưới (Biểu đồ, Thứ tự thực thi, EXPLAIN, Luồng dữ liệu, Sơ đồ ER) và dải bản đồ tuyến 2D kiêm thanh tiến độ chương, đúng spec §6b, song ngữ VI/EN.
 
-**Architecture:** Dữ liệu trực quan được tính bằng hàm thuần trong `src/viz/*` (có unit test chạy PGlite thật trong Node) rồi vẽ bằng DOM/SVG trong `src/ui/*View.ts`. EXPLAIN và "thứ tự thực thi" chạy trong worker DB (cùng sandbox `BEGIN … ROLLBACK`). Thư viện nặng (Mermaid, parser `libpg-query`) chỉ tải khi mở tab cần.
+**Architecture:** Dữ liệu trực quan được tính bằng hàm thuần trong `src/viz/*` (có unit test chạy PGlite thật trong Node, không chứa chữ đã dịch) rồi vẽ bằng DOM/SVG trong `src/ui/*View.ts` (mọi chữ qua `t()`). EXPLAIN và "thứ tự thực thi" chạy trong worker DB (cùng sandbox `BEGIN … ROLLBACK`), đi qua hàng đợi request của `DbClient`. Các tab đăng ký qua `registerTab()` của `src/ui/tabs.ts` trong một file riêng `src/ui/vizTabs.ts`; mọi tab mô tả **lần chạy gần nhất** (`app.lastRun.sql` trong `src/state.ts`), không đọc editor. Kết quả EXPLAIN / thứ tự thực thi / metadata ERD được cache theo SQL (hoặc theo schema) bằng `memoByKey`. Thư viện nặng (Mermaid, parser `libpg-query`) chỉ tải khi mở tab cần.
 
-**Tech Stack:** như Plan 1, thêm `libpg-query` 18.2.4 + `pgsql-deparser` 18.4.5 (parser/deparser Postgres, WASM), `mermaid` 12.3.0, `d3-geo` + `topojson-client` + `world-atlas`.
+**Tech Stack:** như Plan 1, thêm `libpg-query` 18.2.4 + `pgsql-deparser` 18.4.5 (parser/deparser Postgres, WASM), `mermaid` 12.3.0, `d3-geo` 3.1.2 + `topojson-client` 3.1.0 + `world-atlas` 2.0.2 (dev: `@types/d3-geo` 3.1.1, `@types/topojson-client` 3.1.5, `@types/topojson-specification` 1.0.5).
 
-**Spec:** `docs/superpowers/specs/2026-11-16-cargo-query-design.md` §6b. **Tiền đề:** Plan 1 đã xong (Task 1–11).
+**Spec:** `docs/superpowers/specs/2026-11-16-cargo-query-design.md` §6b. **Tiền đề:** Plan 1 đã xong (Task 1–11), gồm cả bản sửa `src/db/{client,worker,run}.ts` của BE đã commit (Task 2: hàng đợi request trong `DbClient`, `SqlError`/`sqlErrorInfo` trong `run.ts`, `QueryTimeoutError`/`DbRestartError`/`DbFailedError` không kèm chữ, `MAX_ROWS_WORKER`) và Task 10 viết theo cấu trúc tách `src/state.ts` + `src/ui/{topbar,inbox,brief,work,tabs}.ts` + `src/i18n/*`. Quyết định nguồn: `docs/team/amendments.md` (B3, C1, C4, C5, C7, F10 và mục "Quyết định của user").
+
+### Tên dùng từ Plan 1 (đã đối chiếu với văn bản Plan 1 Task 10)
+
+Plan 1b chỉ dùng các tên dưới đây từ Plan 1. Tất cả đã có trong code mẫu của Plan 1 Task 10; nếu lúc chạy thấy khác, sửa ở chỗ gọi trong Plan 1b, không đổi Plan 1.
+
+| File (Plan 1) | Tên Plan 1b dùng |
+|---|---|
+| `src/i18n/index.ts` | `type Lang = 'vi' \| 'en'`, `type Key`, `type Params = Record<string, string \| number>`, `type Msg = string \| ((p: Params) => string)`, `t(key: Key, p?: Params): string`, `getLang(): Lang`, `locale(): string` |
+| `src/i18n/vi.ts`, `src/i18n/en.ts` | object literal `vi` (nguồn khóa) và `en: Record<Key, Msg>`; Plan 1b thêm khóa vào cả hai |
+| `src/state.ts` | `app.lastRun: { sql: string; result?: QueryResult; error?: … } \| undefined`, `app.tickets`, `app.selectedId`, `done(): Set<string>`, `unlockedTables(): string[]` |
+| `src/ui/tabs.ts` | `registerTab(spec: TabSpec): void` với `TabSpec { id: string; label: Key; group: 'output' \| 'query' \| 'schema'; order: number; newAt?: string; render(host: HTMLElement): void \| Promise<void> }`; panel sắp tab theo nhóm `output \| query \| schema` rồi theo `order`. Plan 1 đăng ký `result` (output, 10) và `columns` (schema, 20). `registerTab` phải được gọi trước khi panel được tạo. |
+| `src/ui/work.ts` | trong `mountWork(host, deps)`: hàm cục bộ `run(): Promise<void>` (chạy SQL editor/vùng chọn, ghi `app.lastRun`), nút `runBtn`, hàng nút `h('div', { class: 'actions' }, runBtn, …)`, `deps.panel.show(id)`; `WorkArea.currentSql(): string` = đúng đoạn SQL mà Ctrl+Enter sẽ chạy lúc này (vùng chọn nếu có, không thì cả editor), để so được với `app.lastRun.sql` |
+| `src/ui/dom.ts` | `h()` (Plan 1 Task 10) |
+| `src/ui/resultTable.ts` | `renderResult(r: QueryResult, mark?: unknown[]): HTMLElement`, `formatCell(v: unknown, type?: number): string` |
+| `src/main.ts` | `const db = new DbClient(onDbStatus)`, `registerCoreTabs(…)` ngay trước `const panel = createPanel(…)`, hàm `loadColumns()` (gọi một lần khi DB `ready`), hàm `rerender()`, hàm `complete(t: Ticket)` (đóng mọi ticket, kể cả boss qua `actions.complete`), biến `panel` và `work` |
+| `src/progress.ts` | `currentChapter(tickets, completed): number` |
 
 ## Global Constraints
 
-- Mọi ràng buộc của Plan 1 vẫn áp dụng (PGlite 0.5.16 pin, ngày cố định, không `innerHTML` với dữ liệu, try/catch `localStorage`, `npx tsc --noEmit` ở mọi bước xác nhận PASS).
-- Ngoại lệ `innerHTML` duy nhất: SVG do Mermaid sinh từ tên bảng/cột của chính schema game, với `securityLevel: 'strict'`.
-- Pin chính xác: `libpg-query@18.2.4`, `pgsql-deparser@18.4.5`, `mermaid@12.3.0` (`--save-exact`).
+- Mọi ràng buộc của Plan 1 vẫn áp dụng (PGlite 0.5.16 pin, ngày cố định, không `innerHTML` với dữ liệu, try/catch mọi truy cập `localStorage`/IndexedDB, `npx tsc --noEmit` ở mọi bước xác nhận PASS).
+- Ngoại lệ `innerHTML` duy nhất: SVG do Mermaid sinh từ tên bảng/cột (schema game, hoặc tên đã sanitize về `[a-z0-9_]` của schema `sandbox`), với `securityLevel: 'strict'`.
+- Pin chính xác (`--save-exact`): `libpg-query@18.2.4`, `pgsql-deparser@18.4.5`, `mermaid@12.3.0`, `d3-geo@3.1.2`, `topojson-client@3.1.0`, `world-atlas@2.0.2`, `@types/d3-geo@3.1.1`, `@types/topojson-client@3.1.5`, `@types/topojson-specification@1.0.5`.
 - File `libpg-query.wasm` phải được import qua `?url` và nạp bằng `loadModule({ wasm })` — Vite không tự đóng gói nó (đã xác nhận bằng spike).
+- Sau mỗi lần cài dependency: grep `SharedArrayBuffer` (F10). Không bật COOP/COEP; GitHub Pages (D6) không đặt được header này.
+- **i18n:** mọi chữ hiển thị đi qua `t()`; khóa mới được thêm vào **cả** `src/i18n/vi.ts` và `src/i18n/en.ts` trong cùng task. `src/viz/*` chạy trong worker và Node nên chỉ được `import type` từ `src/i18n` (không gọi `t()`/`getLang()`). Dữ liệu được cache (`planFor`, `stepsFor`) không chứa chữ đã dịch: mã + giá trị thô, dịch lúc vẽ. Bảng chú thích theo ngôn ngữ (`NODE_HELP`, `STEP_LABELS`, `STEP_HELP`) là `Record<Lang, …>` cùng tập khóa (có test).
+- Không dịch: tên bảng/cột, SQL, giá trị dữ liệu, lỗi gốc Postgres, tên cảng.
+- Mọi tab trực quan đọc `app.lastRun.sql`; khi editor khác SQL đó thì hiện dải "SQL đã thay đổi — Ctrl+Enter để cập nhật".
+- Số hiển thị qua `fmt()` (`toLocaleString(locale())`).
 - Mọi animation tắt khi `prefers-reduced-motion: reduce`.
-- Màu lấy từ CSS token (`var(--accent)`, `var(--land)`…), không hard-code ngoài `:root`.
+- Màu lấy từ CSS token (`var(--accent)`, `var(--land)`…), không hard-code ngoài `:root`. Trạng thái (bước bỏ qua, SQL mờ, tuyến chưa mở, cạnh luồng) thể hiện bằng **màu/nét**, không bằng `opacity`.
 
 ## File Structure
 
 ```
 src/db/run.ts          + runExplain(db, sql)
 src/db/worker.ts       nhận { id, kind: 'run' | 'explain' | 'steps', sql }
-src/db/client.ts       + explain(sql), steps(sql); request<T>(kind, sql, timeoutMs)
-src/viz/plan.ts        flattenPlan, nodeExplanation, isHeavyScan — từ EXPLAIN JSON
+src/db/client.ts       + RequestKind; request<T>(kind, sql, timeoutMs) qua hàng đợi có sẵn; explain(sql), steps(sql)
+src/viz/memo.ts        memoByKey — cache promise theo SQL / schema
+src/viz/plan.ts        flattenPlan, NODE_HELP, nodeExplanation, isHeavyScan — từ EXPLAIN JSON
 src/viz/parser.ts      ensureParser(): nạp wasm libpg-query trong trình duyệt
-src/viz/steps.ts       buildSteps, clauseRanges, runSteps — thứ tự thực thi logic
+src/viz/steps.ts       STEP_LABELS, STEP_HELP, buildSteps, clauseRanges, runSteps
 src/viz/chart.ts       chartSpec — chọn kiểu biểu đồ theo OID cột
-src/viz/erd.ts         ER_COLUMNS_SQL, ER_CONSTRAINTS_SQL, erDefinition, tablesInQuery
-src/viz/ports.ts       PORTS, laneUnlocked
-src/ui/dom.ts          + svg() helper
+src/viz/erd.ts         erColumnsSql(schema), erConstraintsSql(schema), loadErMetadata, erDefinition, tablesInQuery
+src/viz/ports.ts       PORTS, HUB, laneUnlocked, VOLUMES_SQL, toVolumes, chapterDots, ticketPorts
+src/i18n/vi.ts, en.ts  + khóa viz.*, plan.*, explain.*, flow.*, steps.*, chart.*, erd.*, map.*, tab.*
+src/ui/dom.ts          + svg(), reducedMotion(), fmt()
+src/ui/vizTabs.ts      registerVizTabs(deps): đăng ký 5 tab qua registerTab, cache planFor/stepsFor/erMetadata
+src/ui/work.ts         + nút EXPLAIN
 src/ui/explainView.ts  tab EXPLAIN
 src/ui/flowView.ts     tab Luồng dữ liệu
 src/ui/stepsView.ts    tab Thứ tự thực thi
 src/ui/chartView.ts    tab Biểu đồ
 src/ui/erdView.ts      tab Sơ đồ ER (Mermaid, tải lười)
-src/ui/mapView.ts      dải bản đồ tuyến
-tests/plan.test.ts, steps.test.ts, chart.test.ts, erd.test.ts, ports.test.ts
+src/ui/mapView.ts      dải bản đồ tuyến + thanh tiến độ chương
+src/main.ts            + registerVizTabs(...), createMap/syncMap
+tests/memo.test.ts, plan.test.ts, steps.test.ts, chart.test.ts, erd.test.ts, ports.test.ts
 ```
+
+Thứ tự tab cuối cùng: [`result` · `chart`] | [`steps` · `explain` · `flow`] | [`erd` · `columns`].
 
 ---
 
@@ -47,17 +75,20 @@ tests/plan.test.ts, steps.test.ts, chart.test.ts, erd.test.ts, ports.test.ts
 
 **Files:**
 - Modify: `src/db/run.ts`, `src/db/worker.ts`, `src/db/client.ts`
-- Create: `src/viz/plan.ts`
+- Create: `src/viz/plan.ts`, `src/viz/steps.ts` (file tạm, thay ở Task 3)
 - Test: `tests/plan.test.ts`
 
 **Interfaces:**
-- Consumes: `runSandboxed`, `QueryResult` (Plan 1); `seededDb` (tests/helpers.ts)
+- Consumes: `runSandboxed`, `QueryResult`, `SqlError`, `SqlErrorInfo`, `sqlErrorInfo` (`src/db/run.ts`); `DbClient` (hàng đợi `queue`/`inFlight`/`pump()`, `failure`), `QueryTimeoutError(timeoutMs)`, `DbRestartError`, `DbFailedError(detail)` (`src/db/client.ts`) — Plan 1 Task 2, đã có code; `type Lang` (`src/i18n`, Plan 1 Task 10); `seededDb` (tests/helpers.ts)
 - Produces:
   - `runExplain(db: PGlite, sql: string): Promise<unknown>` — JSON của `EXPLAIN (ANALYZE, FORMAT JSON)`
-  - `DbClient.request<T>(kind: 'run' | 'explain' | 'steps', sql: string, timeoutMs?: number): Promise<T>`; `run(sql)`, `explain(sql): Promise<unknown>`, `steps(sql): Promise<StepsResult>` (`StepsResult` từ Task 3)
-  - `interface PlanNode { id: number; depth: number; parent: number | null; type: string; label: string; relation?: string; rows: number; scanned: number; estRows: number; ms: number; detail: string[] }`
-  - `flattenPlan(json: unknown): { nodes: PlanNode[]; executionMs: number }`
-  - `nodeExplanation(type: string): string`, `isHeavyScan(n: PlanNode): boolean`
+  - `type RequestKind = 'run' | 'explain' | 'steps'`
+  - `DbClient.request<T>(kind: RequestKind, sql: string, timeoutMs?: number): Promise<T>`; `run(sql): Promise<QueryResult>`, `explain(sql): Promise<unknown>`, `steps(sql): Promise<StepsResult>` (ngân sách gấp 3)
+  - `type PlanDetail = { kind: 'index' | 'indexCond' | 'hashCond' | 'joinFilter' | 'filter' | 'groupKey' | 'sortKey'; text: string; removed?: number }`
+  - `interface PlanNode { id: number; depth: number; parent: number | null; type: string; label: string; relation?: string; rows: number; scanned: number; estRows: number; ms: number; detail: PlanDetail[] }`
+  - `interface Plan { nodes: PlanNode[]; executionMs: number }`
+  - `flattenPlan(json: unknown): Plan`
+  - `NODE_HELP: Record<Lang, Record<string, string>>`, `nodeExplanation(type: string, lang: Lang): string`, `isHeavyScan(n: PlanNode): boolean`
 
 - [ ] **Step 1: Viết test**
 
@@ -65,7 +96,7 @@ tests/plan.test.ts, steps.test.ts, chart.test.ts, erd.test.ts, ports.test.ts
 ```ts
 import { describe, expect, it } from 'vitest';
 import { runExplain } from '../src/db/run';
-import { flattenPlan, isHeavyScan, nodeExplanation } from '../src/viz/plan';
+import { flattenPlan, isHeavyScan, NODE_HELP, nodeExplanation } from '../src/viz/plan';
 import { seededDb } from './helpers';
 
 const TEU_BY_CARRIER = `SELECT ca.name, SUM(ct.teu) FROM containers ct
@@ -91,9 +122,14 @@ describe('flattenPlan với EXPLAIN thật', () => {
     await runExplain(db, "UPDATE ports SET name = 'x'");
     expect((await db.query<{ n: number }>("SELECT count(*) AS n FROM ports WHERE name = 'x'")).rows[0].n).toBe(0);
   });
+
+  it('lỗi EXPLAIN là SqlError có SQLSTATE nhưng không có position (bị lệch bởi tiền tố EXPLAIN)', async () => {
+    const db = await seededDb();
+    await expect(runExplain(db, 'SELECT nope FROM ports')).rejects.toMatchObject({ name: 'SqlError', code: '42703', position: undefined });
+  });
 });
 
-describe('nhãn và giải thích node', () => {
+describe('nhãn và chi tiết node (không chứa chữ đã dịch)', () => {
   it('Aggregate theo strategy, join type, alias, rows × loops, dòng bị lọc', () => {
     const { nodes } = flattenPlan([{
       'Execution Time': 1.5,
@@ -113,10 +149,21 @@ describe('nhãn và giải thích node', () => {
     expect(nodes[3].rows).toBe(5);
     expect(nodes[2].scanned).toBe(20005);
     expect(isHeavyScan(nodes[2])).toBe(true);
-    expect(nodes[2].detail).toContain("Lọc: (status = 'X') — bỏ 20000 dòng");
-    expect(nodes[0].detail).toContain('Nhóm theo: a.x');
-    expect(nodeExplanation('Hash Join')).toMatch(/băm/);
-    expect(nodeExplanation('Something New')).toMatch(/kế hoạch/);
+    expect(nodes[2].detail).toContainEqual({ kind: 'filter', text: "(status = 'X')", removed: 20000 });
+    expect(nodes[3].detail).toContainEqual({ kind: 'index', text: 'customers_pkey' });
+    expect(nodes[0].detail).toContainEqual({ kind: 'groupKey', text: 'a.x' });
+  });
+});
+
+describe('NODE_HELP theo ngôn ngữ', () => {
+  it('VI và EN cùng tập khóa', () => {
+    expect(Object.keys(NODE_HELP.en).sort()).toEqual(Object.keys(NODE_HELP.vi).sort());
+  });
+  it('tra theo ngôn ngữ, có câu mặc định cho node lạ', () => {
+    expect(nodeExplanation('Hash Join', 'vi')).toMatch(/băm/);
+    expect(nodeExplanation('Hash Join', 'en')).toMatch(/hash table/);
+    expect(nodeExplanation('Something New', 'vi')).toMatch(/kế hoạch/);
+    expect(nodeExplanation('Something New', 'en')).toMatch(/plan/);
   });
 });
 ```
@@ -128,6 +175,8 @@ Expected: FAIL — `runExplain` / `../src/viz/plan` không tồn tại.
 
 - [ ] **Step 3: Thêm `runExplain` vào cuối `src/db/run.ts`**
 
+`run.ts` đã có `SqlError` và `sqlErrorInfo` (Plan 1 Task 2). Lỗi của EXPLAIN cũng được ném ra dạng `SqlError`, nhưng bỏ `position`: SQL thực chạy có thêm tiền tố `EXPLAIN (…) `, nên vị trí không khớp với editor.
+
 ```ts
 /** EXPLAIN ANALYZE executes the statement, so it gets the same BEGIN … ROLLBACK sandbox. */
 export async function runExplain(db: PGlite, sql: string): Promise<unknown> {
@@ -135,6 +184,9 @@ export async function runExplain(db: PGlite, sql: string): Promise<unknown> {
   try {
     const r = await db.query<unknown[]>(`EXPLAIN (ANALYZE, FORMAT JSON) ${sql}`, [], { rowMode: 'array' });
     return r.rows[0][0];
+  } catch (e) {
+    const info = sqlErrorInfo(e);
+    throw info ? new SqlError({ ...info, position: undefined }) : e;
   } finally {
     await db.exec('ROLLBACK');
   }
@@ -144,6 +196,15 @@ export async function runExplain(db: PGlite, sql: string): Promise<unknown> {
 - [ ] **Step 4: Viết `src/viz/plan.ts`**
 
 ```ts
+import type { Lang } from '../i18n';
+
+export type PlanDetail = {
+  kind: 'index' | 'indexCond' | 'hashCond' | 'joinFilter' | 'filter' | 'groupKey' | 'sortKey';
+  /** Raw Postgres text (expression, index name). Translated labels are added by the view. */
+  text: string;
+  removed?: number;
+};
+
 export interface PlanNode {
   id: number;
   depth: number;
@@ -157,7 +218,12 @@ export interface PlanNode {
   scanned: number;
   estRows: number;
   ms: number;
-  detail: string[];
+  detail: PlanDetail[];
+}
+
+export interface Plan {
+  nodes: PlanNode[];
+  executionMs: number;
 }
 
 interface RawNode {
@@ -191,19 +257,22 @@ function label(n: RawNode): string {
   return `${base}${join}${rel ? ` ${rel}${alias}` : ''}`;
 }
 
-function detail(n: RawNode): string[] {
-  const out: string[] = [];
-  if (n['Index Name']) out.push(`Index: ${n['Index Name']}`);
-  if (n['Index Cond']) out.push(`Điều kiện index: ${n['Index Cond']}`);
-  if (n['Hash Cond']) out.push(`Điều kiện ghép: ${n['Hash Cond']}`);
-  if (n['Join Filter']) out.push(`Lọc khi ghép: ${n['Join Filter']}`);
-  if (n.Filter) out.push(`Lọc: ${n.Filter}${n['Rows Removed by Filter'] ? ` — bỏ ${n['Rows Removed by Filter']} dòng` : ''}`);
-  if (n['Group Key']) out.push(`Nhóm theo: ${n['Group Key'].join(', ')}`);
-  if (n['Sort Key']) out.push(`Sắp theo: ${n['Sort Key'].join(', ')}`);
+function detail(n: RawNode): PlanDetail[] {
+  const out: PlanDetail[] = [];
+  if (n['Index Name']) out.push({ kind: 'index', text: n['Index Name'] });
+  if (n['Index Cond']) out.push({ kind: 'indexCond', text: n['Index Cond'] });
+  if (n['Hash Cond']) out.push({ kind: 'hashCond', text: n['Hash Cond'] });
+  if (n['Join Filter']) out.push({ kind: 'joinFilter', text: n['Join Filter'] });
+  if (n.Filter) {
+    const removed = n['Rows Removed by Filter'];
+    out.push(removed ? { kind: 'filter', text: n.Filter, removed } : { kind: 'filter', text: n.Filter });
+  }
+  if (n['Group Key']) out.push({ kind: 'groupKey', text: n['Group Key'].join(', ') });
+  if (n['Sort Key']) out.push({ kind: 'sortKey', text: n['Sort Key'].join(', ') });
   return out;
 }
 
-export function flattenPlan(json: unknown): { nodes: PlanNode[]; executionMs: number } {
+export function flattenPlan(json: unknown): Plan {
   const root = (json as { Plan: RawNode; 'Execution Time'?: number }[])[0];
   const nodes: PlanNode[] = [];
   const walk = (n: RawNode, depth: number, parent: number | null) => {
@@ -226,34 +295,66 @@ export function flattenPlan(json: unknown): { nodes: PlanNode[]; executionMs: nu
   return { nodes, executionMs: root['Execution Time'] ?? 0 };
 }
 
-const NODE_VI: Record<string, string> = {
-  'Seq Scan': 'Đọc toàn bộ bảng từ đầu đến cuối và kiểm tra từng dòng. Chậm khi bảng lớn mà chỉ cần ít dòng.',
-  'Index Scan': 'Dùng index để nhảy thẳng tới các dòng cần, rồi đọc các dòng đó trong bảng.',
-  'Index Only Scan': 'Lấy dữ liệu ngay trong index, không cần đọc bảng.',
-  'Bitmap Index Scan': 'Dùng index để đánh dấu các trang dữ liệu có dòng phù hợp.',
-  'Bitmap Heap Scan': 'Đọc các trang bảng đã được đánh dấu bởi Bitmap Index Scan.',
-  'Hash Join': 'Dựng bảng băm từ một phía (node Hash) rồi dò từng dòng của phía còn lại vào bảng băm.',
-  Hash: 'Xây bảng băm trong bộ nhớ từ các dòng bên dưới để Hash Join dò tìm.',
-  'Nested Loop': 'Với mỗi dòng phía ngoài, tìm các dòng khớp phía trong. Nhanh khi phía ngoài có ít dòng.',
-  'Merge Join': 'Ghép hai đầu vào đã được sắp xếp theo khóa join, đi song song từ trên xuống.',
-  Sort: 'Sắp xếp các dòng (cho ORDER BY, hoặc chuẩn bị cho Merge Join / GroupAggregate).',
-  'Incremental Sort': 'Sắp xếp tiếp phần còn thiếu trên dữ liệu đã được sắp theo một phần khóa.',
-  Aggregate: 'Gộp nhiều dòng thành giá trị tổng hợp (COUNT, SUM, AVG…), theo nhóm nếu có GROUP BY.',
-  Limit: 'Dừng ngay khi đã đủ số dòng của LIMIT.',
-  Unique: 'Bỏ các dòng trùng nhau liền kề (DISTINCT trên dữ liệu đã sắp xếp).',
-  Materialize: 'Lưu tạm kết quả bên dưới để đọc lại nhiều lần.',
-  Memoize: 'Ghi nhớ kết quả theo khóa để không tính lại cho cùng giá trị.',
-  'Subquery Scan': 'Đọc kết quả của một truy vấn con như một bảng.',
-  'CTE Scan': 'Đọc kết quả của một mệnh đề WITH.',
-  WindowAgg: 'Tính hàm cửa sổ (RANK, LAG, SUM OVER…) trên từng dòng mà không gộp dòng.',
-  Append: 'Nối kết quả của nhiều nhánh (UNION ALL, bảng phân vùng).',
-  SetOp: 'Thực hiện INTERSECT / EXCEPT.',
-  Result: 'Tính biểu thức không cần đọc bảng.',
-  Gather: 'Gom kết quả từ các tiến trình chạy song song.',
+export const NODE_HELP: Record<Lang, Record<string, string>> = {
+  vi: {
+    'Seq Scan': 'Đọc toàn bộ bảng từ đầu đến cuối và kiểm tra từng dòng. Chậm khi bảng lớn mà chỉ cần ít dòng.',
+    'Index Scan': 'Dùng index để nhảy thẳng tới các dòng cần, rồi đọc các dòng đó trong bảng.',
+    'Index Only Scan': 'Lấy dữ liệu ngay trong index, không cần đọc bảng.',
+    'Bitmap Index Scan': 'Dùng index để đánh dấu các trang dữ liệu có dòng phù hợp.',
+    'Bitmap Heap Scan': 'Đọc các trang bảng đã được đánh dấu bởi Bitmap Index Scan.',
+    'Hash Join': 'Dựng bảng băm từ một phía (node Hash) rồi dò từng dòng của phía còn lại vào bảng băm.',
+    Hash: 'Xây bảng băm trong bộ nhớ từ các dòng bên dưới để Hash Join dò tìm.',
+    'Nested Loop': 'Với mỗi dòng phía ngoài, tìm các dòng khớp phía trong. Nhanh khi phía ngoài có ít dòng.',
+    'Merge Join': 'Ghép hai đầu vào đã được sắp xếp theo khóa join, đi song song từ trên xuống.',
+    Sort: 'Sắp xếp các dòng (cho ORDER BY, hoặc chuẩn bị cho Merge Join / GroupAggregate).',
+    'Incremental Sort': 'Sắp xếp tiếp phần còn thiếu trên dữ liệu đã được sắp theo một phần khóa.',
+    Aggregate: 'Gộp nhiều dòng thành giá trị tổng hợp (COUNT, SUM, AVG…), theo nhóm nếu có GROUP BY.',
+    Limit: 'Dừng ngay khi đã đủ số dòng của LIMIT.',
+    Unique: 'Bỏ các dòng trùng nhau liền kề (DISTINCT trên dữ liệu đã sắp xếp).',
+    Materialize: 'Lưu tạm kết quả bên dưới để đọc lại nhiều lần.',
+    Memoize: 'Ghi nhớ kết quả theo khóa để không tính lại cho cùng giá trị.',
+    'Subquery Scan': 'Đọc kết quả của một truy vấn con như một bảng.',
+    'CTE Scan': 'Đọc kết quả của một mệnh đề WITH.',
+    WindowAgg: 'Tính hàm cửa sổ (RANK, LAG, SUM OVER…) trên từng dòng mà không gộp dòng.',
+    Append: 'Nối kết quả của nhiều nhánh (UNION ALL, bảng phân vùng).',
+    SetOp: 'Thực hiện INTERSECT / EXCEPT.',
+    Result: 'Tính biểu thức không cần đọc bảng.',
+    Gather: 'Gom kết quả từ các tiến trình chạy song song.',
+  },
+  en: {
+    'Seq Scan': 'Reads the whole table from start to end and checks every row. Slow when the table is large but only a few rows are needed.',
+    'Index Scan': 'Uses an index to jump straight to the matching rows, then reads those rows from the table.',
+    'Index Only Scan': 'Gets the data from the index itself without reading the table.',
+    'Bitmap Index Scan': 'Uses an index to mark the data pages that contain matching rows.',
+    'Bitmap Heap Scan': 'Reads the table pages marked by the Bitmap Index Scan.',
+    'Hash Join': 'Builds a hash table from one side (the Hash node), then probes it with every row from the other side.',
+    Hash: 'Builds an in-memory hash table from the rows below so the Hash Join can probe it.',
+    'Nested Loop': 'For each outer row, looks up the matching inner rows. Fast when the outer side has few rows.',
+    'Merge Join': 'Joins two inputs that are already sorted on the join key, walking both from top to bottom.',
+    Sort: 'Sorts the rows (for ORDER BY, or to prepare a Merge Join / GroupAggregate).',
+    'Incremental Sort': 'Finishes sorting data that is already sorted on part of the key.',
+    Aggregate: 'Collapses many rows into summary values (COUNT, SUM, AVG…), per group when there is a GROUP BY.',
+    Limit: 'Stops as soon as it has the number of rows in LIMIT.',
+    Unique: 'Removes adjacent duplicate rows (DISTINCT on sorted data).',
+    Materialize: 'Keeps the rows below in memory so they can be read again.',
+    Memoize: 'Remembers results per key so the same value is not computed twice.',
+    'Subquery Scan': 'Reads the result of a subquery as if it were a table.',
+    'CTE Scan': 'Reads the result of a WITH clause.',
+    WindowAgg: 'Computes window functions (RANK, LAG, SUM OVER…) for each row without collapsing rows.',
+    Append: 'Concatenates the results of several branches (UNION ALL, partitioned tables).',
+    SetOp: 'Performs INTERSECT / EXCEPT.',
+    Result: 'Computes expressions without reading a table.',
+    Gather: 'Collects results from parallel worker processes.',
+  },
 };
 
-export function nodeExplanation(type: string): string {
-  return NODE_VI[type] ?? 'Một bước trong kế hoạch thực thi của Postgres.';
+const NODE_FALLBACK: Record<Lang, string> = {
+  vi: 'Một bước trong kế hoạch thực thi của Postgres.',
+  en: "A step in Postgres' execution plan.",
+};
+
+export function nodeExplanation(type: string, lang: Lang): string {
+  return NODE_HELP[lang][type] ?? NODE_FALLBACK[lang];
 }
 
 export function isHeavyScan(n: PlanNode): boolean {
@@ -261,28 +362,18 @@ export function isHeavyScan(n: PlanNode): boolean {
 }
 ```
 
-- [ ] **Step 5: Mở rộng worker và client cho nhiều loại request**
+- [ ] **Step 5: Thêm `kind` vào giao thức worker**
 
-Thay toàn bộ `src/db/worker.ts`:
+Sửa `src/db/worker.ts` (bản Plan 1 Task 2 + phần `countingFetch` của Plan 1 Task 10; giữ nguyên `ready`/`timings`, dòng `globalThis.fetch = countingFetch(…)`, hàng đợi tuần tự và nhánh `catch` gửi `error: SqlErrorInfo`):
+
+1. Thay dòng `import { runSandboxed, sqlErrorInfo } from './run';` bằng:
 ```ts
-import { PGlite } from '@electric-sql/pglite';
-import { initDb } from './init';
-import { runExplain, runSandboxed } from './run';
-
-type Kind = 'run' | 'explain' | 'steps';
-
-const ready = (async () => {
-  const db = new PGlite();
-  await initDb(db);
-  return db;
-})();
-
-ready.then(
-  () => postMessage({ type: 'ready' }),
-  (e: unknown) => postMessage({ type: 'initError', message: e instanceof Error ? e.message : String(e) }),
-);
-
-async function handle(db: PGlite, kind: Kind, sql: string): Promise<unknown> {
+import type { RequestKind } from './client';
+import { runExplain, runSandboxed, sqlErrorInfo } from './run';
+```
+2. Thêm hàm này ngay trên dòng `// One query at a time: …`:
+```ts
+async function handle(db: PGlite, kind: RequestKind, sql: string): Promise<unknown> {
   if (kind === 'explain') return runExplain(db, sql);
   if (kind === 'steps') {
     const { runSteps } = await import('../viz/steps'); // loads the parser only when this tab is used
@@ -290,44 +381,60 @@ async function handle(db: PGlite, kind: Kind, sql: string): Promise<unknown> {
   }
   return runSandboxed(db, sql);
 }
-
-// One request at a time: BEGIN … ROLLBACK pairs must never interleave.
-let queue: Promise<void> = Promise.resolve();
-
-onmessage = (e: MessageEvent<{ id: number; kind: Kind; sql: string }>) => {
-  const { id, kind, sql } = e.data;
-  queue = queue.then(async () => {
-    try {
-      postMessage({ type: 'result', id, result: await handle(await ready, kind, sql) });
-    } catch (err) {
-      postMessage({ type: 'error', id, message: err instanceof Error ? err.message : String(err) });
-    }
-  });
-};
+```
+3. Trong `onmessage`, thay hai dòng:
+```ts
+onmessage = (e: MessageEvent<{ id: number; sql: string }>) => {
+  const { id, sql } = e.data;
+```
+bằng:
+```ts
+onmessage = (e: MessageEvent<{ id: number; kind?: RequestKind; sql: string }>) => {
+  const { id, kind = 'run', sql } = e.data;
+```
+và thay dòng
+```ts
+      postMessage({ type: 'result', id, result: await runSandboxed(db, sql) });
+```
+bằng:
+```ts
+      postMessage({ type: 'result', id, result: await handle(db, kind, sql) });
 ```
 
-Trong `src/db/client.ts`:
-1. Đổi kiểu message `result` thành `result: unknown`:
+- [ ] **Step 6: Đưa `kind` qua hàng đợi của `DbClient`**
+
+Sửa `src/db/client.ts` (bản Plan 1 Task 2 + Plan 1 Task 10: hàng đợi `queue`/`inFlight`/`pump()`, `QueryTimeoutError`, `DbRestartError`, `DbFailedError`, import `LoadProgress`, nhánh `progress` của `WorkerMessage`, `onProgress` đều giữ nguyên):
+
+1. Thêm ngay dưới dòng `import { SqlError, … } from './run';`:
+```ts
+import type { StepsResult } from '../viz/steps';
+```
+và ngay dưới `export type DbStatus = …;`:
+```ts
+export type RequestKind = 'run' | 'explain' | 'steps';
+```
+2. Trong `type WorkerMessage`, đổi nhánh `result` thành:
 ```ts
   | { type: 'result'; id: number; result: unknown }
 ```
-2. Đổi `Pending.resolve` thành `resolve: (r: unknown) => void;`
-3. Thay hàm `run` bằng:
+3. Thay `interface Job { … }` bằng:
 ```ts
-  async request<T>(kind: 'run' | 'explain' | 'steps', sql: string, timeoutMs = this.timeoutMs): Promise<T> {
-    await this.ready;
-    const id = this.nextId++;
+interface Job {
+  kind: RequestKind;
+  sql: string;
+  timeoutMs: number;
+  resolve: (r: unknown) => void;
+  reject: (e: Error) => void;
+}
+```
+4. Thay toàn bộ method `run(sql: string): Promise<QueryResult> { … }` (cùng comment JSDoc phía trên) bằng:
+```ts
+  /** One queued entry point for every kind of request. Rejects with SqlError, QueryTimeoutError, DbRestartError or DbFailedError. */
+  request<T>(kind: RequestKind, sql: string, timeoutMs = this.timeoutMs): Promise<T> {
+    if (this.failure) return Promise.reject(this.failure);
     return new Promise<T>((resolve, reject) => {
-      const timer = setTimeout(() => {
-        this.pending.delete(id);
-        this.restart();
-        reject(new QueryTimeoutError(`Query chạy quá ${timeoutMs / 1000} giây nên đã bị dừng. Database đang được nạp lại.`));
-      }, timeoutMs);
-      this.pending.set(id, {
-        resolve: (r) => { clearTimeout(timer); resolve(r as T); },
-        reject: (e) => { clearTimeout(timer); reject(e); },
-      });
-      this.worker.postMessage({ id, kind, sql });
+      this.queue.push({ kind, sql, timeoutMs, resolve: (r) => resolve(r as T), reject });
+      this.pump();
     });
   }
 
@@ -340,23 +447,37 @@ Trong `src/db/client.ts`:
   }
 
   /** Several sub-queries per call, so it gets a longer budget. */
-  steps(sql: string): Promise<import('../viz/steps').StepsResult> {
-    return this.request('steps', sql, this.timeoutMs * 3);
+  steps(sql: string): Promise<StepsResult> {
+    return this.request<StepsResult>('steps', sql, this.timeoutMs * 3);
   }
 ```
-
-`steps` tham chiếu `src/viz/steps.ts` (Task 3). Cho tới Task 3, tạo tạm file đó với đúng một dòng để typecheck qua:
+5. Trong `pump()`, thay khối từ `const timer = setTimeout(() => {` tới `this.worker.postMessage({ id, sql: job.sql });` bằng:
 ```ts
-export type StepsResult = { ok: false; reason: string };
-export async function runSteps(): Promise<StepsResult> { return { ok: false, reason: 'Chưa hỗ trợ.' }; }
+    const timer = setTimeout(() => {
+      this.inFlight = undefined;
+      job.reject(new QueryTimeoutError(job.timeoutMs));
+      this.restart();
+    }, job.timeoutMs);
+    this.inFlight = { id, job, timer };
+    this.worker.postMessage({ id, kind: job.kind, sql: job.sql });
 ```
 
-- [ ] **Step 6: Chạy test, xác nhận PASS**
+`steps` tham chiếu `src/viz/steps.ts` (Task 3). Tạo tạm file đó để typecheck qua:
+```ts
+import type { PGlite } from '@electric-sql/pglite';
 
-Run: `npx vitest run tests/plan.test.ts && npx tsc --noEmit`
-Expected: PASS, không lỗi kiểu.
+export type StepsResult = { ok: false; reason: string; detail?: string };
+export async function runSteps(_db: PGlite, _sql: string): Promise<StepsResult> {
+  return { ok: false, reason: 'notSelect' };
+}
+```
 
-- [ ] **Step 7: Commit**
+- [ ] **Step 7: Chạy test, xác nhận PASS**
+
+Run: `npx vitest run tests/plan.test.ts && npx vitest run && npx tsc --noEmit`
+Expected: PASS (cả test cũ của Plan 1), không lỗi kiểu.
+
+- [ ] **Step 8: Commit**
 
 ```bash
 git add src/db src/viz tests/plan.test.ts
@@ -365,24 +486,102 @@ git commit -m "feat: EXPLAIN ANALYZE in worker and plan tree model"
 
 ---
 
-### Task 2: Tab EXPLAIN và tab Luồng dữ liệu
+### Task 2: Cache theo SQL, đăng ký tab, tab EXPLAIN và tab Luồng dữ liệu
 
 **Files:**
-- Modify: `src/ui/dom.ts`, `src/main.ts`, `src/style.css`
-- Create: `src/ui/explainView.ts`, `src/ui/flowView.ts`
+- Create: `src/viz/memo.ts`, `src/ui/vizTabs.ts`, `src/ui/explainView.ts`, `src/ui/flowView.ts`
+- Modify: `src/ui/dom.ts`, `src/ui/work.ts`, `src/main.ts`, `src/i18n/vi.ts`, `src/i18n/en.ts`, `src/style.css`
+- Test: `tests/memo.test.ts`
 
 **Interfaces:**
-- Consumes: `flattenPlan`, `nodeExplanation`, `isHeavyScan`, `PlanNode` (Task 1); `DbClient.explain` (Task 1); `Tab`, `createPanel` (Plan 1)
+- Consumes: `flattenPlan`, `nodeExplanation`, `isHeavyScan`, `Plan`, `PlanDetail` (Task 1); `DbClient.explain`, `QueryTimeoutError`, `DbRestartError` (Task 1); `registerTab` (`src/ui/tabs.ts`), `app.lastRun` (`src/state.ts`), `t`, `getLang`, `locale`, `Key` (`src/i18n`), `h` (`src/ui/dom.ts`), `errorMessage` (`src/grader.ts`) — Plan 1
 - Produces:
+  - `memoByKey<T>(load: (key: string) => Promise<T>, max?: number): (key: string) => Promise<T>`; `MEMO_MAX = 20`
   - `svg<K extends keyof SVGElementTagNameMap>(tag: K, attrs?: Record<string, string | number>, ...children: (Node | string)[]): SVGElementTagNameMap[K]`
-  - `reducedMotion(): boolean`
-  - `renderExplain(host: HTMLElement, plan: { nodes: PlanNode[]; executionMs: number }): void`
-  - `renderFlow(host: HTMLElement, plan: { nodes: PlanNode[]; executionMs: number }): void`
-  - trong `main.ts`: `planFor(sql: string): Promise<{ nodes: PlanNode[]; executionMs: number }>` (cache theo SQL), `currentSql(): string`
+  - `reducedMotion(): boolean`, `fmt(n: number, digits?: number): string`
+  - `renderExplain(host: HTMLElement, plan: Plan): void`, `renderFlow(host: HTMLElement, plan: Plan): void`
+  - `interface VizDeps { db: DbClient; show(id: string): void; editorSql(): string }`
+  - `registerVizTabs(deps: VizDeps): void` — Task 2 đăng ký `explain` (query, 20, `newAt: 'ch3-01'`) và `flow` (query, 30)
+  - khóa i18n: `viz.*`, `plan.*`, `explain.*`, `flow.*`, `tab.explain`, `tab.flow`
 
-Giao diện kiểm thủ công; dữ liệu đã có test ở Task 1.
+- [ ] **Step 1: Viết test cho cache**
 
-- [ ] **Step 1: Thêm `svg()` và `reducedMotion()` vào cuối `src/ui/dom.ts`**
+`tests/memo.test.ts`:
+```ts
+import { describe, expect, it } from 'vitest';
+import { memoByKey } from '../src/viz/memo';
+
+describe('memoByKey', () => {
+  it('cùng key chỉ gọi load một lần', async () => {
+    let calls = 0;
+    const f = memoByKey(async (k) => { calls++; return k.length; });
+    expect(await f('abc')).toBe(3);
+    expect(await f('abc')).toBe(3);
+    expect(calls).toBe(1);
+  });
+
+  it('promise bị reject thì không giữ lại, lần sau gọi lại', async () => {
+    let calls = 0;
+    const f = memoByKey(async () => {
+      calls++;
+      if (calls === 1) throw new Error('timeout');
+      return 1;
+    });
+    await expect(f('a')).rejects.toThrow('timeout');
+    expect(await f('a')).toBe(1);
+    expect(calls).toBe(2);
+  });
+
+  it('giữ tối đa max key, bỏ key cũ nhất', async () => {
+    let calls = 0;
+    const f = memoByKey(async (k) => { calls++; return k; }, 2);
+    await f('a');
+    await f('b');
+    await f('c');
+    await f('a');
+    expect(calls).toBe(4);
+  });
+});
+```
+
+- [ ] **Step 2: Chạy test, xác nhận FAIL**
+
+Run: `npx vitest run tests/memo.test.ts`
+Expected: FAIL — không resolve `../src/viz/memo`.
+
+- [ ] **Step 3: Viết `src/viz/memo.ts`**
+
+```ts
+export const MEMO_MAX = 20;
+
+/**
+ * Caches one promise per key (SQL text or schema name). A rejected promise is dropped so the
+ * next call retries (timeouts, DB restarts). Oldest key is evicted past `max`.
+ */
+export function memoByKey<T>(load: (key: string) => Promise<T>, max = MEMO_MAX): (key: string) => Promise<T> {
+  const cache = new Map<string, Promise<T>>();
+  return (key) => {
+    const hit = cache.get(key);
+    if (hit) return hit;
+    const p = load(key);
+    cache.set(key, p);
+    p.catch(() => {
+      if (cache.get(key) === p) cache.delete(key);
+    });
+    if (cache.size > max) cache.delete(cache.keys().next().value as string);
+    return p;
+  };
+}
+```
+
+- [ ] **Step 4: Chạy test, xác nhận PASS**
+
+Run: `npx vitest run tests/memo.test.ts && npx tsc --noEmit`
+Expected: PASS.
+
+- [ ] **Step 5: Thêm `svg()`, `reducedMotion()`, `fmt()` vào cuối `src/ui/dom.ts`**
+
+Plan 1 Task 10 chỉ có `h`, `nodes`, `richText`, `byId` trong file này. Thêm `import { locale } from '../i18n';` vào đầu file.
 
 ```ts
 const SVG_NS = 'http://www.w3.org/2000/svg';
@@ -402,40 +601,110 @@ export function reducedMotion(): boolean {
   return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 }
 
-export const fmt = (n: number) => n.toLocaleString('vi-VN');
+/** Number in the current UI language: 25.677 (vi) / 25,677 (en). */
+export const fmt = (n: number, digits = 2): string => n.toLocaleString(locale(), { maximumFractionDigits: digits });
 ```
 
-- [ ] **Step 2: Viết `src/ui/explainView.ts`**
+- [ ] **Step 6: Thêm khóa i18n**
+
+Thêm vào object `vi` trong `src/i18n/vi.ts` (Plan 1 chỉ khai `tab.result`, `tab.columns`, `tab.list`, `tab.new`, nên không trùng):
+```ts
+  'tab.explain': 'EXPLAIN',
+  'tab.flow': 'Luồng dữ liệu',
+  'viz.runFirst': 'Chạy query trước (Ctrl+Enter).',
+  'viz.stale': 'SQL đã thay đổi — Ctrl+Enter để cập nhật.',
+  'viz.rows': '{n} dòng',
+  'viz.timeout': 'Quá {s} giây nên đã dừng. Database đang được nạp lại.',
+  'viz.restarted': 'Database vừa khởi động lại, mở lại tab này để thử lại.',
+  'viz.dbFailed': 'Database không khởi động được.',
+  'viz.explaining': 'Đang chạy EXPLAIN ANALYZE…',
+  'explain.intro': 'Giai đoạn Optimize chọn kế hoạch dưới đây; Execute chạy hết trong {ms} ms. Thanh xanh = số dòng node xử lý. Bấm vào một node để đọc giải thích.',
+  'explain.heavy': 'Đọc nhiều dòng',
+  'explain.estimate': 'Ước tính {est} dòng, thực tế {actual}.',
+  'plan.index': 'Dùng index: {v}',
+  'plan.indexCond': 'Điều kiện index: {v}',
+  'plan.hashCond': 'Điều kiện ghép: {v}',
+  'plan.joinFilter': 'Lọc khi ghép: {v}',
+  'plan.filter': 'Lọc: {v}',
+  'plan.removed': ' — bỏ {n} dòng',
+  'plan.groupKey': 'Nhóm theo: {v}',
+  'plan.sortKey': 'Sắp theo: {v}',
+  'flow.aria': 'Luồng dữ liệu qua kế hoạch thực thi',
+  'flow.intro': 'Dữ liệu chảy từ trái (đọc bảng) sang phải (kết quả). Đường càng dày càng nhiều dòng — số liệu thật từ EXPLAIN ANALYZE.',
+```
+
+Thêm vào object `en` trong `src/i18n/en.ts`:
+```ts
+  'tab.explain': 'EXPLAIN',
+  'tab.flow': 'Data flow',
+  'viz.runFirst': 'Run a query first (Ctrl+Enter).',
+  'viz.stale': 'The SQL has changed — press Ctrl+Enter to update.',
+  'viz.rows': (p) => `${p.n} ${p.n === 1 || p.n === '1' ? 'row' : 'rows'}`,
+  'viz.timeout': 'Stopped after {s} seconds. The database is reloading.',
+  'viz.restarted': 'The database just restarted; open this tab again to retry.',
+  'viz.dbFailed': 'The database failed to start.',
+  'viz.explaining': 'Running EXPLAIN ANALYZE…',
+  'explain.intro': 'The Optimize stage chose the plan below; Execute finished in {ms} ms. Blue bar = rows the node processed. Click a node to read what it does.',
+  'explain.heavy': 'Reads many rows',
+  'explain.estimate': 'Estimated {est} rows, actual {actual}.',
+  'plan.index': 'Index: {v}',
+  'plan.indexCond': 'Index condition: {v}',
+  'plan.hashCond': 'Join condition: {v}',
+  'plan.joinFilter': 'Join filter: {v}',
+  'plan.filter': 'Filter: {v}',
+  'plan.removed': ' — removed {n} rows',
+  'plan.groupKey': 'Group key: {v}',
+  'plan.sortKey': 'Sort key: {v}',
+  'flow.aria': 'Data flow through the execution plan',
+  'flow.intro': 'Data flows from the left (table reads) to the right (result). Thicker lines carry more rows — real numbers from EXPLAIN ANALYZE.',
+```
+`tab.explain` giống nhau ở hai ngôn ngữ; khóa này đã nằm trong `SAME_OK` của `tests/i18n.test.ts` (Plan 1 Task 10).
+
+- [ ] **Step 7: Viết `src/ui/explainView.ts`**
 
 ```ts
-import { isHeavyScan, nodeExplanation, type PlanNode } from '../viz/plan';
+import { getLang, t, type Key } from '../i18n';
+import { isHeavyScan, nodeExplanation, type Plan, type PlanDetail } from '../viz/plan';
 import { fmt, h } from './dom';
 
-export function renderExplain(host: HTMLElement, plan: { nodes: PlanNode[]; executionMs: number }): void {
+const DETAIL_KEY: Record<PlanDetail['kind'], Key> = {
+  index: 'plan.index',
+  indexCond: 'plan.indexCond',
+  hashCond: 'plan.hashCond',
+  joinFilter: 'plan.joinFilter',
+  filter: 'plan.filter',
+  groupKey: 'plan.groupKey',
+  sortKey: 'plan.sortKey',
+};
+
+const detailText = (d: PlanDetail): string =>
+  t(DETAIL_KEY[d.kind], { v: d.text }) + (d.removed ? t('plan.removed', { n: fmt(d.removed) }) : '');
+
+export function renderExplain(host: HTMLElement, plan: Plan): void {
   const max = Math.max(1, ...plan.nodes.map((n) => n.scanned));
+  const lang = getLang();
   host.append(
-    h('p', { class: 'muted' },
-      `Giai đoạn Optimize chọn kế hoạch dưới đây; Execute chạy hết trong ${plan.executionMs.toFixed(1)} ms. `,
-      'Thanh xanh = số dòng node xử lý. Bấm vào một node để đọc giải thích.'),
+    h('p', { class: 'muted' }, t('explain.intro', { ms: fmt(plan.executionMs, 1) })),
     h('div', { class: 'plan' }, ...plan.nodes.map((n) =>
       h('details', { class: `plan-node${isHeavyScan(n) ? ' heavy' : ''}`, style: `margin-left:${n.depth * 20}px` },
         h('summary', {},
           h('span', { class: 'plan-label' }, n.label),
           h('span', { class: 'meter', 'aria-hidden': 'true' }, h('i', { style: `width:${Math.max(2, (n.scanned / max) * 100)}%` })),
-          h('span', { class: 'plan-rows' }, `${fmt(n.rows)} dòng`),
-          h('span', { class: 'muted' }, `${n.ms.toFixed(2)} ms`),
-          isHeavyScan(n) ? h('span', { class: 'warn', title: 'Đọc nhiều dòng' }, '⚠') : null),
-        h('p', {}, nodeExplanation(n.type)),
-        n.estRows !== n.rows ? h('p', { class: 'muted' }, `Ước tính ${fmt(n.estRows)} dòng, thực tế ${fmt(n.rows)}.`) : null,
-        ...n.detail.map((d) => h('p', {}, h('code', {}, d)))))),
+          h('span', { class: 'plan-rows' }, t('viz.rows', { n: fmt(n.rows) })),
+          h('span', { class: 'muted' }, `${fmt(n.ms, 2)} ms`),
+          isHeavyScan(n) ? h('span', { class: 'warn', role: 'img', 'aria-label': t('explain.heavy'), title: t('explain.heavy') }, '⚠') : null),
+        h('p', {}, nodeExplanation(n.type, lang)),
+        n.estRows !== n.rows ? h('p', { class: 'muted' }, t('explain.estimate', { est: fmt(n.estRows), actual: fmt(n.rows) })) : null,
+        ...n.detail.map((d) => h('p', {}, h('code', {}, detailText(d))))))),
   );
 }
 ```
 
-- [ ] **Step 3: Viết `src/ui/flowView.ts`**
+- [ ] **Step 8: Viết `src/ui/flowView.ts`**
 
 ```ts
-import type { PlanNode } from '../viz/plan';
+import { t } from '../i18n';
+import type { Plan, PlanNode } from '../viz/plan';
 import { fmt, h, reducedMotion, svg } from './dom';
 
 const COL = 210;
@@ -444,7 +713,7 @@ const BOX_W = 168;
 const BOX_H = 40;
 
 /** Leaves on the left, root on the right; edge width grows with log(rows). */
-export function renderFlow(host: HTMLElement, plan: { nodes: PlanNode[]; executionMs: number }): void {
+export function renderFlow(host: HTMLElement, plan: Plan): void {
   const { nodes } = plan;
   const children = (id: number) => nodes.filter((n) => n.parent === id);
   const maxDepth = Math.max(...nodes.map((n) => n.depth));
@@ -463,7 +732,7 @@ export function renderFlow(host: HTMLElement, plan: { nodes: PlanNode[]; executi
   const height = Math.max(1, leaf) * ROW;
   const animate = !reducedMotion();
 
-  const root = svg('svg', { viewBox: `-10 -10 ${width} ${height + 10}`, role: 'img', 'aria-label': 'Luồng dữ liệu qua kế hoạch thực thi', class: 'flow' });
+  const root = svg('svg', { viewBox: `-10 -10 ${width} ${height + 10}`, role: 'img', 'aria-label': t('flow.aria'), class: 'flow' });
   for (const n of nodes.slice(1)) {
     const p = nodes[n.parent!];
     const x1 = x(n) + BOX_W;
@@ -480,70 +749,118 @@ export function renderFlow(host: HTMLElement, plan: { nodes: PlanNode[]; executi
   }
   for (const n of nodes) {
     const label = n.label.length > 24 ? `${n.label.slice(0, 23)}…` : n.label;
+    const rows = t('viz.rows', { n: fmt(n.rows) });
     root.append(svg('g', { transform: `translate(${x(n)},${y.get(n.id)})` },
-      svg('title', {}, `${n.label}: ${fmt(n.rows)} dòng`),
+      svg('title', {}, `${n.label}: ${rows}`),
       svg('rect', { width: BOX_W, height: BOX_H, rx: 6, class: 'flow-box' }),
       svg('text', { x: 8, y: 16, class: 'flow-label' }, label),
-      svg('text', { x: 8, y: 32, class: 'flow-rows' }, `${fmt(n.rows)} dòng`)));
+      svg('text', { x: 8, y: 32, class: 'flow-rows' }, rows)));
   }
   host.append(
-    h('p', { class: 'muted' }, 'Dữ liệu chảy từ trái (đọc bảng) sang phải (kết quả). Đường càng dày càng nhiều dòng — số liệu thật từ EXPLAIN ANALYZE.'),
+    h('p', { class: 'muted' }, t('flow.intro')),
     h('div', { class: 'flow-wrap' }, root),
   );
 }
 ```
 
-- [ ] **Step 4: Gắn vào `src/main.ts`**
+- [ ] **Step 9: Viết `src/ui/vizTabs.ts`**
 
-1. Thêm import (sau dòng `import { renderResult } from './ui/resultTable';`):
 ```ts
-import { renderExplain } from './ui/explainView';
-import { renderFlow } from './ui/flowView';
-import { flattenPlan, type PlanNode } from './viz/plan';
-```
-2. Thêm sau dòng `let lastRun: …;`:
-```ts
-const planCache = new Map<string, Promise<{ nodes: PlanNode[]; executionMs: number }>>();
-const currentSql = () => (editor?.getValue() ?? '').trim();
-function planFor(sql: string): Promise<{ nodes: PlanNode[]; executionMs: number }> {
-  let p = planCache.get(sql);
-  if (!p) {
-    p = db.explain(sql).then(flattenPlan);
-    p.catch(() => planCache.delete(sql));
-    planCache.set(sql, p);
-  }
-  return p;
+import { DbFailedError, DbRestartError, QueryTimeoutError, type DbClient } from '../db/client';
+import { errorMessage } from '../grader';
+import { t } from '../i18n';
+import { app } from '../state';
+import { memoByKey } from '../viz/memo';
+import { flattenPlan, type Plan } from '../viz/plan';
+import { h } from './dom';
+import { renderExplain } from './explainView';
+import { renderFlow } from './flowView';
+import { registerTab } from './tabs';
+
+export interface VizDeps {
+  db: DbClient;
+  /** Switches the bottom panel to a tab (Panel.show). */
+  show(id: string): void;
+  /** Current editor text — only used to flag that lastRun is out of date. */
+  editorSql(): string;
 }
-async function withPlan(host: HTMLElement, draw: (host: HTMLElement, plan: { nodes: PlanNode[]; executionMs: number }) => void): Promise<void> {
-  const sql = currentSql();
-  if (!sql) return void host.append(h('p', { class: 'muted' }, 'Viết query trong editor trước.'));
-  host.append(h('p', { class: 'muted' }, 'Đang chạy EXPLAIN ANALYZE…'));
+
+function errorText(e: unknown): string {
+  if (e instanceof QueryTimeoutError) return t('viz.timeout', { s: e.timeoutMs / 1000 });
+  if (e instanceof DbRestartError) return t('viz.restarted');
+  if (e instanceof DbFailedError) return `${t('viz.dbFailed')}\n${e.detail}`;
+  return errorMessage(e); // Postgres' own message, never translated
+}
+
+/** Every viz tab describes the last run, not the editor. Returns its SQL, or undefined after drawing the empty state. */
+function lastRunSql(host: HTMLElement, deps: VizDeps): string | undefined {
+  const run = app.lastRun;
+  if (!run) {
+    host.append(h('p', { class: 'muted' }, t('viz.runFirst')));
+    return undefined;
+  }
+  if (deps.editorSql().trim() !== run.sql.trim()) host.append(h('p', { class: 'stale', role: 'note' }, t('viz.stale')));
+  return run.sql;
+}
+
+/** Shows a loading line, then replaces it with draw(value) or the error. The stale strip above stays. */
+async function load<T>(host: HTMLElement, loading: string, data: Promise<T>, draw: (body: HTMLElement, value: T) => void): Promise<void> {
+  const body = h('div', {}, h('p', { class: 'muted' }, loading));
+  host.append(body);
   try {
-    const plan = await planFor(sql);
-    host.replaceChildren();
-    draw(host, plan);
+    const value = await data;
+    body.replaceChildren();
+    draw(body, value);
   } catch (e) {
-    host.replaceChildren(h('pre', { class: 'error' }, errorMessage(e)));
+    body.replaceChildren(h('pre', { class: 'error' }, errorText(e)));
   }
 }
-```
-3. Trong `buildTabs()`, thêm hai tab ngay trước tab `columns`:
-```ts
-    { id: 'explain', label: 'EXPLAIN', render: (host) => withPlan(host, renderExplain) },
-    { id: 'flow', label: 'Luồng dữ liệu', render: (host) => withPlan(host, renderFlow) },
-```
-4. Trong `renderTicket()`, thêm nút EXPLAIN — thay dòng:
-```ts
-    h('div', { class: 'actions' }, runBtn, isDone ? null : submitBtn),
-```
-bằng:
-```ts
-    h('div', { class: 'actions' }, runBtn, h('button', { type: 'button', onclick: () => panel.show('explain') }, 'EXPLAIN'), isDone ? null : submitBtn),
+
+function registerPlanTabs(deps: VizDeps): void {
+  const planFor = memoByKey((sql) => deps.db.explain(sql).then(flattenPlan));
+  const withPlan = (draw: (host: HTMLElement, plan: Plan) => void) => (host: HTMLElement) => {
+    const sql = lastRunSql(host, deps);
+    return sql === undefined ? undefined : load(host, t('viz.explaining'), planFor(sql), draw);
+  };
+  registerTab({ id: 'explain', label: 'tab.explain', group: 'query', order: 20, newAt: 'ch3-01', render: withPlan(renderExplain) });
+  registerTab({ id: 'flow', label: 'tab.flow', group: 'query', order: 30, render: withPlan(renderFlow) });
+}
+
+/** Called once from main.ts, before the panel is created. */
+export function registerVizTabs(deps: VizDeps): void {
+  registerPlanTabs(deps);
+}
 ```
 
-- [ ] **Step 5: Thêm CSS vào cuối `src/style.css`**
+- [ ] **Step 10: Gắn vào `src/main.ts` và nút EXPLAIN trong `src/ui/work.ts`**
+
+1. `src/main.ts` — thêm import:
+```ts
+import { registerVizTabs } from './ui/vizTabs';
+```
+và ngay sau dòng `const db = new DbClient(…);`, **trước** chỗ panel được tạo, thêm:
+```ts
+registerVizTabs({ db, show: (id) => panel.show(id), editorSql: () => work.currentSql() });
+```
+(`panel` và `work` chỉ được đọc khi tab render, lúc đó cả hai đã được tạo.)
+
+2. `src/ui/work.ts` — trong `mountWork`, ngay sau khi tạo `runBtn`, thêm:
+```ts
+  // EXPLAIN always describes what was just run: run the editor SQL first, then open the tab.
+  const explainBtn = h('button', { type: 'button', onclick: () => void run().then(() => deps.panel.show('explain')) }, t('tab.explain'));
+```
+và trong hàng `h('div', { class: 'actions' }, runBtn, …)` chèn `explainBtn` ngay sau `runBtn`. Nhãn `EXPLAIN` giống nhau ở hai ngôn ngữ nên `relabel()` không cần đổi nút này.
+
+- [ ] **Step 11: Thêm CSS vào cuối `src/style.css`**
 
 ```css
+:root {
+  --sql-bg: #1e1e1e; --sql-text: #d4d4d4; --sql-dim: #9a9aa0; --sql-mark: #264f78; --on-dark: #ffffff;
+  --edge: #9cc3e8; --lane-closed: #a9b4bf;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --edge: #2f5d8a; --lane-closed: #59636d; }
+}
 .plan-node { border: 1px solid var(--border); border-radius: 6px; margin: 4px 0; padding: 4px 8px; background: var(--code); }
 .plan-node summary { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; cursor: pointer; }
 .plan-node.heavy { border-color: var(--warn); }
@@ -551,26 +868,31 @@ bằng:
 .plan-rows { min-width: 90px; }
 .meter { flex: 1; min-width: 80px; height: 8px; background: var(--border); border-radius: 4px; overflow: hidden; }
 .meter i { display: block; height: 100%; background: var(--accent); }
-.warn { color: var(--warn); }
 .flow-wrap { overflow: auto; }
 .flow { min-width: 480px; width: 100%; height: auto; }
-.flow-edge { fill: none; stroke: var(--accent); opacity: 0.45; }
+.flow-edge { fill: none; stroke: var(--edge); }
 .flow-dot { fill: var(--accent); }
 .flow-box { fill: var(--panel); stroke: var(--border); }
 .flow-label { font: 600 12px system-ui, sans-serif; fill: var(--text); }
 .flow-rows { font: 12px system-ui, sans-serif; fill: var(--accent); }
 ```
 
-- [ ] **Step 6: Kiểm tra kiểu, build và kiểm thủ công**
+- [ ] **Step 12: Kiểm tra kiểu, build và kiểm thủ công**
 
-Run: `npx tsc --noEmit && npm run build`, rồi `npm run dev`.
-Kiểm: mở `ch3-02` (hoặc gõ query TEU theo hãng tàu ở Task 1 test) → bấm **EXPLAIN** → tab EXPLAIN hiện cây có thụt lề, node `Seq Scan containers` có ⚠ và 25.677 dòng; bấm node → giải thích tiếng Việt. Sang tab **Luồng dữ liệu** → sơ đồ trái→phải, đường dày ở các scan lớn, chấm chạy dọc cạnh. Bật "Reduce motion" trong hệ điều hành → chấm không chạy. Query lỗi cú pháp → tab hiện lỗi Postgres.
+Run: `npx vitest run && npx tsc --noEmit && npm run build`, rồi `npm run dev`.
+Kiểm:
+1. Thanh tab có EXPLAIN và Luồng dữ liệu trong nhóm giữa. Mở EXPLAIN khi chưa chạy gì → "Chạy query trước (Ctrl+Enter)."
+2. Gõ query TEU theo hãng tàu ở test Task 1 → bấm nút **EXPLAIN** cạnh nút Chạy → query chạy (tab Kết quả có dữ liệu nếu mở) rồi tab EXPLAIN hiện cây thụt lề; node `Seq Scan containers` có ⚠ và `25.677 dòng`; bấm node → giải thích tiếng Việt, dòng `Lọc: … — bỏ N dòng`.
+3. Sang tab **Luồng dữ liệu** → sơ đồ trái→phải, đường dày ở các scan lớn, chấm chạy dọc cạnh. Tab hiện ngay, không qua dòng "Đang chạy EXPLAIN ANALYZE…" (đã cache theo SQL).
+4. Sửa một ký tự trong editor (không chạy) → mở lại tab EXPLAIN → dải "SQL đã thay đổi — Ctrl+Enter để cập nhật" ở trên, cây vẫn là của SQL cũ. Ctrl+Enter → dải biến mất, cây theo SQL mới.
+5. Bấm `EN` trên topbar → tab EXPLAIN vẽ lại bằng tiếng Anh, số thành `25,677 rows`, không chạy lại EXPLAIN; editor giữ nguyên con trỏ.
+6. Bật "Reduce motion" trong hệ điều hành → chấm không chạy. Query lỗi cú pháp → Chạy → tab EXPLAIN hiện lỗi gốc Postgres.
 
-- [ ] **Step 7: Commit**
+- [ ] **Step 13: Commit**
 
 ```bash
-git add src/ui src/main.ts src/style.css
-git commit -m "feat: EXPLAIN tree and data-flow tabs"
+git add src/viz/memo.ts src/ui src/main.ts src/i18n src/style.css tests/memo.test.ts
+git commit -m "feat: EXPLAIN tree and data-flow tabs from the last run"
 ```
 
 ---
@@ -582,26 +904,33 @@ git commit -m "feat: EXPLAIN tree and data-flow tabs"
 - Test: `tests/steps.test.ts`
 
 **Interfaces:**
-- Consumes: `runSandboxed`, `QueryResult` (Plan 1); `seededDb` (tests)
+- Consumes: `runSandboxed`, `QueryResult` (Plan 1); `type Lang` (`src/i18n`); `seededDb` (tests)
 - Produces:
   - `type StepKey = 'from' | 'where' | 'group' | 'having' | 'select' | 'distinct' | 'order' | 'limit'`
-  - `STEP_LABELS: Record<StepKey, string>`, `STEP_HELP: Record<StepKey, string>`
+  - `STEP_LABELS: Record<Lang, Record<StepKey, string>>`, `STEP_HELP: Record<Lang, Record<StepKey, string>>`
+  - `type StepsFailure = 'syntax' | 'multi' | 'notSelect' | 'withUnion' | 'window'`
   - `ensureParser(): Promise<void>`
-  - `buildSteps(sql: string): Promise<{ ok: true; steps: { key: StepKey; sql: string | null }[]; ranges: Partial<Record<StepKey, [number, number]>> } | { ok: false; reason: string }>`
+  - `clauseRanges(sql: string): Promise<Partial<Record<StepKey, [number, number]>>>`
+  - `buildSteps(sql: string): Promise<{ ok: true; steps: { key: StepKey; sql: string | null }[]; ranges: Partial<Record<StepKey, [number, number]>> } | { ok: false; reason: StepsFailure; detail?: string }>`
   - `interface StepRun { key: StepKey; skipped: boolean; count?: number; sample?: QueryResult; sql?: string; error?: string }`
-  - `type StepsResult = { ok: true; steps: StepRun[]; ranges: Partial<Record<StepKey, [number, number]>> } | { ok: false; reason: string }`
+  - `type StepsResult = { ok: true; steps: StepRun[]; ranges: Partial<Record<StepKey, [number, number]>> } | { ok: false; reason: StepsFailure; detail?: string }`
   - `runSteps(db: PGlite, sql: string): Promise<StepsResult>`
 
-- [ ] **Step 1: Cài parser**
+- [ ] **Step 1: Cài parser và kiểm SharedArrayBuffer**
 
-Run: `npm i --save-exact libpg-query@18.2.4 pgsql-deparser@18.4.5`
+Run:
+```bash
+npm i --save-exact libpg-query@18.2.4 pgsql-deparser@18.4.5
+grep -rl "SharedArrayBuffer" node_modules/libpg-query node_modules/pgsql-deparser --include=*.js --include=*.mjs
+```
+Expected: `package.json` có `"libpg-query": "18.2.4"`, `"pgsql-deparser": "18.4.5"` (không có `^`). Lệnh grep không in dòng nào. Nếu có file khớp: mở file, xem `SharedArrayBuffer` chỉ nằm trong nhánh kiểm tính năng (`typeof SharedArrayBuffer !== 'undefined'`) hay là bắt buộc; nếu bắt buộc thì dừng và báo user (cần COOP/COEP, GitHub Pages không đặt được — D6).
 
 - [ ] **Step 2: Viết test**
 
 `tests/steps.test.ts`:
 ```ts
 import { describe, expect, it } from 'vitest';
-import { buildSteps, runSteps } from '../src/viz/steps';
+import { buildSteps, runSteps, STEP_HELP, STEP_LABELS } from '../src/viz/steps';
 import { seededDb } from './helpers';
 
 const Q = `SELECT ca.name, SUM(ct.teu) AS teu
@@ -622,6 +951,7 @@ describe('runSteps', () => {
       ['from', 25677], ['where', 3167], ['group', 6], ['having', 5], ['select', 5], ['distinct', 'skip'], ['order', 5], ['limit', 3],
     ]);
     expect(r.steps[1].sample!.rows.length).toBe(5);
+    expect(r.steps[2].sample!.columns).toContain('row_count');
   });
 
   it('vị trí mệnh đề trong SQL gốc', async () => {
@@ -659,10 +989,27 @@ describe('runSteps', () => {
     expect(one.steps.filter((s) => !s.skipped).map((s) => s.key)).toEqual(['select']);
   });
 
-  it('báo chưa hỗ trợ / lỗi cú pháp thay vì throw', async () => {
-    for (const q of ['WITH x AS (SELECT 1) SELECT * FROM x', 'SELECT 1 UNION SELECT 2', 'SELECT id, rank() OVER (ORDER BY id) FROM ports', 'SELEC 1', "UPDATE ports SET name = 'x'"]) {
-      expect((await buildSteps(q)).ok, q).toBe(false);
+  it('trả mã lý do (không phải chữ) thay vì throw', async () => {
+    const cases: [string, string][] = [
+      ['WITH x AS (SELECT 1) SELECT * FROM x', 'withUnion'],
+      ['SELECT 1 UNION SELECT 2', 'withUnion'],
+      ['SELECT id, rank() OVER (ORDER BY id) FROM ports', 'window'],
+      ['SELEC 1', 'syntax'],
+      ["UPDATE ports SET name = 'x'", 'notSelect'],
+      ['SELECT 1; SELECT 2', 'multi'],
+    ];
+    for (const [q, reason] of cases) {
+      const r = await buildSteps(q);
+      expect(r.ok, q).toBe(false);
+      if (!r.ok) expect(r.reason, q).toBe(reason);
     }
+  });
+});
+
+describe('STEP_LABELS / STEP_HELP theo ngôn ngữ', () => {
+  it('VI và EN cùng tập khóa', () => {
+    expect(Object.keys(STEP_LABELS.en).sort()).toEqual(Object.keys(STEP_LABELS.vi).sort());
+    expect(Object.keys(STEP_HELP.en).sort()).toEqual(Object.keys(STEP_HELP.vi).sort());
   });
 });
 ```
@@ -670,7 +1017,7 @@ describe('runSteps', () => {
 - [ ] **Step 3: Chạy test, xác nhận FAIL**
 
 Run: `npx vitest run tests/steps.test.ts`
-Expected: FAIL — `buildSteps` chưa tồn tại (file tạm chỉ có `runSteps` trả "Chưa hỗ trợ").
+Expected: FAIL — `buildSteps` / `STEP_LABELS` chưa tồn tại (file tạm chỉ có `runSteps`).
 
 - [ ] **Step 4: Viết `src/viz/parser.ts`**
 
@@ -702,37 +1049,56 @@ import type { PGlite } from '@electric-sql/pglite';
 import { parse, scan } from 'libpg-query';
 import { deparse } from 'pgsql-deparser';
 import { runSandboxed, type QueryResult } from '../db/run';
+import type { Lang } from '../i18n';
 import { ensureParser } from './parser';
 
 export type StepKey = 'from' | 'where' | 'group' | 'having' | 'select' | 'distinct' | 'order' | 'limit';
+export type StepsFailure = 'syntax' | 'multi' | 'notSelect' | 'withUnion' | 'window';
 
-export const STEP_LABELS: Record<StepKey, string> = {
+const SQL_LABELS: Record<StepKey, string> = {
   from: 'FROM + JOIN', where: 'WHERE', group: 'GROUP BY', having: 'HAVING',
   select: 'SELECT', distinct: 'DISTINCT', order: 'ORDER BY', limit: 'LIMIT',
 };
 
-export const STEP_HELP: Record<StepKey, string> = {
-  from: 'Lấy dữ liệu từ các bảng và ghép chúng theo điều kiện JOIN. Đây là bước chạy đầu tiên.',
-  where: 'Giữ lại từng dòng thỏa điều kiện. Chạy trước khi gom nhóm nên chưa dùng được hàm gộp hay alias của SELECT.',
-  group: 'Gom các dòng có cùng giá trị khóa thành một nhóm (cột so_dong = số dòng trong nhóm).',
-  having: 'Lọc các nhóm theo kết quả hàm gộp, ví dụ SUM(...) > 900.',
-  select: 'Tính các cột đầu ra và đặt alias. Viết đầu tiên nhưng chạy sau GROUP BY / HAVING.',
-  distinct: 'Bỏ các dòng trùng nhau trong kết quả.',
-  order: 'Sắp xếp kết quả. Chạy sau SELECT nên dùng được alias.',
-  limit: 'Chỉ giữ số dòng đầu tiên theo LIMIT / OFFSET. Chạy cuối cùng.',
+/** Clause names are SQL keywords, the same in both languages. */
+export const STEP_LABELS: Record<Lang, Record<StepKey, string>> = { vi: SQL_LABELS, en: SQL_LABELS };
+
+export const STEP_HELP: Record<Lang, Record<StepKey, string>> = {
+  vi: {
+    from: 'Lấy dữ liệu từ các bảng và ghép chúng theo điều kiện JOIN. Đây là bước chạy đầu tiên.',
+    where: 'Giữ lại từng dòng thỏa điều kiện. Chạy trước khi gom nhóm nên chưa dùng được hàm gộp hay alias của SELECT.',
+    group: 'Gom các dòng có cùng giá trị khóa thành một nhóm (cột row_count = số dòng trong nhóm).',
+    having: 'Lọc các nhóm theo kết quả hàm gộp, ví dụ SUM(...) > 900.',
+    select: 'Tính các cột đầu ra và đặt alias. Viết đầu tiên nhưng chạy sau GROUP BY / HAVING.',
+    distinct: 'Bỏ các dòng trùng nhau trong kết quả.',
+    order: 'Sắp xếp kết quả. Chạy sau SELECT nên dùng được alias.',
+    limit: 'Chỉ giữ số dòng đầu tiên theo LIMIT / OFFSET. Chạy cuối cùng.',
+  },
+  en: {
+    from: 'Reads the tables and joins them on the JOIN conditions. This step runs first.',
+    where: 'Keeps each row that matches the condition. It runs before grouping, so aggregates and SELECT aliases are not available yet.',
+    group: 'Collects rows with the same key values into one group (column row_count = rows in the group).',
+    having: 'Filters groups on an aggregate result, for example SUM(...) > 900.',
+    select: 'Computes the output columns and their aliases. Written first, but runs after GROUP BY / HAVING.',
+    distinct: 'Removes duplicate rows from the result.',
+    order: 'Sorts the result. It runs after SELECT, so aliases work here.',
+    limit: 'Keeps only the first rows per LIMIT / OFFSET. Runs last.',
+  },
 };
 
 export interface StepRun { key: StepKey; skipped: boolean; count?: number; sample?: QueryResult; sql?: string; error?: string }
 type Ranges = Partial<Record<StepKey, [number, number]>>;
-export type StepsResult = { ok: true; steps: StepRun[]; ranges: Ranges } | { ok: false; reason: string };
-type Built = { ok: true; steps: { key: StepKey; sql: string | null }[]; ranges: Ranges } | { ok: false; reason: string };
+type Failure = { ok: false; reason: StepsFailure; detail?: string };
+export type StepsResult = { ok: true; steps: StepRun[]; ranges: Ranges } | Failure;
+type Built = { ok: true; steps: { key: StepKey; sql: string | null }[]; ranges: Ranges } | Failure;
 
 // libpg-query's AST is a large tagged union; these helpers only touch a few well-known fields.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Ast = any;
 
 const STAR = [{ ResTarget: { val: { ColumnRef: { fields: [{ A_Star: {} }] } } } }];
-const COUNT = { ResTarget: { name: 'so_dong', val: { FuncCall: { funcname: [{ String: { sval: 'count' } }], agg_star: true } } } };
+// Language-neutral alias: results are cached across a VI/EN switch.
+const COUNT = { ResTarget: { name: 'row_count', val: { FuncCall: { funcname: [{ String: { sval: 'count' } }], agg_star: true } } } };
 
 // ponytail: an unqualified GROUP BY name that matches both an input column and a SELECT alias
 // resolves to the column in Postgres, but to the alias here. Rare in tickets; fix if a player hits it.
@@ -782,24 +1148,26 @@ export async function buildSteps(sql: string): Promise<Built> {
   try {
     tree = await parse(sql);
   } catch (e) {
-    return { ok: false, reason: `Câu SQL chưa đúng cú pháp: ${e instanceof Error ? e.message : String(e)}` };
+    return { ok: false, reason: 'syntax', detail: e instanceof Error ? e.message : String(e) };
   }
-  if (tree.stmts?.length !== 1) return { ok: false, reason: 'Chỉ hỗ trợ đúng một câu lệnh.' };
+  if (tree.stmts?.length !== 1) return { ok: false, reason: 'multi' };
   const sel: Ast = tree.stmts[0].stmt?.SelectStmt;
-  if (!sel) return { ok: false, reason: 'Chỉ hỗ trợ câu SELECT.' };
-  if (sel.withClause || (sel.op && sel.op !== 'SETOP_NONE')) return { ok: false, reason: 'Query có WITH hoặc UNION — xem tab EXPLAIN.' };
-  if (JSON.stringify(sel.targetList ?? []).includes('"over"')) return { ok: false, reason: 'Query có window function — xem tab EXPLAIN.' };
+  if (!sel) return { ok: false, reason: 'notSelect' };
+  if (sel.withClause || (sel.op && sel.op !== 'SETOP_NONE')) return { ok: false, reason: 'withUnion' };
+  if (JSON.stringify(sel.targetList ?? []).includes('"over"')) return { ok: false, reason: 'window' };
 
   const wrap = async (o: Ast) =>
     deparse({ version: tree.version, stmts: [{ stmt: { SelectStmt: { limitOption: 'LIMIT_OPTION_DEFAULT', op: 'SETOP_NONE', ...o } } }] });
   const base = { fromClause: sel.fromClause, whereClause: sel.whereClause };
-  const groupTargets = [...groupKeys(sel).map((val) => ({ ResTarget: { val } })), COUNT];
+  // Group by the resolved expressions too: the sub-query has no SELECT alias or ordinal to refer to.
+  const keys = groupKeys(sel);
+  const groupTargets = [...keys.map((val) => ({ ResTarget: { val } })), COUNT];
   const noTail = { limitCount: undefined, limitOffset: undefined };
   const plan: [StepKey, boolean, Ast][] = [
     ['from', !!sel.fromClause, { targetList: STAR, fromClause: sel.fromClause }],
     ['where', !!sel.fromClause && !!sel.whereClause, { targetList: STAR, ...base }],
-    ['group', !!sel.groupClause, { targetList: groupTargets, ...base, groupClause: sel.groupClause }],
-    ['having', !!sel.havingClause, { targetList: groupTargets, ...base, groupClause: sel.groupClause, havingClause: sel.havingClause }],
+    ['group', !!sel.groupClause, { targetList: groupTargets, ...base, groupClause: keys }],
+    ['having', !!sel.havingClause, { targetList: groupTargets, ...base, groupClause: keys, havingClause: sel.havingClause }],
     ['select', true, { ...sel, distinctClause: undefined, sortClause: undefined, ...noTail }],
     ['distinct', !!sel.distinctClause, { ...sel, sortClause: undefined, ...noTail }],
     ['order', !!sel.sortClause, { ...sel, ...noTail }],
@@ -838,7 +1206,7 @@ export async function runSteps(db: PGlite, sql: string): Promise<StepsResult> {
 - [ ] **Step 6: Chạy test, xác nhận PASS**
 
 Run: `npx vitest run tests/steps.test.ts && npx tsc --noEmit`
-Expected: PASS. Nếu test "GROUP BY số thứ tự" fail, in `JSON.stringify(parse('SELECT 1 GROUP BY 1'))` để xem dạng `A_Const` của bản libpg-query đang cài và sửa `groupKeys` cho khớp.
+Expected: PASS (đã chạy thử với libpg-query 18.2.4: `GROUP BY 1` cho dạng `{"A_Const":{"ival":{"ival":1}}}`; bước group/having nhóm theo biểu thức đã quy đổi `keys`, nếu không thì `GROUP BY m` lỗi vì truy vấn con không còn alias `m`).
 
 - [ ] **Step 7: Commit**
 
@@ -853,28 +1221,98 @@ git commit -m "feat: logical query order steps via Postgres parser"
 
 **Files:**
 - Create: `src/ui/stepsView.ts`
-- Modify: `src/main.ts`, `src/style.css`
+- Modify: `src/ui/vizTabs.ts`, `src/i18n/vi.ts`, `src/i18n/en.ts`, `src/style.css`
 
 **Interfaces:**
-- Consumes: `StepsResult`, `STEP_LABELS`, `STEP_HELP`, `StepKey` (Task 3); `DbClient.steps` (Task 1); `renderResult` (Plan 1); `fmt`, `h` (Task 2)
-- Produces: `renderSteps(host: HTMLElement, sql: string, result: StepsResult, goExplain: () => void): void`
+- Consumes: `StepsResult`, `StepsFailure`, `STEP_LABELS`, `STEP_HELP`, `StepKey` (Task 3); `DbClient.steps` (Task 1); `memoByKey`, `registerVizTabs`, `lastRunSql`, `load` (Task 2); `renderResult` (Plan 1); `fmt`, `h` (Task 2); `t`, `getLang`, `Key` (Plan 1)
+- Produces:
+  - `renderSteps(host: HTMLElement, sql: string, result: StepsResult, goExplain: () => void): void`
+  - tab `steps` (query, 10) với cache `stepsFor(sql)` trong `vizTabs.ts`
+  - khóa i18n: `tab.steps`, `steps.*`
 
-- [ ] **Step 1: Viết `src/ui/stepsView.ts`**
+- [ ] **Step 1: Thêm khóa i18n**
+
+`src/i18n/vi.ts`:
+```ts
+  'tab.steps': 'Thứ tự thực thi',
+  'steps.running': 'Đang chạy từng bước…',
+  'steps.syntax': 'Câu SQL chưa đúng cú pháp: {msg}',
+  'steps.multi': 'Chỉ hỗ trợ đúng một câu lệnh.',
+  'steps.notSelect': 'Chỉ hỗ trợ câu SELECT.',
+  'steps.withUnion': 'Query có WITH hoặc UNION — xem tab EXPLAIN.',
+  'steps.window': 'Query có window function — xem tab EXPLAIN.',
+  'steps.seeExplain': 'Xem EXPLAIN',
+  'steps.stage1': '1 · Phân tích (Parse)',
+  'steps.stage2': '2 · Biến đổi (Transform)',
+  'steps.stage3': '3 · Tối ưu (Optimize)',
+  'steps.stage4': '4 · Thực thi (Execute)',
+  'steps.toExplain': 'Xem kế hoạch Postgres đã chọn',
+  'steps.play': '▶ Phát',
+  'steps.pause': '⏸ Dừng',
+  'steps.pipe': 'Các bước thực thi',
+  'steps.unused': 'không dùng',
+  'steps.error': 'lỗi',
+  'steps.groups': '{n} nhóm',
+  'steps.title': 'Bước {i} · {label}',
+  'steps.before': 'Trước',
+  'steps.after': 'Sau',
+  'steps.sample': 'Dòng mẫu sau bước này (tối đa 5):',
+  'steps.sql': 'SQL Postgres chạy cho bước này',
+```
+
+`src/i18n/en.ts`:
+```ts
+  'tab.steps': 'Execution order',
+  'steps.running': 'Running each step…',
+  'steps.syntax': 'The SQL has a syntax error: {msg}',
+  'steps.multi': 'Only a single statement is supported.',
+  'steps.notSelect': 'Only SELECT statements are supported.',
+  'steps.withUnion': 'The query uses WITH or UNION — see the EXPLAIN tab.',
+  'steps.window': 'The query uses a window function — see the EXPLAIN tab.',
+  'steps.seeExplain': 'See EXPLAIN',
+  'steps.stage1': '1 · Parse',
+  'steps.stage2': '2 · Transform',
+  'steps.stage3': '3 · Optimize',
+  'steps.stage4': '4 · Execute',
+  'steps.toExplain': 'See the plan Postgres chose',
+  'steps.play': '▶ Play',
+  'steps.pause': '⏸ Pause',
+  'steps.pipe': 'Execution steps',
+  'steps.unused': 'not used',
+  'steps.error': 'error',
+  'steps.groups': (p) => `${p.n} ${p.n === 1 || p.n === '1' ? 'group' : 'groups'}`,
+  'steps.title': 'Step {i} · {label}',
+  'steps.before': 'Before',
+  'steps.after': 'After',
+  'steps.sample': 'Sample rows after this step (up to 5):',
+  'steps.sql': 'SQL Postgres ran for this step',
+```
+
+- [ ] **Step 2: Viết `src/ui/stepsView.ts`**
 
 ```ts
-import { STEP_HELP, STEP_LABELS, type StepKey, type StepsResult } from '../viz/steps';
+import { getLang, t, type Key } from '../i18n';
+import { STEP_HELP, STEP_LABELS, type StepKey, type StepsFailure, type StepsResult } from '../viz/steps';
 import { fmt, h } from './dom';
 import { renderResult } from './resultTable';
 
-const STAGES = ['1 · Parse', '2 · Transform', '3 · Optimize', '4 · Execute'];
+const STAGES: Key[] = ['steps.stage1', 'steps.stage2', 'steps.stage3', 'steps.stage4'];
+const REASON: Record<StepsFailure, Key> = {
+  syntax: 'steps.syntax', multi: 'steps.multi', notSelect: 'steps.notSelect', withUnion: 'steps.withUnion', window: 'steps.window',
+};
 
 export function renderSteps(host: HTMLElement, sql: string, result: StepsResult, goExplain: () => void): void {
-  const stages = h('div', { class: 'stages' }, ...STAGES.map((s, i) =>
+  const labels = STEP_LABELS[getLang()];
+  const help = STEP_HELP[getLang()];
+  const stages = h('div', { class: 'stages' }, ...STAGES.map((key, i) =>
     i === 2
-      ? h('button', { type: 'button', class: 'stage', onclick: goExplain, title: 'Xem kế hoạch Postgres đã chọn' }, `${s} → EXPLAIN`)
-      : h('span', { class: `stage${i === 3 ? ' on' : ''}` }, s)));
+      ? h('button', { type: 'button', class: 'stage', onclick: goExplain, title: t('steps.toExplain') }, `${t(key)} → EXPLAIN`)
+      : h('span', { class: `stage${i === 3 ? ' on' : ''}` }, t(key))));
   if (!result.ok) {
-    host.append(stages, h('p', { class: 'muted' }, result.reason));
+    host.append(stages, h('p', { class: 'muted' }, t(REASON[result.reason], { msg: result.detail ?? '' })));
+    if (result.reason === 'withUnion' || result.reason === 'window') {
+      host.append(h('button', { type: 'button', onclick: goExplain }, t('steps.seeExplain')));
+    }
     return;
   }
   const { steps, ranges } = result;
@@ -882,14 +1320,16 @@ export function renderSteps(host: HTMLElement, sql: string, result: StepsResult,
   let current = steps.indexOf(live[1] ?? live[0] ?? steps[0]);
   let timer: number | undefined;
 
-  const pipe = h('div', { class: 'pipe', role: 'tablist', 'aria-label': 'Các bước thực thi' });
+  const pipe = h('div', { class: 'pipe', role: 'group', 'aria-label': t('steps.pipe') });
   const detail = h('div', { class: 'step-detail' });
-  const playBtn = h('button', { type: 'button' }, '▶ Phát');
+  const playBtn = h('button', { type: 'button' }, t('steps.play'));
 
   const prevCount = (i: number) => {
     for (let j = i - 1; j >= 0; j--) if (steps[j].count !== undefined) return steps[j].count!;
     return undefined;
   };
+  const unit = (key: StepKey, n: number) =>
+    key === 'group' || key === 'having' ? t('steps.groups', { n: fmt(n) }) : t('viz.rows', { n: fmt(n) });
 
   function highlighted(key: StepKey): HTMLElement {
     const r = ranges[key];
@@ -902,42 +1342,42 @@ export function renderSteps(host: HTMLElement, sql: string, result: StepsResult,
     pipe.replaceChildren(...steps.flatMap((s, i) => [
       i ? h('span', { class: 'arrow', 'aria-hidden': 'true' }, '→') : null,
       h('button', {
-        type: 'button', role: 'tab',
+        type: 'button',
         class: `st${i === current ? ' on' : ''}${s.skipped ? ' skip' : ''}${s.error ? ' err' : ''}`,
-        'aria-selected': i === current ? 'true' : 'false',
+        'aria-current': i === current ? 'step' : false,
         onclick: () => { stop(); current = i; draw(); },
       },
-        h('b', {}, STEP_LABELS[s.key]),
-        s.skipped ? h('span', { class: 'muted' }, 'không dùng')
-          : s.error ? h('span', {}, 'lỗi')
-          : h('span', {}, h('span', { class: 'n' }, fmt(s.count!)), ` ${s.key === 'group' || s.key === 'having' ? 'nhóm' : 'dòng'}`)),
+        h('b', {}, labels[s.key]),
+        s.skipped ? h('span', {}, t('steps.unused'))
+          : s.error ? h('span', {}, t('steps.error'))
+          : h('span', { class: 'n' }, unit(s.key, s.count!))),
     ].filter((x): x is HTMLElement => x !== null)));
 
     const s = steps[current];
     const before = prevCount(current);
     detail.replaceChildren(
-      h('h3', {}, `Bước ${current + 1} · ${STEP_LABELS[s.key]}`),
-      h('p', {}, STEP_HELP[s.key]),
+      h('h3', {}, t('steps.title', { i: current + 1, label: labels[s.key] })),
+      h('p', {}, help[s.key]),
       s.count !== undefined && before !== undefined
         ? h('div', { class: 'compare', 'aria-label': `${fmt(before)} → ${fmt(s.count)}` },
-            h('div', { class: 'bar-row' }, h('span', {}, 'Trước'), h('i', { style: 'width:100%' }), h('span', {}, fmt(before))),
-            h('div', { class: 'bar-row' }, h('span', {}, 'Sau'), h('i', { style: `width:${before ? Math.max(1, (s.count / before) * 100) : 100}%` }), h('span', {}, fmt(s.count))))
-        : null,
+            h('div', { class: 'bar-row' }, h('span', {}, t('steps.before')), h('i', { style: 'width:100%' }), h('span', {}, fmt(before))),
+            h('div', { class: 'bar-row' }, h('span', {}, t('steps.after')), h('i', { style: `width:${before ? Math.max(1, (s.count / before) * 100) : 100}%` }), h('span', {}, fmt(s.count))))
+        : '',
       highlighted(s.key),
-      s.error ? h('pre', { class: 'error' }, s.error) : null,
-      s.sample ? h('div', {}, h('p', { class: 'muted' }, 'Dòng mẫu sau bước này (tối đa 5):'), renderResult(s.sample)) : null,
-      s.sql ? h('details', {}, h('summary', {}, 'SQL Postgres chạy cho bước này'), h('pre', { class: 'sql' }, s.sql)) : null,
+      s.error ? h('pre', { class: 'error' }, s.error) : '',
+      s.sample ? h('div', {}, h('p', { class: 'muted' }, t('steps.sample')), renderResult(s.sample)) : '',
+      s.sql ? h('details', {}, h('summary', {}, t('steps.sql')), h('pre', { class: 'sql' }, s.sql)) : '',
     );
   }
 
   function stop(): void {
     clearInterval(timer);
     timer = undefined;
-    playBtn.textContent = '▶ Phát';
+    playBtn.textContent = t('steps.play');
   }
   playBtn.addEventListener('click', () => {
     if (timer) return stop();
-    playBtn.textContent = '⏸ Dừng';
+    playBtn.textContent = t('steps.pause');
     current = 0;
     draw();
     timer = window.setInterval(() => {
@@ -952,67 +1392,69 @@ export function renderSteps(host: HTMLElement, sql: string, result: StepsResult,
 }
 ```
 
-- [ ] **Step 2: Gắn vào `src/main.ts`**
+- [ ] **Step 3: Đăng ký tab trong `src/ui/vizTabs.ts`**
 
-1. Import:
+1. Thêm import:
 ```ts
-import { renderSteps } from './ui/stepsView';
+import { renderSteps } from './stepsView';
 ```
-2. Trong `buildTabs()`, thêm tab ngay sau tab `result`:
+2. Thêm hàm này ngay trên `export function registerVizTabs`:
 ```ts
-    {
-      id: 'steps',
-      label: 'Thứ tự thực thi',
-      render: async (host) => {
-        const sql = currentSql();
-        if (!sql) return void host.append(h('p', { class: 'muted' }, 'Viết query trong editor trước.'));
-        host.append(h('p', { class: 'muted' }, 'Đang chạy từng bước…'));
-        try {
-          const r = await db.steps(sql);
-          host.replaceChildren();
-          renderSteps(host, sql, r, () => panel.show('explain'));
-        } catch (e) {
-          host.replaceChildren(h('pre', { class: 'error' }, errorMessage(e)));
-        }
-      },
+function registerStepsTab(deps: VizDeps): void {
+  // Same idea as planFor: re-rendering (language switch, tab switch) never re-runs the sub-queries.
+  const stepsFor = memoByKey((sql) => deps.db.steps(sql));
+  registerTab({
+    id: 'steps',
+    label: 'tab.steps',
+    group: 'query',
+    order: 10,
+    render: (host) => {
+      const sql = lastRunSql(host, deps);
+      return sql === undefined
+        ? undefined
+        : load(host, t('steps.running'), stepsFor(sql), (body, r) => renderSteps(body, sql, r, () => deps.show('explain')));
     },
+  });
+}
 ```
+3. Trong `registerVizTabs`, thêm dòng `registerStepsTab(deps);` ngay **trước** `registerPlanTabs(deps);`.
 
-- [ ] **Step 3: Thêm CSS vào cuối `src/style.css`**
+- [ ] **Step 4: Thêm CSS vào cuối `src/style.css`**
 
 ```css
 .stages { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; font-size: 13px; }
 .stage { padding: 3px 10px; border-radius: 12px; background: var(--code); border: 1px solid var(--border); }
-.stage.on { background: var(--bar); color: #fff; }
+.stage.on { background: var(--bar); color: var(--on-dark); }
 .pipe { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 8px 0; }
 .st { display: flex; flex-direction: column; align-items: flex-start; min-width: 96px; background: var(--code); }
 .st .n { font-size: 16px; font-weight: 700; color: var(--accent); }
 .st.on { border-color: var(--accent); background: var(--accent-soft); }
-.st.skip { opacity: 0.5; }
+.st.skip { border-style: dashed; color: var(--muted); }
 .st.err { border-color: var(--bad); }
 .arrow { color: var(--muted); }
-pre.sql { background: #1e1e1e; color: #d4d4d4; padding: 8px; border-radius: 6px; font-size: 12px; overflow: auto; white-space: pre-wrap; }
-pre.sql mark { background: #264f78; color: #fff; border-radius: 2px; }
-pre.sql .dim { opacity: 0.4; }
+pre.sql { background: var(--sql-bg); color: var(--sql-text); padding: 8px; border-radius: 6px; font-size: 12px; overflow: auto; white-space: pre-wrap; }
+pre.sql mark { background: var(--sql-mark); color: var(--on-dark); border-radius: 2px; }
+pre.sql .dim { color: var(--sql-dim); }
 .compare { margin: 8px 0; max-width: 520px; }
 .bar-row { display: grid; grid-template-columns: 48px 1fr 80px; gap: 8px; align-items: center; font-size: 13px; }
 .bar-row i { display: block; height: 10px; background: var(--accent); border-radius: 4px; }
 @media (prefers-reduced-motion: no-preference) { .bar-row i { transition: width 0.4s ease; } }
 ```
 
-- [ ] **Step 4: Kiểm tra kiểu, build, kiểm thủ công**
+- [ ] **Step 5: Kiểm tra kiểu, build, kiểm thủ công**
 
-Run: `npx tsc --noEmit && npm run build` — xác nhận `dist/assets` có `libpg-query-*.wasm`. Rồi `npm run dev`:
-1. Dán query `Q` của test Task 3 vào editor → tab **Thứ tự thực thi** → thấy 4 giai đoạn, chuỗi 8 bước với 25.677 → 3.167 → 6 → 5 → 5 → (DISTINCT mờ) → 5 → 3; bước WHERE được chọn sẵn, mệnh đề WHERE được tô trong SQL, có 5 dòng mẫu.
+Run: `npx vitest run && npx tsc --noEmit && npm run build` — xác nhận `dist/assets` có `libpg-query-*.wasm`. Rồi `npm run dev`:
+1. Dán query `Q` của test Task 3 vào editor → Ctrl+Enter → tab **Thứ tự thực thi** → thấy 4 giai đoạn, chuỗi 8 bước với 25.677 → 3.167 → 6 → 5 → 5 → (DISTINCT nét đứt, "không dùng") → 5 → 3; bước WHERE được chọn sẵn, mệnh đề WHERE được tô trong SQL, phần còn lại màu xám (không mờ), có 5 dòng mẫu.
 2. Bấm **▶ Phát** → tự chạy qua các bước mỗi 1,5 giây; bấm lại để dừng.
-3. Bấm "3 · Optimize → EXPLAIN" → sang tab EXPLAIN.
-4. Gõ `WITH x AS (SELECT 1) SELECT * FROM x` → tab báo "Query có WITH hoặc UNION — xem tab EXPLAIN".
-5. DevTools → Network: `libpg-query-*.wasm` chỉ tải khi mở tab này lần đầu.
+3. Bấm "3 · Tối ưu (Optimize) → EXPLAIN" → sang tab EXPLAIN.
+4. Bấm `EN` → tab vẽ lại bằng tiếng Anh (`25,677 rows`, `6 groups`) **ngay**, không hiện "Running each step…" (đã cache).
+5. Gõ `WITH x AS (SELECT 1) SELECT * FROM x` → Ctrl+Enter → tab báo "Query có WITH hoặc UNION — xem tab EXPLAIN" kèm nút **Xem EXPLAIN**.
+6. DevTools → Network: `libpg-query-*.wasm` chỉ tải khi mở tab này lần đầu.
 
-- [ ] **Step 5: Commit**
+- [ ] **Step 6: Commit**
 
 ```bash
-git add src/ui/stepsView.ts src/main.ts src/style.css
+git add src/ui/stepsView.ts src/ui/vizTabs.ts src/i18n src/style.css
 git commit -m "feat: logical execution order tab"
 ```
 
@@ -1022,15 +1464,16 @@ git commit -m "feat: logical execution order tab"
 
 **Files:**
 - Create: `src/viz/chart.ts`, `src/ui/chartView.ts`
-- Modify: `src/main.ts`, `src/style.css`
+- Modify: `src/ui/vizTabs.ts`, `src/i18n/vi.ts`, `src/i18n/en.ts`, `src/style.css`
 - Test: `tests/chart.test.ts`
 
 **Interfaces:**
-- Consumes: `QueryResult` (Plan 1); `svg`, `fmt`, `h` (Task 2); `runner` (tests)
+- Consumes: `QueryResult` (Plan 1); `svg`, `fmt`, `h`, `lastRunSql`, `registerVizTabs` (Task 2); `formatCell` (Plan 1); `app.lastRun`, `t` (Plan 1); `runner` (tests)
 - Produces:
   - `type ChartSpec = { kind: 'bar' | 'line'; label: number; values: number[] }`
-  - `chartSpec(r: QueryResult): ChartSpec | null`
+  - `MAX_POINTS = 60`, `chartSpec(r: QueryResult): ChartSpec | null`
   - `renderChart(host: HTMLElement, r: QueryResult): void`
+  - tab `chart` (output, 20, `newAt: 'ch2-01'`); khóa i18n `tab.chart`, `chart.*`
 
 - [ ] **Step 1: Viết test**
 
@@ -1099,11 +1542,33 @@ export function chartSpec(r: QueryResult): ChartSpec | null {
 Run: `npx vitest run tests/chart.test.ts && npx tsc --noEmit`
 Expected: PASS.
 
-- [ ] **Step 5: Viết `src/ui/chartView.ts`**
+- [ ] **Step 5: Thêm khóa i18n**
+
+`src/i18n/vi.ts`:
+```ts
+  'tab.chart': 'Biểu đồ',
+  'chart.empty': 'Biểu đồ tự bật khi kết quả có dạng (nhãn, số…) hoặc (ngày, số…), tối đa {max} dòng.',
+  'chart.runError': 'Lần chạy gần nhất bị lỗi — xem tab Kết quả.',
+  'chart.valueCol': 'Cột giá trị: ',
+  'chart.barAria': 'Biểu đồ cột theo {col}',
+  'chart.lineAria': 'Biểu đồ đường theo {col}',
+```
+`src/i18n/en.ts`:
+```ts
+  'tab.chart': 'Chart',
+  'chart.empty': 'The chart appears when the result looks like (label, number…) or (date, number…), up to {max} rows.',
+  'chart.runError': 'The last run failed — see the Result tab.',
+  'chart.valueCol': 'Value column: ',
+  'chart.barAria': 'Bar chart of {col}',
+  'chart.lineAria': 'Line chart of {col}',
+```
+
+- [ ] **Step 6: Viết `src/ui/chartView.ts`**
 
 ```ts
 import type { QueryResult } from '../db/run';
-import { chartSpec, type ChartSpec } from '../viz/chart';
+import { t } from '../i18n';
+import { chartSpec, MAX_POINTS, type ChartSpec } from '../viz/chart';
 import { fmt, h, svg } from './dom';
 import { formatCell } from './resultTable';
 
@@ -1115,7 +1580,7 @@ function bars(r: QueryResult, spec: ChartSpec, col: number): SVGSVGElement {
   const vals = r.rows.map((row) => Number(row[col] ?? 0));
   const max = Math.max(1, ...vals.map(Math.abs));
   const height = r.rows.length * rowH + 8;
-  return svg('svg', { viewBox: `0 0 ${W} ${height}`, class: 'chart', role: 'img', 'aria-label': `Biểu đồ cột theo ${r.columns[col]}` },
+  return svg('svg', { viewBox: `0 0 ${W} ${height}`, class: 'chart', role: 'img', 'aria-label': t('chart.barAria', { col: r.columns[col] }) },
     ...r.rows.map((row, i) => {
       const label = formatCell(row[spec.label], r.types[spec.label]);
       const w = (Math.abs(vals[i]) / max) * (W - labelW - 90);
@@ -1137,9 +1602,9 @@ function line(r: QueryResult, spec: ChartSpec, col: number): SVGSVGElement {
   const [t0, t1] = [pts[0]?.t ?? 0, pts.at(-1)?.t ?? 1];
   const vmax = Math.max(1, ...pts.map((p) => p.v));
   const vmin = Math.min(0, ...pts.map((p) => p.v));
-  const x = (t: number) => pad.l + ((t - t0) / Math.max(1, t1 - t0)) * (W - pad.l - pad.r);
+  const x = (tm: number) => pad.l + ((tm - t0) / Math.max(1, t1 - t0)) * (W - pad.l - pad.r);
   const y = (v: number) => pad.t + (1 - (v - vmin) / Math.max(1, vmax - vmin)) * (H - pad.t - pad.b);
-  return svg('svg', { viewBox: `0 0 ${W} ${H}`, class: 'chart', role: 'img', 'aria-label': `Biểu đồ đường theo ${r.columns[col]}` },
+  return svg('svg', { viewBox: `0 0 ${W} ${H}`, class: 'chart', role: 'img', 'aria-label': t('chart.lineAria', { col: r.columns[col] }) },
     svg('line', { x1: pad.l, y1: y(vmin), x2: W - pad.r, y2: y(vmin), class: 'chart-axis' }),
     svg('text', { x: pad.l - 6, y: y(vmax) + 4, 'text-anchor': 'end', class: 'chart-label' }, fmt(vmax)),
     svg('text', { x: pad.l - 6, y: y(vmin) + 4, 'text-anchor': 'end', class: 'chart-label' }, fmt(vmin)),
@@ -1153,13 +1618,13 @@ function line(r: QueryResult, spec: ChartSpec, col: number): SVGSVGElement {
 export function renderChart(host: HTMLElement, r: QueryResult): void {
   const spec = chartSpec(r);
   if (!spec) {
-    host.append(h('p', { class: 'muted' }, 'Biểu đồ tự bật khi kết quả có dạng (nhãn, số…) hoặc (ngày, số…), tối đa 60 dòng.'));
+    host.append(h('p', { class: 'muted' }, t('chart.empty', { max: MAX_POINTS })));
     return;
   }
   const area = h('div', { class: 'chart-wrap' });
   const draw = (col: number) => area.replaceChildren(spec.kind === 'bar' ? bars(r, spec, col) : line(r, spec, col));
   const picker = spec.values.length > 1
-    ? h('label', {}, 'Cột giá trị: ', (() => {
+    ? h('label', {}, t('chart.valueCol'), (() => {
         const sel = h('select', {}, ...spec.values.map((i) => h('option', { value: String(i) }, r.columns[i])));
         sel.addEventListener('change', () => draw(Number(sel.value)));
         return sel;
@@ -1170,21 +1635,32 @@ export function renderChart(host: HTMLElement, r: QueryResult): void {
 }
 ```
 
-- [ ] **Step 6: Gắn vào `src/main.ts` và CSS**
+- [ ] **Step 7: Đăng ký tab trong `src/ui/vizTabs.ts` và CSS**
 
-1. Import: `import { renderChart } from './ui/chartView';`
-2. Trong `buildTabs()`, thêm ngay sau tab `result`:
+1. Thêm import:
 ```ts
-    {
-      id: 'chart',
-      label: 'Biểu đồ',
-      render: (host) => {
-        if (!lastRun?.result) host.append(h('p', { class: 'muted' }, 'Chạy query để vẽ biểu đồ.'));
-        else renderChart(host, lastRun.result);
-      },
-    },
+import { renderChart } from './chartView';
 ```
-3. Cuối `src/style.css`:
+2. Thêm hàm ngay trên `export function registerVizTabs`:
+```ts
+function registerChartTab(deps: VizDeps): void {
+  registerTab({
+    id: 'chart',
+    label: 'tab.chart',
+    group: 'output',
+    order: 20,
+    newAt: 'ch2-01',
+    render: (host) => {
+      if (lastRunSql(host, deps) === undefined) return;
+      const result = app.lastRun?.result;
+      if (result) renderChart(host, result);
+      else host.append(h('p', { class: 'muted' }, t('chart.runError')));
+    },
+  });
+}
+```
+3. Trong `registerVizTabs`, thêm `registerChartTab(deps);` làm dòng đầu tiên.
+4. Cuối `src/style.css`:
 ```css
 .chart-wrap { overflow: auto; }
 .chart { width: 100%; max-width: 900px; height: auto; }
@@ -1196,52 +1672,58 @@ export function renderChart(host: HTMLElement, r: QueryResult): void {
 .chart-value { fill: var(--text); }
 ```
 
-- [ ] **Step 7: Kiểm thủ công và commit**
+- [ ] **Step 8: Kiểm thủ công và commit**
 
-Run: `npx tsc --noEmit && npm run dev`. Chạy `ch3-02` → tab **Biểu đồ** → 6 cột ngang theo hãng tàu, rê chuột thấy số. Chạy `SELECT date_trunc('month', booking_date)::date, count(*), SUM(gross_weight_kg) FROM shipments GROUP BY 1 ORDER BY 1` → biểu đồ đường 24 điểm, có ô chọn "Cột giá trị". Chạy `SELECT * FROM ports` → thông báo không vẽ.
+Run: `npx vitest run && npx tsc --noEmit && npm run dev`.
+1. Tab **Biểu đồ** nằm ngay sau Kết quả (nhóm đầu).
+2. Chạy `ch3-02` → tab **Biểu đồ** → 6 cột ngang theo hãng tàu, rê chuột thấy số.
+3. Chạy `SELECT date_trunc('month', booking_date)::date, count(*), SUM(gross_weight_kg) FROM shipments GROUP BY 1 ORDER BY 1` → biểu đồ đường 24 điểm, có ô chọn "Cột giá trị".
+4. Chạy `SELECT * FROM ports` → thông báo không vẽ. Chạy SQL lỗi → "Lần chạy gần nhất bị lỗi — xem tab Kết quả."
+5. Bấm `EN` → nhãn số đổi `1.234,5` → `1,234.5`.
 
 ```bash
-git add src/viz/chart.ts src/ui/chartView.ts src/main.ts src/style.css tests/chart.test.ts
-git commit -m "feat: automatic bar/line chart for results"
+git add src/viz/chart.ts src/ui/chartView.ts src/ui/vizTabs.ts src/i18n src/style.css tests/chart.test.ts
+git commit -m "feat: automatic bar/line chart for the last run"
 ```
 
 ---
 
-### Task 6: Sơ đồ ER chuẩn (Mermaid, crow's foot)
+### Task 6: Sơ đồ ER chuẩn (Mermaid, crow's foot), theo schema
 
 **Files:**
 - Create: `src/viz/erd.ts`, `src/ui/erdView.ts`
-- Modify: `src/main.ts`, `src/style.css`
+- Modify: `src/ui/vizTabs.ts`, `src/i18n/vi.ts`, `src/i18n/en.ts`, `src/style.css`
 - Test: `tests/erd.test.ts`
 
 **Interfaces:**
-- Consumes: `tablesUnlocked` (Plan 1); `runner` (tests); `DbClient.run` (Plan 1)
+- Consumes: `unlockedTables`, `app.lastRun` (`src/state.ts`, Plan 1); `runSandboxed`, `QueryResult` (Plan 1); `DbClient.run`; `memoByKey`, `registerVizTabs` (Task 2); `runner`, `freshDb` (tests)
 - Produces:
-  - `ER_COLUMNS_SQL: string`, `ER_CONSTRAINTS_SQL: string`
+  - `erColumnsSql(schema: string): string`, `erConstraintsSql(schema: string): string` — throw `Error` khi tên schema không khớp `/^[a-z_][a-z0-9_]*$/`
   - `interface ErColumn { table: string; name: string; type: string; nullable: boolean }`
   - `interface ErConstraint { table: string; column: string; kind: 'PRIMARY KEY' | 'UNIQUE' | 'FOREIGN KEY'; refTable: string | null }`
+  - `interface ErMetadata { cols: ErColumn[]; cons: ErConstraint[] }`
   - `toErColumns(r: QueryResult): ErColumn[]`, `toErConstraints(r: QueryResult): ErConstraint[]`
+  - `loadErMetadata(run: (sql: string) => Promise<QueryResult>, schema: string): Promise<ErMetadata>` — Plan Import gọi với `'sandbox'`
   - `erDefinition(cols: ErColumn[], cons: ErConstraint[], tables: string[], highlight: Set<string>): string`
-  - `tablesInQuery(sql: string, known: string[]): Set<string>`
+  - `tablesInQuery(sql: string, known: string[]): Set<string>` — dùng lại cho content lint B6
   - `renderErd(host: HTMLElement, definition: string): Promise<void>`
+  - tab `erd` (schema, 10); khóa i18n `tab.erd`, `erd.*`
 
 - [ ] **Step 1: Viết test**
 
 `tests/erd.test.ts`:
 ```ts
 import { describe, expect, it } from 'vitest';
-import { ER_COLUMNS_SQL, ER_CONSTRAINTS_SQL, erDefinition, tablesInQuery, toErColumns, toErConstraints } from '../src/viz/erd';
-import { runner } from './helpers';
+import { runSandboxed } from '../src/db/run';
+import { erColumnsSql, erDefinition, loadErMetadata, tablesInQuery } from '../src/viz/erd';
+import { freshDb, runner } from './helpers';
 
-async function meta() {
-  const run = await runner();
-  return { cols: toErColumns(await run(ER_COLUMNS_SQL)), cons: toErConstraints(await run(ER_CONSTRAINTS_SQL)) };
-}
+const CH2 = ['ports', 'carriers', 'employees', 'customers', 'shipments', 'containers'];
 
-describe('erDefinition', () => {
+describe('erDefinition (schema public)', () => {
   it('quan hệ crow\'s foot và khóa từ information_schema', async () => {
-    const { cols, cons } = await meta();
-    const def = erDefinition(cols, cons, ['ports', 'carriers', 'employees', 'customers', 'shipments', 'containers'], new Set(['shipments']));
+    const { cols, cons } = await loadErMetadata(await runner(), 'public');
+    const def = erDefinition(cols, cons, CH2, new Set(['shipments']));
     expect(def.startsWith('erDiagram')).toBe(true);
     expect(def).toContain('customers ||--o{ shipments : "customer_id"');
     expect(def).toContain('employees |o--o{ employees : "manager_id"');
@@ -1255,9 +1737,27 @@ describe('erDefinition', () => {
   });
 
   it('chỉ vẽ bảng đã mở khóa và quan hệ giữa chúng', async () => {
-    const { cols, cons } = await meta();
-    const def = erDefinition(cols, cons, ['ports', 'carriers', 'employees', 'customers', 'shipments'], new Set());
+    const { cols, cons } = await loadErMetadata(await runner(), 'public');
+    const def = erDefinition(cols, cons, CH2.slice(0, 5), new Set());
     expect(def).not.toContain('containers');
+  });
+});
+
+describe('schema khác (dữ liệu nạp vào sandbox)', () => {
+  it('đọc đúng schema, bảng không có khóa thì chỉ có hộp bảng', async () => {
+    const db = await freshDb();
+    await db.exec('CREATE SCHEMA IF NOT EXISTS sandbox; CREATE TABLE sandbox.my_orders (order_no text, qty integer)');
+    const { cols, cons } = await loadErMetadata((sql) => runSandboxed(db, sql), 'sandbox');
+    expect(cols.map((c) => `${c.table}.${c.name}`)).toEqual(['my_orders.order_no', 'my_orders.qty']);
+    expect(cons).toEqual([]);
+    const def = erDefinition(cols, cons, ['my_orders'], new Set());
+    expect(def).toContain('my_orders {');
+    expect(def).toContain('integer qty');
+    expect(def).not.toContain('--');
+  });
+
+  it('từ chối tên schema không phải định danh', () => {
+    expect(() => erColumnsSql("public' OR '1'='1")).toThrow();
   });
 });
 
@@ -1280,26 +1780,39 @@ Expected: FAIL — không resolve `../src/viz/erd`.
 ```ts
 import type { QueryResult } from '../db/run';
 
-export const ER_COLUMNS_SQL = `SELECT table_name, column_name, data_type, is_nullable
-FROM information_schema.columns WHERE table_schema = 'public'
+const IDENT = /^[a-z_][a-z0-9_]*$/;
+
+/** runSandboxed takes no bind parameters, so the schema name is validated before it is inlined. */
+function schemaLiteral(schema: string): string {
+  if (!IDENT.test(schema)) throw new Error(`invalid schema name: ${schema}`);
+  return `'${schema}'`;
+}
+
+export const erColumnsSql = (schema: string): string => `SELECT table_name, column_name, data_type, is_nullable
+FROM information_schema.columns WHERE table_schema = ${schemaLiteral(schema)}
 ORDER BY table_name, ordinal_position`;
 
-export const ER_CONSTRAINTS_SQL = `SELECT tc.table_name, kcu.column_name, tc.constraint_type, ccu.table_name AS ref_table
+export const erConstraintsSql = (schema: string): string => `SELECT tc.table_name, kcu.column_name, tc.constraint_type, ccu.table_name AS ref_table
 FROM information_schema.table_constraints tc
 JOIN information_schema.key_column_usage kcu
   ON kcu.constraint_name = tc.constraint_name AND kcu.table_schema = tc.table_schema
 LEFT JOIN information_schema.constraint_column_usage ccu
   ON tc.constraint_type = 'FOREIGN KEY' AND ccu.constraint_name = tc.constraint_name AND ccu.table_schema = tc.table_schema
-WHERE tc.table_schema = 'public' AND tc.constraint_type IN ('PRIMARY KEY', 'UNIQUE', 'FOREIGN KEY')`;
+WHERE tc.table_schema = ${schemaLiteral(schema)} AND tc.constraint_type IN ('PRIMARY KEY', 'UNIQUE', 'FOREIGN KEY')`;
 
 export interface ErColumn { table: string; name: string; type: string; nullable: boolean }
 export interface ErConstraint { table: string; column: string; kind: 'PRIMARY KEY' | 'UNIQUE' | 'FOREIGN KEY'; refTable: string | null }
+export interface ErMetadata { cols: ErColumn[]; cons: ErConstraint[] }
 
 export const toErColumns = (r: QueryResult): ErColumn[] =>
   r.rows.map(([table, name, type, nullable]) => ({ table: String(table), name: String(name), type: String(type), nullable: nullable === 'YES' }));
 
 export const toErConstraints = (r: QueryResult): ErConstraint[] =>
   r.rows.map(([table, column, kind, ref]) => ({ table: String(table), column: String(column), kind: kind as ErConstraint['kind'], refTable: ref === null ? null : String(ref) }));
+
+export async function loadErMetadata(run: (sql: string) => Promise<QueryResult>, schema: string): Promise<ErMetadata> {
+  return { cols: toErColumns(await run(erColumnsSql(schema))), cons: toErConstraints(await run(erConstraintsSql(schema))) };
+}
 
 const KEY_TAG: Record<ErConstraint['kind'], string> = { 'PRIMARY KEY': 'PK', 'FOREIGN KEY': 'FK', UNIQUE: 'UK' };
 
@@ -1337,11 +1850,42 @@ export function tablesInQuery(sql: string, known: string[]): Set<string> {
 Run: `npx vitest run tests/erd.test.ts && npx tsc --noEmit`
 Expected: PASS.
 
-- [ ] **Step 5: Cài Mermaid và viết `src/ui/erdView.ts`**
+- [ ] **Step 5: Cài Mermaid, kiểm SharedArrayBuffer**
 
-Run: `npm i --save-exact mermaid@12.3.0`
+Run:
+```bash
+npm i --save-exact mermaid@12.3.0
+grep -rho "new SharedArrayBuffer\|SharedArrayBufferCancellationToken" node_modules/mermaid/dist/chunks/mermaid.esm --include=*.mjs | sort | uniq -c
+```
+Expected: `package.json` có `"mermaid": "12.3.0"`. Grep chỉ thấy `SharedArrayBuffer` trong lớp `SharedArrayBufferCancellationToken` (của `vscode-jsonrpc`, đi kèm parser langium; chỉ chạy khi có người tạo token hủy, `erDiagram` không dùng) — chấp nhận, không cần COOP/COEP. Nếu thấy `SharedArrayBuffer` ở chỗ khác, xử lý như Task 3 Step 1.
+
+- [ ] **Step 6: Thêm khóa i18n**
+
+`src/i18n/vi.ts`:
+```ts
+  'tab.erd': 'Sơ đồ ER',
+  'erd.drawing': 'Đang vẽ sơ đồ…',
+  'erd.intro': "Ký hiệu crow's foot:",
+  'erd.one': 'đúng một',
+  'erd.zeroOne': 'không hoặc một',
+  'erd.many': 'không hoặc nhiều',
+  'erd.bold': 'Bảng viền đậm đang được dùng trong query.',
+```
+`src/i18n/en.ts`:
+```ts
+  'tab.erd': 'ER diagram',
+  'erd.drawing': 'Drawing the diagram…',
+  'erd.intro': "Crow's foot notation:",
+  'erd.one': 'exactly one',
+  'erd.zeroOne': 'zero or one',
+  'erd.many': 'zero or many',
+  'erd.bold': 'Tables with a bold border are used in the query.',
+```
+
+- [ ] **Step 7: Viết `src/ui/erdView.ts`**
 
 ```ts
+import { t } from '../i18n';
 import { h } from './dom';
 
 let seq = 0;
@@ -1357,87 +1901,100 @@ function mermaid(): Promise<typeof import('mermaid').default> {
 }
 
 export async function renderErd(host: HTMLElement, definition: string): Promise<void> {
-  host.append(h('p', { class: 'muted' }, 'Đang vẽ sơ đồ…'));
+  host.append(h('p', { class: 'muted' }, t('erd.drawing')));
   const { svg } = await (await mermaid()).render(`erd-${++seq}`, definition);
   const figure = h('div', { class: 'erd' });
-  // Only innerHTML in the app: SVG generated by Mermaid (strict mode) from our own schema identifiers.
+  // Only innerHTML in the app: SVG generated by Mermaid (strict mode) from schema identifiers.
   figure.innerHTML = svg;
   host.replaceChildren(
     h('p', { class: 'muted' },
-      "Ký hiệu crow's foot: ", h('code', {}, '||'), ' đúng một · ', h('code', {}, '|o'), ' không hoặc một · ',
-      h('code', {}, 'o{'), ' không hoặc nhiều. Bảng viền đậm đang được dùng trong query.'),
+      `${t('erd.intro')} `, h('code', {}, '||'), ` ${t('erd.one')} · `, h('code', {}, '|o'), ` ${t('erd.zeroOne')} · `,
+      h('code', {}, 'o{'), ` ${t('erd.many')}. ${t('erd.bold')}`),
     figure,
   );
 }
 ```
 
-- [ ] **Step 6: Gắn vào `src/main.ts` và CSS**
+- [ ] **Step 8: Đăng ký tab trong `src/ui/vizTabs.ts` và CSS**
 
-1. Import:
+1. Đổi dòng `import { app } from '../state';` thành:
 ```ts
-import { renderErd } from './ui/erdView';
-import { ER_COLUMNS_SQL, ER_CONSTRAINTS_SQL, erDefinition, tablesInQuery, toErColumns, toErConstraints, type ErColumn, type ErConstraint } from './viz/erd';
+import { app, unlockedTables } from '../state';
 ```
-2. Sau `function planFor…` thêm:
+và thêm import:
 ```ts
-let erMeta: Promise<{ cols: ErColumn[]; cons: ErConstraint[] }> | undefined;
-function erMetadata(): Promise<{ cols: ErColumn[]; cons: ErConstraint[] }> {
-  erMeta ??= (async () => ({ cols: toErColumns(await db.run(ER_COLUMNS_SQL)), cons: toErConstraints(await db.run(ER_CONSTRAINTS_SQL)) }))();
-  erMeta.catch(() => (erMeta = undefined));
-  return erMeta;
+import { erDefinition, loadErMetadata, tablesInQuery } from '../viz/erd';
+import { renderErd } from './erdView';
+```
+2. Thêm hàm ngay trên `export function registerVizTabs`:
+```ts
+function registerErdTab(deps: VizDeps): void {
+  // Keyed by schema: Plan Import reuses the same cache with 'sandbox'.
+  const erMetadata = memoByKey((schema) => loadErMetadata((sql) => deps.db.run(sql), schema));
+  registerTab({
+    id: 'erd',
+    label: 'tab.erd',
+    group: 'schema',
+    order: 10,
+    render: async (host) => {
+      const tables = unlockedTables();
+      const { cols, cons } = await erMetadata('public');
+      await renderErd(host, erDefinition(cols, cons, tables, tablesInQuery(app.lastRun?.sql ?? '', tables)));
+    },
+  });
 }
 ```
-3. Trong `buildTabs()`, thay tab `columns` bằng:
-```ts
-    {
-      id: 'erd',
-      label: 'Sơ đồ ER',
-      render: async (host) => {
-        const tables = unlockedTables();
-        const { cols, cons } = await erMetadata();
-        await renderErd(host, erDefinition(cols, cons, tables, tablesInQuery(currentSql(), tables)));
-      },
-    },
-    { id: 'columns', label: 'Cột', render: (host) => void host.append(schemaList()) },
-```
+3. Trong `registerVizTabs`, thêm `registerErdTab(deps);` làm dòng cuối.
 4. Cuối `src/style.css`:
 ```css
 .erd { overflow: auto; }
 .erd svg { max-width: 100%; height: auto; }
 ```
 
-- [ ] **Step 7: Kiểm thủ công và commit**
+- [ ] **Step 9: Kiểm thủ công và commit**
 
-Run: `npx tsc --noEmit && npm run build && npm run dev`. Mở tab **Sơ đồ ER** ở chương 1 → 5 bảng, ký hiệu crow's foot, cột có PK/FK/UK, `employees` có quan hệ tự trỏ `manager_id`. Gõ query có `shipments` → mở lại tab → `shipments` viền đậm. Sang chương 2 → có `containers`. Bật dark mode → theme tối. DevTools Network: chunk `mermaid*`/`erDiagram*` chỉ tải khi mở tab.
+Run: `npx vitest run && npx tsc --noEmit && npm run build && npm run dev`.
+1. Thanh tab: [Kết quả · Biểu đồ] | [Thứ tự thực thi · EXPLAIN · Luồng dữ liệu] | [Sơ đồ ER · Cột].
+2. Mở tab **Sơ đồ ER** ở chương 1 → 5 bảng, ký hiệu crow's foot, cột có PK/FK/UK, `employees` có quan hệ tự trỏ `manager_id`.
+3. Chạy query có `shipments` → mở lại tab → `shipments` viền đậm. Sửa editor mà không chạy → viền đậm vẫn theo lần chạy trước.
+4. Sang chương 2 → có `containers`. Bật dark mode → theme tối. Bấm `EN` → chú thích tiếng Anh.
+5. DevTools Network: chunk `mermaid*`/`erDiagram*` chỉ tải khi mở tab.
 
 ```bash
-git add package.json package-lock.json src/viz/erd.ts src/ui/erdView.ts src/main.ts src/style.css tests/erd.test.ts
-git commit -m "feat: crow's foot ER diagram via Mermaid"
+git add package.json package-lock.json src/viz/erd.ts src/ui/erdView.ts src/ui/vizTabs.ts src/i18n src/style.css tests/erd.test.ts
+git commit -m "feat: crow's foot ER diagram via Mermaid, per schema"
 ```
 
 ---
 
-### Task 7: Dải bản đồ tuyến 2D
+### Task 7: Dải bản đồ tuyến 2D kiêm thanh tiến độ chương
 
 **Files:**
 - Create: `src/viz/ports.ts`, `src/ui/mapView.ts`
-- Modify: `tsconfig.json`, `src/main.ts`, `src/style.css`
+- Modify: `tsconfig.json`, `src/main.ts`, `src/i18n/vi.ts`, `src/i18n/en.ts`, `src/style.css`
 - Test: `tests/ports.test.ts`
 
 **Interfaces:**
-- Consumes: `svg`, `h`, `fmt`, `reducedMotion` (Task 2); `currentChapter` (Plan 1)
+- Consumes: `svg`, `h`, `fmt`, `reducedMotion` (Task 2); `QueryResult` (Plan 1); `app`, `done` (`src/state.ts`), `currentChapter` (`src/progress.ts`), `t` (Plan 1); `runner` (tests)
 - Produces:
   - `interface Port { code: string; name: string; lon: number; lat: number; region: string; kind: 'SEAPORT' | 'AIRPORT' }`
   - `PORTS: Port[]`, `HUB: Record<Port['kind'], string>`
   - `laneUnlocked(port: Port, chapter: number): boolean`
-  - `createMap(host: HTMLElement, volumes: Map<string, number>): { update(chapter: number): void; celebrate(): void }`
+  - `VOLUMES_SQL: string`, `toVolumes(r: QueryResult): Map<string, number>`
+  - `type BeatState = 'done' | 'current' | 'todo'`, `interface ChapterDot { id: string; state: BeatState; boss: boolean }`
+  - `chapterDots(tickets: { id: string; chapter: number; beat: string }[], completed: Set<string>, selectedId: string, chapter: number): ChapterDot[]`
+  - `ticketPorts(ticket: { body: string; steps: { solution: string }[] }): Set<string>`
+  - `interface MapView { chapter: number; dots: ChapterDot[]; focus: Set<string> }`
+  - `interface RouteMap { update(view: MapView): void; setVolumes(v: Map<string, number>): void; celebrate(): void }`
+  - `createMap(host: HTMLElement): RouteMap`
+  - trong `main.ts`: `syncMap(): void`; khóa i18n `map.*`
 
 - [ ] **Step 1: Viết test**
 
 `tests/ports.test.ts`:
 ```ts
 import { describe, expect, it } from 'vitest';
-import { HUB, laneUnlocked, PORTS } from '../src/viz/ports';
+import { chapterDots, HUB, laneUnlocked, PORTS, ticketPorts, toVolumes, VOLUMES_SQL } from '../src/viz/ports';
 import { runner } from './helpers';
 
 const port = (code: string) => PORTS.find((p) => p.code === code)!;
@@ -1465,6 +2022,44 @@ describe('ports', () => {
     expect(laneUnlocked(port(HUB.SEAPORT), 7)).toBe(false);
     expect(laneUnlocked(port('HAN'), 7)).toBe(false);
   });
+
+  it('số lô theo cảng nước ngoài cộng lại bằng tổng số lô', async () => {
+    const run = await runner();
+    const volumes = toVolumes(await run(VOLUMES_SQL));
+    const total = Number((await run('SELECT count(*) FROM shipments')).rows[0][0]);
+    expect([...volumes.values()].reduce((a, b) => a + b, 0)).toBe(total);
+    expect(volumes.get('CNSHA')).toBeGreaterThan(0);
+  });
+});
+
+describe('thanh tiến độ chương', () => {
+  const tickets = [
+    { id: 'ch1-01', chapter: 1, beat: 'teach' },
+    { id: 'ch1-02', chapter: 1, beat: 'develop' },
+    { id: 'ch1-03', chapter: 1, beat: 'twist' },
+    { id: 'ch1-05', chapter: 1, beat: 'boss' },
+    { id: 'ch2-01', chapter: 2, beat: 'teach' },
+  ];
+  it('một chấm mỗi ticket của chương, theo thứ tự; boss được đánh dấu', () => {
+    expect(chapterDots(tickets, new Set(['ch1-01']), 'ch1-02', 1)).toEqual([
+      { id: 'ch1-01', state: 'done', boss: false },
+      { id: 'ch1-02', state: 'current', boss: false },
+      { id: 'ch1-03', state: 'todo', boss: false },
+      { id: 'ch1-05', state: 'todo', boss: true },
+    ]);
+  });
+  it('ticket đã xong vẫn là done dù đang được chọn', () => {
+    expect(chapterDots(tickets, new Set(['ch1-01']), 'ch1-01', 1)[0].state).toBe('done');
+  });
+});
+
+describe('cảng của ticket hiện tại', () => {
+  it('chỉ lấy mã có trong cả Solution và đề bài', () => {
+    const steps = [{ solution: "SELECT * FROM shipments WHERE pod = 'NLRTM' AND pol = 'VNSGN'" }];
+    expect(ticketPorts({ body: 'Các lô đi `NLRTM` tháng này?', steps })).toEqual(new Set(['NLRTM']));
+    expect(ticketPorts({ body: 'Các lô đi châu Âu?', steps })).toEqual(new Set());
+    expect(ticketPorts({ body: 'NLRTM', steps: [{ solution: 'SELECT 1' }] })).toEqual(new Set());
+  });
 });
 ```
 
@@ -1476,6 +2071,8 @@ Expected: FAIL — không resolve `../src/viz/ports`.
 - [ ] **Step 3: Viết `src/viz/ports.ts`**
 
 ```ts
+import type { QueryResult } from '../db/run';
+
 export interface Port { code: string; name: string; lon: number; lat: number; region: string; kind: 'SEAPORT' | 'AIRPORT' }
 
 export const PORTS: Port[] = [
@@ -1515,6 +2112,41 @@ export function laneUnlocked(port: Port, chapter: number): boolean {
   if (port.region === 'Vietnam') return false;
   return chapter >= (port.kind === 'AIRPORT' ? AIR_CHAPTER : SEA_REGION_CHAPTER[port.region] ?? 99);
 }
+
+/** Shipments per foreign end of the lane (export → POD, import → POL). */
+export const VOLUMES_SQL = "SELECT CASE WHEN direction = 'EXPORT' THEN pod ELSE pol END, count(*) FROM shipments GROUP BY 1";
+
+export const toVolumes = (r: QueryResult): Map<string, number> =>
+  new Map(r.rows.map(([code, n]) => [String(code), Number(n)]));
+
+export type BeatState = 'done' | 'current' | 'todo';
+export interface ChapterDot { id: string; state: BeatState; boss: boolean }
+
+/** One dot per ticket of the chapter, in content order — the collapsed map strip's progress bar. */
+export function chapterDots(
+  tickets: { id: string; chapter: number; beat: string }[],
+  completed: Set<string>,
+  selectedId: string,
+  chapter: number,
+): ChapterDot[] {
+  return tickets
+    .filter((t) => t.chapter === chapter)
+    .map((t) => ({
+      id: t.id,
+      state: completed.has(t.id) ? 'done' : t.id === selectedId ? 'current' : 'todo',
+      boss: t.beat === 'boss',
+    }));
+}
+
+/**
+ * Ports the current ticket is about: quoted in a Solution AND named in the brief, so the map
+ * never reveals a port the player has to find themselves.
+ */
+export function ticketPorts(ticket: { body: string; steps: { solution: string }[] }): Set<string> {
+  const solutions = ticket.steps.map((s) => s.solution).join('\n');
+  return new Set(PORTS.map((p) => p.code).filter((code) =>
+    solutions.includes(`'${code}'`) && new RegExp(`\\b${code}\\b`).test(ticket.body)));
+}
 ```
 
 - [ ] **Step 4: Chạy test, xác nhận PASS**
@@ -1522,35 +2154,98 @@ export function laneUnlocked(port: Port, chapter: number): boolean {
 Run: `npx vitest run tests/ports.test.ts && npx tsc --noEmit`
 Expected: PASS.
 
-- [ ] **Step 5: Cài thư viện bản đồ, bật JSON import**
+- [ ] **Step 5: Cài thư viện bản đồ (pin), bật JSON import**
 
 Run:
 ```bash
-npm i d3-geo topojson-client world-atlas
-npm i -D @types/d3-geo @types/topojson-client
+npm i --save-exact d3-geo@3.1.2 topojson-client@3.1.0 world-atlas@2.0.2
+npm i -D --save-exact @types/d3-geo@3.1.1 @types/topojson-client@3.1.5 @types/topojson-specification@1.0.5
+grep -rl "SharedArrayBuffer" node_modules/d3-geo/dist node_modules/topojson-client/dist
 ```
+Expected: các version trong `package.json` không có `^`; grep không in dòng nào.
+
 Trong `tsconfig.json`, thêm vào `compilerOptions`: `"resolveJsonModule": true`.
 
-- [ ] **Step 6: Viết `src/ui/mapView.ts`**
+- [ ] **Step 6: Thêm khóa i18n**
+
+`src/i18n/vi.ts`:
+```ts
+  'map.aria': 'Bản đồ tuyến vận chuyển của công ty',
+  'map.chapter': 'Chương {n}',
+  'map.progress': 'Tiến độ chương: xong {done}/{total} ticket',
+  'map.lanes': 'Tuyến đã mở {n}/{total}',
+  'map.hub': '{name} ({code}) — cảng nhà',
+  'map.portOpen': '{name} ({code}) — {n} lô',
+  'map.portClosed': '{name} ({code}) — chưa mở',
+  'map.expand': '▾ Bản đồ',
+  'map.collapse': '▴ Thu gọn',
+  'map.list': 'Danh sách tuyến',
+  'map.colPort': 'Cảng',
+  'map.colShipments': 'Số lô',
+  'map.colStatus': 'Trạng thái',
+  'map.open': 'đã mở',
+  'map.closed': 'chưa mở',
+  'map.beat.done': 'đã xong',
+  'map.beat.current': 'đang làm',
+  'map.beat.todo': 'chưa làm',
+  'map.beat.boss': 'ticket boss',
+```
+`src/i18n/en.ts`:
+```ts
+  'map.aria': "The company's shipping lanes",
+  'map.chapter': 'Ch. {n}',
+  'map.progress': 'Chapter progress: {done}/{total} tickets done',
+  'map.lanes': 'Lanes open {n}/{total}',
+  'map.hub': '{name} ({code}) — home port',
+  'map.portOpen': (p) => `${p.name} (${p.code}) — ${p.n} ${p.n === 1 || p.n === '1' ? 'shipment' : 'shipments'}`,
+  'map.portClosed': '{name} ({code}) — not open yet',
+  'map.expand': '▾ Map',
+  'map.collapse': '▴ Collapse',
+  'map.list': 'Lane list',
+  'map.colPort': 'Port',
+  'map.colShipments': 'Shipments',
+  'map.colStatus': 'Status',
+  'map.open': 'open',
+  'map.closed': 'not open',
+  'map.beat.done': 'done',
+  'map.beat.current': 'in progress',
+  'map.beat.todo': 'to do',
+  'map.beat.boss': 'boss ticket',
+```
+
+- [ ] **Step 7: Viết `src/ui/mapView.ts`**
 
 ```ts
 import { geoNaturalEarth1, geoPath } from 'd3-geo';
 import { feature } from 'topojson-client';
 import type { GeometryCollection, Topology } from 'topojson-specification';
 import land110 from 'world-atlas/land-110m.json';
-import { HUB, laneUnlocked, PORTS, type Port } from '../viz/ports';
+import { t, type Key } from '../i18n';
+import { HUB, laneUnlocked, PORTS, type BeatState, type ChapterDot, type Port } from '../viz/ports';
 import { fmt, h, reducedMotion, svg } from './dom';
 
 const W = 960;
 const H = 170;
 const COLLAPSE_KEY = 'cargo-query/map-collapsed';
+const BEAT_KEY: Record<BeatState, Key> = { done: 'map.beat.done', current: 'map.beat.current', todo: 'map.beat.todo' };
+const BEAT_SYMBOL: Record<BeatState, string> = { done: '●', current: '◐', todo: '○' };
 
+export interface MapView { chapter: number; dots: ChapterDot[]; focus: Set<string> }
+export interface RouteMap {
+  update(view: MapView): void;
+  setVolumes(v: Map<string, number>): void;
+  celebrate(): void;
+}
+
+/** Saved choice wins; otherwise collapsed on short screens (< 800px). */
 function readCollapsed(): boolean {
   try {
-    return window.localStorage.getItem(COLLAPSE_KEY) === '1';
+    const v = window.localStorage.getItem(COLLAPSE_KEY);
+    if (v !== null) return v === '1';
   } catch {
-    return false;
+    /* convenience only */
   }
+  return window.innerHeight < 800;
 }
 function writeCollapsed(v: boolean): void {
   try {
@@ -1560,7 +2255,7 @@ function writeCollapsed(v: boolean): void {
   }
 }
 
-export function createMap(host: HTMLElement, volumes: Map<string, number>): { update(chapter: number): void; celebrate(): void } {
+export function createMap(host: HTMLElement): RouteMap {
   // Centred on the Pacific (150°E) so lanes to Europe go left and lanes to the Americas go right.
   const projection = geoNaturalEarth1().rotate([-150, 0])
     .fitExtent([[24, 14], [W - 24, H - 10]], { type: 'MultiPoint', coordinates: PORTS.map((p) => [p.lon, p.lat]) });
@@ -1569,25 +2264,62 @@ export function createMap(host: HTMLElement, volumes: Map<string, number>): { up
   const landD = path(feature(topo, topo.objects.land)) ?? '';
   const hub = (p: Port) => PORTS.find((x) => x.code === HUB[p.kind])!;
   const laneD = (p: Port) => path({ type: 'LineString', coordinates: [[hub(p).lon, hub(p).lat], [p.lon, p.lat]] }) ?? '';
+  const lanes = PORTS.filter((p) => p.region !== 'Vietnam');
 
-  let chapter = 1;
+  let view: MapView = { chapter: 1, dots: [], focus: new Set() };
+  let volumes = new Map<string, number>();
   let collapsed = readCollapsed();
-  const stage = svg('svg', { viewBox: `0 0 ${W} ${H}`, class: 'map', role: 'img', 'aria-label': 'Bản đồ tuyến vận chuyển của công ty' });
+  const stage = svg('svg', { id: 'map-stage', viewBox: `0 0 ${W} ${H}`, class: 'map', role: 'img' });
+  const progress = h('span', { class: 'map-progress', role: 'img' });
   const caption = h('span', { class: 'map-caption' });
-  const toggle = h('button', { type: 'button', class: 'map-toggle', 'aria-expanded': 'true' });
+  const list = h('details', { class: 'map-list' });
+  const toggle = h('button', { type: 'button', class: 'map-toggle', 'aria-controls': 'map-stage' });
+
+  const shipments = (p: Port) => fmt(volumes.get(p.code) ?? 0);
+  function portTitle(p: Port, open: boolean): string {
+    if (p.region === 'Vietnam') return t('map.hub', { name: p.name, code: p.code });
+    return open ? t('map.portOpen', { name: p.name, code: p.code, n: shipments(p) }) : t('map.portClosed', { name: p.name, code: p.code });
+  }
 
   function draw(): void {
-    const open = PORTS.filter((p) => laneUnlocked(p, chapter));
-    const lanes = PORTS.filter((p) => p.region !== 'Vietnam');
+    const { chapter, dots, focus } = view;
+    const open = lanes.filter((p) => laneUnlocked(p, chapter));
+
+    progress.setAttribute('aria-label', t('map.progress', { done: dots.filter((d) => d.state === 'done').length, total: dots.length }));
+    progress.replaceChildren(t('map.chapter', { n: chapter }), ...dots.map((d) =>
+      h('span', {
+        class: `beat ${d.state}${d.boss ? ' boss' : ''}`,
+        title: `${d.id}: ${t(BEAT_KEY[d.state])}${d.boss ? ` · ${t('map.beat.boss')}` : ''}`,
+        'aria-hidden': 'true',
+      }, d.boss ? '◆' : BEAT_SYMBOL[d.state])));
+    caption.textContent = t('map.lanes', { n: open.length, total: lanes.length });
+
+    // Text alternative to the SVG tooltips (keyboard and screen reader).
+    list.replaceChildren(
+      h('summary', {}, t('map.list')),
+      h('table', {},
+        h('thead', {}, h('tr', {},
+          h('th', { scope: 'col' }, t('map.colPort')), h('th', { scope: 'col' }, t('map.colShipments')), h('th', { scope: 'col' }, t('map.colStatus')))),
+        h('tbody', {}, ...lanes.map((p) => {
+          const isOpen = laneUnlocked(p, chapter);
+          return h('tr', {},
+            h('td', {}, `${p.name} (${p.code})`),
+            h('td', {}, isOpen ? shipments(p) : '—'),
+            h('td', {}, t(isOpen ? 'map.open' : 'map.closed')));
+        }))));
+
+    stage.setAttribute('aria-label', t('map.aria'));
     stage.replaceChildren(
       svg('path', { d: landD, class: 'map-land' }),
       ...lanes.map((p) => svg('path', { d: laneD(p), class: `map-lane${laneUnlocked(p, chapter) ? ' open' : ''}${p.kind === 'AIRPORT' ? ' air' : ''}` })),
       ...PORTS.map((p) => {
         const [x, y] = projection([p.lon, p.lat]) ?? [0, 0];
-        const isOpen = p.region === 'Vietnam' || laneUnlocked(p, chapter);
-        return svg('g', { class: `map-port${isOpen ? ' open' : ''}${p.region === 'Vietnam' ? ' hub' : ''}` },
-          svg('title', {}, `${p.name} (${p.code})${isOpen ? ` — ${fmt(volumes.get(p.code) ?? 0)} lô` : ' — chưa mở'}`),
-          svg('circle', { cx: x.toFixed(1), cy: y.toFixed(1), r: p.region === 'Vietnam' ? 5 : 3.5 }));
+        const isHub = p.region === 'Vietnam';
+        const isOpen = isHub || laneUnlocked(p, chapter);
+        const isFocus = focus.has(p.code);
+        return svg('g', { class: `map-port${isOpen ? ' open' : ''}${isHub ? ' hub' : ''}${isFocus ? ' focus' : ''}` },
+          svg('title', {}, portTitle(p, isOpen)),
+          svg('circle', { cx: x.toFixed(1), cy: y.toFixed(1), r: isHub || isFocus ? 5 : 3.5 }));
       }),
     );
     const newest = open.at(-1);
@@ -1595,12 +2327,12 @@ export function createMap(host: HTMLElement, volumes: Map<string, number>): { up
       stage.append(svg('text', { class: 'map-ship', 'font-size': 14 }, '🚢',
         svg('animateMotion', { dur: '14s', repeatCount: 'indefinite', path: laneD(newest), rotate: '0' })));
     }
-    caption.textContent = `Tuyến đã mở: ${open.length}/${lanes.length}`;
+    applyCollapsed();
   }
 
   function applyCollapsed(): void {
     host.classList.toggle('collapsed', collapsed);
-    toggle.textContent = collapsed ? '▾ Bản đồ' : '▴ Thu gọn';
+    toggle.textContent = t(collapsed ? 'map.expand' : 'map.collapse');
     toggle.setAttribute('aria-expanded', String(!collapsed));
   }
   toggle.addEventListener('click', () => {
@@ -1609,19 +2341,22 @@ export function createMap(host: HTMLElement, volumes: Map<string, number>): { up
     applyCollapsed();
   });
 
-  host.replaceChildren(h('div', { class: 'map-bar' }, caption, toggle), stage);
+  host.replaceChildren(h('div', { class: 'map-bar' }, progress, caption, list, toggle), stage);
   host.hidden = false;
-  applyCollapsed();
   draw();
 
   return {
-    update(next: number) {
-      chapter = next;
+    update(next) {
+      view = next;
+      draw();
+    },
+    setVolumes(next) {
+      volumes = next;
       draw();
     },
     celebrate() {
-      const open = PORTS.filter((p) => laneUnlocked(p, chapter));
-      if (open.length === 0 || reducedMotion()) return;
+      const open = lanes.filter((p) => laneUnlocked(p, view.chapter));
+      if (open.length === 0 || collapsed || reducedMotion()) return;
       const lane = open[Math.floor(Math.random() * open.length)];
       const ship = svg('text', { class: 'map-ship', 'font-size': 18 }, '🚢',
         svg('animateMotion', { dur: '3s', repeatCount: '1', fill: 'freeze', path: laneD(lane), rotate: '0' }));
@@ -1632,53 +2367,76 @@ export function createMap(host: HTMLElement, volumes: Map<string, number>): { up
 }
 ```
 
-Nếu `tsc` báo thiếu kiểu `topojson-specification`, chạy `npm i -D @types/topojson-specification`.
+- [ ] **Step 8: Gắn vào `src/main.ts`**
 
-- [ ] **Step 7: Gắn vào `src/main.ts` và CSS**
+1. Thêm import (gộp vào import có sẵn nếu `main.ts` đã import cùng module):
+```ts
+import { createMap } from './ui/mapView';
+import { chapterDots, ticketPorts, toVolumes, VOLUMES_SQL } from './viz/ports';
+import { currentChapter } from './progress';
+import { app, done } from './state';
+```
+2. Ngay sau dòng `registerVizTabs(…);` (Task 2), thêm:
+```ts
+// The strip renders before the DB is ready: progress dots and lanes need no query.
+const map = createMap(document.getElementById('map')!);
+function syncMap(): void {
+  const chapter = currentChapter(app.tickets, done());
+  const ticket = app.tickets.find((t) => t.id === app.selectedId); // undefined in Sandbox
+  map.update({
+    chapter,
+    dots: chapterDots(app.tickets, done(), app.selectedId, chapter),
+    focus: ticket ? ticketPorts(ticket) : new Set(),
+  });
+}
+```
+3. Trong `async function loadColumns()` (Plan 1 gọi nó một lần khi DB `ready`), ngay trên dòng `try {`, thêm:
+```ts
+  void db.run(VOLUMES_SQL).then((r) => map.setVolumes(toVolumes(r)), () => { /* tooltips show 0 until next ready */ });
+```
+4. Thêm `syncMap();` làm dòng cuối của `rerender()` (đổi ticket, đóng ticket, đổi ngôn ngữ, nhập tiến độ đều đi qua đây).
+5. Trong `function complete(t: Ticket)`, ngay sau dòng `persist(true);`, thêm `map.celebrate();` (boss cũng đóng qua `complete`, nên tàu chạy cả khi xong boss).
 
-1. Import: `import { createMap } from './ui/mapView';`
-2. Sau `let lastRun …;` thêm: `let map: ReturnType<typeof createMap> | undefined;`
-3. Trong `onDbStatus`, ngay sau dòng `columns = next;`, thêm:
-```ts
-      const vol = await db.run("SELECT CASE WHEN direction = 'EXPORT' THEN pod ELSE pol END, count(*) FROM shipments GROUP BY 1");
-      map = createMap($('map'), new Map(vol.rows.map(([code, n]) => [String(code), Number(n)])));
-      map.update(currentChapter(tickets, done()));
-```
-4. Trong `complete(t)`, ngay sau `persist(true);`, thêm:
-```ts
-  map?.update(currentChapter(tickets, done()));
-  map?.celebrate();
-```
-5. Cuối `src/style.css`:
+- [ ] **Step 9: Thêm CSS vào cuối `src/style.css`**
+
 ```css
 .map-strip { position: relative; }
-.map-bar { display: flex; justify-content: space-between; align-items: center; padding: 4px 16px; font-size: 13px; color: var(--muted); }
-.map-strip.collapsed .map { display: none; }
-.map { display: block; width: 100%; height: auto; max-height: 190px; }
+.map-bar { display: flex; flex-wrap: wrap; gap: 2px 12px; align-items: center; min-height: 28px; padding: 2px 16px; font-size: 13px; color: var(--muted); }
+.map-progress { color: var(--text); }
+.map-progress .beat { margin-left: 4px; color: var(--muted); }
+.map-progress .beat.done { color: var(--good); }
+.map-progress .beat.current { color: var(--accent); }
+.map-caption { margin-right: auto; }
+.map-list summary { cursor: pointer; }
+.map-list table { width: auto; font-size: 12px; }
+.map-strip.collapsed .map, .map-strip.collapsed .map-list { display: none; }
+.map { display: block; width: 100%; height: 120px; }
 .map-land { fill: var(--land); }
-.map-lane { fill: none; stroke: var(--muted); stroke-width: 1; stroke-dasharray: 3 4; opacity: 0.5; }
-.map-lane.open { stroke: var(--accent); stroke-width: 1.8; stroke-dasharray: none; opacity: 0.85; }
+.map-lane { fill: none; stroke: var(--lane-closed); stroke-width: 1; stroke-dasharray: 3 4; }
+.map-lane.open { stroke: var(--accent); stroke-width: 1.8; stroke-dasharray: none; }
 .map-lane.air.open { stroke-dasharray: 6 3; }
 .map-port circle { fill: var(--muted); }
 .map-port.open circle { fill: var(--good); }
-.map-port.hub circle { fill: var(--bad); }
+.map-port.hub circle { fill: var(--accent); }
+.map-port.focus circle { stroke: var(--warn); stroke-width: 2.5; }
 .map-toggle { padding: 2px 8px; font-size: 12px; }
 ```
 
-- [ ] **Step 8: Kiểm thủ công và commit**
+- [ ] **Step 10: Kiểm thủ công và commit**
 
-Run: `npx tsc --noEmit && npm run build && npm run dev`.
-1. Dải bản đồ hiện dưới thanh trên: lục địa nhạt, Cát Lái chấm đỏ; chương 1 chỉ các tuyến châu Á sáng, còn lại nét đứt mờ; tàu chạy chậm trên tuyến mới nhất.
-2. Rê chuột vào Shanghai → "Shanghai (CNSHA) — N lô"; vào Rotterdam (chương 1) → "chưa mở".
-3. Đóng một ticket → tàu lớn chạy nhanh một lượt trên một tuyến đã mở.
-4. Hoàn thành chương 2 (hoặc nhập save đã xong ch1–2) → tuyến Ấn Độ sáng thêm. Chương 3 → châu Âu.
-5. Bấm "▴ Thu gọn" → còn một dòng; tải lại trang vẫn thu gọn.
-6. Bật "Reduce motion" → không có tàu chạy.
-7. Màn hình < 600px → bản đồ co theo chiều ngang, không cuộn ngang.
+Run: `npx vitest run && npx tsc --noEmit && npm run build && npm run dev`.
+1. Dải dưới thanh trên hiện ngay khi tải trang (trước khi DB sẵn sàng): `Chương 1 ◐ ○ ○ ○ ◆ · Tuyến đã mở 6/19` + nút. Mở rộng: lục địa nhạt, Cát Lái chấm màu accent (không đỏ); chương 1 chỉ các tuyến châu Á sáng, còn lại nét đứt xám; tàu chạy chậm trên tuyến mới nhất.
+2. Rê chuột vào Shanghai → "Shanghai (CNSHA) — N lô" (N > 0 sau khi DB sẵn sàng); vào Rotterdam (chương 1) → "chưa mở". Mở "Danh sách tuyến" → bảng 19 tuyến, dùng được bằng bàn phím.
+3. Mở `ch1-05` (boss): nếu đề có nhắc mã cảng có trong Solution (ví dụ `NLRTM`) thì chấm cảng đó có viền cam.
+4. Đóng một ticket → chấm thành `●`, tàu lớn chạy nhanh một lượt trên một tuyến đã mở (khi bản đồ đang mở).
+5. Hoàn thành chương 2 (hoặc nhập save đã xong ch1–2) → tuyến Ấn Độ sáng thêm, chấm đổi sang ticket chương 3. Chương 3 → châu Âu.
+6. Bấm "▴ Thu gọn" → còn một dòng 28px vẫn có chấm tiến độ; tải lại trang vẫn thu gọn. Xóa key `cargo-query/map-collapsed`, thu cửa sổ cao < 800px, tải lại → mặc định thu gọn.
+7. Bấm `EN` → `Ch. 1`, `Lanes open 6/19`, tooltip "— N shipments"; editor không mất con trỏ.
+8. Bật "Reduce motion" → không có tàu chạy. Màn hình < 600px → bản đồ co theo chiều ngang, không cuộn ngang.
 
 ```bash
-git add package.json package-lock.json tsconfig.json src/viz/ports.ts src/ui/mapView.ts src/main.ts src/style.css tests/ports.test.ts
-git commit -m "feat: 2D route map strip with chapter-based lanes"
+git add package.json package-lock.json tsconfig.json src/viz/ports.ts src/ui/mapView.ts src/main.ts src/i18n src/style.css tests/ports.test.ts
+git commit -m "feat: route map strip doubling as chapter progress bar"
 ```
 
 ---
@@ -1691,16 +2449,17 @@ git commit -m "feat: 2D route map strip with chapter-based lanes"
 - [ ] **Step 1: Thêm vào cuối mục `## Architecture`**
 
 ```markdown
-- Visualizations (spec §6b) live in two layers: pure data builders in `src/viz/` (tested in Node against a real seeded PGlite) and DOM/SVG renderers in `src/ui/*View.ts`. The bottom panel (`src/ui/panel.ts`) re-renders the active tab from the current editor SQL or the last run.
-- "Thứ tự thực thi" (`src/viz/steps.ts`) parses the player's SQL with `libpg-query` (Postgres' own parser, WASM), rebuilds one sub-query per logical clause with `pgsql-deparser`, and counts rows for each inside the sandbox. In the browser the `.wasm` must be imported via `?url` and passed to `loadModule` (`src/viz/parser.ts`); Vite does not bundle it otherwise.
-- EXPLAIN uses `EXPLAIN (ANALYZE, FORMAT JSON)` inside `BEGIN … ROLLBACK` (`runExplain`); `src/viz/plan.ts` flattens it and holds the Vietnamese node glossary.
-- The ER tab renders a Mermaid `erDiagram` built from `information_schema` (`src/viz/erd.ts`); it is the only place that uses `innerHTML` (Mermaid strict mode, schema identifiers only). Mermaid and the SQL parser are lazy-loaded.
-- The route map (`src/ui/mapView.ts`) projects `PORTS` (`src/viz/ports.ts`, must match the `ports` seed rows) with d3-geo over world-atlas land; lanes open by chapter via `laneUnlocked`.
+- Visualizations (spec §6b) live in two layers: pure data builders in `src/viz/` (tested in Node against a real seeded PGlite; no translated text, only `import type` from `src/i18n`) and DOM/SVG renderers in `src/ui/*View.ts` (all text through `t()`). `src/ui/vizTabs.ts` registers the five viz tabs through `registerTab()` of `src/ui/tabs.ts`. Every viz tab describes `app.lastRun.sql` (the last run, never the live editor) and shows a "SQL changed" strip when the editor differs. EXPLAIN, execution steps and ER metadata are cached per SQL / schema with `memoByKey` (`src/viz/memo.ts`), so a language switch never re-runs them.
+- Worker requests carry `kind: 'run' | 'explain' | 'steps'` and go through `DbClient.request()` (one queued request at a time; `steps` gets 3× the timeout).
+- "Thứ tự thực thi" (`src/viz/steps.ts`) parses the player's SQL with `libpg-query` (Postgres' own parser, WASM), rebuilds one sub-query per logical clause with `pgsql-deparser`, and counts rows for each inside the sandbox. In the browser the `.wasm` must be imported via `?url` and passed to `loadModule` (`src/viz/parser.ts`); Vite does not bundle it otherwise. Failures are codes (`StepsFailure`), translated in the view.
+- EXPLAIN uses `EXPLAIN (ANALYZE, FORMAT JSON)` inside `BEGIN … ROLLBACK` (`runExplain`); `src/viz/plan.ts` flattens it into nodes with typed `detail` and holds the VI/EN node glossary `NODE_HELP`.
+- The ER tab renders a Mermaid `erDiagram` built from `information_schema` for a given schema (`loadErMetadata(run, schema)` in `src/viz/erd.ts`; `'public'` for the game, `'sandbox'` for imported data); it is the only place that uses `innerHTML` (Mermaid strict mode, schema identifiers only). Mermaid and the SQL parser are lazy-loaded.
+- The route map (`src/ui/mapView.ts`) projects `PORTS` (`src/viz/ports.ts`, must match the `ports` seed rows) with d3-geo over world-atlas land; lanes open by chapter via `laneUnlocked`. Its collapsed 28px bar is the chapter progress bar (`chapterDots`), and ports named in both the brief and the Solution are ringed (`ticketPorts`). `main.ts` keeps it in sync via `syncMap()` from `rerender()`.
 ```
 
 - [ ] **Step 2: Chạy toàn bộ test và build**
 
-Run: `npm test && npm run build`
+Run: `npm test && npx tsc --noEmit && npm run build`
 Expected: tất cả PASS; build xong.
 
 - [ ] **Step 3: Commit**
