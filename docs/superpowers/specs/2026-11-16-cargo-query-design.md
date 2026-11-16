@@ -33,7 +33,7 @@ Chạy hoàn toàn trong trình duyệt, deploy tĩnh, không backend.
 
 - **Stack:** Vite + TypeScript, CodeMirror 6 (`@codemirror/lang-sql`), PGlite **0.5.16 pin cứng** (Postgres 18.6 — `random()` gắn với bản build), Vitest. Không dùng game engine (UI DOM-first theo skill web-games).
 - **Worker:** một dedicated Web Worker tự viết (giao thức message `{id, sql}` → `{id, result|error}`), xử lý tuần tự từng query. Không dùng `PGliteWorker` vì nó bầu leader giữa các tab — `terminate()` ở tab không phải leader không dừng được query. Spike xác nhận `statement_timeout` không có tác dụng trong PGlite, nên `terminate()` là cách dừng duy nhất.
-- **Tải trang:** render inbox và nội dung ticket trước, PGlite khởi động (~1s) + seed (~2s) trong worker. Mạng lỗi → nút thử lại, đề bài vẫn đọc được.
+- **Tải trang:** render inbox và nội dung ticket trước, PGlite (~5MB gzip) khởi động (~1s) + seed (~2s) trong worker. Mạng lỗi → nút thử lại, đề bài vẫn đọc được.
 - **Ticket là file:** `content/tickets/<chương>/<id>.md` gồm frontmatter + đề + gợi ý + SQL đáp án. Thêm ticket = thêm file, nạp qua `import.meta.glob`.
 
 ### Định dạng ticket
@@ -139,7 +139,7 @@ Mỗi chương theo nhịp **teach → develop → twist → rest → boss** (r�
 
 ## 8. Lưu tiến độ (skill save-systems)
 
-- JSON trong `localStorage`: `{ version, completed: [ticketId], xp, hintsUsed: {ticketId: n}, drafts: {ticketId: sql} }`. Chỉ lưu ID/dữ liệu gốc; chương mở khóa, level được tính lại từ `completed`.
+- JSON trong `localStorage`: `{ version, completed: [ticketId], xp, hintsUsed: {ticketId: n}, drafts: {"ticketId#stepIndex": sql} }`. Chỉ lưu ID/dữ liệu gốc; chương mở khóa, level được tính lại từ `completed`.
 - Đọc save: parse → kiểm `version` → từ chối nếu mới hơn bản game (báo người chơi) → migration tuần tự vN→vN+1 → validate (bỏ ticket ID không còn tồn tại).
 - Mọi truy cập `localStorage` bọc try/catch; lỗi thì chơi tiếp không lưu và báo người chơi.
 - Nút **Xuất/Nhập tiến độ** (file JSON).

@@ -22,6 +22,7 @@
 - Không đưa chuỗi từ nội dung/kết quả vào `innerHTML`; luôn dùng `textContent`/`append`.
 - Mọi truy cập `localStorage` bọc try/catch.
 - Backend (nếu sau này có) viết bằng Python — không thuộc plan này.
+- Vitest không kiểm kiểu: mọi bước "xác nhận PASS" chạy thêm `npx tsc --noEmit` và phải không lỗi.
 
 ## File Structure
 
@@ -512,7 +513,214 @@ git commit -m "feat: project scaffold with deterministic core seed"
 
 ---
 
-### Task 2: Grader
+### Task 2: Worker, DbClient và smoke test trên trình duyệt
+
+Làm sớm để kiểm PGlite trong Web Worker thật (Vite bundle `.wasm`/`.data`, `terminate()` khi CPU đang bận) trước khi xây phần còn lại.
+
+**Files:**
+- Create: `src/db/worker.ts`, `src/db/client.ts`
+- Create (tạm, Task 10 ghi đè): `index.html`, `src/main.ts`
+
+**Interfaces:**
+- Consumes: `initDb`, `runSandboxed`, `QueryResult` (Task 1)
+- Produces:
+  - Giao thức worker: main → worker `{ id: number; sql: string }`; worker → main `{ type: 'ready' } | { type: 'initError'; message: string } | { type: 'result'; id: number; result: QueryResult } | { type: 'error'; id: number; message: string }`
+  - `type DbStatus = 'loading' | 'ready' | 'failed'`
+  - `class DbClient { constructor(onStatus: (s: DbStatus, message?: string) => void, timeoutMs?: number); run(sql: string): Promise<QueryResult>; restart(): void }`
+  - `class QueryTimeoutError extends Error`
+
+- [ ] **Step 1: Viết `src/db/worker.ts`**
+
+```ts
+import { PGlite } from '@electric-sql/pglite';
+import { initDb } from './init';
+import { runSandboxed } from './run';
+
+const ready = (async () => {
+  const db = new PGlite();
+  await initDb(db);
+  return db;
+})();
+
+ready.then(
+  () => postMessage({ type: 'ready' }),
+  (e: unknown) => postMessage({ type: 'initError', message: e instanceof Error ? e.message : String(e) }),
+);
+
+// One query at a time: BEGIN … ROLLBACK pairs from two runs must never interleave.
+let queue: Promise<void> = Promise.resolve();
+
+onmessage = (e: MessageEvent<{ id: number; sql: string }>) => {
+  const { id, sql } = e.data;
+  queue = queue.then(async () => {
+    try {
+      const db = await ready;
+      postMessage({ type: 'result', id, result: await runSandboxed(db, sql) });
+    } catch (err) {
+      postMessage({ type: 'error', id, message: err instanceof Error ? err.message : String(err) });
+    }
+  });
+};
+```
+
+- [ ] **Step 2: Viết `src/db/client.ts`**
+
+```ts
+import type { QueryResult } from './run';
+
+export type DbStatus = 'loading' | 'ready' | 'failed';
+export class QueryTimeoutError extends Error {}
+
+type WorkerMessage =
+  | { type: 'ready' }
+  | { type: 'initError'; message: string }
+  | { type: 'result'; id: number; result: QueryResult }
+  | { type: 'error'; id: number; message: string };
+
+interface Pending {
+  resolve: (r: QueryResult) => void;
+  reject: (e: Error) => void;
+}
+
+/**
+ * Owns the PGlite worker. statement_timeout does not work in PGlite, so a runaway query
+ * is stopped by terminating the worker and booting a fresh one (re-seeds, ~3s).
+ */
+export class DbClient {
+  private worker!: Worker;
+  private ready!: Promise<void>;
+  private pending = new Map<number, Pending>();
+  private nextId = 1;
+
+  constructor(
+    private readonly onStatus: (s: DbStatus, message?: string) => void,
+    private readonly timeoutMs = 5000,
+  ) {
+    this.start();
+  }
+
+  private start(): void {
+    this.onStatus('loading');
+    this.worker = new Worker(new URL('./worker.ts', import.meta.url), { type: 'module' });
+    this.ready = new Promise<void>((resolve, reject) => {
+      this.worker.onmessage = (e: MessageEvent<WorkerMessage>) => {
+        const m = e.data;
+        if (m.type === 'ready') {
+          this.onStatus('ready');
+          resolve();
+        } else if (m.type === 'initError') {
+          this.onStatus('failed', m.message);
+          reject(new Error(m.message));
+        } else {
+          const p = this.pending.get(m.id);
+          if (!p) return;
+          this.pending.delete(m.id);
+          if (m.type === 'result') p.resolve(m.result);
+          else p.reject(new Error(m.message));
+        }
+      };
+      this.worker.onerror = (e) => {
+        this.onStatus('failed', e.message);
+        reject(new Error(e.message || 'Worker lỗi'));
+      };
+    });
+    this.ready.catch(() => {}); // surfaced through run() and onStatus
+  }
+
+  async run(sql: string): Promise<QueryResult> {
+    await this.ready;
+    const id = this.nextId++;
+    return new Promise<QueryResult>((resolve, reject) => {
+      const timer = setTimeout(() => {
+        this.pending.delete(id);
+        this.restart();
+        reject(new QueryTimeoutError(`Query chạy quá ${this.timeoutMs / 1000} giây nên đã bị dừng. Database đang được nạp lại.`));
+      }, this.timeoutMs);
+      this.pending.set(id, {
+        resolve: (r) => { clearTimeout(timer); resolve(r); },
+        reject: (e) => { clearTimeout(timer); reject(e); },
+      });
+      this.worker.postMessage({ id, sql });
+    });
+  }
+
+  restart(): void {
+    this.worker.terminate();
+    for (const p of this.pending.values()) p.reject(new Error('Database đang khởi động lại.'));
+    this.pending.clear();
+    this.start();
+  }
+}
+```
+
+- [ ] **Step 3: Trang smoke tạm**
+
+`index.html`:
+```html
+<!doctype html>
+<html lang="vi">
+  <head><meta charset="UTF-8" /><title>Cargo Query smoke</title></head>
+  <body>
+    <pre id="out">smoke test</pre>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
+```
+
+`src/main.ts`:
+```ts
+import { DbClient } from './db/client';
+
+const out = document.getElementById('out')!;
+const log = (s: string) => { out.textContent += `
+${s}`; };
+const db = new DbClient((s, m) => log(`status: ${s}${m ? ` ${m}` : ''}`));
+
+(async () => {
+  log(`count: ${JSON.stringify((await db.run('SELECT count(*) FROM shipments')).rows)}`);
+  try {
+    // CPU-bound (400 triệu dòng), không phải pg_sleep: kiểm terminate() khi worker đang bận tính toán.
+    await db.run('SELECT count(*) FROM shipments a, shipments b');
+    log('LỖI: query nặng không bị dừng');
+  } catch (e) {
+    log(`timeout: ${(e as Error).message}`);
+  }
+  log(`after restart: ${JSON.stringify((await db.run('SELECT 42')).rows)}`);
+  log('DONE');
+})();
+```
+
+- [ ] **Step 4: Typecheck và build**
+
+Run: `npx tsc --noEmit && npx vite build`
+Expected: không lỗi kiểu; `dist/assets` có `worker-*.js`, `pglite-*.wasm` và `pglite-*.data` (đã xác nhận bằng spike với Vite 8.3: wasm ~3.3MB gzip, data ~6.2MB).
+
+- [ ] **Step 5: Chạy trên trình duyệt**
+
+Run: `npm run dev`, mở URL Vite in ra.
+Expected (sau ~15 giây), theo thứ tự:
+```
+status: loading
+status: ready
+count: [[20000]]
+status: loading
+timeout: Query chạy quá 5 giây nên đã bị dừng. Database đang được nạp lại.
+status: ready
+after restart: [[42]]
+DONE
+```
+Lặp lại với `npm run build && npx vite preview` cho bản build. Nếu dòng `LỖI` xuất hiện hoặc trang treo: dừng lại, báo người dùng — kiến trúc timeout của spec cần xem lại.
+
+- [ ] **Step 6: Commit**
+
+```bash
+git add src/db/worker.ts src/db/client.ts index.html src/main.ts
+git commit -m "feat: PGlite worker with timeout kill switch"
+```
+
+---
+
+### Task 3: Grader
 
 **Files:**
 - Create: `src/grader.ts`
@@ -607,11 +815,12 @@ describe('grade trên DB thật', () => {
     expect(r).toMatchObject({ ok: false, reason: 'error' });
   });
 
-  it('DELETE của người chơi bị rollback', async () => {
+  it('UPDATE thành công của người chơi vẫn bị rollback', async () => {
     const run = await runner();
-    await grade(run, sol, 'DELETE FROM ports', false);
+    // Câu lệnh chạy được (không lỗi FK), nên grader báo sai số cột chứ không phải lỗi SQL.
+    expect(await grade(run, sol, "UPDATE ports SET name = 'x'", false)).toMatchObject({ ok: false, reason: 'columns' });
     const db = await seededDb();
-    expect((await db.query<{ n: number }>('SELECT count(*) AS n FROM ports')).rows[0].n).toBe(24);
+    expect((await db.query<{ n: number }>("SELECT count(*) AS n FROM ports WHERE name = 'x'")).rows[0].n).toBe(0);
   });
 
   it('Solution lỗi thì throw (bug nội dung)', async () => {
@@ -715,7 +924,7 @@ git commit -m "feat: result grader with sandboxed runs"
 
 ---
 
-### Task 3: Parser ticket
+### Task 4: Parser ticket
 
 **Files:**
 - Create: `src/tickets.ts`
@@ -950,14 +1159,14 @@ git commit -m "feat: markdown ticket parser"
 
 ---
 
-### Task 4: Tiến trình chơi và kiểm tra nội dung (soft-lock, nhịp chương)
+### Task 5: Tiến trình chơi và kiểm tra nội dung (soft-lock, nhịp chương)
 
 **Files:**
 - Create: `src/progress.ts`
 - Test: `tests/progress.test.ts`
 
 **Interfaces:**
-- Consumes: `Ticket` (Task 3)
+- Consumes: `Ticket` (Task 4)
 - Produces:
   - `CHAPTER_TABLES: Record<number, string[]>`, `CHAPTER_TITLES: Record<number, string>`
   - `tablesUnlocked(chapter: number): string[]`
@@ -1139,7 +1348,7 @@ git commit -m "feat: linear progression, XP and content soft-lock checks"
 
 ---
 
-### Task 5: Lưu tiến độ có version
+### Task 6: Lưu tiến độ có version
 
 **Files:**
 - Create: `src/save.ts`, `tests/fixtures/save-v1.json`
@@ -1333,7 +1542,7 @@ git commit -m "feat: versioned progress save with backup on failure"
 
 ---
 
-### Task 6: Nạp nội dung + ticket chương 1
+### Task 7: Nạp nội dung + ticket chương 1
 
 **Files:**
 - Create: `src/content.ts`
@@ -1341,7 +1550,7 @@ git commit -m "feat: versioned progress save with backup on failure"
 - Test: `tests/content.test.ts`
 
 **Interfaces:**
-- Consumes: `parseTicket`, `byOrder` (Task 3); `contentProblems` (Task 4); `runner` (tests/helpers.ts)
+- Consumes: `parseTicket`, `byOrder` (Task 4); `contentProblems` (Task 5); `runner` (tests/helpers.ts)
 - Produces: `loadTickets(): Ticket[]` (đã sắp theo `byOrder`)
 
 - [ ] **Step 1: Viết test nội dung**
@@ -1578,7 +1787,7 @@ git commit -m "feat: content loader and chapter 1 tickets"
 
 ---
 
-### Task 7: Ticket chương 2
+### Task 8: Ticket chương 2
 
 **Files:**
 - Create: `content/tickets/ch2/ch2-01.md` … `ch2-05.md`
@@ -1747,7 +1956,7 @@ GROUP BY mode
 ## Hints
 1. Bảng `containers` có `container_type` và `teu`; trọng lượng lô ở `shipments.gross_weight_kg`.
 2. Trung bình dùng `AVG`, làm tròn dùng `ROUND(..., 2)`.
-3. `SELECT container_type, COUNT(*), SUM(teu) FROM containers GROUP BY container_type`
+3. `SELECT container_type, COUNT(*), SUM(...) FROM containers GROUP BY ...`
 ````
 
 - [ ] **Step 2: Chạy test nội dung**
@@ -1764,7 +1973,7 @@ git commit -m "feat: chapter 2 tickets (aggregates, GROUP BY, HAVING)"
 
 ---
 
-### Task 8: Ticket chương 3
+### Task 9: Ticket chương 3
 
 **Files:**
 - Create: `content/tickets/ch3/ch3-01.md` … `ch3-05.md`
@@ -1885,7 +2094,7 @@ tables: [employees, customers]
 ---
 Mình cần cân lại danh mục khách cho team Sales.
 
-Mỗi nhân viên phụ trách bao nhiêu khách hàng? Trả về họ tên nhân viên và số khách.
+Mỗi nhân viên đang phụ trách ít nhất một khách thì phụ trách bao nhiêu khách hàng? Trả về họ tên nhân viên và số khách; không cần liệt kê nhân viên không có khách nào.
 
 ## Hints
 1. `customers.sales_rep_id` trỏ tới `employees.id`.
@@ -1973,148 +2182,18 @@ git commit -m "feat: chapter 3 tickets (JOIN, LEFT JOIN, anti-join)"
 
 ---
 
-### Task 9: Worker, DbClient và giao diện
+### Task 10: Giao diện
 
 **Files:**
-- Create: `src/db/worker.ts`, `src/db/client.ts`
-- Create: `index.html`, `src/style.css`, `src/main.ts`
-- Create: `src/ui/dom.ts`, `src/ui/resultTable.ts`, `src/ui/feedback.ts`, `src/ui/editor.ts`
+- Modify (thay toàn bộ trang smoke của Task 2): `index.html`, `src/main.ts`
+- Create: `src/style.css`, `src/ui/dom.ts`, `src/ui/resultTable.ts`, `src/ui/feedback.ts`, `src/ui/editor.ts`
 
 **Interfaces:**
-- Consumes: `initDb`, `runSandboxed`, `QueryResult` (Task 1); `grade`, `errorMessage`, `GradeResult` (Task 2); `Ticket` (Task 3); toàn bộ `progress.ts` (Task 4); toàn bộ `save.ts` (Task 5); `loadTickets` (Task 6)
-- Produces:
-  - Giao thức worker: main → worker `{ id: number; sql: string }`; worker → main `{ type: 'ready' } | { type: 'initError'; message: string } | { type: 'result'; id: number; result: QueryResult } | { type: 'error'; id: number; message: string }`
-  - `type DbStatus = 'loading' | 'ready' | 'failed'`
-  - `class DbClient { constructor(onStatus: (s: DbStatus, message?: string) => void, timeoutMs?: number); run(sql: string): Promise<QueryResult>; restart(): void }`
-  - `class QueryTimeoutError extends Error`
+- Consumes: `QueryResult` (Task 1); `DbClient`, `DbStatus` (Task 2); `grade`, `errorMessage`, `GradeResult` (Task 3); `Ticket` (Task 4); toàn bộ `progress.ts` (Task 5); toàn bộ `save.ts` (Task 6); `loadTickets` (Task 7)
 
-Phần này chạy trong trình duyệt (Web Worker), nên kiểm thủ công bằng dev server; logic đã có unit test ở Task 1–8.
+Giao diện chạy trong trình duyệt nên kiểm thủ công bằng dev server; logic đã có unit test ở Task 1–9.
 
-- [ ] **Step 1: Viết `src/db/worker.ts`**
-
-```ts
-import { PGlite } from '@electric-sql/pglite';
-import { initDb } from './init';
-import { runSandboxed } from './run';
-
-const ready = (async () => {
-  const db = new PGlite();
-  await initDb(db);
-  return db;
-})();
-
-ready.then(
-  () => postMessage({ type: 'ready' }),
-  (e: unknown) => postMessage({ type: 'initError', message: e instanceof Error ? e.message : String(e) }),
-);
-
-// One query at a time: BEGIN … ROLLBACK pairs from two runs must never interleave.
-let queue: Promise<void> = Promise.resolve();
-
-onmessage = (e: MessageEvent<{ id: number; sql: string }>) => {
-  const { id, sql } = e.data;
-  queue = queue.then(async () => {
-    try {
-      const db = await ready;
-      postMessage({ type: 'result', id, result: await runSandboxed(db, sql) });
-    } catch (err) {
-      postMessage({ type: 'error', id, message: err instanceof Error ? err.message : String(err) });
-    }
-  });
-};
-```
-
-- [ ] **Step 2: Viết `src/db/client.ts`**
-
-```ts
-import type { QueryResult } from './run';
-
-export type DbStatus = 'loading' | 'ready' | 'failed';
-export class QueryTimeoutError extends Error {}
-
-type WorkerMessage =
-  | { type: 'ready' }
-  | { type: 'initError'; message: string }
-  | { type: 'result'; id: number; result: QueryResult }
-  | { type: 'error'; id: number; message: string };
-
-interface Pending {
-  resolve: (r: QueryResult) => void;
-  reject: (e: Error) => void;
-}
-
-/**
- * Owns the PGlite worker. statement_timeout does not work in PGlite, so a runaway query
- * is stopped by terminating the worker and booting a fresh one (re-seeds, ~3s).
- */
-export class DbClient {
-  private worker!: Worker;
-  private ready!: Promise<void>;
-  private pending = new Map<number, Pending>();
-  private nextId = 1;
-
-  constructor(
-    private readonly onStatus: (s: DbStatus, message?: string) => void,
-    private readonly timeoutMs = 5000,
-  ) {
-    this.start();
-  }
-
-  private start(): void {
-    this.onStatus('loading');
-    this.worker = new Worker(new URL('./worker.ts', import.meta.url), { type: 'module' });
-    this.ready = new Promise<void>((resolve, reject) => {
-      this.worker.onmessage = (e: MessageEvent<WorkerMessage>) => {
-        const m = e.data;
-        if (m.type === 'ready') {
-          this.onStatus('ready');
-          resolve();
-        } else if (m.type === 'initError') {
-          this.onStatus('failed', m.message);
-          reject(new Error(m.message));
-        } else {
-          const p = this.pending.get(m.id);
-          if (!p) return;
-          this.pending.delete(m.id);
-          if (m.type === 'result') p.resolve(m.result);
-          else p.reject(new Error(m.message));
-        }
-      };
-      this.worker.onerror = (e) => {
-        this.onStatus('failed', e.message);
-        reject(new Error(e.message || 'Worker lỗi'));
-      };
-    });
-    this.ready.catch(() => {}); // surfaced through run() and onStatus
-  }
-
-  async run(sql: string): Promise<QueryResult> {
-    await this.ready;
-    const id = this.nextId++;
-    return new Promise<QueryResult>((resolve, reject) => {
-      const timer = setTimeout(() => {
-        this.pending.delete(id);
-        this.restart();
-        reject(new QueryTimeoutError(`Query chạy quá ${this.timeoutMs / 1000} giây nên đã bị dừng. Database đang được nạp lại.`));
-      }, this.timeoutMs);
-      this.pending.set(id, {
-        resolve: (r) => { clearTimeout(timer); resolve(r); },
-        reject: (e) => { clearTimeout(timer); reject(e); },
-      });
-      this.worker.postMessage({ id, sql });
-    });
-  }
-
-  restart(): void {
-    this.worker.terminate();
-    for (const p of this.pending.values()) p.reject(new Error('Database đang khởi động lại.'));
-    this.pending.clear();
-    this.start();
-  }
-}
-```
-
-- [ ] **Step 3: Viết helper giao diện**
+- [ ] **Step 1: Viết helper giao diện**
 
 `src/ui/dom.ts`:
 ```ts
@@ -2245,7 +2324,7 @@ export function createEditor(
 }
 ```
 
-- [ ] **Step 4: Viết `index.html` và `src/style.css`**
+- [ ] **Step 2: Viết `index.html` và `src/style.css`**
 
 `index.html`:
 ```html
@@ -2328,7 +2407,7 @@ td.null { color: var(--muted); font-style: italic; }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 ```
 
-- [ ] **Step 5: Viết `src/main.ts`**
+- [ ] **Step 3: Viết `src/main.ts`**
 
 ```ts
 import './style.css';
@@ -2631,12 +2710,12 @@ if (loaded.warning) notice(loaded.warning);
 renderAll();
 ```
 
-- [ ] **Step 6: Kiểm tra kiểu và build**
+- [ ] **Step 4: Kiểm tra kiểu và build**
 
 Run: `npm run build`
 Expected: `tsc --noEmit` không lỗi; Vite build xong, có file `.wasm`/`.data` của PGlite trong `dist/assets`.
 
-- [ ] **Step 7: Kiểm thủ công trên trình duyệt**
+- [ ] **Step 5: Kiểm thủ công trên trình duyệt**
 
 Run: `npm run dev` rồi mở URL Vite in ra. Kiểm lần lượt:
 1. Trang hiện hộp thư và ticket `ch1-01` ngay; trạng thái "Đang khởi tạo database…" chuyển "Database sẵn sàng" sau vài giây; Schema hiện 5 bảng chương 1.
@@ -2644,23 +2723,23 @@ Run: `npm run dev` rồi mở URL Vite in ra. Kiểm lần lượt:
 3. Bấm **Nộp** → thông báo "+100 XP", ticket `ch1-02` xuất hiện.
 4. Ở `ch1-02` nộp `SELECT code FROM ports` → báo "Kết quả cần 3 cột…".
 5. Gõ `SELECT pg_sleep(10)` → Chạy → sau ~5s báo "Query chạy quá 5 giây…", database nạp lại, sau đó query thường chạy được.
-6. Gõ `DELETE FROM ports` → Chạy → rồi `SELECT count(*) FROM ports` → vẫn 24.
+6. Gõ `UPDATE ports SET name = 'x'` → Chạy (báo không có kết quả dạng bảng, không lỗi) → rồi `SELECT count(*) FROM ports WHERE name = 'x'` → 0.
 7. Bấm Gợi ý → hiện gợi ý 1, nút thành "Gợi ý (1/3)".
 8. Tải lại trang → tiến độ, XP, bản nháp query còn nguyên.
 9. Xuất tiến độ → xóa `localStorage` trong DevTools → tải lại → Nhập file vừa xuất → tiến độ trở lại.
 10. Chơi tới `ch1-05` (boss): bước 1 đúng → sang bước 2 → đúng → hiện câu kết luận; chọn sai báo "Chưa đúng", chọn `status` → đóng ticket, chuyển sang chương 2, Schema có thêm `containers`.
 11. Thu hẹp cửa sổ < 1000px → bố cục 1 cột, không cuộn ngang; bật dark mode hệ điều hành → màu đổi theo.
 
-- [ ] **Step 8: Commit**
+- [ ] **Step 6: Commit**
 
 ```bash
-git add index.html src/main.ts src/style.css src/ui src/db/worker.ts src/db/client.ts
-git commit -m "feat: worker-backed DB client and game UI"
+git add index.html src/main.ts src/style.css src/ui
+git commit -m "feat: game UI"
 ```
 
 ---
 
-### Task 10: CLAUDE.md
+### Task 11: CLAUDE.md
 
 **Files:**
 - Create: `CLAUDE.md`
@@ -2715,3 +2794,12 @@ Expected: tất cả PASS.
 git add CLAUDE.md
 git commit -m "docs: add CLAUDE.md"
 ```
+
+---
+
+## Ghi chú chuyển sang Plan 2 (không làm trong plan này)
+
+- `cellKey` coi mọi chuỗi trông như số là số, nên HS code `0901` sẽ bằng `901`. Trước khi có bảng `hs_codes`, đổi sang dựa vào OID trong `QueryResult.types` (chỉ làm tròn khi cột là kiểu số).
+- Làm tròn 2 chữ số khiến tỉ lệ 0–1 bị chấm quá dễ: ticket về tỉ lệ phải yêu cầu đơn vị phần trăm.
+- `to_char` và `date_trunc` cho kết quả khác kiểu: ticket về thời gian phải nêu rõ dạng đầu ra (ví dụ "tháng dạng `date` ngày đầu tháng").
+- Kích thước tải trang ~5MB gzip (PGlite wasm + data) — cân nhắc màn hình chờ có tiến độ.
