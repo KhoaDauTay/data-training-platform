@@ -1,3 +1,4 @@
+import { closeCompletion } from '@codemirror/autocomplete';
 import { PostgreSQL, sql, type SQLNamespace } from '@codemirror/lang-sql';
 import { HighlightStyle, syntaxHighlighting } from '@codemirror/language';
 import { setDiagnostics } from '@codemirror/lint';
@@ -20,6 +21,8 @@ export interface Editor {
   clearError(): void;
   /** false when sql-formatter cannot parse the SQL (or its chunk failed to load). */
   format(): Promise<boolean>;
+  /** Closes the autocomplete popup (Run/Submit: it would cover the result). */
+  closeCompletion(): void;
   focus(): void;
   destroy(): void;
 }
@@ -107,6 +110,7 @@ export function createEditor(parent: HTMLElement, opts: EditorOptions): Editor {
         return false;
       }
     },
+    closeCompletion: () => void closeCompletion(view),
     focus: () => view.focus(),
     destroy: () => view.destroy(),
   };

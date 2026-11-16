@@ -7,6 +7,16 @@ export const COACH_KEY = 'cargo-query/coach-done';
 export type CoachSpot = 'brief' | 'panel' | 'recap' | 'hints';
 
 const TEXT: Record<CoachSpot, Key> = { brief: 'coach.brief', panel: 'coach.panel', recap: 'coach.recap', hints: 'coach.hints' };
+/**
+ * Where focus goes when a coach mark removes itself (its own button had focus and would leave it on <body>):
+ * what the mark points at, else the brief heading.
+ */
+const FOCUS_NEXT: Record<CoachSpot, string> = {
+  brief: '#work .cm-content',
+  panel: '#work .cm-content',
+  recap: '.recap button.primary',
+  hints: '.hints button',
+};
 const dismissed = new Set<CoachSpot>();
 
 /** Only a stored `true` means "skipped"; anything else (missing, corrupt, other JSON) shows the coach. */
@@ -24,7 +34,10 @@ function spotNow(): CoachSpot | undefined {
 /** A coach mark placed inside its region (no floating popover), or null. */
 export function coach(spot: CoachSpot): HTMLElement | null {
   if (spotNow() !== spot || dismissed.has(spot)) return null;
-  const close = (e: Event) => (e.currentTarget as HTMLElement).closest('.coach')?.remove();
+  const close = (e: Event) => {
+    (e.currentTarget as HTMLElement).closest('.coach')?.remove();
+    (document.querySelector<HTMLElement>(FOCUS_NEXT[spot]) ?? document.getElementById('brief-title'))?.focus();
+  };
   return h('aside', { class: 'coach', role: 'note' },
     h('p', {}, t(TEXT[spot])),
     h('button', { type: 'button', onclick: (e) => { dismissed.add(spot); close(e); } }, t('coach.ok')),

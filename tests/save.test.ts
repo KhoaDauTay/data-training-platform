@@ -15,19 +15,19 @@ function memoryStorage(initial: Record<string, string> = {}): KV & { data: Recor
 
 describe('parseSave', () => {
   it('round-trip', () => {
-    const s = { ...emptySave(), completed: ['ch1-01'], xp: 100, hintsUsed: { 'ch1-01': 2 }, drafts: { 'ch1-02#0': 'SELECT 1' } };
+    const s = { ...emptySave(), completed: ['ch1-01'], xp: 100, hintsUsed: { 'ch1-01': 2 }, drafts: { 'ch1-02#0': 'SELECT 1' }, graded: { 'ch1-01#0': 'SELECT 2' } };
     expect(parseSave(serializeSave(s), known)).toEqual(s);
   });
 
   it('đọc được save mẫu v1', () => {
     expect(parseSave(v1, known)).toEqual({
-      version: 1, completed: ['ch1-01', 'ch1-02'], xp: 350, hintsUsed: { 'ch1-02': 1 }, drafts: { 'ch1-03#0': 'SELECT ref FROM shipments' },
+      version: 1, completed: ['ch1-01', 'ch1-02'], xp: 350, hintsUsed: { 'ch1-02': 1 }, drafts: { 'ch1-03#0': 'SELECT ref FROM shipments' }, graded: {},
     });
   });
 
   it('bỏ ticket không còn tồn tại và giá trị sai kiểu', () => {
-    const raw = JSON.stringify({ version: 1, completed: ['ch1-01', 'gone', 7], xp: -5, hintsUsed: { gone: 1, 'ch1-01': 'x' }, drafts: { 'gone#0': 'x' } });
-    expect(parseSave(raw, known)).toEqual({ version: 1, completed: ['ch1-01'], xp: 0, hintsUsed: {}, drafts: {} });
+    const raw = JSON.stringify({ version: 1, completed: ['ch1-01', 'gone', 7], xp: -5, hintsUsed: { gone: 1, 'ch1-01': 'x' }, drafts: { 'gone#0': 'x' }, graded: { 'gone#0': 'x', 'ch1-01#0': 3 } });
+    expect(parseSave(raw, known)).toEqual({ version: 1, completed: ['ch1-01'], xp: 0, hintsUsed: {}, drafts: {}, graded: {} });
   });
 
   it('save mới hơn → NewerSaveError mang version, không kèm chữ', () => {

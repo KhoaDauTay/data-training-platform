@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest';
+import { stepKey, ticketOfKey } from '../src/save';
+import { initialDoc } from '../src/state';
 import { COACH_KEY, coachDone } from '../src/ui/coach';
 import { LAYOUT_KEY, parseLayout } from '../src/ui/splitter';
 
@@ -31,5 +33,27 @@ describe('coach-done đọc từ storage', () => {
     expect(coachDone(store(COACH_KEY, '{oops'))).toBe(false);
     expect(coachDone(store(COACH_KEY, null))).toBe(false);
     expect(coachDone(undefined)).toBe(false);
+  });
+});
+
+describe('nội dung editor lúc mở ticket', () => {
+  it('draft có chữ → giữ draft', () => {
+    expect(initialDoc('SELECT 1', 'SELECT *')).toBe('SELECT 1');
+  });
+  it('draft thiếu, rỗng hoặc chỉ khoảng trắng → starter', () => {
+    expect(initialDoc(undefined, 'SELECT *')).toBe('SELECT *');
+    expect(initialDoc('', 'SELECT *')).toBe('SELECT *');
+    expect(initialDoc('  \n\t', 'SELECT *')).toBe('SELECT *');
+  });
+  it('không có starter → draft hoặc chuỗi rỗng', () => {
+    expect(initialDoc('  ', undefined)).toBe('  ');
+    expect(initialDoc(undefined, undefined)).toBe('');
+  });
+});
+
+describe('khóa ticketId#step', () => {
+  it('dựng và đọc ở một chỗ', () => {
+    expect(stepKey('ch1-05', 2)).toBe('ch1-05#2');
+    expect(ticketOfKey(stepKey('ch1-05', 2))).toBe('ch1-05');
   });
 });

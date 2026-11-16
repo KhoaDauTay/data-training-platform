@@ -3,13 +3,14 @@ import type { DbClient } from '../db/client';
 import { sqlErrorInfo } from '../db/run';
 import { grade, type GradeResult } from '../grader';
 import { loadHistory, pushHistory, writeHistory } from '../history';
-import { t } from '../i18n';
-import { app, done, draftKey, editorSchema, persist, stepKey, type LastRun } from '../state';
+import { isMac, t } from '../i18n';
+import { app, done, draftKey, editorSchema, initialDoc, persist, stepKey, type LastRun } from '../state';
 import { localStore } from '../storage';
 import type { Ticket } from '../tickets';
 import { h } from './dom';
 import { createEditor, type Editor } from './editor';
 import { errorText, errorView, gradeMessage } from './feedback';
+import { shortcutOf } from './shortcuts';
 import type { Panel } from './tabs';
 
 export interface WorkDeps {
@@ -58,6 +59,19 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
   const historyBox = h('details', { class: 'history' });
   host.replaceChildren(editorHost, h('div', { class: 'actions' }, runBtn, formatBtn, submitBtn), feedback, historyBox);
 
+  // The buttons advertise Mod+Enter / Mod+Shift+Enter: honour them when focus is outside the editor too
+  // (on a button after a click, the brief heading after picking a ticket). Inside the editor CodeMirror's
+  // keymap handles them first and calls preventDefault, so they never fire twice.
+  document.addEventListener('keydown', (e) => {
+    if (e.defaultPrevented || e.isComposing) return;
+    const action = shortcutOf(e, isMac);
+    if (!action) return;
+    const target = e.target instanceof Element ? e.target : null;
+    if (target?.closest('dialog, input, textarea, select')) return;
+    e.preventDefault();
+    void (action === 'run' ? run() : submit());
+  });
+
   function say(kind: 'good' | 'bad', view: () => Node | string): void {
     message = { kind, view };
     drawMessage();
@@ -88,9 +102,10 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
           e.rows === undefined ? '' : h('span', { class: 'muted' }, ` · ${t('hist.rows', { n: e.rows })}`))))));
   }
 
-  function record(run: LastRun): void {
-    if (!ticket) return;
-    history = pushHistory(history, ticket.id, { sql: run.sql, at: Date.now(), ok: run.error === undefined, rows: run.result?.rows.length });
+  /** History belongs to the ticket the query was started for, even if the player has moved on since. */
+  function record(ticketId: string | undefined, run: LastRun): void {
+    if (!ticketId) return;
+    history = pushHistory(history, ticketId, { sql: run.sql, at: Date.now(), ok: run.error === undefined, rows: run.result?.rows.length });
     writeHistory(localStore(), history);
     drawHistory();
   }
@@ -100,79 +115,104 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
     if (info) editor?.showError(info, offset);
   }
 
+  /**
+   * Everything is captured at click time. If the editor was replaced while the query ran (other ticket or step,
+   * or an imported save), the run is only added to its ticket's history: no lastRun, message, underline or credit.
+   */
   async function run(): Promise<void> {
     if (busy || !editor) return;
-    const { sql, offset } = editor.runTarget();
-    const k = ticket ? stepKey(ticket, stepIndex) : '';
-    editor.clearError();
+    const ed = editor;
+    const tk = ticket;
+    const { sql, offset } = ed.runTarget();
+    const k = tk ? stepKey(tk.id, stepIndex) : '';
+    ed.closeCompletion();
+    ed.clearError();
     busy = true;
     setButtons();
     if (app.dbStatus === 'loading') say('good', () => t('work.queued')); // DbClient queues the query until the DB is ready
+    let r: LastRun;
     try {
-      app.lastRun = { key: k, sql, offset, result: await deps.db.run(sql) };
-      message = undefined;
+      r = { key: k, sql, offset, result: await deps.db.run(sql) };
     } catch (e) {
-      app.lastRun = { key: k, sql, offset, error: e };
-      underline(e, offset);
-      say('bad', () => t('work.runFailed'));
+      r = { key: k, sql, offset, error: e };
     } finally {
       busy = false;
       setButtons();
+    }
+    record(tk?.id, r);
+    if (editor !== ed) return;
+    app.lastRun = r;
+    const failed = r.error !== undefined;
+    if (failed) {
+      underline(r.error, offset);
+      say('bad', () => t('work.runFailed'));
+    } else {
+      message = undefined;
       drawMessage();
     }
-    record(app.lastRun);
-    const failed = app.lastRun.error !== undefined;
     deps.panel.show(failed || SCHEMA_TABS.has(deps.panel.active) ? 'result' : deps.panel.active);
     deps.onRun();
   }
 
   async function submit(): Promise<void> {
     if (busy || !editor || !ticket || submitBtn.hidden) return;
+    const ed = editor;
     const tk = ticket;
     const i = stepIndex;
-    const k = stepKey(tk, i);
-    const sql = editor.getValue(); // Submit always grades the whole editor
-    editor.clearError();
+    const k = stepKey(tk.id, i);
+    const sql = ed.getValue(); // Submit always grades the whole editor
+    ed.closeCompletion();
+    ed.clearError();
     busy = true;
     setButtons();
-    // The player's run is recorded in lastRun, so the tabs and the shape card show what was graded,
+    // The player's run becomes lastRun, so the tabs and the shape card show what was graded,
     // and a timeout/restart keeps its error class (grade() itself only keeps Postgres errors).
+    let played: LastRun | undefined;
     const playerRun = async (s: string) => {
       try {
         const result = await deps.db.run(s);
-        app.lastRun = { key: k, sql: s, offset: 0, result };
+        played = { key: k, sql: s, offset: 0, result };
         return result;
       } catch (e) {
-        app.lastRun = { key: k, sql: s, offset: 0, error: e };
+        played = { key: k, sql: s, offset: 0, error: e };
         throw e;
       }
     };
     let r: GradeResult | undefined;
+    let solutionError: unknown;
     try {
       r = await grade((s) => (s === sql ? playerRun(s) : deps.db.run(s)), tk.steps[i].solution, sql, tk.ordered);
     } catch (e) {
-      say('bad', () => t('work.contentBug', { msg: errorText(e) })); // the Solution itself failed
+      solutionError = e; // the Solution itself failed
+      r = undefined;
     } finally {
       busy = false;
       setButtons();
     }
-    if (app.lastRun?.key === k) record(app.lastRun);
+    if (played) record(tk.id, played);
+    if (editor !== ed) return; // stale: never credit or message a ticket the player has left
+    if (played) app.lastRun = played;
     deps.onRun();
-    if (!r) return;
+    if (!r) {
+      say('bad', () => t('work.contentBug', { msg: errorText(solutionError) }));
+      return;
+    }
     if (!r.ok) {
       const fail = r;
-      const err = app.lastRun?.error;
+      const err = played?.error;
       if (fail.reason === 'error') {
         underline(err, 0);
         say('bad', () => (err !== undefined ? errorView(err) : gradeMessage(fail)));
       } else {
-        if (fail.reason === 'rows' && app.lastRun?.result) app.lastRun.mark = fail.sample;
+        if (fail.reason === 'rows' && played?.result) played.mark = fail.sample;
         say('bad', () => gradeMessage(fail));
       }
       if (fail.reason === 'columns') deps.panel.refresh(); // the shape card already shows the column count
       else deps.panel.show('result');
       return;
     }
+    app.save.graded[k] = sql; // the Recap shows what was graded, not the draft edited afterwards
+    persist();
     if (i < tk.steps.length - 1) {
       deps.onStepSolved(); // setTicket() for the next step clears the message, so say it afterwards
       say('good', () => t('work.stepDone', { i: i + 1 }));
@@ -211,7 +251,7 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
         selection = false; // the new editor starts with an empty selection
         editor?.destroy();
         editor = createEditor(editorHost, {
-          doc: app.save.drafts[draftKey()] ?? tk.starter ?? '',
+          doc: initialDoc(app.save.drafts[draftKey()], tk.starter),
           schema: editorSchema(),
           label: t('work.editorLabel'),
           onChange: (v) => {

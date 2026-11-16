@@ -4,7 +4,7 @@ import type { LoadProgress } from './db/loadProgress';
 import type { QueryResult } from './db/run';
 import type { Key, Params } from './i18n';
 import { currentChapter, tablesUnlocked } from './progress';
-import { emptySave, writeSave } from './save';
+import { emptySave, stepKey, writeSave } from './save';
 import { shapeOf, type Shape } from './shape';
 import { localStore } from './storage';
 import type { Ticket } from './tickets';
@@ -38,8 +38,6 @@ export const app = {
   lastRun: undefined as LastRun | undefined,
   /** Boss whose steps are all solved and whose conclusion is open. Not saved: a reload repeats the last step. */
   conclusionFor: '',
-  /** Ticket closed just now: its Recap heading takes focus once. */
-  justCompleted: '',
   notice: undefined as Notice | undefined,
   /** Runs one statement in the sandbox; main.ts points it at DbClient.run. */
   run: (_sql: string): Promise<QueryResult> => Promise.reject(new Error('DB not started')),
@@ -55,8 +53,12 @@ export const actions = {
 
 export const done = (): Set<string> => new Set(app.save.completed);
 export const selected = (): Ticket => app.tickets.find((x) => x.id === app.selectedId)!;
-export const draftKey = (): string => `${app.selectedId}#${app.stepIndex}`;
-export const stepKey = (ticket: Ticket, stepIndex: number): string => `${ticket.id}#${stepIndex}`;
+export { stepKey };
+export const draftKey = (): string => stepKey(app.selectedId, app.stepIndex);
+
+/** Editor text for a step: the draft, or the ticket's starter when the draft is missing or blank. */
+export const initialDoc = (draft: string | undefined, starter: string | undefined): string =>
+  (draft?.trim() ? draft : starter ?? draft ?? '');
 export const unlockedTables = (): string[] => tablesUnlocked(currentChapter(app.tickets, done()));
 
 let persistTimer: ReturnType<typeof setTimeout> | undefined;
