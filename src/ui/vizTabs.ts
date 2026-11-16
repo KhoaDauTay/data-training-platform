@@ -1,6 +1,6 @@
 import type { DbClient } from '../db/client';
 import { t } from '../i18n';
-import { app, unlockedTables } from '../state';
+import { app, selected, unlockedTables } from '../state';
 import { chapterColor } from '../theme';
 import { erDefinition, loadErMetadata, tablesInQuery } from '../viz/erd';
 import { memoByKey } from '../viz/memo';
@@ -8,7 +8,7 @@ import { flattenPlan, type Plan } from '../viz/plan';
 import type { StepsResult } from '../viz/steps';
 import { renderChart } from './chartView';
 import { h } from './dom';
-import { renderErd } from './erdView';
+import { DARK, drawErd, erdSvg } from './erdView';
 import { renderExplain } from './explainView';
 import { errorView } from './feedback';
 import { renderFlow } from './flowView';
@@ -19,6 +19,8 @@ export interface VizDeps {
   db: DbClient;
   /** Switches the bottom panel to a tab (Panel.show). */
   show(id: string): void;
+  /** Id of the open tab (Panel.active). */
+  active(): string;
   /** What Ctrl+Enter would run now — only used to flag that lastRun is out of date. */
   editorSql(): string;
 }
@@ -76,6 +78,9 @@ function registerStepsTab(deps: VizDeps): void {
   });
 }
 
+/** Chapter colour of the open ticket; chapterColor(0) is the neutral slate (no ticket). */
+const ticketColor = () => chapterColor(selected()?.chapter ?? 0);
+
 function registerChartTab(deps: VizDeps): void {
   registerTab({
     id: 'chart',
@@ -86,9 +91,7 @@ function registerChartTab(deps: VizDeps): void {
     render: (host) => {
       if (lastRunSql(host, deps) === undefined) return;
       const result = app.lastRun?.result;
-      // Chapter colour of the open ticket; chapterColor(0) is the neutral slate (no ticket).
-      const chapter = app.tickets.find((x) => x.id === app.selectedId)?.chapter ?? 0;
-      if (result) renderChart(host, result, chapterColor(chapter));
+      if (result) renderChart(host, result, ticketColor());
       else host.append(h('p', { class: 'muted' }, t('chart.runError')));
     },
   });
@@ -102,11 +105,17 @@ function registerErdTab(deps: VizDeps): void {
     label: 'tab.erd',
     group: 'schema',
     order: 10,
-    render: async (host) => {
+    render: (host) => {
       const tables = unlockedTables();
-      const { cols, cons } = await erMetadata('public');
-      await renderErd(host, erDefinition(cols, cons, tables, tablesInQuery(app.lastRun?.sql ?? '', tables)));
+      // Tables the last run used: bold border in the open ticket's chapter colour (L36).
+      const svg = erMetadata('public').then(({ cols, cons }) =>
+        erdSvg(erDefinition(cols, cons, tables, tablesInQuery(app.lastRun?.sql ?? '', tables), ticketColor().hex)));
+      return load(host, t('erd.drawing'), svg, drawErd);
     },
+  });
+  // Mermaid bakes the theme into the SVG: redraw when the OS theme changes while the tab is open.
+  window.matchMedia(DARK).addEventListener('change', () => {
+    if (deps.active() === 'erd') deps.show('erd');
   });
 }
 

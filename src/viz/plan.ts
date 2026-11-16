@@ -1,4 +1,4 @@
-import type { Lang } from '../i18n';
+import type { Key } from '../i18n';
 
 export type PlanDetail = {
   kind: 'index' | 'indexCond' | 'hashCond' | 'joinFilter' | 'filter' | 'groupKey' | 'sortKey';
@@ -97,66 +97,35 @@ export function flattenPlan(json: unknown): Plan {
   return { nodes, executionMs: root['Execution Time'] ?? 0 };
 }
 
-export const NODE_HELP: Record<Lang, Record<string, string>> = {
-  vi: {
-    'Seq Scan': 'Đọc toàn bộ bảng từ đầu đến cuối và kiểm tra từng dòng. Chậm khi bảng lớn mà chỉ cần ít dòng.',
-    'Index Scan': 'Dùng index để nhảy thẳng tới các dòng cần, rồi đọc các dòng đó trong bảng.',
-    'Index Only Scan': 'Lấy dữ liệu ngay trong index, không cần đọc bảng.',
-    'Bitmap Index Scan': 'Dùng index để đánh dấu các trang dữ liệu có dòng phù hợp.',
-    'Bitmap Heap Scan': 'Đọc các trang bảng đã được đánh dấu bởi Bitmap Index Scan.',
-    'Hash Join': 'Dựng bảng băm từ một phía (node Hash) rồi dò từng dòng của phía còn lại vào bảng băm.',
-    Hash: 'Xây bảng băm trong bộ nhớ từ các dòng bên dưới để Hash Join dò tìm.',
-    'Nested Loop': 'Với mỗi dòng phía ngoài, tìm các dòng khớp phía trong. Nhanh khi phía ngoài có ít dòng.',
-    'Merge Join': 'Ghép hai đầu vào đã được sắp xếp theo khóa join, đi song song từ trên xuống.',
-    Sort: 'Sắp xếp các dòng (cho ORDER BY, hoặc chuẩn bị cho Merge Join / GroupAggregate).',
-    'Incremental Sort': 'Sắp xếp tiếp phần còn thiếu trên dữ liệu đã được sắp theo một phần khóa.',
-    Aggregate: 'Gộp nhiều dòng thành giá trị tổng hợp (COUNT, SUM, AVG…), theo nhóm nếu có GROUP BY.',
-    Limit: 'Dừng ngay khi đã đủ số dòng của LIMIT.',
-    Unique: 'Bỏ các dòng trùng nhau liền kề (DISTINCT trên dữ liệu đã sắp xếp).',
-    Materialize: 'Lưu tạm kết quả bên dưới để đọc lại nhiều lần.',
-    Memoize: 'Ghi nhớ kết quả theo khóa để không tính lại cho cùng giá trị.',
-    'Subquery Scan': 'Đọc kết quả của một truy vấn con như một bảng.',
-    'CTE Scan': 'Đọc kết quả của một mệnh đề WITH.',
-    WindowAgg: 'Tính hàm cửa sổ (RANK, LAG, SUM OVER…) trên từng dòng mà không gộp dòng.',
-    Append: 'Nối kết quả của nhiều nhánh (UNION ALL, bảng phân vùng).',
-    SetOp: 'Thực hiện INTERSECT / EXCEPT.',
-    Result: 'Tính biểu thức không cần đọc bảng.',
-    Gather: 'Gom kết quả từ các tiến trình chạy song song.',
-  },
-  en: {
-    'Seq Scan': 'Reads the whole table from start to end and checks every row. Slow when the table is large but only a few rows are needed.',
-    'Index Scan': 'Uses an index to jump straight to the matching rows, then reads those rows from the table.',
-    'Index Only Scan': 'Gets the data from the index itself without reading the table.',
-    'Bitmap Index Scan': 'Uses an index to mark the data pages that contain matching rows.',
-    'Bitmap Heap Scan': 'Reads the table pages marked by the Bitmap Index Scan.',
-    'Hash Join': 'Builds a hash table from one side (the Hash node), then probes it with every row from the other side.',
-    Hash: 'Builds an in-memory hash table from the rows below so the Hash Join can probe it.',
-    'Nested Loop': 'For each outer row, looks up the matching inner rows. Fast when the outer side has few rows.',
-    'Merge Join': 'Joins two inputs that are already sorted on the join key, walking both from top to bottom.',
-    Sort: 'Sorts the rows (for ORDER BY, or to prepare a Merge Join / GroupAggregate).',
-    'Incremental Sort': 'Finishes sorting data that is already sorted on part of the key.',
-    Aggregate: 'Collapses many rows into summary values (COUNT, SUM, AVG…), per group when there is a GROUP BY.',
-    Limit: 'Stops as soon as it has the number of rows in LIMIT.',
-    Unique: 'Removes adjacent duplicate rows (DISTINCT on sorted data).',
-    Materialize: 'Keeps the rows below in memory so they can be read again.',
-    Memoize: 'Remembers results per key so the same value is not computed twice.',
-    'Subquery Scan': 'Reads the result of a subquery as if it were a table.',
-    'CTE Scan': 'Reads the result of a WITH clause.',
-    WindowAgg: 'Computes window functions (RANK, LAG, SUM OVER…) for each row without collapsing rows.',
-    Append: 'Concatenates the results of several branches (UNION ALL, partitioned tables).',
-    SetOp: 'Performs INTERSECT / EXCEPT.',
-    Result: 'Computes expressions without reading a table.',
-    Gather: 'Collects results from parallel worker processes.',
-  },
+/** i18n key of the glossary line for each node type (text in src/i18n, VI + EN). */
+export const NODE_HELP: Record<string, Key> = {
+  'Seq Scan': 'node.seqScan',
+  'Index Scan': 'node.indexScan',
+  'Index Only Scan': 'node.indexOnlyScan',
+  'Bitmap Index Scan': 'node.bitmapIndexScan',
+  'Bitmap Heap Scan': 'node.bitmapHeapScan',
+  'Hash Join': 'node.hashJoin',
+  Hash: 'node.hash',
+  'Nested Loop': 'node.nestedLoop',
+  'Merge Join': 'node.mergeJoin',
+  Sort: 'node.sort',
+  'Incremental Sort': 'node.incrementalSort',
+  Aggregate: 'node.aggregate',
+  Limit: 'node.limit',
+  Unique: 'node.unique',
+  Materialize: 'node.materialize',
+  Memoize: 'node.memoize',
+  'Subquery Scan': 'node.subqueryScan',
+  'CTE Scan': 'node.cteScan',
+  WindowAgg: 'node.windowAgg',
+  Append: 'node.append',
+  SetOp: 'node.setOp',
+  Result: 'node.result',
+  Gather: 'node.gather',
 };
 
-const NODE_FALLBACK: Record<Lang, string> = {
-  vi: 'Một bước trong kế hoạch thực thi của Postgres.',
-  en: "A step in Postgres' execution plan.",
-};
-
-export function nodeExplanation(type: string, lang: Lang): string {
-  return NODE_HELP[lang][type] ?? NODE_FALLBACK[lang];
+export function nodeHelpKey(type: string): Key {
+  return NODE_HELP[type] ?? 'node.fallback';
 }
 
 export function isHeavyScan(n: PlanNode): boolean {

@@ -11,13 +11,13 @@ describe('thanh tiến độ chương', () => {
   ] as const;
   it('một chấm mỗi việc của chương, theo thứ tự; đánh giá thăng tiến được đánh dấu', () => {
     expect(chapterDots([...tickets], new Set(['ch1-01']), 'ch1-02', 1)).toEqual([
-      { id: 'ch1-01', state: 'done', review: false },
-      { id: 'ch1-02', state: 'current', review: false },
-      { id: 'ch1-03', state: 'todo', review: false },
-      { id: 'ch1-05', state: 'todo', review: true },
+      { id: 'ch1-01', state: 'done', review: false, selected: false },
+      { id: 'ch1-02', state: 'current', review: false, selected: true },
+      { id: 'ch1-03', state: 'todo', review: false, selected: false },
+      { id: 'ch1-05', state: 'todo', review: true, selected: false },
     ]);
   });
-  it('việc đã xong vẫn là done dù đang được chọn', () => {
-    expect(chapterDots([...tickets], new Set(['ch1-01']), 'ch1-01', 1)[0].state).toBe('done');
+  it('việc đã xong vẫn là done dù đang được chọn, nhưng vẫn được đánh dấu đang mở', () => {
+    expect(chapterDots([...tickets], new Set(['ch1-01']), 'ch1-01', 1)[0]).toMatchObject({ state: 'done', selected: true });
   });
 });

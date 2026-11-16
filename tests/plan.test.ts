@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { runExplain } from '../src/db/run';
-import { flattenPlan, isHeavyScan, NODE_HELP, nodeExplanation } from '../src/viz/plan';
+import { en } from '../src/i18n/en';
+import { vi } from '../src/i18n/vi';
+import { flattenPlan, isHeavyScan, NODE_HELP, nodeHelpKey } from '../src/viz/plan';
 import { seededDb } from './helpers';
 
 const TEU_BY_CARRIER = `SELECT ca.name, SUM(ct.teu) FROM containers ct
@@ -59,14 +61,12 @@ describe('nhãn và chi tiết node (không chứa chữ đã dịch)', () => {
   });
 });
 
-describe('NODE_HELP theo ngôn ngữ', () => {
-  it('VI và EN cùng tập khóa', () => {
-    expect(Object.keys(NODE_HELP.en).sort()).toEqual(Object.keys(NODE_HELP.vi).sort());
-  });
-  it('tra theo ngôn ngữ, có câu mặc định cho node lạ', () => {
-    expect(nodeExplanation('Hash Join', 'vi')).toMatch(/băm/);
-    expect(nodeExplanation('Hash Join', 'en')).toMatch(/hash table/);
-    expect(nodeExplanation('Something New', 'vi')).toMatch(/kế hoạch/);
-    expect(nodeExplanation('Something New', 'en')).toMatch(/plan/);
+describe('chú giải node (chữ nằm trong i18n)', () => {
+  it('mỗi loại node trỏ tới một key có chữ VI và EN; node lạ dùng câu mặc định', () => {
+    expect(nodeHelpKey('Hash Join')).toBe('node.hashJoin');
+    expect(vi['node.hashJoin']).toMatch(/băm/);
+    expect(en['node.hashJoin']).toMatch(/hash table/);
+    expect(nodeHelpKey('Something New')).toBe('node.fallback');
+    for (const key of Object.values(NODE_HELP)) expect(vi[key], key).toBeTruthy();
   });
 });

@@ -1,11 +1,15 @@
-import { getLang, t, type Key } from '../i18n';
+import { t, type Key } from '../i18n';
 import { cx } from '../theme';
 import type { StepsResult } from '../viz/steps';
-import { STEP_HELP, STEP_LABELS, type StepKey, type StepsFailure } from '../viz/stepText';
+import { STEP_LABELS, type StepKey, type StepsFailure } from '../viz/stepText';
 import { fmt, h } from './dom';
 import { renderResult } from './resultTable';
 
 const STAGES: Key[] = ['steps.stage1', 'steps.stage2', 'steps.stage3', 'steps.stage4'];
+/** Stage indexes: Optimize links to the EXPLAIN tab; Execute is the stage this tab shows. */
+const OPTIMIZE = 2;
+const EXECUTE = 3;
+const help = (key: StepKey): Key => `steps.help.${key}`;
 const REASON: Record<StepsFailure, Key> = {
   syntax: 'steps.syntax', multi: 'steps.multi', notSelect: 'steps.notSelect', withUnion: 'steps.withUnion', window: 'steps.window',
 };
@@ -16,12 +20,10 @@ const STAGE_OFF = 'bg-code ring-1 ring-line';
 const STEP_BTN = 'flex min-w-24 flex-col items-start';
 
 export function renderSteps(host: HTMLElement, sql: string, result: StepsResult, goExplain: () => void): void {
-  const labels = STEP_LABELS[getLang()];
-  const help = STEP_HELP[getLang()];
   const stages = h('div', { class: 'mb-2 flex flex-wrap gap-1.5 text-sm' }, ...STAGES.map((key, i) =>
-    i === 2
+    i === OPTIMIZE
       ? h('button', { type: 'button', class: PILL, onclick: goExplain, title: t('steps.toExplain') }, `${t(key)} → EXPLAIN`)
-      : h('span', { class: cx(PILL, i === 3 ? STAGE_ON : STAGE_OFF) }, t(key))));
+      : h('span', { class: cx(PILL, i === EXECUTE ? STAGE_ON : STAGE_OFF), 'aria-current': i === EXECUTE ? 'step' : false }, t(key))));
   if (!result.ok) {
     host.append(stages, h('p', { class: 'muted' }, t(REASON[result.reason], { msg: result.detail ?? '' })));
     if (result.reason === 'withUnion' || result.reason === 'window') {
@@ -63,7 +65,7 @@ export function renderSteps(host: HTMLElement, sql: string, result: StepsResult,
         'aria-current': i === current ? 'step' : false,
         onclick: () => { stop(); current = i; draw(); },
       },
-        h('b', {}, labels[s.key]),
+        h('b', {}, STEP_LABELS[s.key]),
         s.skipped ? h('span', {}, t('steps.unused'))
           : s.error ? h('span', {}, t('steps.error'))
           : h('span', { class: 'text-base font-bold tabular-nums' }, unit(s.key, s.count!))),
@@ -75,8 +77,8 @@ export function renderSteps(host: HTMLElement, sql: string, result: StepsResult,
       h('div', { class: 'grid grid-cols-[48px_1fr_80px] items-center gap-2 text-sm' },
         h('span', {}, t(label)), h('i', { class: 'block h-2.5 rounded bg-accent', style: `width:${width}%` }), h('span', { class: 'text-right tabular-nums' }, fmt(n)));
     detail.replaceChildren(
-      h('h3', {}, t('steps.title', { i: current + 1, label: labels[s.key] })),
-      h('p', {}, help[s.key]),
+      h('h3', {}, t('steps.title', { i: current + 1, label: STEP_LABELS[s.key] })),
+      h('p', {}, t(help(s.key))),
       s.count !== undefined && before !== undefined
         ? h('div', { class: 'my-2 max-w-[520px]' },
             bar('steps.before', before, 100),

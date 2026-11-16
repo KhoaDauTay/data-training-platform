@@ -25,11 +25,14 @@ export function createMapStrip(host: HTMLElement): { update(view: StripView): vo
 
   return {
     update({ chapter, dots, tickets, completed }) {
-      progress.setAttribute('aria-label', t('map.progress', { done: dots.filter((d) => d.state === 'done').length, total: dots.length }));
+      // role=img hides the visible "Chương n", so the chapter number is in the accessible name too.
+      const open = dots.find((d) => d.selected)?.id ?? '';
+      progress.setAttribute('aria-label', t('map.progress', { n: chapter, done: dots.filter((d) => d.state === 'done').length, total: dots.length, id: open }));
       progress.replaceChildren(t('map.chapter', { n: chapter }), ...dots.map((d) =>
         h('span', {
-          class: cx('ml-1', BEAT_CLASS[d.state]),
-          title: `${d.id}: ${t(BEAT_KEY[d.state])}${d.review ? ` · ${t('beat.boss')}` : ''}`,
+          // The open ticket is underlined, so a reopened (done) ticket is still visible as "here".
+          class: cx('ml-1', BEAT_CLASS[d.state], d.selected && 'underline decoration-2 underline-offset-4'),
+          title: `${d.id}: ${t(BEAT_KEY[d.state])}${d.review ? ` · ${t('beat.boss')}` : ''}${d.selected ? ` · ${t('map.open')}` : ''}`,
           'aria-hidden': 'true',
         }, d.review ? '◆' : BEAT_SYMBOL[d.state])));
       caption.textContent = t('map.lanes', { n: derive(tickets, completed).open.size, total: ROUTES.length });

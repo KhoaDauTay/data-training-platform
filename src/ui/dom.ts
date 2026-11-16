@@ -39,10 +39,10 @@ export function richText(text: string): HTMLElement {
 
 export const byId = (id: string): HTMLElement => document.getElementById(id)!;
 
-/** `<animateMotion>` ignores the CSS reduced-motion rule in style.css, so SVG animations check this. */
+/** `<animateMotion>` and JS tweens ignore the CSS reduced-motion rule in style.css, so they check this (flowView, stage). */
 export function reducedMotion(): boolean {
   return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 }
 
-/** Number in the current UI language: 25.677 (vi) / 25,677 (en). */
+/** Number in the current UI language with at most `digits` decimals: 25677 → "25.677" (vi) / "25,677" (en); 0.125 → "0,13" / "0.13". */
 export const fmt = (n: number, digits = 2): string => n.toLocaleString(locale(), { maximumFractionDigits: digits });
