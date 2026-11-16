@@ -1,0 +1,82 @@
+# Danh mục kỹ năng. id là khóa dùng trong requires/grants của ticket.
+# Mỗi kỹ năng được đúng một ticket grant, ở đúng chương ghi ở đây.
+# Thẻ kỹ năng (syntax/when/trap) hiện trong Sổ tay; tổng cộng ≤ 6 dòng.
+# Kỹ năng chương 4–6 thêm vào đây TRƯỚC khi viết ticket của chương đó (Plan 2/3).
+# Mọi chuỗi đặt trong nháy kép (dấu phẩy trong { … } sẽ cắt chuỗi nếu không có nháy).
+
+- id: select
+  chapter: 1
+  label: { vi: "Chọn cột", en: "Select columns" }
+  syntax: "SELECT code, name FROM ports"
+  when: { vi: "Chỉ lấy những cột cần cho câu hỏi.", en: "Pull only the columns the question needs." }
+  trap: { vi: "SELECT * kéo cả cột thừa và làm sai số cột khi nộp.", en: "SELECT * drags in extra columns and fails the column count." }
+
+- id: where
+  chapter: 1
+  label: { vi: "Lọc dòng", en: "Filter rows" }
+  syntax: "WHERE region = 'Europe' AND kind IN ('SEAPORT', 'AIRPORT')"
+  when: { vi: "Giữ lại các dòng thỏa điều kiện.", en: "Keep only the rows that match a condition." }
+  trap: { vi: "Chuỗi dùng nháy đơn, nháy kép là tên cột. Trộn AND với OR thì đặt ngoặc.", en: "Strings take single quotes, double quotes mean a column name. Mixing AND with OR needs parentheses." }
+
+- id: order_by
+  chapter: 1
+  label: { vi: "Sắp xếp và phá hòa", en: "Sort with a tie-break" }
+  syntax: "ORDER BY gross_weight_kg DESC, ref"
+  when: { vi: "Đề yêu cầu thứ tự hoặc xếp hạng.", en: "The question asks for an order or a ranking." }
+  trap: { vi: "Thiếu cột phá hòa thì các dòng bằng nhau có thể đổi chỗ.", en: "Without a tie-break column, equal rows can come back in any order." }
+
+- id: limit
+  chapter: 1
+  label: { vi: "Lấy top N", en: "Top N" }
+  syntax: "ORDER BY gross_weight_kg DESC, ref LIMIT 5"
+  when: { vi: "Chỉ cần N dòng đầu sau khi sắp xếp.", en: "You only need the first N rows after sorting." }
+  trap: { vi: "LIMIT không có ORDER BY trả về N dòng bất kỳ.", en: "LIMIT without ORDER BY returns any N rows." }
+
+- id: aggregate
+  chapter: 2
+  label: { vi: "COUNT/SUM/AVG/MIN/MAX, ROUND", en: "COUNT/SUM/AVG/MIN/MAX, ROUND" }
+  syntax: "SELECT count(*), ROUND(AVG(gross_weight_kg), 2) FROM shipments"
+  when: { vi: "Gộp nhiều dòng thành một con số.", en: "Collapse many rows into one number." }
+  trap: { vi: "count(cột) bỏ qua NULL, còn count(*) đếm mọi dòng.", en: "count(column) skips NULLs, count(*) counts every row." }
+
+- id: group_by
+  chapter: 2
+  label: { vi: "Nhóm theo chiều", en: "Group by" }
+  syntax: "SELECT carrier_id, count(*) FROM shipments GROUP BY carrier_id"
+  when: { vi: "Cần một con số cho mỗi hãng tàu, mỗi tháng, mỗi khách.", en: "You need one number per carrier, month or customer." }
+  trap: { vi: "Cột trong SELECT không nằm trong hàm gộp thì phải có trong GROUP BY.", en: "Every SELECT column outside an aggregate must be in GROUP BY." }
+
+- id: having
+  chapter: 2
+  label: { vi: "Lọc nhóm", en: "Filter groups" }
+  syntax: "GROUP BY customer_id HAVING count(*) >= 100"
+  when: { vi: "Lọc theo kết quả của hàm gộp.", en: "Filter on the result of an aggregate." }
+  trap: { vi: "WHERE lọc dòng trước khi nhóm, HAVING lọc nhóm sau khi gộp.", en: "WHERE filters rows before grouping, HAVING filters groups after." }
+
+- id: join
+  chapter: 3
+  label: { vi: "Nối 2 bảng", en: "Inner join" }
+  syntax: "FROM shipments s JOIN customers c ON c.id = s.customer_id"
+  when: { vi: "Cần cột của bảng khác qua khóa ngoại.", en: "You need columns from another table through a foreign key." }
+  trap: { vi: "Thiếu hoặc sai ON thì số dòng bị nhân lên.", en: "A missing or wrong ON multiplies the rows." }
+
+- id: multi_join
+  chapter: 3
+  label: { vi: "Nối nhiều bảng", en: "Multi-table join" }
+  syntax: "FROM containers k JOIN shipments s ON s.id = k.shipment_id JOIN carriers r ON r.id = s.carrier_id"
+  when: { vi: "Dữ liệu cần nằm cách nhau từ 2 khóa ngoại trở lên.", en: "The data you need is two or more foreign keys apart." }
+  trap: { vi: "Mỗi JOIN cần ON riêng. Dùng alias để biết cột thuộc bảng nào.", en: "Every JOIN needs its own ON. Use aliases to tell columns apart." }
+
+- id: left_join
+  chapter: 3
+  label: { vi: "Giữ dòng không khớp", en: "Left join" }
+  syntax: "FROM customers c LEFT JOIN shipments s ON s.customer_id = c.id"
+  when: { vi: "Phải giữ mọi dòng bên trái, kể cả dòng không có cặp.", en: "Keep every left-hand row, even without a match." }
+  trap: { vi: "Điều kiện trên bảng bên phải đặt ở WHERE sẽ biến LEFT JOIN thành JOIN thường. Đặt nó vào ON.", en: "A WHERE condition on the right-hand table turns it back into an inner join. Put it in ON." }
+
+- id: anti_join
+  chapter: 3
+  label: { vi: "Tìm cái “không có”", en: "Anti-join" }
+  syntax: "LEFT JOIN shipments s ON s.customer_id = c.id WHERE s.id IS NULL"
+  when: { vi: "Tìm khách không book, cảng không có lô hàng…", en: "Find customers with no bookings, ports with no shipments…" }
+  trap: { vi: "NOT IN trên danh sách có NULL trả về rỗng. Dùng LEFT JOIN … IS NULL hoặc NOT EXISTS.", en: "NOT IN over a list containing NULL returns nothing. Use LEFT JOIN … IS NULL or NOT EXISTS." }
