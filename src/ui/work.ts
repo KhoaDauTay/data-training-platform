@@ -214,10 +214,10 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
         if (fail.reason === 'rows' && played?.result) played.mark = fail.sample;
         say('bad', () => gradeMessage(fail));
       }
-      if (fail.reason === 'columns') deps.panel.refresh(); // the shape card already shows the column count
-      else deps.panel.show('result');
+      deps.panel.show('result');
       return;
     }
+    deps.panel.show('result'); // the graded run, not the Columns tab left open from before
     app.save.graded[k] = sql; // the Recap shows what was graded, not the draft edited afterwards
     persist();
     if (i < tk.steps.length - 1) {

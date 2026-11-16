@@ -67,6 +67,13 @@ export function drawYard(p: HarborParts, h: Harbor, fresh: ReadonlySet<number> =
   p.yard.replaceChildren(...out);
 }
 
+/** The two status lines (tasks done and ships out; chapters passed and current): in the SVG, and as HTML below sm. */
+export function callout(h: Harbor, current: number): [string, string] {
+  const trips = Object.values(h.trips).reduce((a, b) => a + b, 0) + h.departures;
+  const done = Object.values(h.bays).reduce((a, b) => a + b, 0);
+  return [t('harbor.callA', { done, trips }), t('harbor.callB', { passed: h.passed.size, n: current })];
+}
+
 /**
  * The Tien Sa scene (L26). `ambient`: CSS loops (waves, smoke, lighthouse, departing ship, crane) for Home; the stage
  * passes false and drives the ship, crane, truck, barrier and shutter itself. `crop`: the stage's close-up of berth,
@@ -118,13 +125,13 @@ export function harborScene(h: Harbor, opts: { ambient: boolean; current: number
     s('rect', { x: 866, y: 337, width: 8, height: 5, fill: '#f8fafc' }),
     s('rect', { x: 882, y: 337, width: 8, height: 5, fill: '#f8fafc' }));
   const gateText = text(844, 379, 12, '#f8fafc', '', 'middle');
-  const gateTag = s('g', { opacity: 0, 'aria-hidden': 'true' }, s('rect', { x: 796, y: 364, width: 96, height: 22, rx: 6, fill: '#0f172a' }), gateText);
+  const gateTag = s('g', { opacity: 0, class: 'max-sm:hidden', 'aria-hidden': 'true' }, s('rect', { x: 796, y: 364, width: 96, height: 22, rx: 6, fill: '#0f172a' }), gateText);
 
-  const trips = Object.values(h.trips).reduce((a, b) => a + b, 0) + h.departures;
-  const done = Object.values(h.bays).reduce((a, b) => a + b, 0);
+  const [callA, callB] = callout(h, opts.current);
   const bays = Object.entries(h.bays).map(([ch, k]) => t('harbor.bay', { n: Number(ch), k })).join(', ');
   const svg = s('svg', {
-    viewBox: opts.crop ? '440 140 660 260' : '0 0 1100 400', class: 'block w-full', role: 'img',
+    // L23/L34: at 375px a 14-unit label is ~4px, so every label hides below sm (Home shows callout() as HTML instead)
+    viewBox: opts.crop ? '440 140 660 260' : '0 0 1100 400', class: 'block w-full max-sm:[&_text]:hidden', role: 'img',
     'aria-label': t('harbor.label', { bays: bays || t('harbor.empty') }),
   },
     s('defs', {},
@@ -201,8 +208,8 @@ export function harborScene(h: Harbor, opts: { ambient: boolean; current: number
     gateTag,
     // status callout (outside the stage's crop)
     s('rect', { x: 24, y: 312, width: 360, height: 64, rx: 10, fill: '#0f172a', 'fill-opacity': 0.72 }),
-    s('text', { x: 40, y: 338, 'font-family': FONT, 'font-size': 14, 'font-weight': 600, fill: '#f8fafc' }, t('harbor.callA', { done, trips })),
-    s('text', { x: 40, y: 360, 'font-family': FONT, 'font-size': 14, 'font-weight': 600, fill: '#bae6fd' }, t('harbor.callB', { passed: h.passed.size, n: opts.current })));
+    s('text', { x: 40, y: 338, 'font-family': FONT, 'font-size': 14, 'font-weight': 600, fill: '#f8fafc' }, callA),
+    s('text', { x: 40, y: 360, 'font-family': FONT, 'font-size': 14, 'font-weight': 600, fill: '#bae6fd' }, callB));
 
   const parts: HarborParts = { svg, yard, drop, ship, trolley, cable, spreader, carry, truck, truckBox, barrier, shutter, gateTag, gateText };
   drawYard(parts, h, opts.fresh);

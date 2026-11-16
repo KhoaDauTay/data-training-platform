@@ -5,13 +5,14 @@ import { CHAPTERS, chapterTitle, rankOf, SKILLS } from '../progress';
 import { derive } from '../scene';
 import { actions, app, done } from '../state';
 import { BTN_GO, CARD, chapterColor, cx, DONE_PILL, PILL } from '../theme';
-import { personOf } from '../people';
+import { roleLine } from '../people';
+import { upsert } from '../registry';
 import { stepKey } from '../save';
 import { textOf, type Ticket } from '../tickets';
 import { avatar } from './avatar';
 import { byId, h, nodes } from './dom';
-import { harborScene } from './harbor';
-import { routeMap } from './routeMap';
+import { callout, harborScene } from './harbor';
+import { routeItems, routeMap } from './routeMap';
 import { go } from './router';
 
 /** Width on >= lg screens (3-column grid); every section is full width below lg. */
@@ -39,13 +40,7 @@ const SPAN: Record<Span, string> = { full: 'lg:col-span-3', wide: 'lg:col-span-2
 const sections: HomeSection[] = [];
 const modes: ModeCard[] = [];
 
-/** Same id replaces the old entry (Plan 1c swaps the 'side' card); the list stays sorted by order. */
-function upsert<T extends { id: string; order: number }>(list: T[], item: T): void {
-  const i = list.findIndex((x) => x.id === item.id);
-  if (i >= 0) list.splice(i, 1);
-  list.push(item);
-  list.sort((a, b) => a.order - b.order);
-}
+/** Plan 1c swaps the 'side' card by registering the same id again. */
 export const registerHomeSection = (s: HomeSection): void => upsert(sections, s);
 export const registerMode = (m: ModeCard): void => upsert(modes, m);
 
@@ -82,7 +77,7 @@ function continueCard(m: HomeModel): HTMLElement {
       ? h('div', { class: 'flex gap-3' },
         avatar(next.from, 'lg'),
         h('div', { class: 'min-w-0 flex-1' },
-          h('p', { class: 'm-0 text-[15px]' }, h('b', {}, next.from.name), ' · ', h('span', { class: 'text-muted' }, personOf(next.from.name)?.role[lang] ?? next.from.dept)),
+          h('p', { class: 'm-0 text-[15px]' }, h('b', {}, next.from.name), ' · ', h('span', { class: 'text-muted' }, roleLine(next.from.name, lang) || next.from.dept)),
           h('p', { class: 'mt-1 mb-0 rounded-2xl rounded-tl-sm bg-code px-4 py-3 text-[15px] leading-relaxed' },
             x.body.split(/\n\s*\n/)[0].replace(/\s*\n\s*/g, ' '))))
       : null,
@@ -126,18 +121,15 @@ function statusPill(c: ChapterCard): HTMLElement | null {
 
 /**
  * L21: centred, larger title; a closed chapter shows a centred padded 🔒, muted text (AA, unlike the mockup's
- * 55% opacity) and, on hover or keyboard focus, what opens it. The hint is always in the DOM (aria-describedby).
+ * 55% opacity) and, always visible, what opens it (L34: a chapter without tickets yet says its content is in progress).
  */
 function chapterCard(c: ChapterCard): HTMLElement {
   const lang = getLang();
   const color = chapterColor(c.chapter);
   const closed = c.status === 'locked' || c.status === 'soon';
-  const hintId = `chapter-hint-${c.chapter}`;
   return h('article', {
-    class: cx('group space-y-2 rounded-2xl bg-panel p-5 text-center', c.status === 'current' ? cx(color.ring, 'shadow-md') : 'ring-1 ring-line'),
-    tabindex: closed ? '0' : false,
+    class: cx('space-y-2 rounded-2xl bg-panel p-5 text-center', c.status === 'current' ? cx(color.ring, 'shadow-md') : 'ring-1 ring-line'),
     'aria-current': c.status === 'current' ? 'step' : false,
-    'aria-describedby': closed ? hintId : false,
   },
     closed
       ? h('div', { class: 'mx-auto grid size-12 place-items-center rounded-full bg-code p-3 text-2xl', role: 'img', 'aria-label': t(c.status === 'soon' ? 'home.status.soon' : 'home.status.locked') }, '🔒')
@@ -148,10 +140,8 @@ function chapterCard(c: ChapterCard): HTMLElement {
     h('p', { class: 'm-0 text-sm text-muted' }, t('home.careerAfter', { career: CHAPTERS.find((x) => x.chapter === c.chapter)?.career[lang] ?? '' })),
     c.status === 'done' && c.boss ? h('p', { class: 'm-0 text-sm text-muted' }, t('home.review', { title: textOf(c.boss, lang).title })) : null,
     closed
-      ? h('p', {
-        id: hintId,
-        class: 'm-0 inline-block rounded-lg bg-ink px-3 py-1 text-sm text-panel opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100',
-      }, t('home.lockedAfter', { n: c.chapter - 1 }))
+      ? h('p', { class: 'm-0 inline-block rounded-lg bg-ink px-3 py-1 text-sm text-panel' },
+        c.status === 'soon' ? t('home.soonHint') : t('home.lockedAfter', { n: c.chapter - 1 }))
       : null);
 }
 
@@ -220,19 +210,26 @@ function freshChapters(): Set<number> {
 }
 
 /** Tien Sa (L26): the yard holds one container per completed ticket, coloured by chapter. Home never replays animations. */
+/** Below sm the SVG labels hide (L34), so the title and status lines show as HTML under the picture. */
 function harborSection(m: HomeModel): HTMLElement {
-  const scene = harborScene(derive(app.tickets, done()), { ambient: true, current: m.chapter, fresh: freshChapters() });
+  const harbor = derive(app.tickets, done());
+  const scene = harborScene(harbor, { ambient: true, current: m.chapter, fresh: freshChapters() });
   return h('section', { class: cx(CARD, 'overflow-hidden'), 'aria-labelledby': 'harbor-title' },
     h('h2', { id: 'harbor-title', class: 'sr-only' }, t('harbor.title')),
-    scene.svg);
+    scene.svg,
+    h('div', { class: 'px-4 py-3 text-sm sm:hidden', 'aria-hidden': 'true' },
+      h('p', { class: 'm-0 font-bold' }, t('harbor.title')),
+      ...callout(harbor, m.chapter).map((line) => h('p', { class: 'm-0 text-muted' }, line))));
 }
 
 function routesSection(): HTMLElement {
+  const harbor = derive(app.tickets, done());
   return h('section', { class: cx(CARD, 'p-5'), 'aria-labelledby': 'routes-title' },
     h('div', { class: 'mb-2 flex flex-wrap items-end justify-between gap-2' },
       h('h2', { id: 'routes-title', class: 'm-0 text-lg font-bold' }, t('routes.title')),
       h('p', { class: 'm-0 text-sm text-muted' }, t('routes.subtitle'))),
-    routeMap(derive(app.tickets, done())).svg);
+    routeMap(harbor).svg,
+    h('ul', { class: 'mt-2 mb-0 list-none space-y-0.5 p-0 text-sm sm:hidden', 'aria-hidden': 'true' }, ...routeItems(harbor).map((x) => h('li', {}, x))));
 }
 
 /** Solution results per step, run once per session and only for open tiles (an open tile = task already solved: nothing leaks). */

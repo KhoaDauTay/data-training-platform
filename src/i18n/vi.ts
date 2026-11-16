@@ -24,6 +24,7 @@ export const vi = {
   'home.status.locked': 'Chưa mở',
   'home.status.soon': 'Sắp có',
   'home.review': 'Đánh giá thăng tiến: "{title}"',
+  'home.soonHint': 'Nội dung đang soạn',
   'home.lockedAfter': 'Để mở: qua đánh giá thăng tiến chương {n}',
   'home.skills': 'Chủ đề kỹ năng',
   'home.skillsHint': 'Mỗi vạch là một mức nhớ; kỹ năng mới học bắt đầu ở mức 1.',

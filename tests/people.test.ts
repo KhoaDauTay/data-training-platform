@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { loadTickets } from '../src/content';
-import { parsePeople, PEOPLE, personOf } from '../src/people';
+import schema from '../src/db/schema.sql?raw';
+import { parsePeople, PEOPLE, personOf, roleLine } from '../src/people';
 import { runner } from './helpers';
 
 const VI_DIACRITIC = /[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ]/i;
@@ -9,6 +10,7 @@ const ONE = `- name: A
   employee: null
   role: { vi: "a", en: "a" }
   bio: { vi: "b", en: "b" }
+  tables: [shipments]
   look: { skin: light, hair: black, style: short, accessory: none }
 `;
 
@@ -51,5 +53,18 @@ describe('people.yml (L18)', () => {
     expect(() => parsePeople(ONE.replace('  employee: null\n', ''))).toThrow(/employee/);
     expect(() => parsePeople(ONE + ONE)).toThrow(/trùng/);
     expect(() => parsePeople('name: A')).toThrow(/danh sách/);
+    expect(() => parsePeople(ONE.replace('  tables: [shipments]\n', ''))).toThrow(/tables/);
+  });
+
+  it('tables: mọi người có ít nhất một bảng, tên bảng có thật trong schema.sql (L18, L34)', () => {
+    const real = new Set([...schema.matchAll(/CREATE TABLE (\w+)/g)].map((m) => m[1]));
+    expect(PEOPLE.filter((p) => p.tables.length === 0 || p.tables.some((x) => !real.has(x))).map((p) => p.name)).toEqual([]);
+  });
+
+  it('roleLine: vai trò + bảng đã mở, không dịch tên bảng; người lạ → rỗng', () => {
+    expect(roleLine('Hoàng Khánh', 'en')).toBe('Head of Operations, your mentor');
+    expect(roleLine('Hoàng Khánh', 'en', ['shipments', 'customers'])).toBe('Head of Operations, your mentor · shipments');
+    expect(roleLine('Hoàng Khánh', 'vi', ['shipments', 'containers'])).toBe('Trưởng phòng Ops, người kèm DA mới · shipments, containers');
+    expect(roleLine('Không Ai', 'vi', ['shipments'])).toBe('');
   });
 });

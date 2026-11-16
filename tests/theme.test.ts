@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { loadTickets } from '../src/content';
 import { CHAPTERS } from '../src/progress';
-import { CHAPTER_COLOR, chapterColor, cx, DEPT_COLOR, deptColor } from '../src/theme';
+import { CHAPTER_COLOR, chapterColor, cx, DEPT, deptColor } from '../src/theme';
 
 describe('theme', () => {
   it('mỗi chương trong chapters.yml có một màu riêng', () => {
@@ -21,14 +21,14 @@ describe('theme', () => {
 
   it('mọi phòng ban gửi ticket có màu nhãn; phòng/chương lạ dùng màu trung tính', () => {
     const depts = [...new Set(loadTickets().map((t) => t.from.dept))];
-    expect(depts.filter((d) => !(d in DEPT_COLOR))).toEqual([]);
+    expect(depts.filter((d) => !(d in DEPT))).toEqual([]);
     expect(deptColor('Legal')).toContain('bg-slate-100');
     expect(chapterColor(99).bar).toBe('bg-slate-500');
   });
 
   it('mỗi màu trang trí có biến thể dark:', () => {
     for (const c of Object.values(CHAPTER_COLOR)) expect(c.chip).toContain('dark:');
-    for (const d of Object.values(DEPT_COLOR)) expect(d).toContain('dark:');
+    for (const d of Object.values(DEPT)) expect(d.chip).toContain('dark:');
   });
 
   it('cx bỏ phần rỗng', () => {
