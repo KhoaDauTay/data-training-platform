@@ -199,6 +199,11 @@ export function parseTicket(source: string, origin: string): Ticket {
       if (Object.keys(out).sort().join() !== names.join()) fail(`variants[${i}] phải có đúng các khóa: ${names.join(', ')}`);
       return out;
     });
+    const seenVariant = t.variants.map((v) => names.map((n) => v[n]).join('\u0000'));
+    seenVariant.forEach((s, i) => {
+      const j = seenVariant.indexOf(s);
+      if (j < i) fail(`variants[${i}] trùng variants[${j}]`);
+    });
   } else if (names.length) {
     fail(`dùng {{${names[0]}}} nhưng không có variants`);
   }
