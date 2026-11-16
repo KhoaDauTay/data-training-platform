@@ -40,6 +40,16 @@
       <div id="inbox-list" class="max-h-[60dvh] overflow-auto"></div>
       <form method="dialog" class="mt-3 flex justify-end"><button data-i18n="app.close">Đóng</button></form>
     </dialog>
+    <div id="stage" class="pointer-events-none fixed inset-x-4 bottom-4 z-40 sm:left-auto sm:w-[560px]" hidden>
+      <div class="overflow-hidden rounded-2xl bg-panel shadow-xl ring-1 ring-line">
+        <div id="stage-art" class="relative" aria-hidden="true"></div>
+        <div class="flex items-center gap-3 border-t border-line px-4 py-2">
+          <p id="stage-text" class="m-0 flex-1 text-sm"></p>
+          <button id="stage-skip" type="button" class="pointer-events-auto shrink-0 px-3 py-1 text-sm"></button>
+        </div>
+      </div>
+    </div>
+    <p id="announce" class="sr-only" aria-live="polite"></p>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>
