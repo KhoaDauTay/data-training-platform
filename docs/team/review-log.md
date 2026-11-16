@@ -144,4 +144,4 @@ Vòng 1/3 (2026-11-17): `code-review` (Standards + Spec) + cổng Edge (save v1�
 | docs | Spec §6b còn mô tả Inbox có Luyện tập/Sandbox, topbar `n/69`, màn Tổng kết chương, vị trí Sổ tay (P2/P3/P6 đã thay); E2 key `'sandbox'` (L16); CLAUDE.md chưa nói `#notebook-btn`, `session.mode` chỉ trong bộ nhớ, draft Practice không lưu; P1–P11 chưa có số L | cả hai | Đã sửa d27b011 (P1–P11 đã vào L37) |
 | verification | Chưa chạy round-trip Xuất→Nhập trên trình duyệt; chưa quét "boss/sự cố" màn mới | Spec | Mở — orchestrator |
 
-Sửa vòng 1: commits 9dacae2 (hàng ôn, thống kê, dải tiến độ, hết phiên, ngày, smells, test), 579fc8d (Sổ tay), d27b011 (spec §6b/E2, CLAUDE.md). `tsc` + 450 test + build qua.
+Sửa vòng 1: commits 9dacae2 (hàng ôn, thống kê, dải tiến độ, hết phiên, ngày, smells, test), 579fc8d (Sổ tay), d27b011 (spec §6b/E2, CLAUDE.md), cb484b8 (bài ôn hòa điểm xoay theo ngày; nav Luyện tập khi hết lượt), 8b99b95 (spec: bỏ màn Tổng kết chương, dialog skill map). `tsc` + 451 test + build qua.
