@@ -1,3 +1,5 @@
+import { locale } from '../i18n';
+
 type Child = Node | string | null | undefined | false;
 type Attr = string | boolean | ((e: Event) => void);
 
@@ -36,3 +38,11 @@ export function richText(text: string): HTMLElement {
 }
 
 export const byId = (id: string): HTMLElement => document.getElementById(id)!;
+
+/** `<animateMotion>` ignores the CSS reduced-motion rule in style.css, so SVG animations check this. */
+export function reducedMotion(): boolean {
+  return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+}
+
+/** Number in the current UI language: 25.677 (vi) / 25,677 (en). */
+export const fmt = (n: number, digits = 2): string => n.toLocaleString(locale(), { maximumFractionDigits: digits });

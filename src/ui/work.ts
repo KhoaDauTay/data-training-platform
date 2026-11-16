@@ -60,11 +60,13 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
 
   const editorHost = h('div', { class: 'editor overflow-hidden rounded-xl ring-1 ring-line' });
   const runBtn = h('button', { type: 'button', onclick: () => void run() });
+  // EXPLAIN always describes what was just run: run the editor SQL first, then open the tab.
+  const explainBtn = h('button', { type: 'button', onclick: () => void run().then(() => deps.panel.show('explain')) }, t('tab.explain'));
   const formatBtn = h('button', { type: 'button', onclick: () => void format() });
   const submitBtn = h('button', { type: 'button', class: BTN_SUBMIT, onclick: () => void submit() });
   const feedback = h('div', { role: 'status' });
   const historyBox = h('details', { class: 'mt-2 text-sm' });
-  host.replaceChildren(editorHost, h('div', { class: 'max-sm:sticky max-sm:bottom-0 max-sm:z-10 max-sm:bg-panel' }, h('div', { class: 'actions' }, runBtn, formatBtn, submitBtn)), feedback, historyBox);
+  host.replaceChildren(editorHost, h('div', { class: 'max-sm:sticky max-sm:bottom-0 max-sm:z-10 max-sm:bg-panel' }, h('div', { class: 'actions' }, runBtn, explainBtn, formatBtn, submitBtn)), feedback, historyBox);
 
   // The buttons advertise Mod+Enter / Mod+Shift+Enter: honour them when focus is outside the editor too
   // (on a button after a click, the brief heading after picking a ticket). Inside the editor CodeMirror's
