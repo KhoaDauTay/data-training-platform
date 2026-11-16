@@ -262,4 +262,11 @@ export const en: Record<Key, Msg> = {
   'chart.valueCol': 'Value column: ',
   'chart.barAria': 'Bar chart of {col}',
   'chart.lineAria': 'Line chart of {col}',
+  'tab.erd': 'ER diagram',
+  'erd.drawing': 'Drawing the diagram…',
+  'erd.intro': "Crow's foot notation:",
+  'erd.one': 'exactly one',
+  'erd.zeroOne': 'zero or one',
+  'erd.many': 'zero or many',
+  'erd.bold': 'Tables with a bold border are used in the query.',
 };
