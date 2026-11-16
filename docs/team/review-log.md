@@ -49,3 +49,27 @@ Vòng 2/3 (2026-11-16, chỉ diff a98207e…16d38b1): xác nhận các bản s�
 | test-gap | Chưa test di chuyển focus của coach (`FOCUS_NEXT`) và focus `.recap h3` | Mở |
 | correctness | Lúc boss đang ở câu kết luận, focus trên nút rồi bấm Mod+Shift+Enter → nộp lại bước cuối, dựng lại form kết luận (mất focus) | Mở (nhẹ) |
 | correctness | Kiểm biến thể khác nhau từng đôi so sánh dạng chuỗi → `1` và `'1'` bị coi là trùng | Mở (edge case) |
+
+## Plan 1d (base 5313baa)
+
+Vòng 1/3 (2026-11-17): `code-review` (Standards + Spec) + cổng trình duyệt Edge (Trang chủ, khu làm bài, nộp ch1-03 → hoạt cảnh bãi, không lỗi console). Không vi phạm cứng về innerHTML/storage/pin/L22. 15 ticket khớp problem-design §3.
+
+| Loại | Bug | Nguồn | Trạng thái |
+|---|---|---|---|
+| correctness | `stage.ts:409` Esc không bỏ qua `defaultPrevented` → Esc đóng autocomplete cũng bỏ qua/ẩn hoạt cảnh | Standards | Đã sửa 0ebf933 |
+| correctness | `homeView.ts:240` `kpiResult` dùng `tk.steps[step]` không kiểm → kpis.yml sai làm `rerender()` throw | Standards | Đã sửa 0ebf933 (`kpiTiles` bỏ ô trỏ tới bước không có) |
+| ux | Sau khi Nộp, panel dưới không chuyển sang tab Kết quả (vẫn ở "Cột") | trình duyệt | Đã sửa 0ebf933 |
+| ux | Card chương "Sắp có" ghi "qua đánh giá chương n-1" dù đã qua / chương chưa có ticket (L21) | Spec | Đã sửa 0ebf933 |
+| ux | Chữ trong SVG cảnh Tiên Sa/bản đồ tuyến co còn ~4–5px ở 375px (L23) | Spec | Đã sửa 0ebf933 (ẩn mọi chữ SVG dưới `sm`; Trang chủ hiện tiêu đề cảng, 2 dòng trạng thái và danh sách tuyến bằng HTML; chưa kiểm trên trình duyệt) |
+| a11y | `stage.ts:398` `hide()` ẩn nút Bỏ qua khi nó đang có focus → focus rơi về body | Standards | Đã sửa 0ebf933 |
+| a11y | Card chương khóa `<article tabindex="0">` không tương tác → thêm ~9 điểm Tab | Standards | Đã sửa 0ebf933 (gợi ý luôn hiện) |
+| i18n | `#stage-skip`/`#stage-text` không relabel khi đổi ngôn ngữ (dock reduced-motion còn mở) | Standards | Đã sửa 0ebf933 |
+| content | `people.yml` thiếu trường bảng dữ liệu phụ trách (L18, spec §5) | Spec | Đã sửa 0ebf933 (chỉ hiện bảng đã mở) |
+| test-gap | Chưa test `stage.ts` (thay run, bỏ qua, reduced-motion, Esc), `router.ts`, `registerNav` | Standards | Đã sửa ba01594 (`stageEsc`, `upsert`; `route.ts` đã có test, `startRouter`/hoạt cảnh cần DOM nên không test) |
+| test-gap | Test L22 chỉ quét vi/en dạng chuỗi, không quét content YAML; CLAUDE.md nói test chặn tên bảng/SQL trong đề nhưng test chỉ chặn backtick | Spec | Đã sửa ba01594 + 6770add |
+| docs | CLAUDE.md chưa áp Task 19 Step 1 (stage/scene/harbor/routeMap/svg/people/kpis, `scene:`, chapters.yml career/tier/story); "celebrate là hoạt cảnh duy nhất", "CSS thuần chỉ cho splitter…" sai | cả hai | Đã sửa 6770add |
+| smells | `registerNav` lặp `upsert`; `bilingual` + `Label` lặp `Bilingual`; 4 map theo chuỗi phòng ban; `personOf(...)?.role[lang]` lặp 3 chỗ; `c.harbor!` vs guard; `sentence()` tính tổng chương | Standards | Sửa một phần 0ebf933 (`upsert`, `Bilingual`, bảng `DEPT`, `roleLine`; bỏ qua `c.harbor!` và `sentence()`: không lỗi, diff thêm không đáng) |
+| scope | Test import `src/ui/coach`, refactor `pageShortcutOf` (đóng bug vòng 2) | Spec | Chấp nhận — đóng bug đã ghi |
+| product | Đánh giá chương 2 không mở tuyến mới (Rotterdam đã mở bởi ch1-05) | Spec | Chấp nhận — L34 |
+
+Sửa vòng 1: commits 0ebf933 (fix), ba01594 (test), 6770add (docs).
