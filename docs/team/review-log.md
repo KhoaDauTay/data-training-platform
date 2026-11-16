@@ -87,3 +87,28 @@ Vòng 2/3 (2026-11-17, chỉ diff 60c5257..6770add): các bản sửa vòng 1 đ
 Sửa vòng 2: commits 78fda81 (fix), d29d21a (test).
 
 Kiểm trên Edge sau vòng 2 (2026-11-17): xong ch1-04 (bãi, tab Kết quả mở, đổi EN khi dock mở → chữ đổi), ch1-05 3 bước + kết luận → lên Junior DA, mở chương 2, tuyến Rotterdam (tàu) + Singapore (thăng tiến) trên Trang chủ; không lỗi console. Chưa nhìn thấy trực tiếp hoạt cảnh tàu/thăng tiến (đã chạy xong trước khi chụp). Sửa thêm: nhãn HẢI QUAN tràn chốt (2235772), câu "chốt kết luận" còn sau khi đã nộp + câu "rê chuột" cũ ở Trang chủ (a381066). **Plan 1d đóng sau 2 vòng** (vòng 3 không cần).
+
+## Plan 1b (base bdfa998)
+
+Vòng 1/3 (2026-11-17): `code-review` (Standards + Spec) + cổng trình duyệt Edge (6 tab với query GROUP BY, không lỗi console; ERD dựng dọc 2134px → sửa `direction LR` ở 7f33842). Sandbox EXPLAIN ANALYZE giữ được (BEGIN/ROLLBACK, qua hàng đợi + timeout).
+
+| Loại | Bug | Nguồn | Trạng thái |
+|---|---|---|---|
+| correctness | `parser.ts` `ready ??=` giữ promise lỗi → một lần tải wasm hỏng làm tab Thứ tự thực thi hỏng tới khi restart worker | Standards | Mở |
+| correctness | Lỗi worker không phải Postgres (fetch wasm, import chunk) thành `SqlError` → hiện "Failed to fetch" như lỗi SQL | Standards | Mở |
+| correctness | Tải wasm parser lần đầu (1,7 MB) tính vào timeout 15s của `steps` → mạng chậm làm kill + seed lại worker | Spec | Mở |
+| correctness | Nút EXPLAIN không bị khóa khi đang chạy; `run().then(show('explain'))` vẫn chuyển tab khi đổi ticket/đang bận | cả hai | Mở |
+| correctness | Biểu đồ: `Math.max(1, …)` ép giá trị 0–1 (tỉ lệ) xuống đáy | cả hai | Mở |
+| correctness | `steps.ts` phát hiện window bằng `includes('"over"')` → `SELECT 'over'` bị coi là window | Standards | Mở (edge) |
+| security | `erDefinition` chèn tên bảng/cột thô vào Mermaid; an toàn với `public`, sẽ vỡ với schema `sandbox` (header CSV) | Standards | Mở — sửa trước Plan Import |
+| ux | Tab ER trống khi DB đang boot (chưa có dòng "Đang vẽ…"); lỗi ER không qua `errorView()` | cả hai | Mở |
+| ux | Theme Mermaid cố định lúc mở tab đầu, không theo đổi theme OS | cả hai | Mở |
+| ux | Dải tiến độ dùng `currentChapter`, mở lại ticket chương cũ không có chấm "đang làm" | Spec | Mở |
+| ux | Bảng dùng trong query chỉ viền đậm, spec ghi "tô màu" | Spec | Mở — L36 |
+| i18n | Nhãn nút EXPLAIN không đổi khi đổi ngôn ngữ | Standards | Mở |
+| i18n | `STEP_HELP`/`NODE_HELP` là chữ UI không qua `t()`; CLAUDE.md tự mâu thuẫn ("viz không có chữ dịch") | Standards | Mở |
+| i18n | `viz.rows`, `explain.estimate`, `unit()` hiện số thô, cạnh đó dùng `fmt()` | Standards | Mở |
+| a11y | SVG Mermaid không có tên truy cập; chấm bước hiện tại chỉ bằng màu (thiếu `aria-current`); `#map` vẫn gắn nhãn "Bản đồ tuyến", `role=img` nuốt "Chương n" | cả hai | Mở |
+| test-gap | `DbClient.request` (kind gửi worker, timeout theo job, steps ×3); `ensureParser` thử lại; `erDefinition` với tên cần escape; `"over"`; relabel nút EXPLAIN; biểu đồ giá trị âm/<1 | cả hai | Mở |
+| smells | `reducedMotion()` lặp `stage.ts`; `lastRunSql` lặp dải stale; `vizTabs` tự viết lại `selected()`; `STEP_LABELS` vi=en; `kind='run'` mặc định thừa; `syncMap` data clump; `db/client.ts` import type từ `viz`; chỉ số ma `i === 2/3` trong `stepsView` | Standards | Mở (judgement) |
+| docs | Spec §6b còn chấm "mới" EXPLAIN ở ch3-01 và công tắc "Giảm chuyển động" (trái L35); `er.layoutDirection` thừa sau 7f33842; chú thích `fmt` sai với số lẻ | cả hai | Mở |
