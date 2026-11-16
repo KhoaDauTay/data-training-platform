@@ -193,6 +193,7 @@ export const vi = {
   'err.restart': 'Database vừa khởi động lại nên query bị hủy. Chạy lại.',
   'err.dbFailed': 'Không khởi tạo được database.',
   'err.unknown': 'Lỗi không rõ.',
+  'err.task': 'Không tải được phần cần cho chức năng này (mạng chậm hoặc mất kết nối). Mở lại tab để thử lại.',
   'sqlerr.42703': 'Cột không tồn tại. Kiểm tra tên cột ở tab Cột. Chuỗi viết trong nháy đơn: \'Europe\'.',
   'sqlerr.42P01': 'Bảng không tồn tại hoặc chưa mở ở chương này. Xem tab Cột.',
   'sqlerr.42803': 'Cột trong SELECT phải nằm trong GROUP BY hoặc trong một hàm gộp (COUNT, SUM…).',

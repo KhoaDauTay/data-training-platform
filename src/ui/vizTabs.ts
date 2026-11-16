@@ -5,6 +5,7 @@ import { chapterColor } from '../theme';
 import { erDefinition, loadErMetadata, tablesInQuery } from '../viz/erd';
 import { memoByKey } from '../viz/memo';
 import { flattenPlan, type Plan } from '../viz/plan';
+import type { StepsResult } from '../viz/steps';
 import { renderChart } from './chartView';
 import { h } from './dom';
 import { renderErd } from './erdView';
@@ -59,7 +60,8 @@ function registerPlanTabs(deps: VizDeps): void {
 
 function registerStepsTab(deps: VizDeps): void {
   // Same idea as planFor: re-rendering (language switch, tab switch) never re-runs the sub-queries.
-  const stepsFor = memoByKey((sql) => deps.db.steps(sql));
+  // The parser download gets its own long budget first, so it never counts toward the steps timeout (L36).
+  const stepsFor = memoByKey((sql) => deps.db.loadParser().then(() => deps.db.steps<StepsResult>(sql)));
   registerTab({
     id: 'steps',
     label: 'tab.steps',

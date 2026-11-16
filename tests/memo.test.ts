@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { memoByKey } from '../src/viz/memo';
+import { memoByKey, once } from '../src/viz/memo';
 
 describe('memoByKey', () => {
   it('cùng key chỉ gọi load một lần', async () => {
@@ -30,5 +30,19 @@ describe('memoByKey', () => {
     await f('c');
     await f('a');
     expect(calls).toBe(4);
+  });
+});
+
+describe('once (ensureParser dùng cái này)', () => {
+  it('tải hỏng thì lần sau thử lại; tải được rồi thì không tải nữa', async () => {
+    let calls = 0;
+    const load = once(async () => {
+      calls++;
+      if (calls === 1) throw new Error('Failed to fetch');
+    });
+    await expect(load()).rejects.toThrow('Failed to fetch');
+    await expect(load()).resolves.toBeUndefined();
+    await load();
+    expect(calls).toBe(2);
   });
 });

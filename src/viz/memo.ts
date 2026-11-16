@@ -18,3 +18,9 @@ export function memoByKey<T>(load: (key: string) => Promise<T>, max = MEMO_MAX):
     return p;
   };
 }
+
+/** One shared promise for a key-less load (a wasm module, a lazy chunk); a failure is dropped so the next call retries. */
+export function once<T>(load: () => Promise<T>): () => Promise<T> {
+  const memo = memoByKey(() => load(), 1);
+  return () => memo('');
+}
