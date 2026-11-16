@@ -2,7 +2,7 @@ import './style.css';
 import { loadTickets } from './content';
 import { DbClient, type DbStatus } from './db/client';
 import { applyStatic, setLang, type Lang } from './i18n';
-import { contentProblems, nextTicket, SKILLS, xpFor } from './progress';
+import { contentProblems, currentChapter, nextTicket, SKILLS, xpFor } from './progress';
 import { loadSave, parseSave, serializeSave, type Known } from './save';
 import { actions, app, done, editorSchema, persist, selected, type Column } from './state';
 import { localStore } from './storage';
@@ -20,6 +20,8 @@ import { go, startRouter } from './ui/router';
 import { renderTopbar } from './ui/topbar';
 import { mountWork } from './ui/work';
 import { registerVizTabs } from './ui/vizTabs';
+import { createMapStrip } from './ui/mapStrip';
+import { chapterDots } from './viz/progressDots';
 
 app.tickets = loadTickets();
 const problems = contentProblems(app.tickets);
@@ -81,6 +83,14 @@ const work = mountWork(byId('work'), {
   onRun: () => rerender(),
 });
 
+// Progress dots and lane count need no query: the strip is drawn before the DB is ready.
+const mapStrip = createMapStrip(byId('map'));
+function syncMap(): void {
+  const completed = done();
+  const chapter = currentChapter(app.tickets, completed);
+  mapStrip.update({ chapter, completed, tickets: app.tickets, dots: chapterDots(app.tickets, completed, app.selectedId, chapter) });
+}
+
 /** Language switch and progress changes: redraws text, never remounts the editor. */
 function rerender(): void {
   renderTopbar();
@@ -89,6 +99,7 @@ function rerender(): void {
   renderBrief(byId('ticket'), selected(), app.stepIndex);
   work.relabel();
   relabelStage();
+  if (!byId('map').hidden) syncMap(); // like Home: the hidden strip is redrawn by showRoute()
 }
 
 /** `force`: rebuild the editor even for the same ticket id (an imported save brings its own draft). */
@@ -114,6 +125,7 @@ function nextStep(): void {
 function showRoute(r: Route, initial: boolean): void {
   byId('home').hidden = r !== 'home';
   byId('shell').hidden = r !== 'play';
+  byId('map').hidden = r !== 'play'; // Home has the route map itself
   if (r !== 'home') leftHome(); // Home marks containers added after this moment as "New"
   rerender(); // nav aria-current, Home numbers
   if (!initial) byId(r === 'home' ? 'home-title' : 'brief-title').focus();

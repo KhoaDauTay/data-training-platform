@@ -266,4 +266,11 @@ export const vi = {
   'erd.zeroOne': 'không hoặc một',
   'erd.many': 'không hoặc nhiều',
   'erd.bold': 'Bảng viền đậm đang được dùng trong query.',
+  'map.chapter': 'Chương {n}',
+  'map.progress': 'Tiến độ chương: xong {done}/{total} việc',
+  'map.lanes': 'Tuyến đã mở {n}/{total}',
+  'map.toHome': 'Xem bản đồ',
+  'map.beat.done': 'đã xong',
+  'map.beat.current': 'đang làm',
+  'map.beat.todo': 'chưa làm',
 } satisfies Record<string, Msg>;

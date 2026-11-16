@@ -269,4 +269,11 @@ export const en: Record<Key, Msg> = {
   'erd.zeroOne': 'zero or one',
   'erd.many': 'zero or many',
   'erd.bold': 'Tables with a bold border are used in the query.',
+  'map.chapter': 'Ch. {n}',
+  'map.progress': (p) => `Chapter progress: ${num(p.done)}/${count('task', 'tasks')({ n: p.total })} done`,
+  'map.lanes': 'Lanes open {n}/{total}',
+  'map.toHome': 'See the map',
+  'map.beat.done': 'done',
+  'map.beat.current': 'in progress',
+  'map.beat.todo': 'to do',
 };
