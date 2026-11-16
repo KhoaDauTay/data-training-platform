@@ -8,6 +8,7 @@ import { avatar } from './avatar';
 import { byId, h, nodes } from './dom';
 import { bayBox, CRANE, drawYard, harborScene, MAX_TIERS, type HarborParts } from './harbor';
 import { paintRoutes, routeMap, type MapParts } from './routeMap';
+import { stageEsc } from './shortcuts';
 import { s } from './svg';
 
 /** One completion animation. `fast`: skipped or reduced motion, so every tween draws its end state at once. */
@@ -28,6 +29,10 @@ interface Ctx {
 let current: Run = { fast: true, done: true };
 let queue: Promise<void> = Promise.resolve();
 let hideTimer = 0;
+/** The completion on screen, so relabelStage() can rebuild its sentence in the new language. */
+let shown: Ctx | undefined;
+/** Where focus came from when it entered the stage (the Skip button): hide() hands it back there. */
+let returnFocus: HTMLElement | null = null;
 
 const reduced = (): boolean => matchMedia('(prefers-reduced-motion: reduce)').matches;
 const easeInOut = (x: number): number => (x < 0.5 ? 2 * x * x : 1 - (-2 * x + 2) ** 2 / 2);
@@ -395,19 +400,42 @@ function build(c: Ctx): void {
   c.art.replaceChildren(...nodes(c.harbor?.svg, c.map?.svg));
 }
 
-const hide = (): void => {
-  byId('stage').hidden = true;
-};
+function hide(): void {
+  const stage = byId('stage');
+  const had = stage.contains(document.activeElement);
+  stage.hidden = true;
+  shown = undefined;
+  if (!had) return;
+  // The first candidate that really takes focus (a removed or hidden one does not): where focus came from, the editor, the page heading.
+  for (const el of [returnFocus, byId('work').querySelector<HTMLElement>('.cm-content'), document.getElementById('brief-title'), document.getElementById('home-title')]) {
+    el?.focus();
+    if (el && document.activeElement === el) return;
+  }
+}
+function setSkipLabel(key: Key): void {
+  const b = byId('stage-skip');
+  b.dataset.i18n = key; // applyStatic() relabels it on a language switch
+  b.textContent = t(key);
+}
+/** rerender() calls this: the open dock's sentence follows the language switch (the Skip/Close label follows data-i18n). */
+export function relabelStage(): void {
+  if (shown && !byId('stage').hidden) byId('stage-text').textContent = sentence(shown);
+}
 function skip(): void {
   if (!current.done) current.fast = true; // jump to the end state; the sentence was already announced
   else hide();
 }
 
-/** Skip button and Esc (when no dialog is open: Esc closes the inbox there). */
+/** Skip button and Esc (see stageEsc). */
 export function initStage(): void {
+  const stage = byId('stage');
   byId('stage-skip').addEventListener('click', skip);
+  stage.addEventListener('focusin', (e) => {
+    const from = e.relatedTarget;
+    if (from instanceof HTMLElement && !stage.contains(from)) returnFocus = from;
+  });
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && !byId('stage').hidden && !document.querySelector('dialog[open]')) skip();
+    if (stageEsc(e, !stage.hidden, Boolean(document.querySelector('dialog[open]')))) skip();
   });
 }
 
@@ -432,8 +460,9 @@ export function playCompletion(tk: Ticket, before: Set<string>, after: Set<strin
       if (current !== run) return; // a newer completion already replaced this one
       window.clearTimeout(hideTimer);
       build(c);
+      shown = c;
       byId('stage-text').textContent = text;
-      byId('stage-skip').textContent = t(run.fast ? 'app.close' : 'anim.skip');
+      setSkipLabel(run.fast ? 'app.close' : 'anim.skip');
       byId('stage').hidden = false;
       try {
         await PLAY[c.scene.kind](c);
@@ -441,7 +470,7 @@ export function playCompletion(tk: Ticket, before: Set<string>, after: Set<strin
         run.done = true;
       }
       if (current !== run) return;
-      byId('stage-skip').textContent = t('app.close');
+      setSkipLabel('app.close');
       if (!reduced()) hideTimer = window.setTimeout(hide, 4000);
     })
     .catch((e: unknown) => console.warn('Completion animation failed:', e));

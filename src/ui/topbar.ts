@@ -1,5 +1,6 @@
 import { getLang, t, type Key } from '../i18n';
 import { chapterTitle, CHAPTERS, currentChapter, rankOf } from '../progress';
+import { upsert } from '../registry';
 import { hashOf, type Route } from '../route';
 import { actions, app, done } from '../state';
 import { NAV_LINK, TOP_BTN } from '../theme';
@@ -20,12 +21,7 @@ export interface NavItem {
 }
 const NAV: NavItem[] = [];
 /** Same id replaces the old entry; kept sorted by order. */
-export function registerNav(item: NavItem): void {
-  const i = NAV.findIndex((x) => x.id === item.id);
-  if (i >= 0) NAV.splice(i, 1);
-  NAV.push(item);
-  NAV.sort((a, b) => a.order - b.order);
-}
+export const registerNav = (item: NavItem): void => upsert(NAV, item);
 registerNav({ id: 'home', order: 10, label: 'nav.home', href: hashOf('home'), current: (r) => r === 'home' });
 registerNav({ id: 'play', order: 20, label: 'nav.play', href: hashOf('play'), current: (r) => r === 'play' });
 

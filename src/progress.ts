@@ -13,6 +13,13 @@ export interface Chapter { chapter: number; title: Bilingual; career: Bilingual;
 
 const str = (v: unknown): string => (typeof v === 'string' ? v.trim() : '');
 const strings = (v: unknown): string[] => (Array.isArray(v) ? v.map(String) : []);
+/** Strict { vi, en }: both non-empty strings (trimmed), else undefined. people.yml and ticket `columns:` require it. */
+export function bilingualOf(v: unknown): Bilingual | undefined {
+  const o = v as Partial<Record<keyof Bilingual, unknown>> | null;
+  if (!o || typeof o !== 'object' || Array.isArray(o) || typeof o.vi !== 'string' || typeof o.en !== 'string') return undefined;
+  const b = { vi: o.vi.trim(), en: o.en.trim() };
+  return b.vi && b.en ? b : undefined;
+}
 const bilingual = (v: unknown): Bilingual => {
   const o = (v ?? {}) as Record<string, unknown>;
   return { vi: str(o.vi), en: str(o.en) };

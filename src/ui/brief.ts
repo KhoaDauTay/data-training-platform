@@ -1,9 +1,9 @@
 import { getLang, t, type Key } from '../i18n';
-import { personOf } from '../people';
+import { roleLine } from '../people';
 import { CHAPTERS, nextTicket, SKILLS, xpFor } from '../progress';
 import { compareShape, shapeOf, type Kind, type Shape } from '../shape';
-import { actions, app, done, expectedShape, persist, stepKey } from '../state';
-import { chapterColor, cx, DEPT_CHIP, deptColor, PILL } from '../theme';
+import { actions, app, done, expectedShape, persist, stepKey, unlockedTables } from '../state';
+import { chapterColor, cx, DEPT_CHIP, deptColor, deptOf, PILL } from '../theme';
 import { textOf, type Beat, type Ticket, type TicketText } from '../tickets';
 import { avatar } from './avatar';
 import { coach } from './coach';
@@ -90,18 +90,13 @@ function story(tk: Ticket): HTMLElement | null {
       h('p', { class: 'm-0' }, c.story[getLang()])));
 }
 
-const THANKS: Record<string, Key> = {
-  Management: 'chat.thanksManagement', Ops: 'chat.thanksOps', Sales: 'chat.thanksSales', Customs: 'chat.thanksCustoms',
-  Finance: 'chat.thanksFinance', CS: 'chat.thanksCS', IT: 'chat.thanksIT',
-};
-
 /** After a correct answer: your reply, then the sender's thank-you (L18 ★1). */
 function sentBubbles(tk: Ticket): HTMLElement {
   return h('div', { class: 'my-3 flex flex-col gap-2' },
     h('p', { class: 'm-0 max-w-[85%] self-end rounded-2xl rounded-tr-sm bg-accent-soft px-4 py-2' }, t('chat.sent')),
     h('p', { class: 'm-0 flex max-w-[85%] items-start gap-2 self-start' },
       avatar(tk.from),
-      h('span', { class: 'rounded-2xl rounded-tl-sm bg-code px-4 py-2' }, t(THANKS[tk.from.dept] ?? 'chat.thanksOps'))));
+      h('span', { class: 'rounded-2xl rounded-tl-sm bg-code px-4 py-2' }, t(deptOf(tk.from.dept).thanks))));
 }
 
 /** The SQL that passed the grader; saves from before `graded` existed fall back to the draft. */
@@ -142,7 +137,7 @@ export function renderBrief(host: HTMLElement, tk: Ticket, stepIndex: number): v
         h('p', { class: 'm-0 min-w-0' },
           h('span', { class: 'flex flex-wrap items-center gap-2 font-semibold' },
             tk.from.name, h('span', { class: cx(DEPT_CHIP, deptColor(tk.from.dept)) }, tk.from.dept)),
-          h('span', { class: 'block text-sm text-muted' }, personOf(tk.from.name)?.role[getLang()] ?? ''))),
+          h('span', { class: 'block text-sm text-muted' }, roleLine(tk.from.name, getLang(), unlockedTables())))),
       h('p', { class: 'm-0 flex flex-wrap items-center gap-2 text-sm text-muted' },
         `${t('brief.chapter', { n: tk.chapter })} · ${'★'.repeat(tk.difficulty)}`,
         h('span', { class: cx(PILL, chapterColor(tk.chapter).chip) }, t(BEAT[tk.beat])),

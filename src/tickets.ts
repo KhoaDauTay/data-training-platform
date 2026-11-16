@@ -1,16 +1,16 @@
 import { parse as parseYaml } from 'yaml';
+import { bilingualOf, type Bilingual } from './progress';
 import { parseScene, type Scene } from './scene';
 
 export type Lang = 'vi' | 'en';
 export type Beat = 'teach' | 'develop' | 'twist' | 'rest' | 'boss';
 /** Expected-result column label (L25): business meaning in both languages, never the Solution's column name. */
-export interface Label { vi: string; en: string }
 export interface Step {
   title: string;
   prompt: string;
   solution: string;
   /** Expected result column labels from `columns:` (shape card only; the grader compares by position). */
-  columns?: Label[];
+  columns?: Bilingual[];
 }
 export interface Conclusion { question: string; options: string[]; answer: number }
 /** Player-facing text in one language. `steps` runs parallel to Ticket.steps. */
@@ -150,16 +150,12 @@ export function parseTicket(source: string, origin: string): Ticket {
 
   if (fm.columns !== undefined) {
     // Normal ticket: one list of labels. Boss: one list per step. Each label is { vi, en } (L25).
-    const isLabel = (c: unknown): c is Label => {
-      const o = c as Partial<Label> | null;
-      return !!o && typeof o === 'object' && !Array.isArray(o)
-        && typeof o.vi === 'string' && o.vi.trim() !== '' && typeof o.en === 'string' && o.en.trim() !== '';
-    };
     const lists = t.beat === 'boss' ? fm.columns : [fm.columns];
-    const ok = Array.isArray(lists) && lists.length === t.steps.length
-      && lists.every((l) => Array.isArray(l) && l.length > 0 && l.every(isLabel));
-    if (!ok) fail('columns: mỗi nhãn là { vi, en }; ticket thường một danh sách, cột mốc một danh sách cho mỗi bước');
-    (lists as Label[][]).forEach((l, i) => (t.steps[i].columns = l.map((x) => ({ vi: x.vi.trim(), en: x.en.trim() }))));
+    const parsed = Array.isArray(lists) && lists.length === t.steps.length
+      ? lists.map((l) => (Array.isArray(l) && l.length > 0 ? l.map(bilingualOf) : [undefined]))
+      : [[undefined]];
+    if (parsed.some((l) => l.some((x) => !x))) fail('columns: mỗi nhãn là { vi, en }; ticket thường một danh sách, cột mốc một danh sách cho mỗi bước');
+    parsed.forEach((l, i) => (t.steps[i].columns = l as Bilingual[]));
   }
 
   if (fm.starter !== undefined) {

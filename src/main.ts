@@ -12,7 +12,7 @@ import { renderBrief } from './ui/brief';
 import { byId, h } from './ui/dom';
 import { errorText } from './ui/feedback';
 import { leftHome, renderHome } from './ui/homeView';
-import { initStage, playCompletion } from './ui/stage';
+import { initStage, playCompletion, relabelStage } from './ui/stage';
 import { renderInbox } from './ui/inbox';
 import { createPanel, registerCoreTabs } from './ui/tabs';
 import { initLayout } from './ui/splitter';
@@ -85,6 +85,7 @@ function rerender(): void {
   if (!byId('home').hidden) renderHome(byId('home')); // hidden Home is redrawn by showRoute(); Run/Submit in the workspace never rebuild it
   renderBrief(byId('ticket'), selected(), app.stepIndex);
   work.relabel();
+  relabelStage();
 }
 
 /** `force`: rebuild the editor even for the same ticket id (an imported save brings its own draft). */

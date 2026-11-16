@@ -1,14 +1,9 @@
 import { personOf, type Look } from '../people';
-import { cx } from '../theme';
+import { cx, deptOf } from '../theme';
 import { s } from './svg';
 
 const SKIN: Record<Look['skin'], string> = { light: '#f5d0b0', medium: '#e0a878', tan: '#c08050', deep: '#8a5a3c' };
 const HAIR: Record<Look['hair'], string> = { black: '#1f1b18', brown: '#6b4226', grey: '#a3a3a3' };
-/** Shirt and backdrop per department. Decorative: the department chip next to the portrait carries the meaning. */
-const DEPT: Record<string, [shirt: string, backdrop: string]> = {
-  Management: ['#5b21b6', '#ede9fe'], Ops: ['#1d4ed8', '#dbeafe'], Sales: ['#be185d', '#fce7f3'],
-  Customs: ['#b45309', '#fef3c7'], Finance: ['#047857', '#d1fae5'], CS: ['#0f766e', '#ccfbf1'], IT: ['#0e7490', '#cffafe'],
-};
 const SIZE = { sm: 'size-7', md: 'size-10', lg: 'size-12' } as const;
 const DEFAULT: Look = { skin: 'medium', hair: 'black', style: 'short', accessory: 'none' };
 const INK = '#1f2937';
@@ -62,7 +57,7 @@ function accessory(l: Look): SVGElement[] {
  */
 export function avatar(from: { name: string; dept: string }, size: keyof typeof SIZE = 'sm'): SVGSVGElement {
   const look = personOf(from.name)?.look ?? DEFAULT;
-  const [shirt, backdrop] = DEPT[from.dept] ?? ['#475569', '#e2e8f0'];
+  const { shirt, backdrop } = deptOf(from.dept); // decorative: the department chip next to the portrait carries the meaning
   const skin = SKIN[look.skin];
   return s('svg', { viewBox: '0 0 48 48', class: cx('shrink-0 rounded-full', SIZE[size]), 'aria-hidden': 'true', focusable: 'false' },
     s('rect', { width: 48, height: 48, fill: backdrop }),

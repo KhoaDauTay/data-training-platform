@@ -3,6 +3,7 @@
  * class from pieces (bg- + colour + -500): pick from these maps and join whole names with cx().
  * WCAG AA (>= 4.5:1): chips are -800 on -100 (light) and -200 on -950 (dark); white text only on -700 or darker.
  */
+import type { Key } from './i18n';
 export const cx = (...parts: (string | false | null | undefined)[]): string => parts.filter(Boolean).join(' ');
 
 export interface ChapterColor {
@@ -40,18 +41,23 @@ const NEUTRAL_CHAPTER: ChapterColor = {
 };
 export const chapterColor = (n: number): ChapterColor => CHAPTER_COLOR[n] ?? NEUTRAL_CHAPTER;
 
-/** Department label colours. Department names are never translated, so the key is the raw `from.dept`. */
-export const DEPT_COLOR: Record<string, string> = {
-  Ops: 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-200',
-  Sales: 'bg-pink-100 text-pink-800 dark:bg-pink-950 dark:text-pink-200',
-  Finance: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200',
-  Customs: 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-200',
-  CS: 'bg-teal-100 text-teal-800 dark:bg-teal-950 dark:text-teal-200',
-  Management: 'bg-violet-100 text-violet-800 dark:bg-violet-950 dark:text-violet-200',
-  IT: 'bg-cyan-100 text-cyan-800 dark:bg-cyan-950 dark:text-cyan-200',
+/**
+ * Everything keyed by department. Department names are never translated, so the key is the raw `from.dept`.
+ * chip: label colours · shirt/backdrop: portrait colours (decorative, avatar.ts) · thanks: the sender's thank-you (brief.ts).
+ */
+export interface Dept { chip: string; shirt: string; backdrop: string; thanks: Key }
+export const DEPT: Record<string, Dept> = {
+  Ops: { chip: 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-200', shirt: '#1d4ed8', backdrop: '#dbeafe', thanks: 'chat.thanksOps' },
+  Sales: { chip: 'bg-pink-100 text-pink-800 dark:bg-pink-950 dark:text-pink-200', shirt: '#be185d', backdrop: '#fce7f3', thanks: 'chat.thanksSales' },
+  Finance: { chip: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200', shirt: '#047857', backdrop: '#d1fae5', thanks: 'chat.thanksFinance' },
+  Customs: { chip: 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-200', shirt: '#b45309', backdrop: '#fef3c7', thanks: 'chat.thanksCustoms' },
+  CS: { chip: 'bg-teal-100 text-teal-800 dark:bg-teal-950 dark:text-teal-200', shirt: '#0f766e', backdrop: '#ccfbf1', thanks: 'chat.thanksCS' },
+  Management: { chip: 'bg-violet-100 text-violet-800 dark:bg-violet-950 dark:text-violet-200', shirt: '#5b21b6', backdrop: '#ede9fe', thanks: 'chat.thanksManagement' },
+  IT: { chip: 'bg-cyan-100 text-cyan-800 dark:bg-cyan-950 dark:text-cyan-200', shirt: '#0e7490', backdrop: '#cffafe', thanks: 'chat.thanksIT' },
 };
-const NEUTRAL_DEPT = 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-100';
-export const deptColor = (dept: string): string => DEPT_COLOR[dept] ?? NEUTRAL_DEPT;
+const NEUTRAL_DEPT: Dept = { chip: 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-100', shirt: '#475569', backdrop: '#e2e8f0', thanks: 'chat.thanksOps' };
+export const deptOf = (dept: string): Dept => DEPT[dept] ?? NEUTRAL_DEPT;
+export const deptColor = (dept: string): string => deptOf(dept).chip;
 
 export const CARD = 'rounded-2xl bg-panel ring-1 ring-line';
 export const PILL = 'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-sm font-semibold';

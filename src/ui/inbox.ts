@@ -1,7 +1,7 @@
 import { getLang, t } from '../i18n';
-import { personOf } from '../people';
+import { roleLine } from '../people';
 import { visibleTickets } from '../progress';
-import { actions, app, done } from '../state';
+import { actions, app, done, unlockedTables } from '../state';
 import { cx, DEPT_CHIP, deptColor } from '../theme';
 import { textOf, type Ticket } from '../tickets';
 import { avatar } from './avatar';
@@ -29,7 +29,7 @@ export function renderInbox(): void {
           avatar(from, 'md'),
           h('span', { class: 'min-w-0' },
             h('span', { class: 'flex flex-wrap items-center gap-2 font-semibold' }, from.name, h('span', { class: cx(DEPT_CHIP, deptColor(from.dept)) }, from.dept)),
-            h('span', { class: 'block text-sm font-normal text-muted' }, personOf(from.name)?.role[lang] ?? ''))),
+            h('span', { class: 'block text-sm font-normal text-muted' }, roleLine(from.name, lang, unlockedTables())))),
         h('div', { class: 'ml-13 space-y-1.5' }, ...list.map((tk) => {
           const isDone = d.has(tk.id);
           return h('button', {

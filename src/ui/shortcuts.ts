@@ -24,3 +24,10 @@ export function pageShortcutOf(e: PageKey, mac: boolean, at: { workspaceHidden: 
   if (!action || target?.closest?.('dialog, input, textarea, select')) return undefined;
   return action === 'submit' && at.conclusionOpen ? undefined : action;
 }
+
+/**
+ * Esc skips (or closes) the completion dock, unless something else already took it: CodeMirror closing its autocomplete
+ * (`defaultPrevented`) or an open dialog (Esc closes the inbox there).
+ */
+export const stageEsc = (e: Pick<KeyboardEvent, 'key' | 'defaultPrevented'>, stageOpen: boolean, dialogOpen: boolean): boolean =>
+  e.key === 'Escape' && !e.defaultPrevented && stageOpen && !dialogOpen;

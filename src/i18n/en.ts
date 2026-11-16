@@ -27,6 +27,7 @@ export const en: Record<Key, Msg> = {
   'home.status.locked': 'Locked',
   'home.status.soon': 'Coming soon',
   'home.review': 'Promotion review: "{title}"',
+  'home.soonHint': 'Content in progress',
   'home.lockedAfter': 'To open: pass the chapter {n} promotion review',
   'home.skills': 'Skill topics',
   'home.skillsHint': 'Each bar is a memory level; a newly learned skill starts at level 1.',

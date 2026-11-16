@@ -81,12 +81,16 @@ export function parseKpis(src: string, origin = 'kpis.yml'): Kpi[] {
 }
 export const KPIS: Kpi[] = parseKpis(kpiSource);
 
-/** `ticket` undefined: its chapter has no content yet (the Q3 margin waits for chapter 12). Never opens before completion. */
+/**
+ * `ticket` undefined: its chapter has no content yet (the Q3 margin waits for chapter 12). Never opens before completion.
+ * A tile whose ticket has no step `kpi.step` is dropped (the content test reports it), so Home never throws.
+ */
 export interface KpiTile { kpi: Kpi; ticket?: Ticket; open: boolean }
 export const kpiTiles = (kpis: Kpi[], tickets: Ticket[], completed: Set<string>): KpiTile[] =>
-  kpis.map((kpi) => {
+  kpis.flatMap((kpi) => {
     const ticket = tickets.find((x) => x.id === kpi.ticket);
-    return { kpi, ticket, open: !!ticket && completed.has(ticket.id) };
+    if (ticket && !ticket.steps[kpi.step]) return [];
+    return [{ kpi, ticket, open: !!ticket && completed.has(ticket.id) }];
   });
 
 /** "ch12-06" → 12: chapter of a tile whose ticket is not written yet. */

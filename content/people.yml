@@ -1,6 +1,7 @@
 # Đồng nghiệp gửi việc (L18, product-design-v2 ★1, curriculum §2). Ticket không đổi: from.name là khóa.
 # employee: id trong bảng employees của seed (test đối chiếu tên + phòng); null = nhân vật chưa có trong seed.
 # role: vai trò nghiệp vụ thật; bio: một câu tính cách (giọng của người viết ticket giữ đúng câu này).
+# tables: bảng người này phụ trách (tên thật trong src/db/schema.sql, không dịch; thẻ người gửi chỉ hiện bảng đã mở).
 # look: tham số chân dung SVG (src/ui/avatar.ts):
 #   skin light|medium|tan|deep · hair black|brown|grey · style short|long|bun|side
 #   accessory none|helmet|glasses|headset|tie|scarf|lanyard
@@ -11,6 +12,7 @@
   employee: 1
   role: { vi: "Giám đốc", en: "Managing director" }
   bio: { vi: "Ít lời, chỉ giao những việc quan trọng: mọi buổi đánh giá thăng tiến.", en: "A person of few words who only sends what matters: every promotion review." }
+  tables: [employees]
   look: { skin: medium, hair: grey, style: short, accessory: tie }
 
 - name: "Hoàng Khánh"
@@ -18,6 +20,7 @@
   employee: 14
   role: { vi: "Trưởng phòng Ops, người kèm DA mới", en: "Head of Operations, your mentor" }
   bio: { vi: "Kiên nhẫn, luôn nói \"từng bước một\".", en: "Patient, always says \"one step at a time\"." }
+  tables: [shipments, containers]
   look: { skin: tan, hair: black, style: short, accessory: helmet }
 
 - name: "Lê Bình"
@@ -25,6 +28,7 @@
   employee: 2
   role: { vi: "Trưởng phòng Sales, kiêm pricing", en: "Head of Sales, also runs pricing" }
   bio: { vi: "Nói nhanh, mê top N và số tròn, việc gì cũng \"gấp lắm\".", en: "Talks fast, loves top-N lists and round numbers, everything is \"urgent\"." }
+  tables: [customers, carriers]
   look: { skin: light, hair: black, style: side, accessory: none }
 
 - name: "Hoàng Ngọc"
@@ -32,6 +36,7 @@
   employee: 24
   role: { vi: "Trưởng phòng Hải quan", en: "Head of Customs" }
   bio: { vi: "Kỹ tính, thuộc lòng mã HS, ghét dữ liệu thiếu.", en: "Meticulous, knows HS codes by heart, hates missing data." }
+  tables: [shipments, ports]
   look: { skin: light, hair: black, style: bun, accessory: glasses }
 
 - name: "Nguyễn Quang"
@@ -39,6 +44,7 @@
   employee: 30
   role: { vi: "Kế toán trưởng (công nợ phải thu, phải trả)", en: "Chief accountant (receivables and payables)" }
   bio: { vi: "Cẩn thận từng đồng, luôn hỏi \"làm tròn mấy số?\".", en: "Careful with every cent, always asks \"rounded to how many decimals?\"." }
+  tables: [customers]
   look: { skin: medium, hair: brown, style: short, accessory: glasses }
 
 - name: "Võ Thu"
@@ -46,6 +52,7 @@
   employee: 36
   role: { vi: "Trưởng phòng Chăm sóc khách hàng", en: "Head of Customer Service" }
   bio: { vi: "Ấm áp, nghĩ cho khách, hay hỏi \"khách nào đang buồn?\".", en: "Warm, thinks of the customer first, often asks \"which customer is unhappy?\"." }
+  tables: [customers, shipments]
   look: { skin: light, hair: brown, style: long, accessory: headset }
 
 - name: "Võ Lan"
@@ -53,6 +60,7 @@
   employee: 16
   role: { vi: "Nhân viên chứng từ & booking (B/L, HBL/MBL)", en: "Documentation and booking officer (B/L, HBL/MBL)" }
   bio: { vi: "Soi từng số vận đơn, không để lô nào lệch sổ.", en: "Checks every bill of lading number and never lets a shipment drift off the books." }
+  tables: [shipments, containers]
   look: { skin: light, hair: black, style: long, accessory: lanyard }
 
 - name: "Bùi Long"
@@ -60,6 +68,7 @@
   employee: 18
   role: { vi: "Điều độ vận tải & kho CFS", en: "Trucking and CFS dispatcher" }
   bio: { vi: "Lúc nào cũng ở bãi, đếm xe kéo và ca bốc xếp.", en: "Always out in the yard, counting trucks and loading shifts." }
+  tables: [containers]
   look: { skin: tan, hair: black, style: short, accessory: helmet }
 
 - name: "Võ Phong"
@@ -67,6 +76,7 @@
   employee: 26
   role: { vi: "Khai báo viên hải quan", en: "Customs declarant" }
   bio: { vi: "Khai tờ khai nhanh nhất phòng, sợ nhất luồng đỏ.", en: "Files declarations faster than anyone, dreads the red lane." }
+  tables: [shipments]
   look: { skin: medium, hair: black, style: side, accessory: glasses }
 
 - name: "Đặng Hà"
@@ -74,6 +84,7 @@
   employee: 7
   role: { vi: "Nhân viên pricing (báo giá cước)", en: "Pricing officer (freight quotes)" }
   bio: { vi: "Thuộc giá cước mọi tuyến, không chịu bán dưới giá mua.", en: "Knows the rate on every lane and refuses to sell below cost." }
+  tables: [carriers, ports]
   look: { skin: light, hair: brown, style: bun, accessory: scarf }
 
 - name: "Hoàng Dũng"
@@ -81,6 +92,7 @@
   employee: 4
   role: { vi: "Nhân viên kinh doanh", en: "Sales executive" }
   bio: { vi: "Lúc nào cũng vừa gặp khách về, cần số liệu ngay.", en: "Always just back from a customer visit and needs numbers right away." }
+  tables: [customers]
   look: { skin: medium, hair: black, style: short, accessory: tie }
 
 - name: "Phạm Tâm"
@@ -88,6 +100,7 @@
   employee: 33
   role: { vi: "Kế toán công nợ phải thu (AR)", en: "Accounts receivable accountant (AR)" }
   bio: { vi: "Nhắc nợ nhẹ nhàng nhưng không bỏ sót ai.", en: "Chases payments politely but never misses anyone." }
+  tables: [customers]
   look: { skin: light, hair: black, style: long, accessory: glasses }
 
 - name: "Hoàng Thảo"
@@ -95,6 +108,7 @@
   employee: 34
   role: { vi: "Kế toán công nợ phải trả (AP)", en: "Accounts payable accountant (AP)" }
   bio: { vi: "Đối chiếu từng hóa đơn nhà cung cấp với tỷ giá trong ngày.", en: "Matches every supplier invoice against the exchange rate of the day." }
+  tables: [carriers]
   look: { skin: medium, hair: brown, style: bun, accessory: none }
 
 - name: "Đặng Trang"
@@ -102,6 +116,7 @@
   employee: 37
   role: { vi: "Nhân viên chăm sóc khách hàng", en: "Customer service officer" }
   bio: { vi: "Nghe máy cả ngày, nhớ tên từng khách quen.", en: "On the phone all day, remembers every regular customer by name." }
+  tables: [customers]
   look: { skin: tan, hair: black, style: long, accessory: headset }
 
 - name: "Đỗ Tùng"
@@ -109,4 +124,5 @@
   employee: null
   role: { vi: "Trưởng nhóm IT, cầu nối với Data Engineering", en: "IT team lead, the bridge to Data Engineering" }
   bio: { vi: "Chỉ tin vào kế hoạch thực thi, không tin vào cảm giác \"chạy chậm\".", en: "Trusts execution plans, not the feeling that something \"runs slow\"." }
+  tables: [employees]
   look: { skin: medium, hair: black, style: short, accessory: glasses }
