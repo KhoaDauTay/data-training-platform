@@ -1,0 +1,46 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+Cargo Query: browser game for learning PostgreSQL as a data analyst at a fictional freight forwarder. Spec: `docs/superpowers/specs/2026-11-16-cargo-query-design.md`. Plans: `docs/superpowers/plans/`. Team decisions: `docs/team/amendments.md` (the user's decisions D1–D6 at the end override everything above them) and `docs/team/decision-log.md` (L1, L2, … override older plan/spec text).
+
+## Commands
+
+```bash
+npm run dev                                   # Vite dev server
+npm test                                      # all tests (Vitest, PGlite runs in Node; seed takes ~2s per DB)
+npx vitest run tests/grader.test.ts           # one file
+npx vitest run tests/grader.test.ts -t alias  # one test by name
+npx tsc --noEmit                              # Vitest does not typecheck: run this after every change
+npm run build                                 # typecheck + production build
+```
+
+## Architecture
+
+- Everything runs in the browser; no backend (if one is ever added it must be Python).
+- `src/db/worker.ts` runs PGlite in a dedicated Web Worker, seeds it via `initDb` (`src/db/init.ts`: `schema.sql` + `seed.sql`), and executes one query at a time through `runSandboxed` (`src/db/run.ts`: `BEGIN` → query → `ROLLBACK`). PGlite rejects multi-statement input, so players cannot escape the rollback. Results over `MAX_ROWS_WORKER` (50,000) are cut and flagged `truncated`. The worker wraps `fetch` with `countingFetch` (`src/db/loadProgress.ts`) to report asset download bytes (`x MB`, or `x/y MB` when `Content-Length` is known).
+- `src/db/client.ts` (`DbClient`) queues queries and posts one at a time, so the 5s timeout measures only the running query. `statement_timeout` does not work in PGlite, so a query over 5s terminates the worker and boots a fresh one. Errors are typed and carry no user-facing text (`SqlError` with `position`/`code`/`hint`, `QueryTimeoutError`, `DbRestartError`, `DbFailedError`); the UI translates them by class in `errorText()` (`src/ui/feedback.ts`). Do not switch to `PGliteWorker`: its multi-tab leader election breaks `terminate()`.
+- `src/grader.ts` runs the player's SQL and the step's Solution on the same DB and compares by column position, as a row multiset (or sequence when `ordered: true`), with all numbers rounded to 2 decimals. PGlite returns `numeric` as strings and `date` as `Date`.
+- Tickets are markdown files in `content/tickets/chN/`, loaded by `src/content.ts` (`import.meta.glob`) and parsed by `src/tickets.ts`. VI text comes first, then a `# EN` block with the same sections (no SQL; SQL and frontmatter exist once). Frontmatter: `title_en`, `conclusion_en` (boss), `ordered`, `columns:` (one language-neutral list of result labels for the shape card), `starter:`, `variants:`. Optional `## Task` holds the concrete request. Normal tickets have one `## Solution`; boss tickets have `## Step N: …` sections plus a `conclusion`. Use `textOf(ticket, lang)` for any player-facing ticket text. Copy `content/TEMPLATE.md` to start a ticket.
+- `content/skills.yml` (skill cards: label/syntax/when/trap) and `content/chapters.yml` (chapter titles and outcomes) are loaded by `src/progress.ts`, which also holds linear progression, XP, which tables each chapter reveals (`CHAPTER_TABLES`) and `contentProblems` (soft-lock, pacing, skill-map and twist→boss checks).
+- `src/save.ts` is the versioned progress save under localStorage key `cargo-query-save`. Bump `SAVE_VERSION` with a migration in `MIGRATIONS`; keep old fixtures in `tests/fixtures/` forever. Before migrating, the old save is copied to `cargo-query-save.v<old>`; an unreadable or newer save goes to `cargo-query-save.bak`. A failed write shows the `save.writeFailed` banner.
+- UI: plain TypeScript DOM via `h()` (`src/ui/dom.ts`), no framework. `src/state.ts` holds app state and selectors (no DOM); `actions` lets UI modules call back into `main.ts`. One module per region: `ui/topbar.ts`, `ui/inbox.ts`, `ui/brief.ts` (left pane: message, task, shape card, hints, conclusion, Recap), `ui/work.ts` (editor, Run/Format/Submit, feedback, history), `ui/tabs.ts` (bottom panel). `ui/coach.ts` is the onboarding coach marks, `ui/splitter.ts` the resizable panes (`initLayout`). `main.ts` only wires them together.
+- Editor (`src/ui/editor.ts`, CodeMirror 6): `Mod-Enter` runs (the selection if there is one, else everything), `Mod-Shift-Enter` submits, `Shift-Alt-F` formats; keymap at `Prec.highest`. SQL errors are underlined via `setDiagnostics`. Syntax colours come from a small `HighlightStyle` using `--syn-*` CSS variables defined for both themes in `src/style.css` (no theme-one-dark). Other shortcuts and menus from spec §6b were dropped (decision L11).
+- Render rule: `rerender()` redraws text (top bar, inbox, brief, `work.relabel()`) and must never recreate the editor. `work.setTicket()` recreates it only when `ticketId#step` changes.
+- Bottom-panel tabs register through `registerTab()` in `src/ui/tabs.ts` (group `output | query | schema`, then `order`) before `createPanel()`. Every tab describes `app.lastRun` (the last run, never the live editor) and shows a "SQL changed" strip when the editor differs.
+- i18n: `src/i18n/vi.ts` is the key source; `src/i18n/en.ts` is `Record<Key, Msg>`, so a missing key fails `tsc`. All UI text goes through `t(key)`; static markup uses `data-i18n`/`data-i18n-aria`. EN plurals use function messages. Never translate table/column names, SQL, data values, Postgres error messages, or people's names and departments. `tests/i18n.test.ts` checks placeholders match and EN differs from VI (allow-list `SAME_OK`).
+- Teaching errors: `src/ui/sqlErrors.ts` maps SQLSTATE (plus a few message regexes) to an explanation shown under Postgres' unchanged message; `tests/sqlErrors.test.ts` runs the wrong SQL on real PGlite.
+- The shape card ("Expected result", `src/shape.ts`) shows column count/kinds, row count and the `columns:` labels, never the Solution's column names (they would give the answer away).
+- localStorage keys besides the save, all device preferences wrapped in try/catch (`src/storage.ts`) and never part of `Save`: `cargo-query/prefs` (`{ lang }`), `cargo-query/layout` (splitter sizes), `cargo-query/coach-done` (onboarding skipped), `cargo-query/history` (last 15 queries per `ticketId#step`; Sandbox keeps none).
+- Dependencies are pinned exactly: `@electric-sql/pglite` 0.5.16 (seed depends on it), `@codemirror/lint` 6.9.8, `@codemirror/language` 6.13.1, `@lezer/highlight` 1.2.5, `sql-formatter` 15.9.0 (lazy chunk, loaded by Format / Shift+Alt+F). Add new ones with `npm i --save-exact`.
+
+## Content and seed rules
+
+- `src/db/seed.sql` is deterministic. Each random block starts with its own `setseed()`; append new blocks at the end only. PGlite is pinned to an exact version because `random()` output depends on the Postgres build.
+- In-game "today" is 2026-10-31. Solutions use literal dates; `tests/content.test.ts` fails on `CURRENT_DATE`/`now()`.
+- Ordered or top-N tickets set `ordered: true`, have an `ORDER BY`, and must state a complete tiebreaker in the prompt.
+- Every table a Solution uses must be listed in the ticket's `tables` and unlocked by that chapter.
+- Each chapter must go teach → … → rest → boss, `requires`/`tables` must already be granted/unlocked, and every skill a twist ticket grants must be in the boss's `requires` (`contentProblems`).
+- Every ticket ships VI + EN (release gate: 0 tickets without `# EN`). Code spans must be identical in VI and EN, EN must contain no Vietnamese diacritics, and `columns:` must have one label per Solution column (`tests/content.test.ts`).
+- Story hooks the later chapters rely on are listed at the top of `seed.sql`; do not change them without updating tickets and `tests/seed.test.ts`.
+- Project skills live in `.claude/skills/` (`web-games`, `level-design`, `save-systems`).
