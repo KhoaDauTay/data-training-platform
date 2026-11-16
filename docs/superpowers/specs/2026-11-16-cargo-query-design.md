@@ -259,7 +259,7 @@ Toàn UI dùng **Tailwind CSS v4** (L17): topbar gradient indigo→blue→cyan, 
 
 - Query có `WITH`, `UNION`… hoặc window function: tab Thứ tự thực thi báo "chưa hỗ trợ, xem EXPLAIN" (mở rộng là mục tùy chọn của Plan 3; ví dụ mẫu ch8–10 không dựa vào tab này).
 - **Bản đồ tuyến** (tỏa ra từ Tiên Sa `VNDAD`, L26, L35): bản đồ SVG cách điệu của Plan 1d (`src/ui/routeMap.ts`, `ROUTES` trong `src/scene.ts`: 7 tuyến biển Shanghai, Laem Chabang, Singapore, Rotterdam, Busan, Los Angeles, Sydney), vẽ trên Trang chủ và trong hoạt cảnh `ship`/`promotion` (mục dưới); không dùng `d3-geo`/`world-atlas`, không có đường hàng không. Tuyến mở theo `derive().open` (L32): Shanghai + Laem Chabang từ đầu, mỗi đánh giá thăng tiến ch1–5 mở một tuyến, **và** một việc `scene: ship` tới cảng X mở tuyến X. Không rê chuột xem số lô (bỏ theo L35). **Dải tiến độ** trong khu làm việc (chỉ ở `#/play`, không vẽ bản đồ, không mở rộng): một chấm mỗi ticket của chương (ch1–3: 5, ch4–12: 6; ◆ = cột mốc) + `Tuyến đã mở n/7` + liên kết về bản đồ trên Trang chủ.
-- Mọi animation tắt khi `prefers-reduced-motion` hoặc công tắc "Giảm chuyển động" trong Cài đặt. Không dùng 3D.
+- Mọi animation tắt khi `prefers-reduced-motion` (theo cài đặt hệ điều hành; không có công tắc trong app, L35). Không dùng 3D.
 
 ### Hoạt cảnh khi xong việc (L29, L31; `completion-animations.md`)
 
@@ -290,7 +290,7 @@ Mọi trạng thái hiển thị dưới đây **tính lại từ save**, không
 - **Ticket:** chip "Dạy: X · Cần: Y"; thẻ "Mục tiêu chương" ở ticket teach; thẻ **Kết quả mong đợi** (số cột, loại cột chữ/số/ngày/đúng-sai, số dòng, có thứ tự hay không, nhãn từ `columns:`; không bao giờ hiện tên cột của Solution), so với kết quả sau mỗi lần Chạy; thẻ **Recap** khi nộp đúng (kèm `reflect:` từ Plan 2); màn **Tổng kết chương** sau cột mốc (đọc `career`).
 - **Skill map** (`<dialog>`): khóa / đã học / đang vững / thuộc.
 - **Sổ tay** (`<dialog>` không modal, để vừa đọc vừa gõ): Thẻ kỹ năng / Thuật ngữ, có ô lọc.
-- **Panel:** tablist theo ARIA (roving tabindex, ←/→/Home/End). Nhóm tab [Kết quả · Biểu đồ] | [Thứ tự · EXPLAIN · Luồng] | [ER · Cột]; **không ẩn tab nào**, chỉ chấm "mới" trên Biểu đồ ở `ch2-01` và EXPLAIN ở `ch3-01`. Tab mặc định: Cột khi chưa chạy; sau khi Nộp sai thì mở tab theo loại sai. Mọi tab đọc SQL của lần chạy gần nhất; editor khác SQL đó thì hiện dải "SQL đã thay đổi — Ctrl+Enter để cập nhật".
+- **Panel:** tablist theo ARIA (roving tabindex, ←/→/Home/End). Nhóm tab [Kết quả · Biểu đồ] | [Thứ tự · EXPLAIN · Luồng] | [ER · Cột]; **không ẩn tab nào**, chỉ chấm "mới" trên Biểu đồ ở `ch2-01` (chấm "mới" của EXPLAIN do Plan 4 thêm ở ch11, L35). Tab mặc định: Cột khi chưa chạy; sau khi Nộp sai thì mở tab theo loại sai. Mọi tab đọc SQL của lần chạy gần nhất; editor khác SQL đó thì hiện dải "SQL đã thay đổi — Ctrl+Enter để cập nhật".
 - **Editor:** gợi ý tên bảng/cột có kiểu (chỉ bảng đã mở), chạy vùng chọn, gạch lỗi tại vị trí Postgres báo, lịch sử query (≤ 15 mục mỗi ticket, `<details>`), **Format SQL** bằng `sql-formatter` (pin version, tải lười). Phím tắt chỉ có `Mod-Enter` Chạy, `Mod-Shift-Enter` Nộp, `Shift-Alt-F` Format (L11). Bước cột mốc chỉ báo bằng dòng `Bước i/n: …`. Đổi ngôn ngữ không remount editor.
 - **Bố cục:** app shell `100dvh` khi màn ≥ 1024×700; dải tiến độ một dòng (≥ 28px); splitter kéo được (`role=separator`, phím ±5%); màn < 600px thanh Chạy/Nộp sticky.
 - **Onboarding:** 4 coach mark trong `ch1-01` → `ch1-02`; bấm Chạy khi DB chưa sẵn sàng thì xếp hàng; có empty state cho các bảng/tab.
