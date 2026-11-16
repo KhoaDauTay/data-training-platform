@@ -12,7 +12,7 @@ import { localStore } from './storage';
 import type { Route } from './route';
 import type { Ticket } from './tickets';
 import { initModes, onPracticeWrong, onSolved, renderLeft, renderReviewButton } from './ui/modes';
-import { toggleNotebook } from './ui/notebook';
+import { renderNotebook, toggleNotebook } from './ui/notebook';
 import { byId, h } from './ui/dom';
 import { errorText } from './ui/feedback';
 import { leftHome, renderHome } from './ui/homeView';
@@ -108,6 +108,7 @@ function rerender(): void {
   renderLeft(byId('ticket'));
   work.relabel();
   relabelStage();
+  renderNotebook();
   // Story workspace only (L37): Home has the route map itself; Sandbox and Practice have no chapter progress.
   byId('map').hidden = byId('shell').hidden || !isStory();
   if (!byId('map').hidden) syncMap();

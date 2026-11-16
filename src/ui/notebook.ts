@@ -10,22 +10,35 @@ import { registerMode } from './homeView';
 
 const ITEM = 'border-b border-line py-2';
 
-/** Non-modal (show(), not showModal()): the player keeps typing in the editor while it is open. */
+let redraw: (() => void) | undefined;
+let opener: HTMLElement | null = null;
+
+const button = (): HTMLElement => byId('notebook-btn');
+
+/**
+ * Non-modal (show(), not showModal()): the player keeps typing in the editor while it is open, and Esc on the completion
+ * dock still works (stageEsc only yields to modal dialogs). Opened from the top-bar button or Home's mode card.
+ */
 export function toggleNotebook(dialog: HTMLDialogElement): void {
   if (dialog.open) {
     dialog.close();
     return;
   }
-  const lang = getLang();
-  const other: Lang = lang === 'vi' ? 'en' : 'vi';
-  const learned = learnedSkills(app.tickets, done());
-  const input = h('input', {
-    type: 'search', placeholder: t('nb.filter'), 'aria-label': t('nb.filter'),
-    class: 'w-full rounded-lg bg-panel px-2 py-1.5 ring-1 ring-line',
-  });
+  opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+  const input = h('input', { type: 'search', class: 'w-full rounded-lg bg-panel px-2 py-1.5 ring-1 ring-line' });
+  const title = h('h2', { id: 'notebook-title', class: 'm-0' });
+  const close = h('button', { type: 'button', onclick: () => dialog.close() });
   const list = h('div', {});
 
-  const draw = (): void => {
+  // Built once per opening; redraw() (also from renderNotebook on every rerender) keeps the input, its text and focus.
+  redraw = (): void => {
+    const lang = getLang();
+    const other: Lang = lang === 'vi' ? 'en' : 'vi';
+    const learned = learnedSkills(app.tickets, done());
+    title.textContent = t('nb.title');
+    close.textContent = t('app.close');
+    input.placeholder = t('nb.filter');
+    input.setAttribute('aria-label', t('nb.filter'));
     const q = input.value;
     const cards = SKILLS.filter((s) => matches(q, s.id, s.label.vi, s.label.en));
     const terms = GLOSSARY.filter((g) => matches(q, g.term, g.vi, g.en, ...g.columns));
@@ -52,24 +65,30 @@ export function toggleNotebook(dialog: HTMLDialogElement): void {
     ));
   };
 
-  input.addEventListener('input', draw);
-  dialog.replaceChildren(
-    h('div', { class: 'mb-2 flex items-center justify-between gap-2' },
-      h('h2', { id: 'notebook-title', class: 'm-0' }, t('nb.title')),
-      h('button', { type: 'button', onclick: () => dialog.close() }, t('app.close'))),
-    input,
-    list,
-  );
+  input.addEventListener('input', () => redraw?.());
+  dialog.replaceChildren(h('div', { class: 'mb-2 flex items-center justify-between gap-2' }, title, close), input, list);
   dialog.onkeydown = (e: KeyboardEvent) => {
     if (e.key === 'Escape') {
       e.preventDefault();
       dialog.close();
     }
   };
-  draw();
+  dialog.onclose = () => {
+    redraw = undefined;
+    button().setAttribute('aria-expanded', 'false');
+    // Return focus only if it was inside the notebook (or dropped to <body>), never steal it from the editor.
+    const a = document.activeElement;
+    if (!a || a === document.body || dialog.contains(a)) (opener?.isConnected && !opener.closest('[hidden]') ? opener : button()).focus();
+    opener = null;
+  };
+  redraw();
   dialog.show();
+  button().setAttribute('aria-expanded', 'true');
   input.focus();
 }
+
+/** main.ts rerender(): language switch or a newly learned skill while the notebook is open. */
+export const renderNotebook = (): void => redraw?.();
 
 registerMode({
   id: 'notebook', order: 30, icon: '📒', tint: 'bg-fuchsia-100 dark:bg-fuchsia-950',
