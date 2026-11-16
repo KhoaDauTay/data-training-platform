@@ -1,6 +1,6 @@
 import { homeModel, LEVELS, type ChapterCard, type HomeModel, type SkillCard } from '../home';
 import { getLang, t, type Key } from '../i18n';
-import { CHAPTERS, chapterTitle, SKILLS } from '../progress';
+import { CHAPTERS, chapterTitle, rankOf, SKILLS } from '../progress';
 import { actions, app, done } from '../state';
 import { BTN_GO, CARD, chapterColor, cx, DONE_PILL, PILL } from '../theme';
 import { textOf } from '../tickets';
@@ -80,13 +80,25 @@ function continueCard(m: HomeModel): HTMLElement {
       h('button', { type: 'button', class: 'px-4 py-2 font-semibold', onclick: openInbox }, t('top.inbox'))));
 }
 
-/** Narrow card beside "Continue": neutral text (L23). Task 11 replaces it with the career path ('career'). */
-function sideCard(m: HomeModel): HTMLElement {
-  return h('section', { class: cx(CARD, 'flex h-full flex-col gap-2 p-6'), 'aria-labelledby': 'side-title' },
-    h('h2', { id: 'side-title', class: 'm-0 text-sm font-semibold text-muted' }, t('home.stats')),
-    h('p', { class: 'm-0 text-3xl font-bold tabular-nums' }, t('top.xp', { n: app.save.xp })),
-    h('p', { class: 'm-0' }, t('home.learned', { n: m.learned })),
-    h('p', { class: 'm-0' }, t('home.progress', { done: m.done, total: m.total })));
+/** Career path (L18 ★3, L19, L30): DA intern + the five ★ titles; the current one is marked, later ones say which review opens them. */
+function careerCard(): HTMLElement {
+  const lang = getLang();
+  const rank = rankOf(app.tickets, done());
+  const rows = [{ title: t('career.intern'), at: 0 }, ...CHAPTERS.filter((c) => c.tier).map((c) => ({ title: c.career[lang], at: c.chapter }))];
+  const reached = (at: number): boolean => at === 0 || rank.passed.includes(at);
+  const now = rows.filter((r) => reached(r.at)).pop();
+  return h('section', { class: cx(CARD, 'flex h-full flex-col gap-3 p-6'), 'aria-labelledby': 'career-title' },
+    h('h2', { id: 'career-title', class: 'm-0 text-sm font-semibold text-muted' }, t('home.career')),
+    rank.career ? h('p', { class: 'm-0 font-semibold' }, rank.career[lang]) : null,
+    h('ol', { class: 'm-0 list-none space-y-2 p-0' }, ...rows.map((r) => h('li', {
+      class: cx('flex items-center gap-2 text-[15px]', !reached(r.at) && 'text-muted'),
+      'aria-current': r === now ? 'step' : false,
+    },
+      h('span', { class: cx('size-2.5 shrink-0 rounded-full', reached(r.at) ? 'bg-emerald-600' : 'bg-line'), 'aria-hidden': 'true' }),
+      r === now ? h('b', {}, r.title) : r.title,
+      r === now
+        ? h('span', { class: cx(PILL, 'ml-auto', DONE_PILL) }, t('home.careerNow'))
+        : reached(r.at) ? null : h('span', { class: 'ml-auto text-sm' }, t('home.careerAt', { n: r.at }))))));
 }
 
 /** Small status badge: the only coloured text on the card (L23). */
@@ -119,6 +131,7 @@ function chapterCard(c: ChapterCard): HTMLElement {
     h('h3', { class: cx('m-0 text-xl font-bold', closed && 'text-muted') }, `${c.chapter} · ${chapterTitle(c.chapter, lang)}`),
     c.skills.length ? h('p', { class: cx('m-0 text-[15px]', closed && 'text-muted') }, c.skills.map((s) => s.label[lang]).join(' · ')) : null,
     statusPill(c),
+    h('p', { class: 'm-0 text-sm text-muted' }, t('home.careerAfter', { career: CHAPTERS.find((x) => x.chapter === c.chapter)?.career[lang] ?? '' })),
     c.status === 'done' && c.boss ? h('p', { class: 'm-0 text-sm text-muted' }, t('home.review', { title: textOf(c.boss, lang).title })) : null,
     closed
       ? h('p', {
@@ -180,7 +193,7 @@ function modesSection(): HTMLElement | null {
 }
 
 registerHomeSection({ id: 'continue', order: 10, span: 'wide', render: continueCard });
-registerHomeSection({ id: 'side', order: 20, span: 'narrow', render: sideCard });
+registerHomeSection({ id: 'career', order: 20, span: 'narrow', render: careerCard });
 registerHomeSection({ id: 'chapters', order: 30, span: 'full', render: chaptersSection });
 registerHomeSection({ id: 'skills', order: 40, span: 'full', render: skillsSection });
 registerHomeSection({ id: 'modes', order: 50, span: 'full', render: modesSection });

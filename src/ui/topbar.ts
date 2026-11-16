@@ -1,5 +1,5 @@
 import { getLang, t, type Key } from '../i18n';
-import { chapterTitle, currentChapter } from '../progress';
+import { chapterTitle, CHAPTERS, currentChapter, rankOf } from '../progress';
 import { hashOf, type Route } from '../route';
 import { actions, app, done } from '../state';
 import { NAV_LINK, TOP_BTN } from '../theme';
@@ -65,7 +65,8 @@ function renderNotice(): void {
 
 export function renderTopbar(): void {
   const ch = currentChapter(app.tickets, done());
-  byId('chapter').textContent = t('top.chapter', { n: ch, title: chapterTitle(ch, getLang()) });
+  byId('chapter').textContent = t('top.chapter', { n: ch, total: CHAPTERS.length, title: chapterTitle(ch, getLang()) });
+  byId('rank').textContent = rankOf(app.tickets, done()).tier?.[getLang()] ?? t('career.intern');
   byId('xp').textContent = t('top.xp', { n: app.save.xp });
   for (const b of document.querySelectorAll<HTMLButtonElement>('[data-lang]')) b.setAttribute('aria-pressed', String(b.dataset.lang === getLang()));
   byId('db-status').replaceChildren(dbStatusView());

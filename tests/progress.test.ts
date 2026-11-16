@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import {
-  chapterTitle, CHAPTERS, contentProblems, currentChapter, nextTicket, parseChapters, parseSkills, SKILLS,
+  CHAPTER_TABLES, chapterTitle, CHAPTERS, contentProblems, currentChapter, nextTicket, parseChapters, parseSkills, rankOf, SKILLS,
   tablesUnlocked, twistUsed, visibleTickets, xpFor,
 } from '../src/progress';
+import { loadTickets } from '../src/content';
 import type { Beat, Ticket } from '../src/tickets';
 
 const mk = (id: string, beat: Beat, extra: Partial<Ticket> = {}): Ticket => ({
@@ -24,6 +25,9 @@ const skills = parseSkills([card('select', 1), card('where', 1), card('order_by'
 const chapters = parseChapters(`
 - chapter: 1
   title: { vi: "Tuần thử việc", en: "Probation week" }
+  career: { vi: "Junior DA", en: "Junior DA" }
+  tier: true
+  story: { vi: "Mở đầu", en: "Intro" }
   outcomes:
     - { vi: "Lọc", en: "Filter", skills: [select, where] }
 `);
@@ -70,7 +74,7 @@ describe('skills.yml và chapters.yml', () => {
     expect(SKILLS.map((s) => s.id)).toEqual(expect.arrayContaining(
       ['select', 'where', 'order_by', 'limit', 'aggregate', 'group_by', 'having', 'join', 'multi_join', 'left_join', 'anti_join'],
     ));
-    expect(CHAPTERS.map((c) => c.chapter)).toEqual([1, 2, 3, 4, 5, 6, 7]);
+    expect(CHAPTERS.map((c) => c.chapter)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
     expect(contentProblems([])).toEqual([]);
   });
 
@@ -175,5 +179,41 @@ describe('twistUsed: từ khóa theo kỹ năng', () => {
 
   it('kỹ năng lạ → undefined (không kiểm)', () => {
     expect(twistUsed('pivot', 'SELECT 1')).toBeUndefined();
+  });
+});
+
+describe('12 chương (L30, curriculum.md)', () => {
+  it('★ đổi chức danh ở ch1, 3, 6, 9, 12; mọi chương có career + story vi/en', () => {
+    expect(CHAPTERS.filter((c) => c.tier).map((c) => c.chapter)).toEqual([1, 3, 6, 9, 12]);
+    expect(CHAPTERS.find((c) => c.chapter === 12)?.career).toEqual({ vi: 'Trưởng nhóm Phân tích', en: 'Head of Analytics' });
+    expect(CHAPTERS.every((c) => c.career.vi && c.career.en && c.story.vi && c.story.en)).toBe(true);
+  });
+
+  it('chương thiếu career/story bị báo', () => {
+    const bare = parseChapters('- chapter: 1\n  title: { vi: "a", en: "a" }\n');
+    expect(problems(chapter1, skills, bare)).toContain('chương 1: thiếu career/story vi/en');
+  });
+
+  it('CHAPTER_TABLES: 25 bảng của spec §4, mỗi bảng đúng một lần, mở theo curriculum §3', () => {
+    const all = Object.values(CHAPTER_TABLES).flat();
+    expect(Object.keys(CHAPTER_TABLES).map(Number)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
+    expect(all).toHaveLength(25);
+    expect(new Set(all).size).toBe(25);
+    expect(tablesUnlocked(4)).toContain('trucking_orders');
+    expect(tablesUnlocked(4)).not.toContain('customs_declarations');
+    expect(tablesUnlocked(5)).toContain('hs_codes');
+    expect(tablesUnlocked(8)).not.toContain('master_bills');
+    expect(tablesUnlocked(12)).toContain('claims');
+  });
+
+  it('rankOf: thăng tiến theo cột mốc (L19), chức danh chỉ đổi ở chương ★', () => {
+    const real = loadTickets();
+    const upTo = (ch: number) => new Set(real.filter((t) => t.chapter <= ch).map((t) => t.id));
+    expect(rankOf(real, new Set())).toEqual({ passed: [] });
+    expect(rankOf(real, upTo(1))).toMatchObject({ passed: [1], tier: { en: 'Junior DA' }, career: { en: 'Junior DA' } });
+    expect(rankOf(real, upTo(2))).toMatchObject({ passed: [1, 2], tier: { en: 'Junior DA' }, career: { en: 'Junior DA · volume reporting' } });
+    expect(rankOf(real, upTo(3))).toMatchObject({ passed: [1, 2, 3], tier: { en: 'Data Analyst' } });
+    const noBoss = new Set(real.filter((t) => t.chapter === 1 && t.beat !== 'boss').map((t) => t.id));
+    expect(rankOf(real, noBoss).passed).toEqual([]);
   });
 });
