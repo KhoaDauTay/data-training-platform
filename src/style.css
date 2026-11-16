@@ -129,19 +129,3 @@
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; animation: none !important; scroll-behavior: auto !important; }
 }
-
-/* ==== LEGACY (Plan 1 style.css). Unlayered, so it still beats utilities: Tasks 6–9 delete it rule by rule, Task 9 removes the block. ==== */
-.sql-error .explain { border-left: 3px solid var(--accent); padding-left: 8px; }
-.tabs { display: flex; flex-wrap: wrap; gap: 4px; border-bottom: 1px solid var(--border); margin-bottom: 10px; }
-.tabs button { border-radius: 6px 6px 0 0; border-bottom: 0; background: var(--code); }
-.tabs button.on { background: var(--panel); font-weight: 600; box-shadow: inset 0 2px var(--accent); }
-.tabs .group-start { margin-left: 16px; }
-.tabs .new { margin-left: 6px; padding: 0 4px; border-radius: 4px; background: var(--accent); color: var(--on-accent); font-size: 11px; }
-.table-wrap { overflow: auto; max-height: 420px; border: 1px solid var(--border); border-radius: 6px; }
-th { position: sticky; top: 0; background: var(--panel); }
-td.null { color: var(--muted); font-style: italic; }
-tr.mismatch td { background: var(--accent-soft); }
-.schema-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px; }
-.schema-list h3 { margin: 0; }
-.schema-list ul { list-style: none; padding-left: 8px; margin: 4px 0 8px; font-size: 13px; }
-/* ==== END LEGACY ==== */

@@ -43,8 +43,8 @@ export function errorView(e: unknown): HTMLElement {
   const info = sqlErrorInfo(e);
   if (!info) return h('pre', { class: 'error' }, errorText(e));
   const note = explainError(info);
-  return h('div', { class: 'sql-error' },
+  return h('div', { class: 'space-y-1' },
     h('pre', { class: 'error' }, info.message),
     info.hint ? h('p', { class: 'muted' }, `HINT: ${info.hint}`) : null,
-    note ? h('p', { class: 'explain' }, t(note)) : null);
+    note ? h('p', { class: 'border-l-4 border-accent pl-2' }, t(note)) : null);
 }
