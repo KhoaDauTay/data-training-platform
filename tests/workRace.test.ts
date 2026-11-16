@@ -22,11 +22,20 @@ vi.mock('../src/ui/editor', () => ({
   },
 }));
 
-const fakeEl = () => ({
-  replaceChildren() {}, append() {}, setAttribute() {}, addEventListener() {}, focus() {},
-  classList: { add() {}, remove() {} },
-  hidden: false, disabled: false, textContent: '', className: '',
-});
+/** Every fake element, with a real class set: celebrate() adds a class, drawMessage() reassigns className. */
+const els: { classes: Set<string> }[] = [];
+const fakeEl = () => {
+  const classes = new Set<string>();
+  const el = {
+    replaceChildren() {}, append() {}, setAttribute() {}, addEventListener() {}, focus() {},
+    hidden: false, disabled: false, textContent: '', classes,
+    classList: { add: (c: string) => classes.add(c), remove: (c: string) => classes.delete(c) },
+    get className() { return [...classes].join(' '); },
+    set className(v: string) { classes.clear(); for (const c of v.split(' ').filter(Boolean)) classes.add(c); },
+  };
+  els.push(el);
+  return el;
+};
 vi.mock('../src/ui/dom', () => ({
   h: () => fakeEl(),
   nodes: (...c: unknown[]) => c.filter((x) => x !== null && x !== undefined && x !== false),
@@ -72,6 +81,7 @@ function open(work: ReturnType<typeof mountWork>, tk: Ticket) {
 
 beforeEach(() => {
   editors.length = 0;
+  els.length = 0;
   store = {};
   vi.stubGlobal('document', { addEventListener() {}, querySelector: () => null, getElementById: () => null });
   vi.stubGlobal('window', { localStorage: { getItem: (k: string) => store[k] ?? null, setItem: (k: string, v: string) => { store[k] = v; } } });
@@ -134,5 +144,18 @@ describe('đổi ticket khi query đang chạy', () => {
     await flush();
     expect(deps.onStepSolved).not.toHaveBeenCalled();
     expect(app.save.graded).toEqual({});
+  });
+});
+
+describe('hiệu ứng mừng', () => {
+  it('Nộp đúng ticket thường: lớp pop vẫn còn sau khi complete() vẽ lại (rerender → relabel)', async () => {
+    const { work, deps } = setup();
+    deps.onSolved.mockImplementation(() => work.relabel()); // as main.ts complete() → rerender() → work.relabel()
+    open(work, ticket('A'));
+    editors[0].opts.onSubmit();
+    release();
+    await flush();
+    expect(deps.onSolved).toHaveBeenCalledOnce();
+    expect(els.some((e) => e.classes.has('motion-safe:animate-pop'))).toBe(true);
   });
 });
