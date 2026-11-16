@@ -9,13 +9,19 @@ const DEFAULT: Layout = { col: 40, row: 40 };
 const LIMITS: Record<Part, [number, number]> = { col: [25, 60], row: [20, 70] };
 const clamp = (part: Part, v: number) => Math.min(LIMITS[part][1], Math.max(LIMITS[part][0], Math.round(v)));
 
+/** Stored sizes are user-editable: anything but a finite number falls back to the default, then is clamped. */
+export function parseLayout(saved: unknown): Layout {
+  const s = saved && typeof saved === 'object' ? (saved as Record<string, unknown>) : {};
+  const num = (part: Part) => (typeof s[part] === 'number' && Number.isFinite(s[part]) ? (s[part] as number) : DEFAULT[part]);
+  return { col: clamp('col', num('col')), row: clamp('row', num('row')) };
+}
+
 /**
  * Two keyboard-operable separators for the ≥ 1024×700 app shell. CSS reads --col/--row from `shell`.
  * ←/→ (column) and ↑/↓ (panel) move 5%, Home/End jump to the limits, double-click resets.
  */
 export function initLayout(shell: HTMLElement, handles: Record<Part, HTMLElement>): void {
-  const saved = readJson<Partial<Layout>>(LAYOUT_KEY) ?? {};
-  const layout: Layout = { col: clamp('col', saved.col ?? DEFAULT.col), row: clamp('row', saved.row ?? DEFAULT.row) };
+  const layout = parseLayout(readJson<unknown>(LAYOUT_KEY));
 
   const set = (part: Part, v: number, save = true) => {
     layout[part] = clamp(part, v);
