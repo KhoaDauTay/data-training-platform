@@ -19,6 +19,7 @@ import { initLayout } from './ui/splitter';
 import { go, startRouter } from './ui/router';
 import { renderTopbar } from './ui/topbar';
 import { mountWork } from './ui/work';
+import { registerVizTabs } from './ui/vizTabs';
 
 app.tickets = loadTickets();
 const problems = contentProblems(app.tickets);
@@ -65,6 +66,7 @@ db.onProgress = (p) => {
 app.run = (sql) => db.run(sql);
 
 registerCoreTabs(() => work.currentSql());
+registerVizTabs({ db, show: (id) => panel.show(id), editorSql: () => work.currentSql() });
 const panel = createPanel(byId('panel'));
 const work = mountWork(byId('work'), {
   db,
