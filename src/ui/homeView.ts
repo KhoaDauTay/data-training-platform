@@ -1,10 +1,13 @@
 import { homeModel, LEVELS, type ChapterCard, type HomeModel, type SkillCard } from '../home';
 import { getLang, t, type Key } from '../i18n';
 import { CHAPTERS, chapterTitle, rankOf, SKILLS } from '../progress';
+import { derive } from '../scene';
 import { actions, app, done } from '../state';
 import { BTN_GO, CARD, chapterColor, cx, DONE_PILL, PILL } from '../theme';
 import { textOf } from '../tickets';
 import { byId, h, nodes } from './dom';
+import { harborScene } from './harbor';
+import { routeMap } from './routeMap';
 import { go } from './router';
 
 /** Width on >= lg screens (3-column grid); every section is full width below lg. */
@@ -192,11 +195,42 @@ function modesSection(): HTMLElement | null {
         h('span', {}, h('b', { class: 'block' }, t(md.title)), h('span', { class: 'text-sm text-muted' }, t(md.desc)))))));
 }
 
+/** Completed ids when the player last left Home (session memory only, completion-animations §4). */
+let seenAtLeave: Set<string> | undefined;
+/** main.ts calls this whenever another route is shown. */
+export function leftHome(): void {
+  seenAtLeave = done();
+}
+/** Chapters with a task finished since the last visit: their newest container gets a bright edge and "New". */
+function freshChapters(): Set<number> {
+  const seen = seenAtLeave;
+  const d = done();
+  return new Set(seen ? app.tickets.filter((x) => d.has(x.id) && !seen.has(x.id)).map((x) => x.chapter) : []);
+}
+
+/** Tien Sa (L26): the yard holds one container per completed ticket, coloured by chapter. Home never replays animations. */
+function harborSection(m: HomeModel): HTMLElement {
+  const scene = harborScene(derive(app.tickets, done()), { ambient: true, current: m.chapter, fresh: freshChapters() });
+  return h('section', { class: cx(CARD, 'overflow-hidden'), 'aria-labelledby': 'harbor-title' },
+    h('h2', { id: 'harbor-title', class: 'sr-only' }, t('harbor.title')),
+    scene.svg);
+}
+
+function routesSection(): HTMLElement {
+  return h('section', { class: cx(CARD, 'p-5'), 'aria-labelledby': 'routes-title' },
+    h('div', { class: 'mb-2 flex flex-wrap items-end justify-between gap-2' },
+      h('h2', { id: 'routes-title', class: 'm-0 text-lg font-bold' }, t('routes.title')),
+      h('p', { class: 'm-0 text-sm text-muted' }, t('routes.subtitle'))),
+    routeMap(derive(app.tickets, done())).svg);
+}
+
 registerHomeSection({ id: 'continue', order: 10, span: 'wide', render: continueCard });
 registerHomeSection({ id: 'career', order: 20, span: 'narrow', render: careerCard });
 registerHomeSection({ id: 'chapters', order: 30, span: 'full', render: chaptersSection });
 registerHomeSection({ id: 'skills', order: 40, span: 'full', render: skillsSection });
 registerHomeSection({ id: 'modes', order: 50, span: 'full', render: modesSection });
+registerHomeSection({ id: 'harbor', order: 5, span: 'full', render: harborSection });
+registerHomeSection({ id: 'routes', order: 25, span: 'full', render: routesSection });
 
 /** Redrawn by rerender() (language switch, progress). Pure DOM from homeModel(); keeps no state of its own. */
 export function renderHome(host: HTMLElement): void {
