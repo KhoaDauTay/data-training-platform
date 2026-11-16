@@ -123,3 +123,23 @@ Vòng 2/3 (2026-11-17, chỉ diff 98532fa..2e85fd3): các bản sửa vòng 1 đ
 | correctness | `valueRange()` không chặn NaN/Infinity (`'NaN'::numeric`) → SVG biểu đồ vỡ | Đã sửa (bỏ giá trị không hữu hạn khỏi trục) |
 
 **Plan 1b đóng sau 2 vòng.**
+
+## Plan 1c (base b2e7a10)
+
+Vòng 1/3 (2026-11-17): `code-review` (Standards + Spec) + cổng Edge (save v1→v2 có backup, Practice biến thể tháng 8 không đổi XP, `limit` lên hộp 2, Sandbox, Sổ tay, không lỗi console). Không vi phạm cứng; migration đúng; Practice không rò sang story. Task 11 (chẩn đoán) chờ Plan Deploy.
+
+| Loại | Bug | Nguồn | Trạng thái |
+|---|---|---|---|
+| correctness | Phiên ôn lặp cùng một bài: sau ch1 cả 4 kỹ năng đến hạn đều ra `ch1-03` (chỉ 2 biến thể) → trái D2 "buộc nhớ lại" | Spec | Mở — L37 |
+| correctness | Số trên nút "Ôn: N" (`dueToday`) khác độ dài hàng ôn (`todayQueue`, tối đa 5, bỏ kỹ năng không có bài); hàng rỗng thì bấm không phản hồi (P6) | cả hai | Mở — L37 |
+| correctness | Sổ tay mở (non-modal `dialog[open]`) làm `stageEsc` chặn Esc bỏ qua hoạt cảnh | Standards | Mở |
+| correctness | Sổ tay vẽ một lần lúc mở: đổi ngôn ngữ / học kỹ năng mới khi đang mở → nội dung cũ | Standards | Mở |
+| correctness | Hết phiên Practice: editor sống không ticket cạnh khung "Xong", draft ghi vào `run.draft` | Standards | Mở |
+| ux | Dải tiến độ vẫn hiện trong Sandbox/Practice (spec §6b: không áp dụng) | Spec | Mở |
+| ux | `save.practice {solved, failed}` ghi nhưng không hiện ở đâu | Spec | Mở — L37 |
+| a11y | Đóng Sổ tay không trả focus về nút mở; `#notebook-btn` thiếu `aria-expanded` | cả hai | Mở |
+| data | `DAY_RE` nhận ngày không tồn tại (`2026-13-45`) | Standards | Mở |
+| test-gap | Practice không đụng hintsUsed/graded/history/completed; `onSolved` định tuyến Practice vs `complete()`; round-trip export→import v2; `bossStep` lưu + resume; số ôn = độ dài hàng; hàng ôn không trùng (ticket, biến thể) | cả hai | Mở |
+| smells | `complete()` dùng `localDay(new Date())` thay `session.today()`; `c.box <= 5` thay `MAX_BOX`; kiểu Save lặp kiểu `practice.ts`; `loadTicketTemplates()` parse 2 lần; `practice.failed` tên sai nghĩa; switch `mode.kind` lặp 6 chỗ; `modes.ts` gắn hook khi import; `mapStrings` thay cả `id/path` | Standards | Mở (judgement) |
+| docs | Spec §6b còn mô tả Inbox có Luyện tập/Sandbox, topbar `n/69`, màn Tổng kết chương, vị trí Sổ tay (P2/P3/P6 đã thay); E2 key `'sandbox'` (L16); CLAUDE.md chưa nói `#notebook-btn`, `session.mode` chỉ trong bộ nhớ, draft Practice không lưu; P1–P11 chưa có số L | cả hai | Mở |
+| verification | Chưa chạy round-trip Xuất→Nhập trên trình duyệt; chưa quét "boss/sự cố" màn mới | Spec | Mở — orchestrator |
