@@ -256,4 +256,10 @@ export const en: Record<Key, Msg> = {
   'steps.after': 'After',
   'steps.sample': 'Sample rows after this step (up to 5):',
   'steps.sql': 'SQL Postgres ran for this step',
+  'tab.chart': 'Chart',
+  'chart.empty': 'The chart appears when the result looks like (label, number…) or (date, number…), up to {max} rows.',
+  'chart.runError': 'The last run failed — see the Result tab.',
+  'chart.valueCol': 'Value column: ',
+  'chart.barAria': 'Bar chart of {col}',
+  'chart.lineAria': 'Line chart of {col}',
 };

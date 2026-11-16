@@ -1,8 +1,10 @@
 import type { DbClient } from '../db/client';
 import { t } from '../i18n';
 import { app } from '../state';
+import { chapterColor } from '../theme';
 import { memoByKey } from '../viz/memo';
 import { flattenPlan, type Plan } from '../viz/plan';
+import { renderChart } from './chartView';
 import { h } from './dom';
 import { renderExplain } from './explainView';
 import { errorView } from './feedback';
@@ -70,8 +72,27 @@ function registerStepsTab(deps: VizDeps): void {
   });
 }
 
+function registerChartTab(deps: VizDeps): void {
+  registerTab({
+    id: 'chart',
+    label: 'tab.chart',
+    group: 'output',
+    order: 20,
+    newAt: 'ch2-01',
+    render: (host) => {
+      if (lastRunSql(host, deps) === undefined) return;
+      const result = app.lastRun?.result;
+      // Chapter colour of the open ticket; chapterColor(0) is the neutral slate (no ticket).
+      const chapter = app.tickets.find((x) => x.id === app.selectedId)?.chapter ?? 0;
+      if (result) renderChart(host, result, chapterColor(chapter));
+      else host.append(h('p', { class: 'muted' }, t('chart.runError')));
+    },
+  });
+}
+
 /** Called once from main.ts, before the panel is created. */
 export function registerVizTabs(deps: VizDeps): void {
+  registerChartTab(deps);
   registerStepsTab(deps);
   registerPlanTabs(deps);
 }

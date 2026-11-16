@@ -253,4 +253,10 @@ export const vi = {
   'steps.after': 'Sau',
   'steps.sample': 'Dòng mẫu sau bước này (tối đa 5):',
   'steps.sql': 'SQL Postgres chạy cho bước này',
+  'tab.chart': 'Biểu đồ',
+  'chart.empty': 'Biểu đồ tự bật khi kết quả có dạng (nhãn, số…) hoặc (ngày, số…), tối đa {max} dòng.',
+  'chart.runError': 'Lần chạy gần nhất bị lỗi — xem tab Kết quả.',
+  'chart.valueCol': 'Cột giá trị: ',
+  'chart.barAria': 'Biểu đồ cột theo {col}',
+  'chart.lineAria': 'Biểu đồ đường theo {col}',
 } satisfies Record<string, Msg>;
