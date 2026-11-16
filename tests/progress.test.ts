@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   chapterTitle, CHAPTERS, contentProblems, currentChapter, nextTicket, parseChapters, parseSkills, SKILLS,
-  tablesUnlocked, visibleTickets, xpFor,
+  tablesUnlocked, twistUsed, visibleTickets, xpFor,
 } from '../src/progress';
 import type { Beat, Ticket } from '../src/tickets';
 
@@ -33,7 +33,7 @@ const chapter1 = [
   mk('ch1-02', 'develop', { requires: ['select'], grants: ['where'] }),
   mk('ch1-03', 'twist', { requires: ['select'], grants: ['order_by'] }),
   mk('ch1-04', 'rest'),
-  mk('ch1-05', 'boss', { requires: ['where', 'order_by'] }),
+  mk('ch1-05', 'boss', { requires: ['where', 'order_by'], steps: [{ title: '', prompt: '', solution: 'SELECT 1' }, { title: '', prompt: '', solution: 'SELECT 1 ORDER BY 1' }] }),
 ];
 const problems = (tickets: Ticket[], s = skills, c = chapters) => contentProblems(tickets, s, c);
 const swap = (id: string, patch: Partial<Ticket>) => chapter1.map((t) => (t.id === id ? { ...t, ...patch } : t));
@@ -141,5 +141,39 @@ describe('contentProblems', () => {
   it('boss phải kiểm tra kỹ năng của ticket twist', () => {
     expect(problems(swap('ch1-05', { requires: ['where'] })))
       .toContain('ch1-05: boss phải kiểm tra kỹ năng twist "order_by" (thêm vào requires)');
+  });
+
+  it('boss không dạy kỹ năng nào (grants: [])', () => {
+    expect(problems(swap('ch1-05', { grants: ['order_by'] }))).toContain('ch1-05: boss không được dạy kỹ năng (grants phải rỗng)');
+  });
+
+  it('ít nhất một Solution của boss phải thật sự dùng kỹ năng twist', () => {
+    const noOrder = [{ title: '', prompt: '', solution: 'SELECT 1' }, { title: '', prompt: '', solution: 'SELECT 2' }];
+    expect(problems(swap('ch1-05', { steps: noOrder })))
+      .toContain('ch1-05: không Solution nào của boss dùng kỹ năng twist "order_by"');
+  });
+
+  it('kỹ năng twist không có trong bảng từ khóa thì bỏ qua', () => {
+    const custom = parseSkills([card('select', 1), card('where', 1), card('pivot', 1), card('aggregate', 2)].join('\n'));
+    const tickets = chapter1.map((t) => (t.id === 'ch1-03' ? { ...t, grants: ['pivot'] } : t.id === 'ch1-05' ? { ...t, requires: ['where', 'pivot'] } : t));
+    expect(problems(tickets, custom)).toEqual([]);
+  });
+});
+
+describe('twistUsed: từ khóa theo kỹ năng', () => {
+  it.each([
+    ['limit', 'SELECT 1 LIMIT 3', 'SELECT 1'],
+    ['having', 'SELECT a FROM t GROUP BY a HAVING count(*) > 1', 'SELECT a FROM t GROUP BY a'],
+    ['left_join', 'SELECT * FROM a left  join b ON true', 'SELECT * FROM a JOIN b ON true'],
+    ['anti_join', 'SELECT * FROM a LEFT JOIN b ON true WHERE b.id IS NULL', 'SELECT * FROM a LEFT JOIN b ON true'],
+    ['anti_join', 'SELECT * FROM a WHERE NOT EXISTS (SELECT 1)', 'SELECT * FROM a WHERE EXISTS (SELECT 1)'],
+    ['order_by', 'SELECT 1 ORDER BY 1', 'SELECT 1'],
+  ])('%s', (skill, yes, no) => {
+    expect(twistUsed(skill, yes)).toBe(true);
+    expect(twistUsed(skill, no)).toBe(false);
+  });
+
+  it('kỹ năng lạ → undefined (không kiểm)', () => {
+    expect(twistUsed('pivot', 'SELECT 1')).toBeUndefined();
   });
 });

@@ -22,6 +22,18 @@ const list = (source: string, origin: string): Record<string, unknown>[] => {
   return data as Record<string, unknown>[];
 };
 
+/** How a Solution shows it really uses a skill (twist → boss check). Skills not listed here are not checked. */
+const SKILL_SQL: Record<string, RegExp> = {
+  order_by: /\bORDER\s+BY\b/i,
+  limit: /\bLIMIT\b/i,
+  having: /\bHAVING\b/i,
+  left_join: /\bLEFT\s+(OUTER\s+)?JOIN\b/i,
+  anti_join: /\bIS\s+NULL\b|\bNOT\s+EXISTS\b/i,
+};
+
+/** true/false when `skill` has a keyword pattern, undefined when it cannot be checked. */
+export const twistUsed = (skill: string, sql: string): boolean | undefined => SKILL_SQL[skill]?.test(sql);
+
 /** Throws on a broken structure. Empty card fields are reported by contentProblems instead. */
 export function parseSkills(source: string, origin = 'skills.yml'): Skill[] {
   const seen = new Set<string>();
@@ -149,9 +161,14 @@ export function contentProblems(tickets: Ticket[], skills: Skill[] = SKILLS, cha
     if (beats[beats.length - 2] !== 'rest') problems.push(`chương ${chapter}: ngay trước boss phải là rest`);
     if (beats.filter((b) => b === 'boss').length !== 1) problems.push(`chương ${chapter}: cần đúng một boss`);
     const boss = inChapter.find((t) => t.beat === 'boss');
+    if (boss && boss.grants.length) problems.push(`${boss.id}: boss không được dạy kỹ năng (grants phải rỗng)`);
     for (const twist of inChapter.filter((t) => t.beat === 'twist')) {
       for (const skill of twist.grants) {
-        if (boss && !boss.requires.includes(skill)) problems.push(`${boss.id}: boss phải kiểm tra kỹ năng twist "${skill}" (thêm vào requires)`);
+        if (!boss) continue;
+        if (!boss.requires.includes(skill)) problems.push(`${boss.id}: boss phải kiểm tra kỹ năng twist "${skill}" (thêm vào requires)`);
+        if (boss.steps.every((st) => twistUsed(skill, st.solution) === false)) {
+          problems.push(`${boss.id}: không Solution nào của boss dùng kỹ năng twist "${skill}"`);
+        }
       }
     }
   }
