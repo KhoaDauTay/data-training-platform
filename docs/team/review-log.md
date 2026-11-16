@@ -85,3 +85,5 @@ Vòng 2/3 (2026-11-17, chỉ diff 60c5257..6770add): các bản sửa vòng 1 đ
 | content | Test SQLISH cấm cả `FCL`/`LCL` (thuật ngữ nghiệp vụ thường dùng) | Đã sửa d29d21a |
 
 Sửa vòng 2: commits 78fda81 (fix), d29d21a (test).
+
+Kiểm trên Edge sau vòng 2 (2026-11-17): xong ch1-04 (bãi, tab Kết quả mở, đổi EN khi dock mở → chữ đổi), ch1-05 3 bước + kết luận → lên Junior DA, mở chương 2, tuyến Rotterdam (tàu) + Singapore (thăng tiến) trên Trang chủ; không lỗi console. Chưa nhìn thấy trực tiếp hoạt cảnh tàu/thăng tiến (đã chạy xong trước khi chụp). Sửa thêm: nhãn HẢI QUAN tràn chốt (2235772), câu "chốt kết luận" còn sau khi đã nộp + câu "rê chuột" cũ ở Trang chủ (a381066). **Plan 1d đóng sau 2 vòng** (vòng 3 không cần).
