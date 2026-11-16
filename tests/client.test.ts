@@ -171,23 +171,38 @@ describe('DbClient', () => {
     expect(seen).toEqual([{ loaded: 2_100_000, total: 5_400_000 }]);
     expect(statuses).toEqual(['loading']);
   });
-  it('mỗi loại yêu cầu gửi kèm kind; steps có hạn 3×, tải parser có hạn dài riêng', async () => {
+  it('tải parser chạy bên cạnh hàng đợi: Run không chờ; steps có hạn 3×', async () => {
     const { db } = client();
     const w = last();
     w.ready();
     const parser = db.loadParser();
-    const steps = db.steps('S').catch((e: unknown) => e);
-    expect(w.posted).toEqual([{ id: 1, kind: 'parser', sql: '' }]);
+    const run = db.run('R');
+    expect(w.posted).toEqual([
+      { id: 1, kind: 'parser', sql: '' },
+      { id: 2, kind: 'run', sql: 'R' },
+    ]);
+    w.send({ type: 'result', id: 2, result: { rows: [] } });
+    await expect(run).resolves.toEqual({ rows: [] });
     await vi.advanceTimersByTimeAsync(PARSER_TIMEOUT_MS - 1000); // tải chậm vẫn chưa bị giết
     expect(w.terminated).toBe(false);
     w.send({ type: 'result', id: 1, result: null });
-    await expect(parser).resolves.toBeNull();
-    expect(w.posted[1]).toMatchObject({ kind: 'steps', sql: 'S' });
+    await expect(parser).resolves.toBeUndefined();
+    const steps = db.steps('S').catch((e: unknown) => e);
+    expect(w.posted[2]).toMatchObject({ kind: 'steps', sql: 'S' });
     await vi.advanceTimersByTimeAsync(14_999);
     expect(w.terminated).toBe(false);
     await vi.advanceTimersByTimeAsync(1);
     expect(await steps).toBeInstanceOf(QueryTimeoutError);
     expect(((await steps) as QueryTimeoutError).timeoutMs).toBe(15_000);
+  });
+
+  it('parser gửi trước khi DB sẵn sàng thì chờ ready rồi mới gửi', () => {
+    const { db } = client();
+    const w = last();
+    void db.loadParser();
+    expect(w.posted).toEqual([]);
+    w.ready();
+    expect(w.posted).toEqual([{ id: 1, kind: 'parser', sql: '' }]);
   });
 
   it('explain và run gửi đúng kind', () => {
@@ -206,6 +221,7 @@ describe('DbClient', () => {
     const p = db.loadParser().catch((e: unknown) => e);
     await vi.advanceTimersByTimeAsync(PARSER_TIMEOUT_MS);
     expect(await p).toBeInstanceOf(WorkerTaskError);
+    expect(last().terminated).toBe(false); // a slow download never restarts the DB
   });
 
   it('lỗi không phải Postgres (fault) thành WorkerTaskError, không phải SqlError', async () => {

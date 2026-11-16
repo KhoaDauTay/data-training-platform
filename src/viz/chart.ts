@@ -19,7 +19,8 @@ export function chartSpec(r: QueryResult): ChartSpec | null {
 
 /** Value axis for bars and lines: always contains 0 (the baseline), so 0–1 ratios and negatives scale as they are. Only an all-zero series needs a guard. */
 export function valueRange(values: number[]): [number, number] {
-  const lo = Math.min(0, ...values);
-  const hi = Math.max(0, ...values);
+  const finite = values.filter(Number.isFinite); // 'NaN'::numeric and 'Infinity'::float8 are valid Postgres values
+  const lo = Math.min(0, ...finite);
+  const hi = Math.max(0, ...finite);
   return lo === hi ? [lo, lo + 1] : [lo, hi];
 }

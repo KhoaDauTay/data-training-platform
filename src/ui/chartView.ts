@@ -16,7 +16,7 @@ function bars(r: QueryResult, spec: ChartSpec, col: number, color: ChapterColor)
   const labelW = 200;
   const vals = r.rows.map((row) => Number(row[col] ?? 0));
   const [lo, hi] = valueRange(vals);
-  const x = (v: number) => labelW + ((v - lo) / (hi - lo)) * (W - labelW - 90);
+  const x = (v: number) => labelW + (((Number.isFinite(v) ? v : 0) - lo) / (hi - lo)) * (W - labelW - 90); // NaN/Infinity: no bar, value still printed
   const x0 = x(0); // negatives grow left of the zero line
   const height = r.rows.length * rowH + 8;
   return s('svg', { viewBox: `0 0 ${W} ${height}`, class: SVG, role: 'img', 'aria-label': t('chart.barAria', { col: r.columns[col] }) },
@@ -36,7 +36,7 @@ function line(r: QueryResult, spec: ChartSpec, col: number, color: ChapterColor)
   const pad = { l: 64, r: 16, t: 12, b: 32 };
   const pts = r.rows
     .map((row) => ({ t: (row[spec.label] as Date | null)?.getTime(), v: row[col] === null ? null : Number(row[col]), raw: row[spec.label] }))
-    .filter((p): p is { t: number; v: number; raw: unknown } => p.t !== undefined && p.v !== null)
+    .filter((p): p is { t: number; v: number; raw: unknown } => p.t !== undefined && p.v !== null && Number.isFinite(p.v))
     .sort((a, b) => a.t - b.t);
   const [t0, t1] = [pts[0]?.t ?? 0, pts.at(-1)?.t ?? 1];
   const [vmin, vmax] = valueRange(pts.map((p) => p.v));
