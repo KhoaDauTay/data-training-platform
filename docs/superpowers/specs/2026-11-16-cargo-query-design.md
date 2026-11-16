@@ -25,14 +25,15 @@ Chạy hoàn toàn trong trình duyệt, deploy tĩnh, không backend.
 ┌──────────── Browser ─────────────────────────────────────┐
 │  UI (DOM): Inbox │ Ticket │ Schema │ SQL Editor │ Result │
 │        │                         │                       │
-│   Content (tickets/*.md)      Grader ── PGliteWorker      │
-│        │                         │      (Web Worker)     │
+│   Content (tickets/*.md)      Grader ── Worker riêng      │
+│        │                         │      (PGlite bên trong)│
 │   Progress (localStorage)        │      schema + seed    │
 └──────────────────────────────────────────────────────────┘
 ```
 
-- **Stack:** Vite + TypeScript, CodeMirror 6 (`@codemirror/lang-sql`), PGlite qua `PGliteWorker`, Vitest. Không dùng game engine (UI DOM-first theo skill web-games).
-- **Tải trang:** render inbox và nội dung ticket trước, tải PGlite (~3MB) nền. Mạng lỗi → nút thử lại, đề bài vẫn đọc được.
+- **Stack:** Vite + TypeScript, CodeMirror 6 (`@codemirror/lang-sql`), PGlite **0.5.16 pin cứng** (Postgres 18.6 — `random()` gắn với bản build), Vitest. Không dùng game engine (UI DOM-first theo skill web-games).
+- **Worker:** một dedicated Web Worker tự viết (giao thức message `{id, sql}` → `{id, result|error}`), xử lý tuần tự từng query. Không dùng `PGliteWorker` vì nó bầu leader giữa các tab — `terminate()` ở tab không phải leader không dừng được query. Spike xác nhận `statement_timeout` không có tác dụng trong PGlite, nên `terminate()` là cách dừng duy nhất.
+- **Tải trang:** render inbox và nội dung ticket trước, PGlite khởi động (~1s) + seed (~2s) trong worker. Mạng lỗi → nút thử lại, đề bài vẫn đọc được.
 - **Ticket là file:** `content/tickets/<chương>/<id>.md` gồm frontmatter + đề + gợi ý + SQL đáp án. Thêm ticket = thêm file, nạp qua `import.meta.glob`.
 
 ### Định dạng ticket
@@ -41,7 +42,8 @@ Chạy hoàn toàn trong trình duyệt, deploy tĩnh, không backend.
 ---
 id: ch2-03
 chapter: 2
-from: { name: "Anh Tuấn", dept: "Sales" }
+title: Khách hàng chủ lực
+from: { name: Lê Bình, dept: Sales }
 difficulty: 2
 beat: develop            # teach | develop | twist | rest | boss
 requires: [group_by]     # kỹ năng phải có trước
@@ -62,7 +64,9 @@ SELECT ...
 ```
 ````
 
-Boss ticket có `steps:` (2–3 query con, mỗi step có Solution riêng) và `conclusion:` (câu trắc nghiệm + đáp án đúng).
+Boss ticket thay `## Solution` bằng 2–3 mục `## Step N: <tiêu đề>` (mỗi mục có đề bước + khối ```sql riêng) và thêm `conclusion: { question, options, answer }` vào frontmatter. Câu kết luận phải **không phụ thuộc số liệu** hoặc được một test seed khẳng định.
+
+**Quy tắc nội dung:** ticket có thứ tự / top-N phải nêu tiêu chí phá hòa đầy đủ (ví dụ "bằng nhau thì xếp theo `ref`"), nếu không grader sẽ chấm sai câu đúng. Solution chỉ dùng ngày cố định, không dùng `CURRENT_DATE`/`now()` (test kiểm tra).
 
 ## 4. Dữ liệu domain
 
@@ -78,11 +82,13 @@ Boss ticket có `steps:` (2–3 query con, mỗi step có Solution riêng) và `
 | Chứng từ | `master_bills`, `house_bills` (`master_id`), `incoterms` | 6 |
 | D&D + Claims | `free_time_terms`, `container_events`, `claims` | 6–7 |
 
-Seed tạo **đủ 26 bảng ngay từ đầu**. "Mở khóa" chỉ ảnh hưởng sidebar schema và gợi ý; DB luôn đầy đủ.
+Seed tạo **mọi bảng ngay khi khởi động** (đủ 26 bảng khi xong cả 3 plan triển khai). "Mở khóa" chỉ ảnh hưởng sidebar schema và gợi ý; DB luôn đầy đủ.
 
 ### Seed
 
-- Sinh trong Postgres bằng `generate_series` + `setseed()` → tất định, file SQL vài KB.
+- Sinh trong Postgres bằng `generate_series` + `setseed()` → tất định, file SQL vài KB. **Mỗi khối bảng có `setseed()` riêng** và khối mới chỉ thêm vào cuối, để thêm bảng sau không làm đổi dữ liệu cũ.
+- **"Hôm nay" trong game = 2026-10-31.** Dữ liệu booking từ 2024-11-01 đến 2026-10-31.
+- Móc câu chuyện đặt sẵn từ seed lõi: khách 171–190 ngừng book từ 2026-03-01; khách 191–200 là bản trùng của khách 1–10; ~2% lô AIR ghi FOB; khách 1 là khách lớn nhất (dành cho câu chuyện D&D); hãng tàu 3 *Blue Anchor Lines* (câu chuyện claim); tuyến châu Âu NLRTM/DEHAM/BEANR (câu chuyện margin Q3/2026).
 - Quy mô: ~200 khách, ~20.000 shipment trong 2 năm, tương ứng container/charges/events.
 - Benchmark ngành (margin, on-time…) chỉ dùng làm tham số sinh dữ liệu cho hợp lý.
 
@@ -116,8 +122,9 @@ Mỗi chương theo nhịp **teach → develop → twist → rest → boss** (r�
 - Chạy query người chơi và Solution trên cùng DB, so kết quả:
   - không xét thứ tự dòng, trừ khi `ordered: true`;
   - so theo **vị trí cột**, bỏ qua tên cột;
-  - số thực dung sai `1e-6`; kiểu numeric tiền làm tròn 2 chữ số;
-  - NULL bằng NULL.
+  - **mọi giá trị số** (int, float, numeric — PGlite trả numeric dạng chuỗi) so sánh sau khi **làm tròn 2 chữ số thập phân**, nên `AVG(x)` khớp với `ROUND(AVG(x), 2)`; giá trị nằm đúng ranh giới làm tròn (0.335 vs 0.33499) có thể lệch — chấp nhận;
+  - NULL bằng NULL; ngày so theo thời điểm.
+- Query người chơi chỉ được **một câu lệnh** (PGlite từ chối nhiều câu trong một lần chạy), nên không thể thoát khỏi `BEGIN … ROLLBACK`.
 - Phản hồi khi sai: sai số cột / thiếu N dòng / thừa N dòng / giá trị lệch (ví dụ 1 dòng). Không lộ đáp án.
 - XP: base theo `difficulty`; mỗi bậc gợi ý đã mở trừ một phần.
 
