@@ -1,3 +1,4 @@
+import type { ImportedTable, ImportRequest } from './import';
 import type { LoadProgress } from './loadProgress';
 import { SqlError, type QueryResult, type SqlErrorInfo } from './run';
 
@@ -33,6 +34,14 @@ export class DbFailedError extends Error {
 }
 
 export const PARSER_TIMEOUT_MS = 60_000;
+/** Worst case in the spike (20 MB, 200k rows, 50 columns) took ~6.5 s in Node; the browser is slower. */
+export const IMPORT_TIMEOUT_MS = 30_000;
+
+/** Everything the worker accepts, minus the request id. */
+export type WorkerBody =
+  | { kind: RequestKind; sql: string }
+  | { kind: 'import'; req: ImportRequest; file: Blob }
+  | { kind: 'dropImport'; table?: string };
 
 type WorkerMessage =
   | { type: 'ready'; timings: DbTimings }
@@ -43,8 +52,7 @@ type WorkerMessage =
   | { type: 'fault'; id: number; message: string };
 
 interface Job {
-  kind: RequestKind;
-  sql: string;
+  body: WorkerBody;
   timeoutMs: number;
   resolve: (r: unknown) => void;
   reject: (e: Error) => void;
@@ -60,6 +68,10 @@ export class DbClient {
   timings?: DbTimings;
   /** PGlite asset download progress while booting (bytes). */
   onProgress?: (p: LoadProgress) => void;
+  /** Called when an imported table could not be re-imported after a restart; it is no longer replayed. */
+  onImportDropped: (table: string, error: Error) => void = () => {};
+  /** Imported tables (with their inferred types), replayed after every restart. */
+  private imports = new Map<string, { req: ImportRequest; file: Blob }>();
   private worker!: Worker;
   private status: DbStatus = 'loading';
   private failure?: DbFailedError;
@@ -79,11 +91,48 @@ export class DbClient {
 
   /** One queued entry point for every kind of request. Rejects with SqlError, WorkerTaskError, QueryTimeoutError, DbRestartError or DbFailedError. */
   request<T>(kind: RequestKind, sql: string, timeoutMs = this.timeoutMs): Promise<T> {
+    return this.enqueue<T>({ kind, sql }, timeoutMs);
+  }
+
+  private enqueue<T>(body: WorkerBody, timeoutMs: number): Promise<T> {
     if (this.failure) return Promise.reject(this.failure);
     return new Promise<T>((resolve, reject) => {
-      this.queue.push({ kind, sql, timeoutMs, resolve: (r) => resolve(r as T), reject });
+      this.queue.push({ body, timeoutMs, resolve: (r) => resolve(r as T), reject });
       this.pump();
     });
+  }
+
+  /** CSV → sandbox.<req.table>, through the query queue (never between a player's BEGIN and ROLLBACK). Only a successful import is replayed. */
+  async importCsv(req: ImportRequest, file: Blob): Promise<ImportedTable> {
+    const t = await this.enqueue<ImportedTable>({ kind: 'import', req, file }, IMPORT_TIMEOUT_MS);
+    this.imports.set(req.table, { req: { ...req, types: t.columns.map((c) => c.type) }, file });
+    return t;
+  }
+
+  /** Drops one imported table, or every imported table when `table` is omitted. Forgotten for replay before it is sent. */
+  dropImport(table?: string): Promise<void> {
+    if (table === undefined) this.imports.clear();
+    else this.imports.delete(table);
+    return this.enqueue<void>({ kind: 'dropImport', table }, this.timeoutMs);
+  }
+
+  importedTables(): string[] {
+    return [...this.imports.keys()];
+  }
+
+  /**
+   * Queued right after start(), so replays run before anything sent later. A replay that fails
+   * or times out is forgotten and reported (no restart loop); one cut short by another restart
+   * stays registered and that restart replays it.
+   */
+  private replayImports(): void {
+    for (const [table, { req, file }] of this.imports) {
+      this.enqueue<ImportedTable>({ kind: 'import', req, file }, IMPORT_TIMEOUT_MS).catch((e: Error) => {
+        if (e instanceof DbRestartError) return;
+        this.imports.delete(table);
+        this.onImportDropped(table, e);
+      });
+    }
   }
 
   run(sql: string): Promise<QueryResult> {
@@ -107,7 +156,7 @@ export class DbClient {
     // Bypasses the query queue (Run/Submit never wait for the download) and never restarts the worker.
     if (this.failure) return Promise.reject(this.failure);
     return new Promise<void>((resolve, reject) => {
-      const job: Job = { kind: 'parser', sql: '', timeoutMs: PARSER_TIMEOUT_MS, resolve: () => resolve(), reject };
+      const job: Job = { body: { kind: 'parser', sql: '' }, timeoutMs: PARSER_TIMEOUT_MS, resolve: () => resolve(), reject };
       if (this.status === 'ready') this.postSide(job);
       else this.waitingSide.push(job);
     });
@@ -120,15 +169,16 @@ export class DbClient {
       job.reject(new WorkerTaskError());
     }, job.timeoutMs);
     this.side.set(id, { job, timer });
-    this.worker.postMessage({ id, kind: job.kind, sql: job.sql });
+    this.worker.postMessage({ id, ...job.body });
   }
 
-  /** Kills the worker, rejects every waiting query with DbRestartError, boots a fresh worker. */
+  /** Kills the worker, rejects every waiting query with DbRestartError, boots a fresh worker and replays imported tables. */
   restart(): void {
     performance.mark('db:restart');
     this.worker.terminate();
     this.rejectAll(new DbRestartError());
     this.start();
+    this.replayImports();
   }
 
   private start(): void {
@@ -184,11 +234,15 @@ export class DbClient {
     const id = this.nextId++;
     const timer = setTimeout(() => {
       this.inFlight = undefined;
+      // Forget a timed-out import before restart() replays the others, or it would loop.
+      // Only the registered entry: a timed-out *replacement* keeps the old file replayable.
+      const b = job.body;
+      if (b.kind === 'import' && this.imports.get(b.req.table)?.file === b.file) this.imports.delete(b.req.table);
       job.reject(new QueryTimeoutError(job.timeoutMs));
       this.restart();
     }, job.timeoutMs);
     this.inFlight = { id, job, timer };
-    this.worker.postMessage({ id, kind: job.kind, sql: job.sql });
+    this.worker.postMessage({ id, ...job.body });
   }
 
   private fail(detail: string): void {

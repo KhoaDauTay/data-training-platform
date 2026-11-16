@@ -1,7 +1,8 @@
 import { PGlite } from '@electric-sql/pglite';
 import { initDb } from './init';
 import { countingFetch } from './loadProgress';
-import type { RequestKind } from './client';
+import type { WorkerBody } from './client';
+import { dropImport, importCsv } from './import';
 import { runExplain, runSandboxed, sqlErrorInfo } from './run';
 
 // PGlite fetches its .wasm/.data with the global fetch; count the bytes for the loading status.
@@ -22,13 +23,15 @@ ready.then(
   (e: unknown) => postMessage({ type: 'initError', message: e instanceof Error ? e.message : String(e) }),
 );
 
-async function handle(db: PGlite, kind: RequestKind, sql: string): Promise<unknown> {
-  if (kind === 'explain') return runExplain(db, sql);
-  if (kind === 'steps') {
+async function handle(db: PGlite, body: WorkerBody): Promise<unknown> {
+  if (body.kind === 'import') return importCsv(db, body.req, body.file);
+  if (body.kind === 'dropImport') return dropImport(db, body.table);
+  if (body.kind === 'explain') return runExplain(db, body.sql);
+  if (body.kind === 'steps') {
     const { runSteps } = await import('../viz/steps'); // loads the parser only when this tab is used
-    return runSteps(db, sql);
+    return runSteps(db, body.sql);
   }
-  return runSandboxed(db, sql);
+  return runSandboxed(db, body.sql);
 }
 
 // One query at a time: BEGIN … ROLLBACK pairs from two runs must never interleave.
@@ -46,13 +49,14 @@ async function loadParser(id: number): Promise<void> {
   }
 }
 
-onmessage = (e: MessageEvent<{ id: number; kind: RequestKind; sql: string }>) => {
-  const { id, kind, sql } = e.data;
-  if (kind === 'parser') return void loadParser(id);
+onmessage = (e: MessageEvent<{ id: number } & WorkerBody>) => {
+  const { id } = e.data;
+  const body: WorkerBody = e.data;
+  if (body.kind === 'parser') return void loadParser(id);
   queue = queue.then(async () => {
     try {
       const { db } = await ready;
-      postMessage({ type: 'result', id, result: await handle(db, kind, sql) });
+      postMessage({ type: 'result', id, result: await handle(db, body) });
     } catch (err) {
       // Custom Error fields do not survive postMessage, so send plain fields. Only Postgres errors are SQL errors.
       const error = sqlErrorInfo(err);
