@@ -27,7 +27,7 @@ export function pageShortcutOf(e: PageKey, mac: boolean, at: { workspaceHidden: 
 
 /**
  * Esc skips (or closes) the completion dock, unless something else already took it: CodeMirror closing its autocomplete
- * (`defaultPrevented`) or an open dialog (Esc closes the inbox there).
+ * (`defaultPrevented`) or an open modal dialog (Esc closes the inbox there). The non-modal notebook does not count.
  */
-export const stageEsc = (e: Pick<KeyboardEvent, 'key' | 'defaultPrevented'>, stageOpen: boolean, dialogOpen: boolean): boolean =>
-  e.key === 'Escape' && !e.defaultPrevented && stageOpen && !dialogOpen;
+export const stageEsc = (e: Pick<KeyboardEvent, 'key' | 'defaultPrevented'>, stageOpen: boolean, modalOpen: boolean): boolean =>
+  e.key === 'Escape' && !e.defaultPrevented && stageOpen && !modalOpen;

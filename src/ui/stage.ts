@@ -450,7 +450,7 @@ export function initStage(): void {
     if (!(from instanceof Node && stage.contains(from))) returnFocus = from instanceof HTMLElement ? from : null; // never a stale target
   });
   document.addEventListener('keydown', (e) => {
-    if (stageEsc(e, !stage.hidden, Boolean(document.querySelector('dialog[open]')))) skip();
+    if (stageEsc(e, !stage.hidden, Boolean(document.querySelector('dialog:modal')))) skip(); // the non-modal notebook never blocks it
   });
 }
 
