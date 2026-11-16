@@ -7,6 +7,7 @@ import { h } from './dom';
 import { renderExplain } from './explainView';
 import { errorView } from './feedback';
 import { renderFlow } from './flowView';
+import { renderSteps } from './stepsView';
 import { registerTab } from './tabs';
 
 export interface VizDeps {
@@ -52,7 +53,25 @@ function registerPlanTabs(deps: VizDeps): void {
   registerTab({ id: 'flow', label: 'tab.flow', group: 'query', order: 30, render: withPlan(renderFlow) });
 }
 
+function registerStepsTab(deps: VizDeps): void {
+  // Same idea as planFor: re-rendering (language switch, tab switch) never re-runs the sub-queries.
+  const stepsFor = memoByKey((sql) => deps.db.steps(sql));
+  registerTab({
+    id: 'steps',
+    label: 'tab.steps',
+    group: 'query',
+    order: 10,
+    render: (host) => {
+      const sql = lastRunSql(host, deps);
+      return sql === undefined
+        ? undefined
+        : load(host, t('steps.running'), stepsFor(sql), (body, r) => renderSteps(body, sql, r, () => deps.show('explain')));
+    },
+  });
+}
+
 /** Called once from main.ts, before the panel is created. */
 export function registerVizTabs(deps: VizDeps): void {
+  registerStepsTab(deps);
   registerPlanTabs(deps);
 }
