@@ -94,21 +94,23 @@ Vòng 1/3 (2026-11-17): `code-review` (Standards + Spec) + cổng trình duyệt
 
 | Loại | Bug | Nguồn | Trạng thái |
 |---|---|---|---|
-| correctness | `parser.ts` `ready ??=` giữ promise lỗi → một lần tải wasm hỏng làm tab Thứ tự thực thi hỏng tới khi restart worker | Standards | Mở |
-| correctness | Lỗi worker không phải Postgres (fetch wasm, import chunk) thành `SqlError` → hiện "Failed to fetch" như lỗi SQL | Standards | Mở |
-| correctness | Tải wasm parser lần đầu (1,7 MB) tính vào timeout 15s của `steps` → mạng chậm làm kill + seed lại worker | Spec | Mở |
-| correctness | Nút EXPLAIN không bị khóa khi đang chạy; `run().then(show('explain'))` vẫn chuyển tab khi đổi ticket/đang bận | cả hai | Mở |
-| correctness | Biểu đồ: `Math.max(1, …)` ép giá trị 0–1 (tỉ lệ) xuống đáy | cả hai | Mở |
-| correctness | `steps.ts` phát hiện window bằng `includes('"over"')` → `SELECT 'over'` bị coi là window | Standards | Mở (edge) |
-| security | `erDefinition` chèn tên bảng/cột thô vào Mermaid; an toàn với `public`, sẽ vỡ với schema `sandbox` (header CSV) | Standards | Mở — sửa trước Plan Import |
-| ux | Tab ER trống khi DB đang boot (chưa có dòng "Đang vẽ…"); lỗi ER không qua `errorView()` | cả hai | Mở |
-| ux | Theme Mermaid cố định lúc mở tab đầu, không theo đổi theme OS | cả hai | Mở |
-| ux | Dải tiến độ dùng `currentChapter`, mở lại ticket chương cũ không có chấm "đang làm" | Spec | Mở |
-| ux | Bảng dùng trong query chỉ viền đậm, spec ghi "tô màu" | Spec | Mở — L36 |
-| i18n | Nhãn nút EXPLAIN không đổi khi đổi ngôn ngữ | Standards | Mở |
-| i18n | `STEP_HELP`/`NODE_HELP` là chữ UI không qua `t()`; CLAUDE.md tự mâu thuẫn ("viz không có chữ dịch") | Standards | Mở |
-| i18n | `viz.rows`, `explain.estimate`, `unit()` hiện số thô, cạnh đó dùng `fmt()` | Standards | Mở |
-| a11y | SVG Mermaid không có tên truy cập; chấm bước hiện tại chỉ bằng màu (thiếu `aria-current`); `#map` vẫn gắn nhãn "Bản đồ tuyến", `role=img` nuốt "Chương n" | cả hai | Mở |
-| test-gap | `DbClient.request` (kind gửi worker, timeout theo job, steps ×3); `ensureParser` thử lại; `erDefinition` với tên cần escape; `"over"`; relabel nút EXPLAIN; biểu đồ giá trị âm/<1 | cả hai | Mở |
-| smells | `reducedMotion()` lặp `stage.ts`; `lastRunSql` lặp dải stale; `vizTabs` tự viết lại `selected()`; `STEP_LABELS` vi=en; `kind='run'` mặc định thừa; `syncMap` data clump; `db/client.ts` import type từ `viz`; chỉ số ma `i === 2/3` trong `stepsView` | Standards | Mở (judgement) |
-| docs | Spec §6b còn chấm "mới" EXPLAIN ở ch3-01 và công tắc "Giảm chuyển động" (trái L35); `er.layoutDirection` thừa sau 7f33842; chú thích `fmt` sai với số lẻ | cả hai | Mở |
+| correctness | `parser.ts` `ready ??=` giữ promise lỗi → một lần tải wasm hỏng làm tab Thứ tự thực thi hỏng tới khi restart worker | Standards | Đã sửa eb3b733 (`once()`) |
+| correctness | Lỗi worker không phải Postgres (fetch wasm, import chunk) thành `SqlError` → hiện "Failed to fetch" như lỗi SQL | Standards | Đã sửa eb3b733 (`WorkerTaskError`, `err.task`) |
+| correctness | Tải wasm parser lần đầu (1,7 MB) tính vào timeout 15s của `steps` → mạng chậm làm kill + seed lại worker | Spec | Đã sửa eb3b733 (kind `parser`, 60s, lỗi → thử lại lần mở tab sau) |
+| correctness | Nút EXPLAIN không bị khóa khi đang chạy; `run().then(show('explain'))` vẫn chuyển tab khi đổi ticket/đang bận | cả hai | Đã sửa 890f3c7 |
+| correctness | Biểu đồ: `Math.max(1, …)` ép giá trị 0–1 (tỉ lệ) xuống đáy | cả hai | Đã sửa 890f3c7 (`valueRange`, trục luôn chứa 0, cột âm vẽ sang trái) |
+| correctness | `steps.ts` phát hiện window bằng `includes('"over"')` → `SELECT 'over'` bị coi là window | Standards | Đã sửa 890f3c7 (duyệt AST `FuncCall.over`, cả ORDER BY) |
+| security | `erDefinition` chèn tên bảng/cột thô vào Mermaid; an toàn với `public`, sẽ vỡ với schema `sandbox` (header CSV) | Standards | Đã sửa 890f3c7 (`mermaidName`, giữ chữ Việt có dấu; tên trùng sau khi thay ký tự là giới hạn đã ghi `ponytail:`) |
+| ux | Tab ER trống khi DB đang boot (chưa có dòng "Đang vẽ…"); lỗi ER không qua `errorView()` | cả hai | Đã sửa 890f3c7 |
+| ux | Theme Mermaid cố định lúc mở tab đầu, không theo đổi theme OS | cả hai | Đã sửa 890f3c7 (nghe `prefers-color-scheme`, vẽ lại khi tab ER đang mở) |
+| ux | Dải tiến độ dùng `currentChapter`, mở lại ticket chương cũ không có chấm "đang làm" | Spec | Đã sửa 890f3c7 (chương của ticket đang mở, chấm đang mở gạch chân kể cả khi đã xong) |
+| ux | Bảng dùng trong query chỉ viền đậm, spec ghi "tô màu" | Spec | Đã sửa 890f3c7 (viền đậm + màu chương `ChapterColor.hex`) |
+| i18n | Nhãn nút EXPLAIN không đổi khi đổi ngôn ngữ | Standards | Đã sửa 890f3c7 |
+| i18n | `STEP_HELP`/`NODE_HELP` là chữ UI không qua `t()`; CLAUDE.md tự mâu thuẫn ("viz không có chữ dịch") | Standards | Đã sửa 890f3c7, 1b200dd |
+| i18n | `viz.rows`, `explain.estimate`, `unit()` hiện số thô, cạnh đó dùng `fmt()` | Standards | Đã sửa 890f3c7 (một phần: `explain.estimate` dùng `fmt()`; `viz.rows`/`unit()` vốn đã định dạng theo locale qua `t()`/`count()`, truyền chuỗi `fmt()` sẽ làm hỏng số nhiều EN → giữ số) |
+| a11y | SVG Mermaid không có tên truy cập; chấm bước hiện tại chỉ bằng màu (thiếu `aria-current`); `#map` vẫn gắn nhãn "Bản đồ tuyến", `role=img` nuốt "Chương n" | cả hai | Đã sửa 890f3c7 |
+| test-gap | `DbClient.request` (kind gửi worker, timeout theo job, steps ×3); `ensureParser` thử lại; `erDefinition` với tên cần escape; `"over"`; relabel nút EXPLAIN; biểu đồ giá trị âm/<1 | cả hai | Đã sửa eb3b733, 890f3c7 |
+| smells | `reducedMotion()` lặp `stage.ts`; `lastRunSql` lặp dải stale; `vizTabs` tự viết lại `selected()`; `STEP_LABELS` vi=en; `kind='run'` mặc định thừa; `syncMap` data clump; `db/client.ts` import type từ `viz`; chỉ số ma `i === 2/3` trong `stepsView` | Standards | Đã sửa eb3b733, 890f3c7 (một phần: `reducedMotion`, `selected()`, `STEP_LABELS` một bản, `kind` mặc định, type của `db/client.ts`, hằng `OPTIMIZE`/`EXECUTE`; bỏ qua `lastRunSql`, `syncMap`) |
+| docs | Spec §6b còn chấm "mới" EXPLAIN ở ch3-01 và công tắc "Giảm chuyển động" (trái L35); `er.layoutDirection` thừa sau 7f33842; chú thích `fmt` sai với số lẻ | cả hai | Đã sửa 1b200dd (spec, CLAUDE.md), 890f3c7 (`er.layoutDirection`, chú thích `fmt`) |
+
+Sửa vòng 1: commits eb3b733 (db/parser), 890f3c7 (viz/ui), 1b200dd (docs).
