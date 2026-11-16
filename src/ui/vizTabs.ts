@@ -1,11 +1,13 @@
 import type { DbClient } from '../db/client';
 import { t } from '../i18n';
-import { app } from '../state';
+import { app, unlockedTables } from '../state';
 import { chapterColor } from '../theme';
+import { erDefinition, loadErMetadata, tablesInQuery } from '../viz/erd';
 import { memoByKey } from '../viz/memo';
 import { flattenPlan, type Plan } from '../viz/plan';
 import { renderChart } from './chartView';
 import { h } from './dom';
+import { renderErd } from './erdView';
 import { renderExplain } from './explainView';
 import { errorView } from './feedback';
 import { renderFlow } from './flowView';
@@ -90,9 +92,26 @@ function registerChartTab(deps: VizDeps): void {
   });
 }
 
+function registerErdTab(deps: VizDeps): void {
+  // Keyed by schema: Plan Import reuses the same cache with 'sandbox'.
+  const erMetadata = memoByKey((schema) => loadErMetadata((sql) => deps.db.run(sql), schema));
+  registerTab({
+    id: 'erd',
+    label: 'tab.erd',
+    group: 'schema',
+    order: 10,
+    render: async (host) => {
+      const tables = unlockedTables();
+      const { cols, cons } = await erMetadata('public');
+      await renderErd(host, erDefinition(cols, cons, tables, tablesInQuery(app.lastRun?.sql ?? '', tables)));
+    },
+  });
+}
+
 /** Called once from main.ts, before the panel is created. */
 export function registerVizTabs(deps: VizDeps): void {
   registerChartTab(deps);
   registerStepsTab(deps);
   registerPlanTabs(deps);
+  registerErdTab(deps);
 }

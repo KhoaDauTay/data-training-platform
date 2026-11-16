@@ -259,4 +259,11 @@ export const vi = {
   'chart.valueCol': 'Cột giá trị: ',
   'chart.barAria': 'Biểu đồ cột theo {col}',
   'chart.lineAria': 'Biểu đồ đường theo {col}',
+  'tab.erd': 'Sơ đồ ER',
+  'erd.drawing': 'Đang vẽ sơ đồ…',
+  'erd.intro': "Ký hiệu crow's foot:",
+  'erd.one': 'đúng một',
+  'erd.zeroOne': 'không hoặc một',
+  'erd.many': 'không hoặc nhiều',
+  'erd.bold': 'Bảng viền đậm đang được dùng trong query.',
 } satisfies Record<string, Msg>;
