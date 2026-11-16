@@ -8,6 +8,7 @@
 # columns: mỗi cột kết quả một nhãn { vi, en } theo nghĩa nghiệp vụ (L25), không phải tên cột của Solution.
 # Cột mốc (beat: boss): thay "## Solution" bằng "## Step N: <tiêu đề>" (mỗi bước một khối sql), columns là một danh sách cho mỗi bước,
 # thêm conclusion { question, options, answer } và conclusion_en { question, options }.
+# Hoạt cảnh khi xong (tùy chọn, completion-animations.md §3): scene: { kind: ship|yard|customs|truck|quote|ledger|chat, to?: CNSHA|THLCH|SGSIN|NLRTM|KRPUS|USLAX|AUSYD, lane?: green|yellow|red }. Không khai thì dùng sceneOf().
 id: ch0-01
 chapter: 0
 title: Tiêu đề tiếng Việt
