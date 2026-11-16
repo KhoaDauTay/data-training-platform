@@ -229,8 +229,8 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
       deps.onConclusion(tk);
     } else {
       say('good', () => t('work.correct'));
-      celebrate(feedback);
       deps.onSolved(tk);
+      celebrate(feedback); // after onSolved: its rerender() redraws the message and would reset className
     }
   }
 
