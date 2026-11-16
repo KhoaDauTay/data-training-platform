@@ -248,3 +248,16 @@ Phần không thêm dependency (C14, C15) đã nằm ở §1. Ở đây chỉ c�
 3. Chạy Plan 1 Task 4–11 → Plan 1b.
 4. Plan 1c. Song song: Plan Deploy (sau D6) và 4 spike import.
 5. Plan Import → Plan 2/3.
+
+---
+
+## Quyết định của user (2026-11-16) — nguồn sự thật cho vòng 2
+
+| # | Quyết định |
+|---|---|
+| D1 | Ticket song ngữ: **khối `# EN` ở cuối cùng file** + `title_en` / `conclusion_en`; frontmatter và SQL chỉ một bản. Release yêu cầu 0 ticket thiếu EN. |
+| D2 | Luyện tập **đầy đủ**: `variants` với template `{{x}}` + Leitner 5 hộp [1,2,4,8,16] ngày (`src/practice.ts`) + 3 lối vào (Ôn hôm nay / Luyện kỹ năng / Làm lại ticket) + "Ôn: N". 0 XP. Save v2 thêm `review` + `practice`. |
+| D3 | Import CSV **≤20MB / 200k dòng** (giữ 50 cột / 5 bảng), schema `sandbox`, **file gốc lưu IndexedDB và tự nạp lại khi mở trang**. Chưa hỗ trợ SQL dump. Mọi truy cập IndexedDB bọc try/catch, có nút xóa dữ liệu đã nhập. |
+| D4 | Ticket **đầy đủ**: thêm `columns:` (khai báo cột kết quả) + mục `## Task` riêng + `starter:`; boss ch2-05/ch3-05 có bước 3 kiểm tra kỹ năng twist; dạy AVG/ROUND ở ch2-01; kiểm tra twist→boss trong `contentProblems`. |
+| D5 | **Thêm** format SQL: `sql-formatter` (pin version, tải lười, phím Shift+Alt+F). |
+| D6 | Deploy **miễn phí, không backend**: mặc định **GitHub Pages** qua GitHub Actions (user ưu tiên). Build phải chạy được dưới đường dẫn con (`base` tương đối / `/<repo>/`). Cloudflare Pages là phương án thay thế miễn phí (header cache + nén tốt hơn) — giữ `public/_headers` để chuyển được. Không dùng Railway/Vercel/Supabase lúc này. Telemetry: chỉ nút "copy chẩn đoán". Nhánh DE sau này: backend **Python chạy trên Kubernetes** (user muốn học K8s) — chưa mở plan. |
