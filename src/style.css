@@ -5,6 +5,7 @@
   /* L13 syntax colours: >= 5.6:1 on --panel (#fff) */
   --syn-keyword: #7a2bb0; --syn-string: #a3341a; --syn-number: #0a6b4c; --syn-comment: #5d6b5d;
   --syn-operator: #4a4a52; --syn-type: #0b5fa5; --syn-property: #1d5a7a; --syn-atom: #8a5300;
+  --cm-sel: #e8ecf8; --cm-active: rgba(204, 238, 255, 0.27); /* translucent: the selection stays visible under it; every --syn-* >= 4.5:1 on both */
   color-scheme: light dark;
 }
 @media (prefers-color-scheme: dark) {
@@ -15,6 +16,7 @@
     /* L13 syntax colours: >= 6.3:1 on --panel (#1f1f22) */
     --syn-keyword: #d19bff; --syn-string: #ff9e7a; --syn-number: #7ee0b5; --syn-comment: #9aa39a;
     --syn-operator: #c8c8d0; --syn-type: #6cc0ff; --syn-property: #9cdcfe; --syn-atom: #ffcf6b;
+    --cm-sel: #1e2f46; --cm-active: rgba(255, 255, 255, 0.04);
   }
 }
 * { box-sizing: border-box; }
@@ -76,6 +78,12 @@ button.primary:disabled { background: var(--code); border-color: var(--disabled)
 .editor .cm-editor .cm-content { caret-color: var(--text); }
 /* Tooltips (lint message, autocomplete) follow the app theme: the CodeMirror default is light-only. */
 .editor .cm-tooltip { background: var(--panel); color: var(--text); border-color: var(--border); }
+/* CodeMirror keeps its light base theme in dark mode: caret, selection and active line come from tokens instead. */
+.editor .cm-editor .cm-cursor { border-left-color: var(--text); }
+.editor .cm-editor .cm-selectionLayer .cm-selectionBackground,
+.editor .cm-editor.cm-focused > .cm-scroller > .cm-selectionLayer .cm-selectionBackground { background: var(--cm-sel); }
+.editor .cm-editor .cm-content .cm-activeLine { background: var(--cm-active); }
+.editor .cm-editor .cm-gutters .cm-activeLineGutter { background: var(--accent-soft); }
 code { background: var(--code); padding: 1px 4px; border-radius: 4px; }
 pre.sql { background: var(--code); padding: 8px; border-radius: 6px; white-space: pre-wrap; margin: 0; font-size: 13px; }
 .feedback.bad, .bad { color: var(--bad); }
