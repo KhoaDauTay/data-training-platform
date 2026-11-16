@@ -210,14 +210,14 @@ function freshChapters(): Set<number> {
 }
 
 /** Tien Sa (L26): the yard holds one container per completed ticket, coloured by chapter. Home never replays animations. */
-/** Below sm the SVG labels hide (L34), so the title and status lines show as HTML under the picture. */
+/** Below lg the SVG labels hide (L34), so the title and status lines show as HTML under the picture. */
 function harborSection(m: HomeModel): HTMLElement {
   const harbor = derive(app.tickets, done());
   const scene = harborScene(harbor, { ambient: true, current: m.chapter, fresh: freshChapters() });
   return h('section', { class: cx(CARD, 'overflow-hidden'), 'aria-labelledby': 'harbor-title' },
     h('h2', { id: 'harbor-title', class: 'sr-only' }, t('harbor.title')),
     scene.svg,
-    h('div', { class: 'px-4 py-3 text-sm sm:hidden', 'aria-hidden': 'true' },
+    h('div', { class: 'px-4 py-3 text-sm lg:hidden', 'aria-hidden': 'true' },
       h('p', { class: 'm-0 font-bold' }, t('harbor.title')),
       ...callout(harbor, m.chapter).map((line) => h('p', { class: 'm-0 text-muted' }, line))));
 }
@@ -229,7 +229,7 @@ function routesSection(): HTMLElement {
       h('h2', { id: 'routes-title', class: 'm-0 text-lg font-bold' }, t('routes.title')),
       h('p', { class: 'm-0 text-sm text-muted' }, t('routes.subtitle'))),
     routeMap(harbor).svg,
-    h('ul', { class: 'mt-2 mb-0 list-none space-y-0.5 p-0 text-sm sm:hidden', 'aria-hidden': 'true' }, ...routeItems(harbor).map((x) => h('li', {}, x))));
+    h('ul', { class: 'mt-2 mb-0 list-none space-y-0.5 p-0 text-sm lg:hidden', 'aria-hidden': 'true' }, ...routeItems(harbor).map((x) => h('li', {}, x))));
 }
 
 /** Solution results per step, run once per session and only for open tiles (an open tile = task already solved: nothing leaks). */

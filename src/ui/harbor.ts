@@ -61,13 +61,13 @@ export function drawYard(p: HarborParts, h: Harbor, fresh: ReadonlySet<number> =
     const label = n > MAX_TIERS ? `+${n - MAX_TIERS}` : fresh.has(ch) && shown ? t('harbor.new') : '';
     if (label) {
       const b = bayBox(ch, shown);
-      out.push(s('text', { x: b.x + b.w / 2, y: b.y + 7, 'text-anchor': 'middle', 'font-family': FONT, 'font-size': 10, 'font-weight': 700, fill: '#0f172a' }, label));
+      out.push(s('text', { x: b.x + b.w / 2, y: b.y + 7, 'text-anchor': 'middle', 'font-family': FONT, 'font-size': 12, 'font-weight': 700, fill: '#0f172a' }, label));
     }
   }
   p.yard.replaceChildren(...out);
 }
 
-/** The two status lines (tasks done and ships out; chapters passed and current): in the SVG, and as HTML below sm. */
+/** The two status lines (tasks done and ships out; chapters passed and current): in the SVG, and as HTML below lg. */
 export function callout(h: Harbor, current: number): [string, string] {
   const trips = Object.values(h.trips).reduce((a, b) => a + b, 0) + h.departures;
   const done = Object.values(h.bays).reduce((a, b) => a + b, 0);
@@ -110,7 +110,7 @@ export function harborScene(h: Harbor, opts: { ambient: boolean; current: number
     s('rect', { x: 664, y: 204, width: 8, height: 12, fill: '#334155' }),
     s('circle', { class: amb('cq-smoke'), cx: 668, cy: 198, r: 6, fill: '#cbd5e1', opacity: opts.ambient ? 1 : 0 }),
     s('circle', { class: amb('cq-smoke cq-smoke2'), cx: 668, cy: 198, r: 6, fill: '#cbd5e1', opacity: opts.ambient ? 1 : 0 }),
-    text(580, 276, 11, '#e0f2fe', 'CARGO QUERY', 'middle'));
+    text(580, 276, 12, '#e0f2fe', 'CARGO QUERY', 'middle'));
   const truckBox = s('rect', { x: 0, y: 322, width: 56, height: 20, class: chapterColor(opts.current).fill });
   const truck = s('g', { opacity: 0, transform: 'translate(640,0)', 'aria-hidden': 'true' },
     truckBox,
@@ -125,13 +125,14 @@ export function harborScene(h: Harbor, opts: { ambient: boolean; current: number
     s('rect', { x: 866, y: 337, width: 8, height: 5, fill: '#f8fafc' }),
     s('rect', { x: 882, y: 337, width: 8, height: 5, fill: '#f8fafc' }));
   const gateText = text(844, 379, 12, '#f8fafc', '', 'middle');
-  const gateTag = s('g', { opacity: 0, class: 'max-sm:hidden', 'aria-hidden': 'true' }, s('rect', { x: 796, y: 364, width: 96, height: 22, rx: 6, fill: '#0f172a' }), gateText);
+  const gateTag = s('g', { opacity: 0, class: 'max-lg:hidden', 'aria-hidden': 'true' }, s('rect', { x: 796, y: 364, width: 96, height: 22, rx: 6, fill: '#0f172a' }), gateText);
 
   const [callA, callB] = callout(h, opts.current);
   const bays = Object.entries(h.bays).map(([ch, k]) => t('harbor.bay', { n: Number(ch), k })).join(', ');
   const svg = s('svg', {
-    // L23/L34: at 375px a 14-unit label is ~4px, so every label hides below sm (Home shows callout() as HTML instead)
-    viewBox: opts.crop ? '440 140 660 260' : '0 0 1100 400', class: 'block w-full max-sm:[&_text]:hidden', role: 'img',
+    // L23/L34: labels show only from lg, where the smallest (12 units) renders at ≥ ~11px: Home is ≥ 977px wide for
+    // 1100 units, the stage dock 640px for 660. Below lg every label hides (Home shows callout() as HTML instead).
+    viewBox: opts.crop ? '440 140 660 260' : '0 0 1100 400', class: 'block w-full max-lg:[&_text]:hidden', role: 'img',
     'aria-label': t('harbor.label', { bays: bays || t('harbor.empty') }),
   },
     s('defs', {},
@@ -202,7 +203,7 @@ export function harborScene(h: Harbor, opts: { ambient: boolean; current: number
     // customs gate
     s('rect', { x: 902, y: 362, width: 38, height: 26, rx: 2, fill: '#f8fafc', stroke: '#334155' }),
     s('rect', { x: 902, y: 356, width: 38, height: 7, fill: '#1d4ed8' }),
-    text(921, 380, 9, '#1e3a8a', t('harbor.customs'), 'middle'),
+    text(921, 380, 12, '#1e3a8a', t('harbor.customs'), 'middle'),
     s('rect', { x: 902, y: 330, width: 6, height: 30, fill: '#334155' }),
     barrier,
     gateTag,
