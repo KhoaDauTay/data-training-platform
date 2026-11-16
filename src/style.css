@@ -138,22 +138,6 @@
 .from, .meta { color: var(--muted); font-size: 13px; }
 .editor { border: 1px solid var(--border); border-radius: 6px; }
 .sql-error .explain { border-left: 3px solid var(--accent); padding-left: 8px; }
-.dept { display: inline-block; padding: 0 6px; border-radius: 4px; background: var(--accent-soft); color: var(--text); font-weight: 600; }
-.task, .step, .shape, .recap, .coach { border: 1px solid var(--border); border-radius: 6px; padding: 8px 12px; margin: 12px 0; }
-.task { border-left: 4px solid var(--accent); }
-.shape ul { list-style: none; display: flex; flex-wrap: wrap; gap: 6px; padding: 0; margin: 4px 0; }
-.shape li { border: 1px solid var(--border); border-radius: 4px; padding: 2px 6px; font-size: 13px; }
-.recap { border-color: var(--good); }
-.recap .compare { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 8px; }
-.recap figure { margin: 0; }
-.skill-cards { padding-left: 18px; }
-.coach { background: var(--accent-soft); border-color: var(--accent); }
-.coach p { margin: 0 0 6px; }
-.coach button { margin-right: 6px; }
-.hints ol { padding-left: 20px; }
-.conclusion label { display: block; margin: 4px 0; }
-.conclusion fieldset { border: 0; margin: 0 0 1em; padding: 0; }
-.conclusion legend { padding: 0; margin-bottom: 0.5em; }
 .feedback.bad { color: var(--bad); }
 .feedback.good { color: var(--good); }
 .history summary { cursor: pointer; color: var(--muted); }

@@ -2,7 +2,9 @@ import { getLang, t, type Key } from '../i18n';
 import { nextTicket, SKILLS, xpFor } from '../progress';
 import { compareShape, shapeOf, type Kind, type Shape } from '../shape';
 import { actions, app, done, expectedShape, persist, stepKey } from '../state';
+import { chapterColor, cx, DEPT_CHIP, deptColor, PILL } from '../theme';
 import { textOf, type Beat, type Ticket, type TicketText } from '../tickets';
+import { avatar } from './avatar';
 import { coach } from './coach';
 import { h, nodes, richText } from './dom';
 
@@ -18,16 +20,16 @@ const mark = (ok: boolean): string => (ok ? '✓' : '✗');
 function shapeCard(tk: Ticket, stepIndex: number): HTMLElement {
   const step = tk.steps[stepIndex];
   const labels = step.columns ?? [];
-  const card = h('section', { class: 'shape', 'aria-label': t('shape.title') });
+  const card = h('section', { class: 'my-3 rounded-xl bg-panel p-3 ring-1 ring-line', 'aria-label': t('shape.title') });
   const draw = (exp?: Shape) => {
     const n = exp?.kinds.length ?? labels.length;
     const run = app.lastRun?.key === stepKey(tk.id, stepIndex) ? app.lastRun.result : undefined;
     const cmp = exp && run ? compareShape(exp, shapeOf(run)) : undefined;
     card.replaceChildren(...nodes(
-      h('h3', {}, t('shape.title')),
+      h('h3', { class: 'mt-0' }, t('shape.title')),
       h('p', {}, [t('shape.cols', { n }), exp ? t('shape.rows', { n: exp.rows }) : '…', t(tk.ordered ? 'shape.ordered' : 'shape.unordered')].join(' · ')),
-      h('ul', { class: 'shape-cols' }, ...Array.from({ length: n }, (_, i) =>
-        h('li', {}, labels[i] ? h('code', {}, labels[i]) : null, exp ? ` ${t(KIND[exp.kinds[i]])}` : null))),
+      h('ul', { class: 'my-1 flex list-none flex-wrap gap-1.5 p-0' }, ...Array.from({ length: n }, (_, i) =>
+        h('li', { class: 'rounded-md bg-panel px-1.5 py-0.5 text-sm ring-1 ring-line' }, labels[i] ? h('code', {}, labels[i]) : null, exp ? ` ${t(KIND[exp.kinds[i]])}` : null))),
       cmp && run
         ? h('p', { class: cmp.columns && cmp.kinds && cmp.rows ? 'good' : 'warn' },
           t('shape.yours', { cols: run.columns.length, colsOk: mark(cmp.columns && cmp.kinds), rows: run.rows.length, rowsOk: mark(cmp.rows) }))
@@ -48,19 +50,19 @@ function hints(tk: Ticket, x: TicketText, isDone: boolean): HTMLElement {
       actions.rerender();
     },
   }, t('brief.hint', { i: shown + 1, n: x.hints.length, cost: xpFor(tk, shown) - xpFor(tk, shown + 1) }));
-  return h('section', { class: 'hints' },
-    shown ? h('ol', {}, ...x.hints.slice(0, shown).map((s) => h('li', {}, richText(s)))) : null,
+  return h('section', { class: 'hints my-3' },
+    shown ? h('ol', { class: 'space-y-1' }, ...x.hints.slice(0, shown).map((s) => h('li', {}, richText(s)))) : null,
     isDone || shown >= x.hints.length ? null : btn);
 }
 
 function conclusion(tk: Ticket, x: TicketText): HTMLElement {
   const c = x.conclusion!;
-  const msg = h('p', { role: 'status', class: 'feedback bad' });
-  const form = h('form', { class: 'conclusion' },
-    h('h3', {}, t('brief.conclusion')),
-    h('fieldset', {},
-      h('legend', {}, c.question),
-      ...c.options.map((o, i) => h('label', {},
+  const msg = h('p', { role: 'status', class: 'bad' });
+  const form = h('form', { class: 'my-3 rounded-xl p-3 ring-2 ring-accent' },
+    h('h3', { class: 'mt-0' }, t('brief.conclusion')),
+    h('fieldset', { class: 'mb-4' },
+      h('legend', { class: 'mb-2' }, c.question),
+      ...c.options.map((o, i) => h('label', { class: 'my-1 flex items-center gap-2' },
         h('input', { type: 'radio', name: 'conclusion', value: String(i), checked: picked.get(tk.id) === i, onchange: () => picked.set(tk.id, i) }),
         ' ', o))),
     h('button', { class: 'primary', type: 'submit' }, t('brief.conclude')),
@@ -85,17 +87,17 @@ function recap(tk: Ticket, x: TicketText): HTMLElement {
   const skills = SKILLS.filter((s) => ids.includes(s.id));
   const next = nextTicket(app.tickets, done());
   const hintsUsed = app.save.hintsUsed[tk.id] ?? 0;
-  return h('section', { class: 'recap' },
-    h('h3', { tabindex: '-1' }, t('recap.title')),
+  return h('section', { class: 'recap my-3 rounded-xl bg-emerald-50 p-4 ring-1 ring-emerald-300 dark:bg-emerald-950/40 dark:ring-emerald-800' },
+    h('h3', { tabindex: '-1', class: 'mt-0 text-emerald-900 dark:text-emerald-200' }, t('recap.title')),
     coach('recap'),
     h('p', {}, t('recap.xp', { n: xpFor(tk, hintsUsed), hints: hintsUsed })),
     h('h4', {}, t(tk.grants.length ? 'recap.learned' : 'recap.review')),
-    h('ul', { class: 'skill-cards' }, ...skills.map((s) =>
+    h('ul', { class: 'space-y-1' }, ...skills.map((s) =>
       h('li', {}, h('b', {}, s.label[lang]), ' ', h('code', {}, s.syntax), h('p', { class: 'muted' }, s.when[lang])))),
-    ...tk.steps.map((s, i) => h('div', { class: 'compare' },
+    ...tk.steps.map((s, i) => h('div', { class: 'my-2 grid gap-2 sm:grid-cols-2' },
       tk.steps.length > 1 ? h('h4', {}, x.steps[i].title) : null,
-      h('figure', {}, h('figcaption', {}, t('recap.yours')), h('pre', { class: 'sql' }, gradedSql(tk, i))),
-      h('figure', {}, h('figcaption', {}, t('recap.reference')), h('pre', { class: 'sql' }, s.solution)))),
+      h('figure', {}, h('figcaption', { class: 'mb-1 text-sm text-muted' }, t('recap.yours')), h('pre', { class: 'sql' }, gradedSql(tk, i))),
+      h('figure', {}, h('figcaption', { class: 'mb-1 text-sm text-muted' }, t('recap.reference')), h('pre', { class: 'sql' }, s.solution)))),
     next
       ? h('button', { type: 'button', class: 'primary', onclick: () => actions.selectTicket(next.id) }, t('recap.next'))
       : h('p', {}, t('recap.allDone')));
@@ -107,19 +109,21 @@ export function renderBrief(host: HTMLElement, tk: Ticket, stepIndex: number): v
   const isDone = done().has(tk.id);
   const boss = tk.steps.length > 1;
   host.replaceChildren(...nodes(
-    h('header', {},
-      h('h2', { id: 'brief-title', tabindex: '-1' }, x.title),
-      h('p', { class: 'meta' },
-        h('span', { class: 'dept' }, tk.from.dept),
-        ` ${tk.from.name} · ${t('brief.chapter', { n: tk.chapter })} · ${t(BEAT[tk.beat])} · ${'★'.repeat(tk.difficulty)}`,
-        isDone ? ` · ✓ ${t('inbox.done')}` : ''),
+    h('header', { class: 'space-y-2' },
+      h('p', { class: 'm-0 flex flex-wrap items-center gap-2 text-sm text-muted' },
+        avatar(tk.from),
+        h('span', { class: cx(DEPT_CHIP, deptColor(tk.from.dept)) }, tk.from.dept),
+        `${tk.from.name} · ${t('brief.chapter', { n: tk.chapter })} · ${'★'.repeat(tk.difficulty)}`,
+        h('span', { class: cx(PILL, chapterColor(tk.chapter).chip) }, t(BEAT[tk.beat])),
+        isDone ? `✓ ${t('inbox.done')}` : ''),
+      h('h2', { id: 'brief-title', tabindex: '-1', class: 'm-0 text-lg font-bold' }, x.title),
       x.fallback ? h('p', { class: 'tag' }, t('brief.untranslated')) : null),
     coach('brief'),
     richText(x.body),
-    x.task ? h('section', { class: 'task' }, h('h3', {}, t('brief.task')), richText(x.task)) : null,
+    x.task ? h('section', { class: 'my-3 rounded-lg border-l-4 border-accent bg-accent-soft p-3' }, h('h3', { class: 'mt-0' }, t('brief.task')), richText(x.task)) : null,
     boss
-      ? h('section', { class: 'step' },
-        h('h3', {}, t('brief.step', { i: stepIndex + 1, n: tk.steps.length, title: x.steps[stepIndex].title })),
+      ? h('section', { class: 'my-3 rounded-lg p-3 ring-1 ring-line' },
+        h('h3', { class: 'mt-0' }, t('brief.step', { i: stepIndex + 1, n: tk.steps.length, title: x.steps[stepIndex].title })),
         richText(x.steps[stepIndex].prompt))
       : null,
     isDone ? null : shapeCard(tk, stepIndex),
