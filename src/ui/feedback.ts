@@ -5,6 +5,7 @@ import { t } from '../i18n';
 import { InvalidSaveError, NewerSaveError } from '../save';
 import { h } from './dom';
 import { formatCell } from './resultTable';
+import { explainError } from './sqlErrors';
 
 export function gradeMessage(r: Exclude<GradeResult, { ok: true }>): string {
   switch (r.reason) {
@@ -37,11 +38,13 @@ export function errorText(e: unknown): string {
   return errorMessage(e) || t('err.unknown');
 }
 
-/** Postgres' message unchanged (a real skill to read), then its HINT. */
+/** Postgres' message unchanged (a real skill to read), then its HINT, then a teaching note in the UI language. */
 export function errorView(e: unknown): HTMLElement {
   const info = sqlErrorInfo(e);
   if (!info) return h('pre', { class: 'error' }, errorText(e));
+  const note = explainError(info);
   return h('div', { class: 'sql-error' },
     h('pre', { class: 'error' }, info.message),
-    info.hint ? h('p', { class: 'muted' }, `HINT: ${info.hint}`) : null);
+    info.hint ? h('p', { class: 'muted' }, `HINT: ${info.hint}`) : null,
+    note ? h('p', { class: 'explain' }, t(note)) : null);
 }

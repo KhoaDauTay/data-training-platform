@@ -12,6 +12,7 @@ import { byId, h } from './ui/dom';
 import { errorText } from './ui/feedback';
 import { renderInbox } from './ui/inbox';
 import { createPanel, registerCoreTabs } from './ui/tabs';
+import { initLayout } from './ui/splitter';
 import { renderTopbar } from './ui/topbar';
 import { mountWork } from './ui/work';
 
@@ -155,5 +156,6 @@ window.addEventListener('vite:preloadError', () => {
   renderTopbar();
 });
 
+initLayout(byId('shell'), { col: byId('split-col'), row: byId('split-row') });
 rerender();
 work.setTicket(selected(), app.stepIndex);
