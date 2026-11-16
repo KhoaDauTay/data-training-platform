@@ -1,8 +1,11 @@
 import type { SQLNamespace } from '@codemirror/lang-sql';
 import type { DbClient } from '../db/client';
+import { sqlErrorInfo } from '../db/run';
 import { grade, type GradeResult } from '../grader';
+import { loadHistory, pushHistory, writeHistory } from '../history';
 import { t } from '../i18n';
-import { app, done, draftKey, editorSchema, persist, stepKey } from '../state';
+import { app, done, draftKey, editorSchema, persist, stepKey, type LastRun } from '../state';
+import { localStore } from '../storage';
 import type { Ticket } from '../tickets';
 import { h } from './dom';
 import { createEditor, type Editor } from './editor';
@@ -42,14 +45,18 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
   let key = '';
   let editor: Editor | undefined;
   let busy = false;
+  let selection = false;
   /** Last message under the editor, as a function so relabel() re-translates it. */
   let message: { kind: 'good' | 'bad'; view: () => Node | string } | undefined;
+  let history = loadHistory(localStore());
 
   const editorHost = h('div', { class: 'editor' });
   const runBtn = h('button', { type: 'button', onclick: () => void run() });
+  const formatBtn = h('button', { type: 'button', onclick: () => void format() });
   const submitBtn = h('button', { type: 'button', class: 'primary', onclick: () => void submit() });
   const feedback = h('div', { class: 'feedback', role: 'status' });
-  host.replaceChildren(editorHost, h('div', { class: 'actions' }, runBtn, submitBtn), feedback);
+  const historyBox = h('details', { class: 'history' });
+  host.replaceChildren(editorHost, h('div', { class: 'actions' }, runBtn, formatBtn, submitBtn), feedback, historyBox);
 
   function say(kind: 'good' | 'bad', view: () => Node | string): void {
     message = { kind, view };
@@ -61,18 +68,43 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
   }
 
   function setButtons(): void {
-    runBtn.textContent = busy && app.dbStatus === 'loading' ? t('work.waitingDb') : t('work.run');
+    runBtn.textContent = busy && app.dbStatus === 'loading' ? t('work.waitingDb') : t(selection ? 'work.runSel' : 'work.run');
+    formatBtn.textContent = t('work.format');
     submitBtn.textContent = t('work.submit');
     runBtn.disabled = busy;
     submitBtn.disabled = busy;
     submitBtn.hidden = !ticket || done().has(ticket.id);
   }
 
+  function drawHistory(): void {
+    const list = ticket ? history[ticket.id] ?? [] : [];
+    historyBox.hidden = list.length === 0;
+    historyBox.replaceChildren(
+      h('summary', {}, t('hist.title', { n: list.length })),
+      h('ul', {}, ...list.map((e) => h('li', {},
+        h('button', { type: 'button', class: 'hist', onclick: () => { editor?.setValue(e.sql); editor?.focus(); } },
+          h('span', { class: e.ok ? 'good' : 'bad' }, e.ok ? '✓' : '✗'),
+          ` ${e.sql.replace(/\s+/g, ' ').slice(0, 60)}`,
+          e.rows === undefined ? '' : h('span', { class: 'muted' }, ` · ${t('hist.rows', { n: e.rows })}`))))));
+  }
+
+  function record(run: LastRun): void {
+    if (!ticket) return;
+    history = pushHistory(history, ticket.id, { sql: run.sql, at: Date.now(), ok: run.error === undefined, rows: run.result?.rows.length });
+    writeHistory(localStore(), history);
+    drawHistory();
+  }
+
+  function underline(e: unknown, offset: number): void {
+    const info = sqlErrorInfo(e);
+    if (info) editor?.showError(info, offset);
+  }
+
   async function run(): Promise<void> {
     if (busy || !editor) return;
-    const sql = editor.getValue();
-    const offset = 0;
+    const { sql, offset } = editor.runTarget();
     const k = ticket ? stepKey(ticket, stepIndex) : '';
+    editor.clearError();
     busy = true;
     setButtons();
     if (app.dbStatus === 'loading') say('good', () => t('work.queued')); // DbClient queues the query until the DB is ready
@@ -81,12 +113,14 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
       message = undefined;
     } catch (e) {
       app.lastRun = { key: k, sql, offset, error: e };
+      underline(e, offset);
       say('bad', () => t('work.runFailed'));
     } finally {
       busy = false;
       setButtons();
       drawMessage();
     }
+    record(app.lastRun);
     const failed = app.lastRun.error !== undefined;
     deps.panel.show(failed || SCHEMA_TABS.has(deps.panel.active) ? 'result' : deps.panel.active);
     deps.onRun();
@@ -98,6 +132,7 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
     const i = stepIndex;
     const k = stepKey(tk, i);
     const sql = editor.getValue(); // Submit always grades the whole editor
+    editor.clearError();
     busy = true;
     setButtons();
     // The player's run is recorded in lastRun, so the tabs and the shape card show what was graded,
@@ -121,12 +156,14 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
       busy = false;
       setButtons();
     }
+    if (app.lastRun?.key === k) record(app.lastRun);
     deps.onRun();
     if (!r) return;
     if (!r.ok) {
       const fail = r;
       const err = app.lastRun?.error;
       if (fail.reason === 'error') {
+        underline(err, 0);
         say('bad', () => (err !== undefined ? errorView(err) : gradeMessage(fail)));
       } else {
         if (fail.reason === 'rows' && app.lastRun?.result) app.lastRun.mark = fail.sample;
@@ -148,9 +185,14 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
     }
   }
 
+  async function format(): Promise<void> {
+    if (editor && !(await editor.format())) say('bad', () => t('work.formatFailed'));
+  }
+
   function relabel(): void {
     setButtons();
     drawMessage();
+    drawHistory();
     editor?.setLabel(t('work.editorLabel'));
   }
 
@@ -166,6 +208,7 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
           deps.panel.show('columns'); // nothing run yet: show the tables first
         }
         message = undefined;
+        selection = false; // the new editor starts with an empty selection
         editor?.destroy();
         editor = createEditor(editorHost, {
           doc: app.save.drafts[draftKey()] ?? tk.starter ?? '',
@@ -175,13 +218,19 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
             app.save.drafts[draftKey()] = v;
             persist();
           },
+          onRun: () => void run(),
+          onSubmit: () => void submit(),
+          onSelection: (nonEmpty) => {
+            selection = nonEmpty;
+            setButtons();
+          },
         });
       }
       relabel();
     },
     relabel,
     setSchema: (ns) => editor?.setSchema(ns),
-    currentSql: () => editor?.getValue() ?? '',
+    currentSql: () => editor?.runTarget().sql ?? '',
     focus: () => editor?.focus(),
   };
 }

@@ -1,5 +1,6 @@
 import { t, type Key } from '../i18n';
 import { app, unlockedTables } from '../state';
+import { coach } from './coach';
 import { h } from './dom';
 import { errorText, errorView } from './feedback';
 import { renderResult } from './resultTable';
@@ -110,6 +111,7 @@ export function registerCoreTabs(editorSql: () => string): void {
     order: 10,
     render(host) {
       const run = app.lastRun;
+      host.append(coach('panel') ?? '');
       if (!run) {
         host.append(h('p', { class: 'muted' }, t('res.runFirst')));
         return;

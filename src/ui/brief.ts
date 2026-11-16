@@ -1,8 +1,9 @@
 import { getLang, t, type Key } from '../i18n';
-import { xpFor } from '../progress';
+import { nextTicket, SKILLS, xpFor } from '../progress';
 import { compareShape, shapeOf, type Kind, type Shape } from '../shape';
 import { actions, app, done, expectedShape, persist, stepKey } from '../state';
 import { textOf, type Beat, type Ticket, type TicketText } from '../tickets';
+import { coach } from './coach';
 import { h, nodes, richText } from './dom';
 
 const BEAT: Record<Beat, Key> = { teach: 'beat.teach', develop: 'beat.develop', twist: 'beat.twist', rest: 'beat.rest', boss: 'beat.boss' };
@@ -73,6 +74,34 @@ function conclusion(tk: Ticket, x: TicketText): HTMLElement {
   return form;
 }
 
+/** On a closed ticket: skills learned (or reviewed), your SQL next to the reference, XP, "Next ticket". */
+function recap(tk: Ticket, x: TicketText): HTMLElement {
+  const lang = getLang();
+  const ids = tk.grants.length ? tk.grants : tk.requires;
+  const skills = SKILLS.filter((s) => ids.includes(s.id));
+  const next = nextTicket(app.tickets, done());
+  const hintsUsed = app.save.hintsUsed[tk.id] ?? 0;
+  const heading = h('h3', { tabindex: '-1' }, t('recap.title'));
+  if (app.justCompleted === tk.id) {
+    app.justCompleted = '';
+    queueMicrotask(() => heading.focus());
+  }
+  return h('section', { class: 'recap' },
+    heading,
+    coach('recap'),
+    h('p', {}, t('recap.xp', { n: xpFor(tk, hintsUsed), hints: hintsUsed })),
+    h('h4', {}, t(tk.grants.length ? 'recap.learned' : 'recap.review')),
+    h('ul', { class: 'skill-cards' }, ...skills.map((s) =>
+      h('li', {}, h('b', {}, s.label[lang]), ' ', h('code', {}, s.syntax), h('p', { class: 'muted' }, s.when[lang])))),
+    ...tk.steps.map((s, i) => h('div', { class: 'compare' },
+      tk.steps.length > 1 ? h('h4', {}, x.steps[i].title) : null,
+      h('figure', {}, h('figcaption', {}, t('recap.yours')), h('pre', { class: 'sql' }, app.save.drafts[stepKey(tk, i)] ?? '')),
+      h('figure', {}, h('figcaption', {}, t('recap.reference')), h('pre', { class: 'sql' }, s.solution)))),
+    next
+      ? h('button', { type: 'button', class: 'primary', onclick: () => actions.selectTicket(next.id) }, t('recap.next'))
+      : h('p', {}, t('recap.allDone')));
+}
+
 /** Left pane for `tk` (not necessarily the selected ticket: Plan 1c renders practice tickets here). Replaces host's children. */
 export function renderBrief(host: HTMLElement, tk: Ticket, stepIndex: number): void {
   const x = textOf(tk, getLang());
@@ -86,6 +115,7 @@ export function renderBrief(host: HTMLElement, tk: Ticket, stepIndex: number): v
         ` ${tk.from.name} · ${t('brief.chapter', { n: tk.chapter })} · ${t(BEAT[tk.beat])} · ${'★'.repeat(tk.difficulty)}`,
         isDone ? ` · ✓ ${t('inbox.done')}` : ''),
       x.fallback ? h('p', { class: 'tag' }, t('brief.untranslated')) : null),
+    coach('brief'),
     richText(x.body),
     x.task ? h('section', { class: 'task' }, h('h3', {}, t('brief.task')), richText(x.task)) : null,
     boss
@@ -94,7 +124,9 @@ export function renderBrief(host: HTMLElement, tk: Ticket, stepIndex: number): v
         richText(x.steps[stepIndex].prompt))
       : null,
     isDone ? null : shapeCard(tk, stepIndex),
+    coach('hints'),
     hints(tk, x, isDone),
     app.conclusionFor === tk.id && !isDone && x.conclusion ? conclusion(tk, x) : null,
+    isDone ? recap(tk, x) : null,
   ));
 }
