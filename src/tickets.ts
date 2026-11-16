@@ -1,4 +1,5 @@
 import { parse as parseYaml } from 'yaml';
+import { parseScene, type Scene } from './scene';
 
 export type Lang = 'vi' | 'en';
 export type Beat = 'teach' | 'develop' | 'twist' | 'rest' | 'boss';
@@ -44,6 +45,8 @@ export interface Ticket {
   conclusion?: Conclusion;
   /** SQL preloaded into an empty editor (spec: ch1-01). */
   starter?: string;
+  /** Completion animation (completion-animations.md §3.1); sceneOf() fills the default. */
+  scene?: Scene;
   variants?: Variant[];
   en?: TicketText;
 }
@@ -163,6 +166,7 @@ export function parseTicket(source: string, origin: string): Ticket {
     if (typeof fm.starter !== 'string') fail('starter phải là chuỗi SQL');
     t.starter = (fm.starter as string).trim();
   }
+  if (fm.scene !== undefined) t.scene = parseScene(fm.scene, t.beat === 'boss', fail);
 
   if (enPart !== undefined) {
     const en = parseSections(enPart, fail, 'en');
