@@ -44,6 +44,7 @@ src/
   ui/resultTable.ts    renderResult, formatCell
   ui/feedback.ts       gradeMessage
   ui/editor.ts         createEditor (CodeMirror)
+  ui/panel.ts          panel tab dưới (Kết quả, Cột; Plan 1b thêm tab trực quan)
   main.ts              trạng thái app + render
   style.css
 content/tickets/ch1..ch3/*.md
@@ -2186,7 +2187,7 @@ git commit -m "feat: chapter 3 tickets (JOIN, LEFT JOIN, anti-join)"
 
 **Files:**
 - Modify (thay toàn bộ trang smoke của Task 2): `index.html`, `src/main.ts`
-- Create: `src/style.css`, `src/ui/dom.ts`, `src/ui/resultTable.ts`, `src/ui/feedback.ts`, `src/ui/editor.ts`
+- Create: `src/style.css`, `src/ui/dom.ts`, `src/ui/resultTable.ts`, `src/ui/feedback.ts`, `src/ui/editor.ts`, `src/ui/panel.ts`
 
 **Interfaces:**
 - Consumes: `QueryResult` (Task 1); `DbClient`, `DbStatus` (Task 2); `grade`, `errorMessage`, `GradeResult` (Task 3); `Ticket` (Task 4); toàn bộ `progress.ts` (Task 5); toàn bộ `save.ts` (Task 6); `loadTickets` (Task 7)
@@ -2324,7 +2325,59 @@ export function createEditor(
 }
 ```
 
-- [ ] **Step 2: Viết `index.html` và `src/style.css`**
+- [ ] **Step 2: Viết panel tab, `index.html` và `src/style.css`**
+
+Bố cục đã chốt qua mockup (spec §6b): thanh trên → dải bản đồ (Plan 1b mới bật) → đề bài trái / editor phải → panel tab dưới. Hộp thư là `<dialog>` mở từ thanh trên.
+
+`src/ui/panel.ts`:
+```ts
+import { h } from './dom';
+
+export interface Tab {
+  id: string;
+  label: string;
+  render(host: HTMLElement): void | Promise<void>;
+}
+
+export interface Panel {
+  show(id: string): void;
+  refresh(): void;
+  readonly active: string;
+}
+
+export function createPanel(host: HTMLElement, tabs: Tab[]): Panel {
+  let active = tabs[0].id;
+  const bar = h('div', { class: 'tabs', role: 'tablist' });
+  const body = h('div', { class: 'tab-body', role: 'tabpanel' });
+  host.replaceChildren(bar, body);
+
+  function show(id: string): void {
+    active = id;
+    bar.replaceChildren(...tabs.map((t) =>
+      h('button', {
+        type: 'button',
+        role: 'tab',
+        'aria-selected': t.id === id ? 'true' : 'false',
+        class: t.id === id ? 'on' : '',
+        onclick: () => show(t.id),
+      }, t.label)));
+    body.replaceChildren();
+    const tab = tabs.find((t) => t.id === id) ?? tabs[0];
+    void Promise.resolve()
+      .then(() => tab.render(body))
+      .catch((e: unknown) => body.replaceChildren(h('pre', { class: 'error' }, e instanceof Error ? e.message : String(e))));
+  }
+
+  show(active);
+  return {
+    show,
+    refresh: () => show(active),
+    get active() {
+      return active;
+    },
+  };
+}
+```
 
 `index.html`:
 ```html
@@ -2340,16 +2393,23 @@ export function createEditor(
       <h1>Cargo Query</h1>
       <span id="chapter"></span>
       <span id="xp"></span>
+      <button id="inbox-btn" type="button">📥 Hộp thư</button>
       <span id="db-status" role="status"></span>
       <button id="export-btn" type="button">Xuất tiến độ</button>
       <label class="file-btn">Nhập tiến độ<input id="import-input" type="file" accept="application/json" hidden /></label>
     </header>
+    <div id="map" class="map-strip" aria-label="Bản đồ tuyến" hidden></div>
     <div id="notice" role="status" hidden></div>
-    <main class="layout">
-      <aside id="inbox" aria-label="Hộp thư ticket"></aside>
+    <main class="workspace">
       <section id="ticket" aria-label="Ticket"></section>
-      <aside id="schema" aria-label="Schema"></aside>
+      <section id="work" aria-label="SQL editor"></section>
     </main>
+    <section id="panel" class="panel" aria-label="Kết quả và trực quan hóa"></section>
+    <dialog id="inbox-dialog" aria-labelledby="inbox-title">
+      <h2 id="inbox-title">Hộp thư</h2>
+      <div id="inbox-list"></div>
+      <form method="dialog"><button>Đóng</button></form>
+    </dialog>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>
@@ -2359,50 +2419,62 @@ export function createEditor(
 ```css
 :root {
   --bg: #f7f7f5; --panel: #ffffff; --text: #1d1d1f; --muted: #66666b; --border: #dcdcd8;
-  --accent: #0f6cbd; --good: #1a7f37; --bad: #c62828; --code: #efefea;
+  --accent: #0f6cbd; --accent-soft: #dbeafe; --good: #1a7f37; --bad: #c62828; --warn: #b35c00;
+  --code: #efefea; --sea: #e8f1f8; --land: #d9e2ea; --bar: #1f3b57;
   color-scheme: light dark;
 }
 @media (prefers-color-scheme: dark) {
   :root {
     --bg: #161618; --panel: #1f1f22; --text: #ececf0; --muted: #a0a0a8; --border: #34343a;
-    --accent: #5aa9ff; --good: #4cc26d; --bad: #ff6b6b; --code: #2a2a30;
+    --accent: #5aa9ff; --accent-soft: #1d3550; --good: #4cc26d; --bad: #ff6b6b; --warn: #ffb35a;
+    --code: #2a2a30; --sea: #14202b; --land: #2b3742; --bar: #0d1b29;
   }
 }
 * { box-sizing: border-box; }
 body { margin: 0; font: 15px/1.5 system-ui, sans-serif; background: var(--bg); color: var(--text); }
-.topbar { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; padding: 8px 16px; border-bottom: 1px solid var(--border); background: var(--panel); }
+.topbar { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; padding: 8px 16px; background: var(--bar); color: #fff; }
 .topbar h1 { font-size: 18px; margin: 0 auto 0 0; }
+.topbar button { background: transparent; color: #fff; border-color: #ffffff55; }
+.topbar .file-btn { color: #fff; }
+.map-strip { background: var(--sea); border-bottom: 1px solid var(--border); }
 #notice { padding: 8px 16px; background: var(--code); border-bottom: 1px solid var(--border); }
-.layout { display: grid; grid-template-columns: 260px minmax(0, 1fr) 260px; gap: 16px; padding: 16px; }
-@media (max-width: 1000px) { .layout { grid-template-columns: minmax(0, 1fr); } }
-aside, #ticket { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 12px; min-width: 0; }
+.workspace { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 3fr); gap: 16px; padding: 16px 16px 0; }
+@media (max-width: 900px) { .workspace { grid-template-columns: minmax(0, 1fr); } }
+#ticket, #work, .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 12px; min-width: 0; }
+.panel { margin: 16px; }
 h2 { font-size: 16px; margin: 0 0 8px; }
 h3 { font-size: 15px; margin: 12px 0 4px; }
-.mail { display: block; width: 100%; text-align: left; padding: 8px; margin-bottom: 6px; border: 1px solid var(--border); border-radius: 6px; background: transparent; color: inherit; cursor: pointer; }
-.mail.active { border-color: var(--accent); }
-.mail.done { opacity: 0.7; }
-.mail span { display: block; }
-.mail .subject { font-weight: 600; }
-.from, .meta, .muted { color: var(--muted); font-size: 13px; }
+.muted, .from, .meta { color: var(--muted); font-size: 13px; }
 button { font: inherit; padding: 6px 12px; border: 1px solid var(--border); border-radius: 6px; background: var(--panel); color: inherit; cursor: pointer; }
 button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
 button:disabled { opacity: 0.5; cursor: default; }
 .file-btn { cursor: pointer; text-decoration: underline; }
 .actions { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0; }
 .editor { border: 1px solid var(--border); border-radius: 6px; }
-.editor .cm-editor { min-height: 140px; background: var(--panel); color: var(--text); }
+.editor .cm-editor { min-height: 160px; background: var(--panel); color: var(--text); }
 .editor .cm-editor .cm-gutters { background: var(--code); color: var(--muted); border-color: var(--border); }
 .editor .cm-editor .cm-content { caret-color: var(--text); }
 code { background: var(--code); padding: 1px 4px; border-radius: 4px; }
 .feedback.bad { color: var(--bad); }
 .feedback.good { color: var(--good); }
 .error { color: var(--bad); white-space: pre-wrap; }
+.tabs { display: flex; flex-wrap: wrap; gap: 4px; border-bottom: 1px solid var(--border); margin-bottom: 10px; }
+.tabs button { border-radius: 6px 6px 0 0; border-bottom: 0; background: var(--code); }
+.tabs button.on { background: var(--panel); font-weight: 600; box-shadow: inset 0 2px var(--accent); }
 .table-wrap { overflow: auto; max-height: 420px; border: 1px solid var(--border); border-radius: 6px; }
 table { border-collapse: collapse; font-size: 13px; width: 100%; }
 th, td { padding: 4px 8px; border-bottom: 1px solid var(--border); text-align: left; white-space: nowrap; }
 th { position: sticky; top: 0; background: var(--panel); }
 td.null { color: var(--muted); font-style: italic; }
-#schema ul { list-style: none; padding-left: 8px; margin: 4px 0 8px; font-size: 13px; }
+.schema-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px; }
+.schema-list ul { list-style: none; padding-left: 8px; margin: 4px 0 8px; font-size: 13px; }
+dialog { border: 1px solid var(--border); border-radius: 10px; background: var(--panel); color: var(--text); width: min(520px, calc(100vw - 32px)); }
+dialog::backdrop { background: #0006; }
+.mail { display: block; width: 100%; text-align: left; padding: 8px; margin-bottom: 6px; }
+.mail.active { border-color: var(--accent); box-shadow: inset 3px 0 var(--accent); }
+.mail.done { opacity: 0.7; }
+.mail span { display: block; }
+.mail .subject { font-weight: 600; }
 .conclusion label { display: block; margin: 4px 0; }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 ```
@@ -2413,6 +2485,7 @@ td.null { color: var(--muted); font-style: italic; }
 import './style.css';
 import { loadTickets } from './content';
 import { DbClient, type DbStatus } from './db/client';
+import type { QueryResult } from './db/run';
 import { errorMessage, grade } from './grader';
 import { CHAPTER_TITLES, contentProblems, currentChapter, nextTicket, tablesUnlocked, visibleTickets, xpFor } from './progress';
 import { loadSave, parseSave, serializeSave, writeSave, type KV, type Save } from './save';
@@ -2420,6 +2493,7 @@ import type { Ticket } from './tickets';
 import { h, richText } from './ui/dom';
 import { createEditor, type Editor } from './ui/editor';
 import { gradeMessage } from './ui/feedback';
+import { createPanel, type Tab } from './ui/panel';
 import { renderResult } from './ui/resultTable';
 
 const tickets = loadTickets();
@@ -2448,10 +2522,12 @@ let dbStatus: DbStatus = 'loading';
 let columns: Record<string, { name: string; type: string }[]> = {};
 let editor: Editor | undefined;
 let persistTimer: number | undefined;
+let lastRun: { sql: string; result?: QueryResult; error?: string } | undefined;
 
 const $ = (id: string) => document.getElementById(id)!;
 const selected = (): Ticket => tickets.find((t) => t.id === selectedId)!;
 const draftKey = () => `${selectedId}#${stepIndex}`;
+const unlockedTables = () => tablesUnlocked(currentChapter(tickets, done()));
 
 function notice(text: string): void {
   const n = $('notice');
@@ -2470,9 +2546,7 @@ function persist(now = false): void {
 
 function editorSchema(): Record<string, string[]> {
   const out: Record<string, string[]> = {};
-  for (const t of tablesUnlocked(currentChapter(tickets, done()))) {
-    if (columns[t]) out[t] = columns[t].map((c) => c.name);
-  }
+  for (const t of unlockedTables()) if (columns[t]) out[t] = columns[t].map((c) => c.name);
   return out;
 }
 
@@ -2488,8 +2562,8 @@ async function onDbStatus(s: DbStatus, message?: string): Promise<void> {
       const next: typeof columns = {};
       for (const [table, name, type] of r.rows as string[][]) (next[table] ??= []).push({ name, type });
       columns = next;
-      renderSchema();
       renderTicket();
+      panel.refresh();
     } catch (e) {
       notice(`Không đọc được schema: ${errorMessage(e)}`);
     }
@@ -2498,10 +2572,36 @@ async function onDbStatus(s: DbStatus, message?: string): Promise<void> {
 
 const db = new DbClient((s, m) => void onDbStatus(s, m));
 
+function schemaList(): HTMLElement {
+  const tables = unlockedTables().filter((t) => columns[t]);
+  if (tables.length === 0) return h('p', { class: 'muted' }, 'Đang tải schema…');
+  return h('div', { class: 'schema-list' }, ...tables.map((t) =>
+    h('div', {},
+      h('b', {}, t),
+      h('ul', {}, ...columns[t].map((c) => h('li', {}, h('code', {}, c.name), ' ', h('span', { class: 'muted' }, c.type)))))));
+}
+
+function buildTabs(): Tab[] {
+  return [
+    {
+      id: 'result',
+      label: 'Kết quả',
+      render: (host) => {
+        if (!lastRun) host.append(h('p', { class: 'muted' }, 'Chạy query (Ctrl+Enter) để xem kết quả.'));
+        else if (lastRun.error) host.append(h('pre', { class: 'error' }, lastRun.error));
+        else host.append(renderResult(lastRun.result!));
+      },
+    },
+    { id: 'columns', label: 'Cột', render: (host) => void host.append(schemaList()) },
+  ];
+}
+
+const panel = createPanel($('panel'), buildTabs());
+
 function renderTopbar(): void {
   const ch = currentChapter(tickets, done());
   $('chapter').textContent = `Chương ${ch}: ${CHAPTER_TITLES[ch] ?? ''}`;
-  $('xp').textContent = `${save.xp} XP`;
+  $('xp').textContent = `★ ${save.xp} XP`;
   $('db-status').replaceChildren(
     dbStatus === 'loading'
       ? 'Đang khởi tạo database…'
@@ -2513,38 +2613,26 @@ function renderTopbar(): void {
 
 function renderInbox(): void {
   const d = done();
-  $('inbox').replaceChildren(
-    h('h2', {}, 'Hộp thư'),
-    ...visibleTickets(tickets, d).reverse().map((t) =>
-      h('button', {
-        type: 'button',
-        class: `mail${t.id === selectedId ? ' active' : ''}${d.has(t.id) ? ' done' : ''}`,
-        'aria-current': t.id === selectedId ? 'true' : false,
-        onclick: () => {
-          selectedId = t.id;
-          stepIndex = 0;
-          renderInbox();
-          renderTicket();
-        },
+  const visible = visibleTickets(tickets, d);
+  const fresh = visible.filter((t) => !d.has(t.id)).length;
+  $('inbox-btn').textContent = `📥 Hộp thư${fresh ? ` (${fresh} mới)` : ''}`;
+  $('inbox-list').replaceChildren(...visible.reverse().map((t) =>
+    h('button', {
+      type: 'button',
+      class: `mail${t.id === selectedId ? ' active' : ''}${d.has(t.id) ? ' done' : ''}`,
+      'aria-current': t.id === selectedId ? 'true' : false,
+      onclick: () => {
+        selectedId = t.id;
+        stepIndex = 0;
+        ($('inbox-dialog') as HTMLDialogElement).close();
+        renderInbox();
+        renderTicket();
       },
-        h('span', { class: 'from' }, `${t.from.name} · ${t.from.dept}`),
-        h('span', { class: 'subject' }, t.title),
-        h('span', { class: 'meta' }, d.has(t.id) ? 'Đã xong' : `Chương ${t.chapter} · ${'★'.repeat(t.difficulty)}`),
-      )),
-  );
-}
-
-function renderSchema(): void {
-  const tables = tablesUnlocked(currentChapter(tickets, done())).filter((t) => columns[t]);
-  $('schema').replaceChildren(
-    h('h2', {}, 'Schema'),
-    ...(tables.length === 0
-      ? [h('p', { class: 'muted' }, 'Đang tải…')]
-      : tables.map((t) =>
-          h('details', { open: true },
-            h('summary', {}, t),
-            h('ul', {}, ...columns[t].map((c) => h('li', {}, h('code', {}, c.name), ' ', h('span', { class: 'muted' }, c.type))))))),
-  );
+    },
+      h('span', { class: 'from' }, `${t.from.name} · ${t.from.dept}`),
+      h('span', { class: 'subject' }, t.title),
+      h('span', { class: 'meta' }, d.has(t.id) ? 'Đã xong' : `Chương ${t.chapter} · ${'★'.repeat(t.difficulty)}`),
+    )));
 }
 
 function complete(t: Ticket): void {
@@ -2586,12 +2674,6 @@ function renderTicket(): void {
   const step = t.steps[stepIndex];
   const hintsShown = save.hintsUsed[t.id] ?? 0;
 
-  editor?.destroy();
-  const editorHost = h('div', { class: 'editor' });
-  const out = h('div', { class: 'output' });
-  const feedback = h('p', { class: 'feedback', role: 'status' });
-  const runBtn = h('button', { type: 'button', onclick: () => void run() }, 'Chạy (Ctrl+Enter)');
-  const submitBtn = h('button', { type: 'button', class: 'primary', onclick: () => void submit() }, 'Nộp');
   const hintBtn = h('button', {
     type: 'button',
     onclick: () => {
@@ -2601,7 +2683,24 @@ function renderTicket(): void {
     },
   }, `Gợi ý (${hintsShown}/${t.hints.length})`);
   hintBtn.disabled = hintsShown >= t.hints.length;
+  const conclusionHost = h('div');
 
+  $('ticket').replaceChildren(
+    h('header', {},
+      h('h2', {}, t.title),
+      h('p', { class: 'muted' }, `Từ: ${t.from.name} (${t.from.dept}) · Chương ${t.chapter} · ${'★'.repeat(t.difficulty)}${isDone ? ' · Đã hoàn thành' : ''}`)),
+    richText(t.body),
+    t.steps.length > 1 ? h('div', { class: 'step' }, h('h3', {}, `Bước ${stepIndex + 1}/${t.steps.length}: ${step.title}`), richText(step.prompt)) : null,
+    hintsShown ? h('ol', { class: 'hints' }, ...t.hints.slice(0, hintsShown).map((x) => h('li', {}, richText(x)))) : null,
+    isDone ? null : hintBtn,
+    conclusionHost,
+  );
+
+  editor?.destroy();
+  const editorHost = h('div', { class: 'editor' });
+  const feedback = h('p', { class: 'feedback', role: 'status' });
+  const runBtn = h('button', { type: 'button', onclick: () => void run() }, '▶ Chạy (Ctrl+Enter)');
+  const submitBtn = h('button', { type: 'button', class: 'primary', onclick: () => void submit() }, 'Nộp');
   const setBusy = (b: boolean) => {
     busy = b;
     runBtn.disabled = b;
@@ -2616,13 +2715,15 @@ function renderTicket(): void {
     if (busy) return;
     setBusy(true);
     feedback.textContent = '';
+    const sql = editor!.getValue();
     try {
-      out.replaceChildren(renderResult(await db.run(editor!.getValue())));
+      lastRun = { sql, result: await db.run(sql) };
     } catch (e) {
-      out.replaceChildren(h('pre', { class: 'error' }, errorMessage(e)));
+      lastRun = { sql, error: errorMessage(e) };
     } finally {
       setBusy(false);
     }
+    panel.show(panel.active === 'columns' ? 'result' : panel.active);
   }
 
   async function submit(): Promise<void> {
@@ -2641,8 +2742,8 @@ function renderTicket(): void {
         return;
       }
       if (t.conclusion) {
-        show('Các bước đều đúng. Chốt kết luận bên dưới.', 'good');
-        renderConclusion(t, out);
+        show('Các bước đều đúng. Chốt kết luận ở khung đề bài.', 'good');
+        renderConclusion(t, conclusionHost);
         return;
       }
       complete(t);
@@ -2653,17 +2754,10 @@ function renderTicket(): void {
     }
   }
 
-  $('ticket').replaceChildren(
-    h('header', {},
-      h('h2', {}, t.title),
-      h('p', { class: 'muted' }, `Từ: ${t.from.name} (${t.from.dept}) · Chương ${t.chapter}${isDone ? ' · Đã hoàn thành' : ''}`)),
-    richText(t.body),
-    t.steps.length > 1 ? h('div', { class: 'step' }, h('h3', {}, `Bước ${stepIndex + 1}/${t.steps.length}: ${step.title}`), richText(step.prompt)) : null,
-    hintsShown ? h('ol', { class: 'hints' }, ...t.hints.slice(0, hintsShown).map((x) => h('li', {}, richText(x)))) : null,
+  $('work').replaceChildren(
     editorHost,
-    h('div', { class: 'actions' }, runBtn, isDone ? null : submitBtn, isDone ? null : hintBtn),
+    h('div', { class: 'actions' }, runBtn, isDone ? null : submitBtn),
     feedback,
-    out,
   );
   editor = createEditor(editorHost, {
     doc: save.drafts[draftKey()] ?? '',
@@ -2680,8 +2774,10 @@ function renderAll(): void {
   renderTopbar();
   renderInbox();
   renderTicket();
-  renderSchema();
+  panel.refresh();
 }
+
+$('inbox-btn').addEventListener('click', () => ($('inbox-dialog') as HTMLDialogElement).showModal());
 
 $('export-btn').addEventListener('click', () => {
   const url = URL.createObjectURL(new Blob([serializeSave(save)], { type: 'application/json' }));
@@ -2718,23 +2814,23 @@ Expected: `tsc --noEmit` không lỗi; Vite build xong, có file `.wasm`/`.data`
 - [ ] **Step 5: Kiểm thủ công trên trình duyệt**
 
 Run: `npm run dev` rồi mở URL Vite in ra. Kiểm lần lượt:
-1. Trang hiện hộp thư và ticket `ch1-01` ngay; trạng thái "Đang khởi tạo database…" chuyển "Database sẵn sàng" sau vài giây; Schema hiện 5 bảng chương 1.
-2. Gõ `SELECT code, name, country FROM ports` → Ctrl+Enter → bảng 24 dòng.
-3. Bấm **Nộp** → thông báo "+100 XP", ticket `ch1-02` xuất hiện.
+1. Bố cục: thanh trên tối màu; đề bài `ch1-01` bên trái, editor bên phải, panel tab "Kết quả | Cột" bên dưới. Trạng thái "Đang khởi tạo database…" chuyển "Database sẵn sàng"; tab Cột liệt kê 5 bảng chương 1.
+2. Gõ `SELECT code, name, country FROM ports` → Ctrl+Enter → tab Kết quả hiện 24 dòng.
+3. Bấm **Nộp** → thông báo "+100 XP"; nút "📥 Hộp thư (1 mới)"; mở hộp thư (dialog) thấy `ch1-02`, chọn → dialog đóng, đề đổi.
 4. Ở `ch1-02` nộp `SELECT code FROM ports` → báo "Kết quả cần 3 cột…".
-5. Gõ `SELECT pg_sleep(10)` → Chạy → sau ~5s báo "Query chạy quá 5 giây…", database nạp lại, sau đó query thường chạy được.
+5. Gõ `SELECT count(*) FROM shipments a, shipments b` → Chạy → sau ~5s tab Kết quả báo "Query chạy quá 5 giây…", database nạp lại, query thường chạy lại được.
 6. Gõ `UPDATE ports SET name = 'x'` → Chạy (báo không có kết quả dạng bảng, không lỗi) → rồi `SELECT count(*) FROM ports WHERE name = 'x'` → 0.
-7. Bấm Gợi ý → hiện gợi ý 1, nút thành "Gợi ý (1/3)".
+7. Bấm Gợi ý → gợi ý 1 hiện trong khung đề, nút thành "Gợi ý (1/3)".
 8. Tải lại trang → tiến độ, XP, bản nháp query còn nguyên.
 9. Xuất tiến độ → xóa `localStorage` trong DevTools → tải lại → Nhập file vừa xuất → tiến độ trở lại.
-10. Chơi tới `ch1-05` (boss): bước 1 đúng → sang bước 2 → đúng → hiện câu kết luận; chọn sai báo "Chưa đúng", chọn `status` → đóng ticket, chuyển sang chương 2, Schema có thêm `containers`.
-11. Thu hẹp cửa sổ < 1000px → bố cục 1 cột, không cuộn ngang; bật dark mode hệ điều hành → màu đổi theo.
+10. Chơi tới `ch1-05` (boss): bước 1 đúng → sang bước 2 → đúng → câu kết luận hiện trong khung đề; chọn sai báo "Chưa đúng", chọn `status` → đóng ticket, sang chương 2, tab Cột có thêm `containers`.
+11. Thu hẹp cửa sổ < 900px → đề và editor xếp 1 cột, không cuộn ngang; bật dark mode → màu đổi theo; Tab/Shift+Tab đi qua được mọi nút, Esc đóng hộp thư.
 
 - [ ] **Step 6: Commit**
 
 ```bash
 git add index.html src/main.ts src/style.css src/ui
-git commit -m "feat: game UI"
+git commit -m "feat: game UI (ticket/editor workspace, tab panel, inbox dialog)"
 ```
 
 ---
