@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { isMacPlatform, keyLabels, t } from '../src/i18n';
 import { en } from '../src/i18n/en';
 import { vi } from '../src/i18n/vi';
 
@@ -30,5 +31,33 @@ describe('từ điển i18n', () => {
 
   it('nhãn EN của tab Cột là "Columns" (gợi ý EN của ch1-01 nhắc đúng chữ này)', () => {
     expect(en['tab.columns']).toBe('Columns');
+  });
+});
+
+describe('nhãn phím tắt theo hệ điều hành', () => {
+  it('nhận macOS qua userAgentData hoặc platform', () => {
+    expect(isMacPlatform({ userAgentData: { platform: 'macOS' } })).toBe(true);
+    expect(isMacPlatform({ platform: 'MacIntel' })).toBe(true);
+    expect(isMacPlatform({ platform: 'iPad' })).toBe(true);
+    expect(isMacPlatform({ userAgentData: { platform: 'Windows' }, platform: 'Win32' })).toBe(false);
+    expect(isMacPlatform({ platform: 'Linux x86_64' })).toBe(false);
+    expect(isMacPlatform(undefined)).toBe(false);
+  });
+
+  it('macOS dùng ⌘/⌥, nơi khác Ctrl/Alt', () => {
+    expect(keyLabels(true)).toEqual({ mod: '⌘', alt: '⌥' });
+    expect(keyLabels(false)).toEqual({ mod: 'Ctrl', alt: 'Alt' });
+  });
+
+  it('không chuỗi nào ghi cứng Ctrl/Alt: dùng {mod}/{alt}', () => {
+    const hard = [...Object.entries(vi), ...Object.entries(en)]
+      .filter(([, v]) => typeof v === 'string' && /\b(Ctrl|Alt|Cmd)\b/.test(v))
+      .map(([k]) => k);
+    expect(hard).toEqual([]);
+  });
+
+  it('t() tự điền {mod}/{alt}', () => {
+    expect(t('work.submit')).toMatch(/^\S+ \((Ctrl|⌘)\+Shift\+Enter\)$/);
+    expect(t('work.format')).toMatch(/(Alt|⌥)\+F\)$/);
   });
 });

@@ -21,12 +21,25 @@ function initialLang(): Lang {
   return nav.toLowerCase().startsWith('vi') ? 'vi' : 'en';
 }
 
+interface NavLike { platform?: string; userAgentData?: { platform?: string } }
+
+/** Apple keyboards: CodeMirror's `Mod` is Cmd there, and Alt is labelled Option. */
+export function isMacPlatform(nav: NavLike | undefined): boolean {
+  return /mac|iphone|ipad|ipod/i.test(nav?.userAgentData?.platform || nav?.platform || '');
+}
+
+export const keyLabels = (mac: boolean): { mod: string; alt: string } => (mac ? { mod: '⌘', alt: '⌥' } : { mod: 'Ctrl', alt: 'Alt' });
+
+/** {mod} and {alt} are filled into every message, so shortcut labels follow the OS. */
+const KEYS = keyLabels(isMacPlatform(typeof navigator === 'undefined' ? undefined : (navigator as NavLike)));
+
 let lang: Lang | undefined;
 export const getLang = (): Lang => (lang ??= initialLang());
 export const locale = (): string => (getLang() === 'vi' ? 'vi-VN' : 'en-US');
 
-export function t(key: Key, p: Params = {}): string {
+export function t(key: Key, params: Params = {}): string {
   const msg = DICT[getLang()][key];
+  const p: Params = { ...KEYS, ...params };
   if (typeof msg === 'function') return msg(p);
   return msg.replace(/\{(\w+)\}/g, (m, name: string) => {
     const v = p[name];
