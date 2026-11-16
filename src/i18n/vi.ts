@@ -86,6 +86,7 @@ export const vi = {
   'shape.date': 'ngày',
   'shape.bool': 'đúng/sai',
   'shape.yours': 'Của bạn: {cols} cột {colsOk} · {rows} dòng {rowsOk}',
+  'shape.byPosition': 'Tên cột bạn đặt không quan trọng: máy chấm so theo vị trí cột.',
   'recap.title': 'Bạn vừa học được',
   'recap.xp': '+{n} XP · đã dùng {hints} gợi ý',
   'recap.learned': 'Kỹ năng mới',

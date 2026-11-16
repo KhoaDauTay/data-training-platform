@@ -89,6 +89,7 @@ export const en: Record<Key, Msg> = {
   'shape.date': 'date',
   'shape.bool': 'true/false',
   'shape.yours': 'Yours: {cols} columns {colsOk} · {rows} rows {rowsOk}',
+  'shape.byPosition': 'Your column names do not matter: the grader compares columns by position.',
   'recap.title': 'What you just learned',
   'recap.xp': '+{n} XP · {hints} hints used',
   'recap.learned': 'New skill',
