@@ -11,7 +11,7 @@ import { isStory, session } from './session';
 import { localStore } from './storage';
 import type { Route } from './route';
 import type { Ticket } from './tickets';
-import { initModes, onPracticeSolved, onPracticeWrong, renderLeft } from './ui/modes';
+import { initModes, onPracticeSolved, onPracticeWrong, renderLeft, renderReviewButton } from './ui/modes';
 import { byId, h } from './ui/dom';
 import { errorText } from './ui/feedback';
 import { leftHome, renderHome } from './ui/homeView';
@@ -102,6 +102,7 @@ function syncMap(): void {
 function rerender(): void {
   renderTopbar();
   renderInbox();
+  renderReviewButton(byId('review-btn') as HTMLButtonElement);
   if (!byId('home').hidden) renderHome(byId('home')); // hidden Home is redrawn by showRoute(); Run/Submit in the workspace never rebuild it
   renderLeft(byId('ticket'));
   work.relabel();

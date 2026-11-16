@@ -8,6 +8,7 @@ import { app, done, persist, selected } from '../state';
 import { BTN_GO, CARD, cx } from '../theme';
 import { applyVariant } from '../variants';
 import { renderBrief } from './brief';
+import { goalCard, skillChips, wrapUp } from './chapterView';
 import { h } from './dom';
 import { homeHooks, registerHomeSection, registerMode } from './homeView';
 import { go } from './router';
@@ -135,16 +136,35 @@ function practicePane(host: HTMLElement, run: PracticeRun): void {
       run.result && !finished ? h('button', { type: 'button', class: 'primary', onclick: () => nextItem() }, t('prac.next')) : null,
       h('button', { type: 'button', onclick: () => backToStory() }, t('prac.exit'))));
   const body = h('div');
-  if (!finished) renderBrief(body, run.tickets[run.index], 0);
+  if (!finished) {
+    const tk = run.tickets[run.index];
+    renderBrief(body, tk, 0);
+    body.querySelector('header')?.after(skillChips(tk) ?? '');
+  }
   host.replaceChildren(banner, body);
 }
 
 function storyPane(host: HTMLElement): void {
   const tk = selected();
   renderBrief(host, tk, app.stepIndex);
-  if (done().has(tk.id) && tk.beat !== 'boss') {
+  host.querySelector('header')?.after(skillChips(tk) ?? '', (tk.beat === 'teach' && goalCard(tk.chapter)) || '');
+  if (!done().has(tk.id)) return;
+  if (tk.beat !== 'boss') {
     host.append(h('div', { class: 'actions' }, h('button', { type: 'button', onclick: () => startRetry(tk.id) }, t('prac.retry'))));
+    return;
   }
+  const d = done();
+  const quick = app.tickets.filter((x) => x.chapter === tk.chapter && x.beat !== 'boss' && d.has(x.id));
+  host.append(wrapUp(tk.chapter, quick.length ? () => startRetry(quick[Math.floor(Math.random() * quick.length)].id) : undefined));
+}
+
+/** Top-bar "Review: N" (P3): shown only while a learned skill is due today. */
+export function renderReviewButton(btn: HTMLButtonElement): void {
+  const n = dueToday().length;
+  btn.hidden = n === 0;
+  btn.textContent = t('prog.due', { n });
+  btn.title = t('prog.dueTitle');
+  btn.onclick = () => void startToday();
 }
 
 /** Left pane for the current mode; main.ts rerender() calls this instead of renderBrief(). */

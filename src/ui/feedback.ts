@@ -1,11 +1,21 @@
 import { DbFailedError, DbRestartError, QueryTimeoutError, WorkerTaskError } from '../db/client';
 import { sqlErrorInfo } from '../db/run';
 import { errorMessage, type GradeResult } from '../grader';
-import { t } from '../i18n';
+import { t, type Key } from '../i18n';
 import { InvalidSaveError, NewerSaveError } from '../save';
 import { h } from './dom';
 import { formatCell } from './resultTable';
 import { explainError } from './sqlErrors';
+
+/** product-design-v2 #9: the sender's one-line reaction to a wrong answer, by reason (one voice for every department, P11). */
+export function voiceKey(r: Exclude<GradeResult, { ok: true }>): Key {
+  if (r.reason === 'error') return 'voice.error';
+  if (r.reason === 'columns') return 'voice.columns';
+  if (r.reason === 'order') return 'voice.order';
+  if (r.missing && !r.extra) return 'voice.missing';
+  if (r.extra && !r.missing) return 'voice.extra';
+  return 'voice.values';
+}
 
 export function gradeMessage(r: Exclude<GradeResult, { ok: true }>): string {
   switch (r.reason) {
