@@ -65,3 +65,13 @@ npm run build                                 # typecheck + production build
 - New senders go into `content/people.yml` first (real role, `tables:`; `employee` = id in the seed's `employees`, or null).
 - Story hooks the later chapters rely on are listed at the top of `seed.sql`; do not change them without updating tickets and `tests/seed.test.ts`.
 - Project skills live in `.claude/skills/` (`web-games`, `level-design`, `save-systems`).
+
+## Imported data (Plan Import)
+
+- Player CSVs go to schema `sandbox` (`search_path = public, sandbox`, set once in `initDb`; game tables win on name clashes). Tables are `UNLOGGED`. The files never leave the browser: IndexedDB only, never uploaded, never copied into diagnostics (Plan 1c Task 11, if added).
+- Flow: `inspectCsv` (`src/import/csv.ts`, main thread) checks every D3 limit (20 MB / 200k rows / 50 columns / 5 tables) and sanitises names to `[a-z0-9_]`: reserved words get `_`, game table names get `_my`. Then `DbClient.importCsv` runs worker `kind: 'import'` through the query queue (30 s timeout, `COPY … FROM '/dev/blob'`, type inference in SQL). Then `idbStore().put` keeps the original file plus the inferred types (IndexedDB `cargo-query` / `imports`, records checked by `isStoredImport` on read).
+- `DbClient` replays imported tables after every `restart()`. A replay that fails or times out is dropped and reported (`onImportDropped`), never retried in a loop. `MyData.restore()` replays IndexedDB on page load, one file at a time; a restart or failed boot keeps the stored file.
+- Identifiers are inlined into SQL only through `ident()` and types only through `COLUMN_TYPES` (`src/db/import.ts`). Names reach Mermaid only through `mermaidName()`.
+- Imported tables show only in Sandbox (`src/ui/myDataView.ts`): the "My data" section, the ER tab (`visibleTables()`), and autocomplete (via `schemaHooks.extra` in `src/state.ts`). Home has a "My data" mode card. When imported data changes, call `clearMemos()` (EXPLAIN / steps / ER caches are keyed by SQL text and schema name; `once()` is not cleared).
+- Memory: the D3 limits stay (L5). The panel warns from `MEMORY_WARN_CELLS` imported cells (I3).
+- IndexedDB code has no Node test beyond "no IndexedDB → no throw"; check it by hand (Plan Import Task 6 Step 9).
