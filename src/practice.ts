@@ -73,7 +73,7 @@ export function reviewQueue(
 ): PracticeItem[] {
   const pool = practicePool(templates, completed);
   const open = new Set(dueSkills(review, learned, today));
-  const dayNumber = Number(today.replaceAll('-', ''));
+  const dayNumber = Math.round(Date.parse(today) / 864e5); // days since epoch: consecutive days always differ by 1
   const out: PracticeItem[] = [];
   for (const skill of open) { // a Set skips entries deleted before they are reached: covered skills never start an item
     if (out.length >= QUEUE_MAX) break;

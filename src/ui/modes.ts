@@ -62,7 +62,7 @@ export const backToStory = (): void => enter({ kind: 'story' });
 /** Entry 1: today's review (D2). Nothing due (e.g. the day changed since the button was drawn): Home with a notice (L37). */
 export function startToday(): boolean {
   if (startPractice(reviewToday())) return true;
-  app.notice = { key: 'prac.nothingDue' };
+  if (!app.notice?.key.startsWith('save.')) app.notice = { key: 'prac.nothingDue' }; // never hide a data-loss warning
   go('home'); // already on Home: no hashchange, so redraw ourselves
   ctx?.rerender();
   return false;
@@ -177,7 +177,9 @@ export function renderReviewButton(btn: HTMLButtonElement): void {
 /** Left pane for the current mode; main.ts rerender() calls this instead of renderBrief(). */
 export function renderLeft(host: HTMLElement): void {
   const m = session.mode;
-  byId('work').hidden = practiceFinished();
+  const finished = practiceFinished();
+  byId('work').hidden = finished;
+  byId('split-col').hidden = finished; // no draggable splitter beside an empty column
   if (m.kind === 'sandbox') sandboxPane(host);
   else if (m.kind === 'practice') practicePane(host, m.run);
   else storyPane(host);

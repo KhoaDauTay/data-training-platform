@@ -122,7 +122,7 @@ function readV2(d: Record<string, unknown>, known: Known): V2Fields {
   const p = isRecord(d.practice) ? d.practice : {};
   return {
     review,
-    practice: { solved: isCount(p.solved) ? p.solved : 0, weak: isCount(p.weak) ? p.weak : 0 },
+    practice: { solved: isCount(p.solved) ? p.solved : 0, weak: isCount(p.weak) ? p.weak : isCount(p.failed) ? p.failed : 0 }, // `failed` = name before 9dacae2
     sandboxDraft: typeof d.sandboxDraft === 'string' ? d.sandboxDraft.slice(0, SANDBOX_DRAFT_MAX) : '',
     bossStep,
   };

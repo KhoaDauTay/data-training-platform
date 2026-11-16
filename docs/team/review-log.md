@@ -145,3 +145,14 @@ Vòng 1/3 (2026-11-17): `code-review` (Standards + Spec) + cổng Edge (save v1�
 | verification | Chưa chạy round-trip Xuất→Nhập trên trình duyệt; chưa quét "boss/sự cố" màn mới | Spec | Mở — orchestrator |
 
 Sửa vòng 1: commits 9dacae2 (hàng ôn, thống kê, dải tiến độ, hết phiên, ngày, smells, test), 579fc8d (Sổ tay), d27b011 (spec §6b/E2, CLAUDE.md), cb484b8 (bài ôn hòa điểm xoay theo ngày; nav Luyện tập khi hết lượt), 8b99b95 (spec: bỏ màn Tổng kết chương, dialog skill map). `tsc` + 451 test + build qua.
+
+Vòng 2/3 (2026-11-17, chỉ diff cbe3d0b..b8af619): các bản sửa vòng 1 đạt L37. Kiểm Edge: "Ôn: 1" gom 4 kỹ năng ch1 vào một mục ch1-03, banner "1 of 1", dải tiến độ ẩn trong Practice. Bug mới, sửa ngay:
+
+| Loại | Bug | Trạng thái |
+|---|---|---|
+| ux | Hết phiên Practice: `#work` ẩn nhưng `#split-col` vẫn kéo được cạnh cột trống | Đã sửa (ẩn cùng `#work`) |
+| data-loss | `startToday` ghi đè banner `save.writeFailed`/`save.corrupt` bằng `prac.nothingDue` | Đã sửa (không đè thông báo `save.*`) |
+| correctness | Xoay vòng theo `Number('YYYYMMDD')`: qua tháng/năm hai ngày liền có thể ra cùng bài | Đã sửa (số ngày từ epoch) |
+| data | Đổi `failed`→`weak` trong v2 không có fallback | Đã sửa (đọc `weak ?? failed`) |
+
+Round-trip Xuất→Nhập: không chạy trên trình duyệt (tải file), test tự động bao phủ. **Plan 1c đóng sau 2 vòng** (Task 11 chẩn đoán làm cùng Plan Deploy).
