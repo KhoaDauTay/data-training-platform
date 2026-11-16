@@ -128,6 +128,24 @@ Mỗi chương theo nhịp **teach → develop → twist → rest → boss** (r�
 - Phản hồi khi sai: sai số cột / thiếu N dòng / thừa N dòng / giá trị lệch (ví dụ 1 dòng). Không lộ đáp án.
 - XP: base theo `difficulty`; mỗi bậc gợi ý đã mở trừ một phần.
 
+## 6b. Giao diện & trực quan hóa
+
+**Bố cục** (đã chọn qua mockup): thanh trên (chương, XP, nút Hộp thư mở `<dialog>`, trạng thái DB, xuất/nhập tiến độ) → **dải bản đồ tuyến** mỏng, thu gọn được → hàng giữa: **đề bài trái**, **editor phải** (Chạy / EXPLAIN / Nộp) → **panel dưới rộng** có các tab:
+
+| Tab | Nội dung | Nguồn dữ liệu |
+|---|---|---|
+| Kết quả | bảng kết quả (tối đa 500 dòng) | query của người chơi |
+| Biểu đồ | tự vẽ cột (nhãn + số) hoặc đường (ngày + số), SVG tự viết | kết quả, nhận dạng theo OID kiểu cột |
+| Thứ tự thực thi | 4 giai đoạn Parse → Transform → Optimize → Execute (theo ByteByteGo); chuỗi FROM/JOIN → WHERE → GROUP BY → HAVING → SELECT → DISTINCT → ORDER BY → LIMIT với **số dòng thật** từng bước, tô sáng mệnh đề trong SQL gốc, dòng mẫu, nút phát tự động | `libpg-query` (parser Postgres WASM) + `pgsql-deparser` cắt query thành các query con, chạy trong sandbox; `scan` lấy vị trí mệnh đề ở mức ngoặc 0 |
+| EXPLAIN | cây plan có thanh số dòng/thời gian, cảnh báo Seq Scan lớn, chú thích tiếng Việt từng loại node | `EXPLAIN (ANALYZE, FORMAT JSON)` trong `BEGIN … ROLLBACK` |
+| Luồng dữ liệu | sơ đồ SVG lá → gốc của plan, độ dày cạnh theo số dòng, chấm chạy theo cạnh | cùng dữ liệu EXPLAIN |
+| Sơ đồ ER | ERD chuẩn **crow's foot** (Mermaid `erDiagram`), PK/FK/UK, quan hệ 0..1/1 theo cột FK nullable; bảng dùng trong query được tô màu; chỉ các bảng đã mở khóa | `information_schema` (cột, ràng buộc, FK) |
+
+- Query có `WITH`, `UNION`… hoặc window function: tab Thứ tự thực thi báo "chưa hỗ trợ, xem EXPLAIN" (mở rộng ở Plan 2).
+- **Bản đồ tuyến:** SVG từ `world-atlas` (land 110m) + `d3-geo` (Natural Earth, xoay tâm 150°E để thấy cả châu Âu lẫn Mỹ); cảng là chấm, tuyến từ Việt Nam là đường tròn lớn; tuyến mở theo chương (Asia → South Asia → Europe → North America → Oceania → đường hàng không); rê chuột xem số lô của tuyến; đóng ticket → tàu chạy dọc một tuyến đã mở.
+- Mọi animation tắt khi `prefers-reduced-motion`. Không dùng 3D.
+- Thư viện nặng (Mermaid, libpg-query ~345KB gzip) chỉ tải khi mở tab cần đến.
+
 ## 7. Xử lý lỗi
 
 | Tình huống | Xử lý |
