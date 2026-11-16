@@ -1,7 +1,8 @@
 import { PGlite } from '@electric-sql/pglite';
 import { initDb } from './init';
 import { countingFetch } from './loadProgress';
-import { runSandboxed, sqlErrorInfo } from './run';
+import type { RequestKind } from './client';
+import { runExplain, runSandboxed, sqlErrorInfo } from './run';
 
 // PGlite fetches its .wasm/.data with the global fetch; count the bytes for the loading status.
 globalThis.fetch = countingFetch(fetch.bind(globalThis), (p) => postMessage({ type: 'progress', ...p }));
@@ -21,16 +22,25 @@ ready.then(
   (e: unknown) => postMessage({ type: 'initError', message: e instanceof Error ? e.message : String(e) }),
 );
 
+async function handle(db: PGlite, kind: RequestKind, sql: string): Promise<unknown> {
+  if (kind === 'explain') return runExplain(db, sql);
+  if (kind === 'steps') {
+    const { runSteps } = await import('../viz/steps'); // loads the parser only when this tab is used
+    return runSteps(db, sql);
+  }
+  return runSandboxed(db, sql);
+}
+
 // One query at a time: BEGIN … ROLLBACK pairs from two runs must never interleave.
 // DbClient also sends one query at a time; this queue is the second line of defence.
 let queue: Promise<void> = Promise.resolve();
 
-onmessage = (e: MessageEvent<{ id: number; sql: string }>) => {
-  const { id, sql } = e.data;
+onmessage = (e: MessageEvent<{ id: number; kind?: RequestKind; sql: string }>) => {
+  const { id, kind = 'run', sql } = e.data;
   queue = queue.then(async () => {
     try {
       const { db } = await ready;
-      postMessage({ type: 'result', id, result: await runSandboxed(db, sql) });
+      postMessage({ type: 'result', id, result: await handle(db, kind, sql) });
     } catch (err) {
       // Custom Error fields do not survive postMessage, so send plain fields.
       const error = sqlErrorInfo(err) ?? { message: err instanceof Error ? err.message : String(err) };
