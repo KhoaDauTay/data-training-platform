@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { pageShortcutOf, shortcutOf } from '../src/ui/shortcuts';
+import { pageShortcutOf, shortcutOf, stageEsc } from '../src/ui/shortcuts';
 
 const key = (mods: Partial<Record<'ctrlKey' | 'metaKey' | 'shiftKey' | 'altKey', boolean>>, k = 'Enter') =>
   ({ key: k, ctrlKey: false, metaKey: false, shiftKey: false, altKey: false, ...mods });
@@ -62,5 +62,18 @@ describe('bộ nghe phím tắt cấp trang', () => {
     const concl = { workspaceHidden: false, conclusionOpen: true };
     expect(pageShortcutOf(ev(SUBMIT), false, concl)).toBeUndefined();
     expect(pageShortcutOf(ev(RUN), false, concl)).toBe('run');
+  });
+});
+
+describe('stageEsc (Esc trên hoạt cảnh)', () => {
+  const esc = (defaultPrevented = false, k = 'Escape') => ({ key: k, defaultPrevented });
+  it('Esc bỏ qua/đóng hoạt cảnh đang hiện', () => {
+    expect(stageEsc(esc(), true, false)).toBe(true);
+  });
+  it('không cướp Esc: autocomplete đã xử lý, hộp thoại đang mở, hoạt cảnh đã ẩn, phím khác', () => {
+    expect(stageEsc(esc(true), true, false)).toBe(false);
+    expect(stageEsc(esc(), true, true)).toBe(false);
+    expect(stageEsc(esc(), false, false)).toBe(false);
+    expect(stageEsc(esc(false, 'Enter'), true, false)).toBe(false);
   });
 });

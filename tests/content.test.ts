@@ -57,6 +57,15 @@ describe('song ngữ', () => {
       expect([x.body, x.task, ...x.steps.map((s) => s.prompt)].join('\n')).not.toContain('`');
     }
   });
+
+  // Table names are plain English words ("customers"), so only SQL keywords, coded values and snake_case columns are caught.
+  const SQLISH = /\b(SELECT|FROM|WHERE|GROUP BY|ORDER BY|JOIN|HAVING|LIMIT|COUNT|SUM|AVG|DISTINCT|BOOKED|IN_TRANSIT|ARRIVED|DELIVERED|CANCELLED|EXPORT|IMPORT|SEA|AIR|FCL|LCL)\b|\b[a-z]+_[a-z_]+\b/g;
+  it.each(tickets)('$id: đề không có từ khóa SQL, mã trạng thái hay tên cột snake_case (problem-design §1)', (t) => {
+    for (const lang of ['vi', 'en'] as const) {
+      const x = textOf(t, lang);
+      expect([x.body, x.task ?? '', ...x.steps.map((s) => s.prompt)].join('\n').match(SQLISH)).toBeNull();
+    }
+  });
 });
 
 describe('Solution', () => {
