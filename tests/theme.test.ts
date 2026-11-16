@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { loadTickets } from '../src/content';
 import { CHAPTERS } from '../src/progress';
-import { CHAPTER_COLOR, chapterColor, cx, DEPT_COLOR, deptColor, initials } from '../src/theme';
+import { CHAPTER_COLOR, chapterColor, cx, DEPT_COLOR, deptColor } from '../src/theme';
 
 describe('theme', () => {
   it('mỗi chương trong chapters.yml có một màu riêng', () => {
@@ -33,13 +33,6 @@ describe('theme', () => {
 
   it('cx bỏ phần rỗng', () => {
     expect(cx('a', false, null, undefined, '', 'b')).toBe('a b');
-  });
-
-  it('initials: chữ cái đầu của từ đầu và từ cuối', () => {
-    expect(initials('Lê Bình')).toBe('LB');
-    expect(initials('Nguyễn Văn Quang')).toBe('NQ');
-    expect(initials('an')).toBe('A');
-    expect(initials('   ')).toBe('');
   });
 
   it('src không ghép class bằng template literal hay mảnh tên (scanner Tailwind chỉ thấy tên nguyên vẹn)', () => {

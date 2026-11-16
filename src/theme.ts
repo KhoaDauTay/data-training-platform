@@ -66,9 +66,3 @@ export const TOP_BTN = 'border-0 bg-black/20 text-white ring-1 ring-white/40 hov
 export const NAV_LINK = 'rounded-lg px-3 py-1.5 text-white no-underline hover:bg-black/20 aria-[current=page]:bg-black/30 aria-[current=page]:font-semibold aria-[current=page]:ring-1 aria-[current=page]:ring-white/60';
 /** "Done"/"current" status badge (colour only on small badges, L23): emerald-800 on -100, -200 on -950. */
 export const DONE_PILL = 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200';
-
-/** "Lê Bình" → "LB": avatar placeholder until Task 12 draws portraits (Task 12 deletes this). */
-export function initials(name: string): string {
-  const w = name.trim().split(/\s+/).filter(Boolean);
-  return (w.length > 1 ? w[0][0] + w[w.length - 1][0] : w[0]?.[0] ?? '').toUpperCase();
-}
