@@ -126,6 +126,23 @@
 .editor .cm-editor .cm-gutters .cm-activeLineGutter { background: var(--accent-soft); }
 @media (pointer: coarse) { .editor .cm-content { font-size: 16px; } }
 
+/* ---- Tien Sa scene ambient loops (L26). harbor.ts adds these classes on Home only; off under reduced motion. ---- */
+@media (prefers-reduced-motion: no-preference) {
+  .cq-wave { animation: cq-wave 6s linear infinite; }
+  .cq-wave2 { animation: cq-wave 9s linear infinite reverse; }
+  .cq-smoke { animation: cq-smoke 3s ease-out infinite; transform-box: fill-box; transform-origin: center; }
+  .cq-smoke2 { animation-delay: 1.5s; }
+  .cq-beacon { animation: cq-blink 2.4s infinite; }
+  .cq-ship-out { animation: cq-ship-out 16s linear infinite; transform-box: fill-box; transform-origin: center; }
+  .cq-trolley { animation: cq-trolley 7s ease-in-out infinite; }
+  .cq-hoist { animation: cq-hoist 7s ease-in-out infinite; }
+}
+@keyframes cq-wave { to { transform: translateX(-120px); } }
+@keyframes cq-smoke { 0% { opacity: 0.6; transform: translate(0, 0) scale(0.6); } 100% { opacity: 0; transform: translate(-30px, -40px) scale(1.6); } }
+@keyframes cq-blink { 0%, 60% { opacity: 1; } 61%, 100% { opacity: 0.15; } }
+@keyframes cq-ship-out { 0% { transform: translate(0, 0) scale(1); opacity: 1; } 85% { opacity: 1; } 100% { transform: translate(-420px, -14px) scale(0.6); opacity: 0; } }
+@keyframes cq-trolley { 0%, 15% { transform: translateX(0); } 45%, 60% { transform: translateX(250px); } 90%, 100% { transform: translateX(0); } }
+@keyframes cq-hoist { 0%, 15% { transform: translateY(0); } 25%, 35% { transform: translateY(50px); } 45%, 60% { transform: translateY(0); } 70%, 80% { transform: translateY(60px); } 90%, 100% { transform: translateY(0); } }
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; animation: none !important; scroll-behavior: auto !important; }
 }

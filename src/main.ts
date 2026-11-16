@@ -11,7 +11,7 @@ import type { Ticket } from './tickets';
 import { renderBrief } from './ui/brief';
 import { byId, h } from './ui/dom';
 import { errorText } from './ui/feedback';
-import { renderHome } from './ui/homeView';
+import { leftHome, renderHome } from './ui/homeView';
 import { renderInbox } from './ui/inbox';
 import { createPanel, registerCoreTabs } from './ui/tabs';
 import { initLayout } from './ui/splitter';
@@ -109,6 +109,7 @@ function nextStep(): void {
 function showRoute(r: Route, initial: boolean): void {
   byId('home').hidden = r !== 'home';
   byId('shell').hidden = r !== 'play';
+  if (r !== 'home') leftHome(); // Home marks containers added after this moment as "New"
   rerender(); // nav aria-current, Home numbers
   if (!initial) byId(r === 'home' ? 'home-title' : 'brief-title').focus();
 }
