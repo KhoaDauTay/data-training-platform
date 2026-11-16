@@ -130,16 +130,18 @@ Vòng 1/3 (2026-11-17): `code-review` (Standards + Spec) + cổng Edge (save v1�
 
 | Loại | Bug | Nguồn | Trạng thái |
 |---|---|---|---|
-| correctness | Phiên ôn lặp cùng một bài: sau ch1 cả 4 kỹ năng đến hạn đều ra `ch1-03` (chỉ 2 biến thể) → trái D2 "buộc nhớ lại" | Spec | Mở — L37 |
-| correctness | Số trên nút "Ôn: N" (`dueToday`) khác độ dài hàng ôn (`todayQueue`, tối đa 5, bỏ kỹ năng không có bài); hàng rỗng thì bấm không phản hồi (P6) | cả hai | Mở — L37 |
-| correctness | Sổ tay mở (non-modal `dialog[open]`) làm `stageEsc` chặn Esc bỏ qua hoạt cảnh | Standards | Mở |
-| correctness | Sổ tay vẽ một lần lúc mở: đổi ngôn ngữ / học kỹ năng mới khi đang mở → nội dung cũ | Standards | Mở |
-| correctness | Hết phiên Practice: editor sống không ticket cạnh khung "Xong", draft ghi vào `run.draft` | Standards | Mở |
-| ux | Dải tiến độ vẫn hiện trong Sandbox/Practice (spec §6b: không áp dụng) | Spec | Mở |
-| ux | `save.practice {solved, failed}` ghi nhưng không hiện ở đâu | Spec | Mở — L37 |
-| a11y | Đóng Sổ tay không trả focus về nút mở; `#notebook-btn` thiếu `aria-expanded` | cả hai | Mở |
-| data | `DAY_RE` nhận ngày không tồn tại (`2026-13-45`) | Standards | Mở |
-| test-gap | Practice không đụng hintsUsed/graded/history/completed; `onSolved` định tuyến Practice vs `complete()`; round-trip export→import v2; `bossStep` lưu + resume; số ôn = độ dài hàng; hàng ôn không trùng (ticket, biến thể) | cả hai | Mở |
-| smells | `complete()` dùng `localDay(new Date())` thay `session.today()`; `c.box <= 5` thay `MAX_BOX`; kiểu Save lặp kiểu `practice.ts`; `loadTicketTemplates()` parse 2 lần; `practice.failed` tên sai nghĩa; switch `mode.kind` lặp 6 chỗ; `modes.ts` gắn hook khi import; `mapStrings` thay cả `id/path` | Standards | Mở (judgement) |
-| docs | Spec §6b còn mô tả Inbox có Luyện tập/Sandbox, topbar `n/69`, màn Tổng kết chương, vị trí Sổ tay (P2/P3/P6 đã thay); E2 key `'sandbox'` (L16); CLAUDE.md chưa nói `#notebook-btn`, `session.mode` chỉ trong bộ nhớ, draft Practice không lưu; P1–P11 chưa có số L | cả hai | Mở |
+| correctness | Phiên ôn lặp cùng một bài: sau ch1 cả 4 kỹ năng đến hạn đều ra `ch1-03` (chỉ 2 biến thể) → trái D2 "buộc nhớ lại" | Spec | Đã sửa 9dacae2 |
+| correctness | Số trên nút "Ôn: N" (`dueToday`) khác độ dài hàng ôn (`todayQueue`, tối đa 5, bỏ kỹ năng không có bài); hàng rỗng thì bấm không phản hồi (P6) | cả hai | Đã sửa 9dacae2 |
+| correctness | Sổ tay mở (non-modal `dialog[open]`) làm `stageEsc` chặn Esc bỏ qua hoạt cảnh | Standards | Đã sửa 579fc8d |
+| correctness | Sổ tay vẽ một lần lúc mở: đổi ngôn ngữ / học kỹ năng mới khi đang mở → nội dung cũ | Standards | Đã sửa 579fc8d |
+| correctness | Hết phiên Practice: editor sống không ticket cạnh khung "Xong", draft ghi vào `run.draft` | Standards | Đã sửa 9dacae2 |
+| ux | Dải tiến độ vẫn hiện trong Sandbox/Practice (spec §6b: không áp dụng) | Spec | Đã sửa 9dacae2 |
+| ux | `save.practice {solved, failed}` ghi nhưng không hiện ở đâu | Spec | Đã sửa 9dacae2 (đổi tên `failed` → `weak`) |
+| a11y | Đóng Sổ tay không trả focus về nút mở; `#notebook-btn` thiếu `aria-expanded` | cả hai | Đã sửa 579fc8d |
+| data | `DAY_RE` nhận ngày không tồn tại (`2026-13-45`) | Standards | Đã sửa 9dacae2 |
+| test-gap | Practice không đụng hintsUsed/graded/history/completed; `onSolved` định tuyến Practice vs `complete()`; round-trip export→import v2; `bossStep` lưu + resume; số ôn = độ dài hàng; hàng ôn không trùng (ticket, biến thể) | cả hai | Đã sửa 9dacae2 |
+| smells | `complete()` dùng `localDay(new Date())` thay `session.today()`; `c.box <= 5` thay `MAX_BOX`; kiểu Save lặp kiểu `practice.ts`; `loadTicketTemplates()` parse 2 lần; `practice.failed` tên sai nghĩa; switch `mode.kind` lặp 6 chỗ; `modes.ts` gắn hook khi import; `mapStrings` thay cả `id/path` | Standards | Đã sửa 9dacae2, trừ switch `mode.kind` và hook lúc import (để lại, không rẻ) |
+| docs | Spec §6b còn mô tả Inbox có Luyện tập/Sandbox, topbar `n/69`, màn Tổng kết chương, vị trí Sổ tay (P2/P3/P6 đã thay); E2 key `'sandbox'` (L16); CLAUDE.md chưa nói `#notebook-btn`, `session.mode` chỉ trong bộ nhớ, draft Practice không lưu; P1–P11 chưa có số L | cả hai | Đã sửa d27b011 (P1–P11 đã vào L37) |
 | verification | Chưa chạy round-trip Xuất→Nhập trên trình duyệt; chưa quét "boss/sự cố" màn mới | Spec | Mở — orchestrator |
+
+Sửa vòng 1: commits 9dacae2 (hàng ôn, thống kê, dải tiến độ, hết phiên, ngày, smells, test), 579fc8d (Sổ tay), d27b011 (spec §6b/E2, CLAUDE.md). `tsc` + 450 test + build qua.
