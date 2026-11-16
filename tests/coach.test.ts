@@ -16,7 +16,7 @@ async function clickOk(setup: (app: typeof import('../src/state').app) => void):
   const { app } = await import('../src/state');
   const { coach } = await import('../src/ui/coach');
   app.tickets = [tk('A'), tk('B')];
-  app.save = { version: 1, completed: [], xp: 0, hintsUsed: {}, drafts: {}, graded: {} };
+  app.save = (await import('../src/save')).emptySave();
   app.lastRun = undefined;
   setup(app);
   const spot = app.selectedId === 'B' ? 'hints' : app.save.completed.includes('A') ? 'recap' : app.lastRun ? 'panel' : 'brief';

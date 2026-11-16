@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { QueryResult } from '../src/db/run';
+import { emptySave } from '../src/save';
 import type { Ticket } from '../src/tickets';
 
 // No DOM in this test environment: the editor and h() are replaced by plain objects,
@@ -86,7 +87,7 @@ beforeEach(() => {
   store = {};
   vi.stubGlobal('document', { addEventListener() {}, querySelector: () => null, getElementById: () => null });
   vi.stubGlobal('window', { localStorage: { getItem: (k: string) => store[k] ?? null, setItem: (k: string, v: string) => { store[k] = v; } } });
-  app.save = { version: 1, completed: [], xp: 0, hintsUsed: {}, drafts: { 'A#0': 'SELECT 1  AS n', 'B#0': 'SELECT 2' }, graded: {} };
+  app.save = { ...emptySave(), drafts: { 'A#0': 'SELECT 1  AS n', 'B#0': 'SELECT 2' } };
   app.lastRun = undefined;
 });
 afterEach(() => vi.unstubAllGlobals());
