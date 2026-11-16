@@ -1,8 +1,19 @@
 import { describe, expect, it } from 'vitest';
+import { parse as parseYaml } from 'yaml';
+import chaptersYml from '../content/chapters.yml?raw';
+import kpisYml from '../content/kpis.yml?raw';
+import peopleYml from '../content/people.yml?raw';
 import html from '../index.html?raw';
+import { loadTickets } from '../src/content';
 import { isMacPlatform, keyLabels, t } from '../src/i18n';
 import { en } from '../src/i18n/en';
 import { vi } from '../src/i18n/vi';
+import { textOf } from '../src/tickets';
+
+/** Every string inside a parsed value (keys and YAML comments are not player text). */
+const strings = (v: unknown): string[] =>
+  typeof v === 'string' ? [v] : v && typeof v === 'object' ? Object.values(v).flatMap(strings) : [];
+const GAME_TONE = /boss|sự cố/i;
 
 /** Keys whose EN text is intentionally the same as VI (SQL keywords, product names). */
 const SAME_OK = new Set<string>(['tab.explain', 'top.xp']);

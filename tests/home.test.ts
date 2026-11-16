@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { loadTickets } from '../src/content';
 import { chapterOfId, homeModel, KPIS, kpiTiles, kpiValue, LEVELS, parseKpis, type Kpi } from '../src/home';
 import { CHAPTERS, SKILLS } from '../src/progress';
+import { upsert } from '../src/registry';
 
 const tickets = loadTickets();
 const ids = (ch: number) => tickets.filter((t) => t.chapter === ch).map((t) => t.id);
@@ -68,6 +69,10 @@ describe('Bảng điều hành KPI (L18 ★5, L23)', () => {
     expect(new Set(KPIS.map((k) => k.id)).size).toBe(KPIS.length);
   });
 
+  it('ô trỏ tới bước không có của ticket bị bỏ qua (Trang chủ không throw)', () => {
+    expect(kpiTiles([{ ...kpi('number'), step: 99 }], tickets, new Set())).toEqual([]);
+  });
+
   it('mọi ô trỏ tới ticket có thật, hoặc tới chương chưa có ticket nào', () => {
     const chapters = new Set(tickets.map((t) => t.chapter));
     const bad = KPIS.filter((k) => !tickets.some((t) => t.id === k.ticket) && chapters.has(chapterOfId(k.ticket)));
@@ -90,5 +95,15 @@ describe('Bảng điều hành KPI (L18 ★5, L23)', () => {
     expect(() => parseKpis('- { id: a, ticket: ch1-01, kind: pie, label: { vi: "a", en: "b" } }')).toThrow(/kind/);
     expect(() => parseKpis('- { id: a, ticket: ch1-01, kind: bar }')).toThrow(/label/);
     expect(() => parseKpis('id: a')).toThrow(/danh sách/);
+  });
+});
+
+describe('upsert (đăng ký mục Trang chủ, chế độ, menu)', () => {
+  it('cùng id thay mục cũ; danh sách luôn sắp theo order', () => {
+    const list: { id: string; order: number; v?: number }[] = [];
+    upsert(list, { id: 'b', order: 20 });
+    upsert(list, { id: 'a', order: 10 });
+    upsert(list, { id: 'b', order: 5, v: 2 });
+    expect(list).toEqual([{ id: 'b', order: 5, v: 2 }, { id: 'a', order: 10 }]);
   });
 });
