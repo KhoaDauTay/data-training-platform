@@ -65,21 +65,24 @@ export function pickForSkill(skill: string, templates: Ticket[], completed: Set<
 
 /**
  * Today's review (L37): one item per ticket, carrying every still-uncovered due skill it practises, so a session never
- * repeats a (ticket, variant). Ticket choice is deterministic (most uncovered due skills, then has variants, then content
- * order); `rnd` only picks the variant, so `.length` is the "Review: N" count whatever `rnd` is.
+ * repeats a (ticket, variant). Ticket choice depends only on the data and `today` (most uncovered due skills, then has variants,
+ * ties rotating by day); `rnd` only picks the variant, so `.length` is the "Review: N" count whatever `rnd` is.
  */
 export function reviewQueue(
   review: Review, learned: Iterable<string>, templates: Ticket[], completed: Set<string>, today: string, rnd: () => number,
 ): PracticeItem[] {
   const pool = practicePool(templates, completed);
   const open = new Set(dueSkills(review, learned, today));
+  const dayNumber = Number(today.replaceAll('-', ''));
   const out: PracticeItem[] = [];
   for (const skill of open) { // a Set skips entries deleted before they are reached: covered skills never start an item
     if (out.length >= QUEUE_MAX) break;
     const score = (t: Ticket): number => covers(t).filter((s) => open.has(s)).length * 2 + (variantsOf(t).length >= 2 ? 1 : 0);
-    let best: Ticket | undefined;
-    for (const t of pool) if (covers(t).includes(skill) && !out.some((i) => i.ticketId === t.id) && (!best || score(t) > score(best))) best = t;
-    if (!best) continue;
+    const cands = pool.filter((t) => covers(t).includes(skill) && !out.some((i) => i.ticketId === t.id));
+    if (cands.length === 0) continue;
+    const top = Math.max(...cands.map(score));
+    const ties = cands.filter((t) => score(t) === top);
+    const best = ties[dayNumber % ties.length]; // ties rotate by day, so the same skill is not always the same task
     const skills = covers(best).filter((s) => open.has(s));
     for (const s of skills) open.delete(s);
     out.push({ ticketId: best.id, variant: variantFor(best, rnd), skills });

@@ -153,4 +153,9 @@ describe('hàng ôn trên nội dung thật (L37)', () => {
     }
     expect(lens.size).toBe(1);
   });
+
+  it('kỹ năng chỉ có bài không biến thể: đổi ngày thì đổi bài (không làm lại đúng một câu mỗi ngày)', () => {
+    const pick = (day: string) => reviewQueue({}, ['aggregate'], templates, ch12, day, () => 0)[0].ticketId;
+    expect(pick('2026-11-16')).not.toBe(pick('2026-11-17'));
+  });
 });

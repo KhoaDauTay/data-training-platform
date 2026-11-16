@@ -206,7 +206,7 @@ registerNav({
   id: 'practice', order: 30, label: 'nav.practice', href: hashOf('play'),
   current: (r) => r === 'play' && session.mode.kind === 'practice',
   // Nothing learned yet: Home's Review card explains how practice opens (P6).
-  onclick: () => (session.mode.kind === 'practice' ? go('play') : startAny() || go('home')),
+  onclick: () => (session.mode.kind === 'practice' && !practiceFinished() ? go('play') : startAny() || go('home')), // a finished run starts a new one
 });
 registerNav({
   id: 'sandbox', order: 40, label: 'nav.sandbox', href: hashOf('play'),
