@@ -189,3 +189,44 @@ describe('nút EXPLAIN', () => {
     expect(deps.panel.show).not.toHaveBeenCalled();
   });
 });
+
+describe('Practice không đụng tiến độ câu chuyện', () => {
+  it('nộp đúng trong Practice: chỉ đổi hộp ôn + thống kê; hintsUsed/graded/history/completed giữ nguyên; không complete()', async () => {
+    const { session, useHint } = await import('../src/session');
+    const { onSolved } = await import('../src/ui/modes');
+    const { actions } = await import('../src/state');
+    const complete = vi.spyOn(actions, 'complete');
+    const tk = { ...ticket('A'), grants: ['select'] };
+    session.mode = { kind: 'practice', run: { id: 1, items: [{ ticketId: 'A', variant: 1, skills: ['select'] }], tickets: [tk], index: 0, wrong: 0, hints: 0, passed: 0, draft: '' } };
+    try {
+      const { work, deps } = setup();
+      deps.onSolved.mockImplementation(onSolved);
+      work.setTicket(tk, 0, true);
+      useHint('A');
+      editors[0].opts.onSubmit();
+      release();
+      await flush();
+      expect(deps.onSolved).toHaveBeenCalledOnce();
+      expect(complete).not.toHaveBeenCalled();
+      expect(app.save.completed).toEqual([]);
+      expect(app.save.hintsUsed).toEqual({});
+      expect(app.save.graded).toEqual({});
+      expect(historyOf('A')).toEqual([]);
+      expect(app.save.review.select?.box).toBe(2);
+      expect(app.save.practice).toEqual({ solved: 1, weak: 0 });
+    } finally {
+      session.mode = { kind: 'story' };
+      complete.mockRestore();
+    }
+  });
+
+  it('onSolved trong câu chuyện gọi complete()', async () => {
+    const { onSolved } = await import('../src/ui/modes');
+    const { actions } = await import('../src/state');
+    const complete = vi.spyOn(actions, 'complete').mockImplementation(() => {});
+    const tk = ticket('A');
+    onSolved(tk);
+    expect(complete).toHaveBeenCalledWith(tk);
+    complete.mockRestore();
+  });
+});

@@ -3,7 +3,8 @@ import { variantsOf } from './variants';
 
 export interface Card { box: number; due: string }
 export type Review = Record<string, Card>;
-export interface PracticeStats { solved: number; failed: number }
+/** Practice totals (display only): `solved` = passed, `weak` = correct but after a wrong submit or 2+ hints (not a Leitner pass). */
+export interface PracticeStats { solved: number; weak: number }
 export interface PracticeItem { ticketId: string; variant: number; skills: string[] }
 
 /** Days until the next review, indexed by box - 1 (boxes 1..5). */
@@ -48,10 +49,13 @@ export function variantFor(t: Ticket, rnd: () => number): number {
   return n >= 2 ? 1 + Math.floor(rnd() * (n - 1)) : 0;
 }
 
+/** Skills a ticket practises: the ones it needs plus the ones it teaches (ch1-03 covers all four ch1 skills). */
+const covers = (t: Ticket): string[] => [...t.requires, ...t.grants];
+const practicePool = (templates: Ticket[], completed: Set<string>): Ticket[] =>
+  templates.filter((t) => completed.has(t.id) && t.beat !== 'boss');
+
 export function pickForSkill(skill: string, templates: Ticket[], completed: Set<string>, rnd: () => number): PracticeItem | undefined {
-  const pool = templates.filter(
-    (t) => completed.has(t.id) && t.beat !== 'boss' && (t.grants.includes(skill) || t.requires.includes(skill)),
-  );
+  const pool = practicePool(templates, completed).filter((t) => covers(t).includes(skill));
   const withVariants = pool.filter((t) => variantsOf(t).length >= 2);
   const from = withVariants.length ? withVariants : pool;
   if (from.length === 0) return undefined;
@@ -59,14 +63,26 @@ export function pickForSkill(skill: string, templates: Ticket[], completed: Set<
   return { ticketId: t.id, variant: variantFor(t, rnd), skills: [skill] };
 }
 
-export function todayQueue(
+/**
+ * Today's review (L37): one item per ticket, carrying every still-uncovered due skill it practises, so a session never
+ * repeats a (ticket, variant). Ticket choice is deterministic (most uncovered due skills, then has variants, then content
+ * order); `rnd` only picks the variant, so `.length` is the "Review: N" count whatever `rnd` is.
+ */
+export function reviewQueue(
   review: Review, learned: Iterable<string>, templates: Ticket[], completed: Set<string>, today: string, rnd: () => number,
 ): PracticeItem[] {
+  const pool = practicePool(templates, completed);
+  const open = new Set(dueSkills(review, learned, today));
   const out: PracticeItem[] = [];
-  for (const skill of dueSkills(review, learned, today)) {
+  for (const skill of open) { // a Set skips entries deleted before they are reached: covered skills never start an item
     if (out.length >= QUEUE_MAX) break;
-    const item = pickForSkill(skill, templates, completed, rnd);
-    if (item) out.push(item);
+    const score = (t: Ticket): number => covers(t).filter((s) => open.has(s)).length * 2 + (variantsOf(t).length >= 2 ? 1 : 0);
+    let best: Ticket | undefined;
+    for (const t of pool) if (covers(t).includes(skill) && !out.some((i) => i.ticketId === t.id) && (!best || score(t) > score(best))) best = t;
+    if (!best) continue;
+    const skills = covers(best).filter((s) => open.has(s));
+    for (const s of skills) open.delete(s);
+    out.push({ ticketId: best.id, variant: variantFor(best, rnd), skills });
   }
   return out;
 }
@@ -84,7 +100,7 @@ export function applyResult(
     review,
     practice: {
       solved: state.practice.solved + (success ? 1 : 0),
-      failed: state.practice.failed + (success ? 0 : 1),
+      weak: state.practice.weak + (success ? 0 : 1),
     },
   };
 }

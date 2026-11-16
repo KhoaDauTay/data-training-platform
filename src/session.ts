@@ -1,5 +1,6 @@
+import { loadTicketTemplates } from './content';
 import { learnedSkills } from './home';
-import { dueSkills, localDay, type PracticeItem } from './practice';
+import { localDay, reviewQueue, type PracticeItem } from './practice';
 import { SANDBOX_DRAFT_MAX } from './save';
 import { app, done, draftKey, selected } from './state';
 import type { Ticket } from './tickets';
@@ -29,8 +30,14 @@ export const isStory = (): boolean => session.mode.kind === 'story';
 
 /** Real local day for the Leitner schedule (never the in-game date). */
 export const today = (): string => localDay(new Date());
-/** Learned skills whose review is due today. */
-export const dueToday = (): string[] => dueSkills(app.save.review, learnedSkills(app.tickets, done()), today());
+/** Today's review queue (L37). Its length is the "Review: N" count whatever `rnd` is: `rnd` only picks variants. */
+export function reviewToday(rnd: () => number = Math.random): PracticeItem[] {
+  const d = done();
+  return reviewQueue(app.save.review, learnedSkills(app.tickets, d), loadTicketTemplates(), d, today(), rnd);
+}
+export const reviewCount = (): number => reviewToday(() => 0).length;
+/** All items of the practice run answered: the left pane shows the summary and the editor is hidden (no ticketless editor). */
+export const practiceFinished = (): boolean => session.mode.kind === 'practice' && session.mode.run.index >= session.mode.run.items.length;
 
 export function activeTicket(): Ticket | undefined {
   const m = session.mode;
@@ -59,7 +66,9 @@ export function readDraft(): string | undefined {
 export function writeDraft(v: string): void {
   const m = session.mode;
   if (m.kind === 'sandbox') app.save.sandboxDraft = v.slice(0, SANDBOX_DRAFT_MAX);
-  else if (m.kind === 'practice') m.run.draft = v;
+  else if (m.kind === 'practice') {
+    if (!practiceFinished()) m.run.draft = v;
+  }
   else app.save.drafts[draftKey()] = v;
 }
 

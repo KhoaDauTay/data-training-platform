@@ -3,11 +3,13 @@ import { applyVariant } from './variants';
 
 const files = import.meta.glob<string>('../content/tickets/**/*.md', { query: '?raw', import: 'default', eager: true });
 
-/** Raw tickets with their {{x}} templates; only Practice reads these. */
+let templates: Ticket[] | undefined;
+
+/** Raw tickets with their {{x}} templates, parsed once and shared (Practice and the review queue read these). Do not mutate. */
 export function loadTicketTemplates(): Ticket[] {
-  return Object.entries(files)
+  return (templates ??= Object.entries(files)
     .map(([path, source]) => parseTicket(source, path))
-    .sort(byOrder);
+    .sort(byOrder));
 }
 
 /** Story mode always plays variants[0]. */

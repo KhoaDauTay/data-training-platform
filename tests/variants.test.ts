@@ -86,3 +86,14 @@ describe('biến thể trong nội dung', () => {
     }
   });
 });
+
+describe('applyVariant không đụng id/metadata', () => {
+  it('chỉ thay chữ người chơi đọc và SQL', () => {
+    const base = loadTickets()[0];
+    const tpl = { ...base, id: 'ch1-{{m}}', title: 'T {{m}}', from: { name: '{{m}}', dept: 'D' }, variants: [{ m: 'A' }, { m: 'B' }] };
+    const v = applyVariant(tpl, 1);
+    expect(v.title).toBe('T B');
+    expect(v.id).toBe('ch1-{{m}}');
+    expect(v.from.name).toBe('{{m}}');
+  });
+});

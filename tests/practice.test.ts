@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { loadTickets } from '../src/content';
+import { loadTicketTemplates, loadTickets } from '../src/content';
 import {
   addDays, applyResult, cardOf, dueSkills, INTERVALS, isSuccess, localDay, nextCard,
-  pickForSkill, QUEUE_MAX, retryItem, seedReview, todayQueue, variantFor,
+  pickForSkill, QUEUE_MAX, retryItem, reviewQueue, seedReview, variantFor,
 } from '../src/practice';
 import type { Beat, Ticket } from '../src/tickets';
 
@@ -67,15 +67,15 @@ describe('Leitner', () => {
     expect(dueSkills(review, ['select', 'where', 'limit'], T)).toEqual(['where', 'limit']);
   });
 
-  it('applyResult: đạt thì lên hộp, chưa đạt thì về hộp 1; đếm solved/failed; không đổi input', () => {
-    const state = { review: { select: { box: 2, due: T } }, practice: { solved: 1, failed: 0 } };
+  it('applyResult: đạt thì lên hộp, chưa đạt thì về hộp 1; đếm solved/weak; không đổi input', () => {
+    const state = { review: { select: { box: 2, due: T } }, practice: { solved: 1, weak: 0 } };
     expect(applyResult(state, ['select', 'where'], true, T)).toEqual({
       review: { select: { box: 3, due: '2026-11-20' }, where: { box: 2, due: '2026-11-18' } },
-      practice: { solved: 2, failed: 0 },
+      practice: { solved: 2, weak: 0 },
     });
     expect(applyResult(state, ['select'], false, T)).toEqual({
       review: { select: { box: 1, due: '2026-11-17' } },
-      practice: { solved: 1, failed: 1 },
+      practice: { solved: 1, weak: 1 },
     });
     expect(state.review.select).toEqual({ box: 2, due: T });
   });
@@ -105,15 +105,52 @@ describe('chọn bài luyện', () => {
     expect(pickForSkill('limit', templates, completed, () => 0)).toBeUndefined();
   });
 
-  it('todayQueue tối đa QUEUE_MAX bài', () => {
+  it('reviewQueue: mỗi ticket một lần, gom mọi kỹ năng đến hạn nó luyện', () => {
     const learned = ['k1', 'k2', 'k3', 'k4', 'k5', 'k6', 'k7'];
-    const q = todayQueue({}, learned, templates, completed, T, () => 0);
-    expect(q).toHaveLength(QUEUE_MAX);
-    expect(q.every((i) => i.ticketId === 'ch1-04')).toBe(true);
+    expect(reviewQueue({}, learned, templates, completed, T, () => 0)).toEqual([{ ticketId: 'ch1-04', variant: 0, skills: learned }]);
   });
 
+  it('reviewQueue: tối đa QUEUE_MAX bài, số bài không phụ thuộc rnd', () => {
+    const many = Array.from({ length: 8 }, (_, i) => mk(`ch1-1${i}`, 'develop', { grants: [`s${i}`] }));
+    const ids = new Set(many.map((t) => t.id));
+    const learned = many.map((_, i) => `s${i}`);
+    const q = reviewQueue({}, learned, many, ids, T, () => 0);
+    expect(q).toHaveLength(QUEUE_MAX);
+    expect(reviewQueue({}, learned, many, ids, T, () => 0.99)).toHaveLength(QUEUE_MAX);
+  });
   it('retryItem luyện các kỹ năng ticket đó dạy; ticket rest không dạy gì thì luyện kỹ năng nó cần', () => {
     expect(retryItem(varied, () => 0)).toEqual({ ticketId: 'ch1-02', variant: 1, skills: ['where'] });
     expect(retryItem(wide, () => 0).skills).toEqual(wide.requires);
+  });
+});
+
+describe('hàng ôn trên nội dung thật (L37)', () => {
+  const templates = loadTicketTemplates();
+  const ch1 = new Set(['ch1-01', 'ch1-02', 'ch1-03', 'ch1-04', 'ch1-05']);
+  const ch12 = new Set([...ch1, 'ch2-01', 'ch2-02', 'ch2-03', 'ch2-04', 'ch2-05']);
+  const ch1Skills = ['select', 'where', 'order_by', 'limit'];
+  const ch12Skills = [...ch1Skills, 'aggregate', 'group_by', 'having'];
+
+  it('cả 4 kỹ năng ch1 đến hạn → một bài ch1-03 (biến thể khác 0) gom cả 4', () => {
+    for (const r of [0, 0.5, 0.99]) {
+      const q = reviewQueue({}, ch1Skills, templates, ch1, T, () => r);
+      expect(q).toHaveLength(1);
+      expect(q[0].ticketId).toBe('ch1-03');
+      expect(q[0].variant).not.toBe(0);
+      expect([...q[0].skills].sort()).toEqual([...ch1Skills].sort());
+    }
+  });
+
+  it('không lặp (ticket, biến thể), mỗi kỹ năng đến hạn một lần, số bài như nhau với mọi rnd', () => {
+    const lens = new Set<number>();
+    for (const r of [0, 0.3, 0.7, 0.99]) {
+      const q = reviewQueue({}, ch12Skills, templates, ch12, T, () => r);
+      lens.add(q.length);
+      expect(new Set(q.map((i) => `${i.ticketId}#${i.variant}`)).size).toBe(q.length);
+      expect(new Set(q.map((i) => i.ticketId)).size).toBe(q.length);
+      const skills = q.flatMap((i) => i.skills);
+      expect(new Set(skills).size).toBe(skills.length);
+    }
+    expect(lens.size).toBe(1);
   });
 });

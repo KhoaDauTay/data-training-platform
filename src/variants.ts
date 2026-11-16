@@ -11,12 +11,15 @@ export function renderTemplate(s: string, vars: VariantVars): string {
   return s.replace(VAR_RE, (m, k: string) => (Object.hasOwn(vars, k) ? vars[k] : m));
 }
 
-/** Applies `f` to every string in a ticket, including fields added later (EN block, columns, starter...). */
+/** Ids, people and metadata: never templated (a stray {{x}} there must not change who sent a ticket or what it unlocks). */
+const SKIP = new Set(['id', 'from', 'variants', 'tables', 'requires', 'grants', 'beat', 'scene']);
+
+/** Applies `f` to every player-text / SQL string in a ticket, including fields added later (EN block, columns, starter...). */
 function mapStrings<T>(v: T, f: (s: string) => string): T {
   if (typeof v === 'string') return f(v) as T;
   if (Array.isArray(v)) return v.map((x) => mapStrings(x, f)) as T;
   if (v && typeof v === 'object') {
-    return Object.fromEntries(Object.entries(v).map(([k, x]) => [k, k === 'variants' ? x : mapStrings(x, f)])) as T;
+    return Object.fromEntries(Object.entries(v).map(([k, x]) => [k, SKIP.has(k) ? x : mapStrings(x, f)])) as T;
   }
   return v;
 }
