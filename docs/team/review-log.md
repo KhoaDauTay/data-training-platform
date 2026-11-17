@@ -365,3 +365,43 @@ Vòng 1/3 (2026-11-17): review code + nội dung (11 bài học: ví dụ và Th
 Cổng Chrome (:5174, localStorage xóa trước, coach bỏ qua): ch1-01 thẻ "Bài học nhanh · Chọn cột (SELECT)" mở sẵn trước "Yêu cầu"; Chạy ví dụ 9 dòng, editor và tab Kết quả không đổi; Thử ngay sai "9 dòng có giá trị chưa đúng…", đúng "Đúng rồi!…", XP vẫn 0, pref `{"seen":["select"],"tried":["select"]}`; chip là nút mở `#lesson-dialog` (modal), Esc đóng, focus về chip; "Đã hiểu ✓" thu gọn, focus ở "Mở lại". ch1-02: editor `WHERE ___ AND ___`, Nộp → "Còn 2 chỗ trống…; lần này không tính là nộp sai"; nộp OR → lời `wrong:` về OR; nút "Gợi ý 1/3" không ghi giá; chip "Kỹ năng mới:" / "Cần dùng:". Tab Cột: `country`, `region`, `kind` có dòng giá trị, `code`/`name` không có dòng trống. Theme tối đọc được; cửa sổ không thu nhỏ được (máy giữ 1267 px) nên kiểm 375 px bằng iframe 372 px cùng origin: brief và thẻ không tràn ngang (scrollWidth 357), hộp thoại thành tấm đáy. Sổ tay: 11 nút "Bài học nhanh". Không lỗi console sau khi tải lại. Chưa kiểm: EN, hai bài học xếp chồng ch3-03, gợi ý có giá ch2, Tổng kết ch1 với save cũ.
 
 Sau vòng 1: tsc sạch, 1594 test, build sạch, main 268,5/270 KB gz (budget mọi nhóm ok).
+
+## Plan 7 + v10 reviews (base d312e83, 2026-11-18)
+
+Ba review của bản v10 (BoonData): code review (d312e83..6a6f1ec), UI/UX (designer, Chrome 1267 px + 375 px, sáng/tối), người chơi thử end-to-end (ch1–3 đủ, ch4–12 mỗi chương một việc + đánh giá thăng tiến, tuyến SG). Sửa trong 04f610e, 040da9e, d964cb9, 9e0c6a8, f459bc8, 5cf2d6a, c39c38a. Kiểm lại trong Chrome (:5174, localStorage xóa trước): tour 1 cuộn vào tầm nhìn, bước 3 nằm giữa thanh tab và bảng kết quả, bước 4 ngay dưới "Run the example", bước 8 sau thẻ Recap; Esc trên Home khi đóng menu ⋯ không bỏ tour (coach-done vẫn null); click vùng trống dưới dòng 1 gõ được; lỗi SQL: Boon nói ghi chú, tab Kết quả chỉ còn thông báo Postgres + HINT; dock hoàn thành đóng khi đổi trang; cảnh chat (ch3-01) kết thúc với thẻ còn hiện (opacity 1); tổng kết chương 1 có Lily + Boon, một nút "Start chapter 2 →", Recap của bài thăng tiến không còn nút; lớp phủ sidebar có nền tối, click ngoài thì đóng.
+
+| Loại | Bug | Trạng thái |
+|---|---|---|
+| correctness | Esc bỏ tour khi người chơi chỉ đóng menu ⋯/sổ tay, hoặc đang ở trang khác (dấu nằm trong workspace ẩn) | Đã sửa 04f610e (`tourEscSkips` thuần + test: chỉ khi dấu hiện và không ai nhận Esc) |
+| spec | Hai linh vật trong một vùng (dấu tour + Boon/Lily ở phản hồi, Boon ở gợi ý) | Đã sửa 04f610e (`tourRegion()`) |
+| spec | Dấu tour lồng trong thẻ (bước 8 trong Recap, bước 3/5 trong tab Kết quả) — mâu thuẫn luật "không ở tab Kết quả" | Đã sửa 04f610e (slot panel giữa thanh tab và thân tab, slot recap sau thẻ) |
+| ux | Tour bắt đầu ngoài màn hình; bước 4 nói "Chạy ví dụ" nhưng nằm dưới nút "Chạy & kiểm" | Đã sửa 04f610e (cuộn vào tầm nhìn một lần mỗi bước; bước 4 dưới nút ví dụ; nút thử đổi tên "Kiểm câu trả lời") |
+| correctness | Nộp editor trống được chấm và ghi ✓ 0 dòng; click dưới dòng 1 không vào editor | Đã sửa 040da9e (Chạy/Nộp trống bị từ chối, không tính nộp sai; `.cm-content` cao 160 px) + test d964cb9 |
+| ux | Mỗi bước đánh giá thăng tiến bắt đầu trống, dải "SQL đã thay đổi" | Đã sửa 040da9e (bước sau bắt đầu từ SQL vừa đạt; không áp cho bước lab) + test |
+| content | Đáp án kết luận/reflect gần như luôn là lựa chọn đầu (68/69) | Đã sửa 040da9e (`optionOrder`: thứ tự xáo cố định theo ticket, giá trị lưu vẫn là chỉ số gốc) + test |
+| correctness | Cảnh hoàn thành chat/quote/ledger kết thúc bằng khung trống (thẻ mờ dần, không có tranh phía sau) | Đã sửa 040da9e (thẻ giữ ở trạng thái cuối) |
+| ux | Dock hoàn thành vẫn che trang sau khi đổi trang | Đã sửa 040da9e (`hashchange` đóng dock) |
+| ux | Editor không xuống dòng | Đã sửa 040da9e (`EditorView.lineWrapping`) |
+| content | ch11-06 kết luận bảo chạy lại câu bước 2 trong editor chỉ nhận CREATE INDEX | Đã sửa 9e0c6a8 (chỉ sang Sandbox, lấy câu từ Lịch sử) |
+| content | ch3-01 thiếu tie-break bị báo bẫy JOIN; SG-3 không nói mã hay tên cảng | Đã sửa 9e0c6a8 (`wrong:` cho `s.ref` tăng dần; SG-3 "mã cảng xếp hàng", nhãn cột) |
+| content | Luật làm tròn nêu bằng tham chiếu (ch8-06, ch12-01) | Đã sửa 9e0c6a8 (nói thẳng: làm tròn tới đồng ở từng hóa đơn, trước khi cộng) |
+| content | ch5-06 bước 3 thiếu luật bản thay nộp sau quý; kết luận ch5-06/ch2-05 giả định cách làm; ch7-06 cần bảng bước 2 đã khuất; ch5-02 "tháng 9-10/2026"; tie không nói chiều (ch10-03, ch11-01, ch11-02) | Đã sửa 9e0c6a8 |
+| ux | Thẻ "Kết quả mong đợi" ghi "có thứ tự" cho kết quả một dòng | Đã sửa 9e0c6a8 |
+| ux | Lỗi SQL: Boon chỉ nói "xem tab Kết quả", câu giải thích nằm ở tab | Đã sửa f459bc8 (`errorNote` trong lời Boon; tab Kết quả `errorView(e, false)`) |
+| ux | Luyện tập hiện câu chuyện chương và nhãn "Kỹ năng mới" | Đã sửa f459bc8 |
+| ux | Tổng kết chương: chữ đều nhau, không linh vật, hai nút chính | Đã sửa f459bc8 (Lily + Boon, bước nghề nổi bật, một nút "Bắt đầu chương N →"; Recap bài thăng tiến bỏ nút) |
+| copy | "Chủ đề kỹ năng" không tồn tại; "Ôn tập · 0 XP"; "Dựa vào" cho kỹ năng chương dạy; nhãn "Luyện" trùng Luyện SQL; "Xem tuyến" ở tuyến khóa; lời chào không nhắc Boon | Đã sửa f459bc8 (các khóa i18n VI + EN) |
+| a11y/visual | Viền focus trên h1/h2 được focus bằng script | Đã sửa f459bc8 (chỉ heading `tabindex=-1`; tab vẫn có viền) |
+| visual | Thẻ "Chế độ khác" màu bão hòa; huy hiệu Ôn tập đỏ như hộp thư; Dashboard nút trùng, hàng chip, nút ẩn trên ô khóa; nút "Áp dụng" sát thẻ; "Head of Analytics" xuống dòng; ô tìm Data không placeholder | Đã sửa f459bc8 |
+| ux | Trạng thái tải DB là câu dài làm thanh trên xuống 2 dòng, còn "15,6/15,6 MB" khi đã tải xong | Đã sửa f459bc8 (chấm + %; câu đầy đủ ở title/sr-only; tải xong thì "Đang khởi động") |
+| content | Thẻ kỹ năng WHERE có IN trước khi dạy IN | Đã sửa f459bc8 |
+| ux | Lớp phủ sidebar không nền tối, click ngoài không đóng; thẻ mục tiêu chương đẩy yêu cầu xuống | Đã sửa 5cf2d6a |
+| docs | CLAUDE.md: `search_path`, `'public'`, mục Home theo `pages`, nút Ôn tập trống, khóa route, luật linh vật/tour | Đã sửa c39c38a |
+| spec | Sandbox: câu mẫu quay lại khi người chơi xóa hết bản nháp | Mở (judgement L62: Save không có cờ "đã vào Sandbox"; thêm cờ cần đổi Save) |
+| content | ch2-01/ch2-05 "làm tròn 2 chữ số" không được chấm (grader làm tròn mọi số) | Mở (judgement L63: grader so ở 2 chữ số là thiết kế) |
+| content | ch5-05 JOIN có thể nhân dòng nếu một lô có hai tờ khai chưa thông quan | Mở (judgement L64: seed cố định cho 0 dòng trùng; EXISTS dạy ở chương 7) |
+| ux | Thanh trên mobile 3 dòng; icon lặp ở rail/drawer; module Learning path đặt tên theo chương Logistics; trang Map mở lại bản đồ trong hộp thoại; cảnh tối vẫn ban ngày; Home lặp header; Data ở rail không có chọn bảng; sidebar: cuộn về cuối, nhãn bị cắt, danh sách bảng có viền | Mở (judgement L65: mỗi mục > 30 phút hoặc là thiết kế lại; Plan 8a/8b làm lại Learning path, Map, minh họa) |
+| ux | Lời cảm ơn theo phòng ban lặp lại; "Bảng liên quan" có cả bảng cha FK ở chương 1; nút "Về việc đang làm" sau khi giải một việc cũ | Mở (judgement L65: lời cảm ơn là thiết kế L18; bảng cha là ui-ux-v4 §4; nút đúng khi việc vừa giải không phải việc liền trước, do save thử của người review) |
+| ux | Phản hồi SG-3 khi chỉ cột nhãn sai vẫn nói "kiểm lại cách tính" | Mở (đề đã nói rõ mã cảng; chẩn đoán theo cột cần đổi grader) |
+
+Sau khi sửa: tsc sạch, 1623 test (50 file), build sạch, budget mọi nhóm ok (main 277/290, css 13/20, fonts 51/60).
