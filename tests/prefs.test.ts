@@ -1,4 +1,7 @@
 import { describe, expect, it } from 'vitest';
+import indexHtml from '../index.html?raw';
+import { PREFS_KEY } from '../src/i18n';
+import { getTheme, parseThemePref, resolveTheme, setTheme } from '../src/theme';
 import { stepKey, ticketOfKey } from '../src/save';
 import { initialDoc } from '../src/state';
 import { COACH_KEY, coachDone } from '../src/ui/coach';
@@ -55,5 +58,42 @@ describe('khóa ticketId#step', () => {
   it('dựng và đọc ở một chỗ', () => {
     expect(stepKey('ch1-05', 2)).toBe('ch1-05#2');
     expect(ticketOfKey(stepKey('ch1-05', 2))).toBe('ch1-05');
+  });
+});
+
+describe('theme (L42): trong cargo-query/prefs, cạnh lang', () => {
+  const mem = (init: Record<string, string> = {}) => {
+    const m = new Map(Object.entries(init));
+    return { getItem: (k: string) => m.get(k) ?? null, setItem: (k: string, v: string) => void m.set(k, v), m };
+  };
+
+  it('chỉ light / dark được giữ; thiếu, rác hay storage lỗi → system', () => {
+    expect(getTheme(mem({ [PREFS_KEY]: '{"theme":"dark"}' }))).toBe('dark');
+    expect(getTheme(mem({ [PREFS_KEY]: '{"theme":"light"}' }))).toBe('light');
+    for (const raw of ['{"theme":"blue"}', '{"theme":1}', '{oops', '"dark"', 'null', '[]']) expect(getTheme(mem({ [PREFS_KEY]: raw }))).toBe('system');
+    expect(getTheme(mem())).toBe('system');
+    expect(getTheme({ getItem: () => { throw new Error('blocked'); }, setItem: () => {} })).toBe('system');
+    expect(parseThemePref(undefined)).toBe('system');
+  });
+
+  it('ghi theme giữ nguyên lang (merge như setLang)', () => {
+    const s = mem({ [PREFS_KEY]: '{"lang":"en"}' });
+    setTheme('dark', s);
+    expect(JSON.parse(s.m.get(PREFS_KEY)!)).toEqual({ lang: 'en', theme: 'dark' });
+    setTheme('system', s);
+    expect(JSON.parse(s.m.get(PREFS_KEY)!)).toEqual({ lang: 'en', theme: 'system' });
+  });
+
+  it('system theo OS, light/dark cố định', () => {
+    expect(resolveTheme('system', true)).toBe('dark');
+    expect(resolveTheme('system', false)).toBe('light');
+    expect(resolveTheme('light', true)).toBe('light');
+    expect(resolveTheme('dark', false)).toBe('dark');
+  });
+
+  it('script trong <head> của index.html đọc đúng key prefs (không nháy theme khi tải)', () => {
+    const head = indexHtml.slice(0, indexHtml.indexOf('</head>'));
+    expect(head).toContain(`localStorage.getItem('${PREFS_KEY}')`);
+    expect(head).toContain('d.dataset.theme');
   });
 });

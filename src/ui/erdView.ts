@@ -1,16 +1,16 @@
 import { t } from '../i18n';
+import { isDark } from '../theme';
 import { once } from '../viz/memo';
 import { h } from './dom';
 
 let seq = 0;
-export const DARK = '(prefers-color-scheme: dark)';
 /** A failed chunk import is not cached: the next tab open retries. */
 const mermaid = once(() => import('mermaid').then((m) => m.default));
 
-/** Renders the Mermaid definition to SVG text in the current OS theme (initialize per render, so a theme switch is picked up). */
+/** Renders the Mermaid definition to SVG text in the app's current theme (initialize per render, so a theme switch is picked up). */
 export async function erdSvg(definition: string): Promise<string> {
   const m = await mermaid();
-  m.initialize({ startOnLoad: false, securityLevel: 'strict', theme: window.matchMedia(DARK).matches ? 'dark' : 'default' });
+  m.initialize({ startOnLoad: false, securityLevel: 'strict', theme: isDark() ? 'dark' : 'default' });
   return (await m.render(`erd-${++seq}`, definition)).svg;
 }
 
