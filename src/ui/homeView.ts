@@ -201,6 +201,8 @@ function skillsSection(m: HomeModel): HTMLElement {
   const lang = getLang();
   const onSkill = homeHooks.onSkill;
   const groups = CHAPTERS.map((c) => [c.chapter, m.skills.filter((s) => s.skill.chapter === c.chapter)] as const).filter(([, list]) => list.length > 0);
+  // v11 B6: a skill learned through its General drills (the Learning path's rule) says so, not just "Chapter N".
+  const known = knownSkills(app.save, app.tickets, SKILLS.map((x) => x.id));
   return h('section', { class: 'space-y-10', 'aria-labelledby': 'skills-title' },
     h('h2', { id: 'skills-title', class: 'sr-only' }, t('home.skills')),
     ...groups.map(([n, list]) => h('div', { id: `skills-ch-${n}`, class: 'scroll-mt-4' },
@@ -208,7 +210,7 @@ function skillsSection(m: HomeModel): HTMLElement {
       h('ul', { class: LIST }, ...list.map((s) => listRow({
         lead: h('span', { class: cx('grid size-10 place-items-center rounded-full', s.state === 'locked' ? 'bg-code text-muted' : chapterColor(n).chip) }, skillIcon(s.skill.id)),
         title: s.skill.label[lang],
-        sub: s.state === 'locked' ? t('brief.chapter', { n }) : s.state === 'learned' ? t('home.level', { n: s.level, max: LEVELS }) : t('home.skillOpen'),
+        sub: s.state === 'locked' ? t(known.has(s.skill.id) ? 'home.skillDrilled' : 'brief.chapter', { n }) : s.state === 'learned' ? t('home.level', { n: s.level, max: LEVELS }) : t('home.skillOpen'),
         action: onSkill && s.state === 'learned' ? h('button', { type: 'button', class: 'rounded-full px-4 whitespace-nowrap', onclick: () => onSkill(s.skill.id) }, t('prac.skillGo')) : null,
       }))))),
     h('p', { class: 'm-0 text-sm text-muted' }, t('home.skillsHint')));
