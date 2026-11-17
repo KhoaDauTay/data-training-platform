@@ -107,7 +107,7 @@ export function onPracticeSolved(): void {
   const ok = isSuccess(run.wrong, run.hints);
   const day = today();
   // Warm-up: a success moves each box at most once a day, so redoing the warm-up cannot farm boxes (derived from the save).
-  const skills = run.warmup && ok ? item.skills.filter((s) => !movedToday(app.save.review[s], day)) : item.skills;
+  const skills = ok ? item.skills.filter((s) => !movedToday(app.save.review[s], day)) : item.skills; // any practice path (review, warm-up, redo): a skill moves up at most once a day
   const next = applyResult({ review: app.save.review, practice: app.save.practice }, skills, ok, day);
   app.save.review = next.review;
   app.save.practice = next.practice;

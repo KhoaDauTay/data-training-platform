@@ -67,7 +67,7 @@ export function wrongTipper(run: (sql: string) => Promise<QueryResult>) {
   const resultOf = (tk: Ticket, sql: string): Promise<QueryResult | null> => {
     const k = `${tk.id}#${sql}`;
     let p = results.get(k);
-    if (!p) results.set(k, p = run(sql).catch(() => null)); // a failing `wrong:` is a content bug (tests/content.test.ts): skipped
+    if (!p) results.set(k, p = run(sql).catch(() => { results.delete(k); return null; })); // failure (restart, DB down) is not cached: the next wrong Submit retries
     return p;
   };
   return async (tk: Ticket, result: QueryResult | undefined, fail: GradeResult): Promise<(() => string) | undefined> => {
