@@ -8,6 +8,7 @@ import type { KV } from '../src/storage';
 
 const known: Known = {
   ticketIds: new Set(['ch1-01', 'ch1-02', 'ch1-03', 'ch1-04', 'ch1-05']),
+  laneIds: new Set(),
   skills: new Set(['select', 'where', 'order_by', 'limit']),
 };
 

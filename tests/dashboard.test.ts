@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { cardRunner, KIND_SKILL, moveCard, nextCardId, PIN_MAX_MS, pinBlock, valueCols, type Card } from '../src/dashboard';
+import { cardRunner, colGone, KIND_SKILL, moveCard, nextCardId, PIN_MAX_MS, pinBlock, valueCols, type Card } from '../src/dashboard';
 import { DbRestartError, QueryTimeoutError } from '../src/db/client';
 import { runSandboxed, type QueryResult } from '../src/db/run';
 import { seededDb } from './helpers';
@@ -43,6 +43,15 @@ describe('card của người chơi (src/dashboard.ts)', () => {
     expect(valueCols('table', res([], []))).toEqual([]);
     // More rows than a chart takes: the card shows the first ones, so it still fits.
     expect(valueCols('bar', res([TEXT, INT8], Array.from({ length: 245 }, (_, i) => [`k${i}`, i])))).toEqual([1]);
+  });
+
+  it('cột giá trị không còn trong kết quả → colGone (card hiện "cột không còn", không NaN)', () => {
+    const r = res([TEXT, INT8], [['FOB', 146]]);
+    expect(colGone({ ...card('a'), kind: 'number', col: 1 }, r)).toBe(false);
+    expect(colGone({ ...card('a'), kind: 'number', col: 5 }, r)).toBe(true);
+    expect(colGone({ ...card('a'), kind: 'bar', col: 1 }, r)).toBe(false);
+    expect(colGone({ ...card('a'), kind: 'bar', col: 2 }, r)).toBe(true);
+    expect(colGone({ ...card('a'), kind: 'table', col: 9 }, r)).toBe(false);
   });
 
   it('nút Ghim: SQL đã đổi → chạy lại trước; đủ 24 card; SQL quá dài; query quá 2 s', () => {

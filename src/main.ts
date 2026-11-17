@@ -80,7 +80,8 @@ app.tickets = loadTickets();
 const problems = contentProblems(app.tickets);
 if (problems.length) console.warn('Content problems:', problems);
 // Lane side tasks are known ids too, so their drafts, graded SQL and hints survive a reload (they never enter `completed`).
-const known: Known = { ticketIds: new Set([...app.tickets, ...loadLanes().tasks].map((x) => x.id)), skills: new Set(SKILLS.map((s) => s.id)) };
+const laneIds = new Set(loadLanes().tasks.map((x) => x.id));
+const known: Known = { ticketIds: new Set([...app.tickets.map((x) => x.id), ...laneIds]), laneIds, skills: new Set(SKILLS.map((s) => s.id)) };
 
 const loaded = loadSave(localStore(), known);
 app.save = loaded.save;

@@ -6,7 +6,7 @@ import {
 } from '../src/save';
 import type { KV } from '../src/storage';
 
-const known: Known = { ticketIds: new Set(['ch1-01', 'ch1-02', 'ch1-03']), skills: new Set(['select', 'where']) };
+const known: Known = { ticketIds: new Set(['ch1-01', 'ch1-02', 'ch1-03']), laneIds: new Set(), skills: new Set(['select', 'where']) };
 
 function memoryStorage(initial: Record<string, string> = {}): KV & { data: Record<string, string> } {
   const data = { ...initial };

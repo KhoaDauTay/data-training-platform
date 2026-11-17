@@ -515,6 +515,7 @@ export const en: Record<Key, Msg> = {
   'card.kind.number': 'Number',
   'card.kind.bar': 'Bar',
   'card.kind.line': 'Line',
+  'card.colGone': "Column {n} is no longer in this query's result. Unpin the card and pin it again.",
   'card.rowsShown': 'Showing {n} of {total} rows',
   'pin.button': 'Pin',
   'pin.title': 'Pin to the dashboard',

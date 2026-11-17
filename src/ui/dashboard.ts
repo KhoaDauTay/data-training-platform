@@ -1,5 +1,5 @@
 import { loadLanes } from '../content';
-import { BAR_ROWS, CARD_KINDS, cardRunner, cardSpec, KIND_SKILL, MAX_CARDS, moveCard, TABLE_ROWS, type Card, type CardKind } from '../dashboard';
+import { BAR_ROWS, CARD_KINDS, cardRunner, colGone, cardSpec, KIND_SKILL, MAX_CARDS, moveCard, TABLE_ROWS, type Card, type CardKind } from '../dashboard';
 import { QueryTimeoutError } from '../db/client';
 import type { QueryResult } from '../db/run';
 import { chapterOfId, KPIS, kpiNumber, kpiTiles, kpiValue, learnedSkills, type Kpi, type KpiTile, type KpiValue } from '../home';
@@ -71,6 +71,7 @@ const kindColor = (c: Card) => chapterColor(skillOf(KIND_SKILL[c.kind]).chapter)
 /** What a card shows for its result: a big number, the first rows, bars or a line (shared with the pin dialog's preview). */
 export function cardBody(c: Card, r: QueryResult): HTMLElement {
   const col = c.col ?? 0;
+  if (colGone(c, r)) return h('p', { class: 'm-0 text-muted' }, t('card.colGone', { n: col + 1 }));
   if (c.kind === 'number') {
     const v = kpiNumber(Number(r.rows[0]?.[col] ?? NaN), getLang());
     return kpiView(v, '');
