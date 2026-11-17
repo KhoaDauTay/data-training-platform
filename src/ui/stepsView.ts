@@ -1,7 +1,7 @@
 import { t, type Key } from '../i18n';
 import { cx } from '../theme';
-import { shownSteps, type StepsResult } from '../viz/steps';
-import { STEP_LABELS, type StepKey, type StepsFailure } from '../viz/stepText';
+import type { StepsResult } from '../viz/steps';
+import { shownSteps, STEP_LABELS, type StepKey, type StepsFailure } from '../viz/stepText';
 import { fmt, h } from './dom';
 import { renderResult } from './resultTable';
 
