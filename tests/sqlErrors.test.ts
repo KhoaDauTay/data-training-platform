@@ -27,7 +27,11 @@ const CASES: [string, string][] = [
   ['SELECT mbl_no, issue_date FROM master_bills UNION SELECT hbl_no FROM house_bills', 'sqlerr.setColumns'],
   ['SELECT id, ref FROM shipments EXCEPT SELECT shipment_id FROM invoices', 'sqlerr.setColumns'],
   ['SELECT mbl_no FROM master_bills UNION SELECT id FROM house_bills', 'sqlerr.setTypes'],
-  [`SELECT DISTINCT ON (b.id) b.bill_no FROM vendor_bills b JOIN exchange_rates r ON r.currency = b.currency ORDER BY r.rate_date DESC`, 'sqlerr.42P10'],
+  [`SELECT DISTINCT ON (b.id) b.bill_no FROM vendor_bills b JOIN exchange_rates r ON r.currency = b.currency ORDER BY r.rate_date DESC`, 'sqlerr.distinctOn'],
+  // Same SQLSTATE 42P10, different mistakes: they must not get the DISTINCT ON note.
+  ['SELECT DISTINCT customer_id FROM shipments ORDER BY eta', 'sqlerr.distinctOrder'],
+  ['SELECT ref FROM shipments ORDER BY 2', 'sqlerr.position'],
+  ['SELECT customer_id FROM shipments GROUP BY 3', 'sqlerr.position'],
   ['SELECT ref FROM shipments WHERE customer_id IN (SELECT id, name FROM customers)', 'sqlerr.subqueryColumns'],
 ];
 

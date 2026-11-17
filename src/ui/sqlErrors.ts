@@ -17,6 +17,10 @@ const BY_MESSAGE: [RegExp, Key][] = [
   [/^each (UNION|INTERSECT|EXCEPT) query must have the same number of columns/, 'sqlerr.setColumns'],
   [/^(UNION|INTERSECT|EXCEPT) types .* cannot be matched/, 'sqlerr.setTypes'],
   [/^subquery has too many columns/, 'sqlerr.subqueryColumns'],
+  // 42P10 covers three different mistakes, so they are told apart by message.
+  [/^SELECT DISTINCT ON expressions must match initial ORDER BY/, 'sqlerr.distinctOn'],
+  [/^for SELECT DISTINCT, ORDER BY expressions must appear in select list/, 'sqlerr.distinctOrder'],
+  [/^(ORDER|GROUP) BY position \d+ is not in select list/, 'sqlerr.position'],
 ];
 
 const BY_CODE: Record<string, Key> = {
@@ -32,7 +36,6 @@ const BY_CODE: Record<string, Key> = {
   '42804': 'sqlerr.42804',
   '22P02': 'sqlerr.22P02',
   '21000': 'sqlerr.21000',
-  '42P10': 'sqlerr.42P10',
 };
 
 /** Teaching note shown under Postgres' own message (which is always shown unchanged). */
