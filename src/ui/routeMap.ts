@@ -44,7 +44,7 @@ export function paintRoutes(p: MapParts, h: Harbor): void {
     else p.routes[r.port].setAttribute('stroke-dasharray', '6 6');
     p.pins[r.port].setAttribute('class', open ? color.fill : LOCKED_PIN);
     p.labels[r.port].setAttribute('class', open ? OPEN_TEXT : LOCKED_TEXT);
-    p.labels[r.port].textContent = (open ? '' : '🔒 ') + r.name + (trips ? ` · ${trips}` : '');
+    p.labels[r.port].textContent = r.name + (trips ? ` · ${trips}` : '');
   }
   p.svg.setAttribute('aria-label', t('routes.label', { lanes: routeItems(h).join('; ') }));
 }

@@ -148,3 +148,8 @@
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; animation: none !important; scroll-behavior: auto !important; }
 }
+
+/* Browsers without the Popover API (Safari < 17, Firefox < 125): keep the ⋯ menu out of the page flow. */
+@supports not selector(:popover-open) {
+  [popover] { display: none; }
+}
