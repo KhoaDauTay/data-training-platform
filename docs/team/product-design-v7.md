@@ -12,7 +12,7 @@ Tài liệu này **chỉ đề xuất**. Không sửa `src/`, `content/`, test h
 
 | Chủ đề | Đề xuất v12 | Cỡ |
 |---|---|---|
-| Mục để lại (L65 + v10 mở + backlog 8a/8b/9) | 22 mục, gom thành 5 cụm: **khung mobile một dòng**, **mỗi icon một đích**, **Home ≠ Tổng quan**, **Bản đồ có hồ sơ tuyến ngay trên trang**, **Data chọn bảng khi rail**; cộng các mục nội dung/grader nhỏ (§1). | M |
+| Mục để lại (L65 + v10 mở + backlog 8a/8b/9) | 17 mục mở (cộng 4 mục giữ nguyên ở §1.3), gom thành 5 cụm: **khung mobile một dòng**, **mỗi icon một đích**, **Home ≠ Tổng quan**, **Bản đồ có hồ sơ tuyến ngay trên trang**, **Data chọn bảng khi rail**; cộng các mục nội dung/grader nhỏ (§1). | M |
 | Hiệu năng khởi động | **Chỉ seed domain người chơi đang mở**. Logistics thành lười như `ecom` (`ensure('logistics')`); bài học nhanh/sổ tay chờ Logistics chỉ khi người chơi mở ví dụ. Màn chọn domain lần đầu **trước** khi seed. Spike riêng: lưu data dir đã seed vào IndexedDB (lần 2 gần như tức thì) và DB dựng sẵn (đảo L55, cần user) (§2). | M + spike S |
 | Domain Finance | "Hải Đăng Tài Chính" / *Lighthouse Finance*, công ty cho vay tiêu dùng + trả góp hư cấu ở Đà Nẵng; schema `finance`, id `fin-chN-0M`, 6 chương × 5 việc theo khuôn Plan 9; trọng tâm **sổ vay, quá hạn (DPD), cohort giải ngân, ngân sách vs thực tế, dòng tiền** (khác Logistics ch7–9 là công nợ của một công ty giao nhận) (§3). | L–XL |
 | Animation + minh họa | Cảnh **hoàng hôn/đêm** khi theme tối; hoạt cảnh hoàn thành cho E-com (D9-14) và Finance; Lily chào ở Home; bộ minh họa trạng thái rỗng thống nhất; mọi thứ vẫn CSS/WAAPI, ≤ 3 s, tắt dưới reduced motion (§4). | M |
@@ -130,11 +130,11 @@ Thước đo cho spike (một bảng trong `review-log.md`): thời gian tới "
 | F1 | Thực tập sinh | Sổ vay hôm nay: khoản đang mở, dư nợ theo sản phẩm | `select`, `where`, `aggregate`, `group_by` |
 | F2 | Chuyên viên | Lịch trả nợ vs tiền về: kỳ đã đến hạn, đã trả | `join`, `left_join`, `anti_join`, `date_math` |
 | F3 | Chuyên viên | Quá hạn: nhóm DPD, tỷ lệ nợ xấu theo chi nhánh | `case_when`, `conditional_agg`, `coalesce` |
-| F4 ★ | Chuyên viên chính | Cohort giải ngân (vintage), tỷ lệ chuyển nhóm | `cte`, `date_bucket`, `window_lag`, **`generate_series` (mới: lấp tháng trống)** |
-| F5 | Chuyên viên chính | Ngân sách vs thực tế, lũy kế từ đầu năm | `window_agg`, **`rollup` (mới: GROUPING SETS/ROLLUP cho dòng tổng)** |
-| F6 ★ | Trưởng nhóm | Báo cáo rủi ro quý cho ban điều hành | đánh giá tổng hợp, **`percentile` (mới: `percentile_cont` cho trung vị khoản vay)** |
+| F4 ★ | Chuyên viên chính | Cohort giải ngân (vintage), tỷ lệ chuyển nhóm | `cte`, `date_bucket`, `window_lag`; áp dụng nút nâng cao **A3 Trục ngày** và **B2 Cohort và retention** |
+| F5 | Chuyên viên chính | Ngân sách vs thực tế, lũy kế từ đầu năm | `window_agg`; áp dụng nút **A4 Tổng phụ (ROLLUP)** |
+| F6 ★ | Trưởng nhóm | Báo cáo rủi ro quý cho ban điều hành | đánh giá tổng hợp; áp dụng nút **A2 Phân vị** (trung vị khoản vay) |
 
-3 kỹ năng mới → `skills.yml` + icon (test `icons.test.ts`) + bài học nhanh + 3 drill mỗi kỹ năng trên `lab` (khuôn Plan 8a).
+**Không thêm kỹ năng mới**: trục ngày, cohort, ROLLUP và phân vị đã là nút nâng cao A2/A3/A4/B2 của Plan 8a (bài học + 4 bài trên `lab`). Finance là nơi **áp dụng** chúng: ticket thêm trường tùy chọn `adv: [a3, b2]` để chương hiện "Dựa vào: Trục ngày, Cohort" (link sang `#/learn/adv/<node>`) và trang nút hiện "Áp dụng ở Finance, chương F4" (cùng cơ chế "Domain ↔ Chung" của Plan 8a Task 11). Ôn Leitner vẫn chỉ theo `skills.yml`.
 
 ### 3.4 Cảnh và bản đồ
 
@@ -163,7 +163,7 @@ CSS keyframes + WAAPI + `tween()` (D8b-1), không thêm thư viện; hoạt cả
 | **Hoàng hôn/đêm theo theme** (L65) | Theme tối: cảnh Tiên Sa đổi sang đêm — trời `--sky` đậm, trăng, 6–8 sao nhấp nháy (CSS, chu kỳ 3–5 s lệch pha), đèn cẩu/cửa sổ vàng ấm, phản chiếu đèn trên nước. Chỉ đổi biến màu + một nhóm `<g class="night">` ẩn ở theme sáng; không vẽ cảnh thứ hai. Áp cả bản đồ tuyến (mockup màn 2 ở theme tối). | S–M |
 | **Hoạt cảnh E-com** (D9-14) | Việc thường: kiện hàng trượt lên kệ màu chương (1,2 s); thăng tiến: xe máy giao hàng chạy tới thành phố mới mở trên bản đồ giao hàng (2,5 s) + Lily/Boon `cheer` (D8b-6). | M |
 | **Hoạt cảnh Finance** | §3.4. | S (cùng Plan 10) |
-| **Lily chào ở Home** (L65) | Lily `idle` 72 px cạnh dòng "Tiếp tục", câu chào theo giờ máy (sáng/chiều/tối) + một trong 6 câu theo trạng thái (có ôn tập, vừa lên bậc, lâu chưa học ≥ 7 ngày). Bấm Lily → `cheer` 600 ms (vui, không thưởng). | S |
+| **Lily chào ở Home** (L65) | Lily `idle` 72 px cạnh dòng "Tiếp tục" (Home không có linh vật nào khác ở vùng này: giữ luật "tối đa một linh vật mỗi vùng" của CLAUDE.md; idle chỉ chạy khi sprite có lớp `live`, nên cần mở luật đó cho Home hoặc để Lily đứng yên), câu chào theo giờ máy (sáng/chiều/tối) + một trong 6 câu theo trạng thái (có ôn tập, vừa lên bậc, lâu chưa học ≥ 7 ngày). Bấm Lily → `cheer` 600 ms (vui, không thưởng). | S |
 | **Bộ minh họa thống nhất** | 8 cảnh nhỏ cùng khung 240×160, cùng nét 2 px: trạng thái rỗng (Lịch sử, Bảng điều hành, Dữ liệu của tôi, Ôn tập xong), lỗi tải, offline, chứng nhận (§5.2), insights rỗng. Chunk `illustrations` (D8b-8) thêm, mỗi hình ≤ 6 KB. | M |
 | **Chuyển trang** | View Transitions API (`document.startViewTransition`) khi đổi route, fade 150 ms; trình duyệt không có API thì đổi ngay. 0 KB thư viện. | S |
 
@@ -175,7 +175,7 @@ Mọi thứ chạy ở trình duyệt (CLAUDE.md: không backend; nếu có thì
 
 ### 5.1 Xuất / nhập Bảng điều hành
 
-- **Xuất**: file `boondata-<domain>-dashboard.json` = `{ format: 1, domain, cards: [{ title, kind, sql }] }`. Không có kết quả, không có SQL chạm bảng `sandbox` (thẻ đó bị loại, dialog nói "2 thẻ dùng dữ liệu của bạn nên không xuất").
+- **Xuất**: file `boondata-<domain>.boondash.json` = `{ format: 1, domain, cards: [{ title, kind, sql }] }`. Không có kết quả, không có SQL chạm bảng `sandbox` (thẻ đó bị loại, dialog nói "2 thẻ dùng dữ liệu của bạn nên không xuất").
 - **Ảnh**: mỗi thẻ có "Tải ảnh PNG" (SVG → canvas → `toBlob`), có chú thích nguồn "BoonData · dữ liệu hư cấu" ở góc.
 - **Nhập**: kiểm như `readDashboard` (max 24 thẻ, SQL ≤ 4.000 ký tự), thêm vào cuối, thẻ nhập **không tự chạy** (đã có luật `cargo-query/cards-ran`).
 
@@ -223,13 +223,13 @@ Tính **tại máy**, không gửi đi đâu, không cookie, không ID. Trang `#
 | Việc xong theo chương / domain, bậc nghề | `save.completed`, `rankOf()` | **Có** |
 | Gợi ý đã dùng, việc dùng nhiều gợi ý nhất | `save.hintsUsed` | **Có** |
 | Ôn tập: đạt / đúng chưa đạt | `save.practice` | **Có** |
-| Số lần chạy trước khi đạt, tỉ lệ đạt lần nộp đầu | `cargo-query/history` (`{ sql, at, ok }`, 15 câu gần nhất mỗi việc, chỉ máy này) | **Có, xấp xỉ** (chỉ 15 câu cuối) |
-| Giờ học trong ngày (sáng/chiều/tối) | `history[].at` | **Có, xấp xỉ** |
+| Số lần chạy trước khi đạt, tỉ lệ đạt lần nộp đầu | `cargo-query/history` **không đủ**: `ok` nghĩa là "chạy không lỗi" (không phải "qua grader"), Chạy và Nộp ghi giống nhau, câu trùng liền nhau bị bỏ (`work.ts` `record`, `pushHistory`) | **Cần mới**: pref `cargo-query/attempts` (`Record<ticketId, { runs, submits, passedOn? }>`, đếm ở `work.ts`) |
+| Giờ học trong ngày (sáng/chiều/tối) | `history[].at` (15 câu cuối mỗi việc) | **Có, xấp xỉ** |
 | Lịch ngày học + chuỗi ngày | danh sách ngày local có chạy/nộp | **Cần mới**: pref `cargo-query/activity` (≤ 366 ngày, `localDay`) |
 | Lỗi hay gặp (theo SQLSTATE) | đếm `SqlError.code` | **Cần mới**: pref `cargo-query/errors` (`Record<code, number>`, ≤ 50 khóa) |
-| "Nên làm gì tiếp" | kỹ năng hộp 1–2 + lỗi hay gặp → 1 drill + 1 bài học | **Có** sau 2 mục trên |
+| "Nên làm gì tiếp" | kỹ năng hộp 1–2 + lỗi hay gặp → 1 drill + 1 bài học | **Có** sau các mục mới ở trên |
 
-Hai mục mới để **localStorage, không vào Save** (ladder: không cần bump; mất thì chỉ mất thống kê). Đổi lại: Xuất tiến độ không mang theo lịch ngày học (ghi ở trang). Chuỗi ngày **không** có phạt, không thông báo đẩy, không "mất chuỗi" (tránh tạo áp lực; nhất quán với ôn Leitner theo ngày máy).
+Ba mục mới (`activity`, `errors`, `attempts`) để **localStorage, không vào Save** (ladder: không cần bump; mất thì chỉ mất thống kê). Đổi lại: Xuất tiến độ không mang theo lịch ngày học (ghi ở trang). Chuỗi ngày **không** có phạt, không thông báo đẩy, không "mất chuỗi" (tránh tạo áp lực; nhất quán với ôn Leitner theo ngày máy).
 
 ---
 
@@ -272,7 +272,7 @@ Tổng ~6–7 tuần agent nếu tuần tự; v12.1 và v12.2 chạy song song �
 - **D-U2.** Home = liên domain, Tổng quan = một domain, Home không hiện tin nhắn (U5)? **(có)**
 - **D-U3.** Trang Bản đồ hồ sơ tuyến tại chỗ, hộp thoại chỉ ở thanh việc (U4)? **(có)**
 - **D-F1.** Finance = "Hải Đăng Tài Chính / Lighthouse Finance", cho vay tiêu dùng + trả góp, sau khi kiểm trùng tên? **(có; đổi tên nếu trùng)**
-- **D-F2.** 3 kỹ năng mới (`generate_series`, `rollup`, `percentile`)? **(có)**
+- **D-F2.** Finance dùng nút nâng cao A2/A3/A4/B2 qua trường `adv:` thay vì thêm kỹ năng mới vào `skills.yml`? **(có)**
 - **D-F3.** Finance ở v12.3, sau v12.0 (cần seed theo domain)? **(có)**
 - **D-C1.** Xuất Bảng điều hành (JSON + PNG) và link chia sẻ SQL không tự chạy? **(có)**
 - **D-C2.** Chứng nhận tự tạo, ghi "không xác minh", không mã xác minh? **(có)**
@@ -294,4 +294,4 @@ Tổng ~6–7 tuần agent nếu tuần tự; v12.1 và v12.2 chạy song song �
 5. **Finance**: phố tài chính, bản đồ dòng tiền, 6 chương (§3).
 6. **Tiến bộ của tôi + chứng nhận + xuất Bảng điều hành** (§5, §7).
 
-Đã mở trong Chrome qua companion server (`http://localhost:53388/`) ở 1267 px, kiểm cả 6 màn ở theme sáng và tối, console không lỗi; sửa sau khi xem: tàu và viền nhà tối màu ở theme tối, trăng đè đèn hải đăng, chữ "không xác minh" bị linh vật che trên chứng nhận. Bề rộng 375 px chỉ kiểm bằng hai khung điện thoại trong màn 1 (cửa sổ Chrome không thu nhỏ được trong lần kiểm này). Icon trong mockup là SVG nội tuyến cùng kiểu `icons.ts` (24 px, nét 2 px), không emoji; chữ "boss" không xuất hiện.
+Đã mở trong Chrome qua companion server (`http://localhost:53388/`) ở 1267 px, kiểm cả 6 màn ở theme sáng và tối, console không lỗi; sửa sau khi xem: tàu và viền nhà tối màu ở theme tối, trăng đè đèn hải đăng, cẩu và tàu ở cảnh Tổng quan, chữ "không xác minh" bị linh vật che trên chứng nhận; kiểm lại cả 6 màn ở hai theme sau khi sửa. Bề rộng 375 px chỉ kiểm bằng hai khung điện thoại trong màn 1 (cửa sổ Chrome không thu nhỏ được trong lần kiểm này). Icon trong mockup là SVG nội tuyến cùng kiểu `icons.ts` (24 px, nét 2 px), không emoji; chữ "boss" không xuất hiện.
