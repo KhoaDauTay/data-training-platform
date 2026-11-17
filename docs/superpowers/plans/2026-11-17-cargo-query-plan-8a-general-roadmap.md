@@ -30,16 +30,18 @@
 
 ## Tiền đề (Plan 7 làm gì, nếu chưa làm thì task nào của 8a làm)
 
-Plan viết trên HEAD `d7f42d8`; Plan 7 lúc đó đang được viết (file mới có Task 0–4). Task 0 đối chiếu từng dòng.
+Plan viết trên HEAD `d312e83` (Plan 7 đã viết xong, **chưa build**). Tên dưới đây lấy từ file Plan 7; Task 0 đối chiếu với code thật sau khi Plan 7 build.
 
 | Plan 8a cần | Plan 7 (theo plan) | Nếu HEAD chưa có |
 |---|---|---|
-| Bảng game trong schema `logistics`, `GAME_SCHEMA`, `src/domains.ts` | F1 Task 1 | Task 1 vẫn làm được với game ở `public`: `SCHEMAS = { game: GAME_SCHEMA ?? 'public', lab: 'lab' }`; không sửa F1 |
-| `runLab` so `pg_class.relname` (V16) | Task 1 | Task 1 Step 6 làm luôn (cần cho `lab`) |
-| Route `#/learn`, `#/learn/sql/<n>`, `#/practice`, `#/d/logistics…`, `canonicalHash` | N1 (Task 5) | Dừng: 8a không dựng lại khung route. Báo orchestrator |
-| Sidebar, nav cấp 1 "Lộ trình · Luyện SQL" | F3 | Như trên |
-| Trang Lộ trình tối thiểu (V6: 12 module, dòng nâng cao "đợt sau") | Task 10 (dự kiến) | Task 9 thay toàn bộ trang (8a là chủ trang Lộ trình từ đây) |
-| `mascot(who, pose)` | Task 3 | Bỏ linh vật ở trang Chung (chỉ trang trí) |
+| Bảng game trong schema `logistics`, `GAME_SCHEMA` (`src/domains.ts`), `SANDBOX_SETUP_SQL` = `CREATE SCHEMA IF NOT EXISTS sandbox; SET search_path = logistics, sandbox;` (`src/db/import.ts`) | Plan 7 Task 1 | Task 1 vẫn làm được với game ở `public`: `SCHEMAS = { game: GAME_SCHEMA ?? 'public', lab: 'lab' }`; không sửa F1 |
+| `runLab` so `pg_class.relname` (V16) | Plan 7 Task 1 | Task 1 Step 6 làm luôn (cần cho `lab`) |
+| `parseRoute(hash)` trả id trang (`'learn'`, `'practice'`, `'map'`…), `learnModuleOf(hash)`, `ROUTE_HASH`, `canonicalHash`; `#/d/logistics/map` | Plan 7 Task 5 | Dừng: 8a không dựng lại khung route. Báo orchestrator |
+| Sidebar, nav cấp 1 "Lộ trình · Luyện SQL" | Plan 7 Task 6 | Như trên |
+| Trang Lộ trình tối thiểu (V6: 12 module; dòng nâng cao = khóa i18n `learn.advSoon` "…đợt sau.") | Plan 7 Task 5 | Task 9 thay trang và **xóa** `learn.advSoon` (cả `vi.ts`, `en.ts`) |
+| `mascot(who, pose, cls?, label?)`, `POSES` | Plan 7 Task 3 | Bỏ linh vật ở trang Chung (chỉ trang trí) |
+| Luyện SQL `#/practice` là trang hub; Luyện tập/Sandbox vẫn là session mode trong `play` (V5) | Plan 7 Task 5 | Task 8 theo V5: drill ôn tập chạy như một mode trong workspace |
+| Dòng chương ở Tổng quan có **một** dòng phụ "Dựa vào: …" + một viên trạng thái → `#/learn/sql/n` (F5, không chip chồng) | Plan 7 Task 10 | Task 11 chỉ làm các mục trong dòng đó bấm được + dấu ✓ |
 | Trần `main` 290 (V1, chờ user) | V1 | Ngân sách `main` của 8a = **+0 KB** bất kể trần: mọi UI mới ở chunk lười |
 
 ## Decisions (D8a-1 … D8a-16, để orchestrator ghi L-số)
@@ -48,7 +50,7 @@ Plan viết trên HEAD `d7f42d8`; Plan 7 lúc đó đang được viết (file m
 
 | # | Quyết định | Lý do |
 |---|---|---|
-| D8a-1 | **Một schema `lab`, file `src/db/lab.sql` riêng** (Phụ lục A): 16 bảng, ~15k dòng (`customers` 300, `orders` 1.458, `order_items` ~4,4k, `payments` ~1,4k, `app_events` 1.928, `fact_sales` ~3,9k, `dim_date` 730…), mỗi khối ngẫu nhiên một `setseed()`, ngày cố định, "hôm nay" 2026-10-31. Không nối vào `seed.sql` (v5 §C.1 nói nối cuối): file riêng giữ md5 ghim và luật "chỉ nối cuối" của Logistics nguyên vẹn, và cho phép seed lười. | Seed Logistics trong Node đã sát luật dừng 2,0 s (L45 S2, L46 1,9–2,4 s). `lab` đo **~190–250 ms trong Node** (scratch, PGlite 0.5.16); nối vào seed lúc khởi động sẽ vượt luật. |
+| D8a-1 | **Một schema `lab`, file `src/db/lab.sql` riêng** (Phụ lục A): 16 bảng, ~15k dòng (`customers` 300, `orders` 1.428, `order_items` 4.284, `payments` 1.395, `app_events` 1.928, `fact_sales` 3.894, `dim_customer` 342, `dim_date` 730…), mỗi khối ngẫu nhiên một `setseed()`, ngày cố định, "hôm nay" 2026-10-31. Không nối vào `seed.sql` (v5 §C.1 nói nối cuối): file riêng giữ md5 ghim và luật "chỉ nối cuối" của Logistics nguyên vẹn, và cho phép seed lười. | Seed Logistics trong Node đã sát luật dừng 2,0 s (L45 S2, L46 1,9–2,4 s). `lab` đo **~190–250 ms trong Node** (scratch, PGlite 0.5.16); nối vào seed lúc khởi động sẽ vượt luật. |
 | D8a-2 | **Dữ liệu `lab` bằng ASCII** (tên cửa hàng, thành phố, sản phẩm không dấu: `Hai Chau`, `Da Nang`…). | Code span VI = EN và EN không dấu (luật nội dung); giá trị dữ liệu xuất hiện trong code span của đề. |
 | D8a-3 | **Seed `lab` lười** (v6 F7): worker chỉ seed khi nhận `ensure('lab')`; client gửi `ensure` khi mở bất kỳ trang `#/learn…`/`#/practice` hay drill, và sau `restart()` nếu đã từng ensure. Lần đầu: thanh "Đang chuẩn bị dữ liệu luyện tập…" (≤ ~1 s trên Edge, **ước**, Task 1 đo). Người chỉ chơi Logistics không trả giá nào. **Cần user xem.** | v6 §4.4 điểm 4–5; không tăng thời gian mở trang 10–13 s (L46, L52). |
 | D8a-4 | **`schema` theo request, không theo phiên.** `SET LOCAL search_path TO lab` (không thêm `sandbox`, không thêm schema game: một tên bảng Logistics trong drill báo 42P01 thay vì chạy nhầm). Tên schema chỉ từ hằng `SCHEMAS`. | v6 §4.4 điểm 3; drill không bao giờ đọc bảng domain. |
@@ -184,7 +186,7 @@ export type SchemaId = keyof typeof SCHEMAS;
 ```
 - [ ] **Step 4:** `src/db/run.ts`:
   - `runSandboxed(db, sql, maxRows = MAX_ROWS_WORKER, opts: { schema?: SchemaId } = {})`: sau `BEGIN`, nếu `opts.schema === 'lab'` thì `await db.exec('SET LOCAL search_path TO lab')`. Cùng tham số cho `runExplain`, `runLab`, và hàm đếm của tab Thứ tự thực thi.
-  - `ensureSchema(db, id)`: `const seeded = new WeakMap<PGlite, Set<string>>()`; nếu chưa có: `CREATE SCHEMA lab; SET search_path TO lab;` → `exec(lab)` (import `./lab.sql?raw`) → `SET search_path TO <đường dẫn phiên của Plan 7>` (đọc hằng `SESSION_PATH` mà Plan 7 đặt trong `init.ts`; ví dụ `logistics, sandbox`). Lỗi giữa chừng → `DROP SCHEMA lab CASCADE` rồi ném lại (không để schema dở).
+  - `ensureSchema(db, id)`: `const seeded = new WeakMap<PGlite, Set<string>>()`; nếu chưa có: `CREATE SCHEMA lab; SET search_path TO lab;` → `exec(lab)` (import `./lab.sql?raw`) → `exec(SANDBOX_SETUP_SQL)` (Plan 7, `src/db/import.ts`: trả đường dẫn phiên về `logistics, sandbox`). Lỗi giữa chừng → `DROP SCHEMA lab CASCADE` rồi ném lại (không để schema dở).
 - [ ] **Step 5:** `worker.ts`: request `{ kind: 'ensure', schema }` → `ensureSchema`; mọi request khác đọc `schema` và chuyển xuống `run.ts`. `client.ts`: `ensure(schema)` dùng hạn 30 s (như `importCsv`), nhớ `ensured: Set<SchemaId>`; sau `restart()` gửi lại `ensure` cho từng schema trong `ensured` **trước** query kế tiếp (cùng hàng đợi). `run(sql, { schema })`, `request(kind, …, { schema })` thêm trường vào message.
 - [ ] **Step 6:** Nếu Plan 7 chưa làm V16: `runLab` so `pg_class.relname` thay `regclass::text`.
 - [ ] **Step 7:** `planCheck.ts`: node `Bitmap Heap Scan` có `Relation Name` = t (con là `Bitmap Index Scan`) tính là đọc t qua chỉ mục. Thêm ca vào `tests/planCheck.test.ts`: `SELECT id FROM orders WHERE order_date >= '2026-10-01'` trên `lab` → đạt `plan: { index: 'orders' }`; `… WHERE extract(month FROM order_date) = 10` → không đạt.
@@ -262,7 +264,7 @@ export { default as advNodes } from '../content/general/adv.yml?raw';
 
 - [ ] **Step 1: test trước** `tests/learn.test.ts` (dữ liệu giả nhỏ + nội dung thật):
   - `parseSave` giữ id `g-where-1` trong `completed` mà không cần tải nội dung Chung; giữ nháp/`graded`/`hintsUsed` của `g-…`; vẫn bỏ id lạ không có tiền tố.
-  - `learnedSkills(save, tickets, general)`: ticket `grants` xong ⇒ học; 2 drill của kỹ năng ⇒ học; 1 drill ⇒ chưa; có thẻ `review` ⇒ học.
+  - `learnedSkills(save, tickets, skillIds)`: ticket `grants` xong ⇒ học; 2 drill của kỹ năng ⇒ học; 1 drill ⇒ chưa; có thẻ `review` ⇒ học. **Không cần chunk Chung:** kỹ năng của drill suy từ id (`skillOfDrill('g-conditional-agg-3')` = `conditional_agg`: bỏ `g-` và `-<số>`, đổi `-` thành `_`, chỉ nhận id có trong `skills.yml`; id nút `g-a1-2` → `undefined`). Test: mọi id trong `sql.yml` suy đúng `skill` của nó. Nhờ vậy Tổng quan Logistics (Task 11) tô dấu ✓ mà không tải `general`.
   - `drillState(id)` ∈ `todo | done`; `skillState(skill)` = `{ lesson: seen?, drills: n/3, learned, mastered (box ≥ 4) }`; `moduleState(n)` = kỹ năng của chương n; `nodeState(node)` = `{ done: mọi drill đạt, open: needs đã học }` (nút `external` không bao giờ `done`).
   - `appliesIn(skill)` = chương Logistics có ticket `requires ∪ grants` chứa kỹ năng (vd. `where` → 1, 2, 3, …); `dependsOn(chapter)` = `requires ∪ grants` của ticket chương đó ∪ `uses:` tùy chọn của `chapters.yml` (v5 §B.9).
   - XP: `drillXp(drill, firstPass)` = 10 (challenge 20) lần đầu, 0 sau.
@@ -298,7 +300,7 @@ export { default as advNodes } from '../content/general/adv.yml?raw';
 
 **Files:** sửa `src/route.ts`, `tests/route.test.ts`; tạo `src/ui/learnView.ts` (lười); sửa chỗ Plan 7 đăng ký trang Lộ trình để gọi `loadLearnView()`.
 
-- [ ] **Step 1: test trước** (`tests/route.test.ts`): `#/learn/skill/where` → `{ page: 'learn', view: 'skill', id: 'where' }`; `#/learn/adv/b2` → `{ view: 'adv', id: 'b2' }`; id không khớp `[a-z0-9_]+` → `#/learn`; `#/learn/sql/13` → `#/learn`. Không thêm alias cũ nào.
+- [ ] **Step 1: test trước** (`tests/route.test.ts`, cùng kiểu `learnModuleOf` của Plan 7): `parseRoute('#/learn/skill/where')` = `'learn'`, `learnSkillOf('#/learn/skill/where')` = `'where'`, `learnAdvOf('#/learn/adv/b2')` = `'b2'`; id không khớp `^[a-z0-9_]+$` → `undefined` (trang mở `#/learn`); `learnModuleOf('#/learn/sql/13')` vẫn `undefined`. Không thêm alias cũ nào.
 - [ ] **Step 2:** `learnView.ts` (tiêm `ctx`; mọi chữ qua `lt()`):
   - **`#/learn`**: hai cột từ `lg` (một cột dưới `lg`, track nâng cao ở dưới). Cột 1 "SQL nền tảng": 12 dòng module (`moduleGlyph(n)` của 8b nếu có), mỗi dòng: tên chương-module, "k/m kỹ năng đã học", thanh tiến độ, "Áp dụng: Logistics ch n" (link). Cột 2 "DA nâng cao": 4 nhóm A–D, mỗi nút một dòng: icon + chữ trạng thái ▣ "Trong nền tảng" / ◐ "Một phần" / ↗ "Đọc ngoài" (không chỉ màu, L23), "x/y bài", khóa mềm ("Nên học trước: …" khi `needs` chưa học, vẫn bấm được). Đầu trang: "Đã học N/38 kỹ năng · M thành thạo · K/20 nút nâng cao".
   - **`#/learn/sql/<n>`**: mọi kỹ năng của module: mỗi kỹ năng một khối "thở" (Plan 7 F5): nhãn + trạng thái, dòng "Bài học nhanh" (mở `openLesson`, ✓ khi đã xem), 3 dòng drill (tên kiểu "Làm theo khung / Tự làm / Bẫy hay gặp", ✓ khi đạt, bấm mở workspace), cuối module "Áp dụng ở Logistics, chương n" + nút "Vào chương n" (mở được nếu chương đã mở trong domain, không thì "Mở sau khi xong chương n−1" — không phải "sắp có").
@@ -318,8 +320,8 @@ export { default as advNodes } from '../content/general/adv.yml?raw';
 
 **Files:** sửa `src/ui/homeView.ts` (Tổng quan Logistics: danh sách chương), `src/ui/chapterView.ts` (mục tiêu chương), `src/ui/lessonCard.ts` (thẻ thu gọn khi đã học ở Chung), `content/chapters.yml` (tùy chọn `uses:`), `tests/learn.test.ts`.
 
-- [ ] **Step 1: test trước:** `dependsOn(n)` cho 12 chương không rỗng; mọi id trong `uses:` (nếu thêm) là kỹ năng hoặc nút; chương 10 có `uses: [a1]`, chương 12 có `uses: [b1]` (khung cửa sổ và KPI dùng ở đó).
-- [ ] **Step 2:** Mỗi dòng chương ở Tổng quan Logistics và mục tiêu chương: "Dựa vào:" + chip mỗi kỹ năng/nút (`dependsOn`), chip xanh có ✓ khi đã học (`learnedSkills`), bấm → `#/learn/skill/<id>` hoặc `#/learn/adv/<node>`. Tối đa 6 chip, còn lại "+k" mở trang module.
+- [ ] **Step 1: test trước:** `dependsOn(n)` cho 12 chương không rỗng; `uses:` là **tùy chọn** và mọi id trong đó (nếu có) là kỹ năng hoặc nút. Plan này **không** thêm `uses:` nào (L45 S8: khung trung bình trượt không vào việc ch10; nút nâng cao chỉ hiện "Áp dụng ở" bằng chữ `applies`).
+- [ ] **Step 2:** Dòng phụ "Dựa vào: …" mà Plan 7 Task 10 đã đặt trên mỗi dòng chương (giữ bố cục F5: một dòng, không chip chồng): mỗi tên kỹ năng thành link `#/learn/skill/<id>`, có "✓" khi đã học (`learnedSkills`, không tải chunk Chung); "+k" mở `#/learn/sql/n`. Mục tiêu chương (`chapterView.ts`) dùng cùng hàm.
 - [ ] **Step 3:** Thẻ bài học ở việc teach của Logistics: kỹ năng đã học ở Chung (≥ 2 drill) ⇒ thẻ mở sẵn ở dạng thu gọn với dòng "Bạn đã luyện ở Luyện SQL" (v5 §B.8, D-G3); gợi ý không đổi.
 - [ ] **Step 4:** Trang chủ nền tảng (Plan 7): thẻ "Hôm nay" thêm 1 drill gợi ý (kỹ năng yếu nhất) — nạp `loadGeneral()` lười, khung giữ chỗ.
 - [ ] **Step 5: xác nhận.** `npx tsc --noEmit && npm test`. Kiểm tay: chương 3 hiện "Dựa vào: Nối bảng (JOIN) · Nhiều bảng · LEFT JOIN · …", chip đã học xanh. Commit `feat(learn): every Logistics chapter links the General skills it relies on, and back`.
@@ -358,10 +360,10 @@ export { default as advNodes } from '../content/general/adv.yml?raw';
 ## Đã kiểm khi viết plan (scratch, PGlite 0.5.16 bản pin, Node 24)
 
 - `lab.sql` seed trong schema `lab` sau seed Logistics: **190–250 ms** (Node; seed Logistics cùng máy 2,9–3,3 s khi có tiến trình khác chạy).
-- Số dòng: `customers` 300, `orders` ~1.458 (250 đơn vãng lai `customer_id` NULL, 43 đơn online chưa giao), `order_items` ~4.4k, `payments` ~1.4k (+8 mồ côi, trùng mỗi đơn có `id % 97 = 0`), `app_events` 1.928 (view 900 → add_to_cart 488 → checkout 299 → paid 241), `store_targets` 57, `fact_sales` ~3,9k; 160 ngày trong 2025-01-01..2026-10-31 không có đơn nào (trục ngày). Mọi khách có ≥ 1 đơn.
-- Bài học 27 kỹ năng (Phụ lục B): chạy bằng `vitest` với module thật của repo (`parseLessons`, `cueIn`, `compareResults`, `applyVariant`, `tablesUnlocked`) trên Logistics seed vào `public` (HEAD `d7f42d8`): **137/137 luật đạt**; 79 KB thô, 21,2 KB gzip. Chỉ mục được nêu tên (`shipments_customer_id_idx`, `shipments_booking_date_idx`) giữ tên khi Plan 7 chuyển bảng sang `logistics`.
+- Số dòng (đo trên `lab.sql` đúng như Phụ lục A): `customers` 300, `orders` 1.428 (228 đơn vãng lai `customer_id` NULL = 220 + 8 đơn sỉ ngày 2026-09-09; 12 đơn online chưa hủy mà chưa giao), `order_items` 4.284, `payments` 1.395 (gồm 8 mồ côi, trùng ở đơn `id % 97 = 0`), `app_events` 1.928 (view 900 → add_to_cart 488 → checkout 299 → paid 241), `store_targets` 57, `fact_sales` 3.894, `dim_customer` 342; 160 ngày trong 2025-01-01..2026-10-31 không có đơn nào (trục ngày). Mọi khách có đúng 4 đơn.
+- Bài học 27 kỹ năng (Phụ lục B): chạy bằng `vitest` với module thật của repo (`parseLessons`, `cueIn`, `compareResults`, `applyVariant`, `tablesUnlocked`) trên Logistics seed vào `public` (HEAD `d7f42d8`): **137/137 luật đạt** (chạy lại sau khi sửa một câu của bài `self_join`: quản lý phòng Hải quan, id 24, báo cáo lên id 1 = Director phòng Management, nên câu ghi "giám đốc công ty"); 79 KB thô, 20,7 KB gzip. Chỉ mục được nêu tên (`shipments_customer_id_idx`, `shipments_booking_date_idx`) giữ tên khi Plan 7 chuyển bảng sang `logistics`.
 - Drill (Phụ lục C) và nút (Phụ lục D): `drillcheck.mjs` (luật của Task 4/5, đọc dòng theo vị trí cột `rowMode: 'array'`): ALL OK (114 drill kỹ năng; 28 nút, 20 bài học, 80 bài nâng cao; mọi câu ≤ 3 ms, kết quả lớn nhất 207 dòng). Drill ch11: Solution ra `Bitmap Heap Scan` > `Bitmap Index Scan` (orders) hoặc `Index Scan` (`app_events_user_id_ts_idx`); câu bẫy ra `Seq Scan`.
-- Đặc điểm dữ liệu `lab` mà nội dung đã dựa vào (không sửa seed, mọi bài đã kiểm trên đúng dữ liệu này): số đơn mỗi khách gần như **bằng nhau** (`generate_series(1, floor(random()*15))` trong `LATERAL` không tham chiếu cột ngoài nên chỉ tính một lần) → RFM tần suất thô, bài B4 nêu tiêu chí phụ theo id khách; mọi khách có ≥ 1 đơn và ≥ 1 đơn PAID; không email trùng sau `lower/trim` trong `raw_signups` (C1 kiểm thanh toán trùng thay vào); không mốc giờ nào đúng nửa đêm; thí nghiệm 1: A 40/150, B 42/150, z ≈ 0,26 (B5 dạy "chưa đủ để kết luận"); B6 dựa vào đỉnh 2026-09-09 cửa hàng 3 (6.095.000 đồng, z ≈ 10,2). **Backlog v12:** sửa phân bố đơn mỗi khách = đổi md5 + chạy lại kiểm nội dung Task 4/5.
+- Đặc điểm dữ liệu `lab` mà nội dung đã dựa vào (không sửa seed, mọi bài đã kiểm trên đúng dữ liệu này): số đơn mỗi khách **bằng nhau (4)** (`generate_series(1, floor(random()*15))` trong `LATERAL` không tham chiếu cột ngoài nên chỉ tính một lần) → RFM tần suất thô, bài B4 nêu tiêu chí phụ theo id khách; mọi khách có ≥ 1 đơn và ≥ 1 đơn PAID; không email trùng sau `lower/trim` trong `raw_signups` (C1 kiểm thanh toán trùng thay vào); không mốc giờ nào đúng nửa đêm; thí nghiệm 1: A 40/150, B 42/150, z ≈ 0,26 (B5 dạy "chưa đủ để kết luận"); B6 dựa vào đỉnh 2026-09-09 cửa hàng 3 (6.095.000 đồng, z ≈ 10,2). **Backlog v12:** sửa phân bố đơn mỗi khách = đổi md5 + chạy lại kiểm nội dung Task 4/5.
 - Phát hiện khi kiểm: hai cột trùng tên (`count`, `count`) làm checker đọc theo tên nuốt mất một cột → mọi kiểm nội dung trong repo phải so theo **vị trí** (`compareResults` đã vậy); bẫy "`+ interval` thành timestamp" **không** chấm được vì PGlite trả `Date` cho cả `date` lẫn `timestamp` và grader so chuỗi ISO (bài `date_math` dùng bẫy "trừ ngược chiều" thay thế).
 
 ---
@@ -374,13 +376,16 @@ Seed của schema `lab` (Task 1). Chạy với `search_path = lab`.
 
 ````sql
 -- BoonData `lab`: a small neutral retail chain for the General drills (v5 §C.1, Plan 8a).
--- Runs after the domain seed with search_path = lab (initDb). No story, no people from the domains.
+-- Seeded lazily by ensureSchema(db, 'lab') with search_path = lab (Plan 8a D8a-3). No story, no people from the domains.
 -- Deterministic: one setseed() per random block, literal dates only, "today" = 2026-10-31.
 -- Hooks the drills rely on (tests/lab.test.ts pins them; do not change without updating content/general):
 --   store 4 (Thao Dien) opened 2025-09-01: no orders before, targets only from 2026-03 (full join, date spine)
 --   2026-09-09 store 3 has a bulk-order spike (anomaly drills)
 --   walk-in orders have customer_id NULL; ONLINE orders not yet delivered have delivered_on NULL
---   payments: duplicates and orphan order ids on purpose (data quality); raw_signups is dirty on purpose
+--   payments: duplicates (order id % 97 = 0) and 8 orphan order ids 99901..99908 on purpose (data quality)
+--   raw_signups is dirty on purpose: spacing/case in names, bad or missing emails, mixed phone formats, future dates
+--   (no duplicate emails after lower/trim)
+--   every member has exactly 4 orders (the LATERAL count below is computed once: known quirk, kept so content stays valid)
 --   dim_customer is SCD type 2: customers who moved have two rows (valid_to exclusive, NULL = current)
 
 CREATE TABLE stores (
@@ -447,7 +452,8 @@ CREATE TABLE orders (
   delivered_on date
 );
 SELECT setseed(0.82);
--- Member orders: 0–14 per customer, on or after signup; walk-in orders have no customer.
+-- Member orders on or after signup (the series bound does not reference c, so it is drawn once: 4 per customer);
+-- 220 walk-in orders have no customer.
 -- Store: weighted pick; store 4 (Thao Dien) only from its opening day.
 INSERT INTO orders (id, customer_id, store_id, order_date, channel, status)
 SELECT row_number() OVER (ORDER BY d, cid NULLS LAST, k), cid,
@@ -841,8 +847,8 @@ Task 2. Ví dụ trên bảng Logistics, cue lấy từ chữ thật của việ
     en: "Some tables point to themselves: an employee records the id of their manager, who is also an employee. To put two rows of the same table side by side, JOIN the table to itself with two different aliases, so each column says which role it plays."
   example: "SELECT e.full_name, e.title, m.full_name AS manager FROM employees e JOIN employees m ON m.id = e.manager_id WHERE e.dept = 'Customs' ORDER BY e.full_name"
   explain:
-    vi: "① `employees e`: nhân viên; `employees m`: cùng bảng, đóng vai người quản lý. ② `ON m.id = e.manager_id`: mã quản lý ghi trên nhân viên trỏ tới mã của người quản lý. Kết quả: 6 người phòng Hải quan; năm nhân viên chung một quản lý, còn quản lý phòng báo cáo lên Ban giám đốc."
-    en: "① `employees e`: the employee; `employees m`: the same table, playing the manager. ② `ON m.id = e.manager_id`: the manager id on the employee points to the manager's id. Result: 6 people in Customs; five staff share one manager, and the department manager reports to the board."
+    vi: "① `employees e`: nhân viên; `employees m`: cùng bảng, đóng vai người quản lý. ② `ON m.id = e.manager_id`: mã quản lý ghi trên nhân viên trỏ tới mã của người quản lý. Kết quả: 6 người phòng Hải quan; năm nhân viên chung một quản lý, còn quản lý phòng báo cáo lên giám đốc công ty."
+    en: "① `employees e`: the employee; `employees m`: the same table, playing the manager. ② `ON m.id = e.manager_id`: the manager id on the employee points to the manager's id. Result: 6 people in Customs; five staff share one manager, and the department manager reports to the company director."
   mistake:
     sql: "SELECT e.full_name, e.title, m.full_name AS manager FROM employees e JOIN employees m ON m.manager_id = e.id WHERE e.dept = 'Customs' ORDER BY e.full_name"
     vi: "Ghép ngược chiều: `m.manager_id = e.id` tìm người mà `e` quản lý, không phải người quản lý `e`. Kết quả chỉ còn quản lý phòng, kèm năm nhân viên của họ."
