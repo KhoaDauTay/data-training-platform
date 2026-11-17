@@ -62,13 +62,13 @@ const NEUTRAL_DEPT: Dept = { chip: 'bg-slate-100 text-slate-800 dark:bg-slate-80
 export const deptOf = (dept: string): Dept => DEPT[dept] ?? NEUTRAL_DEPT;
 export const deptColor = (dept: string): string => deptOf(dept).chip;
 
-export const CARD = 'rounded-2xl bg-panel ring-1 ring-line';
+export const CARD = 'rounded-(--r-card) bg-panel ring-1 ring-line';
 export const PILL = 'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-sm font-semibold';
 export const DEPT_CHIP = 'rounded-md px-2 py-0.5 text-xs font-bold uppercase';
-/** Blue call to action: white on blue-700 = 6.7:1, on blue-600 (dark theme) = 5.2:1. */
-export const BTN_GO = 'border-0 bg-blue-700 font-semibold text-white shadow-sm hover:bg-blue-800 dark:bg-blue-600 dark:hover:bg-blue-700';
+/** Teal call to action, a pill (v6 §2.1): --on-accent on --accent = 5.5:1 light, 8.9:1 dark. */
+export const BTN_GO = 'rounded-full border-0 bg-accent font-bold text-on-accent shadow-sm hover:brightness-110';
 /** Green Submit (L17): white on emerald-700 = 5.5:1 (the mockup's emerald-600 is 3.8:1). */
-export const BTN_SUBMIT = 'ml-auto border-0 bg-emerald-700 px-4 font-semibold text-white shadow-sm hover:bg-emerald-800 disabled:bg-code disabled:text-disabled';
+export const BTN_SUBMIT = 'ml-auto rounded-full border-0 bg-emerald-700 px-4 font-bold text-white shadow-sm hover:bg-emerald-800 disabled:bg-code disabled:text-disabled';
 /** Controls on the gradient top bar: darkening keeps white text >= 4.5:1 at the cyan end. */
 export const TOP_BTN = 'border-0 bg-black/20 text-white ring-1 ring-white/40 hover:bg-black/30';
 /**
@@ -80,7 +80,7 @@ export const NAV_LINK = 'rounded-lg px-2 py-1 xl:max-[120rem]:px-1.5 text-center
 export const DONE_PILL = 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200';
 
 /** Clickable card (ui-ux-v3 §d): lift, shadow and an accent ring on hover and keyboard focus. Static cards stay CARD. */
-export const CARD_ACTION = 'rounded-2xl bg-panel ring-1 ring-line transition hover:-translate-y-0.5 hover:bg-panel hover:shadow-md hover:ring-2 hover:ring-accent focus-visible:ring-2 focus-visible:ring-accent';
+export const CARD_ACTION = 'rounded-(--r-card) bg-panel ring-1 ring-line transition hover:-translate-y-0.5 hover:bg-panel hover:shadow-md hover:ring-2 hover:ring-accent focus-visible:ring-2 focus-visible:ring-accent';
 
 /**
  * Light / Dark / follow the OS (L42). Stored as `theme` in the device prefs (PREFS_KEY, next to `lang`), never in the Save.

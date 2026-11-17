@@ -84,7 +84,7 @@ function continueCard(m: HomeModel): HTMLElement {
             x.body.split(/\n\s*\n/)[0].replace(/\s*\n\s*/g, ' '))))
       : null,
     h('div', { class: 'flex items-center gap-3' },
-      progress(percent(m.done, m.total), label, 'h-2.5 flex-1 bg-code', 'bg-linear-to-r from-blue-600 to-cyan-500'),
+      progress(percent(m.done, m.total), label, 'h-2.5 flex-1 bg-code', 'bg-accent'),
       h('span', { class: 'text-sm tabular-nums text-muted' }, label)),
     h('div', { class: 'flex flex-wrap gap-2' },
       next ? h('button', { type: 'button', class: cx(BTN_GO, 'group flex items-center gap-2 px-4 py-2'), onclick: () => resume(next.id) },

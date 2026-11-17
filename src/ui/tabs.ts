@@ -25,8 +25,8 @@ export interface Panel {
   readonly active: string;
 }
 
-/** Underline colour on the open tab (aria-selected): blue-700 on white 6.7:1, blue-300 on the dark panel 9:1. */
-const TAB = 'rounded-t-lg rounded-b-none border-x-0 border-t-0 border-b-2 border-transparent bg-transparent px-3 py-1.5 text-muted hover:bg-code aria-selected:border-blue-600 aria-selected:font-semibold aria-selected:text-blue-700 dark:aria-selected:border-blue-400 dark:aria-selected:text-blue-300';
+/** Open tab (aria-selected): --text with a --accent underline, so the state is not colour alone (L23). */
+const TAB = 'rounded-t-lg rounded-b-none border-x-0 border-t-0 border-b-2 border-transparent bg-transparent px-3 py-1.5 text-muted hover:bg-code aria-selected:border-accent aria-selected:font-bold aria-selected:text-ink';
 const GROUPS: TabGroup[] = ['output', 'query', 'schema'];
 const specs: TabSpec[] = [];
 

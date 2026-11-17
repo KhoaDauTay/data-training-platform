@@ -2,6 +2,33 @@ import { describe, expect, it } from 'vitest';
 import { loadTickets } from '../src/content';
 import { CHAPTERS } from '../src/progress';
 import { CHAPTER_COLOR, chapterColor, cx, DEPT, deptColor } from '../src/theme';
+import css from '../src/style.css?raw';
+
+/** WCAG 2.x relative luminance and contrast ratio. */
+const lum = (hex: string): number => {
+  const [r, g, b] = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255)
+    .map((c) => (c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4));
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+};
+const ratio = (a: string, b: string): number => {
+  const [hi, lo] = [lum(a), lum(b)].sort((x, y) => y - x);
+  return (hi + 0.05) / (lo + 0.05);
+};
+/** `--name: #rrggbb` pairs of one rule block of style.css. */
+const tokens = (selector: string): Record<string, string> => {
+  const body = css.split(`${selector} {`)[1]?.split('}')[0] ?? '';
+  return Object.fromEntries([...body.matchAll(/--([\w-]+):\s*(#[0-9a-fA-F]{6})\b/g)].map((m) => [m[1], m[2]]));
+};
+/** Text colour on background, every pair the UI uses for words (v6 §2.3). --disabled is exempt (WCAG 1.4.3: inactive controls). */
+const TEXT_PAIRS: [string, string][] = [
+  ['text', 'panel'], ['text', 'bg'], ['text', 'code'], ['text', 'accent-soft'], ['text', 'sea'],
+  ['muted', 'panel'], ['muted', 'bg'], ['muted', 'code'], ['muted', 'accent-soft'], ['muted', 'sea'],
+  ['accent', 'panel'], ['accent', 'bg'], ['on-accent', 'accent'],
+  ['good', 'panel'], ['bad', 'panel'], ['warn', 'panel'], ['good', 'bg'], ['bad', 'bg'], ['warn', 'bg'],
+  ['sun-ink', 'sun'],
+  ...['keyword', 'string', 'number', 'comment', 'operator', 'type', 'property', 'atom']
+    .flatMap((s): [string, string][] => [[`syn-${s}`, 'panel'], [`syn-${s}`, 'code']]),
+];
 
 describe('theme', () => {
   it('mỗi chương trong chapters.yml có một màu riêng', () => {
@@ -42,5 +69,20 @@ describe('theme', () => {
       .filter((line) => /\bclass(Name)?\s*[:=]\s*`/.test(line) || /\b(bg|text|ring|border|from|via|to|fill|stroke)-\$\{/.test(line)));
     expect(Object.keys(sources).length).toBeGreaterThan(20);
     expect(bad).toEqual([]);
+  });
+
+  it('chữ trên nền ≥ 4,5:1 ở cả hai theme (WCAG AA, product-design-v6 §2.3)', () => {
+    const light = tokens(':root');
+    const dark = { ...light, ...tokens(':root[data-theme=dark]') };
+    const bad = ([['light', light], ['dark', dark]] as const).flatMap(([name, tk]) => TEXT_PAIRS
+      .filter(([fg, bg]) => !tk[fg] || !tk[bg] || ratio(tk[fg], tk[bg]) < 4.5)
+      .map(([fg, bg]) => `${name} ${fg}/${bg} ${tk[fg] && tk[bg] ? ratio(tk[fg], tk[bg]).toFixed(2) : 'thiếu token'}`));
+    expect(bad).toEqual([]);
+  });
+
+  it('token ấm của v6 (L57) và bo góc 20/14', () => {
+    expect(tokens(':root')).toMatchObject({ bg: '#fbf7f0', accent: '#0f766e', sun: '#ffe9bd', 'sun-ink': '#5c3d00' });
+    expect(tokens(':root[data-theme=dark]')).toMatchObject({ bg: '#1a1714', accent: '#5ed3c3', sun: '#4a3a17' });
+    expect(css).toMatch(/--r-card:\s*20px;\s*--r-ctl:\s*14px;/);
   });
 });

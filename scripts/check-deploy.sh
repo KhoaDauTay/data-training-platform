@@ -27,7 +27,11 @@ EN=$(get "$MAIN" | grep -oE '\./en-[A-Za-z0-9_-]+\.js' | head -1 | cut -c3-)
 # Plan 6: the quick lessons are a lazy chunk awaited before the first render too.
 LESSONS=$(get "$MAIN" | grep -oE 'lessonSources-[A-Za-z0-9_-]+\.js' | head -1)
 [ -n "$LESSONS" ] || { echo "FAIL $MAIN does not reference lessonSources-*.js"; exit 1; }
-for f in $MAIN "assets/$WORKER" "assets/$TICKETS" "assets/$LANES" "assets/$EN" "assets/$LESSONS" $(printf 'assets/%s ' $FILES $LIBWASM); do
+# Plan 7: the stylesheet and the two Nunito files it points at.
+CSS=$(get "" | grep -oE 'assets/index-[A-Za-z0-9_-]+\.css' | head -1)
+FONTS=$([ -n "$CSS" ] && get "$CSS" | grep -oE 'nunito-[a-z]+-wght-normal-[A-Za-z0-9_-]+\.woff2' | sort -u)
+[ -n "$FONTS" ] || { echo "FAIL ${CSS:-index-*.css} does not reference the Nunito woff2 files"; exit 1; }
+for f in $MAIN $CSS "assets/$WORKER" "assets/$TICKETS" "assets/$LANES" "assets/$EN" "assets/$LESSONS" $(printf 'assets/%s ' $FILES $LIBWASM $FONTS); do
   H=$(curl -sS -o /dev/null -D - -H 'Accept-Encoding: br, gzip' "$URL/$f" | tr -d '\r')
   status=$(printf '%s\n' "$H" | head -1 | cut -d' ' -f2)
   type=$(printf '%s\n' "$H" | grep -i '^content-type:' | cut -d' ' -f2-)

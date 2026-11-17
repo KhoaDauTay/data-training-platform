@@ -5,7 +5,7 @@ import { gzipSync } from 'node:zlib';
 
 // First match wins; 'rest' catches every lazy chunk Rolldown names after modules (Mermaid diagrams, sql-formatter as esm-*).
 const GROUPS = [
-  ['main', /^index-.*\.js$/, 270], // Plan 3 Task 1: ticket markdown moved to a lazy chunk (L41); was 300 after Plan 2
+  ['main', /^index-.*\.js$/, 290], // Plan 7 V1 (needs the user's OK): 268 after Plan 6; routes, sidebar, onboarding and ~90 VI strings. Was 270 (L55)
   ['tickets', /^ticketSources-/, 110], // all ticket markdown, one lazy chunk fetched at boot (src/content.ts): 37 KB after ch1–6, 64 KB after ch7–9, 99 KB after ch10–12 (Plan 4 S7, L40 rule)
   ['lanes', /^laneSources-/, 20], // lane briefs and side tasks (content/lanes/), lazy, fetched at boot beside the tickets (Plan 5)
   ['en', /^en-.*\.js$/, 20], // EN dictionary, lazy (Plan 5 T3): 11 KB, fetched at boot only when the player's language is EN
@@ -15,6 +15,7 @@ const GROUPS = [
   ['pglite', /^pglite-/, 5560],
   ['initdb', /^initdb-/, 140],
   ['parser', /^(libpg-query|parser|steps)-/, 410],
+  ['fonts', /\.woff2$/, 60], // Plan 7 V2: Nunito variable, latin 39 KB + vietnamese 13 KB (woff2 is already compressed)
   ['rest', /./, 1560],
 ];
 

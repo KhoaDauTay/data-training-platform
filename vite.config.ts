@@ -13,5 +13,6 @@ export default defineConfig({
   // PGlite tự nạp file .wasm/.data qua import.meta.url; pre-bundle sẽ làm hỏng đường dẫn.
   optimizeDeps: { exclude: ['@electric-sql/pglite'] },
   worker: { format: 'es' },
-  test: { testTimeout: 60_000, hookTimeout: 60_000, setupFiles: ['tests/setup.ts'] },
+  // Vitest turns every .css import into '' unless included; tests/theme.test.ts and tests/mascots.test.ts read style.css?raw.
+  test: { css: { include: [/style\.css/] }, testTimeout: 60_000, hookTimeout: 60_000, setupFiles: ['tests/setup.ts'] },
 });
