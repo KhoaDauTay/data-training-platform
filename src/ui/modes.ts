@@ -1,20 +1,23 @@
-import { loadTicketTemplates } from '../content';
+import { generalNow, loadGeneral, loadLessons, loadTicketTemplates } from '../content';
+import type { DbClient } from '../db/client';
+import type { Drill } from '../general';
 import type { HomeModel } from '../home';
-import { t } from '../i18n';
+import { getLang, locale, t } from '../i18n';
 import { LANE_XP } from '../lanes';
-import { applyResult, isSuccess, movedToday, pickForSkill, retryItem, type PracticeItem } from '../practice';
-import { nextTicket } from '../progress';
+import { applyResult, isSuccess, movedToday, nextCard, pickForSkill, retryItem, type PracticeItem } from '../practice';
+import { nextTicket, SKILLS } from '../progress';
 import { hashOf } from '../route';
 import {
-  activeStep, activeTicket, isStory, markWarmupDone, practiceFinished, reviewCount, reviewToday, session, today, warmupToday, type Mode, type PracticeRun,
+  activeStep, activeTicket, hintsShown, isStory, markWarmupDone, practiceFinished, reviewCount, reviewToday, session, today, warmupToday, type Mode, type PracticeRun,
 } from '../session';
-import { actions, app, done, persist, selected } from '../state';
-import type { Ticket } from '../tickets';
+import { actions, app, done, erMeta, persist, schemaHooks, selected, stepKey } from '../state';
+import { textOf, type Ticket } from '../tickets';
 import { BTN_GO, CARD, cx } from '../theme';
 import { applyVariant } from '../variants';
-import { renderBrief } from './brief';
+import { hints, renderBrief, shapeCard } from './brief';
 import { goalCard, skillChips, wrapUp } from './chapterView';
-import { byId, h } from './dom';
+import { byId, h, nodes, richText } from './dom';
+import { openLesson } from './lessonCard';
 import { homeHooks, registerHomeSection, registerMode } from './homeView';
 import { laneNote } from './lanePanel';
 import { go } from './router';
@@ -68,6 +71,23 @@ export function startPractice(items: PracticeItem[], warmup = false): boolean {
 
 export const startSandbox = (): void => enter({ kind: 'sandbox' });
 export const backToStory = (): void => enter({ kind: 'story' });
+/** Plan 8a: the drill workspace's left pane and credit live in a lazy chunk (src/ui/drillBrief.ts, budget `learnui`). */
+let drillUi: typeof import('./drillBrief') | undefined;
+let drillDb: DbClient | undefined;
+/** Every main-bundle value the chunk uses is handed over here (Plan 6 U3: the chunk imports only types from main modules). */
+const loadDrillUi = () => import('./drillBrief').then((m) => {
+  if (!drillUi) m.initDrill({
+    db: drillDb!, h, nodes, richText, byId, getLang, locale, app, actions, persist, schemaHooks, erMeta, stepKey, session, hintsShown, today,
+    isSuccess, movedToday, nextCard, SKILLS, hashOf, textOf, hints, shapeCard, openLesson, backToStory, startDrillMode, loadGeneral, generalNow, loadLessons,
+  });
+  return (drillUi = m);
+});
+/** Opens a General drill: seeds `lab` and loads the drills first (main.ts actions.startDrill). */
+export function startDrill(id: string, db: DbClient): Promise<void> {
+  drillDb = db;
+  return loadDrillUi().then((m) => m.openDrill(id));
+}
+export const startDrillMode = (ticket: Ticket, drill: Drill): void => enter({ kind: 'drill', ticket, drill, wrong: 0 });
 /** Plan 5: a lane side task in the workspace. It never becomes the next ticket and counts for no chapter (D-B1). */
 export const startLane = (task: Ticket): void => enter({ kind: 'lane', ticket: task });
 /** "Về việc đang làm": the story's next ticket (mockup v6 screen D), or the open one when everything is done. */
@@ -96,7 +116,8 @@ export function startRetry(ticketId: string): boolean {
 
 /** work.ts onSolved: Practice moves Leitner boxes only; a lane task gives flat XP; the story completes the ticket (XP, animation). */
 export const onSolved = (tk: Ticket): void =>
-  (session.mode.kind === 'practice' ? onPracticeSolved() : session.mode.kind === 'lane' ? completeLane(tk) : actions.complete(tk));
+  (session.mode.kind === 'practice' ? onPracticeSolved() : session.mode.kind === 'lane' ? completeLane(tk)
+    : session.mode.kind === 'drill' ? drillUi?.completeDrill(tk) : actions.complete(tk));
 
 /** Correct lane side task: saved apart from `completed`, LANE_XP whatever hints were opened, no animation (D-B1). */
 function completeLane(tk: Ticket): void {
@@ -111,6 +132,7 @@ function completeLane(tk: Ticket): void {
 
 export function onPracticeWrong(): void {
   if (session.mode.kind === 'practice') session.mode.run.wrong++;
+  else if (session.mode.kind === 'drill') session.mode.wrong++;
 }
 
 /** Correct submit in Practice: 0 XP, no completion animation; moves the Leitner boxes of the item's skills. */
@@ -212,6 +234,10 @@ export function renderLeft(host: HTMLElement): void {
   if (m.kind === 'sandbox') sandboxPane(host);
   else if (m.kind === 'practice') practicePane(host, m.run);
   else if (m.kind === 'lane') lanePane(host, m.ticket);
+  else if (m.kind === 'drill') {
+    if (drillUi) drillUi.drillPane(host, m);
+    else void loadDrillUi().then(() => ctx?.rerender());
+  }
   else storyPane(host);
 }
 
@@ -251,7 +277,7 @@ registerNav({
 // Plan 7 V5: "Practise SQL" is a hub page (#/practice); a run in the workspace still counts as being there.
 registerNav({
   id: 'practice', area: 'top', order: 30, label: 'nav.practice', icon: 'repeat', href: hashOf('practice'),
-  current: (r) => r === 'practice' || (r === 'play' && session.mode.kind === 'practice'),
+  current: (r) => r === 'practice' || (r === 'play' && (session.mode.kind === 'practice' || session.mode.kind === 'drill')),
 });
 registerNav({
   id: 'sandbox', area: 'domain', order: 30, label: 'nav.sandbox', icon: 'flask', href: hashOf('play'),

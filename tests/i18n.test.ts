@@ -106,3 +106,16 @@ describe('nhãn phím tắt theo hệ điều hành', () => {
     expect(t('work.format')).toMatch(/(Alt|⌥)\+F\)$/);
   });
 });
+
+describe('chữ UI phần Chung (src/i18n/learn.ts, Plan 8a D8a-13)', () => {
+  it('placeholder khớp, EN khác VI (trừ SAME_OK), không giọng game', async () => {
+    const { LEARN_DICT } = await import('../src/i18n/learn');
+    const SAME = new Set(['drill.title']);
+    for (const [k, v] of Object.entries(LEARN_DICT.vi)) {
+      const e = LEARN_DICT.en[k as keyof typeof LEARN_DICT.en];
+      expect([k, placeholders(e)]).toEqual([k, placeholders(v)]);
+      if (!SAME.has(k)) expect([k, e]).not.toEqual([k, v]);
+      expect(`${v} ${e}`).not.toMatch(GAME_TONE);
+    }
+  });
+});

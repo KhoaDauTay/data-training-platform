@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { buildGeneral, drillTicket, DRILL_ID, parseAdv, parseDrills } from '../src/general';
+import { parse as parseYaml } from 'yaml';
+import { buildGeneral as build, drillTicket, DRILL_ID, parseAdv as advOf, parseDrills as drillsOf } from '../src/general';
+import { parseLessonBody } from '../src/lessons';
+import { DRILL_ID as SAVE_DRILL_ID } from '../src/save';
+import { BLANK } from '../src/tickets';
+
+const parseDrills = (src: string, origin: string) => drillsOf(parseYaml(src), origin);
+const parseAdv = (src: string, origin: string) => advOf(parseYaml(src), origin, parseLessonBody);
+const buildGeneral = (a: string, b: string) => build(parseYaml(a), parseYaml(b), parseLessonBody);
 import { generalNow } from '../src/content';
 import { SKILLS } from '../src/progress';
 import { textOf } from '../src/tickets';
@@ -53,6 +61,11 @@ const EXT = `
     - { title: { vi: "Trang", en: "Page" }, url: "https://roadmap.sh/data-analyst" }`;
 
 describe('parser drill và nút nâng cao', () => {
+  it('DRILL_ID và ___ giống save.ts / tickets.ts (general.ts không import giá trị từ main)', () => {
+    expect(DRILL_ID.source).toBe(SAVE_DRILL_ID.source);
+    expect(parseDrills(DRILL.replace('kind: open', `kind: faded\n  starter: "SELECT ${BLANK} FROM products"`), 'x')[0].kind).toBe('faded');
+  });
+
   it('đọc một drill hợp lệ; ordered mặc định false, starter mặc định undefined', () => {
     const [d] = parseDrills(DRILL, 'sql.yml');
     expect(d).toMatchObject({ id: 'g-where-1', skill: 'where', kind: 'open', ordered: false, solution: 'SELECT name FROM products', wrong: [] });

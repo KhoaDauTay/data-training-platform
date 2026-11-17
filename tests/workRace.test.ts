@@ -417,7 +417,7 @@ describe('chương 11: chấm kế hoạch và phòng thí nghiệm chỉ mục'
     editors[0].opts.onSubmit();
     await flush();
     expect(deps.onSolved).toHaveBeenCalledOnce();
-    expect(deps.db.run).toHaveBeenCalledWith('EXPLAIN (FORMAT JSON) SELECT 1  AS n');
+    expect(deps.db.run).toHaveBeenCalledWith('EXPLAIN (FORMAT JSON) SELECT 1  AS n', { schema: 'game' }); // Plan 8a: every workspace run names its schema
   });
 
   it('phòng thí nghiệm: chỉ mục làm kế hoạch đọc qua chỉ mục và đủ rẻ thì qua, lưu câu CREATE INDEX làm bài đã chấm', async () => {

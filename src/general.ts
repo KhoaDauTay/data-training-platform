@@ -1,16 +1,26 @@
-import { parse as parseYaml } from 'yaml';
-import { parseLessonBody, type Lesson } from './lessons';
-import { DRILL_ID } from './save';
-import { bilingualOf, type Bilingual } from './progress';
-import { BLANK, type Ticket, type Wrong } from './tickets';
+import type { LessonBody, Lesson } from './lessons';
+import type { Bilingual } from './progress';
+import type { Ticket, Wrong } from './tickets';
 
 /**
  * General area (Plan 8a): drills per skill (content/general/sql.yml) and the advanced DA track (content/general/adv.yml).
- * Both run on the `lab` schema. Pure parsers; the YAML is a lazy chunk (src/generalSources.ts, loadGeneral()).
+ * Both run on the `lab` schema. Pure parsers over already-parsed YAML; this module rides in the lazy chunk
+ * src/generalSources.ts, so it imports no value from a main-bundle module (Plan 6 U3: Rolldown would split main into
+ * shared chunks). The YAML parser and parseLessonBody come in as arguments from src/content.ts.
  */
 
-/** Drill ids go into save.completed as they are (D8a-9); the prefix keeps them apart from ticket ids. Defined in save.ts. */
-export { DRILL_ID };
+/** Drill ids go into save.completed as they are (D8a-9). Same pattern as save.ts DRILL_ID (tests/general.test.ts). */
+export const DRILL_ID = /^g-[a-z0-9-]+$/;
+/** Same as tickets.ts BLANK (tests/general.test.ts). */
+const BLANK = '___';
+export type LessonBodyParser = (o: Record<string, unknown>, fail: (what: string) => never) => LessonBody;
+
+const bilingualOf = (v: unknown): Bilingual | undefined => {
+  const o = v as Partial<Record<keyof Bilingual, unknown>> | null;
+  if (!o || typeof o !== 'object' || Array.isArray(o) || typeof o.vi !== 'string' || typeof o.en !== 'string') return undefined;
+  const b = { vi: o.vi.trim(), en: o.en.trim() };
+  return b.vi && b.en ? b : undefined;
+};
 export type DrillKind = 'faded' | 'open' | 'trap' | 'challenge';
 const KINDS: DrillKind[] = ['faded', 'open', 'trap', 'challenge'];
 export interface Drill {
@@ -47,8 +57,7 @@ export interface AdvNode {
 export interface General { drills: Drill[]; nodes: AdvNode[]; bySkill: Map<string, Drill[]>; byId: Map<string, Drill> }
 
 type Raw = Record<string, unknown>;
-const list = (src: string, origin: string): Raw[] => {
-  const data = parseYaml(src) as unknown;
+const list = (data: unknown, origin: string): Raw[] => {
   if (!Array.isArray(data)) throw new Error(`${origin}: cần một danh sách`);
   return data.map((x) => (x ?? {}) as Raw);
 };
@@ -90,17 +99,17 @@ const unique = (drills: Drill[], origin: string): Drill[] => {
 };
 
 /** content/general/sql.yml: one drill per entry, `skill` required. */
-export function parseDrills(src: string, origin: string): Drill[] {
-  return unique(list(src, origin).map((o) => {
+export function parseDrills(data: unknown, origin: string): Drill[] {
+  return unique(list(data, origin).map((o) => {
     if (typeof o.skill !== 'string' || !o.skill) throw new Error(`${origin}: drill ${String(o.id)} thiếu skill`);
     return parseDrill(o, origin, { skill: o.skill });
   }), origin);
 }
 
 /** content/general/adv.yml: nodes; `in|partial` need a lesson and a challenge, `external` needs links. */
-export function parseAdv(src: string, origin: string): AdvNode[] {
+export function parseAdv(data: unknown, origin: string, parseLessonBody: LessonBodyParser): AdvNode[] {
   const seen = new Set<string>();
-  const nodes = list(src, origin).map((o, i): AdvNode => {
+  const nodes = list(data, origin).map((o, i): AdvNode => {
     const fail = (what: string): never => {
       throw new Error(`${origin}: nút ${i} (${String(o.id)}) ${what}`);
     };
@@ -134,9 +143,9 @@ export function parseAdv(src: string, origin: string): AdvNode[] {
 }
 
 /** Both files, indexed; a drill id used in both files throws. */
-export function buildGeneral(sqlSrc: string, advSrc: string): General {
-  const skillDrills = parseDrills(sqlSrc, 'general/sql.yml');
-  const nodes = parseAdv(advSrc, 'general/adv.yml');
+export function buildGeneral(sqlData: unknown, advData: unknown, parseLessonBody: LessonBodyParser): General {
+  const skillDrills = parseDrills(sqlData, 'general/sql.yml');
+  const nodes = parseAdv(advData, 'general/adv.yml', parseLessonBody);
   const drills = unique([...skillDrills, ...nodes.flatMap((n) => n.drills)], 'general/sql.yml + adv.yml');
   const bySkill = new Map<string, Drill[]>();
   for (const d of skillDrills) bySkill.set(d.skill!, [...(bySkill.get(d.skill!) ?? []), d]);

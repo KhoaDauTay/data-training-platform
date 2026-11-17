@@ -1,6 +1,7 @@
-import { buildGeneral, type General } from './general';
+import type { General } from './general';
 import { parseLaneBriefs, type LaneBrief } from './lanes';
-import { parseLessons, type Lesson } from './lessons';
+import { parse as parseYaml } from 'yaml';
+import { parseLessonBody, parseLessons, type Lesson } from './lessons';
 import { byOrder, parseTicket, type Ticket } from './tickets';
 import { applyVariant } from './variants';
 
@@ -58,7 +59,7 @@ let generalLoading: Promise<General> | undefined;
  */
 export function loadGeneral(): Promise<General> {
   return (generalLoading ??= import('./generalSources')
-    .then(({ sqlDrills, advNodes }) => (general = buildGeneral(sqlDrills, advNodes)))
+    .then(({ sqlDrills, advNodes, buildGeneral }) => (general = buildGeneral(parseYaml(sqlDrills), parseYaml(advNodes), parseLessonBody)))
     .catch((e: unknown) => {
       generalLoading = undefined;
       throw e;

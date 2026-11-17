@@ -24,7 +24,9 @@ const seenNow = new Set<string>();
 
 const isSeen = (id: string): boolean => seenNow.has(id) || loadLessonPrefs().seen.includes(id);
 const skillOf = (id: string) => SKILLS.find((s) => s.id === id);
-const label = (id: string): string => skillOf(id)?.label[getLang()] ?? id;
+/** Advanced-node lessons (Plan 8a) have no skill label: openLesson() gives their title. */
+const names = new Map<string, () => string>();
+const label = (id: string): string => skillOf(id)?.label[getLang()] ?? names.get(id)?.() ?? id;
 
 function markSeen(id: string, tried: boolean): void {
   seenNow.add(id);
@@ -101,7 +103,7 @@ function card(l: Lesson, titleId: string, actions: HTMLElement[], tour = false):
     skill ? h('p', { class: 'mt-2 mb-0' }, h('b', {}, t('lesson.syntax')), ' ', h('code', {}, skill.syntax)) : null,
     section(t('lesson.example'), h('pre', { class: 'sql' }, l.example), runExample, tour ? tourSlot('lesson') : null, exampleOut, richText(byMarker(l.explain[lang]))),
     section(t('lesson.mistake'), h('pre', { class: 'sql' }, l.mistake.sql), richText(l.mistake.why[lang])),
-    section(t('lesson.cues'), h('p', { class: 'm-0' }, l.cues[lang].join(' · '))),
+    l.cues[lang].length ? section(t('lesson.cues'), h('p', { class: 'm-0' }, l.cues[lang].join(' · '))) : null,
     section(t('lesson.try'), h('p', { class: 'mt-0' }, l.try.task[lang]), area, h('div', { class: 'actions mb-0' }, check), verdict),
     h('p', { class: 'mt-3 mb-0 text-sm' }, h('a', { href: l.docs, target: '_blank', rel: 'noopener noreferrer' }, t('lesson.docs'))));
 }
@@ -150,8 +152,9 @@ export function lessonSlot(grants: string[]): HTMLElement | null {
 }
 
 /** A skill chip or the handbook: the same card in a modal dialog, readable before the task that teaches it; focus returns to the opener. */
-export function openLesson(id: string): void {
-  const l = loadLessons().get(id);
+export function openLesson(id: string, node?: { lesson: Lesson; name: () => string }): void {
+  if (node) names.set(id, node.name);
+  const l = node?.lesson ?? loadLessons().get(id);
   if (!l) return;
   const dialog = byId('lesson-dialog') as HTMLDialogElement;
   const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;

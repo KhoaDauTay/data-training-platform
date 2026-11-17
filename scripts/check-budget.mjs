@@ -16,6 +16,8 @@ const GROUPS = [
   ['initdb', /^initdb-/, 140],
   ['parser', /^(libpg-query|parser|steps)-/, 410],
   ['fonts', /\.woff2$/, 60], // Plan 7 V2: Nunito variable, latin 39 KB + vietnamese 13 KB (woff2 is already compressed)
+  ['general', /^generalSources-/, 70], // Plan 8a D8a-12: drills (content/general/sql.yml) + advanced nodes (adv.yml) + parsers, lazy, fetched only when a drill or General page opens
+  ['learnui', /^(learnView|drillBrief)-/, 25], // Plan 8a D8a-12/13: General UI (drill workspace, learning path) and its VI/EN text, lazy
   ['rest', /./, 1560],
 ];
 

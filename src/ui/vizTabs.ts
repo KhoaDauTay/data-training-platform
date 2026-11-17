@@ -2,7 +2,8 @@ import type { DbClient } from '../db/client';
 import { GAME_SCHEMA } from '../domains';
 import { t } from '../i18n';
 import { hashOf } from '../route';
-import { activeTicket } from '../session';
+import type { SchemaId } from '../domains';
+import { activeTicket, session } from '../session';
 import { app, erMeta, selected, textValues, unlockedTables } from '../state';
 import { chapterColor, THEME_EVENT } from '../theme';
 import { erDefinition, relatedTables, tablesInQuery, type ErMetadata } from '../viz/erd';
@@ -54,11 +55,24 @@ async function load<T>(host: HTMLElement, loading: string, data: Promise<T>, dra
   }
 }
 
+/** Memo key of the last run: its schema, then its SQL. */
+const runKey = (sql: string): string => `${app.lastRun?.schema ?? 'game'}|${sql}`;
+const splitKey = (key: string): [SchemaId, string] => {
+  const i = key.indexOf('|');
+  return [key.slice(0, i) as SchemaId, key.slice(i + 1)];
+};
+/** Plan 8a: the drill workspace shows the lab tables, all of them, in the ER and Columns tabs. */
+const inDrill = (): boolean => session.mode.kind === 'drill';
+
 function registerPlanTabs(deps: VizDeps): void {
-  const planFor = memoByKey((sql) => deps.db.explain(sql).then(flattenPlan));
+  // Keyed by schema + SQL: the same text means other tables on lab (Plan 8a).
+  const planFor = memoByKey((key) => {
+    const [schema, sql] = splitKey(key);
+    return deps.db.explain(sql, { schema }).then(flattenPlan);
+  });
   const withPlan = (draw: (host: HTMLElement, plan: Plan) => void) => (host: HTMLElement) => {
     const sql = lastRunSql(host, deps);
-    return sql === undefined ? undefined : load(host, t('viz.explaining'), planFor(sql), draw);
+    return sql === undefined ? undefined : load(host, t('viz.explaining'), planFor(runKey(sql)), draw);
   };
   registerTab({ id: 'explain', label: 'tab.explain', group: 'query', order: 20, newAt: 'ch11-01', from: 'ch11-01', render: withPlan(renderExplain) }); // EXPLAIN is taught in ch11 (L30/L35)
   registerTab({ id: 'flow', label: 'tab.flow', group: 'query', order: 30, newAt: 'ch3-01', from: 'ch3-01', render: withPlan(renderFlow) });
@@ -67,7 +81,10 @@ function registerPlanTabs(deps: VizDeps): void {
 function registerStepsTab(deps: VizDeps): void {
   // Same idea as planFor: re-rendering (language switch, tab switch) never re-runs the sub-queries.
   // The parser download gets its own long budget first, so it never counts toward the steps timeout (L36).
-  const stepsFor = memoByKey((sql) => deps.db.loadParser().then(() => deps.db.steps<StepsResult>(sql)));
+  const stepsFor = memoByKey((key) => {
+    const [schema, sql] = splitKey(key);
+    return deps.db.loadParser().then(() => deps.db.steps<StepsResult>(sql, { schema }));
+  });
   registerTab({
     id: 'steps', from: 'ch1-03', newAt: 'ch1-03', // v4 §B.2: first ORDER BY
     label: 'tab.steps',
@@ -77,7 +94,7 @@ function registerStepsTab(deps: VizDeps): void {
       const sql = lastRunSql(host, deps);
       return sql === undefined
         ? undefined
-        : load(host, t('steps.running'), stepsFor(sql), (body, r) => renderSteps(body, sql, r, () => deps.show('explain')));
+        : load(host, t('steps.running'), stepsFor(runKey(sql)), (body, r) => renderSteps(body, sql, r, () => deps.show('explain')));
     },
   });
 }
@@ -102,6 +119,7 @@ function registerChartTab(deps: VizDeps): void {
 
 /** Public metadata plus the Sandbox imports (schema `sandbox`). */
 const allMeta = (): Promise<ErMetadata> => {
+  if (inDrill()) return erMeta('lab');
   const own = sandboxTables().length > 0 ? erMeta('sandbox') : Promise.resolve({ cols: [], cons: [] });
   return Promise.all([erMeta(GAME_SCHEMA), own]).then(([pub, mine]) => ({ cols: [...pub.cols, ...mine.cols], cons: [...pub.cons, ...mine.cons] }));
 };
@@ -113,6 +131,7 @@ interface Scoped { tables: string[]; dropped: string[]; switchable: boolean }
  * in Sandbox every visible table. Related tables are listed alphabetically, so nothing marks the ones the answer uses.
  */
 function scoped(meta: ErMetadata): Scoped {
+  if (inDrill()) return { tables: [...new Set(meta.cols.map((c) => c.table))].sort(), dropped: [], switchable: false };
   const tk = activeTicket();
   const all = { tables: visibleTables(), dropped: [], switchable: false };
   if (!tk) return all;
@@ -174,10 +193,11 @@ function registerSchemaTabs(deps: VizDeps): void {
     order: 20,
     render: (host) => load(host, t('erd.reading'), allMeta(), (body, meta) => {
       const s = scoped(meta);
-      const open = new Set(visibleTables());
-      const game = new Set(unlockedTables()); // imported Sandbox tables get no value lists
+      const drill = inDrill();
+      const open = new Set(drill ? s.tables : visibleTables());
+      const game = new Set(drill ? s.tables : unlockedTables()); // imported Sandbox tables get no value lists
       body.append(...scopeBar(s, deps), h('div', { class: 'grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-2' }, ...s.tables.map((table) => {
-        const values = game.has(table) ? textValues(table) : undefined;
+        const values = game.has(table) ? textValues(table, drill ? 'lab' : 'game') : undefined;
         return h('div', {},
           h('h3', { class: 'm-0' }, table),
           h('ul', { class: 'mt-1 mb-2 list-none space-y-0.5 pl-2 text-sm' }, ...meta.cols.filter((c) => c.table === table).map((c) =>

@@ -7,7 +7,7 @@ import { loadHistory, pushHistory, writeHistory } from '../history';
 import { checkLab, checkPlan, isCreateIndex, planLine, type LabSpec, type PlanFail } from '../planCheck';
 import { getLang, isMac, t } from '../i18n';
 import { SKILLS } from '../progress';
-import { isClosed, keepsWork, readDraft, workKey, writeDraft } from '../session';
+import { isClosed, keepsWork, readDraft, schemaOf, workKey, writeDraft } from '../session';
 import { app, editorSchema, initialDoc, persist, stepKey, type LastRun } from '../state';
 import { localStore } from '../storage';
 import { BTN_SUBMIT } from '../theme';
@@ -71,12 +71,12 @@ const FEEDBACK: Record<'good' | 'bad', string> = {
  * empty result looks like every mistake that filters too much, so it is never matched against `wrong:` (tests/content.test.ts:
  * a `wrong:` SQL always returns rows). Each `wrong:` SQL runs once per ticket+variant (its text has the variant applied).
  */
-export function wrongTipper(run: (sql: string) => Promise<QueryResult>) {
+export function wrongTipper(run: (sql: string, tk: Ticket) => Promise<QueryResult>) {
   const results = new Map<string, Promise<QueryResult | null>>();
   const resultOf = (tk: Ticket, sql: string): Promise<QueryResult | null> => {
     const k = `${tk.id}#${sql}`;
     let p = results.get(k);
-    if (!p) results.set(k, p = run(sql).catch(() => { results.delete(k); return null; })); // failure (restart, DB down) is not cached: the next wrong Submit retries
+    if (!p) results.set(k, p = run(sql, tk).catch(() => { results.delete(k); return null; })); // failure (restart, DB down) is not cached: the next wrong Submit retries
     return p;
   };
   return async (tk: Ticket, result: QueryResult | undefined, fail: GradeResult): Promise<(() => string) | undefined> => {
@@ -87,7 +87,8 @@ export function wrongTipper(run: (sql: string) => Promise<QueryResult>) {
         if (r && compareResults(r, result, tk.ordered).ok) return () => w.why[getLang()];
       }
     }
-    const skill = SKILLS.find((s) => tk.grants.includes(s.id));
+    // A drill (chapter 0) grants nothing: the trap of the skill it practises.
+    const skill = SKILLS.find((s) => tk.grants.includes(s.id)) ?? (tk.chapter === 0 ? SKILLS.find((s) => tk.requires.includes(s.id)) : undefined);
     return skill && (() => t('work.trap', { trap: skill.trap[getLang()] }));
   };
 }
@@ -192,6 +193,7 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
     if (lab && tk) return labRun(ed, sql, tk, stepIndex, lab);
     const k = tk ? stepKey(tk.id, stepIndex) : '';
     const historyId = keepsWork() ? tk?.id : undefined; // a practice variant shares the ticket id: keep it out of that history (P5)
+    const schema = schemaOf(tk); // a drill runs on lab (Plan 8a); captured at click time like the ticket
     ed.closeCompletion();
     ed.clearError();
     busy = true;
@@ -199,13 +201,14 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
     if (app.dbStatus === 'loading') say('good', () => t('work.queued')); // DbClient queues the query until the DB is ready
     let r: LastRun;
     try {
-      r = { key: k, sql, offset, result: await deps.db.run(sql) };
+      r = { key: k, sql, offset, result: await deps.db.run(sql, { schema }) };
     } catch (e) {
       r = { key: k, sql, offset, error: e };
     } finally {
       busy = false;
       setButtons();
     }
+    if (schema !== 'game') r.schema = schema;
     record(historyId, r);
     if (editor !== ed) return;
     app.lastRun = r;
@@ -225,7 +228,7 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
     deps.onRun();
   }
 
-  const wrongTip = wrongTipper((sql) => deps.db.run(sql));
+  const wrongTip = wrongTipper((sql, tk) => deps.db.run(sql, { schema: schemaOf(tk) }));
 
   /**
    * Index lab (chapter 11): the editor holds one CREATE INDEX; the step's Solution is the slow query. Shows its plan before
@@ -282,6 +285,7 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
     const i = stepIndex;
     const k = stepKey(tk.id, i);
     const story = keepsWork(); // captured at click time, like the ticket (a lane side task keeps its graded SQL too)
+    const schema = schemaOf(tk);
     const sql = ed.getValue(); // Submit always grades the whole editor
     if (!sql.trim()) return say('bad', () => t('work.empty')); // an empty editor is not graded and not a wrong submit (end-user test v10 B1)
     const blanks = tk.format === 'faded' ? sql.split(BLANK).length - 1 : 0; // elsewhere ___ is a valid LIKE pattern
@@ -308,11 +312,11 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
     let played: LastRun | undefined;
     const playerRun = async (s: string) => {
       try {
-        const result = await deps.db.run(s);
-        played = { key: k, sql: s, offset: 0, result };
+        const result = await deps.db.run(s, { schema });
+        played = { key: k, sql: s, offset: 0, result, ...(schema !== 'game' ? { schema } : {}) };
         return result;
       } catch (e) {
-        played = { key: k, sql: s, offset: 0, error: e };
+        played = { key: k, sql: s, offset: 0, error: e, ...(schema !== 'game' ? { schema } : {}) };
         throw e;
       }
     };
@@ -322,14 +326,14 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
     let planFail: PlanFail | undefined;
     let planError: unknown; // the player's EXPLAIN failed: a DB/SQL error, not a content bug
     try {
-      r = await grade((s) => (s === sql ? playerRun(s) : deps.db.run(s)), tk.steps[i].solution, sql, tk.ordered);
+      r = await grade((s) => (s === sql ? playerRun(s) : deps.db.run(s, { schema })), tk.steps[i].solution, sql, tk.ordered);
       // Still busy: no newer Run/Submit can start before the tip is ready, so this result can never overwrite a newer one.
       if (!r.ok && r.reason !== 'error') tip = await wrongTip(tk, played?.result, r);
       // Chapter 11: a right result must also read the table through an index. EXPLAIN without ANALYZE: costs, no run.
       const plan = tk.steps[i].plan;
       if (r.ok && plan) {
         try {
-          planFail = checkPlan((await deps.db.run(`EXPLAIN (FORMAT JSON) ${sql}`)).rows[0]?.[0], plan.index);
+          planFail = checkPlan((await deps.db.run(`EXPLAIN (FORMAT JSON) ${sql}`, { schema })).rows[0]?.[0], plan.index);
         } catch (e) {
           planError = e ?? new Error();
         }

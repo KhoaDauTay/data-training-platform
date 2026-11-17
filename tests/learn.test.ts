@@ -14,7 +14,7 @@ const g = generalNow()!;
 const SKILL_IDS = SKILLS.map((s) => s.id);
 const known: Known = { ticketIds: new Set(tickets.map((t) => t.id)), laneIds: new Set(), skills: new Set(SKILL_IDS) };
 const save = (over: Partial<Save> = {}): Save => ({ ...emptySave(), ...over });
-const ctx = (s: Save, seen: string[] = []): LearnCtx => ({ save: s, tickets, general: g, seen });
+const ctx = (s: Save, seen: string[] = []): LearnCtx => ({ save: s, tickets, skills: SKILLS, general: g, seen });
 
 describe('save giữ id drill g-… (không cần tải nội dung Chung)', () => {
   it('completed, nháp, graded, hintsUsed của g-… được giữ; id lạ không tiền tố vẫn bị bỏ', () => {
@@ -91,5 +91,25 @@ describe('src/learn.ts', () => {
     expect(derive(tickets, b)).toEqual(derive(tickets, a));
     expect(chapterSummary(tickets, save({ completed: [...b] }), 2)).toEqual(chapterSummary(tickets, save({ completed: [...a] }), 2));
     expect(kpiTiles(KPIS, tickets, b)).toEqual(kpiTiles(KPIS, tickets, a));
+  });
+});
+
+describe('session: mode drill (Plan 8a Task 7)', () => {
+  it('startDrill đặt mode drill; keepsWork; activeTicket = drillTicket; activeSchema lab; mode khác: game', async () => {
+    const { session, keepsWork, activeTicket, activeSchema, schemaOf, workKey, isClosed } = await import('../src/session');
+    const { drillTicket } = await import('../src/general');
+    const drill = g.byId.get('g-where-1')!;
+    const ticket = drillTicket(drill);
+    session.mode = { kind: 'drill', ticket, drill, wrong: 0 };
+    expect(keepsWork()).toBe(true);
+    expect(activeTicket()).toBe(ticket);
+    expect(activeSchema()).toBe('lab');
+    expect(schemaOf(ticket)).toBe('lab');
+    expect(workKey()).toBe('g-where-1#0');
+    expect(isClosed('g-where-1')).toBe(false); // a passed drill can be submitted again (0 XP)
+    session.mode = { kind: 'sandbox' };
+    expect(activeSchema()).toBe('game');
+    expect(schemaOf(tickets[0])).toBe('game');
+    session.mode = { kind: 'story' };
   });
 });

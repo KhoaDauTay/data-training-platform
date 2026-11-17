@@ -17,7 +17,7 @@ import { isStory, session, today } from './session';
 import { localStore } from './storage';
 import type { Route } from './route';
 import type { Ticket } from './tickets';
-import { initModes, onPracticeWrong, onSolved, renderLeft, renderReviewButton } from './ui/modes';
+import { initModes, onPracticeWrong, onSolved, renderLeft, renderReviewButton, startDrill } from './ui/modes';
 import { renderNotebook, toggleNotebook } from './ui/notebook';
 import { byId, h } from './ui/dom';
 import { errorText } from './ui/feedback';
@@ -262,7 +262,7 @@ window.addEventListener('error', (e) => fault(e.error));
 window.addEventListener('unhandledrejection', (e) => fault(e.reason));
 
 Object.assign(actions, {
-  rerender, selectTicket, complete, retryDb: () => db.restart(), openLane: (port: string) => mapStrip.openLane(port), copyDiagnostics: () => void copyDiagnostics(), useSql: (sql: string) => work.setDoc(sql), showTab: (id: string) => panel.show(id),
+  rerender, selectTicket, complete, retryDb: () => db.restart(), startDrill: (id: string) => void startDrill(id, db), openLane: (port: string) => mapStrip.openLane(port), copyDiagnostics: () => void copyDiagnostics(), useSql: (sql: string) => work.setDoc(sql), showTab: (id: string) => panel.show(id),
   switchLang: (l: Lang) => void setLang(l).then(() => {
     rerender();
     panel.refresh();

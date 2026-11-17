@@ -1,11 +1,12 @@
 import type { AdvNode, Drill, General } from './general';
-import { SKILLS } from './progress';
+import type { Skill } from './progress';
 import type { Save } from './save';
 import type { Ticket } from './tickets';
 
 /**
  * Progress of the General area (Plan 8a Task 6): pure, no DOM. Drill ids live in save.completed (D8a-9); nothing new is saved.
  * Named knownSkills (not learnedSkills): src/home.ts learnedSkills (tickets only) feeds the review queue and stays as it is.
+ * Imports no value from a main-bundle module (the lazy General UI uses it, Plan 6 U3): skills come in as arguments.
  */
 
 /** A skill counts as mastered from this Leitner box (v5 §B.8). */
@@ -17,7 +18,7 @@ export const CHALLENGE_XP = 20;
  * The skill of a skill drill, read from its id alone (no General chunk needed): `g-conditional-agg-3` → `conditional_agg`.
  * Undefined for a node drill (`g-a1-2`) or anything that is not a known skill.
  */
-export function skillOfDrill(id: string, skillIds: readonly string[] = SKILLS.map((s) => s.id)): string | undefined {
+export function skillOfDrill(id: string, skillIds: readonly string[]): string | undefined {
   const m = /^g-([a-z0-9-]+)-\d+$/.exec(id);
   const skill = m?.[1].replace(/-/g, '_');
   return skill && skillIds.includes(skill) ? skill : undefined;
@@ -27,7 +28,7 @@ export function skillOfDrill(id: string, skillIds: readonly string[] = SKILLS.ma
  * "Learned" (D8a-11): a completed ticket grants it, or ≥ 2 of its drills passed, or it has a review card.
  * One definition for the learning path, the "Relies on" line and Home.
  */
-export function knownSkills(save: Save, tickets: Ticket[], skillIds: readonly string[] = SKILLS.map((s) => s.id)): Set<string> {
+export function knownSkills(save: Save, tickets: Ticket[], skillIds: readonly string[]): Set<string> {
   const done = new Set(save.completed);
   const out = new Set<string>();
   for (const t of tickets) if (done.has(t.id)) for (const s of t.grants) out.add(s);
@@ -41,7 +42,8 @@ export function knownSkills(save: Save, tickets: Ticket[], skillIds: readonly st
   return out;
 }
 
-export interface LearnCtx { save: Save; tickets: Ticket[]; general: General; /** Lessons seen (cargo-query/lessons pref). */ seen: readonly string[] }
+export interface LearnCtx { save: Save; tickets: Ticket[]; skills: readonly Skill[]; general: General; /** Lessons seen (cargo-query/lessons pref). */ seen: readonly string[] }
+const known = (c: LearnCtx): Set<string> => knownSkills(c.save, c.tickets, c.skills.map((s) => s.id));
 
 export const drillState = (save: Save, id: string): 'todo' | 'done' => (save.completed.includes(id) ? 'done' : 'todo');
 
@@ -52,28 +54,28 @@ export function skillState(c: LearnCtx, skill: string): SkillState {
     lesson: c.seen.includes(skill),
     drills: drills.filter((d) => drillState(c.save, d.id) === 'done').length,
     total: drills.length,
-    learned: knownSkills(c.save, c.tickets).has(skill),
+    learned: known(c).has(skill),
     mastered: (c.save.review[skill]?.box ?? 0) >= MASTERED_BOX,
   };
 }
 
 /** Module n = the skills of chapter n. Done when every one is learned. */
 export function moduleState(c: LearnCtx, n: number): { skills: string[]; learned: number; done: boolean } {
-  const skills = SKILLS.filter((s) => s.chapter === n).map((s) => s.id);
-  const known = knownSkills(c.save, c.tickets);
-  const learned = skills.filter((s) => known.has(s)).length;
+  const skills = c.skills.filter((s) => s.chapter === n).map((s) => s.id);
+  const k = known(c);
+  const learned = skills.filter((s) => k.has(s)).length;
   return { skills, learned, done: skills.length > 0 && learned === skills.length };
 }
 
 /** done: every drill and the challenge passed (an `external` node is never done); open: every need learned or done. */
 export function nodeState(c: LearnCtx, node: AdvNode): { done: boolean; open: boolean; drills: number; total: number } {
-  const known = knownSkills(c.save, c.tickets);
+  const k = known(c);
   const byId = new Map(c.general.nodes.map((n) => [n.id, n]));
   const nodeDone = (n: AdvNode): boolean => n.status !== 'external' && n.drills.every((d) => drillState(c.save, d.id) === 'done');
   const drills = node.drills.filter((d) => drillState(c.save, d.id) === 'done').length;
   return {
     done: nodeDone(node),
-    open: node.needs.every((x) => known.has(x) || (byId.has(x) && nodeDone(byId.get(x)!))),
+    open: node.needs.every((x) => k.has(x) || (byId.has(x) && nodeDone(byId.get(x)!))),
     drills,
     total: node.drills.length,
   };

@@ -5,7 +5,7 @@ import { roleLine } from '../people';
 import { CHAPTERS, nextTicket, SKILLS, xpFor } from '../progress';
 import { ROUTES } from '../scene';
 import { compareShape, shapeOf, type Kind, type Shape } from '../shape';
-import { hintsShown, isClosed, isStory, useHint } from '../session';
+import { hintsShown, isClosed, isStory, schemaOf, useHint } from '../session';
 import { actions, app, done, erMeta, expectedShape, persist, stepKey, unlockedTables } from '../state';
 import { chapterColor, cx, DEPT_CHIP, deptColor, deptOf, PILL } from '../theme';
 import { optionOrder, textOf, type Beat, type Ticket, type TicketText } from '../tickets';
@@ -28,7 +28,7 @@ const reflected = new Map<string, number>();
 const mark = (ok: boolean): string => (ok ? '✓' : '✗');
 
 /** "Expected result": column count and kinds, row count, ordering, author labels from `columns:`. Never Solution column names. */
-function shapeCard(tk: Ticket, stepIndex: number): HTMLElement {
+export function shapeCard(tk: Ticket, stepIndex: number): HTMLElement {
   const step = tk.steps[stepIndex];
   const labels = step.columns ?? [];
   const card = h('section', { class: 'my-3 rounded-xl bg-panel p-3 ring-1 ring-line', 'aria-label': t('shape.title') });
@@ -49,7 +49,7 @@ function shapeCard(tk: Ticket, stepIndex: number): HTMLElement {
         : null));
   };
   draw();
-  expectedShape(step.solution).then(draw, () => draw());
+  expectedShape(step.solution, schemaOf(tk)).then(draw, () => draw());
   return card;
 }
 
@@ -61,7 +61,7 @@ function labCard(sql: string): HTMLElement {
     h('p', { class: 'mt-1 mb-0 text-sm text-muted' }, t('lab.howto')));
 }
 
-function hints(tk: Ticket, x: TicketText, isDone: boolean): HTMLElement {
+export function hints(tk: Ticket, x: TicketText, isDone: boolean): HTMLElement {
   const shown = hintsShown(tk.id);
   const cost = xpFor(tk, shown) - xpFor(tk, shown + 1); // 0 in chapter 1 (L54)
   const btn = h('button', {

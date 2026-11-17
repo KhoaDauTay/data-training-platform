@@ -1,5 +1,5 @@
 import type { SQLNamespace } from '@codemirror/lang-sql';
-import { GAME_SCHEMA } from './domains';
+import { GAME_SCHEMA, SCHEMAS, type SchemaId } from './domains';
 import type { DbStatus } from './db/client';
 import type { DiagnosticKind } from './diagnostics';
 import type { LoadProgress } from './db/loadProgress';
@@ -26,6 +26,8 @@ export interface LastRun {
   error?: unknown;
   /** Row of `result` the grader reported as not matching (highlighted in the Result tab). */
   mark?: unknown[];
+  /** Set for a run on `lab` (a drill), so EXPLAIN and the execution steps of this run use the same schema (Plan 8a). */
+  schema?: SchemaId;
 }
 
 /** A banner under the top bar. Stored as a key so a language switch re-translates it. */
@@ -66,6 +68,8 @@ export const actions = {
   showTab(_id: string): void {},
   /** Opens the map dialog on a lane's brief (Plan 5). */
   openLane(_port: string): void {},
+  /** Opens a General drill in the workspace (Plan 8a); seeds `lab` first. */
+  startDrill(_id: string): void {},
   /** Language switch from UI built after startup (the welcome screen); the top bar's VI|EN buttons do the same. */
   switchLang(_lang: Lang): void {},
 };
@@ -78,10 +82,15 @@ export const erMeta = memoByKey((schema) => loadErMetadata((sql) => app.run(sql)
  * Columns tab and the Data page. One query per table, once per session (memoByKey drops a failure so it is retried).
  * Holds every table: the "all tables" Columns tab asks for each one per render, and more than MEMO_MAX would thrash.
  */
-export const textValues = memoByKey((table) => erMeta(GAME_SCHEMA).then((m) => {
-  const cols = m.cols.filter((c) => c.table === table && TEXT_TYPES.has(c.type)).map((c) => c.name);
-  return cols.length ? app.run(distinctValuesSql(table, cols)).then(toDistinctValues) : {};
-}), 100);
+const valuesOf = memoByKey((key) => {
+  const [schema, table] = key.split('|') as [SchemaId, string];
+  return erMeta(SCHEMAS[schema]).then((m) => {
+    const cols = m.cols.filter((c) => c.table === table && TEXT_TYPES.has(c.type)).map((c) => c.name);
+    return cols.length ? app.run(distinctValuesSql(table, cols), { schema }).then(toDistinctValues) : {};
+  });
+}, 100);
+/** `schema`: 'lab' for the drill workspace (Plan 8a). */
+export const textValues = (table: string, schema: SchemaId = 'game') => valuesOf(`${schema}|${table}`);
 
 export const done = (): Set<string> => new Set(app.save.completed);
 export const selected = (): Ticket => app.tickets.find((x) => x.id === app.selectedId)!;
@@ -108,16 +117,21 @@ export function persist(now = false): void {
 }
 
 /** Plan Import: imported tables for autocomplete, set by initMyData; returns {} outside Sandbox (I1). */
-export const schemaHooks: { extra?: () => Record<string, Column[]> } = {};
+export const schemaHooks: {
+  extra?: () => Record<string, Column[]>;
+  /** Plan 8a: in the drill workspace, the `lab` tables replace the game tables (set by src/ui/drillBrief.ts). */
+  only?: () => Record<string, Column[]> | undefined;
+} = {};
 
 /** Autocomplete: only unlocked tables (spec §4), with column types as detail, plus imported tables in Sandbox. */
 export function editorSchema(): SQLNamespace {
-  const tables: Record<string, Column[]> = {};
-  for (const table of unlockedTables()) {
+  const only = schemaHooks.only?.();
+  const tables: Record<string, Column[]> = { ...only };
+  if (!only) for (const table of unlockedTables()) {
     const cols = app.columns[table];
     if (cols) tables[table] = cols;
   }
-  Object.assign(tables, schemaHooks.extra?.()); // imported names never clash with game tables (`_my`)
+  if (!only) Object.assign(tables, schemaHooks.extra?.()); // imported names never clash with game tables (`_my`)
   const out: Record<string, SQLNamespace> = {};
   for (const [table, cols] of Object.entries(tables)) {
     out[table] = {
@@ -130,12 +144,13 @@ export function editorSchema(): SQLNamespace {
 
 // Keyed by Solution SQL, not ticket id: Plan 1c variants reuse ids with different SQL.
 const shapes = new Map<string, Promise<Shape>>();
-export function expectedShape(solution: string): Promise<Shape> {
-  let p = shapes.get(solution);
+export function expectedShape(solution: string, schema: SchemaId = 'game'): Promise<Shape> {
+  const k = `${schema}|${solution}`;
+  let p = shapes.get(k);
   if (!p) {
-    p = app.run(solution).then(shapeOf);
-    shapes.set(solution, p);
-    p.catch(() => shapes.delete(solution)); // timeout/restart: try again on the next render
+    p = app.run(solution, { schema }).then(shapeOf);
+    shapes.set(k, p);
+    p.catch(() => shapes.delete(k)); // timeout/restart: try again on the next render
   }
   return p;
 }

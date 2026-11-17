@@ -2,7 +2,9 @@ import { loadTicketTemplates } from './content';
 import { learnedSkills } from './home';
 import { localDay, reviewQueue, warmupQueue, type PracticeItem } from './practice';
 import { currentChapter } from './progress';
-import { SANDBOX_DRAFT_MAX } from './save';
+import type { SchemaId } from './domains';
+import type { Drill } from './general';
+import { DRILL_ID, SANDBOX_DRAFT_MAX } from './save';
 import { app, done, draftKey, selected, stepKey } from './state';
 import type { Ticket } from './tickets';
 
@@ -26,12 +28,17 @@ export interface PracticeRun {
 }
 
 /** Modes inside the #/play route (not routes of their own). `lane`: a lane side task (Plan 5), outside chapter progress. */
-export type Mode = { kind: 'story' } | { kind: 'practice'; run: PracticeRun } | { kind: 'sandbox' } | { kind: 'lane'; ticket: Ticket };
+export type Mode = { kind: 'story' } | { kind: 'practice'; run: PracticeRun } | { kind: 'sandbox' } | { kind: 'lane'; ticket: Ticket }
+  /** Plan 8a: a General drill on `lab` (drillTicket(drill)); `wrong` = wrong submits this visit (Leitner result). */
+  | { kind: 'drill'; ticket: Ticket; drill: Drill; wrong: number };
 
 export const session: { mode: Mode } = { mode: { kind: 'story' } };
 export const isStory = (): boolean => session.mode.kind === 'story';
 /** Story tickets and lane side tasks keep their drafts, graded SQL, hints and history; Practice and the Sandbox do not. */
-export const keepsWork = (): boolean => session.mode.kind === 'story' || session.mode.kind === 'lane';
+export const keepsWork = (): boolean => session.mode.kind === 'story' || session.mode.kind === 'lane' || session.mode.kind === 'drill';
+/** Schema a ticket's SQL runs on: drills (`g-…`) on `lab`, everything else on the game schema (Plan 8a D8a-4). */
+export const schemaOf = (tk: Ticket | undefined): SchemaId => (tk && DRILL_ID.test(tk.id) ? 'lab' : 'game');
+export const activeSchema = (): SchemaId => (session.mode.kind === 'drill' ? 'lab' : 'game');
 
 /** Real local day for the Leitner schedule (never the in-game date). */
 export const today = (): string => localDay(new Date());
@@ -63,7 +70,7 @@ export function activeTicket(): Ticket | undefined {
   const m = session.mode;
   if (m.kind === 'sandbox') return undefined;
   if (m.kind === 'practice') return m.run.index < m.run.tickets.length ? m.run.tickets[m.run.index] : undefined;
-  if (m.kind === 'lane') return m.ticket;
+  if (m.kind === 'lane' || m.kind === 'drill') return m.ticket;
   return selected();
 }
 
@@ -73,7 +80,7 @@ export function workKey(): string {
   const m = session.mode;
   if (m.kind === 'sandbox') return 'sandbox';
   if (m.kind === 'practice') return `practice#${m.run.id}#${m.run.index}`;
-  if (m.kind === 'lane') return stepKey(m.ticket.id, 0);
+  if (m.kind === 'lane' || m.kind === 'drill') return stepKey(m.ticket.id, 0);
   return draftKey();
 }
 

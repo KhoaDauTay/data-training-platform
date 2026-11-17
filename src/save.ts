@@ -106,7 +106,7 @@ const isString = (x: unknown): x is string => typeof x === 'string';
 
 /**
  * Plan 8a D8a-9: General drill ids (`g-…`) live in completed, drafts, graded and hintsUsed like ticket ids. Recognised by
- * pattern, not by a list, so reading a save never needs the lazy General chunk. Re-exported by src/general.ts.
+ * pattern, not by a list, so reading a save never needs the lazy General chunk. src/general.ts holds the same pattern.
  */
 export const DRILL_ID = /^g-[a-z0-9-]+$/;
 const isWorkId = (ids: ReadonlySet<string>, id: string): boolean => ids.has(id) || DRILL_ID.test(id);
