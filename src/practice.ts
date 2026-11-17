@@ -90,6 +90,35 @@ export function reviewQueue(
   return out;
 }
 
+export const WARMUP_SIZE = 3;
+
+/**
+ * Chapter warm-up (curriculum §5.2): when chapter `chapter` ≥ 2 starts, up to WARMUP_SIZE items on skills of earlier
+ * chapters: lowest Leitner box first, then earliest due, then id. One item per skill, never the same ticket twice.
+ * Leitner runs on the calendar, so a player who clears three chapters in one sitting still gets a recall step at each start.
+ */
+export function warmupQueue(
+  review: Review, learned: Iterable<string>, templates: Ticket[], completed: Set<string>, chapter: number, today: string, rnd: () => number,
+): PracticeItem[] {
+  const chapterOf = new Map(templates.flatMap((t) => t.grants.map((s) => [s, t.chapter] as const)));
+  const card = (s: string): Card => cardOf(review, s, today);
+  const skills = [...learned]
+    .filter((s) => (chapterOf.get(s) ?? chapter) < chapter)
+    .sort((a, b) => card(a).box - card(b).box || card(a).due.localeCompare(card(b).due) || a.localeCompare(b));
+  const pool = practicePool(templates, completed);
+  const out: PracticeItem[] = [];
+  for (const skill of skills) {
+    if (out.length >= WARMUP_SIZE) break;
+    const cands = pool.filter((t) => covers(t).includes(skill) && !out.some((i) => i.ticketId === t.id));
+    const withVariants = cands.filter((t) => variantsOf(t).length >= 2);
+    const from = withVariants.length ? withVariants : cands;
+    if (from.length === 0) continue;
+    const t = from[Math.floor(rnd() * from.length)];
+    out.push({ ticketId: t.id, variant: variantFor(t, rnd), skills: [skill] });
+  }
+  return out;
+}
+
 /** "Practise this task again": the skills it teaches, or (a rest ticket teaches none) the skills it needs. */
 export const retryItem = (t: Ticket, rnd: () => number): PracticeItem =>
   ({ ticketId: t.id, variant: variantFor(t, rnd), skills: [...(t.grants.length ? t.grants : t.requires)] });

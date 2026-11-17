@@ -3,7 +3,9 @@ import { learnedSkills, type HomeModel } from '../home';
 import { t } from '../i18n';
 import { applyResult, isSuccess, pickForSkill, retryItem, type PracticeItem } from '../practice';
 import { hashOf } from '../route';
-import { activeStep, activeTicket, isStory, practiceFinished, reviewCount, reviewToday, session, today, type Mode, type PracticeRun } from '../session';
+import {
+  activeStep, activeTicket, isStory, practiceFinished, reviewCount, reviewToday, session, today, warmupToday, type Mode, type PracticeRun,
+} from '../session';
 import { actions, app, done, persist, selected } from '../state';
 import type { Ticket } from '../tickets';
 import { BTN_GO, CARD, cx } from '../theme';
@@ -200,6 +202,17 @@ function reviewCard(m: HomeModel): HTMLElement {
     due ? h('button', { type: 'button', class: cx(BTN_GO, 'px-4 py-2'), onclick: () => startToday() }, t('prac.today', { n: due })) : null);
 }
 
+/** Home "Chapter warm-up" (curriculum §5.2): recall tasks from earlier chapters when a chapter starts. Never blocks its first ticket. */
+function warmupCard(): HTMLElement | null {
+  const n = warmupToday(() => 0).length;
+  if (n === 0) return null;
+  return h('section', { class: cx(CARD, 'flex flex-wrap items-center gap-4 p-5'), 'aria-labelledby': 'warmup-title' },
+    h('div', { class: 'min-w-0 flex-1' },
+      h('h2', { id: 'warmup-title', class: 'm-0 text-lg font-bold' }, t('warmup.title')),
+      h('p', { class: 'mt-1 mb-0 text-[15px] text-muted' }, t('warmup.intro', { n }))),
+    h('button', { type: 'button', class: cx(BTN_GO, 'px-4 py-2'), onclick: () => void startPractice(warmupToday()) }, t('warmup.start', { n })));
+}
+
 // Same id replaces topbar.ts's 'play' entry: "Workspace" is current only in story mode.
 registerNav({
   id: 'play', order: 20, label: 'nav.play', href: hashOf('play'),
@@ -218,6 +231,7 @@ registerNav({
   onclick: () => (session.mode.kind === 'sandbox' ? go('play') : startSandbox()),
 });
 registerHomeSection({ id: 'review', order: 22, span: 'full', render: reviewCard });
+registerHomeSection({ id: 'warmup', order: 21, span: 'full', render: warmupCard });
 registerMode({
   id: 'sandbox', order: 10, icon: '🧪', tint: 'bg-orange-100 dark:bg-orange-950',
   title: 'mode.sandbox', desc: 'mode.sandboxDesc', open: () => startSandbox(),

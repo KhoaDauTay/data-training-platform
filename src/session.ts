@@ -1,6 +1,7 @@
 import { loadTicketTemplates } from './content';
 import { learnedSkills } from './home';
-import { localDay, reviewQueue, type PracticeItem } from './practice';
+import { localDay, reviewQueue, warmupQueue, type PracticeItem } from './practice';
+import { currentChapter } from './progress';
 import { SANDBOX_DRAFT_MAX } from './save';
 import { app, done, draftKey, selected } from './state';
 import type { Ticket } from './tickets';
@@ -36,6 +37,13 @@ export function reviewToday(rnd: () => number = Math.random): PracticeItem[] {
   return reviewQueue(app.save.review, learnedSkills(app.tickets, d), loadTicketTemplates(), d, today(), rnd);
 }
 export const reviewCount = (): number => reviewToday(() => 0).length;
+/** Chapter warm-up (curriculum §5.2): only while chapter N ≥ 2 has no completed ticket yet. Length does not depend on `rnd`. */
+export function warmupToday(rnd: () => number = Math.random): PracticeItem[] {
+  const d = done();
+  const chapter = currentChapter(app.tickets, d);
+  if (chapter < 2 || app.tickets.some((t) => t.chapter === chapter && d.has(t.id))) return [];
+  return warmupQueue(app.save.review, learnedSkills(app.tickets, d), loadTicketTemplates(), d, chapter, today(), rnd);
+}
 /** All items of the practice run answered: the left pane shows the summary and the editor is hidden (no ticketless editor). */
 export const practiceFinished = (): boolean => session.mode.kind === 'practice' && session.mode.run.index >= session.mode.run.items.length;
 

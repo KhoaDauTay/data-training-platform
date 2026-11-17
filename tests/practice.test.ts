@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { loadTicketTemplates, loadTickets } from '../src/content';
 import {
   addDays, applyResult, cardOf, dueSkills, INTERVALS, isSuccess, localDay, nextCard,
-  pickForSkill, QUEUE_MAX, retryItem, reviewQueue, seedReview, variantFor,
+  pickForSkill, QUEUE_MAX, retryItem, reviewQueue, seedReview, variantFor, WARMUP_SIZE, warmupQueue,
 } from '../src/practice';
 import type { Beat, Ticket } from '../src/tickets';
 
@@ -118,6 +118,23 @@ describe('chọn bài luyện', () => {
     expect(q).toHaveLength(QUEUE_MAX);
     expect(reviewQueue({}, learned, many, ids, T, () => 0.99)).toHaveLength(QUEUE_MAX);
   });
+  it('warmupQueue: chỉ kỹ năng của chương trước, hộp thấp trước, mỗi ticket một lần, tối đa WARMUP_SIZE', () => {
+    const ch2 = mk('ch2-01', 'teach', { grants: ['aggregate'], variants: [{ x: '1' }, { x: '2' }, { x: '3' }] });
+    const all = [...templates, ch2];
+    const done = new Set([...completed, 'ch2-01']);
+    const review = { select: { box: 3, due: T }, where: { box: 1, due: '2026-11-20' } };
+    // chapter 2 starts: chapter-1 skills only; where (box 1) before select (box 3); ch1-02 is taken, so select goes to ch1-01
+    expect(warmupQueue(review, ['select', 'where', 'aggregate'], all, done, 2, T, () => 0)).toEqual([
+      { ticketId: 'ch1-02', variant: 1, skills: ['where'] },
+      { ticketId: 'ch1-01', variant: 0, skills: ['select'] },
+    ]);
+    // chapter 3: chapter-2 skills join; where has no other ticket once ch1-02 is taken, so it is skipped
+    expect(warmupQueue({}, ['select', 'where', 'aggregate'], all, done, 3, T, () => 0).map((i) => i.skills[0])).toEqual(['aggregate', 'select']);
+    expect(warmupQueue({}, ['select'], all, done, 1, T, () => 0)).toEqual([]);
+    const many = Array.from({ length: 6 }, (_, i) => mk(`ch1-2${i}`, 'develop', { grants: [`s${i}`] }));
+    expect(warmupQueue({}, many.map((_, i) => `s${i}`), many, new Set(many.map((t) => t.id)), 2, T, () => 0)).toHaveLength(WARMUP_SIZE);
+  });
+
   it('retryItem luyện các kỹ năng ticket đó dạy; ticket rest không dạy gì thì luyện kỹ năng nó cần', () => {
     expect(retryItem(varied, () => 0)).toEqual({ ticketId: 'ch1-02', variant: 1, skills: ['where'] });
     expect(retryItem(wide, () => 0).skills).toEqual(wide.requires);
