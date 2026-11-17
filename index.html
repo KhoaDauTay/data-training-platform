@@ -4,6 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Cargo Query</title>
+    <link rel="icon" type="image/svg+xml" href="favicon.svg" />
     <!-- L42: theme before first paint (no flash). Same rule as src/theme.ts: prefs.theme 'light' | 'dark', anything else follows the OS. -->
     <script>
       (function () {
@@ -17,6 +18,64 @@
     </script>
   </head>
   <body>
+    <!--
+      L57 / product-design-v6 §1: Lily (dog, the player's buddy) and Boon (duck, the guide), six poses each, colours from
+      --lily-* / --boon-* in style.css. Art: CC BY 4.0 (assets/mascots/LICENSE). Not display:none: CSS animations do not run
+      there. The idle loops run only while this <svg> has class `live` (the welcome screen, Plan 7 V4).
+    -->
+    <svg id="mascot-sprite" class="absolute size-0 overflow-hidden" aria-hidden="true" focusable="false">
+      <defs>
+      <g id="lily-tail"><path class="tail" d="M82 94 q16 -4 16 -20 q0 -6 -4 -8" fill="none" stroke="var(--lily-fur)" stroke-width="8" stroke-linecap="round"/></g>
+      <g id="lily-body">
+        <ellipse cx="60" cy="92" rx="25" ry="21" fill="var(--lily-fur)"/>
+        <ellipse cx="60" cy="97" rx="14" ry="12" fill="var(--lily-cream)"/>
+        <ellipse cx="47" cy="111" rx="9" ry="5" fill="var(--lily-cream)"/>
+        <ellipse cx="73" cy="111" rx="9" ry="5" fill="var(--lily-cream)"/>
+      </g>
+      <g id="lily-head">
+        <path d="M38 34 q-16 2 -15 26 q2 6 9 4 q6 -10 8 -22 z" fill="var(--lily-ear)"/>
+        <ellipse cx="60" cy="50" rx="27" ry="24" fill="var(--lily-fur)"/>
+        <path d="M78 30 q10 -14 20 -6 q2 8 -8 12 q-6 2 -12 -6 z" fill="var(--lily-ear)"/>
+        <path d="M66 28 q6 -6 10 2" fill="none" stroke="var(--lily-cream)" stroke-width="3" stroke-linecap="round"/>
+        <ellipse cx="60" cy="61" rx="15" ry="11" fill="var(--lily-cream)"/>
+        <ellipse cx="60" cy="55" rx="5.5" ry="4" fill="var(--lily-ink)"/>
+        <circle cx="42" cy="58" r="3.5" fill="var(--cheek)" opacity=".55"/><circle cx="78" cy="58" r="3.5" fill="var(--cheek)" opacity=".55"/>
+        <path d="M41 68 L79 68 L60 82 z" fill="var(--lily-scarf)"/>
+        <path d="M66 73 l1.6 3.2 3.5 .5 -2.5 2.4 .6 3.5 -3.2 -1.7 -3.2 1.7 .6 -3.5 -2.5 -2.4 3.5 -.5z" fill="var(--lily-badge)"/>
+      </g>
+      <g id="lily-eyes-open" class="eyes"><circle cx="49" cy="46" r="3.6" fill="var(--lily-ink)"/><circle cx="71" cy="46" r="3.6" fill="var(--lily-ink)"/><circle cx="50.2" cy="44.8" r="1.1" fill="#fff"/><circle cx="72.2" cy="44.8" r="1.1" fill="#fff"/></g>
+      <path id="lily-smile" d="M53 63 q7 6 14 0" fill="none" stroke="var(--lily-ink)" stroke-width="2.4" stroke-linecap="round"/>
+      <g id="lily-paws"><ellipse cx="50" cy="90" rx="6" ry="7" fill="var(--lily-fur)" stroke="var(--lily-ear)" stroke-opacity=".25"/><ellipse cx="70" cy="90" rx="6" ry="7" fill="var(--lily-fur)" stroke="var(--lily-ear)" stroke-opacity=".25"/></g>
+      
+      <symbol id="lily-idle" viewBox="0 0 120 120"><use href="#lily-tail"/><g class="body-bob"><use href="#lily-body"/><use href="#lily-paws"/><use href="#lily-head"/><use href="#lily-eyes-open"/><use href="#lily-smile"/></g></symbol>
+      <symbol id="lily-point" viewBox="0 0 120 120"><use href="#lily-tail"/><use href="#lily-body"/><ellipse cx="50" cy="90" rx="6" ry="7" fill="var(--lily-fur)"/><path d="M76 86 L102 70" stroke="var(--lily-fur)" stroke-width="10" stroke-linecap="round"/><circle cx="104" cy="68" r="6" fill="var(--lily-cream)"/><use href="#lily-head"/><g class="eyes"><circle cx="51" cy="46" r="3.6" fill="var(--lily-ink)"/><circle cx="73" cy="46" r="3.6" fill="var(--lily-ink)"/></g><use href="#lily-smile"/></symbol>
+      <symbol id="lily-cheer" viewBox="0 0 120 120"><use href="#lily-tail"/><use href="#lily-body"/><path d="M42 84 L28 62 M78 84 L92 62" stroke="var(--lily-fur)" stroke-width="10" stroke-linecap="round"/><circle cx="27" cy="59" r="6" fill="var(--lily-cream)"/><circle cx="93" cy="59" r="6" fill="var(--lily-cream)"/><use href="#lily-head"/><path d="M45 47 q4 -5 8 0 M67 47 q4 -5 8 0" fill="none" stroke="var(--lily-ink)" stroke-width="2.6" stroke-linecap="round"/><path d="M52 62 q8 12 16 0 z" fill="var(--lily-ink)"/><path d="M56 66 q4 4 8 0 z" fill="#f08a8a"/><path d="M14 30 l3 6 6 3 -6 3 -3 6 -3 -6 -6 -3 6 -3z M104 22 l2 4 4 2 -4 2 -2 4 -2 -4 -4 -2 4 -2z" fill="var(--lily-badge)"/></symbol>
+      <symbol id="lily-think" viewBox="0 0 120 120"><use href="#lily-tail"/><use href="#lily-body"/><ellipse cx="50" cy="90" rx="6" ry="7" fill="var(--lily-fur)"/><path d="M74 90 L68 72" stroke="var(--lily-fur)" stroke-width="10" stroke-linecap="round"/><circle cx="67" cy="70" r="6" fill="var(--lily-cream)"/><use href="#lily-head"/><g><circle cx="50" cy="43" r="3.4" fill="var(--lily-ink)"/><circle cx="72" cy="43" r="3.4" fill="var(--lily-ink)"/></g><path d="M55 64 h9" stroke="var(--lily-ink)" stroke-width="2.4" stroke-linecap="round"/><text x="94" y="22" font-size="22" font-weight="800" fill="var(--boon-wing)" font-family="Nunito Variable, sans-serif">?</text></symbol>
+      <symbol id="lily-oops" viewBox="0 0 120 120"><use href="#lily-tail"/><use href="#lily-body"/><use href="#lily-paws"/><use href="#lily-head"/><path d="M45 43 l7 4 -7 4 M75 43 l-7 4 7 4" fill="none" stroke="var(--lily-ink)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M52 66 q2 -3 4 0 q2 3 4 0 q2 -3 4 0 q2 3 4 0" fill="none" stroke="var(--lily-ink)" stroke-width="2.2" stroke-linecap="round"/><path d="M92 34 q5 8 0 11 q-5 -3 0 -11z" fill="#6cc0e8"/></symbol>
+      <symbol id="lily-sleep" viewBox="0 0 120 120"><path d="M92 104 q16 -2 12 -14" fill="none" stroke="var(--lily-fur)" stroke-width="8" stroke-linecap="round"/><ellipse cx="66" cy="100" rx="34" ry="14" fill="var(--lily-fur)"/><ellipse cx="46" cy="108" rx="12" ry="5" fill="var(--lily-cream)"/><path d="M20 76 q-12 4 -8 22 q8 2 10 -8 z" fill="var(--lily-ear)"/><ellipse cx="38" cy="86" rx="22" ry="18" fill="var(--lily-fur)"/><path d="M50 70 q8 -10 16 -4 q0 6 -8 8z" fill="var(--lily-ear)"/><ellipse cx="34" cy="94" rx="12" ry="8" fill="var(--lily-cream)"/><ellipse cx="30" cy="90" rx="4" ry="3" fill="var(--lily-ink)"/><path d="M34 82 q4 3 8 0 M46 82 q4 3 8 0" fill="none" stroke="var(--lily-ink)" stroke-width="2.2" stroke-linecap="round"/><g class="zz"><text x="70" y="62" font-size="16" font-weight="800" fill="var(--boon-wing)" font-family="Nunito Variable, sans-serif">z</text><text x="82" y="48" font-size="12" font-weight="800" fill="var(--boon-wing)" font-family="Nunito Variable, sans-serif">z</text></g></symbol>
+      
+      <g id="boon-feet"><ellipse cx="50" cy="112" rx="9" ry="4" fill="var(--boon-bill)"/><ellipse cx="70" cy="112" rx="9" ry="4" fill="var(--boon-bill)"/></g>
+      <g id="boon-body"><ellipse cx="60" cy="88" rx="26" ry="24" fill="var(--boon-body)"/><ellipse cx="60" cy="94" rx="17" ry="16" fill="var(--boon-belly)"/></g>
+      <g id="boon-head">
+        <path d="M57 26 q-4 -12 4 -15 q0 7 1 14 M62 25 q3 -10 11 -9 q-4 5 -8 11 M55 27 q-8 -6 -12 0 q5 1 10 3" fill="var(--boon-wing)"/>
+        <circle cx="60" cy="46" r="22" fill="var(--boon-body)"/>
+        <path d="M47 62 L60 78 L73 62" fill="none" stroke="var(--boon-lanyard)" stroke-width="3" stroke-linejoin="round"/>
+        <rect x="54" y="76" width="12" height="14" rx="2.5" fill="#fff" stroke="var(--boon-lanyard)" stroke-width="1.5"/><path d="M57 81 h6 M57 85 h4" stroke="var(--boon-wing)" stroke-width="1.6" stroke-linecap="round"/>
+        <circle cx="44" cy="54" r="3" fill="var(--cheek)" opacity=".5"/><circle cx="76" cy="54" r="3" fill="var(--cheek)" opacity=".5"/>
+      </g>
+      <g id="boon-bill"><path d="M43 53 q17 -7 34 0 q-2 10 -17 10 q-15 0 -17 -10 z" fill="var(--boon-bill)"/><path d="M52 55 h3 M65 55 h3" stroke="var(--boon-ink)" stroke-width="1.6" stroke-linecap="round" opacity=".55"/></g>
+      <g id="boon-glasses"><circle cx="51" cy="43" r="7.5" fill="#fff" fill-opacity=".35" stroke="var(--boon-ink)" stroke-width="2"/><circle cx="69" cy="43" r="7.5" fill="#fff" fill-opacity=".35" stroke="var(--boon-ink)" stroke-width="2"/><path d="M58.5 43 h3" stroke="var(--boon-ink)" stroke-width="2"/></g>
+      <g id="boon-eyes" class="eyes"><circle cx="51" cy="44" r="2.6" fill="var(--boon-ink)"/><circle cx="69" cy="44" r="2.6" fill="var(--boon-ink)"/></g>
+      <g id="boon-wings-down"><ellipse cx="36" cy="88" rx="8" ry="14" fill="var(--boon-wing)" transform="rotate(12 36 88)"/><ellipse cx="84" cy="88" rx="8" ry="14" fill="var(--boon-wing)" transform="rotate(-12 84 88)"/></g>
+      
+      <symbol id="boon-idle" viewBox="0 0 120 120"><g class="body-bob"><use href="#boon-feet"/><use href="#boon-body"/><use href="#boon-wings-down"/><rect x="66" y="86" width="20" height="14" rx="3" fill="var(--boon-ink)" transform="rotate(-10 76 93)"/><rect x="68" y="88" width="16" height="10" rx="2" fill="#bff0ea" transform="rotate(-10 76 93)"/><use href="#boon-head"/><use href="#boon-bill"/><use href="#boon-glasses"/><use href="#boon-eyes"/></g></symbol>
+      <symbol id="boon-point" viewBox="0 0 120 120"><use href="#boon-feet"/><use href="#boon-body"/><ellipse cx="36" cy="88" rx="8" ry="14" fill="var(--boon-wing)" transform="rotate(12 36 88)"/><path d="M82 82 q10 -6 16 -14" stroke="var(--boon-wing)" stroke-width="11" stroke-linecap="round" fill="none"/><path d="M97 68 L114 44" stroke="var(--boon-lanyard)" stroke-width="3" stroke-linecap="round"/><circle cx="115" cy="42" r="3.5" fill="var(--lily-badge)"/><use href="#boon-head"/><use href="#boon-bill"/><use href="#boon-glasses"/><g class="eyes"><circle cx="53" cy="43" r="2.6" fill="var(--boon-ink)"/><circle cx="71" cy="43" r="2.6" fill="var(--boon-ink)"/></g></symbol>
+      <symbol id="boon-cheer" viewBox="0 0 120 120"><use href="#boon-feet"/><use href="#boon-body"/><ellipse cx="30" cy="66" rx="8" ry="15" fill="var(--boon-wing)" transform="rotate(-35 30 66)"/><ellipse cx="90" cy="66" rx="8" ry="15" fill="var(--boon-wing)" transform="rotate(35 90 66)"/><use href="#boon-head"/><path d="M43 53 q17 -7 34 0 q-3 14 -17 14 q-14 0 -17 -14z" fill="var(--boon-bill)"/><path d="M52 58 q8 4 16 0" fill="none" stroke="var(--boon-ink)" stroke-width="1.6" opacity=".5"/><use href="#boon-glasses"/><path d="M48 44 q3 -3 6 0 M66 44 q3 -3 6 0" fill="none" stroke="var(--boon-ink)" stroke-width="2.2" stroke-linecap="round"/><path d="M12 24 h6 M15 21 v6 M100 14 h6 M103 11 v6" stroke="var(--lily-scarf)" stroke-width="2.6" stroke-linecap="round"/><circle cx="22" cy="40" r="2.5" fill="var(--lily-badge)"/><circle cx="104" cy="34" r="2.5" fill="var(--lily-fur)"/></symbol>
+      <symbol id="boon-think" viewBox="0 0 120 120"><use href="#boon-feet"/><use href="#boon-body"/><ellipse cx="36" cy="88" rx="8" ry="14" fill="var(--boon-wing)" transform="rotate(12 36 88)"/><path d="M82 90 q-4 -14 -12 -26" stroke="var(--boon-wing)" stroke-width="11" stroke-linecap="round" fill="none"/><use href="#boon-head"/><use href="#boon-bill"/><use href="#boon-glasses"/><g><circle cx="52" cy="41" r="2.6" fill="var(--boon-ink)"/><circle cx="70" cy="41" r="2.6" fill="var(--boon-ink)"/></g><circle cx="92" cy="30" r="3" fill="var(--boon-wing)" opacity=".6"/><circle cx="100" cy="20" r="4.5" fill="var(--boon-wing)" opacity=".6"/><circle cx="110" cy="8" r="6" fill="var(--boon-wing)" opacity=".6"/></symbol>
+      <symbol id="boon-oops" viewBox="0 0 120 120"><use href="#boon-feet"/><use href="#boon-body"/><ellipse cx="36" cy="88" rx="8" ry="14" fill="var(--boon-wing)" transform="rotate(12 36 88)"/><path d="M84 88 q-2 -14 -10 -26" stroke="var(--boon-wing)" stroke-width="11" stroke-linecap="round" fill="none"/><use href="#boon-head"/><use href="#boon-bill"/><g transform="rotate(-9 60 46) translate(0 3)"><use href="#boon-glasses"/></g><g><circle cx="51" cy="46" r="3.6" fill="none" stroke="var(--boon-ink)" stroke-width="1.8"/><circle cx="69" cy="47" r="3.6" fill="none" stroke="var(--boon-ink)" stroke-width="1.8"/><circle cx="51" cy="46" r="1.2" fill="var(--boon-ink)"/><circle cx="69" cy="47" r="1.2" fill="var(--boon-ink)"/></g><path d="M86 28 q5 8 0 11 q-5 -3 0 -11z" fill="#6cc0e8"/></symbol>
+      <symbol id="boon-sleep" viewBox="0 0 120 120"><ellipse cx="60" cy="104" rx="34" ry="10" fill="var(--ground)"/><ellipse cx="60" cy="90" rx="30" ry="20" fill="var(--boon-body)"/><ellipse cx="74" cy="90" rx="16" ry="11" fill="var(--boon-wing)"/><circle cx="44" cy="76" r="17" fill="var(--boon-body)"/><path d="M42 61 q-3 -9 3 -11 q0 5 1 10" fill="var(--boon-wing)"/><path d="M24 81 q10 -4 19 0 q-2 7 -10 7 q-7 0 -9 -7z" fill="var(--boon-bill)"/><path d="M36 72 q3 3 6 0 M47 72 q3 3 6 0" fill="none" stroke="var(--boon-ink)" stroke-width="2" stroke-linecap="round"/><path d="M50 80 q6 4 10 -2" fill="none" stroke="var(--boon-lanyard)" stroke-width="2.5"/><g class="zz"><text x="66" y="58" font-size="16" font-weight="800" fill="var(--boon-wing)" font-family="Nunito Variable, sans-serif">z</text><text x="78" y="44" font-size="12" font-weight="800" fill="var(--boon-wing)" font-family="Nunito Variable, sans-serif">z</text></g></symbol>
+      </defs>
+    </svg>
     <!--
       L42 / ui-ux-v3 §a: five groups, each one never split across lines (shrink-0). Order by width:
       >= 1280: [brand][nav][status] ··· [actions][settings][data]; below 1920 (120rem) the brand and action labels, the rank and the

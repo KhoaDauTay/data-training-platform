@@ -29,6 +29,10 @@
   /* Boon's speech bubbles and the XP pill. */
   --sun: #ffe9bd; --sun-ink: #5c3d00;
   --r-card: 20px; --r-ctl: 14px;
+  /* Mascot palette (v6 §1.2–1.3): SVG only, never text. */
+  --lily-fur: #d98e4a; --lily-cream: #f7e6cb; --lily-ear: #8a4b22; --lily-ink: #3a2618; --lily-scarf: #1f9e8f; --lily-badge: #ffd166;
+  --boon-body: #7cc3cf; --boon-wing: #3f8f9e; --boon-belly: #e3f4f6; --boon-bill: #f2b544; --boon-ink: #2a2320; --boon-lanyard: #d98e4a;
+  --cheek: #f4a3a3; --sky: #e6f4f6; --ground: #e9dcc6;
   /* L13 syntax colours: >= 4.8:1 on --panel and --code */
   --syn-keyword: #7a2bb0; --syn-string: #a3341a; --syn-number: #0a6b4c; --syn-comment: #5d6b5d;
   --syn-operator: #4a4a52; --syn-type: #0b5fa5; --syn-property: #1d5a7a; --syn-atom: #8a5300;
@@ -41,6 +45,9 @@
   --accent: #5ed3c3; --accent-soft: #16332f; --on-accent: #0b2522; --good: #6bd58a; --bad: #ff8a7a; --warn: #ffc067;
   --code: #2e2823; --sea: #14202b; --land: #2b3742; --bar: #0d1b29; --disabled: #7a7a82;
   --sun: #4a3a17; --sun-ink: #ffe2a3;
+  --lily-fur: #d4914f; --lily-cream: #efdcbc; --lily-ear: #7a4220; --lily-ink: #22160e; --lily-scarf: #2bb3a3;
+  --boon-body: #6fb3bf; --boon-wing: #3a8391; --boon-belly: #d6edf0; --boon-bill: #e9ad3e; --boon-ink: #1d1916;
+  --sky: #1d2a2e; --ground: #3a3127;
   /* L13 syntax colours: >= 5.6:1 on --panel and --code */
   --syn-keyword: #d19bff; --syn-string: #ff9e7a; --syn-number: #7ee0b5; --syn-comment: #9aa39a;
   --syn-operator: #c8c8d0; --syn-type: #6cc0ff; --syn-property: #9cdcfe; --syn-atom: #ffcf6b;
@@ -167,6 +174,17 @@
 @keyframes cq-ship-out { 0% { transform: translate(0, 0) scale(1); opacity: 1; } 85% { opacity: 1; } 100% { transform: translate(-420px, -14px) scale(0.6); opacity: 0; } }
 @keyframes cq-trolley { 0%, 15% { transform: translateX(0); } 45%, 60% { transform: translateX(250px); } 90%, 100% { transform: translateX(0); } }
 @keyframes cq-hoist { 0%, 15% { transform: translateY(0); } 25%, 35% { transform: translateY(50px); } 45%, 60% { transform: translateY(0); } 70%, 80% { transform: translateY(60px); } 90%, 100% { transform: translateY(0); } }
+/* ---- Mascot idle loops (v6 §2.5): on the sprite's originals, so every <use> moves; only while #mascot-sprite.live (Plan 7 V4). ---- */
+@media (prefers-reduced-motion: no-preference) {
+  #mascot-sprite.live .tail { transform-box: fill-box; transform-origin: 0% 100%; animation: cq-wag 0.9s ease-in-out infinite; }
+  #mascot-sprite.live .body-bob { animation: cq-bob 2.4s ease-in-out infinite; }
+  #mascot-sprite.live .eyes { transform-box: fill-box; transform-origin: center; animation: cq-eyes 4s infinite; }
+  #mascot-sprite.live .zz { animation: cq-floatz 2.2s ease-out infinite; }
+}
+@keyframes cq-wag { 0%, 100% { transform: rotate(0); } 50% { transform: rotate(16deg); } }
+@keyframes cq-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
+@keyframes cq-eyes { 0%, 92%, 100% { transform: scaleY(1); } 95% { transform: scaleY(0.1); } }
+@keyframes cq-floatz { 0% { transform: translate(0, 0); opacity: 0; } 30% { opacity: 1; } 100% { transform: translate(8px, -14px); opacity: 0; } }
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; animation: none !important; scroll-behavior: auto !important; }
 }
