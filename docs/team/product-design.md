@@ -39,7 +39,7 @@ Hiện `requires/grants` là chuỗi tự do, `CHAPTER_TITLES` hard-code tiếng
 |---|---|---|---|
 | `select` | 1 | Chọn cột | Select columns |
 | `where` | 1 | Lọc dòng (AND/OR/IN/BETWEEN/LIKE) | Filter rows |
-| `order_by` | 1 | Sắp xếp + phá hòa | Sort with tie-break |
+| `order_by` | 1 | Sắp xếp theo nhiều tiêu chí | Sort with tie-break |
 | `limit` | 1 | Lấy top N | Top N |
 | `aggregate` | 2 | COUNT/SUM/AVG/MIN/MAX | Aggregates |
 | `group_by` | 2 | Nhóm theo chiều | Group by |
@@ -68,14 +68,14 @@ Chương 7 không dạy kỹ năng mới (tổng hợp). Id chương 4–6 là �
   outcomes:
     - { vi: "Lấy đúng cột cần từ một bảng", en: "Pull exactly the columns you need", skills: [select] }
     - { vi: "Lọc lô hàng theo nhiều điều kiện", en: "Filter shipments by several conditions", skills: [where] }
-    - { vi: "Xếp hạng có tiêu chí phá hòa và lấy top N", en: "Rank with a tie-break and take the top N", skills: [order_by, limit] }
+    - { vi: "Xếp hạng có nhiều tiêu chí và lấy top N", en: "Rank with a tie-break and take the top N", skills: [order_by, limit] }
 ```
 
 Mục tiêu đề xuất cho 7 chương (VI; EN dịch tương ứng):
 
 | Ch. | Sau chương này bạn có thể… |
 |---|---|
-| 1 | lấy đúng cột; lọc theo nhiều điều kiện; xếp hạng có phá hòa, lấy top N |
+| 1 | lấy đúng cột; lọc theo nhiều điều kiện; xếp hạng theo nhiều tiêu chí, lấy top N |
 | 2 | đếm/tổng/trung bình một tập lô; báo cáo theo hãng tàu/phương thức; lọc nhóm bằng HAVING và phân biệt với WHERE |
 | 3 | ghép shipment với khách/hãng tàu; nối 3+ bảng; tìm khách không book bằng LEFT JOIN/anti-join |
 | 4 | tính thời gian vận chuyển/on-time bằng interval; phân loại luồng xanh/vàng/đỏ bằng CASE; xử lý `ata` NULL đúng cách |
@@ -169,7 +169,7 @@ Luật (thêm vào `parseTicket` + `tests/content.test.ts`):
 2. Mọi `{{x}}` trong đề/gợi ý/Solution/bản EN có giá trị ở **mọi** biến thể; 2–4 biến thể/ticket.
 3. Mỗi Solution đã render chạy được, trả kết quả **khác rỗng** (test sẵn có, mở rộng cho mọi biến thể) và tuân luật ngày cố định (không `CURRENT_DATE`/`now()`).
 4. Kết quả các biến thể **khác nhau từng đôi** (nếu giống thì biến thể vô nghĩa, người chơi dán lại câu cũ).
-5. Ticket `ordered`/top-N: câu phá hòa phải nằm trong phần đề không template, để mọi biến thể đều có.
+5. Ticket `ordered`/top-N: câu nêu tiêu chí sắp xếp phụ phải nằm trong phần đề không template, để mọi biến thể đều có.
 6. Boss không có variants (nhiều bước + câu kết luận phụ thuộc câu chuyện).
 
 Mục tiêu nội dung: mỗi kỹ năng trong `skills.yml` có ≥ 1 ticket (grants hoặc requires) mang variants → ~20 ticket × 2 biến thể thêm.

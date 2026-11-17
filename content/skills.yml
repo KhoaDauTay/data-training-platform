@@ -20,10 +20,10 @@
 
 - id: order_by
   chapter: 1
-  label: { vi: "Sắp xếp và phá hòa", en: "Sort with a tie-break" }
+  label: { vi: "Sắp xếp theo nhiều tiêu chí", en: "Sort with a tie-breaker" }
   syntax: "ORDER BY gross_weight_kg DESC, ref"
   when: { vi: "Đề yêu cầu thứ tự hoặc xếp hạng.", en: "The question asks for an order or a ranking." }
-  trap: { vi: "Thiếu cột phá hòa thì các dòng bằng nhau có thể đổi chỗ.", en: "Without a tie-break column, equal rows can come back in any order." }
+  trap: { vi: "Thiếu tiêu chí sắp xếp phụ thì các dòng trùng giá trị có thể đổi chỗ giữa các lần chạy.", en: "Without a tie-breaker column, rows with equal values can come back in any order." }
 
 - id: limit
   chapter: 1

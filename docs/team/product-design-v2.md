@@ -151,8 +151,8 @@ Thanh dưới chip hiện "XP tới bậc kế" = XP đã có / tổng XP tối 
 
 ### 7. Huy hiệu + trang Thành tích — **M**
 
-**Thấy:** trang lưới ~15 huy hiệu SVG (khiên/tem hải quan, màu theo nhóm). Ví dụ: "Không cần gợi ý" (boss 0 gợi ý), "Phá hòa chuẩn" (xong mọi ticket `ordered`), "Thợ săn NULL", "Thuộc lòng" (một kỹ năng đạt hộp 5), "Chuyến tàu đầu" (xong ch1), "Bạn của Võ Thu" (xong mọi ticket của CS). Huy hiệu chưa đạt hiện bóng xám và điều kiện.
-**Vì sao:** thưởng cho **hành vi học tốt** (ít gợi ý, ôn đều, phá hòa) chứ không chỉ cho việc đi hết. Điều kiện hiện sẵn nên vừa là mục tiêu phụ, vừa là lời khuyên.
+**Thấy:** trang lưới ~15 huy hiệu SVG (khiên/tem hải quan, màu theo nhóm). Ví dụ: "Không cần gợi ý" (boss 0 gợi ý), "Sắp xếp chuẩn" (xong mọi ticket `ordered`), "Thợ săn NULL", "Thuộc lòng" (một kỹ năng đạt hộp 5), "Chuyến tàu đầu" (xong ch1), "Bạn của Võ Thu" (xong mọi ticket của CS). Huy hiệu chưa đạt hiện bóng xám và điều kiện.
+**Vì sao:** thưởng cho **hành vi học tốt** (ít gợi ý, ôn đều, tiêu chí sắp xếp phụ) chứ không chỉ cho việc đi hết. Điều kiện hiện sẵn nên vừa là mục tiêu phụ, vừa là lời khuyên.
 **Plan:** sau 1c. Mọi điều kiện suy ra từ `completed`/`hintsUsed`/`review` (hàm thuần + test). Thông báo "huy hiệu mới" thì so tập trước/sau ngay trong phiên, không lưu.
 
 ### 8. Bảng màu biểu đồ theo chương/phòng ban — **S**
