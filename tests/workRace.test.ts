@@ -24,11 +24,12 @@ vi.mock('../src/ui/editor', () => ({
 }));
 
 /** Every fake element, with a real class set: celebrate() adds a class, drawMessage() reassigns className. */
-const els: { classes: Set<string>; textContent: string; disabled: boolean; onclick?: unknown }[] = [];
+const els: { classes: Set<string>; textContent: string; disabled: boolean; onclick?: unknown; shown: unknown[]; kids?: unknown[] }[] = [];
 const fakeEl = () => {
   const classes = new Set<string>();
   const el = {
-    replaceChildren() {}, append() {}, setAttribute() {}, addEventListener() {}, focus() {},
+    shown: [] as unknown[],
+    replaceChildren(...c: unknown[]) { el.shown = c; }, append() {}, setAttribute() {}, addEventListener() {}, focus() {},
     hidden: false, disabled: false, textContent: '', classes,
     classList: { add: (c: string) => classes.add(c), remove: (c: string) => classes.delete(c) },
     get className() { return [...classes].join(' '); },
@@ -39,7 +40,7 @@ const fakeEl = () => {
 };
 vi.mock('../src/ui/dom', () => ({
   // Keeps onclick so a test can press a button.
-  h: (_tag: string, attrs?: { onclick?: unknown }) => Object.assign(fakeEl(), { onclick: attrs?.onclick }),
+  h: (_tag: string, attrs?: { onclick?: unknown }, ...kids: unknown[]) => Object.assign(fakeEl(), { onclick: attrs?.onclick, kids }),
   nodes: (...c: unknown[]) => c.filter((x) => x !== null && x !== undefined && x !== false),
   richText: () => fakeEl(),
   byId: () => fakeEl(),
@@ -50,6 +51,8 @@ vi.mock('../src/ui/avatar', () => ({ avatar: () => fakeEl() }));
 const { app } = await import('../src/state');
 const { mountWork } = await import('../src/ui/work');
 const { HISTORY_KEY } = await import('../src/history');
+const { QueryTimeoutError } = await import('../src/db/client');
+const { t } = await import('../src/i18n');
 
 const result: QueryResult = { columns: ['n'], types: [23], rows: [[1]] };
 const ticket = (id: string, steps = 1): Ticket => ({
@@ -75,6 +78,8 @@ function setup() {
 }
 
 const flush = () => new Promise((r) => setTimeout(r, 0));
+/** Text currently shown in any element (strings passed to replaceChildren, and string children of h() elements shown there). */
+const shownText = () => els.flatMap((e) => e.shown).flatMap((x) => (typeof x === 'string' ? [x] : ((x as { kids?: unknown[] })?.kids ?? []).filter((k) => typeof k === 'string'))).join(' | ');
 const historyOf = (id: string) => (JSON.parse(store[HISTORY_KEY] ?? '{}') as Record<string, { sql: string }[]>)[id] ?? [];
 
 function open(work: ReturnType<typeof mountWork>, tk: Ticket) {
@@ -393,7 +398,7 @@ describe('chương 11: chấm kế hoạch và phòng thí nghiệm chỉ mục'
     open(work, labTicket());
     editors[0].opts.onSubmit();
     await flush();
-    expect(deps.db.lab).toHaveBeenCalledWith('CREATE INDEX ON t (a)', 'SELECT 1 AS n');
+    expect(deps.db.lab).toHaveBeenCalledWith('CREATE INDEX ON t (a)', 'SELECT 1 AS n', 't');
     expect(deps.onSolved).toHaveBeenCalledOnce();
     expect(app.save.graded).toEqual({ 'L#0': 'CREATE INDEX ON t (a)' });
   });
@@ -414,5 +419,30 @@ describe('chương 11: chấm kế hoạch và phòng thí nghiệm chỉ mục'
     await flush();
     expect(b.deps.db.lab).not.toHaveBeenCalled();
     expect(b.deps.onWrong).not.toHaveBeenCalled();
+  });
+
+  it('EXPLAIN lúc chấm bị quá giờ: báo lỗi DB bình thường, không phải "lỗi nội dung ticket", không chấm', async () => {
+    app.save.drafts['P#0'] = 'SELECT 1  AS n';
+    const { work, deps } = setup11(IDX);
+    deps.db.run.mockImplementation((sql: string) => (sql.startsWith('EXPLAIN') ? Promise.reject(new QueryTimeoutError(5000)) : Promise.resolve(result)));
+    open(work, planTicket());
+    editors[0].opts.onSubmit();
+    await flush();
+    expect(shownText()).toContain(t('err.timeout', { s: 5 }));
+    expect(shownText()).not.toContain(t('work.contentBug', { msg: '' }).trim());
+    expect(deps.onSolved).not.toHaveBeenCalled();
+    expect(deps.onWrong).not.toHaveBeenCalled();
+  });
+
+  it('phòng thí nghiệm: Chạy ghi câu CREATE INDEX vào lịch sử và xóa lastRun cũ', async () => {
+    app.save.drafts['L#0'] = 'CREATE INDEX ON t (a)';
+    app.lastRun = { key: 'L#0', sql: 'SELECT old', offset: 0, result };
+    const { work, deps } = setup11(IDX);
+    open(work, labTicket());
+    editors[0].opts.onRun();
+    await flush();
+    expect(deps.db.lab).toHaveBeenCalledOnce();
+    expect(historyOf('L').map((e) => e.sql)).toEqual(['CREATE INDEX ON t (a)']);
+    expect(app.lastRun).toBeUndefined();
   });
 });
