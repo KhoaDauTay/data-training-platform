@@ -428,3 +428,15 @@ Task 0–13 build xong, chưa push. Cổng cuối: `tsc` xanh, 2682/2682 test (5
 
 Kiểm tay (Chrome, :5174, localStorage mới): ôn tập mở drill trên lab, đạt → hộp Leitner +1, XP và `completed` không đổi; `#/learn` hai cột, module → kỹ năng → drill; nút a1 (bài học chạy trên lab), b5 (◐ có link), d2 (↗ chỉ link), b2 → thử thách mở; reload giữa chừng giữ nháp `g-b2-4#0` và `completed`; Tổng quan chương 1–2 có link kỹ năng ✓. Chưa kiểm: Edge, 1100/375 px, theme sáng cho trang Chung.
 
+## Plan 9 — domain E-commerce (Lantern Market) (2026-11-18)
+
+Ngân sách sau Task 7 (`node scripts/check-budget.mjs`, KB gz): main 280 / 290, ecom 40 / 50, ecomseed 8 / 10, ecomart 2 / 10, worker 149 / 160. Test: 2893/2893 (60 file).
+
+Đo D9-8 (bản build `vite preview`, Chrome trên máy dev, không phải Edge, Logistics đã sẵn sàng): từ đổi hash sang `#/d/ecommerce` tới lúc dòng "Đang chuẩn bị dữ liệu Chợ Lồng Đèn…" tắt (nội dung + seed `ecom` xong): 5,5 s và 5,9 s (2 lần). Mở thẳng `#/d/ecommerce` ở save mới (dev server): ~15–20 s gồm cả seed Logistics (D9-10). Chưa đo trên Edge.
+
+| Loại | Việc | Trạng thái |
+|---|---|---|
+| test | Đi trọn 30 việc E-com bằng tay (Task 8 Step 4) | Chưa làm: chỉ ecom-ch1-01 nộp đúng trên trình duyệt; mọi Solution/biến thể/wrong đã chạy tự động trong `tests/ecomContent.test.ts` |
+| ux | Thẻ chương trên Tổng quan E-com dẫn tới module Lộ trình cùng số (theo Logistics) | Mở |
+| ux | Kiểm 375 px/1100 px chưa làm (cửa sổ trình duyệt không đổi được cỡ) | Mở |
+
