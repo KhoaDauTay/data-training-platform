@@ -87,7 +87,7 @@
     en: "Pricing sends quotes every day. Is any of them selling below cost? You compare them with subqueries."
   outcomes:
     - { vi: "So từng dòng hay từng nhóm với một con số tính từ cả bảng", en: "Compare each row or group with a number computed over the whole table", skills: [scalar_subquery] }
-    - { vi: "Lọc theo danh sách tính từ truy vấn khác, tránh bẫy NOT IN với ô trống", en: "Filter by a list computed by another query, without the NOT IN and NULL trap", skills: [in_subquery] }
+    - { vi: "Lọc theo danh sách tính từ truy vấn khác", en: "Filter by a list computed by another query", skills: [in_subquery] }
     - { vi: "Tìm thứ đã có hoặc chưa có bản ghi liên quan", en: "Find what does or does not have a related record", skills: [exists] }
     - { vi: "Tra giá còn hiệu lực đúng vào ngày của từng dòng", en: "Look up the price in force on each row's own date", skills: [correlated_value] }
 
