@@ -1,6 +1,7 @@
 import type { ImportedTable, ImportRequest } from './import';
 import type { LoadProgress } from './loadProgress';
-import { SqlError, type LabResult, type QueryResult, type SqlErrorInfo } from './run';
+import { SqlError, type LabResult, type QueryResult, type RunOpts, type SqlErrorInfo } from './run';
+import type { SchemaId } from '../domains';
 
 export type DbStatus = 'loading' | 'ready' | 'failed';
 /** `parser`: loads the SQL parser (wasm + lazy chunk) for `steps`, with its own long budget. */
@@ -39,11 +40,14 @@ export const IMPORT_TIMEOUT_MS = 30_000;
 
 /** Everything the worker accepts, minus the request id. */
 export type WorkerBody =
-  | { kind: RequestKind; sql: string }
+  /** `schema` absent = the game schema (Plan 8a D8a-4). */
+  | { kind: RequestKind; sql: string; schema?: SchemaId }
+  /** Seeds a lazily seeded schema (`lab`) once; a no-op when it is already there. */
+  | { kind: 'ensure'; schema: SchemaId }
   | { kind: 'import'; req: ImportRequest; file: Blob }
   | { kind: 'dropImport'; table?: string }
   /** Index lab (chapter 11): `ddl` is the player's CREATE INDEX, `sql` the step's query, `table` the lab's table; see runLab. */
-  | { kind: 'lab'; ddl: string; sql: string; table: string };
+  | { kind: 'lab'; ddl: string; sql: string; table: string; schema?: SchemaId };
 
 type WorkerMessage =
   | { type: 'ready'; timings: DbTimings }
@@ -76,6 +80,8 @@ export class DbClient {
   onImportDropped: (table: string, error: Error) => void = () => {};
   /** Imported tables (with their inferred types), replayed after every restart. */
   private imports = new Map<string, { req: ImportRequest; file: Blob }>();
+  /** Schemas seeded by ensure(), seeded again after every restart before anything sent later (Plan 8a). */
+  private ensured = new Set<SchemaId>();
   private worker!: Worker;
   private status: DbStatus = 'loading';
   private failure?: DbFailedError;
@@ -94,8 +100,27 @@ export class DbClient {
   }
 
   /** One queued entry point for every kind of request. Rejects with SqlError, WorkerTaskError, QueryTimeoutError, DbRestartError or DbFailedError. */
-  request<T>(kind: RequestKind, sql: string, timeoutMs = this.timeoutMs): Promise<T> {
-    return this.enqueue<T>({ kind, sql }, timeoutMs);
+  request<T>(kind: RequestKind, sql: string, timeoutMs = this.timeoutMs, opts: RunOpts = {}): Promise<T> {
+    return this.enqueue<T>(opts.schema && opts.schema !== 'game' ? { kind, sql, schema: opts.schema } : { kind, sql }, timeoutMs);
+  }
+
+  /**
+   * Seeds `schema` (lab.sql for 'lab') under the import budget, not a query's. Remembered only once it succeeded, and
+   * re-sent after every restart(); a seed that times out is forgotten (no restart loop) and the next ensure() tries again.
+   */
+  async ensure(schema: SchemaId): Promise<void> {
+    if (schema === 'game' || this.ensured.has(schema)) return;
+    await this.enqueue<void>({ kind: 'ensure', schema }, IMPORT_TIMEOUT_MS);
+    this.ensured.add(schema);
+  }
+
+  private replayEnsured(): void {
+    for (const schema of this.ensured) {
+      this.enqueue<void>({ kind: 'ensure', schema }, IMPORT_TIMEOUT_MS).catch((e: Error) => {
+        if (e instanceof DbRestartError || e instanceof DbFailedError) return;
+        this.ensured.delete(schema);
+      });
+    }
   }
 
   private enqueue<T>(body: WorkerBody, timeoutMs: number): Promise<T> {
@@ -140,22 +165,22 @@ export class DbClient {
     }
   }
 
-  run(sql: string): Promise<QueryResult> {
-    return this.request<QueryResult>('run', sql);
+  run(sql: string, opts: RunOpts = {}): Promise<QueryResult> {
+    return this.request<QueryResult>('run', sql, this.timeoutMs, opts);
   }
 
   /** Plans of `sql` before and after the player's index, in one rolled-back transaction (chapter 11 index lab). */
-  lab(ddl: string, sql: string, table: string): Promise<LabResult> {
-    return this.enqueue<LabResult>({ kind: 'lab', ddl, sql, table }, this.timeoutMs);
+  lab(ddl: string, sql: string, table: string, opts: RunOpts = {}): Promise<LabResult> {
+    return this.enqueue<LabResult>(opts.schema && opts.schema !== 'game' ? { kind: 'lab', ddl, sql, table, schema: opts.schema } : { kind: 'lab', ddl, sql, table }, this.timeoutMs);
   }
 
-  explain(sql: string): Promise<unknown> {
-    return this.request<unknown>('explain', sql);
+  explain(sql: string, opts: RunOpts = {}): Promise<unknown> {
+    return this.request<unknown>('explain', sql, this.timeoutMs, opts);
   }
 
   /** Several sub-queries per call, so it gets a longer budget. Call loadParser() first so the download is not counted here. */
-  steps<T>(sql: string): Promise<T> {
-    return this.request<T>('steps', sql, this.timeoutMs * 3);
+  steps<T>(sql: string, opts: RunOpts = {}): Promise<T> {
+    return this.request<T>('steps', sql, this.timeoutMs * 3, opts);
   }
 
   /**
@@ -188,6 +213,7 @@ export class DbClient {
     this.worker.terminate();
     this.rejectAll(new DbRestartError());
     this.start();
+    this.replayEnsured();
     this.replayImports();
   }
 
@@ -248,6 +274,7 @@ export class DbClient {
       // Only the registered entry: a timed-out *replacement* keeps the old file replayable.
       const b = job.body;
       if (b.kind === 'import' && this.imports.get(b.req.table)?.file === b.file) this.imports.delete(b.req.table);
+      if (b.kind === 'ensure') this.ensured.delete(b.schema);
       job.reject(new QueryTimeoutError(job.timeoutMs));
       this.onTimeout?.(new QueryTimeoutError(job.timeoutMs));
       this.restart();

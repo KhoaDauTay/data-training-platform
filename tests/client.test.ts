@@ -235,4 +235,52 @@ describe('DbClient', () => {
     expect(e).not.toBeInstanceOf(SqlError);
     expect((e as WorkerTaskError).detail).toBe('Failed to fetch');
   });
+  it('schema theo request: run/explain/steps/lab mang schema, vắng = game', () => {
+    const { db } = client();
+    const w = last();
+    w.ready();
+    void db.run('R', { schema: 'lab' });
+    expect(w.posted[0]).toMatchObject({ kind: 'run', sql: 'R', schema: 'lab' });
+    w.answer(0);
+    void db.run('G');
+    expect(w.posted[1]).toMatchObject({ kind: 'run', sql: 'G' });
+    expect((w.posted[1] as { schema?: string }).schema).toBeUndefined();
+  });
+
+  it('ensure: hạn 30 s, nhớ schema, gửi lại sau restart trước query kế tiếp', async () => {
+    const { db } = client();
+    const w = last();
+    w.ready();
+    const e = db.ensure('lab');
+    expect(w.posted[0]).toMatchObject({ kind: 'ensure', schema: 'lab' });
+    await vi.advanceTimersByTimeAsync(20_000); // longer than a query's 5 s, still inside its own budget
+    w.send({ type: 'result', id: w.posted[0].id, result: null });
+    await e;
+    await db.ensure('lab'); // already ensured: nothing posted
+    expect(w.posted).toHaveLength(1);
+    await expect(db.ensure('game')).resolves.toBeUndefined();
+    expect(w.posted).toHaveLength(1);
+    const slow = db.run('SLOW').catch((x: unknown) => x);
+    await vi.advanceTimersByTimeAsync(5000);
+    expect(await slow).toBeInstanceOf(QueryTimeoutError);
+    const w2 = last();
+    expect(w2).not.toBe(w);
+    const next = db.run('NEXT', { schema: 'lab' });
+    w2.ready();
+    expect(w2.posted.map((p) => p.kind)).toEqual(['ensure']);
+    w2.send({ type: 'result', id: w2.posted[0].id, result: null });
+    expect(w2.posted.map((p) => p.kind)).toEqual(['ensure', 'run']);
+    w2.answer(1);
+    await expect(next).resolves.toBeDefined();
+  });
+
+  it('ensure quá hạn: không gửi lại sau restart (không vòng lặp)', async () => {
+    const { db } = client();
+    last().ready();
+    const e = db.ensure('lab').catch((x: unknown) => x);
+    await vi.advanceTimersByTimeAsync(30_000);
+    expect(await e).toBeInstanceOf(QueryTimeoutError);
+    last().ready();
+    expect(last().posted).toEqual([]);
+  });
 });

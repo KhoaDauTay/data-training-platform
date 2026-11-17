@@ -15,3 +15,7 @@ export const DOMAINS: readonly Domain[] = [
   { id: 'finance', live: false, icon: 'percent', name: 'domain.finance', desc: 'domain.financeDesc' },
   { id: 'ecommerce', live: false, icon: 'box', name: 'domain.ecommerce', desc: 'domain.ecommerceDesc' },
 ];
+
+/** Every schema a request may name (Plan 8a D8a-4). Only these strings are ever inlined into SQL (never player input). */
+export const SCHEMAS = { game: GAME_SCHEMA, lab: 'lab' } as const;
+export type SchemaId = keyof typeof SCHEMAS;

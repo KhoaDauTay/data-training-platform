@@ -1,0 +1,315 @@
+-- BoonData `lab`: a small neutral retail chain for the General drills (v5 §C.1, Plan 8a).
+-- Seeded lazily by ensureSchema(db, 'lab') with search_path = lab (Plan 8a D8a-3). No story, no people from the domains.
+-- Deterministic: one setseed() per random block, literal dates only, "today" = 2026-10-31.
+-- Hooks the drills rely on (tests/lab.test.ts pins them; do not change without updating content/general):
+--   store 4 (Thao Dien) opened 2025-09-01: no orders before, targets only from 2026-03 (full join, date spine)
+--   2026-09-09 store 3 has a bulk-order spike (anomaly drills)
+--   walk-in orders have customer_id NULL; ONLINE orders not yet delivered have delivered_on NULL
+--   payments: duplicates (order id % 97 = 0) and 8 orphan order ids 99901..99908 on purpose (data quality)
+--   raw_signups is dirty on purpose: spacing/case in names, bad or missing emails, mixed phone formats, future dates
+--   (no duplicate emails after lower/trim)
+--   every member has exactly 4 orders (the LATERAL count below is computed once: known quirk, kept so content stays valid)
+--   dim_customer is SCD type 2: customers who moved have two rows (valid_to exclusive, NULL = current)
+
+CREATE TABLE stores (
+  id int PRIMARY KEY,
+  name text NOT NULL,
+  city text NOT NULL,
+  opened_on date NOT NULL
+);
+INSERT INTO stores VALUES
+  (1, 'Hai Chau', 'Da Nang', '2023-03-01'),
+  (2, 'Son Tra', 'Da Nang', '2024-06-15'),
+  (3, 'Ben Thanh', 'Ho Chi Minh City', '2022-11-20'),
+  (4, 'Thao Dien', 'Ho Chi Minh City', '2025-09-01'),
+  (5, 'Hoan Kiem', 'Hanoi', '2024-01-10');
+
+CREATE TABLE products (
+  id int PRIMARY KEY,
+  name text NOT NULL,
+  category text NOT NULL,
+  price_vnd int NOT NULL
+);
+INSERT INTO products VALUES
+  (1, 'Green tea 500ml', 'Drinks', 12000), (2, 'Iced coffee can', 'Drinks', 18000), (3, 'Orange juice 1l', 'Drinks', 35000),
+  (4, 'Mineral water 1.5l', 'Drinks', 9000), (5, 'Milk tea bottle', 'Drinks', 25000), (6, 'Coconut water', 'Drinks', 22000),
+  (7, 'Rice crackers', 'Snacks', 15000), (8, 'Dried mango', 'Snacks', 45000), (9, 'Cashew nuts 200g', 'Snacks', 89000),
+  (10, 'Potato chips', 'Snacks', 20000), (11, 'Chocolate bar', 'Snacks', 28000), (12, 'Seaweed snack', 'Snacks', 16000),
+  (13, 'Dish soap', 'Household', 32000), (14, 'Laundry powder 3kg', 'Household', 129000), (15, 'Paper towels', 'Household', 41000),
+  (16, 'Trash bags', 'Household', 27000), (17, 'Floor cleaner', 'Household', 56000), (18, 'Light bulb', 'Household', 38000),
+  (19, 'Toothpaste', 'Personal care', 31000), (20, 'Shampoo 650ml', 'Personal care', 149000), (21, 'Sunscreen', 'Personal care', 185000),
+  (22, 'Hand soap', 'Personal care', 29000), (23, 'Face wash', 'Personal care', 99000), (24, 'Toothbrush', 'Personal care', 19000),
+  (25, 'Notebook A5', 'Stationery', 24000), (26, 'Gel pen', 'Stationery', 8000), (27, 'Highlighter set', 'Stationery', 46000),
+  (28, 'Sticky notes', 'Stationery', 14000), (29, 'Stapler', 'Stationery', 65000), (30, 'Desk lamp', 'Stationery', 259000);
+
+CREATE TABLE customers (
+  id int PRIMARY KEY,
+  name text NOT NULL,
+  email text,
+  city text,
+  signup_date date NOT NULL,
+  birth_year int
+);
+SELECT setseed(0.81);
+INSERT INTO customers
+SELECT i,
+       (ARRAY['Nguyen','Tran','Le','Pham','Hoang','Vo','Dang','Bui'])[1 + (i * 7) % 8] || ' ' ||
+       (ARRAY['An','Binh','Chi','Dung','Giang','Hoa','Khanh','Lan','Minh','Nam','Phuong','Quan','Thao','Trang','Tuan','Vy'])[1 + (i * 5) % 16],
+       CASE WHEN i % 23 = 0 THEN NULL ELSE
+         lower((ARRAY['An','Binh','Chi','Dung','Giang','Hoa','Khanh','Lan','Minh','Nam','Phuong','Quan','Thao','Trang','Tuan','Vy'])[1 + (i * 5) % 16])
+         || '.' || lower((ARRAY['Nguyen','Tran','Le','Pham','Hoang','Vo','Dang','Bui'])[1 + (i * 7) % 8]) || i || '@'
+         || (ARRAY['gmail.com','yahoo.com','outlook.com','mail.vn'])[1 + (i * 3) % 4] END,
+       CASE WHEN i % 17 = 0 THEN NULL ELSE (ARRAY['Da Nang','Da Nang','Ho Chi Minh City','Ho Chi Minh City','Hanoi','Hue','Can Tho'])[1 + floor(random() * 7)::int] END,
+       DATE '2025-01-01' + floor(random() * 658)::int,
+       CASE WHEN i % 11 = 0 THEN NULL ELSE 1965 + floor(random() * 40)::int END
+FROM generate_series(1, 300) AS i;
+
+CREATE TABLE orders (
+  id int PRIMARY KEY,
+  customer_id int REFERENCES customers (id),
+  store_id int NOT NULL REFERENCES stores (id),
+  order_date date NOT NULL,
+  channel text NOT NULL,
+  status text NOT NULL,
+  shipped_on date,
+  delivered_on date
+);
+SELECT setseed(0.82);
+-- Member orders on or after signup (the series bound does not reference c, so it is drawn once: 4 per customer);
+-- 220 walk-in orders have no customer.
+-- Store: weighted pick; store 4 (Thao Dien) only from its opening day.
+INSERT INTO orders (id, customer_id, store_id, order_date, channel, status)
+SELECT row_number() OVER (ORDER BY d, cid NULLS LAST, k), cid,
+       CASE WHEN d >= '2025-09-01' AND random() < 0.15 THEN 4 ELSE (ARRAY[1, 1, 2, 3, 3, 3, 5, 5])[1 + floor(random() * 8)::int] END,
+       d, ch, st
+FROM (
+  SELECT c.id AS cid, k,
+         c.signup_date + floor(random() * (DATE '2026-10-31' - c.signup_date + 1))::int AS d,
+         CASE WHEN random() < 0.35 THEN 'ONLINE' ELSE 'STORE' END AS ch,
+         CASE WHEN random() < 0.90 THEN 'PAID' WHEN random() < 0.6 THEN 'CANCELLED' ELSE 'REFUNDED' END AS st
+  FROM customers c CROSS JOIN LATERAL generate_series(1, floor(random() * 15)::int) AS k
+  UNION ALL
+  SELECT NULL, k, DATE '2025-01-01' + floor(random() * 669)::int, 'STORE', 'PAID'
+  FROM generate_series(1, 220) AS k
+) x;
+UPDATE orders SET shipped_on = order_date + floor(random() * 3)::int WHERE channel = 'ONLINE' AND status <> 'CANCELLED';
+UPDATE orders SET delivered_on = shipped_on + 1 + floor(random() * 5)::int WHERE shipped_on IS NOT NULL;
+UPDATE orders SET delivered_on = NULL WHERE delivered_on > '2026-10-31';
+UPDATE orders SET shipped_on = NULL WHERE shipped_on > '2026-10-31';
+-- Spike hook: 8 bulk walk-in orders at Ben Thanh on 2026-09-09.
+INSERT INTO orders (id, customer_id, store_id, order_date, channel, status)
+SELECT (SELECT max(id) FROM orders) + k, NULL, 3, '2026-09-09', 'STORE', 'PAID' FROM generate_series(1, 8) AS k;
+
+CREATE TABLE order_items (
+  order_id int NOT NULL REFERENCES orders (id),
+  line_no int NOT NULL,
+  product_id int NOT NULL REFERENCES products (id),
+  qty int NOT NULL,
+  unit_price_vnd int NOT NULL,
+  PRIMARY KEY (order_id, line_no)
+);
+SELECT setseed(0.83);
+INSERT INTO order_items
+SELECT o.id, k, p, q, CASE WHEN disc THEN round(pr.price_vnd * 0.9)::int ELSE pr.price_vnd END
+FROM orders o
+CROSS JOIN LATERAL generate_series(1, 1 + floor(random() * 4)::int) AS k
+CROSS JOIN LATERAL (SELECT 1 + ((o.id * 7 + k * 11 + floor(random() * 30)::int) % 30) AS p,
+                           CASE WHEN o.order_date = '2026-09-09' AND o.store_id = 3 AND o.customer_id IS NULL THEN 6 ELSE 1 + floor(random() * 5)::int END AS q,
+                           random() < 0.1 AS disc) r
+JOIN products pr ON pr.id = r.p;
+
+CREATE TABLE payments (
+  id int PRIMARY KEY,
+  order_id int NOT NULL,          -- no foreign key on purpose: orphans are a data-quality hook
+  amount_vnd bigint NOT NULL,
+  paid_at timestamp NOT NULL
+);
+SELECT setseed(0.84);
+INSERT INTO payments
+SELECT row_number() OVER (ORDER BY o.id, kind), o.id,
+       CASE WHEN kind = 2 THEN -t.total ELSE t.total END,
+       o.order_date + (kind * 2) + make_interval(hours => 8 + floor(random() * 12)::int, mins => floor(random() * 60)::int)
+FROM orders o
+JOIN (SELECT order_id, sum(qty * unit_price_vnd) AS total FROM order_items GROUP BY order_id) t ON t.order_id = o.id
+CROSS JOIN LATERAL (VALUES (0), (1), (2)) AS v (kind)
+WHERE o.status IN ('PAID', 'REFUNDED') AND (kind = 0 OR (kind = 1 AND o.id % 97 = 0) OR (kind = 2 AND o.status = 'REFUNDED'));
+INSERT INTO payments
+SELECT (SELECT max(id) FROM payments) + k, 99900 + k, 50000 * k, TIMESTAMP '2026-10-01 09:00' + k * interval '1 day'
+FROM generate_series(1, 8) AS k;
+
+CREATE TABLE store_targets (
+  store_id int NOT NULL REFERENCES stores (id),
+  month date NOT NULL,
+  target_vnd bigint NOT NULL,
+  PRIMARY KEY (store_id, month)
+);
+INSERT INTO store_targets
+SELECT s.id, m::date, (CASE s.id WHEN 3 THEN 15 WHEN 1 THEN 10 WHEN 5 THEN 9 WHEN 2 THEN 5 ELSE 6 END) * 1000000
+FROM stores s CROSS JOIN generate_series(DATE '2026-01-01', DATE '2026-12-01', interval '1 month') AS m
+WHERE NOT (s.id = 4 AND m < '2026-03-01') AND NOT (s.id = 5 AND m = '2026-06-01');
+
+CREATE TABLE staff (
+  id int PRIMARY KEY,
+  name text NOT NULL,
+  role text NOT NULL,
+  store_id int REFERENCES stores (id),
+  manager_id int REFERENCES staff (id),
+  hired_on date NOT NULL
+);
+INSERT INTO staff VALUES
+  (1, 'Ha Minh', 'CEO', NULL, NULL, '2022-01-03'),
+  (2, 'Do Lan', 'Regional manager', NULL, 1, '2022-06-01'),
+  (3, 'Ly Quan', 'Regional manager', NULL, 1, '2023-02-15'),
+  (4, 'Mai Thao', 'Store manager', 1, 2, '2023-03-01'),
+  (5, 'Ngo Binh', 'Store manager', 2, 2, '2024-06-01'),
+  (6, 'Ta Vy', 'Store manager', 3, 3, '2022-11-01'),
+  (7, 'Kieu Nam', 'Store manager', 4, 3, '2025-08-15'),
+  (8, 'Luu Hoa', 'Store manager', 5, 2, '2024-01-02'),
+  (9, 'Cao An', 'Cashier', 1, 4, '2023-04-10'), (10, 'Duong Chi', 'Cashier', 1, 4, '2024-09-01'),
+  (11, 'Tong Dung', 'Cashier', 2, 5, '2024-07-01'), (12, 'Vu Giang', 'Cashier', 3, 6, '2022-12-01'),
+  (13, 'Phan Khanh', 'Cashier', 3, 6, '2023-05-20'), (14, 'Lam Phuong', 'Stock clerk', 3, 13, '2025-01-06'),
+  (15, 'Quach Trang', 'Cashier', 4, 7, '2025-09-01'), (16, 'Trieu Tuan', 'Cashier', 5, 8, '2024-02-01'),
+  (17, 'Mac Minh', 'Stock clerk', 5, 16, '2025-03-03'), (18, 'Ong Lan', 'Analyst', NULL, 1, '2025-05-12'),
+  (19, 'Doan Thao', 'Stock clerk', 1, 9, '2026-02-02'), (20, 'Hua Binh', 'Analyst', NULL, 18, '2026-07-01');
+
+CREATE TABLE app_events (
+  id int PRIMARY KEY,
+  session_id int NOT NULL,
+  user_id int REFERENCES customers (id),
+  event text NOT NULL,
+  ts timestamp NOT NULL,
+  props jsonb NOT NULL
+);
+SELECT setseed(0.85);
+INSERT INTO app_events
+SELECT row_number() OVER (ORDER BY s, step), s, u, ev, t0 + step * make_interval(mins => 1 + m),
+       jsonb_build_object('screen', (ARRAY['home','product','cart','checkout','payment'])[step],
+                          'device', dev,
+                          'items', CASE WHEN step >= 2 THEN to_jsonb((ARRAY[1 + s % 30, 1 + (s * 7) % 30])[1:1 + s % 2]) ELSE '[]'::jsonb END)
+FROM (
+  SELECT s, CASE WHEN s % 9 = 0 THEN NULL ELSE 1 + (s * 13) % 300 END AS u,
+         TIMESTAMP '2026-08-01 07:00' + floor(random() * 91) * interval '1 day' + floor(random() * 840) * interval '1 minute' AS t0,
+         (ARRAY['ios','android','web'])[1 + floor(random() * 3)::int] AS dev,
+         CASE WHEN random() < 0.55 THEN CASE WHEN random() < 0.6 THEN CASE WHEN random() < 0.8 THEN 4 ELSE 3 END ELSE 2 END ELSE 1 END AS depth,
+         floor(random() * 5)::int AS m
+  FROM generate_series(1, 900) AS s
+) sess
+CROSS JOIN LATERAL generate_series(1, depth) AS step
+CROSS JOIN LATERAL (SELECT (ARRAY['view','add_to_cart','checkout','paid'])[step] AS ev) e;
+
+CREATE TABLE experiments (
+  id int PRIMARY KEY,
+  name text NOT NULL,
+  started_on date NOT NULL,
+  ended_on date NOT NULL
+);
+INSERT INTO experiments VALUES (1, 'checkout_button', '2026-08-01', '2026-08-31'), (2, 'free_shipping_banner', '2026-09-15', '2026-10-15');
+
+CREATE TABLE assignments (
+  experiment_id int NOT NULL REFERENCES experiments (id),
+  customer_id int NOT NULL REFERENCES customers (id),
+  variant text NOT NULL,
+  converted boolean NOT NULL,
+  PRIMARY KEY (experiment_id, customer_id)
+);
+SELECT setseed(0.86);
+INSERT INTO assignments
+SELECT e, c, v, random() < CASE WHEN e = 1 AND v = 'B' THEN 0.32 WHEN e = 1 THEN 0.22 ELSE 0.18 END
+FROM generate_series(1, 2) AS e
+CROSS JOIN generate_series(1, 300) AS c
+CROSS JOIN LATERAL (SELECT CASE WHEN (c * 31 + e) % 2 = 0 THEN 'A' ELSE 'B' END AS v) x;
+
+CREATE TABLE raw_signups (
+  id int PRIMARY KEY,
+  full_name text,
+  email text,
+  phone text,
+  signup_date date
+);
+SELECT setseed(0.87);
+INSERT INTO raw_signups
+SELECT i,
+       CASE i % 4 WHEN 0 THEN '  ' || upper(n) WHEN 1 THEN lower(n) || '  ' WHEN 2 THEN n ELSE initcap(n) END,
+       CASE WHEN i % 13 = 0 THEN NULL
+            WHEN i % 10 = 0 THEN replace(e, '@', ' at ')
+            WHEN i % 7 = 0 THEN upper(e)
+            WHEN i % 9 = 0 THEN e || ' '
+            ELSE e END,
+       CASE i % 5 WHEN 0 THEN '0905 ' || lpad((i * 37 % 1000)::text, 3, '0') || ' ' || lpad((i * 91 % 1000)::text, 3, '0')
+                  WHEN 1 THEN '+84905' || lpad((i * 37 % 1000)::text, 3, '0') || lpad((i * 91 % 1000)::text, 3, '0')
+                  WHEN 2 THEN '090-5' || lpad((i * 37 % 1000)::text, 3, '0') || '-' || lpad((i * 91 % 1000)::text, 3, '0')
+                  WHEN 3 THEN NULL
+                  ELSE '0905' || lpad((i * 37 % 1000)::text, 3, '0') || lpad((i * 91 % 1000)::text, 3, '0') END,
+       CASE WHEN i % 31 = 0 THEN DATE '2027-01-15' + i ELSE DATE '2026-09-01' + floor(random() * 60)::int END
+FROM (
+  SELECT i,
+         (ARRAY['nguyen van an','tran thi binh','le minh chi','pham quoc dung','hoang gia huy','vo thanh lan'])[1 + i % 6] AS n,
+         'user' || (i % 100) || '@' || (ARRAY['gmail.com','yahoo.com','mail.vn'])[1 + i % 3] AS e
+  FROM generate_series(1, 140) AS i
+) x;
+
+-- Star schema (C2) built from the tables above; dim_customer is SCD type 2 (C3).
+CREATE TABLE dim_date (
+  date_key date PRIMARY KEY,
+  year int NOT NULL,
+  month int NOT NULL,
+  iso_dow int NOT NULL,
+  is_weekend boolean NOT NULL
+);
+INSERT INTO dim_date
+SELECT d, extract(year FROM d), extract(month FROM d), extract(isodow FROM d), extract(isodow FROM d) >= 6
+FROM generate_series(DATE '2025-01-01', DATE '2026-12-31', interval '1 day') AS g (d);
+
+CREATE TABLE dim_product (
+  product_key int PRIMARY KEY,
+  product_id int NOT NULL,
+  name text NOT NULL,
+  category text NOT NULL
+);
+INSERT INTO dim_product SELECT 100 + id, id, name, category FROM products;
+
+CREATE TABLE dim_customer (
+  customer_key int PRIMARY KEY,
+  customer_id int NOT NULL,
+  city text,
+  valid_from date NOT NULL,
+  valid_to date,
+  is_current boolean NOT NULL
+);
+SELECT setseed(0.88);
+-- Every 7th customer moved: first row = old city until the move (valid_to exclusive), second row = current city.
+INSERT INTO dim_customer
+SELECT row_number() OVER (ORDER BY customer_id, valid_from), customer_id, city, valid_from, valid_to, valid_to IS NULL
+FROM (
+  SELECT id AS customer_id, CASE WHEN id % 7 = 0 THEN (ARRAY['Hue','Can Tho','Hanoi'])[1 + id % 3] ELSE city END AS city,
+         signup_date AS valid_from,
+         CASE WHEN id % 7 = 0 THEN signup_date + 30 + (id % 200) END AS valid_to
+  FROM customers
+  UNION ALL
+  SELECT id, city, signup_date + 30 + (id % 200), NULL FROM customers WHERE id % 7 = 0
+) x;
+
+CREATE TABLE fact_sales (
+  order_id int NOT NULL,
+  line_no int NOT NULL,
+  date_key date NOT NULL REFERENCES dim_date (date_key),
+  product_key int NOT NULL REFERENCES dim_product (product_key),
+  customer_key int REFERENCES dim_customer (customer_key),
+  store_id int NOT NULL REFERENCES stores (id),
+  qty int NOT NULL,
+  revenue_vnd bigint NOT NULL,
+  PRIMARY KEY (order_id, line_no)
+);
+INSERT INTO fact_sales
+SELECT i.order_id, i.line_no, o.order_date, 100 + i.product_id, dc.customer_key, o.store_id, i.qty, i.qty * i.unit_price_vnd
+FROM order_items i
+JOIN orders o ON o.id = i.order_id
+LEFT JOIN dim_customer dc ON dc.customer_id = o.customer_id AND o.order_date >= dc.valid_from AND (dc.valid_to IS NULL OR o.order_date < dc.valid_to)
+WHERE o.status = 'PAID';
+
+CREATE INDEX ON orders (customer_id);
+CREATE INDEX ON orders (order_date);
+CREATE INDEX ON app_events (user_id, ts);
+ANALYZE stores; ANALYZE products; ANALYZE customers; ANALYZE orders; ANALYZE order_items; ANALYZE payments; ANALYZE store_targets;
+ANALYZE staff; ANALYZE app_events; ANALYZE experiments; ANALYZE assignments; ANALYZE raw_signups;
+ANALYZE dim_date; ANALYZE dim_product; ANALYZE dim_customer; ANALYZE fact_sales;

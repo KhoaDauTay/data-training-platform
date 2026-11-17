@@ -1,5 +1,6 @@
 import type { PGlite } from '@electric-sql/pglite';
 import { isCreateIndex } from '../planCheck';
+import { SCHEMAS, type SchemaId } from '../domains';
 
 /** Rows posted from the worker are capped here; the UI shows far fewer (MAX_ROWS = 500). */
 export const MAX_ROWS_WORKER = 50_000;
@@ -56,13 +57,22 @@ export function sqlErrorInfo(e: unknown): SqlErrorInfo | undefined {
   };
 }
 
+/** Plan 8a D8a-4: the schema is chosen per request. Absent = the session path (game schema, then sandbox). */
+export interface RunOpts { schema?: SchemaId }
+
+/** BEGIN, then for `lab` a SET LOCAL search_path (only that schema: a game table name in a drill is 42P01). The name comes from SCHEMAS only. */
+async function begin(db: PGlite, opts: RunOpts): Promise<void> {
+  await db.exec('BEGIN');
+  if (opts.schema && opts.schema !== 'game') await db.exec(`SET LOCAL search_path TO ${SCHEMAS[opts.schema]}`);
+}
+
 /**
  * Runs exactly one statement inside BEGIN … ROLLBACK so players can never change data.
  * PGlite rejects multi-statement input, so a player cannot smuggle a COMMIT + DML pair.
  * Postgres errors are rethrown as SqlError.
  */
-export async function runSandboxed(db: PGlite, sql: string, maxRows = MAX_ROWS_WORKER): Promise<QueryResult> {
-  await db.exec('BEGIN');
+export async function runSandboxed(db: PGlite, sql: string, maxRows = MAX_ROWS_WORKER, opts: RunOpts = {}): Promise<QueryResult> {
+  await begin(db, opts);
   try {
     const t0 = performance.now();
     const r = await db.query<unknown[]>(sql, [], { rowMode: 'array' });
@@ -83,8 +93,8 @@ export async function runSandboxed(db: PGlite, sql: string, maxRows = MAX_ROWS_W
 }
 
 /** EXPLAIN ANALYZE executes the statement, so it gets the same BEGIN … ROLLBACK sandbox. */
-export async function runExplain(db: PGlite, sql: string): Promise<unknown> {
-  await db.exec('BEGIN');
+export async function runExplain(db: PGlite, sql: string, opts: RunOpts = {}): Promise<unknown> {
+  await begin(db, opts);
   try {
     const r = await db.query<unknown[]>(`EXPLAIN (ANALYZE, FORMAT JSON) ${sql}`, [], { rowMode: 'array' });
     return r.rows[0][0];
@@ -105,7 +115,7 @@ export interface LabResult { before: unknown; after: unknown }
  * worker, and sent through query() (one statement only), never exec(). After it ran, pg_class must hold exactly one
  * new relation, an index on `table`, and nothing may have gone; otherwise the lab refuses it (and rolls back).
  */
-export async function runLab(db: PGlite, ddl: string, sql: string, table: string): Promise<LabResult> {
+export async function runLab(db: PGlite, ddl: string, sql: string, table: string, opts: RunOpts = {}): Promise<LabResult> {
   if (!isCreateIndex(ddl)) throw new SqlError({ message: 'only one CREATE INDEX statement is allowed here', code: 'LAB01' });
   const explain = async () => (await db.query<unknown[]>(`EXPLAIN (FORMAT JSON) ${sql}`, [], { rowMode: 'array' })).rows[0][0];
   // The indexed table's bare name: indrelid::regclass::text would read "logistics.container_events" whenever the
@@ -113,7 +123,7 @@ export async function runLab(db: PGlite, ddl: string, sql: string, table: string
   const relations = async () => (await db.query<{ oid: string; kind: string; tbl: string | null }>(
     `SELECT c.oid::text AS oid, c.relkind::text AS kind, t.relname::text AS tbl
      FROM pg_class c LEFT JOIN pg_index i ON i.indexrelid = c.oid LEFT JOIN pg_class t ON t.oid = i.indrelid`)).rows;
-  await db.exec('BEGIN');
+  await begin(db, opts);
   try {
     const before = await explain();
     const old = await relations();

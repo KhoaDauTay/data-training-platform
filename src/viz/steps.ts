@@ -1,7 +1,7 @@
 import type { PGlite } from '@electric-sql/pglite';
 import { parse, scan } from 'libpg-query';
 import { deparse } from 'pgsql-deparser';
-import { runSandboxed, type QueryResult } from '../db/run';
+import { runSandboxed, type QueryResult, type RunOpts } from '../db/run';
 import { ensureParser } from './parser';
 
 // Labels and help live in a parser-free module so the UI bundle never pulls in libpg-query.
@@ -111,7 +111,7 @@ export async function buildSteps(sql: string): Promise<Built> {
   return { ok: true, steps, ranges: await clauseRanges(sql) };
 }
 
-export async function runSteps(db: PGlite, sql: string): Promise<StepsResult> {
+export async function runSteps(db: PGlite, sql: string, opts: RunOpts = {}): Promise<StepsResult> {
   const built = await buildSteps(sql);
   if (!built.ok) return built;
   const steps: StepRun[] = [];
@@ -121,8 +121,8 @@ export async function runSteps(db: PGlite, sql: string): Promise<StepsResult> {
       continue;
     }
     try {
-      const count = await runSandboxed(db, `SELECT count(*) FROM (${s.sql}) AS t`);
-      const sample = await runSandboxed(db, `SELECT * FROM (${s.sql}) AS t LIMIT 5`);
+      const count = await runSandboxed(db, `SELECT count(*) FROM (${s.sql}) AS t`, undefined, opts);
+      const sample = await runSandboxed(db, `SELECT * FROM (${s.sql}) AS t LIMIT 5`, undefined, opts);
       steps.push({ key: s.key, skipped: false, count: Number(count.rows[0][0]), sample, sql: s.sql });
     } catch (e) {
       steps.push({ key: s.key, skipped: false, sql: s.sql, error: e instanceof Error ? e.message : String(e) });

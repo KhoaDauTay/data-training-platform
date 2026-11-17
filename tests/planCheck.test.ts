@@ -145,3 +145,16 @@ describe('planCheck: chấm theo kế hoạch thực thi (chương 11)', () => {
     }
   });
 });
+
+describe('planCheck trên schema lab (Plan 8a)', () => {
+  it('Bitmap Heap Scan qua Bitmap Index Scan = đọc bảng qua chỉ mục; hàm trên cột thì không', async () => {
+    const { ensureSchema } = await import('../src/db/lab');
+    const db = await seededDb();
+    await ensureSchema(db, 'lab');
+    const plan = async (sql: string) => (await runSandboxed(db, `EXPLAIN (FORMAT JSON) ${sql}`, undefined, { schema: 'lab' })).rows[0][0];
+    const fast = await plan("SELECT id FROM orders WHERE order_date >= '2026-10-01'");
+    expect(planNodes(fast).map((n) => n['Node Type'])).toContain('Bitmap Heap Scan');
+    expect(checkPlan(fast, 'orders')).toBeUndefined();
+    expect(checkPlan(await plan('SELECT id FROM orders WHERE extract(month FROM order_date) = 10'), 'orders')).toEqual({ reason: 'seqScan', table: 'orders' });
+  });
+});
