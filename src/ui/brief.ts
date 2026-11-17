@@ -197,7 +197,7 @@ function recap(tk: Ticket, x: TicketText): HTMLElement {
     h('ul', { class: 'space-y-1' }, ...skills.map((s) =>
       h('li', {},
         h('span', { class: 'inline-flex items-center gap-1.5 align-middle' }, skillIcon(s.id, 'size-5 text-emerald-800 dark:text-emerald-300'), h('b', {}, s.label[lang])),
-        ' ', h('code', {}, s.syntax), h('p', { class: 'muted' }, s.when[lang])))),
+        ...(activeDomain() === 'logistics' ? [' ', h('code', {}, s.syntax)] : []), h('p', { class: 'muted' }, s.when[lang])))),
     reflectCard(tk),
     ...tk.steps.map((s, i) => h('div', { class: 'my-2 grid gap-2 sm:grid-cols-2' },
       tk.steps.length > 1 ? h('h4', {}, x.steps[i].title) : null,

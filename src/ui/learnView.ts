@@ -107,7 +107,7 @@ function skillPage(c: LearnCtx, s: Skill): HTMLElement {
       h('h3', { id: 'skill-card', class: 'm-0 font-bold' }, lt('learn.card')),
       h('pre', { class: 'sql' }, s.syntax),
       h('p', { class: 'm-0' }, h('b', {}, lt('learn.when')), ' ', s.when[lang]),
-      h('p', { class: 'm-0' }, h('b', {}, lt('learn.trap')), ' ', s.trap[lang])),
+      h('div', {}, h('b', {}, lt('learn.trap')), d$.richText(s.trap[lang]))),
     h('section', { class: 'space-y-2' },
       h('h3', { class: 'm-0 font-bold' }, lt('learn.appliesTitle')),
       ...chapters.map((n) => chapterWay(n))));
@@ -184,7 +184,8 @@ function advPage(c: LearnCtx, x: AdvNode): HTMLElement {
     h('h2', { class: 'm-0 text-xl font-bold' }, `${x.id.toUpperCase()} · ${x.title[lang]}`),
     h('p', { class: 'm-0 text-sm text-muted' }, `${STATUS_ICON[x.status]} ${lt(`adv.status.${x.status}` as LearnKey)}`,
       x.status === 'external' ? '' : ` · ${lt('learn.drills', { n: st.drills, total: st.total })}`),
-    h('p', { class: 'm-0 text-[15px] leading-relaxed' }, x.why[lang]),
+    h('section', { class: 'space-y-3 rounded-(--r-card) bg-panel p-5 ring-1 ring-line' },
+    h('div', { class: 'text-[15px] leading-relaxed' }, d$.richText(x.why[lang])),
     st.done ? h('p', { class: 'm-0 font-bold text-good', role: 'status' }, lt('adv.done', { xp: CHALLENGE_XP })) : null,
     x.needs.length ? h('p', { class: 'm-0' }, h('b', {}, lt('adv.needs')), ' ', ...needs) : null,
     x.applies ? h('p', { class: 'm-0' }, h('b', {}, lt('learn.appliesTitle')), ': ', x.applies[lang]) : null,
@@ -196,7 +197,7 @@ function advPage(c: LearnCtx, x: AdvNode): HTMLElement {
     x.drills.length
       ? h('div', { class: 'flex flex-wrap items-center gap-2' }, h('span', {}, lt('learn.drillsLine')),
         ...x.drills.map((d) => drillButton(d, c.save.completed.includes(d.id))))
-      : null,
+      : null),
     x.links.length
       ? h('section', { class: 'space-y-1' }, h('h3', { class: 'm-0 font-bold' }, lt('adv.links')),
         h('ul', { class: 'm-0 list-disc space-y-1 pl-5' }, ...x.links.map((l) => h('li', {},

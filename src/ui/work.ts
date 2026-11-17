@@ -14,7 +14,7 @@ import { localStore } from '../storage';
 import { BTN_SUBMIT } from '../theme';
 import { BLANK, type Ticket } from '../tickets';
 import { celebrate } from './celebrate';
-import { h } from './dom';
+import { h, richText } from './dom';
 import { createEditor, type Editor } from './editor';
 import { avatar } from './avatar';
 import { errorNote, errorText, errorView, gradeMessage, mascotOf, voiceKey } from './feedback';
@@ -375,7 +375,7 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
         say('bad', () => h('div', {}, err !== undefined ? errorView(err) : gradeMessage(fail), voice()), mascotOf(err));
       } else {
         if (fail.reason === 'rows' && played?.result) played.mark = fail.sample;
-        say('bad', () => h('div', {}, gradeMessage(fail), tip ? h('p', { class: 'mt-2 mb-0' }, tip()) : null, voice()));
+        say('bad', () => h('div', {}, gradeMessage(fail), tip ? h('div', { class: 'mt-2' }, richText(tip())) : null, voice()));
       }
       deps.panel.show('result');
       return;

@@ -64,8 +64,8 @@ function card(l: Lesson, titleId: string, actions: HTMLElement[], tour = false):
   }, t('lesson.runExample'));
   drawExample();
 
-  const area = h('textarea', { class: 'w-full rounded-lg bg-code p-2 font-mono text-sm ring-1 ring-line', rows: '3', spellcheck: 'false', 'aria-label': t('lesson.tryAria'), placeholder: t('lesson.tryPlaceholder') });
-  area.value = drafts.get(l.id) ?? ''; // empty, not the example: the player writes it (v10 critic #5)
+  const area = h('textarea', { class: 'w-full rounded-lg bg-code p-2 font-mono text-sm ring-1 ring-line', rows: l.node ? '8' : '3', spellcheck: 'false', 'aria-label': t('lesson.tryAria'), placeholder: t('lesson.tryPlaceholder') });
+  area.value = drafts.get(l.id) ?? (l.node ? l.try.starter : ''); // skill lesson: empty, the player writes it (v10 critic #5); advanced: its long starter to change (v11 UX #1)
   area.addEventListener('input', () => drafts.set(l.id, area.value));
   const verdict = h('p', { role: 'status', class: 'mb-0' });
   const drawVerdict = (): void => {
@@ -105,12 +105,12 @@ function card(l: Lesson, titleId: string, actions: HTMLElement[], tour = false):
     h('div', { class: 'flex flex-wrap items-center justify-between gap-2' },
       h('h3', { id: titleId, tabindex: '-1', class: 'm-0 flex items-center gap-2' }, skillIcon(l.id, 'size-5'), t('lesson.title', { skill: label(l.id) })),
       h('div', { class: 'flex gap-1.5' }, ...actions)),
-    h('p', { class: 'mt-2 mb-0' }, l.concept[lang]),
+    h('div', { class: 'mt-2' }, richText(l.concept[lang])),
     skill ? h('p', { class: 'mt-2 mb-0' }, h('b', {}, t('lesson.syntax')), ' ', h('code', {}, skill.syntax)) : null,
     section(t('lesson.example'), h('pre', { class: 'sql' }, l.example), runExample, tour ? tourSlot('lesson') : null, exampleOut, richText(byMarker(l.explain[lang]))),
     section(t('lesson.mistake'), h('pre', { class: 'sql' }, l.mistake.sql), richText(l.mistake.why[lang])),
     l.cues[lang].length ? section(t('lesson.cues'), h('p', { class: 'm-0' }, l.cues[lang].join(' · '))) : null,
-    section(t('lesson.try'), h('p', { class: 'mt-0' }, l.try.task[lang]), area, h('div', { class: 'actions mb-0' }, check), verdict),
+    section(t('lesson.try'), richText(l.try.task[lang]), area, h('div', { class: 'actions mb-0' }, check), verdict),
     h('p', { class: 'mt-3 mb-0 text-sm' }, h('a', { href: l.docs, target: '_blank', rel: 'noopener noreferrer' }, t('lesson.docs'))));
 }
 
