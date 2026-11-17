@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { SKILLS } from '../src/progress';
+import { KPIS } from '../src/home';
 import { isIconName, SKILL_ICON, skillIconName } from '../src/ui/icons';
 
 describe('icon kỹ năng và KPI (ui-ux-v3 §e, §c)', () => {
@@ -16,4 +17,8 @@ describe('icon kỹ năng và KPI (ui-ux-v3 §e, §c)', () => {
     expect(Object.values(SKILL_ICON).filter((n) => !isIconName(n))).toEqual([]);
   });
 
+
+  it('mọi ô KPI có icon riêng, là tên có thật (ui-ux-v3 §c)', () => {
+    expect(KPIS.filter((k) => !k.icon || !isIconName(k.icon)).map((k) => k.id)).toEqual([]);
+  });
 });

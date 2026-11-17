@@ -1,5 +1,5 @@
 import type { QueryResult } from '../db/run';
-import { chapterOfId, homeModel, KPIS, kpiTiles, kpiValue, LEVELS, type ChapterCard, type HomeModel, type KpiTile, type KpiValue, type SkillCard } from '../home';
+import { chapterOfId, homeModel, KPIS, kpiTiles, kpiValue, LEVELS, type ChapterCard, type HomeModel, type Kpi, type KpiTile, type KpiValue, type SkillCard } from '../home';
 import { getLang, t, type Key } from '../i18n';
 import { CHAPTERS, chapterTitle, rankOf, SKILLS } from '../progress';
 import { derive } from '../scene';
@@ -10,6 +10,7 @@ import { upsert } from '../registry';
 import { stepKey } from '../save';
 import { textOf, type Ticket } from '../tickets';
 import { avatar } from './avatar';
+import { icon, isIconName, type IconName } from './icons';
 import { byId, h, nodes } from './dom';
 import { callout, harborScene } from './harbor';
 import { routeItems, routeMap } from './routeMap';
@@ -247,37 +248,52 @@ function kpiResult(tk: Ticket, step: number): Promise<QueryResult> {
 }
 
 const BIG = 'm-0 text-3xl font-bold tabular-nums';
+const KIND_ICON: Record<Kpi['kind'], IconName> = { number: 'hash', rowcount: 'list', bar: 'chart' };
+const kpiIcon = (k: Kpi): IconName => (k.icon && isIconName(k.icon) ? k.icon : KIND_ICON[k.kind]);
 
-/** L23: neutral text and bars, numbers in tabular figures; colour stays in small badges. */
-function kpiView(v: KpiValue): HTMLElement {
-  if ('text' in v) return h('p', { class: BIG }, v.text);
+/**
+ * L42: the rounded value shows, the exact one is in `title` (hover) and in the screen-reader text.
+ * L23: neutral text and bars, numbers in tabular figures; colour stays in small badges.
+ */
+function kpiView(v: KpiValue, unit: string): HTMLElement {
+  const unitEl = unit ? h('span', { class: 'text-base font-medium text-muted', 'aria-hidden': 'true' }, unit) : null;
+  if ('text' in v) {
+    return h('p', { class: cx(BIG, 'flex flex-wrap items-baseline gap-x-1.5'), title: unit ? `${v.full} ${unit}` : v.full },
+      h('span', { 'aria-hidden': 'true' }, v.text), unitEl,
+      h('span', { class: 'sr-only' }, unit ? `${v.full} ${unit}` : v.full));
+  }
   const max = Math.max(1, ...v.bars.map((b) => b.value));
-  return h('ul', { class: 'm-0 list-none space-y-1 p-0' }, ...v.bars.map((b) =>
-    h('li', { class: 'grid grid-cols-[minmax(0,8rem)_1fr_auto] items-center gap-2 text-sm' },
+  return h('ul', { class: 'm-0 list-none space-y-1.5 p-0' }, ...v.bars.map((b) =>
+    h('li', { class: 'grid grid-cols-[minmax(0,8rem)_1fr_auto] items-center gap-2 text-sm', title: `${b.label}: ${b.full}${unit ? ` ${unit}` : ''}` },
       h('span', { class: 'truncate' }, b.label),
       h('span', { class: 'h-2.5 rounded bg-slate-500 dark:bg-slate-400', style: `width:${Math.round((b.value / max) * 100)}%`, 'aria-hidden': 'true' }),
-      h('span', { class: 'tabular-nums' }, b.text))));
+      h('span', { class: 'tabular-nums' }, b.text, unit ? h('span', { class: 'text-muted' }, ` ${unit}`) : null))));
 }
 
+/** ui-ux-v3 §c: icon + label, then the big value with its unit, then the source line. Static card: no hover lift. */
 function kpiTile(tile: KpiTile): HTMLElement {
   const lang = getLang();
   const { kpi, ticket } = tile;
-  const value = h('div', { class: 'mt-1 min-h-9' });
-  if (tile.open && ticket) {
+  const open = tile.open && !!ticket;
+  const unit = kpi.unit?.[lang] ?? '';
+  const value = h('div', { class: 'min-h-9' });
+  if (open) {
     value.append(h('p', { class: cx(BIG, 'text-muted') }, '…'));
     kpiResult(ticket, kpi.step).then(
-      (r) => value.replaceChildren(kpiView(kpiValue(kpi, r, lang))),
+      (r) => value.replaceChildren(kpiView(kpiValue(kpi, r, lang), unit)),
       () => value.replaceChildren(h('p', { class: cx(BIG, 'text-muted') }, '—')));
   } else {
     value.append(h('p', { class: cx(BIG, 'text-muted') }, ticket ? '—' : '???'));
   }
-  const foot = tile.open && ticket ? t('home.kpiFrom', { title: textOf(ticket, lang).title })
+  const foot = open ? t('home.kpiFrom', { title: textOf(ticket, lang).title })
     : ticket ? t('home.kpiLocked', { n: ticket.chapter, title: textOf(ticket, lang).title, name: ticket.from.name })
       : t('home.kpiLater', { n: chapterOfId(kpi.ticket) });
-  return h('div', { class: 'rounded-xl bg-panel p-4 ring-1 ring-line' },
-    h('p', { class: 'm-0 text-sm font-medium' }, kpi.label[lang]),
+  return h('article', { class: cx(CARD, 'flex flex-col gap-3 p-4') },
+    h('div', { class: 'flex items-start gap-3' },
+      h('span', { class: cx('grid size-9 shrink-0 place-items-center rounded-lg', open ? 'bg-code text-ink' : 'bg-code text-muted') }, icon(kpiIcon(kpi))),
+      h('h3', { class: 'm-0 self-center text-sm leading-snug font-medium' }, kpi.label[lang])),
     value,
-    h('p', { class: 'mt-1 mb-0 text-sm text-muted' }, foot));
+    h('p', { class: 'mt-auto mb-0 flex items-start gap-1.5 text-sm text-muted' }, icon(open ? 'link' : 'lock', 'mt-0.5 size-4'), h('span', {}, foot)));
 }
 
 function kpiSection(): HTMLElement {

@@ -63,8 +63,11 @@ export function homeModel(
 }
 
 export type KpiKind = 'number' | 'rowcount' | 'bar';
-/** A company dashboard tile (L18 ★5): opens when `ticket` is completed; its value comes from that ticket's Solution (step `step`). */
-export interface Kpi { id: string; ticket: string; step: number; col: number; kind: KpiKind; label: Bilingual }
+/**
+ * A company dashboard tile (L18 ★5): opens when `ticket` is completed; its value comes from that ticket's Solution (step `step`).
+ * unit: shown small after the value (L42: "kg" left the label). icon: an icon name (src/ui/icons.ts); missing → by kind.
+ */
+export interface Kpi { id: string; ticket: string; step: number; col: number; kind: KpiKind; label: Bilingual; unit?: Bilingual; icon?: string }
 const KPI_KINDS: KpiKind[] = ['number', 'rowcount', 'bar'];
 
 export function parseKpis(src: string, origin = 'kpis.yml'): Kpi[] {
@@ -77,9 +80,14 @@ export function parseKpis(src: string, origin = 'kpis.yml'): Kpi[] {
       || typeof label.vi !== 'string' || typeof label.en !== 'string') {
       throw new Error(`${origin}: mục ${i} cần id, ticket, kind (${KPI_KINDS.join(' | ')}) và label { vi, en }`);
     }
+    const unit = k.unit as Record<string, unknown> | undefined;
+    if (unit !== undefined && (typeof unit?.vi !== 'string' || typeof unit.en !== 'string')) throw new Error(`${origin}: mục ${i}: unit cần { vi, en }`);
+    if (k.icon !== undefined && typeof k.icon !== 'string') throw new Error(`${origin}: mục ${i}: icon phải là tên icon`);
     return {
       id: k.id, ticket: k.ticket, kind: k.kind as KpiKind, label: { vi: label.vi, en: label.en },
       step: typeof k.step === 'number' ? k.step : 0, col: typeof k.col === 'number' ? k.col : 0,
+      ...(unit ? { unit: { vi: unit.vi as string, en: unit.en as string } } : {}),
+      ...(typeof k.icon === 'string' ? { icon: k.icon } : {}),
     };
   });
 }
@@ -100,16 +108,32 @@ export const kpiTiles = (kpis: Kpi[], tickets: Ticket[], completed: Set<string>)
 /** "ch12-06" → 12: chapter of a tile whose ticket is not written yet. */
 export const chapterOfId = (id: string): number => Number(/^ch(\d+)-/.exec(id)?.[1] ?? 0);
 
-export type KpiValue = { text: string } | { bars: { label: string; value: number; text: string }[] };
+/** text: rounded for the tile; full: the exact value (2 decimals) for `title` and screen readers. */
+export interface KpiNumber { text: string; full: string }
+const COMPACT_FROM = 1_000_000;
+
+/**
+ * L42: clean dashboard numbers. >= 1,000,000 → compact with one decimal ("156,5 triệu" / "156.5M"; VI uses the long
+ * form because the short "Tr" is unclear); below that, whole numbers stay exact ("9.694") and fractions keep one decimal.
+ */
+export function kpiNumber(x: number, lang: Lang): KpiNumber {
+  const locale = lang === 'vi' ? 'vi-VN' : 'en-US';
+  const full = new Intl.NumberFormat(locale, { maximumFractionDigits: 2 }).format(x);
+  const opts: Intl.NumberFormatOptions = Math.abs(x) >= COMPACT_FROM
+    ? { notation: 'compact', compactDisplay: lang === 'vi' ? 'long' : 'short', maximumFractionDigits: 1 }
+    : { maximumFractionDigits: Number.isInteger(x) ? 0 : 1 };
+  return { text: new Intl.NumberFormat(locale, opts).format(x), full };
+}
+
+export type KpiValue = KpiNumber | { bars: ({ label: string; value: number } & KpiNumber)[] };
 const BARS = 5;
 /** PGlite returns numeric as strings and bigint counts as bigint: Number() covers both. */
 export function kpiValue(k: Kpi, r: QueryResult, lang: Lang): KpiValue {
-  const fmt = new Intl.NumberFormat(lang === 'vi' ? 'vi-VN' : 'en-US', { maximumFractionDigits: 2 });
-  if (k.kind === 'rowcount') return { text: fmt.format(r.rows.length) };
-  if (k.kind === 'number') return { text: fmt.format(Number(r.rows[0]?.[k.col] ?? 0)) };
+  if (k.kind === 'rowcount') return kpiNumber(r.rows.length, lang);
+  if (k.kind === 'number') return kpiNumber(Number(r.rows[0]?.[k.col] ?? 0), lang);
   const bars = r.rows
     .map((row) => ({ label: row.slice(0, -1).map(String).join(' · '), value: Number(row[row.length - 1]) }))
     .sort((a, b) => b.value - a.value || a.label.localeCompare(b.label))
     .slice(0, BARS);
-  return { bars: bars.map((b) => ({ ...b, text: fmt.format(b.value) })) };
+  return { bars: bars.map((b) => ({ ...b, ...kpiNumber(b.value, lang) })) };
 }

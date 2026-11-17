@@ -2,15 +2,17 @@
 # của ticket đó (bước `step`, mặc định 0). Không ghi cứng số (seed có thể đổi); không lộ đáp án trước khi xong.
 # kind: number = ô số ở cột `col` (mặc định 0) của dòng đầu · rowcount = số dòng · bar = các cột trước là nhãn,
 # cột cuối là số (vẽ 5 thanh lớn nhất). Ô trỏ tới ticket chưa viết (ch12-06) khóa tới khi chương đó có nội dung.
-- { id: shipments2025, ticket: ch2-01, kind: number, col: 0, label: { vi: "Lô hàng năm 2025 (không tính lô hủy)", en: "Shipments in 2025 (cancelled excluded)" } }
-- { id: weight2025, ticket: ch2-01, kind: number, col: 1, label: { vi: "Tổng trọng lượng năm 2025 (kg)", en: "Total weight in 2025 (kg)" } }
-- { id: inTransit, ticket: ch2-04, kind: number, label: { vi: "Lô đang trên đường", en: "Shipments in transit" } }
-- { id: keyAccounts, ticket: ch2-03, kind: rowcount, label: { vi: "Khách chủ lực năm 2025 (hơn 150 lô)", en: "Key accounts of 2025 (over 150 shipments)" } }
-- { id: modeMix, ticket: ch2-02, kind: bar, label: { vi: "Số lô 2025 theo phương thức và chiều hàng", en: "2025 shipments by mode and direction" } }
-- { id: teuByCarrier, ticket: ch3-02, kind: bar, label: { vi: "TEU quý 3/2026 theo hãng tàu", en: "Q3 2026 TEU by carrier" } }
-- { id: quietCustomers, ticket: ch3-03, kind: rowcount, label: { vi: "Khách không gửi hàng từ 01/03/2026", en: "Customers with no booking since 1 March 2026" } }
-- { id: topCustomers, ticket: ch3-05, step: 0, kind: bar, label: { vi: "Năm khách lớn nhất năm 2025 (TEU)", en: "Top five customers of 2025 (TEU)" } }
-- { id: overdueArrivals, ticket: ch4-04, kind: rowcount, label: { vi: "Lô quá ngày đến dự kiến mà chưa ghi nhận ngày đến", en: "Shipments past their ETA with no arrival recorded" } }
-- { id: clearanceDays, ticket: ch5-06, step: 1, kind: bar, label: { vi: "Số ngày thông quan trung bình quý 3/2026 theo luồng", en: "Average clearance days in Q3 2026 by lane" } }
-- { id: duplicateCustomers, ticket: ch6-06, kind: rowcount, label: { vi: "Khách bị nhập hai lần với hai cách viết tên", en: "Customers entered twice under two spellings" } }
-- { id: q3margin, ticket: ch12-06, kind: number, label: { vi: "Biên lợi nhuận quý 3/2026", en: "Q3 2026 gross margin" } }
+# L42: unit { vi, en } (tùy chọn) hiện nhỏ sau số, không ghi trong label; icon = tên trong src/ui/icons.ts
+# (tùy chọn, thiếu thì theo kind). Số từ 1 triệu hiện gọn ("156,5 triệu"), số đầy đủ ở tooltip.
+- { id: shipments2025, ticket: ch2-01, kind: number, col: 0, label: { vi: "Lô hàng năm 2025 (không tính lô hủy)", en: "Shipments in 2025 (cancelled excluded)" }, icon: box }
+- { id: weight2025, ticket: ch2-01, kind: number, col: 1, label: { vi: "Tổng trọng lượng năm 2025", en: "Total weight in 2025" }, icon: scale, unit: { vi: "kg", en: "kg" } }
+- { id: inTransit, ticket: ch2-04, kind: number, label: { vi: "Lô đang trên đường", en: "Shipments in transit" }, icon: ship }
+- { id: keyAccounts, ticket: ch2-03, kind: rowcount, label: { vi: "Khách chủ lực năm 2025 (hơn 150 lô)", en: "Key accounts of 2025 (over 150 shipments)" }, icon: star }
+- { id: modeMix, ticket: ch2-02, kind: bar, label: { vi: "Số lô 2025 theo phương thức và chiều hàng", en: "2025 shipments by mode and direction" }, icon: chart }
+- { id: teuByCarrier, ticket: ch3-02, kind: bar, label: { vi: "TEU quý 3/2026 theo hãng tàu", en: "Q3 2026 TEU by carrier" }, icon: container, unit: { vi: "TEU", en: "TEU" } }
+- { id: quietCustomers, ticket: ch3-03, kind: rowcount, label: { vi: "Khách không gửi hàng từ 01/03/2026", en: "Customers with no booking since 1 March 2026" }, icon: clockOff }
+- { id: topCustomers, ticket: ch3-05, step: 0, kind: bar, label: { vi: "Năm khách lớn nhất năm 2025 theo TEU", en: "Top five customers of 2025 by TEU" }, icon: trophy, unit: { vi: "TEU", en: "TEU" } }
+- { id: overdueArrivals, ticket: ch4-04, kind: rowcount, label: { vi: "Lô quá ngày đến dự kiến mà chưa ghi nhận ngày đến", en: "Shipments past their ETA with no arrival recorded" }, icon: clockAlert }
+- { id: clearanceDays, ticket: ch5-06, step: 1, kind: bar, label: { vi: "Số ngày thông quan trung bình quý 3/2026 theo luồng", en: "Average clearance days in Q3 2026 by lane" }, icon: stamp, unit: { vi: "ngày", en: "days" } }
+- { id: duplicateCustomers, ticket: ch6-06, kind: rowcount, label: { vi: "Khách bị nhập hai lần với hai cách viết tên", en: "Customers entered twice under two spellings" }, icon: copy }
+- { id: q3margin, ticket: ch12-06, kind: number, label: { vi: "Biên lợi nhuận quý 3/2026", en: "Q3 2026 gross margin" }, icon: percent }
