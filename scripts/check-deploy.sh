@@ -20,7 +20,11 @@ LIBWASM=$([ -n "$LIBJS" ] && get "assets/$LIBJS" | grep -oE 'libpg-query-[A-Za-z
 # Ticket content (lazy chunk the app awaits before its first render, L41/L43)
 TICKETS=$(get "$MAIN" | grep -oE 'ticketSources-[A-Za-z0-9_-]+\.js' | head -1)
 [ -n "$TICKETS" ] || { echo "FAIL $MAIN does not reference ticketSources-*.js"; exit 1; }
-for f in $MAIN "assets/$WORKER" "assets/$TICKETS" $(printf 'assets/%s ' $FILES $LIBWASM); do
+# Plan 5: lane content and the EN dictionary are lazy chunks awaited before the first render too.
+LANES=$(get "$MAIN" | grep -oE 'laneSources-[A-Za-z0-9_-]+\.js' | head -1)
+EN=$(get "$MAIN" | grep -oE '\./en-[A-Za-z0-9_-]+\.js' | head -1 | cut -c3-)
+[ -n "$LANES" ] && [ -n "$EN" ] || { echo "FAIL $MAIN does not reference laneSources-*.js and en-*.js"; exit 1; }
+for f in $MAIN "assets/$WORKER" "assets/$TICKETS" "assets/$LANES" "assets/$EN" $(printf 'assets/%s ' $FILES $LIBWASM); do
   H=$(curl -sS -o /dev/null -D - -H 'Accept-Encoding: br, gzip' "$URL/$f" | tr -d '\r')
   status=$(printf '%s\n' "$H" | head -1 | cut -d' ' -f2)
   type=$(printf '%s\n' "$H" | grep -i '^content-type:' | cut -d' ' -f2-)
