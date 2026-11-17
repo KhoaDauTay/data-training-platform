@@ -99,7 +99,7 @@ function dbStatusView(): Node {
 }
 
 /**
- * Inbox / Review / Notebook: icon + label (screen-reader only on narrow bars) + a red count badge.
+ * Inbox / Review / Notebook: icon + label (screen-reader only on narrow bars) + a count badge (red for unread mail, sun for reviews due).
  * Only the label and badge spans change, so the icon is never wiped. `aria` names the count ("Inbox, 1 new message").
  */
 export function setActionButton(btn: HTMLElement, label: string, count: number, aria: string): void {

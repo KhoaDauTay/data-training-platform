@@ -403,5 +403,11 @@ Ba review của bản v10 (BoonData): code review (d312e83..6a6f1ec), UI/UX (des
 | ux | Thanh trên mobile 3 dòng; icon lặp ở rail/drawer; module Learning path đặt tên theo chương Logistics; trang Map mở lại bản đồ trong hộp thoại; cảnh tối vẫn ban ngày; Home lặp header; Data ở rail không có chọn bảng; sidebar: cuộn về cuối, nhãn bị cắt, danh sách bảng có viền | Mở (judgement L65: mỗi mục > 30 phút hoặc là thiết kế lại; Plan 8a/8b làm lại Learning path, Map, minh họa) |
 | ux | Lời cảm ơn theo phòng ban lặp lại; "Bảng liên quan" có cả bảng cha FK ở chương 1; nút "Về việc đang làm" sau khi giải một việc cũ | Mở (judgement L65: lời cảm ơn là thiết kế L18; bảng cha là ui-ux-v4 §4; nút đúng khi việc vừa giải không phải việc liền trước, do save thử của người review) |
 | ux | Phản hồi SG-3 khi chỉ cột nhãn sai vẫn nói "kiểm lại cách tính" | Mở (đề đã nói rõ mã cảng; chẩn đoán theo cột cần đổi grader) |
+| ux | "Thử ngay" báo lỗi đỏ ngay lần bấm đầu khi đang tour | Mở (judgement: nút đã đổi tên "Kiểm câu trả lời" và bước 4 nay chỉ đúng nút "Chạy ví dụ"; câu mẫu sai cố ý là bài tập) |
+| ux | Sắp lại brief (tin nhắn → Yêu cầu → Kết quả mong đợi) | Một phần (5cf2d6a thu gọn mục tiêu chương; giữ bài học trước Yêu cầu theo v4 §C.3; bài học đã "Đã hiểu" vốn đã thu gọn) |
+| ux | Luyện SQL: hàng kỹ năng chưa học không có hành động, chưa có drill; 11 module so với 12 | Mở (Plan 8a làm drill và Learning path, L60) |
+| ux | Ví dụ SQL của bài học không có dấu ①; hộp "Correct!" cao mà một chữ; bài học nhanh chưa có Boon | Mở (ví dụ một dòng nên câu giải thích trích code span; còn lại là hoàn thiện ở Plan 8b) — riêng "gợi ý không có linh vật" là nhận định sai: gợi ý đã có Boon (think) |
+| ux | Overview lặp thẻ tin nhắn của Home | Mở (L65) |
+| ux | Nút Nộp xuống dòng riêng khi nhãn Chạy dài ("Đang chờ database…") hoặc khung hẹp, đẩy Lịch sử xuống | Mở (chỉ khi DB đang tải hoặc khung hẹp; chỉnh bố cục ở Plan 8b) |
 
 Sau khi sửa: tsc sạch, 1623 test (50 file), build sạch, budget mọi nhóm ok (main 277/290, css 13/20, fonts 51/60).

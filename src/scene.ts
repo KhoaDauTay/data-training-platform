@@ -94,9 +94,9 @@ export const STEPS: Record<SceneKind, readonly number[]> = {
   yard: [400, 400, 900, 500, 300, 300], // lower, lift, travel, lower, release, trolley home
   customs: [200, 400, 700, 300, 800], // declaration, stamp, truck to gate, [lane wait], barrier, drive through
   truck: [700, 300, 700, 600, 400], // to gate, barrier, through + shutter opens, into CFS, shutter closes
-  quote: [300, 500, 600, 500, 400], // show, wait, flip, wait, fade
-  ledger: [300, 400, 1000, 500, 400], // show, PAID stamp, coins, wait, fade
-  chat: [300, 700, 400, 600, 400], // show, typing, bubble, wait, fade
+  quote: [300, 500, 600, 500, 400], // show, wait, flip, wait, (fade: unused, card-only scenes keep their card, L70)
+  ledger: [300, 400, 1000, 500, 400], // show, PAID stamp, coins, wait, (fade: unused, L70)
+  chat: [300, 700, 400, 600, 400], // show, typing, bubble, wait, (fade: unused, L70)
   promotion: [400, 2600], // last container; then ship + map (2.2 s) with the card (0.4 s) and confetti (2.6 s)
 };
 /** Customs stops at the gate: yellow = document check, red = physical inspection. */
