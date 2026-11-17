@@ -310,13 +310,20 @@ Vòng 1/3 (2026-11-17): review code + nội dung (9 lời giải bài tuyến, 1
 
 | Loại | Bug | Trạng thái |
 |---|---|---|
-| data-loss | Card dùng bảng CSV import lỗi 42P01 khi mở thẳng `#/dashboard` (router chạy trước `myData.restore()`), lỗi được giữ cả phiên; xóa import thì card vẫn hiện kết quả cũ | Mở |
-| correctness | `setLang`: bấm EN (chunk đang tải) rồi VI → khi EN tải xong lại đặt EN | Mở |
-| content | r-1 không nói cách làm tròn trung bình (`ROUND(AVG, 1)` bị chấm sai) | Mở |
-| ux | Nav 6 mục làm thanh trên cùng xuống dòng (chấm DB + ⋯) ở 1451 px | Mở (Edge) |
-| ux | Biểu đồ trong card cột quá nhỏ, nhãn không đọc được | Mở (Edge) |
-| test-gap | `tests/setup.ts` gọi `loadLang()` không đối số → máy locale vi không tải EN | Mở |
-| security | Save nhập từ người khác tự chạy SQL card khi mở bảng (vẫn ROLLBACK + 5 s) — query nặng bộ nhớ có thể làm sập worker lặp lại | Mở (judgement) |
-| validation | `save.lanes` nhận cả id việc chính; `col` vượt số cột → card số hiện NaN | Mở |
-| content | R-3 khóa vẫn hiện tiêu đề "Đợt tăng giá tháng 7" trước ch7 (L49 chỉ ẩn "+40%") | Mở |
-| content | sg-1: chuyện "đầu kéo lớn cho lô nặng" lệch (đầu kéo chở một container) | Mở (judgement) |
+| data-loss | Card dùng bảng CSV import lỗi 42P01 khi mở thẳng `#/dashboard` (router chạy trước `myData.restore()`), lỗi được giữ cả phiên; xóa import thì card vẫn hiện kết quả cũ | Đã sửa 08dc0df |
+| correctness | `setLang`: bấm EN (chunk đang tải) rồi VI → khi EN tải xong lại đặt EN | Đã sửa 27e88d8 |
+| content | r-1 không nói cách làm tròn trung bình (`ROUND(AVG, 1)` bị chấm sai) | Đã sửa 0941d3f |
+| ux | Nav 6 mục làm thanh trên cùng xuống dòng (chấm DB + ⋯) ở 1451 px | Đã sửa 569ca99 (chưa kiểm bằng trình duyệt) |
+| ux | Biểu đồ trong card cột quá nhỏ, nhãn không đọc được | Đã sửa b6c3e1d (chưa kiểm bằng trình duyệt) |
+| test-gap | `tests/setup.ts` gọi `loadLang()` không đối số → máy locale vi không tải EN | Đã sửa 27e88d8 |
+| security | Save nhập từ người khác tự chạy SQL card khi mở bảng (vẫn ROLLBACK + 5 s) — query nặng bộ nhớ có thể làm sập worker lặp lại | Đã sửa 08dc0df |
+| validation | `save.lanes` nhận cả id việc chính; `col` vượt số cột → card số hiện NaN | Đã sửa e0addb1 |
+| content | R-3 khóa vẫn hiện tiêu đề "Đợt tăng giá tháng 7" trước ch7 (L49 chỉ ẩn "+40%") | Đã sửa 46ef9f5 |
+| content | sg-1: chuyện "đầu kéo lớn cho lô nặng" lệch (đầu kéo chở một container) | Đã sửa 0941d3f |
+
+Sửa vòng 1: commits 27e88d8, 0941d3f, e0addb1, 46ef9f5, 08dc0df, b6c3e1d, 569ca99.
+- data-loss + save nhập: thay đổi "Dữ liệu của tôi" (restore, thêm, xóa) xóa mọi kết quả card (`resetCards`) rồi vẽ lại; card chỉ tự chạy khi (id + SQL) đã chạy không lỗi trên máy này (`cargo-query/cards-ran`, kiểm khi đọc; Ghim lên tự ghi). Card cũ của người chơi hiện "Chưa chạy trên máy này" một lần sau bản này.
+- Topbar: 1280–1919 px ẩn nhãn thương hiệu/hành động, rank và tên chương, nav `px-2`, khoảng cách `xl:gap-x-2` (ước ~1.200 px ≤ 1.248 px); từ 1920 px hiện lại, tên chương tối đa 12rem (sửa dòng "1280: tên chương 16rem" của ui-ux-v3 §a). 820/375 không đổi. Chưa đo bằng trình duyệt.
+- Card biểu đồ: viewBox 260 đơn vị + `min-w-[260px]` (không thu nhỏ dưới 1:1: chữ 12 px, cột 18 px), giãn theo card rộng hơn.
+- R-3: L49 ghi "R-3 hiện tiêu đề"; vòng này ẩn tiêu đề khi còn khóa (`titleHidden`, chỉ r-3), dòng vẫn hiện "Bài tuyến 3 · mở sau chương 7". Cần user xác nhận có thay L49 không.
+- sg-1: chuyện mới là lô nặng dễ rớt tàu khi đổi sang tàu mẹ gần đủ trọng tải ở Singapore (theo lô, không theo container; 10 lô đầu đều SEA FCL ~48 t); Solution giữ nguyên.
