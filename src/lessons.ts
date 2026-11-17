@@ -4,7 +4,7 @@ import { localStore, readJson, writeJson, type KV } from './storage';
 
 /**
  * "Bài học nhanh" (product-design-v4 §C, L54): one card per skill, shown before the first task that grants it.
- * Lives in content/lessons.yml, parsed from the lazy ticket chunk (src/content.ts loadLessons()), never in the main bundle.
+ * Lives in content/lessons.yml, its own lazy chunk (src/lessonSources.ts, read by src/content.ts loadLessons()), never in the main bundle.
  */
 export interface Lesson {
   /** Skill id (content/skills.yml). */
