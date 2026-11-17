@@ -1,0 +1,262 @@
+# Bài học nhanh (product-design-v4 §C, L54): một thẻ cho mỗi kỹ năng, hiện trước việc đầu tiên mở kỹ năng đó.
+# id = id trong skills.yml. File này nằm trong chunk lazy của ticket (src/ticketSources.ts), không vào bundle chính.
+# cues: cụm từ nghiệp vụ báo hiệu kỹ năng ("…" = chỗ trống). Việc mở kỹ năng phải có ≥ 1 cụm trong thân đề hoặc Task:
+#   các đoạn giữa "…" xuất hiện theo thứ tự trong cùng một câu, không phân biệt hoa thường (tests/lessons.test.ts).
+# example, try.solution: chạy được, có dòng, chỉ dùng bảng đã mở ở chương của kỹ năng, khác kết quả Solution của việc mở kỹ năng.
+# mistake.sql: câu sai hay gặp; báo lỗi, hoặc ra kết quả khác ví dụ. Code span VI = EN; EN không dấu.
+# try: Thử ngay, chấm bằng grader như việc thật nhưng 0 XP; ordered: true khi thứ tự dòng được chấm.
+
+- id: select
+  cues:
+    vi: ["gửi mình …", "với mỗi … mình cần …", "theo thứ tự: …", "danh sách mọi …"]
+    en: ["send me …", "for each … I need …", "in this order: …", "a list of every …"]
+  concept:
+    vi: "Dữ liệu nằm trong các bảng (table). Mỗi dòng (row) là một thứ, ví dụ một hãng tàu; mỗi cột (column) là một thông tin của nó, ví dụ tên. SELECT chọn những cột bạn cần, FROM nói lấy từ bảng nào. Kết quả có đúng các cột bạn liệt kê, theo đúng thứ tự đó."
+    en: "Data lives in tables. Each row is one thing, for example one carrier; each column is one piece of information about it, for example its name. SELECT picks the columns you need, FROM says which table to read. The result has exactly the columns you list, in that order."
+  example: "SELECT name, mode FROM carriers"
+  explain:
+    vi: "① `SELECT name, mode`: hai cột, cách nhau bằng dấu phẩy. ② `FROM carriers`: bảng hãng vận chuyển. Kết quả: 9 dòng, mỗi hãng một dòng, cột tên rồi tới cột phương thức (`SEA` hoặc `AIR`). `*` nghĩa là mọi cột: tiện để xem bảng, nhưng khi nộp thì thừa cột."
+    en: "① `SELECT name, mode`: two columns, separated by a comma. ② `FROM carriers`: the carrier table. Result: 9 rows, one per carrier, the name column then the mode column (`SEA` or `AIR`). `*` means every column: handy for a look at a table, but it adds extra columns when you submit."
+  mistake:
+    sql: "SELECT name mode FROM carriers"
+    vi: "Quên dấu phẩy: Postgres không báo lỗi mà hiểu `mode` là tên mới đặt cho cột `name`. Bạn nhận 1 cột thay vì 2, và thẻ \"Kết quả mong đợi\" báo lệch số cột."
+    en: "A missing comma: Postgres does not complain, it reads `mode` as a new name for the `name` column. You get 1 column instead of 2, and the \"Expected result\" card shows the column count is off."
+  try:
+    task:
+      vi: "Hãng nào có mã gì? Lấy mã hãng rồi tới tên hãng, cho mọi hãng."
+      en: "Which carrier has which code? Get the carrier code, then the carrier name, for every carrier."
+    starter: "SELECT name, mode FROM carriers"
+    solution: "SELECT code, name FROM carriers"
+  docs: https://www.postgresql.org/docs/current/queries-select-lists.html
+
+- id: where
+  cues:
+    vi: ["chỉ …", "bỏ …", "không tính …", "thuộc …", "từ ngày … đến …", "trước ngày …"]
+    en: ["only …", "leave out …", "not counting …", "in the … region", "from … to …", "before …"]
+  concept:
+    vi: "SELECT chọn cột; WHERE chọn dòng. Mỗi dòng được kiểm điều kiện sau WHERE: đúng thì giữ, sai thì bỏ. Cần nhiều điều kiện cùng đúng thì nối bằng AND; chỉ cần một trong hai thì dùng OR."
+    en: "SELECT picks columns; WHERE picks rows. Every row is checked against the condition after WHERE: true keeps it, false drops it. When several conditions must all hold, join them with AND; when either one is enough, use OR."
+  example: "SELECT code, name, kind FROM ports WHERE country = 'Vietnam'"
+  explain:
+    vi: "① `WHERE country = 'Vietnam'`: chỉ giữ cảng có quốc gia là Việt Nam. ② Chữ đặt trong nháy đơn và phải viết đúng như trong dữ liệu (`'Vietnam'`, không phải `'vietnam'`). Kết quả: 5 dòng, 3 cảng biển và 2 sân bay. ③ So sánh khác: `<>` (khác), `>`, `>=`, `<`, `<=`; ngày cũng viết trong nháy đơn: `booking_date >= '2026-10-01'`. Không chắc giá trị viết thế nào? Xem tab Cột."
+    en: "① `WHERE country = 'Vietnam'`: keep only the ports whose country is Vietnam. ② Text goes in single quotes and must match the data exactly (`'Vietnam'`, not `'vietnam'`). Result: 5 rows, 3 seaports and 2 airports. ③ Other comparisons: `<>` (not equal), `>`, `>=`, `<`, `<=`; dates also go in single quotes: `booking_date >= '2026-10-01'`. Not sure how a value is spelled? Check the Columns tab."
+  mistake:
+    sql: "SELECT code, name, kind FROM ports WHERE country = \"Vietnam\""
+    vi: "Nháy kép là tên cột, không phải chữ. Postgres báo lỗi column \"Vietnam\" does not exist. Viết `'Vietnam'` với nháy đơn."
+    en: "Double quotes mean a column name, not text. Postgres says column \"Vietnam\" does not exist. Write `'Vietnam'` with single quotes."
+  try:
+    task:
+      vi: "Sửa ví dụ để chỉ giữ các sân bay ở Việt Nam: hai điều kiện phải cùng đúng."
+      en: "Change the example to keep only the airports in Vietnam: both conditions must hold."
+    starter: "SELECT code, name, kind FROM ports WHERE country = 'Vietnam'"
+    solution: "SELECT code, name, kind FROM ports WHERE country = 'Vietnam' AND kind = 'AIRPORT'"
+  docs: https://www.postgresql.org/docs/current/queries-table-expressions.html#QUERIES-WHERE
+
+- id: order_by
+  cues:
+    vi: ["… lên đầu", "xếp theo …", "bằng nhau thì …", "trùng … thì …"]
+    en: ["… first", "sorted by …", "on a tie …", "if two … the same"]
+  concept:
+    vi: "Không có ORDER BY thì Postgres trả dòng theo thứ tự bất kỳ. ORDER BY xếp dòng theo một hay nhiều cột: tăng dần là mặc định, thêm DESC để giảm dần. Cột thứ hai (tiêu chí sắp xếp phụ) chỉ dùng khi cột đầu bằng nhau."
+    en: "Without ORDER BY, Postgres returns rows in any order. ORDER BY sorts rows by one or more columns: ascending is the default, add DESC for descending. The second column (the tie-breaker) only counts when the first one is equal."
+  example: "SELECT name, country, base_transit_days FROM ports ORDER BY base_transit_days DESC, name"
+  explain:
+    vi: "① `base_transit_days DESC`: cảng có số ngày đi lớn nhất lên đầu (New York, 35 ngày). ② `, name`: Ningbo và Shanghai cùng 5 ngày, nên xếp tiếp theo tên. Thiếu tiêu chí phụ thì hai cảng này có thể đổi chỗ giữa các lần chạy. ③ Ngày và chữ cũng sắp xếp được: ngày sau lớn hơn ngày trước, chữ theo thứ tự chữ cái."
+    en: "① `base_transit_days DESC`: the port with the most transit days comes first (New York, 35 days). ② `, name`: Ningbo and Shanghai both take 5 days, so the name breaks the tie. Without a tie-breaker those two can swap places between runs. ③ Dates and text sort too: a later date is greater, text goes alphabetically."
+  mistake:
+    sql: "SELECT name, country, base_transit_days FROM ports ORDER BY base_transit_days, name"
+    vi: "Quên DESC: thứ tự tăng dần là mặc định, nên cảng gần nhất (0 ngày) lên đầu thay vì xa nhất."
+    en: "DESC is missing: ascending is the default, so the nearest ports (0 days) come first instead of the farthest."
+  try:
+    task:
+      vi: "Sửa ví dụ để cảng có thời gian đi ngắn nhất lên đầu; bằng nhau thì vẫn xếp theo tên."
+      en: "Change the example so the port with the shortest transit time comes first; on a tie, still sort by name."
+    starter: "SELECT name, country, base_transit_days FROM ports ORDER BY base_transit_days DESC, name"
+    solution: "SELECT name, country, base_transit_days FROM ports ORDER BY base_transit_days, name"
+    ordered: true
+  docs: https://www.postgresql.org/docs/current/queries-order.html
+
+- id: limit
+  cues:
+    vi: ["… nặng nhất", "… mới nhất", "… đầu tiên", "… lớn nhất"]
+    en: ["the … heaviest", "the … latest", "the first …", "the … largest"]
+  concept:
+    vi: "LIMIT N chỉ giữ N dòng đầu của kết quả. Nó luôn đi sau ORDER BY: sắp xếp trước, rồi mới cắt. Muốn ranh giới cắt không đổi giữa các lần chạy thì cần tiêu chí sắp xếp phụ."
+    en: "LIMIT N keeps only the first N rows of the result. It always comes after ORDER BY: sort first, then cut. For the cut-off to stay the same between runs, you need a tie-breaker."
+  example: "SELECT code, name, base_transit_days FROM ports ORDER BY base_transit_days DESC, code LIMIT 3"
+  explain:
+    vi: "① `ORDER BY base_transit_days DESC, code`: xa nhất lên đầu, bằng nhau thì theo mã. ② `LIMIT 3`: chỉ giữ 3 dòng đầu: New York, Hamburg, Antwerp. ③ LIMIT luôn viết cuối câu."
+    en: "① `ORDER BY base_transit_days DESC, code`: farthest first, ties by code. ② `LIMIT 3`: keep only the first 3 rows: New York, Hamburg, Antwerp. ③ LIMIT always goes at the end of the query."
+  mistake:
+    sql: "SELECT code, name, base_transit_days FROM ports LIMIT 3"
+    vi: "LIMIT mà không có ORDER BY thì lấy 3 dòng bất kỳ (ở đây là 3 cảng Việt Nam, 0 ngày), không phải 3 cảng xa nhất."
+    en: "LIMIT without ORDER BY takes any 3 rows (here three Vietnamese ports, 0 days), not the 3 farthest ports."
+  try:
+    task:
+      vi: "Lấy 6 cảng gần nhất (ít ngày đi nhất); bằng nhau thì theo mã cảng. Để ý: có 5 cảng cùng 0 ngày, nên dòng thứ 6 do tiêu chí phụ quyết định."
+      en: "Get the 6 nearest ports (fewest transit days); on a tie, by port code. Note: 5 ports share 0 days, so the tie-breaker decides the 6th row."
+    starter: "SELECT code, name, base_transit_days FROM ports ORDER BY base_transit_days DESC, code LIMIT 3"
+    solution: "SELECT code, name, base_transit_days FROM ports ORDER BY base_transit_days, code LIMIT 6"
+    ordered: true
+  docs: https://www.postgresql.org/docs/current/queries-limit.html
+
+- id: aggregate
+  cues:
+    vi: ["bao nhiêu …", "tổng …", "trung bình …", "một con số", "một dòng duy nhất"]
+    en: ["how many …", "total …", "average …", "a single number", "a single row"]
+  concept:
+    vi: "Hàm gộp biến nhiều dòng thành một giá trị: COUNT(*) đếm dòng, SUM cộng, AVG tính trung bình, MIN và MAX lấy nhỏ nhất, lớn nhất. WHERE lọc dòng trước, rồi hàm gộp tính trên các dòng còn lại. Không gom nhóm thì kết quả chỉ có một dòng."
+    en: "An aggregate turns many rows into one value: COUNT(*) counts rows, SUM adds up, AVG averages, MIN and MAX take the smallest and largest. WHERE filters the rows first, then the aggregate works on what is left. Without grouping, the result is a single row."
+  example: "SELECT COUNT(*), ROUND(AVG(gross_weight_kg), 2), MAX(gross_weight_kg) FROM shipments WHERE mode = 'AIR'"
+  explain:
+    vi: "① `WHERE mode = 'AIR'`: chỉ lô đi đường hàng không. ② `COUNT(*)`: 2.966 lô. ③ `ROUND(AVG(gross_weight_kg), 2)`: trọng lượng trung bình, làm tròn 2 chữ số. ④ `MAX(gross_weight_kg)`: lô nặng nhất. Kết quả: 1 dòng, 3 con số."
+    en: "① `WHERE mode = 'AIR'`: air shipments only. ② `COUNT(*)`: 2,966 shipments. ③ `ROUND(AVG(gross_weight_kg), 2)`: the average weight, rounded to 2 decimals. ④ `MAX(gross_weight_kg)`: the heaviest shipment. Result: 1 row, 3 numbers."
+  mistake:
+    sql: "SELECT mode, COUNT(*) FROM shipments"
+    vi: "Trộn một cột thường với hàm gộp: Postgres báo lỗi column \"shipments.mode\" must appear in the GROUP BY clause. Muốn một con số cho mỗi phương thức thì phải gom nhóm (kỹ năng tiếp theo)."
+    en: "A plain column mixed with an aggregate: Postgres says column \"shipments.mode\" must appear in the GROUP BY clause. One number per mode needs grouping (the next skill)."
+  try:
+    task:
+      vi: "Đổi sang hàng đi đường biển: số lô và tổng trọng lượng (kg)."
+      en: "Switch to sea shipments: the number of shipments and the total weight (kg)."
+    starter: "SELECT COUNT(*), ROUND(AVG(gross_weight_kg), 2), MAX(gross_weight_kg) FROM shipments WHERE mode = 'AIR'"
+    solution: "SELECT COUNT(*), SUM(gross_weight_kg) FROM shipments WHERE mode = 'SEA'"
+  docs: https://www.postgresql.org/docs/current/functions-aggregate.html
+
+- id: group_by
+  cues:
+    vi: ["mỗi … một dòng", "với mỗi …", "từng …", "theo từng …"]
+    en: ["one row per …", "for each …", "each …", "per …"]
+  concept:
+    vi: "GROUP BY gom các dòng có cùng giá trị thành một nhóm; hàm gộp tính riêng trong từng nhóm, và mỗi nhóm ra một dòng. Mọi cột trong SELECT không nằm trong hàm gộp phải có trong GROUP BY."
+    en: "GROUP BY puts rows with the same value into one group; the aggregate is computed inside each group, and each group gives one row. Every SELECT column outside an aggregate must be in GROUP BY."
+  example: "SELECT incoterm, COUNT(*) FROM shipments GROUP BY incoterm"
+  explain:
+    vi: "① `GROUP BY incoterm`: mỗi điều kiện giao hàng (FOB, EXW…) là một nhóm. ② `COUNT(*)`: đếm số lô trong từng nhóm. Kết quả: 8 dòng, mỗi điều kiện một dòng. ③ Gom theo nhiều cột (`GROUP BY a, b`) thì mỗi tổ hợp giá trị là một nhóm."
+    en: "① `GROUP BY incoterm`: each Incoterm (FOB, EXW…) is one group. ② `COUNT(*)`: counts the shipments in each group. Result: 8 rows, one per Incoterm. ③ Grouping by several columns (`GROUP BY a, b`) makes each combination of values one group."
+  mistake:
+    sql: "SELECT incoterm, mode, COUNT(*) FROM shipments GROUP BY incoterm"
+    vi: "Thêm cột vào SELECT mà quên thêm vào GROUP BY: Postgres báo lỗi column \"shipments.mode\" must appear in the GROUP BY clause."
+    en: "A column added to SELECT but not to GROUP BY: Postgres says column \"shipments.mode\" must appear in the GROUP BY clause."
+  try:
+    task:
+      vi: "Tách tiếp theo phương thức: mỗi tổ hợp điều kiện giao hàng và phương thức một dòng, gồm điều kiện, phương thức, số lô."
+      en: "Split further by mode: one row per combination of Incoterm and mode, with the Incoterm, the mode and the number of shipments."
+    starter: "SELECT incoterm, COUNT(*) FROM shipments GROUP BY incoterm"
+    solution: "SELECT incoterm, mode, COUNT(*) FROM shipments GROUP BY incoterm, mode"
+  docs: https://www.postgresql.org/docs/current/queries-table-expressions.html#QUERIES-GROUP
+
+- id: having
+  cues:
+    vi: ["những … có hơn …", "đạt tiêu chí", "chỉ giữ nhóm …", "… có từ … trở lên"]
+    en: ["the … with more than …", "meets the rule", "keep only the groups …", "with at least …"]
+  concept:
+    vi: "HAVING lọc nhóm, sau khi đã gom và tính hàm gộp. WHERE lọc từng dòng trước khi gom, nên không dùng được kết quả đếm; điều kiện trên kết quả đếm hay tổng phải đặt ở HAVING."
+    en: "HAVING filters groups, after grouping and aggregating. WHERE filters single rows before grouping, so it cannot use a count; a condition on a count or a total goes in HAVING."
+  example: "SELECT incoterm, COUNT(*) FROM shipments GROUP BY incoterm HAVING COUNT(*) > 3000"
+  explain:
+    vi: "① `GROUP BY incoterm`: mỗi điều kiện giao hàng một nhóm. ② `HAVING COUNT(*) > 3000`: chỉ giữ nhóm có hơn 3.000 lô. Kết quả: 3 dòng (EXW, DAP, FOB). ③ Thứ tự viết: WHERE, GROUP BY, HAVING."
+    en: "① `GROUP BY incoterm`: one group per Incoterm. ② `HAVING COUNT(*) > 3000`: keep only the groups with more than 3,000 shipments. Result: 3 rows (EXW, DAP, FOB). ③ The order to write them: WHERE, GROUP BY, HAVING."
+  mistake:
+    sql: "SELECT incoterm, COUNT(*) FROM shipments WHERE COUNT(*) > 3000 GROUP BY incoterm"
+    vi: "Đặt điều kiện trên kết quả đếm vào WHERE: Postgres báo lỗi aggregate functions are not allowed in WHERE. Chuyển nó sang HAVING."
+    en: "A condition on the count placed in WHERE: Postgres says aggregate functions are not allowed in WHERE. Move it to HAVING."
+  try:
+    task:
+      vi: "Hãng nào có hơn 2.900 lô? Mã hãng và số lô."
+      en: "Which carriers have more than 2,900 shipments? Carrier id and number of shipments."
+    starter: "SELECT incoterm, COUNT(*) FROM shipments GROUP BY incoterm HAVING COUNT(*) > 3000"
+    solution: "SELECT carrier_id, COUNT(*) FROM shipments GROUP BY carrier_id HAVING COUNT(*) > 2900"
+  docs: https://www.postgresql.org/docs/current/queries-table-expressions.html#QUERIES-GROUP
+
+- id: join
+  cues:
+    vi: ["tên … nằm ở hồ sơ …", "kèm tên …", "… và tên khách", "gọi … bằng tên"]
+    en: ["the … name is on the … record", "with the … name", "… and the customer name", "named by …"]
+  concept:
+    vi: "Mỗi bảng chỉ giữ thông tin của chính nó; lô hàng chỉ ghi mã hãng, tên hãng nằm ở bảng hãng. JOIN ghép mỗi dòng của bảng này với dòng khớp ở bảng kia, theo điều kiện ON (thường là khóa ngoại = khóa chính). Đặt tên ngắn (alias) cho bảng để biết cột thuộc bảng nào."
+    en: "Each table only holds its own information; a shipment records the carrier id, the carrier name is in the carrier table. JOIN pairs each row of one table with the matching row of the other, by the ON condition (usually foreign key = primary key). Give each table a short name (alias) to tell its columns apart."
+  example: "SELECT s.ref, ca.name FROM shipments s JOIN carriers ca ON ca.id = s.carrier_id WHERE s.booking_date = '2026-10-31'"
+  explain:
+    vi: "① `shipments s`, `carriers ca`: alias của hai bảng. ② `ON ca.id = s.carrier_id`: mã hãng ghi trên lô trỏ tới mã của hãng. ③ `s.ref`, `ca.name`: mỗi cột ghi rõ bảng. Kết quả: 25 lô đặt hôm nay, mỗi lô kèm tên hãng. Tab ER cho thấy khóa ngoại nào trỏ tới đâu."
+    en: "① `shipments s`, `carriers ca`: the two tables' aliases. ② `ON ca.id = s.carrier_id`: the carrier id on the shipment points to the carrier's id. ③ `s.ref`, `ca.name`: every column names its table. Result: 25 shipments booked today, each with its carrier name. The ER tab shows which foreign key points where."
+  mistake:
+    sql: "SELECT id, ca.name FROM shipments s JOIN carriers ca ON ca.id = s.carrier_id WHERE s.booking_date = '2026-10-31'"
+    vi: "Cả hai bảng đều có cột `id`: Postgres báo lỗi column reference \"id\" is ambiguous. Ghi rõ `s.id` hay `ca.id`."
+    en: "Both tables have an `id` column: Postgres says column reference \"id\" is ambiguous. Write `s.id` or `ca.id`."
+  try:
+    task:
+      vi: "Đổi tên hãng thành tên cảng đích của lô. Cảng đích trên lô là mã cảng, trỏ tới mã của bảng cảng."
+      en: "Swap the carrier name for the name of the shipment's destination port. The destination on the shipment is a port code, pointing to the port table's code."
+    starter: "SELECT s.ref, ca.name FROM shipments s JOIN carriers ca ON ca.id = s.carrier_id WHERE s.booking_date = '2026-10-31'"
+    solution: "SELECT s.ref, p.name FROM shipments s JOIN ports p ON p.code = s.pod WHERE s.booking_date = '2026-10-31'"
+  docs: https://www.postgresql.org/docs/current/queries-table-expressions.html#QUERIES-JOIN
+
+- id: multi_join
+  cues:
+    vi: ["gọi … bằng tên", "từ … lên …", "… nằm ở ba chỗ"]
+    en: ["named by …", "from … up to …", "… live in three places"]
+  concept:
+    vi: "Khi thông tin cần nằm cách nhau hai khóa ngoại trở lên, nối tiếp từng bảng một: mỗi JOIN thêm một bảng và có ON riêng. Đi theo chuỗi khóa ngoại, ví dụ container → lô → khách hàng."
+    en: "When the data you need is two or more foreign keys apart, join one table at a time: each JOIN adds one table and has its own ON. Follow the chain of foreign keys, for example container → shipment → customer."
+  example: "SELECT ct.container_no, s.ref, cu.name FROM containers ct JOIN shipments s ON s.id = ct.shipment_id JOIN customers cu ON cu.id = s.customer_id WHERE s.booking_date = '2026-10-31'"
+  explain:
+    vi: "① `JOIN shipments s ON s.id = ct.shipment_id`: từ container lên lô. ② `JOIN customers cu ON cu.id = s.customer_id`: từ lô lên khách. ③ Lô có 3 container thì ra 3 dòng: mỗi container một dòng. Kết quả: 36 container của các lô đặt hôm nay."
+    en: "① `JOIN shipments s ON s.id = ct.shipment_id`: from container up to shipment. ② `JOIN customers cu ON cu.id = s.customer_id`: from shipment up to customer. ③ A shipment with 3 containers gives 3 rows: one per container. Result: 36 containers of today's bookings."
+  mistake:
+    sql: "SELECT ct.container_no, s.ref, cu.name FROM containers ct JOIN shipments s ON s.id = ct.shipment_id JOIN customers cu WHERE s.booking_date = '2026-10-31'"
+    vi: "JOIN thứ hai thiếu ON: Postgres báo lỗi cú pháp syntax error at or near \"WHERE\". Mỗi JOIN cần ON riêng."
+    en: "The second JOIN has no ON: Postgres reports syntax error at or near \"WHERE\". Every JOIN needs its own ON."
+  try:
+    task:
+      vi: "Thêm tên cảng đích của lô làm cột cuối: nối thêm một bảng nữa từ lô."
+      en: "Add the name of the shipment's destination port as the last column: join one more table from the shipment."
+    starter: "SELECT ct.container_no, s.ref, cu.name FROM containers ct JOIN shipments s ON s.id = ct.shipment_id JOIN customers cu ON cu.id = s.customer_id WHERE s.booking_date = '2026-10-31'"
+    solution: "SELECT ct.container_no, s.ref, cu.name, p.name FROM containers ct JOIN shipments s ON s.id = ct.shipment_id JOIN customers cu ON cu.id = s.customer_id JOIN ports p ON p.code = s.pod WHERE s.booking_date = '2026-10-31'"
+  docs: https://www.postgresql.org/docs/current/queries-table-expressions.html#QUERIES-JOIN
+
+- id: left_join
+  cues:
+    vi: ["kể cả … chưa từng …", "tính cả … chưa …", "giữ mọi …", "mọi … dù …"]
+    en: ["including … that never …", "include … who have never …", "keep every …", "every … even …"]
+  concept:
+    vi: "JOIN thường chỉ giữ dòng có cặp ở cả hai bảng. LEFT JOIN giữ mọi dòng của bảng bên trái; dòng không có cặp vẫn có mặt, các cột của bảng bên phải để trống (NULL)."
+    en: "A plain JOIN keeps only rows with a match in both tables. LEFT JOIN keeps every row of the left-hand table; a row with no match still appears, with the right-hand table's columns empty (NULL)."
+  example: "SELECT p.code, p.name, s.ref FROM ports p LEFT JOIN shipments s ON s.pod = p.code AND s.booking_date = '2026-10-31'"
+  explain:
+    vi: "① `ports p LEFT JOIN shipments s`: giữ mọi cảng. ② `AND s.booking_date = '2026-10-31'`: chỉ ghép lô đặt hôm nay; điều kiện trên bảng bên phải đặt trong ON. ③ Cảng không có lô nào hôm nay vẫn có một dòng, `ref` là NULL. Kết quả: 34 dòng, 9 dòng NULL."
+    en: "① `ports p LEFT JOIN shipments s`: keep every port. ② `AND s.booking_date = '2026-10-31'`: pair only today's bookings; a condition on the right-hand table goes in ON. ③ A port with no booking today still has one row, its `ref` is NULL. Result: 34 rows, 9 of them NULL."
+  mistake:
+    sql: "SELECT p.code, p.name, s.ref FROM ports p LEFT JOIN shipments s ON s.pod = p.code WHERE s.booking_date = '2026-10-31'"
+    vi: "Điều kiện ngày đặt ở WHERE: dòng NULL không thỏa nên bị loại, LEFT JOIN thành JOIN thường. Cảng không có lô hôm nay biến mất (còn 25 dòng)."
+    en: "The date condition in WHERE: the NULL rows fail it and are dropped, so the LEFT JOIN acts like a plain join. Ports with no booking today disappear (25 rows left)."
+  try:
+    task:
+      vi: "Làm tương tự cho hãng tàu: mọi hãng (tên hãng) kèm mã lô đặt hôm nay của hãng, giữ cả hãng không có lô nào."
+      en: "Do the same for carriers: every carrier (its name) with its shipment refs booked today, keeping carriers with none."
+    starter: "SELECT p.code, p.name, s.ref FROM ports p LEFT JOIN shipments s ON s.pod = p.code AND s.booking_date = '2026-10-31'"
+    solution: "SELECT ca.name, s.ref FROM carriers ca LEFT JOIN shipments s ON s.carrier_id = ca.id AND s.booking_date = '2026-10-31'"
+  docs: https://www.postgresql.org/docs/current/queries-table-expressions.html#QUERIES-JOIN
+
+- id: anti_join
+  cues:
+    vi: ["không có … nào", "chưa từng …", "… lâu không …"]
+    en: ["with no … at all", "never …", "went quiet"]
+  concept:
+    vi: "Anti-join tìm dòng không có cặp: khách không có booking, cảng không có lô. Cách hay dùng: LEFT JOIN rồi chỉ giữ dòng mà khóa bên phải là NULL, tức là không ghép được."
+    en: "An anti-join finds rows with no match: customers without bookings, ports without shipments. The usual way: LEFT JOIN, then keep only the rows whose right-hand key is NULL, which means nothing matched."
+  example: "SELECT p.code, p.name FROM ports p LEFT JOIN shipments s ON s.pod = p.code AND s.booking_date = '2026-10-31' WHERE s.id IS NULL"
+  explain:
+    vi: "① LEFT JOIN như bài trước: mọi cảng, ghép với lô đặt hôm nay. ② `WHERE s.id IS NULL`: chỉ giữ cảng không ghép được lô nào. Kết quả: 9 cảng. ③ So với NULL phải viết `IS NULL`; `= NULL` không bao giờ đúng. Cách khác: `NOT EXISTS (SELECT 1 FROM …)`."
+    en: "① A LEFT JOIN as in the previous lesson: every port, paired with today's bookings. ② `WHERE s.id IS NULL`: keep only the ports that matched no shipment. Result: 9 ports. ③ Comparing with NULL needs `IS NULL`; `= NULL` is never true. Another way: `NOT EXISTS (SELECT 1 FROM …)`."
+  mistake:
+    sql: "SELECT p.code, p.name FROM ports p LEFT JOIN shipments s ON s.pod = p.code AND s.booking_date = '2026-10-31' WHERE s.id = NULL"
+    vi: "`= NULL` không bao giờ đúng, nên kết quả rỗng mà không báo lỗi. Viết `IS NULL`."
+    en: "`= NULL` is never true, so the result is empty and nothing warns you. Write `IS NULL`."
+  try:
+    task:
+      vi: "Hãng tàu nào không có lô nào đặt hôm nay? Lấy tên hãng."
+      en: "Which carriers have no shipment booked today? Get the carrier name."
+    starter: "SELECT p.code, p.name FROM ports p LEFT JOIN shipments s ON s.pod = p.code AND s.booking_date = '2026-10-31' WHERE s.id IS NULL"
+    solution: "SELECT ca.name FROM carriers ca LEFT JOIN shipments s ON s.carrier_id = ca.id AND s.booking_date = '2026-10-31' WHERE s.id IS NULL"
+  docs: https://www.postgresql.org/docs/current/queries-table-expressions.html#QUERIES-JOIN

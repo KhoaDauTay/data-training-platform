@@ -1,9 +1,11 @@
 import { parseLaneBriefs, type LaneBrief } from './lanes';
+import { parseLessons, type Lesson } from './lessons';
 import { byOrder, parseTicket, type Ticket } from './tickets';
 import { applyVariant } from './variants';
 
 let templates: Ticket[] | undefined;
 let lanes: { tasks: Ticket[]; briefs: LaneBrief[] } | undefined;
+let lessons: Map<string, Lesson> | undefined;
 let loading: Promise<void> | undefined;
 
 /**
@@ -13,9 +15,10 @@ let loading: Promise<void> | undefined;
  */
 export function loadContent(): Promise<void> {
   // Plan 5: lane briefs and side tasks are their own lazy chunk, fetched beside the tickets.
-  return (loading ??= Promise.all([import('./ticketSources'), import('./laneSources')])
-    .then(([{ sources }, { laneSources, briefSource }]) => {
+  return (loading ??= Promise.all([import('./ticketSources'), import('./laneSources'), import('./lessonSources')])
+    .then(([{ sources }, { laneSources, briefSource }, { lessonSource }]) => {
       templates = Object.entries(sources).map(([path, source]) => parseTicket(source, path)).sort(byOrder);
+      lessons = new Map(parseLessons(lessonSource).map((l) => [l.id, l]));
       lanes = {
         tasks: Object.entries(laneSources).map(([path, source]) => applyVariant(parseTicket(source, path), 0)).sort(byOrder),
         briefs: parseLaneBriefs(briefSource),
@@ -37,6 +40,12 @@ export function loadTicketTemplates(): Ticket[] {
 export function loadLanes(): { tasks: Ticket[]; briefs: LaneBrief[] } {
   if (!lanes) throw new Error('loadContent() has not finished');
   return lanes;
+}
+
+/** Quick lessons by skill id (content/lessons.yml). A skill without one has no entry. */
+export function loadLessons(): Map<string, Lesson> {
+  if (!lessons) throw new Error('loadContent() has not finished');
+  return lessons;
 }
 
 /** Story mode always plays variants[0]. */
