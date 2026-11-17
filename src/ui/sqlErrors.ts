@@ -21,6 +21,8 @@ const BY_MESSAGE: [RegExp, Key][] = [
   [/^SELECT DISTINCT ON expressions must match initial ORDER BY/, 'sqlerr.distinctOn'],
   [/^for SELECT DISTINCT, ORDER BY expressions must appear in select list/, 'sqlerr.distinctOrder'],
   [/^(ORDER|GROUP) BY position \d+ is not in select list/, 'sqlerr.position'],
+  // 42809 is shared with other wrong-object errors; this one is a ranking/LAG function written without OVER.
+  [/^window function \S+ requires an OVER clause/, 'sqlerr.windowOver'],
 ];
 
 const BY_CODE: Record<string, Key> = {
@@ -36,6 +38,8 @@ const BY_CODE: Record<string, Key> = {
   '42804': 'sqlerr.42804',
   '22P02': 'sqlerr.22P02',
   '21000': 'sqlerr.21000',
+  '42P20': 'sqlerr.42P20',
+  LAB01: 'sqlerr.labOnly', // runLab (src/db/run.ts): the worker refused anything but one CREATE INDEX
 };
 
 /** Teaching note shown under Postgres' own message (which is always shown unchanged). */

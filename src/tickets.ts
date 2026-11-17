@@ -1,5 +1,6 @@
 import { parse as parseYaml } from 'yaml';
 import { bilingualOf, type Bilingual } from './progress';
+import type { LabSpec, PlanSpec } from './planCheck';
 import { parseScene, type Scene } from './scene';
 
 export type Lang = 'vi' | 'en';
@@ -15,6 +16,10 @@ export interface Step {
   solution: string;
   /** Expected result column labels from `columns:` (shape card only; the grader compares by position). */
   columns?: Bilingual[];
+  /** Chapter 11 `plan:`: after a correct result, the plan must read this table through an index. */
+  plan?: PlanSpec;
+  /** Chapter 11 `lab:`: the player writes a CREATE INDEX that speeds up this step's Solution (the slow query). */
+  lab?: LabSpec;
 }
 export interface Conclusion { question: string; options: string[]; answer: number }
 /** Player-facing text in one language. `steps` runs parallel to Ticket.steps. */
@@ -186,6 +191,24 @@ export function parseTicket(source: string, origin: string): Ticket {
     if (parsed.some((l) => l.some((x) => !x))) fail('columns: mỗi nhãn là { vi, en }; ticket thường một danh sách, cột mốc một danh sách cho mỗi bước');
     parsed.forEach((l, i) => (t.steps[i].columns = l as Bilingual[]));
   }
+
+  // plan:/lab: like columns: one object on a normal ticket, one entry per step (null = none) on a promotion review.
+  const perStep = (key: 'plan' | 'lab', check: (v: Record<string, unknown>) => boolean): Record<string, unknown>[] | undefined => {
+    const v = fm[key];
+    if (v === undefined) return undefined;
+    const list = t.beat === 'boss' ? v : [v];
+    if (!Array.isArray(list) || list.length !== t.steps.length
+      || list.some((x) => x !== null && (!x || typeof x !== 'object' || Array.isArray(x) || !check(x as Record<string, unknown>)))) {
+      fail(`${key}: ticket thường một bảng, cột mốc một danh sách mỗi bước (null = không có); xem content/TEMPLATE.md`);
+    }
+    return list as Record<string, unknown>[];
+  };
+  const isName = (x: unknown) => typeof x === 'string' && /^[a-z_]+$/.test(x);
+  perStep('plan', (x) => isName(x.index))?.forEach((x, i) => { if (x) t.steps[i].plan = { index: x.index as string }; });
+  perStep('lab', (x) => isName(x.table) && typeof x.ddl === 'string' && typeof x.max_cost_ratio === 'number' && x.max_cost_ratio > 0 && x.max_cost_ratio < 1)
+    ?.forEach((x, i) => { if (x) t.steps[i].lab = { table: x.table as string, ddl: x.ddl as string, max_cost_ratio: x.max_cost_ratio as number }; });
+  if (t.steps.some((st) => st.plan && st.lab)) fail('một bước không thể có cả plan: và lab:');
+  if (t.steps.some((st) => st.lab) && fm.wrong !== undefined) fail('bước lab: không có kết quả để so với wrong:');
 
   if (fm.starter !== undefined) {
     if (typeof fm.starter !== 'string') fail('starter phải là chuỗi SQL');

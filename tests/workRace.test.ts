@@ -348,3 +348,71 @@ describe('ôn đầu chương (warm-up)', async () => {
     }
   });
 });
+
+/** Chapter 11 (Plan 4): the plan check after a right result, and the index lab. Plans are minimal EXPLAIN JSON. */
+describe('chương 11: chấm kế hoạch và phòng thí nghiệm chỉ mục', () => {
+  const SEQ = [{ Plan: { 'Node Type': 'Seq Scan', 'Relation Name': 't', 'Total Cost': 100 } }];
+  const IDX = [{ Plan: { 'Node Type': 'Index Scan', 'Relation Name': 't', 'Index Name': 'x', 'Total Cost': 5 } }];
+  function setup11(plan: unknown) {
+    const db = {
+      run: vi.fn((sql: string) => Promise.resolve(sql.startsWith('EXPLAIN') ? { columns: ['QUERY PLAN'], types: [114], rows: [[plan]] } : result)),
+      lab: vi.fn(() => Promise.resolve({ before: SEQ, after: plan })),
+    };
+    const panel = { show: vi.fn(), refresh: vi.fn(), active: 'columns' };
+    const deps = { db, panel, onSolved: vi.fn(), onStepSolved: vi.fn(), onConclusion: vi.fn(), onRun: vi.fn(), onWrong: vi.fn() };
+    return { work: mountWork(fakeEl() as unknown as HTMLElement, deps as never), deps };
+  }
+  const planTicket = (): Ticket => ({ ...ticket('P'), steps: [{ title: '', prompt: '', solution: 'SELECT 1 AS n', plan: { index: 't' } }] });
+  const labTicket = (): Ticket => ({ ...ticket('L'), steps: [{ title: '', prompt: '', solution: 'SELECT 1 AS n', lab: { table: 't', ddl: 'CREATE INDEX ON t (a)', max_cost_ratio: 0.1 } }] });
+
+  it('kết quả đúng nhưng kế hoạch đọc cả bảng: nộp sai, mở tab EXPLAIN, không ghi điểm', async () => {
+    app.save.drafts['P#0'] = 'SELECT 1  AS n';
+    const { work, deps } = setup11(SEQ);
+    open(work, planTicket());
+    editors[0].opts.onSubmit();
+    await flush();
+    expect(deps.onWrong).toHaveBeenCalledOnce();
+    expect(deps.onSolved).not.toHaveBeenCalled();
+    expect(deps.panel.show).toHaveBeenLastCalledWith('explain');
+    expect(app.save.graded).toEqual({});
+  });
+
+  it('kết quả đúng và kế hoạch dùng chỉ mục: qua', async () => {
+    app.save.drafts['P#0'] = 'SELECT 1  AS n';
+    const { work, deps } = setup11(IDX);
+    open(work, planTicket());
+    editors[0].opts.onSubmit();
+    await flush();
+    expect(deps.onSolved).toHaveBeenCalledOnce();
+    expect(deps.db.run).toHaveBeenCalledWith('EXPLAIN (FORMAT JSON) SELECT 1  AS n');
+  });
+
+  it('phòng thí nghiệm: chỉ mục làm kế hoạch đọc qua chỉ mục và đủ rẻ thì qua, lưu câu CREATE INDEX làm bài đã chấm', async () => {
+    app.save.drafts['L#0'] = 'CREATE INDEX ON t (a)';
+    const { work, deps } = setup11(IDX);
+    open(work, labTicket());
+    editors[0].opts.onSubmit();
+    await flush();
+    expect(deps.db.lab).toHaveBeenCalledWith('CREATE INDEX ON t (a)', 'SELECT 1 AS n');
+    expect(deps.onSolved).toHaveBeenCalledOnce();
+    expect(app.save.graded).toEqual({ 'L#0': 'CREATE INDEX ON t (a)' });
+  });
+
+  it('phòng thí nghiệm: kế hoạch vẫn đọc cả bảng thì nộp sai; câu không phải CREATE INDEX thì không chạy, không tính sai', async () => {
+    app.save.drafts['L#0'] = 'CREATE INDEX ON t (b)';
+    const a = setup11(SEQ);
+    open(a.work, labTicket());
+    editors[0].opts.onSubmit();
+    await flush();
+    expect(a.deps.onWrong).toHaveBeenCalledOnce();
+    expect(a.deps.onSolved).not.toHaveBeenCalled();
+
+    app.save.drafts['L#0'] = 'SELECT 1';
+    const b = setup11(IDX);
+    open(b.work, labTicket());
+    editors[editors.length - 1].opts.onSubmit();
+    await flush();
+    expect(b.deps.db.lab).not.toHaveBeenCalled();
+    expect(b.deps.onWrong).not.toHaveBeenCalled();
+  });
+});

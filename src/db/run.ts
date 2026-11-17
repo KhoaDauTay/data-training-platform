@@ -1,4 +1,5 @@
 import type { PGlite } from '@electric-sql/pglite';
+import { isCreateIndex } from '../planCheck';
 
 /** Rows posted from the worker are capped here; the UI shows far fewer (MAX_ROWS = 500). */
 export const MAX_ROWS_WORKER = 50_000;
@@ -86,6 +87,30 @@ export async function runExplain(db: PGlite, sql: string): Promise<unknown> {
   } catch (e) {
     const info = sqlErrorInfo(e);
     throw info ? new SqlError({ ...info, position: undefined }) : e;
+  } finally {
+    await db.exec('ROLLBACK');
+  }
+}
+
+/** The index lab's answer: plans of the step's query before and after the player's index (planCheck.ts). */
+export interface LabResult { before: unknown; after: unknown }
+
+/**
+ * Index lab (chapter 11): EXPLAIN `sql`, create the player's index, EXPLAIN again, all in one transaction that is
+ * always rolled back, so the index never outlives the request. `ddl` must be one CREATE INDEX: checked here, in the
+ * worker, and sent through query() (one statement only), never exec().
+ */
+export async function runLab(db: PGlite, ddl: string, sql: string): Promise<LabResult> {
+  if (!isCreateIndex(ddl)) throw new SqlError({ message: 'only one CREATE INDEX statement is allowed here', code: 'LAB01' });
+  const explain = async () => (await db.query<unknown[]>(`EXPLAIN (FORMAT JSON) ${sql}`, [], { rowMode: 'array' })).rows[0][0];
+  await db.exec('BEGIN');
+  try {
+    const before = await explain();
+    await db.query(ddl);
+    return { before, after: await explain() };
+  } catch (e) {
+    const info = sqlErrorInfo(e);
+    throw info ? new SqlError(info) : e;
   } finally {
     await db.exec('ROLLBACK');
   }

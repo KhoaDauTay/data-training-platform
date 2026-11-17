@@ -57,7 +57,7 @@ function registerPlanTabs(deps: VizDeps): void {
     const sql = lastRunSql(host, deps);
     return sql === undefined ? undefined : load(host, t('viz.explaining'), planFor(sql), draw);
   };
-  registerTab({ id: 'explain', label: 'tab.explain', group: 'query', order: 20, render: withPlan(renderExplain) }); // newAt: Plan 4 (EXPLAIN is taught in ch11, L30/L35)
+  registerTab({ id: 'explain', label: 'tab.explain', group: 'query', order: 20, newAt: 'ch11-01', render: withPlan(renderExplain) }); // EXPLAIN is taught in ch11 (L30/L35)
   registerTab({ id: 'flow', label: 'tab.flow', group: 'query', order: 30, render: withPlan(renderFlow) });
 }
 

@@ -1,6 +1,6 @@
 import type { ImportedTable, ImportRequest } from './import';
 import type { LoadProgress } from './loadProgress';
-import { SqlError, type QueryResult, type SqlErrorInfo } from './run';
+import { SqlError, type LabResult, type QueryResult, type SqlErrorInfo } from './run';
 
 export type DbStatus = 'loading' | 'ready' | 'failed';
 /** `parser`: loads the SQL parser (wasm + lazy chunk) for `steps`, with its own long budget. */
@@ -41,7 +41,9 @@ export const IMPORT_TIMEOUT_MS = 30_000;
 export type WorkerBody =
   | { kind: RequestKind; sql: string }
   | { kind: 'import'; req: ImportRequest; file: Blob }
-  | { kind: 'dropImport'; table?: string };
+  | { kind: 'dropImport'; table?: string }
+  /** Index lab (chapter 11): `ddl` is the player's CREATE INDEX, `sql` the step's query; see runLab. */
+  | { kind: 'lab'; ddl: string; sql: string };
 
 type WorkerMessage =
   | { type: 'ready'; timings: DbTimings }
@@ -140,6 +142,11 @@ export class DbClient {
 
   run(sql: string): Promise<QueryResult> {
     return this.request<QueryResult>('run', sql);
+  }
+
+  /** Plans of `sql` before and after the player's index, in one rolled-back transaction (chapter 11 index lab). */
+  lab(ddl: string, sql: string): Promise<LabResult> {
+    return this.enqueue<LabResult>({ kind: 'lab', ddl, sql }, this.timeoutMs);
   }
 
   explain(sql: string): Promise<unknown> {

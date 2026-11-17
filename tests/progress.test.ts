@@ -201,6 +201,8 @@ describe('twistUsed: từ khóa theo kỹ năng', () => {
     ['correlated_value', 'SELECT (SELECT count(*) FROM shipments WHERE shipments.customer_id = c.id) FROM customers c', 'SELECT x.n FROM (SELECT count(*) AS n FROM shipments s JOIN customers c ON c.id = s.customer_id) x'],
     ['distinct_on', 'SELECT DISTINCT ON (b.id) b.id FROM b ORDER BY b.id', 'SELECT DISTINCT b.id FROM b'],
     ['full_join', 'SELECT * FROM a FULL OUTER JOIN b ON true', 'SELECT * FROM a LEFT JOIN b ON true'],
+    ['window_agg', 'SELECT SUM(days) OVER (PARTITION BY name ORDER BY month) FROM m', 'SELECT RANK() OVER (ORDER BY teu DESC), LAG(teu) OVER (ORDER BY month) FROM m'],
+    ['index_design', 'create unique index on container_events (container_id)', 'SELECT * FROM pg_indexes'],
   ])('%s', (skill, yes, no) => {
     expect(twistUsed(skill, yes)).toBe(true);
     expect(twistUsed(skill, no)).toBe(false);

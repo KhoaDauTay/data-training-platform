@@ -65,6 +65,9 @@ const SKILL_SQL: Record<string, { test(sql: string): boolean }> = {
   correlated_value: { test: correlatedSubquery },
   distinct_on: /\bDISTINCT\s+ON\b/i,
   full_join: /\bFULL\s+(OUTER\s+)?JOIN\b/i,
+  // An aggregate used as a window (running total, moving average), not ROW_NUMBER/LAG: `SUM(x) OVER`, `count(*) OVER`.
+  window_agg: /\b(SUM|AVG|COUNT|MIN|MAX)\s*\([^()]*\)\s*OVER\b/i,
+  index_design: /\bCREATE\s+(UNIQUE\s+)?INDEX\b/i,
 };
 
 /** curriculum §5.1: from this chapter on, a rest ticket must review older chapters (spaced, interleaved). */
@@ -240,7 +243,8 @@ export function contentProblems(tickets: Ticket[], skills: Skill[] = SKILLS, cha
       for (const skill of twist.grants) {
         if (!boss) continue;
         if (!boss.requires.includes(skill)) problems.push(`${boss.id}: boss phải kiểm tra kỹ năng twist "${skill}" (thêm vào requires)`);
-        if (boss.steps.every((st) => twistUsed(skill, st.solution) === false)) {
+        // A lab step's answer is its reference CREATE INDEX (lab.ddl), not the slow query in its Solution.
+        if (boss.steps.every((st) => twistUsed(skill, st.lab?.ddl ?? st.solution) === false)) {
           problems.push(`${boss.id}: không Solution nào của boss dùng kỹ năng twist "${skill}"`);
         }
       }

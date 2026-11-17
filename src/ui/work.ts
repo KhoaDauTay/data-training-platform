@@ -4,6 +4,7 @@ import { sqlErrorInfo } from '../db/run';
 import type { QueryResult } from '../db/run';
 import { compareResults, grade, type GradeResult } from '../grader';
 import { loadHistory, pushHistory, writeHistory } from '../history';
+import { checkLab, checkPlan, isCreateIndex, planLine, type PlanFail } from '../planCheck';
 import { getLang, isMac, t } from '../i18n';
 import { SKILLS } from '../progress';
 import { isClosed, isStory, readDraft, workKey, writeDraft } from '../session';
@@ -50,6 +51,12 @@ export interface WorkArea {
 
 /** After a run, these tabs say nothing about the result, so the Result tab opens instead. */
 const SCHEMA_TABS = new Set(['erd', 'columns']);
+
+/** Chapter 11: why the plan was not accepted. `lab` = after the player's index (index lab), else the prebuilt indexes. */
+export function planFailText(f: PlanFail, lab: boolean): string {
+  if (f.reason === 'cost') return t('lab.cost', { table: f.table, pct: Math.round(f.ratio * 100) });
+  return t(lab ? (f.reason === 'seqScan' ? 'lab.seqScan' : 'lab.noIndex') : (f.reason === 'seqScan' ? 'plan.seqScan' : 'plan.noIndex'), { table: f.table });
+}
 
 const FEEDBACK: Record<'good' | 'bad', string> = {
   good: 'mt-2 rounded-xl bg-emerald-50 p-3 text-sm text-emerald-900 ring-1 ring-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-100 dark:ring-emerald-800',
@@ -133,6 +140,7 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
     submitBtn.textContent = t('work.submit');
     runBtn.disabled = busy;
     explainBtn.disabled = busy;
+    explainBtn.hidden = !!ticket?.steps[stepIndex]?.lab; // a lab editor holds CREATE INDEX: Run already shows both plans
     submitBtn.disabled = busy;
     submitBtn.hidden = !ticket || isClosed(ticket.id);
   }
@@ -172,6 +180,8 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
     const ed = editor;
     const tk = ticket;
     const { sql, offset } = ed.runTarget();
+    const lab = tk?.steps[stepIndex].lab;
+    if (lab && tk) return labRun(ed, sql, tk.steps[stepIndex].solution);
     const k = tk ? stepKey(tk.id, stepIndex) : '';
     const historyId = isStory() ? tk?.id : undefined; // a practice variant shares the ticket id: keep it out of that history (P5)
     ed.closeCompletion();
@@ -205,6 +215,42 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
 
   const wrongTip = wrongTipper((sql) => deps.db.run(sql));
 
+  /**
+   * Index lab (chapter 11): the editor holds one CREATE INDEX; the step's Solution is the slow query. Shows its plan before
+   * and after the index (rolled back). Returns the check result, or undefined when nothing was run (not an index, error).
+   */
+  async function labPlans(ed: Editor, ddl: string, query: string, spec?: Parameters<typeof checkLab>[2]): Promise<PlanFail | null | undefined> {
+    if (!isCreateIndex(ddl)) {
+      say('bad', () => t('lab.notIndex'));
+      return undefined;
+    }
+    busy = true;
+    setButtons();
+    try {
+      const { before, after } = await deps.db.lab(ddl, query);
+      if (editor !== ed) return undefined;
+      const fail = spec ? checkLab(before, after, spec) ?? null : null;
+      const lines = () => h('div', {}, h('p', { class: 'm-0' }, t('lab.before', { plan: planLine(before) })), h('p', { class: 'm-0' }, t('lab.after', { plan: planLine(after) })),
+        fail ? h('p', { class: 'mt-2 mb-0' }, planFailText(fail, true)) : null);
+      say(spec && !fail ? 'good' : spec ? 'bad' : 'good', lines);
+      return fail;
+    } catch (e) {
+      if (editor !== ed) return undefined;
+      underline(e, 0);
+      say('bad', () => errorView(e));
+      return undefined;
+    } finally {
+      busy = false;
+      setButtons();
+    }
+  }
+
+  async function labRun(ed: Editor, ddl: string, query: string): Promise<void> {
+    ed.closeCompletion();
+    ed.clearError();
+    await labPlans(ed, ddl, query);
+  }
+
   async function submit(): Promise<void> {
     if (busy || !editor || !ticket || submitBtn.hidden) return;
     const ed = editor;
@@ -220,6 +266,16 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
     }
     ed.closeCompletion();
     ed.clearError();
+    const lab = tk.steps[i].lab;
+    if (lab) {
+      const fail = await labPlans(ed, sql, tk.steps[i].solution, lab);
+      if (fail === undefined || editor !== ed) return;
+      if (fail) {
+        deps.onWrong?.();
+        return;
+      }
+      return void solved(tk, i, k, sql, story);
+    }
     busy = true;
     setButtons();
     // The player's run becomes lastRun, so the tabs and the shape card show what was graded,
@@ -238,10 +294,14 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
     let r: GradeResult | undefined;
     let solutionError: unknown;
     let tip: (() => string) | undefined;
+    let planFail: PlanFail | undefined;
     try {
       r = await grade((s) => (s === sql ? playerRun(s) : deps.db.run(s)), tk.steps[i].solution, sql, tk.ordered);
       // Still busy: no newer Run/Submit can start before the tip is ready, so this result can never overwrite a newer one.
       if (!r.ok && r.reason !== 'error') tip = await wrongTip(tk, played?.result, r);
+      // Chapter 11: a right result must also read the table through an index. EXPLAIN without ANALYZE: costs, no run.
+      const plan = tk.steps[i].plan;
+      if (r.ok && plan) planFail = checkPlan((await deps.db.run(`EXPLAIN (FORMAT JSON) ${sql}`)).rows[0]?.[0], plan.index);
     } catch (e) {
       solutionError = e; // the Solution itself failed
       r = undefined;
@@ -274,7 +334,19 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
       deps.panel.show('result');
       return;
     }
+    if (planFail) {
+      deps.onWrong?.();
+      const f = planFail;
+      say('bad', () => planFailText(f, false));
+      deps.panel.show('explain'); // the plan that was refused
+      return;
+    }
     deps.panel.show('result'); // the graded run, not the Columns tab left open from before
+    solved(tk, i, k, sql, story);
+  }
+
+  /** Credit for a correct step: graded SQL for the Recap, next step / conclusion / solved, message and celebration. */
+  function solved(tk: Ticket, i: number, k: string, sql: string, story: boolean): void {
     if (story) {
       app.save.graded[k] = sql; // the Recap shows what was graded, not the draft edited afterwards
       persist();
