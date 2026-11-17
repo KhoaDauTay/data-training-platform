@@ -183,3 +183,22 @@ Vòng 1/3 (2026-11-17): review gộp + cổng Edge. Kiểm Edge: build `--base=/
 | judgement | `app.problem` không bao giờ xóa (nút ở lại cả phiên; `js-error` sau đè `db-init-failed`); `renderTopbar` dựng lại nút làm mất focus; query chậm của người chơi hiện nút (đúng plan, trái chú thích `fault`); nhóm ngân sách theo tiền tố tên; `check-deploy.sh` không `--max-time`; CI pin theo tag chính | Mở (judgement) |
 
 **Plan Deploy (local) đóng.** Task 8–9 CHỜ USER.
+
+## Plan 2 — chương 4–6 (base d9ee368)
+
+Vòng 1/3 (2026-11-17): review code + nội dung (đọc đủ 18 ticket VI/EN, chạy câu thay thế trên DB) + cổng Edge trên :5174 với save riêng (ch4 mở, thẻ warm-up, bài mẫu ch4-01, `wrong:` + lời người gửi, nộp đúng → hoạt cảnh chat + câu ngẫm lại, không lỗi console; khởi động bản build 6,0 → 6,8 s).
+
+| Loại | Bug | Trạng thái |
+|---|---|---|
+| correctness | `submit()` thả `busy` trước `await wrongTip()` → kết quả cũ đè Run/Nộp mới hơn (kể cả câu "Đúng") | Mở |
+| correctness | `wrongTip` chạy lại tối đa 2 query `wrong:` mỗi lần nộp sai (cả khi sai số cột); query quá 5 s làm Run người chơi nhận `DbRestartError` | Mở (nhớ kết quả theo ticket+biến thể) |
+| correctness | ch4-04 `wrong[0]` (`= NULL`) trả rỗng → mọi kết quả rỗng đều hiện giải thích "= NULL" | Mở |
+| correctness | Thẻ warm-up vẫn hiện sau khi ôn xong, làm lại trong ngày được, mỗi lần đúng +1 hộp → cày hộp | Mở |
+| content | ch4-01 EN "Latest first" (nghĩa là ngày đến muộn nhất) khác VI "trễ nhiều ngày nhất" | Mở |
+| content | ch5-05 VI "chưa được thông quan" đọc thành "chưa có tờ khai" (LEFT JOIN ra thêm 5.846 dòng) | Mở |
+| content | ch5-03: làm tròn từng tờ khai trượt 7/18 dòng; đề không nói thuế suất là % | Mở |
+| content | ch6-01, ch6-06 EN chỉ nói "từ tiếng Việt cho…", không nêu tiền tố cụ thể | Mở |
+| pedagogy | ch5-05 (rest) độ khó 3 bằng twist; câu kết luận ch4-06/ch6-06 lặp câu ngẫm lại của twist; gợi ý ch6-04 dạy `extract(year…) =` thay vì khoảng nửa mở | Mở |
+| a11y | `reflectCard`: đáp án đúng chỉ bằng viền xanh; focus mất sau khi chọn; `role=status` tạo mới mỗi lần vẽ | Mở |
+| ux | Nút "Chép ví dụ vào editor" thay draft không báo có thể Ctrl+Z | Mở |
+| test-gap | Nhánh ô trống trong `submit`; `wrongTip` (khớp, trap, kết quả cũ); undo `setDoc`; điều kiện `warmupToday`; `reflectCard`; bảng trong SQL `wrong:`/Example đã mở theo chương | Mở |
