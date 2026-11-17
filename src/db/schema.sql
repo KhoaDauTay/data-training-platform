@@ -63,3 +63,55 @@ CREATE TABLE containers (
   teu int NOT NULL,
   gross_weight_kg numeric(10, 2) NOT NULL
 );
+
+-- Plan 2 (chapters 4-6): ops, customs and documents. Seed blocks for them are appended at the end of seed.sql.
+CREATE TABLE shipment_events (
+  id int PRIMARY KEY,
+  shipment_id int NOT NULL REFERENCES shipments(id),
+  event text NOT NULL CHECK (event IN ('DEPARTED', 'ARRIVED', 'DELIVERED')),
+  event_date date NOT NULL
+);
+
+CREATE TABLE trucking_orders (
+  id int PRIMARY KEY,
+  shipment_id int NOT NULL REFERENCES shipments(id),
+  order_date date NOT NULL
+);
+
+CREATE TABLE cfs_receipts (
+  id int PRIMARY KEY,
+  shipment_id int NOT NULL REFERENCES shipments(id),
+  received_date date NOT NULL,
+  packages int NOT NULL,
+  volume_cbm numeric(8, 2) NOT NULL,
+  cargo_desc text NOT NULL
+);
+
+CREATE TABLE hs_codes (
+  code text PRIMARY KEY,
+  description text NOT NULL
+);
+
+CREATE TABLE duties_taxes (
+  hs_code text PRIMARY KEY REFERENCES hs_codes(code),
+  import_duty_pct numeric(5, 2) NOT NULL,
+  vat_pct numeric(5, 2) NOT NULL
+);
+
+CREATE TABLE customs_declarations (
+  id int PRIMARY KEY,
+  decl_no text NOT NULL UNIQUE,
+  shipment_id int NOT NULL REFERENCES shipments(id),
+  hs_code text NOT NULL REFERENCES hs_codes(code),
+  lane text NOT NULL CHECK (lane IN ('GREEN', 'YELLOW', 'RED')),
+  submitted_date date NOT NULL,
+  cleared_date date,
+  declared_value_usd numeric(12, 2) NOT NULL,
+  amended_from_id int REFERENCES customs_declarations(id)
+);
+
+CREATE TABLE incoterms (
+  code text PRIMARY KEY,
+  name text NOT NULL,
+  sea_only boolean NOT NULL
+);
