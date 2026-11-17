@@ -6,35 +6,41 @@ import { fmt, h } from './dom';
 import { formatCell } from './resultTable';
 import { s } from './svg';
 
-const W = 720;
-const SVG = 'h-auto w-full max-w-[900px]';
+/**
+ * `card`: a dashboard card (~260–360 px wide). Its viewBox is no wider than the narrowest card, and `min-w` stops it from
+ * scaling below 1:1, so labels stay at least 12 px and bars at least 18 px tall; on a wider card it scales up to fill it.
+ */
+export type ChartSize = 'tab' | 'card';
+const SIZES = {
+  tab: { w: 720, labelW: 200, valueW: 90, chars: 28, rowH: 24, lineH: 260, padL: 64, svg: 'h-auto w-full max-w-[900px]' },
+  card: { w: 260, labelW: 92, valueW: 64, chars: 13, rowH: 26, lineH: 170, padL: 56, svg: 'h-auto w-full min-w-[260px]' },
+} as const;
 const LABEL = 'fill-muted text-xs';
 const VALUE = 'fill-ink text-xs tabular-nums';
 
-/** Also drawn small on dashboard cards (src/ui/dashboard.ts). */
-export function bars(r: QueryResult, spec: ChartSpec, col: number, color: ChapterColor): SVGSVGElement {
-  const rowH = 24;
-  const labelW = 200;
+/** Also drawn on dashboard cards (src/ui/dashboard.ts, size 'card'). */
+export function bars(r: QueryResult, spec: ChartSpec, col: number, color: ChapterColor, size: ChartSize = 'tab'): SVGSVGElement {
+  const { w: W, labelW, valueW, chars, rowH, svg } = SIZES[size];
   const vals = r.rows.map((row) => Number(row[col] ?? 0));
   const [lo, hi] = valueRange(vals);
-  const x = (v: number) => labelW + (((Number.isFinite(v) ? v : 0) - lo) / (hi - lo)) * (W - labelW - 90); // NaN/Infinity: no bar, value still printed
+  const x = (v: number) => labelW + (((Number.isFinite(v) ? v : 0) - lo) / (hi - lo)) * (W - labelW - valueW); // NaN/Infinity: no bar, value still printed
   const x0 = x(0); // negatives grow left of the zero line
   const height = r.rows.length * rowH + 8;
-  return s('svg', { viewBox: `0 0 ${W} ${height}`, class: SVG, role: 'img', 'aria-label': t('chart.barAria', { col: r.columns[col] }) },
+  return s('svg', { viewBox: `0 0 ${W} ${height}`, class: svg, role: 'img', 'aria-label': t('chart.barAria', { col: r.columns[col] }) },
     ...r.rows.map((row, i) => {
       const label = formatCell(row[spec.label], r.types[spec.label]);
       const xv = x(vals[i]);
       return s('g', { transform: `translate(0,${i * rowH + 4})` },
         s('title', {}, `${label}: ${fmt(vals[i])}`),
-        s('text', { x: labelW - 8, y: 15, 'text-anchor': 'end', class: LABEL }, label.length > 28 ? `${label.slice(0, 27)}…` : label),
+        s('text', { x: labelW - 8, y: 15, 'text-anchor': 'end', class: LABEL }, label.length > chars ? `${label.slice(0, chars - 1)}…` : label),
         s('rect', { x: Math.min(x0, xv).toFixed(1), y: 3, width: Math.max(1, Math.abs(xv - x0)).toFixed(1), height: rowH - 8, rx: 3, class: color.fill }),
         s('text', { x: (Math.max(x0, xv) + 6).toFixed(1), y: 15, class: VALUE }, fmt(vals[i])));
     }));
 }
 
-export function line(r: QueryResult, spec: ChartSpec, col: number, color: ChapterColor): SVGSVGElement {
-  const H = 260;
-  const pad = { l: 64, r: 16, t: 12, b: 32 };
+export function line(r: QueryResult, spec: ChartSpec, col: number, color: ChapterColor, size: ChartSize = 'tab'): SVGSVGElement {
+  const { w: W, lineH: H, padL, svg } = SIZES[size];
+  const pad = { l: padL, r: 16, t: 12, b: 32 };
   const pts = r.rows
     .map((row) => ({ t: (row[spec.label] as Date | null)?.getTime(), v: row[col] === null ? null : Number(row[col]), raw: row[spec.label] }))
     .filter((p): p is { t: number; v: number; raw: unknown } => p.t !== undefined && p.v !== null && Number.isFinite(p.v))
@@ -43,7 +49,7 @@ export function line(r: QueryResult, spec: ChartSpec, col: number, color: Chapte
   const [vmin, vmax] = valueRange(pts.map((p) => p.v));
   const x = (tm: number) => pad.l + ((tm - t0) / Math.max(1, t1 - t0)) * (W - pad.l - pad.r);
   const y = (v: number) => pad.t + (1 - (v - vmin) / (vmax - vmin)) * (H - pad.t - pad.b);
-  return s('svg', { viewBox: `0 0 ${W} ${H}`, class: SVG, role: 'img', 'aria-label': t('chart.lineAria', { col: r.columns[col] }) },
+  return s('svg', { viewBox: `0 0 ${W} ${H}`, class: svg, role: 'img', 'aria-label': t('chart.lineAria', { col: r.columns[col] }) },
     s('line', { x1: pad.l, y1: y(0), x2: W - pad.r, y2: y(0), class: 'stroke-line' }),
     s('text', { x: pad.l - 6, y: y(vmax) + 4, 'text-anchor': 'end', class: LABEL }, fmt(vmax)),
     s('text', { x: pad.l - 6, y: y(vmin) + 4, 'text-anchor': 'end', class: LABEL }, fmt(vmin)),
