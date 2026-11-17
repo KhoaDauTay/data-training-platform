@@ -11,6 +11,8 @@ const CASES: [string, string][] = [
   ['SELECT code FROM ports WHERE', 'sqlerr.42601'],
   ['SELECT customer_id FROM shipments WHERE count(*) > 1 GROUP BY customer_id', 'sqlerr.aggWhere'],
   ['SELECT customer_id, ref FROM shipments GROUP BY customer_id', 'sqlerr.42803'],
+  // Same 42803 code: a window inside an aggregate must not get the GROUP BY note.
+  ['SELECT SUM(ROW_NUMBER() OVER ()) FROM shipments', 'sqlerr.aggWindow'],
   ['SELECT id FROM shipments s JOIN customers c ON c.id = s.customer_id', 'sqlerr.42702'],
   ['SELECT x.ref FROM shipments s', 'sqlerr.missingFrom'],
   [`SELECT ref FROM shipments WHERE eta = '31/10/2026'`, 'sqlerr.date'],

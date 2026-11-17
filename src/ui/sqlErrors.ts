@@ -26,6 +26,8 @@ const BY_MESSAGE: [RegExp, Key][] = [
   // 42P20 also covers frame mistakes, so only these messages get the "filter in an outer query" note.
   [/^window functions are not allowed in (WHERE|GROUP BY)/, 'sqlerr.windowWhere'],
   [/^window functions are not allowed in HAVING/, 'sqlerr.windowHaving'],
+  // Same 42803 code as the GROUP BY mistake, but here SUM(ROW_NUMBER() OVER ()) nests a window inside an aggregate.
+  [/^aggregate function calls cannot contain window function calls/, 'sqlerr.aggWindow'],
   [/^RANGE with offset PRECEDING\/FOLLOWING requires exactly one ORDER BY column|^frame (start|end)/, 'sqlerr.windowFrame'],
 ];
 
@@ -44,6 +46,7 @@ const BY_CODE: Record<string, Key> = {
   '21000': 'sqlerr.21000',
   LAB01: 'sqlerr.labOnly', // runLab (src/db/run.ts): the worker refused anything but one CREATE INDEX
   LAB02: 'sqlerr.labTable', // runLab: the index was on another table than the lab's
+  LAB03: 'sqlerr.labNone', // runLab: nothing was created (IF NOT EXISTS with a name that exists)
 };
 
 /** Teaching note shown under Postgres' own message (which is always shown unchanged). */

@@ -60,6 +60,17 @@ describe('planCheck: chấm theo kế hoạch thực thi (chương 11)', () => {
     expect(isCreateIndex('create  unique\n index /* c */ concurrently ON t (a)')).toBe(false);
   });
 
+  it('isCreateIndex: $ right after an identifier or number is refused (Postgres reads é$a$ as one name, 1$a$ as 1 then a quote)', () => {
+    const x = (s: string) => `CREATE INDEX ${s} ON container_events (container_id); DROP TABLE claims --${s.slice(s.indexOf('$'))}`;
+    for (const s of ['é$a$', 'idx$a$', 'chỉ_mục$a$', '索引$a$', 'x $a$', 'ix1$$']) expect(isCreateIndex(x(s))).toBe(false);
+    expect(isCreateIndex("CREATE INDEX ON t (a) WHERE b <> 1$a$ -- $a$; DROP TABLE t")).toBe(false);
+    expect(isCreateIndex("CREATE INDEX ON t (a) WHERE b <> $1$a$ -- $a$; DROP TABLE t")).toBe(false);
+    // Non-ASCII tags are valid dollar quotes, as in Postgres.
+    expect(isCreateIndex('CREATE INDEX ON t (a) WHERE b <> $é$;$é$')).toBe(true);
+    expect(isCreateIndex('CREATE INDEX ON t (a) WHERE b <> $thẻ_1$ -- ;$thẻ_1$')).toBe(true);
+    expect(isCreateIndex('CREATE INDEX ON t (a) WHERE b <> $é$ ; DROP TABLE t')).toBe(false); // unclosed
+  });
+
   it('runLab: kiểm lại trong worker: đúng một chỉ mục mới trên bảng của lab, không thì rollback và báo lỗi', async () => {
     const db = await seededDb();
     const q = 'SELECT * FROM container_events WHERE container_id = 7';
@@ -68,6 +79,10 @@ describe('planCheck: chấm theo kế hoạch thực thi (chương 11)', () => {
     await expect(runLab(db, 'CREATE INDEX ON containers (shipment_id)', q, 'container_events')).rejects.toMatchObject({ code: 'LAB02' });
     expect(explainError({ message: 'x', code: 'LAB02' })).toBe('sqlerr.labTable');
     await expect(runLab(db, 'CREATE INDEX CONCURRENTLY ON container_events (container_id)', q, 'container_events')).rejects.toMatchObject({ code: 'LAB01' });
+    await expect(runLab(db, 'CREATE INDEX é$a$ ON container_events (container_id); DROP TABLE claims --$a$', q, 'container_events')).rejects.toMatchObject({ code: 'LAB01' });
+    // IF NOT EXISTS on a name that exists creates nothing: its own message, not "only one CREATE INDEX".
+    await expect(runLab(db, 'CREATE INDEX IF NOT EXISTS shipments_pkey ON container_events (container_id)', q, 'container_events')).rejects.toMatchObject({ code: 'LAB03' });
+    expect(explainError({ message: 'x', code: 'LAB03' })).toBe('sqlerr.labNone');
     const r = await runLab(db, "CREATE INDEX lab_lit ON container_events (container_id) WHERE event <> '--; DROP TABLE claims'", q, 'container_events');
     expect(r.after).toBeDefined(); // ran as one partial index; the literal is not a comment and not a second statement
     expect((await db.query(`SELECT count(*)::int AS n FROM pg_indexes WHERE indexname = 'lab_lit'`)).rows).toEqual([{ n: 0 }]);

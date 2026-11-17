@@ -317,6 +317,8 @@ export const vi = {
   'sqlerr.windowOver': 'ROW_NUMBER, RANK, LAG, LEAD cần OVER (…) ngay sau: nói chia nhóm theo gì (PARTITION BY) và xếp theo gì (ORDER BY).',
   'sqlerr.labTable': 'Chỉ mục phải đặt trên bảng mà truy vấn ở thẻ bên trái cần đọc nhanh hơn.',
   'sqlerr.labOnly': 'Phòng thí nghiệm chỉ chạy đúng một câu CREATE INDEX.',
+  'sqlerr.labNone': 'Không có chỉ mục mới nào được tạo: tên này đã có rồi hoặc không có gì thay đổi.',
+  'sqlerr.aggWindow': 'Hàm gộp không chứa được hàm cửa sổ. Tính hàm cửa sổ trước trong một truy vấn con hoặc CTE, rồi gộp ở câu ngoài.',
   'recap.reflect': 'Ngẫm lại',
   'recap.reflectRight': 'Chính xác.',
   'recap.reflectWrong': 'Chưa đúng.',

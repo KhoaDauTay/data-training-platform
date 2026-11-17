@@ -1,6 +1,7 @@
 import { parse as parseYaml } from 'yaml';
 import chaptersSource from '../content/chapters.yml?raw';
 import skillsSource from '../content/skills.yml?raw';
+import { codeOnly } from './planCheck';
 import type { Lang, Ticket } from './tickets';
 
 export interface Bilingual { vi: string; en: string }
@@ -55,13 +56,19 @@ function correlatedSubquery(sql: string): boolean {
 
 /** `SUM(…) OVER`: an aggregate used as a window. Its argument may nest parentheses (SUM(SUM(x)), SUM(COALESCE(x, 0))). */
 function aggregateOver(sql: string): boolean {
-  for (const m of sql.matchAll(/\b(SUM|AVG|COUNT|MIN|MAX)\s*\(/gi)) {
-    let i = m.index + m[0].length - 1;
-    for (let depth = 0; i < sql.length; i++) {
-      if (sql[i] === '(') depth++;
-      else if (sql[i] === ')' && --depth === 0) break;
-    }
-    if (/^\s*OVER\b/i.test(sql.slice(i + 1))) return true;
+  const code = codeOnly(sql) ?? sql; // comments and literals out: `SUM(x) /*c*/ OVER`, ')' inside a string
+  const close = new Map<number, number>(); // '(' position → its ')', one pass (unclosed ones have none)
+  const open: number[] = [];
+  for (let i = 0; i < code.length; i++) {
+    if (code[i] === '(') open.push(i);
+    else if (code[i] === ')' && open.length) close.set(open.pop()!, i);
+  }
+  const over = /\s*OVER\b/iy;
+  for (const m of code.matchAll(/\b(SUM|AVG|COUNT|MIN|MAX)\s*\(/gi)) {
+    const end = close.get(m.index + m[0].length - 1);
+    if (end === undefined) continue;
+    over.lastIndex = end + 1;
+    if (over.test(code)) return true;
   }
   return false;
 }
