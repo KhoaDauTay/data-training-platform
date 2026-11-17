@@ -1,8 +1,8 @@
 # Product Design v6: linh vật Bin & Mây, UI cute, nav trái, schema theo domain, cảnh theo domain, animation
 
 Ngày: 2026-11-17 · Vai trò: Product Designer + UI/UX + minh họa · Theo **L56** (`decision-log.md`).
-Đầu vào: `CLAUDE.md`, `product-design-v5.md` (mockup v8), `product-design-v4.md` (onboarding, bài học nhanh, lộ trình), `ui-ux-v4.md`, L47–L56, `src/ui/harbor.ts`, `src/ui/routeMap.ts`, `src/ui/icons.ts`, `src/ui/stage.ts`, `src/style.css`, `src/db/{schema.sql,seed.sql,init.ts,run.ts,import.ts}`, `src/import/myData.ts`, `src/viz/erd.ts`, `scripts/check-budget.mjs`, `tests/{seed,erd,glossary,import}.test.ts`.
-Mockup: `.superpowers/brainstorm/11840-1794844744/content/mascots-layout-v9.html` (7 màn, sáng/tối, nút giảm chuyển động, 375 px).
+Đầu vào: `CLAUDE.md`, `product-design-v5.md` (mockup v8), `product-design-v4.md` (onboarding, bài học nhanh, lộ trình), `ui-ux-v4.md`, L47–L56, `src/ui/harbor.ts`, `src/ui/routeMap.ts`, `src/ui/icons.ts`, `src/ui/stage.ts`, `src/style.css`, `src/db/{schema.sql,seed.sql,init.ts,run.ts,import.ts}`, `src/import/myData.ts`, `src/viz/erd.ts`, `scripts/check-budget.mjs`, `src/ui/splitter.ts`, `src/db/{client,worker}.ts`, `src/ui/work.ts`, `tests/{seed,erd,glossary,import,myData}.test.ts`.
+Mockup: `.superpowers/brainstorm/11840-1794844744/content/mascots-layout-v9.html` (7 màn, sáng/tối, nút giảm chuyển động, 375 px). Một file, chỉ tải Tailwind CDN và font Nunito từ Google Fonts. Icon emoji ở sidebar/rail trong mockup là **chỗ giữ**: bản build dùng icon `icons.ts`.
 
 Tài liệu này **chỉ đề xuất**. Nó không sửa `src/`, `content/` hay test. User duyệt phần **§10 (Quyết định)** trước khi build.
 
@@ -15,9 +15,9 @@ Tài liệu này **chỉ đề xuất**. Nó không sửa `src/`, `content/` hay
 | (1) Linh vật + brand | Hai nhân vật **gốc**: **Bin** (chó cỏ Việt màu caramel, một tai vểnh gập + một tai cụp, khăn xanh ngọc có huy hiệu sao; thực tập sinh DA, bạn đồng hành của người học) và **cô Mây** (vịt trời lông xanh ngọc, kính tròn, chỏm ba sợi lông, dây đeo thẻ "Mentor" + máy tính bảng; senior DA, người dẫn tour, gợi ý, bài học). 6 tư thế mỗi nhân vật, SVG bằng hình cơ bản, màu là biến CSS. Brand: **giữ "Truy" (v5) làm tên sản phẩm, cặp "Bin & Mây" làm gương mặt** (lockup `truy_` · *cùng Bin & Mây*). |
 | (2) UI cute | Bảng màu ấm (nền kem, accent xanh ngọc, nhấn caramel/vàng nắng), bo góc 20/14/999 px, bóng mềm; linh vật xuất hiện ở 7 khoảnh khắc (tour, chờ tải, rỗng, gợi ý, lỗi, đúng, lên chương). Mọi cặp chữ/nền ≥ 4,5:1 cả hai theme (đã tính bằng script, §2.3). Animation chỉ `transform`/`opacity`, tắt hết dưới `prefers-reduced-motion`. |
 | (3) Layout + nav trái | Thanh trên chỉ còn nav cấp 1 (`Trang chủ · Lộ trình · Luyện SQL` + nút domain). **Sidebar trái** chứa nav cấp 2 theo route (thay "hàng 2" của v5). ≥ 1280 px mở sẵn 256 px; 1024–1279 px và trang Làm việc: **rail 64 px**; < 1024 px: **ngăn kéo** (drawer) + thanh dưới 4 mục. Danh sách "thở": một dòng = một thứ, tối đa 1 trạng thái + 1 hành động, không chồng chip. |
-| (4) Schema theo domain | **Một DB PGlite, nhiều schema** (`logistics`, `lab`, sau là `finance`, `ecom`; `sandbox` cho import giữ nguyên), seed **lười theo domain**, `search_path` đặt **theo từng request** trong `BEGIN … ROLLBACK`. Đã chạy thử trên PGlite 0.5.16: seed vào `logistics` cho **md5 của cả 26 bảng trùng** với bản `public`. **Không** dùng một PGlite cho mỗi domain: mỗi instance thêm ~**+370 MB** RSS (đo trong Node). |
+| (4) Schema theo domain | **Một DB PGlite, nhiều schema** (`logistics`, `lab`, sau là `finance`, `ecom`; `sandbox` cho import giữ nguyên), seed **lười theo domain**, `search_path` đặt **theo từng request** trong `BEGIN … ROLLBACK`. Đã chạy thử trên PGlite 0.5.16: seed vào `logistics` cho **md5 của cả 26 bảng trùng** với bản `public`. **Không** dùng một PGlite cho mỗi domain: trong Node, instance rỗng đầu tiên đã +~280 MB RSS và một instance thứ hai seed đủ Logistics thêm ~+370 MB (§4.2). |
 | (5) Cảnh theo domain | Hợp đồng `DomainArt` (cảnh hero + mô hình bản đồ + màu), mỗi domain một chunk lười. Logistics bọc `harborScene`/`routeMap` hiện có (không vẽ lại). Finance: phố ngân hàng + **bản đồ dòng tiền**. E-commerce: kho + cửa hàng + **bản đồ giao hàng**. Chung: "bàn học" với Bin & Mây + **bản đồ module**. Bản đồ mới dùng **một bộ vẽ đồ thị chung** (nút + cạnh + mở theo chương). |
-| (6) Animation | **CSS keyframes + WAAPI (`el.animate`) + `tween()` có sẵn trong `stage.ts`**: 0 KB, MIT-free, đã tôn trọng `reducedMotion()`. Thêm **Motion "mini" (`motion`, MIT, ~2,6 KB)** chỉ khi cần chuỗi phức tạp. Không dùng GSAP (giấy phép riêng của Webflow, không phải mã nguồn mở, có thể bị thu hồi), không dùng Rive/dotLottie (wasm 260–500 KB). Tài nguyên: **SVG tự vẽ** (mặc định), Kenney (CC0) nếu cần; **không** dùng unDraw (cấm phân phối lại) trong repo public. |
+| (6) Animation | **CSS keyframes + WAAPI (`el.animate`) + `tween()` có sẵn trong `stage.ts`**: 0 KB, không thêm phụ thuộc, đã tôn trọng `reducedMotion()`. Thêm **Motion "mini" (`motion`, MIT, ~2,6 KB)** chỉ khi cần chuỗi phức tạp. Không dùng GSAP (giấy phép riêng của Webflow, không phải mã nguồn mở, có thể bị thu hồi), không dùng Rive/dotLottie (wasm 260–500 KB). Tài nguyên: **SVG tự vẽ** (mặc định), Kenney (CC0) nếu cần; **không** dùng unDraw (cấm phân phối lại) trong repo public. |
 | Làm gì **trước** | **F1** schema `logistics` (1 ngày, thuần nội bộ) → **F2** token màu + linh vật `mascots.ts` (2–3 ngày) → **F3** khung sidebar/drawer (3–4 ngày, đi cùng v5 N1) → **F4** khoảnh khắc linh vật + onboarding v4 P2 (2–3 ngày) → **F5** `DomainArt` + cảnh Chung (2–3 ngày) → seed lười khi có `lab` (2 ngày) → cảnh Finance/E-com khi domain đó thật sự làm. |
 
 ---
@@ -56,21 +56,21 @@ Tài liệu này **chỉ đề xuất**. Nó không sửa `src/`, `content/` hay
 
 ### 1.4 Sáu tư thế và quy tắc dùng
 
-Mỗi tư thế là một `<symbol viewBox="0 0 120 120">` dựng từ các phần dùng chung (`<use>`): thân, đầu, mắt, tay/cánh riêng theo tư thế. Toàn bộ 12 tư thế trong mockup là **~12 KB SVG chưa nén, ~2,5 KB gzip** (đo trên khối `<defs>` của mockup), không cần ảnh.
+Mỗi tư thế là một `<symbol viewBox="0 0 120 120">` dựng từ các phần dùng chung (`<use>`): thân, đầu, mắt, tay/cánh riêng theo tư thế. Màu dùng **biến CSS** (`--bin-*`, `--may-*`) thay vì `currentColor` (nhân vật nhiều màu; một `currentColor` chỉ đủ cho icon một màu). Bản 1 màu `currentColor` cho favicon/icon nhỏ: làm khi cần. Lưu ý kỹ thuật: CSS animation áp vào phần tử gốc trong `<defs>`, nên lớp bật animation phải nằm trên tổ tiên của `<defs>` (vd `<body>`), không phải trên chỗ `<use>`. Toàn bộ 12 tư thế trong mockup là **~12 KB SVG chưa nén, ~2,5 KB gzip** (đo trên khối `<defs>` của mockup), không cần ảnh.
 
 | Tư thế | Bin dùng khi | Mây dùng khi |
 |---|---|---|
 | Chờ (idle) | trên logo, thẻ Tiếp tục, đuôi vẫy | bài học nhanh, thẻ Ôn tập |
 | Chỉ (pointing) | "việc tiếp theo ở đây" | **tour**, chỉ vào nút/vùng |
 | Reo (cheering) | nộp đúng, xong chương | lên chương (cùng Bin) |
-| Nghĩ (thinking) | đang chạy query > 400 ms | **gợi ý** bậc 1–3 |
+| Nghĩ (thinking) | đang chạy query > 400 ms | **gợi ý** (mọi bậc) |
 | Ối (oops) | lỗi SQL, sai kết quả | lỗi do tải DB/timeout (giải thích) |
 | Ngủ (sleeping) | màn chào lúc DB tải, trạng thái rỗng | Chế độ nghỉ ở cảnh Chung (ban đêm, trang trí) |
 
 Quy tắc:
 1. **Tối đa một linh vật mỗi vùng**, không bao giờ che đề, editor, kết quả hay nút.
 2. Linh vật là **trang trí**: `aria-hidden="true"`; thông tin luôn nằm trong chữ bên cạnh (bong bóng có `role="status"` khi là thông báo). Riêng hình lớn đứng một mình (màn chào) có `role="img"` + `aria-label`.
-3. Bậc gợi ý cuối (đáp án) **không** có linh vật (giữ cảm giác nghiêm túc khi xem đáp án, v4).
+3. Gợi ý hiện là danh sách `hints` mở dần (`brief.ts`), không có bậc "đáp án" riêng; Mây đi kèm mọi bậc. Nếu sau này có nút "Xem đáp án" thì nút đó **không** có linh vật.
 4. Kích thước: 48 px (dòng), 64 px (thẻ), 96–112 px (bong bóng tour/màn chào). Nét tối thiểu 2 px ở 48 px.
 5. Thêm tư thế mới = thêm một `<symbol>` trong `src/ui/mascots.ts` (dùng `s()` của `svg.ts`), không thêm file ảnh.
 
@@ -83,11 +83,12 @@ Tra cứu là **tìm web**, không phải tra nhãn hiệu tại USPTO/Cục SHT
 | A ★ | **Truy** · *cùng Bin & Mây* | Giữ tên v5 ("truy vấn", EN gần "try"); cặp linh vật là gương mặt, không phải tên | Tự nhiên / dễ | *Truy vấn như đi làm thật.* / *Try it on real data.* · phụ: *Bin học, Mây dẫn.* / *Bin learns, May guides.* | v5 §A.2: không thấy app trùng "Truy"/"truyvan". Từ thường, khó bảo hộ riêng chữ → lockup có linh vật giúp nhận diện. |
 | B | **Bin & Mây** | Tên cặp đôi làm brand | Rất thân / đọc được | *Cùng Bin và Mây học dữ liệu.* / *Learn data with Bin & May.* | Không thấy app "Bin & Mây"/"BinMay". EN "bin" = thùng rác; "&" khó trong URL/tên miền. |
 | C | **Ao Data** | "Ao" là nhà của Mây; nháy "data lake" cỡ nhỏ | Dễ / "ow" lạ | *Ao nhỏ, dữ liệu thật.* / *A small pond of real data.* | Không thấy app trùng. Nửa Việt nửa Anh; "ao" không gợi SQL. |
-| D | **Gâu Quạc** | Tiếng kêu hai bạn | Rất vui / người Anh khó đọc | *Gâu gâu, quạc quạc, SQL chạy ngon.* | Không thấy trùng; mất dấu thành "Gau Quac"; "quạc" gợi Donald → nghiêng về loại. |
+| D | **Gâu Quạc** | Tiếng kêu hai bạn | Rất vui / người Anh khó đọc | *Gâu gâu, quạc quạc, SQL chạy ngon.* / *Woof, quack, query.* | Không thấy trùng; mất dấu thành "Gau Quac"; "quạc/quack" gợi Donald → nghiêng về loại. |
+| D2 | **Bimay** | Ghép **Bi**n + **Mây** thành một từ, không dấu, hợp URL/tên miền | "Bi-mây" / "bee-my" | *Bimay: Bin học, Mây dẫn, bạn thành DA.* / *Bimay: learn data with a buddy and a guide.* | Tìm "Bimay": không thấy app/thương hiệu trùng (gần: BIMM, Bimafy, Bimani, ngành khác). Từ ghép, không nghĩa sẵn → phải giải thích. |
 | E | ~~Puddle / Vũng~~ | chó + vịt đều mê vũng nước; "data puddle" | — | — | **Loại**: đã có app **Puddle** (theo dõi đi vệ sinh của chó con), trùng đúng chủ đề chó; nhãn PUDDLE cũ ở nhóm 9 (đã hủy) và PUDDLE PADS mới nộp 2026. |
 | F | ~~DuckDog / Pawquery~~ | ghép tên loài | — | — | **Loại**: hướng dẫn nhãn hiệu DuckDB cấm tên phái sinh từ "Duck" cho phần mềm liên quan/cạnh tranh DuckDB (ta là học SQL, cùng ngành dữ liệu). "Paw-" quá chung. |
 
-**Khuyến nghị: A.** Lý do: (1) "Truy" đã được đề xuất ở v5 và vẫn chưa ra mắt (`index.html` còn `<title>Cargo Query</title>`), nên không phải đổi lần hai; (2) tên sản phẩm ngắn, nói đúng việc; cặp linh vật mang phần "cute" và có thể thay/thêm nhân vật sau mà không đổi brand; (3) B/C/D yếu ở tiếng Anh hoặc URL. Nếu user muốn brand **là** cặp đôi thì chọn B, giữ wordmark `Bin & Mây`.
+**Khuyến nghị: A.** Lý do: (1) "Truy" đã được đề xuất ở v5 và vẫn chưa ra mắt (`index.html` còn `<title>Cargo Query</title>`), nên không phải đổi lần hai; (2) tên sản phẩm ngắn, nói đúng việc; cặp linh vật mang phần "cute" và có thể thay/thêm nhân vật sau mà không đổi brand; (3) B/C/D yếu ở tiếng Anh hoặc URL. Lưu ý: A **giữ tên của v5**, không phải tên dẫn từ cặp đôi. Nếu user muốn brand **là** cặp đôi: chọn **D2 "Bimay"** (một từ, hợp URL) hoặc B "Bin & Mây" (thân hơn, khó làm URL).
 Phạm vi đổi tên giữ như v5 §A.4 (chỉ hiển thị; khóa `cargo-query*`, repo, URL, "Cargo Query Logistics" giữ nguyên).
 
 ---
@@ -141,8 +142,8 @@ Tất cả ≥ 4,5:1 (chữ thường). Màu linh vật không bao giờ làm m�
 |---|---|---|---|
 | Màn chào lúc tải DB (v4 lớp 1) | Bin **ngủ** → **chờ** khi DB sẵn sàng | "Chào bạn! Mình là Bin…" | Thanh tải giữ nguyên `countingFetch` |
 | Tour 8 bước (v4 lớp 2) | Mây **chỉ** | đúng 8 câu v4 §B.2 | Bong bóng đặt **trong vùng** (giữ quy tắc v4 + `coach.ts`), Esc bỏ qua |
-| Trạng thái rỗng (Bảng điều hành, Dữ liệu của tôi, Lịch sử) | Bin **ngủ** | một câu + một nút | Thay hình rỗng v4 §B.3 |
-| Gợi ý bậc 1–3 | Mây **nghĩ** | chữ gợi ý hiện có | Bậc đáp án: không linh vật |
+| Trạng thái rỗng (Bảng điều hành, Luyện tập chưa có gì, Lịch sử, Dữ liệu của tôi) | Bin **ngủ** | giữ đúng chữ + nút của v4 §B.3 | Chỉ thêm hình cạnh chữ |
+| Gợi ý | Mây **nghĩ** | chữ gợi ý hiện có (`brief.hint`) | |
 | Lỗi SQL | Bin **ối** + chữ giải thích của `sqlErrors.ts` | không đổi chữ | Lỗi Postgres giữ nguyên tiếng Anh |
 | Timeout / DB khởi động lại | Mây **ối** | `errorText()` hiện có | |
 | Nộp đúng | Bin **reo** + "+XP" (`pop`) | hiện có | Không thêm âm thanh |
@@ -182,7 +183,7 @@ Tất cả ≥ 4,5:1 (chữ thường). Màu linh vật không bao giờ làm m�
 | < 1024 px | **Ngăn kéo** từ trái (290 px, `role="dialog"`, `aria-modal`, bẫy focus, Esc/chạm nền mờ đóng, trả focus về nút ☰) + **thanh dưới 4 mục** (Trang chủ · Lộ trình · Luyện SQL · domain hiện tại) | như cột trái |
 
 - Trạng thái thu/mở là pref thiết bị mới `cargo-query/sidebar` (`'open' | 'rail'`), đọc bằng `readJson` + validate (như `parseLayout`), không vào Save.
-- Splitter (`initLayout`) đo lại khi rail ↔ mở; overlay không đổi kích thước khung nên không cần đo.
+- Splitter (`initLayout`) lưu `--col`/`--row` theo **phần trăm** của `#shell`, nên khi sidebar đổi rail ↔ mở thì khung tự co theo, không cần đo lại; overlay không đổi bề rộng `#shell`.
 - **Mobile thay v5 §B.2**: v5 có thanh dưới 3 nút + nút "Domain"; v6 giữ thanh dưới 4 mục (mục 4 = domain đang chọn) **và** thêm ngăn kéo cho nav cấp 2. Nút đổi domain nằm đầu ngăn kéo. Vùng chạm ≥ 44 px.
 
 ### 3.3 Nội dung sidebar theo route
@@ -197,7 +198,8 @@ Tất cả ≥ 4,5:1 (chữ thường). Màu linh vật không bao giờ làm m�
 | Domain "Sắp có" | Chỉ Tổng quan | Cảnh của domain + v5 §B.6 |
 
 - Khóa mềm theo tiến độ (v4 D-O3) áp vào mục sidebar: hiện, có 🔒 + tooltip, không ẩn.
-- Thanh điều hướng việc của ui-ux-v4 §2 (‹ Việc 3/5 ›, chọn chương) **giữ** ở đầu khung đề; danh sách việc trong sidebar là lối thứ hai, không thay.
+- Thanh điều hướng việc của ui-ux-v4 §2 (dải `#map` toàn chiều rộng dưới thanh trên: chọn chương, ‹ ›, nút việc, "Việc tiếp theo →", "Xem bản đồ") **giữ nguyên**. Danh sách việc trong sidebar là lối thứ hai; ở rail (Làm việc mặc định) nó ẩn, nên không trùng. Mockup §4 vẽ gọn "‹ Chương 2 · Việc 3/5 ›" trong khung đề chỉ để minh họa; bản build theo ui-ux-v4 §2.
+- Trang Dữ liệu (ui-ux-v4 §5) hiện có cột trái 18rem (ô tìm + danh sách bảng) **trong** nội dung: v6 chuyển cột đó vào sidebar, nội dung còn chi tiết bảng + sơ đồ.
 
 ### 3.4 Danh sách "thở" (thay chồng div/chip)
 
@@ -214,14 +216,15 @@ Tất cả ≥ 4,5:1 (chữ thường). Màu linh vật không bao giờ làm m�
 - 26 bảng Logistics tạo trong `public` (`schema.sql` + `seed.sql`, seed trong chunk worker qua `?raw`).
 - `SANDBOX_SETUP_SQL` đặt `search_path = public, sandbox` **ở mức phiên**; bảng import nằm ở `sandbox`.
 - Truy vấn người chơi chạy trong `runSandboxed` (`BEGIN → query → ROLLBACK`); `runExplain`, `runLab` cũng vậy.
-- `'public'` viết cứng ở: `erMeta('public')` (`brief.ts`, `dataView.ts`, `vizTabs.ts`), `main.ts:100` (autocomplete), `myData.ts` (`GAME_TABLES_SQL`, kiểm trùng tên I7), test `erd.test.ts`, `glossary.test.ts`, `import.test.ts` (kỳ vọng `public, sandbox`).
+- `'public'` viết cứng ở: `erMeta('public')` (`brief.ts`, `dataView.ts`, `vizTabs.ts`), `main.ts:100` (autocomplete), `myData.ts` (`GAME_TABLES_SQL`, kiểm trùng tên I7), test `erd.test.ts`, `glossary.test.ts`, `import.test.ts` (kỳ vọng `public, sandbox`), `myData.test.ts`.
+- **Đường chạy query**: mọi nơi (grader trong `work.ts` chạy cả câu của người chơi lẫn Solution, thẻ "Kết quả mong đợi" `state.ts`, Bảng điều hành `dashboard.ts`, Dữ liệu `dataView.ts`, gợi ý sai `wrongTipper`, EXPLAIN của `plan:`) đều đi qua **một** `DbClient` (`db.run` / `app.run`) → worker → `runSandboxed`. Không caller nào tự chọn bảng theo schema.
 - Ticket/Solution, `content/` và `seed.sql`: **không** có chữ `public.` hay `search_path` (đã grep) → dùng tên bảng trần.
 
 ### 4.2 Hai phương án
 
 | Tiêu chí | **A. Một PGlite, nhiều schema** | B. Một PGlite cho mỗi domain |
 |---|---|---|
-| Bộ nhớ (đo Node, PGlite 0.5.16) | +0 instance; schema thêm chỉ tốn dữ liệu của nó | Instance rỗng **+282 MB** RSS; instance thứ hai đã seed **+373 MB**. Edge đã ~520 MB với một DB (L39) |
+| Bộ nhớ (đo Node, PGlite 0.5.16; tiến trình bắt đầu 47 MB) | Không thêm instance; schema thêm chỉ tốn dữ liệu của nó (chưa đo riêng; `lab` ~15k dòng là nhỏ so với Logistics) | Instance rỗng đầu tiên → 329 MB (+282); seed Logistics → 646 MB; **instance thứ hai** seed Logistics → 1.019 MB (**+373**). Chưa đo instance thứ hai rỗng (chi phí cố định thật nằm giữa). Edge đã ~520 MB với một DB (L39) |
 | Khởi động | Một lần tải wasm/initdb; domain thêm = chỉ seed | Mỗi domain một lần khởi động (~1 s rỗng trong Node, trình duyệt chậm hơn nhiều, L46) |
 | Trùng tên bảng | Không (schema tách) | Không |
 | Timeout 5 s (kill worker) | Worker mới seed lại các schema đã dùng | Chỉ worker của domain đó |
@@ -245,17 +248,19 @@ CREATE SCHEMA logistics; SET search_path = logistics;   -- rồi exec schema.sql
 
 1. **Schema**: `logistics` (26 bảng hiện có), `lab` (drill Chung, v5 §C.1 — **thay** "Logistics giữ ở `public`" của v5 D-G1), sau này `finance`, `ecom`; `sandbox` giữ cho import. `public` để trống.
 2. **Seed**: `initDb(db, domains)` chạy `CREATE SCHEMA <d>; SET search_path = <d>;` rồi `schema.sql` + `seed.sql` của domain; không sửa file SQL nào (luật seed nối cuối và `setseed()` giữ nguyên; mỗi domain một file seed riêng có `setseed()` riêng).
-3. **search_path theo request**: `runSandboxed(db, sql, { schema })` → `BEGIN; SET LOCAL search_path TO <schema>[, sandbox]; …; ROLLBACK`. `sandbox` chỉ thêm ở trang Sandbox (I4). Tên schema lấy từ danh sách hằng `DOMAINS` (không bao giờ từ input người chơi). `runExplain`, `runLab` nhận cùng tham số. Người chơi tự `set_config('search_path', …)` vẫn bị rollback (đã có test).
-4. **Seed lười**: worker giữ `Set` schema đã seed; message mới `ensure(schema)` seed nếu chưa có. Lúc mở trang: seed domain gần nhất (`cargo-query/domain`, mặc định `logistics`) + `lab` khi `lab` có thật. Seed mỗi domain thành **chunk lười** (`import('./seeds/logistics.sql?raw')`) → thêm nhóm ngân sách `seed-*` trong `check-budget.mjs`, nhóm `worker` nhỏ lại tương ứng.
+3. **Schema đi tới worker thế nào**: `DbClient` có trường `schema` (đặt khi đổi domain/trang: `db.useSchema('logistics' | 'lab' | …)`), mỗi message gửi worker mang theo `schema` của lúc xếp hàng. Grader, shape card, dashboard, Dữ liệu… **không đổi chữ ký**: chúng chạy đúng schema của trang đang mở. Câu của người chơi và Solution cùng một bước luôn chạy trên cùng schema (cùng trang).
+   **search_path theo request**: `runSandboxed(db, sql, { schema })` → `BEGIN; SET LOCAL search_path TO <schema>[, sandbox]; …; ROLLBACK`. `sandbox` chỉ thêm ở trang Sandbox (I4). Tên schema lấy từ danh sách hằng `DOMAINS` (không bao giờ từ input người chơi). `runExplain`, `runLab` nhận cùng tham số. Người chơi tự `set_config('search_path', …)` vẫn bị rollback (đã có test).
+4. **Seed lười**: worker giữ `Set` schema đã seed; message mới `ensure(schema)` seed nếu chưa có. `ensure` **không** dùng hạn 5 s của query (seed trong trình duyệt mất 8–11 s, L46): nó chạy như bước khởi tạo hiện nay (`initDb` trước khi worker nhận query), có thanh tiến độ "Đang chuẩn bị dữ liệu Finance…", query của schema đó xếp hàng chờ. Lúc mở trang: seed domain gần nhất (`cargo-query/domain`, mặc định `logistics`) + `lab` khi `lab` có thật. Seed mỗi domain thành **chunk lười** (`import('./seeds/logistics.sql?raw')`) → thêm nhóm ngân sách `seed-*` trong `check-budget.mjs`, nhóm `worker` nhỏ lại tương ứng.
 5. **Timeout/khởi động lại**: `DbClient` nhớ danh sách schema đã `ensure` và gửi lại cho worker mới trước query kế tiếp.
-6. **Metadata**: `erMeta(schema)` nhận schema của domain hiện tại; `main.ts` autocomplete và `myData.ts` đọc `table_schema = <domain>`.
+6. **Metadata**: `erMeta(schema)` nhận schema của domain hiện tại; `main.ts` autocomplete đọc `table_schema = <domain>`.
+   **Kiểm trùng tên import (I7)**: Sandbox là của domain (v5), và `search_path` của Sandbox là `<domain>, sandbox`, nên chỉ cần kiểm trùng với bảng của **domain đó**: `myData.ts` đọc `table_schema = <domain hiện tại>`. Bảng import trùng tên với bảng domain khác không che gì (domain khác không có `sandbox` trong path). Đổi domain thì danh sách "bảng import bị bỏ vì trùng" tính lại.
 7. **SQL đã lưu có `public.`** (card dashboard, nháp): hiếm, nhưng sẽ báo 42P01. Thêm một mẫu trong `sqlErrors.ts`: thông điệp chứa `"public.` → "Bảng giờ nằm trong schema `logistics`; bỏ tiền tố `public.`". Không migrate Save.
 
 ### 4.5 Kế hoạch chuyển (2 bước, mỗi bước xanh test)
 
 | Bước | Việc | Rủi ro |
 |---|---|---|
-| **S1** (1 ngày) | `initDb`: tạo `logistics` + `SET search_path` trước khi seed; đổi `SANDBOX_SETUP_SQL` thành `logistics, sandbox`; đổi 6 chỗ `'public'` (code) + 3 test; `seed.test.ts` không đổi pin; thêm test "public rỗng, 26 bảng ở logistics". Hành vi người chơi không đổi. | Thấp: tên bảng trần vẫn chạy nhờ `search_path` phiên |
+| **S1** (1 ngày) | `initDb`: tạo `logistics` + `SET search_path` trước khi seed; đổi `SANDBOX_SETUP_SQL` thành `logistics, sandbox`; đổi 6 chỗ `'public'` (code) + 4 file test; `seed.test.ts` không đổi pin; thêm test "public rỗng, 26 bảng ở logistics". Hành vi người chơi không đổi. | Thấp: tên bảng trần vẫn chạy nhờ `search_path` phiên |
 | **S2** (2 ngày, khi `lab` có thật — v5 N2) | `search_path` theo request + seed lười + chunk seed + `ensure` khi restart + ngân sách | Trung bình: đường timeout/restart cần test |
 
 Tác động thời gian seed: **người vào thẳng Logistics không nhanh hơn** (vẫn seed 26 bảng); lợi ích đến khi (a) người chọn "Luyện SQL trước" chỉ cần seed `lab` (~15k dòng, nhỏ), (b) có domain thứ hai: không bao giờ seed domain người chơi chưa mở.
@@ -301,10 +306,10 @@ const DOMAINS = [{ id: 'logistics', art: () => import('./art/logistics') }, …]
 |---|---|---|---|---|---|---|
 | **CSS keyframes + WAAPI + `tween()` có sẵn** | — | **0 KB** | sẵn | `@media` + `reducedMotion()` đã có trong `dom.ts`/`stage.ts` | Thấp: animate từng phần SVG tự vẽ | **Chọn** |
 | Motion (`motion`, bản "mini" `animate`) | MIT | ~2,6 KB mini; ~18 KB bản đầy đủ (theo motion.dev) | ESM, tree-shake | tự kiểm `matchMedia` | Thấp | **Dự phòng** khi cần chuỗi/spring phức tạp; lazy |
-| lottie-web (`lottie_light`) | MIT | ~50 KB (số bên thứ ba, chưa đo) + JSON mỗi hoạt cảnh | được | phải tự dừng | Cao: cần After Effects/Lottie editor | Chỉ nếu dùng hoạt cảnh LottieFiles có sẵn; hiện không cần |
+| lottie-web (`lottie_light`) | MIT (theo trang npm; kiểm lại khi cài) | ~50 KB (số bên thứ ba cho một fork "light", chưa đo) + JSON mỗi hoạt cảnh | được | phải tự dừng | Cao: cần After Effects/Lottie editor | Chỉ nếu dùng hoạt cảnh LottieFiles có sẵn; hiện không cần |
 | @lottiefiles/dotlottie-web | MIT | ~35 KB JS + **~500 KB wasm** tải từ CDN | được | tự xử lý | Cao | Loại (wasm lớn, tải từ CDN ngoài) |
-| Rive (`@rive-app/canvas-lite`) | Runtime MIT; **editor là dịch vụ trả phí/freemium** | ~44 KB JS + **~261 KB wasm** (brotli) | được | tự xử lý | Cao, khóa vào editor Rive | Loại cho giờ; xem lại nếu cần linh vật có xương/state machine |
-| GSAP 3 | **"Standard No Charge License" của Webflow**: miễn phí cả thương mại nhưng **không phải giấy phép mã nguồn mở (OSI)**, Webflow có quyền chấm dứt, cấm dùng cho công cụ dựng animation không cần code cạnh tranh Webflow | ~25 KB core | được | `gsap.matchMedia` | Thấp | **Không dùng**: repo public muốn phụ thuộc giấy phép mở rõ ràng |
+| Rive (`@rive-app/canvas-lite`) | Runtime MIT; file `.riv` phải làm bằng **editor Rive** (dịch vụ riêng của Rive; điều khoản/giá chưa kiểm) | ~44 KB JS + **~261 KB wasm** (brotli) | được | tự xử lý | Cao, khóa vào editor Rive | Loại cho giờ; xem lại nếu cần linh vật có xương/state machine |
+| GSAP 3 | **"Standard No Charge License" của Webflow**: miễn phí cả thương mại nhưng **không phải giấy phép mã nguồn mở (OSI)**, Webflow có quyền chấm dứt, cấm dùng cho công cụ dựng animation không cần code cạnh tranh Webflow | chưa đo (không cần, đã loại vì giấy phép) | được | `gsap.matchMedia` | Thấp | **Không dùng**: repo public muốn phụ thuộc giấy phép mở rõ ràng |
 
 Lý do chọn CSS/WAAPI: linh vật vẽ bằng SVG nhiều phần, animation cần (vẫy đuôi, nhấp nhô, chớp mắt, pop, z bay) đều là `transform` lặp đơn giản; `stage.ts` đã có `tween()` + `reducedMotion()` cho hoạt cảnh dài. Main bundle đang sát ngân sách (≈254/270 KB, L43/L55), không nên thêm thư viện cho thứ CSS làm được.
 
@@ -313,8 +318,8 @@ Lý do chọn CSS/WAAPI: linh vật vẽ bằng SVG nhiều phần, animation c�
 | Nguồn | Giấy phép | Điều kiện | Dùng? |
 |---|---|---|---|
 | **SVG tự vẽ** (linh vật, cảnh) | của dự án | Repo **chưa có file LICENSE** → cần chọn giấy phép cho code và cho hình linh vật (**D-A3**) | **Mặc định** |
-| Kenney (kenney.nl) | CC0 1.0 | Không cần ghi công | Có, nếu cần icon/đồ vật |
-| OpenMoji | CC BY-SA 4.0 | **Phải ghi công**; tác phẩm phái sinh (sửa emoji) phải cùng CC BY-SA | Tránh trong UI chính; nếu dùng: file `ATTRIBUTION.md` + chú thích trong "Giới thiệu" |
+| Kenney (kenney.nl) | CC0 (public domain), theo https://kenney.nl/support | Không cần ghi công (ghi "Kenney" là tùy chọn); không dùng riêng logo Kenney; xem file license đi kèm từng bộ | Có, nếu cần icon/đồ vật |
+| OpenMoji | Hình: CC BY-SA 4.0; code repo: LGPL-3.0 (theo FAQ openmoji.org) | **Phải ghi công**, ghi rõ nếu đã sửa; dòng mẫu của dự án: "All emojis designed by OpenMoji – the open-source emoji and icon project. License: CC BY-SA 4.0"; sửa/phối lại thì phần phái sinh phải cùng CC BY-SA | Tránh trong UI chính; nếu dùng: file `ATTRIBUTION.md` + dòng ghi công trong "Giới thiệu" |
 | LottieFiles (free) | Lottie Simple License | Dùng thương mại được, ghi công khuyến khích; cấm gom để dựng dịch vụ tương tự; **kiểm từng hoạt cảnh** (một số theo CC riêng) | Chưa cần (không dùng Lottie) |
 | unDraw | unDraw License | Miễn phí, không cần ghi công, nhưng **cấm phân phối lại "theo gói hoặc cách khác"** và cấm dùng để huấn luyện AI | **Không** commit vào repo public |
 | Ảnh web bất kỳ, Snoopy/Donald, fan art | không rõ / có bản quyền | — | **Không bao giờ** |
@@ -370,12 +375,12 @@ Thứ tự đề xuất: **F1 → F2 → (v5 N1 + F3) → v4 P2 + F4 → F5 → 
 **Linh vật và brand**
 - **D-M1.** Cặp linh vật gốc **Bin** (chó cỏ caramel) + **cô Mây** (vịt trời xanh ngọc, kính tròn) theo mockup v9? **(có)**
 - **D-M2.** Vai: **Mây = dẫn tour, gợi ý, bài học, giải thích lỗi; Bin = phản ánh trạng thái người học**? **(có)**
-- **D-B1 (thay v5).** Brand: **A · "Truy" + lockup "cùng Bin & Mây"** / B · "Bin & Mây" / C · "Ao Data" / D · "Gâu Quạc"?
+- **D-B1 (thay v5).** Brand: **A · "Truy" + lockup "cùng Bin & Mây"** (giữ tên v5) / D2 · "Bimay" / B · "Bin & Mây" / C · "Ao Data" / D · "Gâu Quạc"?
 
 **UI**
 - **D-U1.** Token màu ấm §2.2 (nền kem, accent xanh ngọc), bo 20/14/999? **(có)**
 - **D-U2.** Font **Nunito tự host** (OFL) / giữ system-ui?
-- **D-U3.** Khoảnh khắc linh vật §2.4, **không** có ở bậc gợi ý đáp án và trong editor/kết quả? **(có)**
+- **D-U3.** Khoảnh khắc linh vật §2.4, **không** có linh vật trong editor/bảng kết quả hay ở nút "Xem đáp án" (nếu sau này có)? **(có)**
 
 **Layout**
 - **D-L1.** Sidebar trái thay "hàng 2" v5; Trang chủ **không** có sidebar; Làm việc mặc định **rail**? **(có)**
@@ -416,4 +421,7 @@ Thứ tự đề xuất: **F1 → F2 → (v5 N1 + F3) → v4 P2 + F4 → F5 → 
 | DuckDB trademark: https://duckdb.org/trademark_guidelines | cấm tên phái sinh "Duck", logo vịt na ná | §1.1, §1.5 |
 | Puddle: app theo dõi chó con (App Store), nhãn PUDDLE https://trademarks.justia.com/853/00/puddle-85300778.html , PUDDLE PADS https://trademarks.justia.com/998/16/puddle-99816486.html | trùng chủ đề | §1.5 |
 | Tìm "Bin & Mây"/"BinMay", "Ao Data", "Gâu Quạc" | không thấy sản phẩm trùng (chỉ tìm web) | §1.5 |
-| Kenney CC0, OpenMoji CC BY-SA 4.0, Nunito OFL 1.1 | theo trang giấy phép của từng dự án (kiểm lại khi lấy tài nguyên) | §6.2 |
+| Kenney: https://kenney.nl/support · OpenMoji: https://openmoji.org/faq | CC0, không cần ghi công · CC BY-SA 4.0, bắt buộc ghi công, share-alike | §6.2 |
+| Nunito | SIL OFL 1.1 (theo Google Fonts; chưa mở trang giấy phép trong phiên này) | §2.1 |
+| Tìm "Bimay" | không thấy sản phẩm trùng (BIMM, Bimafy, Bimani là tên gần, ngành khác) | §1.5 |
+| Chrome lần 2 | xác nhận animation chạy (`animationName = wag`), nút giảm chuyển động tắt được; màn 2, 5 (cả 4 domain), 6, 7 ở cả hai theme; không lỗi console | mockup |
