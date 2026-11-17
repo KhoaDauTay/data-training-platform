@@ -34,7 +34,7 @@ import { initMyData, setMyDataStatus } from './ui/myDataView';
 import { clearMemos } from './viz/memo';
 import { createMapStrip } from './ui/mapStrip';
 import { renderData } from './ui/dataView';
-import { renderDashboard } from './ui/dashboard';
+import { renderDashboard, resetCards } from './ui/dashboard';
 
 initTheme(); // index.html already set data-theme before paint; this adds the OS listener for 'system'
 // The DB (PGlite download + seed, the slowest part of startup) boots in parallel with the ticket chunk below.
@@ -296,6 +296,7 @@ startRouter(showRoute);
 // "My data" (Plan Import): imported CSVs stay in this browser (IndexedDB) and are replayed into the sandbox schema.
 const myData = new MyData(db, idbStore(), () => {
   clearMemos(); // cached plans, steps and ER metadata describe the old data
+  resetCards(); // so do card results, including "table missing" from before restore() replayed it; rerender() runs them again
   work.setSchema(editorSchema());
   panel.refresh();
   rerender();

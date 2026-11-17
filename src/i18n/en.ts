@@ -499,6 +499,8 @@ export const en: Record<Key, Msg> = {
   'dash.slowTitle': 'Slow · no longer runs by itself',
   'dash.slow': 'Last time this query ran for more than 5 seconds, so the database had to restart. Try a narrower time window, or group before joining.',
   'dash.retrySlow': 'Try again',
+  'dash.notRun': 'Not run on this device yet. Cards from an imported save do not run by themselves: check the SQL, then press Run.',
+  'dash.run': 'Run',
   'dash.waiting': 'Waiting to run…',
   'dash.ran': 'ran in {ms} ms',
   'dash.sql': 'Show SQL',

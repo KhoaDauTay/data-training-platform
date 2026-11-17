@@ -1,5 +1,6 @@
 import { DbRestartError, QueryTimeoutError } from './db/client';
 import type { QueryResult } from './db/run';
+import { localStore, readJson, writeJson, type KV } from './storage';
 import { chartSpec, MAX_POINTS, NUMERIC, type ChartSpec } from './viz/chart';
 
 /**
@@ -123,10 +124,35 @@ ${c.sql}`;
       }
       return p;
     },
+    /** Started (or finished) in this session. */
+    has: (c: Card): boolean => runs.has(keyOf(c)),
+    /** "My data" changed: every cached result (or 42P01 failure) may be out of date. */
+    clear: (): void => runs.clear(),
     /** "Chạy lại", unpin: the next result() runs the card again. */
     forget(id: string): void {
       for (const k of runs.keys()) if (k.startsWith(`${id}
 `)) runs.delete(k);
     },
   };
+}
+
+/**
+ * Device preference (never in Save): the cards (id + SQL) that ran without error on this device. Only those run by themselves
+ * when the dashboard opens; a card from an imported save waits for "Chạy" (review-log Plan 5: imported SQL never auto-runs).
+ */
+export const RAN_KEY = 'cargo-query/cards-ran';
+const MAX_RAN = 64;
+const ranKey = (c: Card): string => `${c.id}
+${c.sql}`;
+
+/** Validated on read: anything that is not a list of short strings is dropped. */
+export function loadRan(storage: KV | undefined = localStore()): string[] {
+  const v = readJson<unknown>(RAN_KEY, storage);
+  return Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string' && x.length <= MAX_CARD_SQL + 41).slice(-MAX_RAN) : [];
+}
+export const ranHere = (c: Card, storage?: KV): boolean => loadRan(storage).includes(ranKey(c));
+export function markRan(c: Card, storage?: KV): void {
+  const k = ranKey(c);
+  const ran = loadRan(storage);
+  if (!ran.includes(k)) writeJson(RAN_KEY, [...ran, k].slice(-MAX_RAN), storage);
 }
