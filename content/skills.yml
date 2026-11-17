@@ -157,3 +157,73 @@
   syntax: "ROUND(count(*) FILTER (WHERE status = 'CANCELLED')::numeric * 100 / count(*), 2)"
   when: { vi: "Tính tỷ lệ, phần trăm, hay đổi chữ thành số hoặc ngày.", en: "Compute a rate or a percentage, or turn text into a number or a date." }
   trap: { vi: "Số nguyên chia số nguyên bỏ phần lẻ: 3 / 4 = 0. Ép một vế sang numeric trước khi chia.", en: "Integer divided by integer drops the decimals: 3 / 4 = 0. Cast one side to numeric before dividing." }
+
+- id: scalar_subquery
+  chapter: 7
+  label: { vi: "Truy vấn con trả một giá trị", en: "Scalar subquery" }
+  syntax: "HAVING count(*) > (SELECT count(*)::numeric / count(DISTINCT customer_id) FROM shipments WHERE ...)"
+  when: { vi: "So từng dòng hay từng nhóm với một con số tính từ cả bảng: trung bình, mức cao nhất.", en: "Compare each row or group with one number computed over the whole table: an average, a maximum." }
+  trap: { vi: "Truy vấn con phải tự lọc lại đúng tập dữ liệu; điều kiện của câu ngoài không áp vào nó.", en: "The subquery has to filter the same data again; the outer query's conditions do not apply inside it." }
+
+- id: in_subquery
+  chapter: 7
+  label: { vi: "IN với truy vấn con", en: "IN with a subquery" }
+  syntax: "WHERE customer_id IN (SELECT customer_id FROM shipments ... GROUP BY customer_id HAVING count(*) > 150)"
+  when: { vi: "Lọc theo một danh sách mà chính danh sách đó phải tính ra.", en: "Filter by a list that has to be computed first." }
+  trap: { vi: "NOT IN với danh sách có NULL không trả dòng nào. Lọc IS NOT NULL trong truy vấn con, hoặc dùng NOT EXISTS.", en: "NOT IN against a list that contains NULL returns no rows. Filter IS NOT NULL inside the subquery, or use NOT EXISTS." }
+
+- id: exists
+  chapter: 7
+  label: { vi: "EXISTS và NOT EXISTS", en: "EXISTS and NOT EXISTS" }
+  syntax: "WHERE NOT EXISTS (SELECT 1 FROM shipments s WHERE s.customer_id = q.customer_id AND s.booking_date >= q.quote_date)"
+  when: { vi: "Hỏi có hay chưa có bản ghi liên quan, kể cả khi điều kiện so ngày hay so khoảng.", en: "Ask whether a related record exists, even when the match compares dates or ranges." }
+  trap: { vi: "Quên điều kiện nối với câu ngoài (s.customer_id = q.customer_id) thì EXISTS hỏi cả bảng, đúng hoặc sai cho mọi dòng.", en: "Without the link to the outer row (s.customer_id = q.customer_id), EXISTS asks about the whole table and is true or false for every row." }
+
+- id: correlated_value
+  chapter: 7
+  label: { vi: "Tra giá trị theo từng dòng", en: "Correlated lookup" }
+  syntax: "(SELECT r.buy_usd FROM rate_contracts r WHERE r.pod = q.pod AND q.quote_date BETWEEN r.valid_from AND r.valid_to)"
+  when: { vi: "Mỗi dòng cần một giá trị từ bảng khác, đúng tại ngày của dòng đó: giá đang hiệu lực, tỷ giá ngày đó.", en: "Each row needs one value from another table as of its own date: the rate in force, that day's price." }
+  trap: { vi: "Thiếu điều kiện ngày hiệu lực thì truy vấn con trả nhiều dòng và báo lỗi, hoặc lấy nhầm giá của kỳ khác.", en: "Without the validity-date condition the subquery returns several rows and fails, or picks the price of another period." }
+
+- id: cte
+  chapter: 8
+  label: { vi: "CTE (WITH)", en: "CTE (WITH)" }
+  syntax: "WITH paid AS (SELECT invoice_id, SUM(amount_vnd) AS paid FROM payments GROUP BY invoice_id) SELECT ... LEFT JOIN paid p ON ..."
+  when: { vi: "Cộng riêng một bảng trước khi nối, hoặc đặt tên cho một bước tính để đọc dễ.", en: "Total one table before joining it, or give a calculation step a name so it reads clearly." }
+  trap: { vi: "Nối thẳng hóa đơn với thanh toán rồi mới cộng thì hóa đơn trả hai lần bị cộng hai lần. Cộng thanh toán theo hóa đơn trước.", en: "Joining invoices to payments and then summing counts an invoice paid twice twice. Total the payments per invoice first." }
+
+- id: multi_cte
+  chapter: 8
+  label: { vi: "Nhiều CTE nối tiếp", en: "Chained CTEs" }
+  syntax: "WITH paid AS (...), overdue AS (SELECT ... FROM invoices i LEFT JOIN paid p ...) SELECT ... WHERE o.overdue > (SELECT AVG(overdue) FROM overdue)"
+  when: { vi: "Phép tính nhiều bước: bước sau dùng kết quả bước trước.", en: "A calculation in several steps, each step using the one before." }
+  trap: { vi: "Các CTE cách nhau bằng dấu phẩy, chỉ một chữ WITH ở đầu. Một CTE dùng được nhiều lần trong câu chính.", en: "CTEs are separated by commas, with one WITH at the start. A CTE can be used several times in the main query." }
+
+- id: distinct_on
+  chapter: 8
+  label: { vi: "Dòng mới nhất mỗi nhóm (DISTINCT ON)", en: "Latest row per group (DISTINCT ON)" }
+  syntax: "SELECT DISTINCT ON (b.id) b.bill_no, r.vnd_per_unit FROM vendor_bills b JOIN exchange_rates r ON r.rate_date <= b.bill_date ORDER BY b.id, r.rate_date DESC"
+  when: { vi: "Cần một dòng mới nhất cho mỗi khách, mỗi hóa đơn: tỷ giá gần nhất trước ngày hóa đơn.", en: "You need one latest row per customer or per bill: the most recent rate before the bill date." }
+  trap: { vi: "ORDER BY phải bắt đầu bằng đúng các cột trong DISTINCT ON, rồi mới đến cột chọn dòng giữ lại; thiếu DESC là lấy dòng cũ nhất.", en: "ORDER BY must start with exactly the DISTINCT ON columns, then the column that picks the row; without DESC you keep the oldest row." }
+
+- id: union
+  chapter: 9
+  label: { vi: "Gộp danh sách (UNION)", en: "Combine lists (UNION)" }
+  syntax: "SELECT mbl_no, 'MBL' FROM master_bills WHERE ... UNION ALL SELECT hbl_no, 'HBL' FROM house_bills WHERE ..."
+  when: { vi: "Hai nguồn cùng loại thông tin cần nằm trong một danh sách.", en: "Two sources of the same kind of information belong in one list." }
+  trap: { vi: "UNION bỏ dòng trùng, UNION ALL giữ lại. Mỗi câu SELECT có WHERE riêng; ORDER BY chỉ viết một lần ở cuối.", en: "UNION drops duplicate rows, UNION ALL keeps them. Each SELECT has its own WHERE; ORDER BY is written once, at the end." }
+
+- id: except
+  chapter: 9
+  label: { vi: "Hiệu và giao (EXCEPT, INTERSECT)", en: "Difference and intersection (EXCEPT, INTERSECT)" }
+  syntax: "SELECT s.ref FROM ... delivered ... EXCEPT SELECT s.ref FROM invoices i JOIN shipments s ON s.id = i.shipment_id"
+  when: { vi: "Thứ có ở sổ này mà sổ kia chưa có (EXCEPT), hoặc có ở cả hai (INTERSECT).", en: "What one book has and the other does not (EXCEPT), or what both have (INTERSECT)." }
+  trap: { vi: "So cả dòng: hai bên phải cùng số cột, cùng ý nghĩa. Thêm một cột lệch nhau (ví dụ ngày) thì dòng nào cũng thành khác.", en: "Whole rows are compared: both sides need the same columns with the same meaning. One extra column that differs (a date) makes every row different." }
+
+- id: full_join
+  chapter: 9
+  label: { vi: "Đối chiếu hai phía (FULL JOIN)", en: "Two-sided reconciliation (FULL JOIN)" }
+  syntax: "WITH b AS (...), d AS (...) SELECT COALESCE(b.ref, d.ref), b.atd, d.hbl_no FROM b FULL JOIN d ON d.shipment_id = b.id WHERE b.id IS NULL OR d.shipment_id IS NULL"
+  when: { vi: "Đối chiếu hai sổ mà dòng lệch có thể nằm ở bất kỳ bên nào.", en: "Reconcile two books when a mismatch can sit on either side." }
+  trap: { vi: "Lọc tháng ở WHERE sau FULL JOIN là bỏ mất dòng chỉ có ở một bên. Lọc mỗi sổ trước, trong CTE hoặc truy vấn con, rồi mới nối.", en: "A month filter in WHERE after the FULL JOIN throws away the one-sided rows. Filter each book first, in a CTE or subquery, then join." }

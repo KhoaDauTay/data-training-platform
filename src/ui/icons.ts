@@ -102,9 +102,10 @@ export const SKILL_ICON: Record<string, IconName> = {
   date_math: 'dateMath', date_bucket: 'dateBucket', null_logic: 'emptySet', case_when: 'branch', conditional_agg: 'sigmaCheck',
   coalesce: 'fallback', string_fn: 'text', pattern_match: 'pattern', distinct: 'distinct', cast: 'cast',
   // Planned (curriculum.md): mapped now so a new skill gets its picture the day it is added.
-  in_subquery: 'nested', scalar_subquery: 'nested', correlated_value: 'nested', exists: 'nestedCheck',
-  cte: 'steps', multi_cte: 'steps', window_agg: 'window', window_lag: 'windowLag', window_rank: 'windowRank',
-  union: 'stack', except: 'minus', full_join: 'fullJoin', distinct_on: 'distinct', explain_read: 'plan', index_design: 'bookIndex',
+  // Plan 3: every skill needs its own icon (tests/icons.test.ts); existing shapes until the UI draws dedicated ones (R13).
+  in_subquery: 'list', scalar_subquery: 'nested', correlated_value: 'link', exists: 'nestedCheck',
+  cte: 'steps', multi_cte: 'repeat', window_agg: 'window', window_lag: 'windowLag', window_rank: 'windowRank',
+  union: 'stack', except: 'minus', full_join: 'fullJoin', distinct_on: 'clockOff', explain_read: 'plan', index_design: 'bookIndex',
 };
 export const skillIconName = (id: string): IconName => SKILL_ICON[id] ?? 'puzzle';
 

@@ -28,7 +28,7 @@
   employee: 2
   role: { vi: "Trưởng phòng Sales, kiêm pricing", en: "Head of Sales, also runs pricing" }
   bio: { vi: "Nói nhanh, mê top N và số tròn, việc gì cũng \"gấp lắm\".", en: "Talks fast, loves top-N lists and round numbers, everything is \"urgent\"." }
-  tables: [customers, carriers]
+  tables: [customers, carriers, quotations]
   look: { skin: light, hair: black, style: side, accessory: none }
 
 - name: "Hoàng Ngọc"
@@ -44,7 +44,7 @@
   employee: 30
   role: { vi: "Kế toán trưởng (công nợ phải thu, phải trả)", en: "Chief accountant (receivables and payables)" }
   bio: { vi: "Cẩn thận từng đồng, luôn hỏi \"làm tròn mấy số?\".", en: "Careful with every cent, always asks \"rounded to how many decimals?\"." }
-  tables: [customers]
+  tables: [customers, invoices, payments, vendor_bills, exchange_rates]
   look: { skin: medium, hair: brown, style: short, accessory: glasses }
 
 - name: "Võ Thu"
@@ -60,7 +60,7 @@
   employee: 16
   role: { vi: "Nhân viên chứng từ & booking (B/L, HBL/MBL)", en: "Documentation and booking officer (B/L, HBL/MBL)" }
   bio: { vi: "Soi từng số vận đơn, không để lô nào lệch sổ.", en: "Checks every bill of lading number and never lets a shipment drift off the books." }
-  tables: [shipments, containers, incoterms]
+  tables: [shipments, containers, incoterms, master_bills, house_bills]
   look: { skin: light, hair: black, style: long, accessory: lanyard }
 
 - name: "Bùi Long"
@@ -84,7 +84,7 @@
   employee: 7
   role: { vi: "Nhân viên pricing (báo giá cước)", en: "Pricing officer (freight quotes)" }
   bio: { vi: "Thuộc giá cước mọi tuyến, không chịu bán dưới giá mua.", en: "Knows the rate on every lane and refuses to sell below cost." }
-  tables: [carriers, ports]
+  tables: [carriers, ports, rate_contracts, quotations]
   look: { skin: light, hair: brown, style: bun, accessory: scarf }
 
 - name: "Hoàng Dũng"
@@ -100,7 +100,7 @@
   employee: 33
   role: { vi: "Kế toán công nợ phải thu (AR)", en: "Accounts receivable accountant (AR)" }
   bio: { vi: "Nhắc nợ nhẹ nhàng nhưng không bỏ sót ai.", en: "Chases payments politely but never misses anyone." }
-  tables: [customers]
+  tables: [customers, invoices, payments]
   look: { skin: light, hair: black, style: long, accessory: glasses }
 
 - name: "Hoàng Thảo"
@@ -108,7 +108,7 @@
   employee: 34
   role: { vi: "Kế toán công nợ phải trả (AP)", en: "Accounts payable accountant (AP)" }
   bio: { vi: "Đối chiếu từng hóa đơn nhà cung cấp với tỷ giá trong ngày.", en: "Matches every supplier invoice against the exchange rate of the day." }
-  tables: [carriers]
+  tables: [carriers, vendor_bills, exchange_rates]
   look: { skin: medium, hair: brown, style: bun, accessory: none }
 
 - name: "Đặng Trang"
