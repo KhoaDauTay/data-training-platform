@@ -248,3 +248,14 @@ Vòng 1/3 (2026-11-17): review code + nội dung (đọc đủ 18 ticket VI/EN, 
 | test-gap | `correlated_value` khớp mọi truy vấn con (`IN (SELECT`, `EXISTS`, `FROM (SELECT`) → luật twist→boss không bắt được boss thiếu truy vấn con tương quan; chưa test thông báo lỗi tải nội dung; a11y: thông báo đang tải hiện và điền cùng lúc, có thể không được đọc | Đã sửa 711710e (correlated_value + test âm), a96e884 (điền chữ trước khi hiện); bỏ qua test thông báo lỗi tải nội dung: môi trường test không có DOM |
 
 Sửa vòng 1: commits f932d9e, a96e884, 711710e, d5bed6d, 126bfdb, 3a43da5, 65bf058, 589597a. Cần kiểm trên trình duyệt: thứ tự tải (worker PGlite bắt đầu trước/song song chunk ticket) và thời gian khởi động bản build; thanh trạng thái DB khi DB sẵn sàng trước khi nội dung tải xong; trình đọc màn hình đọc thông báo đang tải.
+
+Vòng 2/3 (2026-11-17): review lại các sửa vòng 1.
+
+| Loại | Bug | Trạng thái |
+|---|---|---|
+| content (hard) | ch7-05: cột TEU không qua báo giá toàn-có-hoặc-không theo chiều hàng trong 5 tuyến đầu (báo giá chỉ gắn lô xuất khẩu đường biển: 3 tuyến xuất = 0, 2 tuyến nhập = đủ TEU), nên `CASE WHEN s.direction = 'IMPORT'` qua mà không cần NOT EXISTS; `wrong:` NOT IN chỉ lệch 2 dòng | Đã sửa 2891dc5: ch7-05 về bản trước 126bfdb (độ khó 2, bảng/requires cũ). Không ticket chương 7 nào có câu ngoài là `shipments` với danh sách `quotations.shipment_id` (ch7-01/02/03/04 hỏi theo báo giá hoặc `customer_id` NOT NULL; ch7-06 là boss, không có `wrong:`), nên bẫy NOT IN với NULL chỉ còn ở thẻ kỹ năng `in_subquery` và câu ngẫm lại ch7-02; mục tiêu chương 7 bỏ vế "tránh bẫy NOT IN với ô trống" (VI + EN) |
+| judgement | `correlatedSubquery` có thể bắt sai/bỏ sót: tham chiếu câu ngoài không alias cùng bảng, nối bằng dấu phẩy, bảng dẫn xuất, LATERAL | Mở (judgement, chỉ ảnh hưởng kiểm nội dung) |
+| judgement | `startup.test.ts` chỉ kiểm thứ tự chữ trong nguồn; worker vẫn seed khi tải nội dung lỗi | Mở (judgement) |
+| pedagogy | ch9-04: `wrong:` lọc tháng ở WHERE sau FULL JOIN hiếm khi khớp câu người chơi hay viết | Mở: dạng hay gặp (CTE không lọc tháng, `WHERE (b.atd trong tháng OR i.issue_date trong tháng) AND (b.id IS NULL OR i.shipment_id IS NULL)`, cũng như dạng `(… OR b.id IS NULL) AND (… OR i.shipment_id IS NULL)`) ra 0 dòng ở biến thể 08/2026 và 06/2026, còn ở 10/2026 trùng hệt `wrong[0]` (12 dòng), nên không thêm được (content.test đòi có dòng và khác Solution ở mọi biến thể); dạng AND cả hai tháng thì rỗng theo cấu trúc. Giữ `wrong:` hiện có |
+
+**Plan 3 đóng sau 2 vòng.**
