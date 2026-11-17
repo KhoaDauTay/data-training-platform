@@ -88,34 +88,57 @@ function conclusion(tk: Ticket, x: TicketText): HTMLElement {
 function exampleCard(tk: Ticket, x: TicketText): HTMLElement | null {
   if (!tk.example || !x.example) return null;
   const sql = tk.example.sql;
+  const status = h('p', { role: 'status', class: 'mb-0 text-sm text-muted' });
   return h('section', { class: 'my-3 rounded-xl bg-panel p-3 ring-1 ring-line', 'aria-labelledby': 'example-title' },
     h('h3', { id: 'example-title', class: 'mt-0' }, t('brief.example')),
     h('pre', { class: 'sql' }, sql),
     richText(x.example),
-    h('button', { type: 'button', onclick: () => actions.useSql(sql) }, t('brief.useExample')));
+    h('button', {
+      type: 'button',
+      onclick: () => {
+        actions.useSql(sql);
+        status.textContent = t('brief.exampleCopied'); // the draft was replaced: say how to get it back
+      },
+    }, t('brief.useExample')),
+    status);
 }
 
-/** Recap question (curriculum §5.5): pick an option, then the right one and the reason show. */
+/**
+ * Recap question (curriculum §5.5): pick an option, then the right one (✓ and a text label, not only colour) and the reason show.
+ * Picking updates the card in place, so focus stays on the chosen button and the status element is the same one each time.
+ */
 function reflectCard(tk: Ticket): HTMLElement | null {
   const r = tk.reflect;
   if (!r) return null;
   const lang = getLang();
-  const pick = reflected.get(tk.id);
+  const status = h('p', { role: 'status', class: 'mb-0' });
+  const buttons = r.options.map((_, i) => h('button', {
+    type: 'button',
+    onclick: () => {
+      reflected.set(tk.id, i);
+      draw();
+    },
+  }));
+  const draw = (): void => {
+    const pick = reflected.get(tk.id);
+    buttons.forEach((b, i) => {
+      const right = pick !== undefined && i === r.answer;
+      b.className = cx('text-left', right && 'ring-2 ring-emerald-500');
+      b.setAttribute('aria-pressed', pick === i ? 'true' : 'false');
+      b.replaceChildren(...nodes(
+        right ? `${mark(true)} ` : pick === i ? `${mark(false)} ` : null,
+        r.options[i][lang],
+        right ? h('span', { class: 'good' }, ` (${t('recap.reflectAnswer')})`) : null));
+    });
+    status.className = cx('mb-0', pick !== undefined && (pick === r.answer ? 'good' : 'bad'));
+    status.textContent = pick === undefined ? '' : `${t(pick === r.answer ? 'recap.reflectRight' : 'recap.reflectWrong')} ${r.why[lang]}`;
+  };
+  draw();
   return h('section', { class: 'my-3 rounded-xl bg-panel p-3 ring-1 ring-line', 'aria-labelledby': 'reflect-title' },
     h('h4', { id: 'reflect-title', class: 'mt-0' }, t('recap.reflect')),
     h('p', {}, r.q[lang]),
-    h('div', { class: 'flex flex-col items-start gap-1.5' }, ...r.options.map((o, i) => h('button', {
-      type: 'button',
-      class: cx('text-left', pick !== undefined && i === r.answer && 'ring-2 ring-emerald-500'),
-      'aria-pressed': pick === i ? 'true' : 'false',
-      onclick: () => {
-        reflected.set(tk.id, i);
-        actions.rerender();
-      },
-    }, o[lang]))),
-    pick === undefined
-      ? null
-      : h('p', { role: 'status', class: pick === r.answer ? 'good' : 'bad' }, `${t(pick === r.answer ? 'recap.reflectRight' : 'recap.reflectWrong')} ${r.why[lang]}`));
+    h('div', { class: 'flex flex-col items-start gap-1.5' }, ...buttons),
+    status);
 }
 
 /** "This week at Cargo Query" (product-design-v2 ★4): the chapter's story, shown on its first ticket only. */

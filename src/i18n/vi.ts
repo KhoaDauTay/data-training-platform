@@ -295,6 +295,8 @@ export const vi = {
   'recap.reflect': 'Ngẫm lại',
   'recap.reflectRight': 'Chính xác.',
   'recap.reflectWrong': 'Chưa đúng.',
+  'recap.reflectAnswer': 'đáp án đúng',
+  'brief.exampleCopied': 'Đã chép ví dụ vào editor. Bấm {mod}+Z để lấy lại bài đang làm.',
   'sqlerr.doubleQuote': 'Nháy kép "…" là tên cột. Giá trị chữ dùng nháy đơn: \'Europe\'.',
   'sqlerr.aggWhere': 'WHERE lọc từng dòng trước khi gom nhóm. Điều kiện trên COUNT/SUM đặt ở HAVING.',
   'sqlerr.missingFrom': 'Alias này chưa được khai báo ở FROM hoặc JOIN.',
