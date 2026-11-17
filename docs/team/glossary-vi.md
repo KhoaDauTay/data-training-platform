@@ -107,7 +107,7 @@ Mẫu nhãn VI: **cụm từ Việt + (từ khóa hoặc thuật ngữ EN)**, nh
 | HAVING | filter groups | lọc nhóm | | — | |
 | subquery | subquery | truy vấn con | | [S4] ✓ | |
 | scalar subquery | scalar subquery | truy vấn con trả một giá trị | | — | "vô hướng" chỉ dùng trong tài liệu nội bộ |
-| correlated subquery | correlated subquery | truy vấn con tương quan | (correlated subquery) | tìm | Dịch sát, chưa có nguồn tiếng Việt đã mở |
+| correlated subquery | correlated subquery | truy vấn con tương quan | (correlated subquery) | — | Dịch sát, chưa có nguồn tiếng Việt đã mở |
 | CTE | CTE | CTE | CTE (bước tính có tên, viết bằng WITH) | [S4] ✓ "tập kết quả tạm thời, có tên" | **Không gọi là "bảng tạm"**: [S4] dùng "bảng tạm" cho temporary table |
 | window function | window function | **hàm cửa sổ** | hàm cửa sổ (window function) | [S1] ✓ "Window Functions (Hàm cửa sổ)" | |
 | partition | partition | nhóm (của PARTITION BY) | | [S1] ✓ "Chia nhóm cửa sổ" | "phân vùng" dành cho bảng phân vùng (table partitioning), như ở `node.append` |
@@ -129,7 +129,7 @@ Mẫu nhãn VI: **cụm từ Việt + (từ khóa hoặc thuật ngữ EN)**, nh
 | execution plan | execution plan, plan | kế hoạch thực thi; viết tắt "kế hoạch" | kế hoạch thực thi (execution plan) | [S2] ✓ "kế hoạch thực thi (Execution Plan)" | |
 | EXPLAIN | EXPLAIN | EXPLAIN | | [S2] ✓ | |
 | index | index | **chỉ mục** | chỉ mục (index) | [S12] slug, [S2] ✓ giữ "Index" | Người làm nghề hay nói "index", nhưng nội dung (75 chỗ) và thẻ kỹ năng đã dùng "chỉ mục". Chọn "chỉ mục" và chú thích (index) lần đầu. Nhóm D của mục 3 sửa các chỗ UI còn ghi "index". **Cần user chốt** (mục 5) |
-| sargable | sargable | điều kiện dùng được chỉ mục | (sargable) | [S12] tìm | |
+| sargable | sargable | điều kiện dùng được chỉ mục | (sargable) | — | Không có từ Việt; chỉ có bài tiếng Anh |
 | sequential scan | Seq Scan | đọc cả bảng (Seq Scan) | | [S2] ✓ "Quét tuần tự… (Seq Scan)" | Tên node giữ tiếng Anh. "đọc cả bảng" và "đọc toàn bộ bảng" đều được |
 | index scan | Index Scan | đọc qua chỉ mục (Index Scan) | | [S2] ✓ | |
 | node | node | node | | [S2] ✓ "Node" | |
@@ -176,7 +176,7 @@ Mẫu nhãn VI: **cụm từ Việt + (từ khóa hoặc thuật ngữ EN)**, nh
 | shipment | shipment | lô hàng, lô | | — | |
 | bill of lading | bill of lading, B/L | vận đơn (B/L) | | [S7] ✓ | |
 | MBL | master bill (MBL) | vận đơn chủ (MBL) | | [S7] ✓ "vận đơn chủ"; [S10] slug | |
-| HBL | house bill (HBL) | vận đơn nhà (HBL) | | [S7] ✓ gọi là "vận đơn thứ cấp" | Văn bản pháp lý dùng "vận đơn thứ cấp"; trong nghề "vận đơn nhà" quen hơn. Giữ "vận đơn nhà", có thể ghi "(vận đơn thứ cấp)" trong `glossary.yml` |
+| HBL | house bill (HBL) | vận đơn nhà (HBL) | | [S7] ✓ gọi là "vận đơn thứ cấp"; [S10] slug cũng vậy | Nguồn đã mở chỉ dùng "vận đơn thứ cấp". "Vận đơn nhà" (dịch sát house bill) là cách nội dung đang dùng ở mọi chỗ, nhưng **chưa xác minh** được nguồn Việt. Tạm giữ; xem mục 5 |
 | air waybill | air waybill (AWB) | vận đơn hàng không (AWB) | | — | ch6-05 có dùng |
 | ETD / ETA | ETD / ETA | giữ; ngày dự kiến khởi hành / dự kiến đến | | — | `glossary.yml` đúng |
 | ATD / ATA | ATD / ATA | giữ; ngày khởi hành / đến thực tế | | — | |
@@ -192,7 +192,7 @@ Mẫu nhãn VI: **cụm từ Việt + (từ khóa hoặc thuật ngữ EN)**, nh
 | D&D | D&D (demurrage and detention) | phí lưu container quá hạn (D&D); trong nghề: "phí DEM/DET" | phí lưu container quá hạn (D&D) | [S6] ✓ | |
 | demurrage | demurrage (DEM) | DEM: phí lưu container tại bãi cảng | | [S6] ✓ "phí lưu container tại bãi cảng" | |
 | detention | detention (DET) | DET: phí lưu container ngoài cảng (vỏ container giữ tại kho chủ hàng) | | [S6] ✓ "giữ vỏ container rỗng tại kho riêng" | |
-| storage | storage | phí lưu bãi (cảng thu) | | [S6] ✓ "Phí Storage"; [S19b] slug DHL "phí lưu bãi, lưu container và lưu kho" | Khác D&D: cảng thu, không phải hãng tàu. "phí lưu bãi, lưu container" = storage + D&D |
+| storage | storage | phí lưu bãi (cảng thu) | | [S6] ✓ gọi là "Phí Storage (Phí Lưu Kho)"; [S19b] slug DHL "phí lưu bãi, lưu container và lưu kho" | Khác D&D: cảng thu, không phải hãng tàu. **Tạm thời**: [S6] gọi storage là "phí lưu kho". Theo kết quả tìm kiếm, DHL lưu ý "phí lưu bãi" và "phí lưu container" bị hiểu đảo nghĩa ở vài thị trường. Chưa mở được trang DHL, nên dòng này cùng B2, B3, H5 chờ xác minh (mục 5) |
 | free time | free time | thời gian miễn phí | (free time) | [S6] ✓ "'thời gian miễn phí' (Free Time)" | |
 | empty return | empty return | trả rỗng (trả vỏ container) | | — | |
 | BAF | BAF | phụ phí nhiên liệu (BAF) | | [S8] ✓ "Phụ phí nhiên liệu" | **không có trong nội dung**; chỉ ghi để dùng sau |
@@ -212,13 +212,16 @@ Mẫu nhãn VI: **cụm từ Việt + (từ khóa hoặc thuật ngữ EN)**, nh
 
 ## 3. Danh sách chỗ lệch (audit)
 
-Tổng **67 mục** trong 8 nhóm A–H; một mục có thể gồm nhiều dòng cùng loại. Ký hiệu cột "Ảnh hưởng":
+Tổng **72 mục** trong 9 nhóm A–I; một mục có thể gồm nhiều dòng cùng loại. Ký hiệu cột "Ảnh hưởng":
 - **CS**: đụng code span (phải giống hệt VI/EN). **Không đề xuất nào đổi code span**; các câu có code span chỉ đổi phần chữ ngoài backtick.
 - **SQLISH**: nằm trong thân đề, Task hoặc đề bước, nên phải tránh từ khóa viết hoa, mã trạng thái và tên snake_case. Mọi đề xuất ở các chỗ này đều đã qua quy tắc đó.
 - **i18n**: chuỗi trong `vi.ts`/`en.ts`. Placeholder `{x}` phải giữ nguyên. Không đề xuất nào làm VI giống hệt EN, nên không cần sửa `SAME_OK`.
 - **test-title**: chuỗi chỉ xuất hiện trong tên test, không nằm trong phép kiểm.
 
-Đã grep `tests/` và `src/` (ngoài `src/i18n/`) cho mọi chuỗi đề xuất đổi. Chỉ "Ticket tiếp theo" có trong tên test `tests/coach.test.ts:52`, và test đó kiểm selector, không kiểm chữ.
+Đã grep `tests/` và `src/` (ngoài `src/i18n/`) cho các chuỗi đề xuất đổi: nhãn kỹ năng ở nhóm A, `term` Demurrage/Detention, các chuỗi ở nhóm C–H.
+- Chỉ "Ticket tiếp theo" có trong tên test `tests/coach.test.ts:52`, và test đó kiểm selector, không kiểm chữ.
+- `glossary.term` chỉ được dùng để hiển thị và lọc (`src/ui/notebook.ts`), nên đổi tên ở B2 an toàn.
+- `tests/progress.test.ts` chỉ kiểm nhãn có đủ vi/en, không giới hạn độ dài.
 
 ### A. `content/skills.yml` (10 mục)
 
@@ -330,15 +333,25 @@ Ba câu trong ticket còn nói "ticket" với người chơi: ch2-02:24 "giống
 | H7 | vi.ts:351 `explain.intro` | "Giai đoạn Optimize chọn kế hoạch…; Execute chạy hết…" | "Giai đoạn Tối ưu chọn kế hoạch…; Thực thi chạy hết…" (khớp `steps.stage3/4`) | i18n, giữ `{ms}` |
 | H8 | vi.ts:318 `sqlerr.labOnly` | "Phòng thí nghiệm chỉ chạy…" | "Bài thử chỉ mục chỉ chạy…" (dịch sát "lab" khó hiểu) | i18n. Tùy chọn |
 
-Đếm: A 10 + B 4 + C 11 + D 5 + E 17 + F 10 + G 2 + H 8 = **67 mục**. Nhóm D phụ thuộc quyết định ở mục 5.
+### I. Bổ sung sau khi soát lại không cắt dòng (5 mục)
+
+| # | File:dòng | Hiện tại | Đề xuất | Ảnh hưởng |
+|---|---|---|---|---|
+| I1 | ch10-06:104 (Hints) | "kèm một tổng chạy theo tháng" | "kèm một tổng lũy kế theo tháng" (cùng loại H4) | — |
+| I2 | ch2-01:25, ch3-01:24 (Hints); ch3-01:15 (`columns` "Ngày booking"); ch3-01:21, ch6-03:35, ch6-04:40 (Task) | "ngày booking" | "ngày đặt chỗ", cùng loại H2. Ở Task, "ngày booking" là lời nghiệp vụ tự nhiên nên **tùy chọn**; ở Hints và `columns` thì nên đổi | :25 có code span `booking_date`: giữ nguyên. Task: SQLISH an toàn (chữ thường) |
+| I3 | ch12-01:38 (Task) | "biên lãi gộp quý 2…", "biên lãi gộp = doanh…" | "biên lợi nhuận gộp" (cùng loại G1) | SQLISH an toàn |
+| I4 | ch12-06:21 (`conclusion`, đáp án) | "…nằm ngay trong biên lãi gộp" | "…nằm ngay trong biên lợi nhuận gộp" (cùng loại G2) | đáp án kết luận; EN không đổi |
+| I5 | ch7-03:41 (Hints); ch9-06:89, :90 (Hints) | "điều kiện ghép là so ngày"; "rồi ghép hai bảng đếm"; "ghép `FULL JOIN … `" | "điều kiện nối…"; "rồi nối hai bảng đếm"; "nối `FULL JOIN …`" (cùng loại E) | CS: giữ nguyên span |
+
+Đếm: A 10 + B 4 + C 11 + D 5 + E 17 + F 10 + G 2 + H 8 + I 5 = **72 mục**. Nhóm D phụ thuộc quyết định ở mục 5.
 
 **Đã soát, không lệch:**
 - "kế hoạch thực thi", "truy vấn con", "hàm cửa sổ" (trừ C10), "cộng dồn"/"tổng lũy kế" (trừ H4), "luồng xanh/vàng/đỏ", "vận đơn chủ/nhà", "hàng lẻ", "kho CFS", "Bảng điều hành", tên Incoterms trong `glossary.yml`.
 - Phía EN ổn: "execution plan", "running total", "tie-breaker", "D&D", "gross margin" và "master/house bill" đều nhất quán.
 
-**Chưa soát:**
-- `conclusion` / `conclusion_en` của ticket boss, vì script soát lọc vùng ngôn ngữ chưa tách được phần frontmatter này.
-- `content/people.yml`.
+**Phạm vi đã soát:**
+- `conclusion` của các ticket boss đã soát bằng grep cho các mẫu trong bảng; chỉ có I4 và ch3-05:18 (nhóm F).
+- **Chưa soát:** `content/people.yml`.
 - Nên soát tay trước khi áp.
 
 ---
@@ -389,3 +402,8 @@ Ba câu trong ticket còn nói "ticket" với người chơi: ch2-02:24 "giống
 2. **hàm gộp hay hàm tổng hợp.** Đề xuất giữ "hàm gộp" vì đang nhất quán. "Hàm tổng hợp" cũng phổ biến nhưng chưa xác minh được ở nguồn đã mở.
 3. **Từ cho đơn vị bài trên UI: "việc" (nhóm F).** Nav đã dùng "Việc trước/sau", "Việc tiếp theo", nên đề xuất thống nhất theo.
 4. **"tiêu chí sắp xếp phụ".** Không có thuật ngữ Việt chuẩn cho tie-breaker. Cụm này mô tả đúng việc nó làm và rõ hơn "phá hòa", nên giữ.
+5. **Chưa xác minh, cần người trong nghề xem:**
+   - **"vận đơn nhà"**: nguồn đã mở chỉ có "vận đơn thứ cấp".
+   - **Storage, DEM, DET và "phí lưu bãi" / "phí lưu kho"** (dòng storage ở 2.4; B2, B3, H5).
+   - **Tên tiếng Việt của Incoterms**: chưa mở được bản dịch chính thức nào.
+   - **"truy vấn con tương quan"**: không tìm thấy nguồn tiếng Việt, đây là cách dịch sát. Nhãn A8 sẽ hiện cụm này cho người chơi.
