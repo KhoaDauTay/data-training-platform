@@ -5,7 +5,7 @@ import { gzipSync } from 'node:zlib';
 
 // First match wins; 'rest' catches every lazy chunk Rolldown names after modules (Mermaid diagrams, sql-formatter as esm-*).
 const GROUPS = [
-  ['main', /^index-.*\.js$/, 270],
+  ['main', /^index-.*\.js$/, 300], // Plan 2: 282 KB after ch4–6 tickets + learning-method engine (Q2, cần user xem cùng P-D3)
   ['css', /^index-.*\.css$/, 20],
   ['worker', /^worker-/, 160],
   ['pglite', /^pglite-/, 5560],
