@@ -7,7 +7,7 @@
 --   * ~2% of AIR shipments carry incoterm FOB (trap: FOB is sea-only, Ch6)
 --   * chapters 4-6 (Plan 2): listed at the head of the Plan 2 block near the end of this file
 --   * chapters 7-9 (Plan 3), incl. the Europe lane (NLRTM/DEHAM/BEANR) margin drop in Q3 2026: head of the Plan 3 block at the end
---   * reserved for Plan 4: customer 1 D&D spike, carrier 3 (Blue Anchor Lines) high claim rate
+--   * chapters 10-12 (Plan 4): customer 1 D&D spike, carrier 3 (Blue Anchor Lines) high claim rate, container_events for the chapter 11 index lab: head of the Plan 4 block at the end
 
 INSERT INTO ports VALUES
   ('VNSGN', 'Ho Chi Minh (Cat Lai)', 'Vietnam', 'Vietnam', 'SEAPORT', 0),
@@ -515,3 +515,81 @@ WITH h AS (
 INSERT INTO house_bills (id, hbl_no, master_bill_id, shipment_id, issue_date, gross_weight_kg)
 SELECT row_number() OVER (ORDER BY issue_date, shipment_id), 'HB' || substr(ref, 3), master_bill_id, shipment_id, issue_date, gross_weight_kg
 FROM d WHERE issue_date <= DATE '2026-10-31';
+
+-- ===== Plan 4 (chapters 10-12). Story hooks (tickets and tests/seed.test.ts depend on them):
+--   * free_time_terms: one row per customer and period (2024-11-01..2026-06-30, 2026-07-01..2026-12-31); free days 7/10/14
+--     never change, the daily rate rises 20% from 2026-07-01 (ch10-04, ch12-03)
+--   * container_events (id = container_id * 10 + step): the life of every FCL container whose shipment sailed (ETD) from
+--     2025-05-01, when container tracking went live: empty out, full in, loaded, discharged, full out, empty back;
+--     about 109k rows (the chapter 11 lab needs a big table; ANALYZE below reads all of it, keep it under 150k); nothing after 2026-10-31 (ch10-03, ch11)
+--   * D&D = days from DISCHARGED to EMPTY_RETURNED of import containers; customer 1 keeps its import containers about
+--     2 weeks longer once discharged from 2026-07-01, so its overrun jumps in Q3 2026 and its October boxes are the
+--     ones stuck at full gate-out on 2026-10-31 (ch10-03, ch10-04, ch12-03, ch12-06)
+--   * claims: about 1.5% of non-cancelled shipments; carrier 3 (Blue Anchor Lines) about 4x that rate in 2026 (ch12-04, ch12-06)
+--   * prebuilt indexes for chapter 11 at the very end; container_events has none on container_id (the index lab)
+SELECT setseed(0.717);
+WITH d AS (
+  SELECT id, (ARRAY[7, 10, 14])[1 + floor(random() * 3)::int] AS free, 40 + floor(random() * 5)::int * 5 AS rate FROM customers ORDER BY id
+)
+INSERT INTO free_time_terms (id, customer_id, valid_from, valid_to, free_days, usd_per_day)
+SELECT row_number() OVER (ORDER BY d.id, p.k), d.id, p.f, p.t, d.free, round((d.rate * p.mult)::numeric, 2)
+FROM d CROSS JOIN (VALUES (1, DATE '2024-11-01', DATE '2026-06-30', 1.0), (2, DATE '2026-07-01', DATE '2026-12-31', 1.2)) p(k, f, t, mult);
+
+SELECT setseed(0.727);
+WITH c AS (
+  SELECT c.id, s.direction, s.customer_id, s.status, s.etd, s.atd, s.ata,
+    random() AS r1, random() AS r2, random() AS r3, random() AS r4, random() AS r5, random() AS r6
+  FROM containers c JOIN shipments s ON s.id = c.shipment_id
+  WHERE s.status <> 'CANCELLED' AND s.etd >= DATE '2025-05-01'
+  ORDER BY c.id
+), t AS (
+  SELECT id, direction, customer_id, status,
+    etd - 3 - floor(r1 * 4)::int + make_interval(hours => 7 + floor(r2 * 10)::int) AS gate_out_empty,
+    etd - 1 - floor(r3 * 2)::int + make_interval(hours => 6 + floor(r4 * 12)::int) AS gate_in_full,
+    atd + make_interval(hours => 2 + floor(r5 * 20)::int) AS loaded,
+    ata + make_interval(hours => 1 + floor(r6 * 20)::int) AS discharged,
+    r1, r2, r3
+  FROM c
+), u AS (
+  SELECT t.*,
+    CASE WHEN status = 'DELIVERED' THEN discharged + make_interval(days => 1 + floor(r2 * 4)::int, hours => 3) END AS gate_out_full
+  FROM t
+), v AS (
+  SELECT u.*, gate_out_full + make_interval(days => 2 + floor(r3 * 7)::int
+      + CASE WHEN customer_id = 1 AND direction = 'IMPORT' AND discharged >= '2026-07-01' THEN 12 + floor(r1 * 8)::int ELSE 0 END,
+      hours => 5) AS empty_returned
+  FROM u
+), e AS (
+  SELECT id, 1 AS k, 'GATE_OUT_EMPTY' AS event, gate_out_empty AS at FROM v
+  UNION ALL SELECT id, 2, 'GATE_IN_FULL', gate_in_full FROM v
+  UNION ALL SELECT id, 3, 'LOADED', loaded FROM v
+  UNION ALL SELECT id, 4, 'DISCHARGED', discharged FROM v
+  UNION ALL SELECT id, 5, 'GATE_OUT_FULL', gate_out_full FROM v
+  UNION ALL SELECT id, 6, 'EMPTY_RETURNED', empty_returned FROM v
+)
+INSERT INTO container_events (id, container_id, event, event_time)
+SELECT id * 10 + k, id, event, at FROM e WHERE at IS NOT NULL AND at < TIMESTAMP '2026-11-01';
+ALTER TABLE container_events ADD PRIMARY KEY (id), ADD FOREIGN KEY (container_id) REFERENCES containers(id);
+
+SELECT setseed(0.737);
+WITH s AS (
+  SELECT s.id, s.carrier_id, s.etd, s.atd, s.ata, s.gross_weight_kg, random() AS r_claim, random() AS r_reason, random() AS r_amt, random() AS r_day
+  FROM shipments s WHERE s.status IN ('DELIVERED', 'ARRIVED') ORDER BY s.id
+), k AS (
+  SELECT s.*, ata + 3 + floor(r_day * 40)::int AS claim_date FROM s
+  WHERE r_claim < CASE WHEN carrier_id = 3 AND ata >= DATE '2026-01-01' THEN 0.06 ELSE 0.015 END
+)
+INSERT INTO claims (id, claim_no, shipment_id, claim_date, reason, amount_usd)
+SELECT row_number() OVER (ORDER BY claim_date, id), 'CL' || to_char(claim_date, 'YYMM') || lpad((row_number() OVER (ORDER BY claim_date, id))::text, 4, '0'),
+  id, claim_date, (ARRAY['DAMAGE', 'SHORTAGE', 'DELAY'])[1 + floor(r_reason * 3)::int], round((150 + r_amt * 4850)::numeric, 2)
+FROM k WHERE claim_date <= DATE '2026-10-31';
+
+-- Chapter 11: the company's indexes on the busiest lookups. ANALYZE so plan costs are the same on every boot.
+CREATE INDEX shipments_booking_date_idx ON shipments (booking_date);
+CREATE INDEX shipments_customer_id_idx ON shipments (customer_id);
+-- container_events is larger than ANALYZE's default 30,000-row sample, and the sample is not seeded by setseed():
+-- read every row so plan costs are identical on every boot.
+SET default_statistics_target = 500;
+ANALYZE container_events;
+RESET default_statistics_target;
+ANALYZE free_time_terms, claims;

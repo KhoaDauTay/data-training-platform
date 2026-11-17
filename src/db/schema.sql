@@ -191,3 +191,31 @@ CREATE TABLE house_bills (
   issue_date date NOT NULL,
   gross_weight_kg numeric(10, 2) NOT NULL
 );
+
+-- Plan 4 (chapters 10-12): container tracking, free time (D&D), claims. Seed blocks for them are appended at the end of seed.sql.
+CREATE TABLE free_time_terms (
+  id int PRIMARY KEY,
+  customer_id int NOT NULL REFERENCES customers(id),
+  valid_from date NOT NULL,
+  valid_to date NOT NULL,
+  free_days int NOT NULL,
+  usd_per_day numeric(8, 2) NOT NULL
+);
+
+-- ~145k rows: the seed bulk-loads it first and adds the primary key and the foreign key afterwards (3x faster).
+-- Deliberately no index on container_id: that is the chapter 11 index lab.
+CREATE TABLE container_events (
+  id int NOT NULL,
+  container_id int NOT NULL,
+  event text NOT NULL CHECK (event IN ('GATE_OUT_EMPTY', 'GATE_IN_FULL', 'LOADED', 'DISCHARGED', 'GATE_OUT_FULL', 'EMPTY_RETURNED')),
+  event_time timestamp NOT NULL
+);
+
+CREATE TABLE claims (
+  id int PRIMARY KEY,
+  claim_no text NOT NULL UNIQUE,
+  shipment_id int NOT NULL REFERENCES shipments(id),
+  claim_date date NOT NULL,
+  reason text NOT NULL CHECK (reason IN ('DAMAGE', 'SHORTAGE', 'DELAY')),
+  amount_usd numeric(10, 2) NOT NULL
+);
