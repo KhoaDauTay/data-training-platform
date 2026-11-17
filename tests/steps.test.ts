@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { buildSteps, runSteps, shownSteps } from '../src/viz/steps';
+import { buildSteps, runSteps } from '../src/viz/steps';
+import { shownSteps } from '../src/viz/stepText';
 import { seededDb } from './helpers';
 
 const Q = `SELECT ca.name, SUM(ct.teu) AS teu
