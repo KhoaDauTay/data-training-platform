@@ -59,6 +59,10 @@ const vi = {
   'adv.status.partial': 'Một phần',
   'adv.status.external': 'Đọc ngoài',
   'adv.needsFirst': 'Nên học trước: {list}',
+  'adv.needs': 'Cần trước:',
+  'adv.done': 'Hoàn thành nút này (thử thách +{xp} XP lần đầu).',
+  'adv.links': 'Đọc thêm',
+  'adv.newTab': 'mở thẻ mới',
 } as const;
 
 export type LearnKey = keyof typeof vi;
@@ -117,6 +121,10 @@ const en: Record<LearnKey, string> = {
   'adv.status.partial': 'Partly',
   'adv.status.external': 'Read outside',
   'adv.needsFirst': 'Learn first: {list}',
+  'adv.needs': 'Needs first:',
+  'adv.done': 'Node complete (the challenge gave +{xp} XP the first time).',
+  'adv.links': 'Read more',
+  'adv.newTab': 'opens a new tab',
 };
 
 export const LEARN_DICT = { vi: vi as Record<LearnKey, string>, en };

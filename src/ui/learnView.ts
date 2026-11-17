@@ -1,7 +1,7 @@
-import type { Drill, General } from '../general';
+import type { AdvNode, Drill, General } from '../general';
 import type { Params } from '../i18n';
 import { learnText, type LearnKey } from '../i18n/learn';
-import { appliesIn, knownSkills, moduleState, nodeState, skillState, type LearnCtx } from '../learn';
+import { appliesIn, CHALLENGE_XP, knownSkills, moduleState, nodeState, skillState, type LearnCtx } from '../learn';
 import type { Skill } from '../progress';
 import type { DrillDeps } from './drillBrief';
 
@@ -27,9 +27,11 @@ export function learnPage(deps: DrillDeps, g: General): HTMLElement {
   d$ = deps;
   const hash = location.hash;
   const skill = d$.SKILLS.find((s) => s.id === d$.learnSkillOf(hash));
+  const node = g.nodes.find((x) => x.id === d$.learnAdvOf(hash));
   const n = d$.learnModuleOf(hash);
   const c = ctx(g);
   if (skill) return skillPage(c, skill);
+  if (node) return advPage(c, node);
   if (n) return modulePage(c, n);
   return overview(c);
 }
@@ -157,4 +159,43 @@ function overview(c: LearnCtx): HTMLElement {
 export function nameOf(c: LearnCtx, id: string): string {
   const lang = d$.getLang();
   return c.skills.find((s) => s.id === id)?.label[lang] ?? c.general.nodes.find((n) => n.id === id)?.title[lang] ?? id;
+}
+
+/** #/learn/adv/<node> (Plan 8a Task 10): why, needs (links, ✓ when learned), lesson on lab, drills + challenge, reading links. */
+function advPage(c: LearnCtx, x: AdvNode): HTMLElement {
+  const { h } = d$;
+  const lang = d$.getLang();
+  const st = nodeState(c, x);
+  const known = knownSkills(c.save, c.tickets, c.skills.map((s) => s.id));
+  const need = (id: string): HTMLElement => {
+    const other = c.general.nodes.find((y) => y.id === id);
+    const ok = other ? nodeState(c, other).done : known.has(id);
+    const href = `${d$.hashOf('learn')}/${other ? `adv/${id}` : `skill/${id}`}`;
+    return h('a', { href, class: ok ? 'font-semibold text-good' : '' }, nameOf(c, id), tick(ok));
+  };
+  const needs = x.needs.flatMap((id, i) => (i ? [', ', need(id)] : [need(id)]));
+  return h('div', { class: 'space-y-5' },
+    h('p', { class: 'm-0' }, h('a', { href: `${d$.hashOf('learn')}` }, lt('learn.backAll'))),
+    h('h2', { class: 'm-0 text-xl font-bold' }, `${x.id.toUpperCase()} · ${x.title[lang]}`),
+    h('p', { class: 'm-0 text-sm text-muted' }, `${STATUS_ICON[x.status]} ${lt(`adv.status.${x.status}` as LearnKey)}`,
+      x.status === 'external' ? '' : ` · ${lt('learn.drills', { n: st.drills, total: st.total })}`),
+    h('p', { class: 'm-0 text-[15px] leading-relaxed' }, x.why[lang]),
+    st.done ? h('p', { class: 'm-0 font-bold text-good', role: 'status' }, lt('adv.done', { xp: CHALLENGE_XP })) : null,
+    x.needs.length ? h('p', { class: 'm-0' }, h('b', {}, lt('adv.needs')), ' ', ...needs) : null,
+    x.applies ? h('p', { class: 'm-0' }, h('b', {}, lt('learn.appliesTitle')), ': ', x.applies[lang]) : null,
+    x.lesson
+      ? h('p', { class: 'm-0 flex flex-wrap items-center gap-2' }, h('span', {}, lt('learn.lesson')),
+        h('button', { type: 'button', class: BTN, 'aria-haspopup': 'dialog', onclick: () => d$.openLesson(x.id, { lesson: x.lesson!, name: () => x.title[d$.getLang()] }) },
+          lt('drill.openLesson'), tick(d$.lessonSeen(x.id))))
+      : null,
+    x.drills.length
+      ? h('div', { class: 'flex flex-wrap items-center gap-2' }, h('span', {}, lt('learn.drillsLine')),
+        ...x.drills.map((d) => drillButton(d, c.save.completed.includes(d.id))))
+      : null,
+    x.links.length
+      ? h('section', { class: 'space-y-1' }, h('h3', { class: 'm-0 font-bold' }, lt('adv.links')),
+        h('ul', { class: 'm-0 list-disc space-y-1 pl-5' }, ...x.links.map((l) => h('li', {},
+          h('a', { href: l.url, target: '_blank', rel: 'noopener noreferrer' }, l.title[lang], ' ↗',
+            h('span', { class: 'sr-only' }, ` (${lt('adv.newTab')})`))))))
+      : null);
 }
