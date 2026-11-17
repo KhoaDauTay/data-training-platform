@@ -272,6 +272,7 @@ registerMode({
 });
 homeHooks.levelOf = (skill) => app.save.review[skill]?.box ?? 1;
 homeHooks.onSkill = (skill) => void startSkill(skill);
+homeHooks.startLane = (task) => startLane(task);
 // Plan Import (L17, I2): "My data" opens the Sandbox, whose left pane holds the CSV import.
 registerMode({
   id: 'mydata', order: 20, icon: 'folder', tint: 'bg-accent-soft text-ink',
