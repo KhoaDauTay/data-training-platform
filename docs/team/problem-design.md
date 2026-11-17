@@ -79,6 +79,8 @@ Grader so kết quả với Solution, nên mọi điều kiện trong Solution p
 
 ### 1.5 Gợi ý: ba bậc, từ nghiệp vụ tới SQL
 
+> **Sửa theo L54 (product-design-v4 §C.4, D-C6):** bậc 1 bắt đầu bằng tên **khái niệm** ("Đây là bài lọc dòng: …"), rồi mới nghiệp vụ → dữ liệu, và nhắc mở lại Bài học nhanh của kỹ năng. Bậc 2 (cú pháp) và bậc 3 (gần đáp án) giữ như bảng dưới. Chương 1: mọi gợi ý miễn phí.
+
 | Bậc | Nội dung | Được nhắc |
 |---|---|---|
 | 1 | **Nghiệp vụ → dữ liệu.** Thông tin cần nằm ở "danh mục" nào, câu hỏi thuộc dạng gì (đếm, xếp hạng, tìm thứ *không có*), điều kiện áp lên từng lô hay lên con số sau khi gom. | Không tên cột, tối đa một từ khóa SQL khi cần đặt tên kỹ thuật vừa học. |
