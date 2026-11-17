@@ -307,3 +307,44 @@ describe('wrongTipper', async () => {
     expect(run).not.toHaveBeenCalled();
   });
 });
+
+describe('ôn đầu chương (warm-up)', async () => {
+  const { loadTickets } = await import('../src/content');
+  const { session, today, warmupDone, warmupToday } = await import('../src/session');
+  const { onPracticeSolved } = await import('../src/ui/modes');
+  const { movedToday, addDays } = await import('../src/practice');
+  const all = loadTickets();
+
+  it('movedToday: đúng khi hạn ôn cách hôm nay đúng một khoảng của hộp', () => {
+    const d = '2026-11-17';
+    expect(movedToday({ box: 2, due: addDays(d, 2) }, d)).toBe(true);
+    expect(movedToday({ box: 2, due: addDays(d, 1) }, d)).toBe(false);
+    expect(movedToday(undefined, d)).toBe(false);
+  });
+
+  it('ôn xong trong ngày thì thẻ ẩn; làm lại không đẩy hộp lần nữa', () => {
+    app.tickets = all;
+    app.save.completed = all.filter((t) => t.chapter < 4).map((t) => t.id); // chapter 4 starts
+    warmupDone.key = '';
+    const items = warmupToday(() => 0);
+    expect(items.length).toBeGreaterThan(0);
+    const finish = () => {
+      const tickets = items.map((i) => all.find((t) => t.id === i.ticketId)!);
+      session.mode = { kind: 'practice', run: { id: 9, items, tickets, index: items.length - 1, wrong: 0, hints: 0, passed: 0, draft: '', warmup: true } };
+      onPracticeSolved();
+    };
+    try {
+      app.save.review = {};
+      finish();
+      expect(app.save.review[items.at(-1)!.skills[0]]?.box).toBe(2);
+      expect(warmupToday(() => 0)).toEqual([]); // hidden until tomorrow
+      finish();
+      expect(app.save.review[items.at(-1)!.skills[0]]?.box).toBe(2); // no farming
+      expect(today()).toBe(warmupDone.key.split('#')[0]);
+    } finally {
+      session.mode = { kind: 'story' };
+      warmupDone.key = '';
+      app.tickets = [];
+    }
+  });
+});
