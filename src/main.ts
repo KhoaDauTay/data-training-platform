@@ -26,7 +26,7 @@ import { renderInbox } from './ui/inbox';
 import { createPanel, registerCoreTabs } from './ui/tabs';
 import { initLayout } from './ui/splitter';
 import { go, startRouter } from './ui/router';
-import { renderTopbar } from './ui/topbar';
+import { initTopbar, renderTopbar } from './ui/topbar';
 import { mountWork } from './ui/work';
 import { registerVizTabs } from './ui/vizTabs';
 import { initMyData, setMyDataStatus } from './ui/myDataView';
@@ -48,6 +48,7 @@ if (loaded.warning?.kind === 'corrupt') app.notice = { key: 'save.corrupt' };
 const firstOpen = (): string => (nextTicket(app.tickets, done()) ?? app.tickets[app.tickets.length - 1]).id;
 app.selectedId = firstOpen();
 app.stepIndex = resumeStep(app.save, selected()); // reloading mid-review keeps the step reached
+initTopbar(); // icon slots first: applyStatic() then only touches the label spans
 applyStatic();
 
 async function loadColumns(): Promise<void> {

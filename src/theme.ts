@@ -71,8 +71,11 @@ export const BTN_GO = 'border-0 bg-blue-700 font-semibold text-white shadow-sm h
 export const BTN_SUBMIT = 'ml-auto border-0 bg-emerald-700 px-4 font-semibold text-white shadow-sm hover:bg-emerald-800 disabled:bg-code disabled:text-disabled';
 /** Controls on the gradient top bar: darkening keeps white text >= 4.5:1 at the cyan end. */
 export const TOP_BTN = 'border-0 bg-black/20 text-white ring-1 ring-white/40 hover:bg-black/30';
-/** Darkening overlays (like TOP_BTN): the nav wraps and can sit over the cyan end, where lightening drops white text under 4.5:1. */
-export const NAV_LINK = 'rounded-lg px-3 py-1.5 text-white no-underline hover:bg-black/20 aria-[current=page]:bg-black/30 aria-[current=page]:font-semibold aria-[current=page]:ring-1 aria-[current=page]:ring-white/60';
+/**
+ * Segmented nav (ui-ux-v3 §a): darkening overlays keep white text >= 4.5:1 over the cyan end of the gradient;
+ * the current page is a white segment with blue-900 text (>= 7:1).
+ */
+export const NAV_LINK = 'rounded-lg px-2.5 py-1 text-center whitespace-nowrap text-white no-underline hover:bg-black/30 aria-[current=page]:bg-white aria-[current=page]:font-semibold aria-[current=page]:text-blue-900 aria-[current=page]:hover:bg-white';
 /** "Done"/"current" status badge (colour only on small badges, L23): emerald-800 on -100, -200 on -950. */
 export const DONE_PILL = 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200';
 
