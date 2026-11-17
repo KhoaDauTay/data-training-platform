@@ -247,13 +247,13 @@ export function renderBrief(host: HTMLElement, tk: Ticket, stepIndex: number): v
     // v10 critic #1: the message, then the Task and the Expected result card, visible without scrolling; the rest below.
     h('div', { class: 'rounded-2xl rounded-tl-sm bg-code px-4 py-0.5 leading-relaxed [&_p]:my-2' }, richText(x.body)),
     x.task ? h('section', { class: 'my-2 rounded-lg border-l-4 border-accent bg-accent-soft px-3 py-2 [&_p]:my-1' }, h('h3', { class: 'mt-0 mb-1' }, t('brief.task')), richText(x.task)) : null,
+    isStory() ? tourSlot('brief') : null, // tour step 1 right under the Task: both fit the 1267x740 pane (~350 px) together
     boss
       ? h('section', { id: 'brief-step', class: 'my-3 scroll-mt-4 rounded-lg p-3 ring-1 ring-line' },
         h('h3', { class: 'mt-0' }, t('brief.step', { i: stepIndex + 1, n: tk.steps.length, title: x.steps[stepIndex].title })),
         richText(x.steps[stepIndex].prompt))
       : null,
     isDone ? null : tk.steps[stepIndex].lab ? labCard(tk.steps[stepIndex].solution) : shapeCard(tk, stepIndex),
-    isStory() ? tourSlot('brief') : null, // tour step 1 under the Task and the card it talks about
     relatedLine(tk),
     h('div', { 'data-brief-extra': '' }), // modes.ts puts skill chips, chapter goals and the lane note here
     exampleCard(tk, x),
