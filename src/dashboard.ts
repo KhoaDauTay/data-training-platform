@@ -69,7 +69,8 @@ export function colGone(c: Card, r: QueryResult): boolean {
   const col = c.col ?? 0;
   if (c.kind === 'table') return false;
   if (c.kind === 'number') return col >= r.columns.length;
-  return !valueCols(c.kind, r).includes(col);
+  const spec = cardSpec(r); // no chart at all (no rows, other shape): the card says "chart.empty", not this
+  return spec?.kind === c.kind && !spec.values.includes(col);
 }
 
 /** Why the Pin button cannot be used now; undefined = it can. `stale`: the editor no longer holds the SQL that ran. */

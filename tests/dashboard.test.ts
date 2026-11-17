@@ -52,6 +52,8 @@ describe('card của người chơi (src/dashboard.ts)', () => {
     expect(colGone({ ...card('a'), kind: 'bar', col: 1 }, r)).toBe(false);
     expect(colGone({ ...card('a'), kind: 'bar', col: 2 }, r)).toBe(true);
     expect(colGone({ ...card('a'), kind: 'table', col: 9 }, r)).toBe(false);
+    expect(colGone({ ...card('a'), kind: 'bar', col: 2 }, res([TEXT, INT8], []))).toBe(false); // no chart: "chart.empty"
+    expect(colGone({ ...card('a'), kind: 'line', col: 1 }, r)).toBe(false); // not a line any more: "chart.empty"
   });
 
   it('nút Ghim: SQL đã đổi → chạy lại trước; đủ 24 card; SQL quá dài; query quá 2 s', () => {
