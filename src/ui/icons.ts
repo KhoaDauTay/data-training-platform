@@ -45,6 +45,25 @@ const P = {
   flask: 'M9 3h6 M10 3v6L4.5 19a1.5 1.5 0 0 0 1.3 2h12.4a1.5 1.5 0 0 0 1.3-2L14 9V3 M7 15h10',
   folder: 'M3 6a1 1 0 0 1 1-1h5l2 2h9a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z',
   puzzle: 'M4 8h4a2 2 0 1 1 4 0h4v4a2 2 0 1 1 0 4v4H4z',
+  // ---- dashboard and lanes (Plan 5, mockup v6) ----
+  table: 'M3 4h18v16H3z M3 9h18 M3 14h18 M9 9v11',
+  lineChart: 'M3 3v18h18 M6 15l4-5 4 3 6-7',
+  pin: 'M9 4h6 M10 4v6l-3 4h10l-3-4V4 M12 14v7',
+  unpin: 'M9 4h6 M10 4v6l-3 4h10l-3-4V4 M12 14v7 M3 3l18 18',
+  refresh: 'M21 12a9 9 0 1 1-3-6.7L21 8 M21 3v5h-5',
+  code: 'M8 7l-5 5 5 5 M16 7l5 5-5 5',
+  up: 'M12 19V5 M6 11l6-6 6 6',
+  down: 'M12 5v14 M6 13l6 6 6-6',
+  x: 'M6 6l12 12 M18 6 6 18',
+  alert: 'M12 3 2 20h20z M12 10v4 M12 17h.01',
+  eye: `M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z ${CIRCLE(12, 12, 3)}`,
+  eyeOff: 'M3 3l18 18 M10.6 5.1A10 10 0 0 1 12 5c6.5 0 10 7 10 7a17 17 0 0 1-3 3.9 M6.6 6.6C3.8 8.4 2 12 2 12s3.5 7 10 7a9.7 9.7 0 0 0 5.4-1.6 M9.9 9.9a3 3 0 0 0 4.2 4.2',
+  route: `${CIRCLE(6, 19, 2)} ${CIRCLE(18, 5, 2)} M8 19h7a3.5 3.5 0 0 0 0-7H9a3.5 3.5 0 0 1 0-7h7`,
+  fuel: 'M4 21V5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v16 M3 21h12 M4 10h10 M14 8h2a2 2 0 0 1 2 2v6a1.5 1.5 0 0 0 3 0V8l-3-3',
+  calendar: CALENDAR,
+  info: `${CIRCLE(12, 12, 9)} M12 11v6 M12 7.5h.01`,
+  chevronLeft: 'M15 6l-6 6 6 6',
+  chevronRight: 'M9 6l6 6-6 6',
   // ---- KPI tiles ----
   hash: 'M4 9h16 M4 15h16 M10 3 8 21 M16 3l-2 18',
   list: 'M8 6h13 M8 12h13 M8 18h13 M3 6h.01 M3 12h.01 M3 18h.01',
@@ -114,6 +133,7 @@ export type IconName = keyof typeof P;
 /** Path data of one icon, for tests/icons.test.ts (no two skill icons may draw the same thing). */
 export const iconPaths = (name: IconName): Entry => P[name];
 export const isIconName = (name: string): name is IconName => Object.hasOwn(P, name);
+export const ICON_NAMES = Object.keys(P) as IconName[];
 
 /** Skill id (content/skills.yml) → icon. tests/icons.test.ts checks every id in skills.yml is here. */
 export const SKILL_ICON: Record<string, IconName> = {
