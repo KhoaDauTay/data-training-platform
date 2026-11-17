@@ -358,8 +358,9 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
       const fail = r;
       const err = played?.error;
       // The sender answers in the chat under the grader's facts (re-translated on a language switch like every message).
-      const voice = (): HTMLElement => h('p', { class: 'mt-2 mb-0 flex items-start gap-2' },
-        avatar(tk.from), h('span', { class: 'rounded-2xl rounded-tl-sm bg-panel px-3 py-1.5 text-ink' }, t(voiceKey(fail))));
+      // A drill (Plan 8a) has no sender: no voice line.
+      const voice = (): HTMLElement | null => (tk.from.name ? h('p', { class: 'mt-2 mb-0 flex items-start gap-2' },
+        avatar(tk.from), h('span', { class: 'rounded-2xl rounded-tl-sm bg-panel px-3 py-1.5 text-ink' }, t(voiceKey(fail)))) : null);
       if (fail.reason === 'error') {
         underline(err, 0);
         say('bad', () => h('div', {}, err !== undefined ? errorView(err) : gradeMessage(fail), voice()), mascotOf(err));

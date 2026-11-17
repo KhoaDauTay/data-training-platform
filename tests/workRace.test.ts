@@ -307,6 +307,30 @@ describe('nộp sai: ô trống, gợi ý wrong:, kết quả cũ', () => {
   });
 });
 
+describe('drill (Plan 8a): chạy trên lab, nộp sai không có người gửi', () => {
+  it('Nộp sai một drill: mọi câu mang schema lab, tính nộp sai, không có lời người gửi', async () => {
+    const db = { run: vi.fn((sql: string, _opts?: unknown) => Promise.resolve(sql === 'SELECT 1 AS n' ? result : { ...result, rows: [[2]] })) };
+    const deps = { db, panel: { show: vi.fn(), active: 'columns' }, onSolved: vi.fn(), onStepSolved: vi.fn(), onConclusion: vi.fn(), onRun: vi.fn(), onWrong: vi.fn() };
+    const work = mountWork(fakeEl() as unknown as HTMLElement, deps as never);
+    app.save.drafts['g-where-3#0'] = 'SELECT 2';
+    const { session } = await import('../src/session');
+    const tk: Ticket = { ...ticket('g-where-3'), chapter: 0, from: { name: '', dept: '' } };
+    session.mode = { kind: 'drill', ticket: tk, drill: {} as never, wrong: 0 };
+    try {
+      work.setTicket(tk, 0);
+      editors[0].opts.onSubmit();
+      await flush();
+      await flush();
+      expect(db.run.mock.calls.map((c) => c[1])).toEqual([{ schema: 'lab' }, { schema: 'lab' }]);
+      expect(deps.onWrong).toHaveBeenCalledOnce();
+      expect(shownText()).not.toContain(t('voice.values'));
+      expect(app.lastRun?.schema).toBe('lab');
+    } finally {
+      session.mode = { kind: 'story' };
+    }
+  });
+});
+
 describe('wrongTipper', async () => {
   const { wrongTipper } = await import('../src/ui/work');
   const { SKILLS } = await import('../src/progress');
