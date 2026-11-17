@@ -64,7 +64,8 @@ describe('biến thể trong nội dung', () => {
       vs.slice(1).forEach((v, j) => {
         const all = texts(applyVariant(t, j + 1)).join('\n');
         for (const [k, x] of Object.entries(first)) {
-          if (v[k] !== x && all.includes(String(x))) problems.push(`${t.id}#${j + 1}: còn sót "${x}" của biến thể 0 — đổi chỗ đó thành {{${k}}}`);
+          // A value this variant also uses under another key (ch6-04: next year = the following variant's year) is expected.
+          if (v[k] !== x && !Object.values(v).includes(x) && all.includes(String(x))) problems.push(`${t.id}#${j + 1}: còn sót "${x}" của biến thể 0 — đổi chỗ đó thành {{${k}}}`);
         }
       });
     }
