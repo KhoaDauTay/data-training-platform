@@ -1,9 +1,10 @@
+import { DOMAINS } from '../domains';
 import { getLang, t, type Key } from '../i18n';
 import { chapterTitle, CHAPTERS, currentChapter, rankOf } from '../progress';
 import { upsert } from '../registry';
-import { hashOf, type Route } from '../route';
+import { domainHash, hashOf, inDomain, type Route } from '../route';
 import { actions, app, done } from '../state';
-import { cx, getTheme, NAV_LINK, setTheme, THEME_PREFS, TOP_BTN, type ThemePref } from '../theme';
+import { getTheme, NAV_LINK, setTheme, THEME_PREFS, TOP_BTN, type ThemePref } from '../theme';
 import { byId, h, nodes } from './dom';
 import { fillIcons, icon, type IconName } from './icons';
 import { currentRoute } from './router';
@@ -37,25 +38,49 @@ registerNav({ id: 'play', area: 'domain', order: 20, label: 'nav.play', icon: 'c
 registerNav({ id: 'dashboard', area: 'domain', order: 60, label: 'nav.dashboard', icon: 'chart', href: hashOf('dashboard'), current: (r) => r === 'dashboard' });
 registerNav({ id: 'map', area: 'domain', order: 70, label: 'nav.map', icon: 'map', href: hashOf('map'), current: (r) => r === 'map' });
 
-/** Until the sidebar (Task 6) the top bar lists both areas, so every page stays reachable. */
+/** Mobile bottom bar (v6 §3.2): 56 px targets; the current one is --accent on --panel (5.5:1) and keeps its label. */
+const BOTTOM_LINK = 'flex min-h-14 flex-col items-center justify-center gap-0.5 text-xs font-bold text-muted no-underline aria-[current=page]:text-accent';
+const MENU_ITEM = 'flex w-full items-center gap-2 rounded-(--r-ctl) px-3 py-2 text-ink no-underline hover:bg-code';
+
+/** A nav link (top bar, bottom bar, sidebar); an item with `onclick` does its own navigation. */
+export function navLink(n: NavItem, route: Route, cls: string, ...body: (Node | string)[]): HTMLAnchorElement {
+  const click = n.onclick;
+  return h('a', {
+    href: n.href, class: cls, 'data-nav': n.id,
+    'aria-current': n.current(route) ? 'page' : false,
+    onclick: click ? (e: Event) => { e.preventDefault(); click(); } : false,
+  }, ...body);
+}
+
 function renderNav(): void {
   const route = currentRoute();
-  byId('nav').replaceChildren(...[...navItems('top'), ...navItems('domain')].map((n) => {
-    const click = n.onclick;
-    return h('a', {
-      href: n.href,
-      class: NAV_LINK,
-      'aria-current': n.current(route) ? 'page' : false,
-      onclick: click ? (e: Event) => { e.preventDefault(); click(); } : false,
-    }, t(n.label));
-  }));
+  const top = navItems('top');
+  const live = DOMAINS.find((d) => d.live)!;
+  byId('nav').replaceChildren(...top.map((n) => navLink(n, route, NAV_LINK, t(n.label))));
+  byId('bottom-nav').replaceChildren(
+    ...top.map((n) => navLink(n, route, BOTTOM_LINK, icon(n.icon, 'size-5'), h('span', {}, t(n.label)))),
+    h('a', { href: hashOf('overview'), class: BOTTOM_LINK, 'aria-current': inDomain(route) ? 'page' : false },
+      icon(live.icon, 'size-5'), h('span', {}, t(live.name))));
+}
+
+/** Domain switch (v5 §B.2, D-N3): Logistics with its chapter, then the "Coming soon" pages (no date promised). */
+function renderDomainMenu(): void {
+  const menu = byId('domain-menu');
+  const ch = currentChapter(app.tickets, done());
+  byId('domain-label').textContent = t(DOMAINS.find((d) => d.live)!.name);
+  menu.replaceChildren(h('div', { class: 'flex flex-col' }, ...DOMAINS.map((d) => h('a', {
+    href: d.live ? hashOf('overview') : domainHash(d.id), class: MENU_ITEM, onclick: () => menu.hidePopover?.(),
+  },
+    icon(d.icon, 'size-4'),
+    h('span', { class: 'flex-1 font-bold' }, t(d.name)),
+    h('span', { class: 'text-sm text-muted' }, d.live ? t('top.chapterShort', { n: ch, total: CHAPTERS.length }) : t('home.status.soon'))))));
 }
 
 /** Ready = a green dot (text for screen readers and on hover); loading and failure stay visible on the bar, never in the ⋯ menu. */
 function dbStatusView(): Node {
   if (app.dbStatus === 'ready') {
     return h('span', { class: 'flex items-center', title: t('db.ready') },
-      h('span', { class: 'size-2.5 rounded-full bg-emerald-400 ring-2 ring-emerald-300/40', 'aria-hidden': 'true' }),
+      h('span', { class: 'size-2.5 rounded-full bg-emerald-600 ring-2 ring-emerald-600/25', 'aria-hidden': 'true' }),
       h('span', { class: 'sr-only' }, t('db.ready')));
   }
   if (app.dbStatus === 'failed') return h('button', { type: 'button', class: TOP_BTN, onclick: () => actions.retryDb() }, t('db.retry'));
@@ -63,7 +88,7 @@ function dbStatusView(): Node {
   const text = !p ? t('db.loading')
     : p.total && p.total >= p.loaded ? t('db.loadingBytes', { loaded: mb(p.loaded), total: mb(p.total) })
       : t('db.loadingMb', { loaded: mb(p.loaded) });
-  return h('span', { class: 'rounded-lg bg-black/25 px-2 py-1 whitespace-nowrap ring-1 ring-white/15' }, text);
+  return h('span', { class: 'rounded-full bg-code px-2.5 py-1 whitespace-nowrap' }, text);
 }
 
 /**
@@ -97,6 +122,7 @@ function renderSettings(): void {
 export function initTopbar(): void {
   fillIcons(document.querySelector('header.topbar')!);
   fillIcons(byId('more-menu'));
+  fillIcons(byId('domain-menu'));
   for (const b of document.querySelectorAll<HTMLButtonElement>('[data-theme-pref]')) {
     const pref = b.dataset.themePref as ThemePref;
     if (!THEME_PREFS.includes(pref)) continue;
@@ -121,16 +147,16 @@ function renderNotice(): void {
 
 export function renderTopbar(): void {
   const lang = getLang();
+  const route = currentRoute();
   const ch = currentChapter(app.tickets, done());
   const total = CHAPTERS.length;
   const title = chapterTitle(ch, lang);
   const chapter = byId('chapter');
   chapter.title = t('top.chapter', { n: ch, total, title });
   chapter.replaceChildren(
-    icon('map', 'size-4 xl:max-[120rem]:hidden'),
-    h('span', { class: 'font-semibold' }, t('top.chapterShort', { n: ch, total })),
-    // Full name in `title`; hidden where the bar is tight (the map strip and Home name the chapter too).
-    h('span', { class: 'truncate max-md:hidden md:max-w-[12rem] xl:hidden' }, title));
+    icon('map', 'size-4'),
+    h('span', { class: 'font-semibold' }, t('top.chapterShort', { n: ch, total })));
+  byId('domain-status').hidden = !inDomain(route); // chapter and rank belong to the domain (v5 §B.2)
   byId('rank').textContent = rankOf(app.tickets, done()).tier?.[lang] ?? t('career.intern');
   byId('xp').replaceChildren(icon('star', 'size-4'), t('top.xp', { n: app.save.xp }));
   renderSettings();
@@ -138,5 +164,6 @@ export function renderTopbar(): void {
     dbStatusView(),
     app.problem ? h('button', { type: 'button', class: TOP_BTN, onclick: () => actions.copyDiagnostics() }, t('diag.copy')) : null));
   renderNav();
+  renderDomainMenu();
   renderNotice();
 }

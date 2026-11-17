@@ -10,6 +10,7 @@ import { h, nodes } from './dom';
 import { drawErd, erdSvg, keyBadges, valuesLine } from './erdView';
 import { errorView } from './feedback';
 import { renderResult } from './resultTable';
+import { sideExtra } from './sidebar';
 import { registerNav } from './topbar';
 
 // Order 60 is kept for the dashboard tab (L47 item 7).
@@ -57,16 +58,20 @@ export function renderData(host: HTMLElement): void {
   const count = h('p', { class: 'sr-only', 'aria-live': 'polite' });
   const detail = h('section', { class: 'min-w-0', 'aria-labelledby': 'data-table-title' });
   const diagram = h('section', { class: 'mt-6 min-w-0' });
-  host.replaceChildren(h('div', { class: 'mx-auto max-w-6xl px-4 py-6' },
+  // v6 §3.3 (V11): from 1024 px the table list lives in the sidebar; below that it stays at the top of the page.
+  const side = sideExtra();
+  const picker = h('div', { class: side ? 'min-w-0' : 'min-w-0 lg:sticky lg:top-4 lg:self-start' },
+    h('label', { for: 'data-search', class: 'mb-1 block font-semibold' }, t('data.search')),
+    search,
+    count,
+    h('h2', { id: 'data-list-title', class: 'sr-only' }, t('data.title')),
+    list);
+  side?.replaceChildren(picker);
+  host.replaceChildren(h('div', { class: 'mx-auto max-w-[1120px] px-4 py-6' },
     h('h1', { id: 'data-title', tabindex: '-1', class: 'm-0 text-2xl font-bold' }, t('data.title')),
     h('p', { class: 'mt-1 text-muted' }, t('data.intro')),
-    h('div', { class: 'mt-4 grid gap-5 lg:grid-cols-[18rem_1fr]' },
-      h('div', { class: 'min-w-0 lg:sticky lg:top-4 lg:self-start' },
-        h('label', { for: 'data-search', class: 'mb-1 block font-semibold' }, t('data.search')),
-        search,
-        count,
-        h('h2', { id: 'data-list-title', class: 'sr-only' }, t('data.title')),
-        list),
+    h('div', { class: side ? 'mt-4 grid gap-5' : 'mt-4 grid gap-5 lg:grid-cols-[18rem_1fr]' },
+      side ? null : picker,
       h('div', { class: 'min-w-0' }, detail, diagram))));
   search.value = view.query;
   if (hadFocus) {

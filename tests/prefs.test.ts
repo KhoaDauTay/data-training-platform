@@ -5,6 +5,7 @@ import { getTheme, parseThemePref, resolveTheme, setTheme } from '../src/theme';
 import { stepKey, ticketOfKey } from '../src/save';
 import { initialDoc } from '../src/state';
 import { COACH_KEY, coachDone } from '../src/ui/coach';
+import { parseSidePref, SIDE_KEY } from '../src/ui/sidebar';
 import { LAYOUT_KEY, parseLayout } from '../src/ui/splitter';
 
 const store = (key: string, raw: string | null) => ({ getItem: (k: string) => (k === key ? raw : null), setItem: () => {} });
@@ -95,5 +96,15 @@ describe('theme (L42): trong cargo-query/prefs, cạnh lang', () => {
     const head = indexHtml.slice(0, indexHtml.indexOf('</head>'));
     expect(head).toContain(`localStorage.getItem('${PREFS_KEY}')`);
     expect(head).toContain('d.dataset.theme');
+  });
+});
+
+describe('sidebar (v6 §3.2)', () => {
+  it('khóa không đổi; chỉ "rail" là thu gọn, còn lại (thiếu, rác) là mở', () => {
+    expect(SIDE_KEY).toBe('cargo-query/sidebar');
+    expect(parseSidePref('rail')).toBe('rail');
+    expect(parseSidePref('open')).toBe('open');
+    expect(parseSidePref(undefined)).toBe('open');
+    expect(parseSidePref({ x: 1 })).toBe('open');
   });
 });

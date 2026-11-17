@@ -69,13 +69,10 @@ export const DEPT_CHIP = 'rounded-md px-2 py-0.5 text-xs font-bold uppercase';
 export const BTN_GO = 'rounded-full border-0 bg-accent font-bold text-on-accent shadow-sm hover:brightness-110';
 /** Green Submit (L17): white on emerald-700 = 5.5:1 (the mockup's emerald-600 is 3.8:1). */
 export const BTN_SUBMIT = 'ml-auto rounded-full border-0 bg-emerald-700 px-4 font-bold text-white shadow-sm hover:bg-emerald-800 disabled:bg-code disabled:text-disabled';
-/** Controls on the gradient top bar: darkening keeps white text >= 4.5:1 at the cyan end. */
-export const TOP_BTN = 'border-0 bg-black/20 text-white ring-1 ring-white/40 hover:bg-black/30';
-/**
- * Segmented nav (ui-ux-v3 §a): darkening overlays keep white text >= 4.5:1 over the cyan end of the gradient;
- * the current page is a white segment with blue-900 text (>= 7:1).
- */
-export const NAV_LINK = 'rounded-lg px-2 py-1 xl:max-[120rem]:px-1.5 text-center whitespace-nowrap text-white no-underline hover:bg-black/30 aria-[current=page]:bg-white aria-[current=page]:font-semibold aria-[current=page]:text-blue-900 aria-[current=page]:hover:bg-white';
+/** Controls on the top bar (V17: --panel, no gradient): --text on --code. */
+export const TOP_BTN = 'rounded-full border-0 bg-code text-ink hover:bg-accent-soft';
+/** Level-1 nav (v6 §3.1): --muted on --panel 6.2:1; the current page is a --accent-soft pill with --text, so not colour alone (bold too). */
+export const NAV_LINK = 'rounded-full px-3 py-1.5 font-bold whitespace-nowrap text-muted no-underline hover:bg-code hover:text-ink aria-[current=page]:bg-accent-soft aria-[current=page]:text-ink';
 /** "Done"/"current" status badge (colour only on small badges, L23): emerald-800 on -100, -200 on -950. */
 export const DONE_PILL = 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200';
 

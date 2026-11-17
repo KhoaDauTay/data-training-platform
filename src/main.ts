@@ -27,7 +27,8 @@ import { renderInbox } from './ui/inbox';
 import { createPanel, registerCoreTabs } from './ui/tabs';
 import { pinBar } from './ui/pin';
 import { initLayout } from './ui/splitter';
-import { go, startRouter } from './ui/router';
+import { currentRoute, go, startRouter } from './ui/router';
+import { initSidebar, renderSidebar } from './ui/sidebar';
 import { initTopbar, renderTopbar } from './ui/topbar';
 import { mountWork } from './ui/work';
 import { registerVizTabs } from './ui/vizTabs';
@@ -136,6 +137,7 @@ const syncMap = (): void => mapStrip.update({
 /** Language switch and progress changes: redraws text, never remounts the editor. */
 function rerender(): void {
   renderTopbar();
+  renderSidebar(currentRoute()); // before the Data page: it fills the sidebar's slot (V11)
   renderInbox();
   renderReviewButton(byId('review-btn') as HTMLButtonElement);
   if (!byId('home').hidden) renderHome(byId('home')); // hidden Home is redrawn by showRoute(); Run/Submit in the workspace never rebuild it
@@ -295,6 +297,7 @@ uiReady = true; // nothing awaited since loadContent(), so no DB callback was mi
 rerender();
 if (app.dbStatus === 'ready') void loadColumns();
 work.setTicket(selected(), app.stepIndex);
+initSidebar();
 startRouter(showRoute);
 
 // "My data" (Plan Import): imported CSVs stay in this browser (IndexedDB) and are replayed into the sandbox schema.
