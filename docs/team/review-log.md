@@ -411,3 +411,20 @@ Ba review của bản v10 (BoonData): code review (d312e83..6a6f1ec), UI/UX (des
 | ux | Nút Nộp xuống dòng riêng khi nhãn Chạy dài ("Đang chờ database…") hoặc khung hẹp, đẩy Lịch sử xuống | Mở (chỉ khi DB đang tải hoặc khung hẹp; chỉnh bố cục ở Plan 8b) |
 
 Sau khi sửa: tsc sạch, 1623 test (50 file), build sạch, budget mọi nhóm ok (main 277/290, css 13/20, fonts 51/60).
+
+## Plan 8a — phần Chung (lab, drill, lộ trình, nút nâng cao) (base 69012a2, 2026-11-18)
+
+Task 0–13 build xong, chưa push. Cổng cuối: `tsc` xanh, 2682/2682 test (54 file), build xanh, 14 nhóm ngân sách ok.
+
+| Nhóm | KB gz | Trần | Ghi chú |
+|---|---|---|---|
+| main | 278.41 | 290 | M0 276.77: +1.64 (luật plan +0.5; cần user duyệt) |
+| lessons | 28 | 35 | 38 bài học |
+| general | 62 | 70 | 114 drill + 28 nút |
+| learnui | 6 | 25 | drillBrief + learnView + i18n/learn |
+| worker | 149 | 160 | + lab.sql |
+| tickets / lanes / en / css | 105 / 10 / 13 / 13 | 110 / 20 / 20 / 20 | không đổi |
+| pglite / initdb / parser / fonts / rest | 5287 / 128 / 390 / 51 / 1484 | 5560 / 140 / 410 / 60 / 1560 | không đổi |
+
+Kiểm tay (Chrome, :5174, localStorage mới): ôn tập mở drill trên lab, đạt → hộp Leitner +1, XP và `completed` không đổi; `#/learn` hai cột, module → kỹ năng → drill; nút a1 (bài học chạy trên lab), b5 (◐ có link), d2 (↗ chỉ link), b2 → thử thách mở; reload giữa chừng giữ nháp `g-b2-4#0` và `completed`; Tổng quan chương 1–2 có link kỹ năng ✓. Chưa kiểm: Edge, 1100/375 px, theme sáng cho trang Chung.
+
