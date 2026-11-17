@@ -23,6 +23,7 @@ import { byId, h } from './ui/dom';
 import { errorText } from './ui/feedback';
 import { leftHome, renderHome } from './ui/homeView';
 import { initStage, playCompletion, relabelStage } from './ui/stage';
+import { prefetchArt } from './art/load';
 import { renderInbox } from './ui/inbox';
 import { createPanel, registerCoreTabs } from './ui/tabs';
 import { coachDone, initTour, refreshTour } from './ui/coach';
@@ -315,6 +316,7 @@ initLayout(byId('shell'), { col: byId('split-col'), row: byId('split-row') });
 initStage();
 uiReady = true; // nothing awaited since loadContent(), so no DB callback was missed in between
 rerender();
+prefetchArt(); // the art chunk (scene, map, completion scenes) once the first screen is up (Plan 8b)
 if (app.dbStatus === 'ready') void loadColumns();
 work.setTicket(selected(), app.stepIndex);
 initSidebar(); // its Esc (close the overlay) goes before the tour's

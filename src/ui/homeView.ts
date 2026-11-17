@@ -17,8 +17,8 @@ import { textOf } from '../tickets';
 import { avatar } from './avatar';
 import { icon, skillIcon, type IconName } from './icons';
 import { byId, h, nodes } from './dom';
-import { callout, harborScene } from './harbor';
-import { routeItems, routeMap } from './routeMap';
+import { artSlot } from '../art/load';
+import { callout, routeItems } from './routeText';
 import { isStory } from '../session';
 import { go } from './router';
 
@@ -238,10 +238,10 @@ function freshChapters(): Set<number> {
 /** Below lg the SVG labels hide (L34), so the title and status lines show as HTML under the picture. */
 function harborSection(m: HomeModel): HTMLElement {
   const harbor = derive(app.tickets, done());
-  const scene = harborScene(harbor, { ambient: true, current: m.chapter, fresh: freshChapters() });
+  const fresh = freshChapters();
   return h('section', { class: cx(CARD, 'overflow-hidden'), 'aria-labelledby': 'harbor-title' },
     h('h2', { id: 'harbor-title', class: 'sr-only' }, t('harbor.title')),
-    scene.svg,
+    artSlot('aspect-[1100/400]', (a) => a.harborScene(harbor, { ambient: true, current: m.chapter, fresh }).svg),
     h('div', { class: 'px-4 py-3 text-sm lg:hidden', 'aria-hidden': 'true' },
       h('p', { class: 'm-0 font-bold' }, t('harbor.title')),
       ...callout(harbor, m.chapter).map((line) => h('p', { class: 'm-0 text-muted' }, line))));
@@ -253,7 +253,7 @@ function routesSection(): HTMLElement {
     h('div', { class: 'mb-2 flex flex-wrap items-end justify-between gap-2' },
       h('h2', { id: 'routes-title', class: 'm-0 text-lg font-bold' }, t('routes.title')),
       h('p', { class: 'm-0 text-sm text-muted' }, t('routes.subtitle'))),
-    routeMap(harbor).svg,
+    artSlot('aspect-[980/260] rounded-xl', (a) => a.routeMap(harbor).svg),
     h('ul', { class: 'mt-2 mb-0 list-none space-y-0.5 p-0 text-sm lg:hidden', 'aria-hidden': 'true' }, ...routeItems(harbor).map((x) => h('li', {}, x))));
 }
 

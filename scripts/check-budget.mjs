@@ -10,6 +10,7 @@ const GROUPS = [
   ['lanes', /^laneSources-/, 20], // lane briefs and side tasks (content/lanes/), lazy, fetched at boot beside the tickets (Plan 5)
   ['en', /^en-.*\.js$/, 20], // EN dictionary, lazy (Plan 5 T3): 11 KB, fetched at boot only when the player's language is EN
   ['lessons', /^lessonSources-/, 20], // quick lessons (content/lessons.yml), lazy, fetched at boot beside the tickets (Plan 6): 8 KB for 11 lessons, ~0.75 KB each
+  ['art', /^logistics-/, 20], // Plan 8b D8b-2: Tien Sa scene, route map and completion scenes, lazy (prefetched when idle after the first render): 7 KB, took 6 KB off main
   ['css', /^index-.*\.css$/, 20],
   ['worker', /^worker-/, 160],
   ['pglite', /^pglite-/, 5560],
