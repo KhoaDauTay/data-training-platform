@@ -3,10 +3,11 @@ import { s } from './svg';
 
 /**
  * Every UI and skill icon (ui-ux-v3 §0, §e): path data on a 24 grid, 2px stroke in currentColor, no text, no emoji.
- * An entry is the stroked `d`, plus an optional second `d` that is also filled (translucent): the shaded part
- * of a Venn diagram, the picked column, the dots of DISTINCT.
+ * An entry is the stroked `d`, plus an optional second `d` that is also filled: translucent by default (the picked
+ * column, the dots of DISTINCT), or SOLID where a 16 px icon must be told apart by its fill (the JOIN family, L43).
  */
-type Entry = string | readonly [stroke: string, fill: string];
+type Entry = string | readonly [stroke: string, fill: string, opacity?: number];
+const SOLID = 1;
 
 const CIRCLE = (cx: number, cy: number, r: number): string => `M${cx - r} ${cy}a${r} ${r} 0 1 0 ${2 * r} 0a${r} ${r} 0 1 0 ${-2 * r} 0`;
 /** Two r=6 circles at x=9 and x=15 meet at (12, 6.8) and (12, 17.2). */
@@ -14,7 +15,10 @@ const VENN = `${CIRCLE(9, 12, 6)} ${CIRCLE(15, 12, 6)}`;
 const LENS = 'M12 6.8A6 6 0 0 1 12 17.2A6 6 0 0 1 12 6.8z';
 const LEFT_MOON = 'M12 6.8A6 6 0 1 0 12 17.2A6 6 0 0 1 12 6.8z';
 const CALENDAR = 'M4 5h16v15H4z M4 9h16 M8 3v4 M16 3v4';
-const BUCKETS = 'M2.5 9v10h5V9 M9.5 9v10h5V9 M16.5 9v10h5V9';
+/** Three open-top buckets in the lower half (GROUP BY / HAVING). */
+const BUCKETS = 'M2.5 12v9h5v-9 M9.5 12v9h5v-9 M16.5 12v9h5v-9';
+/** Three r=5 circles at x=6, 12, 18 (multi JOIN); neighbours meet at x=9 and x=15, y=8 and 16. */
+const LENS3 = (x: number): string => `M${x} 8A5 5 0 0 1 ${x} 16A5 5 0 0 1 ${x} 8z`;
 const LENS_GLASS = `${CIRCLE(10, 10, 7)} M21 21l-6-6`;
 const DOTS = `${CIRCLE(5, 7, 1.5)} ${CIRCLE(5, 17, 1.5)} ${CIRCLE(19, 12, 2)}`;
 const BOOK = 'M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5z M4 19.5A2.5 2.5 0 0 0 6.5 22H20v-5';
@@ -61,13 +65,17 @@ const P = {
   orderBy: 'M7 4v16 M4 7l3-3 3 3 M4 17l3 3 3-3 M13 6h8 M13 12h6 M13 18h4',
   limit: 'M4 4h16 M4 9h16 M4 14h16 M4 20h2 M9 20h2 M14 20h2 M19 20h1',
   sigma: 'M18 5H6l6 7-6 7h12',
-  groupBy: `${BUCKETS} M5 15h.01 M12 13h.01 M12 16h.01 M19 14h.01 M19 17h.01`,
-  having: `${BUCKETS} M5 15h.01 M12 13h.01 M12 16h.01 M17.5 11.5l3 4 M20.5 11.5l-3 4`,
-  join: [VENN, LENS],
-  multiJoin: `${CIRCLE(5, 12, 4)} ${CIRCLE(12, 12, 4)} ${CIRCLE(19, 12, 4)}`,
-  leftJoin: [VENN, CIRCLE(9, 12, 6)],
-  antiJoin: [VENN, LEFT_MOON],
-  selfJoin: `${CIRCLE(10, 14, 6)} M13.5 9.2C15 4 22 4 20.5 10.5c-.6 2-2.3 3-4.3 3.3 M16.2 11.3l0 2.5 2.4.6`,
+  // GROUP BY: one stream forks into three buckets, each holding some rows.
+  groupBy: [`M12 3v4 M12 7 5 10.5 M12 7l7 3.5 M12 7v3.5 ${BUCKETS}`, 'M2.5 17h5v4h-5z M9.5 15h5v6h-5z M16.5 18h5v3h-5z'],
+  // HAVING: the groups already exist; a check keeps only the middle bucket (solid), the others stay empty.
+  having: [`M8 5.5l3 3 5-6 ${BUCKETS}`, 'M9.5 12h5v9h-5z', SOLID],
+  // JOIN family (L43): same two circles, told apart by a SOLID fill — lens / whole left / left crescent / both.
+  join: [VENN, LENS, SOLID],
+  multiJoin: [`${CIRCLE(6, 12, 5)} ${CIRCLE(12, 12, 5)} ${CIRCLE(18, 12, 5)}`, `${LENS3(9)} ${LENS3(15)}`, SOLID],
+  leftJoin: [VENN, CIRCLE(9, 12, 6), SOLID],
+  antiJoin: [VENN, LEFT_MOON, SOLID],
+  // SELF JOIN: one table, an arrow leaves it and loops back into it.
+  selfJoin: [`${CIRCLE(9, 15, 6)} M9 9V6a3 3 0 0 1 3-3h6a3 3 0 0 1 3 3v6a3 3 0 0 1-3 3h-3 M17.5 12.5 15 15l2.5 2.5`, CIRCLE(9, 15, 6)],
   dateMath: `${CALENDAR} M7 14.5h3 M8.5 13v3 M14 14.5h3`,
   dateBucket: `${CALENDAR} M4 14.5h16 M12 9v11`,
   emptySet: `${CIRCLE(12, 12, 8)} M5 21 19 3`,
@@ -87,12 +95,22 @@ const P = {
   windowRank: 'M3 20h5v-5h5v-5h5V5h3',
   stack: 'M4 4h16v7H4z M4 13h16v7H4z',
   minus: 'M2 7h7v10H2z M11 12h3 M16 7h6v10h-6z',
-  fullJoin: [VENN, `${CIRCLE(9, 12, 6)} ${CIRCLE(15, 12, 6)}`],
+  fullJoin: [VENN, `${CIRCLE(9, 12, 6)} ${CIRCLE(15, 12, 6)}`, SOLID],
+  // IN (SELECT …): a value goes into a parenthesised list.
+  inList: 'M2 12h7 M6 9l3 3-3 3 M13.5 4c-2.5 2.5-2.5 13.5 0 16 M19.5 4c2.5 2.5 2.5 13.5 0 16 M15 9h3 M15 12h3 M15 15h3',
+  // Correlated subquery: the current outer row (filled) feeds a small inner query.
+  correlated: ['M2 4h7v16H2z M2 9.3h7 M2 14.7h7 M9 12h5 M12 10l2 2-2 2 M15 8h7v8h-7z', 'M2 9.3h7v5.4H2z'],
+  // Several CTEs: two WITH blocks feed the final query.
+  stepsMerge: 'M3 3h7v5H3z M14 3h7v5h-7z M8.5 16h7v5h-7z M6.5 8v4h11V8 M12 12v4',
+  // DISTINCT ON: two groups of rows; only the first row of each (filled) is kept.
+  firstPerGroup: ['M3 3h18v4H3z M6 10.5h12 M3 14h18v4H3z M6 21h12', 'M3 3h18v4H3z M3 14h18v4H3z'],
   plan: `${LENS_GLASS} M10 7v3 M7 13l3-3 3 3`,
   bookIndex: 'M4 4h12a2 2 0 0 1 2 2v14H6a2 2 0 0 1-2-2z M18 7h3v3h-3 M18 12h3v3h-3',
 } as const satisfies Record<string, Entry>;
 
 export type IconName = keyof typeof P;
+/** Path data of one icon, for tests/icons.test.ts (no two skill icons may draw the same thing). */
+export const iconPaths = (name: IconName): Entry => P[name];
 export const isIconName = (name: string): name is IconName => Object.hasOwn(P, name);
 
 /** Skill id (content/skills.yml) → icon. tests/icons.test.ts checks every id in skills.yml is here. */
@@ -102,22 +120,21 @@ export const SKILL_ICON: Record<string, IconName> = {
   date_math: 'dateMath', date_bucket: 'dateBucket', null_logic: 'emptySet', case_when: 'branch', conditional_agg: 'sigmaCheck',
   coalesce: 'fallback', string_fn: 'text', pattern_match: 'pattern', distinct: 'distinct', cast: 'cast',
   // Planned (curriculum.md): mapped now so a new skill gets its picture the day it is added.
-  // Plan 3: every skill needs its own icon (tests/icons.test.ts); existing shapes until the UI draws dedicated ones (R13).
-  in_subquery: 'list', scalar_subquery: 'nested', correlated_value: 'link', exists: 'nestedCheck',
-  cte: 'steps', multi_cte: 'repeat', window_agg: 'window', window_lag: 'windowLag', window_rank: 'windowRank',
-  union: 'stack', except: 'minus', full_join: 'fullJoin', distinct_on: 'clockOff', explain_read: 'plan', index_design: 'bookIndex',
+  in_subquery: 'inList', scalar_subquery: 'nested', correlated_value: 'correlated', exists: 'nestedCheck',
+  cte: 'steps', multi_cte: 'stepsMerge', window_agg: 'window', window_lag: 'windowLag', window_rank: 'windowRank',
+  union: 'stack', except: 'minus', full_join: 'fullJoin', distinct_on: 'firstPerGroup', explain_read: 'plan', index_design: 'bookIndex',
 };
 export const skillIconName = (id: string): IconName => SKILL_ICON[id] ?? 'puzzle';
 
 /** Decorative: always next to visible text, or inside a control that has an aria-label. */
 export function icon(name: IconName, cls = 'size-5'): SVGSVGElement {
   const e: Entry = P[name];
-  const [stroke, fill] = typeof e === 'string' ? [e, undefined] : e;
+  const [stroke, fill, opacity = 0.35] = typeof e === 'string' ? [e] : e;
   return s('svg', {
     viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': 2, 'stroke-linecap': 'round', 'stroke-linejoin': 'round',
     'aria-hidden': 'true', focusable: 'false', class: cx('shrink-0', cls),
   },
-  fill ? s('path', { d: fill, fill: 'currentColor', 'fill-opacity': 0.35, stroke: 'none' }) : null,
+  fill ? s('path', { d: fill, fill: 'currentColor', 'fill-opacity': opacity, stroke: 'none' }) : null,
   s('path', { d: stroke }));
 }
 
