@@ -1,5 +1,5 @@
 import type { SQLNamespace } from '@codemirror/lang-sql';
-import { GAME_SCHEMA, SCHEMAS, type SchemaId } from './domains';
+import { activeDomain, domainSchemaId, SCHEMAS, type SchemaId } from './domains';
 import type { DbStatus } from './db/client';
 import type { DiagnosticKind } from './diagnostics';
 import type { LoadProgress } from './db/loadProgress';
@@ -90,7 +90,7 @@ const valuesOf = memoByKey((key) => {
   });
 }, 100);
 /** `schema`: 'lab' for the drill workspace (Plan 8a). */
-export const textValues = (table: string, schema: SchemaId = 'game') => valuesOf(`${schema}|${table}`);
+export const textValues = (table: string, schema: SchemaId = domainSchemaId()) => valuesOf(`${schema}|${table}`);
 
 export const done = (): Set<string> => new Set(app.save.completed);
 export const selected = (): Ticket => app.tickets.find((x) => x.id === app.selectedId)!;
@@ -100,9 +100,11 @@ export const draftKey = (): string => stepKey(app.selectedId, app.stepIndex);
 /** Editor text for a step: the draft, or the ticket's starter when the draft is missing or blank. */
 export const initialDoc = (draft: string | undefined, starter: string | undefined): string =>
   (draft?.trim() ? draft : starter ?? draft ?? '');
-/** Chapter tables plus the tables of the open lanes (Plan 5 D-B4: `lane_profiles`, `bunker_prices`). */
-export const unlockedTables = (): string[] =>
-  [...tablesUnlocked(currentChapter(app.tickets, done())), ...laneTables(derive(app.tickets, done()).open)];
+/** Chapter tables plus the tables of the open lanes (Plan 5 D-B4: `lane_profiles`, `bunker_prices`; Logistics only, Plan 9 D9-14). */
+export const unlockedTables = (): string[] => [
+  ...tablesUnlocked(currentChapter(app.tickets, done())),
+  ...(activeDomain() === 'logistics' ? laneTables(derive(app.tickets, done()).open) : []),
+];
 
 let persistTimer: ReturnType<typeof setTimeout> | undefined;
 export function persist(now = false): void {
@@ -144,7 +146,7 @@ export function editorSchema(): SQLNamespace {
 
 // Keyed by Solution SQL, not ticket id: Plan 1c variants reuse ids with different SQL.
 const shapes = new Map<string, Promise<Shape>>();
-export function expectedShape(solution: string, schema: SchemaId = 'game'): Promise<Shape> {
+export function expectedShape(solution: string, schema: SchemaId = domainSchemaId()): Promise<Shape> {
   const k = `${schema}|${solution}`;
   let p = shapes.get(k);
   if (!p) {

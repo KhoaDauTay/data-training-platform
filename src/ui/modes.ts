@@ -1,12 +1,12 @@
-import { generalNow, loadGeneral, loadLessons, loadTicketTemplates } from '../content';
+import { generalNow, loadGeneral, loadLessons, loadTicketTemplates, loadTickets } from '../content';
 import type { DbClient } from '../db/client';
 import type { Drill } from '../general';
 import { knownSkills, type HomeModel } from '../home';
 import { getLang, locale, t } from '../i18n';
 import { LANE_XP } from '../lanes';
 import { applyResult, isSuccess, movedToday, nextCard, pickForSkill, retryItem, type PracticeItem } from '../practice';
-import { chapterTitle, nextTicket, SKILLS, visibleTickets } from '../progress';
-import { hashOf, learnAdvOf, learnModuleOf, learnSkillOf } from '../route';
+import { CHAPTERS, chapterTitle, nextTicket, SKILLS, visibleTickets } from '../progress';
+import { domainHash, hashOf, learnAdvOf, learnModuleOf, learnSkillOf } from '../route';
 import {
   activeSchema, activeStep, activeTicket, hintsShown, isStory, markWarmupDone, practiceFinished, reviewCount, reviewedDrills, reviewToday, session, today, warmupToday, type Mode, type PracticeRun,
 } from '../session';
@@ -83,7 +83,7 @@ const loadDrillUi = () => import('./drillBrief').then((m) => {
   if (!drillUi) m.initDrill({
     db: ctx!.db, activeSchema, h, nodes, richText, byId, getLang, locale, app, actions, persist, schemaHooks, erMeta, stepKey, session, hintsShown, today,
     isSuccess, movedToday, nextCard, SKILLS, hashOf, textOf, hints, shapeCard, openLesson, backToStory, startDrillMode, loadGeneral, generalNow, loadLessons,
-    lessonSeen: isSeen, knownSkills, learnSkillOf, learnAdvOf, learnModuleOf, chapterTitle, visibleTickets,
+    lessonSeen: isSeen, knownSkills, learnSkillOf, learnAdvOf, learnModuleOf, chapterTitle, visibleTickets, loadTickets, CHAPTERS, domainHash,
   });
   return (drillUi = m);
 });
@@ -288,7 +288,7 @@ function warmupCard(): HTMLElement | null {
 
 // Same id replaces topbar.ts's 'play' entry: "Workspace" is current only in story mode (and on a lane task).
 registerNav({
-  id: 'play', area: 'domain', order: 20, label: 'nav.play', icon: 'code', href: hashOf('play'),
+  id: 'play', area: 'domain', order: 20, label: 'nav.play', icon: 'code', get href() { return hashOf('play'); },
   current: (r) => r === 'play' && (isStory() || session.mode.kind === 'lane'),
   onclick: () => (isStory() ? go('play') : backToStory()),
 });
@@ -298,7 +298,7 @@ registerNav({
   current: (r) => r === 'practice' || (r === 'play' && (session.mode.kind === 'practice' || session.mode.kind === 'drill')),
 });
 registerNav({
-  id: 'sandbox', area: 'domain', order: 30, label: 'nav.sandbox', icon: 'flask', href: hashOf('play'),
+  id: 'sandbox', area: 'domain', order: 30, label: 'nav.sandbox', icon: 'flask', get href() { return hashOf('play'); },
   current: (r) => r === 'play' && session.mode.kind === 'sandbox',
   onclick: () => (session.mode.kind === 'sandbox' ? go('play') : startSandbox()),
 });

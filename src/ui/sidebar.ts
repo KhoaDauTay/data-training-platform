@@ -1,7 +1,8 @@
-import { DOMAINS } from '../domains';
+import { loadTickets } from '../content';
+import { activeDomain, DOMAINS } from '../domains';
 import { homeModel, type ChapterStatus } from '../home';
 import { getLang, t, type Key } from '../i18n';
-import { CHAPTERS, chapterTitle, currentChapter, rankOf, SKILLS, visibleTickets } from '../progress';
+import { CHAPTERS, chaptersOf, chapterTitle, currentChapter, rankOf, SKILLS, visibleTickets } from '../progress';
 import { gated, navLock, readTour } from '../onboarding';
 import { domainHash, hashOf, inDomain, learnModuleOf, learnSkillOf, type Route } from '../route';
 import { isStory, reviewCount } from '../session';
@@ -11,7 +12,7 @@ import { cx } from '../theme';
 import { textOf } from '../tickets';
 import { byId, h, nodes } from './dom';
 import { icon } from './icons';
-import { navItems } from './topbar';
+import { domainLine, navItems } from './topbar';
 
 /** Device pref (v6 §3.2): the sidebar on wide reading pages. Never in the Save. */
 export const SIDE_KEY = 'cargo-query/sidebar';
@@ -61,13 +62,13 @@ function row(r: Row): HTMLElement {
 /** Learning path (v6 §3.3): the 12 SQL modules, one per chapter, with their state. */
 function modules(): HTMLElement[] {
   const lang = getLang();
-  const m = homeModel(app.tickets, done(), CHAPTERS, SKILLS);
+  const m = homeModel(loadTickets('logistics'), done(), CHAPTERS, SKILLS); // General: the learning path follows Logistics (Plan 9)
   const open = learnModuleOf(location.hash) ?? SKILLS.find((s) => s.id === learnSkillOf(location.hash))?.chapter ?? m.chapter;
   return m.chapters.map((c) => row({
     key: `m${c.chapter}`,
     href: `${hashOf('learn')}/sql/${c.chapter}`,
     lead: c.status === 'done' ? icon('check', 'size-5 text-good') : c.status === 'current' ? h('b', {}, String(c.chapter)) : icon('lock', 'size-4 text-muted'),
-    label: `${c.chapter} · ${chapterTitle(c.chapter, lang)}`,
+    label: `${c.chapter} · ${chapterTitle(c.chapter, lang, CHAPTERS)}`,
     sub: t(STATUS[c.status], { done: c.done, total: c.total }),
     current: c.chapter === open,
   }));
@@ -76,14 +77,14 @@ function modules(): HTMLElement[] {
 /** Domain header: name, chapter and rank (v6 §3.1: they moved off the top bar's left). */
 function domainHead(): HTMLElement {
   const lang = getLang();
-  const live = DOMAINS.find((d) => d.live)!;
+  const live = DOMAINS.find((d) => d.id === activeDomain())!;
   const ch = currentChapter(app.tickets, done());
   return h('div', { class: 'flex items-center gap-3 px-3 py-2' },
     h('span', { class: 'grid size-6 shrink-0 place-items-center', 'aria-hidden': 'true' }, icon(live.icon)),
     h('span', { class: 'side-label min-w-0' },
       h('b', { class: 'block' }, t(live.name)),
       h('span', { class: 'block truncate text-xs font-semibold text-muted' },
-        `${t('top.chapterShort', { n: ch, total: CHAPTERS.length })} · ${rankOf(app.tickets, done()).tier?.[lang] ?? t('career.intern')}`)));
+        `${t('top.chapterShort', { n: ch, total: chaptersOf().length })} · ${rankOf(app.tickets, done()).tier?.[lang] ?? t('career.intern')}`)));
 }
 
 /** Workspace (v6 §3.3): the open chapter's tasks, a second way beside the task bar; hidden in the rail. */
@@ -112,8 +113,8 @@ function domainSwitch(): HTMLElement {
   return h('div', {},
     h('p', { class: GROUP }, t('home.domains')),
     ...DOMAINS.map((d) => row({
-      key: `d:${d.id}`, href: d.live ? hashOf('overview') : domainHash(d.id), lead: icon(d.icon), label: t(d.name),
-      sub: d.live ? undefined : t('home.status.soon'), current: false,
+      key: `d:${d.id}`, href: domainHash(d.id), lead: icon(d.icon), label: t(d.name),
+      sub: domainLine(d.id), current: d.id === activeDomain(),
     })));
 }
 
@@ -126,7 +127,7 @@ function content(route: Route, drawer: boolean): (Node | string)[] {
     out.push(row({ key: 'today', href: hashOf('practice'), lead: icon('repeat'), label: t('side.today', { n: reviewCount() }), current: true }),
       h('p', { class: GROUP }, t('side.byModule')),
       ...CHAPTERS.filter((c) => SKILLS.some((s) => s.chapter === c.chapter)).map((c) => row({
-        key: `p${c.chapter}`, href: hashOf('practice'), lead: h('b', {}, String(c.chapter)), label: chapterTitle(c.chapter, lang), current: false,
+        key: `p${c.chapter}`, href: hashOf('practice'), lead: h('b', {}, String(c.chapter)), label: chapterTitle(c.chapter, lang, CHAPTERS), current: false,
         onclick: () => document.getElementById(`skills-ch-${c.chapter}`)?.scrollIntoView({ block: 'start' }),
       })));
   } else if (inDomain(route)) {

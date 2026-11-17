@@ -1,6 +1,8 @@
 import { getLang, t, type Key } from '../i18n';
 import { LANE_XP, laneLabel } from '../lanes';
-import { CHAPTERS, chapterTitle } from '../progress';
+import { activeDomain } from '../domains';
+import { chaptersOf, chapterTitle } from '../progress';
+import { ecomArt } from './ecomArt';
 import { derive, ROUTES, type Harbor } from '../scene';
 import { actions, app } from '../state';
 import { BTN_GO, cx } from '../theme';
@@ -51,6 +53,14 @@ export function createMapStrip(host: HTMLElement): { update(view: StripView): vo
    * readable version and the way in when the SVG labels hide (L34).
    */
   function fill({ tickets, completed }: StripView): void {
+    if (activeDomain() !== 'logistics') { // Plan 9 D9-14: the delivery map, no lanes
+      dialog.replaceChildren(h('div', { class: 'p-5' },
+        h('div', { class: 'mb-3 flex items-start gap-2' },
+          h('h2', { id: 'map-dialog-title', class: 'm-0 flex-1 text-lg font-bold' }, t('ecom.map.title')),
+          h('form', { method: 'dialog' }, h('button', { class: 'flex items-center gap-1 px-2 py-1 text-sm' }, icon('x', 'size-4'), t('app.close')))),
+        ecomArt('map')));
+      return;
+    }
     const harbor = derive(tickets, completed);
     const parts = routeMap(harbor);
     for (const r of ROUTES) {
@@ -151,7 +161,7 @@ export function createMapStrip(host: HTMLElement): { update(view: StripView): vo
           const id = first?.chapter === c ? first.id : tickets.find((x) => x.chapter === c && completed.has(x.id))?.id;
           if (id) go(id);
         },
-      }, ...CHAPTERS.map((c) => {
+      }, ...chaptersOf().map((c) => {
         const own = tickets.filter((x) => x.chapter === c.chapter);
         const reachable = own.some((x) => completed.has(x.id) || x === first);
         const allDone = own.length > 0 && own.every((x) => completed.has(x.id));
@@ -201,7 +211,7 @@ export function createMapStrip(host: HTMLElement): { update(view: StripView): vo
         h('div', { class: 'flex shrink-0 items-center gap-1 max-sm:order-3 max-sm:w-full max-sm:flex-wrap max-sm:justify-center' }, arrow('prev'), ...tasks, arrow('next')),
         cont ? h('div', { class: 'shrink-0 max-sm:order-4 max-sm:w-full' }, cont) : null,
         h('div', { class: 'ml-auto flex shrink-0 items-center gap-2 text-muted max-sm:order-2' },
-          h('span', { class: 'max-sm:hidden' }, t('map.lanes', { n: derive(tickets, completed).open.size, total: ROUTES.length })),
+          activeDomain() === 'logistics' ? h('span', { class: 'max-sm:hidden' }, t('map.lanes', { n: derive(tickets, completed).open.size, total: ROUTES.length })) : null,
           mapBtn)));
       if (focused) host.querySelector<HTMLElement>(`[data-nav="${CSS.escape(focused)}"]`)?.focus();
       if (dialog.open) fill(view); // language or progress changed while the map is open

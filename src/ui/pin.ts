@@ -1,6 +1,8 @@
 import { CARD_KINDS, KIND_SKILL, markRan, MAX_CARD_SQL, MAX_CARD_TITLE, MAX_CARDS, nextCardId, pinBlock, valueCols, type Card, type CardKind } from '../dashboard';
 import type { QueryResult } from '../db/run';
+import { activeDomain } from '../domains';
 import { learnedSkills } from '../home';
+import { domainSlot } from '../save';
 import { getLang, t } from '../i18n';
 import { activeTicket, session } from '../session';
 import { actions, app, done, persist } from '../state';
@@ -28,7 +30,7 @@ export function pinBar(editorSql: () => string): HTMLElement | null {
   const r = run?.result;
   if (!run || !r) return null;
   const from = source();
-  const block = from ? pinBlock({ sql: run.sql, ms: r.ms }, editorSql(), app.save.dashboard.cards.length) : undefined;
+  const block = from ? pinBlock({ sql: run.sql, ms: r.ms }, editorSql(), domainSlot(app.save, activeDomain()).dashboard.cards.length) : undefined;
   const off = block === 'stale' || block === 'full'; // 'slow' and 'long': the dialog explains the rule
   return h('div', { class: 'mb-2 flex flex-wrap items-center justify-end gap-x-3 gap-y-1 text-sm' },
     r.ms !== undefined ? h('span', { class: 'mr-auto tabular-nums text-muted' }, t('dash.ran', { ms: r.ms })) : null,
@@ -46,7 +48,7 @@ function openPinDialog(sql: string, r: QueryResult, from: string, editorSql: () 
   const usable = (k: CardKind) => learned.has(KIND_SKILL[k]) && valueCols(k, r).length > 0;
   let kind: CardKind | undefined = (['line', 'bar', 'number', 'table'] as const).find((k) => usable(k) && (k !== 'number' || r.rows.length === 1)) ?? CARD_KINDS.find(usable);
   let col = kind ? valueCols(kind, r)[0] : 0;
-  const block = pinBlock({ sql, ms: r.ms }, editorSql(), app.save.dashboard.cards.length);
+  const block = pinBlock({ sql, ms: r.ms }, editorSql(), domainSlot(app.save, activeDomain()).dashboard.cards.length);
 
   const title = h('input', {
     type: 'text', id: 'pin-title', maxlength: String(MAX_CARD_TITLE), class: 'mt-1 w-full rounded-lg border border-line bg-panel px-3 py-2 text-ink',
@@ -84,13 +86,13 @@ function openPinDialog(sql: string, r: QueryResult, from: string, editorSql: () 
   });
 
   confirm.addEventListener('click', () => {
-    const now = pinBlock({ sql, ms: r.ms }, editorSql(), app.save.dashboard.cards.length); // the editor may have changed behind the dialog
+    const now = pinBlock({ sql, ms: r.ms }, editorSql(), domainSlot(app.save, activeDomain()).dashboard.cards.length); // the editor may have changed behind the dialog
     if (now || !kind) return void (status.textContent = t(now === 'stale' ? 'pin.stale' : 'dash.full', { max: MAX_CARDS }));
     if (!title.value.trim()) {
       status.textContent = t('pin.needTitle');
       return title.focus();
     }
-    const d = app.save.dashboard;
+    const d = domainSlot(app.save, activeDomain()).dashboard;
     const pinned = { ...card(), id: nextCardId(d.cards) };
     d.cards = [...d.cards, pinned];
     markRan(pinned); // it just ran here: it may run by itself on the dashboard
@@ -103,7 +105,7 @@ function openPinDialog(sql: string, r: QueryResult, from: string, editorSql: () 
   dialog.append(h('div', { class: 'space-y-4 p-5' },
     h('div', { class: 'flex items-center gap-2' },
       h('h2', { id: 'pin-dialog-title', class: 'm-0 flex-1 text-lg font-bold' }, t('pin.title')),
-      h('span', { class: 'text-sm text-muted' }, t('dash.count', { n: app.save.dashboard.cards.length, max: MAX_CARDS }))),
+      h('span', { class: 'text-sm text-muted' }, t('dash.count', { n: domainSlot(app.save, activeDomain()).dashboard.cards.length, max: MAX_CARDS }))),
     h('fieldset', { class: 'm-0 border-0 p-0' }, h('legend', { class: 'mb-1 text-sm font-semibold' }, t('pin.kind')), h('div', { class: 'flex flex-wrap gap-2' }, ...radios)),
     h('label', { class: 'block text-sm font-semibold', for: 'pin-title' }, t('pin.cardTitle'), title),
     colBox,

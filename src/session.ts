@@ -2,9 +2,9 @@ import { generalNow, loadTicketTemplates } from './content';
 import { learnedSkills } from './home';
 import { dueSkills, localDay, QUEUE_MAX, reviewQueue, warmupQueue, type PracticeItem } from './practice';
 import { currentChapter, SKILLS } from './progress';
-import type { SchemaId } from './domains';
+import { activeDomain, domainSchemaId, type SchemaId } from './domains';
 import type { Drill } from './general';
-import { DRILL_ID, SANDBOX_DRAFT_MAX } from './save';
+import { domainSlot, DRILL_ID, SANDBOX_DRAFT_MAX } from './save';
 import { app, done, draftKey, selected, stepKey } from './state';
 import type { Ticket } from './tickets';
 
@@ -36,8 +36,8 @@ export const session: { mode: Mode } = { mode: { kind: 'story' } };
 export const isStory = (): boolean => session.mode.kind === 'story';
 /** Story tickets and lane side tasks keep their drafts, graded SQL, hints and history; Practice and the Sandbox do not. */
 export const keepsWork = (): boolean => session.mode.kind === 'story' || session.mode.kind === 'lane' || session.mode.kind === 'drill';
-/** Schema a ticket's SQL runs on: drills (`g-…`) on `lab`, everything else on the game schema (Plan 8a D8a-4). */
-export const schemaOf = (tk: Ticket | undefined): SchemaId => (tk && DRILL_ID.test(tk.id) ? 'lab' : 'game');
+/** Schema a ticket's SQL runs on: drills (`g-…`) on `lab`, everything else on the open domain's schema (Plan 8a D8a-4, Plan 9). */
+export const schemaOf = (tk: Ticket | undefined): SchemaId => (tk && DRILL_ID.test(tk.id) ? 'lab' : domainSchemaId());
 /** A review drill runs as a Practice item (Plan 8a Task 8), so the schema follows the open ticket, not the mode. */
 export const activeSchema = (): SchemaId => schemaOf(activeTicket());
 
@@ -93,18 +93,23 @@ export function workKey(): string {
 
 /** v4 §B.3: the first Sandbox visit starts from a small query instead of an empty editor (ports is open from chapter 1). */
 export const SANDBOX_STARTER = 'SELECT * FROM ports LIMIT 20';
+/** Plan 9: E-commerce has no `ports`; products is open from its chapter 1. */
+export const sandboxStarter = (): string => (activeDomain() === 'logistics' ? SANDBOX_STARTER : 'SELECT * FROM products LIMIT 20');
 
 /** `undefined` lets the caller fall back (initialDoc: the ticket's `starter`). */
 export function readDraft(): string | undefined {
   const m = session.mode;
-  if (m.kind === 'sandbox') return app.save.sandboxDraft.trim() ? app.save.sandboxDraft : SANDBOX_STARTER;
+  if (m.kind === 'sandbox') {
+    const draft = domainSlot(app.save, activeDomain()).sandboxDraft;
+    return draft.trim() ? draft : sandboxStarter();
+  }
   if (m.kind === 'practice') return m.run.draft === '' ? undefined : m.run.draft;
   return app.save.drafts[workKey()];
 }
 
 export function writeDraft(v: string): void {
   const m = session.mode;
-  if (m.kind === 'sandbox') app.save.sandboxDraft = v.slice(0, SANDBOX_DRAFT_MAX);
+  if (m.kind === 'sandbox') domainSlot(app.save, activeDomain()).sandboxDraft = v.slice(0, SANDBOX_DRAFT_MAX);
   else if (m.kind === 'practice') {
     if (!practiceFinished()) m.run.draft = v;
   }

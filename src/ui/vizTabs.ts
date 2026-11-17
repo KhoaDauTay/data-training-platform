@@ -1,5 +1,5 @@
 import type { DbClient } from '../db/client';
-import { GAME_SCHEMA } from '../domains';
+import { domainSchemaId, domainSchemaName } from '../domains';
 import { t } from '../i18n';
 import { hashOf } from '../route';
 import type { SchemaId } from '../domains';
@@ -121,7 +121,7 @@ function registerChartTab(deps: VizDeps): void {
 const allMeta = (): Promise<ErMetadata> => {
   if (inDrill()) return erMeta('lab');
   const own = sandboxTables().length > 0 ? erMeta('sandbox') : Promise.resolve({ cols: [], cons: [] });
-  return Promise.all([erMeta(GAME_SCHEMA), own]).then(([pub, mine]) => ({ cols: [...pub.cols, ...mine.cols], cons: [...pub.cons, ...mine.cons] }));
+  return Promise.all([erMeta(domainSchemaName()), own]).then(([pub, mine]) => ({ cols: [...pub.cols, ...mine.cols], cons: [...pub.cons, ...mine.cons] }));
 };
 
 interface Scoped { tables: string[]; dropped: string[]; switchable: boolean }
@@ -197,7 +197,7 @@ function registerSchemaTabs(deps: VizDeps): void {
       const open = new Set(drill ? s.tables : visibleTables());
       const game = new Set(drill ? s.tables : unlockedTables()); // imported Sandbox tables get no value lists
       body.append(...scopeBar(s, deps), h('div', { class: 'grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-2' }, ...s.tables.map((table) => {
-        const values = game.has(table) ? textValues(table, drill ? 'lab' : 'game') : undefined;
+        const values = game.has(table) ? textValues(table, drill ? 'lab' : domainSchemaId()) : undefined;
         return h('div', {},
           h('h3', { class: 'm-0' }, table),
           h('ul', { class: 'mt-1 mb-2 list-none space-y-0.5 pl-2 text-sm' }, ...meta.cols.filter((c) => c.table === table).map((c) =>

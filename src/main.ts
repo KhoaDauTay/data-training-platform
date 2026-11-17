@@ -1,10 +1,10 @@
 import './style.css';
 import { initTheme } from './theme';
-import { loadContent, loadLanes, loadTickets } from './content';
+import { loadContent, loadDomain, loadLanes, loadTickets } from './content';
 import { DbClient, DbFailedError, DbRestartError, QueryTimeoutError, WorkerTaskError, type DbStatus } from './db/client';
 import { SqlError } from './db/run';
 import { buildDiagnostics, diagnosticsText } from './diagnostics';
-import { GAME_SCHEMA } from './domains';
+import { activeDomain, DOMAIN_KEY, ECOM_ID, domainSchemaId, domainSchemaName, isLiveDomain, setActiveDomain, type DomainId } from './domains';
 import { applyStatic, loadLang, setLang, t, type Lang } from './i18n';
 import { MyData } from './import/myData';
 import { idbStore } from './import/store';
@@ -14,8 +14,8 @@ import { actions, app, done, editorSchema, persist, selected, type Column } from
 import { resumeStep } from './overview';
 import { seedReview } from './practice';
 import { isStory, session, today } from './session';
-import { localStore } from './storage';
-import type { Route } from './route';
+import { localStore, readJson, writeJson } from './storage';
+import { domainOfHash, type Route } from './route';
 import type { Ticket } from './tickets';
 import { initModes, onPracticeWrong, onSolved, renderLeft, renderReviewButton, startDrill } from './ui/modes';
 import { renderNotebook, toggleNotebook } from './ui/notebook';
@@ -90,7 +90,8 @@ const problems = contentProblems(app.tickets);
 if (problems.length) console.warn('Content problems:', problems);
 // Lane side tasks are known ids too, so their drafts, graded SQL and hints survive a reload (they never enter `completed`).
 const laneIds = new Set(loadLanes().tasks.map((x) => x.id));
-const known: Known = { ticketIds: new Set([...app.tickets.map((x) => x.id), ...laneIds]), laneIds, skills: new Set(SKILLS.map((s) => s.id)) };
+// Logistics ids are listed; e-commerce ids are kept by pattern (ECOM_ID), so its lazy content is not needed here (Plan 9).
+const known: Known = { ticketIds: new Set([...loadTickets('logistics').map((x) => x.id), ...laneIds]), laneIds, skills: new Set(SKILLS.map((s) => s.id)) };
 
 const loaded = loadSave(localStore(), known);
 app.save = loaded.save;
@@ -104,10 +105,12 @@ initTopbar(); // icon slots first: applyStatic() then only touches the label spa
 applyStatic();
 
 async function loadColumns(): Promise<void> {
+  const schema = domainSchemaName();
   try {
     const r = await db.run(
-      `SELECT table_name, column_name, data_type FROM information_schema.columns WHERE table_schema = '${GAME_SCHEMA}' ORDER BY table_name, ordinal_position`,
+      `SELECT table_name, column_name, data_type FROM information_schema.columns WHERE table_schema = '${schema}' ORDER BY table_name, ordinal_position`,
     );
+    if (schema !== domainSchemaName()) return; // the player switched domain meanwhile: enterDomain() loads the new columns
     const next: Record<string, Column[]> = {};
     for (const [table, name, type] of r.rows as string[][]) (next[table] ??= []).push({ name, type });
     app.columns = next;
@@ -163,6 +166,11 @@ function rerender(): void {
 
 /** `force`: rebuild the editor even for the same ticket id (an imported save brings its own draft). */
 function selectTicket(id: string, force = false): void {
+  const owner: DomainId = ECOM_ID.test(id) ? 'ecommerce' : 'logistics'; // the learning path opens Logistics tasks from any domain
+  if (owner !== activeDomain()) {
+    void enterDomain(owner).then(() => { if (activeDomain() === owner) selectTicket(id, force); });
+    return;
+  }
   const fromMode = !isStory(); // leaving Practice/Sandbox: new editor, and the practice run's lastRun is dropped
   session.mode = { kind: 'story' };
   app.selectedId = id;
@@ -224,6 +232,63 @@ function complete(tk: Ticket): void {
   byId('ticket').querySelector<HTMLElement>('.recap h3')?.focus(); // the Submit button just disappeared
   work.setSchema(editorSchema()); // a boss may open the next chapter's tables
   panel.refresh();
+}
+
+/**
+ * Plan 9: open a live domain's pages. Loads its content (lazy chunk), sends every query that names no schema to the
+ * domain's schema (seeding it once through ensure, queued ahead of later queries), and redraws. Caches keyed by SQL text
+ * (EXPLAIN, steps, ER, dashboard cards) are cleared because the same text means other tables now.
+ */
+async function enterDomain(id: DomainId): Promise<void> {
+  if (id === activeDomain()) return;
+  const loadingShown = id !== 'logistics';
+  const clearLoading = (): void => {
+    if (app.notice?.key === 'ecom.loading') app.notice = undefined;
+  };
+  if (loadingShown) {
+    app.notice = { key: 'ecom.loading' };
+    renderTopbar();
+  }
+  try {
+    await loadDomain(id);
+  } catch {
+    app.notice = { key: 'ecom.failed' };
+    renderTopbar();
+    return;
+  }
+  const wanted = domainOfHash(location.hash);
+  if (wanted && wanted !== id) { // the player went to another domain while this one loaded
+    clearLoading();
+    renderTopbar();
+    return;
+  }
+  setActiveDomain(id);
+  writeJson(DOMAIN_KEY, id);
+  const schema = domainSchemaId(id);
+  db.defaultSchema = schema;
+  if (loadingShown) {
+    db.ensure(schema).then(() => {
+      clearLoading();
+      renderTopbar();
+    }, () => {
+      app.notice = { key: 'ecom.failed' };
+      renderTopbar();
+    });
+  }
+  clearMemos();
+  resetCards();
+  session.mode = { kind: 'story' }; // Practice/Sandbox/drill of the other domain never carry over
+  app.tickets = loadTickets();
+  app.selectedId = firstOpen();
+  app.stepIndex = resumeStep(app.save, selected());
+  app.conclusionFor = '';
+  app.lastRun = undefined;
+  app.columns = {};
+  rerender();
+  work.setTicket(selected(), app.stepIndex, true);
+  work.setSchema(editorSchema());
+  panel.refresh();
+  if (app.dbStatus === 'ready') void loadColumns(); // queued after ensure, so it reads the seeded schema
 }
 
 /** Allowlisted payload only (Plan Deploy Task 3): never SQL, messages, drafts or data. Nothing is sent anywhere. */
@@ -319,7 +384,15 @@ if (app.dbStatus === 'ready') void loadColumns();
 work.setTicket(selected(), app.stepIndex);
 initSidebar(); // its Esc (close the overlay) goes before the tour's
 initTour();
-startRouter(showRoute);
+// Plan 9 D9-12: the domain in the URL, else the last one opened (General pages keep it), before the router builds hashes.
+const savedDomain = readJson<unknown>(DOMAIN_KEY);
+const bootDomain = domainOfHash(location.hash) ?? (isLiveDomain(savedDomain) ? savedDomain : 'logistics');
+if (bootDomain !== 'logistics') await enterDomain(bootDomain);
+startRouter((r, initial) => {
+  const d = domainOfHash(location.hash);
+  if (d && d !== activeDomain()) void enterDomain(d).then(() => showRoute(r, initial));
+  else showRoute(r, initial);
+});
 initWelcome();
 
 // "My data" (Plan Import): imported CSVs stay in this browser (IndexedDB) and are replayed into the sandbox schema.

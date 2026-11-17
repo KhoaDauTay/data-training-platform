@@ -1,6 +1,6 @@
 import { getLang, t } from '../i18n';
-import { GAME_SCHEMA } from '../domains';
-import { CHAPTER_TABLES, chapterTitle } from '../progress';
+import { activeDomain, domainSchemaName } from '../domains';
+import { chapterTablesOf, chapterTitle } from '../progress';
 import { dataTableOf, hashOf } from '../route';
 import { app, erMeta, textValues, unlockedTables } from '../state';
 import { chapterColor, cx, THEME_EVENT } from '../theme';
@@ -14,7 +14,7 @@ import { sideExtra } from './sidebar';
 import { registerNav } from './topbar';
 
 // Order 60 is kept for the dashboard tab (L47 item 7).
-registerNav({ id: 'data', area: 'domain', order: 50, label: 'nav.data', icon: 'table', href: hashOf('data'), current: (r) => r === 'data' });
+registerNav({ id: 'data', area: 'domain', order: 50, label: 'nav.data', icon: 'table', get href() { return hashOf('data'); }, current: (r) => r === 'data' });
 
 /** In memory only, never saved (ui-ux-v4 §5). */
 const view = { query: '', scope: 'near' as 'near' | 'all' };
@@ -25,7 +25,7 @@ let redrawList = (): void => {};
 let redrawDiagram = (): void => {};
 
 const rowCounts = memoByKey((key) => app.run(erRowCountsSql(key.split(','))).then((r) => new Map(r.rows.map(([x, n]) => [String(x), Number(n)]))));
-const chapterOf = (table: string): number => Number(Object.entries(CHAPTER_TABLES).find(([, ts]) => ts.includes(table))?.[0] ?? 0);
+const chapterOf = (table: string): number => Number(Object.entries(chapterTablesOf()).find(([, ts]) => ts.includes(table))?.[0] ?? 0);
 /** "mở ở chương 4", or for a lane table (chapter 0, Plan 5) "mở theo bài tuyến". */
 const openedAt = (table: string): string => (chapterOf(table) ? t('data.openedAt', { n: chapterOf(table) }) : t('lane.tableAt'));
 const tableHash = (table: string): string => `${hashOf('data')}/${table}`;
@@ -69,7 +69,7 @@ export function renderData(host: HTMLElement): void {
   side?.replaceChildren(picker);
   host.replaceChildren(h('div', { class: 'mx-auto max-w-[1120px] px-4 py-6' },
     h('h1', { id: 'data-title', tabindex: '-1', class: 'm-0 text-2xl font-bold' }, t('data.title')),
-    h('p', { class: 'mt-1 text-muted' }, t('data.intro')),
+    h('p', { class: 'mt-1 text-muted' }, t(activeDomain() === 'logistics' ? 'data.intro' : 'ecom.dataIntro')),
     h('div', { class: side ? 'mt-4 grid gap-5' : 'mt-4 grid gap-5 lg:grid-cols-[18rem_1fr]' },
       side ? null : picker,
       h('div', { class: 'min-w-0' }, detail, diagram))));
@@ -91,9 +91,9 @@ export function renderData(host: HTMLElement): void {
   function drawList(): void {
     const needle = q();
     const hits = open.filter((x) => !needle || x.includes(needle) || matchCols(x).length > 0);
-    const locked = Object.values(CHAPTER_TABLES).flat().filter((x) => !openSet.has(x) && (!needle || x.includes(needle)));
+    const locked = Object.values(chapterTablesOf()).flat().filter((x) => !openSet.has(x) && (!needle || x.includes(needle)));
     count.textContent = needle ? t('data.matches', { n: hits.length }) : '';
-    const groups = Object.entries(CHAPTER_TABLES).map(([c, ts]) => [Number(c), ts.filter((x) => hits.includes(x))] as const).filter(([, ts]) => ts.length);
+    const groups = Object.entries(chapterTablesOf()).map(([c, ts]) => [Number(c), ts.filter((x) => hits.includes(x))] as const).filter(([, ts]) => ts.length);
     list.replaceChildren(...nodes(
       needle && hits.length === 0 ? h('p', { class: 'text-muted' }, t('data.none', { q: view.query.trim() })) : null,
       ...groups.map(([c, ts]) => h('div', { class: 'mt-3' },
@@ -206,7 +206,7 @@ export function renderData(host: HTMLElement): void {
   };
   drawList();
   drawDetail();
-  erMeta(GAME_SCHEMA).then((m) => {
+  erMeta(domainSchemaName()).then((m) => {
     if (!live()) return;
     meta = m;
     drawList();

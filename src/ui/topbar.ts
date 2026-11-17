@@ -1,6 +1,7 @@
-import { DOMAINS } from '../domains';
+import { loadTickets } from '../content';
+import { activeDomain, DOMAINS, ECOM_ID, type DomainId } from '../domains';
 import { getLang, t, type Key } from '../i18n';
-import { chapterTitle, CHAPTERS, currentChapter, rankOf } from '../progress';
+import { chapterTitle, CHAPTERS, chaptersOf, currentChapter, rankOf } from '../progress';
 import { upsert } from '../registry';
 import { domainHash, hashOf, inDomain, type Route } from '../route';
 import { actions, app, done } from '../state';
@@ -33,14 +34,27 @@ export const navItems = (area: NavItem['area']): NavItem[] => NAV.filter((n) => 
 registerNav({ id: 'home', area: 'top', order: 10, label: 'nav.home', icon: 'home', href: hashOf('home'), current: (r) => r === 'home' });
 registerNav({ id: 'learn', area: 'top', order: 20, label: 'nav.learn', icon: 'route', href: hashOf('learn'), current: (r) => r === 'learn' });
 // Practice (top, order 30), Sandbox (domain, 30, ui/modes.ts) and Data (domain, 50, ui/dataView.ts) register their own.
-registerNav({ id: 'overview', area: 'domain', order: 10, label: 'nav.overview', icon: 'anchor', href: hashOf('overview'), current: (r) => r === 'overview' || r === 'soon' });
-registerNav({ id: 'play', area: 'domain', order: 20, label: 'nav.play', icon: 'code', href: hashOf('play'), current: (r) => r === 'play' });
-registerNav({ id: 'dashboard', area: 'domain', order: 60, label: 'nav.dashboard', icon: 'chart', href: hashOf('dashboard'), current: (r) => r === 'dashboard' });
-registerNav({ id: 'map', area: 'domain', order: 70, label: 'nav.map', icon: 'map', href: hashOf('map'), current: (r) => r === 'map' });
+registerNav({ id: 'overview', area: 'domain', order: 10, label: 'nav.overview', icon: 'anchor', get href() { return hashOf('overview'); }, current: (r) => r === 'overview' || r === 'soon' });
+registerNav({ id: 'play', area: 'domain', order: 20, label: 'nav.play', icon: 'code', get href() { return hashOf('play'); }, current: (r) => r === 'play' });
+registerNav({ id: 'dashboard', area: 'domain', order: 60, label: 'nav.dashboard', icon: 'chart', get href() { return hashOf('dashboard'); }, current: (r) => r === 'dashboard' });
+registerNav({ id: 'map', area: 'domain', order: 70, label: 'nav.map', icon: 'map', get href() { return hashOf('map'); }, current: (r) => r === 'map' });
 
 /** Mobile bottom bar (v6 §3.2): 56 px targets; the current one is --accent on --panel (5.5:1) and keeps its label. */
 const BOTTOM_LINK = 'flex min-h-14 flex-col items-center justify-center gap-0.5 text-xs font-bold text-muted no-underline aria-[current=page]:text-accent';
 const MENU_ITEM = 'flex w-full items-center gap-2 rounded-(--r-ctl) px-3 py-2 text-ink no-underline hover:bg-code';
+
+/**
+ * A domain's progress line on the platform Home, the domain menu and the drawer (Plan 9): Logistics = chapter · rank,
+ * E-commerce = tasks done (counted from the Save by id pattern, so its content chunk is not needed).
+ */
+export function domainLine(id: DomainId): string {
+  const d = DOMAINS.find((x) => x.id === id)!;
+  if (!d.live) return t('home.status.soon');
+  if (id === 'ecommerce') return t('ecom.homeLine', { n: app.save.completed.filter((x) => ECOM_ID.test(x)).length });
+  const tickets = loadTickets('logistics');
+  const rank = rankOf(tickets, done(), CHAPTERS).tier?.[getLang()] ?? t('career.intern');
+  return `${t('top.chapterShort', { n: currentChapter(tickets, done()), total: CHAPTERS.length })} · ${rank}`;
+}
 
 /** A nav link (top bar, bottom bar, sidebar); an item with `onclick` does its own navigation. */
 export function navLink(n: NavItem, route: Route, cls: string, ...body: (Node | string)[]): HTMLAnchorElement {
@@ -55,7 +69,7 @@ export function navLink(n: NavItem, route: Route, cls: string, ...body: (Node | 
 function renderNav(): void {
   const route = currentRoute();
   const top = navItems('top');
-  const live = DOMAINS.find((d) => d.live)!;
+  const live = DOMAINS.find((d) => d.id === activeDomain())!;
   byId('nav').replaceChildren(...top.map((n) => navLink(n, route, NAV_LINK, t(n.label))));
   byId('bottom-nav').replaceChildren(
     ...top.map((n) => navLink(n, route, BOTTOM_LINK, icon(n.icon, 'size-5'), h('span', {}, t(n.label)))),
@@ -66,14 +80,13 @@ function renderNav(): void {
 /** Domain switch (v5 §B.2, D-N3): Logistics with its chapter, then the "Coming soon" pages (no date promised). */
 function renderDomainMenu(): void {
   const menu = byId('domain-menu');
-  const ch = currentChapter(app.tickets, done());
-  byId('domain-label').textContent = t(DOMAINS.find((d) => d.live)!.name);
+  byId('domain-label').textContent = t(DOMAINS.find((d) => d.id === activeDomain())!.name);
   menu.replaceChildren(h('div', { class: 'flex flex-col' }, ...DOMAINS.map((d) => h('a', {
-    href: d.live ? hashOf('overview') : domainHash(d.id), class: MENU_ITEM, onclick: () => menu.hidePopover?.(),
+    href: domainHash(d.id), class: MENU_ITEM, onclick: () => menu.hidePopover?.(), 'aria-current': d.id === activeDomain() ? 'true' : false,
   },
     icon(d.icon, 'size-4'),
     h('span', { class: 'flex-1 font-bold' }, t(d.name)),
-    h('span', { class: 'text-sm text-muted' }, d.live ? t('top.chapterShort', { n: ch, total: CHAPTERS.length }) : t('home.status.soon'))))));
+    h('span', { class: 'text-sm text-muted' }, domainLine(d.id))))));
 }
 
 /** Ready = a green dot (text for screen readers and on hover); loading and failure stay visible on the bar, never in the ⋯ menu. */
@@ -156,7 +169,7 @@ export function renderTopbar(): void {
   const lang = getLang();
   const route = currentRoute();
   const ch = currentChapter(app.tickets, done());
-  const total = CHAPTERS.length;
+  const total = chaptersOf().length;
   const title = chapterTitle(ch, lang);
   const chapter = byId('chapter');
   chapter.title = t('top.chapter', { n: ch, total, title });

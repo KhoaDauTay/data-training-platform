@@ -145,7 +145,7 @@ export const kpiTiles = (kpis: Kpi[], tickets: Ticket[], completed: Set<string>)
   });
 
 /** "ch12-06" → 12: chapter of a tile whose ticket is not written yet. */
-export const chapterOfId = (id: string): number => Number(/^ch(\d+)-/.exec(id)?.[1] ?? 0);
+export const chapterOfId = (id: string): number => Number(/^(?:ecom-)?ch(\d+)-/.exec(id)?.[1] ?? 0);
 
 /** text: rounded for the tile; full: the exact value (2 decimals) for `title` and screen readers. */
 export interface KpiNumber { text: string; full: string }

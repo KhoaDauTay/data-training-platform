@@ -2,12 +2,13 @@ import { loadLanes } from '../content';
 import { BAR_ROWS, CARD_KINDS, cardRunner, colGone, markRan, ranHere, cardSpec, KIND_SKILL, MAX_CARDS, moveCard, TABLE_ROWS, type Card, type CardKind } from '../dashboard';
 import { QueryTimeoutError } from '../db/client';
 import type { QueryResult } from '../db/run';
-import { chapterOfId, KPIS, kpiNumber, kpiTiles, kpiValue, learnedSkills, type Kpi, type KpiTile, type KpiValue } from '../home';
+import { activeDomain } from '../domains';
+import { chapterOfId, kpisOf, kpiNumber, kpiTiles, kpiValue, learnedSkills, type Kpi, type KpiTile, type KpiValue } from '../home';
 import { getLang, t, type Key } from '../i18n';
 import { laneLabel } from '../lanes';
 import { SKILLS } from '../progress';
 import { ROUTES } from '../scene';
-import { stepKey } from '../save';
+import { domainSlot, stepKey } from '../save';
 import { app, done, persist } from '../state';
 import { BTN_GO, CARD, chapterColor, cx } from '../theme';
 import { textOf, type Ticket } from '../tickets';
@@ -88,7 +89,7 @@ export function cardBody(c: Card, r: QueryResult): HTMLElement {
 
 /** Once per session, one card after another (src/dashboard.ts cardRunner); a card that timed out is saved as slow. */
 const cards = cardRunner((sql) => app.run(sql), (id) => {
-  const saved = app.save.dashboard.cards.find((x) => x.id === id);
+  const saved = domainSlot(app.save, activeDomain()).dashboard.cards.find((x) => x.id === id);
   if (saved) saved.slow = true;
   persist(true);
 });
@@ -137,7 +138,7 @@ function playerCard(c: Card, i: number, n: number, redraw: () => void): HTMLElem
     });
   }
   const move = (dir: -1 | 1) => {
-    const d = app.save.dashboard;
+    const d = domainSlot(app.save, activeDomain()).dashboard;
     d.cards = moveCard(d.cards, i, dir);
     save();
     // The moved card's same button keeps focus; at the top or bottom it is disabled, so the other arrow takes it.
@@ -162,7 +163,7 @@ function playerCard(c: Card, i: number, n: number, redraw: () => void): HTMLElem
       btn('down', 'down', t('dash.down', { title: c.title }), () => move(1), i === n - 1),
       btn('rerun', 'refresh', t('dash.rerun', { title: c.title }), rerun),
       btn('unpin', 'unpin', t('dash.unpin', { title: c.title }), () => {
-        const d = app.save.dashboard;
+        const d = domainSlot(app.save, activeDomain()).dashboard;
         d.cards = d.cards.filter((x) => x.id !== c.id);
         cards.forget(c.id);
         save();
@@ -173,7 +174,7 @@ function playerCard(c: Card, i: number, n: number, redraw: () => void): HTMLElem
 
 function mineSection(redraw: () => void): HTMLElement {
   const lang = getLang();
-  const cards = app.save.dashboard.cards;
+  const cards = domainSlot(app.save, activeDomain()).dashboard.cards;
   const learned = learnedSkills(app.tickets, done());
   // One plain line, not a chip row (v6 §3.4, v10 UX #20).
   const kinds = CARD_KINDS.map((k) => {
@@ -197,7 +198,7 @@ function mineSection(redraw: () => void): HTMLElement {
 }
 
 function setHidden(id: string, hide: boolean, label: string, redraw: () => void): void {
-  const d = app.save.dashboard;
+  const d = domainSlot(app.save, activeDomain()).dashboard;
   d.hidden = hide ? [...d.hidden, id] : d.hidden.filter((x) => x !== id);
   persist(true);
   redraw();
@@ -236,8 +237,8 @@ function kpiTile(tile: KpiTile, redraw: () => void): HTMLElement {
 
 function companySection(redraw: () => void): HTMLElement {
   const lang = getLang();
-  const tiles = kpiTiles(KPIS, app.tickets, done());
-  const hidden = new Set(app.save.dashboard.hidden);
+  const tiles = kpiTiles(kpisOf(), app.tickets, done());
+  const hidden = new Set(domainSlot(app.save, activeDomain()).dashboard.hidden);
   const shown = tiles.filter((x) => !hidden.has(x.kpi.id));
   const gone = tiles.filter((x) => hidden.has(x.kpi.id));
   return h('section', { 'aria-labelledby': 'dash-company-title' },

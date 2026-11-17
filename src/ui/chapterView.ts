@@ -1,7 +1,7 @@
 import { knownSkills } from '../home';
 import { getLang, t } from '../i18n';
 import { chapterSummary, outcomeDone } from '../overview';
-import { CHAPTERS, chapterTitle, nextTicket, SKILLS } from '../progress';
+import { chaptersOf, chapterTitle, nextTicket, SKILLS } from '../progress';
 import { actions, app, done } from '../state';
 import { BTN_GO, chapterColor, cx, PILL } from '../theme';
 import type { Ticket } from '../tickets';
@@ -14,7 +14,7 @@ export const skillLabel = (id: string): string => SKILLS.find((s) => s.id === id
 
 /** "After this chapter you can…" (chapters.yml outcomes), ticked from the skills learned so far. */
 function outcomeList(chapter: number): HTMLElement | null {
-  const c = CHAPTERS.find((x) => x.chapter === chapter);
+  const c = chaptersOf().find((x) => x.chapter === chapter);
   if (!c?.outcomes.length) return null;
   const d = done();
   const learned = knownSkills(app.save, app.tickets, SKILLS.map((s) => s.id)); // learned anywhere counts (Plan 8a D8a-11)
@@ -57,7 +57,7 @@ export function wrapUp(chapter: number, onQuick?: () => void): HTMLElement {
   const lang = getLang();
   const s = chapterSummary(app.tickets, app.save, chapter);
   const last = !app.tickets.some((tk) => tk.chapter > chapter);
-  const career = CHAPTERS.find((c) => c.chapter === chapter)?.career[lang];
+  const career = chaptersOf().find((c) => c.chapter === chapter)?.career[lang];
   const next = last ? undefined : nextTicket(app.tickets, done());
   // v6 §2.4: Lily and Boon cheer a new chapter; one primary way on (the Recap above has none for a promotion review, v10 UX #9).
   return h('section', { class: 'my-3 rounded-xl bg-panel p-4 ring-1 ring-line', 'aria-labelledby': 'wrapup-title' },

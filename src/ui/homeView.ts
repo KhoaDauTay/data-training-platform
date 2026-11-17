@@ -1,7 +1,11 @@
-import { DOMAINS, type Domain } from '../domains';
-import { homeModel, knownSkills, KPIS, kpiTiles, learnedSkills, LEVELS, reliesOn, type ChapterCard, type HomeModel } from '../home';
+import { loadTickets } from '../content';
+import { activeDomain, DOMAINS, type Domain } from '../domains';
+import { homeModel, knownSkills, kpisOf, kpiTiles, learnedSkills, LEVELS, reliesOn, type ChapterCard, type HomeModel } from '../home';
 import { getLang, t, type Key } from '../i18n';
-import { CHAPTERS, chapterTitle, rankOf, SKILLS } from '../progress';
+import { CHAPTERS, chaptersOf, chapterTitle, domainSkills, rankOf, SKILLS } from '../progress';
+import { domainSlot } from '../save';
+import { ecomArt } from './ecomArt';
+import { domainLine } from './topbar';
 import { derive, ROUTES as LANES } from '../scene';
 import { domainHash, soonDomainOf } from '../route';
 import { laneInfo } from './lanePanel';
@@ -108,7 +112,7 @@ function continueCard(m: HomeModel): HTMLElement {
   const x = next ? textOf(next, lang) : undefined;
   return h('section', { class: cx(CARD, 'flex h-full flex-col gap-4 p-6'), 'aria-labelledby': 'continue-title' },
     h('p', { class: cx('m-0 flex items-center gap-2 text-sm font-semibold', chapterColor(m.chapter).text) },
-      icon('inbox', 'size-4'), t('home.kicker', { n: m.chapter, title: chapterTitle(m.chapter, lang) })),
+      icon('inbox', 'size-4'), t('home.kicker', { n: m.chapter, title: chapterTitle(m.chapter, lang, currentRoute() === 'home' ? CHAPTERS : chaptersOf()) })), // Home follows Logistics (renderHome)
     h('h2', { id: 'continue-title', class: 'm-0 text-xl font-bold' }, x ? x.title : t('inbox.empty')),
     next && x
       ? h('div', { class: 'flex gap-3' },
@@ -131,7 +135,7 @@ function continueCard(m: HomeModel): HTMLElement {
 function careerCard(): HTMLElement {
   const lang = getLang();
   const rank = rankOf(app.tickets, done());
-  const rows = [{ title: t('career.intern'), at: 0 }, ...CHAPTERS.filter((c) => c.tier).map((c) => ({ title: c.career[lang], at: c.chapter }))];
+  const rows = [{ title: t('career.intern'), at: 0 }, ...chaptersOf().filter((c) => c.tier).map((c) => ({ title: c.career[lang], at: c.chapter }))];
   const reached = (at: number): boolean => at === 0 || rank.passed.includes(at);
   const now = rows.filter((r) => reached(r.at)).pop();
   return h('section', { class: cx(CARD, 'flex h-full flex-col gap-3 p-6'), 'aria-labelledby': 'career-title' },
@@ -200,7 +204,7 @@ function skillsSection(m: HomeModel): HTMLElement {
   return h('section', { class: 'space-y-10', 'aria-labelledby': 'skills-title' },
     h('h2', { id: 'skills-title', class: 'sr-only' }, t('home.skills')),
     ...groups.map(([n, list]) => h('div', { id: `skills-ch-${n}`, class: 'scroll-mt-4' },
-      h('h3', { class: GROUP_TITLE }, t('learn.module', { n, title: chapterTitle(n, lang) })),
+      h('h3', { class: GROUP_TITLE }, t('learn.module', { n, title: chapterTitle(n, lang, CHAPTERS) })),
       h('ul', { class: LIST }, ...list.map((s) => listRow({
         lead: h('span', { class: cx('grid size-10 place-items-center rounded-full', s.state === 'locked' ? 'bg-code text-muted' : chapterColor(n).chip) }, skillIcon(s.skill.id)),
         title: s.skill.label[lang],
@@ -241,6 +245,10 @@ function freshChapters(): Set<number> {
 /** Tien Sa (L26): the yard holds one container per completed ticket, coloured by chapter. Home never replays animations. */
 /** Below lg the SVG labels hide (L34), so the title and status lines show as HTML under the picture. */
 function harborSection(m: HomeModel): HTMLElement {
+  if (activeDomain() !== 'logistics') { // Plan 9 D9-13: the Lantern Market scene, never the harbour
+    return h('section', { class: cx(CARD, 'overflow-hidden'), 'aria-labelledby': 'harbor-title' },
+      h('h2', { id: 'harbor-title', class: 'm-0 px-4 pt-3 text-lg font-bold' }, t('ecom.scene.title')), ecomArt('scene'));
+  }
   const harbor = derive(app.tickets, done());
   const scene = harborScene(harbor, { ambient: true, current: m.chapter, fresh: freshChapters() });
   return h('section', { class: cx(CARD, 'overflow-hidden'), 'aria-labelledby': 'harbor-title' },
@@ -252,6 +260,10 @@ function harborSection(m: HomeModel): HTMLElement {
 }
 
 function routesSection(): HTMLElement {
+  if (activeDomain() !== 'logistics') {
+    return h('section', { class: cx(CARD, 'p-5'), 'aria-labelledby': 'routes-title' },
+      h('h2', { id: 'routes-title', class: 'm-0 mb-2 text-lg font-bold' }, t('ecom.map.title')), ecomArt('map'));
+  }
   const harbor = derive(app.tickets, done());
   return h('section', { class: cx(CARD, 'p-5'), 'aria-labelledby': 'routes-title' },
     h('div', { class: 'mb-2 flex flex-wrap items-end justify-between gap-2' },
@@ -263,11 +275,11 @@ function routesSection(): HTMLElement {
 
 /** L48 D-A1: the company tiles moved to #/dashboard (src/ui/dashboard.ts); Home keeps a one-line teaser that links there. */
 function kpiSection(): HTMLElement {
-  const tiles = kpiTiles(KPIS, app.tickets, done());
+  const tiles = kpiTiles(kpisOf(), app.tickets, done());
   return h('a', { href: hashOf('dashboard'), class: cx(CARD_ACTION, 'group flex items-center gap-3 p-4 text-ink no-underline') },
     h('span', { class: 'grid size-9 shrink-0 place-items-center rounded-lg bg-code', 'aria-hidden': 'true' }, icon('chart')),
     h('span', { class: 'min-w-0 flex-1' }, h('b', {}, t('dash.title')), ' · ',
-      t('dash.teaser', { open: tiles.filter((x) => x.open).length, total: tiles.length, cards: app.save.dashboard.cards.length })),
+      t('dash.teaser', { open: tiles.filter((x) => x.open).length, total: tiles.length, cards: domainSlot(app.save, activeDomain()).dashboard.cards.length })),
     icon('arrowRight', 'size-4 text-muted transition group-hover:translate-x-0.5 group-hover:text-accent'));
 }
 
@@ -278,16 +290,14 @@ function helloSection(): HTMLElement {
 }
 
 /** Platform Home (v5 §B.5 #3): Logistics with its chapter and rank, then the domains that are coming (D-N3). */
-function domainsSection(m: HomeModel): HTMLElement {
-  const lang = getLang();
-  const rank = rankOf(app.tickets, done());
+function domainsSection(): HTMLElement {
   return h('section', { 'aria-labelledby': 'domains-title' },
     h('h2', { id: 'domains-title', class: GROUP_TITLE }, t('home.domains')),
     h('ul', { class: LIST }, ...DOMAINS.map((d) => listRow({
       lead: icon(d.icon, 'size-6'),
       title: t(d.name),
-      sub: d.live ? `${t('top.chapterShort', { n: m.chapter, total: CHAPTERS.length })} · ${rank.tier?.[lang] ?? t('career.intern')}` : t('home.status.soon'),
-      action: h('a', { href: d.live ? hashOf('overview') : domainHash(d.id), class: d.live ? cx(BTN_GO, 'px-4 py-2 whitespace-nowrap no-underline') : OUTLINE_LINK },
+      sub: domainLine(d.id),
+      action: h('a', { href: domainHash(d.id), class: d.live ? cx(BTN_GO, 'px-4 py-2 whitespace-nowrap no-underline') : OUTLINE_LINK },
         t(d.live ? 'home.enter' : 'home.peek')),
     }))));
 }
@@ -315,7 +325,8 @@ function soonSection(): HTMLElement {
 }
 
 /** Map page (v6 D-L3): the lanes as a list beside the route map; each opens its brief in the map dialog. */
-function lanesSection(): HTMLElement {
+function lanesSection(): HTMLElement | null {
+  if (activeDomain() !== 'logistics') return null; // lanes are Logistics only (D9-14)
   const harbor = derive(app.tickets, done());
   return h('section', { 'aria-labelledby': 'lanes-title' },
     h('h2', { id: 'lanes-title', class: GROUP_TITLE }, t('map.lanesTitle')),
@@ -349,7 +360,11 @@ const pageOf = (r: string): Page => (r === 'learn' || r === 'practice' || r === 
 /** Redrawn by rerender() (language switch, progress). Pure DOM from homeModel(); keeps no state of its own. */
 export function renderHome(host: HTMLElement): void {
   const page = pageOf(currentRoute());
-  const m = homeModel(app.tickets, done(), CHAPTERS, SKILLS, homeHooks.levelOf);
+  // General pages (Home, learning path, Practise SQL) follow Logistics; domain pages the open domain (Plan 9 D9-12).
+  const general = page === 'home' || page === 'learn' || page === 'practice';
+  const m = general || activeDomain() === 'logistics'
+    ? homeModel(general ? loadTickets('logistics') : app.tickets, done(), CHAPTERS, SKILLS, homeHooks.levelOf)
+    : homeModel(app.tickets, done(), chaptersOf(), domainSkills(app.tickets), homeHooks.levelOf);
   const grid = page === 'overview'; // the harbour page keeps its 3-column grid; the others are one 880 px column (v6 §3.3)
   host.replaceChildren(
     h('h1', {

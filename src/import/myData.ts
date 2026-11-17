@@ -1,7 +1,7 @@
 import { DbFailedError, DbRestartError } from '../db/client';
 import type { ImportedTable, ImportRequest } from '../db/import';
 import type { QueryResult } from '../db/run';
-import { GAME_SCHEMA } from '../domains';
+import { ECOM_TABLES, GAME_SCHEMA } from '../domains';
 import { inspectCsv, type ImportProblem } from './csv';
 import type { ImportStore, StoredImport } from './store';
 
@@ -47,8 +47,13 @@ export class MyData {
     this.onChange(tables);
   }
 
-  private async gameTables(): Promise<Set<string>> {
-    return new Set((await this.db.run(GAME_TABLES_SQL)).rows.map((r) => String(r[0])));
+  /**
+   * Plan 9 D9-15: a new import also avoids the e-commerce names (static list: the ecom schema may not be seeded yet).
+   * `restore` passes false: a file stored before Plan 9 as `orders` is kept, not deleted (in E-commerce `ecom.orders` wins).
+   */
+  private async gameTables(withEcom = true): Promise<Set<string>> {
+    const own = (await this.db.run(GAME_TABLES_SQL)).rows.map((r) => String(r[0]));
+    return new Set(withEcom ? [...own, ...ECOM_TABLES] : own);
   }
 
   /**
@@ -72,7 +77,7 @@ export class MyData {
     if (stored.length === 0) return failed;
     let game: Set<string>;
     try {
-      game = await this.gameTables();
+      game = await this.gameTables(false);
     } catch (error) {
       return stored.map((r) => ({ table: r.table, error })); // DB not usable: keep every record
     }

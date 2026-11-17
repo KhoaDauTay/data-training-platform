@@ -1,8 +1,8 @@
 import { getLang, t, type Key } from '../i18n';
-import { GAME_SCHEMA } from '../domains';
+import { activeDomain, domainSchemaName } from '../domains';
 import { LANE_XP } from '../lanes';
 import { roleLine } from '../people';
-import { CHAPTERS, nextTicket, SKILLS, xpFor } from '../progress';
+import { chaptersOf, nextTicket, SKILLS, xpFor } from '../progress';
 import { ROUTES } from '../scene';
 import { compareShape, shapeOf, type Kind, type Shape } from '../shape';
 import { hintsShown, isClosed, isStory, schemaOf, useHint } from '../session';
@@ -162,12 +162,12 @@ function reflectCard(tk: Ticket): HTMLElement | null {
 
 /** "This week at Cargo Query" (product-design-v2 ★4): the chapter's story, shown on its first ticket only. */
 function story(tk: Ticket): HTMLElement | null {
-  const c = CHAPTERS.find((x) => x.chapter === tk.chapter);
+  const c = chaptersOf().find((x) => x.chapter === tk.chapter);
   if (!c?.story.vi || app.tickets.find((x) => x.chapter === tk.chapter) !== tk) return null;
   return h('section', { class: 'my-3 overflow-hidden rounded-xl bg-panel ring-1 ring-line' },
     h('div', { class: cx('h-1.5', chapterColor(tk.chapter).bar) }),
     h('div', { class: 'p-3' },
-      h('h3', { class: 'mt-0' }, t('brief.story')),
+      h('h3', { class: 'mt-0' }, t(activeDomain() === 'logistics' ? 'brief.story' : 'ecom.briefStory')),
       h('p', { class: 'm-0' }, c.story[getLang()])));
 }
 
@@ -221,7 +221,7 @@ function relatedLine(tk: Ticket): HTMLElement | null {
   const fill = (tables: string[]) => line.replaceChildren(h('span', { class: 'text-muted' }, t('brief.related')), ...[...tables].sort().map((x) =>
     h('button', { type: 'button', class: 'px-1.5 py-0 font-mono text-sm', onclick: () => actions.showTab('erd') }, x)));
   fill(core);
-  erMeta(GAME_SCHEMA).then((m) => fill(relatedTables(tk.tables, open, m.cons).tables), () => {}); // DB not ready or failed: the task's own tables stay
+  erMeta(domainSchemaName()).then((m) => fill(relatedTables(tk.tables, open, m.cons).tables), () => {}); // DB not ready or failed: the task's own tables stay
   return line;
 }
 

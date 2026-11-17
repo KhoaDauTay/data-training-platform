@@ -1,3 +1,4 @@
+import { activeDomain } from '../domains';
 import { getLang, t, type Key } from '../i18n';
 import { rankOf, type Rank } from '../progress';
 import { derive, GATE_WAIT, routeOpenedBy, ROUTES, sceneOf, STEPS, type Harbor, type Lane, type Scene } from '../scene';
@@ -463,6 +464,14 @@ export function initStage(): void {
  * animations). Reduced motion: end state only, and the dock stays until Close or the next completion.
  */
 export function playCompletion(tk: Ticket, before: Set<string>, after: Set<string>): void {
+  if (activeDomain() !== 'logistics') { // Plan 9 D9-14: no completion scene in E-commerce yet, only the sentence
+    const lang = getLang();
+    const rank = rankOf(app.tickets, after);
+    byId('announce').textContent = tk.beat === 'boss'
+      ? t('ecom.promoted', { rank: (rank.career ?? rank.tier)?.[lang] ?? t('career.intern') })
+      : t('ecom.done', { title: textOf(tk, lang).title });
+    return;
+  }
   current.fast = true;
   const run: Run = { fast: reducedMotion(), done: false };
   current = run;

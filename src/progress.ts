@@ -129,8 +129,9 @@ export function parseChapters(source: string, origin = 'chapters.yml'): Chapter[
 export const SKILLS: Skill[] = parseSkills(skillsSource);
 export const CHAPTERS: Chapter[] = parseChapters(chaptersSource);
 
-export function chapterTitle(chapter: number, lang: Lang): string {
-  return chaptersOf().find((c) => c.chapter === chapter)?.title[lang] ?? '';
+/** `chapters`: CHAPTERS on General pages (the learning path follows Logistics, Plan 9 D9-12). */
+export function chapterTitle(chapter: number, lang: Lang, chapters: Chapter[] = chaptersOf()): string {
+  return chapters.find((c) => c.chapter === chapter)?.title[lang] ?? '';
 }
 
 /** Tables that appear in the schema sidebar from this chapter on (spec §4). The DB always has all of them. */

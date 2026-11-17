@@ -40,6 +40,8 @@ export interface DrillDeps {
   // Learning path (Task 9-10)
   lessonSeen: typeof LessonCard.isSeen; learnSkillOf: typeof Route.learnSkillOf; learnAdvOf: typeof Route.learnAdvOf;
   learnModuleOf: typeof Route.learnModuleOf; knownSkills: typeof Home.knownSkills; chapterTitle: typeof Progress.chapterTitle; visibleTickets: typeof Progress.visibleTickets;
+  // Plan 9 D9-12: the General area reads Logistics, whatever domain is open
+  loadTickets: typeof Content.loadTickets; CHAPTERS: typeof Progress.CHAPTERS; domainHash: typeof Route.domainHash;
 }
 
 let d$: DrillDeps;
@@ -150,11 +152,11 @@ function recap(g: General, d: Drill, tk: Ticket): HTMLElement {
   const next = [...group.slice(at + 1), ...group.slice(0, at)].find((x) => !app.save.completed.includes(x.id));
   const xp = lastXp.get(tk.id);
   const sql = app.save.graded[d$.stepKey(tk.id, 0)];
-  const chapters = d.skill ? appliesIn(app.tickets, d.skill) : [];
+  const chapters = d.skill ? appliesIn(d$.loadTickets('logistics'), d.skill) : [];
   return h('section', { class: 'recap my-3 rounded-xl bg-panel p-3 ring-1 ring-accent', 'aria-labelledby': 'drill-recap' },
     h('h3', { id: 'drill-recap', tabindex: '-1', class: 'mt-0' }, xp === undefined ? lt('drill.done') : xp > 0 ? lt('drill.passed', { xp }) : lt('drill.passedAgain')),
     sql ? h('div', {}, h('p', { class: 'mb-1 text-sm text-muted' }, lt('drill.recap')), h('pre', { class: 'sql' }, sql)) : null,
-    chapters.length ? h('p', { class: 'text-sm' }, h('a', { href: d$.hashOf('overview') }, lt('drill.applies', { list: chapters.join(', ') }))) : null,
+    chapters.length ? h('p', { class: 'text-sm' }, h('a', { href: d$.domainHash('logistics') }, lt('drill.applies', { list: chapters.join(', ') }))) : null,
     h('div', { class: 'actions mb-0' },
       next
         ? h('button', { type: 'button', class: 'primary', onclick: () => d$.startDrillMode(drillTicket(next), next) }, lt('drill.next'))
@@ -198,7 +200,7 @@ export function practiceHub(): HTMLElement | null {
   if (!g) return null;
   const { h, app } = d$;
   const ids = d$.SKILLS.map((s) => s.id);
-  const known = d$.knownSkills(app.save, app.tickets, ids);
+  const known = d$.knownSkills(app.save, d$.loadTickets('logistics'), ids);
   const done = (d: Drill): boolean => app.save.completed.includes(d.id);
   const go = (d: Drill, label: string): HTMLElement =>
     h('button', { type: 'button', class: BTN, onclick: () => d$.actions.startDrill(d.id) }, label);

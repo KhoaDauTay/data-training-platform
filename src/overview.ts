@@ -1,4 +1,4 @@
-import { CHAPTER_TABLES, xpFor } from './progress';
+import { chapterTablesOf, xpFor } from './progress';
 import type { Save } from './save';
 import type { Ticket } from './tickets';
 
@@ -18,7 +18,7 @@ export function chapterSummary(tickets: Ticket[], save: Save, chapter: number): 
     xp: done.reduce((sum, t) => sum + xpFor(t, save.hintsUsed[t.id] ?? 0), 0),
     hints: done.reduce((sum, t) => sum + (save.hintsUsed[t.id] ?? 0), 0),
     skills: done.flatMap((t) => t.grants),
-    newTables: CHAPTER_TABLES[chapter + 1] ?? [],
+    newTables: chapterTablesOf()[chapter + 1] ?? [],
   };
 }
 

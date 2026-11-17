@@ -19,8 +19,9 @@ const H2 = 'm-0 text-lg font-bold';
 
 function ctx(g: General): LearnCtx {
   const { app } = d$;
-  return { save: app.save, tickets: app.tickets, skills: d$.SKILLS, general: g, seen: d$.SKILLS.map((s) => s.id).filter((id) => d$.lessonSeen(id)),
-    known: d$.knownSkills(app.save, app.tickets, d$.SKILLS.map((s) => s.id)) };
+  const tickets = d$.loadTickets('logistics'); // Plan 9 D9-12: the learning path follows Logistics
+  return { save: app.save, tickets, skills: d$.SKILLS, general: g, seen: d$.SKILLS.map((s) => s.id).filter((id) => d$.lessonSeen(id)),
+    known: d$.knownSkills(app.save, tickets, d$.SKILLS.map((s) => s.id)) };
 }
 
 /** Draws the learning page for the current hash into a fresh element. */
@@ -72,9 +73,10 @@ function skillBlock(c: LearnCtx, s: Skill, heading: 'h2' | 'h3'): HTMLElement {
 function chapterWay(n: number): HTMLElement {
   const { h, app } = d$;
   const done = new Set(app.save.completed);
-  const own = app.tickets.filter((x) => x.chapter === n);
+  const tickets = d$.loadTickets('logistics');
+  const own = tickets.filter((x) => x.chapter === n);
   const first = own.find((x) => !done.has(x.id)) ?? own[0];
-  const reachable = !!first && d$.visibleTickets(app.tickets, done).includes(first);
+  const reachable = !!first && d$.visibleTickets(tickets, done).includes(first);
   return h('div', { class: 'flex flex-wrap items-center gap-3' },
     h('span', {}, lt('learn.appliesOne', { n })),
     reachable
@@ -87,7 +89,7 @@ function modulePage(c: LearnCtx, n: number): HTMLElement {
   const ms = moduleState(c, n);
   return h('div', { class: 'space-y-5' },
     h('p', { class: 'm-0' }, h('a', { href: d$.hashOf('learn') }, lt('learn.backAll'))),
-    h('h2', { class: 'm-0 text-xl font-bold' }, lt('learn.moduleTitle', { n, title: d$.chapterTitle(n, d$.getLang()) })),
+    h('h2', { class: 'm-0 text-xl font-bold' }, lt('learn.moduleTitle', { n, title: d$.chapterTitle(n, d$.getLang(), d$.CHAPTERS) })),
     h('p', { class: 'm-0 text-muted' }, lt('learn.moduleLine', { k: ms.learned, m: ms.skills.length })),
     ...d$.SKILLS.filter((s) => s.chapter === n).map((s) => skillBlock(c, s, 'h3')),
     chapterWay(n));
@@ -132,7 +134,7 @@ function overview(c: LearnCtx): HTMLElement {
     h('ul', { class: LIST }, ...modules.map((n) => {
       const ms = moduleState(c, n);
       return h('li', { class: 'space-y-2 rounded-(--r-card) bg-panel px-5 py-4 ring-1 ring-line' },
-        h('a', { href: `${d$.hashOf('learn')}/sql/${n}`, class: 'font-bold' }, lt('learn.moduleTitle', { n, title: d$.chapterTitle(n, lang) }), tick(ms.done)),
+        h('a', { href: `${d$.hashOf('learn')}/sql/${n}`, class: 'font-bold' }, lt('learn.moduleTitle', { n, title: d$.chapterTitle(n, lang, d$.CHAPTERS) }), tick(ms.done)),
         h('p', { class: 'm-0 text-sm text-muted' }, `${lt('learn.moduleLine', { k: ms.learned, m: ms.skills.length })} · ${lt('learn.appliesOne', { n })}`),
         bar(ms.learned, ms.skills.length));
     })));
