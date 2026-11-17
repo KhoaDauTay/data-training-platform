@@ -9,6 +9,8 @@ import { emptySave, stepKey, writeSave } from './save';
 import { shapeOf, type Shape } from './shape';
 import { localStore } from './storage';
 import type { Ticket } from './tickets';
+import { loadErMetadata } from './viz/erd';
+import { memoByKey } from './viz/memo';
 
 export interface LastRun {
   /** stepKey of the ticket step it was run for ('' outside a ticket); the shape card compares only matching runs. */
@@ -42,6 +44,8 @@ export const app = {
   notice: undefined as Notice | undefined,
   /** Last app/DB fault (never a player's SQL error): shows the "Copy diagnostics" button. */
   problem: undefined as { kind: DiagnosticKind; error?: unknown } | undefined,
+  /** ER and Columns tabs: tables related to the open task, or every unlocked table (ui-ux-v4 §4). Not saved. */
+  schemaScope: 'task' as 'task' | 'all',
   /** Runs one statement in the sandbox; main.ts points it at DbClient.run. */
   run: (_sql: string): Promise<QueryResult> => Promise.reject(new Error('DB not started')),
 };
@@ -55,7 +59,12 @@ export const actions = {
   copyDiagnostics(): void {},
   /** Replaces the editor text ("Use this example" on a worked ticket). */
   useSql(_sql: string): void {},
+  /** Opens a bottom-panel tab (Panel.show). */
+  showTab(_id: string): void {},
 };
+
+/** Columns and keys per schema, shared by the ER and Columns tabs, the brief and the Data page. Keyed by schema ('sandbox' for imports). */
+export const erMeta = memoByKey((schema) => loadErMetadata((sql) => app.run(sql), schema));
 
 export const done = (): Set<string> => new Set(app.save.completed);
 export const selected = (): Ticket => app.tickets.find((x) => x.id === app.selectedId)!;

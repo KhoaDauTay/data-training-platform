@@ -1,5 +1,5 @@
 import { t, type Key } from '../i18n';
-import { app, unlockedTables } from '../state';
+import { app } from '../state';
 import { cx } from '../theme';
 import { coach } from './coach';
 import { h } from './dom';
@@ -95,15 +95,6 @@ export function createPanel(host: HTMLElement): Panel {
   };
 }
 
-function schemaList(): HTMLElement {
-  const tables = unlockedTables().filter((x) => app.columns[x]);
-  if (tables.length === 0) return h('p', { class: 'muted' }, t('cols.loading'));
-  return h('div', { class: 'grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-2' }, ...tables.map((table) =>
-    h('div', {},
-      h('h3', { class: 'm-0' }, table),
-      h('ul', { class: 'mt-1 mb-2 list-none pl-2 text-sm' }, ...app.columns[table].map((c) => h('li', {}, h('code', {}, c.name), ' ', h('span', { class: 'muted' }, c.type)))))));
-}
-
 /** Plan 1 tabs. `editorSql` = what Ctrl+Enter would run now, to flag a stale result. */
 export function registerCoreTabs(editorSql: () => string): void {
   registerTab({
@@ -122,5 +113,4 @@ export function registerCoreTabs(editorSql: () => string): void {
       host.append(run.error !== undefined ? errorView(run.error) : renderResult(run.result!, run.mark));
     },
   });
-  registerTab({ id: 'columns', label: 'tab.columns', group: 'schema', order: 20, render: (host) => void host.append(schemaList()) });
 }

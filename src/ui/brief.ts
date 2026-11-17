@@ -3,9 +3,10 @@ import { roleLine } from '../people';
 import { CHAPTERS, nextTicket, SKILLS, xpFor } from '../progress';
 import { compareShape, shapeOf, type Kind, type Shape } from '../shape';
 import { hintsShown, isClosed, isStory, useHint } from '../session';
-import { actions, app, done, expectedShape, persist, stepKey, unlockedTables } from '../state';
+import { actions, app, done, erMeta, expectedShape, persist, stepKey, unlockedTables } from '../state';
 import { chapterColor, cx, DEPT_CHIP, deptColor, deptOf, PILL } from '../theme';
 import { textOf, type Beat, type Ticket, type TicketText } from '../tickets';
+import { relatedTables } from '../viz/erd';
 import { avatar } from './avatar';
 import { coach } from './coach';
 import { h, nodes, richText } from './dom';
@@ -199,6 +200,22 @@ function recap(tk: Ticket, x: TicketText): HTMLElement {
       : h('p', {}, t('recap.allDone')));
 }
 
+/**
+ * "Related tables:" chips (ui-ux-v4 §4), alphabetical so nothing marks the tables the answer uses. The task's own tables
+ * first; once the FK metadata is in, only this line is refilled with their parents too (no rerender). A chip opens the ER tab.
+ */
+function relatedLine(tk: Ticket): HTMLElement | null {
+  const open = unlockedTables();
+  const core = tk.tables.filter((x) => open.includes(x));
+  if (core.length === 0) return null;
+  const line = h('p', { class: 'my-3 flex flex-wrap items-center gap-1.5 text-sm' });
+  const fill = (tables: string[]) => line.replaceChildren(h('span', { class: 'text-muted' }, t('brief.related')), ...[...tables].sort().map((x) =>
+    h('button', { type: 'button', class: 'px-1.5 py-0 font-mono text-sm', onclick: () => actions.showTab('erd') }, x)));
+  fill(core);
+  erMeta('public').then((m) => fill(relatedTables(tk.tables, open, m.cons).tables), () => {}); // DB not ready or failed: the task's own tables stay
+  return line;
+}
+
 /** Left pane for `tk` (not necessarily the selected ticket: Plan 1c renders practice tickets here). Replaces host's children. */
 export function renderBrief(host: HTMLElement, tk: Ticket, stepIndex: number): void {
   const x = textOf(tk, getLang());
@@ -223,6 +240,7 @@ export function renderBrief(host: HTMLElement, tk: Ticket, stepIndex: number): v
     h('div', { class: 'rounded-2xl rounded-tl-sm bg-code px-4 leading-relaxed' }, richText(x.body)),
     exampleCard(tk, x),
     x.task ? h('section', { class: 'my-3 rounded-lg border-l-4 border-accent bg-accent-soft p-3' }, h('h3', { class: 'mt-0' }, t('brief.task')), richText(x.task)) : null,
+    relatedLine(tk),
     boss
       ? h('section', { class: 'my-3 rounded-lg p-3 ring-1 ring-line' },
         h('h3', { class: 'mt-0' }, t('brief.step', { i: stepIndex + 1, n: tk.steps.length, title: x.steps[stepIndex].title })),
