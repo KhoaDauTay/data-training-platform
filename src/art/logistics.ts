@@ -117,7 +117,8 @@ export function harborScene(h: Harbor, opts: { ambient: boolean; current: number
   const amb = (cls: string): string | false => (opts.ambient ? cls : false);
   const grad = (k: string, stops: [number, string, number?][]): SVGLinearGradientElement =>
     s('linearGradient', { id: id(k), x1: 0, y1: 0, x2: 0, y2: 1 },
-      ...stops.map(([offset, color, alpha]) => s('stop', { offset, 'stop-color': color, 'stop-opacity': alpha ?? 1 })));
+      // style, not the attribute: a stop colour may be a theme token (var(--hs-*), dusk in dark mode, v10 critic #8)
+      ...stops.map(([offset, color, alpha]) => s('stop', { offset, style: `stop-color:${color};stop-opacity:${alpha ?? 1}` })));
   const text = (x: number, y: number, size: number, fill: string, label: string, anchor = 'start'): SVGTextElement =>
     s('text', { x, y, 'text-anchor': anchor, 'font-family': FONT, 'font-size': size, 'font-weight': 700, fill }, label);
 
@@ -167,8 +168,8 @@ export function harborScene(h: Harbor, opts: { ambient: boolean; current: number
     'aria-label': t('harbor.label', { bays: bays || t('harbor.empty') }),
   },
     s('defs', {},
-      grad('sky', [[0, '#7dd3fc'], [0.6, '#e0f2fe'], [1, '#fef3c7']]),
-      grad('sea', [[0, '#0ea5e9'], [1, '#0c4a6e']]),
+      grad('sky', [[0, 'var(--hs-sky0)'], [0.6, 'var(--hs-sky1)'], [1, 'var(--hs-sky2)']]),
+      grad('sea', [[0, 'var(--hs-sea0)'], [1, 'var(--hs-sea1)']]),
       grad('mtn', [[0, '#166534'], [1, '#14532d']]),
       grad('mtn2', [[0, '#4d7c0f', 0.75], [1, '#365314', 0.75]]),
       grad('quay', [[0, '#cbd5e1'], [1, '#94a3b8']]),
@@ -183,12 +184,12 @@ export function harborScene(h: Harbor, opts: { ambient: boolean; current: number
     // Plan 8b: far layer (sun, clouds, ridges, lighthouse) and mid layer (ripples, feeder) move a few units with the
     // pointer on Home (parallax()); the full-bleed sky and sea never move, so no edge shows. Ridges start at x -12 for that.
     s('g', { 'data-layer': 'far' },
-    s('circle', { cx: 930, cy: 62, r: 30, fill: '#fde68a', opacity: 0.9 }),
+    s('circle', { cx: 930, cy: 62, r: 30, style: 'fill:var(--hs-sun)', opacity: 0.9 }),
     ...(opts.ambient ? CLOUDS.map(([y, k, dur, delay]) => s('g', { transform: `translate(0,${y}) scale(${k})`, 'aria-hidden': 'true' },
       s('g', { class: 'hidden cq-cloud motion-safe:inline', style: `animation-duration:${dur}s;animation-delay:-${delay}s` },
-        s('ellipse', { cx: 0, cy: 0, rx: 34, ry: 12, fill: '#ffffff', opacity: 0.8 }),
-        s('ellipse', { cx: -18, cy: 4, rx: 22, ry: 9, fill: '#ffffff', opacity: 0.8 }),
-        s('ellipse', { cx: 20, cy: 5, rx: 24, ry: 8, fill: '#ffffff', opacity: 0.8 })))) : []),
+        s('ellipse', { cx: 0, cy: 0, rx: 34, ry: 12, style: 'fill:var(--hs-cloud)', opacity: 0.8 }),
+        s('ellipse', { cx: -18, cy: 4, rx: 22, ry: 9, style: 'fill:var(--hs-cloud)', opacity: 0.8 }),
+        s('ellipse', { cx: 20, cy: 5, rx: 24, ry: 8, style: 'fill:var(--hs-cloud)', opacity: 0.8 })))) : []),
     s('path', { d: 'M-12 210 L0 210 L80 170 L170 150 L250 120 L330 95 L410 110 L470 92 L540 128 L600 150 L680 172 L760 190 L760 230 L-12 230 Z', fill: url('mtn2') }),
     s('path', { d: 'M-12 220 L0 220 L60 190 L140 178 L220 150 L300 140 L360 152 L430 136 L500 160 L560 185 L620 205 L620 236 L-12 236 Z', fill: url('mtn') }),
     text(300, 132, 15, '#f8fafc', t('harbor.sontra'), 'middle'),
