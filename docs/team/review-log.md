@@ -292,3 +292,14 @@ Vòng 2/3 (2026-11-17): review lại các sửa vòng 1 (tokenizer lab, map lỗ
 | correctness | `SUM(x) /*c*/ OVER` hoặc `)` trong chuỗi bị `window_agg` bỏ sót | Đã sửa c062f00 (cùng sửa `aggregateOver` ở trên) |
 
 **Plan 4 đóng sau 2 vòng.**
+
+## Cổng cuối Mốc 2 (2026-11-17)
+
+Kiểm Edge trên code cuối (sau mọi bản sửa Plan 4): ch11-01 câu đúng kết quả nhưng Seq Scan → chưa đạt, câu dùng index → đạt; ch11-04 index bảng khác → LAB02, index đúng → đạt, lịch sử 2 dòng, các tab không hiện kết quả cũ; ch12-06 bước 4 + kết luận → hoạt cảnh thăng tiến "Lead DA → Trưởng nhóm Phân tích", 69/69 việc; tải lại Trang chủ: "Bạn đã xong mọi ticket hiện có", KPI biên lợi nhuận Q3 = 16,6; build `/cargo-query/` + `check-deploy.sh` (thêm kiểm chunk ticket) đạt; không lỗi console. Còn nhỏ:
+
+| Loại | Bug | Trạng thái |
+|---|---|---|
+| i18n | Dòng lỗi LAB02/LAB01 ("the index must be on the container_events table") là tiếng Anh do app viết, hiện cho người chơi VI (giải thích VI ở dưới vẫn đúng) | Mở |
+| ux | Khi đã xong 69/69, khung cảng vẫn ghi "đang làm chương 12" | Mở |
+| verification | Chưa xem lại trên trình duyệt: ✓/✗ câu ngẫm lại, Ctrl+Z sau khi chép bài mẫu, thẻ ôn đầu chương ẩn sau khi xong (Plan 2); giao diện L42 ở 375/820 px, theme giữ sau khi tải lại, khu làm việc + ERD ở theme tối, menu ⋯ | Mở — chưa kiểm |
+| docs | Spec và curriculum còn ghi số bảng cũ và vài tính năng đã bỏ/dời ở L41–L45 | Mở |

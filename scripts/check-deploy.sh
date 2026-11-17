@@ -17,7 +17,10 @@ PARSER=$(printf '%s' "$WJS" | grep -oE 'parser-[A-Za-z0-9_-]+\.js' | head -1)
 LIBJS=$([ -n "$PARSER" ] && get "assets/$PARSER" | grep -oE 'libpg-query-[A-Za-z0-9_-]+\.js' | head -1)
 LIBWASM=$([ -n "$LIBJS" ] && get "assets/$LIBJS" | grep -oE 'libpg-query-[A-Za-z0-9_-]+\.wasm' | head -1)
 [ -n "$LIBWASM" ] || { echo "FAIL no libpg-query-*.wasm via $WORKER -> parser-*.js -> libpg-query-*.js"; exit 1; }
-for f in $MAIN "assets/$WORKER" $(printf 'assets/%s ' $FILES $LIBWASM); do
+# Ticket content (lazy chunk the app awaits before its first render, L41/L43)
+TICKETS=$(get "$MAIN" | grep -oE 'ticketSources-[A-Za-z0-9_-]+\.js' | head -1)
+[ -n "$TICKETS" ] || { echo "FAIL $MAIN does not reference ticketSources-*.js"; exit 1; }
+for f in $MAIN "assets/$WORKER" "assets/$TICKETS" $(printf 'assets/%s ' $FILES $LIBWASM); do
   H=$(curl -sS -o /dev/null -D - -H 'Accept-Encoding: br, gzip' "$URL/$f" | tr -d '\r')
   status=$(printf '%s\n' "$H" | head -1 | cut -d' ' -f2)
   type=$(printf '%s\n' "$H" | grep -i '^content-type:' | cut -d' ' -f2-)
