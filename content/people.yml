@@ -20,7 +20,7 @@
   employee: 14
   role: { vi: "Trưởng phòng Ops, người kèm DA mới", en: "Head of Operations, your mentor" }
   bio: { vi: "Kiên nhẫn, luôn nói \"từng bước một\".", en: "Patient, always says \"one step at a time\"." }
-  tables: [shipments, containers]
+  tables: [shipments, containers, shipment_events]
   look: { skin: tan, hair: black, style: short, accessory: helmet }
 
 - name: "Lê Bình"
@@ -36,7 +36,7 @@
   employee: 24
   role: { vi: "Trưởng phòng Hải quan", en: "Head of Customs" }
   bio: { vi: "Kỹ tính, thuộc lòng mã HS, ghét dữ liệu thiếu.", en: "Meticulous, knows HS codes by heart, hates missing data." }
-  tables: [shipments, ports]
+  tables: [shipments, ports, customs_declarations]
   look: { skin: light, hair: black, style: bun, accessory: glasses }
 
 - name: "Nguyễn Quang"
@@ -60,7 +60,7 @@
   employee: 16
   role: { vi: "Nhân viên chứng từ & booking (B/L, HBL/MBL)", en: "Documentation and booking officer (B/L, HBL/MBL)" }
   bio: { vi: "Soi từng số vận đơn, không để lô nào lệch sổ.", en: "Checks every bill of lading number and never lets a shipment drift off the books." }
-  tables: [shipments, containers]
+  tables: [shipments, containers, incoterms]
   look: { skin: light, hair: black, style: long, accessory: lanyard }
 
 - name: "Bùi Long"
@@ -68,7 +68,7 @@
   employee: 18
   role: { vi: "Điều độ vận tải & kho CFS", en: "Trucking and CFS dispatcher" }
   bio: { vi: "Lúc nào cũng ở bãi, đếm xe kéo và ca bốc xếp.", en: "Always out in the yard, counting trucks and loading shifts." }
-  tables: [containers]
+  tables: [containers, trucking_orders, cfs_receipts]
   look: { skin: tan, hair: black, style: short, accessory: helmet }
 
 - name: "Võ Phong"
@@ -76,7 +76,7 @@
   employee: 26
   role: { vi: "Khai báo viên hải quan", en: "Customs declarant" }
   bio: { vi: "Khai tờ khai nhanh nhất phòng, sợ nhất luồng đỏ.", en: "Files declarations faster than anyone, dreads the red lane." }
-  tables: [shipments]
+  tables: [customs_declarations, hs_codes, duties_taxes]
   look: { skin: medium, hair: black, style: side, accessory: glasses }
 
 - name: "Đặng Hà"

@@ -80,3 +80,80 @@
   syntax: "LEFT JOIN shipments s ON s.customer_id = c.id WHERE s.id IS NULL"
   when: { vi: "Tìm khách không book, cảng không có lô hàng…", en: "Find customers with no bookings, ports with no shipments…" }
   trap: { vi: "NOT IN trên danh sách có NULL trả về rỗng. Dùng LEFT JOIN … IS NULL hoặc NOT EXISTS.", en: "NOT IN over a list containing NULL returns nothing. Use LEFT JOIN … IS NULL or NOT EXISTS." }
+
+- id: date_math
+  chapter: 4
+  label: { vi: "Tính trên ngày", en: "Date arithmetic" }
+  syntax: "ata - eta AS days_late, etd + 7, DATE '2026-10-31' - ata"
+  when: { vi: "Cần số ngày giữa hai mốc, hoặc một ngày cách mốc N ngày.", en: "You need the days between two dates, or the date N days after one." }
+  trap: { vi: "Ngày trừ ngày ra số ngày (số nguyên). Ngày cộng interval ra timestamp, không còn là ngày; cộng số nguyên thì vẫn là ngày.", en: "A date minus a date gives a number of days. A date plus an interval becomes a timestamp; plus an integer it stays a date." }
+
+- id: date_bucket
+  chapter: 4
+  label: { vi: "Gom theo ngày, tuần, tháng", en: "Group by day, week or month" }
+  syntax: "SELECT date_trunc('month', booking_date), count(*) ... GROUP BY 1 ORDER BY 1"
+  when: { vi: "Cần một con số cho mỗi tháng, mỗi tuần, mỗi ngày.", en: "You need one number per month, week or day." }
+  trap: { vi: "date_trunc('week', …) bắt đầu tuần từ thứ Hai; extract(month …) chỉ ra số tháng, gộp lẫn tháng 10 của hai năm.", en: "date_trunc('week', …) starts weeks on Monday; extract(month …) only gives the month number and merges October of two years." }
+
+- id: null_logic
+  chapter: 4
+  label: { vi: "Giá trị trống (NULL)", en: "Missing values (NULL)" }
+  syntax: "WHERE ata IS NULL AND status <> 'CANCELLED'"
+  when: { vi: "Tìm thứ chưa được ghi: ngày đến thực tế, ngày thông quan…", en: "Find what has not been recorded yet: actual arrival, clearance date…" }
+  trap: { vi: "= NULL không bao giờ đúng, phải viết IS NULL. Ô trống có thể vì nhiều lý do (lô hủy cũng không có ngày đến).", en: "= NULL is never true; write IS NULL. A value can be empty for several reasons (a cancelled shipment has no arrival either)." }
+
+- id: case_when
+  chapter: 5
+  label: { vi: "Phân loại bằng CASE", en: "Classify with CASE" }
+  syntax: "CASE WHEN x <= 1 THEN 1 WHEN x <= 3 THEN 2 ELSE 3 END"
+  when: { vi: "Đặt mỗi dòng vào một nhóm theo điều kiện.", en: "Put each row into a group by a condition." }
+  trap: { vi: "CASE dừng ở điều kiện đúng đầu tiên, nên xếp điều kiện hẹp lên trước. Thiếu ELSE thì ra NULL.", en: "CASE stops at the first true condition, so put the narrow ones first. Without ELSE you get NULL." }
+
+- id: conditional_agg
+  chapter: 5
+  label: { vi: "Đếm có điều kiện", en: "Conditional aggregates" }
+  syntax: "count(*) FILTER (WHERE lane = 'RED'), SUM(CASE WHEN ata <= eta THEN 1 ELSE 0 END)"
+  when: { vi: "Cần nhiều con số theo điều kiện trên cùng một dòng, mỗi điều kiện một cột.", en: "You need several conditional counts side by side, one column per condition." }
+  trap: { vi: "Lọc ở WHERE thì mất các dòng khác cho cột kia. Đặt điều kiện vào FILTER hoặc CASE của từng cột.", en: "A WHERE filter drops the rows the other columns need. Put each condition in that column's FILTER or CASE." }
+
+- id: coalesce
+  chapter: 5
+  label: { vi: "Thay giá trị trống", en: "Fill in missing values" }
+  syntax: "COALESCE(t.import_duty_pct, 0), NULLIF(x, 0)"
+  when: { vi: "Dùng một giá trị mặc định khi dữ liệu còn trống.", en: "Use a default when the data is missing." }
+  trap: { vi: "Phép tính với NULL ra NULL, và SUM bỏ qua NULL mà không báo. COALESCE trước khi tính.", en: "Arithmetic with NULL gives NULL, and SUM skips NULLs silently. COALESCE before you calculate." }
+
+- id: self_join
+  chapter: 5
+  label: { vi: "Nối bảng với chính nó", en: "Self-join" }
+  syntax: "FROM customs_declarations o JOIN customs_declarations a ON a.amended_from_id = o.id"
+  when: { vi: "Một dòng trỏ tới dòng khác cùng bảng: tờ khai sửa, khách trùng, quản lý của nhân viên.", en: "A row points to another row of the same table: amendments, duplicates, an employee's manager." }
+  trap: { vi: "Đặt hai alias khác nhau và nhớ chuỗi có thể dài hơn một bước (sửa rồi lại sửa).", en: "Use two different aliases, and remember a chain can be longer than one step (amended, then amended again)." }
+
+- id: string_fn
+  chapter: 6
+  label: { vi: "Hàm chuỗi", en: "String functions" }
+  syntax: "upper(name), trim(x), replace(x, 'a', 'b'), regexp_replace(name, '^Công ty (TNHH|CP) ', ''), a || b"
+  when: { vi: "Chuẩn hóa hoặc ghép chữ trước khi in, so sánh hay gom nhóm.", en: "Normalise or build text before printing, comparing or grouping." }
+  trap: { vi: "replace chỉ thay một chuỗi cố định, và thay mọi chỗ khớp kể cả giữa câu. Muốn bỏ một trong nhiều tiền tố thì dùng regexp_replace với ^ neo đầu chuỗi và | cho các lựa chọn.", en: "replace swaps one fixed string, everywhere it appears, even mid-text. To drop one of several prefixes, use regexp_replace with ^ to anchor the start and | between the options." }
+
+- id: pattern_match
+  chapter: 6
+  label: { vi: "Tìm theo mẫu chữ", en: "Pattern matching" }
+  syntax: "WHERE cargo_desc ILIKE '%frozen%'"
+  when: { vi: "Tìm chữ nằm đâu đó trong một ô gõ tay.", en: "Find a word somewhere inside free text." }
+  trap: { vi: "LIKE phân biệt hoa thường; ILIKE thì không. Thiếu % ở hai đầu thì chỉ khớp nguyên ô.", en: "LIKE is case-sensitive; ILIKE is not. Without % on both sides it only matches the whole value." }
+
+- id: distinct
+  chapter: 6
+  label: { vi: "Đếm giá trị khác nhau", en: "Distinct values" }
+  syntax: "SELECT DISTINCT pod FROM shipments; count(DISTINCT pod)"
+  when: { vi: "Hỏi \"bao nhiêu loại\" hay \"bao nhiêu nơi\", không phải bao nhiêu dòng.", en: "The question is \"how many kinds\" or \"how many places\", not how many rows." }
+  trap: { vi: "count(pod) đếm cả lần lặp; count(DISTINCT pod) mới đếm cảng khác nhau.", en: "count(pod) counts repeats too; count(DISTINCT pod) counts different ports." }
+
+- id: cast
+  chapter: 6
+  label: { vi: "Ép kiểu, chia lấy số lẻ", en: "Casts and decimal division" }
+  syntax: "ROUND(count(*) FILTER (WHERE status = 'CANCELLED')::numeric * 100 / count(*), 2)"
+  when: { vi: "Tính tỷ lệ, phần trăm, hay đổi chữ thành số hoặc ngày.", en: "Compute a rate or a percentage, or turn text into a number or a date." }
+  trap: { vi: "Số nguyên chia số nguyên bỏ phần lẻ: 3 / 4 = 0. Ép một vế sang numeric trước khi chia.", en: "Integer divided by integer drops the decimals: 3 / 4 = 0. Cast one side to numeric before dividing." }
