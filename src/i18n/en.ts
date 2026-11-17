@@ -94,7 +94,7 @@ export const en: Record<Key, Msg> = {
   'prac.nothingDue': 'Nothing is due for review today. Your review schedule is on the Review card below.',
   'prac.stats': 'Practice so far: {solved} passed, {weak} not yet solid (correct, but after a wrong submit or 2+ hints).',
   'prac.noneDue': 'No skill is due for review today. To practise more, click a learned skill under Skill topics.',
-  'prac.locked': 'Once you finish your first task, the skills you learn are scheduled for review here.',
+  'prac.locked': 'Nothing to review yet. Learn your first skill in task 1 and it joins the review queue.',
   'prac.retry': 'Practise this task again (0 XP)',
   'prac.banner': 'Practice · {i} of {n} · 0 XP',
   'prac.exit': 'Back to work',
@@ -495,6 +495,9 @@ export const en: Record<Key, Msg> = {
   'map.beat.current': 'in progress',
   // ---- Plan 5: dashboard ----
   'nav.dashboard': 'Dashboard',
+  'prac.toFirst': 'Go to task 1',
+  'hist.empty': 'History: your runs will show here (up to 15)',
+  'tour.replay': 'Replay the tour',
   'lock.afterTask1': 'Opens after your first task',
   'lock.afterTask2': 'Opens after your second task',
   'tour.label': 'Tour {i}/{n}',

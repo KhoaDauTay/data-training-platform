@@ -58,4 +58,12 @@ describe('buildDiagnostics', () => {
     expect(buildDiagnostics({ build: 'dev', kind: 'db-timeout', error: 'boom', userAgent: SAFARI }))
       .toEqual({ build: 'dev', kind: 'db-timeout', ua: 'safari' });
   });
+  it('onboarding (v4 §B.6): chỉ số đếm và cờ, không chữ; sai dạng thì bỏ', () => {
+    const base = { build: 'dev', kind: 'feedback' as const, userAgent: EDGE };
+    expect(buildDiagnostics({ ...base, onboarding: { tourStep: 5, skipped: false, ch1Hints: [0, 2, 1, 0, 3], lessonsTried: 4 } }).onboarding)
+      .toEqual({ tourStep: 5, skipped: false, ch1Hints: [0, 2, 1, 0, 3], lessonsTried: 4 });
+    expect(buildDiagnostics({ ...base, onboarding: { tourStep: 'x', skipped: true, ch1Hints: [], lessonsTried: 0 } }).onboarding).toBeUndefined();
+    expect(buildDiagnostics({ ...base, onboarding: { tourStep: 1, skipped: 1, ch1Hints: ['SELECT'], lessonsTried: 0 } }).onboarding).toBeUndefined();
+    expect(buildDiagnostics(base)).toEqual({ build: 'dev', kind: 'feedback', ua: 'chrome' });
+  });
 });

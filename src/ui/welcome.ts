@@ -22,6 +22,7 @@ function choose(knows: boolean): void {
   if (knows) writeJson(COACH_KEY, true);
   dialog().close();
   actions.selectTicket(app.tickets[0].id);
+  actions.showTab('columns'); // same ticket id, so setTicket() does not relabel the tabs: hide the ones not open yet (D-O4)
 }
 
 function go(to: number): void {
@@ -82,6 +83,8 @@ export function initWelcome(): void {
     if (replay) return;
     startTour(false);
     writeJson(COACH_KEY, true);
+    actions.rerender(); // sidebar locks (D-O3)
+    actions.showTab('columns'); // and the tabs not open yet (D-O4)
   });
   if (welcomeNeeded(done().size, readTour(), coachDone())) openWelcome(false);
 }

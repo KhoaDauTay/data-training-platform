@@ -25,8 +25,10 @@ import { leftHome, renderHome } from './ui/homeView';
 import { initStage, playCompletion, relabelStage } from './ui/stage';
 import { renderInbox } from './ui/inbox';
 import { createPanel, registerCoreTabs } from './ui/tabs';
-import { initTour, refreshTour } from './ui/coach';
-import { initWelcome, relabelWelcome } from './ui/welcome';
+import { coachDone, initTour, refreshTour } from './ui/coach';
+import { initWelcome, openWelcome, relabelWelcome } from './ui/welcome';
+import { readTour } from './onboarding';
+import { loadLessonPrefs } from './lessons';
 import { pinBar } from './ui/pin';
 import { initLayout } from './ui/splitter';
 import { currentRoute, go, startRouter } from './ui/router';
@@ -226,11 +228,16 @@ function complete(tk: Ticket): void {
 
 /** Allowlisted payload only (Plan Deploy Task 3): never SQL, messages, drafts or data. Nothing is sent anywhere. */
 async function copyDiagnostics(): Promise<void> {
-  const p = app.problem;
-  if (!p) return;
+  const p = app.problem ?? { kind: 'feedback' as const }; // the ⋯ menu copies it with no fault (v4 §B.6)
   const readyMs = performance.getEntriesByName('db:time-to-ready').at(-1)?.duration;
   const text = diagnosticsText(buildDiagnostics({
-    build: __BUILD__, kind: p.kind, error: p.error, timings: { ...db.timings, readyMs }, userAgent: navigator.userAgent,
+    build: __BUILD__, kind: p.kind, error: 'error' in p ? p.error : undefined, timings: { ...db.timings, readyMs }, userAgent: navigator.userAgent,
+    onboarding: {
+      tourStep: readTour()?.step ?? 0,
+      skipped: coachDone(),
+      ch1Hints: app.tickets.filter((x) => x.chapter === 1).map((x) => app.save.hintsUsed[x.id] ?? 0),
+      lessonsTried: loadLessonPrefs().tried.length,
+    },
   }));
   // Never replace another banner (new version + Reload, save warnings): those matter more than "copied".
   const free = !app.notice || app.notice.key.startsWith('diag.');
@@ -264,6 +271,8 @@ Object.assign(actions, {
 
 byId('inbox-btn').addEventListener('click', () => (byId('inbox-dialog') as HTMLDialogElement).showModal());
 byId('notebook-btn').addEventListener('click', () => toggleNotebook(byId('notebook-dialog') as HTMLDialogElement));
+byId('replay-btn').addEventListener('click', () => openWelcome(true)); // v4 D-O2: the static version (V10)
+byId('diag-btn').addEventListener('click', () => void copyDiagnostics());
 
 for (const b of document.querySelectorAll<HTMLButtonElement>('[data-lang]')) {
   b.addEventListener('click', () => void setLang(b.dataset.lang as Lang).then(() => { // EN may need its chunk first

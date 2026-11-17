@@ -163,6 +163,8 @@
     <!-- L42: replaces part of L11; holds only Export / Import progress. Outside <header> so focus uses --accent. -->
     <div id="more-menu" popover class="m-0 min-w-52 rounded-xl border-0 bg-panel p-1 text-ink shadow-lg ring-1 ring-line [inset:3.5rem_1rem_auto_auto]">
       <div class="flex flex-col">
+        <button id="replay-btn" type="button" popovertarget="more-menu" popovertargetaction="hide" class="flex w-full items-center gap-2 rounded-lg border-0 bg-transparent px-3 py-2 text-left hover:bg-code"><span data-icon="info" data-icon-class="size-4"></span><span data-i18n="tour.replay">Xem lại hướng dẫn</span></button>
+        <button id="diag-btn" type="button" popovertarget="more-menu" popovertargetaction="hide" class="flex w-full items-center gap-2 rounded-lg border-0 bg-transparent px-3 py-2 text-left hover:bg-code"><span data-icon="copy" data-icon-class="size-4"></span><span data-i18n="diag.copy">Sao chép thông tin chẩn đoán</span></button>
         <button id="export-btn" type="button" popovertarget="more-menu" popovertargetaction="hide" class="flex w-full items-center gap-2 rounded-lg border-0 bg-transparent px-3 py-2 text-left hover:bg-code"><span data-icon="download" data-icon-class="size-4"></span><span data-i18n="top.export">Xuất tiến độ</span></button>
         <button id="import-btn" type="button" popovertarget="more-menu" popovertargetaction="hide" class="flex w-full items-center gap-2 rounded-lg border-0 bg-transparent px-3 py-2 text-left hover:bg-code"><span data-icon="upload" data-icon-class="size-4"></span><span data-i18n="top.import">Nhập tiến độ</span></button>
       </div>

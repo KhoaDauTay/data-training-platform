@@ -91,7 +91,7 @@ export const vi = {
   'prac.nothingDue': 'Hôm nay không còn bài ôn nào đến hạn. Lịch ôn nằm ở thẻ Ôn tập bên dưới.',
   'prac.stats': 'Đã luyện: {solved} bài đạt, {weak} bài chưa tốt (đúng nhưng có lần nộp sai hoặc từ 2 gợi ý).',
   'prac.noneDue': 'Hôm nay chưa có kỹ năng nào đến hạn ôn. Muốn luyện thêm, bấm một kỹ năng đã học ở mục Chủ đề kỹ năng.',
-  'prac.locked': 'Xong việc đầu tiên thì kỹ năng bạn học được sẽ vào lịch ôn ở đây.',
+  'prac.locked': 'Chưa có gì để ôn. Học xong kỹ năng đầu tiên ở việc 1, kỹ năng đó sẽ vào hàng ôn.',
   'prac.retry': 'Luyện lại việc này (0 XP)',
   'prac.banner': 'Luyện tập · bài {i}/{n} · 0 XP',
   'prac.exit': 'Về Làm việc',
@@ -492,6 +492,9 @@ export const vi = {
   'map.beat.current': 'đang làm',
   // ---- Plan 5: dashboard (#/dashboard, product-design-v3 Part A, mockup v6) ----
   'nav.dashboard': 'Bảng điều hành',
+  'prac.toFirst': 'Tới việc 1',
+  'hist.empty': 'Lịch sử: các lần chạy của bạn sẽ hiện ở đây (tối đa 15)',
+  'tour.replay': 'Xem lại hướng dẫn',
   'lock.afterTask1': 'Mở sau khi xong việc đầu tiên',
   'lock.afterTask2': 'Mở sau khi xong việc thứ hai',
   'tour.label': 'Hướng dẫn {i}/{n}',

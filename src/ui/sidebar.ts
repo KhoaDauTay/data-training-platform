@@ -2,6 +2,7 @@ import { DOMAINS } from '../domains';
 import { homeModel, type ChapterStatus } from '../home';
 import { getLang, t, type Key } from '../i18n';
 import { CHAPTERS, chapterTitle, currentChapter, rankOf, SKILLS, visibleTickets } from '../progress';
+import { gated, navLock, readTour } from '../onboarding';
 import { domainHash, hashOf, inDomain, learnModuleOf, type Route } from '../route';
 import { isStory, reviewCount } from '../session';
 import { actions, app, done } from '../state';
@@ -123,9 +124,12 @@ function content(route: Route, drawer: boolean): (Node | string)[] {
   } else if (route === 'practice') {
     out.push(row({ key: 'today', href: hashOf('practice'), lead: icon('repeat'), label: t('side.today', { n: reviewCount() }), current: true }));
   } else if (inDomain(route)) {
-    out.push(domainHead(), ...navItems('domain').map((n) => row({
-      key: n.id, href: n.href, lead: icon(n.icon), label: t(n.label), current: n.current(route), onclick: n.onclick,
-    })));
+    const order = app.tickets.map((x) => x.id);
+    const isGated = gated(readTour());
+    out.push(domainHead(), ...navItems('domain').map((n) => {
+      const lock = navLock(n.id, done(), order, isGated);
+      return row({ key: n.id, href: n.href, lead: icon(n.icon), label: t(n.label), current: n.current(route), onclick: n.onclick, lock: lock && t(lock) });
+    }));
     if (route === 'play') out.push(tasks());
     if (route === 'data') out.push(sideExtra());
   }

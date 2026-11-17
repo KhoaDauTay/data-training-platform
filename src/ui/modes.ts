@@ -224,7 +224,9 @@ function reviewCard(m: HomeModel): HTMLElement {
       h('h2', { id: 'review-title', class: 'm-0 text-lg font-bold' }, t('prac.section')),
       h('p', { class: 'mt-1 mb-0 text-[15px] text-muted' }, intro),
       p.solved + p.weak ? h('p', { class: 'mt-1 mb-0 text-sm text-muted' }, t('prac.stats', { solved: p.solved, weak: p.weak })) : null),
-    due ? h('button', { type: 'button', class: cx(BTN_GO, 'px-4 py-2'), onclick: () => startToday() }, t('prac.today', { n: due })) : null);
+    due ? h('button', { type: 'button', class: cx(BTN_GO, 'px-4 py-2'), onclick: () => startToday() }, t('prac.today', { n: due })) : null,
+    // v4 §B.3: nothing learned yet → one way forward.
+    m.learned === 0 ? h('button', { type: 'button', class: cx(BTN_GO, 'px-4 py-2'), onclick: () => actions.selectTicket(app.tickets[0].id) }, t('prac.toFirst')) : null);
 }
 
 /** Home "Chapter warm-up" (curriculum §5.2): recall tasks from earlier chapters when a chapter starts. Never blocks its first ticket. */

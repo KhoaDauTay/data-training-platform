@@ -2,7 +2,10 @@
  * "Copy diagnostics" payload (telemetry phase 1, decision D6). Strict allowlist:
  * never SQL, error messages, stacks, drafts, save data or imported data.
  */
-export type DiagnosticKind = 'db-init-failed' | 'db-timeout' | 'worker-crash' | 'chunk-load-failed' | 'js-error';
+/** 'feedback': copied by hand from the ⋯ menu with no fault (v4 §B.6: the five-person test sends this string back). */
+export type DiagnosticKind = 'db-init-failed' | 'db-timeout' | 'worker-crash' | 'chunk-load-failed' | 'js-error' | 'feedback';
+/** v4 §B.6: counts and flags only (never SQL or text). */
+export interface Onboarding { tourStep: number; skipped: boolean; ch1Hints: number[]; lessonsTried: number }
 export type UaFamily = 'chrome' | 'firefox' | 'safari' | 'other';
 export interface DiagnosticTimings { bootMs: number; seedMs: number; readyMs: number }
 
@@ -12,6 +15,7 @@ export interface Diagnostics {
   sqlstate?: string;
   errorName?: string;
   timings?: DiagnosticTimings;
+  onboarding?: Onboarding;
   ua: UaFamily;
 }
 
@@ -20,6 +24,7 @@ export interface DiagnosticsInput {
   kind: DiagnosticKind;
   error?: unknown;
   timings?: Partial<Record<keyof DiagnosticTimings, unknown>>;
+  onboarding?: Partial<Record<keyof Onboarding, unknown>>;
   userAgent: string;
 }
 
@@ -40,6 +45,8 @@ function field(error: unknown, key: 'code' | 'name'): string | undefined {
   return typeof v === 'string' ? v : undefined;
 }
 
+const count = (v: unknown): number | undefined => (typeof v === 'number' && Number.isInteger(v) && v >= 0 && v <= 1000 ? v : undefined);
+
 function ms(v: unknown): number | undefined {
   return typeof v === 'number' && Number.isFinite(v) && v >= 0 ? Math.round(v) : undefined;
 }
@@ -59,6 +66,15 @@ export function buildDiagnostics(input: DiagnosticsInput): Diagnostics {
     const seedMs = ms(input.timings.seedMs);
     const readyMs = ms(input.timings.readyMs);
     if (bootMs !== undefined && seedMs !== undefined && readyMs !== undefined) d.timings = { bootMs, seedMs, readyMs };
+  }
+  const o = input.onboarding;
+  if (o) {
+    const tourStep = count(o.tourStep);
+    const lessonsTried = count(o.lessonsTried);
+    const hints = Array.isArray(o.ch1Hints) && o.ch1Hints.length <= 20 ? o.ch1Hints.map(count) : [undefined];
+    if (tourStep !== undefined && lessonsTried !== undefined && typeof o.skipped === 'boolean' && hints.every((x) => x !== undefined)) {
+      d.onboarding = { tourStep, skipped: o.skipped, ch1Hints: hints as number[], lessonsTried };
+    }
   }
   return d;
 }

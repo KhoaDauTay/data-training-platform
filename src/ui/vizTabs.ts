@@ -60,8 +60,8 @@ function registerPlanTabs(deps: VizDeps): void {
     const sql = lastRunSql(host, deps);
     return sql === undefined ? undefined : load(host, t('viz.explaining'), planFor(sql), draw);
   };
-  registerTab({ id: 'explain', label: 'tab.explain', group: 'query', order: 20, newAt: 'ch11-01', render: withPlan(renderExplain) }); // EXPLAIN is taught in ch11 (L30/L35)
-  registerTab({ id: 'flow', label: 'tab.flow', group: 'query', order: 30, render: withPlan(renderFlow) });
+  registerTab({ id: 'explain', label: 'tab.explain', group: 'query', order: 20, newAt: 'ch11-01', from: 'ch11-01', render: withPlan(renderExplain) }); // EXPLAIN is taught in ch11 (L30/L35)
+  registerTab({ id: 'flow', label: 'tab.flow', group: 'query', order: 30, newAt: 'ch3-01', from: 'ch3-01', render: withPlan(renderFlow) });
 }
 
 function registerStepsTab(deps: VizDeps): void {
@@ -69,7 +69,7 @@ function registerStepsTab(deps: VizDeps): void {
   // The parser download gets its own long budget first, so it never counts toward the steps timeout (L36).
   const stepsFor = memoByKey((sql) => deps.db.loadParser().then(() => deps.db.steps<StepsResult>(sql)));
   registerTab({
-    id: 'steps',
+    id: 'steps', from: 'ch1-03', newAt: 'ch1-03', // v4 §B.2: first ORDER BY
     label: 'tab.steps',
     group: 'query',
     order: 10,
@@ -87,11 +87,10 @@ const ticketColor = () => chapterColor(selected()?.chapter ?? 0);
 
 function registerChartTab(deps: VizDeps): void {
   registerTab({
-    id: 'chart',
+    id: 'chart', from: 'ch2-02', newAt: 'ch2-02', // first task with several groups
     label: 'tab.chart',
     group: 'output',
     order: 20,
-    newAt: 'ch2-01',
     render: (host) => {
       if (lastRunSql(host, deps) === undefined) return;
       const result = app.lastRun?.result;
@@ -152,7 +151,7 @@ function scopeBar(s: Scoped, deps: VizDeps): (Node | string)[] {
 
 function registerSchemaTabs(deps: VizDeps): void {
   registerTab({
-    id: 'erd',
+    id: 'erd', from: 'ch3-01', newAt: 'ch3-01', // first join
     label: 'tab.erd',
     group: 'schema',
     order: 10,

@@ -3,7 +3,8 @@ import indexHtml from '../index.html?raw';
 import { PREFS_KEY } from '../src/i18n';
 import { getTheme, parseThemePref, resolveTheme, setTheme } from '../src/theme';
 import { stepKey, ticketOfKey } from '../src/save';
-import { initialDoc } from '../src/state';
+import { readDraft, SANDBOX_STARTER, session } from '../src/session';
+import { app, initialDoc } from '../src/state';
 import { COACH_KEY, coachDone } from '../src/ui/coach';
 import { parseSidePref, SIDE_KEY } from '../src/ui/sidebar';
 import { LAYOUT_KEY, parseLayout } from '../src/ui/splitter';
@@ -106,5 +107,18 @@ describe('sidebar (v6 §3.2)', () => {
     expect(parseSidePref('open')).toBe('open');
     expect(parseSidePref(undefined)).toBe('open');
     expect(parseSidePref({ x: 1 })).toBe('open');
+  });
+});
+
+describe('Sandbox lần đầu (v4 §B.3)', () => {
+  it('nháp trống hoặc chỉ khoảng trắng → câu mẫu; có chữ → giữ', () => {
+    session.mode = { kind: 'sandbox' };
+    app.save.sandboxDraft = '';
+    expect(readDraft()).toBe(SANDBOX_STARTER);
+    app.save.sandboxDraft = '  \n';
+    expect(readDraft()).toBe(SANDBOX_STARTER);
+    app.save.sandboxDraft = 'SELECT 1';
+    expect(readDraft()).toBe('SELECT 1');
+    session.mode = { kind: 'story' };
   });
 });

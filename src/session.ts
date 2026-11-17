@@ -77,10 +77,13 @@ export function workKey(): string {
   return draftKey();
 }
 
+/** v4 §B.3: the first Sandbox visit starts from a small query instead of an empty editor (ports is open from chapter 1). */
+export const SANDBOX_STARTER = 'SELECT * FROM ports LIMIT 20';
+
 /** `undefined` lets the caller fall back (initialDoc: the ticket's `starter`). */
 export function readDraft(): string | undefined {
   const m = session.mode;
-  if (m.kind === 'sandbox') return app.save.sandboxDraft;
+  if (m.kind === 'sandbox') return app.save.sandboxDraft.trim() ? app.save.sandboxDraft : SANDBOX_STARTER;
   if (m.kind === 'practice') return m.run.draft === '' ? undefined : m.run.draft;
   return app.save.drafts[workKey()];
 }

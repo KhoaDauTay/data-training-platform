@@ -149,9 +149,9 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
 
   function drawHistory(): void {
     const list = ticket && keepsWork() ? history[ticket.id] ?? [] : []; // in Practice it would show the story's passing SQL
-    historyBox.hidden = list.length === 0;
+    historyBox.hidden = !ticket || !keepsWork(); // v4 §B.3: an empty history says what will appear there
     historyBox.replaceChildren(
-      h('summary', { class: 'cursor-pointer text-muted' }, t('hist.title', { n: list.length })),
+      h('summary', { class: 'cursor-pointer text-muted' }, list.length ? t('hist.title', { n: list.length }) : t('hist.empty')),
       h('ul', { class: 'my-1 list-none p-0' }, ...list.map((e) => h('li', {},
         h('button', { type: 'button', class: 'w-full border-0 bg-transparent px-1 py-0.5 text-left font-mono text-xs hover:bg-code', onclick: () => { editor?.setValue(e.sql); editor?.focus(); } },
           h('span', { class: e.ok ? 'good' : 'bad' }, e.ok ? '✓' : '✗'),

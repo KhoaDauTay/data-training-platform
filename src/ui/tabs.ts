@@ -1,5 +1,7 @@
 import { t, type Key } from '../i18n';
-import { app } from '../state';
+import { gated, readTour, tabOpen } from '../onboarding';
+import { visibleTickets } from '../progress';
+import { app, done } from '../state';
 import { cx } from '../theme';
 import { markTabOpened, tourSlot } from './coach';
 import { h } from './dom';
@@ -15,6 +17,8 @@ export interface TabSpec {
   order: number;
   /** Ticket id where this tab gets a "new" badge (e.g. 'ch3-01' for EXPLAIN). */
   newAt?: string;
+  /** v4 D-O4 (V9): for a beginner from the welcome screen the tab appears once this ticket is reached. */
+  from?: string;
   render(host: HTMLElement): void | Promise<void>;
 }
 
@@ -56,17 +60,21 @@ export function createPanel(host: HTMLElement): Panel {
   let active = tabs.some((x) => x.id === 'columns') ? 'columns' : tabs[0].id;
 
   bar.addEventListener('keydown', (e) => {
-    const i = buttons.indexOf(document.activeElement as HTMLButtonElement);
+    const shown = buttons.filter((b) => !b.hidden); // tabs not open yet (D-O4) are skipped
+    const i = shown.indexOf(document.activeElement as HTMLButtonElement);
     if (i < 0) return;
-    const n = buttons.length;
+    const n = shown.length;
     const j = ({ ArrowRight: (i + 1) % n, ArrowLeft: (i - 1 + n) % n, Home: 0, End: n - 1 } as Record<string, number>)[e.key];
     if (j === undefined) return;
     e.preventDefault();
-    buttons[j].focus();
+    shown[j].focus();
   });
 
   function label(): void {
+    const reached = new Set(visibleTickets(app.tickets, done()).map((x) => x.id));
+    const isGated = gated(readTour());
     tabs.forEach((tab, i) => {
+      buttons[i].hidden = !tabOpen(tab.from, reached, isGated) && tab.id !== active; // a chip may still open it on purpose
       const on = tab.id === active;
       const b = buttons[i];
       b.setAttribute('aria-selected', String(on));
