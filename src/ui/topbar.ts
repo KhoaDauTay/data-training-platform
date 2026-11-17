@@ -3,7 +3,7 @@ import { chapterTitle, CHAPTERS, currentChapter, rankOf } from '../progress';
 import { upsert } from '../registry';
 import { hashOf, type Route } from '../route';
 import { actions, app, done } from '../state';
-import { NAV_LINK, TOP_BTN } from '../theme';
+import { cx, NAV_LINK, TOP_BTN } from '../theme';
 import { byId, h, nodes } from './dom';
 import { currentRoute } from './router';
 
@@ -65,7 +65,9 @@ export function renderTopbar(): void {
   byId('rank').textContent = rankOf(app.tickets, done()).tier?.[getLang()] ?? t('career.intern');
   byId('xp').textContent = t('top.xp', { n: app.save.xp });
   for (const b of document.querySelectorAll<HTMLButtonElement>('[data-lang]')) b.setAttribute('aria-pressed', String(b.dataset.lang === getLang()));
-  byId('db-status').replaceChildren(dbStatusView());
+  byId('db-status').replaceChildren(...nodes(
+    dbStatusView(),
+    app.problem ? h('button', { type: 'button', class: cx(TOP_BTN, 'ml-2'), onclick: () => actions.copyDiagnostics() }, t('diag.copy')) : null));
   renderNav();
   renderNotice();
 }

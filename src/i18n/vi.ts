@@ -2,6 +2,9 @@ import type { Msg } from './index';
 
 /** Source of keys (VI is the original). Plan 1b/1c add keys here and in en.ts in the same task. */
 export const vi = {
+  'diag.copy': 'Sao chép thông tin chẩn đoán',
+  'diag.copied': 'Đã chép thông tin chẩn đoán. Dán vào báo lỗi giúp mình nhé (không có SQL hay dữ liệu của bạn trong đó).',
+  'diag.manual': 'Không chép tự động được. Hãy tự chép đoạn sau vào báo lỗi: {text}',
   'mode.mydata': 'Dữ liệu của tôi',
   'mode.mydataDesc': 'Nạp file CSV của bạn rồi thử SQL, Biểu đồ, EXPLAIN và Sơ đồ ER trên chính dữ liệu đó.',
   'mydata.title': 'Dữ liệu của tôi',

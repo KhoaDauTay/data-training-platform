@@ -1,6 +1,8 @@
 import './style.css';
 import { loadTickets } from './content';
-import { DbClient, type DbStatus } from './db/client';
+import { DbClient, DbFailedError, DbRestartError, QueryTimeoutError, WorkerTaskError, type DbStatus } from './db/client';
+import { SqlError } from './db/run';
+import { buildDiagnostics, diagnosticsText } from './diagnostics';
 import { applyStatic, setLang, t, type Lang } from './i18n';
 import { MyData } from './import/myData';
 import { idbStore } from './import/store';
@@ -63,8 +65,11 @@ async function loadColumns(): Promise<void> {
 
 // DbClient reports 'loading' from its constructor, before panel/work exist: this callback touches only
 // the top bar, except in the 'ready' branch, which always arrives later (after the worker has booted).
+let dbWasReady = false;
 function onDbStatus(s: DbStatus): void {
   app.dbStatus = s;
+  if (s === 'ready') dbWasReady = true;
+  if (s === 'failed') app.problem = { kind: dbWasReady ? 'worker-crash' : 'db-init-failed' }; // P10
   if (s !== 'loading') app.loadProgress = undefined;
   renderTopbar();
   if (s === 'ready' && Object.keys(app.columns).length === 0) void loadColumns();
@@ -76,6 +81,10 @@ db.onProgress = (p) => {
   renderTopbar();
 };
 app.run = (sql) => db.run(sql);
+db.onTimeout = (e) => {
+  app.problem = { kind: 'db-timeout', error: e };
+  renderTopbar();
+};
 
 registerCoreTabs(() => work.currentSql());
 registerVizTabs({ db, show: (id) => panel.show(id), active: () => panel.active, editorSql: () => work.currentSql() });
@@ -168,7 +177,34 @@ function complete(t: Ticket): void {
   panel.refresh();
 }
 
-Object.assign(actions, { rerender, selectTicket, complete, retryDb: () => db.restart() });
+/** Allowlisted payload only (Plan Deploy Task 3): never SQL, messages, drafts or data. Nothing is sent anywhere. */
+async function copyDiagnostics(): Promise<void> {
+  const p = app.problem;
+  if (!p) return;
+  const readyMs = performance.getEntriesByName('db:time-to-ready').at(-1)?.duration;
+  const text = diagnosticsText(buildDiagnostics({
+    build: __BUILD__, kind: p.kind, error: p.error, timings: { ...db.timings, readyMs }, userAgent: navigator.userAgent,
+  }));
+  try {
+    await navigator.clipboard.writeText(text);
+    app.notice = { key: 'diag.copied' };
+  } catch {
+    app.notice = { key: 'diag.manual', params: { text } }; // shown with textContent (renderNotice)
+  }
+  renderTopbar();
+}
+
+/** Uncaught app errors only: query outcomes (player SQL errors, timeouts, restarts, worker task and DB failures) are normal play or already recorded. */
+const fault = (error: unknown): void => {
+  if (error instanceof SqlError || error instanceof QueryTimeoutError || error instanceof DbRestartError
+    || error instanceof WorkerTaskError || error instanceof DbFailedError) return;
+  app.problem = { kind: 'js-error', error };
+  renderTopbar();
+};
+window.addEventListener('error', (e) => fault(e.error));
+window.addEventListener('unhandledrejection', (e) => fault(e.reason));
+
+Object.assign(actions, { rerender, selectTicket, complete, retryDb: () => db.restart(), copyDiagnostics: () => void copyDiagnostics() });
 
 byId('inbox-btn').addEventListener('click', () => (byId('inbox-dialog') as HTMLDialogElement).showModal());
 byId('notebook-btn').addEventListener('click', () => toggleNotebook(byId('notebook-dialog') as HTMLDialogElement));
@@ -206,6 +242,7 @@ byId('export-btn').addEventListener('click', () => {
 
 // A lazy chunk (sql-formatter; Plan 1b: Mermaid, libpg-query) 404s after a deploy: offer a reload.
 window.addEventListener('vite:preloadError', () => {
+  app.problem = { kind: 'chunk-load-failed' };
   app.notice = { key: 'app.newVersion', reload: true };
   renderTopbar();
 });
