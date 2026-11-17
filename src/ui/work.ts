@@ -410,8 +410,8 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
       say('good', () => t(isClosed(tk.id) ? 'work.correct' : 'work.conclusionNext')); // redrawn after the conclusion is submitted
       deps.onConclusion(tk);
     } else {
-      // XP of this first solve (story: complete() adds it; lane: LANE_XP once); a re-solve or Practice earns none.
-      const xp = !story ? 0 : tk.lane ? (app.save.lanes.includes(tk.id) ? 0 : LANE_XP) : done().has(tk.id) ? 0 : xpFor(tk, app.save.hintsUsed[tk.id] ?? 0);
+      // XP of this first solve (story: complete() adds it; lane: LANE_XP once); a re-solve, Practice or a drill (chapter 0, its Recap says its XP) shows none.
+      const xp = !story || tk.chapter === 0 ? 0 : tk.lane ? (app.save.lanes.includes(tk.id) ? 0 : LANE_XP) : done().has(tk.id) ? 0 : xpFor(tk, app.save.hintsUsed[tk.id] ?? 0);
       say('good', () => (xp ? t('work.correctXp', { n: xp }) : t('work.correct')), ['lily', 'cheer']);
       deps.onSolved(tk);
       celebrate(feedback); // after onSolved: its rerender() redraws the message and would reset className
