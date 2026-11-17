@@ -32,7 +32,7 @@
 - Plan mẫu: `docs/superpowers/plans/2026-11-17-cargo-query-plan-4-ch10-12.md`.
 - Quyết định mới: T1–T13 (dưới).
 
-**Tiền đề:** Plan 1–4, Import, Deploy (phần local) và các bản sửa L47 đã xong. Plan viết và replay trên HEAD `61de3a9` (tsc sạch, 1421 test xanh).
+**Tiền đề:** Plan 1–4, Import, Deploy (phần local) và các bản sửa L47 đã xong. Plan viết và replay trên HEAD `61de3a9` (tsc sạch, 1421 test xanh). Các commit sau `61de3a9` (`fd43525` thuật ngữ "tiêu chí sắp xếp phụ", L50, L51 bảng thuật ngữ) chỉ sửa tài liệu, `content/TEMPLATE.md`, `chapters.yml`, `skills.yml`, `ch1-03.md`: không khối nào của plan này chạm tới các file đó.
 
 ## Đã có trên HEAD (không làm lại)
 
@@ -106,7 +106,7 @@
 - **Đề bài** (problem-design §1; `tests/lanes.test.ts` kiểm như `content.test.ts`):
   - Thân đề và `## Task` không có tên bảng/cột, từ khóa SQL, mã trạng thái, backtick.
   - Code span VI = EN; EN không dấu tiếng Việt và không tên người.
-  - Ngày cố định; bài `ordered` nêu đủ quy tắc phá hòa; tiền và số lẻ nói rõ có làm tròn hay không.
+  - Ngày cố định; bài `ordered` nêu đủ tiêu chí sắp xếp phụ (fd43525); tiền và số lẻ nói rõ có làm tròn hay không.
 - **Ngân sách:** main ≤ 270 KB gzip, chạy `node scripts/check-budget.mjs` sau mỗi task có sửa `src/`.
 - `src/ui/*`, `src/main.ts`: logic thuần đã tách ra `src/dashboard.ts`, `src/lanes.ts` có test; phần DOM kiểm tay theo checklist Task 8 trên **Edge, cổng 5174** (không bao giờ `:5173`).
 - Mỗi task một commit (bước cuối của task). Chỉ `git add` đúng các file của task. Mọi commit message kết thúc bằng dòng `Claude-Session: https://claude.ai/code/session_01PwPSBV1SVDP6quEZfKN56M`.
@@ -145,7 +145,7 @@ scripts/check-budget.mjs, CLAUDE.md
 | SG-1 | Singapore · ch1 | where, order_by, limit | 10 | dòng 10 = 47.728,82 kg, dòng 11 = 47.475,62 (không hòa) |
 | SG-2 | Singapore · ch3 | join (bảng tuyến) | 5 | New York 34,6 · Hamburg 31,4 · Antwerp 30,7 · Rotterdam 30,2 · Nhava Sheva 13,6 |
 | SG-3 | Singapore · ch4 | date_math | 3 | VNDAD 54 lô 4,26 ngày · VNHPH 68 / 4,24 · VNSGN 130 / 4,95 |
-| S-1 | Sydney · ch5 | conditional_agg, date_math, join | 6 | Pacific Bridge 7 lô trễ đầu; 3 hãng hòa ở 3 lô trễ, phá hòa theo tên |
+| S-1 | Sydney · ch5 | conditional_agg, date_math, join | 6 | Pacific Bridge 7 lô trễ đầu; 3 hãng bằng nhau ở 3 lô trễ, xếp phụ theo tên |
 | S-2 | Sydney · ch5 | join (bảng tuyến) | 3 | 107,51 · 110,89 · 110,18 USD/TEU (07–09/2026) |
 | S-3 | Sydney · ch5 | date_bucket, join | 10 | 5 · 4 · 2 · 3 · 7 · 4 · 3 · 3 · 2 · 2 lô (01–10/2026) |
 
@@ -4349,7 +4349,7 @@ Ghi kết quả vào `docs/team/decision-log.md` (dòng L-số mới) cùng T1�
 
 **Solution và nội dung:**
 - Mọi Solution bài tuyến chạy trên PGlite ra số dòng như bảng trên.
-- Không bài nào hòa ở ranh LIMIT; S-1 có hòa và phá hòa theo tên như đề nói.
+- Không bài nào hòa ở ranh LIMIT; S-1 có hãng bằng nhau và xếp phụ theo tên như đề nói.
 
 **Seed:**
 - md5 của 24 bảng cũ (gồm `free_time_terms`, `container_events`, `claims`) trước và sau Plan 5 giống hệt.
