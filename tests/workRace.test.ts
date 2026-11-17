@@ -444,5 +444,6 @@ describe('chương 11: chấm kế hoạch và phòng thí nghiệm chỉ mục'
     expect(deps.db.lab).toHaveBeenCalledOnce();
     expect(historyOf('L').map((e) => e.sql)).toEqual(['CREATE INDEX ON t (a)']);
     expect(app.lastRun).toBeUndefined();
+    expect(deps.panel.refresh).toHaveBeenCalled(); // the tabs redraw without the old run
   });
 });

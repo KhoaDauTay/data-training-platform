@@ -44,6 +44,8 @@ describe('planCheck: chấm theo kế hoạch thực thi (chương 11)', () => {
     expect(isCreateIndex('/* /* */ CREATE INDEX */ DROP TABLE claims')).toBe(false);
     expect(isCreateIndex('/* a /* b */ c */ CREATE INDEX ON t (a)')).toBe(true);
     expect(isCreateIndex('/* unclosed CREATE INDEX ON t (a)')).toBe(false);
+    // Postgres also ends -- at \r: here it runs DROP TABLE, then a block comment.
+    expect(isCreateIndex('--\rDROP TABLE claims /*\nCREATE INDEX ON t (a) -- */')).toBe(false);
     expect(isCreateIndex('CREATE INDEX ON t (a) */')).toBe(false);
     // -- and /* inside a literal are not comments.
     expect(isCreateIndex("CREATE INDEX ON t (a) WHERE b <> '--x' AND c <> '/*'")).toBe(true);
@@ -62,6 +64,7 @@ describe('planCheck: chấm theo kế hoạch thực thi (chương 11)', () => {
     const db = await seededDb();
     const q = 'SELECT * FROM container_events WHERE container_id = 7';
     await expect(runLab(db, '/* /* */ CREATE INDEX */ DROP TABLE claims', q, 'container_events')).rejects.toMatchObject({ code: 'LAB01' });
+    await expect(runLab(db, '--\rDROP TABLE claims /*\nCREATE INDEX ON container_events (container_id) -- */', q, 'container_events')).rejects.toMatchObject({ code: 'LAB01' });
     await expect(runLab(db, 'CREATE INDEX ON containers (shipment_id)', q, 'container_events')).rejects.toMatchObject({ code: 'LAB02' });
     expect(explainError({ message: 'x', code: 'LAB02' })).toBe('sqlerr.labTable');
     await expect(runLab(db, 'CREATE INDEX CONCURRENTLY ON container_events (container_id)', q, 'container_events')).rejects.toMatchObject({ code: 'LAB01' });
