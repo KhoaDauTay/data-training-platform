@@ -1,7 +1,9 @@
 import { loadTicketTemplates } from '../content';
 import { learnedSkills, type HomeModel } from '../home';
 import { t } from '../i18n';
+import { LANE_XP } from '../lanes';
 import { applyResult, isSuccess, movedToday, pickForSkill, retryItem, type PracticeItem } from '../practice';
+import { nextTicket } from '../progress';
 import { hashOf } from '../route';
 import {
   activeStep, activeTicket, isStory, markWarmupDone, practiceFinished, reviewCount, reviewToday, session, today, warmupToday, type Mode, type PracticeRun,
@@ -14,6 +16,7 @@ import { renderBrief } from './brief';
 import { goalCard, skillChips, wrapUp } from './chapterView';
 import { byId, h } from './dom';
 import { homeHooks, registerHomeSection, registerMode } from './homeView';
+import { laneNote } from './lanePanel';
 import { go } from './router';
 import { registerNav, setActionButton } from './topbar';
 import { renderMyData } from './myDataView';
@@ -64,6 +67,10 @@ export function startPractice(items: PracticeItem[], warmup = false): boolean {
 
 export const startSandbox = (): void => enter({ kind: 'sandbox' });
 export const backToStory = (): void => enter({ kind: 'story' });
+/** Plan 5: a lane side task in the workspace. It never becomes the next ticket and counts for no chapter (D-B1). */
+export const startLane = (task: Ticket): void => enter({ kind: 'lane', ticket: task });
+/** "Về việc đang làm": the story's next ticket (mockup v6 screen D), or the open one when everything is done. */
+export const toCurrentTask = (): void => actions.selectTicket(nextTicket(app.tickets, done())?.id ?? app.selectedId);
 
 /** Entry 1: today's review (D2). Nothing due (e.g. the day changed since the button was drawn): Home with a notice (L37). */
 export function startToday(): boolean {
@@ -93,8 +100,20 @@ function startAny(): boolean {
   return learned.length > 0 && startSkill(learned[Math.floor(Math.random() * learned.length)]);
 }
 
-/** work.ts onSolved: Practice moves Leitner boxes only; the story completes the ticket (XP, animation). */
-export const onSolved = (tk: Ticket): void => (session.mode.kind === 'practice' ? onPracticeSolved() : actions.complete(tk));
+/** work.ts onSolved: Practice moves Leitner boxes only; a lane task gives flat XP; the story completes the ticket (XP, animation). */
+export const onSolved = (tk: Ticket): void =>
+  (session.mode.kind === 'practice' ? onPracticeSolved() : session.mode.kind === 'lane' ? completeLane(tk) : actions.complete(tk));
+
+/** Correct lane side task: saved apart from `completed`, LANE_XP whatever hints were opened, no animation (D-B1). */
+function completeLane(tk: Ticket): void {
+  if (app.save.lanes.includes(tk.id)) return;
+  app.save.lanes.push(tk.id);
+  app.save.xp += LANE_XP;
+  persist(true);
+  ctx?.rerender();
+  byId('announce').textContent = t('lane.solved', { xp: LANE_XP });
+  byId('ticket').querySelector<HTMLElement>('.recap h3')?.focus(); // the Submit button just disappeared
+}
 
 export function onPracticeWrong(): void {
   if (session.mode.kind === 'practice') session.mode.run.wrong++;
@@ -176,6 +195,11 @@ function storyPane(host: HTMLElement): void {
   host.append(wrapUp(tk.chapter, quick.length ? () => startRetry(quick[Math.floor(Math.random() * quick.length)].id) : undefined));
 }
 
+function lanePane(host: HTMLElement, tk: Ticket): void {
+  renderBrief(host, tk, 0);
+  host.querySelector('header')?.after(skillChips(tk) ?? '', laneNote(tk, (port) => actions.openLane(port)));
+}
+
 /** Top-bar "Review: N" (P3): N = items in today's queue; hidden when the queue is empty. */
 export function renderReviewButton(btn: HTMLButtonElement): void {
   const n = reviewCount();
@@ -193,6 +217,7 @@ export function renderLeft(host: HTMLElement): void {
   byId('split-col').hidden = finished; // no draggable splitter beside an empty column
   if (m.kind === 'sandbox') sandboxPane(host);
   else if (m.kind === 'practice') practicePane(host, m.run);
+  else if (m.kind === 'lane') lanePane(host, m.ticket);
   else storyPane(host);
 }
 
@@ -223,7 +248,7 @@ function warmupCard(): HTMLElement | null {
 // Same id replaces topbar.ts's 'play' entry: "Workspace" is current only in story mode.
 registerNav({
   id: 'play', order: 20, label: 'nav.play', href: hashOf('play'),
-  current: (r) => r === 'play' && isStory(),
+  current: (r) => r === 'play' && (isStory() || session.mode.kind === 'lane'),
   onclick: () => (isStory() ? go('play') : backToStory()),
 });
 registerNav({

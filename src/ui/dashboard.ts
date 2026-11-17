@@ -1,9 +1,12 @@
+import { loadLanes } from '../content';
 import { BAR_ROWS, CARD_KINDS, cardRunner, cardSpec, KIND_SKILL, MAX_CARDS, moveCard, TABLE_ROWS, type Card, type CardKind } from '../dashboard';
 import { QueryTimeoutError } from '../db/client';
 import type { QueryResult } from '../db/run';
 import { chapterOfId, KPIS, kpiNumber, kpiTiles, kpiValue, learnedSkills, type Kpi, type KpiTile, type KpiValue } from '../home';
 import { getLang, t, type Key } from '../i18n';
+import { laneLabel } from '../lanes';
 import { SKILLS } from '../progress';
+import { ROUTES } from '../scene';
 import { stepKey } from '../save';
 import { app, done, persist } from '../state';
 import { BTN_GO, CARD, chapterColor, cx } from '../theme';
@@ -92,7 +95,9 @@ const cards = cardRunner((sql) => app.run(sql), (id) => {
 function sourceLine(c: Card): string {
   if (c.source === 'sandbox') return t('card.fromSandbox');
   const tk = app.tickets.find((x) => x.id === c.source);
-  return tk ? t('card.fromTask', { title: textOf(tk, getLang()).title }) : t('card.yours');
+  if (tk) return t('card.fromTask', { title: textOf(tk, getLang()).title });
+  const lane = loadLanes().tasks.find((x) => x.id === c.source);
+  return lane ? t('card.fromLane', { id: laneLabel(lane), name: ROUTES.find((r) => r.port === lane.lane)?.name ?? '' }) : t('card.yours');
 }
 
 function playerCard(c: Card, i: number, n: number, redraw: () => void): HTMLElement {

@@ -4,7 +4,9 @@ import type { DiagnosticKind } from './diagnostics';
 import type { LoadProgress } from './db/loadProgress';
 import type { QueryResult } from './db/run';
 import type { Key, Params } from './i18n';
+import { laneTables } from './lanes';
 import { currentChapter, tablesUnlocked } from './progress';
+import { derive } from './scene';
 import { emptySave, stepKey, writeSave } from './save';
 import { shapeOf, type Shape } from './shape';
 import { localStore } from './storage';
@@ -61,6 +63,8 @@ export const actions = {
   useSql(_sql: string): void {},
   /** Opens a bottom-panel tab (Panel.show). */
   showTab(_id: string): void {},
+  /** Opens the map dialog on a lane's brief (Plan 5). */
+  openLane(_port: string): void {},
 };
 
 /** Columns and keys per schema, shared by the ER and Columns tabs, the brief and the Data page. Keyed by schema ('sandbox' for imports). */
@@ -74,7 +78,9 @@ export const draftKey = (): string => stepKey(app.selectedId, app.stepIndex);
 /** Editor text for a step: the draft, or the ticket's starter when the draft is missing or blank. */
 export const initialDoc = (draft: string | undefined, starter: string | undefined): string =>
   (draft?.trim() ? draft : starter ?? draft ?? '');
-export const unlockedTables = (): string[] => tablesUnlocked(currentChapter(app.tickets, done()));
+/** Chapter tables plus the tables of the open lanes (Plan 5 D-B4: `lane_profiles`, `bunker_prices`). */
+export const unlockedTables = (): string[] =>
+  [...tablesUnlocked(currentChapter(app.tickets, done())), ...laneTables(derive(app.tickets, done()).open)];
 
 let persistTimer: ReturnType<typeof setTimeout> | undefined;
 export function persist(now = false): void {

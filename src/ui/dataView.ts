@@ -24,6 +24,8 @@ let redrawDiagram = (): void => {};
 
 const rowCounts = memoByKey((key) => app.run(erRowCountsSql(key.split(','))).then((r) => new Map(r.rows.map(([x, n]) => [String(x), Number(n)]))));
 const chapterOf = (table: string): number => Number(Object.entries(CHAPTER_TABLES).find(([, ts]) => ts.includes(table))?.[0] ?? 0);
+/** "mở ở chương 4", or for a lane table (chapter 0, Plan 5) "mở theo bài tuyến". */
+const openedAt = (table: string): string => (chapterOf(table) ? t('data.openedAt', { n: chapterOf(table) }) : t('lane.tableAt'));
 const tableHash = (table: string): string => `${hashOf('data')}/${table}`;
 const go = (table: string): void => void (location.hash = tableHash(table));
 
@@ -136,7 +138,7 @@ export function renderData(host: HTMLElement): void {
     const sample = h('div', { class: 'mt-2' });
     detail.replaceChildren(...nodes(
       title,
-      h('p', { class: 'mt-1 text-muted' }, `${rowText(sel)} · ${t('data.openedAt', { n: chapterOf(sel) })}`),
+      h('p', { class: 'mt-1 text-muted' }, `${rowText(sel)} · ${openedAt(sel)}`),
       columnsHost,
       refBy.length ? h('h3', {}, t('data.refBy')) : null,
       refBy.length ? h('ul', { class: 'flex list-none flex-wrap gap-1.5 p-0' }, ...refBy.map((c) =>
@@ -210,6 +212,6 @@ export function renderData(host: HTMLElement): void {
   rowCounts(open.join(',')).then((r) => { rows = r; }, () => { rows = 'error'; }).then(() => {
     if (!live() || !meta) return; // drawn with the metadata otherwise
     drawList();
-    detail.querySelector('#data-table-title + p')?.replaceChildren(`${rowText(sel)} · ${t('data.openedAt', { n: chapterOf(sel) })}`);
+    detail.querySelector('#data-table-title + p')?.replaceChildren(`${rowText(sel)} · ${openedAt(sel)}`);
   });
 }

@@ -1,7 +1,9 @@
+import { parseLaneBriefs, type LaneBrief } from './lanes';
 import { byOrder, parseTicket, type Ticket } from './tickets';
 import { applyVariant } from './variants';
 
 let templates: Ticket[] | undefined;
+let lanes: { tasks: Ticket[]; briefs: LaneBrief[] } | undefined;
 let loading: Promise<void> | undefined;
 
 /**
@@ -10,9 +12,14 @@ let loading: Promise<void> | undefined;
  * main.ts and tests/setup.ts await this before anything reads tickets. A failed load can be retried.
  */
 export function loadContent(): Promise<void> {
-  return (loading ??= import('./ticketSources')
-    .then(({ sources }) => {
+  // Plan 5: lane briefs and side tasks are their own lazy chunk, fetched beside the tickets.
+  return (loading ??= Promise.all([import('./ticketSources'), import('./laneSources')])
+    .then(([{ sources }, { laneSources, briefSource }]) => {
       templates = Object.entries(sources).map(([path, source]) => parseTicket(source, path)).sort(byOrder);
+      lanes = {
+        tasks: Object.entries(laneSources).map(([path, source]) => applyVariant(parseTicket(source, path), 0)).sort(byOrder),
+        briefs: parseLaneBriefs(briefSource),
+      };
     })
     .catch((e: unknown) => {
       loading = undefined;
@@ -24,6 +31,12 @@ export function loadContent(): Promise<void> {
 export function loadTicketTemplates(): Ticket[] {
   if (!templates) throw new Error('loadContent() has not finished');
   return templates;
+}
+
+/** Lane briefs and side tasks (src/lanes.ts). Side tasks are never part of loadTickets(). */
+export function loadLanes(): { tasks: Ticket[]; briefs: LaneBrief[] } {
+  if (!lanes) throw new Error('loadContent() has not finished');
+  return lanes;
 }
 
 /** Story mode always plays variants[0]. */

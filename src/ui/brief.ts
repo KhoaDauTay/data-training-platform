@@ -1,6 +1,8 @@
 import { getLang, t, type Key } from '../i18n';
+import { LANE_XP } from '../lanes';
 import { roleLine } from '../people';
 import { CHAPTERS, nextTicket, SKILLS, xpFor } from '../progress';
+import { ROUTES } from '../scene';
 import { compareShape, shapeOf, type Kind, type Shape } from '../shape';
 import { hintsShown, isClosed, isStory, useHint } from '../session';
 import { actions, app, done, erMeta, expectedShape, persist, stepKey, unlockedTables } from '../state';
@@ -185,7 +187,7 @@ function recap(tk: Ticket, x: TicketText): HTMLElement {
   return h('section', { class: 'recap my-3 rounded-xl bg-emerald-50 p-4 ring-1 ring-emerald-300 dark:bg-emerald-950/40 dark:ring-emerald-800' },
     h('h3', { tabindex: '-1', class: 'mt-0 text-emerald-900 dark:text-emerald-200' }, t('recap.title')),
     coach('recap'),
-    h('p', {}, t('recap.xp', { n: xpFor(tk, hintsUsed), hints: hintsUsed })),
+    h('p', {}, tk.lane ? t('lane.xp', { n: LANE_XP }) : t('recap.xp', { n: xpFor(tk, hintsUsed), hints: hintsUsed })),
     h('h4', {}, t(tk.grants.length ? 'recap.learned' : 'recap.review')),
     h('ul', { class: 'space-y-1' }, ...skills.map((s) =>
       h('li', {},
@@ -197,7 +199,7 @@ function recap(tk: Ticket, x: TicketText): HTMLElement {
       h('figure', {}, h('figcaption', { class: 'mb-1 text-sm text-muted' }, t('recap.yours')), h('pre', { class: 'sql' }, gradedSql(tk, i))),
       h('figure', {}, h('figcaption', { class: 'mb-1 text-sm text-muted' }, t('recap.reference')), h('pre', { class: 'sql' }, s.lab?.ddl ?? s.solution)))), // lab step: the reference index, not the slow query
     next
-      ? h('button', { type: 'button', class: 'primary', onclick: () => actions.selectTicket(next.id) }, t('recap.next'))
+      ? h('button', { type: 'button', class: 'primary', onclick: () => actions.selectTicket(next.id) }, t(tk.lane ? 'nav.continueBack' : 'recap.next'))
       : h('p', {}, t('recap.allDone')));
 }
 
@@ -231,8 +233,9 @@ export function renderBrief(host: HTMLElement, tk: Ticket, stepIndex: number): v
             tk.from.name, h('span', { class: cx(DEPT_CHIP, deptColor(tk.from.dept)) }, tk.from.dept)),
           h('span', { class: 'block text-sm text-muted' }, roleLine(tk.from.name, getLang(), unlockedTables())))),
       h('p', { class: 'm-0 flex flex-wrap items-center gap-2 text-sm text-muted' },
-        `${t('brief.chapter', { n: tk.chapter })} · ${'★'.repeat(tk.difficulty)}`,
-        h('span', { class: cx(PILL, chapterColor(tk.chapter).chip) }, t(BEAT[tk.beat])),
+        tk.lane ? t('lane.optional', { xp: LANE_XP }) : `${t('brief.chapter', { n: tk.chapter })} · ${'★'.repeat(tk.difficulty)}`,
+        h('span', { class: cx(PILL, chapterColor(tk.chapter).chip) },
+          tk.lane ? t('lane.badge', { name: ROUTES.find((r) => r.port === tk.lane)?.name ?? tk.lane }) : t(BEAT[tk.beat])),
         isDone ? `✓ ${t('inbox.done')}` : ''),
       h('h2', { id: 'brief-title', tabindex: '-1', class: 'm-0 text-lg font-bold' }, x.title),
       x.fallback ? h('p', { class: 'tag' }, t('brief.untranslated')) : null),
