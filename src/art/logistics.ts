@@ -28,7 +28,7 @@ let ROUTES: typeof Routes, STEPS: typeof Steps, GATE_WAIT: typeof GateWait, rout
 let CHAPTER_COLOR: typeof ChapterColors, chapterColor: typeof ChapterColorOf, cx: typeof Cx, PILL: string, DONE_PILL: string;
 let h: typeof H, s: typeof S, nodes: typeof Nodes, reducedMotion: typeof ReducedMotion;
 let avatar: typeof Avatar, mascot: typeof Mascot, callout: typeof Callout, routeItems: typeof RouteItems;
-export { drawNewRoutes, liveMap } from './mapMotion';
+export { drawNewRoutes, liveMap, parallax } from './mapMotion';
 
 /** Called once by loadArt() before anything else here runs. */
 export function init(d: ArtDeps): void {
@@ -75,6 +75,8 @@ export function bayBox(ch: number, tier: number): Box {
 
 const FONT = 'system-ui, sans-serif';
 let uid = 0;
+/** Home's drifting clouds: [y, scale, seconds per crossing, start offset in seconds] (Plan 8b Task 4). */
+const CLOUDS: [number, number, number, number][] = [[46, 1, 60, 12], [84, 0.7, 80, 50], [30, 0.85, 100, 70]];
 
 /** Redraws the yard from `h.bays`. `fresh`: chapters whose top container gets a bright edge and a "New" tag. */
 export function drawYard(p: HarborParts, h: Harbor, fresh: ReadonlySet<number> = new Set()): void {
@@ -177,16 +179,25 @@ export function harborScene(h: Harbor, opts: { ambient: boolean; current: number
         s('rect', { width: 8, height: 5, fill: '#94a3b8' }), s('rect', { y: 4, width: 8, height: 1, fill: '#64748b' }))),
     // sky, sun, Son Tra peninsula (two ridges), lighthouse
     s('rect', { width: 1100, height: 400, fill: url('sky') }),
+    // Plan 8b: far layer (sun, clouds, ridges, lighthouse) and mid layer (ripples, feeder) move a few units with the
+    // pointer on Home (parallax()); the full-bleed sky and sea never move, so no edge shows. Ridges start at x -12 for that.
+    s('g', { 'data-layer': 'far' },
     s('circle', { cx: 930, cy: 62, r: 30, fill: '#fde68a', opacity: 0.9 }),
-    s('path', { d: 'M0 210 L80 170 L170 150 L250 120 L330 95 L410 110 L470 92 L540 128 L600 150 L680 172 L760 190 L760 230 L0 230 Z', fill: url('mtn2') }),
-    s('path', { d: 'M0 220 L60 190 L140 178 L220 150 L300 140 L360 152 L430 136 L500 160 L560 185 L620 205 L620 236 L0 236 Z', fill: url('mtn') }),
+    ...(opts.ambient ? CLOUDS.map(([y, k, dur, delay]) => s('g', { transform: `translate(0,${y}) scale(${k})`, 'aria-hidden': 'true' },
+      s('g', { class: 'hidden cq-cloud motion-safe:inline', style: `animation-duration:${dur}s;animation-delay:-${delay}s` },
+        s('ellipse', { cx: 0, cy: 0, rx: 34, ry: 12, fill: '#ffffff', opacity: 0.8 }),
+        s('ellipse', { cx: -18, cy: 4, rx: 22, ry: 9, fill: '#ffffff', opacity: 0.8 }),
+        s('ellipse', { cx: 20, cy: 5, rx: 24, ry: 8, fill: '#ffffff', opacity: 0.8 })))) : []),
+    s('path', { d: 'M-12 210 L0 210 L80 170 L170 150 L250 120 L330 95 L410 110 L470 92 L540 128 L600 150 L680 172 L760 190 L760 230 L-12 230 Z', fill: url('mtn2') }),
+    s('path', { d: 'M-12 220 L0 220 L60 190 L140 178 L220 150 L300 140 L360 152 L430 136 L500 160 L560 185 L620 205 L620 236 L-12 236 Z', fill: url('mtn') }),
     text(300, 132, 15, '#f8fafc', t('harbor.sontra'), 'middle'),
     s('g', { 'aria-hidden': 'true' },
       s('rect', { x: 596, y: 178, width: 8, height: 26, fill: '#f8fafc' }),
       s('rect', { x: 596, y: 186, width: 8, height: 5, fill: '#dc2626' }),
-      s('circle', { class: amb('cq-beacon'), cx: 600, cy: 176, r: 5, fill: '#fde047' })),
+      s('circle', { class: amb('cq-beacon'), cx: 600, cy: 176, r: 5, fill: '#fde047' }))),
     // sea and drifting ripples
     s('rect', { y: 230, width: 1100, height: 170, fill: url('sea') }),
+    s('g', { 'data-layer': 'mid' },
     s('g', { class: amb('cq-wave'), 'aria-hidden': 'true' }, s('rect', { x: 0, y: 246, width: 1340, height: 14, fill: url('ripple') })),
     s('g', { class: amb('cq-wave2'), 'aria-hidden': 'true' }, s('rect', { x: -120, y: 300, width: 1340, height: 14, fill: url('ripple') })),
     s('g', { class: amb('cq-wave'), 'aria-hidden': 'true' }, s('rect', { x: 0, y: 362, width: 1340, height: 14, fill: url('ripple') })),
@@ -197,6 +208,8 @@ export function harborScene(h: Harbor, opts: { ambient: boolean; current: number
       s('rect', { x: 632, y: 288, width: 18, height: 12, fill: '#0284c7' }),
       s('rect', { x: 652, y: 288, width: 18, height: 12, fill: '#7c3aed' }),
       s('rect', { x: 676, y: 280, width: 16, height: 20, fill: '#f1f5f9' })) : null,
+    opts.ambient ? s('g', { class: 'cq-glint', 'aria-hidden': 'true', stroke: '#ffffff', 'stroke-width': 1.5, 'stroke-linecap': 'round', opacity: 0.3 },
+      s('line', { x1: 120, y1: 282, x2: 150, y2: 282 }), s('line', { x1: 330, y1: 338, x2: 352, y2: 338 }), s('line', { x1: 470, y1: 372, x2: 500, y2: 372 })) : null),
     // land: quay apron, road, verge, labels
     s('path', { d: 'M700 236 H1100 V400 H660 L700 312 Z', fill: url('quay') }),
     s('rect', { x: 700, y: 236, width: 400, height: 5, fill: '#475569' }),

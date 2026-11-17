@@ -237,12 +237,18 @@ function freshChapters(): Set<number> {
 
 /** Tien Sa (L26): the yard holds one container per completed ticket, coloured by chapter. Home never replays animations. */
 /** Below lg the SVG labels hide (L34), so the title and status lines show as HTML under the picture. */
+let stopScene: (() => void) | undefined;
 function harborSection(m: HomeModel): HTMLElement {
   const harbor = derive(app.tickets, done());
   const fresh = freshChapters();
   return h('section', { class: cx(CARD, 'overflow-hidden'), 'aria-labelledby': 'harbor-title' },
     h('h2', { id: 'harbor-title', class: 'sr-only' }, t('harbor.title')),
-    artSlot('aspect-[1100/400]', (a) => a.harborScene(harbor, { ambient: true, current: m.chapter, fresh }).svg),
+    artSlot('aspect-[1100/400]', (a) => {
+      stopScene?.();
+      const { svg } = a.harborScene(harbor, { ambient: true, current: m.chapter, fresh });
+      stopScene = a.parallax(svg);
+      return svg;
+    }),
     h('div', { class: 'px-4 py-3 text-sm lg:hidden', 'aria-hidden': 'true' },
       h('p', { class: 'm-0 font-bold' }, t('harbor.title')),
       ...callout(harbor, m.chapter).map((line) => h('p', { class: 'm-0 text-muted' }, line))));

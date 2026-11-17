@@ -94,3 +94,41 @@ export function liveMap(p: MapParts, h: Harbor, draw: string[], order: string[])
   void drawNewRoutes(p, draw);
   return sailFleet(p, h, order);
 }
+
+/**
+ * D8b-7: the overview scene's far layer moves ±6/±3 units and the mid layer ±3/±1.5 with a fine pointer, easing back
+ * to 0 when it leaves. Never on touch screens or under reduced motion. Returns stop.
+ */
+export function parallax(svg: SVGSVGElement): () => void {
+  if (reduced() || !window.matchMedia('(pointer: fine)').matches) return () => {};
+  const layers: [Element[], number, number][] = [
+    [[...svg.querySelectorAll('[data-layer="far"]')], 6, 3],
+    [[...svg.querySelectorAll('[data-layer="mid"]')], 3, 1.5],
+  ];
+  const goal = { x: 0, y: 0 };
+  const now = { x: 0, y: 0 };
+  const move = (e: PointerEvent): void => {
+    const r = svg.getBoundingClientRect();
+    goal.x = clamp(((e.clientX - r.left) / r.width) * 2 - 1, -1, 1);
+    goal.y = clamp(((e.clientY - r.top) / r.height) * 2 - 1, -1, 1);
+  };
+  const leave = (): void => { goal.x = 0; goal.y = 0; };
+  svg.addEventListener('pointermove', move);
+  svg.addEventListener('pointerleave', leave);
+  let last = '';
+  const stop = ambient(svg, () => {
+    if (!svg.isConnected) return end();
+    now.x += (goal.x - now.x) * 0.08;
+    now.y += (goal.y - now.y) * 0.08;
+    const key = `${now.x.toFixed(3)},${now.y.toFixed(3)}`;
+    if (key === last) return; // at rest: no DOM writes
+    last = key;
+    for (const [els, ax, ay] of layers) for (const el of els) el.setAttribute('transform', `translate(${(-now.x * ax).toFixed(2)},${(-now.y * ay).toFixed(2)})`);
+  });
+  function end(): void {
+    stop();
+    svg.removeEventListener('pointermove', move);
+    svg.removeEventListener('pointerleave', leave);
+  }
+  return end;
+}

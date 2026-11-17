@@ -190,6 +190,8 @@
 /* ---- Tien Sa scene ambient loops (L26). harbor.ts adds these classes on Home only; off under reduced motion. ---- */
 @media (prefers-reduced-motion: no-preference) {
   .cq-pulse { animation: cq-pulse 2.4s ease-out infinite; transform-box: fill-box; transform-origin: center; }
+  .cq-cloud { animation: cq-cloud linear infinite; }
+  .cq-glint { animation: cq-glint 3.2s ease-in-out infinite; }
   .cq-ship-bob { animation: cq-float 2.8s ease-in-out infinite; }
   .cq-wave { animation: cq-wave 6s linear infinite; }
   .cq-wave2 { animation: cq-wave 9s linear infinite reverse; }
@@ -200,6 +202,8 @@
   .cq-trolley { animation: cq-trolley 7s ease-in-out infinite; }
   .cq-hoist { animation: cq-hoist 7s ease-in-out infinite; }
 }
+@keyframes cq-cloud { from { transform: translateX(-140px); } to { transform: translateX(1240px); } }
+@keyframes cq-glint { 0%, 100% { opacity: 0.2; } 50% { opacity: 0.6; } }
 @keyframes cq-pulse { 0% { transform: scale(1); opacity: 0.7; } 100% { transform: scale(2.6); opacity: 0; } }
 @keyframes cq-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-1.5px); } }
 @keyframes cq-wave { to { transform: translateX(-120px); } }
