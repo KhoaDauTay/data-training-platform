@@ -1,5 +1,6 @@
 import type { SQLNamespace } from '@codemirror/lang-sql';
 import type { DbStatus } from './db/client';
+import type { DiagnosticKind } from './diagnostics';
 import type { LoadProgress } from './db/loadProgress';
 import type { QueryResult } from './db/run';
 import type { Key, Params } from './i18n';
@@ -39,6 +40,8 @@ export const app = {
   /** Boss whose steps are all solved and whose conclusion is open. Not saved: a reload repeats the last step. */
   conclusionFor: '',
   notice: undefined as Notice | undefined,
+  /** Last app/DB fault (never a player's SQL error): shows the "Copy diagnostics" button. */
+  problem: undefined as { kind: DiagnosticKind; error?: unknown } | undefined,
   /** Runs one statement in the sandbox; main.ts points it at DbClient.run. */
   run: (_sql: string): Promise<QueryResult> => Promise.reject(new Error('DB not started')),
 };
@@ -49,6 +52,7 @@ export const actions = {
   selectTicket(_id: string): void {},
   complete(_ticket: Ticket): void {},
   retryDb(): void {},
+  copyDiagnostics(): void {},
 };
 
 export const done = (): Set<string> => new Set(app.save.completed);

@@ -66,6 +66,8 @@ interface Job {
  */
 export class DbClient {
   timings?: DbTimings;
+  /** A query ran past its budget; called before the worker restarts (the diagnostics button). */
+  onTimeout?: (e: QueryTimeoutError) => void;
   /** PGlite asset download progress while booting (bytes). */
   onProgress?: (p: LoadProgress) => void;
   /** Called when an imported table could not be re-imported after a restart; it is no longer replayed. */
@@ -240,6 +242,7 @@ export class DbClient {
       const b = job.body;
       if (b.kind === 'import' && this.imports.get(b.req.table)?.file === b.file) this.imports.delete(b.req.table);
       job.reject(new QueryTimeoutError(job.timeoutMs));
+      this.onTimeout?.(new QueryTimeoutError(job.timeoutMs));
       this.restart();
     }, job.timeoutMs);
     this.inFlight = { id, job, timer };

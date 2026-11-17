@@ -5,6 +5,9 @@ const num = (v: Params[string] | undefined): string => Number(v).toLocaleString(
 const count = (one: string, many: string) => (p: Params): string => `${num(p.n)} ${p.n === 1 ? one : many}`;
 
 export const en: Record<Key, Msg> = {
+  'diag.copy': 'Copy diagnostics',
+  'diag.copied': 'Diagnostics copied. Please paste them into your bug report (they contain no SQL and none of your data).',
+  'diag.manual': 'Could not copy automatically. Please copy this into your bug report: {text}',
   'mode.mydata': 'My data',
   'mode.mydataDesc': 'Load your own CSV files, then try SQL, Chart, EXPLAIN and the ER diagram on that data.',
   'mydata.title': 'My data',
