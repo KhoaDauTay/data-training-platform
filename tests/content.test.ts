@@ -104,19 +104,26 @@ describe('Solution', () => {
   });
 });
 
-/** curriculum §5: learning-method fields, required from chapter 4 (ch1–3 stay as they are). */
-describe('phương pháp học (Plan 2, từ chương 4)', () => {
-  const templates = loadTicketTemplates().filter((t) => t.chapter >= 4);
+/**
+ * curriculum §5, extended to every chapter by product-design-v4 §E.1 (L54): reflect on every normal ticket and one faded
+ * ticket (the first develop) per chapter. Only from chapter 4 is the teach ticket a worked example: in chapters 1–3 the
+ * skill's quick lesson (content/lessons.yml) is the paired example instead (D-C4).
+ */
+describe('phương pháp học (mọi chương)', () => {
+  const templates = loadTicketTemplates();
   const normal = templates.filter((t) => t.beat !== 'boss');
   const chapters = [...new Set(templates.map((t) => t.chapter))];
   /** Every variant of every `wrong:` SQL, so a variant cannot make a wrong answer accidentally right. */
   const wrongs = normal.flatMap((t) => Array.from({ length: Math.max(1, variantsOf(t).length) }, (_, v) => applyVariant(t, v))
     .flatMap((tv, v) => (tv.wrong ?? []).map((w, i) => ({ name: `${t.id}#${v} wrong[${i}]`, sql: w.sql, solution: tv.steps[0].solution, ordered: t.ordered }))));
 
-  it.each(chapters)('chương %i: teach là ví dụ mẫu (worked), có đúng một bài làm cùng (faded)', (c) => {
+  it.each(chapters.filter((c) => c >= 4))('chương %i: teach là ví dụ mẫu (worked)', (c) => {
+    expect(templates.find((t) => t.chapter === c && t.beat === 'teach')?.format).toBe('worked');
+  });
+
+  it.each(chapters)('chương %i: đúng một bài làm cùng (faded), là việc develop đầu tiên', (c) => {
     const inChapter = templates.filter((t) => t.chapter === c);
-    expect(inChapter.find((t) => t.beat === 'teach')?.format).toBe('worked');
-    expect(inChapter.filter((t) => t.format === 'faded')).toHaveLength(1);
+    expect(inChapter.filter((t) => t.format === 'faded').map((t) => t.id)).toEqual([inChapter.find((t) => t.beat === 'develop')?.id]);
   });
 
   it.each(normal)('$id: có câu ngẫm lại (reflect), EN không dấu', (t) => {
@@ -148,9 +155,9 @@ describe('phương pháp học (Plan 2, từ chương 4)', () => {
     }
   });
 
-  // L37: the review queue needs other figures to practise with, not the same task again.
-  it('mỗi kỹ năng mới có một ticket thường với ≥ 3 biến thể (biến thể 0 + 2)', () => {
-    const missing = SKILLS.filter((s) => chapters.includes(s.chapter))
+  // L37: the review queue needs other figures to practise with, not the same task again (from chapter 4, Plan 2).
+  it('mỗi kỹ năng mới từ chương 4 có một ticket thường với ≥ 3 biến thể (biến thể 0 + 2)', () => {
+    const missing = SKILLS.filter((s) => s.chapter >= 4 && chapters.includes(s.chapter))
       .filter((s) => !normal.some((t) => [...t.requires, ...t.grants].includes(s.id) && variantsOf(t).length >= 3))
       .map((s) => s.id);
     expect(missing).toEqual([]);

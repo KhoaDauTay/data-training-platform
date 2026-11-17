@@ -9,11 +9,12 @@
 # Cột mốc (beat: boss): thay "## Solution" bằng "## Step N: <tiêu đề>" (mỗi bước một khối sql), columns là một danh sách cho mỗi bước,
 # thêm conclusion { question, options, answer } và conclusion_en { question, options }.
 # Hoạt cảnh khi xong (tùy chọn, completion-animations.md §3): scene: { kind: ship|yard|customs|truck|quote|ledger|chat, to?: CNSHA|THLCH|SGSIN|NLRTM|KRPUS|USLAX|AUSYD, lane?: green|yellow|red }. Không khai thì dùng sceneOf().
-# Dạng bài (curriculum §5.1, từ ch4): format: worked | faded | open (mặc định open).
-#   worked (ticket teach): thêm "## Example" ngay sau "## Task": một khối ```sql đánh dấu -- ①, -- ②… rồi mỗi dấu một đoạn giải thích
+# Dạng bài (curriculum §5.1): format: worked | faded | open (mặc định open). Mỗi chương đúng một faded = việc develop đầu tiên.
+#   worked (ticket teach từ ch4; ch1–3 dùng Bài học nhanh trong content/lessons.yml thay ví dụ mẫu): thêm "## Example" ngay sau "## Task": một khối ```sql đánh dấu -- ①, -- ②… rồi mỗi dấu một đoạn giải thích
 #   (các đoạn cách nhau một dòng trống). Khối # EN có "## Example" chỉ gồm lời giải thích, code span giống hệt bản VI.
 #   faded: starter có ít nhất một chỗ trống ___ (Nộp khi còn ___ thì báo, không tính là nộp sai).
-# reflect (mọi ticket thường từ ch4): { q: {vi, en}, options: [{vi, en}, …] (2–4), answer: số thứ tự đáp án đúng từ 0, why: {vi, en} } — câu ngẫm lại trong Recap.
+# reflect (mọi ticket thường, mọi chương): { q: {vi, en}, options: [{vi, en}, …] (2–4), answer: số thứ tự đáp án đúng từ 0, why: {vi, en} } — câu ngẫm lại trong Recap.
+# Gợi ý (product-design-v4 §C.4): 1 = khái niệm ("Đây là bài lọc dòng: …", được gọi tên một từ khóa SQL, nhắc Bài học nhanh), 2 = cú pháp (bảng, cột, giá trị), 3 = gần đáp án (khung có ...).
 # wrong (tùy chọn): [{ sql, vi, en }] — câu SQL sai hay gặp; kết quả người chơi trùng kết quả câu này thì phản hồi hiện lời giải thích.
 #   Mỗi câu phải chạy được và khác kết quả Solution ở mọi biến thể (tests/content.test.ts).
 # variants: từ ch4, mỗi kỹ năng mới cần một ticket thường có ≥ 3 biến thể (biến thể 0 + 2) để hàng ôn có bài khác (L37).
