@@ -4,7 +4,7 @@ import { loadContent, loadTickets } from './content';
 import { DbClient, DbFailedError, DbRestartError, QueryTimeoutError, WorkerTaskError, type DbStatus } from './db/client';
 import { SqlError } from './db/run';
 import { buildDiagnostics, diagnosticsText } from './diagnostics';
-import { applyStatic, setLang, t, type Lang } from './i18n';
+import { applyStatic, loadLang, setLang, t, type Lang } from './i18n';
 import { MyData } from './import/myData';
 import { idbStore } from './import/store';
 import { contentProblems, nextTicket, SKILLS, xpFor } from './progress';
@@ -33,6 +33,7 @@ import { initMyData, setMyDataStatus } from './ui/myDataView';
 import { clearMemos } from './viz/memo';
 import { createMapStrip } from './ui/mapStrip';
 import { renderData } from './ui/dataView';
+import { renderDashboard } from './ui/dashboard';
 
 initTheme(); // index.html already set data-theme before paint; this adds the OS listener for 'system'
 // The DB (PGlite download + seed, the slowest part of startup) boots in parallel with the ticket chunk below.
@@ -60,13 +61,14 @@ db.onTimeout = (e) => {
   renderTopbar();
 };
 
-// Ticket text is a lazy chunk (src/content.ts): say so while it loads, and offer a reload if it fails.
+// Ticket text and the EN dictionary are lazy chunks (src/content.ts, src/i18n): say so while they load (in VI until EN is in),
+// and offer a reload if one fails.
 // Nothing else is drawn yet, so the banner is set by hand; renderNotice() owns it from the first rerender on.
 const loadingNotice = byId('notice');
 loadingNotice.replaceChildren(h('span', {}, t('content.loading'))); // text first, then unhide, so the live region is read
 loadingNotice.hidden = false;
 try {
-  await loadContent();
+  await Promise.all([loadContent(), loadLang()]);
 } catch (e) {
   loadingNotice.replaceChildren(h('span', {}, t('content.failed')), h('button', { type: 'button', onclick: () => location.reload() }, t('app.reload')));
   throw e;
@@ -132,6 +134,7 @@ function rerender(): void {
   renderReviewButton(byId('review-btn') as HTMLButtonElement);
   if (!byId('home').hidden) renderHome(byId('home')); // hidden Home is redrawn by showRoute(); Run/Submit in the workspace never rebuild it
   if (!byId('data').hidden) renderData(byId('data'));
+  if (!byId('dashboard').hidden) renderDashboard(byId('dashboard'));
   renderLeft(byId('ticket'));
   work.relabel();
   relabelStage();
@@ -165,7 +168,7 @@ function nextStep(): void {
 }
 
 let shownRoute: Route | undefined;
-/** #/ = Home, #/play = workspace, #/data = Data page. All stay mounted and only toggle `hidden`, so the editor is never recreated. */
+/** #/ = Home, #/play = workspace, #/data = Data page, #/dashboard. All stay mounted and only toggle `hidden`, so the editor is never recreated. */
 function showRoute(r: Route, initial: boolean): void {
   const tableSwitch = r === 'data' && shownRoute === 'data'; // #/data/a → #/data/b: only the Data page changes
   shownRoute = r;
@@ -176,10 +179,11 @@ function showRoute(r: Route, initial: boolean): void {
   }
   byId('home').hidden = r !== 'home';
   byId('data').hidden = r !== 'data';
+  byId('dashboard').hidden = r !== 'dashboard';
   byId('shell').hidden = r !== 'play';
   if (r !== 'home') leftHome(); // Home marks containers added after this moment as "New"
-  rerender(); // nav aria-current, Home numbers, Data page
-  if (!initial) byId(r === 'home' ? 'home-title' : r === 'data' ? 'data-title' : 'brief-title').focus();
+  rerender(); // nav aria-current, Home numbers, Data page, dashboard
+  if (!initial) byId({ home: 'home-title', data: 'data-title', dashboard: 'dashboard-title', play: 'brief-title' }[r]).focus();
 }
 
 /** Correct answer: save at once, stay on the ticket and show the Recap (no auto-jump). */
@@ -240,11 +244,10 @@ byId('inbox-btn').addEventListener('click', () => (byId('inbox-dialog') as HTMLD
 byId('notebook-btn').addEventListener('click', () => toggleNotebook(byId('notebook-dialog') as HTMLDialogElement));
 
 for (const b of document.querySelectorAll<HTMLButtonElement>('[data-lang]')) {
-  b.addEventListener('click', () => {
-    setLang(b.dataset.lang as Lang);
+  b.addEventListener('click', () => void setLang(b.dataset.lang as Lang).then(() => { // EN may need its chunk first
     rerender();
     panel.refresh();
-  });
+  }));
 }
 
 byId('export-btn').addEventListener('click', () => {

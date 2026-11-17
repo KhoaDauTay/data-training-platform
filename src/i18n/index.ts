@@ -1,6 +1,5 @@
 import { readJson, writeJson } from '../storage';
 import type { Lang } from '../tickets';
-import { en } from './en';
 import { vi } from './vi';
 
 export type { Lang };
@@ -12,7 +11,15 @@ export type Key = keyof typeof vi;
 /** Device preference, not progress: never part of Save. */
 export const PREFS_KEY = 'cargo-query/prefs';
 
-const DICT: Record<Lang, Record<Key, Msg>> = { vi, en };
+const DICT: Partial<Record<Lang, Record<Key, Msg>>> = { vi };
+
+/**
+ * The EN dictionary is a lazy chunk (Plan 5 T3: room in the main bundle, L40): main.ts and tests/setup.ts await
+ * loadLang() before the first render, setLang() before a switch. Until it is in, t() reads VI.
+ */
+export async function loadLang(l: Lang = getLang()): Promise<void> {
+  if (l === 'en' && !DICT.en) DICT.en = (await import('./en')).en;
+}
 
 function initialLang(): Lang {
   const saved = readJson<{ lang?: unknown }>(PREFS_KEY)?.lang;
@@ -39,7 +46,7 @@ export const getLang = (): Lang => (lang ??= initialLang());
 export const locale = (): string => (getLang() === 'vi' ? 'vi-VN' : 'en-US');
 
 export function t(key: Key, params: Params = {}): string {
-  const msg = DICT[getLang()][key];
+  const msg = (DICT[getLang()] ?? vi)[key];
   const p: Params = { ...KEYS, ...params };
   if (typeof msg === 'function') return msg(p);
   return msg.replace(/\{(\w+)\}/g, (m, name: string) => {
@@ -56,7 +63,8 @@ export function applyStatic(root: ParentNode = document): void {
   document.documentElement.lang = getLang();
 }
 
-export function setLang(l: Lang): void {
+export async function setLang(l: Lang): Promise<void> {
+  await loadLang(l);
   lang = l;
   writeJson(PREFS_KEY, { ...readJson<object>(PREFS_KEY), lang: l });
   applyStatic();
