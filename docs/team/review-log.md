@@ -430,7 +430,7 @@ Kiểm tay (Chrome, :5174, localStorage mới): ôn tập mở drill trên lab, 
 
 ## Plan 9 — domain E-commerce (Lantern Market) (2026-11-18)
 
-Ngân sách sau Task 7 (`node scripts/check-budget.mjs`, KB gz): main 280 / 290, ecom 40 / 50, ecomseed 8 / 10, ecomart 2 / 10, worker 149 / 160. Test: 2893/2893 (60 file).
+Ngân sách sau Task 7 (`node scripts/check-budget.mjs`, KB gz): main 280 / 290, ecom 40 / 50, ecomseed 8 / 10, ecomart 2 / 10, worker 149 / 160. Test: 2893/2893 (59 file).
 
 Đo D9-8 (bản build `vite preview`, Chrome trên máy dev, không phải Edge, Logistics đã sẵn sàng): từ đổi hash sang `#/d/ecommerce` tới lúc dòng "Đang chuẩn bị dữ liệu Chợ Lồng Đèn…" tắt (nội dung + seed `ecom` xong): 5,5 s và 5,9 s (2 lần). Mở thẳng `#/d/ecommerce` ở save mới (dev server): ~15–20 s gồm cả seed Logistics (D9-10). Chưa đo trên Edge.
 
