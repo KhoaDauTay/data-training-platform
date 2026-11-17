@@ -220,3 +220,15 @@ Vòng 2/3 (2026-11-17, chỉ diff af017fa..f5339be): các bản sửa vòng 1 đ
 | Loại | Bug | Trạng thái |
 |---|---|---|
 | ux/teaching | ch4-02: `date_trunc(booking_date)` → "function date_trunc(date) does not exist" bị hiểu là "date_trunc không tồn tại"; giải thích cũ của 42883 nói sai ("so sánh hai kiểu khác nhau"); `date_trunc(MONTH, …)` → "column month does not exist" không có gợi ý; đề không nói đơn vị viết trong nháy đơn | Đã sửa: giải thích riêng `sqlerr.dateTrunc`, `sqlerr.unitQuote`, `sqlerr.fnArgs` (hàm có nhưng sai tham số) + test PGlite; đề ch4-02 VI/EN nói rõ chỗ trống đầu là đơn vị trong nháy đơn |
+
+## L42 — giao diện theo phản hồi user (base 75d27aa)
+
+Vòng 1/3 (2026-11-17): review code + spec `docs/team/ui-ux-v3.md`. Chưa kiểm Edge (extension mất kết nối). Đạt: SVG qua `s()`, theme lưu trong prefs có kiểm tra, script đầu trang tối giản, mọi chỗ đọc theme hệ điều hành đã chuyển sang theme app, nút nhập vẫn mở được file.
+
+| Loại | Bug | Trạng thái |
+|---|---|---|
+| spec | Bản đồ tuyến còn emoji 🔒 trên nhãn tuyến khóa | Đã sửa (bỏ emoji; khóa đã thể hiện bằng nét đứt + màu) |
+| correctness | `kpiNumber` quyết định gọn/đủ trên số chưa làm tròn: 999.999,95 hiện "1.000.000" thay vì "1 triệu"; -0,04 hiện "-0"; NaN hiện "NaN" | Đã sửa + test |
+| a11y | Hộp thư/Sổ tay chỉ còn icon ở md–lg, xl–2xl mà không có tooltip | Đã sửa (`data-i18n-title`) |
+| compat | Không có Popover API (Safari < 17, Firefox < 125): menu ⋯ hiện thành khối cuối trang | Đã sửa một phần (ẩn menu; trình duyệt cũ không mở được Xuất/Nhập — chấp nhận, mục tiêu Edge/Chromium) |
+| judgement | Thanh KPI dạng cột chỉ đọc số làm tròn cho trình đọc màn hình; huy hiệu đếm không tự thông báo khi đổi; Esc trên menu ⋯ cũng bỏ qua hoạt cảnh; `CARD_ACTION` lặp chuỗi `CARD`; `rounded-xl` chồng `rounded-2xl`; 1280–1535 px ẩn tên chương/nhãn nút (khác spec, cần ghi bổ sung); menu ghim `top: 3.5rem` đè header nhiều dòng; `q3margin` thiếu `unit: %` | Mở (judgement) |

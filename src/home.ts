@@ -118,11 +118,14 @@ const COMPACT_FROM = 1_000_000;
  */
 export function kpiNumber(x: number, lang: Lang): KpiNumber {
   const locale = lang === 'vi' ? 'vi-VN' : 'en-US';
+  if (!Number.isFinite(x)) return { text: '—', full: '—' };
   const full = new Intl.NumberFormat(locale, { maximumFractionDigits: 2 }).format(x);
-  const opts: Intl.NumberFormatOptions = Math.abs(x) >= COMPACT_FROM
+  // Decide on the value as it will be shown: 999,999.95 rounds to 1,000,000 and must read "1M"; -0.04 must not read "-0".
+  const shown = Math.round(x * 10) / 10 || 0;
+  const opts: Intl.NumberFormatOptions = Math.abs(shown) >= COMPACT_FROM
     ? { notation: 'compact', compactDisplay: lang === 'vi' ? 'long' : 'short', maximumFractionDigits: 1 }
     : { maximumFractionDigits: Number.isInteger(x) ? 0 : 1 };
-  return { text: new Intl.NumberFormat(locale, opts).format(x), full };
+  return { text: new Intl.NumberFormat(locale, opts).format(Math.abs(shown) >= COMPACT_FROM ? x : shown), full };
 }
 
 export type KpiValue = KpiNumber | { bars: ({ label: string; value: number } & KpiNumber)[] };

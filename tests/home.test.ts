@@ -98,6 +98,9 @@ describe('Bảng điều hành KPI (L18 ★5, L23)', () => {
     expect(kpiNumber(9694, 'vi')).toEqual({ text: '9.694', full: '9.694' });
     expect(kpiNumber(9694, 'en')).toEqual({ text: '9,694', full: '9,694' });
     expect(kpiNumber(999_999, 'en').text).toBe('999,999');
+    expect(kpiNumber(999_999.95, 'en').text).toBe('1M'); // rounds up across the compact boundary
+    expect(kpiNumber(-0.04, 'en').text).toBe('0');
+    expect(kpiNumber(NaN, 'vi').text).toBe('—');
     expect(kpiNumber(4.6666, 'vi')).toEqual({ text: '4,7', full: '4,67' });
     expect(kpiNumber(4.6666, 'en')).toEqual({ text: '4.7', full: '4.67' });
     expect(kpiNumber(0, 'vi').text).toBe('0');
