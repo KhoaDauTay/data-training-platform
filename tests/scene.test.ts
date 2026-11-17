@@ -23,6 +23,9 @@ describe('sceneOf (completion-animations §3.2–§3.3)', () => {
       'ch3-05': { kind: 'promotion' },
       'ch4-01': { kind: 'chat' }, 'ch4-02': { kind: 'ship' }, 'ch4-03': { kind: 'truck' }, 'ch4-04': { kind: 'chat' },
       'ch4-05': { kind: 'truck' }, 'ch4-06': { kind: 'promotion' },
+      'ch5-01': { kind: 'customs', lane: 'green' }, 'ch5-02': { kind: 'customs', lane: 'yellow' },
+      'ch5-03': { kind: 'customs', lane: 'green' }, 'ch5-04': { kind: 'customs', lane: 'red' }, 'ch5-05': { kind: 'chat' },
+      'ch5-06': { kind: 'promotion' },
     });
   });
 
