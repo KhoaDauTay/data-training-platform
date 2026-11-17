@@ -19,6 +19,7 @@ const GROUPS = [
   ['general', /^generalSources-/, 70], // Plan 8a D8a-12: drills (content/general/sql.yml) + advanced nodes (adv.yml) + parsers, lazy, fetched only when a drill or General page opens
   ['learnui', /^(learnView|drillBrief)-/, 25], // Plan 8a D8a-12/13: General UI (drill workspace, learning path) and its VI/EN text, lazy
   ['ecom', /^ecomSources-/, 50], // Plan 9: content/domains/ecom (30 tickets, chapters, people, KPIs), lazy on the first visit (D9-16)
+  ['ecomart', /^ecommerce-/, 10], // Plan 9: src/art/ecommerce.ts (store scene, delivery map), lazy
   ['ecomseed', /^ecomSeed-/, 10], // Plan 9: src/db/ecom/{schema,seed}.sql, lazy in the worker on ensure('ecom'): 7.6 KB gz -9 measured on the source (D9-16)
   ['rest', /./, 1560],
 ];
