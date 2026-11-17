@@ -41,21 +41,21 @@
 
 - id: group_by
   chapter: 2
-  label: { vi: "Nhóm theo chiều", en: "Group by" }
+  label: { vi: "Gom nhóm (GROUP BY)", en: "Group by" }
   syntax: "SELECT carrier_id, count(*) FROM shipments GROUP BY carrier_id"
   when: { vi: "Cần một con số cho mỗi hãng tàu, mỗi tháng, mỗi khách.", en: "You need one number per carrier, month or customer." }
   trap: { vi: "Cột trong SELECT không nằm trong hàm gộp thì phải có trong GROUP BY.", en: "Every SELECT column outside an aggregate must be in GROUP BY." }
 
 - id: having
   chapter: 2
-  label: { vi: "Lọc nhóm", en: "Filter groups" }
+  label: { vi: "Lọc nhóm (HAVING)", en: "Filter groups" }
   syntax: "GROUP BY customer_id HAVING count(*) >= 100"
   when: { vi: "Lọc theo kết quả của hàm gộp.", en: "Filter on the result of an aggregate." }
   trap: { vi: "WHERE lọc dòng trước khi nhóm, HAVING lọc nhóm sau khi gộp.", en: "WHERE filters rows before grouping, HAVING filters groups after." }
 
 - id: join
   chapter: 3
-  label: { vi: "Nối 2 bảng", en: "Inner join" }
+  label: { vi: "Nối 2 bảng (JOIN)", en: "Inner join" }
   syntax: "FROM shipments s JOIN customers c ON c.id = s.customer_id"
   when: { vi: "Cần cột của bảng khác qua khóa ngoại.", en: "You need columns from another table through a foreign key." }
   trap: { vi: "Thiếu hoặc sai ON thì số dòng bị nhân lên.", en: "A missing or wrong ON multiplies the rows." }
@@ -69,14 +69,14 @@
 
 - id: left_join
   chapter: 3
-  label: { vi: "Giữ dòng không khớp", en: "Left join" }
+  label: { vi: "Giữ dòng không khớp (LEFT JOIN)", en: "Left join" }
   syntax: "FROM customers c LEFT JOIN shipments s ON s.customer_id = c.id"
   when: { vi: "Phải giữ mọi dòng bên trái, kể cả dòng không có cặp.", en: "Keep every left-hand row, even without a match." }
   trap: { vi: "Điều kiện trên bảng bên phải đặt ở WHERE sẽ biến LEFT JOIN thành JOIN thường. Đặt nó vào ON.", en: "A WHERE condition on the right-hand table turns it back into an inner join. Put it in ON." }
 
 - id: anti_join
   chapter: 3
-  label: { vi: "Tìm cái “không có”", en: "Anti-join" }
+  label: { vi: "Tìm dòng không có cặp (anti-join)", en: "Anti-join" }
   syntax: "LEFT JOIN shipments s ON s.customer_id = c.id WHERE s.id IS NULL"
   when: { vi: "Tìm khách không book, cảng không có lô hàng…", en: "Find customers with no bookings, ports with no shipments…" }
   trap: { vi: "NOT IN trên danh sách có NULL trả về rỗng. Dùng LEFT JOIN … IS NULL hoặc NOT EXISTS.", en: "NOT IN over a list containing NULL returns nothing. Use LEFT JOIN … IS NULL or NOT EXISTS." }
@@ -118,14 +118,14 @@
 
 - id: coalesce
   chapter: 5
-  label: { vi: "Thay giá trị trống", en: "Fill in missing values" }
+  label: { vi: "Thay giá trị trống (COALESCE)", en: "Fill in missing values" }
   syntax: "COALESCE(t.import_duty_pct, 0), NULLIF(x, 0)"
   when: { vi: "Dùng một giá trị mặc định khi dữ liệu còn trống.", en: "Use a default when the data is missing." }
   trap: { vi: "Phép tính với NULL ra NULL, và SUM bỏ qua NULL mà không báo. COALESCE trước khi tính.", en: "Arithmetic with NULL gives NULL, and SUM skips NULLs silently. COALESCE before you calculate." }
 
 - id: self_join
   chapter: 5
-  label: { vi: "Nối bảng với chính nó", en: "Self-join" }
+  label: { vi: "Nối bảng với chính nó (self-join)", en: "Self-join" }
   syntax: "FROM customs_declarations o JOIN customs_declarations a ON a.amended_from_id = o.id"
   when: { vi: "Một dòng trỏ tới dòng khác cùng bảng: tờ khai sửa, khách trùng, quản lý của nhân viên.", en: "A row points to another row of the same table: amendments, duplicates, an employee's manager." }
   trap: { vi: "Đặt hai alias khác nhau và nhớ chuỗi có thể dài hơn một bước (sửa rồi lại sửa).", en: "Use two different aliases, and remember a chain can be longer than one step (amended, then amended again)." }
@@ -139,21 +139,21 @@
 
 - id: pattern_match
   chapter: 6
-  label: { vi: "Tìm theo mẫu chữ", en: "Pattern matching" }
+  label: { vi: "Tìm theo mẫu chữ (LIKE, ILIKE)", en: "Pattern matching" }
   syntax: "WHERE cargo_desc ILIKE '%frozen%'"
   when: { vi: "Tìm chữ nằm đâu đó trong một ô gõ tay.", en: "Find a word somewhere inside free text." }
   trap: { vi: "LIKE phân biệt hoa thường; ILIKE thì không. Thiếu % ở hai đầu thì chỉ khớp nguyên ô.", en: "LIKE is case-sensitive; ILIKE is not. Without % on both sides it only matches the whole value." }
 
 - id: distinct
   chapter: 6
-  label: { vi: "Đếm giá trị khác nhau", en: "Distinct values" }
+  label: { vi: "Giá trị khác nhau (DISTINCT)", en: "Distinct values" }
   syntax: "SELECT DISTINCT pod FROM shipments; count(DISTINCT pod)"
   when: { vi: "Hỏi \"bao nhiêu loại\" hay \"bao nhiêu nơi\", không phải bao nhiêu dòng.", en: "The question is \"how many kinds\" or \"how many places\", not how many rows." }
   trap: { vi: "count(pod) đếm cả lần lặp; count(DISTINCT pod) mới đếm cảng khác nhau.", en: "count(pod) counts repeats too; count(DISTINCT pod) counts different ports." }
 
 - id: cast
   chapter: 6
-  label: { vi: "Ép kiểu, chia lấy số lẻ", en: "Casts and decimal division" }
+  label: { vi: "Ép kiểu, chia ra số thập phân", en: "Casts and decimal division" }
   syntax: "ROUND(count(*) FILTER (WHERE status = 'CANCELLED')::numeric * 100 / count(*), 2)"
   when: { vi: "Tính tỷ lệ, phần trăm, hay đổi chữ thành số hoặc ngày.", en: "Compute a rate or a percentage, or turn text into a number or a date." }
   trap: { vi: "Số nguyên chia số nguyên bỏ phần lẻ: 3 / 4 = 0. Ép một vế sang numeric trước khi chia.", en: "Integer divided by integer drops the decimals: 3 / 4 = 0. Cast one side to numeric before dividing." }
@@ -181,7 +181,7 @@
 
 - id: correlated_value
   chapter: 7
-  label: { vi: "Tra giá trị theo từng dòng", en: "Correlated lookup" }
+  label: { vi: "Tra giá trị theo từng dòng (truy vấn con tương quan)", en: "Correlated lookup" }
   syntax: "(SELECT r.buy_usd FROM rate_contracts r WHERE r.pod = q.pod AND q.quote_date BETWEEN r.valid_from AND r.valid_to)"
   when: { vi: "Mỗi dòng cần một giá trị từ bảng khác, đúng tại ngày của dòng đó: giá đang hiệu lực, tỷ giá ngày đó.", en: "Each row needs one value from another table as of its own date: the rate in force, that day's price." }
   trap: { vi: "Thiếu điều kiện ngày hiệu lực thì truy vấn con trả nhiều dòng và báo lỗi, hoặc lấy nhầm giá của kỳ khác.", en: "Without the validity-date condition the subquery returns several rows and fails, or picks the price of another period." }
@@ -223,9 +223,9 @@
 
 - id: full_join
   chapter: 9
-  label: { vi: "Đối chiếu hai phía (FULL JOIN)", en: "Two-sided reconciliation (FULL JOIN)" }
+  label: { vi: "Đối soát hai phía (FULL JOIN)", en: "Two-sided reconciliation (FULL JOIN)" }
   syntax: "WITH b AS (...), d AS (...) SELECT COALESCE(b.ref, d.ref), b.atd, d.hbl_no FROM b FULL JOIN d ON d.shipment_id = b.id WHERE b.id IS NULL OR d.shipment_id IS NULL"
-  when: { vi: "Đối chiếu hai sổ mà dòng lệch có thể nằm ở bất kỳ bên nào.", en: "Reconcile two books when a mismatch can sit on either side." }
+  when: { vi: "Đối soát hai sổ mà dòng lệch có thể nằm ở bất kỳ bên nào.", en: "Reconcile two books when a mismatch can sit on either side." }
   trap: { vi: "Lọc tháng ở WHERE sau FULL JOIN là bỏ mất dòng chỉ có ở một bên. Lọc mỗi sổ trước, trong CTE hoặc truy vấn con, rồi mới nối.", en: "A month filter in WHERE after the FULL JOIN throws away the one-sided rows. Filter each book first, in a CTE or subquery, then join." }
 
 - id: window_rank
@@ -233,7 +233,7 @@
   label: { vi: "Xếp hạng trong nhóm (RANK, ROW_NUMBER)", en: "Ranking within groups (RANK, ROW_NUMBER)" }
   syntax: "RANK() OVER (PARTITION BY month ORDER BY teu DESC)"
   when: { vi: "Cần mấy dòng đứng đầu trong mỗi nhóm, hoặc dòng mới nhất của từng container, mà vẫn giữ nguyên từng dòng.", en: "You need the top rows in each group, or each container's latest row, while keeping every row as it is." }
-  trap: { vi: "Không lọc hạng ở WHERE của chính câu đó: tính hạng trong CTE rồi lọc ở câu ngoài. ROW_NUMBER cắt hòa tùy ý; muốn bằng nhau cùng hạng thì dùng RANK (1, 1, 3) hoặc DENSE_RANK (1, 1, 2).", en: "Do not filter on the rank in that query's own WHERE: rank in a CTE and filter outside. ROW_NUMBER breaks ties arbitrarily; for equal values to share a rank use RANK (1, 1, 3) or DENSE_RANK (1, 1, 2)." }
+  trap: { vi: "Không lọc hạng ở WHERE của chính câu đó: tính hạng trong CTE rồi lọc ở câu ngoài. ROW_NUMBER xếp các dòng bằng nhau theo thứ tự tùy ý; muốn bằng nhau cùng hạng thì dùng RANK (1, 1, 3) hoặc DENSE_RANK (1, 1, 2).", en: "Do not filter on the rank in that query's own WHERE: rank in a CTE and filter outside. ROW_NUMBER breaks ties arbitrarily; for equal values to share a rank use RANK (1, 1, 3) or DENSE_RANK (1, 1, 2)." }
 
 - id: window_lag
   chapter: 10
@@ -260,7 +260,7 @@
   chapter: 11
   label: { vi: "Điều kiện dùng được chỉ mục", en: "Index-friendly conditions" }
   syntax: "WHERE booking_date >= '2026-10-12' AND booking_date < '2026-10-19'"
-  when: { vi: "Cột có chỉ mục mà câu lọc vẫn đọc cả bảng: viết lại điều kiện sao cho cột đứng một mình.", en: "A column has an index but the filter still reads the whole table: rewrite the condition so the column stands alone." }
+  when: { vi: "Cột có chỉ mục (index) mà câu lọc vẫn đọc cả bảng: viết lại điều kiện sao cho cột đứng một mình (điều kiện sargable).", en: "A column has an index but the filter still reads the whole table: rewrite the condition so the column stands alone." }
   trap: { vi: "Bọc cột trong hàm hay ép kiểu (to_char, date_trunc, upper, ::text) là chỉ mục thường không dùng được. Biến đổi giá trị bên kia dấu bằng, hoặc đổi thành khoảng nửa mở.", en: "Wrapping the column in a function or a cast (to_char, date_trunc, upper, ::text) stops a plain index from being used. Transform the value on the other side, or use a half-open range." }
 
 - id: index_design
