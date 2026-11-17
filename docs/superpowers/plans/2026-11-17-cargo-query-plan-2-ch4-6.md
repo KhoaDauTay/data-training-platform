@@ -38,7 +38,7 @@
 | Q2 | **Ngân sách `main` 270 → 300 KB gzip.** Đo thật sau Plan 2: 282 KB (HEAD 254). Theo luật L40 (số đo + 5 %, làm tròn 10 KB). **Cần user xem** cùng P-D3. Khuyến nghị cho Plan 3: tách nội dung ticket thành chunk tải lười theo chương trước khi thêm ch7–9 (mỗi plan nội dung thêm ~25–28 KB gzip vào `main`). | `content.ts` nạp ticket bằng `import.meta.glob(..., eager)` nên ticket nằm trong `main`; 18 ticket VI+EN có ví dụ mẫu/ngẫm lại/câu sai ≈ 25 KB gzip. Đổi sang nạp bất đồng bộ đụng mọi chỗ gọi `loadTickets()` đồng bộ: việc riêng, không nhét vào plan nội dung. Worker (seed) chỉ +3 KB (133 → 136 / 160). |
 | Q3 | Kết quả ticket **không chứa chữ phụ thuộc ngôn ngữ**: nhóm phân loại là số (ch5-01: 1 nhanh, 2 bình thường, 3 chậm), cờ là đúng/sai (ch5-03: thiếu thuế suất). | Grader so chuỗi chính xác; người chơi VI và EN sẽ gõ nhãn khác nhau. |
 | Q4 | `format` tùy chọn (không khai = `open`; ch1–3 không đổi). `## Example`: khối SQL chỉ ở phần VI, đánh dấu `-- ①…`; lời giải thích mỗi dấu một đoạn ở cả VI và EN. Thẻ "Ví dụ mẫu" có nút "Chép ví dụ vào editor" (thay nội dung editor, hoàn tác được). **Để sau:** tô sáng mệnh đề khi rê chuột qua chú thích, Tab/Shift-Tab nhảy giữa các `___`. | Đủ cho nhịp ví dụ mẫu → bài cặp đôi; phần tô sáng cần ánh xạ dấu → vị trí trong editor, không chặn việc học. |
-| Q5 | Nộp khi còn `___`: báo "còn N chỗ trống", **không chấm, không tính là nộp sai** (không gọi `onWrong`, Luyện tập không bị trừ hộp). Chạy (Run) thì Postgres báo lỗi cú pháp như thường. | Curriculum §5.1. |
+| Q5 | Ticket `faded` nộp khi còn `___`: báo "còn N chỗ trống", **không chấm, không tính là nộp sai** (không gọi `onWrong`, Luyện tập không bị trừ hộp). Chạy (Run) thì Postgres báo lỗi cú pháp như thường. Ticket không phải `faded` không chặn `___`, vì `LIKE '___'` (ba ký tự bất kỳ) là SQL hợp lệ. | Curriculum §5.1. |
 | Q6 | Sau khi Nộp sai **kết quả** (không phải lỗi SQL): chạy lần lượt các câu `wrong:` của ticket; câu nào cho kết quả trùng kết quả người chơi thì hiện lời giải thích của câu đó. Không trùng câu nào thì hiện `trap` của kỹ năng ticket dạy (`grants`). Ticket không dạy gì (rest) và cột mốc: không thêm gì. | Curriculum §5.4 dòng 2–3. Chỉ chạy thêm ≤ 2 query, chỉ khi nộp sai. |
 | Q7 | `reflect:` hiện trong Recap (chỉ chế độ Làm việc, sau khi xong việc), không chấm, không XP, không lưu. **Bắt buộc từ ch4**; `reflect:` cho 15 ticket ch1–3 **để sau** (plan này không sửa ticket cũ). | Curriculum §5.5; giữ diff gọn, ch1–3 đã kiểm. |
 | Q8 | Card "Ôn đầu chương": section Trang chủ order 21 (ngay trên card Ôn tập 22). Chỉ hiện khi chương hiện tại N ≥ 2 **chưa có ticket nào xong**; tối đa 3 bài từ `warmupQueue` (kỹ năng các chương < N, hộp Leitner thấp nhất → đến hạn sớm nhất → id; mỗi ticket một lần; ưu tiên ticket có biến thể). Kết quả tính như Luyện tập (0 XP, đổi hộp Leitner). Không thêm trường save. **Để sau:** card trong Hộp thư, chế độ "Thẻ úp" (§5.3, Plan 3). | Curriculum §5.2; điều kiện "chưa có ticket nào của chương xong" tính lại được từ `completed`. |
@@ -1140,7 +1140,7 @@ git commit -m "feat(practice): chapter warm-up card with three recall tasks from
 
 **Interfaces:**
 - Consumes: `Ticket.example/reflect/wrong`, `BLANK` (Task 2); `compareResults` (`grader.ts`); `SKILLS`.
-- Produces: `actions.useSql(sql)`; `WorkArea.setDoc(sql)`; thẻ "Ví dụ mẫu" (sau `## Task`), câu ngẫm lại trong Recap; Nộp khi còn `___` → `work.blanks` (không chấm, không `onWrong`); nộp sai kết quả → lời giải thích của câu `wrong:` khớp, hoặc `work.trap` với `trap` của kỹ năng ticket dạy; `sqlerr.42804`, `sqlerr.22P02`.
+- Produces: `actions.useSql(sql)`; `WorkArea.setDoc(sql)`; thẻ "Ví dụ mẫu" (đặt ngay trước khối Yêu cầu, ví dụ đọc trước bài cặp đôi), câu ngẫm lại trong Recap; ticket `faded` Nộp khi còn `___` → `work.blanks` (không chấm, không `onWrong`; ticket khác không chặn, vì `'___'` là mẫu LIKE hợp lệ); nộp sai kết quả → lời giải thích của câu `wrong:` khớp, hoặc `work.trap` với `trap` của kỹ năng ticket dạy; `sqlerr.42804`, `sqlerr.22P02`.
 
 - [ ] **Step 1: Test lỗi SQL mới (chạy trên PGlite thật)**
 
@@ -1336,7 +1336,7 @@ bằng:
     const k = stepKey(tk.id, i);
     const story = isStory(); // captured at click time, like the ticket
     const sql = ed.getValue(); // Submit always grades the whole editor
-    const blanks = sql.split(BLANK).length - 1;
+    const blanks = tk.format === 'faded' ? sql.split(BLANK).length - 1 : 0; // elsewhere ___ is a valid LIKE pattern
     if (blanks) {
       say('bad', () => t('work.blanks', { n: blanks })); // a faded starter not filled in yet: not graded, not a wrong submit
       return;
@@ -2739,7 +2739,7 @@ ORDER BY mode
 ```
 
 ## Step 2: Thông quan theo luồng
-Các tờ khai được thông quan trong quý 3/2026: mỗi luồng mất trung bình bao nhiêu ngày từ lúc nộp đến lúc thông quan, làm tròn 2 chữ số thập phân? Gửi luồng và số ngày trung bình, luồng nhanh nhất lên đầu.
+Các tờ khai được thông quan trong quý 3/2026: mỗi luồng mất trung bình bao nhiêu ngày từ lúc nộp đến lúc thông quan, làm tròn 2 chữ số thập phân? Gửi luồng và số ngày trung bình, luồng nhanh nhất lên đầu; bằng nhau thì xếp theo mã luồng trong hệ thống theo thứ tự chữ cái.
 ```sql
 SELECT lane, ROUND(AVG(cleared_date - submitted_date), 2)
 FROM customs_declarations
@@ -2773,7 +2773,7 @@ This is your promotion review. The board is reviewing Q3 2026 service quality an
 The shipments that arrived in Q3 2026 (1 July to 30 September inclusive): per transport mode, how many shipments, and how many arrived on time (actual arrival no later than planned arrival)? Send the mode, the number of shipments and the number on time; air first, then sea.
 
 ## Step 2: Clearance by lane
-The declarations cleared in Q3 2026: on average, how many days did each lane take from filing to clearance, rounded to 2 decimals? Send the lane and the average days, fastest lane first.
+The declarations cleared in Q3 2026: on average, how many days did each lane take from filing to clearance, rounded to 2 decimals? Send the lane and the average days, fastest lane first; on a tie, by the lane's system code alphabetically.
 
 ## Step 3: Declarations by lane, last versions only
 The declarations filed in Q3 2026, counting only the last version: a declaration that was cancelled and filed again does not count, only the one that replaced it. One row with three numbers: green, yellow and red lane declarations.
