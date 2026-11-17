@@ -117,10 +117,10 @@ export function renderTopbar(): void {
   const chapter = byId('chapter');
   chapter.title = t('top.chapter', { n: ch, total, title });
   chapter.replaceChildren(
-    icon('map', 'size-4'),
+    icon('map', 'size-4 xl:max-[120rem]:hidden'),
     h('span', { class: 'font-semibold' }, t('top.chapterShort', { n: ch, total })),
     // Full name in `title`; hidden where the bar is tight (the map strip and Home name the chapter too).
-    h('span', { class: 'truncate max-md:hidden md:max-w-[12rem] xl:max-[120rem]:hidden' }, title));
+    h('span', { class: 'truncate max-md:hidden md:max-w-[12rem] xl:hidden' }, title));
   byId('rank').textContent = rankOf(app.tickets, done()).tier?.[lang] ?? t('career.intern');
   byId('xp').replaceChildren(icon('star', 'size-4'), t('top.xp', { n: app.save.xp }));
   renderSettings();
