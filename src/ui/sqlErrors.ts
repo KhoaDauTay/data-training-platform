@@ -8,6 +8,12 @@ const BY_MESSAGE: [RegExp, Key][] = [
   [/^aggregate functions are not allowed in WHERE/, 'sqlerr.aggWhere'],
   [/^missing FROM-clause entry/, 'sqlerr.missingFrom'],
   [/^cannot insert multiple commands/, 'sqlerr.multi'],
+  // date_trunc(booking_date) or date_trunc(booking_date, 'month'): the unit comes first, as a quoted word.
+  [/^function date_trunc\(/, 'sqlerr.dateTrunc'],
+  // date_trunc(MONTH, …) / extract(MONTH …) read an unquoted unit as a column name.
+  [/^column "(year|quarter|month|week|day|hour|minute|second)" does not exist/, 'sqlerr.unitQuote'],
+  // Same 42883 code as "date = 5", but here a function got arguments it cannot take.
+  [/^function \S+\(.*\) does not exist/, 'sqlerr.fnArgs'],
 ];
 
 const BY_CODE: Record<string, Key> = {
