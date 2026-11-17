@@ -20,7 +20,8 @@ export function startRouter(show: (r: Route, initial: boolean) => void): void {
     show(r, initial);
   };
   const first = initialRoute(location.hash, readJson<unknown>(ROUTE_KEY));
-  history.replaceState(history.state, '', hashOf(first)); // no extra history entry for the redirect
+  // No extra history entry for the redirect; a hash that already names the route keeps its tail (#/data/ports).
+  if (parseRoute(location.hash) !== first) history.replaceState(history.state, '', hashOf(first));
   apply(first, true);
   window.addEventListener('hashchange', () => apply(parseRoute(location.hash) ?? 'home', false));
 }

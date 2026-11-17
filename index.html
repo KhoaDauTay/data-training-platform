@@ -21,11 +21,11 @@
       L42 / ui-ux-v3 §a: five groups, each one never split across lines (shrink-0). Order by width:
       >= 1280: [brand][nav][status] ··· [actions][settings][data]
       768–1279: [brand][nav] ··· [settings][data] / [status] ··· [actions]
-      < 768: [brand][status] ··· [data] / [nav: 4 columns] / [actions, icons only] ··· [settings]
+      < 768: [brand][status] ··· [data] / [nav: 3 columns, 2 rows] / [actions, icons only] ··· [settings]
     -->
     <header class="topbar flex flex-wrap items-center gap-x-3 gap-y-2 bg-linear-to-r from-indigo-700 via-blue-700 to-cyan-700 px-4 py-2 text-white dark:from-indigo-950 dark:via-blue-950 dark:to-cyan-950">
       <h1 class="order-1 m-0 flex shrink-0 items-center gap-2 text-lg font-bold"><span class="grid size-8 place-items-center rounded-lg bg-black/25 ring-1 ring-white/15"><span data-icon="anchor"></span></span><span class="max-lg:sr-only xl:max-2xl:sr-only">Cargo Query</span></h1>
-      <nav id="nav" class="grid shrink-0 grid-cols-4 gap-1 rounded-xl bg-black/25 p-1 text-sm ring-1 ring-white/15 max-md:order-4 max-md:basis-full md:order-2 md:flex" data-i18n-aria="nav.label" aria-label="Điều hướng chính"></nav>
+      <nav id="nav" class="grid shrink-0 grid-cols-3 gap-1 rounded-xl bg-black/25 p-1 text-sm ring-1 ring-white/15 max-md:order-4 max-md:basis-full md:order-2 md:flex" data-i18n-aria="nav.label" aria-label="Điều hướng chính"></nav>
       <div id="status" class="flex shrink-0 items-center gap-2 rounded-xl bg-black/25 px-3 py-1 text-sm ring-1 ring-white/15 max-md:order-2 md:max-xl:order-6 xl:order-3">
         <span id="chapter" class="flex min-w-0 items-center gap-1.5 whitespace-nowrap"></span>
         <span class="h-4 w-px bg-white/30 max-md:hidden" aria-hidden="true"></span>
@@ -60,6 +60,8 @@
     <div id="map" class="map-strip border-b border-line bg-sea" hidden></div>
     <div id="notice" role="status" class="flex items-center gap-2 border-b border-line bg-code px-4 py-2" hidden></div>
     <main id="home" class="shell:min-h-0 shell:flex-1 shell:overflow-auto" data-i18n-aria="nav.home" aria-label="Trang chủ" hidden></main>
+    <!-- ui-ux-v4 §5: the Data page (#/data/<table>), filled by src/ui/dataView.ts. -->
+    <main id="data" class="shell:min-h-0 shell:flex-1 shell:overflow-auto" data-i18n-aria="nav.data" aria-label="Dữ liệu" hidden></main>
     <main id="shell" class="shell" hidden>
       <div class="workspace">
         <section id="ticket" class="min-w-0 rounded-2xl bg-panel p-4 ring-1 ring-line" data-i18n-aria="area.ticket" aria-label="Đề bài"></section>

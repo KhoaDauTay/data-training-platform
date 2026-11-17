@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { hashOf, initialRoute, isRoute, parseRoute, ROUTES } from '../src/route';
+import { dataTableOf, hashOf, initialRoute, isRoute, parseRoute, ROUTES } from '../src/route';
 
 describe('route', () => {
   it('parseRoute: không có hash → undefined (dùng route đã nhớ)', () => {
@@ -31,5 +31,17 @@ describe('route', () => {
     expect(initialRoute('', undefined)).toBe('home');
     expect(isRoute('play')).toBe(true);
     expect(isRoute(42)).toBe(false);
+  });
+
+  it('#/data và #/data/<bảng> là trang Dữ liệu; dataTableOf chỉ nhận định danh', () => {
+    expect(parseRoute('#/data')).toBe('data');
+    expect(parseRoute('#/data/ports')).toBe('data');
+    expect(dataTableOf('#/data/ports')).toBe('ports');
+    expect(dataTableOf('#/data/container_events')).toBe('container_events');
+    expect(dataTableOf('#/data')).toBeUndefined();
+    expect(dataTableOf('#/data/')).toBeUndefined();
+    expect(dataTableOf('#/data/x;drop')).toBeUndefined();
+    expect(dataTableOf('#/data/Ports')).toBeUndefined();
+    expect(dataTableOf('#/play/ports')).toBeUndefined();
   });
 });
