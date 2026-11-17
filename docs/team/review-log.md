@@ -156,3 +156,17 @@ Vòng 2/3 (2026-11-17, chỉ diff cbe3d0b..b8af619): các bản sửa vòng 1 đ
 | data | Đổi `failed`→`weak` trong v2 không có fallback | Đã sửa (đọc `weak ?? failed`) |
 
 Round-trip Xuất→Nhập: không chạy trên trình duyệt (tải file), test tự động bao phủ. **Plan 1c đóng sau 2 vòng** (Task 11 chẩn đoán làm cùng Plan Deploy).
+
+## Plan Import (base 7ae0731)
+
+Vòng 1/3 (2026-11-17): review Standards + bảo mật + Spec + cổng Edge (CSV 1.000 dòng: trạng thái, kiểu cột, query + Biểu đồ + ERD có `don_hang`; nạp lại sau reload; 200k × 10 cột 12 MB < 20 s, Edge ~520 MB — L39). Bảo mật: không phát hiện cứng (tên qua `ident()`, kiểu qua `COLUMN_TYPES` kiểm 2 lần, COPY từ blob, Run vẫn BEGIN/ROLLBACK).
+
+| Loại | Bug | Trạng thái |
+|---|---|---|
+| data-loss | Worker mới boot lỗi sau restart: `replayImports` chỉ bỏ qua `DbRestartError` → `DbFailedError` xóa mọi file đã lưu trong IndexedDB (trái mục 12 của plan) | Đã sửa (giữ cả khi `DbFailedError`) + test |
+| correctness | Header `xmin/xmax/cmin/cmax/ctid/tableoid` lọt qua `sanitizeIdent` → CREATE TABLE lỗi 42701, báo sai "kiểm số cột/UTF-8" | Đã sửa (thêm hậu tố `_`) + test |
+| ux | "Xóa toàn bộ" dùng `window.confirm` gốc: chặn trang (kẹt tự động hóa), khác kiểu hộp thoại của app | Đã sửa (xác nhận 2 bước tại chỗ, focus vào nút xác nhận, VI+EN) |
+| judgement | `isStoredImport` không kiểm lại giới hạn D3 khi đọc; nhập file trùng tên bảng thay thế lặng lẽ; `search_path` cả phiên nên SQL ở Làm việc/Luyện tập vẫn đọc được bảng `sandbox` (chấm điểm không ảnh hưởng); bảng tên `pg_*` bị che | Mở (judgement, để sau) |
+| verification | Chưa đo trường hợp xấu nhất D3 (20 MB × 50 cột × 5 bảng), cảnh báo I3 chưa thấy trên Edge, timeout 30 s chưa thử | Mở — cần user (L39) |
+
+**Plan Import đóng sau 1 vòng** (bản sửa nhỏ, có test; vòng sau chỉ diff nếu cần).
