@@ -1,5 +1,5 @@
 import { loadLanes } from '../content';
-import { BAR_ROWS, CARD_KINDS, cardRunner, colGone, cardSpec, KIND_SKILL, MAX_CARDS, moveCard, TABLE_ROWS, type Card, type CardKind } from '../dashboard';
+import { BAR_ROWS, CARD_KINDS, cardRunner, colGone, markRan, ranHere, cardSpec, KIND_SKILL, MAX_CARDS, moveCard, TABLE_ROWS, type Card, type CardKind } from '../dashboard';
 import { QueryTimeoutError } from '../db/client';
 import type { QueryResult } from '../db/run';
 import { chapterOfId, KPIS, kpiNumber, kpiTiles, kpiValue, learnedSkills, type Kpi, type KpiTile, type KpiValue } from '../home';
@@ -91,6 +91,8 @@ const cards = cardRunner((sql) => app.run(sql), (id) => {
   if (saved) saved.slow = true;
   persist(true);
 });
+/** main.ts, when "My data" changes: results (and "table missing" errors) from before the change are dropped. */
+export const resetCards = (): void => cards.clear();
 
 /** "SQL của bạn · Sandbox" / "· việc …": where the card was pinned from. */
 function sourceLine(c: Card): string {
@@ -111,6 +113,7 @@ function playerCard(c: Card, i: number, n: number, redraw: () => void): HTMLElem
   const rerun = () => {
     cards.forget(c.id);
     delete c.slow;
+    void cards.result(c).catch(() => {}); // started before the redraw, so a card never run here runs too
     save();
   };
   if (c.slow) {
@@ -118,9 +121,13 @@ function playerCard(c: Card, i: number, n: number, redraw: () => void): HTMLElem
       h('p', { class: 'm-0 flex items-center gap-1.5 font-semibold' }, icon('alert', 'size-4'), t('dash.slowTitle')),
       h('p', { class: 'mt-1 mb-2' }, t('dash.slow')),
       h('button', { type: 'button', class: 'flex items-center gap-1.5 px-3 py-1', onclick: rerun }, icon('refresh', 'size-4'), t('dash.retrySlow'))));
+  } else if (!cards.has(c) && !ranHere(c)) {
+    body.append(h('p', { class: 'mt-0 mb-2 text-sm text-muted' }, t('dash.notRun')),
+      h('button', { type: 'button', class: 'flex items-center gap-1.5 px-3 py-1', onclick: rerun }, icon('refresh', 'size-4'), t('dash.run')));
   } else {
     body.append(h('p', { class: 'm-0 text-muted' }, t('dash.waiting')));
     cards.result(c).then((r) => {
+      markRan(c);
       body.replaceChildren(cardBody(c, r));
       if (r.ms !== undefined) ran.textContent = t('dash.ran', { ms: r.ms });
     }, (e: unknown) => {

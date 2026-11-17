@@ -1,4 +1,4 @@
-import { CARD_KINDS, KIND_SKILL, MAX_CARD_SQL, MAX_CARD_TITLE, MAX_CARDS, nextCardId, pinBlock, valueCols, type Card, type CardKind } from '../dashboard';
+import { CARD_KINDS, KIND_SKILL, markRan, MAX_CARD_SQL, MAX_CARD_TITLE, MAX_CARDS, nextCardId, pinBlock, valueCols, type Card, type CardKind } from '../dashboard';
 import type { QueryResult } from '../db/run';
 import { learnedSkills } from '../home';
 import { getLang, t } from '../i18n';
@@ -91,7 +91,9 @@ function openPinDialog(sql: string, r: QueryResult, from: string, editorSql: () 
       return title.focus();
     }
     const d = app.save.dashboard;
-    d.cards = [...d.cards, { ...card(), id: nextCardId(d.cards) }];
+    const pinned = { ...card(), id: nextCardId(d.cards) };
+    d.cards = [...d.cards, pinned];
+    markRan(pinned); // it just ran here: it may run by itself on the dashboard
     persist(true);
     dialog.close();
     app.notice = { key: 'pin.done', params: { title: title.value.trim() } };

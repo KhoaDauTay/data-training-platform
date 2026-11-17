@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { cardRunner, colGone, KIND_SKILL, moveCard, nextCardId, PIN_MAX_MS, pinBlock, valueCols, type Card } from '../src/dashboard';
+import { cardRunner, colGone, KIND_SKILL, loadRan, markRan, RAN_KEY, ranHere, moveCard, nextCardId, PIN_MAX_MS, pinBlock, valueCols, type Card } from '../src/dashboard';
 import { DbRestartError, QueryTimeoutError } from '../src/db/client';
 import { runSandboxed, type QueryResult } from '../src/db/run';
 import { seededDb } from './helpers';
@@ -111,6 +111,45 @@ describe('chạy card (cardRunner, product-design-v3 §7)', () => {
     await expect(cards.result(sqlCard('d', 'OK'))).resolves.toBe(ok); // the chain goes on after a failure
     expect(slow).toEqual(['s']);
     await expect(cards.result(sqlCard('c', 'CUT'))).resolves.toBe(ok); // forgotten after the restart, so it ran again
+  });
+});
+
+describe('card sau khi "Dữ liệu của tôi" đổi, card chạy trên máy này', () => {
+  const sqlCard = (id: string, sql: string): Card => ({ ...card(id), sql });
+
+  it('clear(): lỗi 42P01 trước khi restore() xong không bị giữ cả phiên', async () => {
+    let restored = false;
+    const run = async () => {
+      if (!restored) throw new Error('relation "my_csv" does not exist');
+      return { columns: ['n'], types: [20], rows: [[1]] };
+    };
+    const cards = cardRunner(run, () => {});
+    const c = sqlCard('c1', 'SELECT * FROM sandbox.my_csv');
+    await expect(cards.result(c)).rejects.toThrow('does not exist');
+    expect(cards.has(c)).toBe(true);
+    restored = true;
+    cards.clear();
+    expect(cards.has(c)).toBe(false);
+    await expect(cards.result(c)).resolves.toMatchObject({ rows: [[1]] });
+  });
+
+  it('cards-ran: chỉ card (id + SQL) đã chạy trên máy này; dữ liệu hỏng bị bỏ', () => {
+    const data: Record<string, string> = {};
+    const kv = { getItem: (k: string) => data[k] ?? null, setItem: (k: string, v: string) => void (data[k] = v) };
+    const a = sqlCard('c1', 'SELECT 1');
+    expect(ranHere(a, kv)).toBe(false);
+    markRan(a, kv);
+    markRan(a, kv);
+    expect(loadRan(kv)).toEqual([`c1
+SELECT 1`]);
+    expect(ranHere(a, kv)).toBe(true);
+    expect(ranHere(sqlCard('c1', 'SELECT 2'), kv)).toBe(false); // an imported c1 with other SQL
+    data[RAN_KEY] = '{"x":1}';
+    expect(loadRan(kv)).toEqual([]);
+    data[RAN_KEY] = JSON.stringify(['ok', 3, null, 'x'.repeat(5000)]);
+    expect(loadRan(kv)).toEqual(['ok']);
+    data[RAN_KEY] = 'not json';
+    expect(loadRan(kv)).toEqual([]);
   });
 });
 

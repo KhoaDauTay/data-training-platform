@@ -496,6 +496,8 @@ export const vi = {
   'dash.slowTitle': 'Chậm · không tự chạy nữa',
   'dash.slow': 'Lần trước query chạy quá 5 giây nên database phải khởi động lại. Thử lọc khung thời gian hẹp hơn hoặc gom trước khi nối bảng.',
   'dash.retrySlow': 'Chạy thử lại',
+  'dash.notRun': 'Chưa chạy trên máy này. Card từ tiến độ nhập vào không tự chạy: xem SQL rồi bấm Chạy.',
+  'dash.run': 'Chạy',
   'dash.waiting': 'Đang chờ chạy…',
   'dash.ran': 'chạy {ms} ms',
   'dash.sql': 'Xem SQL',
