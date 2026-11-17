@@ -24,7 +24,10 @@ TICKETS=$(get "$MAIN" | grep -oE 'ticketSources-[A-Za-z0-9_-]+\.js' | head -1)
 LANES=$(get "$MAIN" | grep -oE 'laneSources-[A-Za-z0-9_-]+\.js' | head -1)
 EN=$(get "$MAIN" | grep -oE '\./en-[A-Za-z0-9_-]+\.js' | head -1 | cut -c3-)
 [ -n "$LANES" ] && [ -n "$EN" ] || { echo "FAIL $MAIN does not reference laneSources-*.js and en-*.js"; exit 1; }
-for f in $MAIN "assets/$WORKER" "assets/$TICKETS" "assets/$LANES" "assets/$EN" $(printf 'assets/%s ' $FILES $LIBWASM); do
+# Plan 6: the quick lessons are a lazy chunk awaited before the first render too.
+LESSONS=$(get "$MAIN" | grep -oE 'lessonSources-[A-Za-z0-9_-]+\.js' | head -1)
+[ -n "$LESSONS" ] || { echo "FAIL $MAIN does not reference lessonSources-*.js"; exit 1; }
+for f in $MAIN "assets/$WORKER" "assets/$TICKETS" "assets/$LANES" "assets/$EN" "assets/$LESSONS" $(printf 'assets/%s ' $FILES $LIBWASM); do
   H=$(curl -sS -o /dev/null -D - -H 'Accept-Encoding: br, gzip' "$URL/$f" | tr -d '\r')
   status=$(printf '%s\n' "$H" | head -1 | cut -d' ' -f2)
   type=$(printf '%s\n' "$H" | grep -i '^content-type:' | cut -d' ' -f2-)
