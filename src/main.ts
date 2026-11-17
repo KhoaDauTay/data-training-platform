@@ -131,7 +131,7 @@ const work = mountWork(byId('work'), {
   onConclusion: (t) => {
     app.conclusionFor = t.id;
     rerender();
-    document.getElementById('conclusion-form')?.scrollIntoView({ block: 'nearest' });
+    reveal('conclusion-form');
   },
   onRun: () => rerender(),
 });
@@ -177,6 +177,11 @@ function selectTicket(id: string, force = false): void {
   byId('brief-title').focus();
 }
 
+/** Scrolls `id` into view once the result table and the editor have settled (they move the page in the same task). */
+function reveal(id: string): void {
+  window.setTimeout(() => document.getElementById(id)?.scrollIntoView({ block: 'nearest' }), 150);
+}
+
 function nextStep(): void {
   app.stepIndex++;
   app.save.bossStep[app.selectedId] = app.stepIndex;
@@ -184,7 +189,7 @@ function nextStep(): void {
   rerender();
   work.setTicket(selected(), app.stepIndex);
   work.focus(); // the new step's editor replaces the one that had focus
-  document.getElementById('brief-step')?.scrollIntoView({ block: 'nearest' }); // the new step's words, not the old scroll spot (v10 critic #3)
+  reveal('brief-step'); // the new step's words, not the old scroll spot (v10 critic #3)
 }
 
 let shownRoute: Route | undefined;
