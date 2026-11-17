@@ -28,6 +28,8 @@ let ROUTES: typeof Routes, STEPS: typeof Steps, GATE_WAIT: typeof GateWait, rout
 let CHAPTER_COLOR: typeof ChapterColors, chapterColor: typeof ChapterColorOf, cx: typeof Cx, PILL: string, DONE_PILL: string;
 let h: typeof H, s: typeof S, nodes: typeof Nodes, reducedMotion: typeof ReducedMotion;
 let avatar: typeof Avatar, mascot: typeof Mascot, callout: typeof Callout, routeItems: typeof RouteItems;
+export { drawNewRoutes, liveMap } from './mapMotion';
+
 /** Called once by loadArt() before anything else here runs. */
 export function init(d: ArtDeps): void {
   ({ t, getLang, textOf, ROUTES, STEPS, GATE_WAIT, routeOpenedBy, CHAPTER_COLOR, chapterColor, cx, PILL, DONE_PILL } = d);
@@ -265,6 +267,8 @@ export interface MapParts {
   routes: Record<string, SVGPathElement>;
   pins: Record<string, SVGCircleElement>;
   labels: Record<string, SVGTextElement>;
+  /** Pulsing rings (Plan 8b): the hub and the next lane to open. Under reduced motion they stay still, like a pin outline. */
+  rings: SVGGElement;
 }
 /** Lanes, pins, trip counts and the accessible description from `h`. A promotion repaints after its ship arrives. */
 export function paintRoutes(p: MapParts, h: Harbor): void {
@@ -281,6 +285,9 @@ export function paintRoutes(p: MapParts, h: Harbor): void {
     p.labels[r.port].textContent = r.name + (trips ? ` · ${trips}` : '');
   }
   p.svg.setAttribute('aria-label', t('routes.label', { lanes: routeItems(h).join('; ') }));
+  const next = ROUTES.filter((r) => !h.open.has(r.port)).sort((a, b) => a.opens - b.opens)[0];
+  const ring = (cx0: number, cy: number, cls: string): SVGCircleElement => s('circle', { cx: cx0, cy, r: 6, fill: 'none', 'stroke-width': 2, class: cx('cq-pulse', cls) });
+  p.rings.replaceChildren(ring(560, 132, 'stroke-red-600'), ...(next ? [ring(next.x, next.y, chapterColor(Math.max(1, next.opens)).stroke)] : []));
 }
 
 /** Lanes radiating from Tien Sa (L26, mockup v5 coordinates, viewBox 980×260). */
@@ -293,6 +300,7 @@ export function routeMap(h: Harbor): MapParts {
     pins[r.port] = s('circle', { cx: r.x, cy: r.y, r: 6 });
     labels[r.port] = s('text', { x: r.lx, y: r.ly });
   }
+  const rings = s('g', { 'aria-hidden': 'true', 'pointer-events': 'none' });
   const wake = s('path', { fill: 'none', 'stroke-width': 5, 'stroke-linecap': 'round', opacity: 0, 'aria-hidden': 'true' });
   const ship = s('g', { opacity: 0, 'aria-hidden': 'true' },
     s('path', { d: 'M-11 -2 L11 -2 L8 5 L-8 5 Z', fill: '#1e3a8a' }),
@@ -305,10 +313,11 @@ export function routeMap(h: Harbor): MapParts {
     s('g', {}, ...Object.values(routes)),
     wake,
     s('g', { 'font-family': FONT, 'font-size': 14, 'font-weight': 600 }, ...Object.values(pins), ...Object.values(labels)),
+    rings,
     ship,
     s('circle', { cx: 560, cy: 132, r: 9, fill: '#dc2626', stroke: '#ffffff', 'stroke-width': 3 }),
     s('text', { x: 575, y: 150, 'font-family': FONT, 'font-size': 14, 'font-weight': 700, class: OPEN_TEXT }, t('routes.hub')));
-  const parts: MapParts = { svg, ship, wake, routes, pins, labels };
+  const parts: MapParts = { svg, ship, wake, routes, pins, labels, rings };
   paintRoutes(parts, h);
   return parts;
 }

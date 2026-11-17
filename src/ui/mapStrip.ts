@@ -3,6 +3,7 @@ import { LANE_XP, laneLabel } from '../lanes';
 import { CHAPTERS, chapterTitle } from '../progress';
 import { derive, ROUTES, type Harbor } from '../scene';
 import { artSlot } from '../art/load';
+import { fleetOrder, takeNewRoutes } from '../routesSeen';
 import { actions, app } from '../state';
 import { BTN_GO, cx } from '../theme';
 import { textOf, type Ticket } from '../tickets';
@@ -50,6 +51,7 @@ export function createMapStrip(host: HTMLElement): { update(view: StripView): vo
    * Pins are buttons with a one-line tooltip (D-B6: days and side tasks, never shipment counts); the HTML list is the
    * readable version and the way in when the SVG labels hide (L34).
    */
+  let stopMap: (() => void) | undefined;
   function fill({ tickets, completed }: StripView): void {
     const harbor = derive(tickets, completed);
     const map = artSlot('aspect-[980/260] rounded-xl', (art) => {
@@ -68,6 +70,8 @@ export function createMapStrip(host: HTMLElement): { update(view: StripView): vo
         pin.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pick(r.port); } });
       }
       parts.svg.removeAttribute('role'); // the pins inside are controls now; the list below says the same in text
+      stopMap?.(); // the dialog is refilled on every rerender: one fleet at a time, and it only sails while the dialog is open (on screen)
+      stopMap = art.liveMap(parts, harbor, takeNewRoutes(harbor.open), fleetOrder());
       return parts.svg;
     });
     const list = h('ul', { class: 'mt-3 mb-0 grid list-none gap-1.5 p-0 text-sm sm:grid-cols-2' }, ...ROUTES.map((r) =>

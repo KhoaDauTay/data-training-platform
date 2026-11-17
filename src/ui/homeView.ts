@@ -18,6 +18,7 @@ import { avatar } from './avatar';
 import { icon, skillIcon, type IconName } from './icons';
 import { byId, h, nodes } from './dom';
 import { artSlot } from '../art/load';
+import { fleetOrder, takeNewRoutes } from '../routesSeen';
 import { callout, routeItems } from './routeText';
 import { isStory } from '../session';
 import { go } from './router';
@@ -247,13 +248,19 @@ function harborSection(m: HomeModel): HTMLElement {
       ...callout(harbor, m.chapter).map((line) => h('p', { class: 'm-0 text-muted' }, line))));
 }
 
+let stopMap: (() => void) | undefined;
 function routesSection(): HTMLElement {
   const harbor = derive(app.tickets, done());
   return h('section', { class: cx(CARD, 'p-5'), 'aria-labelledby': 'routes-title' },
     h('div', { class: 'mb-2 flex flex-wrap items-end justify-between gap-2' },
       h('h2', { id: 'routes-title', class: 'm-0 text-lg font-bold' }, t('routes.title')),
       h('p', { class: 'm-0 text-sm text-muted' }, t('routes.subtitle'))),
-    artSlot('aspect-[980/260] rounded-xl', (a) => a.routeMap(harbor).svg),
+    artSlot('aspect-[980/260] rounded-xl', (a) => {
+      stopMap?.(); // one fleet per page: the previous drawing's loop ends here
+      const p = a.routeMap(harbor);
+      stopMap = a.liveMap(p, harbor, takeNewRoutes(harbor.open), fleetOrder());
+      return p.svg;
+    }),
     h('ul', { class: 'mt-2 mb-0 list-none space-y-0.5 p-0 text-sm lg:hidden', 'aria-hidden': 'true' }, ...routeItems(harbor).map((x) => h('li', {}, x))));
 }
 
