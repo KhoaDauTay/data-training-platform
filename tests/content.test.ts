@@ -3,7 +3,7 @@ import template from '../content/TEMPLATE.md?raw';
 import { loadTicketTemplates, loadTickets } from '../src/content';
 import { compareResults } from '../src/grader';
 import { KPIS } from '../src/home';
-import { CHAPTER_TABLES, contentProblems, SKILLS } from '../src/progress';
+import { CHAPTER_TABLES, contentProblems, SKILLS, tablesUnlocked } from '../src/progress';
 import { parseTicket, textOf, type TicketText } from '../src/tickets';
 import { applyVariant, variantsOf } from '../src/variants';
 import { runner } from './helpers';
@@ -133,9 +133,19 @@ describe('phương pháp học (Plan 2, từ chương 4)', () => {
     expect(t.example!.sql).not.toBe(t.steps[0].solution);
   });
 
-  it.each(wrongs)('$name: câu sai chạy được và cho kết quả khác Solution', async ({ sql, solution, ordered }) => {
+  // An empty result is never matched against `wrong:` (src/ui/work.ts wrongTipper), so an empty `wrong:` could never fire.
+  it.each(wrongs)('$name: câu sai chạy được, có dòng, và cho kết quả khác Solution', async ({ sql, solution, ordered }) => {
     const run = await runner();
-    expect(compareResults(await run(solution), await run(sql), ordered).ok).toBe(false);
+    const r = await run(sql);
+    expect(r.rows.length).toBeGreaterThan(0);
+    expect(compareResults(await run(solution), r, ordered).ok).toBe(false);
+  });
+
+  it.each(templates)('$id: bảng trong SQL `wrong:` và ví dụ mẫu đã mở ở chương này', (t) => {
+    const unlocked = tablesUnlocked(t.chapter);
+    for (const sql of [...(t.wrong ?? []).map((w) => w.sql), t.example?.sql ?? '']) {
+      expect(tablesIn(sql).filter((x) => !unlocked.includes(x))).toEqual([]);
+    }
   });
 
   // L37: the review queue needs other figures to practise with, not the same task again.
