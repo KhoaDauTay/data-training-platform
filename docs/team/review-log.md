@@ -259,3 +259,19 @@ Vòng 2/3 (2026-11-17): review lại các sửa vòng 1.
 | pedagogy | ch9-04: `wrong:` lọc tháng ở WHERE sau FULL JOIN hiếm khi khớp câu người chơi hay viết | Mở: dạng hay gặp (CTE không lọc tháng, `WHERE (b.atd trong tháng OR i.issue_date trong tháng) AND (b.id IS NULL OR i.shipment_id IS NULL)`, cũng như dạng `(… OR b.id IS NULL) AND (… OR i.shipment_id IS NULL)`) ra 0 dòng ở biến thể 08/2026 và 06/2026, còn ở 10/2026 trùng hệt `wrong[0]` (12 dòng), nên không thêm được (content.test đòi có dòng và khác Solution ở mọi biến thể); dạng AND cả hai tháng thì rỗng theo cấu trúc. Giữ `wrong:` hiện có |
 
 **Plan 3 đóng sau 2 vòng.**
+
+## Plan 4 — chương 10–12 (base c741c6e)
+
+Vòng 1/3 (2026-11-17): review code + bảo mật + nội dung (đọc đủ 18 ticket, ~25 câu thay thế/tấn công trên PGlite) + cổng Edge :5174 (save ch1–10 xong: ch11 mở, Lead DA; ch11-01 câu đúng kết quả nhưng Seq Scan bị chấm chưa đạt + mở tab EXPLAIN có chấm "mới"; câu dùng index thì đạt; ch11-04 index sai cột → giải thích trước/sau, index đúng → đạt; sau lab `pg_indexes` chỉ còn khóa chính; không lỗi console). Không có gì tồn tại sau lab (DROP/COMMIT/set_config đều rollback); plan ổn định giữa các lần boot; kết luận ch10/ch12 khớp dữ liệu.
+
+| Loại | Bug | Trạng thái |
+|---|---|---|
+| security | `isCreateIndex` bỏ comment bằng regex, nhưng comment Postgres lồng nhau: `/* /* */ CREATE INDEX */ DROP TABLE claims` qua kiểm tra và `runLab` chạy DROP (vẫn rollback); `--` trong chuỗi bị cắt nhầm | Mở |
+| correctness | `sqlerr.42P20` map theo mã: PGlite cũng trả 42P20 cho lỗi khung (RANGE offset cần đúng 1 cột ORDER BY, frame bắt đầu từ current row, window trong HAVING) → giải thích "WHERE không lọc được" sai | Mở |
+| correctness | EXPLAIN chấm theo plan dùng chung `try` với chấm điểm: timeout/restart lúc EXPLAIN báo "Lỗi nội dung ticket" | Mở |
+| correctness | `window_agg` không bắt `SUM(SUM(x)) OVER`, `SUM(COALESCE(x,0)) OVER` (đối số lồng) | Mở |
+| ux | Lab không ghi lịch sử, không đặt `lastRun` (các tab vẫn hiện lần chạy cũ) — chưa ghi trong tài liệu | Mở |
+| content | ch11-03 hứa "chỉ mục biểu thức là việc của bài thiết kế chỉ mục" nhưng ch11-04 không nhắc | Mở |
+| pedagogy | RANK vs DENSE_RANK chỉ khác ở biến thể 1 của ch10-01 (biến thể 0, 2 và bước 1 của bài thăng tiến hòa chỉ ở hạng cuối) | Mở |
+| pedagogy | ch11-04: gợi ý dạy `(container_id, event_time)` nhưng chỉ `container_id` cũng đạt ngưỡng 10% → bài học "cột thứ hai trả dòng đã sắp" không được kiểm; ch12-06 có thể nhắc phí D&D được chuyển cho khách | Mở (judgement) |
+| perf | Reviewer đo seed 2,85 s (Node) — vượt ngưỡng S2 2,0 s nếu đúng; build agent đo 1,84–1,94 s | Mở — đo lại |
