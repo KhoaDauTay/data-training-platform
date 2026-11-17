@@ -1,6 +1,6 @@
 import { loadLanes } from '../content';
 import { getLang, t } from '../i18n';
-import { LANE_XP, laneLabel, laneTaskState, shown, type LaneTaskState } from '../lanes';
+import { LANE_XP, laneLabel, laneTaskState, shown, titleHidden, type LaneTaskState } from '../lanes';
 import { ROUTES, type Harbor, type RouteInfo } from '../scene';
 import { app } from '../state';
 import { BTN_GO, cx, DONE_PILL, PILL } from '../theme';
@@ -21,13 +21,17 @@ export function laneInfo(r: RouteInfo, harbor: Harbor): string {
   return tasks.length ? `${days} · ${t('lane.count', { done: tasks.filter((x) => app.save.lanes.includes(x.id)).length, total: tasks.length })}` : `${days} · ${t('lane.later')}`;
 }
 
+/** The task's title, or "Bài tuyến 3 · mở sau chương 7" while a spoiler title is locked. */
+export const taskTitle = (task: Ticket, state: LaneTaskState): string => titleHidden(task, state)
+  ? t('lane.hiddenTitle', { n: /\d+$/.exec(task.id)?.[0] ?? '', ch: task.chapter }) : textOf(task, getLang()).title;
+
 /** One side task in the brief's list: done (✓, review it), open (do it) or locked (title and when it opens, L49). */
 function taskRow(task: Ticket, harbor: Harbor, start: (task: Ticket) => void): HTMLElement {
   const lang = getLang();
   const state = stateOf(task, harbor);
   return h('li', { class: 'flex flex-wrap items-center gap-2 rounded-lg p-2 ring-1 ring-line' },
     h('span', { class: cx(PILL, state === 'done' ? DONE_PILL : 'bg-code text-ink') }, state === 'done' ? icon('check', 'size-3.5') : state === 'locked' ? icon('lock', 'size-3.5') : null, laneLabel(task)),
-    h('b', { class: cx('min-w-0 flex-1', state === 'locked' && 'text-muted') }, textOf(task, lang).title),
+    h('b', { class: cx('min-w-0 flex-1', state === 'locked' && 'text-muted') }, taskTitle(task, state)),
     state === 'locked'
       ? h('span', { class: 'text-sm text-muted' }, t('lane.taskAt', { n: task.chapter, xp: LANE_XP }))
       : h('button', { type: 'button', class: cx('px-3 py-1 text-sm', state === 'open' && BTN_GO), onclick: () => start(task) },
