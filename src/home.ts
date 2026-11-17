@@ -27,6 +27,10 @@ export const LEVELS = 5;
 export const learnedSkills = (tickets: Ticket[], completed: Set<string>): Set<string> =>
   new Set(tickets.filter((t) => completed.has(t.id)).flatMap((t) => t.grants));
 
+/** v5 §B.9: a chapter relies on what its tickets require or teach (requires ∪ grants), in first-seen order. */
+export const reliesOn = (tickets: Ticket[], chapter: number): string[] =>
+  [...new Set(tickets.filter((t) => t.chapter === chapter).flatMap((t) => [...t.requires, ...t.grants]))];
+
 /** Everything on Home, recomputed from the save and the content (nothing extra is stored). */
 export function homeModel(
   tickets: Ticket[],

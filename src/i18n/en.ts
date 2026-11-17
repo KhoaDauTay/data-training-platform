@@ -495,6 +495,9 @@ export const en: Record<Key, Msg> = {
   'map.beat.current': 'in progress',
   // ---- Plan 5: dashboard ----
   'nav.dashboard': 'Dashboard',
+  'home.reliesOn': 'Relies on: {skills}',
+  'prac.skillGo': 'Practise',
+  'side.byModule': 'Skills by module',
   'prac.toFirst': 'Go to task 1',
   'hist.empty': 'History: your runs will show here (up to 15)',
   'tour.replay': 'Replay the tour',

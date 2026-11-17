@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { loadTickets } from '../src/content';
-import { chapterOfId, homeModel, KPIS, kpiNumber, kpiTiles, kpiValue, LEVELS, parseKpis, type Kpi } from '../src/home';
+import { chapterOfId, homeModel, KPIS, kpiNumber, kpiTiles, kpiValue, LEVELS, parseKpis, reliesOn, type Kpi } from '../src/home';
 import { CHAPTERS, SKILLS } from '../src/progress';
 import { upsert } from '../src/registry';
+import type { Ticket } from '../src/tickets';
 
 const tickets = loadTickets();
 const ids = (ch: number) => tickets.filter((t) => t.chapter === ch).map((t) => t.id);
@@ -124,5 +125,14 @@ describe('upsert (đăng ký mục Trang chủ, chế độ, menu)', () => {
     upsert(list, { id: 'a', order: 10 });
     upsert(list, { id: 'b', order: 5, v: 2 });
     expect(list).toEqual([{ id: 'b', order: 5, v: 2 }, { id: 'a', order: 10 }]);
+  });
+});
+
+describe('reliesOn (v5 §B.9: "Dựa vào" của chương)', () => {
+  it('hợp requires ∪ grants của các việc trong chương, theo thứ tự gặp, không trùng', () => {
+    const tk = (chapter: number, requires: string[], grants: string[]) => ({ chapter, requires, grants }) as unknown as Ticket;
+    const tickets = [tk(1, [], ['select']), tk(2, ['select'], ['aggregate']), tk(2, ['where', 'select'], ['group_by'])];
+    expect(reliesOn(tickets, 2)).toEqual(['select', 'aggregate', 'where', 'group_by']);
+    expect(reliesOn(tickets, 3)).toEqual([]);
   });
 });

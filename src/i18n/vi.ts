@@ -492,6 +492,9 @@ export const vi = {
   'map.beat.current': 'đang làm',
   // ---- Plan 5: dashboard (#/dashboard, product-design-v3 Part A, mockup v6) ----
   'nav.dashboard': 'Bảng điều hành',
+  'home.reliesOn': 'Dựa vào: {skills}',
+  'prac.skillGo': 'Luyện',
+  'side.byModule': 'Kỹ năng theo module',
   'prac.toFirst': 'Tới việc 1',
   'hist.empty': 'Lịch sử: các lần chạy của bạn sẽ hiện ở đây (tối đa 15)',
   'tour.replay': 'Xem lại hướng dẫn',

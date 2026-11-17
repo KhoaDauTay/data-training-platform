@@ -1,5 +1,5 @@
 import { DOMAINS, type Domain } from '../domains';
-import { homeModel, KPIS, kpiTiles, learnedSkills, LEVELS, type ChapterCard, type HomeModel, type SkillCard } from '../home';
+import { homeModel, KPIS, kpiTiles, learnedSkills, LEVELS, reliesOn, type ChapterCard, type HomeModel } from '../home';
 import { getLang, t, type Key } from '../i18n';
 import { CHAPTERS, chapterTitle, rankOf, SKILLS, visibleTickets } from '../progress';
 import { derive, ROUTES as LANES } from '../scene';
@@ -158,51 +158,26 @@ function statusPill(c: ChapterCard): HTMLElement | null {
   return null;
 }
 
-const SKILL_ROW = 4;
 /**
- * One skill per line, cut with the full name on hover; "+n" replaces the 4th line when there are more (ui-ux-v4 §6).
- * Fixed height from sm (also when empty) so every card's footer lines up.
+ * v6 §3.4 (F5, L47 #6): one row per chapter, the same shape whatever its content: number/✓/lock · title · one line
+ * ("Relies on: Filter rows, Sort +2", or what opens it) · one status pill that links to the chapter's module.
  */
-function skillRow(c: ChapterCard, closed: boolean): HTMLElement {
+function chapterRow(c: ChapterCard): HTMLLIElement {
   const lang = getLang();
-  const more = c.skills.length > SKILL_ROW;
-  const shown = more ? c.skills.slice(0, SKILL_ROW - 1) : c.skills;
-  const rest = c.skills.slice(shown.length);
-  return h('ul', { 'aria-hidden': c.skills.length ? false : 'true', class: cx('m-0 w-full max-w-[14rem] list-none p-0 text-left text-sm sm:h-24', closed && 'text-muted') },
-    ...shown.map((s) => h('li', { class: 'flex h-6 items-center gap-1.5', title: s.label[lang] }, skillIcon(s.id, 'size-4 shrink-0'), h('span', { class: 'truncate' }, s.label[lang]))),
-    more ? h('li', { class: 'flex h-6 items-center text-muted', title: rest.map((s) => s.label[lang]).join(', ') }, `+${rest.length}`) : null);
-}
-
-/**
- * L21: centred, larger title; a closed chapter shows a centred lock, muted text (AA, unlike the mockup's
- * 55% opacity) and, always visible, what opens it (L34: a chapter without tickets yet says its content is in progress).
- */
-function chapterCard(c: ChapterCard): HTMLElement {
-  const lang = getLang();
-  const color = chapterColor(c.chapter);
   const closed = c.status === 'locked' || c.status === 'soon';
-  const title = `${c.chapter} · ${chapterTitle(c.chapter, lang)}`;
-  return h('article', {
-    class: cx('flex h-full flex-col items-center gap-2 rounded-2xl bg-panel p-5 text-center', c.status === 'current' ? cx(color.ring, 'shadow-md') : 'ring-1 ring-line'),
-    'aria-current': c.status === 'current' ? 'step' : false,
-  },
-    closed
-      ? h('div', { class: 'mx-auto grid size-12 place-items-center rounded-full bg-code text-muted', role: 'img', 'aria-label': t(c.status === 'soon' ? 'home.status.soon' : 'home.status.locked') }, icon('lock', 'size-6'))
-      : h('div', { class: cx('relative mx-auto grid size-12 place-items-center rounded-full text-xl font-bold', color.chip), 'aria-hidden': 'true' },
-        String(c.chapter),
-        c.status === 'done' ? h('span', { class: 'absolute -right-1 -bottom-1 grid size-5 place-items-center rounded-full bg-emerald-700 text-white ring-2 ring-panel' }, icon('check', 'size-3.5')) : null),
-    h('h3', { class: cx('m-0 line-clamp-2 text-xl font-bold sm:min-h-14', closed && 'text-muted'), title }, title),
-    skillRow(c, closed),
-    // The badge follows the fixed-height title + skill block, so it lines up across a row (ui-ux-v4 §6, L47 #6);
-    // the variable-length lines below are pinned to the bottom.
-    statusPill(c),
-    h('div', { class: 'mt-auto flex w-full flex-col items-center gap-1.5' },
-      h('p', { class: 'm-0 line-clamp-2 text-sm text-muted' }, t('home.careerAfter', { career: CHAPTERS.find((x) => x.chapter === c.chapter)?.career[lang] ?? '' })),
-      c.status === 'done' && c.boss ? h('p', { class: 'm-0 line-clamp-2 text-sm text-muted' }, t('home.review', { title: textOf(c.boss, lang).title })) : null,
-      closed
-        ? h('p', { class: 'm-0 inline-block rounded-lg bg-ink px-3 py-1 text-sm text-panel' },
-          c.status === 'soon' ? t('home.soonHint') : t('home.lockedAfter', { n: c.chapter - 1 }))
-        : null));
+  const uses = reliesOn(app.tickets, c.chapter).map((id) => SKILLS.find((s) => s.id === id)?.label[lang] ?? id);
+  const short = uses.length > 2 ? `${uses.slice(0, 2).join(', ')} +${uses.length - 2}` : uses.join(', ');
+  return listRow({
+    lead: closed
+      ? icon('lock', 'size-5 text-muted')
+      : c.status === 'done'
+        ? h('span', { class: 'grid size-10 place-items-center rounded-full bg-emerald-700 text-white' }, icon('check', 'size-5'))
+        : h('span', { class: cx('grid size-10 place-items-center rounded-full text-lg font-bold', chapterColor(c.chapter).chip) }, String(c.chapter)),
+    title: `${c.chapter} · ${chapterTitle(c.chapter, lang)}`,
+    sub: closed ? (c.status === 'soon' ? t('home.soonHint') : t('home.lockedAfter', { n: c.chapter - 1 })) : t('home.reliesOn', { skills: short }),
+    action: closed ? null : h('a', { href: `${hashOf('learn')}/sql/${c.chapter}`, class: 'no-underline', title: t('learn.module', { n: c.chapter, title: chapterTitle(c.chapter, lang) }) }, statusPill(c)),
+    current: c.status === 'current',
+  });
 }
 
 function chaptersSection(m: HomeModel): HTMLElement {
@@ -210,37 +185,25 @@ function chaptersSection(m: HomeModel): HTMLElement {
     h('div', { class: 'mb-3 flex flex-wrap items-end justify-between gap-2' },
       h('h2', { id: 'chapters-title', class: 'm-0 text-lg font-bold' }, t('home.chapters', { n: m.chapters.length })),
       h('p', { class: 'm-0 text-sm text-muted' }, t('home.chaptersIntro'))),
-    h('div', { class: 'grid gap-4 sm:grid-cols-2 lg:grid-cols-4' }, ...m.chapters.map(chapterCard)));
+    h('ul', { class: LIST }, ...m.chapters.map(chapterRow)));
 }
 
-function skillCard(s: SkillCard): HTMLElement {
-  const lang = getLang();
-  const color = chapterColor(s.skill.chapter);
-  const locked = s.state === 'locked';
-  const body = nodes(
-    h('span', { class: 'flex items-center gap-3' },
-      h('span', { class: cx('relative grid size-9 shrink-0 place-items-center rounded-lg', locked ? 'bg-panel text-muted' : color.chip), 'aria-hidden': 'true' },
-        skillIcon(s.skill.id),
-        locked ? h('span', { class: 'absolute -right-1.5 -bottom-1.5 grid size-4 place-items-center rounded-full bg-panel ring-1 ring-line' }, icon('lock', 'size-2.5')) : null),
-      h('b', {}, s.skill.label[lang])),
-    h('span', { class: 'mt-2 flex items-center gap-1 text-sm text-muted' },
-      locked ? icon('lock', 'size-3.5') : null,
-      locked ? t('brief.chapter', { n: s.skill.chapter }) : t(s.state === 'learned' ? 'home.skillLearned' : 'home.skillOpen')),
-    locked
-      ? null
-      : h('span', { class: 'mt-2 flex gap-0.5', role: 'img', 'aria-label': t('home.level', { n: s.level, max: LEVELS }) },
-        ...Array.from({ length: LEVELS }, (_, i) => h('i', { class: cx('h-1.5 flex-1 rounded', i < s.level ? color.bar : 'bg-code') }))));
-  const onSkill = homeHooks.onSkill;
-  return onSkill && s.state === 'learned'
-    ? h('button', { type: 'button', class: cx(CARD_ACTION, 'block w-full rounded-xl border-0 p-4 text-left'), onclick: () => onSkill(s.skill.id) }, ...body)
-    : h('div', { class: cx('block w-full rounded-xl p-4 text-left ring-1 ring-line', locked ? 'bg-code text-muted' : 'bg-panel') }, ...body);
-}
-
+/** Practise SQL (v6 §3.3–3.4): skills grouped by module, one row each, one action ("Practise") once learned. */
 function skillsSection(m: HomeModel): HTMLElement {
-  return h('section', { 'aria-labelledby': 'skills-title' },
-    h('h2', { id: 'skills-title', class: 'mb-3 text-lg font-bold' }, t('home.skills')),
-    h('div', { class: 'grid gap-3 sm:grid-cols-3 lg:grid-cols-4' }, ...m.skills.map(skillCard)),
-    h('p', { class: 'mt-2 mb-0 text-sm text-muted' }, t('home.skillsHint')));
+  const lang = getLang();
+  const onSkill = homeHooks.onSkill;
+  const groups = CHAPTERS.map((c) => [c.chapter, m.skills.filter((s) => s.skill.chapter === c.chapter)] as const).filter(([, list]) => list.length > 0);
+  return h('section', { class: 'space-y-10', 'aria-labelledby': 'skills-title' },
+    h('h2', { id: 'skills-title', class: 'sr-only' }, t('home.skills')),
+    ...groups.map(([n, list]) => h('div', { id: `skills-ch-${n}`, class: 'scroll-mt-4' },
+      h('h3', { class: GROUP_TITLE }, t('learn.module', { n, title: chapterTitle(n, lang) })),
+      h('ul', { class: LIST }, ...list.map((s) => listRow({
+        lead: h('span', { class: cx('grid size-10 place-items-center rounded-full', s.state === 'locked' ? 'bg-code text-muted' : chapterColor(n).chip) }, skillIcon(s.skill.id)),
+        title: s.skill.label[lang],
+        sub: s.state === 'locked' ? t('brief.chapter', { n }) : s.state === 'learned' ? t('home.level', { n: s.level, max: LEVELS }) : t('home.skillOpen'),
+        action: onSkill && s.state === 'learned' ? h('button', { type: 'button', class: 'rounded-full px-4 whitespace-nowrap', onclick: () => onSkill(s.skill.id) }, t('prac.skillGo')) : null,
+      }))))),
+    h('p', { class: 'm-0 text-sm text-muted' }, t('home.skillsHint')));
 }
 
 function modesSection(): HTMLElement | null {

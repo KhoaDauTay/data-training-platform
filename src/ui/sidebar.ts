@@ -122,7 +122,13 @@ function content(route: Route, drawer: boolean): (Node | string)[] {
   if (route === 'learn') {
     out.push(h('p', { class: GROUP }, t('side.sqlTrack')), ...modules(), h('p', { class: 'side-label mt-3 px-3 text-sm text-muted' }, t('learn.advSoon')));
   } else if (route === 'practice') {
-    out.push(row({ key: 'today', href: hashOf('practice'), lead: icon('repeat'), label: t('side.today', { n: reviewCount() }), current: true }));
+    const lang = getLang();
+    out.push(row({ key: 'today', href: hashOf('practice'), lead: icon('repeat'), label: t('side.today', { n: reviewCount() }), current: true }),
+      h('p', { class: GROUP }, t('side.byModule')),
+      ...CHAPTERS.filter((c) => SKILLS.some((s) => s.chapter === c.chapter)).map((c) => row({
+        key: `p${c.chapter}`, href: hashOf('practice'), lead: h('b', {}, String(c.chapter)), label: chapterTitle(c.chapter, lang), current: false,
+        onclick: () => document.getElementById(`skills-ch-${c.chapter}`)?.scrollIntoView({ block: 'start' }),
+      })));
   } else if (inDomain(route)) {
     const order = app.tickets.map((x) => x.id);
     const isGated = gated(readTour());
