@@ -170,3 +170,16 @@ Vòng 1/3 (2026-11-17): review Standards + bảo mật + Spec + cổng Edge (CSV
 | verification | Chưa đo trường hợp xấu nhất D3 (20 MB × 50 cột × 5 bảng), cảnh báo I3 chưa thấy trên Edge, timeout 30 s chưa thử | Mở — cần user (L39) |
 
 **Plan Import đóng sau 1 vòng** (bản sửa nhỏ, có test; vòng sau chỉ diff nếu cần).
+
+## Plan Deploy local (base c5af0a1, gồm bản sửa 4496e4c, dfa1856)
+
+Vòng 1/3 (2026-11-17): review gộp + cổng Edge. Kiểm Edge: build `--base=/cargo-query/` chạy trên preview :4173 (mọi asset dưới `/cargo-query/assets/`, DB ready, tab Thứ tự thực thi + ERD tải chunk/wasm đúng, query quá 5 s → nút "Sao chép thông tin chẩn đoán" → "không chứa SQL hay dữ liệu"); trên :5173 sau restart worker bảng import nạp lại (`count(*)` = 200000). Allowlist chẩn đoán đạt (chỉ SQLSTATE, tên lỗi, thời gian, UA, build). Ngân sách: mọi nhóm ok, main 253/270 KB.
+
+| Loại | Bug | Trạng thái |
+|---|---|---|
+| correctness | Lỗi `window` vô hại (`e.error === null`: ResizeObserver loop, "Script error." của extension) bật nút chẩn đoán ngay khi mở trang — thấy thật trên Edge | Đã sửa (bỏ qua `error == null`) |
+| correctness | Bấm "Sao chép chẩn đoán" đè banner khác (bản mới + Tải lại, cảnh báo lưu) | Đã sửa (chỉ ghi thông báo khi không có banner khác) |
+| a11y | Xác nhận "Xóa toàn bộ" mất khi rerender (nạp lại import, đổi ngôn ngữ, Run); sau "Xóa hết" focus rơi về body; bấm đúp chạy clear 2 lần | Đã sửa (cờ cấp module, focus về ô chọn file, khóa nút) — thử bằng bàn phím trên Edge |
+| judgement | `app.problem` không bao giờ xóa (nút ở lại cả phiên; `js-error` sau đè `db-init-failed`); `renderTopbar` dựng lại nút làm mất focus; query chậm của người chơi hiện nút (đúng plan, trái chú thích `fault`); nhóm ngân sách theo tiền tố tên; `check-deploy.sh` không `--max-time`; CI pin theo tag chính | Mở (judgement) |
+
+**Plan Deploy (local) đóng.** Task 8–9 CHỜ USER.

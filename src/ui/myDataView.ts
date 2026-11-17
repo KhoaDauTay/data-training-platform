@@ -142,16 +142,23 @@ export function renderMyData(): HTMLElement {
 }
 
 /** Two-step "delete all": the first click asks inline (no native confirm(), which blocks the page). */
+let confirmingClear = false; // module-level: a rerender (import replay, language switch, Run) keeps the question open
 function clearButton(): HTMLElement {
   const box = h('div', { class: 'flex flex-wrap items-center gap-2' });
-  const ask = (): void => {
-    const yes = h('button', { type: 'button', class: 'rounded-lg bg-bad px-3 py-1 font-semibold text-on-accent', onclick: () => void act(() => my!.clear()) }, t('mydata.clearYes'));
-    const no = h('button', { type: 'button', onclick: () => { idle(); first.focus(); } }, t('mydata.clearNo'));
+  const first = h('button', { type: 'button', onclick: () => { confirmingClear = true; draw(); (box.querySelector('[data-yes]') as HTMLElement).focus(); } }, t('mydata.clear'));
+  const draw = (): void => {
+    if (!confirmingClear) return void box.replaceChildren(first);
+    const yes = h('button', {
+      type: 'button', 'data-yes': '', class: 'rounded-lg bg-bad px-3 py-1 font-semibold text-on-accent',
+      onclick: () => {
+        yes.disabled = true; // no double clear
+        confirmingClear = false;
+        void act(() => my!.clear()).then(() => document.getElementById('mydata-file')?.focus());
+      },
+    }, t('mydata.clearYes'));
+    const no = h('button', { type: 'button', onclick: () => { confirmingClear = false; draw(); first.focus(); } }, t('mydata.clearNo'));
     box.replaceChildren(h('p', { class: 'w-full text-sm', role: 'alert' }, t('mydata.clearConfirm')), yes, no);
-    yes.focus();
   };
-  const first = h('button', { type: 'button', onclick: ask }, t('mydata.clear'));
-  const idle = (): void => box.replaceChildren(first);
-  idle();
+  draw();
   return box;
 }
