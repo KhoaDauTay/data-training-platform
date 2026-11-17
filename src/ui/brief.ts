@@ -1,4 +1,5 @@
 import { getLang, t, type Key } from '../i18n';
+import { GAME_SCHEMA } from '../domains';
 import { LANE_XP } from '../lanes';
 import { roleLine } from '../people';
 import { CHAPTERS, nextTicket, SKILLS, xpFor } from '../progress';
@@ -217,7 +218,7 @@ function relatedLine(tk: Ticket): HTMLElement | null {
   const fill = (tables: string[]) => line.replaceChildren(h('span', { class: 'text-muted' }, t('brief.related')), ...[...tables].sort().map((x) =>
     h('button', { type: 'button', class: 'px-1.5 py-0 font-mono text-sm', onclick: () => actions.showTab('erd') }, x)));
   fill(core);
-  erMeta('public').then((m) => fill(relatedTables(tk.tables, open, m.cons).tables), () => {}); // DB not ready or failed: the task's own tables stay
+  erMeta(GAME_SCHEMA).then((m) => fill(relatedTables(tk.tables, open, m.cons).tables), () => {}); // DB not ready or failed: the task's own tables stay
   return line;
 }
 

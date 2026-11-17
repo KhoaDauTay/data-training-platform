@@ -108,9 +108,11 @@ export interface LabResult { before: unknown; after: unknown }
 export async function runLab(db: PGlite, ddl: string, sql: string, table: string): Promise<LabResult> {
   if (!isCreateIndex(ddl)) throw new SqlError({ message: 'only one CREATE INDEX statement is allowed here', code: 'LAB01' });
   const explain = async () => (await db.query<unknown[]>(`EXPLAIN (FORMAT JSON) ${sql}`, [], { rowMode: 'array' })).rows[0][0];
+  // The indexed table's bare name: indrelid::regclass::text would read "logistics.container_events" whenever the
+  // schema is not on the search_path (v6 §4.3), and Plan 8 sets the path per request.
   const relations = async () => (await db.query<{ oid: string; kind: string; tbl: string | null }>(
-    `SELECT c.oid::text AS oid, c.relkind::text AS kind, i.indrelid::regclass::text AS tbl
-     FROM pg_class c LEFT JOIN pg_index i ON i.indexrelid = c.oid`)).rows;
+    `SELECT c.oid::text AS oid, c.relkind::text AS kind, t.relname::text AS tbl
+     FROM pg_class c LEFT JOIN pg_index i ON i.indexrelid = c.oid LEFT JOIN pg_class t ON t.oid = i.indrelid`)).rows;
   await db.exec('BEGIN');
   try {
     const before = await explain();

@@ -1,7 +1,8 @@
 import type { PGlite } from '@electric-sql/pglite';
+import { GAME_SCHEMA } from '../domains';
 
 /** Run once per session at init: imported tables live in `sandbox`; game tables win on name clashes. */
-export const SANDBOX_SETUP_SQL = 'CREATE SCHEMA IF NOT EXISTS sandbox; SET search_path = public, sandbox;';
+export const SANDBOX_SETUP_SQL = `CREATE SCHEMA IF NOT EXISTS sandbox; SET search_path = ${GAME_SCHEMA}, sandbox;`;
 
 export type Delimiter = ',' | ';';
 export type ColumnType = 'bigint' | 'numeric' | 'date' | 'timestamp' | 'boolean' | 'text';

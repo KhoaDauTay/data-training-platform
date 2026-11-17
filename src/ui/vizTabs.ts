@@ -1,4 +1,5 @@
 import type { DbClient } from '../db/client';
+import { GAME_SCHEMA } from '../domains';
 import { t } from '../i18n';
 import { hashOf } from '../route';
 import { activeTicket } from '../session';
@@ -103,7 +104,7 @@ function registerChartTab(deps: VizDeps): void {
 /** Public metadata plus the Sandbox imports (schema `sandbox`). */
 const allMeta = (): Promise<ErMetadata> => {
   const own = sandboxTables().length > 0 ? erMeta('sandbox') : Promise.resolve({ cols: [], cons: [] });
-  return Promise.all([erMeta('public'), own]).then(([pub, mine]) => ({ cols: [...pub.cols, ...mine.cols], cons: [...pub.cons, ...mine.cons] }));
+  return Promise.all([erMeta(GAME_SCHEMA), own]).then(([pub, mine]) => ({ cols: [...pub.cols, ...mine.cols], cons: [...pub.cons, ...mine.cons] }));
 };
 
 interface Scoped { tables: string[]; dropped: string[]; switchable: boolean }

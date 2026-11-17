@@ -1,4 +1,5 @@
 import { getLang, t } from '../i18n';
+import { GAME_SCHEMA } from '../domains';
 import { CHAPTER_TABLES, chapterTitle } from '../progress';
 import { dataTableOf, hashOf } from '../route';
 import { app, erMeta, textValues, unlockedTables } from '../state';
@@ -200,7 +201,7 @@ export function renderData(host: HTMLElement): void {
   };
   drawList();
   drawDetail();
-  erMeta('public').then((m) => {
+  erMeta(GAME_SCHEMA).then((m) => {
     if (!live()) return;
     meta = m;
     drawList();

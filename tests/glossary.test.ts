@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { GLOSSARY, matches, normalize, parseGlossary } from '../src/glossary';
+import { GAME_SCHEMA } from '../src/domains';
 import { runner } from './helpers';
 
 const VI_DIACRITIC = /[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ]/i;
@@ -38,7 +39,7 @@ describe('content/glossary.yml', () => {
 
   it('mọi cột trong columns tồn tại trong DB', async () => {
     const run = await runner();
-    const r = await run("SELECT table_name || '.' || column_name FROM information_schema.columns WHERE table_schema = 'public'");
+    const r = await run(`SELECT table_name || '.' || column_name FROM information_schema.columns WHERE table_schema = '${GAME_SCHEMA}'`);
     const existing = new Set(r.rows.map((row) => String(row[0])));
     const missing = GLOSSARY.flatMap((g) => g.columns.filter((c) => !existing.has(c)).map((c) => `${g.term}: ${c}`));
     expect(missing).toEqual([]);

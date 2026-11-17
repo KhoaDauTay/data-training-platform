@@ -3,6 +3,8 @@ import type { Key } from '../i18n';
 
 // Cases SQLSTATE alone cannot tell apart; checked first, on Postgres' English message.
 const BY_MESSAGE: [RegExp, Key][] = [
+  // Plan 7 (v6 §4.4-7): the game tables moved from public to the logistics schema; a saved card or draft may still say public.x.
+  [/^relation "public\./, 'sqlerr.publicPrefix'],
   // Unquoted names are folded to lower case, so a name with capitals or spaces was written in "double quotes".
   [/^column "[^"]*[A-Z\s][^"]*" does not exist/, 'sqlerr.doubleQuote'],
   [/^aggregate functions are not allowed in WHERE/, 'sqlerr.aggWhere'],

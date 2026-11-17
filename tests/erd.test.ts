@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { runSandboxed } from '../src/db/run';
+import { GAME_SCHEMA } from '../src/domains';
 import { loadTickets } from '../src/content';
 import { tablesUnlocked } from '../src/progress';
 import { app, textValues } from '../src/state';
@@ -14,7 +15,7 @@ const CH2 = ['ports', 'carriers', 'employees', 'customers', 'shipments', 'contai
 
 describe('erDefinition (schema public)', () => {
   it('quan hệ crow\'s foot và khóa từ information_schema', async () => {
-    const { cols, cons } = await loadErMetadata(await runner(), 'public');
+    const { cols, cons } = await loadErMetadata(await runner(), GAME_SCHEMA);
     const def = erDefinition(cols, cons, CH2, new Set(['shipments']));
     expect(def.startsWith('erDiagram')).toBe(true);
     expect(def).toContain('customers ||--o{ shipments : "customer_id"');
@@ -29,7 +30,7 @@ describe('erDefinition (schema public)', () => {
   });
 
   it('chỉ vẽ bảng đã mở khóa và quan hệ giữa chúng', async () => {
-    const { cols, cons } = await loadErMetadata(await runner(), 'public');
+    const { cols, cons } = await loadErMetadata(await runner(), GAME_SCHEMA);
     const def = erDefinition(cols, cons, CH2.slice(0, 5), new Set());
     expect(def).not.toContain('containers');
   });
@@ -134,7 +135,7 @@ describe('relatedTables (ui-ux-v4 §4)', () => {
   });
 
   it('dữ liệu thật: ch10-04 có 8 bảng; chỉ ch12-06 phải ẩn bớt', async () => {
-    const { cons: real } = await loadErMetadata(await runner(), 'public');
+    const { cons: real } = await loadErMetadata(await runner(), GAME_SCHEMA);
     const tickets = loadTickets();
     const ch10 = tickets.find((x) => x.id === 'ch10-04')!;
     expect(new Set(relatedTables(ch10.tables, tablesUnlocked(10), real).tables)).toEqual(
@@ -147,7 +148,7 @@ describe('relatedTables (ui-ux-v4 §4)', () => {
 
 describe('erDefinition detail', () => {
   it('chỉ bảng trong detail có khối cột; bảng khác là hộp tên', async () => {
-    const { cols, cons } = await loadErMetadata(await runner(), 'public');
+    const { cols, cons } = await loadErMetadata(await runner(), GAME_SCHEMA);
     const def = erDefinition(cols, cons, CH2, new Set(['shipments']), undefined, new Set(['shipments']));
     expect(def).toContain('shipments {');
     expect(def).not.toContain('customers {');
@@ -194,7 +195,7 @@ describe('distinctValuesSql (giá trị của cột chữ, product-design-v4 §C
 
   it('mọi bảng chữ của chương 12: một câu mỗi bảng, tổng cộng nhanh (Node; trình duyệt chậm hơn vài lần)', async () => {
     const run = await runner();
-    const meta = await loadErMetadata(run, 'public');
+    const meta = await loadErMetadata(run, GAME_SCHEMA);
     const start = performance.now();
     for (const table of tablesUnlocked(12)) {
       const cols = meta.cols.filter((c) => c.table === table && TEXT_TYPES.has(c.type)).map((c) => c.name);

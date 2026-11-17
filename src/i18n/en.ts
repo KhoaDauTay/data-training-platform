@@ -308,6 +308,7 @@ export const en: Record<Key, Msg> = {
   'err.task': 'This request failed for a reason other than your SQL (usually a slow or lost connection while loading a component). Try again.',
   'sqlerr.42703': 'That column does not exist. Check the name in the Columns tab. Text values go in single quotes: \'Europe\'.',
   'sqlerr.42P01': 'That table does not exist or is not unlocked in this chapter. See the Columns tab.',
+  'sqlerr.publicPrefix': 'The company tables now live in the logistics schema. Drop the public. prefix and write the bare table name, for example ports.',
   'sqlerr.42803': 'Every column in SELECT must be in GROUP BY or inside an aggregate function (COUNT, SUM…).',
   'sqlerr.42702': 'Two tables have a column with this name. Say which one with an alias, e.g. s.id or c.id.',
   'sqlerr.42601': 'Syntax error near the red underline. Clause order: SELECT → FROM → WHERE → GROUP BY → HAVING → ORDER BY → LIMIT.',

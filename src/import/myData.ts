@@ -1,6 +1,7 @@
 import { DbFailedError, DbRestartError } from '../db/client';
 import type { ImportedTable, ImportRequest } from '../db/import';
 import type { QueryResult } from '../db/run';
+import { GAME_SCHEMA } from '../domains';
 import { inspectCsv, type ImportProblem } from './csv';
 import type { ImportStore, StoredImport } from './store';
 
@@ -24,7 +25,7 @@ function ignoreRestart(e: unknown): void {
   if (!(e instanceof DbRestartError)) throw e;
 }
 
-const GAME_TABLES_SQL = "SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'";
+const GAME_TABLES_SQL = `SELECT table_name FROM information_schema.tables WHERE table_schema = '${GAME_SCHEMA}'`;
 
 /**
  * Owns the list of imported tables: inspect → import in the worker → keep the original file in the store.

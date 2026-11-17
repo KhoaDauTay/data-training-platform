@@ -8,6 +8,8 @@ const CASES: [string, string][] = [
   [`SELECT code FROM ports WHERE region = "Europe"`, 'sqlerr.doubleQuote'],
   ['SELECT cde FROM ports', 'sqlerr.42703'],
   ['SELECT code FROM portz', 'sqlerr.42P01'],
+  // Plan 7 (v6 §4.4-7): an old card or draft that still says public.ports gets told where the tables went.
+  ['SELECT code FROM public.ports', 'sqlerr.publicPrefix'],
   ['SELECT code FROM ports WHERE', 'sqlerr.42601'],
   ['SELECT customer_id FROM shipments WHERE count(*) > 1 GROUP BY customer_id', 'sqlerr.aggWhere'],
   ['SELECT customer_id, ref FROM shipments GROUP BY customer_id', 'sqlerr.42803'],

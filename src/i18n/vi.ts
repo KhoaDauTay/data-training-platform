@@ -305,6 +305,7 @@ export const vi = {
   'err.task': 'Không chạy được yêu cầu này, không phải do câu SQL (thường là mạng chậm hoặc mất kết nối khi tải thêm thành phần). Thử lại.',
   'sqlerr.42703': 'Cột không tồn tại. Kiểm tra tên cột ở tab Cột. Chuỗi viết trong nháy đơn: \'Europe\'.',
   'sqlerr.42P01': 'Bảng không tồn tại hoặc chưa mở ở chương này. Xem tab Cột.',
+  'sqlerr.publicPrefix': 'Bảng của công ty giờ nằm trong schema logistics. Bỏ tiền tố public. và viết tên bảng trần, ví dụ ports.',
   'sqlerr.42803': 'Cột trong SELECT phải nằm trong GROUP BY hoặc trong một hàm gộp (COUNT, SUM…).',
   'sqlerr.42702': 'Hai bảng cùng có cột này. Ghi rõ bảng bằng alias, ví dụ s.id hoặc c.id.',
   'sqlerr.42601': 'Lỗi cú pháp gần chỗ gạch đỏ. Thứ tự viết: SELECT → FROM → WHERE → GROUP BY → HAVING → ORDER BY → LIMIT.',

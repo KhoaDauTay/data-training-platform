@@ -18,6 +18,14 @@ async function one<T>(sql: string): Promise<T> {
 }
 
 describe('seed', () => {
+  it('S1 (v6 §4.4): 26 bảng game nằm ở schema logistics, public trống', async () => {
+    const count = async (schema: string) => (await one<{ n: number }>(
+      `SELECT count(*)::int AS n FROM information_schema.tables WHERE table_schema = '${schema}'`)).n;
+    expect(await count('logistics')).toBe([...TABLES, ...PLAN2, ...PLAN3, ...PLAN4, ...PLAN5].length);
+    expect(await count('public')).toBe(0);
+    expect((await one<{ search_path: string }>('SHOW search_path')).search_path).toBe('logistics, sandbox');
+  });
+
   it('tất định: hai lần seed cho cùng dữ liệu', async () => {
     const [a, b] = await Promise.all([freshDb(), freshDb()]);
     for (const t of [...TABLES, ...PLAN2, ...PLAN3, ...PLAN4, ...PLAN5]) {

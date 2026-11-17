@@ -4,6 +4,7 @@ import { loadContent, loadLanes, loadTickets } from './content';
 import { DbClient, DbFailedError, DbRestartError, QueryTimeoutError, WorkerTaskError, type DbStatus } from './db/client';
 import { SqlError } from './db/run';
 import { buildDiagnostics, diagnosticsText } from './diagnostics';
+import { GAME_SCHEMA } from './domains';
 import { applyStatic, loadLang, setLang, t, type Lang } from './i18n';
 import { MyData } from './import/myData';
 import { idbStore } from './import/store';
@@ -97,7 +98,7 @@ applyStatic();
 async function loadColumns(): Promise<void> {
   try {
     const r = await db.run(
-      "SELECT table_name, column_name, data_type FROM information_schema.columns WHERE table_schema = 'public' ORDER BY table_name, ordinal_position",
+      `SELECT table_name, column_name, data_type FROM information_schema.columns WHERE table_schema = '${GAME_SCHEMA}' ORDER BY table_name, ordinal_position`,
     );
     const next: Record<string, Column[]> = {};
     for (const [table, name, type] of r.rows as string[][]) (next[table] ??= []).push({ name, type });

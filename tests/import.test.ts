@@ -67,7 +67,7 @@ describe('importCsv', () => {
     await dropImport(db);
     const left = await runSandboxed(db, "SELECT count(*) FROM information_schema.tables WHERE table_schema = 'sandbox'");
     expect(left.rows).toEqual([[0]]);
-    expect((await runSandboxed(db, 'SHOW search_path')).rows).toEqual([['public, sandbox']]);
+    expect((await runSandboxed(db, 'SHOW search_path')).rows).toEqual([['logistics, sandbox']]);
     expect((await runSandboxed(db, 'SELECT count(*) FROM shipments')).rows).toEqual([[20000]]);
   });
 
@@ -77,6 +77,6 @@ describe('importCsv', () => {
     await runSandboxed(db, 'DELETE FROM orders_csv');
     await runSandboxed(db, "SELECT set_config('search_path', 'sandbox', false)");
     expect((await runSandboxed(db, 'SELECT count(*) FROM orders_csv')).rows).toEqual([[3]]);
-    expect((await runSandboxed(db, 'SHOW search_path')).rows).toEqual([['public, sandbox']]);
+    expect((await runSandboxed(db, 'SHOW search_path')).rows).toEqual([['logistics, sandbox']]);
   });
 });

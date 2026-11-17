@@ -1,4 +1,5 @@
 import type { SQLNamespace } from '@codemirror/lang-sql';
+import { GAME_SCHEMA } from './domains';
 import type { DbStatus } from './db/client';
 import type { DiagnosticKind } from './diagnostics';
 import type { LoadProgress } from './db/loadProgress';
@@ -75,7 +76,7 @@ export const erMeta = memoByKey((schema) => loadErMetadata((sql) => app.run(sql)
  * Columns tab and the Data page. One query per table, once per session (memoByKey drops a failure so it is retried).
  * Holds every table: the "all tables" Columns tab asks for each one per render, and more than MEMO_MAX would thrash.
  */
-export const textValues = memoByKey((table) => erMeta('public').then((m) => {
+export const textValues = memoByKey((table) => erMeta(GAME_SCHEMA).then((m) => {
   const cols = m.cols.filter((c) => c.table === table && TEXT_TYPES.has(c.type)).map((c) => c.name);
   return cols.length ? app.run(distinctValuesSql(table, cols)).then(toDistinctValues) : {};
 }), 100);
