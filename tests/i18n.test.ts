@@ -28,6 +28,15 @@ describe('từ điển i18n', () => {
     expect(bad).toEqual([]);
   });
 
+  it('BoonData là tên sản phẩm; "Cargo Query" chỉ còn là công ty "Cargo Query Logistics" (L57, V12)', () => {
+    const bad = [...Object.entries(vi), ...Object.entries(en)]
+      .filter(([, v]) => typeof v === 'string' && /Cargo Query(?! Logistics)/.test(v))
+      .map(([k]) => k);
+    expect(bad).toEqual([]);
+    expect(html).toMatch(/<title>BoonData<\/title>/);
+    expect(html).not.toMatch(/>Cargo Query</);
+  });
+
   it('EN không trùng y hệt VI, trừ SAME_OK', () => {
     const same = Object.entries(vi)
       .filter(([k, v]) => typeof v === 'string' && en[k as keyof typeof en] === v && !SAME_OK.has(k))

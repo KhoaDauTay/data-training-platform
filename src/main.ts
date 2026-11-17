@@ -258,7 +258,7 @@ for (const b of document.querySelectorAll<HTMLButtonElement>('[data-lang]')) {
 
 byId('export-btn').addEventListener('click', () => {
   const url = URL.createObjectURL(new Blob([serializeSave(app.save)], { type: 'application/json' }));
-  h('a', { href: url, download: 'cargo-query-save.json' }).click();
+  h('a', { href: url, download: 'boondata-progress.json' }).click(); // Import reads any file name (V12)
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 });
 

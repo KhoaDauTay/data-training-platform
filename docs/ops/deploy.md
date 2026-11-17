@@ -1,4 +1,6 @@
-# Deploy & vận hành — Cargo Query (bản DA)
+# Deploy & vận hành — BoonData
+
+> Tên sản phẩm là BoonData (L57). Repo, URL GitHub Pages, `package.json` `name` và mọi khóa localStorage `cargo-query*` giữ nguyên: đổi khóa làm người chơi mất tiến độ.
 
 Host mặc định: **GitHub Pages** qua GitHub Actions (`.github/workflows/ci.yml`). Không backend. Phương án thay thế: Cloudflare Pages (mục 6).
 
