@@ -202,6 +202,9 @@ describe('twistUsed: từ khóa theo kỹ năng', () => {
     ['distinct_on', 'SELECT DISTINCT ON (b.id) b.id FROM b ORDER BY b.id', 'SELECT DISTINCT b.id FROM b'],
     ['full_join', 'SELECT * FROM a FULL OUTER JOIN b ON true', 'SELECT * FROM a LEFT JOIN b ON true'],
     ['window_agg', 'SELECT SUM(days) OVER (PARTITION BY name ORDER BY month) FROM m', 'SELECT RANK() OVER (ORDER BY teu DESC), LAG(teu) OVER (ORDER BY month) FROM m'],
+    ['window_agg', 'SELECT m, SUM(SUM(teu)) OVER (ORDER BY m) FROM t GROUP BY m', 'SELECT m, SUM(SUM(teu)) FROM t GROUP BY m'],
+    ['window_agg', 'SELECT SUM(COALESCE(x, 0))  OVER (ORDER BY d) FROM t', 'SELECT LAG(SUM(x)) OVER (ORDER BY d), SUM(COALESCE(x, 0)) FROM t GROUP BY d'],
+    ['window_agg', 'SELECT count(*) over w FROM t WINDOW w AS (ORDER BY d)', 'SELECT max(x), ROW_NUMBER() OVER () FROM t'],
     ['index_design', 'create unique index on container_events (container_id)', 'SELECT * FROM pg_indexes'],
   ])('%s', (skill, yes, no) => {
     expect(twistUsed(skill, yes)).toBe(true);

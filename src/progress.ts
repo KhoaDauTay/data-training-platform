@@ -53,6 +53,19 @@ function correlatedSubquery(sql: string): boolean {
   return false;
 }
 
+/** `SUM(…) OVER`: an aggregate used as a window. Its argument may nest parentheses (SUM(SUM(x)), SUM(COALESCE(x, 0))). */
+function aggregateOver(sql: string): boolean {
+  for (const m of sql.matchAll(/\b(SUM|AVG|COUNT|MIN|MAX)\s*\(/gi)) {
+    let i = m.index + m[0].length - 1;
+    for (let depth = 0; i < sql.length; i++) {
+      if (sql[i] === '(') depth++;
+      else if (sql[i] === ')' && --depth === 0) break;
+    }
+    if (/^\s*OVER\b/i.test(sql.slice(i + 1))) return true;
+  }
+  return false;
+}
+
 /** How a Solution shows it really uses a skill (twist → boss check). Skills not listed here are not checked. */
 const SKILL_SQL: Record<string, { test(sql: string): boolean }> = {
   order_by: /\bORDER\s+BY\b/i,
@@ -66,7 +79,7 @@ const SKILL_SQL: Record<string, { test(sql: string): boolean }> = {
   distinct_on: /\bDISTINCT\s+ON\b/i,
   full_join: /\bFULL\s+(OUTER\s+)?JOIN\b/i,
   // An aggregate used as a window (running total, moving average), not ROW_NUMBER/LAG: `SUM(x) OVER`, `count(*) OVER`.
-  window_agg: /\b(SUM|AVG|COUNT|MIN|MAX)\s*\([^()]*\)\s*OVER\b/i,
+  window_agg: { test: aggregateOver },
   index_design: /\bCREATE\s+(UNIQUE\s+)?INDEX\b/i,
 };
 
