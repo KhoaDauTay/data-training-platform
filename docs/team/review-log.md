@@ -277,3 +277,18 @@ Vòng 1/3 (2026-11-17): review code + bảo mật + nội dung (đọc đủ 18 
 | perf | Reviewer đo seed 2,85 s (Node) — vượt ngưỡng S2 2,0 s nếu đúng; build agent đo 1,84–1,94 s | Đã đo lại (máy không rảnh, CPU 13–29%): 5 tiến trình riêng 2,01 / 2,03 / 1,97 / 1,93 / 2,38 s; vòng 5 lần trong 1 tiến trình 2,14–3,79 s và 3,10–5,04 s. Không đổi dữ liệu; cần đo lại trên máy rảnh |
 
 Sửa vòng 1: commits 8bbbe08, f52508c, 7a46cd2, 4a51fbe, dad3b71, ae839dc, fb08192. Thay đổi hành vi: chỉ mục trên bảng khác bảng lab giờ là lỗi LAB02 (không tính nộp sai). Chưa kiểm trên trình duyệt.
+
+Vòng 2/3 (2026-11-17): review lại các sửa vòng 1 (tokenizer lab, map lỗi, `window_agg`, lỗi EXPLAIN lúc chấm). Không có trình duyệt.
+
+| Loại | Bug | Trạng thái |
+|---|---|---|
+| security | `codeOnly()` coi `$tag$` là dollar-quote khi ký tự trước không thuộc `[\w$]`, nhưng Postgres coi chữ không phải ASCII là ký tự định danh: `CREATE INDEX é$a$ ON container_events (container_id); DROP TABLE claims --$a$` qua `isCreateIndex` (chỉ PGlite từ chối nhiều câu lệnh mới chặn được) | Đã sửa c062f00 (`$` ngay sau ký tự định danh/số hoặc ký tự không ASCII thì từ chối, vì `1$a$`/`0x1F$a$` Postgres lại đọc là số rồi dollar-quote; tag nhận ký tự không ASCII như `dolqdelim`) |
+| correctness | `SUM(ROW_NUMBER() OVER ())` → 42803 "aggregate function calls cannot contain window function calls" nhận ghi chú GROUP BY (`sqlerr.42803`) | Đã sửa c062f00 (`sqlerr.aggWindow`: tính hàm cửa sổ trong truy vấn con/CTE rồi gộp; test PGlite thật) |
+| correctness | `aggregateOver` quét văn bản thô và quét lại tới cuối với mỗi `SUM(` chưa đóng (bậc hai) | Đã sửa c062f00 (quét `codeOnly(sql)`, ghép ngoặc một lượt; 200 KB `SUM(` chạy nhanh) |
+| ux | `CREATE INDEX IF NOT EXISTS` với tên đã có không tạo gì nhưng báo LAB01 "chỉ chạy đúng một câu CREATE INDEX" | Đã sửa c062f00 (LAB03 / `sqlerr.labNone`: không có chỉ mục mới, tên đã có hoặc không có gì thay đổi) |
+| test | Nhánh `planError` khi EXPLAIN trả `SqlError` chưa có test | Đã sửa c062f00 (hiện thông báo Postgres + ghi chú, không "lỗi nội dung ticket", không chấm) |
+| ux | Chỉ EXPLAIN lỗi lúc chấm thì không có dấu hiệu "chưa ghi điểm" | Mở (judgement) |
+| ux | Chạy câu không phải chỉ mục trong editor lab không ghi lịch sử, giữ `lastRun` cũ | Mở (judgement) |
+| correctness | `SUM(x) /*c*/ OVER` hoặc `)` trong chuỗi bị `window_agg` bỏ sót | Đã sửa c062f00 (cùng sửa `aggregateOver` ở trên) |
+
+**Plan 4 đóng sau 2 vòng.**
