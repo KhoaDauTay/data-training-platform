@@ -16,7 +16,7 @@ columns:
   - { vi: "Ngày đặt chỗ", en: "Booking date" }
   - { vi: "Trọng lượng (kg)", en: "Weight (kg)" }
 ---
-Năm sau mình định thuê xe đầu kéo khỏe hơn cho hàng nặng đi Singapore. Mình cần xem những lô nặng nhất năm vừa rồi để ước tải.
+Hàng đi Singapore đổi sang tàu mẹ ở đó, và khi tàu mẹ đã gần đủ trọng tải thì lô nặng hay bị rớt tàu trước. Năm sau mình muốn báo trước cho hãng tàu những lô nặng để họ giữ chỗ. Mình cần xem những lô nặng nhất năm vừa rồi để biết hàng nặng tới mức nào.
 
 ## Task
 Trong các lô xuất khẩu đặt chỗ năm 2025 đi cảng Singapore, không tính lô đã hủy, cho mình 10 lô nặng nhất: mã lô, ngày đặt chỗ, trọng lượng (kg). Nặng nhất xếp đầu; bằng trọng lượng thì theo mã lô từ A đến Z.
@@ -37,7 +37,7 @@ LIMIT 10
 ```
 
 # EN
-Next year I want stronger tractor units for heavy cargo to Singapore. I need to see last year's heaviest shipments to size the loads.
+Cargo to Singapore changes to a mother vessel there, and when that ship is close to its weight limit the heavy shipments are the first to be rolled. Next year I want to warn the carriers about heavy shipments early so they keep the space. I need to see last year's heaviest shipments to know how heavy they get.
 
 ## Task
 Among export shipments booked in 2025 for the port of Singapore, leaving out cancelled ones, give me the 10 heaviest: shipment reference, booking date, weight (kg). Heaviest first; on equal weight, by reference from A to Z.
