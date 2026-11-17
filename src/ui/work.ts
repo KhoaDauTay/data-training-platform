@@ -19,6 +19,7 @@ import { createEditor, type Editor } from './editor';
 import { avatar } from './avatar';
 import { errorNote, errorText, errorView, gradeMessage, mascotOf, voiceKey } from './feedback';
 import { mascot, type Mascot, type Pose } from './mascots';
+import { showPane } from './paneTabs';
 import { pageShortcutOf } from './shortcuts';
 import { tourRegion, tourSlot } from './coach';
 import type { Panel } from './tabs';
@@ -113,7 +114,7 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
   const feedback = h('div', { role: 'status' });
   const historyBox = h('details', { class: 'mt-2 text-sm' });
   // The tour's mark sits under the buttons, never over the editor (v4 §B.2); main.ts refreshTour() refills it.
-  host.replaceChildren(editorHost, h('div', { class: 'max-sm:sticky max-sm:bottom-0 max-sm:z-10 max-sm:bg-panel' }, h('div', { class: 'actions' }, runBtn, explainBtn, formatBtn, submitBtn)), tourSlot('work'), feedback, historyBox);
+  host.replaceChildren(editorHost, h('div', { class: 'max-md:sticky max-md:bottom-14 max-md:z-10 max-md:bg-panel' }, h('div', { class: 'actions' }, runBtn, explainBtn, formatBtn, submitBtn)), tourSlot('work'), feedback, historyBox);
 
   // The buttons advertise Mod+Enter / Mod+Shift+Enter: honour them when focus is outside the editor too
   // (on a button after a click, the brief heading after picking a ticket). Inside the editor CodeMirror's
@@ -229,6 +230,7 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
       drawMessage();
     }
     deps.panel.show(failed || (!tab && SCHEMA_TABS.has(deps.panel.active)) ? 'result' : tab ?? deps.panel.active);
+    if (!failed) showPane('panel'); // phone: the result; an error stays here, under Boon's explanation
     deps.onRun();
   }
 

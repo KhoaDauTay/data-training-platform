@@ -7,6 +7,7 @@ import { app, done } from '../state';
 import { localStore, readJson, writeJson, type KV } from '../storage';
 import { h } from './dom';
 import { mascot } from './mascots';
+import { showPane, type Pane } from './paneTabs';
 import { go } from './router';
 
 export const COACH_KEY = 'cargo-query/coach-done';
@@ -88,6 +89,8 @@ let scrolled: number | undefined;
 function reveal(el: HTMLElement, step: number): void {
   if (scrolled === step) return;
   requestAnimationFrame(() => {
+    const pane = el.closest('#ticket, #work, #panel')?.id;
+    if (pane && el.isConnected) showPane(pane as Pane); // phone: the pane holding Boon's mark (v10 critic #2)
     if (!el.isConnected || el.offsetParent === null || document.getElementById('shell')?.hidden) return; // drawn in a hidden view: try on the next draw
     scrolled = step;
     el.scrollIntoView({ block: 'nearest' }); // scroll only: focus stays where the player is typing

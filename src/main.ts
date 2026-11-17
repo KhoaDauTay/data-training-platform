@@ -1,3 +1,4 @@
+import { initPaneTabs, showPane } from './ui/paneTabs';
 import './style.css';
 import { initTheme } from './theme';
 import { loadContent, loadLanes, loadTickets } from './content';
@@ -131,6 +132,7 @@ const work = mountWork(byId('work'), {
   onConclusion: (t) => {
     app.conclusionFor = t.id;
     rerender();
+    showPane('ticket');
     reveal('conclusion-form');
   },
   onRun: () => rerender(),
@@ -173,6 +175,7 @@ function selectTicket(id: string, force = false): void {
   (byId('inbox-dialog') as HTMLDialogElement).close();
   rerender();
   work.setTicket(selected(), app.stepIndex, force || fromMode);
+  showPane('ticket');
   go('play'); // from Home or the inbox on Home: the hashchange then focuses the brief (it is hidden until then)
   byId('brief-title').focus();
 }
@@ -189,6 +192,7 @@ function nextStep(): void {
   rerender();
   work.setTicket(selected(), app.stepIndex);
   work.focus(); // the new step's editor replaces the one that had focus
+  showPane('ticket');
   reveal('brief-step'); // the new step's words, not the old scroll spot (v10 critic #3)
 }
 
@@ -229,6 +233,7 @@ function complete(tk: Ticket): void {
   if (nextTicket(app.tickets, done())) byId('announce').append(` ${t('nav.nextReady')}`);
   app.conclusionFor = '';
   rerender();
+  showPane('ticket'); // phone: the Recap
   // The Submit button just disappeared: a promotion review lands on its chapter wrap-up, any other task on its Recap.
   byId('ticket').querySelector<HTMLElement>('#wrapup-title, .recap h3')?.focus();
   work.setSchema(editorSchema()); // a boss may open the next chapter's tables
@@ -322,6 +327,7 @@ window.addEventListener('vite:preloadError', () => {
 
 initLayout(byId('shell'), { col: byId('split-col'), row: byId('split-row') });
 initStage();
+initPaneTabs();
 uiReady = true; // nothing awaited since loadContent(), so no DB callback was missed in between
 rerender();
 prefetchArt(); // the art chunk (scene, map, completion scenes) once the first screen is up (Plan 8b)

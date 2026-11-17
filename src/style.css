@@ -168,6 +168,17 @@
   #ticket, #work { grid-column: 1; }
 }
 .panel { margin: 16px 0; }
+/* v10 critic #2: one workspace pane at a time on a phone (src/ui/paneTabs.ts); the tabs stick under the top of the page. */
+.pane-tabs { display: none; }
+@media (max-width: 767.98px) {
+  .shell { padding: 8px 8px 0; }
+  .pane-tabs { display: grid; position: sticky; top: 0; z-index: 20; }
+  .shell[data-pane=ticket] #work, .shell[data-pane=ticket] .panel,
+  .shell[data-pane=work] #ticket, .shell[data-pane=work] .panel,
+  .shell[data-pane=panel] .workspace { display: none; }
+  .panel { margin-top: 0; }
+  body[data-route=play] .top-prefs { display: none; } /* compact header in the workspace: language and theme stay on every other page */
+}
 @media (min-width: 1024px) and (min-height: 700px) {
   body { height: 100dvh; display: flex; flex-direction: column; overflow: hidden; }
   .shell { flex: 1; min-height: 0; display: grid; grid-template-rows: minmax(0, 1fr) 12px minmax(0, var(--row, 40%)); padding-bottom: 12px; }
