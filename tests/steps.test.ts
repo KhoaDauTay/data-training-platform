@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildSteps, runSteps } from '../src/viz/steps';
+import { buildSteps, runSteps, shownSteps } from '../src/viz/steps';
 import { seededDb } from './helpers';
 
 const Q = `SELECT ca.name, SUM(ct.teu) AS teu
@@ -21,6 +21,17 @@ describe('runSteps', () => {
     ]);
     expect(r.steps[1].sample!.rows.length).toBe(5);
     expect(r.steps[2].sample!.columns).toContain('row_count');
+  });
+
+  it('tab Thứ tự thực thi chỉ vẽ mệnh đề có dùng (không HAVING, không DISTINCT)', async () => {
+    const r = await runSteps(await seededDb(), `SELECT b.currency, count(*), SUM(b.amount)
+FROM vendor_bills b
+JOIN shipments s ON s.id = b.shipment_id
+WHERE s.booking_date >= '2026-09-01' AND s.booking_date < '2026-10-01'
+GROUP BY b.currency
+ORDER BY b.currency`);
+    if (!r.ok) throw new Error(r.reason);
+    expect(shownSteps(r.steps).map((s) => s.key)).toEqual(['from', 'where', 'group', 'select', 'order']);
   });
 
   it('vị trí mệnh đề trong SQL gốc', async () => {
