@@ -38,7 +38,7 @@ function shapeCard(tk: Ticket, stepIndex: number): HTMLElement {
     const cmp = exp && run ? compareShape(exp, shapeOf(run)) : undefined;
     card.replaceChildren(...nodes(
       h('h3', { class: 'mt-0' }, t('shape.title')),
-      h('p', {}, [t('shape.cols', { n }), exp ? t('shape.rows', { n: exp.rows }) : '…', t(tk.ordered ? 'shape.ordered' : 'shape.unordered')].join(' · ')),
+      h('p', {}, [t('shape.cols', { n }), exp ? t('shape.rows', { n: exp.rows }) : '…', exp?.rows === 1 ? null : t(tk.ordered ? 'shape.ordered' : 'shape.unordered')].filter(Boolean).join(' · ')), // one row has no order (v10 C4)
       h('ul', { class: 'my-1 flex list-none flex-wrap gap-1.5 p-0' }, ...Array.from({ length: n }, (_, i) =>
         h('li', { class: 'rounded-md bg-panel px-1.5 py-0.5 text-sm ring-1 ring-line' }, // The label already says what the column holds; the kind (text/number/date) only stands in when there is no label.
         labels[i] ? h('b', { class: 'font-semibold' }, labels[i][getLang()]) : exp ? t(KIND[exp.kinds[i]]) : null))),
