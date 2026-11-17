@@ -204,3 +204,13 @@ Vòng 1/3 (2026-11-17): review code + nội dung (đọc đủ 18 ticket VI/EN, 
 | test-gap | Nhánh ô trống trong `submit`; `wrongTip` (khớp, trap, kết quả cũ); undo `setDoc`; điều kiện `warmupToday`; `reflectCard`; bảng trong SQL `wrong:`/Example đã mở theo chương | Đã sửa 54a80b6, d3e11a1, 66f0ec7 (`reflectCard` và undo `setDoc` cần DOM: kiểm trên trình duyệt) |
 
 Sửa vòng 1: commits 54a80b6 (submit/wrongTip), d3e11a1 (warm-up), e976724 (reflect, ví dụ mẫu), 66f0ec7 (test nội dung, ch4-04), 75112e0 (nội dung). `tsc` + 789 test + build + budget qua. Chưa kiểm trên trình duyệt.
+
+Vòng 2/3 (2026-11-17, chỉ diff af017fa..f5339be): các bản sửa vòng 1 đạt. Bug mới:
+
+| Loại | Bug | Trạng thái |
+|---|---|---|
+| correctness | `wrongTipper` lưu cả lần lỗi (restart/DB lỗi) → ticket mất câu giải thích tới khi tải lại trang | Đã sửa (lỗi không lưu, lần sau thử lại) |
+| correctness | Cày hộp vẫn được qua "Luyện lại việc này" (chỉ warm-up có lọc `movedToday`) | Đã sửa (mọi lần luyện đúng: mỗi kỹ năng lên hộp tối đa 1 lần/ngày) |
+| judgement | Query `wrong:` quá 5 s bật banner "db-timeout" cho SQL người chơi không viết; thẻ warm-up hiện lại sau reload (không cày được); dòng "đã chép ví dụ" không tự tắt; test biến thể miễn theo giá trị, không theo key | Mở (judgement) |
+
+**Plan 2 đóng sau 2 vòng** (kiểm Edge các mục DOM: ✓/✗ câu ngẫm lại, Ctrl+Z sau khi chép ví dụ, thẻ warm-up — làm khi user không dùng tab :5174).
