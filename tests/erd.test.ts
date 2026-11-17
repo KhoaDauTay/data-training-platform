@@ -2,10 +2,12 @@ import { describe, expect, it } from 'vitest';
 import { runSandboxed } from '../src/db/run';
 import { loadTickets } from '../src/content';
 import { tablesUnlocked } from '../src/progress';
+import { app, textValues } from '../src/state';
 import {
   distinctValuesSql, erColumnsSql, erDefinition, erRowCountsSql, loadErMetadata, mermaidName, relatedTables, tablesInQuery, TEXT_TYPES, toDistinctValues,
   type ErColumn, type ErConstraint,
 } from '../src/viz/erd';
+import { clearMemos, MEMO_MAX } from '../src/viz/memo';
 import { freshDb, runner } from './helpers';
 
 const CH2 = ['ports', 'carriers', 'employees', 'customers', 'shipments', 'containers'];
@@ -201,5 +203,20 @@ describe('distinctValuesSql (giá trị của cột chữ, product-design-v4 §C
     const ms = performance.now() - start;
     console.log(`distinctValuesSql: ${tablesUnlocked(12).length} tables in ${ms.toFixed(0)} ms`);
     expect(ms).toBeLessThan(1000);
+  });
+});
+
+describe('textValues (src/state.ts)', () => {
+  it('mỗi bảng chạy đúng một lần mỗi phiên, kể cả khi mở hết bảng chương 12 và bảng tuyến (> MEMO_MAX)', async () => {
+    const run = await runner();
+    const sqls: string[] = [];
+    app.run = (sql) => (sqls.push(sql), run(sql));
+    clearMemos();
+    const tables = [...tablesUnlocked(12), 'lane_profiles', 'bunker_prices'];
+    expect(tables.length).toBeGreaterThan(MEMO_MAX);
+    for (let pass = 0; pass < 2; pass++) await Promise.all(tables.map((x) => textValues(x)));
+    const perTable = sqls.filter((s) => s.includes('ARRAY(SELECT DISTINCT')).map((s) => s.match(/ FROM (\w+) WHERE/)![1]);
+    expect(perTable).toContain('ports');
+    expect(perTable.length).toBe(new Set(perTable).size);
   });
 });

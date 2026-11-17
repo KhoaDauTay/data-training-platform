@@ -73,11 +73,12 @@ export const erMeta = memoByKey((schema) => loadErMetadata((sql) => app.run(sql)
 /**
  * Values of the short text columns of a game table (product-design-v4 §C.4-4: look at the data before filtering), for the
  * Columns tab and the Data page. One query per table, once per session (memoByKey drops a failure so it is retried).
+ * Holds every table: the "all tables" Columns tab asks for each one per render, and more than MEMO_MAX would thrash.
  */
 export const textValues = memoByKey((table) => erMeta('public').then((m) => {
   const cols = m.cols.filter((c) => c.table === table && TEXT_TYPES.has(c.type)).map((c) => c.name);
   return cols.length ? app.run(distinctValuesSql(table, cols)).then(toDistinctValues) : {};
-}));
+}), 100);
 
 export const done = (): Set<string> => new Set(app.save.completed);
 export const selected = (): Ticket => app.tickets.find((x) => x.id === app.selectedId)!;
