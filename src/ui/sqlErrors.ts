@@ -43,6 +43,7 @@ const BY_CODE: Record<string, Key> = {
   '22P02': 'sqlerr.22P02',
   '21000': 'sqlerr.21000',
   LAB01: 'sqlerr.labOnly', // runLab (src/db/run.ts): the worker refused anything but one CREATE INDEX
+  LAB02: 'sqlerr.labTable', // runLab: the index was on another table than the lab's
 };
 
 /** Teaching note shown under Postgres' own message (which is always shown unchanged). */

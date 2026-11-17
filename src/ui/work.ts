@@ -4,7 +4,7 @@ import { sqlErrorInfo } from '../db/run';
 import type { QueryResult } from '../db/run';
 import { compareResults, grade, type GradeResult } from '../grader';
 import { loadHistory, pushHistory, writeHistory } from '../history';
-import { checkLab, checkPlan, isCreateIndex, planLine, type PlanFail } from '../planCheck';
+import { checkLab, checkPlan, isCreateIndex, planLine, type LabSpec, type PlanFail } from '../planCheck';
 import { getLang, isMac, t } from '../i18n';
 import { SKILLS } from '../progress';
 import { isClosed, isStory, readDraft, workKey, writeDraft } from '../session';
@@ -181,7 +181,7 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
     const tk = ticket;
     const { sql, offset } = ed.runTarget();
     const lab = tk?.steps[stepIndex].lab;
-    if (lab && tk) return labRun(ed, sql, tk.steps[stepIndex].solution);
+    if (lab && tk) return labRun(ed, sql, tk, stepIndex, lab);
     const k = tk ? stepKey(tk.id, stepIndex) : '';
     const historyId = isStory() ? tk?.id : undefined; // a practice variant shares the ticket id: keep it out of that history (P5)
     ed.closeCompletion();
@@ -217,38 +217,49 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
 
   /**
    * Index lab (chapter 11): the editor holds one CREATE INDEX; the step's Solution is the slow query. Shows its plan before
-   * and after the index (rolled back). Returns the check result, or undefined when nothing was run (not an index, error).
+   * and after the index (rolled back). Returns the check result (null = passes; only when `grading`), or undefined when
+   * nothing was run (not an index, error, stale). Every lab run goes into the ticket's history (the DDL, ok = it ran).
+   * A lab run has no result table, so it clears lastRun: the tabs never describe an older run as if it were this one.
    */
-  async function labPlans(ed: Editor, ddl: string, query: string, spec?: Parameters<typeof checkLab>[2]): Promise<PlanFail | null | undefined> {
+  async function labPlans(ed: Editor, ddl: string, tk: Ticket, i: number, lab: LabSpec, grading: boolean): Promise<PlanFail | null | undefined> {
     if (!isCreateIndex(ddl)) {
       say('bad', () => t('lab.notIndex'));
       return undefined;
     }
+    const historyId = isStory() ? tk.id : undefined;
     busy = true;
     setButtons();
+    let plans: Awaited<ReturnType<DbClient['lab']>> | undefined;
+    let error: unknown;
     try {
-      const { before, after } = await deps.db.lab(ddl, query);
-      if (editor !== ed) return undefined;
-      const fail = spec ? checkLab(before, after, spec) ?? null : null;
-      const lines = () => h('div', {}, h('p', { class: 'm-0' }, t('lab.before', { plan: planLine(before) })), h('p', { class: 'm-0' }, t('lab.after', { plan: planLine(after) })),
-        fail ? h('p', { class: 'mt-2 mb-0' }, planFailText(fail, true)) : null);
-      say(spec && !fail ? 'good' : spec ? 'bad' : 'good', lines);
-      return fail;
+      plans = await deps.db.lab(ddl, tk.steps[i].solution, lab.table);
     } catch (e) {
-      if (editor !== ed) return undefined;
-      underline(e, 0);
-      say('bad', () => errorView(e));
-      return undefined;
+      error = e;
     } finally {
       busy = false;
       setButtons();
     }
+    record(historyId, { key: stepKey(tk.id, i), sql: ddl, offset: 0, error });
+    if (editor !== ed) return undefined;
+    app.lastRun = undefined;
+    deps.onRun();
+    if (!plans) {
+      underline(error, 0);
+      say('bad', () => errorView(error));
+      return undefined;
+    }
+    const { before, after } = plans;
+    const fail = grading ? checkLab(before, after, lab) ?? null : null;
+    const lines = () => h('div', {}, h('p', { class: 'm-0' }, t('lab.before', { plan: planLine(before) })), h('p', { class: 'm-0' }, t('lab.after', { plan: planLine(after) })),
+      fail ? h('p', { class: 'mt-2 mb-0' }, planFailText(fail, true)) : null);
+    say(fail ? 'bad' : 'good', lines);
+    return fail;
   }
 
-  async function labRun(ed: Editor, ddl: string, query: string): Promise<void> {
+  async function labRun(ed: Editor, ddl: string, tk: Ticket, i: number, lab: LabSpec): Promise<void> {
     ed.closeCompletion();
     ed.clearError();
-    await labPlans(ed, ddl, query);
+    await labPlans(ed, ddl, tk, i, lab, false);
   }
 
   async function submit(): Promise<void> {
@@ -268,7 +279,7 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
     ed.clearError();
     const lab = tk.steps[i].lab;
     if (lab) {
-      const fail = await labPlans(ed, sql, tk.steps[i].solution, lab);
+      const fail = await labPlans(ed, sql, tk, i, lab, true);
       if (fail === undefined || editor !== ed) return;
       if (fail) {
         deps.onWrong?.();

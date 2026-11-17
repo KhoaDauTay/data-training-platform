@@ -56,10 +56,57 @@ export function planLine(json: unknown): string {
 }
 
 /**
- * The index lab accepts exactly one CREATE [UNIQUE] INDEX (comments allowed). Checked in the worker, not only in the UI;
- * PGlite's query() also refuses a second statement. CONCURRENTLY cannot run inside the lab's transaction.
+ * `sql` with comments removed and literals ('…', "…", $tag$…$tag$) blanked, the way Postgres' lexer reads them:
+ * block comments nest, and -- or /* inside a literal is not a comment. Undefined when anything is left unclosed,
+ * a stray * / remains, or there is a backslash (E'…' escapes, never needed in a CREATE INDEX).
+ */
+export function codeOnly(sql: string): string | undefined {
+  if (sql.includes('\\')) return undefined;
+  let out = '';
+  for (let i = 0; i < sql.length;) {
+    if (sql.startsWith('--', i)) {
+      const nl = sql.indexOf('\n', i);
+      i = nl < 0 ? sql.length : nl;
+      out += ' ';
+    } else if (sql.startsWith('/*', i)) {
+      let depth = 0;
+      do {
+        if (i >= sql.length) return undefined;
+        if (sql.startsWith('/*', i)) { depth++; i += 2; } else if (sql.startsWith('*/', i)) { depth--; i += 2; } else i++;
+      } while (depth > 0);
+      out += ' ';
+    } else if (sql.startsWith('*/', i)) {
+      return undefined;
+    } else if (sql[i] === "'" || sql[i] === '"') {
+      const q = sql[i];
+      let j = i + 1;
+      for (;;) {
+        j = sql.indexOf(q, j);
+        if (j < 0) return undefined;
+        if (sql[j + 1] !== q) break;
+        j += 2; // '' or "" inside the literal
+      }
+      out += ' ';
+      i = j + 1;
+    } else {
+      const tag = sql[i] === '$' && !/[\w$]/.test(sql[i - 1] ?? '') ? /^\$([A-Za-z_]\w*)?\$/.exec(sql.slice(i))?.[0] : undefined;
+      if (tag) {
+        const end = sql.indexOf(tag, i + tag.length);
+        if (end < 0) return undefined;
+        out += ' ';
+        i = end + tag.length;
+      } else out += sql[i++];
+    }
+  }
+  return out;
+}
+
+/**
+ * The index lab accepts exactly one CREATE [UNIQUE] INDEX (comments and one trailing ; allowed). Checked in the worker,
+ * not only in the UI; the worker also checks that the statement created exactly one index on the lab table (runLab).
+ * CONCURRENTLY cannot run inside the lab's transaction.
  */
 export function isCreateIndex(sql: string): boolean {
-  const body = sql.replace(/--[^\n]*/g, '').replace(/\/\*[\s\S]*?\*\//g, '').trim();
-  return /^CREATE\s+(UNIQUE\s+)?INDEX\b/i.test(body) && !/\bCONCURRENTLY\b/i.test(body);
+  const body = codeOnly(sql)?.trim().replace(/;$/, '');
+  return body !== undefined && /^CREATE\s+(UNIQUE\s+)?INDEX\b/i.test(body) && !/;|\bCONCURRENTLY\b/i.test(body);
 }

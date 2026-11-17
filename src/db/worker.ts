@@ -27,7 +27,7 @@ async function handle(db: PGlite, body: WorkerBody): Promise<unknown> {
   if (body.kind === 'import') return importCsv(db, body.req, body.file);
   if (body.kind === 'dropImport') return dropImport(db, body.table);
   if (body.kind === 'explain') return runExplain(db, body.sql);
-  if (body.kind === 'lab') return runLab(db, body.ddl, body.sql);
+  if (body.kind === 'lab') return runLab(db, body.ddl, body.sql, body.table);
   if (body.kind === 'steps') {
     const { runSteps } = await import('../viz/steps'); // loads the parser only when this tab is used
     return runSteps(db, body.sql);

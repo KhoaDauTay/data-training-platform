@@ -98,15 +98,27 @@ export interface LabResult { before: unknown; after: unknown }
 /**
  * Index lab (chapter 11): EXPLAIN `sql`, create the player's index, EXPLAIN again, all in one transaction that is
  * always rolled back, so the index never outlives the request. `ddl` must be one CREATE INDEX: checked here, in the
- * worker, and sent through query() (one statement only), never exec().
+ * worker, and sent through query() (one statement only), never exec(). After it ran, pg_class must hold exactly one
+ * new relation, an index on `table`, and nothing may have gone; otherwise the lab refuses it (and rolls back).
  */
-export async function runLab(db: PGlite, ddl: string, sql: string): Promise<LabResult> {
+export async function runLab(db: PGlite, ddl: string, sql: string, table: string): Promise<LabResult> {
   if (!isCreateIndex(ddl)) throw new SqlError({ message: 'only one CREATE INDEX statement is allowed here', code: 'LAB01' });
   const explain = async () => (await db.query<unknown[]>(`EXPLAIN (FORMAT JSON) ${sql}`, [], { rowMode: 'array' })).rows[0][0];
+  const relations = async () => (await db.query<{ oid: string; kind: string; tbl: string | null }>(
+    `SELECT c.oid::text AS oid, c.relkind::text AS kind, i.indrelid::regclass::text AS tbl
+     FROM pg_class c LEFT JOIN pg_index i ON i.indexrelid = c.oid`)).rows;
   await db.exec('BEGIN');
   try {
     const before = await explain();
+    const old = await relations();
     await db.query(ddl);
+    const now = await relations();
+    const known = new Set(old.map((r) => r.oid));
+    const added = now.filter((r) => !known.has(r.oid));
+    if (now.length !== old.length + 1 || added.length !== 1 || added[0].kind !== 'i') {
+      throw new SqlError({ message: 'only one CREATE INDEX statement is allowed here', code: 'LAB01' });
+    }
+    if (added[0].tbl !== table) throw new SqlError({ message: `the index must be on the ${table} table`, code: 'LAB02' });
     return { before, after: await explain() };
   } catch (e) {
     const info = sqlErrorInfo(e);
