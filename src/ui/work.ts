@@ -306,13 +306,20 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
     let solutionError: unknown;
     let tip: (() => string) | undefined;
     let planFail: PlanFail | undefined;
+    let planError: unknown; // the player's EXPLAIN failed: a DB/SQL error, not a content bug
     try {
       r = await grade((s) => (s === sql ? playerRun(s) : deps.db.run(s)), tk.steps[i].solution, sql, tk.ordered);
       // Still busy: no newer Run/Submit can start before the tip is ready, so this result can never overwrite a newer one.
       if (!r.ok && r.reason !== 'error') tip = await wrongTip(tk, played?.result, r);
       // Chapter 11: a right result must also read the table through an index. EXPLAIN without ANALYZE: costs, no run.
       const plan = tk.steps[i].plan;
-      if (r.ok && plan) planFail = checkPlan((await deps.db.run(`EXPLAIN (FORMAT JSON) ${sql}`)).rows[0]?.[0], plan.index);
+      if (r.ok && plan) {
+        try {
+          planFail = checkPlan((await deps.db.run(`EXPLAIN (FORMAT JSON) ${sql}`)).rows[0]?.[0], plan.index);
+        } catch (e) {
+          planError = e ?? new Error();
+        }
+      }
     } catch (e) {
       solutionError = e; // the Solution itself failed
       r = undefined;
@@ -343,6 +350,11 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
         say('bad', () => h('div', {}, gradeMessage(fail), tip ? h('p', { class: 'mt-2 mb-0' }, tip()) : null, voice()));
       }
       deps.panel.show('result');
+      return;
+    }
+    if (planError !== undefined) {
+      const e = planError;
+      say('bad', () => errorView(e)); // timeout/restart/DB failure: errorText; Postgres error: its message and note
       return;
     }
     if (planFail) {
