@@ -411,3 +411,20 @@ Ba review của bản v10 (BoonData): code review (d312e83..6a6f1ec), UI/UX (des
 | ux | Nút Nộp xuống dòng riêng khi nhãn Chạy dài ("Đang chờ database…") hoặc khung hẹp, đẩy Lịch sử xuống | Mở (chỉ khi DB đang tải hoặc khung hẹp; chỉnh bố cục ở Plan 8b) |
 
 Sau khi sửa: tsc sạch, 1623 test (50 file), build sạch, budget mọi nhóm ok (main 277/290, css 13/20, fonts 51/60).
+
+## Plan 8b — chuyển động, hình minh họa, đánh bóng (base 69012a2, 2026-11-18, nhánh v11-art)
+
+Đo trên build (`gzip -9`, `scripts/check-budget.mjs`), không ước lượng:
+
+| Nhóm | Trước (M0) | Sau Plan 8b | Trần |
+|---|---|---|---|
+| `main` | 276,85 KB | 271,60 KB (−5,25) | 290 |
+| `art` (`logistics-*`: cảnh, bản đồ, hoạt cảnh, ambient, mapMotion) | – | 9,05 KB | 20 |
+| `illustrations` | – | 2,17 KB | 15 |
+| `css` | 13 KB | 13,62 KB | 20 |
+
+- `modulepreload` trong `dist/index.html`: chỉ `preload-helper` (= P0). Lần build đầu với import thường, Rolldown tách chunk dùng chung `routeText-*.js` 216 KB preload (Plan 6 U3); chuyển sang tiêm phụ thuộc (`ArtDeps`, `init()`), `tests/artChunk.test.ts` chặn import runtime từ `src/art/*` ra ngoài.
+- tsc sạch, 1639 test (54 file) xanh.
+- Kiểm tay (Chrome qua claude-in-chrome, cổng 5177, save thử từ `save-v3.json`): Tổng quan vẽ cảnh có mây + parallax (lớp far/mid dịch, về 0); trang Bản đồ: 4 tàu chạy trên 4 tuyến mở, cảng gốc + Busan (tuyến kế tiếp) nhịp; bỏ SGSIN khỏi `routes-seen` → SGSIN được vẽ lại một lần, style xóa sau đó, tuyến khóa giữ `6 6`; màn thăng tiến ch3 có Boon trong thẻ, Lily ở góc dock, Busan thành nét liền màu chương, không vòng nhịp trong dock; Lộ trình/Finance có hình; nút Chạy hiện spinner + "Running…" + `aria-busy`; cột số canh phải.
+- **Không đo được (ghi rõ, không coi là đạt):** chi phí khung hình ≤ 2 ms và long task (Performance panel), tab ẩn 10 s, giả lập reduced motion, Slow 3G. Tab tự động bị bóp rAF (1–8 khung/s) nên cả thời lượng hoạt cảnh cũng không đo được trong trình duyệt. Thay vào đó: `tests/ambient.test.ts` (không đăng ký khi reduced motion, không frame khi khuất/ẩn, stop ngắt observer, một vòng cho nhiều đăng ký), `tests/scene.test.ts` (tổng mỗi `STEPS` không đổi), mọi keyframe mới nằm trong khối `no-preference`, mây `display:none` dưới reduced motion. Cần người kiểm tay trên Edge trước khi phát hành.
+- Ghi chú môi trường: dev server trong worktree không tải được `pglite.wasm` (node_modules là junction ra ngoài allow list của Vite), nên kiểm có DB chạy trên `vite preview`.
