@@ -7,7 +7,7 @@ import { buildDiagnostics, diagnosticsText } from './diagnostics';
 import { applyStatic, setLang, t, type Lang } from './i18n';
 import { MyData } from './import/myData';
 import { idbStore } from './import/store';
-import { contentProblems, currentChapter, nextTicket, SKILLS, xpFor } from './progress';
+import { contentProblems, nextTicket, SKILLS, xpFor } from './progress';
 import { loadSave, parseSave, serializeSave, type Known } from './save';
 import { actions, app, done, editorSchema, persist, selected, type Column } from './state';
 import { resumeStep } from './overview';
@@ -32,7 +32,6 @@ import { registerVizTabs } from './ui/vizTabs';
 import { initMyData, setMyDataStatus } from './ui/myDataView';
 import { clearMemos } from './viz/memo';
 import { createMapStrip } from './ui/mapStrip';
-import { chapterDots } from './viz/progressDots';
 
 initTheme(); // index.html already set data-theme before paint; this adds the OS listener for 'system'
 // The DB (PGlite download + seed, the slowest part of startup) boots in parallel with the ticket chunk below.
@@ -121,14 +120,9 @@ const work = mountWork(byId('work'), {
 });
 initModes({ work, rerender });
 
-// Progress dots and lane count need no query: the strip is drawn before the DB is ready.
+// The task bar needs no query: it is drawn before the DB is ready.
 const mapStrip = createMapStrip(byId('map'));
-function syncMap(): void {
-  const completed = done();
-  // The open ticket's chapter (a reopened old ticket shows its own chapter), else the player's current one.
-  const chapter = app.tickets.find((x) => x.id === app.selectedId)?.chapter ?? currentChapter(app.tickets, completed);
-  mapStrip.update({ chapter, completed, tickets: app.tickets, dots: chapterDots(app.tickets, completed, app.selectedId, chapter) });
-}
+const syncMap = (): void => mapStrip.update({ tickets: app.tickets, completed: done(), selectedId: app.selectedId });
 
 /** Language switch and progress changes: redraws text, never remounts the editor. */
 function rerender(): void {
@@ -140,7 +134,7 @@ function rerender(): void {
   work.relabel();
   relabelStage();
   renderNotebook();
-  // Story workspace only (L37): Home has the route map itself; Sandbox and Practice have no chapter progress.
+  // Story workspace only: selectTicket() forces story mode, so Practice and Sandbox must not show the task bar (ui-ux-v4 §2).
   byId('map').hidden = byId('shell').hidden || !isStory();
   if (!byId('map').hidden) syncMap();
 }
@@ -178,16 +172,18 @@ function showRoute(r: Route, initial: boolean): void {
 }
 
 /** Correct answer: save at once, stay on the ticket and show the Recap (no auto-jump). */
-function complete(t: Ticket): void {
-  if (done().has(t.id)) return;
+function complete(tk: Ticket): void {
+  if (done().has(tk.id)) return;
   const before = done();
-  const gained = xpFor(t, app.save.hintsUsed[t.id] ?? 0);
-  app.save.completed.push(t.id);
+  const gained = xpFor(tk, app.save.hintsUsed[tk.id] ?? 0);
+  app.save.completed.push(tk.id);
   app.save.xp += gained;
-  app.save.review = seedReview(app.save.review, t.grants, today()); // first review tomorrow
-  delete app.save.bossStep[t.id];
+  app.save.review = seedReview(app.save.review, tk.grants, today()); // first review tomorrow
+  delete app.save.bossStep[tk.id];
   persist(true);
-  playCompletion(t, before, done()); // first completion only: the early return above skips re-solves
+  playCompletion(tk, before, done()); // first completion only: the early return above skips re-solves
+  // Appended to the sentence playCompletion just announced: focus stays on the Recap, the next step is in the task bar.
+  if (nextTicket(app.tickets, done())) byId('announce').append(` ${t('nav.nextReady')}`);
   app.conclusionFor = '';
   rerender();
   byId('ticket').querySelector<HTMLElement>('.recap h3')?.focus(); // the Submit button just disappeared

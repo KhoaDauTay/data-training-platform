@@ -16,7 +16,7 @@ const strings = (v: unknown): string[] =>
 const GAME_TONE = /boss|sự cố/i;
 
 /** Keys whose EN text is intentionally the same as VI (SQL keywords, product names). */
-const SAME_OK = new Set<string>(['tab.explain', 'top.xp', 'nav.sandbox', 'top.chapterShort']);
+const SAME_OK = new Set<string>(['tab.explain', 'top.xp', 'nav.sandbox', 'top.chapterShort', 'nav.task']);
 const placeholders = (s: string): string => [...s.matchAll(/\{(\w+)\}/g)].map((m) => m[1]).sort().join();
 
 describe('từ điển i18n', () => {
