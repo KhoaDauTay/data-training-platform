@@ -203,4 +203,4 @@ Vòng 1/3 (2026-11-17): review code + nội dung (đọc đủ 18 ticket VI/EN, 
 | ux | Nút "Chép ví dụ vào editor" thay draft không báo có thể Ctrl+Z | Đã sửa e976724 |
 | test-gap | Nhánh ô trống trong `submit`; `wrongTip` (khớp, trap, kết quả cũ); undo `setDoc`; điều kiện `warmupToday`; `reflectCard`; bảng trong SQL `wrong:`/Example đã mở theo chương | Đã sửa 54a80b6, d3e11a1, 66f0ec7 (`reflectCard` và undo `setDoc` cần DOM: kiểm trên trình duyệt) |
 
-Sửa vòng 1: commits 54a80b6, d3e11a1, e976724, 66f0ec7, 75112e0.
+Sửa vòng 1: commits 54a80b6 (submit/wrongTip), d3e11a1 (warm-up), e976724 (reflect, ví dụ mẫu), 66f0ec7 (test nội dung, ch4-04), 75112e0 (nội dung). `tsc` + 789 test + build + budget qua. Chưa kiểm trên trình duyệt.
