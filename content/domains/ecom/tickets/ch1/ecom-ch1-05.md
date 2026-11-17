@@ -17,16 +17,16 @@ columns:
 conclusion:
   question: "Ở bước 2, vì sao phải xếp thêm theo mã SKU sau khi đã xếp theo giá?"
   options:
-    - "Để hai món cùng giá luôn đứng theo một thứ tự cố định, nên mười món được chọn không đổi giữa các lần chạy"
-    - "Để kết quả chạy nhanh hơn"
-    - "Vì giá không sắp xếp được"
+    - "Để hai món cùng giá luôn đứng theo một thứ tự cố định giữa các lần chạy"
+    - "Để truy vấn chạy nhanh hơn, vì sắp theo hai cột thì ít phải so sánh hơn"
+    - "Vì giá có phần thập phân nên không sắp xếp riêng được"
   answer: 0
 conclusion_en:
   question: "In step 2, why sort by the SKU code after sorting by price?"
   options:
-    - "So two items with the same price always stand in one fixed order, and the ten items picked never change between runs"
-    - "To make the query run faster"
-    - "Because prices cannot be sorted"
+    - "So two items with the same price always stand in one fixed order between runs"
+    - "To make the query faster, since sorting on two columns needs fewer comparisons"
+    - "Because prices have decimals, so they cannot be sorted on their own"
 ---
 Đây là buổi đánh giá thăng tiến của bạn. Mình là Hà, người sáng lập Chợ Lồng Đèn. Chiều nay mình gặp nhà đầu tư và cần ba bảng số nhỏ. Làm đúng cả ba là bạn qua thử việc.
 
@@ -40,7 +40,7 @@ ORDER BY joined_on, name
 ```
 
 ## Step 2: Mười món đắt nhất
-Mười sản phẩm đắt nhất đang còn bán trên toàn sàn: mã SKU, tên sản phẩm, giá bán. Đắt nhất lên đầu; cùng giá thì mã SKU nhỏ hơn đứng trước.
+Mười sản phẩm đắt nhất đang còn bán trên toàn sàn: mã SKU, tên sản phẩm, giá bán. Đắt nhất lên đầu; cùng giá thì xếp theo mã SKU theo thứ tự chữ cái.
 ```sql
 SELECT sku, name, price
 FROM products
@@ -71,7 +71,7 @@ This is your promotion review. I am Ha, the founder of Lantern Market. This afte
 The official shops (with the official label) in the city of Da Nang: shop name and date joined. The shop that joined earliest first; on the same date, by shop name.
 
 ## Step 2: The ten priciest items
-The ten most expensive products still on sale on the whole marketplace: SKU code, product name, price. Most expensive first; on equal prices, the smaller SKU code first.
+The ten most expensive products still on sale on the whole marketplace: SKU code, product name, price. Most expensive first; on equal prices, by SKU code in alphabetical order.
 
 ## Step 3: The first five customers in Hue who came through a friend
 Among customers in the city of Hue who came to the marketplace because a friend referred them, the five who signed up earliest: customer number, full name, signup date. Earliest signup first; on the same date, the smaller customer number first.

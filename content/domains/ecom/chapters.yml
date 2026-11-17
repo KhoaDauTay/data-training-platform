@@ -9,8 +9,8 @@
   tier: true
   tables: [categories, sellers, products, customers, reviews]
   story:
-    vi: "Chợ Lồng Đèn là sàn bán lẻ trực tuyến mở cửa ở Đà Nẵng đầu năm 2025. Tuần đầu, trưởng nhóm dữ liệu kèm bạn làm quen danh mục shop, sản phẩm và khách hàng; cuối tuần, nhà sáng lập đánh giá thử việc."
-    en: "Lantern Market is an online marketplace that opened in Da Nang in early 2025. In your first week the data team lead walks you through the shop, product and customer lists; at the end of the week the founder runs your probation review."
+    vi: "Chợ Lồng Đèn là sàn bán lẻ trực tuyến ở Đà Nẵng: các shop đầu tiên lên sàn từ 2023, sàn mở cho khách mua từ giữa 2024. Tuần đầu, trưởng nhóm dữ liệu kèm bạn làm quen danh mục shop, sản phẩm và khách hàng; cuối tuần, nhà sáng lập đánh giá thử việc."
+    en: "Lantern Market is an online marketplace in Da Nang: the first shops joined in 2023 and it opened to shoppers in mid-2024. In your first week the data team lead walks you through the shop, product and customer lists; at the end of the week the founder runs your probation review."
   outcomes:
     - { vi: "Lấy đúng cột cần từ một bảng", en: "Pull exactly the columns you need", skills: [select] }
     - { vi: "Lọc sản phẩm và khách theo nhiều điều kiện", en: "Filter products and customers by several conditions", skills: [where] }

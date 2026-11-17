@@ -49,7 +49,7 @@ Mình đang dựng bảng theo dõi phễu mua hàng cho marketing: bao nhiêu n
 Câu truy vấn trong editor đã có khung; bạn chỉ cần điền ba điều kiện đếm ở các chỗ trống ___.
 
 ## Task
-Phễu mua hàng từng tháng của quý {{qv}}: số phiên truy cập, số phiên có xem sản phẩm, số phiên có thêm vào giỏ, và số phiên kết thúc bằng một đơn hàng. Tháng ghi bằng ngày đầu tháng; tháng sớm nhất lên đầu.
+Phễu mua hàng từng tháng của quý {{qv}}: số phiên truy cập, số phiên có xem sản phẩm, số phiên có thêm vào giỏ, và số phiên có đặt được đơn hàng. Tháng ghi bằng ngày đầu tháng; tháng sớm nhất lên đầu.
 
 ## Hints
 1. Mỗi tháng là một nhóm; trong nhóm cần bốn số đếm, mỗi số đếm một điều kiện riêng.
@@ -75,7 +75,7 @@ I am building a purchase funnel tracker for marketing: how many people visit, ho
 The query in the editor already has the frame; you only need to fill in the three count conditions at the ___ blanks.
 
 ## Task
-The monthly purchase funnel for {{q_en}}: the number of sessions, sessions that viewed a product, sessions that added something to the cart, and sessions that ended in an order. Each month shown as its first day; earliest month first.
+The monthly purchase funnel for {{q_en}}: the number of sessions, sessions that viewed a product, sessions that added something to the cart, and sessions that placed an order. Each month shown as its first day; earliest month first.
 
 ## Hints
 1. Each month is one group; the group needs four counts, each with its own condition.

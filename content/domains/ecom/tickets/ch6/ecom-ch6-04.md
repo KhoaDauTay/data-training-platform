@@ -12,8 +12,8 @@ tables: [returns]
 ordered: true
 columns:
   - { vi: "Lý do trả hàng", en: "Return reason" }
-  - { vi: "Số món trả", en: "Items returned" }
-  - { vi: "Số món được duyệt hoàn tiền", en: "Items approved for refund" }
+  - { vi: "Số yêu cầu trả hàng", en: "Return requests" }
+  - { vi: "Số yêu cầu được duyệt hoàn tiền", en: "Requests approved for refund" }
   - { vi: "Tổng tiền đã hoàn (đồng)", en: "Total refunded (VND)" }
 reflect:
   q: { vi: "Vì sao tổng tiền hoàn không cần điều kiện được duyệt?", en: "Why does the refund total need no approved condition?" }
@@ -31,7 +31,7 @@ wrong:
 Mỗi quý nhóm chăm sóc khách hàng báo cáo hàng trả về: vì sao khách trả, bao nhiêu món được duyệt, và sàn đã hoàn bao nhiêu tiền.
 
 ## Task
-Các yêu cầu trả hàng gửi trong quý 3/2026 (từ 01/07 đến hết 30/09), theo từng lý do: số món trả, số món được duyệt hoàn tiền, và tổng tiền đã hoàn. Nhiều món nhất lên đầu; bằng nhau thì xếp theo lý do.
+Các yêu cầu trả hàng gửi trong quý 3/2026 (từ 01/07 đến hết 30/09), theo từng lý do: số yêu cầu trả hàng, số yêu cầu được duyệt hoàn tiền, và tổng tiền đã hoàn. Nhiều yêu cầu nhất lên đầu; bằng nhau thì xếp theo lý do.
 
 ## Hints
 1. Gom theo lý do; trong mỗi nhóm cần một số đếm mọi món, một số đếm có điều kiện, và một tổng.
@@ -51,7 +51,7 @@ ORDER BY 2 DESC, reason
 Every quarter the customer care team reports on returns: why customers send items back, how many are approved, and how much the marketplace refunded.
 
 ## Task
-For the return requests sent in Q3 2026 (1 July to 30 September), per reason: the number of items returned, the number approved for refund, and the total refunded. Most items first; on equal numbers, by reason.
+For the return requests sent in Q3 2026 (1 July to 30 September), per reason: the number of return requests, the number approved for refund, and the total refunded. Most requests first; on equal numbers, by reason.
 
 ## Hints
 1. Group by reason; each group needs a count of every item, a conditional count, and a total.

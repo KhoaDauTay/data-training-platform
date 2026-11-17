@@ -417,11 +417,11 @@
 - id: g-self-join-3
   skill: self_join
   kind: trap
-  task: { vi: "Mỗi nhân viên: tên nhân viên và tên cấp trên hai bậc (quản lý của quản lý trực tiếp); ai không có cấp trên hai bậc thì không tính.", en: "Each staff member: staff name and the name of the boss two levels up (the direct manager's manager); people without one are left out." }
+  task: { vi: "Mỗi nhân viên: tên nhân viên và tên cấp trên hai bậc (quản lý của quản lý trực tiếp); ai không có cấp trên hai bậc thì không tính.", en: "Each staff member: staff name and the name of the manager two levels up (the direct manager's manager); people without one are left out." }
   solution: "SELECT e.name, g.name FROM staff e JOIN staff m ON m.id = e.manager_id JOIN staff g ON g.id = m.manager_id"
   hint: { vi: "Cần nối `staff` ba lần: nhân viên, quản lý, rồi quản lý của quản lý.", en: "Join `staff` three times: employee, manager, then the manager's manager." }
   wrong:
-    - { sql: "SELECT e.name, m.name FROM staff e JOIN staff m ON m.id = e.manager_id", vi: "Mới đi lên một bậc: đó là quản lý trực tiếp, chưa phải cấp trên hai bậc.", en: "This only goes up one level: that is the direct manager, not the boss two levels up." }
+    - { sql: "SELECT e.name, m.name FROM staff e JOIN staff m ON m.id = e.manager_id", vi: "Mới đi lên một bậc: đó là quản lý trực tiếp, chưa phải cấp trên hai bậc.", en: "This only goes up one level: that is the direct manager, not the manager two levels up." }
 
 # ---- string_fn (ch6)
 - id: g-string-fn-1

@@ -39,7 +39,7 @@ Khách ở miền Trung than phiền đơn giao chậm. Trước khi gặp Kite 
 Đây là việc đầu tiên của bạn với ngày tháng, nên mình gửi kèm một ví dụ mẫu.
 
 ## Task
-Những kiện do Kite Logistics chở, gửi đi trong tháng {{month}}, mà giao trễ hơn 2 ngày so với ngày hẹn: mã đơn, thành phố nhận, ngày hẹn giao, ngày giao thực tế và số ngày trễ. Trễ nhiều nhất lên đầu; bằng nhau thì mã đơn nhỏ hơn đứng trước.
+Những kiện do Kite Logistics chở, gửi đi trong tháng {{month}}, mà giao trễ hơn 2 ngày so với ngày hẹn: mã đơn, thành phố nhận, ngày hẹn giao, ngày giao thực tế và số ngày trễ. Trễ nhiều nhất lên đầu; bằng nhau thì xếp theo mã đơn theo thứ tự chữ cái.
 
 ## Example
 ```sql
@@ -82,7 +82,7 @@ Customers in central Vietnam complain that deliveries are slow. Before I meet Ki
 This is your first task with dates, so I am sending a worked example along.
 
 ## Task
-The parcels carried by Kite Logistics, shipped in {{month_en}}, that arrived more than 2 days after the promised date: order code, delivery city, promised date, actual delivery date and days late. Most days late first; on equal days, the smaller order code first.
+The parcels carried by Kite Logistics, shipped in {{month_en}}, that arrived more than 2 days after the promised date: order code, delivery city, promised date, actual delivery date and days late. Most days late first; on equal days, by order code in alphabetical order.
 
 ## Example
 Example: in the week of 1 to 7 June 2026, which parcels were promised 3 or more days after shipping, and if the customer complains, when is the check date (7 days after the promised date)?

@@ -34,7 +34,7 @@ wrong:
 Trang giới thiệu cho nhà đầu tư cần một biểu đồ: mỗi tháng có thêm bao nhiêu khách, và tổng số khách của sàn đã lên tới đâu. Biểu đồ chỉ vẽ mấy tháng gần đây, nhưng tổng phải tính từ ngày mở sàn.
 
 ## Task
-Mỗi tháng từ {{first}} đến nay: số khách mới đăng ký trong tháng, và tổng số khách của sàn tính từ ngày mở sàn đến hết tháng đó. Tháng ghi bằng ngày đầu tháng; tháng sớm nhất lên đầu.
+Mỗi tháng từ {{first}} đến hết tháng 10/2026: số khách mới đăng ký trong tháng, và tổng số khách của sàn tính từ ngày mở sàn đến hết tháng đó. Tháng ghi bằng ngày đầu tháng; tháng sớm nhất lên đầu.
 
 ## Hints
 1. Đếm khách mới theo tháng cho mọi tháng, cộng dồn theo thứ tự thời gian, rồi mới chỉ giữ các tháng cần hiện.
@@ -61,7 +61,7 @@ ORDER BY month
 The investor page needs a chart: how many customers joined each month, and how far the marketplace's total customer count has climbed. The chart only draws the recent months, but the total must count from launch.
 
 ## Task
-For each month from {{first_en}} until now: the number of new customers who signed up in the month, and the marketplace's total customers from launch to the end of that month. Each month shown as its first day; earliest month first.
+For each month from {{first_en}} to the end of October 2026: the number of new customers who signed up in the month, and the marketplace's total customers from launch to the end of that month. Each month shown as its first day; earliest month first.
 
 ## Hints
 1. Count new customers per month for every month, add them up in time order, and only then keep the months to show.

@@ -33,7 +33,7 @@ wrong:
 Marketing sắp gửi một mã giảm giá cho khách đã tạo tài khoản mà chưa mua lần nào, để kéo họ đặt đơn đầu tiên. Gửi nhầm cho khách đã mua thì tốn tiền vô ích.
 
 ## Task
-Những khách đăng ký trong tháng {{month}} mà đến nay chưa đặt một đơn nào (kể cả đơn đã hủy cũng chưa có): mã khách, họ tên, ngày đăng ký. Thứ tự dòng không quan trọng.
+Những khách đăng ký trong tháng {{month}} mà đến nay chưa từng đặt đơn nào, kể cả đơn đã hủy: mã khách, họ tên, ngày đăng ký. Thứ tự dòng không quan trọng.
 
 ## Hints
 1. Bài này tìm thứ không có: giữ mọi khách, gắn đơn của họ nếu có, rồi chỉ giữ khách không gắn được đơn nào.

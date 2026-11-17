@@ -3,8 +3,13 @@ import { parse as parseYaml } from 'yaml';
 import chaptersYml from '../content/chapters.yml?raw';
 import kpisYml from '../content/kpis.yml?raw';
 import peopleYml from '../content/people.yml?raw';
+import ecomChaptersYml from '../content/domains/ecom/chapters.yml?raw';
+import ecomKpisYml from '../content/domains/ecom/kpis.yml?raw';
+import ecomPeopleYml from '../content/domains/ecom/people.yml?raw';
+import generalSqlYml from '../content/general/sql.yml?raw';
+import generalAdvYml from '../content/general/adv.yml?raw';
 import html from '../index.html?raw';
-import { loadTickets } from '../src/content';
+import { loadDomain, loadTicketTemplates, loadTickets } from '../src/content';
 import { isMacPlatform, keyLabels, t } from '../src/i18n';
 import { en } from '../src/i18n/en';
 import { vi } from '../src/i18n/vi';
@@ -67,6 +72,17 @@ describe('từ điển i18n', () => {
     const texts = [
       ...[chaptersYml, peopleYml, kpisYml].flatMap((y) => strings(parseYaml(y))),
       ...loadTickets().flatMap((tk) => (['vi', 'en'] as const).flatMap((lang) => strings(textOf(tk, lang)))),
+    ];
+    expect(texts.length).toBeGreaterThan(100);
+    expect(texts.filter((x) => GAME_TONE.test(x))).toEqual([]);
+  });
+
+  it('L22 (v11 review): E-commerce và General cũng không có "boss" / "sự cố"', async () => {
+    await loadDomain('ecommerce');
+    const texts = [
+      ...[ecomChaptersYml, ecomKpisYml, ecomPeopleYml].flatMap((y) => strings(parseYaml(y))),
+      ...[generalSqlYml, generalAdvYml].flatMap((y) => strings(parseYaml(y))),
+      ...loadTicketTemplates('ecommerce').flatMap((tk) => (['vi', 'en'] as const).flatMap((lang) => strings(textOf(tk, lang)))),
     ];
     expect(texts.length).toBeGreaterThan(100);
     expect(texts.filter((x) => GAME_TONE.test(x))).toEqual([]);

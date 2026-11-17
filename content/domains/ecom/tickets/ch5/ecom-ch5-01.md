@@ -37,7 +37,7 @@ Marketing đang nghĩ mức miễn phí giao hàng mới. Muốn đặt mức ch
 Lần này bạn tự đặt nhãn cho từng dòng theo luật, nên mình gửi kèm một ví dụ mẫu.
 
 ## Task
-Tháng {{month}}, chia các khoản thanh toán đã thu thành công theo số tiền: nhóm 1 dưới 200 nghìn đồng, nhóm 2 từ 200 nghìn đến dưới 500 nghìn, nhóm 3 từ 500 nghìn trở lên. Mỗi nhóm một dòng: số nhóm, số khoản và tổng tiền; xếp theo số nhóm.
+Tháng {{month}}, chia các khoản thanh toán đã thu thành công theo số tiền: nhóm 1 dưới 200 nghìn đồng, nhóm 2 từ 200 nghìn đến dưới 500 nghìn, nhóm 3 từ 500 nghìn trở lên (mỗi đơn trả một khoản, nên đây cũng là cỡ đơn). Mỗi nhóm một dòng: số nhóm, số khoản và tổng tiền; xếp theo số nhóm.
 
 ## Example
 ```sql
@@ -79,7 +79,7 @@ Marketing is thinking about a new free-shipping threshold. To set it right, I ne
 This time you label each row by a rule yourself, so I am sending a worked example along.
 
 ## Task
-For {{month_en}}, split the payments collected successfully by amount: band 1 under 200 thousand VND, band 2 from 200 thousand to under 500 thousand, band 3 from 500 thousand up. One row per band: the band number, the number of payments and the total; sorted by band number.
+For {{month_en}}, split the payments collected successfully by amount: band 1 under 200 thousand VND, band 2 from 200 thousand to under 500 thousand, band 3 from 500 thousand up (each order is paid in one payment, so this is also the order size). One row per band: the band number, the number of payments and the total; sorted by band number.
 
 ## Example
 Example: put each product of category number 3 into a price tier: 1 cheap, 2 medium, 3 premium.

@@ -41,7 +41,7 @@ ORDER BY 1
 ```
 
 ## Step 2: Kiện quá hẹn mà chưa giao
-Tính đến hôm nay 31/10/2026: các kiện chưa giao mà ngày hẹn giao đã qua (trước hôm nay). Gửi mã đơn, đơn vị vận chuyển, thành phố nhận và số ngày đã quá hẹn (31/10/2026 trừ ngày hẹn). Quá hẹn lâu nhất lên đầu; bằng nhau thì mã đơn nhỏ hơn đứng trước.
+Tính đến hôm nay 31/10/2026: các kiện chưa giao mà ngày hẹn giao đã qua (trước hôm nay). Gửi mã đơn, đơn vị vận chuyển, thành phố nhận và số ngày đã quá hẹn (31/10/2026 trừ ngày hẹn). Quá hẹn lâu nhất lên đầu; bằng nhau thì xếp theo mã đơn theo thứ tự chữ cái.
 ```sql
 SELECT o.code, d.courier, d.city, DATE '2026-10-31' - d.promised_on
 FROM deliveries d
@@ -73,7 +73,7 @@ This is your promotion review. The 10.10 sale sold very well, but customers in c
 From 7 to 13 October 2026, how many orders were placed each day (every order, cancelled ones included)? Each day shown as its start; earliest day first.
 
 ## Step 2: Parcels past their promise and not delivered
-As of today, 31 October 2026: the parcels not delivered yet whose promised date has already passed (before today). Send the order code, courier, delivery city and how many days past the promise (31 October 2026 minus the promised date). Longest overdue first; on equal days, the smaller order code first.
+As of today, 31 October 2026: the parcels not delivered yet whose promised date has already passed (before today). Send the order code, courier, delivery city and how many days past the promise (31 October 2026 minus the promised date). Longest overdue first; on equal days, by order code in alphabetical order.
 
 ## Step 3: Kite Logistics in central Vietnam, by week
 The parcels Kite Logistics carried to Da Nang, Hue and Nha Trang, shipped from Monday 3 August to Sunday 25 October 2026: per shipping week (weeks start on Monday and are shown as that Monday), how many days late on average compared with the promised date? Parcels not delivered yet count up to today, 31 October 2026. Round to 2 decimals; earliest week first.

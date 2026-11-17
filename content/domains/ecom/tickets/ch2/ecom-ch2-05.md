@@ -16,16 +16,16 @@ columns:
 conclusion:
   question: "Ở bước 3, điều kiện từ 150 món trở lên được kiểm vào lúc nào?"
   options:
-    - "Sau khi đã cộng số món của từng sản phẩm, vì nó là điều kiện trên tổng của nhóm"
-    - "Trước khi cộng, trên từng dòng hàng của đơn"
-    - "Không cần điều kiện, chỉ cần sắp xếp"
+    - "Sau khi đã cộng số món của từng sản phẩm"
+    - "Trước khi cộng, trên từng dòng hàng của đơn, để bớt dòng phải cộng"
+    - "Không cần điều kiện, vì sắp xếp giảm dần rồi lấy phần đầu là đủ"
   answer: 0
 conclusion_en:
   question: "In step 3, when is the condition of 150 units or more checked?"
   options:
-    - "After the units of each product are added up, because it is a condition on the group's total"
-    - "Before adding, on each order line"
-    - "No condition is needed, only sorting"
+    - "After the units of each product are added up"
+    - "Before adding, on each order line, so fewer rows need adding"
+    - "No condition is needed, since sorting high to low and keeping the top is enough"
 ---
 Đây là buổi đánh giá thăng tiến của bạn. Sáng thứ Hai mình họp tổng kết tháng 10 với kế toán, marketing và ngành hàng, và cần ba bảng số. Làm đúng cả ba là bạn bước thêm một bước trong sự nghiệp.
 

@@ -34,7 +34,7 @@ wrong:
 Tuần này banner trang chủ dành cho nhóm hàng {{cat_name}}. Banner chỉ có chỗ cho năm món, và sếp muốn trưng những món cao cấp nhất để kéo khách vào xem.
 
 ## Task
-Gửi mình 5 sản phẩm đắt nhất đang còn bán của nhóm hàng số {{cat}} ({{cat_name}}): mã SKU, tên sản phẩm, giá bán. Đắt nhất lên đầu; cùng giá thì mã SKU nhỏ hơn đứng trước.
+Gửi mình 5 sản phẩm đắt nhất đang còn bán của nhóm hàng số {{cat}} ({{cat_name}}): mã SKU, tên sản phẩm, giá bán. Đắt nhất lên đầu; cùng giá thì xếp theo mã SKU theo thứ tự chữ cái.
 
 ## Hints
 1. Lọc đúng nhóm hàng và hàng còn bán như bài trước, rồi xếp theo giá từ cao xuống thấp và chỉ giữ vài dòng đầu.
@@ -51,10 +51,10 @@ LIMIT 5
 ```
 
 # EN
-This week the home page banner belongs to the {{cat_name}} category. The banner only has room for five items, and the boss wants the most premium ones to draw shoppers in.
+This week the home page banner belongs to the {{cat_name}} category. The banner only has room for five items, and the merchandising lead wants the most premium ones to draw shoppers in.
 
 ## Task
-Send me the 5 most expensive products still on sale in category number {{cat}} ({{cat_name}}): SKU code, product name, price. Most expensive first; on equal prices, the smaller SKU code first.
+Send me the 5 most expensive products still on sale in category number {{cat}} ({{cat_name}}): SKU code, product name, price. Most expensive first; on equal prices, by SKU code in alphabetical order.
 
 ## Hints
 1. Filter the right category and the items still on sale like the last task, then sort by price from high to low and keep only the first few rows.

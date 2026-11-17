@@ -12,8 +12,8 @@ tables: [order_items, deliveries, products, sellers, returns]
 ordered: true
 columns:
   - { vi: "Tên shop", en: "Shop name" }
-  - { vi: "Số món đã giao", en: "Items delivered" }
-  - { vi: "Số món trả vì hỏng", en: "Items returned damaged" }
+  - { vi: "Số dòng hàng đã giao", en: "Order lines delivered" }
+  - { vi: "Số dòng hàng trả vì hỏng", en: "Order lines returned damaged" }
   - { vi: "Tỷ lệ trả vì hỏng (%)", en: "Damaged return rate (%)" }
 reflect:
   q: { vi: "Vì sao điều kiện lý do hỏng phải nằm trong điều kiện ghép với danh mục trả hàng?", en: "Why must the damaged-reason condition sit in the join with the returns list?" }
@@ -31,7 +31,7 @@ wrong:
 Khách than nhận hàng điện tử bị hỏng. Trước khi làm việc với các shop, ngành hàng cần biết shop nào có tỷ lệ hàng hỏng bị trả về cao bất thường.
 
 ## Task
-Các món hàng giao tới khách trong quý 3/2026 (ngày giao từ 01/07 đến hết 30/09): với mỗi shop, có bao nhiêu món đã giao, bao nhiêu món bị khách trả vì hỏng, và tỷ lệ đó bằng bao nhiêu phần trăm (làm tròn 2 chữ số thập phân)? Chỉ xét shop có từ 100 món đã giao trở lên. Tỷ lệ cao nhất lên đầu; bằng nhau thì xếp theo tên shop.
+Các dòng hàng giao tới khách trong quý 3/2026 (ngày giao từ 01/07 đến hết 30/09; mỗi sản phẩm trong một đơn tính một lần, không theo số lượng): với mỗi shop, có bao nhiêu dòng hàng đã giao, bao nhiêu dòng hàng bị khách trả vì hỏng, và tỷ lệ đó bằng bao nhiêu phần trăm (làm tròn 2 chữ số thập phân)? Chỉ xét shop có từ 100 dòng hàng đã giao trở lên. Tỷ lệ cao nhất lên đầu; bằng nhau thì xếp theo tên shop.
 
 ## Hints
 1. Đi từ dòng hàng tới giao hàng (ngày giao), sản phẩm và shop; gắn thêm lần trả hàng vì hỏng nếu có, mà không làm mất món nào không bị trả.
@@ -56,7 +56,7 @@ ORDER BY 4 DESC, s.name
 Customers complain about receiving broken electronics. Before talking to the shops, the category team needs to know which shops have an unusually high rate of damaged items sent back.
 
 ## Task
-For the items delivered to customers in Q3 2026 (delivery date from 1 July to 30 September): for each shop, how many items were delivered, how many were returned by customers as damaged, and what percentage is that (rounded to 2 decimals)? Only shops with 100 or more items delivered. Highest rate first; on equal rates, by shop name.
+For the order lines delivered to customers in Q3 2026 (delivery date from 1 July to 30 September; each product in an order counts once, whatever the quantity): for each shop, how many order lines were delivered, how many were returned by customers as damaged, and what percentage is that (rounded to 2 decimals)? Only shops with 100 or more order lines delivered. Highest rate first; on equal rates, by shop name.
 
 ## Hints
 1. Walk from the order line to the delivery (its date), the product and the shop; attach a damaged return if there is one, without losing the items that were not returned.

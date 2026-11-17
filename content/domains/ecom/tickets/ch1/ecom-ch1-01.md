@@ -30,7 +30,7 @@ wrong:
 ---
 Chào bạn, chào mừng đến Chợ Lồng Đèn! Mình là Huy, trưởng nhóm dữ liệu, tuần này mình kèm bạn.
 
-Chợ Lồng Đèn là sàn bán lẻ trực tuyến, mở cửa từ đầu năm 2025 ở Đà Nẵng. Hàng do các shop đối tác đăng bán, sàn lo thanh toán và giao hàng. Việc đầu tiên của bạn là làm quen với các shop. Đây cũng là lần đầu bạn viết truy vấn ở đây, nên mình gửi kèm một ví dụ mẫu: đọc, chạy thử, rồi làm phần của bạn.
+Chợ Lồng Đèn là sàn bán lẻ trực tuyến ở Đà Nẵng: các shop đầu tiên lên sàn từ 2023, sàn mở cho khách mua từ giữa 2024. Hàng do các shop đối tác đăng bán, sàn lo thanh toán và giao hàng. Việc đầu tiên của bạn là làm quen với các shop. Đây cũng là lần đầu bạn viết truy vấn ở đây, nên mình gửi kèm một ví dụ mẫu: đọc, chạy thử, rồi làm phần của bạn.
 
 ## Task
 Gửi mình danh bạ mọi shop đang có trên sàn. Với mỗi shop mình cần ba thông tin, theo thứ tự: tên shop, thành phố, ngày vào sàn. Thứ tự dòng không quan trọng.
@@ -60,7 +60,7 @@ FROM sellers
 # EN
 Hi, and welcome to Lantern Market! I am Huy, the data team lead, and I will be your mentor this week.
 
-Lantern Market is an online marketplace that opened in Da Nang at the start of 2025. Partner shops list the goods; the marketplace handles payment and delivery. Your first job is to get to know the shops. It is also your first query here, so I am sending a worked example along: read it, run it, then do your part.
+Lantern Market is an online marketplace in Da Nang: the first shops joined in 2023 and it opened to shoppers in mid-2024. Partner shops list the goods; the marketplace handles payment and delivery. Your first job is to get to know the shops. It is also your first query here, so I am sending a worked example along: read it, run it, then do your part.
 
 ## Task
 Send me the directory of every shop on the marketplace. For each shop I need three things, in this order: shop name, city, date joined. Row order does not matter.

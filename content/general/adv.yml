@@ -910,7 +910,7 @@
   group: B
   status: in
   title: { vi: "Phát hiện bất thường", en: "Anomaly detection" }
-  why: { vi: "Một ngày doanh thu vọt lên hay tụt xuống cần được báo trước khi sếp hỏi.", en: "A day when revenue jumps or drops should be flagged before the boss asks." }
+  why: { vi: "Một ngày doanh thu vọt lên hay tụt xuống cần được báo trước khi sếp hỏi.", en: "A day when revenue jumps or drops should be flagged before your manager asks." }
   needs: [window_agg, cte, date_bucket, a1, a2]
   applies: { vi: "Mọi domain: cảnh báo trên Bảng điều hành", en: "Every domain: alerts on the dashboard" }
   lesson:
