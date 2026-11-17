@@ -158,9 +158,10 @@ function chapterCard(c: ChapterCard): HTMLElement {
         c.status === 'done' ? h('span', { class: 'absolute -right-1 -bottom-1 grid size-5 place-items-center rounded-full bg-emerald-700 text-white ring-2 ring-panel' }, icon('check', 'size-3.5')) : null),
     h('h3', { class: cx('m-0 line-clamp-2 text-xl font-bold sm:min-h-14', closed && 'text-muted'), title }, title),
     skillRow(c, closed),
-    // Footer pinned to the bottom (ui-ux-v4 §6): the badge lines up across a row whatever the skills above say.
+    // The badge follows the fixed-height title + skill block, so it lines up across a row (ui-ux-v4 §6, L47 #6);
+    // the variable-length lines below are pinned to the bottom.
+    statusPill(c),
     h('div', { class: 'mt-auto flex w-full flex-col items-center gap-1.5' },
-      statusPill(c),
       h('p', { class: 'm-0 line-clamp-2 text-sm text-muted' }, t('home.careerAfter', { career: CHAPTERS.find((x) => x.chapter === c.chapter)?.career[lang] ?? '' })),
       c.status === 'done' && c.boss ? h('p', { class: 'm-0 line-clamp-2 text-sm text-muted' }, t('home.review', { title: textOf(c.boss, lang).title })) : null,
       closed

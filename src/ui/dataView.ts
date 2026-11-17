@@ -28,7 +28,7 @@ const tableHash = (table: string): string => `${hashOf('data')}/${table}`;
 const go = (table: string): void => void (location.hash = tableHash(table));
 
 // One search box for the page's lifetime: redrawing the page never replaces it mid-typing (Vietnamese IME composition).
-const search = h('input', { type: 'search', id: 'data-search', class: 'w-full', autocomplete: 'off' });
+const search = h('input', { type: 'search', id: 'data-search', class: 'mt-1 w-full rounded-lg border border-line bg-panel px-3 py-2 text-sm text-ink focus-visible:outline-2 focus-visible:outline-accent', autocomplete: 'off' });
 search.addEventListener('input', () => {
   view.query = search.value;
   redrawList();
