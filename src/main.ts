@@ -185,18 +185,21 @@ async function copyDiagnostics(): Promise<void> {
   const text = diagnosticsText(buildDiagnostics({
     build: __BUILD__, kind: p.kind, error: p.error, timings: { ...db.timings, readyMs }, userAgent: navigator.userAgent,
   }));
+  // Never replace another banner (new version + Reload, save warnings): those matter more than "copied".
+  const free = !app.notice || app.notice.key.startsWith('diag.');
   try {
     await navigator.clipboard.writeText(text);
-    app.notice = { key: 'diag.copied' };
+    if (free) app.notice = { key: 'diag.copied' };
   } catch {
-    app.notice = { key: 'diag.manual', params: { text } }; // shown with textContent (renderNotice)
+    if (free) app.notice = { key: 'diag.manual', params: { text } }; // shown with textContent (renderNotice)
   }
   renderTopbar();
 }
 
 /** Uncaught app errors only: query outcomes (player SQL errors, timeouts, restarts, worker task and DB failures) are normal play or already recorded. */
 const fault = (error: unknown): void => {
-  if (error instanceof SqlError || error instanceof QueryTimeoutError || error instanceof DbRestartError
+  // null: ResizeObserver loop notices and cross-origin "Script error." (extensions) carry no Error object.
+  if (error == null || error instanceof SqlError || error instanceof QueryTimeoutError || error instanceof DbRestartError
     || error instanceof WorkerTaskError || error instanceof DbFailedError) return;
   app.problem = { kind: 'js-error', error };
   renderTopbar();
