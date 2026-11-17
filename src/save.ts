@@ -104,10 +104,17 @@ export const stepKey = (ticketId: string, stepIndex: number): string => `${ticke
 export const ticketOfKey = (key: string): string => key.split('#')[0];
 const isString = (x: unknown): x is string => typeof x === 'string';
 
+/**
+ * Plan 8a D8a-9: General drill ids (`g-…`) live in completed, drafts, graded and hintsUsed like ticket ids. Recognised by
+ * pattern, not by a list, so reading a save never needs the lazy General chunk. Re-exported by src/general.ts.
+ */
+export const DRILL_ID = /^g-[a-z0-9-]+$/;
+const isWorkId = (ids: ReadonlySet<string>, id: string): boolean => ids.has(id) || DRILL_ID.test(id);
+
 function pickRecord<T>(v: unknown, ok: (x: unknown) => x is T, ticketIds: ReadonlySet<string>): Record<string, T> {
   const out: Record<string, T> = {};
   if (v && typeof v === 'object' && !Array.isArray(v)) {
-    for (const [k, x] of Object.entries(v)) if (ticketIds.has(ticketOfKey(k)) && ok(x)) out[k] = x;
+    for (const [k, x] of Object.entries(v)) if (isWorkId(ticketIds, ticketOfKey(k)) && ok(x)) out[k] = x;
   }
   return out;
 }
@@ -158,7 +165,7 @@ export function parseSave(raw: string, known: Known, migrations = MIGRATIONS, ve
     d = { ...migrate(d, known), version: v };
   }
   const completed = Array.isArray(d.completed)
-    ? d.completed.filter((x): x is string => typeof x === 'string' && known.ticketIds.has(x))
+    ? d.completed.filter((x): x is string => typeof x === 'string' && isWorkId(known.ticketIds, x))
     : [];
   return {
     version,

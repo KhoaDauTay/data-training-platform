@@ -1,5 +1,6 @@
 import { parse as parseYaml } from 'yaml';
 import { parseLessonBody, type Lesson } from './lessons';
+import { DRILL_ID } from './save';
 import { bilingualOf, type Bilingual } from './progress';
 import { BLANK, type Ticket, type Wrong } from './tickets';
 
@@ -8,8 +9,8 @@ import { BLANK, type Ticket, type Wrong } from './tickets';
  * Both run on the `lab` schema. Pure parsers; the YAML is a lazy chunk (src/generalSources.ts, loadGeneral()).
  */
 
-/** Drill ids go into save.completed as they are (D8a-9); the prefix keeps them apart from ticket ids. */
-export const DRILL_ID = /^g-[a-z0-9-]+$/;
+/** Drill ids go into save.completed as they are (D8a-9); the prefix keeps them apart from ticket ids. Defined in save.ts. */
+export { DRILL_ID };
 export type DrillKind = 'faded' | 'open' | 'trap' | 'challenge';
 const KINDS: DrillKind[] = ['faded', 'open', 'trap', 'challenge'];
 export interface Drill {
