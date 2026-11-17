@@ -58,15 +58,17 @@ export function planLine(json: unknown): string {
 /**
  * `sql` with comments removed and literals ('…', "…", $tag$…$tag$) blanked, the way Postgres' lexer reads them:
  * block comments nest, and -- or /* inside a literal is not a comment. Undefined when anything is left unclosed,
- * a stray * / remains, or there is a backslash (E'…' escapes, never needed in a CREATE INDEX).
+ * a stray * / remains, a $ follows an identifier/number character, or there is a backslash (E'…' escapes, never
+ * needed in a CREATE INDEX).
  */
 export function codeOnly(sql: string): string | undefined {
   if (sql.includes('\\')) return undefined;
   let out = '';
   for (let i = 0; i < sql.length;) {
     if (sql.startsWith('--', i)) {
-      const nl = sql.slice(i).search(/[\r\n]/); // Postgres ends a -- comment at \r as well as \n
-      i = nl < 0 ? sql.length : i + nl;
+      const nl = /[\r\n]/g; // Postgres ends a -- comment at \r as well as \n
+      nl.lastIndex = i;
+      i = nl.exec(sql)?.index ?? sql.length;
       out += ' ';
     } else if (sql.startsWith('/*', i)) {
       let depth = 0;
@@ -88,8 +90,15 @@ export function codeOnly(sql: string): string | undefined {
       }
       out += ' ';
       i = j + 1;
+    } else if (sql[i] === '$' && /[\w$]|[^\x00-\x7F]/.test(sql[i - 1] ?? '')) {
+      // Right after an identifier, number or $1 parameter: whether Postgres reads a $tag$ here depends on the token
+      // before it (é$a$ and x$a$ are one identifier, 1$a$ and 0x1F$a$ are a number then a dollar quote). Refused.
+      return undefined;
     } else {
-      const tag = sql[i] === '$' && !/[\w$]/.test(sql[i - 1] ?? '') ? /^\$([A-Za-z_]\w*)?\$/.exec(sql.slice(i))?.[0] : undefined;
+      // Postgres' dolqdelim: $$ or $tag$, tag = letters, digits, _ and any non-ASCII character, not starting with a digit.
+      const dolq = /\$([A-Za-z_\u0080-￿][\w\u0080-￿]*)?\$/y;
+      dolq.lastIndex = i;
+      const tag = sql[i] === '$' ? dolq.exec(sql)?.[0] : undefined;
       if (tag) {
         const end = sql.indexOf(tag, i + tag.length);
         if (end < 0) return undefined;

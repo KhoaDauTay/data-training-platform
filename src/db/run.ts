@@ -115,6 +115,8 @@ export async function runLab(db: PGlite, ddl: string, sql: string, table: string
     const now = await relations();
     const known = new Set(old.map((r) => r.oid));
     const added = now.filter((r) => !known.has(r.oid));
+    // CREATE INDEX IF NOT EXISTS on a name already taken creates nothing (only a NOTICE).
+    if (now.length === old.length && added.length === 0) throw new SqlError({ message: 'no new index was created', code: 'LAB03' });
     if (now.length !== old.length + 1 || added.length !== 1 || added[0].kind !== 'i') {
       throw new SqlError({ message: 'only one CREATE INDEX statement is allowed here', code: 'LAB01' });
     }

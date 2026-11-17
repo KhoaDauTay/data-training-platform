@@ -320,6 +320,8 @@ export const en: Record<Key, Msg> = {
   'sqlerr.windowOver': 'ROW_NUMBER, RANK, LAG and LEAD need OVER (…) right after them: what to split by (PARTITION BY) and what to order by (ORDER BY).',
   'sqlerr.labTable': 'Put the index on the table that the query in the card on the left needs to read faster.',
   'sqlerr.labOnly': 'The lab runs exactly one CREATE INDEX statement.',
+  'sqlerr.labNone': 'No new index was created: the name already exists or nothing changed.',
+  'sqlerr.aggWindow': 'An aggregate cannot contain a window function. Compute the window function first in a subquery or CTE, then aggregate in the outer query.',
   'recap.reflect': 'Think it over',
   'recap.reflectRight': 'Correct.',
   'recap.reflectWrong': 'Not quite.',

@@ -52,6 +52,7 @@ const { app } = await import('../src/state');
 const { mountWork } = await import('../src/ui/work');
 const { HISTORY_KEY } = await import('../src/history');
 const { QueryTimeoutError } = await import('../src/db/client');
+const { SqlError } = await import('../src/db/run');
 const { t } = await import('../src/i18n');
 
 const result: QueryResult = { columns: ['n'], types: [23], rows: [[1]] };
@@ -432,6 +433,25 @@ describe('chương 11: chấm kế hoạch và phòng thí nghiệm chỉ mục'
     expect(shownText()).not.toContain(t('work.contentBug', { msg: '' }).trim());
     expect(deps.onSolved).not.toHaveBeenCalled();
     expect(deps.onWrong).not.toHaveBeenCalled();
+  });
+
+  it('EXPLAIN lúc chấm báo lỗi SQL: hiện thông báo Postgres và ghi chú dạy, không phải "lỗi nội dung ticket", không chấm', async () => {
+    app.save.drafts['P#0'] = 'SELECT 1  AS n';
+    const { work, deps } = setup11(IDX);
+    deps.db.run.mockImplementation((sql: string) => (sql.startsWith('EXPLAIN')
+      ? Promise.reject(new SqlError({ message: 'syntax error at or near "x"', code: '42601' }))
+      : Promise.resolve(result)));
+    open(work, planTicket());
+    editors[0].opts.onSubmit();
+    await flush();
+    const deep = (x: unknown): string[] => (typeof x === 'string' ? [x] : ((x as { kids?: unknown[] })?.kids ?? []).flatMap(deep));
+    const text = els.flatMap((e) => e.shown).flatMap(deep).join(' | '); // errorView nests the message one level down
+    expect(text).toContain('syntax error at or near "x"');
+    expect(text).toContain(t('sqlerr.42601'));
+    expect(text).not.toContain(t('work.contentBug', { msg: '' }).trim());
+    expect(deps.onSolved).not.toHaveBeenCalled();
+    expect(deps.onWrong).not.toHaveBeenCalled();
+    expect(app.save.graded).toEqual({});
   });
 
   it('phòng thí nghiệm: Chạy ghi câu CREATE INDEX vào lịch sử và xóa lastRun cũ', async () => {

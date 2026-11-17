@@ -205,10 +205,19 @@ describe('twistUsed: từ khóa theo kỹ năng', () => {
     ['window_agg', 'SELECT m, SUM(SUM(teu)) OVER (ORDER BY m) FROM t GROUP BY m', 'SELECT m, SUM(SUM(teu)) FROM t GROUP BY m'],
     ['window_agg', 'SELECT SUM(COALESCE(x, 0))  OVER (ORDER BY d) FROM t', 'SELECT LAG(SUM(x)) OVER (ORDER BY d), SUM(COALESCE(x, 0)) FROM t GROUP BY d'],
     ['window_agg', 'SELECT count(*) over w FROM t WINDOW w AS (ORDER BY d)', 'SELECT max(x), ROW_NUMBER() OVER () FROM t'],
+    // Comments and literals do not count: OVER after a comment counts, OVER or ')' inside a string does not.
+    ['window_agg', 'SELECT SUM(x) /* running */ OVER (ORDER BY d) FROM t', "SELECT SUM(x), ') OVER' FROM t"],
+    ['window_agg', "SELECT SUM(length(')')) OVER (ORDER BY d) FROM t", "SELECT SUM(length(x)) -- OVER\nFROM t"],
     ['index_design', 'create unique index on container_events (container_id)', 'SELECT * FROM pg_indexes'],
   ])('%s', (skill, yes, no) => {
     expect(twistUsed(skill, yes)).toBe(true);
     expect(twistUsed(skill, no)).toBe(false);
+  });
+
+  it('window_agg: 200 KB of unclosed SUM( stays fast (no quadratic scan)', () => {
+    const t0 = performance.now();
+    expect(twistUsed('window_agg', 'SELECT ' + 'SUM('.repeat(50_000))).toBe(false);
+    expect(performance.now() - t0).toBeLessThan(500);
   });
 
   it('kỹ năng lạ → undefined (không kiểm)', () => {
