@@ -13,7 +13,7 @@ const parse = (v: unknown, boss = false): Scene => parseScene(v, boss, fail);
 const as = (dept: string, tables: string[] = ['ports']) => ({ ...tickets[0], from: { name: 'X', dept }, tables });
 
 describe('sceneOf (completion-animations §3.2–§3.3)', () => {
-  it('15 ticket ch1–3 ra đúng bảng §3.3 (sau 3 dòng scene: của Step 4)', () => {
+  it('mọi ticket ra đúng bảng §3.3 (ch1–3 sau 3 dòng scene: của Step 4; ch4–6 theo Plan 2)', () => {
     expect(Object.fromEntries(tickets.map((t) => [t.id, sceneOf(t)]))).toEqual({
       'ch1-01': { kind: 'yard' }, 'ch1-02': { kind: 'yard' }, 'ch1-03': { kind: 'yard' }, 'ch1-04': { kind: 'yard' },
       'ch1-05': { kind: 'promotion', to: 'NLRTM' },
@@ -21,6 +21,8 @@ describe('sceneOf (completion-animations §3.2–§3.3)', () => {
       'ch2-05': { kind: 'promotion' },
       'ch3-01': { kind: 'chat' }, 'ch3-02': { kind: 'yard' }, 'ch3-03': { kind: 'chat' }, 'ch3-04': { kind: 'yard' },
       'ch3-05': { kind: 'promotion' },
+      'ch4-01': { kind: 'chat' }, 'ch4-02': { kind: 'ship' }, 'ch4-03': { kind: 'truck' }, 'ch4-04': { kind: 'chat' },
+      'ch4-05': { kind: 'truck' }, 'ch4-06': { kind: 'promotion' },
     });
   });
 
