@@ -73,7 +73,7 @@ Thanh tải DB vẫn hiện ở chân màn chào. DB sẵn sàng trước khi đ
 
 | # | Vùng | Lời (VI) | Bước xong khi |
 |---|---|---|---|
-| 1 | Khung yêu cầu | "Đây là tin nhắn của anh Khánh. Phần **Việc cần làm** là câu hỏi; thẻ **Kết quả mong đợi** cho biết cần mấy cột, mấy dòng." | Bấm "Tiếp" |
+| 1 | Khung yêu cầu | "Đây là tin nhắn của anh Khánh. Phần **Yêu cầu** là câu hỏi; thẻ **Kết quả mong đợi** cho biết cần mấy cột, mấy dòng." | Bấm "Tiếp" |
 | 2 | Editor | "Editor có sẵn một câu SQL. Bấm **Chạy** ({mod}+Enter)." | Có lần chạy đầu (`app.lastRun`) |
 | 3 | Tab Kết quả | "Kết quả có 6 cột, thẻ mong đợi cần 3. Dấu ✗ trên thẻ cho biết còn lệch." | Bấm "Tiếp" |
 | 4 | Thẻ Bài học nhanh *Chọn cột (SELECT)* | "Chưa biết sửa sao? Bài học 1 phút này chỉ cách chọn cột. Bấm **Chạy ví dụ**." | Chạy ví dụ trong thẻ |
@@ -95,16 +95,16 @@ Mỗi bước có "Bỏ qua hướng dẫn" (Esc). Tour không chặn thao tác:
 | Nav **Sandbox** | hiện | luôn | Không cần |
 | Hộp thư | hiện | luôn | Bước 8 tour |
 
-Ghi chú: giữ nav 6 mục cố định (L49) để bố cục không nhảy; chỉ **khóa + tooltip**, không ẩn. Đây là quyết định **D-O3**.
+Ghi chú: giữ nav 6 mục cố định (L49) để bố cục không nhảy; chỉ **khóa + tooltip**, không ẩn. Đây là quyết định **D-O3**. Hiện tại (bản live) Bảng điều hành mở ngay từ đầu, khóa theo từng loại card; D-O3 đổi điều này thành khóa cả mục tới khi xong ch1-02. Trạng thái rỗng (§B.3) nối tiếp ý #10 "Minh họa trạng thái rỗng" của `product-design-v2.md`, chưa làm.
 
 ### B.3 Trạng thái rỗng (empty states)
 
 | Chỗ | Hiện tại | Đề xuất (VI) |
 |---|---|---|
-| Tab Kết quả trước lần chạy đầu | trống | "Bấm **Chạy** ({mod}+Enter) để xem kết quả ở đây." + mũi tên tới nút Chạy |
-| Luyện tập khi chưa học kỹ năng nào | về Trang chủ kèm giải thích (L37) | "Chưa có gì để ôn. Học xong kỹ năng đầu tiên ở việc 1, kỹ năng đó sẽ vào hàng ôn." + nút "Tới việc 1" |
+| Tab Kết quả trước lần chạy đầu | **Đã có** `res.runFirst` ("Chạy truy vấn ({mod}+Enter) để xem kết quả.") | Giữ chữ; thêm mũi tên tới nút Chạy trong tour bước 2 |
+| Luyện tập khi chưa học kỹ năng nào | `prac.noneDue` / `prac.nothingDue` nói về "đến hạn", chưa phân biệt trường hợp chưa học gì (L37) | "Chưa có gì để ôn. Học xong kỹ năng đầu tiên ở việc 1, kỹ năng đó sẽ vào hàng ôn." + nút "Tới việc 1" |
 | Bảng điều hành chưa có card | **Đã có** ("Ghim truy vấn đầu tiên của bạn" + nút "Tạo card trong Sandbox") | Giữ nguyên |
-| Lịch sử query của ticket | — | "Các lần chạy của bạn sẽ hiện ở đây (tối đa 15)." |
+| Lịch sử query của ticket | chỉ có tiêu đề `hist.title` ("Lịch sử (0)") | "Các lần chạy của bạn sẽ hiện ở đây (tối đa 15)." |
 | Sandbox lần đầu | editor trống | Starter gợi ý: `SELECT * FROM ports LIMIT 20` + dòng "Sandbox không chấm, chạy gì cũng được." |
 
 ### B.4 Bỏ qua, xem lại, lưu
@@ -164,7 +164,7 @@ Ghi chú: giữ nav 6 mục cố định (L49) để bố cục không nhảy; c
 
 | Chỗ | Hành vi |
 |---|---|
-| **Brief**, ticket đầu tiên có kỹ năng trong `grants` | Thẻ nằm **giữa tin nhắn và Việc cần làm**, mở sẵn lần đầu. Bấm "Đã hiểu" hoặc Thử ngay đạt → thu gọn thành một dòng "Bài học nhanh: Lọc dòng (WHERE) ✓ · Mở lại". Ticket mở hai kỹ năng (ch1-03, ch3-03): hai thẻ xếp chồng, thẻ hai thu gọn tới khi thẻ một xong. |
+| **Brief**, ticket đầu tiên có kỹ năng trong `grants` | Thẻ nằm **giữa tin nhắn và Yêu cầu**, mở sẵn lần đầu. Bấm "Đã hiểu" hoặc Thử ngay đạt → thu gọn thành một dòng "Bài học nhanh: Lọc dòng (WHERE) ✓ · Mở lại". Ticket mở hai kỹ năng (ch1-03, ch3-03): hai thẻ xếp chồng, thẻ hai thu gọn tới khi thẻ một xong. |
 | **Chip kỹ năng** (`skillChips`, mọi ticket) | Chip thành **nút**; bấm mở thẻ trong dialog. Đổi nhãn tiền tố: "Dạy:" → **"Kỹ năng mới:"**, "Cần:" → **"Cần dùng:"**. |
 | **Lộ trình** (§D) | Nút bài học trước nút ticket; mở được cả khi ticket chưa mở (đọc trước). |
 | **Sổ tay** | Kỹ năng chưa học vẫn hiện **bài học nhanh** (không hiện thẻ `syntax/when/trap` cũ tới khi học); bỏ khóa đọc. |
@@ -355,7 +355,7 @@ Thứ tự nút suy ra từ thứ tự ticket trong chương:
 | Mở | = `nextTicket()`, chưa có nháp | chưa xem | — |
 | Đang làm | có `drafts[stepKey]` hoặc `bossStep` | đã xem, chưa Thử ngay | — |
 | Xong | trong `completed` | Thử ngay đạt | hộp Leitner 1–3: vạch mức nhớ (dùng lại `home.level`) |
-| **Thành thạo** | — | — | `review[skill].box ≥ 4` (≥ 8 ngày không quên), viền vàng + ngôi sao |
+| **Thành thạo** | — | — | `review[skill].box ≥ 4` (đã nhớ đúng qua các lần ôn cách 1, 2, 4 ngày; lần ôn tới cách 8 ngày; `INTERVALS` = [1, 2, 4, 8, 16]), viền vàng + ngôi sao |
 
 Không màu đơn độc: mỗi trạng thái có icon + chữ (khóa, ▶, …, ✓, ★), theo L23.
 
@@ -422,7 +422,7 @@ Hàm thuần mới `pathOf(chapter, tickets, save, lessonsPref) → Node[]` tron
 | ch1-05 | — | — | (cột mốc dùng `conclusion`) | — | — |
 | ch2-01 | (worked qua bài học) | "ba con số", "trung bình" ✓ | + | + (quên bỏ lô hủy) | |
 | **ch2-02** | **faded** | "mỗi tổ hợp … một dòng" ✓ | + | + | starter `… GROUP BY ___` |
-| ch2-03 | open | "những khách có hơn {{min}} lô" ✓ | + | + (`WHERE count…` → lỗi 42803, đã có trong `sqlErrors`) | |
+| ch2-03 | open | "những khách có hơn {{min}} lô" ✓ | + | + (đếm cả lô hủy, hoặc `>=` thay `>`; câu `wrong` phải chạy được nên lỗi `WHERE count(*)…` không đưa vào đây: lỗi đó đã có giải thích SQLSTATE 42803 trong `sqlErrors.ts`) | |
 | ch2-04 | open | — | + | — | |
 | ch3-01 | (worked qua bài học) | thêm "tên khách nằm ở hồ sơ khách hàng" | + | + (thiếu `ON` → nhân dòng) | bài học `join` phải dạy **alias** (`s`, `c`), hiện chưa được giới thiệu ở đâu |
 | **ch3-02** | **faded** | ✓ | + | + | |
@@ -557,7 +557,7 @@ MVP = **P0 + P1 + P2**. P3 sau buổi thử (có thể đổi theo phản hồi)
 **Lộ trình**
 
 - **D-P1.** Lộ trình nằm trong Trang chủ (Toàn cảnh thay lưới card chương; chương tại `#/path/n`), **không thêm mục nav thứ 7**? (đề xuất: có)
-- **D-P2.** "Thành thạo" = hộp Leitner ≥ 4 (đã nhớ qua lần ôn cách 8 ngày)? Hay ≥ 5?
+- **D-P2.** "Thành thạo" = hộp Leitner ≥ 4 (đã qua lần ôn cách 4 ngày, lần tới cách 8 ngày; đề xuất), hay = 5 (đã qua cả lần ôn cách 8 ngày)?
 - **D-P3.** Ngăn chi tiết có link **đọc thêm bên ngoài** (PostgreSQL docs, SQLBolt)? Ứng dụng hiện không có link ra ngoài. (đề xuất: chỉ PostgreSQL docs)
 - **D-P4.** Làm lộ trình (P3) **sau** buổi thử 5 người với MVP P0–P2? (đề xuất: có)
 
@@ -580,4 +580,4 @@ MVP = **P0 + P1 + P2**. P3 sau buổi thử (có thể đổi theo phản hồi)
 | Select Star SQL: https://selectstarsql.com/ | "Sách tương tác", một bộ dữ liệu thật xuyên suốt, chương ~30 phút theo mạch truyện. Giống cách Cargo Query dùng một công ty xuyên suốt. | §C.7 (ví dụ trên dữ liệu thật của game) |
 | Khan Academy Intro to SQL: https://www.khanacademy.org/computing/computer-programming/sql | **Không mở được** (trang chặn trình đọc tự động). Không trích. | — |
 | Worked-example effect: https://en.wikipedia.org/wiki/Worked-example_effect | Sweller & Cooper (1985): người mới học từ ví dụ giải sẵn tốt hơn tự giải; Renkl, Atkinson & Große (2004): **làm mờ dần** các bước kích thích tự giải thích; Paas: bài "hoàn thiện nửa chừng" (completion) hiệu quả như ví dụ đầy đủ; Kalyuga và cộng sự: **expertise reversal**, ví dụ có thể làm chậm người đã giỏi. Trang tự ghi một số trích dẫn chưa kiểm, nên chỉ dùng ở mức nguyên tắc. | §C.1 (ví dụ → Thử ngay → ticket), §B.2 (lựa chọn "Đã biết SQL"), §E.1 (faded) |
-| PostgreSQL docs: https://www.postgresql.org/docs/current/queries-select-lists.html, https://www.postgresql.org/docs/current/queries-table-expressions.html#QUERIES-WHERE | Link "Đọc thêm" của bài học. | §C.7 |
+| PostgreSQL docs: https://www.postgresql.org/docs/current/queries-select-lists.html, https://www.postgresql.org/docs/current/queries-table-expressions.html#QUERIES-WHERE | Link "Đọc thêm" của bài học. **Chưa mở để kiểm** (đường dẫn theo cấu trúc docs Postgres quen thuộc); người viết bài học kiểm từng link trước khi đưa vào `skills.yml`. | §C.7 |
