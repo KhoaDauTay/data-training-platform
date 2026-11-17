@@ -9,6 +9,7 @@ import { textOf, type Beat, type Ticket, type TicketText } from '../tickets';
 import { avatar } from './avatar';
 import { coach } from './coach';
 import { h, nodes, richText } from './dom';
+import { skillIcon } from './icons';
 
 const BEAT: Record<Beat, Key> = { teach: 'beat.teach', develop: 'beat.develop', twist: 'beat.twist', rest: 'beat.rest', boss: 'beat.boss' };
 const KIND: Record<Kind, Key> = { text: 'shape.text', number: 'shape.number', date: 'shape.date', bool: 'shape.bool' };
@@ -177,7 +178,9 @@ function recap(tk: Ticket, x: TicketText): HTMLElement {
     h('p', {}, t('recap.xp', { n: xpFor(tk, hintsUsed), hints: hintsUsed })),
     h('h4', {}, t(tk.grants.length ? 'recap.learned' : 'recap.review')),
     h('ul', { class: 'space-y-1' }, ...skills.map((s) =>
-      h('li', {}, h('b', {}, s.label[lang]), ' ', h('code', {}, s.syntax), h('p', { class: 'muted' }, s.when[lang])))),
+      h('li', {},
+        h('span', { class: 'inline-flex items-center gap-1.5 align-middle' }, skillIcon(s.id, 'size-5 text-emerald-800 dark:text-emerald-300'), h('b', {}, s.label[lang])),
+        ' ', h('code', {}, s.syntax), h('p', { class: 'muted' }, s.when[lang])))),
     reflectCard(tk),
     ...tk.steps.map((s, i) => h('div', { class: 'my-2 grid gap-2 sm:grid-cols-2' },
       tk.steps.length > 1 ? h('h4', {}, x.steps[i].title) : null,

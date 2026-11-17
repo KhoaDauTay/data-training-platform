@@ -7,6 +7,7 @@ import { app, done } from '../state';
 import type { Lang } from '../tickets';
 import { byId, h, nodes } from './dom';
 import { registerMode } from './homeView';
+import { skillIcon } from './icons';
 
 const ITEM = 'border-b border-line py-2';
 
@@ -47,12 +48,12 @@ export function toggleNotebook(dialog: HTMLDialogElement): void {
       ...cards.map((s) =>
         learned.has(s.id)
           ? h('article', { class: ITEM },
-              h('h4', { class: 'm-0' }, s.label[lang]),
+              h('h4', { class: 'm-0 flex items-center gap-2' }, skillIcon(s.id), s.label[lang]),
               h('pre', { class: 'sql my-1' }, s.syntax),
               h('p', { class: 'my-0.5 text-sm' }, h('b', {}, t('nb.when')), ' ', s.when[lang]),
               h('p', { class: 'my-0.5 text-sm' }, h('b', {}, t('nb.trap')), ' ', s.trap[lang]))
           : h('article', { class: ITEM },
-              h('h4', { class: 'm-0 text-muted' }, s.label[lang]),
+              h('h4', { class: 'm-0 flex items-center gap-2 text-muted' }, skillIcon(s.id), s.label[lang]),
               h('p', { class: 'my-0.5 text-sm text-muted' }, t('nb.unlockAt', { id: grantedBy(app.tickets, s.id)?.id ?? '—' })))),
       h('h3', {}, t('nb.terms')),
       ...terms.map((g) =>
@@ -91,6 +92,6 @@ export function toggleNotebook(dialog: HTMLDialogElement): void {
 export const renderNotebook = (): void => redraw?.();
 
 registerMode({
-  id: 'notebook', order: 30, icon: '📒', tint: 'bg-fuchsia-100 dark:bg-fuchsia-950',
+  id: 'notebook', order: 30, icon: 'book', tint: 'bg-fuchsia-100 text-fuchsia-800 dark:bg-fuchsia-950 dark:text-fuchsia-200',
   title: 'mode.notebook', desc: 'mode.notebookDesc', open: () => toggleNotebook(byId('notebook-dialog') as HTMLDialogElement),
 });
