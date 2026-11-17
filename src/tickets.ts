@@ -4,6 +4,10 @@ import { parseScene, type Scene } from './scene';
 
 export type Lang = 'vi' | 'en';
 export type Beat = 'teach' | 'develop' | 'twist' | 'rest' | 'boss';
+/** curriculum §5.1: worked = annotated example + paired task; faded = starter with ___ blanks; open = plain task. */
+export type Format = 'worked' | 'faded' | 'open';
+/** A blank in a faded starter; Submit refuses SQL that still contains one. */
+export const BLANK = '___';
 /** Expected-result column label (L25): business meaning in both languages, never the Solution's column name. */
 export interface Step {
   title: string;
@@ -21,7 +25,13 @@ export interface TicketText {
   hints: string[];
   steps: { title: string; prompt: string }[];
   conclusion?: { question: string; options: string[] };
+  /** "## Example" prose (format: worked): explains the ①… markers of Ticket.example.sql. */
+  example?: string;
 }
+/** Multiple-choice question in the Recap after a correct submit (curriculum §5.5). Not graded, not saved. */
+export interface Reflect { q: Bilingual; options: Bilingual[]; answer: number; why: Bilingual }
+/** A common wrong answer: when the player's result equals this SQL's result, the feedback shows `why` (curriculum §5.4). */
+export interface Wrong { sql: string; why: Bilingual }
 /** Values for the {{name}} templates. variants[0] is the version used in the main path. */
 export type Variant = Record<string, string>;
 export interface Ticket {
@@ -49,9 +59,16 @@ export interface Ticket {
   scene?: Scene;
   variants?: Variant[];
   en?: TicketText;
+  /** undefined = open (ch1–3 never declare it). */
+  format?: Format;
+  /** format: worked. `sql` (markers -- ①…) is shared; `text` is the VI prose (EN prose lives in en.example). */
+  example?: { sql: string; text: string };
+  reflect?: Reflect;
+  wrong?: Wrong[];
 }
 
 const BEATS: Beat[] = ['teach', 'develop', 'twist', 'rest', 'boss'];
+const FORMATS: Format[] = ['worked', 'faded', 'open'];
 const FM_RE = /^---\n([\s\S]*?)\n---\n([\s\S]*)$/;
 const EN_RE = /^# EN[ \t]*$/m;
 const SQL_RE = /```sql\n([\s\S]*?)```/;
@@ -60,7 +77,7 @@ const VARIANT_VALUE_RE = /^[\w .:/-]{1,40}$/;
 
 const strings = (v: unknown): string[] => (Array.isArray(v) ? v.map(String) : []);
 
-interface Sections { body: string; task: string; hints: string[]; steps: Step[] }
+interface Sections { body: string; task: string; hints: string[]; steps: Step[]; example?: { prose: string; sql: string } }
 
 /** VI part: steps carry ```sql. EN part: same headings, never ```sql (SQL is shared). */
 function parseSections(part: string, fail: (msg: string) => never, lang: Lang): Sections {
@@ -72,6 +89,11 @@ function parseSections(part: string, fail: (msg: string) => never, lang: Lang): 
     const content = nl === -1 ? '' : sec.slice(nl + 1);
     if (heading === 'Task') {
       out.task = content.trim();
+    } else if (heading === 'Example') {
+      const sql = SQL_RE.exec(content);
+      if (lang === 'en' && sql) fail('khối # EN không được chứa ```sql trong "## Example" — SQL dùng chung');
+      if (lang === 'vi' && !sql) fail('"## Example" thiếu khối ```sql');
+      out.example = { prose: content.replace(SQL_RE, '').trim(), sql: sql ? sql[1].trim() : '' };
     } else if (heading === 'Hints') {
       for (const line of content.split('\n')) {
         const h = /^\d+\.\s+(.*)$/.exec(line.trim());
@@ -96,12 +118,16 @@ function parseSections(part: string, fail: (msg: string) => never, lang: Lang): 
 /** Every {{name}} used anywhere in the ticket's text, SQL and labels. */
 function templateNames(t: Ticket): Set<string> {
   const texts = (x: TicketText) => [x.title, x.body, x.task, ...x.hints, ...x.steps.flatMap((s) => [s.title, s.prompt]),
-    ...(x.conclusion ? [x.conclusion.question, ...x.conclusion.options] : [])];
+    ...(x.conclusion ? [x.conclusion.question, ...x.conclusion.options] : []), x.example ?? ''];
+  const both = (b: Bilingual) => [b.vi, b.en];
   const all = [
     ...texts(textOf(t, 'vi')),
     ...(t.en ? texts(t.en) : []),
-    ...t.steps.flatMap((s) => [s.solution, ...(s.columns ?? []).flatMap((l) => [l.vi, l.en])]),
+    ...t.steps.flatMap((s) => [s.solution, ...(s.columns ?? []).flatMap(both)]),
     t.starter ?? '',
+    t.example?.sql ?? '',
+    ...(t.reflect ? [t.reflect.q, ...t.reflect.options, t.reflect.why].flatMap(both) : []),
+    ...(t.wrong ?? []).flatMap((w) => [w.sql, ...both(w.why)]),
   ];
   return new Set(all.flatMap((s) => [...s.matchAll(VAR_RE)].map((m) => m[1])));
 }
@@ -135,6 +161,9 @@ export function parseTicket(source: string, origin: string): Ticket {
     hints: vi.hints,
     steps: vi.steps,
   };
+  if (fm.format !== undefined) {
+    t.format = FORMATS.includes(fm.format as Format) ? (fm.format as Format) : fail(`format phải là một trong ${FORMATS.join(', ')}`);
+  }
 
   if (t.hints.length !== 3) fail('cần đúng 3 hints');
   if (t.beat === 'boss') {
@@ -164,6 +193,37 @@ export function parseTicket(source: string, origin: string): Ticket {
   }
   if (fm.scene !== undefined) t.scene = parseScene(fm.scene, t.beat === 'boss', fail);
 
+  if (vi.example) {
+    t.example = { sql: vi.example.sql, text: vi.example.prose };
+    if (t.format !== 'worked') fail('"## Example" chỉ dành cho format: worked');
+  } else if (t.format === 'worked') {
+    fail('format: worked cần mục "## Example" (khối ```sql có chú thích ①… và lời giải thích)');
+  }
+  if (t.format === 'faded' && !t.starter?.includes(BLANK)) fail(`format: faded cần starter có ít nhất một chỗ trống ${BLANK}`);
+  if (t.beat === 'boss' && (fm.reflect !== undefined || fm.wrong !== undefined)) fail('boss dùng conclusion, không có reflect/wrong');
+  if (fm.reflect !== undefined) {
+    const r = fm.reflect as { q?: unknown; options?: unknown; answer?: unknown; why?: unknown } | null;
+    const options = Array.isArray(r?.options) ? r.options.map(bilingualOf) : [];
+    const q = bilingualOf(r?.q);
+    const why = bilingualOf(r?.why);
+    const answer = r?.answer;
+    if (!q || !why || options.length < 2 || options.length > 4 || options.some((o) => !o)
+      || typeof answer !== 'number' || answer < 0 || answer >= options.length) {
+      fail('reflect cần { q: {vi, en}, options: 2–4 × {vi, en}, answer: số thứ tự đáp án đúng (từ 0), why: {vi, en} }');
+    }
+    t.reflect = { q: q!, options: options as Bilingual[], answer: answer as number, why: why! };
+  }
+  if (fm.wrong !== undefined) {
+    const ws = Array.isArray(fm.wrong) ? (fm.wrong as unknown[]) : [];
+    if (ws.length === 0) fail('wrong: cần ít nhất một mục { sql, vi, en }');
+    t.wrong = ws.map((w) => {
+      const o = w as { sql?: unknown } | null;
+      const why = bilingualOf(w);
+      if (typeof o?.sql !== 'string' || !o.sql.trim() || !why) fail('wrong: mỗi mục là { sql, vi, en }');
+      return { sql: (o!.sql as string).trim(), why: why! };
+    });
+  }
+
   if (enPart !== undefined) {
     const en = parseSections(enPart, fail, 'en');
     if (typeof fm.title_en !== 'string') fail('khối # EN cần title_en');
@@ -178,7 +238,9 @@ export function parseTicket(source: string, origin: string): Ticket {
       task: en.task,
       hints: en.hints,
       steps: t.beat === 'boss' ? en.steps.map((s) => ({ title: s.title, prompt: s.prompt })) : [{ title: '', prompt: '' }],
+      ...(en.example ? { example: en.example.prose } : {}),
     };
+    if (!vi.example !== !en.example) fail('"## Example" phải có ở cả VI và EN');
     if (t.conclusion) {
       const c = fm.conclusion_en as { question?: unknown; options?: unknown } | undefined;
       if (!c || typeof c.question !== 'string' || !Array.isArray(c.options) || c.options.length !== t.conclusion.options.length) {
@@ -228,6 +290,7 @@ export function textOf(t: Ticket, lang: Lang): TicketText & { fallback: boolean 
     hints: t.hints,
     steps: t.steps.map((s) => ({ title: s.title, prompt: s.prompt })),
     ...(t.conclusion ? { conclusion: { question: t.conclusion.question, options: t.conclusion.options } } : {}),
+    ...(t.example ? { example: t.example.text } : {}),
     fallback: lang === 'en',
   };
 }

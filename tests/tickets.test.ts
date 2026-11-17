@@ -194,6 +194,55 @@ describe('song ngữ (# EN), ## Task, columns, starter', () => {
   });
 });
 
+/** NORMAL_BI as a worked example with reflect and wrong (Plan 2, curriculum §5). */
+const WORKED = NORMAL_BI
+  .replace('beat: develop\n', `beat: develop
+format: worked
+reflect:
+  q: { vi: "Vì sao?", en: "Why?" }
+  options: [{ vi: "Vì A", en: "Because of A" }, { vi: "Vì B", en: "Because of B" }]
+  answer: 1
+  why: { vi: "Vì B đúng.", en: "B is right." }
+wrong:
+  - { sql: "SELECT code FROM ports", vi: "Thiếu điều kiện.", en: "The filter is missing." }
+`)
+  .replace('## Task\nLấy mã cảng.\n', '## Task\nLấy mã cảng.\n\n## Example\n```sql\nSELECT name FROM ports -- ①\n```\n① Chọn cột `name`.\n')
+  .replace('## Task\nReturn the port codes.\n', '## Task\nReturn the port codes.\n\n## Example\n① Pick the `name` column.\n');
+
+describe('format, ## Example, reflect, wrong (Plan 2)', () => {
+  it('đọc ví dụ mẫu, câu ngẫm lại và câu sai điển hình', () => {
+    const t = parseTicket(WORKED, 'w.md');
+    expect(t.format).toBe('worked');
+    expect(t.example).toEqual({ sql: 'SELECT name FROM ports -- ①', text: '① Chọn cột `name`.' });
+    expect(textOf(t, 'vi').example).toBe('① Chọn cột `name`.');
+    expect(textOf(t, 'en').example).toBe('① Pick the `name` column.');
+    expect(t.reflect).toEqual({
+      q: { vi: 'Vì sao?', en: 'Why?' }, options: [{ vi: 'Vì A', en: 'Because of A' }, { vi: 'Vì B', en: 'Because of B' }],
+      answer: 1, why: { vi: 'Vì B đúng.', en: 'B is right.' },
+    });
+    expect(t.wrong).toEqual([{ sql: 'SELECT code FROM ports', why: { vi: 'Thiếu điều kiện.', en: 'The filter is missing.' } }]);
+    expect(parseTicket(NORMAL, 'n.md').format).toBeUndefined(); // ch1–3: open by default
+  });
+
+  it('faded cần chỗ trống ___ trong starter', () => {
+    const faded = NORMAL.replace('beat: develop\n', 'beat: develop\nformat: faded\nstarter: SELECT ___ FROM ports\n');
+    expect(parseTicket(faded, 'f.md').starter).toBe('SELECT ___ FROM ports');
+    expect(() => parseTicket(faded.replace('SELECT ___ FROM ports', 'SELECT code FROM ports'), 'f.md')).toThrow(/___/);
+  });
+
+  it('báo lỗi định dạng', () => {
+    const bad = (src: string) => () => parseTicket(src, 'bad.md');
+    expect(bad(WORKED.replace('format: worked', 'format: guided'))).toThrow(/format/);
+    expect(bad(WORKED.replace('format: worked\n', ''))).toThrow(/chỉ dành cho format: worked/);
+    expect(bad(WORKED.replace(/## Example\n```sql\n.*\n```\n.*\n/, ''))).toThrow(/cần mục "## Example"/);
+    expect(bad(WORKED.replace('## Example\n① Pick', '## Example\n```sql\nSELECT 1\n```\n① Pick'))).toThrow(/SQL dùng chung/);
+    expect(bad(WORKED.replace('## Example\n① Pick the `name` column.\n', ''))).toThrow(/cả VI và EN/);
+    expect(bad(WORKED.replace('  answer: 1\n', '  answer: 2\n'))).toThrow(/reflect/);
+    expect(bad(WORKED.replace(', en: "The filter is missing."', ''))).toThrow(/wrong/);
+    expect(bad(BOSS.replace('ordered: true\n', 'ordered: true\nwrong: [{ sql: "SELECT 1", vi: "a", en: "b" }]\n'))).toThrow(/boss/);
+  });
+});
+
 describe('variants', () => {
   it('đọc biến thể; giá trị số thành chuỗi', () => {
     expect(parseTicket(VARIANT, 'v.md').variants).toEqual([{ region: 'Europe' }, { region: 'Asia' }]);
