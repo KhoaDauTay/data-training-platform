@@ -43,7 +43,7 @@ Plan này chạy **sau** Plan 7 (BoonData foundation), Plan 8a (General + `lab`)
 | D9-1 | **Công ty hư cấu "Chợ Lồng Đèn" / "Lantern Market"**: sàn bán lẻ trực tuyến ở Đà Nẵng, mở cửa 01/2025, shop đối tác đăng hàng, sàn lo thanh toán + giao hàng. **Không thương hiệu thật:** đơn vị giao hàng `BeeRun Express`, `Kite Logistics`, `Lantern Fleet` (đội xe riêng); cách thanh toán là mã chung `cod/ewallet/card/bank_transfer` (không tên ví/thẻ); shop tên kiểu "Hoi An Lantern Craft"; sản phẩm "Smart Earbuds 252". | L56 bản quyền; tên gắn Hội An (lồng đèn) để cùng vùng với Logistics (Tiên Sa). |
 | D9-2 | **7 đồng nghiệp** trong `content/domains/ecom/people.yml` (cùng định dạng `people.yml`, `employee: null`): Võ Thanh Hà (Management, CEO, mọi đánh giá thăng tiến), Lâm Gia Huy (IT, trưởng nhóm dữ liệu, người kèm), Trịnh Mai Anh (Marketing), Đoàn Quốc Bảo (Category), Nguyễn Thu Uyên (Ops, kho vận), Hồ Ngọc Diệp (CS), Kha Văn Lộc (Finance). Tên không trùng người Logistics (`personOf` tìm theo tên). **2 phòng mới** trong `DEPT` (`src/theme.ts`): `Marketing`, `Category`. | v5 §B: mỗi domain có cốt truyện và người gửi riêng; tách file để `tests/people.test.ts` (đếm phòng ban Logistics) không đổi. |
 | D9-3 | **Domain id giữ `ecommerce`** (Plan 7), **schema `ecom`**, id ticket `ecom-chN-0M`, route `#/d/ecommerce/…`, thư mục `content/domains/ecom/`. Logistics **không** chuyển thư mục. | Plan 7 đã đặt id + route "Sắp có"; v5 §B.7 tiền tố `ecom-`. Chuyển `content/tickets` của Logistics không có lợi gì (v5 E). |
-| D9-4 | **6 chương × 5 việc = 30 việc, 21 kỹ năng dùng lại id:** C1 `select`, `where`, `order_by`+`limit` · C2 `aggregate`, `group_by`, `having` · C3 `join`, `multi_join`, `left_join`+`anti_join` · C4 `date_math`, `date_bucket`, `null_logic`+`coalesce` · C5 `case_when`, `conditional_agg`, `cte` · C6 `window_rank`, `window_lag`, `window_agg`. **Không dạy** ở E-com: `distinct`, `string_fn`, `pattern_match`, `cast`, `self_join`, truy vấn con (`scalar_subquery`, `in_subquery`, `exists`, `correlated_value`), `multi_cte` (đánh giá C5 dùng hai khối WITH, chỉ đòi `cte`), `distinct_on`, `union`, `except`, `full_join`, `explain_read`, `sargable`, `index_design` (bỏ chương index: không `runLab`, không bảng lớn, seed nhẹ). | Đủ đường DA bán lẻ (doanh số → giao hàng → phễu → giữ chân) trong 30 việc; mỗi kỹ năng đúng một lần như luật `contentProblems`. |
+| D9-4 | **6 chương × 5 việc = 30 việc, 21 kỹ năng dùng lại id:** C1 `select`, `where`, `order_by`+`limit` · C2 `aggregate`, `group_by`, `having` · C3 `join`, `multi_join`, `left_join`+`anti_join` · C4 `date_math`, `date_bucket`, `null_logic`+`coalesce` · C5 `case_when`, `conditional_agg`, `cte` · C6 `window_rank`, `window_lag`, `window_agg`. **Không dạy** ở E-com: `distinct`, `string_fn`, `pattern_match`, `cast`, `self_join`, truy vấn con (`scalar_subquery`, `in_subquery`, `exists`, `correlated_value`), `multi_cte` (đánh giá C5 dùng hai khối WITH, chỉ đòi `cte`), `distinct_on`, `union`, `except`, `full_join`, `explain_read`, `sargable`, `index_design` (bỏ chương index: không `runLab`, không bảng lớn, seed nhẹ). Ngoại lệ biết trước: đánh giá thăng tiến ecom-ch6-05 dùng `::date` (đổi thời điểm thành ngày) ở bước 1 và 3; gợi ý 2 ghi sẵn cú pháp, `requires` không ghi `cast` (E-com không dạy nó), SQL đã kiểm giữ nguyên. | Đủ đường DA bán lẻ (doanh số → giao hàng → phễu → giữ chân) trong 30 việc; mỗi kỹ năng đúng một lần như luật `contentProblems`. |
 | D9-5 | **Mọi chương E-com mở bằng ví dụ mẫu (`format: worked`)**, kể cả C1–C3 (Logistics C1–C3 dùng bài học nhanh thay). Đúng một `faded` mỗi chương (develop đầu). `reflect:` + `wrong:` ở mọi việc thường. **Biến thể ≥ 3 ở mọi việc dạy kỹ năng từ ecom-ch1-02** (trừ `select`), chặt hơn luật ch≥4 của Logistics. Luật rest (≥ 2 kỹ năng chương trước, 1 từ N−2) áp từ C4 như `REST_RULE_FROM`. | Người vào E-com đa phần đã qua General/Logistics; ví dụ mẫu nhanh hơn. Ôn Leitner cần biến thể (L37). |
 | D9-6 | **Chương của kỹ năng trong domain = chương của ticket dạy nó** (`domainSkills(tickets)`), không chép `skills.yml`. Thẻ kỹ năng (label/syntax/trap), hộp Leitner, `review` dùng chung giữa domain. Lộ trình Chung (Plan 8a) vẫn theo chương Logistics. | Một nguồn thẻ kỹ năng; `contentProblems` kiểm được "dạy đúng một lần". |
 | D9-7 | **Nội dung E-com là chunk lười `ecomSources`**, tải khi mở domain (không tải lúc khởi động). Save giữ id E-com **theo mẫu** `ECOM_ID = /^ecom-ch\d{1,2}-\d{2}$/` (như `DRILL_ID` của Plan 8a, D8a-9). | Người chỉ chơi Logistics không tải 39 KB gz; `Known` không cần nội dung E-com nên không mất tiến độ khi đọc Save trước khi tải chunk. |
@@ -107,8 +107,9 @@ CLAUDE.md                         mục "Domain E-commerce (Plan 9)"            
 - Seed `ecom` hai lần trên hai instance: md5 13 bảng trùng nhau (tất định); `CREATE SCHEMA ecom; SET search_path TO ecom;` rồi `schema.sql` + `seed.sql` không sửa.
 - 30 ticket (Phụ lục C) chạy qua **chính** `parseTicket`, `applyVariant`, `compareResults`, `cellKey`, `contentProblems`, `parseChapters`, `parsePeople`, `parseKpis`, `runSandboxed` của repo (vitest với config scratch trỏ root repo): **225/225 kiểm tra xanh**, gồm mọi Solution × biến thể có dòng và khác nhau từng đôi, mọi `wrong:` × biến thể chạy được và khác Solution, mọi ví dụ mẫu chạy được, mã trong code span VI = EN, EN không dấu, đề không có từ khóa SQL/snake_case, biến thể 0 không sót, luật rest/twist→boss/teach-faded.
 - Thời gian mỗi Solution ≤ 12 ms (Node). Bảng số dòng ở mục dưới.
+- **Hai schema cùng lúc:** seed Logistics vào `logistics` (đường dẫn phiên `logistics, sandbox`), một query Logistics, rồi đúng chuỗi `ensureSchema` cho `ecom` (`CREATE SCHEMA ecom; SET search_path TO ecom;` → `schema.sql` → `seed.sql` → `SANDBOX_SETUP_SQL`): **1,56 s**, md5 13 bảng đọc qua `BEGIN; SET LOCAL search_path TO ecom, sandbox; … ROLLBACK` **trùng ghim**; query `customers`/`orders`/`payments` trả số E-com (5.000 khách, 845 đơn hủy), sau đó `SHOW search_path` = `logistics, sandbox` và `customers` không tiền tố trả 200 (Logistics).
 - `src/art/ecommerce.ts` (Phụ lục D) qua `tsc --strict` với `s()`/`chapterColor` thật của repo (i18n thay bằng stub vì khóa `ecom.*` chưa có).
-- Chưa kiểm: build Vite, trình duyệt, tích hợp với code Plan 7/8 (chưa có trên HEAD).
+- **Chưa kiểm:** code engine của Task 1–3, 5, 6 chưa chạy trên code thật của Plan 7/8 (chưa có trên HEAD lúc viết; các khối code viết theo chữ ký trong plan của chúng); build Vite; thời gian seed trên trình duyệt.
 
 ### Kết quả của Solution (biến thể 0)
 
@@ -138,7 +139,33 @@ grep -n "SAVE_VERSION = " src/save.ts            # phải là 3
 ls src/art/load.ts src/db/lab.sql                # Plan 8b, 8a
 ls src/db/ecom src/ecomSources.ts 2>&1 | grep -c "No such"   # phải là 2 (chưa có gì của Plan 9)
 ```
-- [ ] **Step 2: mốc đo.** `npx tsc --noEmit && npm test` xanh. `npm run build && node scripts/check-budget.mjs`: ghi **M0** (`main`, `worker`, `tickets`, `art`). Seed Logistics trong Node (`npx vitest run tests/seed.test.ts`) để có số so với D9-8.
+- [ ] **Step 2: tách phụ lục ra file** (một lần; các task sau dùng file đã tách, không chép tay). Lưu khối dưới thành `/tmp/plan9_extract.py` (hoặc thư mục scratch) rồi chạy `python /tmp/plan9_extract.py` từ thư mục repo:
+```python
+import re, os
+s = open('docs/superpowers/plans/2026-11-17-cargo-query-plan-9-ecom-domain.md', encoding='utf-8').read()
+def block(title, fence):
+    a = s[s.index('\n' + title):]   # the heading line, not the quoted title in this script
+    a = a[a.index(fence) + len(fence):]
+    end = '\n````\n' if fence.startswith('````') else '\n```\n'
+    return a[:a.index(end)]
+def write(path, text):
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    open(path, 'w', encoding='utf-8', newline='\n').write(text.rstrip('\n') + '\n')
+write('src/db/ecom/schema.sql', block('## Phụ lục A', '```sql\n'))
+write('src/db/ecom/seed.sql', block('## Phụ lục B', '```sql\n'))
+write('src/art/ecommerce.ts', block('## Phụ lục D', '```ts\n'))
+write('tests/ecomSeed.test.ts', block('### E.1', '```ts\n'))
+write('tests/ecomContent.test.ts', block('### E.2', '```ts\n'))
+write('tests/fixtures/save-v4.json', block('### E.3', '```json\n'))
+c = block('## Phụ lục C', '````text\n')
+n = 0
+for m in re.finditer(r'^=== (\S+) ===\n(.*?)(?=^=== |\Z)', c, re.S | re.M):
+    write(os.path.join('content/domains/ecom', m.group(1)), m.group(2))
+    n += 1
+print(n, 'content files')   # 33
+```
+  Các file này **chưa commit** ở Task 0: mỗi task `git add` đúng file của nó (Task 1: `src/db/ecom/*`, `tests/ecomSeed.test.ts`; Task 3: `tests/ecomContent.test.ts`; Task 4: `content/domains/ecom/**`; Task 5: `tests/fixtures/save-v4.json`; Task 7: `src/art/ecommerce.ts`). `npm test` trước các task đó sẽ đỏ ở test mới: bình thường (test viết trước).
+- [ ] **Step 3: mốc đo.** `npx tsc --noEmit && npm test` xanh. `npm run build && node scripts/check-budget.mjs`: ghi **M0** (`main`, `worker`, `tickets`, `art`). Seed Logistics trong Node (`npx vitest run tests/seed.test.ts`) để có số so với D9-8.
 
 ---
 
@@ -150,9 +177,9 @@ ls src/db/ecom src/ecomSources.ts 2>&1 | grep -c "No such"   # phải là 2 (ch�
 - Consumes: `SCHEMAS`, `SchemaId`, `ensureSchema`, `runSandboxed(…, { schema })`, request `ensure`, `DbClient.ensure` (Plan 8a T1).
 - Produces: `SCHEMAS.ecom = 'ecom'`; `ECOM_TABLES`; `ensureSchema(db, 'ecom')`; `setRequestPath(db, schema?)`; `DbClient.defaultSchema`; `ecomRunner()` trong `tests/helpers.ts`.
 
-- [ ] **Step 1: tạo dữ liệu.** `src/db/ecom/schema.sql` = **Phụ lục A** nguyên văn; `src/db/ecom/seed.sql` = **Phụ lục B** nguyên văn.
+- [ ] **Step 1: tạo dữ liệu.** `src/db/ecom/schema.sql` (**Phụ lục A**) và `src/db/ecom/seed.sql` (**Phụ lục B**) đã tách ở Task 0 Step 2; kiểm `head -3 src/db/ecom/seed.sql`.
 
-- [ ] **Step 2: test trước.** Tạo `tests/ecomSeed.test.ts` = **Phụ lục E.1**. Thêm vào `tests/helpers.ts` (cạnh `runner()`; thêm import `ensureSchema` từ `../src/db/run` nếu chưa có):
+- [ ] **Step 2: test trước.** `tests/ecomSeed.test.ts` = **Phụ lục E.1** (đã tách ở Task 0). Thêm vào `tests/helpers.ts` (cạnh `runner()`; thêm import `ensureSchema` từ `../src/db/run` nếu chưa có):
 ```ts
 /** The e-commerce schema on the shared test DB (Plan 9): seeded once per file, queries run with search_path ecom, sandbox. */
 export async function ecomRunner(): Promise<(sql: string) => Promise<QueryResult>> {
@@ -353,7 +380,7 @@ export function domainOfHash(hash: string): DomainId | undefined {
 **Interfaces:**
 - Produces: `loadDomain(id): Promise<void>`; `loadTicketTemplates(d = activeDomain())`, `loadTickets(d = activeDomain())`; `Chapter.tables?: string[]`; `setDomainChapters`, `chaptersOf(d?)`, `chapterTablesOf(d?)`, `domainSkills(tickets)`; `contentProblems(tickets, skills?, chapters?, tables?)`; `tablesUnlocked(chapter, tables?)`; `kpisOf(d?)`, `setDomainKpis`; `peopleOf(d)`, `setDomainPeople`, `personOf` tìm mọi domain.
 
-- [ ] **Step 1: test trước.** Tạo `tests/ecomContent.test.ts` = **Phụ lục E.2**. Run → FAIL (`loadDomain`… chưa có; nội dung chưa có — Task 4 thêm, nên test này xanh ở cuối Task 4).
+- [ ] **Step 1: test trước.** `tests/ecomContent.test.ts` = **Phụ lục E.2** (đã tách ở Task 0). Run → FAIL (`loadDomain`… chưa có; nội dung chưa có — Task 4 thêm, nên test này xanh ở cuối Task 4).
 
 - [ ] **Step 2: `src/ecomSources.ts`** (tạo):
 ```ts
@@ -470,17 +497,7 @@ export function loadTickets(d: DomainId = activeDomain()): Ticket[] {
 
 **Files:** tạo `content/domains/ecom/chapters.yml`, `content/domains/ecom/people.yml`, `content/domains/ecom/kpis.yml`, `content/domains/ecom/tickets/ch1/ecom-ch1-01.md` … `ch6/ecom-ch6-05.md` (30 file).
 
-- [ ] **Step 1:** Chép **Phụ lục C** nguyên văn: mỗi khối `=== <đường dẫn> ===` là một file dưới `content/domains/ecom/` (đường dẫn ticket tương đối với `content/domains/ecom/tickets/`). Mẹo: lưu phụ lục ra file rồi chạy
-```bash
-python - <<'EOF'
-import re, os
-s = open('plan9-appendix-c.txt', encoding='utf-8').read()
-for m in re.finditer(r'^=== (\S+) ===\n(.*?)(?=^=== |\Z)', s, re.S | re.M):
-    p = os.path.join('content/domains/ecom', m.group(1))
-    os.makedirs(os.path.dirname(p), exist_ok=True)
-    open(p, 'w', encoding='utf-8', newline='\n').write(m.group(2).rstrip('\n') + '\n')
-EOF
-```
+- [ ] **Step 1:** 33 file của **Phụ lục C** đã tách ở Task 0 Step 2 (mỗi khối `=== <đường dẫn> ===` là một file dưới `content/domains/ecom/`, ticket dưới `tickets/chN/`). Kiểm: `ls content/domains/ecom/tickets/*/*.md | wc -l` → 30.
 - [ ] **Step 2: `src/theme.ts` `DEPT`:** thêm 2 phòng (khóa i18n thêm ở Task 6 Step 7; nếu `tsc` báo `Key` chưa có, làm luôn bước i18n đó ở đây):
 ```ts
   Marketing: { chip: 'bg-orange-100 text-orange-800 dark:bg-orange-950 dark:text-orange-200', shirt: '#c2410c', backdrop: '#ffedd5', thanks: 'chat.thanksMarketing' },
@@ -495,7 +512,7 @@ EOF
 
 **Files:** sửa `src/save.ts`, `tests/saveV3.test.ts`; tạo `tests/saveV4.test.ts`, `tests/fixtures/save-v4.json`.
 
-- [ ] **Step 1: test trước.** Tạo `tests/fixtures/save-v4.json` = **Phụ lục E.3**, `tests/saveV4.test.ts`:
+- [ ] **Step 1: test trước.** `tests/fixtures/save-v4.json` = **Phụ lục E.3** (đã tách ở Task 0); tạo `tests/saveV4.test.ts`:
 ```ts
 import { describe, expect, it } from 'vitest';
 import v3 from './fixtures/save-v3.json?raw';
@@ -640,6 +657,10 @@ async function enterDomain(id: DomainId): Promise<void> {
   - `textValues` (`src/state.ts`): khóa memo thành `` `${domainSchemaName()}.${table}` `` và đọc `erMeta(domainSchemaName())`.
   - `src/import/myData.ts`: tập tên bảng game = kết quả `GAME_TABLES_SQL` (Logistics) **∪ `ECOM_TABLES`** (D9-15): `return new Set([...rows.map((r) => String(r[0])), ...ECOM_TABLES]);`.
 
+- [ ] **Step 4b: autocomplete theo domain.** Neo: `grep -n "information_schema.columns" src/main.ts src/state.ts`. Query cột cho autocomplete (Plan 7 đổi tên schema) thường chạy **một lần** khi DB sẵn sàng: tách thành hàm `loadCompletions()` và gọi lại cuối `enterDomain` (sau `ensure`, cùng hàng đợi), để E-com không giữ cột Logistics. Bảng nhập (`schemaHooks.extra`) giữ nguyên.
+
+- [ ] **Step 4c: trang Chung đọc Logistics, không đọc `app.tickets`.** `enterDomain` đổi `app.tickets` sang E-com, nhưng trang Chung (Trang chủ nền tảng, `#/learn…`, `#/practice`, drill của Plan 8a) so tiến độ với `CHAPTERS` Logistics (D9-12). Neo: `grep -rn "app.tickets\|homeModel(\|rankOf(\|currentChapter(" src/ui src/*.ts | grep -iv "mapStrip\|brief\|work\|inbox\|dashboard\|dataView"`. Ở mọi view Chung trong danh sách đó: `app.tickets` → `loadTickets('logistics')` (memo một lần là đủ: nội dung Logistics không đổi trong phiên). Trên Trang chủ nền tảng, thẻ Logistics dùng `loadTickets('logistics')` + `CHAPTERS`; thẻ E-com dùng dòng `ecom.homeLine` (Step 6), không gọi `homeModel` cho E-com.
+
 - [ ] **Step 5: trang domain đọc dữ liệu của domain.** Neo: `grep -rn "CHAPTERS\b\|CHAPTER_TABLES\|KPIS\b\|tablesUnlocked(" src/ui src/state.ts src/overview.ts src/home.ts`. Ở **trang domain** (Tổng quan, Làm việc/brief/thanh việc, Dữ liệu, Bảng điều hành, thanh trên phần chương + bậc nghề): `CHAPTERS` → `chaptersOf()`, `CHAPTER_TABLES` → `chapterTablesOf()`, `KPIS` → `kpisOf()`. **Không đổi** ở trang Chung của Plan 8a (`#/learn…`, `#/practice`, drill): Lộ trình theo chương Logistics. Ô thẻ kỹ năng theo chương trên Tổng quan dùng `domainSkills(app.tickets)` khi `activeDomain() !== 'logistics'`.
 
 - [ ] **Step 6: phần riêng Logistics.**
@@ -648,6 +669,7 @@ async function enterDomain(id: DomainId): Promise<void> {
   - `src/ui/stage.ts` `playCompletion`: đầu hàm `if (activeDomain() !== 'logistics') { announce(t(ticket.beat === 'boss' ? 'ecom.promoted' : 'ecom.done', { title, rank })); return; }` (D9-14; `celebrate()` vẫn chạy ở `work.ts` như mọi lần đúng). Tên hàm announce theo `stage.ts`.
   - Trang chủ nền tảng (Plan 7 `renderHome`): thẻ domain dùng `domainHash(d.id)` cho mọi domain (thay `d.live ? hashOf('overview') : …`, vì `hashOf` giờ theo domain đang mở); dòng phụ của thẻ E-com: `t('ecom.homeLine', { n })` với `n` = số id `completed` khớp `ECOM_ID` (không cần tải nội dung).
   - Nút chọn domain trên thanh trên (Plan 7): mục đang chọn = `activeDomain()`.
+  - **Cảnh và bản đồ của Logistics không bao giờ vẽ ở E-com** (mốc M1 phải phát hành được trước Task 7): section cảnh và section tuyến trên Tổng quan, trang `#/d/<domain>/map`, hộp thoại bản đồ của thanh việc. Neo: `grep -rn "harborScene\|routeMap\|loadArt(" src/ui`. Ở mỗi chỗ: `activeDomain() !== 'logistics'` → khung giữ chỗ (cùng `aspect-*` và nền `bg-accent-soft` như Plan 8b) + tiêu đề `t('ecom.scene.title')` / `t('ecom.map.title')` + dòng HTML `t('ecom.scene.callout')`; không danh sách tuyến/bài tuyến, không tàu, không chữ "sắp có". Task 7 thay khung bằng hình.
 
 - [ ] **Step 7: Save theo domain.** Neo: `grep -rn "save.dashboard\|\.sandboxDraft" src --include=*.ts | grep -v src/save.ts`. Mọi chỗ đọc/ghi → `domainSlot(save, activeDomain()).dashboard` / `.sandboxDraft` (import `domainSlot` từ `../save`). Card KPI ẩn (`hidden`) cũng theo slot.
 
@@ -680,7 +702,7 @@ async function enterDomain(id: DomainId): Promise<void> {
   3. Nộp đúng → `celebrate`, câu announce E-com, không dock cảng; thanh việc chuyển việc 2; hộp thoại bản đồ không có danh sách tuyến.
   4. Sandbox E-com: nháp riêng; nhập một CSV `orders.csv` → bảng `orders_my`; `SELECT * FROM orders_my` chạy.
   5. Bảng điều hành E-com: ô KPI E-com (khóa tới khi xong việc nguồn), ghim một card → quay về Logistics: card E-com không hiện, card Logistics còn.
-  6. `#/d/logistics/play` ↔ `#/d/ecommerce/play` qua lại: editor, việc, tab Cột, EXPLAIN đổi theo domain; tải lại trang ở `#/learn` vẫn nhớ domain gần nhất (nút domain).
+  6. `#/d/logistics/play` ↔ `#/d/ecommerce/play` qua lại: editor, việc, tab Cột, EXPLAIN, autocomplete (gõ `ord` → `orders` chỉ ở E-com) đổi theo domain; tải lại trang ở `#/learn` vẫn nhớ domain gần nhất (nút domain), và Lộ trình/Trang chủ vẫn hiện tiến độ Logistics khi domain gần nhất là E-com.
   7. Timeout: ở E-com chạy `SELECT pg_sleep(6)` → DB khởi động lại, query E-com kế tiếp vẫn chạy (re-ensure của Plan 8a).
 - [ ] **Step 10: commit** `feat(ecom): open the e-commerce domain (switch, schema per domain, per-domain pages, saves and guards)`.
 
@@ -709,7 +731,7 @@ describe('bản đồ giao hàng E-com (Plan 9 D9-13)', () => {
   });
 });
 ```
-- [ ] **Step 2:** tạo `src/art/ecommerce.ts` = **Phụ lục D** nguyên văn.
+- [ ] **Step 2:** `src/art/ecommerce.ts` = **Phụ lục D** (đã tách ở Task 0).
 - [ ] **Step 3: `src/art/load.ts`** (Plan 8b) thêm:
 ```ts
 import type * as Ecommerce from './ecommerce';
@@ -903,7 +925,7 @@ CREATE TABLE ad_spend (
 -- setseed(), so a block appended later never re-rolls an earlier one. Append new blocks at the END.
 -- Game "today" = 2026-10-31 (same as Logistics). Solutions use literal dates, never CURRENT_DATE/now().
 -- Story hooks (tickets and tests/ecomSeed.test.ts depend on them):
---   * 12% of customers never order (anti join, E3)
+--   * ~10% of customers never order: 493 of 5,000 (anti join, E3)
 --   * Retention by first channel: referral > organic > social > ads (cohort/window, E6; CAC in E5 boss)
 --   * Sale days 2025-09-09, 2025-10-10, 2025-11-11, 2025-12-12, 2026-09-09, 2026-10-10: ~300 extra orders each,
 --     most with that day's voucher (date_bucket, window_lag)
@@ -911,7 +933,7 @@ CREATE TABLE ad_spend (
 --     2026-09-01: 60% arrive 3-7 days after the promised date (date_math, E4)
 --   * Cash on delivery (cod) orders that were cancelled, or are not delivered yet, have NO payment row (left join, E3)
 --   * Some card payments fail first: one 'failed' row, then a 'paid' row for the same order (join fan-out trap, E3)
---   * Seller 7 (Highland Gadget Hub): phones/audio items delivered in Q3 2026 come back 'damaged' ~25% of the time and
+--   * Seller 7 (Highland Gadget Hub): phones/audio items delivered in Q3 2026 come back 'damaged' ~15% of the time (14.7%; 1.2% for other shops) and
 --     get low ratings (returns, E5 / E6)
 --   * birth_year is NULL for ~25% of customers, reviews.comment is NULL for ~45% (null_logic / coalesce, E4)
 --   * orders placed on 2026-10-30/31 are 'pending' (no delivery row); orders shipped and not delivered by 2026-10-31
