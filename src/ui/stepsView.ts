@@ -1,6 +1,6 @@
 import { t, type Key } from '../i18n';
 import { cx } from '../theme';
-import type { StepsResult } from '../viz/steps';
+import { shownSteps, type StepsResult } from '../viz/steps';
 import { STEP_LABELS, type StepKey, type StepsFailure } from '../viz/stepText';
 import { fmt, h } from './dom';
 import { renderResult } from './resultTable';
@@ -32,8 +32,7 @@ export function renderSteps(host: HTMLElement, sql: string, result: StepsResult,
     return;
   }
   const { ranges } = result;
-  // L47 #1: clauses the query does not use get no card (buildSteps keeps them as `skipped`; tests rely on that).
-  const steps = result.steps.filter((s) => !s.skipped);
+  const steps = shownSteps(result.steps); // buildSteps keeps unused clauses as `skipped`; tests rely on that
   const live = steps.filter((s) => s.error === undefined);
   let current = steps.indexOf(live[1] ?? live[0] ?? steps[0]);
   let timer: number | undefined;

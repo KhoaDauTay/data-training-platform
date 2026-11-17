@@ -11,6 +11,8 @@ import type { StepKey, StepsFailure } from './stepText';
 export interface StepRun { key: StepKey; skipped: boolean; count?: number; sample?: QueryResult; sql?: string; error?: string }
 type Ranges = Partial<Record<StepKey, [number, number]>>;
 type Failure = { ok: false; reason: StepsFailure; detail?: string };
+/** Steps the Execution order tab draws: clauses the query does not use get no card (ui-ux-v4 §1). */
+export const shownSteps = (steps: StepRun[]): StepRun[] => steps.filter((s) => !s.skipped);
 export type StepsResult = { ok: true; steps: StepRun[]; ranges: Ranges } | Failure;
 type Built = { ok: true; steps: { key: StepKey; sql: string | null }[]; ranges: Ranges } | Failure;
 
