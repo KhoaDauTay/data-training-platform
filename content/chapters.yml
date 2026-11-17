@@ -113,7 +113,7 @@
   outcomes:
     - { vi: "Gộp hai danh sách thành một", en: "Combine two lists into one", skills: [union] }
     - { vi: "Tìm thứ có ở sổ này mà sổ kia còn thiếu", en: "Find what one book has and the other is missing", skills: [except] }
-    - { vi: "Đối chiếu hai sổ, thấy cả dòng chỉ có ở một bên", en: "Reconcile two books and see the rows found on one side only", skills: [full_join] }
+    - { vi: "Đối soát hai sổ, thấy cả dòng chỉ có ở một bên", en: "Reconcile two books and see the rows found on one side only", skills: [full_join] }
 
 - chapter: 10
   title: { vi: "Xu hướng & xếp hạng", en: "Trends and rankings" }
