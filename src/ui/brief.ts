@@ -31,14 +31,14 @@ const mark = (ok: boolean): string => (ok ? '✓' : '✗');
 function shapeCard(tk: Ticket, stepIndex: number): HTMLElement {
   const step = tk.steps[stepIndex];
   const labels = step.columns ?? [];
-  const card = h('section', { class: 'my-3 rounded-xl bg-panel p-3 ring-1 ring-line', 'aria-label': t('shape.title') });
+  const card = h('section', { class: 'my-2 rounded-xl bg-panel px-3 py-2 ring-1 ring-line', 'aria-label': t('shape.title') });
   const draw = (exp?: Shape) => {
     const n = exp?.kinds.length ?? labels.length;
     const run = app.lastRun?.key === stepKey(tk.id, stepIndex) ? app.lastRun.result : undefined;
     const cmp = exp && run ? compareShape(exp, shapeOf(run)) : undefined;
     card.replaceChildren(...nodes(
-      h('h3', { class: 'mt-0' }, t('shape.title')),
-      h('p', {}, [t('shape.cols', { n }), exp ? t('shape.rows', { n: exp.rows }) : '…', exp?.rows === 1 ? null : t(tk.ordered ? 'shape.ordered' : 'shape.unordered')].filter(Boolean).join(' · ')), // one row has no order (v10 C4)
+      h('h3', { class: 'mt-0 mb-1' }, t('shape.title')),
+      h('p', { class: 'my-1' }, [t('shape.cols', { n }), exp ? t('shape.rows', { n: exp.rows }) : '…', exp?.rows === 1 ? null : t(tk.ordered ? 'shape.ordered' : 'shape.unordered')].filter(Boolean).join(' · ')), // one row has no order (v10 C4)
       h('ul', { class: 'my-1 flex list-none flex-wrap gap-1.5 p-0' }, ...Array.from({ length: n }, (_, i) =>
         h('li', { class: 'rounded-md bg-panel px-1.5 py-0.5 text-sm ring-1 ring-line' }, // The label already says what the column holds; the kind (text/number/date) only stands in when there is no label.
         labels[i] ? h('b', { class: 'font-semibold' }, labels[i][getLang()]) : exp ? t(KIND[exp.kinds[i]]) : null))),
@@ -230,9 +230,9 @@ export function renderBrief(host: HTMLElement, tk: Ticket, stepIndex: number): v
   const isDone = isClosed(tk.id); // Practice replays a done ticket open: shape card, hints and Submit, no Recap
   const boss = tk.steps.length > 1;
   host.replaceChildren(...nodes(
-    h('header', { class: 'space-y-2' },
+    h('header', { class: 'mb-2 space-y-1' },
       h('div', { class: 'flex items-center gap-3' },
-        avatar(tk.from, 'lg'),
+        avatar(tk.from, 'md'),
         h('p', { class: 'm-0 min-w-0' },
           h('span', { class: 'flex flex-wrap items-center gap-2 font-semibold' },
             tk.from.name, h('span', { class: cx(DEPT_CHIP, deptColor(tk.from.dept)) }, tk.from.dept)),
@@ -244,19 +244,21 @@ export function renderBrief(host: HTMLElement, tk: Ticket, stepIndex: number): v
         isDone ? `✓ ${t('inbox.done')}` : ''),
       h('h2', { id: 'brief-title', tabindex: '-1', class: 'm-0 text-lg font-bold' }, x.title),
       x.fallback ? h('p', { class: 'tag' }, t('brief.untranslated')) : null),
-    isStory() ? story(tk) : null,
-    isStory() ? tourSlot('brief') : null,
-    h('div', { class: 'rounded-2xl rounded-tl-sm bg-code px-4 leading-relaxed' }, richText(x.body)),
-    isStory() && !isDone ? lessonSlot(tk.grants) : null, // quick lessons before the task (product-design-v4 §C.3)
-    exampleCard(tk, x),
-    x.task ? h('section', { class: 'my-3 rounded-lg border-l-4 border-accent bg-accent-soft p-3' }, h('h3', { class: 'mt-0' }, t('brief.task')), richText(x.task)) : null,
-    relatedLine(tk),
+    // v10 critic #1: the message, then the Task and the Expected result card, visible without scrolling; the rest below.
+    h('div', { class: 'rounded-2xl rounded-tl-sm bg-code px-4 py-0.5 leading-relaxed [&_p]:my-2' }, richText(x.body)),
+    x.task ? h('section', { class: 'my-2 rounded-lg border-l-4 border-accent bg-accent-soft px-3 py-2 [&_p]:my-1' }, h('h3', { class: 'mt-0 mb-1' }, t('brief.task')), richText(x.task)) : null,
     boss
       ? h('section', { id: 'brief-step', class: 'my-3 scroll-mt-4 rounded-lg p-3 ring-1 ring-line' },
         h('h3', { class: 'mt-0' }, t('brief.step', { i: stepIndex + 1, n: tk.steps.length, title: x.steps[stepIndex].title })),
         richText(x.steps[stepIndex].prompt))
       : null,
     isDone ? null : tk.steps[stepIndex].lab ? labCard(tk.steps[stepIndex].solution) : shapeCard(tk, stepIndex),
+    isStory() ? tourSlot('brief') : null, // tour step 1 under the Task and the card it talks about
+    relatedLine(tk),
+    h('div', { 'data-brief-extra': '' }), // modes.ts puts skill chips, chapter goals and the lane note here
+    exampleCard(tk, x),
+    isStory() && !isDone ? lessonSlot(tk.grants) : null, // seen lessons (or "I know SQL") are one line each
+    isStory() ? story(tk) : null,
     coach('hints'),
     hints(tk, x, isDone),
     app.conclusionFor === tk.id && !isDone && x.conclusion ? conclusion(tk, x) : null,

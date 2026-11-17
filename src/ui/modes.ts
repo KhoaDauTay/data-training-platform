@@ -171,7 +171,7 @@ function practicePane(host: HTMLElement, run: PracticeRun): void {
   if (!finished) {
     const tk = run.tickets[run.index];
     renderBrief(body, tk, 0);
-    body.querySelector('header')?.after(skillChips(tk) ?? '');
+    body.querySelector('[data-brief-extra]')?.replaceWith(skillChips(tk) ?? '');
   }
   host.replaceChildren(banner, body);
 }
@@ -179,7 +179,7 @@ function practicePane(host: HTMLElement, run: PracticeRun): void {
 function storyPane(host: HTMLElement): void {
   const tk = selected();
   renderBrief(host, tk, app.stepIndex);
-  host.querySelector('header')?.after(skillChips(tk) ?? '', (tk.beat === 'teach' && goalCard(tk.chapter)) || '');
+  host.querySelector('[data-brief-extra]')?.replaceWith(skillChips(tk) ?? '', (tk.beat === 'teach' && goalCard(tk.chapter)) || '');
   if (!done().has(tk.id)) return;
   if (tk.beat !== 'boss') {
     host.append(h('div', { class: 'actions' }, h('button', { type: 'button', onclick: () => startRetry(tk.id) }, t('prac.retry'))));
@@ -196,7 +196,7 @@ function storyPane(host: HTMLElement): void {
 
 function lanePane(host: HTMLElement, tk: Ticket): void {
   renderBrief(host, tk, 0);
-  host.querySelector('header')?.after(skillChips(tk) ?? '', laneNote(tk, (port) => actions.openLane(port)));
+  host.querySelector('[data-brief-extra]')?.replaceWith(skillChips(tk) ?? '', laneNote(tk, (port) => actions.openLane(port)));
 }
 
 /** Top-bar "Review: N" (P3): N = items in today's queue; hidden when the queue is empty. */
