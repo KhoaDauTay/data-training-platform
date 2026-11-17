@@ -4,13 +4,13 @@ import { getLang, t, type Key } from '../i18n';
 import { CHAPTERS, chapterTitle, rankOf, SKILLS } from '../progress';
 import { derive } from '../scene';
 import { actions, app, done } from '../state';
-import { BTN_GO, CARD, chapterColor, cx, DONE_PILL, PILL } from '../theme';
+import { BTN_GO, CARD, CARD_ACTION, chapterColor, cx, DONE_PILL, PILL } from '../theme';
 import { roleLine } from '../people';
 import { upsert } from '../registry';
 import { stepKey } from '../save';
 import { textOf, type Ticket } from '../tickets';
 import { avatar } from './avatar';
-import { icon, isIconName, type IconName } from './icons';
+import { icon, isIconName, skillIcon, type IconName } from './icons';
 import { byId, h, nodes } from './dom';
 import { callout, harborScene } from './harbor';
 import { routeItems, routeMap } from './routeMap';
@@ -30,8 +30,8 @@ export interface HomeSection {
 export interface ModeCard {
   id: string;
   order: number;
-  icon: string;
-  /** Whole literal Tailwind classes for the icon tile, e.g. 'bg-orange-100 dark:bg-orange-950'. */
+  icon: IconName;
+  /** Whole literal Tailwind classes for the icon tile (background + icon colour, both themes). */
   tint: string;
   title: Key;
   desc: Key;
@@ -73,7 +73,8 @@ function continueCard(m: HomeModel): HTMLElement {
   const next = m.next;
   const x = next ? textOf(next, lang) : undefined;
   return h('section', { class: cx(CARD, 'flex h-full flex-col gap-4 p-6'), 'aria-labelledby': 'continue-title' },
-    h('p', { class: cx('m-0 text-sm font-semibold', chapterColor(m.chapter).text) }, t('home.kicker', { n: m.chapter, title: chapterTitle(m.chapter, lang) })),
+    h('p', { class: cx('m-0 flex items-center gap-2 text-sm font-semibold', chapterColor(m.chapter).text) },
+      icon('inbox', 'size-4'), t('home.kicker', { n: m.chapter, title: chapterTitle(m.chapter, lang) })),
     h('h2', { id: 'continue-title', class: 'm-0 text-xl font-bold' }, x ? x.title : t('inbox.empty')),
     next && x
       ? h('div', { class: 'flex gap-3' },
@@ -87,8 +88,9 @@ function continueCard(m: HomeModel): HTMLElement {
       progress(percent(m.done, m.total), label, 'h-2.5 flex-1 bg-code', 'bg-linear-to-r from-blue-600 to-cyan-500'),
       h('span', { class: 'text-sm tabular-nums text-muted' }, label)),
     h('div', { class: 'flex flex-wrap gap-2' },
-      next ? h('button', { type: 'button', class: cx(BTN_GO, 'px-4 py-2'), onclick: () => resume(next.id) }, t('home.resume')) : null,
-      h('button', { type: 'button', class: 'px-4 py-2 font-semibold', onclick: openInbox }, t('top.inbox'))));
+      next ? h('button', { type: 'button', class: cx(BTN_GO, 'group flex items-center gap-2 px-4 py-2'), onclick: () => resume(next.id) },
+        t('home.resume'), icon('arrowRight', 'size-4 transition group-hover:translate-x-0.5')) : null,
+      h('button', { type: 'button', class: 'flex items-center gap-2 px-4 py-2 font-semibold', onclick: openInbox }, icon('inbox', 'size-4'), t('top.inbox'))));
 }
 
 /** Career path (L18 ★3, L19, L30): DA intern + the five ★ titles; the current one is marked, later ones say which review opens them. */
@@ -99,8 +101,8 @@ function careerCard(): HTMLElement {
   const reached = (at: number): boolean => at === 0 || rank.passed.includes(at);
   const now = rows.filter((r) => reached(r.at)).pop();
   return h('section', { class: cx(CARD, 'flex h-full flex-col gap-3 p-6'), 'aria-labelledby': 'career-title' },
-    h('h2', { id: 'career-title', class: 'm-0 text-sm font-semibold text-muted' }, t('home.career')),
-    rank.career ? h('p', { class: 'm-0 font-semibold' }, rank.career[lang]) : null,
+    h('h2', { id: 'career-title', class: 'm-0 flex items-center gap-2 text-sm font-semibold text-muted' }, icon('badge', 'size-4'), t('home.career')),
+    rank.career ? h('p', { class: 'm-0 text-lg font-semibold' }, rank.career[lang]) : null,
     h('ol', { class: 'm-0 list-none space-y-2 p-0' }, ...rows.map((r) => h('li', {
       class: cx('flex items-center gap-2 text-[15px]', !reached(r.at) && 'text-muted'),
       'aria-current': r === now ? 'step' : false,
@@ -121,8 +123,19 @@ function statusPill(c: ChapterCard): HTMLElement | null {
   return null;
 }
 
+const SKILL_ROW = 4;
+/** Up to four skill icons with their names, then "+n" (ui-ux-v3 §d). */
+function skillRow(c: ChapterCard, closed: boolean): HTMLElement | null {
+  if (!c.skills.length) return null;
+  const lang = getLang();
+  const rest = c.skills.length - SKILL_ROW;
+  return h('ul', { class: cx('m-0 flex list-none flex-wrap justify-center gap-x-3 gap-y-1 p-0 text-sm', closed && 'text-muted') },
+    ...c.skills.slice(0, SKILL_ROW).map((s) => h('li', { class: 'flex items-center gap-1' }, skillIcon(s.id, 'size-4'), s.label[lang])),
+    rest > 0 ? h('li', { class: 'text-muted', title: c.skills.slice(SKILL_ROW).map((s) => s.label[lang]).join(', ') }, `+${rest}`) : null);
+}
+
 /**
- * L21: centred, larger title; a closed chapter shows a centred padded 🔒, muted text (AA, unlike the mockup's
+ * L21: centred, larger title; a closed chapter shows a centred lock, muted text (AA, unlike the mockup's
  * 55% opacity) and, always visible, what opens it (L34: a chapter without tickets yet says its content is in progress).
  */
 function chapterCard(c: ChapterCard): HTMLElement {
@@ -134,10 +147,12 @@ function chapterCard(c: ChapterCard): HTMLElement {
     'aria-current': c.status === 'current' ? 'step' : false,
   },
     closed
-      ? h('div', { class: 'mx-auto grid size-12 place-items-center rounded-full bg-code p-3 text-2xl', role: 'img', 'aria-label': t(c.status === 'soon' ? 'home.status.soon' : 'home.status.locked') }, '🔒')
-      : h('div', { class: cx('mx-auto grid size-12 place-items-center rounded-full text-xl font-bold', color.chip), 'aria-hidden': 'true' }, String(c.chapter)),
+      ? h('div', { class: 'mx-auto grid size-12 place-items-center rounded-full bg-code text-muted', role: 'img', 'aria-label': t(c.status === 'soon' ? 'home.status.soon' : 'home.status.locked') }, icon('lock', 'size-6'))
+      : h('div', { class: cx('relative mx-auto grid size-12 place-items-center rounded-full text-xl font-bold', color.chip), 'aria-hidden': 'true' },
+        String(c.chapter),
+        c.status === 'done' ? h('span', { class: 'absolute -right-1 -bottom-1 grid size-5 place-items-center rounded-full bg-emerald-700 text-white ring-2 ring-panel' }, icon('check', 'size-3.5')) : null),
     h('h3', { class: cx('m-0 text-xl font-bold', closed && 'text-muted') }, `${c.chapter} · ${chapterTitle(c.chapter, lang)}`),
-    c.skills.length ? h('p', { class: cx('m-0 text-[15px]', closed && 'text-muted') }, c.skills.map((s) => s.label[lang]).join(' · ')) : null,
+    skillRow(c, closed),
     statusPill(c),
     h('p', { class: 'm-0 text-sm text-muted' }, t('home.careerAfter', { career: CHAPTERS.find((x) => x.chapter === c.chapter)?.career[lang] ?? '' })),
     c.status === 'done' && c.boss ? h('p', { class: 'm-0 text-sm text-muted' }, t('home.review', { title: textOf(c.boss, lang).title })) : null,
@@ -160,21 +175,22 @@ function skillCard(s: SkillCard): HTMLElement {
   const color = chapterColor(s.skill.chapter);
   const locked = s.state === 'locked';
   const body = nodes(
-    h('span', { class: 'flex items-center gap-2' },
-      h('span', { class: cx('grid size-8 shrink-0 place-items-center rounded-lg font-bold', locked ? 'bg-panel text-muted' : color.chip), 'aria-hidden': 'true' },
-        s.skill.id.charAt(0).toUpperCase()),
+    h('span', { class: 'flex items-center gap-3' },
+      h('span', { class: cx('relative grid size-9 shrink-0 place-items-center rounded-lg', locked ? 'bg-panel text-muted' : color.chip), 'aria-hidden': 'true' },
+        skillIcon(s.skill.id),
+        locked ? h('span', { class: 'absolute -right-1.5 -bottom-1.5 grid size-4 place-items-center rounded-full bg-panel ring-1 ring-line' }, icon('lock', 'size-2.5')) : null),
       h('b', {}, s.skill.label[lang])),
-    h('span', { class: 'mt-2 block text-sm text-muted' },
-      locked ? `🔒 ${t('brief.chapter', { n: s.skill.chapter })}` : t(s.state === 'learned' ? 'home.skillLearned' : 'home.skillOpen')),
+    h('span', { class: 'mt-2 flex items-center gap-1 text-sm text-muted' },
+      locked ? icon('lock', 'size-3.5') : null,
+      locked ? t('brief.chapter', { n: s.skill.chapter }) : t(s.state === 'learned' ? 'home.skillLearned' : 'home.skillOpen')),
     locked
       ? null
       : h('span', { class: 'mt-2 flex gap-0.5', role: 'img', 'aria-label': t('home.level', { n: s.level, max: LEVELS }) },
         ...Array.from({ length: LEVELS }, (_, i) => h('i', { class: cx('h-1.5 flex-1 rounded', i < s.level ? color.bar : 'bg-code') }))));
-  const box = cx('block w-full rounded-xl p-4 text-left ring-1 ring-line', locked ? 'bg-code text-muted' : 'bg-panel');
   const onSkill = homeHooks.onSkill;
   return onSkill && s.state === 'learned'
-    ? h('button', { type: 'button', class: cx(box, 'border-0 hover:bg-panel hover:ring-2 hover:ring-accent'), onclick: () => onSkill(s.skill.id) }, ...body)
-    : h('div', { class: box }, ...body);
+    ? h('button', { type: 'button', class: cx(CARD_ACTION, 'block w-full rounded-xl border-0 p-4 text-left'), onclick: () => onSkill(s.skill.id) }, ...body)
+    : h('div', { class: cx('block w-full rounded-xl p-4 text-left ring-1 ring-line', locked ? 'bg-code text-muted' : 'bg-panel') }, ...body);
 }
 
 function skillsSection(m: HomeModel): HTMLElement {
@@ -191,11 +207,12 @@ function modesSection(): HTMLElement | null {
     h('div', { class: 'grid gap-3 sm:grid-cols-3' }, ...modes.map((md) =>
       h('button', {
         type: 'button',
-        class: 'flex items-start gap-3 rounded-xl border-0 bg-panel p-4 text-left ring-1 ring-line hover:bg-panel hover:ring-2 hover:ring-accent',
+        class: cx(CARD_ACTION, 'group flex items-start gap-3 rounded-xl border-0 p-4 text-left'),
         onclick: () => md.open(),
       },
-        h('span', { class: cx('grid size-10 shrink-0 place-items-center rounded-lg text-xl', md.tint), 'aria-hidden': 'true' }, md.icon),
-        h('span', {}, h('b', { class: 'block' }, t(md.title)), h('span', { class: 'text-sm text-muted' }, t(md.desc)))))));
+        h('span', { class: cx('grid size-10 shrink-0 place-items-center rounded-lg', md.tint), 'aria-hidden': 'true' }, icon(md.icon)),
+        h('span', { class: 'min-w-0 flex-1' }, h('b', { class: 'block' }, t(md.title)), h('span', { class: 'text-sm text-muted' }, t(md.desc))),
+        icon('arrowRight', 'mt-0.5 size-4 text-muted transition group-hover:translate-x-0.5 group-hover:text-accent')))));
 }
 
 /** Completed ids when the player last left Home (session memory only, completion-animations §4). */

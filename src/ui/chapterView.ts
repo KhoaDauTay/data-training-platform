@@ -6,6 +6,7 @@ import { app, done } from '../state';
 import { chapterColor, cx, PILL } from '../theme';
 import type { Ticket } from '../tickets';
 import { h } from './dom';
+import { skillIcon } from './icons';
 
 export const skillLabel = (id: string): string => SKILLS.find((s) => s.id === id)?.label[getLang()] ?? id;
 
@@ -35,10 +36,13 @@ export function goalCard(chapter: number): HTMLElement | null {
 /** "Teaches: … · Needs: …" from grants/requires; colour only on the small chips (L23). */
 export function skillChips(tk: Ticket): HTMLElement | null {
   if (tk.grants.length === 0 && tk.requires.length === 0) return null;
-  const list = (ids: string[]) => ids.map(skillLabel).join(', ');
-  return h('p', { class: 'my-2 flex flex-wrap gap-1.5' },
-    tk.grants.length ? h('span', { class: cx(PILL, chapterColor(tk.chapter).chip) }, t('chip.teaches', { list: list(tk.grants) })) : null,
-    tk.requires.length ? h('span', { class: cx(PILL, 'bg-code text-ink') }, t('chip.needs', { list: list(tk.requires) })) : null);
+  // One chip per skill with its icon (ui-ux-v3 §e), after a plain "Teaches:" / "Needs:" label.
+  const row = (label: string, ids: string[], chip: string) => h('span', { class: 'flex flex-wrap items-center gap-1.5' },
+    h('span', { class: 'text-sm font-semibold text-muted' }, label),
+    ...ids.map((id) => h('span', { class: cx(PILL, chip) }, skillIcon(id, 'size-4'), skillLabel(id))));
+  return h('p', { class: 'my-2 flex flex-wrap items-center gap-x-4 gap-y-1.5' },
+    tk.grants.length ? row(t('chip.teachesLabel'), tk.grants, chapterColor(tk.chapter).chip) : null,
+    tk.requires.length ? row(t('chip.needsLabel'), tk.requires, 'bg-code text-ink') : null);
 }
 
 /** Under the promotion review's Recap (P2). The promotion animation already celebrated: no effect here. */

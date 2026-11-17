@@ -238,13 +238,13 @@ registerNav({
 registerHomeSection({ id: 'review', order: 22, span: 'full', render: reviewCard });
 registerHomeSection({ id: 'warmup', order: 21, span: 'full', render: warmupCard });
 registerMode({
-  id: 'sandbox', order: 10, icon: '🧪', tint: 'bg-orange-100 dark:bg-orange-950',
+  id: 'sandbox', order: 10, icon: 'flask', tint: 'bg-orange-100 text-orange-800 dark:bg-orange-950 dark:text-orange-200',
   title: 'mode.sandbox', desc: 'mode.sandboxDesc', open: () => startSandbox(),
 });
 homeHooks.levelOf = (skill) => app.save.review[skill]?.box ?? 1;
 homeHooks.onSkill = (skill) => void startSkill(skill);
 // Plan Import (L17, I2): "My data" opens the Sandbox, whose left pane holds the CSV import.
 registerMode({
-  id: 'mydata', order: 20, icon: '📂', tint: 'bg-cyan-100 dark:bg-cyan-950',
+  id: 'mydata', order: 20, icon: 'folder', tint: 'bg-cyan-100 text-cyan-800 dark:bg-cyan-950 dark:text-cyan-200',
   title: 'mode.mydata', desc: 'mode.mydataDesc', open: () => startSandbox(),
 });
