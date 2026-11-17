@@ -8,8 +8,9 @@ import { applyResult, isSuccess, movedToday, nextCard, pickForSkill, retryItem, 
 import { nextTicket, SKILLS } from '../progress';
 import { hashOf } from '../route';
 import {
-  activeStep, activeTicket, hintsShown, isStory, markWarmupDone, practiceFinished, reviewCount, reviewToday, session, today, warmupToday, type Mode, type PracticeRun,
+  activeSchema, activeStep, activeTicket, hintsShown, isStory, markWarmupDone, practiceFinished, reviewCount, reviewedDrills, reviewToday, session, today, warmupToday, type Mode, type PracticeRun,
 } from '../session';
+import { DRILL_ID } from '../save';
 import { actions, app, done, erMeta, persist, schemaHooks, selected, stepKey } from '../state';
 import { textOf, type Ticket } from '../tickets';
 import { BTN_GO, CARD, cx } from '../theme';
@@ -29,11 +30,11 @@ import { mascot } from './mascots';
 let templateMap: Map<string, Ticket> | undefined;
 /** Built on first use: ticket content arrives after this module loads (main.ts awaits loadContent()). */
 const templates = (): Map<string, Ticket> => (templateMap ??= new Map(loadTicketTemplates().map((tk) => [tk.id, tk])));
-let ctx: { work: WorkArea; rerender(): void } | undefined;
+let ctx: { work: WorkArea; rerender(): void; db: DbClient } | undefined;
 let runSeq = 0;
 
 /** Called once from main.ts, right after mountWork(). */
-export function initModes(c: { work: WorkArea; rerender(): void }): void {
+export function initModes(c: { work: WorkArea; rerender(): void; db: DbClient }): void {
   ctx = c;
 }
 
@@ -49,15 +50,19 @@ function enter(mode: Mode): void {
   focusTitle();
 }
 
+/** A review drill (Plan 8a Task 8) becomes its drill ticket (runs on lab); anything else the template with the item's variant. */
+const itemTicket = (i: PracticeItem): Ticket | undefined =>
+  DRILL_ID.test(i.ticketId) ? drillUi?.reviewTicket(i.ticketId) : templates().has(i.ticketId) ? applyVariant(templates().get(i.ticketId)!, i.variant) : undefined;
+
 export function startPractice(items: PracticeItem[], warmup = false): boolean {
-  const usable = items.filter((i) => templates().has(i.ticketId));
+  const usable = items.flatMap((i) => (itemTicket(i) ? [i] : []));
   if (usable.length === 0) return false;
   enter({
     kind: 'practice',
     run: {
       id: ++runSeq,
       items: usable,
-      tickets: usable.map((i) => applyVariant(templates().get(i.ticketId)!, i.variant)),
+      tickets: usable.map((i) => itemTicket(i)!),
       index: 0,
       wrong: 0,
       hints: 0,
@@ -73,18 +78,16 @@ export const startSandbox = (): void => enter({ kind: 'sandbox' });
 export const backToStory = (): void => enter({ kind: 'story' });
 /** Plan 8a: the drill workspace's left pane and credit live in a lazy chunk (src/ui/drillBrief.ts, budget `learnui`). */
 let drillUi: typeof import('./drillBrief') | undefined;
-let drillDb: DbClient | undefined;
 /** Every main-bundle value the chunk uses is handed over here (Plan 6 U3: the chunk imports only types from main modules). */
 const loadDrillUi = () => import('./drillBrief').then((m) => {
   if (!drillUi) m.initDrill({
-    db: drillDb!, h, nodes, richText, byId, getLang, locale, app, actions, persist, schemaHooks, erMeta, stepKey, session, hintsShown, today,
+    db: ctx!.db, activeSchema, h, nodes, richText, byId, getLang, locale, app, actions, persist, schemaHooks, erMeta, stepKey, session, hintsShown, today,
     isSuccess, movedToday, nextCard, SKILLS, hashOf, textOf, hints, shapeCard, openLesson, backToStory, startDrillMode, loadGeneral, generalNow, loadLessons,
   });
   return (drillUi = m);
 });
 /** Opens a General drill: seeds `lab` and loads the drills first (main.ts actions.startDrill). */
-export function startDrill(id: string, db: DbClient): Promise<void> {
-  drillDb = db;
+export function startDrill(id: string): Promise<void> {
   return loadDrillUi().then((m) => m.openDrill(id));
 }
 export const startDrillMode = (ticket: Ticket, drill: Drill): void => enter({ kind: 'drill', ticket, drill, wrong: 0 });
@@ -94,8 +97,10 @@ export const startLane = (task: Ticket): void => enter({ kind: 'lane', ticket: t
 export const toCurrentTask = (): void => actions.selectTicket(nextTicket(app.tickets, done())?.id ?? app.selectedId);
 
 /** Entry 1: today's review (D2). Nothing due (e.g. the day changed since the button was drawn): Home with a notice (L37). */
-export function startToday(): boolean {
-  if (startPractice(reviewToday())) return true;
+export async function startToday(): Promise<boolean> {
+  // Plan 8a Task 8: reviews are drills on lab; if the drills or lab cannot load, the review falls back to ticket variants.
+  const ok = reviewCount() > 0 && await loadDrillUi().then((m) => m.prepareLab()).then(() => true, () => false);
+  if (startPractice(reviewToday(Math.random, ok ? generalNow()?.bySkill : undefined))) return true;
   if (!app.notice?.key.startsWith('save.')) app.notice = { key: 'prac.nothingDue' }; // never hide a data-loss warning
   go('practice'); // the hub explains what is due; already there: no hashchange, so redraw ourselves
   ctx?.rerender();
@@ -150,6 +155,7 @@ export function onPracticeSolved(): void {
   app.save.practice = next.practice;
   persist(true);
   run.result = ok ? 'ok' : 'weak';
+  if (DRILL_ID.test(item.ticketId)) reviewedDrills.add(item.ticketId);
   if (ok) run.passed++;
   if (run.warmup && run.index === run.items.length - 1) markWarmupDone();
   ctx?.rerender();
@@ -191,7 +197,8 @@ function practicePane(host: HTMLElement, run: PracticeRun): void {
   const body = h('div');
   if (!finished) {
     const tk = run.tickets[run.index];
-    renderBrief(body, tk, 0);
+    if (DRILL_ID.test(tk.id) && drillUi) drillUi.reviewBody(body, tk);
+    else renderBrief(body, tk, 0);
     body.querySelector('header')?.after(skillChips(tk) ?? '');
   }
   host.replaceChildren(banner, body);
@@ -285,6 +292,16 @@ registerNav({
   onclick: () => (session.mode.kind === 'sandbox' ? go('play') : startSandbox()),
 });
 registerHomeSection({ id: 'review', order: 22, span: 'full', pages: ['home', 'practice'], render: reviewCard });
+/** Plan 8a Task 8: the drill part of the Practise SQL hub is drawn by the lazy General chunk; one load attempt per page load. */
+let hubTried = false;
+function drillHub(): HTMLElement | null {
+  const hub = generalNow() && drillUi?.practiceHub();
+  if (hub || hubTried) return hub || null;
+  hubTried = true;
+  void Promise.all([loadDrillUi(), loadGeneral()]).then(() => ctx?.rerender(), () => undefined);
+  return null;
+}
+registerHomeSection({ id: 'drills', order: 23, span: 'full', pages: ['practice'], render: drillHub });
 registerHomeSection({ id: 'warmup', order: 21, span: 'full', pages: ['home', 'practice'], render: warmupCard });
 registerMode({
   id: 'sandbox', order: 10, icon: 'flask', tint: 'bg-accent-soft text-ink',

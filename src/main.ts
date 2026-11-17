@@ -133,7 +133,7 @@ const work = mountWork(byId('work'), {
   },
   onRun: () => rerender(),
 });
-initModes({ work, rerender });
+initModes({ work, rerender, db });
 
 // The task bar needs no query: it is drawn before the DB is ready.
 const mapStrip = createMapStrip(byId('map'));
@@ -262,7 +262,7 @@ window.addEventListener('error', (e) => fault(e.error));
 window.addEventListener('unhandledrejection', (e) => fault(e.reason));
 
 Object.assign(actions, {
-  rerender, selectTicket, complete, retryDb: () => db.restart(), startDrill: (id: string) => void startDrill(id, db), openLane: (port: string) => mapStrip.openLane(port), copyDiagnostics: () => void copyDiagnostics(), useSql: (sql: string) => work.setDoc(sql), showTab: (id: string) => panel.show(id),
+  rerender, selectTicket, complete, retryDb: () => db.restart(), startDrill: (id: string) => void startDrill(id), openLane: (port: string) => mapStrip.openLane(port), copyDiagnostics: () => void copyDiagnostics(), useSql: (sql: string) => work.setDoc(sql), showTab: (id: string) => panel.show(id),
   switchLang: (l: Lang) => void setLang(l).then(() => {
     rerender();
     panel.refresh();

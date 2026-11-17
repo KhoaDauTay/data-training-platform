@@ -3,7 +3,7 @@ import { GAME_SCHEMA } from '../domains';
 import { t } from '../i18n';
 import { hashOf } from '../route';
 import type { SchemaId } from '../domains';
-import { activeTicket, session } from '../session';
+import { activeSchema, activeTicket, session } from '../session';
 import { app, erMeta, selected, textValues, unlockedTables } from '../state';
 import { chapterColor, THEME_EVENT } from '../theme';
 import { erDefinition, relatedTables, tablesInQuery, type ErMetadata } from '../viz/erd';
@@ -62,7 +62,7 @@ const splitKey = (key: string): [SchemaId, string] => {
   return [key.slice(0, i) as SchemaId, key.slice(i + 1)];
 };
 /** Plan 8a: the drill workspace shows the lab tables, all of them, in the ER and Columns tabs. */
-const inDrill = (): boolean => session.mode.kind === 'drill';
+const inDrill = (): boolean => activeSchema() === 'lab'; // a drill, or a review drill in Practice
 
 function registerPlanTabs(deps: VizDeps): void {
   // Keyed by schema + SQL: the same text means other tables on lab (Plan 8a).

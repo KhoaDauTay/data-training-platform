@@ -1,7 +1,7 @@
-import { loadTicketTemplates } from './content';
+import { generalNow, loadTicketTemplates } from './content';
 import { learnedSkills } from './home';
-import { localDay, reviewQueue, warmupQueue, type PracticeItem } from './practice';
-import { currentChapter } from './progress';
+import { dueSkills, localDay, QUEUE_MAX, reviewQueue, warmupQueue, type PracticeItem } from './practice';
+import { currentChapter, SKILLS } from './progress';
 import type { SchemaId } from './domains';
 import type { Drill } from './general';
 import { DRILL_ID, SANDBOX_DRAFT_MAX } from './save';
@@ -38,16 +38,23 @@ export const isStory = (): boolean => session.mode.kind === 'story';
 export const keepsWork = (): boolean => session.mode.kind === 'story' || session.mode.kind === 'lane' || session.mode.kind === 'drill';
 /** Schema a ticket's SQL runs on: drills (`g-…`) on `lab`, everything else on the game schema (Plan 8a D8a-4). */
 export const schemaOf = (tk: Ticket | undefined): SchemaId => (tk && DRILL_ID.test(tk.id) ? 'lab' : 'game');
-export const activeSchema = (): SchemaId => (session.mode.kind === 'drill' ? 'lab' : 'game');
+/** A review drill runs as a Practice item (Plan 8a Task 8), so the schema follows the open ticket, not the mode. */
+export const activeSchema = (): SchemaId => schemaOf(activeTicket());
 
 /** Real local day for the Leitner schedule (never the in-game date). */
 export const today = (): string => localDay(new Date());
 /** Today's review queue (L37). Its length is the "Review: N" count whatever `rnd` is: `rnd` only picks variants. */
-export function reviewToday(rnd: () => number = Math.random): PracticeItem[] {
+export function reviewToday(rnd: () => number = Math.random, drills = generalNow()?.bySkill): PracticeItem[] {
   const d = done();
-  return reviewQueue(app.save.review, learnedSkills(app.tickets, d), loadTicketTemplates(), d, today(), rnd);
+  return reviewQueue(app.save.review, reviewSkills(), loadTicketTemplates(), d, today(), rnd, drills, reviewedDrills);
 }
-export const reviewCount = (): number => reviewToday(() => 0).length;
+/** Skills under review: learned through tickets, or holding a card (a drill passed in the General area creates one, D8a-11). */
+const reviewSkills = (): Set<string> =>
+  new Set([...learnedSkills(app.tickets, done()), ...Object.keys(app.save.review).filter((s) => SKILLS.some((k) => k.id === s))]);
+/** Drills reviewed this session (memory only): the next review of the same skill picks another one. */
+export const reviewedDrills = new Set<string>();
+/** Every skill has drills (tests/general.test.ts), so the drill queue holds one item per due skill: countable without the General chunk. */
+export const reviewCount = (): number => Math.min(dueSkills(app.save.review, reviewSkills(), today()).length, QUEUE_MAX);
 /** `day#chapter` of the last warm-up run answered to the end: its card stays hidden until the next day. In memory only. */
 export const warmupDone = { key: '' };
 const warmupKey = (): string => `${today()}#${currentChapter(app.tickets, done())}`;

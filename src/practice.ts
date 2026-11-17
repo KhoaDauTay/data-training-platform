@@ -1,3 +1,4 @@
+import type { Drill } from './general';
 import type { Ticket } from './tickets';
 import { variantsOf } from './variants';
 
@@ -74,7 +75,19 @@ export function pickForSkill(skill: string, templates: Ticket[], completed: Set<
  */
 export function reviewQueue(
   review: Review, learned: Iterable<string>, templates: Ticket[], completed: Set<string>, today: string, rnd: () => number,
+  drills?: ReadonlyMap<string, readonly Drill[]>, seen: ReadonlySet<string> = new Set(),
 ): PracticeItem[] {
+  if (drills) {
+    // Plan 8a Task 8: one drill per due skill, so the count is min(due, QUEUE_MAX) without loading the General chunk.
+    const out: PracticeItem[] = [];
+    for (const skill of dueSkills(review, learned, today)) {
+      if (out.length >= QUEUE_MAX) break;
+      const d = pickDrill(skill, drills, seen, rnd);
+      const item = d ? { ticketId: d.id, variant: 0, skills: [skill] } : pickForSkill(skill, templates, completed, rnd);
+      if (item && !out.some((i) => i.ticketId === item.ticketId)) out.push(item);
+    }
+    return out;
+  }
   const pool = practicePool(templates, completed);
   const open = new Set(dueSkills(review, learned, today));
   const dayNumber = Math.round(Date.parse(today) / 864e5); // days since epoch: consecutive days always differ by 1
@@ -92,6 +105,19 @@ export function reviewQueue(
     out.push({ ticketId: best.id, variant: variantFor(best, rnd), skills });
   }
   return out;
+}
+
+const KIND_ORDER = ['open', 'trap', 'faded'] as const;
+/** A drill of `skill` for a review: not reviewed yet this session (`seen`), open first, then trap, then faded; all seen → any. */
+export function pickDrill(skill: string, drills: ReadonlyMap<string, readonly Drill[]>, seen: ReadonlySet<string>, rnd: () => number): Drill | undefined {
+  const all = drills.get(skill) ?? [];
+  const fresh = all.filter((d) => !seen.has(d.id));
+  const pool = fresh.length ? fresh : all;
+  for (const k of KIND_ORDER) {
+    const c = pool.filter((d) => d.kind === k);
+    if (c.length) return c[Math.floor(rnd() * c.length)];
+  }
+  return pool[0];
 }
 
 export const WARMUP_SIZE = 3;

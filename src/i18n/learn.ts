@@ -25,6 +25,12 @@ const vi = {
   'drill.applies': 'Áp dụng ở Logistics, chương: {list}',
   'drill.exit': 'Thoát drill',
   'drill.solved': 'Drill đạt, +{xp} XP.',
+  'hub.title': 'Drill trên dữ liệu cửa hàng',
+  'hub.empty': 'Bạn chưa học kỹ năng nào. Bắt đầu từ Module 1: đọc bài học nhanh rồi làm 3 drill.',
+  'hub.start': 'Bắt đầu từ Module 1',
+  'hub.weakest': 'Kỹ năng yếu nhất: {skill} (hộp {box})',
+  'hub.continue': 'Drill đang làm dở: {what}',
+  'hub.resume': 'Làm tiếp',
 } as const;
 
 export type LearnKey = keyof typeof vi;
@@ -49,6 +55,12 @@ const en: Record<LearnKey, string> = {
   'drill.applies': 'Used in Logistics, chapters: {list}',
   'drill.exit': 'Leave the drill',
   'drill.solved': 'Drill passed, +{xp} XP.',
+  'hub.title': 'Drills on the shop data',
+  'hub.empty': 'You have not learned a skill yet. Start with Module 1: read the quick lesson, then do 3 drills.',
+  'hub.start': 'Start with Module 1',
+  'hub.weakest': 'Weakest skill: {skill} (box {box})',
+  'hub.continue': 'Drill left half-done: {what}',
+  'hub.resume': 'Continue',
 };
 
 export const LEARN_DICT = { vi: vi as Record<LearnKey, string>, en };

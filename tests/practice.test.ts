@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { loadTicketTemplates, loadTickets } from '../src/content';
+import { generalNow, loadTicketTemplates, loadTickets } from '../src/content';
 import {
   addDays, applyResult, cardOf, dueSkills, INTERVALS, isSuccess, localDay, nextCard,
-  pickForSkill, QUEUE_MAX, retryItem, reviewQueue, seedReview, variantFor, WARMUP_SIZE, warmupQueue,
+  pickDrill, pickForSkill, QUEUE_MAX, retryItem, reviewQueue, seedReview, variantFor, WARMUP_SIZE, warmupQueue,
 } from '../src/practice';
 import type { Beat, Ticket } from '../src/tickets';
 
@@ -174,5 +174,41 @@ describe('hàng ôn trên nội dung thật (L37)', () => {
   it('kỹ năng chỉ có bài không biến thể: đổi ngày thì đổi bài (không làm lại đúng một câu mỗi ngày)', () => {
     const pick = (day: string) => reviewQueue({}, ['aggregate'], templates, ch12, day, () => 0)[0].ticketId;
     expect(pick('2026-11-16')).not.toBe(pick('2026-11-17'));
+  });
+});
+
+describe('ôn tập bằng drill (Plan 8a Task 8)', () => {
+  const templates = loadTicketTemplates();
+  const g = generalNow()!;
+  const done = new Set(['ch1-01', 'ch1-02', 'ch1-03', 'ch1-04', 'ch1-05']);
+  const skills = ['select', 'where', 'order_by', 'limit', 'aggregate', 'group_by', 'having'];
+
+  it('mỗi kỹ năng đến hạn một drill của chính nó, ưu tiên open → trap → faded, bỏ drill đã ôn trong phiên', () => {
+    expect(pickDrill('where', g.bySkill, new Set(), () => 0)?.kind).toBe('open');
+    const open = g.bySkill.get('where')!.find((d) => d.kind === 'open')!.id;
+    expect(pickDrill('where', g.bySkill, new Set([open]), () => 0)?.kind).toBe('trap');
+    const all = new Set(g.bySkill.get('where')!.map((d) => d.id));
+    expect(pickDrill('where', g.bySkill, all, () => 0)?.skill).toBe('where'); // all seen: reuse rather than skip the skill
+    expect(pickDrill('nope', g.bySkill, new Set(), () => 0)).toBeUndefined();
+    const q = reviewQueue({}, skills, templates, done, T, () => 0.5, g.bySkill, new Set());
+    expect(q).toHaveLength(QUEUE_MAX);
+    for (const i of q) {
+      expect(i.ticketId).toMatch(/^g-/);
+      expect(g.byId.get(i.ticketId)!.skill).toBe(i.skills[0]);
+      expect(i.skills).toHaveLength(1);
+    }
+  });
+
+  it('số bài = min(kỹ năng đến hạn, QUEUE_MAX) với mọi rnd (đếm được khi chưa tải chunk Chung)', () => {
+    for (const n of [0, 1, 3, 7]) for (const r of [0, 0.5, 0.99]) {
+      const q = reviewQueue({}, skills.slice(0, n), templates, done, T, () => r, g.bySkill, new Set());
+      expect(q).toHaveLength(Math.min(dueSkills({}, skills.slice(0, n), T).length, QUEUE_MAX));
+    }
+  });
+
+  it('kỹ năng không có drill → bài ticket như cũ; không có nguồn drill → đường cũ nguyên vẹn', () => {
+    const q = reviewQueue({}, ['where'], templates, done, T, () => 0, new Map(), new Set());
+    expect(q[0].ticketId).toMatch(/^ch1-/);
+    expect(reviewQueue({}, ['where'], templates, done, T, () => 0)).toEqual(q);
   });
 });
