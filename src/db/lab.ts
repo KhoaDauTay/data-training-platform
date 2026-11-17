@@ -4,21 +4,34 @@ import { SCHEMAS, type SchemaId } from '../domains';
 import { SANDBOX_SETUP_SQL } from './import';
 
 /**
- * Plan 8a D8a-3: the `lab` schema (src/db/lab.sql, the General drills' shop data) is seeded lazily, on the first `ensure`
- * request, never at boot. Imported only by the worker and the tests, so lab.sql stays out of the main bundle.
+ * Schemas seeded lazily, on the first `ensure` request, never at boot (v6 F7): `lab` (Plan 8a D8a-3, the General drills'
+ * shop data) and `ecom` (Plan 9, the e-commerce domain; its SQL is its own chunk, src/db/ecomSeed.ts). Imported only by
+ * the worker and the tests, so the seed SQL stays out of the main bundle.
  */
+const LAZY_SEEDS: Partial<Record<SchemaId, () => Promise<string[]>>> = {
+  lab: async () => [lab],
+  ecom: async () => {
+    const m = await import('./ecomSeed');
+    return [m.schema, m.seed];
+  },
+};
 const seeded = new WeakMap<PGlite, Set<SchemaId>>();
 
-/** Seeds `id` once per DB. The game schema is always there. A failed seed drops the half-built schema and restores the session search_path. */
-export async function ensureSchema(db: PGlite, id: SchemaId, source: string = lab): Promise<void> {
-  if (id === 'game') return;
+/**
+ * Seeds `id` once per DB, each file with only its schema on the path. The game schema is always there. A failed seed
+ * drops the half-built schema and restores the session search_path. `source` replaces the seed files (tests only).
+ */
+export async function ensureSchema(db: PGlite, id: SchemaId, source?: string): Promise<void> {
+  const load = LAZY_SEEDS[id];
+  if (!load) return;
   const done = seeded.get(db) ?? new Set<SchemaId>();
   seeded.set(db, done);
   if (done.has(id)) return;
   const name = SCHEMAS[id];
   try {
+    const files = source === undefined ? await load() : [source];
     await db.exec(`CREATE SCHEMA ${name}; SET search_path TO ${name};`);
-    await db.exec(source);
+    for (const sql of files) await db.exec(sql);
     await db.exec(SANDBOX_SETUP_SQL);
   } catch (e) {
     await db.exec(`DROP SCHEMA IF EXISTS ${name} CASCADE; ${SANDBOX_SETUP_SQL}`);
