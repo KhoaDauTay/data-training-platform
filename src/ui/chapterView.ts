@@ -29,8 +29,9 @@ function outcomeList(chapter: number): HTMLElement | null {
 export function goalCard(chapter: number): HTMLElement | null {
   const list = outcomeList(chapter);
   if (!list) return null;
-  return h('section', { class: 'my-3 rounded-xl bg-panel p-3 ring-1 ring-line', 'aria-labelledby': 'goal-title' },
-    h('h3', { id: 'goal-title', class: 'mt-0' }, t('goal.title', { n: chapter, title: chapterTitle(chapter, getLang()) })),
+  // One closed line: the request and the task come first in the brief (v10 UX #3); the goals are a click away.
+  return h('details', { class: 'my-3 rounded-xl bg-panel p-3 ring-1 ring-line' },
+    h('summary', { id: 'goal-title', class: 'cursor-pointer font-semibold' }, t('goal.title', { n: chapter, title: chapterTitle(chapter, getLang()) })),
     h('p', { class: 'my-1 text-sm text-muted' }, t('goal.intro')),
     list);
 }
