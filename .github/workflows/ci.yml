@@ -1,0 +1,71 @@
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      # Project site lives at https://<user>.github.io/<repo>/. Set repo variable PAGES_BASE=/ for a user site or custom domain.
+      BASE: ${{ vars.PAGES_BASE || format('/{0}/', github.event.repository.name) }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24          # same major as dev machine (v24.18.0); gzip budget numbers measured on it
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+      - name: Build for GitHub Pages base
+        run: npx vite build --base="$BASE"
+      - name: Assert base path in index.html
+        run: grep -q "src=\"${BASE}assets/index-" dist/index.html
+      - run: node scripts/check-budget.mjs
+      - if: github.event_name != 'pull_request'
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    concurrency:
+      group: pages
+      cancel-in-progress: false   # never cut a Pages deployment in half
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v5
+      - uses: actions/checkout@v7
+        with:
+          sparse-checkout: scripts
+      - name: Post-deploy check (GitHub Pages headers are not configurable; missing compression is WARN)
+        env:
+          PAGE_URL: ${{ steps.deployment.outputs.page_url }}
+        run: |
+          for i in 1 2 3; do
+            bash scripts/check-deploy.sh "$PAGE_URL" && exit 0
+            sleep 20
+          done
+          exit 1
