@@ -73,9 +73,9 @@ describe('loadSave', () => {
   });
 
   it('save mới hơn → cảnh báo newer kèm version, giữ bản .bak', () => {
-    const raw = JSON.stringify({ version: 4, completed: [] });
+    const raw = JSON.stringify({ version: 5, completed: [] });
     const store = memoryStorage({ [SAVE_KEY]: raw });
-    expect(loadSave(store, known)).toEqual({ save: emptySave(), warning: { kind: 'newer', version: 4 } });
+    expect(loadSave(store, known)).toEqual({ save: emptySave(), warning: { kind: 'newer', version: 5 } });
     expect(store.data[`${SAVE_KEY}.bak`]).toBe(raw);
   });
 

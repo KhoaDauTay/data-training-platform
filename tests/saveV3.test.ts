@@ -3,7 +3,7 @@ import v1 from './fixtures/save-v1.json?raw';
 import v2 from './fixtures/save-v2.json?raw';
 import v3 from './fixtures/save-v3.json?raw';
 import { MAX_CARD_SQL, MAX_CARDS } from '../src/dashboard';
-import { emptySave, loadSave, oldSaveKey, parseSave, SAVE_KEY, SAVE_VERSION, serializeSave, type Known } from '../src/save';
+import { emptySave, loadSave, MIGRATIONS, oldSaveKey, parseSave, SAVE_KEY, serializeSave, type Known } from '../src/save';
 import type { KV } from '../src/storage';
 
 // Lane side tasks (r-1, r-2) are known ids like tickets: their drafts, graded SQL and hints survive a reload.
@@ -19,22 +19,17 @@ function memStore(initial: Record<string, string> = {}): KV & { data: Record<str
 }
 
 describe('save v3 (Plan 5: bảng điều hành + bài tuyến)', () => {
-  it('SAVE_VERSION 3, emptySave có dashboard và lanes rỗng', () => {
-    expect(SAVE_VERSION).toBe(3);
-    expect(emptySave()).toMatchObject({ version: 3, dashboard: { cards: [], hidden: [] }, lanes: [] });
-  });
-
   it('đọc save mẫu v3 nguyên vẹn', () => {
-    expect(parseSave(v3, known)).toEqual(JSON.parse(v3));
+    expect(parseSave(v3, known, MIGRATIONS, 3)).toMatchObject(JSON.parse(v3)); // v4 adds byDomain (tests/saveV4.test.ts)
   });
 
   it('migrate v1 và v2 lên v3 (fixture giữ mãi)', () => {
-    for (const raw of [v1, v2]) expect(parseSave(raw, known)).toMatchObject({ version: 3, dashboard: { cards: [], hidden: [] }, lanes: [] });
+    for (const raw of [v1, v2]) expect(parseSave(raw, known, MIGRATIONS, 3)).toMatchObject({ version: 3, dashboard: { cards: [], hidden: [] }, lanes: [] });
   });
 
   it('loadSave từ v2: giữ bản gốc ở oldSaveKey(2) rồi migrate', () => {
     const store = memStore({ [SAVE_KEY]: v2 });
-    const r = loadSave(store, known);
+    const r = loadSave(store, known, MIGRATIONS, 3);
     expect(r.warning).toBeUndefined();
     expect(r.save.version).toBe(3);
     expect(store.data[oldSaveKey(2)]).toBe(v2);
