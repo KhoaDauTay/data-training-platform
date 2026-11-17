@@ -37,7 +37,12 @@ const SKILL_SQL: Record<string, RegExp> = {
   having: /\bHAVING\b/i,
   left_join: /\bLEFT\s+(OUTER\s+)?JOIN\b/i,
   anti_join: /\bIS\s+NULL\b|\bNOT\s+EXISTS\b/i,
+  null_logic: /\bIS\s+(NOT\s+)?NULL\b/i,
+  cast: /::\s*\w+|\bCAST\s*\(/i,
 };
+
+/** curriculum §5.1: from this chapter on, a rest ticket must review older chapters (spaced, interleaved). */
+export const REST_RULE_FROM = 4;
 
 /** true/false when `skill` has a keyword pattern, undefined when it cannot be checked. */
 export const twistUsed = (skill: string, sql: string): boolean | undefined => SKILL_SQL[skill]?.test(sql);
@@ -195,6 +200,14 @@ export function contentProblems(tickets: Ticket[], skills: Skill[] = SKILLS, cha
     if (beats[beats.length - 1] !== 'boss') problems.push(`chương ${chapter}: ticket cuối phải là boss`);
     if (beats[beats.length - 2] !== 'rest') problems.push(`chương ${chapter}: ngay trước boss phải là rest`);
     if (beats.filter((b) => b === 'boss').length !== 1) problems.push(`chương ${chapter}: cần đúng một boss`);
+    if (chapter >= REST_RULE_FROM) {
+      for (const rest of inChapter.filter((t) => t.beat === 'rest')) {
+        const older = rest.requires.map((s) => skillById.get(s)?.chapter ?? chapter).filter((c) => c < chapter);
+        if (older.length < 2 || !older.some((c) => c <= chapter - 2)) {
+          problems.push(`${rest.id}: rest phải requires ≥ 2 kỹ năng của chương trước, trong đó ≥ 1 kỹ năng từ chương ${chapter - 2} trở về trước`);
+        }
+      }
+    }
     const boss = inChapter.find((t) => t.beat === 'boss');
     if (boss && boss.grants.length) problems.push(`${boss.id}: boss không được dạy kỹ năng (grants phải rỗng)`);
     for (const twist of inChapter.filter((t) => t.beat === 'twist')) {
