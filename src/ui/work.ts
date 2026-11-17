@@ -1,14 +1,16 @@
 import type { SQLNamespace } from '@codemirror/lang-sql';
 import type { DbClient } from '../db/client';
 import { sqlErrorInfo } from '../db/run';
-import { grade, type GradeResult } from '../grader';
+import type { QueryResult } from '../db/run';
+import { compareResults, grade, type GradeResult } from '../grader';
 import { loadHistory, pushHistory, writeHistory } from '../history';
-import { isMac, t } from '../i18n';
+import { getLang, isMac, t } from '../i18n';
+import { SKILLS } from '../progress';
 import { isClosed, isStory, readDraft, workKey, writeDraft } from '../session';
 import { app, editorSchema, initialDoc, persist, stepKey, type LastRun } from '../state';
 import { localStore } from '../storage';
 import { BTN_SUBMIT } from '../theme';
-import type { Ticket } from '../tickets';
+import { BLANK, type Ticket } from '../tickets';
 import { celebrate } from './celebrate';
 import { h } from './dom';
 import { createEditor, type Editor } from './editor';
@@ -39,6 +41,8 @@ export interface WorkArea {
   /** Language switch: labels and the last message only, never the editor. */
   relabel(): void;
   setSchema(ns: SQLNamespace): void;
+  /** Replaces the editor text, undoable ("Use this example" on a worked ticket). */
+  setDoc(sql: string): void;
   /** Exactly what Ctrl+Enter would run now (selection or whole editor), to compare with app.lastRun.sql. */
   currentSql(): string;
   focus(): void;
@@ -172,6 +176,24 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
     deps.onRun();
   }
 
+  /**
+   * After a wrong result (curriculum §5.4): the author's explanation when the result equals one of the ticket's `wrong:` SQL,
+   * else the trap of the skill the ticket teaches. A `wrong:` SQL that fails is a content bug (tests/content.test.ts): skipped.
+   */
+  async function wrongTip(tk: Ticket, result: QueryResult | undefined): Promise<(() => string) | undefined> {
+    if (result) {
+      for (const w of tk.wrong ?? []) {
+        try {
+          if (compareResults(await deps.db.run(w.sql), result, tk.ordered).ok) return () => w.why[getLang()];
+        } catch {
+          // ignored, see above
+        }
+      }
+    }
+    const skill = SKILLS.find((s) => tk.grants.includes(s.id));
+    return skill && (() => t('work.trap', { trap: skill.trap[getLang()] }));
+  }
+
   async function submit(): Promise<void> {
     if (busy || !editor || !ticket || submitBtn.hidden) return;
     const ed = editor;
@@ -180,6 +202,11 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
     const k = stepKey(tk.id, i);
     const story = isStory(); // captured at click time, like the ticket
     const sql = ed.getValue(); // Submit always grades the whole editor
+    const blanks = tk.format === 'faded' ? sql.split(BLANK).length - 1 : 0; // elsewhere ___ is a valid LIKE pattern
+    if (blanks) {
+      say('bad', () => t('work.blanks', { n: blanks })); // a faded starter not filled in yet: not graded, not a wrong submit
+      return;
+    }
     ed.closeCompletion();
     ed.clearError();
     busy = true;
@@ -228,7 +255,9 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
         say('bad', () => h('div', {}, err !== undefined ? errorView(err) : gradeMessage(fail), voice()));
       } else {
         if (fail.reason === 'rows' && played?.result) played.mark = fail.sample;
-        say('bad', () => h('div', {}, gradeMessage(fail), voice()));
+        const tip = await wrongTip(tk, played?.result);
+        if (editor !== ed) return;
+        say('bad', () => h('div', {}, gradeMessage(fail), tip ? h('p', { class: 'mt-2 mb-0' }, tip()) : null, voice()));
       }
       deps.panel.show('result');
       return;
@@ -297,6 +326,10 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
     },
     relabel,
     setSchema: (ns) => editor?.setSchema(ns),
+    setDoc: (sql) => {
+      editor?.setValue(sql);
+      editor?.focus();
+    },
     currentSql: () => editor?.runTarget().sql ?? '',
     focus: () => editor?.focus(),
   };

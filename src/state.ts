@@ -53,6 +53,8 @@ export const actions = {
   complete(_ticket: Ticket): void {},
   retryDb(): void {},
   copyDiagnostics(): void {},
+  /** Replaces the editor text ("Use this example" on a worked ticket). */
+  useSql(_sql: string): void {},
 };
 
 export const done = (): Set<string> => new Set(app.save.completed);

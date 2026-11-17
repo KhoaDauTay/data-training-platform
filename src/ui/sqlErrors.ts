@@ -20,6 +20,8 @@ const BY_CODE: Record<string, Key> = {
   '22007': 'sqlerr.date',
   '22008': 'sqlerr.date',
   '22012': 'sqlerr.22012',
+  '42804': 'sqlerr.42804',
+  '22P02': 'sqlerr.22P02',
 };
 
 /** Teaching note shown under Postgres' own message (which is always shown unchanged). */
