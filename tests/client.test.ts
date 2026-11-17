@@ -274,6 +274,23 @@ describe('DbClient', () => {
     await expect(next).resolves.toBeDefined();
   });
 
+  it('ensure đang chờ khi worker restart: gửi lại trên worker mới (v11 review #1)', async () => {
+    const { db } = client();
+    const w = last();
+    w.ready();
+    const slow = db.run('SLOW').catch((x: unknown) => x);
+    const e = db.ensure('ecom');
+    await vi.advanceTimersByTimeAsync(5000);
+    expect(await slow).toBeInstanceOf(QueryTimeoutError);
+    const w2 = last();
+    expect(w2).not.toBe(w);
+    w2.ready();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(w2.posted).toEqual([expect.objectContaining({ kind: 'ensure', schema: 'ecom' })]);
+    w2.send({ type: 'result', id: w2.posted[0].id, result: null });
+    await expect(e).resolves.toBeUndefined();
+  });
+
   it('ensure quá hạn: không gửi lại sau restart (không vòng lặp)', async () => {
     const { db } = client();
     last().ready();

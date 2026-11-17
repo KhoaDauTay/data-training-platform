@@ -51,8 +51,8 @@ export const TOUR_SLOT: Record<number, TourSlot> = { 1: 'brief', 2: 'work', 3: '
 /** v4 §B.2 layer 2. Steps 1, 3 and 8 wait for a button; the others for what the player does. */
 export function tourStep(f: TourFacts): number | undefined {
   const tour = f.tour;
-  if (!f.onFirst || f.skipped || !tour || tour.knows) return undefined;
-  if (f.solved) return tour.step >= TOUR_STEPS ? undefined : 8;
+  if (!f.onFirst || f.skipped || !tour || tour.knows || tour.step >= TOUR_STEPS) return undefined;
+  if (f.solved) return 8;
   const passed = [true, false, f.ran, false, f.exampleRan, f.columnsSeen, f.shapeOk, f.solved];
   for (let n = 1; n <= 7; n++) if (tour.step < n && !passed[n]) return n;
   return 7;

@@ -84,6 +84,7 @@ export const vi = {
   'voice.missing': 'Hình như còn thiếu vài dòng, bạn xem lại điều kiện lọc nhé?',
   'voice.extra': 'Hình như có vài dòng mình không cần, bạn xem lại điều kiện lọc nhé?',
   'voice.values': 'Số dòng thì đủ nhưng vài giá trị chưa khớp, bạn kiểm lại cách tính nhé.',
+  'voice.rowsAndValues': 'Số dòng và giá trị đều lệch, bạn xem lại điều kiện lọc nhé.',
   'nav.practice': 'Luyện SQL',
   'nav.sandbox': 'Sandbox',
   'mode.sandbox': 'Sandbox: SQL tự do',

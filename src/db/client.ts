@@ -113,7 +113,13 @@ export class DbClient {
    */
   async ensure(schema: SchemaId): Promise<void> {
     if (schema === 'game' || this.ensured.has(schema)) return;
-    await this.enqueue<void>({ kind: 'ensure', schema }, IMPORT_TIMEOUT_MS);
+    try {
+      await this.enqueue<void>({ kind: 'ensure', schema }, IMPORT_TIMEOUT_MS);
+    } catch (e) {
+      // v11 review: an ensure queued when another query restarted the worker is sent again on the new one.
+      if (e instanceof DbRestartError) return this.ensure(schema);
+      throw e;
+    }
     this.ensured.add(schema);
   }
 

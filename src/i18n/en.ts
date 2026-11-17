@@ -87,6 +87,7 @@ export const en: Record<Key, Msg> = {
   'voice.missing': 'Looks like a few rows are missing. Could you check the filters?',
   'voice.extra': "Looks like there are rows I don't need. Could you check the filters?",
   'voice.values': 'The row count is right but some values are off. Could you check the calculation?',
+  'voice.rowsAndValues': 'Both the row count and some values are off. Could you check the filters?',
   'nav.practice': 'Practise SQL',
   'nav.sandbox': 'Sandbox',
   'mode.sandbox': 'Sandbox: free SQL',

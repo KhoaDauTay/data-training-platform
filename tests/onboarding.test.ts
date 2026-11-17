@@ -55,6 +55,7 @@ describe('onboarding (v4 §B, Plan 7 V8–V9)', () => {
   it('làm khác thứ tự thì nhảy tới bước tương ứng; tải lại không lùi', () => {
     expect(at({ solved: true }, 1)).toBe(8); // Submit at once
     expect(at({ solved: true }, 8)).toBeUndefined(); // tour over
+    expect(at({}, 8)).toBeUndefined(); // v11 B1: tour over, another domain's unsolved first ticket
     expect(at({ ran: true, columnsSeen: true }, 3)).toBe(4); // the lesson step still waits
     expect(at({}, 5)).toBe(6); // reload: lastRun is gone, steps 1–5 were passed
   });

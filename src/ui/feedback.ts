@@ -15,7 +15,7 @@ export function voiceKey(r: Exclude<GradeResult, { ok: true }>): Key {
   if (r.reason === 'order') return 'voice.order';
   if (r.missing && !r.extra) return 'voice.missing';
   if (r.extra && !r.missing) return 'voice.extra';
-  return 'voice.values';
+  return r.missing === r.extra ? 'voice.values' : 'voice.rowsAndValues';
 }
 
 export function gradeMessage(r: Exclude<GradeResult, { ok: true }>): string {

@@ -28,9 +28,8 @@ import type { WorkArea } from './work';
 import { mascot } from './mascots';
 import { illustration } from '../art/load';
 
-let templateMap: Map<string, Ticket> | undefined;
-/** Built on first use: ticket content arrives after this module loads (main.ts awaits loadContent()). */
-const templates = (): Map<string, Ticket> => (templateMap ??= new Map(loadTicketTemplates().map((tk) => [tk.id, tk])));
+/** Rebuilt on each call from the open domain's templates (v11 review: a memo kept the first domain's tickets). */
+const templates = (): Map<string, Ticket> => new Map(loadTicketTemplates().map((tk) => [tk.id, tk]));
 let ctx: { work: WorkArea; rerender(): void; db: DbClient } | undefined;
 let runSeq = 0;
 

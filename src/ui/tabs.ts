@@ -1,6 +1,7 @@
 import { t, type Key } from '../i18n';
 import { gated, readTour, tabOpen } from '../onboarding';
 import { visibleTickets } from '../progress';
+import { activeDomain } from '../domains';
 import { app, done } from '../state';
 import { cx } from '../theme';
 import { markTabOpened, tourSlot } from './coach';
@@ -72,7 +73,7 @@ export function createPanel(host: HTMLElement): Panel {
 
   function label(): void {
     const reached = new Set(visibleTickets(app.tickets, done()).map((x) => x.id));
-    const isGated = gated(readTour());
+    const isGated = gated(readTour()) && activeDomain() === 'logistics'; // `from` ids are Logistics tickets
     tabs.forEach((tab, i) => {
       buttons[i].hidden = !tabOpen(tab.from, reached, isGated) && tab.id !== active; // a chip may still open it on purpose
       const on = tab.id === active;
