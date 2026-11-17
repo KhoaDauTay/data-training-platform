@@ -3,7 +3,8 @@ import { buildGeneral, drillTicket, DRILL_ID, parseAdv, parseDrills } from '../s
 import { generalNow } from '../src/content';
 import { SKILLS } from '../src/progress';
 import { textOf } from '../src/tickets';
-import { distinctResults, drillRules } from './generalRules';
+import { compareResults } from '../src/grader';
+import { codeSpans, distinctResults, drillRules, labRun, VI_DIACRITIC } from './generalRules';
 
 const DRILL = `
 - id: g-where-1
@@ -118,4 +119,68 @@ describe('nội dung: drill theo kỹ năng (content/general/sql.yml)', () => {
   });
 
   drillRules(skillDrills);
+});
+
+describe('nội dung: lộ trình DA nâng cao (content/general/adv.yml)', () => {
+  const g = generalNow()!;
+  const nodes = g.nodes;
+  const withLesson = nodes.filter((n) => n.lesson);
+  const IDS = [...Array.from({ length: 10 }, (_, i) => `a${i + 1}`), ...Array.from({ length: 7 }, (_, i) => `b${i + 1}`),
+    'c1', 'c2', 'c3', ...Array.from({ length: 8 }, (_, i) => `d${i + 1}`)];
+  const PARTIAL = ['a10', 'b5', 'b7', 'c2'];
+
+  it('đủ 28 nút đúng thứ tự và trạng thái của v5 §D.3', () => {
+    expect(nodes.map((n) => n.id)).toEqual(IDS);
+    for (const n of nodes) expect([n.id, n.status]).toEqual([n.id, n.id.startsWith('d') ? 'external' : PARTIAL.includes(n.id) ? 'partial' : 'in']);
+    for (const n of nodes) expect(n.group).toBe(n.id[0].toUpperCase());
+  });
+
+  it('in|partial: bài học + ≥ 3 drill gồm đúng một challenge; partial|external: ≥ 1 link https', () => {
+    for (const n of nodes) {
+      if (n.status !== 'external') {
+        expect(n.lesson, n.id).toBeDefined();
+        expect(n.drills.length, n.id).toBeGreaterThanOrEqual(3);
+        expect(n.drills.filter((d) => d.kind === 'challenge'), n.id).toHaveLength(1);
+      }
+      if (n.status !== 'in') expect(n.links.length, n.id).toBeGreaterThanOrEqual(1);
+    }
+  });
+
+  it('needs: mọi id là kỹ năng hoặc nút có thật, không vòng', () => {
+    const byId = new Map(nodes.map((n) => [n.id, n]));
+    for (const n of nodes) for (const x of n.needs) expect(SKILLS.some((s) => s.id === x) || byId.has(x), `${n.id} → ${x}`).toBe(true);
+    const state = new Map<string, 'open' | 'done'>();
+    const visit = (id: string, path: string[]): void => {
+      if (state.get(id) === 'done' || !byId.has(id)) return;
+      expect(state.get(id), `vòng: ${[...path, id].join(' → ')}`).not.toBe('open');
+      state.set(id, 'open');
+      for (const x of byId.get(id)!.needs) visit(x, [...path, id]);
+      state.set(id, 'done');
+    };
+    for (const n of nodes) visit(n.id, []);
+  });
+
+  it.each(withLesson)('$id: bài học: EN không dấu, code span VI = EN, khái niệm ≤ 70 từ, giải thích ≤ 90 từ', (n) => {
+    const l = n.lesson!;
+    const en = [l.concept.en, l.explain.en, l.mistake.why.en, l.try.task.en].join('\n');
+    expect(en.replace(/`[^`]+`/g, '')).not.toMatch(VI_DIACRITIC);
+    for (const b of [l.concept, l.explain, l.mistake.why, l.try.task]) expect(codeSpans(b.en)).toEqual(codeSpans(b.vi));
+    expect(l.concept.vi.split(/\s+/).length).toBeLessThanOrEqual(70);
+    expect(l.explain.vi.split(/\s+/).length).toBeLessThanOrEqual(90);
+  });
+
+  it.each(withLesson)('$id: bài học trên lab: ví dụ, câu mở đầu, lời giải có dòng; mở đầu chưa đạt; câu sai báo lỗi hoặc khác ví dụ', async (n) => {
+    const l = n.lesson!;
+    const run = await labRun();
+    for (const sql of [l.example, l.try.starter, l.try.solution]) expect((await run(sql)).rows.length).toBeGreaterThan(0);
+    expect(compareResults(await run(l.try.solution), await run(l.try.starter), l.try.ordered).ok).toBe(false);
+    const wrong = await run(l.mistake.sql).catch(() => undefined);
+    if (wrong) expect(compareResults(await run(l.example), wrong, true).ok).toBe(false);
+  });
+
+  it.each(withLesson)('$id: các drill của nút không cùng kết quả', async (n) => {
+    expect(await distinctResults(n.drills)).toEqual([]);
+  });
+
+  drillRules(nodes.flatMap((n) => n.drills));
 });
