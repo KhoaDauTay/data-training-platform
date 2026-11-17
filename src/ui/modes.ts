@@ -19,7 +19,9 @@ import { registerNav, setActionButton } from './topbar';
 import { renderMyData } from './myDataView';
 import type { WorkArea } from './work';
 
-const templates = new Map(loadTicketTemplates().map((tk) => [tk.id, tk]));
+let templateMap: Map<string, Ticket> | undefined;
+/** Built on first use: ticket content arrives after this module loads (main.ts awaits loadContent()). */
+const templates = (): Map<string, Ticket> => (templateMap ??= new Map(loadTicketTemplates().map((tk) => [tk.id, tk])));
 let ctx: { work: WorkArea; rerender(): void } | undefined;
 let runSeq = 0;
 
@@ -41,14 +43,14 @@ function enter(mode: Mode): void {
 }
 
 export function startPractice(items: PracticeItem[], warmup = false): boolean {
-  const usable = items.filter((i) => templates.has(i.ticketId));
+  const usable = items.filter((i) => templates().has(i.ticketId));
   if (usable.length === 0) return false;
   enter({
     kind: 'practice',
     run: {
       id: ++runSeq,
       items: usable,
-      tickets: usable.map((i) => applyVariant(templates.get(i.ticketId)!, i.variant)),
+      tickets: usable.map((i) => applyVariant(templates().get(i.ticketId)!, i.variant)),
       index: 0,
       wrong: 0,
       hints: 0,
@@ -74,13 +76,13 @@ export function startToday(): boolean {
 
 /** Entry 2: one skill (Home skill topics). */
 export function startSkill(skill: string): boolean {
-  const item = pickForSkill(skill, [...templates.values()], done(), Math.random);
+  const item = pickForSkill(skill, [...templates().values()], done(), Math.random);
   return item ? startPractice([item]) : false;
 }
 
 /** Entry 3: redo a finished task, another variant when it has one. Never a promotion review (L10). */
 export function startRetry(ticketId: string): boolean {
-  const tpl = templates.get(ticketId);
+  const tpl = templates().get(ticketId);
   return !!tpl && tpl.beat !== 'boss' && done().has(ticketId) && startPractice([retryItem(tpl, Math.random)]);
 }
 
