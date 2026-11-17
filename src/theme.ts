@@ -75,7 +75,7 @@ export const TOP_BTN = 'border-0 bg-black/20 text-white ring-1 ring-white/40 hov
  * Segmented nav (ui-ux-v3 §a): darkening overlays keep white text >= 4.5:1 over the cyan end of the gradient;
  * the current page is a white segment with blue-900 text (>= 7:1).
  */
-export const NAV_LINK = 'rounded-lg px-2.5 py-1 text-center whitespace-nowrap text-white no-underline hover:bg-black/30 aria-[current=page]:bg-white aria-[current=page]:font-semibold aria-[current=page]:text-blue-900 aria-[current=page]:hover:bg-white';
+export const NAV_LINK = 'rounded-lg px-2 py-1 text-center whitespace-nowrap text-white no-underline hover:bg-black/30 aria-[current=page]:bg-white aria-[current=page]:font-semibold aria-[current=page]:text-blue-900 aria-[current=page]:hover:bg-white';
 /** "Done"/"current" status badge (colour only on small badges, L23): emerald-800 on -100, -200 on -950. */
 export const DONE_PILL = 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200';
 

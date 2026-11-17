@@ -19,24 +19,25 @@
   <body>
     <!--
       L42 / ui-ux-v3 §a: five groups, each one never split across lines (shrink-0). Order by width:
-      >= 1280: [brand][nav][status] ··· [actions][settings][data]
+      >= 1280: [brand][nav][status] ··· [actions][settings][data]; below 1920 (120rem) the brand and action labels, the rank and the
+      chapter title are hidden and the gaps are tighter, so six nav items fit one row from 1280 (review-log Plan 5: it wrapped at 1451)
       768–1279: [brand][nav] ··· [settings][data] / [status] ··· [actions]
       < 768: [brand][status] ··· [data] / [nav: 3 columns, 2 rows] / [actions, icons only] ··· [settings]
     -->
-    <header class="topbar flex flex-wrap items-center gap-x-3 gap-y-2 bg-linear-to-r from-indigo-700 via-blue-700 to-cyan-700 px-4 py-2 text-white dark:from-indigo-950 dark:via-blue-950 dark:to-cyan-950">
-      <h1 class="order-1 m-0 flex shrink-0 items-center gap-2 text-lg font-bold"><span class="grid size-8 place-items-center rounded-lg bg-black/25 ring-1 ring-white/15"><span data-icon="anchor"></span></span><span class="max-lg:sr-only xl:max-2xl:sr-only">Cargo Query</span></h1>
+    <header class="topbar flex flex-wrap items-center gap-x-3 gap-y-2 xl:gap-x-2 bg-linear-to-r from-indigo-700 via-blue-700 to-cyan-700 px-4 py-2 text-white dark:from-indigo-950 dark:via-blue-950 dark:to-cyan-950">
+      <h1 class="order-1 m-0 flex shrink-0 items-center gap-2 text-lg font-bold"><span class="grid size-8 place-items-center rounded-lg bg-black/25 ring-1 ring-white/15"><span data-icon="anchor"></span></span><span class="max-lg:sr-only xl:max-[120rem]:sr-only">Cargo Query</span></h1>
       <nav id="nav" class="grid shrink-0 grid-cols-3 gap-1 rounded-xl bg-black/25 p-1 text-sm ring-1 ring-white/15 max-md:order-4 max-md:basis-full md:order-2 md:flex" data-i18n-aria="nav.label" aria-label="Điều hướng chính"></nav>
       <div id="status" class="flex shrink-0 items-center gap-2 rounded-xl bg-black/25 px-3 py-1 text-sm ring-1 ring-white/15 max-md:order-2 md:max-xl:order-6 xl:order-3">
         <span id="chapter" class="flex min-w-0 items-center gap-1.5 whitespace-nowrap"></span>
-        <span class="h-4 w-px bg-white/30 max-md:hidden" aria-hidden="true"></span>
-        <span class="flex items-center gap-1.5 whitespace-nowrap max-md:hidden"><span data-icon="badge" data-icon-class="size-4"></span><span id="rank" class="font-semibold"></span></span>
+        <span class="h-4 w-px bg-white/30 max-md:hidden xl:max-[120rem]:hidden" aria-hidden="true"></span>
+        <span class="flex items-center gap-1.5 whitespace-nowrap max-md:hidden xl:max-[120rem]:hidden"><span data-icon="badge" data-icon-class="size-4"></span><span id="rank" class="font-semibold"></span></span>
         <span class="h-4 w-px bg-white/30" aria-hidden="true"></span>
         <span id="xp" class="flex items-center gap-1 whitespace-nowrap rounded-full bg-amber-400 px-2 py-0.5 font-semibold text-amber-950"></span>
       </div>
       <div class="flex shrink-0 items-center gap-2 max-md:order-5 md:max-xl:order-7 md:max-xl:ml-auto xl:order-4 xl:ml-auto">
-        <button id="inbox-btn" type="button" data-i18n-title="top.inbox" class="relative flex shrink-0 items-center gap-1.5 rounded-lg border-0 bg-black/25 px-2.5 py-1.5 text-sm text-white ring-1 ring-white/15 hover:bg-black/40"><span data-icon="inbox" data-icon-class="size-4"></span><span data-label class="max-lg:sr-only xl:max-2xl:sr-only" data-i18n="top.inbox">Hộp thư</span><span data-badge class="absolute -top-1.5 -right-1.5 grid h-5 min-w-5 place-items-center rounded-full bg-rose-600 px-1 text-xs font-bold text-white ring-2 ring-white/80" aria-hidden="true" hidden></span></button>
-        <button id="review-btn" type="button" class="relative flex shrink-0 items-center gap-1.5 rounded-lg border-0 bg-black/25 px-2.5 py-1.5 text-sm text-white ring-1 ring-white/15 hover:bg-black/40" hidden><span data-icon="repeat" data-icon-class="size-4"></span><span data-label class="max-lg:sr-only xl:max-2xl:sr-only" data-i18n="top.review">Ôn tập</span><span data-badge class="absolute -top-1.5 -right-1.5 grid h-5 min-w-5 place-items-center rounded-full bg-rose-600 px-1 text-xs font-bold text-white ring-2 ring-white/80" aria-hidden="true" hidden></span></button>
-        <button id="notebook-btn" type="button" data-i18n-title="nb.open" class="relative flex shrink-0 items-center gap-1.5 rounded-lg border-0 bg-black/25 px-2.5 py-1.5 text-sm text-white ring-1 ring-white/15 hover:bg-black/40" aria-controls="notebook-dialog" aria-expanded="false"><span data-icon="book" data-icon-class="size-4"></span><span data-label class="max-lg:sr-only xl:max-2xl:sr-only" data-i18n="nb.open">Sổ tay</span></button>
+        <button id="inbox-btn" type="button" data-i18n-title="top.inbox" class="relative flex shrink-0 items-center gap-1.5 rounded-lg border-0 bg-black/25 px-2.5 py-1.5 text-sm text-white ring-1 ring-white/15 hover:bg-black/40"><span data-icon="inbox" data-icon-class="size-4"></span><span data-label class="max-lg:sr-only xl:max-[120rem]:sr-only" data-i18n="top.inbox">Hộp thư</span><span data-badge class="absolute -top-1.5 -right-1.5 grid h-5 min-w-5 place-items-center rounded-full bg-rose-600 px-1 text-xs font-bold text-white ring-2 ring-white/80" aria-hidden="true" hidden></span></button>
+        <button id="review-btn" type="button" class="relative flex shrink-0 items-center gap-1.5 rounded-lg border-0 bg-black/25 px-2.5 py-1.5 text-sm text-white ring-1 ring-white/15 hover:bg-black/40" hidden><span data-icon="repeat" data-icon-class="size-4"></span><span data-label class="max-lg:sr-only xl:max-[120rem]:sr-only" data-i18n="top.review">Ôn tập</span><span data-badge class="absolute -top-1.5 -right-1.5 grid h-5 min-w-5 place-items-center rounded-full bg-rose-600 px-1 text-xs font-bold text-white ring-2 ring-white/80" aria-hidden="true" hidden></span></button>
+        <button id="notebook-btn" type="button" data-i18n-title="nb.open" class="relative flex shrink-0 items-center gap-1.5 rounded-lg border-0 bg-black/25 px-2.5 py-1.5 text-sm text-white ring-1 ring-white/15 hover:bg-black/40" aria-controls="notebook-dialog" aria-expanded="false"><span data-icon="book" data-icon-class="size-4"></span><span data-label class="max-lg:sr-only xl:max-[120rem]:sr-only" data-i18n="nb.open">Sổ tay</span></button>
       </div>
       <div class="flex shrink-0 items-center gap-1 rounded-xl bg-black/25 p-1 ring-1 ring-white/15 max-md:order-6 max-md:ml-auto md:max-xl:order-3 md:max-xl:ml-auto xl:order-5">
         <div class="flex gap-0.5" role="group" data-i18n-aria="top.lang" aria-label="Ngôn ngữ">
