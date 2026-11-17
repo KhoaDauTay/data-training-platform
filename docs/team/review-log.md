@@ -303,3 +303,20 @@ Kiểm Edge trên code cuối (sau mọi bản sửa Plan 4): ch11-01 câu đún
 | ux | Khi đã xong 69/69, khung cảng vẫn ghi "đang làm chương 12" | Mở |
 | verification | Chưa xem lại trên trình duyệt: ✓/✗ câu ngẫm lại, Ctrl+Z sau khi chép bài mẫu, thẻ ôn đầu chương ẩn sau khi xong (Plan 2); giao diện L42 ở 375/820 px, theme giữ sau khi tải lại, khu làm việc + ERD ở theme tối, menu ⋯ | Mở — chưa kiểm |
 | docs | Spec và curriculum còn ghi số bảng cũ và vài tính năng đã bỏ/dời ở L41–L45 | Mở |
+
+## Plan 5 — dashboard + bài tuyến đợt 1 (base 2f1c032)
+
+Vòng 1/3 (2026-11-17): review code + nội dung (9 lời giải bài tuyến, 14 câu thay thế, 12 đạt) + cổng Edge :5174 (save v2 ch1–7 → v3 có backup; Bảng điều hành trống + 12/16 ô công ty; bản đồ → hồ sơ Rotterdam (Tiên Sa, "+40%" hiện vì đã qua ch7); R-2 nộp đúng +50 XP, `completed` không đổi; Ghim lên → card cột trên bảng; không lỗi console).
+
+| Loại | Bug | Trạng thái |
+|---|---|---|
+| data-loss | Card dùng bảng CSV import lỗi 42P01 khi mở thẳng `#/dashboard` (router chạy trước `myData.restore()`), lỗi được giữ cả phiên; xóa import thì card vẫn hiện kết quả cũ | Mở |
+| correctness | `setLang`: bấm EN (chunk đang tải) rồi VI → khi EN tải xong lại đặt EN | Mở |
+| content | r-1 không nói cách làm tròn trung bình (`ROUND(AVG, 1)` bị chấm sai) | Mở |
+| ux | Nav 6 mục làm thanh trên cùng xuống dòng (chấm DB + ⋯) ở 1451 px | Mở (Edge) |
+| ux | Biểu đồ trong card cột quá nhỏ, nhãn không đọc được | Mở (Edge) |
+| test-gap | `tests/setup.ts` gọi `loadLang()` không đối số → máy locale vi không tải EN | Mở |
+| security | Save nhập từ người khác tự chạy SQL card khi mở bảng (vẫn ROLLBACK + 5 s) — query nặng bộ nhớ có thể làm sập worker lặp lại | Mở (judgement) |
+| validation | `save.lanes` nhận cả id việc chính; `col` vượt số cột → card số hiện NaN | Mở |
+| content | R-3 khóa vẫn hiện tiêu đề "Đợt tăng giá tháng 7" trước ch7 (L49 chỉ ẩn "+40%") | Mở |
+| content | sg-1: chuyện "đầu kéo lớn cho lô nặng" lệch (đầu kéo chở một container) | Mở (judgement) |
