@@ -164,6 +164,25 @@ describe('contentProblems', () => {
   });
 });
 
+describe('luật ticket rest ôn xen kẽ (từ chương 4, curriculum §5.1)', () => {
+  const four = parseSkills([card('select', 1), card('where', 1), card('group_by', 2), card('join', 3), card('date_math', 4)].join('\n'));
+  const ch4 = (requires: string[]) => [
+    mk('ch4-01', 'teach', { grants: ['date_math'] }),
+    mk('ch4-02', 'rest', { requires }),
+    mk('ch4-03', 'boss', { requires: ['date_math'] }),
+  ];
+  const restProblems = (requires: string[]) => contentProblems(ch4(requires), four, chapters).filter((p) => p.includes('rest phải'));
+
+  it('đủ 2 kỹ năng cũ, có 1 kỹ năng từ chương N−2 trở về trước → hợp lệ', () => {
+    expect(restProblems(['join', 'group_by', 'date_math'])).toEqual([]);
+  });
+
+  it('thiếu kỹ năng cũ, hoặc chỉ ôn chương liền trước → báo lỗi', () => {
+    expect(restProblems(['group_by', 'date_math'])).toHaveLength(1);
+    expect(restProblems(['join', 'date_math'])).toHaveLength(1);
+  });
+});
+
 describe('twistUsed: từ khóa theo kỹ năng', () => {
   it.each([
     ['limit', 'SELECT 1 LIMIT 3', 'SELECT 1'],
@@ -172,6 +191,9 @@ describe('twistUsed: từ khóa theo kỹ năng', () => {
     ['anti_join', 'SELECT * FROM a LEFT JOIN b ON true WHERE b.id IS NULL', 'SELECT * FROM a LEFT JOIN b ON true'],
     ['anti_join', 'SELECT * FROM a WHERE NOT EXISTS (SELECT 1)', 'SELECT * FROM a WHERE EXISTS (SELECT 1)'],
     ['order_by', 'SELECT 1 ORDER BY 1', 'SELECT 1'],
+    ['null_logic', 'SELECT 1 FROM t WHERE ata IS NOT NULL', 'SELECT 1 FROM t WHERE ata = NULL'],
+    ['cast', 'SELECT count(*)::numeric / 3', 'SELECT 100.0 * count(*) / 3'],
+    ['cast', 'SELECT CAST(count(*) AS numeric)', 'SELECT count(*)'],
   ])('%s', (skill, yes, no) => {
     expect(twistUsed(skill, yes)).toBe(true);
     expect(twistUsed(skill, no)).toBe(false);
