@@ -4,7 +4,7 @@ import { grade } from '../grader';
 import { getLang, t } from '../i18n';
 import { loadLessonPrefs, markLesson, type Lesson } from '../lessons';
 import { SKILLS } from '../progress';
-import { app } from '../state';
+import { actions as appActions, app } from '../state';
 import { cx } from '../theme';
 import { byId, h, nodes, richText } from './dom';
 import { errorText, errorView, gradeMessage } from './feedback';
@@ -49,6 +49,7 @@ function card(l: Lesson, titleId: string, actions: HTMLElement[]): HTMLElement {
         .finally(() => {
           runExample.disabled = false;
           drawExample();
+          if (!exampleOut.isConnected) appActions.rerender(); // the brief was redrawn while it ran (e.g. DB still booting): show it there
         });
     },
   }, t('lesson.runExample'));
@@ -80,6 +81,7 @@ function card(l: Lesson, titleId: string, actions: HTMLElement[]): HTMLElement {
       }
       check.disabled = false;
       drawVerdict();
+      if (!verdict.isConnected) appActions.rerender();
     },
   }, t('lesson.check'));
   drawVerdict();
