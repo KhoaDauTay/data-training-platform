@@ -1,0 +1,21 @@
+{
+  "version": 3,
+  "completed": ["ch1-01", "ch1-02", "ch1-03", "ch1-04", "ch1-05", "ch2-01", "ch2-02"],
+  "xp": 1240,
+  "hintsUsed": { "ch1-02": 1, "r-1": 2 },
+  "drafts": { "ch2-03#0": "SELECT count(*) FROM shipments", "r-2#0": "SELECT 1" },
+  "graded": { "ch2-02#0": "SELECT mode, direction, COUNT(*) FROM shipments GROUP BY mode, direction", "r-1#0": "SELECT incoterm, count(*) FROM shipments GROUP BY incoterm" },
+  "review": { "select": { "box": 3, "due": "2026-11-20" } },
+  "practice": { "solved": 4, "weak": 1 },
+  "sandboxDraft": "SELECT count(*) FROM shipments",
+  "bossStep": {},
+  "dashboard": {
+    "cards": [
+      { "id": "c1", "title": "Lô đi Rotterdam năm 2025", "sql": "SELECT count(*) FROM shipments WHERE pod = 'NLRTM'", "kind": "number", "col": 0, "source": "sandbox" },
+      { "id": "c2", "title": "Theo điều kiện giao hàng", "sql": "SELECT incoterm, count(*) FROM shipments GROUP BY incoterm ORDER BY 2 DESC", "kind": "bar", "col": 1, "source": "r-1" },
+      { "id": "c4", "title": "Số lô mỗi khách", "sql": "SELECT customer_id, count(*) FROM shipments GROUP BY 1", "kind": "table", "slow": true, "source": "sandbox" }
+    ],
+    "hidden": ["rows2025"]
+  },
+  "lanes": ["r-1"]
+}

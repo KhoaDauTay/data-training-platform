@@ -1,7 +1,7 @@
 import type { QueryResult } from '../db/run';
 
 /** int2, int4, int8, float4, float8, numeric */
-const NUMERIC = new Set([21, 23, 20, 700, 701, 1700]);
+export const NUMERIC = new Set([21, 23, 20, 700, 701, 1700]);
 /** date, timestamp, timestamptz */
 const TEMPORAL = new Set([1082, 1114, 1184]);
 export const MAX_POINTS = 60;

@@ -1,7 +1,8 @@
+import { emptyDashboard, readDashboard, type Dashboard } from './dashboard';
 import { addDays, MAX_BOX, type PracticeStats, type Review } from './practice';
 import type { KV } from './storage';
 
-export const SAVE_VERSION = 2;
+export const SAVE_VERSION = 3;
 export const SANDBOX_DRAFT_MAX = 20_000;
 export const SAVE_KEY = 'cargo-query-save';
 
@@ -26,9 +27,17 @@ export interface Save {
   sandboxDraft: string;
   /** Promotion-review step reached (0-based) for tickets not completed yet. Clamped to steps.length - 1 on use. */
   bossStep: Record<string, number>;
+  // --- v3 (Plan 5, L48 D-A2) ---
+  /** Player cards and hidden company tiles of the dashboard (src/dashboard.ts). */
+  dashboard: Dashboard;
+  /** Lane side tasks solved (content/lanes/). Never in `completed`: chapters, rank, the next ticket and KPIs ignore them. */
+  lanes: string[];
 }
 
-/** Ids that exist in the current content; saved ids not in here are dropped. `skills` is used from v2 (review). */
+/**
+ * Ids that exist in the current content; saved ids not in here are dropped. `skills` is used from v2 (review).
+ * `ticketIds` holds story tickets and lane side tasks (their drafts, graded SQL and hints are kept like a ticket's).
+ */
 export interface Known { ticketIds: ReadonlySet<string>; skills: ReadonlySet<string> }
 
 // Errors carry no user-facing text: the UI translates them by class / warning.kind.
@@ -48,6 +57,9 @@ export type Migration = (data: Record<string, unknown>, known: Known) => Record<
 export const MIGRATIONS: Record<number, Migration> = {
   // v1 → v2: pure, needs no content. Learned skills missing from `review` count as box 1 due today (practice.ts cardOf).
   1: (d) => ({ ...d, review: {}, practice: { solved: 0, weak: 0 }, sandboxDraft: '', bossStep: {} }),
+  // v2 → v3: no cards, no lane task done. Bumped (not optional like `graded`) so an older build moves a v3 save to .bak
+  // instead of rewriting it without the player's cards (product-design-v3 §6).
+  2: (d) => ({ ...d, dashboard: emptyDashboard(), lanes: [] }),
 };
 
 export const emptySave = (): Save => ({
@@ -61,6 +73,8 @@ export const emptySave = (): Save => ({
   practice: { solved: 0, weak: 0 },
   sandboxDraft: '',
   bossStep: {},
+  dashboard: emptyDashboard(),
+  lanes: [],
 });
 export const serializeSave = (s: Save): string => JSON.stringify(s);
 
@@ -153,6 +167,8 @@ export function parseSave(raw: string, known: Known, migrations = MIGRATIONS, ve
     drafts: pickRecord(d.drafts, isString, known.ticketIds),
     graded: pickRecord(d.graded, isString, known.ticketIds),
     ...readV2(d, known),
+    dashboard: readDashboard(d.dashboard),
+    lanes: Array.isArray(d.lanes) ? [...new Set(d.lanes.filter((x): x is string => typeof x === 'string' && known.ticketIds.has(x)))] : [],
   };
 }
 

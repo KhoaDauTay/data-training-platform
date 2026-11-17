@@ -18,11 +18,11 @@ function memStore(initial: Record<string, string> = {}): KV & { data: Record<str
 
 describe('save v2', () => {
   it('emptySave có đủ trường v2 và giữ graded', () => {
-    expect(emptySave()).toMatchObject({ version: 2, graded: {}, review: {}, practice: { solved: 0, weak: 0 }, sandboxDraft: '', bossStep: {} });
+    expect(emptySave()).toMatchObject({ version: 3, graded: {}, review: {}, practice: { solved: 0, weak: 0 }, sandboxDraft: '', bossStep: {} });
   });
 
-  it('đọc save mẫu v2 nguyên vẹn', () => {
-    expect(parseSave(v2, known)).toEqual(JSON.parse(v2));
+  it('đọc save mẫu v2 nguyên vẹn (Plan 5: migrate lên v3, thêm trường v3 rỗng)', () => {
+    expect(parseSave(v2, known)).toEqual({ ...JSON.parse(v2), version: 3, dashboard: { cards: [], hidden: [] }, lanes: [] });
   });
 
   it('migrate v1 → v2: giữ dữ liệu v1, thêm trường v2 rỗng', () => {
@@ -56,15 +56,15 @@ describe('save v2', () => {
     expect(s.bossStep).toEqual({ 'ch1-05': 1 });
   });
 
-  it('từ chối save v3', () => {
-    expect(() => parseSave(JSON.stringify({ version: 3 }), known)).toThrow(NewerSaveError);
+  it('từ chối save v4', () => {
+    expect(() => parseSave(JSON.stringify({ version: 4 }), known)).toThrow(NewerSaveError);
   });
 
-  it('loadSave từ v1 bằng MIGRATIONS thật: giữ bản gốc ở oldSaveKey(1), migrate lên v2', () => {
+  it('loadSave từ v1 bằng MIGRATIONS thật: giữ bản gốc ở oldSaveKey(1), migrate lên v3', () => {
     const store = memStore({ [SAVE_KEY]: v1 });
     const r = loadSave(store, known);
     expect(r.warning).toBeUndefined();
-    expect(r.save).toMatchObject({ version: 2, completed: ['ch1-01', 'ch1-02'], review: {}, bossStep: {}, graded: {} });
+    expect(r.save).toMatchObject({ version: 3, completed: ['ch1-01', 'ch1-02'], review: {}, bossStep: {}, graded: {} });
     expect(store.data[oldSaveKey(1)]).toBe(v1);
   });
 
