@@ -124,14 +124,18 @@ function statusPill(c: ChapterCard): HTMLElement | null {
 }
 
 const SKILL_ROW = 4;
-/** Up to four skill icons with their names, then "+n" (ui-ux-v3 §d). */
-function skillRow(c: ChapterCard, closed: boolean): HTMLElement | null {
-  if (!c.skills.length) return null;
+/**
+ * One skill per line, cut with the full name on hover; "+n" replaces the 4th line when there are more (ui-ux-v4 §6).
+ * Fixed height from sm (also when empty) so every card's footer lines up.
+ */
+function skillRow(c: ChapterCard, closed: boolean): HTMLElement {
   const lang = getLang();
-  const rest = c.skills.length - SKILL_ROW;
-  return h('ul', { class: cx('m-0 flex list-none flex-wrap justify-center gap-x-3 gap-y-1 p-0 text-sm', closed && 'text-muted') },
-    ...c.skills.slice(0, SKILL_ROW).map((s) => h('li', { class: 'flex items-center gap-1' }, skillIcon(s.id, 'size-4'), s.label[lang])),
-    rest > 0 ? h('li', { class: 'text-muted', title: c.skills.slice(SKILL_ROW).map((s) => s.label[lang]).join(', ') }, `+${rest}`) : null);
+  const more = c.skills.length > SKILL_ROW;
+  const shown = more ? c.skills.slice(0, SKILL_ROW - 1) : c.skills;
+  const rest = c.skills.slice(shown.length);
+  return h('ul', { 'aria-hidden': c.skills.length ? false : 'true', class: cx('m-0 w-full max-w-[14rem] list-none p-0 text-left text-sm sm:h-24', closed && 'text-muted') },
+    ...shown.map((s) => h('li', { class: 'flex h-6 items-center gap-1.5', title: s.label[lang] }, skillIcon(s.id, 'size-4 shrink-0'), h('span', { class: 'truncate' }, s.label[lang]))),
+    more ? h('li', { class: 'flex h-6 items-center text-muted', title: rest.map((s) => s.label[lang]).join(', ') }, `+${rest.length}`) : null);
 }
 
 /**
@@ -142,8 +146,9 @@ function chapterCard(c: ChapterCard): HTMLElement {
   const lang = getLang();
   const color = chapterColor(c.chapter);
   const closed = c.status === 'locked' || c.status === 'soon';
+  const title = `${c.chapter} · ${chapterTitle(c.chapter, lang)}`;
   return h('article', {
-    class: cx('space-y-2 rounded-2xl bg-panel p-5 text-center', c.status === 'current' ? cx(color.ring, 'shadow-md') : 'ring-1 ring-line'),
+    class: cx('flex h-full flex-col items-center gap-2 rounded-2xl bg-panel p-5 text-center', c.status === 'current' ? cx(color.ring, 'shadow-md') : 'ring-1 ring-line'),
     'aria-current': c.status === 'current' ? 'step' : false,
   },
     closed
@@ -151,15 +156,17 @@ function chapterCard(c: ChapterCard): HTMLElement {
       : h('div', { class: cx('relative mx-auto grid size-12 place-items-center rounded-full text-xl font-bold', color.chip), 'aria-hidden': 'true' },
         String(c.chapter),
         c.status === 'done' ? h('span', { class: 'absolute -right-1 -bottom-1 grid size-5 place-items-center rounded-full bg-emerald-700 text-white ring-2 ring-panel' }, icon('check', 'size-3.5')) : null),
-    h('h3', { class: cx('m-0 text-xl font-bold', closed && 'text-muted') }, `${c.chapter} · ${chapterTitle(c.chapter, lang)}`),
+    h('h3', { class: cx('m-0 line-clamp-2 text-xl font-bold sm:min-h-14', closed && 'text-muted'), title }, title),
     skillRow(c, closed),
-    statusPill(c),
-    h('p', { class: 'm-0 text-sm text-muted' }, t('home.careerAfter', { career: CHAPTERS.find((x) => x.chapter === c.chapter)?.career[lang] ?? '' })),
-    c.status === 'done' && c.boss ? h('p', { class: 'm-0 text-sm text-muted' }, t('home.review', { title: textOf(c.boss, lang).title })) : null,
-    closed
-      ? h('p', { class: 'm-0 inline-block rounded-lg bg-ink px-3 py-1 text-sm text-panel' },
-        c.status === 'soon' ? t('home.soonHint') : t('home.lockedAfter', { n: c.chapter - 1 }))
-      : null);
+    // Footer pinned to the bottom (ui-ux-v4 §6): the badge lines up across a row whatever the skills above say.
+    h('div', { class: 'mt-auto flex w-full flex-col items-center gap-1.5' },
+      statusPill(c),
+      h('p', { class: 'm-0 line-clamp-2 text-sm text-muted' }, t('home.careerAfter', { career: CHAPTERS.find((x) => x.chapter === c.chapter)?.career[lang] ?? '' })),
+      c.status === 'done' && c.boss ? h('p', { class: 'm-0 line-clamp-2 text-sm text-muted' }, t('home.review', { title: textOf(c.boss, lang).title })) : null,
+      closed
+        ? h('p', { class: 'm-0 inline-block rounded-lg bg-ink px-3 py-1 text-sm text-panel' },
+          c.status === 'soon' ? t('home.soonHint') : t('home.lockedAfter', { n: c.chapter - 1 }))
+        : null));
 }
 
 function chaptersSection(m: HomeModel): HTMLElement {
