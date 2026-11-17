@@ -115,3 +115,79 @@ CREATE TABLE incoterms (
   name text NOT NULL,
   sea_only boolean NOT NULL
 );
+
+-- Plan 3 (chapters 7-9): pricing, receivables/payables, bills of lading. Seed blocks for them are appended at the end of seed.sql.
+CREATE TABLE exchange_rates (
+  currency text NOT NULL CHECK (currency IN ('USD', 'EUR')),
+  rate_date date NOT NULL,
+  vnd_per_unit numeric(10, 2) NOT NULL,
+  PRIMARY KEY (currency, rate_date)
+);
+
+CREATE TABLE rate_contracts (
+  id int PRIMARY KEY,
+  pol text NOT NULL REFERENCES ports(code),
+  pod text NOT NULL REFERENCES ports(code),
+  container_type text NOT NULL CHECK (container_type IN ('20GP', '40GP', '40HC', '40RF')),
+  valid_from date NOT NULL,
+  valid_to date NOT NULL,
+  buy_usd numeric(10, 2) NOT NULL
+);
+
+CREATE TABLE quotations (
+  id int PRIMARY KEY,
+  quote_no text NOT NULL UNIQUE,
+  customer_id int NOT NULL REFERENCES customers(id),
+  sales_rep_id int NOT NULL REFERENCES employees(id),
+  pol text NOT NULL REFERENCES ports(code),
+  pod text NOT NULL REFERENCES ports(code),
+  container_type text NOT NULL CHECK (container_type IN ('20GP', '40GP', '40HC', '40RF')),
+  quote_date date NOT NULL,
+  sell_usd numeric(10, 2) NOT NULL,
+  shipment_id int REFERENCES shipments(id)
+);
+
+CREATE TABLE invoices (
+  id int PRIMARY KEY,
+  invoice_no text NOT NULL UNIQUE,
+  shipment_id int NOT NULL REFERENCES shipments(id),
+  customer_id int NOT NULL REFERENCES customers(id),
+  issue_date date NOT NULL,
+  due_date date NOT NULL,
+  amount_vnd numeric(14, 0) NOT NULL
+);
+
+CREATE TABLE payments (
+  id int PRIMARY KEY,
+  invoice_id int NOT NULL REFERENCES invoices(id),
+  pay_date date NOT NULL,
+  amount_vnd numeric(14, 0) NOT NULL
+);
+
+CREATE TABLE vendor_bills (
+  id int PRIMARY KEY,
+  bill_no text NOT NULL UNIQUE,
+  shipment_id int NOT NULL REFERENCES shipments(id),
+  bill_date date NOT NULL,
+  currency text NOT NULL CHECK (currency IN ('USD', 'EUR')),
+  amount numeric(12, 2) NOT NULL
+);
+
+CREATE TABLE master_bills (
+  id int PRIMARY KEY,
+  mbl_no text NOT NULL UNIQUE,
+  carrier_id int NOT NULL REFERENCES carriers(id),
+  pol text NOT NULL REFERENCES ports(code),
+  pod text NOT NULL REFERENCES ports(code),
+  issue_date date NOT NULL,
+  gross_weight_kg numeric(12, 2) NOT NULL
+);
+
+CREATE TABLE house_bills (
+  id int PRIMARY KEY,
+  hbl_no text NOT NULL UNIQUE,
+  master_bill_id int NOT NULL REFERENCES master_bills(id),
+  shipment_id int NOT NULL UNIQUE REFERENCES shipments(id),
+  issue_date date NOT NULL,
+  gross_weight_kg numeric(10, 2) NOT NULL
+);

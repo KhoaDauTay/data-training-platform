@@ -6,8 +6,8 @@
 --   * customers 191-200 duplicate customers 1-10 with English-style names (trap, Ch4+)
 --   * ~2% of AIR shipments carry incoterm FOB (trap: FOB is sea-only, Ch6)
 --   * chapters 4-6 (Plan 2): listed at the head of the Plan 2 block near the end of this file
---   * reserved for Plan 3: Europe lane (NLRTM/DEHAM/BEANR) margin drop in Q3 2026,
---     customer 1 D&D spike, carrier 3 (Blue Anchor Lines) high claim rate
+--   * chapters 7-9 (Plan 3), incl. the Europe lane (NLRTM/DEHAM/BEANR) margin drop in Q3 2026: head of the Plan 3 block at the end
+--   * reserved for Plan 4: customer 1 D&D spike, carrier 3 (Blue Anchor Lines) high claim rate
 
 INSERT INTO ports VALUES
   ('VNSGN', 'Ho Chi Minh (Cat Lai)', 'Vietnam', 'Vietnam', 'SEAPORT', 0),
@@ -300,3 +300,218 @@ INSERT INTO incoterms VALUES
   ('DPU', 'Delivered at Place Unloaded', false), ('DDP', 'Delivered Duty Paid', false),
   ('FAS', 'Free Alongside Ship', true), ('FOB', 'Free on Board', true),
   ('CFR', 'Cost and Freight', true), ('CIF', 'Cost, Insurance and Freight', true);
+
+-- ===== Plan 3 (chapters 7-9). Story hooks (tickets and tests/seed.test.ts depend on them):
+--   * exchange_rates (VND per USD/EUR) only on working days 2026-03-02..2026-10-30: no weekends, no public holidays (ch8-04)
+--   * rate_contracts: one buy rate per lane (VN port -> overseas sea port), container type and day from 2026-04-01 to 2026-12-31, no gaps or overlaps;
+--     Europe lanes (NLRTM/DEHAM/BEANR) +40% from 2026-07-15 (general rate increase) and stay high in Q4 (ch7-04, ch12)
+--   * quotations from 2026-04-01: one per FCL sea export booked from 2026-04-06 (shipment_id set) plus 900 that never
+--     became a booking (shipment_id NULL, a quarter of them for the churned customers 171-190) (ch7-02, ch7-03)
+--   * quotes keep pricing Europe from the pre-increase rate, so many Europe quotes from 2026-07-15 sell below the buy rate;
+--     about 1.5% of all other quotes are discounted below cost (ch7-04, ch7-06, ch12 margin story)
+--   * invoices (VND) for shipments booked from 2026-04-01 once they sail (exports) or arrive (imports); ~3% of DELIVERED
+--     shipments were never invoiced (ch9-02, ch9-06); due 30 days after issue
+--   * payments: 5% of invoices never paid, 20% paid in two instalments, so overdue debt reaches every aging bucket (ch8-01..03)
+--   * vendor_bills in USD (and EUR for Europe lanes), dated any day of the week; cancelled shipments still carry a bill (ch8-04, ch8-05)
+--   * master_bills group sea exports sailing from 2026-05-01 by carrier, ports and sailing day; ~4% weigh more than 1% off their house bills (ch9-03)
+--   * the Q3 2026 margin story (ch12): Europe lanes lose about 12 margin points from Q2 to Q3, other regions stay flat
+--   * house_bills: ~8% issued 3-7 days after sailing, the rest within 2 days; none issued after 2026-10-31 (ch9-04, ch9-05)
+
+-- The planner has no statistics for freshly seeded tables and picks nested loops (10+ s); one ANALYZE keeps this block fast.
+ANALYZE shipments, containers;
+
+SELECT setseed(0.808);
+WITH d AS (
+  SELECT g::date AS rate_date, random() AS r_usd, random() AS r_eur
+  FROM generate_series(DATE '2026-03-02', DATE '2026-10-30', INTERVAL '1 day') g
+  WHERE extract(isodow FROM g) < 6
+    AND g::date NOT IN (DATE '2026-04-27', DATE '2026-04-30', DATE '2026-05-01', DATE '2026-09-01', DATE '2026-09-02')
+  ORDER BY 1
+), w AS (
+  SELECT rate_date, 26150 + 25 * sum(r_usd - 0.47) OVER (ORDER BY rate_date) AS usd,
+                    30200 + 60 * sum(r_eur - 0.48) OVER (ORDER BY rate_date) AS eur
+  FROM d
+)
+INSERT INTO exchange_rates (currency, rate_date, vnd_per_unit)
+SELECT 'USD', rate_date, round(usd) FROM w
+UNION ALL SELECT 'EUR', rate_date, round(eur) FROM w;
+
+SELECT setseed(0.909);
+WITH lane AS (
+  SELECT o.code AS pol, p.code AS pod, p.region = 'Europe' AS eu, p.base_transit_days AS days,
+    CASE o.code WHEN 'VNSGN' THEN 1.0 WHEN 'VNHPH' THEN 1.03 ELSE 1.06 END AS f_pol
+  FROM ports o CROSS JOIN ports p
+  WHERE o.code IN ('VNSGN', 'VNHPH', 'VNDAD') AND p.kind = 'SEAPORT' AND p.region <> 'Vietnam'
+), typ (container_type, f_type) AS (VALUES ('20GP', 1.0), ('40GP', 1.75), ('40HC', 1.85), ('40RF', 2.6)),
+period (valid_from, valid_to, who, gri) AS (VALUES
+  (DATE '2026-04-01', DATE '2026-06-30', 'all', 1.0),
+  (DATE '2026-07-01', DATE '2026-09-30', 'asia', 1.0), (DATE '2026-07-01', DATE '2026-07-14', 'eu', 1.0),
+  (DATE '2026-07-15', DATE '2026-09-30', 'eu', 1.4), (DATE '2026-10-01', DATE '2026-12-31', 'asia', 1.0),
+  (DATE '2026-10-01', DATE '2026-12-31', 'eu', 1.38)
+), c AS (
+  SELECT x.*, random() AS r FROM (
+    SELECT lane.pol, lane.pod, lane.days, lane.f_pol, typ.container_type, typ.f_type, period.valid_from, period.valid_to, period.gri
+    FROM lane CROSS JOIN typ CROSS JOIN period
+    WHERE period.who = 'all' OR (period.who = 'eu') = lane.eu
+    ORDER BY lane.pol, lane.pod, typ.container_type, period.valid_from
+  ) x
+)
+INSERT INTO rate_contracts (id, pol, pod, container_type, valid_from, valid_to, buy_usd)
+SELECT row_number() OVER (ORDER BY pol, pod, container_type, valid_from), pol, pod, container_type, valid_from, valid_to,
+  round(((250 + days * 38) * f_pol * f_type * gri * (0.94 + r * 0.12))::numeric, 0)
+FROM c;
+
+ANALYZE exchange_rates, rate_contracts;
+SELECT setseed(0.111);
+WITH won AS (
+  SELECT s.id AS shipment_id, s.customer_id, s.sales_rep_id, s.pol, s.pod, k.container_type, s.booking_date
+  FROM shipments s
+  JOIN (SELECT DISTINCT ON (shipment_id) shipment_id, container_type FROM containers ORDER BY shipment_id, id) k ON k.shipment_id = s.id
+  WHERE s.direction = 'EXPORT' AND s.mode = 'SEA' AND s.booking_date >= DATE '2026-04-06'
+  ORDER BY s.id
+), w AS (
+  SELECT won.*, booking_date - 1 - floor(random() * 5)::int AS quote_date, random() AS r_disc, random() AS r_mark FROM won
+), lost AS (
+  SELECT g, random() AS r_cust, random() AS r_churn, random() AS r_pol, random() AS r_pod, random() AS r_type, random() AS r_day,
+    random() AS r_disc, random() AS r_mark
+  FROM generate_series(1, 900) g
+), l AS (
+  SELECT NULL::int AS shipment_id,
+    CASE WHEN r_churn < 0.25 THEN 171 + floor(r_cust * 20)::int ELSE 1 + floor(190 * power(r_cust, 1.5))::int END AS customer_id,
+    (ARRAY['VNSGN','VNSGN','VNHPH','VNDAD'])[1 + floor(r_pol * 4)::int] AS pol,
+    (ARRAY['CNSHA','CNNGB','SGSIN','KRPUS','JPTYO','THLCH','INNSA','NLRTM','DEHAM','BEANR','USLAX','USNYC','AUSYD','CNSHA','NLRTM','USLAX'])[1 + floor(r_pod * 16)::int] AS pod,
+    (ARRAY['20GP','40GP','40HC','40HC','40RF'])[1 + floor(r_type * 5)::int] AS container_type,
+    DATE '2026-04-01' + floor(r_day * 213)::int AS quote_date, r_disc, r_mark
+  FROM lost
+), q AS (
+  SELECT shipment_id, customer_id, sales_rep_id, pol, pod, container_type, quote_date, r_disc, r_mark FROM w
+  UNION ALL
+  SELECT l.shipment_id, l.customer_id, cu.sales_rep_id, l.pol, l.pod, l.container_type, l.quote_date, l.r_disc, l.r_mark
+  FROM l JOIN customers cu ON cu.id = l.customer_id
+), pre AS MATERIALIZED ( -- Europe lanes only: the buy rate before the 2026-07-15 increase
+  SELECT pol, pod, container_type, buy_usd FROM rate_contracts WHERE valid_to = DATE '2026-07-14'
+), priced AS (
+  SELECT q.*, CASE WHEN q.quote_date >= DATE '2026-07-15' THEN pre.buy_usd END AS pre_buy, cur.buy_usd AS cur_buy,
+    row_number() OVER (ORDER BY q.quote_date, q.shipment_id NULLS LAST, q.customer_id, q.pol, q.pod, q.container_type, q.r_mark) AS id
+  FROM q
+  JOIN rate_contracts cur ON cur.pol = q.pol AND cur.pod = q.pod AND cur.container_type = q.container_type
+                         AND q.quote_date BETWEEN cur.valid_from AND cur.valid_to
+  LEFT JOIN pre ON pre.pol = q.pol AND pre.pod = q.pod AND pre.container_type = q.container_type
+)
+INSERT INTO quotations (id, quote_no, customer_id, sales_rep_id, pol, pod, container_type, quote_date, sell_usd, shipment_id)
+SELECT id, 'QT' || to_char(quote_date, 'YYMM') || lpad(id::text, 5, '0'), customer_id, sales_rep_id, pol, pod, container_type, quote_date,
+  round((COALESCE(pre_buy, cur_buy) * CASE WHEN r_disc < 0.015 THEN 0.90 + r_mark * 0.08 WHEN pre_buy IS NOT NULL THEN 1.12 + r_mark * 0.40
+                                            ELSE 1.08 + r_mark * 0.17 END)::numeric, 0),
+  shipment_id
+FROM priced ORDER BY id;
+
+ANALYZE quotations;
+SELECT setseed(0.212);
+WITH s AS (
+  SELECT s.id, s.customer_id, s.direction, s.mode, s.load_type, s.status, s.gross_weight_kg, s.volume_cbm,
+    CASE WHEN s.direction = 'EXPORT' THEN s.atd ELSE s.ata END AS served,
+    CASE WHEN s.direction = 'EXPORT' THEN s.pod ELSE s.pol END AS far,
+    random() AS r_issue, random() AS r_forget, random() AS r_rev
+  FROM shipments s
+  WHERE s.booking_date >= DATE '2026-04-01' AND s.status <> 'CANCELLED'
+  ORDER BY s.id
+), r AS (
+  SELECT s.*, p.base_transit_days AS days, q.sell_usd, k.boxes, s.served + 1 + floor(s.r_issue * 3)::int AS issue_date
+  FROM s JOIN ports p ON p.code = s.far LEFT JOIN quotations q ON q.shipment_id = s.id
+  LEFT JOIN (SELECT shipment_id, count(*) AS boxes FROM containers GROUP BY shipment_id) k ON k.shipment_id = s.id
+  WHERE s.served IS NOT NULL AND NOT (s.status = 'DELIVERED' AND s.r_forget < 0.03)
+), v AS (
+  SELECT r.*, CASE
+      WHEN sell_usd IS NOT NULL THEN sell_usd * boxes + 120
+      WHEN mode = 'AIR' THEN gross_weight_kg * (3.6 + r_rev * 1.2)
+      WHEN load_type = 'LCL' THEN volume_cbm * (50 + r_rev * 35) + 60
+      ELSE boxes * (700 + days * 30) * (1.0 + r_rev * 0.2) END AS rev_usd,
+    row_number() OVER (ORDER BY issue_date, id) AS n
+  FROM r WHERE issue_date <= DATE '2026-10-31'
+)
+INSERT INTO invoices (id, invoice_no, shipment_id, customer_id, issue_date, due_date, amount_vnd)
+SELECT n, 'INV' || to_char(issue_date, 'YYMM') || lpad(n::text, 5, '0'), id, customer_id, issue_date, issue_date + 30,
+  round((rev_usd * (SELECT x.vnd_per_unit FROM exchange_rates x WHERE x.currency = 'USD' AND x.rate_date <= v.issue_date
+                    ORDER BY x.rate_date DESC LIMIT 1))::numeric, -3)
+FROM v ORDER BY n;
+
+ANALYZE invoices;
+SELECT setseed(0.313);
+WITH i AS (
+  SELECT id, due_date, amount_vnd, random() AS r_kind, random() AS r_d1, random() AS r_d2 FROM invoices ORDER BY id
+), p AS (
+  SELECT id AS invoice_id, 1 AS k, due_date - 15 + floor(r_d1 * 45)::int AS pay_date, amount_vnd AS amount FROM i WHERE r_kind >= 0.25
+  UNION ALL
+  SELECT id, 1, due_date - 5 + floor(r_d1 * 20)::int, round(amount_vnd * 0.5, -3) FROM i WHERE r_kind >= 0.05 AND r_kind < 0.25
+  UNION ALL
+  SELECT id, 2, due_date + 15 + floor(r_d1 * 20)::int + floor(r_d2 * 40)::int, amount_vnd - round(amount_vnd * 0.5, -3)
+  FROM i WHERE r_kind >= 0.05 AND r_kind < 0.25
+)
+INSERT INTO payments (id, invoice_id, pay_date, amount_vnd)
+SELECT row_number() OVER (ORDER BY pay_date, invoice_id, k), invoice_id, pay_date, amount FROM p WHERE pay_date <= DATE '2026-10-31';
+
+SELECT setseed(0.414);
+WITH s AS (
+  SELECT s.id, s.status, s.mode, s.load_type, s.pol, s.pod, s.booking_date, s.gross_weight_kg, s.volume_cbm,
+    CASE WHEN s.direction = 'EXPORT' THEN s.atd ELSE s.ata END AS served,
+    CASE WHEN s.direction = 'EXPORT' THEN s.pod ELSE s.pol END AS far,
+    random() AS r_cost, random() AS r_d1, random() AS r_d2, random() AS r_cancel
+  FROM shipments s WHERE s.booking_date >= DATE '2026-04-01' ORDER BY s.id
+), c AS (
+  SELECT s.*, p.region = 'Europe' AS eu, p.base_transit_days AS days, rc.buy_usd, n.boxes
+  FROM s JOIN ports p ON p.code = s.far
+  LEFT JOIN (SELECT shipment_id, count(*) AS boxes FROM containers GROUP BY shipment_id) n ON n.shipment_id = s.id
+  LEFT JOIN quotations q ON q.shipment_id = s.id
+  LEFT JOIN rate_contracts rc ON rc.pol = s.pol AND rc.pod = s.pod AND rc.container_type = q.container_type
+                             AND s.served BETWEEN rc.valid_from AND rc.valid_to
+), k AS (
+  SELECT c.*, CASE
+      WHEN buy_usd IS NOT NULL THEN buy_usd * boxes + 80
+      WHEN mode = 'AIR' THEN gross_weight_kg * (2.6 + r_cost * 0.8)
+      WHEN load_type = 'LCL' THEN volume_cbm * (32 + r_cost * 13) + 30
+      ELSE boxes * (700 + days * 30) * (0.78 + r_cost * 0.14) END AS cost_usd
+  FROM c
+), b AS (
+  SELECT id AS shipment_id, 1 AS k, served + floor(r_d1 * 7)::int AS bill_date, 'USD' AS currency,
+    round((cost_usd * CASE WHEN eu THEN 0.85 ELSE 1 END)::numeric, 2) AS amount
+  FROM k WHERE status <> 'CANCELLED' AND served IS NOT NULL
+  UNION ALL
+  SELECT id, 2, served + 2 + floor(r_d2 * 6)::int, 'EUR', round((cost_usd * 0.15 * 26150 / 30200)::numeric, 2)
+  FROM k WHERE status <> 'CANCELLED' AND served IS NOT NULL AND eu
+  UNION ALL
+  SELECT id, 1, booking_date + 3 + floor(r_d1 * 8)::int, 'USD', round((80 + r_cost * 170)::numeric, 2)
+  FROM k WHERE status = 'CANCELLED' AND r_cancel < 0.6
+), n AS (
+  SELECT b.*, row_number() OVER (ORDER BY bill_date, shipment_id, k) AS id FROM b WHERE bill_date <= DATE '2026-10-31'
+)
+INSERT INTO vendor_bills (id, bill_no, shipment_id, bill_date, currency, amount)
+SELECT id, 'VB' || to_char(bill_date, 'YYMM') || lpad(id::text, 5, '0'), shipment_id, bill_date, currency, amount FROM n ORDER BY id;
+
+SELECT setseed(0.515);
+WITH grp AS (
+  SELECT carrier_id, pol, pod, atd, sum(gross_weight_kg) AS w
+  FROM shipments WHERE direction = 'EXPORT' AND mode = 'SEA' AND atd >= DATE '2026-05-01'
+  GROUP BY carrier_id, pol, pod, atd
+  ORDER BY atd, carrier_id, pol, pod
+), m AS (
+  SELECT row_number() OVER (ORDER BY atd, carrier_id, pol, pod) AS id, grp.*, random() AS r_dev, random() AS r_size FROM grp
+)
+INSERT INTO master_bills (id, mbl_no, carrier_id, pol, pod, issue_date, gross_weight_kg)
+SELECT m.id, c.code || lpad((400000 + m.id)::text, 8, '0'), m.carrier_id, m.pol, m.pod, m.atd,
+  round((m.w * CASE WHEN m.r_dev >= 0.04 THEN 1 WHEN m.r_size < 0.5 THEN 0.94 + m.r_size * 0.07 ELSE 1.015 + (m.r_size - 0.5) * 0.09 END)::numeric, 2)
+FROM m JOIN carriers c ON c.id = m.carrier_id ORDER BY m.id;
+
+ANALYZE master_bills;
+SELECT setseed(0.616);
+WITH h AS (
+  SELECT s.id AS shipment_id, s.ref, s.atd, s.gross_weight_kg, m.id AS master_bill_id, random() AS r_late, random() AS r_day
+  FROM shipments s
+  JOIN master_bills m ON m.carrier_id = s.carrier_id AND m.pol = s.pol AND m.pod = s.pod AND m.issue_date = s.atd
+  WHERE s.direction = 'EXPORT' AND s.mode = 'SEA' AND s.atd >= DATE '2026-05-01'
+  ORDER BY s.id
+), d AS (
+  SELECT h.*, atd + CASE WHEN r_late < 0.08 THEN 3 + floor(r_day * 5)::int ELSE floor(r_day * 3)::int END AS issue_date FROM h
+)
+INSERT INTO house_bills (id, hbl_no, master_bill_id, shipment_id, issue_date, gross_weight_kg)
+SELECT row_number() OVER (ORDER BY issue_date, shipment_id), 'HB' || substr(ref, 3), master_bill_id, shipment_id, issue_date, gross_weight_kg
+FROM d WHERE issue_date <= DATE '2026-10-31';
