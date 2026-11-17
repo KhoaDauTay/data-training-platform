@@ -593,3 +593,39 @@ SET default_statistics_target = 500;
 ANALYZE container_events;
 RESET default_statistics_target;
 ANALYZE free_time_terms, claims;
+
+-- Plan 5 (lanes, L48 option B). Hand-written, no random(): no setseed() needed. Illustrative, simplified figures.
+-- Hooks (content/lanes/): from Da Nang (Tien Sa, the game's hub) Europe, India and New York change ship in SGSIN,
+-- Los Angeles in KRPUS; Hai Phong to Sydney also calls at SGSIN. Fuel peaks in Aug 2026 (622 USD/t).
+-- Per destination: distance and days from Da Nang; Ho Chi Minh (VNSGN) is 330 nm (1 day) closer to southern destinations
+-- (side 1) and farther from northern ones (side -1), Hai Phong the other way round.
+INSERT INTO lane_profiles (pol, pod, distance_nm, via_port, sea_days, fuel_t_per_day, vessel_teu)
+SELECT v.pol, d.pod, d.dist + v.k * d.side * 330,
+  CASE WHEN v.pol = 'VNHPH' AND d.pod = 'AUSYD' THEN 'SGSIN' ELSE d.via END,
+  d.days + v.k * d.side, d.fuel, d.teu
+FROM (VALUES ('VNDAD', 0), ('VNSGN', -1), ('VNHPH', 1)) AS v (pol, k)
+CROSS JOIN (VALUES
+  ('CNSHA', -1, 1250, NULL, 4.5, 28.0, 1800),
+  ('CNNGB', -1, 1180, NULL, 4.3, 28.0, 1800),
+  ('SGSIN', 1, 1020, NULL, 3.2, 28.0, 1800),
+  ('KRPUS', -1, 1850, NULL, 5.8, 33.0, 2500),
+  ('JPTYO', -1, 2280, NULL, 7.4, 33.0, 2500),
+  ('THLCH', 1, 1090, NULL, 3.6, 22.0, 1100),
+  ('INNSA', 1, 3520, 'SGSIN', 13.6, 48.0, 4200),
+  ('NLRTM', 1, 9480, 'SGSIN', 30.2, 120.0, 13000),
+  ('DEHAM', 1, 9790, 'SGSIN', 31.4, 120.0, 13000),
+  ('BEANR', 1, 9600, 'SGSIN', 30.7, 120.0, 13000),
+  ('USLAX', -1, 7120, 'KRPUS', 19.8, 95.0, 8500),
+  ('USNYC', 1, 11850, 'SGSIN', 34.6, 120.0, 11000),
+  ('AUSYD', 1, 4380, NULL, 15.6, 48.0, 4200)
+) AS d (pod, side, dist, via, days, fuel, teu)
+ORDER BY v.pol, d.pod;
+
+INSERT INTO bunker_prices (month, usd_per_tonne) VALUES
+  ('2025-01-01', 612.00), ('2025-02-01', 598.00), ('2025-03-01', 585.00), ('2025-04-01', 571.00),
+  ('2025-05-01', 560.00), ('2025-06-01', 566.00), ('2025-07-01', 574.00), ('2025-08-01', 569.00),
+  ('2025-09-01', 558.00), ('2025-10-01', 552.00), ('2025-11-01', 547.00), ('2025-12-01', 541.00),
+  ('2026-01-01', 536.00), ('2026-02-01', 529.00), ('2026-03-01', 534.00), ('2026-04-01', 548.00),
+  ('2026-05-01', 561.00), ('2026-06-01', 579.00), ('2026-07-01', 603.00), ('2026-08-01', 622.00),
+  ('2026-09-01', 618.00), ('2026-10-01', 605.00);
+ANALYZE lane_profiles, bunker_prices;
