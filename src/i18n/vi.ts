@@ -63,6 +63,8 @@ export const vi = {
   'lesson.try': 'Thử ngay (không tính XP)',
   'lesson.tryAria': 'SQL thử ngay',
   'lesson.check': 'Kiểm câu trả lời',
+  'lesson.tryPlaceholder': 'Gõ câu SQL của bạn ở đây',
+  'lesson.tryEmpty': 'Ô đang trống. Gõ câu SQL của bạn rồi bấm Kiểm.',
   'lesson.running': 'Đang chạy…',
   'lesson.tryOk': 'Đúng rồi! Bạn đã nắm kỹ năng này.',
   'lesson.docs': 'Đọc thêm: tài liệu PostgreSQL',
