@@ -190,15 +190,17 @@ Vòng 1/3 (2026-11-17): review code + nội dung (đọc đủ 18 ticket VI/EN, 
 
 | Loại | Bug | Trạng thái |
 |---|---|---|
-| correctness | `submit()` thả `busy` trước `await wrongTip()` → kết quả cũ đè Run/Nộp mới hơn (kể cả câu "Đúng") | Mở |
-| correctness | `wrongTip` chạy lại tối đa 2 query `wrong:` mỗi lần nộp sai (cả khi sai số cột); query quá 5 s làm Run người chơi nhận `DbRestartError` | Mở (nhớ kết quả theo ticket+biến thể) |
-| correctness | ch4-04 `wrong[0]` (`= NULL`) trả rỗng → mọi kết quả rỗng đều hiện giải thích "= NULL" | Mở |
-| correctness | Thẻ warm-up vẫn hiện sau khi ôn xong, làm lại trong ngày được, mỗi lần đúng +1 hộp → cày hộp | Mở |
-| content | ch4-01 EN "Latest first" (nghĩa là ngày đến muộn nhất) khác VI "trễ nhiều ngày nhất" | Mở |
-| content | ch5-05 VI "chưa được thông quan" đọc thành "chưa có tờ khai" (LEFT JOIN ra thêm 5.846 dòng) | Mở |
-| content | ch5-03: làm tròn từng tờ khai trượt 7/18 dòng; đề không nói thuế suất là % | Mở |
-| content | ch6-01, ch6-06 EN chỉ nói "từ tiếng Việt cho…", không nêu tiền tố cụ thể | Mở |
-| pedagogy | ch5-05 (rest) độ khó 3 bằng twist; câu kết luận ch4-06/ch6-06 lặp câu ngẫm lại của twist; gợi ý ch6-04 dạy `extract(year…) =` thay vì khoảng nửa mở | Mở |
-| a11y | `reflectCard`: đáp án đúng chỉ bằng viền xanh; focus mất sau khi chọn; `role=status` tạo mới mỗi lần vẽ | Mở |
-| ux | Nút "Chép ví dụ vào editor" thay draft không báo có thể Ctrl+Z | Mở |
-| test-gap | Nhánh ô trống trong `submit`; `wrongTip` (khớp, trap, kết quả cũ); undo `setDoc`; điều kiện `warmupToday`; `reflectCard`; bảng trong SQL `wrong:`/Example đã mở theo chương | Mở |
+| correctness | `submit()` thả `busy` trước `await wrongTip()` → kết quả cũ đè Run/Nộp mới hơn (kể cả câu "Đúng") | Đã sửa 54a80b6 |
+| correctness | `wrongTip` chạy lại tối đa 2 query `wrong:` mỗi lần nộp sai (cả khi sai số cột); query quá 5 s làm Run người chơi nhận `DbRestartError` | Đã sửa 54a80b6 |
+| correctness | ch4-04 `wrong[0]` (`= NULL`) trả rỗng → mọi kết quả rỗng đều hiện giải thích "= NULL" | Đã sửa 54a80b6, 66f0ec7 |
+| correctness | Thẻ warm-up vẫn hiện sau khi ôn xong, làm lại trong ngày được, mỗi lần đúng +1 hộp → cày hộp | Đã sửa d3e11a1 |
+| content | ch4-01 EN "Latest first" (nghĩa là ngày đến muộn nhất) khác VI "trễ nhiều ngày nhất" | Đã sửa 75112e0 |
+| content | ch5-05 VI "chưa được thông quan" đọc thành "chưa có tờ khai" (LEFT JOIN ra thêm 5.846 dòng) | Đã sửa 75112e0 |
+| content | ch5-03: làm tròn từng tờ khai trượt 7/18 dòng; đề không nói thuế suất là % | Đã sửa 75112e0 |
+| content | ch6-01, ch6-06 EN chỉ nói "từ tiếng Việt cho…", không nêu tiền tố cụ thể | Đã sửa 75112e0 (code span ở ví dụ mẫu ch6-01 và gợi ý 1 ch6-06, vì đề không được có backtick) |
+| pedagogy | ch5-05 (rest) độ khó 3 bằng twist; câu kết luận ch4-06/ch6-06 lặp câu ngẫm lại của twist; gợi ý ch6-04 dạy `extract(year…) =` thay vì khoảng nửa mở | Đã sửa 75112e0 |
+| a11y | `reflectCard`: đáp án đúng chỉ bằng viền xanh; focus mất sau khi chọn; `role=status` tạo mới mỗi lần vẽ | Đã sửa e976724 |
+| ux | Nút "Chép ví dụ vào editor" thay draft không báo có thể Ctrl+Z | Đã sửa e976724 |
+| test-gap | Nhánh ô trống trong `submit`; `wrongTip` (khớp, trap, kết quả cũ); undo `setDoc`; điều kiện `warmupToday`; `reflectCard`; bảng trong SQL `wrong:`/Example đã mở theo chương | Đã sửa 54a80b6, d3e11a1, 66f0ec7 (`reflectCard` và undo `setDoc` cần DOM: kiểm trên trình duyệt) |
+
+Sửa vòng 1: commits 54a80b6, d3e11a1, e976724, 66f0ec7, 75112e0.
