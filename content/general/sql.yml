@@ -1,1 +1,927 @@
-[]
+# Drill phần Chung theo kỹ năng (Plan 8a): 3 mỗi kỹ năng (faded, open, trap). Dữ liệu: schema `lab` (src/db/lab.sql).
+
+# ---- select (ch1)
+- id: g-select-1
+  skill: select
+  kind: faded
+  task: { vi: "Lấy tên và danh mục của mọi sản phẩm.", en: "Get the name and the category of every product." }
+  starter: "SELECT ___, ___ FROM products"
+  solution: "SELECT name, category FROM products"
+  hint: { vi: "Hai cột cần lấy là `name` và `category`, cách nhau bằng dấu phẩy.", en: "The two columns are `name` and `category`, separated by a comma." }
+- id: g-select-2
+  skill: select
+  kind: open
+  task: { vi: "Mỗi cửa hàng: tên, thành phố và ngày khai trương, theo đúng thứ tự cột đó.", en: "For each store: the name, the city and the opening date, in that column order." }
+  solution: "SELECT name, city, opened_on FROM stores"
+  hint: { vi: "Bảng `stores` có cột `opened_on` là ngày khai trương.", en: "The `stores` table has `opened_on` for the opening date." }
+- id: g-select-3
+  skill: select
+  kind: trap
+  task: { vi: "Lấy mã và tên của mọi khách hàng, chỉ hai cột đó.", en: "Get the id and the name of every customer, only those two columns." }
+  solution: "SELECT id, name FROM customers"
+  hint: { vi: "Liệt kê đúng hai cột `id`, `name`.", en: "List exactly the two columns `id`, `name`." }
+  wrong:
+    - { sql: "SELECT * FROM customers", vi: "`*` lấy mọi cột của bảng, nên kết quả thừa cột so với yêu cầu.", en: "`*` takes every column of the table, so the result has more columns than asked." }
+
+# ---- where (ch1)
+- id: g-where-1
+  skill: where
+  kind: faded
+  task: { vi: "Sản phẩm nào giá trên 100.000 đồng? Lấy tên và giá.", en: "Which products cost more than 100,000 VND? Get the name and the price." }
+  starter: "SELECT name, price_vnd FROM products WHERE ___"
+  solution: "SELECT name, price_vnd FROM products WHERE price_vnd > 100000"
+  hint: { vi: "So sánh `price_vnd` với một con số.", en: "Compare `price_vnd` with a number." }
+- id: g-where-2
+  skill: where
+  kind: open
+  task: { vi: "Khách ở `Hanoi` sinh sau năm 1990: lấy tên và năm sinh.", en: "Customers in `Hanoi` born after 1990: get the name and the birth year." }
+  solution: "SELECT name, birth_year FROM customers WHERE city = 'Hanoi' AND birth_year > 1990"
+  hint: { vi: "Hai điều kiện trên `city` và `birth_year` phải cùng đúng.", en: "Both conditions, on `city` and on `birth_year`, must hold." }
+- id: g-where-3
+  skill: where
+  kind: trap
+  task: { vi: "Đơn bán qua kênh `ONLINE` của cửa hàng 1 hoặc cửa hàng 2: lấy mã đơn và mã cửa hàng.", en: "Orders sold through the `ONLINE` channel at store 1 or store 2: get the order id and the store id." }
+  solution: "SELECT id, store_id FROM orders WHERE channel = 'ONLINE' AND (store_id = 1 OR store_id = 2)"
+  hint: { vi: "Khi trộn AND với OR, đặt phần \"cửa hàng 1 hoặc 2\" trong ngoặc.", en: "When mixing AND with OR, put the \"store 1 or 2\" part in parentheses." }
+  wrong:
+    - { sql: "SELECT id, store_id FROM orders WHERE channel = 'ONLINE' AND store_id = 1 OR store_id = 2", vi: "Không có ngoặc thì AND được tính trước: bạn lấy mọi đơn của cửa hàng 2, kể cả đơn bán tại quầy.", en: "Without parentheses AND is evaluated first: you get every order of store 2, in-store ones included." }
+
+# ---- order_by (ch1)
+- id: g-order-by-1
+  skill: order_by
+  kind: faded
+  task: { vi: "Mọi sản phẩm: tên và giá, đắt nhất lên đầu; cùng giá thì theo tên A→Z.", en: "Every product: name and price, most expensive first; on the same price, by name A→Z." }
+  starter: "SELECT name, price_vnd FROM products ORDER BY ___"
+  solution: "SELECT name, price_vnd FROM products ORDER BY price_vnd DESC, name"
+  ordered: true
+  hint: { vi: "Sắp theo `price_vnd` giảm dần (DESC), rồi theo `name`.", en: "Sort by `price_vnd` descending (DESC), then by `name`." }
+- id: g-order-by-2
+  skill: order_by
+  kind: open
+  task: { vi: "Mọi nhân viên: tên và ngày vào làm, người vào sớm nhất lên đầu; cùng ngày thì mã nhân viên nhỏ hơn trước.", en: "Every staff member: name and hire date, earliest first; on the same date, the smaller staff id first." }
+  solution: "SELECT name, hired_on FROM staff ORDER BY hired_on, id"
+  ordered: true
+  hint: { vi: "Ngày sớm hơn là nhỏ hơn, nên sắp tăng dần theo `hired_on`, rồi `id`.", en: "An earlier date is smaller, so sort ascending by `hired_on`, then `id`." }
+- id: g-order-by-3
+  skill: order_by
+  kind: trap
+  task: { vi: "Mọi sản phẩm: danh mục, tên, giá; xếp theo danh mục A→Z, trong mỗi danh mục thì đắt nhất lên đầu.", en: "Every product: category, name, price; sorted by category A→Z, and within each category the most expensive first." }
+  solution: "SELECT category, name, price_vnd FROM products ORDER BY category, price_vnd DESC"
+  ordered: true
+  hint: { vi: "Mỗi cột trong ORDER BY có chiều riêng: DESC chỉ áp cho cột đứng ngay trước nó.", en: "Each column in ORDER BY has its own direction: DESC applies only to the column right before it." }
+  wrong:
+    - { sql: "SELECT category, name, price_vnd FROM products ORDER BY category, price_vnd", vi: "Thiếu DESC sau `price_vnd`: trong mỗi danh mục, rẻ nhất lại lên đầu.", en: "DESC is missing after `price_vnd`: within each category the cheapest comes first." }
+
+# ---- limit (ch1)
+- id: g-limit-1
+  skill: limit
+  kind: faded
+  task: { vi: "5 sản phẩm đắt nhất: tên và giá, đắt nhất lên đầu.", en: "The 5 most expensive products: name and price, most expensive first." }
+  starter: "SELECT name, price_vnd FROM products ORDER BY price_vnd DESC LIMIT ___"
+  solution: "SELECT name, price_vnd FROM products ORDER BY price_vnd DESC LIMIT 5"
+  ordered: true
+  hint: { vi: "Sắp xếp đã có sẵn; chỉ cần nói giữ bao nhiêu dòng đầu.", en: "The sort is already there; just say how many top rows to keep." }
+- id: g-limit-2
+  skill: limit
+  kind: open
+  task: { vi: "3 khách đăng ký sớm nhất: tên và ngày đăng ký; cùng ngày thì mã khách nhỏ hơn trước.", en: "The 3 earliest customers to sign up: name and signup date; on the same date, the smaller customer id first." }
+  solution: "SELECT name, signup_date FROM customers ORDER BY signup_date, id LIMIT 3"
+  ordered: true
+  hint: { vi: "Sắp theo `signup_date` rồi `id`, sau đó chỉ giữ 3 dòng.", en: "Sort by `signup_date` then `id`, then keep only 3 rows." }
+- id: g-limit-3
+  skill: limit
+  kind: trap
+  task: { vi: "10 đơn mới nhất: mã đơn và ngày đặt, mới nhất lên đầu; cùng ngày thì mã đơn lớn hơn trước.", en: "The 10 latest orders: order id and order date, latest first; on the same date, the larger order id first." }
+  solution: "SELECT id, order_date FROM orders ORDER BY order_date DESC, id DESC LIMIT 10"
+  ordered: true
+  hint: { vi: "\"Mới nhất\" chỉ có nghĩa sau khi đã sắp xếp theo ngày.", en: "\"Latest\" only means something after sorting by date." }
+  wrong:
+    - { sql: "SELECT id, order_date FROM orders LIMIT 10", vi: "LIMIT không có ORDER BY lấy 10 dòng bất kỳ, không phải 10 đơn mới nhất.", en: "LIMIT without ORDER BY takes any 10 rows, not the 10 latest orders." }
+
+# ---- aggregate (ch2)
+- id: g-aggregate-1
+  skill: aggregate
+  kind: faded
+  task: { vi: "Có tất cả bao nhiêu đơn, ngày đặt đầu tiên và ngày đặt gần nhất là ngày nào? Một dòng, ba con số.", en: "How many orders are there, and what are the first and the latest order dates? One row, three values." }
+  starter: "SELECT ___(*), min(order_date), ___(order_date) FROM orders"
+  solution: "SELECT count(*), min(order_date), max(order_date) FROM orders"
+  hint: { vi: "Một hàm đếm dòng, một hàm lấy giá trị lớn nhất.", en: "One function counts rows, one takes the largest value." }
+- id: g-aggregate-2
+  skill: aggregate
+  kind: open
+  task: { vi: "Với các sản phẩm danh mục `Snacks`: giá trung bình (làm tròn tới đồng) và giá cao nhất.", en: "For the products in the `Snacks` category: the average price (rounded to the whole dong) and the highest price." }
+  solution: "SELECT round(avg(price_vnd)), max(price_vnd) FROM products WHERE category = 'Snacks'"
+  hint: { vi: "Lọc danh mục trước, rồi dùng hàm trung bình (bọc trong `round`) và hàm lớn nhất.", en: "Filter the category first, then use the average (wrapped in `round`) and the maximum." }
+- id: g-aggregate-3
+  skill: aggregate
+  kind: trap
+  task: { vi: "Có bao nhiêu khách hàng đã để lại email?", en: "How many customers have left an email?" }
+  solution: "SELECT count(email) FROM customers"
+  hint: { vi: "Hàm đếm trên một cột bỏ qua ô trống của cột đó.", en: "Counting a column skips the empty values of that column." }
+  wrong:
+    - { sql: "SELECT count(*) FROM customers", vi: "`count(*)` đếm mọi dòng, kể cả khách chưa có email.", en: "`count(*)` counts every row, customers without an email included." }
+
+# ---- group_by (ch2)
+- id: g-group-by-1
+  skill: group_by
+  kind: faded
+  task: { vi: "Mỗi danh mục có bao nhiêu sản phẩm? Lấy danh mục và số sản phẩm.", en: "How many products does each category have? Get the category and the product count." }
+  starter: "SELECT category, count(*) FROM products GROUP BY ___"
+  solution: "SELECT category, count(*) FROM products GROUP BY category"
+  hint: { vi: "Gom theo đúng cột đứng ngoài hàm gộp trong SELECT.", en: "Group by the column that sits outside the aggregate in SELECT." }
+- id: g-group-by-2
+  skill: group_by
+  kind: open
+  task: { vi: "Mỗi cửa hàng có bao nhiêu đơn đã thanh toán (`PAID`)? Lấy mã cửa hàng và số đơn.", en: "How many paid (`PAID`) orders does each store have? Get the store id and the order count." }
+  solution: "SELECT store_id, count(*) FROM orders WHERE status = 'PAID' GROUP BY store_id"
+  hint: { vi: "Lọc trạng thái trước, rồi gom theo `store_id`.", en: "Filter the status first, then group by `store_id`." }
+- id: g-group-by-3
+  skill: group_by
+  kind: trap
+  task: { vi: "Số đơn cho mỗi cặp kênh bán và trạng thái: lấy kênh, trạng thái, số đơn.", en: "The order count for each pair of channel and status: get the channel, the status and the count." }
+  solution: "SELECT channel, status, count(*) FROM orders GROUP BY channel, status"
+  hint: { vi: "Mọi cột trong SELECT nằm ngoài hàm gộp đều phải có trong GROUP BY.", en: "Every SELECT column outside an aggregate must be in GROUP BY." }
+  wrong:
+    - { sql: "SELECT channel, status, count(*) FROM orders GROUP BY channel", vi: "`status` không có trong GROUP BY, nên Postgres báo lỗi: nó không biết lấy trạng thái nào cho mỗi kênh.", en: "`status` is not in GROUP BY, so Postgres raises an error: it cannot tell which status to show for each channel." }
+
+# ---- having (ch2)
+- id: g-having-1
+  skill: having
+  kind: faded
+  task: { vi: "Sản phẩm nào đã bán tổng cộng hơn 480 đơn vị? Lấy mã sản phẩm và tổng số lượng.", en: "Which products have sold more than 480 units in total? Get the product id and the total quantity." }
+  starter: "SELECT product_id, sum(qty) FROM order_items GROUP BY product_id HAVING ___"
+  solution: "SELECT product_id, sum(qty) FROM order_items GROUP BY product_id HAVING sum(qty) > 480"
+  hint: { vi: "Điều kiện đặt trên tổng `sum(qty)` của mỗi nhóm.", en: "The condition is on each group's total `sum(qty)`." }
+- id: g-having-2
+  skill: having
+  kind: open
+  task: { vi: "Danh mục nào có giá trung bình trên 50.000 đồng? Lấy danh mục và giá trung bình (làm tròn tới đồng).", en: "Which categories have an average price above 50,000 VND? Get the category and the average price (rounded to the whole dong)." }
+  solution: "SELECT category, round(avg(price_vnd)) FROM products GROUP BY category HAVING avg(price_vnd) > 50000"
+  hint: { vi: "Lọc nhóm sau khi gom, bằng điều kiện trên `avg(price_vnd)`.", en: "Filter the groups after grouping, with a condition on `avg(price_vnd)`." }
+- id: g-having-3
+  skill: having
+  kind: trap
+  task: { vi: "Cửa hàng nào có hơn 250 đơn? Lấy mã cửa hàng và số đơn.", en: "Which stores have more than 250 orders? Get the store id and the order count." }
+  solution: "SELECT store_id, count(*) FROM orders GROUP BY store_id HAVING count(*) > 250"
+  hint: { vi: "Điều kiện trên số đơn của nhóm không đặt được ở bước lọc dòng.", en: "A condition on a group's count cannot go in the row filter." }
+  wrong:
+    - { sql: "SELECT store_id, count(*) FROM orders WHERE count(*) > 250 GROUP BY store_id", vi: "WHERE lọc từng dòng trước khi gom, lúc đó chưa có số đếm: Postgres báo lỗi. Điều kiện trên nhóm đặt ở HAVING.", en: "WHERE filters single rows before grouping, when there is no count yet: Postgres raises an error. A condition on groups goes in HAVING." }
+
+# ---- join (ch3)
+- id: g-join-1
+  skill: join
+  kind: faded
+  task: { vi: "Các dòng hàng của đơn số 100: tên sản phẩm và số lượng.", en: "The lines of order 100: product name and quantity." }
+  starter: "SELECT p.name, i.qty FROM order_items i JOIN products p ON ___ WHERE i.order_id = 100"
+  solution: "SELECT p.name, i.qty FROM order_items i JOIN products p ON p.id = i.product_id WHERE i.order_id = 100"
+  hint: { vi: "Dòng hàng trỏ tới sản phẩm qua `product_id`.", en: "An order line points to its product through `product_id`." }
+- id: g-join-2
+  skill: join
+  kind: open
+  task: { vi: "Nhân viên làm tại cửa hàng: tên nhân viên và tên cửa hàng (người ở văn phòng không tính).", en: "Staff who work at a store: staff name and store name (office staff are left out)." }
+  solution: "SELECT e.name, s.name FROM staff e JOIN stores s ON s.id = e.store_id"
+  hint: { vi: "Nối `staff` với `stores` qua `store_id`; phép nối thường tự bỏ người không có cửa hàng.", en: "Join `staff` to `stores` through `store_id`; a plain join drops people with no store." }
+- id: g-join-3
+  skill: join
+  kind: trap
+  task: { vi: "Đơn đặt ngày 2026-10-31 của khách thành viên: mã đơn và tên khách.", en: "Member orders placed on 2026-10-31: order id and customer name." }
+  solution: "SELECT o.id, c.name FROM orders o JOIN customers c ON c.id = o.customer_id WHERE o.order_date = '2026-10-31'"
+  hint: { vi: "Điều kiện nối phải ghép đúng cột khóa: khách của đơn nằm ở `customer_id`.", en: "The join condition must match the right key: an order's customer is in `customer_id`." }
+  wrong:
+    - { sql: "SELECT o.id, c.name FROM orders o JOIN customers c ON c.id = o.store_id WHERE o.order_date = '2026-10-31'", vi: "ON ghép nhầm cột (`store_id`): Postgres không báo lỗi, nhưng mỗi đơn gắn với một khách sai.", en: "ON matches the wrong column (`store_id`): Postgres does not complain, but each order gets the wrong customer." }
+
+# ---- multi_join (ch3)
+- id: g-multi-join-1
+  skill: multi_join
+  kind: faded
+  task: { vi: "Các dòng hàng của đơn số 200: tên sản phẩm, số lượng và tên cửa hàng bán.", en: "The lines of order 200: product name, quantity and the name of the selling store." }
+  starter: "SELECT p.name, i.qty, s.name FROM order_items i JOIN products p ON ___ JOIN orders o ON ___ JOIN stores s ON s.id = o.store_id WHERE i.order_id = 200"
+  solution: "SELECT p.name, i.qty, s.name FROM order_items i JOIN products p ON p.id = i.product_id JOIN orders o ON o.id = i.order_id JOIN stores s ON s.id = o.store_id WHERE i.order_id = 200"
+  hint: { vi: "Mỗi JOIN có ON riêng: sản phẩm qua `product_id`, đơn qua `order_id`.", en: "Each JOIN has its own ON: the product through `product_id`, the order through `order_id`." }
+- id: g-multi-join-2
+  skill: multi_join
+  kind: open
+  task: { vi: "Đơn của khách thành viên đặt ngày 2026-10-30: mã đơn, tên khách, tên cửa hàng.", en: "Member orders placed on 2026-10-30: order id, customer name, store name." }
+  solution: "SELECT o.id, c.name, s.name FROM orders o JOIN customers c ON c.id = o.customer_id JOIN stores s ON s.id = o.store_id WHERE o.order_date = '2026-10-30'"
+  hint: { vi: "Từ `orders` nối hai lần: tới `customers` và tới `stores`.", en: "Join twice from `orders`: to `customers` and to `stores`." }
+- id: g-multi-join-3
+  skill: multi_join
+  kind: trap
+  task: { vi: "Dòng hàng của các đơn đặt ngày 2026-10-29: mã đơn, tên sản phẩm, tên cửa hàng.", en: "Lines of the orders placed on 2026-10-29: order id, product name, store name." }
+  solution: "SELECT i.order_id, p.name, s.name FROM order_items i JOIN products p ON p.id = i.product_id JOIN orders o ON o.id = i.order_id JOIN stores s ON s.id = o.store_id WHERE o.order_date = '2026-10-29'"
+  hint: { vi: "Hai bảng cùng có cột `name`: ghi bí danh trước mỗi cột.", en: "Two tables both have a `name` column: put the alias before each column." }
+  wrong:
+    - { sql: "SELECT order_id, name, name FROM order_items i JOIN products p ON p.id = i.product_id JOIN orders o ON o.id = i.order_id JOIN stores s ON s.id = o.store_id WHERE o.order_date = '2026-10-29'", vi: "`name` có ở cả `products` lẫn `stores`, nên Postgres báo cột mơ hồ. Viết `p.name`, `s.name`.", en: "`name` exists in both `products` and `stores`, so Postgres says the column is ambiguous. Write `p.name`, `s.name`." }
+
+# ---- left_join (ch3)
+- id: g-left-join-1
+  skill: left_join
+  kind: faded
+  task: { vi: "Mọi nhân viên: tên nhân viên và tên cửa hàng; người ở văn phòng vẫn hiện, cửa hàng để trống.", en: "Every staff member: staff name and store name; office staff still show, with an empty store." }
+  starter: "SELECT e.name, s.name FROM staff e ___ JOIN stores s ON s.id = e.store_id"
+  solution: "SELECT e.name, s.name FROM staff e LEFT JOIN stores s ON s.id = e.store_id"
+  hint: { vi: "Phép nối giữ mọi dòng của bảng bên trái, kể cả dòng không ghép được.", en: "The join that keeps every row of the left table, even the unmatched ones." }
+- id: g-left-join-2
+  skill: left_join
+  kind: open
+  task: { vi: "Khách đăng ký từ 2026-10-01: tên khách và mã từng đơn của họ; khách chưa có đơn vẫn hiện, mã đơn để trống.", en: "Customers who signed up from 2026-10-01: customer name and the id of each of their orders; customers without orders still show, with an empty order id." }
+  solution: "SELECT c.name, o.id FROM customers c LEFT JOIN orders o ON o.customer_id = c.id WHERE c.signup_date >= '2026-10-01'"
+  hint: { vi: "Bắt đầu từ `customers` để giữ mọi khách, điều kiện lọc là trên bảng bên trái.", en: "Start from `customers` to keep every customer; the filter is on the left table." }
+- id: g-left-join-3
+  skill: left_join
+  kind: trap
+  task: { vi: "Mọi cửa hàng và mục tiêu doanh thu tháng 2026-06-01; cửa hàng chưa đặt mục tiêu vẫn hiện, mục tiêu để trống.", en: "Every store and its revenue target for month 2026-06-01; a store with no target still shows, with an empty target." }
+  solution: "SELECT s.name, t.target_vnd FROM stores s LEFT JOIN store_targets t ON t.store_id = s.id AND t.month = '2026-06-01'"
+  hint: { vi: "Điều kiện về tháng thuộc bảng bên phải, nên đặt nó trong ON.", en: "The month condition is about the right-hand table, so put it in ON." }
+  wrong:
+    - { sql: "SELECT s.name, t.target_vnd FROM stores s LEFT JOIN store_targets t ON t.store_id = s.id WHERE t.month = '2026-06-01'", vi: "Điều kiện trên bảng bên phải đặt ở WHERE loại mất cửa hàng không có mục tiêu: phép nối thành nối thường.", en: "A condition on the right table in WHERE drops the store with no target: the join turns back into an inner join." }
+
+# ---- anti_join (ch3)
+- id: g-anti-join-1
+  skill: anti_join
+  kind: faded
+  task: { vi: "Khách nào không có đơn nào từ ngày 2026-07-01 trở đi? Lấy mã và tên.", en: "Which customers have no orders from 2026-07-01 onwards? Get the id and the name." }
+  starter: "SELECT c.id, c.name FROM customers c LEFT JOIN orders o ON o.customer_id = c.id AND o.order_date >= '2026-07-01' WHERE ___ IS NULL"
+  solution: "SELECT c.id, c.name FROM customers c LEFT JOIN orders o ON o.customer_id = c.id AND o.order_date >= '2026-07-01' WHERE o.id IS NULL"
+  hint: { vi: "Khách không ghép được đơn nào thì mọi cột của `orders` đều trống; kiểm khóa của đơn.", en: "A customer with no matching order has every `orders` column empty; check the order's key." }
+- id: g-anti-join-2
+  skill: anti_join
+  kind: open
+  task: { vi: "Cửa hàng nào chưa có mục tiêu doanh thu cho tháng 2026-02-01? Lấy tên cửa hàng.", en: "Which stores have no revenue target for month 2026-02-01? Get the store name." }
+  solution: "SELECT s.name FROM stores s LEFT JOIN store_targets t ON t.store_id = s.id AND t.month = '2026-02-01' WHERE t.store_id IS NULL"
+  hint: { vi: "Nối giữ mọi cửa hàng với điều kiện tháng trong ON, rồi giữ dòng không ghép được.", en: "Join keeping every store with the month in ON, then keep the rows that did not match." }
+- id: g-anti-join-3
+  skill: anti_join
+  kind: trap
+  task: { vi: "Khách thành viên nào chưa từng mua ở cửa hàng 3? Lấy mã và tên khách.", en: "Which member customers have never bought at store 3? Get the customer id and name." }
+  solution: "SELECT c.id, c.name FROM customers c LEFT JOIN orders o ON o.customer_id = c.id AND o.store_id = 3 WHERE o.id IS NULL"
+  hint: { vi: "Đơn của cửa hàng 3 có cả khách vãng lai (khách trống), nên tránh so \"không nằm trong danh sách\".", en: "Store 3's orders include walk-ins (no customer), so avoid a \"not in the list\" comparison." }
+  wrong:
+    - { sql: "SELECT id, name FROM customers WHERE id NOT IN (SELECT customer_id FROM orders WHERE store_id = 3)", vi: "Danh sách có giá trị trống (đơn khách vãng lai), nên NOT IN không bao giờ đúng: kết quả rỗng.", en: "The list contains an empty value (walk-in orders), so NOT IN is never true: the result is empty." }
+
+# ---- date_math (ch4)
+- id: g-date-math-1
+  skill: date_math
+  kind: faded
+  task: { vi: "Đơn giao trong tháng 10/2026: mã đơn và số ngày từ lúc đặt tới lúc giao.", en: "Orders delivered in October 2026: order id and the number of days from ordering to delivery." }
+  starter: "SELECT id, ___ FROM orders WHERE delivered_on >= '2026-10-01' AND delivered_on < '2026-11-01'"
+  solution: "SELECT id, delivered_on - order_date FROM orders WHERE delivered_on >= '2026-10-01' AND delivered_on < '2026-11-01'"
+  hint: { vi: "Ngày trừ ngày ra số ngày.", en: "A date minus a date gives a number of days." }
+- id: g-date-math-2
+  skill: date_math
+  kind: open
+  task: { vi: "Khách đăng ký từ 2026-10-01: tên và hạn dùng mã chào mừng, là ngày thứ 30 sau ngày đăng ký.", en: "Customers who signed up from 2026-10-01: name and the expiry of their welcome code, 30 days after the signup date." }
+  solution: "SELECT name, signup_date + 30 FROM customers WHERE signup_date >= '2026-10-01'"
+  hint: { vi: "Ngày cộng một số nguyên ra một ngày mới.", en: "A date plus an integer gives a new date." }
+- id: g-date-math-3
+  skill: date_math
+  kind: trap
+  task: { vi: "Tính đến ngày 2026-10-31, mỗi cửa hàng đã mở được bao nhiêu ngày? Lấy tên và số ngày (số dương).", en: "As of 2026-10-31, how many days has each store been open? Get the name and the number of days (a positive number)." }
+  solution: "SELECT name, DATE '2026-10-31' - opened_on FROM stores"
+  hint: { vi: "Lấy ngày sau trừ ngày trước.", en: "Subtract the earlier date from the later one." }
+  wrong:
+    - { sql: "SELECT name, opened_on - DATE '2026-10-31' FROM stores", vi: "Trừ ngược chiều: ngày trước trừ ngày sau ra số âm.", en: "Subtracted the wrong way round: the earlier date minus the later one is negative." }
+
+# ---- date_bucket (ch4)
+- id: g-date-bucket-1
+  skill: date_bucket
+  kind: faded
+  task: { vi: "Số đơn mỗi tháng của năm 2026, xếp theo tháng.", en: "The number of orders in each month of 2026, sorted by month." }
+  starter: "SELECT date_trunc(___, order_date), count(*) FROM orders WHERE order_date >= '2026-01-01' GROUP BY 1 ORDER BY 1"
+  solution: "SELECT date_trunc('month', order_date), count(*) FROM orders WHERE order_date >= '2026-01-01' GROUP BY 1 ORDER BY 1"
+  ordered: true
+  hint: { vi: "Đơn vị cắt ngày viết trong nháy đơn, bằng tiếng Anh.", en: "The unit to cut the date to goes in single quotes, in English." }
+- id: g-date-bucket-2
+  skill: date_bucket
+  kind: open
+  task: { vi: "Số khách đăng ký mỗi tháng của năm 2025, xếp theo tháng.", en: "The number of customers who signed up in each month of 2025, sorted by month." }
+  solution: "SELECT date_trunc('month', signup_date), count(*) FROM customers WHERE signup_date >= '2025-01-01' AND signup_date < '2026-01-01' GROUP BY 1 ORDER BY 1"
+  ordered: true
+  hint: { vi: "Lọc năm 2025 bằng khoảng nửa mở, rồi gom theo đầu tháng.", en: "Filter 2025 with a half-open range, then group by the start of the month." }
+- id: g-date-bucket-3
+  skill: date_bucket
+  kind: trap
+  task: { vi: "Số đơn mỗi tháng từ 01/2025 tới 10/2026, mỗi tháng một dòng, xếp theo tháng.", en: "The number of orders in each month from January 2025 to October 2026, one row per month, sorted by month." }
+  solution: "SELECT date_trunc('month', order_date), count(*) FROM orders GROUP BY 1 ORDER BY 1"
+  ordered: true
+  hint: { vi: "Một tháng ở đây gồm cả năm: tháng 3/2025 khác tháng 3/2026.", en: "A month here includes its year: March 2025 is not March 2026." }
+  wrong:
+    - { sql: "SELECT extract(month FROM order_date), count(*) FROM orders GROUP BY 1 ORDER BY 1", vi: "`extract(month …)` chỉ ra số tháng, nên tháng 3 của hai năm bị gộp: chỉ còn 12 dòng.", en: "`extract(month …)` only gives the month number, so March of two years is merged: only 12 rows are left." }
+
+# ---- null_logic (ch4)
+- id: g-null-logic-1
+  skill: null_logic
+  kind: faded
+  task: { vi: "Khách nào chưa có thành phố? Lấy mã và tên.", en: "Which customers have no city? Get the id and the name." }
+  starter: "SELECT id, name FROM customers WHERE city ___"
+  solution: "SELECT id, name FROM customers WHERE city IS NULL"
+  hint: { vi: "Ô trống không so bằng dấu `=` được.", en: "An empty value cannot be compared with `=`." }
+- id: g-null-logic-2
+  skill: null_logic
+  kind: open
+  task: { vi: "Đơn đã gửi đi nhưng chưa giao tới khách: mã đơn và ngày gửi.", en: "Orders that have shipped but are not delivered yet: order id and ship date." }
+  solution: "SELECT id, shipped_on FROM orders WHERE shipped_on IS NOT NULL AND delivered_on IS NULL"
+  hint: { vi: "Một cột phải có giá trị, cột kia phải trống.", en: "One column must have a value, the other must be empty." }
+- id: g-null-logic-3
+  skill: null_logic
+  kind: trap
+  task: { vi: "Khách nào chưa có email? Lấy mã và tên.", en: "Which customers have no email? Get the id and the name." }
+  solution: "SELECT id, name FROM customers WHERE email IS NULL"
+  hint: { vi: "Hỏi \"có trống không\" bằng IS, không bằng dấu bằng.", en: "Ask \"is it empty\" with IS, not with an equals sign." }
+  wrong:
+    - { sql: "SELECT id, name FROM customers WHERE email = NULL", vi: "`= NULL` không bao giờ đúng, nên kết quả rỗng. Viết `IS NULL`.", en: "`= NULL` is never true, so the result is empty. Write `IS NULL`." }
+
+# ---- case_when (ch5)
+- id: g-case-when-1
+  skill: case_when
+  kind: faded
+  task: { vi: "Mỗi sản phẩm: tên và hạng giá: 1 nếu dưới 20.000 đồng, 2 nếu từ 20.000 đến dưới 100.000, 3 nếu từ 100.000 trở lên.", en: "Each product: name and price band: 1 if under 20,000 VND, 2 from 20,000 to under 100,000, 3 from 100,000 up." }
+  starter: "SELECT name, CASE WHEN price_vnd < 20000 THEN 1 WHEN ___ THEN 2 ELSE ___ END FROM products"
+  solution: "SELECT name, CASE WHEN price_vnd < 20000 THEN 1 WHEN price_vnd < 100000 THEN 2 ELSE 3 END FROM products"
+  hint: { vi: "Điều kiện thứ hai chỉ được xét khi điều kiện đầu sai, nên chỉ cần mốc trên.", en: "The second condition is only checked when the first is false, so it only needs the upper bound." }
+- id: g-case-when-2
+  skill: case_when
+  kind: open
+  task: { vi: "Đơn `ONLINE` đặt từ 2026-10-01 (trừ đơn hủy): mã đơn và nhóm giao hàng: 1 nếu giao trong vòng 2 ngày sau khi đặt, 2 nếu lâu hơn, 3 nếu chưa giao.", en: "`ONLINE` orders placed from 2026-10-01 (cancelled ones left out): order id and delivery group: 1 if delivered within 2 days of ordering, 2 if later, 3 if not delivered yet." }
+  solution: "SELECT id, CASE WHEN delivered_on IS NULL THEN 3 WHEN delivered_on - order_date <= 2 THEN 1 ELSE 2 END FROM orders WHERE channel = 'ONLINE' AND order_date >= '2026-10-01' AND status <> 'CANCELLED'"
+  hint: { vi: "Xét trường hợp chưa giao trước, rồi tới số ngày giao.", en: "Handle the not-delivered case first, then the delivery days." }
+- id: g-case-when-3
+  skill: case_when
+  kind: trap
+  task: { vi: "Mỗi khách: mã khách và nhóm tuổi: 1 nếu sinh từ năm 1995, 2 nếu sinh từ 1980 đến 1994, 3 nếu trước 1980, 0 nếu không rõ năm sinh.", en: "Each customer: customer id and age group: 1 if born in 1995 or later, 2 if born 1980 to 1994, 3 if before 1980, 0 if the birth year is unknown." }
+  solution: "SELECT id, CASE WHEN birth_year >= 1995 THEN 1 WHEN birth_year >= 1980 THEN 2 WHEN birth_year < 1980 THEN 3 ELSE 0 END FROM customers"
+  hint: { vi: "CASE dừng ở điều kiện đúng đầu tiên: đặt điều kiện hẹp nhất lên trước.", en: "CASE stops at the first true condition: put the narrowest one first." }
+  wrong:
+    - { sql: "SELECT id, CASE WHEN birth_year >= 1980 THEN 2 WHEN birth_year >= 1995 THEN 1 WHEN birth_year < 1980 THEN 3 ELSE 0 END FROM customers", vi: "Người sinh 1995 cũng thỏa `>= 1980`, nên CASE dừng ở nhóm 2 và nhóm 1 không bao giờ xuất hiện.", en: "Someone born in 1995 also matches `>= 1980`, so CASE stops at group 2 and group 1 never appears." }
+
+# ---- conditional_agg (ch5)
+- id: g-conditional-agg-1
+  skill: conditional_agg
+  kind: faded
+  task: { vi: "Mỗi cửa hàng: mã cửa hàng, tổng số đơn và số đơn bán qua kênh `ONLINE`.", en: "Each store: store id, total orders and the number of orders sold through the `ONLINE` channel." }
+  starter: "SELECT store_id, count(*), count(*) FILTER (WHERE ___) FROM orders GROUP BY store_id"
+  solution: "SELECT store_id, count(*), count(*) FILTER (WHERE channel = 'ONLINE') FROM orders GROUP BY store_id"
+  hint: { vi: "Điều kiện của riêng cột thứ ba nằm trong FILTER.", en: "The third column's own condition goes inside FILTER." }
+- id: g-conditional-agg-2
+  skill: conditional_agg
+  kind: open
+  task: { vi: "Mỗi tháng của năm 2026: tháng, số đơn `PAID`, số đơn `CANCELLED`, số đơn `REFUNDED` (ba cột đếm).", en: "Each month of 2026: the month, the number of `PAID`, `CANCELLED` and `REFUNDED` orders (three count columns)." }
+  solution: "SELECT date_trunc('month', order_date), count(*) FILTER (WHERE status = 'PAID'), count(*) FILTER (WHERE status = 'CANCELLED'), count(*) FILTER (WHERE status = 'REFUNDED') FROM orders WHERE order_date >= '2026-01-01' GROUP BY 1"
+  hint: { vi: "Một nhóm mỗi tháng, mỗi trạng thái một cột đếm có điều kiện riêng.", en: "One group per month, one conditional count column per status." }
+- id: g-conditional-agg-3
+  skill: conditional_agg
+  kind: trap
+  task: { vi: "Mỗi kênh bán: kênh, tổng số đơn và số đơn bị hủy (`CANCELLED`).", en: "Each channel: the channel, total orders and the number of cancelled (`CANCELLED`) orders." }
+  solution: "SELECT channel, count(*) AS orders, count(*) FILTER (WHERE status = 'CANCELLED') AS cancelled FROM orders GROUP BY channel"
+  hint: { vi: "Cột tổng cần mọi đơn, nên điều kiện \"bị hủy\" không được nằm ở WHERE.", en: "The total column needs every order, so the \"cancelled\" condition must not be in WHERE." }
+  wrong:
+    - { sql: "SELECT channel, count(*) AS orders, count(*) AS cancelled FROM orders WHERE status = 'CANCELLED' GROUP BY channel", vi: "WHERE bỏ mọi đơn không bị hủy trước khi đếm, nên cột tổng cũng chỉ đếm đơn hủy.", en: "WHERE drops every order that is not cancelled before counting, so the total column only counts cancelled orders too." }
+
+# ---- coalesce (ch5)
+- id: g-coalesce-1
+  skill: coalesce
+  kind: faded
+  task: { vi: "Mỗi cửa hàng: tên và mục tiêu doanh thu tháng 2026-06-01; cửa hàng chưa đặt mục tiêu thì ghi 0.", en: "Each store: name and revenue target for month 2026-06-01; a store with no target shows 0." }
+  starter: "SELECT s.name, COALESCE(___, ___) FROM stores s LEFT JOIN store_targets t ON t.store_id = s.id AND t.month = '2026-06-01'"
+  solution: "SELECT s.name, COALESCE(t.target_vnd, 0) FROM stores s LEFT JOIN store_targets t ON t.store_id = s.id AND t.month = '2026-06-01'"
+  hint: { vi: "Giá trị đầu tiên không trống thắng: cột mục tiêu, rồi tới số thay thế.", en: "The first non-empty value wins: the target column, then the fallback number." }
+- id: g-coalesce-2
+  skill: coalesce
+  kind: open
+  task: { vi: "Đơn `ONLINE` đặt từ 2026-10-20 (trừ đơn hủy): mã đơn và số ngày giao; đơn chưa giao thì tính tới ngày 2026-10-31.", en: "`ONLINE` orders placed from 2026-10-20 (cancelled ones left out): order id and delivery days; for an order not delivered yet, count up to 2026-10-31." }
+  solution: "SELECT id, COALESCE(delivered_on, DATE '2026-10-31') - order_date FROM orders WHERE channel = 'ONLINE' AND order_date >= '2026-10-20' AND status <> 'CANCELLED'"
+  hint: { vi: "Thay ngày giao trống bằng ngày 2026-10-31 trước khi trừ.", en: "Replace an empty delivery date with 2026-10-31 before subtracting." }
+- id: g-coalesce-3
+  skill: coalesce
+  kind: trap
+  task: { vi: "Khách đăng ký từ 2026-09-01: mã khách và tuổi tính theo năm 2026 (2026 trừ năm sinh); không rõ năm sinh thì ghi 0.", en: "Customers who signed up from 2026-09-01: customer id and age in 2026 (2026 minus birth year); with an unknown birth year, show 0." }
+  solution: "SELECT id, COALESCE(2026 - birth_year, 0) FROM customers WHERE signup_date >= '2026-09-01'"
+  hint: { vi: "Phép tính với ô trống ra ô trống; thay kết quả trống bằng 0.", en: "Arithmetic with an empty value gives an empty value; replace the empty result with 0." }
+  wrong:
+    - { sql: "SELECT id, 2026 - birth_year FROM customers WHERE signup_date >= '2026-09-01'", vi: "Khách không rõ năm sinh ra tuổi trống thay vì 0: phép tính với NULL ra NULL.", en: "Customers with no birth year get an empty age instead of 0: arithmetic with NULL gives NULL." }
+
+# ---- self_join (ch5)
+- id: g-self-join-1
+  skill: self_join
+  kind: faded
+  task: { vi: "Mỗi nhân viên có quản lý: tên nhân viên và tên quản lý trực tiếp.", en: "Each staff member who has a manager: staff name and direct manager's name." }
+  starter: "SELECT e.name, m.name FROM staff e JOIN staff m ON ___"
+  solution: "SELECT e.name, m.name FROM staff e JOIN staff m ON m.id = e.manager_id"
+  hint: { vi: "Bảng `staff` dùng hai lần với hai bí danh; quản lý là dòng có `id` bằng `manager_id` của nhân viên.", en: "Use `staff` twice with two aliases; the manager is the row whose `id` equals the employee's `manager_id`." }
+- id: g-self-join-2
+  skill: self_join
+  kind: open
+  task: { vi: "Nhân viên nào vào làm trước quản lý trực tiếp của mình? Lấy tên nhân viên và tên quản lý.", en: "Which staff members were hired before their direct manager? Get the staff name and the manager's name." }
+  solution: "SELECT e.name, m.name FROM staff e JOIN staff m ON m.id = e.manager_id WHERE e.hired_on < m.hired_on"
+  hint: { vi: "Sau khi nối nhân viên với quản lý, so hai cột `hired_on`.", en: "After joining staff to manager, compare the two `hired_on` columns." }
+- id: g-self-join-3
+  skill: self_join
+  kind: trap
+  task: { vi: "Mỗi nhân viên: tên nhân viên và tên cấp trên hai bậc (quản lý của quản lý trực tiếp); ai không có cấp trên hai bậc thì không tính.", en: "Each staff member: staff name and the name of the boss two levels up (the direct manager's manager); people without one are left out." }
+  solution: "SELECT e.name, g.name FROM staff e JOIN staff m ON m.id = e.manager_id JOIN staff g ON g.id = m.manager_id"
+  hint: { vi: "Cần nối `staff` ba lần: nhân viên, quản lý, rồi quản lý của quản lý.", en: "Join `staff` three times: employee, manager, then the manager's manager." }
+  wrong:
+    - { sql: "SELECT e.name, m.name FROM staff e JOIN staff m ON m.id = e.manager_id", vi: "Mới đi lên một bậc: đó là quản lý trực tiếp, chưa phải cấp trên hai bậc.", en: "This only goes up one level: that is the direct manager, not the boss two levels up." }
+
+# ---- string_fn (ch6)
+- id: g-string-fn-1
+  skill: string_fn
+  kind: faded
+  task: { vi: "Mỗi sản phẩm: tên viết hoa toàn bộ và số ký tự của tên.", en: "Each product: the name in capital letters and the number of characters in the name." }
+  starter: "SELECT ___(name), ___(name) FROM products"
+  solution: "SELECT upper(name), length(name) FROM products"
+  hint: { vi: "Một hàm đổi sang chữ hoa, một hàm đếm ký tự.", en: "One function turns text to capitals, one counts characters." }
+- id: g-string-fn-2
+  skill: string_fn
+  kind: open
+  task: { vi: "Mỗi tên miền email của khách (phần sau dấu `@`): tên miền và số khách dùng; bỏ khách không có email.", en: "Each customer email domain (the part after `@`): the domain and the number of customers using it; leave out customers without an email." }
+  solution: "SELECT split_part(email, '@', 2), count(*) FROM customers WHERE email IS NOT NULL GROUP BY 1"
+  hint: { vi: "`split_part` cắt chuỗi theo một ký tự và lấy phần thứ n.", en: "`split_part` cuts text at a character and takes the n-th piece." }
+- id: g-string-fn-3
+  skill: string_fn
+  kind: trap
+  task: { vi: "Các đăng ký có mã từ 1 đến 12 trong `raw_signups`: mã và tên đã bỏ khoảng trắng thừa ở hai đầu, viết hoa chữ cái đầu mỗi từ.", en: "Sign-ups with ids 1 to 12 in `raw_signups`: id and the name with extra spaces removed from both ends, each word capitalised." }
+  solution: "SELECT id, initcap(trim(full_name)) FROM raw_signups WHERE id <= 12"
+  hint: { vi: "Chỉ bỏ khoảng trắng ở hai đầu, khoảng trắng giữa các từ phải giữ.", en: "Only remove spaces at both ends; the spaces between words must stay." }
+  wrong:
+    - { sql: "SELECT id, initcap(replace(full_name, ' ', '')) FROM raw_signups WHERE id <= 12", vi: "`replace` thay mọi chỗ, kể cả khoảng trắng giữa các từ, nên họ và tên dính liền. Dùng `trim`.", en: "`replace` swaps every occurrence, the spaces between words too, so the names run together. Use `trim`." }
+
+# ---- pattern_match (ch6)
+- id: g-pattern-match-1
+  skill: pattern_match
+  kind: faded
+  task: { vi: "Sản phẩm nào có chữ `tea` trong tên, bất kể hoa thường? Lấy tên.", en: "Which products have `tea` in the name, in any letter case? Get the name." }
+  starter: "SELECT name FROM products WHERE name ILIKE ___"
+  solution: "SELECT name FROM products WHERE name ILIKE '%tea%'"
+  hint: { vi: "Đặt `%` ở cả hai đầu để khớp ở bất kỳ vị trí nào.", en: "Put `%` on both sides to match anywhere." }
+- id: g-pattern-match-2
+  skill: pattern_match
+  kind: open
+  task: { vi: "Khách dùng email đuôi `@gmail.com`: mã và email.", en: "Customers whose email ends in `@gmail.com`: id and email." }
+  solution: "SELECT id, email FROM customers WHERE email LIKE '%@gmail.com'"
+  hint: { vi: "Chỉ đặt `%` ở đầu mẫu: email phải kết thúc bằng phần đó.", en: "Put `%` only at the start of the pattern: the email must end with that part." }
+- id: g-pattern-match-3
+  skill: pattern_match
+  kind: trap
+  task: { vi: "Trong `raw_signups`: đăng ký có email kết thúc bằng `gmail.com`, viết hoa hay thường đều tính. Lấy mã và email.", en: "In `raw_signups`: sign-ups whose email ends in `gmail.com`, upper or lower case both count. Get the id and email." }
+  solution: "SELECT id, email FROM raw_signups WHERE email ILIKE '%gmail.com'"
+  hint: { vi: "Có email được nhập bằng chữ hoa.", en: "Some emails were typed in capital letters." }
+  wrong:
+    - { sql: "SELECT id, email FROM raw_signups WHERE email LIKE '%gmail.com'", vi: "LIKE phân biệt hoa thường, nên bỏ sót email viết hoa. Dùng ILIKE.", en: "LIKE is case-sensitive, so it misses the emails in capitals. Use ILIKE." }
+
+# ---- distinct (ch6)
+- id: g-distinct-1
+  skill: distinct
+  kind: faded
+  task: { vi: "Những thành phố nào có khách hàng? Mỗi thành phố một dòng (kể cả ô trống).", en: "Which cities have customers? One row per city (the empty value included)." }
+  starter: "SELECT ___ city FROM customers"
+  solution: "SELECT DISTINCT city FROM customers"
+  hint: { vi: "Một từ khóa sau SELECT bỏ các dòng trùng nhau.", en: "One keyword after SELECT drops duplicate rows." }
+- id: g-distinct-2
+  skill: distinct
+  kind: open
+  task: { vi: "Mỗi cửa hàng có bao nhiêu khách thành viên khác nhau từng mua? Lấy mã cửa hàng và số khách.", en: "How many different member customers have bought at each store? Get the store id and the customer count." }
+  solution: "SELECT store_id, count(DISTINCT customer_id) FROM orders GROUP BY store_id"
+  hint: { vi: "Đếm khách, không đếm đơn: một khách mua nhiều lần chỉ tính một.", en: "Count customers, not orders: a customer who bought many times counts once." }
+- id: g-distinct-3
+  skill: distinct
+  kind: trap
+  task: { vi: "Trong tháng 10/2026, mỗi danh mục bán được bao nhiêu sản phẩm khác nhau? Lấy danh mục và số sản phẩm.", en: "In October 2026, how many different products did each category sell? Get the category and the product count." }
+  solution: "SELECT p.category, count(DISTINCT i.product_id) FROM order_items i JOIN orders o ON o.id = i.order_id JOIN products p ON p.id = i.product_id WHERE o.order_date >= '2026-10-01' AND o.order_date < '2026-11-01' GROUP BY p.category"
+  hint: { vi: "Một sản phẩm xuất hiện trong nhiều dòng hàng; chỉ đếm mỗi sản phẩm một lần.", en: "A product appears in many order lines; count each product once." }
+  wrong:
+    - { sql: "SELECT p.category, count(i.product_id) FROM order_items i JOIN orders o ON o.id = i.order_id JOIN products p ON p.id = i.product_id WHERE o.order_date >= '2026-10-01' AND o.order_date < '2026-11-01' GROUP BY p.category", vi: "`count(product_id)` đếm cả lần lặp, tức số dòng hàng, không phải số sản phẩm khác nhau.", en: "`count(product_id)` counts the repeats too, that is order lines, not different products." }
+
+# ---- cast (ch6)
+- id: g-cast-1
+  skill: cast
+  kind: faded
+  task: { vi: "Mỗi cửa hàng: mã cửa hàng và tỉ lệ phần trăm đơn bị hủy (`CANCELLED`), làm tròn 2 chữ số.", en: "Each store: store id and the percentage of cancelled (`CANCELLED`) orders, rounded to 2 decimals." }
+  starter: "SELECT store_id, round(count(*) FILTER (WHERE status = 'CANCELLED')::___ * 100 / count(*), 2) FROM orders GROUP BY store_id"
+  solution: "SELECT store_id, round(count(*) FILTER (WHERE status = 'CANCELLED')::numeric * 100 / count(*), 2) FROM orders GROUP BY store_id"
+  hint: { vi: "Đổi một vế sang kiểu số có phần thập phân trước khi chia.", en: "Cast one side to a decimal number type before dividing." }
+- id: g-cast-2
+  skill: cast
+  kind: open
+  task: { vi: "Mỗi đơn đặt ngày 2026-10-31: mã đơn và số lượng trung bình mỗi dòng hàng (tổng số lượng chia số dòng), làm tròn 2 chữ số.", en: "Each order placed on 2026-10-31: order id and the average quantity per line (total quantity divided by the number of lines), rounded to 2 decimals." }
+  solution: "SELECT i.order_id, round(sum(i.qty)::numeric / count(*), 2) FROM order_items i JOIN orders o ON o.id = i.order_id WHERE o.order_date = '2026-10-31' GROUP BY i.order_id"
+  hint: { vi: "Tổng số lượng là số nguyên; đổi sang `numeric` trước khi chia.", en: "The total quantity is an integer; cast it to `numeric` before dividing." }
+- id: g-cast-3
+  skill: cast
+  kind: trap
+  task: { vi: "Mỗi cửa hàng: mã cửa hàng và tỉ lệ đơn bán qua kênh `ONLINE` trên tổng số đơn, dạng số từ 0 đến 1, làm tròn 2 chữ số.", en: "Each store: store id and the share of orders sold through the `ONLINE` channel out of all orders, as a number from 0 to 1, rounded to 2 decimals." }
+  solution: "SELECT store_id, round(count(*) FILTER (WHERE channel = 'ONLINE')::numeric / count(*), 2) FROM orders GROUP BY store_id"
+  hint: { vi: "Số nguyên chia số nguyên bỏ phần thập phân.", en: "An integer divided by an integer drops the decimals." }
+  wrong:
+    - { sql: "SELECT store_id, round(count(*) FILTER (WHERE channel = 'ONLINE') / count(*), 2) FROM orders GROUP BY store_id", vi: "Hai số đếm đều là số nguyên, nên phép chia ra 0 cho mọi cửa hàng. Đổi một vế sang `numeric`.", en: "Both counts are integers, so the division gives 0 for every store. Cast one side to `numeric`." }
+
+
+# ---- scalar_subquery (ch7)
+- id: g-scalar-subquery-1
+  skill: scalar_subquery
+  kind: faded
+  task: { vi: "Sản phẩm nào đắt hơn giá trung bình của mọi sản phẩm? Lấy tên và giá.", en: "Which products cost more than the average price of all products? Get the name and the price." }
+  starter: "SELECT name, price_vnd FROM products WHERE price_vnd > (SELECT ___ FROM products)"
+  solution: "SELECT name, price_vnd FROM products WHERE price_vnd > (SELECT AVG(price_vnd) FROM products)"
+  hint: { vi: "Truy vấn con trả về đúng một con số: trung bình của `price_vnd`.", en: "The subquery returns exactly one number: the average of `price_vnd`." }
+- id: g-scalar-subquery-2
+  skill: scalar_subquery
+  kind: open
+  task: { vi: "Những đơn hàng nào được đặt vào ngày gần nhất có đơn trong dữ liệu? Lấy mã đơn, mã cửa hàng và ngày đặt.", en: "Which orders were placed on the latest order date in the data? Get the order id, the store id and the order date." }
+  solution: "SELECT id, store_id, order_date FROM orders WHERE order_date = (SELECT MAX(order_date) FROM orders)"
+  hint: { vi: "Tìm ngày lớn nhất của `order_date` trong một truy vấn con, rồi so với nó.", en: "Find the largest `order_date` in a subquery, then compare with it." }
+- id: g-scalar-subquery-3
+  skill: scalar_subquery
+  kind: trap
+  task: { vi: "Món ăn vặt (`Snacks`) nào rẻ hơn giá trung bình của chính nhóm ăn vặt? Lấy tên và giá.", en: "Which snacks (`Snacks`) are cheaper than the average price of the snacks themselves? Get the name and the price." }
+  solution: "SELECT name, price_vnd FROM products WHERE category = 'Snacks' AND price_vnd < (SELECT AVG(price_vnd) FROM products WHERE category = 'Snacks')"
+  hint: { vi: "Điều kiện nhóm phải viết cả trong truy vấn con.", en: "The category condition must be written inside the subquery too." }
+  wrong:
+    - sql: "SELECT name, price_vnd FROM products WHERE category = 'Snacks' AND price_vnd < (SELECT AVG(price_vnd) FROM products)"
+      vi: "Truy vấn con đang tính trung bình của mọi sản phẩm. Điều kiện `category = 'Snacks'` của câu ngoài không áp vào truy vấn con: phải lọc lại bên trong."
+      en: "The subquery averages every product. The outer `category = 'Snacks'` condition does not apply inside the subquery: filter again inside it."
+
+# ---- in_subquery (ch7)
+- id: g-in-subquery-1
+  skill: in_subquery
+  kind: faded
+  task: { vi: "Khách nào đã từng mua ở cửa hàng số 4 (Thao Dien)? Lấy mã và tên khách.", en: "Which customers have ever bought at store 4 (Thao Dien)? Get the customer id and name." }
+  starter: "SELECT id, name FROM customers WHERE id IN (SELECT ___ FROM orders WHERE store_id = 4)"
+  solution: "SELECT id, name FROM customers WHERE id IN (SELECT customer_id FROM orders WHERE store_id = 4)"
+  hint: { vi: "Truy vấn con trả về một cột: mã khách của các đơn ở cửa hàng 4.", en: "The subquery returns one column: the customer id of the orders at store 4." }
+- id: g-in-subquery-2
+  skill: in_subquery
+  kind: open
+  task: { vi: "Khách ở `Hue` nào có ít nhất một đơn mua online (`ONLINE`) trong tháng 10/2026? Lấy tên và email.", en: "Which customers in `Hue` placed at least one online (`ONLINE`) order in October 2026? Get the name and the email." }
+  solution: "SELECT name, email FROM customers WHERE city = 'Hue' AND id IN (SELECT customer_id FROM orders WHERE channel = 'ONLINE' AND order_date >= '2026-10-01' AND order_date < '2026-11-01')"
+  hint: { vi: "Lọc đơn online của tháng 10 trong truy vấn con, rồi giữ khách có mã nằm trong danh sách đó.", en: "Filter October's online orders in the subquery, then keep the customers whose id is in that list." }
+- id: g-in-subquery-3
+  skill: in_subquery
+  kind: trap
+  task: { vi: "Khách nào chưa từng mua ở cửa hàng số 3 (Ben Thanh)? Lấy mã và tên khách. Lưu ý: đơn khách vãng lai không có mã khách.", en: "Which customers have never bought at store 3 (Ben Thanh)? Get the customer id and name. Note: walk-in orders have no customer id." }
+  solution: "SELECT id, name FROM customers WHERE id NOT IN (SELECT customer_id FROM orders WHERE store_id = 3 AND customer_id IS NOT NULL)"
+  hint: { vi: "Danh sách trong truy vấn con có ô trống (NULL) thì phép phủ định không giữ dòng nào.", en: "If the subquery's list holds an empty value (NULL), the negated test keeps no rows." }
+  wrong:
+    - sql: "SELECT id, name FROM customers WHERE id NOT IN (SELECT customer_id FROM orders WHERE store_id = 3)"
+      vi: "Ra 0 dòng: danh sách có `NULL` từ đơn khách vãng lai ở cửa hàng 3, và `NOT IN` với `NULL` không bao giờ đúng. Lọc `customer_id IS NOT NULL` trong truy vấn con, hoặc dùng `NOT EXISTS`."
+      en: "0 rows: the list holds `NULL` from store 3's walk-in orders, and `NOT IN` against `NULL` is never true. Filter `customer_id IS NOT NULL` inside the subquery, or use `NOT EXISTS`."
+
+# ---- exists (ch7)
+- id: g-exists-1
+  skill: exists
+  kind: faded
+  task: { vi: "Khách nào có ít nhất một đơn bị hoàn tiền (`REFUNDED`)? Lấy mã và tên khách.", en: "Which customers have at least one refunded (`REFUNDED`) order? Get the customer id and name." }
+  starter: "SELECT c.id, c.name FROM customers c WHERE EXISTS (SELECT 1 FROM orders o WHERE o.customer_id = ___ AND o.status = 'REFUNDED')"
+  solution: "SELECT c.id, c.name FROM customers c WHERE EXISTS (SELECT 1 FROM orders o WHERE o.customer_id = c.id AND o.status = 'REFUNDED')"
+  hint: { vi: "Nối đơn trong truy vấn con với khách của câu ngoài qua mã khách.", en: "Link the order in the subquery to the outer customer by the customer id." }
+- id: g-exists-2
+  skill: exists
+  kind: open
+  task: { vi: "Khách nào chưa từng mua online (`ONLINE`)? Lấy mã, tên và thành phố.", en: "Which customers have never bought online (`ONLINE`)? Get the id, name and city." }
+  solution: "SELECT c.id, c.name, c.city FROM customers c WHERE NOT EXISTS (SELECT 1 FROM orders o WHERE o.customer_id = c.id AND o.channel = 'ONLINE')"
+  hint: { vi: "Hỏi \"không tồn tại đơn online nào của khách này\".", en: "Ask \"there is no online order of this customer\"." }
+- id: g-exists-3
+  skill: exists
+  kind: trap
+  task: { vi: "Khách nào đã từng mua ở cửa hàng số 2 (Son Tra)? Lấy mã và tên khách.", en: "Which customers have ever bought at store 2 (Son Tra)? Get the customer id and name." }
+  solution: "SELECT c.id, c.name FROM customers c WHERE EXISTS (SELECT 1 FROM orders o WHERE o.customer_id = c.id AND o.store_id = 2)"
+  hint: { vi: "Truy vấn con phải hỏi về đúng khách đang xét ở câu ngoài.", en: "The subquery must ask about the very customer of the outer row." }
+  wrong:
+    - sql: "SELECT c.id, c.name FROM customers c WHERE EXISTS (SELECT 1 FROM orders o WHERE o.store_id = 2)"
+      vi: "Thiếu điều kiện `o.customer_id = c.id`: truy vấn con hỏi cả bảng đơn, đúng cho mọi khách, nên ra cả 300 khách."
+      en: "The `o.customer_id = c.id` link is missing: the subquery asks about the whole order table, true for every customer, so you get all 300 customers."
+
+# ---- correlated_value (ch7)
+- id: g-correlated-value-1
+  skill: correlated_value
+  kind: faded
+  task: { vi: "Với mỗi cửa hàng, ngày đặt đơn gần nhất là ngày nào? Lấy tên cửa hàng và ngày đó.", en: "For each store, what is its latest order date? Get the store name and that date." }
+  starter: "SELECT s.name, (SELECT MAX(o.order_date) FROM orders o WHERE o.store_id = ___) FROM stores s"
+  solution: "SELECT s.name, (SELECT MAX(o.order_date) FROM orders o WHERE o.store_id = s.id) FROM stores s"
+  hint: { vi: "Truy vấn con dùng mã của cửa hàng đang xét ở câu ngoài.", en: "The subquery uses the id of the store of the outer row." }
+- id: g-correlated-value-2
+  skill: correlated_value
+  kind: open
+  task: { vi: "Mỗi khách ở `Can Tho` có bao nhiêu đơn? Lấy tên khách và số đơn; khách chưa có đơn ghi 0.", en: "How many orders does each customer in `Can Tho` have? Get the customer name and the order count; a customer with no orders shows 0." }
+  solution: "SELECT c.name, (SELECT COUNT(*) FROM orders o WHERE o.customer_id = c.id) FROM customers c WHERE c.city = 'Can Tho'"
+  hint: { vi: "Một truy vấn con đếm đơn cho từng khách; đếm trên tập rỗng ra 0.", en: "A subquery counts the orders of each customer; counting an empty set gives 0." }
+- id: g-correlated-value-3
+  skill: correlated_value
+  kind: trap
+  task: { vi: "Các đơn tháng 10/2026 của khách số 14, 21, 28 và 35: lấy mã đơn và thành phố của khách tại ngày đặt đơn, theo lịch sử `dim_customer` (hiệu lực từ `valid_from`, tới trước `valid_to`; `valid_to` trống là hiện tại).", en: "The October 2026 orders of customers 14, 21, 28 and 35: get the order id and the customer's city on the order date, from the `dim_customer` history (valid from `valid_from`, until before `valid_to`; an empty `valid_to` means current)." }
+  solution: "SELECT o.id, (SELECT d.city FROM dim_customer d WHERE d.customer_id = o.customer_id AND o.order_date >= d.valid_from AND (d.valid_to IS NULL OR o.order_date < d.valid_to)) FROM orders o WHERE o.customer_id IN (14, 21, 28, 35) AND o.order_date >= '2026-10-01' AND o.order_date < '2026-11-01'"
+  hint: { vi: "Truy vấn con chỉ được trả một dòng: thêm điều kiện ngày đặt đơn nằm trong khoảng hiệu lực.", en: "The subquery may return only one row: add the condition that the order date falls in the validity range." }
+  wrong:
+    - sql: "SELECT o.id, (SELECT d.city FROM dim_customer d WHERE d.customer_id = o.customer_id) FROM orders o WHERE o.customer_id IN (14, 21, 28, 35) AND o.order_date >= '2026-10-01' AND o.order_date < '2026-11-01'"
+      vi: "Thiếu điều kiện ngày hiệu lực: khách đã chuyển nhà có hai dòng lịch sử, truy vấn con trả hai dòng và Postgres báo lỗi more than one row returned by a subquery."
+      en: "The validity-date condition is missing: a customer who moved has two history rows, the subquery returns two rows and Postgres reports more than one row returned by a subquery."
+
+# ---- cte (ch8)
+- id: g-cte-1
+  skill: cte
+  kind: faded
+  task: { vi: "Đơn nào có tổng tiền đã thanh toán (cộng mọi dòng trong `payments`) trên 1.000.000 đồng? Lấy mã đơn và tổng đó.", en: "Which orders have total payments (all their rows in `payments` added up) above 1,000,000 VND? Get the order id and that total." }
+  starter: "WITH paid AS (SELECT order_id, SUM(amount_vnd) AS total FROM payments GROUP BY ___) SELECT order_id, total FROM paid WHERE total > 1000000"
+  solution: "WITH paid AS (SELECT order_id, SUM(amount_vnd) AS total FROM payments GROUP BY order_id) SELECT order_id, total FROM paid WHERE total > 1000000"
+  hint: { vi: "Bước đặt tên cộng tiền theo từng đơn; câu chính chỉ lọc kết quả của bước đó.", en: "The named step totals the money per order; the main query only filters that step's result." }
+- id: g-cte-2
+  skill: cte
+  kind: open
+  task: { vi: "Cửa hàng nào có doanh số tháng 10/2026 (tổng số lượng × đơn giá của đơn `PAID`) trên 10.000.000 đồng? Lấy tên cửa hàng và doanh số.", en: "Which stores had October 2026 sales (sum of quantity × unit price over `PAID` orders) above 10,000,000 VND? Get the store name and the sales." }
+  solution: "WITH sales AS (SELECT o.store_id, SUM(i.qty * i.unit_price_vnd) AS total FROM orders o JOIN order_items i ON i.order_id = o.id WHERE o.status = 'PAID' AND o.order_date >= '2026-10-01' AND o.order_date < '2026-11-01' GROUP BY o.store_id) SELECT s.name, sales.total FROM sales JOIN stores s ON s.id = sales.store_id WHERE sales.total > 10000000"
+  hint: { vi: "Tính doanh số theo cửa hàng trong một bước có tên, rồi nối với `stores` để lấy tên.", en: "Compute sales per store in a named step, then join `stores` for the name." }
+- id: g-cte-3
+  skill: cte
+  kind: trap
+  task: { vi: "Với mỗi đơn đặt trong tháng 10/2026 có ít nhất một khoản thanh toán: lấy mã đơn, tổng giá trị hàng (số lượng × đơn giá) và tổng tiền đã thanh toán.", en: "For each order placed in October 2026 that has at least one payment: get the order id, the goods value (quantity × unit price) and the total paid." }
+  solution: "WITH items AS (SELECT order_id, SUM(qty * unit_price_vnd) AS goods FROM order_items GROUP BY order_id), paid AS (SELECT order_id, SUM(amount_vnd) AS paid FROM payments GROUP BY order_id) SELECT o.id, items.goods, paid.paid FROM orders o JOIN items ON items.order_id = o.id JOIN paid ON paid.order_id = o.id WHERE o.order_date >= '2026-10-01' AND o.order_date < '2026-11-01'"
+  hint: { vi: "Cộng hàng theo đơn và cộng tiền theo đơn ở hai bước riêng, rồi mới nối.", en: "Total the goods per order and the payments per order in two separate steps, then join." }
+  wrong:
+    - sql: "SELECT o.id, SUM(i.qty * i.unit_price_vnd), SUM(p.amount_vnd) FROM orders o JOIN order_items i ON i.order_id = o.id JOIN payments p ON p.order_id = o.id WHERE o.order_date >= '2026-10-01' AND o.order_date < '2026-11-01' GROUP BY o.id"
+      vi: "Nối thẳng dòng hàng với thanh toán rồi mới cộng: đơn có 3 dòng hàng thì tiền thanh toán bị cộng 3 lần, đơn có 2 khoản thanh toán thì giá trị hàng bị cộng 2 lần."
+      en: "Joining goods lines to payments before adding up: an order with 3 lines has its payment counted 3 times, an order with 2 payments has its goods counted twice."
+
+# ---- multi_cte (ch8)
+- id: g-multi-cte-1
+  skill: multi_cte
+  kind: faded
+  task: { vi: "Tháng nào của năm 2026 có doanh số cao nhất (tổng số lượng × đơn giá của đơn `PAID`)? Lấy tháng và doanh số.", en: "Which month of 2026 had the highest sales (sum of quantity × unit price over `PAID` orders)? Get the month and the sales." }
+  starter: "WITH m AS (SELECT date_trunc('month', o.order_date) AS month, SUM(i.qty * i.unit_price_vnd) AS sales FROM orders o JOIN order_items i ON i.order_id = o.id WHERE o.status = 'PAID' AND o.order_date >= '2026-01-01' GROUP BY 1), best AS (SELECT ___ AS sales FROM m) SELECT m.month, m.sales FROM m JOIN best ON best.sales = m.sales"
+  solution: "WITH m AS (SELECT date_trunc('month', o.order_date) AS month, SUM(i.qty * i.unit_price_vnd) AS sales FROM orders o JOIN order_items i ON i.order_id = o.id WHERE o.status = 'PAID' AND o.order_date >= '2026-01-01' GROUP BY 1), best AS (SELECT MAX(sales) AS sales FROM m) SELECT m.month, m.sales FROM m JOIN best ON best.sales = m.sales"
+  hint: { vi: "Bước thứ hai đọc kết quả của bước thứ nhất và lấy giá trị lớn nhất.", en: "The second step reads the first step's result and takes the largest value." }
+- id: g-multi-cte-2
+  skill: multi_cte
+  kind: open
+  task: { vi: "Cửa hàng nào có doanh số tháng 10/2026 (đơn `PAID`) cao hơn doanh số trung bình một cửa hàng trong tháng đó? Lấy mã cửa hàng và doanh số.", en: "Which stores had October 2026 sales (`PAID` orders) above the average store's sales that month? Get the store id and the sales." }
+  solution: "WITH sales AS (SELECT o.store_id, SUM(i.qty * i.unit_price_vnd) AS total FROM orders o JOIN order_items i ON i.order_id = o.id WHERE o.status = 'PAID' AND o.order_date >= '2026-10-01' AND o.order_date < '2026-11-01' GROUP BY o.store_id), avg_sales AS (SELECT AVG(total) AS a FROM sales) SELECT sales.store_id, sales.total FROM sales, avg_sales WHERE sales.total > avg_sales.a"
+  hint: { vi: "Một bước tính doanh số mỗi cửa hàng, bước sau tính trung bình của bước đó.", en: "One step computes each store's sales, the next step averages that step." }
+- id: g-multi-cte-3
+  skill: multi_cte
+  kind: trap
+  task: { vi: "Mỗi nhóm hàng chiếm bao nhiêu phần trăm doanh số năm 2026 (đơn `PAID`)? Lấy nhóm hàng và phần trăm, làm tròn 1 chữ số ở kết quả cuối.", en: "What percentage of 2026 sales (`PAID` orders) does each category make? Get the category and the percentage, rounded to 1 decimal on the final figure." }
+  solution: "WITH by_cat AS (SELECT p.category, SUM(i.qty * i.unit_price_vnd) AS sales FROM orders o JOIN order_items i ON i.order_id = o.id JOIN products p ON p.id = i.product_id WHERE o.status = 'PAID' AND o.order_date >= '2026-01-01' GROUP BY p.category), total AS (SELECT SUM(sales) AS t FROM by_cat) SELECT by_cat.category, ROUND(100.0 * by_cat.sales / total.t, 1) FROM by_cat, total"
+  hint: { vi: "Hai bước đặt tên, cách nhau bằng dấu phẩy, sau một chữ WITH duy nhất.", en: "Two named steps, separated by a comma, after a single WITH." }
+  wrong:
+    - sql: "WITH by_cat AS (SELECT p.category, SUM(i.qty * i.unit_price_vnd) AS sales FROM orders o JOIN order_items i ON i.order_id = o.id JOIN products p ON p.id = i.product_id WHERE o.status = 'PAID' AND o.order_date >= '2026-01-01' GROUP BY p.category) WITH total AS (SELECT SUM(sales) AS t FROM by_cat) SELECT by_cat.category, ROUND(100.0 * by_cat.sales / total.t, 1) FROM by_cat, total"
+      vi: "Viết `WITH` hai lần là lỗi cú pháp. Chỉ một `WITH` ở đầu, các bước sau nối bằng dấu phẩy."
+      en: "Writing `WITH` twice is a syntax error. One `WITH` at the start, the later steps joined with commas."
+
+# ---- distinct_on (ch8)
+- id: g-distinct-on-1
+  skill: distinct_on
+  kind: faded
+  task: { vi: "Với mỗi khách có mã từ 1 đến 20, đơn mới nhất là đơn nào? Lấy mã khách, mã đơn và ngày đặt; cùng ngày thì lấy mã đơn lớn hơn.", en: "For each customer with id 1 to 20, which is their latest order? Get the customer id, order id and order date; on the same day take the larger order id." }
+  starter: "SELECT DISTINCT ON (customer_id) customer_id, id, order_date FROM orders WHERE customer_id BETWEEN 1 AND 20 ORDER BY customer_id, ___"
+  solution: "SELECT DISTINCT ON (customer_id) customer_id, id, order_date FROM orders WHERE customer_id BETWEEN 1 AND 20 ORDER BY customer_id, order_date DESC, id DESC"
+  hint: { vi: "Sau cột của DISTINCT ON, sắp xếp sao cho dòng muốn giữ lên đầu mỗi nhóm.", en: "After the DISTINCT ON column, sort so the row you want to keep comes first in each group." }
+- id: g-distinct-on-2
+  skill: distinct_on
+  kind: open
+  task: { vi: "Mỗi nhóm hàng có sản phẩm đắt nhất là gì? Lấy nhóm hàng, tên và giá.", en: "What is the most expensive product in each category? Get the category, the name and the price." }
+  solution: "SELECT DISTINCT ON (category) category, name, price_vnd FROM products ORDER BY category, price_vnd DESC, name"
+  hint: { vi: "Một dòng cho mỗi nhóm hàng; dòng giữ lại là dòng giá cao nhất.", en: "One row per category; the row kept is the highest price." }
+- id: g-distinct-on-3
+  skill: distinct_on
+  kind: trap
+  task: { vi: "Mỗi cửa hàng có đơn online (`ONLINE`) gần đây nhất là đơn nào? Lấy mã cửa hàng, mã đơn và ngày đặt; cùng ngày thì lấy mã đơn lớn hơn.", en: "What is each store's most recent online (`ONLINE`) order? Get the store id, order id and order date; on the same day take the larger order id." }
+  solution: "SELECT DISTINCT ON (store_id) store_id, id, order_date FROM orders WHERE channel = 'ONLINE' ORDER BY store_id, order_date DESC, id DESC"
+  hint: { vi: "\"Gần đây nhất\" nghĩa là ngày lớn nhất phải lên đầu nhóm.", en: "\"Most recent\" means the largest date must come first in its group." }
+  wrong:
+    - sql: "SELECT DISTINCT ON (store_id) store_id, id, order_date FROM orders WHERE channel = 'ONLINE' ORDER BY store_id, order_date, id"
+      vi: "Thiếu `DESC`: thứ tự tăng dần đưa đơn cũ nhất lên đầu, nên mỗi cửa hàng giữ đơn online đầu tiên chứ không phải gần nhất."
+      en: "`DESC` is missing: ascending order puts the oldest order first, so each store keeps its first online order, not its latest."
+
+# ---- union (ch9)
+- id: g-union-1
+  skill: union
+  kind: faded
+  task: { vi: "Liệt kê mọi thành phố có cửa hàng hoặc có khách (mỗi thành phố một lần, bỏ thành phố trống).", en: "List every city that has a store or a customer (each city once, leave out empty cities)." }
+  starter: "SELECT city FROM stores UNION SELECT ___ FROM customers WHERE city IS NOT NULL"
+  solution: "SELECT city FROM stores UNION SELECT city FROM customers WHERE city IS NOT NULL"
+  hint: { vi: "Hai câu SELECT cần cùng số cột, cùng ý nghĩa.", en: "Both SELECTs need the same number of columns with the same meaning." }
+- id: g-union-2
+  skill: union
+  kind: open
+  task: { vi: "Một danh sách người cho buổi gặp ở `Ben Thanh`: tên nhân viên cửa hàng số 3 (loại 1) và tên khách ở `Ho Chi Minh City` đăng ký từ 01/10/2026 (loại 2). Lấy tên và loại.", en: "One guest list for a meeting at `Ben Thanh`: the names of store 3's staff (type 1) and of customers in `Ho Chi Minh City` who signed up from 2026-10-01 (type 2). Get the name and the type." }
+  solution: "SELECT name, 1 FROM staff WHERE store_id = 3 UNION ALL SELECT name, 2 FROM customers WHERE city = 'Ho Chi Minh City' AND signup_date >= '2026-10-01'"
+  hint: { vi: "Mỗi câu SELECT có WHERE riêng và tự đặt cột loại bằng một con số.", en: "Each SELECT has its own WHERE and sets the type column with a number." }
+- id: g-union-3
+  skill: union
+  kind: trap
+  task: { vi: "Liệt kê nhóm hàng của từng dòng hàng bán ngày 30/10/2026 ở cửa hàng 1, nối tiếp bằng nhóm hàng của từng dòng hàng bán cùng ngày ở cửa hàng 3. Mỗi dòng hàng một dòng, giữ cả các dòng lặp lại.", en: "List the category of every order line sold on 2026-10-30 at store 1, followed by the category of every line sold that day at store 3. One row per order line, keep the repeats." }
+  solution: "SELECT p.category FROM order_items i JOIN orders o ON o.id = i.order_id JOIN products p ON p.id = i.product_id WHERE o.store_id = 1 AND o.order_date = '2026-10-30' UNION ALL SELECT p.category FROM order_items i JOIN orders o ON o.id = i.order_id JOIN products p ON p.id = i.product_id WHERE o.store_id = 3 AND o.order_date = '2026-10-30'"
+  hint: { vi: "Có một cách ghép bỏ dòng trùng và một cách giữ nguyên; đề cần giữ.", en: "One way of stacking drops duplicate rows and one keeps them; the task needs them kept." }
+  wrong:
+    - sql: "SELECT p.category FROM order_items i JOIN orders o ON o.id = i.order_id JOIN products p ON p.id = i.product_id WHERE o.store_id = 1 AND o.order_date = '2026-10-30' UNION SELECT p.category FROM order_items i JOIN orders o ON o.id = i.order_id JOIN products p ON p.id = i.product_id WHERE o.store_id = 3 AND o.order_date = '2026-10-30'"
+      vi: "`UNION` bỏ dòng trùng: mỗi nhóm hàng chỉ còn một dòng, mất các dòng hàng lặp lại. Dùng `UNION ALL`."
+      en: "`UNION` drops duplicate rows: each category is left once and the repeated lines are lost. Use `UNION ALL`."
+
+# ---- except (ch9)
+- id: g-except-1
+  skill: except
+  kind: faded
+  task: { vi: "Khách nào có đơn trong tháng 9/2026 nhưng không có đơn nào trong tháng 10/2026? Lấy mã khách.", en: "Which customers ordered in September 2026 but not in October 2026? Get the customer id." }
+  starter: "SELECT customer_id FROM orders WHERE order_date >= '2026-09-01' AND order_date < '2026-10-01' AND customer_id IS NOT NULL EXCEPT SELECT ___ FROM orders WHERE order_date >= '2026-10-01' AND order_date < '2026-11-01'"
+  solution: "SELECT customer_id FROM orders WHERE order_date >= '2026-09-01' AND order_date < '2026-10-01' AND customer_id IS NOT NULL EXCEPT SELECT customer_id FROM orders WHERE order_date >= '2026-10-01' AND order_date < '2026-11-01'"
+  hint: { vi: "Bên phải phép trừ cũng trả về mã khách, nhưng của tháng 10.", en: "The right side of the subtraction also returns customer ids, but for October." }
+- id: g-except-2
+  skill: except
+  kind: open
+  task: { vi: "Thành phố nào có khách nhưng chưa có cửa hàng? Lấy tên thành phố.", en: "Which cities have customers but no store yet? Get the city name." }
+  solution: "SELECT city FROM customers WHERE city IS NOT NULL EXCEPT SELECT city FROM stores"
+  hint: { vi: "Lấy thành phố của khách, trừ đi thành phố của cửa hàng.", en: "Take the customers' cities, minus the stores' cities." }
+- id: g-except-3
+  skill: except
+  kind: trap
+  task: { vi: "Khách nào đã mua ở cửa hàng số 1 nhưng chưa bao giờ mua ở cửa hàng số 2? Lấy mã khách.", en: "Which customers have bought at store 1 but never at store 2? Get the customer id." }
+  solution: "SELECT customer_id FROM orders WHERE store_id = 1 AND customer_id IS NOT NULL EXCEPT SELECT customer_id FROM orders WHERE store_id = 2"
+  hint: { vi: "Phép trừ so cả dòng: chỉ để cột mã khách ở hai bên.", en: "The subtraction compares whole rows: keep only the customer id column on both sides." }
+  wrong:
+    - sql: "SELECT customer_id, order_date FROM orders WHERE store_id = 1 AND customer_id IS NOT NULL EXCEPT SELECT customer_id, order_date FROM orders WHERE store_id = 2"
+      vi: "Thêm `order_date` vào hai bên thì dòng nào cũng khác nhau (khác ngày), nên gần như mọi đơn ở cửa hàng 1 đều còn lại, kể cả của khách từng mua ở cửa hàng 2."
+      en: "With `order_date` on both sides almost every row differs (another date), so nearly every store 1 order stays, even for customers who also bought at store 2."
+
+# ---- full_join (ch9)
+- id: g-full-join-1
+  skill: full_join
+  kind: faded
+  task: { vi: "So chỉ tiêu tháng 6/2026 (`store_targets`) với doanh số thật tháng đó (đơn `PAID`) cho mọi cửa hàng có ở một trong hai bên: lấy mã cửa hàng, chỉ tiêu và doanh số (bên nào thiếu thì để trống).", en: "Compare the June 2026 targets (`store_targets`) with that month's real sales (`PAID` orders) for every store found on either side: get the store id, the target and the sales (empty where a side is missing)." }
+  starter: "WITH t AS (SELECT store_id, target_vnd FROM store_targets WHERE month = '2026-06-01'), a AS (SELECT o.store_id, SUM(i.qty * i.unit_price_vnd) AS sales FROM orders o JOIN order_items i ON i.order_id = o.id WHERE o.status = 'PAID' AND o.order_date >= '2026-06-01' AND o.order_date < '2026-07-01' GROUP BY o.store_id) SELECT COALESCE(t.store_id, a.store_id), t.target_vnd, a.sales FROM t ___ a ON a.store_id = t.store_id"
+  solution: "WITH t AS (SELECT store_id, target_vnd FROM store_targets WHERE month = '2026-06-01'), a AS (SELECT o.store_id, SUM(i.qty * i.unit_price_vnd) AS sales FROM orders o JOIN order_items i ON i.order_id = o.id WHERE o.status = 'PAID' AND o.order_date >= '2026-06-01' AND o.order_date < '2026-07-01' GROUP BY o.store_id) SELECT COALESCE(t.store_id, a.store_id), t.target_vnd, a.sales FROM t FULL JOIN a ON a.store_id = t.store_id"
+  hint: { vi: "Cần giữ dòng chỉ có ở bên trái và dòng chỉ có ở bên phải.", en: "You need to keep rows found only on the left and rows found only on the right." }
+- id: g-full-join-2
+  skill: full_join
+  kind: open
+  task: { vi: "Trong năm 2026, cặp cửa hàng × tháng nào chỉ có ở một bên: có chỉ tiêu mà không có doanh số (đơn `PAID`), hoặc có doanh số mà không có chỉ tiêu? Lấy mã cửa hàng, tháng, chỉ tiêu và doanh số.", en: "In 2026, which store × month pairs exist on one side only: a target with no sales (`PAID` orders), or sales with no target? Get the store id, the month, the target and the sales." }
+  solution: "WITH t AS (SELECT store_id, month, target_vnd FROM store_targets), a AS (SELECT o.store_id, date_trunc('month', o.order_date)::date AS month, SUM(i.qty * i.unit_price_vnd) AS sales FROM orders o JOIN order_items i ON i.order_id = o.id WHERE o.status = 'PAID' AND o.order_date >= '2026-01-01' GROUP BY 1, 2) SELECT COALESCE(t.store_id, a.store_id), COALESCE(t.month, a.month), t.target_vnd, a.sales FROM t FULL JOIN a ON a.store_id = t.store_id AND a.month = t.month WHERE t.store_id IS NULL OR a.store_id IS NULL"
+  hint: { vi: "Nối theo cả cửa hàng lẫn tháng, rồi giữ dòng mà một bên trống.", en: "Join on both store and month, then keep the rows where one side is empty." }
+- id: g-full-join-3
+  skill: full_join
+  kind: trap
+  task: { vi: "Tháng 2/2026: với mọi cửa hàng có chỉ tiêu hoặc có doanh số (đơn `PAID`), lấy mã cửa hàng, chỉ tiêu, doanh số và phần chênh (doanh số trừ chỉ tiêu; thiếu bên nào thì chênh để trống).", en: "February 2026: for every store with a target or with sales (`PAID` orders), get the store id, the target, the sales and the gap (sales minus target; empty when a side is missing)." }
+  solution: "WITH t AS (SELECT store_id, target_vnd FROM store_targets WHERE month = '2026-02-01'), a AS (SELECT o.store_id, SUM(i.qty * i.unit_price_vnd) AS sales FROM orders o JOIN order_items i ON i.order_id = o.id WHERE o.status = 'PAID' AND o.order_date >= '2026-02-01' AND o.order_date < '2026-03-01' GROUP BY o.store_id) SELECT COALESCE(t.store_id, a.store_id), t.target_vnd, a.sales, a.sales - t.target_vnd FROM t FULL JOIN a ON a.store_id = t.store_id"
+  hint: { vi: "Lọc tháng của mỗi bên trước khi nối, không phải sau.", en: "Filter each side's month before the join, not after it." }
+  wrong:
+    - sql: "WITH a AS (SELECT o.store_id, SUM(i.qty * i.unit_price_vnd) AS sales FROM orders o JOIN order_items i ON i.order_id = o.id WHERE o.status = 'PAID' AND o.order_date >= '2026-02-01' AND o.order_date < '2026-03-01' GROUP BY o.store_id) SELECT COALESCE(t.store_id, a.store_id), t.target_vnd, a.sales, a.sales - t.target_vnd FROM store_targets t FULL JOIN a ON a.store_id = t.store_id WHERE t.month = '2026-02-01'"
+      vi: "Lọc `t.month` ở WHERE sau khi nối thì dòng chỉ có doanh số (cửa hàng 4 chưa có chỉ tiêu tháng 2) có `t.month` trống và bị bỏ. Lọc chỉ tiêu trong CTE trước khi nối."
+      en: "Filtering `t.month` in WHERE after the join drops the sales-only row (store 4 has no February target): its `t.month` is empty. Filter the targets in a CTE before the join."
+
+# ---- window_rank (ch10)
+- id: g-window-rank-1
+  skill: window_rank
+  kind: faded
+  task: { vi: "Xếp hạng sản phẩm theo giá trong từng nhóm hàng, đắt nhất hạng 1. Lấy nhóm hàng, tên, giá và hạng.", en: "Rank products by price within each category, the most expensive ranked 1. Get the category, name, price and rank." }
+  starter: "SELECT category, name, price_vnd, RANK() OVER (PARTITION BY ___ ORDER BY price_vnd DESC) FROM products"
+  solution: "SELECT category, name, price_vnd, RANK() OVER (PARTITION BY category ORDER BY price_vnd DESC) FROM products"
+  hint: { vi: "Mỗi nhóm hàng xếp hạng riêng: chia nhóm theo cột nhóm hàng.", en: "Each category is ranked on its own: partition by the category column." }
+- id: g-window-rank-2
+  skill: window_rank
+  kind: open
+  task: { vi: "Với mỗi cửa hàng, 3 sản phẩm có doanh số cao nhất trong quý 3/2026 (đơn `PAID`, tháng 7–9) là gì? Lấy mã cửa hàng, mã sản phẩm, doanh số và hạng; bằng doanh số thì cùng hạng và bỏ qua hạng kế tiếp (1, 1, 3).", en: "For each store, which 3 products had the highest sales in Q3 2026 (`PAID` orders, July–September)? Get the store id, product id, sales and rank; equal sales share a rank and skip the next one (1, 1, 3)." }
+  solution: "WITH s AS (SELECT o.store_id, i.product_id, SUM(i.qty * i.unit_price_vnd) AS sales FROM orders o JOIN order_items i ON i.order_id = o.id WHERE o.status = 'PAID' AND o.order_date >= '2026-07-01' AND o.order_date < '2026-10-01' GROUP BY 1, 2), r AS (SELECT store_id, product_id, sales, RANK() OVER (PARTITION BY store_id ORDER BY sales DESC) AS rk FROM s) SELECT store_id, product_id, sales, rk FROM r WHERE rk <= 3"
+  hint: { vi: "Tính hạng trong một bước có tên, rồi lọc hạng ở câu ngoài.", en: "Compute the rank in a named step, then filter on it outside." }
+- id: g-window-rank-3
+  skill: window_rank
+  kind: trap
+  task: { vi: "Xếp hạng khách ở `Hue` theo số đơn, nhiều nhất hạng 1; bằng số đơn thì cùng hạng và bỏ qua hạng kế tiếp (1, 1, 3). Lấy tên khách, số đơn và hạng.", en: "Rank the customers in `Hue` by number of orders, the most ranked 1; equal counts share a rank and skip the next one (1, 1, 3). Get the customer name, order count and rank." }
+  solution: "SELECT c.name, COUNT(*), RANK() OVER (ORDER BY COUNT(*) DESC) FROM customers c JOIN orders o ON o.customer_id = c.id WHERE c.city = 'Hue' GROUP BY c.id, c.name"
+  hint: { vi: "Khi số đơn bằng nhau, hai khách phải nhận cùng hạng.", en: "When order counts are equal, both customers must get the same rank." }
+  wrong:
+    - sql: "SELECT c.name, COUNT(*), ROW_NUMBER() OVER (ORDER BY COUNT(*) DESC) FROM customers c JOIN orders o ON o.customer_id = c.id WHERE c.city = 'Hue' GROUP BY c.id, c.name"
+      vi: "`ROW_NUMBER` đánh số liền nhau và xếp các khách bằng số đơn theo thứ tự tùy ý. Muốn bằng nhau cùng hạng (1, 1, 3) thì dùng `RANK`."
+      en: "`ROW_NUMBER` numbers rows one after another and orders tied customers arbitrarily. For ties to share a rank (1, 1, 3) use `RANK`."
+
+# ---- window_lag (ch10)
+- id: g-window-lag-1
+  skill: window_lag
+  kind: faded
+  task: { vi: "Doanh số mỗi tháng năm 2026 (đơn `PAID`) và doanh số của tháng liền trước. Lấy tháng, doanh số tháng đó và doanh số tháng trước.", en: "Sales for each month of 2026 (`PAID` orders) and the previous month's sales. Get the month, that month's sales and the previous month's sales." }
+  starter: "WITH m AS (SELECT date_trunc('month', o.order_date) AS month, SUM(i.qty * i.unit_price_vnd) AS sales FROM orders o JOIN order_items i ON i.order_id = o.id WHERE o.status = 'PAID' AND o.order_date >= '2026-01-01' GROUP BY 1) SELECT month, sales, LAG(sales) OVER (ORDER BY ___) FROM m"
+  solution: "WITH m AS (SELECT date_trunc('month', o.order_date) AS month, SUM(i.qty * i.unit_price_vnd) AS sales FROM orders o JOIN order_items i ON i.order_id = o.id WHERE o.status = 'PAID' AND o.order_date >= '2026-01-01' GROUP BY 1) SELECT month, sales, LAG(sales) OVER (ORDER BY month) FROM m"
+  hint: { vi: "\"Dòng trước\" theo thứ tự tháng.", en: "\"The previous row\" in month order." }
+- id: g-window-lag-2
+  skill: window_lag
+  kind: open
+  task: { vi: "Quý 3/2026 (tháng 7–9), doanh số mỗi cửa hàng mỗi tháng (đơn `PAID`) thay đổi bao nhiêu so với tháng trước của chính cửa hàng đó? Lấy mã cửa hàng, tháng, doanh số và phần thay đổi (tháng đầu để trống).", en: "In Q3 2026 (July–September), how much did each store's monthly sales (`PAID` orders) change from that same store's previous month? Get the store id, the month, the sales and the change (empty for the first month)." }
+  solution: "WITH m AS (SELECT o.store_id, date_trunc('month', o.order_date) AS month, SUM(i.qty * i.unit_price_vnd) AS sales FROM orders o JOIN order_items i ON i.order_id = o.id WHERE o.status = 'PAID' AND o.order_date >= '2026-07-01' AND o.order_date < '2026-10-01' GROUP BY 1, 2) SELECT store_id, month, sales, sales - LAG(sales) OVER (PARTITION BY store_id ORDER BY month) FROM m"
+  hint: { vi: "Mỗi cửa hàng chỉ so với chính nó: chia nhóm theo cửa hàng, sắp theo tháng.", en: "Each store compares only with itself: partition by store, order by month." }
+- id: g-window-lag-3
+  skill: window_lag
+  kind: trap
+  task: { vi: "Với các đơn của khách số 1 đến 5: lấy mã khách, mã đơn, ngày đặt và ngày đặt đơn liền trước của chính khách đó (theo ngày, rồi theo mã đơn; đơn đầu tiên để trống).", en: "For the orders of customers 1 to 5: get the customer id, order id, order date and the date of that same customer's previous order (by date, then by order id; the first order is empty)." }
+  solution: "SELECT customer_id, id, order_date, LAG(order_date) OVER (PARTITION BY customer_id ORDER BY order_date, id) FROM orders WHERE customer_id BETWEEN 1 AND 5"
+  hint: { vi: "Đơn trước phải là của cùng một khách.", en: "The previous order must belong to the same customer." }
+  wrong:
+    - sql: "SELECT customer_id, id, order_date, LAG(order_date) OVER (ORDER BY order_date, id) FROM orders WHERE customer_id BETWEEN 1 AND 5"
+      vi: "Thiếu `PARTITION BY customer_id`: \"đơn trước\" là đơn liền trước của bất kỳ khách nào, nên khách này bị so với khách khác."
+      en: "`PARTITION BY customer_id` is missing: \"the previous order\" is the previous order of any customer, so one customer is compared with another."
+
+# ---- window_agg (ch10)
+- id: g-window-agg-1
+  skill: window_agg
+  kind: faded
+  task: { vi: "Doanh số cộng dồn từ đầu năm 2026 (đơn `PAID`): lấy tháng, doanh số tháng đó và tổng cộng dồn tới hết tháng đó.", en: "Year-to-date 2026 sales (`PAID` orders): get the month, that month's sales and the running total up to the end of that month." }
+  starter: "WITH m AS (SELECT date_trunc('month', o.order_date) AS month, SUM(i.qty * i.unit_price_vnd) AS sales FROM orders o JOIN order_items i ON i.order_id = o.id WHERE o.status = 'PAID' AND o.order_date >= '2026-01-01' GROUP BY 1) SELECT month, sales, SUM(sales) OVER (___) FROM m"
+  solution: "WITH m AS (SELECT date_trunc('month', o.order_date) AS month, SUM(i.qty * i.unit_price_vnd) AS sales FROM orders o JOIN order_items i ON i.order_id = o.id WHERE o.status = 'PAID' AND o.order_date >= '2026-01-01' GROUP BY 1) SELECT month, sales, SUM(sales) OVER (ORDER BY month) FROM m"
+  hint: { vi: "Tổng cộng dồn cần thứ tự trong cửa sổ.", en: "A running total needs an order inside the window." }
+- id: g-window-agg-2
+  skill: window_agg
+  kind: open
+  task: { vi: "Tháng 10/2026, mỗi cửa hàng chiếm bao nhiêu phần trăm doanh số cả chuỗi (đơn `PAID`)? Lấy mã cửa hàng, doanh số và phần trăm, làm tròn 1 chữ số ở kết quả cuối.", en: "In October 2026, what percentage of the chain's sales (`PAID` orders) does each store make? Get the store id, the sales and the percentage, rounded to 1 decimal on the final figure." }
+  solution: "WITH s AS (SELECT o.store_id, SUM(i.qty * i.unit_price_vnd) AS sales FROM orders o JOIN order_items i ON i.order_id = o.id WHERE o.status = 'PAID' AND o.order_date >= '2026-10-01' AND o.order_date < '2026-11-01' GROUP BY 1) SELECT store_id, sales, ROUND(100.0 * sales / SUM(sales) OVER (), 1) FROM s"
+  hint: { vi: "Tổng cả chuỗi đặt cạnh mỗi dòng: một cửa sổ rỗng bao mọi dòng.", en: "The chain total next to every row: an empty window covers all rows." }
+- id: g-window-agg-3
+  skill: window_agg
+  kind: trap
+  task: { vi: "Quý 3/2026 (tháng 7–9), doanh số cộng dồn theo tháng của từng cửa hàng (đơn `PAID`): lấy mã cửa hàng, tháng, doanh số và tổng cộng dồn của cửa hàng đó tới hết tháng.", en: "Q3 2026 (July–September), each store's running monthly sales (`PAID` orders): get the store id, the month, the sales and that store's running total up to the end of the month." }
+  solution: "WITH m AS (SELECT o.store_id, date_trunc('month', o.order_date) AS month, SUM(i.qty * i.unit_price_vnd) AS sales FROM orders o JOIN order_items i ON i.order_id = o.id WHERE o.status = 'PAID' AND o.order_date >= '2026-07-01' AND o.order_date < '2026-10-01' GROUP BY 1, 2) SELECT store_id, month, sales, SUM(sales) OVER (PARTITION BY store_id ORDER BY month) FROM m"
+  hint: { vi: "Cộng dồn trong từng cửa hàng, theo thứ tự tháng.", en: "Run the total inside each store, in month order." }
+  wrong:
+    - sql: "WITH m AS (SELECT o.store_id, date_trunc('month', o.order_date) AS month, SUM(i.qty * i.unit_price_vnd) AS sales FROM orders o JOIN order_items i ON i.order_id = o.id WHERE o.status = 'PAID' AND o.order_date >= '2026-07-01' AND o.order_date < '2026-10-01' GROUP BY 1, 2) SELECT store_id, month, sales, SUM(sales) OVER (PARTITION BY store_id) FROM m"
+      vi: "Thiếu `ORDER BY` trong `OVER`: tháng nào cũng nhận tổng cả quý của cửa hàng, không phải tổng cộng dồn."
+      en: "`ORDER BY` is missing inside `OVER`: every month gets the store's whole-quarter total, not a running total."
+
+# ---- explain_read (ch11)
+- id: g-explain-read-1
+  skill: explain_read
+  kind: faded
+  task: { vi: "Lấy mã đơn và ngày đặt của mọi đơn của khách số 42. Chạy xong, mở tab EXPLAIN: bảng `orders` được đọc qua chỉ mục nào?", en: "Get the order id and order date of every order of customer 42. After running it, open the EXPLAIN tab: which index reads the `orders` table?" }
+  starter: "SELECT id, order_date FROM orders WHERE ___ = 42"
+  solution: "SELECT id, order_date FROM orders WHERE customer_id = 42"
+  plan: { index: orders }
+  hint: { vi: "Lọc theo cột có chỉ mục `orders(customer_id)`; trong kế hoạch tìm nút Index Scan hoặc Bitmap Index Scan.", en: "Filter on the column of the `orders(customer_id)` index; in the plan look for an Index Scan or Bitmap Index Scan node." }
+- id: g-explain-read-2
+  skill: explain_read
+  kind: open
+  task: { vi: "Mỗi ngày từ 01/10/2026 đến 07/10/2026 có bao nhiêu đơn? Lấy ngày và số đơn. Viết điều kiện ngày sao cho kế hoạch đọc `orders` qua chỉ mục `orders(order_date)`.", en: "How many orders were placed on each day from 2026-10-01 to 2026-10-07? Get the date and the count. Write the date condition so the plan reads `orders` through the `orders(order_date)` index." }
+  solution: "SELECT order_date, COUNT(*) FROM orders WHERE order_date >= '2026-10-01' AND order_date < '2026-10-08' GROUP BY order_date"
+  plan: { index: orders }
+  hint: { vi: "So sánh trực tiếp cột ngày với hai mốc; đọc kế hoạch từ nút trong cùng ra ngoài.", en: "Compare the date column directly with two bounds; read the plan from the innermost node outwards." }
+- id: g-explain-read-3
+  skill: explain_read
+  kind: trap
+  task: { vi: "Khách số 42 có bao nhiêu đơn đã thanh toán (`PAID`)? Lấy một con số. Kế hoạch vẫn phải bắt đầu từ chỉ mục theo khách.", en: "How many paid (`PAID`) orders does customer 42 have? Get one number. The plan must still start from the customer index." }
+  solution: "SELECT COUNT(*) FROM orders WHERE customer_id = 42 AND status = 'PAID'"
+  plan: { index: orders }
+  hint: { vi: "Hai điều kiện phải cùng đúng.", en: "Both conditions must hold." }
+  wrong:
+    - sql: "SELECT COUNT(*) FROM orders WHERE customer_id = 42 OR status = 'PAID'"
+      vi: "`OR` đếm cả đơn `PAID` của mọi khách. Tab EXPLAIN cũng báo hiệu: kế hoạch chuyển sang Seq Scan đọc hết `orders`, vì không chỉ mục nào trả lời được vế `status`."
+      en: "`OR` also counts every customer's `PAID` orders. The EXPLAIN tab gives it away too: the plan switches to a Seq Scan over all of `orders`, since no index answers the `status` side."
+
+# ---- sargable (ch11)
+- id: g-sargable-1
+  skill: sargable
+  kind: faded
+  task: { vi: "Lấy mã đơn, mã cửa hàng và ngày đặt của các đơn trong tuần 05/10/2026–11/10/2026, viết điều kiện ngày dạng khoảng nửa mở để dùng được chỉ mục `orders(order_date)`.", en: "Get the order id, store id and order date of the orders in the week 2026-10-05 to 2026-10-11, writing the date condition as a half-open range so the `orders(order_date)` index can be used." }
+  starter: "SELECT id, store_id, order_date FROM orders WHERE order_date >= '2026-10-05' AND order_date < ___"
+  solution: "SELECT id, store_id, order_date FROM orders WHERE order_date >= '2026-10-05' AND order_date < '2026-10-12'"
+  plan: { index: orders }
+  hint: { vi: "Mốc trên là ngày ngay sau ngày cuối, dùng dấu nhỏ hơn.", en: "The upper bound is the day right after the last day, with less-than." }
+- id: g-sargable-2
+  skill: sargable
+  kind: open
+  task: { vi: "Tháng 10/2026, mỗi kênh bán (`channel`) có bao nhiêu đơn? Lấy kênh và số đơn; để cột ngày trần để chỉ mục `orders(order_date)` dùng được.", en: "In October 2026, how many orders did each sales channel (`channel`) get? Get the channel and the count; leave the date column bare so the `orders(order_date)` index can be used." }
+  solution: "SELECT channel, COUNT(*) FROM orders WHERE order_date >= '2026-10-01' AND order_date < '2026-11-01' GROUP BY channel"
+  plan: { index: orders }
+  hint: { vi: "Không bọc cột ngày trong hàm; so nó với hai mốc ngày.", en: "Do not wrap the date column in a function; compare it with two dates." }
+- id: g-sargable-3
+  skill: sargable
+  kind: trap
+  task: { vi: "Lấy mã và ngày đặt của các đơn online (`ONLINE`) tháng 10/2026, viết sao cho chỉ mục `orders(order_date)` dùng được.", en: "Get the id and order date of the online (`ONLINE`) orders of October 2026, written so the `orders(order_date)` index can be used." }
+  solution: "SELECT id, order_date FROM orders WHERE channel = 'ONLINE' AND order_date >= '2026-10-01' AND order_date < '2026-11-01'"
+  plan: { index: orders }
+  hint: { vi: "Lấy tháng ra khỏi cột vừa chậm vừa dễ sai: tháng 10 có ở cả hai năm.", en: "Pulling the month out of the column is both slow and easy to get wrong: October exists in two years." }
+  wrong:
+    - sql: "SELECT id, order_date FROM orders WHERE channel = 'ONLINE' AND extract(month FROM order_date) = 10"
+      vi: "`extract(month …) = 10` lấy cả tháng 10/2025, và bọc cột trong hàm nên kế hoạch thành Seq Scan. Dùng khoảng nửa mở `>= '2026-10-01' AND < '2026-11-01'`."
+      en: "`extract(month …) = 10` also takes October 2025, and wrapping the column in a function turns the plan into a Seq Scan. Use the half-open range `>= '2026-10-01' AND < '2026-11-01'`."
+
+# ---- index_design (ch11)
+- id: g-index-design-1
+  skill: index_design
+  kind: faded
+  task: { vi: "Các sự kiện của người dùng số 77 trong tháng 9/2026: lấy tên sự kiện và thời điểm, theo thứ tự thời gian. Chỉ mục `app_events(user_id, ts)` đọc được cả hai điều kiện.", en: "User 77's events in September 2026: get the event name and the time, in time order. The `app_events(user_id, ts)` index can serve both conditions." }
+  starter: "SELECT event, ts FROM app_events WHERE user_id = 77 AND ts >= ___ AND ts < ___ ORDER BY ts"
+  solution: "SELECT event, ts FROM app_events WHERE user_id = 77 AND ts >= '2026-09-01' AND ts < '2026-10-01' ORDER BY ts"
+  ordered: true
+  plan: { index: app_events }
+  hint: { vi: "Cột đầu của chỉ mục là `user_id` (so bằng), cột sau là `ts` (một khoảng).", en: "The index's first column is `user_id` (equality), the next is `ts` (a range)." }
+- id: g-index-design-2
+  skill: index_design
+  kind: open
+  task: { vi: "Sự kiện gần đây nhất của người dùng số 120 là gì? Lấy tên sự kiện, thời điểm và thiết bị (`device` trong `props`).", en: "What is user 120's most recent event? Get the event name, the time and the device (`device` in `props`)." }
+  solution: "SELECT event, ts, props->>'device' FROM app_events WHERE user_id = 120 ORDER BY ts DESC LIMIT 1"
+  plan: { index: app_events }
+  hint: { vi: "Lọc theo cột đầu của chỉ mục, sắp theo cột thứ hai giảm dần, lấy một dòng.", en: "Filter on the index's first column, sort by its second column descending, take one row." }
+- id: g-index-design-3
+  skill: index_design
+  kind: trap
+  task: { vi: "Người dùng số 77 có những sự kiện nào trong ngày 05/09/2026? Lấy tên sự kiện và thời điểm. Chỉ mục `app_events(user_id, ts)` chỉ giúp khi cột đầu của nó được lọc.", en: "Which events did user 77 have on 2026-09-05? Get the event name and the time. The `app_events(user_id, ts)` index only helps when its first column is filtered." }
+  solution: "SELECT event, ts FROM app_events WHERE user_id = 77 AND ts >= '2026-09-05' AND ts < '2026-09-06'"
+  plan: { index: app_events }
+  hint: { vi: "Lọc theo cả người dùng lẫn thời gian.", en: "Filter on both the user and the time." }
+  wrong:
+    - sql: "SELECT event, ts FROM app_events WHERE ts >= '2026-09-05' AND ts < '2026-09-06'"
+      vi: "Thiếu `user_id = 77`: ra sự kiện của mọi người dùng ngày đó, và vì cột đầu của chỉ mục không được lọc nên kế hoạch thành Seq Scan."
+      en: "`user_id = 77` is missing: you get every user's events that day, and since the index's first column is not filtered the plan becomes a Seq Scan."

@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { buildGeneral, drillTicket, DRILL_ID, parseAdv, parseDrills } from '../src/general';
+import { generalNow } from '../src/content';
+import { SKILLS } from '../src/progress';
 import { textOf } from '../src/tickets';
+import { distinctResults, drillRules } from './generalRules';
 
 const DRILL = `
 - id: g-where-1
@@ -99,4 +102,20 @@ describe('parser drill và nút nâng cao', () => {
     const [o] = parseDrills(DRILL, 'x');
     expect(drillTicket(o).format).toBe('open');
   });
+});
+
+describe('nội dung: drill theo kỹ năng (content/general/sql.yml)', () => {
+  const g = generalNow()!;
+  const skillDrills = g.drills.filter((d) => d.skill);
+
+  it('mỗi kỹ năng trong skills.yml có đúng 3 drill: một faded, một open, một trap', () => {
+    for (const s of SKILLS) expect([s.id, (g.bySkill.get(s.id) ?? []).map((d) => d.kind).sort()]).toEqual([s.id, ['faded', 'open', 'trap']]);
+    expect(skillDrills.filter((d) => !SKILLS.some((s) => s.id === d.skill)).map((d) => d.id)).toEqual([]);
+  });
+
+  it.each(SKILLS.map((s) => s.id))('%s: hai drill cùng kỹ năng không cùng kết quả', async (id) => {
+    expect(await distinctResults(g.bySkill.get(id) ?? [])).toEqual([]);
+  });
+
+  drillRules(skillDrills);
 });
