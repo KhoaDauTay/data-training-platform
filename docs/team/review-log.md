@@ -266,12 +266,14 @@ Vòng 1/3 (2026-11-17): review code + bảo mật + nội dung (đọc đủ 18 
 
 | Loại | Bug | Trạng thái |
 |---|---|---|
-| security | `isCreateIndex` bỏ comment bằng regex, nhưng comment Postgres lồng nhau: `/* /* */ CREATE INDEX */ DROP TABLE claims` qua kiểm tra và `runLab` chạy DROP (vẫn rollback); `--` trong chuỗi bị cắt nhầm | Mở |
-| correctness | `sqlerr.42P20` map theo mã: PGlite cũng trả 42P20 cho lỗi khung (RANGE offset cần đúng 1 cột ORDER BY, frame bắt đầu từ current row, window trong HAVING) → giải thích "WHERE không lọc được" sai | Mở |
-| correctness | EXPLAIN chấm theo plan dùng chung `try` với chấm điểm: timeout/restart lúc EXPLAIN báo "Lỗi nội dung ticket" | Mở |
-| correctness | `window_agg` không bắt `SUM(SUM(x)) OVER`, `SUM(COALESCE(x,0)) OVER` (đối số lồng) | Mở |
-| ux | Lab không ghi lịch sử, không đặt `lastRun` (các tab vẫn hiện lần chạy cũ) — chưa ghi trong tài liệu | Mở |
-| content | ch11-03 hứa "chỉ mục biểu thức là việc của bài thiết kế chỉ mục" nhưng ch11-04 không nhắc | Mở |
-| pedagogy | RANK vs DENSE_RANK chỉ khác ở biến thể 1 của ch10-01 (biến thể 0, 2 và bước 1 của bài thăng tiến hòa chỉ ở hạng cuối) | Mở |
-| pedagogy | ch11-04: gợi ý dạy `(container_id, event_time)` nhưng chỉ `container_id` cũng đạt ngưỡng 10% → bài học "cột thứ hai trả dòng đã sắp" không được kiểm; ch12-06 có thể nhắc phí D&D được chuyển cho khách | Mở (judgement) |
-| perf | Reviewer đo seed 2,85 s (Node) — vượt ngưỡng S2 2,0 s nếu đúng; build agent đo 1,84–1,94 s | Mở — đo lại |
+| security | `isCreateIndex` bỏ comment bằng regex, nhưng comment Postgres lồng nhau: `/* /* */ CREATE INDEX */ DROP TABLE claims` qua kiểm tra và `runLab` chạy DROP (vẫn rollback); `--` trong chuỗi bị cắt nhầm | Đã sửa f52508c, fb08192 (tokenizer: comment lồng, chuỗi/dollar-quote, `--` hết ở CR hoặc LF, cấm dấu gạch ngược; worker kiểm pg_class: đúng 1 chỉ mục mới trên bảng lab, bảng khác → LAB02) |
+| correctness | `sqlerr.42P20` map theo mã: PGlite cũng trả 42P20 cho lỗi khung (RANGE offset cần đúng 1 cột ORDER BY, frame bắt đầu từ current row, window trong HAVING) → giải thích "WHERE không lọc được" sai | Đã sửa 8bbbe08 |
+| correctness | EXPLAIN chấm theo plan dùng chung `try` với chấm điểm: timeout/restart lúc EXPLAIN báo "Lỗi nội dung ticket" | Đã sửa 7a46cd2 |
+| correctness | `window_agg` không bắt `SUM(SUM(x)) OVER`, `SUM(COALESCE(x,0)) OVER` (đối số lồng) | Đã sửa 4a51fbe |
+| ux | Lab không ghi lịch sử, không đặt `lastRun` (các tab vẫn hiện lần chạy cũ) — chưa ghi trong tài liệu | Đã sửa f52508c, fb08192 (lab ghi lịch sử câu DDL, xóa `lastRun`, vẽ lại tab; ghi trong CLAUDE.md) |
+| content | ch11-03 hứa "chỉ mục biểu thức là việc của bài thiết kế chỉ mục" nhưng ch11-04 không nhắc | Đã sửa dad3b71 (bỏ lời hứa, gọi tên chỉ mục biểu thức) |
+| pedagogy | RANK vs DENSE_RANK chỉ khác ở biến thể 1 của ch10-01 (biến thể 0, 2 và bước 1 của bài thăng tiến hòa chỉ ở hạng cuối) | Đã sửa dad3b71 (ch10-01 cả 3 biến thể, thêm `wrong:` DENSE_RANK); bước 1 ch10-06 không tách được với dữ liệu cố định (quý 1–3/2026 RANK = DENSE_RANK với mọi n 2–6) |
+| pedagogy | ch11-04: gợi ý dạy `(container_id, event_time)` nhưng chỉ `container_id` cũng đạt ngưỡng 10% → bài học "cột thứ hai trả dòng đã sắp" không được kiểm; ch12-06 có thể nhắc phí D&D được chuyển cho khách | Đã sửa ae839dc (hai chỉ mục cùng tỉ lệ 0,0163 ở mọi biến thể nên không tách được; sửa gợi ý/giải thích: cột thứ hai không bắt buộc); ch12-06 không đổi |
+| perf | Reviewer đo seed 2,85 s (Node) — vượt ngưỡng S2 2,0 s nếu đúng; build agent đo 1,84–1,94 s | Đã đo lại (máy không rảnh, CPU 13–29%): 5 tiến trình riêng 2,01 / 2,03 / 1,97 / 1,93 / 2,38 s; vòng 5 lần trong 1 tiến trình 2,14–3,79 s và 3,10–5,04 s. Không đổi dữ liệu; cần đo lại trên máy rảnh |
+
+Sửa vòng 1: commits 8bbbe08, f52508c, 7a46cd2, 4a51fbe, dad3b71, ae839dc, fb08192. Thay đổi hành vi: chỉ mục trên bảng khác bảng lab giờ là lỗi LAB02 (không tính nộp sai). Chưa kiểm trên trình duyệt.
