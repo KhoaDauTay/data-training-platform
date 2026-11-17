@@ -88,7 +88,7 @@ export const vi = {
   'mode.sandboxDesc': 'Viết SQL bất kỳ trên dữ liệu công ty, không chấm điểm.',
   'prac.section': 'Ôn tập hôm nay (không tính XP)',
   'prac.today': 'Ôn hôm nay ({n})',
-  'prac.dueIntro': 'Hôm nay có {n} bài ôn, gom các kỹ năng đã đến hạn. Mỗi bài là một việc bạn đã làm, có thể với số liệu khác; làm đúng thì lần ôn sau giãn ra.',
+  'prac.dueIntro': 'Hôm nay có {n} bài ôn, gom các kỹ năng đã đến hạn. Mỗi bài là một drill ngắn trên dữ liệu cửa hàng; làm đúng thì lần ôn sau giãn ra.',
   'prac.nothingDue': 'Hôm nay không còn bài ôn nào đến hạn. Lịch ôn nằm ở thẻ Ôn tập bên dưới.',
   'prac.stats': 'Đã luyện: {solved} bài đạt, {weak} bài chưa tốt (đúng nhưng có lần nộp sai hoặc từ 2 gợi ý).',
   'prac.noneDue': 'Hôm nay chưa có kỹ năng nào đến hạn ôn. Muốn luyện thêm, chọn một kỹ năng đã học trong Luyện SQL.',

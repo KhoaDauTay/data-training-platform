@@ -91,7 +91,7 @@ export const en: Record<Key, Msg> = {
   'mode.sandboxDesc': 'Write any SQL against the company data, with no grading.',
   'prac.section': 'Review today (no XP)',
   'prac.today': 'Review today ({n})',
-  'prac.dueIntro': (p) => `${p.n} review task${Number(p.n) === 1 ? '' : 's'} today, covering the skills now due. Each one is a task you have done, possibly with different figures; get it right and the next review comes later.`,
+  'prac.dueIntro': (p) => `${p.n} review task${Number(p.n) === 1 ? '' : 's'} today, covering the skills now due. Each one is a short drill on the shop data; get it right and the next review comes later.`,
   'prac.nothingDue': 'Nothing is due for review today. Your review schedule is on the Review card below.',
   'prac.stats': 'Practice so far: {solved} passed, {weak} not yet solid (correct, but after a wrong submit or 2+ hints).',
   'prac.noneDue': 'No skill is due for review today. To practise more, pick a learned skill in Practise SQL.',

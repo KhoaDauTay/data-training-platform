@@ -89,7 +89,17 @@ const loadDrillUi = () => import('./drillBrief').then((m) => {
 });
 /** Opens a General drill: seeds `lab` and loads the drills first (main.ts actions.startDrill). */
 export function startDrill(id: string): Promise<void> {
-  return loadDrillUi().then((m) => m.openDrill(id));
+  // Seeding lab can take a moment on the first drill: the clicked button stays disabled until the drill opens; a failure says so.
+  const btn = document.activeElement instanceof HTMLButtonElement ? document.activeElement : undefined;
+  btn?.setAttribute('aria-busy', 'true');
+  if (btn) btn.disabled = true;
+  return loadDrillUi().then((m) => m.openDrill(id)).catch(() => {
+    app.notice = { key: 'learn.failed' };
+    ctx?.rerender();
+  }).finally(() => {
+    btn?.removeAttribute('aria-busy');
+    if (btn) btn.disabled = false;
+  });
 }
 export const startDrillMode = (ticket: Ticket, drill: Drill): void => enter({ kind: 'drill', ticket, drill, wrong: 0 });
 /** Plan 5: a lane side task in the workspace. It never becomes the next ticket and counts for no chapter (D-B1). */
