@@ -17,24 +17,44 @@
     </script>
   </head>
   <body>
-    <header class="topbar flex flex-wrap items-center gap-x-4 gap-y-2 bg-linear-to-r from-indigo-700 via-blue-700 to-cyan-700 px-4 py-2 text-white dark:from-indigo-950 dark:via-blue-950 dark:to-cyan-950">
-      <h1 class="m-0 flex items-center gap-2 text-lg font-bold"><span class="grid size-8 place-items-center rounded-lg bg-white/15" aria-hidden="true">⚓</span>Cargo Query</h1>
-      <nav id="nav" class="flex flex-wrap gap-1 text-sm" data-i18n-aria="nav.label" aria-label="Điều hướng chính"></nav>
-      <span id="chapter" class="text-sm"></span>
-      <div class="ml-auto flex flex-wrap items-center gap-2 text-sm">
-        <span id="rank" class="rounded-full bg-white px-3 py-1 font-semibold text-slate-900"></span>
-        <span id="xp" class="rounded-full bg-amber-400 px-3 py-1 font-semibold text-amber-950"></span>
-        <button id="inbox-btn" type="button" class="border-0 bg-black/20 text-white ring-1 ring-white/40 hover:bg-black/30" data-i18n="top.inbox">Hộp thư</button>
-        <button id="review-btn" type="button" class="border-0 bg-black/20 text-white ring-1 ring-white/40 hover:bg-black/30" hidden></button>
-        <button id="notebook-btn" type="button" class="border-0 bg-black/20 text-white ring-1 ring-white/40 hover:bg-black/30" data-i18n="nb.open" aria-controls="notebook-dialog" aria-expanded="false">Sổ tay</button>
-        <div class="flex rounded-lg bg-black/20 p-0.5" role="group" data-i18n-aria="top.lang" aria-label="Ngôn ngữ">
-          <button type="button" data-lang="vi" aria-pressed="true" class="border-0 bg-transparent px-2 py-0.5 text-white aria-pressed:bg-white aria-pressed:font-semibold aria-pressed:text-blue-800">VI</button>
-          <button type="button" data-lang="en" aria-pressed="false" class="border-0 bg-transparent px-2 py-0.5 text-white aria-pressed:bg-white aria-pressed:font-semibold aria-pressed:text-blue-800">EN</button>
-        </div>
-        <button id="export-btn" type="button" class="border-0 bg-black/20 text-white ring-1 ring-white/40 hover:bg-black/30" data-i18n="top.export">Xuất tiến độ</button>
-        <label class="cursor-pointer rounded-lg bg-black/20 px-3 py-1.5 ring-1 ring-white/40 focus-within:outline-2 focus-within:outline-white hover:bg-black/30"><span data-i18n="top.import">Nhập tiến độ</span><input id="import-input" type="file" accept="application/json" class="sr-only" /></label>
-        <span id="db-status" role="status"></span>
+    <!--
+      L42 / ui-ux-v3 §a: five groups, each one never split across lines (shrink-0). Order by width:
+      >= 1280: [brand][nav][status] ··· [actions][settings][data]
+      768–1279: [brand][nav] ··· [settings][data] / [status] ··· [actions]
+      < 768: [brand][status] ··· [data] / [nav: 4 columns] / [actions, icons only] ··· [settings]
+    -->
+    <header class="topbar flex flex-wrap items-center gap-x-3 gap-y-2 bg-linear-to-r from-indigo-700 via-blue-700 to-cyan-700 px-4 py-2 text-white dark:from-indigo-950 dark:via-blue-950 dark:to-cyan-950">
+      <h1 class="order-1 m-0 flex shrink-0 items-center gap-2 text-lg font-bold"><span class="grid size-8 place-items-center rounded-lg bg-black/25 ring-1 ring-white/15"><span data-icon="anchor"></span></span><span class="max-lg:sr-only xl:max-2xl:sr-only">Cargo Query</span></h1>
+      <nav id="nav" class="grid shrink-0 grid-cols-4 gap-1 rounded-xl bg-black/25 p-1 text-sm ring-1 ring-white/15 max-md:order-4 max-md:basis-full md:order-2 md:flex" data-i18n-aria="nav.label" aria-label="Điều hướng chính"></nav>
+      <div id="status" class="flex shrink-0 items-center gap-2 rounded-xl bg-black/25 px-3 py-1 text-sm ring-1 ring-white/15 max-md:order-2 md:max-xl:order-6 xl:order-3">
+        <span id="chapter" class="flex min-w-0 items-center gap-1.5 whitespace-nowrap"></span>
+        <span class="h-4 w-px bg-white/30 max-md:hidden" aria-hidden="true"></span>
+        <span class="flex items-center gap-1.5 whitespace-nowrap max-md:hidden"><span data-icon="badge" data-icon-class="size-4"></span><span id="rank" class="font-semibold"></span></span>
+        <span class="h-4 w-px bg-white/30" aria-hidden="true"></span>
+        <span id="xp" class="flex items-center gap-1 whitespace-nowrap rounded-full bg-amber-400 px-2 py-0.5 font-semibold text-amber-950"></span>
       </div>
+      <div class="flex shrink-0 items-center gap-2 max-md:order-5 md:max-xl:order-7 md:max-xl:ml-auto xl:order-4 xl:ml-auto">
+        <button id="inbox-btn" type="button" class="relative flex shrink-0 items-center gap-1.5 rounded-lg border-0 bg-black/25 px-2.5 py-1.5 text-sm text-white ring-1 ring-white/15 hover:bg-black/40"><span data-icon="inbox" data-icon-class="size-4"></span><span data-label class="max-lg:sr-only xl:max-2xl:sr-only" data-i18n="top.inbox">Hộp thư</span><span data-badge class="absolute -top-1.5 -right-1.5 grid h-5 min-w-5 place-items-center rounded-full bg-rose-600 px-1 text-xs font-bold text-white ring-2 ring-white/80" aria-hidden="true" hidden></span></button>
+        <button id="review-btn" type="button" class="relative flex shrink-0 items-center gap-1.5 rounded-lg border-0 bg-black/25 px-2.5 py-1.5 text-sm text-white ring-1 ring-white/15 hover:bg-black/40" hidden><span data-icon="repeat" data-icon-class="size-4"></span><span data-label class="max-lg:sr-only xl:max-2xl:sr-only" data-i18n="top.review">Ôn tập</span><span data-badge class="absolute -top-1.5 -right-1.5 grid h-5 min-w-5 place-items-center rounded-full bg-rose-600 px-1 text-xs font-bold text-white ring-2 ring-white/80" aria-hidden="true" hidden></span></button>
+        <button id="notebook-btn" type="button" class="relative flex shrink-0 items-center gap-1.5 rounded-lg border-0 bg-black/25 px-2.5 py-1.5 text-sm text-white ring-1 ring-white/15 hover:bg-black/40" aria-controls="notebook-dialog" aria-expanded="false"><span data-icon="book" data-icon-class="size-4"></span><span data-label class="max-lg:sr-only xl:max-2xl:sr-only" data-i18n="nb.open">Sổ tay</span></button>
+      </div>
+      <div class="flex shrink-0 items-center gap-1 rounded-xl bg-black/25 p-1 ring-1 ring-white/15 max-md:order-6 max-md:ml-auto md:max-xl:order-3 md:max-xl:ml-auto xl:order-5">
+        <div class="flex gap-0.5" role="group" data-i18n-aria="top.lang" aria-label="Ngôn ngữ">
+          <button type="button" data-lang="vi" aria-pressed="true" class="rounded-lg border-0 bg-transparent px-2 py-0.5 text-sm text-white hover:bg-black/30 aria-pressed:bg-white aria-pressed:font-semibold aria-pressed:text-blue-900 aria-pressed:hover:bg-white">VI</button>
+          <button type="button" data-lang="en" aria-pressed="false" class="rounded-lg border-0 bg-transparent px-2 py-0.5 text-sm text-white hover:bg-black/30 aria-pressed:bg-white aria-pressed:font-semibold aria-pressed:text-blue-900 aria-pressed:hover:bg-white">EN</button>
+        </div>
+        <span class="mx-1 h-5 w-px bg-white/30" aria-hidden="true"></span>
+        <div class="flex gap-0.5" role="group" data-i18n-aria="top.theme" aria-label="Giao diện">
+          <button type="button" data-theme-pref="light" aria-pressed="false" class="grid size-7 place-items-center rounded-lg border-0 bg-transparent p-0 text-white hover:bg-black/30 aria-pressed:bg-white aria-pressed:text-blue-900 aria-pressed:hover:bg-white" data-i18n-aria="theme.light" aria-label="Sáng"><span data-icon="sun" data-icon-class="size-4"></span></button>
+          <button type="button" data-theme-pref="system" aria-pressed="true" class="grid size-7 place-items-center rounded-lg border-0 bg-transparent p-0 text-white hover:bg-black/30 aria-pressed:bg-white aria-pressed:text-blue-900 aria-pressed:hover:bg-white" data-i18n-aria="theme.system" aria-label="Theo hệ thống"><span data-icon="monitor" data-icon-class="size-4"></span></button>
+          <button type="button" data-theme-pref="dark" aria-pressed="false" class="grid size-7 place-items-center rounded-lg border-0 bg-transparent p-0 text-white hover:bg-black/30 aria-pressed:bg-white aria-pressed:text-blue-900 aria-pressed:hover:bg-white" data-i18n-aria="theme.dark" aria-label="Tối"><span data-icon="moon" data-icon-class="size-4"></span></button>
+        </div>
+      </div>
+      <div class="flex shrink-0 items-center gap-2 max-md:order-3 max-md:ml-auto md:max-xl:order-4 xl:order-6">
+        <span id="db-status" role="status" class="flex items-center gap-2 text-sm"></span>
+        <button id="more-btn" type="button" popovertarget="more-menu" class="grid size-8 place-items-center rounded-lg border-0 bg-black/25 p-0 text-white ring-1 ring-white/15 hover:bg-black/40" data-i18n-aria="top.more" aria-label="Thêm"><span data-icon="more"></span></button>
+      </div>
+      <div class="order-5 hidden h-0 basis-full border-t border-white/15 md:max-xl:block" aria-hidden="true"></div>
     </header>
     <div id="map" class="map-strip border-b border-line bg-sea" role="group" data-i18n-aria="map.strip" aria-label="Tiến độ chương" hidden></div>
     <div id="notice" role="status" class="flex items-center gap-2 border-b border-line bg-code px-4 py-2" hidden></div>
@@ -63,6 +83,14 @@
       </div>
     </div>
     <dialog id="notebook-dialog" class="fixed inset-auto top-16 right-4 z-30 m-0 max-h-[calc(100dvh-6rem)] w-[min(380px,calc(100vw-2rem))] overflow-auto max-sm:inset-x-4 max-sm:top-auto max-sm:bottom-4 max-sm:max-h-[60dvh] max-sm:w-auto" aria-labelledby="notebook-title"></dialog>
+    <!-- L42: replaces part of L11; holds only Export / Import progress. Outside <header> so focus uses --accent. -->
+    <div id="more-menu" popover class="m-0 min-w-52 rounded-xl border-0 bg-panel p-1 text-ink shadow-lg ring-1 ring-line [inset:3.5rem_1rem_auto_auto]">
+      <div class="flex flex-col">
+        <button id="export-btn" type="button" popovertarget="more-menu" popovertargetaction="hide" class="flex w-full items-center gap-2 rounded-lg border-0 bg-transparent px-3 py-2 text-left hover:bg-code"><span data-icon="download" data-icon-class="size-4"></span><span data-i18n="top.export">Xuất tiến độ</span></button>
+        <button id="import-btn" type="button" popovertarget="more-menu" popovertargetaction="hide" class="flex w-full items-center gap-2 rounded-lg border-0 bg-transparent px-3 py-2 text-left hover:bg-code"><span data-icon="upload" data-icon-class="size-4"></span><span data-i18n="top.import">Nhập tiến độ</span></button>
+      </div>
+    </div>
+    <input id="import-input" type="file" accept="application/json" hidden />
     <p id="announce" class="sr-only" aria-live="polite"></p>
     <script type="module" src="/src/main.ts"></script>
   </body>

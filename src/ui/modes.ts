@@ -15,7 +15,7 @@ import { goalCard, skillChips, wrapUp } from './chapterView';
 import { byId, h } from './dom';
 import { homeHooks, registerHomeSection, registerMode } from './homeView';
 import { go } from './router';
-import { registerNav } from './topbar';
+import { registerNav, setActionButton } from './topbar';
 import { renderMyData } from './myDataView';
 import type { WorkArea } from './work';
 
@@ -178,7 +178,7 @@ function storyPane(host: HTMLElement): void {
 export function renderReviewButton(btn: HTMLButtonElement): void {
   const n = reviewCount();
   btn.hidden = n === 0;
-  btn.textContent = t('prog.due', { n });
+  setActionButton(btn, t('top.review'), n, t('top.reviewDue', { n }));
   btn.title = t('prog.dueTitle');
   btn.onclick = () => void startToday();
 }
