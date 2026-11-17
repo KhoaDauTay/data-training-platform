@@ -158,6 +158,18 @@ describe('erRowCountsSql', () => {
     for (const [, n] of r.rows) expect(typeof n).toBe('number');
   });
 
+  it('một truy vấn cho mọi bảng của chương 12, đủ nhanh dưới giới hạn 5 s', async () => {
+    const run = await runner();
+    const all = tablesUnlocked(12);
+    const start = performance.now();
+    const r = await run(erRowCountsSql(all));
+    const ms = performance.now() - start;
+    console.log(`erRowCountsSql: ${all.length} tables in ${ms.toFixed(0)} ms`);
+    expect(r.rows.map(([x]) => x)).toEqual(all);
+    for (const [, n] of r.rows) expect(n).toBeGreaterThan(0);
+    expect(ms).toBeLessThan(5000);
+  });
+
   it('từ chối tên bảng không phải định danh', () => {
     expect(() => erRowCountsSql(['ports; DROP TABLE x'])).toThrow();
   });
