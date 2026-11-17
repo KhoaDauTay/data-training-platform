@@ -4,6 +4,7 @@ import { grade } from '../grader';
 import { getLang, t } from '../i18n';
 import { lessonSchema, loadLessonPrefs, markLesson, type Lesson } from '../lessons';
 import { SKILLS } from '../progress';
+import { skillOfDrill } from '../home';
 import { actions as appActions, app } from '../state';
 import { cx } from '../theme';
 import { byId, h, nodes, richText } from './dom';
@@ -129,11 +130,17 @@ export function lessonSlot(grants: string[]): HTMLElement | null {
   const lessons = loadLessons();
   const draw = (focus?: string): void => {
     // v4 §C.6: "I already know SQL" on the welcome screen → every lesson starts as its one-line row (chips still open it).
-    const first = readTour()?.knows ? undefined : ids.find((id) => !isSeen(id));
+    // Plan 8a D8a-11 / v5 §B.8: a skill practised in the General area (≥ 2 drills) starts as its one-line row too.
+    const skillIds = SKILLS.map((s) => s.id);
+    const drilled = (id: string): boolean => app.save.completed.filter((x) => skillOfDrill(x, skillIds) === id).length >= 2;
+    const first = readTour()?.knows ? undefined : ids.find((id) => !isSeen(id) && !drilled(id));
     host.replaceChildren(...ids.map((id) => {
       // Tour step 4 ("Run the example") sits right under that button, on the first lesson only; a closed lesson keeps it on its row.
       const tour = id === ids[0];
-      if (!(expanded.get(id) ?? id === first)) return h('div', {}, collapsed(id, () => { expanded.set(id, true); draw(id); }), tour ? tourSlot('lesson') : null);
+      if (!(expanded.get(id) ?? id === first)) {
+        return h('div', {}, collapsed(id, () => { expanded.set(id, true); draw(id); }),
+          drilled(id) ? h('p', { class: 'mt-1 mb-0 text-sm text-muted' }, t('lesson.drilled')) : null, tour ? tourSlot('lesson') : null);
+      }
       const close = (seen: boolean) => () => {
         if (seen) markSeen(id, false);
         expanded.set(id, false);

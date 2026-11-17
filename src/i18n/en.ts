@@ -566,6 +566,7 @@ export const en: Record<Key, Msg> = {
   'home.peek': 'Take a look',
   'home.skillsTeaser': 'Skills: {n}/{total} learned. See the learning path',
   'learn.module': 'Module {n} · {title}',
+  'lesson.drilled': 'You already practised this skill in Practise SQL.',
   'learn.loading': 'Preparing the learning path and the practice data…',
   'learn.failed': 'Could not load the learning path. Check your connection, then try again.',
   'soon.title': '{name}: coming soon',

@@ -1,7 +1,7 @@
 import { generalNow, loadGeneral, loadLessons, loadTicketTemplates } from '../content';
 import type { DbClient } from '../db/client';
 import type { Drill } from '../general';
-import type { HomeModel } from '../home';
+import { knownSkills, type HomeModel } from '../home';
 import { getLang, locale, t } from '../i18n';
 import { LANE_XP } from '../lanes';
 import { applyResult, isSuccess, movedToday, nextCard, pickForSkill, retryItem, type PracticeItem } from '../practice';
@@ -83,7 +83,7 @@ const loadDrillUi = () => import('./drillBrief').then((m) => {
   if (!drillUi) m.initDrill({
     db: ctx!.db, activeSchema, h, nodes, richText, byId, getLang, locale, app, actions, persist, schemaHooks, erMeta, stepKey, session, hintsShown, today,
     isSuccess, movedToday, nextCard, SKILLS, hashOf, textOf, hints, shapeCard, openLesson, backToStory, startDrillMode, loadGeneral, generalNow, loadLessons,
-    lessonSeen: isSeen, learnSkillOf, learnAdvOf, learnModuleOf, chapterTitle, visibleTickets,
+    lessonSeen: isSeen, knownSkills, learnSkillOf, learnAdvOf, learnModuleOf, chapterTitle, visibleTickets,
   });
   return (drillUi = m);
 });
@@ -322,7 +322,7 @@ function learnSection(): HTMLElement {
     : h('p', { class: 'm-0 min-h-40 text-muted', 'aria-live': 'polite' }, t('learn.loading'));
 }
 registerHomeSection({ id: 'module', order: 10, span: 'full', pages: ['learn'], render: learnSection });
-registerHomeSection({ id: 'drills', order: 23, span: 'full', pages: ['practice'], render: drillHub });
+registerHomeSection({ id: 'drills', order: 23, span: 'full', pages: ['home', 'practice'], render: drillHub }); // Task 11: Home's "today" also suggests one drill
 registerHomeSection({ id: 'warmup', order: 21, span: 'full', pages: ['home', 'practice'], render: warmupCard });
 registerMode({
   id: 'sandbox', order: 10, icon: 'flask', tint: 'bg-accent-soft text-ink',

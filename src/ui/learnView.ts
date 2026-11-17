@@ -1,7 +1,7 @@
 import type { AdvNode, Drill, General } from '../general';
 import type { Params } from '../i18n';
 import { learnText, type LearnKey } from '../i18n/learn';
-import { appliesIn, CHALLENGE_XP, knownSkills, moduleState, nodeState, skillState, type LearnCtx } from '../learn';
+import { appliesIn, CHALLENGE_XP, moduleState, nodeState, skillState, type LearnCtx } from '../learn';
 import type { Skill } from '../progress';
 import type { DrillDeps } from './drillBrief';
 
@@ -19,7 +19,8 @@ const H2 = 'm-0 text-lg font-bold';
 
 function ctx(g: General): LearnCtx {
   const { app } = d$;
-  return { save: app.save, tickets: app.tickets, skills: d$.SKILLS, general: g, seen: d$.SKILLS.map((s) => s.id).filter((id) => d$.lessonSeen(id)) };
+  return { save: app.save, tickets: app.tickets, skills: d$.SKILLS, general: g, seen: d$.SKILLS.map((s) => s.id).filter((id) => d$.lessonSeen(id)),
+    known: d$.knownSkills(app.save, app.tickets, d$.SKILLS.map((s) => s.id)) };
 }
 
 /** Draws the learning page for the current hash into a fresh element. */
@@ -121,7 +122,7 @@ const STATUS_ICON = { in: '▣', partial: '◐', external: '↗' } as const;
 function overview(c: LearnCtx): HTMLElement {
   const { h } = d$;
   const lang = d$.getLang();
-  const known = knownSkills(c.save, c.tickets, c.skills.map((s) => s.id));
+  const known = c.known;
   const mastered = c.skills.filter((s) => skillState(c, s.id).mastered).length;
   const graded = c.general.nodes.filter((n) => n.status !== 'external');
   const nodesDone = graded.filter((n) => nodeState(c, n).done).length;
@@ -166,7 +167,7 @@ function advPage(c: LearnCtx, x: AdvNode): HTMLElement {
   const { h } = d$;
   const lang = d$.getLang();
   const st = nodeState(c, x);
-  const known = knownSkills(c.save, c.tickets, c.skills.map((s) => s.id));
+  const known = c.known;
   const need = (id: string): HTMLElement => {
     const other = c.general.nodes.find((y) => y.id === id);
     const ok = other ? nodeState(c, other).done : known.has(id);

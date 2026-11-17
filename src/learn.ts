@@ -5,7 +5,6 @@ import type { Ticket } from './tickets';
 
 /**
  * Progress of the General area (Plan 8a Task 6): pure, no DOM. Drill ids live in save.completed (D8a-9); nothing new is saved.
- * Named knownSkills (not learnedSkills): src/home.ts learnedSkills (tickets only) feeds the review queue and stays as it is.
  * Imports no value from a main-bundle module (the lazy General UI uses it, Plan 6 U3): skills come in as arguments.
  */
 
@@ -14,36 +13,9 @@ export const MASTERED_BOX = 4;
 export const DRILL_XP = 10;
 export const CHALLENGE_XP = 20;
 
-/**
- * The skill of a skill drill, read from its id alone (no General chunk needed): `g-conditional-agg-3` → `conditional_agg`.
- * Undefined for a node drill (`g-a1-2`) or anything that is not a known skill.
- */
-export function skillOfDrill(id: string, skillIds: readonly string[]): string | undefined {
-  const m = /^g-([a-z0-9-]+)-\d+$/.exec(id);
-  const skill = m?.[1].replace(/-/g, '_');
-  return skill && skillIds.includes(skill) ? skill : undefined;
-}
-
-/**
- * "Learned" (D8a-11): a completed ticket grants it, or ≥ 2 of its drills passed, or it has a review card.
- * One definition for the learning path, the "Relies on" line and Home.
- */
-export function knownSkills(save: Save, tickets: Ticket[], skillIds: readonly string[]): Set<string> {
-  const done = new Set(save.completed);
-  const out = new Set<string>();
-  for (const t of tickets) if (done.has(t.id)) for (const s of t.grants) out.add(s);
-  const drills = new Map<string, number>();
-  for (const id of save.completed) {
-    const s = skillOfDrill(id, skillIds);
-    if (s) drills.set(s, (drills.get(s) ?? 0) + 1);
-  }
-  for (const [s, n] of drills) if (n >= 2) out.add(s);
-  for (const s of Object.keys(save.review)) if (skillIds.includes(s)) out.add(s);
-  return out;
-}
-
-export interface LearnCtx { save: Save; tickets: Ticket[]; skills: readonly Skill[]; general: General; /** Lessons seen (cargo-query/lessons pref). */ seen: readonly string[] }
-const known = (c: LearnCtx): Set<string> => knownSkills(c.save, c.tickets, c.skills.map((s) => s.id));
+/** `known` = knownSkills() of src/home.ts (main bundle; this module stays lazy-only, so the caller computes it). */
+export interface LearnCtx { save: Save; tickets: Ticket[]; skills: readonly Skill[]; general: General; /** Lessons seen (cargo-query/lessons pref). */ seen: readonly string[]; known: ReadonlySet<string> }
+const known = (c: LearnCtx): ReadonlySet<string> => c.known;
 
 export const drillState = (save: Save, id: string): 'todo' | 'done' => (save.completed.includes(id) ? 'done' : 'todo');
 

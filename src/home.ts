@@ -2,6 +2,7 @@ import { parse as parseYaml } from 'yaml';
 import kpiSource from '../content/kpis.yml?raw';
 import type { QueryResult } from './db/run';
 import { currentChapter, nextTicket, type Bilingual, type Chapter, type Skill } from './progress';
+import type { Save } from './save';
 import type { Lang, Ticket } from './tickets';
 
 /** soon = the chapter has no tickets yet ("Sắp có"); locked = it has tickets the player has not reached (🔒). */
@@ -26,6 +27,35 @@ export const LEVELS = 5;
 /** Skills taught by the completed tickets. Shared by Home, Practice and the chapter goals (Plan 1c). */
 export const learnedSkills = (tickets: Ticket[], completed: Set<string>): Set<string> =>
   new Set(tickets.filter((t) => completed.has(t.id)).flatMap((t) => t.grants));
+
+// Plan 8a (moved from src/learn.ts in Task 11 so the Logistics chapter rows can tick learned skills without the General chunk).
+/**
+ * The skill of a skill drill, read from its id alone (no General chunk needed): `g-conditional-agg-3` → `conditional_agg`.
+ * Undefined for a node drill (`g-a1-2`) or anything that is not a known skill.
+ */
+export function skillOfDrill(id: string, skillIds: readonly string[]): string | undefined {
+  const m = /^g-([a-z0-9-]+)-\d+$/.exec(id);
+  const skill = m?.[1].replace(/-/g, '_');
+  return skill && skillIds.includes(skill) ? skill : undefined;
+}
+
+/**
+ * "Learned" (D8a-11): a completed ticket grants it, or ≥ 2 of its drills passed, or it has a review card.
+ * One definition for the learning path, the "Relies on" line and Home.
+ */
+export function knownSkills(save: Save, tickets: Ticket[], skillIds: readonly string[]): Set<string> {
+  const done = new Set(save.completed);
+  const out = new Set<string>();
+  for (const t of tickets) if (done.has(t.id)) for (const s of t.grants) out.add(s);
+  const drills = new Map<string, number>();
+  for (const id of save.completed) {
+    const s = skillOfDrill(id, skillIds);
+    if (s) drills.set(s, (drills.get(s) ?? 0) + 1);
+  }
+  for (const [s, n] of drills) if (n >= 2) out.add(s);
+  for (const s of Object.keys(save.review)) if (skillIds.includes(s)) out.add(s);
+  return out;
+}
 
 /** v5 §B.9: a chapter relies on what its tickets require or teach (requires ∪ grants), in first-seen order. */
 export const reliesOn = (tickets: Ticket[], chapter: number): string[] =>

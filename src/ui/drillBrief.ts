@@ -1,10 +1,11 @@
 import type * as Content from '../content';
 import type { DbClient } from '../db/client';
 import { drillTicket, type Drill, type General } from '../general';
+import type * as Home from '../home';
 import type * as I18n from '../i18n';
 import { learnText, type LearnKey } from '../i18n/learn';
 import { learnPage as drawLearn } from './learnView';
-import { appliesIn, drillXp, knownSkills } from '../learn';
+import { appliesIn, drillXp } from '../learn';
 import type * as Practice from '../practice';
 import type * as Progress from '../progress';
 import type * as Route from '../route';
@@ -38,7 +39,7 @@ export interface DrillDeps {
   loadGeneral: typeof Content.loadGeneral; generalNow: typeof Content.generalNow; loadLessons: typeof Content.loadLessons;
   // Learning path (Task 9-10)
   lessonSeen: typeof LessonCard.isSeen; learnSkillOf: typeof Route.learnSkillOf; learnAdvOf: typeof Route.learnAdvOf;
-  learnModuleOf: typeof Route.learnModuleOf; chapterTitle: typeof Progress.chapterTitle; visibleTickets: typeof Progress.visibleTickets;
+  learnModuleOf: typeof Route.learnModuleOf; knownSkills: typeof Home.knownSkills; chapterTitle: typeof Progress.chapterTitle; visibleTickets: typeof Progress.visibleTickets;
 }
 
 let d$: DrillDeps;
@@ -197,7 +198,7 @@ export function practiceHub(): HTMLElement | null {
   if (!g) return null;
   const { h, app } = d$;
   const ids = d$.SKILLS.map((s) => s.id);
-  const known = knownSkills(app.save, app.tickets, ids);
+  const known = d$.knownSkills(app.save, app.tickets, ids);
   const done = (d: Drill): boolean => app.save.completed.includes(d.id);
   const go = (d: Drill, label: string): HTMLElement =>
     h('button', { type: 'button', class: BTN, onclick: () => d$.actions.startDrill(d.id) }, label);

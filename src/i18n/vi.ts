@@ -563,6 +563,7 @@ export const vi = {
   'home.peek': 'Xem',
   'home.skillsTeaser': 'Kỹ năng: đã học {n}/{total}. Xem lộ trình',
   'learn.module': 'Module {n} · {title}',
+  'lesson.drilled': 'Bạn đã luyện kỹ năng này ở Luyện SQL.',
   'learn.loading': 'Đang chuẩn bị lộ trình và dữ liệu luyện tập…',
   'learn.failed': 'Không tải được lộ trình. Kiểm tra kết nối mạng rồi thử lại.',
   'soon.title': '{name}: sắp có',

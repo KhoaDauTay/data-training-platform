@@ -1,5 +1,5 @@
 import { DOMAINS, type Domain } from '../domains';
-import { homeModel, KPIS, kpiTiles, learnedSkills, LEVELS, reliesOn, type ChapterCard, type HomeModel } from '../home';
+import { homeModel, knownSkills, KPIS, kpiTiles, learnedSkills, LEVELS, reliesOn, type ChapterCard, type HomeModel } from '../home';
 import { getLang, t, type Key } from '../i18n';
 import { CHAPTERS, chapterTitle, rankOf, SKILLS } from '../progress';
 import { derive, ROUTES as LANES } from '../scene';
@@ -65,7 +65,7 @@ export const LIST = cx(CARD, 'm-0 list-none divide-y divide-line overflow-hidden
 export const GROUP_TITLE = 'mt-0 mb-3 text-xs font-bold tracking-wider text-muted uppercase';
 
 /** One row = one thing (v6 §3.4): 40 px lead · bold title · at most one muted line · at most one action. */
-export function listRow(r: { lead: Node; title: string; sub?: string; action?: Node | null; current?: boolean; id?: string }): HTMLLIElement {
+export function listRow(r: { lead: Node; title: string; sub?: string | Node; action?: Node | null; current?: boolean; id?: string }): HTMLLIElement {
   return h('li', {
     id: r.id ?? false,
     class: cx('flex items-center gap-4 border-l-4 px-5 py-4', r.current ? 'border-l-accent bg-accent-soft' : 'border-l-transparent'),
@@ -164,8 +164,13 @@ function statusPill(c: ChapterCard): HTMLElement | null {
 function chapterRow(c: ChapterCard): HTMLLIElement {
   const lang = getLang();
   const closed = c.status === 'locked' || c.status === 'soon';
-  const uses = reliesOn(app.tickets, c.chapter).map((id) => SKILLS.find((s) => s.id === id)?.label[lang] ?? id);
-  const short = uses.length > 2 ? `${uses.slice(0, 2).join(', ')} +${uses.length - 2}` : uses.join(', ');
+  // Plan 8a Task 11: each skill links to its page, ✓ once learned anywhere (no General chunk needed); "+k" opens the module.
+  const ids = reliesOn(app.tickets, c.chapter);
+  const known = knownSkills(app.save, app.tickets, SKILLS.map((s) => s.id));
+  const skillLink = (id: string, i: number): (Node | string)[] => [i ? ', ' : '',
+    h('a', { href: `${hashOf('learn')}/skill/${id}`, class: known.has(id) ? 'text-good' : 'text-muted' }, SKILLS.find((s) => s.id === id)?.label[lang] ?? id, known.has(id) ? ' ✓' : '')];
+  const short = h('span', {}, t('home.reliesOn', { skills: '' }), ...ids.slice(0, 2).flatMap(skillLink),
+    ids.length > 2 ? h('a', { href: `${hashOf('learn')}/sql/${c.chapter}`, class: 'text-muted' }, ` +${ids.length - 2}`) : null);
   return listRow({
     lead: closed
       ? icon('lock', 'size-5 text-muted')
@@ -173,7 +178,7 @@ function chapterRow(c: ChapterCard): HTMLLIElement {
         ? h('span', { class: 'grid size-10 place-items-center rounded-full bg-emerald-700 text-white' }, icon('check', 'size-5'))
         : h('span', { class: cx('grid size-10 place-items-center rounded-full text-lg font-bold', chapterColor(c.chapter).chip) }, String(c.chapter)),
     title: `${c.chapter} · ${chapterTitle(c.chapter, lang)}`,
-    sub: closed ? (c.status === 'soon' ? t('home.soonHint') : t('home.lockedAfter', { n: c.chapter - 1 })) : t('home.reliesOn', { skills: short }),
+    sub: closed ? (c.status === 'soon' ? t('home.soonHint') : t('home.lockedAfter', { n: c.chapter - 1 })) : short,
     action: closed ? null : h('a', { href: `${hashOf('learn')}/sql/${c.chapter}`, class: 'no-underline', title: t('learn.module', { n: c.chapter, title: chapterTitle(c.chapter, lang) }) }, statusPill(c)),
     current: c.status === 'current',
   });

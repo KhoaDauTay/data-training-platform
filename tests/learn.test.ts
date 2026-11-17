@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { generalNow, loadTickets } from '../src/content';
-import { kpiTiles, KPIS } from '../src/home';
+import { knownSkills, kpiTiles, KPIS, skillOfDrill } from '../src/home';
 import {
-  appliesIn, dependsOn, drillState, drillXp, knownSkills, moduleState, nodeState, skillOfDrill, skillState, type LearnCtx,
+  appliesIn, dependsOn, drillState, drillXp, moduleState, nodeState, skillState, type LearnCtx,
 } from '../src/learn';
 import { chapterSummary } from '../src/overview';
 import { nextTicket, rankOf, SKILLS } from '../src/progress';
@@ -14,7 +14,7 @@ const g = generalNow()!;
 const SKILL_IDS = SKILLS.map((s) => s.id);
 const known: Known = { ticketIds: new Set(tickets.map((t) => t.id)), laneIds: new Set(), skills: new Set(SKILL_IDS) };
 const save = (over: Partial<Save> = {}): Save => ({ ...emptySave(), ...over });
-const ctx = (s: Save, seen: string[] = []): LearnCtx => ({ save: s, tickets, skills: SKILLS, general: g, seen });
+const ctx = (s: Save, seen: string[] = []): LearnCtx => ({ save: s, tickets, skills: SKILLS, general: g, seen, known: knownSkills(s, tickets, SKILLS.map((k) => k.id)) });
 
 describe('save giữ id drill g-… (không cần tải nội dung Chung)', () => {
   it('completed, nháp, graded, hintsUsed của g-… được giữ; id lạ không tiền tố vẫn bị bỏ', () => {
@@ -111,5 +111,15 @@ describe('session: mode drill (Plan 8a Task 7)', () => {
     expect(activeSchema()).toBe('game');
     expect(schemaOf(tickets[0])).toBe('game');
     session.mode = { kind: 'story' };
+  });
+});
+
+describe('Domain ↔ Chung (Plan 8a Task 11)', () => {
+  it('dependsOn: mọi chương 1–12 dựa vào ít nhất một kỹ năng có thật', () => {
+    for (let n = 1; n <= 12; n++) {
+      const deps = dependsOn(tickets, n);
+      expect([n, deps.length > 0]).toEqual([n, true]);
+      for (const id of deps) expect(SKILLS.some((s) => s.id === id)).toBe(true);
+    }
   });
 });

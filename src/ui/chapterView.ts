@@ -1,4 +1,4 @@
-import { learnedSkills } from '../home';
+import { knownSkills } from '../home';
 import { getLang, t } from '../i18n';
 import { chapterSummary, outcomeDone } from '../overview';
 import { CHAPTERS, chapterTitle, nextTicket, SKILLS } from '../progress';
@@ -17,7 +17,7 @@ function outcomeList(chapter: number): HTMLElement | null {
   const c = CHAPTERS.find((x) => x.chapter === chapter);
   if (!c?.outcomes.length) return null;
   const d = done();
-  const learned = learnedSkills(app.tickets, d);
+  const learned = knownSkills(app.save, app.tickets, SKILLS.map((s) => s.id)); // learned anywhere counts (Plan 8a D8a-11)
   const lang = getLang();
   return h('ul', { class: 'my-1 list-none space-y-1 p-0' }, ...c.outcomes.map((o) => {
     const ok = outcomeDone(o.skills, chapter, app.tickets, d, learned);
