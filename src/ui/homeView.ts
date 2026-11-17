@@ -1,7 +1,13 @@
-import { homeModel, KPIS, kpiTiles, LEVELS, type ChapterCard, type HomeModel, type SkillCard } from '../home';
+import { DOMAINS, type Domain } from '../domains';
+import { homeModel, KPIS, kpiTiles, learnedSkills, LEVELS, type ChapterCard, type HomeModel, type SkillCard } from '../home';
 import { getLang, t, type Key } from '../i18n';
-import { CHAPTERS, chapterTitle, rankOf, SKILLS } from '../progress';
-import { derive } from '../scene';
+import { CHAPTERS, chapterTitle, rankOf, SKILLS, visibleTickets } from '../progress';
+import { derive, ROUTES as LANES } from '../scene';
+import { domainHash, learnModuleOf, soonDomainOf } from '../route';
+import { hasLesson, openLesson } from './lessonCard';
+import { laneInfo } from './lanePanel';
+import { mascot } from './mascots';
+import { currentRoute } from './router';
 import { actions, app, done } from '../state';
 import { BTN_GO, CARD, CARD_ACTION, chapterColor, cx, DONE_PILL, PILL } from '../theme';
 import { roleLine } from '../people';
@@ -16,12 +22,16 @@ import { routeItems, routeMap } from './routeMap';
 import { isStory } from '../session';
 import { go } from './router';
 
-/** Width on >= lg screens (3-column grid); every section is full width below lg. */
+/** Width on >= lg screens (3-column grid, Overview only); every section is full width below lg and on the other pages. */
 export type Span = 'full' | 'wide' | 'narrow';
+/** Reading pages drawn in <main id="home"> (v5 §B.4–B.6, v6 §3.3): one per route except play, data and dashboard. */
+export type Page = 'home' | 'learn' | 'practice' | 'overview' | 'map' | 'soon';
 export interface HomeSection {
   id: string;
   order: number;
   span: Span;
+  /** Pages this section appears on. */
+  pages: readonly Page[];
   /** null = nothing to show; the section is skipped. */
   render(m: HomeModel): HTMLElement | null;
 }
@@ -49,6 +59,32 @@ export const registerMode = (m: ModeCard): void => upsert(modes, m);
 export const homeHooks: { levelOf?: (skill: string) => number; onSkill?: (skill: string) => void } = {};
 
 const openInbox = (): void => (byId('inbox-dialog') as HTMLDialogElement).showModal();
+
+/** v6 §3.4 airy list: one bordered card, thin lines between rows. */
+export const LIST = cx(CARD, 'm-0 list-none divide-y divide-line overflow-hidden p-0');
+/** Small-caps group title in --muted (v6 §3.4). */
+export const GROUP_TITLE = 'mt-0 mb-3 text-xs font-bold tracking-wider text-muted uppercase';
+
+/** One row = one thing (v6 §3.4): 40 px lead · bold title · at most one muted line · at most one action. */
+export function listRow(r: { lead: Node; title: string; sub?: string; action?: Node | null; current?: boolean; id?: string }): HTMLLIElement {
+  return h('li', {
+    id: r.id ?? false,
+    class: cx('flex items-center gap-4 border-l-4 px-5 py-4', r.current ? 'border-l-accent bg-accent-soft' : 'border-l-transparent'),
+    'aria-current': r.current ? 'step' : false,
+  },
+    h('span', { class: 'grid size-10 shrink-0 place-items-center', 'aria-hidden': 'true' }, r.lead),
+    h('span', { class: 'min-w-0 flex-1' }, h('b', { class: 'block' }, r.title), r.sub ? h('span', { class: 'block text-sm text-muted' }, r.sub) : null),
+    r.action ?? null);
+}
+
+/** A mascot and its words (v6 §2.1): --sun-ink on --sun ≥ 8:1; the picture is decorative, the words carry the meaning. */
+export function bubble(who: Node, text: string): HTMLElement {
+  return h('div', { class: 'flex items-end gap-3' }, who,
+    h('p', { class: 'm-0 rounded-(--r-card) rounded-bl-sm bg-sun px-4 py-3 font-semibold text-sun-ink' }, text));
+}
+
+const soonDomain = (): Domain => DOMAINS.find((d) => d.id === (soonDomainOf(location.hash) ?? 'finance'))!;
+const OUTLINE_LINK = 'rounded-full px-4 py-2 font-bold whitespace-nowrap text-ink no-underline ring-1 ring-line hover:bg-code';
 const percent = (n: number, of: number): number => (of ? Math.round((n / of) * 100) : 0);
 
 /** The ticket is already selected: only switch view (selectTicket would restart a boss at step 1). */
@@ -268,23 +304,124 @@ function kpiSection(): HTMLElement {
     icon('arrowRight', 'size-4 text-muted transition group-hover:translate-x-0.5 group-hover:text-accent'));
 }
 
-registerHomeSection({ id: 'continue', order: 10, span: 'wide', render: continueCard });
-registerHomeSection({ id: 'career', order: 20, span: 'narrow', render: careerCard });
-registerHomeSection({ id: 'chapters', order: 30, span: 'full', render: chaptersSection });
-registerHomeSection({ id: 'skills', order: 40, span: 'full', render: skillsSection });
-registerHomeSection({ id: 'modes', order: 50, span: 'full', render: modesSection });
-registerHomeSection({ id: 'harbor', order: 5, span: 'full', render: harborSection });
-registerHomeSection({ id: 'routes', order: 25, span: 'full', render: routesSection });
-registerHomeSection({ id: 'kpi', order: 35, span: 'full', render: kpiSection });
+/** Platform Home (v5 §B.5): Lily and the tagline (v5 §A.3). */
+function helloSection(): HTMLElement {
+  return h('section', { class: 'flex items-center gap-4' }, mascot('lily', 'idle', 'size-16'),
+    h('div', {}, h('p', { class: 'm-0 text-2xl font-extrabold' }, t('app.name')), h('p', { class: 'm-0 text-muted' }, t('home.tagline'))));
+}
+
+/** Platform Home (v5 §B.5 #3): Logistics with its chapter and rank, then the domains that are coming (D-N3). */
+function domainsSection(m: HomeModel): HTMLElement {
+  const lang = getLang();
+  const rank = rankOf(app.tickets, done());
+  return h('section', { 'aria-labelledby': 'domains-title' },
+    h('h2', { id: 'domains-title', class: GROUP_TITLE }, t('home.domains')),
+    h('ul', { class: LIST }, ...DOMAINS.map((d) => listRow({
+      lead: icon(d.icon, 'size-6'),
+      title: t(d.name),
+      sub: d.live ? `${t('top.chapterShort', { n: m.chapter, total: CHAPTERS.length })} · ${rank.tier?.[lang] ?? t('career.intern')}` : t('home.status.soon'),
+      action: h('a', { href: d.live ? hashOf('overview') : domainHash(d.id), class: d.live ? cx(BTN_GO, 'px-4 py-2 whitespace-nowrap no-underline') : OUTLINE_LINK },
+        t(d.live ? 'home.enter' : 'home.peek')),
+    }))));
+}
+
+/** Platform Home (v5 §B.5 #4): one line, the full list is on the learning path. */
+function skillsTeaser(m: HomeModel): HTMLElement {
+  return h('a', { href: hashOf('learn'), class: cx(CARD_ACTION, 'group flex items-center gap-3 p-4 text-ink no-underline') },
+    h('span', { class: 'grid size-9 shrink-0 place-items-center rounded-full bg-code', 'aria-hidden': 'true' }, icon('route')),
+    h('span', { class: 'min-w-0 flex-1 font-semibold' }, t('home.skillsTeaser', { n: m.learned, total: m.skills.length })),
+    icon('arrowRight', 'size-4 text-muted transition group-hover:translate-x-0.5 group-hover:text-accent'));
+}
+
+/**
+ * Learning path (Plan 7 V6): module n = the skills of chapter n, each with its quick lesson when there is one, then the way into
+ * Logistics. Boon names the next skill to learn (v6 §3.3).
+ */
+function moduleSection(m: HomeModel): HTMLElement {
+  const lang = getLang();
+  const d = done();
+  const n = learnModuleOf(location.hash) ?? m.chapter;
+  const card = m.chapters.find((c) => c.chapter === n) ?? m.chapters[0];
+  const learned = learnedSkills(app.tickets, d);
+  const own = app.tickets.filter((x) => x.chapter === card.chapter);
+  const first = own.find((x) => !d.has(x.id)) ?? own[0];
+  const reachable = !!first && visibleTickets(app.tickets, d).includes(first);
+  const next = card.skills.find((s) => !learned.has(s.id));
+  return h('section', { class: 'space-y-6', 'aria-labelledby': 'module-title' },
+    h('h2', { id: 'module-title', class: 'm-0 text-xl font-bold' }, t('learn.module', { n: card.chapter, title: chapterTitle(card.chapter, lang) })),
+    bubble(mascot('boon', 'point', 'size-20'), next ? t('learn.next', { skill: next.label[lang] }) : t('learn.allDone')),
+    h('ul', { class: LIST }, ...card.skills.map((s, i) => listRow({
+      lead: learned.has(s.id) ? icon('check', 'size-6 text-good') : h('b', { class: 'text-lg' }, String(i + 1)),
+      title: s.label[lang],
+      sub: s.when[lang],
+      action: hasLesson(s.id) ? h('button', { type: 'button', class: 'rounded-full px-4 whitespace-nowrap', 'aria-haspopup': 'dialog', onclick: () => openLesson(s.id) }, t('nb.lesson')) : null,
+    }))),
+    reachable
+      ? h('button', { type: 'button', class: cx(BTN_GO, 'px-4 py-2'), onclick: () => actions.selectTicket(first.id) }, t('learn.apply', { n: card.chapter }))
+      : h('p', { class: 'm-0 text-muted' }, card.status === 'soon' ? t('home.soonHint') : t('home.lockedAfter', { n: card.chapter - 1 })),
+    h('p', { class: 'm-0 text-sm text-muted' }, t('learn.advSoon')));
+}
+
+/** "Coming soon" page of a domain (v5 §B.6): what it is, which skills carry over, two ways out. No form, no date. */
+function soonSection(): HTMLElement {
+  const lang = getLang();
+  const learned = learnedSkills(app.tickets, done());
+  const have = SKILLS.filter((s) => learned.has(s.id));
+  return h('section', { class: 'space-y-5' },
+    bubble(mascot('boon', 'idle', 'size-20'), t(soonDomain().desc)),
+    h('h2', { class: GROUP_TITLE }, t('soon.skills')),
+    have.length ? h('p', { class: 'm-0' }, have.map((s) => s.label[lang]).join(' · ')) : h('p', { class: 'm-0 text-muted' }, t('soon.none')),
+    h('div', { class: 'flex flex-wrap gap-3' },
+      h('a', { href: hashOf('practice'), class: cx(BTN_GO, 'px-4 py-2 no-underline') }, t('soon.practice')),
+      h('a', { href: hashOf('overview'), class: OUTLINE_LINK }, t('soon.back'))));
+}
+
+/** Map page (v6 D-L3): the lanes as a list beside the route map; each opens its brief in the map dialog. */
+function lanesSection(): HTMLElement {
+  const harbor = derive(app.tickets, done());
+  return h('section', { 'aria-labelledby': 'lanes-title' },
+    h('h2', { id: 'lanes-title', class: GROUP_TITLE }, t('map.lanesTitle')),
+    h('ul', { class: LIST }, ...LANES.map((r) => listRow({
+      lead: icon(harbor.open.has(r.port) ? 'route' : 'lock', 'size-6 text-muted'),
+      title: r.name,
+      sub: laneInfo(r, harbor),
+      action: h('button', { type: 'button', class: 'rounded-full px-4 whitespace-nowrap', onclick: () => actions.openLane(r.port) }, t('map.openLane')),
+    }))));
+}
+
+registerHomeSection({ id: 'hello', order: 1, span: 'full', pages: ['home'], render: helloSection });
+registerHomeSection({ id: 'harbor', order: 5, span: 'full', pages: ['overview'], render: harborSection });
+registerHomeSection({ id: 'continue', order: 10, span: 'wide', pages: ['home', 'overview'], render: continueCard });
+registerHomeSection({ id: 'module', order: 10, span: 'full', pages: ['learn'], render: moduleSection });
+registerHomeSection({ id: 'soon', order: 10, span: 'full', pages: ['soon'], render: soonSection });
+registerHomeSection({ id: 'career', order: 20, span: 'narrow', pages: ['overview'], render: careerCard });
+registerHomeSection({ id: 'routes', order: 25, span: 'full', pages: ['map'], render: routesSection });
+registerHomeSection({ id: 'domains', order: 28, span: 'full', pages: ['home'], render: domainsSection });
+registerHomeSection({ id: 'chapters', order: 30, span: 'full', pages: ['overview'], render: chaptersSection });
+registerHomeSection({ id: 'lanes', order: 30, span: 'full', pages: ['map'], render: lanesSection });
+registerHomeSection({ id: 'kpi', order: 35, span: 'full', pages: ['overview'], render: kpiSection });
+registerHomeSection({ id: 'skills', order: 40, span: 'full', pages: ['practice'], render: skillsSection });
+registerHomeSection({ id: 'skillsTeaser', order: 45, span: 'full', pages: ['home'], render: skillsTeaser });
+registerHomeSection({ id: 'modes', order: 50, span: 'full', pages: ['overview'], render: modesSection });
+
+const PAGE_TITLE: Record<Exclude<Page, 'soon'>, Key> = {
+  home: 'nav.home', learn: 'nav.learn', practice: 'nav.practice', overview: 'nav.overview', map: 'nav.map',
+};
+const pageOf = (r: string): Page => (r === 'learn' || r === 'practice' || r === 'overview' || r === 'map' || r === 'soon' ? r : 'home');
 
 /** Redrawn by rerender() (language switch, progress). Pure DOM from homeModel(); keeps no state of its own. */
 export function renderHome(host: HTMLElement): void {
+  const page = pageOf(currentRoute());
   const m = homeModel(app.tickets, done(), CHAPTERS, SKILLS, homeHooks.levelOf);
+  const grid = page === 'overview'; // the harbour page keeps its 3-column grid; the others are one 880 px column (v6 §3.3)
   host.replaceChildren(
-    h('h1', { id: 'home-title', tabindex: '-1', class: 'sr-only' }, t('nav.home')),
-    h('div', { class: 'mx-auto grid max-w-6xl gap-5 px-4 py-6 lg:grid-cols-3' },
-      ...nodes(...sections.map((s) => {
+    h('h1', {
+      id: 'home-title', tabindex: '-1',
+      class: page === 'home' || page === 'overview' ? 'sr-only' : 'mx-auto mt-6 mb-0 max-w-[880px] px-4 text-2xl font-extrabold',
+    }, page === 'soon' ? t('soon.title', { name: t(soonDomain().name) }) : t(PAGE_TITLE[page])),
+    h('div', { class: grid ? 'mx-auto grid max-w-[1120px] gap-5 px-4 py-6 lg:grid-cols-3' : 'mx-auto grid max-w-[880px] gap-8 px-4 py-6' },
+      ...nodes(...sections.filter((s) => s.pages.includes(page)).map((s) => {
         const el = s.render(m);
-        return el && h('div', { class: cx('min-w-0', SPAN[s.span]) }, el);
+        return el && h('div', { class: cx('min-w-0', grid && SPAN[s.span]) }, el);
       }))));
 }

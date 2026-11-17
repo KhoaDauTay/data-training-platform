@@ -1,27 +1,64 @@
-/** Hash routes without a framework. Practice and Sandbox (Plan 1c) are modes inside 'play', not routes. */
-export const ROUTES = ['home', 'play', 'data', 'dashboard'] as const;
+import { DOMAINS, type DomainId } from './domains';
+
+/**
+ * Hash routes without a framework (product-design-v5 §B.3, v6 §3.3). Practice runs and the Sandbox stay session modes
+ * inside 'play' (Plan 7 V5); every reading page (home, learn, practice, overview, map, soon) is drawn in <main id="home">.
+ */
+export const ROUTES = ['home', 'learn', 'practice', 'overview', 'play', 'data', 'dashboard', 'map', 'soon'] as const;
 export type Route = (typeof ROUTES)[number];
 
-/** Last route shown: a device convenience, never part of Save. */
+/** Last route shown: a device convenience, never part of Save. Values saved before Plan 7 (home/play/data/dashboard) stay valid. */
 export const ROUTE_KEY = 'cargo-query/route';
 
-const HASH: Record<Route, string> = { home: '#/', play: '#/play', data: '#/data', dashboard: '#/dashboard' };
+/** The only live domain for now (V6). */
+const D = '#/d/logistics';
+const HASH: Record<Route, string> = {
+  home: '#/', learn: '#/learn', practice: '#/practice', overview: D, play: `${D}/play`, data: `${D}/data`,
+  dashboard: `${D}/dashboard`, map: `${D}/map`, soon: '#/d/finance',
+};
+const DOMAIN_PAGE: Record<string, Route> = { '': 'overview', play: 'play', data: 'data', dashboard: 'dashboard', map: 'map' };
+
 export const hashOf = (r: Route): string => HASH[r];
 export const isRoute = (v: unknown): v is Route => ROUTES.includes(v as Route);
+/** A domain's pages: the sidebar lists the domain's items and the top bar shows its chapter and rank (v6 §3.1). */
+export const inDomain = (r: Route): boolean => r === 'overview' || r === 'play' || r === 'data' || r === 'dashboard' || r === 'map' || r === 'soon';
+export const domainHash = (id: DomainId): string => `#/d/${id}`;
+
+/** Hashes from before Plan 7 (#/play, #/data/<t>, #/dashboard) → the same page, tail kept. Kept forever (v5 §B.3). */
+export function canonicalHash(hash: string): string {
+  const m = /^#\/?(play|data|dashboard)(?=$|[/?])(.*)$/.exec(hash);
+  return m ? `${D}/${m[1]}${m[2]}` : hash;
+}
 
 /** '' (no hash) → undefined, so the remembered route can be used; any unknown path falls back to home. */
 export function parseRoute(hash: string): Route | undefined {
   if (hash === '') return undefined;
-  const path = hash.replace(/^#\/?/, '').split(/[/?]/)[0];
-  return isRoute(path) ? path : 'home';
+  const [a = '', b = '', c = ''] = canonicalHash(hash).replace(/^#\/?/, '').split('?')[0].split('/');
+  if (a === '') return 'home';
+  if (a === 'learn' || a === 'practice') return a;
+  if (a !== 'd') return 'home';
+  if (b === 'logistics') return Object.hasOwn(DOMAIN_PAGE, c) ? DOMAIN_PAGE[c] : 'home';
+  return soonDomainOf(hash) ? 'soon' : 'home';
 }
 
 export function initialRoute(hash: string, saved: unknown): Route {
   return parseRoute(hash) ?? (isRoute(saved) ? saved : 'home');
 }
 
-/** `#/data/<table>` → the table name (ui-ux-v4 §5); anything that is not a plain identifier is ignored. */
+/** `#/d/logistics/data/<table>` (or the old `#/data/<table>`) → the table (ui-ux-v4 §5); anything but a plain identifier is ignored. */
 export function dataTableOf(hash: string): string | undefined {
-  const m = /^#\/?data\/([^/?]*)/.exec(hash);
+  const m = /^#\/?d\/logistics\/data\/([^/?]*)/.exec(canonicalHash(hash));
   return m && /^[a-z_][a-z0-9_]*$/.test(m[1]) ? m[1] : undefined;
+}
+
+/** `#/learn/sql/<n>` → module n (1–12, one per chapter, L27); else undefined (the page opens the current chapter's module). */
+export function learnModuleOf(hash: string): number | undefined {
+  const n = Number(/^#\/?learn\/sql\/(\d{1,2})(?=$|[/?])/.exec(hash)?.[1]);
+  return n >= 1 && n <= 12 ? n : undefined;
+}
+
+/** `#/d/<id>…` → the domain when it exists and is not live yet ("Coming soon", v5 §B.6). */
+export function soonDomainOf(hash: string): DomainId | undefined {
+  const id = /^#\/?d\/([a-z]+)(?=$|[/?])/.exec(hash)?.[1];
+  return DOMAINS.find((d) => d.id === id && !d.live)?.id;
 }

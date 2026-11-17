@@ -1,4 +1,4 @@
-import { hashOf, initialRoute, parseRoute, ROUTE_KEY, type Route } from '../route';
+import { canonicalHash, hashOf, initialRoute, parseRoute, ROUTE_KEY, type Route } from '../route';
 import { readJson, writeJson } from '../storage';
 
 let current: Route = 'home';
@@ -19,9 +19,18 @@ export function startRouter(show: (r: Route, initial: boolean) => void): void {
     writeJson(ROUTE_KEY, r);
     show(r, initial);
   };
+  /** An old hash (#/play, #/data/<t>, #/dashboard: bookmarks, shared links) becomes the new one in place, no extra history entry. */
+  const upgrade = (): void => {
+    const c = canonicalHash(location.hash);
+    if (c !== location.hash) history.replaceState(history.state, '', c);
+  };
+  upgrade();
   const first = initialRoute(location.hash, readJson<unknown>(ROUTE_KEY));
-  // No extra history entry for the redirect; a hash that already names the route keeps its tail (#/data/ports).
+  // No extra history entry for the redirect; a hash that already names the route keeps its tail (#/d/logistics/data/ports).
   if (parseRoute(location.hash) !== first) history.replaceState(history.state, '', hashOf(first));
   apply(first, true);
-  window.addEventListener('hashchange', () => apply(parseRoute(location.hash) ?? 'home', false));
+  window.addEventListener('hashchange', () => {
+    upgrade();
+    apply(parseRoute(location.hash) ?? 'home', false);
+  });
 }

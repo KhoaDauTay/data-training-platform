@@ -1,5 +1,5 @@
 import { loadTicketTemplates } from '../content';
-import { learnedSkills, type HomeModel } from '../home';
+import type { HomeModel } from '../home';
 import { t } from '../i18n';
 import { LANE_XP } from '../lanes';
 import { applyResult, isSuccess, movedToday, pickForSkill, retryItem, type PracticeItem } from '../practice';
@@ -76,7 +76,7 @@ export const toCurrentTask = (): void => actions.selectTicket(nextTicket(app.tic
 export function startToday(): boolean {
   if (startPractice(reviewToday())) return true;
   if (!app.notice?.key.startsWith('save.')) app.notice = { key: 'prac.nothingDue' }; // never hide a data-loss warning
-  go('home'); // already on Home: no hashchange, so redraw ourselves
+  go('practice'); // the hub explains what is due; already there: no hashchange, so redraw ourselves
   ctx?.rerender();
   return false;
 }
@@ -91,13 +91,6 @@ export function startSkill(skill: string): boolean {
 export function startRetry(ticketId: string): boolean {
   const tpl = templates().get(ticketId);
   return !!tpl && tpl.beat !== 'boss' && done().has(ticketId) && startPractice([retryItem(tpl, Math.random)]);
-}
-
-/** Nav "Practice" (P6): today's due skills, else one learned skill at random; false when nothing is learned yet. */
-function startAny(): boolean {
-  if (startPractice(reviewToday())) return true;
-  const learned = [...learnedSkills(app.tickets, done())];
-  return learned.length > 0 && startSkill(learned[Math.floor(Math.random() * learned.length)]);
 }
 
 /** work.ts onSolved: Practice moves Leitner boxes only; a lane task gives flat XP; the story completes the ticket (XP, animation). */
@@ -245,25 +238,24 @@ function warmupCard(): HTMLElement | null {
     h('button', { type: 'button', class: cx(BTN_GO, 'px-4 py-2'), onclick: () => void startPractice(warmupToday(), true) }, t('warmup.start', { n })));
 }
 
-// Same id replaces topbar.ts's 'play' entry: "Workspace" is current only in story mode.
+// Same id replaces topbar.ts's 'play' entry: "Workspace" is current only in story mode (and on a lane task).
 registerNav({
-  id: 'play', order: 20, label: 'nav.play', href: hashOf('play'),
+  id: 'play', area: 'domain', order: 20, label: 'nav.play', icon: 'code', href: hashOf('play'),
   current: (r) => r === 'play' && (isStory() || session.mode.kind === 'lane'),
   onclick: () => (isStory() ? go('play') : backToStory()),
 });
+// Plan 7 V5: "Practise SQL" is a hub page (#/practice); a run in the workspace still counts as being there.
 registerNav({
-  id: 'practice', order: 30, label: 'nav.practice', href: hashOf('play'),
-  current: (r) => r === 'play' && session.mode.kind === 'practice',
-  // Nothing learned yet: Home's Review card explains how practice opens (P6).
-  onclick: () => (session.mode.kind === 'practice' && !practiceFinished() ? go('play') : startAny() || go('home')), // a finished run starts a new one
+  id: 'practice', area: 'top', order: 30, label: 'nav.practice', icon: 'repeat', href: hashOf('practice'),
+  current: (r) => r === 'practice' || (r === 'play' && session.mode.kind === 'practice'),
 });
 registerNav({
-  id: 'sandbox', order: 40, label: 'nav.sandbox', href: hashOf('play'),
+  id: 'sandbox', area: 'domain', order: 30, label: 'nav.sandbox', icon: 'flask', href: hashOf('play'),
   current: (r) => r === 'play' && session.mode.kind === 'sandbox',
   onclick: () => (session.mode.kind === 'sandbox' ? go('play') : startSandbox()),
 });
-registerHomeSection({ id: 'review', order: 22, span: 'full', render: reviewCard });
-registerHomeSection({ id: 'warmup', order: 21, span: 'full', render: warmupCard });
+registerHomeSection({ id: 'review', order: 22, span: 'full', pages: ['home', 'practice'], render: reviewCard });
+registerHomeSection({ id: 'warmup', order: 21, span: 'full', pages: ['home', 'practice'], render: warmupCard });
 registerMode({
   id: 'sandbox', order: 10, icon: 'flask', tint: 'bg-orange-100 text-orange-800 dark:bg-orange-950 dark:text-orange-200',
   title: 'mode.sandbox', desc: 'mode.sandboxDesc', open: () => startSandbox(),

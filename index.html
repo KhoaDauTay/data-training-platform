@@ -120,7 +120,8 @@
     <!-- ui-ux-v4 §2: task navigation (story mode only); the inner <nav> carries the label. -->
     <div id="map" class="map-strip border-b border-line bg-sea" hidden></div>
     <div id="notice" role="status" class="flex items-center gap-2 border-b border-line bg-code px-4 py-2" hidden></div>
-    <main id="home" class="shell:min-h-0 shell:flex-1 shell:overflow-auto" data-i18n-aria="nav.home" aria-label="Trang chủ" hidden></main>
+    <!-- Plan 7: every reading page (Home, Learning path, Practise SQL, Overview, Map, Coming soon); its <h1 id="home-title"> names it. -->
+    <main id="home" class="shell:min-h-0 shell:flex-1 shell:overflow-auto" hidden></main>
     <!-- ui-ux-v4 §5: the Data page (#/data/<table>), filled by src/ui/dataView.ts. -->
     <main id="data" class="shell:min-h-0 shell:flex-1 shell:overflow-auto" data-i18n-aria="nav.data" aria-label="Dữ liệu" hidden></main>
     <!-- Plan 5 (L48/L49): #/dashboard, filled by src/ui/dashboard.ts. -->

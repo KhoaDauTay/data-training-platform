@@ -13,7 +13,7 @@ import { renderResult } from './resultTable';
 import { registerNav } from './topbar';
 
 // Order 60 is kept for the dashboard tab (L47 item 7).
-registerNav({ id: 'data', order: 50, label: 'nav.data', href: hashOf('data'), current: (r) => r === 'data' });
+registerNav({ id: 'data', area: 'domain', order: 50, label: 'nav.data', icon: 'table', href: hashOf('data'), current: (r) => r === 'data' });
 
 /** In memory only, never saved (ui-ux-v4 §5). */
 const view = { query: '', scope: 'near' as 'near' | 'all' };

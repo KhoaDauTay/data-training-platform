@@ -5,16 +5,21 @@ import { hashOf, type Route } from '../route';
 import { actions, app, done } from '../state';
 import { cx, getTheme, NAV_LINK, setTheme, THEME_PREFS, TOP_BTN, type ThemePref } from '../theme';
 import { byId, h, nodes } from './dom';
-import { fillIcons, icon } from './icons';
+import { fillIcons, icon, type IconName } from './icons';
 import { currentRoute } from './router';
 
 const mb = (bytes: number): number => Math.round(bytes / 1e5) / 10;
 
-/** A top-bar link. Plan 1c adds Practice / Sandbox here (and re-registers 'play' to be current only in story mode). */
+/**
+ * One navigation entry (v5 §B.2, v6 §3): `area` 'top' = level 1 (top bar, mobile bottom bar), 'domain' = the domain's pages
+ * (sidebar, drawer). `icon` shows in the rail and the bottom bar.
+ */
 export interface NavItem {
   id: string;
   order: number;
+  area: 'top' | 'domain';
   label: Key;
+  icon: IconName;
   href: string;
   current(route: Route): boolean;
   /** Optional action instead of plain hash navigation (e.g. enter a mode, then go('play')). */
@@ -23,14 +28,19 @@ export interface NavItem {
 const NAV: NavItem[] = [];
 /** Same id replaces the old entry; kept sorted by order. */
 export const registerNav = (item: NavItem): void => upsert(NAV, item);
-registerNav({ id: 'home', order: 10, label: 'nav.home', href: hashOf('home'), current: (r) => r === 'home' });
-registerNav({ id: 'play', order: 20, label: 'nav.play', href: hashOf('play'), current: (r) => r === 'play' });
-// L49: six items (mobile: a 3×2 grid); Practice, Sandbox (ui/modes.ts) and Data (ui/dataView.ts) register their own.
-registerNav({ id: 'dashboard', order: 60, label: 'nav.dashboard', href: hashOf('dashboard'), current: (r) => r === 'dashboard' });
+export const navItems = (area: NavItem['area']): NavItem[] => NAV.filter((n) => n.area === area);
+registerNav({ id: 'home', area: 'top', order: 10, label: 'nav.home', icon: 'home', href: hashOf('home'), current: (r) => r === 'home' });
+registerNav({ id: 'learn', area: 'top', order: 20, label: 'nav.learn', icon: 'route', href: hashOf('learn'), current: (r) => r === 'learn' });
+// Practice (top, order 30), Sandbox (domain, 30, ui/modes.ts) and Data (domain, 50, ui/dataView.ts) register their own.
+registerNav({ id: 'overview', area: 'domain', order: 10, label: 'nav.overview', icon: 'anchor', href: hashOf('overview'), current: (r) => r === 'overview' || r === 'soon' });
+registerNav({ id: 'play', area: 'domain', order: 20, label: 'nav.play', icon: 'code', href: hashOf('play'), current: (r) => r === 'play' });
+registerNav({ id: 'dashboard', area: 'domain', order: 60, label: 'nav.dashboard', icon: 'chart', href: hashOf('dashboard'), current: (r) => r === 'dashboard' });
+registerNav({ id: 'map', area: 'domain', order: 70, label: 'nav.map', icon: 'map', href: hashOf('map'), current: (r) => r === 'map' });
 
+/** Until the sidebar (Task 6) the top bar lists both areas, so every page stays reachable. */
 function renderNav(): void {
   const route = currentRoute();
-  byId('nav').replaceChildren(...NAV.map((n) => {
+  byId('nav').replaceChildren(...[...navItems('top'), ...navItems('domain')].map((n) => {
     const click = n.onclick;
     return h('a', {
       href: n.href,

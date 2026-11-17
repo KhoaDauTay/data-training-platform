@@ -174,7 +174,10 @@ function nextStep(): void {
 }
 
 let shownRoute: Route | undefined;
-/** #/ = Home, #/play = workspace, #/data = Data page, #/dashboard. All stay mounted and only toggle `hidden`, so the editor is never recreated. */
+/** Reading pages share <main id="home"> (src/ui/homeView.ts draws the one the route names). */
+const PAGE_ROUTES: ReadonlySet<Route> = new Set<Route>(['home', 'learn', 'practice', 'overview', 'map', 'soon']);
+const TITLE_OF: Partial<Record<Route, string>> = { data: 'data-title', dashboard: 'dashboard-title', play: 'brief-title' };
+/** Reading pages, #/d/logistics/play = workspace, …/data = Data page, …/dashboard. All stay mounted and only toggle `hidden`, so the editor is never recreated. */
 function showRoute(r: Route, initial: boolean): void {
   const tableSwitch = r === 'data' && shownRoute === 'data'; // #/data/a → #/data/b: only the Data page changes
   shownRoute = r;
@@ -183,13 +186,13 @@ function showRoute(r: Route, initial: boolean): void {
     byId('data-table-title').focus();
     return;
   }
-  byId('home').hidden = r !== 'home';
+  byId('home').hidden = !PAGE_ROUTES.has(r);
   byId('data').hidden = r !== 'data';
   byId('dashboard').hidden = r !== 'dashboard';
   byId('shell').hidden = r !== 'play';
-  if (r !== 'home') leftHome(); // Home marks containers added after this moment as "New"
-  rerender(); // nav aria-current, Home numbers, Data page, dashboard
-  if (!initial) byId({ home: 'home-title', data: 'data-title', dashboard: 'dashboard-title', play: 'brief-title' }[r]).focus();
+  if (r !== 'overview') leftHome(); // the harbour (Overview) marks containers added after this moment as "New"
+  rerender(); // nav aria-current, page numbers, Data page, dashboard
+  if (!initial) byId(TITLE_OF[r] ?? 'home-title').focus();
 }
 
 /** Correct answer: save at once, stay on the ticket and show the Recap (no auto-jump). */
