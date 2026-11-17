@@ -47,6 +47,7 @@ vi.mock('../src/ui/dom', () => ({
 }));
 
 vi.mock('../src/ui/avatar', () => ({ avatar: () => fakeEl() }));
+vi.mock('../src/ui/mascots', () => ({ mascot: () => fakeEl() })); // Task 9: the feedback line draws a mascot (SVG)
 
 const { app } = await import('../src/state');
 const { mountWork } = await import('../src/ui/work');
@@ -80,7 +81,9 @@ function setup() {
 
 const flush = () => new Promise((r) => setTimeout(r, 0));
 /** Text currently shown in any element (strings passed to replaceChildren, and string children of h() elements shown there). */
-const shownText = () => els.flatMap((e) => e.shown).flatMap((x) => (typeof x === 'string' ? [x] : ((x as { kids?: unknown[] })?.kids ?? []).filter((k) => typeof k === 'string'))).join(' | ');
+// Deep: since Task 9 a line with a mascot nests its words one level further down (mascot · div · words).
+const textOf = (x: unknown): string[] => (typeof x === 'string' ? [x] : ((x as { kids?: unknown[] })?.kids ?? []).flatMap(textOf));
+const shownText = () => els.flatMap((e) => e.shown).flatMap(textOf).join(' | ');
 const historyOf = (id: string) => (JSON.parse(store[HISTORY_KEY] ?? '{}') as Record<string, { sql: string }[]>)[id] ?? [];
 
 function open(work: ReturnType<typeof mountWork>, tk: Ticket) {

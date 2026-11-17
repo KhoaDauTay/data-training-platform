@@ -16,7 +16,8 @@ import { celebrate } from './celebrate';
 import { h } from './dom';
 import { createEditor, type Editor } from './editor';
 import { avatar } from './avatar';
-import { errorText, errorView, gradeMessage, voiceKey } from './feedback';
+import { errorText, errorView, gradeMessage, mascotOf, voiceKey } from './feedback';
+import { mascot, type Mascot, type Pose } from './mascots';
 import { pageShortcutOf } from './shortcuts';
 import { tourSlot } from './coach';
 import type { Panel } from './tabs';
@@ -99,7 +100,7 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
   let busy = false;
   let selection = false;
   /** Last message under the editor, as a function so relabel() re-translates it. */
-  let message: { kind: 'good' | 'bad'; view: () => Node | string } | undefined;
+  let message: { kind: 'good' | 'bad'; view: () => Node | string; who?: [Mascot, Pose] } | undefined;
   let history = loadHistory(localStore());
 
   const editorHost = h('div', { class: 'editor overflow-hidden rounded-xl ring-1 ring-line' });
@@ -126,13 +127,17 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
     void (action === 'run' ? run() : submit());
   });
 
-  function say(kind: 'good' | 'bad', view: () => Node | string): void {
-    message = { kind, view };
+  /** `who`: a mascot beside the words (V7), at most one, in this line under the buttons only. */
+  function say(kind: 'good' | 'bad', view: () => Node | string, who?: [Mascot, Pose]): void {
+    message = { kind, view, who };
     drawMessage();
   }
   function drawMessage(): void {
     feedback.className = message ? FEEDBACK[message.kind] : '';
-    feedback.replaceChildren(message ? message.view() : '');
+    const who = message?.who;
+    feedback.replaceChildren(!message ? '' : who
+      ? h('div', { class: 'flex items-start gap-3' }, mascot(who[0], who[1], 'size-12'), h('div', { class: 'min-w-0 flex-1' }, message.view()))
+      : message.view());
   }
 
   function setButtons(): void {
@@ -206,7 +211,7 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
     const failed = r.error !== undefined;
     if (failed) {
       underline(r.error, offset);
-      say('bad', () => t('work.runFailed'));
+      say('bad', () => t('work.runFailed'), mascotOf(r.error));
     } else {
       message = undefined;
       drawMessage();
@@ -248,7 +253,7 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
     deps.onRun();
     if (!plans) {
       underline(error, 0);
-      say('bad', () => errorView(error));
+      say('bad', () => errorView(error), mascotOf(error));
       return undefined;
     }
     const { before, after } = plans;
@@ -347,7 +352,7 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
         avatar(tk.from), h('span', { class: 'rounded-2xl rounded-tl-sm bg-panel px-3 py-1.5 text-ink' }, t(voiceKey(fail))));
       if (fail.reason === 'error') {
         underline(err, 0);
-        say('bad', () => h('div', {}, err !== undefined ? errorView(err) : gradeMessage(fail), voice()));
+        say('bad', () => h('div', {}, err !== undefined ? errorView(err) : gradeMessage(fail), voice()), mascotOf(err));
       } else {
         if (fail.reason === 'rows' && played?.result) played.mark = fail.sample;
         say('bad', () => h('div', {}, gradeMessage(fail), tip ? h('p', { class: 'mt-2 mb-0' }, tip()) : null, voice()));
@@ -357,7 +362,7 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
     }
     if (planError !== undefined) {
       const e = planError;
-      say('bad', () => errorView(e)); // timeout/restart/DB failure: errorText; Postgres error: its message and note
+      say('bad', () => errorView(e), mascotOf(e)); // timeout/restart/DB failure: errorText; Postgres error: its message and note
       return;
     }
     if (planFail) {
@@ -379,13 +384,13 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
     }
     if (i < tk.steps.length - 1) {
       deps.onStepSolved(); // setTicket() for the next step clears the message, so say it afterwards
-      say('good', () => t('work.stepDone', { i: i + 1 }));
+      say('good', () => t('work.stepDone', { i: i + 1 }), ['lily', 'cheer']);
       celebrate(feedback);
     } else if (tk.conclusion) {
       say('good', () => t(isClosed(tk.id) ? 'work.correct' : 'work.conclusionNext')); // redrawn after the conclusion is submitted
       deps.onConclusion(tk);
     } else {
-      say('good', () => t('work.correct'));
+      say('good', () => t('work.correct'), ['lily', 'cheer']);
       deps.onSolved(tk);
       celebrate(feedback); // after onSolved: its rerender() redraws the message and would reset className
     }

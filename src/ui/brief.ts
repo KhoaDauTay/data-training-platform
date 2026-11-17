@@ -10,6 +10,7 @@ import { actions, app, done, erMeta, expectedShape, persist, stepKey, unlockedTa
 import { chapterColor, cx, DEPT_CHIP, deptColor, deptOf, PILL } from '../theme';
 import { textOf, type Beat, type Ticket, type TicketText } from '../tickets';
 import { relatedTables } from '../viz/erd';
+import { mascot } from './mascots';
 import { avatar } from './avatar';
 import { coach, tourSlot } from './coach';
 import { h, nodes, richText } from './dom';
@@ -74,7 +75,8 @@ function hints(tk: Ticket, x: TicketText, isDone: boolean): HTMLElement {
     ? t('brief.hint', { i: shown + 1, n: x.hints.length, cost })
     : t('brief.hintFree', { i: shown + 1, n: x.hints.length })); // Practice: 0 XP, so no cost (P9); chapter 1: free (L54)
   return h('section', { class: 'hints my-3' },
-    shown ? h('ol', { class: 'space-y-1' }, ...x.hints.slice(0, shown).map((s) => h('li', {}, richText(s)))) : null,
+    shown ? h('div', { class: 'flex items-start gap-3' }, mascot('boon', 'think', 'size-12'),
+      h('ol', { class: 'min-w-0 flex-1 space-y-1' }, ...x.hints.slice(0, shown).map((s) => h('li', {}, richText(s))))) : null,
     isDone || shown >= x.hints.length ? null : btn);
 }
 

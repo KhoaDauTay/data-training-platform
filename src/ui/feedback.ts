@@ -5,6 +5,7 @@ import { t, type Key } from '../i18n';
 import { InvalidSaveError, NewerSaveError } from '../save';
 import { h } from './dom';
 import { formatCell } from './resultTable';
+import type { Mascot, Pose } from './mascots';
 import { explainError } from './sqlErrors';
 
 /** product-design-v2 #9: the sender's one-line reaction to a wrong answer, by reason (one voice for every department, P11). */
@@ -58,4 +59,14 @@ export function errorView(e: unknown): HTMLElement {
     h('pre', { class: 'error' }, info.message),
     info.hint ? h('p', { class: 'muted' }, `HINT: ${info.hint}`) : null,
     note ? h('p', { class: 'border-l-4 border-accent pl-2' }, t(note)) : null);
+}
+
+/**
+ * v6 §2.4 with the L57 roles (V7): Boon explains a Postgres error that has a teaching note (thinking), or a timeout / DB restart
+ * (oops). Anything else gets no mascot. Lily's cheer on a correct answer is passed by work.ts itself.
+ */
+export function mascotOf(error: unknown): [Mascot, Pose] | undefined {
+  if (error instanceof QueryTimeoutError || error instanceof DbRestartError) return ['boon', 'oops'];
+  const info = sqlErrorInfo(error);
+  return info && explainError(info) ? ['boon', 'think'] : undefined;
 }

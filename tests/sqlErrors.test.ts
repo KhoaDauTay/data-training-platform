@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { sqlErrorInfo, type SqlErrorInfo } from '../src/db/run';
 import { explainError } from '../src/ui/sqlErrors';
 import { runner } from './helpers';
+import { mascotOf } from '../src/ui/feedback';
+import { DbRestartError, QueryTimeoutError } from '../src/db/client';
 
 // Real PGlite errors: if a new PGlite build changes a message or SQLSTATE, this fails here, not in front of a player.
 const CASES: [string, string][] = [
@@ -69,5 +71,17 @@ describe('lỗi biết dạy', () => {
   it('lỗi lạ thì không có giải thích', () => {
     expect(explainError({ message: 'something else', code: '99999' })).toBeUndefined();
     expect(explainError({ message: 'something else', code: '42P20' })).toBeUndefined(); // 42P20 is told apart by message only
+  });
+});
+
+describe('mascotOf (V7: Boon giải thích lỗi, không linh vật khi không có gì để giải thích)', () => {
+  it('lỗi Postgres có lời giải thích → Boon nghĩ; timeout/khởi động lại → Boon ối; còn lại → không', async () => {
+    const run = await runner();
+    const err = await run('SELECT cde FROM ports').then(() => undefined, (e: unknown) => e);
+    expect(mascotOf(err)).toEqual(['boon', 'think']);
+    expect(mascotOf(new QueryTimeoutError(5000))).toEqual(['boon', 'oops']);
+    expect(mascotOf(new DbRestartError())).toEqual(['boon', 'oops']);
+    expect(mascotOf(new Error('boom'))).toBeUndefined();
+    expect(mascotOf(undefined)).toBeUndefined();
   });
 });

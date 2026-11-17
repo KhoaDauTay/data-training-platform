@@ -17,6 +17,7 @@ import { byId, h } from './dom';
 import { errorView } from './feedback';
 import { icon, isIconName, type IconName } from './icons';
 import { startSandbox } from './modes';
+import { mascot } from './mascots';
 import { renderResult } from './resultTable';
 
 /** #/dashboard (product-design-v3 Part A, L48/L49): player cards first, then the company tiles from content/kpis.yml. */
@@ -189,6 +190,7 @@ function mineSection(redraw: () => void): HTMLElement {
     cards.length
       ? h('div', { class: 'grid gap-4 sm:grid-cols-2 lg:grid-cols-3' }, ...cards.map((c, i) => playerCard(c, i, cards.length, redraw)))
       : h('div', { class: cx(CARD, 'p-5') },
+        mascot('lily', 'sleep', 'size-16 mb-2'), // v6 §2.4: an empty state
         h('h3', { class: 'm-0 text-base font-bold' }, t('dash.emptyTitle')),
         h('p', { class: 'mt-1 mb-3 text-[15px] text-muted' }, t('dash.empty')),
         h('button', { type: 'button', class: cx(BTN_GO, 'px-4 py-2'), onclick: () => startSandbox() }, t('dash.toSandbox'))));
