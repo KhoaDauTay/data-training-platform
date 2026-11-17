@@ -1,5 +1,4 @@
-import type { QueryResult } from '../db/run';
-import { chapterOfId, homeModel, KPIS, kpiTiles, kpiValue, LEVELS, type ChapterCard, type HomeModel, type Kpi, type KpiTile, type KpiValue, type SkillCard } from '../home';
+import { homeModel, KPIS, kpiTiles, LEVELS, type ChapterCard, type HomeModel, type SkillCard } from '../home';
 import { getLang, t, type Key } from '../i18n';
 import { CHAPTERS, chapterTitle, rankOf, SKILLS } from '../progress';
 import { derive } from '../scene';
@@ -7,10 +6,10 @@ import { actions, app, done } from '../state';
 import { BTN_GO, CARD, CARD_ACTION, chapterColor, cx, DONE_PILL, PILL } from '../theme';
 import { roleLine } from '../people';
 import { upsert } from '../registry';
-import { stepKey } from '../save';
-import { textOf, type Ticket } from '../tickets';
+import { hashOf } from '../route';
+import { textOf } from '../tickets';
 import { avatar } from './avatar';
-import { icon, isIconName, skillIcon, type IconName } from './icons';
+import { icon, skillIcon, type IconName } from './icons';
 import { byId, h, nodes } from './dom';
 import { callout, harborScene } from './harbor';
 import { routeItems, routeMap } from './routeMap';
@@ -259,73 +258,14 @@ function routesSection(): HTMLElement {
     h('ul', { class: 'mt-2 mb-0 list-none space-y-0.5 p-0 text-sm lg:hidden', 'aria-hidden': 'true' }, ...routeItems(harbor).map((x) => h('li', {}, x))));
 }
 
-/** Solution results per step, run once per session and only for open tiles (an open tile = task already solved: nothing leaks). */
-const kpiRuns = new Map<string, Promise<QueryResult>>();
-function kpiResult(tk: Ticket, step: number): Promise<QueryResult> {
-  const key = stepKey(tk.id, step);
-  let run = kpiRuns.get(key);
-  if (!run) {
-    run = app.run(tk.steps[step].solution); // DbClient queues it until the database is ready
-    kpiRuns.set(key, run);
-    run.catch(() => kpiRuns.delete(key)); // a failed run is retried on the next draw
-  }
-  return run;
-}
-
-const BIG = 'm-0 text-3xl font-bold tabular-nums';
-const KIND_ICON: Record<Kpi['kind'], IconName> = { number: 'hash', rowcount: 'list', bar: 'chart' };
-const kpiIcon = (k: Kpi): IconName => (k.icon && isIconName(k.icon) ? k.icon : KIND_ICON[k.kind]);
-
-/**
- * L42: the rounded value shows, the exact one is in `title` (hover) and in the screen-reader text.
- * L23: neutral text and bars, numbers in tabular figures; colour stays in small badges.
- */
-function kpiView(v: KpiValue, unit: string): HTMLElement {
-  const unitEl = unit ? h('span', { class: 'text-base font-medium text-muted', 'aria-hidden': 'true' }, unit) : null;
-  if ('text' in v) {
-    return h('p', { class: cx(BIG, 'flex flex-wrap items-baseline gap-x-1.5'), title: unit ? `${v.full} ${unit}` : v.full },
-      h('span', { 'aria-hidden': 'true' }, v.text), unitEl,
-      h('span', { class: 'sr-only' }, unit ? `${v.full} ${unit}` : v.full));
-  }
-  const max = Math.max(1, ...v.bars.map((b) => b.value));
-  return h('ul', { class: 'm-0 list-none space-y-1.5 p-0' }, ...v.bars.map((b) =>
-    h('li', { class: 'grid grid-cols-[minmax(0,8rem)_1fr_auto] items-center gap-2 text-sm', title: `${b.label}: ${b.full}${unit ? ` ${unit}` : ''}` },
-      h('span', { class: 'truncate' }, b.label),
-      h('span', { class: 'h-2.5 rounded bg-slate-500 dark:bg-slate-400', style: `width:${Math.round((b.value / max) * 100)}%`, 'aria-hidden': 'true' }),
-      h('span', { class: 'tabular-nums' }, b.text, unit ? h('span', { class: 'text-muted' }, ` ${unit}`) : null))));
-}
-
-/** ui-ux-v3 §c: icon + label, then the big value with its unit, then the source line. Static card: no hover lift. */
-function kpiTile(tile: KpiTile): HTMLElement {
-  const lang = getLang();
-  const { kpi, ticket } = tile;
-  const open = tile.open && !!ticket;
-  const unit = kpi.unit?.[lang] ?? '';
-  const value = h('div', { class: 'min-h-9' });
-  if (open) {
-    value.append(h('p', { class: cx(BIG, 'text-muted') }, '…'));
-    kpiResult(ticket, kpi.step).then(
-      (r) => value.replaceChildren(kpiView(kpiValue(kpi, r, lang), unit)),
-      () => value.replaceChildren(h('p', { class: cx(BIG, 'text-muted') }, '—')));
-  } else {
-    value.append(h('p', { class: cx(BIG, 'text-muted') }, ticket ? '—' : '???'));
-  }
-  const foot = open ? t('home.kpiFrom', { title: textOf(ticket, lang).title })
-    : ticket ? t('home.kpiLocked', { n: ticket.chapter, title: textOf(ticket, lang).title, name: ticket.from.name })
-      : t('home.kpiLater', { n: chapterOfId(kpi.ticket) });
-  return h('article', { class: cx(CARD, 'flex flex-col gap-3 p-4') },
-    h('div', { class: 'flex items-start gap-3' },
-      h('span', { class: cx('grid size-9 shrink-0 place-items-center rounded-lg', open ? 'bg-code text-ink' : 'bg-code text-muted') }, icon(kpiIcon(kpi))),
-      h('h3', { class: 'm-0 self-center text-sm leading-snug font-medium' }, kpi.label[lang])),
-    value,
-    h('p', { class: 'mt-auto mb-0 flex items-start gap-1.5 text-sm text-muted' }, icon(open ? 'link' : 'lock', 'mt-0.5 size-4'), h('span', {}, foot)));
-}
-
+/** L48 D-A1: the company tiles moved to #/dashboard (src/ui/dashboard.ts); Home keeps a one-line teaser that links there. */
 function kpiSection(): HTMLElement {
-  return h('section', { 'aria-labelledby': 'kpi-title' },
-    h('h2', { id: 'kpi-title', class: 'm-0 text-lg font-bold' }, t('home.kpi')),
-    h('p', { class: 'mt-1 mb-3 text-[15px] text-muted' }, t('home.kpiIntro')),
-    h('div', { class: 'grid gap-4 sm:grid-cols-2 lg:grid-cols-4' }, ...kpiTiles(KPIS, app.tickets, done()).map(kpiTile)));
+  const tiles = kpiTiles(KPIS, app.tickets, done());
+  return h('a', { href: hashOf('dashboard'), class: cx(CARD_ACTION, 'group flex items-center gap-3 p-4 text-ink no-underline') },
+    h('span', { class: 'grid size-9 shrink-0 place-items-center rounded-lg bg-code', 'aria-hidden': 'true' }, icon('chart')),
+    h('span', { class: 'min-w-0 flex-1' }, h('b', {}, t('dash.title')), ' · ',
+      t('dash.teaser', { open: tiles.filter((x) => x.open).length, total: tiles.length, cards: app.save.dashboard.cards.length })),
+    icon('arrowRight', 'size-4 text-muted transition group-hover:translate-x-0.5 group-hover:text-accent'));
 }
 
 registerHomeSection({ id: 'continue', order: 10, span: 'wide', render: continueCard });

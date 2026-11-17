@@ -1,11 +1,11 @@
 /** Hash routes without a framework. Practice and Sandbox (Plan 1c) are modes inside 'play', not routes. */
-export const ROUTES = ['home', 'play', 'data'] as const;
+export const ROUTES = ['home', 'play', 'data', 'dashboard'] as const;
 export type Route = (typeof ROUTES)[number];
 
 /** Last route shown: a device convenience, never part of Save. */
 export const ROUTE_KEY = 'cargo-query/route';
 
-const HASH: Record<Route, string> = { home: '#/', play: '#/play', data: '#/data' };
+const HASH: Record<Route, string> = { home: '#/', play: '#/play', data: '#/data', dashboard: '#/dashboard' };
 export const hashOf = (r: Route): string => HASH[r];
 export const isRoute = (v: unknown): v is Route => ROUTES.includes(v as Route);
 

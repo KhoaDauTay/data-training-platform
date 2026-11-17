@@ -33,6 +33,12 @@ describe('route', () => {
     expect(isRoute(42)).toBe(false);
   });
 
+  it('#/dashboard là Bảng điều hành (Plan 5, L48 D-A1)', () => {
+    expect(parseRoute('#/dashboard')).toBe('dashboard');
+    expect(hashOf('dashboard')).toBe('#/dashboard');
+    expect(ROUTES).toEqual(['home', 'play', 'data', 'dashboard']);
+  });
+
   it('#/data và #/data/<bảng> là trang Dữ liệu; dataTableOf chỉ nhận định danh', () => {
     expect(parseRoute('#/data')).toBe('data');
     expect(parseRoute('#/data/ports')).toBe('data');

@@ -7,6 +7,7 @@ import { gzipSync } from 'node:zlib';
 const GROUPS = [
   ['main', /^index-.*\.js$/, 270], // Plan 3 Task 1: ticket markdown moved to a lazy chunk (L41); was 300 after Plan 2
   ['tickets', /^ticketSources-/, 110], // all ticket markdown, one lazy chunk fetched at boot (src/content.ts): 37 KB after ch1–6, 64 KB after ch7–9, 99 KB after ch10–12 (Plan 4 S7, L40 rule)
+  ['en', /^en-.*\.js$/, 20], // EN dictionary, lazy (Plan 5 T3): 11 KB, fetched at boot only when the player's language is EN
   ['css', /^index-.*\.css$/, 20],
   ['worker', /^worker-/, 160],
   ['pglite', /^pglite-/, 5560],

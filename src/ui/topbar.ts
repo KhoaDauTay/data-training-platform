@@ -25,6 +25,8 @@ const NAV: NavItem[] = [];
 export const registerNav = (item: NavItem): void => upsert(NAV, item);
 registerNav({ id: 'home', order: 10, label: 'nav.home', href: hashOf('home'), current: (r) => r === 'home' });
 registerNav({ id: 'play', order: 20, label: 'nav.play', href: hashOf('play'), current: (r) => r === 'play' });
+// L49: six items (mobile: a 3×2 grid); Practice, Sandbox (ui/modes.ts) and Data (ui/dataView.ts) register their own.
+registerNav({ id: 'dashboard', order: 60, label: 'nav.dashboard', href: hashOf('dashboard'), current: (r) => r === 'dashboard' });
 
 function renderNav(): void {
   const route = currentRoute();
