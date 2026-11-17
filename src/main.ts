@@ -32,6 +32,7 @@ import { registerVizTabs } from './ui/vizTabs';
 import { initMyData, setMyDataStatus } from './ui/myDataView';
 import { clearMemos } from './viz/memo';
 import { createMapStrip } from './ui/mapStrip';
+import { renderData } from './ui/dataView';
 
 initTheme(); // index.html already set data-theme before paint; this adds the OS listener for 'system'
 // The DB (PGlite download + seed, the slowest part of startup) boots in parallel with the ticket chunk below.
@@ -130,6 +131,7 @@ function rerender(): void {
   renderInbox();
   renderReviewButton(byId('review-btn') as HTMLButtonElement);
   if (!byId('home').hidden) renderHome(byId('home')); // hidden Home is redrawn by showRoute(); Run/Submit in the workspace never rebuild it
+  if (!byId('data').hidden) renderData(byId('data'));
   renderLeft(byId('ticket'));
   work.relabel();
   relabelStage();
@@ -162,13 +164,22 @@ function nextStep(): void {
   work.focus(); // the new step's editor replaces the one that had focus
 }
 
-/** #/ = Home, #/play = workspace. Both stay mounted and only toggle `hidden`, so the editor is never recreated. */
+let shownRoute: Route | undefined;
+/** #/ = Home, #/play = workspace, #/data = Data page. All stay mounted and only toggle `hidden`, so the editor is never recreated. */
 function showRoute(r: Route, initial: boolean): void {
+  const tableSwitch = r === 'data' && shownRoute === 'data'; // #/data/a → #/data/b: only the Data page changes
+  shownRoute = r;
+  if (tableSwitch) {
+    renderData(byId('data'));
+    byId('data-table-title').focus();
+    return;
+  }
   byId('home').hidden = r !== 'home';
+  byId('data').hidden = r !== 'data';
   byId('shell').hidden = r !== 'play';
   if (r !== 'home') leftHome(); // Home marks containers added after this moment as "New"
-  rerender(); // nav aria-current, Home numbers
-  if (!initial) byId(r === 'home' ? 'home-title' : 'brief-title').focus();
+  rerender(); // nav aria-current, Home numbers, Data page
+  if (!initial) byId(r === 'home' ? 'home-title' : r === 'data' ? 'data-title' : 'brief-title').focus();
 }
 
 /** Correct answer: save at once, stay on the ticket and show the Recap (no auto-jump). */

@@ -1,5 +1,6 @@
 import type { DbClient } from '../db/client';
 import { t } from '../i18n';
+import { hashOf } from '../route';
 import { activeTicket } from '../session';
 import { app, erMeta, selected, unlockedTables } from '../state';
 import { chapterColor, THEME_EVENT } from '../theme';
@@ -159,7 +160,11 @@ function registerSchemaTabs(deps: VizDeps): void {
       const s = scoped(meta);
       body.append(...scopeBar(s, deps));
       const svg = erdSvg(erDefinition(meta.cols, meta.cons, s.tables, tablesInQuery(app.lastRun?.sql ?? '', s.tables), ticketColor().hex));
-      return load(body, t('erd.drawing'), svg, drawErd);
+      const first = s.tables.find((x) => unlockedTables().includes(x));
+      return load(body, t('erd.drawing'), svg, (fig, out) => {
+        drawErd(fig, out);
+        if (first) fig.append(h('p', { class: 'mb-0' }, h('a', { href: `${hashOf('data')}/${first}` }, t('erd.toData'))));
+      });
     }),
   });
   registerTab({
