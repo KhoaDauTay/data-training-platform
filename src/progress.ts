@@ -30,8 +30,31 @@ const list = (source: string, origin: string): Record<string, unknown>[] => {
   return data as Record<string, unknown>[];
 };
 
+/**
+ * A `(SELECT …)` that reads `alias.column` for an alias (or table) not declared inside it, i.e. the outer query's row.
+ * Keyword-level, not a parser: string literals with a dot inside a subquery could fool it.
+ */
+function correlatedSubquery(sql: string): boolean {
+  for (const m of sql.matchAll(/\(\s*SELECT\b/gi)) {
+    let depth = 0;
+    let end = m.index;
+    for (; end < sql.length; end++) {
+      if (sql[end] === '(') depth++;
+      else if (sql[end] === ')' && --depth === 0) break;
+    }
+    const sub = sql.slice(m.index, end);
+    const own = new Set<string>();
+    for (const d of sub.matchAll(/\b(?:FROM|JOIN)\s+(\w+)(?:\s+(?:AS\s+)?(\w+))?/gi)) {
+      own.add(d[1].toLowerCase());
+      if (d[2]) own.add(d[2].toLowerCase());
+    }
+    for (const r of sub.matchAll(/\b([a-z_]\w*)\.[a-z_]/gi)) if (!own.has(r[1].toLowerCase())) return true;
+  }
+  return false;
+}
+
 /** How a Solution shows it really uses a skill (twist → boss check). Skills not listed here are not checked. */
-const SKILL_SQL: Record<string, RegExp> = {
+const SKILL_SQL: Record<string, { test(sql: string): boolean }> = {
   order_by: /\bORDER\s+BY\b/i,
   limit: /\bLIMIT\b/i,
   having: /\bHAVING\b/i,
@@ -39,7 +62,7 @@ const SKILL_SQL: Record<string, RegExp> = {
   anti_join: /\bIS\s+NULL\b|\bNOT\s+EXISTS\b/i,
   null_logic: /\bIS\s+(NOT\s+)?NULL\b/i,
   cast: /::\s*\w+|\bCAST\s*\(/i,
-  correlated_value: /\(\s*SELECT\b/i,
+  correlated_value: { test: correlatedSubquery },
   distinct_on: /\bDISTINCT\s+ON\b/i,
   full_join: /\bFULL\s+(OUTER\s+)?JOIN\b/i,
 };

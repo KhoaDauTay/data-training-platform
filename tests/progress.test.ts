@@ -195,6 +195,10 @@ describe('twistUsed: từ khóa theo kỹ năng', () => {
     ['cast', 'SELECT count(*)::numeric / 3', 'SELECT 100.0 * count(*) / 3'],
     ['cast', 'SELECT CAST(count(*) AS numeric)', 'SELECT count(*)'],
     ['correlated_value', 'SELECT (SELECT r.buy_usd FROM r WHERE r.id = q.id) FROM q', 'SELECT q.id FROM q JOIN r ON r.id = q.id'],
+    // Any subquery is not enough: it must read the outer row.
+    ['correlated_value', 'SELECT 1 FROM q WHERE q.x < (SELECT max(r.buy_usd) FROM rate_contracts AS r WHERE r.pod = q.pod)', 'SELECT q.id FROM quotations q WHERE q.customer_id IN (SELECT c.id FROM customers c)'],
+    ['correlated_value', 'SELECT 1 FROM q WHERE EXISTS (SELECT 1 FROM s WHERE s.id = q.sid)', "SELECT q.id FROM q WHERE EXISTS (SELECT 1 FROM shipments s WHERE s.status = 'X')"],
+    ['correlated_value', 'SELECT (SELECT count(*) FROM shipments WHERE shipments.customer_id = c.id) FROM customers c', 'SELECT x.n FROM (SELECT count(*) AS n FROM shipments s JOIN customers c ON c.id = s.customer_id) x'],
     ['distinct_on', 'SELECT DISTINCT ON (b.id) b.id FROM b ORDER BY b.id', 'SELECT DISTINCT b.id FROM b'],
     ['full_join', 'SELECT * FROM a FULL OUTER JOIN b ON true', 'SELECT * FROM a LEFT JOIN b ON true'],
   ])('%s', (skill, yes, no) => {
