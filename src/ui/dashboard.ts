@@ -1,12 +1,20 @@
+import { BAR_ROWS, CARD_KINDS, cardRunner, cardSpec, KIND_SKILL, MAX_CARDS, moveCard, TABLE_ROWS, type Card, type CardKind } from '../dashboard';
+import { QueryTimeoutError } from '../db/client';
 import type { QueryResult } from '../db/run';
-import { chapterOfId, KPIS, kpiTiles, kpiValue, type Kpi, type KpiTile, type KpiValue } from '../home';
-import { getLang, t } from '../i18n';
+import { chapterOfId, KPIS, kpiNumber, kpiTiles, kpiValue, learnedSkills, type Kpi, type KpiTile, type KpiValue } from '../home';
+import { getLang, t, type Key } from '../i18n';
+import { SKILLS } from '../progress';
 import { stepKey } from '../save';
 import { app, done, persist } from '../state';
-import { CARD, cx } from '../theme';
+import { BTN_GO, CARD, chapterColor, cx } from '../theme';
 import { textOf, type Ticket } from '../tickets';
+import { MAX_POINTS } from '../viz/chart';
+import { bars, line } from './chartView';
 import { byId, h } from './dom';
+import { errorView } from './feedback';
 import { icon, isIconName, type IconName } from './icons';
+import { startSandbox } from './modes';
+import { renderResult } from './resultTable';
 
 /** #/dashboard (product-design-v3 Part A, L48/L49): player cards first, then the company tiles from content/kpis.yml. */
 
@@ -50,6 +58,127 @@ export function kpiView(v: KpiValue, unit: string): HTMLElement {
       h('span', { class: 'truncate' }, b.label),
       h('span', { class: 'h-2.5 rounded bg-slate-500 dark:bg-slate-400', style: `width:${Math.round((b.value / max) * 100)}%`, 'aria-hidden': 'true' }),
       h('span', { class: 'tabular-nums' }, b.text, unit ? h('span', { class: 'text-muted' }, ` ${unit}`) : null))));
+}
+
+export const KIND_LABEL: Record<CardKind, Key> = { table: 'card.kind.table', number: 'card.kind.number', bar: 'card.kind.bar', line: 'card.kind.line' };
+export const skillOf = (id: string) => SKILLS.find((s) => s.id === id)!;
+/** "Cột: mở khi học …" chapter colour of the skill that opens the kind (product-design-v3 §8). */
+const kindColor = (c: Card) => chapterColor(skillOf(KIND_SKILL[c.kind]).chapter);
+
+/** What a card shows for its result: a big number, the first rows, bars or a line (shared with the pin dialog's preview). */
+export function cardBody(c: Card, r: QueryResult): HTMLElement {
+  const col = c.col ?? 0;
+  if (c.kind === 'number') {
+    const v = kpiNumber(Number(r.rows[0]?.[col] ?? NaN), getLang());
+    return kpiView(v, '');
+  }
+  const cut = (n: number) => (r.rows.length > n ? h('p', { class: 'mt-1 mb-0 text-sm text-muted' }, t('card.rowsShown', { n, total: r.rows.length })) : null);
+  if (c.kind === 'table') return h('div', {}, renderResult({ ...r, rows: r.rows.slice(0, TABLE_ROWS) }), cut(TABLE_ROWS));
+  const spec = cardSpec(r);
+  if (!spec || spec.kind !== c.kind) return h('p', { class: 'm-0 text-muted' }, t('chart.empty', { max: MAX_POINTS }));
+  const n = c.kind === 'bar' ? BAR_ROWS : MAX_POINTS;
+  const shown = { ...r, rows: r.rows.slice(0, n) };
+  return h('div', { class: 'overflow-auto' }, c.kind === 'bar' ? bars(shown, spec, col, kindColor(c)) : line(shown, spec, col, kindColor(c)), cut(n));
+}
+
+/** Once per session, one card after another (src/dashboard.ts cardRunner); a card that timed out is saved as slow. */
+const cards = cardRunner((sql) => app.run(sql), (id) => {
+  const saved = app.save.dashboard.cards.find((x) => x.id === id);
+  if (saved) saved.slow = true;
+  persist(true);
+});
+
+/** "SQL của bạn · Sandbox" / "· việc …": where the card was pinned from. */
+function sourceLine(c: Card): string {
+  if (c.source === 'sandbox') return t('card.fromSandbox');
+  const tk = app.tickets.find((x) => x.id === c.source);
+  return tk ? t('card.fromTask', { title: textOf(tk, getLang()).title }) : t('card.yours');
+}
+
+function playerCard(c: Card, i: number, n: number, redraw: () => void): HTMLElement {
+  const body = h('div', { class: 'min-h-9' });
+  const ran = h('span', { class: 'tabular-nums' });
+  const save = () => {
+    persist(true);
+    redraw();
+  };
+  const rerun = () => {
+    cards.forget(c.id);
+    delete c.slow;
+    save();
+  };
+  if (c.slow) {
+    body.append(h('div', { class: 'rounded-lg bg-amber-50 p-3 text-sm text-amber-950 ring-1 ring-amber-300 dark:bg-amber-950/40 dark:text-amber-100 dark:ring-amber-800' },
+      h('p', { class: 'm-0 flex items-center gap-1.5 font-semibold' }, icon('alert', 'size-4'), t('dash.slowTitle')),
+      h('p', { class: 'mt-1 mb-2' }, t('dash.slow')),
+      h('button', { type: 'button', class: 'flex items-center gap-1.5 px-3 py-1', onclick: rerun }, icon('refresh', 'size-4'), t('dash.retrySlow'))));
+  } else {
+    body.append(h('p', { class: 'm-0 text-muted' }, t('dash.waiting')));
+    cards.result(c).then((r) => {
+      body.replaceChildren(cardBody(c, r));
+      if (r.ms !== undefined) ran.textContent = t('dash.ran', { ms: r.ms });
+    }, (e: unknown) => {
+      if (e instanceof QueryTimeoutError) redraw(); // now marked slow
+      else body.replaceChildren(errorView(e));
+    });
+  }
+  const move = (dir: -1 | 1) => {
+    const d = app.save.dashboard;
+    d.cards = moveCard(d.cards, i, dir);
+    save();
+    // The moved card's same button keeps focus; at the top or bottom it is disabled, so the other arrow takes it.
+    const edge = i + dir === 0 || i + dir === n - 1;
+    const act = (dir < 0) !== edge ? 'up' : 'down';
+    document.querySelector<HTMLElement>(`[data-card="${c.id}"][data-act="${act}"]`)?.focus();
+    announce(t('dash.moved', { title: c.title, i: i + dir + 1, n }));
+  };
+  const btn = (act: string, name: IconName, label: string, onclick: () => void, disabled = false) =>
+    h('button', { type: 'button', class: ICON_BTN, 'data-card': c.id, 'data-act': act, title: label, 'aria-label': label, disabled, onclick }, icon(name, 'size-4'));
+  return h('article', { class: cx(CARD, 'flex min-w-0 flex-col gap-3 p-4') },
+    h('div', { class: 'flex items-start gap-2' },
+      h('span', { class: 'grid size-9 shrink-0 place-items-center rounded-lg bg-code', 'aria-hidden': 'true' }, icon(({ table: 'table', number: 'hash', bar: 'chart', line: 'lineChart' } as const)[c.kind])),
+      h('h3', { class: 'm-0 min-w-0 flex-1 self-center text-sm leading-snug font-semibold break-words' }, c.title)),
+    body,
+    h('details', { class: 'text-sm' },
+      h('summary', { class: 'cursor-pointer text-muted' }, t('dash.sql')),
+      h('pre', { class: 'sql mt-2 mb-0 max-h-48 overflow-auto' }, c.sql)),
+    h('div', { class: 'mt-auto flex flex-wrap items-center gap-1 text-sm text-muted' },
+      h('span', { class: 'mr-auto' }, sourceLine(c), ' · ', ran),
+      btn('up', 'up', t('dash.up', { title: c.title }), () => move(-1), i === 0),
+      btn('down', 'down', t('dash.down', { title: c.title }), () => move(1), i === n - 1),
+      btn('rerun', 'refresh', t('dash.rerun', { title: c.title }), rerun),
+      btn('unpin', 'unpin', t('dash.unpin', { title: c.title }), () => {
+        const d = app.save.dashboard;
+        d.cards = d.cards.filter((x) => x.id !== c.id);
+        cards.forget(c.id);
+        save();
+        byId('dash-mine-title').focus();
+        announce(t('dash.unpinned', { title: c.title }));
+      })));
+}
+
+function mineSection(redraw: () => void): HTMLElement {
+  const lang = getLang();
+  const cards = app.save.dashboard.cards;
+  const learned = learnedSkills(app.tickets, done());
+  const kinds = CARD_KINDS.map((k) => {
+    const skill = skillOf(KIND_SKILL[k]);
+    return h('span', { class: cx('rounded-md px-2 py-0.5 ring-1 ring-line', !learned.has(skill.id) && 'text-muted') },
+      t(KIND_LABEL[k]), learned.has(skill.id) ? '' : ` · ${t('pin.kindLocked', { skill: skill.label[lang], n: skill.chapter })}`);
+  });
+  return h('section', { 'aria-labelledby': 'dash-mine-title' },
+    h('div', { class: 'flex flex-wrap items-center gap-x-3 gap-y-2' },
+      h('h2', { id: 'dash-mine-title', tabindex: '-1', class: 'm-0 text-lg font-bold' }, t('dash.mine')),
+      h('span', { class: 'text-sm text-muted' }, t('dash.count', { n: cards.length, max: MAX_CARDS })),
+      h('button', { type: 'button', class: 'ml-auto flex items-center gap-1.5 px-3 py-1 text-sm', onclick: () => startSandbox() }, icon('flask', 'size-4'), t('dash.toSandbox'))),
+    h('p', { class: 'mt-2 mb-3 flex flex-wrap items-center gap-1.5 text-sm' }, h('span', { class: 'text-muted' }, t('dash.kinds')), ...kinds),
+    cards.length >= MAX_CARDS ? h('p', { class: 'mb-3 text-sm', role: 'note' }, t('dash.full', { max: MAX_CARDS })) : null,
+    cards.length
+      ? h('div', { class: 'grid gap-4 sm:grid-cols-2 lg:grid-cols-3' }, ...cards.map((c, i) => playerCard(c, i, cards.length, redraw)))
+      : h('div', { class: cx(CARD, 'p-5') },
+        h('h3', { class: 'm-0 text-base font-bold' }, t('dash.emptyTitle')),
+        h('p', { class: 'mt-1 mb-3 text-[15px] text-muted' }, t('dash.empty')),
+        h('button', { type: 'button', class: cx(BTN_GO, 'px-4 py-2'), onclick: () => startSandbox() }, t('dash.toSandbox'))));
 }
 
 function setHidden(id: string, hide: boolean, label: string, redraw: () => void): void {
@@ -118,5 +247,6 @@ export function renderDashboard(host: HTMLElement): void {
     h('header', {},
       h('h1', { id: 'dashboard-title', tabindex: '-1', class: 'm-0 text-2xl font-bold' }, t('dash.title')),
       h('p', { class: 'mt-1 mb-0 max-w-3xl text-[15px] text-muted' }, t('dash.intro'))),
+    mineSection(redraw), // L49: the player's own cards come before the company figures
     companySection(redraw)));
 }

@@ -11,6 +11,8 @@ export interface QueryResult {
   rows: unknown[][];
   /** Set only when the query returned more than MAX_ROWS_WORKER rows and `rows` was cut. */
   truncated?: true;
+  /** Time the statement took inside the worker (ms, rounded), without the queue wait. Plan 5: the 2 s pin rule. */
+  ms?: number;
 }
 
 /** Postgres error fields. `message` is Postgres' own text and is never translated. */
@@ -62,11 +64,13 @@ export function sqlErrorInfo(e: unknown): SqlErrorInfo | undefined {
 export async function runSandboxed(db: PGlite, sql: string, maxRows = MAX_ROWS_WORKER): Promise<QueryResult> {
   await db.exec('BEGIN');
   try {
+    const t0 = performance.now();
     const r = await db.query<unknown[]>(sql, [], { rowMode: 'array' });
     const result: QueryResult = {
       columns: r.fields.map((f) => f.name),
       types: r.fields.map((f) => f.dataTypeID),
       rows: r.rows.length > maxRows ? r.rows.slice(0, maxRows) : r.rows,
+      ms: Math.round(performance.now() - t0),
     };
     if (r.rows.length > maxRows) result.truncated = true;
     return result;

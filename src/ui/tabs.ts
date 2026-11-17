@@ -95,8 +95,8 @@ export function createPanel(host: HTMLElement): Panel {
   };
 }
 
-/** Plan 1 tabs. `editorSql` = what Ctrl+Enter would run now, to flag a stale result. */
-export function registerCoreTabs(editorSql: () => string): void {
+/** Plan 1 tabs. `editorSql` = what Ctrl+Enter would run now, to flag a stale result. `bar`: the line above the result (Plan 5: run time, Pin). */
+export function registerCoreTabs(editorSql: () => string, bar: () => Node | null = () => null): void {
   registerTab({
     id: 'result',
     label: 'tab.result',
@@ -110,7 +110,7 @@ export function registerCoreTabs(editorSql: () => string): void {
         return;
       }
       if (editorSql().trim() !== run.sql.trim()) host.append(h('p', { class: 'stale', role: 'note' }, t('res.stale')));
-      host.append(run.error !== undefined ? errorView(run.error) : renderResult(run.result!, run.mark));
+      host.append(bar() ?? '', run.error !== undefined ? errorView(run.error) : renderResult(run.result!, run.mark));
     },
   });
 }

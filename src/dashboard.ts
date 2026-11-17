@@ -1,3 +1,4 @@
+import { DbRestartError, QueryTimeoutError } from './db/client';
 import type { QueryResult } from './db/run';
 import { chartSpec, MAX_POINTS, NUMERIC, type ChartSpec } from './viz/chart';
 
@@ -85,4 +86,39 @@ export function moveCard(cards: Card[], i: number, dir: -1 | 1): Card[] {
   const out = [...cards];
   [out[i], out[j]] = [out[j], out[i]];
   return out;
+}
+
+/**
+ * Player cards run once per session, one after another (a card waits for the previous one), through the DbClient queue
+ * (product-design-v3 §7). A timeout restarts the worker: only that card is reported to `onSlow` (the UI saves it as slow and
+ * never runs it by itself again); cards cut short by the restart are forgotten and run on the next draw. Results are not
+ * saved: the seed is deterministic and every query is rolled back, so they cannot change within a build.
+ */
+export function cardRunner(run: (sql: string) => Promise<QueryResult>, onSlow: (id: string) => void) {
+  // Keyed by id and SQL: ids repeat across saves (c1, c2…), so an imported save's c1 must not reuse the old c1's result.
+  const runs = new Map<string, Promise<QueryResult>>();
+  const keyOf = (c: Card): string => `${c.id}
+${c.sql}`;
+  let chain: Promise<unknown> = Promise.resolve();
+  return {
+    result(c: Card): Promise<QueryResult> {
+      const k = keyOf(c);
+      let p = runs.get(k);
+      if (!p) {
+        p = chain.then(() => run(c.sql));
+        chain = p.catch(() => {});
+        runs.set(k, p);
+        p.catch((e: unknown) => {
+          if (e instanceof DbRestartError) runs.delete(k);
+          if (e instanceof QueryTimeoutError) onSlow(c.id);
+        });
+      }
+      return p;
+    },
+    /** "Chạy lại", unpin: the next result() runs the card again. */
+    forget(id: string): void {
+      for (const k of runs.keys()) if (k.startsWith(`${id}
+`)) runs.delete(k);
+    },
+  };
 }

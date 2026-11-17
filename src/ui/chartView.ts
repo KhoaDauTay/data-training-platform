@@ -11,7 +11,8 @@ const SVG = 'h-auto w-full max-w-[900px]';
 const LABEL = 'fill-muted text-xs';
 const VALUE = 'fill-ink text-xs tabular-nums';
 
-function bars(r: QueryResult, spec: ChartSpec, col: number, color: ChapterColor): SVGSVGElement {
+/** Also drawn small on dashboard cards (src/ui/dashboard.ts). */
+export function bars(r: QueryResult, spec: ChartSpec, col: number, color: ChapterColor): SVGSVGElement {
   const rowH = 24;
   const labelW = 200;
   const vals = r.rows.map((row) => Number(row[col] ?? 0));
@@ -31,7 +32,7 @@ function bars(r: QueryResult, spec: ChartSpec, col: number, color: ChapterColor)
     }));
 }
 
-function line(r: QueryResult, spec: ChartSpec, col: number, color: ChapterColor): SVGSVGElement {
+export function line(r: QueryResult, spec: ChartSpec, col: number, color: ChapterColor): SVGSVGElement {
   const H = 260;
   const pad = { l: 64, r: 16, t: 12, b: 32 };
   const pts = r.rows

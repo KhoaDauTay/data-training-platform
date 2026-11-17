@@ -24,6 +24,7 @@ import { leftHome, renderHome } from './ui/homeView';
 import { initStage, playCompletion, relabelStage } from './ui/stage';
 import { renderInbox } from './ui/inbox';
 import { createPanel, registerCoreTabs } from './ui/tabs';
+import { pinBar } from './ui/pin';
 import { initLayout } from './ui/splitter';
 import { go, startRouter } from './ui/router';
 import { initTopbar, renderTopbar } from './ui/topbar';
@@ -106,7 +107,7 @@ async function loadColumns(): Promise<void> {
   }
 }
 
-registerCoreTabs(() => work.currentSql());
+registerCoreTabs(() => work.currentSql(), () => pinBar(() => work.currentSql()));
 registerVizTabs({ db, show: (id) => panel.show(id), active: () => panel.active, editorSql: () => work.currentSql() });
 const panel = createPanel(byId('panel'));
 const work = mountWork(byId('work'), {
