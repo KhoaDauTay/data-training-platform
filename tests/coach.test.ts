@@ -49,7 +49,7 @@ describe('coach mark: đóng thì focus đi đúng chỗ', () => {
     expect(focused()).toEqual(['#work .cm-content']);
   });
 
-  it('recap → nút "Ticket tiếp theo" trong Recap', async () => {
+  it('recap → nút "Việc tiếp theo" trong Recap', async () => {
     await clickOk((app) => { app.selectedId = 'A'; app.save.completed = ['A']; });
     expect(focused()).toEqual(['.recap button.primary']);
   });
