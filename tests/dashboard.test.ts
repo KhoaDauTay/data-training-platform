@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { KIND_SKILL, moveCard, nextCardId, PIN_MAX_MS, pinBlock, valueCols, type Card } from '../src/dashboard';
-import type { QueryResult } from '../src/db/run';
+import { cardRunner, KIND_SKILL, moveCard, nextCardId, PIN_MAX_MS, pinBlock, valueCols, type Card } from '../src/dashboard';
+import { DbRestartError, QueryTimeoutError } from '../src/db/client';
+import { runSandboxed, type QueryResult } from '../src/db/run';
+import { seededDb } from './helpers';
 
 const card = (id: string): Card => ({ id, title: id, sql: 'SELECT 1', kind: 'table', source: 'sandbox' });
 const res = (types: number[], rows: unknown[][]): QueryResult => ({ columns: types.map((_, i) => `c${i}`), types, rows });
@@ -51,5 +53,62 @@ describe('card của người chơi (src/dashboard.ts)', () => {
     expect(pinBlock({ sql: `SELECT ${'1'.repeat(4000)}`, ms: 1 }, `SELECT ${'1'.repeat(4000)}`, 0)).toBe('long');
     expect(pinBlock({ sql: 'SELECT 1', ms: PIN_MAX_MS + 1 }, 'SELECT 1', 0)).toBe('slow');
     expect(pinBlock({ sql: 'SELECT 1', ms: PIN_MAX_MS }, 'SELECT 1', 0)).toBeUndefined();
+  });
+});
+
+describe('chạy card (cardRunner, product-design-v3 §7)', () => {
+  const ok: QueryResult = { columns: ['n'], types: [20], rows: [[1]] };
+  const sqlCard = (id: string, sql: string): Card => ({ ...card(id), sql });
+
+  it('mỗi card chạy một lần mỗi phiên, lần lượt từng card', async () => {
+    const order: string[] = [];
+    let release!: () => void;
+    const gate = new Promise<void>((r) => (release = r));
+    const run = async (sql: string) => {
+      order.push(`start ${sql}`);
+      if (sql === 'A') await gate;
+      order.push(`end ${sql}`);
+      return ok;
+    };
+    const cards = cardRunner(run, () => {});
+    const a = cards.result(sqlCard('a', 'A'));
+    const b = cards.result(sqlCard('b', 'B'));
+    await Promise.resolve();
+    expect(order).toEqual(['start A']); // B waits for A
+    release();
+    await Promise.all([a, b]);
+    expect(order).toEqual(['start A', 'end A', 'start B', 'end B']);
+    await cards.result(sqlCard('a', 'A'));
+    expect(order.filter((x) => x === 'start A')).toHaveLength(1); // cached for the session
+    cards.forget('a');
+    await cards.result(sqlCard('a', 'A'));
+    expect(order.filter((x) => x === 'start A')).toHaveLength(2);
+    await cards.result(sqlCard('a', 'B')); // same id from an imported save, other SQL: runs its own SQL
+    expect(order.filter((x) => x === 'start B')).toHaveLength(2);
+  });
+
+  it('quá giờ → chỉ card đó bị đánh dấu chậm; card bị cắt ngang do khởi động lại thì chạy lại lần sau', async () => {
+    const slow: string[] = [];
+    let calls = 0;
+    const run = async (sql: string) => {
+      calls++;
+      if (sql === 'SLOW') throw new QueryTimeoutError(5000);
+      if (sql === 'CUT' && calls < 4) throw new DbRestartError();
+      return ok;
+    };
+    const cards = cardRunner(run, (id) => slow.push(id));
+    await expect(cards.result(sqlCard('s', 'SLOW'))).rejects.toBeInstanceOf(QueryTimeoutError);
+    await expect(cards.result(sqlCard('c', 'CUT'))).rejects.toBeInstanceOf(DbRestartError);
+    await expect(cards.result(sqlCard('d', 'OK'))).resolves.toBe(ok); // the chain goes on after a failure
+    expect(slow).toEqual(['s']);
+    await expect(cards.result(sqlCard('c', 'CUT'))).resolves.toBe(ok); // forgotten after the restart, so it ran again
+  });
+});
+
+describe('thời gian chạy trong kết quả (luật 2 s khi ghim)', () => {
+  it('runSandboxed ghi ms của câu lệnh', async () => {
+    const r = await runSandboxed(await seededDb(), 'SELECT count(*) FROM shipments');
+    expect(Number.isInteger(r.ms)).toBe(true);
+    expect(r.ms).toBeGreaterThanOrEqual(0);
   });
 });
