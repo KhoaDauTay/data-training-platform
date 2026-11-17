@@ -12,7 +12,7 @@ import { textOf, type Beat, type Ticket, type TicketText } from '../tickets';
 import { relatedTables } from '../viz/erd';
 import { mascot } from './mascots';
 import { avatar } from './avatar';
-import { coach, tourSlot } from './coach';
+import { coach, tourRegion, tourSlot } from './coach';
 import { h, nodes, richText } from './dom';
 import { skillIcon } from './icons';
 import { lessonSlot } from './lessonCard';
@@ -74,8 +74,9 @@ function hints(tk: Ticket, x: TicketText, isDone: boolean): HTMLElement {
   }, isStory() && cost > 0
     ? t('brief.hint', { i: shown + 1, n: x.hints.length, cost })
     : t('brief.hintFree', { i: shown + 1, n: x.hints.length })); // Practice: 0 XP, so no cost (P9); chapter 1: free (L54)
+  const tourHere = tourRegion() === 'brief' || tourRegion() === 'lesson'; // one Boon per pane
   return h('section', { class: 'hints my-3' },
-    shown ? h('div', { class: 'flex items-start gap-3' }, mascot('boon', 'think', 'size-12'),
+    shown ? h('div', { class: 'flex items-start gap-3' }, tourHere ? null : mascot('boon', 'think', 'size-12'),
       h('ol', { class: 'min-w-0 flex-1 space-y-1' }, ...x.hints.slice(0, shown).map((s) => h('li', {}, richText(s))))) : null,
     isDone || shown >= x.hints.length ? null : btn);
 }
@@ -191,7 +192,6 @@ function recap(tk: Ticket, x: TicketText): HTMLElement {
   const hintsUsed = app.save.hintsUsed[tk.id] ?? 0;
   return h('section', { class: 'recap my-3 rounded-xl bg-emerald-50 p-4 ring-1 ring-emerald-300 dark:bg-emerald-950/40 dark:ring-emerald-800' },
     h('h3', { tabindex: '-1', class: 'mt-0 text-emerald-900 dark:text-emerald-200' }, t('recap.title')),
-    tourSlot('recap'),
     h('p', {}, tk.lane ? t('lane.xp', { n: LANE_XP }) : t('recap.xp', { n: xpFor(tk, hintsUsed), hints: hintsUsed })),
     h('h4', {}, t(tk.grants.length ? 'recap.learned' : 'recap.review')),
     h('ul', { class: 'space-y-1' }, ...skills.map((s) =>
@@ -248,7 +248,6 @@ export function renderBrief(host: HTMLElement, tk: Ticket, stepIndex: number): v
     isStory() ? tourSlot('brief') : null,
     h('div', { class: 'rounded-2xl rounded-tl-sm bg-code px-4 leading-relaxed' }, richText(x.body)),
     isStory() && !isDone ? lessonSlot(tk.grants) : null, // quick lessons before the task (product-design-v4 §C.3)
-    isStory() && !isDone ? tourSlot('lesson') : null,
     exampleCard(tk, x),
     x.task ? h('section', { class: 'my-3 rounded-lg border-l-4 border-accent bg-accent-soft p-3' }, h('h3', { class: 'mt-0' }, t('brief.task')), richText(x.task)) : null,
     relatedLine(tk),
@@ -263,5 +262,6 @@ export function renderBrief(host: HTMLElement, tk: Ticket, stepIndex: number): v
     app.conclusionFor === tk.id && !isDone && x.conclusion ? conclusion(tk, x) : null,
     isDone ? sentBubbles(tk) : null,
     isDone ? recap(tk, x) : null,
+    isDone && isStory() ? tourSlot('recap') : null, // tour step 8 after the Recap card, not inside it (v6 §2.1)
   ));
 }

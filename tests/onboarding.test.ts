@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  ackTour, gated, navLock, parseTour, readTour, startTour, tabOpen, TOUR_KEY, tourStep, welcomeNeeded, type TourFacts,
+  ackTour, gated, navLock, parseTour, readTour, startTour, tabOpen, TOUR_KEY, tourEscSkips, tourStep, welcomeNeeded, type TourFacts,
 } from '../src/onboarding';
 import type { KV } from '../src/storage';
 
@@ -89,5 +89,10 @@ describe('onboarding (v4 §B, Plan 7 V8–V9)', () => {
     expect(tabOpen('ch3-01', reached, true)).toBe(false);
     expect(tabOpen(undefined, reached, true)).toBe(true);
     expect(tabOpen('ch3-01', reached, false)).toBe(true);
+  });
+  it('Esc chỉ bỏ tour khi thấy dấu của Boon và không ai khác nhận Esc (code review v10 #1)', () => {
+    expect(tourEscSkips({ markVisible: true, owned: false })).toBe(true);
+    expect(tourEscSkips({ markVisible: false, owned: false })).toBe(false); // ở trang khác, dấu nằm trong workspace ẩn
+    expect(tourEscSkips({ markVisible: true, owned: true })).toBe(false); // đang đóng menu ⋯ / sổ tay / popup editor
   });
 });

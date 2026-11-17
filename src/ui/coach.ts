@@ -1,6 +1,6 @@
 import { getLang, t, type Key } from '../i18n';
 import { loadLessonPrefs } from '../lessons';
-import { ackTour, readTour, TOUR_SLOT, TOUR_STEPS, tourStep, type TourFacts, type TourSlot } from '../onboarding';
+import { ackTour, readTour, TOUR_SLOT, TOUR_STEPS, tourEscSkips, tourStep, type TourFacts, type TourSlot } from '../onboarding';
 import { SKILLS } from '../progress';
 import { isStory } from '../session';
 import { app, done } from '../state';
@@ -83,6 +83,23 @@ function skip(): void {
   document.getElementById('brief-title')?.focus();
 }
 
+/** The step whose mark was last scrolled into view: each step scrolls once, never on a plain redraw (UI/UX review v10 #1). */
+let scrolled: number | undefined;
+function reveal(el: HTMLElement, step: number): void {
+  if (scrolled === step) return;
+  requestAnimationFrame(() => {
+    if (!el.isConnected || el.offsetParent === null || document.getElementById('shell')?.hidden) return; // drawn in a hidden view: try on the next draw
+    scrolled = step;
+    el.scrollIntoView({ block: 'nearest' }); // scroll only: focus stays where the player is typing
+  });
+}
+
+/** The region the tour's mark is in now: that region shows no other mascot (v6 §1.4 rule 1, code review v10 #2). */
+export function tourRegion(): TourSlot | undefined {
+  const step = tourStep(facts());
+  return step === undefined ? undefined : TOUR_SLOT[step];
+}
+
 /** Boon's mark: --sun-ink on --sun (8.3:1), a step counter, the words, its button(s) and "Skip the tour (Esc)". */
 function mark(step: number): HTMLElement {
   const after = (n: number, toPath = false) => () => {
@@ -91,7 +108,7 @@ function mark(step: number): HTMLElement {
     if (toPath) go('learn');
     else document.querySelector<HTMLElement>('[data-tour-mark]')?.focus(); // the next step's mark, wherever it now sits
   };
-  return h('aside', {
+  const el = h('aside', {
     class: 'tour my-3 flex items-start gap-3 rounded-(--r-card) bg-sun p-3 text-sun-ink', role: 'note', tabindex: '-1',
     'data-tour-mark': String(step), 'aria-label': t('tour.label', { i: step, n: TOUR_STEPS }),
   },
@@ -104,6 +121,8 @@ function mark(step: number): HTMLElement {
         step === 8 ? h('button', { type: 'button', class: 'primary', onclick: after(8) }, t('tour.done')) : null,
         step === 8 ? h('button', { type: 'button', onclick: after(8, true) }, t('tour.seePath')) : null,
         h('button', { type: 'button', onclick: () => skip() }, t('tour.skip')))));
+  reveal(el, step);
+  return el;
 }
 
 /** A region's placeholder (brief, lesson, work, panel, recap): holds the mark when the current step points there. */
@@ -125,11 +144,25 @@ export function refreshTour(): void {
   }
 }
 
-/** Esc skips the tour (v4 §B.4) unless something else owns Esc: an open modal, the completion dock, CodeMirror's popups. */
+/** `:popover-open` throws in browsers without the Popover API (their menus are display:none, style.css). */
+function popoverOpen(): boolean {
+  try {
+    return !!document.querySelector(':popover-open');
+  } catch {
+    return false;
+  }
+}
+
+/** Esc skips the tour (v4 §B.4) unless the mark is out of sight or something else owns Esc (tourEscSkips). */
 export function initTour(): void {
   document.addEventListener('keydown', (e) => {
-    if (e.key !== 'Escape' || e.defaultPrevented || !document.querySelector('[data-tour-mark]')) return;
-    if (document.querySelector('dialog:modal') || document.getElementById('stage')?.hidden === false) return;
-    skip();
+    if (e.key !== 'Escape' || e.defaultPrevented) return;
+    const mark = document.querySelector<HTMLElement>('[data-tour-mark]');
+    const target = e.target instanceof Element ? e.target : null;
+    const owned = !!document.querySelector('dialog:modal, dialog#notebook-dialog[open]') || popoverOpen()
+      || document.getElementById('stage')?.hidden === false
+      || !!target?.closest('.cm-editor');
+    const markVisible = !!mark && !document.getElementById('shell')?.hidden && mark.offsetParent !== null;
+    if (tourEscSkips({ markVisible, owned })) skip();
   });
 }

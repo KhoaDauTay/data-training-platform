@@ -58,6 +58,16 @@ export function tourStep(f: TourFacts): number | undefined {
   return 7;
 }
 
+/** What Esc sees when the tour might take it (coach.ts initTour). */
+export interface EscScene {
+  /** A tour mark is on screen: in the visible workspace and laid out (not in a hidden view). */
+  markVisible: boolean;
+  /** Something else closes on this Esc: a modal, the completion dock, a popover, the notebook, or CodeMirror (focus in the editor). */
+  owned: boolean;
+}
+/** Esc skips the tour only when the player can see Boon's mark and nothing else is closing on that key (code review v10 #1). */
+export const tourEscSkips = (s: EscScene): boolean => s.markVisible && !s.owned;
+
 /** v4 D-O3 with V9: day-one items show a lock and why, never hidden. `order` = story ticket ids. */
 export function navLock(id: string, completed: ReadonlySet<string>, order: readonly string[], isGated: boolean): Key | undefined {
   if (!isGated) return undefined;

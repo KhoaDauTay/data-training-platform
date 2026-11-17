@@ -10,7 +10,7 @@ import { byId, h, nodes, richText } from './dom';
 import { errorText, errorView, gradeMessage } from './feedback';
 import { skillIcon } from './icons';
 import { renderResult } from './resultTable';
-import { markExampleRan } from './coach';
+import { markExampleRan, tourSlot } from './coach';
 import { readTour } from '../onboarding';
 
 // Session state by skill id. The brief is rebuilt on every rerender, so what the player typed or ran lives here.
@@ -31,11 +31,14 @@ function markSeen(id: string, tried: boolean): void {
   markLesson(id, tried);
 }
 
+/** One paragraph per ①②③ marker (UI/UX review v10 #7). */
+const byMarker = (text: string): string => text.replace(/\s+(?=[②-⑨])/g, '\n\n');
+
 const section = (title: string, ...body: (Node | null)[]): HTMLElement =>
   h('div', { class: 'mt-3' }, h('h4', { class: 'mt-0 mb-1' }, title), ...body);
 
 /** The full card (product-design-v4 §C.2). `titleId` differs between the brief and the dialog; `actions` sit next to the title. */
-function card(l: Lesson, titleId: string, actions: HTMLElement[]): HTMLElement {
+function card(l: Lesson, titleId: string, actions: HTMLElement[], tour = false): HTMLElement {
   const lang = getLang();
   const exampleOut = h('div', { class: 'mt-2' });
   const drawExample = (): void => {
@@ -96,7 +99,7 @@ function card(l: Lesson, titleId: string, actions: HTMLElement[]): HTMLElement {
       h('div', { class: 'flex gap-1.5' }, ...actions)),
     h('p', { class: 'mt-2 mb-0' }, l.concept[lang]),
     skill ? h('p', { class: 'mt-2 mb-0' }, h('b', {}, t('lesson.syntax')), ' ', h('code', {}, skill.syntax)) : null,
-    section(t('lesson.example'), h('pre', { class: 'sql' }, l.example), runExample, exampleOut, richText(l.explain[lang])),
+    section(t('lesson.example'), h('pre', { class: 'sql' }, l.example), runExample, tour ? tourSlot('lesson') : null, exampleOut, richText(byMarker(l.explain[lang]))),
     section(t('lesson.mistake'), h('pre', { class: 'sql' }, l.mistake.sql), richText(l.mistake.why[lang])),
     section(t('lesson.cues'), h('p', { class: 'm-0' }, l.cues[lang].join(' · '))),
     section(t('lesson.try'), h('p', { class: 'mt-0' }, l.try.task[lang]), area, h('div', { class: 'actions mb-0' }, check), verdict),
@@ -126,7 +129,9 @@ export function lessonSlot(grants: string[]): HTMLElement | null {
     // v4 §C.6: "I already know SQL" on the welcome screen → every lesson starts as its one-line row (chips still open it).
     const first = readTour()?.knows ? undefined : ids.find((id) => !isSeen(id));
     host.replaceChildren(...ids.map((id) => {
-      if (!(expanded.get(id) ?? id === first)) return collapsed(id, () => { expanded.set(id, true); draw(id); });
+      // Tour step 4 ("Run the example") sits right under that button, on the first lesson only; a closed lesson keeps it on its row.
+      const tour = id === ids[0];
+      if (!(expanded.get(id) ?? id === first)) return h('div', {}, collapsed(id, () => { expanded.set(id, true); draw(id); }), tour ? tourSlot('lesson') : null);
       const close = (seen: boolean) => () => {
         if (seen) markSeen(id, false);
         expanded.set(id, false);
@@ -135,7 +140,7 @@ export function lessonSlot(grants: string[]): HTMLElement | null {
       return card(lessons.get(id)!, `lesson-${id}-title`, [
         h('button', { type: 'button', onclick: close(true) }, `${t('lesson.gotIt')} ✓`),
         h('button', { type: 'button', onclick: close(false) }, t('lesson.collapse')),
-      ]);
+      ], tour);
     }));
     // The pressed button is gone: focus what replaced it (the one-line row's button, or the opened card's title).
     if (focus) host.querySelector<HTMLElement>(`[data-lesson="${focus}"] button, #lesson-${focus}-title`)?.focus();

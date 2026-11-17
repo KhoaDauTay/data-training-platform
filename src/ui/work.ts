@@ -19,7 +19,7 @@ import { avatar } from './avatar';
 import { errorText, errorView, gradeMessage, mascotOf, voiceKey } from './feedback';
 import { mascot, type Mascot, type Pose } from './mascots';
 import { pageShortcutOf } from './shortcuts';
-import { tourSlot } from './coach';
+import { tourRegion, tourSlot } from './coach';
 import type { Panel } from './tabs';
 
 export interface WorkDeps {
@@ -134,7 +134,7 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
   }
   function drawMessage(): void {
     feedback.className = message ? FEEDBACK[message.kind] : '';
-    const who = message?.who;
+    const who = tourRegion() === 'work' ? undefined : message?.who; // Boon's tour mark is already in this pane
     feedback.replaceChildren(!message ? '' : who
       ? h('div', { class: 'flex items-start gap-3' }, mascot(who[0], who[1], 'size-12'), h('div', { class: 'min-w-0 flex-1' }, message.view()))
       : message.view());

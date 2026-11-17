@@ -65,7 +65,7 @@ export const en: Record<Key, Msg> = {
   'lesson.cues': 'Signs in a request',
   'lesson.try': 'Try it now (no XP)',
   'lesson.tryAria': 'Try-it-now SQL',
-  'lesson.check': 'Run & check',
+  'lesson.check': 'Check my answer',
   'lesson.running': 'Running…',
   'lesson.tryOk': 'Correct! You have got this skill.',
   'lesson.docs': 'Read more: PostgreSQL docs',

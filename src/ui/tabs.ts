@@ -56,7 +56,7 @@ export function createPanel(host: HTMLElement): Panel {
       },
     }));
   const bar = h('div', { class: 'mb-2.5 flex flex-wrap gap-1 border-b border-line max-sm:flex-nowrap max-sm:overflow-x-auto', role: 'tablist', 'data-i18n-aria': 'tab.list', 'aria-label': t('tab.list') }, ...buttons);
-  host.replaceChildren(bar, body);
+  host.replaceChildren(bar, tourSlot('panel'), body); // tour steps 3 and 5: above the tab body, never inside the result (v10 review)
   let active = tabs.some((x) => x.id === 'columns') ? 'columns' : tabs[0].id;
 
   bar.addEventListener('keydown', (e) => {
@@ -115,7 +115,6 @@ export function registerCoreTabs(editorSql: () => string, bar: () => Node | null
     order: 10,
     render(host) {
       const run = app.lastRun;
-      host.append(tourSlot('panel'));
       if (!run) {
         host.append(h('p', { class: 'muted' }, t('res.runFirst')));
         return;
