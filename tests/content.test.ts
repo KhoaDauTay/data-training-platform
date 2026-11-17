@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import template from '../content/TEMPLATE.md?raw';
-import { loadTickets } from '../src/content';
+import { loadTicketTemplates, loadTickets } from '../src/content';
+import { compareResults } from '../src/grader';
 import { KPIS } from '../src/home';
-import { CHAPTER_TABLES, contentProblems } from '../src/progress';
+import { CHAPTER_TABLES, contentProblems, SKILLS } from '../src/progress';
 import { parseTicket, textOf, type TicketText } from '../src/tickets';
+import { applyVariant, variantsOf } from '../src/variants';
 import { runner } from './helpers';
 
 const tickets = loadTickets();
@@ -16,7 +18,7 @@ const VI_DIACRITIC = /[àáạảãâầấậẩẫăằắặẳẵèéẹẻ�
 const codeSpans = (s: string): string[] => [...s.matchAll(/`([^`]+)`/g)].map((m) => m[1]).sort();
 const allText = (x: TicketText): string => [
   x.title, x.body, x.task, ...x.hints, ...x.steps.flatMap((s) => [s.title, s.prompt]),
-  ...(x.conclusion ? [x.conclusion.question, ...x.conclusion.options] : []),
+  ...(x.conclusion ? [x.conclusion.question, ...x.conclusion.options] : []), x.example ?? '',
 ].join('\n');
 // ponytail: regex over FROM/JOIN is enough for content Solutions (no CTE, no quoted names).
 // Swap for tablesInQuery (Plan 1b Task 6, libpg-query) if a Solution ever needs a CTE or subquery in FROM.
@@ -99,6 +101,49 @@ describe('Solution', () => {
     const run = await runner();
     const boss = tickets.find((t) => t.id === 'ch1-05');
     expect((await run(boss!.steps[0].solution)).rows.length).toBeGreaterThanOrEqual(4);
+  });
+});
+
+/** curriculum §5: learning-method fields, required from chapter 4 (ch1–3 stay as they are). */
+describe('phương pháp học (Plan 2, từ chương 4)', () => {
+  const templates = loadTicketTemplates().filter((t) => t.chapter >= 4);
+  const normal = templates.filter((t) => t.beat !== 'boss');
+  const chapters = [...new Set(templates.map((t) => t.chapter))];
+  /** Every variant of every `wrong:` SQL, so a variant cannot make a wrong answer accidentally right. */
+  const wrongs = normal.flatMap((t) => Array.from({ length: Math.max(1, variantsOf(t).length) }, (_, v) => applyVariant(t, v))
+    .flatMap((tv, v) => (tv.wrong ?? []).map((w, i) => ({ name: `${t.id}#${v} wrong[${i}]`, sql: w.sql, solution: tv.steps[0].solution, ordered: t.ordered }))));
+
+  it.each(chapters)('chương %i: teach là ví dụ mẫu (worked), có đúng một bài làm cùng (faded)', (c) => {
+    const inChapter = templates.filter((t) => t.chapter === c);
+    expect(inChapter.find((t) => t.beat === 'teach')?.format).toBe('worked');
+    expect(inChapter.filter((t) => t.format === 'faded')).toHaveLength(1);
+  });
+
+  it.each(normal)('$id: có câu ngẫm lại (reflect), EN không dấu', (t) => {
+    expect(t.reflect).toBeDefined();
+    const r = t.reflect!;
+    expect([r.q, r.why, ...r.options].map((b) => b.en).join('\n')).not.toMatch(VI_DIACRITIC);
+    for (const w of t.wrong ?? []) expect(w.why.en).not.toMatch(VI_DIACRITIC);
+  });
+
+  it.each(templates.filter((t) => t.example))('$id: SQL ví dụ mẫu chạy được, có dữ liệu, khác Solution', async (t) => {
+    const run = await runner();
+    const r = await run(t.example!.sql);
+    expect(r.rows.length).toBeGreaterThan(0);
+    expect(t.example!.sql).not.toBe(t.steps[0].solution);
+  });
+
+  it.each(wrongs)('$name: câu sai chạy được và cho kết quả khác Solution', async ({ sql, solution, ordered }) => {
+    const run = await runner();
+    expect(compareResults(await run(solution), await run(sql), ordered).ok).toBe(false);
+  });
+
+  // L37: the review queue needs other figures to practise with, not the same task again.
+  it('mỗi kỹ năng mới có một ticket thường với ≥ 3 biến thể (biến thể 0 + 2)', () => {
+    const missing = SKILLS.filter((s) => chapters.includes(s.chapter))
+      .filter((s) => !normal.some((t) => [...t.requires, ...t.grants].includes(s.id) && variantsOf(t).length >= 3))
+      .map((s) => s.id);
+    expect(missing).toEqual([]);
   });
 });
 

@@ -10,4 +10,7 @@
 - { id: teuByCarrier, ticket: ch3-02, kind: bar, label: { vi: "TEU quý 3/2026 theo hãng tàu", en: "Q3 2026 TEU by carrier" } }
 - { id: quietCustomers, ticket: ch3-03, kind: rowcount, label: { vi: "Khách không gửi hàng từ 01/03/2026", en: "Customers with no booking since 1 March 2026" } }
 - { id: topCustomers, ticket: ch3-05, step: 0, kind: bar, label: { vi: "Năm khách lớn nhất năm 2025 (TEU)", en: "Top five customers of 2025 (TEU)" } }
+- { id: overdueArrivals, ticket: ch4-04, kind: rowcount, label: { vi: "Lô quá ngày đến dự kiến mà chưa ghi nhận ngày đến", en: "Shipments past their ETA with no arrival recorded" } }
+- { id: clearanceDays, ticket: ch5-06, step: 1, kind: bar, label: { vi: "Số ngày thông quan trung bình quý 3/2026 theo luồng", en: "Average clearance days in Q3 2026 by lane" } }
+- { id: duplicateCustomers, ticket: ch6-06, kind: rowcount, label: { vi: "Khách bị nhập hai lần với hai cách viết tên", en: "Customers entered twice under two spellings" } }
 - { id: q3margin, ticket: ch12-06, kind: number, label: { vi: "Biên lợi nhuận quý 3/2026", en: "Q3 2026 gross margin" } }

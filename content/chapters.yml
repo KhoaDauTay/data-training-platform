@@ -48,7 +48,10 @@
   story:
     vi: "Tàu đến trễ, xe kéo phải chờ, kho CFS đầy dần. Điều độ vận tải cần bạn tính theo ngày tháng và xử lý cả những ngày chưa ai ghi."
     en: "Ships run late, trucks wait, the CFS warehouse fills up. The dispatchers need you to work with dates, including the dates nobody has filled in yet."
-  outcomes: []
+  outcomes:
+    - { vi: "Tính số ngày trễ và ngày hẹn mới từ các mốc ngày", en: "Work out days late and new due dates from the recorded dates", skills: [date_math] }
+    - { vi: "Lập báo cáo theo tháng, tuần, ngày", en: "Report by month, week or day", skills: [date_bucket] }
+    - { vi: "Tìm thứ chưa được ghi mà không lẫn lô đã hủy", en: "Find what has not been recorded yet without mixing in cancelled shipments", skills: [null_logic] }
 
 - chapter: 5
   title: { vi: "Hải quan & phân loại", en: "Customs and classification" }
@@ -57,7 +60,11 @@
   story:
     vi: "Mùa cao điểm hải quan: tờ khai luồng xanh, vàng, đỏ và những tờ khai phải sửa. Phòng Hải quan cần bạn phân loại và đếm theo điều kiện."
     en: "Customs peak season: green, yellow and red lanes, and declarations that had to be amended. The customs team needs you to classify and count by condition."
-  outcomes: []
+  outcomes:
+    - { vi: "Phân loại từng dòng theo điều kiện", en: "Classify each row by a condition", skills: [case_when] }
+    - { vi: "Đếm theo nhiều điều kiện trên cùng một dòng báo cáo", en: "Count by several conditions on one report line", skills: [conditional_agg] }
+    - { vi: "Thay dữ liệu còn trống bằng giá trị mặc định", en: "Replace missing data with a default", skills: [coalesce] }
+    - { vi: "Lần theo tờ khai sửa bằng cách nối bảng với chính nó", en: "Follow amended declarations by joining a table to itself", skills: [self_join] }
 
 - chapter: 6
   title: { vi: "Làm sạch dữ liệu", en: "Cleaning the data" }
@@ -66,7 +73,10 @@
   story:
     vi: "Tên khách mỗi nơi viết một kiểu, có khách bị nhập hai lần. Trước báo cáo năm, việc làm sạch dữ liệu thuộc về bạn."
     en: "Customer names are spelled differently in every place, and some customers were entered twice. Before the annual report, the clean-up is yours."
-  outcomes: []
+  outcomes:
+    - { vi: "Chuẩn hóa tên và tìm chữ trong ô gõ tay", en: "Normalise names and search typed text", skills: [string_fn, pattern_match] }
+    - { vi: "Đếm có bao nhiêu loại, bao nhiêu nơi khác nhau", en: "Count how many different kinds or places", skills: [distinct] }
+    - { vi: "Tính tỷ lệ phần trăm đúng tới số lẻ", en: "Compute percentages with their decimals", skills: [cast] }
 
 - chapter: 7
   title: { vi: "Báo giá & so sánh", en: "Quotes and comparisons" }
