@@ -70,6 +70,8 @@ export interface Ticket {
   example?: { sql: string; text: string };
   reflect?: Reflect;
   wrong?: Wrong[];
+  /** Plan 5: a lane side task (content/lanes/) for this map port; `chapter` is then the chapter whose review opens it. */
+  lane?: string;
 }
 
 const BEATS: Beat[] = ['teach', 'develop', 'twist', 'rest', 'boss'];
@@ -215,6 +217,7 @@ export function parseTicket(source: string, origin: string): Ticket {
     t.starter = (fm.starter as string).trim();
   }
   if (fm.scene !== undefined) t.scene = parseScene(fm.scene, t.beat === 'boss', fail);
+  if (fm.lane !== undefined) t.lane = typeof fm.lane === 'string' && /^[A-Z]{5}$/.test(fm.lane) ? fm.lane : fail('lane là mã cảng của bản đồ, vd NLRTM');
 
   if (vi.example) {
     t.example = { sql: vi.example.sql, text: vi.example.prose };

@@ -1,6 +1,6 @@
 import './style.css';
 import { initTheme } from './theme';
-import { loadContent, loadTickets } from './content';
+import { loadContent, loadLanes, loadTickets } from './content';
 import { DbClient, DbFailedError, DbRestartError, QueryTimeoutError, WorkerTaskError, type DbStatus } from './db/client';
 import { SqlError } from './db/run';
 import { buildDiagnostics, diagnosticsText } from './diagnostics';
@@ -79,7 +79,8 @@ loadingNotice.hidden = true;
 app.tickets = loadTickets();
 const problems = contentProblems(app.tickets);
 if (problems.length) console.warn('Content problems:', problems);
-const known: Known = { ticketIds: new Set(app.tickets.map((x) => x.id)), skills: new Set(SKILLS.map((s) => s.id)) };
+// Lane side tasks are known ids too, so their drafts, graded SQL and hints survive a reload (they never enter `completed`).
+const known: Known = { ticketIds: new Set([...app.tickets, ...loadLanes().tasks].map((x) => x.id)), skills: new Set(SKILLS.map((s) => s.id)) };
 
 const loaded = loadSave(localStore(), known);
 app.save = loaded.save;
@@ -126,7 +127,9 @@ initModes({ work, rerender });
 
 // The task bar needs no query: it is drawn before the DB is ready.
 const mapStrip = createMapStrip(byId('map'));
-const syncMap = (): void => mapStrip.update({ tickets: app.tickets, completed: done(), selectedId: app.selectedId });
+const syncMap = (): void => mapStrip.update({
+  tickets: app.tickets, completed: done(), selectedId: app.selectedId, lane: session.mode.kind === 'lane' ? session.mode.ticket : undefined,
+});
 
 /** Language switch and progress changes: redraws text, never remounts the editor. */
 function rerender(): void {
@@ -140,8 +143,8 @@ function rerender(): void {
   work.relabel();
   relabelStage();
   renderNotebook();
-  // Story workspace only: selectTicket() forces story mode, so Practice and Sandbox must not show the task bar (ui-ux-v4 §2).
-  byId('map').hidden = byId('shell').hidden || !isStory();
+  // Story workspace and lane tasks only: selectTicket() forces story mode, so Practice and Sandbox must not show the task bar (ui-ux-v4 §2).
+  byId('map').hidden = byId('shell').hidden || !(isStory() || session.mode.kind === 'lane');
   if (!byId('map').hidden) syncMap();
 }
 
@@ -238,7 +241,7 @@ window.addEventListener('error', (e) => fault(e.error));
 window.addEventListener('unhandledrejection', (e) => fault(e.reason));
 
 Object.assign(actions, {
-  rerender, selectTicket, complete, retryDb: () => db.restart(), copyDiagnostics: () => void copyDiagnostics(), useSql: (sql: string) => work.setDoc(sql), showTab: (id: string) => panel.show(id),
+  rerender, selectTicket, complete, retryDb: () => db.restart(), openLane: (port: string) => mapStrip.openLane(port), copyDiagnostics: () => void copyDiagnostics(), useSql: (sql: string) => work.setDoc(sql), showTab: (id: string) => panel.show(id),
 });
 
 byId('inbox-btn').addEventListener('click', () => (byId('inbox-dialog') as HTMLDialogElement).showModal());

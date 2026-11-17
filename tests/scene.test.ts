@@ -109,9 +109,11 @@ SELECT 1
 describe('tuyến từ Tiên Sa (L26, L31)', () => {
   it('mỗi tuyến là cảng SEAPORT của seed, tên đúng ports.name; có Laem Chabang, không có Bangkok', async () => {
     const run = await runner();
-    const r = await run("SELECT code, name FROM ports WHERE kind = 'SEAPORT'");
+    const r = await run("SELECT code, name, base_transit_days FROM ports WHERE kind = 'SEAPORT'");
     const seed = new Map(r.rows.map(([code, name]) => [String(code), String(name)]));
     expect(ROUTES.filter((x) => seed.get(x.port) !== x.name).map((x) => x.port)).toEqual([]);
+    const days = new Map(r.rows.map(([code, , d]) => [String(code), Number(d)]));
+    expect(ROUTES.filter((x) => days.get(x.port) !== x.days).map((x) => x.port)).toEqual([]); // Plan 5: lane list "~30 ngày"
     expect(ROUTES.map((x) => x.name)).toContain('Laem Chabang');
     expect(ROUTES.map((x) => x.name).join()).not.toMatch(/Bangkok/);
   });

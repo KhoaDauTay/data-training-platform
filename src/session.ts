@@ -3,7 +3,7 @@ import { learnedSkills } from './home';
 import { localDay, reviewQueue, warmupQueue, type PracticeItem } from './practice';
 import { currentChapter } from './progress';
 import { SANDBOX_DRAFT_MAX } from './save';
-import { app, done, draftKey, selected } from './state';
+import { app, done, draftKey, selected, stepKey } from './state';
 import type { Ticket } from './tickets';
 
 export interface PracticeRun {
@@ -25,11 +25,13 @@ export interface PracticeRun {
   warmup?: boolean;
 }
 
-/** Modes inside the #/play route (not routes of their own). */
-export type Mode = { kind: 'story' } | { kind: 'practice'; run: PracticeRun } | { kind: 'sandbox' };
+/** Modes inside the #/play route (not routes of their own). `lane`: a lane side task (Plan 5), outside chapter progress. */
+export type Mode = { kind: 'story' } | { kind: 'practice'; run: PracticeRun } | { kind: 'sandbox' } | { kind: 'lane'; ticket: Ticket };
 
 export const session: { mode: Mode } = { mode: { kind: 'story' } };
 export const isStory = (): boolean => session.mode.kind === 'story';
+/** Story tickets and lane side tasks keep their drafts, graded SQL, hints and history; Practice and the Sandbox do not. */
+export const keepsWork = (): boolean => session.mode.kind === 'story' || session.mode.kind === 'lane';
 
 /** Real local day for the Leitner schedule (never the in-game date). */
 export const today = (): string => localDay(new Date());
@@ -61,6 +63,7 @@ export function activeTicket(): Ticket | undefined {
   const m = session.mode;
   if (m.kind === 'sandbox') return undefined;
   if (m.kind === 'practice') return m.run.index < m.run.tickets.length ? m.run.tickets[m.run.index] : undefined;
+  if (m.kind === 'lane') return m.ticket;
   return selected();
 }
 
@@ -70,6 +73,7 @@ export function workKey(): string {
   const m = session.mode;
   if (m.kind === 'sandbox') return 'sandbox';
   if (m.kind === 'practice') return `practice#${m.run.id}#${m.run.index}`;
+  if (m.kind === 'lane') return stepKey(m.ticket.id, 0);
   return draftKey();
 }
 
@@ -78,7 +82,7 @@ export function readDraft(): string | undefined {
   const m = session.mode;
   if (m.kind === 'sandbox') return app.save.sandboxDraft;
   if (m.kind === 'practice') return m.run.draft === '' ? undefined : m.run.draft;
-  return app.save.drafts[draftKey()];
+  return app.save.drafts[workKey()];
 }
 
 export function writeDraft(v: string): void {
@@ -87,11 +91,12 @@ export function writeDraft(v: string): void {
   else if (m.kind === 'practice') {
     if (!practiceFinished()) m.run.draft = v;
   }
-  else app.save.drafts[draftKey()] = v;
+  else app.save.drafts[workKey()] = v;
 }
 
-/** Closed = no Submit, Recap shown. Only story tickets close; Practice always grades. */
-export const isClosed = (ticketId: string): boolean => session.mode.kind === 'story' && done().has(ticketId);
+/** Closed = no Submit, Recap shown. Story tickets and lane side tasks close; Practice always grades. */
+export const isClosed = (ticketId: string): boolean =>
+  (session.mode.kind === 'story' && done().has(ticketId)) || (session.mode.kind === 'lane' && app.save.lanes.includes(ticketId));
 
 export function hintsShown(ticketId: string): number {
   return session.mode.kind === 'practice' ? session.mode.run.hints : app.save.hintsUsed[ticketId] ?? 0;

@@ -2,19 +2,20 @@ import { CARD_KINDS, KIND_SKILL, MAX_CARD_SQL, MAX_CARD_TITLE, MAX_CARDS, nextCa
 import type { QueryResult } from '../db/run';
 import { learnedSkills } from '../home';
 import { getLang, t } from '../i18n';
-import { session } from '../session';
-import { actions, app, done, persist, selected } from '../state';
+import { activeTicket, session } from '../session';
+import { actions, app, done, persist } from '../state';
 import { BTN_GO, cx } from '../theme';
 import { textOf } from '../tickets';
 import { cardBody, KIND_LABEL, skillOf } from './dashboard';
 import { h } from './dom';
 import { icon } from './icons';
 
-/** Where Pin is offered (L49): the Sandbox, and a story task once it is solved (so the player's own SQL is pinned, never a hint). */
+/** Where Pin is offered (L49): the Sandbox, and a story or lane task once it is solved (the player's own SQL, never a hint). */
 function source(): string | undefined {
   const m = session.mode;
   if (m.kind === 'sandbox') return 'sandbox';
   if (m.kind === 'story' && done().has(app.selectedId)) return app.selectedId;
+  if (m.kind === 'lane' && app.save.lanes.includes(m.ticket.id)) return m.ticket.id;
   return undefined;
 }
 
@@ -49,7 +50,7 @@ function openPinDialog(sql: string, r: QueryResult, from: string, editorSql: () 
 
   const title = h('input', {
     type: 'text', id: 'pin-title', maxlength: String(MAX_CARD_TITLE), class: 'mt-1 w-full rounded-lg border border-line bg-panel px-3 py-2 text-ink',
-    value: from === 'sandbox' ? '' : textOf(selected(), lang).title.slice(0, MAX_CARD_TITLE),
+    value: from === 'sandbox' ? '' : textOf(activeTicket()!, lang).title.slice(0, MAX_CARD_TITLE),
   });
   const colBox = h('div');
   const preview = h('div', { class: 'rounded-xl p-3 ring-1 ring-line' });

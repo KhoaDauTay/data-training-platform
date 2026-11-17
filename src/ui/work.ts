@@ -7,7 +7,7 @@ import { loadHistory, pushHistory, writeHistory } from '../history';
 import { checkLab, checkPlan, isCreateIndex, planLine, type LabSpec, type PlanFail } from '../planCheck';
 import { getLang, isMac, t } from '../i18n';
 import { SKILLS } from '../progress';
-import { isClosed, isStory, readDraft, workKey, writeDraft } from '../session';
+import { isClosed, keepsWork, readDraft, workKey, writeDraft } from '../session';
 import { app, editorSchema, initialDoc, persist, stepKey, type LastRun } from '../state';
 import { localStore } from '../storage';
 import { BTN_SUBMIT } from '../theme';
@@ -146,7 +146,7 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
   }
 
   function drawHistory(): void {
-    const list = ticket && isStory() ? history[ticket.id] ?? [] : []; // in Practice it would show the story's passing SQL
+    const list = ticket && keepsWork() ? history[ticket.id] ?? [] : []; // in Practice it would show the story's passing SQL
     historyBox.hidden = list.length === 0;
     historyBox.replaceChildren(
       h('summary', { class: 'cursor-pointer text-muted' }, t('hist.title', { n: list.length })),
@@ -183,7 +183,7 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
     const lab = tk?.steps[stepIndex].lab;
     if (lab && tk) return labRun(ed, sql, tk, stepIndex, lab);
     const k = tk ? stepKey(tk.id, stepIndex) : '';
-    const historyId = isStory() ? tk?.id : undefined; // a practice variant shares the ticket id: keep it out of that history (P5)
+    const historyId = keepsWork() ? tk?.id : undefined; // a practice variant shares the ticket id: keep it out of that history (P5)
     ed.closeCompletion();
     ed.clearError();
     busy = true;
@@ -226,7 +226,7 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
       say('bad', () => t('lab.notIndex'));
       return undefined;
     }
-    const historyId = isStory() ? tk.id : undefined;
+    const historyId = keepsWork() ? tk.id : undefined;
     busy = true;
     setButtons();
     let plans: Awaited<ReturnType<DbClient['lab']>> | undefined;
@@ -269,7 +269,7 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
     const tk = ticket;
     const i = stepIndex;
     const k = stepKey(tk.id, i);
-    const story = isStory(); // captured at click time, like the ticket
+    const story = keepsWork(); // captured at click time, like the ticket (a lane side task keeps its graded SQL too)
     const sql = ed.getValue(); // Submit always grades the whole editor
     const blanks = tk.format === 'faded' ? sql.split(BLANK).length - 1 : 0; // elsewhere ___ is a valid LIKE pattern
     if (blanks) {
