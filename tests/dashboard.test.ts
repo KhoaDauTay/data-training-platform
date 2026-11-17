@@ -71,6 +71,28 @@ describe('chạy card (cardRunner, product-design-v3 §7)', () => {
   const ok: QueryResult = { columns: ['n'], types: [20], rows: [[1]] };
   const sqlCard = (id: string, sql: string): Card => ({ ...card(id), sql });
 
+  it('card chờ trong hàng chạy trên domain lúc được xếp, timeout đánh dấu đúng domain (v11 review #4)', async () => {
+    let domain = 'logistics';
+    let release!: () => void;
+    const gate = new Promise<void>((r) => (release = r));
+    const ran: string[] = [];
+    const slow: string[] = [];
+    const run = async (sql: string, d: string) => {
+      ran.push(`${sql}@${d}`);
+      if (sql === 'A') await gate;
+      if (sql === 'B') throw new QueryTimeoutError(5000);
+      return ok;
+    };
+    const cards = cardRunner(run, (id, d) => slow.push(`${id}@${d}`), () => domain);
+    const a = cards.result(sqlCard('a', 'A'));
+    const b = cards.result(sqlCard('b', 'B')).catch(() => undefined);
+    domain = 'ecommerce';
+    release();
+    await Promise.all([a, b]);
+    expect(ran).toEqual(['A@logistics', 'B@logistics']);
+    expect(slow).toEqual(['b@logistics']);
+  });
+
   it('mỗi card chạy một lần mỗi phiên, lần lượt từng card', async () => {
     const order: string[] = [];
     let release!: () => void;

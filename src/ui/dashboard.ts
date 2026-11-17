@@ -2,7 +2,7 @@ import { loadLanes } from '../content';
 import { BAR_ROWS, CARD_KINDS, cardRunner, colGone, markRan, ranHere, cardSpec, KIND_SKILL, MAX_CARDS, moveCard, TABLE_ROWS, type Card, type CardKind } from '../dashboard';
 import { QueryTimeoutError } from '../db/client';
 import type { QueryResult } from '../db/run';
-import { activeDomain } from '../domains';
+import { activeDomain, domainSchemaId } from '../domains';
 import { chapterOfId, kpisOf, kpiNumber, kpiTiles, kpiValue, learnedSkills, type Kpi, type KpiTile, type KpiValue } from '../home';
 import { getLang, t, type Key } from '../i18n';
 import { laneLabel } from '../lanes';
@@ -88,11 +88,11 @@ export function cardBody(c: Card, r: QueryResult): HTMLElement {
 }
 
 /** Once per session, one card after another (src/dashboard.ts cardRunner); a card that timed out is saved as slow. */
-const cards = cardRunner((sql) => app.run(sql), (id) => {
-  const saved = domainSlot(app.save, activeDomain()).dashboard.cards.find((x) => x.id === id);
+const cards = cardRunner((sql, d) => app.run(sql, { schema: domainSchemaId(d) }), (id, d) => {
+  const saved = domainSlot(app.save, d).dashboard.cards.find((x) => x.id === id);
   if (saved) saved.slow = true;
   persist(true);
-});
+}, activeDomain);
 /** main.ts, when "My data" changes: results (and "table missing" errors) from before the change are dropped. */
 export const resetCards = (): void => cards.clear();
 

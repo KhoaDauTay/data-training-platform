@@ -103,8 +103,13 @@ export function moveCard(cards: Card[], i: number, dir: -1 | 1): Card[] {
  * (product-design-v3 §7). A timeout restarts the worker: only that card is reported to `onSlow` (the UI saves it as slow and
  * never runs it by itself again); cards cut short by the restart are forgotten and run on the next draw. Results are not
  * saved: the seed is deterministic and every query is rolled back, so they cannot change within a build.
+ *
+ * `at` is read when a card is queued, not when it runs (v11 review #4): a card still waiting when the player switches domain
+ * runs on its own domain's schema and is marked slow in that domain's save.
  */
-export function cardRunner(run: (sql: string) => Promise<QueryResult>, onSlow: (id: string) => void) {
+export function cardRunner<D = undefined>(
+  run: (sql: string, at: D) => Promise<QueryResult>, onSlow: (id: string, at: D) => void, at: () => D = () => undefined as D,
+) {
   // Keyed by id and SQL: ids repeat across saves (c1, c2…), so an imported save's c1 must not reuse the old c1's result.
   const runs = new Map<string, Promise<QueryResult>>();
   const keyOf = (c: Card): string => `${c.id}
@@ -115,12 +120,13 @@ ${c.sql}`;
       const k = keyOf(c);
       let p = runs.get(k);
       if (!p) {
-        p = chain.then(() => run(c.sql));
+        const where = at();
+        p = chain.then(() => run(c.sql, where));
         chain = p.catch(() => {});
         runs.set(k, p);
         p.catch((e: unknown) => {
           if (e instanceof DbRestartError) runs.delete(k);
-          if (e instanceof QueryTimeoutError) onSlow(c.id);
+          if (e instanceof QueryTimeoutError) onSlow(c.id, where);
         });
       }
       return p;
