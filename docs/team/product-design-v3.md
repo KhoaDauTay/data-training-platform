@@ -368,7 +368,7 @@ WHERE s.pol = 'AUSYD' AND s.direction = 'IMPORT'
   AND s.ata >= '2026-01-01' AND s.ata < '2026-11-01'
 GROUP BY ca.name
 ORDER BY count(*) FILTER (WHERE s.ata - s.eta > 2) DESC, ca.name;
--- Đã chạy: 6 hãng; Pacific Bridge Shipping 29 lô / 7 trễ / 18,3 ngày đứng đầu; ba hãng hòa ở 3 lô trễ, phá hòa theo tên.
+-- Đã chạy: 6 hãng; Pacific Bridge Shipping 29 lô / 7 trễ / 18,3 ngày đứng đầu; ba hãng hòa ở 3 lô trễ, xếp tiếp theo tên.
 ```
 
 **Việc phụ S-2: Tiền dầu mỗi TEU.** Mở khi tuyến Sydney mở và đã học JOIN. **Cần phương án B** (`lane_profiles`, `bunker_prices`).

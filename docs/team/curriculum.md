@@ -117,7 +117,7 @@ So với `CHAPTER_TABLES` hiện tại (bản 7 chương), các bảng sau đổ
 **Quy ước:**
 
 - **Nhịp ch4–12:** `teach` (ví dụ mẫu) → `develop` (làm cùng, điền chỗ trống) → `develop` (tự làm) → `twist` → `rest` (ôn xen kẽ) → `boss` (cột mốc). `format` là trường mới, xem §5.1.
-- Câu hỏi viết theo problem-design §1: không tên cột, không từ khóa SQL, không giá trị mã hóa; ngày tuyệt đối; "hôm nay" là 31/10/2026. Đây mới là **câu một dòng**. Khi viết thành ticket phải bổ sung đủ ràng buộc (lô hủy, phá hòa, làm tròn).
+- Câu hỏi viết theo problem-design §1: không tên cột, không từ khóa SQL, không giá trị mã hóa; ngày tuyệt đối; "hôm nay" là 31/10/2026. Đây mới là **câu một dòng**. Khi viết thành ticket phải bổ sung đủ ràng buộc (lô hủy, tiêu chí sắp xếp phụ, làm tròn).
 - **Dạy** = `grants`. **Ôn** = kỹ năng chương trước được dùng lại (`requires`).
 - Ký hiệu cột Dạng: W = `format: worked` (ví dụ mẫu), F = `faded` (làm cùng), O = `open` (tự làm), Lab = phòng thí nghiệm index (§6).
 - Mỗi kỹ năng mới được đúng **một** ticket dạy, trong đúng chương của nó; cột mốc không dạy gì. Kỹ năng của ticket twist nằm trong `requires` của cột mốc cùng chương.

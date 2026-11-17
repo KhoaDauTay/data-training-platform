@@ -33,7 +33,7 @@ Người chơi chỉ còn việc chép từ đề sang editor. Việc thật c�
 | **Người hỏi** | Một đồng nghiệp có **vai trò nghiệp vụ thật** của forwarder (L18), hỏi đúng mảng dữ liệu của mình. | Trưởng phòng Hải quan hỏi về nhân sự khai báo, không hỏi về hãng tàu. |
 | **Câu hỏi** | Câu người không biết SQL vẫn hiểu được. Hỏi về **sự vật nghiệp vụ** (lô hàng, khách, container, tờ khai), không hỏi về bảng hay cột. | "Khách nào gửi hơn 150 lô trong năm 2025?" |
 | **Mục đích** ("để làm gì") | Một mệnh đề nói kết quả sẽ được dùng vào việc gì. Mục đích giúp người chơi tự kiểm tra kết quả ("con số này có hợp lý cho buổi họp không?") và giải thích ràng buộc. | "…để mời dự hội nghị khách hàng cuối năm." |
-| **Ràng buộc** | Nói bằng ngôn ngữ nghiệp vụ, **đủ chặt để chỉ một đáp án đúng**: khoảng thời gian, có tính lô hủy không, mốc ngày có tính hay không, cách phá hòa. | "Tính cả lô bị hủy, vì đó vẫn là nhu cầu thật của khách." |
+| **Ràng buộc** | Nói bằng ngôn ngữ nghiệp vụ, **đủ chặt để chỉ một đáp án đúng**: khoảng thời gian, có tính lô hủy không, mốc ngày có tính hay không, cách chọn tiêu chí sắp xếp phụ. | "Tính cả lô bị hủy, vì đó vẫn là nhu cầu thật của khách." |
 | **Đầu ra** | Liệt kê **thông tin cần trả về theo đúng thứ tự**, bằng nghĩa nghiệp vụ. | "mã khách hàng và số lô năm 2025" |
 
 ### 1.2 Người chơi tự quyết; đề không đọc hộ
@@ -65,7 +65,7 @@ Grader so kết quả với Solution, nên mọi điều kiện trong Solution p
   - "tính cả lô hủy" (vì đó vẫn là nhu cầu đặt chỗ của khách).
 
   Đề không lọc gì thì nói **"tính mọi lô"** hoặc **"toàn bộ container"**. Không để người chơi đoán.
-- **Phá hòa** (ticket `ordered: true`) là một **quy tắc nghiệp vụ** đầy đủ: "nặng bằng nhau thì lô có mã nhỏ hơn đứng trước", "bằng TEU thì xếp theo tên khách theo thứ tự chữ cái". Không viết "theo `ref` tăng dần".
+- **Tiêu chí sắp xếp phụ** (tie-breaker) (ticket `ordered: true`) là một **quy tắc nghiệp vụ** đầy đủ: "nặng bằng nhau thì lô có mã nhỏ hơn đứng trước", "bằng TEU thì xếp theo tên khách theo thứ tự chữ cái". Không viết "theo `ref` tăng dần".
 - **Tập bao gồm** cũng phải rõ: "kể cả khách chưa từng booking", "nhân viên không phụ trách khách nào thì bỏ qua".
 - **Phân biệt khái niệm dễ nhầm** bằng lời nghiệp vụ. Ví dụ: "sales quản lý khách (người đứng tên trong hồ sơ khách hàng), không phải sales làm từng lô". Lô hàng cũng có một cột sales riêng.
 - **Làm tròn và đơn vị:** "kg, làm tròn 2 chữ số thập phân".
@@ -111,7 +111,7 @@ Ch4–7 cần thêm các vai trò **chứng từ / booking & vận đơn**, **kh
 
 - [ ] Người không biết SQL đọc thân đề + Task có hiểu ai cần gì, để làm gì không?
 - [ ] Thân đề, Task, đề bước: không backtick, không tên cột hay `snake_case`, không từ khóa SQL, không mã trạng thái.
-- [ ] Mọi điều kiện của Solution (thời gian, lô hủy, tập bao gồm, làm tròn, phá hòa) đều nói ra được bằng lời nghiệp vụ.
+- [ ] Mọi điều kiện của Solution (thời gian, lô hủy, tập bao gồm, làm tròn, tiêu chí sắp xếp phụ) đều nói ra được bằng lời nghiệp vụ.
 - [ ] Danh sách đầu ra theo đúng thứ tự cột của Solution; nhãn `columns:` cùng số cột, có `vi` và `en`, không trùng tên cột Solution.
 - [ ] Hints đúng 3 bậc (§1.5); code span VI và EN giống hệt; EN không có dấu tiếng Việt (kể cả tên người: EN không nhắc tên người).
 
@@ -261,7 +261,7 @@ Một nhà máy thép đang cân nhắc chuyển hàng sang mình. Họ hỏi m�
 Gửi mình 10 lô hàng xuất khẩu đi đường biển nặng nhất, trong số các lô booking trong tháng 10/2026: mã lô và tổng trọng lượng (kg). Tính mọi booking trong tháng, kể cả lô sau đó bị hủy, vì khách chỉ hỏi mình đã nhận booking cỡ nào. Lô nặng nhất lên đầu; hai lô nặng bằng nhau thì lô có mã nhỏ hơn đứng trước.
 
 ## Hints
-1. Có ba điều kiện lọc: hàng xuất, đi đường biển, ngày booking trong tháng 10/2026. Sau đó xếp theo trọng lượng giảm dần, phá hòa bằng mã lô, rồi chỉ giữ 10 dòng đầu.
+1. Có ba điều kiện lọc: hàng xuất, đi đường biển, ngày booking trong tháng 10/2026. Sau đó xếp theo trọng lượng giảm dần, trùng thì xếp tiếp theo mã lô, rồi chỉ giữ 10 dòng đầu.
 2. Bảng `shipments`: chiều hàng ở `direction` (`'EXPORT'`), phương thức ở `mode` (`'SEA'`), ngày booking ở `booking_date`, trọng lượng ở `gross_weight_kg`, mã lô ở `ref`. Tháng 10: `booking_date >= '2026-10-01' AND booking_date < '2026-11-01'`. Giảm dần dùng `DESC`.
 3. `SELECT ref, gross_weight_kg FROM shipments WHERE ... ORDER BY gross_weight_kg DESC, ref LIMIT 10`
 
@@ -740,7 +740,7 @@ The customers with no booking from 1 March 2026 until today, including customers
 - Bảng lấy từ spec §4. Tên cột của bảng mới chưa có, Plan 2/3 sẽ định nghĩa; ở đây chỉ ghi tên bảng.
 - Ngày là ngày tuyệt đối; "hôm nay" là 31/10/2026.
 - Mỗi câu ghi: **vai trò** người hỏi, **mục đích**, **bảng**, **kỹ năng luyện**, **nhịp gợi ý** (teach/develop/twist/rest/cột mốc), và bẫy dữ liệu khi có.
-- Khi viết thành ticket, áp đủ §1. Đặc biệt, mọi ràng buộc ở đây (khoảng ngày, lô hủy, phá hòa) phải còn nguyên trong `## Task`.
+- Khi viết thành ticket, áp đủ §1. Đặc biệt, mọi ràng buộc ở đây (khoảng ngày, lô hủy, tiêu chí sắp xếp phụ) phải còn nguyên trong `## Task`.
 - Người viết chọn khoảng 5 câu mỗi chương, theo nhịp teach → develop → twist → rest → cột mốc. Câu cột mốc gom kỹ năng của câu twist (luật D4).
 
 ### Chương 4: Thời gian & phân loại (ngày/khoảng thời gian, CASE, NULL) · Ops, Hải quan

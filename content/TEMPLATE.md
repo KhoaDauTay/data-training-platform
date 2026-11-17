@@ -3,7 +3,7 @@
 # Đề là câu hỏi nghiệp vụ (docs/team/problem-design.md §1): ai hỏi, cần gì, để làm gì, ràng buộc đủ để chấm đúng,
 # thông tin trả về theo thứ tự. Thân đề, Task và đề bước: không tên bảng/cột, không từ khóa SQL, không mã trạng thái, không backtick.
 # Kỹ năng trong requires/grants lấy id từ content/skills.yml. Bảng trong tables phải mở ở chương này (CHAPTER_TABLES).
-# Có thứ tự/top-N: đặt ordered: true và nêu quy tắc phá hòa bằng lời nghiệp vụ.
+# Có thứ tự/top-N: đặt ordered: true và nêu tiêu chí sắp xếp phụ (khi giá trị trùng nhau) bằng lời nghiệp vụ.
 # Ngày "hôm nay" là 2026-10-31; Solution chỉ dùng ngày cố định.
 # columns: mỗi cột kết quả một nhãn { vi, en } theo nghĩa nghiệp vụ (L25), không phải tên cột của Solution.
 # Cột mốc (beat: boss): thay "## Solution" bằng "## Step N: <tiêu đề>" (mỗi bước một khối sql), columns là một danh sách cho mỗi bước,
@@ -38,7 +38,7 @@ columns:
 Bối cảnh: ai hỏi, cần gì, để làm gì (1–3 câu), bằng lời nghiệp vụ.
 
 ## Task
-Câu hỏi nghiệp vụ, ràng buộc (thời gian, lô hủy, tập bao gồm, làm tròn, phá hòa) và thông tin cần trả về theo đúng thứ tự.
+Câu hỏi nghiệp vụ, ràng buộc (thời gian, lô hủy, tập bao gồm, làm tròn, tiêu chí sắp xếp phụ khi trùng) và thông tin cần trả về theo đúng thứ tự.
 
 ## Hints
 1. Nghiệp vụ → dữ liệu: thông tin nằm ở danh mục nào, câu hỏi thuộc dạng gì.
@@ -54,7 +54,7 @@ SELECT code, name FROM ports WHERE region = 'Europe'
 Context: who asks, what they need and what for (1-3 sentences), in business words.
 
 ## Task
-The business question, the constraints (dates, cancelled shipments, what is included, rounding, tie-breaks) and the information to return, in order.
+The business question, the constraints (dates, cancelled shipments, what is included, rounding, tie-breakers) and the information to return, in order.
 
 ## Hints
 1. Business to data: which list holds the information, what kind of question this is.

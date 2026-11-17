@@ -15,7 +15,7 @@
   outcomes:
     - { vi: "Lấy đúng cột cần từ một bảng", en: "Pull exactly the columns you need", skills: [select] }
     - { vi: "Lọc lô hàng theo nhiều điều kiện", en: "Filter shipments by several conditions", skills: [where] }
-    - { vi: "Xếp hạng có tiêu chí phá hòa và lấy top N", en: "Rank with a tie-break and take the top N", skills: [order_by, limit] }
+    - { vi: "Xếp hạng theo nhiều tiêu chí và lấy top N", en: "Rank with a tie-breaker and take the top N", skills: [order_by, limit] }
 
 - chapter: 2
   title: { vi: "Báo cáo sản lượng", en: "Volume reports" }
