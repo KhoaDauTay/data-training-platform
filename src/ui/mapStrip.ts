@@ -4,6 +4,8 @@ import { activeDomain } from '../domains';
 import { chaptersOf, chapterTitle } from '../progress';
 import { ecomArt } from './ecomArt';
 import { derive, ROUTES, type Harbor } from '../scene';
+import { artSlot } from '../art/load';
+import { fleetOrder, takeNewRoutes } from '../routesSeen';
 import { actions, app } from '../state';
 import { BTN_GO, cx } from '../theme';
 import { textOf, type Ticket } from '../tickets';
@@ -12,7 +14,6 @@ import { byId, h } from './dom';
 import { icon } from './icons';
 import { laneInfo, lanePanel, stateOf, tasksOf } from './lanePanel';
 import { startLane, toCurrentTask } from './modes';
-import { routeMap } from './routeMap';
 
 /** `lane`: the lane side task open in the workspace (Plan 5); the bar then shows that lane's tasks instead of the chapter's. */
 export interface StripView { tickets: Ticket[]; completed: Set<string>; selectedId: string; lane?: Ticket }
@@ -52,6 +53,7 @@ export function createMapStrip(host: HTMLElement): { update(view: StripView): vo
    * Pins are buttons with a one-line tooltip (D-B6: days and side tasks, never shipment counts); the HTML list is the
    * readable version and the way in when the SVG labels hide (L34).
    */
+  let stopMap: (() => void) | undefined;
   function fill({ tickets, completed }: StripView): void {
     if (activeDomain() !== 'logistics') { // Plan 9 D9-14: the delivery map, no lanes
       dialog.replaceChildren(h('div', { class: 'p-5' },
@@ -62,21 +64,26 @@ export function createMapStrip(host: HTMLElement): { update(view: StripView): vo
       return;
     }
     const harbor = derive(tickets, completed);
-    const parts = routeMap(harbor);
-    for (const r of ROUTES) {
-      const pin = parts.pins[r.port];
-      const tip = `${r.name} · ${laneInfo(r, harbor)}`;
-      pin.setAttribute('r', '9'); // a bigger target than the 6-unit dot
-      pin.setAttribute('role', 'button');
-      pin.setAttribute('tabindex', '0');
-      pin.setAttribute('aria-label', tip);
-      pin.setAttribute('class', `${pin.getAttribute('class') ?? ''} cursor-pointer`);
-      pin.replaceChildren(document.createElementNS('http://www.w3.org/2000/svg', 'title'));
-      pin.firstChild!.textContent = tip;
-      pin.addEventListener('click', () => pick(r.port));
-      pin.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pick(r.port); } });
-    }
-    parts.svg.removeAttribute('role'); // the pins inside are controls now; the list below says the same in text
+    const map = artSlot('aspect-[980/260] rounded-xl', (art) => {
+      const parts = art.routeMap(harbor);
+      for (const r of ROUTES) {
+        const pin = parts.pins[r.port];
+        const tip = `${r.name} · ${laneInfo(r, harbor)}`;
+        pin.setAttribute('r', '9'); // a bigger target than the 6-unit dot
+        pin.setAttribute('role', 'button');
+        pin.setAttribute('tabindex', '0');
+        pin.setAttribute('aria-label', tip);
+        pin.setAttribute('class', `${pin.getAttribute('class') ?? ''} cursor-pointer`);
+        pin.replaceChildren(document.createElementNS('http://www.w3.org/2000/svg', 'title'));
+        pin.firstChild!.textContent = tip;
+        pin.addEventListener('click', () => pick(r.port));
+        pin.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pick(r.port); } });
+      }
+      parts.svg.removeAttribute('role'); // the pins inside are controls now; the list below says the same in text
+      stopMap?.(); // the dialog is refilled on every rerender: one fleet at a time, and it only sails while the dialog is open (on screen)
+      stopMap = art.liveMap(parts, harbor, takeNewRoutes(harbor.open), fleetOrder());
+      return parts.svg;
+    });
     const list = h('ul', { class: 'mt-3 mb-0 grid list-none gap-1.5 p-0 text-sm sm:grid-cols-2' }, ...ROUTES.map((r) =>
       h('li', {}, h('button', {
         type: 'button', 'data-lane': r.port, 'aria-current': r.port === lanePort ? 'true' : false,
@@ -95,7 +102,7 @@ export function createMapStrip(host: HTMLElement): { update(view: StripView): vo
           h('p', { class: 'mt-1 mb-3 text-sm text-muted' }, t('map.lanes', { n: harbor.open.size, total: ROUTES.length }), ' · ', t('lane.pickShort'))),
         h('form', { method: 'dialog' }, h('button', { class: 'flex items-center gap-1 px-2 py-1 text-sm' }, icon('x', 'size-4'), t('app.close')))),
       h('div', { class: 'grid gap-4 lg:grid-cols-[minmax(0,1fr)_22rem]' },
-        h('div', { class: cx('min-w-0', lanePort && 'max-lg:hidden') }, parts.svg, list),
+        h('div', { class: cx('min-w-0', lanePort && 'max-lg:hidden') }, map, list),
         panel)));
   }
 

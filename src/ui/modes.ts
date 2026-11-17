@@ -5,7 +5,7 @@ import { knownSkills, type HomeModel } from '../home';
 import { getLang, locale, t } from '../i18n';
 import { LANE_XP } from '../lanes';
 import { applyResult, isSuccess, movedToday, nextCard, pickForSkill, retryItem, type PracticeItem } from '../practice';
-import { CHAPTERS, chapterTitle, nextTicket, SKILLS, visibleTickets } from '../progress';
+import { CHAPTERS, chapterTitle, moduleTitle, nextTicket, SKILLS, visibleTickets } from '../progress';
 import { domainHash, hashOf, learnAdvOf, learnModuleOf, learnSkillOf } from '../route';
 import {
   activeSchema, activeStep, activeTicket, hintsShown, isStory, markWarmupDone, practiceFinished, reviewCount, reviewedDrills, reviewToday, session, today, warmupToday, type Mode, type PracticeRun,
@@ -26,6 +26,7 @@ import { registerNav, setActionButton } from './topbar';
 import { renderMyData } from './myDataView';
 import type { WorkArea } from './work';
 import { mascot } from './mascots';
+import { illustration } from '../art/load';
 
 let templateMap: Map<string, Ticket> | undefined;
 /** Built on first use: ticket content arrives after this module loads (main.ts awaits loadContent()). */
@@ -83,7 +84,7 @@ const loadDrillUi = () => import('./drillBrief').then((m) => {
   if (!drillUi) m.initDrill({
     db: ctx!.db, activeSchema, h, nodes, richText, byId, getLang, locale, app, actions, persist, schemaHooks, erMeta, stepKey, session, hintsShown, today,
     isSuccess, movedToday, nextCard, SKILLS, hashOf, textOf, hints, shapeCard, openLesson, backToStory, startDrillMode, loadGeneral, generalNow, loadLessons,
-    lessonSeen: isSeen, knownSkills, learnSkillOf, learnAdvOf, learnModuleOf, chapterTitle, visibleTickets, loadTickets, CHAPTERS, domainHash,
+    lessonSeen: isSeen, knownSkills, learnSkillOf, learnAdvOf, learnModuleOf, moduleTitle, illustration, visibleTickets, loadTickets, CHAPTERS, domainHash,
   });
   return (drillUi = m);
 });
@@ -210,7 +211,10 @@ function practicePane(host: HTMLElement, run: PracticeRun): void {
     const tk = run.tickets[run.index];
     if (DRILL_ID.test(tk.id) && drillUi) drillUi.reviewBody(body, tk);
     else renderBrief(body, tk, 0);
-    body.querySelector('header')?.after(skillChips(tk) ?? '');
+    const chips = skillChips(tk) ?? '';
+    const slot = body.querySelector('[data-brief-extra]'); // the story brief's slot; a drill brief has none
+    if (slot) slot.replaceWith(chips);
+    else body.querySelector('header')?.after(chips);
   }
   host.replaceChildren(banner, body);
 }
@@ -218,7 +222,7 @@ function practicePane(host: HTMLElement, run: PracticeRun): void {
 function storyPane(host: HTMLElement): void {
   const tk = selected();
   renderBrief(host, tk, app.stepIndex);
-  host.querySelector('header')?.after(skillChips(tk) ?? '', (tk.beat === 'teach' && goalCard(tk.chapter)) || '');
+  host.querySelector('[data-brief-extra]')?.replaceWith(skillChips(tk) ?? '', (tk.beat === 'teach' && goalCard(tk.chapter)) || '');
   if (!done().has(tk.id)) return;
   if (tk.beat !== 'boss') {
     host.append(h('div', { class: 'actions' }, h('button', { type: 'button', onclick: () => startRetry(tk.id) }, t('prac.retry'))));
@@ -226,12 +230,16 @@ function storyPane(host: HTMLElement): void {
   }
   const d = done();
   const quick = app.tickets.filter((x) => x.chapter === tk.chapter && x.beat !== 'boss' && d.has(x.id));
-  host.append(wrapUp(tk.chapter, quick.length ? () => startRetry(quick[Math.floor(Math.random() * quick.length)].id) : undefined));
+  // Right after passing, above the long Recap (v10 critic #3): the new title and the one way on are what the player looks for.
+  const wrap = wrapUp(tk.chapter, quick.length ? () => startRetry(quick[Math.floor(Math.random() * quick.length)].id) : undefined);
+  const recap = host.querySelector('.recap');
+  if (recap) recap.before(wrap);
+  else host.append(wrap);
 }
 
 function lanePane(host: HTMLElement, tk: Ticket): void {
   renderBrief(host, tk, 0);
-  host.querySelector('header')?.after(skillChips(tk) ?? '', laneNote(tk, (port) => actions.openLane(port)));
+  host.querySelector('[data-brief-extra]')?.replaceWith(skillChips(tk) ?? '', laneNote(tk, (port) => actions.openLane(port)));
 }
 
 /** Top-bar "Review: N" (P3): N = items in today's queue; hidden when the queue is empty. */
@@ -266,6 +274,7 @@ function reviewCard(m: HomeModel): HTMLElement {
   const p = app.save.practice;
   return h('section', { class: cx(CARD, 'flex flex-wrap items-center gap-4 p-5'), 'aria-labelledby': 'review-title' },
     m.learned === 0 ? mascot('lily', 'sleep', 'size-16') : null, // v6 §2.4: an empty state
+    m.learned > 0 && !due ? h('div', { class: 'w-40 shrink-0' }, illustration('aspect-[240/120]', (il) => il.emptyDrills())) : null, // Plan 8b: nothing due
     h('div', { class: 'min-w-0 flex-1' },
       h('h2', { id: 'review-title', class: 'm-0 text-lg font-bold' }, t('prac.section')),
       h('p', { class: 'mt-1 mb-0 text-[15px] text-muted' }, intro),
@@ -340,6 +349,7 @@ registerMode({
 });
 homeHooks.levelOf = (skill) => app.save.review[skill]?.box ?? 1;
 homeHooks.onSkill = (skill) => void startSkill(skill);
+homeHooks.startLane = (task) => startLane(task);
 // Plan Import (L17, I2): "My data" opens the Sandbox, whose left pane holds the CSV import.
 registerMode({
   id: 'mydata', order: 20, icon: 'folder', tint: 'bg-accent-soft text-ink',

@@ -46,7 +46,7 @@ function card(l: Lesson, titleId: string, actions: HTMLElement[], tour = false):
   const exampleOut = h('div', { class: 'mt-2' });
   const drawExample = (): void => {
     const e = examples.get(l.id);
-    exampleOut.replaceChildren(...nodes(e && (e.result ? renderResult(e.result) : errorView(e.error))));
+    exampleOut.replaceChildren(...nodes(e && (e.result ? renderResult(e.result, undefined, 8) : errorView(e.error))));
   };
   const runExample = h('button', {
     type: 'button',
@@ -64,8 +64,8 @@ function card(l: Lesson, titleId: string, actions: HTMLElement[], tour = false):
   }, t('lesson.runExample'));
   drawExample();
 
-  const area = h('textarea', { class: 'w-full rounded-lg bg-code p-2 font-mono text-sm ring-1 ring-line', rows: '3', spellcheck: 'false', 'aria-label': t('lesson.tryAria') });
-  area.value = drafts.get(l.id) ?? l.try.starter;
+  const area = h('textarea', { class: 'w-full rounded-lg bg-code p-2 font-mono text-sm ring-1 ring-line', rows: '3', spellcheck: 'false', 'aria-label': t('lesson.tryAria'), placeholder: t('lesson.tryPlaceholder') });
+  area.value = drafts.get(l.id) ?? ''; // empty, not the example: the player writes it (v10 critic #5)
   area.addEventListener('input', () => drafts.set(l.id, area.value));
   const verdict = h('p', { role: 'status', class: 'mb-0' });
   const drawVerdict = (): void => {
@@ -77,6 +77,11 @@ function card(l: Lesson, titleId: string, actions: HTMLElement[], tour = false):
     type: 'button',
     class: 'primary',
     onclick: async () => {
+      if (!area.value.trim()) {
+        verdicts.set(l.id, { ok: false, text: () => t('lesson.tryEmpty') }); // like Run/Submit on an empty editor (L68)
+        drawVerdict();
+        return;
+      }
       check.disabled = true;
       verdict.className = 'mb-0';
       verdict.textContent = t('lesson.running');

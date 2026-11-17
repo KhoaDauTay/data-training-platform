@@ -21,7 +21,8 @@ const DOMAIN_PAGE: Record<string, Route> = { '': 'overview', play: 'play', data:
 export const hashOf = (r: Route): string => hashTable()[r];
 export const isRoute = (v: unknown): v is Route => ROUTES.includes(v as Route);
 /** A domain's pages: the sidebar lists the domain's items and the top bar shows its chapter and rank (v6 §3.1). */
-export const inDomain = (r: Route): boolean => r === 'overview' || r === 'play' || r === 'data' || r === 'dashboard' || r === 'map' || r === 'soon';
+/** The live (Logistics) domain's pages. A "coming soon" domain page is not one: no Logistics sidebar, chapter or rank there (v10 critic #7). */
+export const inDomain = (r: Route): boolean => r === 'overview' || r === 'play' || r === 'data' || r === 'dashboard' || r === 'map';
 export const domainHash = (id: DomainId): string => `#/d/${id}`;
 
 /** Hashes from before Plan 7 (#/play, #/data/<t>, #/dashboard) → the same page, tail kept. Kept forever (v5 §B.3). */

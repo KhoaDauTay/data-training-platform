@@ -24,4 +24,5 @@ Hướng dẫn cho người đóng góp và agent: `CLAUDE.md`. Triển khai: `d
 
 - Code: MIT (`LICENSE`).
 - Hình Boon và Lily: CC BY 4.0 (`assets/mascots/LICENSE`).
+- Cảnh và hình minh họa được vẽ bằng code trong `src/art/` (MIT như phần code); hình Boon và Lily theo CC BY 4.0 (`assets/mascots/LICENSE`). Không có tài nguyên đồ họa bên thứ ba.
 - Font Nunito: SIL Open Font License 1.1 (`src/assets/fonts/OFL.txt`).

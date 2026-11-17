@@ -89,7 +89,8 @@ function modulePage(c: LearnCtx, n: number): HTMLElement {
   const ms = moduleState(c, n);
   return h('div', { class: 'space-y-5' },
     h('p', { class: 'm-0' }, h('a', { href: d$.hashOf('learn') }, lt('learn.backAll'))),
-    h('h2', { class: 'm-0 text-xl font-bold' }, lt('learn.moduleTitle', { n, title: d$.chapterTitle(n, d$.getLang(), d$.CHAPTERS) })),
+    h('div', { class: 'flex items-center gap-3' }, h('div', { class: 'w-28 shrink-0' }, d$.illustration('aspect-[160/64]', (il) => il.moduleGlyph(n))), // Plan 8b
+      h('h2', { class: 'm-0 text-xl font-bold' }, lt('learn.moduleTitle', { n, title: d$.moduleTitle(n, d$.getLang()) }))),
     h('p', { class: 'm-0 text-muted' }, lt('learn.moduleLine', { k: ms.learned, m: ms.skills.length })),
     ...d$.SKILLS.filter((s) => s.chapter === n).map((s) => skillBlock(c, s, 'h3')),
     chapterWay(n));
@@ -134,7 +135,7 @@ function overview(c: LearnCtx): HTMLElement {
     h('ul', { class: LIST }, ...modules.map((n) => {
       const ms = moduleState(c, n);
       return h('li', { class: 'space-y-2 rounded-(--r-card) bg-panel px-5 py-4 ring-1 ring-line' },
-        h('a', { href: `${d$.hashOf('learn')}/sql/${n}`, class: 'font-bold' }, lt('learn.moduleTitle', { n, title: d$.chapterTitle(n, lang, d$.CHAPTERS) }), tick(ms.done)),
+        h('a', { href: `${d$.hashOf('learn')}/sql/${n}`, class: 'font-bold' }, lt('learn.moduleTitle', { n, title: d$.moduleTitle(n, lang) }), tick(ms.done)),
         h('p', { class: 'm-0 text-sm text-muted' }, `${lt('learn.moduleLine', { k: ms.learned, m: ms.skills.length })} · ${lt('learn.appliesOne', { n })}`),
         bar(ms.learned, ms.skills.length));
     })));
@@ -154,6 +155,7 @@ function overview(c: LearnCtx): HTMLElement {
             needs.length ? ` · ${lt('adv.needsFirst', { list: needs.map((id) => nameOf(c, id)).join(', ') })}` : ''));
       })))));
   return h('div', { class: 'space-y-5' },
+    known.size ? d$.illustration('aspect-[480/200] max-w-md', (il) => il.studyDesk()) : d$.illustration('aspect-[240/120] max-w-sm', (il) => il.emptyPath()), // Plan 8b
     h('p', { class: 'm-0 text-muted' }, lt('learn.stats', { n: known.size, total: c.skills.length, m: mastered, k: nodesDone, nodes: graded.length })),
     h('div', { class: 'grid gap-6 lg:grid-cols-2' }, sql, adv));
 }

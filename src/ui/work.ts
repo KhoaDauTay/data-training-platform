@@ -6,9 +6,10 @@ import { compareResults, grade, type GradeResult } from '../grader';
 import { loadHistory, pushHistory, writeHistory } from '../history';
 import { checkLab, checkPlan, isCreateIndex, planLine, type LabSpec, type PlanFail } from '../planCheck';
 import { getLang, isMac, t } from '../i18n';
-import { SKILLS } from '../progress';
+import { LANE_XP } from '../lanes';
+import { SKILLS, xpFor } from '../progress';
 import { isClosed, keepsWork, readDraft, schemaOf, workKey, writeDraft } from '../session';
-import { app, editorSchema, initialDoc, persist, stepKey, type LastRun } from '../state';
+import { app, done, editorSchema, initialDoc, persist, stepKey, type LastRun } from '../state';
 import { localStore } from '../storage';
 import { BTN_SUBMIT } from '../theme';
 import { BLANK, type Ticket } from '../tickets';
@@ -18,6 +19,7 @@ import { createEditor, type Editor } from './editor';
 import { avatar } from './avatar';
 import { errorNote, errorText, errorView, gradeMessage, mascotOf, voiceKey } from './feedback';
 import { mascot, type Mascot, type Pose } from './mascots';
+import { showPane } from './paneTabs';
 import { pageShortcutOf } from './shortcuts';
 import { tourRegion, tourSlot } from './coach';
 import type { Panel } from './tabs';
@@ -61,7 +63,7 @@ export function planFailText(f: PlanFail, lab: boolean): string {
 }
 
 const FEEDBACK: Record<'good' | 'bad', string> = {
-  good: 'mt-2 rounded-xl bg-emerald-50 p-3 text-sm text-emerald-900 ring-1 ring-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-100 dark:ring-emerald-800',
+  good: 'mt-2 rounded-xl bg-emerald-50 px-3 py-1.5 text-sm font-semibold text-emerald-900 ring-1 ring-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-100 dark:ring-emerald-800',
   bad: 'mt-2 rounded-xl bg-rose-50 p-3 text-sm text-rose-900 ring-1 ring-rose-200 dark:bg-rose-950/40 dark:text-rose-100 dark:ring-rose-800',
 };
 
@@ -113,7 +115,7 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
   const feedback = h('div', { role: 'status' });
   const historyBox = h('details', { class: 'mt-2 text-sm' });
   // The tour's mark sits under the buttons, never over the editor (v4 §B.2); main.ts refreshTour() refills it.
-  host.replaceChildren(editorHost, h('div', { class: 'max-sm:sticky max-sm:bottom-0 max-sm:z-10 max-sm:bg-panel' }, h('div', { class: 'actions' }, runBtn, explainBtn, formatBtn, submitBtn)), tourSlot('work'), feedback, historyBox);
+  host.replaceChildren(editorHost, h('div', { class: 'max-md:sticky max-md:bottom-14 max-md:z-10 max-md:bg-panel' }, h('div', { class: 'actions' }, runBtn, explainBtn, formatBtn, submitBtn)), tourSlot('work'), feedback, historyBox);
 
   // The buttons advertise Mod+Enter / Mod+Shift+Enter: honour them when focus is outside the editor too
   // (on a button after a click, the brief heading after picking a ticket). Inside the editor CodeMirror's
@@ -137,7 +139,9 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
     feedback.className = message ? FEEDBACK[message.kind] : '';
     const who = tourRegion() === 'work' ? undefined : message?.who; // Boon's tour mark is already in this pane
     feedback.replaceChildren(!message ? '' : who
-      ? h('div', { class: 'flex items-start gap-3' }, mascot(who[0], who[1], 'size-12'), h('div', { class: 'min-w-0 flex-1' }, message.view()))
+      ? message.kind === 'good' // one compact line: a small cheering Lily beside it (v10 critic #6)
+        ? h('div', { class: 'flex items-center gap-2' }, mascot(who[0], who[1], 'size-8 shrink-0'), h('div', { class: 'min-w-0 flex-1' }, message.view()))
+        : h('div', { class: 'flex items-start gap-3' }, mascot(who[0], who[1], 'size-12'), h('div', { class: 'min-w-0 flex-1' }, message.view()))
       : message.view());
   }
 
@@ -146,6 +150,10 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
     explainBtn.textContent = t('tab.explain');
     formatBtn.textContent = t('work.format');
     submitBtn.textContent = t('work.submit');
+    // Plan 8b 8.7: a running query says so (spinner stops under reduced motion with every other animation)
+    if (busy && app.dbStatus !== 'loading') runBtn.replaceChildren(h('span', { class: 'mr-1.5 inline-block size-3 animate-spin rounded-full border-2 border-current border-t-transparent align-[-1px]', 'aria-hidden': 'true' }), t('work.running'));
+    runBtn.setAttribute('aria-busy', String(busy));
+    submitBtn.setAttribute('aria-busy', String(busy));
     runBtn.disabled = busy;
     explainBtn.disabled = busy;
     explainBtn.hidden = !!ticket?.steps[stepIndex]?.lab; // a lab editor holds CREATE INDEX: Run already shows both plans
@@ -225,6 +233,7 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
       drawMessage();
     }
     deps.panel.show(failed || (!tab && SCHEMA_TABS.has(deps.panel.active)) ? 'result' : tab ?? deps.panel.active);
+    if (!failed) showPane('panel'); // phone: the result; an error stays here, under Boon's explanation
     deps.onRun();
   }
 
@@ -401,7 +410,9 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
       say('good', () => t(isClosed(tk.id) ? 'work.correct' : 'work.conclusionNext')); // redrawn after the conclusion is submitted
       deps.onConclusion(tk);
     } else {
-      say('good', () => t('work.correct'), ['lily', 'cheer']);
+      // XP of this first solve (story: complete() adds it; lane: LANE_XP once); a re-solve or Practice earns none.
+      const xp = !story ? 0 : tk.lane ? (app.save.lanes.includes(tk.id) ? 0 : LANE_XP) : done().has(tk.id) ? 0 : xpFor(tk, app.save.hintsUsed[tk.id] ?? 0);
+      say('good', () => (xp ? t('work.correctXp', { n: xp }) : t('work.correct')), ['lily', 'cheer']);
       deps.onSolved(tk);
       celebrate(feedback); // after onSolved: its rerender() redraws the message and would reset className
     }

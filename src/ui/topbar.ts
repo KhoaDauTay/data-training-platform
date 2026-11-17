@@ -3,7 +3,7 @@ import { activeDomain, DOMAINS, ECOM_ID, type DomainId } from '../domains';
 import { getLang, t, type Key } from '../i18n';
 import { chapterTitle, CHAPTERS, chaptersOf, currentChapter, rankOf } from '../progress';
 import { upsert } from '../registry';
-import { domainHash, hashOf, inDomain, type Route } from '../route';
+import { domainHash, hashOf, inDomain, soonDomainOf, type Route } from '../route';
 import { actions, app, done } from '../state';
 import { getTheme, NAV_LINK, setTheme, THEME_PREFS, TOP_BTN, type ThemePref } from '../theme';
 import { byId, h, nodes } from './dom';
@@ -80,7 +80,8 @@ function renderNav(): void {
 /** Domain switch (v5 §B.2, D-N3): Logistics with its chapter, then the "Coming soon" pages (no date promised). */
 function renderDomainMenu(): void {
   const menu = byId('domain-menu');
-  byId('domain-label').textContent = t(DOMAINS.find((d) => d.id === activeDomain())!.name);
+  const soon = currentRoute() === 'soon' ? soonDomainOf(location.hash) : undefined; // the chip names the domain being looked at
+  byId('domain-label').textContent = t(DOMAINS.find((d) => d.id === (soon ?? activeDomain()))!.name);
   menu.replaceChildren(h('div', { class: 'flex flex-col' }, ...DOMAINS.map((d) => h('a', {
     href: domainHash(d.id), class: MENU_ITEM, onclick: () => menu.hidePopover?.(), 'aria-current': d.id === activeDomain() ? 'true' : false,
   },

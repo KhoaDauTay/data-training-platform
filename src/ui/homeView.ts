@@ -2,13 +2,13 @@ import { loadTickets } from '../content';
 import { activeDomain, DOMAINS, type Domain } from '../domains';
 import { homeModel, knownSkills, kpisOf, kpiTiles, learnedSkills, LEVELS, reliesOn, type ChapterCard, type HomeModel } from '../home';
 import { getLang, t, type Key } from '../i18n';
-import { CHAPTERS, chaptersOf, chapterTitle, domainSkills, rankOf, SKILLS } from '../progress';
+import { CHAPTERS, chaptersOf, chapterTitle, domainSkills, moduleTitle, rankOf, SKILLS } from '../progress';
 import { domainSlot } from '../save';
 import { ecomArt } from './ecomArt';
 import { domainLine } from './topbar';
 import { derive, ROUTES as LANES } from '../scene';
 import { domainHash, soonDomainOf } from '../route';
-import { laneInfo } from './lanePanel';
+import { laneInfo, lanePanel } from './lanePanel';
 import { mascot } from './mascots';
 import { currentRoute } from './router';
 import { actions, app, done } from '../state';
@@ -16,12 +16,13 @@ import { BTN_GO, CARD, CARD_ACTION, chapterColor, cx, DONE_PILL, PILL } from '..
 import { roleLine } from '../people';
 import { upsert } from '../registry';
 import { hashOf } from '../route';
-import { textOf } from '../tickets';
+import { textOf, type Ticket } from '../tickets';
 import { avatar } from './avatar';
 import { icon, skillIcon, type IconName } from './icons';
 import { byId, h, nodes } from './dom';
-import { callout, harborScene } from './harbor';
-import { routeItems, routeMap } from './routeMap';
+import { artSlot, illustration } from '../art/load';
+import { fleetOrder, takeNewRoutes } from '../routesSeen';
+import { callout, routeItems } from './routeText';
 import { isStory } from '../session';
 import { go } from './router';
 
@@ -59,7 +60,7 @@ export const registerHomeSection = (s: HomeSection): void => upsert(sections, s)
 export const registerMode = (m: ModeCard): void => upsert(modes, m);
 
 /** Plan 1c: `levelOf` = Leitner box per skill, `onSkill` = practise that skill. */
-export const homeHooks: { levelOf?: (skill: string) => number; onSkill?: (skill: string) => void } = {};
+export const homeHooks: { levelOf?: (skill: string) => number; onSkill?: (skill: string) => void; startLane?: (task: Ticket) => void } = {};
 
 const openInbox = (): void => (byId('inbox-dialog') as HTMLDialogElement).showModal();
 
@@ -157,8 +158,7 @@ function statusPill(c: ChapterCard): HTMLElement | null {
   const n = { done: c.done, total: c.total };
   if (c.status === 'done') return h('span', { class: cx(PILL, DONE_PILL) }, t('home.status.done', n));
   if (c.status === 'current') return h('span', { class: cx(PILL, chapterColor(c.chapter).chip) }, t('home.status.current', n));
-  if (c.status === 'soon') return h('span', { class: cx(PILL, 'bg-code text-muted') }, t('home.status.soon'));
-  return null;
+  return h('span', { class: cx(PILL, 'bg-code text-muted') }, t(c.status === 'soon' ? 'home.status.soon' : 'home.status.locked', n)); // same words as the sidebar (v10 critic #7)
 }
 
 /**
@@ -183,7 +183,7 @@ function chapterRow(c: ChapterCard): HTMLLIElement {
         : h('span', { class: cx('grid size-10 place-items-center rounded-full text-lg font-bold', chapterColor(c.chapter).chip) }, String(c.chapter)),
     title: `${c.chapter} · ${chapterTitle(c.chapter, lang)}`,
     sub: closed ? (c.status === 'soon' ? t('home.soonHint') : t('home.lockedAfter', { n: c.chapter - 1 })) : short,
-    action: closed ? null : h('a', { href: `${hashOf('learn')}/sql/${c.chapter}`, class: 'no-underline', title: t('learn.module', { n: c.chapter, title: chapterTitle(c.chapter, lang) }) }, statusPill(c)),
+    action: closed ? statusPill(c) : h('a', { href: `${hashOf('learn')}/sql/${c.chapter}`, class: 'no-underline', title: t('learn.module', { n: c.chapter, title: moduleTitle(c.chapter, lang) }) }, statusPill(c)),
     current: c.status === 'current',
   });
 }
@@ -204,7 +204,7 @@ function skillsSection(m: HomeModel): HTMLElement {
   return h('section', { class: 'space-y-10', 'aria-labelledby': 'skills-title' },
     h('h2', { id: 'skills-title', class: 'sr-only' }, t('home.skills')),
     ...groups.map(([n, list]) => h('div', { id: `skills-ch-${n}`, class: 'scroll-mt-4' },
-      h('h3', { class: GROUP_TITLE }, t('learn.module', { n, title: chapterTitle(n, lang, CHAPTERS) })),
+      h('h3', { class: GROUP_TITLE }, t('learn.module', { n, title: moduleTitle(n, lang) })),
       h('ul', { class: LIST }, ...list.map((s) => listRow({
         lead: h('span', { class: cx('grid size-10 place-items-center rounded-full', s.state === 'locked' ? 'bg-code text-muted' : chapterColor(n).chip) }, skillIcon(s.skill.id)),
         title: s.skill.label[lang],
@@ -244,21 +244,28 @@ function freshChapters(): Set<number> {
 
 /** Tien Sa (L26): the yard holds one container per completed ticket, coloured by chapter. Home never replays animations. */
 /** Below lg the SVG labels hide (L34), so the title and status lines show as HTML under the picture. */
+let stopScene: (() => void) | undefined;
 function harborSection(m: HomeModel): HTMLElement {
   if (activeDomain() !== 'logistics') { // Plan 9 D9-13: the Lantern Market scene, never the harbour
     return h('section', { class: cx(CARD, 'overflow-hidden'), 'aria-labelledby': 'harbor-title' },
       h('h2', { id: 'harbor-title', class: 'm-0 px-4 pt-3 text-lg font-bold' }, t('ecom.scene.title')), ecomArt('scene'));
   }
   const harbor = derive(app.tickets, done());
-  const scene = harborScene(harbor, { ambient: true, current: m.chapter, fresh: freshChapters() });
+  const fresh = freshChapters();
   return h('section', { class: cx(CARD, 'overflow-hidden'), 'aria-labelledby': 'harbor-title' },
     h('h2', { id: 'harbor-title', class: 'sr-only' }, t('harbor.title')),
-    scene.svg,
+    artSlot('aspect-[1100/400]', (a) => {
+      stopScene?.();
+      const { svg } = a.harborScene(harbor, { ambient: true, current: m.chapter, fresh });
+      stopScene = a.parallax(svg);
+      return svg;
+    }),
     h('div', { class: 'px-4 py-3 text-sm lg:hidden', 'aria-hidden': 'true' },
       h('p', { class: 'm-0 font-bold' }, t('harbor.title')),
       ...callout(harbor, m.chapter).map((line) => h('p', { class: 'm-0 text-muted' }, line))));
 }
 
+let stopMap: (() => void) | undefined;
 function routesSection(): HTMLElement {
   if (activeDomain() !== 'logistics') {
     return h('section', { class: cx(CARD, 'p-5'), 'aria-labelledby': 'routes-title' },
@@ -269,7 +276,12 @@ function routesSection(): HTMLElement {
     h('div', { class: 'mb-2 flex flex-wrap items-end justify-between gap-2' },
       h('h2', { id: 'routes-title', class: 'm-0 text-lg font-bold' }, t('routes.title')),
       h('p', { class: 'm-0 text-sm text-muted' }, t('routes.subtitle'))),
-    routeMap(harbor).svg,
+    artSlot('aspect-[980/260] rounded-xl', (a) => {
+      stopMap?.(); // one fleet per page: the previous drawing's loop ends here
+      const p = a.routeMap(harbor);
+      stopMap = a.liveMap(p, harbor, takeNewRoutes(harbor.open), fleetOrder());
+      return p.svg;
+    }),
     h('ul', { class: 'mt-2 mb-0 list-none space-y-0.5 p-0 text-sm lg:hidden', 'aria-hidden': 'true' }, ...routeItems(harbor).map((x) => h('li', {}, x))));
 }
 
@@ -316,6 +328,7 @@ function soonSection(): HTMLElement {
   const learned = learnedSkills(app.tickets, done());
   const have = SKILLS.filter((s) => learned.has(s.id));
   return h('section', { class: 'space-y-5' },
+    soonDomain().id === 'finance' ? illustration('aspect-[480/200] max-w-md', (il) => il.financeSoon()) : null, // Plan 8b (v6 §5.1)
     bubble(mascot('boon', 'idle', 'size-20'), t(soonDomain().desc)),
     h('h2', { class: GROUP_TITLE }, t('soon.skills')),
     have.length ? h('p', { class: 'm-0' }, have.map((s) => s.label[lang]).join(' · ')) : h('p', { class: 'm-0 text-muted' }, t('soon.none')),
@@ -324,18 +337,30 @@ function soonSection(): HTMLElement {
       h('a', { href: hashOf('overview'), class: OUTLINE_LINK }, t('soon.back'))));
 }
 
-/** Map page (v6 D-L3): the lanes as a list beside the route map; each opens its brief in the map dialog. */
+/** Lane whose brief is open on the Map page (session only). */
+let mapLane: string | undefined;
+/**
+ * Map page (v6 D-L3): the lanes as a list under the route map; "Read the lane brief" opens that brief right under its row,
+ * on the page (v10 critic #4: the map dialog would show a second copy of the map). Pressing it again closes it.
+ */
 function lanesSection(): HTMLElement | null {
   if (activeDomain() !== 'logistics') return null; // lanes are Logistics only (D9-14)
   const harbor = derive(app.tickets, done());
+  const toggle = (port: string) => () => {
+    mapLane = mapLane === port ? undefined : port;
+    actions.rerender();
+    byId('home').querySelector<HTMLElement>(mapLane ? '#lane-title' : `#lane-btn-${port}`)?.focus(); // the map dialog may hold its own #lane-title
+  };
   return h('section', { 'aria-labelledby': 'lanes-title' },
     h('h2', { id: 'lanes-title', class: GROUP_TITLE }, t('map.lanesTitle')),
-    h('ul', { class: LIST }, ...LANES.map((r) => listRow({
+    h('ul', { class: LIST }, ...LANES.flatMap((r) => [listRow({
       lead: icon(harbor.open.has(r.port) ? 'route' : 'lock', 'size-6 text-muted'),
       title: r.name,
       sub: laneInfo(r, harbor),
-      action: h('button', { type: 'button', class: 'rounded-full px-4 whitespace-nowrap', onclick: () => actions.openLane(r.port) }, t('map.openLane')),
-    }))));
+      action: h('button', {
+        type: 'button', id: `lane-btn-${r.port}`, class: 'rounded-full px-4 whitespace-nowrap', 'aria-expanded': String(mapLane === r.port), onclick: toggle(r.port),
+      }, t('map.openLane')),
+    }), mapLane === r.port ? h('li', { class: 'rounded-xl bg-panel p-4 ring-1 ring-line' }, lanePanel(r.port, harbor, (task) => homeHooks.startLane?.(task))) : null])));
 }
 
 registerHomeSection({ id: 'hello', order: 1, span: 'full', pages: ['home'], render: helloSection });

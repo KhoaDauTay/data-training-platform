@@ -1,3 +1,4 @@
+import type * as ArtLoad from '../art/load';
 import type * as Content from '../content';
 import type { DbClient } from '../db/client';
 import { drillTicket, type Drill, type General } from '../general';
@@ -39,7 +40,7 @@ export interface DrillDeps {
   loadGeneral: typeof Content.loadGeneral; generalNow: typeof Content.generalNow; loadLessons: typeof Content.loadLessons;
   // Learning path (Task 9-10)
   lessonSeen: typeof LessonCard.isSeen; learnSkillOf: typeof Route.learnSkillOf; learnAdvOf: typeof Route.learnAdvOf;
-  learnModuleOf: typeof Route.learnModuleOf; knownSkills: typeof Home.knownSkills; chapterTitle: typeof Progress.chapterTitle; visibleTickets: typeof Progress.visibleTickets;
+  learnModuleOf: typeof Route.learnModuleOf; knownSkills: typeof Home.knownSkills; moduleTitle: typeof Progress.moduleTitle; illustration: typeof ArtLoad.illustration; visibleTickets: typeof Progress.visibleTickets;
   // Plan 9 D9-12: the General area reads Logistics, whatever domain is open
   loadTickets: typeof Content.loadTickets; CHAPTERS: typeof Progress.CHAPTERS; domainHash: typeof Route.domainHash;
 }

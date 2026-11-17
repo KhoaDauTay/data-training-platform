@@ -95,7 +95,7 @@
         <button id="review-btn" type="button" class="relative flex shrink-0 items-center gap-1.5 rounded-full border-0 bg-code px-3 py-1.5 text-sm text-ink hover:bg-accent-soft" hidden><span data-icon="repeat" data-icon-class="size-4"></span><span data-label class="max-xl:sr-only" data-i18n="top.review">Ôn tập</span><span data-badge class="absolute -top-1.5 -right-1.5 grid h-5 min-w-5 place-items-center rounded-full bg-sun px-1 text-xs font-bold text-sun-ink ring-2 ring-panel" aria-hidden="true" hidden></span></button>
         <button id="notebook-btn" type="button" data-i18n-title="nb.open" class="relative flex shrink-0 items-center gap-1.5 rounded-full border-0 bg-code px-3 py-1.5 text-sm text-ink hover:bg-accent-soft" aria-controls="notebook-dialog" aria-expanded="false"><span data-icon="book" data-icon-class="size-4"></span><span data-label class="max-xl:sr-only" data-i18n="nb.open">Sổ tay</span></button>
       </div>
-      <div class="flex shrink-0 items-center gap-1 rounded-full bg-code p-1">
+      <div class="top-prefs flex shrink-0 items-center gap-1 rounded-full bg-code p-1">
         <div class="flex gap-0.5" role="group" data-i18n-aria="top.lang" aria-label="Ngôn ngữ">
           <button type="button" data-lang="vi" aria-pressed="true" class="rounded-full border-0 bg-transparent px-2 py-0.5 text-sm text-ink hover:bg-panel aria-pressed:bg-panel aria-pressed:font-bold aria-pressed:shadow-sm">VI</button>
           <button type="button" data-lang="en" aria-pressed="false" class="rounded-full border-0 bg-transparent px-2 py-0.5 text-sm text-ink hover:bg-panel aria-pressed:bg-panel aria-pressed:font-bold aria-pressed:shadow-sm">EN</button>
@@ -126,8 +126,14 @@
     <!-- Plan 5 (L48/L49): #/dashboard, filled by src/ui/dashboard.ts. -->
     <main id="dashboard" class="shell:min-h-0 shell:flex-1 shell:overflow-auto" data-i18n-aria="nav.dashboard" aria-label="Bảng điều hành" hidden></main>
     <main id="shell" class="shell" hidden>
+      <!-- Below 768 px only (style.css): one pane at a time, src/ui/paneTabs.ts. -->
+      <div id="pane-tabs" role="tablist" class="pane-tabs mb-3 grid grid-cols-3 gap-1 rounded-full bg-code p-1" data-i18n-aria="area.panes" aria-label="Khu làm việc">
+        <button type="button" role="tab" data-pane="ticket" aria-controls="ticket" class="rounded-full border-0 bg-transparent px-2 py-2 text-sm font-semibold text-ink aria-selected:bg-panel aria-selected:shadow-sm" data-i18n="pane.ticket">Đề bài</button>
+        <button type="button" role="tab" data-pane="work" aria-controls="work" class="rounded-full border-0 bg-transparent px-2 py-2 text-sm font-semibold text-ink aria-selected:bg-panel aria-selected:shadow-sm">SQL</button>
+        <button type="button" role="tab" data-pane="panel" aria-controls="panel" class="rounded-full border-0 bg-transparent px-2 py-2 text-sm font-semibold text-ink aria-selected:bg-panel aria-selected:shadow-sm" data-i18n="pane.result">Kết quả</button>
+      </div>
       <div class="workspace">
-        <section id="ticket" class="min-w-0 rounded-2xl bg-panel p-4 ring-1 ring-line" data-i18n-aria="area.ticket" aria-label="Đề bài"></section>
+        <section id="ticket" class="min-w-0 rounded-2xl bg-panel px-4 py-3 ring-1 ring-line" data-i18n-aria="area.ticket" aria-label="Đề bài"></section>
         <div id="split-col" class="split split-col cursor-col-resize touch-none rounded hover:bg-accent-soft focus-visible:bg-accent-soft" data-i18n-aria="area.splitCol" aria-label="Độ rộng cột đề bài"></div>
         <section id="work" class="min-w-0 rounded-2xl bg-panel p-4 ring-1 ring-line" data-i18n-aria="area.work" aria-label="SQL editor"></section>
       </div>

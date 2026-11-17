@@ -1,3 +1,4 @@
+import { initPaneTabs, showPane } from './ui/paneTabs';
 import './style.css';
 import { initTheme } from './theme';
 import { loadContent, loadDomain, loadLanes, loadTickets } from './content';
@@ -23,6 +24,7 @@ import { byId, h } from './ui/dom';
 import { errorText } from './ui/feedback';
 import { leftHome, renderHome } from './ui/homeView';
 import { initStage, playCompletion, relabelStage } from './ui/stage';
+import { prefetchArt } from './art/load';
 import { renderInbox } from './ui/inbox';
 import { createPanel, registerCoreTabs } from './ui/tabs';
 import { coachDone, initTour, refreshTour } from './ui/coach';
@@ -133,6 +135,8 @@ const work = mountWork(byId('work'), {
   onConclusion: (t) => {
     app.conclusionFor = t.id;
     rerender();
+    showPane('ticket');
+    reveal('conclusion-form');
   },
   onRun: () => rerender(),
 });
@@ -179,8 +183,14 @@ function selectTicket(id: string, force = false): void {
   (byId('inbox-dialog') as HTMLDialogElement).close();
   rerender();
   work.setTicket(selected(), app.stepIndex, force || fromMode);
+  showPane('ticket');
   go('play'); // from Home or the inbox on Home: the hashchange then focuses the brief (it is hidden until then)
   byId('brief-title').focus();
+}
+
+/** Scrolls `id` into view once the result table and the editor have settled (they move the page in the same task). */
+function reveal(id: string): void {
+  window.setTimeout(() => document.getElementById(id)?.scrollIntoView({ block: 'nearest' }), 150);
 }
 
 function nextStep(): void {
@@ -190,6 +200,8 @@ function nextStep(): void {
   rerender();
   work.setTicket(selected(), app.stepIndex);
   work.focus(); // the new step's editor replaces the one that had focus
+  showPane('ticket');
+  reveal('brief-step'); // the new step's words, not the old scroll spot (v10 critic #3)
 }
 
 let shownRoute: Route | undefined;
@@ -229,7 +241,9 @@ function complete(tk: Ticket): void {
   if (nextTicket(app.tickets, done())) byId('announce').append(` ${t('nav.nextReady')}`);
   app.conclusionFor = '';
   rerender();
-  byId('ticket').querySelector<HTMLElement>('.recap h3')?.focus(); // the Submit button just disappeared
+  showPane('ticket'); // phone: the Recap
+  // The Submit button just disappeared: a promotion review lands on its chapter wrap-up, any other task on its Recap.
+  byId('ticket').querySelector<HTMLElement>('#wrapup-title, .recap h3')?.focus();
   work.setSchema(editorSchema()); // a boss may open the next chapter's tables
   panel.refresh();
 }
@@ -378,8 +392,10 @@ window.addEventListener('vite:preloadError', () => {
 
 initLayout(byId('shell'), { col: byId('split-col'), row: byId('split-row') });
 initStage();
+initPaneTabs();
 uiReady = true; // nothing awaited since loadContent(), so no DB callback was missed in between
 rerender();
+prefetchArt(); // the art chunk (scene, map, completion scenes) once the first screen is up (Plan 8b)
 if (app.dbStatus === 'ready') void loadColumns();
 work.setTicket(selected(), app.stepIndex);
 initSidebar(); // its Esc (close the overlay) goes before the tour's

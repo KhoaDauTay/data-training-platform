@@ -1,12 +1,14 @@
 # 12 chương (L27, L30, docs/team/curriculum.md).
 # career: bước nghề đạt được khi qua "Đánh giá thăng tiến" (ticket beat: boss) của chương (L19, L22).
 # tier: true = chương ★ đổi chức danh (ch1, 3, 6, 9, 12); career của chương ★ là chức danh mới.
+# module: tên module SQL trung tính (Lộ trình học, Luyện SQL), không theo câu chuyện của domain.
 # story: đoạn mở chương, hiện trên ticket đầu tiên của chương (product-design-v2 ★4).
 # Outcome chỉ dùng kỹ năng của chương này hoặc chương trước; ch4–12 thêm cùng plan viết ticket của chương đó.
 # Màu chương nằm ở src/theme.ts (CHAPTER_COLOR): Tailwind không quét file YAML. Mọi chuỗi đặt trong nháy kép.
 
 - chapter: 1
   title: { vi: "Tuần thử việc", en: "Probation week" }
+  module: { vi: "Đọc và lọc dữ liệu", en: "Reading and filtering data" }
   career: { vi: "Junior DA", en: "Junior DA" }
   tier: true
   story:
@@ -19,6 +21,7 @@
 
 - chapter: 2
   title: { vi: "Báo cáo sản lượng", en: "Volume reports" }
+  module: { vi: "Tổng hợp và nhóm", en: "Aggregating and grouping" }
   career: { vi: "Junior DA · phụ trách báo cáo sản lượng", en: "Junior DA · volume reporting" }
   tier: false
   story:
@@ -31,6 +34,7 @@
 
 - chapter: 3
   title: { vi: "Nối dữ liệu", en: "Joining data" }
+  module: { vi: "Nối bảng", en: "Joining tables" }
   career: { vi: "Data Analyst", en: "Data Analyst" }
   tier: true
   story:
@@ -43,6 +47,7 @@
 
 - chapter: 4
   title: { vi: "Lịch tàu & thời gian", en: "Schedules and time" }
+  module: { vi: "Ngày tháng và NULL", en: "Dates and NULLs" }
   career: { vi: "Data Analyst · phụ trách số liệu Ops & lịch tàu", en: "Data Analyst · Ops and schedule data" }
   tier: false
   story:
@@ -55,6 +60,7 @@
 
 - chapter: 5
   title: { vi: "Hải quan & phân loại", en: "Customs and classification" }
+  module: { vi: "Phân loại theo điều kiện", en: "Conditional logic" }
   career: { vi: "Data Analyst · phụ trách số liệu Hải quan", en: "Data Analyst · customs data" }
   tier: false
   story:
@@ -68,6 +74,7 @@
 
 - chapter: 6
   title: { vi: "Làm sạch dữ liệu", en: "Cleaning the data" }
+  module: { vi: "Chuỗi và kiểu dữ liệu", en: "Text and data types" }
   career: { vi: "Senior DA", en: "Senior DA" }
   tier: true
   story:
@@ -80,6 +87,7 @@
 
 - chapter: 7
   title: { vi: "Báo giá & so sánh", en: "Quotes and comparisons" }
+  module: { vi: "Truy vấn con", en: "Subqueries" }
   career: { vi: "Senior DA · phụ trách phân tích giá", en: "Senior DA · pricing analysis" }
   tier: false
   story:
@@ -93,6 +101,7 @@
 
 - chapter: 8
   title: { vi: "Công nợ & tỷ giá", en: "Receivables and exchange rates" }
+  module: { vi: "CTE và dòng mới nhất", en: "CTEs and latest rows" }
   career: { vi: "Senior DA · phụ trách báo cáo tài chính", en: "Senior DA · financial reporting" }
   tier: false
   story:
@@ -105,6 +114,7 @@
 
 - chapter: 9
   title: { vi: "Đối soát chứng từ", en: "Document reconciliation" }
+  module: { vi: "Gộp và đối chiếu tập hợp", en: "Set operations" }
   career: { vi: "Lead DA", en: "Lead DA" }
   tier: true
   story:
@@ -117,6 +127,7 @@
 
 - chapter: 10
   title: { vi: "Xu hướng & xếp hạng", en: "Trends and rankings" }
+  module: { vi: "Hàm cửa sổ", en: "Window functions" }
   career: { vi: "Lead DA · phụ trách báo cáo điều hành", en: "Lead DA · executive reporting" }
   tier: false
   story:
@@ -129,6 +140,7 @@
 
 - chapter: 11
   title: { vi: "Truy vấn nhanh hơn", en: "Faster queries" }
+  module: { vi: "Hiệu năng và chỉ mục", en: "Performance and indexes" }
   career: { vi: "Lead DA · phụ trách hiệu năng dữ liệu", en: "Lead DA · data performance" }
   tier: false
   story:
@@ -141,6 +153,7 @@
 
 - chapter: 12
   title: { vi: "Điều tra cuối năm", en: "Year-end investigation" }
+  module: { vi: "Dự án tổng hợp", en: "Capstone project" }
   career: { vi: "Trưởng nhóm Phân tích", en: "Head of Analytics" }
   tier: true
   story:

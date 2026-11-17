@@ -11,8 +11,9 @@ export interface Skill { id: string; chapter: number; label: Bilingual; syntax: 
 /** "After this chapter you can…"; ticked once every skill in `skills` is learned. */
 export interface Outcome extends Bilingual { skills: string[] }
 /** career: the step reached by passing this chapter's promotion review; tier: a ★ chapter that changes the job title (L30). */
-/** `tables`: the domain tables this chapter reveals (content/domains/<d>/chapters.yml); Logistics keeps CHAPTER_TABLES below. */
-export interface Chapter { chapter: number; title: Bilingual; career: Bilingual; tier: boolean; story: Bilingual; outcomes: Outcome[]; tables?: string[] }
+/** `module`: the domain-neutral name of the chapter's SQL module (Learning path, Practise SQL); `title` is the domain story's.
+ * `tables`: the domain tables this chapter reveals (content/domains/<d>/chapters.yml); Logistics keeps CHAPTER_TABLES below. */
+export interface Chapter { chapter: number; title: Bilingual; module: Bilingual; career: Bilingual; tier: boolean; story: Bilingual; outcomes: Outcome[]; tables?: string[] }
 
 const str = (v: unknown): string => (typeof v === 'string' ? v.trim() : '');
 const strings = (v: unknown): string[] => (Array.isArray(v) ? v.map(String) : []);
@@ -117,6 +118,7 @@ export function parseChapters(source: string, origin = 'chapters.yml'): Chapter[
     return {
       chapter: c.chapter,
       title: bilingual(c.title),
+      module: bilingualOf(c.module) ?? bilingual(c.title),
       career: bilingual(c.career),
       tier: c.tier === true,
       story: bilingual(c.story),
@@ -132,6 +134,10 @@ export const CHAPTERS: Chapter[] = parseChapters(chaptersSource);
 /** `chapters`: CHAPTERS on General pages (the learning path follows Logistics, Plan 9 D9-12). */
 export function chapterTitle(chapter: number, lang: Lang, chapters: Chapter[] = chaptersOf()): string {
   return chapters.find((c) => c.chapter === chapter)?.title[lang] ?? '';
+}
+/** The General pages' name for a chapter's module (v10 critic #7): about SQL, never the logistics story. */
+export function moduleTitle(chapter: number, lang: Lang): string {
+  return CHAPTERS.find((c) => c.chapter === chapter)?.module[lang] ?? '';
 }
 
 /** Tables that appear in the schema sidebar from this chapter on (spec §4). The DB always has all of them. */
