@@ -122,6 +122,15 @@ describe('DbClient import', () => {
     expect(dropped).toEqual([]);
   });
 
+  it('worker mới không boot được: không xóa file đã lưu, giữ để nạp lại', async () => {
+    const { db, dropped } = await withImportedTable();
+    await timeoutQuery(db);
+    last().onmessage?.({ data: { type: 'initError', message: 'wasm failed' } });
+    await vi.advanceTimersByTimeAsync(0);
+    expect(dropped).toEqual([]);
+    expect(db.importedTables()).toEqual(['orders']);
+  });
+
   it('import lần đầu lỗi thì không được ghi để nạp lại', async () => {
     const db = new DbClient(() => {}, 5000);
     last().ready();

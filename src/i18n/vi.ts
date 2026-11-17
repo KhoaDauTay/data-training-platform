@@ -16,6 +16,8 @@ export const vi = {
   'mydata.deleteAria': 'Xóa bảng {table}',
   'mydata.clear': 'Xóa toàn bộ dữ liệu đã nhập',
   'mydata.clearConfirm': 'Xóa mọi bảng đã nhập và file đã lưu trong trình duyệt?',
+  'mydata.clearYes': 'Xóa hết',
+  'mydata.clearNo': 'Hủy',
   'mydata.none': 'Chưa có bảng nào.',
   'mydata.empty': 'File không có dòng tiêu đề hoặc không có dòng dữ liệu nào.',
   'mydata.tooLarge': 'File khoảng {mb} MB, vượt giới hạn {max} MB.',

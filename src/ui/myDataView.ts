@@ -136,12 +136,22 @@ export function renderMyData(): HTMLElement {
       ? h('ul', { class: 'my-2 list-none p-0' }, ...tables.map(tableItem))
       : h('p', { class: 'text-sm text-muted' }, t('mydata.none')),
     tables.length
-      ? h('button', {
-          type: 'button',
-          onclick: () => {
-            if (window.confirm(t('mydata.clearConfirm'))) void act(() => my!.clear());
-          },
-        }, t('mydata.clear'))
+      ? clearButton()
       : null,
   );
+}
+
+/** Two-step "delete all": the first click asks inline (no native confirm(), which blocks the page). */
+function clearButton(): HTMLElement {
+  const box = h('div', { class: 'flex flex-wrap items-center gap-2' });
+  const ask = (): void => {
+    const yes = h('button', { type: 'button', class: 'rounded-lg bg-bad px-3 py-1 font-semibold text-on-accent', onclick: () => void act(() => my!.clear()) }, t('mydata.clearYes'));
+    const no = h('button', { type: 'button', onclick: () => { idle(); first.focus(); } }, t('mydata.clearNo'));
+    box.replaceChildren(h('p', { class: 'w-full text-sm', role: 'alert' }, t('mydata.clearConfirm')), yes, no);
+    yes.focus();
+  };
+  const first = h('button', { type: 'button', onclick: ask }, t('mydata.clear'));
+  const idle = (): void => box.replaceChildren(first);
+  idle();
+  return box;
 }

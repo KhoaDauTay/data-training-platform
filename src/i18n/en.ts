@@ -19,6 +19,8 @@ export const en: Record<Key, Msg> = {
   'mydata.deleteAria': 'Delete table {table}',
   'mydata.clear': 'Delete all imported data',
   'mydata.clearConfirm': 'Delete every imported table and the files saved in this browser?',
+  'mydata.clearYes': 'Delete all',
+  'mydata.clearNo': 'Cancel',
   'mydata.none': 'No tables yet.',
   'mydata.empty': 'The file has no header row or no data rows.',
   'mydata.tooLarge': 'The file is about {mb} MB, over the {max} MB limit.',

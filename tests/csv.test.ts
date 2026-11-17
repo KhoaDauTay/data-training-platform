@@ -10,6 +10,7 @@ describe('sanitize tên', () => {
   it('bỏ dấu tiếng Việt, chữ thường, ký tự lạ thành _, số đầu thêm c_', () => {
     expect(sanitizeIdent('Mã Lô (VNĐ)', 'x')).toBe('ma_lo_vnd');
     expect(sanitizeIdent('  Đơn  giá/kg ', 'x')).toBe('don_gia_kg');
+    expect(['xmin', 'ctid', 'tableoid'].map((c) => sanitizeIdent(c, 'x'))).toEqual(['xmin_', 'ctid_', 'tableoid_']); // system columns (42701)
     expect(sanitizeIdent('2026 Sales', 'x')).toBe('c_2026_sales');
     expect(sanitizeIdent('!!!', 'col_3')).toBe('col_3');
     expect(sanitizeIdent('a'.repeat(80), 'x')).toHaveLength(63);

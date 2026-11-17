@@ -128,7 +128,8 @@ export class DbClient {
   private replayImports(): void {
     for (const [table, { req, file }] of this.imports) {
       this.enqueue<ImportedTable>({ kind: 'import', req, file }, IMPORT_TIMEOUT_MS).catch((e: Error) => {
-        if (e instanceof DbRestartError) return;
+        // Restart or failed boot is not the file's fault: keep it for the next replay (plan item 12).
+        if (e instanceof DbRestartError || e instanceof DbFailedError) return;
         this.imports.delete(table);
         this.onImportDropped(table, e);
       });

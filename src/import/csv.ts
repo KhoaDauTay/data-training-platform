@@ -32,8 +32,10 @@ export function sanitizeIdent(raw: string, fallback: string): string {
   if (!s) s = fallback;
   if (/^[0-9]/.test(s)) s = `c_${s}`;
   s = s.slice(0, MAX_IDENT);
-  return RESERVED.has(s) ? `${s}_` : s;
+  return RESERVED.has(s) || SYSTEM_COLUMNS.has(s) ? `${s}_` : s;
 }
+/** Postgres system column names: CREATE TABLE rejects them (42701). */
+const SYSTEM_COLUMNS = new Set(['xmin', 'xmax', 'cmin', 'cmax', 'ctid', 'tableoid']);
 
 /** Duplicates get _2, _3, … in order of appearance. */
 export function uniqueNames(names: string[]): string[] {
