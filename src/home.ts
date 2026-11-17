@@ -2,6 +2,7 @@ import { parse as parseYaml } from 'yaml';
 import kpiSource from '../content/kpis.yml?raw';
 import type { QueryResult } from './db/run';
 import { currentChapter, nextTicket, type Bilingual, type Chapter, type Skill } from './progress';
+import { activeDomain, type DomainId } from './domains';
 import type { Save } from './save';
 import type { Lang, Ticket } from './tickets';
 
@@ -126,6 +127,10 @@ export function parseKpis(src: string, origin = 'kpis.yml'): Kpi[] {
   });
 }
 export const KPIS: Kpi[] = parseKpis(kpiSource);
+const domainKpis = new Map<DomainId, Kpi[]>();
+export const setDomainKpis = (d: DomainId, kpis: Kpi[]): void => void domainKpis.set(d, kpis);
+/** The open domain's company tiles (Logistics: content/kpis.yml; E-com: content/domains/ecom/kpis.yml). */
+export const kpisOf = (d: DomainId = activeDomain()): Kpi[] => (d === 'logistics' ? KPIS : domainKpis.get(d) ?? []);
 
 /**
  * `ticket` undefined: its chapter has no content yet (the Q3 margin waits for chapter 12). Never opens before completion.

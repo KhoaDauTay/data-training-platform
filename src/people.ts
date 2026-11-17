@@ -1,5 +1,6 @@
 import { parse as parseYaml } from 'yaml';
 import source from '../content/people.yml?raw';
+import type { DomainId } from './domains';
 import { bilingualOf, type Bilingual } from './progress';
 
 /** Allowed portrait parameters (src/ui/avatar.ts draws each one). */
@@ -48,7 +49,17 @@ export function parsePeople(src: string, origin = 'people.yml'): Person[] {
 }
 
 export const PEOPLE: Person[] = parsePeople(source);
-export const personOf = (name: string): Person | undefined => PEOPLE.find((p) => p.name === name);
+const domainPeople = new Map<DomainId, Person[]>([['logistics', PEOPLE]]);
+export const setDomainPeople = (d: DomainId, people: Person[]): void => void domainPeople.set(d, people);
+export const peopleOf = (d: DomainId): Person[] => domainPeople.get(d) ?? [];
+/** Looks in every loaded domain: names never repeat across domains (tests/ecomContent.test.ts). */
+export function personOf(name: string): Person | undefined {
+  for (const list of domainPeople.values()) {
+    const p = list.find((x) => x.name === name);
+    if (p) return p;
+  }
+  return undefined;
+}
 
 /** The line under a sender's name: role, then the tables they own that the player can already see (`visible`). '' = unknown sender. */
 export function roleLine(name: string, lang: keyof Bilingual, visible: readonly string[] = []): string {

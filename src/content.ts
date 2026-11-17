@@ -1,7 +1,11 @@
+import { activeDomain, type DomainId } from './domains';
 import type { General } from './general';
+import { parseKpis, setDomainKpis } from './home';
 import { parseLaneBriefs, type LaneBrief } from './lanes';
 import { parse as parseYaml } from 'yaml';
 import { parseLessonBody, parseLessons, type Lesson } from './lessons';
+import { parsePeople, setDomainPeople } from './people';
+import { parseChapters, setDomainChapters } from './progress';
 import { byOrder, parseTicket, type Ticket } from './tickets';
 import { applyVariant } from './variants';
 
@@ -32,10 +36,34 @@ export function loadContent(): Promise<void> {
     }));
 }
 
+const domainTemplates = new Map<DomainId, Ticket[]>();
+let ecomLoading: Promise<void> | undefined;
+
+/**
+ * A domain's content (Plan 9): Logistics comes with loadContent(); E-commerce is its own lazy chunk (src/ecomSources.ts),
+ * loaded the first time the player opens the domain. A failed load can be retried. Await it before setActiveDomain().
+ */
+export function loadDomain(id: DomainId): Promise<void> {
+  if (id !== 'ecommerce') return Promise.resolve();
+  return (ecomLoading ??= import('./ecomSources')
+    .then((m) => {
+      const list = Object.entries(m.ticketSources).map(([path, source]) => parseTicket(source, path)).sort(byOrder);
+      setDomainChapters('ecommerce', parseChapters(m.chaptersSource, 'domains/ecom/chapters.yml'));
+      setDomainKpis('ecommerce', parseKpis(m.kpiSource, 'domains/ecom/kpis.yml'));
+      setDomainPeople('ecommerce', parsePeople(m.peopleSource, 'domains/ecom/people.yml'));
+      domainTemplates.set('ecommerce', list);
+    })
+    .catch((e: unknown) => {
+      ecomLoading = undefined;
+      throw e;
+    }));
+}
+
 /** Raw tickets with their {{x}} templates, parsed once and shared (Practice and the review queue read these). Do not mutate. */
-export function loadTicketTemplates(): Ticket[] {
-  if (!templates) throw new Error('loadContent() has not finished');
-  return templates;
+export function loadTicketTemplates(d: DomainId = activeDomain()): Ticket[] {
+  const list = d === 'logistics' ? templates : domainTemplates.get(d);
+  if (!list) throw new Error(d === 'logistics' ? 'loadContent() has not finished' : `loadDomain('${d}') has not finished`);
+  return list;
 }
 
 /** Lane briefs and side tasks (src/lanes.ts). Side tasks are never part of loadTickets(). */
@@ -70,6 +98,6 @@ export function loadGeneral(): Promise<General> {
 export const generalNow = (): General | undefined => general;
 
 /** Story mode always plays variants[0]. */
-export function loadTickets(): Ticket[] {
-  return loadTicketTemplates().map((t) => applyVariant(t, 0));
+export function loadTickets(d: DomainId = activeDomain()): Ticket[] {
+  return loadTicketTemplates(d).map((t) => applyVariant(t, 0));
 }

@@ -1,6 +1,7 @@
 import { parse as parseYaml } from 'yaml';
 import chaptersSource from '../content/chapters.yml?raw';
 import skillsSource from '../content/skills.yml?raw';
+import { activeDomain, type DomainId } from './domains';
 import { codeOnly } from './planCheck';
 import type { Lang, Ticket } from './tickets';
 
@@ -10,7 +11,8 @@ export interface Skill { id: string; chapter: number; label: Bilingual; syntax: 
 /** "After this chapter you can…"; ticked once every skill in `skills` is learned. */
 export interface Outcome extends Bilingual { skills: string[] }
 /** career: the step reached by passing this chapter's promotion review; tier: a ★ chapter that changes the job title (L30). */
-export interface Chapter { chapter: number; title: Bilingual; career: Bilingual; tier: boolean; story: Bilingual; outcomes: Outcome[] }
+/** `tables`: the domain tables this chapter reveals (content/domains/<d>/chapters.yml); Logistics keeps CHAPTER_TABLES below. */
+export interface Chapter { chapter: number; title: Bilingual; career: Bilingual; tier: boolean; story: Bilingual; outcomes: Outcome[]; tables?: string[] }
 
 const str = (v: unknown): string => (typeof v === 'string' ? v.trim() : '');
 const strings = (v: unknown): string[] => (Array.isArray(v) ? v.map(String) : []);
@@ -119,6 +121,7 @@ export function parseChapters(source: string, origin = 'chapters.yml'): Chapter[
       tier: c.tier === true,
       story: bilingual(c.story),
       outcomes: outcomes.map((o) => ({ ...bilingual(o), skills: strings((o as { skills?: unknown } | null)?.skills) })),
+      ...(Array.isArray(c.tables) ? { tables: strings(c.tables) } : {}),
     };
   });
 }
@@ -127,7 +130,7 @@ export const SKILLS: Skill[] = parseSkills(skillsSource);
 export const CHAPTERS: Chapter[] = parseChapters(chaptersSource);
 
 export function chapterTitle(chapter: number, lang: Lang): string {
-  return CHAPTERS.find((c) => c.chapter === chapter)?.title[lang] ?? '';
+  return chaptersOf().find((c) => c.chapter === chapter)?.title[lang] ?? '';
 }
 
 /** Tables that appear in the schema sidebar from this chapter on (spec §4). The DB always has all of them. */
@@ -146,8 +149,27 @@ export const CHAPTER_TABLES: Record<number, string[]> = {
   12: ['claims'],
 };
 
-export function tablesUnlocked(chapter: number): string[] {
-  return Object.entries(CHAPTER_TABLES)
+/** Chapters of the non-Logistics domains, set by loadDomain() (src/content.ts). Logistics is CHAPTERS. */
+const domainChapters = new Map<DomainId, Chapter[]>();
+export const setDomainChapters = (d: DomainId, chapters: Chapter[]): void => void domainChapters.set(d, chapters);
+/** The open domain's chapters (Plan 9 D9-12). General pages keep CHAPTERS: the learning path follows Logistics. */
+export const chaptersOf = (d: DomainId = activeDomain()): Chapter[] => (d === 'logistics' ? CHAPTERS : domainChapters.get(d) ?? []);
+export const chapterTablesOf = (d: DomainId = activeDomain()): Record<number, string[]> =>
+  d === 'logistics' ? CHAPTER_TABLES : Object.fromEntries(chaptersOf(d).map((c) => [c.chapter, c.tables ?? []]));
+
+/**
+ * A domain's skill cards: the shared cards of skills.yml with `chapter` = the chapter of the domain ticket that teaches
+ * the skill (Plan 9 D9-6). Skills the domain never teaches are left out, so contentProblems reports any ticket that
+ * requires one. Leitner boxes and review stay keyed by the shared skill id.
+ */
+export function domainSkills(tickets: Ticket[], all: Skill[] = SKILLS): Skill[] {
+  const taughtIn = new Map<string, number>();
+  for (const t of tickets) for (const s of t.grants) if (!taughtIn.has(s)) taughtIn.set(s, t.chapter);
+  return all.filter((s) => taughtIn.has(s.id)).map((s) => ({ ...s, chapter: taughtIn.get(s.id)! }));
+}
+
+export function tablesUnlocked(chapter: number, tables: Record<number, string[]> = chapterTablesOf()): string[] {
+  return Object.entries(tables)
     .filter(([c]) => Number(c) <= chapter)
     .flatMap(([, tables]) => tables);
 }
@@ -183,7 +205,7 @@ export interface Rank {
   career?: Bilingual;
 }
 
-export function rankOf(tickets: Ticket[], completed: Set<string>, chapters: Chapter[] = CHAPTERS): Rank {
+export function rankOf(tickets: Ticket[], completed: Set<string>, chapters: Chapter[] = chaptersOf()): Rank {
   const passed = tickets.filter((t) => t.beat === 'boss' && completed.has(t.id)).map((t) => t.chapter).sort((a, b) => a - b);
   const reached = chapters.filter((c) => passed.includes(c.chapter));
   const tier = reached.filter((c) => c.tier).pop()?.career;
@@ -196,7 +218,9 @@ export function rankOf(tickets: Ticket[], completed: Set<string>, chapters: Chap
  * Skills/outcomes are only required to be granted for chapters that already have tickets,
  * so content can be written chapter by chapter.
  */
-export function contentProblems(tickets: Ticket[], skills: Skill[] = SKILLS, chapters: Chapter[] = CHAPTERS): string[] {
+export function contentProblems(
+  tickets: Ticket[], skills: Skill[] = SKILLS, chapters: Chapter[] = chaptersOf(), tables: Record<number, string[]> = chapterTablesOf(),
+): string[] {
   const problems: string[] = [];
   const skillById = new Map(skills.map((s) => [s.id, s]));
   const seen = new Set<string>();
@@ -211,7 +235,7 @@ export function contentProblems(tickets: Ticket[], skills: Skill[] = SKILLS, cha
     for (const skill of t.requires) {
       if (!granted.has(skill)) problems.push(`${t.id}: cần kỹ năng "${skill}" nhưng chưa ticket nào trước đó dạy`);
     }
-    const open = tablesUnlocked(t.chapter);
+    const open = tablesUnlocked(t.chapter, tables);
     for (const table of t.tables) {
       if (!open.includes(table)) problems.push(`${t.id}: dùng bảng "${table}" chưa mở ở chương ${t.chapter}`);
     }
