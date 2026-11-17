@@ -1,5 +1,5 @@
 import type { QueryResult } from '../db/run';
-import { t } from '../i18n';
+import { locale, t } from '../i18n';
 import { cx, type ChapterColor } from '../theme';
 import { chartSpec, MAX_POINTS, valueRange, type ChartSpec } from '../viz/chart';
 import { fmt, h } from './dom';
@@ -13,10 +13,13 @@ import { s } from './svg';
 export type ChartSize = 'tab' | 'card';
 const SIZES = {
   tab: { w: 720, labelW: 200, valueW: 90, chars: 28, rowH: 24, lineH: 260, padL: 64, svg: 'h-auto w-full max-w-[900px]' },
-  card: { w: 260, labelW: 92, valueW: 64, chars: 13, rowH: 26, lineH: 170, padL: 56, svg: 'h-auto w-full min-w-[260px]' },
+  card: { w: 260, labelW: 92, valueW: 64, chars: 13, rowH: 26, lineH: 170, padL: 56, svg: 'h-auto w-full max-w-[400px] min-w-[260px]' },
 } as const;
 const LABEL = 'fill-muted text-xs';
 const VALUE = 'fill-ink text-xs tabular-nums';
+
+/** Card bars print "1,2 Tr" / "1.2M" so the value fits its 64 units; the exact value is in the bar's tooltip. */
+const short = (n: number): string => n.toLocaleString(locale(), { notation: 'compact', maximumFractionDigits: 1 });
 
 /** Also drawn on dashboard cards (src/ui/dashboard.ts, size 'card'). */
 export function bars(r: QueryResult, spec: ChartSpec, col: number, color: ChapterColor, size: ChartSize = 'tab'): SVGSVGElement {
@@ -34,7 +37,7 @@ export function bars(r: QueryResult, spec: ChartSpec, col: number, color: Chapte
         s('title', {}, `${label}: ${fmt(vals[i])}`),
         s('text', { x: labelW - 8, y: 15, 'text-anchor': 'end', class: LABEL }, label.length > chars ? `${label.slice(0, chars - 1)}…` : label),
         s('rect', { x: Math.min(x0, xv).toFixed(1), y: 3, width: Math.max(1, Math.abs(xv - x0)).toFixed(1), height: rowH - 8, rx: 3, class: color.fill }),
-        s('text', { x: (Math.max(x0, xv) + 6).toFixed(1), y: 15, class: VALUE }, fmt(vals[i])));
+        s('text', { x: (Math.max(x0, xv) + 6).toFixed(1), y: 15, class: VALUE }, size === 'card' ? short(vals[i]) : fmt(vals[i])));
     }));
 }
 
