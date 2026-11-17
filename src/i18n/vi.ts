@@ -546,7 +546,6 @@ export const vi = {
   'lane.asked': 'DA ở tuyến này hay được hỏi:',
   'lane.illustrative': 'Số liệu minh họa, đã giản lược. Công ty và số liệu là hư cấu.',
   'lane.tasks': 'Bài tuyến · {done}/{total} xong · tùy chọn',
-  'lane.hiddenTitle': 'Bài tuyến {n} · mở sau chương {ch}',
   'lane.taskAt': 'Mở sau chương {n} · +{xp} XP',
   'lane.start': 'Làm bài tuyến',
   'lane.review': 'Xem lại',

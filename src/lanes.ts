@@ -80,10 +80,6 @@ export function laneTaskState(task: Ticket, open: ReadonlySet<string>, passed: R
   return task.lane && open.has(task.lane) && passed.has(task.chapter) ? 'open' : 'locked';
 }
 
-/** Side tasks whose title gives a later chapter away (the July rate rise, like the brief's "+40%" `after: 7`): hidden while locked. */
-const SPOILER_TITLES = new Set(['r-3']);
-export const titleHidden = (task: Ticket, state: LaneTaskState): boolean => state === 'locked' && SPOILER_TITLES.has(task.id);
-
 /** "R-1": the label of a side task on buttons and cards. */
 export const laneLabel = (task: Ticket): string => task.id.toUpperCase();
 
