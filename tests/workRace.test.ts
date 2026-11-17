@@ -104,6 +104,30 @@ beforeEach(() => {
 afterEach(() => vi.unstubAllGlobals());
 
 describe('đổi ticket khi query đang chạy', () => {
+  it('editor trống: Chạy và Nộp bị từ chối, không chạy, không ghi lịch sử, không tính nộp sai (v10 B1)', async () => {
+    app.save.drafts['A#0'] = '  ';
+    const { work, deps } = setup();
+    const onWrong = vi.fn();
+    (deps as { onWrong?: () => void }).onWrong = onWrong;
+    open(work, ticket('A'));
+    editors[0].opts.onRun();
+    editors[0].opts.onSubmit();
+    await flush();
+    expect(deps.db.run).not.toHaveBeenCalled();
+    expect(historyOf('A')).toEqual([]);
+    expect(onWrong).not.toHaveBeenCalled();
+  });
+
+  it('bước sau của bài thăng tiến bắt đầu từ SQL đã đạt ở bước trước (v10 B4)', () => {
+    app.save.graded['A#0'] = 'SELECT 7';
+    const { work } = setup();
+    const tk = ticket('A', 2);
+    app.selectedId = tk.id;
+    app.stepIndex = 1;
+    work.setTicket(tk, 1);
+    expect(editors.at(-1)!.opts.doc).toBe('SELECT 7');
+  });
+
   it('Nộp xong sau khi đã đổi ticket: chỉ ghi lịch sử của ticket lúc bấm, không chấm điểm', async () => {
     const { work, deps } = setup();
     open(work, ticket('A'));
@@ -208,7 +232,7 @@ describe('Practice không đụng tiến độ câu chuyện', () => {
     const { actions } = await import('../src/state');
     const complete = vi.spyOn(actions, 'complete');
     const tk = { ...ticket('A'), grants: ['select'] };
-    session.mode = { kind: 'practice', run: { id: 1, items: [{ ticketId: 'A', variant: 1, skills: ['select'] }], tickets: [tk], index: 0, wrong: 0, hints: 0, passed: 0, draft: '' } };
+    session.mode = { kind: 'practice', run: { id: 1, items: [{ ticketId: 'A', variant: 1, skills: ['select'] }], tickets: [tk], index: 0, wrong: 0, hints: 0, passed: 0, draft: 'SELECT 2' } };
     try {
       const { work, deps } = setup();
       deps.onSolved.mockImplementation(onSolved);
