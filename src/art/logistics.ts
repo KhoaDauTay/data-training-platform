@@ -11,6 +11,7 @@ import type { h as H, nodes as Nodes, reducedMotion as ReducedMotion } from '../
 import type { mascot as Mascot } from '../ui/mascots';
 import type { callout as Callout, routeItems as RouteItems } from '../ui/routeText';
 import type { s as S } from '../ui/svg';
+import { arrivalPulse } from './mapMotion';
 
 /**
  * Everything this chunk uses from main, handed over by src/art/load.ts (D8b-2 stop rule): a runtime import of a main
@@ -461,6 +462,9 @@ async function sail(c: Ctx, port: string, ms: number): Promise<void> {
   m.wake.setAttribute('stroke-dasharray', String(len));
   m.wake.setAttribute('opacity', '0.55');
   m.ship.setAttribute('opacity', '1');
+  const r = ROUTES.find((x) => x.port === port);
+  // Plan 8b: the port pulses during the last 250 ms of the voyage (inside the step, never after it)
+  const pulse = r && !c.run.fast ? window.setTimeout(() => { if (!c.run.fast) arrivalPulse(m, r.x, r.y, chapterColor(c.tk.chapter).stroke); }, Math.max(0, ms - 250)) : 0;
   await tween(c.run, ms, (x) => {
     const at = path.getPointAtLength(x * len);
     const ahead = path.getPointAtLength(Math.min(len, x * len + 1));
@@ -469,9 +473,26 @@ async function sail(c: Ctx, port: string, ms: number): Promise<void> {
     m.ship.setAttribute('transform', `translate(${at.x},${at.y}) rotate(${flip ? deg + 180 : deg}) scale(${flip ? -1 : 1},1)`);
     m.wake.setAttribute('stroke-dashoffset', String(len * (1 - x)));
   });
+  window.clearTimeout(pulse);
   m.ship.setAttribute('opacity', '0');
   m.wake.setAttribute('opacity', '0');
   paintRoutes(m, c.after);
+}
+
+/**
+ * Plan 8b: a lane this promotion opens is drawn in first (solid in its colour, dashoffset len → 0) inside the sail step.
+ * Inline style only, removed at the end, so paintRoutes() attributes win afterwards. A fast run draws the end state.
+ */
+async function drawLane(c: Ctx, port: string, ms: number): Promise<void> {
+  const m = c.map;
+  if (!m) return;
+  const path = m.routes[port];
+  const len = path.getTotalLength();
+  paintRoutes(m, c.after);
+  path.style.strokeDasharray = `${len} ${len}`;
+  await tween(c.run, ms, (x) => { path.style.strokeDashoffset = String(len * (1 - x)); }, easeOut);
+  path.style.removeProperty('stroke-dasharray');
+  path.style.removeProperty('stroke-dashoffset');
 }
 
 // ---- cards over the art ----
@@ -520,10 +541,13 @@ function promoCard(c: Ctx): HTMLElement {
   const from = c.rankBefore.tier?.[lang] ?? t('career.intern');
   const to = c.rankAfter.tier?.[lang] ?? t('career.intern');
   const opened = openedNames(c);
-  return h('div', { class: 'w-80 max-w-[calc(100vw-4rem)] rounded-2xl bg-panel p-4 text-center shadow-xl ring-2 ring-amber-500' },
-    h('p', { class: 'm-0 text-sm font-semibold tracking-wide text-amber-800 uppercase dark:text-amber-200' }, t('anim.promoKicker', { n: c.tk.chapter })),
-    h('p', { class: 'm-0 text-lg font-bold' }, from !== to ? `${from} → ${to}` : t('anim.promoStep', { career: c.rankAfter.career?.[lang] ?? to })),
-    opened.length ? h('p', { class: 'm-0 text-sm text-muted' }, t('anim.promoRoute', { port: opened.join(', ') })) : null);
+  // Plan 8b D8b-6 (Plan 7 V18): Boon cheers beside the promotion card; Lily cheers in the dock (ui/stage.ts)
+  return h('div', { class: 'flex w-80 max-w-[calc(100vw-4rem)] items-center gap-3 rounded-2xl bg-panel p-4 shadow-xl ring-2 ring-amber-500' },
+    mascot('boon', 'cheer', 'size-14'),
+    h('div', { class: 'min-w-0 flex-1 text-center' },
+      h('p', { class: 'm-0 text-sm font-semibold tracking-wide text-amber-800 uppercase dark:text-amber-200' }, t('anim.promoKicker', { n: c.tk.chapter })),
+      h('p', { class: 'm-0 text-lg font-bold' }, from !== to ? `${from} → ${to}` : t('anim.promoStep', { career: c.rankAfter.career?.[lang] ?? to })),
+      opened.length ? h('p', { class: 'm-0 text-sm text-muted' }, t('anim.promoRoute', { port: opened.join(', ') })) : null));
 }
 
 // ---- the eight kinds (§2), step durations from STEPS ----
@@ -675,7 +699,9 @@ const PLAY: Record<Scene['kind'], (c: Ctx) => Promise<void>> = {
     if (!c.run.fast) void confetti(c, restMs);
     await Promise.all([
       departBerth(c).then(() => berthBack(c, 400)),
-      route ? sail(c, route, 2200) : wait(c.run, 2200),
+      route ? (c.after.open.has(route) && !c.before.open.has(route)
+        ? drawLane(c, route, 880).then(() => sail(c, route, 1320)) // 40% draws the new lane, the ship takes the rest: still 2.2 s
+        : sail(c, route, 2200)) : wait(c.run, 2200),
       fadeIn(c.run, card, 400),
       wait(c.run, restMs),
     ]);
@@ -688,7 +714,10 @@ export function build(c: Ctx): void {
   if (k === 'ship' || k === 'yard' || k === 'customs' || k === 'truck' || k === 'promotion') {
     c.harbor = harborScene(c.before, { ambient: false, current: c.tk.chapter, crop: true });
   }
-  if ((k === 'ship' && c.scene.to) || k === 'promotion') c.map = routeMap(c.before);
+  if ((k === 'ship' && c.scene.to) || k === 'promotion') {
+    c.map = routeMap(c.before);
+    c.map.rings.replaceChildren(); // no endless pulse in the dock (Plan 8b: loops only on reading pages); arrivalPulse() uses the group once
+  }
   c.art.replaceChildren(...nodes(c.harbor?.svg, c.map?.svg));
 }
 /** Plays the scene of `c` (§2, step durations from STEPS). A fast run draws the end state at once. */

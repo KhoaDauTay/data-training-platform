@@ -173,3 +173,12 @@ describe('thời lượng (§2): mỗi hoạt cảnh ≤ 3 s', () => {
     expect(Math.max(...all)).toBeLessThanOrEqual(3000);
   });
 });
+
+describe('step totals (Plan 8b: new effects play inside the old steps)', () => {
+  it('keeps every kind at its HEAD total', () => {
+    const sum = (k: Scene['kind']): number => STEPS[k].reduce((a, b) => a + b, 0);
+    expect(Object.fromEntries((Object.keys(STEPS) as Scene['kind'][]).map((k) => [k, sum(k)]))).toEqual({
+      ship: 2600, yard: 2800, customs: 2400, truck: 2700, quote: 2300, ledger: 2600, chat: 2400, promotion: 3000,
+    });
+  });
+});

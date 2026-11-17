@@ -2,10 +2,12 @@ import type { Ctx, Run } from '../art/logistics';
 import { loadArt } from '../art/load';
 import { getLang, t, type Key } from '../i18n';
 import { rankOf } from '../progress';
-import { derive, ROUTES, sceneOf, type Lane } from '../scene';
+import { derive, durationOf, ROUTES, sceneOf, type Lane } from '../scene';
+import { takeNewRoutes } from '../routesSeen';
 import { app } from '../state';
 import { textOf, type Ticket } from '../tickets';
 import { byId, reducedMotion } from './dom';
+import { mascot } from './mascots';
 import { stageEsc } from './shortcuts';
 
 // Plan 8b D8b-2: the pictures and scene bodies live in the lazy art chunk (src/art/logistics.ts). This file keeps the
@@ -82,7 +84,25 @@ async function drawAndPlay(c: Ctx, owner: Ctx = c): Promise<void> {
   }
   if (shown !== owner) return; // hidden (route change) or a newer completion took the dock while the chunk loaded
   art.build(c);
-  await art.play(c);
+  // D8b-6: Lily cheers in the dock's corner for every kind, popping in beside the last step (no extra time). Decorative
+  // (the sentence says it all), never takes a click; hidden below sm where the cards fill the dock's width.
+  const lily = mascot('lily', 'cheer', 'pointer-events-none absolute right-2 bottom-2 size-14 max-sm:hidden');
+  c.art.append(lily);
+  if (c.run.fast) {
+    await art.play(c);
+    return;
+  }
+  lily.style.opacity = '0';
+  const pop = window.setTimeout(() => {
+    lily.style.opacity = '1';
+    if (!c.run.fast) lily.animate([{ transform: 'scale(.6)', opacity: 0 }, { transform: 'scale(1)', opacity: 1 }], { duration: 300, easing: 'cubic-bezier(.3,1.6,.6,1)' });
+  }, Math.max(0, durationOf(c.scene) - 300));
+  try {
+    await art.play(c);
+  } finally {
+    window.clearTimeout(pop);
+    lily.style.opacity = '1';
+  }
 }
 
 /**
@@ -142,6 +162,7 @@ export function playCompletion(tk: Ticket, before: Set<string>, after: Set<strin
   };
   const text = sentence(c);
   byId('announce').textContent = text; // read now, not after the animation (§6)
+  takeNewRoutes(c.after.open); // a lane this completion opens is drawn here, so the map page does not draw it again (D8b-5)
   queue = queue
     .then(async () => {
       if (current !== run) return; // a newer completion already replaced this one
