@@ -7,6 +7,7 @@ import { chapterColor, cx, PILL } from '../theme';
 import type { Ticket } from '../tickets';
 import { h } from './dom';
 import { skillIcon } from './icons';
+import { hasLesson, openLesson } from './lessonCard';
 
 export const skillLabel = (id: string): string => SKILLS.find((s) => s.id === id)?.label[getLang()] ?? id;
 
@@ -33,13 +34,17 @@ export function goalCard(chapter: number): HTMLElement | null {
     list);
 }
 
-/** "Teaches: … · Needs: …" from grants/requires; colour only on the small chips (L23). */
+/** "New skill: … · Uses: …" from grants/requires; colour only on the small chips (L23). */
 export function skillChips(tk: Ticket): HTMLElement | null {
   if (tk.grants.length === 0 && tk.requires.length === 0) return null;
-  // One chip per skill with its icon (ui-ux-v3 §e), after a plain "Teaches:" / "Needs:" label.
+  // One chip per skill with its icon (ui-ux-v3 §e), after a plain label. A skill with a quick lesson is a button that opens it (§C.3).
+  const chipOf = (id: string, chip: string) => hasLesson(id)
+    ? h('button', { type: 'button', class: cx(PILL, chip, 'border-0'), 'aria-haspopup': 'dialog', title: t('chip.lessonAria', { skill: skillLabel(id) }), onclick: () => openLesson(id) },
+      skillIcon(id, 'size-4'), skillLabel(id))
+    : h('span', { class: cx(PILL, chip) }, skillIcon(id, 'size-4'), skillLabel(id));
   const row = (label: string, ids: string[], chip: string) => h('span', { class: 'flex flex-wrap items-center gap-1.5' },
     h('span', { class: 'text-sm font-semibold text-muted' }, label),
-    ...ids.map((id) => h('span', { class: cx(PILL, chip) }, skillIcon(id, 'size-4'), skillLabel(id))));
+    ...ids.map((id) => chipOf(id, chip)));
   return h('p', { class: 'my-2 flex flex-wrap items-center gap-x-4 gap-y-1.5' },
     tk.grants.length ? row(t('chip.teachesLabel'), tk.grants, chapterColor(tk.chapter).chip) : null,
     tk.requires.length ? row(t('chip.needsLabel'), tk.requires, 'bg-code text-ink') : null);

@@ -8,6 +8,7 @@ import type { Lang } from '../tickets';
 import { byId, h, nodes } from './dom';
 import { registerMode } from './homeView';
 import { skillIcon } from './icons';
+import { hasLesson, openLesson } from './lessonCard';
 
 const ITEM = 'border-b border-line py-2';
 
@@ -42,6 +43,8 @@ export function toggleNotebook(dialog: HTMLDialogElement): void {
     input.setAttribute('aria-label', t('nb.filter'));
     const q = input.value;
     const cards = SKILLS.filter((s) => matches(q, s.id, s.label.vi, s.label.en));
+    // A skill's quick lesson can be read before the skill is learned (product-design-v4 §C.3).
+    const lesson = (id: string) => hasLesson(id) ? h('button', { type: 'button', class: 'mt-1 px-2 py-0.5 text-sm', onclick: () => openLesson(id) }, t('nb.lesson')) : null;
     const terms = GLOSSARY.filter((g) => matches(q, g.term, g.vi, g.en, ...g.columns));
     list.replaceChildren(...nodes(
       h('h3', {}, t('nb.cards')),
@@ -51,10 +54,12 @@ export function toggleNotebook(dialog: HTMLDialogElement): void {
               h('h4', { class: 'm-0 flex items-center gap-2' }, skillIcon(s.id), s.label[lang]),
               h('pre', { class: 'sql my-1' }, s.syntax),
               h('p', { class: 'my-0.5 text-sm' }, h('b', {}, t('nb.when')), ' ', s.when[lang]),
-              h('p', { class: 'my-0.5 text-sm' }, h('b', {}, t('nb.trap')), ' ', s.trap[lang]))
+              h('p', { class: 'my-0.5 text-sm' }, h('b', {}, t('nb.trap')), ' ', s.trap[lang]),
+              lesson(s.id))
           : h('article', { class: ITEM },
               h('h4', { class: 'm-0 flex items-center gap-2 text-muted' }, skillIcon(s.id), s.label[lang]),
-              h('p', { class: 'my-0.5 text-sm text-muted' }, t('nb.unlockAt', { id: grantedBy(app.tickets, s.id)?.id ?? '—' })))),
+              h('p', { class: 'my-0.5 text-sm text-muted' }, t('nb.unlockAt', { id: grantedBy(app.tickets, s.id)?.id ?? '—' })),
+              lesson(s.id))),
       h('h3', {}, t('nb.terms')),
       ...terms.map((g) =>
         h('article', { class: ITEM },

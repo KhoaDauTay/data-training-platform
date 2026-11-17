@@ -13,6 +13,7 @@ import { avatar } from './avatar';
 import { coach } from './coach';
 import { h, nodes, richText } from './dom';
 import { skillIcon } from './icons';
+import { lessonSlot } from './lessonCard';
 
 const BEAT: Record<Beat, Key> = { teach: 'beat.teach', develop: 'beat.develop', twist: 'beat.twist', rest: 'beat.rest', boss: 'beat.boss' };
 const KIND: Record<Kind, Key> = { text: 'shape.text', number: 'shape.number', date: 'shape.date', bool: 'shape.bool' };
@@ -243,6 +244,7 @@ export function renderBrief(host: HTMLElement, tk: Ticket, stepIndex: number): v
     story(tk),
     coach('brief'),
     h('div', { class: 'rounded-2xl rounded-tl-sm bg-code px-4 leading-relaxed' }, richText(x.body)),
+    isStory() && !isDone ? lessonSlot(tk.grants) : null, // quick lessons before the task (product-design-v4 §C.3)
     exampleCard(tk, x),
     x.task ? h('section', { class: 'my-3 rounded-lg border-l-4 border-accent bg-accent-soft p-3' }, h('h3', { class: 'mt-0' }, t('brief.task')), richText(x.task)) : null,
     relatedLine(tk),

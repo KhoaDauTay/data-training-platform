@@ -90,6 +90,8 @@
     </div>
     <!-- ui-ux-v4 §3: the route map without leaving the task; filled by src/ui/mapStrip.ts. Padding sits on the inner box so a click on the dialog itself is the backdrop. Below sm: bottom sheet. -->
     <dialog id="map-dialog" class="max-h-[calc(100dvh-4rem)] w-[min(960px,calc(100vw-2rem))] overflow-auto rounded-2xl p-0 max-sm:mb-0 max-sm:max-h-[85dvh] max-sm:w-full max-sm:max-w-none max-sm:rounded-b-none" aria-labelledby="map-dialog-title"></dialog>
+    <!-- product-design-v4 §C.3: a quick lesson opened from a skill chip or the handbook; filled by src/ui/lessonCard.ts. -->
+    <dialog id="lesson-dialog" class="max-h-[calc(100dvh-4rem)] w-[min(720px,calc(100vw-2rem))] overflow-auto max-sm:mb-0 max-sm:max-h-[85dvh] max-sm:w-full max-sm:max-w-none max-sm:rounded-b-none" aria-labelledby="lesson-dialog-title"></dialog>
     <dialog id="notebook-dialog" class="fixed inset-auto top-16 right-4 z-30 m-0 max-h-[calc(100dvh-6rem)] w-[min(380px,calc(100vw-2rem))] overflow-auto max-sm:inset-x-4 max-sm:top-auto max-sm:bottom-4 max-sm:max-h-[60dvh] max-sm:w-auto" aria-labelledby="notebook-title"></dialog>
     <!-- L42: replaces part of L11; holds only Export / Import progress. Outside <header> so focus uses --accent. -->
     <div id="more-menu" popover class="m-0 min-w-52 rounded-xl border-0 bg-panel p-1 text-ink shadow-lg ring-1 ring-line [inset:3.5rem_1rem_auto_auto]">
