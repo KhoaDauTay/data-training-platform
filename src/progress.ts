@@ -165,8 +165,12 @@ export function currentChapter(tickets: Ticket[], completed: Set<string>): numbe
   return nextTicket(tickets, completed)?.chapter ?? Math.max(1, ...tickets.map((t) => t.chapter));
 }
 
+/** L54: hints cost nothing anywhere in this chapter (the probation week); elsewhere each costs 25% of the task XP, at most 3. */
+export const FREE_HINT_CHAPTER = 1;
+
 export function xpFor(ticket: Ticket, hintsUsed: number): number {
-  return Math.round(ticket.difficulty * 100 * (1 - 0.25 * Math.min(hintsUsed, 3)));
+  const paid = ticket.chapter === FREE_HINT_CHAPTER ? 0 : Math.min(hintsUsed, 3);
+  return Math.round(ticket.difficulty * 100 * (1 - 0.25 * paid));
 }
 
 /** Career after the promotion reviews passed so far (L19: one step per review; the title changes only at ★ chapters). */

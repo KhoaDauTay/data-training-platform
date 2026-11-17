@@ -243,7 +243,7 @@ export const vi = {
   'coach.brief': 'Đây là yêu cầu từ đồng nghiệp. Đọc xong, bấm Chạy ({mod}+Enter) để thử câu SQL có sẵn.',
   'coach.panel': 'Kết quả hiện ở đây. Tab Cột liệt kê các bảng bạn được dùng. Khi kết quả khớp thẻ "Kết quả mong đợi", bấm Nộp.',
   'coach.recap': 'Mỗi việc xong mở một kỹ năng và cho bạn xem cách viết tham khảo. Bấm "Việc tiếp theo" để đi tiếp.',
-  'coach.hints': 'Bí thì bấm Gợi ý. Mỗi gợi ý trừ 25% XP của việc.',
+  'coach.hints': 'Bí thì bấm Gợi ý. Cả chương 1 gợi ý miễn phí; từ chương 2, mỗi gợi ý trừ 25% XP của việc.',
   'coach.ok': 'Hiểu rồi',
   'coach.skip': 'Bỏ qua hướng dẫn',
   'work.editorLabel': 'Trình soạn SQL',

@@ -246,7 +246,7 @@ export const en: Record<Key, Msg> = {
   'coach.brief': 'This is a request from a colleague. Read it, then press Run ({mod}+Enter) to try the starter query.',
   'coach.panel': 'Results show up here. The Columns tab lists the tables you may use. When your result matches the "Expected result" card, press Submit.',
   'coach.recap': 'Each solved task unlocks a skill and shows a reference answer. Press "Next task" to move on.',
-  'coach.hints': 'Stuck? Press Hint. Each hint costs 25% of the task XP.',
+  'coach.hints': 'Stuck? Press Hint. Hints are free for all of chapter 1; from chapter 2 on, each hint costs 25% of the task XP.',
   'coach.ok': 'Got it',
   'coach.skip': 'Skip the tour',
   'work.editorLabel': 'SQL editor',

@@ -63,9 +63,13 @@ describe('tiến trình', () => {
   });
 
   it('XP trừ 25% mỗi gợi ý, tối đa 3', () => {
-    expect(xpFor(mk('ch1-01', 'teach'), 0)).toBe(200);
-    expect(xpFor(mk('ch1-01', 'teach'), 1)).toBe(150);
-    expect(xpFor(mk('ch1-01', 'teach'), 9)).toBe(50);
+    expect(xpFor(mk('ch2-01', 'teach'), 0)).toBe(200);
+    expect(xpFor(mk('ch2-01', 'teach'), 1)).toBe(150);
+    expect(xpFor(mk('ch2-01', 'teach'), 9)).toBe(50);
+  });
+
+  it('L54: cả chương 1 gợi ý miễn phí (mọi việc, mọi bậc)', () => {
+    for (const beat of ['teach', 'develop', 'twist', 'rest', 'boss'] as const) expect(xpFor(mk('ch1-03', beat), 3)).toBe(200);
   });
 });
 

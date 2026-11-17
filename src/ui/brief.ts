@@ -60,6 +60,7 @@ function labCard(sql: string): HTMLElement {
 
 function hints(tk: Ticket, x: TicketText, isDone: boolean): HTMLElement {
   const shown = hintsShown(tk.id);
+  const cost = xpFor(tk, shown) - xpFor(tk, shown + 1); // 0 in chapter 1 (L54)
   const btn = h('button', {
     type: 'button',
     onclick: () => {
@@ -67,9 +68,9 @@ function hints(tk: Ticket, x: TicketText, isDone: boolean): HTMLElement {
       persist();
       actions.rerender();
     },
-  }, isStory()
-    ? t('brief.hint', { i: shown + 1, n: x.hints.length, cost: xpFor(tk, shown) - xpFor(tk, shown + 1) })
-    : t('brief.hintFree', { i: shown + 1, n: x.hints.length })); // Practice: 0 XP, so no cost (P9)
+  }, isStory() && cost > 0
+    ? t('brief.hint', { i: shown + 1, n: x.hints.length, cost })
+    : t('brief.hintFree', { i: shown + 1, n: x.hints.length })); // Practice: 0 XP, so no cost (P9); chapter 1: free (L54)
   return h('section', { class: 'hints my-3' },
     shown ? h('ol', { class: 'space-y-1' }, ...x.hints.slice(0, shown).map((s) => h('li', {}, richText(s)))) : null,
     isDone || shown >= x.hints.length ? null : btn);
