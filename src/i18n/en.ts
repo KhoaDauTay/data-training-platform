@@ -278,6 +278,7 @@ export const en: Record<Key, Msg> = {
   'work.queued': 'The database is starting. Your query runs as soon as it is ready.',
   'work.runFailed': "The query failed; Postgres' own message is in the Result tab.",
   'work.formatFailed': 'Could not format: the SQL has a syntax error.',
+  'work.correctXp': 'Correct! +{n} XP',
   'work.correct': 'Correct!',
   'work.stepDone': 'Step {i} done. On to the next step.',
   'work.conclusionNext': 'All steps are correct. Submit your conclusion in the brief.',

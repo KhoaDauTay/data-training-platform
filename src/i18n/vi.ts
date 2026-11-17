@@ -275,6 +275,7 @@ export const vi = {
   'work.queued': 'Database đang khởi động. Truy vấn sẽ chạy ngay khi sẵn sàng.',
   'work.runFailed': 'Truy vấn lỗi; thông báo gốc của Postgres ở tab Kết quả.',
   'work.formatFailed': 'Không định dạng được: SQL đang có lỗi cú pháp.',
+  'work.correctXp': 'Đúng rồi! +{n} XP',
   'work.correct': 'Đúng rồi!',
   'work.stepDone': 'Bước {i} xong. Sang bước tiếp theo.',
   'work.conclusionNext': 'Các bước đều đúng. Chốt kết luận ở khung đề bài.',

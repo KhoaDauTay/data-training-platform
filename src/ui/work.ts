@@ -6,9 +6,10 @@ import { compareResults, grade, type GradeResult } from '../grader';
 import { loadHistory, pushHistory, writeHistory } from '../history';
 import { checkLab, checkPlan, isCreateIndex, planLine, type LabSpec, type PlanFail } from '../planCheck';
 import { getLang, isMac, t } from '../i18n';
-import { SKILLS } from '../progress';
+import { LANE_XP } from '../lanes';
+import { SKILLS, xpFor } from '../progress';
 import { isClosed, keepsWork, readDraft, workKey, writeDraft } from '../session';
-import { app, editorSchema, initialDoc, persist, stepKey, type LastRun } from '../state';
+import { app, done, editorSchema, initialDoc, persist, stepKey, type LastRun } from '../state';
 import { localStore } from '../storage';
 import { BTN_SUBMIT } from '../theme';
 import { BLANK, type Ticket } from '../tickets';
@@ -61,7 +62,7 @@ export function planFailText(f: PlanFail, lab: boolean): string {
 }
 
 const FEEDBACK: Record<'good' | 'bad', string> = {
-  good: 'mt-2 rounded-xl bg-emerald-50 p-3 text-sm text-emerald-900 ring-1 ring-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-100 dark:ring-emerald-800',
+  good: 'mt-2 rounded-xl bg-emerald-50 px-3 py-1.5 text-sm font-semibold text-emerald-900 ring-1 ring-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-100 dark:ring-emerald-800',
   bad: 'mt-2 rounded-xl bg-rose-50 p-3 text-sm text-rose-900 ring-1 ring-rose-200 dark:bg-rose-950/40 dark:text-rose-100 dark:ring-rose-800',
 };
 
@@ -136,7 +137,9 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
     feedback.className = message ? FEEDBACK[message.kind] : '';
     const who = tourRegion() === 'work' ? undefined : message?.who; // Boon's tour mark is already in this pane
     feedback.replaceChildren(!message ? '' : who
-      ? h('div', { class: 'flex items-start gap-3' }, mascot(who[0], who[1], 'size-12'), h('div', { class: 'min-w-0 flex-1' }, message.view()))
+      ? message.kind === 'good' // one compact line: a small cheering Lily beside it (v10 critic #6)
+        ? h('div', { class: 'flex items-center gap-2' }, mascot(who[0], who[1], 'size-8 shrink-0'), h('div', { class: 'min-w-0 flex-1' }, message.view()))
+        : h('div', { class: 'flex items-start gap-3' }, mascot(who[0], who[1], 'size-12'), h('div', { class: 'min-w-0 flex-1' }, message.view()))
       : message.view());
   }
 
@@ -400,7 +403,9 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
       say('good', () => t(isClosed(tk.id) ? 'work.correct' : 'work.conclusionNext')); // redrawn after the conclusion is submitted
       deps.onConclusion(tk);
     } else {
-      say('good', () => t('work.correct'), ['lily', 'cheer']);
+      // XP of this first solve (story: complete() adds it; lane: LANE_XP once); a re-solve or Practice earns none.
+      const xp = !story ? 0 : tk.lane ? (app.save.lanes.includes(tk.id) ? 0 : LANE_XP) : done().has(tk.id) ? 0 : xpFor(tk, app.save.hintsUsed[tk.id] ?? 0);
+      say('good', () => (xp ? t('work.correctXp', { n: xp }) : t('work.correct')), ['lily', 'cheer']);
       deps.onSolved(tk);
       celebrate(feedback); // after onSolved: its rerender() redraws the message and would reset className
     }
