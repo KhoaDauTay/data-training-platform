@@ -44,7 +44,7 @@
 **Tiền đề:**
 - Plan 1–5 và các bản sửa sau đó đã xong.
 - Plan viết và replay trên HEAD `4c84973` (tsc sạch, 1472 test xanh).
-- Các commit sau đó (`9cd87fd` L55, `789e266` product-design-v5, `6d6768e` L56) chỉ thêm tài liệu (`decision-log.md`, `product-design-v5.md`): không khối nào của plan chạm tới.
+- Các commit sau đó (`9cd87fd` L55, `789e266` product-design-v5, `6d6768e` L56, `a3749f2`/`70ffcf3`/`635f302` product-design-v6) chỉ sửa `decision-log.md`, `product-design-v5.md`, `product-design-v6.md`: không khối nào của plan chạm tới (đã kiểm bằng `git diff --stat 4c84973 635f302`). Không dòng quyết định nào sau L56 đổi luật gợi ý chương 1.
 
 ## Đã có trên HEAD (không làm lại)
 
@@ -3227,7 +3227,10 @@ Ghi kết quả vào `docs/team/decision-log.md` (dòng L-số mới) cùng U1�
 **Nội dung (PGlite 0.5.16, `schema.sql` + `seed.sql` của HEAD):**
 - Mọi Solution ch1–3 không đổi. Mọi `wrong:` mới chạy ra dòng và khác Solution ở mọi biến thể.
 - Ứng viên bị loại vì trùng Solution: ch1-03 "bỏ lô hủy" (05/2026), "thiếu tiêu chí phụ" (không hòa ở ranh LIMIT ở cả 3 tháng); ch2-03 `>=` (cả 3 biến thể); ch3-03 "quên điều kiện ngày" (0 dòng).
-- Ví dụ, câu mở đầu và lời giải Thử ngay của 11 bài học chạy ra số dòng như bảng trên; câu sai của `where`, `aggregate`, `group_by`, `having`, `join`, `multi_join` báo đúng lỗi Postgres ghi trong bài.
+- Ví dụ, câu mở đầu và lời giải Thử ngay của 11 bài học chạy ra số dòng như bảng trên.
+- Câu sai của 11 bài đã chạy và đọc thông báo:
+  - Báo lỗi đúng như ghi trong bài: `where` 42703, `aggregate`/`group_by` 42803 "must appear in the GROUP BY clause", `having` 42803 "aggregate functions are not allowed in WHERE", `join` 42702, `multi_join` 42601.
+  - Không lỗi nhưng ra kết quả khác ví dụ: `select` 1 cột, `order_by` tăng dần, `limit` 3 cảng Việt Nam, `left_join` 25 dòng, `anti_join` 0 dòng.
 - Giá trị cột chữ: 22 bảng, tổng ~50 ms trong Node.
 
 **Smoke test trên Chrome** (bản build của bản viết, cổng 5181, không save):
