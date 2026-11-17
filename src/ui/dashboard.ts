@@ -82,7 +82,7 @@ export function cardBody(c: Card, r: QueryResult): HTMLElement {
   if (!spec || spec.kind !== c.kind) return h('p', { class: 'm-0 text-muted' }, t('chart.empty', { max: MAX_POINTS }));
   const n = c.kind === 'bar' ? BAR_ROWS : MAX_POINTS;
   const shown = { ...r, rows: r.rows.slice(0, n) };
-  return h('div', { class: 'overflow-auto' }, c.kind === 'bar' ? bars(shown, spec, col, kindColor(c)) : line(shown, spec, col, kindColor(c)), cut(n));
+  return h('div', { class: 'overflow-auto' }, c.kind === 'bar' ? bars(shown, spec, col, kindColor(c), 'card') : line(shown, spec, col, kindColor(c), 'card'), cut(n));
 }
 
 /** Once per session, one card after another (src/dashboard.ts cardRunner); a card that timed out is saved as slow. */
