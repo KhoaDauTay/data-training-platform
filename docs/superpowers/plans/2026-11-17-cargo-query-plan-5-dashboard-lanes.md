@@ -47,127 +47,26 @@
 
 ## Quyết định sản phẩm của plan này (T1–T13, để orchestrator ghi L-số)
 
-**T1. Seed phương án B, viết tay.**
-- `lane_profiles(pol, pod, distance_nm, via_port, sea_days, fuel_t_per_day, vessel_teu)`, PK (`pol`, `pod`):
-  - 39 tuyến = 13 cảng biển ngoài × 3 cảng VN (Đà Nẵng/Tiên Sa, Cát Lái `VNSGN`, Hải Phòng).
-  - Sinh từ một bảng 13 dòng giá trị của Tiên Sa. Cảng phía nam (side 1) gần Cát Lái hơn 330 hải lý / 1 ngày, cảng phía bắc thì ngược lại. Hải Phòng ngược với Cát Lái, và Hải Phòng–Sydney ghé `SGSIN`.
-  - Châu Âu, Nhava Sheva, New York đổi tàu ở `SGSIN`; Los Angeles đổi ở `KRPUS`.
-- `bunker_prices(month, usd_per_tonne)`: 22 tháng 01/2025..10/2026, đỉnh 08/2026 (622 USD/t).
-- Không `random()` nên không cần `setseed()`. Khối nạp hết **4,3 ms** (đo riêng).
-- md5 của 24 bảng cũ không đổi, Plan 4 nay cũng được ghim. Hai bảng mới cũng ghim md5.
-- Lý do: D-B2 = B. Mọi Solution S-2/SG-2 ra số cỡ thật: Tiên Sa–Sydney quý 3 ra 107,5–110,9 USD/TEU.
+**Chỗ lệch so với yêu cầu, cần orchestrator/user xem trước:**
+- T4: card không có trường `order` và `label`.
+- T3: từ điển EN thành chunk lazy và `setLang` thành async. Không ai yêu cầu việc này; plan làm để main ≤ 270 KB.
+- T10: S-3 là đồ gỗ thay lúa mì; SG-1..SG-3 do plan viết mới.
 
-**T2. Cảng gốc là Tiên Sa (`VNDAD`) ở mọi nội dung tuyến (L49).**
-- R-3 dùng giá `VNDAD → NLRTM`: 20GP 1.391 → 1.980 (+589), 40RF +1.909.
-- S-2 dùng hồ sơ `VNDAD/AUSYD` (một hồ sơ cho cả hai chiều).
-- `tests/lanes.test.ts` cấm chữ "Cát Lái/Cat Lai" trong `content/lanes/`.
-- Bảng `ports` vẫn giữ tên "Ho Chi Minh (Cat Lai)" của `VNSGN` (md5).
-
-**T3. Từ điển EN thành chunk lazy để main ≤ 270 KB. Cần user xem.**
-- Đo trên build:
-  - HEAD: main 265/270.
-  - Tách trang Bảng điều hành **và** trang Dữ liệu thành chunk lazy: Rolldown đưa các module dùng chung (dom, icons, erdView) vào chunk preload riêng, nên chỉ bớt ~1 KB trên 4,4 KB code tách ra. Không làm.
-  - EN lazy: main 259 trước code Plan 5, **265/270** sau toàn bộ Plan 5.
-- Cách làm:
-  - `loadLang()` chạy song song `loadContent()`; `setLang()` thành async; `t()` đọc VI tới khi EN về.
-  - Người chơi EN thấy dòng "Đang tải nội dung…" bằng VI trong lúc chờ.
-- Nhóm ngân sách mới (luật L40):
-  - `en`: 12 KB / 20.
-  - `lanes`: 10 KB / 20 (T8).
-- Đảo ngược: bỏ lazy EN và nâng main lên 280 KB.
-
-**T4. Hình Save v3.**
-- Trường mới:
-  - `dashboard: { cards: Card[]; hidden: string[] }`.
-  - `lanes: string[]` (bài tuyến đã xong).
-- `Card = { id, title ≤ 80, sql ≤ 4000, kind: table|number|bar|line, col?, slow?, source }`.
-- **Không có trường `order`**: vị trí trong mảng là thứ tự, nên không thể có hai card cùng chỗ.
-- **Không có `label`**: cột nhãn của card cột/đường luôn là cột 0, như `chartSpec` của tab Biểu đồ.
-- `source` là `sandbox`, id ticket hoặc id bài tuyến.
-- Nâng `SAVE_VERSION`: build cũ gặp save v3 thì đẩy vào `.bak` thay vì xóa card (có test). Giữ mãi `save-v1/v2.json`; thêm `save-v3.json`.
-- `Known.ticketIds` gồm cả id bài tuyến, nên nháp, SQL đã chấm và gợi ý của bài tuyến không bị bỏ khi đọc lại.
-
-**T5. Luật ghim.**
-- Nút "Ghim lên" ở trên bảng kết quả của tab Kết quả.
-- Có ở: Sandbox, việc chính **đã xong**, bài tuyến **đã xong**. Không có ở Luyện tập.
-- Ghim `app.lastRun`. Ngay sau khi nộp đúng, lastRun chính là SQL đã qua grader.
-- Tắt kèm lý do: SQL trong editor khác lastRun ("Chạy lại trước khi ghim"), hoặc đủ 24 card.
-- Hộp thoại giải thích và tắt nút Ghim khi: query > 2 s (theo `QueryResult.ms` đo trong worker, không tính thời gian chờ hàng đợi), hoặc SQL > 4.000 ký tự.
-- Nút Ghim trong hộp thoại kiểm lại luật lúc bấm.
-- Dạng card:
-  - Mặc định theo thứ tự đường > cột > số (khi kết quả 1 dòng) > bảng, trong các dạng đã mở và hợp với kết quả.
-  - Dạng khóa vẫn hiện, mờ, kèm "mở khi học … (ch. n)".
-  - Dạng không hợp: "không hợp với kết quả này".
-- Tiêu đề mặc định = tên việc; Sandbox thì để trống (bắt buộc nhập).
-
-**T6. Chạy card (`cardRunner`, product-design-v3 §7).**
-- Mỗi card chạy một lần mỗi phiên, card sau chờ card trước, qua hàng đợi `DbClient`.
-- `QueryTimeoutError`: chỉ card đó thành `slow` (lưu ngay), không tự chạy nữa; hiện "Chậm · không tự chạy nữa" và "Chạy thử lại".
-- `DbRestartError`: card bị cắt ngang thì quên kết quả, lần vẽ sau chạy lại.
-- Lỗi SQL hiện qua `errorView`.
-- Kết quả không lưu (seed tất định, mọi query ROLLBACK).
-- Ô KPI công ty giữ cách cũ (Solution, cache theo phiên).
-
-**T7. Bố cục bảng điều hành (mockup màn A, E1).**
-- Card của người chơi trước, Số liệu công ty sau (L49).
-- Lưới 1/2/3 cột; mobile một cột.
-- Nút card là icon có `aria-label`, vùng chạm 40 px.
-- Lên/Xuống: focus ở lại nút của card vừa dời (ở đầu/cuối thì sang mũi tên còn lại), đọc "Đã dời … tới vị trí i/n".
-- Bỏ ghim: không hỏi lại (P2).
-- Ô công ty: nút Ẩn, cùng `<details>` "Ô đã ẩn (n)" để Hiện lại.
-- Trang chủ: một dòng "Bảng điều hành · 7/16 ô đã mở · n card của bạn →".
-- Kéo thả, đổi cỡ, sửa SQL card, PNG/CSV là P3/P4 (D-A6), không làm.
-- **Dạng đường có ngay** (mở khi học `date_bucket`, ch4). Lý do: `line()` của tab Biểu đồ dùng lại được nguyên, và S-3 có kết quả hình đường.
-
-**T8. Bài tuyến là file ticket riêng, không bao giờ vào `app.tickets`.**
-- Vị trí và frontmatter:
-  - Nằm ở `content/lanes/<cảng>/<id>.md` và dùng `parseTicket` như ticket.
-  - Trường mới `lane: <PORT>`.
-  - `chapter` = chương mà đánh giá thăng tiến của nó mở bài; ngoài ra bài còn cần tuyến đã mở, vì L32 cho tàu mở tuyến sớm.
-  - `beat: rest`, `grants: []`.
-  - Không `variants` (không vào bộ Luyện tập, D-B5), không `reflect`/`wrong` ở đợt 1.
-- Cách tải: chunk lazy riêng `laneSources` (10 KB) qua `loadLanes()`, nên `nextTicket`, chương, thang nghề, bến cảng, KPI và bộ Luyện tập không bao giờ thấy bài tuyến (test).
-- Khi chơi:
-  - Mở ở chế độ phiên `lane`; thanh việc đổi sang chế độ bài tuyến.
-  - Nộp đúng: lưu vào `save.lanes`, +50 XP cố định, không trừ gợi ý, không hoạt cảnh, Recap có nút "Về việc đang làm".
-  - Nháp, SQL đã chấm và lịch sử giữ như việc chính (`keepsWork()`).
-- `laneProblems`: kỹ năng phải được dạy tới chương đó; bảng phải mở ở chương đó **hoặc** thuộc tuyến; bài không mở trước tuyến; không dạy kỹ năng; id không trùng; tuyến phải có hồ sơ.
-
-**T9. Hồ sơ tuyến dạng YAML có `after:`.**
-- Mục có `after: N` chỉ hiện khi đã qua đánh giá chương N.
-- Rotterdam: "+40%" và dòng "Tăng giá" (GRI) là `after: 7`. Câu "DA hay được hỏi" bỏ phần giá mua, để trước ch7 không lộ chuyện tăng giá (L49, có test).
-- R-3 hiện tiêu đề kèm "Mở sau chương 7".
-- Tuyến chưa có nội dung ghi "đợt sau"; tuyến khóa ghi "mở sau đánh giá ch. n".
-- Tuyến khóa có hồ sơ thì xem trước 2 dòng.
-- Nhãn "Số liệu minh họa, đã giản lược".
-
-**T10. Nội dung bài tuyến lệch một chút so với design §17–§18.**
-- S-3 "lúa mì" cần phương án C (không duyệt), nên thay bằng **đồ gỗ đi Sydney theo tháng** (chủ đề kiểm dịch ISPM 15, kết quả hình đường).
-- Singapore (design chỉ phác): SG-1 10 lô nặng nhất (ch1), SG-2 tuyến đổi tàu ở Singapore (ch3, `lane_profiles`), SG-3 số ngày đi biển thực tế theo cảng xếp hàng (ch4).
-- Cát (D-B3) bỏ: nhạy cảm và không có dữ liệu.
-- Người gửi: R-1 và R-2 Đặng Hà (L49), R-3 Lê Bình (trưởng Sales kiêm pricing), SG-1 Bùi Long, SG-2 Hoàng Khánh, SG-3 Võ Thu, S-1 Võ Lan, S-2 Hoàng Thảo (AP, trả tiền hãng tàu), S-3 Hoàng Dũng.
-
-**T11. Bản đồ và bảng tuyến.**
-- Chấm cảng trong SVG thành nút (`role=button`, `tabindex=0`, Enter/Space), tooltip `<title>` "Rotterdam · ~30 ngày · 1/3 bài tuyến" (D-B6: không số lô).
-- Danh sách tuyến HTML luôn có.
-- Hồ sơ là khung phải từ `lg`; dưới `lg` cùng tấm đó thay danh sách, có nút "‹ Tất cả tuyến".
-- `LANE_TABLES`: `SGSIN` → `lane_profiles`; `AUSYD` → `lane_profiles`, `bunker_prices`.
-  - Hiện ở tab Cột, ER, autocomplete và trang Dữ liệu khi tuyến mở (`unlockedTables()`).
-  - Trang Dữ liệu ghi "mở theo bài tuyến".
-- Trang chủ giữ bản đồ chỉ để xem (không bấm).
-
-**T12. Dời lại (để sau, không chặn gì).**
-- Nhóm "Việc tuyến (tùy chọn)" trong Hộp thư.
-- "Việc tuyến x/y" ở Trang chủ.
-- Thẻ "Số của bạn" trong hồ sơ.
-- Hoạt cảnh tàu ghé cảng tuyến khi xong bài tuyến.
-- Bài tuyến cho Shanghai, Laem Chabang, Busan, Los Angeles (đợt sau, D-B8).
-- P3/P4 của bảng điều hành.
-
-**T13. Thời gian seed.**
-- Đo xen kẽ, cùng máy cùng lúc, lần chạy đầu của mỗi tiến trình: HEAD 2.018 / 1.935 ms, Plan 5 2.196 / 1.887 ms. Đó là nhiễu: khối Plan 5 chỉ 4,3 ms.
-- Luật dừng S2 (2,0 s Node) giữ nguyên.
-- L46 đã ghi seed Node 1,9–2,4 s sát ngưỡng, có từ trước Plan 5.
+| # | Quyết định | Lý do |
+|---|---|---|
+| T1 | **Seed phương án B, viết tay, không `random()`.**<br>• `lane_profiles(pol, pod, distance_nm, via_port, sea_days, fuel_t_per_day, vessel_teu)`, PK (`pol`, `pod`): 39 tuyến = 13 cảng biển ngoài × 3 cảng VN.<br>• Sinh từ 13 dòng giá trị của Tiên Sa: cảng phía nam gần Cát Lái (`VNSGN`) hơn 330 hải lý / 1 ngày, cảng phía bắc thì ngược lại; Hải Phòng ngược với Cát Lái.<br>• Châu Âu, Nhava Sheva, New York đổi tàu ở `SGSIN`; Los Angeles ở `KRPUS`; Hải Phòng–Sydney ghé `SGSIN`.<br>• `bunker_prices(month, usd_per_tonne)`: 22 tháng 01/2025..10/2026, đỉnh 08/2026 (622 USD/t).<br>• Khối nạp 4,3 ms. md5 của 24 bảng cũ (nay ghim cả 3 bảng Plan 4) và 2 bảng mới được ghim. | D-B2 = B. Số liệu ra cỡ thật: Tiên Sa–Sydney quý 3 là 107,5–110,9 USD/TEU (design: 80–150). Không cần `setseed()`. |
+| T2 | **Cảng gốc là Tiên Sa (`VNDAD`) trong mọi nội dung tuyến.**<br>• R-3 dùng giá `VNDAD → NLRTM` (20GP 1.391 → 1.980, +589).<br>• S-2 dùng hồ sơ `VNDAD/AUSYD`; một hồ sơ dùng cho cả hai chiều.<br>• `tests/lanes.test.ts` cấm chữ "Cát Lái/Cat Lai" trong `content/lanes/`. | L49. Bảng `ports` vẫn giữ tên "Ho Chi Minh (Cat Lai)" của `VNSGN` vì md5. |
+| T3 | **Từ điển EN thành chunk lazy.**<br>• `loadLang()` chạy song song `loadContent()`; `setLang()` async; `t()` đọc VI tới khi EN về.<br>• Nhóm ngân sách mới `en` 20 KB và `lanes` 20 KB (luật L40). **Cần user xem.** | Đo trên build:<br>• HEAD main 265/270.<br>• Tách trang Bảng điều hành + Dữ liệu thành chunk lazy chỉ bớt ~1 KB trên 4,4 KB code, vì Rolldown đưa module dùng chung (dom, icons, erdView) vào chunk preload riêng.<br>• EN lazy: main 259 trước code Plan 5, 265/270 sau.<br>Đảo ngược: bỏ EN lazy, nâng main lên 280 KB. |
+| T4 | **Save v3.**<br>• Trường mới `dashboard: { cards, hidden }` và `lanes: string[]`.<br>• `Card = { id, title ≤ 80, sql ≤ 4000, kind: table/number/bar/line, col?, slow?, source }`.<br>• **Không `order`**: vị trí trong mảng là thứ tự.<br>• **Không `label`**: cột nhãn của card cột/đường luôn là cột 0, như `chartSpec`.<br>• `Known.ticketIds` gồm cả id bài tuyến.<br>• Fixture v1/v2 giữ mãi; thêm v3. | Không thể có hai card cùng chỗ hay một cột nhãn sai. Nâng version: build cũ đẩy save v3 vào `.bak` thay vì xóa card (có test). Nháp, SQL đã chấm và gợi ý của bài tuyến không bị bỏ khi đọc lại. |
+| T5 | **Luật ghim.**<br>• Nút "Ghim lên" trên bảng của tab Kết quả; có ở Sandbox, việc chính đã xong, bài tuyến đã xong; ghim `app.lastRun`.<br>• Tắt kèm lý do: editor khác lastRun ("Chạy lại trước khi ghim"), hoặc đủ 24 card.<br>• Hộp thoại giải thích và tắt Ghim: > 2 s (`QueryResult.ms` đo trong worker, không tính hàng đợi), hoặc SQL > 4.000 ký tự; nút Ghim kiểm lại lúc bấm.<br>• Dạng mặc định: đường > cột > số (khi 1 dòng) > bảng. Dạng khóa vẫn hiện, mờ, kèm "mở khi học … (ch. n)".<br>• Tiêu đề mặc định = tên việc (Sandbox để trống, bắt buộc nhập). | Ngay sau khi nộp đúng, lastRun chính là SQL đã qua grader; không lộ đáp án vì việc đã xong. D-A3, D-A4. |
+| T6 | **`cardRunner`.**<br>• Mỗi card chạy một lần mỗi phiên, card sau chờ card trước; khóa cache là id + SQL (nhập save khác có `c1` khác vẫn chạy lại).<br>• Hết giờ: chỉ card đó `slow` (lưu ngay), hiện "Chậm · không tự chạy nữa" + "Chạy thử lại".<br>• `DbRestartError`: quên kết quả, chạy lại ở lần vẽ sau.<br>• Kết quả không lưu. | product-design-v3 §7. Mỗi card hỏng gây tối đa một lần seed lại (10–11 s, L46). |
+| T7 | **Bố cục bảng điều hành.**<br>• Card của người chơi trước, số liệu công ty sau; lưới 1/2/3 cột.<br>• Nút card là icon có `aria-label`, vùng chạm 40 px.<br>• Lên/Xuống giữ focus trên card vừa dời và đọc vị trí mới.<br>• Ô công ty có Ẩn, cùng "Ô đã ẩn (n)" để Hiện lại.<br>• Trang chủ còn một dòng dẫn tới trang.<br>• Dạng đường có ngay (mở ở ch4). | L49, mockup màn A/E1. Kéo thả, đổi cỡ, sửa SQL card, PNG/CSV là P3/P4 (D-A6). Dạng đường dùng lại `line()` nguyên, và S-3 có kết quả hình đường. |
+| T8 | **Bài tuyến là file ticket riêng, không vào `app.tickets`.**<br>• Ở `content/lanes/<cảng>/*.md`, thêm `lane:`. `chapter` = chương mà đánh giá thăng tiến của nó mở bài, cộng điều kiện tuyến đã mở.<br>• `beat: rest`, `grants: []`, không `variants`/`reflect`/`wrong` ở đợt 1.<br>• Tải qua chunk lazy `laneSources` (`loadLanes()`).<br>• Chế độ phiên `lane`: +50 XP cố định, gợi ý miễn phí, lưu ở `save.lanes`, không hoạt cảnh; nháp, SQL đã chấm và lịch sử giữ như việc chính (`keepsWork()`).<br>• `laneProblems` kiểm luật mở. | D-B1, D-B5. Không thể vô tình vào `nextTicket`, chương, thang nghề, KPI, bến cảng hay bộ Luyện tập (có test). L32: tàu có thể mở tuyến sớm, nên phải gate theo kỹ năng. |
+| T9 | **Hồ sơ tuyến dạng YAML có `after:`.**<br>• Mục có `after: N` chỉ hiện khi đã qua đánh giá chương N.<br>• Rotterdam: "+40%" và dòng GRI là `after: 7`; câu "hay được hỏi" bỏ phần giá.<br>• R-3 hiện tiêu đề kèm "Mở sau chương 7".<br>• Tuyến chưa có nội dung: "đợt sau". Tuyến khóa: xem trước 2 dòng.<br>• `ROUTES.days` = `ports.base_transit_days` (có test). | L49 (không lộ ch12), D-B6, design §13. |
+| T10 | **Nội dung bài tuyến.**<br>• S-3 = đồ gỗ đi Sydney theo tháng (chủ đề ISPM 15, kết quả hình đường).<br>• SG-1 10 lô nặng nhất (ch1), SG-2 tuyến đổi tàu ở Singapore (ch3), SG-3 số ngày đi biển thực tế theo cảng xếp hàng (ch4).<br>• Bỏ cát.<br>• Người gửi: R-1/R-2 Đặng Hà, R-3 Lê Bình, SG-1 Bùi Long, SG-2 Hoàng Khánh, SG-3 Võ Thu, S-1 Võ Lan, S-2 Hoàng Thảo, S-3 Hoàng Dũng. **Cần user xem.** | Lúa mì cần phương án C (không duyệt). Design chỉ phác Singapore. Cát nhạy cảm và không có dữ liệu (D-B3). R-2 là Đặng Hà theo L49. |
+| T11 | **Bản đồ và bảng tuyến.**<br>• Chấm cảng là nút (Enter/Space) có tooltip `<title>` một dòng, không số lô; danh sách tuyến HTML luôn có.<br>• Hồ sơ là khung phải từ `lg`; dưới `lg` thay danh sách, có "‹ Tất cả tuyến".<br>• `LANE_TABLES`: `SGSIN` → `lane_profiles`; `AUSYD` → `lane_profiles`, `bunker_prices`. Hiện ở tab Cột, ER, autocomplete, trang Dữ liệu ("mở theo bài tuyến") khi tuyến mở. | D-B4, D-B6, mockup C/E2/E3. Bản đồ ở Trang chủ chỉ để xem. |
+| T12 | **Dời lại:**<br>• Nhóm "Việc tuyến" trong Hộp thư, "Việc tuyến x/y" ở Trang chủ, thẻ "Số của bạn".<br>• Hoạt cảnh tàu ghé cảng.<br>• Bốn tuyến còn lại (D-B8).<br>• P3/P4 của bảng điều hành. | Không chặn gì. |
+| T13 | **Thời gian seed.**<br>• Đo xen kẽ, lần đầu mỗi tiến trình: HEAD 2.018/1.935 ms, Plan 5 2.196/1.887 ms (nhiễu); khối Plan 5 chỉ 4,3 ms.<br>• Luật S2 (2,0 s) giữ nguyên. | L46 đã ghi seed Node sát ngưỡng từ trước Plan 5. |
 
 ## Tên dùng từ HEAD (Task 0 kiểm bằng grep)
 
@@ -1719,6 +1618,8 @@ describe('chạy card (cardRunner, product-design-v3 §7)', () => {
     cards.forget('a');
     await cards.result(sqlCard('a', 'A'));
     expect(order.filter((x) => x === 'start A')).toHaveLength(2);
+    await cards.result(sqlCard('a', 'B')); // same id from an imported save, other SQL: runs its own SQL
+    expect(order.filter((x) => x === 'start B')).toHaveLength(2);
   });
 
   it('quá giờ → chỉ card đó bị đánh dấu chậm; card bị cắt ngang do khởi động lại thì chạy lại lần sau', async () => {
@@ -1775,17 +1676,21 @@ import type { QueryResult } from './db/run';
  * saved: the seed is deterministic and every query is rolled back, so they cannot change within a build.
  */
 export function cardRunner(run: (sql: string) => Promise<QueryResult>, onSlow: (id: string) => void) {
+  // Keyed by id and SQL: ids repeat across saves (c1, c2…), so an imported save's c1 must not reuse the old c1's result.
   const runs = new Map<string, Promise<QueryResult>>();
+  const keyOf = (c: Card): string => `${c.id}
+${c.sql}`;
   let chain: Promise<unknown> = Promise.resolve();
   return {
     result(c: Card): Promise<QueryResult> {
-      let p = runs.get(c.id);
+      const k = keyOf(c);
+      let p = runs.get(k);
       if (!p) {
         p = chain.then(() => run(c.sql));
         chain = p.catch(() => {});
-        runs.set(c.id, p);
+        runs.set(k, p);
         p.catch((e: unknown) => {
-          if (e instanceof DbRestartError) runs.delete(c.id);
+          if (e instanceof DbRestartError) runs.delete(k);
           if (e instanceof QueryTimeoutError) onSlow(c.id);
         });
       }
@@ -1793,7 +1698,8 @@ export function cardRunner(run: (sql: string) => Promise<QueryResult>, onSlow: (
     },
     /** "Chạy lại", unpin: the next result() runs the card again. */
     forget(id: string): void {
-      runs.delete(id);
+      for (const k of runs.keys()) if (k.startsWith(`${id}
+`)) runs.delete(k);
     },
   };
 }
@@ -4290,9 +4196,9 @@ Claude-Session: https://claude.ai/code/session_01PwPSBV1SVDP6quEZfKN56M"
 ### Task 8: CLAUDE.md, kiểm toàn bộ, checklist Edge cho orchestrator
 
 **Files:**
-- Modify: `CLAUDE.md`
+- Modify: `CLAUDE.md`, `scripts/check-deploy.sh`
 
-- [ ] **Step 1: Ghi luật mới vào CLAUDE.md**
+- [ ] **Step 1: Ghi luật mới vào CLAUDE.md; kiểm deploy gồm hai chunk lazy mới**
 
 **Sửa `CLAUDE.md`** — thay:
 ```markdown
@@ -4311,13 +4217,15 @@ bằng:
 
 **Sửa `CLAUDE.md`** — thay:
 ```markdown
+- The ER tab renders a Mermaid `erDiagram` built from `information_schema` for a given schema (`loadErMetadata(run, schema)` in `src/viz/erd.ts`, cached as `erMeta(schema)` in `src/state.ts` and shared by the ER and Columns tabs, the brief and the Data page; `'public'` for the game, `'sandbox'` for imported data). `erMeta('public')` includes locked tables: every consumer filters by `unlockedTables()`. With a task open, the ER and Columns tabs default to `relatedTables()` (ui-ux-v4 §4: the task's tables, bridges, FK parents child → parent, capped at 10, listed alphabetically so nothing marks the answer's tables), with a switch to all unlocked tables (`app.schemaScope`, not saved); the brief shows the same list as chips that open the ER tab (`actions.showTab`). The Data page (ui-ux-v4 §5) lists unlocked tables by chapter with exact row counts (`erRowCountsSql`), columns with PK/UK/FK (`keyBadges`, `ui/erdView.ts`), referenced-by, 5 sample rows on demand and an ER diagram around the table (`erDefinition(..., detail)`: only that table gets columns) or of all tables; its nav item is order 50, 60 is kept for the dashboard; it is the only place that uses `innerHTML` (Mermaid strict mode; every name goes through `mermaidName()`, which replaces anything outside letters/digits/`_` so a CSV header cannot inject Mermaid syntax). Tables the last run used get a bold border in the open ticket's chapter colour (`ChapterColor.hex`, L36); the diagram is redrawn when `prefers-color-scheme` changes. Mermaid and the SQL parser are lazy-loaded.
 - The task bar (`#map`, `src/ui/mapStrip.ts`, ui-ux-v4 §2–3, replaces L35/L37) shows only in story mode on `#/play` (its buttons call `selectTicket()`, which forces story mode): chapter `<select>`, ‹ › and one button per task of the open ticket's chapter (the open one has a thick bottom border; `navTargets()`, `src/viz/progressDots.ts`: done tickets + the first not done, in story order; later tasks are disabled and never show their title), and a continue button (main button right after a correct answer, "back to current task" while reviewing an old one). "See the map" opens `<dialog id="map-dialog">` with `routeMap()` and the `routeItems()` list, so the player never leaves the task. Redrawn whole by `syncMap()` from `rerender()` (focus kept by `data-nav`); the dialog is refilled when open.
 - i18n: `src/i18n/vi.ts` is the key source; `src/i18n/en.ts` is `Record<Key, Msg>`, so a missing key fails `tsc`. All UI text goes through `t(key)`; static markup uses `data-i18n`/`data-i18n-aria`. EN plurals use function messages. Never translate table/column names, SQL, data values, Postgres error messages, or people's names and departments. `tests/i18n.test.ts` checks placeholders match and EN differs from VI (allow-list `SAME_OK`).
 - Teaching errors: `src/ui/sqlErrors.ts` maps SQLSTATE (plus a few message regexes) to an explanation shown under Postgres' unchanged message; `tests/sqlErrors.test.ts` runs the wrong SQL on real PGlite.
 ```
 bằng:
 ```markdown
-- The task bar (`#map`, `src/ui/mapStrip.ts`, ui-ux-v4 §2–3, replaces L35/L37) shows only in story mode on `#/play` (its buttons call `selectTicket()`, which forces story mode): chapter `<select>`, ‹ › and one button per task of the open ticket's chapter (the open one has a thick bottom border; `navTargets()`, `src/viz/progressDots.ts`: done tickets + the first not done, in story order; later tasks are disabled and never show their title), and a continue button (main button right after a correct answer, "back to current task" while reviewing an old one). "See the map" opens `<dialog id="map-dialog">` with `routeMap()` and the `routeItems()` list, so the player never leaves the task. Redrawn whole by `syncMap()` from `rerender()` (focus kept by `data-nav`); the dialog is refilled when open.
+- The ER tab renders a Mermaid `erDiagram` built from `information_schema` for a given schema (`loadErMetadata(run, schema)` in `src/viz/erd.ts`, cached as `erMeta(schema)` in `src/state.ts` and shared by the ER and Columns tabs, the brief and the Data page; `'public'` for the game, `'sandbox'` for imported data). `erMeta('public')` includes locked tables: every consumer filters by `unlockedTables()`. With a task open, the ER and Columns tabs default to `relatedTables()` (ui-ux-v4 §4: the task's tables, bridges, FK parents child → parent, capped at 10, listed alphabetically so nothing marks the answer's tables), with a switch to all unlocked tables (`app.schemaScope`, not saved); the brief shows the same list as chips that open the ER tab (`actions.showTab`). The Data page (ui-ux-v4 §5) lists unlocked tables by chapter with exact row counts (`erRowCountsSql`), columns with PK/UK/FK (`keyBadges`, `ui/erdView.ts`), referenced-by, 5 sample rows on demand and an ER diagram around the table (`erDefinition(..., detail)`: only that table gets columns) or of all tables; its nav item is order 50, 60 is kept for the dashboard; it is the only place that uses `innerHTML` (Mermaid strict mode; every name goes through `mermaidName()`, which replaces anything outside letters/digits/`_` so a CSV header cannot inject Mermaid syntax). Tables the last run used get a bold border in the open ticket's chapter colour (`ChapterColor.hex`, L36); the diagram is redrawn when `prefers-color-scheme` changes. Mermaid and the SQL parser are lazy-loaded.
+- The task bar (`#map`, `src/ui/mapStrip.ts`, ui-ux-v4 §2–3, replaces L35/L37) shows in story mode and lane mode on `#/play` (story buttons call `selectTicket()`, which forces story mode; in lane mode it shows "Về việc đang làm", the lane badge and that lane's side tasks instead): chapter `<select>`, ‹ › and one button per task of the open ticket's chapter (the open one has a thick bottom border; `navTargets()`, `src/viz/progressDots.ts`: done tickets + the first not done, in story order; later tasks are disabled and never show their title), and a continue button (main button right after a correct answer, "back to current task" while reviewing an old one). "See the map" opens `<dialog id="map-dialog">` with `routeMap()` (pins are buttons), the lane list and the picked lane's brief (`src/ui/lanePanel.ts`), so the player never leaves the task. Redrawn whole by `syncMap()` from `rerender()` (focus kept by `data-nav`); the dialog is refilled when open.
 - i18n: `src/i18n/vi.ts` is the key source; `src/i18n/en.ts` is `Record<Key, Msg>`, so a missing key fails `tsc`. All UI text goes through `t(key)`; static markup uses `data-i18n`/`data-i18n-aria`. EN plurals use function messages. Never translate table/column names, SQL, data values, Postgres error messages, or people's names and departments. `tests/i18n.test.ts` checks placeholders match and EN differs from VI (allow-list `SAME_OK`). `en.ts` is a lazy chunk (Plan 5, main budget): `main.ts` awaits `loadLang()` with `loadContent()`, `setLang()` is async, `t()` falls back to VI until EN is in, and `tests/setup.ts` loads it.
 - Teaching errors: `src/ui/sqlErrors.ts` maps SQLSTATE (plus a few message regexes) to an explanation shown under Postgres' unchanged message; `tests/sqlErrors.test.ts` runs the wrong SQL on real PGlite.
 ```
@@ -4335,6 +4243,23 @@ bằng:
 - Project skills live in `.claude/skills/` (`web-games`, `level-design`, `save-systems`).
 ```
 
+**Sửa `scripts/check-deploy.sh`** — thay:
+```
+[ -n "$TICKETS" ] || { echo "FAIL $MAIN does not reference ticketSources-*.js"; exit 1; }
+for f in $MAIN "assets/$WORKER" "assets/$TICKETS" $(printf 'assets/%s ' $FILES $LIBWASM); do
+  H=$(curl -sS -o /dev/null -D - -H 'Accept-Encoding: br, gzip' "$URL/$f" | tr -d '\r')
+```
+bằng:
+```
+[ -n "$TICKETS" ] || { echo "FAIL $MAIN does not reference ticketSources-*.js"; exit 1; }
+# Plan 5: lane content and the EN dictionary are lazy chunks awaited before the first render too.
+LANES=$(get "$MAIN" | grep -oE 'laneSources-[A-Za-z0-9_-]+\.js' | head -1)
+EN=$(get "$MAIN" | grep -oE '\./en-[A-Za-z0-9_-]+\.js' | head -1 | cut -c3-)
+[ -n "$LANES" ] && [ -n "$EN" ] || { echo "FAIL $MAIN does not reference laneSources-*.js and en-*.js"; exit 1; }
+for f in $MAIN "assets/$WORKER" "assets/$TICKETS" "assets/$LANES" "assets/$EN" $(printf 'assets/%s ' $FILES $LIBWASM); do
+  H=$(curl -sS -o /dev/null -D - -H 'Accept-Encoding: br, gzip' "$URL/$f" | tr -d '\r')
+```
+
 - [ ] **Step 2: Kiểm toàn bộ**
 
 Run: `npm test && npx tsc --noEmit && npm run build && node scripts/check-budget.mjs`
@@ -4345,8 +4270,8 @@ Expected:
 - [ ] **Step 3: Commit**
 
 ```bash
-git add CLAUDE.md
-git commit -m "docs: CLAUDE.md notes for Plan 5 (save v3, dashboard, pin rules, lanes, lazy EN)
+git add CLAUDE.md scripts/check-deploy.sh
+git commit -m "docs: CLAUDE.md notes for Plan 5 (save v3, dashboard, pin rules, lanes, lazy EN); deploy check covers the lane and EN chunks
 
 Claude-Session: https://claude.ai/code/session_01PwPSBV1SVDP6quEZfKN56M"
 ```
@@ -4358,7 +4283,8 @@ Claude-Session: https://claude.ai/code/session_01PwPSBV1SVDP6quEZfKN56M"
 - Mở trên **Edge**. **Không** mở `:5173`.
 - Tạo hai file ngoài repo rồi nạp bằng **Nhập tiến độ** (menu `⋯`):
   - `save-v2-ch5-done.json`: `{"version":2,"completed":[…],"xp":5000,"hintsUsed":{},"drafts":{},"graded":{},"review":{},"practice":{"solved":0,"weak":0},"sandboxDraft":"","bossStep":{}}`, trong đó `completed` là mọi id `ch1-01` … `ch5-06` (`ls content/tickets/ch{1..5}`). Đây là save cũ, để thử migrate lên v3.
-  - `save-v3-ch7-done.json`: như trên, thêm `ch6-01` … `ch7-06`, đổi `"version":3`, thêm `"dashboard":{"cards":[],"hidden":[]},"lanes":[]`.
+  - `save-v3-ch3-done.json`: `"version":3`, `completed` là mọi id `ch1-01` … `ch3-05`, thêm `"dashboard":{"cards":[],"hidden":[]},"lanes":[]` (các trường khác như trên). Dùng cho: Đường khóa, Sydney khóa, không có `bunker_prices`.
+  - `save-v3-ch7-done.json`: như file ch3 nhưng `completed` tới `ch7-06`. Dùng cho: R-3 mở, "+40%" hiện.
 
 **Kiểm** (mỗi dòng ✓/✗, ghi số đo):
 
@@ -4376,11 +4302,11 @@ Claude-Session: https://claude.ai/code/session_01PwPSBV1SVDP6quEZfKN56M"
 4. **Ghim từ Sandbox.**
    - `SELECT incoterm, count(*) FROM shipments GROUP BY 1 ORDER BY 2 DESC`, bấm Chạy.
    - Tab Kết quả có "chạy n ms" và "Ghim lên".
-   - Hộp thoại: Đường khóa ("mở khi học … (ch. 4)") ở save ch3; ở save ch5 thì Đường "không hợp với kết quả này". Cột chọn sẵn, xem trước 6 thanh, nút Ghim tắt khi tiêu đề trống (bấm thì báo "Đặt tiêu đề cho card.").
+   - Hộp thoại: với `save-v3-ch3-done.json`, Đường khóa ("mở khi học … (ch. 4)"); với save ch5, Đường "không hợp với kết quả này". Cột chọn sẵn, xem trước 6 thanh, nút Ghim tắt khi tiêu đề trống (bấm thì báo "Đặt tiêu đề cho card.").
    - Ghim → dòng báo "Đã ghim …".
 5. **Chạy lại trước khi ghim.** Sửa SQL trong editor (không chạy), mở lại tab Kết quả: dải "SQL đã đổi", nút Ghim tắt kèm "Chạy lại trước khi ghim".
 6. **Luật 2 s.**
-   - Chạy `SELECT count(*) FROM container_events a JOIN container_events b ON a.container_id = b.container_id WHERE a.id < 20000` (hoặc câu > 2 s tương tự).
+   - Chạy `SELECT count(*) FROM shipments a JOIN shipments b ON a.customer_id = b.customer_id JOIN carriers c ON c.id <> a.carrier_id` (Node 2,9 s). Nếu trên Edge vượt 5 s (DB khởi động lại), thay `JOIN carriers c ON c.id <> a.carrier_id` bằng `CROSS JOIN generate_series(1, 4)`.
    - Hộp thoại: "Query chạy x s, quá 2 s nên không ghim được." và nút Ghim tắt.
 7. **Trang Bảng điều hành.**
    - Card của bạn đứng trước Số liệu công ty.
@@ -4393,11 +4319,11 @@ Claude-Session: https://claude.ai/code/session_01PwPSBV1SVDP6quEZfKN56M"
    - Ghim một câu ~1,9 s rồi sửa thành câu > 5 s ngay trong Save (DevTools: đổi `sql` của card) và tải lại.
    - Mở trang: DB khởi động lại một lần, card thành "Chậm · không tự chạy nữa". Tải lại trang: card không tự chạy.
    - "Chạy thử lại" chạy đúng một lần.
-9. **Xuất → Nhập tiến độ** giữ card, ô đã ẩn và bài tuyến đã xong.
+9. **Xuất → Nhập tiến độ** giữ card, ô đã ẩn và bài tuyến đã xong. Nhập một save khác có card `c1` với SQL khác: card hiện đúng kết quả SQL mới (T6).
 10. **Bản đồ (thanh việc → Xem bản đồ).**
-    - Danh sách: Rotterdam "~30 ngày · 0/3 bài tuyến"; Shanghai "~5 ngày · đợt sau"; ở save ch3, Sydney "mở sau đánh giá ch. 5".
+    - Danh sách: Rotterdam "~30 ngày · 0/3 bài tuyến"; Shanghai "~5 ngày · đợt sau"; với `save-v3-ch3-done.json`, Sydney "mở sau đánh giá ch. 5" và hồ sơ chỉ xem trước 2 dòng.
     - Rê chuột hoặc Tab tới chấm cảng: tooltip một dòng, Enter mở hồ sơ.
-    - Rotterdam ở save ch5: **không** thấy "+40%" hay dòng "Tăng giá"; R-3 hiện tiêu đề + "Mở sau chương 7". Ở save ch7: thấy cả hai.
+    - Rotterdam ở save ch5: **không** thấy "+40%" hay dòng "Tăng giá"; R-3 hiện tiêu đề + "Mở sau chương 7". Với `save-v3-ch7-done.json`: thấy cả hai, R-3 mở.
     - 375 px: hồ sơ thay danh sách, có "‹ Tất cả tuyến".
 11. **Bài tuyến R-2.**
     - "Làm bài tuyến" → thanh việc đổi chế độ: "Về việc đang làm", huy hiệu "Bài tuyến · Rotterdam", nút R-1/R-2/R-3.
@@ -4407,7 +4333,7 @@ Claude-Session: https://claude.ai/code/session_01PwPSBV1SVDP6quEZfKN56M"
     - "Về việc đang làm" về đúng việc tiếp theo của cốt truyện.
 12. **Bảng tuyến.**
     - Sau khi Singapore mở: tab Cột, ER và trang Dữ liệu có `lane_profiles` ("mở theo bài tuyến"); autocomplete gợi ý bảng.
-    - Trước khi Sydney mở: không có `bunker_prices`.
+    - Với `save-v3-ch3-done.json` (Sydney chưa mở): không có `bunker_prices`.
 13. **Dark mode + 375 px:** card cột/đường, hộp thoại ghim, hồ sơ tuyến, không tràn ngang trang.
 
 Ghi kết quả vào `docs/team/decision-log.md` (dòng L-số mới) cùng T1–T13. **Cần user xem:** T3 (EN lazy), T10 (S-3 đồ gỗ thay lúa mì, nội dung Singapore), số đo boot.
@@ -4419,7 +4345,7 @@ Ghi kết quả vào `docs/team/decision-log.md` (dòng L-số mới) cùng T1�
 **Cách viết và replay:**
 - Viết trên bản `git archive` của HEAD **`61de3a9`** (`node_modules` nối bằng junction), mỗi task một commit.
 - Sinh plan từ chính các commit đó, rồi **replay** toàn bộ plan lên một bản `git archive` sạch khác: đọc các khối `Tạo` / `Sửa … — thay/bằng` / `Thêm vào cuối`, mỗi khối "thay" phải khớp đúng một lần.
-- Kết quả: 143 khối áp được, không khối nào lệch; nội dung từng file giống bản viết (khác nhau chỉ ở kiểu xuống dòng CRLF/LF của `git archive` trên Windows). Kết quả: `tsc` sạch, **1468 test PASS**, `npm run build` sạch, `check-budget` mọi nhóm `ok` (`main` 265/270, `tickets` 99/110, `lanes` 10/20, `en` 12/20, `worker` 144/160). Replay từng task trên một bản sạch riêng, dừng sau mỗi task: `tsc` sạch và mọi test PASS (1423, 1424, 1437, 1438, 1441, 1446, 1468, 1468 test; HEAD có 1421).
+- Kết quả: 144 khối áp được, không khối nào lệch; nội dung từng file giống bản viết (chỉ khác kiểu xuống dòng CRLF/LF do `git archive` trên Windows). `tsc` sạch, **1468 test PASS** (`tests/seed.test.ts` từng chạm hạn 60 s khi hai bộ test chạy song song trên cùng máy; chạy riêng thì 25/25 PASS), `npm run build` sạch, `check-budget` mọi nhóm `ok` (`main` 265/270, `tickets` 99/110, `lanes` 10/20, `en` 12/20, `worker` 144/160), `bash -n scripts/check-deploy.sh` sạch. Replay từng task trên một bản sạch riêng, dừng sau mỗi task: `tsc` sạch và mọi test PASS (1423, 1424, 1437, 1438, 1441, 1446, 1468, 1468 test; HEAD có 1421).
 
 **Solution và nội dung:**
 - Mọi Solution bài tuyến chạy trên PGlite ra số dòng như bảng trên.
