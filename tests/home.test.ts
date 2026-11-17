@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { loadTickets } from '../src/content';
-import { chapterOfId, homeModel, KPIS, kpiTiles, kpiValue, LEVELS, parseKpis, type Kpi } from '../src/home';
+import { chapterOfId, homeModel, KPIS, kpiNumber, kpiTiles, kpiValue, LEVELS, parseKpis, type Kpi } from '../src/home';
 import { CHAPTERS, SKILLS } from '../src/progress';
 import { upsert } from '../src/registry';
 
@@ -80,14 +80,27 @@ describe('Bảng điều hành KPI (L18 ★5, L23)', () => {
   });
 
   it('kpiValue: số theo locale, đếm dòng, 5 thanh lớn nhất', () => {
-    expect(kpiValue(kpi('number'), res([[9694, '123.5']]), 'vi')).toEqual({ text: '9.694' });
-    expect(kpiValue(kpi('number', 1), res([[9694, '1234567.5']]), 'en')).toEqual({ text: '1,234,567.5' });
-    expect(kpiValue(kpi('rowcount'), res([[1], [2], [3]]), 'en')).toEqual({ text: '3' });
+    expect(kpiValue(kpi('number'), res([[9694, '123.5']]), 'vi')).toEqual({ text: '9.694', full: '9.694' });
+    expect(kpiValue(kpi('number', 1), res([[9694, '1234567.5']]), 'en')).toEqual({ text: '1.2M', full: '1,234,567.5' });
+    expect(kpiValue(kpi('rowcount'), res([[1], [2], [3]]), 'en')).toEqual({ text: '3', full: '3' });
     const bars = kpiValue(kpi('bar'), res([['SEA', 'EXPORT', 5], ['AIR', 'IMPORT', 9], ['A', 'B', 1], ['C', 'D', 2], ['E', 'F', 3], ['G', 'H', 4]]), 'en');
-    expect(bars).toEqual({ bars: [
-      { label: 'AIR · IMPORT', value: 9, text: '9' }, { label: 'SEA · EXPORT', value: 5, text: '5' }, { label: 'G · H', value: 4, text: '4' },
-      { label: 'E · F', value: 3, text: '3' }, { label: 'C · D', value: 2, text: '2' },
-    ] });
+    const bar = (label: string, value: number) => ({ label, value, text: String(value), full: String(value) });
+    expect(bars).toEqual({ bars: [bar('AIR · IMPORT', 9), bar('SEA · EXPORT', 5), bar('G · H', 4), bar('E · F', 3), bar('C · D', 2)] });
+  });
+
+  it('kpiNumber (L42): từ 1 triệu thì gọn 1 số lẻ, dưới đó số nguyên giữ nguyên, số lẻ còn 1 chữ số', () => {
+    expect(kpiNumber(156524646.12, 'vi')).toEqual({ text: '156,5 triệu', full: '156.524.646,12' });
+    expect(kpiNumber(156524646.12, 'en')).toEqual({ text: '156.5M', full: '156,524,646.12' });
+    expect(kpiNumber(2.5e9, 'vi').text).toBe('2,5 tỷ');
+    expect(kpiNumber(2.5e9, 'en').text).toBe('2.5B');
+    expect(kpiNumber(1_000_000, 'en').text).toBe('1M');
+    expect(kpiNumber(-3_200_000, 'vi').text).toBe('-3,2 triệu');
+    expect(kpiNumber(9694, 'vi')).toEqual({ text: '9.694', full: '9.694' });
+    expect(kpiNumber(9694, 'en')).toEqual({ text: '9,694', full: '9,694' });
+    expect(kpiNumber(999_999, 'en').text).toBe('999,999');
+    expect(kpiNumber(4.6666, 'vi')).toEqual({ text: '4,7', full: '4,67' });
+    expect(kpiNumber(4.6666, 'en')).toEqual({ text: '4.7', full: '4.67' });
+    expect(kpiNumber(0, 'vi').text).toBe('0');
   });
 
   it('parseKpis báo lỗi cấu trúc', () => {
@@ -95,6 +108,9 @@ describe('Bảng điều hành KPI (L18 ★5, L23)', () => {
     expect(() => parseKpis('- { id: a, ticket: ch1-01, kind: pie, label: { vi: "a", en: "b" } }')).toThrow(/kind/);
     expect(() => parseKpis('- { id: a, ticket: ch1-01, kind: bar }')).toThrow(/label/);
     expect(() => parseKpis('id: a')).toThrow(/danh sách/);
+    expect(() => parseKpis('- { id: a, ticket: ch1-01, kind: bar, label: { vi: "a", en: "b" }, unit: kg }')).toThrow(/unit/);
+    expect(parseKpis('- { id: a, ticket: ch1-01, kind: bar, label: { vi: "a", en: "b" }, unit: { vi: ngày, en: days }, icon: stamp }')[0])
+      .toMatchObject({ unit: { vi: 'ngày', en: 'days' }, icon: 'stamp' });
   });
 });
 
