@@ -3,7 +3,7 @@ import { homeModel, type ChapterStatus } from '../home';
 import { getLang, t, type Key } from '../i18n';
 import { CHAPTERS, chapterTitle, currentChapter, rankOf, SKILLS, visibleTickets } from '../progress';
 import { gated, navLock, readTour } from '../onboarding';
-import { domainHash, hashOf, inDomain, learnModuleOf, type Route } from '../route';
+import { domainHash, hashOf, inDomain, learnModuleOf, learnSkillOf, type Route } from '../route';
 import { isStory, reviewCount } from '../session';
 import { actions, app, done } from '../state';
 import { readJson, writeJson } from '../storage';
@@ -62,7 +62,7 @@ function row(r: Row): HTMLElement {
 function modules(): HTMLElement[] {
   const lang = getLang();
   const m = homeModel(app.tickets, done(), CHAPTERS, SKILLS);
-  const open = learnModuleOf(location.hash) ?? m.chapter;
+  const open = learnModuleOf(location.hash) ?? SKILLS.find((s) => s.id === learnSkillOf(location.hash))?.chapter ?? m.chapter;
   return m.chapters.map((c) => row({
     key: `m${c.chapter}`,
     href: `${hashOf('learn')}/sql/${c.chapter}`,
@@ -120,7 +120,7 @@ function domainSwitch(): HTMLElement {
 function content(route: Route, drawer: boolean): (Node | string)[] {
   const out: (Node | null | undefined)[] = [drawer ? domainSwitch() : null];
   if (route === 'learn') {
-    out.push(h('p', { class: GROUP }, t('side.sqlTrack')), ...modules(), h('p', { class: 'side-label mt-3 px-3 text-sm text-muted' }, t('learn.advSoon')));
+    out.push(h('p', { class: GROUP }, t('side.sqlTrack')), ...modules());
   } else if (route === 'practice') {
     const lang = getLang();
     out.push(row({ key: 'today', href: hashOf('practice'), lead: icon('repeat'), label: t('side.today', { n: reviewCount() }), current: true }),

@@ -5,8 +5,8 @@ import type { HomeModel } from '../home';
 import { getLang, locale, t } from '../i18n';
 import { LANE_XP } from '../lanes';
 import { applyResult, isSuccess, movedToday, nextCard, pickForSkill, retryItem, type PracticeItem } from '../practice';
-import { nextTicket, SKILLS } from '../progress';
-import { hashOf } from '../route';
+import { chapterTitle, nextTicket, SKILLS, visibleTickets } from '../progress';
+import { hashOf, learnAdvOf, learnModuleOf, learnSkillOf } from '../route';
 import {
   activeSchema, activeStep, activeTicket, hintsShown, isStory, markWarmupDone, practiceFinished, reviewCount, reviewedDrills, reviewToday, session, today, warmupToday, type Mode, type PracticeRun,
 } from '../session';
@@ -18,7 +18,7 @@ import { applyVariant } from '../variants';
 import { hints, renderBrief, shapeCard } from './brief';
 import { goalCard, skillChips, wrapUp } from './chapterView';
 import { byId, h, nodes, richText } from './dom';
-import { openLesson } from './lessonCard';
+import { isSeen, openLesson } from './lessonCard';
 import { homeHooks, registerHomeSection, registerMode } from './homeView';
 import { laneNote } from './lanePanel';
 import { go } from './router';
@@ -83,6 +83,7 @@ const loadDrillUi = () => import('./drillBrief').then((m) => {
   if (!drillUi) m.initDrill({
     db: ctx!.db, activeSchema, h, nodes, richText, byId, getLang, locale, app, actions, persist, schemaHooks, erMeta, stepKey, session, hintsShown, today,
     isSuccess, movedToday, nextCard, SKILLS, hashOf, textOf, hints, shapeCard, openLesson, backToStory, startDrillMode, loadGeneral, generalNow, loadLessons,
+    lessonSeen: isSeen, learnSkillOf, learnAdvOf, learnModuleOf, chapterTitle, visibleTickets,
   });
   return (drillUi = m);
 });
@@ -301,6 +302,26 @@ function drillHub(): HTMLElement | null {
   void Promise.all([loadDrillUi(), loadGeneral()]).then(() => ctx?.rerender(), () => undefined);
   return null;
 }
+/**
+ * Plan 8a Task 9: the learning path (#/learn…) is drawn by the lazy General chunk; it replaces Plan 7's module section (same id).
+ * Loading shows a fixed-height line; a failed load shows Retry (never a load loop: loadGeneral drops a failed promise).
+ */
+let learnLoad: 'idle' | 'loading' | 'failed' = 'idle';
+function loadLearn(): void {
+  learnLoad = 'loading';
+  void ctx?.db.ensure('lab').catch(() => undefined); // seeded in the background: the drills open faster (D8a-3)
+  Promise.all([loadDrillUi(), loadGeneral()]).then(() => (learnLoad = 'idle'), () => (learnLoad = 'failed')).finally(() => ctx?.rerender());
+}
+function learnSection(): HTMLElement {
+  const page = generalNow() && drillUi?.learnPage();
+  if (page) return page;
+  if (learnLoad === 'idle') loadLearn();
+  return learnLoad === 'failed'
+    ? h('div', { role: 'alert', class: 'space-y-2' }, h('p', { class: 'm-0' }, t('learn.failed')),
+      h('button', { type: 'button', onclick: () => { loadLearn(); ctx?.rerender(); } }, t('data.retry')))
+    : h('p', { class: 'm-0 min-h-40 text-muted', 'aria-live': 'polite' }, t('learn.loading'));
+}
+registerHomeSection({ id: 'module', order: 10, span: 'full', pages: ['learn'], render: learnSection });
 registerHomeSection({ id: 'drills', order: 23, span: 'full', pages: ['practice'], render: drillHub });
 registerHomeSection({ id: 'warmup', order: 21, span: 'full', pages: ['home', 'practice'], render: warmupCard });
 registerMode({

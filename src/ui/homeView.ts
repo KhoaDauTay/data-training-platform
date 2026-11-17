@@ -1,10 +1,9 @@
 import { DOMAINS, type Domain } from '../domains';
 import { homeModel, KPIS, kpiTiles, learnedSkills, LEVELS, reliesOn, type ChapterCard, type HomeModel } from '../home';
 import { getLang, t, type Key } from '../i18n';
-import { CHAPTERS, chapterTitle, rankOf, SKILLS, visibleTickets } from '../progress';
+import { CHAPTERS, chapterTitle, rankOf, SKILLS } from '../progress';
 import { derive, ROUTES as LANES } from '../scene';
-import { domainHash, learnModuleOf, soonDomainOf } from '../route';
-import { hasLesson, openLesson } from './lessonCard';
+import { domainHash, soonDomainOf } from '../route';
 import { laneInfo } from './lanePanel';
 import { mascot } from './mascots';
 import { currentRoute } from './router';
@@ -296,35 +295,6 @@ function skillsTeaser(m: HomeModel): HTMLElement {
     icon('arrowRight', 'size-4 text-muted transition group-hover:translate-x-0.5 group-hover:text-accent'));
 }
 
-/**
- * Learning path (Plan 7 V6): module n = the skills of chapter n, each with its quick lesson when there is one, then the way into
- * Logistics. Boon names the next skill to learn (v6 §3.3).
- */
-function moduleSection(m: HomeModel): HTMLElement {
-  const lang = getLang();
-  const d = done();
-  const n = learnModuleOf(location.hash) ?? m.chapter;
-  const card = m.chapters.find((c) => c.chapter === n) ?? m.chapters[0];
-  const learned = learnedSkills(app.tickets, d);
-  const own = app.tickets.filter((x) => x.chapter === card.chapter);
-  const first = own.find((x) => !d.has(x.id)) ?? own[0];
-  const reachable = !!first && visibleTickets(app.tickets, d).includes(first);
-  const next = card.skills.find((s) => !learned.has(s.id));
-  return h('section', { class: 'space-y-6', 'aria-labelledby': 'module-title' },
-    h('h2', { id: 'module-title', class: 'm-0 text-xl font-bold' }, t('learn.module', { n: card.chapter, title: chapterTitle(card.chapter, lang) })),
-    bubble(mascot('boon', 'point', 'size-20'), next ? t('learn.next', { skill: next.label[lang] }) : t('learn.allDone')),
-    h('ul', { class: LIST }, ...card.skills.map((s, i) => listRow({
-      lead: learned.has(s.id) ? icon('check', 'size-6 text-good') : h('b', { class: 'text-lg' }, String(i + 1)),
-      title: s.label[lang],
-      sub: s.when[lang],
-      action: hasLesson(s.id) ? h('button', { type: 'button', class: 'rounded-full px-4 whitespace-nowrap', 'aria-haspopup': 'dialog', onclick: () => openLesson(s.id) }, t('nb.lesson')) : null,
-    }))),
-    reachable
-      ? h('button', { type: 'button', class: cx(BTN_GO, 'mt-4 px-4 py-2'), onclick: () => actions.selectTicket(first.id) }, t('learn.apply', { n: card.chapter }))
-      : h('p', { class: 'm-0 text-muted' }, card.status === 'soon' ? t('home.soonHint') : t('home.lockedAfter', { n: card.chapter - 1 })),
-    h('p', { class: 'm-0 text-sm text-muted' }, t('learn.advSoon')));
-}
-
 /** "Coming soon" page of a domain (v5 §B.6): what it is, which skills carry over, two ways out. No form, no date. */
 function soonSection(): HTMLElement {
   const lang = getLang();
@@ -355,7 +325,6 @@ function lanesSection(): HTMLElement {
 registerHomeSection({ id: 'hello', order: 1, span: 'full', pages: ['home'], render: helloSection });
 registerHomeSection({ id: 'harbor', order: 5, span: 'full', pages: ['overview'], render: harborSection });
 registerHomeSection({ id: 'continue', order: 10, span: 'wide', pages: ['home', 'overview'], render: continueCard });
-registerHomeSection({ id: 'module', order: 10, span: 'full', pages: ['learn'], render: moduleSection });
 registerHomeSection({ id: 'soon', order: 10, span: 'full', pages: ['soon'], render: soonSection });
 registerHomeSection({ id: 'career', order: 20, span: 'narrow', pages: ['overview'], render: careerCard });
 registerHomeSection({ id: 'routes', order: 25, span: 'full', pages: ['map'], render: routesSection });

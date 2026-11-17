@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  canonicalHash, dataTableOf, domainHash, hashOf, inDomain, initialRoute, isRoute, learnModuleOf, parseRoute, ROUTES, soonDomainOf,
+  canonicalHash, dataTableOf, domainHash, hashOf, inDomain, initialRoute, isRoute, learnAdvOf, learnModuleOf, learnSkillOf, parseRoute, ROUTES, soonDomainOf,
 } from '../src/route';
 
 describe('route (v5 §B.3, Plan 7)', () => {
@@ -90,5 +90,20 @@ describe('route (v5 §B.3, Plan 7)', () => {
     expect(learnModuleOf('#/learn/sql/0')).toBeUndefined();
     expect(learnModuleOf('#/learn/sql/3x')).toBeUndefined();
     expect(learnModuleOf('#/learn')).toBeUndefined();
+  });
+
+  it('learnSkillOf / learnAdvOf (Plan 8a Task 9): trang kỹ năng và trang nút, id lạ → undefined', () => {
+    expect(parseRoute('#/learn/skill/where')).toBe('learn');
+    expect(parseRoute('#/learn/adv/b2')).toBe('learn');
+    expect(learnSkillOf('#/learn/skill/where')).toBe('where');
+    expect(learnSkillOf('#/learn/skill/conditional_agg')).toBe('conditional_agg');
+    expect(learnAdvOf('#/learn/adv/b2')).toBe('b2');
+    expect(learnSkillOf('#/learn/skill/Where')).toBeUndefined();
+    expect(learnSkillOf('#/learn/skill/a-b')).toBeUndefined();
+    expect(learnSkillOf('#/learn/skill/')).toBeUndefined();
+    expect(learnAdvOf('#/learn/adv/<x>')).toBeUndefined();
+    expect(learnSkillOf('#/learn/adv/b2')).toBeUndefined();
+    expect(learnAdvOf('#/learn')).toBeUndefined();
+    expect(learnModuleOf('#/learn/skill/where')).toBeUndefined();
   });
 });

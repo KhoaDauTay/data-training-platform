@@ -57,6 +57,11 @@ export function learnModuleOf(hash: string): number | undefined {
   return n >= 1 && n <= 12 ? n : undefined;
 }
 
+/** `#/learn/skill/<id>` → the skill page (Plan 8a); anything but `[a-z0-9_]+` → undefined (the page shows #/learn). */
+export const learnSkillOf = (hash: string): string | undefined => /^#\/?learn\/skill\/([a-z0-9_]+)(?=$|[/?])/.exec(hash)?.[1];
+/** `#/learn/adv/<node>` → the advanced node page (Plan 8a). */
+export const learnAdvOf = (hash: string): string | undefined => /^#\/?learn\/adv\/([a-z0-9_]+)(?=$|[/?])/.exec(hash)?.[1];
+
 /** `#/d/<id>…` → the domain when it exists and is not live yet ("Coming soon", v5 §B.6). */
 export function soonDomainOf(hash: string): DomainId | undefined {
   const id = /^#\/?d\/([a-z]+)(?=$|[/?])/.exec(hash)?.[1];

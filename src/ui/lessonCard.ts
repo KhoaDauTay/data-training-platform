@@ -22,7 +22,7 @@ const expanded = new Map<string, boolean>();
 /** Marked this session: the pref write may fail (blocked storage) and the card must still collapse. */
 const seenNow = new Set<string>();
 
-const isSeen = (id: string): boolean => seenNow.has(id) || loadLessonPrefs().seen.includes(id);
+export const isSeen = (id: string): boolean => seenNow.has(id) || loadLessonPrefs().seen.includes(id);
 const skillOf = (id: string) => SKILLS.find((s) => s.id === id);
 /** Advanced-node lessons (Plan 8a) have no skill label: openLesson() gives their title. */
 const names = new Map<string, () => string>();

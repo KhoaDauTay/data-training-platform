@@ -3,6 +3,7 @@ import type { DbClient } from '../db/client';
 import { drillTicket, type Drill, type General } from '../general';
 import type * as I18n from '../i18n';
 import { learnText, type LearnKey } from '../i18n/learn';
+import { learnPage as drawLearn } from './learnView';
 import { appliesIn, drillXp, knownSkills } from '../learn';
 import type * as Practice from '../practice';
 import type * as Progress from '../progress';
@@ -35,6 +36,9 @@ export interface DrillDeps {
   hints: typeof Brief.hints; shapeCard: typeof Brief.shapeCard; openLesson: typeof LessonCard.openLesson;
   backToStory: typeof Modes.backToStory; startDrillMode: typeof Modes.startDrillMode;
   loadGeneral: typeof Content.loadGeneral; generalNow: typeof Content.generalNow; loadLessons: typeof Content.loadLessons;
+  // Learning path (Task 9-10)
+  lessonSeen: typeof LessonCard.isSeen; learnSkillOf: typeof Route.learnSkillOf; learnAdvOf: typeof Route.learnAdvOf;
+  learnModuleOf: typeof Route.learnModuleOf; chapterTitle: typeof Progress.chapterTitle; visibleTickets: typeof Progress.visibleTickets;
 }
 
 let d$: DrillDeps;
@@ -153,7 +157,7 @@ function recap(g: General, d: Drill, tk: Ticket): HTMLElement {
     h('div', { class: 'actions mb-0' },
       next
         ? h('button', { type: 'button', class: 'primary', onclick: () => d$.startDrillMode(drillTicket(next), next) }, lt('drill.next'))
-        : h('a', { href: d$.hashOf('learn') }, lt('drill.back'))));
+        : h('a', { href: `${d$.hashOf('learn')}/${d.skill ? `skill/${d.skill}` : `adv/${d.node}`}` }, lt('drill.back'))));
 }
 
 /** work.ts onSolved in drill mode: +10 XP the first time (+20 a challenge), the skill's Leitner card (D8a-10/11), no animation. */
@@ -215,4 +219,10 @@ export function practiceHub(): HTMLElement | null {
     pick ? row(lt('hub.weakest', { skill: nameOf(g, pick), box: box(weakest) }), go(pick, lt(`drill.kind.${pick.kind}` as LearnKey))) : null,
     ...half.map((d) => row(lt('hub.continue', { what: nameOf(g, d) }), go(d, lt('hub.resume')))),
   );
+}
+
+/** #/learn… page body (src/ui/learnView.ts, same chunk). Undefined while the drills are not loaded. */
+export function learnPage(): HTMLElement | undefined {
+  const g = d$.generalNow();
+  return g && drawLearn(d$, g);
 }
