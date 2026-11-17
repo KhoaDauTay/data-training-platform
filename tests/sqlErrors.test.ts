@@ -24,7 +24,12 @@ const CASES: [string, string][] = [
   [`SELECT CASE WHEN eta < '2026-10-31' THEN ref ELSE 0 END FROM shipments`, 'sqlerr.42804'],
   [`SELECT CASE WHEN eta < '2026-10-31' THEN 1 ELSE 'late' END FROM shipments`, 'sqlerr.22P02'],
   ['SELECT q.quote_no, (SELECT r.buy_usd FROM rate_contracts r WHERE r.pod = q.pod) FROM quotations q', 'sqlerr.21000'],
-  ['SELECT ref FROM shipments WHERE ROW_NUMBER() OVER (ORDER BY ref) <= 3', 'sqlerr.42P20'],
+  ['SELECT ref FROM shipments WHERE ROW_NUMBER() OVER (ORDER BY ref) <= 3', 'sqlerr.windowWhere'],
+  ['SELECT customer_id FROM shipments GROUP BY RANK() OVER (ORDER BY customer_id)', 'sqlerr.windowWhere'],
+  ['SELECT customer_id FROM shipments GROUP BY customer_id HAVING RANK() OVER (ORDER BY customer_id) = 1', 'sqlerr.windowHaving'],
+  // Same 42P20 code, but a frame mistake: must not get the "filter in an outer query" note.
+  ['SELECT SUM(gross_weight_kg) OVER (ORDER BY eta, ref RANGE BETWEEN 1 PRECEDING AND CURRENT ROW) FROM shipments', 'sqlerr.windowFrame'],
+  ['SELECT SUM(gross_weight_kg) OVER (ORDER BY eta ROWS BETWEEN CURRENT ROW AND 1 PRECEDING) FROM shipments', 'sqlerr.windowFrame'],
   ['SELECT ref, LAG(ref) FROM shipments', 'sqlerr.windowOver'],
   ['SELECT mbl_no, issue_date FROM master_bills UNION SELECT hbl_no FROM house_bills', 'sqlerr.setColumns'],
   ['SELECT id, ref FROM shipments EXCEPT SELECT shipment_id FROM invoices', 'sqlerr.setColumns'],
@@ -59,5 +64,6 @@ describe('lỗi biết dạy', () => {
 
   it('lỗi lạ thì không có giải thích', () => {
     expect(explainError({ message: 'something else', code: '99999' })).toBeUndefined();
+    expect(explainError({ message: 'something else', code: '42P20' })).toBeUndefined(); // 42P20 is told apart by message only
   });
 });

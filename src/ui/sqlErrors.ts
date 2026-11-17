@@ -23,6 +23,10 @@ const BY_MESSAGE: [RegExp, Key][] = [
   [/^(ORDER|GROUP) BY position \d+ is not in select list/, 'sqlerr.position'],
   // 42809 is shared with other wrong-object errors; this one is a ranking/LAG function written without OVER.
   [/^window function \S+ requires an OVER clause/, 'sqlerr.windowOver'],
+  // 42P20 also covers frame mistakes, so only these messages get the "filter in an outer query" note.
+  [/^window functions are not allowed in (WHERE|GROUP BY)/, 'sqlerr.windowWhere'],
+  [/^window functions are not allowed in HAVING/, 'sqlerr.windowHaving'],
+  [/^RANGE with offset PRECEDING\/FOLLOWING requires exactly one ORDER BY column|^frame (start|end)/, 'sqlerr.windowFrame'],
 ];
 
 const BY_CODE: Record<string, Key> = {
@@ -38,7 +42,6 @@ const BY_CODE: Record<string, Key> = {
   '42804': 'sqlerr.42804',
   '22P02': 'sqlerr.22P02',
   '21000': 'sqlerr.21000',
-  '42P20': 'sqlerr.42P20',
   LAB01: 'sqlerr.labOnly', // runLab (src/db/run.ts): the worker refused anything but one CREATE INDEX
 };
 
