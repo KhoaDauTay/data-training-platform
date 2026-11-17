@@ -201,6 +201,8 @@ export const vi = {
   'top.export': 'Xuất tiến độ',
   'top.import': 'Nhập tiến độ',
   'db.loading': 'Đang khởi tạo database…',
+  'content.loading': 'Đang tải nội dung các ticket…',
+  'content.failed': 'Không tải được nội dung ticket. Kiểm tra kết nối mạng rồi tải lại trang.',
   'db.loadingBytes': 'Đang tải database {loaded}/{total} MB',
   'db.loadingMb': 'Đang tải database {loaded} MB',
   'db.ready': 'Database sẵn sàng',

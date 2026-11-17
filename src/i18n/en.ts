@@ -204,6 +204,8 @@ export const en: Record<Key, Msg> = {
   'top.export': 'Export progress',
   'top.import': 'Import progress',
   'db.loading': 'Starting the database…',
+  'content.loading': 'Loading the tickets…',
+  'content.failed': 'Could not load the tickets. Check your connection, then reload the page.',
   'db.loadingBytes': 'Downloading the database {loaded}/{total} MB',
   'db.loadingMb': 'Downloading the database {loaded} MB',
   'db.ready': 'Database ready',

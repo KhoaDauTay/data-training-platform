@@ -13,5 +13,5 @@ export default defineConfig({
   // PGlite tự nạp file .wasm/.data qua import.meta.url; pre-bundle sẽ làm hỏng đường dẫn.
   optimizeDeps: { exclude: ['@electric-sql/pglite'] },
   worker: { format: 'es' },
-  test: { testTimeout: 60_000, hookTimeout: 60_000 },
+  test: { testTimeout: 60_000, hookTimeout: 60_000, setupFiles: ['tests/setup.ts'] },
 });

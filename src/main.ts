@@ -1,6 +1,6 @@
 import './style.css';
 import { initTheme } from './theme';
-import { loadTickets } from './content';
+import { loadContent, loadTickets } from './content';
 import { DbClient, DbFailedError, DbRestartError, QueryTimeoutError, WorkerTaskError, type DbStatus } from './db/client';
 import { SqlError } from './db/run';
 import { buildDiagnostics, diagnosticsText } from './diagnostics';
@@ -35,6 +35,19 @@ import { createMapStrip } from './ui/mapStrip';
 import { chapterDots } from './viz/progressDots';
 
 initTheme(); // index.html already set data-theme before paint; this adds the OS listener for 'system'
+// Ticket text is a lazy chunk (src/content.ts): say so while it loads, and offer a reload if it fails.
+// Nothing else is drawn yet, so the banner is set by hand; renderNotice() owns it from the first rerender on.
+const loadingNotice = byId('notice');
+loadingNotice.hidden = false;
+loadingNotice.replaceChildren(h('span', {}, t('content.loading')));
+try {
+  await loadContent();
+} catch (e) {
+  loadingNotice.replaceChildren(h('span', {}, t('content.failed')), h('button', { type: 'button', onclick: () => location.reload() }, t('app.reload')));
+  throw e;
+}
+loadingNotice.hidden = true;
+
 app.tickets = loadTickets();
 const problems = contentProblems(app.tickets);
 if (problems.length) console.warn('Content problems:', problems);
