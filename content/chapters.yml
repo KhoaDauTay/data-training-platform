@@ -122,7 +122,10 @@
   story:
     vi: "Ban giám đốc muốn thấy xu hướng: khách nào tăng, khách nào giảm, tháng này so với tháng trước."
     en: "The board wants to see trends: which customers grow, which shrink, this month against last month."
-  outcomes: []
+  outcomes:
+    - { vi: "Xếp hạng trong từng nhóm và lấy mấy dòng đầu mỗi nhóm", en: "Rank inside each group and keep the top rows of each", skills: [window_rank] }
+    - { vi: "So mỗi kỳ với kỳ liền trước", en: "Compare each period with the one before", skills: [window_lag] }
+    - { vi: "Cộng dồn theo thời gian trong từng nhóm", en: "Keep a running total over time inside each group", skills: [window_agg] }
 
 - chapter: 11
   title: { vi: "Truy vấn nhanh hơn", en: "Faster queries" }
@@ -131,7 +134,10 @@
   story:
     vi: "Báo cáo chạy chậm dần khi dữ liệu lớn lên. Cùng IT, bạn đọc kế hoạch thực thi và đề xuất chỉ mục."
     en: "Reports get slower as the data grows. Together with IT, you read execution plans and propose indexes."
-  outcomes: []
+  outcomes:
+    - { vi: "Đọc kế hoạch thực thi, thấy bước nào đọc cả bảng", en: "Read an execution plan and spot the step that reads a whole table", skills: [explain_read] }
+    - { vi: "Viết điều kiện lọc để chỉ mục có sẵn dùng được", en: "Write filters that the existing indexes can use", skills: [sargable] }
+    - { vi: "Đề xuất chỉ mục đúng cột, đúng thứ tự, có số chứng minh", en: "Propose an index on the right columns in the right order, with figures to prove it", skills: [index_design] }
 
 - chapter: 12
   title: { vi: "Điều tra cuối năm", en: "Year-end investigation" }
@@ -140,4 +146,7 @@
   story:
     vi: "Biên lợi nhuận quý 3/2026 giảm. Hội đồng quản trị cần ba nguyên nhân, mỗi nguyên nhân kèm một con số chứng minh."
     en: "The Q3 2026 margin fell. The board needs three causes, each backed by a number."
-  outcomes: []
+  outcomes:
+    - { vi: "Biến một câu hỏi của ban lãnh đạo thành con số so được giữa hai kỳ", en: "Turn a board question into a figure that compares fairly between periods", skills: [multi_cte, conditional_agg] }
+    - { vi: "Kiểm tra chéo một con số bằng cách tách nó theo một chiều khác", en: "Cross-check a figure by splitting it along another dimension", skills: [window_lag, correlated_value] }
+    - { vi: "Đưa nhiều giả thuyết về cùng một đơn vị để chọn nguyên nhân chính", en: "Bring several hypotheses to one unit to pick the main cause", skills: [distinct_on, case_when] }

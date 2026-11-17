@@ -18,4 +18,5 @@
 - { id: belowCostQuotes, ticket: ch7-04, kind: rowcount, label: { vi: "Báo giá quý 3/2026 bán dưới giá mua", en: "Q3 2026 quotes priced below the buy rate" }, icon: nestedCheck }
 - { id: overdueCustomers, ticket: ch8-03, kind: rowcount, label: { vi: "Khách đang có nợ quá hạn (31/10/2026)", en: "Customers with overdue debt (31 October 2026)" }, icon: clockAlert }
 - { id: unbilledDelivered, ticket: ch9-02, kind: rowcount, label: { vi: "Lô giao tháng 10/2026 chưa xuất hóa đơn", en: "Shipments delivered in October 2026 and not invoiced" }, icon: minus }
-- { id: q3margin, ticket: ch12-06, kind: number, label: { vi: "Biên lợi nhuận quý 3/2026", en: "Q3 2026 gross margin" }, icon: percent }
+- { id: stuckContainers, ticket: ch10-03, kind: rowcount, label: { vi: "Container kẹt hơn 5 ngày ở một bước (31/10/2026)", en: "Containers stuck at one step for over 5 days (31 October 2026)" }, icon: clockAlert }
+- { id: q3margin, ticket: ch12-06, kind: number, label: { vi: "Biên lợi nhuận gộp quý 3/2026", en: "Q3 2026 gross margin" }, icon: percent, unit: { vi: "%", en: "%" } }

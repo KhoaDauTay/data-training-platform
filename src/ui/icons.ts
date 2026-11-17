@@ -106,6 +106,8 @@ const P = {
   firstPerGroup: ['M3 3h18v4H3z M6 10.5h12 M3 14h18v4H3z M6 21h12', 'M3 3h18v4H3z M3 14h18v4H3z'],
   plan: `${LENS_GLASS} M10 7v3 M7 13l3-3 3 3`,
   bookIndex: 'M4 4h12a2 2 0 0 1 2 2v14H6a2 2 0 0 1-2-2z M18 7h3v3h-3 M18 12h3v3h-3',
+  // Index-friendly condition: the bare column (bar) goes straight to the index (arrow), nothing wrapped around it.
+  sargable: 'M4 4v16 M8 12h12 M16 8l4 4-4 4',
 } as const satisfies Record<string, Entry>;
 
 export type IconName = keyof typeof P;
@@ -122,7 +124,7 @@ export const SKILL_ICON: Record<string, IconName> = {
   // Planned (curriculum.md): mapped now so a new skill gets its picture the day it is added.
   in_subquery: 'inList', scalar_subquery: 'nested', correlated_value: 'correlated', exists: 'nestedCheck',
   cte: 'steps', multi_cte: 'stepsMerge', window_agg: 'window', window_lag: 'windowLag', window_rank: 'windowRank',
-  union: 'stack', except: 'minus', full_join: 'fullJoin', distinct_on: 'firstPerGroup', explain_read: 'plan', index_design: 'bookIndex',
+  union: 'stack', except: 'minus', full_join: 'fullJoin', distinct_on: 'firstPerGroup', explain_read: 'plan', index_design: 'bookIndex', sargable: 'sargable',
 };
 export const skillIconName = (id: string): IconName => SKILL_ICON[id] ?? 'puzzle';
 

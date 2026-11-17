@@ -20,7 +20,7 @@
   employee: 14
   role: { vi: "Trưởng phòng Ops, người kèm DA mới", en: "Head of Operations, your mentor" }
   bio: { vi: "Kiên nhẫn, luôn nói \"từng bước một\".", en: "Patient, always says \"one step at a time\"." }
-  tables: [shipments, containers, shipment_events]
+  tables: [shipments, containers, shipment_events, claims]
   look: { skin: tan, hair: black, style: short, accessory: helmet }
 
 - name: "Lê Bình"
@@ -68,7 +68,7 @@
   employee: 18
   role: { vi: "Điều độ vận tải & kho CFS", en: "Trucking and CFS dispatcher" }
   bio: { vi: "Lúc nào cũng ở bãi, đếm xe kéo và ca bốc xếp.", en: "Always out in the yard, counting trucks and loading shifts." }
-  tables: [containers, trucking_orders, cfs_receipts]
+  tables: [containers, trucking_orders, cfs_receipts, container_events]
   look: { skin: tan, hair: black, style: short, accessory: helmet }
 
 - name: "Võ Phong"
@@ -100,7 +100,7 @@
   employee: 33
   role: { vi: "Kế toán công nợ phải thu (AR)", en: "Accounts receivable accountant (AR)" }
   bio: { vi: "Nhắc nợ nhẹ nhàng nhưng không bỏ sót ai.", en: "Chases payments politely but never misses anyone." }
-  tables: [customers, invoices, payments]
+  tables: [customers, invoices, payments, free_time_terms]
   look: { skin: light, hair: black, style: long, accessory: glasses }
 
 - name: "Hoàng Thảo"
@@ -124,5 +124,5 @@
   employee: null
   role: { vi: "Trưởng nhóm IT, cầu nối với Data Engineering", en: "IT team lead, the bridge to Data Engineering" }
   bio: { vi: "Chỉ tin vào kế hoạch thực thi, không tin vào cảm giác \"chạy chậm\".", en: "Trusts execution plans, not the feeling that something \"runs slow\"." }
-  tables: [employees]
+  tables: [shipments, containers, container_events]
   look: { skin: medium, hair: black, style: short, accessory: glasses }
