@@ -91,7 +91,7 @@ export function createMapStrip(host: HTMLElement): { update(view: StripView): vo
           'aria-current': here ? 'page' : false,
           class: cx('relative grid size-10 shrink-0 place-items-center p-0 text-sm font-semibold tabular-nums sm:size-8',
             state === 'done' && 'text-good', state === 'current' && 'ring-2 ring-accent', state === 'locked' && 'text-muted',
-            here && 'bg-accent-soft underline decoration-2 underline-offset-4'),
+            here && 'border-b-4 border-b-accent bg-accent-soft'),
           onclick: () => go(x.id),
         },
           state === 'locked' ? icon('lock', 'size-3.5') : x.beat === 'boss' ? icon('badge', 'size-4') : String(n),
@@ -110,7 +110,7 @@ export function createMapStrip(host: HTMLElement): { update(view: StripView): vo
       mapBtn.replaceChildren(icon('map', 'size-4'), h('span', { class: 'max-sm:sr-only' }, t('map.see')));
       host.replaceChildren(h('nav', { class: 'flex flex-wrap items-center gap-x-3 gap-y-1.5 px-4 py-1.5 text-sm', 'aria-label': t('nav.tasks') },
         select,
-        h('div', { class: 'flex shrink-0 items-center gap-1 max-sm:order-3 max-sm:w-full max-sm:justify-center' }, arrow('prev'), ...tasks, arrow('next')),
+        h('div', { class: 'flex shrink-0 items-center gap-1 max-sm:order-3 max-sm:w-full max-sm:flex-wrap max-sm:justify-center' }, arrow('prev'), ...tasks, arrow('next')),
         cont ? h('div', { class: 'shrink-0 max-sm:order-4 max-sm:w-full' }, cont) : null,
         h('div', { class: 'ml-auto flex shrink-0 items-center gap-2 text-muted max-sm:order-2' },
           h('span', { class: 'max-sm:hidden' }, t('map.lanes', { n: derive(tickets, completed).open.size, total: ROUTES.length })),
