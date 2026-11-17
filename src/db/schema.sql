@@ -219,3 +219,22 @@ CREATE TABLE claims (
   reason text NOT NULL CHECK (reason IN ('DAMAGE', 'SHORTAGE', 'DELAY')),
   amount_usd numeric(10, 2) NOT NULL
 );
+
+-- Plan 5 (lanes, seed option B, L48): two small hand-written tables for the lane side tasks. Seed block at the end of seed.sql.
+-- One row per lane from a Vietnamese seaport, valid both ways. via_port NULL = direct sailing.
+CREATE TABLE lane_profiles (
+  pol text NOT NULL REFERENCES ports(code),
+  pod text NOT NULL REFERENCES ports(code),
+  distance_nm int NOT NULL,
+  via_port text REFERENCES ports(code),
+  sea_days numeric(4, 1) NOT NULL,
+  fuel_t_per_day numeric(5, 1) NOT NULL,
+  vessel_teu int NOT NULL,
+  PRIMARY KEY (pol, pod)
+);
+
+-- Monthly bunker (ship fuel) price, first day of the month.
+CREATE TABLE bunker_prices (
+  month date PRIMARY KEY,
+  usd_per_tonne numeric(7, 2) NOT NULL
+);

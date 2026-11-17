@@ -8,6 +8,8 @@ const PLAN2 = ['shipment_events', 'trucking_orders', 'cfs_receipts', 'hs_codes',
 const PLAN3 = ['exchange_rates', 'rate_contracts', 'quotations', 'invoices', 'payments', 'vendor_bills', 'master_bills', 'house_bills'];
 /** Plan 4 (chapters 10–12), appended after PLAN3. */
 const PLAN4 = ['free_time_terms', 'container_events', 'claims'];
+/** Plan 5 (lanes, option B, L48): hand-written, appended after PLAN4. */
+const PLAN5 = ['lane_profiles', 'bunker_prices'];
 const hashOf = (t: string) => `SELECT md5(string_agg(x::text, '|' ORDER BY x::text)) AS h FROM ${t} x`;
 
 const db = seededDb;
@@ -18,7 +20,7 @@ async function one<T>(sql: string): Promise<T> {
 describe('seed', () => {
   it('tất định: hai lần seed cho cùng dữ liệu', async () => {
     const [a, b] = await Promise.all([freshDb(), freshDb()]);
-    for (const t of [...TABLES, ...PLAN2, ...PLAN3, ...PLAN4]) {
+    for (const t of [...TABLES, ...PLAN2, ...PLAN3, ...PLAN4, ...PLAN5]) {
       const ha = (await a.query<{ h: string }>(hashOf(t))).rows[0].h;
       const hb = (await b.query<{ h: string }>(hashOf(t))).rows[0].h;
       expect(ha, t).toBe(hb);
@@ -26,7 +28,7 @@ describe('seed', () => {
   });
 
   // Appending blocks must never re-roll older tables: ch1–3 hashes taken before Plan 2 (HEAD 646d9e0), Plan 2 hashes before Plan 3 (HEAD fd96e31),
-  // Plan 3 hashes before Plan 4 (HEAD 2ddc893). The chapter 11 indexes and ANALYZE change plans, never rows.
+  // Plan 3 hashes before Plan 4 (HEAD 2ddc893), Plan 4 hashes before Plan 5 (HEAD 61de3a9). The chapter 11 indexes and ANALYZE change plans, never rows.
   it('bảng cũ giữ nguyên từng byte khi thêm khối seed mới', async () => {
     const before: Record<string, string> = {
       ports: 'ec1c84dddcf5646f1e3b5fc1d57f69f7',
@@ -50,8 +52,11 @@ describe('seed', () => {
       vendor_bills: 'fc1cae4b377366523d6e3ad01c464712',
       master_bills: '718148ac3166c207d4c6925bf3097411',
       house_bills: '97308ee315ed7ddab557e0ce7302725e',
+      free_time_terms: '6d85e1979035e08dcd049fdda04ae60c',
+      container_events: 'dc49ff2b67e83cecdf2dc72cb88fbb03',
+      claims: '23a759d2c1ecb373473106d63af17c39',
     };
-    for (const t of [...TABLES, ...PLAN2, ...PLAN3]) expect((await one<{ h: string }>(hashOf(t))).h, t).toBe(before[t]);
+    for (const t of [...TABLES, ...PLAN2, ...PLAN3, ...PLAN4]) expect((await one<{ h: string }>(hashOf(t))).h, t).toBe(before[t]);
   });
 
   it('quy mô đúng', async () => {
@@ -295,5 +300,27 @@ describe('seed', () => {
     expect((await one<{ n: number }>(`SELECT count(*) AS n FROM shipments WHERE mode = 'AIR' AND incoterm = 'FOB'`)).n).toBeGreaterThan(0);
     const top = await one<{ customer_id: number }>(`SELECT customer_id FROM shipments GROUP BY customer_id ORDER BY count(*) DESC LIMIT 1`);
     expect(top.customer_id).toBe(1);
+  });
+});
+
+describe('seed Plan 5 (tuyến, phương án B)', () => {
+  it('bảng tuyến viết tay: md5 ghim, 39 tuyến, 22 tháng giá nhiên liệu', async () => {
+    expect((await one<{ h: string }>(hashOf('lane_profiles'))).h).toBe('cc1b47c39ec43e74acd81872c5ead6e9');
+    expect((await one<{ h: string }>(hashOf('bunker_prices'))).h).toBe('0e075e03739a80b243cda8e0b573ed97');
+    expect((await one<{ n: number }>('SELECT count(*) AS n FROM lane_profiles')).n).toBe(39);
+    expect((await one<{ n: number }>("SELECT count(*) AS n FROM bunker_prices WHERE month BETWEEN '2025-01-01' AND '2026-10-01'")).n).toBe(22);
+  });
+
+  it('móc của bài tuyến (content/lanes/)', async () => {
+    // SG-2: from Da Nang (Tien Sa) five lanes change ship in Singapore; Los Angeles changes in Busan.
+    expect((await one<{ p: string }>(`SELECT string_agg(pod, ',' ORDER BY pod) AS p FROM lane_profiles WHERE pol = 'VNDAD' AND via_port = 'SGSIN'`)).p)
+      .toBe('BEANR,DEHAM,INNSA,NLRTM,USNYC');
+    // S-2: about 100 USD of fuel per TEU on Tien Sa - Sydney in Q3 2026 (BAF-sized, product-design-v3 §18).
+    const s2 = await one<{ lo: string; hi: string }>(`SELECT min(l.sea_days * l.fuel_t_per_day * b.usd_per_tonne / l.vessel_teu) AS lo,
+      max(l.sea_days * l.fuel_t_per_day * b.usd_per_tonne / l.vessel_teu) AS hi
+      FROM lane_profiles l JOIN bunker_prices b ON b.month >= '2026-07-01' AND b.month < '2026-10-01' WHERE l.pol = 'VNDAD' AND l.pod = 'AUSYD'`);
+    expect(Number(s2.lo)).toBeGreaterThan(80);
+    expect(Number(s2.hi)).toBeLessThan(150);
+    expect((await one<{ n: number }>(`SELECT count(*) AS n FROM lane_profiles l JOIN ports p ON p.code = l.pod WHERE p.kind <> 'SEAPORT' OR l.pol NOT LIKE 'VN%'`)).n).toBe(0);
   });
 });
