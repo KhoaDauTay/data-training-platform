@@ -153,6 +153,8 @@ export const en: Record<Key, Msg> = {
   'chat.thanksFinance': 'The figures match the books. Thanks for being careful.',
   'chat.thanksCS': 'Thank you, the customers will be happy.',
   'chat.thanksIT': 'Thanks, logging it in the system.',
+  'chat.thanksMarketing': 'Great, this goes straight into the campaign plan.',
+  'chat.thanksCategory': "Thanks, the category team uses this for this week's line-up.",
   'harbor.title': 'Tien Sa port, Da Nang',
   'harbor.sontra': 'Son Tra peninsula',
   'harbor.port': 'Tien Sa port · VNDAD',

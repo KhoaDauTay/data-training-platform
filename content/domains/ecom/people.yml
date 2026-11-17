@@ -1,0 +1,59 @@
+# Đồng nghiệp ở Chợ Lồng Đèn (Plan 9). Cùng định dạng content/people.yml (src/people.ts parsePeople).
+# employee: null (domain E-com không có bảng nhân viên). tables: bảng trong schema ecom (src/db/ecom/schema.sql).
+# Tên không trùng người nào của Logistics (personOf tìm theo tên). Mọi chuỗi đặt trong nháy kép; EN không dấu.
+
+- name: "Võ Thanh Hà"
+  dept: Management
+  employee: null
+  role: { vi: "Nhà sáng lập kiêm CEO", en: "Founder and CEO" }
+  bio: { vi: "Nói ít, hỏi đúng chỗ đau; chỉ gửi các buổi đánh giá thăng tiến.", en: "Says little and asks where it hurts; only sends the promotion reviews." }
+  tables: [orders, customers]
+  look: { skin: light, hair: black, style: long, accessory: none }
+
+- name: "Lâm Gia Huy"
+  dept: IT
+  employee: null
+  role: { vi: "Trưởng nhóm dữ liệu, người kèm DA mới", en: "Data team lead, your mentor" }
+  bio: { vi: "Thích vẽ phễu lên bảng trắng, luôn hỏi \"số này đếm cái gì?\".", en: "Loves drawing funnels on the whiteboard, always asks \"what does this number count?\"." }
+  tables: [web_sessions, sellers]
+  look: { skin: tan, hair: black, style: short, accessory: headset }
+
+- name: "Trịnh Mai Anh"
+  dept: Marketing
+  employee: null
+  role: { vi: "Trưởng phòng Marketing", en: "Head of Marketing" }
+  bio: { vi: "Sống theo lịch sale 9.9, 10.10, 11.11; việc gì cũng có hạn chót.", en: "Lives by the 9.9, 10.10, 11.11 sale calendar; every request has a deadline." }
+  tables: [vouchers, ad_spend, customers]
+  look: { skin: medium, hair: brown, style: side, accessory: scarf }
+
+- name: "Đoàn Quốc Bảo"
+  dept: Category
+  employee: null
+  role: { vi: "Quản lý ngành hàng", en: "Category manager" }
+  bio: { vi: "Thuộc từng mã SKU, mê bảng xếp hạng bán chạy.", en: "Knows every SKU, loves best-seller rankings." }
+  tables: [categories, products, sellers]
+  look: { skin: light, hair: black, style: short, accessory: glasses }
+
+- name: "Nguyễn Thu Uyên"
+  dept: Ops
+  employee: null
+  role: { vi: "Trưởng nhóm kho vận và giao hàng", en: "Fulfilment and delivery lead" }
+  bio: { vi: "Nhớ ngày hẹn giao của từng kiện, ghét chữ \"đang trên đường\".", en: "Remembers every parcel's promised date, hates the words \"on the way\"." }
+  tables: [deliveries, returns]
+  look: { skin: tan, hair: black, style: bun, accessory: lanyard }
+
+- name: "Hồ Ngọc Diệp"
+  dept: CS
+  employee: null
+  role: { vi: "Trưởng nhóm chăm sóc khách hàng", en: "Customer care lead" }
+  bio: { vi: "Đọc mọi đánh giá một sao, gọi lại cho từng khách.", en: "Reads every one-star review and calls each customer back." }
+  tables: [reviews, returns]
+  look: { skin: medium, hair: black, style: long, accessory: headset }
+
+- name: "Kha Văn Lộc"
+  dept: Finance
+  employee: null
+  role: { vi: "Kế toán trưởng", en: "Chief accountant" }
+  bio: { vi: "Đối chiếu từng đồng với sao kê, không tin con số chưa khớp.", en: "Matches every dong against the statements and trusts no figure that does not reconcile." }
+  tables: [payments, orders]
+  look: { skin: deep, hair: grey, style: short, accessory: tie }

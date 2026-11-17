@@ -150,6 +150,8 @@ export const vi = {
   'chat.thanksFinance': 'Số khớp sổ. Cảm ơn bạn đã làm cẩn thận.',
   'chat.thanksCS': 'Cảm ơn bạn, khách sẽ vui lắm.',
   'chat.thanksIT': 'Cảm ơn, mình ghi nhận vào hệ thống.',
+  'chat.thanksMarketing': 'Hay quá, mình đưa vào kế hoạch chiến dịch luôn.',
+  'chat.thanksCategory': 'Cảm ơn bạn, ngành hàng dùng số này cho đợt xếp hàng tuần này.',
   'harbor.title': 'Cảng Tiên Sa, Đà Nẵng',
   'harbor.sontra': 'Bán đảo Sơn Trà',
   'harbor.port': 'Cảng Tiên Sa · VNDAD',

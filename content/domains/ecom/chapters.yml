@@ -1,0 +1,82 @@
+# E-commerce domain (Plan 9): 6 chapters at Chợ Lồng Đèn (Lantern Market). Same fields as content/chapters.yml,
+# plus `tables:` = the ecom tables this chapter reveals (Logistics keeps CHAPTER_TABLES in src/progress.ts).
+# career: step reached by passing the chapter's promotion review; tier: true = the job title changes (★).
+# Mọi chuỗi đặt trong nháy kép; EN không dấu.
+
+- chapter: 1
+  title: { vi: "Tuần đầu ở Chợ Lồng Đèn", en: "First week at Lantern Market" }
+  career: { vi: "Junior DA", en: "Junior DA" }
+  tier: true
+  tables: [categories, sellers, products, customers, reviews]
+  story:
+    vi: "Chợ Lồng Đèn là sàn bán lẻ trực tuyến mở cửa ở Đà Nẵng đầu năm 2025. Tuần đầu, trưởng nhóm dữ liệu kèm bạn làm quen danh mục shop, sản phẩm và khách hàng; cuối tuần, nhà sáng lập đánh giá thử việc."
+    en: "Lantern Market is an online marketplace that opened in Da Nang in early 2025. In your first week the data team lead walks you through the shop, product and customer lists; at the end of the week the founder runs your probation review."
+  outcomes:
+    - { vi: "Lấy đúng cột cần từ một bảng", en: "Pull exactly the columns you need", skills: [select] }
+    - { vi: "Lọc sản phẩm và khách theo nhiều điều kiện", en: "Filter products and customers by several conditions", skills: [where] }
+    - { vi: "Xếp hạng có thứ tự phụ và lấy top N", en: "Rank with a tie-breaker and take the top N", skills: [order_by, limit] }
+
+- chapter: 2
+  title: { vi: "Đếm đơn, đếm tiền", en: "Counting orders and money" }
+  career: { vi: "Junior DA · báo cáo bán hàng", en: "Junior DA · sales reporting" }
+  tier: false
+  tables: [orders, order_items, payments, deliveries]
+  story:
+    vi: "Sàn lớn nhanh, và mọi phòng đều cần con số: kế toán đối chiếu tiền thu, vận hành thương lượng với đơn vị giao hàng, marketing tìm khách mua nhiều."
+    en: "The marketplace is growing fast and every team needs figures: accounting matches the money collected, operations negotiates with the couriers, marketing looks for frequent buyers."
+  outcomes:
+    - { vi: "Đếm, cộng, tìm nhỏ nhất, lớn nhất, trung bình", en: "Count, sum, find the smallest, largest and average", skills: [aggregate] }
+    - { vi: "Lập báo cáo theo từng nhóm", en: "Report group by group", skills: [group_by] }
+    - { vi: "Lọc nhóm sau khi gộp và phân biệt với lọc dòng", en: "Filter groups after aggregating and tell it apart from filtering rows", skills: [having] }
+
+- chapter: 3
+  title: { vi: "Ghép các mảnh dữ liệu", en: "Joining the pieces" }
+  career: { vi: "Data Analyst", en: "Data Analyst" }
+  tier: true
+  tables: [vouchers]
+  story:
+    vi: "Một đơn hàng nằm ở nhiều bảng: khách, dòng hàng, sản phẩm, shop, thanh toán. Từ nay bạn ghép chúng lại để trả lời ai mua gì, của shop nào, đã trả tiền chưa."
+    en: "One order lives in several tables: customer, order lines, products, shops, payments. From now on you put them together to answer who bought what, from which shop, and whether it was paid."
+  outcomes:
+    - { vi: "Ghép đơn với khách và sản phẩm", en: "Match orders with customers and products", skills: [join] }
+    - { vi: "Đi qua ba, bốn bảng trong một truy vấn", en: "Walk through three or four tables in one query", skills: [multi_join] }
+    - { vi: "Tìm thứ không có: khách chưa mua, đơn chưa trả tiền", en: "Find what is missing: customers who never bought, orders never paid", skills: [left_join, anti_join] }
+
+- chapter: 4
+  title: { vi: "Mùa sale và giao hàng", en: "Sale season and delivery" }
+  career: { vi: "Data Analyst · vận hành", en: "Data Analyst · operations" }
+  tier: false
+  tables: []
+  story:
+    vi: "Sau đợt sale 9.9 và 10.10, khách miền Trung than giao hàng chậm. Vận hành cần bạn đo từng ngày trễ, theo tuần và theo tháng."
+    en: "After the 9.9 and 10.10 sales, customers in central Vietnam complain about slow deliveries. Operations needs you to measure every day of delay, by week and by month."
+  outcomes:
+    - { vi: "Tính số ngày giữa hai mốc", en: "Count the days between two dates", skills: [date_math] }
+    - { vi: "Gom số liệu theo tuần, theo tháng", en: "Roll figures up by week and by month", skills: [date_bucket] }
+    - { vi: "Xử lý ô trống: kiện chưa giao, khách chưa khai", en: "Handle empty cells: parcels not delivered yet, data customers never gave", skills: [null_logic, coalesce] }
+
+- chapter: 5
+  title: { vi: "Phễu và nhóm khách", en: "Funnels and segments" }
+  career: { vi: "Data Analyst · marketing", en: "Data Analyst · marketing" }
+  tier: false
+  tables: [web_sessions, returns, ad_spend]
+  story:
+    vi: "Ngân sách quảng cáo năm sau đang được chia. Marketing cần biết khách đi qua phễu mua hàng thế nào, nhóm khách nào đáng giá, và mỗi khách mới tốn bao nhiêu tiền."
+    en: "Next year's ad budget is being split. Marketing needs to know how shoppers move through the purchase funnel, which segments are worth it, and what each new customer costs."
+  outcomes:
+    - { vi: "Chia dòng vào nhóm theo luật", en: "Sort rows into groups by rules", skills: [case_when] }
+    - { vi: "Đếm nhiều điều kiện trong một lần gom", en: "Count several conditions in one pass", skills: [conditional_agg] }
+    - { vi: "Chia truy vấn dài thành từng bước có tên", en: "Split a long query into named steps", skills: [cte] }
+
+- chapter: 6
+  title: { vi: "Giữ chân khách", en: "Keeping customers" }
+  career: { vi: "Senior DA", en: "Senior DA" }
+  tier: true
+  tables: []
+  story:
+    vi: "Khách mới đến nhiều, nhưng bao nhiêu người quay lại? Nhà sáng lập cần bức tranh giữ chân khách theo kênh trước khi gọi vốn vòng tiếp theo."
+    en: "Plenty of new customers arrive, but how many come back? The founder needs the retention picture by channel before the next funding round."
+  outcomes:
+    - { vi: "Xếp hạng trong từng nhóm", en: "Rank within each group", skills: [window_rank] }
+    - { vi: "So với kỳ trước, đơn trước", en: "Compare with the previous period or order", skills: [window_lag] }
+    - { vi: "Cộng dồn và tỷ trọng mà không mất dòng", en: "Running totals and shares without losing rows", skills: [window_agg] }

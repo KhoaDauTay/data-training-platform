@@ -56,6 +56,8 @@ export const DEPT: Record<string, Dept> = {
   Customs: { chip: 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-200', shirt: '#b45309', backdrop: '#fef3c7', thanks: 'chat.thanksCustoms' },
   CS: { chip: 'bg-teal-100 text-teal-800 dark:bg-teal-950 dark:text-teal-200', shirt: '#0f766e', backdrop: '#ccfbf1', thanks: 'chat.thanksCS' },
   Management: { chip: 'bg-violet-100 text-violet-800 dark:bg-violet-950 dark:text-violet-200', shirt: '#5b21b6', backdrop: '#ede9fe', thanks: 'chat.thanksManagement' },
+  Marketing: { chip: 'bg-orange-100 text-orange-800 dark:bg-orange-950 dark:text-orange-200', shirt: '#c2410c', backdrop: '#ffedd5', thanks: 'chat.thanksMarketing' },
+  Category: { chip: 'bg-lime-100 text-lime-800 dark:bg-lime-950 dark:text-lime-200', shirt: '#4d7c0f', backdrop: '#ecfccb', thanks: 'chat.thanksCategory' },
   IT: { chip: 'bg-cyan-100 text-cyan-800 dark:bg-cyan-950 dark:text-cyan-200', shirt: '#0e7490', backdrop: '#cffafe', thanks: 'chat.thanksIT' },
 };
 const NEUTRAL_DEPT: Dept = { chip: 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-100', shirt: '#475569', backdrop: '#e2e8f0', thanks: 'chat.thanksOps' };

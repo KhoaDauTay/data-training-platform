@@ -1,0 +1,7 @@
+# Bảng điều hành của Chợ Lồng Đèn (Plan 9). Cùng định dạng content/kpis.yml; `ticket` là id ticket E-com.
+# Số tính lúc chạy từ Solution của ticket (biến thể 0) trên schema ecom; ô mở khi người chơi xong ticket đó.
+- { id: ecomCollectedOct, ticket: ecom-ch2-01, kind: number, col: 1, label: { vi: "Tiền thu tháng 10/2026", en: "Money collected in October 2026" }, icon: chart, unit: { vi: "đồng", en: "VND" } }
+- { id: ecomFrequentBuyers, ticket: ecom-ch2-03, kind: rowcount, label: { vi: "Khách đặt từ 8 đơn trong năm 2026", en: "Customers with 8 or more orders in 2026" }, icon: star }
+- { id: ecomCategoryRevenue, ticket: ecom-ch3-02, kind: bar, label: { vi: "Doanh thu hàng tháng 10/2026 theo nhóm hàng", en: "October 2026 goods revenue by category" }, icon: trophy, unit: { vi: "đồng", en: "VND" } }
+- { id: ecomNeverBought, ticket: ecom-ch3-03, kind: rowcount, label: { vi: "Khách đăng ký tháng 9/2026 chưa mua lần nào", en: "September 2026 signups who never bought" }, icon: clockOff }
+- { id: ecomKiteLate, ticket: ecom-ch4-01, kind: rowcount, label: { vi: "Kiện Kite Logistics gửi tháng 10/2026 trễ hơn 2 ngày", en: "Kite Logistics parcels shipped in October 2026 over 2 days late" }, icon: clockAlert }
