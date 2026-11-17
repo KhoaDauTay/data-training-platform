@@ -3023,6 +3023,8 @@ git commit -m "docs: document the product layer (save v2, modes, practice, noteb
 
 ### Task 11: Nút "Sao chép thông tin chẩn đoán" (L8)
 
+> **ĐÃ THAY bằng Plan Deploy Task 7 (L40) — không chạy task này.**
+
 **Tiền đề:** Plan Deploy Task 1 (`__BUILD__`, `src/env.d.ts`) và Task 3 (`src/diagnostics.ts`: `buildDiagnostics`, `diagnosticsText`, `DiagnosticKind`) đã commit. Kiểm:
 ```bash
 grep -c "export function buildDiagnostics\|export function diagnosticsText\|export type DiagnosticKind" src/diagnostics.ts
