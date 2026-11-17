@@ -35,7 +35,8 @@ function shapeCard(tk: Ticket, stepIndex: number): HTMLElement {
       h('h3', { class: 'mt-0' }, t('shape.title')),
       h('p', {}, [t('shape.cols', { n }), exp ? t('shape.rows', { n: exp.rows }) : '…', t(tk.ordered ? 'shape.ordered' : 'shape.unordered')].join(' · ')),
       h('ul', { class: 'my-1 flex list-none flex-wrap gap-1.5 p-0' }, ...Array.from({ length: n }, (_, i) =>
-        h('li', { class: 'rounded-md bg-panel px-1.5 py-0.5 text-sm ring-1 ring-line' }, labels[i] ? h('b', { class: 'font-semibold' }, labels[i][getLang()]) : null, exp ? ` ${t(KIND[exp.kinds[i]])}` : null))),
+        h('li', { class: 'rounded-md bg-panel px-1.5 py-0.5 text-sm ring-1 ring-line' }, // The label already says what the column holds; the kind (text/number/date) only stands in when there is no label.
+        labels[i] ? h('b', { class: 'font-semibold' }, labels[i][getLang()]) : exp ? t(KIND[exp.kinds[i]]) : null))),
       h('p', { class: 'mt-1 mb-0 text-sm text-muted' }, t('shape.byPosition')),
       cmp && run
         ? h('p', { class: cmp.columns && cmp.kinds && cmp.rows ? 'good' : 'warn' },
