@@ -39,6 +39,9 @@ const SKILL_SQL: Record<string, RegExp> = {
   anti_join: /\bIS\s+NULL\b|\bNOT\s+EXISTS\b/i,
   null_logic: /\bIS\s+(NOT\s+)?NULL\b/i,
   cast: /::\s*\w+|\bCAST\s*\(/i,
+  correlated_value: /\(\s*SELECT\b/i,
+  distinct_on: /\bDISTINCT\s+ON\b/i,
+  full_join: /\bFULL\s+(OUTER\s+)?JOIN\b/i,
 };
 
 /** curriculum §5.1: from this chapter on, a rest ticket must review older chapters (spaced, interleaved). */
@@ -90,7 +93,7 @@ export const CHAPTER_TABLES: Record<number, string[]> = {
   5: ['customs_declarations', 'hs_codes', 'duties_taxes'],
   6: ['incoterms'],
   7: ['rate_contracts', 'quotations'],
-  8: ['charges', 'invoices', 'payments', 'vendor_bills', 'exchange_rates'],
+  8: ['invoices', 'payments', 'vendor_bills', 'exchange_rates'], // no `charges` (Plan 3 R2): revenue is invoices.amount_vnd
   9: ['master_bills', 'house_bills'],
   10: ['free_time_terms', 'container_events'],
   11: [],

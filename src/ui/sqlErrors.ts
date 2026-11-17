@@ -14,6 +14,9 @@ const BY_MESSAGE: [RegExp, Key][] = [
   [/^column "(year|quarter|month|week|day|hour|minute|second)" does not exist/, 'sqlerr.unitQuote'],
   // Same 42883 code as "date = 5", but here a function got arguments it cannot take.
   [/^function \S+\(.*\) does not exist/, 'sqlerr.fnArgs'],
+  [/^each (UNION|INTERSECT|EXCEPT) query must have the same number of columns/, 'sqlerr.setColumns'],
+  [/^(UNION|INTERSECT|EXCEPT) types .* cannot be matched/, 'sqlerr.setTypes'],
+  [/^subquery has too many columns/, 'sqlerr.subqueryColumns'],
 ];
 
 const BY_CODE: Record<string, Key> = {
@@ -28,6 +31,8 @@ const BY_CODE: Record<string, Key> = {
   '22012': 'sqlerr.22012',
   '42804': 'sqlerr.42804',
   '22P02': 'sqlerr.22P02',
+  '21000': 'sqlerr.21000',
+  '42P10': 'sqlerr.42P10',
 };
 
 /** Teaching note shown under Postgres' own message (which is always shown unchanged). */
