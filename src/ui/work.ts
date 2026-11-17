@@ -242,6 +242,7 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
     record(historyId, { key: stepKey(tk.id, i), sql: ddl, offset: 0, error });
     if (editor !== ed) return undefined;
     app.lastRun = undefined;
+    deps.panel.refresh(); // rerender() does not redraw the tabs
     deps.onRun();
     if (!plans) {
       underline(error, 0);

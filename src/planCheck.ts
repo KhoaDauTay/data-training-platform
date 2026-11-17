@@ -65,8 +65,8 @@ export function codeOnly(sql: string): string | undefined {
   let out = '';
   for (let i = 0; i < sql.length;) {
     if (sql.startsWith('--', i)) {
-      const nl = sql.indexOf('\n', i);
-      i = nl < 0 ? sql.length : nl;
+      const nl = sql.slice(i).search(/[\r\n]/); // Postgres ends a -- comment at \r as well as \n
+      i = nl < 0 ? sql.length : i + nl;
       out += ' ';
     } else if (sql.startsWith('/*', i)) {
       let depth = 0;
