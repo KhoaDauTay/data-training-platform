@@ -2,7 +2,7 @@ import { loadLessons } from '../content';
 import type { QueryResult } from '../db/run';
 import { grade } from '../grader';
 import { getLang, t } from '../i18n';
-import { loadLessonPrefs, markLesson, type Lesson } from '../lessons';
+import { lessonSchema, loadLessonPrefs, markLesson, type Lesson } from '../lessons';
 import { SKILLS } from '../progress';
 import { actions as appActions, app } from '../state';
 import { cx } from '../theme';
@@ -49,7 +49,7 @@ function card(l: Lesson, titleId: string, actions: HTMLElement[], tour = false):
     type: 'button',
     onclick: () => {
       runExample.disabled = true;
-      app.run(l.example)
+      app.run(l.example, { schema: lessonSchema(l) })
         .then((result) => examples.set(l.id, { result }), (error: unknown) => examples.set(l.id, { error }))
         .finally(() => {
           runExample.disabled = false;
@@ -79,7 +79,7 @@ function card(l: Lesson, titleId: string, actions: HTMLElement[], tour = false):
       verdict.textContent = t('lesson.running');
       try {
         // The real grader against the lesson's own answer, 0 XP; app.lastRun, drafts and history are never touched.
-        const r = await grade((sql) => app.run(sql), l.try.solution, area.value, l.try.ordered);
+        const r = await grade((sql) => app.run(sql, { schema: lessonSchema(l) }), l.try.solution, area.value, l.try.ordered);
         verdicts.set(l.id, r.ok ? { ok: true, text: () => t('lesson.tryOk') } : { ok: false, text: () => gradeMessage(r) });
         if (r.ok) markSeen(l.id, true);
       } catch (e) {

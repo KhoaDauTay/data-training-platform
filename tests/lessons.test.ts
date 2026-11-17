@@ -74,8 +74,9 @@ describe('bài học nhanh (content/lessons.yml)', () => {
     return Array.from({ length: Math.max(1, variantsOf(t).length) }, (_, v) => applyVariant(t, v).steps[0].solution);
   };
 
-  it('mọi kỹ năng chương 1–3 có bài học; id là kỹ năng có thật', () => {
-    expect(SKILLS.filter((s) => s.chapter <= 3 && !loadLessons().has(s.id)).map((s) => s.id)).toEqual([]);
+  it('mọi kỹ năng trong skills.yml có đúng một bài học (Plan 8a: 38); id là kỹ năng có thật', () => {
+    expect(SKILLS.filter((s) => !loadLessons().has(s.id)).map((s) => s.id)).toEqual([]);
+    expect(lessons).toHaveLength(SKILLS.length);
     expect(lessons.filter((l) => !SKILLS.some((s) => s.id === l.id)).map((l) => l.id)).toEqual([]);
   });
 

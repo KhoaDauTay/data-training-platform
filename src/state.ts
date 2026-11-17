@@ -3,7 +3,7 @@ import { GAME_SCHEMA } from './domains';
 import type { DbStatus } from './db/client';
 import type { DiagnosticKind } from './diagnostics';
 import type { LoadProgress } from './db/loadProgress';
-import type { QueryResult } from './db/run';
+import type { QueryResult, RunOpts } from './db/run';
 import type { Key, Lang, Params } from './i18n';
 import { laneTables } from './lanes';
 import { currentChapter, tablesUnlocked } from './progress';
@@ -49,8 +49,8 @@ export const app = {
   problem: undefined as { kind: DiagnosticKind; error?: unknown } | undefined,
   /** ER and Columns tabs: tables related to the open task, or every unlocked table (ui-ux-v4 §4). Not saved. */
   schemaScope: 'task' as 'task' | 'all',
-  /** Runs one statement in the sandbox; main.ts points it at DbClient.run. */
-  run: (_sql: string): Promise<QueryResult> => Promise.reject(new Error('DB not started')),
+  /** Runs one statement in the sandbox; main.ts points it at DbClient.run. `schema` absent = the game schema (Plan 8a). */
+  run: (_sql: string, _opts?: RunOpts): Promise<QueryResult> => Promise.reject(new Error('DB not started')),
 };
 
 /** Implemented in main.ts; UI modules call these instead of importing main. */

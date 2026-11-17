@@ -1,6 +1,7 @@
 import { parse as parseYaml } from 'yaml';
 import { bilingualOf, type Bilingual } from './progress';
 import { localStore, readJson, writeJson, type KV } from './storage';
+import type { SchemaId } from './domains';
 
 /**
  * "Bài học nhanh" (product-design-v4 §C, L54): one card per skill, shown before the first task that grants it.
@@ -22,7 +23,12 @@ export interface Lesson {
   try: { task: Bilingual; starter: string; solution: string; ordered: boolean };
   /** PostgreSQL docs page. */
   docs: string;
+  /** Set on an advanced node's lesson (content/general/adv.yml): it runs on `lab` (Plan 8a D8a-8). */
+  node?: string;
 }
+
+/** Skill lessons run on the game tables, advanced-node lessons on `lab`. */
+export const lessonSchema = (l: Lesson): SchemaId => (l.node ? 'lab' : 'game');
 
 const DOCS = 'https://www.postgresql.org/docs/';
 
