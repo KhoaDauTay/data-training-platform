@@ -58,12 +58,12 @@ describe('Bảng điều hành KPI (L18 ★5, L23)', () => {
   const res = (rows: unknown[][]) => ({ columns: (rows[0] ?? []).map((_, i) => `c${i}`), types: [], rows });
   const kpi = (kind: Kpi['kind'], col = 0): Kpi => ({ id: 'x', ticket: 'ch2-01', step: 0, col, kind, label: { vi: 'a', en: 'a' } });
 
-  it('ô chỉ mở khi xong đúng việc tính ra nó; ô của chương chưa có nội dung luôn khóa', () => {
+  it('ô chỉ mở khi xong đúng việc tính ra nó', () => {
     const tiles = kpiTiles(KPIS, tickets, new Set([...ids(1), ...ids(2)]));
     const by = (id: string) => tiles.find((x) => x.kpi.id === id)!;
     expect(by('shipments2025')).toMatchObject({ open: true, ticket: { id: 'ch2-01' } });
     expect(by('teuByCarrier')).toMatchObject({ open: false, ticket: { id: 'ch3-02' } });
-    expect(by('q3margin')).toMatchObject({ open: false, ticket: undefined });
+    expect(by('q3margin')).toMatchObject({ open: false, ticket: { id: 'ch12-06' } }); // Plan 4 wrote chapter 12: locked until ch12-06 is done
     expect(chapterOfId('ch12-06')).toBe(12);
     expect(KPIS[KPIS.length - 1].id).toBe('q3margin');
     expect(new Set(KPIS.map((k) => k.id)).size).toBe(KPIS.length);
