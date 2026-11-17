@@ -139,6 +139,8 @@
     <!-- v6 §3.2 below 1024 px: level 1 + the current domain (44 px+ targets); the drawer holds the domain's pages. -->
     <nav id="bottom-nav" class="fixed inset-x-0 bottom-0 z-30 grid grid-cols-4 border-t border-line bg-panel lg:hidden" data-i18n-aria="nav.bottom" aria-label="Điều hướng nhanh"></nav>
     <dialog id="side-drawer" class="m-0 h-dvh max-h-none w-[290px] max-w-[85vw] rounded-none rounded-r-(--r-card) p-0" aria-labelledby="side-drawer-title"></dialog>
+    <!-- v4 §B.2 layer 1 (Plan 7): welcome screen during the DB download, and the static tour replay; filled by src/ui/welcome.ts. -->
+    <dialog id="welcome-dialog" class="w-[min(640px,calc(100vw-2rem))]" aria-labelledby="welcome-title"></dialog>
     <dialog id="inbox-dialog" aria-labelledby="inbox-title">
       <h2 id="inbox-title" class="text-lg" data-i18n="top.inbox">Hộp thư</h2>
       <div id="inbox-list" class="max-h-[60dvh] overflow-auto"></div>

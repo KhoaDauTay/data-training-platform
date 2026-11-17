@@ -11,7 +11,7 @@ import { chapterColor, cx, DEPT_CHIP, deptColor, deptOf, PILL } from '../theme';
 import { textOf, type Beat, type Ticket, type TicketText } from '../tickets';
 import { relatedTables } from '../viz/erd';
 import { avatar } from './avatar';
-import { coach } from './coach';
+import { coach, tourSlot } from './coach';
 import { h, nodes, richText } from './dom';
 import { skillIcon } from './icons';
 import { lessonSlot } from './lessonCard';
@@ -189,7 +189,7 @@ function recap(tk: Ticket, x: TicketText): HTMLElement {
   const hintsUsed = app.save.hintsUsed[tk.id] ?? 0;
   return h('section', { class: 'recap my-3 rounded-xl bg-emerald-50 p-4 ring-1 ring-emerald-300 dark:bg-emerald-950/40 dark:ring-emerald-800' },
     h('h3', { tabindex: '-1', class: 'mt-0 text-emerald-900 dark:text-emerald-200' }, t('recap.title')),
-    coach('recap'),
+    tourSlot('recap'),
     h('p', {}, tk.lane ? t('lane.xp', { n: LANE_XP }) : t('recap.xp', { n: xpFor(tk, hintsUsed), hints: hintsUsed })),
     h('h4', {}, t(tk.grants.length ? 'recap.learned' : 'recap.review')),
     h('ul', { class: 'space-y-1' }, ...skills.map((s) =>
@@ -243,9 +243,10 @@ export function renderBrief(host: HTMLElement, tk: Ticket, stepIndex: number): v
       h('h2', { id: 'brief-title', tabindex: '-1', class: 'm-0 text-lg font-bold' }, x.title),
       x.fallback ? h('p', { class: 'tag' }, t('brief.untranslated')) : null),
     story(tk),
-    coach('brief'),
+    isStory() ? tourSlot('brief') : null,
     h('div', { class: 'rounded-2xl rounded-tl-sm bg-code px-4 leading-relaxed' }, richText(x.body)),
     isStory() && !isDone ? lessonSlot(tk.grants) : null, // quick lessons before the task (product-design-v4 §C.3)
+    isStory() && !isDone ? tourSlot('lesson') : null,
     exampleCard(tk, x),
     x.task ? h('section', { class: 'my-3 rounded-lg border-l-4 border-accent bg-accent-soft p-3' }, h('h3', { class: 'mt-0' }, t('brief.task')), richText(x.task)) : null,
     relatedLine(tk),

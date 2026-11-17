@@ -1,7 +1,7 @@
 import { t, type Key } from '../i18n';
 import { app } from '../state';
 import { cx } from '../theme';
-import { coach } from './coach';
+import { markTabOpened, tourSlot } from './coach';
 import { h } from './dom';
 import { errorText, errorView } from './feedback';
 import { renderResult } from './resultTable';
@@ -46,7 +46,10 @@ export function createPanel(host: HTMLElement): Panel {
       id: `tab-${tab.id}`,
       'aria-controls': 'tabpanel',
       class: cx(TAB, i > 0 && tab.group !== tabs[i - 1].group && 'ml-4'),
-      onclick: () => show(tab.id),
+      onclick: () => {
+        markTabOpened(tab.id); // tour step 5: a tab opened by hand (setTicket's own show('columns') does not count)
+        show(tab.id);
+      },
     }));
   const bar = h('div', { class: 'mb-2.5 flex flex-wrap gap-1 border-b border-line max-sm:flex-nowrap max-sm:overflow-x-auto', role: 'tablist', 'data-i18n-aria': 'tab.list', 'aria-label': t('tab.list') }, ...buttons);
   host.replaceChildren(bar, body);
@@ -104,7 +107,7 @@ export function registerCoreTabs(editorSql: () => string, bar: () => Node | null
     order: 10,
     render(host) {
       const run = app.lastRun;
-      host.append(coach('panel') ?? '');
+      host.append(tourSlot('panel'));
       if (!run) {
         host.append(h('p', { class: 'muted' }, t('res.runFirst')));
         return;

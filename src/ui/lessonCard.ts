@@ -10,6 +10,8 @@ import { byId, h, nodes, richText } from './dom';
 import { errorText, errorView, gradeMessage } from './feedback';
 import { skillIcon } from './icons';
 import { renderResult } from './resultTable';
+import { markExampleRan } from './coach';
+import { readTour } from '../onboarding';
 
 // Session state by skill id. The brief is rebuilt on every rerender, so what the player typed or ran lives here.
 const drafts = new Map<string, string>();
@@ -49,6 +51,7 @@ function card(l: Lesson, titleId: string, actions: HTMLElement[]): HTMLElement {
         .finally(() => {
           runExample.disabled = false;
           drawExample();
+          markExampleRan(l.id); // tour step 4
           if (!exampleOut.isConnected) appActions.rerender(); // the brief was redrawn while it ran (e.g. DB still booting): show it there
         });
     },
@@ -120,7 +123,8 @@ export function lessonSlot(grants: string[]): HTMLElement | null {
   const host = h('div');
   const lessons = loadLessons();
   const draw = (focus?: string): void => {
-    const first = ids.find((id) => !isSeen(id));
+    // v4 §C.6: "I already know SQL" on the welcome screen → every lesson starts as its one-line row (chips still open it).
+    const first = readTour()?.knows ? undefined : ids.find((id) => !isSeen(id));
     host.replaceChildren(...ids.map((id) => {
       if (!(expanded.get(id) ?? id === first)) return collapsed(id, () => { expanded.set(id, true); draw(id); });
       const close = (seen: boolean) => () => {

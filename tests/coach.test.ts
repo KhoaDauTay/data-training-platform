@@ -9,28 +9,25 @@ vi.mock('../src/ui/dom', () => ({
 
 const tk = (id: string) => ({ id }) as Ticket;
 let found: Record<string, { focus: ReturnType<typeof vi.fn> }>;
+let skipped = false;
 const focused = () => Object.entries(found).filter(([, el]) => el.focus.mock.calls.length).map(([sel]) => sel);
 
-async function clickOk(setup: (app: typeof import('../src/state').app) => void): Promise<{ removed: boolean }> {
+async function load(selected: string, completed: string[] = []) {
   vi.resetModules(); // `dismissed` is module state
   const { app } = await import('../src/state');
   const { coach } = await import('../src/ui/coach');
   app.tickets = [tk('A'), tk('B')];
   app.save = (await import('../src/save')).emptySave();
-  app.lastRun = undefined;
-  setup(app);
-  const spot = app.selectedId === 'B' ? 'hints' : app.save.completed.includes('A') ? 'recap' : app.lastRun ? 'panel' : 'brief';
-  const mark = coach(spot) as unknown as El;
-  const ok = mark.children[1] as El;
-  const state = { removed: false };
-  (ok.attrs.onclick as (e: unknown) => void)({ currentTarget: { closest: (s: string) => (s === '.coach' ? { remove: () => { state.removed = true; } } : null) } });
-  return state;
+  app.save.completed = completed;
+  app.selectedId = selected;
+  return coach;
 }
 
 beforeEach(() => {
   found = {};
+  skipped = false;
   const el = (sel: string) => (found[sel] ??= { focus: vi.fn() });
-  vi.stubGlobal('window', { localStorage: { getItem: () => null, setItem() {} } });
+  vi.stubGlobal('window', { localStorage: { getItem: (k: string) => (skipped && k === 'cargo-query/coach-done' ? 'true' : null), setItem() {} } });
   vi.stubGlobal('document', {
     querySelector: (sel: string) => el(sel),
     getElementById: (id: string) => el(`#${id}`),
@@ -38,33 +35,21 @@ beforeEach(() => {
 });
 afterEach(() => vi.unstubAllGlobals());
 
-describe('coach mark: đóng thì focus đi đúng chỗ', () => {
-  it('brief → editor', async () => {
-    expect((await clickOk((app) => { app.selectedId = 'A'; })).removed).toBe(true);
-    expect(focused()).toEqual(['#work .cm-content']);
-  });
-
-  it('panel → editor', async () => {
-    await clickOk((app) => { app.selectedId = 'A'; app.lastRun = { key: 'A#0', sql: '', offset: 0 }; });
-    expect(focused()).toEqual(['#work .cm-content']);
-  });
-
-  it('recap → nút "Việc tiếp theo" trong Recap', async () => {
-    await clickOk((app) => { app.selectedId = 'A'; app.save.completed = ['A']; });
-    expect(focused()).toEqual(['.recap button.primary']);
-  });
-
-  it('hints → nút gợi ý', async () => {
-    await clickOk((app) => { app.selectedId = 'B'; });
+describe('dấu Gợi ý ở việc 2 (v4 §B.5)', () => {
+  it('hiện ở việc 2 chưa xong; "Hiểu rồi" gỡ dấu và đưa focus về nút Gợi ý', async () => {
+    const coach = await load('B');
+    const mark = coach('hints') as unknown as El;
+    const ok = mark.children[1] as El;
+    const state = { removed: false };
+    (ok.attrs.onclick as (e: unknown) => void)({ currentTarget: { closest: (s: string) => (s === '.coach' ? { remove: () => { state.removed = true; } } : null) } });
+    expect(state.removed).toBe(true);
     expect(focused()).toEqual(['.hints button']);
   });
 
-  it('không tìm thấy đích → tiêu đề đề bài', async () => {
-    vi.stubGlobal('document', {
-      querySelector: () => null,
-      getElementById: (id: string) => (found[`#${id}`] ??= { focus: vi.fn() }),
-    });
-    await clickOk((app) => { app.selectedId = 'A'; });
-    expect(focused()).toEqual(['#brief-title']);
+  it('không hiện ở việc khác, khi việc 2 đã xong, hay khi đã bỏ qua hướng dẫn', async () => {
+    expect((await load('A'))('hints')).toBeNull();
+    expect((await load('B', ['B']))('hints')).toBeNull();
+    skipped = true;
+    expect((await load('B'))('hints')).toBeNull();
   });
 });

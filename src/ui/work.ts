@@ -18,6 +18,7 @@ import { createEditor, type Editor } from './editor';
 import { avatar } from './avatar';
 import { errorText, errorView, gradeMessage, voiceKey } from './feedback';
 import { pageShortcutOf } from './shortcuts';
+import { tourSlot } from './coach';
 import type { Panel } from './tabs';
 
 export interface WorkDeps {
@@ -109,7 +110,8 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
   const submitBtn = h('button', { type: 'button', class: BTN_SUBMIT, onclick: () => void submit() });
   const feedback = h('div', { role: 'status' });
   const historyBox = h('details', { class: 'mt-2 text-sm' });
-  host.replaceChildren(editorHost, h('div', { class: 'max-sm:sticky max-sm:bottom-0 max-sm:z-10 max-sm:bg-panel' }, h('div', { class: 'actions' }, runBtn, explainBtn, formatBtn, submitBtn)), feedback, historyBox);
+  // The tour's mark sits under the buttons, never over the editor (v4 §B.2); main.ts refreshTour() refills it.
+  host.replaceChildren(editorHost, h('div', { class: 'max-sm:sticky max-sm:bottom-0 max-sm:z-10 max-sm:bg-panel' }, h('div', { class: 'actions' }, runBtn, explainBtn, formatBtn, submitBtn)), tourSlot('work'), feedback, historyBox);
 
   // The buttons advertise Mod+Enter / Mod+Shift+Enter: honour them when focus is outside the editor too
   // (on a button after a click, the brief heading after picking a ticket). Inside the editor CodeMirror's

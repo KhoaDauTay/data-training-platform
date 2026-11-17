@@ -4,7 +4,7 @@ import type { DbStatus } from './db/client';
 import type { DiagnosticKind } from './diagnostics';
 import type { LoadProgress } from './db/loadProgress';
 import type { QueryResult } from './db/run';
-import type { Key, Params } from './i18n';
+import type { Key, Lang, Params } from './i18n';
 import { laneTables } from './lanes';
 import { currentChapter, tablesUnlocked } from './progress';
 import { derive } from './scene';
@@ -66,6 +66,8 @@ export const actions = {
   showTab(_id: string): void {},
   /** Opens the map dialog on a lane's brief (Plan 5). */
   openLane(_port: string): void {},
+  /** Language switch from UI built after startup (the welcome screen); the top bar's VI|EN buttons do the same. */
+  switchLang(_lang: Lang): void {},
 };
 
 /** Columns and keys per schema, shared by the ER and Columns tabs, the brief and the Data page. Keyed by schema ('sandbox' for imports). */

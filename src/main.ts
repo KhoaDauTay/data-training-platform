@@ -25,6 +25,8 @@ import { leftHome, renderHome } from './ui/homeView';
 import { initStage, playCompletion, relabelStage } from './ui/stage';
 import { renderInbox } from './ui/inbox';
 import { createPanel, registerCoreTabs } from './ui/tabs';
+import { initTour, refreshTour } from './ui/coach';
+import { initWelcome, relabelWelcome } from './ui/welcome';
 import { pinBar } from './ui/pin';
 import { initLayout } from './ui/splitter';
 import { currentRoute, go, startRouter } from './ui/router';
@@ -50,13 +52,16 @@ function onDbStatus(s: DbStatus): void {
   if (s !== 'loading') app.loadProgress = undefined;
   if (!uiReady) return;
   renderTopbar();
+  relabelWelcome(); // Lily wakes up, "I am new" becomes clickable
   if (s === 'ready' && Object.keys(app.columns).length === 0) void loadColumns();
 }
 const db = new DbClient(onDbStatus);
 db.onProgress = (p) => {
   if (app.dbStatus !== 'loading') return; // the steps tab fetches the parser .wasm through the same counting fetch later
   app.loadProgress = p;
-  if (uiReady) renderTopbar();
+  if (!uiReady) return;
+  renderTopbar();
+  relabelWelcome();
 };
 app.run = (sql) => db.run(sql);
 db.onTimeout = (e) => {
@@ -150,6 +155,8 @@ function rerender(): void {
   // Story workspace and lane tasks only: selectTicket() forces story mode, so Practice and Sandbox must not show the task bar (ui-ux-v4 §2).
   byId('map').hidden = byId('shell').hidden || !(isStory() || session.mode.kind === 'lane');
   if (!byId('map').hidden) syncMap();
+  refreshTour(); // the work area's slot is not rebuilt by a rerender
+  relabelWelcome();
 }
 
 /** `force`: rebuild the editor even for the same ticket id (an imported save brings its own draft). */
@@ -249,6 +256,10 @@ window.addEventListener('unhandledrejection', (e) => fault(e.reason));
 
 Object.assign(actions, {
   rerender, selectTicket, complete, retryDb: () => db.restart(), openLane: (port: string) => mapStrip.openLane(port), copyDiagnostics: () => void copyDiagnostics(), useSql: (sql: string) => work.setDoc(sql), showTab: (id: string) => panel.show(id),
+  switchLang: (l: Lang) => void setLang(l).then(() => {
+    rerender();
+    panel.refresh();
+  }),
 });
 
 byId('inbox-btn').addEventListener('click', () => (byId('inbox-dialog') as HTMLDialogElement).showModal());
@@ -297,8 +308,10 @@ uiReady = true; // nothing awaited since loadContent(), so no DB callback was mi
 rerender();
 if (app.dbStatus === 'ready') void loadColumns();
 work.setTicket(selected(), app.stepIndex);
-initSidebar();
+initSidebar(); // its Esc (close the overlay) goes before the tour's
+initTour();
 startRouter(showRoute);
+initWelcome();
 
 // "My data" (Plan Import): imported CSVs stay in this browser (IndexedDB) and are replayed into the sandbox schema.
 const myData = new MyData(db, idbStore(), () => {
