@@ -1,6 +1,6 @@
 import { t } from '../i18n';
 import type { ErConstraint } from '../viz/erd';
-import { isDark } from '../theme';
+import { cx, isDark } from '../theme';
 import { once } from '../viz/memo';
 import { h, nodes } from './dom';
 
@@ -31,6 +31,17 @@ export function drawErd(host: HTMLElement, svg: string): void {
 }
 
 const BADGE = 'rounded bg-code px-1 text-xs font-semibold ring-1 ring-line';
+
+/** "AIRPORT · SEAPORT" under a column name: hidden until the values are in, and for columns with too many of them. */
+export function valuesLine(values: Promise<Record<string, string[]>> | undefined, column: string, cls = ''): HTMLElement {
+  const el = h('span', { class: cx('block text-xs text-muted', cls), hidden: true });
+  values?.then((v) => {
+    if (!v[column]) return;
+    el.textContent = v[column].join(' · ');
+    el.hidden = false;
+  }, () => {});
+  return el;
+}
 
 /**
  * PK / UK / FK badges of one column. An FK to an unlocked table shows `→ table.column` (a button when `onRef` is given);

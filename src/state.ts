@@ -11,7 +11,7 @@ import { emptySave, stepKey, writeSave } from './save';
 import { shapeOf, type Shape } from './shape';
 import { localStore } from './storage';
 import type { Ticket } from './tickets';
-import { loadErMetadata } from './viz/erd';
+import { distinctValuesSql, loadErMetadata, TEXT_TYPES, toDistinctValues } from './viz/erd';
 import { memoByKey } from './viz/memo';
 
 export interface LastRun {
@@ -69,6 +69,15 @@ export const actions = {
 
 /** Columns and keys per schema, shared by the ER and Columns tabs, the brief and the Data page. Keyed by schema ('sandbox' for imports). */
 export const erMeta = memoByKey((schema) => loadErMetadata((sql) => app.run(sql), schema));
+
+/**
+ * Values of the short text columns of a game table (product-design-v4 §C.4-4: look at the data before filtering), for the
+ * Columns tab and the Data page. One query per table, once per session (memoByKey drops a failure so it is retried).
+ */
+export const textValues = memoByKey((table) => erMeta('public').then((m) => {
+  const cols = m.cols.filter((c) => c.table === table && TEXT_TYPES.has(c.type)).map((c) => c.name);
+  return cols.length ? app.run(distinctValuesSql(table, cols)).then(toDistinctValues) : {};
+}));
 
 export const done = (): Set<string> => new Set(app.save.completed);
 export const selected = (): Ticket => app.tickets.find((x) => x.id === app.selectedId)!;

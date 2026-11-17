@@ -40,6 +40,25 @@ export function erRowCountsSql(tables: string[]): string {
   return tables.map((t) => `SELECT '${t}' AS t, count(*)::int AS n FROM ${t}`).join(' UNION ALL ');
 }
 
+/** Text column types whose values the Columns tab and the Data page list (product-design-v4 §C.4-4, D-C7). */
+export const TEXT_TYPES = new Set(['text', 'character varying', 'character']);
+/** A column with more distinct values than this shows none. */
+export const VALUES_MAX = 20;
+
+/** Distinct values of `columns` of one table in one statement, sorted, at most VALUES_MAX + 1 each (so "too many" is known). */
+export function distinctValuesSql(table: string, columns: string[]): string {
+  for (const x of [table, ...columns]) if (!IDENT.test(x)) throw new Error(`invalid name: ${x}`);
+  return columns.map((c) => `SELECT '${c}' AS c, ARRAY(SELECT DISTINCT ${c} FROM ${table} WHERE ${c} IS NOT NULL ORDER BY 1 LIMIT ${VALUES_MAX + 1}) AS v`)
+    .join(' UNION ALL ');
+}
+
+/** column → its values, only for columns with at most VALUES_MAX of them. */
+export function toDistinctValues(r: QueryResult): Record<string, string[]> {
+  const out: Record<string, string[]> = {};
+  for (const [c, v] of r.rows) if (Array.isArray(v) && v.length <= VALUES_MAX) out[String(c)] = v.map(String);
+  return out;
+}
+
 export interface Related { tables: string[]; dropped: string[] }
 
 /**

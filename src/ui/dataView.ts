@@ -1,12 +1,12 @@
 import { getLang, t } from '../i18n';
 import { CHAPTER_TABLES, chapterTitle } from '../progress';
 import { dataTableOf, hashOf } from '../route';
-import { app, erMeta, unlockedTables } from '../state';
+import { app, erMeta, textValues, unlockedTables } from '../state';
 import { chapterColor, cx, THEME_EVENT } from '../theme';
 import { erDefinition, erRowCountsSql, type ErMetadata } from '../viz/erd';
 import { memoByKey } from '../viz/memo';
 import { h, nodes } from './dom';
-import { drawErd, erdSvg, keyBadges } from './erdView';
+import { drawErd, erdSvg, keyBadges, valuesLine } from './erdView';
 import { errorView } from './feedback';
 import { renderResult } from './resultTable';
 import { registerNav } from './topbar';
@@ -114,11 +114,13 @@ export function renderData(host: HTMLElement): void {
   function drawColumns(): void {
     const needle = q();
     const cell = 'border-b border-line px-2 py-1.5 text-left align-top';
+    const values = textValues(sel);
     columnsHost.replaceChildren(h('table', { class: 'w-full border-collapse text-sm max-sm:block' },
       h('thead', { class: 'max-sm:hidden' }, h('tr', {}, ...['#', t('data.col.name'), t('data.col.type'), t('data.col.null'), t('data.col.key')].map((x) => h('th', { class: cell }, x)))),
       h('tbody', { class: 'max-sm:block' }, ...colsOf(sel).map((c, i) => h('tr', { class: 'max-sm:flex max-sm:flex-wrap max-sm:items-center max-sm:gap-x-2 max-sm:border-b max-sm:border-line max-sm:py-1.5' },
         h('td', { class: cx(cell, 'text-muted max-sm:hidden') }, String(i + 1)),
-        h('td', { class: cx(cell, 'max-sm:basis-full max-sm:border-0 max-sm:p-0 max-sm:font-semibold') }, h('code', {}, needle && c.name.includes(needle) ? h('mark', {}, c.name) : c.name)),
+        h('td', { class: cx(cell, 'max-sm:basis-full max-sm:border-0 max-sm:p-0 max-sm:font-semibold') }, h('code', {}, needle && c.name.includes(needle) ? h('mark', {}, c.name) : c.name),
+          valuesLine(values, c.name, 'mt-0.5 font-normal')),
         h('td', { class: cx(cell, 'max-sm:border-0 max-sm:p-0') }, c.type),
         h('td', { class: cx(cell, 'max-sm:border-0 max-sm:p-0') }, h('code', {}, c.nullable ? 'NULL' : 'NOT NULL')),
         h('td', { class: cx(cell, 'max-sm:border-0 max-sm:p-0') }, h('span', { class: 'flex flex-wrap items-center gap-1' }, ...keyBadges(meta!.cons, sel, c.name, openSet, go))))))));

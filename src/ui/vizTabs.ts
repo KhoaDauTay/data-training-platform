@@ -2,7 +2,7 @@ import type { DbClient } from '../db/client';
 import { t } from '../i18n';
 import { hashOf } from '../route';
 import { activeTicket } from '../session';
-import { app, erMeta, selected, unlockedTables } from '../state';
+import { app, erMeta, selected, textValues, unlockedTables } from '../state';
 import { chapterColor, THEME_EVENT } from '../theme';
 import { erDefinition, relatedTables, tablesInQuery, type ErMetadata } from '../viz/erd';
 import { memoByKey } from '../viz/memo';
@@ -10,7 +10,7 @@ import { flattenPlan, type Plan } from '../viz/plan';
 import type { StepsResult } from '../viz/steps';
 import { renderChart } from './chartView';
 import { h, nodes } from './dom';
-import { drawErd, erdSvg, keyBadges } from './erdView';
+import { drawErd, erdSvg, keyBadges, valuesLine } from './erdView';
 import { renderExplain } from './explainView';
 import { errorView } from './feedback';
 import { renderFlow } from './flowView';
@@ -175,11 +175,15 @@ function registerSchemaTabs(deps: VizDeps): void {
     render: (host) => load(host, t('erd.reading'), allMeta(), (body, meta) => {
       const s = scoped(meta);
       const open = new Set(visibleTables());
-      body.append(...scopeBar(s, deps), h('div', { class: 'grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-2' }, ...s.tables.map((table) =>
-        h('div', {},
+      const game = new Set(unlockedTables()); // imported Sandbox tables get no value lists
+      body.append(...scopeBar(s, deps), h('div', { class: 'grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-2' }, ...s.tables.map((table) => {
+        const values = game.has(table) ? textValues(table) : undefined;
+        return h('div', {},
           h('h3', { class: 'm-0' }, table),
           h('ul', { class: 'mt-1 mb-2 list-none space-y-0.5 pl-2 text-sm' }, ...meta.cols.filter((c) => c.table === table).map((c) =>
-            h('li', { class: 'flex flex-wrap items-center gap-1' }, h('code', {}, c.name), h('span', { class: 'muted' }, c.type), ...keyBadges(meta.cons, table, c.name, open))))))));
+            h('li', { class: 'flex flex-wrap items-center gap-1' }, h('code', {}, c.name), h('span', { class: 'muted' }, c.type), ...keyBadges(meta.cons, table, c.name, open),
+              valuesLine(values, c.name, 'basis-full pl-2')))));
+      })));
     }),
   });
   // Mermaid bakes the theme into the SVG: redraw when the app theme changes (switch or OS, src/theme.ts) while the tab is open.

@@ -2,7 +2,10 @@ import { describe, expect, it } from 'vitest';
 import { runSandboxed } from '../src/db/run';
 import { loadTickets } from '../src/content';
 import { tablesUnlocked } from '../src/progress';
-import { erColumnsSql, erDefinition, erRowCountsSql, loadErMetadata, mermaidName, relatedTables, tablesInQuery, type ErColumn, type ErConstraint } from '../src/viz/erd';
+import {
+  distinctValuesSql, erColumnsSql, erDefinition, erRowCountsSql, loadErMetadata, mermaidName, relatedTables, tablesInQuery, TEXT_TYPES, toDistinctValues,
+  type ErColumn, type ErConstraint,
+} from '../src/viz/erd';
 import { freshDb, runner } from './helpers';
 
 const CH2 = ['ports', 'carriers', 'employees', 'customers', 'shipments', 'containers'];
@@ -172,5 +175,31 @@ describe('erRowCountsSql', () => {
 
   it('từ chối tên bảng không phải định danh', () => {
     expect(() => erRowCountsSql(['ports; DROP TABLE x'])).toThrow();
+  });
+});
+
+describe('distinctValuesSql (giá trị của cột chữ, product-design-v4 §C.4-4)', () => {
+  it('giá trị đã sắp xếp; cột có hơn 20 giá trị không hiện; tên lạ bị từ chối', async () => {
+    const run = await runner();
+    expect(toDistinctValues(await run(distinctValuesSql('ports', ['kind', 'region', 'code'])))).toEqual({
+      kind: ['AIRPORT', 'SEAPORT'],
+      region: ['Asia', 'Europe', 'North America', 'Oceania', 'South Asia', 'Vietnam'],
+    });
+    expect(toDistinctValues(await run(distinctValuesSql('employees', ['dept'])))).toEqual({ dept: ['CS', 'Customs', 'Finance', 'Management', 'Ops', 'Sales'] });
+    expect(() => distinctValuesSql('ports', ['kind; DROP TABLE ports'])).toThrow();
+    expect(() => distinctValuesSql('ports x', ['kind'])).toThrow();
+  });
+
+  it('mọi bảng chữ của chương 12: một câu mỗi bảng, tổng cộng nhanh (Node; trình duyệt chậm hơn vài lần)', async () => {
+    const run = await runner();
+    const meta = await loadErMetadata(run, 'public');
+    const start = performance.now();
+    for (const table of tablesUnlocked(12)) {
+      const cols = meta.cols.filter((c) => c.table === table && TEXT_TYPES.has(c.type)).map((c) => c.name);
+      if (cols.length) await run(distinctValuesSql(table, cols));
+    }
+    const ms = performance.now() - start;
+    console.log(`distinctValuesSql: ${tablesUnlocked(12).length} tables in ${ms.toFixed(0)} ms`);
+    expect(ms).toBeLessThan(1000);
   });
 });
