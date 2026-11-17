@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { parseTicket, textOf } from '../src/tickets';
+import { optionOrder, parseTicket, textOf } from '../src/tickets';
 
 const NORMAL = `---
 id: ch1-02
@@ -297,5 +297,19 @@ describe('plan: và lab: (chương 11)', () => {
     expect(bad(withFm(NORMAL, LAB.replace('0.1', '2')))).toThrow(/lab:/);
     expect(bad(withFm(NORMAL, `plan: { index: ports }\n${LAB}`))).toThrow(/cả plan: và lab:/);
     expect(bad(withFm(NORMAL, `${LAB}\nwrong:\n  - { sql: "SELECT 1", vi: "a", en: "b" }`))).toThrow(/wrong:/);
+  });
+});
+
+describe('optionOrder (v10 B5)', () => {
+  it('là hoán vị, cố định theo seed, và đáp án 0 không luôn đứng đầu', async () => {
+    const { loadTickets } = await import('../src/content');
+    for (const n of [2, 3, 4, 5]) {
+      const o = optionOrder('ch1-05#c', n);
+      expect([...o].sort()).toEqual(Array.from({ length: n }, (_, i) => i));
+      expect(optionOrder('ch1-05#c', n)).toEqual(o);
+    }
+    const withConclusion = loadTickets().filter((tk) => tk.conclusion);
+    const first = withConclusion.filter((tk) => optionOrder(`${tk.id}#c`, tk.conclusion!.options.length)[0] === tk.conclusion!.answer).length;
+    expect(first).toBeLessThan(withConclusion.length / 2 + 1);
   });
 });

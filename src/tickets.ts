@@ -322,3 +322,20 @@ export function textOf(t: Ticket, lang: Lang): TicketText & { fallback: boolean 
 }
 
 export const byOrder = (a: Ticket, b: Ticket): number => a.chapter - b.chapter || a.id.localeCompare(b.id);
+
+/**
+ * Display order of a conclusion's or reflect's options (end-user test v10 B5: authors put the answer first in 68 of 69 tickets).
+ * A permutation of 0..n-1 fixed by `seed` (ticket id + which list), so every redraw shows the same order; the stored and
+ * compared value stays the option's original index.
+ */
+export function optionOrder(seed: string, n: number): number[] {
+  let x = 2166136261;
+  for (const c of seed) x = Math.imul(x ^ c.charCodeAt(0), 16777619) >>> 0; // FNV-1a
+  const order = Array.from({ length: n }, (_, i) => i);
+  for (let i = n - 1; i > 0; i--) {
+    x = (Math.imul(x, 1664525) + 1013904223) >>> 0; // LCG step
+    const j = x % (i + 1);
+    [order[i], order[j]] = [order[j], order[i]];
+  }
+  return order;
+}

@@ -8,7 +8,7 @@ import { compareShape, shapeOf, type Kind, type Shape } from '../shape';
 import { hintsShown, isClosed, isStory, useHint } from '../session';
 import { actions, app, done, erMeta, expectedShape, persist, stepKey, unlockedTables } from '../state';
 import { chapterColor, cx, DEPT_CHIP, deptColor, deptOf, PILL } from '../theme';
-import { textOf, type Beat, type Ticket, type TicketText } from '../tickets';
+import { optionOrder, textOf, type Beat, type Ticket, type TicketText } from '../tickets';
 import { relatedTables } from '../viz/erd';
 import { mascot } from './mascots';
 import { avatar } from './avatar';
@@ -88,9 +88,9 @@ function conclusion(tk: Ticket, x: TicketText): HTMLElement {
     h('h3', { class: 'mt-0' }, t('brief.conclusion')),
     h('fieldset', { class: 'mb-4' },
       h('legend', { class: 'mb-2' }, c.question),
-      ...c.options.map((o, i) => h('label', { class: 'my-1 flex items-center gap-2' },
+      ...optionOrder(`${tk.id}#c`, c.options.length).map((i) => h('label', { class: 'my-1 flex items-center gap-2' },
         h('input', { type: 'radio', name: 'conclusion', value: String(i), checked: picked.get(tk.id) === i, onchange: () => picked.set(tk.id, i) }),
-        ' ', o))),
+        ' ', c.options[i]))),
     h('button', { class: 'primary', type: 'submit' }, t('brief.conclude')),
     msg);
   form.addEventListener('submit', (e) => {
@@ -156,7 +156,7 @@ function reflectCard(tk: Ticket): HTMLElement | null {
   return h('section', { class: 'my-3 rounded-xl bg-panel p-3 ring-1 ring-line', 'aria-labelledby': 'reflect-title' },
     h('h4', { id: 'reflect-title', class: 'mt-0' }, t('recap.reflect')),
     h('p', {}, r.q[lang]),
-    h('div', { class: 'flex flex-col items-start gap-1.5' }, ...buttons),
+    h('div', { class: 'flex flex-col items-start gap-1.5' }, ...optionOrder(`${tk.id}#r`, buttons.length).map((i) => buttons[i])),
     status);
 }
 

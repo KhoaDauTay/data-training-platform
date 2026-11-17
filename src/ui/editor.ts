@@ -66,6 +66,7 @@ export function createEditor(parent: HTMLElement, opts: EditorOptions): Editor {
       ])),
       basicSetup, // no indentWithTab: Tab must still leave the editor
       highlight, // non-fallback: replaces basicSetup's defaultHighlightStyle
+      EditorView.lineWrapping, // long queries wrap instead of hiding the start of the line (end-user test v10)
       schemaConf.of(language(opts.schema)),
       labelConf.of(ariaLabel(opts.label)),
       EditorView.updateListener.of((u) => {

@@ -187,6 +187,7 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
     const ed = editor;
     const tk = ticket;
     const { sql, offset } = ed.runTarget();
+    if (!sql.trim()) return say('bad', () => t('work.empty')); // nothing to run: never logged as a ✓ with 0 rows
     const lab = tk?.steps[stepIndex].lab;
     if (lab && tk) return labRun(ed, sql, tk, stepIndex, lab);
     const k = tk ? stepKey(tk.id, stepIndex) : '';
@@ -278,6 +279,7 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
     const k = stepKey(tk.id, i);
     const story = keepsWork(); // captured at click time, like the ticket (a lane side task keeps its graded SQL too)
     const sql = ed.getValue(); // Submit always grades the whole editor
+    if (!sql.trim()) return say('bad', () => t('work.empty')); // an empty editor is not graded and not a wrong submit (end-user test v10 B1)
     const blanks = tk.format === 'faded' ? sql.split(BLANK).length - 1 : 0; // elsewhere ___ is a valid LIKE pattern
     if (blanks) {
       say('bad', () => t('work.blanks', { n: blanks })); // a faded starter not filled in yet: not graded, not a wrong submit
@@ -422,7 +424,8 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
         selection = false; // the new editor starts with an empty selection
         editor?.destroy();
         editor = createEditor(editorHost, {
-          doc: initialDoc(readDraft(), tk?.starter),
+          // A promotion review step starts from the SQL that passed the step before ("from the list in step 1…", v10 B4); never into or out of an index lab.
+          doc: initialDoc(readDraft(), (tk && i > 0 && !tk.steps[i].lab && !tk.steps[i - 1].lab ? app.save.graded[stepKey(tk.id, i - 1)] : undefined) ?? tk?.starter),
           schema: editorSchema(),
           label: t('work.editorLabel'),
           onChange: (v) => {

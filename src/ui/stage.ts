@@ -281,7 +281,7 @@ const PLAY: Record<Scene['kind'], (c: Ctx) => Promise<void>> = {
   },
 
   async quote(c) {
-    const [showMs, wait1, flipMs, wait2, fadeMs] = STEPS.quote;
+    const [showMs, wait1, flipMs, wait2] = STEPS.quote; // card-only scenes keep their card: fading it left an empty dock (v10 B3)
     const front = h('div', {},
       h('p', { class: 'm-0 font-semibold text-muted' }, t('anim.quoteCard')),
       h('p', { class: 'm-0 font-bold' }, titleOf(c)),
@@ -300,11 +300,10 @@ const PLAY: Record<Scene['kind'], (c: Ctx) => Promise<void>> = {
       }
     });
     await wait(c.run, wait2);
-    await fadeOut(c.run, card, fadeMs);
   },
 
   async ledger(c) {
-    const [showMs, stampMs, coinsMs, waitMs, fadeMs] = STEPS.ledger;
+    const [showMs, stampMs, coinsMs, waitMs] = STEPS.ledger;
     const paid = h('span', { class: cx(STAMP, 'top-3 right-3', LANE.green.stamp) }, t('anim.paid'));
     paid.style.opacity = '0';
     const coins = Array.from({ length: 6 }, (_, i) =>
@@ -326,11 +325,10 @@ const PLAY: Record<Scene['kind'], (c: Ctx) => Promise<void>> = {
       coin.style.opacity = k >= 1 ? '0' : '1';
     }), linear);
     await wait(c.run, waitMs);
-    await fadeOut(c.run, card, fadeMs);
   },
 
   async chat(c) {
-    const [showMs, typingMs, bubbleMs, waitMs, fadeMs] = STEPS.chat;
+    const [showMs, typingMs, bubbleMs, waitMs] = STEPS.chat;
     const dots = [0, 1, 2].map(() => h('span', { class: 'size-1.5 rounded-full bg-muted' }));
     const typing = h('span', { class: 'inline-flex gap-1 rounded-2xl rounded-tl-sm bg-code px-3 py-2' }, ...dots);
     const bubble = h('p', { class: 'm-0 rounded-2xl rounded-tl-sm bg-code px-3 py-2', hidden: true }, t('anim.thanks'));
@@ -350,7 +348,6 @@ const PLAY: Record<Scene['kind'], (c: Ctx) => Promise<void>> = {
       happy.style.opacity = String(x);
     });
     await wait(c.run, waitMs);
-    await fadeOut(c.run, card, fadeMs);
   },
 
   async promotion(c) {
@@ -451,6 +448,12 @@ export function initStage(): void {
   });
   document.addEventListener('keydown', (e) => {
     if (stageEsc(e, !stage.hidden, Boolean(document.querySelector('dialog:modal')))) skip(); // the non-modal notebook never blocks it
+  });
+  // Leaving the page closes the dock: it belongs to the task just solved and would cover the next page (UI/UX review v10 #10).
+  window.addEventListener('hashchange', () => {
+    if (stage.hidden) return;
+    current.fast = true;
+    hide();
   });
 }
 

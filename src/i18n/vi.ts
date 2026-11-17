@@ -313,6 +313,7 @@ export const vi = {
   'sqlerr.22P02': 'Một chuỗi trong nháy đơn không đọc được thành kiểu cần dùng (số, ngày…). Kiểm tra lại giá trị; với CASE, cho mọi nhánh cùng một kiểu.',
   'brief.example': 'Ví dụ mẫu',
   'brief.useExample': 'Chép ví dụ vào editor',
+  'work.empty': 'Editor đang trống. Gõ câu SQL rồi chạy hoặc nộp; lần này không tính là nộp sai.',
   'work.blanks': 'Còn {n} chỗ trống ___ trong câu SQL. Điền hết rồi nộp; lần này không tính là nộp sai.',
   'work.trap': 'Bẫy hay gặp: {trap}',
   'plan.seqScan': 'Kết quả đúng, nhưng kế hoạch thực thi vẫn đọc toàn bộ bảng {table} (Seq Scan). Viết lại điều kiện để dùng được chỉ mục có sẵn (đừng bọc cột trong hàm), rồi nộp lại. Tab EXPLAIN đang mở kế hoạch đó.',

@@ -316,6 +316,7 @@ export const en: Record<Key, Msg> = {
   'sqlerr.22P02': 'A string in single quotes cannot be read as the type needed here (a number, a date…). Check the value; in a CASE, give every branch the same type.',
   'brief.example': 'Worked example',
   'brief.useExample': 'Copy the example into the editor',
+  'work.empty': 'The editor is empty. Type a SQL query, then run or submit it; this one does not count as a wrong submit.',
   'work.blanks': (p) => `${p.n === 1 ? 'There is still 1 blank' : `There are still ${num(p.n)} blanks`} ___ in the SQL. Fill them in, then submit; this one does not count as a wrong submit.`,
   'work.trap': 'Common trap: {trap}',
   'plan.seqScan': 'The result is right, but the execution plan still reads the whole {table} table (Seq Scan). Rewrite the condition so the existing index can be used (do not wrap the column in a function), then submit again. The EXPLAIN tab shows that plan.',
