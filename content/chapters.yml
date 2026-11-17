@@ -85,7 +85,11 @@
   story:
     vi: "Pricing gửi báo giá mỗi ngày. Có báo giá nào đang bán dưới giá mua không? Bạn so sánh bằng truy vấn con."
     en: "Pricing sends quotes every day. Is any of them selling below cost? You compare them with subqueries."
-  outcomes: []
+  outcomes:
+    - { vi: "So từng dòng hay từng nhóm với một con số tính từ cả bảng", en: "Compare each row or group with a number computed over the whole table", skills: [scalar_subquery] }
+    - { vi: "Lọc theo danh sách tính từ truy vấn khác, tránh bẫy NOT IN với ô trống", en: "Filter by a list computed by another query, without the NOT IN and NULL trap", skills: [in_subquery] }
+    - { vi: "Tìm thứ đã có hoặc chưa có bản ghi liên quan", en: "Find what does or does not have a related record", skills: [exists] }
+    - { vi: "Tra giá còn hiệu lực đúng vào ngày của từng dòng", en: "Look up the price in force on each row's own date", skills: [correlated_value] }
 
 - chapter: 8
   title: { vi: "Công nợ & tỷ giá", en: "Receivables and exchange rates" }
@@ -94,7 +98,10 @@
   story:
     vi: "Công nợ phải thu, phải trả, nhiều loại tiền, tỷ giá chỉ có vào ngày làm việc. Kế toán cần những phép tính chia thành từng bước rõ ràng."
     en: "Receivables, payables, several currencies, exchange rates only on working days. Accounting needs calculations broken into clear steps."
-  outcomes: []
+  outcomes:
+    - { vi: "Cộng riêng từng bảng tiền trước khi nối để không nhân đôi", en: "Total each money table before joining so nothing is counted twice", skills: [cte] }
+    - { vi: "Chia phép tính dài thành nhiều bước có tên", en: "Break a long calculation into named steps", skills: [multi_cte] }
+    - { vi: "Lấy dòng mới nhất trong mỗi nhóm, như tỷ giá gần nhất", en: "Take the latest row in each group, such as the most recent rate", skills: [distinct_on] }
 
 - chapter: 9
   title: { vi: "Đối soát chứng từ", en: "Document reconciliation" }
@@ -103,7 +110,10 @@
   story:
     vi: "Vận đơn chủ, vận đơn nhà, sổ booking và hóa đơn phải khớp nhau. Bạn đối soát để không lô nào lọt sổ."
     en: "Master bills, house bills, the booking book and the invoices must all agree. You reconcile them so no shipment slips through."
-  outcomes: []
+  outcomes:
+    - { vi: "Gộp hai danh sách thành một", en: "Combine two lists into one", skills: [union] }
+    - { vi: "Tìm thứ có ở sổ này mà sổ kia còn thiếu", en: "Find what one book has and the other is missing", skills: [except] }
+    - { vi: "Đối chiếu hai sổ, thấy cả dòng chỉ có ở một bên", en: "Reconcile two books and see the rows found on one side only", skills: [full_join] }
 
 - chapter: 10
   title: { vi: "Xu hướng & xếp hạng", en: "Trends and rankings" }
