@@ -346,3 +346,22 @@ Sửa vòng 1: commits 27e88d8, 0941d3f, e0addb1, 46ef9f5, 08dc0df, b6c3e1d, 569
 - "vận đơn nhà (HBL)", "hàm gộp", tên Incoterms: giữ, không cần sửa.
 
 Lane mới (`content/lanes/**`) đã soát cùng các mẫu: chỉ `ausyd/s-2` cần sửa. tsc, 1472 test, build, budget đều qua. Chưa kiểm bằng trình duyệt.
+
+## Plan 6 — bài học nhanh ch1–3, nội dung ch1–3, gợi ý miễn phí ch1 (base 1128b37)
+
+Vòng 1/3 (2026-11-17): review code + nội dung (11 bài học: ví dụ và Thử ngay so với mọi Solution ch1–4 ở mọi biến thể, không trùng; câu "Lỗi hay gặp" chạy ra đúng lỗi/kết quả như lời giải thích; tên bài học trong gợi ý 1 đều là nhãn kỹ năng thật; `reflect`/`wrong:` của ch1-03, ch2-03 đi qua `applyVariant`) + cổng Chrome :5174 (save mới).
+
+| Loại | Bug | Trạng thái |
+|---|---|---|
+| perf | `textValues` dùng `memoByKey` mặc định (`MEMO_MAX` 20, bỏ mục cũ nhất, lần trúng không làm mới): từ chương 12 có 22 bảng + 2 bảng tuyến, nên tab Cột "Tất cả bảng đã mở" chạy lại mọi câu giá trị ở mỗi lần vẽ, xếp hàng trước Chạy của người chơi | Đã sửa ab8c355 (max 100; test đếm câu qua hai lượt 24 bảng) |
+| correctness | Thẻ bài học: kết quả "Chạy ví dụ" / "Chạy & kiểm" về sau khi brief đã vẽ lại (vd. DB còn đang khởi động, người chơi bấm Gợi ý) chỉ vẽ vào thẻ đã tách khỏi trang, thẻ mới không hiện kết quả | Đã sửa 8fdd7a4 (vẽ lại khi thẻ đã tách) |
+| docs | `src/lessons.ts` ghi bài học "parsed from the lazy ticket chunk" (là chunk riêng); CLAUDE.md còn ghi luật reflect/faded/`wrong:` "From chapter 4" | Đã sửa 3f90e60 |
+| docs | Bước Task 7 bị bỏ: đoạn sửa đổi `problem-design.md` §1.5 | Đã sửa f54da74 |
+| spec | §C.2 vẽ bảng kết quả ví dụ "≤ 8 dòng"; ví dụ trả 9–36 dòng và thẻ hiện cả bảng (dài trong brief) | Mở (judgement; plan đã ghi số dòng) |
+| ux | "Đã hiểu ✓" / Thử ngay đạt trong hộp thoại không vẽ lại brief: thẻ cùng kỹ năng trong brief vẫn mở tới lần vẽ lại sau | Mở (judgement, như U8) |
+| a11y | Chip có bài học dùng `title` (khóa `chip.lessonAria`) chứ không `aria-label` | Mở (judgement: tên truy cập là nhãn chip, `aria-haspopup` báo hộp thoại) |
+| spec | U2 (file `lessons.yml` riêng), U3 (main 268,5/270), U5 (miễn phí mọi bậc ch1), U8 (Thử ngay đạt không thu gọn ngay): lệch thiết kế đã khai trong plan | Mở — chờ user |
+
+Cổng Chrome (:5174, localStorage xóa trước, coach bỏ qua): ch1-01 thẻ "Bài học nhanh · Chọn cột (SELECT)" mở sẵn trước "Yêu cầu"; Chạy ví dụ 9 dòng, editor và tab Kết quả không đổi; Thử ngay sai "9 dòng có giá trị chưa đúng…", đúng "Đúng rồi!…", XP vẫn 0, pref `{"seen":["select"],"tried":["select"]}`; chip là nút mở `#lesson-dialog` (modal), Esc đóng, focus về chip; "Đã hiểu ✓" thu gọn, focus ở "Mở lại". ch1-02: editor `WHERE ___ AND ___`, Nộp → "Còn 2 chỗ trống…; lần này không tính là nộp sai"; nộp OR → lời `wrong:` về OR; nút "Gợi ý 1/3" không ghi giá; chip "Kỹ năng mới:" / "Cần dùng:". Tab Cột: `country`, `region`, `kind` có dòng giá trị, `code`/`name` không có dòng trống. Theme tối đọc được; cửa sổ không thu nhỏ được (máy giữ 1267 px) nên kiểm 375 px bằng iframe 372 px cùng origin: brief và thẻ không tràn ngang (scrollWidth 357), hộp thoại thành tấm đáy. Sổ tay: 11 nút "Bài học nhanh". Không lỗi console sau khi tải lại. Chưa kiểm: EN, hai bài học xếp chồng ch3-03, gợi ý có giá ch2, Tổng kết ch1 với save cũ.
+
+Sau vòng 1: tsc sạch, 1594 test, build sạch, main 268,5/270 KB gz (budget mọi nhóm ok).
