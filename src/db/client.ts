@@ -42,8 +42,8 @@ export type WorkerBody =
   | { kind: RequestKind; sql: string }
   | { kind: 'import'; req: ImportRequest; file: Blob }
   | { kind: 'dropImport'; table?: string }
-  /** Index lab (chapter 11): `ddl` is the player's CREATE INDEX, `sql` the step's query; see runLab. */
-  | { kind: 'lab'; ddl: string; sql: string };
+  /** Index lab (chapter 11): `ddl` is the player's CREATE INDEX, `sql` the step's query, `table` the lab's table; see runLab. */
+  | { kind: 'lab'; ddl: string; sql: string; table: string };
 
 type WorkerMessage =
   | { type: 'ready'; timings: DbTimings }
@@ -145,8 +145,8 @@ export class DbClient {
   }
 
   /** Plans of `sql` before and after the player's index, in one rolled-back transaction (chapter 11 index lab). */
-  lab(ddl: string, sql: string): Promise<LabResult> {
-    return this.enqueue<LabResult>({ kind: 'lab', ddl, sql }, this.timeoutMs);
+  lab(ddl: string, sql: string, table: string): Promise<LabResult> {
+    return this.enqueue<LabResult>({ kind: 'lab', ddl, sql, table }, this.timeoutMs);
   }
 
   explain(sql: string): Promise<unknown> {

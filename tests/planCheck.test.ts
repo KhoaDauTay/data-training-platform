@@ -27,11 +27,10 @@ const SLOW: Record<string, (vars: Record<string, string>) => string> = {
   'ch11-06#1': () => `SELECT s.ref, s.booking_date, s.status FROM shipments s WHERE s.customer_id::text = '57' AND s.booking_date::text >= '2026-07-01' ORDER BY s.booking_date, s.ref`,
 };
 
-/** Indexes a player might propose that must NOT pass the lab (wrong first column, wrong table). */
+/** Indexes a player might propose that must NOT pass the lab (wrong first column). Another table is refused by the worker. */
 const NEAR_MISS = [
   'CREATE INDEX ON container_events (event_time, container_id)',
   'CREATE INDEX ON container_events (event)',
-  'CREATE INDEX ON containers (shipment_id)',
 ];
 
 describe('planCheck: chấm theo kế hoạch thực thi (chương 11)', () => {
@@ -41,14 +40,43 @@ describe('planCheck: chấm theo kế hoạch thực thi (chương 11)', () => {
     expect(isCreateIndex('CREATE INDEX CONCURRENTLY ON t (a)')).toBe(false);
     expect(isCreateIndex('DROP TABLE shipments')).toBe(false);
     expect(isCreateIndex('/* CREATE INDEX */ DELETE FROM shipments')).toBe(false);
+    // Postgres block comments nest: the first */ does not end the comment.
+    expect(isCreateIndex('/* /* */ CREATE INDEX */ DROP TABLE claims')).toBe(false);
+    expect(isCreateIndex('/* a /* b */ c */ CREATE INDEX ON t (a)')).toBe(true);
+    expect(isCreateIndex('/* unclosed CREATE INDEX ON t (a)')).toBe(false);
+    expect(isCreateIndex('CREATE INDEX ON t (a) */')).toBe(false);
+    // -- and /* inside a literal are not comments.
+    expect(isCreateIndex("CREATE INDEX ON t (a) WHERE b <> '--x' AND c <> '/*'")).toBe(true);
+    expect(isCreateIndex('CREATE INDEX "--x" ON t (a)')).toBe(true);
+    expect(isCreateIndex("CREATE INDEX ON t (a) WHERE b <> 'it''s; DROP TABLE t'")).toBe(true);
+    expect(isCreateIndex("CREATE INDEX ON t (a) WHERE b <> $$;$$")).toBe(true);
+    expect(isCreateIndex("CREATE INDEX ON t (a) WHERE b <> 'x")).toBe(false);
+    expect(isCreateIndex(String.raw`CREATE INDEX ON t (a) WHERE b <> E'\'' ; DROP TABLE t --'`)).toBe(false); // backslash escapes: refused
+    expect(isCreateIndex('CREATE INDEX ON t (a);')).toBe(true);
+    expect(isCreateIndex('CREATE INDEX ON t (a); DROP TABLE t')).toBe(false);
+    expect(isCreateIndex('CREATE INDEX ON t (a);;')).toBe(false);
+    expect(isCreateIndex('create  unique\n index /* c */ concurrently ON t (a)')).toBe(false);
+  });
+
+  it('runLab: kiểm lại trong worker: đúng một chỉ mục mới trên bảng của lab, không thì rollback và báo lỗi', async () => {
+    const db = await seededDb();
+    const q = 'SELECT * FROM container_events WHERE container_id = 7';
+    await expect(runLab(db, '/* /* */ CREATE INDEX */ DROP TABLE claims', q, 'container_events')).rejects.toMatchObject({ code: 'LAB01' });
+    await expect(runLab(db, 'CREATE INDEX ON containers (shipment_id)', q, 'container_events')).rejects.toMatchObject({ code: 'LAB02' });
+    expect(explainError({ message: 'x', code: 'LAB02' })).toBe('sqlerr.labTable');
+    await expect(runLab(db, 'CREATE INDEX CONCURRENTLY ON container_events (container_id)', q, 'container_events')).rejects.toMatchObject({ code: 'LAB01' });
+    const r = await runLab(db, "CREATE INDEX lab_lit ON container_events (container_id) WHERE event <> '--; DROP TABLE claims'", q, 'container_events');
+    expect(r.after).toBeDefined(); // ran as one partial index; the literal is not a comment and not a second statement
+    expect((await db.query(`SELECT count(*)::int AS n FROM pg_indexes WHERE indexname = 'lab_lit'`)).rows).toEqual([{ n: 0 }]);
+    expect((await db.query('SELECT count(*)::int AS n FROM claims')).rows[0]).toBeDefined();
   });
 
   it('runLab: từ chối câu không phải CREATE INDEX và câu ghép; chỉ mục không còn sau khi chạy', async () => {
     const db = await seededDb();
-    await expect(runLab(db, 'DROP TABLE shipments', 'SELECT 1')).rejects.toMatchObject({ code: 'LAB01' });
+    await expect(runLab(db, 'DROP TABLE shipments', 'SELECT 1', 'shipments')).rejects.toMatchObject({ code: 'LAB01' });
     expect(explainError({ message: 'x', code: 'LAB01' })).toBe('sqlerr.labOnly');
-    await expect(runLab(db, 'CREATE INDEX ON shipments (eta); DROP TABLE shipments', 'SELECT 1')).rejects.toThrow();
-    const r = await runLab(db, 'CREATE INDEX lab_probe ON container_events (container_id)', 'SELECT * FROM container_events WHERE container_id = 7');
+    await expect(runLab(db, 'CREATE INDEX ON shipments (eta); DROP TABLE shipments', 'SELECT 1', 'shipments')).rejects.toThrow();
+    const r = await runLab(db, 'CREATE INDEX lab_probe ON container_events (container_id)', 'SELECT * FROM container_events WHERE container_id = 7', 'container_events');
     expect(planLine(r.before)).toMatch(/^Seq Scan container_events/);
     expect(planLine(r.after)).toMatch(/lab_probe/);
     expect((await db.query(`SELECT count(*)::int AS n FROM pg_indexes WHERE indexname = 'lab_probe'`)).rows).toEqual([{ n: 0 }]);
@@ -62,7 +90,7 @@ describe('planCheck: chấm theo kế hoạch thực thi (chương 11)', () => {
   it.each(steps)('$name: Solution đạt plan:/lab: ở mọi biến thể', async ({ step }) => {
     if (step.plan) expect(checkPlan(await explain(step.solution), step.plan.index)).toBeUndefined();
     if (step.lab) {
-      const r = await runLab(await seededDb(), step.lab.ddl, step.solution);
+      const r = await runLab(await seededDb(), step.lab.ddl, step.solution, step.lab.table);
       expect(checkLab(r.before, r.after, step.lab)).toBeUndefined();
       expect(checkPlan(r.before, step.lab.table)).toMatchObject({ reason: 'seqScan' }); // the lab starts from a whole-table read
     }
@@ -70,7 +98,7 @@ describe('planCheck: chấm theo kế hoạch thực thi (chương 11)', () => {
 
   it.each(steps.filter((x) => x.step.lab))('$name: chỉ mục sai cột đầu hoặc sai bảng không đạt', async ({ step }) => {
     for (const ddl of NEAR_MISS) {
-      const r = await runLab(await seededDb(), ddl, step.solution);
+      const r = await runLab(await seededDb(), ddl, step.solution, step.lab!.table);
       expect(checkLab(r.before, r.after, step.lab!), ddl).toBeDefined();
     }
   });
