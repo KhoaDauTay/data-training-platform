@@ -32,6 +32,26 @@ export const lessonSchema = (l: Lesson): SchemaId => (l.node ? 'lab' : 'game');
 
 const DOCS = 'https://www.postgresql.org/docs/';
 
+/** The fields every lesson has (skill lessons add id and cues; advanced-node lessons in adv.yml, Plan 8a, have neither). */
+export type LessonBody = Omit<Lesson, 'id' | 'cues' | 'node'>;
+
+/** Checks and reads a lesson's body; `fail` throws with the caller's location. */
+export function parseLessonBody(o: Record<string, unknown>, fail: (what: string) => never): LessonBody {
+  const sql = (v: unknown, what: string): string => (typeof v === 'string' && v.trim() ? v.trim() : fail(`thiếu ${what}`));
+  const both = (v: unknown, what: string): Bilingual => bilingualOf(v) ?? fail(`${what} cần { vi, en }`);
+  const mistake = (o.mistake ?? {}) as Record<string, unknown>;
+  const tr = (o.try ?? {}) as Record<string, unknown>;
+  const docs = typeof o.docs === 'string' && o.docs.startsWith(DOCS) ? o.docs : fail(`docs phải là một trang ${DOCS}`);
+  return {
+    concept: both(o.concept, 'concept'),
+    example: sql(o.example, 'example'),
+    explain: both(o.explain, 'explain'),
+    mistake: { sql: sql(mistake.sql, 'mistake.sql'), why: both(mistake, 'mistake') },
+    try: { task: both(tr.task, 'try.task'), starter: sql(tr.starter, 'try.starter'), solution: sql(tr.solution, 'try.solution'), ordered: tr.ordered === true },
+    docs,
+  };
+}
+
 /** Throws on a broken entry, like parseSkills: the content tests load the real file. */
 export function parseLessons(source: string, origin = 'lessons.yml'): Lesson[] {
   const data = parseYaml(source) as unknown;
@@ -42,26 +62,14 @@ export function parseLessons(source: string, origin = 'lessons.yml'): Lesson[] {
     const fail = (what: string): never => {
       throw new Error(`${origin}: mục ${i} (${String(o.id)}) ${what}`);
     };
-    const sql = (v: unknown, what: string): string => (typeof v === 'string' && v.trim() ? v.trim() : fail(`thiếu ${what}`));
-    const both = (v: unknown, what: string): Bilingual => bilingualOf(v) ?? fail(`${what} cần { vi, en }`);
     const id = typeof o.id === 'string' && o.id ? o.id : fail('thiếu id');
     if (seen.has(id)) fail('trùng id');
     seen.add(id);
     const cues = (o.cues ?? {}) as Record<string, unknown>;
     const list = (v: unknown) => (Array.isArray(v) && v.every((x) => typeof x === 'string' && x.trim()) ? (v as string[]) : fail('cues cần { vi: [...], en: [...] }'));
-    const mistake = (o.mistake ?? {}) as Record<string, unknown>;
-    const tr = (o.try ?? {}) as Record<string, unknown>;
-    const docs = typeof o.docs === 'string' && o.docs.startsWith(DOCS) ? o.docs : fail(`docs phải là một trang ${DOCS}`);
-    return {
-      id,
-      cues: { vi: list(cues.vi), en: list(cues.en) },
-      concept: both(o.concept, 'concept'),
-      example: sql(o.example, 'example'),
-      explain: both(o.explain, 'explain'),
-      mistake: { sql: sql(mistake.sql, 'mistake.sql'), why: both(mistake, 'mistake') },
-      try: { task: both(tr.task, 'try.task'), starter: sql(tr.starter, 'try.starter'), solution: sql(tr.solution, 'try.solution'), ordered: tr.ordered === true },
-      docs,
-    };
+    // Same order as before the split: cues are checked before the body.
+    const parsedCues = { vi: list(cues.vi), en: list(cues.en) };
+    return { id, cues: parsedCues, ...parseLessonBody(o, fail) };
   });
 }
 

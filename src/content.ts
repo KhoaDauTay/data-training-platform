@@ -1,3 +1,4 @@
+import { buildGeneral, type General } from './general';
 import { parseLaneBriefs, type LaneBrief } from './lanes';
 import { parseLessons, type Lesson } from './lessons';
 import { byOrder, parseTicket, type Ticket } from './tickets';
@@ -47,6 +48,25 @@ export function loadLessons(): Map<string, Lesson> {
   if (!lessons) throw new Error('loadContent() has not finished');
   return lessons;
 }
+
+let general: General | undefined;
+let generalLoading: Promise<General> | undefined;
+
+/**
+ * Plan 8a: drills and advanced nodes, their own lazy chunk (src/generalSources.ts). Never part of loadContent(): only the
+ * General pages, reviews and the drill workspace call it. A failed load is dropped so the next call retries.
+ */
+export function loadGeneral(): Promise<General> {
+  return (generalLoading ??= import('./generalSources')
+    .then(({ sqlDrills, advNodes }) => (general = buildGeneral(sqlDrills, advNodes)))
+    .catch((e: unknown) => {
+      generalLoading = undefined;
+      throw e;
+    }));
+}
+
+/** The General content once loadGeneral() resolved, else undefined (callers that cannot wait show a placeholder). */
+export const generalNow = (): General | undefined => general;
 
 /** Story mode always plays variants[0]. */
 export function loadTickets(): Ticket[] {
