@@ -35,11 +35,36 @@ import { createMapStrip } from './ui/mapStrip';
 import { chapterDots } from './viz/progressDots';
 
 initTheme(); // index.html already set data-theme before paint; this adds the OS listener for 'system'
+// The DB (PGlite download + seed, the slowest part of startup) boots in parallel with the ticket chunk below.
+// Its callbacks only record state until the UI exists (`uiReady`); the setup at the end draws what they recorded.
+let uiReady = false;
+let dbWasReady = false;
+function onDbStatus(s: DbStatus): void {
+  app.dbStatus = s;
+  if (s === 'ready') dbWasReady = true;
+  if (s === 'failed') app.problem = { kind: dbWasReady ? 'worker-crash' : 'db-init-failed' }; // P10
+  if (s !== 'loading') app.loadProgress = undefined;
+  if (!uiReady) return;
+  renderTopbar();
+  if (s === 'ready' && Object.keys(app.columns).length === 0) void loadColumns();
+}
+const db = new DbClient(onDbStatus);
+db.onProgress = (p) => {
+  if (app.dbStatus !== 'loading') return; // the steps tab fetches the parser .wasm through the same counting fetch later
+  app.loadProgress = p;
+  if (uiReady) renderTopbar();
+};
+app.run = (sql) => db.run(sql);
+db.onTimeout = (e) => {
+  app.problem = { kind: 'db-timeout', error: e };
+  renderTopbar();
+};
+
 // Ticket text is a lazy chunk (src/content.ts): say so while it loads, and offer a reload if it fails.
 // Nothing else is drawn yet, so the banner is set by hand; renderNotice() owns it from the first rerender on.
 const loadingNotice = byId('notice');
+loadingNotice.replaceChildren(h('span', {}, t('content.loading'))); // text first, then unhide, so the live region is read
 loadingNotice.hidden = false;
-loadingNotice.replaceChildren(h('span', {}, t('content.loading')));
 try {
   await loadContent();
 } catch (e) {
@@ -78,29 +103,6 @@ async function loadColumns(): Promise<void> {
     console.warn('Could not read the schema:', errorText(e));
   }
 }
-
-// DbClient reports 'loading' from its constructor, before panel/work exist: this callback touches only
-// the top bar, except in the 'ready' branch, which always arrives later (after the worker has booted).
-let dbWasReady = false;
-function onDbStatus(s: DbStatus): void {
-  app.dbStatus = s;
-  if (s === 'ready') dbWasReady = true;
-  if (s === 'failed') app.problem = { kind: dbWasReady ? 'worker-crash' : 'db-init-failed' }; // P10
-  if (s !== 'loading') app.loadProgress = undefined;
-  renderTopbar();
-  if (s === 'ready' && Object.keys(app.columns).length === 0) void loadColumns();
-}
-const db = new DbClient(onDbStatus);
-db.onProgress = (p) => {
-  if (app.dbStatus !== 'loading') return; // the steps tab fetches the parser .wasm through the same counting fetch later
-  app.loadProgress = p;
-  renderTopbar();
-};
-app.run = (sql) => db.run(sql);
-db.onTimeout = (e) => {
-  app.problem = { kind: 'db-timeout', error: e };
-  renderTopbar();
-};
 
 registerCoreTabs(() => work.currentSql());
 registerVizTabs({ db, show: (id) => panel.show(id), active: () => panel.active, editorSql: () => work.currentSql() });
@@ -270,7 +272,9 @@ window.addEventListener('vite:preloadError', () => {
 
 initLayout(byId('shell'), { col: byId('split-col'), row: byId('split-row') });
 initStage();
+uiReady = true; // nothing awaited since loadContent(), so no DB callback was missed in between
 rerender();
+if (app.dbStatus === 'ready') void loadColumns();
 work.setTicket(selected(), app.stepIndex);
 startRouter(showRoute);
 
