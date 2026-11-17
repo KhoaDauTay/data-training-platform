@@ -11,6 +11,7 @@ const GROUPS = [
   ['en', /^en-.*\.js$/, 20], // EN dictionary, lazy (Plan 5 T3): 11 KB, fetched at boot only when the player's language is EN
   ['lessons', /^lessonSources-/, 20], // quick lessons (content/lessons.yml), lazy, fetched at boot beside the tickets (Plan 6): 8 KB for 11 lessons, ~0.75 KB each
   ['art', /^logistics-/, 20], // Plan 8b D8b-2: Tien Sa scene, route map and completion scenes, lazy (prefetched when idle after the first render): 7 KB, took 6 KB off main
+  ['illustrations', /^illustrations-/, 15], // Plan 8b D8b-8: drawn illustrations (learning path, modules, empty states, Finance), lazy, fetched by the first page that shows one
   ['css', /^index-.*\.css$/, 20],
   ['worker', /^worker-/, 160],
   ['pglite', /^pglite-/, 5560],

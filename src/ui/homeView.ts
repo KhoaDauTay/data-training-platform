@@ -17,7 +17,7 @@ import { textOf } from '../tickets';
 import { avatar } from './avatar';
 import { icon, skillIcon, type IconName } from './icons';
 import { byId, h, nodes } from './dom';
-import { artSlot } from '../art/load';
+import { artSlot, illustration } from '../art/load';
 import { fleetOrder, takeNewRoutes } from '../routesSeen';
 import { callout, routeItems } from './routeText';
 import { isStory } from '../session';
@@ -324,7 +324,9 @@ function moduleSection(m: HomeModel): HTMLElement {
   const reachable = !!first && visibleTickets(app.tickets, d).includes(first);
   const next = card.skills.find((s) => !learned.has(s.id));
   return h('section', { class: 'space-y-6', 'aria-labelledby': 'module-title' },
-    h('h2', { id: 'module-title', class: 'm-0 text-xl font-bold' }, t('learn.module', { n: card.chapter, title: chapterTitle(card.chapter, lang) })),
+    m.learned ? illustration('aspect-[480/200] max-w-md', (il) => il.studyDesk()) : illustration('aspect-[240/120] max-w-sm', (il) => il.emptyPath()), // Plan 8b
+    h('div', { class: 'flex items-center gap-3' }, h('div', { class: 'w-28 shrink-0' }, illustration('aspect-[160/64]', (il) => il.moduleGlyph(card.chapter, chapterColor(card.chapter).fill))),
+      h('h2', { id: 'module-title', class: 'm-0 text-xl font-bold' }, t('learn.module', { n: card.chapter, title: chapterTitle(card.chapter, lang) }))),
     bubble(mascot('boon', 'point', 'size-20'), next ? t('learn.next', { skill: next.label[lang] }) : t('learn.allDone')),
     h('ul', { class: LIST }, ...card.skills.map((s, i) => listRow({
       lead: learned.has(s.id) ? icon('check', 'size-6 text-good') : h('b', { class: 'text-lg' }, String(i + 1)),
@@ -344,6 +346,7 @@ function soonSection(): HTMLElement {
   const learned = learnedSkills(app.tickets, done());
   const have = SKILLS.filter((s) => learned.has(s.id));
   return h('section', { class: 'space-y-5' },
+    soonDomain().id === 'finance' ? illustration('aspect-[480/200] max-w-md', (il) => il.financeSoon()) : null, // Plan 8b (v6 §5.1)
     bubble(mascot('boon', 'idle', 'size-20'), t(soonDomain().desc)),
     h('h2', { class: GROUP_TITLE }, t('soon.skills')),
     have.length ? h('p', { class: 'm-0' }, have.map((s) => s.label[lang]).join(' · ')) : h('p', { class: 'm-0 text-muted' }, t('soon.none')),

@@ -22,6 +22,7 @@ import { registerNav, setActionButton } from './topbar';
 import { renderMyData } from './myDataView';
 import type { WorkArea } from './work';
 import { mascot } from './mascots';
+import { illustration } from '../art/load';
 
 let templateMap: Map<string, Ticket> | undefined;
 /** Built on first use: ticket content arrives after this module loads (main.ts awaits loadContent()). */
@@ -222,6 +223,7 @@ function reviewCard(m: HomeModel): HTMLElement {
   const p = app.save.practice;
   return h('section', { class: cx(CARD, 'flex flex-wrap items-center gap-4 p-5'), 'aria-labelledby': 'review-title' },
     m.learned === 0 ? mascot('lily', 'sleep', 'size-16') : null, // v6 §2.4: an empty state
+    m.learned > 0 && !due ? h('div', { class: 'w-40 shrink-0' }, illustration('aspect-[240/120]', (il) => il.emptyDrills())) : null, // Plan 8b: nothing due
     h('div', { class: 'min-w-0 flex-1' },
       h('h2', { id: 'review-title', class: 'm-0 text-lg font-bold' }, t('prac.section')),
       h('p', { class: 'mt-1 mb-0 text-[15px] text-muted' }, intro),

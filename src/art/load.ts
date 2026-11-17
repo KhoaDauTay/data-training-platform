@@ -7,6 +7,7 @@ import { h, nodes, reducedMotion } from '../ui/dom';
 import { mascot } from '../ui/mascots';
 import { callout, routeItems } from '../ui/routeText';
 import { s } from '../ui/svg';
+import type * as Illustrations from './illustrations';
 import type * as Logistics from './logistics';
 
 export type LogisticsArt = typeof Logistics;
@@ -42,5 +43,21 @@ export function artSlot(aspect: string, draw: (a: LogisticsArt) => Element): Ele
   if (a) return draw(a);
   const slot = h('div', { class: cx('block w-full bg-accent-soft', aspect), 'aria-hidden': 'true' });
   loadArt().then((m) => { if (slot.isConnected) slot.replaceWith(draw(m)); }, () => {});
+  return slot;
+}
+
+export type IllustrationArt = typeof Illustrations;
+let ill: Promise<IllustrationArt> | undefined;
+let illReady: IllustrationArt | undefined;
+/** Drawn illustrations (Plan 8b Task 6): their own lazy chunk, fetched the first time a page shows one. */
+export function loadIllustrations(): Promise<IllustrationArt> {
+  ill ??= import('./illustrations').then((m) => (illReady = m), (e: unknown) => { ill = undefined; throw e; });
+  return ill;
+}
+/** Like artSlot(): drawn at once when the chunk is in, else a same-aspect placeholder swapped in place (no layout shift). */
+export function illustration(aspect: string, draw: (il: IllustrationArt) => Element): Element {
+  if (illReady) return draw(illReady);
+  const slot = h('div', { class: cx('block w-full rounded-2xl bg-accent-soft', aspect), 'aria-hidden': 'true' });
+  loadIllustrations().then((m) => { if (slot.isConnected) slot.replaceWith(draw(m)); }, () => {});
   return slot;
 }
