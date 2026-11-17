@@ -36,6 +36,8 @@ describe('sceneOf (completion-animations §3.2–§3.3)', () => {
       'ch9-05': { kind: 'ship' }, 'ch9-06': { kind: 'promotion' },
       'ch10-01': { kind: 'yard' }, 'ch10-02': { kind: 'yard' }, 'ch10-03': { kind: 'truck' }, 'ch10-04': { kind: 'ledger' },
       'ch10-05': { kind: 'ledger' }, 'ch10-06': { kind: 'promotion' },
+      'ch11-01': { kind: 'yard' }, 'ch11-02': { kind: 'yard' }, 'ch11-03': { kind: 'chat' }, 'ch11-04': { kind: 'truck' },
+      'ch11-05': { kind: 'ledger' }, 'ch11-06': { kind: 'promotion' },
     });
   });
 
