@@ -8,7 +8,7 @@ import { textOf, type Ticket } from '../tickets';
 import { navTargets } from '../viz/progressDots';
 import { byId, h } from './dom';
 import { icon } from './icons';
-import { laneInfo, lanePanel, stateOf, tasksOf } from './lanePanel';
+import { laneInfo, lanePanel, stateOf, taskTitle, tasksOf } from './lanePanel';
 import { startLane, toCurrentTask } from './modes';
 import { routeMap } from './routeMap';
 
@@ -95,7 +95,7 @@ export function createMapStrip(host: HTMLElement): { update(view: StripView): vo
     const r = ROUTES.find((x) => x.port === lane.lane)!;
     const tasks = tasksOf(r.port).map((x) => {
       const state = stateOf(x, harbor);
-      const label = `${laneLabel(x)} · ${textOf(x, lang).title} · ${t(state === 'done' ? 'map.beat.done' : state === 'open' ? 'lane.stateOpen' : 'nav.taskLocked')}`;
+      const label = `${laneLabel(x)} · ${taskTitle(x, state)} · ${t(state === 'done' ? 'map.beat.done' : state === 'open' ? 'lane.stateOpen' : 'nav.taskLocked')}`;
       const here = x.id === lane.id;
       return h('button', {
         type: 'button', 'data-nav': `l:${x.id}`, title: label, 'aria-label': label, disabled: state === 'locked', 'aria-current': here ? 'page' : false,

@@ -547,6 +547,7 @@ export const en: Record<Key, Msg> = {
   'lane.asked': 'What a DA on this lane gets asked:',
   'lane.illustrative': 'Illustrative, simplified figures. The company and its numbers are fictional.',
   'lane.tasks': 'Lane tasks · {done}/{total} done · optional',
+  'lane.hiddenTitle': 'Lane task {n} · opens after chapter {ch}',
   'lane.taskAt': 'Opens after chapter {n} · +{xp} XP',
   'lane.start': 'Do this lane task',
   'lane.review': 'Look again',
