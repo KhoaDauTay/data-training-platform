@@ -9,6 +9,7 @@ import type { KV } from '../src/storage';
 // Lane side tasks (r-1, r-2) are known ids like tickets: their drafts, graded SQL and hints survive a reload.
 const known: Known = {
   ticketIds: new Set(['ch1-01', 'ch1-02', 'ch1-03', 'ch1-04', 'ch1-05', 'ch2-01', 'ch2-02', 'ch2-03', 'r-1', 'r-2']),
+  laneIds: new Set(['r-1', 'r-2']),
   skills: new Set(['select', 'where', 'order_by', 'limit']),
 };
 
@@ -64,7 +65,7 @@ describe('save v3 (Plan 5: bảng điều hành + bài tuyến)', () => {
         ],
         hidden: ['a', 'a', 7, ''],
       },
-      lanes: ['r-1', 'gone', 'r-1', 3],
+      lanes: ['r-1', 'gone', 'r-1', 3, 'ch1-01'], // a story id is not a lane task
     });
     const s = parseSave(raw, known);
     expect(s.dashboard.cards.map((c) => c.id)).toEqual(['c1', 'c7']);

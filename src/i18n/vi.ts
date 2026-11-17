@@ -512,6 +512,7 @@ export const vi = {
   'card.kind.number': 'Số',
   'card.kind.bar': 'Cột',
   'card.kind.line': 'Đường',
+  'card.colGone': 'Cột {n} không còn trong kết quả của query này. Bỏ ghim rồi ghim lại card.',
   'card.rowsShown': 'Đang hiện {n}/{total} dòng',
   'pin.button': 'Ghim lên',
   'pin.title': 'Ghim lên bảng điều hành',

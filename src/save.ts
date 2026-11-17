@@ -38,7 +38,8 @@ export interface Save {
  * Ids that exist in the current content; saved ids not in here are dropped. `skills` is used from v2 (review).
  * `ticketIds` holds story tickets and lane side tasks (their drafts, graded SQL and hints are kept like a ticket's).
  */
-export interface Known { ticketIds: ReadonlySet<string>; skills: ReadonlySet<string> }
+/** `ticketIds` = story and lane task ids (drafts, hints, graded SQL); `laneIds` = lane task ids only (`lanes`). */
+export interface Known { ticketIds: ReadonlySet<string>; laneIds: ReadonlySet<string>; skills: ReadonlySet<string> }
 
 // Errors carry no user-facing text: the UI translates them by class / warning.kind.
 export class NewerSaveError extends Error {
@@ -168,7 +169,7 @@ export function parseSave(raw: string, known: Known, migrations = MIGRATIONS, ve
     graded: pickRecord(d.graded, isString, known.ticketIds),
     ...readV2(d, known),
     dashboard: readDashboard(d.dashboard),
-    lanes: Array.isArray(d.lanes) ? [...new Set(d.lanes.filter((x): x is string => typeof x === 'string' && known.ticketIds.has(x)))] : [],
+    lanes: Array.isArray(d.lanes) ? [...new Set(d.lanes.filter((x): x is string => typeof x === 'string' && known.laneIds.has(x)))] : [],
   };
 }
 

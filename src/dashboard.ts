@@ -63,6 +63,14 @@ export function valueCols(kind: CardKind, r: QueryResult): number[] {
   return spec?.kind === kind ? spec.values : [];
 }
 
+/** The card's value column is not in this result any more (an edited save, or imported data that changed): say so, never NaN. */
+export function colGone(c: Card, r: QueryResult): boolean {
+  const col = c.col ?? 0;
+  if (c.kind === 'table') return false;
+  if (c.kind === 'number') return col >= r.columns.length;
+  return !valueCols(c.kind, r).includes(col);
+}
+
 /** Why the Pin button cannot be used now; undefined = it can. `stale`: the editor no longer holds the SQL that ran. */
 export type PinBlock = 'stale' | 'full' | 'long' | 'slow';
 export function pinBlock(run: { sql: string; ms?: number }, editorSql: string, cards: number): PinBlock | undefined {
