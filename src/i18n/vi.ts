@@ -260,7 +260,6 @@ export const vi = {
   'recap.review': 'Ôn lại',
   'recap.yours': 'SQL của bạn',
   'recap.reference': 'Cách tham khảo',
-  'recap.next': 'Việc tiếp theo →',
   'recap.allDone': 'Bạn đã hoàn thành mọi việc hiện có!',
   'coach.hints': 'Việc này dạy kỹ năng mới. Đọc Bài học nhanh phía trên trước. Kẹt nữa thì mở Gợi ý: cả chương 1 gợi ý miễn phí, gợi ý đầu chỉ nhắc khái niệm.',
   'coach.ok': 'Hiểu rồi',

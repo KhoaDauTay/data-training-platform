@@ -179,7 +179,8 @@ export function playCompletion(tk: Ticket, before: Set<string>, after: Set<strin
       }
       if (current !== run) return;
       setSkipLabel('app.close');
-      if (!reducedMotion()) hideTimer = window.setTimeout(hide, 4000);
+      // A promotion carries the new title: it stays ≥ 8 s so it can be read (v10 critic #3); reduced motion stays until Close.
+      if (!reducedMotion()) hideTimer = window.setTimeout(hide, c.scene.kind === 'promotion' ? 8000 : 4000);
     })
     .catch((e: unknown) => console.warn('Completion animation failed:', e));
 }

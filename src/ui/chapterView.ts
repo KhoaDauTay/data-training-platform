@@ -60,10 +60,10 @@ export function wrapUp(chapter: number, onQuick?: () => void): HTMLElement {
   const career = CHAPTERS.find((c) => c.chapter === chapter)?.career[lang];
   const next = last ? undefined : nextTicket(app.tickets, done());
   // v6 §2.4: Lily and Boon cheer a new chapter; one primary way on (the Recap above has none for a promotion review, v10 UX #9).
-  return h('section', { class: 'my-3 rounded-xl bg-panel p-4 ring-1 ring-line', 'aria-labelledby': 'wrapup-title' },
+  return h('section', { class: 'wrapup my-3 scroll-mt-4 rounded-xl bg-panel p-4 ring-1 ring-line', 'aria-labelledby': 'wrapup-title' },
     h('div', { class: 'flex items-center gap-3' },
       mascot('lily', 'cheer', 'size-16'), mascot('boon', 'cheer', 'size-16'),
-      h('h3', { id: 'wrapup-title', class: 'm-0 text-lg font-bold' }, t('sum.title', { n: chapter, title: chapterTitle(chapter, lang) }))),
+      h('h3', { id: 'wrapup-title', tabindex: '-1', class: 'm-0 text-lg font-bold' }, t('sum.title', { n: chapter, title: chapterTitle(chapter, lang) }))),
     career ? h('p', { class: 'mt-3 rounded-lg bg-sun px-3 py-2 font-semibold text-sun-ink' }, t('sum.career', { career })) : null,
     outcomeList(chapter),
     s.skills.length ? h('p', {}, t('sum.skills', { list: s.skills.map(skillLabel).join(', ') })) : null,

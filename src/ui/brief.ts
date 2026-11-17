@@ -84,7 +84,7 @@ function hints(tk: Ticket, x: TicketText, isDone: boolean): HTMLElement {
 function conclusion(tk: Ticket, x: TicketText): HTMLElement {
   const c = x.conclusion!;
   const msg = h('p', { role: 'status', class: 'bad' });
-  const form = h('form', { class: 'my-3 rounded-xl p-3 ring-2 ring-accent' },
+  const form = h('form', { id: 'conclusion-form', class: 'my-3 scroll-mt-4 rounded-xl p-3 ring-2 ring-accent' },
     h('h3', { class: 'mt-0' }, t('brief.conclusion')),
     h('fieldset', { class: 'mb-4' },
       h('legend', { class: 'mb-2' }, c.question),
@@ -203,10 +203,9 @@ function recap(tk: Ticket, x: TicketText): HTMLElement {
       tk.steps.length > 1 ? h('h4', {}, x.steps[i].title) : null,
       h('figure', {}, h('figcaption', { class: 'mb-1 text-sm text-muted' }, t('recap.yours')), h('pre', { class: 'sql' }, gradedSql(tk, i))),
       h('figure', {}, h('figcaption', { class: 'mb-1 text-sm text-muted' }, t('recap.reference')), h('pre', { class: 'sql' }, s.lab?.ddl ?? s.solution)))), // lab step: the reference index, not the slow query
-    tk.beat === 'boss' && !tk.lane ? null // the chapter wrap-up under it holds the one way on
-      : next
-      ? h('button', { type: 'button', class: 'primary', onclick: () => actions.selectTicket(next.id) }, t(tk.lane ? 'nav.continueBack' : 'recap.next'))
-      : h('p', {}, t('recap.allDone')));
+    // One way on (v10 critic #3): the task bar's continue button for a story task, the wrap-up for a promotion review.
+    tk.lane && next ? h('button', { type: 'button', class: 'primary', onclick: () => actions.selectTicket(next.id) }, t('nav.continueBack'))
+      : next ? null : h('p', {}, t('recap.allDone')));
 }
 
 /**
@@ -253,7 +252,7 @@ export function renderBrief(host: HTMLElement, tk: Ticket, stepIndex: number): v
     x.task ? h('section', { class: 'my-3 rounded-lg border-l-4 border-accent bg-accent-soft p-3' }, h('h3', { class: 'mt-0' }, t('brief.task')), richText(x.task)) : null,
     relatedLine(tk),
     boss
-      ? h('section', { class: 'my-3 rounded-lg p-3 ring-1 ring-line' },
+      ? h('section', { id: 'brief-step', class: 'my-3 scroll-mt-4 rounded-lg p-3 ring-1 ring-line' },
         h('h3', { class: 'mt-0' }, t('brief.step', { i: stepIndex + 1, n: tk.steps.length, title: x.steps[stepIndex].title })),
         richText(x.steps[stepIndex].prompt))
       : null,

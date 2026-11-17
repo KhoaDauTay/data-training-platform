@@ -131,6 +131,7 @@ const work = mountWork(byId('work'), {
   onConclusion: (t) => {
     app.conclusionFor = t.id;
     rerender();
+    document.getElementById('conclusion-form')?.scrollIntoView({ block: 'nearest' });
   },
   onRun: () => rerender(),
 });
@@ -183,6 +184,7 @@ function nextStep(): void {
   rerender();
   work.setTicket(selected(), app.stepIndex);
   work.focus(); // the new step's editor replaces the one that had focus
+  document.getElementById('brief-step')?.scrollIntoView({ block: 'nearest' }); // the new step's words, not the old scroll spot (v10 critic #3)
 }
 
 let shownRoute: Route | undefined;
@@ -222,7 +224,8 @@ function complete(tk: Ticket): void {
   if (nextTicket(app.tickets, done())) byId('announce').append(` ${t('nav.nextReady')}`);
   app.conclusionFor = '';
   rerender();
-  byId('ticket').querySelector<HTMLElement>('.recap h3')?.focus(); // the Submit button just disappeared
+  // The Submit button just disappeared: a promotion review lands on its chapter wrap-up, any other task on its Recap.
+  byId('ticket').querySelector<HTMLElement>('#wrapup-title, .recap h3')?.focus();
   work.setSchema(editorSchema()); // a boss may open the next chapter's tables
   panel.refresh();
 }

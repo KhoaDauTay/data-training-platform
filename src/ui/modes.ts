@@ -187,7 +187,11 @@ function storyPane(host: HTMLElement): void {
   }
   const d = done();
   const quick = app.tickets.filter((x) => x.chapter === tk.chapter && x.beat !== 'boss' && d.has(x.id));
-  host.append(wrapUp(tk.chapter, quick.length ? () => startRetry(quick[Math.floor(Math.random() * quick.length)].id) : undefined));
+  // Right after passing, above the long Recap (v10 critic #3): the new title and the one way on are what the player looks for.
+  const wrap = wrapUp(tk.chapter, quick.length ? () => startRetry(quick[Math.floor(Math.random() * quick.length)].id) : undefined);
+  const recap = host.querySelector('.recap');
+  if (recap) recap.before(wrap);
+  else host.append(wrap);
 }
 
 function lanePane(host: HTMLElement, tk: Ticket): void {

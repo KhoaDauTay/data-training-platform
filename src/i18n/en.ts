@@ -263,7 +263,6 @@ export const en: Record<Key, Msg> = {
   'recap.review': 'Review',
   'recap.yours': 'Your SQL',
   'recap.reference': 'Reference answer',
-  'recap.next': 'Next task →',
   'recap.allDone': 'You have finished every task available!',
   'coach.hints': 'This task teaches a new skill. Read the quick lesson above first. Still stuck? Open a hint: hints are free in all of chapter 1, and the first one only names the idea.',
   'coach.ok': 'Got it',
