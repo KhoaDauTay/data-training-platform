@@ -194,6 +194,9 @@ describe('twistUsed: từ khóa theo kỹ năng', () => {
     ['null_logic', 'SELECT 1 FROM t WHERE ata IS NOT NULL', 'SELECT 1 FROM t WHERE ata = NULL'],
     ['cast', 'SELECT count(*)::numeric / 3', 'SELECT 100.0 * count(*) / 3'],
     ['cast', 'SELECT CAST(count(*) AS numeric)', 'SELECT count(*)'],
+    ['correlated_value', 'SELECT (SELECT r.buy_usd FROM r WHERE r.id = q.id) FROM q', 'SELECT q.id FROM q JOIN r ON r.id = q.id'],
+    ['distinct_on', 'SELECT DISTINCT ON (b.id) b.id FROM b ORDER BY b.id', 'SELECT DISTINCT b.id FROM b'],
+    ['full_join', 'SELECT * FROM a FULL OUTER JOIN b ON true', 'SELECT * FROM a LEFT JOIN b ON true'],
   ])('%s', (skill, yes, no) => {
     expect(twistUsed(skill, yes)).toBe(true);
     expect(twistUsed(skill, no)).toBe(false);
@@ -216,11 +219,12 @@ describe('12 chương (L30, curriculum.md)', () => {
     expect(problems(chapter1, skills, bare)).toContain('chương 1: thiếu career/story vi/en');
   });
 
-  it('CHAPTER_TABLES: 25 bảng của spec §4, mỗi bảng đúng một lần, mở theo curriculum §3', () => {
+  it('CHAPTER_TABLES: 24 bảng (spec §4 trừ charges, Plan 3 R2), mỗi bảng đúng một lần, mở theo curriculum §3', () => {
     const all = Object.values(CHAPTER_TABLES).flat();
     expect(Object.keys(CHAPTER_TABLES).map(Number)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
-    expect(all).toHaveLength(25);
-    expect(new Set(all).size).toBe(25);
+    expect(all).toHaveLength(24);
+    expect(new Set(all).size).toBe(24);
+    expect(all).not.toContain('charges');
     expect(tablesUnlocked(4)).toContain('trucking_orders');
     expect(tablesUnlocked(4)).not.toContain('customs_declarations');
     expect(tablesUnlocked(5)).toContain('hs_codes');

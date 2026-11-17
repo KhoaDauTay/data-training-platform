@@ -23,6 +23,12 @@ const CASES: [string, string][] = [
   ['SELECT round(ref) FROM shipments', 'sqlerr.fnArgs'],
   [`SELECT CASE WHEN eta < '2026-10-31' THEN ref ELSE 0 END FROM shipments`, 'sqlerr.42804'],
   [`SELECT CASE WHEN eta < '2026-10-31' THEN 1 ELSE 'late' END FROM shipments`, 'sqlerr.22P02'],
+  ['SELECT q.quote_no, (SELECT r.buy_usd FROM rate_contracts r WHERE r.pod = q.pod) FROM quotations q', 'sqlerr.21000'],
+  ['SELECT mbl_no, issue_date FROM master_bills UNION SELECT hbl_no FROM house_bills', 'sqlerr.setColumns'],
+  ['SELECT id, ref FROM shipments EXCEPT SELECT shipment_id FROM invoices', 'sqlerr.setColumns'],
+  ['SELECT mbl_no FROM master_bills UNION SELECT id FROM house_bills', 'sqlerr.setTypes'],
+  [`SELECT DISTINCT ON (b.id) b.bill_no FROM vendor_bills b JOIN exchange_rates r ON r.currency = b.currency ORDER BY r.rate_date DESC`, 'sqlerr.42P10'],
+  ['SELECT ref FROM shipments WHERE customer_id IN (SELECT id, name FROM customers)', 'sqlerr.subqueryColumns'],
 ];
 
 async function errorOf(sql: string): Promise<SqlErrorInfo> {
