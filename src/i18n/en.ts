@@ -381,7 +381,6 @@ export const en: Record<Key, Msg> = {
   'steps.play': '▶ Play',
   'steps.pause': '⏸ Pause',
   'steps.pipe': 'Execution steps',
-  'steps.unused': 'not used',
   'steps.error': 'error',
   'steps.groups': count('group', 'groups'),
   'steps.title': 'Step {i} · {label}',
