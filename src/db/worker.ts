@@ -3,7 +3,7 @@ import { initDb } from './init';
 import { countingFetch } from './loadProgress';
 import type { WorkerBody } from './client';
 import { dropImport, importCsv } from './import';
-import { runExplain, runSandboxed, sqlErrorInfo } from './run';
+import { runExplain, runLab, runSandboxed, sqlErrorInfo } from './run';
 
 // PGlite fetches its .wasm/.data with the global fetch; count the bytes for the loading status.
 globalThis.fetch = countingFetch(fetch.bind(globalThis), (p) => postMessage({ type: 'progress', ...p }));
@@ -27,6 +27,7 @@ async function handle(db: PGlite, body: WorkerBody): Promise<unknown> {
   if (body.kind === 'import') return importCsv(db, body.req, body.file);
   if (body.kind === 'dropImport') return dropImport(db, body.table);
   if (body.kind === 'explain') return runExplain(db, body.sql);
+  if (body.kind === 'lab') return runLab(db, body.ddl, body.sql);
   if (body.kind === 'steps') {
     const { runSteps } = await import('../viz/steps'); // loads the parser only when this tab is used
     return runSteps(db, body.sql);

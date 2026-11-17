@@ -274,3 +274,28 @@ describe('variants', () => {
     expect(() => parseTicket(typed, 'v.md')).toThrow(/variants\[1\] trùng variants\[0\]/); // same SQL once rendered
   });
 });
+
+/** Chapter 11 (Plan 4): plan: and lab: follow columns: (one object on a normal ticket, one entry per step on a promotion review). */
+describe('plan: và lab: (chương 11)', () => {
+  const LAB = 'lab: { table: container_events, ddl: "CREATE INDEX ON container_events (container_id)", max_cost_ratio: 0.1 }';
+  const withFm = (src: string, line: string) => src.replace('tables: [ports]\n', `tables: [ports]\n${line}\n`).replace('tables: [shipments]\n', `tables: [shipments]\n${line}\n`);
+
+  it('ticket thường: plan: gắn vào bước duy nhất; lab: đọc bảng, câu mẫu và ngưỡng', () => {
+    expect(parseTicket(withFm(NORMAL, 'plan: { index: ports }'), 'p.md').steps[0].plan).toEqual({ index: 'ports' });
+    expect(parseTicket(withFm(NORMAL, LAB), 'l.md').steps[0].lab).toEqual({ table: 'container_events', ddl: 'CREATE INDEX ON container_events (container_id)', max_cost_ratio: 0.1 });
+  });
+
+  it('cột mốc: một mục mỗi bước, null = không có', () => {
+    const t = parseTicket(withFm(BOSS, `plan: [{ index: shipments }, null]\nlab: [null, ${LAB.slice(5)}]`), 'b.md');
+    expect(t.steps.map((s) => [s.plan, s.lab?.table])).toEqual([[{ index: 'shipments' }, undefined], [undefined, 'container_events']]);
+  });
+
+  it('báo lỗi định dạng', () => {
+    const bad = (src: string) => () => parseTicket(src, 'bad.md');
+    expect(bad(withFm(NORMAL, 'plan: { index: "Ports; DROP" }'))).toThrow(/plan:/);
+    expect(bad(withFm(BOSS, 'plan: { index: shipments }'))).toThrow(/plan:/); // a promotion review needs one entry per step
+    expect(bad(withFm(NORMAL, LAB.replace('0.1', '2')))).toThrow(/lab:/);
+    expect(bad(withFm(NORMAL, `plan: { index: ports }\n${LAB}`))).toThrow(/cả plan: và lab:/);
+    expect(bad(withFm(NORMAL, `${LAB}\nwrong:\n  - { sql: "SELECT 1", vi: "a", en: "b" }`))).toThrow(/wrong:/);
+  });
+});

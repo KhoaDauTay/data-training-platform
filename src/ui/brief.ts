@@ -46,6 +46,14 @@ function shapeCard(tk: Ticket, stepIndex: number): HTMLElement {
   return card;
 }
 
+/** Index lab step (chapter 11): the slow query (the step's Solution) the player's CREATE INDEX must speed up. Replaces the shape card. */
+function labCard(sql: string): HTMLElement {
+  return h('section', { class: 'my-3 rounded-xl bg-panel p-3 ring-1 ring-line', 'aria-label': t('lab.title') },
+    h('h3', { class: 'mt-0' }, t('lab.title')),
+    h('pre', { class: 'sql' }, sql),
+    h('p', { class: 'mt-1 mb-0 text-sm text-muted' }, t('lab.howto')));
+}
+
 function hints(tk: Ticket, x: TicketText, isDone: boolean): HTMLElement {
   const shown = hintsShown(tk.id);
   const btn = h('button', {
@@ -185,7 +193,7 @@ function recap(tk: Ticket, x: TicketText): HTMLElement {
     ...tk.steps.map((s, i) => h('div', { class: 'my-2 grid gap-2 sm:grid-cols-2' },
       tk.steps.length > 1 ? h('h4', {}, x.steps[i].title) : null,
       h('figure', {}, h('figcaption', { class: 'mb-1 text-sm text-muted' }, t('recap.yours')), h('pre', { class: 'sql' }, gradedSql(tk, i))),
-      h('figure', {}, h('figcaption', { class: 'mb-1 text-sm text-muted' }, t('recap.reference')), h('pre', { class: 'sql' }, s.solution)))),
+      h('figure', {}, h('figcaption', { class: 'mb-1 text-sm text-muted' }, t('recap.reference')), h('pre', { class: 'sql' }, s.lab?.ddl ?? s.solution)))), // lab step: the reference index, not the slow query
     next
       ? h('button', { type: 'button', class: 'primary', onclick: () => actions.selectTicket(next.id) }, t('recap.next'))
       : h('p', {}, t('recap.allDone')));
@@ -220,7 +228,7 @@ export function renderBrief(host: HTMLElement, tk: Ticket, stepIndex: number): v
         h('h3', { class: 'mt-0' }, t('brief.step', { i: stepIndex + 1, n: tk.steps.length, title: x.steps[stepIndex].title })),
         richText(x.steps[stepIndex].prompt))
       : null,
-    isDone ? null : shapeCard(tk, stepIndex),
+    isDone ? null : tk.steps[stepIndex].lab ? labCard(tk.steps[stepIndex].solution) : shapeCard(tk, stepIndex),
     coach('hints'),
     hints(tk, x, isDone),
     app.conclusionFor === tk.id && !isDone && x.conclusion ? conclusion(tk, x) : null,
