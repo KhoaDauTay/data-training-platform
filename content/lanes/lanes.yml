@@ -1,1 +1,75 @@
-[]
+# Lane briefs (product-design-v3 §13, §17, §18; L48, L49). One entry per map port (src/scene.ts ROUTES) that has side tasks in
+# content/lanes/<port>/. Lanes without an entry show "đợt sau" in the lane list.
+# The hub is Tien Sa (Da Nang, VNDAD), as on the map (L49). Figures are illustrative and simplified (the brief says so).
+# numbers: { value, text } — the figures to remember; facts: { label, text } — detail rows.
+# after: N — shown only once chapter N's promotion review is passed (L49: the Rotterdam rate rise waits for chapter 7).
+- port: NLRTM
+  country: { vi: "Hà Lan", en: "Netherlands" }
+  intro:
+    vi: "Rotterdam là cảng lớn nhất châu Âu và là cửa ngõ chính cho hàng Việt Nam vào EU. Từ Tiên Sa, tàu đi khoảng 30 ngày qua kênh Suez, thường đổi sang tàu lớn ở Singapore. Khi Biển Đỏ bất ổn, hãng tàu vòng qua Mũi Hảo Vọng, thêm 10–14 ngày và tốn thêm nhiên liệu."
+    en: "Rotterdam is Europe's largest port and the main gateway for Vietnamese goods into the EU. From Tien Sa a ship takes about 30 days through the Suez Canal, usually changing to a bigger ship in Singapore. When the Red Sea is unsafe, carriers sail around the Cape of Good Hope, adding 10 to 14 days and more fuel."
+  numbers:
+    - { value: "~30", text: { vi: "ngày đi biển", en: "days at sea" } }
+    - { value: "FOB", text: { vi: "điều kiện phổ biến nhất", en: "the most common term" } }
+    - { value: "+40%", text: { vi: "giá mua từ 15/07/2026", en: "buy rate from 15 Jul 2026" }, after: 7 }
+  facts:
+    - label: { vi: "Hàng chính", en: "Main cargo" }
+      text: { vi: "Dệt may, hải sản đông lạnh, đồ gỗ, cà phê, hạt điều.", en: "Textiles, frozen seafood, furniture, coffee, cashews." }
+    - label: { vi: "Incoterms", en: "Incoterms" }
+      text: { vi: "Phần lớn FOB: người mua châu Âu tự thuê tàu, mình lo chặng nội địa và thủ tục xuất.", en: "Mostly FOB: the European buyer books the ship, we handle the inland leg and export formalities." }
+    - label: { vi: "BAF", en: "BAF" }
+      text: { vi: "Phụ phí nhiên liệu đổi theo giá dầu; tuyến càng dài càng nhạy.", en: "The bunker surcharge follows the fuel price; the longer the lane, the more it moves." }
+    - label: { vi: "Mùa vụ", en: "Season" }
+      text: { vi: "Cao điểm quý 3–4 (hàng Giáng sinh).", en: "Peak in Q3 and Q4 (Christmas goods)." }
+    - label: { vi: "Hay vướng", en: "Common trouble" }
+      text: { vi: "Thiếu chỗ mùa cao điểm, đổi lịch khi tàu phải vòng Mũi Hảo Vọng.", en: "No space in the peak season, schedule changes when ships go around the Cape." }
+    - label: { vi: "Tăng giá", en: "Rate rise" }
+      text: { vi: "Đợt tăng giá chung (GRI) ngày 15/07/2026 đẩy giá mua tuyến châu Âu lên khoảng 40%.", en: "The general rate increase (GRI) of 15 July 2026 pushed Europe buy rates up by about 40%." }
+      after: 7
+  asked:
+    vi: "Hàng gì đang đi châu Âu, theo điều kiện giao hàng nào?"
+    en: "What is going to Europe, and under which delivery terms?"
+
+- port: SGSIN
+  country: { vi: "Singapore", en: "Singapore" }
+  intro:
+    vi: "Singapore là cảng trung chuyển lớn của Đông Nam Á: hàng từ Tiên Sa đi châu Âu, Ấn Độ hay bờ Đông nước Mỹ thường được dỡ ở đây rồi xếp lên tàu mẹ lớn hơn. Chặng Tiên Sa – Singapore ngắn, khoảng 3 ngày, tàu gom nhỏ chạy nhiều chuyến mỗi tuần."
+    en: "Singapore is Southeast Asia's big transshipment hub: cargo from Tien Sa to Europe, India or the US East Coast is often unloaded here and put on a bigger mother vessel. The Tien Sa to Singapore leg is short, about 3 days, and small feeder ships sail several times a week."
+  numbers:
+    - { value: "~3", text: { vi: "ngày đi biển", en: "days at sea" } }
+    - { value: "5", text: { vi: "tuyến từ Tiên Sa đổi tàu ở đây", en: "lanes from Tien Sa change ship here" } }
+    - { value: "2", text: { vi: "chặng cho hàng đi xa: tàu gom, tàu mẹ", en: "legs for long hauls: feeder, mother vessel" } }
+  facts:
+    - label: { vi: "Vai trò", en: "Role" }
+      text: { vi: "Cảng trung chuyển: hàng đổi từ tàu gom (feeder) sang tàu mẹ.", en: "Transshipment hub: cargo moves from feeder ships to mother vessels." }
+    - label: { vi: "Hàng chính", en: "Main cargo" }
+      text: { vi: "Hàng tiêu dùng, điện tử, thép, vật liệu xây dựng.", en: "Consumer goods, electronics, steel, building materials." }
+    - label: { vi: "Thời gian", en: "Time" }
+      text: { vi: "Khoảng 3 ngày đi biển; hàng đi tiếp thường chờ thêm 1–2 ngày để đổi tàu.", en: "About 3 days at sea; cargo going further often waits 1 to 2 more days to change ship." }
+    - label: { vi: "Hay vướng", en: "Common trouble" }
+      text: { vi: "Lỡ chuyến tàu mẹ thì hàng nằm cảng chờ chuyến sau (rớt tàu).", en: "Miss the mother vessel and the cargo waits in port for the next one (rolled cargo)." }
+  asked:
+    vi: "Lô nào đi Singapore rồi đi tiếp, và thực tế mất bao nhiêu ngày?"
+    en: "Which cargo goes on from Singapore, and how many days does it really take?"
+
+- port: AUSYD
+  country: { vi: "Úc", en: "Australia" }
+  intro:
+    vi: "Tuyến Sydney chạy hai chiều với hai câu chuyện khác nhau. Chiều về: lúa mì Úc cho nhà máy bột mì và thức ăn chăn nuôi ở Việt Nam, phần lớn bằng tàu rời. Chiều đi: đồ gỗ, hải sản, hàng tiêu dùng. Úc kiểm dịch sinh học rất chặt: pallet và bao bì gỗ phải xử lý theo chuẩn ISPM 15, đồ gỗ dễ bị giữ lại kiểm tra."
+    en: "The Sydney lane runs both ways with two different stories. Inbound: Australian wheat for flour and feed mills in Vietnam, mostly by bulk carrier. Outbound: furniture, seafood and consumer goods. Australia's biosecurity is strict: wooden pallets and packaging must be treated to the ISPM 15 standard, and wooden furniture is often held for inspection."
+  numbers:
+    - { value: "~16", text: { vi: "ngày đi biển", en: "days at sea" } }
+    - { value: "~48", text: { vi: "tấn nhiên liệu mỗi ngày (tàu 4.200 TEU)", en: "tonnes of fuel a day (4,200 TEU ship)" } }
+    - { value: "BAF", text: { vi: "đổi theo giá dầu từng tháng", en: "follows the monthly fuel price" } }
+  facts:
+    - label: { vi: "Hàng chính", en: "Main cargo" }
+      text: { vi: "Chiều về lúa mì; chiều đi đồ gỗ, hải sản.", en: "Wheat inbound; furniture and seafood outbound." }
+    - label: { vi: "Kiểm dịch", en: "Biosecurity" }
+      text: { vi: "ISPM 15 cho pallet và bao bì gỗ; đồ gỗ hay bị kiểm, có khi phải hun trùng lại.", en: "ISPM 15 for wooden pallets and packaging; furniture is often inspected and sometimes fumigated again." }
+    - label: { vi: "Nhiên liệu", en: "Fuel" }
+      text: { vi: "Chặng càng dài, nhiên liệu càng chiếm phần lớn chi phí, nên hãng tàu tính phụ phí BAF theo giá dầu.", en: "The longer the leg, the bigger the share of fuel in the cost, so carriers charge a BAF that follows the fuel price." }
+    - label: { vi: "Trung chuyển", en: "Transshipment" }
+      text: { vi: "Hàng đi Hải Phòng thường ghé Singapore, nên lâu hơn hàng từ Tiên Sa.", en: "Cargo for Hai Phong usually calls at Singapore, so it takes longer than cargo from Tien Sa." }
+  asked:
+    vi: "Hãng nào hay trễ trên tuyến Úc, và mỗi TEU gánh bao nhiêu tiền dầu?"
+    en: "Which carrier runs late on the Australia lane, and how much fuel cost does each TEU carry?"
