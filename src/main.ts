@@ -207,7 +207,9 @@ const fault = (error: unknown): void => {
 window.addEventListener('error', (e) => fault(e.error));
 window.addEventListener('unhandledrejection', (e) => fault(e.reason));
 
-Object.assign(actions, { rerender, selectTicket, complete, retryDb: () => db.restart(), copyDiagnostics: () => void copyDiagnostics() });
+Object.assign(actions, {
+  rerender, selectTicket, complete, retryDb: () => db.restart(), copyDiagnostics: () => void copyDiagnostics(), useSql: (sql: string) => work.setDoc(sql),
+});
 
 byId('inbox-btn').addEventListener('click', () => (byId('inbox-dialog') as HTMLDialogElement).showModal());
 byId('notebook-btn').addEventListener('click', () => toggleNotebook(byId('notebook-dialog') as HTMLDialogElement));

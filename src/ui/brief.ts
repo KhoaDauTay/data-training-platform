@@ -15,6 +15,8 @@ const KIND: Record<Kind, Key> = { text: 'shape.text', number: 'shape.number', da
 
 /** Conclusion option picked per ticket: survives re-renders and language switches (not saved). */
 const picked = new Map<string, number>();
+/** Reflect option picked per ticket (curriculum §5.5): same rules, never graded or saved. */
+const reflected = new Map<string, number>();
 
 const mark = (ok: boolean): string => (ok ? '✓' : '✗');
 
@@ -82,6 +84,40 @@ function conclusion(tk: Ticket, x: TicketText): HTMLElement {
   return form;
 }
 
+/** format: worked (curriculum §5.1): the annotated example the task is paired with; the button loads it into the editor. */
+function exampleCard(tk: Ticket, x: TicketText): HTMLElement | null {
+  if (!tk.example || !x.example) return null;
+  const sql = tk.example.sql;
+  return h('section', { class: 'my-3 rounded-xl bg-panel p-3 ring-1 ring-line', 'aria-labelledby': 'example-title' },
+    h('h3', { id: 'example-title', class: 'mt-0' }, t('brief.example')),
+    h('pre', { class: 'sql' }, sql),
+    richText(x.example),
+    h('button', { type: 'button', onclick: () => actions.useSql(sql) }, t('brief.useExample')));
+}
+
+/** Recap question (curriculum §5.5): pick an option, then the right one and the reason show. */
+function reflectCard(tk: Ticket): HTMLElement | null {
+  const r = tk.reflect;
+  if (!r) return null;
+  const lang = getLang();
+  const pick = reflected.get(tk.id);
+  return h('section', { class: 'my-3 rounded-xl bg-panel p-3 ring-1 ring-line', 'aria-labelledby': 'reflect-title' },
+    h('h4', { id: 'reflect-title', class: 'mt-0' }, t('recap.reflect')),
+    h('p', {}, r.q[lang]),
+    h('div', { class: 'flex flex-col items-start gap-1.5' }, ...r.options.map((o, i) => h('button', {
+      type: 'button',
+      class: cx('text-left', pick !== undefined && i === r.answer && 'ring-2 ring-emerald-500'),
+      'aria-pressed': pick === i ? 'true' : 'false',
+      onclick: () => {
+        reflected.set(tk.id, i);
+        actions.rerender();
+      },
+    }, o[lang]))),
+    pick === undefined
+      ? null
+      : h('p', { role: 'status', class: pick === r.answer ? 'good' : 'bad' }, `${t(pick === r.answer ? 'recap.reflectRight' : 'recap.reflectWrong')} ${r.why[lang]}`));
+}
+
 /** "This week at Cargo Query" (product-design-v2 ★4): the chapter's story, shown on its first ticket only. */
 function story(tk: Ticket): HTMLElement | null {
   const c = CHAPTERS.find((x) => x.chapter === tk.chapter);
@@ -119,6 +155,7 @@ function recap(tk: Ticket, x: TicketText): HTMLElement {
     h('h4', {}, t(tk.grants.length ? 'recap.learned' : 'recap.review')),
     h('ul', { class: 'space-y-1' }, ...skills.map((s) =>
       h('li', {}, h('b', {}, s.label[lang]), ' ', h('code', {}, s.syntax), h('p', { class: 'muted' }, s.when[lang])))),
+    reflectCard(tk),
     ...tk.steps.map((s, i) => h('div', { class: 'my-2 grid gap-2 sm:grid-cols-2' },
       tk.steps.length > 1 ? h('h4', {}, x.steps[i].title) : null,
       h('figure', {}, h('figcaption', { class: 'mb-1 text-sm text-muted' }, t('recap.yours')), h('pre', { class: 'sql' }, gradedSql(tk, i))),
@@ -150,6 +187,7 @@ export function renderBrief(host: HTMLElement, tk: Ticket, stepIndex: number): v
     story(tk),
     coach('brief'),
     h('div', { class: 'rounded-2xl rounded-tl-sm bg-code px-4 leading-relaxed' }, richText(x.body)),
+    exampleCard(tk, x),
     x.task ? h('section', { class: 'my-3 rounded-lg border-l-4 border-accent bg-accent-soft p-3' }, h('h3', { class: 'mt-0' }, t('brief.task')), richText(x.task)) : null,
     boss
       ? h('section', { class: 'my-3 rounded-lg p-3 ring-1 ring-line' },

@@ -18,6 +18,8 @@ const CASES: [string, string][] = [
   ['SELECT ref FROM shipments WHERE eta = 5', 'sqlerr.42883'],
   ['SELECT 1; SELECT 2', 'sqlerr.multi'],
   ['SELECT 1/0', 'sqlerr.22012'],
+  [`SELECT CASE WHEN eta < '2026-10-31' THEN ref ELSE 0 END FROM shipments`, 'sqlerr.42804'],
+  [`SELECT CASE WHEN eta < '2026-10-31' THEN 1 ELSE 'late' END FROM shipments`, 'sqlerr.22P02'],
 ];
 
 async function errorOf(sql: string): Promise<SqlErrorInfo> {
