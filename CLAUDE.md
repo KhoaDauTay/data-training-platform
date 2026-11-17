@@ -13,6 +13,7 @@ npx vitest run tests/grader.test.ts           # one file
 npx vitest run tests/grader.test.ts -t alias  # one test by name
 npx tsc --noEmit                              # Vitest does not typecheck: run this after every change
 npm run build                                 # typecheck + production build
+node scripts/check-budget.mjs                 # gzip budget per asset group (after a build); deploy runbook: docs/ops/deploy.md
 ```
 
 ## Architecture
