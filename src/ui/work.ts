@@ -56,6 +56,33 @@ const FEEDBACK: Record<'good' | 'bad', string> = {
   bad: 'mt-2 rounded-xl bg-rose-50 p-3 text-sm text-rose-900 ring-1 ring-rose-200 dark:bg-rose-950/40 dark:text-rose-100 dark:ring-rose-800',
 };
 
+/**
+ * After a wrong result (curriculum §5.4): the author's explanation when the result equals one of the ticket's `wrong:` SQL,
+ * else the trap of the skill the ticket teaches. A wrong column count says nothing about which mistake it was (no tip), and an
+ * empty result looks like every mistake that filters too much, so it is never matched against `wrong:` (tests/content.test.ts:
+ * a `wrong:` SQL always returns rows). Each `wrong:` SQL runs once per ticket+variant (its text has the variant applied).
+ */
+export function wrongTipper(run: (sql: string) => Promise<QueryResult>) {
+  const results = new Map<string, Promise<QueryResult | null>>();
+  const resultOf = (tk: Ticket, sql: string): Promise<QueryResult | null> => {
+    const k = `${tk.id}#${sql}`;
+    let p = results.get(k);
+    if (!p) results.set(k, p = run(sql).catch(() => null)); // a failing `wrong:` is a content bug (tests/content.test.ts): skipped
+    return p;
+  };
+  return async (tk: Ticket, result: QueryResult | undefined, fail: GradeResult): Promise<(() => string) | undefined> => {
+    if (fail.ok || fail.reason === 'columns') return undefined;
+    if (result?.rows.length) {
+      for (const w of tk.wrong ?? []) {
+        const r = await resultOf(tk, w.sql);
+        if (r && compareResults(r, result, tk.ordered).ok) return () => w.why[getLang()];
+      }
+    }
+    const skill = SKILLS.find((s) => tk.grants.includes(s.id));
+    return skill && (() => t('work.trap', { trap: skill.trap[getLang()] }));
+  };
+}
+
 export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
   let ticket: Ticket | undefined;
   let stepIndex = 0;
@@ -176,23 +203,7 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
     deps.onRun();
   }
 
-  /**
-   * After a wrong result (curriculum §5.4): the author's explanation when the result equals one of the ticket's `wrong:` SQL,
-   * else the trap of the skill the ticket teaches. A `wrong:` SQL that fails is a content bug (tests/content.test.ts): skipped.
-   */
-  async function wrongTip(tk: Ticket, result: QueryResult | undefined): Promise<(() => string) | undefined> {
-    if (result) {
-      for (const w of tk.wrong ?? []) {
-        try {
-          if (compareResults(await deps.db.run(w.sql), result, tk.ordered).ok) return () => w.why[getLang()];
-        } catch {
-          // ignored, see above
-        }
-      }
-    }
-    const skill = SKILLS.find((s) => tk.grants.includes(s.id));
-    return skill && (() => t('work.trap', { trap: skill.trap[getLang()] }));
-  }
+  const wrongTip = wrongTipper((sql) => deps.db.run(sql));
 
   async function submit(): Promise<void> {
     if (busy || !editor || !ticket || submitBtn.hidden) return;
@@ -226,8 +237,11 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
     };
     let r: GradeResult | undefined;
     let solutionError: unknown;
+    let tip: (() => string) | undefined;
     try {
       r = await grade((s) => (s === sql ? playerRun(s) : deps.db.run(s)), tk.steps[i].solution, sql, tk.ordered);
+      // Still busy: no newer Run/Submit can start before the tip is ready, so this result can never overwrite a newer one.
+      if (!r.ok && r.reason !== 'error') tip = await wrongTip(tk, played?.result, r);
     } catch (e) {
       solutionError = e; // the Solution itself failed
       r = undefined;
@@ -255,8 +269,6 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
         say('bad', () => h('div', {}, err !== undefined ? errorView(err) : gradeMessage(fail), voice()));
       } else {
         if (fail.reason === 'rows' && played?.result) played.mark = fail.sample;
-        const tip = await wrongTip(tk, played?.result);
-        if (editor !== ed) return;
         say('bad', () => h('div', {}, gradeMessage(fail), tip ? h('p', { class: 'mt-2 mb-0' }, tip()) : null, voice()));
       }
       deps.panel.show('result');

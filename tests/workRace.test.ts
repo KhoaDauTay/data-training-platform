@@ -45,6 +45,8 @@ vi.mock('../src/ui/dom', () => ({
   byId: () => fakeEl(),
 }));
 
+vi.mock('../src/ui/avatar', () => ({ avatar: () => fakeEl() }));
+
 const { app } = await import('../src/state');
 const { mountWork } = await import('../src/ui/work');
 const { HISTORY_KEY } = await import('../src/history');
@@ -228,5 +230,80 @@ describe('Practice không đụng tiến độ câu chuyện', () => {
     onSolved(tk);
     expect(complete).toHaveBeenCalledWith(tk);
     complete.mockRestore();
+  });
+});
+
+describe('nộp sai: ô trống, gợi ý wrong:, kết quả cũ', () => {
+  it('bài faded còn ô ___: không chấm, không tính là nộp sai', async () => {
+    const { work, deps } = setup();
+    const onWrong = vi.fn();
+    (deps as { onWrong?: () => void }).onWrong = onWrong;
+    app.save.drafts['A#0'] = 'SELECT ___ FROM ports';
+    open(work, { ...ticket('A'), format: 'faded' });
+    editors[0].opts.onSubmit();
+    await flush();
+    expect(deps.db.run).not.toHaveBeenCalled();
+    expect(onWrong).not.toHaveBeenCalled();
+    expect(deps.onSolved).not.toHaveBeenCalled();
+    expect(app.lastRun).toBeUndefined();
+  });
+
+  it('Run bấm khi gợi ý của lần nộp sai còn đang chạy: bị chặn, không đè kết quả', async () => {
+    const pending: (() => void)[] = [];
+    const db = {
+      run: vi.fn((sql: string) => (sql === 'SELECT 1 AS n'
+        ? Promise.resolve(result)
+        : sql === 'SELECT 2'
+          ? Promise.resolve({ ...result, rows: [[2]] })
+          : new Promise<QueryResult>((resolve) => { pending.push(() => resolve({ ...result, rows: [[3]] })); }))),
+    };
+    const deps = { db, panel: { show: vi.fn(), active: 'columns' }, onSolved: vi.fn(), onStepSolved: vi.fn(), onConclusion: vi.fn(), onRun: vi.fn(), onWrong: vi.fn() };
+    const work = mountWork(fakeEl() as unknown as HTMLElement, deps as never);
+    app.selectedId = 'B';
+    app.stepIndex = 0;
+    work.setTicket({ ...ticket('B'), wrong: [{ sql: 'SELECT 3', why: { vi: 'v', en: 'e' } }] }, 0);
+    editors[0].opts.onSubmit();
+    await flush();
+    expect(pending).toHaveLength(1); // the `wrong:` query is running, Submit still busy
+    editors[0].opts.onRun();
+    expect(db.run).toHaveBeenCalledTimes(3); // player, Solution, wrong: — the Run was refused
+    pending[0]();
+    await flush();
+    expect(deps.onWrong).toHaveBeenCalledOnce();
+    expect(app.lastRun?.sql).toBe('SELECT 2');
+  });
+});
+
+describe('wrongTipper', async () => {
+  const { wrongTipper } = await import('../src/ui/work');
+  const { SKILLS } = await import('../src/progress');
+  const { getLang } = await import('../src/i18n');
+  const rows = (...v: number[]): QueryResult => ({ columns: ['n'], types: [23], rows: v.map((x) => [x]) });
+  const skill = SKILLS[0];
+  const tk: Ticket = { ...ticket('W'), grants: [skill.id], wrong: [{ sql: 'W1', why: { vi: 'sai 1', en: 'wrong 1' } }, { sql: 'W2', why: { vi: 'sai 2', en: 'wrong 2' } }] };
+  const rowsFail = { ok: false, reason: 'rows', missing: 1, extra: 1 } as const;
+  const make = () => {
+    const run = vi.fn(async (sql: string) => (sql === 'W1' ? rows(1) : rows(2, 3)));
+    return { run, tip: wrongTipper(run) };
+  };
+
+  it('khớp kết quả một câu wrong: → lời giải thích của câu đó; chạy mỗi câu một lần', async () => {
+    const { run, tip } = make();
+    expect((await tip(tk, rows(3, 2), rowsFail))?.()).toBe(tk.wrong![1].why[getLang()]);
+    expect((await tip(tk, rows(3, 2), rowsFail))?.()).toBe(tk.wrong![1].why[getLang()]);
+    expect(run).toHaveBeenCalledTimes(2);
+  });
+
+  it('không khớp → bẫy của kỹ năng; kết quả rỗng không bao giờ khớp wrong:', async () => {
+    const { run, tip } = make();
+    expect((await tip(tk, rows(9), rowsFail))?.()).toContain(skill.trap[getLang()]);
+    expect((await tip(tk, rows(), rowsFail))?.()).toContain(skill.trap[getLang()]);
+    expect(run).toHaveBeenCalledTimes(2);
+  });
+
+  it('sai số cột: không gợi ý, không chạy câu wrong:', async () => {
+    const { run, tip } = make();
+    expect(await tip(tk, rows(1), { ok: false, reason: 'columns', expected: 2, actual: 1 })).toBeUndefined();
+    expect(run).not.toHaveBeenCalled();
   });
 });
