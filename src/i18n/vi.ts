@@ -378,7 +378,6 @@ export const vi = {
   'steps.play': '▶ Phát',
   'steps.pause': '⏸ Dừng',
   'steps.pipe': 'Các bước thực thi',
-  'steps.unused': 'không dùng',
   'steps.error': 'lỗi',
   'steps.groups': '{n} nhóm',
   'steps.title': 'Bước {i} · {label}',

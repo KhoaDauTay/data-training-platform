@@ -31,8 +31,10 @@ export function renderSteps(host: HTMLElement, sql: string, result: StepsResult,
     }
     return;
   }
-  const { steps, ranges } = result;
-  const live = steps.filter((s) => !s.skipped && s.error === undefined);
+  const { ranges } = result;
+  // L47 #1: clauses the query does not use get no card (buildSteps keeps them as `skipped`; tests rely on that).
+  const steps = result.steps.filter((s) => !s.skipped);
+  const live = steps.filter((s) => s.error === undefined);
   let current = steps.indexOf(live[1] ?? live[0] ?? steps[0]);
   let timer: number | undefined;
 
@@ -61,13 +63,12 @@ export function renderSteps(host: HTMLElement, sql: string, result: StepsResult,
       i ? h('span', { class: 'text-muted', 'aria-hidden': 'true' }, '→') : null,
       h('button', {
         type: 'button',
-        class: cx(STEP_BTN, i === current ? 'border-accent bg-accent-soft' : 'bg-code', s.skipped && 'border-dashed text-muted', s.error && 'border-bad'),
+        class: cx(STEP_BTN, i === current ? 'border-accent bg-accent-soft' : 'bg-code', s.error && 'border-bad'),
         'aria-current': i === current ? 'step' : false,
         onclick: () => { stop(); current = i; draw(); },
       },
         h('b', {}, STEP_LABELS[s.key]),
-        s.skipped ? h('span', {}, t('steps.unused'))
-          : s.error ? h('span', {}, t('steps.error'))
+        s.error ? h('span', {}, t('steps.error'))
           : h('span', { class: 'text-base font-bold tabular-nums' }, unit(s.key, s.count!))),
     ].filter((x): x is HTMLElement => x !== null)));
 
