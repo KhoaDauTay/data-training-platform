@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { runSandboxed } from '../src/db/run';
-import { erColumnsSql, erDefinition, loadErMetadata, mermaidName, tablesInQuery, type ErColumn, type ErConstraint } from '../src/viz/erd';
+import { loadTickets } from '../src/content';
+import { tablesUnlocked } from '../src/progress';
+import { erColumnsSql, erDefinition, erRowCountsSql, loadErMetadata, mermaidName, relatedTables, tablesInQuery, type ErColumn, type ErConstraint } from '../src/viz/erd';
 import { freshDb, runner } from './helpers';
 
 const CH2 = ['ports', 'carriers', 'employees', 'customers', 'shipments', 'containers'];
@@ -53,7 +55,7 @@ describe('erDefinition escape tên (header CSV, L36)', () => {
     { table: 'bad table}', name: 'số_lượng', type: 'integer', nullable: false },
     { table: '2026 orders', name: 'id', type: 'integer', nullable: false },
   ];
-  const cons: ErConstraint[] = [{ table: 'bad table}', column: evil, kind: 'FOREIGN KEY', refTable: '2026 orders' }];
+  const cons: ErConstraint[] = [{ table: 'bad table}', column: evil, kind: 'FOREIGN KEY', refTable: '2026 orders', refColumn: 'id' }];
 
   it('mỗi tên thành một từ an toàn; chữ Việt có dấu được giữ', () => {
     expect(mermaidName('shipments')).toBe('shipments');
@@ -96,5 +98,67 @@ describe('tablesInQuery', () => {
     const known = ['shipments', 'customers', 'ports'];
     expect(tablesInQuery("SELECT * FROM Shipments s JOIN customers c ON c.id = s.customer_id WHERE s.note = 'ports'", known))
       .toEqual(new Set(['shipments', 'customers']));
+  });
+});
+
+const fk = (table: string, refTable: string, column = `${refTable}_id`): ErConstraint => ({ table, column, kind: 'FOREIGN KEY', refTable, refColumn: 'id' });
+
+describe('relatedTables (ui-ux-v4 §4)', () => {
+  const cons = [fk('c', 'b'), fk('b', 'a'), fk('a', 'a', 'parent_id'), fk('x', 'b'), fk('y', 'x'), fk('z', 'z', 'self_id')];
+  const all = ['a', 'b', 'c', 'x', 'y', 'z'];
+
+  it('đi con → cha mọi độ sâu, không đi cha → con, tự tham chiếu không lặp', () => {
+    expect(relatedTables(['c'], all, cons)).toEqual({ tables: ['c', 'a', 'b'], dropped: [] });
+    expect(relatedTables(['z'], all, cons)).toEqual({ tables: ['z'], dropped: [] });
+    expect(relatedTables(['a'], all, cons).tables).toEqual(['a']);
+  });
+
+  it('thêm bảng cầu nối khi bảng của việc không liên thông', () => {
+    // c and y meet through b and x (c → b ← x ← y); a is a parent of b.
+    expect(relatedTables(['c', 'y'], all, cons)).toEqual({ tables: ['c', 'y', 'b', 'x', 'a'], dropped: [] });
+  });
+
+  it('bảng chưa mở không bao giờ xuất hiện, kể cả qua FK', () => {
+    expect(relatedTables(['c', 'q'], ['b', 'c'], cons)).toEqual({ tables: ['c', 'b'], dropped: [] });
+  });
+
+  it('vượt max: bỏ bảng cha ít được tham chiếu nhất trước; core không bị cắt', () => {
+    const r = relatedTables(['c', 'y'], all, cons, 4);
+    expect(r).toEqual({ tables: ['c', 'y', 'b', 'x'], dropped: ['a'] });
+    expect(relatedTables(['c', 'y'], all, cons, 1).tables).toEqual(['c', 'y', 'b', 'x']);
+  });
+
+  it('dữ liệu thật: ch10-04 có 8 bảng; chỉ ch12-06 phải ẩn bớt', async () => {
+    const { cons: real } = await loadErMetadata(await runner(), 'public');
+    const tickets = loadTickets();
+    const ch10 = tickets.find((x) => x.id === 'ch10-04')!;
+    expect(new Set(relatedTables(ch10.tables, tablesUnlocked(10), real).tables)).toEqual(
+      new Set(['container_events', 'containers', 'shipments', 'customers', 'free_time_terms', 'ports', 'carriers', 'employees']));
+    const over = tickets.filter((x) => relatedTables(x.tables, tablesUnlocked(x.chapter), real).dropped.length > 0).map((x) => x.id);
+    expect(over).toEqual(['ch12-06']);
+    expect(real.find((c) => c.table === 'shipments' && c.column === 'customer_id')).toMatchObject({ refTable: 'customers', refColumn: 'id' });
+  });
+});
+
+describe('erDefinition detail', () => {
+  it('chỉ bảng trong detail có khối cột; bảng khác là hộp tên', async () => {
+    const { cols, cons } = await loadErMetadata(await runner(), 'public');
+    const def = erDefinition(cols, cons, CH2, new Set(['shipments']), undefined, new Set(['shipments']));
+    expect(def).toContain('shipments {');
+    expect(def).not.toContain('customers {');
+    expect(def.split(/\n/)).toContain('  customers');
+    expect(def).toContain('customers ||--o{ shipments : "customer_id"');
+  });
+});
+
+describe('erRowCountsSql', () => {
+  it('đếm chính xác, giá trị là số', async () => {
+    const r = await (await runner())(erRowCountsSql(['ports', 'carriers']));
+    expect(r.rows.map(([t]) => t)).toEqual(['ports', 'carriers']);
+    for (const [, n] of r.rows) expect(typeof n).toBe('number');
+  });
+
+  it('từ chối tên bảng không phải định danh', () => {
+    expect(() => erRowCountsSql(['ports; DROP TABLE x'])).toThrow();
   });
 });
