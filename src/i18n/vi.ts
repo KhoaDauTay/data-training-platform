@@ -557,7 +557,7 @@ export const vi = {
   'domain.ecommerce': 'E-commerce',
   'domain.logisticsDesc': 'Cargo Query Logistics, Đà Nẵng: 12 chương từ thực tập sinh tới trưởng nhóm.',
   'domain.financeDesc': 'Phân tích công nợ, dòng tiền và ngân sách cho một công ty hư cấu. Đang thiết kế.',
-  'domain.ecommerceDesc': 'Đơn hàng, khách hàng và giao hàng của một cửa hàng trực tuyến hư cấu. Đang thiết kế.',
+  'domain.ecommerceDesc': 'Chợ Lồng Đèn, sàn bán lẻ trực tuyến hư cấu ở Đà Nẵng: 6 chương từ doanh số, giao hàng, phễu mua hàng tới giữ chân khách.',
   'home.domains': 'Lĩnh vực',
   'home.enter': 'Vào làm',
   'home.peek': 'Xem',

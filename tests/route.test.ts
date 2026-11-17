@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
+import { activeDomain, setActiveDomain } from '../src/domains';
 import {
-  canonicalHash, dataTableOf, domainHash, hashOf, inDomain, initialRoute, isRoute, learnAdvOf, learnModuleOf, learnSkillOf, parseRoute, ROUTES, soonDomainOf,
+  canonicalHash, dataTableOf, domainHash, domainOfHash, hashOf, inDomain, initialRoute, isRoute, learnAdvOf, learnModuleOf, learnSkillOf, parseRoute, ROUTES, soonDomainOf,
 } from '../src/route';
 
 describe('route (v5 §B.3, Plan 7)', () => {
@@ -43,15 +44,37 @@ describe('route (v5 §B.3, Plan 7)', () => {
   it('domain chưa làm là "Sắp có"; domain hay trang lạ về Trang chủ', () => {
     expect(parseRoute('#/d/finance')).toBe('soon');
     expect(parseRoute('#/d/finance/play')).toBe('soon');
-    expect(parseRoute('#/d/ecommerce')).toBe('soon');
     expect(parseRoute('#/d/mars')).toBe('home');
     expect(parseRoute('#/d/logistics/nope')).toBe('home');
     expect(parseRoute('#/d/logistics/constructor')).toBe('home');
     expect(parseRoute('#/sandbox')).toBe('home');
     expect(parseRoute('#/PLAY')).toBe('home');
-    expect(soonDomainOf('#/d/ecommerce/x')).toBe('ecommerce');
     expect(soonDomainOf('#/d/logistics')).toBeUndefined();
     expect(domainHash('finance')).toBe('#/d/finance');
+  });
+
+  it('Plan 9: E-commerce là domain sống, trang của nó nằm dưới #/d/ecommerce', () => {
+    expect(parseRoute('#/d/ecommerce')).toBe('overview');
+    expect(parseRoute('#/d/ecommerce/play')).toBe('play');
+    expect(parseRoute('#/d/ecommerce/data/orders')).toBe('data');
+    expect(parseRoute('#/d/ecommerce/map')).toBe('map');
+    expect(soonDomainOf('#/d/ecommerce/x')).toBeUndefined();
+    expect(domainOfHash('#/d/ecommerce/play?x=1')).toBe('ecommerce');
+    expect(domainOfHash('#/play')).toBe('logistics'); // hash cũ → Logistics (canonicalHash)
+    expect(domainOfHash('#/learn')).toBeUndefined();
+    expect(domainOfHash('#/d/finance')).toBeUndefined();
+    expect(dataTableOf('#/d/ecommerce/data/order_items')).toBe('order_items');
+  });
+
+  it('Plan 9: hashOf theo domain đang mở; hash cũ vẫn về Logistics', () => {
+    const before = activeDomain();
+    setActiveDomain('ecommerce');
+    expect(hashOf('play')).toBe('#/d/ecommerce/play');
+    expect(hashOf('overview')).toBe('#/d/ecommerce');
+    expect(hashOf('learn')).toBe('#/learn');
+    expect(canonicalHash('#/play')).toBe('#/d/logistics/play');
+    setActiveDomain(before);
+    expect(hashOf('play')).toBe('#/d/logistics/play');
   });
 
   it('hashOf ngược với parseRoute', () => {

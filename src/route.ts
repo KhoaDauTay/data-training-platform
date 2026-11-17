@@ -1,4 +1,4 @@
-import { DOMAINS, type DomainId } from './domains';
+import { activeDomain, DOMAINS, isLiveDomain, type DomainId } from './domains';
 
 /**
  * Hash routes without a framework (product-design-v5 §B.3, v6 §3.3). Practice runs and the Sandbox stay session modes
@@ -10,15 +10,15 @@ export type Route = (typeof ROUTES)[number];
 /** Last route shown: a device convenience, never part of Save. Values saved before Plan 7 (home/play/data/dashboard) stay valid. */
 export const ROUTE_KEY = 'cargo-query/route';
 
-/** The only live domain for now (V6). */
-const D = '#/d/logistics';
-const HASH: Record<Route, string> = {
-  home: '#/', learn: '#/learn', practice: '#/practice', overview: D, play: `${D}/play`, data: `${D}/data`,
-  dashboard: `${D}/dashboard`, map: `${D}/map`, soon: '#/d/finance',
-};
+/** The open domain's base hash (Plan 9): domain pages follow activeDomain(); old hashes still mean Logistics (canonicalHash). */
+const D = (): string => `#/d/${activeDomain()}`;
+const hashTable = (): Record<Route, string> => ({
+  home: '#/', learn: '#/learn', practice: '#/practice', overview: D(), play: `${D()}/play`, data: `${D()}/data`,
+  dashboard: `${D()}/dashboard`, map: `${D()}/map`, soon: '#/d/finance',
+});
 const DOMAIN_PAGE: Record<string, Route> = { '': 'overview', play: 'play', data: 'data', dashboard: 'dashboard', map: 'map' };
 
-export const hashOf = (r: Route): string => HASH[r];
+export const hashOf = (r: Route): string => hashTable()[r];
 export const isRoute = (v: unknown): v is Route => ROUTES.includes(v as Route);
 /** A domain's pages: the sidebar lists the domain's items and the top bar shows its chapter and rank (v6 §3.1). */
 export const inDomain = (r: Route): boolean => r === 'overview' || r === 'play' || r === 'data' || r === 'dashboard' || r === 'map' || r === 'soon';
@@ -27,7 +27,7 @@ export const domainHash = (id: DomainId): string => `#/d/${id}`;
 /** Hashes from before Plan 7 (#/play, #/data/<t>, #/dashboard) → the same page, tail kept. Kept forever (v5 §B.3). */
 export function canonicalHash(hash: string): string {
   const m = /^#\/?(play|data|dashboard)(?=$|[/?])(.*)$/.exec(hash);
-  return m ? `${D}/${m[1]}${m[2]}` : hash;
+  return m ? `#/d/logistics/${m[1]}${m[2]}` : hash;
 }
 
 /** '' (no hash) → undefined, so the remembered route can be used; any unknown path falls back to home. */
@@ -37,7 +37,7 @@ export function parseRoute(hash: string): Route | undefined {
   if (a === '') return 'home';
   if (a === 'learn' || a === 'practice') return a;
   if (a !== 'd') return 'home';
-  if (b === 'logistics') return Object.hasOwn(DOMAIN_PAGE, c) ? DOMAIN_PAGE[c] : 'home';
+  if (isLiveDomain(b)) return Object.hasOwn(DOMAIN_PAGE, c) ? DOMAIN_PAGE[c] : 'home';
   return soonDomainOf(hash) ? 'soon' : 'home';
 }
 
@@ -45,9 +45,9 @@ export function initialRoute(hash: string, saved: unknown): Route {
   return parseRoute(hash) ?? (isRoute(saved) ? saved : 'home');
 }
 
-/** `#/d/logistics/data/<table>` (or the old `#/data/<table>`) → the table (ui-ux-v4 §5); anything but a plain identifier is ignored. */
+/** `#/d/<domain>/data/<table>` (or the old `#/data/<table>`) → the table (ui-ux-v4 §5); anything but a plain identifier is ignored. */
 export function dataTableOf(hash: string): string | undefined {
-  const m = /^#\/?d\/logistics\/data\/([^/?]*)/.exec(canonicalHash(hash));
+  const m = /^#\/?d\/[a-z]+\/data\/([^/?]*)/.exec(canonicalHash(hash));
   return m && /^[a-z_][a-z0-9_]*$/.test(m[1]) ? m[1] : undefined;
 }
 
@@ -66,4 +66,10 @@ export const learnAdvOf = (hash: string): string | undefined => /^#\/?learn\/adv
 export function soonDomainOf(hash: string): DomainId | undefined {
   const id = /^#\/?d\/([a-z]+)(?=$|[/?])/.exec(hash)?.[1];
   return DOMAINS.find((d) => d.id === id && !d.live)?.id;
+}
+
+/** `#/d/<id>…` of a live domain (old hashes count as Logistics) → that domain; any other page → undefined (keeps the last domain). */
+export function domainOfHash(hash: string): DomainId | undefined {
+  const id = /^#\/?d\/([a-z]+)(?=$|[/?])/.exec(canonicalHash(hash))?.[1];
+  return isLiveDomain(id) ? id : undefined;
 }

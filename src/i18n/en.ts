@@ -560,7 +560,7 @@ export const en: Record<Key, Msg> = {
   'domain.ecommerce': 'E-commerce',
   'domain.logisticsDesc': 'Cargo Query Logistics, Da Nang: 12 chapters from intern to team lead.',
   'domain.financeDesc': 'Receivables, cash flow and budgets for a fictional company. In design.',
-  'domain.ecommerceDesc': 'Orders, customers and deliveries of a fictional online shop. In design.',
+  'domain.ecommerceDesc': 'Lantern Market, a fictional online marketplace in Da Nang: 6 chapters from sales and delivery to purchase funnels and retention.',
   'home.domains': 'Domains',
   'home.enter': 'Go to work',
   'home.peek': 'Take a look',
