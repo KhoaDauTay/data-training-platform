@@ -327,3 +327,22 @@ Sửa vòng 1: commits 27e88d8, 0941d3f, e0addb1, 46ef9f5, 08dc0df, b6c3e1d, 569
 - Card biểu đồ: viewBox 260 đơn vị, `min-w-[260px] max-w-[400px]` (không thu nhỏ dưới 1:1: chữ 12 px, cột 18 px; xem trước trong hộp Ghim không phóng quá 1,5×), số trên cột dạng gọn ("1,2 Tr"), số đủ ở tooltip. `colGone` chỉ khi biểu đồ vẫn hợp mà cột không còn (không có dòng → "chart.empty").
 - R-3: L49 ghi "R-3 hiện tiêu đề"; vòng này ẩn tiêu đề khi còn khóa (`titleHidden`, chỉ r-3), dòng vẫn hiện "Bài tuyến 3 · mở sau chương 7". Cần user xác nhận có thay L49 không.
 - sg-1: `pod = 'SGSIN'` là cảng đích (không đổi tàu), nên chuyện mới là tàu gom nhỏ đi Singapore có trọng tải hạn chế, chuyến gần đủ tải thì lô nặng bị dời sang chuyến sau (theo lô, không theo container; 10 lô đầu đều SEA FCL ~48 t); Solution giữ nguyên.
+
+## Thuật ngữ (L51)
+
+Áp bảng `docs/team/glossary-vi.md` (L51, mặc định của user) trong commits 57cf36c, 46784eb, dee3c19. Dò lại dòng trên HEAD sau Plan 5 và vòng sửa 1; code span, Solution và `answer` không đổi; SAME_OK không cần sửa.
+
+**Đã áp:**
+- A1–A10: nhãn kỹ năng kèm từ khóa/thuật ngữ EN; "Đối soát hai phía"; trap ROW_NUMBER bỏ "cắt hòa". Thêm "(index)" và "(sargable)" một lần ở thẻ `sargable`.
+- B1. B3 một phần: thêm D&D, Reefer, Claim, Customs clearance vào `glossary.yml`. B4: điền `columns` cho HBL, MBL, Free time (bảng đã có), sửa ghi chú đầu file.
+- C1–C11, và cùng loại ở chuỗi Plan 5: `dash.intro`, `dash.emptyTitle`, `dash.empty`, `dash.slow`, `card.colGone`, `pin.fast`, `pin.slow`, `pin.slowHelp` ("query" → "truy vấn").
+- D1–D5 ("chỉ mục"); thêm "kế hoạch thực thi (execution plan)" và "chỉ mục (index)" lần đầu ở thân đề ch11-01.
+- E1–E17, I5 ("ghép" → "nối" ở giọng dạy SQL), thêm ch3-03 "phép ghép thông thường" và lane `ausyd/s-2` gợi ý 1 (cùng loại). Task ch9-04 "Ghép theo lô" giữ (giọng nghiệp vụ).
+- F1–F9 và câu trong ticket (ch2-02, ch3-05; EN "ticket" → "task" ở ch2-02 gợi ý 2, ch3-05 conclusion và gợi ý 1). Tên test `coach.test.ts:52` đổi theo.
+- G1–G2, I3, I4 ("biên lợi nhuận gộp"). H1, H2/I2 (cả Task, `columns` ch3-01), H3 (cả ví dụ ch8-01 "bảng tạm" cùng loại), H4/I1, H6, H7, H8 (chỉ VI; EN "lab" giữ).
+
+**Bỏ qua theo L51:**
+- B2, H5 và mục Storage của B3: storage/DEM/DET giữ nguyên, ghi "chưa kiểm chứng" ở `glossary.yml` (chú thích trên Demurrage) và ở mục 5 của bảng thuật ngữ.
+- "vận đơn nhà (HBL)", "hàm gộp", tên Incoterms: giữ, không cần sửa.
+
+Lane mới (`content/lanes/**`) đã soát cùng các mẫu: chỉ `ausyd/s-2` cần sửa. tsc, 1472 test, build, budget đều qua. Chưa kiểm bằng trình duyệt.
