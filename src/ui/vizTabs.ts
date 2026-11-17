@@ -1,14 +1,15 @@
 import type { DbClient } from '../db/client';
 import { t } from '../i18n';
-import { app, selected } from '../state';
+import { activeTicket } from '../session';
+import { app, erMeta, selected, unlockedTables } from '../state';
 import { chapterColor, THEME_EVENT } from '../theme';
-import { erDefinition, loadErMetadata, tablesInQuery } from '../viz/erd';
+import { erDefinition, relatedTables, tablesInQuery, type ErMetadata } from '../viz/erd';
 import { memoByKey } from '../viz/memo';
 import { flattenPlan, type Plan } from '../viz/plan';
 import type { StepsResult } from '../viz/steps';
 import { renderChart } from './chartView';
-import { h } from './dom';
-import { drawErd, erdSvg } from './erdView';
+import { h, nodes } from './dom';
+import { drawErd, erdSvg, keyBadges } from './erdView';
 import { renderExplain } from './explainView';
 import { errorView } from './feedback';
 import { renderFlow } from './flowView';
@@ -98,23 +99,83 @@ function registerChartTab(deps: VizDeps): void {
   });
 }
 
-function registerErdTab(deps: VizDeps): void {
-  // Keyed by schema: Plan Import reuses the same cache with 'sandbox'.
-  const erMetadata = memoByKey((schema) => loadErMetadata((sql) => deps.db.run(sql), schema));
+/** Public metadata plus the Sandbox imports (schema `sandbox`). */
+const allMeta = (): Promise<ErMetadata> => {
+  const own = sandboxTables().length > 0 ? erMeta('sandbox') : Promise.resolve({ cols: [], cons: [] });
+  return Promise.all([erMeta('public'), own]).then(([pub, mine]) => ({ cols: [...pub.cols, ...mine.cols], cons: [...pub.cons, ...mine.cons] }));
+};
+
+interface Scoped { tables: string[]; dropped: string[]; switchable: boolean }
+
+/**
+ * What the ER and Columns tabs show (ui-ux-v4 §4): with a task, its related tables (or every unlocked table, by the switch);
+ * in Sandbox every visible table. Related tables are listed alphabetically, so nothing marks the ones the answer uses.
+ */
+function scoped(meta: ErMetadata): Scoped {
+  const tk = activeTicket();
+  const all = { tables: visibleTables(), dropped: [], switchable: false };
+  if (!tk) return all;
+  const r = relatedTables(tk.tables, unlockedTables(), meta.cons);
+  if (r.tables.length === 0) return all; // no `tables` in the ticket: nothing to scope to
+  return app.schemaScope === 'all' ? { ...all, switchable: true } : { tables: [...r.tables].sort(), dropped: [...r.dropped].sort(), switchable: true };
+}
+
+/** Switch pressed by keyboard: the redraw replaces it, so the new button takes focus back. */
+let refocus: 'task' | 'all' | undefined;
+const SCOPE_BTN = 'px-2.5 py-1 text-sm aria-pressed:bg-accent aria-pressed:font-semibold aria-pressed:text-on-accent';
+
+/** The "Related to this task | All unlocked tables" switch, and the hidden-tables line. */
+function scopeBar(s: Scoped, deps: VizDeps): (Node | string)[] {
+  if (!s.switchable) return [];
+  const btn = (v: 'task' | 'all', label: string) => {
+    const b = h('button', {
+      type: 'button', class: SCOPE_BTN, 'aria-pressed': String(app.schemaScope === v),
+      onclick: () => {
+        app.schemaScope = v;
+        refocus = v;
+        deps.show(deps.active());
+      },
+    }, label);
+    if (refocus === v) {
+      refocus = undefined;
+      queueMicrotask(() => b.focus()); // appended by the caller in the same task
+    }
+    return b;
+  };
+  return [
+    h('div', { class: 'mb-2 flex flex-wrap gap-1', role: 'group', 'aria-label': t('erd.scope') }, btn('task', t('erd.scopeTask')), btn('all', t('erd.scopeAll'))),
+    ...nodes(s.dropped.length ? h('p', { class: 'text-sm text-muted' }, t('erd.dropped', { n: s.dropped.length, list: s.dropped.join(', ') })) : null),
+  ];
+}
+
+function registerSchemaTabs(deps: VizDeps): void {
   registerTab({
     id: 'erd',
     label: 'tab.erd',
     group: 'schema',
     order: 10,
-    render: (host) => {
-      // Sandbox: imported tables too (schema `sandbox`); every name reaches Mermaid through mermaidName() (L36).
-      const tables = visibleTables();
-      const own = sandboxTables().length > 0 ? erMetadata('sandbox') : Promise.resolve({ cols: [], cons: [] });
-      // Tables the last run used: bold border in the open ticket's chapter colour (L36).
-      const svg = Promise.all([erMetadata('public'), own]).then(([pub, mine]) =>
-        erdSvg(erDefinition([...pub.cols, ...mine.cols], [...pub.cons, ...mine.cons], tables, tablesInQuery(app.lastRun?.sql ?? '', tables), ticketColor().hex)));
-      return load(host, t('erd.drawing'), svg, drawErd);
-    },
+    // Every name reaches Mermaid through mermaidName() (L36). Tables the last run used: bold border in the chapter colour.
+    render: (host) => load(host, t('erd.reading'), allMeta(), (body, meta) => {
+      const s = scoped(meta);
+      body.append(...scopeBar(s, deps));
+      const svg = erdSvg(erDefinition(meta.cols, meta.cons, s.tables, tablesInQuery(app.lastRun?.sql ?? '', s.tables), ticketColor().hex));
+      return load(body, t('erd.drawing'), svg, drawErd);
+    }),
+  });
+  registerTab({
+    id: 'columns',
+    label: 'tab.columns',
+    group: 'schema',
+    order: 20,
+    render: (host) => load(host, t('erd.reading'), allMeta(), (body, meta) => {
+      const s = scoped(meta);
+      const open = new Set(visibleTables());
+      body.append(...scopeBar(s, deps), h('div', { class: 'grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-2' }, ...s.tables.map((table) =>
+        h('div', {},
+          h('h3', { class: 'm-0' }, table),
+          h('ul', { class: 'mt-1 mb-2 list-none space-y-0.5 pl-2 text-sm' }, ...meta.cols.filter((c) => c.table === table).map((c) =>
+            h('li', { class: 'flex flex-wrap items-center gap-1' }, h('code', {}, c.name), h('span', { class: 'muted' }, c.type), ...keyBadges(meta.cons, table, c.name, open))))))));
+    }),
   });
   // Mermaid bakes the theme into the SVG: redraw when the app theme changes (switch or OS, src/theme.ts) while the tab is open.
   document.addEventListener(THEME_EVENT, () => {
@@ -127,5 +188,5 @@ export function registerVizTabs(deps: VizDeps): void {
   registerChartTab(deps);
   registerStepsTab(deps);
   registerPlanTabs(deps);
-  registerErdTab(deps);
+  registerSchemaTabs(deps);
 }

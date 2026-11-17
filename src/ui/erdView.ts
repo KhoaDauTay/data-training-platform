@@ -1,7 +1,8 @@
 import { t } from '../i18n';
+import type { ErConstraint } from '../viz/erd';
 import { isDark } from '../theme';
 import { once } from '../viz/memo';
-import { h } from './dom';
+import { h, nodes } from './dom';
 
 let seq = 0;
 /** A failed chunk import is not cached: the next tab open retries. */
@@ -27,4 +28,25 @@ export function drawErd(host: HTMLElement, svg: string): void {
       h('code', {}, 'o{'), ` ${t('erd.many')}. ${t('erd.bold')}`),
     figure,
   );
+}
+
+const BADGE = 'rounded bg-code px-1 text-xs font-semibold ring-1 ring-line';
+
+/**
+ * PK / UK / FK badges of one column. An FK to an unlocked table shows `→ table.column` (a button when `onRef` is given);
+ * to a locked table only "locked table", so the Data page and the Columns tab never name what is not open yet.
+ */
+export function keyBadges(cons: ErConstraint[], table: string, column: string, unlocked: Set<string>, onRef?: (table: string) => void): Node[] {
+  const mine = cons.filter((c) => c.table === table && c.column === column);
+  const out: Node[] = [];
+  if (mine.some((c) => c.kind === 'PRIMARY KEY')) out.push(h('span', { class: BADGE }, 'PK'));
+  if (mine.some((c) => c.kind === 'UNIQUE')) out.push(h('span', { class: BADGE }, 'UK'));
+  for (const c of mine.filter((x) => x.kind === 'FOREIGN KEY' && x.refTable)) {
+    const ref = `${c.refTable}.${c.refColumn ?? ''}`;
+    out.push(h('span', { class: 'inline-flex items-center gap-1' }, h('span', { class: BADGE }, 'FK →'), ...nodes(
+      !unlocked.has(c.refTable!) ? h('span', { class: 'text-sm text-muted' }, t('data.refLocked'))
+        : onRef ? h('button', { type: 'button', class: 'px-1.5 py-0 font-mono text-sm', onclick: () => onRef(c.refTable!) }, ref)
+          : h('code', {}, ref))));
+  }
+  return out;
 }
