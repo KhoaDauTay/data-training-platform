@@ -348,7 +348,7 @@ Thứ tự đề xuất: **F1 → F2 → (v5 N1 + F3) → v4 P2 + F4 → F5 → 
 | Rủi ro | Giảm thiểu |
 |---|---|
 | Linh vật vẫn bị thấy "giống" nhân vật nổi tiếng | Bảng §1.1 làm checklist review; cho 3–5 người xem mockup hỏi "giống ai?" trước khi build |
-| "Cute" làm nhiễu, người học thấy trẻ con | Quy tắc §1.4 (một linh vật mỗi vùng, không trong editor/kết quả); tắt linh vật ở bậc đáp án; trang Làm việc giữ tông nghề |
+| "Cute" làm nhiễu, người học thấy trẻ con | Quy tắc §1.4 (một linh vật mỗi vùng, không trong editor/kết quả); trang Làm việc giữ tông nghề |
 | Thanh trên + sidebar + thanh việc = 3 tầng điều hướng | Sidebar rail mặc định ở Làm việc; tour chỉ một đường; buổi thử 5 người (v4 §B.6) có câu hỏi về sidebar |
 | Font web làm chậm lần tải đầu | Tự host 2 độ đậm, `font-display: swap`; hoặc D-U2 = system-ui |
 | Đổi token làm lệch màu cú pháp/biểu đồ | Đo lại L13 trên nền mới; màu chương không đổi |
