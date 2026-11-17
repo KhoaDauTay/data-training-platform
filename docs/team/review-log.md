@@ -239,10 +239,12 @@ Vòng 1/3 (2026-11-17): review code + nội dung (đọc đủ 18 ticket VI/EN, 
 
 | Loại | Bug | Trạng thái |
 |---|---|---|
-| perf | `main.ts`: `new DbClient()` chỉ chạy sau `await loadContent()` → tải + seed DB (phần chậm nhất) chờ chunk ticket thay vì chạy song song — khớp với thời gian khởi động tăng | Mở |
-| correctness | `sqlErrors` map mã `42P10` → giải thích DISTINCT ON, nhưng PGlite cũng trả 42P10 cho `SELECT DISTINCT x … ORDER BY y` và `ORDER BY 2`/`GROUP BY 3` ngoài danh sách cột | Mở (khớp theo message + test âm) |
-| content | ch8-06 nói "không làm tròn từng hóa đơn" trái với ch8-04 (twist) dạy làm tròn từng hóa đơn → lệch 8 đồng | Mở |
-| pedagogy | ch9-04 thiếu `wrong:` cho bẫy chính của FULL JOIN (lọc tháng ở WHERE sau khi nối) | Mở |
-| pedagogy | NOT IN với NULL chỉ có trong câu ngẫm lại/trap, không ticket nào gặp được (các cột liên quan NOT NULL) dù mục tiêu chương 7 hứa tránh bẫy này | Mở |
-| content | ch7-02 "không cần ghi" nghe như tùy chọn (LEFT JOIN liệt kê khách 0 báo giá sẽ trượt) → "đừng ghi"; câu kết luận ch7-06 đã bị lộ ở `why` của ch7-04; câu kết luận ch8-06 hỏi giả định dữ liệu không trả lời được (dữ liệu: 49/54 lô lỗ thuộc tuyến châu Âu) | Mở |
-| test-gap | `correlated_value` khớp mọi truy vấn con (`IN (SELECT`, `EXISTS`, `FROM (SELECT`) → luật twist→boss không bắt được boss thiếu truy vấn con tương quan; chưa test thông báo lỗi tải nội dung; a11y: thông báo đang tải hiện và điền cùng lúc, có thể không được đọc | Mở |
+| perf | `main.ts`: `new DbClient()` chỉ chạy sau `await loadContent()` → tải + seed DB (phần chậm nhất) chờ chunk ticket thay vì chạy song song — khớp với thời gian khởi động tăng | Đã sửa a96e884 (test thứ tự nguồn: tests/startup.test.ts) |
+| correctness | `sqlErrors` map mã `42P10` → giải thích DISTINCT ON, nhưng PGlite cũng trả 42P10 cho `SELECT DISTINCT x … ORDER BY y` và `ORDER BY 2`/`GROUP BY 3` ngoài danh sách cột | Đã sửa f932d9e (khớp theo message, 3 giải thích riêng, test âm trên PGlite) |
+| content | ch8-06 nói "không làm tròn từng hóa đơn" trái với ch8-04 (twist) dạy làm tròn từng hóa đơn → lệch 8 đồng | Đã sửa d5bed6d (làm tròn từng hóa đơn; `wrong:` không làm tròn đặt ở ch8-04 vì boss không có `wrong:`) |
+| pedagogy | ch9-04 thiếu `wrong:` cho bẫy chính của FULL JOIN (lọc tháng ở WHERE sau khi nối) | Đã sửa 3a43da5 |
+| pedagogy | NOT IN với NULL chỉ có trong câu ngẫm lại/trap, không ticket nào gặp được (các cột liên quan NOT NULL) dù mục tiêu chương 7 hứa tránh bẫy này | Đã sửa 126bfdb (ch7-05 thêm cột TEU không qua báo giá, `quotations.shipment_id` có NULL; `wrong:` NOT IN ra cột toàn 0) |
+| content | ch7-02 "không cần ghi" nghe như tùy chọn (LEFT JOIN liệt kê khách 0 báo giá sẽ trượt) → "đừng ghi"; câu kết luận ch7-06 đã bị lộ ở `why` của ch7-04; câu kết luận ch8-06 hỏi giả định dữ liệu không trả lời được (dữ liệu: 49/54 lô lỗ thuộc tuyến châu Âu) | Đã sửa 126bfdb, d5bed6d |
+| test-gap | `correlated_value` khớp mọi truy vấn con (`IN (SELECT`, `EXISTS`, `FROM (SELECT`) → luật twist→boss không bắt được boss thiếu truy vấn con tương quan; chưa test thông báo lỗi tải nội dung; a11y: thông báo đang tải hiện và điền cùng lúc, có thể không được đọc | Đã sửa 711710e (correlated_value + test âm), a96e884 (điền chữ trước khi hiện); bỏ qua test thông báo lỗi tải nội dung: môi trường test không có DOM |
+
+Sửa vòng 1: commits f932d9e, a96e884, 711710e, d5bed6d, 126bfdb, 3a43da5. Cần kiểm trên trình duyệt: thứ tự tải (worker PGlite bắt đầu trước/song song chunk ticket) và thời gian khởi động bản build; thanh trạng thái DB khi DB sẵn sàng trước khi nội dung tải xong; trình đọc màn hình đọc thông báo đang tải.
