@@ -14,7 +14,7 @@
 - id: where
   chapter: 1
   label: { vi: "Lọc dòng (WHERE)", en: "Filter rows (WHERE)" }
-  syntax: "WHERE region = 'Europe' AND kind IN ('SEAPORT', 'AIRPORT')"
+  syntax: "WHERE region = 'Europe' AND kind = 'SEAPORT'"
   when: { vi: "Giữ lại các dòng thỏa điều kiện.", en: "Keep only the rows that match a condition." }
   trap: { vi: "Chuỗi dùng nháy đơn, nháy kép là tên cột. Trộn AND với OR thì đặt ngoặc.", en: "Strings take single quotes, double quotes mean a column name. Mixing AND with OR needs parentheses." }
 

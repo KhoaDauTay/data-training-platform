@@ -1,13 +1,14 @@
 import { learnedSkills } from '../home';
 import { getLang, t } from '../i18n';
 import { chapterSummary, outcomeDone } from '../overview';
-import { CHAPTERS, chapterTitle, SKILLS } from '../progress';
-import { app, done } from '../state';
-import { chapterColor, cx, PILL } from '../theme';
+import { CHAPTERS, chapterTitle, nextTicket, SKILLS } from '../progress';
+import { actions, app, done } from '../state';
+import { BTN_GO, chapterColor, cx, PILL } from '../theme';
 import type { Ticket } from '../tickets';
 import { h } from './dom';
 import { skillIcon } from './icons';
 import { hasLesson, openLesson } from './lessonCard';
+import { mascot } from './mascots';
 
 export const skillLabel = (id: string): string => SKILLS.find((s) => s.id === id)?.label[getLang()] ?? id;
 
@@ -56,13 +57,19 @@ export function wrapUp(chapter: number, onQuick?: () => void): HTMLElement {
   const s = chapterSummary(app.tickets, app.save, chapter);
   const last = !app.tickets.some((tk) => tk.chapter > chapter);
   const career = CHAPTERS.find((c) => c.chapter === chapter)?.career[lang];
+  const next = last ? undefined : nextTicket(app.tickets, done());
+  // v6 §2.4: Lily and Boon cheer a new chapter; one primary way on (the Recap above has none for a promotion review, v10 UX #9).
   return h('section', { class: 'my-3 rounded-xl bg-panel p-4 ring-1 ring-line', 'aria-labelledby': 'wrapup-title' },
-    h('h3', { id: 'wrapup-title', class: 'mt-0' }, t('sum.title', { n: chapter, title: chapterTitle(chapter, lang) })),
-    career ? h('p', { class: 'font-semibold' }, t('sum.career', { career })) : null,
+    h('div', { class: 'flex items-center gap-3' },
+      mascot('lily', 'cheer', 'size-16'), mascot('boon', 'cheer', 'size-16'),
+      h('h3', { id: 'wrapup-title', class: 'm-0 text-lg font-bold' }, t('sum.title', { n: chapter, title: chapterTitle(chapter, lang) }))),
+    career ? h('p', { class: 'mt-3 rounded-lg bg-sun px-3 py-2 font-semibold text-sun-ink' }, t('sum.career', { career })) : null,
     outcomeList(chapter),
     s.skills.length ? h('p', {}, t('sum.skills', { list: s.skills.map(skillLabel).join(', ') })) : null,
     h('p', {}, t('sum.stats', { xp: s.xp, hints: s.hints })),
     !last && s.newTables.length ? h('p', {}, t('sum.tables', { list: s.newTables.join(', ') })) : null,
     last ? h('p', {}, t('sum.last')) : null,
-    onQuick ? h('div', { class: 'actions' }, h('button', { type: 'button', onclick: onQuick }, t('sum.quick'))) : null);
+    h('div', { class: 'actions' },
+      next ? h('button', { type: 'button', class: cx(BTN_GO, 'px-4 py-2'), onclick: () => actions.selectTicket(next.id) }, t('sum.nextChapter', { n: next.chapter })) : null,
+      onQuick ? h('button', { type: 'button', onclick: onQuick }, t('sum.quick')) : null));
 }

@@ -97,6 +97,6 @@ export function toggleNotebook(dialog: HTMLDialogElement): void {
 export const renderNotebook = (): void => redraw?.();
 
 registerMode({
-  id: 'notebook', order: 30, icon: 'book', tint: 'bg-fuchsia-100 text-fuchsia-800 dark:bg-fuchsia-950 dark:text-fuchsia-200',
+  id: 'notebook', order: 30, icon: 'book', tint: 'bg-accent-soft text-ink',
   title: 'mode.notebook', desc: 'mode.notebookDesc', open: () => toggleNotebook(byId('notebook-dialog') as HTMLDialogElement),
 });

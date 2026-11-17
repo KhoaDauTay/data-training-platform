@@ -62,7 +62,7 @@ export function renderData(host: HTMLElement): void {
   const side = sideExtra();
   const picker = h('div', { class: side ? 'min-w-0' : 'min-w-0 lg:sticky lg:top-4 lg:self-start' },
     h('label', { for: 'data-search', class: 'mb-1 block font-semibold' }, t('data.search')),
-    search,
+    Object.assign(search, { placeholder: t('data.searchHint') }),
     count,
     h('h2', { id: 'data-list-title', class: 'sr-only' }, t('data.title')),
     list);

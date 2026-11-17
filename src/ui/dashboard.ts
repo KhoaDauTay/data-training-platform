@@ -175,17 +175,17 @@ function mineSection(redraw: () => void): HTMLElement {
   const lang = getLang();
   const cards = app.save.dashboard.cards;
   const learned = learnedSkills(app.tickets, done());
+  // One plain line, not a chip row (v6 §3.4, v10 UX #20).
   const kinds = CARD_KINDS.map((k) => {
     const skill = skillOf(KIND_SKILL[k]);
-    return h('span', { class: cx('rounded-md px-2 py-0.5 ring-1 ring-line', !learned.has(skill.id) && 'text-muted') },
-      t(KIND_LABEL[k]), learned.has(skill.id) ? '' : ` · ${t('pin.kindLocked', { skill: skill.label[lang], n: skill.chapter })}`);
-  });
+    return `${t(KIND_LABEL[k])}${learned.has(skill.id) ? '' : ` (${t('pin.kindLocked', { skill: skill.label[lang], n: skill.chapter })})`}`;
+  }).join(' · ');
   return h('section', { 'aria-labelledby': 'dash-mine-title' },
     h('div', { class: 'flex flex-wrap items-center gap-x-3 gap-y-2' },
       h('h2', { id: 'dash-mine-title', tabindex: '-1', class: 'm-0 text-lg font-bold' }, t('dash.mine')),
       h('span', { class: 'text-sm text-muted' }, t('dash.count', { n: cards.length, max: MAX_CARDS })),
-      h('button', { type: 'button', class: 'ml-auto flex items-center gap-1.5 px-3 py-1 text-sm', onclick: () => startSandbox() }, icon('flask', 'size-4'), t('dash.toSandbox'))),
-    h('p', { class: 'mt-2 mb-3 flex flex-wrap items-center gap-1.5 text-sm' }, h('span', { class: 'text-muted' }, t('dash.kinds')), ...kinds),
+      cards.length ? h('button', { type: 'button', class: 'ml-auto flex items-center gap-1.5 px-3 py-1 text-sm', onclick: () => startSandbox() }, icon('flask', 'size-4'), t('dash.toSandbox')) : null), // empty: the empty state holds it
+    h('p', { class: 'mt-2 mb-3 text-sm' }, h('span', { class: 'text-muted' }, t('dash.kinds')), ' ', kinds),
     cards.length >= MAX_CARDS ? h('p', { class: 'mb-3 text-sm', role: 'note' }, t('dash.full', { max: MAX_CARDS })) : null,
     cards.length
       ? h('div', { class: 'grid gap-4 sm:grid-cols-2 lg:grid-cols-3' }, ...cards.map((c, i) => playerCard(c, i, cards.length, redraw)))
@@ -228,8 +228,8 @@ function kpiTile(tile: KpiTile, redraw: () => void): HTMLElement {
     h('div', { class: 'flex items-start gap-3' },
       h('span', { class: cx('grid size-9 shrink-0 place-items-center rounded-lg', open ? 'bg-code text-ink' : 'bg-code text-muted') }, icon(kpiIcon(kpi))),
       h('h3', { class: 'm-0 flex-1 self-center text-sm leading-snug font-medium' }, label),
-      h('button', { type: 'button', class: ICON_BTN, title: t('dash.hide', { title: label }), 'aria-label': t('dash.hide', { title: label }), onclick: () => setHidden(kpi.id, true, label, redraw) },
-        icon('eyeOff', 'size-4'))),
+      open ? h('button', { type: 'button', class: ICON_BTN, title: t('dash.hide', { title: label }), 'aria-label': t('dash.hide', { title: label }), onclick: () => setHidden(kpi.id, true, label, redraw) },
+        icon('eyeOff', 'size-4')) : null), // a locked tile has nothing to hide yet
     value,
     h('p', { class: 'mt-auto mb-0 flex items-start gap-1.5 text-sm text-muted' }, icon(open ? 'link' : 'lock', 'mt-0.5 size-4'), h('span', {}, foot)));
 }

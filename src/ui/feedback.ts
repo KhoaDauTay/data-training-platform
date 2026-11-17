@@ -50,11 +50,21 @@ export function errorText(e: unknown): string {
   return errorMessage(e) || t('err.unknown');
 }
 
-/** Postgres' message unchanged (a real skill to read), then its HINT, then a teaching note in the UI language. */
-export function errorView(e: unknown): HTMLElement {
+/** The teaching note for a Postgres error, in the UI language; Boon says it beside a failed Run (L59, v10 UX #8). */
+export function errorNote(e: unknown): string | undefined {
+  const info = sqlErrorInfo(e);
+  const note = info && explainError(info);
+  return note ? t(note) : undefined;
+}
+
+/**
+ * Postgres' message unchanged (a real skill to read), then its HINT, then a teaching note in the UI language.
+ * `withNote: false` in the Result tab: Boon already explains it under the buttons.
+ */
+export function errorView(e: unknown, withNote = true): HTMLElement {
   const info = sqlErrorInfo(e);
   if (!info) return h('pre', { class: 'error' }, errorText(e));
-  const note = explainError(info);
+  const note = withNote && explainError(info);
   return h('div', { class: 'space-y-1' },
     h('pre', { class: 'error' }, info.message),
     info.hint ? h('p', { class: 'muted' }, `HINT: ${info.hint}`) : null,

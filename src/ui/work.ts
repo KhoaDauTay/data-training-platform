@@ -16,7 +16,7 @@ import { celebrate } from './celebrate';
 import { h } from './dom';
 import { createEditor, type Editor } from './editor';
 import { avatar } from './avatar';
-import { errorText, errorView, gradeMessage, mascotOf, voiceKey } from './feedback';
+import { errorNote, errorText, errorView, gradeMessage, mascotOf, voiceKey } from './feedback';
 import { mascot, type Mascot, type Pose } from './mascots';
 import { pageShortcutOf } from './shortcuts';
 import { tourRegion, tourSlot } from './coach';
@@ -212,7 +212,11 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
     const failed = r.error !== undefined;
     if (failed) {
       underline(r.error, offset);
-      say('bad', () => t('work.runFailed'), mascotOf(r.error));
+      const err = r.error;
+      say('bad', () => {
+        const note = errorNote(err);
+        return note ? h('div', {}, h('p', { class: 'm-0' }, t('work.runFailed')), h('p', { class: 'mt-1 mb-0' }, note)) : t('work.runFailed');
+      }, mascotOf(err));
     } else {
       message = undefined;
       drawMessage();

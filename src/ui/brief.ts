@@ -203,7 +203,8 @@ function recap(tk: Ticket, x: TicketText): HTMLElement {
       tk.steps.length > 1 ? h('h4', {}, x.steps[i].title) : null,
       h('figure', {}, h('figcaption', { class: 'mb-1 text-sm text-muted' }, t('recap.yours')), h('pre', { class: 'sql' }, gradedSql(tk, i))),
       h('figure', {}, h('figcaption', { class: 'mb-1 text-sm text-muted' }, t('recap.reference')), h('pre', { class: 'sql' }, s.lab?.ddl ?? s.solution)))), // lab step: the reference index, not the slow query
-    next
+    tk.beat === 'boss' && !tk.lane ? null // the chapter wrap-up under it holds the one way on
+      : next
       ? h('button', { type: 'button', class: 'primary', onclick: () => actions.selectTicket(next.id) }, t(tk.lane ? 'nav.continueBack' : 'recap.next'))
       : h('p', {}, t('recap.allDone')));
 }
@@ -239,12 +240,12 @@ export function renderBrief(host: HTMLElement, tk: Ticket, stepIndex: number): v
           h('span', { class: 'block text-sm text-muted' }, roleLine(tk.from.name, getLang(), unlockedTables())))),
       h('p', { class: 'm-0 flex flex-wrap items-center gap-2 text-sm text-muted' },
         tk.lane ? t('lane.optional', { xp: LANE_XP }) : `${t('brief.chapter', { n: tk.chapter })} · ${'★'.repeat(tk.difficulty)}`,
-        h('span', { class: cx(PILL, chapterColor(tk.chapter).chip) },
-          tk.lane ? t('lane.badge', { name: ROUTES.find((r) => r.port === tk.lane)?.name ?? tk.lane }) : t(BEAT[tk.beat])),
+        tk.lane || isStory() ? h('span', { class: cx(PILL, chapterColor(tk.chapter).chip) }, // Practice has its own banner: no "New skill" badge (v10 UX #6)
+          tk.lane ? t('lane.badge', { name: ROUTES.find((r) => r.port === tk.lane)?.name ?? tk.lane }) : t(BEAT[tk.beat])) : null,
         isDone ? `✓ ${t('inbox.done')}` : ''),
       h('h2', { id: 'brief-title', tabindex: '-1', class: 'm-0 text-lg font-bold' }, x.title),
       x.fallback ? h('p', { class: 'tag' }, t('brief.untranslated')) : null),
-    story(tk),
+    isStory() ? story(tk) : null,
     isStory() ? tourSlot('brief') : null,
     h('div', { class: 'rounded-2xl rounded-tl-sm bg-code px-4 leading-relaxed' }, richText(x.body)),
     isStory() && !isDone ? lessonSlot(tk.grants) : null, // quick lessons before the task (product-design-v4 §C.3)

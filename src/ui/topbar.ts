@@ -85,10 +85,17 @@ function dbStatusView(): Node {
   }
   if (app.dbStatus === 'failed') return h('button', { type: 'button', class: TOP_BTN, onclick: () => actions.retryDb() }, t('db.retry'));
   const p = app.loadProgress;
-  const text = !p ? t('db.loading')
-    : p.total && p.total >= p.loaded ? t('db.loadingBytes', { loaded: mb(p.loaded), total: mb(p.total) })
+  const known = !!p?.total && p.total >= p.loaded;
+  const downloaded = !p || (known && p.loaded >= p.total!); // 15.6/15.6 MB: the download is over, the database is starting
+  const text = downloaded ? t('db.loading')
+    : known ? t('db.loadingBytes', { loaded: mb(p.loaded), total: mb(p.total!) })
       : t('db.loadingMb', { loaded: mb(p.loaded) });
-  return h('span', { class: 'rounded-full bg-code px-2.5 py-1 whitespace-nowrap' }, text);
+  // A dot and a short figure (full words on hover and for screen readers): an inline sentence wrapped the bar (v10 UX #4/#5).
+  const short = downloaded ? '' : known ? `${Math.round((p.loaded / p.total!) * 100)}%` : `${mb(p.loaded)} MB`;
+  return h('span', { class: 'flex items-center gap-1.5 text-xs whitespace-nowrap text-muted', title: text },
+    h('span', { class: 'size-2.5 animate-pulse rounded-full bg-amber-500', 'aria-hidden': 'true' }),
+    short ? h('span', { 'aria-hidden': 'true' }, short) : null,
+    h('span', { class: 'sr-only' }, text));
 }
 
 /**

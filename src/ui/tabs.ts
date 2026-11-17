@@ -120,7 +120,7 @@ export function registerCoreTabs(editorSql: () => string, bar: () => Node | null
         return;
       }
       if (editorSql().trim() !== run.sql.trim()) host.append(h('p', { class: 'stale', role: 'note' }, t('res.stale')));
-      host.append(bar() ?? '', run.error !== undefined ? errorView(run.error) : renderResult(run.result!, run.mark));
+      host.append(bar() ?? '', run.error !== undefined ? errorView(run.error, false) : renderResult(run.result!, run.mark));
     },
   });
 }

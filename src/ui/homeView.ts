@@ -143,7 +143,7 @@ function careerCard(): HTMLElement {
       'aria-current': r === now ? 'step' : false,
     },
       h('span', { class: cx('size-2.5 shrink-0 rounded-full', reached(r.at) ? 'bg-emerald-600' : 'bg-line'), 'aria-hidden': 'true' }),
-      r === now ? h('b', {}, r.title) : r.title,
+      r === now ? h('b', { class: 'whitespace-nowrap' }, r.title) : h('span', { class: 'whitespace-nowrap' }, r.title), // never wraps under its dot
       r === now
         ? h('span', { class: cx(PILL, 'ml-auto', DONE_PILL) }, t('home.careerNow'))
         : reached(r.at) ? null : h('span', { class: 'ml-auto text-sm' }, t('home.careerAt', { n: r.at }))))));
@@ -320,7 +320,7 @@ function moduleSection(m: HomeModel): HTMLElement {
       action: hasLesson(s.id) ? h('button', { type: 'button', class: 'rounded-full px-4 whitespace-nowrap', 'aria-haspopup': 'dialog', onclick: () => openLesson(s.id) }, t('nb.lesson')) : null,
     }))),
     reachable
-      ? h('button', { type: 'button', class: cx(BTN_GO, 'px-4 py-2'), onclick: () => actions.selectTicket(first.id) }, t('learn.apply', { n: card.chapter }))
+      ? h('button', { type: 'button', class: cx(BTN_GO, 'mt-4 px-4 py-2'), onclick: () => actions.selectTicket(first.id) }, t('learn.apply', { n: card.chapter }))
       : h('p', { class: 'm-0 text-muted' }, card.status === 'soon' ? t('home.soonHint') : t('home.lockedAfter', { n: card.chapter - 1 })),
     h('p', { class: 'm-0 text-sm text-muted' }, t('learn.advSoon')));
 }
