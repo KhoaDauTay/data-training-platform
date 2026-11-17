@@ -63,8 +63,12 @@ export function applyStatic(root: ParentNode = document): void {
   document.documentElement.lang = getLang();
 }
 
+/** The last language asked for: an EN chunk that arrives after the player picked VI again must not switch back. */
+let wanted: Lang | undefined;
 export async function setLang(l: Lang): Promise<void> {
+  wanted = l;
   await loadLang(l);
+  if (wanted !== l) return;
   lang = l;
   writeJson(PREFS_KEY, { ...readJson<object>(PREFS_KEY), lang: l });
   applyStatic();
