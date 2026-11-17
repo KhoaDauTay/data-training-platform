@@ -6,28 +6,28 @@
 
 - id: select
   chapter: 1
-  label: { vi: "Chọn cột", en: "Select columns" }
+  label: { vi: "Chọn cột (SELECT)", en: "Select columns (SELECT)" }
   syntax: "SELECT code, name FROM ports"
   when: { vi: "Chỉ lấy những cột cần cho câu hỏi.", en: "Pull only the columns the question needs." }
   trap: { vi: "SELECT * kéo cả cột thừa và làm sai số cột khi nộp.", en: "SELECT * drags in extra columns and fails the column count." }
 
 - id: where
   chapter: 1
-  label: { vi: "Lọc dòng", en: "Filter rows" }
+  label: { vi: "Lọc dòng (WHERE)", en: "Filter rows (WHERE)" }
   syntax: "WHERE region = 'Europe' AND kind IN ('SEAPORT', 'AIRPORT')"
   when: { vi: "Giữ lại các dòng thỏa điều kiện.", en: "Keep only the rows that match a condition." }
   trap: { vi: "Chuỗi dùng nháy đơn, nháy kép là tên cột. Trộn AND với OR thì đặt ngoặc.", en: "Strings take single quotes, double quotes mean a column name. Mixing AND with OR needs parentheses." }
 
 - id: order_by
   chapter: 1
-  label: { vi: "Sắp xếp theo nhiều tiêu chí", en: "Sort with a tie-breaker" }
+  label: { vi: "Sắp xếp (ORDER BY)", en: "Sort (ORDER BY)" }
   syntax: "ORDER BY gross_weight_kg DESC, ref"
   when: { vi: "Đề yêu cầu thứ tự hoặc xếp hạng.", en: "The question asks for an order or a ranking." }
   trap: { vi: "Thiếu tiêu chí sắp xếp phụ thì các dòng trùng giá trị có thể đổi chỗ giữa các lần chạy.", en: "Without a tie-breaker column, rows with equal values can come back in any order." }
 
 - id: limit
   chapter: 1
-  label: { vi: "Lấy top N", en: "Top N" }
+  label: { vi: "Lấy top N (LIMIT)", en: "Top N (LIMIT)" }
   syntax: "ORDER BY gross_weight_kg DESC, ref LIMIT 5"
   when: { vi: "Chỉ cần N dòng đầu sau khi sắp xếp.", en: "You only need the first N rows after sorting." }
   trap: { vi: "LIMIT không có ORDER BY trả về N dòng bất kỳ.", en: "LIMIT without ORDER BY returns any N rows." }

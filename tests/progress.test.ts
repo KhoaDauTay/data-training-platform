@@ -82,6 +82,14 @@ describe('skills.yml và chapters.yml', () => {
     expect(contentProblems([])).toEqual([]);
   });
 
+  it('nhãn kỹ năng là một mệnh đề thì có từ khóa trong ngoặc (product-design-v4 §E.1-6)', () => {
+    const label = (id: string) => SKILLS.find((s) => s.id === id)!.label;
+    for (const [id, kw] of [['select', 'SELECT'], ['where', 'WHERE'], ['order_by', 'ORDER BY'], ['limit', 'LIMIT']]) {
+      expect(label(id).vi).toContain(`(${kw})`);
+      expect(label(id).en).toContain(`(${kw})`);
+    }
+  });
+
   it('chapterTitle theo ngôn ngữ', () => {
     expect(chapterTitle(1, 'vi')).toBe('Tuần thử việc');
     expect(chapterTitle(1, 'en')).toBe('Probation week');
