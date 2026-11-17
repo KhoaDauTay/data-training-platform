@@ -298,6 +298,8 @@ export const en: Record<Key, Msg> = {
   'recap.reflect': 'Think it over',
   'recap.reflectRight': 'Correct.',
   'recap.reflectWrong': 'Not quite.',
+  'recap.reflectAnswer': 'correct answer',
+  'brief.exampleCopied': 'Example copied into the editor. Press {mod}+Z to get your previous text back.',
   'sqlerr.doubleQuote': 'Double quotes "…" name a column. Text values use single quotes: \'Europe\'.',
   'sqlerr.aggWhere': 'WHERE filters single rows before grouping. Conditions on COUNT/SUM go in HAVING.',
   'sqlerr.missingFrom': 'This alias is not declared in FROM or JOIN.',
