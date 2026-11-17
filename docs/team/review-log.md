@@ -214,3 +214,9 @@ Vòng 2/3 (2026-11-17, chỉ diff af017fa..f5339be): các bản sửa vòng 1 đ
 | judgement | Query `wrong:` quá 5 s bật banner "db-timeout" cho SQL người chơi không viết; thẻ warm-up hiện lại sau reload (không cày được); dòng "đã chép ví dụ" không tự tắt; test biến thể miễn theo giá trị, không theo key | Mở (judgement) |
 
 **Plan 2 đóng sau 2 vòng** (kiểm Edge các mục DOM: ✓/✗ câu ngẫm lại, Ctrl+Z sau khi chép ví dụ, thẻ warm-up — làm khi user không dùng tab :5174).
+
+## Phản hồi user khi chơi thử (2026-11-17)
+
+| Loại | Bug | Trạng thái |
+|---|---|---|
+| ux/teaching | ch4-02: `date_trunc(booking_date)` → "function date_trunc(date) does not exist" bị hiểu là "date_trunc không tồn tại"; giải thích cũ của 42883 nói sai ("so sánh hai kiểu khác nhau"); `date_trunc(MONTH, …)` → "column month does not exist" không có gợi ý; đề không nói đơn vị viết trong nháy đơn | Đã sửa: giải thích riêng `sqlerr.dateTrunc`, `sqlerr.unitQuote`, `sqlerr.fnArgs` (hàm có nhưng sai tham số) + test PGlite; đề ch4-02 VI/EN nói rõ chỗ trống đầu là đơn vị trong nháy đơn |
