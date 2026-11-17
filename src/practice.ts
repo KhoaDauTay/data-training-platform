@@ -30,6 +30,10 @@ export function nextCard(card: Card | undefined, success: boolean, today: string
   return { box, due: addDays(today, INTERVALS[box - 1]) };
 }
 
+/** The card was moved (or seeded) today: its due date is exactly one interval after today. */
+export const movedToday = (card: Card | undefined, today: string): boolean =>
+  !!card && card.due === addDays(today, INTERVALS[card.box - 1]);
+
 /** Called after a correct submit: passed only with no wrong submit and at most one hint. */
 export const isSuccess = (wrongSubmits: number, hints: number): boolean => wrongSubmits === 0 && hints <= 1;
 

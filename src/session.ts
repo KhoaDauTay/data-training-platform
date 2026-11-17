@@ -21,6 +21,8 @@ export interface PracticeRun {
   result?: 'ok' | 'weak';
   /** Editor text of the current item. Practice drafts are never saved. */
   draft: string;
+  /** Started from the chapter warm-up card. */
+  warmup?: boolean;
 }
 
 /** Modes inside the #/play route (not routes of their own). */
@@ -37,11 +39,19 @@ export function reviewToday(rnd: () => number = Math.random): PracticeItem[] {
   return reviewQueue(app.save.review, learnedSkills(app.tickets, d), loadTicketTemplates(), d, today(), rnd);
 }
 export const reviewCount = (): number => reviewToday(() => 0).length;
-/** Chapter warm-up (curriculum §5.2): only while chapter N ≥ 2 has no completed ticket yet. Length does not depend on `rnd`. */
+/** `day#chapter` of the last warm-up run answered to the end: its card stays hidden until the next day. In memory only. */
+export const warmupDone = { key: '' };
+const warmupKey = (): string => `${today()}#${currentChapter(app.tickets, done())}`;
+export const markWarmupDone = (): void => void (warmupDone.key = warmupKey());
+
+/**
+ * Chapter warm-up (curriculum §5.2): only while chapter N ≥ 2 has no completed ticket yet, and not again on the day it was
+ * finished. Length does not depend on `rnd`.
+ */
 export function warmupToday(rnd: () => number = Math.random): PracticeItem[] {
   const d = done();
   const chapter = currentChapter(app.tickets, d);
-  if (chapter < 2 || app.tickets.some((t) => t.chapter === chapter && d.has(t.id))) return [];
+  if (chapter < 2 || warmupDone.key === warmupKey() || app.tickets.some((t) => t.chapter === chapter && d.has(t.id))) return [];
   return warmupQueue(app.save.review, learnedSkills(app.tickets, d), loadTicketTemplates(), d, chapter, today(), rnd);
 }
 /** All items of the practice run answered: the left pane shows the summary and the editor is hidden (no ticketless editor). */

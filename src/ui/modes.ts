@@ -1,10 +1,10 @@
 import { loadTicketTemplates } from '../content';
 import { learnedSkills, type HomeModel } from '../home';
 import { t } from '../i18n';
-import { applyResult, isSuccess, pickForSkill, retryItem, type PracticeItem } from '../practice';
+import { applyResult, isSuccess, movedToday, pickForSkill, retryItem, type PracticeItem } from '../practice';
 import { hashOf } from '../route';
 import {
-  activeStep, activeTicket, isStory, practiceFinished, reviewCount, reviewToday, session, today, warmupToday, type Mode, type PracticeRun,
+  activeStep, activeTicket, isStory, markWarmupDone, practiceFinished, reviewCount, reviewToday, session, today, warmupToday, type Mode, type PracticeRun,
 } from '../session';
 import { actions, app, done, persist, selected } from '../state';
 import type { Ticket } from '../tickets';
@@ -40,7 +40,7 @@ function enter(mode: Mode): void {
   focusTitle();
 }
 
-export function startPractice(items: PracticeItem[]): boolean {
+export function startPractice(items: PracticeItem[], warmup = false): boolean {
   const usable = items.filter((i) => templates.has(i.ticketId));
   if (usable.length === 0) return false;
   enter({
@@ -54,6 +54,7 @@ export function startPractice(items: PracticeItem[]): boolean {
       hints: 0,
       passed: 0,
       draft: '',
+      warmup,
     },
   });
   return true;
@@ -104,12 +105,16 @@ export function onPracticeSolved(): void {
   const item = run.items[run.index];
   if (!item || run.result) return;
   const ok = isSuccess(run.wrong, run.hints);
-  const next = applyResult({ review: app.save.review, practice: app.save.practice }, item.skills, ok, today());
+  const day = today();
+  // Warm-up: a success moves each box at most once a day, so redoing the warm-up cannot farm boxes (derived from the save).
+  const skills = run.warmup && ok ? item.skills.filter((s) => !movedToday(app.save.review[s], day)) : item.skills;
+  const next = applyResult({ review: app.save.review, practice: app.save.practice }, skills, ok, day);
   app.save.review = next.review;
   app.save.practice = next.practice;
   persist(true);
   run.result = ok ? 'ok' : 'weak';
   if (ok) run.passed++;
+  if (run.warmup && run.index === run.items.length - 1) markWarmupDone();
   ctx?.rerender();
 }
 
@@ -210,7 +215,7 @@ function warmupCard(): HTMLElement | null {
     h('div', { class: 'min-w-0 flex-1' },
       h('h2', { id: 'warmup-title', class: 'm-0 text-lg font-bold' }, t('warmup.title')),
       h('p', { class: 'mt-1 mb-0 text-[15px] text-muted' }, t('warmup.intro', { n }))),
-    h('button', { type: 'button', class: cx(BTN_GO, 'px-4 py-2'), onclick: () => void startPractice(warmupToday()) }, t('warmup.start', { n })));
+    h('button', { type: 'button', class: cx(BTN_GO, 'px-4 py-2'), onclick: () => void startPractice(warmupToday(), true) }, t('warmup.start', { n })));
 }
 
 // Same id replaces topbar.ts's 'play' entry: "Workspace" is current only in story mode.
