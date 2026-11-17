@@ -43,7 +43,7 @@ function card(l: Lesson, titleId: string, actions: HTMLElement[], tour = false):
   const exampleOut = h('div', { class: 'mt-2' });
   const drawExample = (): void => {
     const e = examples.get(l.id);
-    exampleOut.replaceChildren(...nodes(e && (e.result ? renderResult(e.result) : errorView(e.error))));
+    exampleOut.replaceChildren(...nodes(e && (e.result ? renderResult(e.result, undefined, 8) : errorView(e.error))));
   };
   const runExample = h('button', {
     type: 'button',

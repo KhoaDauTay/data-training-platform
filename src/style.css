@@ -103,6 +103,11 @@
   dialog { margin: auto; padding: 20px; border: 1px solid var(--border); border-radius: var(--r-card); background: var(--panel); color: var(--text); width: min(520px, calc(100vw - 32px)); box-shadow: 0 20px 40px rgb(0 0 0 / 0.25); }
   dialog::backdrop { background: rgb(0 0 0 / 0.45); }
   :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  /* Plan 8b polish: balanced headings, no lone last word in prose, no jump when a page grows a scrollbar, no scroll chaining out of dialogs */
+  h1, h2 { text-wrap: balance; }
+  p { text-wrap: pretty; }
+  #home, #data, #dashboard { scrollbar-gutter: stable; }
+  dialog { overscroll-behavior: contain; }
   /* Headings focused by script (tabindex=-1) are landmarks for screen readers, not controls: no input-like ring (v10 UX #16). */
   :is(h1, h2, h3, h4)[tabindex="-1"]:focus-visible { outline: none; }
 }

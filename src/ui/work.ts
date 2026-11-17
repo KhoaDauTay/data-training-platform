@@ -145,6 +145,10 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
     explainBtn.textContent = t('tab.explain');
     formatBtn.textContent = t('work.format');
     submitBtn.textContent = t('work.submit');
+    // Plan 8b 8.7: a running query says so (spinner stops under reduced motion with every other animation)
+    if (busy && app.dbStatus !== 'loading') runBtn.replaceChildren(h('span', { class: 'mr-1.5 inline-block size-3 animate-spin rounded-full border-2 border-current border-t-transparent align-[-1px]', 'aria-hidden': 'true' }), t('work.running'));
+    runBtn.setAttribute('aria-busy', String(busy));
+    submitBtn.setAttribute('aria-busy', String(busy));
     runBtn.disabled = busy;
     explainBtn.disabled = busy;
     explainBtn.hidden = !!ticket?.steps[stepIndex]?.lab; // a lab editor holds CREATE INDEX: Run already shows both plans

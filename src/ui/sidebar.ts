@@ -46,7 +46,7 @@ interface Row { key: string; href: string; lead: Node; label: string; sub?: stri
 function row(r: Row): HTMLElement {
   const click = r.onclick;
   return h('a', {
-    href: r.href, 'data-side': r.key, class: SIDE_LINK, title: r.lock ?? r.label,
+    href: r.href, 'data-side': r.key, class: SIDE_LINK, title: [r.label, r.lock ?? r.sub].filter(Boolean).join(' · '),
     'aria-current': r.current ? 'page' : false,
     'aria-disabled': r.lock ? 'true' : false,
     onclick: r.lock ? (e: Event) => e.preventDefault() : click ? (e: Event) => { e.preventDefault(); click(); } : false,
@@ -78,12 +78,12 @@ function domainHead(): HTMLElement {
   const lang = getLang();
   const live = DOMAINS.find((d) => d.live)!;
   const ch = currentChapter(app.tickets, done());
+  const line = `${t('top.chapterShort', { n: ch, total: CHAPTERS.length })} · ${rankOf(app.tickets, done()).tier?.[lang] ?? t('career.intern')}`;
   return h('div', { class: 'flex items-center gap-3 px-3 py-2' },
     h('span', { class: 'grid size-6 shrink-0 place-items-center', 'aria-hidden': 'true' }, icon(live.icon)),
     h('span', { class: 'side-label min-w-0' },
       h('b', { class: 'block' }, t(live.name)),
-      h('span', { class: 'block truncate text-xs font-semibold text-muted' },
-        `${t('top.chapterShort', { n: ch, total: CHAPTERS.length })} · ${rankOf(app.tickets, done()).tier?.[lang] ?? t('career.intern')}`)));
+      h('span', { class: 'block truncate text-xs font-semibold text-muted', title: line }, line)));
 }
 
 /** Workspace (v6 §3.3): the open chapter's tasks, a second way beside the task bar; hidden in the rail. */
