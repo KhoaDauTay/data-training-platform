@@ -1,14 +1,14 @@
 import type { DbClient } from '../db/client';
 import { t } from '../i18n';
 import { app, selected } from '../state';
-import { chapterColor } from '../theme';
+import { chapterColor, THEME_EVENT } from '../theme';
 import { erDefinition, loadErMetadata, tablesInQuery } from '../viz/erd';
 import { memoByKey } from '../viz/memo';
 import { flattenPlan, type Plan } from '../viz/plan';
 import type { StepsResult } from '../viz/steps';
 import { renderChart } from './chartView';
 import { h } from './dom';
-import { DARK, drawErd, erdSvg } from './erdView';
+import { drawErd, erdSvg } from './erdView';
 import { renderExplain } from './explainView';
 import { errorView } from './feedback';
 import { renderFlow } from './flowView';
@@ -116,8 +116,8 @@ function registerErdTab(deps: VizDeps): void {
       return load(host, t('erd.drawing'), svg, drawErd);
     },
   });
-  // Mermaid bakes the theme into the SVG: redraw when the OS theme changes while the tab is open.
-  window.matchMedia(DARK).addEventListener('change', () => {
+  // Mermaid bakes the theme into the SVG: redraw when the app theme changes (switch or OS, src/theme.ts) while the tab is open.
+  document.addEventListener(THEME_EVENT, () => {
     if (deps.active() === 'erd') deps.show('erd');
   });
 }

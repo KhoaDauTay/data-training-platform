@@ -3,7 +3,8 @@
  * class from pieces (bg- + colour + -500): pick from these maps and join whole names with cx().
  * WCAG AA (>= 4.5:1): chips are -800 on -100 (light) and -200 on -950 (dark); white text only on -700 or darker.
  */
-import type { Key } from './i18n';
+import { PREFS_KEY, type Key } from './i18n';
+import { readJson, writeJson, type KV } from './storage';
 export const cx = (...parts: (string | false | null | undefined)[]): string => parts.filter(Boolean).join(' ');
 
 export interface ChapterColor {
@@ -74,3 +75,47 @@ export const TOP_BTN = 'border-0 bg-black/20 text-white ring-1 ring-white/40 hov
 export const NAV_LINK = 'rounded-lg px-3 py-1.5 text-white no-underline hover:bg-black/20 aria-[current=page]:bg-black/30 aria-[current=page]:font-semibold aria-[current=page]:ring-1 aria-[current=page]:ring-white/60';
 /** "Done"/"current" status badge (colour only on small badges, L23): emerald-800 on -100, -200 on -950. */
 export const DONE_PILL = 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200';
+
+/** Clickable card (ui-ux-v3 §d): lift, shadow and an accent ring on hover and keyboard focus. Static cards stay CARD. */
+export const CARD_ACTION = 'rounded-2xl bg-panel ring-1 ring-line transition hover:-translate-y-0.5 hover:bg-panel hover:shadow-md hover:ring-2 hover:ring-accent focus-visible:ring-2 focus-visible:ring-accent';
+
+/**
+ * Light / Dark / follow the OS (L42). Stored as `theme` in the device prefs (PREFS_KEY, next to `lang`), never in the Save.
+ * The resolved value is always written to <html data-theme>; style.css keys its tokens and the `dark:` variant on it.
+ * index.html repeats the read in an inline <head> script so the first paint already has the right theme.
+ */
+export type ThemePref = 'light' | 'dark' | 'system';
+export const THEME_PREFS: readonly ThemePref[] = ['light', 'system', 'dark'];
+export const THEME_EVENT = 'cq-theme';
+const OS_DARK = '(prefers-color-scheme: dark)';
+
+/** Anything but 'light' / 'dark' (missing, junk, unreadable storage) means follow the OS. */
+export const parseThemePref = (v: unknown): ThemePref => (v === 'light' || v === 'dark' ? v : 'system');
+export const getTheme = (storage?: KV): ThemePref => parseThemePref(readJson<{ theme?: unknown }>(PREFS_KEY, storage)?.theme);
+export const resolveTheme = (pref: ThemePref, osDark: boolean): 'light' | 'dark' => (pref === 'system' ? (osDark ? 'dark' : 'light') : pref);
+
+const osDark = (): boolean => typeof window !== 'undefined' && window.matchMedia(OS_DARK).matches;
+/** True when the page currently shows the dark theme (Mermaid and anything else that bakes colours in). */
+export const isDark = (): boolean => typeof document !== 'undefined' && document.documentElement.dataset.theme === 'dark';
+
+function applyTheme(pref: ThemePref): void {
+  const next = resolveTheme(pref, osDark());
+  const root = document.documentElement;
+  const changed = root.dataset.theme !== next;
+  root.dataset.theme = next;
+  if (changed) document.dispatchEvent(new Event(THEME_EVENT));
+}
+
+/** Merges into the prefs object, so `lang` survives (setLang merges the same way). */
+export function setTheme(pref: ThemePref, storage?: KV): void {
+  writeJson(PREFS_KEY, { ...readJson<object>(PREFS_KEY, storage), theme: pref }, storage);
+  if (typeof document !== 'undefined') applyTheme(pref);
+}
+
+/** Once at startup: re-applies the stored choice and follows OS changes while the choice is 'system'. */
+export function initTheme(): void {
+  applyTheme(getTheme());
+  window.matchMedia(OS_DARK).addEventListener('change', () => {
+    if (getTheme() === 'system') applyTheme('system');
+  });
+}

@@ -40,7 +40,7 @@ export interface EditorOptions {
 const language = (schema: SQLNamespace) => sql({ dialect: PostgreSQL, schema, upperCaseKeywords: true });
 const ariaLabel = (label: string) => EditorView.contentAttributes.of({ 'aria-label': label });
 
-/** L13: colours are CSS variables (style.css, light + dark), so the theme follows prefers-color-scheme without JS. */
+/** L13: colours are CSS variables (style.css, light + [data-theme=dark]), so the in-app theme switch recolours them without JS here. */
 const highlight = syntaxHighlighting(HighlightStyle.define([
   { tag: tags.keyword, color: 'var(--syn-keyword)' },
   { tag: [tags.string, tags.special(tags.string)], color: 'var(--syn-string)' },

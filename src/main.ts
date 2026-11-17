@@ -1,4 +1,5 @@
 import './style.css';
+import { initTheme } from './theme';
 import { loadTickets } from './content';
 import { DbClient, DbFailedError, DbRestartError, QueryTimeoutError, WorkerTaskError, type DbStatus } from './db/client';
 import { SqlError } from './db/run';
@@ -33,6 +34,7 @@ import { clearMemos } from './viz/memo';
 import { createMapStrip } from './ui/mapStrip';
 import { chapterDots } from './viz/progressDots';
 
+initTheme(); // index.html already set data-theme before paint; this adds the OS listener for 'system'
 app.tickets = loadTickets();
 const problems = contentProblems(app.tickets);
 if (problems.length) console.warn('Content problems:', problems);

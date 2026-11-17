@@ -4,6 +4,17 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Cargo Query</title>
+    <!-- L42: theme before first paint (no flash). Same rule as src/theme.ts: prefs.theme 'light' | 'dark', anything else follows the OS. -->
+    <script>
+      (function () {
+        var d = document.documentElement, t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        try {
+          var p = (JSON.parse(localStorage.getItem('cargo-query/prefs')) || {}).theme;
+          if (p === 'light' || p === 'dark') t = p;
+        } catch (e) {}
+        d.dataset.theme = t;
+      })();
+    </script>
   </head>
   <body>
     <header class="topbar flex flex-wrap items-center gap-x-4 gap-y-2 bg-linear-to-r from-indigo-700 via-blue-700 to-cyan-700 px-4 py-2 text-white dark:from-indigo-950 dark:via-blue-950 dark:to-cyan-950">
