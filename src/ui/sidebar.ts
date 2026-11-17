@@ -1,7 +1,7 @@
 import { DOMAINS } from '../domains';
 import { homeModel, type ChapterStatus } from '../home';
 import { getLang, t, type Key } from '../i18n';
-import { CHAPTERS, chapterTitle, currentChapter, rankOf, SKILLS, visibleTickets } from '../progress';
+import { CHAPTERS, chapterTitle, currentChapter, moduleTitle, rankOf, SKILLS, visibleTickets } from '../progress';
 import { gated, navLock, readTour } from '../onboarding';
 import { domainHash, hashOf, inDomain, learnModuleOf, type Route } from '../route';
 import { isStory, reviewCount } from '../session';
@@ -67,7 +67,7 @@ function modules(): HTMLElement[] {
     key: `m${c.chapter}`,
     href: `${hashOf('learn')}/sql/${c.chapter}`,
     lead: c.status === 'done' ? icon('check', 'size-5 text-good') : c.status === 'current' ? h('b', {}, String(c.chapter)) : icon('lock', 'size-4 text-muted'),
-    label: `${c.chapter} · ${chapterTitle(c.chapter, lang)}`,
+    label: `${c.chapter} · ${moduleTitle(c.chapter, lang)}`,
     sub: t(STATUS[c.status], { done: c.done, total: c.total }),
     current: c.chapter === open,
   }));
@@ -126,9 +126,11 @@ function content(route: Route, drawer: boolean): (Node | string)[] {
     out.push(row({ key: 'today', href: hashOf('practice'), lead: icon('repeat'), label: t('side.today', { n: reviewCount() }), current: true }),
       h('p', { class: GROUP }, t('side.byModule')),
       ...CHAPTERS.filter((c) => SKILLS.some((s) => s.chapter === c.chapter)).map((c) => row({
-        key: `p${c.chapter}`, href: hashOf('practice'), lead: h('b', {}, String(c.chapter)), label: chapterTitle(c.chapter, lang), current: false,
+        key: `p${c.chapter}`, href: hashOf('practice'), lead: h('b', {}, String(c.chapter)), label: moduleTitle(c.chapter, lang), current: false,
         onclick: () => document.getElementById(`skills-ch-${c.chapter}`)?.scrollIntoView({ block: 'start' }),
       })));
+  } else if (route === 'soon') {
+    if (!drawer) out.push(domainSwitch()); // the domains, not Logistics' pages
   } else if (inDomain(route)) {
     const order = app.tickets.map((x) => x.id);
     const isGated = gated(readTour());

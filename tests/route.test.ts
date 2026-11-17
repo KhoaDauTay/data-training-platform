@@ -70,7 +70,7 @@ describe('route (v5 §B.3, Plan 7)', () => {
 
   it('ROUTES và inDomain', () => {
     expect(ROUTES).toEqual(['home', 'learn', 'practice', 'overview', 'play', 'data', 'dashboard', 'map', 'soon']);
-    expect(ROUTES.filter(inDomain)).toEqual(['overview', 'play', 'data', 'dashboard', 'map', 'soon']);
+    expect(ROUTES.filter(inDomain)).toEqual(['overview', 'play', 'data', 'dashboard', 'map']);
   });
 
   it('dataTableOf: hash mới và cũ, chỉ nhận định danh', () => {

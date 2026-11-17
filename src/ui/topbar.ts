@@ -2,7 +2,7 @@ import { DOMAINS } from '../domains';
 import { getLang, t, type Key } from '../i18n';
 import { chapterTitle, CHAPTERS, currentChapter, rankOf } from '../progress';
 import { upsert } from '../registry';
-import { domainHash, hashOf, inDomain, type Route } from '../route';
+import { domainHash, hashOf, inDomain, soonDomainOf, type Route } from '../route';
 import { actions, app, done } from '../state';
 import { getTheme, NAV_LINK, setTheme, THEME_PREFS, TOP_BTN, type ThemePref } from '../theme';
 import { byId, h, nodes } from './dom';
@@ -67,7 +67,8 @@ function renderNav(): void {
 function renderDomainMenu(): void {
   const menu = byId('domain-menu');
   const ch = currentChapter(app.tickets, done());
-  byId('domain-label').textContent = t(DOMAINS.find((d) => d.live)!.name);
+  const soon = currentRoute() === 'soon' ? soonDomainOf(location.hash) : undefined; // the chip names the domain being looked at
+  byId('domain-label').textContent = t(DOMAINS.find((d) => (soon ? d.id === soon : d.live))!.name);
   menu.replaceChildren(h('div', { class: 'flex flex-col' }, ...DOMAINS.map((d) => h('a', {
     href: d.live ? hashOf('overview') : domainHash(d.id), class: MENU_ITEM, onclick: () => menu.hidePopover?.(),
   },

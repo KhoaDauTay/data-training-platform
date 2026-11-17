@@ -1,7 +1,7 @@
 import { DOMAINS, type Domain } from '../domains';
 import { homeModel, KPIS, kpiTiles, learnedSkills, LEVELS, reliesOn, type ChapterCard, type HomeModel } from '../home';
 import { getLang, t, type Key } from '../i18n';
-import { CHAPTERS, chapterTitle, rankOf, SKILLS, visibleTickets } from '../progress';
+import { CHAPTERS, chapterTitle, moduleTitle, rankOf, SKILLS, visibleTickets } from '../progress';
 import { derive, ROUTES as LANES } from '../scene';
 import { domainHash, learnModuleOf, soonDomainOf } from '../route';
 import { hasLesson, openLesson } from './lessonCard';
@@ -155,8 +155,7 @@ function statusPill(c: ChapterCard): HTMLElement | null {
   const n = { done: c.done, total: c.total };
   if (c.status === 'done') return h('span', { class: cx(PILL, DONE_PILL) }, t('home.status.done', n));
   if (c.status === 'current') return h('span', { class: cx(PILL, chapterColor(c.chapter).chip) }, t('home.status.current', n));
-  if (c.status === 'soon') return h('span', { class: cx(PILL, 'bg-code text-muted') }, t('home.status.soon'));
-  return null;
+  return h('span', { class: cx(PILL, 'bg-code text-muted') }, t(c.status === 'soon' ? 'home.status.soon' : 'home.status.locked', n)); // same words as the sidebar (v10 critic #7)
 }
 
 /**
@@ -176,7 +175,7 @@ function chapterRow(c: ChapterCard): HTMLLIElement {
         : h('span', { class: cx('grid size-10 place-items-center rounded-full text-lg font-bold', chapterColor(c.chapter).chip) }, String(c.chapter)),
     title: `${c.chapter} · ${chapterTitle(c.chapter, lang)}`,
     sub: closed ? (c.status === 'soon' ? t('home.soonHint') : t('home.lockedAfter', { n: c.chapter - 1 })) : t('home.reliesOn', { skills: short }),
-    action: closed ? null : h('a', { href: `${hashOf('learn')}/sql/${c.chapter}`, class: 'no-underline', title: t('learn.module', { n: c.chapter, title: chapterTitle(c.chapter, lang) }) }, statusPill(c)),
+    action: closed ? null : h('a', { href: `${hashOf('learn')}/sql/${c.chapter}`, class: 'no-underline', title: t('learn.module', { n: c.chapter, title: moduleTitle(c.chapter, lang) }) }, statusPill(c)),
     current: c.status === 'current',
   });
 }
@@ -197,7 +196,7 @@ function skillsSection(m: HomeModel): HTMLElement {
   return h('section', { class: 'space-y-10', 'aria-labelledby': 'skills-title' },
     h('h2', { id: 'skills-title', class: 'sr-only' }, t('home.skills')),
     ...groups.map(([n, list]) => h('div', { id: `skills-ch-${n}`, class: 'scroll-mt-4' },
-      h('h3', { class: GROUP_TITLE }, t('learn.module', { n, title: chapterTitle(n, lang) })),
+      h('h3', { class: GROUP_TITLE }, t('learn.module', { n, title: moduleTitle(n, lang) })),
       h('ul', { class: LIST }, ...list.map((s) => listRow({
         lead: h('span', { class: cx('grid size-10 place-items-center rounded-full', s.state === 'locked' ? 'bg-code text-muted' : chapterColor(n).chip) }, skillIcon(s.skill.id)),
         title: s.skill.label[lang],
@@ -326,7 +325,7 @@ function moduleSection(m: HomeModel): HTMLElement {
   return h('section', { class: 'space-y-6', 'aria-labelledby': 'module-title' },
     m.learned ? illustration('aspect-[480/200] max-w-md', (il) => il.studyDesk()) : illustration('aspect-[240/120] max-w-sm', (il) => il.emptyPath()), // Plan 8b
     h('div', { class: 'flex items-center gap-3' }, h('div', { class: 'w-28 shrink-0' }, illustration('aspect-[160/64]', (il) => il.moduleGlyph(card.chapter, chapterColor(card.chapter).fill))),
-      h('h2', { id: 'module-title', class: 'm-0 text-xl font-bold' }, t('learn.module', { n: card.chapter, title: chapterTitle(card.chapter, lang) }))),
+      h('h2', { id: 'module-title', class: 'm-0 text-xl font-bold' }, t('learn.module', { n: card.chapter, title: moduleTitle(card.chapter, lang) }))),
     bubble(mascot('boon', 'point', 'size-20'), next ? t('learn.next', { skill: next.label[lang] }) : t('learn.allDone')),
     h('ul', { class: LIST }, ...card.skills.map((s, i) => listRow({
       lead: learned.has(s.id) ? icon('check', 'size-6 text-good') : h('b', { class: 'text-lg' }, String(i + 1)),
