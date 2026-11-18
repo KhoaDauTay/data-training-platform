@@ -113,6 +113,8 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
   /** Last message under the editor, as a function so relabel() re-translates it. */
   let message: { kind: 'good' | 'bad'; view: () => Node | string; who?: [Mascot, Pose]; detail?: () => Node | null } | undefined;
   let history = loadHistory(localStore());
+  /** The message under the buttons is the scaffold note with its Undo button (v13 §3.1). */
+  let fillNote = false;
 
   const editorHost = h('div', { lang: 'en', class: 'editor overflow-hidden rounded-xl ring-1 ring-line' });
   const runBtn = h('button', { type: 'button', onclick: () => void run() });
@@ -143,6 +145,7 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
   /** `who`: a mascot beside the words (V7), at most one, in this line under the buttons only. */
   function say(kind: 'good' | 'bad', view: () => Node | string, who?: [Mascot, Pose], detail?: () => Node | null): void {
     message = { kind, view, who, detail };
+    fillNote = false;
     drawMessage();
   }
   function drawMessage(): void {
@@ -471,6 +474,11 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
           onChange: (v) => {
             writeDraft(v);
             persist();
+            if (fillNote) { // the first edit after "Fill the scaffold": its Undo would now only undo that edit (like the Try-it box)
+              fillNote = false;
+              message = undefined;
+              drawMessage();
+            }
           },
           onRun: () => void run(),
           onSubmit: () => void submit(),
@@ -512,6 +520,7 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
             drawMessage();
           },
         }, t('frame.undo')) : null), ['boon', 'point']);
+      fillNote = act === 'replace';
       return 'done';
     },
     currentSql: () => editor?.runTarget().sql ?? '',
