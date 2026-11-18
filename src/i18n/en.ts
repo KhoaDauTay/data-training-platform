@@ -635,8 +635,6 @@ export const en: Record<Key, Msg> = {
   'soon.none': 'No skills yet. Start with the learning path or Logistics.',
   'soon.practice': 'Practise SQL meanwhile',
   'soon.back': 'Back to Logistics',
-  'map.lanesTitle': 'Lanes and lane tasks',
-  'map.openLane': 'Read the lane brief',
   'dash.title': 'Dashboard',
   'dash.intro': 'Pin your queries as cards to keep an eye on them. Cards run again every time this page opens, so a query must run in under 2 seconds. Card types open as you learn the skills behind them.',
   'dash.teaser': (p) => `${num(p.open)}/${num(p.total)} tiles open · ${count('card', 'cards')({ n: p.cards })} of yours`,

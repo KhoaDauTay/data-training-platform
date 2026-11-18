@@ -1,6 +1,7 @@
 import { loadLanes } from '../content';
 import { getLang, t } from '../i18n';
 import { LANE_XP, laneLabel, laneTaskState, shown, type LaneTaskState } from '../lanes';
+import type { MapParts } from '../art/logistics';
 import { ROUTES, type Harbor, type RouteInfo } from '../scene';
 import { app } from '../state';
 import { BTN_GO, cx, DONE_PILL, PILL } from '../theme';
@@ -69,4 +70,25 @@ export function laneNote(task: Ticket, openBrief: (port: string) => void): HTMLE
   return h('div', { class: 'my-3 space-y-2 rounded-lg bg-code p-3 text-sm' }, ...nodes(
     h('p', { class: 'm-0 flex items-start gap-1.5' }, icon('info', 'mt-0.5 size-4 shrink-0'), t('lane.rules', { xp: LANE_XP })),
     h('button', { type: 'button', class: 'flex items-center gap-1.5 px-3 py-1', onclick: () => openBrief(r.port) }, icon('map', 'size-4'), t('lane.seeBrief', { name: r.name }))));
+}
+
+/**
+ * Map pins as buttons (map dialog and the Map page, v12.0 U4): a one-line tooltip each (D-B6: days and side tasks, never
+ * shipment counts); `pick` opens that lane's brief. The HTML lane list says the same in text (L34).
+ */
+export function wirePins(parts: Pick<MapParts, 'svg' | 'pins'>, harbor: Harbor, pick: (port: string) => void): void {
+  for (const r of ROUTES) {
+    const pin = parts.pins[r.port];
+    const tip = `${r.name} · ${laneInfo(r, harbor)}`;
+    pin.setAttribute('r', '9'); // a bigger target than the 6-unit dot
+    pin.setAttribute('role', 'button');
+    pin.setAttribute('tabindex', '0');
+    pin.setAttribute('aria-label', tip);
+    pin.setAttribute('class', `${pin.getAttribute('class') ?? ''} cursor-pointer`);
+    pin.replaceChildren(document.createElementNS('http://www.w3.org/2000/svg', 'title'));
+    pin.firstChild!.textContent = tip;
+    pin.addEventListener('click', () => pick(r.port));
+    pin.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pick(r.port); } });
+  }
+  parts.svg.removeAttribute('role'); // the pins inside are controls now
 }

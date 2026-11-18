@@ -8,7 +8,7 @@ import { ecomArt } from './ecomArt';
 import { domainLine } from './topbar';
 import { derive, ROUTES as LANES } from '../scene';
 import { domainHash, learnAdvOf, learnModuleOf, learnSkillOf, soonDomainOf } from '../route';
-import { laneInfo, lanePanel } from './lanePanel';
+import { laneInfo, lanePanel, wirePins } from './lanePanel';
 import { mascot, setLilyStage } from './mascots';
 import { dayCount, lilyStage, toNextStage } from '../lily';
 import { relabelScene, teachScene } from './teachScene';
@@ -24,7 +24,7 @@ import { icon, skillIcon, type IconName } from './icons';
 import { byId, h, nodes } from './dom';
 import { artSlot, illustration } from '../art/load';
 import { fleetOrder, takeNewRoutes } from '../routesSeen';
-import { callout, routeItems } from './routeText';
+import { callout } from './routeText';
 import { isStory } from '../session';
 import { go } from './router';
 
@@ -288,23 +288,47 @@ function harborSection(m: HomeModel): HTMLElement {
 }
 
 let stopMap: (() => void) | undefined;
+/** Lane whose brief is open on the Map page (session only). */
+let mapLane: string | undefined;
+
+/** v12.0 U4: a pin or a list row opens that lane's brief beside the map (under it below 1024 px); its name is announced. */
+function pickLane(port: string): void {
+  mapLane = port;
+  actions.rerender();
+  byId('announce').textContent = LANES.find((r) => r.port === port)?.name ?? '';
+  byId('home').querySelector<HTMLElement>('#lane-title')?.scrollIntoView({ block: 'nearest' });
+}
+
 function routesSection(): HTMLElement {
   if (activeDomain() !== 'logistics') {
     return h('section', { class: cx(CARD, 'p-5'), 'aria-labelledby': 'routes-title' },
       h('h2', { id: 'routes-title', class: 'm-0 mb-2 text-lg font-bold' }, t('ecom.map.title')), ecomArt('map'));
   }
   const harbor = derive(app.tickets, done());
+  const list = h('ul', { class: 'mt-3 mb-0 grid list-none gap-1.5 p-0 text-sm sm:grid-cols-2' }, ...LANES.map((r) =>
+    h('li', {}, h('button', {
+      type: 'button', id: `lane-btn-${r.port}`, 'aria-current': r.port === mapLane ? 'true' : false,
+      class: cx('flex w-full items-center gap-2 px-3 py-1.5 text-left max-lg:min-h-11', r.port === mapLane && 'ring-2 ring-accent', !harbor.open.has(r.port) && 'text-muted'),
+      onclick: () => pickLane(r.port),
+    }, icon(harbor.open.has(r.port) ? 'route' : 'lock', 'size-4'), h('b', {}, r.name), h('span', { class: 'ml-auto text-muted' }, laneInfo(r, harbor))))));
+  const brief = mapLane
+    ? h('div', { class: 'min-w-0 rounded-xl p-4 ring-1 ring-line' }, lanePanel(mapLane, harbor, (task) => homeHooks.startLane?.(task)))
+    : h('p', { class: 'm-0 self-start rounded-xl bg-code p-4 text-sm text-muted' }, t('lane.pick'));
   return h('section', { class: cx(CARD, 'p-5'), 'aria-labelledby': 'routes-title' },
     h('div', { class: 'mb-2 flex flex-wrap items-end justify-between gap-2' },
       h('h2', { id: 'routes-title', class: 'm-0 text-lg font-bold' }, t('routes.title')),
       h('p', { class: 'm-0 text-sm text-muted' }, t('routes.subtitle'))),
-    artSlot('aspect-[980/260] rounded-xl', (a) => {
-      stopMap?.(); // one fleet per page: the previous drawing's loop ends here
-      const p = a.routeMap(harbor);
-      stopMap = a.liveMap(p, harbor, takeNewRoutes(harbor.open), fleetOrder());
-      return p.svg;
-    }),
-    h('ul', { class: 'mt-2 mb-0 list-none space-y-0.5 p-0 text-sm lg:hidden', 'aria-hidden': 'true' }, ...routeItems(harbor).map((x) => h('li', {}, x))));
+    h('div', { class: 'grid gap-4 lg:grid-cols-[minmax(0,1fr)_22rem]' },
+      h('div', { class: 'min-w-0' },
+        artSlot('aspect-[980/260] rounded-xl', (a) => {
+          stopMap?.(); // one fleet per page: the previous drawing's loop ends here
+          const p = a.routeMap(harbor);
+          wirePins(p, harbor, pickLane);
+          stopMap = a.liveMap(p, harbor, takeNewRoutes(harbor.open), fleetOrder());
+          return p.svg;
+        }),
+        list),
+      brief));
 }
 
 /** L48 D-A1: the company tiles moved to #/dashboard (src/ui/dashboard.ts); Home keeps a one-line teaser that links there. */
@@ -382,33 +406,6 @@ function soonSection(): HTMLElement {
       h('a', { href: hashOf('overview'), class: OUTLINE_LINK }, t('soon.back'))));
 }
 
-/** Lane whose brief is open on the Map page (session only). */
-let mapLane: string | undefined;
-/**
- * Map page (v6 D-L3): the lanes as a list under the route map; "Read the lane brief" opens that brief right under its row,
- * on the page (v10 critic #4: the map dialog would show a second copy of the map). Pressing it again closes it.
- */
-function lanesSection(): HTMLElement | null {
-  if (activeDomain() !== 'logistics') return null; // lanes are Logistics only (D9-14)
-  const harbor = derive(app.tickets, done());
-  const toggle = (port: string) => () => {
-    mapLane = mapLane === port ? undefined : port;
-    actions.rerender();
-    byId('home').querySelector<HTMLElement>(mapLane ? '#lane-title' : `#lane-btn-${port}`)?.focus(); // the map dialog may hold its own #lane-title
-  };
-  return h('section', { 'aria-labelledby': 'lanes-title' },
-    h('h2', { id: 'lanes-title', class: GROUP_TITLE }, t('map.lanesTitle')),
-    h('ul', { class: LIST }, ...LANES.flatMap((r) => [listRow({
-      lead: icon(harbor.open.has(r.port) ? 'route' : 'lock', 'size-6 text-muted'),
-      title: r.name,
-      sub: laneInfo(r, harbor),
-      // v11 UX #8: a locked lane has no brief to read yet; its line says when it opens (lane.lockedAt)
-      action: !harbor.open.has(r.port) ? null : h('button', {
-        type: 'button', id: `lane-btn-${r.port}`, class: 'rounded-full px-4 whitespace-nowrap', 'aria-expanded': String(mapLane === r.port), onclick: toggle(r.port),
-      }, t('map.openLane')),
-    }), mapLane === r.port ? h('li', { class: 'rounded-xl bg-panel p-4 ring-1 ring-line' }, lanePanel(r.port, harbor, (task) => homeHooks.startLane?.(task))) : null])));
-}
-
 registerHomeSection({ id: 'teach', order: 5, span: 'full', pages: ['learn'], render: teachSection });
 registerHomeSection({ id: 'hello', order: 1, span: 'full', pages: ['home'], render: helloSection });
 registerHomeSection({ id: 'harbor', order: 5, span: 'full', pages: ['overview'], render: harborSection });
@@ -418,7 +415,6 @@ registerHomeSection({ id: 'career', order: 20, span: 'narrow', pages: ['overview
 registerHomeSection({ id: 'routes', order: 25, span: 'full', pages: ['map'], render: routesSection });
 registerHomeSection({ id: 'domains', order: 28, span: 'full', pages: ['home'], render: domainsSection });
 registerHomeSection({ id: 'chapters', order: 30, span: 'full', pages: ['overview'], render: chaptersSection });
-registerHomeSection({ id: 'lanes', order: 30, span: 'full', pages: ['map'], render: lanesSection });
 registerHomeSection({ id: 'kpi', order: 35, span: 'full', pages: ['overview'], render: kpiSection });
 registerHomeSection({ id: 'skills', order: 40, span: 'full', pages: ['practice'], render: skillsSection });
 registerHomeSection({ id: 'skillsTeaser', order: 45, span: 'full', pages: ['home'], render: skillsTeaser });

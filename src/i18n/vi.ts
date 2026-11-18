@@ -633,8 +633,6 @@ export const vi = {
   'soon.none': 'Chưa có kỹ năng nào. Bắt đầu ở Lộ trình hoặc Logistics.',
   'soon.practice': 'Luyện SQL trong lúc chờ',
   'soon.back': 'Về Logistics',
-  'map.lanesTitle': 'Tuyến và bài tuyến',
-  'map.openLane': 'Đọc hồ sơ tuyến',
   'dash.title': 'Bảng điều hành',
   'dash.intro': 'Ghim truy vấn của bạn thành card để theo dõi. Card chạy lại mỗi lần mở trang này, nên truy vấn phải chạy dưới 2 giây. Dạng card mở dần theo kỹ năng bạn học.',
   'dash.teaser': '{open}/{total} ô đã mở · {cards} card của bạn',
