@@ -87,14 +87,17 @@ function modulePage(c: LearnCtx, n: number): HTMLElement {
 function skillPage(c: LearnCtx, s: Skill): HTMLElement {
   const { h } = d$;
   const lang = d$.getLang();
+  const lesson = d$.loadLessons().get(s.id);
   return h('div', { class: 'space-y-5' },
     h('p', { class: 'm-0' }, h('a', { href: `${d$.hashOf('learn')}/sql/${s.chapter}` }, lt('learn.backModule', { n: s.chapter }))),
     skillBlock(c, s, 'h2'),
     h('section', { class: 'space-y-2 rounded-(--r-card) bg-panel p-5 ring-1 ring-line', 'aria-labelledby': 'skill-card' },
       h('h3', { id: 'skill-card', class: 'm-0 font-bold' }, lt('learn.card')),
-      h('pre', { class: 'sql' }, s.syntax),
+      // L93: General shows the lesson's example and mistake (lab, a shop chain), not the card's domain syntax and trap (L82).
+      h('pre', { class: 'sql' }, lesson?.example ?? s.syntax),
       h('p', { class: 'm-0' }, h('b', {}, lt('learn.when')), ' ', s.when[lang]),
-      h('div', {}, h('b', {}, lt('learn.trap')), d$.richText(s.trap[lang]))));
+      h('div', {}, h('b', {}, lt('learn.trap')), d$.richText(lesson?.mistake.why[lang] ?? s.trap[lang]),
+        lesson ? h('pre', { class: 'sql' }, lesson.mistake.sql) : null)));
 }
 
 /** A thin bar with its numbers also in words beside it (never colour alone, L23). */

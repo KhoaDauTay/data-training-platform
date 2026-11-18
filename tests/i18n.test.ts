@@ -23,7 +23,7 @@ const GAME_TONE = /boss|sự cố/i;
 /** Keys whose EN text is intentionally the same as VI (SQL keywords, product names). */
 // Plan 7: product, domain and module names read the same in both languages.
 const SAME_OK = new Set<string>(['work.runKeys', 'work.submitKeys', 'tab.explain', 'top.xp', 'nav.sandbox', 'top.chapterShort', 'top.chapterTiny', 'nav.task',
-  'app.name', 'domain.logistics', 'domain.finance', 'domain.ecommerce', 'learn.module']);
+  'app.name', 'domain.logistics', 'domain.finance', 'domain.ecommerce']);
 const placeholders = (s: string): string => [...s.matchAll(/\{(\w+)\}/g)].map((m) => m[1]).sort().join();
 
 describe('từ điển i18n', () => {
@@ -126,7 +126,7 @@ describe('nhãn phím tắt theo hệ điều hành', () => {
 describe('chữ UI phần Chung (src/i18n/learn.ts, Plan 8a D8a-13)', () => {
   it('placeholder khớp, EN khác VI (trừ SAME_OK), không giọng game', async () => {
     const { LEARN_DICT } = await import('../src/i18n/learn');
-    const SAME = new Set(['drill.title', 'learn.moduleTitle', 'learn.backModule']);
+    const SAME = new Set<string>(); // L93: VI says "Bài luyện", "Phần"
     for (const [k, v] of Object.entries(LEARN_DICT.vi)) {
       const e = LEARN_DICT.en[k as keyof typeof LEARN_DICT.en];
       expect([k, placeholders(e)]).toEqual([k, placeholders(v)]);
