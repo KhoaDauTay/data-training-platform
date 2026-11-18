@@ -523,6 +523,14 @@ Baseline (Plan 10 Task 0, HEAD 237e70f, 2026-11-18). Build: `main` 282, `worker`
 
 | Row | before: data ready (ms, 3 runs) | before: db:time-to-ready | after: data ready | after: db:ensure:&lt;schema&gt; |
 |---|---|---|---|---|
-| (a) `#/d/logistics` | 3282 / 3090 / 3060 | 3166 / 3005 / 2993 | | |
-| (b) `#/d/ecommerce` | 4814 / 4764 / 5048 | 2958 / 2959 / 3244 | | |
-| (c) SQL only (`#/learn`; HEAD seeds Logistics anyway) | 5012 / 5379 / 5125 | 3232 / 3188 / 3314 | | |
+| (a) `#/d/logistics` | 3282 / 3090 / 3060 | 3166 / 3005 / 2993 | 3015 / 3166 / 3116 | game 2865 / 2991 / 2987 |
+| (b) `#/d/ecommerce` | 4814 / 4764 / 5048 | 2958 / 2959 / 3244 | 2613 / 2608 / 2570 | ecom 2467 / 2472 / 2437 |
+| (c) SQL only (`#/learn`; before: HEAD seeds Logistics anyway; after: pref `"general"`, seeds `lab` only) | 5012 / 5379 / 5125 | 3232 / 3188 / 3314 | 1413 / 1462 / 1461 | lab 1252 / 1272 / 1321 |
+
+After (Plan 10 Task 13, HEAD b58287e + docs, 2026-11-18): same script and conditions as the baseline (headless Edge via CDP, `vite preview --port 5178`, fresh profile, one warm-up load, machine not idle). Build: `main` 285, `worker` 135 (was 149), `initdb` 128, `gameseed` 13 KB gz. `db:time-to-ready` now means only the engine (≈ 1.0 s every row), so the "after" seed column is `db:ensure:<schema>` (measured from the ensure() call, which runs in parallel with the engine download).
+- (a) Logistics: 3144 → 3099 ms mean, −45 ms (−1 %): unchanged, as planned (it still seeds Logistics; the gain is in the other rows).
+- (b) E-commerce: 4875 → 2597 ms mean, −2278 ms (−47 %): Logistics is no longer seeded first.
+- (c) SQL only: 5172 → 1445 ms mean, −3727 ms (−72 %): only `lab` is seeded.
+- Design estimate for (b) (§2.3: ~6–8 s instead of ~16–19 s headed, a ratio of about 0.32–0.50): met in direction, slightly short in ratio (0.53 headless). The fixed cost now is the engine boot (~1 s) plus the E-com seed (~2.5 s), which this plan does not touch.
+
+Smoke (Plan 10 Task 13 Step 4), scripted headless Edge on `:5178` with fresh profiles (5174/5175 were in use by other sessions; the L72 test data stays on `:5174`/`:5175` and was not touched): Home, Learning path, module 1, Practise, Overview, Workspace, Data, Dashboard, Map, E-com Overview and Workspace in light and dark at 375 and 1267 px: 0 console errors or exceptions, no horizontal scroll, top bar one line at 375 px (all items overlap one row, 61 px high), rail icons unique on every page. Workspace ticket 1: Run announces "Chạy xong: 24 dòng, 1 cột.", a wrong Submit gives the column-count feedback, the right one "Đúng rồi! +100 XP". E-com session (Overview, Workspace, Data, Dashboard, Home, Learning path, Practise): measures `db:ensure:ecom` and `db:ensure:lab` only, `gameSeed` never fetched, so 0 `logistics` tables (the Task 2 Step 10 check, read from the seeds instead of `information_schema`). First visit on cleared storage: three choices, Next disabled, no seed chunk fetched before the pick; "Chỉ học SQL" closes the dialog, opens `#/learn`, seeds `lab` only, pref `"general"`; reload: no picker, `lab` again; `#/d/logistics` sets the pref to `"logistics"`.
