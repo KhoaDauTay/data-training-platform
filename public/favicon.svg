@@ -1,30 +1,19 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120">
-  <!-- Lily (BoonData mascot, Dalmatian), idle pose. Art: CC BY 4.0, see assets/mascots/LICENSE. -->
+  <!-- Boon (BoonData mascot, the guide). Art: CC BY 4.0, see assets/mascots/LICENSE. -->
   <defs>
-    <g id="lily-tail"><g><path d="M82 94 q16 -4 16 -20 q0 -6 -4 -8" fill="none" stroke="#5a4f47" stroke-width="11" stroke-linecap="round"/><path d="M82 94 q16 -4 16 -20 q0 -6 -4 -8" fill="none" stroke="#fdfbf7" stroke-width="8" stroke-linecap="round"/><path d="M82 94 q16 -4 16 -20 q0 -6 -4 -8" fill="none" stroke="#2b2522" stroke-width="4" stroke-linecap="round" stroke-dasharray="1 9"/></g></g>
-    <g id="lily-body">
-        <ellipse cx="60" cy="92" rx="25" ry="21" fill="#fdfbf7" stroke="#5a4f47" stroke-width="1.8"/>
-        <ellipse cx="60" cy="97" rx="14" ry="12" fill="#ece6dc"/>
-        <ellipse cx="47" cy="111" rx="9" ry="5" fill="#ece6dc"/>
-        <ellipse cx="73" cy="111" rx="9" ry="5" fill="#ece6dc"/>
-        <g fill="#2b2522"><circle cx="44" cy="86" r="3"/><circle cx="77" cy="84" r="3.6"/><circle cx="71" cy="101" r="2.4"/><circle cx="48" cy="102" r="2.2"/><circle cx="62" cy="80" r="2"/></g>
+    <g id="boon-feet"><ellipse cx="50" cy="112" rx="9" ry="4" fill="#f2b544"/><ellipse cx="70" cy="112" rx="9" ry="4" fill="#f2b544"/></g>
+    <g id="boon-body"><ellipse cx="60" cy="88" rx="26" ry="24" fill="#fdfdfb" stroke="#59626a" stroke-width="1.8"/><ellipse cx="60" cy="94" rx="17" ry="16" fill="#eef1f2"/></g>
+    <g id="boon-wings-down"><ellipse cx="36" cy="88" rx="8" ry="14" fill="#e3e7e9" stroke="#59626a" stroke-width="1.8" transform="rotate(12 36 88)"/><ellipse cx="84" cy="88" rx="8" ry="14" fill="#e3e7e9" stroke="#59626a" stroke-width="1.8" transform="rotate(-12 84 88)"/></g>
+    <g id="boon-head">
+        <path d="M57 26 q-4 -12 4 -15 q0 7 1 14 M62 25 q3 -10 11 -9 q-4 5 -8 11 M55 27 q-8 -6 -12 0 q5 1 10 3" fill="#e3e7e9" stroke="#59626a" stroke-width="1.8"/>
+        <circle cx="60" cy="46" r="22" fill="#fdfdfb" stroke="#59626a" stroke-width="1.8"/>
+        <path d="M47 62 L60 78 L73 62" fill="none" stroke="#d98e4a" stroke-width="3" stroke-linejoin="round"/>
+        <rect x="54" y="76" width="12" height="14" rx="2.5" fill="#fff" stroke="#d98e4a" stroke-width="1.5"/><path d="M57 81 h6 M57 85 h4" stroke="#3f8f9e" stroke-width="1.6" stroke-linecap="round"/>
+        <circle cx="44" cy="54" r="3" fill="#f4a3a3" opacity=".5"/><circle cx="76" cy="54" r="3" fill="#f4a3a3" opacity=".5"/>
       </g>
-    <g id="lily-head">
-        <path d="M38 34 q-16 2 -15 26 q2 6 9 4 q6 -10 8 -22 z" fill="#2b2522" stroke="#5a4f47" stroke-width="1.6"/>
-        <ellipse cx="60" cy="50" rx="27" ry="24" fill="#fdfbf7" stroke="#5a4f47" stroke-width="1.8"/>
-        <path d="M78 30 q10 -14 20 -6 q2 8 -8 12 q-6 2 -12 -6 z" fill="#2b2522" stroke="#5a4f47" stroke-width="1.6"/>
-        <path d="M66 28 q6 -6 10 2" fill="none" stroke="#ece6dc" stroke-width="3" stroke-linecap="round"/>
-        <ellipse cx="60" cy="61" rx="15" ry="11" fill="#ece6dc"/>
-        <g fill="#2b2522"><circle cx="45" cy="33" r="2.6"/><circle cx="70" cy="31" r="2"/><circle cx="80" cy="47" r="2.4"/><circle cx="38" cy="50" r="1.8"/></g>
-        <ellipse cx="60" cy="55" rx="5.5" ry="4" fill="#2b2522"/>
-        <circle cx="42" cy="58" r="3.5" fill="#f4a3a3" opacity=".55"/><circle cx="78" cy="58" r="3.5" fill="#f4a3a3" opacity=".55"/>
-        <path d="M41 68 L79 68 L60 82 z" fill="#1f9e8f"/>
-        <path d="M66 73 l1.6 3.2 3.5 .5 -2.5 2.4 .6 3.5 -3.2 -1.7 -3.2 1.7 .6 -3.5 -2.5 -2.4 3.5 -.5z" fill="#ffd166"/>
-      </g>
-    <g id="lily-eyes-open"><circle cx="49" cy="46" r="3.6" fill="#2b2522"/><circle cx="71" cy="46" r="3.6" fill="#2b2522"/><circle cx="50.2" cy="44.8" r="1.1" fill="#fff"/><circle cx="72.2" cy="44.8" r="1.1" fill="#fff"/></g>
-    <path id="lily-smile" d="M53 63 q7 6 14 0" fill="none" stroke="#2b2522" stroke-width="2.4" stroke-linecap="round"/>
-    <g id="lily-paws"><ellipse cx="50" cy="90" rx="6" ry="7" fill="#fdfbf7" stroke="#5a4f47" stroke-width="1.8"/><ellipse cx="70" cy="90" rx="6" ry="7" fill="#fdfbf7" stroke="#5a4f47" stroke-width="1.8"/></g>
-    <symbol id="lily-idle" viewBox="0 0 120 120"><use href="#lily-tail"/><g><use href="#lily-body"/><use href="#lily-paws"/><use href="#lily-head"/><use href="#lily-eyes-open"/><use href="#lily-smile"/></g></symbol>
+    <g id="boon-bill"><path d="M43 53 q17 -7 34 0 q-2 10 -17 10 q-15 0 -17 -10 z" fill="#f2b544"/><path d="M52 55 h3 M65 55 h3" stroke="#2a2320" stroke-width="1.6" stroke-linecap="round" opacity=".55"/></g>
+    <g id="boon-glasses"><circle cx="51" cy="43" r="7.5" fill="#fff" fill-opacity=".35" stroke="#2a2320" stroke-width="2"/><circle cx="69" cy="43" r="7.5" fill="#fff" fill-opacity=".35" stroke="#2a2320" stroke-width="2"/><path d="M58.5 43 h3" stroke="#2a2320" stroke-width="2"/></g>
+    <g id="boon-eyes"><circle cx="51" cy="44" r="2.6" fill="#2a2320"/><circle cx="69" cy="44" r="2.6" fill="#2a2320"/></g>
   </defs>
-  <use href="#lily-idle"/>
+  <use href="#boon-feet"/><use href="#boon-body"/><use href="#boon-wings-down"/><use href="#boon-head"/><use href="#boon-bill"/><use href="#boon-glasses"/><use href="#boon-eyes"/>
 </svg>

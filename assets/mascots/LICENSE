@@ -7,7 +7,7 @@ To view a copy of this license, visit https://creativecommons.org/licenses/by/4.
 It covers:
 - the <svg id="mascot-sprite"> block in index.html (Boon the duck and Lily the Dalmatian, six poses each, Lily's growth props);
 - the teaching scene (Boon at a board, Lily listening) drawn by src/ui/teachScene.ts;
-- public/favicon.svg.
+- public/favicon.svg (Boon, the brand mascot).
 
 Attribution: "Boon and Lily by KhoaDauTay (BoonData), CC BY 4.0", and say if you changed them.
 Boon and Lily are original characters. Do not present them as, or combine them with, characters owned by others.

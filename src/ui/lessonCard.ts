@@ -11,7 +11,8 @@ import { byId, h, nodes, richText } from './dom';
 import { errorText, errorView } from './feedback';
 import { skillIcon } from './icons';
 import { renderResult } from './resultTable';
-import { markExampleRan, tourSlot } from './coach';
+import { markExampleRan, tourRegion, tourSlot } from './coach';
+import { mascot } from './mascots';
 import { readTour } from '../onboarding';
 import { diffView, runOn, tryPreview, verdictText } from './tryPreview';
 
@@ -136,7 +137,10 @@ function card(l: Lesson, titleId: string, actions: HTMLElement[], tour = false):
   const skill = skillOf(l.id);
   return h('section', { class: 'my-3 rounded-xl bg-panel p-3 ring-1 ring-accent', 'aria-labelledby': titleId },
     h('div', { class: 'flex flex-wrap items-center justify-between gap-2' },
-      h('h3', { id: titleId, tabindex: '-1', class: 'm-0 flex items-center gap-2' }, skillIcon(l.id, 'size-5'), t('lesson.title', { skill: label(l.id) })),
+      h('h3', { id: titleId, tabindex: '-1', class: 'm-0 flex items-center gap-2' },
+        // v12 (L87): Boon teaches the lesson; left out while his tour mark is in the same pane (one mascot per region)
+        tour || tourRegion() === 'brief' || tourRegion() === 'lesson' ? skillIcon(l.id, 'size-5') : mascot('boon', 'point', 'size-10 shrink-0'),
+        t('lesson.title', { skill: label(l.id) })),
       h('div', { class: 'flex gap-1.5' }, ...actions)),
     h('div', { class: 'mt-2' }, richText(l.concept[lang])),
     skill ? h('p', { class: 'mt-2 mb-0' }, h('b', {}, t('lesson.syntax')), ' ', h('code', {}, skill.syntax)) : null,
