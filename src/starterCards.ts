@@ -36,6 +36,19 @@ export const STARTERS: Partial<Record<DomainId, StarterCard[]>> = {
     // Not the columns of ecom-ch1-01 (every shop's name, city, joined_on): "Xem SQL" must not show an answer.
     { id: 's-official', title: 'starter.ec.official', kind: 'table', tables: ['sellers'], sql: 'SELECT name, city\nFROM sellers\nWHERE is_official\nORDER BY city, name' },
   ],
+  finance: [
+    { id: 's-customers', title: 'starter.fi.customers', kind: 'number', tables: ['customers'], sql: 'SELECT COUNT(*) AS customers\nFROM customers' },
+    {
+      id: 's-channel', title: 'starter.fi.channel', kind: 'bar', col: 1, tables: ['applications'],
+      sql: 'SELECT channel, COUNT(*) AS applications\nFROM applications\nGROUP BY channel\nORDER BY applications DESC, channel',
+    },
+    // Applications, not loans paid out: fin-ch4-02 counts loans per month.
+    {
+      id: 's-applications', title: 'starter.fi.applications', kind: 'line', col: 1, tables: ['applications'],
+      sql: "SELECT date_trunc('month', applied_on)::date AS month, COUNT(*) AS applications\nFROM applications\nWHERE applied_on >= DATE '2025-11-01' AND applied_on < DATE '2026-11-01'\nGROUP BY 1\nORDER BY 1",
+    },
+    { id: 's-products', title: 'starter.fi.products', kind: 'table', tables: ['products'], sql: 'SELECT name, kind, rate_month_pct\nFROM products\nORDER BY kind, name' },
+  ],
 };
 
 /** The domain's starter cards whose tables are all open; `title` is the resolved text, `source` marks them as ours, the id carries the domain. */

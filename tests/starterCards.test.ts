@@ -8,10 +8,10 @@ import { vi } from '../src/i18n/vi';
 import { chapterTablesOf, domainSkills } from '../src/progress';
 import { starterCards, STARTERS } from '../src/starterCards';
 import { applyVariant, variantsOf } from '../src/variants';
-import { ecomRunner, runner } from './helpers';
+import { ecomRunner, finRunner, runner } from './helpers';
 
-await loadDomain('ecommerce');
-const DOMAINS: DomainId[] = ['logistics', 'ecommerce'];
+await Promise.all([loadDomain('ecommerce'), loadDomain('finance')]);
+const DOMAINS: DomainId[] = ['logistics', 'ecommerce', 'finance'];
 
 describe('customCardsOpen (D-DB1)', () => {
   it('locks a gated beginner until the Number card skill is learned', () => {
@@ -22,7 +22,7 @@ describe('customCardsOpen (D-DB1)', () => {
     expect(customCardsOpen(new Set(), 0, false)).toBe(true);
     expect(customCardsOpen(new Set(['select']), 1, true)).toBe(true);
   });
-  it('is the skill of a card kind that both domains teach', () => {
+  it('is the skill of a card kind that every domain teaches', () => {
     expect(Object.values(KIND_SKILL)).toContain(CUSTOM_SKILL);
     for (const d of DOMAINS) expect(domainSkills(loadTicketTemplates(d)).some((s) => s.id === CUSTOM_SKILL)).toBe(true);
   });
@@ -36,6 +36,7 @@ describe('starter cards', () => {
     expect(all.every((c) => c.source === 'starter' && c.title.startsWith('T:starter.'))).toBe(true);
     expect(starterCards('logistics', ['carriers'], t as never).map((c) => c.id)).toEqual(['logistics/s-carriers']) // the domain in the id: both domains have an s-customers with the same SQL;
     expect(starterCards('finance', ['x'], t as never)).toEqual([]);
+    expect(starterCards('finance', ['products'], t as never).map((c) => c.id)).toEqual(['finance/s-products']);
   });
 
   for (const d of DOMAINS) {
@@ -51,7 +52,7 @@ describe('starter cards', () => {
     });
 
     it(`${d}: every card runs, fits its kind, and equals no ticket Solution (no answer, no KPI tile leaks)`, async () => {
-      const run = d === 'logistics' ? await runner() : await ecomRunner();
+      const run = d === 'logistics' ? await runner() : d === 'ecommerce' ? await ecomRunner() : await finRunner();
       const solutions = loadTicketTemplates(d).flatMap((tk) => Array.from({ length: Math.max(1, variantsOf(tk).length) }, (_, i) => i).flatMap((i) => applyVariant(tk, i).steps.map((s) => s.solution)));
       const results = [];
       for (const sql of new Set(solutions)) {

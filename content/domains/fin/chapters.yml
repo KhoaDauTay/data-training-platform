@@ -1,2 +1,81 @@
-# Tín dụng Hũ Bạc (Plan 11, product-design-v9). Cùng định dạng content/domains/ecom/chapters.yml. T3 viết nội dung; tới lúc đó là danh sách rỗng.
-[]
+# Tín dụng Hũ Bạc / Silver Jar Credit (Plan 11, product-design-v9 §4). Cùng định dạng content/domains/ecom/chapters.yml:
+# `tables:` = bảng schema finance mà chương mở; career = bậc đạt khi qua đánh giá thăng tiến của chương; tier: true = đổi chức danh (★).
+# Mọi chuỗi đặt trong nháy kép; EN không dấu.
+
+- chapter: 1
+  title: { vi: "Tuần đầu ở Hũ Bạc", en: "First week at Silver Jar" }
+  career: { vi: "Chuyên viên phân tích tập sự", en: "Junior Credit Analyst" }
+  tier: true
+  tables: [branches, products, customers, applications, loans]
+  story:
+    vi: "Hũ Bạc cho vay tiêu dùng và trả góp ở 8 chi nhánh miền Trung. Tuần đầu, trưởng nhóm dữ liệu dẫn bạn làm quen hồ sơ vay và sổ vay; cuối tuần, tổng giám đốc đánh giá thử việc."
+    en: "Silver Jar Credit makes consumer loans and instalment loans through 8 branches in central Vietnam. In your first week the data team lead walks you through loan applications and the loan book; at the end of the week the CEO runs your probation review."
+  outcomes:
+    - { vi: "Lấy và lọc đúng khoản vay cần xem", en: "Pull and filter exactly the loans you need", skills: [select, where] }
+    - { vi: "Xếp hạng có thứ tự phụ, lấy top N", en: "Rank with a tie-breaker and take the top N", skills: [order_by, limit] }
+    - { vi: "Đếm, cộng, gom theo sản phẩm", en: "Count, sum and group by product", skills: [aggregate, group_by] }
+
+- chapter: 2
+  title: { vi: "Lịch trả nợ và tiền về", en: "Repayment schedules and money in" }
+  career: { vi: "Chuyên viên phân tích tập sự · sổ vay", en: "Junior Credit Analyst · loan book" }
+  tier: false
+  tables: [schedules, repayments]
+  story:
+    vi: "Mỗi khoản vay là một lịch trả nhiều kỳ. Thu hồi nợ và kế toán cần biết kỳ nào đã đến hạn, đã trả hay chưa, trả trễ bao nhiêu ngày."
+    en: "Every loan is a schedule of monthly instalments. Collections and accounting need to know which instalments are due, whether they were paid, and how many days late."
+  outcomes:
+    - { vi: "Ghép khoản vay với lịch trả", en: "Match loans with their schedules", skills: [join] }
+    - { vi: "Đếm số ngày giữa hạn trả và ngày trả", en: "Count the days between the due date and the payment date", skills: [date_math] }
+    - { vi: "Giữ cả kỳ chưa trả, ghi 0 thay ô trống", en: "Keep unpaid instalments too and write 0 instead of an empty cell", skills: [left_join, coalesce] }
+
+- chapter: 3
+  title: { vi: "Quá hạn và nhóm nợ", en: "Arrears and delinquency buckets" }
+  career: { vi: "Chuyên viên phân tích tín dụng", en: "Credit Analyst" }
+  tier: false
+  tables: [loan_snapshots]
+  story:
+    vi: "Phòng Rủi ro chụp sổ vay vào cuối mỗi tháng: dư nợ còn lại và số ngày quá hạn của từng khoản. Từ nay bạn chia khoản vay vào nhóm nợ và đo nợ xấu theo chi nhánh."
+    en: "The Risk team takes a picture of the loan book at the end of every month: the balance left and the days past due of every loan. From now on you sort loans into delinquency buckets and measure bad debt by branch."
+  outcomes:
+    - { vi: "Chia khoản vay vào nhóm theo luật", en: "Sort loans into buckets by rules", skills: [case_when] }
+    - { vi: "Đếm nhiều điều kiện trong một lần gom", en: "Count several conditions in one pass", skills: [conditional_agg] }
+    - { vi: "Đi qua ba bảng, lọc nhóm sau khi gom", en: "Walk through three tables and filter groups after aggregating", skills: [multi_join, having] }
+
+- chapter: 4
+  title: { vi: "Cohort giải ngân", en: "Disbursement cohorts" }
+  career: { vi: "Chuyên viên rủi ro tín dụng", en: "Credit Risk Analyst" }
+  tier: true
+  tables: []
+  story:
+    vi: "Hội đồng tín dụng hỏi: khoản cho vay mùa Tết có xấu hơn bình thường không? Câu trả lời nằm ở cohort giải ngân, tức những khoản giải ngân cùng tháng được theo dõi theo tuổi."
+    en: "The credit committee asks: were the loans made around Tet worse than usual? The answer lies in disbursement cohorts, the loans paid out in the same month, followed as they age."
+  outcomes:
+    - { vi: "Chia truy vấn dài thành từng bước có tên", en: "Split a long query into named steps", skills: [cte] }
+    - { vi: "Gom theo tháng giải ngân", en: "Group by disbursement month", skills: [date_bucket] }
+    - { vi: "So với tháng trước của cùng khoản vay", en: "Compare with the same loan's previous month", skills: [window_lag] }
+
+- chapter: 5
+  title: { vi: "Ngân sách và thực tế", en: "Budget and actuals" }
+  career: { vi: "Chuyên viên rủi ro tín dụng · ngân sách", en: "Credit Risk Analyst · budgeting" }
+  tier: false
+  tables: [accounts, budgets, gl_entries]
+  story:
+    vi: "Mùa lập ngân sách 2027. Kế toán trưởng cần biết chi nhánh nào chi vượt, khoản mục nào chưa có kế hoạch, và lũy kế từ đầu năm đang ở đâu."
+    en: "It is budget season for 2027. The chief accountant needs to know which branches overspend, which cost lines have no plan, and where the year-to-date totals stand."
+  outcomes:
+    - { vi: "Đặt ngân sách cạnh thực chi mà không mất dòng nào ở hai bên", en: "Put the budget next to actual spending without losing rows on either side", skills: [full_join] }
+    - { vi: "Lũy kế và tỷ trọng mà không mất dòng", en: "Running totals and shares without losing rows", skills: [window_agg] }
+    - { vi: "So với một con số tính từ cả bảng", en: "Compare with a figure computed from the whole table", skills: [scalar_subquery] }
+
+- chapter: 6
+  title: { vi: "Báo cáo rủi ro quý", en: "The quarterly risk report" }
+  career: { vi: "Chuyên viên rủi ro cao cấp", en: "Senior Risk Analyst" }
+  tier: true
+  tables: [collection_calls]
+  story:
+    vi: "Ban điều hành họp quý. Tỷ lệ quá hạn chung vẫn ổn, nhưng một chi nhánh đang xấu đi nhanh. Bạn soạn báo cáo: ai xếp cuối, vì sao, và đội thu hồi nợ đã gọi đủ chưa."
+    en: "The board meets for the quarter. The overall arrears rate still looks fine, but one branch is getting worse fast. You write the report: who ranks last, why, and whether the collections team called everyone it should."
+  outcomes:
+    - { vi: "Xếp hạng trong từng nhóm", en: "Rank within each group", skills: [window_rank] }
+    - { vi: "Chia một báo cáo thành nhiều bước có tên", en: "Split one report into several named steps", skills: [multi_cte] }
+    - { vi: "Tìm thứ không có: khoản quá hạn chưa ai gọi", en: "Find what is missing: overdue loans nobody called", skills: [anti_join] }

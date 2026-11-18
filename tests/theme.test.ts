@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { loadTickets } from '../src/content';
+import { loadDomain, loadTickets, loadTicketTemplates } from '../src/content';
+import { peopleOf } from '../src/people';
 import { CHAPTERS } from '../src/progress';
 import { CHAPTER_COLOR, chapterColor, cx, DEPT, deptColor, thanksKey } from '../src/theme';
 import css from '../src/style.css?raw';
@@ -87,6 +88,27 @@ describe('theme', () => {
   });
   it('A4 (v12.0): mọi nút cao tối thiểu 24 px (WCAG 2.5.8)', () => {
     expect(css).toMatch(/@layer base[\s\S]*button[^{]*\{[^}]*min-height:\s*1\.5rem/);
+  });
+});
+
+describe('v14 T3: phòng Risk và Collections (Finance)', () => {
+  // Tailwind v4 sRGB fallbacks of the chip colours (light: -100 bg / -800 text; dark: -950 bg / -200 text).
+  const HEX: Record<string, string> = {
+    'red-100': '#ffe2e2', 'red-800': '#9f0712', 'red-950': '#460809', 'red-200': '#ffc9c9',
+    'indigo-100': '#e0e7ff', 'indigo-800': '#372aac', 'indigo-950': '#1e1a4d', 'indigo-200': '#c6d2ff',
+  };
+  it.each(['Risk', 'Collections'])('%s: nhãn có màu riêng, chữ ≥ 4,5:1 ở cả hai theme', (name) => {
+    const chip = DEPT[name]?.chip ?? '';
+    const [bg, text, darkBg, darkText] = [...chip.matchAll(/(?:bg|text)-(\w+-\d+)/g)].map((m) => HEX[m[1]]);
+    expect([bg, text, darkBg, darkText].every(Boolean), chip).toBe(true);
+    expect(ratio(text, bg)).toBeGreaterThanOrEqual(4.5);
+    expect(ratio(darkText, darkBg)).toBeGreaterThanOrEqual(4.5);
+  });
+  it('mọi phòng gửi việc hay có người ở Finance và E-com có màu nhãn', async () => {
+    await Promise.all([loadDomain('finance'), loadDomain('ecommerce')]);
+    const depts = (['finance', 'ecommerce'] as const).flatMap((d) => [...loadTicketTemplates(d).map((t) => t.from.dept), ...peopleOf(d).map((p) => p.dept)]);
+    expect(depts.filter((d) => !(d in DEPT))).toEqual([]);
+    expect(depts).toContain('Risk');
   });
 });
 

@@ -1,2 +1,59 @@
-# Tín dụng Hũ Bạc (Plan 11, product-design-v9). Cùng định dạng content/domains/ecom/people.yml. T3 viết nội dung; tới lúc đó là danh sách rỗng.
-[]
+# Đồng nghiệp ở Tín dụng Hũ Bạc (Plan 11, product-design-v9 §2.2). Cùng định dạng content/people.yml (src/people.ts parsePeople).
+# employee: null (domain Finance không có bảng nhân viên). tables: bảng trong schema finance (src/db/fin/schema.sql).
+# Tên không trùng người nào của Logistics hay E-com (personOf tìm theo tên). Mọi chuỗi đặt trong nháy kép; EN không dấu.
+
+- name: "Lương Bảo Châu"
+  dept: Management
+  employee: null
+  role: { vi: "Tổng giám đốc", en: "CEO" }
+  bio: { vi: "Mở Hũ Bạc từ một quầy nhỏ ở Đà Nẵng; chỉ gửi các buổi đánh giá thăng tiến, và luôn hỏi \"vì sao\".", en: "Started Silver Jar from one small counter in Da Nang; only sends the promotion reviews, and always asks \"why\"." }
+  tables: [loans, branches]
+  look: { skin: light, hair: black, style: bun, accessory: none }
+
+- name: "Tạ Minh Nhật"
+  dept: IT
+  employee: null
+  role: { vi: "Trưởng nhóm dữ liệu, người kèm bạn", en: "Data team lead, your mentor" }
+  bio: { vi: "Viết bảng ảnh chụp cuối tháng; thích hỏi \"một dòng là cái gì?\" trước mọi con số.", en: "Built the month-end snapshot table; likes to ask \"what is one row?\" before any figure." }
+  tables: [loan_snapshots, applications]
+  look: { skin: tan, hair: black, style: short, accessory: glasses }
+
+- name: "Huỳnh Kim Ngân"
+  dept: Risk
+  employee: null
+  role: { vi: "Giám đốc Quản trị rủi ro", en: "Head of Credit Risk" }
+  bio: { vi: "Đọc nhóm nợ như đọc nhiệt kế; muốn thấy xu hướng trước khi nó thành tổn thất.", en: "Reads delinquency buckets like a thermometer; wants to see a trend before it becomes a loss." }
+  tables: [loan_snapshots, loans, applications]
+  look: { skin: medium, hair: black, style: long, accessory: scarf }
+
+- name: "Mạc Văn Toàn"
+  dept: Collections
+  employee: null
+  role: { vi: "Trưởng nhóm thu hồi nợ", en: "Collections lead" }
+  bio: { vi: "Tai nghe không rời; nhớ khách nào hứa trả ngày nào.", en: "Never without his headset; remembers which customer promised to pay on which day." }
+  tables: [collection_calls, repayments]
+  look: { skin: deep, hair: black, style: short, accessory: headset }
+
+- name: "Lư Thảo Vy"
+  dept: Finance
+  employee: null
+  role: { vi: "Kế toán trưởng", en: "Chief accountant" }
+  bio: { vi: "Sổ cái phải khớp tới từng đồng; ghét nhất khoản chi không có ngân sách.", en: "The ledger must match to the last dong; nothing annoys her more than spending with no budget." }
+  tables: [gl_entries, budgets, accounts]
+  look: { skin: light, hair: brown, style: side, accessory: none }
+
+- name: "Phùng Đức Lâm"
+  dept: Sales
+  employee: null
+  role: { vi: "Giám đốc kinh doanh, mạng lưới chi nhánh", en: "Head of sales and branches" }
+  bio: { vi: "Đi khắp 8 chi nhánh mỗi tháng; đo mọi thứ bằng tiền giải ngân.", en: "Visits all 8 branches every month; measures everything in money paid out." }
+  tables: [branches, products, applications]
+  look: { skin: tan, hair: grey, style: short, accessory: tie }
+
+- name: "Tôn Nữ Hạnh"
+  dept: CS
+  employee: null
+  role: { vi: "Trưởng nhóm chăm sóc khách hàng", en: "Customer care lead" }
+  bio: { vi: "Trả lời khách mỗi ngày về lịch trả; muốn số liệu đơn giản để đọc lại qua điện thoại.", en: "Answers customers about their repayment schedule every day; wants figures simple enough to read out on the phone." }
+  tables: [customers, schedules]
+  look: { skin: medium, hair: black, style: long, accessory: lanyard }

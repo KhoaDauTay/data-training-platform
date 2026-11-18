@@ -59,6 +59,8 @@ export const DEPT: Record<string, Dept> = {
   Marketing: { chip: 'bg-orange-100 text-orange-800 dark:bg-orange-950 dark:text-orange-200', shirt: '#c2410c', backdrop: '#ffedd5', thanks: ['chat.thanksMarketing', 'chat.thanksMarketing2', 'chat.thanksMarketing3', 'chat.thanksMarketing4'] },
   Category: { chip: 'bg-lime-100 text-lime-800 dark:bg-lime-950 dark:text-lime-200', shirt: '#4d7c0f', backdrop: '#ecfccb', thanks: ['chat.thanksCategory', 'chat.thanksCategory2', 'chat.thanksCategory3', 'chat.thanksCategory4'] },
   IT: { chip: 'bg-cyan-100 text-cyan-800 dark:bg-cyan-950 dark:text-cyan-200', shirt: '#0e7490', backdrop: '#cffafe', thanks: ['chat.thanksIT', 'chat.thanksIT2', 'chat.thanksIT3', 'chat.thanksIT4'] },
+  Risk: { chip: 'bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-200', shirt: '#b91c1c', backdrop: '#fee2e2', thanks: ['chat.thanksRisk', 'chat.thanksRisk2', 'chat.thanksRisk3', 'chat.thanksRisk4'] },
+  Collections: { chip: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-950 dark:text-indigo-200', shirt: '#4338ca', backdrop: '#e0e7ff', thanks: ['chat.thanksCollections', 'chat.thanksCollections2', 'chat.thanksCollections3', 'chat.thanksCollections4'] },
 };
 const NEUTRAL_DEPT: Dept = { chip: 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-100', shirt: '#475569', backdrop: '#e2e8f0', thanks: ['chat.thanksOps', 'chat.thanksOps2', 'chat.thanksOps3', 'chat.thanksOps4'] };
 export const deptOf = (dept: string): Dept => DEPT[dept] ?? NEUTRAL_DEPT;

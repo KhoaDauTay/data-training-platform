@@ -1,2 +1,8 @@
-# Tín dụng Hũ Bạc (Plan 11, product-design-v9). Cùng định dạng content/domains/ecom/kpis.yml. T3 viết nội dung; tới lúc đó là danh sách rỗng.
-[]
+# Bảng điều hành của Tín dụng Hũ Bạc (Plan 11). Cùng định dạng content/kpis.yml; `ticket` là id ticket Finance.
+# Số tính lúc chạy từ Solution của ticket (biến thể 0) trên schema finance; ô mở khi người chơi xong ticket đó.
+# Ô `bar` lấy cột cuối làm giá trị, các cột trước làm nhãn, nên chỉ dùng Solution có nhãn chữ (v14 T3, khác v9 §5.1: decision-log).
+- { id: finCollectedOct, ticket: fin-ch2-05, kind: number, col: 1, label: { vi: "Tiền đã thu từ các kỳ đến hạn tháng 10/2026", en: "Money collected on instalments due in October 2026" }, icon: chart, unit: { vi: "đồng", en: "VND" } }
+- { id: finLateRepayments, ticket: fin-ch2-02, kind: rowcount, label: { vi: "Kỳ đến hạn tháng 10/2026 trả trễ", en: "October 2026 instalments paid late" }, icon: clockAlert }
+- { id: finOverdueBranches, ticket: fin-ch3-03, kind: bar, label: { vi: "Chi nhánh có hơn 4 khoản quá hạn trên 30 ngày, cuối tháng 10/2026", en: "Branches with more than 4 loans over 30 days past due, end of October 2026" }, icon: alert }
+- { id: finMarketingQ3, ticket: fin-ch5-05, step: 1, kind: bar, label: { vi: "Thực chi Marketing quý 3/2026, chi nhánh trên mức trung bình", en: "Q3 2026 marketing spend, branches above the average" }, icon: trophy, unit: { vi: "đồng", en: "VND" } }
+- { id: finUncalled, ticket: fin-ch6-03, kind: rowcount, label: { vi: "Khoản quá hạn trên 30 ngày chưa được gọi trong tháng 10/2026", en: "Loans over 30 days past due with no call in October 2026" }, icon: clockOff }

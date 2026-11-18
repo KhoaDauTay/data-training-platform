@@ -1,8 +1,7 @@
 // Plan 11 (product-design-v9 §4, §6.3): every rule of tests/ecomContent.test.ts applied to the Finance domain
 // (content/domains/fin/, schema finance), plus: prompts may not say ROLLUP/CUBE/GROUPING/FILTER/COALESCE/NULL/EXISTS,
-// no ticket uses precision:, and `adv:` names an in/partial node of content/general/adv.yml, on Finance tickets only.
-// Until T3 writes the tickets the content-dependent suites skip themselves (describe.skipIf below); they switch on with the
-// first ticket, so a green run before then only covers the loader and the adv rules.
+// no ticket uses precision:, `adv:` names an in/partial node of content/general/adv.yml, on Finance tickets only, and the three
+// trap: tickets hide their twist keyword in the hint scaffold (L127). The skipIf(!READY) guards only matter if the tickets vanish.
 import { describe, expect, it } from 'vitest';
 import finSchemaSql from '../src/db/fin/schema.sql?raw';
 import { generalNow, loadDomain, loadLanes, loadTicketTemplates } from '../src/content';
@@ -12,6 +11,7 @@ import { peopleOf, personOf } from '../src/people';
 import { chaptersOf, chapterTablesOf, contentProblems, domainSkills } from '../src/progress';
 import { textOf, type TicketText } from '../src/tickets';
 import { applyVariant, variantsOf } from '../src/variants';
+import { frameOf } from '../src/frame';
 import { finRunner } from './helpers';
 
 await Promise.all([loadDomain('finance'), loadDomain('ecommerce')]);
@@ -37,7 +37,7 @@ const allText = (x: TicketText): string => [
 const tablesIn = (sql: string): string[] =>
   [...new Set([...sql.matchAll(/\b(?:from|join)\s+([a-z_][a-z0-9_]*)/gi)].map((m) => m[1].toLowerCase()))].filter((x) => ALL_TABLES.includes(x));
 const READY = templates.length > 0; // false until T3 adds content/domains/fin/tickets
-const SQLISH = /\b(SELECT|FROM|WHERE|GROUP BY|ORDER BY|JOIN|HAVING|LIMIT|COUNT|SUM|AVG|DISTINCT|OVER|PARTITION|CASE|WITH)\b|\b[a-z]+_[a-z_]+\b/g;
+const SQLISH = /\b(SELECT|FROM|WHERE|GROUP BY|ORDER BY|JOIN|HAVING|LIMIT|COUNT|SUM|AVG|DISTINCT|OVER|PARTITION|CASE|WITH|ROLLUP|CUBE|GROUPING|FILTER|COALESCE|NULL|EXISTS)\b|\b[a-z]+_[a-z_]+\b/g;
 
 describe.skipIf(!READY)('Finance: cấu trúc', () => {
   it('30 ticket, 6 chương, id fin-chN-0M', () => {
@@ -198,6 +198,20 @@ describe.skipIf(!READY)('Finance: KPI (content/domains/fin/kpis.yml)', () => {
     }
     if (k.kind === 'rowcount') expect(r.rows.length).toBeGreaterThan(0);
     if (k.kind === 'bar') expect(r.rows.every((row) => Number.isFinite(Number(row[row.length - 1])))).toBe(true);
+  });
+});
+
+describe.skipIf(!READY)('Finance: khung gợi ý giấu bẫy (trap:, v14 T3)', () => {
+  it('đúng ba việc bẫy; khung (mọi biến thể) không lộ từ khóa của bẫy', () => {
+    const HIDDEN: Record<string, RegExp> = { 'fin-ch4-03': /PARTITION BY/, 'fin-ch5-01': /FULL JOIN/, 'fin-ch6-03': /IS NULL/ };
+    expect(templates.filter((t) => t.trap).map((t) => t.id).sort()).toEqual(Object.keys(HIDDEN));
+    for (const tpl of templates.filter((t) => t.trap)) {
+      for (let v = 0; v < variantsOf(tpl).length; v++) {
+        const t = applyVariant(tpl, v);
+        expect(t.steps[0].solution).toMatch(HIDDEN[t.id]);
+        expect(frameOf(t.steps[0].solution, t.wrong!.map((w) => w.sql)), `${t.id}#${v}`).not.toMatch(HIDDEN[t.id]);
+      }
+    }
   });
 });
 

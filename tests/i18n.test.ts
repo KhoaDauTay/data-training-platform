@@ -6,6 +6,9 @@ import peopleYml from '../content/people.yml?raw';
 import ecomChaptersYml from '../content/domains/ecom/chapters.yml?raw';
 import ecomKpisYml from '../content/domains/ecom/kpis.yml?raw';
 import ecomPeopleYml from '../content/domains/ecom/people.yml?raw';
+import finChaptersYml from '../content/domains/fin/chapters.yml?raw';
+import finKpisYml from '../content/domains/fin/kpis.yml?raw';
+import finPeopleYml from '../content/domains/fin/people.yml?raw';
 import generalSqlYml from '../content/general/sql.yml?raw';
 import generalAdvYml from '../content/general/adv.yml?raw';
 import html from '../index.html?raw';
@@ -77,12 +80,12 @@ describe('từ điển i18n', () => {
     expect(texts.filter((x) => GAME_TONE.test(x))).toEqual([]);
   });
 
-  it('L22 (v11 review): E-commerce và General cũng không có "boss" / "sự cố"', async () => {
-    await loadDomain('ecommerce');
+  it('L22 (v11 review, v14): E-commerce, Finance và General cũng không có "boss" / "sự cố"', async () => {
+    await Promise.all([loadDomain('ecommerce'), loadDomain('finance')]);
     const texts = [
-      ...[ecomChaptersYml, ecomKpisYml, ecomPeopleYml].flatMap((y) => strings(parseYaml(y))),
+      ...[ecomChaptersYml, ecomKpisYml, ecomPeopleYml, finChaptersYml, finKpisYml, finPeopleYml].flatMap((y) => strings(parseYaml(y))),
       ...[generalSqlYml, generalAdvYml].flatMap((y) => strings(parseYaml(y))),
-      ...loadTicketTemplates('ecommerce').flatMap((tk) => (['vi', 'en'] as const).flatMap((lang) => strings(textOf(tk, lang)))),
+      ...[...loadTicketTemplates('ecommerce'), ...loadTicketTemplates('finance')].flatMap((tk) => (['vi', 'en'] as const).flatMap((lang) => strings(textOf(tk, lang)))),
     ];
     expect(texts.length).toBeGreaterThan(100);
     expect(texts.filter((x) => GAME_TONE.test(x))).toEqual([]);
