@@ -516,3 +516,13 @@ Người chơi thử: save mới chỉ xong `ch1-01` (người mới từ màn c
 | Kỹ năng trên Luyện SQL | Main đã đổi: mọi kỹ năng mở luyện | Không đổi |
 | Nút top bar Ôn tập / Hộp thư / Sổ tay | Ẩn khi 0 / luôn chạy | Không đổi |
 | Gõ thẳng URL trang đang khóa (Sandbox/Dữ liệu trước việc 1) | Trang vẫn mở và chạy | Để lại: trang chạy đúng, không phải nút chết; chỉ link trên nav khóa |
+
+## v12.0 (Plan 10)
+
+Baseline (Plan 10 Task 0, HEAD 237e70f, 2026-11-18). Build: `main` 282, `worker` 149, `initdb` 128 KB gz. "Data ready" = D10-25 (green dot in the top bar and `#notice` hidden), `performance.now()` from navigation start. Measured with a scripted headless Edge (CDP) on `vite preview --port 5178` (5174/5175 were in use by other sessions), fresh profile (no L72 test save, so the welcome dialog was open), warm HTTP cache after one warm-up load, machine not idle (other agents running). Row (b) is followed by one `#/d/logistics` load so the domain pref goes back. Headless numbers are lower than the headed Edge numbers of L46 (10–11 s); compare "after" with the same script.
+
+| Row | before: data ready (ms, 3 runs) | before: db:time-to-ready | after: data ready | after: db:ensure:&lt;schema&gt; |
+|---|---|---|---|---|
+| (a) `#/d/logistics` | 3282 / 3090 / 3060 | 3166 / 3005 / 2993 | | |
+| (b) `#/d/ecommerce` | 4814 / 4764 / 5048 | 2958 / 2959 / 3244 | | |
+| (c) SQL only (`#/learn`; HEAD seeds Logistics anyway) | 5012 / 5379 / 5125 | 3232 / 3188 / 3314 | | |
