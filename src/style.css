@@ -270,3 +270,6 @@ svg[data-mascot=lily] > use, svg[data-mascot=lily] > .lily-fig { transform: scal
 @supports not selector(:popover-open) {
   [popover] { display: none; }
 }
+
+/* v13 (product-design-v8 §2.1): the block a guide step talks about (the one right under its slot) gets a static sun outline; Boon's words name it too. */
+[data-guide-slot]:has(> [data-guide-mark]) + section { outline: 2px solid var(--sun); outline-offset: 2px; }

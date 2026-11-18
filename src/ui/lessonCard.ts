@@ -217,7 +217,7 @@ function card(l: Lesson, titleId: string, actions: HTMLElement[], tour = false, 
   drawBoon();
 
   const skill = skillOf(l.id);
-  return h('section', { class: 'group my-3 rounded-xl bg-panel p-3 ring-1 ring-accent', 'aria-labelledby': titleId },
+  return h('section', { class: cx('my-3 rounded-xl bg-panel p-3 ring-1 ring-accent', guided && 'group'), 'aria-labelledby': titleId },
     h('div', { class: 'flex flex-wrap items-center justify-between gap-2' },
       h('h3', { id: titleId, tabindex: '-1', class: 'm-0 flex items-center gap-2' },
         // v12 (L87): Boon teaches the lesson; left out while his tour mark is in the same pane (one mascot per region)

@@ -194,6 +194,7 @@ export function initGuides(deps: GuideDeps): void {
   };
   // Any dialog closed (lesson, welcome): the page's guide may show again, once the dialog's own `close` listeners ran (D-G3 first).
   document.addEventListener('close', () => queueMicrotask(refresh), true);
+  document.addEventListener('pointerdown', (e) => { if (!(e.target instanceof Element && e.target.closest('[data-guide-mark]'))) held = false; }); // a click on blank page moves focus to <body> without focusin
   document.addEventListener('focusin', (e) => { held = e.target instanceof Element && !!e.target.closest('[data-guide-mark]'); });
   deps.guideHooks.region = () => {
     const a = current();
