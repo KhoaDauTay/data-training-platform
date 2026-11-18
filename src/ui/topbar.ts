@@ -9,6 +9,7 @@ import { getTheme, NAV_LINK, setTheme, THEME_PREFS, TOP_BTN, type ThemePref } fr
 import { byId, h, nodes } from './dom';
 import { fillIcons, icon, NAV_ICON, type IconName } from './icons';
 import { currentRoute } from './router';
+import { activeSchema } from '../session';
 
 const mb = (bytes: number): number => Math.round(bytes / 1e5) / 10;
 
@@ -191,8 +192,10 @@ export function renderTopbar(): void {
   chapter.replaceChildren(
     icon('map', 'size-4'),
     h('span', { class: 'font-semibold' }, t('top.chapterShort', { n: ch, total })));
-  byId('domain-status').hidden = !inDomain(route); // chapter and rank belong to the domain (v5 §B.2)
-  byId('domain-chapter').textContent = inDomain(route) ? t('top.chapterTiny', { n: ch }) : ''; // U1: "Ch.4" in the chip on phones
+  // Chapter and rank belong to the domain (v5 §B.2); a General drill opened in the workspace is not in it (L82, L93).
+  const domainChrome = inDomain(route) && !(route === 'play' && activeSchema() === 'lab');
+  byId('domain-status').hidden = !domainChrome;
+  byId('domain-chapter').textContent = domainChrome ? t('top.chapterTiny', { n: ch }) : ''; // U1: "Ch.4" in the chip on phones
   byId('rank').textContent = rankOf(app.tickets, done()).tier?.[lang] ?? t('career.intern');
   byId('xp').replaceChildren(icon('star', 'size-4'), t('top.xp', { n: app.save.xp }));
   renderSettings();

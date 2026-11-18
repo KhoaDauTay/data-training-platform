@@ -519,6 +519,7 @@ export const en: Record<Key, Msg> = {
   'erd.scope': 'Diagram scope',
   'erd.scopeTask': 'Related to this task',
   'erd.scopeAll': 'All unlocked tables',
+  'erd.scopeLab': 'All tables',
   'erd.dropped': (p) => `${count('more table', 'more tables')(p)} hidden: ${p.list}.`,
   'erd.reading': 'Reading the structure…',
   'brief.related': 'Related tables:',

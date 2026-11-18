@@ -71,7 +71,7 @@ const FEEDBACK: Record<'good' | 'bad', string> = {
 
 /**
  * After a wrong result (curriculum §5.4): the author's explanation when the result equals one of the ticket's `wrong:` SQL,
- * else the trap of the skill the ticket teaches. A wrong column count says nothing about which mistake it was (no tip), and an
+ * else the trap of the skill the ticket teaches (a drill teaches none: no tip). A wrong column count says nothing about which mistake it was (no tip), and an
  * empty result looks like every mistake that filters too much, so it is never matched against `wrong:` (tests/content.test.ts:
  * a `wrong:` SQL always returns rows). Each `wrong:` SQL runs once per ticket+variant (its text has the variant applied).
  */
@@ -91,8 +91,9 @@ export function wrongTipper(run: (sql: string, tk: Ticket) => Promise<QueryResul
         if (r && compareResults(r, result, tk.ordered).ok) return () => w.why[getLang()];
       }
     }
-    // A drill (chapter 0) grants nothing: the trap of the skill it practises.
-    const skill = SKILLS.find((s) => tk.grants.includes(s.id)) ?? (tk.chapter === 0 ? SKILLS.find((s) => tk.requires.includes(s.id)) : undefined);
+    // A drill (chapter 0) grants nothing, so no fallback: the skill's general trap was rarely its mistake, and the drill's
+    // own feedback already names the columns and rows that differ (L84, L93).
+    const skill = SKILLS.find((s) => tk.grants.includes(s.id));
     return skill && (() => t('work.trap', { trap: skill.trap[getLang()] }));
   };
 }

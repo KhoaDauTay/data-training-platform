@@ -516,6 +516,7 @@ export const vi = {
   'erd.scope': 'Phạm vi sơ đồ',
   'erd.scopeTask': 'Liên quan đến việc này',
   'erd.scopeAll': 'Tất cả bảng đã mở',
+  'erd.scopeLab': 'Tất cả bảng',
   'erd.dropped': 'Ẩn bớt {n} bảng: {list}.',
   'erd.reading': 'Đang đọc cấu trúc…',
   'brief.related': 'Bảng liên quan:',

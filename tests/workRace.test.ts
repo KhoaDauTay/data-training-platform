@@ -365,6 +365,13 @@ describe('wrongTipper', async () => {
     expect(await tip(tk, rows(1), { ok: false, reason: 'columns', expected: 2, actual: 1 })).toBeUndefined();
     expect(run).not.toHaveBeenCalled();
   });
+
+  it('L93: drill (chương 0) không khớp wrong: → không gợi ý bẫy chung của kỹ năng; khớp thì vẫn giải thích', async () => {
+    const { tip } = make();
+    const drill: Ticket = { ...tk, id: 'g-x-1', chapter: 0, grants: [], requires: [skill.id] };
+    expect(await tip(drill, rows(9), rowsFail)).toBeUndefined();
+    expect((await tip(drill, rows(1), rowsFail))?.()).toBe(tk.wrong![0].why[getLang()]);
+  });
 });
 
 describe('ôn đầu chương (warm-up)', async () => {

@@ -18,6 +18,7 @@ import { errorView } from './feedback';
 import { renderFlow } from './flowView';
 import { sandboxTables, visibleTables } from './myDataView';
 import { renderSteps } from './stepsView';
+import { tablesIn } from './tryPreview';
 import { registerTab } from './tabs';
 
 export interface VizDeps {
@@ -131,8 +132,15 @@ interface Scoped { tables: string[]; dropped: string[]; switchable: boolean }
  * in Sandbox every visible table. Related tables are listed alphabetically, so nothing marks the ones the answer uses.
  */
 function scoped(meta: ErMetadata): Scoped {
-  if (inDrill()) return { tables: [...new Set(meta.cols.map((c) => c.table))].sort(), dropped: [], switchable: false };
   const tk = activeTicket();
+  if (inDrill()) {
+    // L93: like a ticket, a drill opens on the tables its Solution reads (the same ones "Tables used" shows, L84), switch to all of lab.
+    const lab = [...new Set(meta.cols.map((c) => c.table))].sort();
+    const own = tk ? tablesIn(tk.steps[0].solution, lab) : [];
+    const r = relatedTables(own, lab, meta.cons, 10, false);
+    if (r.tables.length === 0 || app.schemaScope === 'all') return { tables: lab, dropped: [], switchable: r.tables.length > 0 };
+    return { tables: [...r.tables].sort(), dropped: [], switchable: true };
+  }
   const all = { tables: visibleTables(), dropped: [], switchable: false };
   if (!tk) return all;
   const r = relatedTables(tk.tables, unlockedTables(), meta.cons, 10, showsParents(tk));
@@ -163,7 +171,7 @@ function scopeBar(s: Scoped, deps: VizDeps): (Node | string)[] {
     return b;
   };
   return [
-    h('div', { class: 'mb-2 flex flex-wrap gap-1', role: 'group', 'aria-label': t('erd.scope') }, btn('task', t('erd.scopeTask')), btn('all', t('erd.scopeAll'))),
+    h('div', { class: 'mb-2 flex flex-wrap gap-1', role: 'group', 'aria-label': t('erd.scope') }, btn('task', t('erd.scopeTask')), btn('all', t(inDrill() ? 'erd.scopeLab' : 'erd.scopeAll'))),
     ...nodes(s.dropped.length ? h('p', { class: 'text-sm text-muted' }, t('erd.dropped', { n: s.dropped.length, list: s.dropped.join(', ') })) : null),
   ];
 }
@@ -194,8 +202,8 @@ function registerSchemaTabs(deps: VizDeps): void {
     render: (host) => load(host, t('erd.reading'), allMeta(), (body, meta) => {
       const s = scoped(meta);
       const drill = inDrill();
-      const open = new Set(drill ? s.tables : visibleTables());
-      const game = new Set(drill ? s.tables : unlockedTables()); // imported Sandbox tables get no value lists
+      const open = new Set(drill ? meta.cols.map((c) => c.table) : visibleTables()); // a drill: every lab table is open, so an FK names its parent
+      const game = new Set(drill ? meta.cols.map((c) => c.table) : unlockedTables()); // imported Sandbox tables get no value lists
       body.append(...scopeBar(s, deps), h('div', { class: 'grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-2' }, ...s.tables.map((table) => {
         const values = game.has(table) ? textValues(table, drill ? 'lab' : domainSchemaId()) : undefined;
         return h('div', {},
