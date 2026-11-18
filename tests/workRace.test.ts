@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { QueryResult } from '../src/db/run';
+import type { GradeResult } from '../src/grader';
 import { emptySave } from '../src/save';
 import type { Ticket } from '../src/tickets';
 
@@ -338,7 +339,7 @@ describe('wrongTipper', async () => {
   const rows = (...v: number[]): QueryResult => ({ columns: ['n'], types: [23], rows: v.map((x) => [x]) });
   const skill = SKILLS[0];
   const tk: Ticket = { ...ticket('W'), grants: [skill.id], wrong: [{ sql: 'W1', why: { vi: 'sai 1', en: 'wrong 1' } }, { sql: 'W2', why: { vi: 'sai 2', en: 'wrong 2' } }] };
-  const rowsFail = { ok: false, reason: 'rows', missing: 1, extra: 1 } as const;
+  const rowsFail: GradeResult = { ok: false, reason: 'rows', missing: 1, extra: 1, extraRows: [], missingRows: [], expectedRows: 1, actualRows: 1 };
   const make = () => {
     const run = vi.fn(async (sql: string) => (sql === 'W1' ? rows(1) : rows(2, 3)));
     return { run, tip: wrongTipper(run) };

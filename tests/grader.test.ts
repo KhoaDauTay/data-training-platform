@@ -16,8 +16,21 @@ describe('cellKey', () => {
   });
   it('NULL, ngày, chữ', () => {
     expect(cellKey(null)).toBe('∅');
-    expect(cellKey(new Date('2026-10-31T00:00:00Z'))).toBe('2026-10-31T00:00:00.000Z');
+    expect(cellKey(new Date('2026-10-31T00:00:00Z'))).toBe('2026-10-31');
     expect(cellKey('CQ2610')).toBe('CQ2610');
+  });
+  it('ngày: nửa đêm UTC (date) và nửa đêm giờ máy (timestamp) cùng khóa; thời điểm khác vẫn khác', () => {
+    expect(cellKey(new Date(2026, 9, 1))).toBe('2026-10-01'); // local midnight, how PGlite reads a timestamp
+    expect(cellKey(new Date(Date.UTC(2026, 9, 1)))).toBe('2026-10-01');
+    expect(cellKey(new Date(2026, 9, 1, 8, 30))).not.toBe(cellKey(new Date(2026, 9, 1)));
+    expect(cellKey(new Date(Date.UTC(2026, 9, 1, 0, 0, 1)))).not.toBe(cellKey(new Date(Date.UTC(2026, 9, 1, 0, 0, 2))));
+  });
+  it("trên PGlite: date_trunc('month', timestamp) khớp cùng tháng kiểu date", async () => {
+    const run = await runner();
+    const ts = await run("SELECT date_trunc('month', TIMESTAMP '2026-10-15 13:45:00')");
+    const d = await run("SELECT DATE '2026-10-01'");
+    expect(compareResults(d, ts, false)).toEqual({ ok: true });
+    expect(compareResults(d, await run("SELECT TIMESTAMP '2026-10-01 08:30:00'"), false).ok).toBe(false); // not 07:00: in UTC+7 that is UTC midnight, keyed as a day (cellKey has no column types)
   });
 });
 
@@ -36,15 +49,50 @@ describe('compareResults', () => {
     expect(compareResults(exp, res([[1], [2]]), false)).toEqual({ ok: false, reason: 'columns', expected: 2, actual: 1 });
   });
   it('thiếu dòng', () => {
-    expect(compareResults(exp, res([[1, 'a']]), false)).toEqual({ ok: false, reason: 'rows', missing: 1, extra: 0, sample: undefined });
+    // toMatchObject since L84 added extraRows/missingRows/row counts to the 'rows' result (tested below)
+    expect(compareResults(exp, res([[1, 'a']]), false)).toMatchObject({ ok: false, reason: 'rows', missing: 1, extra: 0, sample: undefined });
   });
   it('giá trị lệch: báo dòng của người chơi', () => {
-    expect(compareResults(exp, res([[1, 'a'], [2, 'z']]), false)).toEqual({ ok: false, reason: 'rows', missing: 1, extra: 1, sample: [2, 'z'] });
+    expect(compareResults(exp, res([[1, 'a'], [2, 'z']]), false)).toMatchObject({ ok: false, reason: 'rows', missing: 1, extra: 1, sample: [2, 'z'] });
   });
   it('dòng trùng được đếm đúng', () => {
     expect(compareResults(res([[1], [1]]), res([[1]]), false)).toMatchObject({ reason: 'rows', missing: 1, extra: 0 });
   });
 });
+
+describe('compareResults: chi tiết cho Thử ngay và drill (L84)', () => {
+  const carriers = res([['OSL', 'Oceanic Star Line'], ['VNA', 'Vietnam Air'], ['FDX', 'FedEx']]);
+  it('dòng thừa và dòng thiếu (tối đa 3), số dòng hai bên; sample vẫn là dòng của người chơi', () => {
+    const actual = res([[1, 'a'], [9, 'x'], [8, 'y'], [7, 'z'], [6, 'w']]);
+    const r = compareResults(exp4(), actual, false);
+    expect(r).toMatchObject({ reason: 'rows', missing: 3, extra: 4, expectedRows: 4, actualRows: 5, extraRows: [[9, 'x'], [8, 'y'], [7, 'z']], missingRows: [[2, 'b'], [3, 'c'], [4, 'd']] });
+    expect(r.ok === false && r.reason === 'rows' && r.sample).toBe(actual.rows[1]);
+    expect(r).not.toHaveProperty('cols'); // row counts differ: no column analysis
+  });
+  it('dòng trùng: chỉ phần thiếu', () => {
+    expect(compareResults(res([[1], [1], [2]]), res([[1], [2]]), false)).toMatchObject({ missingRows: [[1]], extraRows: [] });
+  });
+  it('cột 1 của người chơi là cột 2 của đáp án, cột 2 không khớp gì (lời than của user)', () => {
+    const actual = res([['Oceanic Star Line', 'SEA'], ['Vietnam Air', 'AIR'], ['FedEx', 'AIR']]);
+    expect(compareResults(carriers, actual, false)).toMatchObject({ cols: { mismatched: [0, 1], moved: [{ from: 0, to: 1 }] } });
+  });
+  it('hai cột đổi chỗ: moved theo cả hai chiều', () => {
+    const actual = res(carriers.rows.map(([a, b]) => [b, a]));
+    expect(compareResults(carriers, actual, false)).toMatchObject({ cols: { mismatched: [0, 1], moved: [{ from: 0, to: 1 }, { from: 1, to: 0 }] } });
+  });
+  it('một cột sai, cột kia đúng', () => {
+    const actual = res([['OSL', 'x'], ['VNA', 'Vietnam Air'], ['FDX', 'FedEx']]);
+    expect(compareResults(carriers, actual, false)).toMatchObject({ cols: { mismatched: [1], moved: [] } });
+  });
+  it('mọi cột đủ giá trị nhưng ghép dòng sai: mismatched rỗng', () => {
+    const actual = res([['OSL', 'Vietnam Air'], ['VNA', 'Oceanic Star Line'], ['FDX', 'FedEx']]);
+    expect(compareResults(carriers, actual, false)).toMatchObject({ reason: 'rows', cols: { mismatched: [], moved: [] } });
+  });
+});
+
+function exp4(): QueryResult {
+  return res([[1, 'a'], [2, 'b'], [3, 'c'], [4, 'd']]);
+}
 
 describe('grade trên DB thật', () => {
   const sol = "SELECT code, name FROM ports WHERE region = 'Europe' AND kind = 'SEAPORT'";

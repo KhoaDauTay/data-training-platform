@@ -13,13 +13,13 @@ export interface Lesson {
   /** Business phrases that signal the skill in a request; "…" marks a gap. */
   cues: { vi: string[]; en: string[] };
   concept: Bilingual;
-  /** Runs on the real data; its result never equals the granting ticket's Solution (tests/lessons.test.ts). */
+  /** Runs on the neutral `lab` schema (L82/L84), like the drills; tests/lessons.test.ts checks it there. */
   example: string;
   /** ①②… notes on the example, with `code spans`. */
   explain: Bilingual;
   /** A common mistake: it errors, or gives a result other than the example's. */
   mistake: { sql: string; why: Bilingual };
-  /** "Thử ngay": graded by the grader against `solution`, 0 XP. */
+  /** "Thử ngay": graded by compareResults against `solution` on `lab`, 0 XP; the box previews its tables and expected result (L84). */
   try: { task: Bilingual; starter: string; solution: string; ordered: boolean };
   /** PostgreSQL docs page. */
   docs: string;
@@ -27,8 +27,8 @@ export interface Lesson {
   node?: string;
 }
 
-/** Skill lessons run on the game tables, advanced-node lessons on `lab`. */
-export const lessonSchema = (l: Lesson): SchemaId => (l.node ? 'lab' : 'game');
+/** Every lesson runs on `lab` (L84): skill lessons and advanced-node lessons alike, never on a domain's tables. */
+export const lessonSchema = (_l: Lesson): SchemaId => 'lab';
 
 const DOCS = 'https://www.postgresql.org/docs/';
 

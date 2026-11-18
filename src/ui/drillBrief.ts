@@ -18,6 +18,7 @@ import type * as Brief from './brief';
 import type * as Dom from './dom';
 import type * as LessonCard from './lessonCard';
 import type * as Modes from './modes';
+import type * as TryPreview from './tryPreview';
 
 /**
  * Drill workspace (Plan 8a Task 7), a lazy chunk (budget group `learnui`), loaded by src/ui/modes.ts when a drill opens.
@@ -35,7 +36,7 @@ export interface DrillDeps {
   session: typeof Session.session; hintsShown: typeof Session.hintsShown; today: typeof Session.today; activeSchema: typeof Session.activeSchema;
   isSuccess: typeof Practice.isSuccess; movedToday: typeof Practice.movedToday; nextCard: typeof Practice.nextCard;
   SKILLS: typeof Progress.SKILLS; hashOf: typeof Route.hashOf; textOf: typeof Tickets.textOf;
-  hints: typeof Brief.hints; shapeCard: typeof Brief.shapeCard; openLesson: typeof LessonCard.openLesson;
+  hints: typeof Brief.hints; shapeCard: typeof Brief.shapeCard; tryPreview: typeof TryPreview.tryPreview; openLesson: typeof LessonCard.openLesson;
   backToStory: typeof Modes.backToStory; startDrillMode: typeof Modes.startDrillMode;
   loadGeneral: typeof Content.loadGeneral; generalNow: typeof Content.generalNow; loadLessons: typeof Content.loadLessons;
   // Learning path (Task 9-10)
@@ -102,7 +103,7 @@ function nameOf(g: General, d: Drill): string {
 
 const TITLE = { id: 'brief-title', tabindex: '-1', class: 'm-0 text-lg font-bold' };
 
-/** Left pane of the drill workspace: title, task, expected result (no labels, D8a-6), a free hint, the lesson, the Recap. */
+/** Left pane of the drill workspace: title, task, expected shape (no labels, D8a-6), tables used and expected rows (L84), a free hint, the lesson, the Recap. */
 export function drillPane(host: HTMLElement, m: DrillMode): void {
   const { h, nodes } = d$;
   const g = d$.generalNow();
@@ -141,6 +142,7 @@ function drillParts(g: General, d: Drill, tk: Ticket): (Node | null | false | un
     h('div', { class: 'mt-3 text-[15px] leading-relaxed' }, richText(d.task[lang])),
     h('p', { class: 'text-sm text-muted' }, lt('drill.data')),
     d$.shapeCard(tk, 0),
+    d$.tryPreview(tk.steps[0].solution, 'lab'), // L84: the tables it reads and a sample of the expected result (practice, not story)
     d$.hints(tk, d$.textOf(tk, lang), false),
     lesson ? h('p', { class: 'my-2 flex flex-wrap items-center gap-2 text-sm' }, h('span', {}, lt('drill.lesson', { name: what })), lesson) : null,
   ];

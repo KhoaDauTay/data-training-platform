@@ -13,6 +13,8 @@ import { app, done, editorSchema, initialDoc, persist, stepKey, type LastRun } f
 import { localStore } from '../storage';
 import { BTN_SUBMIT } from '../theme';
 import { BLANK, type Ticket } from '../tickets';
+import { DRILL_ID } from '../save';
+import { diffView, verdictText } from './tryPreview';
 import { celebrate } from './celebrate';
 import { h, richText } from './dom';
 import { createEditor, type Editor } from './editor';
@@ -103,7 +105,7 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
   let busy = false;
   let selection = false;
   /** Last message under the editor, as a function so relabel() re-translates it. */
-  let message: { kind: 'good' | 'bad'; view: () => Node | string; who?: [Mascot, Pose] } | undefined;
+  let message: { kind: 'good' | 'bad'; view: () => Node | string; who?: [Mascot, Pose]; detail?: () => Node | null } | undefined;
   let history = loadHistory(localStore());
 
   const editorHost = h('div', { class: 'editor overflow-hidden rounded-xl ring-1 ring-line' });
@@ -113,9 +115,11 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
   const formatBtn = h('button', { type: 'button', onclick: () => void format() });
   const submitBtn = h('button', { type: 'button', class: BTN_SUBMIT, onclick: () => void submit() });
   const feedback = h('div', { role: 'status' });
+  /** A drill's wrong answer (L84): the rows that differ, outside the status line so a screen reader reads one sentence. */
+  const detailBox = h('div');
   const historyBox = h('details', { class: 'mt-2 text-sm' });
   // The tour's mark sits under the buttons, never over the editor (v4 §B.2); main.ts refreshTour() refills it.
-  host.replaceChildren(editorHost, h('div', { class: 'max-md:sticky max-md:bottom-14 max-md:z-10 max-md:bg-panel' }, h('div', { class: 'actions' }, runBtn, explainBtn, formatBtn, submitBtn)), tourSlot('work'), feedback, historyBox);
+  host.replaceChildren(editorHost, h('div', { class: 'max-md:sticky max-md:bottom-14 max-md:z-10 max-md:bg-panel' }, h('div', { class: 'actions' }, runBtn, explainBtn, formatBtn, submitBtn)), tourSlot('work'), feedback, detailBox, historyBox);
 
   // The buttons advertise Mod+Enter / Mod+Shift+Enter: honour them when focus is outside the editor too
   // (on a button after a click, the brief heading after picking a ticket). Inside the editor CodeMirror's
@@ -131,12 +135,13 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
   });
 
   /** `who`: a mascot beside the words (V7), at most one, in this line under the buttons only. */
-  function say(kind: 'good' | 'bad', view: () => Node | string, who?: [Mascot, Pose]): void {
-    message = { kind, view, who };
+  function say(kind: 'good' | 'bad', view: () => Node | string, who?: [Mascot, Pose], detail?: () => Node | null): void {
+    message = { kind, view, who, detail };
     drawMessage();
   }
   function drawMessage(): void {
     feedback.className = message ? FEEDBACK[message.kind] : '';
+    detailBox.replaceChildren(message?.detail?.() ?? '');
     const who = tourRegion() === 'work' ? undefined : message?.who; // Boon's tour mark is already in this pane
     feedback.replaceChildren(!message ? '' : who
       ? message.kind === 'good' // one compact line: a small cheering Lily beside it (v10 critic #6)
@@ -375,7 +380,10 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
         say('bad', () => h('div', {}, err !== undefined ? errorView(err) : gradeMessage(fail), voice()), mascotOf(err));
       } else {
         if (fail.reason === 'rows' && played?.result) played.mark = fail.sample;
-        say('bad', () => h('div', {}, gradeMessage(fail), tip ? h('div', { class: 'mt-2' }, richText(tip())) : null, voice()));
+        // A General drill (practice, L84) says which columns differ and shows the rows; story, lane and E-com tickets keep L25.
+        const drill = DRILL_ID.test(tk.id);
+        say('bad', () => h('div', {}, drill ? verdictText(fail) : gradeMessage(fail), tip ? h('div', { class: 'mt-2' }, richText(tip())) : null, voice()),
+          undefined, drill ? () => diffView(fail) : undefined);
       }
       deps.panel.show('result');
       return;

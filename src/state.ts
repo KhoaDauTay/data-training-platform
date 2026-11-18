@@ -53,6 +53,8 @@ export const app = {
   schemaScope: 'task' as 'task' | 'all',
   /** Runs one statement in the sandbox; main.ts points it at DbClient.run. `schema` absent = the game schema (Plan 8a). */
   run: (_sql: string, _opts?: RunOpts): Promise<QueryResult> => Promise.reject(new Error('DB not started')),
+  /** Seeds a lazily seeded schema (`lab`) before its first query; main.ts points it at DbClient.ensure (a no-op once seeded). */
+  ensure: (_schema: SchemaId): Promise<void> => Promise.resolve(),
 };
 
 /** Implemented in main.ts; UI modules call these instead of importing main. */
@@ -145,14 +147,16 @@ export function editorSchema(): SQLNamespace {
 }
 
 // Keyed by Solution SQL, not ticket id: Plan 1c variants reuse ids with different SQL.
-const shapes = new Map<string, Promise<Shape>>();
-export function expectedShape(solution: string, schema: SchemaId = domainSchemaId()): Promise<Shape> {
+const expected = new Map<string, Promise<QueryResult>>();
+/** The Solution's result, run once per session (shape card, and the L84 expected-result preview of lessons and drills). */
+export function expectedResult(solution: string, schema: SchemaId = domainSchemaId()): Promise<QueryResult> {
   const k = `${schema}|${solution}`;
-  let p = shapes.get(k);
+  let p = expected.get(k);
   if (!p) {
-    p = app.run(solution, { schema }).then(shapeOf);
-    shapes.set(k, p);
-    p.catch(() => shapes.delete(k)); // timeout/restart: try again on the next render
+    p = schema === 'game' ? app.run(solution, { schema }) : app.ensure(schema).then(() => app.run(solution, { schema }));
+    expected.set(k, p);
+    p.catch(() => expected.delete(k)); // timeout/restart: try again on the next render
   }
   return p;
 }
+export const expectedShape = (solution: string, schema: SchemaId = domainSchemaId()): Promise<Shape> => expectedResult(solution, schema).then(shapeOf);
