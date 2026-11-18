@@ -11,6 +11,7 @@ import type { h as H, nodes as Nodes, reducedMotion as ReducedMotion } from '../
 import type { mascot as Mascot } from '../ui/mascots';
 import type { callout as Callout, routeItems as RouteItems } from '../ui/routeText';
 import type { s as S } from '../ui/svg';
+import { ambient } from './ambient';
 import { arrivalPulse } from './mapMotion';
 
 /**
@@ -44,7 +45,7 @@ export const MAX_TIERS = 6;
 /** Crane home: trolley above the berthed ship, spreader at rest. The stage (Task 18) tweens from here. */
 export const CRANE = { x: 555, y: 170 } as const;
 
-/** The parts Task 18 animates. Everything else in the scene is static or a CSS ambient loop. */
+/** The parts the completion scenes animate (A2). Everything else is static or one of Home's ambient loops (harborLife). */
 export interface HarborParts {
   svg: SVGSVGElement;
   yard: SVGGElement;
@@ -80,35 +81,51 @@ const FONT = 'system-ui, sans-serif';
 let uid = 0;
 /** Home's drifting clouds: [y, scale, seconds per crossing, start offset in seconds] (Plan 8b Task 4). */
 const CLOUDS: [number, number, number, number][] = [[46, 1, 60, 12], [84, 0.7, 80, 50], [30, 0.85, 100, 70]];
+/** Where the sun (moon at dusk) sits: over open water, so its glint lands on the sea (ui-ux-v6 S1). */
+const SUN = { x: 168, y: 64 } as const;
+
+/**
+ * A container in three tones (S1): face (`paint`: a chapter fill class or a hex), shaded right side, corrugation
+ * grooves and a lit top edge. Only black/white alpha on top of the face, so the chapter colours stay the only colours.
+ */
+function container(x: number, y: number, w: number, hh: number, paint: Record<string, string | number | false>): SVGElement[] {
+  const side = Math.max(2, Math.round(w * 0.12));
+  let d = '';
+  for (let gx = x + 2.5; gx < x + w - side - 1; gx += 3.5) d += `M${gx.toFixed(1)} ${y + 1.4}V${y + hh - 1}`;
+  return [
+    s('rect', { x, y, width: w, height: hh, rx: 0.6, ...paint }),
+    s('rect', { x: x + w - side, y, width: side, height: hh, fill: '#000000', opacity: 0.24 }),
+    s('path', { d, stroke: '#000000', 'stroke-opacity': 0.16, 'stroke-width': 0.9 }),
+    s('rect', { x, y, width: w, height: Math.min(1.4, hh * 0.16), fill: '#ffffff', opacity: 0.38 }),
+  ];
+}
 
 /** Redraws the yard from `h.bays`. `fresh`: chapters whose top container gets a bright edge and a "New" tag. */
 export function drawYard(p: HarborParts, h: Harbor, fresh: ReadonlySet<number> = new Set()): void {
   const out: SVGElement[] = [];
   for (const ch of [7, 8, 9, 10, 11, 12, 1, 2, 3, 4, 5, 6]) { // back row first: the front row covers it
     const pad = bayBox(ch, -1);
-    out.push(s('rect', { x: pad.x - 1, y: pad.base, width: pad.w + 2, height: 2, fill: '#64748b' }));
+    out.push(s('rect', { x: pad.x - 1, y: pad.base, width: pad.w + 2, height: 2, style: 'fill:var(--hs-wall)' }));
     const n = h.bays[ch] ?? 0;
     const shown = Math.min(n, MAX_TIERS);
+    if (shown) out.push(s('path', { d: `M${pad.x + pad.w} ${pad.base} l7 0 l-7 ${-Math.min(shown, 3) * 4} Z`, fill: '#000000', opacity: 0.12 })); // stack shadow
     for (let k = 0; k < shown; k++) {
       const b = bayBox(ch, k);
       const top = fresh.has(ch) && k === shown - 1;
-      out.push(s('rect', {
-        x: b.x, y: b.y, width: b.w, height: b.h - 0.6, rx: 0.8, class: chapterColor(ch).fill,
-        stroke: top ? '#ffffff' : false, 'stroke-width': top ? 1.6 : false,
-      }));
-      out.push(s('rect', { x: b.x + 2, y: b.y + 1.5, width: b.w - 4, height: 1, fill: '#ffffff', opacity: 0.25 }));
+      out.push(...container(b.x, b.y, b.w, b.h - 0.6, { class: chapterColor(ch).fill, stroke: top ? '#ffffff' : false, 'stroke-width': top ? 1.6 : false }));
     }
     const label = n > MAX_TIERS ? `+${n - MAX_TIERS}` : fresh.has(ch) && shown ? t('harbor.new') : '';
     if (label) {
       const b = bayBox(ch, shown);
-      out.push(s('text', { x: b.x + b.w / 2, y: b.y + 7, 'text-anchor': 'middle', 'font-family': FONT, 'font-size': 12, 'font-weight': 700, fill: '#0f172a' }, label));
+      out.push(s('text', { x: b.x + b.w / 2, y: b.y + 7, 'text-anchor': 'middle', 'font-family': FONT, 'font-size': 12, 'font-weight': 700, fill: '#0f172a', stroke: '#ffffff', 'stroke-width': 3, 'paint-order': 'stroke' }, label));
     }
   }
   p.yard.replaceChildren(...out);
 }
 
 /**
- * The Tien Sa scene (L26). `ambient`: CSS loops (waves, smoke, lighthouse, departing ship, crane) for Home; the stage
+ * The Tien Sa scene (L26, redrawn in ui-ux-v6 S1: three depth layers, light from the sun over the bay, dusk with yard
+ * lights in dark mode). `ambient`: Home; harborLife() animates its loops (GSAP, only while on screen). The stage
  * passes false and drives the ship, crane, truck, barrier and shutter itself. `crop`: the stage's close-up of berth,
  * crane load path (y ≥ 140, so the lifted container stays in frame), yard, gate and CFS. Gradient ids get a per-build prefix: Home (hidden) and the stage can both be in the DOM.
  */
@@ -116,51 +133,87 @@ export function harborScene(h: Harbor, opts: { ambient: boolean; current: number
   const n = ++uid;
   const id = (k: string): string => `cq${n}-${k}`;
   const url = (k: string): string => `url(#${id(k)})`;
-  const amb = (cls: string): string | false => (opts.ambient ? cls : false);
-  const grad = (k: string, stops: [number, string, number?][]): SVGLinearGradientElement =>
-    s('linearGradient', { id: id(k), x1: 0, y1: 0, x2: 0, y2: 1 },
+  const tok = (k: string): string => `fill:var(--hs-${k})`;
+  const amb = (k: string, data: Record<string, string | number> = {}): Record<string, string | number> =>
+    (opts.ambient ? { 'data-amb': k, ...Object.fromEntries(Object.entries(data).map(([a, v]) => [`data-${a}`, v])) } : {});
+  const grad = (k: string, stops: [number, string, number?][], dir: [number, number, number, number] = [0, 0, 0, 1]): SVGLinearGradientElement =>
+    s('linearGradient', { id: id(k), x1: dir[0], y1: dir[1], x2: dir[2], y2: dir[3] },
       // style, not the attribute: a stop colour may be a theme token (var(--hs-*), dusk in dark mode, v10 critic #8)
       ...stops.map(([offset, color, alpha]) => s('stop', { offset, style: `stop-color:${color};stop-opacity:${alpha ?? 1}` })));
+  const glow = (k: string, color: string): SVGRadialGradientElement =>
+    s('radialGradient', { id: id(k) }, s('stop', { offset: 0, style: `stop-color:${color};stop-opacity:0.95` }),
+      s('stop', { offset: 0.35, style: `stop-color:${color};stop-opacity:0.45` }), s('stop', { offset: 1, style: `stop-color:${color};stop-opacity:0` }));
   const text = (x: number, y: number, size: number, fill: string, label: string, anchor = 'start'): SVGTextElement =>
     s('text', { x, y, 'text-anchor': anchor, 'font-family': FONT, 'font-size': size, 'font-weight': 700, fill }, label);
+  /** S1: a place name on a translucent pill (never straight on the picture); the whole label hides below lg (L23/L34). */
+  const label = (x: number, y: number, size: number, str: string, anchor: 'start' | 'middle' | 'end' = 'start'): SVGGElement => {
+    const w = str.length * size * 0.6 + 16;
+    const left = anchor === 'start' ? x - 8 : anchor === 'middle' ? x - w / 2 : x - w + 8;
+    return s('g', { class: 'max-lg:hidden' },
+      s('rect', { x: left, y: y - size - 3, width: w, height: size + 10, rx: (size + 10) / 2, fill: '#0f172a', 'fill-opacity': 0.66 }),
+      text(x, y, size, '#f8fafc', str, anchor));
+  };
 
   const yard = s('g', {});
   const drop = s('g', { 'aria-hidden': 'true' });
-  const cable = s('line', { x1: 0, y1: 125, x2: 0, y2: CRANE.y, stroke: '#334155', 'stroke-width': 2 });
-  const spreader = s('rect', { x: -18, y: CRANE.y, width: 36, height: 4, fill: '#facc15' });
-  const carry = s('rect', { x: -16, y: CRANE.y + 4, width: 32, height: 10, class: chapterColor(opts.current).fill, opacity: opts.ambient ? 1 : 0 });
-  const hoist = s('g', { class: amb('cq-hoist') }, cable, spreader, carry);
+  const cable = s('line', { x1: 0, y1: 125, x2: 0, y2: CRANE.y, stroke: '#1e293b', 'stroke-width': 2 });
+  const spreader = s('rect', { x: -18, y: CRANE.y, width: 36, height: 4, rx: 1, fill: '#facc15' });
+  const carry = s('rect', { x: -16, y: CRANE.y + 4, width: 32, height: 10, rx: 0.6, class: chapterColor(opts.current).fill, opacity: opts.ambient ? 1 : 0 });
+  const hoist = s('g', {}, cable, spreader, carry);
   const trolley = s('g', { transform: `translate(${CRANE.x},0)` },
-    s('rect', { x: -13, y: 117, width: 26, height: 8, rx: 1, fill: '#334155' }),
+    s('rect', { x: -13, y: 117, width: 26, height: 8, rx: 1.5, fill: '#334155' }),
+    s('rect', { x: -13, y: 117, width: 26, height: 2, rx: 1, fill: '#64748b' }),
     hoist);
+
+  // the berthed feeder: shadow + reflection inside the group, so they sail with it (setShip)
   const ship = s('g', { 'aria-hidden': 'true' },
-    s('path', { d: 'M470 250 L690 250 L676 284 L486 284 Z', fill: url('hull') }),
-    s('rect', { x: 470, y: 250, width: 220, height: 4, fill: '#dc2626' }),
-    ...[['#0284c7', 494, 234], ['#7c3aed', 524, 234], ['#e11d48', 554, 234], ['#059669', 584, 234], ['#d97706', 614, 234]]
-      .map(([fill, x, y]) => s('rect', { x, y, width: 28, height: 16, fill })),
-    s('rect', { x: 509, y: 220, width: 28, height: 14, fill: '#d97706' }),
-    s('rect', { x: 569, y: 220, width: 28, height: 14, fill: '#0284c7' }),
-    s('rect', { x: 650, y: 216, width: 28, height: 34, fill: '#f8fafc' }),
-    s('rect', { x: 655, y: 222, width: 18, height: 5, fill: '#0ea5e9' }),
-    s('rect', { x: 664, y: 204, width: 8, height: 12, fill: '#334155' }),
-    s('circle', { class: amb('cq-smoke'), cx: 668, cy: 198, r: 6, fill: '#cbd5e1', opacity: opts.ambient ? 1 : 0 }),
-    s('circle', { class: amb('cq-smoke cq-smoke2'), cx: 668, cy: 198, r: 6, fill: '#cbd5e1', opacity: opts.ambient ? 1 : 0 }),
-    text(580, 276, 12, '#e0f2fe', 'CARGO QUERY', 'middle'));
-  const truckBox = s('rect', { x: 0, y: 322, width: 56, height: 20, class: chapterColor(opts.current).fill });
+    s('rect', { x: 480, y: 284, width: 204, height: 18, fill: url('reflect') }),
+    s('ellipse', { cx: 580, cy: 285, rx: 112, ry: 4, fill: '#000000', opacity: 0.28 }),
+    s('path', { d: 'M462 248 L690 248 L683 284 L490 284 Q470 270 462 248 Z', fill: url('hull') }),
+    s('path', { d: 'M486 276 L685 276 L683 284 L490 284 Z', fill: '#9f1239' }), // antifouling below the waterline
+    s('path', { d: 'M462 248 L690 248 L689 253 L465 253 Z', fill: '#f8fafc', opacity: 0.85 }), // sheer line
+    ...[['#0284c7', 494, 232], ['#7c3aed', 524, 232], ['#e11d48', 554, 232], ['#059669', 584, 232], ['#d97706', 614, 232]]
+      .flatMap(([fill, x, y]) => container(x as number, y as number, 28, 16, { fill })),
+    ...container(509, 218, 28, 14, { fill: '#d97706' }),
+    ...container(569, 218, 28, 14, { fill: '#0284c7' }),
+    // bridge: lit face, shaded side, a window band
+    s('rect', { x: 648, y: 212, width: 32, height: 36, fill: '#f8fafc' }),
+    s('rect', { x: 672, y: 212, width: 8, height: 36, fill: '#cbd5e1' }),
+    s('rect', { x: 644, y: 210, width: 40, height: 4, fill: '#e2e8f0' }),
+    s('rect', { x: 652, y: 218, width: 24, height: 5, rx: 1, fill: '#0f172a' }),
+    s('rect', { x: 652, y: 218, width: 24, height: 5, rx: 1, style: 'fill:#fde68a;opacity:var(--hs-lamp)' }),
+    s('rect', { x: 662, y: 196, width: 10, height: 14, fill: '#334155' }),
+    s('rect', { x: 662, y: 199, width: 10, height: 3, fill: '#dc2626' }),
+    s('circle', { ...amb('smoke'), cx: 667, cy: 190, r: 6, fill: '#cbd5e1', opacity: opts.ambient ? 0.35 : 0 }),
+    s('circle', { ...amb('smoke', { o: 1.5 }), cx: 667, cy: 190, r: 6, fill: '#cbd5e1', opacity: 0 }),
+    text(578, 270, 12, '#e0f2fe', 'CARGO QUERY', 'middle'));
+
+  const truckBox = s('rect', { x: 0, y: 322, width: 56, height: 20, rx: 0.8, class: chapterColor(opts.current).fill });
   const truck = s('g', { opacity: 0, transform: 'translate(640,0)', 'aria-hidden': 'true' },
+    s('ellipse', { cx: 40, cy: 354, rx: 40, ry: 3, fill: '#000000', opacity: 0.25 }),
     truckBox,
-    s('path', { d: 'M4 326 V338 M12 326 V338 M20 326 V338 M28 326 V338 M36 326 V338 M44 326 V338 M52 326 V338', stroke: '#000000', 'stroke-opacity': 0.18 }),
+    s('rect', { x: 50, y: 322, width: 6, height: 20, fill: '#000000', opacity: 0.22 }),
+    s('path', { d: 'M4 325 V339 M10 325 V339 M16 325 V339 M22 325 V339 M28 325 V339 M34 325 V339 M40 325 V339 M46 325 V339', stroke: '#000000', 'stroke-opacity': 0.16 }),
+    s('rect', { x: 0, y: 322, width: 56, height: 1.5, fill: '#ffffff', opacity: 0.4 }),
     s('rect', { x: 0, y: 342, width: 76, height: 5, fill: '#1e293b' }),
-    s('path', { d: 'M58 330 H70 L76 338 V347 H58 Z', fill: '#f8fafc', stroke: '#1e293b' }),
-    s('rect', { x: 66, y: 332, width: 7, height: 6, fill: '#7dd3fc' }),
-    ...[10, 20, 48, 68].map((cx) => s('circle', { cx, cy: 350, r: 4, fill: '#0f172a' })));
+    s('path', { d: 'M58 328 H69 Q72 328 74 331 L77 337 V347 H58 Z', fill: '#f1f5f9', stroke: '#1e293b', 'stroke-width': 1 }),
+    s('path', { d: 'M66 331 H70 L74 337 H66 Z', fill: '#7dd3fc' }),
+    ...[10, 22, 48, 68].flatMap((cx) => [s('circle', { cx, cy: 350, r: 4.2, fill: '#0f172a' }), s('circle', { cx, cy: 350, r: 1.6, fill: '#94a3b8' })]));
   const shutter = s('rect', { x: 1026, y: 316, width: 62, height: 44, fill: url('shutter') });
   const barrier = s('g', {},
-    s('rect', { x: 858, y: 337, width: 48, height: 5, fill: '#dc2626' }),
+    s('rect', { x: 858, y: 337, width: 48, height: 5, rx: 1, fill: '#dc2626' }),
     s('rect', { x: 866, y: 337, width: 8, height: 5, fill: '#f8fafc' }),
     s('rect', { x: 882, y: 337, width: 8, height: 5, fill: '#f8fafc' }));
   const gateText = text(844, 379, 12, '#f8fafc', '', 'middle');
   const gateTag = s('g', { opacity: 0, class: 'max-lg:hidden', 'aria-hidden': 'true' }, s('rect', { x: 796, y: 364, width: 96, height: 22, rx: 6, fill: '#0f172a' }), gateText);
+
+  /** A light mast: pole, lamp head and, at dusk (--hs-lamp 1), a glow and a pool of light on the ground. */
+  const mast = (x: number, top: number, base: number): SVGElement[] => [
+    s('ellipse', { cx: x, cy: base, rx: 34, ry: 7, fill: url('lamp'), style: 'opacity:calc(var(--hs-lamp) * 0.55)' }),
+    s('rect', { x: x - 1.5, y: top, width: 3, height: base - top, fill: '#475569' }),
+    s('rect', { x: x - 7, y: top - 3, width: 14, height: 4, rx: 1, fill: '#334155' }),
+    s('circle', { cx: x, cy: top, r: 22, fill: url('lamp'), style: 'opacity:var(--hs-lamp)' }),
+  ];
 
   const [callA, callB] = callout(h, opts.current);
   const bays = Object.entries(h.bays).map(([ch, k]) => t('harbor.bay', { n: Number(ch), k })).join(', ');
@@ -171,96 +224,218 @@ export function harborScene(h: Harbor, opts: { ambient: boolean; current: number
     'aria-label': t('harbor.label', { bays: bays || t('harbor.empty') }),
   },
     s('defs', {},
-      grad('sky', [[0, 'var(--hs-sky0)'], [0.6, 'var(--hs-sky1)'], [1, 'var(--hs-sky2)']]),
-      grad('sea', [[0, 'var(--hs-sea0)'], [1, 'var(--hs-sea1)']]),
-      grad('mtn', [[0, '#166534'], [1, '#14532d']]),
-      grad('mtn2', [[0, '#4d7c0f', 0.75], [1, '#365314', 0.75]]),
-      grad('quay', [[0, '#cbd5e1'], [1, '#94a3b8']]),
-      grad('hull', [[0, '#1e3a8a'], [1, '#172554']]),
-      grad('shed', [[0, '#e2e8f0'], [1, '#cbd5e1']]),
-      s('pattern', { id: id('ripple'), width: 120, height: 14, patternUnits: 'userSpaceOnUse' },
-        s('path', { d: 'M0 7 Q15 0 30 7 T60 7 T90 7 T120 7', fill: 'none', stroke: '#e0f2fe', 'stroke-opacity': 0.5, 'stroke-width': 2 })),
+      grad('sky', [[0, 'var(--hs-sky0)'], [0.62, 'var(--hs-sky1)'], [1, 'var(--hs-sky2)']]),
+      grad('sea', [[0, 'var(--hs-sea0)'], [0.35, 'var(--hs-sea0)', 0.85], [1, 'var(--hs-sea1)']]),
+      grad('haze', [[0, 'var(--hs-sky2)', 0], [1, 'var(--hs-sky2)', 0.75]]),
+      grad('far', [[0, 'var(--hs-far)'], [1, 'var(--hs-far)', 0.7]]),
+      grad('mid', [[0, 'var(--hs-mid)'], [1, 'var(--hs-mid)', 0.9]]),
+      grad('near', [[0, 'var(--hs-near)'], [1, 'var(--hs-near2)']]),
+      grad('quay', [[0, 'var(--hs-quay0)'], [1, 'var(--hs-quay1)']]),
+      grad('hull', [[0, '#27448f'], [0.55, '#1e3a8a'], [1, '#132a63']]),
+      grad('reflect', [[0, '#1e3a8a', 0.45], [1, '#1e3a8a', 0]]),
+      grad('shed', [[0, 'var(--hs-shed0)'], [1, 'var(--hs-shed1)']]),
+      grad('wall', [[0, '#000000', 0.28], [1, '#000000', 0]], [0, 0, 1, 0]),
+      glow('sunglow', 'var(--hs-sun)'),
+      glow('lamp', '#fde68a'),
+      s('pattern', { id: id('rip0'), width: 60, height: 6, patternUnits: 'userSpaceOnUse' },
+        s('path', { d: 'M0 3 Q7.5 0.5 15 3 T30 3', fill: 'none', stroke: '#e0f2fe', 'stroke-opacity': 0.35, 'stroke-width': 1, 'stroke-linecap': 'round' })),
+      s('pattern', { id: id('rip1'), width: 90, height: 10, patternUnits: 'userSpaceOnUse' },
+        s('path', { d: 'M4 5 Q15 1 26 5 M50 6 Q61 2 72 6', fill: 'none', stroke: '#e0f2fe', 'stroke-opacity': 0.42, 'stroke-width': 1.5, 'stroke-linecap': 'round' })),
+      s('pattern', { id: id('rip2'), width: 120, height: 14, patternUnits: 'userSpaceOnUse' },
+        s('path', { d: 'M6 8 Q21 2 36 8 M70 9 Q86 3 102 9', fill: 'none', stroke: '#e0f2fe', 'stroke-opacity': 0.5, 'stroke-width': 2, 'stroke-linecap': 'round' })),
       s('pattern', { id: id('shutter'), width: 8, height: 5, patternUnits: 'userSpaceOnUse' },
         s('rect', { width: 8, height: 5, fill: '#94a3b8' }), s('rect', { y: 4, width: 8, height: 1, fill: '#64748b' }))),
-    // sky, sun, Son Tra peninsula (two ridges), lighthouse
     s('rect', { width: 1100, height: 400, fill: url('sky') }),
     // Plan 8b: far layer (sun, clouds, ridges, lighthouse) and mid layer (ripples, feeder) move a few units with the
     // pointer on Home (parallax()); the full-bleed sky and sea never move, so no edge shows. Ridges start at x -12 for that.
     s('g', { 'data-layer': 'far' },
-    s('circle', { cx: 930, cy: 62, r: 30, style: 'fill:var(--hs-sun)', opacity: 0.9 }),
-    ...(opts.ambient ? CLOUDS.map(([y, k, dur, delay]) => s('g', { transform: `translate(0,${y}) scale(${k})`, 'aria-hidden': 'true' },
-      s('g', { class: 'hidden cq-cloud motion-safe:inline', style: `animation-duration:${dur}s;animation-delay:-${delay}s` },
-        s('ellipse', { cx: 0, cy: 0, rx: 34, ry: 12, style: 'fill:var(--hs-cloud)', opacity: 0.8 }),
-        s('ellipse', { cx: -18, cy: 4, rx: 22, ry: 9, style: 'fill:var(--hs-cloud)', opacity: 0.8 }),
-        s('ellipse', { cx: 20, cy: 5, rx: 24, ry: 8, style: 'fill:var(--hs-cloud)', opacity: 0.8 })))) : []),
-    s('path', { d: 'M-12 210 L0 210 L80 170 L170 150 L250 120 L330 95 L410 110 L470 92 L540 128 L600 150 L680 172 L760 190 L760 230 L-12 230 Z', fill: url('mtn2') }),
-    s('path', { d: 'M-12 220 L0 220 L60 190 L140 178 L220 150 L300 140 L360 152 L430 136 L500 160 L560 185 L620 205 L620 236 L-12 236 Z', fill: url('mtn') }),
-    text(300, 132, 15, '#f8fafc', t('harbor.sontra'), 'middle'),
-    s('g', { 'aria-hidden': 'true' },
-      s('rect', { x: 596, y: 178, width: 8, height: 26, fill: '#f8fafc' }),
-      s('rect', { x: 596, y: 186, width: 8, height: 5, fill: '#dc2626' }),
-      s('circle', { class: amb('cq-beacon'), cx: 600, cy: 176, r: 5, fill: '#fde047' }))),
-    // sea and drifting ripples
+      s('circle', { cx: SUN.x, cy: SUN.y, r: 70, fill: url('sunglow'), opacity: 0.55 }),
+      s('circle', { cx: SUN.x, cy: SUN.y, r: 24, style: tok('sun') }),
+      ...(opts.ambient ? CLOUDS.map(([y, k, dur, delay]) => s('g', { transform: `translate(0,${y}) scale(${k})`, 'aria-hidden': 'true' },
+        s('g', { ...amb('cloud', { s: dur, o: delay }), transform: `translate(${((delay / dur) * 1380 - 140).toFixed(0)},0)` },
+          s('path', { d: 'M-40 8 Q-44 -2 -30 -3 Q-26 -14 -10 -11 Q0 -22 16 -12 Q32 -14 34 -1 Q46 1 42 8 Z', style: 'fill:var(--hs-cloud)', opacity: 0.92 }),
+          s('path', { d: 'M-40 8 Q-20 4 0 6 Q22 4 42 8 Z', fill: '#000000', opacity: 0.06 })))) : []),
+      // Son Tra: far ridge (pale, bluish), mid ridge, near headland with shaded slopes away from the sun
+      s('path', { d: 'M-12 214 L40 196 L120 168 L200 150 L270 124 L330 104 L392 116 L452 100 L520 128 L590 150 L670 176 L760 196 L780 232 L-12 232 Z', fill: url('far') }),
+      s('path', { d: 'M-12 222 L50 204 L130 186 L210 160 L290 148 L350 158 L420 142 L486 162 L548 186 L610 204 L700 222 L700 234 L-12 234 Z', fill: url('mid') }),
+      s('path', { d: 'M-12 228 L60 214 L150 204 L240 182 L312 176 L380 186 L460 174 L530 194 L596 206 L640 218 L660 236 L-12 236 Z', fill: url('near') }),
+      s('path', { d: 'M312 176 L380 186 L364 236 L320 236 Z M460 174 L530 194 L560 236 L490 236 Z M596 206 L640 218 L660 236 L610 236 Z', fill: '#000000', opacity: 0.16 }),
+      s('path', { d: 'M240 182 L312 176 L300 190 L250 194 Z M380 186 L460 174 L440 186 L392 194 Z', fill: '#ffffff', opacity: 0.1 }),
+      label(330, 92, 15, t('harbor.sontra'), 'middle'),
+      // lighthouse on the headland: lit side, shaded side, lantern with a soft halo
+      s('g', { 'aria-hidden': 'true' },
+        s('path', { d: 'M597 206 L599 182 L605 182 L607 206 Z', fill: '#f8fafc' }),
+        s('path', { d: 'M603 182 L605 182 L607 206 L604 206 Z', fill: '#cbd5e1' }),
+        s('path', { d: 'M598.2 190 L605.8 190 L606.2 195 L597.8 195 Z', fill: '#dc2626' }),
+        s('rect', { x: 597, y: 177, width: 10, height: 5, rx: 1, fill: '#334155' }),
+        s('circle', { ...amb('beacon'), cx: 602, cy: 179, r: 16, fill: url('lamp'), opacity: 0.9 }),
+        s('circle', { cx: 602, cy: 179, r: 2.6, fill: '#fef08a' }))),
+    // sea: depth gradient, haze at the horizon, the sun's glint, ripples smaller toward the horizon
     s('rect', { y: 230, width: 1100, height: 170, fill: url('sea') }),
+    s('rect', { y: 222, width: 1100, height: 14, fill: url('haze') }),
+    s('g', { ...amb('glint'), 'aria-hidden': 'true', opacity: 0.7 },
+      ...[[238, 46], [246, 38], [255, 50], [265, 30], [276, 40], [288, 22], [301, 30]].map(([y, w], i) =>
+        s('rect', { x: SUN.x - w / 2 + ((i * 7) % 11) - 5, y, width: w, height: 2.2, rx: 1.1, style: tok('sun'), opacity: 0.85 - i * 0.09 }))),
     s('g', { 'data-layer': 'mid' },
-    s('g', { class: amb('cq-wave'), 'aria-hidden': 'true' }, s('rect', { x: 0, y: 246, width: 1340, height: 14, fill: url('ripple') })),
-    s('g', { class: amb('cq-wave2'), 'aria-hidden': 'true' }, s('rect', { x: -120, y: 300, width: 1340, height: 14, fill: url('ripple') })),
-    s('g', { class: amb('cq-wave'), 'aria-hidden': 'true' }, s('rect', { x: 0, y: 362, width: 1340, height: 14, fill: url('ripple') })),
-    // a small feeder leaving for the open sea (Home only)
-    opts.ambient ? s('g', { class: 'cq-ship-out', 'aria-hidden': 'true' },
-      s('path', { d: 'M600 300 L700 300 L692 316 L608 316 Z', fill: '#334155' }),
-      s('rect', { x: 612, y: 288, width: 18, height: 12, fill: '#d97706' }),
-      s('rect', { x: 632, y: 288, width: 18, height: 12, fill: '#0284c7' }),
-      s('rect', { x: 652, y: 288, width: 18, height: 12, fill: '#7c3aed' }),
-      s('rect', { x: 676, y: 280, width: 16, height: 20, fill: '#f1f5f9' })) : null,
-    opts.ambient ? s('g', { class: 'cq-glint', 'aria-hidden': 'true', stroke: '#ffffff', 'stroke-width': 1.5, 'stroke-linecap': 'round', opacity: 0.3 },
-      s('line', { x1: 120, y1: 282, x2: 150, y2: 282 }), s('line', { x1: 330, y1: 338, x2: 352, y2: 338 }), s('line', { x1: 470, y1: 372, x2: 500, y2: 372 })) : null),
-    // land: quay apron, road, verge, labels
+      s('g', { ...amb('wave', { w: 60, s: 10 }), 'aria-hidden': 'true' }, s('rect', { x: 0, y: 240, width: 1340, height: 6, fill: url('rip0') })),
+      s('g', { ...amb('wave', { w: -90, s: 9 }), 'aria-hidden': 'true' }, s('rect', { x: -120, y: 268, width: 1340, height: 10, fill: url('rip1') })),
+      s('g', { ...amb('wave', { w: 120, s: 7 }), 'aria-hidden': 'true' }, s('rect', { x: 0, y: 312, width: 1340, height: 14, fill: url('rip2') })),
+      s('g', { ...amb('wave', { w: -120, s: 8 }), 'aria-hidden': 'true' }, s('rect', { x: -120, y: 364, width: 1340, height: 14, fill: url('rip2') })),
+      // a small feeder leaving for the open sea (Home only)
+      opts.ambient ? s('g', { 'aria-hidden': 'true' }, s('g', amb('feeder'),
+        s('ellipse', { cx: 646, cy: 317, rx: 50, ry: 2.5, fill: '#000000', opacity: 0.22 }),
+        s('path', { d: 'M598 300 L700 300 L694 316 L610 316 Q602 309 598 300 Z', fill: '#334155' }),
+        s('path', { d: 'M598 300 L700 300 L699 303 L600 303 Z', fill: '#f8fafc', opacity: 0.8 }),
+        ...[['#d97706', 612], ['#0284c7', 632], ['#7c3aed', 652]].flatMap(([fill, x]) => container(x as number, 288, 18, 12, { fill })),
+        s('rect', { x: 676, y: 282, width: 16, height: 18, fill: '#f1f5f9' }),
+        s('rect', { x: 686, y: 282, width: 6, height: 18, fill: '#cbd5e1' }),
+        s('rect', { x: 678, y: 286, width: 12, height: 3, fill: '#0f172a' }))) : null),
+    // land: quay wall with fenders and its shadow on the water, apron, road, verge
+    s('rect', { x: 672, y: 236, width: 28, height: 76, fill: '#000000', opacity: 0.12 }),
     s('path', { d: 'M700 236 H1100 V400 H660 L700 312 Z', fill: url('quay') }),
-    s('rect', { x: 700, y: 236, width: 400, height: 5, fill: '#475569' }),
-    s('rect', { x: 700, y: 241, width: 4, height: 71, fill: '#475569' }),
-    s('rect', { x: 684, y: 334, width: 416, height: 26, fill: '#475569' }),
-    s('line', { x1: 690, y1: 347, x2: 1010, y2: 347, stroke: '#f8fafc', 'stroke-width': 2, 'stroke-dasharray': '12 10' }),
-    s('rect', { x: 672, y: 360, width: 428, height: 40, fill: '#a3b18a', opacity: 0.55 }),
-    text(700, 382, 12, '#1e293b', t('harbor.yardLabel')),
-    text(1094, 395, 13, '#0f172a', t('harbor.port'), 'end'),
+    s('path', { d: 'M700 236 H1100 V241 H704 V312 L700 312 Z', style: tok('wall') }),
+    ...[252, 272, 292].map((y) => s('rect', { x: 696, y, width: 6, height: 10, rx: 1.5, fill: '#1e293b' })),
+    s('path', { d: 'M712 312 L771 312 L792 326 L733 326 Z', fill: '#000000', opacity: 0.1 }), // crane shadow
+    s('rect', { x: 684, y: 334, width: 416, height: 26, style: tok('road') }),
+    s('rect', { x: 684, y: 334, width: 416, height: 2, fill: '#000000', opacity: 0.18 }),
+    s('line', { x1: 690, y1: 347, x2: 1010, y2: 347, stroke: '#f8fafc', 'stroke-opacity': 0.85, 'stroke-width': 2, 'stroke-dasharray': '12 10' }),
+    s('rect', { x: 672, y: 360, width: 428, height: 40, style: tok('verge') }),
+    ...mast(784, 222, 312),
+    ...mast(1004, 214, 334),
     yard,
     drop,
     ship,
-    // STS crane: back-stays, tower, legs, bracing, boom, cab; trolley + spreader move
+    // STS crane: lit and shaded faces (light from the sun on the left), truss boom, portal legs with cross beams
     s('g', { 'aria-hidden': 'true' },
-      s('path', { d: 'M740 70 L470 112 M740 70 L1015 112', stroke: '#9a3412', 'stroke-width': 2 }),
-      s('rect', { x: 736, y: 62, width: 8, height: 50, fill: '#ea580c' }),
-      s('rect', { x: 712, y: 118, width: 9, height: 194, fill: '#f97316' }),
-      s('rect', { x: 762, y: 118, width: 9, height: 194, fill: '#f97316' }),
-      s('path', { d: 'M716 160 L766 220 M766 160 L716 220 M716 230 L766 290 M766 230 L716 290', stroke: '#ea580c', 'stroke-width': 3 }),
-      s('rect', { x: 470, y: 108, width: 545, height: 10, fill: '#ea580c' }),
-      s('rect', { x: 704, y: 92, width: 74, height: 16, fill: '#f97316' }),
-      s('rect', { x: 712, y: 96, width: 14, height: 7, fill: '#7dd3fc' }),
-      s('g', { class: amb('cq-trolley') }, trolley)),
+      s('path', { d: 'M740 66 L470 110 M740 66 L1015 110', style: 'stroke:var(--hs-crane-d)', 'stroke-width': 2 }),
+      s('rect', { x: 735, y: 58, width: 10, height: 52, style: tok('crane') }),
+      s('rect', { x: 741, y: 58, width: 4, height: 52, style: tok('crane-d') }),
+      s('circle', { cx: 740, cy: 56, r: 2.5, fill: '#ef4444' }),
+      ...[712, 762].flatMap((x) => [
+        s('rect', { x, y: 118, width: 9, height: 194, style: tok('crane') }),
+        s('rect', { x: x + 6, y: 118, width: 3, height: 194, style: tok('crane-d') }),
+        s('rect', { x: x - 3, y: 306, width: 15, height: 6, rx: 1, fill: '#334155' })]),
+      s('rect', { x: 712, y: 150, width: 59, height: 6, style: tok('crane') }),
+      s('rect', { x: 712, y: 154, width: 59, height: 2, style: tok('crane-d') }),
+      s('rect', { x: 712, y: 226, width: 59, height: 5, style: tok('crane') }),
+      s('path', { d: 'M718 160 L766 222 M766 160 L718 222 M718 234 L766 300 M766 234 L718 300', style: 'stroke:var(--hs-crane-d)', 'stroke-width': 2.5 }),
+      // boom: top and bottom chords with a zigzag web
+      s('rect', { x: 470, y: 106, width: 545, height: 4, style: tok('crane') }),
+      s('rect', { x: 470, y: 114, width: 545, height: 4, style: tok('crane-d') }),
+      s('path', { d: Array.from({ length: 45 }, (_, i) => `${i ? 'L' : 'M'}${472 + i * 12} ${i % 2 ? 114 : 110}`).join(' '), fill: 'none', style: 'stroke:var(--hs-crane)', 'stroke-width': 1.6 }),
+      s('rect', { x: 702, y: 88, width: 78, height: 18, rx: 1, style: tok('crane') }),
+      s('rect', { x: 702, y: 88, width: 78, height: 3, fill: '#ffffff', opacity: 0.25 }),
+      s('rect', { x: 764, y: 88, width: 16, height: 18, style: tok('crane-d') }),
+      s('rect', { x: 710, y: 93, width: 16, height: 7, rx: 1, fill: '#7dd3fc' }),
+      s('rect', { x: 710, y: 93, width: 16, height: 7, rx: 1, style: 'fill:#fde68a;opacity:var(--hs-lamp)' }),
+      s('g', amb('trolley'), trolley)),
     // CFS warehouse interior, the truck (drawn between interior and facade so it disappears inside), facade + shutter
     s('rect', { x: 1012, y: 282, width: 88, height: 78, fill: '#334155' }),
     s('rect', { x: 1026, y: 316, width: 62, height: 44, fill: '#0f172a' }),
     truck,
     s('path', { d: 'M1012 282 H1100 V360 H1088 V316 H1026 V360 H1012 Z', fill: url('shed') }),
-    s('path', { d: 'M1006 284 L1056 262 L1100 270 V284 Z', fill: '#64748b' }),
+    s('rect', { x: 1012, y: 282, width: 6, height: 78, fill: '#000000', opacity: 0.12 }),
+    s('path', { d: 'M1004 285 L1056 260 L1100 268 V285 Z', style: tok('roof') }),
+    s('path', { d: 'M1004 285 L1056 260 L1058 263 L1008 286 Z', fill: '#ffffff', opacity: 0.25 }),
+    ...[1024, 1046, 1068].map((x) => s('rect', { x, y: 292, width: 16, height: 5, rx: 1, fill: '#475569' })),
+    ...[1024, 1046, 1068].map((x) => s('rect', { x, y: 292, width: 16, height: 5, rx: 1, style: 'fill:#fde68a;opacity:var(--hs-lamp)' })),
     shutter,
-    text(1057, 306, 12, '#0f172a', t('harbor.cfs'), 'middle'),
-    // customs gate
+    s('rect', { x: 1024, y: 313, width: 66, height: 4, fill: '#475569' }),
+    label(1057, 254, 12, t('harbor.cfs'), 'middle'),
+    // customs gate: booth with a lit sign
     s('rect', { x: 881, y: 362, width: 80, height: 26, rx: 2, fill: '#f8fafc', stroke: '#334155' }),
-    s('rect', { x: 881, y: 356, width: 80, height: 7, fill: '#1d4ed8' }),
+    s('rect', { x: 881, y: 356, width: 80, height: 7, rx: 1, fill: '#1d4ed8' }),
     text(921, 380, 12, '#1e3a8a', t('harbor.customs'), 'middle'),
     s('rect', { x: 902, y: 330, width: 6, height: 30, fill: '#334155' }),
     barrier,
     gateTag,
-    // status callout (outside the stage's crop)
-    s('rect', { x: 24, y: 312, width: 360, height: 64, rx: 10, fill: '#0f172a', 'fill-opacity': 0.72 }),
-    s('text', { x: 40, y: 338, 'font-family': FONT, 'font-size': 14, 'font-weight': 600, fill: '#f8fafc' }, callA),
-    s('text', { x: 40, y: 360, 'font-family': FONT, 'font-size': 14, 'font-weight': 600, fill: '#bae6fd' }, callB));
+    label(872, 388, 12, t('harbor.yardLabel'), 'end'),
+    label(1088, 30, 13, t('harbor.port'), 'end'),
+    // status callout (outside the stage's crop); HTML repeats it below lg, so the empty box hides there too
+    s('g', { class: 'max-lg:hidden' },
+      s('rect', { x: 24, y: 312, width: 360, height: 64, rx: 14, fill: '#0f172a', 'fill-opacity': 0.72, stroke: '#ffffff', 'stroke-opacity': 0.12 }),
+      s('text', { x: 40, y: 338, 'font-family': FONT, 'font-size': 14, 'font-weight': 600, fill: '#f8fafc' }, callA),
+      s('text', { x: 40, y: 360, 'font-family': FONT, 'font-size': 14, 'font-weight': 600, fill: '#bae6fd' }, callB)));
 
   const parts: HarborParts = { svg, yard, drop, ship, trolley, hoist, cable, spreader, carry, truck, truckBox, barrier, shutter, gateTag, gateText };
   drawYard(parts, h, opts.fresh);
   return parts;
+}
+
+/** Home's truck (S1): from the road's end to the gate, into the CFS, a wait, then back out; one 18 s loop, seconds. */
+export const TRUCK_LOOP = 18;
+export const TRUCK_PLAN: { at: number; dur: number; part: 'truck' | 'barrier' | 'shutter'; from: number; to: number; ease: string }[] = [
+  { part: 'truck', at: 0, dur: 3.2, from: 640, to: 778, ease: 'power2.out' },
+  { part: 'barrier', at: 3.4, dur: 0.6, from: 0, to: 80, ease: 'back.out(1.6)' },
+  { part: 'truck', at: 4.2, dur: 2, from: 778, to: 940, ease: 'power1.in' },
+  { part: 'shutter', at: 5, dur: 1, from: 0, to: 1, ease: 'power2.inOut' },
+  { part: 'truck', at: 6.4, dur: 1.2, from: 940, to: 1020, ease: 'power2.out' },
+  { part: 'barrier', at: 6.6, dur: 0.6, from: 80, to: 0, ease: 'power2.inOut' },
+  { part: 'shutter', at: 7.8, dur: 0.8, from: 1, to: 0, ease: 'power2.inOut' },
+  { part: 'shutter', at: 10.2, dur: 0.8, from: 0, to: 1, ease: 'power2.inOut' },
+  { part: 'barrier', at: 10.4, dur: 0.6, from: 0, to: 80, ease: 'back.out(1.6)' },
+  { part: 'truck', at: 11.2, dur: 1.2, from: 1020, to: 930, ease: 'power2.in' },
+  { part: 'shutter', at: 12.6, dur: 0.8, from: 1, to: 0, ease: 'power2.inOut' },
+  { part: 'truck', at: 12.6, dur: 2, from: 930, to: 778, ease: 'power2.out' },
+  { part: 'barrier', at: 14.8, dur: 0.6, from: 80, to: 0, ease: 'power2.inOut' },
+  { part: 'truck', at: 15.6, dur: 2, from: 778, to: 640, ease: 'power1.in' },
+];
+
+/**
+ * S1: Home's ambient loops on GSAP (waves, clouds, the lighthouse every 2.4 s, the glint, funnel smoke, the leaving
+ * feeder, the crane, the truck). Every loop is a paused timeline scrubbed from the shared ambient() clock, so it stops
+ * while the scene is off screen or the tab is hidden, and a redraw never restarts it. Nothing under reduced motion
+ * (the static frame stays); the scene is static until the gsap chunk is in. Returns stop.
+ */
+export function harborLife(p: HarborParts): () => void {
+  if (reducedMotion()) return () => {};
+  let stop = (): void => {};
+  let dead = false;
+  prefetchGsap();
+  gsapMod?.then((g) => { if (!dead && p.svg.isConnected) stop = live(p, g); }, () => {});
+  return () => { dead = true; stop(); };
+}
+
+function live(p: HarborParts, g: Gsap): () => void {
+  const loops: [Timeline, number, number][] = [];
+  const loop = (period: number, offset: number, f: (tl: Timeline) => void): void => {
+    const tl = g.timeline();
+    f(tl);
+    loops.push([tl, period, offset]);
+  };
+  const q = (k: string): SVGElement[] => [...p.svg.querySelectorAll<SVGElement>(`[data-amb="${k}"]`)];
+  const num = (el: SVGElement, k: string): number => Number(el.dataset[k] ?? 0);
+  for (const el of q('wave')) loop(num(el, 's'), 0, (tl) => tl.fromTo(el, { x: 0 }, { x: -num(el, 'w'), duration: num(el, 's'), ease: 'none' }));
+  for (const el of q('cloud')) loop(num(el, 's'), num(el, 'o'), (tl) => tl.fromTo(el, { x: -140 }, { x: 1240, duration: num(el, 's'), ease: 'none' }));
+  for (const el of q('beacon')) loop(2.4, 0, (tl) => tl.set(el, { opacity: 0.9 }, 0).to(el, { opacity: 0.12, duration: 0.5, ease: 'power1.in' }, 1.2).to(el, { opacity: 0.9, duration: 0.5, ease: 'power1.out' }, 1.9));
+  for (const el of q('glint')) loop(3.2, 0, (tl) => tl.fromTo(el, { opacity: 0.45 }, { opacity: 0.9, duration: 1.6, ease: 'sine.inOut' }).to(el, { opacity: 0.45, duration: 1.6, ease: 'sine.inOut' }));
+  for (const el of q('smoke')) loop(3, num(el, 'o'), (tl) => tl.fromTo(el, { opacity: 0.6, x: 0, y: 0, scale: 0.6, transformOrigin: '50% 50%' }, { opacity: 0, x: -30, y: -40, scale: 1.6, duration: 3, ease: 'power1.out' }));
+  for (const el of q('feeder')) loop(16, 0, (tl) => tl.fromTo(el, { x: 0, y: 0, scale: 1, opacity: 1, transformOrigin: '50% 50%' }, { x: -420, y: -14, scale: 0.6, duration: 16, ease: 'none' }).to(el, { opacity: 0, duration: 2.4, ease: 'none' }, 13.6));
+  // crane: lift from the ship, travel to the quay, set down, lift, back (7 s, like the v5 CSS loop it replaces)
+  for (const el of q('trolley')) loop(7, 0, (tl) => {
+    const k = { y: 0 };
+    const hoist = (): void => setHoist(p, CRANE.y + k.y);
+    tl.set(el, { x: 0 }, 0).set(k, { y: 0, onUpdate: hoist }, 0)
+      .to(k, { y: 50, duration: 0.8, ease: 'power2.inOut', onUpdate: hoist }, 0.6).to(k, { y: 0, duration: 0.8, ease: 'power2.inOut', onUpdate: hoist }, 1.6)
+      .to(el, { x: 250, duration: 1.6, ease: 'cq-crane' }, 2.4)
+      .to(k, { y: 60, duration: 0.6, ease: 'power2.inOut', onUpdate: hoist }, 4.1).to(k, { y: 0, duration: 0.6, ease: 'power2.inOut', onUpdate: hoist }, 4.8)
+      .to(el, { x: 0, duration: 1.4, ease: 'cq-crane' }, 5.5);
+  });
+  loop(TRUCK_LOOP, 0, (tl) => {
+    const put = { truck: (x: number) => setTruck(p, x, Math.min(1, Math.max(0, (x - 640) / 40))), barrier: (x: number) => setBarrier(p, x), shutter: (x: number) => setShutter(p, x) };
+    for (const sg of TRUCK_PLAN) drive(tl, sg.at, sg.dur, sg.ease, (x) => put[sg.part](sg.from + (sg.to - sg.from) * x));
+    tl.call(() => {}, undefined, TRUCK_LOOP); // the loop is 18 s even though the last move ends earlier
+  });
+  const stopClock = ambient(p.svg, (ms) => {
+    if (!p.svg.isConnected) return end();
+    const sec = ms / 1000;
+    for (const [tl, period, offset] of loops) tl.time((sec + offset) % period);
+  });
+  function end(): void {
+    stopClock();
+    for (const [tl] of loops) tl.kill();
+  }
+  return end;
 }
 
 // ---- the route map (was ui/routeMap.ts) ----
@@ -387,14 +562,18 @@ const marks = (steps: readonly number[]): number[] => steps.reduce<number[]>((a,
 // ---- scene parts (geometry of mockup v5); §2.3: GSAP tweens a state object and these setters write the attributes ----
 function setCrane(p: HarborParts, x: number, y: number, carry?: string | false): void {
   p.trolley.setAttribute('transform', `translate(${x},0)`);
-  p.cable.setAttribute('y2', String(y));
-  p.spreader.setAttribute('y', String(y));
-  p.carry.setAttribute('y', String(y + 4));
+  setHoist(p, y);
   if (carry === false) p.carry.setAttribute('opacity', '0');
   else if (carry) {
     p.carry.setAttribute('class', carry);
     p.carry.setAttribute('opacity', '1');
   }
+}
+/** Spreader (and load) at height `y`, the cable reaching down to it. */
+function setHoist(p: HarborParts, y: number): void {
+  p.cable.setAttribute('y2', String(y));
+  p.spreader.setAttribute('y', String(y));
+  p.carry.setAttribute('y', String(y + 4));
 }
 /** The load swings `deg` about the trolley (0 = hanging straight: no attribute). */
 function setSway(p: HarborParts, deg: number): void {

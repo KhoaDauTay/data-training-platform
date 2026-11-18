@@ -293,9 +293,10 @@ function harborSection(m: HomeModel): HTMLElement {
     h('h2', { id: 'harbor-title', class: 'sr-only' }, t('harbor.title')),
     artSlot('aspect-[1100/400]', (a) => {
       stopScene?.();
-      const { svg } = a.harborScene(harbor, { ambient: true, current: m.chapter, fresh });
-      stopScene = a.parallax(svg);
-      return svg;
+      const p = a.harborScene(harbor, { ambient: true, current: m.chapter, fresh });
+      const stops = [a.parallax(p.svg), a.harborLife(p)];
+      stopScene = () => stops.forEach((f) => f());
+      return p.svg;
     }),
     h('div', { class: 'px-4 py-3 text-sm lg:hidden', 'aria-hidden': 'true' },
       h('p', { class: 'm-0 font-bold' }, t('harbor.title')),

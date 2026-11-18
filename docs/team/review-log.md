@@ -655,3 +655,7 @@ Trình duyệt (`vite preview --port 5199`, `dist` mới build, Edge headless h�
 - Giảm chuyển động: `document.getAnimations()` rỗng ở cả 36 lần mở.
 - Tìm thấy và sửa (L109 #2): thẻ "Ôn tập hôm nay" ở 375 px ép chữ một từ mỗi dòng; sau sửa nút xuống dòng dưới chữ (ảnh chụp lại, cả bộ chạy lại: vẫn 0 lỗi, 0 cuộn ngang).
 - Để lại (L109 #3): top bar 1280 px xuống hai dòng, có từ trước v5.
+
+## v6 T7 (S1 Tiên Sa vẽ lại + nền GSAP), 2026-11-19
+
+`npx tsc --noEmit` sạch, `npm test` 3106 xanh (1 bỏ qua), `npm run build` xanh, `check-budget` xanh (main 301/500, art 13/20, css 16/20, gsap 44/50; main không có GSAP). Trình duyệt (`vite preview` 5221 cho bản trước, 5222/5224 cho bản sau; dev 5223 cho dock; Edge headless hồ sơ mới; đã tắt hết): Tổng quan Logistics 375/1280 × sáng/tối + giảm chuyển động, dock ship/yard/truck/customs/promotion 1280 sáng/tối và truck/yard 375 tối: 0 lỗi console. Đo chuyển động: thuộc tính `transform` của sóng/mây đổi giữa hai lần đọc khi cảnh trên màn hình; đứng yên khi cuộn khuất và ở `…/play`; giảm chuyển động: không đổi.

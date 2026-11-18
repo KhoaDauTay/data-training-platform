@@ -38,6 +38,10 @@
   --cheek: #f4a3a3; --wood-dark: #8a4b22; --sky: #e6f4f6; --ground: #e9dcc6;
   /* Tien Sa scene (src/art/logistics.ts): day here, dusk in dark mode (v10 critic #8). */
   --hs-sky0: #7dd3fc; --hs-sky1: #e0f2fe; --hs-sky2: #fef3c7; --hs-sea0: #0ea5e9; --hs-sea1: #0c4a6e; --hs-sun: #fde68a; --hs-cloud: #ffffff;
+  /* ui-ux-v6 S1: depth (far ridge palest), quay, crane lit/shaded faces; --hs-lamp turns the yard lights on (dusk only). */
+  --hs-far: #a9cbc6; --hs-mid: #6c9f7c; --hs-near: #3d7b52; --hs-near2: #2f6342; --hs-quay0: #d9dee4; --hs-quay1: #a5aeb9;
+  --hs-wall: #4b5563; --hs-road: #475569; --hs-verge: #b5c19a; --hs-shed0: #f1f5f9; --hs-shed1: #cbd5e1; --hs-roof: #64748b;
+  --hs-crane: #f97316; --hs-crane-d: #c2410c; --hs-lamp: 0;
   /* L13 syntax colours: >= 4.8:1 on --panel and --code */
   --syn-keyword: #7a2bb0; --syn-string: #a3341a; --syn-number: #0a6b4c; --syn-comment: #5d6b5d;
   --syn-operator: #4a4a52; --syn-type: #0b5fa5; --syn-property: #1d5a7a; --syn-atom: #8a5300;
@@ -55,6 +59,9 @@
   --boon-shade: #b9c2c7; --boon-bill-dark: #b8741f;
   --sky: #1d2a2e; --ground: #3a3127; --wood-dark: #6b3a1a;
   --hs-sky0: #1e1b4b; --hs-sky1: #c2643f; --hs-sky2: #f59e0b; --hs-sea0: #1d4e6e; --hs-sea1: #0b1a2e; --hs-sun: #fb923c; --hs-cloud: #f6c3b0;
+  --hs-far: #8a5a72; --hs-mid: #563f62; --hs-near: #2c2a45; --hs-near2: #211f36; --hs-quay0: #545c69; --hs-quay1: #3b424d;
+  --hs-wall: #1f2937; --hs-road: #1f2733; --hs-verge: #3b4535; --hs-shed0: #7b8494; --hs-shed1: #586170; --hs-roof: #3b4250;
+  --hs-crane: #e8641c; --hs-crane-d: #9a3412; --hs-lamp: 1;
   /* L13 syntax colours: >= 5.6:1 on --panel and --code */
   --syn-keyword: #d19bff; --syn-string: #ff9e7a; --syn-number: #7ee0b5; --syn-comment: #9aa39a;
   --syn-operator: #c8c8d0; --syn-type: #6cc0ff; --syn-property: #9cdcfe; --syn-atom: #ffcf6b;
@@ -211,31 +218,13 @@
 .editor .cm-editor .cm-gutters .cm-activeLineGutter { background: var(--accent-soft); }
 @media (pointer: coarse) { .editor .cm-content { font-size: 16px; } }
 
-/* ---- Tien Sa scene ambient loops (L26). harbor.ts adds these classes on Home only; off under reduced motion. ---- */
+/* ---- Route map loops (Plan 8b); the Tien Sa scene's loops run on GSAP since ui-ux-v6 S1 (harborLife). Off under reduced motion. ---- */
 @media (prefers-reduced-motion: no-preference) {
   .cq-pulse { animation: cq-pulse 2.4s ease-out infinite; transform-box: fill-box; transform-origin: center; }
-  .cq-cloud { animation: cq-cloud linear infinite; }
-  .cq-glint { animation: cq-glint 3.2s ease-in-out infinite; }
   .cq-ship-bob { animation: cq-float 2.8s ease-in-out infinite; }
-  .cq-wave { animation: cq-wave 6s linear infinite; }
-  .cq-wave2 { animation: cq-wave 9s linear infinite reverse; }
-  .cq-smoke { animation: cq-smoke 3s ease-out infinite; transform-box: fill-box; transform-origin: center; }
-  .cq-smoke2 { animation-delay: 1.5s; }
-  .cq-beacon { animation: cq-blink 2.4s infinite; }
-  .cq-ship-out { animation: cq-ship-out 16s linear infinite; transform-box: fill-box; transform-origin: center; }
-  .cq-trolley { animation: cq-trolley 7s ease-in-out infinite; }
-  .cq-hoist { animation: cq-hoist 7s ease-in-out infinite; }
 }
-@keyframes cq-cloud { from { transform: translateX(-140px); } to { transform: translateX(1240px); } }
-@keyframes cq-glint { 0%, 100% { opacity: 0.2; } 50% { opacity: 0.6; } }
 @keyframes cq-pulse { 0% { transform: scale(1); opacity: 0.7; } 100% { transform: scale(2.6); opacity: 0; } }
 @keyframes cq-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-1.5px); } }
-@keyframes cq-wave { to { transform: translateX(-120px); } }
-@keyframes cq-smoke { 0% { opacity: 0.6; transform: translate(0, 0) scale(0.6); } 100% { opacity: 0; transform: translate(-30px, -40px) scale(1.6); } }
-@keyframes cq-blink { 0%, 60% { opacity: 1; } 61%, 100% { opacity: 0.15; } }
-@keyframes cq-ship-out { 0% { transform: translate(0, 0) scale(1); opacity: 1; } 85% { opacity: 1; } 100% { transform: translate(-420px, -14px) scale(0.6); opacity: 0; } }
-@keyframes cq-trolley { 0%, 15% { transform: translateX(0); } 45%, 60% { transform: translateX(250px); } 90%, 100% { transform: translateX(0); } }
-@keyframes cq-hoist { 0%, 15% { transform: translateY(0); } 25%, 35% { transform: translateY(50px); } 45%, 60% { transform: translateY(0); } 70%, 80% { transform: translateY(60px); } 90%, 100% { transform: translateY(0); } }
 /* ---- Mascot idle loops (v6 §2.5): on the sprite's originals, so every <use> moves; only while #mascot-sprite.live (Plan 7 V4). ---- */
 @media (prefers-reduced-motion: no-preference) {
   #mascot-sprite.live .tail { transform-box: fill-box; transform-origin: 0% 100%; animation: cq-wag 0.9s ease-in-out infinite; }
