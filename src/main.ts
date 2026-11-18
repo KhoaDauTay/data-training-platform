@@ -14,7 +14,7 @@ import { loadSave, parseSave, serializeSave, type Known } from './save';
 import { actions, app, done, editorSchema, persist, selected, type Column } from './state';
 import { resumeStep } from './overview';
 import { seedReview } from './practice';
-import { isStory, session, today } from './session';
+import { activeSchema, isStory, session, today } from './session';
 import { localStore, readJson, writeJson } from './storage';
 import { domainOfHash, type Route } from './route';
 import type { Ticket } from './tickets';
@@ -223,7 +223,20 @@ const syncMap = (): void => mapStrip.update({
 });
 
 /** Language switch and progress changes: redraws text, never remounts the editor. */
+/**
+ * The data a domain page needs (D10-3). A drill (also a review drill) in the workspace runs on `lab` only: it neither
+ * seeds the domain nor counts as a domain visit for the pref (D10-7), so "SQL only" stays lab-only (Plan 10 review).
+ */
+function openPage(r: Route, d: DomainId): void {
+  const s = r === 'play' && activeSchema() === 'lab' ? 'lab' : domainSchemaId(d);
+  if (s !== 'lab') writeJson(DOMAIN_KEY, d); // the last domain opened; replaces 'general' (D10-7)
+  openSchema(s);
+}
+
 function rerender(): void {
+  // A mode change on the same hash (drill → story on #/d/x/play) fires no route: follow it here.
+  const d = domainOfHash(location.hash);
+  if (currentRoute() === 'play' && d === activeDomain() && want !== (activeSchema() === 'lab' ? 'lab' : domainSchemaId(d))) openPage('play', d);
   syncLily(); // L87: Lily's growth stage on <html data-lily>, before anything draws her
   renderTopbar();
   renderSidebar(currentRoute()); // before the Data page: it fills the sidebar's slot (V11)
@@ -505,10 +518,7 @@ initTour();
 if (pick && pick !== 'general' && pick !== activeDomain()) await enterDomain(pick);
 startRouter((r, initial) => {
   const d = domainOfHash(location.hash);
-  if (d) {
-    writeJson(DOMAIN_KEY, d); // the last domain opened; replaces 'general' (D10-7)
-    openSchema(domainSchemaId(d)); // a domain page needs its data (seeded once)
-  }
+  if (d) openPage(r, d); // a domain page needs its data (seeded once)
   if (d && d !== activeDomain()) void enterDomain(d).then(() => showRoute(r, initial));
   else showRoute(r, initial);
 });
