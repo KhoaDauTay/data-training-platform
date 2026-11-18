@@ -201,7 +201,7 @@ function chapterRow(c: ChapterCard): HTMLLIElement {
   const short = h('span', {}, t('home.reliesOn', { skills: '' }), ...ids.slice(0, 2).flatMap(skillLink),
     ids.length > 2 ? h('a', { href: `${hashOf('learn')}/sql/${c.chapter}`, class: cx(ABOVE, 'inline-block min-h-6 min-w-6 text-center text-muted') }, ` +${ids.length - 2}`) : null);
   // Plan 11 §1.4: the advanced nodes the chapter's tasks apply (Finance only: other domains have no adv:, so no General fetch).
-  const adv = advLine([...new Set(app.tickets.filter((x) => x.chapter === c.chapter).flatMap((x) => x.adv ?? []))], ABOVE);
+  const adv = closed ? null : advLine([...new Set(app.tickets.filter((x) => x.chapter === c.chapter).flatMap((x) => x.adv ?? []))], ABOVE);
   return listRow({
     lead: closed
       ? icon('lock', 'size-5 text-muted')
