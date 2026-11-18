@@ -49,6 +49,8 @@ export interface ModeCard {
   title: Key;
   desc: Key;
   open(): void;
+  /** v12 audit: why the card cannot open now (the same lock as its sidebar item), or undefined. Shown locked, never a no-op. */
+  lock?(): Key | undefined;
 }
 
 const SPAN: Record<Span, string> = { full: 'lg:col-span-3', wide: 'lg:col-span-2', narrow: 'lg:col-span-1' };
@@ -228,15 +230,23 @@ function modesSection(): HTMLElement | null {
   if (modes.length === 0) return null;
   return h('section', { 'aria-labelledby': 'modes-title' },
     h('h2', { id: 'modes-title', class: 'mb-3 text-lg font-bold' }, t('home.modes')),
-    h('div', { class: 'grid gap-3 sm:grid-cols-3' }, ...modes.map((md) =>
-      h('button', {
+    h('div', { class: 'grid gap-3 sm:grid-cols-3' }, ...modes.map((md) => {
+      const why = md.lock?.();
+      if (why) {
+        return h('div', { class: cx(CARD, 'flex items-start gap-3 rounded-xl p-4'), 'aria-disabled': 'true' },
+          h('span', { class: 'grid size-10 shrink-0 place-items-center rounded-lg bg-code text-muted', 'aria-hidden': 'true' }, icon(md.icon)),
+          h('span', { class: 'min-w-0 flex-1' }, h('b', { class: 'block text-muted' }, t(md.title)),
+            h('span', { class: 'flex items-center gap-1.5 text-sm text-muted' }, icon('lock', 'size-3.5 shrink-0'), t(why))));
+      }
+      return h('button', {
         type: 'button',
         class: cx(CARD_ACTION, 'group flex items-start gap-3 rounded-xl border-0 p-4 text-left'),
         onclick: () => md.open(),
       },
         h('span', { class: cx('grid size-10 shrink-0 place-items-center rounded-lg', md.tint), 'aria-hidden': 'true' }, icon(md.icon)),
         h('span', { class: 'min-w-0 flex-1' }, h('b', { class: 'block' }, t(md.title)), h('span', { class: 'text-sm text-muted' }, t(md.desc))),
-        icon('arrowRight', 'mt-0.5 size-4 text-muted transition group-hover:translate-x-0.5 group-hover:text-accent')))));
+        icon('arrowRight', 'mt-0.5 size-4 text-muted transition group-hover:translate-x-0.5 group-hover:text-accent'));
+    })));
 }
 
 /** Completed ids when the player last left Home (session memory only, completion-animations §4). */

@@ -6,6 +6,7 @@ import { app, done } from '../state';
 import { cx } from '../theme';
 import { markTabOpened, tourSlot } from './coach';
 import { h } from './dom';
+import { icon } from './icons';
 import { errorText, errorView } from './feedback';
 import { renderResult } from './resultTable';
 
@@ -57,7 +58,9 @@ export function createPanel(host: HTMLElement): Panel {
       },
     }));
   const bar = h('div', { class: 'mb-2.5 flex flex-wrap gap-1 border-b border-line max-sm:flex-nowrap max-sm:overflow-x-auto', role: 'tablist', 'data-i18n-aria': 'tab.list', 'aria-label': t('tab.list') }, ...buttons);
-  host.replaceChildren(bar, tourSlot('panel'), body); // tour steps 3 and 5: above the tab body, never inside the result (v10 review)
+  // v12 audit: tabs a beginner has not reached are hidden (D-O4), so one muted line says more are coming, never silence.
+  const more = h('span', { class: 'mb-2.5 flex shrink-0 items-center gap-1 self-center text-xs text-muted', hidden: true }, icon('lock', 'size-3.5'), h('span'));
+  host.replaceChildren(h('div', { class: 'flex flex-wrap items-end gap-x-3' }, h('div', { class: 'min-w-0 flex-1' }, bar), more), tourSlot('panel'), body); // tour steps 3 and 5: above the tab body, never inside the result (v10 review)
   let active = tabs.some((x) => x.id === 'columns') ? 'columns' : tabs[0].id;
 
   bar.addEventListener('keydown', (e) => {
@@ -74,6 +77,9 @@ export function createPanel(host: HTMLElement): Panel {
   function label(): void {
     const reached = new Set(visibleTickets(app.tickets, done()).map((x) => x.id));
     const isGated = gated(readTour()) && activeDomain() === 'logistics'; // `from` ids are Logistics tickets
+    const later = tabs.filter((tab) => !tabOpen(tab.from, reached, isGated) && tab.id !== active).length;
+    more.hidden = later === 0;
+    more.lastElementChild!.textContent = later ? t('lock.tabsHidden', { n: later }) : '';
     tabs.forEach((tab, i) => {
       buttons[i].hidden = !tabOpen(tab.from, reached, isGated) && tab.id !== active; // a chip may still open it on purpose
       const on = tab.id === active;

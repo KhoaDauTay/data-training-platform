@@ -25,6 +25,16 @@ export const BAR_ROWS = 12;
 /** D-A3: a kind opens with the skill that makes that shape of result (table ch1, number and bar ch2, line ch4). */
 export const KIND_SKILL: Record<CardKind, string> = { table: 'select', number: 'aggregate', bar: 'group_by', line: 'date_bucket' };
 
+/**
+ * D-DB1 (L86): a beginner from the welcome screen (`gated`) builds their own cards once they have learned this skill (the
+ * Number card's skill: with `select` alone a card is only raw rows, the same as a starter table). Until then the dashboard shows
+ * our starter cards (src/starterCards.ts) and Pin is shown locked. Players who said "I know SQL", players from before the welcome
+ * screen and anyone who already has cards (old or imported save) are never locked out.
+ */
+export const CUSTOM_SKILL = 'aggregate';
+export const customCardsOpen = (learned: ReadonlySet<string>, cards: number, isGated: boolean): boolean =>
+  !isGated || cards > 0 || learned.has(CUSTOM_SKILL);
+
 export const emptyDashboard = (): Dashboard => ({ cards: [], hidden: [] });
 
 const isRecord = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v);

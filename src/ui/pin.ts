@@ -8,7 +8,7 @@ import { activeTicket, session } from '../session';
 import { actions, app, done, persist } from '../state';
 import { BTN_GO, cx } from '../theme';
 import { textOf } from '../tickets';
-import { cardBody, KIND_LABEL, skillOf } from './dashboard';
+import { cardBody, customLock, KIND_LABEL, skillOf } from './dashboard';
 import { h } from './dom';
 import { icon } from './icons';
 
@@ -30,6 +30,13 @@ export function pinBar(editorSql: () => string): HTMLElement | null {
   const r = run?.result;
   if (!run || !r) return null;
   const from = source();
+  const lock = from ? customLock() : undefined;
+  if (lock) { // D-DB1: shown locked with what opens it, never a dead button
+    return h('div', { class: 'mb-2 flex flex-wrap items-center justify-end gap-x-3 gap-y-1 text-sm' },
+      r.ms !== undefined ? h('span', { class: 'mr-auto tabular-nums text-muted' }, t('dash.ran', { ms: r.ms })) : null,
+      h('span', { class: 'flex items-center gap-1.5 rounded-full border border-dashed border-line px-3 py-1 text-muted', role: 'note' },
+        icon('lock', 'size-4'), t('pin.locked', lock)));
+  }
   const block = from ? pinBlock({ sql: run.sql, ms: r.ms }, editorSql(), domainSlot(app.save, activeDomain()).dashboard.cards.length) : undefined;
   const off = block === 'stale' || block === 'full'; // 'slow' and 'long': the dialog explains the rule
   return h('div', { class: 'mb-2 flex flex-wrap items-center justify-end gap-x-3 gap-y-1 text-sm' },

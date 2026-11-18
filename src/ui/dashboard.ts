@@ -1,15 +1,17 @@
 import { loadLanes } from '../content';
-import { BAR_ROWS, CARD_KINDS, cardRunner, colGone, markRan, ranHere, cardSpec, KIND_SKILL, MAX_CARDS, moveCard, TABLE_ROWS, type Card, type CardKind } from '../dashboard';
+import { BAR_ROWS, CARD_KINDS, cardRunner, CUSTOM_SKILL, customCardsOpen, colGone, markRan, ranHere, cardSpec, KIND_SKILL, MAX_CARDS, moveCard, TABLE_ROWS, type Card, type CardKind } from '../dashboard';
 import { QueryTimeoutError } from '../db/client';
 import type { QueryResult } from '../db/run';
 import { activeDomain, domainSchemaId } from '../domains';
 import { chapterOfId, kpisOf, kpiNumber, kpiTiles, kpiValue, learnedSkills, type Kpi, type KpiTile, type KpiValue } from '../home';
 import { getLang, t, type Key } from '../i18n';
 import { laneLabel } from '../lanes';
-import { SKILLS } from '../progress';
+import { domainSkills, SKILLS } from '../progress';
+import { gated, readTour } from '../onboarding';
+import { starterCards } from '../starterCards';
 import { ROUTES } from '../scene';
 import { domainSlot, stepKey } from '../save';
-import { app, done, persist } from '../state';
+import { app, done, persist, unlockedTables } from '../state';
 import { BTN_GO, CARD, chapterColor, cx } from '../theme';
 import { textOf, type Ticket } from '../tickets';
 import { MAX_POINTS } from '../viz/chart';
@@ -19,6 +21,7 @@ import { errorView } from './feedback';
 import { icon, isIconName, type IconName } from './icons';
 import { startSandbox } from './modes';
 import { mascot } from './mascots';
+import { go } from './router';
 import { renderResult } from './resultTable';
 
 /** #/dashboard (product-design-v3 Part A, L48/L49): player cards first, then the company tiles from content/kpis.yml. */
@@ -40,6 +43,7 @@ const BIG = 'm-0 text-3xl font-bold tabular-nums';
 const KIND_ICON: Record<Kpi['kind'], IconName> = { number: 'hash', rowcount: 'list', bar: 'chart' };
 const kpiIcon = (k: Kpi): IconName => (k.icon && isIconName(k.icon) ? k.icon : KIND_ICON[k.kind]);
 const ICON_BTN = 'grid size-10 shrink-0 place-items-center p-0 sm:size-8';
+const KIND_ICONS: Record<CardKind, IconName> = { table: 'table', number: 'hash', bar: 'chart', line: 'lineChart' };
 
 /** Screen-reader line for moves, hides and unpins (the button that was pressed may be gone after the redraw). */
 const announce = (text: string): void => {
@@ -151,7 +155,7 @@ function playerCard(c: Card, i: number, n: number, redraw: () => void): HTMLElem
     h('button', { type: 'button', class: ICON_BTN, 'data-card': c.id, 'data-act': act, title: label, 'aria-label': label, disabled, onclick }, icon(name, 'size-4'));
   return h('article', { class: cx(CARD, 'flex min-w-0 flex-col gap-3 p-4') },
     h('div', { class: 'flex items-start gap-2' },
-      h('span', { class: 'grid size-9 shrink-0 place-items-center rounded-lg bg-code', 'aria-hidden': 'true' }, icon(({ table: 'table', number: 'hash', bar: 'chart', line: 'lineChart' } as const)[c.kind])),
+      h('span', { class: 'grid size-9 shrink-0 place-items-center rounded-lg bg-code', 'aria-hidden': 'true' }, icon(KIND_ICONS[c.kind])),
       h('h3', { class: 'm-0 min-w-0 flex-1 self-center text-sm leading-snug font-semibold break-words' }, c.title)),
     body,
     h('details', { class: 'text-sm' },
@@ -172,9 +176,68 @@ function playerCard(c: Card, i: number, n: number, redraw: () => void): HTMLElem
       })));
 }
 
+/** Starter cards run once per session like player cards, but are never saved, never marked "ran" and never slow-flagged. */
+const starters = cardRunner((sql, d) => app.run(sql, { schema: domainSchemaId(d) }), () => {}, activeDomain);
+
+/**
+ * D-DB1 (L86): why the player cannot make cards yet, or undefined when they can. One function for the dashboard, Pin and
+ * the pin dialog. `n` is the domain's chapter that teaches the skill.
+ */
+export function customLock(): { skill: string; n: number } | undefined {
+  const cards = domainSlot(app.save, activeDomain()).dashboard.cards.length;
+  if (customCardsOpen(learnedSkills(app.tickets, done()), cards, gated(readTour()))) return undefined;
+  const s = domainSkills(app.tickets).find((x) => x.id === CUSTOM_SKILL) ?? skillOf(CUSTOM_SKILL);
+  return { skill: s.label[getLang()], n: s.chapter };
+}
+
+function starterCard(c: Card): HTMLElement {
+  const body = h('div', { class: 'min-h-9' }, h('p', { class: 'm-0 text-muted' }, t('dash.waiting')));
+  starters.result(c).then((r) => body.replaceChildren(cardBody(c, r)), (e: unknown) => body.replaceChildren(errorView(e)));
+  return h('article', { class: cx(CARD, 'flex min-w-0 flex-col gap-3 p-4') },
+    h('div', { class: 'flex items-start gap-2' },
+      h('span', { class: 'grid size-9 shrink-0 place-items-center rounded-lg bg-code', 'aria-hidden': 'true' }, icon(KIND_ICONS[c.kind])),
+      h('h3', { class: 'm-0 min-w-0 flex-1 self-center text-sm leading-snug font-semibold break-words' }, c.title),
+      h('span', { class: 'shrink-0 rounded-full bg-accent-soft px-2 py-0.5 text-xs font-semibold text-ink' }, t('dash.starterBadge'))),
+    body,
+    h('details', { class: 'mt-auto text-sm' },
+      h('summary', { class: 'cursor-pointer text-muted' }, t('dash.sql')),
+      h('pre', { class: 'sql mt-2 mb-0 max-h-48 overflow-auto' }, c.sql)));
+}
+
+/** Shown while the player has no card of their own (locked or not), so the page is never empty (D-DB1). */
+function startersBlock(locked: boolean): HTMLElement | null {
+  const list = starterCards(activeDomain(), unlockedTables(), (k) => t(k));
+  if (!list.length) return null;
+  return h('div', { class: 'mt-5' },
+    h('h3', { class: 'm-0 text-base font-bold' }, t('dash.starters')),
+    h('p', { class: 'mt-1 mb-3 text-sm text-muted' }, t('dash.startersIntro'), locked ? '' : ` ${t('dash.startersHide')}`),
+    h('div', { class: 'grid gap-4 sm:grid-cols-2 lg:grid-cols-4' }, ...list.map(starterCard)));
+}
+
+/** Locked: what opens custom cards, the locked "Make a card" control (not a button) and one real way forward. */
+function lockedMine(lock: { skill: string; n: number }): HTMLElement {
+  const hint = t('dash.createLockedHint', lock);
+  return h('section', { 'aria-labelledby': 'dash-mine-title' },
+    h('h2', { id: 'dash-mine-title', tabindex: '-1', class: 'm-0 text-lg font-bold' }, t('dash.mine')),
+    h('div', { class: cx(CARD, 'mt-3 flex flex-wrap items-start gap-4 p-5') },
+      h('span', { class: 'grid size-10 shrink-0 place-items-center rounded-lg bg-code text-muted', 'aria-hidden': 'true' }, icon('lock')),
+      h('div', { class: 'min-w-0 flex-1' },
+        h('h3', { class: 'm-0 text-base font-bold' }, t('dash.lockedTitle')),
+        h('p', { class: 'mt-1 mb-3 text-[15px] text-muted' }, t('dash.lockedWhy', lock)),
+        h('div', { class: 'flex flex-wrap items-center gap-3' },
+          h('span', {
+            role: 'button', 'aria-disabled': 'true', tabindex: '0', title: hint, 'aria-label': `${t('dash.createLocked')}: ${hint}`,
+            class: 'inline-flex cursor-not-allowed items-center gap-1.5 rounded-full border border-dashed border-line px-4 py-2 text-sm font-semibold text-muted',
+          }, icon('lock', 'size-4'), t('dash.createLocked'), h('span', { class: 'font-normal' }, ` · ${hint}`)),
+          h('button', { type: 'button', class: cx(BTN_GO, 'px-4 py-2'), onclick: () => go('play') }, t('dash.toTask'))))),
+    startersBlock(true));
+}
+
 function mineSection(redraw: () => void): HTMLElement {
   const lang = getLang();
   const cards = domainSlot(app.save, activeDomain()).dashboard.cards;
+  const lock = customLock();
+  if (lock) return lockedMine(lock);
   const learned = learnedSkills(app.tickets, done());
   // One plain line, not a chip row (v6 §3.4, v10 UX #20).
   const kinds = CARD_KINDS.map((k) => {
@@ -194,7 +257,8 @@ function mineSection(redraw: () => void): HTMLElement {
         mascot('lily', 'sleep', 'size-16 mb-2'), // v6 §2.4: an empty state
         h('h3', { class: 'm-0 text-base font-bold' }, t('dash.emptyTitle')),
         h('p', { class: 'mt-1 mb-3 text-[15px] text-muted' }, t('dash.empty')),
-        h('button', { type: 'button', class: cx(BTN_GO, 'px-4 py-2'), onclick: () => startSandbox() }, t('dash.toSandbox'))));
+        h('button', { type: 'button', class: cx(BTN_GO, 'px-4 py-2'), onclick: () => startSandbox() }, t('dash.toSandbox'))),
+    cards.length ? null : startersBlock(false));
 }
 
 function setHidden(id: string, hide: boolean, label: string, redraw: () => void): void {
@@ -219,7 +283,8 @@ function kpiTile(tile: KpiTile, redraw: () => void): HTMLElement {
       (r) => value.replaceChildren(kpiView(kpiValue(kpi, r, lang), unit)),
       () => value.replaceChildren(h('p', { class: cx(BIG, 'text-muted') }, '—')));
   } else {
-    value.append(h('p', { class: cx(BIG, 'text-muted') }, ticket ? '—' : '???'));
+    // A locked tile shows an empty bar, never "—" or "???" (they read as broken data; v12 audit).
+    value.append(h('div', { class: 'h-9 rounded-lg border border-dashed border-line bg-code', 'aria-hidden': 'true' }));
   }
   const foot = open ? t('home.kpiFrom', { title: textOf(ticket, lang).title })
     : ticket ? t('home.kpiLocked', { n: ticket.chapter, title: textOf(ticket, lang).title, name: ticket.from.name })
@@ -230,7 +295,8 @@ function kpiTile(tile: KpiTile, redraw: () => void): HTMLElement {
       h('span', { class: cx('grid size-9 shrink-0 place-items-center rounded-lg', open ? 'bg-code text-ink' : 'bg-code text-muted') }, icon(kpiIcon(kpi))),
       h('h3', { class: 'm-0 flex-1 self-center text-sm leading-snug font-medium' }, label),
       open ? h('button', { type: 'button', class: ICON_BTN, title: t('dash.hide', { title: label }), 'aria-label': t('dash.hide', { title: label }), onclick: () => setHidden(kpi.id, true, label, redraw) },
-        icon('eyeOff', 'size-4')) : null), // a locked tile has nothing to hide yet
+        icon('eyeOff', 'size-4'))
+        : h('span', { class: 'flex shrink-0 items-center gap-1 rounded-full bg-code px-2 py-0.5 text-xs font-semibold text-muted' }, icon('lock', 'size-3.5'), t('dash.kpiLocked'))), // a locked tile has nothing to hide yet
     value,
     h('p', { class: 'mt-auto mb-0 flex items-start gap-1.5 text-sm text-muted' }, icon(open ? 'link' : 'lock', 'mt-0.5 size-4'), h('span', {}, foot)));
 }
