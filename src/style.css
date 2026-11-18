@@ -34,7 +34,7 @@
   --boon-body: #fdfdfb; --boon-plume: #e3e7e9; --boon-line: #59626a; --boon-wing: #3f8f9e; --boon-belly: #eef1f2; --boon-bill: #f2b544; --boon-ink: #2a2320; --boon-lanyard: #d98e4a;
   /* L87: Lily's growth stage (adult look by default: the top-bar logo has no data-mascot) and the teaching scene's loops (off). */
   --lily-scarf-on: 1; --lily-badge-on: 1; --lily-prop-on: 0; --lily-size: 1; --lily-wag: none; --lily-nod: none; --boon-tap: none;
-  --cheek: #f4a3a3; --wood: #c98b55; --wood-dark: #8a4b22; --sky: #e6f4f6; --ground: #e9dcc6;
+  --cheek: #f4a3a3; --wood-dark: #8a4b22; --sky: #e6f4f6; --ground: #e9dcc6;
   /* Tien Sa scene (src/art/logistics.ts): day here, dusk in dark mode (v10 critic #8). */
   --hs-sky0: #7dd3fc; --hs-sky1: #e0f2fe; --hs-sky2: #fef3c7; --hs-sea0: #0ea5e9; --hs-sea1: #0c4a6e; --hs-sun: #fde68a; --hs-cloud: #ffffff;
   /* L13 syntax colours: >= 4.8:1 on --panel and --code */
@@ -51,7 +51,7 @@
   --sun: #4a3a17; --sun-ink: #ffe2a3;
   --lily-fur: #f3f0eb; --lily-cream: #dcd5ca; --lily-ear: #1f1a17; --lily-spot: #1f1a17; --lily-line: #8a7e75; --lily-ink: #1f1a17; --lily-scarf: #2bb3a3;
   --boon-body: #f2f2ef; --boon-plume: #d3d9dc; --boon-line: #858e95; --boon-wing: #3a8391; --boon-belly: #e1e6e7; --boon-bill: #e9ad3e; --boon-ink: #1d1916;
-  --sky: #1d2a2e; --ground: #3a3127; --wood: #9a6538; --wood-dark: #6b3a1a;
+  --sky: #1d2a2e; --ground: #3a3127; --wood-dark: #6b3a1a;
   --hs-sky0: #1e1b4b; --hs-sky1: #c2643f; --hs-sky2: #f59e0b; --hs-sea0: #1d4e6e; --hs-sea1: #0b1a2e; --hs-sun: #fb923c; --hs-cloud: #f6c3b0;
   /* L13 syntax colours: >= 5.6:1 on --panel and --code */
   --syn-keyword: #d19bff; --syn-string: #ff9e7a; --syn-number: #7ee0b5; --syn-comment: #9aa39a;
@@ -299,6 +299,17 @@ body:has(use[href="#cq-load"]) #mascot-sprite .ld { animation: cq-ld 1.2s ease-i
 #mascot-sprite .ld + .ld { animation-delay: 0.2s; }
 #mascot-sprite .ld + .ld + .ld { animation-delay: 0.4s; }
 @keyframes cq-ld { 0%, 100% { opacity: 0.25; } 50% { opacity: 1; } }
+/* B1: the module page's glyph pops its accent parts in turn once per page entry (learnView adds .cq-glyph-in only then);
+   a skill that just became learned stamps its icon tile and draws its check. */
+.cq-glyph-in [data-acc] { transform-box: fill-box; transform-origin: center; animation: cq-pop-in 360ms cubic-bezier(.3,1.6,.6,1) backwards; }
+.cq-glyph-in [data-acc="1"] { animation-delay: 80ms; }
+.cq-glyph-in [data-acc="2"] { animation-delay: 160ms; }
+.cq-glyph-in [data-acc="3"] { animation-delay: 240ms; }
+.cq-stamp > svg:first-child { animation: cq-stamp 380ms ease-out; }
+.cq-stamp .cq-ck path { stroke-dasharray: 23; animation: cq-draw 300ms ease-out 200ms backwards; }
+@keyframes cq-pop-in { from { scale: 0.6; } }
+@keyframes cq-stamp { from { scale: 1.35; rotate: -8deg; } }
+@keyframes cq-draw { from { stroke-dashoffset: 23; } }
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; animation: none !important; scroll-behavior: auto !important; }
 }

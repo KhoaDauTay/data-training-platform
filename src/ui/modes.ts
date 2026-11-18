@@ -30,7 +30,7 @@ import { registerNav, setActionButton } from './topbar';
 import { renderMyData } from './myDataView';
 import type { WorkArea } from './work';
 import { mascot } from './mascots';
-import { NAV_ICON } from './icons';
+import { icon, NAV_ICON, skillIcon } from './icons';
 import { illustration } from '../art/load';
 import { gated, navLock, readTour } from '../onboarding';
 
@@ -92,7 +92,7 @@ const loadDrillUi = () => import('./drillBrief').then((m) => {
   if (!drillUi) m.initDrill({
     db: ctx!.db, activeSchema, h, nodes, richText, byId, loader, getLang, locale, app, actions, persist, schemaHooks, erMeta, stepKey, session, hintsShown, today,
     isSuccess, movedToday, nextCard, SKILLS, hashOf, textOf, hints, shapeCard, tryPreview, openLesson, backToStory, startDrillMode, loadGeneral, generalNow, loadLessons,
-    lessonSeen: isSeen, knownSkills, learnSkillOf, learnAdvOf, learnModuleOf, moduleTitle, illustration, loadTickets, CHAPTERS,
+    lessonSeen: isSeen, knownSkills, learnSkillOf, learnAdvOf, learnModuleOf, moduleTitle, illustration, icon, skillIcon, loadTickets, CHAPTERS,
     announce, readJson, writeJson, readTour, boonMark, escOwned, guideHooks, guideSlot, showPane, parseRoute, mod: keyLabels(isMac).mod,
   });
   return (drillUi = m);

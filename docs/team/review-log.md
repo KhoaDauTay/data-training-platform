@@ -588,3 +588,12 @@ Trình duyệt (`vite preview --port 5199`, Edge headless hồ sơ mới qua CDP
 - Story 375: story chuyển sang pane Đề bài nên Lily ở dòng phản hồi không chạy (như A2); Lily trong dock ẩn (`max-sm:hidden`): bản đầu để class `grow` nằm lại, đã sửa (gỡ ngay khi không animation nào chạy). Pill ở Trang chủ có.
 - Giảm chuyển động 375: không `react`/`grow`, Lily đứng ở giai đoạn mới; câu báo và pill vẫn có.
 - Thăng tiến ≤ 3,0 s: theo cấu trúc (Lily lớn bắt đầu `durationOf − 900`, kết thúc cùng cảnh), chưa chạy thăng tiến trên trình duyệt. Nhập save: chỉ test đơn vị.
+
+### T5 B1 lộ trình (L105)
+
+Đo (gzip -9): main 287,49 KiB (+14 B), illustrations 1,88 / 15 (−0,3), learnui `drillBrief` 12,28 / 25 (+0,35), CSS 15,31 / 20 (+0,19). `npm test` 3073 xanh (1 bỏ qua), `tsc` sạch, build xanh, `check-budget` ok. Test mới: `stamper` (mốc lần đầu, đóng dấu một lần + cửa sổ 600 ms, chưa vẽ thì chưa tiêu, save mới đặt lại mốc) trong `tests/learn.test.ts`; `moduleGlyph(1..12)` có `data-acc` 0..k (≤ 4) trong `tests/illustrations.test.ts`.
+
+Trình duyệt (`vite preview --port 5199`, Edge headless hồ sơ mới qua CDP, save v4 fixture + `g-select-1/2`; 1280 sáng, 375 tối, 320 sáng, một lần 375 giảm chuyển động):
+- `#/learn`: 11 dòng Phần có glyph (ch12 không dạy kỹ năng), 4 glyph nhóm nâng cao; `scrollWidth` = bề rộng ở 1280/375/320.
+- `#/learn/sql/1`: `.cq-glyph-in` có và `cq-pop-in` chạy ngay khi vào; 1,2 s sau đã vẽ lại thì không còn class (không phát lại). Ô icon có ✓ SVG cho 4 kỹ năng đã học; gắn `cq-stamp` bằng tay → `cq-stamp` + `cq-draw` chạy (đường CSS đúng). Luồng thật "đạt drill thứ 2 → về trang Phần" chỉ kiểm bằng test `stamper`.
+- Giảm chuyển động: không animation nào, glyph và ✓ ở trạng thái cuối.

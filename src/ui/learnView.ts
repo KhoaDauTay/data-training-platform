@@ -1,7 +1,7 @@
 import type { AdvNode, Drill, General } from '../general';
 import type { Params } from '../i18n';
 import { learnText, type LearnKey } from '../i18n/learn';
-import { CHALLENGE_XP, moduleState, nodeState, skillState, type LearnCtx } from '../learn';
+import { CHALLENGE_XP, moduleState, nodeState, skillState, stamper, type LearnCtx } from '../learn';
 import type { Skill } from '../progress';
 import type { DrillDeps } from './drillBrief';
 import { replayBtn } from './guideList';
@@ -24,6 +24,11 @@ const H2 = 'm-0 text-lg font-bold';
 const backLine = (href: string, text: string, guide: string): HTMLElement =>
   d$.h('p', { class: 'm-0 flex flex-wrap items-center justify-between gap-2' }, d$.h('a', { href }, text), replayBtn(guide));
 const slot = (name: string): HTMLElement => d$.guideSlot(name);
+/** ui-ux-v5 B1: skill icons that just became "learned" get a one-shot stamp (src/learn.ts stamper). */
+const stamps = stamper();
+/** The page drawn last and when it was entered: the module glyph pops in only within 700 ms of a page change, never on a later redraw. */
+let pageKey = '';
+let enteredAt = 0;
 
 function ctx(g: General): LearnCtx {
   const { app } = d$;
@@ -40,6 +45,8 @@ export function learnPage(deps: DrillDeps, g: General): HTMLElement {
   const node = g.nodes.find((x) => x.id === d$.learnAdvOf(hash));
   const n = d$.learnModuleOf(hash);
   const c = ctx(g);
+  stamps.base(c.save, c.known); // a new save object (import) resets the baseline
+  if (hash !== pageKey) { pageKey = hash; enteredAt = performance.now(); }
   if (skill) return skillPage(c, skill);
   if (node) return advPage(c, node);
   if (n) return modulePage(c, n);
@@ -65,9 +72,13 @@ function skillBlock(c: LearnCtx, s: Skill, heading: 'h2' | 'h3'): HTMLElement {
   const st = skillState(c, s.id);
   const drills = c.general.bySkill.get(s.id) ?? [];
   const card = heading === 'h3'; // a module page: a click anywhere on the card opens the skill page (L88, L93)
+  // v5 B1: the icon tile (decorative, the status line says "learned" in words); not an ancestor of the link (L93)
+  const tile = h('span', { class: stamps.stamp(s.id, st.learned) ? 'cq-stamp relative grid size-10 shrink-0 place-items-center rounded-full bg-accent-soft text-ink' : 'relative grid size-10 shrink-0 place-items-center rounded-full bg-accent-soft text-ink', 'aria-hidden': 'true' },
+    d$.skillIcon(s.id), st.learned ? d$.icon('check', 'cq-ck absolute -right-1 -bottom-1 size-5 rounded-full bg-panel p-0.5 text-good ring-1 ring-line') : null);
   return h('section', { class: card ? 'relative cursor-pointer space-y-3 rounded-(--r-card) bg-panel p-5 ring-1 ring-line hover:ring-accent' : 'space-y-3 rounded-(--r-card) bg-panel p-5 ring-1 ring-line' },
-    h('div', { class: 'flex flex-wrap items-baseline justify-between gap-2' },
-      h(heading, { class: H2 }, card ? h('a', { href: `${d$.hashOf('learn')}/skill/${s.id}`, class: 'after:absolute after:inset-0' }, label(s)) : label(s)),
+    h('div', { class: 'flex flex-wrap items-center justify-between gap-2' },
+      h('div', { class: 'flex min-w-0 items-center gap-3' }, tile,
+        h(heading, { class: H2 }, card ? h('a', { href: `${d$.hashOf('learn')}/skill/${s.id}`, class: 'after:absolute after:inset-0' }, label(s)) : label(s))),
       h('span', { class: 'text-sm text-muted' }, `${skillStatus(c, s.id)} · ${lt('learn.drills', { n: st.drills, total: st.total })}`)),
     h('p', { class: 'm-0 text-[15px] text-muted' }, s.when[d$.getLang()]),
     d$.loadLessons().has(s.id)
@@ -83,7 +94,7 @@ function modulePage(c: LearnCtx, n: number): HTMLElement {
   const ms = moduleState(c, n);
   return h('div', { class: 'space-y-5' },
     backLine(d$.hashOf('learn'), lt('learn.backAll'), 'module-intro'),
-    h('div', { class: 'flex items-center gap-3' }, h('div', { class: 'w-28 shrink-0' }, d$.illustration('aspect-[160/64]', (il) => il.moduleGlyph(n))), // Plan 8b
+    h('div', { class: 'flex items-center gap-3' }, h('div', { class: performance.now() - enteredAt < 700 ? 'cq-glyph-in w-28 shrink-0' : 'w-28 shrink-0' }, d$.illustration('aspect-[160/64]', (il) => il.moduleGlyph(n))), // Plan 8b
       h('h2', { class: 'm-0 text-xl font-bold' }, lt('learn.moduleTitle', { n, title: d$.moduleTitle(n, d$.getLang()) }))),
     h('p', { class: 'm-0 text-muted' }, lt('learn.moduleLine', { k: ms.learned, m: ms.skills.length })),
     slot('module-head'),
@@ -130,17 +141,20 @@ function overview(c: LearnCtx): HTMLElement {
     slot('learn-sql'),
     h('ul', { class: LIST }, ...modules.map((n) => {
       const ms = moduleState(c, n);
-      return h('li', { class: 'relative cursor-pointer space-y-2 rounded-(--r-card) bg-panel px-5 py-4 ring-1 ring-line hover:ring-accent' }, // v12 L86: the whole card opens it
-        h('a', { href: `${d$.hashOf('learn')}/sql/${n}`, class: 'font-bold after:absolute after:inset-0' }, lt('learn.moduleTitle', { n, title: d$.moduleTitle(n, lang) }), tick(ms.done)),
-        h('p', { class: 'm-0 text-sm text-muted' }, lt('learn.moduleLine', { k: ms.learned, m: ms.skills.length })),
-        bar(ms.learned, ms.skills.length));
+      return h('li', { class: 'relative flex cursor-pointer items-center gap-3 rounded-(--r-card) bg-panel px-5 py-4 ring-1 ring-line hover:ring-accent' }, // v12 L86: the whole card opens it
+        h('div', { class: 'w-12 shrink-0 sm:w-16' }, d$.illustration('aspect-[160/64]', (il) => il.moduleGlyph(n))), // v5 B1: static (L93)
+        h('div', { class: 'min-w-0 flex-1 space-y-2' },
+          h('a', { href: `${d$.hashOf('learn')}/sql/${n}`, class: 'font-bold after:absolute after:inset-0' }, lt('learn.moduleTitle', { n, title: d$.moduleTitle(n, lang) }), tick(ms.done)),
+          h('p', { class: 'm-0 text-sm text-muted' }, lt('learn.moduleLine', { k: ms.learned, m: ms.skills.length })),
+          bar(ms.learned, ms.skills.length)));
     })));
   const groups = (['A', 'B', 'C', 'D'] as const).map((gr) => [gr, c.general.nodes.filter((x) => x.group === gr)] as const);
   const adv = h('section', { id: 'adv', class: 'min-w-0 space-y-3', 'aria-labelledby': 'track-adv' },
     h('h2', { id: 'track-adv', class: H2 }, lt('learn.trackAdv')),
     slot('learn-adv'),
     ...groups.map(([gr, list]) => h('div', { class: 'space-y-2' },
-      h('h3', { class: 'm-0 text-sm font-bold tracking-wide text-muted uppercase' }, lt(`adv.group.${gr}` as LearnKey)),
+      h('div', { class: 'flex items-center gap-3' }, h('div', { class: 'w-20 shrink-0' }, d$.illustration('aspect-[160/64]', (il) => il.trackGlyph(gr))), // v5 B1
+        h('h3', { class: 'm-0 text-sm font-bold tracking-wide text-muted uppercase' }, lt(`adv.group.${gr}` as LearnKey))),
       h('ul', { class: LIST }, ...list.map((x) => {
         const st = nodeState(c, x);
         const needs = x.needs.filter((id) => !known.has(id) && !(c.general.nodes.find((y) => y.id === id) && nodeState(c, c.general.nodes.find((y) => y.id === id)!).done));

@@ -18,6 +18,7 @@ import type * as Tickets from '../tickets';
 import type { Ticket } from '../tickets';
 import type * as Brief from './brief';
 import type * as Dom from './dom';
+import type * as Icons from './icons';
 import type * as LessonCard from './lessonCard';
 import type * as Modes from './modes';
 import type * as TryPreview from './tryPreview';
@@ -44,6 +45,7 @@ export interface DrillDeps extends GuideDeps {
   // Learning path (Task 9-10)
   lessonSeen: typeof LessonCard.isSeen; learnSkillOf: typeof Route.learnSkillOf; learnAdvOf: typeof Route.learnAdvOf;
   learnModuleOf: typeof Route.learnModuleOf; knownSkills: typeof Home.knownSkills; moduleTitle: typeof Progress.moduleTitle; illustration: typeof ArtLoad.illustration;
+  icon: typeof Icons.icon; skillIcon: typeof Icons.skillIcon;
   // Plan 9 D9-12: the General area reads Logistics, whatever domain is open
   loadTickets: typeof Content.loadTickets; CHAPTERS: typeof Progress.CHAPTERS;
   // v13 guides (ui/guideList.ts)

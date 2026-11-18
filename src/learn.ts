@@ -65,3 +65,26 @@ export function dependsOn(tickets: Ticket[], n: number, uses: readonly string[] 
 
 /** D8a-10: +10 the first time a drill passes (+20 for a challenge), 0 after. */
 export const drillXp = (d: Drill, firstPass: boolean): number => (firstPass ? (d.kind === 'challenge' ? CHALLENGE_XP : DRILL_XP) : 0);
+
+/**
+ * ui-ux-v5 B1: which skill icons get the one-shot stamp. `base(token, known)` runs on every learning-page draw: the first
+ * draw (or a new save object, i.e. an import) only sets the baseline. `stamp(id, learned)` runs where a skill's block is
+ * drawn: a skill learned since the baseline stamps and is marked seen there (so the overview does not use it up), and keeps
+ * its stamp for `win` ms, so a rerender right after (language switch, seed done) does not cut the animation.
+ */
+export function stamper(win = 600, now = (): number => performance.now()) {
+  let token: object | undefined;
+  let seen = new Set<string>();
+  const at = new Map<string, number>();
+  return {
+    base(t: object, known: Iterable<string>): void {
+      if (t !== token) { token = t; seen = new Set(known); at.clear(); }
+    },
+    stamp(id: string, learned: boolean): boolean {
+      if (!learned) return false;
+      if (!seen.has(id)) { seen.add(id); at.set(id, now()); return true; }
+      const t0 = at.get(id);
+      return t0 !== undefined && now() - t0 < win;
+    },
+  };
+}
