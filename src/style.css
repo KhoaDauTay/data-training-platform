@@ -36,6 +36,8 @@
   /* L87: Lily's growth stage (adult look by default: the top-bar logo has no data-mascot) and the teaching scene's loops (off). */
   --lily-scarf-on: 1; --lily-badge-on: 1; --lily-prop-on: 0; --lily-size: 1; --lily-wag: none; --lily-nod: none; --boon-tap: none;
   --cheek: #f4a3a3; --wood-dark: #8a4b22; --sky: #e6f4f6; --ground: #e9dcc6;
+  /* ui-ux-v6 S2: the route map (sea gradient, graticule, coastline, label halo) */
+  --map-sea-1: #dcedf6; --map-sea-2: #b9d9ea; --map-grid: rgb(52 110 150 / 0.16); --map-coast: #ffffff; --map-halo: #eef6fb;
   /* Tien Sa scene (src/art/logistics.ts): day here, dusk in dark mode (v10 critic #8). */
   --hs-sky0: #7dd3fc; --hs-sky1: #e0f2fe; --hs-sky2: #fef3c7; --hs-sea0: #0ea5e9; --hs-sea1: #0c4a6e; --hs-sun: #fde68a; --hs-cloud: #ffffff;
   /* ui-ux-v6 S1: depth (far ridge palest), quay, crane lit/shaded faces; --hs-lamp turns the yard lights on (dusk only). */
@@ -57,7 +59,8 @@
   --lily-fur: #f3f0eb; --lily-cream: #dcd5ca; --lily-ear: #1f1a17; --lily-spot: #1f1a17; --lily-line: #8a7e75; --lily-ink: #1f1a17; --lily-scarf: #2bb3a3;
   --boon-body: #f2f2ef; --boon-plume: #d3d9dc; --boon-line: #858e95; --boon-wing: #3a8391; --boon-belly: #e1e6e7; --boon-bill: #e9ad3e; --boon-ink: #1d1916;
   --boon-shade: #b9c2c7; --boon-bill-dark: #b8741f;
-  --sky: #1d2a2e; --ground: #3a3127; --wood-dark: #6b3a1a;
+  --sky: #1d2a2e; --ground: #3a3127;
+  --map-sea-1: #16303f; --map-sea-2: #0e1f2a; --map-grid: rgb(140 190 220 / 0.12); --map-coast: #6f6250; --map-halo: #12232f; --wood-dark: #6b3a1a;
   --hs-sky0: #1e1b4b; --hs-sky1: #c2643f; --hs-sky2: #f59e0b; --hs-sea0: #1d4e6e; --hs-sea1: #0b1a2e; --hs-sun: #fb923c; --hs-cloud: #f6c3b0;
   --hs-far: #8a5a72; --hs-mid: #563f62; --hs-near: #2c2a45; --hs-near2: #211f36; --hs-quay0: #545c69; --hs-quay1: #3b424d;
   --hs-wall: #1f2937; --hs-road: #1f2733; --hs-verge: #3b4535; --hs-shed0: #7b8494; --hs-shed1: #586170; --hs-roof: #3b4250;

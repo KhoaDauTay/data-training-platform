@@ -334,17 +334,15 @@ function routesSection(): HTMLElement {
     h('div', { class: 'mb-2 flex flex-wrap items-end justify-between gap-2' },
       h('h2', { id: 'routes-title', class: 'm-0 text-lg font-bold' }, t('routes.title')),
       h('p', { class: 'm-0 text-sm text-muted' }, t('routes.subtitle'))),
-    h('div', { class: 'grid gap-4 lg:grid-cols-[minmax(0,1fr)_22rem]' },
-      h('div', { class: 'min-w-0' },
-        artSlot('aspect-[980/260] rounded-xl', (a) => {
-          stopMap?.(); // one fleet per page: the previous drawing's loop ends here
-          const p = a.routeMap(harbor);
-          wirePins(p, harbor, pickLane);
-          stopMap = a.liveMap(p, harbor, takeNewRoutes(harbor.open), fleetOrder());
-          return p.svg;
-        }),
-        list),
-      brief));
+    // ui-ux-v6 S2: the map takes the card's full width (labels ≥ 11 px from lg); the lane list and the brief sit below it
+    artSlot('aspect-[5/2] rounded-xl', (a) => {
+      stopMap?.(); // one fleet per page: the previous drawing's loop ends here
+      const p = a.routeMap(harbor);
+      wirePins(p, harbor, pickLane);
+      stopMap = a.liveMap(p, harbor, takeNewRoutes(harbor.open), fleetOrder());
+      return p.svg;
+    }),
+    h('div', { class: 'grid gap-4 lg:grid-cols-[minmax(0,1fr)_22rem]' }, h('div', { class: 'min-w-0' }, list), h('div', { class: 'min-w-0 lg:mt-3' }, brief)));
 }
 
 /** L48 D-A1: the company tiles moved to #/dashboard (src/ui/dashboard.ts); Home keeps a one-line teaser that links there. */

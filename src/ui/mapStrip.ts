@@ -64,7 +64,7 @@ export function createMapStrip(host: HTMLElement): { update(view: StripView): vo
       return;
     }
     const harbor = derive(tickets, completed);
-    const map = artSlot('aspect-[980/260] rounded-xl', (art) => {
+    const map = artSlot('aspect-[5/2] rounded-xl', (art) => {
       const parts = art.routeMap(harbor);
       wirePins(parts, harbor, pick);
       stopMap?.(); // the dialog is refilled on every rerender: one fleet at a time, and it only sails while the dialog is open (on screen)
@@ -88,9 +88,11 @@ export function createMapStrip(host: HTMLElement): { update(view: StripView): vo
           h('h2', { id: 'map-dialog-title', class: 'm-0 text-lg font-bold' }, t('routes.title')),
           h('p', { class: 'mt-1 mb-3 text-sm text-muted' }, t('map.lanes', { n: harbor.open.size, total: ROUTES.length }), ' · ', t('lane.pickShort'))),
         h('form', { method: 'dialog' }, h('button', { class: 'flex items-center gap-1 px-2 py-1 text-sm' }, icon('x', 'size-4'), t('app.close')))),
+      // ui-ux-v6 S2: the map spans the dialog (labels ≥ 11 px from lg); the lane list and the brief sit below it
+      h('div', { class: cx(lanePort && 'max-lg:hidden') }, map),
       h('div', { class: 'grid gap-4 lg:grid-cols-[minmax(0,1fr)_22rem]' },
-        h('div', { class: cx('min-w-0', lanePort && 'max-lg:hidden') }, map, list),
-        panel)));
+        h('div', { class: cx('min-w-0', lanePort && 'max-lg:hidden') }, list),
+        h('div', { class: 'min-w-0 lg:mt-3' }, panel))));
   }
 
   /** Lane mode of the task bar (mockup v6 screen D): back to the story, the lane's badge and its side tasks. */

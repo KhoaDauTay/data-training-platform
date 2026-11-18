@@ -10,18 +10,18 @@ export interface Scene { kind: SceneKind; to?: string; lane?: Lane }
 
 /**
  * Lanes radiating from Tien Sa (L26), as approved in mockup v5. `opens`: the chapter whose promotion review opens the lane
- * (0 = open from the start); a ship sailing there also opens it (L32). `name` = ports.name in the seed (tests/scene.test.ts). x/y/d/lx/ly: map geometry (viewBox 980×260).
+ * (0 = open from the start); a ship sailing there also opens it (L32). `name` = ports.name in the seed (tests/scene.test.ts). Map geometry lives in the art chunk (src/art/seaLanes.ts, ui-ux-v6 S2).
  */
-export interface RouteInfo { port: string; name: string; opens: number; days: number; x: number; y: number; d: string; lx: number; ly: number }
+export interface RouteInfo { port: string; name: string; opens: number; days: number }
 /** `days`: about this many days at sea from Tien Sa = ports.base_transit_days (lane list and tooltips, Plan 5). */
 export const ROUTES: RouteInfo[] = [
-  { port: 'CNSHA', name: 'Shanghai', opens: 0, days: 5, x: 620, y: 80, d: 'M560 132 Q600 100 620 80', lx: 540, ly: 72 },
-  { port: 'THLCH', name: 'Laem Chabang', opens: 0, days: 3, x: 515, y: 110, d: 'M560 132 Q540 114 515 110', lx: 410, ly: 132 },
-  { port: 'SGSIN', name: 'Singapore', opens: 1, days: 3, x: 540, y: 196, d: 'M560 132 Q580 170 540 196', lx: 452, ly: 214 },
-  { port: 'NLRTM', name: 'Rotterdam', opens: 2, days: 30, x: 160, y: 80, d: 'M560 132 Q380 60 160 80', lx: 110, ly: 66 },
-  { port: 'KRPUS', name: 'Busan', opens: 3, days: 6, x: 682, y: 62, d: 'M560 132 Q640 74 682 62', lx: 692, ly: 58 },
-  { port: 'USLAX', name: 'Los Angeles', opens: 4, days: 20, x: 860, y: 96, d: 'M560 132 Q700 40 860 96', lx: 820, ly: 120 },
-  { port: 'AUSYD', name: 'Sydney', opens: 5, days: 16, x: 662, y: 212, d: 'M560 132 Q630 175 662 212', lx: 674, ly: 232 },
+  { port: 'CNSHA', name: 'Shanghai', opens: 0, days: 5 },
+  { port: 'THLCH', name: 'Laem Chabang', opens: 0, days: 3 },
+  { port: 'SGSIN', name: 'Singapore', opens: 1, days: 3 },
+  { port: 'NLRTM', name: 'Rotterdam', opens: 2, days: 30 },
+  { port: 'KRPUS', name: 'Busan', opens: 3, days: 6 },
+  { port: 'USLAX', name: 'Los Angeles', opens: 4, days: 20 },
+  { port: 'AUSYD', name: 'Sydney', opens: 5, days: 16 },
 ];
 export const routeOpenedBy = (chapter: number): string | undefined => ROUTES.find((r) => r.opens === chapter && chapter > 0)?.port;
 

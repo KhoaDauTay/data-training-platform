@@ -12,7 +12,9 @@ import type { mascot as Mascot } from '../ui/mascots';
 import type { callout as Callout, routeItems as RouteItems } from '../ui/routeText';
 import type { s as S } from '../ui/svg';
 import { ambient } from './ambient';
-import { arrivalPulse } from './mapMotion';
+import { COAST, LAND } from './coast';
+import { arrivalPulse, drawNewRoutes, sailFleet } from './mapMotion';
+import { HUB, LANE_GEO, laneCurve, lanePath, xy, type Pt } from './seaLanes';
 
 /**
  * Everything this chunk uses from main, handed over by src/art/load.ts (D8b-2 stop rule): a runtime import of a main
@@ -30,7 +32,7 @@ let ROUTES: typeof Routes, STEPS: typeof Steps, GATE_WAIT: typeof GateWait, rout
 let CHAPTER_COLOR: typeof ChapterColors, chapterColor: typeof ChapterColorOf, cx: typeof Cx, PILL: string, DONE_PILL: string;
 let h: typeof H, s: typeof S, nodes: typeof Nodes, reducedMotion: typeof ReducedMotion;
 let avatar: typeof Avatar, mascot: typeof Mascot, callout: typeof Callout, routeItems: typeof RouteItems;
-export { drawNewRoutes, liveMap, parallax } from './mapMotion';
+export { parallax } from './mapMotion';
 
 /** Called once by loadArt() before anything else here runs. */
 export function init(d: ArtDeps): void {
@@ -387,12 +389,15 @@ export const TRUCK_PLAN: { at: number; dur: number; part: 'truck' | 'barrier' | 
  * while the scene is off screen or the tab is hidden, and a redraw never restarts it. Nothing under reduced motion
  * (the static frame stays); the scene is static until the gsap chunk is in. Returns stop.
  */
-export function harborLife(p: HarborParts): () => void {
+export const harborLife = (p: HarborParts): (() => void) => withGsap(p.svg, (g) => live(p, g));
+
+/** Starts `f` once the gsap chunk is in, if `svg` is still in the page; nothing under reduced motion. Returns stop. */
+function withGsap(svg: SVGSVGElement, f: (g: Gsap) => () => void): () => void {
   if (reducedMotion()) return () => {};
   let stop = (): void => {};
   let dead = false;
   prefetchGsap();
-  gsapMod?.then((g) => { if (!dead && p.svg.isConnected) stop = live(p, g); }, () => {});
+  gsapMod?.then((g) => { if (!dead && svg.isConnected) stop = f(g); }, () => {});
   return () => { dead = true; stop(); };
 }
 
@@ -438,20 +443,16 @@ function live(p: HarborParts, g: Gsap): () => void {
   return end;
 }
 
-// ---- the route map (was ui/routeMap.ts) ----
+// ---- the route map (was ui/routeMap.ts; ui-ux-v6 S2: Natural Earth coastline, src/art/coast.ts + seaLanes.ts) ----
 
-/** Stylised land masses (mockup v4): Europe, Asia, Australia, Americas. Not a geographic map. */
-const LAND = [
-  'M40 60 Q120 40 210 70 Q260 90 250 140 Q200 170 150 150 Q90 140 60 110 Z',
-  'M330 40 Q460 20 600 50 Q660 70 650 110 Q610 150 560 140 Q520 170 470 160 Q420 140 380 120 Q330 90 330 40 Z',
-  'M600 170 Q660 160 700 190 Q690 225 640 230 Q600 215 600 170 Z',
-  'M760 60 Q860 40 930 70 Q940 120 900 140 Q840 150 790 120 Z',
-];
-/** AA on the sea (sky-100 / slate-800) and on land (slate-300 / slate-700) in both themes. */
+/** AA on the sea and on the land in both themes; every label also has a sea-coloured halo (paint-order stroke). */
 const OPEN_TEXT = 'fill-slate-900 dark:fill-slate-100';
 const LOCKED_TEXT = 'fill-slate-600 dark:fill-slate-300';
 const LOCKED_LINE = 'stroke-slate-400 dark:stroke-slate-500';
 const LOCKED_PIN = 'fill-slate-400 dark:fill-slate-500';
+/** Map units: 14 units ≥ 11 CSS px once the map is ≥ 786 px wide, true wherever labels show (lg and up, full card width; probed in v6 T8). */
+const LABEL_SIZE = 14;
+const HALO = { stroke: 'var(--map-halo)', 'stroke-width': 4, 'stroke-linejoin': 'round', 'paint-order': 'stroke' } as const;
 
 export interface MapParts {
   svg: SVGSVGElement;
@@ -459,10 +460,13 @@ export interface MapParts {
   wake: SVGPathElement;
   routes: Record<string, SVGPathElement>;
   pins: Record<string, SVGCircleElement>;
+  /** The faint ring around an open port's pin (S2: dot + ring). */
+  halos: Record<string, SVGCircleElement>;
   labels: Record<string, SVGTextElement>;
   /** Pulsing rings (Plan 8b): the hub and the next lane to open. Under reduced motion they stay still, like a pin outline. */
   rings: SVGGElement;
 }
+export const portXY = (port: string): Pt => xy(LANE_GEO[port].port);
 /** Lanes, pins, trip counts and the accessible description from `h`. A promotion repaints after its ship arrives. */
 export function paintRoutes(p: MapParts, h: Harbor): void {
   for (const r of ROUTES) {
@@ -474,46 +478,82 @@ export function paintRoutes(p: MapParts, h: Harbor): void {
     if (open) p.routes[r.port].removeAttribute('stroke-dasharray');
     else p.routes[r.port].setAttribute('stroke-dasharray', '6 6');
     p.pins[r.port].setAttribute('class', open ? color.fill : LOCKED_PIN);
+    p.halos[r.port].setAttribute('class', open ? color.stroke : 'stroke-transparent');
     p.labels[r.port].setAttribute('class', open ? OPEN_TEXT : LOCKED_TEXT);
     p.labels[r.port].textContent = r.name + (trips ? ` · ${trips}` : '');
   }
   p.svg.setAttribute('aria-label', t('routes.label', { lanes: routeItems(h).join('; ') }));
   const next = ROUTES.filter((r) => !h.open.has(r.port)).sort((a, b) => a.opens - b.opens)[0];
-  const ring = (cx0: number, cy: number, cls: string): SVGCircleElement => s('circle', { cx: cx0, cy, r: 6, fill: 'none', 'stroke-width': 2, class: cx('cq-pulse', cls) });
-  p.rings.replaceChildren(ring(560, 132, 'stroke-red-600'), ...(next ? [ring(next.x, next.y, chapterColor(Math.max(1, next.opens)).stroke)] : []));
+  const ring = ([x, y]: Pt, cls: string): SVGCircleElement => s('circle', { cx: x, cy: y, r: 6, fill: 'none', 'stroke-width': 2, class: cx('cq-pulse', cls) });
+  p.rings.replaceChildren(ring(xy(HUB), 'stroke-red-600'), ...(next ? [ring(portXY(next.port), chapterColor(Math.max(1, next.opens)).stroke)] : []));
 }
 
-/** Lanes radiating from Tien Sa (L26, mockup v5 coordinates, viewBox 980×260). */
+let mapUid = 0;
+/** Faint meridians and parallels every 20° (S2), one path. */
+function graticule(): string {
+  let d = '';
+  for (let lon = 0; lon <= 240; lon += 20) d += `M${xy([lon, 0])[0]} 0V${COAST.h}`;
+  for (let lat = -40; lat <= 60; lat += 20) d += `M0 ${xy([0, lat])[1]}H${COAST.w}`;
+  return d;
+}
+
+/** Lanes radiating from Tien Sa (L26) over the real coastline (S2, viewBox 1000×400). */
 export function routeMap(h: Harbor): MapParts {
+  const id = `cqm${++mapUid}`;
   const routes: Record<string, SVGPathElement> = {};
   const pins: Record<string, SVGCircleElement> = {};
+  const halos: Record<string, SVGCircleElement> = {};
   const labels: Record<string, SVGTextElement> = {};
   for (const r of ROUTES) {
-    routes[r.port] = s('path', { d: r.d, fill: 'none', 'stroke-width': 3, 'stroke-linecap': 'round' });
-    pins[r.port] = s('circle', { cx: r.x, cy: r.y, r: 6 });
-    labels[r.port] = s('text', { x: r.lx, y: r.ly });
+    const [x, y] = portXY(r.port);
+    const [dx, dy, anchor] = LANE_GEO[r.port].label;
+    routes[r.port] = s('path', { d: lanePath(r.port), fill: 'none', 'stroke-width': 3, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' });
+    halos[r.port] = s('circle', { cx: x, cy: y, r: 11, fill: 'none', 'stroke-width': 2, 'stroke-opacity': 0.35 });
+    pins[r.port] = s('circle', { cx: x, cy: y, r: 6, stroke: 'var(--map-halo)', 'stroke-width': 2 });
+    labels[r.port] = s('text', { x: x + dx, y: y + dy, 'text-anchor': anchor, ...HALO });
   }
   const rings = s('g', { 'aria-hidden': 'true', 'pointer-events': 'none' });
   const wake = s('path', { fill: 'none', 'stroke-width': 5, 'stroke-linecap': 'round', opacity: 0, 'aria-hidden': 'true' });
   // v6 T1: the inner <g> is the ship's mirror (set by the GSAP sail, never by GSAP itself); the outer one takes the motion transform.
   const ship = s('g', { opacity: 0, 'aria-hidden': 'true' }, s('g', {},
-    s('path', { d: 'M-11 -2 L11 -2 L8 5 L-8 5 Z', fill: '#1e3a8a' }),
+    s('path', { d: 'M-11 -2 L11 -2 L8 5 L-8 5 Z', fill: '#1e3a8a', stroke: 'var(--map-halo)', 'stroke-width': 1 }),
     s('rect', { x: -7, y: -7, width: 8, height: 5, fill: '#d97706' }),
     s('rect', { x: 2, y: -9, width: 5, height: 7, fill: '#f8fafc', stroke: '#1e3a8a', 'stroke-width': 0.8 })));
-  // L23/L34: 14-unit labels are ≥ ~13px from lg (≥ 937px for 980 units) and too small below it, so they hide below lg (Home lists routeItems() as HTML there)
-  const svg = s('svg', { viewBox: '0 0 980 260', class: 'block w-full max-lg:[&_text]:hidden', role: 'img' },
-    s('rect', { width: 980, height: 260, rx: 12, class: 'fill-sky-100 dark:fill-slate-800' }),
-    ...LAND.map((d) => s('path', { d, class: 'fill-slate-300 dark:fill-slate-700' })),
+  const [hx, hy] = xy(HUB);
+  // L23/L34: labels hide below lg (the page and the dialog list routeItems() as HTML there); from lg the map is the card's full width
+  const svg = s('svg', { viewBox: `0 0 ${COAST.w} ${COAST.h}`, 'data-map': 'routes', class: 'block w-full rounded-xl max-lg:[&_text]:hidden', role: 'img' },
+    s('defs', {},
+      s('linearGradient', { id: `${id}-sea`, x1: 0, y1: 0, x2: 0, y2: 1 },
+        s('stop', { offset: 0, style: 'stop-color:var(--map-sea-1)' }), s('stop', { offset: 1, style: 'stop-color:var(--map-sea-2)' }))),
+    s('rect', { width: COAST.w, height: COAST.h, fill: `url(#${id}-sea)` }),
+    s('path', { d: graticule(), fill: 'none', stroke: 'var(--map-grid)', 'stroke-width': 0.8, 'aria-hidden': 'true' }),
+    s('path', { d: LAND, 'fill-rule': 'evenodd', fill: '#000000', opacity: 0.12, transform: 'translate(0,2)', 'aria-hidden': 'true' }), // soft shadow under the land
+    s('path', { d: LAND, 'fill-rule': 'evenodd', style: 'fill:var(--ground);stroke:var(--map-coast)', 'stroke-width': 0.9, 'stroke-linejoin': 'round', 'aria-hidden': 'true' }),
     s('g', {}, ...Object.values(routes)),
     wake,
-    s('g', { 'font-family': FONT, 'font-size': 14, 'font-weight': 600 }, ...Object.values(pins), ...Object.values(labels)),
+    s('g', { 'aria-hidden': 'true' }, ...Object.values(halos)),
+    s('g', { 'font-family': FONT, 'font-size': LABEL_SIZE, 'font-weight': 700 }, ...Object.values(pins), ...Object.values(labels)),
     rings,
     ship,
-    s('circle', { cx: 560, cy: 132, r: 9, fill: '#dc2626', stroke: '#ffffff', 'stroke-width': 3 }),
-    s('text', { x: 575, y: 150, 'font-family': FONT, 'font-size': 14, 'font-weight': 700, class: OPEN_TEXT }, t('routes.hub')));
-  const parts: MapParts = { svg, ship, wake, routes, pins, labels, rings };
+    s('circle', { cx: hx, cy: hy, r: 8, fill: '#dc2626', stroke: 'var(--map-halo)', 'stroke-width': 3 }),
+    s('text', { x: hx + 14, y: hy + 14, 'font-family': FONT, 'font-size': LABEL_SIZE, 'font-weight': 800, class: OPEN_TEXT, ...HALO }, t('routes.hub')));
+  const parts: MapParts = { svg, ship, wake, routes, pins, halos, labels, rings };
   paintRoutes(parts, h);
   return parts;
+}
+
+/** The dock's map (A2): a 1000×265 band around `port`'s lane, so the dock is no taller than with the v5 map (375 px: never over the editor). */
+export function cropToLane(p: MapParts, port: string | undefined): void {
+  const ys = port && LANE_GEO[port] ? laneCurve(port).flat().map(([, y]) => y) : [xy(HUB)[1]];
+  const band = 265;
+  const top = Math.min(COAST.h - band, Math.max(0, (Math.min(...ys) + Math.max(...ys)) / 2 - band / 2));
+  p.svg.setAttribute('viewBox', `0 ${Math.round(top)} ${COAST.w} ${band}`);
+}
+
+/** The map on a reading page or the open map dialog: new lanes draw in one after another, then (GSAP in) the fleet sails. Returns stop. */
+export function liveMap(p: MapParts, h: Harbor, draw: string[], order: string[]): () => void {
+  void drawNewRoutes(p, draw);
+  return withGsap(p.svg, (g) => sailFleet(g, p, h, order));
 }
 
 // ---- completion scenes (were in ui/stage.ts; on GSAP timelines since ui-ux-v6 A2) ----
@@ -678,7 +718,7 @@ function mapSail(c: Ctx, g: Gsap, tl: Timeline, port: string, at: number, dur: n
       },
     }, at)
     // Plan 8b: the port pulses during the last 250 ms of the voyage (inside the step, never after it)
-    .call(() => { if (!c.run.fast) arrivalPulse(m, r.x, r.y, color); }, undefined, at + dur - 0.25)
+    .call(() => { if (!c.run.fast) arrivalPulse(m, ...portXY(port), color); }, undefined, at + dur - 0.25)
     .call(() => { m.ship.setAttribute('opacity', '0'); m.wake.setAttribute('opacity', '0'); }, undefined, at + dur);
 }
 
@@ -998,7 +1038,7 @@ const SCENES: Record<Scene['kind'], Kind> = {
           const color = chapterColor(Math.max(1, r.opens)).stroke;
           tl.call(() => paintRoutes(m, c.after), undefined, l0)
             .fromTo(m.routes[route], { drawSVG: '0%' }, { drawSVG: '100%', duration: l1 - l0, ease: 'power1.inOut', immediateRender: false }, l0)
-            .call(() => { if (!c.run.fast) arrivalPulse(m, r.x, r.y, color, 400); }, undefined, l1 - 0.3);
+            .call(() => { if (!c.run.fast) arrivalPulse(m, ...portXY(route), color, 400); }, undefined, l1 - 0.3);
           mapSail(c, g, tl, route, PROMO.sail[0], PROMO.sail[1] - PROMO.sail[0]);
         } else mapSail(c, g, tl, route, PROMO.lane[0], PROMO.sail[1] - PROMO.lane[0]);
       }
@@ -1015,6 +1055,7 @@ export function build(c: Ctx): void {
   }
   if ((k === 'ship' && c.scene.to) || k === 'promotion') {
     c.map = routeMap(c.before);
+    cropToLane(c.map, c.scene.to ?? routeOpenedBy(c.tk.chapter));
     c.map.rings.replaceChildren(); // no endless pulse in the dock (Plan 8b: loops only on reading pages); arrivalPulse() uses the group once
   }
   c.art.replaceChildren(...nodes(c.harbor?.svg, c.map?.svg));

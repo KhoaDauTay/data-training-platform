@@ -1,75 +1,77 @@
-// Plan 8b Task 3: the living route map. Ships sail the open lanes (shared ambient loop), a newly opened lane draws
-// itself in once per device, and (Task 4) the overview scene's pointer parallax. Art chunk: no runtime import from main.
+// Plan 8b Task 3: the living route map. Ships sail the open lanes (shared ambient loop; GSAP MotionPath since ui-ux-v6
+// S2, the module handed in, never imported), a newly opened lane draws itself in once per device, and (Task 4) the overview scene's pointer parallax. Art chunk: no runtime import from main.
 import { ambient } from './ambient';
 import type { Harbor } from '../scene';
 import type { MapParts } from './logistics';
+
+type Gsap = typeof import('./gsap');
 
 const NS = 'http://www.w3.org/2000/svg';
 const reduced = (): boolean => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 const clamp = (x: number, a: number, b: number): number => Math.min(b, Math.max(a, x));
 
-/** Places `ship` at fraction `x` of `path`, nose along the lane (mirrored when heading left, like sail()). */
-export function placeOnPath(ship: SVGGElement, path: SVGPathElement, len: number, x: number, back = false, scale = 1): void {
-  const a = path.getPointAtLength(x * len);
-  const b = path.getPointAtLength(clamp(x * len + (back ? -1 : 1), 0, len));
-  const deg = (Math.atan2(b.y - a.y, b.x - a.x) * 180) / Math.PI;
-  const flip = Math.abs(deg) > 90;
-  ship.setAttribute('transform', `translate(${a.x},${a.y}) rotate(${flip ? deg + 180 : deg}) scale(${(flip ? -1 : 1) * scale},${scale})`);
-}
-
 /**
- * Up to 4 small ships run there and back on the open lanes (most recently opened first), 14–22 s a round trip by lane
- * length, out of phase. Positions come from the frame time, so a hidden tab resumes without a jump. Returns stop.
+ * S2: up to 4 small ships run there and back on the open lanes (most recently opened first), 14–36 s a round trip by
+ * lane length, out of phase. Each is a paused GSAP MotionPath timeline (autoRotate) scrubbed by the shared ambient()
+ * clock, so a hidden tab or an off-screen map stops it and resumes without a jump. The outer <g> takes GSAP's transform;
+ * the inner one is the mirror (heading left = upright, never upside down) and the 0.7 scale. Returns stop.
  */
-export function sailFleet(p: MapParts, h: Harbor, order: string[]): () => void {
+export function sailFleet(g: Gsap, p: MapParts, h: Harbor, order: string[]): () => void {
   if (reduced()) return () => {};
   const lanes = order.filter((port) => h.open.has(port)).slice(0, 4);
   if (!lanes.length) return () => {};
   const fleet = lanes.map((port, i) => {
     const path = p.routes[port];
-    const len = path.getTotalLength();
     const ship = p.ship.cloneNode(true) as SVGGElement;
+    const mirror = ship.firstElementChild as SVGGElement;
     const bob = document.createElementNS(NS, 'g');
     bob.setAttribute('class', 'cq-ship-bob');
-    bob.append(...ship.childNodes);
-    ship.append(bob);
+    bob.append(...mirror.childNodes);
+    mirror.append(bob);
     ship.setAttribute('opacity', '1');
     p.ship.before(ship);
-    return { ship, path, len, period: clamp(len / 40, 14, 22) * 1000, phase: i * 0.27 };
+    const period = clamp(path.getTotalLength() / 40, 14, 36);
+    const leg = (start: number, end: number): object => ({
+      duration: period / 2, ease: 'sine.inOut',
+      motionPath: { path, align: path, alignOrigin: [0.5, 0.5], autoRotate: true, start, end },
+      onUpdate: () => {
+        const deg = Number(g.gsap.getProperty(ship, 'rotation'));
+        mirror.setAttribute('transform', Math.cos((deg * Math.PI) / 180) < 0 ? 'scale(0.7,-0.7)' : 'scale(0.7)');
+      },
+    });
+    const tl = g.timeline().to(ship, leg(0.04, 0.96)).to(ship, leg(0.96, 0.04));
+    return { ship, tl, period, phase: i * 0.27 * period };
   });
   const stop = ambient(p.svg, (ms) => {
     if (!p.svg.isConnected) return end(); // the page redrew without calling stop: never animate a detached map
-    for (const f of fleet) {
-      const k = (ms / f.period + f.phase) % 1;
-      const back = k >= 0.5;
-      const x = back ? 2 - 2 * k : 2 * k;
-      placeOnPath(f.ship, f.path, f.len, 0.04 + 0.92 * x, back, 0.7);
-    }
+    for (const f of fleet) f.tl.time((ms / 1000 + f.phase) % f.period);
   });
   function end(): void {
     stop();
-    fleet.forEach((f) => f.ship.remove());
+    for (const f of fleet) { f.tl.kill(); f.ship.remove(); }
   }
   return end;
 }
 
 /**
- * Draws each lane of `draw` in (stroke-dashoffset, `ms`), then pops its pin. The dash pattern goes through WAAPI style
+ * Draws each lane of `draw` in (stroke-dashoffset, `ms`), then pops its pin; several new lanes draw one after another
+ * (S2 stagger), all within 3 s. The dash pattern goes through WAAPI style
  * only and is removed when the animation ends or is cancelled, so paintRoutes() (attributes) always wins: a locked
  * lane keeps its "6 6" dashes (D8b-5). Reduced motion: nothing, the lane is simply there.
  */
 export function drawNewRoutes(p: MapParts, draw: string[], ms = 1200): Promise<void> {
   if (reduced() || !draw.length) return Promise.resolve();
-  return Promise.all(draw.map((port) => {
+  const gap = draw.length > 1 ? Math.min(ms / 2, (3000 - ms) / (draw.length - 1)) : 0;
+  return Promise.all(draw.map((port, i) => {
     const path = p.routes[port];
     const pin = p.pins[port];
     if (!path || !pin || typeof path.animate !== 'function') return undefined;
     const len = path.getTotalLength();
     const dash = `${len} ${len}`;
-    const line = path.animate([{ strokeDasharray: dash, strokeDashoffset: len }, { strokeDasharray: dash, strokeDashoffset: 0 }], { duration: ms, easing: 'ease-out' });
+    const line = path.animate([{ strokeDasharray: dash, strokeDashoffset: len }, { strokeDasharray: dash, strokeDashoffset: 0 }], { duration: ms, delay: i * gap, easing: 'ease-out', fill: 'backwards' });
     pin.style.transformBox = 'fill-box';
     pin.style.transformOrigin = 'center';
-    const dot = pin.animate([{ transform: 'scale(0)' }, { transform: 'scale(1)' }], { duration: 300, delay: ms * 0.9, fill: 'backwards' });
+    const dot = pin.animate([{ transform: 'scale(0)' }, { transform: 'scale(1)' }], { duration: 300, delay: i * gap + ms * 0.9, fill: 'backwards' });
     const clear = (): void => {
       path.style.removeProperty('stroke-dasharray');
       path.style.removeProperty('stroke-dashoffset');
@@ -87,12 +89,6 @@ export function arrivalPulse(p: MapParts, x: number, y: number, cls: string, ms 
   c.style.transformOrigin = 'center';
   p.rings.append(c);
   c.animate([{ transform: 'scale(1)', opacity: 0.8 }, { transform: 'scale(2.4)', opacity: 0 }], { duration: ms, easing: 'ease-out' }).finished.then(() => c.remove(), () => c.remove());
-}
-
-/** The map on a reading page or the open map dialog: draw new lanes once, then the fleet sails. Returns stop. */
-export function liveMap(p: MapParts, h: Harbor, draw: string[], order: string[]): () => void {
-  void drawNewRoutes(p, draw);
-  return sailFleet(p, h, order);
 }
 
 /**

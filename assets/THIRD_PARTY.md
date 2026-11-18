@@ -16,7 +16,7 @@ BoonData's own mascot art (Lily, Boon) is not third-party: CC BY 4.0, `assets/ma
 
 | What | Source | Version | Licence | Checked | Task |
 |---|---|---|---|---|---|
-| Natural Earth 1:110m coastline | https://www.naturalearthdata.com | 1:110m physical | Public domain ("Crediting the authors is unnecessary", naturalearthdata.com/about/terms-of-use) | 2026-11-18 | S2 route map, simplified paths |
+| Natural Earth 1:110m land (`ne_110m_land.geojson`) | https://github.com/nvkelso/natural-earth-vector, raw file at commit `693f11422f4e08d2da4566b854dda53eb7c39fb3` (`geojson/ne_110m_land.geojson`, downloaded 2026-11-19) | 1:110m physical (NE 4.1 data) | Public domain ("Crediting the authors is unnecessary", naturalearthdata.com/about/terms-of-use) | 2026-11-19 | S2 route map: `scripts/coast.mjs` clips, projects (plate carrée) and simplifies it into `src/art/coast.ts` (generated, ≈ 3 KB gz) |
 | Open Peeps (Pablo Stanley) | https://www.openpeeps.com | library as downloaded | CC0 ("copy, modify, distribute, remix … even for commercial purposes, without asking permission") | 2026-11-18 (site text) | P3 / D-V5 portraits, only if used |
 | Open Doodles (Pablo Stanley) | https://www.opendoodles.com | library as downloaded | CC0 ("copy, edit, remix, share, or redraw these images for any purpose without restriction"; "No need to credit"; the about page states no pack/redistribution limit, so the third-party "no packs" note in v6 §1 is not the author's licence) | 2026-11-18 (opendoodles.com/about) | P3 empty states, only if used |
 
