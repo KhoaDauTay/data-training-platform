@@ -166,7 +166,9 @@ function openSchema(s: SchemaId): void {
   // Never replace another banner (save warnings, new version + Reload): those matter more than "preparing".
   const free = (): boolean => !app.notice || app.notice.key.startsWith('domain.');
   const settled = (): void => {
-    if (s === want && app.notice?.key === 'domain.loading') app.notice = undefined;
+    // Also drop another domain's "could not load" line: its data is not what this page needs.
+    const other = app.notice?.key === 'domain.failed' && (!d || app.notice.params?.name !== t(d.name));
+    if (s === want && (app.notice?.key === 'domain.loading' || other)) app.notice = undefined;
     if (uiReady) renderTopbar();
   };
   if (db.ready(s)) return settled(); // enterDomain() may have just said "preparing" for data that is already in
