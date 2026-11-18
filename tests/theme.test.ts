@@ -85,6 +85,9 @@ describe('theme', () => {
     expect(tokens(':root[data-theme=dark]')).toMatchObject({ bg: '#1a1714', accent: '#5ed3c3', sun: '#4a3a17' });
     expect(css).toMatch(/--r-card:\s*20px;\s*--r-ctl:\s*14px;/);
   });
+  it('A4 (v12.0): mọi nút cao tối thiểu 24 px (WCAG 2.5.8)', () => {
+    expect(css).toMatch(/@layer base[\s\S]*button[^{]*\{[^}]*min-height:\s*1\.5rem/);
+  });
 });
 
 describe('L1 (v12.0): lời cảm ơn', () => {

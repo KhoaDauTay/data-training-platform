@@ -99,6 +99,7 @@
   ul { list-style: disc; }
   ol { list-style: decimal; }
   button { cursor: pointer; padding: 6px 12px; border: 1px solid var(--border); border-radius: var(--r-ctl); background: var(--panel); color: inherit; font: inherit; }
+  button, summary { min-height: 1.5rem; } /* v12.0 A4: WCAG 2.5.8 target size */
   button:hover { background: var(--code); }
   button:disabled { color: var(--disabled); border-style: dashed; cursor: default; }
   code { background: var(--code); padding: 1px 4px; border-radius: 4px; font-family: ui-monospace, monospace; font-size: 0.92em; }

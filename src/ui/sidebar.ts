@@ -21,7 +21,7 @@ export type SidePref = 'open' | 'rail';
 export const parseSidePref = (v: unknown): SidePref => (v === 'open' ? 'open' : 'rail');
 
 /** The current page: a 4 px --accent bar + --accent-soft background, not colour alone (v6 §3.1). */
-const SIDE_LINK = 'flex w-full items-center gap-3 rounded-(--r-ctl) border-0 border-l-4 border-transparent bg-transparent px-3 py-2 text-left font-bold text-ink no-underline hover:bg-code aria-[current=page]:border-accent aria-[current=page]:bg-accent-soft aria-disabled:text-muted';
+const SIDE_LINK = 'flex max-lg:min-h-11 w-full items-center gap-3 rounded-(--r-ctl) border-0 border-l-4 border-transparent bg-transparent px-3 py-2 text-left font-bold text-ink no-underline hover:bg-code aria-[current=page]:border-accent aria-[current=page]:bg-accent-soft aria-disabled:text-muted';
 const GROUP = 'side-group mt-4 mb-1 px-3 text-xs font-bold tracking-wider text-muted uppercase';
 const WIDE = '(min-width: 1024px)';
 const XL = '(min-width: 1280px)';

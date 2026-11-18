@@ -197,7 +197,7 @@ function chapterRow(c: ChapterCard): HTMLLIElement {
   const skillLink = (id: string, i: number): (Node | string)[] => [i ? ', ' : '',
     h('a', { href: `${hashOf('learn')}/skill/${id}`, class: cx(ABOVE, known.has(id) ? 'text-good' : 'text-muted') }, SKILLS.find((s) => s.id === id)?.label[lang] ?? id, known.has(id) ? ' ✓' : '')];
   const short = h('span', {}, t('home.reliesOn', { skills: '' }), ...ids.slice(0, 2).flatMap(skillLink),
-    ids.length > 2 ? h('a', { href: `${hashOf('learn')}/sql/${c.chapter}`, class: cx(ABOVE, 'text-muted') }, ` +${ids.length - 2}`) : null);
+    ids.length > 2 ? h('a', { href: `${hashOf('learn')}/sql/${c.chapter}`, class: cx(ABOVE, 'inline-block min-h-6 min-w-6 text-center text-muted') }, ` +${ids.length - 2}`) : null);
   return listRow({
     lead: closed
       ? icon('lock', 'size-5 text-muted')

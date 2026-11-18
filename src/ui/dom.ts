@@ -10,6 +10,7 @@ export function h<K extends keyof HTMLElementTagNameMap>(
   ...children: Child[]
 ): HTMLElementTagNameMap[K] {
   const el = document.createElement(tag);
+  if ((tag === 'code' || tag === 'pre') && !('lang' in attrs)) el.lang = 'en'; // v12.0 A5: SQL and table names read in English
   for (const [k, v] of Object.entries(attrs)) {
     if (typeof v === 'function') el.addEventListener(k.replace(/^on/, ''), v);
     else if (v === true) el.setAttribute(k, '');

@@ -108,7 +108,7 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
   let message: { kind: 'good' | 'bad'; view: () => Node | string; who?: [Mascot, Pose]; detail?: () => Node | null } | undefined;
   let history = loadHistory(localStore());
 
-  const editorHost = h('div', { class: 'editor overflow-hidden rounded-xl ring-1 ring-line' });
+  const editorHost = h('div', { lang: 'en', class: 'editor overflow-hidden rounded-xl ring-1 ring-line' });
   const runBtn = h('button', { type: 'button', onclick: () => void run() });
   // EXPLAIN always describes what was just run: run the editor SQL, and open the tab only if that run succeeded for this editor.
   const explainBtn = h('button', { type: 'button', onclick: () => void run('explain') });
@@ -177,7 +177,7 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
     historyBox.replaceChildren(
       h('summary', { class: 'cursor-pointer text-muted' }, list.length ? t('hist.title', { n: list.length }) : t('hist.empty')),
       h('ul', { class: 'my-1 list-none p-0' }, ...list.map((e) => h('li', {},
-        h('button', { type: 'button', class: 'w-full border-0 bg-transparent px-1 py-0.5 text-left font-mono text-xs hover:bg-code', onclick: () => { editor?.setValue(e.sql); editor?.focus(); } },
+        h('button', { type: 'button', class: 'min-h-6 max-lg:min-h-11 w-full border-0 bg-transparent px-1 py-0.5 text-left font-mono text-xs hover:bg-code', onclick: () => { editor?.setValue(e.sql); editor?.focus(); } },
           h('span', { class: e.ok ? 'good' : 'bad' }, e.ok ? '✓' : '✗'),
           ` ${e.sql.replace(/\s+/g, ' ').slice(0, 60)}`,
           e.rows === undefined ? '' : h('span', { class: 'muted' }, ` · ${t('hist.rows', { n: e.rows })}`))))));
