@@ -62,10 +62,10 @@ export interface RunOpts { schema?: SchemaId }
 
 /**
  * search_path for one request, right after BEGIN (v6 §4.4). Absent or 'game' = the session path (logistics, sandbox). lab never
- * sees sandbox (a game table name in a drill is 42P01, D8a-4); ecom does, so imported CSVs work in the e-commerce Sandbox
+ * sees sandbox (a game table name in a drill is 42P01, D8a-4); ecom and fin do, so imported CSVs work in the e-commerce Sandbox
  * (Plan 9 D9-9). Names come from SCHEMAS only.
  */
-const REQUEST_PATH: Partial<Record<SchemaId, string>> = { lab: SCHEMAS.lab, ecom: `${SCHEMAS.ecom}, sandbox` };
+const REQUEST_PATH: Partial<Record<SchemaId, string>> = { lab: SCHEMAS.lab, ecom: `${SCHEMAS.ecom}, sandbox`, fin: `${SCHEMAS.fin}, sandbox` };
 export async function setRequestPath(db: { exec(sql: string): Promise<unknown> }, schema?: SchemaId): Promise<void> {
   const path = schema && REQUEST_PATH[schema];
   if (path) await db.exec(`SET LOCAL search_path TO ${path}`);

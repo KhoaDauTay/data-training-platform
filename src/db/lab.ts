@@ -6,7 +6,7 @@ import { SANDBOX_SETUP_SQL } from './import';
 /**
  * Schemas seeded lazily, on the first `ensure` request, never at boot (v6 F7): `game` (Logistics, v12.0 P1; its SQL is
  * its own chunk, src/db/gameSeed.ts), `lab` (Plan 8a D8a-3, the General drills' shop data) and `ecom` (Plan 9, the
- * e-commerce domain; chunk src/db/ecomSeed.ts). Imported only by the worker and the tests, so the seed SQL stays out of
+ * e-commerce domain; chunk src/db/ecomSeed.ts) and `fin` (Plan 11, Finance; chunk src/db/finSeed.ts). Imported only by the worker and the tests, so the seed SQL stays out of
  * the main bundle.
  */
 const LAZY_SEEDS: Partial<Record<SchemaId, () => Promise<string[]>>> = {
@@ -17,6 +17,10 @@ const LAZY_SEEDS: Partial<Record<SchemaId, () => Promise<string[]>>> = {
   lab: async () => [lab],
   ecom: async () => {
     const m = await import('./ecomSeed');
+    return [m.schema, m.seed];
+  },
+  fin: async () => {
+    const m = await import('./finSeed');
     return [m.schema, m.seed];
   },
 };

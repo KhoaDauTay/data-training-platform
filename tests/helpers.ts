@@ -27,3 +27,10 @@ export async function ecomRunner(): Promise<(sql: string) => Promise<QueryResult
   await ensureSchema(db, 'ecom');
   return (sql) => runSandboxed(db, sql, undefined, { schema: 'ecom' });
 }
+
+/** The finance schema on the shared test DB (Plan 11): seeded once per file, queries run with search_path finance, sandbox. */
+export async function finRunner(): Promise<(sql: string) => Promise<QueryResult>> {
+  const db = await seededDb();
+  await ensureSchema(db, 'fin');
+  return (sql) => runSandboxed(db, sql, undefined, { schema: 'fin' });
+}

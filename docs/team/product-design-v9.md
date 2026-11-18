@@ -1,6 +1,6 @@
 # Product Design v9: Domain Finance (đề xuất build)
 
-**Trạng thái: ĐỀ XUẤT.** Chờ user duyệt §9 (Quyết định) trước khi viết plan build (Plan 11).
+**Trạng thái: ĐÃ DUYỆT (2026-11-19).** User duyệt bằng "Build đi": mọi quyết định ở §9 lấy mặc định in đậm (decision-log L124). Phát hành v14 (Plan 11, T0…T7).
 
 Ngày: 2026-11-18 · Vai trò: Product Designer · **Chỉ đề xuất**: không sửa `src/`, `content/`, test hay `decision-log.md`.
 Yêu cầu của user (giữ ý): *"Gọi Agent Product Design ra hoàn thiện nốt Finance. Các UI/UX hiện tại ok."* Vì vậy tài liệu này **không đề xuất kiểu UI mới**. Finance dùng lại đúng khuôn E-commerce (Plan 9) và các thay đổi của v12.0 (màn chọn domain, seed lười theo schema) và v13 (gợi ý → điền khung ở mọi bài; Boon chỉ hướng dẫn trong khu General).

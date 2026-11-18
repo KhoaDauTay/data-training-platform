@@ -17,12 +17,17 @@ export const DOMAINS: readonly Domain[] = [
 ];
 
 /** Every schema a request may name (Plan 8a D8a-4). Only these strings are ever inlined into SQL (never player input). */
-export const SCHEMAS = { game: GAME_SCHEMA, lab: 'lab', ecom: 'ecom' } as const;
+export const SCHEMAS = { game: GAME_SCHEMA, lab: 'lab', ecom: 'ecom', fin: 'finance' } as const;
 
 /** Tables of the ecom schema (src/db/ecom/schema.sql; tests/ecomSeed.test.ts checks the list). A CSV import with one of these names gets `_my` (Plan 9 D9-15). */
 export const ECOM_TABLES = [
   'categories', 'sellers', 'products', 'customers', 'vouchers', 'orders', 'order_items',
   'payments', 'deliveries', 'returns', 'reviews', 'web_sessions', 'ad_spend',
+] as const;
+/** Tables of the finance schema (src/db/fin/schema.sql, in CREATE order; tests/finSeed.test.ts checks the list). Plan 11. */
+export const FIN_TABLES = [
+  'branches', 'products', 'customers', 'applications', 'loans', 'schedules', 'repayments', 'loan_snapshots',
+  'accounts', 'budgets', 'gl_entries', 'collection_calls',
 ] as const;
 /**
  * Tables of the Logistics schema (src/db/schema.sql; tests/startup.test.ts checks the list). Static because Logistics is
