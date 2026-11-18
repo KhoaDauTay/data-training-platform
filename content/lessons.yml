@@ -39,19 +39,28 @@
   concept:
     vi: "SELECT chọn cột; WHERE chọn dòng. Mỗi dòng được kiểm điều kiện sau WHERE: đúng thì giữ, sai thì bỏ. Cần nhiều điều kiện cùng đúng thì nối bằng AND; chỉ cần một trong hai thì dùng OR."
     en: "SELECT picks columns; WHERE picks rows. Every row is checked against the condition after WHERE: true keeps it, false drops it. When several conditions must all hold, join them with AND; when either one is enough, use OR."
-  example: "SELECT name, price_vnd FROM products WHERE category = 'Drinks'"
+  example: |-
+    SELECT name, price_vnd
+    FROM products
+    WHERE category = 'Drinks'
   explain:
     vi: "① `WHERE category = 'Drinks'`: chỉ giữ sản phẩm thuộc danh mục đồ uống. ② Chữ đặt trong nháy đơn và phải viết đúng như trong dữ liệu (`'Drinks'`, không phải `'drinks'`). Kết quả: 6 dòng. ③ So sánh khác: `<>` (khác), `>`, `>=`, `<`, `<=`; ngày cũng viết trong nháy đơn: `order_date >= '2026-10-01'`. Không chắc giá trị viết thế nào? Xem tab Cột."
     en: "① `WHERE category = 'Drinks'`: keep only the products in the drinks category. ② Text goes in single quotes and must match the data exactly (`'Drinks'`, not `'drinks'`). Result: 6 rows. ③ Other comparisons: `<>` (not equal), `>`, `>=`, `<`, `<=`; dates also go in single quotes: `order_date >= '2026-10-01'`. Not sure how a value is spelled? Check the Columns tab."
   mistake:
-    sql: "SELECT name, price_vnd FROM products WHERE category = \"Drinks\""
+    sql: |-
+      SELECT name, price_vnd
+      FROM products
+      WHERE category = "Drinks"
     vi: "Nháy kép là tên cột, không phải chữ. Postgres báo lỗi column \"Drinks\" does not exist. Viết `'Drinks'` với nháy đơn."
     en: "Double quotes mean a column name, not text. Postgres says column \"Drinks\" does not exist. Write `'Drinks'` with single quotes."
   try:
     task:
       vi: "Từ bảng `staff`, lấy `name` rồi `role` của những nhân viên có `store_id` là 3 và `role` là `Cashier` (hai điều kiện cùng đúng)."
       en: "From the `staff` table, get `name` then `role` of the employees whose `store_id` is 3 and whose `role` is `Cashier` (both conditions must hold)."
-    starter: "SELECT name, price_vnd FROM products WHERE category = 'Drinks'"
+    starter: |-
+      SELECT name, price_vnd
+      FROM products
+      WHERE category = 'Drinks'
     solution: "SELECT name, role FROM staff WHERE store_id = 3 AND role = 'Cashier'"
   docs: https://www.postgresql.org/docs/current/queries-table-expressions.html#QUERIES-WHERE
 
@@ -62,19 +71,28 @@
   concept:
     vi: "Không có ORDER BY thì Postgres trả dòng theo thứ tự bất kỳ. ORDER BY xếp dòng theo một hay nhiều cột: tăng dần là mặc định, thêm DESC để giảm dần. Cột thứ hai (tiêu chí sắp xếp phụ) chỉ dùng khi cột đầu bằng nhau."
     en: "Without ORDER BY, Postgres returns rows in any order. ORDER BY sorts rows by one or more columns: ascending is the default, add DESC for descending. The second column (the tie-breaker) only counts when the first one is equal."
-  example: "SELECT city, name, opened_on FROM stores ORDER BY city, opened_on DESC"
+  example: |-
+    SELECT city, name, opened_on
+    FROM stores
+    ORDER BY city, opened_on DESC
   explain:
     vi: "① `ORDER BY city`: thành phố theo thứ tự chữ cái, Da Nang lên đầu. ② `, opened_on DESC`: Da Nang có hai cửa hàng, nên xếp tiếp theo ngày khai trương, mới nhất trước (Son Tra rồi Hai Chau). Thiếu tiêu chí phụ thì hai cửa hàng cùng thành phố có thể đổi chỗ giữa các lần chạy. ③ Ngày và chữ đều sắp xếp được: ngày sau lớn hơn ngày trước, chữ theo thứ tự chữ cái. Kết quả: 5 dòng."
     en: "① `ORDER BY city`: cities in alphabetical order, Da Nang first. ② `, opened_on DESC`: Da Nang has two stores, so they are sorted further by opening date, newest first (Son Tra, then Hai Chau). Without a tie-breaker two stores in the same city can swap places between runs. ③ Dates and text both sort: a later date is greater, text goes alphabetically. Result: 5 rows."
   mistake:
-    sql: "SELECT city, name, opened_on FROM stores ORDER BY city, opened_on"
+    sql: |-
+      SELECT city, name, opened_on
+      FROM stores
+      ORDER BY city, opened_on
     vi: "Quên DESC: tăng dần là mặc định, nên trong mỗi thành phố cửa hàng cũ nhất lên trước thay vì mới nhất."
     en: "DESC is missing: ascending is the default, so in each city the oldest store comes first instead of the newest."
   try:
     task:
       vi: "Từ bảng `staff`, lấy `role`, `name`, `hired_on` của mọi nhân viên; xếp theo `role` từ A đến Z, cùng `role` thì người có `hired_on` mới nhất lên trước."
       en: "From the `staff` table, get `role`, `name`, `hired_on` for every employee; sort by `role` from A to Z, and within the same `role` the most recent `hired_on` first."
-    starter: "SELECT city, name, opened_on FROM stores ORDER BY city, opened_on DESC"
+    starter: |-
+      SELECT city, name, opened_on
+      FROM stores
+      ORDER BY city, opened_on DESC
     solution: "SELECT role, name, hired_on FROM staff ORDER BY role, hired_on DESC"
     ordered: true
   docs: https://www.postgresql.org/docs/current/queries-order.html
@@ -86,19 +104,33 @@
   concept:
     vi: "LIMIT N chỉ giữ N dòng đầu của kết quả. Nó luôn đi sau ORDER BY: sắp xếp trước, rồi mới cắt. Muốn ranh giới cắt không đổi giữa các lần chạy thì cần tiêu chí sắp xếp phụ."
     en: "LIMIT N keeps only the first N rows of the result. It always comes after ORDER BY: sort first, then cut. For the cut-off to stay the same between runs, you need a tie-breaker."
-  example: "SELECT name, price_vnd FROM products WHERE category = 'Household' ORDER BY price_vnd DESC, name LIMIT 3"
+  example: |-
+    SELECT name, price_vnd
+    FROM products
+    WHERE category = 'Household'
+    ORDER BY price_vnd DESC, name
+    LIMIT 3
   explain:
     vi: "① `ORDER BY price_vnd DESC, name`: đắt nhất lên đầu, cùng giá thì theo tên. ② `LIMIT 3`: chỉ giữ 3 dòng đầu: Laundry powder 3kg, Floor cleaner, Paper towels. ③ LIMIT luôn viết cuối câu."
     en: "① `ORDER BY price_vnd DESC, name`: most expensive first, same price by name. ② `LIMIT 3`: keep only the first 3 rows: Laundry powder 3kg, Floor cleaner, Paper towels. ③ LIMIT always goes at the end of the query."
   mistake:
-    sql: "SELECT name, price_vnd FROM products WHERE category = 'Household' LIMIT 3"
+    sql: |-
+      SELECT name, price_vnd
+      FROM products
+      WHERE category = 'Household'
+      LIMIT 3
     vi: "LIMIT mà không có ORDER BY thì lấy 3 dòng bất kỳ (ở đây có cả Dish soap 32.000), không phải 3 sản phẩm đắt nhất."
     en: "LIMIT without ORDER BY takes any 3 rows (here including Dish soap at 32,000), not the 3 most expensive products."
   try:
     task:
       vi: "Từ bảng `staff`, lấy `name` và `hired_on` của 3 nhân viên vào làm gần đây nhất: `hired_on` mới nhất lên đầu, cùng ngày thì `id` nhỏ hơn trước."
       en: "From the `staff` table, get `name` and `hired_on` of the 3 most recently hired employees: latest `hired_on` first, on the same date the smaller `id` first."
-    starter: "SELECT name, price_vnd FROM products WHERE category = 'Household' ORDER BY price_vnd DESC, name LIMIT 3"
+    starter: |-
+      SELECT name, price_vnd
+      FROM products
+      WHERE category = 'Household'
+      ORDER BY price_vnd DESC, name
+      LIMIT 3
     solution: "SELECT name, hired_on FROM staff ORDER BY hired_on DESC, id LIMIT 3"
     ordered: true
   docs: https://www.postgresql.org/docs/current/queries-limit.html
@@ -110,7 +142,10 @@
   concept:
     vi: "Hàm gộp biến nhiều dòng thành một giá trị: COUNT(*) đếm dòng, SUM cộng, AVG tính trung bình, MIN và MAX lấy nhỏ nhất, lớn nhất. WHERE lọc dòng trước, rồi hàm gộp tính trên các dòng còn lại. Không gom nhóm thì kết quả chỉ có một dòng."
     en: "An aggregate turns many rows into one value: COUNT(*) counts rows, SUM adds up, AVG averages, MIN and MAX take the smallest and largest. WHERE filters the rows first, then the aggregate works on what is left. Without grouping, the result is a single row."
-  example: "SELECT COUNT(*), MIN(price_vnd), MAX(price_vnd) FROM products WHERE category = 'Drinks'"
+  example: |-
+    SELECT COUNT(*), MIN(price_vnd), MAX(price_vnd)
+    FROM products
+    WHERE category = 'Drinks'
   explain:
     vi: "① `WHERE category = 'Drinks'`: chỉ đồ uống. ② `COUNT(*)`: 6 sản phẩm. ③ `MIN(price_vnd)`: rẻ nhất, 9.000. ④ `MAX(price_vnd)`: đắt nhất, 35.000. Kết quả: 1 dòng, 3 con số."
     en: "① `WHERE category = 'Drinks'`: drinks only. ② `COUNT(*)`: 6 products. ③ `MIN(price_vnd)`: the cheapest, 9,000. ④ `MAX(price_vnd)`: the most expensive, 35,000. Result: 1 row, 3 numbers."
@@ -122,7 +157,10 @@
     task:
       vi: "Từ bảng `orders`, chỉ các đơn có `channel` là `ONLINE` (mọi `status`): một dòng gồm số đơn, rồi `order_date` sớm nhất."
       en: "From the `orders` table, only the orders whose `channel` is `ONLINE` (any `status`): one row with the number of orders, then the earliest `order_date`."
-    starter: "SELECT COUNT(*), MIN(price_vnd), MAX(price_vnd) FROM products WHERE category = 'Drinks'"
+    starter: |-
+      SELECT COUNT(*), MIN(price_vnd), MAX(price_vnd)
+      FROM products
+      WHERE category = 'Drinks'
     solution: "SELECT COUNT(*), MIN(order_date) FROM orders WHERE channel = 'ONLINE'"
   docs: https://www.postgresql.org/docs/current/functions-aggregate.html
 
@@ -156,19 +194,31 @@
   concept:
     vi: "HAVING lọc nhóm, sau khi đã gom và tính hàm gộp. WHERE lọc từng dòng trước khi gom, nên không dùng được kết quả đếm; điều kiện trên kết quả đếm hay tổng phải đặt ở HAVING."
     en: "HAVING filters groups, after grouping and aggregating. WHERE filters single rows before grouping, so it cannot use a count; a condition on a count or a total goes in HAVING."
-  example: "SELECT city, COUNT(*) FROM customers GROUP BY city HAVING COUNT(*) > 50"
+  example: |-
+    SELECT city, COUNT(*)
+    FROM customers
+    GROUP BY city
+    HAVING COUNT(*) > 50
   explain:
     vi: "① `GROUP BY city`: mỗi thành phố của khách một nhóm. ② `HAVING COUNT(*) > 50`: chỉ giữ nhóm có hơn 50 khách. Kết quả: 2 dòng, Da Nang 85 và Ho Chi Minh City 95. ③ Thứ tự viết: WHERE, GROUP BY, HAVING."
     en: "① `GROUP BY city`: one group per customer city. ② `HAVING COUNT(*) > 50`: keep only the groups with more than 50 customers. Result: 2 rows, Da Nang 85 and Ho Chi Minh City 95. ③ The order to write them: WHERE, GROUP BY, HAVING."
   mistake:
-    sql: "SELECT city, COUNT(*) FROM customers WHERE COUNT(*) > 50 GROUP BY city"
+    sql: |-
+      SELECT city, COUNT(*)
+      FROM customers
+      WHERE COUNT(*) > 50
+      GROUP BY city
     vi: "Đặt điều kiện trên kết quả đếm vào WHERE: Postgres báo lỗi aggregate functions are not allowed in WHERE. Chuyển nó sang HAVING."
     en: "A condition on the count placed in WHERE: Postgres says aggregate functions are not allowed in WHERE. Move it to HAVING."
   try:
     task:
       vi: "Từ bảng `staff`, mỗi `role` một dòng: `role` rồi số nhân viên có `role` đó; chỉ giữ những nhóm có từ 3 nhân viên trở lên."
       en: "From the `staff` table, one row per `role`: the `role`, then the number of employees with that `role`; keep only the groups with 3 or more employees."
-    starter: "SELECT city, COUNT(*) FROM customers GROUP BY city HAVING COUNT(*) > 50"
+    starter: |-
+      SELECT city, COUNT(*)
+      FROM customers
+      GROUP BY city
+      HAVING COUNT(*) > 50
     solution: "SELECT role, COUNT(*) FROM staff GROUP BY role HAVING COUNT(*) >= 3"
   docs: https://www.postgresql.org/docs/current/queries-table-expressions.html#QUERIES-GROUP
 
@@ -179,19 +229,31 @@
   concept:
     vi: "Mỗi bảng chỉ giữ thông tin của chính nó; đơn hàng chỉ ghi mã cửa hàng, tên cửa hàng nằm ở bảng cửa hàng. JOIN ghép mỗi dòng của bảng này với dòng khớp ở bảng kia, theo điều kiện ON (thường là khóa ngoại = khóa chính). Đặt tên ngắn (alias) cho bảng để biết cột thuộc bảng nào."
     en: "Each table only holds its own information; an order records the store id, the store name is in the store table. JOIN pairs each row of one table with the matching row of the other, by the ON condition (usually foreign key = primary key). Give each table a short name (alias) to tell its columns apart."
-  example: "SELECT o.id, o.order_date, s.name FROM orders o JOIN stores s ON s.id = o.store_id WHERE o.order_date = '2026-10-31'"
+  example: |-
+    SELECT o.id, o.order_date, s.name
+    FROM orders o
+    JOIN stores s ON s.id = o.store_id
+    WHERE o.order_date = '2026-10-31'
   explain:
     vi: "① `orders o`, `stores s`: alias của hai bảng. ② `ON s.id = o.store_id`: mã cửa hàng ghi trên đơn trỏ tới mã của cửa hàng. ③ `o.id`, `s.name`: mỗi cột ghi rõ bảng. Kết quả: 5 đơn ngày 31/10/2026, mỗi đơn kèm tên cửa hàng. Tab ER cho thấy khóa ngoại nào trỏ tới đâu."
     en: "① `orders o`, `stores s`: the two tables' aliases. ② `ON s.id = o.store_id`: the store id on the order points to the store's id. ③ `o.id`, `s.name`: every column names its table. Result: 5 orders on 31 October 2026, each with its store name. The ER tab shows which foreign key points where."
   mistake:
-    sql: "SELECT id, o.order_date, s.name FROM orders o JOIN stores s ON s.id = o.store_id WHERE o.order_date = '2026-10-31'"
+    sql: |-
+      SELECT id, o.order_date, s.name
+      FROM orders o
+      JOIN stores s ON s.id = o.store_id
+      WHERE o.order_date = '2026-10-31'
     vi: "Cả hai bảng đều có cột `id`: Postgres báo lỗi column reference \"id\" is ambiguous. Ghi rõ `o.id` hay `s.id`."
     en: "Both tables have an `id` column: Postgres says column reference \"id\" is ambiguous. Write `o.id` or `s.id`."
   try:
     task:
       vi: "Chỉ tiêu tháng 10/2026: từ bảng `store_targets`, các dòng có `month` = '2026-10-01'; lấy `name` của cửa hàng (bảng `stores`, nối qua `store_id`) rồi `target_vnd`."
       en: "The October 2026 targets: from the `store_targets` table, the rows with `month` = '2026-10-01'; get the store's `name` (table `stores`, linked by `store_id`) then `target_vnd`."
-    starter: "SELECT o.id, o.order_date, s.name FROM orders o JOIN stores s ON s.id = o.store_id WHERE o.order_date = '2026-10-31'"
+    starter: |-
+      SELECT o.id, o.order_date, s.name
+      FROM orders o
+      JOIN stores s ON s.id = o.store_id
+      WHERE o.order_date = '2026-10-31'
     solution: "SELECT s.name, t.target_vnd FROM store_targets t JOIN stores s ON s.id = t.store_id WHERE t.month = '2026-10-01'"
   docs: https://www.postgresql.org/docs/current/queries-table-expressions.html#QUERIES-JOIN
 
@@ -202,19 +264,40 @@
   concept:
     vi: "Khi thông tin cần nằm cách nhau hai khóa ngoại trở lên, nối tiếp từng bảng một: mỗi JOIN thêm một bảng và có ON riêng. Đi theo chuỗi khóa ngoại, ví dụ dòng hàng → sản phẩm, dòng hàng → đơn → khách."
     en: "When the data you need is two or more foreign keys apart, join one table at a time: each JOIN adds one table and has its own ON. Follow the chain of foreign keys, for example order line → product, order line → order → customer."
-  example: "SELECT o.id, c.name, p.name, i.qty FROM orders o JOIN customers c ON c.id = o.customer_id JOIN order_items i ON i.order_id = o.id JOIN products p ON p.id = i.product_id WHERE o.order_date = '2026-10-31' ORDER BY o.id, i.line_no"
+  example: |-
+    SELECT o.id, c.name, p.name, i.qty
+    FROM orders o
+    JOIN customers c ON c.id = o.customer_id
+    JOIN order_items i ON i.order_id = o.id
+    JOIN products p ON p.id = i.product_id
+    WHERE o.order_date = '2026-10-31'
+    ORDER BY o.id, i.line_no
   explain:
     vi: "① `JOIN customers c ON c.id = o.customer_id`: từ đơn lên khách. ② `JOIN order_items i ON i.order_id = o.id`: từ đơn xuống các dòng hàng. ③ `JOIN products p ON p.id = i.product_id`: từ dòng hàng lên sản phẩm. Đơn có 3 dòng hàng thì ra 3 dòng. Kết quả: 15 dòng hàng của các đơn ngày 31/10/2026 (đơn khách vãng lai, không có khách, bị JOIN bỏ đi)."
     en: "① `JOIN customers c ON c.id = o.customer_id`: from order up to customer. ② `JOIN order_items i ON i.order_id = o.id`: from order down to its lines. ③ `JOIN products p ON p.id = i.product_id`: from line up to product. An order with 3 lines gives 3 rows. Result: 15 lines of the orders on 31 October 2026 (walk-in orders, with no customer, are dropped by the JOIN)."
   mistake:
-    sql: "SELECT o.id, c.name, p.name, i.qty FROM orders o JOIN customers c ON c.id = o.customer_id JOIN order_items i JOIN products p ON p.id = i.product_id WHERE o.order_date = '2026-10-31' ORDER BY o.id, i.line_no"
+    sql: |-
+      SELECT o.id, c.name, p.name, i.qty
+      FROM orders o
+      JOIN customers c ON c.id = o.customer_id
+      JOIN order_items i
+      JOIN products p ON p.id = i.product_id
+      WHERE o.order_date = '2026-10-31'
+      ORDER BY o.id, i.line_no
     vi: "Một JOIN thiếu ON: Postgres báo lỗi cú pháp syntax error at or near \"WHERE\". Mỗi JOIN cần ON riêng."
     en: "One JOIN has no ON: Postgres reports syntax error at or near \"WHERE\". Every JOIN needs its own ON."
   try:
     task:
       vi: "Mọi nhân viên có `role` là `Cashier` trong bảng `staff`: `name` của nhân viên, `name` của cửa hàng họ làm (bảng `stores`, qua `store_id`) và `target_vnd` của cửa hàng đó cho `month` = '2026-10-01' (bảng `store_targets`; cửa hàng nào cũng có chỉ tiêu tháng đó)."
       en: "Every employee whose `role` is `Cashier` in the `staff` table: the employee's `name`, the `name` of their store (table `stores`, via `store_id`) and that store's `target_vnd` for `month` = '2026-10-01' (table `store_targets`; every store has a target that month)."
-    starter: "SELECT o.id, c.name, p.name, i.qty FROM orders o JOIN customers c ON c.id = o.customer_id JOIN order_items i ON i.order_id = o.id JOIN products p ON p.id = i.product_id WHERE o.order_date = '2026-10-31' ORDER BY o.id, i.line_no"
+    starter: |-
+      SELECT o.id, c.name, p.name, i.qty
+      FROM orders o
+      JOIN customers c ON c.id = o.customer_id
+      JOIN order_items i ON i.order_id = o.id
+      JOIN products p ON p.id = i.product_id
+      WHERE o.order_date = '2026-10-31'
+      ORDER BY o.id, i.line_no
     solution: "SELECT e.name, s.name, t.target_vnd FROM staff e JOIN stores s ON s.id = e.store_id JOIN store_targets t ON t.store_id = s.id WHERE e.role = 'Cashier' AND t.month = '2026-10-01'"
   docs: https://www.postgresql.org/docs/current/queries-table-expressions.html#QUERIES-JOIN
 
@@ -225,19 +308,29 @@
   concept:
     vi: "JOIN thường chỉ giữ dòng có cặp ở cả hai bảng. LEFT JOIN giữ mọi dòng của bảng bên trái; dòng không có cặp vẫn có mặt, các cột của bảng bên phải để trống (NULL)."
     en: "A plain JOIN keeps only rows with a match in both tables. LEFT JOIN keeps every row of the left-hand table; a row with no match still appears, with the right-hand table's columns empty (NULL)."
-  example: "SELECT s.name, o.id FROM stores s LEFT JOIN orders o ON o.store_id = s.id AND o.order_date = '2026-10-26'"
+  example: |-
+    SELECT s.name, o.id
+    FROM stores s
+    LEFT JOIN orders o ON o.store_id = s.id AND o.order_date = '2026-10-26'
   explain:
     vi: "① `stores s LEFT JOIN orders o`: giữ mọi cửa hàng. ② `AND o.order_date = '2026-10-26'`: chỉ ghép đơn của ngày 26/10/2026; điều kiện trên bảng bên phải đặt trong ON. ③ Cửa hàng không có đơn nào hôm đó vẫn có một dòng, `id` là NULL. Kết quả: 8 dòng, 2 dòng NULL (Ben Thanh, Hoan Kiem)."
     en: "① `stores s LEFT JOIN orders o`: keep every store. ② `AND o.order_date = '2026-10-26'`: pair only the orders of 26 October 2026; a condition on the right-hand table goes in ON. ③ A store with no order that day still has one row, its `id` is NULL. Result: 8 rows, 2 of them NULL (Ben Thanh, Hoan Kiem)."
   mistake:
-    sql: "SELECT s.name, o.id FROM stores s LEFT JOIN orders o ON o.store_id = s.id WHERE o.order_date = '2026-10-26'"
+    sql: |-
+      SELECT s.name, o.id
+      FROM stores s
+      LEFT JOIN orders o ON o.store_id = s.id
+      WHERE o.order_date = '2026-10-26'
     vi: "Điều kiện ngày đặt ở WHERE: dòng NULL không thỏa nên bị loại, LEFT JOIN thành JOIN thường. Cửa hàng không có đơn hôm đó biến mất (còn 6 dòng)."
     en: "The date condition in WHERE: the NULL rows fail it and are dropped, so the LEFT JOIN acts like a plain join. Stores with no order that day disappear (6 rows left)."
   try:
     task:
       vi: "Mọi cửa hàng trong bảng `stores`: `name` rồi `target_vnd` của tháng `month` = '2026-02-01' (bảng `store_targets`, nối qua `store_id`). Cửa hàng chưa có chỉ tiêu tháng đó vẫn có một dòng, `target_vnd` để trống."
       en: "Every store in the `stores` table: `name` then the `target_vnd` for `month` = '2026-02-01' (table `store_targets`, linked by `store_id`). A store with no target that month still gets one row, with an empty `target_vnd`."
-    starter: "SELECT s.name, o.id FROM stores s LEFT JOIN orders o ON o.store_id = s.id AND o.order_date = '2026-10-26'"
+    starter: |-
+      SELECT s.name, o.id
+      FROM stores s
+      LEFT JOIN orders o ON o.store_id = s.id AND o.order_date = '2026-10-26'
     solution: "SELECT s.name, t.target_vnd FROM stores s LEFT JOIN store_targets t ON t.store_id = s.id AND t.month = '2026-02-01'"
   docs: https://www.postgresql.org/docs/current/queries-table-expressions.html#QUERIES-JOIN
 
@@ -248,19 +341,31 @@
   concept:
     vi: "Anti-join tìm dòng không có cặp: khách chưa có đơn nào, sản phẩm chưa bán được. Cách hay dùng: LEFT JOIN rồi chỉ giữ dòng mà khóa bên phải là NULL, tức là không ghép được."
     en: "An anti-join finds rows with no match: customers with no order, products never sold. The usual way: LEFT JOIN, then keep only the rows whose right-hand key is NULL, which means nothing matched."
-  example: "SELECT s.id, s.name FROM stores s LEFT JOIN orders o ON o.store_id = s.id AND o.order_date = '2026-10-26' WHERE o.id IS NULL"
+  example: |-
+    SELECT s.id, s.name
+    FROM stores s
+    LEFT JOIN orders o ON o.store_id = s.id AND o.order_date = '2026-10-26'
+    WHERE o.id IS NULL
   explain:
     vi: "① LEFT JOIN như bài trước: mọi cửa hàng, ghép với đơn ngày 26/10/2026. ② `WHERE o.id IS NULL`: chỉ giữ cửa hàng không ghép được đơn nào. Kết quả: 2 cửa hàng, Ben Thanh và Hoan Kiem. ③ So với NULL phải viết `IS NULL`; `= NULL` không bao giờ đúng. Cách khác: `NOT EXISTS (SELECT 1 FROM …)`."
     en: "① A LEFT JOIN as in the previous lesson: every store, paired with the orders of 26 October 2026. ② `WHERE o.id IS NULL`: keep only the stores that matched no order. Result: 2 stores, Ben Thanh and Hoan Kiem. ③ Comparing with NULL needs `IS NULL`; `= NULL` is never true. Another way: `NOT EXISTS (SELECT 1 FROM …)`."
   mistake:
-    sql: "SELECT s.id, s.name FROM stores s LEFT JOIN orders o ON o.store_id = s.id AND o.order_date = '2026-10-26' WHERE o.id = NULL"
+    sql: |-
+      SELECT s.id, s.name
+      FROM stores s
+      LEFT JOIN orders o ON o.store_id = s.id AND o.order_date = '2026-10-26'
+      WHERE o.id = NULL
     vi: "`= NULL` không bao giờ đúng, nên kết quả rỗng mà không báo lỗi. Viết `IS NULL`."
     en: "`= NULL` is never true, so the result is empty and nothing warns you. Write `IS NULL`."
   try:
     task:
       vi: "Trong bảng `staff`, cột `manager_id` ghi `id` của người quản lý. Nhân viên nào không quản lý ai, tức là không có nhân viên nào có `manager_id` bằng `id` của họ? Lấy `name`."
       en: "In the `staff` table, `manager_id` holds the `id` of the employee's manager. Which employees manage nobody, that is, no employee has a `manager_id` equal to their `id`? Get the `name`."
-    starter: "SELECT s.id, s.name FROM stores s LEFT JOIN orders o ON o.store_id = s.id AND o.order_date = '2026-10-26' WHERE o.id IS NULL"
+    starter: |-
+      SELECT s.id, s.name
+      FROM stores s
+      LEFT JOIN orders o ON o.store_id = s.id AND o.order_date = '2026-10-26'
+      WHERE o.id IS NULL
     solution: "SELECT e.name FROM staff e LEFT JOIN staff r ON r.manager_id = e.id WHERE r.id IS NULL"
   docs: https://www.postgresql.org/docs/current/queries-table-expressions.html#QUERIES-JOIN
 
@@ -271,19 +376,43 @@
   concept:
     vi: "Ngày trừ ngày ra số ngày giữa hai mốc, là một số nguyên. Ngày cộng hoặc trừ một số nguyên ra một ngày mới. Muốn so khoảng cách thì so con số đó như mọi số khác: lớn hơn 3 ngày, bằng 0 ngày."
     en: "A date minus a date gives the number of days between them, an integer. A date plus or minus an integer gives a new date. To compare a gap, compare that number like any other: more than 3 days, exactly 0 days."
-  example: "SELECT id, order_date, shipped_on, shipped_on - order_date AS wait_days, order_date + 7 AS check_on FROM orders WHERE channel = 'ONLINE' AND order_date >= '2026-10-15' AND order_date <= '2026-10-17' ORDER BY id"
+  example: |-
+    SELECT id,
+      order_date,
+      shipped_on,
+      shipped_on - order_date AS wait_days,
+      order_date + 7 AS check_on
+    FROM orders
+    WHERE channel = 'ONLINE' AND order_date >= '2026-10-15' AND order_date <= '2026-10-17'
+    ORDER BY id
   explain:
     vi: "① `shipped_on - order_date`: số ngày từ lúc đặt tới lúc gửi hàng; đơn 1313 là 0 ngày (gửi ngay trong ngày), đơn 1318 là 2 ngày. ② `order_date + 7`: một ngày mới, 7 ngày sau ngày đặt (2026-10-23 cho đơn đặt ngày 16/10). ③ `AS wait_days`: đặt tên cho cột tính ra. Kết quả: 5 đơn online đặt từ 15 đến 17/10/2026."
     en: "① `shipped_on - order_date`: the days from ordering to shipping; order 1313 took 0 days (shipped the same day), order 1318 took 2. ② `order_date + 7`: a new date, 7 days after the order (2026-10-23 for an order of 16 October). ③ `AS wait_days`: names the computed column. Result: 5 online orders placed from 15 to 17 October 2026."
   mistake:
-    sql: "SELECT id, order_date, shipped_on, order_date - shipped_on AS wait_days, order_date + 7 AS check_on FROM orders WHERE channel = 'ONLINE' AND order_date >= '2026-10-15' AND order_date <= '2026-10-17' ORDER BY id"
+    sql: |-
+      SELECT id,
+        order_date,
+        shipped_on,
+        order_date - shipped_on AS wait_days,
+        order_date + 7 AS check_on
+      FROM orders
+      WHERE channel = 'ONLINE' AND order_date >= '2026-10-15' AND order_date <= '2026-10-17'
+      ORDER BY id
     vi: "Trừ ngược: ngày sớm trừ ngày muộn ra số âm (-2 thay vì 2). Postgres không báo lỗi, nên luôn lấy mốc sau trừ mốc trước."
     en: "Subtracting the wrong way round: the earlier date minus the later one is negative (-2 instead of 2). Postgres does not complain, so always take the later date minus the earlier one."
   try:
     task:
       vi: "Từ bảng `orders`, các đơn có `delivered_on` từ '2026-10-20' đến '2026-10-22' (tính cả hai ngày): `id`, `shipped_on`, `delivered_on` và số ngày từ `shipped_on` tới `delivered_on`."
       en: "From the `orders` table, the orders with `delivered_on` from '2026-10-20' to '2026-10-22' (both days included): `id`, `shipped_on`, `delivered_on` and the number of days from `shipped_on` to `delivered_on`."
-    starter: "SELECT id, order_date, shipped_on, shipped_on - order_date AS wait_days, order_date + 7 AS check_on FROM orders WHERE channel = 'ONLINE' AND order_date >= '2026-10-15' AND order_date <= '2026-10-17' ORDER BY id"
+    starter: |-
+      SELECT id,
+        order_date,
+        shipped_on,
+        shipped_on - order_date AS wait_days,
+        order_date + 7 AS check_on
+      FROM orders
+      WHERE channel = 'ONLINE' AND order_date >= '2026-10-15' AND order_date <= '2026-10-17'
+      ORDER BY id
     solution: "SELECT id, shipped_on, delivered_on, delivered_on - shipped_on FROM orders WHERE delivered_on >= '2026-10-20' AND delivered_on <= '2026-10-22'"
   docs: https://www.postgresql.org/docs/current/functions-datetime.html
 
@@ -294,19 +423,33 @@
   concept:
     vi: "Muốn một con số cho mỗi tháng (hay tuần, ngày) thì cắt mỗi ngày về đầu kỳ của nó bằng date_trunc, rồi gom nhóm theo kết quả đó. Mọi ngày trong tháng 10 đều thành 2026-10-01, nên rơi vào cùng một nhóm."
     en: "For one number per month (or week, or day), cut each date back to the start of its period with date_trunc, then group by that result. Every date in October becomes 2026-10-01, so they all land in one group."
-  example: "SELECT date_trunc('week', order_date)::date AS week, COUNT(*) FROM orders WHERE order_date >= '2026-10-05' AND order_date < '2026-11-02' GROUP BY week ORDER BY week"
+  example: |-
+    SELECT date_trunc('week', order_date)::date AS week, COUNT(*)
+    FROM orders
+    WHERE order_date >= '2026-10-05' AND order_date < '2026-11-02'
+    GROUP BY week
+    ORDER BY week
   explain:
     vi: "① `date_trunc('week', order_date)`: đưa mỗi ngày về thứ Hai đầu tuần. ② `::date`: bỏ phần giờ cho dễ đọc. ③ `GROUP BY week`: mỗi tuần một dòng. Kết quả: 4 tuần, 51, 46, 50 và 43 đơn. Đơn vị khác: `'day'`, `'month'`, `'year'`."
     en: "① `date_trunc('week', order_date)`: moves each date back to the Monday of its week. ② `::date`: drops the time part so it reads easily. ③ `GROUP BY week`: one row per week. Result: 4 weeks, with 51, 46, 50 and 43 orders. Other units: `'day'`, `'month'`, `'year'`."
   mistake:
-    sql: "SELECT extract(month FROM order_date) AS month, COUNT(*) FROM orders GROUP BY 1 ORDER BY 1"
+    sql: |-
+      SELECT extract(month FROM order_date) AS month, COUNT(*)
+      FROM orders
+      GROUP BY 1
+      ORDER BY 1
     vi: "`extract(month …)` chỉ ra số tháng (10), nên tháng 10/2025 và tháng 10/2026 bị gộp chung một dòng. Dùng `date_trunc` để giữ cả năm."
     en: "`extract(month …)` only gives the month number (10), so October 2025 and October 2026 merge into one row. Use `date_trunc` to keep the year."
   try:
     task:
       vi: "Từ bảng `orders`, các đơn có `channel` là `ONLINE` và `order_date` trong năm 2025 (mọi `status`): mỗi tháng có đơn một dòng, gồm tháng (ngày đầu tháng) và số đơn; tháng sớm nhất lên đầu."
       en: "From the `orders` table, the orders whose `channel` is `ONLINE` with an `order_date` in 2025 (any `status`): one row per month that has orders, with the month (its first day) and the number of orders; earliest month first."
-    starter: "SELECT date_trunc('week', order_date)::date AS week, COUNT(*) FROM orders WHERE order_date >= '2026-10-05' AND order_date < '2026-11-02' GROUP BY week ORDER BY week"
+    starter: |-
+      SELECT date_trunc('week', order_date)::date AS week, COUNT(*)
+      FROM orders
+      WHERE order_date >= '2026-10-05' AND order_date < '2026-11-02'
+      GROUP BY week
+      ORDER BY week
     solution: "SELECT date_trunc('month', order_date), COUNT(*) FROM orders WHERE channel = 'ONLINE' AND order_date >= '2025-01-01' AND order_date < '2026-01-01' GROUP BY 1 ORDER BY 1"
     ordered: true
   docs: https://www.postgresql.org/docs/current/functions-datetime.html#FUNCTIONS-DATETIME-TRUNC
@@ -318,19 +461,28 @@
   concept:
     vi: "NULL nghĩa là chưa có giá trị: chưa biết, chưa xảy ra. NULL không bằng gì cả, kể cả NULL khác, nên phép so sánh với NULL không bao giờ đúng. Tìm ô trống thì viết IS NULL, ô đã có giá trị thì IS NOT NULL."
     en: "NULL means no value yet: unknown, or not happened. NULL equals nothing, not even another NULL, so a comparison with NULL is never true. To find an empty cell write IS NULL; for a filled one, IS NOT NULL."
-  example: "SELECT id, name, city FROM customers WHERE birth_year IS NULL AND city = 'Da Nang'"
+  example: |-
+    SELECT id, name, city
+    FROM customers
+    WHERE birth_year IS NULL AND city = 'Da Nang'
   explain:
     vi: "① `birth_year IS NULL`: khách chưa khai năm sinh. ② `AND city = 'Da Nang'`: chỉ khách ở Đà Nẵng. Kết quả: 8 khách. ③ Ô trống có thể vì nhiều lý do: khách không khai, đơn chưa giao, đơn mua tại quầy không có khách."
     en: "① `birth_year IS NULL`: customers who never gave a birth year. ② `AND city = 'Da Nang'`: only customers in Da Nang. Result: 8 customers. ③ A cell can be empty for several reasons: the customer did not say, the order is not delivered yet, a walk-in order has no customer."
   mistake:
-    sql: "SELECT id, name, city FROM customers WHERE birth_year = NULL AND city = 'Da Nang'"
+    sql: |-
+      SELECT id, name, city
+      FROM customers
+      WHERE birth_year = NULL AND city = 'Da Nang'
     vi: "`birth_year = NULL` không bao giờ đúng, nên kết quả rỗng mà không báo lỗi. Viết `birth_year IS NULL`."
     en: "`birth_year = NULL` is never true, so the result is empty and nothing warns you. Write `birth_year IS NULL`."
   try:
     task:
       vi: "Từ bảng `staff`, những nhân viên không thuộc cửa hàng nào (ô `store_id` trống): `name` rồi `role`."
       en: "From the `staff` table, the employees who belong to no store (an empty `store_id`): `name` then `role`."
-    starter: "SELECT id, name, city FROM customers WHERE birth_year IS NULL AND city = 'Da Nang'"
+    starter: |-
+      SELECT id, name, city
+      FROM customers
+      WHERE birth_year IS NULL AND city = 'Da Nang'
     solution: "SELECT name, role FROM staff WHERE store_id IS NULL"
   docs: https://www.postgresql.org/docs/current/functions-comparison.html
 
@@ -341,19 +493,37 @@
   concept:
     vi: "CASE xếp mỗi dòng vào một nhóm theo điều kiện, như một chuỗi câu nếu… thì…. Postgres thử từng WHEN từ trên xuống và dừng ở điều kiện đúng đầu tiên; không điều kiện nào đúng thì lấy ELSE. Kết quả CASE là một cột mới, gom nhóm được."
     en: "CASE puts each row into a group by a condition, like a chain of if… then…. Postgres tries each WHEN from the top and stops at the first true one; if none is true it takes ELSE. The CASE result is a new column you can group by."
-  example: "SELECT CASE WHEN birth_year < 1980 THEN 1 WHEN birth_year < 1995 THEN 2 ELSE 3 END AS age_group, COUNT(*) FROM customers WHERE birth_year IS NOT NULL GROUP BY age_group ORDER BY age_group"
+  example: |-
+    SELECT CASE WHEN birth_year < 1980 THEN 1 WHEN birth_year < 1995 THEN 2 ELSE 3 END AS age_group,
+      COUNT(*)
+    FROM customers
+    WHERE birth_year IS NOT NULL
+    GROUP BY age_group
+    ORDER BY age_group
   explain:
     vi: "① `WHEN birth_year < 1980 THEN 1`: khách sinh trước 1980 vào nhóm 1. ② `WHEN birth_year < 1995 THEN 2`: chỉ xét các dòng còn lại, nên nhóm 2 là từ 1980 đến 1994. ③ `ELSE 3`: còn lại. ④ `GROUP BY age_group`: đếm từng nhóm. Kết quả: 119, 95 và 59 khách."
     en: "① `WHEN birth_year < 1980 THEN 1`: customers born before 1980 go to group 1. ② `WHEN birth_year < 1995 THEN 2`: only the remaining rows are checked, so group 2 is 1980 to 1994. ③ `ELSE 3`: the rest. ④ `GROUP BY age_group`: count each group. Result: 119, 95 and 59 customers."
   mistake:
-    sql: "SELECT CASE WHEN birth_year < 1995 THEN 2 WHEN birth_year < 1980 THEN 1 ELSE 3 END AS age_group, COUNT(*) FROM customers WHERE birth_year IS NOT NULL GROUP BY age_group ORDER BY age_group"
+    sql: |-
+      SELECT CASE WHEN birth_year < 1995 THEN 2 WHEN birth_year < 1980 THEN 1 ELSE 3 END AS age_group,
+        COUNT(*)
+      FROM customers
+      WHERE birth_year IS NOT NULL
+      GROUP BY age_group
+      ORDER BY age_group
     vi: "Điều kiện rộng đứng trước: khách sinh năm 1970 đã khớp `< 1995` nên vào nhóm 2, nhóm 1 không bao giờ có dòng. Đặt điều kiện hẹp lên trước."
     en: "The wide condition comes first: a customer born in 1970 already matches `< 1995` and lands in group 2, so group 1 never gets a row. Put the narrow condition first."
   try:
     task:
       vi: "Từ bảng `products`, chia sản phẩm theo `price_vnd`: nhóm 1 là dưới 30000, nhóm 2 là từ 30000 đến dưới 100000, nhóm 3 là từ 100000 trở lên. Mỗi nhóm một dòng: số nhóm rồi số sản phẩm; nhóm 1 lên đầu."
       en: "From the `products` table, split the products by `price_vnd`: group 1 is under 30000, group 2 is 30000 to under 100000, group 3 is 100000 or more. One row per group: the group number, then the number of products; group 1 first."
-    starter: "SELECT CASE WHEN birth_year < 1980 THEN 1 WHEN birth_year < 1995 THEN 2 ELSE 3 END AS age_group, COUNT(*) FROM customers WHERE birth_year IS NOT NULL GROUP BY age_group ORDER BY age_group"
+    starter: |-
+      SELECT CASE WHEN birth_year < 1980 THEN 1 WHEN birth_year < 1995 THEN 2 ELSE 3 END AS age_group,
+        COUNT(*)
+      FROM customers
+      WHERE birth_year IS NOT NULL
+      GROUP BY age_group
+      ORDER BY age_group
     solution: "SELECT CASE WHEN price_vnd < 30000 THEN 1 WHEN price_vnd < 100000 THEN 2 ELSE 3 END AS band, COUNT(*) FROM products GROUP BY band ORDER BY band"
     ordered: true
   docs: https://www.postgresql.org/docs/current/functions-conditional.html#FUNCTIONS-CASE
@@ -365,19 +535,36 @@
   concept:
     vi: "Muốn nhiều con số theo điều kiện trên cùng một dòng, mỗi điều kiện một cột: đặt điều kiện vào chính hàm gộp. count(*) FILTER (WHERE …) chỉ đếm các dòng thỏa điều kiện đó, còn các cột khác vẫn thấy mọi dòng."
     en: "For several conditional numbers on one row, one column per condition, put the condition inside the aggregate itself. count(*) FILTER (WHERE …) counts only the rows that match it, while the other columns still see every row."
-  example: "SELECT category, COUNT(*) AS total, COUNT(*) FILTER (WHERE price_vnd >= 50000) AS pricey FROM products GROUP BY category ORDER BY category"
+  example: |-
+    SELECT category,
+      COUNT(*) AS total,
+      COUNT(*) FILTER (WHERE price_vnd >= 50000) AS pricey
+    FROM products
+    GROUP BY category
+    ORDER BY category
   explain:
     vi: "① `COUNT(*)`: mọi sản phẩm của danh mục. ② `COUNT(*) FILTER (WHERE price_vnd >= 50000)`: chỉ sản phẩm từ 50.000 trở lên, ngay trên cùng dòng. Kết quả: 5 danh mục, mỗi danh mục 6 sản phẩm; Drinks không có món nào từ 50.000, Personal care có 3. ③ Cách viết khác cùng ý: `SUM(CASE WHEN … THEN 1 ELSE 0 END)`."
     en: "① `COUNT(*)`: every product in the category. ② `COUNT(*) FILTER (WHERE price_vnd >= 50000)`: only the products at 50,000 or more, on the same row. Result: 5 categories, 6 products each; Drinks has none at 50,000 or more, Personal care has 3. ③ Another way to write it: `SUM(CASE WHEN … THEN 1 ELSE 0 END)`."
   mistake:
-    sql: "SELECT category, COUNT(*) AS total, COUNT(*) AS pricey FROM products WHERE price_vnd >= 50000 GROUP BY category ORDER BY category"
+    sql: |-
+      SELECT category, COUNT(*) AS total, COUNT(*) AS pricey
+      FROM products
+      WHERE price_vnd >= 50000
+      GROUP BY category
+      ORDER BY category
     vi: "Đặt điều kiện giá ở WHERE: mọi sản phẩm rẻ hơn bị loại trước khi đếm, nên cột tổng cũng chỉ đếm món đắt, và Drinks mất hẳn khỏi kết quả."
     en: "The price condition in WHERE: every cheaper product is dropped before counting, so the total column only counts the pricey ones too, and Drinks vanishes from the result."
   try:
     task:
       vi: "Từ bảng `orders`, chỉ các đơn có `order_date` trong tháng 10/2026 (mọi `status`), mỗi `store_id` một dòng: `store_id`, số đơn có `channel` là `ONLINE`, rồi số đơn có `channel` là `STORE`."
       en: "From the `orders` table, only the orders with an `order_date` in October 2026 (any `status`), one row per `store_id`: the `store_id`, the number of orders whose `channel` is `ONLINE`, then the number whose `channel` is `STORE`."
-    starter: "SELECT category, COUNT(*) AS total, COUNT(*) FILTER (WHERE price_vnd >= 50000) AS pricey FROM products GROUP BY category ORDER BY category"
+    starter: |-
+      SELECT category,
+        COUNT(*) AS total,
+        COUNT(*) FILTER (WHERE price_vnd >= 50000) AS pricey
+      FROM products
+      GROUP BY category
+      ORDER BY category
     solution: "SELECT store_id, COUNT(*) FILTER (WHERE channel = 'ONLINE'), COUNT(*) FILTER (WHERE channel = 'STORE') FROM orders WHERE order_date >= '2026-10-01' AND order_date < '2026-11-01' GROUP BY store_id"
   docs: https://www.postgresql.org/docs/current/sql-expressions.html#SYNTAX-AGGREGATES
 
@@ -388,19 +575,31 @@
   concept:
     vi: "COALESCE(a, b) trả a nếu a có giá trị, còn a là NULL thì trả b. Dùng để thay ô trống bằng một giá trị mặc định (0, một ngày, một chữ…) trước khi cộng, so sánh hay hiện ra. Mọi giá trị trong COALESCE phải cùng kiểu."
     en: "COALESCE(a, b) returns a when it has a value, and b when a is NULL. Use it to replace an empty cell with a default (0, a date, a word…) before adding, comparing or showing it. Every value in COALESCE must have the same type."
-  example: "SELECT id, name, birth_year, COALESCE(birth_year, 0) AS birth_or_0 FROM customers WHERE id <= 24 ORDER BY id"
+  example: |-
+    SELECT id, name, birth_year, COALESCE(birth_year, 0) AS birth_or_0
+    FROM customers
+    WHERE id <= 24
+    ORDER BY id
   explain:
     vi: "① `COALESCE(birth_year, 0)`: có năm sinh thì lấy, chưa có thì ghi 0. ② Khách 11 và 22 không khai năm sinh: cột `birth_year` trống, cột cuối là 0. Kết quả: 24 khách, không dòng nào trống ở cột cuối."
     en: "① `COALESCE(birth_year, 0)`: take the birth year if there is one, otherwise 0. ② Customers 11 and 22 gave no birth year: `birth_year` is empty and the last column is 0. Result: 24 customers, with no empty cell in the last column."
   mistake:
-    sql: "SELECT id, name, birth_year, COALESCE(birth_year, 'unknown') AS birth_or_0 FROM customers WHERE id <= 24 ORDER BY id"
+    sql: |-
+      SELECT id, name, birth_year, COALESCE(birth_year, 'unknown') AS birth_or_0
+      FROM customers
+      WHERE id <= 24
+      ORDER BY id
     vi: "Trộn kiểu: `birth_year` là số còn `'unknown'` là chữ, nên Postgres báo lỗi invalid input syntax for type integer. Giá trị thay thế phải cùng kiểu với cột."
     en: "Mixed types: `birth_year` is a number and `'unknown'` is text, so Postgres says invalid input syntax for type integer. The fallback must have the same type as the column."
   try:
     task:
       vi: "Từ bảng `customers`, khách có `id` từ 30 đến 40 (tính cả hai đầu): `id`, `name` và `city`; khách có `city` trống thì cột đó ghi chữ `Unknown`."
       en: "From the `customers` table, the customers with `id` from 30 to 40 (both ends included): `id`, `name` and `city`; for a customer with an empty `city`, that column shows the text `Unknown`."
-    starter: "SELECT id, name, birth_year, COALESCE(birth_year, 0) AS birth_or_0 FROM customers WHERE id <= 24 ORDER BY id"
+    starter: |-
+      SELECT id, name, birth_year, COALESCE(birth_year, 0) AS birth_or_0
+      FROM customers
+      WHERE id <= 24
+      ORDER BY id
     solution: "SELECT id, name, COALESCE(city, 'Unknown') FROM customers WHERE id BETWEEN 30 AND 40"
   docs: https://www.postgresql.org/docs/current/functions-conditional.html#FUNCTIONS-COALESCE-NVL-IFNULL
 
@@ -411,19 +610,34 @@
   concept:
     vi: "Có bảng trỏ tới chính nó: nhân viên ghi mã người quản lý, cũng là một nhân viên. Muốn đặt hai dòng của cùng bảng cạnh nhau thì JOIN bảng đó với chính nó, đặt hai alias khác nhau để biết cột nào thuộc vai nào."
     en: "Some tables point to themselves: an employee records the id of their manager, who is also an employee. To put two rows of the same table side by side, JOIN the table to itself with two different aliases, so each column says which role it plays."
-  example: "SELECT e.name, e.role, m.name AS manager FROM staff e JOIN staff m ON m.id = e.manager_id WHERE e.store_id = 3 ORDER BY e.name"
+  example: |-
+    SELECT e.name, e.role, m.name AS manager
+    FROM staff e
+    JOIN staff m ON m.id = e.manager_id
+    WHERE e.store_id = 3
+    ORDER BY e.name
   explain:
     vi: "① `staff e`: nhân viên; `staff m`: cùng bảng, đóng vai người quản lý. ② `ON m.id = e.manager_id`: mã quản lý ghi trên nhân viên trỏ tới mã của người quản lý. Kết quả: 4 người của cửa hàng 3; hai thu ngân báo cáo cho Ta Vy, còn Ta Vy báo cáo lên Ly Quan."
     en: "① `staff e`: the employee; `staff m`: the same table, playing the manager. ② `ON m.id = e.manager_id`: the manager id on the employee points to the manager's id. Result: 4 people at store 3; two cashiers report to Ta Vy, and Ta Vy reports to Ly Quan."
   mistake:
-    sql: "SELECT e.name, e.role, m.name AS manager FROM staff e JOIN staff m ON m.manager_id = e.id WHERE e.store_id = 3 ORDER BY e.name"
+    sql: |-
+      SELECT e.name, e.role, m.name AS manager
+      FROM staff e
+      JOIN staff m ON m.manager_id = e.id
+      WHERE e.store_id = 3
+      ORDER BY e.name
     vi: "Ghép ngược chiều: `m.manager_id = e.id` tìm người mà `e` quản lý, không phải người quản lý `e`. Cột cuối thành tên cấp dưới, và ai không quản lý ai thì biến mất."
     en: "Joined the wrong way round: `m.manager_id = e.id` finds the people `e` manages, not the manager of `e`. The last column becomes a report's name, and anyone who manages nobody disappears."
   try:
     task:
       vi: "Trong bảng `staff`, `manager_id` là `id` của người quản lý. Mỗi người có ít nhất một cấp dưới trực tiếp một dòng: `name` của người quản lý rồi số nhân viên có `manager_id` trỏ tới họ."
       en: "In the `staff` table, `manager_id` is the `id` of the manager. One row for each person with at least one direct report: the manager's `name`, then the number of employees whose `manager_id` points to them."
-    starter: "SELECT e.name, e.role, m.name AS manager FROM staff e JOIN staff m ON m.id = e.manager_id WHERE e.store_id = 3 ORDER BY e.name"
+    starter: |-
+      SELECT e.name, e.role, m.name AS manager
+      FROM staff e
+      JOIN staff m ON m.id = e.manager_id
+      WHERE e.store_id = 3
+      ORDER BY e.name
     solution: "SELECT m.name, COUNT(*) FROM staff e JOIN staff m ON m.id = e.manager_id GROUP BY m.id, m.name"
   docs: https://www.postgresql.org/docs/current/tutorial-join.html
 
@@ -434,19 +648,37 @@
   concept:
     vi: "Postgres có sẵn hàm xử lý chữ: upper và lower đổi hoa thường, length đếm ký tự, replace thay một đoạn, trim bỏ khoảng trắng hai đầu, và toán tử || ghép nhiều chữ thành một. Hàm trả về chữ mới; dữ liệu trong bảng không đổi."
     en: "Postgres has built-in text functions: upper and lower change case, length counts characters, replace swaps a piece of text, trim removes spaces at both ends, and the || operator joins pieces of text into one. Functions return new text; the data in the table is not changed."
-  example: "SELECT name, upper(name) AS name_caps, length(name) AS letters, name || ' (' || city || ')' AS label FROM stores ORDER BY id"
+  example: |-
+    SELECT name,
+      upper(name) AS name_caps,
+      length(name) AS letters,
+      name || ' (' || city || ')' AS label
+    FROM stores
+    ORDER BY id
   explain:
     vi: "① `upper(name)`: HAI CHAU, SON TRA… ② `length(name)`: số ký tự, kể cả dấu cách; Hai Chau có 8. ③ `name || ' (' || city || ')'`: ghép tên và thành phố thành một nhãn, như Hai Chau (Da Nang). Kết quả: 5 cửa hàng. Muốn bỏ một đoạn chỉ ở đầu chuỗi thì dùng `regexp_replace` với `^`."
     en: "① `upper(name)`: HAI CHAU, SON TRA… ② `length(name)`: the number of characters, spaces included; 8 for Hai Chau. ③ `name || ' (' || city || ')'`: joins name and city into one label, like Hai Chau (Da Nang). Result: 5 stores. To drop a piece only at the start of the text, use `regexp_replace` with `^`."
   mistake:
-    sql: "SELECT name, upper(name) AS name_caps, length(name) AS letters, name + ' (' + city + ')' AS label FROM stores ORDER BY id"
+    sql: |-
+      SELECT name,
+        upper(name) AS name_caps,
+        length(name) AS letters,
+        name + ' (' + city + ')' AS label
+      FROM stores
+      ORDER BY id
     vi: "Ghép chữ bằng `+` như trong Excel hay một số ngôn ngữ khác: Postgres báo lỗi operator does not exist: text + unknown. Ghép chữ dùng `||`."
     en: "Joining text with `+` as in some other tools: Postgres says operator does not exist: text + unknown. Join text with `||`."
   try:
     task:
       vi: "Từ bảng `staff`, những người có `role` là `Store manager`: một cột duy nhất gồm `name`, một dấu cách, một gạch ngang, một dấu cách, rồi `role` viết thường toàn bộ (ví dụ: Mai Thao - store manager)."
       en: "From the `staff` table, the people whose `role` is `Store manager`: a single column with the `name`, a space, a dash, a space, then the `role` all in lower case (for example: Mai Thao - store manager)."
-    starter: "SELECT name, upper(name) AS name_caps, length(name) AS letters, name || ' (' || city || ')' AS label FROM stores ORDER BY id"
+    starter: |-
+      SELECT name,
+        upper(name) AS name_caps,
+        length(name) AS letters,
+        name || ' (' || city || ')' AS label
+      FROM stores
+      ORDER BY id
     solution: "SELECT name || ' - ' || lower(role) FROM staff WHERE role = 'Store manager'"
   docs: https://www.postgresql.org/docs/current/functions-string.html
 
@@ -480,19 +712,34 @@
   concept:
     vi: "DISTINCT bỏ các dòng trùng nhau trong kết quả. count(DISTINCT cột) đếm số giá trị khác nhau, không đếm số dòng: một khách mua 10 đơn vẫn chỉ tính là một khách."
     en: "DISTINCT removes duplicate rows from the result. count(DISTINCT column) counts the different values, not the rows: a customer with 10 orders still counts as one customer."
-  example: "SELECT channel, COUNT(*) AS orders, COUNT(DISTINCT customer_id) AS customers FROM orders WHERE order_date >= '2026-10-01' AND order_date < '2026-11-01' GROUP BY channel ORDER BY channel"
+  example: |-
+    SELECT channel, COUNT(*) AS orders, COUNT(DISTINCT customer_id) AS customers
+    FROM orders
+    WHERE order_date >= '2026-10-01' AND order_date < '2026-11-01'
+    GROUP BY channel
+    ORDER BY channel
   explain:
     vi: "① `COUNT(*)`: số đơn của mỗi kênh. ② `COUNT(DISTINCT customer_id)`: số khách khác nhau đã mua qua kênh đó; ô trống (đơn khách vãng lai) không được đếm. Kết quả tháng 10/2026: ONLINE 65 đơn của 56 khách; STORE 152 đơn của 94 khách. ③ `SELECT DISTINCT city FROM stores`: mỗi thành phố một dòng."
     en: "① `COUNT(*)`: the orders of each channel. ② `COUNT(DISTINCT customer_id)`: the different customers who bought through it; empty cells (walk-in orders) are not counted. Result for October 2026: ONLINE 65 orders from 56 customers; STORE 152 orders from 94 customers. ③ `SELECT DISTINCT city FROM stores`: one row per city."
   mistake:
-    sql: "SELECT channel, COUNT(*) AS orders, COUNT(customer_id) AS customers FROM orders WHERE order_date >= '2026-10-01' AND order_date < '2026-11-01' GROUP BY channel ORDER BY channel"
+    sql: |-
+      SELECT channel, COUNT(*) AS orders, COUNT(customer_id) AS customers
+      FROM orders
+      WHERE order_date >= '2026-10-01' AND order_date < '2026-11-01'
+      GROUP BY channel
+      ORDER BY channel
     vi: "Quên DISTINCT: `COUNT(customer_id)` đếm mọi dòng có mã khách, nên khách mua hai lần bị đếm hai lần (ONLINE ra 65 thay vì 56)."
     en: "DISTINCT is missing: `COUNT(customer_id)` counts every row with a customer id, so a customer who bought twice counts twice (ONLINE shows 65 instead of 56)."
   try:
     task:
       vi: "Từ bảng `staff`, những giá trị `role` đang có: một cột `role`, mỗi giá trị chỉ một dòng."
       en: "From the `staff` table, the `role` values in use: one column, `role`, each value on one row only."
-    starter: "SELECT channel, COUNT(*) AS orders, COUNT(DISTINCT customer_id) AS customers FROM orders WHERE order_date >= '2026-10-01' AND order_date < '2026-11-01' GROUP BY channel ORDER BY channel"
+    starter: |-
+      SELECT channel, COUNT(*) AS orders, COUNT(DISTINCT customer_id) AS customers
+      FROM orders
+      WHERE order_date >= '2026-10-01' AND order_date < '2026-11-01'
+      GROUP BY channel
+      ORDER BY channel
     solution: "SELECT DISTINCT role FROM staff"
   docs: https://www.postgresql.org/docs/current/queries-select-lists.html#QUERIES-DISTINCT
 
@@ -503,19 +750,40 @@
   concept:
     vi: "Số nguyên chia số nguyên ra số nguyên: Postgres bỏ phần lẻ, 1 * 100 / 6 ra 16 chứ không phải 16,67. Đổi một vế sang numeric trước khi chia bằng ::numeric thì giữ được phần lẻ; ROUND(x, 2) làm tròn 2 chữ số."
     en: "An integer divided by an integer is an integer: Postgres drops the fraction, so 1 * 100 / 6 gives 16, not 16.67. Turn one side into numeric with ::numeric before dividing to keep the fraction; ROUND(x, 2) rounds to 2 decimals."
-  example: "SELECT category, COUNT(*) FILTER (WHERE price_vnd >= 50000) AS pricey, COUNT(*) AS total, ROUND(COUNT(*) FILTER (WHERE price_vnd >= 50000)::numeric * 100 / COUNT(*), 2) AS pct FROM products GROUP BY category ORDER BY category"
+  example: |-
+    SELECT category,
+      COUNT(*) FILTER (WHERE price_vnd >= 50000) AS pricey,
+      COUNT(*) AS total,
+      ROUND(COUNT(*) FILTER (WHERE price_vnd >= 50000)::numeric * 100 / COUNT(*), 2) AS pct
+    FROM products
+    GROUP BY category
+    ORDER BY category
   explain:
     vi: "① `COUNT(*) FILTER (…)::numeric`: đổi số món đắt sang numeric trước khi chia. ② `* 100 / COUNT(*)`: tỷ lệ phần trăm. ③ `ROUND(…, 2)`: làm tròn 2 chữ số. Kết quả: 5 danh mục; Snacks có 1 trên 6 món từ 50.000, tức 16.67%. Đổi kiểu khác: `'2026-10-31'::date`, `'42'::int`."
     en: "① `COUNT(*) FILTER (…)::numeric`: turns the pricey count into numeric before dividing. ② `* 100 / COUNT(*)`: the percentage. ③ `ROUND(…, 2)`: rounds to 2 decimals. Result: 5 categories; Snacks has 1 of 6 products at 50,000 or more, 16.67%. Other casts: `'2026-10-31'::date`, `'42'::int`."
   mistake:
-    sql: "SELECT category, COUNT(*) FILTER (WHERE price_vnd >= 50000) AS pricey, COUNT(*) AS total, COUNT(*) FILTER (WHERE price_vnd >= 50000) * 100 / COUNT(*) AS pct FROM products GROUP BY category ORDER BY category"
+    sql: |-
+      SELECT category,
+        COUNT(*) FILTER (WHERE price_vnd >= 50000) AS pricey,
+        COUNT(*) AS total,
+        COUNT(*) FILTER (WHERE price_vnd >= 50000) * 100 / COUNT(*) AS pct
+      FROM products
+      GROUP BY category
+      ORDER BY category
     vi: "Thiếu `::numeric`: hai số nguyên chia nhau, phần lẻ bị bỏ mà không báo lỗi, Snacks ra 16 thay vì 16.67."
     en: "No `::numeric`: two integers divided, the fraction is dropped without a warning, so Snacks shows 16 instead of 16.67."
   try:
     task:
       vi: "Từ bảng `orders` (mọi ngày), mỗi `channel` một dòng: `channel` rồi tỷ lệ phần trăm đơn có `status` là `REFUNDED` trên tổng số đơn của kênh đó, làm tròn 2 chữ số."
       en: "From the `orders` table (all dates), one row per `channel`: the `channel`, then the percentage of its orders whose `status` is `REFUNDED` out of all its orders, rounded to 2 decimals."
-    starter: "SELECT category, COUNT(*) FILTER (WHERE price_vnd >= 50000) AS pricey, COUNT(*) AS total, ROUND(COUNT(*) FILTER (WHERE price_vnd >= 50000)::numeric * 100 / COUNT(*), 2) AS pct FROM products GROUP BY category ORDER BY category"
+    starter: |-
+      SELECT category,
+        COUNT(*) FILTER (WHERE price_vnd >= 50000) AS pricey,
+        COUNT(*) AS total,
+        ROUND(COUNT(*) FILTER (WHERE price_vnd >= 50000)::numeric * 100 / COUNT(*), 2) AS pct
+      FROM products
+      GROUP BY category
+      ORDER BY category
     solution: "SELECT channel, ROUND(COUNT(*) FILTER (WHERE status = 'REFUNDED')::numeric * 100 / COUNT(*), 2) FROM orders GROUP BY channel"
   docs: https://www.postgresql.org/docs/current/sql-expressions.html#SQL-SYNTAX-TYPE-CASTS
 
@@ -526,19 +794,37 @@
   concept:
     vi: "Truy vấn con (subquery) là một câu SELECT đặt trong ngoặc bên trong câu khác. Truy vấn con trả đúng một giá trị thì dùng được như một con số: so sánh trong WHERE, hiện trong SELECT. Postgres tính nó trước, rồi đem kết quả so với từng dòng."
     en: "A subquery is a SELECT in parentheses inside another query. A subquery that returns exactly one value can be used like a number: compared in WHERE, shown in SELECT. Postgres works it out first, then compares every row with the result."
-  example: "SELECT id, name, birth_year FROM customers WHERE birth_year = (SELECT MIN(birth_year) FROM customers) ORDER BY id"
+  example: |-
+    SELECT id, name, birth_year
+    FROM customers
+    WHERE birth_year = (
+      SELECT MIN(birth_year)
+      FROM customers
+    )
+    ORDER BY id
   explain:
     vi: "① `(SELECT MIN(birth_year) FROM customers)`: năm sinh sớm nhất trong mọi khách, là 1965. ② `birth_year = (…)`: so từng khách với con số đó. Kết quả: 13 khách sinh năm 1965. Chạy riêng truy vấn con để xem con số."
     en: "① `(SELECT MIN(birth_year) FROM customers)`: the earliest birth year of all customers, 1965. ② `birth_year = (…)`: compares each customer with that number. Result: 13 customers born in 1965. Run the subquery alone to see the number."
   mistake:
-    sql: "SELECT id, name, birth_year FROM customers WHERE birth_year = MIN(birth_year) ORDER BY id"
+    sql: |-
+      SELECT id, name, birth_year
+      FROM customers
+      WHERE birth_year = MIN(birth_year)
+      ORDER BY id
     vi: "Đặt hàm gộp thẳng vào WHERE: Postgres báo lỗi aggregate functions are not allowed in WHERE. Con số nhỏ nhất phải tính trong một truy vấn con riêng."
     en: "An aggregate put straight into WHERE: Postgres says aggregate functions are not allowed in WHERE. The minimum has to come from its own subquery."
   try:
     task:
       vi: "Từ bảng `store_targets`, chỉ các dòng có `month` = '2026-10-01' và `target_vnd` lớn hơn trung bình `target_vnd` của mọi dòng cùng tháng đó: `store_id` rồi `target_vnd`."
       en: "From the `store_targets` table, only the rows with `month` = '2026-10-01' whose `target_vnd` is above the average `target_vnd` of all rows of that same month: `store_id` then `target_vnd`."
-    starter: "SELECT id, name, birth_year FROM customers WHERE birth_year = (SELECT MIN(birth_year) FROM customers) ORDER BY id"
+    starter: |-
+      SELECT id, name, birth_year
+      FROM customers
+      WHERE birth_year = (
+        SELECT MIN(birth_year)
+        FROM customers
+      )
+      ORDER BY id
     solution: "SELECT store_id, target_vnd FROM store_targets WHERE month = '2026-10-01' AND target_vnd > (SELECT AVG(target_vnd) FROM store_targets WHERE month = '2026-10-01')"
   docs: https://www.postgresql.org/docs/current/sql-expressions.html#SQL-SYNTAX-SCALAR-SUBQUERIES
 
@@ -549,19 +835,40 @@
   concept:
     vi: "IN (truy vấn con) giữ các dòng có giá trị nằm trong một danh sách do câu khác tính ra. Truy vấn con chỉ được trả đúng một cột. Dùng khi điều kiện nằm ở bảng khác mà bạn không cần lấy cột nào của bảng đó."
     en: "IN (subquery) keeps the rows whose value is in a list computed by another query. The subquery must return exactly one column. Use it when the condition lives in another table and you need none of that table's columns."
-  example: "SELECT name, city FROM stores WHERE id IN (SELECT store_id FROM orders WHERE order_date = '2026-10-26')"
+  example: |-
+    SELECT name, city
+    FROM stores
+    WHERE id IN (
+      SELECT store_id
+      FROM orders
+      WHERE order_date = '2026-10-26'
+    )
   explain:
     vi: "① `(SELECT store_id FROM orders WHERE order_date = '2026-10-26')`: danh sách mã cửa hàng có đơn ngày 26/10/2026 (có thể lặp). ② `id IN (…)`: chỉ giữ cửa hàng có mã trong danh sách đó; mỗi cửa hàng vẫn một dòng dù có ba đơn. Kết quả: 3 cửa hàng."
     en: "① `(SELECT store_id FROM orders WHERE order_date = '2026-10-26')`: the list of store ids with an order on 26 October 2026 (it may repeat). ② `id IN (…)`: keep only the stores whose id is on that list; each store is still one row even with three orders. Result: 3 stores."
   mistake:
-    sql: "SELECT name, city FROM stores WHERE id IN (SELECT store_id, id FROM orders WHERE order_date = '2026-10-26')"
+    sql: |-
+      SELECT name, city
+      FROM stores
+      WHERE id IN (
+        SELECT store_id, id
+        FROM orders
+        WHERE order_date = '2026-10-26'
+      )
     vi: "Truy vấn con trả hai cột: Postgres báo lỗi subquery has too many columns. Sau IN chỉ để đúng cột cần so."
     en: "The subquery returns two columns: Postgres says subquery has too many columns. After IN, keep only the column being compared."
   try:
     task:
       vi: "Từ bảng `products`, những sản phẩm có trong ít nhất một dòng của bảng `order_items` với `order_id` = 1417: `name` rồi `category`, mỗi sản phẩm một dòng."
       en: "From the `products` table, the products that appear in at least one row of `order_items` with `order_id` = 1417: `name` then `category`, one row per product."
-    starter: "SELECT name, city FROM stores WHERE id IN (SELECT store_id FROM orders WHERE order_date = '2026-10-26')"
+    starter: |-
+      SELECT name, city
+      FROM stores
+      WHERE id IN (
+        SELECT store_id
+        FROM orders
+        WHERE order_date = '2026-10-26'
+      )
     solution: "SELECT name, category FROM products WHERE id IN (SELECT product_id FROM order_items WHERE order_id = 1417)"
   docs: https://www.postgresql.org/docs/current/functions-subquery.html#FUNCTIONS-SUBQUERY-IN
 
@@ -572,19 +879,43 @@
   concept:
     vi: "EXISTS (truy vấn con) đúng khi truy vấn con trả ít nhất một dòng; NOT EXISTS đúng khi nó không trả dòng nào. Truy vấn con thường nhắc tới cột của dòng bên ngoài, nên được kiểm lại cho từng dòng. Chọn cột gì trong đó không quan trọng, hay viết SELECT 1."
     en: "EXISTS (subquery) is true when the subquery returns at least one row; NOT EXISTS is true when it returns none. The subquery usually refers to the outer row's columns, so it is checked again for every row. What it selects does not matter; SELECT 1 is common."
-  example: "SELECT c.id, c.name FROM customers c WHERE c.city = 'Hue' AND NOT EXISTS (SELECT 1 FROM orders o WHERE o.customer_id = c.id AND o.store_id = 3) ORDER BY c.id"
+  example: |-
+    SELECT c.id, c.name
+    FROM customers c
+    WHERE c.city = 'Hue' AND NOT EXISTS (
+      SELECT 1
+      FROM orders o
+      WHERE o.customer_id = c.id AND o.store_id = 3
+    )
+    ORDER BY c.id
   explain:
     vi: "① `NOT EXISTS (SELECT 1 FROM orders o WHERE o.customer_id = c.id AND o.store_id = 3)`: với từng khách, tìm đơn của họ ở cửa hàng 3; không có đơn nào thì giữ khách. ② `o.customer_id = c.id`: truy vấn con nhắc tới `c` của câu ngoài. Kết quả: 8 khách ở Huế chưa từng mua ở cửa hàng 3."
     en: "① `NOT EXISTS (SELECT 1 FROM orders o WHERE o.customer_id = c.id AND o.store_id = 3)`: for each customer, look for their orders at store 3; keep the customer if there is none. ② `o.customer_id = c.id`: the subquery refers to the outer `c`. Result: 8 customers in Hue who never bought at store 3."
   mistake:
-    sql: "SELECT c.id, c.name FROM customers c WHERE c.city = 'Hue' AND c.id NOT IN (SELECT customer_id FROM orders WHERE store_id = 3) ORDER BY c.id"
+    sql: |-
+      SELECT c.id, c.name
+      FROM customers c
+      WHERE c.city = 'Hue' AND c.id NOT IN (
+        SELECT customer_id
+        FROM orders
+        WHERE store_id = 3
+      )
+      ORDER BY c.id
     vi: "Dùng `NOT IN` khi danh sách có ô trống: đơn khách vãng lai có `customer_id` là NULL, và `NOT IN` gặp NULL thì không bao giờ đúng. Kết quả 0 dòng, không báo lỗi. Dùng `NOT EXISTS`."
     en: "`NOT IN` on a list with empty cells: walk-in orders have a NULL `customer_id`, and `NOT IN` with a NULL is never true. The result has 0 rows and no warning. Use `NOT EXISTS`."
   try:
     task:
       vi: "Từ bảng `stores`, những cửa hàng có ít nhất một đơn trong bảng `orders` với `status` là `REFUNDED` và `order_date` từ '2026-10-01' trở đi: `name` rồi `city`, mỗi cửa hàng một dòng."
       en: "From the `stores` table, the stores with at least one order in `orders` whose `status` is `REFUNDED` and whose `order_date` is '2026-10-01' or later: `name` then `city`, one row per store."
-    starter: "SELECT c.id, c.name FROM customers c WHERE c.city = 'Hue' AND NOT EXISTS (SELECT 1 FROM orders o WHERE o.customer_id = c.id AND o.store_id = 3) ORDER BY c.id"
+    starter: |-
+      SELECT c.id, c.name
+      FROM customers c
+      WHERE c.city = 'Hue' AND NOT EXISTS (
+        SELECT 1
+        FROM orders o
+        WHERE o.customer_id = c.id AND o.store_id = 3
+      )
+      ORDER BY c.id
     solution: "SELECT s.name, s.city FROM stores s WHERE EXISTS (SELECT 1 FROM orders o WHERE o.store_id = s.id AND o.status = 'REFUNDED' AND o.order_date >= '2026-10-01')"
   docs: https://www.postgresql.org/docs/current/functions-subquery.html#FUNCTIONS-SUBQUERY-EXISTS
 
@@ -595,19 +926,39 @@
   concept:
     vi: "Truy vấn con tương quan (correlated subquery) nhắc tới cột của dòng bên ngoài, nên Postgres tính lại nó cho từng dòng. Đặt trong SELECT, nó tra một giá trị riêng cho mỗi dòng: lần mua gần nhất của khách này, số nhân viên của cửa hàng này."
     en: "A correlated subquery refers to a column of the outer row, so Postgres works it out again for every row. Placed in SELECT, it looks up one value per row: this customer's latest purchase, this store's head count."
-  example: "SELECT s.name, (SELECT COUNT(*) FROM staff e WHERE e.store_id = s.id) AS staff_count FROM stores s ORDER BY s.name"
+  example: |-
+    SELECT s.name, (
+      SELECT COUNT(*)
+      FROM staff e
+      WHERE e.store_id = s.id
+    ) AS staff_count
+    FROM stores s
+    ORDER BY s.name
   explain:
     vi: "① Câu ngoài: mỗi cửa hàng một dòng. ② `(SELECT COUNT(*) FROM staff e WHERE e.store_id = s.id)`: số nhân viên của cửa hàng ở dòng đó. ③ Truy vấn con phải trả đúng một giá trị mỗi dòng. Kết quả: 5 cửa hàng, Ben Thanh và Hai Chau mỗi nơi 4 người."
     en: "① The outer query: one row per store. ② `(SELECT COUNT(*) FROM staff e WHERE e.store_id = s.id)`: the head count of that row's store. ③ The subquery must return exactly one value per row. Result: 5 stores, Ben Thanh and Hai Chau with 4 people each."
   mistake:
-    sql: "SELECT s.name, (SELECT COUNT(*) FROM staff e) AS staff_count FROM stores s ORDER BY s.name"
+    sql: |-
+      SELECT s.name, (
+        SELECT COUNT(*)
+        FROM staff e
+      ) AS staff_count
+      FROM stores s
+      ORDER BY s.name
     vi: "Quên điều kiện nối với dòng ngoài: truy vấn con tính một lần cho cả bảng, nên cửa hàng nào cũng nhận cùng một số (20, cả công ty)."
     en: "The link to the outer row is missing: the subquery runs once for the whole table, so every store gets the same number (20, the whole company)."
   try:
     task:
       vi: "Mỗi sản phẩm có `category` là `Stationery` trong bảng `products` một dòng: `name` rồi tổng `qty` của mọi dòng trong bảng `order_items` có `product_id` là sản phẩm đó (mọi đơn, mọi trạng thái)."
       en: "One row for each product whose `category` is `Stationery` in the `products` table: the `name`, then the total `qty` of every row in `order_items` whose `product_id` is that product (all orders, any status)."
-    starter: "SELECT s.name, (SELECT COUNT(*) FROM staff e WHERE e.store_id = s.id) AS staff_count FROM stores s ORDER BY s.name"
+    starter: |-
+      SELECT s.name, (
+        SELECT COUNT(*)
+        FROM staff e
+        WHERE e.store_id = s.id
+      ) AS staff_count
+      FROM stores s
+      ORDER BY s.name
     solution: "SELECT p.name, (SELECT SUM(i.qty) FROM order_items i WHERE i.product_id = p.id) FROM products p WHERE p.category = 'Stationery'"
   docs: https://www.postgresql.org/docs/current/sql-expressions.html#SQL-SYNTAX-SCALAR-SUBQUERIES
 
@@ -618,19 +969,52 @@
   concept:
     vi: "WITH đặt tên cho một bước trung gian (CTE): WITH ten AS (SELECT …) rồi câu chính dùng ten như một bảng. Câu dài được chia thành bước nhỏ, đọc từ trên xuống, chạy thử từng bước được. Bước đó chỉ tồn tại trong câu này."
     en: "WITH names an intermediate step (a CTE): WITH name AS (SELECT …), then the main query uses name like a table. A long query becomes small steps you read top to bottom and can test one by one. The step only exists inside this query."
-  example: "WITH per_store AS (SELECT store_id, COUNT(*) AS n FROM orders WHERE order_date >= '2026-10-01' AND order_date < '2026-11-01' GROUP BY store_id) SELECT s.name, per_store.n FROM per_store JOIN stores s ON s.id = per_store.store_id WHERE per_store.n >= 30 ORDER BY per_store.n DESC"
+  example: |-
+    WITH per_store AS (
+      SELECT store_id, COUNT(*) AS n
+      FROM orders
+      WHERE order_date >= '2026-10-01' AND order_date < '2026-11-01'
+      GROUP BY store_id
+    )
+    SELECT s.name, per_store.n
+    FROM per_store
+    JOIN stores s ON s.id = per_store.store_id
+    WHERE per_store.n >= 30
+    ORDER BY per_store.n DESC
   explain:
     vi: "① `WITH per_store AS (…)`: bước 1, số đơn mỗi cửa hàng trong tháng 10/2026. ② `FROM per_store JOIN stores s`: câu chính đọc `per_store` như một bảng và nối lấy tên cửa hàng. ③ `WHERE per_store.n >= 30`: lọc trên cột đã tính ở bước 1. Kết quả: 4 cửa hàng, nhiều nhất Ben Thanh 76 đơn."
     en: "① `WITH per_store AS (…)`: step 1, the orders per store in October 2026. ② `FROM per_store JOIN stores s`: the main query reads `per_store` like a table and joins the store name. ③ `WHERE per_store.n >= 30`: filters on the column step 1 computed. Result: 4 stores, the top one Ben Thanh with 76 orders."
   mistake:
-    sql: "WITH per_store AS (SELECT store_id, COUNT(*) AS n FROM orders WHERE order_date >= '2026-10-01' AND order_date < '2026-11-01' GROUP BY store_id), SELECT s.name, per_store.n FROM per_store JOIN stores s ON s.id = per_store.store_id WHERE per_store.n >= 30 ORDER BY per_store.n DESC"
+    sql: |-
+      WITH per_store AS (
+        SELECT store_id, COUNT(*) AS n
+        FROM orders
+        WHERE order_date >= '2026-10-01' AND order_date < '2026-11-01'
+        GROUP BY store_id
+      ),
+      SELECT s.name, per_store.n
+      FROM per_store
+      JOIN stores s ON s.id = per_store.store_id
+      WHERE per_store.n >= 30
+      ORDER BY per_store.n DESC
     vi: "Dấu phẩy thừa trước câu chính: Postgres báo lỗi syntax error at or near \"SELECT\". Dấu phẩy chỉ dùng để nối bước này với bước sau."
     en: "An extra comma before the main query: Postgres reports syntax error at or near \"SELECT\". The comma only joins one step to the next."
   try:
     task:
       vi: "Bước 1: từ bảng `order_items`, tiền hàng mỗi `order_id` = tổng của `qty * unit_price_vnd` trên các dòng của đơn đó. Câu chính: `order_id` rồi số tiền đó, chỉ các đơn có số tiền trên 2000000."
       en: "Step 1: from the `order_items` table, the goods value per `order_id` = the sum of `qty * unit_price_vnd` over that order's rows. Main query: the `order_id`, then that value, only for orders above 2000000."
-    starter: "WITH per_store AS (SELECT store_id, COUNT(*) AS n FROM orders WHERE order_date >= '2026-10-01' AND order_date < '2026-11-01' GROUP BY store_id) SELECT s.name, per_store.n FROM per_store JOIN stores s ON s.id = per_store.store_id WHERE per_store.n >= 30 ORDER BY per_store.n DESC"
+    starter: |-
+      WITH per_store AS (
+        SELECT store_id, COUNT(*) AS n
+        FROM orders
+        WHERE order_date >= '2026-10-01' AND order_date < '2026-11-01'
+        GROUP BY store_id
+      )
+      SELECT s.name, per_store.n
+      FROM per_store
+      JOIN stores s ON s.id = per_store.store_id
+      WHERE per_store.n >= 30
+      ORDER BY per_store.n DESC
     solution: "WITH t AS (SELECT order_id, SUM(qty * unit_price_vnd) AS total FROM order_items GROUP BY order_id) SELECT order_id, total FROM t WHERE total > 2000000"
   docs: https://www.postgresql.org/docs/current/queries-with.html
 
@@ -641,19 +1025,59 @@
   concept:
     vi: "Một WITH có thể có nhiều bước, cách nhau bằng dấu phẩy; bước sau đọc được kết quả của bước trước. Hay dùng khi cần một con số tính từ chính kết quả trung gian, ví dụ trung bình của các tổng vừa tính."
     en: "One WITH can hold several steps separated by commas; a later step can read an earlier step's result. Handy when you need a number computed from the intermediate result itself, such as the average of the totals you just worked out."
-  example: "WITH per_city AS (SELECT city, COUNT(*) AS n FROM customers WHERE city IS NOT NULL GROUP BY city), a AS (SELECT AVG(n) AS avg_n FROM per_city) SELECT per_city.city, per_city.n FROM per_city, a WHERE per_city.n > a.avg_n ORDER BY per_city.city"
+  example: |-
+    WITH per_city AS (
+      SELECT city, COUNT(*) AS n
+      FROM customers
+      WHERE city IS NOT NULL
+      GROUP BY city
+    ), a AS (
+      SELECT AVG(n) AS avg_n
+      FROM per_city
+    )
+    SELECT per_city.city, per_city.n
+    FROM per_city, a
+    WHERE per_city.n > a.avg_n
+    ORDER BY per_city.city
   explain:
     vi: "① `per_city`: số khách mỗi thành phố (bỏ khách không ghi thành phố). ② `a`: đọc `per_city`, tính trung bình của 5 con số đó, khoảng 56,6. ③ `FROM per_city, a`: `a` chỉ có một dòng nên ghép được với mọi thành phố. Kết quả: 2 thành phố cao hơn trung bình, Da Nang 85 và Ho Chi Minh City 95."
     en: "① `per_city`: customers per city (leaving out those with no city). ② `a`: reads `per_city` and averages those 5 numbers, about 56.6. ③ `FROM per_city, a`: `a` has one row, so it pairs with every city. Result: 2 cities above the average, Da Nang 85 and Ho Chi Minh City 95."
   mistake:
-    sql: "WITH per_city AS (SELECT city, COUNT(*) AS n FROM customers WHERE city IS NOT NULL GROUP BY city) WITH a AS (SELECT AVG(n) AS avg_n FROM per_city) SELECT per_city.city, per_city.n FROM per_city, a WHERE per_city.n > a.avg_n ORDER BY per_city.city"
+    sql: |-
+      WITH per_city AS (
+        SELECT city, COUNT(*) AS n
+        FROM customers
+        WHERE city IS NOT NULL
+        GROUP BY city
+      )
+      WITH a AS (
+        SELECT AVG(n) AS avg_n
+        FROM per_city
+      )
+      SELECT per_city.city, per_city.n
+      FROM per_city, a
+      WHERE per_city.n > a.avg_n
+      ORDER BY per_city.city
     vi: "Viết `WITH` hai lần: Postgres báo lỗi syntax error at or near \"WITH\". Chỉ một `WITH` ở đầu, các bước nối bằng dấu phẩy."
     en: "Writing `WITH` twice: Postgres reports syntax error at or near \"WITH\". Use one `WITH` at the top and join the steps with commas."
   try:
     task:
       vi: "Bước 1: từ bảng `staff`, số nhân viên mỗi `role`. Bước 2: số lớn nhất trong kết quả bước 1. Câu chính: `role` rồi số nhân viên, chỉ những dòng có số nhân viên bằng số lớn nhất đó."
       en: "Step 1: from the `staff` table, the number of employees per `role`. Step 2: the largest number in step 1's result. Main query: the `role`, then its number of employees, only for the rows whose number equals that largest one."
-    starter: "WITH per_city AS (SELECT city, COUNT(*) AS n FROM customers WHERE city IS NOT NULL GROUP BY city), a AS (SELECT AVG(n) AS avg_n FROM per_city) SELECT per_city.city, per_city.n FROM per_city, a WHERE per_city.n > a.avg_n ORDER BY per_city.city"
+    starter: |-
+      WITH per_city AS (
+        SELECT city, COUNT(*) AS n
+        FROM customers
+        WHERE city IS NOT NULL
+        GROUP BY city
+      ), a AS (
+        SELECT AVG(n) AS avg_n
+        FROM per_city
+      )
+      SELECT per_city.city, per_city.n
+      FROM per_city, a
+      WHERE per_city.n > a.avg_n
+      ORDER BY per_city.city
     solution: "WITH r AS (SELECT role, COUNT(*) AS n FROM staff GROUP BY role), top AS (SELECT MAX(n) AS n FROM r) SELECT r.role, r.n FROM r JOIN top ON top.n = r.n"
   docs: https://www.postgresql.org/docs/current/queries-with.html
 
@@ -664,19 +1088,28 @@
   concept:
     vi: "DISTINCT ON (cột) giữ đúng một dòng cho mỗi giá trị của cột đó: dòng đứng đầu theo ORDER BY. ORDER BY phải bắt đầu bằng chính cột trong DISTINCT ON, rồi tới tiêu chí chọn dòng (mới nhất thì DESC). Đây là cách viết riêng của Postgres."
     en: "DISTINCT ON (column) keeps exactly one row per value of that column: the first one by ORDER BY. ORDER BY must start with the DISTINCT ON column itself, then the rule that picks the row (DESC for the newest). This is Postgres' own syntax."
-  example: "SELECT DISTINCT ON (city) city, name, opened_on FROM stores ORDER BY city, opened_on DESC"
+  example: |-
+    SELECT DISTINCT ON (city) city, name, opened_on
+    FROM stores
+    ORDER BY city, opened_on DESC
   explain:
     vi: "① `DISTINCT ON (city)`: mỗi thành phố một dòng. ② `ORDER BY city, opened_on DESC`: trong mỗi thành phố, cửa hàng mới khai trương nhất đứng đầu nên được giữ. Kết quả: 3 dòng: Son Tra (Da Nang), Hoan Kiem (Hanoi), Thao Dien (Ho Chi Minh City). Cần tiêu chí phụ khi hai dòng cùng ngày."
     en: "① `DISTINCT ON (city)`: one row per city. ② `ORDER BY city, opened_on DESC`: within each city the most recently opened store comes first, so it is kept. Result: 3 rows: Son Tra (Da Nang), Hoan Kiem (Hanoi), Thao Dien (Ho Chi Minh City). Add a tie-breaker when two rows share a date."
   mistake:
-    sql: "SELECT DISTINCT ON (city) city, name, opened_on FROM stores ORDER BY opened_on DESC"
+    sql: |-
+      SELECT DISTINCT ON (city) city, name, opened_on
+      FROM stores
+      ORDER BY opened_on DESC
     vi: "ORDER BY không bắt đầu bằng cột của DISTINCT ON: Postgres báo lỗi SELECT DISTINCT ON expressions must match initial ORDER BY expressions."
     en: "ORDER BY does not start with the DISTINCT ON column: Postgres says SELECT DISTINCT ON expressions must match initial ORDER BY expressions."
   try:
     task:
       vi: "Từ bảng `staff`, mỗi `role` một dòng: người vào làm sớm nhất của `role` đó (`hired_on` nhỏ nhất; cùng ngày thì `id` nhỏ hơn). Cột: `role`, `name`, `hired_on`."
       en: "From the `staff` table, one row per `role`: the earliest hire of that `role` (smallest `hired_on`; on the same date, the smaller `id`). Columns: `role`, `name`, `hired_on`."
-    starter: "SELECT DISTINCT ON (city) city, name, opened_on FROM stores ORDER BY city, opened_on DESC"
+    starter: |-
+      SELECT DISTINCT ON (city) city, name, opened_on
+      FROM stores
+      ORDER BY city, opened_on DESC
     solution: "SELECT DISTINCT ON (role) role, name, hired_on FROM staff ORDER BY role, hired_on, id"
   docs: https://www.postgresql.org/docs/current/sql-select.html#SQL-DISTINCT
 
@@ -687,19 +1120,43 @@
   concept:
     vi: "UNION ALL nối kết quả của hai câu SELECT thành một danh sách, câu này nằm dưới câu kia. Hai câu phải có cùng số cột, cùng kiểu theo thứ tự. UNION (không ALL) còn bỏ các dòng trùng. ORDER BY viết một lần ở cuối, áp cho cả danh sách."
     en: "UNION ALL stacks the results of two SELECTs into one list, one under the other. Both must have the same number of columns, with matching types in order. UNION (without ALL) also removes duplicate rows. ORDER BY goes once at the end and sorts the whole list."
-  example: "SELECT name, 'STORE' AS kind FROM stores WHERE city = 'Da Nang' UNION ALL SELECT name, 'STAFF' FROM staff WHERE store_id IN (1, 2) ORDER BY kind, name"
+  example: |-
+    SELECT name, 'STORE' AS kind
+    FROM stores
+    WHERE city = 'Da Nang'
+    UNION ALL
+    SELECT name, 'STAFF'
+    FROM staff
+    WHERE store_id IN (1, 2)
+    ORDER BY kind, name
   explain:
     vi: "① Câu trên: 2 cửa hàng ở Đà Nẵng, cột thứ hai là chữ cố định `'STORE'`. ② Câu dưới: 6 nhân viên của cửa hàng 1 và 2, cột thứ hai `'STAFF'`. ③ Tên cột lấy theo câu đầu (`kind`). Kết quả: 8 dòng. Cột chữ cố định cho biết mỗi dòng đến từ đâu."
     en: "① The top query: 2 stores in Da Nang, the second column is the fixed text `'STORE'`. ② The bottom query: 6 employees of stores 1 and 2, second column `'STAFF'`. ③ Column names come from the first query (`kind`). Result: 8 rows. The fixed text column tells where each row came from."
   mistake:
-    sql: "SELECT name, 'STORE' AS kind FROM stores WHERE city = 'Da Nang' UNION ALL SELECT name FROM staff WHERE store_id IN (1, 2) ORDER BY kind, name"
+    sql: |-
+      SELECT name, 'STORE' AS kind
+      FROM stores
+      WHERE city = 'Da Nang'
+      UNION ALL
+      SELECT name
+      FROM staff
+      WHERE store_id IN (1, 2)
+      ORDER BY kind, name
     vi: "Hai câu khác số cột: Postgres báo lỗi each UNION query must have the same number of columns."
     en: "The two queries have different column counts: Postgres says each UNION query must have the same number of columns."
   try:
     task:
       vi: "Một cột ngày duy nhất gồm: mọi `opened_on` của bảng `stores`, rồi mọi `hired_on` của nhân viên có `role` là `Store manager` trong bảng `staff`. Giữ cả ngày trùng: một ngày xuất hiện mấy lần thì giữ mấy dòng."
       en: "A single date column with: every `opened_on` from the `stores` table, then every `hired_on` of the employees whose `role` is `Store manager` in the `staff` table. Keep duplicate dates: a date that appears several times keeps that many rows."
-    starter: "SELECT name, 'STORE' AS kind FROM stores WHERE city = 'Da Nang' UNION ALL SELECT name, 'STAFF' FROM staff WHERE store_id IN (1, 2) ORDER BY kind, name"
+    starter: |-
+      SELECT name, 'STORE' AS kind
+      FROM stores
+      WHERE city = 'Da Nang'
+      UNION ALL
+      SELECT name, 'STAFF'
+      FROM staff
+      WHERE store_id IN (1, 2)
+      ORDER BY kind, name
     solution: "SELECT opened_on FROM stores UNION ALL SELECT hired_on FROM staff WHERE role = 'Store manager'"
   docs: https://www.postgresql.org/docs/current/queries-union.html
 
@@ -710,19 +1167,43 @@
   concept:
     vi: "A EXCEPT B trả các dòng có trong kết quả A mà không có trong kết quả B, và bỏ dòng trùng. Thứ tự quan trọng: B EXCEPT A là câu hỏi khác. Hai câu phải cùng số cột, cùng kiểu, như UNION."
     en: "A EXCEPT B returns the rows in A's result that are not in B's, without duplicates. Order matters: B EXCEPT A is a different question. Both queries need the same columns and types, as with UNION."
-  example: "SELECT store_id FROM orders WHERE order_date = '2026-10-30' EXCEPT SELECT store_id FROM orders WHERE order_date = '2026-10-31' ORDER BY 1"
+  example: |-
+    SELECT store_id
+    FROM orders
+    WHERE order_date = '2026-10-30'
+    EXCEPT
+    SELECT store_id
+    FROM orders
+    WHERE order_date = '2026-10-31'
+    ORDER BY 1
   explain:
     vi: "① Câu trên: cửa hàng có đơn ngày 30/10/2026. ② `EXCEPT`: bỏ đi những cửa hàng có trong câu dưới. ③ Câu dưới: cửa hàng có đơn ngày 31/10/2026. Kết quả: 1 dòng, cửa hàng 2: có đơn ngày 30 mà ngày 31 không có đơn nào."
     en: "① The top query: stores with an order on 30 October 2026. ② `EXCEPT`: remove those found in the bottom query. ③ The bottom query: stores with an order on 31 October 2026. Result: 1 row, store 2: orders on the 30th but none on the 31st."
   mistake:
-    sql: "SELECT store_id FROM orders WHERE order_date = '2026-10-31' EXCEPT SELECT store_id FROM orders WHERE order_date = '2026-10-30' ORDER BY 1"
+    sql: |-
+      SELECT store_id
+      FROM orders
+      WHERE order_date = '2026-10-31'
+      EXCEPT
+      SELECT store_id
+      FROM orders
+      WHERE order_date = '2026-10-30'
+      ORDER BY 1
     vi: "Đảo thứ tự hai câu: kết quả thành cửa hàng có đơn ngày 31 mà không có ngày 30, ở đây 0 dòng. Câu có danh sách cần giữ đứng trước `EXCEPT`."
     en: "The two queries swapped: the result becomes the stores with orders on the 31st but not the 30th, here 0 rows. The list you keep goes before `EXCEPT`."
   try:
     task:
       vi: "Từ bảng `products`, một cột `category`: các danh mục có ít nhất một sản phẩm `price_vnd` dưới 20000 nhưng không có sản phẩm nào `price_vnd` trên 100000. Mỗi danh mục một dòng."
       en: "From the `products` table, one column, `category`: the categories with at least one product whose `price_vnd` is under 20000 but no product whose `price_vnd` is above 100000. One row per category."
-    starter: "SELECT store_id FROM orders WHERE order_date = '2026-10-30' EXCEPT SELECT store_id FROM orders WHERE order_date = '2026-10-31' ORDER BY 1"
+    starter: |-
+      SELECT store_id
+      FROM orders
+      WHERE order_date = '2026-10-30'
+      EXCEPT
+      SELECT store_id
+      FROM orders
+      WHERE order_date = '2026-10-31'
+      ORDER BY 1
     solution: "SELECT category FROM products WHERE price_vnd < 20000 EXCEPT SELECT category FROM products WHERE price_vnd > 100000"
   docs: https://www.postgresql.org/docs/current/queries-union.html
 
@@ -733,19 +1214,55 @@
   concept:
     vi: "FULL JOIN giữ mọi dòng của cả hai bên: dòng ghép được thì nằm chung, dòng chỉ có ở một bên vẫn có mặt, cột của bên kia để trống (NULL). Dùng để đối chiếu hai danh sách lệch nhau. COALESCE gộp khóa của hai bên thành một cột."
     en: "FULL JOIN keeps every row from both sides: matched rows sit together, a row found on one side only still appears, with the other side's columns empty (NULL). Use it to reconcile two lists that do not quite agree. COALESCE merges both sides' keys into one column."
-  example: "SELECT COALESCE(o.id, p.order_id) AS order_id, o.status, p.amount_vnd FROM (SELECT id, status FROM orders WHERE order_date BETWEEN '2026-10-01' AND '2026-10-03') o FULL JOIN (SELECT order_id, amount_vnd FROM payments WHERE paid_at >= '2026-10-01' AND paid_at < '2026-10-04') p ON p.order_id = o.id ORDER BY 1"
+  example: |-
+    SELECT COALESCE(o.id, p.order_id) AS order_id, o.status, p.amount_vnd
+    FROM (
+      SELECT id, status
+      FROM orders
+      WHERE order_date BETWEEN '2026-10-01' AND '2026-10-03'
+    ) o
+    FULL JOIN (
+      SELECT order_id, amount_vnd
+      FROM payments
+      WHERE paid_at >= '2026-10-01' AND paid_at < '2026-10-04'
+    ) p ON p.order_id = o.id
+    ORDER BY 1
   explain:
     vi: "① `o`: đơn đặt ngày 1–3/10/2026; `p`: các khoản thanh toán cùng ba ngày. ② `FULL JOIN … ON p.order_id = o.id`: ghép theo mã đơn, giữ cả dòng chỉ có ở một bên. ③ `COALESCE(o.id, p.order_id)`: mã đơn của bên nào có. Kết quả: 22 dòng; 99901 và 99902 là khoản thu không khớp đơn nào (`status` trống)."
     en: "① `o`: orders placed on 1–3 October 2026; `p`: the payments on the same three days. ② `FULL JOIN … ON p.order_id = o.id`: matches by order id and keeps rows found on one side only. ③ `COALESCE(o.id, p.order_id)`: the order id from whichever side has it. Result: 22 rows; 99901 and 99902 are payments that match no order (empty `status`)."
   mistake:
-    sql: "SELECT COALESCE(o.id, p.order_id) AS order_id, o.status, p.amount_vnd FROM (SELECT id, status FROM orders WHERE order_date BETWEEN '2026-10-01' AND '2026-10-03') o LEFT JOIN (SELECT order_id, amount_vnd FROM payments WHERE paid_at >= '2026-10-01' AND paid_at < '2026-10-04') p ON p.order_id = o.id ORDER BY 1"
+    sql: |-
+      SELECT COALESCE(o.id, p.order_id) AS order_id, o.status, p.amount_vnd
+      FROM (
+        SELECT id, status
+        FROM orders
+        WHERE order_date BETWEEN '2026-10-01' AND '2026-10-03'
+      ) o
+      LEFT JOIN (
+        SELECT order_id, amount_vnd
+        FROM payments
+        WHERE paid_at >= '2026-10-01' AND paid_at < '2026-10-04'
+      ) p ON p.order_id = o.id
+      ORDER BY 1
     vi: "Dùng `LEFT JOIN`: khoản thanh toán không có đơn cùng kỳ bị mất (còn 20 dòng), nên đối chiếu chỉ thấy một chiều."
     en: "Using `LEFT JOIN`: payments with no order in the period disappear (20 rows left), so the check only sees one direction."
   try:
     task:
       vi: "Từ bảng `orders` (mọi `status`), đối chiếu số đơn mỗi `store_id` ngày '2026-10-30' và ngày '2026-10-31'. Mỗi `store_id` có đơn ở ít nhất một trong hai ngày một dòng: `store_id`, số đơn ngày 30, số đơn ngày 31; ngày không có đơn thì để trống (không ghi 0)."
       en: "From the `orders` table (any `status`), compare the number of orders per `store_id` on '2026-10-30' and on '2026-10-31'. One row for each `store_id` with orders on at least one of the two days: the `store_id`, the orders on the 30th, the orders on the 31st; a day with no order stays empty (not 0)."
-    starter: "SELECT COALESCE(o.id, p.order_id) AS order_id, o.status, p.amount_vnd FROM (SELECT id, status FROM orders WHERE order_date BETWEEN '2026-10-01' AND '2026-10-03') o FULL JOIN (SELECT order_id, amount_vnd FROM payments WHERE paid_at >= '2026-10-01' AND paid_at < '2026-10-04') p ON p.order_id = o.id ORDER BY 1"
+    starter: |-
+      SELECT COALESCE(o.id, p.order_id) AS order_id, o.status, p.amount_vnd
+      FROM (
+        SELECT id, status
+        FROM orders
+        WHERE order_date BETWEEN '2026-10-01' AND '2026-10-03'
+      ) o
+      FULL JOIN (
+        SELECT order_id, amount_vnd
+        FROM payments
+        WHERE paid_at >= '2026-10-01' AND paid_at < '2026-10-04'
+      ) p ON p.order_id = o.id
+      ORDER BY 1
     solution: "WITH a AS (SELECT store_id, COUNT(*) AS n FROM orders WHERE order_date = '2026-10-30' GROUP BY store_id), b AS (SELECT store_id, COUNT(*) AS n FROM orders WHERE order_date = '2026-10-31' GROUP BY store_id) SELECT COALESCE(a.store_id, b.store_id), a.n, b.n FROM a FULL JOIN b ON b.store_id = a.store_id"
   docs: https://www.postgresql.org/docs/current/queries-table-expressions.html#QUERIES-JOIN
 
@@ -756,19 +1273,30 @@
   concept:
     vi: "Hàm cửa sổ (window function) tính trên một nhóm dòng mà không gộp các dòng lại: mỗi dòng vẫn còn, kèm thêm một cột. RANK() OVER (PARTITION BY nhóm ORDER BY tiêu chí) xếp hạng trong từng nhóm; bằng nhau thì cùng hạng và hạng kế tiếp bị nhảy."
     en: "A window function works over a group of rows without collapsing them: every row stays, with one more column. RANK() OVER (PARTITION BY group ORDER BY rule) ranks inside each group; ties share a rank and the next rank is skipped."
-  example: "SELECT id, name, birth_year, RANK() OVER (ORDER BY birth_year DESC) AS rk FROM customers WHERE city = 'Hue' AND birth_year >= 1990 ORDER BY rk, id"
+  example: |-
+    SELECT id, name, birth_year, RANK() OVER (ORDER BY birth_year DESC) AS rk
+    FROM customers
+    WHERE city = 'Hue' AND birth_year >= 1990
+    ORDER BY rk, id
   explain:
     vi: "① `RANK() OVER (ORDER BY birth_year DESC)`: khách trẻ nhất hạng 1. ② Hai khách cùng sinh năm 1998 nên cùng hạng 3, người sau nhảy lên hạng 5. ③ Thêm `PARTITION BY city` thì xếp hạng riêng trong từng thành phố. Kết quả: 10 khách ở Huế sinh từ 1990, không dòng nào bị gộp. Không muốn nhảy hạng: `DENSE_RANK()`; luôn khác nhau: `ROW_NUMBER()`."
     en: "① `RANK() OVER (ORDER BY birth_year DESC)`: the youngest customer is rank 1. ② Two customers born in 1998 share rank 3, so the next one is rank 5. ③ Adding `PARTITION BY city` ranks separately inside each city. Result: 10 customers in Hue born from 1990, no row collapsed. No skipped ranks: `DENSE_RANK()`; always distinct: `ROW_NUMBER()`."
   mistake:
-    sql: "SELECT name, birth_year FROM customers WHERE city = 'Hue' AND RANK() OVER (ORDER BY birth_year DESC) <= 3"
+    sql: |-
+      SELECT name, birth_year
+      FROM customers
+      WHERE city = 'Hue' AND RANK() OVER (ORDER BY birth_year DESC) <= 3
     vi: "Lọc hàm cửa sổ ngay trong WHERE: Postgres báo lỗi window functions are not allowed in WHERE. Tính hạng trong một bước WITH, rồi lọc ở câu chính."
     en: "Filtering a window function in WHERE: Postgres says window functions are not allowed in WHERE. Compute the rank in a WITH step, then filter in the main query."
   try:
     task:
       vi: "Từ bảng `staff`, chỉ nhân viên có `store_id` (bỏ ô trống): xếp hạng trong từng `store_id` theo `hired_on`, người vào làm sớm nhất hạng 1; cùng ngày thì cùng hạng và hạng sau bị nhảy. Cột: `store_id`, `name`, `hired_on`, hạng."
       en: "From the `staff` table, only employees with a `store_id` (skip empty ones): rank them within each `store_id` by `hired_on`, the earliest hire is rank 1; the same date shares a rank and the next rank is skipped. Columns: `store_id`, `name`, `hired_on`, the rank."
-    starter: "SELECT id, name, birth_year, RANK() OVER (ORDER BY birth_year DESC) AS rk FROM customers WHERE city = 'Hue' AND birth_year >= 1990 ORDER BY rk, id"
+    starter: |-
+      SELECT id, name, birth_year, RANK() OVER (ORDER BY birth_year DESC) AS rk
+      FROM customers
+      WHERE city = 'Hue' AND birth_year >= 1990
+      ORDER BY rk, id
     solution: "SELECT store_id, name, hired_on, RANK() OVER (PARTITION BY store_id ORDER BY hired_on) FROM staff WHERE store_id IS NOT NULL"
   docs: https://www.postgresql.org/docs/current/tutorial-window.html
 
@@ -779,19 +1307,55 @@
   concept:
     vi: "LAG(cột) OVER (ORDER BY …) lấy giá trị của dòng đứng ngay trước theo thứ tự đã cho; LEAD lấy dòng ngay sau. Dòng đầu không có dòng trước nên ra NULL. Lấy giá trị hiện tại trừ LAG là ra mức tăng giảm."
     en: "LAG(column) OVER (ORDER BY …) takes the value of the row just before in the given order; LEAD takes the row just after. The first row has no previous row, so it gets NULL. The current value minus LAG is the change."
-  example: "WITH d AS (SELECT order_date, COUNT(*) AS n FROM orders WHERE order_date BETWEEN '2026-10-01' AND '2026-10-07' GROUP BY order_date) SELECT order_date, n, LAG(n) OVER (ORDER BY order_date) AS prev, n - LAG(n) OVER (ORDER BY order_date) AS change FROM d ORDER BY order_date"
+  example: |-
+    WITH d AS (
+      SELECT order_date, COUNT(*) AS n
+      FROM orders
+      WHERE order_date BETWEEN '2026-10-01' AND '2026-10-07'
+      GROUP BY order_date
+    )
+    SELECT order_date,
+      n,
+      LAG(n) OVER (ORDER BY order_date) AS prev,
+      n - LAG(n) OVER (ORDER BY order_date) AS change
+    FROM d
+    ORDER BY order_date
   explain:
     vi: "① `d`: số đơn mỗi ngày từ 1 đến 7/10/2026. ② `LAG(n) OVER (ORDER BY order_date)`: số của ngày liền trước. ③ `n - LAG(n) …`: tăng giảm. Ngày 01/10 có 5 đơn và `prev` trống; ngày 02/10 có 8, tăng 3. Kết quả: 7 dòng."
     en: "① `d`: orders per day from 1 to 7 October 2026. ② `LAG(n) OVER (ORDER BY order_date)`: the previous day's number. ③ `n - LAG(n) …`: the change. 1 October has 5 orders and an empty `prev`; 2 October has 8, up 3. Result: 7 rows."
   mistake:
-    sql: "WITH d AS (SELECT order_date, COUNT(*) AS n FROM orders WHERE order_date BETWEEN '2026-10-01' AND '2026-10-07' GROUP BY order_date) SELECT order_date, n, LAG(n) OVER (ORDER BY order_date DESC) AS prev, n - LAG(n) OVER (ORDER BY order_date DESC) AS change FROM d ORDER BY order_date"
+    sql: |-
+      WITH d AS (
+        SELECT order_date, COUNT(*) AS n
+        FROM orders
+        WHERE order_date BETWEEN '2026-10-01' AND '2026-10-07'
+        GROUP BY order_date
+      )
+      SELECT order_date,
+        n,
+        LAG(n) OVER (ORDER BY order_date DESC) AS prev,
+        n - LAG(n) OVER (ORDER BY order_date DESC) AS change
+      FROM d
+      ORDER BY order_date
     vi: "Thứ tự trong OVER bị đảo (`DESC`): \"dòng trước\" thành ngày hôm sau, nên mức tăng giảm ngược dấu và lệch một ngày. Thứ tự trong OVER quyết định dòng nào là dòng trước, không phải ORDER BY cuối câu."
     en: "The order inside OVER is reversed (`DESC`): the \"previous row\" becomes the next day, so the change has the wrong sign and is one day off. The order inside OVER decides the previous row, not the final ORDER BY."
   try:
     task:
       vi: "Từ bảng `staff`, xếp mọi nhân viên theo `hired_on` (cùng ngày thì `id` nhỏ hơn trước). Mỗi người một dòng: `name`, `hired_on`, và `hired_on` của người đứng liền trước theo thứ tự đó (người đầu tiên để trống). Kết quả theo đúng thứ tự đó."
       en: "From the `staff` table, order every employee by `hired_on` (on the same date, the smaller `id` first). One row per person: `name`, `hired_on`, and the `hired_on` of the person just before in that order (empty for the first). Return the rows in that order."
-    starter: "WITH d AS (SELECT order_date, COUNT(*) AS n FROM orders WHERE order_date BETWEEN '2026-10-01' AND '2026-10-07' GROUP BY order_date) SELECT order_date, n, LAG(n) OVER (ORDER BY order_date) AS prev, n - LAG(n) OVER (ORDER BY order_date) AS change FROM d ORDER BY order_date"
+    starter: |-
+      WITH d AS (
+        SELECT order_date, COUNT(*) AS n
+        FROM orders
+        WHERE order_date BETWEEN '2026-10-01' AND '2026-10-07'
+        GROUP BY order_date
+      )
+      SELECT order_date,
+        n,
+        LAG(n) OVER (ORDER BY order_date) AS prev,
+        n - LAG(n) OVER (ORDER BY order_date) AS change
+      FROM d
+      ORDER BY order_date
     solution: "SELECT name, hired_on, LAG(hired_on) OVER (ORDER BY hired_on, id) FROM staff ORDER BY hired_on, id"
     ordered: true
   docs: https://www.postgresql.org/docs/current/functions-window.html
@@ -803,19 +1367,55 @@
   concept:
     vi: "Hàm gộp quen thuộc (SUM, AVG, COUNT) cũng dùng được như hàm cửa sổ. SUM(x) OVER (ORDER BY ngày) cộng dồn từ dòng đầu tới dòng hiện tại; SUM(x) OVER () là tổng của mọi dòng, đặt cạnh từng dòng để tính phần trăm."
     en: "The usual aggregates (SUM, AVG, COUNT) also work as window functions. SUM(x) OVER (ORDER BY date) is a running total from the first row to the current one; SUM(x) OVER () is the total of every row, placed next to each row to work out a share."
-  example: "WITH d AS (SELECT order_date, COUNT(*) AS n FROM orders WHERE order_date BETWEEN '2026-10-01' AND '2026-10-07' GROUP BY order_date) SELECT order_date, n, SUM(n) OVER (ORDER BY order_date) AS running, ROUND(n * 100.0 / SUM(n) OVER (), 1) AS pct FROM d ORDER BY order_date"
+  example: |-
+    WITH d AS (
+      SELECT order_date, COUNT(*) AS n
+      FROM orders
+      WHERE order_date BETWEEN '2026-10-01' AND '2026-10-07'
+      GROUP BY order_date
+    )
+    SELECT order_date,
+      n,
+      SUM(n) OVER (ORDER BY order_date) AS running,
+      ROUND(n * 100.0 / SUM(n) OVER (), 1) AS pct
+    FROM d
+    ORDER BY order_date
   explain:
     vi: "① `SUM(n) OVER (ORDER BY order_date)`: cộng dồn: 5, 13, 20… ② `SUM(n) OVER ()`: tổng cả tuần (50), giống nhau ở mọi dòng. ③ `n * 100.0 / …`: phần của từng ngày, ngày 01/10 là 10.0%. Thêm `PARTITION BY` để cộng dồn riêng cho từng cửa hàng. Kết quả: 7 dòng."
     en: "① `SUM(n) OVER (ORDER BY order_date)`: a running total: 5, 13, 20… ② `SUM(n) OVER ()`: the whole week's total (50), the same on every row. ③ `n * 100.0 / …`: each day's share, 10.0% for 1 October. Add `PARTITION BY` to keep a separate running total per store. Result: 7 rows."
   mistake:
-    sql: "WITH d AS (SELECT order_date, COUNT(*) AS n FROM orders WHERE order_date BETWEEN '2026-10-01' AND '2026-10-07' GROUP BY order_date) SELECT order_date, n, SUM(n) OVER () AS running, ROUND(n * 100.0 / SUM(n) OVER (), 1) AS pct FROM d ORDER BY order_date"
+    sql: |-
+      WITH d AS (
+        SELECT order_date, COUNT(*) AS n
+        FROM orders
+        WHERE order_date BETWEEN '2026-10-01' AND '2026-10-07'
+        GROUP BY order_date
+      )
+      SELECT order_date,
+        n,
+        SUM(n) OVER () AS running,
+        ROUND(n * 100.0 / SUM(n) OVER (), 1) AS pct
+      FROM d
+      ORDER BY order_date
     vi: "Thiếu `ORDER BY` trong OVER: mọi dòng nhận tổng cả tuần (50) chứ không cộng dồn. Cộng dồn cần thứ tự."
     en: "No `ORDER BY` inside OVER: every row gets the whole week's total (50) instead of a running total. A running total needs an order."
   try:
     task:
       vi: "Từ bảng `store_targets`, các dòng có `store_id` = 1 và `month` từ '2026-01-01' đến '2026-06-01' (tính cả hai tháng): `month`, `target_vnd` và tổng `target_vnd` cộng dồn từ tháng đầu tới tháng của dòng đó; `month` sớm nhất lên đầu."
       en: "From the `store_targets` table, the rows with `store_id` = 1 and `month` from '2026-01-01' to '2026-06-01' (both included): `month`, `target_vnd` and the running total of `target_vnd` from the first month up to that row's month; earliest `month` first."
-    starter: "WITH d AS (SELECT order_date, COUNT(*) AS n FROM orders WHERE order_date BETWEEN '2026-10-01' AND '2026-10-07' GROUP BY order_date) SELECT order_date, n, SUM(n) OVER (ORDER BY order_date) AS running, ROUND(n * 100.0 / SUM(n) OVER (), 1) AS pct FROM d ORDER BY order_date"
+    starter: |-
+      WITH d AS (
+        SELECT order_date, COUNT(*) AS n
+        FROM orders
+        WHERE order_date BETWEEN '2026-10-01' AND '2026-10-07'
+        GROUP BY order_date
+      )
+      SELECT order_date,
+        n,
+        SUM(n) OVER (ORDER BY order_date) AS running,
+        ROUND(n * 100.0 / SUM(n) OVER (), 1) AS pct
+      FROM d
+      ORDER BY order_date
     solution: "SELECT month, target_vnd, SUM(target_vnd) OVER (ORDER BY month) FROM store_targets WHERE store_id = 1 AND month <= '2026-06-01' ORDER BY month"
     ordered: true
   docs: https://www.postgresql.org/docs/current/tutorial-window.html
@@ -827,19 +1427,32 @@
   concept:
     vi: "Trước khi chạy, Postgres lập kế hoạch thực thi (execution plan): đọc bảng nào, theo cách nào, nối ra sao. Tab EXPLAIN vẽ kế hoạch đó thành cây, đọc từ dưới lên. Seq Scan là đọc cả bảng; Index Scan hay Bitmap Index Scan là tra qua chỉ mục (index), chỉ đọc dòng cần."
     en: "Before running a query, Postgres makes an execution plan: which tables to read, how, and how to join them. The EXPLAIN tab draws that plan as a tree, read from the bottom up. Seq Scan reads the whole table; Index Scan or Bitmap Index Scan looks rows up through an index, reading only what it needs."
-  example: "SELECT id, order_date, status FROM orders WHERE customer_id = 7 ORDER BY order_date, id"
+  example: |-
+    SELECT id, order_date, status
+    FROM orders
+    WHERE customer_id = 7
+    ORDER BY order_date, id
   explain:
     vi: "① Chạy ví dụ rồi mở tab EXPLAIN. ② Bước dưới cùng: `Bitmap Index Scan on orders_customer_id_idx`: tra các đơn của khách 7 qua chỉ mục theo khách. ③ Bước trên: `Sort` xếp 4 dòng theo ngày. Mỗi bước ghi số dòng ước tính và chi phí (cost): con số để so, không phải mili giây."
     en: "① Run the example, then open the EXPLAIN tab. ② The bottom step: `Bitmap Index Scan on orders_customer_id_idx`: looks up customer 7's orders through the customer index. ③ The step above: `Sort` orders the 4 rows by date. Each step shows estimated rows and a cost: a number to compare, not milliseconds."
   mistake:
-    sql: "EXPLAIN SELECT id, order_date, status FROM orders WHERE customer_id = 7 ORDER BY order_date, id"
+    sql: |-
+      EXPLAIN
+      SELECT id, order_date, status
+      FROM orders
+      WHERE customer_id = 7
+      ORDER BY order_date, id
     vi: "Tự gõ `EXPLAIN` vào câu: kết quả thành các dòng chữ của kế hoạch chứ không còn là danh sách đơn, nên nộp sẽ sai. Chạy câu bình thường rồi xem tab EXPLAIN."
     en: "Typing `EXPLAIN` into the query: the result becomes lines of plan text instead of the order list, so a submit fails. Run the plain query and look at the EXPLAIN tab."
   try:
     task:
       vi: "Từ bảng `orders`, các đơn có `customer_id` = 120 (mọi `status`): `id`, `store_id`, `status`; xếp theo `id` tăng dần. Câu này lọc theo cột có chỉ mục, nên kế hoạch sẽ tra qua chỉ mục."
       en: "From the `orders` table, the orders with `customer_id` = 120 (any `status`): `id`, `store_id`, `status`; sorted by `id` ascending. It filters on an indexed column, so the plan looks rows up through the index."
-    starter: "SELECT id, order_date, status FROM orders WHERE customer_id = 7 ORDER BY order_date, id"
+    starter: |-
+      SELECT id, order_date, status
+      FROM orders
+      WHERE customer_id = 7
+      ORDER BY order_date, id
     solution: "SELECT id, store_id, status FROM orders WHERE customer_id = 120 ORDER BY id"
     ordered: true
   docs: https://www.postgresql.org/docs/current/using-explain.html
@@ -851,19 +1464,31 @@
   concept:
     vi: "Chỉ mục trên một cột chỉ giúp được khi điều kiện so chính cột đó với một giá trị. Bọc cột trong hàm (date_trunc, extract, ::text…) thì Postgres phải tính hàm cho mọi dòng rồi mới so, nên đọc cả bảng. Viết lại thành khoảng giá trị trên cột trần."
     en: "An index on a column only helps when the condition compares that bare column with a value. Wrap the column in a function (date_trunc, extract, ::text…) and Postgres must compute it for every row before comparing, so it reads the whole table. Rewrite it as a range on the bare column."
-  example: "SELECT id, order_date FROM orders WHERE order_date >= '2026-10-01' AND order_date < '2026-10-03' ORDER BY order_date, id"
+  example: |-
+    SELECT id, order_date
+    FROM orders
+    WHERE order_date >= '2026-10-01' AND order_date < '2026-10-03'
+    ORDER BY order_date, id
   explain:
     vi: "① `order_date >= '2026-10-01' AND order_date < '2026-10-03'`: khoảng nửa mở trên cột trần. ② Tab EXPLAIN: `Bitmap Index Scan on orders_order_date_idx`. ③ Viết `date_trunc('day', order_date) …` hay `extract(…)` thì kế hoạch thành `Seq Scan`, đọc cả bảng. Kết quả: 13 đơn."
     en: "① `order_date >= '2026-10-01' AND order_date < '2026-10-03'`: a half-open range on the bare column. ② EXPLAIN tab: `Bitmap Index Scan on orders_order_date_idx`. ③ Writing `date_trunc('day', order_date) …` or `extract(…)` turns the plan into a `Seq Scan` that reads the whole table. Result: 13 orders."
   mistake:
-    sql: "SELECT id, order_date FROM orders WHERE extract(day FROM order_date) <= 2 AND extract(month FROM order_date) = 10 ORDER BY order_date, id"
+    sql: |-
+      SELECT id, order_date
+      FROM orders
+      WHERE extract(day FROM order_date) <= 2 AND extract(month FROM order_date) = 10
+      ORDER BY order_date, id
     vi: "Cắt ngày bằng `extract`: chỉ mục không dùng được, và còn sai vì gộp cả ngày 1–2/10/2025 (17 dòng thay vì 13). Giữ cột trần, so với một khoảng ngày."
     en: "Cutting the date with `extract`: the index cannot be used, and it is also wrong because it picks up 1–2 October 2025 too (17 rows instead of 13). Keep the bare column and compare it with a date range."
   try:
     task:
       vi: "Từ bảng `orders`, các đơn có `store_id` = 2 và `order_date` trong tháng 9/2026 (từ '2026-09-01' đến hết '2026-09-30', mọi `status`): `id`, `order_date`; xếp theo `order_date` rồi `id`. Viết điều kiện ngày trên cột trần để chỉ mục ngày dùng được."
       en: "From the `orders` table, the orders with `store_id` = 2 and an `order_date` in September 2026 (from '2026-09-01' through '2026-09-30', any `status`): `id`, `order_date`; sorted by `order_date`, then `id`. Write the date condition on the bare column so the date index can be used."
-    starter: "SELECT id, order_date FROM orders WHERE order_date >= '2026-10-01' AND order_date < '2026-10-03' ORDER BY order_date, id"
+    starter: |-
+      SELECT id, order_date
+      FROM orders
+      WHERE order_date >= '2026-10-01' AND order_date < '2026-10-03'
+      ORDER BY order_date, id
     solution: "SELECT id, order_date FROM orders WHERE store_id = 2 AND order_date >= '2026-09-01' AND order_date < '2026-10-01' ORDER BY order_date, id"
     ordered: true
   docs: https://www.postgresql.org/docs/current/indexes-types.html
@@ -875,18 +1500,30 @@
   concept:
     vi: "Chọn chỉ mục theo câu truy vấn hay chạy: cột trong điều kiện bằng (=) là ứng viên đầu tiên. Chỉ mục nhiều cột thì đặt các cột so bằng trước, cột so khoảng (>=, BETWEEN) sau. Chỉ mục làm đọc nhanh nhưng ghi chậm hơn và tốn chỗ, nên chỉ thêm khi có câu cần."
     en: "Pick an index from the queries that run often: a column in an equality (=) condition is the first candidate. In a multi-column index put the equality columns first and the range column (>=, BETWEEN) last. Indexes speed up reads but slow down writes and take space, so add one only when a query needs it."
-  example: "SELECT paid_at, amount_vnd FROM payments WHERE order_id = 97 ORDER BY paid_at"
+  example: |-
+    SELECT paid_at, amount_vnd
+    FROM payments
+    WHERE order_id = 97
+    ORDER BY paid_at
   explain:
     vi: "① Câu tra các khoản thanh toán của một đơn, chạy mỗi lần mở đơn. ② Tab EXPLAIN: `Seq Scan on payments`, đọc hết 1.395 dòng để lấy 2 dòng, vì chưa có chỉ mục nào theo `order_id`. ③ Một chỉ mục trên `payments (order_id)` sẽ đổi bước đó thành tra qua chỉ mục."
     en: "① The query looks up an order's payments, run every time an order is opened. ② EXPLAIN tab: `Seq Scan on payments`, reading all 1,395 rows to return 2, because there is no index by `order_id`. ③ An index on `payments (order_id)` would turn that step into an index lookup."
   mistake:
-    sql: "SELECT paid_at, amount_vnd FROM payments WHERE order_id::text LIKE '97%' ORDER BY paid_at"
+    sql: |-
+      SELECT paid_at, amount_vnd
+      FROM payments
+      WHERE order_id::text LIKE '97%'
+      ORDER BY paid_at
     vi: "So cột dưới dạng chữ (`order_id::text`): cột bị bọc trong phép đổi kiểu nên chỉ mục không dùng được, và mẫu còn khớp cả đơn 970, 971… (12 dòng thay vì 2). Giữ cột trần: `order_id = 97`."
     en: "Comparing the column as text (`order_id::text`): the cast wraps the column so the index cannot be used, and the pattern also matches orders 970, 971… (12 rows instead of 2). Keep the column bare: `order_id = 97`."
   try:
     task:
       vi: "Từ bảng `order_items`, các dòng có `product_id` = 30, `qty` = 5 và `order_id` từ 1000 trở lên: `order_id` rồi `line_no`. (Chỉ mục hợp với câu này: hai cột so bằng trước, cột so khoảng `order_id` sau.)"
       en: "From the `order_items` table, the rows with `product_id` = 30, `qty` = 5 and `order_id` of 1000 or more: `order_id` then `line_no`. (The index that fits it: the two equality columns first, the range column `order_id` last.)"
-    starter: "SELECT paid_at, amount_vnd FROM payments WHERE order_id = 97 ORDER BY paid_at"
+    starter: |-
+      SELECT paid_at, amount_vnd
+      FROM payments
+      WHERE order_id = 97
+      ORDER BY paid_at
     solution: "SELECT order_id, line_no FROM order_items WHERE product_id = 30 AND qty = 5 AND order_id >= 1000"
   docs: https://www.postgresql.org/docs/current/indexes-multicolumn.html

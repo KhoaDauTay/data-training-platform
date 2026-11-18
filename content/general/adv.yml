@@ -11,19 +11,55 @@
     concept:
       vi: "Hàm cửa sổ (window function) nhìn vào một nhóm dòng quanh dòng hiện tại. Khung (frame) nói nhóm đó là những dòng nào: ROWS đếm theo số dòng (2 dòng trước và dòng này), RANGE đếm theo giá trị (7 ngày lịch gần nhất). Khi dữ liệu thiếu ngày, hai cách cho kết quả khác nhau."
       en: "A window function looks at a group of rows around the current row. The frame says which rows: ROWS counts rows (the 2 rows before and this one), RANGE counts by value (the last 7 calendar days). When days are missing, the two give different results."
-    example: "WITH d AS (SELECT o.order_date, sum(i.qty * i.unit_price_vnd) AS revenue FROM orders o JOIN order_items i ON i.order_id = o.id WHERE o.status = 'PAID' AND o.store_id = 3 AND o.order_date >= '2026-10-01' GROUP BY o.order_date) SELECT order_date, revenue, round(avg(revenue) OVER (ORDER BY order_date ROWS BETWEEN 2 PRECEDING AND CURRENT ROW)) AS avg_3 FROM d ORDER BY order_date"
+    example: |-
+      WITH d AS (
+        SELECT o.order_date, sum(i.qty * i.unit_price_vnd) AS revenue
+        FROM orders o
+        JOIN order_items i ON i.order_id = o.id
+        WHERE o.status = 'PAID' AND o.store_id = 3 AND o.order_date >= '2026-10-01'
+        GROUP BY o.order_date
+      )
+      SELECT order_date,
+        revenue,
+        round(avg(revenue) OVER (ORDER BY order_date ROWS BETWEEN 2 PRECEDING AND CURRENT ROW)) AS avg_3
+      FROM d
+      ORDER BY order_date
     explain:
       vi: "① CTE `d` tính doanh thu mỗi ngày của cửa hàng 3 trong tháng 10/2026. ② `ROWS BETWEEN 2 PRECEDING AND CURRENT ROW`: trung bình của dòng này và 2 dòng trước. Ngày 01/10 chỉ có chính nó (295.000), ngày 02/10 là trung bình 2 ngày (533.750). ③ `ORDER BY` trong `OVER` quyết định dòng nào là \"trước\". ④ Nếu một ngày không bán gì, ROWS lấy luôn ngày bán xa hơn; muốn đúng 3 ngày lịch thì dùng `RANGE` với `interval`."
       en: "① The CTE `d` gives store 3's revenue per day in October 2026. ② `ROWS BETWEEN 2 PRECEDING AND CURRENT ROW`: the average of this row and the 2 before it. On 1 Oct there is only itself (295,000); on 2 Oct it averages 2 days (533,750). ③ The `ORDER BY` inside `OVER` decides which rows come before. ④ If a day had no sales, ROWS reaches back to an older day; for exactly 3 calendar days use `RANGE` with an `interval`."
     mistake:
-      sql: "WITH d AS (SELECT o.order_date, sum(i.qty * i.unit_price_vnd) AS revenue FROM orders o JOIN order_items i ON i.order_id = o.id WHERE o.status = 'PAID' AND o.store_id = 3 AND o.order_date >= '2026-10-01' GROUP BY o.order_date) SELECT order_date, revenue, round(avg(revenue) OVER (ORDER BY order_date)) AS avg_3 FROM d ORDER BY order_date"
+      sql: |-
+        WITH d AS (
+          SELECT o.order_date, sum(i.qty * i.unit_price_vnd) AS revenue
+          FROM orders o
+          JOIN order_items i ON i.order_id = o.id
+          WHERE o.status = 'PAID' AND o.store_id = 3 AND o.order_date >= '2026-10-01'
+          GROUP BY o.order_date
+        )
+        SELECT order_date,
+          revenue,
+          round(avg(revenue) OVER (ORDER BY order_date)) AS avg_3
+        FROM d
+        ORDER BY order_date
       vi: "Bỏ khung: với `ORDER BY` mà không ghi khung, Postgres lấy từ dòng đầu tới dòng hiện tại. Bạn nhận trung bình cộng dồn từ đầu tháng, không phải trung bình 3 dòng."
       en: "No frame: with `ORDER BY` and no frame, Postgres takes every row from the first to the current one. You get an average since the start of the month, not over 3 rows."
     try:
       task:
         vi: "Đổi sang trung bình 7 ngày lịch gần nhất (tính cả hôm nay), để ngày không bán không làm khung kéo dài."
         en: "Change it to the average over the last 7 calendar days (today included), so days without sales do not stretch the frame."
-      starter: "WITH d AS (SELECT o.order_date, sum(i.qty * i.unit_price_vnd) AS revenue FROM orders o JOIN order_items i ON i.order_id = o.id WHERE o.status = 'PAID' AND o.store_id = 3 AND o.order_date >= '2026-10-01' GROUP BY o.order_date) SELECT order_date, revenue, round(avg(revenue) OVER (ORDER BY order_date ROWS BETWEEN 2 PRECEDING AND CURRENT ROW)) AS avg_3 FROM d ORDER BY order_date"
+      starter: |-
+        WITH d AS (
+          SELECT o.order_date, sum(i.qty * i.unit_price_vnd) AS revenue
+          FROM orders o
+          JOIN order_items i ON i.order_id = o.id
+          WHERE o.status = 'PAID' AND o.store_id = 3 AND o.order_date >= '2026-10-01'
+          GROUP BY o.order_date
+        )
+        SELECT order_date,
+          revenue,
+          round(avg(revenue) OVER (ORDER BY order_date ROWS BETWEEN 2 PRECEDING AND CURRENT ROW)) AS avg_3
+        FROM d
+        ORDER BY order_date
       solution: "WITH d AS (SELECT o.order_date, sum(i.qty * i.unit_price_vnd) AS revenue FROM orders o JOIN order_items i ON i.order_id = o.id WHERE o.status = 'PAID' AND o.store_id = 3 AND o.order_date >= '2026-10-01' GROUP BY o.order_date) SELECT order_date, revenue, round(avg(revenue) OVER (ORDER BY order_date RANGE BETWEEN interval '6 days' PRECEDING AND CURRENT ROW)) AS avg_7 FROM d ORDER BY order_date"
       ordered: true
     docs: https://www.postgresql.org/docs/current/sql-expressions.html#SYNTAX-WINDOW-FUNCTIONS
@@ -33,7 +69,19 @@
       task:
         vi: "Doanh thu cộng dồn từ đầu tháng 10/2026 của cửa hàng 1 (chỉ đơn `PAID`): mỗi ngày có bán một dòng gồm ngày, doanh thu ngày, doanh thu cộng dồn, xếp theo ngày."
         en: "Store 1's running revenue since the start of October 2026 (only `PAID` orders): one row per day with sales, with the date, the day's revenue and the running total, sorted by date."
-      starter: "WITH d AS (SELECT o.order_date, sum(i.qty * i.unit_price_vnd) AS revenue FROM orders o JOIN order_items i ON i.order_id = o.id WHERE o.status = 'PAID' AND o.store_id = 1 AND o.order_date >= '2026-10-01' GROUP BY o.order_date) SELECT order_date, revenue, sum(revenue) OVER (ORDER BY order_date ROWS BETWEEN ___ AND CURRENT ROW) FROM d ORDER BY order_date"
+      starter: |-
+        WITH d AS (
+          SELECT o.order_date, sum(i.qty * i.unit_price_vnd) AS revenue
+          FROM orders o
+          JOIN order_items i ON i.order_id = o.id
+          WHERE o.status = 'PAID' AND o.store_id = 1 AND o.order_date >= '2026-10-01'
+          GROUP BY o.order_date
+        )
+        SELECT order_date,
+          revenue,
+          sum(revenue) OVER (ORDER BY order_date ROWS BETWEEN ___ AND CURRENT ROW)
+        FROM d
+        ORDER BY order_date
       solution: "WITH d AS (SELECT o.order_date, sum(i.qty * i.unit_price_vnd) AS revenue FROM orders o JOIN order_items i ON i.order_id = o.id WHERE o.status = 'PAID' AND o.store_id = 1 AND o.order_date >= '2026-10-01' GROUP BY o.order_date) SELECT order_date, revenue, sum(revenue) OVER (ORDER BY order_date ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) FROM d ORDER BY order_date"
       ordered: true
       hint: { vi: "Cộng dồn nghĩa là khung bắt đầu từ dòng đầu tiên: `UNBOUNDED PRECEDING`.", en: "A running total means the frame starts at the very first row: `UNBOUNDED PRECEDING`." }
@@ -77,19 +125,54 @@
     concept:
       vi: "Trung bình bị vài đơn rất lớn kéo lên; trung vị là giá trị đứng giữa khi xếp tất cả. percentile_cont(0.5) WITHIN GROUP (ORDER BY x) tính trung vị, 0.9 cho phân vị 90. NTILE(4) OVER (ORDER BY x) chia các dòng thành 4 nhóm gần bằng nhau về số dòng."
       en: "A few very large orders pull the average up; the median is the middle value once everything is sorted. percentile_cont(0.5) WITHIN GROUP (ORDER BY x) gives the median, 0.9 the 90th percentile. NTILE(4) OVER (ORDER BY x) splits the rows into 4 groups of nearly equal size."
-    example: "SELECT s.city, percentile_cont(0.5) WITHIN GROUP (ORDER BY t.total) AS median_vnd, round(avg(t.total)) AS avg_vnd FROM orders o JOIN stores s ON s.id = o.store_id JOIN (SELECT order_id, sum(qty * unit_price_vnd) AS total FROM order_items GROUP BY order_id) t ON t.order_id = o.id WHERE o.status = 'PAID' GROUP BY s.city ORDER BY s.city"
+    example: |-
+      SELECT s.city,
+        percentile_cont(0.5) WITHIN GROUP (ORDER BY t.total) AS median_vnd,
+        round(avg(t.total)) AS avg_vnd
+      FROM orders o
+      JOIN stores s ON s.id = o.store_id
+      JOIN (
+        SELECT order_id, sum(qty * unit_price_vnd) AS total
+        FROM order_items
+        GROUP BY order_id
+      ) t ON t.order_id = o.id
+      WHERE o.status = 'PAID'
+      GROUP BY s.city
+      ORDER BY s.city
     explain:
       vi: "① Truy vấn con `t` tính giá trị mỗi đơn. ② `percentile_cont(0.5) WITHIN GROUP (ORDER BY t.total)`: trung vị, cú pháp riêng của hàm phân vị. ③ Kết quả 3 thành phố: ở Da Nang trung vị là 353.250 đồng còn trung bình là 465.112 đồng. Trung bình cao hơn vì vài đơn rất lớn. ④ Báo cáo \"đơn điển hình\" nên dùng trung vị."
       en: "① The subquery `t` gives each order's value. ② `percentile_cont(0.5) WITHIN GROUP (ORDER BY t.total)`: the median, with the special syntax of percentile functions. ③ Result, 3 cities: in Da Nang the median is 353,250 VND while the average is 465,112 VND. The average is higher because of a few very large orders. ④ A \"typical order\" report should use the median."
     mistake:
-      sql: "SELECT s.city, percentile_cont(0.5) (ORDER BY t.total) AS median_vnd FROM orders o JOIN stores s ON s.id = o.store_id JOIN (SELECT order_id, sum(qty * unit_price_vnd) AS total FROM order_items GROUP BY order_id) t ON t.order_id = o.id GROUP BY s.city"
+      sql: |-
+        SELECT s.city, percentile_cont(0.5) (ORDER BY t.total) AS median_vnd
+        FROM orders o
+        JOIN stores s ON s.id = o.store_id
+        JOIN (
+          SELECT order_id, sum(qty * unit_price_vnd) AS total
+          FROM order_items
+          GROUP BY order_id
+        ) t ON t.order_id = o.id
+        GROUP BY s.city
       vi: "Thiếu `WITHIN GROUP`: Postgres báo lỗi cú pháp. Hàm phân vị luôn viết `percentile_cont(0.5) WITHIN GROUP (ORDER BY ...)`."
       en: "`WITHIN GROUP` is missing: Postgres reports a syntax error. Percentile functions are always written `percentile_cont(0.5) WITHIN GROUP (ORDER BY ...)`."
     try:
       task:
         vi: "Sửa ví dụ để mỗi thành phố có phân vị 90 của giá trị đơn thay cho trung vị (giữ cột trung bình)."
         en: "Change the example so each city shows the 90th percentile of order value instead of the median (keep the average column)."
-      starter: "SELECT s.city, percentile_cont(0.5) WITHIN GROUP (ORDER BY t.total) AS median_vnd, round(avg(t.total)) AS avg_vnd FROM orders o JOIN stores s ON s.id = o.store_id JOIN (SELECT order_id, sum(qty * unit_price_vnd) AS total FROM order_items GROUP BY order_id) t ON t.order_id = o.id WHERE o.status = 'PAID' GROUP BY s.city ORDER BY s.city"
+      starter: |-
+        SELECT s.city,
+          percentile_cont(0.5) WITHIN GROUP (ORDER BY t.total) AS median_vnd,
+          round(avg(t.total)) AS avg_vnd
+        FROM orders o
+        JOIN stores s ON s.id = o.store_id
+        JOIN (
+          SELECT order_id, sum(qty * unit_price_vnd) AS total
+          FROM order_items
+          GROUP BY order_id
+        ) t ON t.order_id = o.id
+        WHERE o.status = 'PAID'
+        GROUP BY s.city
+        ORDER BY s.city
       solution: "SELECT s.city, percentile_cont(0.9) WITHIN GROUP (ORDER BY t.total) AS p90_vnd, round(avg(t.total)) AS avg_vnd FROM orders o JOIN stores s ON s.id = o.store_id JOIN (SELECT order_id, sum(qty * unit_price_vnd) AS total FROM order_items GROUP BY order_id) t ON t.order_id = o.id WHERE o.status = 'PAID' GROUP BY s.city ORDER BY s.city"
     docs: https://www.postgresql.org/docs/current/functions-aggregate.html#FUNCTIONS-ORDEREDSET-TABLE
   drills:
@@ -98,7 +181,10 @@
       task:
         vi: "Giá trung vị của sản phẩm trong mỗi danh mục (`category`)."
         en: "The median product price in each `category`."
-      starter: "SELECT category, percentile_cont(0.5) WITHIN GROUP (ORDER BY ___) FROM products GROUP BY category"
+      starter: |-
+        SELECT category, percentile_cont(0.5) WITHIN GROUP (ORDER BY ___)
+        FROM products
+        GROUP BY category
       solution: "SELECT category, percentile_cont(0.5) WITHIN GROUP (ORDER BY price_vnd) FROM products GROUP BY category"
       hint: { vi: "Trong `ORDER BY` của hàm phân vị là cột bạn muốn lấy trung vị.", en: "Inside the percentile's `ORDER BY` goes the column you want the median of." }
     - id: g-a2-2
@@ -140,19 +226,38 @@
     concept:
       vi: "GROUP BY chỉ tạo dòng cho ngày có dữ liệu. Muốn đủ mọi ngày, tạo trước một \"trục\" gồm mọi ngày bằng generate_series, rồi LEFT JOIN dữ liệu vào trục. Ngày không có dữ liệu ra NULL; COALESCE đổi thành 0."
       en: "GROUP BY only makes rows for days that have data. To get every day, first build a \"spine\" of all days with generate_series, then LEFT JOIN the data onto it. Days with no data come out NULL; COALESCE turns that into 0."
-    example: "SELECT g.d::date AS day, COALESCE(sum(i.qty * i.unit_price_vnd), 0) AS revenue FROM generate_series(DATE '2026-10-01', DATE '2026-10-31', interval '1 day') AS g (d) LEFT JOIN orders o ON o.order_date = g.d AND o.store_id = 2 AND o.status = 'PAID' LEFT JOIN order_items i ON i.order_id = o.id GROUP BY g.d ORDER BY g.d"
+    example: |-
+      SELECT g.d::date AS day, COALESCE(sum(i.qty * i.unit_price_vnd), 0) AS revenue
+      FROM generate_series(DATE '2026-10-01', DATE '2026-10-31', interval '1 day') AS g (d)
+      LEFT JOIN orders o ON o.order_date = g.d AND o.store_id = 2 AND o.status = 'PAID'
+      LEFT JOIN order_items i ON i.order_id = o.id
+      GROUP BY g.d
+      ORDER BY g.d
     explain:
       vi: "① `generate_series(DATE '2026-10-01', DATE '2026-10-31', interval '1 day')`: 31 dòng, mỗi ngày một dòng. ② Điều kiện cửa hàng và trạng thái nằm trong `ON`, để ngày không có đơn vẫn giữ dòng. ③ `COALESCE(sum(...), 0)`: ngày trống ra 0. Kết quả: 31 dòng, trong đó 14 ngày cửa hàng 2 không bán gì. Chỉ `GROUP BY` thì chỉ còn 17 dòng."
       en: "① `generate_series(DATE '2026-10-01', DATE '2026-10-31', interval '1 day')`: 31 rows, one per day. ② The store and status conditions sit in `ON`, so a day with no orders keeps its row. ③ `COALESCE(sum(...), 0)`: an empty day becomes 0. Result: 31 rows, and store 2 sold nothing on 14 of those days. A plain `GROUP BY` gives only 17 rows."
     mistake:
-      sql: "SELECT g.d::date AS day, COALESCE(sum(i.qty * i.unit_price_vnd), 0) AS revenue FROM generate_series(DATE '2026-10-01', DATE '2026-10-31', interval '1 day') AS g (d) LEFT JOIN orders o ON o.order_date = g.d LEFT JOIN order_items i ON i.order_id = o.id WHERE o.store_id = 2 AND o.status = 'PAID' GROUP BY g.d ORDER BY g.d"
+      sql: |-
+        SELECT g.d::date AS day, COALESCE(sum(i.qty * i.unit_price_vnd), 0) AS revenue
+        FROM generate_series(DATE '2026-10-01', DATE '2026-10-31', interval '1 day') AS g (d)
+        LEFT JOIN orders o ON o.order_date = g.d
+        LEFT JOIN order_items i ON i.order_id = o.id
+        WHERE o.store_id = 2 AND o.status = 'PAID'
+        GROUP BY g.d
+        ORDER BY g.d
       vi: "Điều kiện đặt ở `WHERE` chạy sau `LEFT JOIN`: dòng của ngày trống có `o.store_id` là NULL nên bị bỏ, trục ngày mất tác dụng (còn 17 dòng). Đặt điều kiện của bảng bên phải vào `ON`."
       en: "A condition in `WHERE` runs after the `LEFT JOIN`: an empty day's row has `o.store_id` NULL, so it is dropped and the spine is lost (17 rows left). Put the right-hand table's conditions in `ON`."
     try:
       task:
         vi: "Đổi sang cửa hàng 5 và đếm số đơn `PAID` mỗi ngày tháng 10/2026 (ngày không có đơn ra 0)."
         en: "Switch to store 5 and count the `PAID` orders each day in October 2026 (0 on days without orders)."
-      starter: "SELECT g.d::date AS day, COALESCE(sum(i.qty * i.unit_price_vnd), 0) AS revenue FROM generate_series(DATE '2026-10-01', DATE '2026-10-31', interval '1 day') AS g (d) LEFT JOIN orders o ON o.order_date = g.d AND o.store_id = 2 AND o.status = 'PAID' LEFT JOIN order_items i ON i.order_id = o.id GROUP BY g.d ORDER BY g.d"
+      starter: |-
+        SELECT g.d::date AS day, COALESCE(sum(i.qty * i.unit_price_vnd), 0) AS revenue
+        FROM generate_series(DATE '2026-10-01', DATE '2026-10-31', interval '1 day') AS g (d)
+        LEFT JOIN orders o ON o.order_date = g.d AND o.store_id = 2 AND o.status = 'PAID'
+        LEFT JOIN order_items i ON i.order_id = o.id
+        GROUP BY g.d
+        ORDER BY g.d
       solution: "SELECT g.d::date AS day, count(o.id) AS orders FROM generate_series(DATE '2026-10-01', DATE '2026-10-31', interval '1 day') AS g (d) LEFT JOIN orders o ON o.order_date = g.d AND o.store_id = 5 AND o.status = 'PAID' GROUP BY g.d ORDER BY g.d"
       ordered: true
     docs: https://www.postgresql.org/docs/current/functions-srf.html
@@ -162,7 +267,12 @@
       task:
         vi: "Số đơn mỗi tháng của cửa hàng 4 từ 07/2025 đến 10/2026, tháng chưa mở cửa ghi 0. Mỗi tháng một dòng: tháng, số đơn, xếp theo tháng."
         en: "Store 4's orders per month from July 2025 to October 2026, 0 for months before it opened. One row per month: the month and the order count, sorted by month."
-      starter: "SELECT g.m::date AS month, count(o.id) FROM generate_series(DATE '2025-07-01', DATE '2026-10-01', interval '1 month') AS g (m) LEFT JOIN orders o ON date_trunc('month', o.order_date) = g.m AND ___ GROUP BY g.m ORDER BY g.m"
+      starter: |-
+        SELECT g.m::date AS month, count(o.id)
+        FROM generate_series(DATE '2025-07-01', DATE '2026-10-01', interval '1 month') AS g (m)
+        LEFT JOIN orders o ON date_trunc('month', o.order_date) = g.m AND ___
+        GROUP BY g.m
+        ORDER BY g.m
       solution: "SELECT g.m::date AS month, count(o.id) FROM generate_series(DATE '2025-07-01', DATE '2026-10-01', interval '1 month') AS g (m) LEFT JOIN orders o ON date_trunc('month', o.order_date) = g.m AND o.store_id = 4 GROUP BY g.m ORDER BY g.m"
       ordered: true
       hint: { vi: "Điều kiện cửa hàng phải nằm trong `ON`, nếu không tháng trống sẽ mất.", en: "The store condition must sit in `ON`, or the empty months disappear." }
@@ -206,19 +316,52 @@
     concept:
       vi: "GROUP BY ROLLUP (a, b) gom theo (a, b), thêm dòng tổng phụ cho từng a và một dòng tổng chung. CUBE thêm cả tổng theo b. GROUPING SETS cho bạn tự liệt kê các cách gom. Ở dòng tổng, cột bị gộp là NULL; GROUPING(cột) ra 1 ở những dòng đó để phân biệt với NULL thật."
       en: "GROUP BY ROLLUP (a, b) groups by (a, b), adds a subtotal row for each a and one grand total row. CUBE also adds totals by b. GROUPING SETS lets you list the groupings yourself. On a total row the rolled-up column is NULL; GROUPING(column) returns 1 there, to tell it apart from a real NULL."
-    example: "SELECT s.name, p.category, sum(i.qty * i.unit_price_vnd) AS revenue, GROUPING(s.name, p.category) AS level FROM orders o JOIN stores s ON s.id = o.store_id JOIN order_items i ON i.order_id = o.id JOIN products p ON p.id = i.product_id WHERE o.status = 'PAID' AND o.order_date >= '2026-10-01' GROUP BY ROLLUP (s.name, p.category) ORDER BY s.name, p.category"
+    example: |-
+      SELECT s.name,
+        p.category,
+        sum(i.qty * i.unit_price_vnd) AS revenue,
+        GROUPING(s.name, p.category) AS level
+      FROM orders o
+      JOIN stores s ON s.id = o.store_id
+      JOIN order_items i ON i.order_id = o.id
+      JOIN products p ON p.id = i.product_id
+      WHERE o.status = 'PAID' AND o.order_date >= '2026-10-01'
+      GROUP BY ROLLUP (s.name, p.category)
+      ORDER BY s.name, p.category
     explain:
       vi: "① `ROLLUP (s.name, p.category)`: dòng chi tiết cửa hàng × danh mục, rồi tổng phụ mỗi cửa hàng, rồi tổng chung. ② `GROUPING(s.name, p.category)` ra 0 ở dòng chi tiết, 1 ở tổng phụ cửa hàng, 3 ở tổng chung. ③ Kết quả tháng 10/2026: 31 dòng = 25 chi tiết + 5 tổng phụ + 1 tổng chung. Tổng phụ của Ben Thanh là 30.483.200 đồng."
       en: "① `ROLLUP (s.name, p.category)`: detail rows store × category, then a subtotal per store, then a grand total. ② `GROUPING(s.name, p.category)` is 0 on detail rows, 1 on store subtotals, 3 on the grand total. ③ Result for October 2026: 31 rows = 25 details + 5 subtotals + 1 grand total. Ben Thanh's subtotal is 30,483,200 VND."
     mistake:
-      sql: "SELECT s.name, p.category, sum(i.qty * i.unit_price_vnd) AS revenue, GROUPING(s.name, p.category) AS level FROM orders o JOIN stores s ON s.id = o.store_id JOIN order_items i ON i.order_id = o.id JOIN products p ON p.id = i.product_id WHERE o.status = 'PAID' AND o.order_date >= '2026-10-01' GROUP BY ROLLUP (p.category, s.name) ORDER BY s.name, p.category"
+      sql: |-
+        SELECT s.name,
+          p.category,
+          sum(i.qty * i.unit_price_vnd) AS revenue,
+          GROUPING(s.name, p.category) AS level
+        FROM orders o
+        JOIN stores s ON s.id = o.store_id
+        JOIN order_items i ON i.order_id = o.id
+        JOIN products p ON p.id = i.product_id
+        WHERE o.status = 'PAID' AND o.order_date >= '2026-10-01'
+        GROUP BY ROLLUP (p.category, s.name)
+        ORDER BY s.name, p.category
       vi: "Đảo thứ tự trong `ROLLUP`: tổng phụ giờ là theo danh mục, không theo cửa hàng. Cột đầu tiên trong `ROLLUP` là cấp lớn nhất."
       en: "The `ROLLUP` order is swapped: the subtotals are now per category, not per store. The first column in `ROLLUP` is the top level."
     try:
       task:
         vi: "Đổi để có thêm tổng mỗi danh mục trên mọi cửa hàng (giữ cột mức)."
         en: "Change it to also get a total per category across all stores (keep the level column)."
-      starter: "SELECT s.name, p.category, sum(i.qty * i.unit_price_vnd) AS revenue, GROUPING(s.name, p.category) AS level FROM orders o JOIN stores s ON s.id = o.store_id JOIN order_items i ON i.order_id = o.id JOIN products p ON p.id = i.product_id WHERE o.status = 'PAID' AND o.order_date >= '2026-10-01' GROUP BY ROLLUP (s.name, p.category) ORDER BY s.name, p.category"
+      starter: |-
+        SELECT s.name,
+          p.category,
+          sum(i.qty * i.unit_price_vnd) AS revenue,
+          GROUPING(s.name, p.category) AS level
+        FROM orders o
+        JOIN stores s ON s.id = o.store_id
+        JOIN order_items i ON i.order_id = o.id
+        JOIN products p ON p.id = i.product_id
+        WHERE o.status = 'PAID' AND o.order_date >= '2026-10-01'
+        GROUP BY ROLLUP (s.name, p.category)
+        ORDER BY s.name, p.category
       solution: "SELECT s.name, p.category, sum(i.qty * i.unit_price_vnd) AS revenue, GROUPING(s.name, p.category) AS level FROM orders o JOIN stores s ON s.id = o.store_id JOIN order_items i ON i.order_id = o.id JOIN products p ON p.id = i.product_id WHERE o.status = 'PAID' AND o.order_date >= '2026-10-01' GROUP BY CUBE (s.name, p.category) ORDER BY s.name, p.category"
     docs: https://www.postgresql.org/docs/current/queries-table-expressions.html#QUERIES-GROUPING-SETS
   drills:
@@ -227,7 +370,10 @@
       task:
         vi: "Số đơn theo kênh (`channel`) và trạng thái (`status`), thêm tổng phụ mỗi kênh và một dòng tổng chung."
         en: "Order count by `channel` and `status`, plus a subtotal per channel and one grand total row."
-      starter: "SELECT channel, status, count(*) FROM orders GROUP BY ROLLUP (___)"
+      starter: |-
+        SELECT channel, status, count(*)
+        FROM orders
+        GROUP BY ROLLUP (___)
       solution: "SELECT channel, status, count(*) FROM orders GROUP BY ROLLUP (channel, status)"
       hint: { vi: "Cấp lớn (kênh) đứng trước trong `ROLLUP`.", en: "The top level (channel) comes first in `ROLLUP`." }
     - id: g-a4-2
@@ -267,19 +413,46 @@
     concept:
       vi: "Pivot biến giá trị của một cột (tháng) thành nhiều cột. Trong Postgres cách gọn nhất là mỗi cột một hàm gộp có FILTER: sum(x) FILTER (WHERE tháng = 8), sum(x) FILTER (WHERE tháng = 9)… Số cột phải biết trước khi viết câu lệnh."
       en: "A pivot turns the values of one column (months) into several columns. In Postgres the neat way is one aggregate with FILTER per column: sum(x) FILTER (WHERE month = 8), sum(x) FILTER (WHERE month = 9)… You must know the columns before writing the query."
-    example: "SELECT o.store_id, sum(i.qty * i.unit_price_vnd) FILTER (WHERE o.order_date >= '2026-08-01' AND o.order_date < '2026-09-01') AS aug, sum(i.qty * i.unit_price_vnd) FILTER (WHERE o.order_date >= '2026-09-01' AND o.order_date < '2026-10-01') AS sep, sum(i.qty * i.unit_price_vnd) FILTER (WHERE o.order_date >= '2026-10-01') AS oct FROM orders o JOIN order_items i ON i.order_id = o.id WHERE o.status = 'PAID' AND o.order_date >= '2026-08-01' GROUP BY o.store_id ORDER BY o.store_id"
+    example: |-
+      SELECT o.store_id,
+        sum(i.qty * i.unit_price_vnd) FILTER (WHERE o.order_date >= '2026-08-01' AND o.order_date < '2026-09-01') AS aug,
+        sum(i.qty * i.unit_price_vnd) FILTER (WHERE o.order_date >= '2026-09-01' AND o.order_date < '2026-10-01') AS sep,
+        sum(i.qty * i.unit_price_vnd) FILTER (WHERE o.order_date >= '2026-10-01') AS oct
+      FROM orders o
+      JOIN order_items i ON i.order_id = o.id
+      WHERE o.status = 'PAID' AND o.order_date >= '2026-08-01'
+      GROUP BY o.store_id
+      ORDER BY o.store_id
     explain:
       vi: "① `WHERE` giữ mọi dòng của cả 3 tháng; mỗi cột tự lọc tháng của nó bằng `FILTER`. ② Mỗi cửa hàng một dòng, mỗi tháng một cột: kết quả 5 dòng × 4 cột. ③ Tháng không có dòng nào thì ô là NULL; muốn 0 thì bọc `COALESCE(..., 0)`. ④ Thêm tháng = thêm một cột `FILTER`."
       en: "① `WHERE` keeps every row of all 3 months; each column filters its own month with `FILTER`. ② One row per store, one column per month: the result is 5 rows × 4 columns. ③ A month with no rows gives NULL; wrap it in `COALESCE(..., 0)` for 0. ④ Another month = one more `FILTER` column."
     mistake:
-      sql: "SELECT o.store_id, sum(i.qty * i.unit_price_vnd) FILTER (WHERE o.order_date >= '2026-08-01' AND o.order_date < '2026-09-01') AS aug, sum(i.qty * i.unit_price_vnd) FILTER (WHERE o.order_date >= '2026-09-01' AND o.order_date < '2026-10-01') AS sep, sum(i.qty * i.unit_price_vnd) FILTER (WHERE o.order_date >= '2026-10-01') AS oct FROM orders o JOIN order_items i ON i.order_id = o.id WHERE o.status = 'PAID' AND o.order_date >= '2026-08-01' AND o.order_date < '2026-09-01' GROUP BY o.store_id ORDER BY o.store_id"
+      sql: |-
+        SELECT o.store_id,
+          sum(i.qty * i.unit_price_vnd) FILTER (WHERE o.order_date >= '2026-08-01' AND o.order_date < '2026-09-01') AS aug,
+          sum(i.qty * i.unit_price_vnd) FILTER (WHERE o.order_date >= '2026-09-01' AND o.order_date < '2026-10-01') AS sep,
+          sum(i.qty * i.unit_price_vnd) FILTER (WHERE o.order_date >= '2026-10-01') AS oct
+        FROM orders o
+        JOIN order_items i ON i.order_id = o.id
+        WHERE o.status = 'PAID' AND o.order_date >= '2026-08-01' AND o.order_date < '2026-09-01'
+        GROUP BY o.store_id
+        ORDER BY o.store_id
       vi: "Lọc tháng 8 ở `WHERE` thì các dòng tháng 9 và 10 đã bị bỏ trước khi `FILTER` chạy: hai cột đó toàn NULL. `WHERE` phải giữ đủ mọi tháng của các cột."
       en: "Filtering August in `WHERE` drops the September and October rows before `FILTER` runs: those two columns are all NULL. `WHERE` must keep every month the columns need."
     try:
       task:
         vi: "Đổi thành số đơn `PAID` theo kênh: mỗi kênh một dòng, ba cột tháng 8, 9, 10/2026."
         en: "Change it to the number of `PAID` orders by channel: one row per channel, three columns for August, September and October 2026."
-      starter: "SELECT o.store_id, sum(i.qty * i.unit_price_vnd) FILTER (WHERE o.order_date >= '2026-08-01' AND o.order_date < '2026-09-01') AS aug, sum(i.qty * i.unit_price_vnd) FILTER (WHERE o.order_date >= '2026-09-01' AND o.order_date < '2026-10-01') AS sep, sum(i.qty * i.unit_price_vnd) FILTER (WHERE o.order_date >= '2026-10-01') AS oct FROM orders o JOIN order_items i ON i.order_id = o.id WHERE o.status = 'PAID' AND o.order_date >= '2026-08-01' GROUP BY o.store_id ORDER BY o.store_id"
+      starter: |-
+        SELECT o.store_id,
+          sum(i.qty * i.unit_price_vnd) FILTER (WHERE o.order_date >= '2026-08-01' AND o.order_date < '2026-09-01') AS aug,
+          sum(i.qty * i.unit_price_vnd) FILTER (WHERE o.order_date >= '2026-09-01' AND o.order_date < '2026-10-01') AS sep,
+          sum(i.qty * i.unit_price_vnd) FILTER (WHERE o.order_date >= '2026-10-01') AS oct
+        FROM orders o
+        JOIN order_items i ON i.order_id = o.id
+        WHERE o.status = 'PAID' AND o.order_date >= '2026-08-01'
+        GROUP BY o.store_id
+        ORDER BY o.store_id
       solution: "SELECT o.channel, count(*) FILTER (WHERE o.order_date >= '2026-08-01' AND o.order_date < '2026-09-01') AS aug, count(*) FILTER (WHERE o.order_date >= '2026-09-01' AND o.order_date < '2026-10-01') AS sep, count(*) FILTER (WHERE o.order_date >= '2026-10-01') AS oct FROM orders o WHERE o.status = 'PAID' AND o.order_date >= '2026-08-01' GROUP BY o.channel ORDER BY o.channel"
     docs: https://www.postgresql.org/docs/current/sql-expressions.html#SYNTAX-AGGREGATES
   drills:
@@ -288,7 +461,15 @@
       task:
         vi: "Mỗi danh mục: số đơn vị bán (`qty`) ở kênh `STORE` và ở kênh `ONLINE`, hai cột, chỉ đơn `PAID`."
         en: "Each category: units sold (`qty`) in the `STORE` channel and in the `ONLINE` channel, two columns, `PAID` orders only."
-      starter: "SELECT p.category, sum(i.qty) FILTER (WHERE ___) AS store_units, sum(i.qty) FILTER (WHERE ___) AS online_units FROM orders o JOIN order_items i ON i.order_id = o.id JOIN products p ON p.id = i.product_id WHERE o.status = 'PAID' GROUP BY p.category"
+      starter: |-
+        SELECT p.category,
+          sum(i.qty) FILTER (WHERE ___) AS store_units,
+          sum(i.qty) FILTER (WHERE ___) AS online_units
+        FROM orders o
+        JOIN order_items i ON i.order_id = o.id
+        JOIN products p ON p.id = i.product_id
+        WHERE o.status = 'PAID'
+        GROUP BY p.category
       solution: "SELECT p.category, sum(i.qty) FILTER (WHERE o.channel = 'STORE') AS store_units, sum(i.qty) FILTER (WHERE o.channel = 'ONLINE') AS online_units FROM orders o JOIN order_items i ON i.order_id = o.id JOIN products p ON p.id = i.product_id WHERE o.status = 'PAID' GROUP BY p.category"
       hint: { vi: "Mỗi `FILTER` giữ một kênh.", en: "Each `FILTER` keeps one channel." }
     - id: g-a5-2
@@ -330,19 +511,55 @@
     concept:
       vi: "WITH RECURSIVE có hai phần nối bằng UNION ALL: phần mở đầu (anchor) chọn các dòng xuất phát, phần đệ quy nối bảng với chính kết quả CTE để đi xuống thêm một cấp. Postgres lặp lại tới khi không còn dòng mới."
       en: "WITH RECURSIVE has two parts joined by UNION ALL: the anchor picks the starting rows, the recursive part joins the table to the CTE's own result to go one level further. Postgres repeats until no new rows appear."
-    example: "WITH RECURSIVE t AS (SELECT id, name, manager_id, 0 AS depth FROM staff WHERE manager_id IS NULL UNION ALL SELECT s.id, s.name, s.manager_id, t.depth + 1 FROM staff s JOIN t ON s.manager_id = t.id) SELECT id, name, depth FROM t ORDER BY depth, id"
+    example: |-
+      WITH RECURSIVE t AS (
+        SELECT id, name, manager_id, 0 AS depth
+        FROM staff
+        WHERE manager_id IS NULL
+        UNION ALL
+        SELECT s.id, s.name, s.manager_id, t.depth + 1
+        FROM staff s
+        JOIN t ON s.manager_id = t.id
+      )
+      SELECT id, name, depth
+      FROM t
+      ORDER BY depth, id
     explain:
       vi: "① Phần mở đầu: người không có quản lý (CEO, cấp 0). ② Phần đệ quy: nhân viên có `manager_id` là một người đã ở trong `t`, cấp + 1. ③ Kết quả: 20 người, 5 cấp (0 đến 4): 1 ở cấp 0, 3 ở cấp 1, 6 ở cấp 2, 7 ở cấp 3, 3 ở cấp 4. ④ JOIN thường chỉ đi được số cấp bạn viết sẵn."
       en: "① The anchor: the person with no manager (the CEO, level 0). ② The recursive part: staff whose `manager_id` is someone already in `t`, level + 1. ③ Result: 20 people over 5 levels (0 to 4): 1 at level 0, 3 at level 1, 6 at level 2, 7 at level 3, 3 at level 4. ④ A plain JOIN only goes as many levels as you write out."
     mistake:
-      sql: "WITH t AS (SELECT id, name, manager_id, 0 AS depth FROM staff WHERE manager_id IS NULL UNION ALL SELECT s.id, s.name, s.manager_id, t.depth + 1 FROM staff s JOIN t ON s.manager_id = t.id) SELECT id, name, depth FROM t ORDER BY depth, id"
+      sql: |-
+        WITH t AS (
+          SELECT id, name, manager_id, 0 AS depth
+          FROM staff
+          WHERE manager_id IS NULL
+          UNION ALL
+          SELECT s.id, s.name, s.manager_id, t.depth + 1
+          FROM staff s
+          JOIN t ON s.manager_id = t.id
+        )
+        SELECT id, name, depth
+        FROM t
+        ORDER BY depth, id
       vi: "Thiếu chữ `RECURSIVE`: CTE không được tự gọi chính nó, Postgres báo relation \"t\" does not exist."
       en: "The word `RECURSIVE` is missing: the CTE may not refer to itself, and Postgres says relation \"t\" does not exist."
     try:
       task:
         vi: "Chỉ lấy những người dưới quyền Do Lan (mã 2) ở mọi cấp, kể cả Do Lan (cấp 0)."
         en: "Get only the people under Do Lan (id 2) at every level, Do Lan included (level 0)."
-      starter: "WITH RECURSIVE t AS (SELECT id, name, manager_id, 0 AS depth FROM staff WHERE manager_id IS NULL UNION ALL SELECT s.id, s.name, s.manager_id, t.depth + 1 FROM staff s JOIN t ON s.manager_id = t.id) SELECT id, name, depth FROM t ORDER BY depth, id"
+      starter: |-
+        WITH RECURSIVE t AS (
+          SELECT id, name, manager_id, 0 AS depth
+          FROM staff
+          WHERE manager_id IS NULL
+          UNION ALL
+          SELECT s.id, s.name, s.manager_id, t.depth + 1
+          FROM staff s
+          JOIN t ON s.manager_id = t.id
+        )
+        SELECT id, name, depth
+        FROM t
+        ORDER BY depth, id
       solution: "WITH RECURSIVE t AS (SELECT id, name, manager_id, 0 AS depth FROM staff WHERE id = 2 UNION ALL SELECT s.id, s.name, s.manager_id, t.depth + 1 FROM staff s JOIN t ON s.manager_id = t.id) SELECT id, name, depth FROM t ORDER BY depth, id"
       ordered: true
     docs: https://www.postgresql.org/docs/current/queries-with.html#QUERIES-WITH-RECURSIVE
@@ -352,7 +569,19 @@
       task:
         vi: "Chuỗi quản lý phía trên Lam Phuong (mã 14), từ chính Lam Phuong tới CEO: mã, tên, bước (Lam Phuong là 0), xếp theo bước."
         en: "The chain of managers above Lam Phuong (id 14), from Lam Phuong up to the CEO: id, name, step (Lam Phuong is 0), sorted by step."
-      starter: "WITH RECURSIVE up AS (SELECT id, name, manager_id, 0 AS step FROM staff WHERE id = 14 UNION ALL SELECT s.id, s.name, s.manager_id, up.step + 1 FROM staff s JOIN up ON s.id = up.___) SELECT id, name, step FROM up ORDER BY step"
+      starter: |-
+        WITH RECURSIVE up AS (
+          SELECT id, name, manager_id, 0 AS step
+          FROM staff
+          WHERE id = 14
+          UNION ALL
+          SELECT s.id, s.name, s.manager_id, up.step + 1
+          FROM staff s
+          JOIN up ON s.id = up.___
+        )
+        SELECT id, name, step
+        FROM up
+        ORDER BY step
       solution: "WITH RECURSIVE up AS (SELECT id, name, manager_id, 0 AS step FROM staff WHERE id = 14 UNION ALL SELECT s.id, s.name, s.manager_id, up.step + 1 FROM staff s JOIN up ON s.id = up.manager_id) SELECT id, name, step FROM up ORDER BY step"
       ordered: true
       hint: { vi: "Đi lên: người tiếp theo là quản lý của người vừa tìm được.", en: "Going up: the next person is the manager of the one just found." }
@@ -394,19 +623,30 @@
     concept:
       vi: "Cột jsonb chứa một đối tượng có khóa. props->>'device' lấy giá trị của khóa device dưới dạng chữ (dùng để so sánh, gom nhóm); props->'items' lấy dưới dạng jsonb (dùng tiếp với hàm JSON). jsonb_array_length đếm phần tử mảng, jsonb_array_elements_text tách mảng thành dòng."
       en: "A jsonb column holds an object with keys. props->>'device' gets the device key's value as text (for comparing, grouping); props->'items' gets it as jsonb (to pass on to JSON functions). jsonb_array_length counts array elements, jsonb_array_elements_text turns an array into rows."
-    example: "SELECT props->>'device' AS device, count(*) FROM app_events GROUP BY props->>'device' ORDER BY device"
+    example: |-
+      SELECT props->>'device' AS device, count(*)
+      FROM app_events
+      GROUP BY props->>'device'
+      ORDER BY device
     explain:
       vi: "① Mỗi dòng của `app_events` có `props` như `{\"screen\": \"home\", \"device\": \"ios\", \"items\": []}`. ② `props->>'device'` ra chữ `ios`, `android` hoặc `web`. ③ Kết quả 3 dòng: android 653, ios 684, web 591 sự kiện. ④ `->` giữ kiểu jsonb, `->>` ra chữ: so sánh với chữ thường thì dùng `->>`."
       en: "① Each `app_events` row has `props` such as `{\"screen\": \"home\", \"device\": \"ios\", \"items\": []}`. ② `props->>'device'` gives the text `ios`, `android` or `web`. ③ Result, 3 rows: android 653, ios 684, web 591 events. ④ `->` keeps jsonb, `->>` gives text: to compare with plain text, use `->>`."
     mistake:
-      sql: "SELECT count(*) FROM app_events WHERE props->'device' = 'ios'"
+      sql: |-
+        SELECT count(*)
+        FROM app_events
+        WHERE props->'device' = 'ios'
       vi: "`->` ra jsonb, nên Postgres thử đọc `'ios'` như JSON và báo lỗi invalid input syntax for type json. Dùng `props->>'device' = 'ios'`."
       en: "`->` returns jsonb, so Postgres tries to read `'ios'` as JSON and reports invalid input syntax for type json. Use `props->>'device' = 'ios'`."
     try:
       task:
         vi: "Đổi sang đếm sự kiện theo màn hình (khóa `screen`)."
         en: "Change it to count events by screen (the `screen` key)."
-      starter: "SELECT props->>'device' AS device, count(*) FROM app_events GROUP BY props->>'device' ORDER BY device"
+      starter: |-
+        SELECT props->>'device' AS device, count(*)
+        FROM app_events
+        GROUP BY props->>'device'
+        ORDER BY device
       solution: "SELECT props->>'screen' AS screen, count(*) FROM app_events GROUP BY props->>'screen' ORDER BY screen"
     docs: https://www.postgresql.org/docs/current/functions-json.html
   drills:
@@ -415,7 +655,11 @@
       task:
         vi: "Mỗi thiết bị (khóa `device`): số sự kiện thanh toán (`event` là `paid`)."
         en: "Each device (the `device` key): the number of payment events (`event` is `paid`)."
-      starter: "SELECT props->>___, count(*) FROM app_events WHERE event = 'paid' GROUP BY 1"
+      starter: |-
+        SELECT props->>___, count(*)
+        FROM app_events
+        WHERE event = 'paid'
+        GROUP BY 1
       solution: "SELECT props->>'device', count(*) FROM app_events WHERE event = 'paid' GROUP BY 1"
       hint: { vi: "Tên khóa viết trong nháy đơn sau `->>`.", en: "The key name goes in single quotes after `->>`." }
     - id: g-a7-2
@@ -463,7 +707,11 @@
       vi: "① Mẫu đọc là: đầu chuỗi, chữ thường/số/chấm/gạch dưới, `@`, tên miền, một hay nhiều đuôi `.xx`, cuối chuỗi. ② `!~`: giữ email không khớp. ③ Kết quả: 41 email sai trong 140 đăng ký: viết hoa, thừa khoảng trắng cuối, hay `at` thay cho `@`. ④ 10 email NULL không hiện: NULL không khớp cũng không \"không khớp\"."
       en: "① The pattern reads: start, lowercase letters/digits/dots/underscores, `@`, a domain, one or more `.xx` endings, end. ② `!~`: keep the emails that do not match. ③ Result: 41 bad emails out of 140 sign-ups: uppercase, a trailing space, or `at` instead of `@`. ④ The 10 NULL emails do not show: NULL neither matches nor fails to match."
     mistake:
-      sql: "SELECT id, email FROM raw_signups WHERE email NOT LIKE '%@%' ORDER BY id"
+      sql: |-
+        SELECT id, email
+        FROM raw_signups
+        WHERE email NOT LIKE '%@%'
+        ORDER BY id
       vi: "`LIKE` chỉ bắt được email thiếu `@` (13 dòng); email viết hoa hay thừa khoảng trắng vẫn lọt. Mẫu nhiều điều kiện cần regex."
       en: "`LIKE` only catches emails without `@` (13 rows); uppercase emails or trailing spaces still get through. A pattern with many rules needs a regex."
     try:
@@ -520,19 +768,58 @@
     concept:
       vi: "Truy vấn con trong FROM bình thường không được nhắc tới bảng đứng trước nó. Thêm LATERAL thì được: truy vấn con chạy lại cho từng dòng bên trái, nên có thể ORDER BY … LIMIT 3 riêng cho mỗi cửa hàng. LEFT JOIN LATERAL … ON true giữ cả dòng bên trái không có kết quả."
       en: "A subquery in FROM normally cannot mention the tables before it. With LATERAL it can: the subquery runs again for each row on the left, so it can ORDER BY … LIMIT 3 for each store separately. LEFT JOIN LATERAL … ON true keeps left rows that get no result."
-    example: "SELECT s.name AS store, x.product, x.units FROM stores s CROSS JOIN LATERAL (SELECT p.name AS product, sum(i.qty) AS units FROM orders o JOIN order_items i ON i.order_id = o.id JOIN products p ON p.id = i.product_id WHERE o.store_id = s.id AND o.status = 'PAID' GROUP BY p.name ORDER BY units DESC, p.name LIMIT 3) x ORDER BY s.name, x.units DESC, x.product"
+    example: |-
+      SELECT s.name AS store, x.product, x.units
+      FROM stores s
+      CROSS JOIN LATERAL (
+        SELECT p.name AS product, sum(i.qty) AS units
+        FROM orders o
+        JOIN order_items i ON i.order_id = o.id
+        JOIN products p ON p.id = i.product_id
+        WHERE o.store_id = s.id AND o.status = 'PAID'
+        GROUP BY p.name
+        ORDER BY units DESC, p.name
+        LIMIT 3
+      ) x
+      ORDER BY s.name, x.units DESC, x.product
     explain:
       vi: "① Truy vấn con nhắc tới `s.id` của dòng cửa hàng bên trái: nhờ `LATERAL`. ② Với mỗi cửa hàng: gom theo sản phẩm, xếp giảm dần, `LIMIT 3`. ③ Kết quả 15 dòng = 5 cửa hàng × 3 sản phẩm; ở Ben Thanh đứng đầu là Highlighter set với 165 đơn vị. ④ `p.name` trong `ORDER BY` là tiêu chí phụ để top 3 không đổi giữa các lần chạy."
       en: "① The subquery mentions the left store row's `s.id`: that is what `LATERAL` allows. ② For each store: group by product, sort descending, `LIMIT 3`. ③ Result: 15 rows = 5 stores × 3 products; at Ben Thanh the top one is Highlighter set with 165 units. ④ `p.name` in `ORDER BY` is the tie-breaker so the top 3 stays the same between runs."
     mistake:
-      sql: "SELECT s.name AS store, x.product, x.units FROM stores s CROSS JOIN (SELECT p.name AS product, sum(i.qty) AS units FROM orders o JOIN order_items i ON i.order_id = o.id JOIN products p ON p.id = i.product_id WHERE o.store_id = s.id AND o.status = 'PAID' GROUP BY p.name ORDER BY units DESC, p.name LIMIT 3) x ORDER BY s.name, x.units DESC, x.product"
+      sql: |-
+        SELECT s.name AS store, x.product, x.units
+        FROM stores s
+        CROSS JOIN (
+          SELECT p.name AS product, sum(i.qty) AS units
+          FROM orders o
+          JOIN order_items i ON i.order_id = o.id
+          JOIN products p ON p.id = i.product_id
+          WHERE o.store_id = s.id AND o.status = 'PAID'
+          GROUP BY p.name
+          ORDER BY units DESC, p.name
+          LIMIT 3
+        ) x
+        ORDER BY s.name, x.units DESC, x.product
       vi: "Thiếu `LATERAL`: truy vấn con không thấy `s`, Postgres báo invalid reference to FROM-clause entry for table \"s\"."
       en: "`LATERAL` is missing: the subquery cannot see `s`, and Postgres says invalid reference to FROM-clause entry for table \"s\"."
     try:
       task:
         vi: "Đổi thành 2 danh mục có doanh thu đơn `PAID` cao nhất mỗi cửa hàng (bằng nhau thì theo tên danh mục)."
         en: "Change it to each store's 2 categories with the highest `PAID` revenue (ties by category name)."
-      starter: "SELECT s.name AS store, x.product, x.units FROM stores s CROSS JOIN LATERAL (SELECT p.name AS product, sum(i.qty) AS units FROM orders o JOIN order_items i ON i.order_id = o.id JOIN products p ON p.id = i.product_id WHERE o.store_id = s.id AND o.status = 'PAID' GROUP BY p.name ORDER BY units DESC, p.name LIMIT 3) x ORDER BY s.name, x.units DESC, x.product"
+      starter: |-
+        SELECT s.name AS store, x.product, x.units
+        FROM stores s
+        CROSS JOIN LATERAL (
+          SELECT p.name AS product, sum(i.qty) AS units
+          FROM orders o
+          JOIN order_items i ON i.order_id = o.id
+          JOIN products p ON p.id = i.product_id
+          WHERE o.store_id = s.id AND o.status = 'PAID'
+          GROUP BY p.name
+          ORDER BY units DESC, p.name
+          LIMIT 3
+        ) x
+        ORDER BY s.name, x.units DESC, x.product
       solution: "SELECT s.name AS store, x.category, x.revenue FROM stores s CROSS JOIN LATERAL (SELECT p.category, sum(i.qty * i.unit_price_vnd) AS revenue FROM orders o JOIN order_items i ON i.order_id = o.id JOIN products p ON p.id = i.product_id WHERE o.store_id = s.id AND o.status = 'PAID' GROUP BY p.category ORDER BY revenue DESC, p.category LIMIT 2) x ORDER BY s.name, x.revenue DESC, x.category"
       ordered: true
     docs: https://www.postgresql.org/docs/current/queries-table-expressions.html#QUERIES-LATERAL
@@ -542,7 +829,17 @@
       task:
         vi: "Mỗi khách ở `Hue`: mã khách, mã và ngày của đơn gần nhất (mọi trạng thái; bằng ngày thì mã đơn lớn hơn là gần hơn). Khách chưa có đơn thì không có dòng."
         en: "Each customer in `Hue`: customer id, and the id and date of their latest order (every status; on the same date, the larger order id is the later one). A customer with no orders has no row."
-      starter: "SELECT c.id, x.id, x.order_date FROM customers c CROSS JOIN LATERAL (SELECT o.id, o.order_date FROM orders o WHERE o.customer_id = c.id ORDER BY o.order_date DESC, o.id DESC LIMIT ___) x WHERE c.city = 'Hue'"
+      starter: |-
+        SELECT c.id, x.id, x.order_date
+        FROM customers c
+        CROSS JOIN LATERAL (
+          SELECT o.id, o.order_date
+          FROM orders o
+          WHERE o.customer_id = c.id
+          ORDER BY o.order_date DESC, o.id DESC
+          LIMIT ___
+        ) x
+        WHERE c.city = 'Hue'
       solution: "SELECT c.id, x.id, x.order_date FROM customers c CROSS JOIN LATERAL (SELECT o.id, o.order_date FROM orders o WHERE o.customer_id = c.id ORDER BY o.order_date DESC, o.id DESC LIMIT 1) x WHERE c.city = 'Hue'"
       hint: { vi: "\"Đơn gần nhất\" là một đơn.", en: "\"The latest order\" is one order." }
     - id: g-a9-2
@@ -583,19 +880,30 @@
     concept:
       vi: "EXPLAIN cho xem kế hoạch Postgres định dùng: Seq Scan đọc cả bảng, Index Scan hay Bitmap Index Scan đi qua chỉ mục (index). Chỉ mục chỉ dùng được khi điều kiện so sánh thẳng cột với giá trị; bọc cột trong hàm (extract, ::text) thì thường mất chỉ mục. Ở đây chỉ chấm kế hoạch, không chấm mili giây."
       en: "EXPLAIN shows the plan Postgres means to use: a Seq Scan reads the whole table, an Index Scan or Bitmap Index Scan goes through an index. An index only helps when the condition compares the column directly with a value; wrapping the column in a function (extract, ::text) usually loses the index. Only the plan is graded here, never milliseconds."
-    example: "EXPLAIN SELECT id FROM orders WHERE order_date = '2026-09-09'"
+    example: |-
+      EXPLAIN
+      SELECT id
+      FROM orders
+      WHERE order_date = '2026-09-09'
     explain:
       vi: "① `lab` có sẵn chỉ mục trên `orders(order_date)`, `orders(customer_id)` và `app_events(user_id, ts)`. ② Kế hoạch có `Bitmap Index Scan on orders_order_date_idx`: Postgres dùng chỉ mục và ước khoảng 11 dòng. ③ Viết `extract(day FROM order_date) = 9 AND ...` thì cùng kết quả nhưng kế hoạch thành `Seq Scan`, đọc cả 1.428 đơn."
       en: "① `lab` already has indexes on `orders(order_date)`, `orders(customer_id)` and `app_events(user_id, ts)`. ② The plan shows `Bitmap Index Scan on orders_order_date_idx`: Postgres uses the index and expects about 11 rows. ③ Writing `extract(day FROM order_date) = 9 AND ...` gives the same rows but the plan becomes a `Seq Scan` over all 1,428 orders."
     mistake:
-      sql: "EXPLAIN SELECT id FROM orders WHERE extract(year FROM order_date) = 2026 AND extract(month FROM order_date) = 9 AND extract(day FROM order_date) = 9"
+      sql: |-
+        EXPLAIN
+        SELECT id
+        FROM orders
+        WHERE extract(year FROM order_date) = 2026 AND extract(month FROM order_date) = 9 AND extract(day FROM order_date) = 9
       vi: "Cột bị bọc trong `extract(...)`: chỉ mục trên `order_date` không dùng được, kế hoạch là `Seq Scan`."
       en: "The column is wrapped in `extract(...)`: the index on `order_date` cannot be used, and the plan is a `Seq Scan`."
     try:
       task:
         vi: "Lấy mã và ngày của các đơn từ 25/10/2026 tới hết 31/10/2026, viết sao cho dùng được chỉ mục trên ngày đặt."
         en: "Get the id and date of the orders from 25 October 2026 through 31 October 2026, written so the order-date index can be used."
-      starter: "SELECT id, order_date FROM orders WHERE order_date = '2026-09-09'"
+      starter: |-
+        SELECT id, order_date
+        FROM orders
+        WHERE order_date = '2026-09-09'
       solution: "SELECT id, order_date FROM orders WHERE order_date >= '2026-10-25' AND order_date < '2026-11-01'"
     docs: https://www.postgresql.org/docs/current/using-explain.html
   drills:
@@ -653,26 +961,55 @@
     concept:
       vi: "Một KPI là một phân số có định nghĩa rõ: tử số là gì, mẫu số là gì, tính trên kỳ nào. Giá trị đơn trung bình (AOV) = doanh thu chia số đơn, không phải trung bình các dòng hàng. Tăng trưởng so với tháng trước (MoM) = (tháng này − tháng trước) / tháng trước; LAG lấy giá trị tháng trước."
       en: "A KPI is a fraction with a clear definition: what the numerator is, what the denominator is, over which period. Average order value (AOV) = revenue divided by the number of orders, not the average of item lines. Month-over-month growth (MoM) = (this month − last month) / last month; LAG fetches last month's value."
-    example: "SELECT date_trunc('month', o.order_date)::date AS month, sum(i.qty * i.unit_price_vnd) AS revenue, count(DISTINCT o.id) AS orders, round(sum(i.qty * i.unit_price_vnd)::numeric / count(DISTINCT o.id)) AS aov FROM orders o JOIN order_items i ON i.order_id = o.id WHERE o.status = 'PAID' AND o.order_date >= '2026-07-01' GROUP BY 1 ORDER BY 1"
+    example: |-
+      SELECT date_trunc('month', o.order_date)::date AS month,
+        sum(i.qty * i.unit_price_vnd) AS revenue,
+        count(DISTINCT o.id) AS orders,
+        round(sum(i.qty * i.unit_price_vnd)::numeric / count(DISTINCT o.id)) AS aov
+      FROM orders o
+      JOIN order_items i ON i.order_id = o.id
+      WHERE o.status = 'PAID' AND o.order_date >= '2026-07-01'
+      GROUP BY 1
+      ORDER BY 1
     explain:
       vi: "① `count(DISTINCT o.id)`: sau khi nối với dòng hàng, mỗi đơn lặp lại nhiều lần, nên phải đếm mã đơn khác nhau. ② `::numeric` trước khi chia để không mất phần lẻ. ③ Kết quả: 4 tháng; tháng 7 có 115 đơn, AOV 486.231 đồng; tháng 10 có 200 đơn, doanh thu 97.162.500 đồng, AOV 485.813 đồng. Doanh thu tăng mạnh nhưng AOV gần như đứng yên: tăng là do nhiều đơn hơn, không phải đơn to hơn."
       en: "① `count(DISTINCT o.id)`: after the join with item lines each order repeats, so count distinct order ids. ② `::numeric` before dividing so the fraction is not lost. ③ Result: 4 months; July has 115 orders, AOV 486,231 VND; October has 200 orders, revenue 97,162,500 VND, AOV 485,813 VND. Revenue grew a lot but AOV barely moved: growth came from more orders, not bigger ones."
     mistake:
-      sql: "SELECT date_trunc('month', o.order_date)::date AS month, round(avg(i.qty * i.unit_price_vnd)) AS aov FROM orders o JOIN order_items i ON i.order_id = o.id WHERE o.status = 'PAID' AND o.order_date >= '2026-07-01' GROUP BY 1"
+      sql: |-
+        SELECT date_trunc('month', o.order_date)::date AS month,
+          round(avg(i.qty * i.unit_price_vnd)) AS aov
+        FROM orders o
+        JOIN order_items i ON i.order_id = o.id
+        WHERE o.status = 'PAID' AND o.order_date >= '2026-07-01'
+        GROUP BY 1
       vi: "`avg` trên các dòng hàng cho giá trị trung bình của một dòng, không phải của một đơn: mỗi đơn có 1 đến 4 dòng nên con số nhỏ hơn AOV thật nhiều lần."
       en: "`avg` over item lines gives the average value of a line, not of an order: each order has 1 to 4 lines, so the number is several times smaller than the real AOV."
     try:
       task:
         vi: "Với mỗi tháng của năm 2026: doanh thu và % tăng so với tháng trước (làm tròn 1 chữ số thập phân). Tháng 1 không có tháng trước nên để trống."
         en: "For each month of 2026: revenue and the % change from the previous month (rounded to 1 decimal). January has no previous month, so leave it empty."
-      starter: "SELECT date_trunc('month', o.order_date)::date AS month, sum(i.qty * i.unit_price_vnd) AS revenue, count(DISTINCT o.id) AS orders, round(sum(i.qty * i.unit_price_vnd)::numeric / count(DISTINCT o.id)) AS aov FROM orders o JOIN order_items i ON i.order_id = o.id WHERE o.status = 'PAID' AND o.order_date >= '2026-07-01' GROUP BY 1 ORDER BY 1"
+      starter: |-
+        SELECT date_trunc('month', o.order_date)::date AS month,
+          sum(i.qty * i.unit_price_vnd) AS revenue,
+          count(DISTINCT o.id) AS orders,
+          round(sum(i.qty * i.unit_price_vnd)::numeric / count(DISTINCT o.id)) AS aov
+        FROM orders o
+        JOIN order_items i ON i.order_id = o.id
+        WHERE o.status = 'PAID' AND o.order_date >= '2026-07-01'
+        GROUP BY 1
+        ORDER BY 1
       solution: "WITH m AS (SELECT date_trunc('month', o.order_date)::date AS month, sum(i.qty * i.unit_price_vnd) AS revenue FROM orders o JOIN order_items i ON i.order_id = o.id WHERE o.status = 'PAID' AND o.order_date >= '2026-01-01' GROUP BY 1) SELECT month, revenue, round(100.0 * (revenue - lag(revenue) OVER (ORDER BY month)) / lag(revenue) OVER (ORDER BY month), 1) AS mom_pct FROM m"
     docs: https://www.postgresql.org/docs/current/functions-window.html
   drills:
     - id: g-b1-1
       kind: faded
       task: { vi: "Giá trị đơn trung bình (AOV) của từng cửa hàng trong tháng 10/2026, chỉ đơn đã thanh toán, làm tròn tới đồng.", en: "Average order value (AOV) of each store in October 2026, paid orders only, rounded to the dong." }
-      starter: "SELECT o.store_id, round(sum(i.qty * i.unit_price_vnd)::numeric / ___) AS aov FROM orders o JOIN order_items i ON i.order_id = o.id WHERE o.status = 'PAID' AND o.order_date >= '2026-10-01' AND o.order_date < '2026-11-01' GROUP BY o.store_id"
+      starter: |-
+        SELECT o.store_id, round(sum(i.qty * i.unit_price_vnd)::numeric / ___) AS aov
+        FROM orders o
+        JOIN order_items i ON i.order_id = o.id
+        WHERE o.status = 'PAID' AND o.order_date >= '2026-10-01' AND o.order_date < '2026-11-01'
+        GROUP BY o.store_id
       solution: "SELECT o.store_id, round(sum(i.qty * i.unit_price_vnd)::numeric / count(DISTINCT o.id)) AS aov FROM orders o JOIN order_items i ON i.order_id = o.id WHERE o.status = 'PAID' AND o.order_date >= '2026-10-01' AND o.order_date < '2026-11-01' GROUP BY o.store_id"
       hint: { vi: "Mẫu số là số đơn, không phải số dòng hàng: đếm mã đơn khác nhau.", en: "The denominator is the number of orders, not item lines: count distinct order ids." }
     - id: g-b1-2
@@ -707,26 +1044,78 @@
     concept:
       vi: "Cohort (nhóm khách cùng lứa) là các khách bắt đầu trong cùng một kỳ, ví dụ cùng tháng đăng ký. Retention (tỷ lệ giữ chân) tháng N là phần khách của cohort còn mua ở đúng tháng thứ N sau tháng bắt đầu. Cách làm: một CTE gán cohort cho khách, một CTE lấy các tháng có mua, nối trái rồi đếm có điều kiện."
       en: "A cohort is the group of customers who started in the same period, for example the same signup month. Month-N retention is the share of the cohort who buy in exactly the Nth month after the start month. Recipe: one CTE assigns each customer a cohort, one CTE lists the months with purchases, then left join and count with conditions."
-    example: "WITH f AS (SELECT id, date_trunc('month', signup_date)::date AS cohort FROM customers WHERE signup_date >= '2026-01-01' AND signup_date < '2026-07-01'), a AS (SELECT DISTINCT customer_id, date_trunc('month', order_date)::date AS m FROM orders WHERE status = 'PAID') SELECT f.cohort, count(DISTINCT f.id) AS size, count(DISTINCT a.customer_id) FILTER (WHERE a.m = f.cohort + interval '1 month') AS m1 FROM f LEFT JOIN a ON a.customer_id = f.id GROUP BY 1 ORDER BY 1"
+    example: |-
+      WITH f AS (
+        SELECT id, date_trunc('month', signup_date)::date AS cohort
+        FROM customers
+        WHERE signup_date >= '2026-01-01' AND signup_date < '2026-07-01'
+      ), a AS (
+        SELECT DISTINCT customer_id, date_trunc('month', order_date)::date AS m
+        FROM orders
+        WHERE status = 'PAID'
+      )
+      SELECT f.cohort,
+        count(DISTINCT f.id) AS size,
+        count(DISTINCT a.customer_id) FILTER (WHERE a.m = f.cohort + interval '1 month') AS m1
+      FROM f
+      LEFT JOIN a ON a.customer_id = f.id
+      GROUP BY 1
+      ORDER BY 1
     explain:
       vi: "① CTE `f`: mỗi khách đăng ký từ 01/2026 tới 06/2026 và tháng cohort của họ. ② CTE `a`: mỗi cặp khách, tháng có đơn đã thanh toán. ③ `LEFT JOIN` giữ cả khách chưa mua lại để cỡ cohort đúng. ④ `FILTER (WHERE a.m = f.cohort + interval '1 month')`: chỉ đúng tháng kế tiếp. Kết quả: 6 cohort; tháng 1 có 17 khách, 4 người mua lại ở tháng 2; tháng 6 có 15 khách, 12 người mua lại."
       en: "① CTE `f`: each customer who signed up from 01/2026 to 06/2026 and their cohort month. ② CTE `a`: each customer and month pair with a paid order. ③ `LEFT JOIN` keeps customers who never came back, so the cohort size is right. ④ `FILTER (WHERE a.m = f.cohort + interval '1 month')`: exactly the next month. Result: 6 cohorts; January has 17 customers, 4 bought again in February; June has 15 customers, 12 came back."
     mistake:
-      sql: "WITH f AS (SELECT id, date_trunc('month', signup_date)::date AS cohort FROM customers WHERE signup_date >= '2026-01-01' AND signup_date < '2026-07-01'), a AS (SELECT DISTINCT customer_id, date_trunc('month', order_date)::date AS m FROM orders WHERE status = 'PAID') SELECT f.cohort, count(DISTINCT f.id) AS size, count(DISTINCT a.customer_id) FILTER (WHERE a.m > f.cohort) AS m1 FROM f LEFT JOIN a ON a.customer_id = f.id GROUP BY 1 ORDER BY 1"
+      sql: |-
+        WITH f AS (
+          SELECT id, date_trunc('month', signup_date)::date AS cohort
+          FROM customers
+          WHERE signup_date >= '2026-01-01' AND signup_date < '2026-07-01'
+        ), a AS (
+          SELECT DISTINCT customer_id, date_trunc('month', order_date)::date AS m
+          FROM orders
+          WHERE status = 'PAID'
+        )
+        SELECT f.cohort,
+          count(DISTINCT f.id) AS size,
+          count(DISTINCT a.customer_id) FILTER (WHERE a.m > f.cohort) AS m1
+        FROM f
+        LEFT JOIN a ON a.customer_id = f.id
+        GROUP BY 1
+        ORDER BY 1
       vi: "`a.m > f.cohort` đếm khách mua ở bất kỳ tháng nào sau đó, không phải đúng tháng thứ nhất: số giữ chân bị thổi phồng."
       en: "`a.m > f.cohort` counts customers who bought in any later month, not exactly month one: retention is inflated."
     try:
       task:
         vi: "Giữ 6 cohort trong ví dụ, nhưng thay cột số người bằng tỷ lệ % mua lại ở tháng thứ nhất (làm tròn 1 chữ số thập phân). Kết quả: tháng cohort, cỡ cohort, tỷ lệ."
         en: "Keep the 6 cohorts of the example, but replace the head count with the % who bought again in month one (rounded to 1 decimal). Result: cohort month, cohort size, rate."
-      starter: "WITH f AS (SELECT id, date_trunc('month', signup_date)::date AS cohort FROM customers WHERE signup_date >= '2026-01-01' AND signup_date < '2026-07-01'), a AS (SELECT DISTINCT customer_id, date_trunc('month', order_date)::date AS m FROM orders WHERE status = 'PAID') SELECT f.cohort, count(DISTINCT f.id) AS size, count(DISTINCT a.customer_id) FILTER (WHERE a.m = f.cohort + interval '1 month') AS m1 FROM f LEFT JOIN a ON a.customer_id = f.id GROUP BY 1 ORDER BY 1"
+      starter: |-
+        WITH f AS (
+          SELECT id, date_trunc('month', signup_date)::date AS cohort
+          FROM customers
+          WHERE signup_date >= '2026-01-01' AND signup_date < '2026-07-01'
+        ), a AS (
+          SELECT DISTINCT customer_id, date_trunc('month', order_date)::date AS m
+          FROM orders
+          WHERE status = 'PAID'
+        )
+        SELECT f.cohort,
+          count(DISTINCT f.id) AS size,
+          count(DISTINCT a.customer_id) FILTER (WHERE a.m = f.cohort + interval '1 month') AS m1
+        FROM f
+        LEFT JOIN a ON a.customer_id = f.id
+        GROUP BY 1
+        ORDER BY 1
       solution: "WITH f AS (SELECT id, date_trunc('month', signup_date)::date AS cohort FROM customers WHERE signup_date >= '2026-01-01' AND signup_date < '2026-07-01'), a AS (SELECT DISTINCT customer_id, date_trunc('month', order_date)::date AS m FROM orders WHERE status = 'PAID') SELECT f.cohort, count(DISTINCT f.id) AS size, round(100.0 * count(DISTINCT a.customer_id) FILTER (WHERE a.m = f.cohort + interval '1 month') / count(DISTINCT f.id), 1) AS m1_pct FROM f LEFT JOIN a ON a.customer_id = f.id GROUP BY 1"
     docs: https://www.postgresql.org/docs/current/queries-with.html
   drills:
     - id: g-b2-1
       kind: faded
       task: { vi: "Cỡ của từng cohort tháng đăng ký trong năm 2026: tháng đăng ký và số khách.", en: "The size of each signup-month cohort in 2026: signup month and number of customers." }
-      starter: "SELECT date_trunc('___', signup_date)::date AS cohort, count(*) AS size FROM customers WHERE signup_date >= '2026-01-01' GROUP BY 1"
+      starter: |-
+        SELECT date_trunc('___', signup_date)::date AS cohort, count(*) AS size
+        FROM customers
+        WHERE signup_date >= '2026-01-01'
+        GROUP BY 1
       solution: "SELECT date_trunc('month', signup_date)::date AS cohort, count(*) AS size FROM customers WHERE signup_date >= '2026-01-01' GROUP BY 1"
       hint: { vi: "Cohort ở đây là tháng: cắt ngày đăng ký về đầu tháng.", en: "The cohort here is a month: truncate the signup date to the start of the month." }
     - id: g-b2-2
@@ -761,24 +1150,41 @@
     concept:
       vi: "Funnel (phễu) đếm có bao nhiêu phiên (session) đi tới từng bước: xem, thêm vào giỏ, thanh toán, đã trả tiền. Mỗi bước là một phép đếm phiên khác nhau có điều kiện. Tỷ lệ chuyển đổi của một bước là số phiên ở bước đó chia cho số phiên ở bước trước."
       en: "A funnel counts how many sessions reach each step: view, add to cart, checkout, paid. Each step is a conditional count of distinct sessions. A step's conversion rate is the sessions at that step divided by the sessions at the step before."
-    example: "SELECT count(DISTINCT session_id) FILTER (WHERE event = 'view') AS viewed, count(DISTINCT session_id) FILTER (WHERE event = 'add_to_cart') AS carted, count(DISTINCT session_id) FILTER (WHERE event = 'checkout') AS checked_out, count(DISTINCT session_id) FILTER (WHERE event = 'paid') AS paid FROM app_events"
+    example: |-
+      SELECT count(DISTINCT session_id) FILTER (WHERE event = 'view') AS viewed,
+        count(DISTINCT session_id) FILTER (WHERE event = 'add_to_cart') AS carted,
+        count(DISTINCT session_id) FILTER (WHERE event = 'checkout') AS checked_out,
+        count(DISTINCT session_id) FILTER (WHERE event = 'paid') AS paid
+      FROM app_events
     explain:
       vi: "① Mỗi cột là một bước, cùng một bảng sự kiện, khác điều kiện trong `FILTER`. ② `count(DISTINCT session_id)` đếm phiên, không đếm sự kiện. ③ Kết quả: 900 phiên xem, 488 thêm vào giỏ, 299 tới thanh toán, 241 trả tiền. Tỷ lệ cả phễu: 241 / 900 ≈ 26,8%; bước rơi nhiều nhất là từ xem sang giỏ (còn 54%)."
       en: "① Each column is a step: same event table, a different condition in `FILTER`. ② `count(DISTINCT session_id)` counts sessions, not events. ③ Result: 900 sessions viewed, 488 added to cart, 299 reached checkout, 241 paid. Whole-funnel conversion: 241 / 900 ≈ 26.8%; the biggest drop is from view to cart (54% stay)."
     mistake:
-      sql: "SELECT count(DISTINCT user_id) FILTER (WHERE event = 'view') AS viewed, count(DISTINCT user_id) FILTER (WHERE event = 'add_to_cart') AS carted, count(DISTINCT user_id) FILTER (WHERE event = 'checkout') AS checked_out, count(DISTINCT user_id) FILTER (WHERE event = 'paid') AS paid FROM app_events"
+      sql: |-
+        SELECT count(DISTINCT user_id) FILTER (WHERE event = 'view') AS viewed,
+          count(DISTINCT user_id) FILTER (WHERE event = 'add_to_cart') AS carted,
+          count(DISTINCT user_id) FILTER (WHERE event = 'checkout') AS checked_out,
+          count(DISTINCT user_id) FILTER (WHERE event = 'paid') AS paid
+        FROM app_events
       vi: "Đếm theo `user_id` thì mất mọi phiên khách vãng lai (`user_id` trống) và gộp nhiều phiên của cùng một khách: đó là phễu theo người, không phải theo phiên."
       en: "Counting by `user_id` drops every anonymous session (empty `user_id`) and merges several sessions of one customer: that is a funnel by person, not by session."
     try:
       task: { vi: "Tách phễu theo thiết bị (`device` trong cột JSON `props`): thiết bị và số phiên ở 4 bước như ví dụ.", en: "Split the funnel by device (`device` in the JSON column `props`): device and the session counts of the 4 steps as in the example." }
-      starter: "SELECT count(DISTINCT session_id) FILTER (WHERE event = 'view') AS viewed, count(DISTINCT session_id) FILTER (WHERE event = 'add_to_cart') AS carted, count(DISTINCT session_id) FILTER (WHERE event = 'checkout') AS checked_out, count(DISTINCT session_id) FILTER (WHERE event = 'paid') AS paid FROM app_events"
+      starter: |-
+        SELECT count(DISTINCT session_id) FILTER (WHERE event = 'view') AS viewed,
+          count(DISTINCT session_id) FILTER (WHERE event = 'add_to_cart') AS carted,
+          count(DISTINCT session_id) FILTER (WHERE event = 'checkout') AS checked_out,
+          count(DISTINCT session_id) FILTER (WHERE event = 'paid') AS paid
+        FROM app_events
       solution: "SELECT props ->> 'device' AS device, count(DISTINCT session_id) FILTER (WHERE event = 'view') AS viewed, count(DISTINCT session_id) FILTER (WHERE event = 'add_to_cart') AS carted, count(DISTINCT session_id) FILTER (WHERE event = 'checkout') AS checked_out, count(DISTINCT session_id) FILTER (WHERE event = 'paid') AS paid FROM app_events GROUP BY 1"
     docs: https://www.postgresql.org/docs/current/sql-expressions.html#SYNTAX-AGGREGATES
   drills:
     - id: g-b3-1
       kind: faded
       task: { vi: "Tỷ lệ chuyển đổi cả phễu: % phiên có xem (`view`) mà đi tới trả tiền (`paid`), làm tròn 1 chữ số thập phân.", en: "Whole-funnel conversion: the % of sessions with a view (`view`) that reached payment (`paid`), rounded to 1 decimal." }
-      starter: "SELECT round(100.0 * count(DISTINCT session_id) FILTER (WHERE event = 'paid') / count(DISTINCT session_id) FILTER (WHERE event = ___), 1) AS conversion_pct FROM app_events"
+      starter: |-
+        SELECT round(100.0 * count(DISTINCT session_id) FILTER (WHERE event = 'paid') / count(DISTINCT session_id) FILTER (WHERE event = ___), 1) AS conversion_pct
+        FROM app_events
       solution: "SELECT round(100.0 * count(DISTINCT session_id) FILTER (WHERE event = 'paid') / count(DISTINCT session_id) FILTER (WHERE event = 'view'), 1) AS conversion_pct FROM app_events"
       hint: { vi: "Mẫu số là bước đầu tiên của phễu.", en: "The denominator is the first step of the funnel." }
     - id: g-b3-2
@@ -813,24 +1219,78 @@
     concept:
       vi: "RFM chấm mỗi khách theo ba trục: Recency (bao lâu rồi chưa mua), Frequency (mua bao nhiêu đơn), Monetary (chi bao nhiêu). NTILE(5) chia khách đã xếp hạng thành 5 nhóm bằng nhau, cho điểm 1 tới 5. Với Recency, mua càng gần thì điểm càng cao, nên xếp giảm dần theo số ngày."
       en: "RFM scores each customer on three axes: Recency (how long since the last purchase), Frequency (how many orders), Monetary (how much spent). NTILE(5) splits the ranked customers into 5 equal groups, scoring 1 to 5. For Recency the more recent buyer scores higher, so sort by days descending."
-    example: "WITH c AS (SELECT o.customer_id, DATE '2026-10-31' - max(o.order_date) AS recency, count(DISTINCT o.id) AS frequency, sum(i.qty * i.unit_price_vnd) AS monetary FROM orders o JOIN order_items i ON i.order_id = o.id WHERE o.status = 'PAID' AND o.customer_id IS NOT NULL GROUP BY 1) SELECT customer_id, recency, frequency, monetary FROM c ORDER BY monetary DESC, customer_id LIMIT 10"
+    example: |-
+      WITH c AS (
+        SELECT o.customer_id,
+          DATE '2026-10-31' - max(o.order_date) AS recency,
+          count(DISTINCT o.id) AS frequency,
+          sum(i.qty * i.unit_price_vnd) AS monetary
+        FROM orders o
+        JOIN order_items i ON i.order_id = o.id
+        WHERE o.status = 'PAID' AND o.customer_id IS NOT NULL
+        GROUP BY 1
+      )
+      SELECT customer_id, recency, frequency, monetary
+      FROM c
+      ORDER BY monetary DESC, customer_id
+      LIMIT 10
     explain:
       vi: "① `DATE '2026-10-31' - max(o.order_date)`: số ngày từ đơn gần nhất tới hôm nay. ② `count(DISTINCT o.id)`: số đơn, không phải số dòng hàng. ③ `sum(...)`: tổng chi. Cả 300 khách đều có đơn đã thanh toán; recency từ 0 tới 465 ngày, frequency từ 1 tới 4 đơn. Kết quả: 10 khách chi nhiều nhất, người đầu tiên chi 4.071.400 đồng."
       en: "① `DATE '2026-10-31' - max(o.order_date)`: days from the latest order to today. ② `count(DISTINCT o.id)`: number of orders, not item lines. ③ `sum(...)`: total spend. All 300 customers have a paid order; recency runs from 0 to 465 days, frequency from 1 to 4 orders. Result: the 10 biggest spenders, the first one spent 4,071,400 VND."
     mistake:
-      sql: "WITH c AS (SELECT o.customer_id, max(o.order_date) - DATE '2026-10-31' AS recency, count(DISTINCT o.id) AS frequency, sum(i.qty * i.unit_price_vnd) AS monetary FROM orders o JOIN order_items i ON i.order_id = o.id WHERE o.status = 'PAID' AND o.customer_id IS NOT NULL GROUP BY 1) SELECT customer_id, recency, frequency, monetary FROM c ORDER BY monetary DESC, customer_id LIMIT 10"
+      sql: |-
+        WITH c AS (
+          SELECT o.customer_id,
+            max(o.order_date) - DATE '2026-10-31' AS recency,
+            count(DISTINCT o.id) AS frequency,
+            sum(i.qty * i.unit_price_vnd) AS monetary
+          FROM orders o
+          JOIN order_items i ON i.order_id = o.id
+          WHERE o.status = 'PAID' AND o.customer_id IS NOT NULL
+          GROUP BY 1
+        )
+        SELECT customer_id, recency, frequency, monetary
+        FROM c
+        ORDER BY monetary DESC, customer_id
+        LIMIT 10
       vi: "Trừ ngược chiều: recency thành số âm, và mọi phép xếp hạng theo recency sau đó đảo ngược."
       en: "Subtracting the wrong way round: recency becomes negative, and every later ranking by recency flips."
     try:
       task: { vi: "Chấm điểm M từ 1 tới 5 bằng NTILE theo tổng chi (chi ít = 1). Với mỗi điểm: điểm, số khách, tổng chi nhỏ nhất và lớn nhất trong nhóm.", en: "Score M from 1 to 5 with NTILE on total spend (lowest spend = 1). For each score: the score, number of customers, smallest and largest spend in the group." }
-      starter: "WITH c AS (SELECT o.customer_id, DATE '2026-10-31' - max(o.order_date) AS recency, count(DISTINCT o.id) AS frequency, sum(i.qty * i.unit_price_vnd) AS monetary FROM orders o JOIN order_items i ON i.order_id = o.id WHERE o.status = 'PAID' AND o.customer_id IS NOT NULL GROUP BY 1) SELECT customer_id, recency, frequency, monetary FROM c ORDER BY monetary DESC, customer_id LIMIT 10"
+      starter: |-
+        WITH c AS (
+          SELECT o.customer_id,
+            DATE '2026-10-31' - max(o.order_date) AS recency,
+            count(DISTINCT o.id) AS frequency,
+            sum(i.qty * i.unit_price_vnd) AS monetary
+          FROM orders o
+          JOIN order_items i ON i.order_id = o.id
+          WHERE o.status = 'PAID' AND o.customer_id IS NOT NULL
+          GROUP BY 1
+        )
+        SELECT customer_id, recency, frequency, monetary
+        FROM c
+        ORDER BY monetary DESC, customer_id
+        LIMIT 10
       solution: "WITH c AS (SELECT o.customer_id, sum(i.qty * i.unit_price_vnd) AS monetary FROM orders o JOIN order_items i ON i.order_id = o.id WHERE o.status = 'PAID' AND o.customer_id IS NOT NULL GROUP BY 1), s AS (SELECT monetary, ntile(5) OVER (ORDER BY monetary) AS m_score FROM c) SELECT m_score, count(*) AS customers, min(monetary) AS low, max(monetary) AS high FROM s GROUP BY m_score"
     docs: https://www.postgresql.org/docs/current/functions-window.html
   drills:
     - id: g-b4-1
       kind: faded
       task: { vi: "Chấm điểm R từ 1 tới 5 bằng NTILE cho mọi khách có đơn `PAID` (đơn có `customer_id`): số ngày từ đơn `PAID` gần nhất tới 2026-10-31, mua càng gần đây điểm càng cao. Với mỗi điểm: điểm, số khách, số ngày nhỏ nhất và lớn nhất.", en: "Score R from 1 to 5 with NTILE for every customer with a `PAID` order (orders with a `customer_id`): the days from their latest `PAID` order to 2026-10-31, the more recent the higher the score. For each score: the score, number of customers, smallest and largest number of days." }
-      starter: "WITH c AS (SELECT customer_id, DATE '2026-10-31' - max(order_date) AS recency FROM orders WHERE status = 'PAID' AND customer_id IS NOT NULL GROUP BY 1), s AS (SELECT recency, ntile(5) OVER (ORDER BY recency ___) AS r_score FROM c) SELECT r_score, count(*) AS customers, min(recency) AS low, max(recency) AS high FROM s GROUP BY r_score"
+      starter: |-
+        WITH c AS (
+          SELECT customer_id, DATE '2026-10-31' - max(order_date) AS recency
+          FROM orders
+          WHERE status = 'PAID' AND customer_id IS NOT NULL
+          GROUP BY 1
+        ), s AS (
+          SELECT recency, ntile(5) OVER (ORDER BY recency ___) AS r_score
+          FROM c
+        )
+        SELECT r_score, count(*) AS customers, min(recency) AS low, max(recency) AS high
+        FROM s
+        GROUP BY r_score
       solution: "WITH c AS (SELECT customer_id, DATE '2026-10-31' - max(order_date) AS recency FROM orders WHERE status = 'PAID' AND customer_id IS NOT NULL GROUP BY 1), s AS (SELECT recency, ntile(5) OVER (ORDER BY recency DESC) AS r_score FROM c) SELECT r_score, count(*) AS customers, min(recency) AS low, max(recency) AS high FROM s GROUP BY r_score"
       hint: { vi: "Nhiều ngày = lâu rồi chưa mua = điểm thấp: xếp số ngày giảm dần.", en: "Many days = long since the last purchase = low score: sort days descending." }
     - id: g-b4-2
@@ -864,24 +1324,48 @@
     concept:
       vi: "A/B test chia khách ngẫu nhiên thành nhóm A (bản cũ) và B (bản mới), rồi so tỷ lệ chuyển đổi. Chênh lệch nhỏ có thể chỉ do ngẫu nhiên; z-score cho biết chênh lệch lớn cỡ nào so với độ nhiễu. Trị tuyệt đối dưới khoảng 2 thường là chưa đủ bằng chứng. Kiểm định và cỡ mẫu: xem tài liệu bên ngoài."
       en: "An A/B test splits customers at random into group A (the old version) and B (the new one), then compares conversion rates. A small difference can be pure chance; the z-score tells how big the difference is compared with the noise. An absolute value below about 2 is usually not enough evidence. Testing and sample size: see the outside material."
-    example: "SELECT experiment_id, variant, count(*) AS users, count(*) FILTER (WHERE converted) AS conversions, round(100.0 * count(*) FILTER (WHERE converted) / count(*), 1) AS rate_pct FROM assignments GROUP BY 1, 2 ORDER BY 1, 2"
+    example: |-
+      SELECT experiment_id,
+        variant,
+        count(*) AS users,
+        count(*) FILTER (WHERE converted) AS conversions,
+        round(100.0 * count(*) FILTER (WHERE converted) / count(*), 1) AS rate_pct
+      FROM assignments
+      GROUP BY 1, 2
+      ORDER BY 1, 2
     explain:
       vi: "① Mỗi dòng là một nhóm của một thí nghiệm. ② `count(*) FILTER (WHERE converted)`: số khách chuyển đổi. ③ `100.0 *` trước khi chia để ra số thập phân. Kết quả: thí nghiệm 1 có A 40/150 = 26,7%, B 42/150 = 28,0%; thí nghiệm 2 có A 20,7%, B 17,3%. B của thí nghiệm 1 hơn 1,3 điểm %, nhưng chỉ là 2 khách: còn quá sớm để kết luận."
       en: "① Each row is one group of one experiment. ② `count(*) FILTER (WHERE converted)`: the customers who converted. ③ `100.0 *` before dividing to get decimals. Result: experiment 1 has A 40/150 = 26.7%, B 42/150 = 28.0%; experiment 2 has A 20.7%, B 17.3%. B in experiment 1 is 1.3 points ahead, but that is only 2 customers: too early to call."
     mistake:
-      sql: "SELECT experiment_id, variant, avg(converted) AS rate FROM assignments GROUP BY 1, 2"
+      sql: |-
+        SELECT experiment_id, variant, avg(converted) AS rate
+        FROM assignments
+        GROUP BY 1, 2
       vi: "`avg` không nhận kiểu boolean: Postgres báo lỗi function avg(boolean) does not exist. Đổi sang số trước (`converted::int`) hoặc đếm có điều kiện."
       en: "`avg` does not take a boolean: Postgres says function avg(boolean) does not exist. Cast to a number first (`converted::int`) or use a conditional count."
     try:
       task: { vi: "Chỉ thí nghiệm 1, một dòng: tỷ lệ % của A, của B và chênh lệch B − A (điểm %), mỗi số làm tròn 1 chữ số thập phân.", en: "Experiment 1 only, one row: the % rate of A, of B and the difference B − A (points), each rounded to 1 decimal." }
-      starter: "SELECT experiment_id, variant, count(*) AS users, count(*) FILTER (WHERE converted) AS conversions, round(100.0 * count(*) FILTER (WHERE converted) / count(*), 1) AS rate_pct FROM assignments GROUP BY 1, 2 ORDER BY 1, 2"
+      starter: |-
+        SELECT experiment_id,
+          variant,
+          count(*) AS users,
+          count(*) FILTER (WHERE converted) AS conversions,
+          round(100.0 * count(*) FILTER (WHERE converted) / count(*), 1) AS rate_pct
+        FROM assignments
+        GROUP BY 1, 2
+        ORDER BY 1, 2
       solution: "WITH r AS (SELECT 100.0 * count(*) FILTER (WHERE variant = 'A' AND converted) / count(*) FILTER (WHERE variant = 'A') AS a, 100.0 * count(*) FILTER (WHERE variant = 'B' AND converted) / count(*) FILTER (WHERE variant = 'B') AS b FROM assignments WHERE experiment_id = 1) SELECT round(a, 1) AS rate_a, round(b, 1) AS rate_b, round(b - a, 1) AS diff_pts FROM r"
     docs: https://www.postgresql.org/docs/current/functions-math.html
   drills:
     - id: g-b5-1
       kind: faded
       task: { vi: "Thí nghiệm 2: tỷ lệ chuyển đổi % của từng nhóm, làm tròn 1 chữ số thập phân.", en: "Experiment 2: the conversion rate % of each group, rounded to 1 decimal." }
-      starter: "SELECT variant, round(100.0 * count(*) FILTER (WHERE ___) / count(*), 1) AS rate_pct FROM assignments WHERE experiment_id = 2 GROUP BY variant"
+      starter: |-
+        SELECT variant,
+          round(100.0 * count(*) FILTER (WHERE ___) / count(*), 1) AS rate_pct
+        FROM assignments
+        WHERE experiment_id = 2
+        GROUP BY variant
       solution: "SELECT variant, round(100.0 * count(*) FILTER (WHERE converted) / count(*), 1) AS rate_pct FROM assignments WHERE experiment_id = 2 GROUP BY variant"
       hint: { vi: "Cột `converted` đã là đúng/sai: dùng thẳng làm điều kiện.", en: "The `converted` column is already true/false: use it directly as the condition." }
     - id: g-b5-2
@@ -917,24 +1401,93 @@
     concept:
       vi: "Một ngày là bất thường khi nó lệch xa so với các ngày trước đó. Cách đơn giản: tính trung bình và độ lệch chuẩn của 28 ngày bán trước (khung cửa sổ không gồm ngày đang xét), rồi đánh dấu ngày vượt trung bình + 3 lần độ lệch chuẩn."
       en: "A day is unusual when it sits far from the days before it. A simple method: compute the mean and standard deviation of the previous 28 sales days (a window frame that excludes the current day), then flag days above the mean + 3 standard deviations."
-    example: "WITH d AS (SELECT o.order_date AS day, sum(i.qty * i.unit_price_vnd) AS revenue FROM orders o JOIN order_items i ON i.order_id = o.id WHERE o.status = 'PAID' AND o.store_id = 3 GROUP BY 1), s AS (SELECT day, revenue, avg(revenue) OVER w AS mean_28, stddev_samp(revenue) OVER w AS sd_28 FROM d WINDOW w AS (ORDER BY day ROWS BETWEEN 28 PRECEDING AND 1 PRECEDING)) SELECT day, revenue, round(mean_28) AS mean_28, round(sd_28) AS sd_28 FROM s WHERE day BETWEEN '2026-09-01' AND '2026-09-15' ORDER BY day"
+    example: |-
+      WITH d AS (
+        SELECT o.order_date AS day, sum(i.qty * i.unit_price_vnd) AS revenue
+        FROM orders o
+        JOIN order_items i ON i.order_id = o.id
+        WHERE o.status = 'PAID' AND o.store_id = 3
+        GROUP BY 1
+      ), s AS (
+        SELECT day,
+          revenue,
+          avg(revenue) OVER w AS mean_28,
+          stddev_samp(revenue) OVER w AS sd_28
+        FROM d
+        WINDOW w AS (ORDER BY day ROWS BETWEEN 28 PRECEDING AND 1 PRECEDING)
+      )
+      SELECT day, revenue, round(mean_28) AS mean_28, round(sd_28) AS sd_28
+      FROM s
+      WHERE day BETWEEN '2026-09-01' AND '2026-09-15'
+      ORDER BY day
     explain:
       vi: "① CTE `d`: doanh thu mỗi ngày có bán của cửa hàng 3. ② `ROWS BETWEEN 28 PRECEDING AND 1 PRECEDING`: 28 ngày bán trước, không gồm hôm nay. ③ Lọc ngày sau khi tính cửa sổ, để ngày đầu tháng vẫn có đủ quá khứ. Kết quả: 14 ngày; ngày 09/09/2026 bán 6.095.000 đồng trong khi trung bình 918.425 và độ lệch chuẩn 507.111: lệch hơn 10 lần độ lệch chuẩn."
       en: "① CTE `d`: revenue for each sales day of store 3. ② `ROWS BETWEEN 28 PRECEDING AND 1 PRECEDING`: the 28 previous sales days, not today. ③ Filter dates after the window is computed, so early-month days still have their history. Result: 14 days; on 2026-09-09 the store sold 6,095,000 VND against a mean of 918,425 and a standard deviation of 507,111: more than 10 standard deviations above."
     mistake:
-      sql: "WITH d AS (SELECT o.order_date AS day, sum(i.qty * i.unit_price_vnd) AS revenue FROM orders o JOIN order_items i ON i.order_id = o.id WHERE o.status = 'PAID' AND o.store_id = 3 GROUP BY 1), s AS (SELECT day, revenue, avg(revenue) OVER w AS mean_28, stddev_samp(revenue) OVER w AS sd_28 FROM d WINDOW w AS (ORDER BY day ROWS BETWEEN 28 PRECEDING AND CURRENT ROW)) SELECT day, revenue, round(mean_28) AS mean_28, round(sd_28) AS sd_28 FROM s WHERE day BETWEEN '2026-09-01' AND '2026-09-15' ORDER BY day"
+      sql: |-
+        WITH d AS (
+          SELECT o.order_date AS day, sum(i.qty * i.unit_price_vnd) AS revenue
+          FROM orders o
+          JOIN order_items i ON i.order_id = o.id
+          WHERE o.status = 'PAID' AND o.store_id = 3
+          GROUP BY 1
+        ), s AS (
+          SELECT day,
+            revenue,
+            avg(revenue) OVER w AS mean_28,
+            stddev_samp(revenue) OVER w AS sd_28
+          FROM d
+          WINDOW w AS (ORDER BY day ROWS BETWEEN 28 PRECEDING AND CURRENT ROW)
+        )
+        SELECT day, revenue, round(mean_28) AS mean_28, round(sd_28) AS sd_28
+        FROM s
+        WHERE day BETWEEN '2026-09-01' AND '2026-09-15'
+        ORDER BY day
       vi: "Khung gồm cả ngày đang xét (`CURRENT ROW`): ngày đột biến tự kéo trung bình và độ lệch chuẩn của chính nó lên, nên trông bớt bất thường."
       en: "The frame includes the current day (`CURRENT ROW`): a spike pulls up its own mean and standard deviation, so it looks less unusual."
     try:
       task: { vi: "Năm 2026, những ngày nào cửa hàng 3 bán vượt trung bình + 3 lần độ lệch chuẩn của 28 ngày bán trước? Ngày và doanh thu.", en: "In 2026, on which days did store 3 sell more than the mean + 3 standard deviations of the 28 previous sales days? Day and revenue." }
-      starter: "WITH d AS (SELECT o.order_date AS day, sum(i.qty * i.unit_price_vnd) AS revenue FROM orders o JOIN order_items i ON i.order_id = o.id WHERE o.status = 'PAID' AND o.store_id = 3 GROUP BY 1), s AS (SELECT day, revenue, avg(revenue) OVER w AS mean_28, stddev_samp(revenue) OVER w AS sd_28 FROM d WINDOW w AS (ORDER BY day ROWS BETWEEN 28 PRECEDING AND 1 PRECEDING)) SELECT day, revenue, round(mean_28) AS mean_28, round(sd_28) AS sd_28 FROM s WHERE day BETWEEN '2026-09-01' AND '2026-09-15' ORDER BY day"
+      starter: |-
+        WITH d AS (
+          SELECT o.order_date AS day, sum(i.qty * i.unit_price_vnd) AS revenue
+          FROM orders o
+          JOIN order_items i ON i.order_id = o.id
+          WHERE o.status = 'PAID' AND o.store_id = 3
+          GROUP BY 1
+        ), s AS (
+          SELECT day,
+            revenue,
+            avg(revenue) OVER w AS mean_28,
+            stddev_samp(revenue) OVER w AS sd_28
+          FROM d
+          WINDOW w AS (ORDER BY day ROWS BETWEEN 28 PRECEDING AND 1 PRECEDING)
+        )
+        SELECT day, revenue, round(mean_28) AS mean_28, round(sd_28) AS sd_28
+        FROM s
+        WHERE day BETWEEN '2026-09-01' AND '2026-09-15'
+        ORDER BY day
       solution: "WITH d AS (SELECT o.order_date AS day, sum(i.qty * i.unit_price_vnd) AS revenue FROM orders o JOIN order_items i ON i.order_id = o.id WHERE o.status = 'PAID' AND o.store_id = 3 GROUP BY 1), s AS (SELECT day, revenue, avg(revenue) OVER w AS m, stddev_samp(revenue) OVER w AS sd FROM d WINDOW w AS (ORDER BY day ROWS BETWEEN 28 PRECEDING AND 1 PRECEDING)) SELECT day, revenue FROM s WHERE day >= '2026-01-01' AND revenue > m + 3 * sd"
     docs: https://www.postgresql.org/docs/current/sql-expressions.html#SYNTAX-WINDOW-FUNCTIONS
   drills:
     - id: g-b6-1
       kind: faded
       task: { vi: "Doanh thu cả chuỗi mỗi ngày có bán trong tháng 10/2026, kèm trung bình trượt 7 ngày bán (hôm nay và 6 ngày bán trước), làm tròn tới đồng.", en: "Chain revenue for each sales day in October 2026, with a 7-sales-day moving average (today and the 6 previous sales days), rounded to the dong." }
-      starter: "WITH d AS (SELECT o.order_date AS day, sum(i.qty * i.unit_price_vnd) AS revenue FROM orders o JOIN order_items i ON i.order_id = o.id WHERE o.status = 'PAID' GROUP BY 1), s AS (SELECT day, revenue, round(avg(revenue) OVER (ORDER BY day ROWS BETWEEN ___ PRECEDING AND CURRENT ROW)) AS avg_7 FROM d) SELECT day, revenue, avg_7 FROM s WHERE day >= '2026-10-01'"
+      starter: |-
+        WITH d AS (
+          SELECT o.order_date AS day, sum(i.qty * i.unit_price_vnd) AS revenue
+          FROM orders o
+          JOIN order_items i ON i.order_id = o.id
+          WHERE o.status = 'PAID'
+          GROUP BY 1
+        ), s AS (
+          SELECT day,
+            revenue,
+            round(avg(revenue) OVER (ORDER BY day ROWS BETWEEN ___ PRECEDING AND CURRENT ROW)) AS avg_7
+          FROM d
+        )
+        SELECT day, revenue, avg_7
+        FROM s
+        WHERE day >= '2026-10-01'
       solution: "WITH d AS (SELECT o.order_date AS day, sum(i.qty * i.unit_price_vnd) AS revenue FROM orders o JOIN order_items i ON i.order_id = o.id WHERE o.status = 'PAID' GROUP BY 1), s AS (SELECT day, revenue, round(avg(revenue) OVER (ORDER BY day ROWS BETWEEN 6 PRECEDING AND CURRENT ROW)) AS avg_7 FROM d) SELECT day, revenue, avg_7 FROM s WHERE day >= '2026-10-01'"
       hint: { vi: "Hôm nay cộng 6 dòng trước là 7 dòng.", en: "Today plus 6 rows before it is 7 rows." }
     - id: g-b6-2
@@ -968,24 +1521,67 @@
     concept:
       vi: "Trung bình (`avg`) nhạy với vài giá trị rất lớn; trung vị (`percentile_cont(0.5)`) thì không. Độ lệch chuẩn (`stddev_samp`) đo mức phân tán. `corr` cho hệ số tương quan từ −1 tới 1. Trước khi tính, xác định đơn vị: một đơn hàng hay một dòng hàng."
       en: "The mean (`avg`) is pulled by a few very large values; the median (`percentile_cont(0.5)`) is not. The standard deviation (`stddev_samp`) measures spread. `corr` gives the correlation from −1 to 1. Before computing, fix the unit: one order or one item line."
-    example: "WITH o AS (SELECT o.id, sum(i.qty * i.unit_price_vnd) AS value FROM orders o JOIN order_items i ON i.order_id = o.id WHERE o.status = 'PAID' AND o.order_date >= '2026-01-01' GROUP BY o.id) SELECT count(*) AS orders, round(avg(value)) AS mean, round(stddev_samp(value)) AS sd, min(value) AS low, max(value) AS high FROM o"
+    example: |-
+      WITH o AS (
+        SELECT o.id, sum(i.qty * i.unit_price_vnd) AS value
+        FROM orders o
+        JOIN order_items i ON i.order_id = o.id
+        WHERE o.status = 'PAID' AND o.order_date >= '2026-01-01'
+        GROUP BY o.id
+      )
+      SELECT count(*) AS orders,
+        round(avg(value)) AS mean,
+        round(stddev_samp(value)) AS sd,
+        min(value) AS low,
+        max(value) AS high
+      FROM o
     explain:
       vi: "① CTE `o`: một dòng mỗi đơn, với giá trị đơn. ② Các hàm gộp tính trên đơn, không trên dòng hàng. ③ Kết quả năm 2026: 958 đơn, trung bình 483.612 đồng, độ lệch chuẩn 358.511, nhỏ nhất 46.500, lớn nhất 2.628.000. Độ lệch chuẩn gần bằng trung bình: giá trị đơn phân tán rộng, nên xem thêm trung vị."
       en: "① CTE `o`: one row per order, with the order value. ② The aggregates work on orders, not on item lines. ③ Result for 2026: 958 orders, mean 483,612 VND, standard deviation 358,511, smallest 46,500, largest 2,628,000. The standard deviation is close to the mean: order values are widely spread, so also look at the median."
     mistake:
-      sql: "SELECT count(*) AS orders, round(avg(i.qty * i.unit_price_vnd)) AS mean, round(stddev_samp(i.qty * i.unit_price_vnd)) AS sd, min(i.qty * i.unit_price_vnd) AS low, max(i.qty * i.unit_price_vnd) AS high FROM orders o JOIN order_items i ON i.order_id = o.id WHERE o.status = 'PAID' AND o.order_date >= '2026-01-01'"
+      sql: |-
+        SELECT count(*) AS orders,
+          round(avg(i.qty * i.unit_price_vnd)) AS mean,
+          round(stddev_samp(i.qty * i.unit_price_vnd)) AS sd,
+          min(i.qty * i.unit_price_vnd) AS low,
+          max(i.qty * i.unit_price_vnd) AS high
+        FROM orders o
+        JOIN order_items i ON i.order_id = o.id
+        WHERE o.status = 'PAID' AND o.order_date >= '2026-01-01'
       vi: "Tính thẳng trên dòng hàng: \"đơn vị\" thành một dòng, số đếm thành số dòng, mọi thống kê nói về dòng hàng chứ không về đơn."
       en: "Computing straight on item lines: the unit becomes a line, the count becomes the number of lines, and every statistic describes lines, not orders."
     try:
       task: { vi: "Như ví dụ nhưng tách theo kênh bán (`channel`): kênh, số đơn, trung bình, độ lệch chuẩn (làm tròn tới đồng).", en: "Like the example but split by sales channel (`channel`): channel, number of orders, mean, standard deviation (rounded to the dong)." }
-      starter: "WITH o AS (SELECT o.id, sum(i.qty * i.unit_price_vnd) AS value FROM orders o JOIN order_items i ON i.order_id = o.id WHERE o.status = 'PAID' AND o.order_date >= '2026-01-01' GROUP BY o.id) SELECT count(*) AS orders, round(avg(value)) AS mean, round(stddev_samp(value)) AS sd, min(value) AS low, max(value) AS high FROM o"
+      starter: |-
+        WITH o AS (
+          SELECT o.id, sum(i.qty * i.unit_price_vnd) AS value
+          FROM orders o
+          JOIN order_items i ON i.order_id = o.id
+          WHERE o.status = 'PAID' AND o.order_date >= '2026-01-01'
+          GROUP BY o.id
+        )
+        SELECT count(*) AS orders,
+          round(avg(value)) AS mean,
+          round(stddev_samp(value)) AS sd,
+          min(value) AS low,
+          max(value) AS high
+        FROM o
       solution: "WITH o AS (SELECT o.id, o.channel, sum(i.qty * i.unit_price_vnd) AS value FROM orders o JOIN order_items i ON i.order_id = o.id WHERE o.status = 'PAID' AND o.order_date >= '2026-01-01' GROUP BY o.id, o.channel) SELECT channel, count(*) AS orders, round(avg(value)) AS mean, round(stddev_samp(value)) AS sd FROM o GROUP BY channel"
     docs: https://www.postgresql.org/docs/current/functions-aggregate.html
   drills:
     - id: g-b7-1
       kind: faded
       task: { vi: "Trung vị giá trị đơn (đơn đã thanh toán, năm 2026).", en: "The median order value (paid orders, 2026)." }
-      starter: "WITH o AS (SELECT o.id, sum(i.qty * i.unit_price_vnd) AS value FROM orders o JOIN order_items i ON i.order_id = o.id WHERE o.status = 'PAID' AND o.order_date >= '2026-01-01' GROUP BY o.id) SELECT percentile_cont(0.5) WITHIN GROUP (ORDER BY ___) AS median FROM o"
+      starter: |-
+        WITH o AS (
+          SELECT o.id, sum(i.qty * i.unit_price_vnd) AS value
+          FROM orders o
+          JOIN order_items i ON i.order_id = o.id
+          WHERE o.status = 'PAID' AND o.order_date >= '2026-01-01'
+          GROUP BY o.id
+        )
+        SELECT percentile_cont(0.5) WITHIN GROUP (ORDER BY ___) AS median
+        FROM o
       solution: "WITH o AS (SELECT o.id, sum(i.qty * i.unit_price_vnd) AS value FROM orders o JOIN order_items i ON i.order_id = o.id WHERE o.status = 'PAID' AND o.order_date >= '2026-01-01' GROUP BY o.id) SELECT percentile_cont(0.5) WITHIN GROUP (ORDER BY value) AS median FROM o"
       hint: { vi: "Trung vị cần xếp đúng cột giá trị đơn.", en: "The median needs the order value column in its ordering." }
     - id: g-b7-2
@@ -1022,24 +1618,86 @@
     concept:
       vi: "Kiểm chất lượng là một bộ câu hỏi \"có dòng nào vi phạm luật không\": mồ côi (thanh toán trỏ tới đơn không tồn tại), trùng (một đơn trả hai lần), ngày trong tương lai, ô trống bắt buộc. Gộp các phép kiểm bằng UNION ALL thành một bảng: số thứ tự phép kiểm và số dòng vi phạm."
       en: "A quality check is a set of \"does any row break a rule\" questions: orphans (a payment pointing at an order that does not exist), duplicates (an order paid twice), dates in the future, required blanks. Stack the checks with UNION ALL into one table: the check number and the count of offending rows."
-    example: "SELECT 1 AS check_no, count(*) AS problems FROM payments p WHERE NOT EXISTS (SELECT 1 FROM orders o WHERE o.id = p.order_id) UNION ALL SELECT 2, count(*) FROM (SELECT order_id FROM payments WHERE amount_vnd > 0 GROUP BY order_id HAVING count(*) > 1) d UNION ALL SELECT 3, count(*) FROM raw_signups WHERE signup_date > '2026-10-31'"
+    example: |-
+      SELECT 1 AS check_no, count(*) AS problems
+      FROM payments p
+      WHERE NOT EXISTS (
+        SELECT 1
+        FROM orders o
+        WHERE o.id = p.order_id
+      )
+      UNION ALL
+      SELECT 2, count(*)
+      FROM (
+        SELECT order_id
+        FROM payments
+        WHERE amount_vnd > 0
+        GROUP BY order_id
+        HAVING count(*) > 1
+      ) d
+      UNION ALL
+      SELECT 3, count(*)
+      FROM raw_signups
+      WHERE signup_date > '2026-10-31'
     explain:
       vi: "① Phép 1: `NOT EXISTS` tìm thanh toán mồ côi: 8 dòng. ② Phép 2: đơn có hơn một khoản thanh toán dương: 13 đơn trả trùng (khoản âm là hoàn tiền, hợp lệ). ③ Phép 3: ngày đăng ký sau hôm nay (31/10/2026): 4 dòng. Một bảng 3 dòng, mỗi số khác 0 là một việc phải hỏi bộ phận nhập liệu."
       en: "① Check 1: `NOT EXISTS` finds orphan payments: 8 rows. ② Check 2: orders with more than one positive payment: 13 orders paid twice (negative amounts are refunds, which are fine). ③ Check 3: signup dates after today (2026-10-31): 4 rows. One 3-row table, and every non-zero number is a question for the people who enter the data."
     mistake:
-      sql: "SELECT 1 AS check_no, count(*) AS problems FROM payments p WHERE NOT EXISTS (SELECT 1 FROM orders o WHERE o.id = p.order_id) UNION ALL SELECT 2, count(*) FROM (SELECT order_id FROM payments GROUP BY order_id HAVING count(*) > 1) d UNION ALL SELECT 3, count(*) FROM raw_signups WHERE signup_date > '2026-10-31'"
+      sql: |-
+        SELECT 1 AS check_no, count(*) AS problems
+        FROM payments p
+        WHERE NOT EXISTS (
+          SELECT 1
+          FROM orders o
+          WHERE o.id = p.order_id
+        )
+        UNION ALL
+        SELECT 2, count(*)
+        FROM (
+          SELECT order_id
+          FROM payments
+          GROUP BY order_id
+          HAVING count(*) > 1
+        ) d
+        UNION ALL
+        SELECT 3, count(*)
+        FROM raw_signups
+        WHERE signup_date > '2026-10-31'
       vi: "Bỏ điều kiện `amount_vnd > 0` thì mọi đơn có hoàn tiền (một khoản trả + một khoản âm) cũng bị tính là trùng: 51 thay vì 13. Luật kiểm phải đúng với nghiệp vụ."
       en: "Without `amount_vnd > 0`, every refunded order (one payment + one negative amount) also counts as a duplicate: 51 instead of 13. A check must match the business rule."
     try:
       task: { vi: "Liệt kê chi tiết các thanh toán mồ côi: mã thanh toán, mã đơn và số tiền.", en: "List the orphan payments in detail: payment id, order id and amount." }
-      starter: "SELECT 1 AS check_no, count(*) AS problems FROM payments p WHERE NOT EXISTS (SELECT 1 FROM orders o WHERE o.id = p.order_id) UNION ALL SELECT 2, count(*) FROM (SELECT order_id FROM payments WHERE amount_vnd > 0 GROUP BY order_id HAVING count(*) > 1) d UNION ALL SELECT 3, count(*) FROM raw_signups WHERE signup_date > '2026-10-31'"
+      starter: |-
+        SELECT 1 AS check_no, count(*) AS problems
+        FROM payments p
+        WHERE NOT EXISTS (
+          SELECT 1
+          FROM orders o
+          WHERE o.id = p.order_id
+        )
+        UNION ALL
+        SELECT 2, count(*)
+        FROM (
+          SELECT order_id
+          FROM payments
+          WHERE amount_vnd > 0
+          GROUP BY order_id
+          HAVING count(*) > 1
+        ) d
+        UNION ALL
+        SELECT 3, count(*)
+        FROM raw_signups
+        WHERE signup_date > '2026-10-31'
       solution: "SELECT p.id, p.order_id, p.amount_vnd FROM payments p WHERE NOT EXISTS (SELECT 1 FROM orders o WHERE o.id = p.order_id)"
     docs: https://www.postgresql.org/docs/current/functions-subquery.html
   drills:
     - id: g-c1-1
       kind: faded
       task: { vi: "Những đăng ký thô nào có ngày đăng ký sau hôm nay (31/10/2026)? Mã và ngày đăng ký.", en: "Which raw signups have a signup date after today (2026-10-31)? Id and signup date." }
-      starter: "SELECT id, signup_date FROM raw_signups WHERE signup_date > ___"
+      starter: |-
+        SELECT id, signup_date
+        FROM raw_signups
+        WHERE signup_date > ___
       solution: "SELECT id, signup_date FROM raw_signups WHERE signup_date > '2026-10-31'"
       hint: { vi: "So với ngày hôm nay viết dạng ngày trong nháy đơn.", en: "Compare with today's date written in single quotes." }
     - id: g-c1-2
@@ -1073,24 +1731,45 @@
     concept:
       vi: "Bảng fact ghi sự kiện đo được (ở đây một dòng hàng đã bán: số lượng, doanh thu), các bảng dimension mô tả ngữ cảnh (ngày, sản phẩm, khách). Grain là \"một dòng fact là gì\". Hỏi về đơn mà fact ở grain dòng hàng thì phải đếm mã đơn khác nhau. Thiết kế schema (DDL) học ở tài liệu Kimball."
       en: "The fact table records measurable events (here one sold item line: quantity, revenue); dimension tables describe the context (date, product, customer). The grain is \"what one fact row is\". Asking about orders when the fact grain is the item line means counting distinct order ids. Schema design (DDL) is covered by the Kimball material."
-    example: "SELECT d.year, d.month, sum(f.revenue_vnd) AS revenue FROM fact_sales f JOIN dim_date d ON d.date_key = f.date_key WHERE d.year = 2026 GROUP BY d.year, d.month ORDER BY d.year, d.month"
+    example: |-
+      SELECT d.year, d.month, sum(f.revenue_vnd) AS revenue
+      FROM fact_sales f
+      JOIN dim_date d ON d.date_key = f.date_key
+      WHERE d.year = 2026
+      GROUP BY d.year, d.month
+      ORDER BY d.year, d.month
     explain:
       vi: "① `fact_sales` là fact, grain = một dòng hàng của đơn đã thanh toán. ② `dim_date` cho năm, tháng, thứ trong tuần mà không cần hàm ngày. ③ Kết quả: 10 tháng của năm 2026, từ 21.451.200 đồng (tháng 1) tới 97.162.500 đồng (tháng 10), khớp với tổng tính từ bảng đơn hàng."
       en: "① `fact_sales` is the fact table, grain = one item line of a paid order. ② `dim_date` gives year, month and weekday without date functions. ③ Result: the 10 months of 2026, from 21,451,200 VND (January) to 97,162,500 VND (October), matching the totals computed from the orders table."
     mistake:
-      sql: "SELECT d.month, sum(f.revenue_vnd) AS revenue FROM fact_sales f JOIN dim_date d ON d.date_key = f.date_key GROUP BY d.month ORDER BY d.month"
+      sql: |-
+        SELECT d.month, sum(f.revenue_vnd) AS revenue
+        FROM fact_sales f
+        JOIN dim_date d ON d.date_key = f.date_key
+        GROUP BY d.month
+        ORDER BY d.month
       vi: "Gom theo tháng mà không theo năm (và bỏ lọc năm) thì tháng 1/2025 và tháng 1/2026 cộng chung một dòng."
       en: "Grouping by month without the year (and dropping the year filter) adds January 2025 and January 2026 into one row."
     try:
       task: { vi: "Doanh thu theo danh mục sản phẩm trong quý 3/2026 (tháng 7 tới 9), dùng `dim_product` và `dim_date`.", en: "Revenue by product category in Q3 2026 (July to September), using `dim_product` and `dim_date`." }
-      starter: "SELECT d.year, d.month, sum(f.revenue_vnd) AS revenue FROM fact_sales f JOIN dim_date d ON d.date_key = f.date_key WHERE d.year = 2026 GROUP BY d.year, d.month ORDER BY d.year, d.month"
+      starter: |-
+        SELECT d.year, d.month, sum(f.revenue_vnd) AS revenue
+        FROM fact_sales f
+        JOIN dim_date d ON d.date_key = f.date_key
+        WHERE d.year = 2026
+        GROUP BY d.year, d.month
+        ORDER BY d.year, d.month
       solution: "SELECT p.category, sum(f.revenue_vnd) AS revenue FROM fact_sales f JOIN dim_product p ON p.product_key = f.product_key JOIN dim_date d ON d.date_key = f.date_key WHERE d.year = 2026 AND d.month BETWEEN 7 AND 9 GROUP BY p.category"
     docs: https://www.postgresql.org/docs/current/queries-table-expressions.html
   drills:
     - id: g-c2-1
       kind: faded
       task: { vi: "Tổng doanh thu ngày cuối tuần và ngày thường (cột `is_weekend` của `dim_date`).", en: "Total revenue on weekend days and on weekdays (the `is_weekend` column of `dim_date`)." }
-      starter: "SELECT d.is_weekend, sum(f.revenue_vnd) AS revenue FROM fact_sales f JOIN dim_date d ON d.date_key = ___ GROUP BY d.is_weekend"
+      starter: |-
+        SELECT d.is_weekend, sum(f.revenue_vnd) AS revenue
+        FROM fact_sales f
+        JOIN dim_date d ON d.date_key = ___
+        GROUP BY d.is_weekend
       solution: "SELECT d.is_weekend, sum(f.revenue_vnd) AS revenue FROM fact_sales f JOIN dim_date d ON d.date_key = f.date_key GROUP BY d.is_weekend"
       hint: { vi: "Fact nối với dimension qua khóa của dimension có trong fact.", en: "The fact joins a dimension through that dimension's key stored in the fact." }
     - id: g-c2-2
@@ -1126,24 +1805,44 @@
     concept:
       vi: "SCD loại 2 (slowly changing dimension) giữ mỗi phiên bản thuộc tính một dòng, có `valid_from` và `valid_to`. Ở đây `valid_to` là ngày đầu tiên phiên bản hết hiệu lực (không tính), trống nghĩa là phiên bản hiện tại. Muốn giá trị tại ngày X: `valid_from <= X` và (`valid_to` trống hoặc `valid_to > X`)."
       en: "SCD type 2 (slowly changing dimension) keeps one row per version of an attribute, with `valid_from` and `valid_to`. Here `valid_to` is the first day the version no longer applies (exclusive), blank means the current version. For the value on date X: `valid_from <= X` and (`valid_to` is blank or `valid_to > X`)."
-    example: "SELECT dc.city, sum(f.revenue_vnd) AS revenue FROM fact_sales f JOIN dim_customer dc ON dc.customer_key = f.customer_key GROUP BY dc.city ORDER BY revenue DESC"
+    example: |-
+      SELECT dc.city, sum(f.revenue_vnd) AS revenue
+      FROM fact_sales f
+      JOIN dim_customer dc ON dc.customer_key = f.customer_key
+      GROUP BY dc.city
+      ORDER BY revenue DESC
     explain:
       vi: "① Fact đã lưu `customer_key` của đúng phiên bản lúc bán, nên chỉ cần nối khóa. ② 42 khách đã chuyển thành phố có hai dòng trong `dim_customer`. ③ Kết quả: 6 dòng (gồm thành phố trống của khách không khai); Ho Chi Minh City 157.954.100 đồng, Da Nang 137.323.200 đồng. Doanh thu bán lẻ không qua thẻ thành viên (khóa khách trống) không nằm trong phép nối này."
       en: "① The fact already stores the `customer_key` of the version valid at sale time, so a key join is enough. ② 42 customers who moved city have two rows in `dim_customer`. ③ Result: 6 rows (including a blank city for customers who gave none); Ho Chi Minh City 157,954,100 VND, Da Nang 137,323,200 VND. Walk-in sales (blank customer key) drop out of this join."
     mistake:
-      sql: "SELECT dc.city, sum(f.revenue_vnd) AS revenue FROM fact_sales f JOIN dim_customer k ON k.customer_key = f.customer_key JOIN dim_customer dc ON dc.customer_id = k.customer_id GROUP BY dc.city ORDER BY revenue DESC"
+      sql: |-
+        SELECT dc.city, sum(f.revenue_vnd) AS revenue
+        FROM fact_sales f
+        JOIN dim_customer k ON k.customer_key = f.customer_key
+        JOIN dim_customer dc ON dc.customer_id = k.customer_id
+        GROUP BY dc.city
+        ORDER BY revenue DESC
       vi: "Nối `dim_customer` theo mã khách mà không theo khoảng hiệu lực: khách đã chuyển có hai dòng, nên mỗi lần mua bị cộng hai lần, một lần cho mỗi thành phố."
       en: "Joining `dim_customer` on customer id without the validity range: a customer who moved has two rows, so each purchase is added twice, once per city."
     try:
       task: { vi: "Cùng doanh thu đó nhưng theo thành phố hiện tại của khách (phiên bản `is_current`), để thấy khác biệt.", en: "The same revenue but by the customer's current city (the `is_current` version), to see the difference." }
-      starter: "SELECT dc.city, sum(f.revenue_vnd) AS revenue FROM fact_sales f JOIN dim_customer dc ON dc.customer_key = f.customer_key GROUP BY dc.city ORDER BY revenue DESC"
+      starter: |-
+        SELECT dc.city, sum(f.revenue_vnd) AS revenue
+        FROM fact_sales f
+        JOIN dim_customer dc ON dc.customer_key = f.customer_key
+        GROUP BY dc.city
+        ORDER BY revenue DESC
       solution: "SELECT cur.city, sum(f.revenue_vnd) AS revenue FROM fact_sales f JOIN dim_customer dc ON dc.customer_key = f.customer_key JOIN dim_customer cur ON cur.customer_id = dc.customer_id AND cur.is_current GROUP BY cur.city"
     docs: https://www.postgresql.org/docs/current/queries-table-expressions.html
   drills:
     - id: g-c3-1
       kind: faded
       task: { vi: "Vào ngày 01/01/2026, mỗi thành phố có bao nhiêu khách (theo phiên bản còn hiệu lực ngày đó)? Thành phố và số khách.", en: "On 2026-01-01, how many customers did each city have (by the version valid that day)? City and number of customers." }
-      starter: "SELECT city, count(*) AS customers FROM dim_customer WHERE valid_from <= '2026-01-01' AND (valid_to IS NULL OR valid_to > ___) GROUP BY city"
+      starter: |-
+        SELECT city, count(*) AS customers
+        FROM dim_customer
+        WHERE valid_from <= '2026-01-01' AND (valid_to IS NULL OR valid_to > ___)
+        GROUP BY city
       solution: "SELECT city, count(*) AS customers FROM dim_customer WHERE valid_from <= '2026-01-01' AND (valid_to IS NULL OR valid_to > '2026-01-01') GROUP BY city"
       hint: { vi: "Phiên bản còn hiệu lực khi ngày hết hiệu lực nằm sau ngày đang xét.", en: "A version is valid when its end date falls after the date in question." }
     - id: g-c3-2
