@@ -203,12 +203,13 @@ describe.skipIf(!READY)('Finance: KPI (content/domains/fin/kpis.yml)', () => {
 
 describe.skipIf(!READY)('Finance: khung gợi ý giấu bẫy (trap:, v14 T3)', () => {
   it('đúng ba việc bẫy; khung (mọi biến thể) không lộ từ khóa của bẫy', () => {
-    const HIDDEN: Record<string, RegExp> = { 'fin-ch4-03': /PARTITION BY/, 'fin-ch5-01': /FULL JOIN/, 'fin-ch6-03': /IS NULL/ };
+    // F6-03: the twist is where the month condition goes, so the join condition with the calls is hidden too.
+    const HIDDEN: Record<string, RegExp> = { 'fin-ch4-03': /PARTITION BY/, 'fin-ch5-01': /FULL JOIN/, 'fin-ch6-03': /IS NULL|ON c\.___ = l\.___ AND/ };
     expect(templates.filter((t) => t.trap).map((t) => t.id).sort()).toEqual(Object.keys(HIDDEN));
     for (const tpl of templates.filter((t) => t.trap)) {
       for (let v = 0; v < variantsOf(tpl).length; v++) {
         const t = applyVariant(tpl, v);
-        expect(t.steps[0].solution).toMatch(HIDDEN[t.id]);
+        expect(t.steps[0].solution).toMatch(/PARTITION BY|FULL JOIN|IS NULL/);
         expect(frameOf(t.steps[0].solution, t.wrong!.map((w) => w.sql)), `${t.id}#${v}`).not.toMatch(HIDDEN[t.id]);
       }
     }

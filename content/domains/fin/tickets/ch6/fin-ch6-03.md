@@ -28,6 +28,9 @@ reflect:
   answer: 0
   why: { vi: "Phần lọc dòng chạy sau khi ghép, nên điều kiện tháng ở đó loại mọi dòng có cuộc gọi tháng khác. Đặt trong điều kiện ghép thì chỉ cuộc gọi trong tháng mới được ghép, và \"không ghép được\" nghĩa là tháng đó chưa ai gọi.", en: "The row filter runs after the join, so a month condition there removes every row with a call from another month. In the join condition only calls of that month are matched, and \"no match\" means nobody called that month." }
 wrong:
+  - sql: "SELECT l.code, l.branch_id, s.dpd FROM loan_snapshots s JOIN loans l ON l.id = s.loan_id LEFT JOIN collection_calls c ON c.loan_id = l.id WHERE s.month_end = '{{me}}' AND s.dpd > 30 AND c.called_on >= '{{from}}' AND c.called_on < '{{to}}' ORDER BY s.dpd DESC, l.code"
+    vi: "Danh sách đang là các khoản đã được gọi trong tháng: điều kiện tháng ở phần lọc dòng chung loại mọi khoản không có cuộc gọi. Đặt điều kiện tháng vào điều kiện ghép, rồi giữ những khoản không ghép được."
+    en: "Your list holds the loans that were called during the month: a month condition in the shared row filter removes every loan with no call. Put the month condition into the join condition, then keep the loans that found no match."
   - sql: "SELECT l.code, l.branch_id, s.dpd FROM loan_snapshots s JOIN loans l ON l.id = s.loan_id LEFT JOIN collection_calls c ON c.loan_id = l.id AND c.called_on >= '{{from}}' AND c.called_on < '{{to}}' WHERE s.month_end = '{{me}}' AND s.dpd > 30 ORDER BY s.dpd DESC, l.code"
     vi: "Danh sách có cả khoản đã được gọi: ghép trái giữ mọi khoản, nhưng chưa lọc lấy những khoản không ghép được với cuộc gọi nào (phía cuộc gọi để trống)."
     en: "Your list also has loans that were called: the left join keeps every loan, but you did not keep only the loans that matched no call (empty on the call side)."
