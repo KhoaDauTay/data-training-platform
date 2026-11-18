@@ -472,12 +472,14 @@ export function renderHome(host: HTMLElement): void {
     ? homeModel(general ? loadTickets('logistics') : app.tickets, done(), CHAPTERS, SKILLS, homeHooks.levelOf)
     : homeModel(app.tickets, done(), chaptersOf(), domainSkills(app.tickets), homeHooks.levelOf);
   const grid = page === 'overview'; // the harbour page keeps its 3-column grid; the others are one 880 px column (v6 §3.3)
+  const enter = host.dataset.enter !== undefined; // ui-ux-v5 C1: set by showRoute(), used by this draw only
+  delete host.dataset.enter;
   host.replaceChildren(
     h('h1', {
       id: 'home-title', tabindex: '-1',
       class: page === 'home' || page === 'overview' ? 'sr-only' : 'mx-auto mt-6 mb-0 max-w-[880px] px-4 text-2xl font-extrabold',
     }, page === 'soon' ? t('soon.title', { name: t(soonDomain().name) }) : t(PAGE_TITLE[page])),
-    h('div', { class: grid ? 'mx-auto grid max-w-[1120px] gap-5 px-4 py-6 lg:grid-cols-3' : 'mx-auto grid max-w-[880px] gap-8 px-4 py-6' },
+    h('div', { class: cx(grid ? 'mx-auto grid max-w-[1120px] gap-5 px-4 py-6 lg:grid-cols-3' : 'mx-auto grid max-w-[880px] gap-8 px-4 py-6', enter && 'cq-enter') },
       ...nodes(...sections.filter((s) => s.pages.includes(page)).map((s) => {
         const el = s.render(m);
         return el && h('div', { class: cx('min-w-0', grid && SPAN[s.span]) }, el);

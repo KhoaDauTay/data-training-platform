@@ -172,20 +172,32 @@ export function syncMenuCopies(): void {
   }
 }
 
+let noticeSig: unknown[] = [];
 function renderNotice(): void {
   const el = byId('notice');
   const n = app.notice;
   el.hidden = !n;
-  if (!n) return el.replaceChildren();
+  if (!n) {
+    noticeSig = [];
+    return el.replaceChildren();
+  }
   // ui-ux-v5 A4: the domain's loading line gets the loader, and a bar only while the asset download has a known size left.
   const wait = n.key === 'domain.loading';
   const p = app.loadProgress;
   const bar = wait && downloading(p);
+  // #notice is role=status: a download progress tick (renderTopbar) must not rebuild the same line, or it is read again each time.
+  const sig = [n, getLang(), bar]; // a new notice object (even the same text again) is drawn and read anew
+  const shown = el.querySelector('progress');
+  if (sig.every((x, i) => x === noticeSig[i])) {
+    if (shown && bar) shown.value = p!.loaded;
+    return;
+  }
+  noticeSig = sig;
   el.classList.toggle('max-sm:flex-wrap', bar);
   el.replaceChildren(...nodes(
     wait && loader(),
     h('span', {}, t(n.key, n.params)),
-    bar && h('progress', { class: 'h-1.5 w-40 accent-accent max-sm:order-last max-sm:w-full', max: String(p!.total), value: String(p!.loaded) }),
+    bar && h('progress', { class: 'h-1.5 w-40 accent-accent max-sm:order-last max-sm:w-full', 'aria-hidden': 'true', max: String(p!.total), value: String(p!.loaded) }),
     n.reload ? h('button', { type: 'button', onclick: () => location.reload() }, t('app.reload')) : null,
     h('button', { type: 'button', class: 'ml-auto', 'aria-label': t('app.dismiss'), onclick: () => { app.notice = undefined; renderNotice(); } }, '×')));
 }
