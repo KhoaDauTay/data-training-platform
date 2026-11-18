@@ -262,6 +262,26 @@ svg[data-mascot=lily] > use, svg[data-mascot=lily] > .lily-fig { transform: scal
 .teach-scene .tb-nod { transform: rotate(6deg); transform-origin: 60px 76px; } /* still frame: Lily's head leans toward Boon */
 @keyframes cq-nod { 0%, 100% { transform: rotate(6deg); } 40% { transform: rotate(10deg) translateY(1px); } 55% { transform: rotate(4deg) translateY(-1px); } }
 @keyframes cq-tap { 0%, 100% { transform: rotate(0); } 50% { transform: rotate(-9deg); } }
+/* ---- v5 motion (ui-ux-v5 §1). Base styles are the end state; one-shot classes go on at an event, never while drawing (react(),
+   src/ui/celebrate.ts); transform only on leaf SVGs (mascot, icon), never on a link, button or card (L93). Reduced motion: the rule below. ---- */
+@property --lily-size { syntax: '<number>'; inherits: true; initial-value: 1; }
+@property --lily-scarf-on { syntax: '<number>'; inherits: true; initial-value: 1; }
+@property --lily-badge-on { syntax: '<number>'; inherits: true; initial-value: 1; }
+@property --lily-prop-on { syntax: '<number>'; inherits: true; initial-value: 0; }
+/* A2: individual translate/rotate, so cq-grow's `scale` (A1) can run beside them. */
+svg[data-mascot].react { transform-origin: 50% 100%; }
+svg.react[data-pose=cheer] { animation: cq-jump 560ms ease-out; }
+svg.react[data-pose=point] { animation: cq-lean 480ms ease-out; }
+svg.react[data-pose=think] { animation: cq-tilt 500ms ease-out; }
+svg.react[data-pose=oops] { animation: cq-shake 360ms ease-out; }
+.cq-bubble { transform-origin: 0 0; animation: cq-bubble 220ms ease-out; }
+.cq-rise { pointer-events: none; animation: cq-rise 800ms ease-out forwards; }
+@keyframes cq-jump { 0%, 50%, 100% { translate: 0 0; } 25% { translate: 0 -6px; } 72% { translate: 0 -3px; } }
+@keyframes cq-lean { 0%, 55%, 100% { rotate: 0deg; } 28% { rotate: -6deg; } 78% { rotate: -3deg; } }
+@keyframes cq-tilt { 0%, 100% { rotate: 0deg; } 25%, 70% { rotate: 5deg; } }
+@keyframes cq-shake { 0%, 100% { translate: 0 0; } 17%, 50%, 83% { translate: -2px 0; } 33%, 67% { translate: 2px 0; } }
+@keyframes cq-bubble { from { opacity: 0; scale: 0.96; } }
+@keyframes cq-rise { to { translate: 0 -14px; opacity: 0; } }
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; animation: none !important; scroll-behavior: auto !important; }
 }

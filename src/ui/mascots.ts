@@ -18,7 +18,8 @@ export type Pose = (typeof POSES)[number];
 export function mascot(who: Mascot, pose: Pose, cls = 'size-12', label?: string): SVGSVGElement {
   const a11y: Record<string, string> = label ? { role: 'img', 'aria-label': label } : { 'aria-hidden': 'true', focusable: 'false' };
   // data-mascot: Lily's growth stage (L87, <html data-lily> + style.css) reaches every Lily drawn here, never the top-bar logo.
-  return s('svg', { viewBox: '0 0 120 120', class: cx('shrink-0 overflow-visible', cls), 'data-mascot': who, ...a11y }, s('use', { href: `#${who}-${pose}` }));
+  // data-pose: picks the one-shot reaction keyframe of react() (src/ui/celebrate.ts, ui-ux-v5 §1).
+  return s('svg', { viewBox: '0 0 120 120', class: cx('shrink-0 overflow-visible', cls), 'data-mascot': who, 'data-pose': pose, ...a11y }, s('use', { href: `#${who}-${pose}` }));
 }
 
 /** rerender(): Lily's stage on <html data-lily> (0–3, src/lily.ts). */

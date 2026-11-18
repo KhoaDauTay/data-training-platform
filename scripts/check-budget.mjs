@@ -1,10 +1,11 @@
 // Gzip budget per asset group (KB, gzip -9). Numbers and reasons: Plan Deploy Task 2 (devops §2, F3, L6, P-D1..P-D4).
 // Usage: node scripts/check-budget.mjs [dir]   (default dist/assets)
-import { readdirSync, readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { gzipSync } from 'node:zlib';
 
 // First match wins; 'rest' catches every lazy chunk Rolldown names after modules (Mermaid diagrams, sql-formatter as esm-*).
 const GROUPS = [
+  ['html', /^index\.html$/, 9], // ui-ux-v5 §2: dist/index.html (one level above the assets): the mascot sprite and boot script, 7.9 KB before v5
   ['main', /^index-.*\.js$/, 290], // Plan 7 V1 (needs the user's OK): 268 after Plan 6; routes, sidebar, onboarding and ~90 VI strings. Was 270 (L55)
   ['tickets', /^ticketSources-/, 110], // all ticket markdown, one lazy chunk fetched at boot (src/content.ts): 37 KB after ch1–6, 64 KB after ch7–9, 99 KB after ch10–12 (Plan 4 S7, L40 rule)
   ['lanes', /^laneSources-/, 20], // lane briefs and side tasks (content/lanes/), lazy, fetched at boot beside the tickets (Plan 5)
@@ -30,9 +31,11 @@ const GROUPS = [
 
 const dir = process.argv[2] ?? 'dist/assets';
 const sums = {};
-for (const f of readdirSync(dir)) {
+const files = readdirSync(dir).map((f) => [f, `${dir}/${f}`]);
+if (existsSync(`${dir}/../index.html`)) files.push(['index.html', `${dir}/../index.html`]);
+for (const [f, path] of files) {
   const [name] = GROUPS.find(([, re]) => re.test(f));
-  sums[name] = (sums[name] ?? 0) + gzipSync(readFileSync(`${dir}/${f}`), { level: 9 }).length / 1024;
+  sums[name] = (sums[name] ?? 0) + gzipSync(readFileSync(path), { level: 9 }).length / 1024;
 }
 let fail = false;
 for (const [name, , budget] of GROUPS) {

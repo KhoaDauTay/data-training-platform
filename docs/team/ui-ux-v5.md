@@ -1,5 +1,7 @@
 # BoonData — UI/UX v5: thêm chuyển động và SVG (làm giàu, không thiết kế lại)
 
+**Trạng thái: ĐÃ DUYỆT** (user, 2026-11-18: "Build đi"), mọi quyết định §9 lấy mặc định in đậm (L101).
+
 Người viết: UI/UX · 2026-11-18. User: *"Bổ sung thêm animation và SVG nữa cho tốt"*, và UI/UX hiện tại đã ổn. Vì vậy v5 **không đổi bố cục, màu, chữ hay luồng**. Nó chỉ thêm chuyển động ngắn và hình vẽ vào những chỗ đang đứng yên, theo cùng luật đã có.
 
 Ràng buộc giữ nguyên:
