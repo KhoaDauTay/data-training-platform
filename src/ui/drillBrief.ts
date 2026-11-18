@@ -45,6 +45,7 @@ export interface DrillDeps extends GuideDeps {
   // Learning path (Task 9-10)
   lessonSeen: typeof LessonCard.isSeen; learnSkillOf: typeof Route.learnSkillOf; learnAdvOf: typeof Route.learnAdvOf;
   learnModuleOf: typeof Route.learnModuleOf; knownSkills: typeof Home.knownSkills; moduleTitle: typeof Progress.moduleTitle; illustration: typeof ArtLoad.illustration;
+  loadedGsap: typeof ArtLoad.loadedGsap; loadGsap: typeof ArtLoad.loadGsap; reducedMotion: typeof Dom.reducedMotion; // v6 S4 unlock
   icon: typeof Icons.icon; skillIcon: typeof Icons.skillIcon;
   // Plan 9 D9-12: the General area reads Logistics, whatever domain is open
   loadTickets: typeof Content.loadTickets; CHAPTERS: typeof Progress.CHAPTERS;

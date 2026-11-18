@@ -27,44 +27,103 @@ const SOFT = 'var(--accent-soft)';
 const PANEL = 'var(--panel)';
 const LINE = 'var(--border)';
 
-/**
- * Header glyph of SQL module n (1–12, one per chapter). `accent`: the chapter's fill class (chapterColor(n).fill), else the
- * accent colour. Accent parts carry `data-acc` 0, 1… in drawing order: the module page's glyph-in pops them in turn (v5 B1).
- */
-export function moduleGlyph(n: number, accent?: string): SVGSVGElement {
-  let k = 0;
-  const acc = (x: Attrs): Attrs => ({ ...x, 'data-acc': k++ });
-  const fx = (): Attrs => acc(accent ? { class: accent } : { fill: A });
-  const f = (x: number, y: number, w: number, h: number, extra: Attrs = {}): SVGElement => e('rect', { x, y, width: w, height: h, rx: 2, ...fx(), ...extra });
-  const grid = (x: number, y: number, cols: number, rows: number): SVGElement =>
-    e('g', {}, rect(x, y, cols * 16, rows * 10, PANEL, { stroke: LINE }),
-      ...Array.from({ length: rows - 1 }, (_, r) => line(x, y + (r + 1) * 10, x + cols * 16, y + (r + 1) * 10, LINE, 1)));
+// ui-ux-v6 S4: module and track glyphs in the Phosphor duotone grammar (the icon set, src/ui/iconData.ts) on a 96x64
+// grid: one colour (the accent: General pages have no chapter colours, L82), round 4-unit strokes, a 0.2 tone layer.
+const W = 96;
+const H = 64;
+const pen: Attrs = { fill: 'none', stroke: A, 'stroke-width': 4, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' };
+const tile = (): SVGElement => rect(2, 2, W - 4, H - 4, SOFT, { rx: 12 });
+
+/** One shape drawn twice: its tone layer (opacity 0.2) under its outline. `acc` marks it for the module page's glyph-in pop. */
+function duo(tag: string, attrs: Attrs, acc?: number): SVGElement {
+  return e('g', acc === undefined ? {} : { 'data-acc': acc }, e(tag, { ...attrs, fill: A, opacity: 0.2 }), e(tag, { ...attrs, ...pen }));
+}
+const d = (x: string): SVGElement => path(x, pen);
+const box = (x: number, y: number, w: number, h: number, acc?: number, rx = 4): SVGElement => duo('rect', { x, y, width: w, height: h, rx }, acc);
+const ringC = (cx: number, cy: number, r: number, acc?: number): SVGElement => duo('circle', { cx, cy, r }, acc);
+/** A table outline with row rules at the given y's. */
+const table = (x: number, y: number, w: number, h: number, rows: number[]): SVGElement =>
+  e('g', {}, rect(x, y, w, h, 'none', { ...pen, rx: 4 }), ...rows.map((ry) => d(`M${x} ${ry} H${x + w}`)));
+/** A tone-only row (no outline) inside a table. */
+const toneRow = (x: number, y: number, w: number, h: number, acc: number): SVGElement => rect(x, y, w, h, A, { opacity: 0.2, 'data-acc': acc });
+
+/** Header glyph of SQL module n (1–12, one per chapter). Tone parts carry `data-acc` 0, 1… in drawing order (v5 B1 glyph-in). */
+export function moduleGlyph(n: number): SVGSVGElement {
   const body: Record<number, () => Kid[]> = {
-    1: () => [grid(40, 14, 5, 4), f(72, 14, 16, 40, { opacity: 0.85 })],
-    2: () => [path('M30 16 H70 L56 34 V48 L44 52 V34 Z', ink), path('M96 18 H120 L106 32 L120 46 H96', acc({ ...ink, stroke: A }))],
-    3: () => [grid(18, 16, 3, 3), grid(98, 16, 3, 3), path('M66 26 C80 26 84 36 98 36', acc({ ...ink, stroke: A }))],
-    4: () => [rect(30, 16, 44, 34, PANEL, { rx: 4, stroke: LINE }), f(30, 16, 44, 8), circle(110, 33, 16, PANEL, ring), path('M110 24 V33 H118', ink)],
-    5: () => [path('M30 32 H70 M70 32 L100 16 H130 M70 32 H130 M70 32 L100 48 H130', ink), circle(70, 32, 5, A, acc({}))],
-    6: () => [rect(28, 22, 70, 6, LINE, { rx: 3 }), rect(28, 34, 50, 6, LINE, { rx: 3 }), f(52, 22, 22, 6), circle(108, 30, 13, 'none', { ...ring, 'stroke-width': 3 }), line(117, 40, 130, 52, 'var(--muted)', 4)],
-    7: () => [rect(36, 12, 88, 40, PANEL, { rx: 6, ...ring }), rect(52, 20, 56, 24, SOFT, { rx: 4, ...ring }), f(68, 27, 24, 10)],
-    8: () => [f(40, 40, 30, 12), f(46, 26, 30, 12, { opacity: 0.8 }), f(52, 12, 30, 12, { opacity: 0.6 }), path('M98 46 C118 46 118 18 98 18 M98 18 l6 -4 M98 18 l6 4', ink)],
-    9: () => [circle(66, 32, 18, 'none', ring), circle(94, 32, 18, 'none', ring), e('path', { d: 'M80 21 A18 18 0 0 1 80 43 A18 18 0 0 1 80 21 Z', ...fx() })],
-    10: () => [...[0, 1, 2, 3, 4, 5].map((i) => rect(24 + i * 20, 38 - (i % 3) * 8, 12, (i % 3) * 8 + 10, LINE, { rx: 2 })), rect(60, 12, 48, 42, 'none', acc({ rx: 6, stroke: A, 'stroke-width': 3 }))],
-    11: () => [rect(44, 12, 64, 42, PANEL, { rx: 4, ...ring }), line(76, 12, 76, 54), f(88, 12, 10, 22), path('M88 34 L93 29 L98 34', { fill: SOFT })],
-    12: () => [rect(30, 12, 100, 42, PANEL, { rx: 6, stroke: LINE, 'stroke-width': 2 }), path('M44 44 A20 20 0 0 1 84 44', ink), e('line', acc({ x1: 64, y1: 44, x2: 76, y2: 30, stroke: A, 'stroke-width': 3, 'stroke-linecap': 'round' })), f(96, 34, 8, 12), f(108, 26, 8, 20), f(120, 20, 8, 26)],
+    // reading and filtering: a table, one row picked, a funnel letting it through
+    1: () => [toneRow(14, 24, 30, 10, 0), table(14, 14, 30, 36, [24, 34, 42]), duo('path', { d: 'M52 16 H84 L72 31 V46 L64 50 V31 Z' }, 1)],
+    // aggregating and grouping: two clusters of rows become two bars
+    2: () => [...[[16, 20], [26, 16], [22, 28], [16, 42], [26, 40], [22, 50]].map(([cx, cy]) => circle(cx, cy, 3.5, A)),
+      d('M36 32 H48 M42 26 L48 32 L42 38'), box(56, 18, 10, 34, 0, 2), box(72, 32, 10, 20, 1, 2), d('M52 52 H86')],
+    // joining tables: two tables, matching rows linked
+    3: () => [toneRow(12, 14, 24, 10, 0), toneRow(60, 24, 24, 10, 1), table(12, 14, 24, 36, [24, 34]), table(60, 14, 24, 36, [24, 34]),
+      d('M36 19 C48 19 48 29 60 29'), d('M36 29 C48 29 48 41 60 41')],
+    // dates and NULLs: a calendar with one day marked, and the empty set
+    4: () => [box(14, 16, 38, 36, undefined, 5), d('M14 26 H52 M24 11 V20 M42 11 V20'), box(34, 32, 10, 10, 0, 2), ringC(72, 34, 11, 1), d('M62 48 L82 20')],
+    // conditional logic: a decision with two branches
+    5: () => [duo('path', { d: 'M26 20 L38 32 L26 44 L14 32 Z' }, 0), d('M38 32 C48 32 48 18 58 18 M38 32 C48 32 48 46 58 46'), box(58, 11, 24, 14, 1), box(58, 39, 24, 14)],
+    // text and data types: lines of text with a cursor, a square turned into a circle
+    6: () => [d('M14 20 H40 M14 32 H34 M14 44 H40'), d('M46 14 V50 M42 14 H50 M42 50 H50'), box(58, 12, 16, 16, 0, 3), ringC(74, 44, 9, 1), d('M78 18 C86 22 86 30 80 34 M80 34 L80 27 M80 34 L86 31')],
+    // subqueries: a query inside a query
+    7: () => [box(12, 10, 72, 44, undefined, 7), box(28, 21, 40, 22, 0), d('M36 29 H60 M36 36 H52')],
+    // CTEs and latest rows: steps building on each other, a flag on the newest
+    8: () => [box(12, 42, 22, 12, undefined, 3), box(30, 30, 22, 12, 0, 3), box(48, 18, 22, 12, 1, 3), d('M78 30 V10 L88 14 L78 18')],
+    // set operations: two overlapping sets
+    9: () => [ringC(38, 32, 17, 0), ringC(58, 32, 17, 1)],
+    // window functions: a frame sliding over rows
+    10: () => [...[0, 1, 2, 3, 4, 5].map((i) => d(`M${18 + i * 12} 46 V${40 - ((i * 7) % 4) * 6}`)), box(32, 12, 32, 40, 0, 6), d('M40 58 H56 M51 54 L56 58 L51 62')],
+    // performance and indexes: a speed gauge
+    11: () => [duo('path', { d: 'M18 48 A30 30 0 0 1 78 48 Z' }, 0), d('M48 48 L64 28'), circle(48, 48, 4, A), d('M24 34 L28 36 M34 24 L37 28 M48 19 V23 M62 24 L59 28')],
+    // capstone: a magnifier over a chart
+    12: () => [d('M14 52 H54 M20 52 V38 M30 52 V30 M40 52 V42'), ringC(60, 26, 14, 0), d('M70 36 L82 48')],
   };
-  return root(160, 64, rect(4, 4, 152, 56, SOFT, { rx: 12 }), ...(body[n] ?? body[1])());
+  return root(W, H, tile(), ...(body[n] ?? body[1])());
 }
 
 /** Header glyph of an advanced group: A windows + recursion (tree), B funnel + cohort steps, C star schema, D arrow out of the frame. */
 export function trackGlyph(g: 'A' | 'B' | 'C' | 'D'): SVGSVGElement {
   const body: Record<'A' | 'B' | 'C' | 'D', Kid[]> = {
-    A: [rect(22, 14, 40, 36, 'none', { rx: 4, stroke: A, 'stroke-width': 3 }), path('M112 14 V26 M112 26 L94 40 M112 26 L130 40 M94 40 V50 M130 40 V50', ink), circle(112, 14, 4, A)],
-    B: [path('M22 14 H66 L52 32 V46 L36 50 V32 Z', ink), path('M86 50 V40 H102 V30 H118 V20 H134', { ...ink, stroke: A, 'stroke-width': 3 })],
-    C: [path('M80 10 V54 M46 32 H114', ink), rect(70, 24, 20, 16, A, { rx: 3 }), ...[[80, 10], [80, 54], [46, 32], [114, 32]].map(([x, y]) => circle(x, y, 7, PANEL, ring))],
-    D: [rect(24, 12, 64, 40, 'none', { rx: 6, ...ring }), path('M60 32 H132 M120 22 L132 32 L120 42', { ...ink, stroke: A, 'stroke-width': 3 })],
+    A: [box(12, 16, 28, 32, 0, 5), d('M66 14 V26 M66 26 L52 40 M66 26 L80 40 M52 40 V50 M80 40 V50'), ringC(66, 14, 5)],
+    B: [duo('path', { d: 'M12 16 H44 L34 30 V44 L22 48 V30 Z' }, 0), d('M52 50 V40 H64 V30 H76 V20 H86')],
+    C: [d('M48 10 V54 M18 32 H78'), box(38, 24, 20, 16, 0, 3), ...[[48, 10], [48, 54], [18, 32], [78, 32]].map(([cx, cy]) => ringC(cx, cy, 6))],
+    D: [box(10, 14, 44, 36, 0, 6), d('M34 32 H86 M76 22 L86 32 L76 42')],
   };
-  return root(160, 64, rect(4, 4, 152, 56, SOFT, { rx: 12 }), ...body[g]);
+  return root(W, H, tile(), ...body[g]);
+}
+
+const TICK = 'M7.5 12.5 L10.5 15.5 L16.5 9';
+/** The tick's start shape: a dot in the middle (General has no locks to open, L88; ui-ux-v6 S4 said a padlock, L121). */
+export const UNLOCK_FROM = 'M11.6 12 L12 12 L12.4 12';
+export const UNLOCK_MS = 900;
+
+/** A module whose skills are all learned: a ring and a tick (`data-ring`/`data-mark`, pathLength 1 so CSS can draw them too). */
+export function doneBadge(): SVGSVGElement {
+  return e('svg', { viewBox: '0 0 24 24', class: 'block size-full', 'aria-hidden': 'true', focusable: 'false' },
+    circle(12, 12, 11.5, PANEL),
+    circle(12, 12, 9.5, 'none', { 'data-ring': '', stroke: 'var(--good)', 'stroke-width': 2.5, pathLength: 1 }),
+    path(TICK, { 'data-mark': '', fill: 'none', stroke: 'var(--good)', 'stroke-width': 2.5, 'stroke-linecap': 'round', 'stroke-linejoin': 'round', pathLength: 1 })) as SVGSVGElement;
+}
+
+/**
+ * ui-ux-v6 S4: a module just completed this session. The ring draws in (DrawSVG), the dot grows into the tick (MorphSVG), the
+ * badge pops; 900 ms, only on the badge's own leaves (L93). GSAP comes in from the caller (this chunk never imports it).
+ * The badge's children are put back at the end, so it equals a fresh doneBadge() (GSAP leaves inline residue, L116).
+ */
+export function playUnlock(badge: SVGSVGElement, g: typeof import('./gsap')): void {
+  const snap = badge.cloneNode(true) as SVGSVGElement;
+  const ring = badge.querySelector('[data-ring]');
+  const mark = badge.querySelector('[data-mark]');
+  const disc = badge.firstElementChild;
+  if (!ring || !mark || !disc) return;
+  for (const x of [ring, mark]) x.removeAttribute('pathLength'); // DrawSVG measures real lengths; the snapshot puts it back
+  const s = UNLOCK_MS / 1000;
+  const tl = g.timeline();
+  tl.fromTo([disc, ring], { scale: 0.6, svgOrigin: '12 12' }, { scale: 1, duration: s * 0.4, ease: 'back.out(2.4)' }, 0)
+    .fromTo(ring, { drawSVG: '0%' }, { drawSVG: '100%', duration: s * 0.55, ease: 'power2.out' }, 0)
+    .fromTo(mark, { morphSVG: UNLOCK_FROM }, { morphSVG: TICK, duration: s * 0.5, ease: 'back.out(2)' }, s * 0.35)
+    .set({}, {}, s)
+    .eventCallback('onComplete', () => { tl.kill(); badge.replaceChildren(...snap.childNodes); });
+  tl.play();
 }
 
 /** Practise SQL with nothing due: an empty board with a tick; room on the right for Lily asleep (sprite in HTML). */

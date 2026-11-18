@@ -84,5 +84,8 @@ export function stamper() {
       seen.add(id);
       return true;
     },
+    /** v6 S4: like stamp() without using it up (a page entry draws twice); spend() once the animation really starts. */
+    fresh: (id: string, learned: boolean): boolean => learned && !seen.has(id),
+    spend(id: string): void { seen.add(id); },
   };
 }

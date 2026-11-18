@@ -17,7 +17,7 @@ import { BTN_GO, CARD, cx } from '../theme';
 import { applyVariant } from '../variants';
 import { hints, renderBrief, shapeCard } from './brief';
 import { goalCard, skillChips, wrapUp } from './chapterView';
-import { announce, byId, h, loader, nodes, richText } from './dom';
+import { announce, byId, h, loader, nodes, reducedMotion, richText } from './dom';
 import { boonMark, enterMark, escOwned, guideHooks, guideSlot } from './coach';
 import { showPane } from './paneTabs';
 import { readJson, writeJson } from '../storage';
@@ -31,7 +31,7 @@ import { renderMyData } from './myDataView';
 import type { WorkArea } from './work';
 import { mascot } from './mascots';
 import { icon, NAV_ICON, skillIcon } from './icons';
-import { illustration } from '../art/load';
+import { illustration, loadedGsap, loadGsap } from '../art/load';
 import { gated, navLock, readTour } from '../onboarding';
 
 /** v12 audit: the Overview's Sandbox / My data cards follow the Sandbox sidebar lock (v4 D-O3). */
@@ -92,7 +92,7 @@ const loadDrillUi = () => import('./drillBrief').then((m) => {
   if (!drillUi) m.initDrill({
     db: ctx!.db, activeSchema, h, nodes, richText, byId, loader, getLang, locale, app, actions, persist, schemaHooks, erMeta, stepKey, session, hintsShown, today,
     isSuccess, movedToday, nextCard, SKILLS, hashOf, textOf, hints, shapeCard, tryPreview, openLesson, backToStory, startDrillMode, loadGeneral, generalNow, loadLessons,
-    lessonSeen: isSeen, knownSkills, learnSkillOf, learnAdvOf, learnModuleOf, moduleTitle, illustration, icon, skillIcon, loadTickets, CHAPTERS,
+    lessonSeen: isSeen, knownSkills, learnSkillOf, learnAdvOf, learnModuleOf, moduleTitle, illustration, loadedGsap, loadGsap, reducedMotion, icon, skillIcon, loadTickets, CHAPTERS,
     announce, readJson, writeJson, readTour, boonMark, enterMark, escOwned, guideHooks, guideSlot, showPane, parseRoute, mod: keyLabels(isMac).mod,
   });
   return (drillUi = m);

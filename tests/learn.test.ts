@@ -125,6 +125,19 @@ describe('Domain ↔ Chung (Plan 8a Task 11)', () => {
 });
 
 describe('stamper (ui-ux-v5 B1: icon đóng dấu khi kỹ năng vừa thành "đã học")', () => {
+  it('v6 S4: fresh() chưa tiêu dấu (trang vẽ hai lần liền khi vào), spend() mới tiêu', async () => {
+    const { stamper } = await import('../src/learn');
+    const st = stamper();
+    const s1 = {};
+    st.base(s1, ['m1']);
+    expect(st.fresh('m1', true)).toBe(false);
+    expect(st.fresh('m2', false)).toBe(false);
+    expect(st.fresh('m2', true)).toBe(true);
+    expect(st.fresh('m2', true)).toBe(true); // the second draw of the same entry still gets it
+    st.spend('m2');
+    expect(st.fresh('m2', true)).toBe(false);
+    expect(st.stamp('m2', true)).toBe(false);
+  });
   it('lần vẽ đầu chỉ đặt mốc; kỹ năng mới học đóng dấu đúng một lần (vẽ lại thì không)', async () => {
     const { stamper } = await import('../src/learn');
     const st = stamper();

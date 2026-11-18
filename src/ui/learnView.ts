@@ -28,6 +28,35 @@ const slot = (name: string): HTMLElement => d$.guideSlot(name);
 const stamps = stamper();
 /** The page drawn last: the module glyph pops in on the first draw after the hash changes, never on a redraw. */
 let pageKey = '';
+/** ui-ux-v6 S4: a module whose skills all became learned this session unlocks once (ids `m<n>`; baseline = done at first draw). */
+const unlocks = stamper();
+const doneIds = (c: LearnCtx): string[] => [...new Set(c.skills.map((s) => s.chapter))].filter((n) => moduleState(c, n).done).map((n) => `m${n}`);
+
+/**
+ * The module glyph, with the done badge in its corner (a sibling of the card's link, L93). A module done since the baseline
+ * plays the unlock once, on the first badge that is still in the page at the next frame: GSAP when its chunk is in, else the
+ * CSS draw (`.cq-unlock`) and a GSAP load for next time (L116); reduced motion shows it still. Any later redraw (language
+ * switch, coming back) draws the badge still: the stamp is spent.
+ */
+function moduleArt(c: LearnCtx, n: number, cls: string, done: boolean): HTMLElement {
+  const id = `m${n}`;
+  const play = unlocks.fresh(id, done);
+  const badge = done ? d$.illustration('aspect-square', (il) => {
+    const b = il.doneBadge();
+    // Checked again just before the paint: the entry's first draw is often replaced at once, and only the shown one plays.
+    if (play) requestAnimationFrame(() => {
+      if (!b.isConnected || !unlocks.fresh(id, true)) return;
+      unlocks.spend(id);
+      if (d$.reducedMotion()) return;
+      const g = d$.loadedGsap();
+      if (g) il.playUnlock(b, g);
+      else { b.classList.add('cq-unlock'); d$.loadGsap(); }
+    });
+    return b;
+  }) : null;
+  return d$.h('div', { class: cx('relative shrink-0', cls) }, d$.illustration('aspect-[3/2]', (il) => il.moduleGlyph(n)),
+    badge ? d$.h('div', { class: 'absolute -top-1.5 -right-1.5 size-5 sm:size-6' }, badge) : null);
+}
 
 function ctx(g: General): LearnCtx {
   const { app } = d$;
@@ -45,6 +74,7 @@ export function learnPage(deps: DrillDeps, g: General): HTMLElement {
   const n = d$.learnModuleOf(hash);
   const c = ctx(g);
   stamps.base(c.save, c.known); // a new save object (import) resets the baseline
+  unlocks.base(c.save, doneIds(c));
   const entered = hash !== pageKey;
   pageKey = hash;
   if (skill) return skillPage(c, skill);
@@ -94,7 +124,7 @@ function modulePage(c: LearnCtx, n: number, entered: boolean): HTMLElement {
   const ms = moduleState(c, n);
   return h('div', { class: 'space-y-5' },
     backLine(d$.hashOf('learn'), lt('learn.backAll'), 'module-intro'),
-    h('div', { class: 'flex items-center gap-3' }, h('div', { class: entered ? 'cq-glyph-in w-28 shrink-0' : 'w-28 shrink-0' }, d$.illustration('aspect-[160/64]', (il) => il.moduleGlyph(n))), // Plan 8b
+    h('div', { class: 'flex items-center gap-3' }, moduleArt(c, n, entered ? 'cq-glyph-in w-24' : 'w-24', ms.done), // Plan 8b, v6 S4
       h('h2', { class: 'm-0 text-xl font-bold' }, lt('learn.moduleTitle', { n, title: d$.moduleTitle(n, d$.getLang()) }))),
     h('p', { class: 'm-0 text-muted' }, lt('learn.moduleLine', { k: ms.learned, m: ms.skills.length })),
     slot('module-head'),
@@ -126,7 +156,11 @@ function bar(k: number, m: number): HTMLElement {
     d$.h('div', { class: 'h-2 rounded-full bg-accent', style: `width:${pct}%` }));
 }
 
-const STATUS_ICON = { in: '▣', partial: '◐', external: '↗' } as const;
+/** ui-ux-v6 S4: an advanced node's status icon beside its words (the icon is decorative). */
+const STATUS_ICON = { in: 'inApp', partial: 'partial', external: 'external' } as const;
+const statusLine = (x: AdvNode, rest: string): HTMLElement =>
+  d$.h('p', { class: 'm-0 flex items-start gap-1.5 text-sm text-muted' }, d$.icon(STATUS_ICON[x.status], 'mt-0.5 size-4 text-accent'),
+    d$.h('span', {}, `${lt(`adv.status.${x.status}` as LearnKey)}${rest}`));
 
 function overview(c: LearnCtx): HTMLElement {
   const { h } = d$;
@@ -142,7 +176,7 @@ function overview(c: LearnCtx): HTMLElement {
     h('ul', { class: LIST }, ...modules.map((n) => {
       const ms = moduleState(c, n);
       return h('li', { class: 'relative flex cursor-pointer items-center gap-3 rounded-(--r-card) bg-panel px-5 py-4 ring-1 ring-line hover:ring-accent' }, // v12 L86: the whole card opens it
-        h('div', { class: 'w-12 shrink-0 sm:w-16' }, d$.illustration('aspect-[160/64]', (il) => il.moduleGlyph(n))), // v5 B1: static (L93)
+        moduleArt(c, n, 'w-14 sm:w-20', ms.done), // v5 B1: static glyph (L93); v6 S4: done badge
         h('div', { class: 'min-w-0 flex-1 space-y-2' },
           h('a', { href: `${d$.hashOf('learn')}/sql/${n}`, class: 'font-bold after:absolute after:inset-0' }, lt('learn.moduleTitle', { n, title: d$.moduleTitle(n, lang) }), tick(ms.done)),
           h('p', { class: 'm-0 text-sm text-muted' }, lt('learn.moduleLine', { k: ms.learned, m: ms.skills.length })),
@@ -153,17 +187,15 @@ function overview(c: LearnCtx): HTMLElement {
     h('h2', { id: 'track-adv', class: H2 }, lt('learn.trackAdv')),
     slot('learn-adv'),
     ...groups.map(([gr, list]) => h('div', { class: 'space-y-2' },
-      h('div', { class: 'flex items-center gap-3' }, h('div', { class: 'w-20 shrink-0' }, d$.illustration('aspect-[160/64]', (il) => il.trackGlyph(gr))), // v5 B1
+      h('div', { class: 'flex items-center gap-3' }, h('div', { class: 'w-14 shrink-0' }, d$.illustration('aspect-[3/2]', (il) => il.trackGlyph(gr))), // v5 B1
         h('h3', { class: 'm-0 text-sm font-bold tracking-wide text-muted uppercase' }, lt(`adv.group.${gr}` as LearnKey))),
       h('ul', { class: LIST }, ...list.map((x) => {
         const st = nodeState(c, x);
         const needs = x.needs.filter((id) => !known.has(id) && !(c.general.nodes.find((y) => y.id === id) && nodeState(c, c.general.nodes.find((y) => y.id === id)!).done));
         return h('li', { class: 'relative cursor-pointer space-y-1 rounded-(--r-card) bg-panel px-5 py-3 ring-1 ring-line hover:ring-accent' },
           h('a', { href: `${d$.hashOf('learn')}/adv/${x.id}`, class: 'font-bold after:absolute after:inset-0' }, `${x.id.toUpperCase()} · ${x.title[lang]}`, tick(st.done)),
-          h('p', { class: 'm-0 text-sm text-muted' },
-            `${STATUS_ICON[x.status]} ${lt(`adv.status.${x.status}` as LearnKey)}`,
-            x.status === 'external' ? '' : ` · ${lt('learn.drills', { n: st.drills, total: st.total })}`,
-            needs.length ? ` · ${lt('adv.needsFirst', { list: needs.map((id) => nameOf(c, id)).join(', ') })}` : ''));
+          statusLine(x, (x.status === 'external' ? '' : ` · ${lt('learn.drills', { n: st.drills, total: st.total })}`)
+            + (needs.length ? ` · ${lt('adv.needsFirst', { list: needs.map((id) => nameOf(c, id)).join(', ') })}` : '')));
       })))));
   return h('div', { class: 'space-y-5' },
     // L87: the header picture is Boon teaching Lily, section 'teach' of src/ui/homeView.ts (main), drawn above this one
@@ -194,8 +226,7 @@ function advPage(c: LearnCtx, x: AdvNode): HTMLElement {
   return h('div', { class: 'space-y-5' },
     backLine(d$.hashOf('learn'), lt('learn.backAll'), x.status === 'external' ? 'adv-ext' : 'adv'),
     h('h2', { class: 'm-0 text-xl font-bold' }, `${x.id.toUpperCase()} · ${x.title[lang]}`),
-    h('p', { class: 'm-0 text-sm text-muted' }, `${STATUS_ICON[x.status]} ${lt(`adv.status.${x.status}` as LearnKey)}`,
-      x.status === 'external' ? '' : ` · ${lt('learn.drills', { n: st.drills, total: st.total })}`),
+    statusLine(x, x.status === 'external' ? '' : ` · ${lt('learn.drills', { n: st.drills, total: st.total })}`),
     h('section', { class: 'space-y-3 rounded-(--r-card) bg-panel p-5 ring-1 ring-line' },
     h('div', { class: 'text-[15px] leading-relaxed' }, d$.richText(x.why[lang])),
     st.done ? h('p', { class: 'm-0 font-bold text-good', role: 'status' }, lt('adv.done', { xp: CHALLENGE_XP })) : null,

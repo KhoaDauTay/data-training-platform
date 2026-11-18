@@ -309,6 +309,10 @@ body:has(use[href="#cq-load"]) #mascot-sprite .ld { animation: cq-ld 1.2s ease-i
 .cq-glyph-in [data-acc="3"] { animation-delay: 240ms; }
 .cq-stamp > svg:first-child { animation: cq-stamp 380ms ease-out; }
 .cq-stamp .cq-ck path { stroke-dasharray: 1; animation: cq-draw 300ms ease-out 200ms backwards; }
+/* v6 S4: a module unlocked while GSAP is not in yet (learnView moduleArt): the ring and tick of its badge draw in, the badge pops. */
+.cq-unlock { animation: cq-pop-in 360ms cubic-bezier(.3,1.6,.6,1); }
+.cq-unlock [data-ring], .cq-unlock [data-mark] { stroke-dasharray: 1; animation: cq-draw 500ms ease-out backwards; }
+.cq-unlock [data-mark] { animation-delay: 350ms; }
 @keyframes cq-pop-in { from { scale: 0.6; } }
 @keyframes cq-stamp { from { scale: 1.35; rotate: -8deg; } }
 @keyframes cq-draw { from { stroke-dashoffset: 1; } }

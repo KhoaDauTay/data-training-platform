@@ -84,6 +84,9 @@
     "firstPerGroup": ["number-circle-one", "DISTINCT ON: the first row per group"],
     "plan": ["tree-structure", "EXPLAIN: the plan tree"],
     "bookIndex": ["book-open-text", "index design: a book's index"],
-    "sargable": ["lightning", "index-friendly condition: fast"]
+    "sargable": ["lightning", "index-friendly condition: fast"],
+    "inApp": ["monitor-play", "advanced node practised here in the app (replaces the text mark of ui-ux-v6 S4)"],
+    "partial": ["circle-half", "advanced node partly practised in the app"],
+    "external": ["arrow-square-out", "advanced node: read external docs"]
   }
 }
