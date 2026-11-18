@@ -608,3 +608,13 @@ Trình duyệt (`vite preview --port 5199`, Edge headless hồ sơ mới qua CDP
 - Tour ticket 1: bước 1, 2, 3 mỗi bước một lần `cq-fade` + `cq-hop`; đổi ngôn ngữ trong lúc dấu hiện: không gì chạy lại; class gỡ sau khi xong; Esc (focus ngoài editor) bỏ tour.
 - G1 `#/learn`: `path#0` chạy `cq-fade` (bước đầu không có Boon, `mascot: false`), `path#1` chạy `cq-fade` + `cq-hop`; đổi ngôn ngữ: không chạy lại.
 - Giảm chuyển động: không animation nào, dấu hiện ngay.
+
+### T7 B3 E-com nền + dock + bảng `DOCK` (L107)
+
+Đo (gzip -9): main 288,76 / 290 (≤ 289,0; T6 288,73, tức +0,03), ecomart 2,91 / 10 (+1,24), CSS 15,58 / 20 (+0,08). `npm test` 3079 xanh (1 bỏ qua), `tsc` sạch, build xanh, `check-budget` ok. Test mới trong `tests/ecomArt.test.ts` (đỏ trước khi có code): nền có 3 `cq-sway` + 1 `cq-scoot` chỉ khi ambient; vòng `cq-pulse` ở thành phố mở gần nhất, không có trong dock; dock việc thường chạy nhanh = 13 gói, gói mới ở ô 12, không vòng lặp, 2,2 s; thăng tiến chạy nhanh = Ha Noi mở, lồng đèn sáng, thẻ hiện, 3,0 s.
+
+Trình duyệt (`vite --port 5199` (dev, để trang gọi `playCompletion` của chính app qua URL module đã tải), Edge headless hồ sơ mới qua CDP; 1280 sáng/tối, 375 sáng/tối, giảm chuyển động):
+- Logistics không đổi: `ch1-01` và thăng tiến ch1 dưới giảm chuyển động, `#stage` outerHTML và ảnh chụp cuối **giống từng byte** trước (HEAD, `git stash`) và sau; bản chạy có chuyển động: cùng các mốc (chữ, nút, Lily, kích thước dock).
+- E-com `ecom-ch1-01`: gói rơi + nảy (0,6 s), cửa cuốn hạ, xe máy chạy ra, Lily vào ở ~1,9 s, nút thành "Đóng" ở 2,2 s; câu `ecom.done` trong `#announce` ngay lúc đạt. Thăng tiến ch1: gói, lồng đèn sáng, Ha Noi hiện + một vòng, thẻ "Chương 1 · Đánh giá thăng tiến · Đạt / Junior DA", Lily ở cuối, 3,0 s; câu `ecom.promoted`.
+- Esc (1280) và Bỏ qua (375) lúc 0,3 s: lần 1 nhảy tới trạng thái cuối (nút "Đóng", gói ở chỗ, thẻ hiện, lồng đèn sáng), lần 2 đóng dock. Dock không chồng editor ở 1280; ở 375 pane Đề bài đang mở (editor ẩn).
+- Giảm chuyển động: dock vẽ trạng thái cuối ngay, nút "Đóng", ở lại tới khi đóng; Tổng quan và trang Bản đồ không animation nào. Tổng quan có chuyển động: `cq-sway` (3 lồng đèn) + `cq-scoot` chạy; dock không vòng lặp nào.

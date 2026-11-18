@@ -1,4 +1,4 @@
-import { activeDomain } from '../domains';
+import { activeDomain, type DomainId } from '../domains';
 import type { Ctx, Run } from '../art/logistics';
 import { loadArt } from '../art/load';
 import { getLang, t, type Key } from '../i18n';
@@ -8,12 +8,21 @@ import { takeNewRoutes } from '../routesSeen';
 import { app } from '../state';
 import { textOf, type Ticket } from '../tickets';
 import { byId, reducedMotion } from './dom';
+import { loadEcomArt } from './ecomArt';
 import { grewLately, once } from './celebrate';
 import { mascot } from './mascots';
 import { stageEsc } from './shortcuts';
 
 // Plan 8b D8b-2: the pictures and scene bodies live in the lazy art chunk (src/art/logistics.ts). This file keeps the
 // dock, Skip/Close, Esc, the announced sentence and the queue, so a completion is announced and closable before the chunk arrives.
+
+/**
+ * ui-ux-v5 B3: the completion picture per domain, each a lazy chunk with the art/logistics contract (`run.fast` = end state
+ * only; `ms` = length, default durationOf). A domain not listed only gets the sentence. Finance adds one line here.
+ */
+interface DockArt { build(c: Ctx): void; play(c: Ctx): Promise<void>; ms?(c: Ctx): number }
+const DOCK: Partial<Record<DomainId, () => Promise<DockArt>>> = { logistics: loadArt, ecommerce: loadEcomArt };
+let dock: () => Promise<DockArt> = loadArt;
 
 let current: Run = { fast: true, done: true };
 let queue: Promise<void> = Promise.resolve();
@@ -37,6 +46,9 @@ const DONE_KEY: Record<'truck' | 'quote' | 'ledger' | 'chat', Key> = {
 function sentence(c: Ctx): string {
   const lang = getLang();
   const title = titleOf(c);
+  if (activeDomain() !== 'logistics') { // Plan 9: E-commerce's own sentences
+    return c.tk.beat === 'boss' ? t('ecom.promoted', { rank: (c.rankAfter.career ?? c.rankAfter.tier)?.[lang] ?? t('career.intern') }) : t('ecom.done', { title });
+  }
   const { kind, to, lane } = c.scene;
   if (kind === 'ship') return to ? t('anim.doneShip', { title, port: portName(to) }) : t('anim.doneShipNoPort', { title });
   if (kind === 'yard') {
@@ -78,7 +90,7 @@ function setSkipLabel(key: Key): void {
 async function drawAndPlay(c: Ctx, owner: Ctx = c): Promise<void> {
   let art;
   try {
-    art = await loadArt();
+    art = await dock();
   } catch (e) {
     console.warn('Completion art unavailable:', e);
     c.art.replaceChildren();
@@ -106,7 +118,7 @@ async function drawAndPlay(c: Ctx, owner: Ctx = c): Promise<void> {
       if (lily.getAnimations().length) once(lily, 'grow');
       else lily.classList.remove('grow'); // hidden (below sm): never left to replay once shown
     } else lily.animate([{ transform: 'scale(.6)', opacity: 0 }, { transform: 'scale(1)', opacity: 1 }], { duration: 300, easing: 'cubic-bezier(.3,1.6,.6,1)' });
-  }, Math.max(0, durationOf(c.scene) - (grow ? 900 : 300)));
+  }, Math.max(0, (art.ms?.(c) ?? durationOf(c.scene)) - (grow ? 900 : 300)));
   try {
     await art.play(c);
   } finally {
@@ -162,17 +174,8 @@ export function initStage(): void {
  * animations). Reduced motion: end state only, and the dock stays until Close or the next completion.
  */
 export function playCompletion(tk: Ticket, before: Set<string>, after: Set<string>): void {
-  if (activeDomain() !== 'logistics') { // Plan 9 D9-14: no completion scene in E-commerce yet, only the sentence
-    const lang = getLang();
-    const rank = rankOf(app.tickets, after);
-    byId('announce').textContent = tk.beat === 'boss'
-      ? t('ecom.promoted', { rank: (rank.career ?? rank.tier)?.[lang] ?? t('career.intern') })
-      : t('ecom.done', { title: textOf(tk, lang).title });
-    return;
-  }
-  current.fast = true;
+  const load = DOCK[activeDomain()];
   const run: Run = { fast: reducedMotion(), done: false };
-  current = run;
   const c: Ctx = {
     run, tk, scene: sceneOf(tk), art: byId('stage-art'), lang: getLang(),
     before: derive(app.tickets, before), after: derive(app.tickets, after),
@@ -180,7 +183,11 @@ export function playCompletion(tk: Ticket, before: Set<string>, after: Set<strin
   };
   const text = sentence(c);
   byId('announce').textContent = text; // read now, not after the animation (§6)
-  takeNewRoutes(c.after.open); // a lane this completion opens is drawn here, so the map page does not draw it again (D8b-5)
+  if (!load) return;
+  current.fast = true;
+  current = run;
+  dock = load;
+  if (load === loadArt) takeNewRoutes(c.after.open); // a lane this completion opens is drawn here, so the map page does not draw it again (D8b-5)
   queue = queue
     .then(async () => {
       if (current !== run) return; // a newer completion already replaced this one
