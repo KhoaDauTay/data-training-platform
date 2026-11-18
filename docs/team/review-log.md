@@ -591,9 +591,10 @@ Trình duyệt (`vite preview --port 5199`, Edge headless hồ sơ mới qua CDP
 
 ### T5 B1 lộ trình (L105)
 
-Đo (gzip -9): main 287,49 KiB (+14 B), illustrations 1,88 / 15 (−0,3), learnui `drillBrief` 12,28 / 25 (+0,35), CSS 15,31 / 20 (+0,19). `npm test` 3073 xanh (1 bỏ qua), `tsc` sạch, build xanh, `check-budget` ok. Test mới: `stamper` (mốc lần đầu, đóng dấu một lần + cửa sổ 600 ms, chưa vẽ thì chưa tiêu, save mới đặt lại mốc) trong `tests/learn.test.ts`; `moduleGlyph(1..12)` có `data-acc` 0..k (≤ 4) trong `tests/illustrations.test.ts`.
+Đo (`check-budget.mjs`, gzip -9 qua zlib, KiB): main 288,66 / 290 (≤ 289,0; T4 288,64, tức +0,02), illustrations 1,87 / 15 (−0,3), learnui 12,35 / 25 (+0,35), CSS 15,43 / 20 (+0,19). `npm test` 3073 xanh (1 bỏ qua), `tsc` sạch, build xanh, `check-budget` ok. Test mới: `stamper` (mốc lần đầu, đóng dấu đúng một lần, vẽ lại không phát lại, chưa vẽ thì chưa tiêu, save mới đặt lại mốc) trong `tests/learn.test.ts`; `moduleGlyph(1..12)` có `data-acc` 0..k (≤ 4) trong `tests/illustrations.test.ts`.
 
-Trình duyệt (`vite preview --port 5199`, Edge headless hồ sơ mới qua CDP, save v4 fixture + `g-select-1/2`; 1280 sáng, 375 tối, 320 sáng, một lần 375 giảm chuyển động):
+Trình duyệt (`vite preview --port 5199`, Edge headless hồ sơ mới qua CDP; 1280 sáng, 375 tối, 320 sáng, một lần 375 giảm chuyển động):
 - `#/learn`: 11 dòng Phần có glyph (ch12 không dạy kỹ năng), 4 glyph nhóm nâng cao; `scrollWidth` = bề rộng ở 1280/375/320.
-- `#/learn/sql/1`: `.cq-glyph-in` có và `cq-pop-in` chạy ngay khi vào; 1,2 s sau đã vẽ lại thì không còn class (không phát lại). Ô icon có ✓ SVG cho 4 kỹ năng đã học; gắn `cq-stamp` bằng tay → `cq-stamp` + `cq-draw` chạy (đường CSS đúng). Luồng thật "đạt drill thứ 2 → về trang Phần" chỉ kiểm bằng test `stamper`.
+- `#/learn/sql/1` từ tổng quan: một lần vẽ, `.cq-glyph-in` + `cq-pop-in` chạy; bấm EN 150 ms sau: lần vẽ lại không có class (không phát lại).
+- Luồng thật (save chỉ `g-select-1`): trang Phần 1 không ✓ → "Tự làm" `g-select-2`, nộp đúng → về `#/learn/sql/1`: một lần vẽ có `.cq-stamp` và 1 ✓, chạy `cq-stamp` + `cq-draw`; bấm EN 150 ms sau: vẽ lại không dấu (không phát lại).
 - Giảm chuyển động: không animation nào, glyph và ✓ ở trạng thái cuối.

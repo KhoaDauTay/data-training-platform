@@ -125,35 +125,29 @@ describe('Domain ↔ Chung (Plan 8a Task 11)', () => {
 });
 
 describe('stamper (ui-ux-v5 B1: icon đóng dấu khi kỹ năng vừa thành "đã học")', () => {
-  it('lần vẽ đầu chỉ đặt mốc; kỹ năng mới học đóng dấu một lần, vẽ lại ngay trong cửa sổ vẫn còn, sau đó thôi', async () => {
+  it('lần vẽ đầu chỉ đặt mốc; kỹ năng mới học đóng dấu đúng một lần (vẽ lại thì không)', async () => {
     const { stamper } = await import('../src/learn');
-    let now = 0;
-    const st = stamper(600, () => now);
+    const st = stamper();
     const s1 = {};
     st.base(s1, ['select']);
     expect(st.stamp('select', true)).toBe(false);
     expect(st.stamp('where', false)).toBe(false);
-    now = 1000;
     st.base(s1, ['select', 'where']);
     expect(st.stamp('where', true)).toBe(true);
-    now = 1200; // a second rerender right after (language switch, seed done): same frame still plays
-    expect(st.stamp('where', true)).toBe(true);
-    now = 2000;
+    st.base(s1, ['select', 'where']); // a rerender (language switch, seed done) never replays it
     expect(st.stamp('where', true)).toBe(false);
   });
   it('kỹ năng chưa vẽ thì chưa tiêu: đóng dấu ở trang vẽ nó sau', async () => {
     const { stamper } = await import('../src/learn');
-    let now = 0;
-    const st = stamper(600, () => now);
+    const st = stamper();
     const s1 = {};
     st.base(s1, []);
-    now = 5000;
     st.base(s1, ['join']);
     expect(st.stamp('join', true)).toBe(true);
   });
   it('nhập save (đối tượng save mới) đặt lại mốc: không đóng dấu hàng loạt', async () => {
     const { stamper } = await import('../src/learn');
-    const st = stamper(600, () => 0);
+    const st = stamper();
     st.base({}, []);
     st.base({}, ['select', 'where']);
     expect(st.stamp('select', true)).toBe(false);

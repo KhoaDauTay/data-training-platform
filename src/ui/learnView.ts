@@ -26,9 +26,8 @@ const backLine = (href: string, text: string, guide: string): HTMLElement =>
 const slot = (name: string): HTMLElement => d$.guideSlot(name);
 /** ui-ux-v5 B1: skill icons that just became "learned" get a one-shot stamp (src/learn.ts stamper). */
 const stamps = stamper();
-/** The page drawn last and when it was entered: the module glyph pops in only within 700 ms of a page change, never on a later redraw. */
+/** The page drawn last: the module glyph pops in on the first draw after the hash changes, never on a redraw. */
 let pageKey = '';
-let enteredAt = 0;
 
 function ctx(g: General): LearnCtx {
   const { app } = d$;
@@ -46,10 +45,11 @@ export function learnPage(deps: DrillDeps, g: General): HTMLElement {
   const n = d$.learnModuleOf(hash);
   const c = ctx(g);
   stamps.base(c.save, c.known); // a new save object (import) resets the baseline
-  if (hash !== pageKey) { pageKey = hash; enteredAt = performance.now(); }
+  const entered = hash !== pageKey;
+  pageKey = hash;
   if (skill) return skillPage(c, skill);
   if (node) return advPage(c, node);
-  if (n) return modulePage(c, n);
+  if (n) return modulePage(c, n, entered);
   return overview(c);
 }
 
@@ -89,12 +89,12 @@ function skillBlock(c: LearnCtx, s: Skill, heading: 'h2' | 'h3'): HTMLElement {
       ...drills.map((d) => drillButton(d, c.save.completed.includes(d.id)))));
 }
 
-function modulePage(c: LearnCtx, n: number): HTMLElement {
+function modulePage(c: LearnCtx, n: number, entered: boolean): HTMLElement {
   const { h } = d$;
   const ms = moduleState(c, n);
   return h('div', { class: 'space-y-5' },
     backLine(d$.hashOf('learn'), lt('learn.backAll'), 'module-intro'),
-    h('div', { class: 'flex items-center gap-3' }, h('div', { class: performance.now() - enteredAt < 700 ? 'cq-glyph-in w-28 shrink-0' : 'w-28 shrink-0' }, d$.illustration('aspect-[160/64]', (il) => il.moduleGlyph(n))), // Plan 8b
+    h('div', { class: 'flex items-center gap-3' }, h('div', { class: entered ? 'cq-glyph-in w-28 shrink-0' : 'w-28 shrink-0' }, d$.illustration('aspect-[160/64]', (il) => il.moduleGlyph(n))), // Plan 8b
       h('h2', { class: 'm-0 text-xl font-bold' }, lt('learn.moduleTitle', { n, title: d$.moduleTitle(n, d$.getLang()) }))),
     h('p', { class: 'm-0 text-muted' }, lt('learn.moduleLine', { k: ms.learned, m: ms.skills.length })),
     slot('module-head'),
