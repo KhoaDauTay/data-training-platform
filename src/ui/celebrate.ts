@@ -5,6 +5,18 @@ export function celebrate(el: HTMLElement): void {
   el.classList.remove('motion-safe:animate-pop');
   void el.offsetWidth; // restart the animation if it is still running
   el.classList.add('motion-safe:animate-pop');
+  once(el, 'motion-safe:animate-pop');
+}
+
+const ENDS = ['animationend', 'animationcancel']; // cancel: `el` was hidden mid-way (a phone pane), which would replay the class once shown
+/** Drops a one-shot class when `el`'s own animation ends (not a child's), so a later display change never replays it (ui-ux-v5 §1). */
+export function once(el: Element, cls: string): void {
+  const end = (e: Event): void => {
+    if (e.target !== el) return;
+    el.classList.remove(cls);
+    for (const n of ENDS) el.removeEventListener(n, end);
+  };
+  for (const n of ENDS) el.addEventListener(n, end);
 }
 
 /**
@@ -21,7 +33,7 @@ export function react(host: Element | null | undefined, grow = false): void {
   if (grow) svg.classList.add('grow');
   const done = (): void => {
     if (svg.getAnimations().every((a) => a.playState === 'finished')) svg.classList.remove('react', 'grow');
-    else svg.addEventListener('animationend', done, { once: true });
+    else for (const e of ENDS) svg.addEventListener(e, done, { once: true });
   };
   done(); // nothing started (hidden host, a pose without a keyframe): drop the class now, so it never plays later
 }

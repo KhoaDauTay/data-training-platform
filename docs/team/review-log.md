@@ -565,6 +565,15 @@ Trình duyệt (`vite preview --port 5199`, Edge headless hồ sơ mới, 1280 +
 
 ### T2 A2 phản ứng + A3 XP (L102)
 
-Đo (gzip -9): main 288,12 / 290 KB (≤ 289,0), CSS 15 / 20, `html` 8 / 9. `npm test` 3066 xanh (1 bỏ qua), `tsc` sạch, build xanh. Test mới: `xpGain` (lần đầu 0, tăng N, không tăng 0, save mới 0) trong `tests/mascots.test.ts`; `tests/workRace.test.ts` thêm `querySelector` cho phần tử giả.
+Đo (gzip -9): main 288,21 / 290 KB (≤ 289,0; T1 287,78, tức T2 +0,43 so với ước +0,25: T3–T7 còn ~0,8 KB tới mốc 289,0), CSS 15,03 / 20, `html` 8 / 9. `npm test` 3066 xanh (1 bỏ qua), `tsc` sạch, build xanh. Test mới: `xpGain` (lần đầu 0, tăng N, không tăng 0, save mới 0) trong `tests/mascots.test.ts`; `tests/workRace.test.ts` thêm `querySelector` cho phần tử giả.
 
-Trình duyệt (`vite preview --port 5199`, Edge headless hồ sơ mới qua CDP, ticket ch1-01): 1280: bấm "Gợi ý 1/n" → Boon `point` có `react` + animation `cq-lean`, bong bóng có `cq-bubble`, 700 ms sau class đã gỡ; nộp đúng → "Đúng rồi! +100 XP", Lily `cheer` có `react`, chip "+100" `aria-hidden` trong `#xp`, 1 s sau chip và class đều mất; đổi ngôn ngữ ngay sau đó: không animation `cq-*` một lần nào chạy lại. 375: chip "+100" chạy, top bar cao như cũ (61 px, không xuống dòng); Lily không nảy vì story chuyển sang pane Đề bài (L102 #4). Giảm chuyển động: không `react`, không chip, số XP đổi ngay. Chưa kiểm bằng trình duyệt: drill (+10), nhập save, theme tối (chip dùng cặp `bg-sun`/`text-sun-ink` sẵn có); nhập save được phủ bằng test `xpGain`.
+Trình duyệt (`vite preview --port 5199`, Edge headless hồ sơ mới qua CDP, ticket ch1-01, rồi drill `g-select-1`; 1280 sáng, 1280 tối, 375 sáng, 375 tối, một lần giảm chuyển động):
+- Gợi ý: Boon `point` có `react` và chạy `cq-lean`, bong bóng chạy `cq-bubble`. Đổi ngôn ngữ 150 ms sau: không animation một lần nào chạy. Gợi ý 2 không có vẽ lại: `cq-bubble` gỡ ở `animationend`.
+- 375: đổi pane SQL rồi về pane Đề bài ngay sau gợi ý. Lần đầu `cq-lean` **phát lại** (class nằm lại vì animation bị hủy khi pane ẩn). Đã sửa (L102 #4), chạy lại: không còn gì.
+- Điền khung: dòng "Mình điền khung…" có Boon `point` + `react`, `cq-lean` chạy (thứ tự microtask sau `actions.rerender()` của brief đúng).
+- Chạy câu sai cột (`nme`): Boon `think` nhận `react`, `cq-tilt` chạy (MutationObserver ghi lại).
+- Nộp đúng: "Đúng rồi! +100 XP", Lily `cheer` + `cq-jump`, `#xp` pop + chip "+100" `aria-hidden`. Ở 1280, chip bắt đầu dưới pill (y 41–56, trong top bar). Bản đầu đặt chip trên pill thì chip ra ngoài mép trên (y −4), đã dời. Đổi ngôn ngữ 150 ms sau: chip mất (đúng A3), không gì phát lại, pop không chạy lại. Class pop gỡ sau 450 ms.
+- Ở 375, Lily không nảy vì story chuyển sang pane Đề bài. Chip có chạy, nhưng lúc đó trang đang cuộn (pill y −1141, do script cuộn tới editor), nên người chơi chỉ thấy chip khi trang ở đầu (L102 #5). Top bar 61 px như trước, không xuống dòng.
+- Drill: chip "+10", XP 100 → 110, Lily `cheer` + `react`.
+- Giảm chuyển động: không `react`, không chip, không animation; số XP đổi ngay.
+- Chưa kiểm trên trình duyệt: nhập save (đã có test `xpGain`) và Boon `oops` (hết giờ, đi cùng đường `say()` + `mascotOf`).

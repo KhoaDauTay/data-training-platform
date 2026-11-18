@@ -15,8 +15,8 @@ import { relatedTables } from '../viz/erd';
 import { mascot } from './mascots';
 import { avatar } from './avatar';
 import { boonRegion, coach, tourSlot } from './coach';
-import { byId, h, nodes, richText } from './dom';
-import { react } from './celebrate';
+import { byId, h, nodes, reducedMotion, richText } from './dom';
+import { once, react } from './celebrate';
 import { skillIcon } from './icons';
 import { lessonSlot } from './lessonCard';
 
@@ -140,7 +140,11 @@ export function hints(tk: Ticket, x: TicketText, isDone: boolean, stepIndex = 0)
       // ui-ux-v5 A2: at the click, after the redraw: Boon leans and the new bubble opens (older hints stay still).
       const box = byId('ticket').querySelector('section.hints');
       react(box);
-      box?.querySelector('[data-bubble]')?.classList.add('cq-bubble');
+      const bubble = box?.querySelector('[data-bubble]');
+      if (bubble && !reducedMotion()) {
+        bubble.classList.add('cq-bubble');
+        once(bubble, 'cq-bubble');
+      }
     },
   }, isStory() && cost > 0
     ? t('brief.hint', { i: shown + 1, n: x.hints.length, cost })

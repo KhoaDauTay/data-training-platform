@@ -184,18 +184,16 @@ function renderNotice(): void {
 
 let xpMark: { save: object; xp: number } | undefined;
 
-/** ui-ux-v5 A3: the pill pops and a "+N" chip rises when XP grew since the last draw (any source); a running chip survives a redraw. */
+/** ui-ux-v5 A3: the pill pops and a "+N" chip rises when XP grew since the last draw (any source); it starts under the pill so it never leaves the viewport. */
 function drawXp(): void {
   const pill = byId('xp');
   const gain = xpGain(xpMark, app.save, app.save.xp);
   xpMark = { save: app.save, xp: app.save.xp };
-  const old = pill.querySelector('.cq-rise');
-  pill.replaceChildren(icon('star', 'size-4'), t('top.xp', { n: app.save.xp }), ...(old ? [old] : []));
+  pill.replaceChildren(icon('star', 'size-4'), t('top.xp', { n: app.save.xp })); // a later redraw drops a running chip early (accepted, A3)
   if (!gain || reducedMotion()) return; // reduced motion: no animationend would ever remove the chip
   celebrate(pill);
-  old?.remove();
   // aria-hidden: the feedback line already says "+N XP" (work.correctXp).
-  const chip = h('span', { 'aria-hidden': 'true', class: 'cq-rise absolute -top-3 right-0 whitespace-nowrap rounded-full bg-sun px-1.5 text-xs font-bold text-sun-ink shadow-sm' }, `+${gain}`);
+  const chip = h('span', { 'aria-hidden': 'true', class: 'cq-rise absolute top-full right-0 mt-1 whitespace-nowrap rounded-full bg-sun px-1.5 text-xs font-bold text-sun-ink shadow-sm' }, `+${gain}`);
   chip.addEventListener('animationend', () => chip.remove(), { once: true });
   pill.append(chip);
 }
