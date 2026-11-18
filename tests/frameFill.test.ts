@@ -1,3 +1,5 @@
+import { history, undo } from '@codemirror/commands';
+import { EditorState } from '@codemirror/state';
 import { describe, expect, it } from 'vitest';
 import { generalNow, loadTickets } from '../src/content';
 import { drillTicket } from '../src/general';
@@ -6,6 +8,7 @@ import { xpFor } from '../src/progress';
 import { framePrice, payFrame, session } from '../src/session';
 import { app } from '../src/state';
 import { fillAction, firstBlank } from '../src/tickets';
+import { fillSpec, flashField, flashOff } from '../src/ui/editor';
 
 // v13 T3 (product-design-v8 §3.1, §3.5, §3.6): "Fill the scaffold into the editor".
 describe('fillAction (§3.5)', () => {
@@ -84,5 +87,39 @@ describe('framePrice / payFrame (§3.6)', () => {
     expect(app.save.hintsUsed[ticket.id]).toBeUndefined();
     expect(framePrice(ticket)).toBe('free');
     session.mode = { kind: 'story' };
+  });
+});
+
+// ui-ux-v6 E3: the filled scaffold lights up (a mark decoration that fades in CSS) and stays one undo step.
+describe('fill flash (v6 E3)', () => {
+  const ranges = (st: EditorState) => {
+    const out: [number, number][] = [];
+    st.field(flashField).between(0, st.doc.length, (a, b) => { out.push([a, b]); });
+    return out;
+  };
+  const run = (st: EditorState, cmd: typeof undo) => {
+    let next = st;
+    cmd({ state: st, dispatch: (tr) => { next = tr.state; } });
+    return next;
+  };
+  it('điền khung: cả đoạn vừa chèn sáng lên; Hoàn tác một lần là về câu cũ', () => {
+    let st = EditorState.create({ doc: 'SELECT 1', extensions: [history(), flashField] });
+    st = st.update({ changes: { from: 8, insert: 'x' } }).state; // a keystroke just before: never merged with the fill
+    st = st.update(fillSpec(st, 'SELECT ___ FROM t', [7, 3])).state;
+    expect(st.doc.toString()).toBe('SELECT ___ FROM t');
+    expect(ranges(st)).toEqual([[0, 17]]);
+    expect(st.selection.main.from).toBe(7);
+    st = st.update({ effects: flashOff }).state; // the timer's clear adds no undo step
+    expect(ranges(st)).toEqual([]);
+    st = run(st, undo);
+    expect(st.doc.toString()).toBe('SELECT 1x');
+  });
+  it('đã bằng khung (không chèn gì): không sáng; gõ phím xóa vệt sáng', () => {
+    let st = EditorState.create({ doc: 'SELECT ___', extensions: [history(), flashField] });
+    st = st.update(fillSpec(st, undefined, [7, 3])).state;
+    expect(ranges(st)).toEqual([]);
+    st = st.update(fillSpec(st, 'SELECT ___ FROM t', [7, 3])).state;
+    st = st.update({ changes: { from: 0, insert: ' ' } }).state;
+    expect(ranges(st)).toEqual([]);
   });
 });

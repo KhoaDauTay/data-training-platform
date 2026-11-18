@@ -1,6 +1,8 @@
 import { t } from '../i18n';
 import { cx } from '../theme';
-import { h } from './dom';
+import { loadedGsap, loadGsap } from '../art/load';
+import type { Timeline } from '../art/gsap';
+import { h, reducedMotion } from './dom';
 import { rig } from './mascots';
 import { s } from './svg';
 
@@ -8,8 +10,8 @@ import { s } from './svg';
  * L87: Boon (the teacher) points at a small board; Lily (the learner, at her growth stage) sits on the other side and listens.
  * One illustration (counts as one mascot for the "one per region" rule). Built from the sprite's parts (rig()) so only this scene's
  * pieces move (style.css `.teach-scene`): Boon's pointer taps, Lily nods and wags, only while on screen (IntersectionObserver);
- * reduced motion = still frame. Lily and Boon are buttons: Lily cheers for 600 ms, Boon taps twice and moves the board's
- * highlight to the next line. No reward, nothing saved.
+ * reduced motion = still frame. Lily and Boon are buttons: Lily cheers for 600 ms, Boon taps twice, moves the board's
+ * highlight to the next line and writes it (v6 E4). No reward, nothing saved.
  */
 const fig = (vb: string, cls: string, ...kids: SVGElement[]) =>
   s('svg', { viewBox: vb, class: cx('overflow-visible', cls), 'aria-hidden': 'true', focusable: 'false' }, ...kids);
@@ -21,10 +23,11 @@ const LINES = [[[10, 14, 'var(--syn-keyword)'], [28, 30, 'var(--muted)']], [[10,
 export function teachScene(size: 'md' | 'lg' = 'md'): HTMLElement {
   let line = 0;
   const marks = LINES.map((_, i) => s('rect', { x: 6, y: 9 + i * 15, width: 66, height: 11, rx: 3, fill: 'var(--accent-soft)', class: 'tb-line', opacity: i ? 0 : 1 }));
+  const strokes = LINES.map((ln, i) => ln.map(([x, w, c]) => s('path', { d: `M${x} ${14.5 + i * 15} h${w}`, stroke: c, 'stroke-width': 4, 'stroke-linecap': 'round' })));
   const board = fig('0 0 80 72', size === 'lg' ? 'w-28' : 'w-24',
     s('rect', { x: 1, y: 1, width: 78, height: 54, rx: 6, fill: 'var(--panel)', stroke: 'var(--wood-dark)', 'stroke-width': 3 }),
     ...marks,
-    ...LINES.flatMap((ln, i) => ln.map(([x, w, c]) => s('path', { d: `M${x} ${14.5 + i * 15} h${w}`, stroke: c, 'stroke-width': 4, 'stroke-linecap': 'round' }))),
+    ...strokes.flat(),
     s('path', { d: 'M24 56 l-6 14 M56 56 l6 14', stroke: 'var(--wood-dark)', 'stroke-width': 3, 'stroke-linecap': 'round' }));
 
   // v6 M1: the same parts as mascot() (rig()); the scene's loops go on single parts: Lily's tail, her head parts, Boon's pointing wing.
@@ -50,12 +53,26 @@ export function teachScene(size: 'md' | 'lg' = 'md'): HTMLElement {
     clearTimeout(timer);
     timer = setTimeout(() => { listen.style.display = ''; cheer.style.display = 'none'; }, 600);
   } }, lilySvg);
+  // v6 E4: Boon writes the newly highlighted line: its strokes draw in one after another (DrawSVG, 600 ms in all). Until the
+  // GSAP chunk is in (or under reduced motion) the line is simply there, as before; the timeline is reverted at the end.
+  let writing: Timeline | undefined;
+  const write = (paths: SVGElement[]): void => {
+    writing?.progress(1);
+    const g = loadedGsap();
+    if (!g) return loadGsap();
+    if (reducedMotion()) return;
+    const each = 0.6 / paths.length;
+    const tl = writing = g.timeline().fromTo(paths, { drawSVG: '0%' }, { drawSVG: '100%', duration: each, stagger: each, ease: 'power1.inOut' });
+    tl.eventCallback('onComplete', () => { tl.revert(); if (writing === tl) writing = undefined; });
+    tl.play();
+  };
   let tap: ReturnType<typeof setTimeout> | undefined;
   const scene = h('div', { class: 'teach-scene mx-auto flex w-fit items-end', role: 'group', 'aria-label': t('teach.scene') });
   const boon = h('button', { type: 'button', class: cx(BTN, '-ml-1'), 'aria-label': t('teach.boon'), onclick: () => {
     marks[line].setAttribute('opacity', '0');
     line = (line + 1) % LINES.length;
     marks[line].setAttribute('opacity', '1');
+    write(strokes[line]);
     scene.removeAttribute('data-tap');
     void scene.offsetWidth; // restart the tap
     scene.setAttribute('data-tap', '');

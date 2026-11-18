@@ -203,14 +203,26 @@ function renderNotice(): void {
 }
 
 let xpMark: { save: object; n: number } | undefined;
+let xpRun = 0;
 
 /** ui-ux-v5 A3: the pill pops and a "+N" chip rises when XP grew since the last draw (any source); it starts under the pill so it never leaves the viewport. */
 function drawXp(): void {
   const pill = byId('xp');
   const gain = gainSince(xpMark, app.save, app.save.xp);
   xpMark = { save: app.save, n: app.save.xp };
-  pill.replaceChildren(icon('star', 'size-4'), t('top.xp', { n: app.save.xp })); // a later redraw drops a running chip early (accepted, A3)
+  const label = document.createTextNode(t('top.xp', { n: app.save.xp }));
+  pill.replaceChildren(icon('star', 'size-4'), label); // a later redraw drops a running chip early (accepted, A3)
+  const run = ++xpRun; // a later redraw stops the count below (its text is final already)
   if (!gain || reducedMotion()) return; // reduced motion: no animationend would ever remove the chip
+  // v6 E1: the number counts up from the old total in 600 ms (ease-out), plain rAF in main (no GSAP).
+  const to = app.save.xp, t0 = performance.now();
+  const tick = (now: number): void => {
+    if (run !== xpRun) return;
+    const k = Math.min(1, (now - t0) / 600);
+    label.data = t('top.xp', { n: Math.round(to - gain * (1 - k) ** 3) });
+    if (k < 1) requestAnimationFrame(tick);
+  };
+  tick(t0);
   celebrate(pill);
   // aria-hidden: the feedback line already says "+N XP" (work.correctXp).
   const chip = h('span', { 'aria-hidden': 'true', class: 'cq-rise absolute top-full right-0 mt-1 whitespace-nowrap rounded-full bg-sun px-1.5 text-xs font-bold text-sun-ink shadow-sm' }, `+${gain}`);

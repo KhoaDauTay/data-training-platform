@@ -3,8 +3,8 @@ import { PostgreSQL, sql, type SQLNamespace } from '@codemirror/lang-sql';
 import { HighlightStyle, syntaxHighlighting } from '@codemirror/language';
 import { setDiagnostics } from '@codemirror/lint';
 import { isolateHistory, undo } from '@codemirror/commands';
-import { Compartment, Prec } from '@codemirror/state';
-import { keymap } from '@codemirror/view';
+import { Compartment, EditorState, Prec, StateEffect, StateField, Transaction, type TransactionSpec } from '@codemirror/state';
+import { Decoration, keymap } from '@codemirror/view';
 import { tags } from '@lezer/highlight';
 import { basicSetup, EditorView } from 'codemirror';
 import type { SqlErrorInfo } from '../db/run';
@@ -57,6 +57,29 @@ const highlight = syntaxHighlighting(HighlightStyle.define([
   { tag: [tags.bool, tags.null], color: 'var(--syn-atom)' },
 ]));
 
+/** ui-ux-v6 E3: the text a fill just inserted lights up and fades (style.css .cq-filled, 600 ms); cleared by a timer or the next edit. */
+const flashMark = Decoration.mark({ class: 'cq-filled' });
+const flashSet = StateEffect.define<boolean>();
+export const flashOff = flashSet.of(false);
+export const flashField = StateField.define({
+  create: () => Decoration.none,
+  update(deco, tr) {
+    for (const e of tr.effects) if (e.is(flashSet)) return e.value && tr.state.doc.length ? Decoration.set([flashMark.range(0, tr.state.doc.length)]) : Decoration.none;
+    return tr.docChanged ? Decoration.none : deco;
+  },
+  provide: (f) => EditorView.decorations.from(f),
+});
+
+/** v13 §3.1 + v6 E3: `sql` replaces the document as one undo step on its own (undefined: kept, nothing lights up), `select` selected and in view. */
+export function fillSpec(state: EditorState, value: string | undefined, [from, len]: [number, number]): TransactionSpec {
+  return {
+    ...(value === undefined ? {} : { changes: { from: 0, to: state.doc.length, insert: value }, effects: flashSet.of(true) }),
+    selection: { anchor: from, head: from + len },
+    scrollIntoView: true,
+    annotations: isolateHistory.of('full'), // never merged with a keystroke typed just before
+  };
+}
+
 export function createEditor(parent: HTMLElement, opts: EditorOptions): Editor {
   const schemaConf = new Compartment();
   const labelConf = new Compartment();
@@ -72,6 +95,7 @@ export function createEditor(parent: HTMLElement, opts: EditorOptions): Editor {
       basicSetup, // no indentWithTab: Tab must still leave the editor
       highlight, // non-fallback: replaces basicSetup's defaultHighlightStyle
       EditorView.lineWrapping, // long queries wrap instead of hiding the start of the line (end-user test v10)
+      flashField,
       schemaConf.of(language(opts.schema)),
       labelConf.of(ariaLabel(opts.label)),
       EditorView.updateListener.of((u) => {
@@ -90,13 +114,9 @@ export function createEditor(parent: HTMLElement, opts: EditorOptions): Editor {
     setValue(value) {
       view.dispatch({ changes: { from: 0, to: view.state.doc.length, insert: value } });
     },
-    fill(value, [from, len]) {
-      view.dispatch({
-        ...(value === undefined ? {} : { changes: { from: 0, to: view.state.doc.length, insert: value } }),
-        selection: { anchor: from, head: from + len },
-        scrollIntoView: true,
-        annotations: isolateHistory.of('full'), // never merged with a keystroke typed just before
-      });
+    fill(value, select) {
+      view.dispatch(fillSpec(view.state, value, select));
+      if (value !== undefined) setTimeout(() => { if (view.dom.isConnected) view.dispatch({ effects: flashOff, annotations: Transaction.addToHistory.of(false) }); }, 600);
     },
     undo: () => void undo(view),
     setSchema(ns) {
