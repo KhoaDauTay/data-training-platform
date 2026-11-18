@@ -1,7 +1,7 @@
 import type { AdvNode, Drill, General } from '../general';
 import type { Params } from '../i18n';
 import { learnText, type LearnKey } from '../i18n/learn';
-import { appliesIn, CHALLENGE_XP, moduleState, nodeState, skillState, type LearnCtx } from '../learn';
+import { CHALLENGE_XP, moduleState, nodeState, skillState, type LearnCtx } from '../learn';
 import type { Skill } from '../progress';
 import type { DrillDeps } from './drillBrief';
 
@@ -69,21 +69,6 @@ function skillBlock(c: LearnCtx, s: Skill, heading: 'h2' | 'h3'): HTMLElement {
       ...drills.map((d) => drillButton(d, c.save.completed.includes(d.id)))));
 }
 
-/** "Used in Logistics, chapter n" with the way in: open when its first ticket is reachable, else what opens it. */
-function chapterWay(n: number): HTMLElement {
-  const { h, app } = d$;
-  const done = new Set(app.save.completed);
-  const tickets = d$.loadTickets('logistics');
-  const own = tickets.filter((x) => x.chapter === n);
-  const first = own.find((x) => !done.has(x.id)) ?? own[0];
-  const reachable = !!first && d$.visibleTickets(tickets, done).includes(first);
-  return h('div', { class: 'flex flex-wrap items-center gap-3' },
-    h('span', {}, lt('learn.appliesOne', { n })),
-    reachable
-      ? h('button', { type: 'button', class: BTN, onclick: () => d$.actions.selectTicket(first.id) }, lt('learn.enter', { n }))
-      : h('span', { class: 'text-muted' }, lt('learn.opensAfter', { n: n - 1 })));
-}
-
 function modulePage(c: LearnCtx, n: number): HTMLElement {
   const { h } = d$;
   const ms = moduleState(c, n);
@@ -92,14 +77,12 @@ function modulePage(c: LearnCtx, n: number): HTMLElement {
     h('div', { class: 'flex items-center gap-3' }, h('div', { class: 'w-28 shrink-0' }, d$.illustration('aspect-[160/64]', (il) => il.moduleGlyph(n))), // Plan 8b
       h('h2', { class: 'm-0 text-xl font-bold' }, lt('learn.moduleTitle', { n, title: d$.moduleTitle(n, d$.getLang()) }))),
     h('p', { class: 'm-0 text-muted' }, lt('learn.moduleLine', { k: ms.learned, m: ms.skills.length })),
-    ...d$.SKILLS.filter((s) => s.chapter === n).map((s) => skillBlock(c, s, 'h3')),
-    chapterWay(n));
+    ...d$.SKILLS.filter((s) => s.chapter === n).map((s) => skillBlock(c, s, 'h3')));
 }
 
 function skillPage(c: LearnCtx, s: Skill): HTMLElement {
   const { h } = d$;
   const lang = d$.getLang();
-  const chapters = appliesIn(c.tickets, s.id);
   return h('div', { class: 'space-y-5' },
     h('p', { class: 'm-0' }, h('a', { href: `${d$.hashOf('learn')}/sql/${s.chapter}` }, lt('learn.backModule', { n: s.chapter }))),
     skillBlock(c, s, 'h2'),
@@ -107,10 +90,7 @@ function skillPage(c: LearnCtx, s: Skill): HTMLElement {
       h('h3', { id: 'skill-card', class: 'm-0 font-bold' }, lt('learn.card')),
       h('pre', { class: 'sql' }, s.syntax),
       h('p', { class: 'm-0' }, h('b', {}, lt('learn.when')), ' ', s.when[lang]),
-      h('div', {}, h('b', {}, lt('learn.trap')), d$.richText(s.trap[lang]))),
-    h('section', { class: 'space-y-2' },
-      h('h3', { class: 'm-0 font-bold' }, lt('learn.appliesTitle')),
-      ...chapters.map((n) => chapterWay(n))));
+      h('div', {}, h('b', {}, lt('learn.trap')), d$.richText(s.trap[lang]))));
 }
 
 /** A thin bar with its numbers also in words beside it (never colour alone, L23). */
@@ -136,7 +116,7 @@ function overview(c: LearnCtx): HTMLElement {
       const ms = moduleState(c, n);
       return h('li', { class: 'space-y-2 rounded-(--r-card) bg-panel px-5 py-4 ring-1 ring-line' },
         h('a', { href: `${d$.hashOf('learn')}/sql/${n}`, class: 'font-bold' }, lt('learn.moduleTitle', { n, title: d$.moduleTitle(n, lang) }), tick(ms.done)),
-        h('p', { class: 'm-0 text-sm text-muted' }, `${lt('learn.moduleLine', { k: ms.learned, m: ms.skills.length })} · ${lt('learn.appliesOne', { n })}`),
+        h('p', { class: 'm-0 text-sm text-muted' }, lt('learn.moduleLine', { k: ms.learned, m: ms.skills.length })),
         bar(ms.learned, ms.skills.length));
     })));
   const groups = (['A', 'B', 'C', 'D'] as const).map((gr) => [gr, c.general.nodes.filter((x) => x.group === gr)] as const);
@@ -188,7 +168,7 @@ function advPage(c: LearnCtx, x: AdvNode): HTMLElement {
     h('div', { class: 'text-[15px] leading-relaxed' }, d$.richText(x.why[lang])),
     st.done ? h('p', { class: 'm-0 font-bold text-good', role: 'status' }, lt('adv.done', { xp: CHALLENGE_XP })) : null,
     x.needs.length ? h('p', { class: 'm-0' }, h('b', {}, lt('adv.needs')), ' ', ...needs) : null,
-    x.applies ? h('p', { class: 'm-0' }, h('b', {}, lt('learn.appliesTitle')), ': ', x.applies[lang]) : null,
+    x.applies ? h('p', { class: 'm-0' }, h('b', {}, lt('learn.usedFor')), ' ', x.applies[lang]) : null,
     x.lesson
       ? h('p', { class: 'm-0 flex flex-wrap items-center gap-2' }, h('span', {}, lt('learn.lesson')),
         h('button', { type: 'button', class: BTN, 'aria-haspopup': 'dialog', onclick: () => d$.openLesson(x.id, { lesson: x.lesson!, name: () => x.title[d$.getLang()] }) },

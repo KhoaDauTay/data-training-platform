@@ -4,7 +4,7 @@ Ngày: 2026-11-18 · Vai trò: Product Designer + UI/UX · Theo **L58** ("v12 l�
 Đầu vào: `CLAUDE.md` (bản trên đĩa sau c39c38a/69012a2), `decision-log.md` L42–L73, `product-design-v5.md` (§B domain, Save), `product-design-v6.md` (§3 nav trái, §4 schema theo domain, §5 cảnh, §10 quyết định), `review-log.md` mục "Plan 7 + v10 reviews", Plan 8a (General + `lab`), Plan 8b (animation/art/polish), Plan 9 (E-commerce), `src/save.ts`, `src/history.ts`, `src/practice.ts`, `src/domains.ts`, `src/route.ts`, `src/style.css`.
 Mockup: `.superpowers/brainstorm/11840-1794844744/content/v12-proposal.html` (6 màn, sáng/tối, VI, một file; chỉ tải Tailwind CDN và font Nunito; linh vật lấy đúng sprite `#mascot-sprite` trong `index.html`).
 
-Tài liệu này **chỉ đề xuất**. Không sửa `src/`, `content/`, test hay `decision-log.md`. User duyệt **§10 (Quyết định)** trước khi viết plan build. Lúc viết, v11 (Plan 8a/8b/9) đang được build và **chưa có mục review v11 trong `review-log.md`**: mục nào v11 đã làm xong thì gạch khỏi danh sách khi viết plan.
+**Đã duyệt (L81)** với các sửa L82 (General tách domain) và L83 (Lily chó đốm, Boon lông trắng). Tài liệu này **chỉ đề xuất**. Không sửa `src/`, `content/`, test hay `decision-log.md`. User duyệt **§10 (Quyết định)** trước khi viết plan build. Lúc viết, v11 (Plan 8a/8b/9) đang được build và **chưa có mục review v11 trong `review-log.md`**: mục nào v11 đã làm xong thì gạch khỏi danh sách khi viết plan.
 
 ---
 
@@ -33,7 +33,7 @@ Nguồn: L65 (UI/UX để lại), các dòng **Mở** trong "Plan 7 + v10 review
 |---|---|---|---|---|
 | U1 | Thanh trên mobile 3 dòng | L65, v10 UX | **Một dòng 56 px** ở < 640 px: nút ngăn kéo · logo mark BoonData (không chữ) · chip domain chỉ icon + chương ("Ch.4") · pill XP · nút ⋯. Trạng thái DB là **chấm màu** trong chip domain (đã có `title`/sr-only từ f459bc8). Ngôn ngữ, theme, Xuất/Nhập vào menu ⋯. Nav cấp 1 đã ở thanh dưới 4 mục (v6 §3.2), không lặp ở trên. Mockup màn 1. | S |
 | U2 | Icon lặp ở rail/drawer | L65 | Luật **"một icon = một đích"**: mỗi mục nav một icon riêng trong `icons.ts`; test mới duyệt danh sách mục sidebar của mọi route và fail nếu hai mục khác `href` dùng cùng icon. Cần 4–5 icon mới (Bản đồ = la bàn, Dữ liệu = trụ DB, Bảng điều hành = ô lưới, Tổng quan = nhà kho/ngân hàng theo domain). | S |
-| U3 | Module Lộ trình đặt tên theo chương Logistics | L65 | Đặt theo **nhóm kỹ năng** ("Chọn và lọc dòng", "Gộp và tóm tắt", "Nối bảng"…), dòng phụ "Dùng ở Logistics ch.2 · E-com ch.1". Plan 8a có 12 module SQL: đổi nhãn, không đổi id. | S |
+| U3 | Module Lộ trình đặt tên theo chương Logistics | L65 | Đặt theo **nhóm kỹ năng** ("Chọn và lọc dòng", "Gộp và tóm tắt", "Nối bảng"…) (không dòng phụ nhắc domain/chương, L82). Plan 8a có 12 module SQL: đổi nhãn, không đổi id. | S |
 | U4 | Trang Bản đồ mở lại bản đồ trong hộp thoại | L65 | Trang `#/d/<id>/map` = **bản đồ trái + hồ sơ tuyến phải** (≥ 1024 px), bottom sheet trên mobile; bấm pin đổi hồ sơ tại chỗ, `aria-live=polite` đọc tên tuyến. Hộp thoại `#map-dialog` chỉ còn ở thanh việc (đang làm bài thì không rời trang). Hồ sơ = brief tuyến (lanePanel), việc phụ, bảng tuyến mở thêm. Mockup màn 2. | M |
 | U5 | Home lặp header / Tổng quan lặp thẻ tin nhắn của Home | L65, v10 UX | Phân vai cứng: **Home = liên domain** (một dòng "Tiếp tục: <việc> · <domain>", Ôn tập hôm nay, đường General, thẻ các domain, insights tóm tắt). **Tổng quan = một domain** (cảnh, chương hiện tại, hộp thư, KPI). Home **không** hiện tin nhắn đồng nghiệp; Tổng quan **không** hiện thẻ domain hay ôn tập. Mockup màn 3. | S–M |
 | U6 | Data không có chọn bảng khi sidebar là rail | L65 | Khi rail (1024–1279 px, hoặc workspace): đầu trang Data có **`<select>` gốc** (nhóm `<optgroup>` theo chương, số dòng trong nhãn) + ô tìm; khi sidebar mở thì danh sách như hiện nay. Native select: bàn phím, mobile picker, screen reader miễn phí. Mockup màn 1 (điện thoại thứ hai). | S |
@@ -50,7 +50,7 @@ Nguồn: L65 (UI/UX để lại), các dòng **Mở** trong "Plan 7 + v10 review
 | L4 | Làm tròn trong đề không được chấm | L63 | `precision?: number` theo bước (mặc định 2, giữ nguyên mọi đề cũ); chỉ đề nói rõ "làm tròn tới đồng" dùng `0`. | S |
 | L5 | Sandbox: câu mẫu quay lại khi xóa hết | L62 | Cờ "đã vào Sandbox" ở localStorage `cargo-query/sandbox-seen` (thiết bị), **không** cần Save. Ladder: pref đủ dùng. | S |
 | L6 | "Correct!" cao mà một chữ; bài học nhanh chưa có Boon; ví dụ không có ① | v10 mở | Ô đúng thu thành một dòng có Lily `cheer` 32 px; bài học nhanh mở bằng Boon `point` 40 px; ví dụ nhiều dòng mới có ① (ví dụ một dòng giữ nguyên). | S |
-| L7 | Bài học/sổ tay chỉ có ví dụ Logistics | D9-17 | Mỗi bài học thêm **ví dụ theo domain đang mở** khi domain có bảng phù hợp (`example_ecom`, `example_fin` tùy chọn); thiếu thì dùng `lab` (không cần seed Logistics, xem §2). | M (nội dung) |
+| L7 | Bài học/sổ tay chỉ có ví dụ Logistics | D9-17 | Ví dụ và "Thử ngay" của bài học chuyển sang chạy trên **`lab`** (trung tính, L82), không thêm ví dụ theo domain; không cần seed Logistics (xem §2). | M (nội dung) |
 | L8 | `lab`: mỗi khách đúng 4 đơn (RFM thô) | Plan 8a dòng 366 | Sửa phân bố (tham chiếu cột ngoài trong `LATERAL`), đổi md5 ghim, chạy lại kiểm nội dung drill/nút nâng cao Task 4/5. Làm cùng L7 vì cùng đụng `lab`. | S–M |
 | L9 | E-com không có hoạt cảnh hoàn thành | D9-14 | §4.2. | M |
 
@@ -134,7 +134,7 @@ Thước đo cho spike (một bảng trong `review-log.md`): thời gian tới "
 | F5 | Chuyên viên chính | Ngân sách vs thực tế, lũy kế từ đầu năm | `window_agg`; áp dụng nút **A4 Tổng phụ (ROLLUP)** |
 | F6 ★ | Trưởng nhóm | Báo cáo rủi ro quý cho ban điều hành | đánh giá tổng hợp; áp dụng nút **A2 Phân vị** (trung vị khoản vay) |
 
-**Không thêm kỹ năng mới**: trục ngày, cohort, ROLLUP và phân vị đã là nút nâng cao A2/A3/A4/B2 của Plan 8a (bài học + 4 bài trên `lab`). Finance là nơi **áp dụng** chúng: ticket thêm trường tùy chọn `adv: [a3, b2]` để chương hiện "Dựa vào: Trục ngày, Cohort" (link sang `#/learn/adv/<node>`) và trang nút hiện "Áp dụng ở Finance, chương F4" (cùng cơ chế "Domain ↔ Chung" của Plan 8a Task 11). Ôn Leitner vẫn chỉ theo `skills.yml`.
+**Không thêm kỹ năng mới**: trục ngày, cohort, ROLLUP và phân vị đã là nút nâng cao A2/A3/A4/B2 của Plan 8a (bài học + 4 bài trên `lab`). Finance là nơi **áp dụng** chúng: ticket thêm trường tùy chọn `adv: [a3, b2]` để chương hiện "Dựa vào: Trục ngày, Cohort" (link sang `#/learn/adv/<node>`) (chỉ chiều domain → General; trang nút **không** nhắc Finance hay chương nào, L82). Ôn Leitner vẫn chỉ theo `skills.yml`.
 
 ### 3.4 Cảnh và bản đồ
 

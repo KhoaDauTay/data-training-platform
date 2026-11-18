@@ -6,7 +6,7 @@ import type * as Home from '../home';
 import type * as I18n from '../i18n';
 import { learnText, type LearnKey } from '../i18n/learn';
 import { learnPage as drawLearn } from './learnView';
-import { appliesIn, drillXp } from '../learn';
+import { drillXp } from '../learn';
 import type * as Practice from '../practice';
 import type * as Progress from '../progress';
 import type * as Route from '../route';
@@ -40,9 +40,9 @@ export interface DrillDeps {
   loadGeneral: typeof Content.loadGeneral; generalNow: typeof Content.generalNow; loadLessons: typeof Content.loadLessons;
   // Learning path (Task 9-10)
   lessonSeen: typeof LessonCard.isSeen; learnSkillOf: typeof Route.learnSkillOf; learnAdvOf: typeof Route.learnAdvOf;
-  learnModuleOf: typeof Route.learnModuleOf; knownSkills: typeof Home.knownSkills; moduleTitle: typeof Progress.moduleTitle; illustration: typeof ArtLoad.illustration; visibleTickets: typeof Progress.visibleTickets;
+  learnModuleOf: typeof Route.learnModuleOf; knownSkills: typeof Home.knownSkills; moduleTitle: typeof Progress.moduleTitle; illustration: typeof ArtLoad.illustration;
   // Plan 9 D9-12: the General area reads Logistics, whatever domain is open
-  loadTickets: typeof Content.loadTickets; CHAPTERS: typeof Progress.CHAPTERS; domainHash: typeof Route.domainHash;
+  loadTickets: typeof Content.loadTickets; CHAPTERS: typeof Progress.CHAPTERS;
 }
 
 let d$: DrillDeps;
@@ -157,11 +157,9 @@ function recap(g: General, d: Drill, tk: Ticket): HTMLElement {
   const nextSkill = skillAt < 0 ? undefined : d$.SKILLS.slice(skillAt + 1).find((s) => (g.bySkill.get(s.id) ?? []).some((x) => !app.save.completed.includes(x.id)));
   const nextSkillDrill = nextSkill && g.bySkill.get(nextSkill.id)!.find((x) => !app.save.completed.includes(x.id))!;
   const sql = app.save.graded[d$.stepKey(tk.id, 0)];
-  const chapters = d.skill ? appliesIn(d$.loadTickets('logistics'), d.skill) : [];
   return h('section', { class: 'recap my-3 rounded-xl bg-panel p-3 ring-1 ring-accent', 'aria-labelledby': 'drill-recap' },
     h('h3', { id: 'drill-recap', tabindex: '-1', class: 'mt-0' }, xp === undefined ? lt('drill.done') : xp > 0 ? lt('drill.passed', { xp }) : lt('drill.passedAgain')),
     sql ? h('div', {}, h('p', { class: 'mb-1 text-sm text-muted' }, lt('drill.recap')), h('pre', { class: 'sql' }, sql)) : null,
-    chapters.length ? h('p', { class: 'text-sm' }, h('a', { href: d$.domainHash('logistics') }, lt('drill.applies', { list: chapters.join(', ') }))) : null,
     h('div', { class: 'actions mb-0' },
       next
         ? h('button', { type: 'button', class: 'primary', onclick: () => d$.startDrillMode(drillTicket(next), next) }, lt('drill.next'))

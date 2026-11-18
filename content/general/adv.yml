@@ -325,7 +325,7 @@
   title: { vi: "CTE đệ quy (WITH RECURSIVE)", en: "Recursive CTEs (WITH RECURSIVE)" }
   why: { vi: "Cây tổ chức, cây danh mục, chuỗi phụ thuộc: số cấp không biết trước nên JOIN thường không đủ.", en: "Org charts, category trees, dependency chains: the depth is unknown, so plain JOINs are not enough." }
   needs: [multi_cte, self_join]
-  applies: { vi: "Cây quản lý (Logistics cũng có `employees.manager_id`).", en: "Reporting lines (Logistics also has `employees.manager_id`)." }
+  applies: { vi: "Cây quản lý, danh mục nhiều cấp.", en: "Reporting lines, nested categories." }
   lesson:
     concept:
       vi: "WITH RECURSIVE có hai phần nối bằng UNION ALL: phần mở đầu (anchor) chọn các dòng xuất phát, phần đệ quy nối bảng với chính kết quả CTE để đi xuống thêm một cấp. Postgres lặp lại tới khi không còn dòng mới."
@@ -648,7 +648,7 @@
   title: { vi: "KPI và so sánh kỳ (MoM, YoY, tỷ lệ)", en: "KPIs and period comparison (MoM, YoY, ratios)" }
   why: { vi: "Báo cáo nào cũng có doanh thu, giá trị đơn trung bình và tăng trưởng so với kỳ trước; sai tử số hay mẫu số là sai cả báo cáo.", en: "Every report has revenue, average order value and growth against the previous period; a wrong numerator or denominator breaks the whole report." }
   needs: [window_lag, cast, date_bucket, cte]
-  applies: { vi: "Mọi domain: thẻ KPI ở Bảng điều hành", en: "Every domain: KPI tiles on the dashboard" }
+  applies: { vi: "Thẻ KPI ở Bảng điều hành", en: "KPI tiles on the dashboard" }
   lesson:
     concept:
       vi: "Một KPI là một phân số có định nghĩa rõ: tử số là gì, mẫu số là gì, tính trên kỳ nào. Giá trị đơn trung bình (AOV) = doanh thu chia số đơn, không phải trung bình các dòng hàng. Tăng trưởng so với tháng trước (MoM) = (tháng này − tháng trước) / tháng trước; LAG lấy giá trị tháng trước."
@@ -702,7 +702,7 @@
   title: { vi: "Cohort và retention", en: "Cohorts and retention" }
   why: { vi: "Khách mới có quay lại không là câu hỏi số một ở bán lẻ và sản phẩm số.", en: "Whether new customers come back is the number one question in retail and digital products." }
   needs: [date_bucket, cte, conditional_agg, left_join]
-  applies: { vi: "E-commerce: báo cáo giữ chân khách", en: "E-commerce: retention reports" }
+  applies: { vi: "Báo cáo giữ chân khách", en: "Retention reports" }
   lesson:
     concept:
       vi: "Cohort (nhóm khách cùng lứa) là các khách bắt đầu trong cùng một kỳ, ví dụ cùng tháng đăng ký. Retention (tỷ lệ giữ chân) tháng N là phần khách của cohort còn mua ở đúng tháng thứ N sau tháng bắt đầu. Cách làm: một CTE gán cohort cho khách, một CTE lấy các tháng có mua, nối trái rồi đếm có điều kiện."
@@ -756,7 +756,7 @@
   title: { vi: "Phễu chuyển đổi (funnel)", en: "Conversion funnels" }
   why: { vi: "Biết khách rơi rụng ở bước nào thì mới biết sửa chỗ nào trên ứng dụng.", en: "Knowing where users drop out tells you which part of the app to fix." }
   needs: [conditional_agg, cte, distinct]
-  applies: { vi: "E-commerce: phễu mua hàng trên ứng dụng", en: "E-commerce: the in-app purchase funnel" }
+  applies: { vi: "Phễu mua hàng trên ứng dụng", en: "The in-app purchase funnel" }
   lesson:
     concept:
       vi: "Funnel (phễu) đếm có bao nhiêu phiên (session) đi tới từng bước: xem, thêm vào giỏ, thanh toán, đã trả tiền. Mỗi bước là một phép đếm phiên khác nhau có điều kiện. Tỷ lệ chuyển đổi của một bước là số phiên ở bước đó chia cho số phiên ở bước trước."
@@ -808,7 +808,7 @@
   title: { vi: "Phân khúc RFM", en: "RFM segmentation" }
   why: { vi: "Marketing cần biết ai là khách tốt, ai sắp rời bỏ, để gửi đúng ưu đãi cho đúng người.", en: "Marketing needs to know who the best customers are and who is about to leave, to send the right offer to the right people." }
   needs: [window_rank, cte, case_when, date_math, a2]
-  applies: { vi: "E-commerce: chia nhóm khách cho chiến dịch", en: "E-commerce: customer segments for campaigns" }
+  applies: { vi: "Chia nhóm khách cho chiến dịch", en: "Customer segments for campaigns" }
   lesson:
     concept:
       vi: "RFM chấm mỗi khách theo ba trục: Recency (bao lâu rồi chưa mua), Frequency (mua bao nhiêu đơn), Monetary (chi bao nhiêu). NTILE(5) chia khách đã xếp hạng thành 5 nhóm bằng nhau, cho điểm 1 tới 5. Với Recency, mua càng gần thì điểm càng cao, nên xếp giảm dần theo số ngày."
@@ -859,7 +859,7 @@
   title: { vi: "A/B test cơ bản", en: "A/B testing basics" }
   why: { vi: "Đọc kết quả thí nghiệm đúng cách giúp tránh tuyên bố \"B thắng\" chỉ vì may.", en: "Reading an experiment correctly avoids declaring \"B wins\" because of luck." }
   needs: [conditional_agg, cast, cte, a2]
-  applies: { vi: "E-commerce: thử nút, banner, giá", en: "E-commerce: testing buttons, banners, prices" }
+  applies: { vi: "Thử nút, banner, giá", en: "Testing buttons, banners, prices" }
   lesson:
     concept:
       vi: "A/B test chia khách ngẫu nhiên thành nhóm A (bản cũ) và B (bản mới), rồi so tỷ lệ chuyển đổi. Chênh lệch nhỏ có thể chỉ do ngẫu nhiên; z-score cho biết chênh lệch lớn cỡ nào so với độ nhiễu. Trị tuyệt đối dưới khoảng 2 thường là chưa đủ bằng chứng. Kiểm định và cỡ mẫu: xem tài liệu bên ngoài."
@@ -912,7 +912,7 @@
   title: { vi: "Phát hiện bất thường", en: "Anomaly detection" }
   why: { vi: "Một ngày doanh thu vọt lên hay tụt xuống cần được báo trước khi sếp hỏi.", en: "A day when revenue jumps or drops should be flagged before your manager asks." }
   needs: [window_agg, cte, date_bucket, a1, a2]
-  applies: { vi: "Mọi domain: cảnh báo trên Bảng điều hành", en: "Every domain: alerts on the dashboard" }
+  applies: { vi: "Cảnh báo trên Bảng điều hành", en: "Alerts on the dashboard" }
   lesson:
     concept:
       vi: "Một ngày là bất thường khi nó lệch xa so với các ngày trước đó. Cách đơn giản: tính trung bình và độ lệch chuẩn của 28 ngày bán trước (khung cửa sổ không gồm ngày đang xét), rồi đánh dấu ngày vượt trung bình + 3 lần độ lệch chuẩn."
@@ -963,7 +963,7 @@
   title: { vi: "Thống kê mô tả trong SQL", en: "Descriptive statistics in SQL" }
   why: { vi: "Trung bình, trung vị, độ lệch chuẩn và tương quan là ngôn ngữ chung khi trình bày số liệu.", en: "Mean, median, standard deviation and correlation are the common language for presenting numbers." }
   needs: [aggregate, group_by, cte]
-  applies: { vi: "Mọi domain: mô tả phân phối trước khi kết luận", en: "Every domain: describe a distribution before drawing conclusions" }
+  applies: { vi: "Mô tả phân phối trước khi kết luận", en: "Describe a distribution before drawing conclusions" }
   lesson:
     concept:
       vi: "Trung bình (`avg`) nhạy với vài giá trị rất lớn; trung vị (`percentile_cont(0.5)`) thì không. Độ lệch chuẩn (`stddev_samp`) đo mức phân tán. `corr` cho hệ số tương quan từ −1 tới 1. Trước khi tính, xác định đơn vị: một đơn hàng hay một dòng hàng."
@@ -1017,7 +1017,7 @@
   title: { vi: "Kiểm chất lượng dữ liệu", en: "Data quality checks" }
   why: { vi: "Phần lớn con số sai trong báo cáo đến từ dữ liệu bẩn: trùng, mồ côi, trống, ngày vô lý.", en: "Most wrong numbers in reports come from dirty data: duplicates, orphans, blanks, impossible dates." }
   needs: [anti_join, null_logic, having, union, pattern_match]
-  applies: { vi: "Mọi domain: chạy trước mỗi báo cáo quan trọng", en: "Every domain: run before every important report" }
+  applies: { vi: "Chạy trước mỗi báo cáo quan trọng", en: "Run before every important report" }
   lesson:
     concept:
       vi: "Kiểm chất lượng là một bộ câu hỏi \"có dòng nào vi phạm luật không\": mồ côi (thanh toán trỏ tới đơn không tồn tại), trùng (một đơn trả hai lần), ngày trong tương lai, ô trống bắt buộc. Gộp các phép kiểm bằng UNION ALL thành một bảng: số thứ tự phép kiểm và số dòng vi phạm."
@@ -1068,7 +1068,7 @@
   title: { vi: "Star schema và grain", en: "Star schemas and grain" }
   why: { vi: "Hầu hết kho dữ liệu BI là bảng fact ở giữa và các bảng dimension xung quanh; đọc sai grain là đếm sai.", en: "Most BI warehouses are a fact table in the middle with dimension tables around it; misreading the grain means counting wrong." }
   needs: [multi_join, group_by, left_join]
-  applies: { vi: "Mọi domain: đọc kho dữ liệu của công ty", en: "Every domain: reading the company's data warehouse" }
+  applies: { vi: "đọc kho dữ liệu của công ty", en: "Reading the company's data warehouse" }
   lesson:
     concept:
       vi: "Bảng fact ghi sự kiện đo được (ở đây một dòng hàng đã bán: số lượng, doanh thu), các bảng dimension mô tả ngữ cảnh (ngày, sản phẩm, khách). Grain là \"một dòng fact là gì\". Hỏi về đơn mà fact ở grain dòng hàng thì phải đếm mã đơn khác nhau. Thiết kế schema (DDL) học ở tài liệu Kimball."
@@ -1121,7 +1121,7 @@
   title: { vi: "SCD loại 2 (lịch sử thuộc tính)", en: "SCD type 2 (attribute history)" }
   why: { vi: "Báo cáo phải dùng thuộc tính đúng tại lúc giao dịch, ví dụ thành phố của khách khi họ mua, không phải thành phố hôm nay.", en: "Reports must use attributes as they were at transaction time, for example the customer's city when they bought, not today's city." }
   needs: [join, null_logic, date_math, c2]
-  applies: { vi: "Mọi domain: báo cáo theo vùng, theo hạng khách qua thời gian", en: "Every domain: reports by region or customer tier over time" }
+  applies: { vi: "Báo cáo theo vùng, theo hạng khách qua thời gian", en: "Reports by region or customer tier over time" }
   lesson:
     concept:
       vi: "SCD loại 2 (slowly changing dimension) giữ mỗi phiên bản thuộc tính một dòng, có `valid_from` và `valid_to`. Ở đây `valid_to` là ngày đầu tiên phiên bản hết hiệu lực (không tính), trống nghĩa là phiên bản hiện tại. Muốn giá trị tại ngày X: `valid_from <= X` và (`valid_to` trống hoặc `valid_to > X`)."
@@ -1225,7 +1225,7 @@
   group: D
   status: external
   title: { vi: "Giao tiếp và lấy yêu cầu", en: "Communication and gathering requirements" }
-  why: { vi: "Biến một câu hỏi mơ hồ thành một truy vấn đúng; thư của đồng nghiệp trong các domain là nơi luyện kỹ năng này.", en: "Turning a vague question into the right query; the colleagues' messages in the domains are where you practise it." }
+  why: { vi: "Biến một câu hỏi mơ hồ thành một truy vấn đúng: hỏi lại cho rõ, chọn bảng, chọn cột, rồi mới viết SQL.", en: "Turning a vague question into the right query: ask until it is clear, pick the tables and columns, then write the SQL." }
   needs: [select]
   links:
     - { title: { vi: "roadmap.sh: Lộ trình Data Analyst", en: "roadmap.sh: Data Analyst roadmap" }, url: "https://roadmap.sh/data-analyst" }

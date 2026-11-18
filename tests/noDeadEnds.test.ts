@@ -62,3 +62,17 @@ describe('không ngõ cụt trên phần Chung', () => {
     for (const [f, src] of Object.entries(sources)) expect([f, src.includes('advSoon')]).toEqual([f, false]);
   });
 });
+
+describe('General tách domain (L82)', () => {
+  it('chữ của trang General không nhắc domain hay chương', () => {
+    const bad = /logistics|e-?commerce|finance|chương|chapter|chợ lồng đèn|lantern|cargo/i;
+    for (const lang of ['vi', 'en'] as const)
+      for (const [k, v] of Object.entries(LEARN_DICT[lang])) expect([k, bad.test(v)]).toEqual([k, false]);
+  });
+});
+
+it('nút nâng cao không nhắc domain (L82)', () => {
+  const bad = /logistics|e-?commerce|finance|domain|chương \d|chapter \d/i;
+  for (const n of generalNow()!.nodes)
+    for (const lang of ['vi', 'en'] as const) expect([n.id, bad.test(`${n.applies?.[lang] ?? ''} ${n.why?.[lang] ?? ''}`)]).toEqual([n.id, false]);
+});

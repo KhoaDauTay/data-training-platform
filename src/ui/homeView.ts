@@ -208,9 +208,10 @@ function skillsSection(m: HomeModel): HTMLElement {
     ...groups.map(([n, list]) => h('div', { id: `skills-ch-${n}`, class: 'scroll-mt-4' },
       h('h3', { class: GROUP_TITLE }, t('learn.module', { n, title: moduleTitle(n, lang) })),
       h('ul', { class: LIST }, ...list.map((s) => listRow({
-        lead: h('span', { class: cx('grid size-10 place-items-center rounded-full', s.state === 'locked' ? 'bg-code text-muted' : chapterColor(n).chip) }, skillIcon(s.skill.id)),
+        // v12 (L82): one tint for every module, no chapter colour or "Chapter N": General never points at a domain.
+        lead: h('span', { class: 'grid size-10 place-items-center rounded-full bg-accent-soft text-accent' }, skillIcon(s.skill.id)),
         title: s.skill.label[lang],
-        sub: s.state === 'locked' ? t(known.has(s.skill.id) ? 'home.skillDrilled' : 'brief.chapter', { n }) : s.state === 'learned' ? t('home.level', { n: s.level, max: LEVELS }) : t('home.skillOpen'),
+        sub: s.state === 'learned' ? t('home.level', { n: s.level, max: LEVELS }) : t(known.has(s.skill.id) ? 'home.skillDrilled' : 'home.skillOpen'),
         action: onSkill && s.state === 'learned' ? h('button', { type: 'button', class: 'rounded-full px-4 whitespace-nowrap', onclick: () => onSkill(s.skill.id) }, t('prac.skillGo')) : null,
       }))))),
     h('p', { class: 'm-0 text-sm text-muted' }, t('home.skillsHint')));

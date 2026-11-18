@@ -5,8 +5,8 @@ import { knownSkills, type HomeModel } from '../home';
 import { getLang, locale, t } from '../i18n';
 import { LANE_XP } from '../lanes';
 import { applyResult, isSuccess, movedToday, nextCard, pickForSkill, retryItem, type PracticeItem } from '../practice';
-import { CHAPTERS, chapterTitle, moduleTitle, nextTicket, SKILLS, visibleTickets } from '../progress';
-import { domainHash, hashOf, learnAdvOf, learnModuleOf, learnSkillOf } from '../route';
+import { CHAPTERS, chapterTitle, moduleTitle, nextTicket, SKILLS } from '../progress';
+import { hashOf, learnAdvOf, learnModuleOf, learnSkillOf } from '../route';
 import {
   activeSchema, activeStep, activeTicket, hintsShown, isStory, markWarmupDone, practiceFinished, reviewCount, reviewedDrills, reviewToday, session, today, warmupToday, type Mode, type PracticeRun,
 } from '../session';
@@ -83,7 +83,7 @@ const loadDrillUi = () => import('./drillBrief').then((m) => {
   if (!drillUi) m.initDrill({
     db: ctx!.db, activeSchema, h, nodes, richText, byId, getLang, locale, app, actions, persist, schemaHooks, erMeta, stepKey, session, hintsShown, today,
     isSuccess, movedToday, nextCard, SKILLS, hashOf, textOf, hints, shapeCard, openLesson, backToStory, startDrillMode, loadGeneral, generalNow, loadLessons,
-    lessonSeen: isSeen, knownSkills, learnSkillOf, learnAdvOf, learnModuleOf, moduleTitle, illustration, visibleTickets, loadTickets, CHAPTERS, domainHash,
+    lessonSeen: isSeen, knownSkills, learnSkillOf, learnAdvOf, learnModuleOf, moduleTitle, illustration, loadTickets, CHAPTERS,
   });
   return (drillUi = m);
 });

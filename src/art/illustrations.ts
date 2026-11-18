@@ -33,14 +33,14 @@ export function studyDesk(): SVGSVGElement {
     rect(0, 0, 480, 200, 'var(--sky)', { rx: 16 }),
     circle(420, 44, 22, 'var(--sun)'),
     path('M0 150 Q120 118 240 140 T480 132 V200 H0 Z', { fill: 'var(--ground)' }),
-    rect(190, 128, 220, 10, 'var(--lily-fur)', { rx: 3 }),
-    rect(202, 138, 8, 48, 'var(--lily-ear)'), rect(390, 138, 8, 48, 'var(--lily-ear)'),
+    rect(190, 128, 220, 10, 'var(--wood)', { rx: 3 }),
+    rect(202, 138, 8, 48, 'var(--wood-dark)'), rect(390, 138, 8, 48, 'var(--wood-dark)'),
     rect(232, 70, 104, 58, 'var(--bar)', { rx: 6 }),
     ...[28, 40, 20, 46].map((h, i) => rect(246 + i * 22, 118 - h, 14, h, A, { rx: 2 })),
     rect(220, 126, 128, 5, LINE, { rx: 2 }),
     rect(360, 106, 18, 22, PANEL, { rx: 3, stroke: LINE, 'stroke-width': 2 }),
     path('M378 112 q8 0 8 6 t-8 6', ink),
-    rect(196, 116, 30, 6, 'var(--boon-body)', { rx: 1 }), rect(198, 110, 26, 6, 'var(--sun)', { rx: 1 }), rect(195, 104, 30, 6, SOFT, { rx: 1, stroke: LINE }));
+    rect(196, 116, 30, 6, 'var(--land)', { rx: 1 }), rect(198, 110, 26, 6, 'var(--sun)', { rx: 1 }), rect(195, 104, 30, 6, SOFT, { rx: 1, stroke: LINE }));
 }
 
 /** Header glyph of SQL module n (1–12, one per chapter). `accent`: the chapter's fill class (chapterColor(n).fill), else the accent colour. */
