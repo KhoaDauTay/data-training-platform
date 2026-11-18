@@ -15,7 +15,7 @@ import { BTN_SUBMIT } from '../theme';
 import { blanksIn, fillAction, firstBlank, type Ticket } from '../tickets';
 import { DRILL_ID } from '../save';
 import { diffView, hasDiff, verdictText } from './tryPreview';
-import { celebrate } from './celebrate';
+import { celebrate, react } from './celebrate';
 import { announce, h, richText } from './dom';
 import { createEditor, type Editor } from './editor';
 import { avatar } from './avatar';
@@ -149,6 +149,8 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
     fillNote = false;
     drawMessage();
     refreshGuides(); // v13 G6: a drill's diff may call Boon's guide
+    // ui-ux-v5 A2: the mascot reacts once, after the event's synchronous rerender() (solved → complete(), fill → brief) redrew the line.
+    if (who) queueMicrotask(() => react(feedback));
   }
   function drawMessage(): void {
     feedback.className = message ? FEEDBACK[message.kind] : '';

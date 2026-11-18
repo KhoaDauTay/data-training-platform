@@ -562,3 +562,9 @@ Kiểm tay §3.9: Edge headless (CDP), `vite preview` :5199, hồ sơ mới, đ�
 Đo (gzip -9): main 287,78 / 290 KB (trước 287,7), CSS 15,02 / 20, `html` 7,69 / 9 (nhóm mới). Test mới đỏ khi thử `cq-shake 3.2s`, một tên `cq-*` không keyframe và `cq-nod` định nghĩa hai lần; xanh sau khi gỡ.
 
 Trình duyệt (`vite preview --port 5199`, Edge headless hồ sơ mới, 1280 + 375, sáng + tối, một lần `--force-prefers-reduced-motion`): màn chào không đổi; Lily người chơi mới vẫn giai đoạn 0 (`--lily-size` 0,8, không khăn, không sao) sau khi đăng ký `@property`, logo top bar vẫn dáng trưởng thành. Lily `cheer` hiện thấy + `react` → `getAnimations()` = `cq-jump`; Lily trong khối `display: none` → không animation nào (nên `react()` gỡ class ngay); giảm chuyển động → không animation.
+
+### T2 A2 phản ứng + A3 XP (L102)
+
+Đo (gzip -9): main 288,12 / 290 KB (≤ 289,0), CSS 15 / 20, `html` 8 / 9. `npm test` 3066 xanh (1 bỏ qua), `tsc` sạch, build xanh. Test mới: `xpGain` (lần đầu 0, tăng N, không tăng 0, save mới 0) trong `tests/mascots.test.ts`; `tests/workRace.test.ts` thêm `querySelector` cho phần tử giả.
+
+Trình duyệt (`vite preview --port 5199`, Edge headless hồ sơ mới qua CDP, ticket ch1-01): 1280: bấm "Gợi ý 1/n" → Boon `point` có `react` + animation `cq-lean`, bong bóng có `cq-bubble`, 700 ms sau class đã gỡ; nộp đúng → "Đúng rồi! +100 XP", Lily `cheer` có `react`, chip "+100" `aria-hidden` trong `#xp`, 1 s sau chip và class đều mất; đổi ngôn ngữ ngay sau đó: không animation `cq-*` một lần nào chạy lại. 375: chip "+100" chạy, top bar cao như cũ (61 px, không xuống dòng); Lily không nảy vì story chuyển sang pane Đề bài (L102 #4). Giảm chuyển động: không `react`, không chip, số XP đổi ngay. Chưa kiểm bằng trình duyệt: drill (+10), nhập save, theme tối (chip dùng cặp `bg-sun`/`text-sun-ink` sẵn có); nhập save được phủ bằng test `xpGain`.

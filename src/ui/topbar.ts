@@ -6,7 +6,8 @@ import { upsert } from '../registry';
 import { domainHash, hashOf, inDomain, soonDomainOf, type Route } from '../route';
 import { actions, app, done } from '../state';
 import { getTheme, NAV_LINK, setTheme, THEME_PREFS, TOP_BTN, type ThemePref } from '../theme';
-import { byId, h, nodes } from './dom';
+import { byId, h, nodes, reducedMotion } from './dom';
+import { celebrate, xpGain } from './celebrate';
 import { fillIcons, icon, NAV_ICON, type IconName } from './icons';
 import { currentRoute } from './router';
 import { activeSchema } from '../session';
@@ -181,6 +182,24 @@ function renderNotice(): void {
     h('button', { type: 'button', class: 'ml-auto', 'aria-label': t('app.dismiss'), onclick: () => { app.notice = undefined; renderNotice(); } }, '×')));
 }
 
+let xpMark: { save: object; xp: number } | undefined;
+
+/** ui-ux-v5 A3: the pill pops and a "+N" chip rises when XP grew since the last draw (any source); a running chip survives a redraw. */
+function drawXp(): void {
+  const pill = byId('xp');
+  const gain = xpGain(xpMark, app.save, app.save.xp);
+  xpMark = { save: app.save, xp: app.save.xp };
+  const old = pill.querySelector('.cq-rise');
+  pill.replaceChildren(icon('star', 'size-4'), t('top.xp', { n: app.save.xp }), ...(old ? [old] : []));
+  if (!gain || reducedMotion()) return; // reduced motion: no animationend would ever remove the chip
+  celebrate(pill);
+  old?.remove();
+  // aria-hidden: the feedback line already says "+N XP" (work.correctXp).
+  const chip = h('span', { 'aria-hidden': 'true', class: 'cq-rise absolute -top-3 right-0 whitespace-nowrap rounded-full bg-sun px-1.5 text-xs font-bold text-sun-ink shadow-sm' }, `+${gain}`);
+  chip.addEventListener('animationend', () => chip.remove(), { once: true });
+  pill.append(chip);
+}
+
 export function renderTopbar(): void {
   const lang = getLang();
   const route = currentRoute();
@@ -197,7 +216,7 @@ export function renderTopbar(): void {
   byId('domain-status').hidden = !domainChrome;
   byId('domain-chapter').textContent = domainChrome ? t('top.chapterTiny', { n: ch }) : ''; // U1: "Ch.4" in the chip on phones
   byId('rank').textContent = rankOf(app.tickets, done()).tier?.[lang] ?? t('career.intern');
-  byId('xp').replaceChildren(icon('star', 'size-4'), t('top.xp', { n: app.save.xp }));
+  drawXp();
   renderSettings();
   byId('db-status').replaceChildren(...nodes(
     dbStatusView(),

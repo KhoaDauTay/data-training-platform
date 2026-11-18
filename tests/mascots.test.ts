@@ -76,3 +76,14 @@ describe('chuyển động (ui-ux v5 §1)', () => {
     }
   });
 });
+
+describe('A3: chip "+N" của XP (ui-ux-v5)', () => {
+  it('lần vẽ đầu và sau khi nhập save (đối tượng save mới): 0; tăng: N; không tăng: 0', async () => {
+    const { xpGain } = await import('../src/ui/celebrate');
+    const save = {};
+    expect(xpGain(undefined, save, 50)).toBe(0);
+    expect(xpGain({ save, xp: 50 }, save, 60)).toBe(10);
+    expect(xpGain({ save, xp: 60 }, save, 60)).toBe(0);
+    expect(xpGain({ save, xp: 60 }, {}, 900)).toBe(0);
+  });
+});

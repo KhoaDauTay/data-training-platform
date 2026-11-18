@@ -30,7 +30,7 @@ const fakeEl = () => {
   const classes = new Set<string>();
   const el = {
     shown: [] as unknown[],
-    replaceChildren(...c: unknown[]) { el.shown = c; }, append() {}, setAttribute() {}, addEventListener() {}, focus() {},
+    replaceChildren(...c: unknown[]) { el.shown = c; }, append() {}, setAttribute() {}, addEventListener() {}, focus() {}, querySelector: () => null, // react() (ui-ux-v5 A2)
     hidden: false, disabled: false, textContent: '', classes,
     classList: { add: (c: string) => classes.add(c), remove: (c: string) => classes.delete(c) },
     get className() { return [...classes].join(' '); },

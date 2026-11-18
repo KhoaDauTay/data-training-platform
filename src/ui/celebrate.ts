@@ -25,3 +25,8 @@ export function react(host: Element | null | undefined, grow = false): void {
   };
   done(); // nothing started (hidden host, a pose without a keyframe): drop the class now, so it never plays later
 }
+
+/** ui-ux-v5 A3: XP gained since the pill was last drawn; 0 on the first draw and after an import (a new save object, page not reloaded). */
+export function xpGain(mark: { save: object; xp: number } | undefined, save: object, xp: number): number {
+  return mark?.save === save ? Math.max(0, xp - mark.xp) : 0;
+}

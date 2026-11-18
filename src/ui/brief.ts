@@ -15,7 +15,8 @@ import { relatedTables } from '../viz/erd';
 import { mascot } from './mascots';
 import { avatar } from './avatar';
 import { boonRegion, coach, tourSlot } from './coach';
-import { h, nodes, richText } from './dom';
+import { byId, h, nodes, richText } from './dom';
+import { react } from './celebrate';
 import { skillIcon } from './icons';
 import { lessonSlot } from './lessonCard';
 
@@ -136,6 +137,10 @@ export function hints(tk: Ticket, x: TicketText, isDone: boolean, stepIndex = 0)
       useHint(tk.id);
       persist();
       actions.rerender();
+      // ui-ux-v5 A2: at the click, after the redraw: Boon leans and the new bubble opens (older hints stay still).
+      const box = byId('ticket').querySelector('section.hints');
+      react(box);
+      box?.querySelector('[data-bubble]')?.classList.add('cq-bubble');
     },
   }, isStory() && cost > 0
     ? t('brief.hint', { i: shown + 1, n: x.hints.length, cost })
@@ -146,7 +151,7 @@ export function hints(tk: Ticket, x: TicketText, isDone: boolean, stepIndex = 0)
   return h('section', { class: 'hints my-3' },
     last > 1 ? h('ol', { class: 'mt-0 mb-2 space-y-1 text-sm text-muted' }, ...x.hints.slice(0, last - 1).map((s) => h('li', {}, richText(s)))) : null,
     last ? h('div', { class: 'flex items-start gap-3' }, tourHere ? null : mascot('boon', 'point', 'size-12 shrink-0'),
-      h('div', { class: 'min-w-0 flex-1 rounded-2xl rounded-tl-sm bg-sun px-4 py-2 text-sun-ink [&_p]:my-1' },
+      h('div', { 'data-bubble': '', class: 'min-w-0 flex-1 rounded-2xl rounded-tl-sm bg-sun px-4 py-2 text-sun-ink [&_p]:my-1' },
         h('p', { class: 'text-sm font-semibold' }, t('brief.hintFree', { i: last, n: x.hints.length })),
         richText(x.hints[last - 1]),
         isDone ? null : fillBox(tk, stepIndex, last))) : null,
