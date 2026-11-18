@@ -663,3 +663,41 @@ Trình duyệt (`vite preview --port 5199`, `dist` mới build, Edge headless h�
 ## v6 T8 (S2 bản đồ tuyến trên bờ biển Natural Earth + MotionPath), 2026-11-19
 
 `npx tsc --noEmit` sạch, `npm test` 3112 xanh (1 bỏ qua), `npm run build` xanh, `check-budget` xanh (main 301/500, art 17/20, gsap 44/50; main không có GSAP). `node scripts/coast.mjs` không đối số (tải từ commit đã ghim) cho ra đúng `src/art/coast.ts` đã commit. Trình duyệt (`vite preview` 5211/5215 cho bản trước, 5213 cho bản sau; dev 5212/5214 cho dock; Edge headless hồ sơ mới; đã tắt hết): trang Bản đồ + hộp thoại bản đồ 375/1280 × sáng/tối + giảm chuyển động, 1024 sáng/tối, tất cả tuyến mở 1280; dock thăng tiến ch1/ch2/ch6 375/1280: 0 lỗi console. Nhãn đo bằng `getScreenCTM`: 11,3 px trên trang (1024 và 1280), 12,9 px trong hộp thoại (trước T8: ~9,9 px trang, ~7,7 px hộp thoại); dưới `lg` ẩn như trước. Giảm chuyển động: không có tàu nền. Ảnh: `scratchpad\v6shots\T8\before|after|after-all|before-dialog|after\dock\`.
+
+## v6 (ui-ux-v6, T0–T12, 2026-11-18..19, L111–L123)
+
+Tổng kết. Mỗi task có cổng duyệt bằng mắt riêng (ảnh trước/sau 375/1280 sáng + tối, một lần giảm chuyển động) trong scratchpad `v6shots\T<n>\` và kết quả ở dòng L của nó; T12 chỉ là giấy tờ + đo, không có cổng mắt và không quét trình duyệt lại.
+
+| Task | Việc | Quyết định | Ảnh |
+|---|---|---|---|
+| T0 | `assets/THIRD_PARTY.md`, giấy phép, bỏ Kenney | L111 | |
+| T1 | Spike GSAP (chunk `gsap-*`, cảnh tàu) | L112 | `T1` |
+| T2 | Icon Phosphor duotone sinh mã (I1) | L113 | `T2` |
+| T3 | Top bar một hàng (F1) | L114 | `T3` |
+| T4 | Sprite linh vật theo phần (M1a) | L115 | `T4` |
+| T5 | Rig GSAP `react()` + Lily lớn (M1b) | L116 | `T5` |
+| T6 | Mọi cảnh dock Logistics trên GSAP, hoa giấy Physics2D (A2) | L117 | `T6` |
+| T7 | Tiên Sa vẽ lại, nền GSAP theo đồng hồ `ambient()` (S1) | L118 | `T7` |
+| T8 | Bản đồ trên bờ biển Natural Earth, MotionPath (S2) | L119 | `T8` |
+| T9 | Phố Chợ Lồng Đèn vẽ lại, dock E-com GSAP (S3) | L120 | `T9` |
+| T10 | Hình từng Phần + huy hiệu mở khóa (S4) | L121 | `T10` |
+| T11 | P3 E1–E5; S5 chân dung bỏ | L122 | `T11` |
+| T12 | Giấy tờ + đo lại §4 | L123 | |
+
+Ngân sách (gzip -9, KB; build lại từng commit trong worktree, mốc `1f66492`):
+
+| Nhóm | Trước v6 | Sau v6 | Ước §4 | Trần |
+|---|---|---|---|---|
+| main | 288,98 | 301,59 (+12,6; build ở repo 301,52) | +7–10 | 500 (cổng §6 "+10" trượt, L123) |
+| `html` | 7,85 | 9,09 | ≤ 12 | 12 |
+| css | 15,66 | 16,20 | | 20 |
+| art | 9,07 | 17,20 | +6–10 | 20 |
+| gsap | | 44,30 | 45 | 50 |
+| ecomart | 2,91 | 5,62 | +3 | 10 |
+| illustrations | 1,87 | 2,46 | +4 | 15 |
+| learnui | 12,36 | 12,61 | +0,3 | 25 |
+| rest | 1484,21 | 1484,98 (comment `@license`, L112) | | 1560 |
+
+main theo task: T1 +0,06, T2 +10,54, T3 +0,01, T4 +0,26, T5 +1,19, T6 +0,03, T7 +0,02, T8 −0,21, T9 +0,04, T10 +0,27, T11 +0,42. `check-budget`: `index-*.js` không có `GreenSock`, `gsap-*` còn dòng `@license`.
+
+Cổng cuối (T12, sau khi sửa giấy tờ): `npx tsc --noEmit` sạch, `npm test` 3118 xanh (1 bỏ qua), `npm run build` xanh, `check-budget` xanh.

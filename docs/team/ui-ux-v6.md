@@ -1,6 +1,6 @@
 # BoonData — UI/UX v6: hình, icon và chuyển động "xịn" (nâng cấp trên v5)
 
-**Trạng thái: HƯỚNG ĐÃ DUYỆT** (user, 2026-11-18: "Duyệt"). Bốn quyết định lớn ở §0.2 đã chốt. Các quyết định nhỏ D-V1..D-V10 ở §9 lấy mặc định in đậm (L111). T0 xong: giấy phép ghi ở `assets/THIRD_PARTY.md`; Open Doodles xác nhận CC0; **không gói Kenney nào đạt** (3D, tàu buồm hoặc isometric), nên cảnh S1/S3 vẽ tay.
+**Trạng thái: HƯỚNG ĐÃ DUYỆT** (user, 2026-11-18: "Duyệt"). **Đã build xong T0–T12** (2026-11-19, L111–L123; tổng kết ở `review-log.md` "v6"). Bốn quyết định lớn ở §0.2 đã chốt. Các quyết định nhỏ D-V1..D-V10 ở §9 lấy mặc định in đậm (L111). T0 xong: giấy phép ghi ở `assets/THIRD_PARTY.md`; Open Doodles xác nhận CC0; **không gói Kenney nào đạt** (3D, tàu buồm hoặc isometric), nên cảnh S1/S3 vẽ tay.
 
 Người viết: UI/UX · 2026-11-18.
 
@@ -233,19 +233,23 @@ Plan Finance vẽ cảnh, theo cùng quy cách S1 và hợp đồng §2.3, dùng
 
 ## 4. Bảng ngân sách (gzip -9; GSAP và icon đo thật, phần còn lại ước lượng; đo lại ở cổng mỗi task)
 
-| Mục | main | `html` | Chunk lười |
-|---|---|---|---|
-| §2 GSAP | 0 | | **gsap 45 / 50 (mới)** |
-| I1 Icon | +6–9 | +0,3 (`data-icon` tĩnh) | |
-| M1 Linh vật | +0,3 | +1,5–2,5 → ≤ 12 | |
-| A2 Dock | 0 | | art −0,5 |
-| F1 Top bar | ≈ 0 | | |
-| S1 Tiên Sa | 0 | | art +3–5 (≤ 20) |
-| S2 Bản đồ | 0 | | art +3–5 (≤ 20; nếu vượt thì tách `coast` thành chunk riêng ≤ 6) |
-| S3 E-com | 0 | | ecomart +3 (≤ 10) |
-| S4 Lộ trình | 0 | | illustrations +4 (≤ 15), learnui +0,3 |
-| P3 | +0,3 | | peeps ≤ 15 (nếu làm) |
-| **Tổng** | **≈ +7–10** (289 → ~299 / 500) | ≤ 12 | |
+Cột "Đo" (T12, 2026-11-19): mỗi commit v6 build lại trong một worktree (`vite build`, `check-budget.mjs` với 2 chữ số), hiệu giữa commit của task và commit trước nó. Mốc trước v6 là `1f66492` (T0, chưa đổi mã). Chi tiết: `review-log.md` "v6".
+
+| Mục | main | `html` | Chunk lười | Đo (T12) |
+|---|---|---|---|---|
+| §2 GSAP | 0 | | **gsap 45 / 50 (mới)** | main +0,06 (bộ tải); gsap **44,30** / 50; art +0,64 (cảnh tàu) |
+| I1 Icon | +6–9 | +0,3 (`data-icon` tĩnh) | | **main +10,54** (path Phosphor dài hơn ước, L113); `html` 0 |
+| M1 Linh vật | +0,3 | +1,5–2,5 → ≤ 12 | | main +0,26 (T4) +1,19 (T5, rig `react()`); `html` 7,94 → 9,08 |
+| A2 Dock | 0 | | art −0,5 | main +0,03; art 9,67 → 10,55 (+0,88, L117 (7)) |
+| F1 Top bar | ≈ 0 | | | main +0,01; `html` +0,09 |
+| S1 Tiên Sa | 0 | | art +3–5 (≤ 20) | art +2,48 → 13,03 |
+| S2 Bản đồ | 0 | | art +3–5 (≤ 20; nếu vượt thì tách `coast` thành chunk riêng ≤ 6) | main −0,21; art +4,13 → 17,16 (không cần chunk `coast`) |
+| S3 E-com | 0 | | ecomart +3 (≤ 10) | ecomart 2,91 → 5,66; css +0,24 |
+| S4 Lộ trình | 0 | | illustrations +4 (≤ 15), learnui +0,3 | main +0,27; illustrations 1,87 → 2,46; learnui +0,25 |
+| P3 | +0,3 | | peeps ≤ 15 (nếu làm) | main +0,42; css +0,07; S5 không làm, không có chunk `peeps` |
+| **Tổng** | **≈ +7–10** (289 → ~299 / 500) | ≤ 12 | | **main 288,98 → 301,59 (+12,6 / 500)**; `html` 7,85 → 9,09 / 12; css 15,66 → 16,20 / 20; art 9,07 → 17,20 / 20; gsap 44,30 / 50; ecomart 2,91 → 5,62 / 10; illustrations 2,46 / 15; learnui 12,61 / 25; `rest` +0,77 (comment `@license` của mermaid/cytoscape, L112) |
+
+Cổng chung "main ≤ +10 KB so với trước v6" (§6) **trượt 2,6 KB**, hầu hết do I1; trần 500 vẫn dư 198 KB (L123).
 
 ## 5. i18n
 
