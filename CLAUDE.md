@@ -14,7 +14,7 @@ npx vitest run tests/grader.test.ts -t alias  # one test by name
 npx tsc --noEmit                              # Vitest does not typecheck: run this after every change
 npm run build                                 # typecheck + production build
 node scripts/check-budget.mjs                 # gzip budget per asset group (after a build); deploy runbook: docs/ops/deploy.md
-                                              # budget groups now include fonts (woff2, 60 KB); main ceiling 290 KB (Plan 7 V1); `gameseed` (Logistics seed, lazy in the worker, 16 KB; v12.0); `frame` (hint scaffold, 3 KB; v13)
+                                              # budget groups now include fonts (woff2, 60 KB); main ceiling 500 KB (user 2026-11-18; was 290, Plan 7 V1); `gameseed` (Logistics seed, lazy in the worker, 16 KB; v12.0); `frame` (hint scaffold, 3 KB; v13)
 ```
 
 ## Architecture
