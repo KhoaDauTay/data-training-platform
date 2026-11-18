@@ -1,4 +1,4 @@
-# Product Design v9: Domain Finance (đề xuất build)
+# Product Design v9: Domain Finance (đã duyệt, đang build)
 
 **Trạng thái: ĐÃ DUYỆT (2026-11-19).** User duyệt bằng "Build đi": mọi quyết định ở §9 lấy mặc định in đậm (decision-log L124). Phát hành v14 (Plan 11, T0…T7).
 
@@ -233,7 +233,7 @@ Số trong bảng đo trên bản nháp T0.
 
 ### 3.4 Kết quả T0 (b)–(d), 2026-11-18
 
-**Thư mục nháp** `C:\Users\KHOA~1.HUY\AppData\Local\Temp\claude\be8c95d1f89f2452\e927c5e6-22a4-40fa-bff6-3a9e8af9fcbc\scratchpad\fin-t0\`. Thư mục tạm, có thể bị xóa khi dọn máy, nên T1 chép sớm.
+**Thư mục nháp:** `docs/team/fin-t0/` (schema, seed, `tickets.mjs`, `runall.mjs`, `results.txt`). T1 đã chép schema + seed vào `src/db/fin/`.
 
 | File | Dùng cho |
 |---|---|
