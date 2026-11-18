@@ -35,12 +35,14 @@ export function parseDays(raw: unknown): string[] {
 export const withDay = (days: string[], day: string): string[] => (days.includes(day) ? days : parseDays([...days, day]));
 
 let marked: string | undefined;
-/** Called on every save write (state.ts persist): writes at most once per day per page load. */
-export function markDay(day: string, storage?: KV): void {
-  if (marked === day) return;
-  const days = parseDays(readJson<unknown>(DAYS_KEY, storage));
-  if (!days.includes(day)) writeJson(DAYS_KEY, withDay(days, day), storage);
+/** Called on every save write (state.ts persist): writes at most once per day per page load. True = a new day was just written (ui-ux-v5 C2). */
+export function markDay(day: string, storage?: KV): boolean {
+  if (marked === day) return false;
   marked = day;
+  const days = parseDays(readJson<unknown>(DAYS_KEY, storage));
+  if (days.includes(day)) return false;
+  writeJson(DAYS_KEY, withDay(days, day), storage);
+  return true;
 }
 
 /** "Day N with Lily": 1 on the first day, before anything was saved. */

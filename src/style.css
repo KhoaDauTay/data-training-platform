@@ -318,6 +318,15 @@ body:has(main:not([hidden]) use[href="#lily-sleep"]) #lily-sleep .zz { animation
 svg[data-mascot].cq-hop { animation: cq-hop 320ms ease-out 80ms backwards; }
 @keyframes cq-fade { from { opacity: 0; } }
 @keyframes cq-hop { 0%, 100% { translate: 0 0; } 40% { translate: 0 -6px; } }
+/* C1: a reading page entered after the first load (main.ts showRoute sets #home[data-enter] for 400 ms): its first blocks
+   fade in, staggered; opacity only (the blocks hold stretched-link cards, L93), never the workspace, Data page or dashboard.
+   C2: Home's "Day N with Lily" number flips once on the first draw after a new day was written. */
+#home[data-enter] > div > * { animation: cq-fade 180ms ease-out backwards; }
+#home[data-enter] > div > :nth-child(2) { animation-delay: 40ms; }
+#home[data-enter] > div > :nth-child(3) { animation-delay: 80ms; }
+#home[data-enter] > div > :nth-child(4) { animation-delay: 120ms; }
+.cq-flip { display: inline-block; animation: cq-flip 300ms ease-out; }
+@keyframes cq-flip { from { opacity: 0; translate: 0 -4px; } }
 /* B3: the Lantern Market Overview (storeScene's `ambient`, src/art/ecommerce.ts): lanterns sway from their top, the scooter
    rides off to the right and comes back from the left (a wrapper <g>: the scooter keeps its transform attribute). */
 .cq-sway { transform-box: fill-box; transform-origin: 50% 0; animation: cq-sway 3.2s ease-in-out infinite; }

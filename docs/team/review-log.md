@@ -621,3 +621,15 @@ Trình duyệt (`vite --port 5199` (dev, để trang gọi `playCompletion` củ
 - Đường thật (`vite preview --port 5199`, `dist` đã build, hồ sơ mới, 1280): nộp đúng `ecom-ch1-01` bằng Ctrl+Shift+Enter: dock hiện ngay, gói mới ở ô 0 (640, 256), Lily vào ~1,9 s, "Đóng" ở 2,2 s, không chồng editor; feedback chạy `cq-jump` + `cq-rise` (T2). Giảm chuyển động: trạng thái cuối ngay, "Đóng". Thăng tiến E-com chỉ chạy qua `playCompletion` trực tiếp (dev), chưa qua nộp thật.
 - Ảnh cuối Logistics có chuyển động `log-1280-light-end.png` lệch 10 byte trước/sau: nhìn tận mắt giống nhau; phần lệch là khung của vòng lặp linh vật ở hộp thoại chào (`.live`) phía sau, không phải dock (bản giảm chuyển động giống từng byte).
 - Hộp thoại bản đồ E-com giữ vòng `cq-pulse` như hộp thoại Logistics (vòng `routeMap` + `liveMap` vẫn chạy trong hộp thoại); câu "hộp thoại và dock không lặp" của B3 nói về cảnh cửa hàng (`storeScene`), vốn không có trong hộp thoại.
+
+### T8 C1 mờ dần trang đọc + C2 lật số ngày (L108)
+
+Đo (gzip -9): main 288,88 / 290 (≤ 289,0; T7 288,76, tức +0,12), CSS 15,67 / 20 (+0,09), `html` 8 / 9. `npm test` 3080 xanh (1 bỏ qua), `tsc` sạch, build xanh, `check-budget` ok. Test mới trong `tests/lily.test.ts` (đỏ trước khi có code): `markDay` ngày mới `true`, cùng ngày `false`, ngày đã có trong kho (tab khác) `false`.
+
+Trình duyệt (`vite preview --port 5199`, Edge headless hồ sơ mới qua CDP; 1280, 375 tối, một lần giảm chuyển động):
+- Tải lại thật ở `#/`, `#/learn`, `#/d/logistics`: `#home` không bao giờ có `data-enter`, không `cq-fade` trên khối, không lật.
+- Trang chủ → Lộ trình → Tổng quan: `data-enter` có ở 60 ms, hết ở 560 ms; Lộ trình 2 khối mờ (cảnh dạy + phần), Tổng quan 6.
+- Bấm chuột thật vào góc một card stretched link (`::after`, không phải chữ link) 30 ms sau khi vào Lộ trình: cú bấm ăn (`#/learn/sql/1`), giống hệt khi bấm sau 600 ms.
+- Vào workspace (`…/play`): không `data-enter`, không `cq-fade`.
+- C2: xóa `cargo-query/days`, nộp đúng ch1-01 thật (Ctrl+Shift+Enter), mở Trang chủ: span `.cq-flip` một lần, câu "Lily (là bạn) · Cún con · Ngày thứ 1 cùng Lily" không đổi; đổi ngôn ngữ ngay sau: span không còn class, không chạy lại; rời rồi về Trang chủ: không lật; tải lại cùng ngày: không lật.
+- Giảm chuyển động: vào Lộ trình không animation nào chạy (`getAnimations()` không có `cq-fade`).

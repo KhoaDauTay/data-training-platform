@@ -49,6 +49,8 @@ export const app = {
   lastRun: undefined as LastRun | undefined,
   /** Boss whose steps are all solved and whose conclusion is open. Not saved: a reload repeats the last step. */
   conclusionFor: '',
+  /** ui-ux-v5 C2: a new "Day N with Lily" was just written; Home's next hello draw flips the number once. Not saved. */
+  dayFlip: false,
   notice: undefined as Notice | undefined,
   /** Last app/DB fault (never a player's SQL error): shows the "Copy diagnostics" button. */
   problem: undefined as { kind: DiagnosticKind; error?: unknown } | undefined,
@@ -119,7 +121,7 @@ let persistTimer: ReturnType<typeof setTimeout> | undefined;
 export function persist(now = false): void {
   clearTimeout(persistTimer);
   const write = () => {
-    markDay(localDay(new Date())); // L87: a day with a save write counts toward "Day N with Lily" (device pref)
+    if (markDay(localDay(new Date()))) app.dayFlip = true; // L87: a day with a save write counts toward "Day N with Lily" (device pref)
     if (writeSave(localStore(), app.save)) return;
     app.notice = { key: 'save.writeFailed' };
     actions.rerender();

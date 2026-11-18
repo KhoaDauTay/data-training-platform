@@ -45,6 +45,14 @@ describe('Lily lớn lên (L87)', () => {
     expect(dayCount(kv)).toBe(2);
   });
 
+  it('markDay trả true chỉ khi vừa ghi một ngày mới (ui-ux-v5 C2)', () => {
+    const kv = mem({});
+    expect(markDay('2026-12-01', kv)).toBe(true);
+    expect(markDay('2026-12-01', kv)).toBe(false);
+    expect(markDay('2026-12-02', kv)).toBe(true);
+    expect(markDay('2026-12-01', mem({ [DAYS_KEY]: '["2026-12-01"]' }))).toBe(false); // already stored (another tab)
+  });
+
   it('sprite: khăn, huy hiệu và laptop theo biến giai đoạn; mặc định (logo) là Lily trưởng thành', () => {
     for (const v of ['scarf', 'badge', 'prop']) expect(html).toContain(`style="opacity:var(--lily-${v}-on)"`);
     const root = css.split(':root {')[1]?.split('}')[0] ?? '';

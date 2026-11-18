@@ -386,9 +386,13 @@ export const leftHello = (): void => { grewPill = false; };
 /** Platform Home (v5 §B.5): Lily (the player, at her growth stage, L87) and the tagline (v5 §A.3). */
 function helloSection(): HTMLElement {
   const { stage, next } = lilyNow();
+  // ui-ux-v5 C2: the day number is its own <span>, flipped once on the first draw after a new day was written.
+  const [pre, post] = t('lily.line', { stage: t(STAGE_NAME[stage]), n: '' }).split('');
+  const flip = app.dayFlip;
+  app.dayFlip = false;
   return h('section', { class: 'flex items-center gap-4' }, mascot('lily', 'idle', 'size-20'),
     h('div', { class: 'min-w-0' }, h('p', { class: 'm-0 text-2xl font-extrabold' }, t('app.name')), h('p', { class: 'm-0 text-muted' }, t('home.tagline')),
-      h('p', { class: 'mt-2 mb-0 text-sm font-semibold' }, t('lily.line', { stage: t(STAGE_NAME[stage]), n: dayCount() }),
+      h('p', { class: 'mt-2 mb-0 text-sm font-semibold' }, pre, h('span', { class: flip && 'cq-flip' }, String(dayCount())), post,
         grewPill ? h('span', { class: 'ml-2 rounded-full bg-sun px-2 py-0.5 text-xs font-bold text-sun-ink' }, t('lily.grewPill')) : null),
       h('p', { class: 'm-0 text-sm text-muted' }, next === undefined ? t('lily.max') : t('lily.next', { n: next }))));
 }

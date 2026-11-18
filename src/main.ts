@@ -301,6 +301,7 @@ function nextStep(): void {
 }
 
 let shownRoute: Route | undefined;
+let enterTimer: ReturnType<typeof setTimeout> | undefined;
 /** Reading pages share <main id="home"> (src/ui/homeView.ts draws the one the route names). */
 const PAGE_ROUTES: ReadonlySet<Route> = new Set<Route>(['home', 'learn', 'practice', 'overview', 'map', 'soon']);
 const TITLE_OF: Partial<Record<Route, string>> = { data: 'data-title', dashboard: 'dashboard-title', play: 'brief-title' };
@@ -314,7 +315,14 @@ function showRoute(r: Route, initial: boolean): void {
     byId('data-table-title').focus();
     return;
   }
-  byId('home').hidden = !PAGE_ROUTES.has(r);
+  const home = byId('home');
+  home.hidden = !PAGE_ROUTES.has(r);
+  // ui-ux-v5 C1: a reading page entered after the first load fades its blocks in (CSS, opacity only); the mark goes after 400 ms.
+  clearTimeout(enterTimer);
+  if (!initial && !home.hidden) {
+    home.dataset.enter = '';
+    enterTimer = setTimeout(() => delete home.dataset.enter, 400);
+  } else delete home.dataset.enter;
   byId('data').hidden = r !== 'data';
   byId('dashboard').hidden = r !== 'dashboard';
   byId('shell').hidden = r !== 'play';
