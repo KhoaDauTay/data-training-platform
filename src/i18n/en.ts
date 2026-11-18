@@ -239,6 +239,7 @@ export const en: Record<Key, Msg> = {
   'top.inboxNew': (p) => `Inbox, ${count('new message', 'new messages')(p)}`,
   'top.chapter': 'Chapter {n}/{total}: {title}',
   'top.chapterShort': 'Ch. {n}/{total}',
+  'top.chapterTiny': 'Ch.{n}',
   'top.xp': '{n} XP',
   'top.review': 'Review',
   'top.reviewDue': (p) => `Review, ${count('item', 'items')(p)} due`,

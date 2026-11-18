@@ -35,7 +35,7 @@ import { pinBar } from './ui/pin';
 import { initLayout } from './ui/splitter';
 import { currentRoute, go, startRouter } from './ui/router';
 import { initSidebar, renderSidebar } from './ui/sidebar';
-import { initTopbar, renderTopbar } from './ui/topbar';
+import { initTopbar, renderTopbar, syncMenuCopies } from './ui/topbar';
 import { mountWork } from './ui/work';
 import { registerVizTabs } from './ui/vizTabs';
 import { initMyData, setMyDataStatus } from './ui/myDataView';
@@ -229,6 +229,7 @@ function rerender(): void {
   renderSidebar(currentRoute()); // before the Data page: it fills the sidebar's slot (V11)
   renderInbox();
   renderReviewButton(byId('review-btn') as HTMLButtonElement);
+  syncMenuCopies();
   if (!byId('home').hidden) renderHome(byId('home')); // hidden Home is redrawn by showRoute(); Run/Submit in the workspace never rebuild it
   if (!byId('data').hidden) renderData(byId('data'));
   if (!byId('dashboard').hidden) renderDashboard(byId('dashboard'));

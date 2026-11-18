@@ -87,21 +87,21 @@
       Plan 7 (v6 §3.1): level-1 nav only (Home · Learning path · Practise SQL) + the domain switch; a domain's pages live in the
       left sidebar (#side). Below 1024 px: ☰ opens the drawer, #bottom-nav holds level 1, and button labels hide first.
     -->
-    <header class="topbar flex flex-wrap items-center gap-x-2 gap-y-2 border-b border-line bg-panel px-3 py-2 lg:px-4">
+    <header class="topbar flex flex-wrap items-center gap-x-2 gap-y-2 max-sm:flex-nowrap max-sm:gap-x-1.5 border-b border-line bg-panel px-3 py-2 lg:px-4">
       <button id="side-btn" type="button" class="grid size-11 shrink-0 place-items-center border-0 bg-transparent p-0 lg:hidden" aria-controls="side-drawer" aria-expanded="false" data-i18n-aria="side.open" aria-label="Mở điều hướng"><span data-icon="menu"></span></button>
       <a href="#/" class="flex shrink-0 items-center gap-2 text-ink no-underline" data-i18n-aria="app.homeLink" aria-label="BoonData, về Trang chủ"><svg class="size-9" viewBox="0 0 120 120" aria-hidden="true" focusable="false"><use href="#boon-idle"></use></svg><span class="text-lg font-extrabold tracking-tight max-sm:hidden">BoonData</span></a>
       <nav id="nav" class="flex shrink-0 gap-1 max-lg:hidden" data-i18n-aria="nav.label" aria-label="Điều hướng chính"></nav>
-      <button id="domain-btn" type="button" popovertarget="domain-menu" class="flex shrink-0 items-center gap-1.5 rounded-full border-0 bg-code px-3 py-1.5 font-bold text-ink hover:bg-accent-soft" data-i18n-title="nav.domains" title="Chọn lĩnh vực"><span data-icon="anchor" data-icon-class="size-4"></span><span id="domain-label">Logistics</span><span data-icon="chevronRight" data-icon-class="size-3.5 rotate-90"></span></button>
+      <button id="domain-btn" type="button" popovertarget="domain-menu" class="flex shrink-0 items-center gap-1.5 rounded-full border-0 bg-code px-3 py-1.5 font-bold text-ink hover:bg-accent-soft max-sm:px-2.5" data-i18n-title="nav.domains" title="Chọn lĩnh vực"><span id="domain-icon" class="contents"><span data-icon="anchor" data-icon-class="size-4"></span></span><span id="domain-label" class="max-sm:sr-only">Logistics</span><span id="domain-chapter" class="whitespace-nowrap sm:hidden" aria-hidden="true"></span><span data-icon="chevronRight" data-icon-class="size-3.5 rotate-90 max-sm:hidden"></span></button>
       <div id="status" class="ml-auto flex shrink-0 items-center gap-2 text-sm">
         <span id="domain-status" class="flex items-center gap-2 max-md:hidden"><span id="chapter" class="flex min-w-0 items-center gap-1.5 whitespace-nowrap"></span><span class="flex items-center gap-1.5 whitespace-nowrap max-xl:hidden"><span data-icon="badge" data-icon-class="size-4"></span><span id="rank" class="font-semibold"></span></span></span>
         <span id="xp" class="flex items-center gap-1 whitespace-nowrap rounded-full bg-sun px-2.5 py-0.5 font-bold text-sun-ink"></span>
       </div>
-      <div class="flex shrink-0 items-center gap-1.5">
+      <div data-actions class="flex shrink-0 items-center gap-1.5 max-sm:hidden">
         <button id="inbox-btn" type="button" data-i18n-title="top.inbox" class="relative flex shrink-0 items-center gap-1.5 rounded-full border-0 bg-code px-3 py-1.5 text-sm text-ink hover:bg-accent-soft"><span data-icon="inbox" data-icon-class="size-4"></span><span data-label class="max-xl:sr-only" data-i18n="top.inbox">Hộp thư</span><span data-badge class="absolute -top-1.5 -right-1.5 grid h-5 min-w-5 place-items-center rounded-full bg-rose-700 px-1 text-xs font-bold text-white ring-2 ring-panel" aria-hidden="true" hidden></span></button>
         <button id="review-btn" type="button" class="relative flex shrink-0 items-center gap-1.5 rounded-full border-0 bg-code px-3 py-1.5 text-sm text-ink hover:bg-accent-soft" hidden><span data-icon="repeat" data-icon-class="size-4"></span><span data-label class="max-xl:sr-only" data-i18n="top.review">Ôn tập</span><span data-badge class="absolute -top-1.5 -right-1.5 grid h-5 min-w-5 place-items-center rounded-full bg-sun px-1 text-xs font-bold text-sun-ink ring-2 ring-panel" aria-hidden="true" hidden></span></button>
         <button id="notebook-btn" type="button" data-i18n-title="nb.open" class="relative flex shrink-0 items-center gap-1.5 rounded-full border-0 bg-code px-3 py-1.5 text-sm text-ink hover:bg-accent-soft" aria-controls="notebook-dialog" aria-expanded="false"><span data-icon="book" data-icon-class="size-4"></span><span data-label class="max-xl:sr-only" data-i18n="nb.open">Sổ tay</span></button>
       </div>
-      <div class="top-prefs flex shrink-0 items-center gap-1 rounded-full bg-code p-1">
+      <div class="top-prefs flex shrink-0 items-center max-sm:hidden gap-1 rounded-full bg-code p-1">
         <div class="flex gap-0.5" role="group" data-i18n-aria="top.lang" aria-label="Ngôn ngữ">
           <button type="button" data-lang="vi" aria-pressed="true" class="rounded-full border-0 bg-transparent px-2 py-0.5 text-sm text-ink hover:bg-panel aria-pressed:bg-panel aria-pressed:font-bold aria-pressed:shadow-sm">VI</button>
           <button type="button" data-lang="en" aria-pressed="false" class="rounded-full border-0 bg-transparent px-2 py-0.5 text-sm text-ink hover:bg-panel aria-pressed:bg-panel aria-pressed:font-bold aria-pressed:shadow-sm">EN</button>
@@ -175,6 +175,24 @@
     <!-- L42: replaces part of L11; holds only Export / Import progress. Outside <header> so focus uses --accent. -->
     <div id="more-menu" popover class="m-0 min-w-52 rounded-xl border-0 bg-panel p-1 text-ink shadow-lg ring-1 ring-line [inset:3.5rem_1rem_auto_auto]">
       <div class="flex flex-col">
+        <!-- v12.0 U1: below 640 px the bar keeps one line; these copy the bar's Inbox / Review / Notebook and settings. -->
+        <div class="mb-1 flex flex-col border-b border-line pb-1 sm:hidden">
+          <button type="button" data-proxy="inbox-btn" popovertarget="more-menu" popovertargetaction="hide" class="flex w-full items-center gap-2 rounded-lg border-0 bg-transparent px-3 py-2 text-left hover:bg-code"><span data-icon="inbox" data-icon-class="size-4"></span><span data-label data-i18n="top.inbox">Hộp thư</span></button>
+          <button type="button" data-proxy="review-btn" popovertarget="more-menu" popovertargetaction="hide" class="flex w-full items-center gap-2 rounded-lg border-0 bg-transparent px-3 py-2 text-left hover:bg-code" hidden><span data-icon="repeat" data-icon-class="size-4"></span><span data-label data-i18n="top.review">Ôn tập</span></button>
+          <button type="button" data-proxy="notebook-btn" popovertarget="more-menu" popovertargetaction="hide" class="flex w-full items-center gap-2 rounded-lg border-0 bg-transparent px-3 py-2 text-left hover:bg-code"><span data-icon="book" data-icon-class="size-4"></span><span data-label data-i18n="nb.open">Sổ tay</span></button>
+          <div class="flex items-center gap-1 px-3 py-2">
+            <div class="flex gap-0.5" role="group" data-i18n-aria="top.lang" aria-label="Ngôn ngữ">
+              <button type="button" data-lang="vi" aria-pressed="true" class="rounded-full border-0 bg-transparent px-2 py-0.5 text-sm text-ink hover:bg-code aria-pressed:bg-code aria-pressed:font-bold">VI</button>
+              <button type="button" data-lang="en" aria-pressed="false" class="rounded-full border-0 bg-transparent px-2 py-0.5 text-sm text-ink hover:bg-code aria-pressed:bg-code aria-pressed:font-bold">EN</button>
+            </div>
+            <span class="mx-1 h-5 w-px bg-line" aria-hidden="true"></span>
+            <div class="flex gap-0.5" role="group" data-i18n-aria="top.theme" aria-label="Giao diện">
+              <button type="button" data-theme-pref="light" aria-pressed="false" class="grid size-7 place-items-center rounded-full border-0 bg-transparent p-0 text-ink hover:bg-code aria-pressed:bg-code" data-i18n-aria="theme.light" aria-label="Sáng"><span data-icon="sun" data-icon-class="size-4"></span></button>
+              <button type="button" data-theme-pref="system" aria-pressed="true" class="grid size-7 place-items-center rounded-full border-0 bg-transparent p-0 text-ink hover:bg-code aria-pressed:bg-code" data-i18n-aria="theme.system" aria-label="Theo hệ thống"><span data-icon="monitor" data-icon-class="size-4"></span></button>
+              <button type="button" data-theme-pref="dark" aria-pressed="false" class="grid size-7 place-items-center rounded-full border-0 bg-transparent p-0 text-ink hover:bg-code aria-pressed:bg-code" data-i18n-aria="theme.dark" aria-label="Tối"><span data-icon="moon" data-icon-class="size-4"></span></button>
+            </div>
+          </div>
+        </div>
         <button id="replay-btn" type="button" popovertarget="more-menu" popovertargetaction="hide" class="flex w-full items-center gap-2 rounded-lg border-0 bg-transparent px-3 py-2 text-left hover:bg-code"><span data-icon="info" data-icon-class="size-4"></span><span data-i18n="tour.replay">Xem lại hướng dẫn</span></button>
         <button id="diag-btn" type="button" popovertarget="more-menu" popovertargetaction="hide" class="flex w-full items-center gap-2 rounded-lg border-0 bg-transparent px-3 py-2 text-left hover:bg-code"><span data-icon="copy" data-icon-class="size-4"></span><span data-i18n="diag.copy">Sao chép thông tin chẩn đoán</span></button>
         <button id="export-btn" type="button" popovertarget="more-menu" popovertargetaction="hide" class="flex w-full items-center gap-2 rounded-lg border-0 bg-transparent px-3 py-2 text-left hover:bg-code"><span data-icon="download" data-icon-class="size-4"></span><span data-i18n="top.export">Xuất tiến độ</span></button>

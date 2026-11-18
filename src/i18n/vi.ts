@@ -236,6 +236,7 @@ export const vi = {
   'top.inboxNew': 'Hộp thư, {n} tin mới',
   'top.chapter': 'Chương {n}/{total}: {title}',
   'top.chapterShort': 'Ch. {n}/{total}',
+  'top.chapterTiny': 'Ch.{n}',
   'top.xp': '{n} XP',
   'top.review': 'Ôn tập',
   'top.reviewDue': 'Ôn tập, {n} mục đến hạn',

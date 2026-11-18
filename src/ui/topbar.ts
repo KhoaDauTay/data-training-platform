@@ -81,7 +81,9 @@ function renderNav(): void {
 function renderDomainMenu(): void {
   const menu = byId('domain-menu');
   const soon = currentRoute() === 'soon' ? soonDomainOf(location.hash) : undefined; // the chip names the domain being looked at
-  byId('domain-label').textContent = t(DOMAINS.find((d) => d.id === (soon ?? activeDomain()))!.name);
+  const shown = DOMAINS.find((d) => d.id === (soon ?? activeDomain()))!;
+  byId('domain-label').textContent = t(shown.name);
+  byId('domain-icon').replaceChildren(icon(shown.icon, 'size-4')); // U2: the chip shows the open domain's icon, not a fixed anchor
   menu.replaceChildren(h('div', { class: 'flex flex-col' }, ...DOMAINS.map((d) => h('a', {
     href: domainHash(d.id), class: MENU_ITEM, onclick: () => menu.hidePopover?.(), 'aria-current': d.id === activeDomain() ? 'true' : false,
   },
@@ -152,7 +154,19 @@ export function initTopbar(): void {
       renderSettings();
     });
   }
+  // v12.0 U1: the ⋯ menu's phone copies press the real bar buttons (same dialogs, counts and aria-expanded).
+  for (const p of document.querySelectorAll<HTMLButtonElement>('[data-proxy]')) p.addEventListener('click', () => byId(p.dataset.proxy!).click());
   byId('import-btn').addEventListener('click', () => (byId('import-input') as HTMLInputElement).click());
+}
+
+/** v12.0 U1: the ⋯ copies show what the bar buttons show (Review hidden at 0; the count is in the bar button's aria-label). */
+export function syncMenuCopies(): void {
+  for (const p of document.querySelectorAll<HTMLElement>('[data-proxy]')) {
+    const src = byId(p.dataset.proxy!);
+    p.hidden = src.hidden;
+    const label = p.querySelector<HTMLElement>('[data-label]');
+    if (label) label.textContent = src.getAttribute('aria-label') ?? src.querySelector('[data-label]')?.textContent ?? '';
+  }
 }
 
 function renderNotice(): void {
@@ -178,6 +192,7 @@ export function renderTopbar(): void {
     icon('map', 'size-4'),
     h('span', { class: 'font-semibold' }, t('top.chapterShort', { n: ch, total })));
   byId('domain-status').hidden = !inDomain(route); // chapter and rank belong to the domain (v5 §B.2)
+  byId('domain-chapter').textContent = inDomain(route) ? t('top.chapterTiny', { n: ch }) : ''; // U1: "Ch.4" in the chip on phones
   byId('rank').textContent = rankOf(app.tickets, done()).tier?.[lang] ?? t('career.intern');
   byId('xp').replaceChildren(icon('star', 'size-4'), t('top.xp', { n: app.save.xp }));
   renderSettings();
