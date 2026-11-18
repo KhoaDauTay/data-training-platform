@@ -132,9 +132,12 @@ export function verdictText(r: Fail): string {
   return `${capital(parts.join(', '))}.`;
 }
 
+/** diffView() draws something: rows extra or missing (not a column-count or order-only failure). G6 talks about these tables (v13). */
+export const hasDiff = (r: Fail): r is Extract<Fail, { reason: 'rows' }> => r.reason === 'rows' && (r.extraRows.length > 0 || r.missingRows.length > 0);
+
 /** Up to 3 of the player's rows not in the answer, then up to 3 answer rows missing; stacked, never paired by position. */
 export function diffView(r: Fail): HTMLElement | null {
-  if (r.reason !== 'rows') return null;
+  if (!hasDiff(r)) return null;
   const block = (title: string, rows: unknown[][], n: number): HTMLElement | null =>
     rows.length ? h('div', {}, subhead(title), renderResult(positional(rows, rows[0].length), undefined, 3, t('diff.caption', { shown: rows.length, n }))) : null;
   return h('div', { class: 'mt-2 space-y-2' }, ...nodes(

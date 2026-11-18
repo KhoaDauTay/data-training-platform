@@ -2,7 +2,7 @@ import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import type { QueryResult } from '../src/db/run';
 import { compareResults } from '../src/grader';
 import { setLang } from '../src/i18n';
-import { tablesIn, verdictText } from '../src/ui/tryPreview';
+import { hasDiff, tablesIn, verdictText } from '../src/ui/tryPreview';
 
 const res = (rows: unknown[][]): QueryResult => ({ columns: rows[0].map((_, i) => `c${i}`), types: [], rows });
 const carriers = res([['OSL', 'Oceanic Star Line'], ['VNA', 'Vietnam Air'], ['FDX', 'FedEx']]);
@@ -46,5 +46,20 @@ describe('tablesIn', () => {
     const known = ['orders', 'customers', 'stores'];
     expect(tablesIn('SELECT EXTRACT(year FROM ordered_at) FROM orders o JOIN customers c ON c.id = o.customer_id', known)).toEqual(['orders', 'customers']);
     expect(tablesIn('WITH x AS (SELECT 1) SELECT * FROM x', known)).toEqual([]);
+  });
+});
+
+describe('hasDiff (v13 G6: Boon talks about "these two small tables" only when they show)', () => {
+  const fail = (actual: unknown[][], expected = carriers, ordered = false) => {
+    const r = compareResults(expected, res(actual), ordered);
+    if (r.ok) throw new Error('expected a failure');
+    return r;
+  };
+  it('rows extra or missing: the diff shows', () => {
+    expect(hasDiff(fail([['OSL', 'Oceanic Star Line']]))).toBe(true);
+  });
+  it('wrong column count or only the order differs: no diff tables', () => {
+    expect(hasDiff(fail([['OSL'], ['VNA'], ['FDX']]))).toBe(false);
+    expect(hasDiff(fail([['FDX', 'FedEx'], ['VNA', 'Vietnam Air'], ['OSL', 'Oceanic Star Line']], carriers, true))).toBe(false);
   });
 });

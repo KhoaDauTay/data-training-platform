@@ -14,7 +14,7 @@ import { localStore } from '../storage';
 import { BTN_SUBMIT } from '../theme';
 import { blanksIn, fillAction, firstBlank, type Ticket } from '../tickets';
 import { DRILL_ID } from '../save';
-import { diffView, verdictText } from './tryPreview';
+import { diffView, hasDiff, verdictText } from './tryPreview';
 import { celebrate } from './celebrate';
 import { announce, h, richText } from './dom';
 import { createEditor, type Editor } from './editor';
@@ -400,7 +400,7 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
         // A General drill (practice, L84) says which columns differ and shows the rows; story, lane and E-com tickets keep L25.
         const drill = DRILL_ID.test(tk.id);
         say('bad', () => h('div', {}, drill ? verdictText(fail) : gradeMessage(fail), tip ? h('div', { class: 'mt-2' }, richText(tip())) : null, voice()),
-          undefined, drill ? () => diffView(fail) : undefined);
+          undefined, drill && hasDiff(fail) ? () => diffView(fail) : undefined); // detail set = G6's tables show
       }
       deps.panel.show('result');
       return;
@@ -510,7 +510,6 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
       showPane('work');
       const n = blanksIn(sql, faded);
       const key: Key = faded ? 'frame.resetDone' : 'frame.filled';
-      announce(t(key, { n }));
       say('good', () => h('div', { class: 'flex flex-wrap items-center gap-2' }, h('p', { class: 'm-0 font-normal' }, t(key, { n })),
         act === 'replace' ? h('button', {
           type: 'button',

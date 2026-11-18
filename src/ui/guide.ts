@@ -192,8 +192,10 @@ export function initGuides(deps: GuideDeps): void {
   deps.guideHooks.ran = () => {
     if (active?.guide.steps[active.step].slot === 'lesson-example') next(); // G4: the example ran, on to step 2
   };
-  // Any dialog closed (lesson, welcome): the page's guide may show again, once the dialog's own `close` listeners ran (D-G3 first).
-  document.addEventListener('close', () => queueMicrotask(refresh), true);
+  // Any dialog closed (lesson, welcome): the page's guide may show again, once the dialog's own `close` listeners ran (D-G3 first,
+  // and lessonCard's onclose clears guideHooks.lesson). A task, not a microtask: a browser-fired event runs microtasks between
+  // listeners, so a microtask from this capture listener would run before those and see the lesson still open.
+  document.addEventListener('close', () => setTimeout(refresh), true);
   document.addEventListener('pointerdown', (e) => { if (!(e.target instanceof Element && e.target.closest('[data-guide-mark]'))) held = false; }); // a click on blank page moves focus to <body> without focusin
   document.addEventListener('focusin', (e) => { held = e.target instanceof Element && !!e.target.closest('[data-guide-mark]'); });
   deps.guideHooks.region = () => {

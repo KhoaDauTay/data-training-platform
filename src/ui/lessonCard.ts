@@ -15,7 +15,7 @@ import { renderResult } from './resultTable';
 import { boonRegion, guideHooks, guideSlot, markExampleRan, refreshGuides, tourSlot } from './coach';
 import { mascot } from './mascots';
 import { readTour } from '../onboarding';
-import { diffView, runOn, tryPreview, verdictText } from './tryPreview';
+import { diffView, hasDiff, runOn, tryPreview, verdictText } from './tryPreview';
 
 // Session state by skill id. The brief is rebuilt on every rerender, so what the player typed or ran lives here.
 const drafts = new Map<string, string>();
@@ -296,7 +296,7 @@ export function openLesson(id: string, node?: { lesson: Lesson; name: () => stri
   const dialog = byId('lesson-dialog') as HTMLDialogElement;
   const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
   const guided = !!opts?.guide;
-  guideHooks.lesson = guided ? { diff: () => !!verdicts.get(l.id)?.fail } : undefined; // before card(): the guide engine reads it
+  guideHooks.lesson = guided ? { diff: () => { const f = verdicts.get(l.id)?.fail; return !!f && hasDiff(f); } } : undefined; // before card(): the guide engine reads it
   dialog.replaceChildren(card(l, 'lesson-dialog-title', [
     guided ? guideHooks.replayBtn?.('lesson') ?? null : null,
     h('button', { type: 'button', onclick: () => { markSeen(id, false); dialog.close(); } }, `${t('lesson.gotIt')} ✓`),

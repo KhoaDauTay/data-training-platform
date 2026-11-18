@@ -35,10 +35,10 @@ for (const f of readdirSync(dir)) {
   sums[name] = (sums[name] ?? 0) + gzipSync(readFileSync(`${dir}/${f}`), { level: 9 }).length / 1024;
 }
 let fail = false;
-for (const [name, , budget, pending] of GROUPS) {
+for (const [name, , budget] of GROUPS) {
   const kb = sums[name];
-  const bad = (kb === undefined && !pending) || kb > budget; // a missing group means the build changed shape: look before deploying
+  const bad = kb === undefined || kb > budget; // a missing group means the build changed shape: look before deploying
   fail ||= bad;
-  console.log(`${bad ? 'FAIL' : 'ok  '} ${name.padEnd(7)} ${kb === undefined ? `not found${pending ? ` (not imported before ${pending})` : ''}` : `${kb.toFixed(0).padStart(5)} KB gz / ${budget} KB`}`);
+  console.log(`${bad ? 'FAIL' : 'ok  '} ${name.padEnd(7)} ${kb === undefined ? 'not found' : `${kb.toFixed(0).padStart(5)} KB gz / ${budget} KB`}`);
 }
 process.exit(fail ? 1 : 0);
