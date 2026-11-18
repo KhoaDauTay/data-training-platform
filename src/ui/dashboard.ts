@@ -89,7 +89,7 @@ export function cardBody(c: Card, r: QueryResult): HTMLElement {
   if (!spec || spec.kind !== c.kind) return h('p', { class: 'm-0 text-muted' }, t('chart.empty', { max: MAX_POINTS }));
   const n = c.kind === 'bar' ? BAR_ROWS : MAX_POINTS;
   const shown = { ...r, rows: r.rows.slice(0, n) };
-  return h('div', { class: 'overflow-auto' }, c.kind === 'bar' ? bars(shown, spec, col, kindColor(c), 'card') : line(shown, spec, col, kindColor(c), 'card'), cut(n));
+  return h('div', { class: 'overflow-x-auto' }, c.kind === 'bar' ? bars(shown, spec, col, kindColor(c), 'card') : line(shown, spec, col, kindColor(c), 'card'), cut(n));
 }
 
 /** Once per session, one card after another (src/dashboard.ts cardRunner); a card that timed out is saved as slow. */
@@ -212,7 +212,7 @@ function startersBlock(locked: boolean): HTMLElement | null {
   return h('div', { class: 'mt-5' },
     h('h3', { class: 'm-0 text-base font-bold' }, t('dash.starters')),
     h('p', { class: 'mt-1 mb-3 text-sm text-muted' }, t('dash.startersIntro'), locked ? '' : ` ${t('dash.startersHide')}`),
-    h('div', { class: 'grid gap-4 sm:grid-cols-2 lg:grid-cols-4' }, ...list.map(starterCard)));
+    h('div', { class: 'grid gap-4 sm:grid-cols-2' }, ...list.map(starterCard))); // 4 columns left a chart < 260 px: scrollbars (L93)
 }
 
 /** Locked: what opens custom cards, the locked "Make a card" control (not a button) and one real way forward. */
@@ -228,8 +228,10 @@ function lockedMine(lock: { skill: string; n: number }): HTMLElement {
         h('div', { class: 'flex flex-wrap items-center gap-3' },
           h('span', {
             role: 'button', 'aria-disabled': 'true', tabindex: '0', title: hint, 'aria-label': `${t('dash.createLocked')}: ${hint}`,
-            class: 'inline-flex cursor-not-allowed items-center gap-1.5 rounded-full border border-dashed border-line px-4 py-2 text-sm font-semibold text-muted',
-          }, icon('lock', 'size-4'), t('dash.createLocked'), h('span', { class: 'font-normal' }, ` · ${hint}`)),
+            class: 'inline-flex shrink-0 cursor-not-allowed items-center gap-1.5 rounded-full border border-dashed border-line px-4 py-2 text-sm font-semibold whitespace-nowrap text-muted',
+          }, icon('lock', 'size-4'), t('dash.createLocked')),
+          // The hint is its own line: inside the pill it squeezed "Tạo card" into a column at 375 px (L93).
+          h('span', { class: 'min-w-48 flex-1 text-sm text-muted', 'aria-hidden': 'true' }, hint),
           h('button', { type: 'button', class: cx(BTN_GO, 'px-4 py-2'), onclick: () => (isStory() ? go('play') : backToStory()) }, t('dash.toTask'))))),
     startersBlock(true));
 }
@@ -285,7 +287,9 @@ function kpiTile(tile: KpiTile, redraw: () => void): HTMLElement {
       () => value.replaceChildren(h('p', { class: cx(BIG, 'text-muted') }, '—')));
   } else {
     // A locked tile shows an empty bar, never "—" or "???" (they read as broken data; v12 audit).
-    value.append(h('div', { class: 'h-9 rounded-lg border border-dashed border-line bg-code', 'aria-hidden': 'true' }));
+    // The "locked" chip sits in that bar, not beside the title, so a 4-column tile keeps its title width (L93).
+    value.append(h('div', { class: 'flex h-9 items-center justify-center gap-1 rounded-lg border border-dashed border-line bg-code text-xs font-semibold text-muted' },
+      icon('lock', 'size-3.5'), t('dash.kpiLocked')));
   }
   const foot = open ? t('home.kpiFrom', { title: textOf(ticket, lang).title })
     : ticket ? t('home.kpiLocked', { n: ticket.chapter, title: textOf(ticket, lang).title, name: ticket.from.name })
@@ -297,7 +301,7 @@ function kpiTile(tile: KpiTile, redraw: () => void): HTMLElement {
       h('h3', { class: 'm-0 flex-1 self-center text-sm leading-snug font-medium' }, label),
       open ? h('button', { type: 'button', class: ICON_BTN, title: t('dash.hide', { title: label }), 'aria-label': t('dash.hide', { title: label }), onclick: () => setHidden(kpi.id, true, label, redraw) },
         icon('eyeOff', 'size-4'))
-        : h('span', { class: 'flex shrink-0 items-center gap-1 rounded-full bg-code px-2 py-0.5 text-xs font-semibold text-muted' }, icon('lock', 'size-3.5'), t('dash.kpiLocked'))), // a locked tile has nothing to hide yet
+        : null), // a locked tile has nothing to hide yet
     value,
     h('p', { class: 'mt-auto mb-0 flex items-start gap-1.5 text-sm text-muted' }, icon(open ? 'link' : 'lock', 'mt-0.5 size-4'), h('span', {}, foot)));
 }
