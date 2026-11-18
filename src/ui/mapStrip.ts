@@ -1,6 +1,6 @@
 import { getLang, t, type Key } from '../i18n';
 import { LANE_XP, laneLabel } from '../lanes';
-import { activeDomain } from '../domains';
+import { activeDomain, domainText } from '../domains';
 import { chaptersOf, chapterTitle } from '../progress';
 import { ecomArt } from './ecomArt';
 import { derive, ROUTES, type Harbor } from '../scene';
@@ -55,10 +55,11 @@ export function createMapStrip(host: HTMLElement): { update(view: StripView): vo
    */
   let stopMap: (() => void) | undefined;
   function fill({ tickets, completed }: StripView): void {
-    if (activeDomain() !== 'logistics') { // Plan 9 D9-14: the delivery map, no lanes
+    const words = domainText();
+    if (words) { // Plan 9 D9-14: the domain's own map, no lanes
       dialog.replaceChildren(h('div', { class: 'p-5' },
         h('div', { class: 'mb-3 flex items-start gap-2' },
-          h('h2', { id: 'map-dialog-title', class: 'm-0 flex-1 text-lg font-bold' }, t('ecom.map.title')),
+          h('h2', { id: 'map-dialog-title', class: 'm-0 flex-1 text-lg font-bold' }, t(words.mapTitle)),
           h('form', { method: 'dialog' }, h('button', { class: 'flex items-center gap-1 px-2 py-1 text-sm' }, icon('x', 'size-4'), t('app.close')))),
         ecomArt('map')));
       return;

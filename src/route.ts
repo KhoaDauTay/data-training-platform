@@ -1,10 +1,11 @@
-import { activeDomain, DOMAINS, isLiveDomain, type DomainId } from './domains';
+import { activeDomain, isLiveDomain, type DomainId } from './domains';
 
 /**
  * Hash routes without a framework (product-design-v5 §B.3, v6 §3.3). Practice runs and the Sandbox stay session modes
- * inside 'play' (Plan 7 V5); every reading page (home, learn, practice, overview, map, soon) is drawn in <main id="home">.
+ * inside 'play' (Plan 7 V5); every reading page (home, learn, practice, overview, map) is drawn in <main id="home">.
  */
-export const ROUTES = ['home', 'learn', 'practice', 'overview', 'play', 'data', 'dashboard', 'map', 'soon'] as const;
+export const ROUTES = ['home', 'learn', 'practice', 'overview', 'play', 'data', 'dashboard', 'map'] as const;
+// v14 T5 (v9 D-F8): 'soon' (the "Coming soon" page) is gone; a remembered 'soon' reads as home (isRoute). A fourth domain gets it back from git.
 export type Route = (typeof ROUTES)[number];
 
 /** Last route shown: a device convenience, never part of Save. Values saved before Plan 7 (home/play/data/dashboard) stay valid. */
@@ -14,14 +15,13 @@ export const ROUTE_KEY = 'cargo-query/route';
 const D = (): string => `#/d/${activeDomain()}`;
 const hashTable = (): Record<Route, string> => ({
   home: '#/', learn: '#/learn', practice: '#/practice', overview: D(), play: `${D()}/play`, data: `${D()}/data`,
-  dashboard: `${D()}/dashboard`, map: `${D()}/map`, soon: '#/d/finance',
+  dashboard: `${D()}/dashboard`, map: `${D()}/map`,
 });
 const DOMAIN_PAGE: Record<string, Route> = { '': 'overview', play: 'play', data: 'data', dashboard: 'dashboard', map: 'map' };
 
 export const hashOf = (r: Route): string => hashTable()[r];
 export const isRoute = (v: unknown): v is Route => ROUTES.includes(v as Route);
 /** A domain's pages: the sidebar lists the domain's items and the top bar shows its chapter and rank (v6 §3.1). */
-/** The live (Logistics) domain's pages. A "coming soon" domain page is not one: no Logistics sidebar, chapter or rank there (v10 critic #7). */
 export const inDomain = (r: Route): boolean => r === 'overview' || r === 'play' || r === 'data' || r === 'dashboard' || r === 'map';
 export const domainHash = (id: DomainId): string => `#/d/${id}`;
 
@@ -38,8 +38,7 @@ export function parseRoute(hash: string): Route | undefined {
   if (a === '') return 'home';
   if (a === 'learn' || a === 'practice') return a;
   if (a !== 'd') return 'home';
-  if (isLiveDomain(b)) return Object.hasOwn(DOMAIN_PAGE, c) ? DOMAIN_PAGE[c] : 'home';
-  return soonDomainOf(hash) ? 'soon' : 'home';
+  return isLiveDomain(b) && Object.hasOwn(DOMAIN_PAGE, c) ? DOMAIN_PAGE[c] : 'home';
 }
 
 export function initialRoute(hash: string, saved: unknown): Route {
@@ -62,12 +61,6 @@ export function learnModuleOf(hash: string): number | undefined {
 export const learnSkillOf = (hash: string): string | undefined => /^#\/?learn\/skill\/([a-z0-9_]+)(?=$|[/?])/.exec(hash)?.[1];
 /** `#/learn/adv/<node>` → the advanced node page (Plan 8a). */
 export const learnAdvOf = (hash: string): string | undefined => /^#\/?learn\/adv\/([a-z0-9_]+)(?=$|[/?])/i.exec(hash)?.[1].toLowerCase(); // #/learn/adv/A1 = a1 (L93): pages print ids in capitals
-
-/** `#/d/<id>…` → the domain when it exists and is not live yet ("Coming soon", v5 §B.6). */
-export function soonDomainOf(hash: string): DomainId | undefined {
-  const id = /^#\/?d\/([a-z]+)(?=$|[/?])/.exec(hash)?.[1];
-  return DOMAINS.find((d) => d.id === id && !d.live)?.id;
-}
 
 /** `#/d/<id>…` of a live domain (old hashes count as Logistics) → that domain; any other page → undefined (keeps the last domain). */
 export function domainOfHash(hash: string): DomainId | undefined {

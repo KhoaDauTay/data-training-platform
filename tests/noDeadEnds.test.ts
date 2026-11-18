@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { generalNow, loadLessons, loadTickets } from '../src/content';
+import { generalNow, loadDomain, loadLessons, loadTickets } from '../src/content';
+import { DOMAINS, DOMAIN_SCHEMA } from '../src/domains';
+import { en } from '../src/i18n/en';
+import { vi } from '../src/i18n/vi';
+import { chaptersOf } from '../src/progress';
 import { LEARN_DICT } from '../src/i18n/learn';
 import { appliesIn } from '../src/learn';
 import { SKILLS } from '../src/progress';
@@ -60,6 +64,25 @@ describe('không ngõ cụt trên phần Chung', () => {
     }
     expect(Object.keys(sources).length).toBeGreaterThan(50);
     for (const [f, src] of Object.entries(sources)) expect([f, src.includes('advSoon')]).toEqual([f, false]);
+  });
+});
+
+describe('v14 T5: không còn trang "Sắp có"', () => {
+  it('mọi domain sống, có schema riêng và mọi chương có việc', async () => {
+    for (const d of DOMAINS) {
+      expect([d.id, d.live]).toEqual([d.id, true]);
+      expect(DOMAIN_SCHEMA[d.id]).toBeTruthy();
+      await loadDomain(d.id);
+      const own = loadTickets(d.id);
+      const chapters = d.id === 'logistics' ? [] : chaptersOf(d.id); // Logistics: chapters with no tickets show "Sắp có" by design (home.status.soon)
+      for (const c of chapters) expect([d.id, c.chapter, own.some((x) => x.chapter === c.chapter)]).toEqual([d.id, c.chapter, true]);
+    }
+  });
+  it('khóa soon.* và financeSoon() đã gỡ; mô tả Finance không nói "đang thiết kế"', () => {
+    for (const dict of [vi, en] as Record<string, unknown>[]) expect(Object.keys(dict).filter((k) => k.startsWith('soon.'))).toEqual([]);
+    for (const [f, src] of Object.entries(sources)) expect([f, /financeSoon|soonDomainOf/.test(src)]).toEqual([f, false]);
+    expect(vi['domain.financeDesc']).not.toMatch(/đang thiết kế|sắp có/i);
+    expect(en['domain.financeDesc']).not.toMatch(/in design|coming soon/i);
   });
 });
 

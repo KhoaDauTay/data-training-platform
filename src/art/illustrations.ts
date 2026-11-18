@@ -136,19 +136,3 @@ export function emptyDrills(): SVGSVGElement {
     path('M117 70 L122 75 L131 64', { ...ink, stroke: A, 'stroke-width': 3 }),
     line(60, 92, 54, 108, 'var(--muted)', 3), line(120, 92, 126, 108, 'var(--muted)', 3));
 }
-
-/** Finance "coming soon": a columned hall, two towers, a dashed growth line in the sky and a stack of coins. */
-export function financeSoon(): SVGSVGElement {
-  return root(480, 200,
-    rect(0, 0, 480, 200, 'var(--sky)', { rx: 16 }),
-    path('M40 120 L130 96 L210 104 L300 70 L400 54 L450 30', { fill: 'none', stroke: A, 'stroke-width': 3, 'stroke-dasharray': '8 8', 'stroke-linecap': 'round' }),
-    circle(450, 30, 6, A),
-    rect(0, 168, 480, 32, 'var(--ground)'),
-    path('M60 92 L130 70 L200 92 Z', { fill: LINE }),
-    rect(66, 92, 128, 10, PANEL, { stroke: LINE }),
-    ...[78, 104, 130, 156, 180].map((x) => rect(x - 4, 104, 8, 56, PANEL, { stroke: LINE })),
-    rect(60, 160, 140, 8, LINE),
-    rect(250, 60, 60, 108, 'var(--bar)', { rx: 4 }), rect(320, 90, 48, 78, 'var(--land)', { rx: 4 }),
-    ...[0, 1, 2, 3, 4].flatMap((r) => [rect(262, 72 + r * 18, 12, 10, 'var(--sun)'), rect(286, 72 + r * 18, 12, 10, 'var(--sun)')]),
-    ...[0, 1, 2, 3].map((i) => e('ellipse', { cx: 412, cy: 160 - i * 9, rx: 22, ry: 7, fill: 'var(--sun)', stroke: 'var(--sun-ink)', 'stroke-width': 1.5 })));
-}

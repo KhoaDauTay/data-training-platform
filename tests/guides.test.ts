@@ -206,10 +206,10 @@ describe('offeredIds (v8 §2.3, General area only)', () => {
   it('nothing behind another modal (the welcome screen picks "SQL only" and opens the path behind it)', () => {
     expect(offeredIds({ ...base, route: 'learn', modal: true })).toEqual([]);
   });
-  it('never in story, lane, sandbox, a promotion review, a warm-up, E-com or on Home', () => {
+  it('never in story, lane, sandbox, a promotion review, a warm-up, a domain page (Logistics, E-com, Finance: routes carry no domain) or on Home', () => {
     for (const mode of ['story', 'lane', 'sandbox', 'practice']) expect(offeredIds({ route: 'play', mode, diff: true })).toEqual([]);
     expect(offeredIds({ route: 'play', mode: 'story', drillKind: 'open', diff: false })).toEqual([]); // a stale kind outside drill/practice
-    for (const route of ['home', 'overview', 'data', 'dashboard', 'map', 'soon', undefined]) expect(offeredIds({ route, mode: 'drill', drillKind: 'open', diff: true })).toEqual([]);
+    for (const route of ['home', 'overview', 'data', 'dashboard', 'map', undefined]) expect(offeredIds({ route, mode: 'drill', drillKind: 'open', diff: true })).toEqual([]);
   });
 });
 

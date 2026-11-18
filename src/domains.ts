@@ -9,10 +9,10 @@ export const GAME_SCHEMA = 'logistics';
 export type DomainId = 'logistics' | 'finance' | 'ecommerce';
 /** `icon` is a name from src/ui/icons.ts, kept as a literal here so the worker never pulls UI code. */
 export interface Domain { id: DomainId; live: boolean; icon: 'anchor' | 'percent' | 'box'; name: Key; desc: Key }
-/** v5 §B.2, D-N3: Finance shows as "Coming soon" (a page, no date promised). E-commerce is live from Plan 9. */
+/** E-commerce is live from Plan 9, Finance from v14 T5 (the "Coming soon" page is gone, v9 D-F8). Order: Logistics, Finance, E-commerce. */
 export const DOMAINS: readonly Domain[] = [
   { id: 'logistics', live: true, icon: 'anchor', name: 'domain.logistics', desc: 'domain.logisticsDesc' },
-  { id: 'finance', live: false, icon: 'percent', name: 'domain.finance', desc: 'domain.financeDesc' },
+  { id: 'finance', live: true, icon: 'percent', name: 'domain.finance', desc: 'domain.financeDesc' },
   { id: 'ecommerce', live: true, icon: 'box', name: 'domain.ecommerce', desc: 'domain.ecommerceDesc' },
 ];
 
@@ -41,7 +41,7 @@ export const LOGISTICS_TABLES = [
 export type SchemaId = keyof typeof SCHEMAS;
 
 /** Schema of each live domain's own tables (story, practice, sandbox, data, dashboard). Plan 9. */
-export const DOMAIN_SCHEMA: Partial<Record<DomainId, SchemaId>> = { logistics: 'game', ecommerce: 'ecom' };
+export const DOMAIN_SCHEMA: Record<DomainId, SchemaId> = { logistics: 'game', ecommerce: 'ecom', finance: 'fin' };
 export const isLiveDomain = (id: unknown): id is DomainId => DOMAINS.some((d) => d.id === id && d.live);
 
 // ponytail: one module-level "open domain", since one domain's pages show at a time; pass the domain explicitly if a page ever shows two.
@@ -52,12 +52,33 @@ export const activeDomain = (): DomainId => active;
 export const setActiveDomain = (id: DomainId): void => {
   active = id;
 };
-export const domainSchemaId = (d: DomainId = active): SchemaId => DOMAIN_SCHEMA[d] ?? 'game';
+export const domainSchemaId = (d: DomainId = active): SchemaId => DOMAIN_SCHEMA[d];
 export const domainSchemaName = (d: DomainId = active): string => SCHEMAS[domainSchemaId(d)];
 
 /** E-commerce ticket ids. Save keeps them by pattern because the domain's content is a lazy chunk (D9-7, like DRILL_ID). */
 export const ECOM_ID = /^ecom-ch\d{1,2}-\d{2}$/;
 /** Finance ticket ids, kept by pattern in the Save like ECOM_ID (v14, Save v5). */
 export const FIN_ID = /^fin-ch\d{1,2}-\d{2}$/;
+/** Ticket ids of each non-Logistics domain (v9 §6.2): who owns an id, and the "{n} tasks done" line, read this one table. */
+export const DOMAIN_ID: Record<Exclude<DomainId, 'logistics'>, RegExp> = { ecommerce: ECOM_ID, finance: FIN_ID };
+/** The domain that owns a ticket id: Logistics unless a lazy domain's pattern matches. */
+export const ownerOf = (id: string): DomainId =>
+  (Object.keys(DOMAIN_ID) as (keyof typeof DOMAIN_ID)[]).find((d) => DOMAIN_ID[d].test(id)) ?? 'logistics';
+
+/** Main-bundle words of each non-Logistics domain's pages (v9 §6.2): shown before, and without, its art chunk. */
+export interface DomainText { story: Key; dataIntro: Key; sceneTitle: Key; mapTitle: Key; callout: Key; done: Key; promoted: Key }
+export const DOMAIN_TEXT: Record<Exclude<DomainId, 'logistics'>, DomainText> = {
+  ecommerce: {
+    story: 'ecom.briefStory', dataIntro: 'ecom.dataIntro', sceneTitle: 'ecom.scene.title', mapTitle: 'ecom.map.title',
+    callout: 'ecom.scene.callout', done: 'ecom.done', promoted: 'ecom.promoted',
+  },
+  finance: {
+    story: 'fin.briefStory', dataIntro: 'fin.dataIntro', sceneTitle: 'fin.scene.title', mapTitle: 'fin.map.title',
+    callout: 'fin.scene.callout', done: 'fin.done', promoted: 'fin.promoted',
+  },
+};
+/** The open (or given) domain's words; undefined in Logistics, whose pages have their own. */
+export const domainText = (d: DomainId = active): DomainText | undefined => (d === 'logistics' ? undefined : DOMAIN_TEXT[d]);
+
 /** Device pref: the last domain opened (a live DomainId; anything else reads as logistics). Never part of Save. */
 export const DOMAIN_KEY = 'cargo-query/domain';

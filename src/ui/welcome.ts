@@ -35,7 +35,7 @@ function choose(knows: boolean): void {
   actions.showTab('columns'); // same ticket id, so setTicket() does not relabel the tabs: hide the ones not open yet (D-O4)
 }
 
-/** Logistics, E-commerce (live domains) and "Chỉ học SQL" (lab only). Finance is not live, so it is not offered. */
+/** Every live domain (Logistics, Finance, E-commerce) and "Chỉ học SQL" (lab only). */
 function pickList(): HTMLElement {
   const live = DOMAINS.filter((d) => d.live).map((d) => ({ id: d.id as BootPick, icon: d.icon, name: t(d.name), desc: t(d.desc) }));
   const all = [...live, { id: 'general' as BootPick, icon: 'route' as const, name: t('welcome.pickSql'), desc: t('welcome.pickSqlDesc') }];

@@ -52,6 +52,12 @@ describe('MyData', () => {
     expect(my.tables.map((t) => [t.table, t.rows])).toEqual([['shipments_my', 1]]);
   });
 
+  it('v14 T5: tên bảng Finance cũng thêm _my (loans.csv → loans_my), ở mọi domain', async () => {
+    const { pg, my } = await setup();
+    await my.add(CSV, 'loans.csv');
+    expect(await count(pg, 'loans_my')).toBe(2);
+  });
+
   it('add: vượt giới hạn trả problem, lỗi COPY trả error; cả hai không đụng store', async () => {
     const { store, my } = await setup();
     for (const n of ['a', 'b', 'c', 'd', 'e']) await my.add(new Blob(['x\n1\n']), `${n}.csv`);

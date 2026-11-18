@@ -1,5 +1,5 @@
 import { getLang, t } from '../i18n';
-import { activeDomain, domainSchemaName } from '../domains';
+import { activeDomain, domainSchemaName, domainText } from '../domains';
 import { chapterTablesOf, chapterTitle } from '../progress';
 import { dataTableOf, hashOf } from '../route';
 import { app, erMeta, textValues, unlockedTables } from '../state';
@@ -76,7 +76,7 @@ export function renderData(host: HTMLElement): void {
   side?.replaceChildren(picker);
   host.replaceChildren(h('div', { class: 'mx-auto max-w-[1120px] px-4 py-6' },
     h('h1', { id: 'data-title', tabindex: '-1', class: 'm-0 text-2xl font-bold' }, t('data.title')),
-    h('p', { class: 'mt-1 text-muted' }, t(activeDomain() === 'logistics' ? 'data.intro' : 'ecom.dataIntro')),
+    h('p', { class: 'mt-1 text-muted' }, t(domainText()?.dataIntro ?? 'data.intro')),
     h('div', { class: side ? 'mt-4 grid gap-5' : 'mt-4 grid gap-5 lg:grid-cols-[18rem_1fr]' },
       side ? null : picker,
       h('div', { class: 'min-w-0' }, detail, diagram))));

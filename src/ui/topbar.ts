@@ -1,9 +1,9 @@
 import { loadTickets } from '../content';
-import { activeDomain, DOMAINS, ECOM_ID, type DomainId } from '../domains';
+import { activeDomain, DOMAIN_ID, DOMAINS, type DomainId } from '../domains';
 import { getLang, t, type Key } from '../i18n';
 import { chapterTitle, CHAPTERS, chaptersOf, currentChapter, rankOf } from '../progress';
 import { upsert } from '../registry';
-import { domainHash, hashOf, inDomain, soonDomainOf, type Route } from '../route';
+import { domainHash, hashOf, inDomain, type Route } from '../route';
 import { actions, app, done } from '../state';
 import { getTheme, NAV_LINK, setTheme, THEME_PREFS, TOP_BTN, type ThemePref } from '../theme';
 import { byId, h, loader, nodes, reducedMotion } from './dom';
@@ -37,7 +37,7 @@ export const navItems = (area: NavItem['area']): NavItem[] => NAV.filter((n) => 
 registerNav({ id: 'home', area: 'top', order: 10, label: 'nav.home', icon: NAV_ICON.home, href: hashOf('home'), current: (r) => r === 'home' });
 registerNav({ id: 'learn', area: 'top', order: 20, label: 'nav.learn', icon: NAV_ICON.learn, href: hashOf('learn'), current: (r) => r === 'learn' });
 // Practice (top, order 30), Sandbox (domain, 30, ui/modes.ts) and Data (domain, 50, ui/dataView.ts) register their own.
-registerNav({ id: 'overview', area: 'domain', order: 10, label: 'nav.overview', icon: NAV_ICON.overview, get href() { return hashOf('overview'); }, current: (r) => r === 'overview' || r === 'soon' });
+registerNav({ id: 'overview', area: 'domain', order: 10, label: 'nav.overview', icon: NAV_ICON.overview, get href() { return hashOf('overview'); }, current: (r) => r === 'overview' });
 registerNav({ id: 'play', area: 'domain', order: 20, label: 'nav.play', icon: NAV_ICON.play, get href() { return hashOf('play'); }, current: (r) => r === 'play' });
 registerNav({ id: 'dashboard', area: 'domain', order: 60, label: 'nav.dashboard', icon: NAV_ICON.dashboard, get href() { return hashOf('dashboard'); }, current: (r) => r === 'dashboard' });
 registerNav({ id: 'map', area: 'domain', order: 70, label: 'nav.map', icon: NAV_ICON.map, get href() { return hashOf('map'); }, current: (r) => r === 'map' });
@@ -48,12 +48,10 @@ const MENU_ITEM = 'flex w-full items-center gap-2 rounded-(--r-ctl) px-3 py-2 te
 
 /**
  * A domain's progress line on the platform Home, the domain menu and the drawer (Plan 9): Logistics = chapter · rank,
- * E-commerce = tasks done (counted from the Save by id pattern, so its content chunk is not needed).
+ * the other domains = tasks done (counted from the Save by id pattern, DOMAIN_ID, so their content chunks are not needed).
  */
 export function domainLine(id: DomainId): string {
-  const d = DOMAINS.find((x) => x.id === id)!;
-  if (!d.live) return t('home.status.soon');
-  if (id === 'ecommerce') return t('ecom.homeLine', { n: app.save.completed.filter((x) => ECOM_ID.test(x)).length });
+  if (id !== 'logistics') return t('domain.homeLine', { n: app.save.completed.filter((x) => DOMAIN_ID[id].test(x)).length });
   const tickets = loadTickets('logistics');
   const rank = rankOf(tickets, done(), CHAPTERS).tier?.[getLang()] ?? t('career.intern');
   return `${t('top.chapterShort', { n: currentChapter(tickets, done()), total: CHAPTERS.length })} · ${rank}`;
@@ -80,11 +78,10 @@ function renderNav(): void {
       icon(live.icon, 'size-5'), h('span', {}, t(live.name))));
 }
 
-/** Domain switch (v5 §B.2, D-N3): Logistics with its chapter, then the "Coming soon" pages (no date promised). */
+/** Domain switch (v5 §B.2): every domain with its progress line (Logistics: chapter · rank; the others: tasks done). */
 function renderDomainMenu(): void {
   const menu = byId('domain-menu');
-  const soon = currentRoute() === 'soon' ? soonDomainOf(location.hash) : undefined; // the chip names the domain being looked at
-  const shown = DOMAINS.find((d) => d.id === (soon ?? activeDomain()))!;
+  const shown = DOMAINS.find((d) => d.id === activeDomain())!;
   byId('domain-label').textContent = t(shown.name);
   byId('domain-icon').replaceChildren(icon(shown.icon, 'size-4')); // U2: the chip shows the open domain's icon, not a fixed anchor
   menu.replaceChildren(h('div', { class: 'flex flex-col' }, ...DOMAINS.map((d) => h('a', {

@@ -94,7 +94,7 @@ export function workKey(): string {
 
 /** v4 §B.3: the first Sandbox visit starts from a small query instead of an empty editor (ports is open from chapter 1). */
 export const SANDBOX_STARTER = 'SELECT * FROM ports LIMIT 20';
-/** Plan 9: E-commerce has no `ports`; products is open from its chapter 1. */
+/** Plan 9: E-commerce and Finance have no `ports`; `products` is open from chapter 1 in both (v9 §6.2). */
 export const sandboxStarter = (): string => (activeDomain() === 'logistics' ? SANDBOX_STARTER : 'SELECT * FROM products LIMIT 20');
 
 /** `undefined` lets the caller fall back (initialDoc: the ticket's `starter`). */

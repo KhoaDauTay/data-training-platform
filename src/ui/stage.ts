@@ -1,4 +1,4 @@
-import { activeDomain, type DomainId } from '../domains';
+import { activeDomain, domainText, type DomainId } from '../domains';
 import type { Ctx, Run } from '../art/logistics';
 import { loadArt, loadedGsap } from '../art/load';
 import { getLang, t, type Key } from '../i18n';
@@ -46,8 +46,9 @@ const DONE_KEY: Record<'truck' | 'quote' | 'ledger' | 'chat', Key> = {
 function sentence(c: Ctx): string {
   const lang = getLang();
   const title = titleOf(c);
-  if (activeDomain() !== 'logistics') { // Plan 9: E-commerce's own sentences
-    return c.tk.beat === 'boss' ? t('ecom.promoted', { rank: (c.rankAfter.career ?? c.rankAfter.tier)?.[lang] ?? t('career.intern') }) : t('ecom.done', { title });
+  const words = domainText();
+  if (words) { // Plan 9, v9 §5.4: the domain's own sentences
+    return c.tk.beat === 'boss' ? t(words.promoted, { rank: (c.rankAfter.career ?? c.rankAfter.tier)?.[lang] ?? t('career.intern') }) : t(words.done, { title });
   }
   const { kind, to, lane } = c.scene;
   if (kind === 'ship') return to ? t('anim.doneShip', { title, port: portName(to) }) : t('anim.doneShipNoPort', { title });

@@ -24,7 +24,6 @@ const all = (): [string, Fake][] => [
   ...Array.from({ length: 12 }, (_, i): [string, Fake] => [`moduleGlyph(${i + 1})`, fake(il.moduleGlyph(i + 1))]),
   ...(['A', 'B', 'C', 'D'] as const).map((g): [string, Fake] => [`trackGlyph(${g})`, fake(il.trackGlyph(g))]),
   ['emptyDrills', fake(il.emptyDrills())],
-  ['financeSoon', fake(il.financeSoon())],
 ];
 const COLOR = /^(none|currentColor|var\(--[a-z-]+\))$/;
 

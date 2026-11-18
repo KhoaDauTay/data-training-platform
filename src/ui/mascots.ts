@@ -3,7 +3,7 @@ import { s } from './svg';
 
 /**
  * Lily (Dalmatian): the learner, i.e. the player's own avatar; she reacts (cheer, sleep, idle) and never teaches. Boon (duck): the
- * teacher and guide (welcome, tour, hints, lessons, error notes, Coming soon) and speaks in the first person. L57, L83, L87.
+ * teacher and guide (welcome, tour, hints, lessons, error notes) and speaks in the first person. L57, L83, L87.
  */
 export type Mascot = 'lily' | 'boon';
 export const POSES = ['idle', 'point', 'cheer', 'think', 'oops', 'sleep'] as const;

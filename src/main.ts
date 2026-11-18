@@ -5,7 +5,7 @@ import { loadContent, loadDomain, loadLanes, loadTickets } from './content';
 import { DbClient, DbFailedError, DbRestartError, QueryTimeoutError, WorkerTaskError, type DbStatus } from './db/client';
 import { SqlError } from './db/run';
 import { buildDiagnostics, diagnosticsText } from './diagnostics';
-import { activeDomain, DOMAIN_KEY, DOMAIN_SCHEMA, DOMAINS, ECOM_ID, domainSchemaId, domainSchemaName, setActiveDomain, type DomainId, type SchemaId } from './domains';
+import { activeDomain, DOMAIN_KEY, DOMAIN_SCHEMA, DOMAINS, domainSchemaId, ownerOf, domainSchemaName, setActiveDomain, type DomainId, type SchemaId } from './domains';
 import { applyStatic, loadLang, setLang, t, type Lang } from './i18n';
 import { MyData } from './import/myData';
 import { idbStore } from './import/store';
@@ -120,7 +120,7 @@ const problems = contentProblems(app.tickets);
 if (problems.length) console.warn('Content problems:', problems);
 // Lane side tasks are known ids too, so their drafts, graded SQL and hints survive a reload (they never enter `completed`).
 const laneIds = new Set(loadLanes().tasks.map((x) => x.id));
-// Logistics ids are listed; e-commerce ids are kept by pattern (ECOM_ID), so its lazy content is not needed here (Plan 9).
+// Logistics ids are listed; e-commerce and finance ids are kept by pattern (DOMAIN_ID), so their lazy content is not needed here (Plan 9, v14).
 const known: Known = { ticketIds: new Set([...loadTickets('logistics').map((x) => x.id), ...laneIds]), laneIds, skills: new Set(SKILLS.map((s) => s.id)) };
 
 const loaded = loadSave(localStore(), known);
@@ -266,7 +266,7 @@ function rerender(): void {
 
 /** `force`: rebuild the editor even for the same ticket id (an imported save brings its own draft). */
 function selectTicket(id: string, force = false): void {
-  const owner: DomainId = ECOM_ID.test(id) ? 'ecommerce' : 'logistics'; // the learning path opens Logistics tasks from any domain
+  const owner: DomainId = ownerOf(id); // the learning path opens Logistics tasks from any domain
   if (owner !== activeDomain()) {
     void enterDomain(owner).then(() => { if (activeDomain() === owner) selectTicket(id, force); });
     return;
@@ -302,7 +302,7 @@ function nextStep(): void {
 
 let shownRoute: Route | undefined;
 /** Reading pages share <main id="home"> (src/ui/homeView.ts draws the one the route names). */
-const PAGE_ROUTES: ReadonlySet<Route> = new Set<Route>(['home', 'learn', 'practice', 'overview', 'map', 'soon']);
+const PAGE_ROUTES: ReadonlySet<Route> = new Set<Route>(['home', 'learn', 'practice', 'overview', 'map']);
 const TITLE_OF: Partial<Record<Route, string>> = { data: 'data-title', dashboard: 'dashboard-title', play: 'brief-title' };
 /** Reading pages, #/d/logistics/play = workspace, …/data = Data page, …/dashboard. All stay mounted and only toggle `hidden`, so the editor is never recreated. */
 function showRoute(r: Route, initial: boolean): void {

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { activeDomain, setActiveDomain } from '../src/domains';
 import {
-  canonicalHash, dataTableOf, domainHash, domainOfHash, hashOf, inDomain, initialRoute, isRoute, learnAdvOf, learnModuleOf, learnSkillOf, parseRoute, ROUTES, soonDomainOf,
+  canonicalHash, dataTableOf, domainHash, domainOfHash, hashOf, inDomain, initialRoute, isRoute, learnAdvOf, learnModuleOf, learnSkillOf, parseRoute, ROUTES,
 } from '../src/route';
 
 describe('route (v5 §B.3, Plan 7)', () => {
@@ -41,15 +41,18 @@ describe('route (v5 §B.3, Plan 7)', () => {
     expect(parseRoute('#/dashboard')).toBe('dashboard');
   });
 
-  it('domain chưa làm là "Sắp có"; domain hay trang lạ về Trang chủ', () => {
-    expect(parseRoute('#/d/finance')).toBe('soon');
-    expect(parseRoute('#/d/finance/play')).toBe('soon');
+  it('v14 T5: Finance là domain sống (không còn "Sắp có"); domain hay trang lạ về Trang chủ', () => {
+    expect(parseRoute('#/d/finance')).toBe('overview');
+    expect(parseRoute('#/d/finance/play')).toBe('play');
+    expect(parseRoute('#/d/finance/data/loans')).toBe('data');
+    expect(parseRoute('#/d/finance/dashboard')).toBe('dashboard');
+    expect(parseRoute('#/d/finance/map')).toBe('map');
+    expect(domainOfHash('#/d/finance/play')).toBe('finance');
     expect(parseRoute('#/d/mars')).toBe('home');
     expect(parseRoute('#/d/logistics/nope')).toBe('home');
     expect(parseRoute('#/d/logistics/constructor')).toBe('home');
     expect(parseRoute('#/sandbox')).toBe('home');
     expect(parseRoute('#/PLAY')).toBe('home');
-    expect(soonDomainOf('#/d/logistics')).toBeUndefined();
     expect(domainHash('finance')).toBe('#/d/finance');
   });
 
@@ -58,11 +61,10 @@ describe('route (v5 §B.3, Plan 7)', () => {
     expect(parseRoute('#/d/ecommerce/play')).toBe('play');
     expect(parseRoute('#/d/ecommerce/data/orders')).toBe('data');
     expect(parseRoute('#/d/ecommerce/map')).toBe('map');
-    expect(soonDomainOf('#/d/ecommerce/x')).toBeUndefined();
     expect(domainOfHash('#/d/ecommerce/play?x=1')).toBe('ecommerce');
     expect(domainOfHash('#/play')).toBe('logistics'); // hash cũ → Logistics (canonicalHash)
     expect(domainOfHash('#/learn')).toBeUndefined();
-    expect(domainOfHash('#/d/finance')).toBeUndefined();
+    expect(domainOfHash('#/d/mars')).toBeUndefined();
     expect(dataTableOf('#/d/ecommerce/data/order_items')).toBe('order_items');
   });
 
@@ -86,13 +88,14 @@ describe('route (v5 §B.3, Plan 7)', () => {
     expect(initialRoute('', 'play')).toBe('play');
     expect(initialRoute('', 'data')).toBe('data');
     expect(initialRoute('', 'junk')).toBe('home');
+    expect(initialRoute('', 'soon')).toBe('home'); // v14 T5: a remembered "Coming soon" page reads as Home
     expect(initialRoute('', undefined)).toBe('home');
     expect(isRoute('play')).toBe(true);
     expect(isRoute(42)).toBe(false);
   });
 
   it('ROUTES và inDomain', () => {
-    expect(ROUTES).toEqual(['home', 'learn', 'practice', 'overview', 'play', 'data', 'dashboard', 'map', 'soon']);
+    expect(ROUTES).toEqual(['home', 'learn', 'practice', 'overview', 'play', 'data', 'dashboard', 'map']);
     expect(ROUTES.filter(inDomain)).toEqual(['overview', 'play', 'data', 'dashboard', 'map']);
   });
 

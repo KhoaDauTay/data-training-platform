@@ -106,7 +106,8 @@ describe('bootPick (v12.0 P1/P2)', () => {
     expect(bootPick(undefined, 'ecommerce', true)).toBe('ecommerce');
     expect(bootPick(undefined, 'general', false)).toBe('general');
     expect(bootPick(undefined, undefined, false)).toBe('logistics');
-    expect(bootPick(undefined, 'finance', false)).toBe('logistics'); // not live
+    expect(bootPick(undefined, 'finance', false)).toBe('finance'); // live from v14 T5
+    expect(bootPick(undefined, 'mars', false)).toBe('logistics'); // not a domain
   });
   it('a first visit with nothing remembered asks (undefined = the welcome picker)', () => {
     expect(bootPick(undefined, undefined, true)).toBeUndefined();

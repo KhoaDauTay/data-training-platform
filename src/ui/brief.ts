@@ -1,6 +1,6 @@
 import { getLang, t, type Key } from '../i18n';
 import { generalNow, loadGeneral } from '../content';
-import { activeDomain, domainSchemaName } from '../domains';
+import { activeDomain, domainSchemaName, domainText } from '../domains';
 import { DRILL_ID } from '../save';
 import { LANE_XP } from '../lanes';
 import { roleLine } from '../people';
@@ -250,7 +250,7 @@ function story(tk: Ticket): HTMLElement | null {
   return h('section', { class: 'my-3 overflow-hidden rounded-xl bg-panel ring-1 ring-line' },
     h('div', { class: cx('h-1.5', chapterColor(tk.chapter).bar) }),
     h('div', { class: 'p-3' },
-      h('h3', { class: 'mt-0' }, t(activeDomain() === 'logistics' ? 'brief.story' : 'ecom.briefStory')),
+      h('h3', { class: 'mt-0' }, t(domainText()?.story ?? 'brief.story')),
       h('p', { class: 'm-0' }, c.story[getLang()])));
 }
 

@@ -1,4 +1,5 @@
 import { loadedGsap, loadGsap } from '../art/load';
+import { activeDomain, domainText } from '../domains';
 import { getLang, t } from '../i18n';
 import { rankOf } from '../progress';
 import { app, done } from '../state';
@@ -24,12 +25,14 @@ export function loadEcomArt(): Promise<EcommerceArt> {
  * E-commerce art slots (Plan 9 D9-13): the Overview scene, the Map page and the task bar's map dialog. A frame of the
  * picture's size is drawn at once and replaced by the SVG when the chunk is in; the key lines show as HTML below lg
  * (the SVG text hides there, L35). A failed load keeps the frame and the HTML line.
+ * v14 T5 (M1): Finance has no art chunk yet, so it keeps the frame and its own HTML line (fin.*); T6 draws its picture.
  */
 export function ecomArt(kind: 'scene' | 'map'): HTMLElement {
   const d = done();
   const st = { passed: new Set(rankOf(app.tickets, d).passed), done: app.tickets.filter((x) => d.has(x.id)).length };
-  const frame = h('div', { class: cx('w-full bg-accent-soft', kind === 'scene' ? 'aspect-[1100/400]' : 'aspect-[980/300] rounded-xl'), 'aria-hidden': 'true' });
-  const legend = h('div', { class: 'px-4 py-3 text-sm text-muted' }, h('p', { class: 'm-0' }, t('ecom.scene.callout')));
+  const frame = h('div', { class: cx('w-full bg-accent-soft', kind === 'scene' ? 'aspect-[1100/400] max-h-60' : 'aspect-[980/300] rounded-xl'), 'aria-hidden': 'true' });
+  const legend = h('div', { class: 'px-4 py-3 text-sm text-muted' }, h('p', { class: 'm-0' }, t(domainText()?.callout ?? 'ecom.scene.callout')));
+  if (activeDomain() !== 'ecommerce') return h('div', {}, frame, legend);
   void loadEcomArt().then((a) => {
     if (!frame.isConnected) return; // redrawn meanwhile
     frame.replaceWith(kind === 'scene' ? a.storeScene(st) : a.deliveryMap(st));

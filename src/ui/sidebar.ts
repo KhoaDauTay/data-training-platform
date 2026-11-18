@@ -144,8 +144,6 @@ function content(route: Route, drawer: boolean): (Node | string)[] {
         key: `p${c.chapter}`, href: hashOf('practice'), lead: h('b', {}, String(c.chapter)), label: moduleTitle(c.chapter, lang), current: false,
         onclick: () => document.getElementById(`skills-ch-${c.chapter}`)?.scrollIntoView({ block: 'start' }),
       })));
-  } else if (route === 'soon') {
-    if (!drawer) out.push(domainSwitch()); // the domains, not Logistics' pages
   } else if (inDomain(route)) {
     const order = app.tickets.map((x) => x.id);
     const isGated = gated(readTour());
