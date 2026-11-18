@@ -539,6 +539,8 @@ export const vi = {
   'erd.dropped': 'Ẩn bớt {n} bảng: {list}.',
   'erd.reading': 'Đang đọc cấu trúc…',
   'brief.related': 'Bảng liên quan:',
+  'brief.adv': 'Dựa vào:',
+  'brief.advLoading': 'Bài nâng cao liên quan',
   'data.refLocked': 'bảng chưa mở',
   'nav.data': 'Dữ liệu',
   'erd.toData': 'Xem toàn bộ cấu trúc ở trang Dữ liệu →',

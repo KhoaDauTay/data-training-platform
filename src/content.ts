@@ -37,26 +37,39 @@ export function loadContent(): Promise<void> {
 }
 
 const domainTemplates = new Map<DomainId, Ticket[]>();
-let ecomLoading: Promise<void> | undefined;
+const domainLoading = new Map<DomainId, Promise<void>>();
+/** Lazy content chunk and folder of each non-Logistics domain (Plan 9, Plan 11). */
+const DOMAIN_SOURCES: Partial<Record<DomainId, [() => Promise<typeof import('./ecomSources')>, string]>> = {
+  ecommerce: [() => import('./ecomSources'), 'domains/ecom'],
+  finance: [() => import('./finSources'), 'domains/fin'],
+};
 
 /**
- * A domain's content (Plan 9): Logistics comes with loadContent(); E-commerce is its own lazy chunk (src/ecomSources.ts),
- * loaded the first time the player opens the domain. A failed load can be retried. Await it before setActiveDomain().
+ * A domain's content (Plan 9): Logistics comes with loadContent(); every other domain is its own lazy chunk
+ * (src/ecomSources.ts, src/finSources.ts), loaded the first time the player opens it. A failed load can be retried.
+ * Await it before setActiveDomain().
  */
 export function loadDomain(id: DomainId): Promise<void> {
-  if (id !== 'ecommerce') return Promise.resolve();
-  return (ecomLoading ??= import('./ecomSources')
-    .then((m) => {
-      const list = Object.entries(m.ticketSources).map(([path, source]) => parseTicket(source, path)).sort(byOrder);
-      setDomainChapters('ecommerce', parseChapters(m.chaptersSource, 'domains/ecom/chapters.yml'));
-      setDomainKpis('ecommerce', parseKpis(m.kpiSource, 'domains/ecom/kpis.yml'));
-      setDomainPeople('ecommerce', parsePeople(m.peopleSource, 'domains/ecom/people.yml'));
-      domainTemplates.set('ecommerce', list);
-    })
-    .catch((e: unknown) => {
-      ecomLoading = undefined;
-      throw e;
-    }));
+  const src = DOMAIN_SOURCES[id];
+  if (!src) return Promise.resolve();
+  const [load, dir] = src;
+  let p = domainLoading.get(id);
+  if (!p) {
+    p = load()
+      .then((m) => {
+        const list = Object.entries(m.ticketSources).map(([path, source]) => parseTicket(source, path)).sort(byOrder);
+        setDomainChapters(id, parseChapters(m.chaptersSource, `${dir}/chapters.yml`));
+        setDomainKpis(id, parseKpis(m.kpiSource, `${dir}/kpis.yml`));
+        setDomainPeople(id, parsePeople(m.peopleSource, `${dir}/people.yml`));
+        domainTemplates.set(id, list);
+      })
+      .catch((e: unknown) => {
+        domainLoading.delete(id);
+        throw e;
+      });
+    domainLoading.set(id, p);
+  }
+  return p;
 }
 
 /** Raw tickets with their {{x}} templates, parsed once and shared (Practice and the review queue read these). Do not mutate. */

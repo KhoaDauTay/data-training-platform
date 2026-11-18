@@ -541,6 +541,8 @@ export const en: Record<Key, Msg> = {
   'erd.dropped': (p) => `${count('more table', 'more tables')(p)} hidden: ${p.list}.`,
   'erd.reading': 'Reading the structure…',
   'brief.related': 'Related tables:',
+  'brief.adv': 'Builds on:',
+  'brief.advLoading': 'Related advanced lesson',
   'data.refLocked': 'locked table',
   'nav.data': 'Data',
   'erd.toData': 'See the full structure on the Data page →',

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import templateRaw from '../content/TEMPLATE.md?raw';
 import { optionOrder, parseTicket, textOf } from '../src/tickets';
+import { applyVariant } from '../src/variants';
 
 const NORMAL = `---
 id: ch1-02
@@ -323,5 +324,19 @@ describe('precision (L4)', () => {
     expect(parseTicket(withFm('precision: 0'), 'x').steps[0].precision).toBe(0);
     expect(() => parseTicket(withFm('precision: 1.5'), 'x')).toThrow(/precision/);
     expect(() => parseTicket(withFm('precision: [0]'), 'x')).toThrow(/precision/);
+  });
+});
+
+describe('adv: (Plan 11 §1.4)', () => {
+  const template = templateRaw.replace(/\r\n/g, '\n');
+  const withFm = (line: string) => template.replace(/^---\n/, `---\n${line}\n`);
+  it('mảng id nút nâng cao, giữ qua applyVariant; không có thì undefined', () => {
+    expect(parseTicket(template, 'x').adv).toBeUndefined();
+    const t = parseTicket(withFm('adv: [a3, b2]'), 'x');
+    expect(t.adv).toEqual(['a3', 'b2']);
+    expect(applyVariant(t, 0).adv).toEqual(['a3', 'b2']);
+    for (const bad of ['adv: a3', 'adv: []', 'adv: [A3]', 'adv: [e1]', 'adv: [a123]', 'adv: [window_agg]']) {
+      expect(() => parseTicket(withFm(bad), 'x'), bad).toThrow(/adv:/);
+    }
   });
 });

@@ -1,10 +1,11 @@
 import { getLang, t, type Key } from '../i18n';
-import { generalNow } from '../content';
+import { generalNow, loadGeneral } from '../content';
 import { activeDomain, domainSchemaName } from '../domains';
 import { DRILL_ID } from '../save';
 import { LANE_XP } from '../lanes';
 import { roleLine } from '../people';
 import { chaptersOf, nextTicket, SKILLS, xpFor } from '../progress';
+import { hashOf } from '../route';
 import { ROUTES } from '../scene';
 import { compareShape, shapeOf, type Kind, type Shape } from '../shape';
 import { framePrice, hintsShown, isClosed, isStory, payFrame, schemaOf, useHint, workKey } from '../session';
@@ -305,6 +306,24 @@ function relatedLine(tk: Ticket): HTMLElement | null {
   return line;
 }
 
+/**
+ * Plan 11 §1.4: "Relies on:" links to the advanced General nodes a task applies (domain -> General only, L82). Titles come
+ * from the General chunk, fetched only when there are ids; until then (or if it fails) each link reads "Related advanced
+ * lesson" and still works. The line is refilled in place, never through rerender() (a failed load would retry in a loop).
+ */
+export function advLine(ids: string[], linkClass = ''): HTMLElement | null {
+  if (!ids.length) return null;
+  const line = h('span', { class: 'inline-flex flex-wrap items-center gap-x-1.5' });
+  const fill = () => {
+    const nodes = generalNow()?.nodes;
+    line.replaceChildren(h('span', { class: 'text-muted' }, t('brief.adv')), ...ids.map((id) => h('a', { href: `${hashOf('learn')}/adv/${id}`, class: linkClass },
+      nodes?.find((n) => n.id === id)?.title[getLang()] ?? t('brief.advLoading'))));
+  };
+  fill();
+  if (!generalNow()) loadGeneral().then(fill, () => {});
+  return line;
+}
+
 /** Left pane for `tk` (not necessarily the selected ticket: Plan 1c renders practice tickets here). Replaces host's children. */
 export function renderBrief(host: HTMLElement, tk: Ticket, stepIndex: number): void {
   const x = textOf(tk, getLang());
@@ -336,6 +355,7 @@ export function renderBrief(host: HTMLElement, tk: Ticket, stepIndex: number): v
       : null,
     isDone ? null : tk.steps[stepIndex].lab ? labCard(tk.steps[stepIndex].solution) : shapeCard(tk, stepIndex),
     relatedLine(tk),
+    tk.adv ? h('p', { class: 'my-3 text-sm' }, advLine(tk.adv)) : null,
     h('div', { 'data-brief-extra': '' }), // modes.ts puts skill chips, chapter goals and the lane note here
     exampleCard(tk, x),
     isStory() && !isDone ? lessonSlot(tk.grants) : null, // seen lessons (or "I know SQL") are one line each

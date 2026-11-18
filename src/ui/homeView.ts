@@ -21,6 +21,7 @@ import { upsert } from '../registry';
 import { hashOf } from '../route';
 import { textOf, type Ticket } from '../tickets';
 import { avatar } from './avatar';
+import { advLine } from './brief';
 import { icon, skillIcon, type IconName } from './icons';
 import { byId, h, nodes } from './dom';
 import { artSlot, illustration } from '../art/load';
@@ -199,6 +200,8 @@ function chapterRow(c: ChapterCard): HTMLLIElement {
     h('a', { href: `${hashOf('learn')}/skill/${id}`, class: cx(ABOVE, known.has(id) ? 'text-good' : 'text-muted') }, SKILLS.find((s) => s.id === id)?.label[lang] ?? id, known.has(id) ? ' ✓' : '')];
   const short = h('span', {}, t('home.reliesOn', { skills: '' }), ...ids.slice(0, 2).flatMap(skillLink),
     ids.length > 2 ? h('a', { href: `${hashOf('learn')}/sql/${c.chapter}`, class: cx(ABOVE, 'inline-block min-h-6 min-w-6 text-center text-muted') }, ` +${ids.length - 2}`) : null);
+  // Plan 11 §1.4: the advanced nodes the chapter's tasks apply (Finance only: other domains have no adv:, so no General fetch).
+  const adv = advLine([...new Set(app.tickets.filter((x) => x.chapter === c.chapter).flatMap((x) => x.adv ?? []))], ABOVE);
   return listRow({
     lead: closed
       ? icon('lock', 'size-5 text-muted')
@@ -206,7 +209,7 @@ function chapterRow(c: ChapterCard): HTMLLIElement {
         ? h('span', { class: 'grid size-10 place-items-center rounded-full bg-emerald-700 text-white' }, icon('check', 'size-5'))
         : h('span', { class: cx('grid size-10 place-items-center rounded-full text-lg font-bold', chapterColor(c.chapter).chip) }, String(c.chapter)),
     title: `${c.chapter} · ${chapterTitle(c.chapter, lang)}`,
-    sub: closed ? (c.status === 'soon' ? t('home.soonHint') : t('home.lockedAfter', { n: c.chapter - 1 })) : short,
+    sub: closed ? (c.status === 'soon' ? t('home.soonHint') : t('home.lockedAfter', { n: c.chapter - 1 })) : adv ? h('span', { class: 'flex flex-wrap gap-x-3' }, short, adv) : short,
     action: closed ? statusPill(c) : h('a', { href: `${hashOf('learn')}/sql/${c.chapter}`, class: 'no-underline', title: t('learn.module', { n: c.chapter, title: moduleTitle(c.chapter, lang) }) }, statusPill(c)),
     current: c.status === 'current',
   });
