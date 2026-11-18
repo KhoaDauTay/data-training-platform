@@ -488,3 +488,7 @@ Kiểm lại: tsc sạch; `npm test` 64 file, 2913 test xanh, không còn unhand
 | ux #6, #7, #9, #10, #11 | Ổ khóa rail Lộ trình, bản đồ E-com bắc–nam, chữ phím tắt trên mobile, cuộn tour/brief, tab Cột của drill | Để lại (L80) |
 | ux | `navLock` ở E-com khóa Sandbox/Dữ liệu tới khi xong việc 1 của E-com | Để lại: nhất quán theo domain, không phải lỗi |
 | content | Reflect E-com: đáp án đúng đôi khi dài nhất | Để lại: review chỉ nêu kết luận đánh giá thăng tiến |
+
+## v11 live (2026-11-18)
+
+- **Backlog v12:** màn chào (Lily) khi người chơi vào thẳng `#/d/ecommerce` vẫn kể câu chuyện Cargo Query Logistics / 12 chương; nên theo domain đang mở (Chợ Lồng Đèn, 6 chương). Thấy trên site live, chưa sửa.
