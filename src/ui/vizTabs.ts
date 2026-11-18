@@ -4,7 +4,7 @@ import { t } from '../i18n';
 import { hashOf } from '../route';
 import type { SchemaId } from '../domains';
 import { activeSchema, activeTicket, session } from '../session';
-import { app, erMeta, selected, textValues, unlockedTables } from '../state';
+import { app, erMeta, selected, showsParents, textValues, unlockedTables } from '../state';
 import { chapterColor, THEME_EVENT } from '../theme';
 import { erDefinition, relatedTables, tablesInQuery, type ErMetadata } from '../viz/erd';
 import { memoByKey } from '../viz/memo';
@@ -135,7 +135,7 @@ function scoped(meta: ErMetadata): Scoped {
   const tk = activeTicket();
   const all = { tables: visibleTables(), dropped: [], switchable: false };
   if (!tk) return all;
-  const r = relatedTables(tk.tables, unlockedTables(), meta.cons);
+  const r = relatedTables(tk.tables, unlockedTables(), meta.cons, 10, showsParents(tk));
   if (r.tables.length === 0) return all; // no `tables` in the ticket: nothing to scope to
   return app.schemaScope === 'all' ? { ...all, switchable: true } : { tables: [...r.tables].sort(), dropped: [...r.dropped].sort(), switchable: true };
 }

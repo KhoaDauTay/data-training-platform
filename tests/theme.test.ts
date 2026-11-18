@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { loadTickets } from '../src/content';
 import { CHAPTERS } from '../src/progress';
-import { CHAPTER_COLOR, chapterColor, cx, DEPT, deptColor } from '../src/theme';
+import { CHAPTER_COLOR, chapterColor, cx, DEPT, deptColor, thanksKey } from '../src/theme';
 import css from '../src/style.css?raw';
 
 /** WCAG 2.x relative luminance and contrast ratio. */
@@ -84,5 +84,20 @@ describe('theme', () => {
     expect(tokens(':root')).toMatchObject({ bg: '#fbf7f0', accent: '#0f766e', sun: '#ffe9bd', 'sun-ink': '#5c3d00' });
     expect(tokens(':root[data-theme=dark]')).toMatchObject({ bg: '#1a1714', accent: '#5ed3c3', sun: '#4a3a17' });
     expect(css).toMatch(/--r-card:\s*20px;\s*--r-ctl:\s*14px;/);
+  });
+});
+
+describe('L1 (v12.0): lời cảm ơn', () => {
+  it('mỗi phòng 4 câu khác nhau', () => {
+    for (const [name, d] of Object.entries(DEPT)) expect(new Set(d.thanks).size, name).toBe(4);
+  });
+  it('cùng việc cùng câu; việc liền nhau khác câu, cả khi sang chương', () => {
+    expect(thanksKey('Ops', 'ch3-02')).toBe(thanksKey('Ops', 'ch3-02'));
+    for (let n = 1; n < 6; n++) expect(thanksKey('Ops', `ch3-0${n}`)).not.toBe(thanksKey('Ops', `ch3-0${n + 1}`));
+    expect(thanksKey('Sales', 'ch3-05')).not.toBe(thanksKey('Sales', 'ch4-01'));
+    expect(thanksKey('Sales', 'ch4-06')).not.toBe(thanksKey('Sales', 'ch5-01'));
+    expect(thanksKey('Finance', 'ecom-ch2-03')).not.toBe(thanksKey('Finance', 'ecom-ch2-04'));
+    expect(thanksKey('Finance', 'ecom-ch2-05')).not.toBe(thanksKey('Finance', 'ecom-ch3-01'));
+    expect(thanksKey('Nobody', 'x')).toMatch(/^chat\.thanksOps/);
   });
 });

@@ -2,10 +2,11 @@ import { generalNow, loadTicketTemplates } from './content';
 import { learnedSkills } from './home';
 import { dueSkills, localDay, QUEUE_MAX, reviewQueue, warmupQueue, type PracticeItem } from './practice';
 import { currentChapter, SKILLS } from './progress';
-import { activeDomain, domainSchemaId, type SchemaId } from './domains';
+import { activeDomain, domainSchemaId, type DomainId, type SchemaId } from './domains';
 import type { Drill } from './general';
 import { domainSlot, DRILL_ID, SANDBOX_DRAFT_MAX } from './save';
 import { app, done, draftKey, selected, stepKey } from './state';
+import { readJson, writeJson, type KV } from './storage';
 import type { Ticket } from './tickets';
 
 export interface PracticeRun {
@@ -97,11 +98,22 @@ export const SANDBOX_STARTER = 'SELECT * FROM ports LIMIT 20';
 export const sandboxStarter = (): string => (activeDomain() === 'logistics' ? SANDBOX_STARTER : 'SELECT * FROM products LIMIT 20');
 
 /** `undefined` lets the caller fall back (initialDoc: the ticket's `starter`). */
+/** L5 (v12.0): device pref, the domains whose Sandbox the player has edited; there an empty draft stays empty. Never in Save. */
+export const SANDBOX_SEEN_KEY = 'cargo-query/sandbox-seen';
+const seenList = (storage?: KV): string[] => {
+  const v = readJson<unknown>(SANDBOX_SEEN_KEY, storage);
+  return Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string') : [];
+};
+export const sandboxSeen = (d: DomainId, storage?: KV): boolean => seenList(storage).includes(d);
+export function markSandboxSeen(d: DomainId, storage?: KV): void {
+  if (!sandboxSeen(d, storage)) writeJson(SANDBOX_SEEN_KEY, [...seenList(storage), d], storage);
+}
+
 export function readDraft(): string | undefined {
   const m = session.mode;
   if (m.kind === 'sandbox') {
     const draft = domainSlot(app.save, activeDomain()).sandboxDraft;
-    return draft.trim() ? draft : sandboxStarter();
+    return draft.trim() ? draft : sandboxSeen(activeDomain()) ? '' : sandboxStarter();
   }
   if (m.kind === 'practice') return m.run.draft === '' ? undefined : m.run.draft;
   return app.save.drafts[workKey()];
@@ -109,7 +121,10 @@ export function readDraft(): string | undefined {
 
 export function writeDraft(v: string): void {
   const m = session.mode;
-  if (m.kind === 'sandbox') domainSlot(app.save, activeDomain()).sandboxDraft = v.slice(0, SANDBOX_DRAFT_MAX);
+  if (m.kind === 'sandbox') {
+    domainSlot(app.save, activeDomain()).sandboxDraft = v.slice(0, SANDBOX_DRAFT_MAX);
+    if (v !== sandboxStarter()) markSandboxSeen(activeDomain()); // the player's own edit, not the starter loading
+  }
   else if (m.kind === 'practice') {
     if (!practiceFinished()) m.run.draft = v;
   }

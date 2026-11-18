@@ -83,6 +83,7 @@ Written against HEAD `fe218f1`, which already includes L82/L83 (c6be07a) and L85
 | D10-25 | **Metric "data ready"** = `performance.now()` at the first moment the top bar shows the green dot **and** no `domain.loading`/`ecom.loading` notice is visible. Also record `db:ensure:<schema>` (after only). 3 runs each for Logistics, E-commerce direct and SQL only, Edge, `vite preview` build, idle machine, warm HTTP cache. | Same metric before and after; HEAD has no ensure measure. |
 | D10-26 | **L3 and L6 move to Plan 10a** (user, 2026-11-18). | See "Out of scope". |
 | D10-27 | **T10 as built:** `cellKey` keeps `dateKey` (the plan's Step 2 snippet predates it); the column-detail check (`columnCheck`, L84) gets `precision` too, so a strict cell is reported in its column. `cellKey` now has a second parameter, so `row.map(cellKey)` would pass the array index as precision: every caller wraps it (`(c) => cellKey(c)`, tests/variants and ecomContent). | Found while implementing Task 10. |
+| D10-28 | **T11 as built:** `thanksKey` uses index = number + 2 x chapter, not chapter + number (D10-20): with 6-ticket chapters, chN-06 and chN+1-01 gave the same line. The new index differs for consecutive tickets also across chapters of 3 to 6 tickets (test adds ch4-06 to ch5-01 and ecom-ch2-05 to ecom-ch3-01). | Found while implementing Task 11. |
 
 ## Global Constraints
 

@@ -1,9 +1,9 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import indexHtml from '../index.html?raw';
 import { PREFS_KEY } from '../src/i18n';
 import { getTheme, parseThemePref, resolveTheme, setTheme } from '../src/theme';
 import { stepKey, ticketOfKey } from '../src/save';
-import { readDraft, SANDBOX_STARTER, session } from '../src/session';
+import { readDraft, SANDBOX_STARTER, session, writeDraft } from '../src/session';
 import { app, initialDoc } from '../src/state';
 import { COACH_KEY, coachDone } from '../src/ui/coach';
 import { parseSidePref, SIDE_KEY } from '../src/ui/sidebar';
@@ -120,5 +120,23 @@ describe('Sandbox lần đầu (v4 §B.3)', () => {
     app.save.sandboxDraft = 'SELECT 1';
     expect(readDraft()).toBe('SELECT 1');
     session.mode = { kind: 'story' };
+  });
+});
+
+describe('L5 (v12.0): Sandbox đã sửa thì không hiện lại câu mẫu', () => {
+  it('câu mẫu chỉ tới khi người chơi gõ khác câu mẫu; theo từng lĩnh vực', () => {
+    const data = new Map<string, string>();
+    vi.stubGlobal('window', { localStorage: { getItem: (k: string) => data.get(k) ?? null, setItem: (k: string, v: string) => void data.set(k, v) } });
+    session.mode = { kind: 'sandbox' };
+    app.save.sandboxDraft = '';
+    expect(readDraft()).toBe(SANDBOX_STARTER);
+    writeDraft(SANDBOX_STARTER); // the starter itself is not an edit
+    expect(readDraft()).toBe(SANDBOX_STARTER);
+    writeDraft('SELECT 1');
+    writeDraft('');
+    expect(readDraft()).toBe('');
+    expect(JSON.parse(data.get('cargo-query/sandbox-seen')!)).toEqual(['logistics']);
+    session.mode = { kind: 'story' };
+    vi.unstubAllGlobals();
   });
 });

@@ -7,7 +7,7 @@ import type { LoadProgress } from './db/loadProgress';
 import type { QueryResult, RunOpts } from './db/run';
 import type { Key, Lang, Params } from './i18n';
 import { laneTables } from './lanes';
-import { currentChapter, tablesUnlocked } from './progress';
+import { currentChapter, domainSkills, tablesUnlocked } from './progress';
 import { derive } from './scene';
 import { emptySave, stepKey, writeSave } from './save';
 import { markDay } from './lily';
@@ -168,3 +168,9 @@ export function expectedResult(solution: string, schema: SchemaId = domainSchema
   return p;
 }
 export const expectedShape = (solution: string, schema: SchemaId = domainSchemaId()): Promise<Shape> => expectedResult(solution, schema).then(shapeOf);
+
+/** L2 (v12.0): FK parent tables join the related tables only from the chapter that teaches JOIN in the open domain. */
+export function showsParents(tk: Ticket): boolean {
+  const join = domainSkills(app.tickets).find((s) => s.id === 'join');
+  return !!join && tk.chapter >= join.chapter;
+}

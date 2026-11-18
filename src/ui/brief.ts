@@ -6,8 +6,8 @@ import { chaptersOf, nextTicket, SKILLS, xpFor } from '../progress';
 import { ROUTES } from '../scene';
 import { compareShape, shapeOf, type Kind, type Shape } from '../shape';
 import { hintsShown, isClosed, isStory, schemaOf, useHint } from '../session';
-import { actions, app, done, erMeta, expectedShape, persist, stepKey, unlockedTables } from '../state';
-import { chapterColor, cx, DEPT_CHIP, deptColor, deptOf, PILL } from '../theme';
+import { actions, app, done, erMeta, expectedShape, persist, showsParents, stepKey, unlockedTables } from '../state';
+import { chapterColor, cx, DEPT_CHIP, deptColor, PILL, thanksKey } from '../theme';
 import { optionOrder, textOf, type Beat, type Ticket, type TicketText } from '../tickets';
 import { relatedTables } from '../viz/erd';
 import { mascot } from './mascots';
@@ -178,7 +178,7 @@ function sentBubbles(tk: Ticket): HTMLElement {
     h('p', { class: 'm-0 max-w-[85%] self-end rounded-2xl rounded-tr-sm bg-accent-soft px-4 py-2' }, t('chat.sent')),
     h('p', { class: 'm-0 flex max-w-[85%] items-start gap-2 self-start' },
       avatar(tk.from),
-      h('span', { class: 'rounded-2xl rounded-tl-sm bg-code px-4 py-2' }, t(deptOf(tk.from.dept).thanks))));
+      h('span', { class: 'rounded-2xl rounded-tl-sm bg-code px-4 py-2' }, t(thanksKey(tk.from.dept, tk.id)))));
 }
 
 /** The SQL that passed the grader; saves from before `graded` existed fall back to the draft. */
@@ -221,7 +221,7 @@ function relatedLine(tk: Ticket): HTMLElement | null {
   const fill = (tables: string[]) => line.replaceChildren(h('span', { class: 'text-muted' }, t('brief.related')), ...[...tables].sort().map((x) =>
     h('button', { type: 'button', class: 'px-1.5 py-0 font-mono text-sm', onclick: () => actions.showTab('erd') }, x)));
   fill(core);
-  erMeta(domainSchemaName()).then((m) => fill(relatedTables(tk.tables, open, m.cons).tables), () => {}); // DB not ready or failed: the task's own tables stay
+  erMeta(domainSchemaName()).then((m) => fill(relatedTables(tk.tables, open, m.cons, 10, showsParents(tk)).tables), () => {}); // DB not ready or failed: the task's own tables stay
   return line;
 }
 

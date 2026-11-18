@@ -3,7 +3,7 @@ import { runSandboxed } from '../src/db/run';
 import { GAME_SCHEMA } from '../src/domains';
 import { loadTickets } from '../src/content';
 import { tablesUnlocked } from '../src/progress';
-import { app, textValues } from '../src/state';
+import { app, showsParents, textValues } from '../src/state';
 import {
   distinctValuesSql, erColumnsSql, erDefinition, erRowCountsSql, loadErMetadata, mermaidName, relatedTables, tablesInQuery, TEXT_TYPES, toDistinctValues,
   type ErColumn, type ErConstraint,
@@ -119,6 +119,11 @@ describe('relatedTables (ui-ux-v4 §4)', () => {
     expect(relatedTables(['a'], all, cons).tables).toEqual(['a']);
   });
 
+  it('L2: withParents false = chỉ bảng của việc và cầu nối, không bảng cha FK', () => {
+    expect(relatedTables(['c'], all, cons, 10, false)).toEqual({ tables: ['c'], dropped: [] });
+    expect(relatedTables(['c', 'y'], all, cons, 10, false)).toEqual({ tables: ['c', 'y', 'b', 'x'], dropped: [] });
+  });
+
   it('thêm bảng cầu nối khi bảng của việc không liên thông', () => {
     // c and y meet through b and x (c → b ← x ← y); a is a parent of b.
     expect(relatedTables(['c', 'y'], all, cons)).toEqual({ tables: ['c', 'y', 'b', 'x', 'a'], dropped: [] });
@@ -219,5 +224,15 @@ describe('textValues (src/state.ts)', () => {
     const perTable = sqls.filter((s) => s.includes('ARRAY(SELECT DISTINCT')).map((s) => s.match(/ FROM (\w+) WHERE/)![1]);
     expect(perTable).toContain('ports');
     expect(perTable.length).toBe(new Set(perTable).size);
+  });
+});
+
+describe('L2: bảng cha FK chỉ từ chương dạy JOIN', () => {
+  it('Logistics: chương 1–2 không, từ chương 3 có', () => {
+    app.tickets = loadTickets('logistics');
+    const ch = (n: number) => app.tickets.find((x) => x.chapter === n)!;
+    expect(showsParents(ch(1))).toBe(false);
+    expect(showsParents(ch(2))).toBe(false);
+    expect(showsParents(ch(3))).toBe(true);
   });
 });

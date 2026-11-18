@@ -65,9 +65,10 @@ export interface Related { tables: string[]; dropped: string[] }
  * Tables to show for a task (ui-ux-v4 §4): the task's unlocked tables, the shortest bridges that connect them,
  * then every parent reached child → parent through FKs (any depth, self-references skipped). Never parent → child:
  * `shipments` alone has about twelve children. Over `max`, parents referenced by the fewest shown tables go first
- * (then by name); core and bridges are never cut.
+ * (then by name); core and bridges are never cut. `withParents` false (before the JOIN chapter, L2): only the task's
+ * tables and the bridges between them.
  */
-export function relatedTables(core: string[], unlocked: string[], cons: ErConstraint[], max = 10): Related {
+export function relatedTables(core: string[], unlocked: string[], cons: ErConstraint[], max = 10, withParents = true): Related {
   const u = new Set(unlocked);
   const fks = cons.filter((c) => c.kind === 'FOREIGN KEY' && c.refTable && c.refTable !== c.table && u.has(c.table) && u.has(c.refTable));
   const parentsOf = new Map<string, Set<string>>();
@@ -108,7 +109,7 @@ export function relatedTables(core: string[], unlocked: string[], cons: ErConstr
   }
 
   const parents = new Set<string>();
-  for (const stack = [...keep]; stack.length;) {
+  if (withParents) for (const stack = [...keep]; stack.length;) {
     for (const p of parentsOf.get(stack.pop()!) ?? []) if (!keep.has(p) && !parents.has(p)) { parents.add(p); stack.push(p); }
   }
   const all = new Set([...keep, ...parents]);

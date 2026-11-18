@@ -46,22 +46,32 @@ export const chapterColor = (n: number): ChapterColor => CHAPTER_COLOR[n] ?? NEU
 
 /**
  * Everything keyed by department. Department names are never translated, so the key is the raw `from.dept`.
- * chip: label colours · shirt/backdrop: portrait colours (decorative, avatar.ts) · thanks: the sender's thank-you (brief.ts).
+ * chip: label colours · shirt/backdrop: portrait colours (decorative, avatar.ts) · thanks: four thank-you lines, one per ticket by thanksKey (brief.ts).
  */
-export interface Dept { chip: string; shirt: string; backdrop: string; thanks: Key }
+export interface Dept { chip: string; shirt: string; backdrop: string; thanks: readonly [Key, Key, Key, Key] }
 export const DEPT: Record<string, Dept> = {
-  Ops: { chip: 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-200', shirt: '#1d4ed8', backdrop: '#dbeafe', thanks: 'chat.thanksOps' },
-  Sales: { chip: 'bg-pink-100 text-pink-800 dark:bg-pink-950 dark:text-pink-200', shirt: '#be185d', backdrop: '#fce7f3', thanks: 'chat.thanksSales' },
-  Finance: { chip: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200', shirt: '#047857', backdrop: '#d1fae5', thanks: 'chat.thanksFinance' },
-  Customs: { chip: 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-200', shirt: '#b45309', backdrop: '#fef3c7', thanks: 'chat.thanksCustoms' },
-  CS: { chip: 'bg-teal-100 text-teal-800 dark:bg-teal-950 dark:text-teal-200', shirt: '#0f766e', backdrop: '#ccfbf1', thanks: 'chat.thanksCS' },
-  Management: { chip: 'bg-violet-100 text-violet-800 dark:bg-violet-950 dark:text-violet-200', shirt: '#5b21b6', backdrop: '#ede9fe', thanks: 'chat.thanksManagement' },
-  Marketing: { chip: 'bg-orange-100 text-orange-800 dark:bg-orange-950 dark:text-orange-200', shirt: '#c2410c', backdrop: '#ffedd5', thanks: 'chat.thanksMarketing' },
-  Category: { chip: 'bg-lime-100 text-lime-800 dark:bg-lime-950 dark:text-lime-200', shirt: '#4d7c0f', backdrop: '#ecfccb', thanks: 'chat.thanksCategory' },
-  IT: { chip: 'bg-cyan-100 text-cyan-800 dark:bg-cyan-950 dark:text-cyan-200', shirt: '#0e7490', backdrop: '#cffafe', thanks: 'chat.thanksIT' },
+  Ops: { chip: 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-200', shirt: '#1d4ed8', backdrop: '#dbeafe', thanks: ['chat.thanksOps', 'chat.thanksOps2', 'chat.thanksOps3', 'chat.thanksOps4'] },
+  Sales: { chip: 'bg-pink-100 text-pink-800 dark:bg-pink-950 dark:text-pink-200', shirt: '#be185d', backdrop: '#fce7f3', thanks: ['chat.thanksSales', 'chat.thanksSales2', 'chat.thanksSales3', 'chat.thanksSales4'] },
+  Finance: { chip: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200', shirt: '#047857', backdrop: '#d1fae5', thanks: ['chat.thanksFinance', 'chat.thanksFinance2', 'chat.thanksFinance3', 'chat.thanksFinance4'] },
+  Customs: { chip: 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-200', shirt: '#b45309', backdrop: '#fef3c7', thanks: ['chat.thanksCustoms', 'chat.thanksCustoms2', 'chat.thanksCustoms3', 'chat.thanksCustoms4'] },
+  CS: { chip: 'bg-teal-100 text-teal-800 dark:bg-teal-950 dark:text-teal-200', shirt: '#0f766e', backdrop: '#ccfbf1', thanks: ['chat.thanksCS', 'chat.thanksCS2', 'chat.thanksCS3', 'chat.thanksCS4'] },
+  Management: { chip: 'bg-violet-100 text-violet-800 dark:bg-violet-950 dark:text-violet-200', shirt: '#5b21b6', backdrop: '#ede9fe', thanks: ['chat.thanksManagement', 'chat.thanksManagement2', 'chat.thanksManagement3', 'chat.thanksManagement4'] },
+  Marketing: { chip: 'bg-orange-100 text-orange-800 dark:bg-orange-950 dark:text-orange-200', shirt: '#c2410c', backdrop: '#ffedd5', thanks: ['chat.thanksMarketing', 'chat.thanksMarketing2', 'chat.thanksMarketing3', 'chat.thanksMarketing4'] },
+  Category: { chip: 'bg-lime-100 text-lime-800 dark:bg-lime-950 dark:text-lime-200', shirt: '#4d7c0f', backdrop: '#ecfccb', thanks: ['chat.thanksCategory', 'chat.thanksCategory2', 'chat.thanksCategory3', 'chat.thanksCategory4'] },
+  IT: { chip: 'bg-cyan-100 text-cyan-800 dark:bg-cyan-950 dark:text-cyan-200', shirt: '#0e7490', backdrop: '#cffafe', thanks: ['chat.thanksIT', 'chat.thanksIT2', 'chat.thanksIT3', 'chat.thanksIT4'] },
 };
-const NEUTRAL_DEPT: Dept = { chip: 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-100', shirt: '#475569', backdrop: '#e2e8f0', thanks: 'chat.thanksOps' };
+const NEUTRAL_DEPT: Dept = { chip: 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-100', shirt: '#475569', backdrop: '#e2e8f0', thanks: ['chat.thanksOps', 'chat.thanksOps2', 'chat.thanksOps3', 'chat.thanksOps4'] };
 export const deptOf = (dept: string): Dept => DEPT[dept] ?? NEUTRAL_DEPT;
+/**
+ * L1 (v12.0): one of the sender's department's four thank-you lines, fixed per ticket. Index = number + 2 × chapter
+ * (D10-20 said chapter + number, which repeats from a 6-ticket chapter's last ticket to the next chapter's first);
+ * consecutive tickets differ, also across chapters of 3 to 6 tickets. Other ids (lanes) use a string hash.
+ */
+export function thanksKey(dept: string, ticketId: string): Key {
+  const m = /ch(\d+)-(\d+)$/.exec(ticketId);
+  const i = m ? Number(m[2]) + 2 * Number(m[1]) : [...ticketId].reduce((a, c) => (a * 31 + c.charCodeAt(0)) >>> 0, 0);
+  return deptOf(dept).thanks[i % 4];
+}
 export const deptColor = (dept: string): string => deptOf(dept).chip;
 
 export const CARD = 'rounded-(--r-card) bg-panel ring-1 ring-line';
