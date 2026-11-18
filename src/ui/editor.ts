@@ -81,6 +81,7 @@ export function fillSpec(state: EditorState, value: string | undefined, [from, l
 }
 
 export function createEditor(parent: HTMLElement, opts: EditorOptions): Editor {
+  let flashTimer: ReturnType<typeof setTimeout> | undefined;
   const schemaConf = new Compartment();
   const labelConf = new Compartment();
   const view = new EditorView({
@@ -116,7 +117,9 @@ export function createEditor(parent: HTMLElement, opts: EditorOptions): Editor {
     },
     fill(value, select) {
       view.dispatch(fillSpec(view.state, value, select));
-      if (value !== undefined) setTimeout(() => { if (view.dom.isConnected) view.dispatch({ effects: flashOff, annotations: Transaction.addToHistory.of(false) }); }, 600);
+      if (value === undefined) return;
+      clearTimeout(flashTimer); // a second fill within 600 ms keeps its own full flash
+      flashTimer = setTimeout(() => { if (view.dom.isConnected) view.dispatch({ effects: flashOff, annotations: Transaction.addToHistory.of(false) }); }, 600);
     },
     undo: () => void undo(view),
     setSchema(ns) {

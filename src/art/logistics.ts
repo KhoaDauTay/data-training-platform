@@ -149,11 +149,19 @@ export function harborScene(h: Harbor, opts: { ambient: boolean; current: number
     s('text', { x, y, 'text-anchor': anchor, 'font-family': FONT, 'font-size': size, 'font-weight': 700, fill }, label);
   /** S1: a place name on a translucent pill (never straight on the picture); the whole label hides below lg (L23/L34). */
   const label = (x: number, y: number, size: number, str: string, anchor: 'start' | 'middle' | 'end' = 'start'): SVGGElement => {
-    const w = str.length * size * 0.6 + 16;
-    const left = anchor === 'start' ? x - 8 : anchor === 'middle' ? x - w / 2 : x - w + 8;
-    return s('g', { class: 'max-lg:hidden' },
-      s('rect', { x: left, y: y - size - 3, width: w, height: size + 10, rx: (size + 10) / 2, fill: '#0f172a', 'fill-opacity': 0.66 }),
-      text(x, y, size, '#f8fafc', str, anchor));
+    const fit = (tw: number): [number, number] => {
+      const w = tw + 16;
+      return [anchor === 'start' ? x - 8 : anchor === 'middle' ? x - w / 2 : x - w + 8, w];
+    };
+    const [left, w] = fit(str.length * size * 0.55); // a guess until the text is laid out
+    const pill = s('rect', { x: left, y: y - size - 3, width: w, height: size + 10, rx: (size + 10) / 2, fill: '#0f172a', 'fill-opacity': 0.66 });
+    const txt = text(x, y, size, '#f8fafc', str, anchor);
+    // v6 review: the pill hugs the real text (the guess left a wide empty end on one side); hidden below lg = no layout, keep the guess
+    setTimeout(() => { // after the caller has put the scene in the page
+      const tw = txt.isConnected ? txt.getComputedTextLength() : 0;
+      if (tw > 0) { const [l, ww] = fit(tw); pill.setAttribute('x', String(l)); pill.setAttribute('width', String(ww)); }
+    });
+    return s('g', { class: 'max-lg:hidden' }, pill, txt);
   };
 
   const yard = s('g', {});
