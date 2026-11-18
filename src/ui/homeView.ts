@@ -235,7 +235,9 @@ function skillsSection(m: HomeModel): HTMLElement {
         lead: h('span', { class: 'grid size-10 place-items-center rounded-full bg-accent-soft text-accent' }, skillIcon(s.skill.id)),
         title: s.skill.label[lang],
         sub: s.state === 'learned' ? t('home.level', { n: s.level, max: LEVELS }) : t(known.has(s.skill.id) ? 'home.skillDrilled' : 'home.skillOpen'),
-        action: onSkill && s.state === 'learned' ? h('button', { type: 'button', class: 'rounded-full px-4 whitespace-nowrap', onclick: () => onSkill(s.skill.id) }, t('prac.skillGo')) : null,
+        // Not under review yet: the row opens the skill's page (lesson + drills), never a row with no way forward (L93).
+        action: onSkill && s.state === 'learned' ? h('button', { type: 'button', class: 'rounded-full px-4 whitespace-nowrap', onclick: () => onSkill(s.skill.id) }, t('prac.skillGo'))
+          : h('a', { href: `${hashOf('learn')}/skill/${s.skill.id}`, class: OUTLINE_LINK }, t('prac.skillLearn')),
       }))))),
     h('p', { class: 'm-0 text-sm text-muted' }, t('home.skillsHint')));
 }

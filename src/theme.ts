@@ -77,8 +77,9 @@ export const deptColor = (dept: string): string => deptOf(dept).chip;
 export const CARD = 'rounded-(--r-card) bg-panel ring-1 ring-line';
 export const PILL = 'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-sm font-semibold';
 export const DEPT_CHIP = 'rounded-md px-2 py-0.5 text-xs font-bold uppercase';
-/** Teal call to action, a pill (v6 §2.1): --on-accent on --accent = 5.5:1 light, 8.9:1 dark. */
-export const BTN_GO = 'rounded-full border-0 bg-accent font-bold text-on-accent shadow-sm hover:brightness-110';
+/** Teal call to action, a pill (v6 §2.1): --on-accent on --accent = 5.5:1 light, 8.9:1 dark. Hover never uses filter/transform: they make the
+ * pill the containing block of a stretched row's ::after (L88), so the cover shrank under the pointer and the click missed (L93). */
+export const BTN_GO = 'rounded-full border-0 bg-accent font-bold text-on-accent shadow-sm hover:shadow-md';
 /** Green Submit (L17): white on emerald-700 = 5.5:1 (the mockup's emerald-600 is 3.8:1). */
 export const BTN_SUBMIT = 'ml-auto rounded-full border-0 bg-emerald-700 px-4 font-bold text-white shadow-sm hover:bg-emerald-800 disabled:bg-code disabled:text-disabled';
 /** Controls on the top bar (V17: --panel, no gradient): --text on --code. */

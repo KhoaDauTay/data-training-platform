@@ -217,7 +217,7 @@ export function practiceHub(): HTMLElement | null {
     h('section', { class: 'space-y-3 rounded-(--r-card) bg-panel p-5 ring-1 ring-line', 'aria-labelledby': 'hub-title' }, head, ...d$.nodes(...kids));
   if (known.size === 0) {
     return wrap(h('p', { class: 'm-0 text-[15px] text-muted' }, lt('hub.empty')),
-      h('a', { href: `${d$.hashOf('learn')}/sql/1`, class: 'font-semibold' }, lt('hub.start')));
+      h('a', { href: `${d$.hashOf('learn')}/sql/1`, class: 'inline-block rounded-full bg-accent px-4 py-2 font-bold text-on-accent no-underline shadow-sm hover:shadow-md' }, lt('hub.start'))); // looks like the call to action it is (BTN_GO, by value: lazy chunk)
   }
   const box = (s: string): number => app.save.review[s]?.box ?? 1;
   const weakest = [...known].sort((a, b) => box(a) - box(b) || ids.indexOf(a) - ids.indexOf(b))[0];

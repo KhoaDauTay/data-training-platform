@@ -15,6 +15,9 @@ const lt = (key: LearnKey, params?: Params): string => learnText(d$.getLang(), d
 
 const LIST = 'm-0 list-none space-y-2 p-0';
 const BTN = 'rounded-full px-4 whitespace-nowrap';
+/** Buttons inside a card whose title link covers it (L88) stay clickable above the cover. */
+const ABOVE = 'relative z-10';
+const cx = (...c: string[]): string => c.join(' ');
 const H2 = 'm-0 text-lg font-bold';
 
 function ctx(g: General): LearnCtx {
@@ -44,7 +47,7 @@ const label = (s: Skill): string => s.label[d$.getLang()];
 
 /** One drill button: "Fill in the frame ✓" (D8a: done drills stay playable, 0 XP). */
 export const drillButton = (d: Drill, done: boolean): HTMLElement =>
-  d$.h('button', { type: 'button', class: BTN, onclick: () => d$.actions.startDrill(d.id) }, kindLabel(d), tick(done));
+  d$.h('button', { type: 'button', class: cx(BTN, ABOVE), onclick: () => d$.actions.startDrill(d.id) }, kindLabel(d), tick(done));
 
 function skillStatus(c: LearnCtx, id: string): string {
   const st = skillState(c, id);
@@ -56,14 +59,15 @@ function skillBlock(c: LearnCtx, s: Skill, heading: 'h2' | 'h3'): HTMLElement {
   const { h } = d$;
   const st = skillState(c, s.id);
   const drills = c.general.bySkill.get(s.id) ?? [];
-  return h('section', { class: 'space-y-3 rounded-(--r-card) bg-panel p-5 ring-1 ring-line' },
+  const card = heading === 'h3'; // a module page: a click anywhere on the card opens the skill page (L88, L93)
+  return h('section', { class: card ? 'relative cursor-pointer space-y-3 rounded-(--r-card) bg-panel p-5 ring-1 ring-line hover:ring-accent' : 'space-y-3 rounded-(--r-card) bg-panel p-5 ring-1 ring-line' },
     h('div', { class: 'flex flex-wrap items-baseline justify-between gap-2' },
-      h(heading, { class: H2 }, heading === 'h3' ? h('a', { href: `${d$.hashOf('learn')}/skill/${s.id}` }, label(s)) : label(s)),
+      h(heading, { class: H2 }, card ? h('a', { href: `${d$.hashOf('learn')}/skill/${s.id}`, class: 'after:absolute after:inset-0' }, label(s)) : label(s)),
       h('span', { class: 'text-sm text-muted' }, `${skillStatus(c, s.id)} · ${lt('learn.drills', { n: st.drills, total: st.total })}`)),
     h('p', { class: 'm-0 text-[15px] text-muted' }, s.when[d$.getLang()]),
     d$.loadLessons().has(s.id)
       ? h('p', { class: 'm-0 flex flex-wrap items-center gap-2' }, h('span', {}, lt('learn.lesson')),
-        h('button', { type: 'button', class: BTN, 'aria-haspopup': 'dialog', onclick: () => d$.openLesson(s.id) }, lt('drill.openLesson'), tick(st.lesson)))
+        h('button', { type: 'button', class: cx(BTN, ABOVE), 'aria-haspopup': 'dialog', onclick: () => d$.openLesson(s.id) }, lt('drill.openLesson'), tick(st.lesson)))
       : null,
     h('div', { class: 'flex flex-wrap items-center gap-2' }, h('span', {}, lt('learn.drillsLine')),
       ...drills.map((d) => drillButton(d, c.save.completed.includes(d.id)))));
@@ -171,7 +175,7 @@ function advPage(c: LearnCtx, x: AdvNode): HTMLElement {
     x.applies ? h('p', { class: 'm-0' }, h('b', {}, lt('learn.usedFor')), ' ', x.applies[lang]) : null,
     x.lesson
       ? h('p', { class: 'm-0 flex flex-wrap items-center gap-2' }, h('span', {}, lt('learn.lesson')),
-        h('button', { type: 'button', class: BTN, 'aria-haspopup': 'dialog', onclick: () => d$.openLesson(x.id, { lesson: x.lesson!, name: () => x.title[d$.getLang()] }) },
+        h('button', { type: 'button', class: cx(BTN, ABOVE), 'aria-haspopup': 'dialog', onclick: () => d$.openLesson(x.id, { lesson: x.lesson!, name: () => x.title[d$.getLang()] }) },
           lt('drill.openLesson'), tick(d$.lessonSeen(x.id))))
       : null,
     x.drills.length
