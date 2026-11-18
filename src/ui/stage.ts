@@ -144,8 +144,13 @@ export function relabelStage(): void {
     })
     .catch((e: unknown) => console.warn('Completion redraw failed:', e));
 }
+/** Jumps `run` to its end state: `fast` for the rAF scenes, `skip` for a GSAP timeline that is playing (ui-ux-v6 §2.3). */
+function finish(run: Run): void {
+  run.fast = true;
+  run.skip?.();
+}
 function skip(): void {
-  if (!current.done) current.fast = true; // jump to the end state; the sentence was already announced
+  if (!current.done) finish(current); // jump to the end state; the sentence was already announced
   else hide();
 }
 
@@ -163,7 +168,7 @@ export function initStage(): void {
   // Leaving the page closes the dock: it belongs to the task just solved and would cover the next page (UI/UX review v10 #10).
   window.addEventListener('hashchange', () => {
     if (stage.hidden) return;
-    current.fast = true;
+    finish(current);
     hide();
   });
 }
@@ -184,7 +189,7 @@ export function playCompletion(tk: Ticket, before: Set<string>, after: Set<strin
   const text = sentence(c);
   byId('announce').textContent = text; // read now, not after the animation (§6)
   if (!load) return;
-  current.fast = true;
+  finish(current);
   current = run;
   dock = load;
   if (load === loadArt) takeNewRoutes(c.after.open); // a lane this completion opens is drawn here, so the map page does not draw it again (D8b-5)

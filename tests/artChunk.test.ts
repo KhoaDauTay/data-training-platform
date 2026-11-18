@@ -19,7 +19,8 @@ describe('art chunk', () => {
   });
   it('takes main code by injection only (D8b-2: a runtime import hoists a shared preload chunk)', () => {
     for (const [file, code] of Object.entries(SRC)) {
-      if (!file.startsWith('../src/art/') || file === '../src/art/load.ts') continue;
+      // load.ts is main; gsap.ts wraps the gsap package (ui-ux-v6 §2.1, tests/gsapChunk.test.ts)
+      if (!file.startsWith('../src/art/') || file === '../src/art/load.ts' || file === '../src/art/gsap.ts') continue;
       for (const spec of staticImports(code)) expect(spec, file).toMatch(/^\.\/[a-zA-Z]+$/);
     }
   });

@@ -25,6 +25,7 @@ const GROUPS = [
   ['ecomart', /^ecommerce-/, 10], // Plan 9: src/art/ecommerce.ts (store scene, delivery map), lazy
   ['ecomseed', /^ecomSeed-/, 10], // Plan 9: src/db/ecom/{schema,seed}.sql, lazy in the worker on ensure('ecom'): 7.6 KB gz -9 measured on the source (D9-16)
   ['gameseed', /^gameSeed-/, 16], // v12.0 P1 (Plan 10 D10-1): src/db/{schema,seed}.sql, lazy in the worker on ensure('game'): 13.3 KB gz -9 on the source
+  ['gsap', /^gsap-/, 50], // ui-ux-v6 §2.1: src/art/gsap.ts (GSAP 3.15.1 core + MorphSVG, DrawSVG, MotionPath, Physics2D, CustomEase), lazy: 45 KB measured in v6
   ['frame', /^frame-/, 3], // v13 (product-design-v8 §4): src/frame.ts, the hint scaffold, lazy on the first "fill the scaffold" (brief.ts, lessonCard.ts): 2.9 KB gz -9 measured
   ['rest', /./, 1560],
 ];
@@ -43,5 +44,15 @@ for (const [name, , budget] of GROUPS) {
   const bad = kb === undefined || kb > budget; // a missing group means the build changed shape: look before deploying
   fail ||= bad;
   console.log(`${bad ? 'FAIL' : 'ok  '} ${name.padEnd(7)} ${kb === undefined ? 'not found' : `${kb.toFixed(0).padStart(5)} KB gz / ${budget} KB`}`);
+}
+// ui-ux-v6 §2.1/§2.2: no GSAP in main, and GSAP's copyright notice kept in its chunk (its licence forbids removing it).
+const text = (re) => files.filter(([f]) => re.test(f)).map(([, path]) => readFileSync(path, 'utf8')).join(' ');
+const gsapText = text(/^gsap-.*\.js$/);
+for (const [ok, what] of [
+  [!text(/^index-.*\.js$/).includes('GreenSock'), 'main has no GSAP'],
+  [/@license Copyright 2008-\d+, GreenSock/.test(gsapText), 'gsap chunk keeps its @license notice'],
+]) {
+  fail ||= !ok;
+  console.log(`${ok ? 'ok  ' : 'FAIL'} ${what}`);
 }
 process.exit(fail ? 1 : 0);

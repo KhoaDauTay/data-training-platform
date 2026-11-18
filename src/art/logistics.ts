@@ -317,10 +317,11 @@ export function routeMap(h: Harbor): MapParts {
   }
   const rings = s('g', { 'aria-hidden': 'true', 'pointer-events': 'none' });
   const wake = s('path', { fill: 'none', 'stroke-width': 5, 'stroke-linecap': 'round', opacity: 0, 'aria-hidden': 'true' });
-  const ship = s('g', { opacity: 0, 'aria-hidden': 'true' },
+  // v6 T1: the inner <g> is the ship's mirror (set by the GSAP sail, never by GSAP itself); the outer one takes the motion transform.
+  const ship = s('g', { opacity: 0, 'aria-hidden': 'true' }, s('g', {},
     s('path', { d: 'M-11 -2 L11 -2 L8 5 L-8 5 Z', fill: '#1e3a8a' }),
     s('rect', { x: -7, y: -7, width: 8, height: 5, fill: '#d97706' }),
-    s('rect', { x: 2, y: -9, width: 5, height: 7, fill: '#f8fafc', stroke: '#1e3a8a', 'stroke-width': 0.8 }));
+    s('rect', { x: 2, y: -9, width: 5, height: 7, fill: '#f8fafc', stroke: '#1e3a8a', 'stroke-width': 0.8 })));
   // L23/L34: 14-unit labels are ≥ ~13px from lg (≥ 937px for 980 units) and too small below it, so they hide below lg (Home lists routeItems() as HTML there)
   const svg = s('svg', { viewBox: '0 0 980 260', class: 'block w-full max-lg:[&_text]:hidden', role: 'img' },
     s('rect', { width: 980, height: 260, rx: 12, class: 'fill-sky-100 dark:fill-slate-800' }),
@@ -340,7 +341,19 @@ export function routeMap(h: Harbor): MapParts {
 // ---- completion scenes (were in ui/stage.ts) ----
 
 /** One completion animation. `fast`: skipped or reduced motion, so every tween draws its end state at once. */
-export interface Run { fast: boolean; done: boolean }
+export interface Run {
+  fast: boolean;
+  done: boolean;
+  /** Set while a GSAP timeline plays (src/art/gsap.ts play()): jumps it to its end state. ui/stage.ts calls it after setting `fast`. */
+  skip?: () => void;
+}
+
+type Gsap = typeof import('./gsap');
+let gsapMod: Promise<Gsap> | undefined;
+/** ui-ux-v6 §2.1: GSAP's own lazy chunk, never a static import. A failed load is dropped so the next completion retries. */
+const loadGsap = (): Promise<Gsap> => (gsapMod ??= import('./gsap').catch((e: unknown) => { gsapMod = undefined; throw e; }));
+/** src/art/load.ts prefetchArt(): fetch GSAP when idle after the art chunk, so the first completion never waits for it. */
+export const prefetchGsap = (): void => void loadGsap().catch(() => {});
 export interface Ctx {
   run: Run;
   tk: Ticket;
@@ -496,6 +509,76 @@ async function drawLane(c: Ctx, port: string, ms: number): Promise<void> {
   path.style.removeProperty('stroke-dashoffset');
 }
 
+// ---- v6 T1: the ship scene on GSAP (§2.3: state objects drive the attribute setters; GSAP moves only the map ship) ----
+/** End frame of `ship`: back at the berth, the new container in its bay, the lanes repainted from `after`. */
+function shipEnd(c: Ctx): void {
+  const p = c.harbor;
+  if (p) {
+    setShip(p, 0, 1);
+    drawYard(p, c.after, new Set([c.tk.chapter]));
+  }
+  const m = c.map;
+  if (m) {
+    m.ship.setAttribute('opacity', '0');
+    m.wake.setAttribute('opacity', '0');
+    paintRoutes(m, c.after);
+  }
+}
+/** STEPS.ship: leave the berth (1.6 s) while sailing the lane on the map; then berth back + container drop. Ends with shipEnd(). */
+function shipTimeline(c: Ctx, g: Gsap): ReturnType<Gsap['timeline']> {
+  const tl = g.timeline();
+  const [sail, back] = STEPS.ship.map((ms) => ms / 1000);
+  const end = sail + back;
+  const p = c.harbor;
+  let box: SVGRectElement | undefined;
+  if (p) {
+    const out = { x: 0 };
+    tl.to(out, { x: 1, duration: 1.6, ease: 'power1.in', onUpdate: () => setShip(p, out.x, out.x < 0.7 ? 1 : 1 - (out.x - 0.7) / 0.3) }, 0)
+      .call(() => setShip(p, 0, 0), undefined, 1.6);
+    const home = { a: 0 };
+    tl.to(home, { a: 1, duration: back, ease: 'power1.inOut', onUpdate: () => setShip(p, 0, home.a) }, sail);
+    const ch = c.tk.chapter;
+    const tier = (c.after.bays[ch] ?? 1) - 1;
+    if (tier < MAX_TIERS) {
+      const b = bayBox(ch, tier);
+      const drop = s('rect', { x: b.x, y: b.y - 30, width: b.w, height: b.h - 0.6, class: chapterColor(ch).fill, opacity: 0 });
+      box = drop;
+      p.drop.append(drop);
+      const d = { x: 0 };
+      tl.to(d, { x: 1, duration: back, ease: 'power1.in', onUpdate: () => {
+        drop.setAttribute('y', String(b.y - 30 * (1 - d.x)));
+        drop.setAttribute('opacity', String(Math.min(1, d.x * 2)));
+      } }, sail);
+    }
+  }
+  const m = c.map;
+  const port = c.scene.to;
+  const r = ROUTES.find((x) => x.port === port);
+  if (m && port && r) {
+    const path = m.routes[port];
+    const mirror = m.ship.firstElementChild as SVGGElement;
+    const color = chapterColor(c.tk.chapter).stroke;
+    m.wake.setAttribute('d', path.getAttribute('d') ?? '');
+    m.wake.setAttribute('class', color);
+    tl.call(() => { m.wake.setAttribute('opacity', '0.55'); m.ship.setAttribute('opacity', '1'); }, undefined, 0)
+      .fromTo(m.wake, { drawSVG: '0%' }, { drawSVG: '100%', duration: sail, ease: 'power1.inOut' }, 0)
+      .to(m.ship, {
+        duration: sail, ease: 'power1.inOut',
+        motionPath: { path, align: path, alignOrigin: [0.5, 0.5], autoRotate: true },
+        onUpdate: () => { // heading left: mirror upright instead of sailing upside down (like placeOnPath)
+          const deg = Number(g.gsap.getProperty(m.ship, 'rotation'));
+          mirror.setAttribute('transform', Math.cos((deg * Math.PI) / 180) < 0 ? 'scale(1,-1)' : '');
+        },
+      }, 0)
+      // Plan 8b: the port pulses during the last 250 ms of the voyage (inside the step, never after it)
+      .call(() => { if (!c.run.fast) arrivalPulse(m, r.x, r.y, color); }, undefined, sail - 0.25);
+  }
+  return tl.call(() => {
+    box?.remove();
+    shipEnd(c);
+  }, undefined, end);
+}
+
 // ---- cards over the art ----
 const CARD_OV = 'w-64 max-w-[calc(100vw-4rem)] rounded-xl bg-panel p-3 text-sm shadow-lg ring-1 ring-line';
 const STAMP = 'absolute rounded-md border-[3px] px-2 py-0.5 text-[15px] font-extrabold tracking-wide uppercase';
@@ -554,9 +637,15 @@ function promoCard(c: Ctx): HTMLElement {
 // ---- the eight kinds (§2), step durations from STEPS ----
 const PLAY: Record<Scene['kind'], (c: Ctx) => Promise<void>> = {
   async ship(c) {
-    const [sailMs, backMs] = STEPS.ship;
-    await Promise.all([departBerth(c), c.scene.to ? sail(c, c.scene.to, sailMs) : wait(c.run, sailMs)]);
-    await Promise.all([berthBack(c, backMs), dropContainer(c, backMs)]);
+    let g: Gsap;
+    try {
+      g = await loadGsap();
+    } catch (e) {
+      console.warn('Animation library unavailable:', e); // §2.1: the end state, the dock keeps its sentence and Close
+      shipEnd(c);
+      return;
+    }
+    await g.play(shipTimeline(c, g), c.run);
   },
 
   async yard(c) {

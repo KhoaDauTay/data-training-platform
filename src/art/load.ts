@@ -31,7 +31,7 @@ export const loadedArt = (): LogisticsArt | undefined => ready;
 /** Start the download once the first screen is drawn, so the first completion never waits for it. */
 export const prefetchArt = (): void => {
   const idle = window.requestIdleCallback ?? ((f: () => void) => window.setTimeout(f, 200));
-  idle(() => void loadArt().catch(() => {}));
+  idle(() => void loadArt().then((m) => idle(m.prefetchGsap), () => {})); // ui-ux-v6 §2.1: GSAP on the next idle
 };
 
 /**

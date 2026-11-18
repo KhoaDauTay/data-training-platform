@@ -9,12 +9,12 @@ BoonData's own mascot art (Lily, Boon) is not third-party: CC BY 4.0, `assets/ma
 | What | Source | Version | Licence | Checked | Where |
 |---|---|---|---|---|---|
 | Nunito Variable (latin + vietnamese woff2) | `@fontsource-variable/nunito` (npm), font by Vernon Adams et al. | 5.3.0 | SIL OFL 1.1 (`src/assets/fonts/OFL.txt`) | before v6 | `src/assets/fonts/` |
+| GSAP core + MorphSVG, DrawSVG, MotionPath, Physics2D, CustomEase | `gsap` (npm), https://gsap.com | 3.15.1 | GSAP Standard "no charge" licence (https://gsap.com/standard-license): free incl. commercial use for any website/web app; forbids use in a no-code animation builder competing with Webflow and forbids removing the copyright notice. **Not an OSI licence: GSAP code is not MIT.** Keep its `@license` comment in the built chunk. | 2026-11-18 (npm `license` field + licence page) | `src/art/gsap.ts` (only importer), lazy chunk `gsap-*` (v6 T1); `@license` comments kept by `vite.config.ts` |
 
 ## Approved for v6 (add the "Where" when the task lands)
 
 | What | Source | Version | Licence | Checked | Task |
 |---|---|---|---|---|---|
-| GSAP core + MorphSVG, DrawSVG, MotionPath, Physics2D, CustomEase | `gsap` (npm), https://gsap.com | 3.15.1 (fallback 3.15.0) | GSAP Standard "no charge" licence (https://gsap.com/standard-license): free incl. commercial use for any website/web app; forbids use in a no-code animation builder competing with Webflow and forbids removing the copyright notice. **Not an OSI licence: GSAP code is not MIT.** Keep its `@license` comment in the built chunk. | 2026-11-18 (npm `license` field + licence page) | T1, lazy chunk `gsap` |
 | Phosphor Icons | `@phosphor-icons/core` (npm), https://phosphoricons.com | 2.1.1 | MIT | 2026-11-18 (npm `license` field) | T2 (I1), paths generated into `iconData.ts` (D-V1) |
 | Natural Earth 1:110m coastline | https://www.naturalearthdata.com | 1:110m physical | Public domain ("Crediting the authors is unnecessary", naturalearthdata.com/about/terms-of-use) | 2026-11-18 | S2 route map, simplified paths |
 | Open Peeps (Pablo Stanley) | https://www.openpeeps.com | library as downloaded | CC0 ("copy, modify, distribute, remix … even for commercial purposes, without asking permission") | 2026-11-18 (site text) | P3 / D-V5 portraits, only if used |
