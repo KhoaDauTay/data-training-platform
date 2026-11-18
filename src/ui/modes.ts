@@ -17,7 +17,7 @@ import { BTN_GO, CARD, cx } from '../theme';
 import { applyVariant } from '../variants';
 import { hints, renderBrief, shapeCard } from './brief';
 import { goalCard, skillChips, wrapUp } from './chapterView';
-import { announce, byId, h, nodes, richText } from './dom';
+import { announce, byId, h, loader, nodes, richText } from './dom';
 import { boonMark, escOwned, guideHooks, guideSlot } from './coach';
 import { showPane } from './paneTabs';
 import { readJson, writeJson } from '../storage';
@@ -90,7 +90,7 @@ let drillUi: typeof import('./drillBrief') | undefined;
 /** Every main-bundle value the chunk uses is handed over here (Plan 6 U3: the chunk imports only types from main modules). */
 const loadDrillUi = () => import('./drillBrief').then((m) => {
   if (!drillUi) m.initDrill({
-    db: ctx!.db, activeSchema, h, nodes, richText, byId, getLang, locale, app, actions, persist, schemaHooks, erMeta, stepKey, session, hintsShown, today,
+    db: ctx!.db, activeSchema, h, nodes, richText, byId, loader, getLang, locale, app, actions, persist, schemaHooks, erMeta, stepKey, session, hintsShown, today,
     isSuccess, movedToday, nextCard, SKILLS, hashOf, textOf, hints, shapeCard, tryPreview, openLesson, backToStory, startDrillMode, loadGeneral, generalNow, loadLessons,
     lessonSeen: isSeen, knownSkills, learnSkillOf, learnAdvOf, learnModuleOf, moduleTitle, illustration, loadTickets, CHAPTERS,
     announce, readJson, writeJson, readTour, boonMark, escOwned, guideHooks, guideSlot, showPane, parseRoute, mod: keyLabels(isMac).mod,
@@ -352,7 +352,7 @@ function learnSection(): HTMLElement {
   return learnLoad === 'failed'
     ? h('div', { role: 'alert', class: 'space-y-2' }, h('p', { class: 'm-0' }, t('learn.failed')),
       h('button', { type: 'button', onclick: () => { loadLearn(); ctx?.rerender(); } }, t('data.retry')))
-    : h('p', { class: 'm-0 min-h-40 text-muted', 'aria-live': 'polite' }, t('learn.loading'));
+    : h('p', { class: 'm-0 flex min-h-40 items-start gap-2 text-muted', 'aria-live': 'polite' }, loader(), t('learn.loading'));
 }
 registerHomeSection({ id: 'module', order: 10, span: 'full', pages: ['learn'], render: learnSection });
 registerHomeSection({ id: 'drills', order: 23, span: 'full', pages: ['home', 'practice'], render: drillHub }); // Task 11: Home's "today" also suggests one drill

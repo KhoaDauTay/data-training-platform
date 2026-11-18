@@ -1,4 +1,5 @@
 import { locale } from '../i18n';
+import { s } from './svg';
 
 type Child = Node | string | null | undefined | false;
 type Attr = string | boolean | ((e: Event) => void);
@@ -50,6 +51,10 @@ export function announce(text: string): void {
     el.textContent = text;
   }, 50);
 }
+
+/** ui-ux-v5 A4: the shared loader (sprite symbol #cq-load), put before an existing waiting text. Decorative. */
+export const loader = (): SVGSVGElement =>
+  s('svg', { class: 'inline-block size-6 shrink-0 align-middle', 'aria-hidden': 'true', focusable: 'false' }, s('use', { href: '#cq-load' }));
 
 export function reducedMotion(): boolean {
   return window.matchMedia('(prefers-reduced-motion: reduce)').matches;

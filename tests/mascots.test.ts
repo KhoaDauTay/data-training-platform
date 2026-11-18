@@ -107,3 +107,22 @@ describe('A3 + A1: mốc trong phiên (ui-ux-v5)', () => {
     }
   });
 });
+
+describe('A4: loader chung (ui-ux-v5)', () => {
+  it('#cq-load trong sprite: 3 hàng .ld, không chữ, chỉ chạy khi trang có loader', () => {
+    const sym = sprite.split('<symbol id="cq-load"')[1]?.split('</symbol>')[0] ?? '';
+    expect(sym).not.toBe('');
+    expect(sym.match(/class="ld"/g)).toHaveLength(3);
+    expect(sym).not.toMatch(/<text/);
+    expect(css).toMatch(/body:has\(use\[href="#cq-load"\]\) #mascot-sprite \.ld[^{]*\{[^}]*animation:[^}]*cq-ld[^}]*infinite/);
+  });
+
+  it('thanh <progress> chỉ khi biết tổng và chưa tải xong', async () => {
+    const { downloading } = await import('../src/db/loadProgress');
+    expect(downloading(undefined)).toBe(false);
+    expect(downloading({ loaded: 5 })).toBe(false);
+    expect(downloading({ loaded: 5, total: 0 })).toBe(false);
+    expect(downloading({ loaded: 5, total: 10 })).toBe(true);
+    expect(downloading({ loaded: 10, total: 10 })).toBe(false);
+  });
+});

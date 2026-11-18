@@ -6,7 +6,7 @@ import { app, erMeta, textValues, unlockedTables } from '../state';
 import { chapterColor, cx, THEME_EVENT } from '../theme';
 import { erDefinition, erRowCountsSql, type ErMetadata } from '../viz/erd';
 import { memoByKey } from '../viz/memo';
-import { h, nodes } from './dom';
+import { h, loader, nodes } from './dom';
 import { drawErd, erdSvg, keyBadges, valuesLine } from './erdView';
 import { errorView } from './feedback';
 import { renderResult } from './resultTable';
@@ -155,7 +155,7 @@ export function renderData(host: HTMLElement): void {
       return;
     }
     if (!meta) {
-      detail.replaceChildren(title, h('p', { class: 'text-muted' }, t('data.loading')));
+      detail.replaceChildren(title, h('p', { class: 'flex items-center gap-2 text-muted' }, loader(), t('data.loading')));
       return;
     }
     const refBy = meta.cons.filter((c) => c.kind === 'FOREIGN KEY' && c.refTable === sel && openSet.has(c.table));
@@ -171,7 +171,7 @@ export function renderData(host: HTMLElement): void {
         type: 'button',
         class: 'mt-3',
         onclick: () => {
-          sample.replaceChildren(h('p', { class: 'text-muted' }, t('data.loading')));
+          sample.replaceChildren(h('p', { class: 'flex items-center gap-2 text-muted' }, loader(), t('data.loading')));
           // `sel` is an unlocked table name, itself a plain identifier (dataTableOf / CHAPTER_TABLES).
           app.run(`SELECT * FROM ${sel} LIMIT 5`).then((r) => live() && sample.replaceChildren(renderResult(r)), (e: unknown) => live() && sample.replaceChildren(errorView(e)));
         },

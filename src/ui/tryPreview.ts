@@ -4,7 +4,7 @@ import type { GradeResult } from '../grader';
 import { t } from '../i18n';
 import { app, erMeta, expectedResult } from '../state';
 import type { ErMetadata } from '../viz/erd';
-import { h, nodes } from './dom';
+import { h, loader, nodes } from './dom';
 import { errorView } from './feedback';
 import { renderResult } from './resultTable';
 
@@ -51,7 +51,7 @@ const positional = (rows: unknown[][], width: number, types: number[] = []): Que
   ({ columns: Array.from({ length: width }, (_, i) => t('preview.col', { n: i + 1 })), types, rows });
 
 const subhead = (text: string): HTMLElement => h('h4', { class: 'mt-0 mb-1 text-sm' }, text);
-const loading = (): HTMLElement => h('p', { class: 'my-1 text-sm text-muted' }, t('preview.loading'));
+const loading = (): HTMLElement => h('p', { class: 'my-1 flex items-center gap-2 text-sm text-muted' }, loader(), t('preview.loading'));
 
 function tableBox(schema: SchemaId, table: string, meta: ErMetadata): HTMLElement {
   const key = `${schema}|${table}`;

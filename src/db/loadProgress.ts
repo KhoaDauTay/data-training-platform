@@ -1,6 +1,9 @@
 /** Bytes of PGlite's .wasm/.data received so far. `total` only when every response so far had an uncompressed Content-Length. */
 export interface LoadProgress { loaded: number; total?: number }
 
+/** ui-ux-v5 A4: a progress bar only while the size is known and bytes are still coming (never 100 % while seeding). */
+export const downloading = (p: LoadProgress | undefined): boolean => !!p?.total && p.loaded < p.total;
+
 const ASSET_RE = /\.(wasm|data)(\?|$)/;
 
 /**

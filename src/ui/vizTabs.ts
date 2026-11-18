@@ -11,7 +11,7 @@ import { memoByKey } from '../viz/memo';
 import { flattenPlan, type Plan } from '../viz/plan';
 import type { StepsResult } from '../viz/steps';
 import { renderChart } from './chartView';
-import { h, nodes } from './dom';
+import { h, loader, nodes } from './dom';
 import { drawErd, erdSvg, keyBadges, valuesLine } from './erdView';
 import { renderExplain } from './explainView';
 import { errorView } from './feedback';
@@ -44,7 +44,7 @@ function lastRunSql(host: HTMLElement, deps: VizDeps): string | undefined {
 
 /** Shows a loading line, then replaces it with draw(value) or the error. The stale strip above stays. */
 async function load<T>(host: HTMLElement, loading: string, data: Promise<T>, draw: (body: HTMLElement, value: T) => void): Promise<void> {
-  const body = h('div', {}, h('p', { class: 'muted' }, loading));
+  const body = h('div', {}, h('p', { class: 'muted flex items-center gap-2' }, loader(), loading));
   host.append(body);
   try {
     const value = await data;

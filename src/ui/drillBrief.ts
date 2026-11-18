@@ -31,7 +31,7 @@ import type * as TryPreview from './tryPreview';
  */
 export interface DrillDeps extends GuideDeps {
   db: DbClient;
-  h: typeof Dom.h; nodes: typeof Dom.nodes; richText: typeof Dom.richText; byId: typeof Dom.byId;
+  h: typeof Dom.h; nodes: typeof Dom.nodes; richText: typeof Dom.richText; byId: typeof Dom.byId; loader: typeof Dom.loader;
   getLang: typeof I18n.getLang; locale: typeof I18n.locale;
   app: typeof State.app; actions: typeof State.actions; persist: typeof State.persist; schemaHooks: typeof State.schemaHooks;
   erMeta: typeof State.erMeta; stepKey: typeof State.stepKey;
@@ -113,7 +113,7 @@ const TITLE = { id: 'brief-title', tabindex: '-1', class: 'm-0 text-lg font-bold
 export function drillPane(host: HTMLElement, m: DrillMode): void {
   const { h, nodes } = d$;
   const g = d$.generalNow();
-  if (!g) return void host.replaceChildren(h('p', { class: 'muted', 'aria-live': 'polite' }, lt('drill.loading')));
+  if (!g) return void host.replaceChildren(h('p', { class: 'muted flex items-center gap-2', 'aria-live': 'polite' }, d$.loader(), lt('drill.loading')));
   const { drill: d, ticket: tk } = m;
   const passed = d$.app.save.completed.includes(tk.id);
   host.replaceChildren(...nodes(
