@@ -24,6 +24,7 @@ const GROUPS = [
   ['ecomart', /^ecommerce-/, 10], // Plan 9: src/art/ecommerce.ts (store scene, delivery map), lazy
   ['ecomseed', /^ecomSeed-/, 10], // Plan 9: src/db/ecom/{schema,seed}.sql, lazy in the worker on ensure('ecom'): 7.6 KB gz -9 measured on the source (D9-16)
   ['gameseed', /^gameSeed-/, 16], // v12.0 P1 (Plan 10 D10-1): src/db/{schema,seed}.sql, lazy in the worker on ensure('game'): 13.3 KB gz -9 on the source
+  ['frame', /^frame-/, 3, 'T3'], // v13 (product-design-v8 §4): src/frame.ts, the hint scaffold, lazy on the first "fill the scaffold": 2.9 KB gz -9 measured. 'T3' = may be absent until v13 T3 imports it (L95); drop the flag then
   ['rest', /./, 1560],
 ];
 
@@ -34,10 +35,10 @@ for (const f of readdirSync(dir)) {
   sums[name] = (sums[name] ?? 0) + gzipSync(readFileSync(`${dir}/${f}`), { level: 9 }).length / 1024;
 }
 let fail = false;
-for (const [name, , budget] of GROUPS) {
+for (const [name, , budget, pending] of GROUPS) {
   const kb = sums[name];
-  const bad = kb === undefined || kb > budget; // a missing group means the build changed shape: look before deploying
+  const bad = (kb === undefined && !pending) || kb > budget; // a missing group means the build changed shape: look before deploying
   fail ||= bad;
-  console.log(`${bad ? 'FAIL' : 'ok  '} ${name.padEnd(7)} ${kb === undefined ? 'not found' : `${kb.toFixed(0).padStart(5)} KB gz / ${budget} KB`}`);
+  console.log(`${bad ? 'FAIL' : 'ok  '} ${name.padEnd(7)} ${kb === undefined ? `not found${pending ? ` (not imported before ${pending})` : ''}` : `${kb.toFixed(0).padStart(5)} KB gz / ${budget} KB`}`);
 }
 process.exit(fail ? 1 : 0);
