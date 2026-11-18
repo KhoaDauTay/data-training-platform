@@ -12,7 +12,7 @@ import { isClosed, keepsWork, readDraft, schemaOf, workKey, writeDraft } from '.
 import { app, done, editorSchema, initialDoc, persist, stepKey, type LastRun } from '../state';
 import { localStore } from '../storage';
 import { BTN_SUBMIT } from '../theme';
-import { BLANK, type Ticket } from '../tickets';
+import { blanksIn, type Ticket } from '../tickets';
 import { DRILL_ID } from '../save';
 import { diffView, verdictText } from './tryPreview';
 import { celebrate } from './celebrate';
@@ -237,9 +237,9 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
       underline(r.error, offset);
       const err = r.error;
       say('bad', () => {
-        const note = errorNote(err);
+        const note = errorNote(err, sql);
         return note ? h('div', {}, h('p', { class: 'm-0' }, t('work.runFailed')), h('p', { class: 'mt-1 mb-0' }, note)) : t('work.runFailed');
-      }, mascotOf(err));
+      }, mascotOf(err, sql));
     } else {
       message = undefined;
       drawMessage();
@@ -309,9 +309,9 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
     const schema = schemaOf(tk);
     const sql = ed.getValue(); // Submit always grades the whole editor
     if (!sql.trim()) return say('bad', () => t('work.empty')); // an empty editor is not graded and not a wrong submit (end-user test v10 B1)
-    const blanks = tk.format === 'faded' ? sql.split(BLANK).length - 1 : 0; // elsewhere ___ is a valid LIKE pattern
+    const blanks = blanksIn(sql, tk.format === 'faded'); // every exercise (v13 D-H7); outside faded, LIKE '___' is not a blank
     if (blanks) {
-      say('bad', () => t('work.blanks', { n: blanks })); // a faded starter not filled in yet: not graded, not a wrong submit
+      say('bad', () => t('work.blanks', { n: blanks })); // a starter or frame not filled in yet: not graded, not a wrong submit
       return;
     }
     ed.closeCompletion();

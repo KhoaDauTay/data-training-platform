@@ -6,6 +6,7 @@ import { lessonSchema, loadLessonPrefs, markLesson, type Lesson } from '../lesso
 import { SKILLS } from '../progress';
 import { skillOfDrill } from '../home';
 import { actions as appActions, app } from '../state';
+import { blanksIn } from '../tickets';
 import { cx } from '../theme';
 import { byId, h, nodes, richText } from './dom';
 import { errorText, errorView } from './feedback';
@@ -21,7 +22,7 @@ const drafts = new Map<string, string>();
 const verdicts = new Map<string, { ok: boolean; text: () => string; fail?: Exclude<GradeResult, { ok: true }> }>();
 const examples = new Map<string, { result?: QueryResult; error?: unknown }>();
 /** "Chạy thử" in the try box (L84): the player's own result, not graded, never app.lastRun. */
-const tryRuns = new Map<string, { result?: QueryResult; error?: unknown }>();
+const tryRuns = new Map<string, { result?: QueryResult; error?: unknown; sql?: string }>();
 /** Open/collapsed as the player last chose this session; otherwise the first lesson not seen yet is open. */
 const expanded = new Map<string, boolean>();
 /** Marked this session: the pref write may fail (blocked storage) and the card must still collapse. */
@@ -84,7 +85,7 @@ function card(l: Lesson, titleId: string, actions: HTMLElement[], tour = false):
   const drawYours = (): void => {
     const r = tryRuns.get(l.id);
     yours.replaceChildren(...nodes(r && h('div', { class: 'mt-2' }, h('h5', { class: 'mt-0 mb-1 text-sm' }, t('lesson.yours')),
-      r.result ? renderResult(r.result, undefined, 8) : errorView(r.error))));
+      r.result ? renderResult(r.result, undefined, 8) : errorView(r.error, true, r.sql))));
   };
   const busy = (on: boolean): void => {
     check.disabled = on;
@@ -99,7 +100,8 @@ function card(l: Lesson, titleId: string, actions: HTMLElement[], tour = false):
         return;
       }
       busy(true);
-      await runOn(lessonSchema(l), area.value).then((result) => tryRuns.set(l.id, { result }), (error: unknown) => tryRuns.set(l.id, { error }));
+      const sql = area.value;
+      await runOn(lessonSchema(l), sql).then((result) => tryRuns.set(l.id, { result }), (error: unknown) => tryRuns.set(l.id, { error, sql }));
       busy(false);
       drawYours();
       if (!yours.isConnected) appActions.rerender();
@@ -111,6 +113,12 @@ function card(l: Lesson, titleId: string, actions: HTMLElement[], tour = false):
     onclick: async () => {
       if (!area.value.trim()) {
         verdicts.set(l.id, { ok: false, text: () => t('lesson.tryEmpty') }); // like Run/Submit on an empty editor (L68)
+        drawVerdict();
+        return;
+      }
+      const blanks = blanksIn(area.value, false); // v13 §3.8: not graded, like Submit
+      if (blanks) {
+        verdicts.set(l.id, { ok: false, text: () => t('work.blanks', { n: blanks }) });
         drawVerdict();
         return;
       }

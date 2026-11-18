@@ -9,6 +9,17 @@ export type Beat = 'teach' | 'develop' | 'twist' | 'rest' | 'boss';
 export type Format = 'worked' | 'faded' | 'open';
 /** A blank in a faded starter; Submit refuses SQL that still contains one. */
 export const BLANK = '___';
+/**
+ * Blanks left in `sql` (v13, product-design-v8 §3.8): Submit refuses SQL that still has one, in every exercise. A faded ticket
+ * counts every ___ (its starter has blanks inside quotes, ch6-02); anywhere else only a standalone ___ outside '…', "…" and
+ * comments counts, since LIKE '___' is a valid pattern. Stateless, so a draft with blanks that survived a reload is still caught.
+ */
+export function blanksIn(sql: string, faded: boolean): number {
+  if (faded) return sql.split(BLANK).length - 1;
+  // ponytail: comments are not nested and dollar quotes are not skipped; fine for the generated frames and content Solutions.
+  const code = sql.replace(/'(?:[^']|'')*'?|"(?:[^"]|"")*"?|--[^\n]*|\/\*[\s\S]*?(?:\*\/|$)/g, ' ');
+  return code.match(/(?<![\w$])___(?![\w$])/g)?.length ?? 0;
+}
 /** Expected-result column label (L25): business meaning in both languages, never the Solution's column name. */
 export interface Step {
   title: string;

@@ -1,5 +1,6 @@
 import type { SqlErrorInfo } from '../db/run';
 import type { Key } from '../i18n';
+import { blanksIn } from '../tickets';
 
 // Cases SQLSTATE alone cannot tell apart; checked first, on Postgres' English message.
 const BY_MESSAGE: [RegExp, Key][] = [
@@ -51,8 +52,12 @@ const BY_CODE: Record<string, Key> = {
   LAB03: 'sqlerr.labNone', // runLab: nothing was created (IF NOT EXISTS with a name that exists)
 };
 
-/** Teaching note shown under Postgres' own message (which is always shown unchanged). */
-export function explainError(e: SqlErrorInfo): Key | undefined {
+/**
+ * Teaching note shown under Postgres' own message (which is always shown unchanged). `sql` = the query that ran: one that still
+ * has a ___ blank gets the blank note whatever Postgres said (column, function or syntax error, v13 §3.8).
+ */
+export function explainError(e: SqlErrorInfo, sql?: string): Key | undefined {
+  if (sql && blanksIn(sql, false)) return 'sqlerr.blank';
   for (const [re, key] of BY_MESSAGE) if (re.test(e.message)) return key;
   return e.code ? BY_CODE[e.code] : undefined;
 }

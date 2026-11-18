@@ -51,9 +51,9 @@ export function errorText(e: unknown): string {
 }
 
 /** The teaching note for a Postgres error, in the UI language; Boon says it beside a failed Run (L59, v10 UX #8). */
-export function errorNote(e: unknown): string | undefined {
+export function errorNote(e: unknown, sql?: string): string | undefined {
   const info = sqlErrorInfo(e);
-  const note = info && explainError(info);
+  const note = info && explainError(info, sql);
   return note ? t(note) : undefined;
 }
 
@@ -61,10 +61,10 @@ export function errorNote(e: unknown): string | undefined {
  * Postgres' message unchanged (a real skill to read), then its HINT, then a teaching note in the UI language.
  * `withNote: false` in the Result tab: Boon already explains it under the buttons.
  */
-export function errorView(e: unknown, withNote = true): HTMLElement {
+export function errorView(e: unknown, withNote = true, sql?: string): HTMLElement {
   const info = sqlErrorInfo(e);
   if (!info) return h('pre', { class: 'error' }, errorText(e));
-  const note = withNote && explainError(info);
+  const note = withNote && explainError(info, sql);
   return h('div', { class: 'space-y-1' },
     h('pre', { class: 'error' }, info.message),
     info.hint ? h('p', { class: 'muted' }, `HINT: ${info.hint}`) : null,
@@ -75,10 +75,10 @@ export function errorView(e: unknown, withNote = true): HTMLElement {
  * v6 §2.4 with the L57 roles (V7): Boon explains a Postgres error that has a teaching note (thinking), or a timeout / DB restart
  * (oops). Anything else gets no mascot. Lily's cheer on a correct answer is passed by work.ts itself.
  */
-export function mascotOf(error: unknown): [Mascot, Pose] | undefined {
+export function mascotOf(error: unknown, sql?: string): [Mascot, Pose] | undefined {
   if (error instanceof QueryTimeoutError || error instanceof DbRestartError) return ['boon', 'oops'];
   const info = sqlErrorInfo(error);
-  return info && explainError(info) ? ['boon', 'think'] : undefined;
+  return info && explainError(info, sql) ? ['boon', 'think'] : undefined;
 }
 
 /** 1-based line of Postgres' 1-based character position `pos` in `text`. */

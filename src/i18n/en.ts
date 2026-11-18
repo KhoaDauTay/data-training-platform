@@ -370,6 +370,7 @@ export const en: Record<Key, Msg> = {
   'err.dbFailed': 'The database could not start.',
   'err.unknown': 'Unknown error.',
   'err.task': 'This request failed for a reason other than your SQL (usually a slow or lost connection while loading a component). Try again.',
+  'sqlerr.blank': 'There is still a ___ blank: Postgres reads it as a column name. Fill it in and run again.',
   'sqlerr.42703': 'That column does not exist. Check the name in the Columns tab. Text values go in single quotes: \'Europe\'.',
   'sqlerr.42P01': 'That table does not exist or is not unlocked in this chapter. See the Columns tab.',
   'sqlerr.publicPrefix': 'The company tables now live in the logistics schema. Drop the public. prefix and write the bare table name, for example ports.',

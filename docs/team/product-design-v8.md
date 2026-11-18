@@ -1,5 +1,7 @@
 # Product Design v8: Boon chỉ đường trong Lộ trình, gợi ý điền khung ở mọi bài
 
+**Trạng thái: ĐÃ DUYỆT (v13, 2026-11-18, L94): user duyệt với mọi mặc định §5.**
+
 Ngày: 2026-11-18 · Vai trò: Product Designer + UI/UX · **Chỉ đề xuất**: không sửa `src/`, `content/`, test hay `decision-log.md`. User duyệt **§5 (Quyết định)** trước khi viết plan build.
 Đầu vào: `CLAUDE.md`, `decision-log.md` L81–L93 (L82 General tách domain, L84 Thử ngay/preview, L87 vai linh vật, L88, L93), `product-design-v7.md` (khuôn), `problem-design.md` §1.5 (gợi ý ba bậc), mã: `src/onboarding.ts`, `src/ui/coach.ts`, `src/ui/teachScene.ts`, `src/ui/lessonCard.ts`, `src/ui/learnView.ts`, `src/ui/drillBrief.ts`, `src/ui/brief.ts` (`hints()`), `src/ui/work.ts` (chặn `___`, `setTicket`), `src/ui/editor.ts`, `src/general.ts` (`drillTicket`), `src/ui/modes.ts`, `src/session.ts`, `src/progress.ts` (`xpFor`), `content/general/*.yml`, `content/lessons.yml`, ticket `ch1-02`, `ch3-03`, `ch5-03`, `ch7-02`, `ch10-02`, `ch11-03/04`, `ch2-05`, `ecom-ch1-02`, `ecom-ch5-02`, `ecom-ch6-02/05`, làn `ausyd/s-1`, `nlrtm/r-3`.
 Số đo trong tài liệu (§3.3, §3.4) lấy từ một bản thử luật sinh khung chạy trên **toàn bộ** nội dung thật (script tạm ngoài repo, không commit): 114 drill kỹ năng, 80 drill/thử thách nâng cao, 58 ô Thử ngay, 117 Solution của ticket story/E-com/làn.
