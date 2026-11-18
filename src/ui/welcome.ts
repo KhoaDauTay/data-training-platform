@@ -58,7 +58,12 @@ async function pick(c: BootPick): Promise<void> {
   const ok = await actions.startWith(c);
   entering = false;
   if (ok) picking = false; // else the domain's content did not load (banner shown): the picker stays
-  if (dialog().open) draw();
+  if (!dialog().open) return;
+  if (ok) go(0); // focus the title: the picked button is gone
+  else {
+    draw();
+    dialog().querySelector<HTMLElement>(`[data-w="pick-${c}"]`)?.focus();
+  }
 }
 
 function go(to: number): void {
