@@ -554,3 +554,11 @@ Kiểm tay §3.9: Edge headless (CDP), `vite preview` :5199, hồ sơ mới, đ�
 | ux | Ngay sau khi điền, `___` đầu đang được chọn nên nút là "Chạy vùng chọn": Chạy/{mod}+Enter lúc đó chỉ chạy `___` (lỗi cú pháp), không chạy cả câu | Để lại (L99): lời Boon `sqlerr.blank` vẫn đúng; gõ đè chỗ chọn (mục đích của việc chọn) bỏ vùng chọn |
 | ux | Nút Hoàn tác dưới editor biến mất khi Chạy/Nộp viết dòng phản hồi mới | Để lại: đúng L96 (8), {mod}+Z vẫn lấy lại câu cũ |
 | chưa chạy trên trình duyệt | Bước lab chỉ mục (không nút điền), điền trong Luyện tập, lượt ôn bằng drill (G7 `review`), reduced motion | Đã có unit test (L96, L98); để lại |
+
+## v5 (ui-ux-v5, 2026-11-18, L101)
+
+### T1 nền §1
+
+Đo (gzip -9): main 287,78 / 290 KB (trước 287,7), CSS 15,02 / 20, `html` 7,69 / 9 (nhóm mới). Test mới đỏ khi thử `cq-shake 3.2s`, một tên `cq-*` không keyframe và `cq-nod` định nghĩa hai lần; xanh sau khi gỡ.
+
+Trình duyệt (`vite preview --port 5199`, Edge headless hồ sơ mới, 1280 + 375, sáng + tối, một lần `--force-prefers-reduced-motion`): màn chào không đổi; Lily người chơi mới vẫn giai đoạn 0 (`--lily-size` 0,8, không khăn, không sao) sau khi đăng ký `@property`, logo top bar vẫn dáng trưởng thành. Lily `cheer` hiện thấy + `react` → `getAnimations()` = `cq-jump`; Lily trong khối `display: none` → không animation nào (nên `react()` gỡ class ngay); giảm chuyển động → không animation.
