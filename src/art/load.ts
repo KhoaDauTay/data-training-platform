@@ -31,8 +31,19 @@ export const loadedArt = (): LogisticsArt | undefined => ready;
 /** Start the download once the first screen is drawn, so the first completion never waits for it. */
 export const prefetchArt = (): void => {
   const idle = window.requestIdleCallback ?? ((f: () => void) => window.setTimeout(f, 200));
-  idle(() => void loadArt().then((m) => idle(m.prefetchGsap), () => {})); // ui-ux-v6 §2.1: GSAP on the next idle
+  idle(() => void loadArt().then((m) => idle(() => { m.prefetchGsap(); loadGsap(); }), () => {})); // ui-ux-v6 §2.1: GSAP on the next idle
 };
+
+export type GsapArt = typeof import('./gsap');
+let gsapMod: Promise<GsapArt> | undefined;
+let gsapReady: GsapArt | undefined;
+/** ui-ux-v6 §2.1 for main (the mascot rig, src/ui/celebrate.ts): the same lazy `gsap-*` chunk; a failed load is dropped so the next call retries. */
+export const loadGsap = (): void => {
+  gsapMod ??= import('./gsap').then((m) => (gsapReady = m), (e: unknown) => { gsapMod = undefined; throw e; });
+  gsapMod.catch(() => {});
+};
+/** The GSAP chunk if it has already arrived: react() then animates the rig, else the v5 CSS keyframes run (M1). */
+export const loadedGsap = (): GsapArt | undefined => gsapReady;
 
 /**
  * A picture from the art chunk: drawn at once when the chunk is in, else a placeholder of the same aspect ratio (no

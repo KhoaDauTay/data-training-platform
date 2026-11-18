@@ -1,6 +1,6 @@
 import { activeDomain, type DomainId } from '../domains';
 import type { Ctx, Run } from '../art/logistics';
-import { loadArt } from '../art/load';
+import { loadArt, loadedGsap } from '../art/load';
 import { getLang, t, type Key } from '../i18n';
 import { rankOf } from '../progress';
 import { derive, durationOf, ROUTES, sceneOf, type Lane } from '../scene';
@@ -9,7 +9,7 @@ import { app } from '../state';
 import { textOf, type Ticket } from '../tickets';
 import { byId, reducedMotion } from './dom';
 import { loadEcomArt } from './ecomArt';
-import { grewLately, once } from './celebrate';
+import { grewLately, once, react } from './celebrate';
 import { mascot } from './mascots';
 import { stageEsc } from './shortcuts';
 
@@ -107,13 +107,14 @@ async function drawAndPlay(c: Ctx, owner: Ctx = c): Promise<void> {
     return;
   }
   lily.style.opacity = '0';
-  // ui-ux-v5 A1: Lily just grew (read here, after complete()'s rerender ran syncLily): her CSS grow (900 ms, accessory fades in)
+  // ui-ux-v5 A1: Lily just grew (read here, after complete()'s rerender ran syncLily): her grow (900 ms, accessory fades in)
   // replaces the 300 ms pop and starts earlier, so it still ends with the scene (≤ 3.0 s, promotion included).
   const grow = grewLately();
   const pop = window.setTimeout(() => {
     lily.style.opacity = '1';
     if (c.run.fast) return;
-    if (grow) {
+    if (grow && loadedGsap()) react(lily, true); // v6 M1: the rig cheers and grows (scarf drawn, star morphed, laptop in)
+    else if (grow) {
       lily.classList.add('grow');
       if (lily.getAnimations().length) once(lily, 'grow');
       else lily.classList.remove('grow'); // hidden (below sm): never left to replay once shown

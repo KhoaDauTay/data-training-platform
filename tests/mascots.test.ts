@@ -157,3 +157,25 @@ describe('B2 + B4 (ui-ux-v5)', () => {
     expect(css).toMatch(/svg\[data-mascot\]\.cq-hop\s*\{[^}]*animation:\s*cq-hop 320ms[^}]*80ms/);
   });
 });
+
+describe('rig GSAP (ui-ux-v6 M1, T5)', () => {
+  it('mỗi phản ứng có phần để động, các phần đó có trong công thức tư thế; ≤ 3 s; lớn lên 900 ms như cq-grow', async () => {
+    const { MOVES, GROW_MS, movedParts } = await import('../src/ui/mascots');
+    for (const who of ['lily', 'boon'] as const) {
+      for (const [pose, m] of Object.entries(MOVES)) {
+        expect(m.ms, pose).toBeLessThanOrEqual(3000);
+        const parts = movedParts(who, pose as keyof typeof MOVES);
+        expect(parts.body.length, `${who} ${pose}`).toBeGreaterThan(3);
+        expect(parts.body).not.toContain('shadow'); // L115: the shadow stays on the ground
+        expect(parts.body).not.toContain('laptop'); // her laptop too
+        expect(parts.head.length, `${who} ${pose}`).toBeGreaterThan(1);
+        for (const p of [...parts.body, ...parts.head, ...parts.extra]) expect(RIG[who][pose as keyof typeof MOVES]).toContain(p);
+      }
+    }
+    expect(movedParts('lily', 'cheer').extra).toEqual(['tail']);
+    expect(movedParts('boon', 'point').extra).toEqual(['arm-point']);
+    expect(movedParts('boon', 'think').extra).toEqual(['arm-chin']);
+    expect(GROW_MS).toBe(900);
+    expect(css).toContain(`animation: cq-grow ${GROW_MS}ms`);
+  });
+});

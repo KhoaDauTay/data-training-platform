@@ -33,6 +33,32 @@ export const RIG = {
   },
 } as const satisfies Record<Mascot, Record<Pose, readonly string[]>>;
 
+/**
+ * v6 M1 (T5): the GSAP reactions of react() (src/ui/celebrate.ts) on the rig parts. `ms` is the whole reaction; `extra` is the
+ * part with its own move (tail wag, pointing wing, wing to the chin), skipped when the mascot has none (Boon has no tail).
+ * Pivots are viewBox units: `feet` for the jump, `neck` for the head tilt, then each extra part's joint.
+ */
+export const MOVES = {
+  cheer: { ms: 700, extra: ['tail'] },
+  think: { ms: 400, extra: ['arm-chin'] },
+  oops: { ms: 360, extra: [] },
+  point: { ms: 480, extra: ['arm-point'] },
+} as const;
+export type Move = keyof typeof MOVES;
+export const PIVOT: Record<Mascot, Record<string, string>> = {
+  lily: { feet: '60 112', neck: '60 72', tail: '80 106', 'arm-point': '72 88' },
+  boon: { feet: '60 112', neck: '60 62', 'arm-point': '84 76', 'arm-chin': '84 80' },
+};
+/** Lily grows (v5 A1) in 900 ms, like cq-grow in style.css. */
+export const GROW_MS = 900;
+const GROUND = new Set(['shadow', 'laptop']); // stay on the floor while she jumps or shakes
+const HEAD = /^(head|ear-|eyes-|mouth-|glasses|plume)/;
+export function movedParts(who: Mascot, pose: Move): { body: string[]; head: string[]; extra: string[] } {
+  const parts: readonly string[] = RIG[who][pose];
+  const extra: readonly string[] = MOVES[pose].extra;
+  return { body: parts.filter((p) => !GROUND.has(p)), head: parts.filter((p) => HEAD.test(p)), extra: extra.filter((p) => parts.includes(p)) };
+}
+
 /** One pose as a <g> of <g data-part="…"><use/></g>: real elements a later rig can move one by one (v6 M1); the outer <g> carries Lily's stage scale. */
 export function rig(who: Mascot, pose: Pose): SVGGElement {
   return s('g', {}, ...RIG[who][pose].map((p) => s('g', { 'data-part': p }, s('use', { href: `#${who}-${p}` }))));
