@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import v3 from './fixtures/save-v3.json?raw';
 import v4 from './fixtures/save-v4.json?raw';
-import { domainSlot, emptySave, MIGRATIONS, NewerSaveError, parseSave, SAVE_VERSION, type Known } from '../src/save';
+import { domainSlot, emptySave, MIGRATIONS, NewerSaveError, parseSave, type Known } from '../src/save';
 
 // Logistics ids are listed (Known); e-commerce ids are kept by pattern (ECOM_ID) because that content is a lazy chunk.
 const known: Known = {
@@ -12,17 +12,17 @@ const known: Known = {
 const emptySlot = { dashboard: { cards: [], hidden: [] }, sandboxDraft: '' };
 
 describe('save v4 (Plan 9: domain E-commerce)', () => {
-  it('SAVE_VERSION 4; save mới có slot E-com rỗng', () => {
-    expect(SAVE_VERSION).toBe(4);
-    expect(emptySave()).toMatchObject({ version: 4, byDomain: { ecommerce: emptySlot } });
+  it('save mới có slot E-com rỗng (SAVE_VERSION: tests/saveV5.test.ts)', () => {
+    expect(emptySave().byDomain.ecommerce).toEqual(emptySlot);
   });
 
   it('v3 → v4: mọi trường v3 giữ nguyên, thêm slot E-com rỗng', () => {
-    expect(parseSave(v3, known)).toEqual({ ...JSON.parse(v3), version: 4, byDomain: { ecommerce: emptySlot } });
+    expect(parseSave(v3, known, MIGRATIONS, 4)).toEqual({ ...JSON.parse(v3), version: 4, byDomain: { ecommerce: emptySlot, finance: emptySlot } });
   });
 
   it('đọc save mẫu v4 nguyên vẹn: id ecom- giữ theo mẫu dù chưa tải nội dung E-com', () => {
-    expect(parseSave(v4, known)).toEqual(JSON.parse(v4));
+    const d = JSON.parse(v4); // parseSave always returns a complete Save, so the finance slot (v5) reads as empty
+    expect(parseSave(v4, known, MIGRATIONS, 4)).toEqual({ ...d, byDomain: { ...d.byDomain, finance: emptySlot } });
   });
 
   it('id không thuộc nội dung nào và không khớp mẫu vẫn bị bỏ', () => {

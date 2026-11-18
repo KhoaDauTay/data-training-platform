@@ -57,5 +57,7 @@ export const domainSchemaName = (d: DomainId = active): string => SCHEMAS[domain
 
 /** E-commerce ticket ids. Save keeps them by pattern because the domain's content is a lazy chunk (D9-7, like DRILL_ID). */
 export const ECOM_ID = /^ecom-ch\d{1,2}-\d{2}$/;
+/** Finance ticket ids, kept by pattern in the Save like ECOM_ID (v14, Save v5). */
+export const FIN_ID = /^fin-ch\d{1,2}-\d{2}$/;
 /** Device pref: the last domain opened (a live DomainId; anything else reads as logistics). Never part of Save. */
 export const DOMAIN_KEY = 'cargo-query/domain';

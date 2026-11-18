@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import v1 from './fixtures/save-v1.json?raw';
 import {
-  emptySave, InvalidSaveError, loadSave, NewerSaveError, oldSaveKey, parseSave, SAVE_KEY, serializeSave, writeSave,
+  emptySave, InvalidSaveError, loadSave, NewerSaveError, oldSaveKey, parseSave, SAVE_KEY, SAVE_VERSION, serializeSave, writeSave,
   type Known, type Migration,
 } from '../src/save';
 import type { KV } from '../src/storage';
@@ -73,9 +73,9 @@ describe('loadSave', () => {
   });
 
   it('save mới hơn → cảnh báo newer kèm version, giữ bản .bak', () => {
-    const raw = JSON.stringify({ version: 5, completed: [] });
+    const raw = JSON.stringify({ version: SAVE_VERSION + 1, completed: [] });
     const store = memoryStorage({ [SAVE_KEY]: raw });
-    expect(loadSave(store, known)).toEqual({ save: emptySave(), warning: { kind: 'newer', version: 5 } });
+    expect(loadSave(store, known)).toEqual({ save: emptySave(), warning: { kind: 'newer', version: SAVE_VERSION + 1 } });
     expect(store.data[`${SAVE_KEY}.bak`]).toBe(raw);
   });
 

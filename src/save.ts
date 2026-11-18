@@ -1,9 +1,9 @@
 import { emptyDashboard, readDashboard, type Dashboard } from './dashboard';
-import { ECOM_ID, type DomainId } from './domains';
+import { ECOM_ID, FIN_ID, type DomainId } from './domains';
 import { addDays, MAX_BOX, type PracticeStats, type Review } from './practice';
 import type { KV } from './storage';
 
-export const SAVE_VERSION = 4;
+export const SAVE_VERSION = 5;
 export const SANDBOX_DRAFT_MAX = 20_000;
 export const SAVE_KEY = 'cargo-query-save';
 
@@ -39,7 +39,7 @@ export interface Save {
   lanes: string[];
   // --- v4 (Plan 9, D9-11) ---
   /** What a player owns per domain besides the shared fields. Logistics keeps the top-level dashboard and sandboxDraft. */
-  byDomain: { ecommerce: DomainSlot };
+  byDomain: { ecommerce: DomainSlot; finance: DomainSlot };
 }
 
 /**
@@ -72,6 +72,9 @@ export const MIGRATIONS: Record<number, Migration> = {
   // v3 → v4 (Plan 9): an empty e-commerce slot. Bumped so a build from before Plan 9 moves a v4 save to .bak instead of
   // rewriting it without the e-commerce progress and cards (D9-11).
   3: (d) => ({ ...d, byDomain: { ecommerce: emptySlot() } }),
+  // v4 → v5 (v14, product-design-v9 §6.1): an empty finance slot. Bumped for the same reason: a v4 build would drop the
+  // fin- ids and the finance slot on its next write; with v5 it moves the save to .bak instead.
+  4: (d) => ({ ...d, byDomain: { ...(isRecord(d.byDomain) ? d.byDomain : {}), finance: emptySlot() } }),
 };
 
 export const emptySave = (): Save => ({
@@ -87,7 +90,7 @@ export const emptySave = (): Save => ({
   bossStep: {},
   dashboard: emptyDashboard(),
   lanes: [],
-  byDomain: { ecommerce: emptySlot() },
+  byDomain: { ecommerce: emptySlot(), finance: emptySlot() },
 });
 export const serializeSave = (s: Save): string => JSON.stringify(s);
 
@@ -121,8 +124,8 @@ const isString = (x: unknown): x is string => typeof x === 'string';
  * pattern, not by a list, so reading a save never needs the lazy General chunk. src/general.ts holds the same pattern.
  */
 export const DRILL_ID = /^g-[a-z0-9-]+$/;
-// Plan 9 D9-7: e-commerce ticket ids (ECOM_ID) are kept by pattern for the same reason (lazy domain chunk).
-const isWorkId = (ids: ReadonlySet<string>, id: string): boolean => ids.has(id) || DRILL_ID.test(id) || ECOM_ID.test(id);
+// Plan 9 D9-7 / v14: e-commerce and finance ticket ids (ECOM_ID, FIN_ID) are kept by pattern for the same reason (lazy domain chunks).
+const isWorkId = (ids: ReadonlySet<string>, id: string): boolean => ids.has(id) || DRILL_ID.test(id) || ECOM_ID.test(id) || FIN_ID.test(id);
 
 function pickRecord<T>(v: unknown, ok: (x: unknown) => x is T, ticketIds: ReadonlySet<string>): Record<string, T> {
   const out: Record<string, T> = {};
@@ -168,8 +171,8 @@ function readSlot(v: unknown): DomainSlot {
   return { dashboard: readDashboard(o.dashboard), sandboxDraft: typeof o.sandboxDraft === 'string' ? o.sandboxDraft.slice(0, SANDBOX_DRAFT_MAX) : '' };
 }
 
-/** The one place a domain's dashboard and Sandbox draft are read or written (Plan 9): Logistics = the Save itself (v3 fields), E-com = byDomain.ecommerce. */
-export const domainSlot = (save: Save, id: DomainId): DomainSlot => (id === 'ecommerce' ? save.byDomain.ecommerce : save);
+/** The one place a domain's dashboard and Sandbox draft are read or written (Plan 9): Logistics = the Save itself (v3 fields), others = byDomain[id]. */
+export const domainSlot = (save: Save, id: DomainId): DomainSlot => (id === 'logistics' ? save : save.byDomain[id]);
 
 /**
  * Throws InvalidSaveError (not JSON, bad version, missing migration) or NewerSaveError.
@@ -185,6 +188,7 @@ export function parseSave(raw: string, known: Known, migrations = MIGRATIONS, ve
     v++;
     d = { ...migrate(d, known), version: v };
   }
+  const by = isRecord(d.byDomain) ? d.byDomain : {};
   const completed = Array.isArray(d.completed)
     ? d.completed.filter((x): x is string => typeof x === 'string' && isWorkId(known.ticketIds, x))
     : [];
@@ -198,7 +202,7 @@ export function parseSave(raw: string, known: Known, migrations = MIGRATIONS, ve
     ...readV2(d, known),
     dashboard: readDashboard(d.dashboard),
     lanes: Array.isArray(d.lanes) ? [...new Set(d.lanes.filter((x): x is string => typeof x === 'string' && known.laneIds.has(x)))] : [],
-    byDomain: { ecommerce: readSlot(isRecord(d.byDomain) ? d.byDomain.ecommerce : undefined) },
+    byDomain: { ecommerce: readSlot(by.ecommerce), finance: readSlot(by.finance) },
   };
 }
 
