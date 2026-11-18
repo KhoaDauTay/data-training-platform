@@ -75,25 +75,25 @@ function rigReact({ timeline }: GsapArt, svg: SVGSVGElement, grow: boolean): voi
   if (pose in MOVES) {
     const m = movedParts(who, pose as Move);
     const extra = all(m.extra).map((g) => g.firstElementChild ?? g);
-    const s = (ms: number) => ms / 1000;
+    const s = (f: number) => (f * MOVES[pose as Move].ms) / 1000; // a share of the reaction's length (≤ 3 s, tests/mascots.test.ts)
     if (pose === 'cheer') { // squash, jump 10 px, land with a bounce; Lily wags her tail 3 times
       tl.to(all(m.body), { keyframes: [
-        { scaleY: 0.96, svgOrigin: at.feet, duration: s(100), ease: 'power1.in' },
-        { scaleY: 1, y: -10, duration: s(220), ease: 'power2.out' },
-        { y: 0, duration: s(380), ease: 'bounce.out' }] }, 0);
-      if (extra.length) tl.to(extra, { keyframes: { rotation: [0, 14, -14, 14, -14, 14, 0] }, svgOrigin: at.tail, duration: s(600), ease: 'sine.inOut' }, 0);
+        { scaleY: 0.96, svgOrigin: at.feet, duration: s(0.14), ease: 'power1.in' },
+        { scaleY: 1, y: -10, duration: s(0.32), ease: 'power2.out' },
+        { y: 0, duration: s(0.54), ease: 'bounce.out' }] }, 0);
+      if (extra.length) tl.to(extra, { keyframes: { rotation: [0, 14, -14, 14, -14, 14, 0] }, svgOrigin: at.tail, duration: s(0.86), ease: 'sine.inOut' }, 0);
     } else if (pose === 'think') { // head tilts, the wing comes up to the chin
       tl.to(all(m.head), { keyframes: [
-        { rotation: -6, svgOrigin: at.neck, duration: s(140), ease: 'power2.out' },
-        { rotation: -6, duration: s(100) },
-        { rotation: 0, duration: s(160), ease: 'sine.inOut' }] }, 0);
+        { rotation: -6, svgOrigin: at.neck, duration: s(0.35), ease: 'power2.out' },
+        { rotation: -6, duration: s(0.25) },
+        { rotation: 0, duration: s(0.4), ease: 'sine.inOut' }] }, 0);
       // Boon's wing swings up from its root; Lily's chin paw is one part with her other arm, so it only lifts a little
       const lift = at['arm-chin'] ? { rotation: 28, svgOrigin: at['arm-chin'] } : { y: 4 };
-      if (extra.length) tl.from(extra, { ...lift, duration: s(300), ease: 'back.out(2)' }, 0);
+      if (extra.length) tl.from(extra, { ...lift, duration: s(0.75), ease: 'back.out(2)' }, 0);
     } else if (pose === 'oops') { // shake ±4 px three times
-      tl.to(all(m.body), { keyframes: { x: [0, -4, 4, -4, 4, -4, 4, 0] }, duration: s(360), ease: 'none' }, 0);
+      tl.to(all(m.body), { keyframes: { x: [0, -4, 4, -4, 4, -4, 4, 0] }, duration: s(1), ease: 'none' }, 0);
     } else if (extra.length) { // point: the wing points twice
-      const beat = [{ rotation: -12, svgOrigin: at['arm-point'], duration: s(80), ease: 'power1.in' }, { rotation: 0, duration: s(160), ease: 'back.out(2)' }];
+      const beat = [{ rotation: -12, svgOrigin: at['arm-point'], duration: s(1 / 6), ease: 'power1.in' }, { rotation: 0, duration: s(1 / 3), ease: 'back.out(2)' }];
       tl.to(extra, { keyframes: [...beat, ...beat] }, 0);
     }
   }
