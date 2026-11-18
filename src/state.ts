@@ -156,7 +156,9 @@ export function expectedResult(solution: string, schema: SchemaId = domainSchema
   const k = `${schema}|${solution}`;
   let p = expected.get(k);
   if (!p) {
-    p = schema === 'game' ? app.run(solution, { schema }) : app.ensure(schema).then(() => app.run(solution, { schema }));
+    // A named run seeds its schema (v12.0 D10-3) and respects a failed seed; an explicit ensure() would clear that and
+    // start another seed on every brief redraw. Only `lab` keeps it: lessons and drills have no Retry button of their own.
+    p = schema === 'lab' ? app.ensure(schema).then(() => app.run(solution, { schema })) : app.run(solution, { schema });
     expected.set(k, p);
     p.catch(() => expected.delete(k)); // timeout/restart: try again on the next render
   }
