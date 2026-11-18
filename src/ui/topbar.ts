@@ -233,7 +233,8 @@ export function renderTopbar(): void {
   const domainChrome = inDomain(route) && !(route === 'play' && activeSchema() === 'lab');
   byId('domain-status').hidden = !domainChrome;
   byId('domain-chapter').textContent = domainChrome ? t('top.chapterTiny', { n: ch }) : ''; // U1: "Ch.4" in the chip on phones
-  byId('rank').textContent = rankOf(app.tickets, done()).tier?.[lang] ?? t('career.intern');
+  const rank = byId('rank');
+  rank.textContent = rank.title = rankOf(app.tickets, done()).tier?.[lang] ?? t('career.intern'); // title: F1 truncates it on a tight bar
   drawXp();
   renderSettings();
   byId('db-status').replaceChildren(...nodes(
