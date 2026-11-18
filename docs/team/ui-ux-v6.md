@@ -1,6 +1,6 @@
 # BoonData — UI/UX v6: hình, icon và chuyển động "xịn" (nâng cấp trên v5)
 
-**Trạng thái: HƯỚNG ĐÃ DUYỆT** (user, 2026-11-18: "Duyệt"). Bốn quyết định lớn ở §0.2 đã chốt. Các quyết định nhỏ ở §9 lấy mặc định in đậm nếu không ai đổi.
+**Trạng thái: HƯỚNG ĐÃ DUYỆT** (user, 2026-11-18: "Duyệt"). Bốn quyết định lớn ở §0.2 đã chốt. Các quyết định nhỏ D-V1..D-V10 ở §9 lấy mặc định in đậm (L111). T0 xong: giấy phép ghi ở `assets/THIRD_PARTY.md`; Open Doodles xác nhận CC0; **không gói Kenney nào đạt** (3D, tàu buồm hoặc isometric), nên cảnh S1/S3 vẽ tay.
 
 Người viết: UI/UX · 2026-11-18.
 
