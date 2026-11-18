@@ -89,6 +89,10 @@ export class DbClient {
   private ensured = new Set<SchemaId>();
   /** Seeds in flight, one per schema: a second caller waits for the same seed instead of queueing another. */
   private seeding = new Map<SchemaId, Promise<void>>();
+  /** Seeds that failed or timed out (D10-2): requests naming them no longer re-seed (no 2-minute wait per Run). ensure() clears it. */
+  private broken = new Set<SchemaId>();
+  /** v12.0: a seed finished (any caller). main.ts drops cached results and loads the columns here (D10-5). */
+  onSeeded: (schema: SchemaId) => void = () => {};
   /** Schema for requests that name none (Plan 9 D9-9): the open domain's ('game' = Logistics, 'ecom'). Drills and lessons pass theirs explicitly. */
   defaultSchema: SchemaId = 'game';
   private worker!: Worker;
@@ -110,6 +114,7 @@ export class DbClient {
 
   /** One queued entry point for every kind of request. Rejects with SqlError, WorkerTaskError, QueryTimeoutError, DbRestartError or DbFailedError. */
   request<T>(kind: RequestKind, sql: string, timeoutMs = this.timeoutMs, opts: RunOpts = {}): Promise<T> {
+    this.seedNamed(opts.schema);
     const schema = opts.schema ?? this.defaultSchema;
     return this.enqueue<T>(schema !== 'game' ? { kind, sql, schema } : { kind, sql }, timeoutMs);
   }
@@ -125,6 +130,7 @@ export class DbClient {
    * the next ensure() tries again.
    */
   ensure(schema: SchemaId): Promise<void> {
+    this.broken.delete(schema);
     if (this.ensured.has(schema)) return Promise.resolve();
     let p = this.seeding.get(schema);
     if (!p) {
@@ -142,11 +148,20 @@ export class DbClient {
         await this.enqueue<void>({ kind: 'ensure', schema }, ENSURE_TIMEOUT_MS);
         break;
       } catch (e) {
-        if (!(e instanceof DbRestartError)) throw e; // v11 review: queued when another query restarted the worker: send again
+        if (!(e instanceof DbRestartError)) { // v11 review: queued when another query restarted the worker: send again
+          this.broken.add(schema);
+          throw e;
+        }
       }
     }
     this.ensured.add(schema);
+    this.onSeeded(schema);
     performance.measure(`db:ensure:${schema}`, { start }); // v12.0 §2 measurement (review-log)
+  }
+
+  /** v12.0 D10-3: a request that names its schema (workspace, lessons, drills) seeds it first, queued ahead of itself. */
+  private seedNamed(schema?: SchemaId): void {
+    if (schema && !this.ensured.has(schema) && !this.broken.has(schema)) void this.ensure(schema).catch(() => undefined);
   }
 
   private replayEnsured(): void {
@@ -206,6 +221,7 @@ export class DbClient {
 
   /** Plans of `sql` before and after the player's index, in one rolled-back transaction (chapter 11 index lab). */
   lab(ddl: string, sql: string, table: string, opts: RunOpts = {}): Promise<LabResult> {
+    this.seedNamed(opts.schema);
     const schema = opts.schema ?? this.defaultSchema;
     return this.enqueue<LabResult>(schema !== 'game' ? { kind: 'lab', ddl, sql, table, schema } : { kind: 'lab', ddl, sql, table }, this.timeoutMs);
   }

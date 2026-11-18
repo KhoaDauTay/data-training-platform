@@ -16,6 +16,12 @@ describe('khởi động', () => {
     expect(db).toBeGreaterThan(-1);
     expect(content).toBeGreaterThan(db);
   });
+  it('v12.0: lựa chọn lúc khởi động được tính và mở schema trước lần vẽ đầu tiên', () => {
+    const pick = src.indexOf('const pick: BootPick | undefined = bootPick(');
+    expect(pick).toBeGreaterThan(-1);
+    expect(pick).toBeLessThan(src.indexOf('uiReady = true'));
+    expect(src).not.toContain("db.ensure('game')"); // Task 1's stop-gap is gone
+  });
 });
 
 describe('v12.0 P1: worker khởi động rỗng, Logistics seed lười', () => {

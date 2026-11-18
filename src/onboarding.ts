@@ -1,3 +1,4 @@
+import { isLiveDomain, type DomainId } from './domains';
 import type { Key } from './i18n';
 import { localStore, readJson, writeJson, type KV } from './storage';
 
@@ -27,6 +28,20 @@ export function ackTour(step: number, storage?: KV): void {
 /** Welcome screen (v4 §B.2 layer 1): new players only; never an old save (v4 §F.2) or someone who skipped the old coach marks. */
 export const welcomeNeeded = (completed: number, tour: TourPref | undefined, coachSkipped: boolean): boolean =>
   completed === 0 && tour === undefined && !coachSkipped;
+
+/** v12.0 P2: what the player starts in. 'general' = "Chỉ học SQL" (only `lab` is seeded). Kept in the domain pref (D10-7). */
+export type BootPick = DomainId | 'general';
+
+/**
+ * v12.0 P1/P2: the data to seed at boot. The hash's domain, else the remembered one (pref cargo-query/domain, which may
+ * be 'general'), else Logistics, except on a first visit (`firstVisit` = welcomeNeeded(...)): then undefined, and the
+ * welcome dialog asks before anything is seeded.
+ */
+export function bootPick(hashDomain: DomainId | undefined, pref: unknown, firstVisit: boolean): BootPick | undefined {
+  if (hashDomain) return hashDomain;
+  if (isLiveDomain(pref) || pref === 'general') return pref;
+  return firstVisit ? undefined : 'logistics';
+}
 
 /** Progressive disclosure (v4 §B.2 layer 3) only for players who started on the welcome screen as beginners (V9). */
 export const gated = (tour: TourPref | undefined): boolean => tour !== undefined && !tour.knows;

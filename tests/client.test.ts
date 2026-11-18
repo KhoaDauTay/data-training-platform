@@ -235,16 +235,49 @@ describe('DbClient', () => {
     expect(e).not.toBeInstanceOf(SqlError);
     expect((e as WorkerTaskError).detail).toBe('Failed to fetch');
   });
-  it('schema theo request: run/explain/steps/lab mang schema, vắng = game', () => {
+  it('schema theo request: run/explain/steps/lab mang schema, vắng = game', async () => {
     const { db } = client();
     const w = last();
     w.ready();
     void db.run('R', { schema: 'lab' });
-    expect(w.posted[0]).toMatchObject({ kind: 'run', sql: 'R', schema: 'lab' });
-    w.answer(0);
+    expect(w.posted[0]).toMatchObject({ kind: 'ensure', schema: 'lab' }); // D10-3: a named schema is seeded first
+    w.send({ type: 'result', id: w.posted[0].id, result: null });
+    await vi.advanceTimersByTimeAsync(0);
+    expect(w.posted[1]).toMatchObject({ kind: 'run', sql: 'R', schema: 'lab' });
+    w.answer(1);
     void db.run('G');
-    expect(w.posted[1]).toMatchObject({ kind: 'run', sql: 'G' });
-    expect((w.posted[1] as { schema?: string }).schema).toBeUndefined();
+    expect(w.posted[2]).toMatchObject({ kind: 'run', sql: 'G' });
+    expect((w.posted[2] as { schema?: string }).schema).toBeUndefined();
+  });
+
+  it('D10-3: query mang schema thì seed trước; seed hỏng không seed lại ở mỗi lần chạy, ensure() thì thử lại', async () => {
+    const { db } = client();
+    const w = last();
+    w.ready();
+    const r = db.run('A', { schema: 'ecom' }).catch((x: unknown) => x);
+    expect(w.posted.map((p) => p.kind)).toEqual(['ensure']);
+    w.send({ type: 'fault', id: w.posted[0].id, message: 'boom' });
+    await vi.advanceTimersByTimeAsync(0);
+    expect(w.posted.map((p) => p.kind)).toEqual(['ensure', 'run']);
+    w.answer(1);
+    await r;
+    void db.run('B', { schema: 'ecom' });
+    expect(w.posted.map((p) => p.kind)).toEqual(['ensure', 'run', 'run']); // broken: no second seed
+    w.answer(2);
+    void db.ensure('ecom').catch(() => undefined);
+    expect(w.posted.map((p) => p.kind)).toEqual(['ensure', 'run', 'run', 'ensure']);
+  });
+
+  it('onSeeded: mỗi seed xong báo một lần, kể cả seed do query mang schema khởi động', async () => {
+    const { db } = client();
+    const seen: string[] = [];
+    db.onSeeded = (s) => seen.push(s);
+    const w = last();
+    w.ready();
+    void db.run('A', { schema: 'lab' });
+    w.send({ type: 'result', id: w.posted[0].id, result: null });
+    await vi.advanceTimersByTimeAsync(0);
+    expect(seen).toEqual(['lab']);
   });
 
   it('ensure: hạn riêng, nhớ schema, gửi lại sau restart trước query kế tiếp', async () => {

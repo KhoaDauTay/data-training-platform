@@ -49,7 +49,8 @@ export function shapeCard(tk: Ticket, stepIndex: number): HTMLElement {
         : null));
   };
   draw();
-  expectedShape(step.solution, schemaOf(tk)).then(draw, () => draw());
+  // v12.0 D10-3: a hidden workspace (Home, SQL only) must not seed the open domain; showRoute() redraws the brief when it opens.
+  if (!document.getElementById('shell')?.hidden) expectedShape(step.solution, schemaOf(tk)).then(draw, () => draw());
   return card;
 }
 

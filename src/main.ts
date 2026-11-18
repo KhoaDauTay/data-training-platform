@@ -5,7 +5,7 @@ import { loadContent, loadDomain, loadLanes, loadTickets } from './content';
 import { DbClient, DbFailedError, DbRestartError, QueryTimeoutError, WorkerTaskError, type DbStatus } from './db/client';
 import { SqlError } from './db/run';
 import { buildDiagnostics, diagnosticsText } from './diagnostics';
-import { activeDomain, DOMAIN_KEY, ECOM_ID, domainSchemaId, domainSchemaName, isLiveDomain, setActiveDomain, type DomainId } from './domains';
+import { activeDomain, DOMAIN_KEY, DOMAIN_SCHEMA, DOMAINS, ECOM_ID, domainSchemaId, domainSchemaName, setActiveDomain, type DomainId, type SchemaId } from './domains';
 import { applyStatic, loadLang, setLang, t, type Lang } from './i18n';
 import { MyData } from './import/myData';
 import { idbStore } from './import/store';
@@ -29,7 +29,7 @@ import { renderInbox } from './ui/inbox';
 import { createPanel, registerCoreTabs } from './ui/tabs';
 import { coachDone, initTour, refreshTour } from './ui/coach';
 import { initWelcome, openWelcome, relabelWelcome } from './ui/welcome';
-import { readTour } from './onboarding';
+import { bootPick, readTour, welcomeNeeded, type BootPick } from './onboarding';
 import { loadLessonPrefs } from './lessons';
 import { pinBar } from './ui/pin';
 import { initLayout } from './ui/splitter';
@@ -49,20 +49,29 @@ initTheme(); // index.html already set data-theme before paint; this adds the OS
 // Its callbacks only record state until the UI exists (`uiReady`); the setup at the end draws what they recorded.
 let uiReady = false;
 let dbWasReady = false;
+/** The worker itself (engine). app.dbStatus is the status of the data the open pages need (D10-4). */
+let engine: DbStatus = 'loading';
+/** v12.0 P1: the schema the open pages need; undefined while a first visitor has not picked one (P2). */
+let want: SchemaId | undefined;
+const failedSeeds = new Set<SchemaId>();
+/** Also called from the DbClient constructor: the engine is 'loading' then, so `db` is never read before it exists. */
+function syncDbStatus(): void {
+  app.dbStatus = engine === 'failed' || (want !== undefined && failedSeeds.has(want)) ? 'failed'
+    : engine === 'ready' && want !== undefined && db.ready(want) ? 'ready' : 'loading';
+}
 function onDbStatus(s: DbStatus): void {
-  app.dbStatus = s;
+  engine = s;
   if (s === 'ready') dbWasReady = true;
   if (s === 'failed') app.problem = { kind: dbWasReady ? 'worker-crash' : 'db-init-failed' }; // P10
   if (s !== 'loading') app.loadProgress = undefined;
+  syncDbStatus();
   if (!uiReady) return;
   renderTopbar();
   relabelWelcome(); // the download line ends, "I am new" becomes clickable
-  if (s === 'ready' && Object.keys(app.columns).length === 0) void loadColumns();
 }
 const db = new DbClient(onDbStatus);
-void db.ensure('game').catch(() => undefined); // v12.0 Task 1 only: Logistics still at boot; Task 2 seeds the domain the player opens
 db.onProgress = (p) => {
-  if (app.dbStatus !== 'loading') return; // the steps tab fetches the parser .wasm through the same counting fetch later
+  if (engine !== 'loading') return; // the steps tab fetches the parser .wasm through the same counting fetch later
   app.loadProgress = p;
   if (!uiReady) return;
   renderTopbar();
@@ -70,6 +79,23 @@ db.onProgress = (p) => {
 };
 app.run = (sql, opts) => db.run(sql, opts);
 app.ensure = (schema) => db.ensure(schema);
+/**
+ * Every finished seed, whoever started it (openSchema, a lesson's or drill's named request): status, banner, caches and
+ * columns follow. Queries that ran before it saw empty tables, and memoByKey keeps empty results (D10-5). `lab` readers
+ * always await ensure('lab') first, so nothing about it is stale, and a redraw would drop a quick lesson's pending run.
+ */
+db.onSeeded = (s) => {
+  if (s === want && app.notice?.key === 'domain.loading') app.notice = undefined;
+  syncDbStatus();
+  if (!uiReady) return;
+  if (s === 'lab') {
+    renderTopbar();
+    relabelWelcome();
+    return;
+  }
+  dataChanged();
+  if (s === domainSchemaId() && Object.keys(app.columns).length === 0) void loadColumns();
+};
 db.onTimeout = (e) => {
   app.problem = { kind: 'db-timeout', error: e };
   renderTopbar();
@@ -105,6 +131,10 @@ if (loaded.warning?.kind === 'corrupt') app.notice = { key: 'save.corrupt' };
 const firstOpen = (): string => (nextTicket(app.tickets, done()) ?? app.tickets[app.tickets.length - 1]).id;
 app.selectedId = firstOpen();
 app.stepIndex = resumeStep(app.save, selected()); // reloading mid-review keeps the step reached
+// v12.0 P1/P2: seed only what the player opens, queued before the first render's queries. undefined = first visit: Task 3's
+// welcome picker will ask first; until then a first visitor gets Logistics, as before (else "I am new" never enables).
+const pick: BootPick | undefined = bootPick(domainOfHash(location.hash), readJson<unknown>(DOMAIN_KEY), welcomeNeeded(done().size, readTour(), coachDone()));
+openSchema(pick === 'general' ? 'lab' : domainSchemaId(pick ?? 'logistics'));
 initTopbar(); // icon slots first: applyStatic() then only touches the label spans
 applyStatic();
 
@@ -123,6 +153,37 @@ async function loadColumns(): Promise<void> {
   } catch (e) {
     console.warn('Could not read the schema:', errorText(e));
   }
+}
+
+/**
+ * v12.0 P1: the data the open pages need. Seeds `s` once (DbClient.ensure is idempotent and queued ahead of later
+ * requests). The top bar dot, the welcome screen and Run follow app.dbStatus; db.onSeeded redraws when it is in.
+ */
+function openSchema(s: SchemaId): void {
+  want = s;
+  syncDbStatus();
+  if (uiReady) renderTopbar();
+  if (db.ready(s) || failedSeeds.has(s)) return; // a failed seed waits for Retry (D10-2), never one 2-minute try per page
+  const d = DOMAINS.find((x) => DOMAIN_SCHEMA[x.id] === s);
+  // Never replace another banner (save warnings, new version + Reload): those matter more than "preparing".
+  const free = (): boolean => !app.notice || app.notice.key.startsWith('domain.');
+  if (d && free()) app.notice = { key: 'domain.loading', params: { name: t(d.name) } };
+  if (uiReady) renderTopbar();
+  db.ensure(s).catch(() => {
+    failedSeeds.add(s);
+    if (d && free()) app.notice = { key: 'domain.failed', params: { name: t(d.name) } };
+    syncDbStatus();
+    if (uiReady) renderTopbar();
+  });
+}
+
+/** Imported data changed or a seed finished: cached plans, steps, ER metadata and card results describe the old data. */
+function dataChanged(): void {
+  clearMemos();
+  resetCards();
+  work.setSchema(editorSchema());
+  panel.refresh();
+  rerender();
 }
 
 registerCoreTabs(() => work.currentSql(), () => pinBar(() => work.currentSql()));
@@ -252,30 +313,27 @@ function complete(tk: Ticket): void {
 }
 
 /**
- * Plan 9: open a live domain's pages. Loads its content (lazy chunk), sends every query that names no schema to the
- * domain's schema (seeding it once through ensure, queued ahead of later queries), and redraws. Caches keyed by SQL text
- * (EXPLAIN, steps, ER, dashboard cards) are cleared because the same text means other tables now.
+ * Plan 9: open a live domain's pages. Loads its content (lazy chunk), points requests that name no schema at the
+ * domain's schema, opens that schema (seeded once, v12.0 P1) and redraws. Caches keyed by SQL text are cleared because
+ * the same text means other tables now.
  */
 async function enterDomain(id: DomainId): Promise<void> {
   if (id === activeDomain()) return;
-  const loadingShown = id !== 'logistics';
-  const clearLoading = (): void => {
-    if (app.notice?.key === 'ecom.loading') app.notice = undefined;
-  };
-  if (loadingShown) {
-    app.notice = { key: 'ecom.loading' };
+  const name = t(DOMAINS.find((d) => d.id === id)!.name);
+  if (id !== 'logistics') { // Logistics' content is in the boot chunks
+    app.notice = { key: 'domain.loading', params: { name } };
     renderTopbar();
   }
   try {
     await loadDomain(id);
   } catch {
-    app.notice = { key: 'ecom.failed' };
+    app.notice = { key: 'domain.failed', params: { name } };
     renderTopbar();
     return;
   }
   const wanted = domainOfHash(location.hash);
   if (wanted && wanted !== id) { // the player went to another domain while this one loaded
-    clearLoading();
+    if (app.notice?.key === 'domain.loading') app.notice = undefined;
     renderTopbar();
     return;
   }
@@ -283,15 +341,6 @@ async function enterDomain(id: DomainId): Promise<void> {
   writeJson(DOMAIN_KEY, id);
   const schema = domainSchemaId(id);
   db.defaultSchema = schema;
-  if (loadingShown) {
-    db.ensure(schema).then(() => {
-      clearLoading();
-      renderTopbar();
-    }, () => {
-      app.notice = { key: 'ecom.failed' };
-      renderTopbar();
-    });
-  }
   clearMemos();
   resetCards();
   session.mode = { kind: 'story' }; // Practice/Sandbox/drill of the other domain never carry over
@@ -301,11 +350,12 @@ async function enterDomain(id: DomainId): Promise<void> {
   app.conclusionFor = '';
   app.lastRun = undefined;
   app.columns = {};
+  openSchema(schema); // keeps or replaces the loading line until the data is in
   rerender();
   work.setTicket(selected(), app.stepIndex, true);
   work.setSchema(editorSchema());
   panel.refresh();
-  if (app.dbStatus === 'ready') void loadColumns(); // queued after ensure, so it reads the seeded schema
+  if (db.ready(schema)) void loadColumns(); // else db.onSeeded loads them
 }
 
 /** Allowlisted payload only (Plan Deploy Task 3): never SQL, messages, drafts or data. Nothing is sent anywhere. */
@@ -344,7 +394,13 @@ window.addEventListener('error', (e) => fault(e.error));
 window.addEventListener('unhandledrejection', (e) => fault(e.reason));
 
 Object.assign(actions, {
-  rerender, selectTicket, complete, retryDb: () => db.restart(), startDrill: (id: string) => void startDrill(id), openLane: (port: string) => mapStrip.openLane(port), copyDiagnostics: () => void copyDiagnostics(), useSql: (sql: string) => work.setDoc(sql), showTab: (id: string) => panel.show(id),
+  rerender, selectTicket, complete, retryDb: () => {
+    db.restart();
+    if (want) {
+      failedSeeds.delete(want); // the only place a failed seed is tried again (D10-2); restart() replays the seeded ones
+      openSchema(want);
+    }
+  }, startDrill: (id: string) => void startDrill(id), openLane: (port: string) => mapStrip.openLane(port), copyDiagnostics: () => void copyDiagnostics(), useSql: (sql: string) => work.setDoc(sql), showTab: (id: string) => panel.show(id),
   switchLang: (l: Lang) => void setLang(l).then(() => {
     rerender();
     panel.refresh();
@@ -404,24 +460,20 @@ work.setTicket(selected(), app.stepIndex);
 initSidebar(); // its Esc (close the overlay) goes before the tour's
 initTour();
 // Plan 9 D9-12: the domain in the URL, else the last one opened (General pages keep it), before the router builds hashes.
-const savedDomain = readJson<unknown>(DOMAIN_KEY);
-const bootDomain = domainOfHash(location.hash) ?? (isLiveDomain(savedDomain) ? savedDomain : 'logistics');
-if (bootDomain !== 'logistics') await enterDomain(bootDomain);
+if (pick && pick !== 'general' && pick !== activeDomain()) await enterDomain(pick);
 startRouter((r, initial) => {
   const d = domainOfHash(location.hash);
+  if (d) {
+    writeJson(DOMAIN_KEY, d); // the last domain opened; replaces 'general' (D10-7)
+    openSchema(domainSchemaId(d)); // a domain page needs its data (seeded once)
+  }
   if (d && d !== activeDomain()) void enterDomain(d).then(() => showRoute(r, initial));
   else showRoute(r, initial);
 });
 initWelcome();
 
 // "My data" (Plan Import): imported CSVs stay in this browser (IndexedDB) and are replayed into the sandbox schema.
-const myData = new MyData(db, idbStore(), () => {
-  clearMemos(); // cached plans, steps and ER metadata describe the old data
-  resetCards(); // so do card results, including "table missing" from before restore() replayed it; rerender() runs them again
-  work.setSchema(editorSchema());
-  panel.refresh();
-  rerender();
-});
+const myData = new MyData(db, idbStore(), () => dataChanged()); // imported tables: same caches to drop as a finished seed
 initMyData(myData, rerender);
 db.onImportDropped = (table) => {
   void myData.dropped(table);

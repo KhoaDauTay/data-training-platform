@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   ackTour, gated, navLock, parseTour, readTour, startTour, tabOpen, TOUR_KEY, tourEscSkips, tourStep, welcomeNeeded, type TourFacts,
+  bootPick,
 } from '../src/onboarding';
 import type { KV } from '../src/storage';
 
@@ -96,5 +97,19 @@ describe('onboarding (v4 §B, Plan 7 V8–V9)', () => {
     expect(tourEscSkips({ markVisible: true, owned: false })).toBe(true);
     expect(tourEscSkips({ markVisible: false, owned: false })).toBe(false); // ở trang khác, dấu nằm trong workspace ẩn
     expect(tourEscSkips({ markVisible: true, owned: true })).toBe(false); // đang đóng menu ⋯ / sổ tay / popup editor
+  });
+});
+
+describe('bootPick (v12.0 P1/P2)', () => {
+  it('domain in the hash wins, then the pref, then Logistics for anyone who is not new', () => {
+    expect(bootPick('ecommerce', 'logistics', true)).toBe('ecommerce');
+    expect(bootPick(undefined, 'ecommerce', true)).toBe('ecommerce');
+    expect(bootPick(undefined, 'general', false)).toBe('general');
+    expect(bootPick(undefined, undefined, false)).toBe('logistics');
+    expect(bootPick(undefined, 'finance', false)).toBe('logistics'); // not live
+  });
+  it('a first visit with nothing remembered asks (undefined = the welcome picker)', () => {
+    expect(bootPick(undefined, undefined, true)).toBeUndefined();
+    expect(bootPick(undefined, 42, true)).toBeUndefined();
   });
 });
