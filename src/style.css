@@ -32,6 +32,8 @@
   /* Mascot palette (v6 §1.2–1.3): SVG only, never text. */
   --lily-fur: #fdfbf7; --lily-cream: #ece6dc; --lily-ear: #2b2522; --lily-spot: #2b2522; --lily-line: #5a4f47; --lily-ink: #2b2522; --lily-scarf: #1f9e8f; --lily-badge: #ffd166;
   --boon-body: #fdfdfb; --boon-plume: #e3e7e9; --boon-line: #59626a; --boon-wing: #3f8f9e; --boon-belly: #eef1f2; --boon-bill: #f2b544; --boon-ink: #2a2320; --boon-lanyard: #d98e4a;
+  /* L87: Lily's growth stage (adult look by default: the top-bar logo has no data-mascot) and the teaching scene's loops (off). */
+  --lily-scarf-on: 1; --lily-badge-on: 1; --lily-prop-on: 0; --lily-size: 1; --lily-wag: none; --lily-nod: none; --boon-tap: none;
   --cheek: #f4a3a3; --wood: #c98b55; --wood-dark: #8a4b22; --sky: #e6f4f6; --ground: #e9dcc6;
   /* Tien Sa scene (src/art/logistics.ts): day here, dusk in dark mode (v10 critic #8). */
   --hs-sky0: #7dd3fc; --hs-sky1: #e0f2fe; --hs-sky2: #fef3c7; --hs-sea0: #0ea5e9; --hs-sea1: #0c4a6e; --hs-sun: #fde68a; --hs-cloud: #ffffff;
@@ -242,6 +244,23 @@
 @keyframes cq-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
 @keyframes cq-eyes { 0%, 92%, 100% { transform: scaleY(1); } 95% { transform: scaleY(0.1); } }
 @keyframes cq-floatz { 0% { transform: translate(0, 0); opacity: 0; } 30% { opacity: 1; } 100% { transform: translate(8px, -14px); opacity: 0; } }
+/* ---- L87: Lily grows with the player. <html data-lily> is set by rerender() (main.ts); mascot('lily') marks its <svg> data-mascot. ---- */
+:root[data-lily="0"] [data-mascot=lily] { --lily-size: 0.8; --lily-scarf-on: 0; --lily-badge-on: 0; }
+:root[data-lily="1"] [data-mascot=lily] { --lily-size: 0.9; --lily-badge-on: 0; }
+:root[data-lily="3"] [data-mascot=lily] { --lily-prop-on: 1; }
+svg[data-mascot=lily] > use, svg[data-mascot=lily] > .lily-fig { transform: scale(var(--lily-size)); transform-origin: 60px 116px; }
+/* ---- L87 teaching scene (src/ui/teachScene.ts): loops only while it is on screen (data-live, IntersectionObserver). ---- */
+@media (prefers-reduced-motion: no-preference) {
+  .teach-scene[data-live] { --lily-wag: cq-wag 0.9s ease-in-out infinite; --lily-nod: cq-nod 3.2s ease-in-out infinite; --boon-tap: cq-tap 1.8s ease-in-out infinite; }
+  .teach-scene[data-tap] { --boon-tap: cq-tap 0.3s ease-in-out 2; }
+  .teach-scene .tb-tail { transform-box: fill-box; transform-origin: 0% 100%; animation: var(--lily-wag); }
+  .teach-scene .tb-nod { animation: var(--lily-nod); }
+  .teach-scene .tb-tap { transform-origin: 84px 84px; animation: var(--boon-tap); }
+  .teach-scene .tb-line { transition: opacity 0.2s; }
+}
+.teach-scene .tb-nod { transform: rotate(6deg); transform-origin: 60px 76px; } /* still frame: Lily's head leans toward Boon */
+@keyframes cq-nod { 0%, 100% { transform: rotate(6deg); } 40% { transform: rotate(10deg) translateY(1px); } 55% { transform: rotate(4deg) translateY(-1px); } }
+@keyframes cq-tap { 0%, 100% { transform: rotate(0); } 50% { transform: rotate(-9deg); } }
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; animation: none !important; scroll-behavior: auto !important; }
 }

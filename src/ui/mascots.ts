@@ -1,7 +1,10 @@
 import { cx } from '../theme';
 import { s } from './svg';
 
-/** Lily (dog): the player's buddy, mirrors how the work goes. Boon (duck): the guide (tour, hints, error notes). L57, v6 §1. */
+/**
+ * Lily (Dalmatian): the learner, i.e. the player's own avatar; she reacts (cheer, sleep, idle) and never teaches. Boon (duck): the
+ * teacher and guide (welcome, tour, hints, lessons, error notes, Coming soon) and speaks in the first person. L57, L83, L87.
+ */
 export type Mascot = 'lily' | 'boon';
 /** One <symbol id="<mascot>-<pose>"> each in index.html's #mascot-sprite (tests/mascots.test.ts). New pose: a symbol there + a name here. */
 export const POSES = ['idle', 'point', 'cheer', 'think', 'oops', 'sleep'] as const;
@@ -14,5 +17,11 @@ export type Pose = (typeof POSES)[number];
  */
 export function mascot(who: Mascot, pose: Pose, cls = 'size-12', label?: string): SVGSVGElement {
   const a11y: Record<string, string> = label ? { role: 'img', 'aria-label': label } : { 'aria-hidden': 'true', focusable: 'false' };
-  return s('svg', { viewBox: '0 0 120 120', class: cx('shrink-0 overflow-visible', cls), ...a11y }, s('use', { href: `#${who}-${pose}` }));
+  // data-mascot: Lily's growth stage (L87, <html data-lily> + style.css) reaches every Lily drawn here, never the top-bar logo.
+  return s('svg', { viewBox: '0 0 120 120', class: cx('shrink-0 overflow-visible', cls), 'data-mascot': who, ...a11y }, s('use', { href: `#${who}-${pose}` }));
+}
+
+/** rerender(): Lily's stage on <html data-lily> (0–3, src/lily.ts). */
+export function setLilyStage(stage: number): void {
+  document.documentElement.dataset.lily = String(stage);
 }
