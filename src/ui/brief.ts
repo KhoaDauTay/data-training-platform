@@ -1,11 +1,13 @@
 import { getLang, t, type Key } from '../i18n';
+import { generalNow } from '../content';
 import { activeDomain, domainSchemaName } from '../domains';
+import { DRILL_ID } from '../save';
 import { LANE_XP } from '../lanes';
 import { roleLine } from '../people';
 import { chaptersOf, nextTicket, SKILLS, xpFor } from '../progress';
 import { ROUTES } from '../scene';
 import { compareShape, shapeOf, type Kind, type Shape } from '../shape';
-import { hintsShown, isClosed, isStory, schemaOf, useHint } from '../session';
+import { framePrice, hintsShown, isClosed, isStory, payFrame, schemaOf, useHint, workKey } from '../session';
 import { actions, app, done, erMeta, expectedShape, persist, showsParents, stepKey, unlockedTables } from '../state';
 import { chapterColor, cx, DEPT_CHIP, deptColor, PILL, thanksKey } from '../theme';
 import { optionOrder, textOf, type Beat, type Ticket, type TicketText } from '../tickets';
@@ -62,7 +64,70 @@ function labCard(sql: string): HTMLElement {
     h('p', { class: 'mt-1 mb-0 text-sm text-muted' }, t('lab.howto')));
 }
 
-export function hints(tk: Ticket, x: TicketText, isDone: boolean): HTMLElement {
+/** v13 §3.1: steps waiting on "Replace with the scaffold?" / whose scaffold chunk failed to load (stepKey). Session only. */
+const asking = new Set<string>();
+const frameFailed = new Set<string>();
+
+/**
+ * Inside Boon's bubble, once the hint that names the commands is open (story: hint 2; a drill's only hint; faded: hint 1):
+ * "Fill the scaffold into the editor" (faded: "Reset the starting scaffold", free) with its price (§3.6), the in-place
+ * "Replace?" question (§3.5), or why an index lab step gets none (§3.7). Redrawn in place so focus stays on its buttons.
+ */
+function fillBox(tk: Ticket, i: number, shown: number): HTMLElement | null {
+  const faded = tk.format === 'faded';
+  if (shown < (faded ? 1 : Math.min(2, tk.hints.length))) return null;
+  if (tk.steps[i].lab) return h('p', { class: 'mt-2 mb-0 text-sm' }, t('frame.lab'));
+  if (faded && !tk.starter) return null;
+  const k = stepKey(tk.id, i);
+  const box = h('div', { class: 'mt-2' });
+  const fill = async (force: boolean): Promise<void> => {
+    const at = workKey();
+    let sql = tk.starter ?? '';
+    if (!faded) {
+      try {
+        const { frameOf } = await import('../frame'); // lazy chunk `frame`
+        const drill = DRILL_ID.test(tk.id) ? generalNow()?.byId.get(tk.id) : undefined;
+        sql = frameOf(tk.steps[i].solution, drill?.kind === 'trap' ? drill.wrong.map((w) => w.sql) : undefined);
+        frameFailed.delete(k);
+      } catch {
+        frameFailed.add(k);
+        return draw('fill');
+      }
+    }
+    if (workKey() !== at) return; // the player moved on while the chunk loaded
+    const r = actions.fillFrame(sql, faded, force);
+    if (r === 'ask') {
+      asking.add(k);
+      return draw('replace');
+    }
+    asking.delete(k);
+    if (r !== 'done') return;
+    if (!faded) payFrame(tk); // only once the editor really holds the scaffold
+    persist();
+    actions.rerender(); // the last hint and the XP line change
+  };
+  const draw = (focus?: string): void => {
+    const price = faded ? undefined : framePrice(tk);
+    box.replaceChildren(...nodes(
+      asking.has(k)
+        ? h('div', {},
+          h('p', { class: 'mt-0 mb-1' }, t('frame.ask')),
+          h('div', { class: 'flex flex-wrap gap-2' },
+            h('button', { type: 'button', 'data-f': 'replace', class: 'primary', onclick: () => void fill(true) }, t('frame.replace')),
+            h('button', { type: 'button', onclick: () => { asking.delete(k); draw('fill'); } }, t('frame.keep'))))
+        : h('div', { class: 'flex flex-wrap items-center gap-2' },
+          h('button', { type: 'button', 'data-f': 'fill', onclick: () => void fill(false) }, t(faded ? 'frame.reset' : 'frame.fill')),
+          price === undefined ? null : h('span', { class: 'text-sm' }, typeof price === 'object' ? t('frame.cost', { i: price.hint, cost: price.xp })
+            : price === 'free' ? t('frame.free') : t(DRILL_ID.test(tk.id) ? 'frame.weakPass' : 'frame.weakRun'))),
+      frameFailed.has(k) ? h('p', { role: 'status', class: 'mt-1 mb-0 text-sm' }, t('frame.failed')) : null));
+    if (focus) box.querySelector<HTMLElement>(`[data-f="${focus}"]`)?.focus();
+  };
+  draw();
+  return box;
+}
+
+/** Hints as Boon's words (v13 §3.1): the earlier ones as a small list, the latest in his bubble with the scaffold button. */
+export function hints(tk: Ticket, x: TicketText, isDone: boolean, stepIndex = 0): HTMLElement {
   const shown = hintsShown(tk.id);
   const cost = xpFor(tk, shown) - xpFor(tk, shown + 1); // 0 in chapter 1 (L54)
   const btn = h('button', {
@@ -76,9 +141,14 @@ export function hints(tk: Ticket, x: TicketText, isDone: boolean): HTMLElement {
     ? t('brief.hint', { i: shown + 1, n: x.hints.length, cost })
     : t('brief.hintFree', { i: shown + 1, n: x.hints.length })); // Practice: 0 XP, so no cost (P9); chapter 1: free (L54)
   const tourHere = tourRegion() === 'brief' || tourRegion() === 'lesson'; // one Boon per pane
+  const last = Math.min(shown, x.hints.length);
   return h('section', { class: 'hints my-3' },
-    shown ? h('div', { class: 'flex items-start gap-3' }, tourHere ? null : mascot('boon', 'think', 'size-12'),
-      h('ol', { class: 'min-w-0 flex-1 space-y-1' }, ...x.hints.slice(0, shown).map((s) => h('li', {}, richText(s))))) : null,
+    last > 1 ? h('ol', { class: 'mt-0 mb-2 space-y-1 text-sm text-muted' }, ...x.hints.slice(0, last - 1).map((s) => h('li', {}, richText(s)))) : null,
+    last ? h('div', { class: 'flex items-start gap-3' }, tourHere ? null : mascot('boon', 'point', 'size-12 shrink-0'),
+      h('div', { class: 'min-w-0 flex-1 rounded-2xl rounded-tl-sm bg-sun px-4 py-2 text-sun-ink [&_p]:my-1' },
+        h('p', { class: 'text-sm font-semibold' }, t('brief.hintFree', { i: last, n: x.hints.length })),
+        richText(x.hints[last - 1]),
+        isDone ? null : fillBox(tk, stepIndex, last))) : null,
     isDone || shown >= x.hints.length ? null : btn);
 }
 
@@ -261,7 +331,7 @@ export function renderBrief(host: HTMLElement, tk: Ticket, stepIndex: number): v
     isStory() && !isDone ? lessonSlot(tk.grants) : null, // seen lessons (or "I know SQL") are one line each
     isStory() ? story(tk) : null,
     coach('hints'),
-    hints(tk, x, isDone),
+    hints(tk, x, isDone, stepIndex),
     app.conclusionFor === tk.id && !isDone && x.conclusion ? conclusion(tk, x) : null,
     isDone ? sentBubbles(tk) : null,
     isDone ? recap(tk, x) : null,

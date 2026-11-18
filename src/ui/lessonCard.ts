@@ -6,7 +6,7 @@ import { lessonSchema, loadLessonPrefs, markLesson, type Lesson } from '../lesso
 import { SKILLS } from '../progress';
 import { skillOfDrill } from '../home';
 import { actions as appActions, app } from '../state';
-import { blanksIn } from '../tickets';
+import { blanksIn, fillAction, firstBlank } from '../tickets';
 import { cx } from '../theme';
 import { byId, h, nodes, richText } from './dom';
 import { errorText, errorView } from './feedback';
@@ -23,6 +23,9 @@ const verdicts = new Map<string, { ok: boolean; text: () => string; fail?: Exclu
 const examples = new Map<string, { result?: QueryResult; error?: unknown }>();
 /** "Chạy thử" in the try box (L84): the player's own result, not graded, never app.lastRun. */
 const tryRuns = new Map<string, { result?: QueryResult; error?: unknown; sql?: string }>();
+/** v13 "Boon helps" in the try box: its bubble state, and the text before the scaffold replaced it (one undo level). */
+const boon = new Map<string, 'open' | 'ask' | 'failed'>();
+const undoTry = new Map<string, string>();
 /** Open/collapsed as the player last chose this session; otherwise the first lesson not seen yet is open. */
 const expanded = new Map<string, boolean>();
 /** Marked this session: the pref write may fail (blocked storage) and the card must still collapse. */
@@ -72,7 +75,10 @@ function card(l: Lesson, titleId: string, actions: HTMLElement[], tour = false):
 
   const area = h('textarea', { class: 'w-full rounded-lg bg-code p-2 font-mono text-sm ring-1 ring-line', rows: l.node ? '8' : '3', spellcheck: 'false', 'aria-label': t('lesson.tryAria'), placeholder: t('lesson.tryPlaceholder') });
   area.value = drafts.get(l.id) ?? (l.node ? l.try.starter : ''); // skill lesson: empty, the player writes it (v10 critic #5); advanced: its long starter to change (v11 UX #1)
-  area.addEventListener('input', () => drafts.set(l.id, area.value));
+  area.addEventListener('input', () => {
+    drafts.set(l.id, area.value);
+    if (undoTry.delete(l.id)) drawBoon(); // one undo level, until the next edit (v13 §3.1)
+  });
   const verdict = h('p', { role: 'status', class: 'mb-0' });
   const detail = h('div'); // outside the status line: the rows that differ (L84)
   const yours = h('div');
@@ -142,6 +148,65 @@ function card(l: Lesson, titleId: string, actions: HTMLElement[], tour = false):
   drawVerdict();
   drawYours();
 
+  // v13 §3.1: "Boon helps" beside Run: his bubble (no second Boon: the card's title has him) offers the scaffold, free.
+  const boonBox = h('div');
+  const setArea = (v: string): void => {
+    area.value = v;
+    drafts.set(l.id, v);
+  };
+  const fillTry = async (force: boolean): Promise<void> => {
+    let frame: string;
+    try {
+      frame = (await import('../frame')).frameOf(l.try.solution);
+    } catch {
+      boon.set(l.id, 'failed');
+      return drawBoon('fill');
+    }
+    const act = force ? 'replace' : fillAction(area.value, frame, l.node ? l.try.starter : undefined); // an untouched advanced starter counts as empty
+    if (act === 'ask') {
+      boon.set(l.id, 'ask');
+      return drawBoon('replace');
+    }
+    boon.set(l.id, 'open');
+    if (act === 'replace') {
+      undoTry.set(l.id, area.value);
+      setArea(frame);
+    }
+    drawBoon();
+    const at = firstBlank(area.value, false);
+    area.focus();
+    if (at >= 0) area.setSelectionRange(at, at + 3);
+  };
+  const drawBoon = (focus?: string): void => {
+    const st = boon.get(l.id);
+    const prev = undoTry.get(l.id);
+    boonBox.replaceChildren(...nodes(st && h('div', { class: 'mt-2 rounded-2xl bg-sun px-4 py-2 text-sm text-sun-ink [&_p]:my-1' },
+      h('p', {}, t('frame.try')),
+      st === 'ask'
+        ? h('div', {}, h('p', {}, t('frame.ask')), h('div', { class: 'flex flex-wrap gap-2' },
+          h('button', { type: 'button', 'data-f': 'replace', class: 'primary', onclick: () => void fillTry(true) }, t('frame.replace')),
+          h('button', { type: 'button', onclick: () => { boon.set(l.id, 'open'); drawBoon('fill'); } }, t('frame.keep'))))
+        : h('div', { class: 'flex flex-wrap items-center gap-2' },
+          h('button', { type: 'button', 'data-f': 'fill', onclick: () => void fillTry(false) }, t('frame.fill')),
+          prev === undefined ? null : h('button', {
+            type: 'button',
+            onclick: () => {
+              setArea(prev);
+              undoTry.delete(l.id);
+              drawBoon();
+              area.focus();
+            },
+          }, t('frame.undo'))),
+      st === 'failed' ? h('p', { role: 'status' }, t('frame.failed')) : null)));
+    if (focus) boonBox.querySelector<HTMLElement>(`[data-f="${focus}"]`)?.focus();
+  };
+  const boonBtn = h('button', { type: 'button', 'aria-expanded': String(!!boon.get(l.id)), onclick: () => {
+    boon.set(l.id, 'open');
+    boonBtn.setAttribute('aria-expanded', 'true');
+    drawBoon('fill');
+  } }, t('frame.boon'));
+  drawBoon();
+
   const skill = skillOf(l.id);
   return h('section', { class: 'my-3 rounded-xl bg-panel p-3 ring-1 ring-accent', 'aria-labelledby': titleId },
     h('div', { class: 'flex flex-wrap items-center justify-between gap-2' },
@@ -156,7 +221,7 @@ function card(l: Lesson, titleId: string, actions: HTMLElement[], tour = false):
     section(t('lesson.mistake'), h('pre', { class: 'sql' }, l.mistake.sql), richText(l.mistake.why[lang])),
     l.cues[lang].length ? section(t('lesson.cues'), h('p', { class: 'm-0' }, l.cues[lang].join(' · '))) : null,
     section(t('lesson.try'), richText(l.try.task[lang]), tryPreview(l.try.solution, lessonSchema(l)), area,
-      h('div', { class: 'actions mb-0' }, runMine, check), verdict, detail, yours),
+      h('div', { class: 'actions mb-0' }, runMine, boonBtn, check), boonBox, verdict, detail, yours),
     h('p', { class: 'mt-3 mb-0 text-sm' }, h('a', { href: l.docs, target: '_blank', rel: 'noopener noreferrer' }, t('lesson.docs'))));
 }
 

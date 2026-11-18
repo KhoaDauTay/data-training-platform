@@ -1,7 +1,7 @@
 import { generalNow, loadTicketTemplates } from './content';
 import { learnedSkills } from './home';
 import { dueSkills, localDay, QUEUE_MAX, reviewQueue, warmupQueue, type PracticeItem } from './practice';
-import { currentChapter, SKILLS } from './progress';
+import { currentChapter, SKILLS, xpFor } from './progress';
 import { activeDomain, domainSchemaId, type DomainId, type SchemaId } from './domains';
 import type { Drill } from './general';
 import { domainSlot, DRILL_ID, SANDBOX_DRAFT_MAX } from './save';
@@ -31,7 +31,7 @@ export interface PracticeRun {
 /** Modes inside the #/play route (not routes of their own). `lane`: a lane side task (Plan 5), outside chapter progress. */
 export type Mode = { kind: 'story' } | { kind: 'practice'; run: PracticeRun } | { kind: 'sandbox' } | { kind: 'lane'; ticket: Ticket }
   /** Plan 8a: a General drill on `lab` (drillTicket(drill)); `wrong` = wrong submits this visit (Leitner result). */
-  | { kind: 'drill'; ticket: Ticket; drill: Drill; wrong: number };
+  | { kind: 'drill'; ticket: Ticket; drill: Drill; wrong: number; framed?: boolean };
 
 export const session: { mode: Mode } = { mode: { kind: 'story' } };
 export const isStory = (): boolean => session.mode.kind === 'story';
@@ -142,4 +142,26 @@ export function hintsShown(ticketId: string): number {
 export function useHint(ticketId: string): void {
   if (session.mode.kind === 'practice') session.mode.run.hints++;
   else app.save.hintsUsed[ticketId] = hintsShown(ticketId) + 1;
+}
+
+/**
+ * v13 §3.6: what "Fill the scaffold" costs now. Story, lane, E-com and promotion reviews: it opens every hint (`xp` = the
+ * XP that costs, 0 in chapter 1 and for a lane task's flat XP → 'free'); Practice: the run is no longer a clean pass
+ * (`weak`, a review drill too, though it has one hint); a drill: its pass is weak (`framed`, never saved: D-H4). Once paid: 'free'.
+ */
+export function framePrice(tk: Ticket): { xp: number; hint: number } | 'weak' | 'free' {
+  const m = session.mode;
+  const n = tk.hints.length;
+  if (m.kind === 'drill') return m.framed ? 'free' : 'weak';
+  if (m.kind === 'practice') return m.run.hints >= 2 ? 'free' : 'weak'; // isSuccess: ≤ 1 hint
+  const xp = m.kind === 'lane' ? 0 : xpFor(tk, hintsShown(tk.id)) - xpFor(tk, n);
+  return xp > 0 ? { xp, hint: n } : 'free';
+}
+
+/** Pays the price above, only once the editor really holds the scaffold. */
+export function payFrame(tk: Ticket): void {
+  const m = session.mode;
+  if (m.kind === 'drill') m.framed = true;
+  else if (m.kind === 'practice') m.run.hints = Math.max(m.run.hints, 2, tk.hints.length);
+  else app.save.hintsUsed[tk.id] = Math.max(hintsShown(tk.id), tk.hints.length);
 }

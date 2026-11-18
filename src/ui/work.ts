@@ -12,7 +12,7 @@ import { isClosed, keepsWork, readDraft, schemaOf, workKey, writeDraft } from '.
 import { app, done, editorSchema, initialDoc, persist, stepKey, type LastRun } from '../state';
 import { localStore } from '../storage';
 import { BTN_SUBMIT } from '../theme';
-import { blanksIn, type Ticket } from '../tickets';
+import { blanksIn, fillAction, firstBlank, type Ticket } from '../tickets';
 import { DRILL_ID } from '../save';
 import { diffView, verdictText } from './tryPreview';
 import { celebrate } from './celebrate';
@@ -50,6 +50,11 @@ export interface WorkArea {
   setSchema(ns: SQLNamespace): void;
   /** Replaces the editor text, undoable ("Use this example" on a worked ticket). */
   setDoc(sql: string): void;
+  /**
+   * v13 §3.1/§3.5: puts the hint scaffold (`faded`: the starter again) in the editor, its first ___ selected, and says so with an
+   * Undo button. 'ask' = the editor holds the player's own SQL and `force` is not set: the caller asks first. Only 'done' changed anything.
+   */
+  fill(sql: string, faded: boolean, force: boolean): 'done' | 'ask' | undefined;
   /** Exactly what Ctrl+Enter would run now (selection or whole editor), to compare with app.lastRun.sql. */
   currentSql(): string;
   focus(): void;
@@ -482,6 +487,32 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
     setDoc: (sql) => {
       editor?.setValue(sql);
       editor?.focus();
+    },
+    fill(sql, faded, force) {
+      const ed = editor;
+      if (!ed || !ticket) return undefined;
+      const act = force ? 'replace' : fillAction(ed.getValue(), sql, ticket.starter);
+      if (act === 'ask') return 'ask';
+      const doc = act === 'replace' ? sql : ed.getValue(); // already the scaffold: only select its first blank again
+      const at = firstBlank(doc, faded);
+      ed.fill(act === 'replace' ? sql : undefined, at < 0 ? [0, 0] : [at, 3]);
+      ed.focus();
+      showPane('work');
+      const n = blanksIn(sql, faded);
+      const key: Key = faded ? 'frame.resetDone' : 'frame.filled';
+      announce(t(key, { n }));
+      say('good', () => h('div', { class: 'flex flex-wrap items-center gap-2' }, h('p', { class: 'm-0 font-normal' }, t(key, { n })),
+        act === 'replace' ? h('button', {
+          type: 'button',
+          onclick: () => {
+            if (editor !== ed) return;
+            ed.undo();
+            ed.focus();
+            message = undefined;
+            drawMessage();
+          },
+        }, t('frame.undo')) : null), ['boon', 'point']);
+      return 'done';
     },
     currentSql: () => editor?.runTarget().sql ?? '',
     focus: () => editor?.focus(),

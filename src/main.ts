@@ -449,7 +449,7 @@ Object.assign(actions, {
       failedSeeds.delete(want); // the only place a failed seed is tried again (D10-2); restart() replays the seeded ones
       openSchema(want);
     }
-  }, startWith, startDrill: (id: string) => void startDrill(id), openLane: (port: string) => mapStrip.openLane(port), copyDiagnostics: () => void copyDiagnostics(), useSql: (sql: string) => work.setDoc(sql), showTab: (id: string) => panel.show(id),
+  }, startWith, startDrill: (id: string) => void startDrill(id), openLane: (port: string) => mapStrip.openLane(port), copyDiagnostics: () => void copyDiagnostics(), useSql: (sql: string) => work.setDoc(sql), fillFrame: (sql: string, faded: boolean, force: boolean) => work.fill(sql, faded, force), showTab: (id: string) => panel.show(id),
   switchLang: (l: Lang) => void setLang(l).then(() => {
     rerender();
     panel.refresh();

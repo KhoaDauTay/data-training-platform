@@ -185,7 +185,7 @@ export function completeDrill(tk: Ticket): void {
   }
   const skill = m.drill.skill; // advanced nodes have no Leitner card
   if (skill) {
-    const ok = d$.isSuccess(m.wrong, d$.hintsShown(tk.id));
+    const ok = d$.isSuccess(m.wrong, d$.hintsShown(tk.id)) && !m.framed; // v13 D-H4: a pass after "Fill the scaffold" is weak
     const card = app.save.review[skill];
     const day = d$.today();
     // A pass creates or raises the card (at most once a day, like Practice); a weak pass only resets an existing card.

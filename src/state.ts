@@ -71,6 +71,8 @@ export const actions = {
   copyDiagnostics(): void {},
   /** Replaces the editor text ("Use this example" on a worked ticket). */
   useSql(_sql: string): void {},
+  /** v13: work.fill() (the hint scaffold into the editor). */
+  fillFrame(_sql: string, _faded: boolean, _force: boolean): 'done' | 'ask' | undefined { return undefined; },
   /** Opens a bottom-panel tab (Panel.show). */
   showTab(_id: string): void {},
   /** Opens the map dialog on a lane's brief (Plan 5). */

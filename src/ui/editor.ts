@@ -2,6 +2,7 @@ import { closeCompletion } from '@codemirror/autocomplete';
 import { PostgreSQL, sql, type SQLNamespace } from '@codemirror/lang-sql';
 import { HighlightStyle, syntaxHighlighting } from '@codemirror/language';
 import { setDiagnostics } from '@codemirror/lint';
+import { isolateHistory, undo } from '@codemirror/commands';
 import { Compartment, Prec } from '@codemirror/state';
 import { keymap } from '@codemirror/view';
 import { tags } from '@lezer/highlight';
@@ -14,6 +15,10 @@ export interface Editor {
   runTarget(): { sql: string; offset: number };
   /** Replaces the document in one undoable transaction (history, format). */
   setValue(sql: string): void;
+  /** v13 §3.1: `sql` replaces the document as one undo step on its own (undefined: kept), with `select` (from, length) selected and in view. */
+  fill(sql: string | undefined, select: [number, number]): void;
+  /** One undo step (the scaffold's "Undo" button). */
+  undo(): void;
   setSchema(ns: SQLNamespace): void;
   setLabel(label: string): void;
   /** Underlines Postgres' 1-based character `position`, shifted by `offset` for a selection run. */
@@ -85,6 +90,15 @@ export function createEditor(parent: HTMLElement, opts: EditorOptions): Editor {
     setValue(value) {
       view.dispatch({ changes: { from: 0, to: view.state.doc.length, insert: value } });
     },
+    fill(value, [from, len]) {
+      view.dispatch({
+        ...(value === undefined ? {} : { changes: { from: 0, to: view.state.doc.length, insert: value } }),
+        selection: { anchor: from, head: from + len },
+        scrollIntoView: true,
+        annotations: isolateHistory.of('full'), // never merged with a keystroke typed just before
+      });
+    },
+    undo: () => void undo(view),
     setSchema(ns) {
       view.dispatch({ effects: schemaConf.reconfigure(language(ns)) });
     },

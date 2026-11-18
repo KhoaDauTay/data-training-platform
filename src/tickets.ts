@@ -15,10 +15,22 @@ export const BLANK = '___';
  * comments counts, since LIKE '___' is a valid pattern. Stateless, so a draft with blanks that survived a reload is still caught.
  */
 export function blanksIn(sql: string, faded: boolean): number {
-  if (faded) return sql.split(BLANK).length - 1;
-  // ponytail: comments are not nested and dollar quotes are not skipped; fine for the generated frames and content Solutions.
-  const code = sql.replace(/'(?:[^']|'')*'?|"(?:[^"]|"")*"?|--[^\n]*|\/\*[\s\S]*?(?:\*\/|$)/g, ' ');
-  return code.match(/(?<![\w$])___(?![\w$])/g)?.length ?? 0;
+  return (faded ? sql.split(BLANK).length - 1 : codeOnly(sql).match(STANDALONE_G)?.length) ?? 0;
+}
+// ponytail: comments are not nested and dollar quotes are not skipped; fine for the generated frames and content Solutions.
+/** Strings and comments blanked out with spaces of the same length, so offsets still match `sql`. */
+const codeOnly = (sql: string): string => sql.replace(/'(?:[^']|'')*'?|"(?:[^"]|"")*"?|--[^\n]*|\/\*[\s\S]*?(?:\*\/|$)/g, (m) => ' '.repeat(m.length));
+const STANDALONE = /(?<![\w$])___(?![\w$])/;
+const STANDALONE_G = new RegExp(STANDALONE.source, 'g');
+/** Offset of the first blank `blanksIn` counts (-1: none): the scaffold selects it so typing replaces it (v13 §3.1). */
+export const firstBlank = (sql: string, faded: boolean): number => (faded ? sql.indexOf(BLANK) : codeOnly(sql).search(STANDALONE));
+/**
+ * v13 §3.5, "Fill the scaffold" with this editor text: empty or the step's starter → replace at once; already the scaffold →
+ * only select its first blank again; anything else is the player's own SQL → ask first (never merged into it).
+ */
+export function fillAction(current: string, frame: string, starter: string | undefined): 'replace' | 'same' | 'ask' {
+  const cur = current.trim();
+  return cur === frame.trim() ? 'same' : !cur || cur === starter?.trim() ? 'replace' : 'ask';
 }
 /** Expected-result column label (L25): business meaning in both languages, never the Solution's column name. */
 export interface Step {
