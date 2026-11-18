@@ -1,6 +1,6 @@
 import { loadLessons } from '../content';
 import type { QueryResult } from '../db/run';
-import { grade } from '../grader';
+import { grade, type GradeResult } from '../grader';
 import { getLang, t } from '../i18n';
 import { lessonSchema, loadLessonPrefs, markLesson, type Lesson } from '../lessons';
 import { SKILLS } from '../progress';
@@ -8,16 +8,19 @@ import { skillOfDrill } from '../home';
 import { actions as appActions, app } from '../state';
 import { cx } from '../theme';
 import { byId, h, nodes, richText } from './dom';
-import { errorText, errorView, gradeMessage } from './feedback';
+import { errorText, errorView } from './feedback';
 import { skillIcon } from './icons';
 import { renderResult } from './resultTable';
 import { markExampleRan, tourSlot } from './coach';
 import { readTour } from '../onboarding';
+import { diffView, runOn, tryPreview, verdictText } from './tryPreview';
 
 // Session state by skill id. The brief is rebuilt on every rerender, so what the player typed or ran lives here.
 const drafts = new Map<string, string>();
-const verdicts = new Map<string, { ok: boolean; text: () => string }>();
+const verdicts = new Map<string, { ok: boolean; text: () => string; fail?: Exclude<GradeResult, { ok: true }> }>();
 const examples = new Map<string, { result?: QueryResult; error?: unknown }>();
+/** "Chạy thử" in the try box (L84): the player's own result, not graded, never app.lastRun. */
+const tryRuns = new Map<string, { result?: QueryResult; error?: unknown }>();
 /** Open/collapsed as the player last chose this session; otherwise the first lesson not seen yet is open. */
 const expanded = new Map<string, boolean>();
 /** Marked this session: the pref write may fail (blocked storage) and the card must still collapse. */
@@ -52,7 +55,8 @@ function card(l: Lesson, titleId: string, actions: HTMLElement[], tour = false):
     type: 'button',
     onclick: () => {
       runExample.disabled = true;
-      app.run(l.example, { schema: lessonSchema(l) })
+      // lab is seeded on first use (L84): say so while it runs
+      runOn(lessonSchema(l), l.example, () => exampleOut.replaceChildren(h('p', { class: 'my-1 text-sm text-muted' }, t('preview.loading'))))
         .then((result) => examples.set(l.id, { result }), (error: unknown) => examples.set(l.id, { error }))
         .finally(() => {
           runExample.disabled = false;
@@ -68,11 +72,38 @@ function card(l: Lesson, titleId: string, actions: HTMLElement[], tour = false):
   area.value = drafts.get(l.id) ?? (l.node ? l.try.starter : ''); // skill lesson: empty, the player writes it (v10 critic #5); advanced: its long starter to change (v11 UX #1)
   area.addEventListener('input', () => drafts.set(l.id, area.value));
   const verdict = h('p', { role: 'status', class: 'mb-0' });
+  const detail = h('div'); // outside the status line: the rows that differ (L84)
+  const yours = h('div');
   const drawVerdict = (): void => {
     const v = verdicts.get(l.id);
     verdict.className = cx('mb-0', v && (v.ok ? 'good' : 'bad'));
     verdict.textContent = v ? v.text() : '';
+    detail.replaceChildren(...nodes(v?.fail && diffView(v.fail)));
   };
+  const drawYours = (): void => {
+    const r = tryRuns.get(l.id);
+    yours.replaceChildren(...nodes(r && h('div', { class: 'mt-2' }, h('h5', { class: 'mt-0 mb-1 text-sm' }, t('lesson.yours')),
+      r.result ? renderResult(r.result, undefined, 8) : errorView(r.error))));
+  };
+  const busy = (on: boolean): void => {
+    check.disabled = on;
+    runMine.disabled = on;
+  };
+  const runMine = h('button', {
+    type: 'button',
+    onclick: async () => {
+      if (!area.value.trim()) {
+        verdicts.set(l.id, { ok: false, text: () => t('lesson.tryEmpty') });
+        drawVerdict();
+        return;
+      }
+      busy(true);
+      await runOn(lessonSchema(l), area.value).then((result) => tryRuns.set(l.id, { result }), (error: unknown) => tryRuns.set(l.id, { error }));
+      busy(false);
+      drawYours();
+      if (!yours.isConnected) appActions.rerender();
+    },
+  }, t('lesson.run'));
   const check = h('button', {
     type: 'button',
     class: 'primary',
@@ -82,23 +113,25 @@ function card(l: Lesson, titleId: string, actions: HTMLElement[], tour = false):
         drawVerdict();
         return;
       }
-      check.disabled = true;
+      busy(true);
       verdict.className = 'mb-0';
       verdict.textContent = t('lesson.running');
+      detail.replaceChildren();
       try {
-        // The real grader against the lesson's own answer, 0 XP; app.lastRun, drafts and history are never touched.
-        const r = await grade((sql) => app.run(sql, { schema: lessonSchema(l) }), l.try.solution, area.value, l.try.ordered);
-        verdicts.set(l.id, r.ok ? { ok: true, text: () => t('lesson.tryOk') } : { ok: false, text: () => gradeMessage(r) });
+        // The real grader against the lesson's own answer on lab, 0 XP; app.lastRun, drafts and history are never touched.
+        const r = await grade((sql) => runOn(lessonSchema(l), sql, () => (verdict.textContent = t('preview.loading'))), l.try.solution, area.value, l.try.ordered);
+        verdicts.set(l.id, r.ok ? { ok: true, text: () => t('lesson.tryOk') } : { ok: false, text: () => verdictText(r), fail: r });
         if (r.ok) markSeen(l.id, true);
       } catch (e) {
         verdicts.set(l.id, { ok: false, text: () => errorText(e) });
       }
-      check.disabled = false;
+      busy(false);
       drawVerdict();
       if (!verdict.isConnected) appActions.rerender();
     },
   }, t('lesson.check'));
   drawVerdict();
+  drawYours();
 
   const skill = skillOf(l.id);
   return h('section', { class: 'my-3 rounded-xl bg-panel p-3 ring-1 ring-accent', 'aria-labelledby': titleId },
@@ -110,7 +143,8 @@ function card(l: Lesson, titleId: string, actions: HTMLElement[], tour = false):
     section(t('lesson.example'), h('pre', { class: 'sql' }, l.example), runExample, tour ? tourSlot('lesson') : null, exampleOut, richText(byMarker(l.explain[lang]))),
     section(t('lesson.mistake'), h('pre', { class: 'sql' }, l.mistake.sql), richText(l.mistake.why[lang])),
     l.cues[lang].length ? section(t('lesson.cues'), h('p', { class: 'm-0' }, l.cues[lang].join(' · '))) : null,
-    section(t('lesson.try'), richText(l.try.task[lang]), area, h('div', { class: 'actions mb-0' }, check), verdict),
+    section(t('lesson.try'), richText(l.try.task[lang]), tryPreview(l.try.solution, lessonSchema(l)), area,
+      h('div', { class: 'actions mb-0' }, runMine, check), verdict, detail, yours),
     h('p', { class: 'mt-3 mb-0 text-sm' }, h('a', { href: l.docs, target: '_blank', rel: 'noopener noreferrer' }, t('lesson.docs'))));
 }
 

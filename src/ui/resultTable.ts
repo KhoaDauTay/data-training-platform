@@ -21,17 +21,17 @@ export function formatCell(v: unknown, type?: number): string {
 
 /**
  * Values are shown raw (never translated or locale-formatted). `mark` = row to flag as not matching. `limit`: rows drawn
- * (a lesson example shows 8 and a "+N more rows" line, Plan 8b 8.3; the Result tab keeps MAX_ROWS).
+ * (a lesson example shows 8 and a "+N more rows" line, Plan 8b 8.3; the Result tab keeps MAX_ROWS). `title` replaces the caption.
  */
-export function renderResult(r: QueryResult, mark?: unknown[], limit = MAX_ROWS): HTMLElement {
+export function renderResult(r: QueryResult, mark?: unknown[], limit = MAX_ROWS, title?: string): HTMLElement {
   if (r.columns.length === 0) return h('p', { class: 'muted' }, t('res.noTable'));
   const shown = r.rows.slice(0, limit);
   const num = r.columns.map((_, i) => NUMERIC_OIDS.has(r.types[i]));
-  const caption = r.truncated
+  const caption = title ?? (r.truncated
     ? t('res.tooBig', { n: r.rows.length })
     : r.rows.length > MAX_ROWS
       ? t('res.shown', { n: r.rows.length, max: MAX_ROWS })
-      : t('res.rows', { n: r.rows.length });
+      : t('res.rows', { n: r.rows.length }));
   const cell = (row: unknown[], v: unknown, i: number) =>
     h('td', { class: cx(v === null && 'italic text-muted', num[i] && 'text-right tabular-nums') },
       i === 0 && row === mark ? h('span', { class: 'tag' }, t('res.mismatch')) : null,

@@ -68,6 +68,7 @@ db.onProgress = (p) => {
   relabelWelcome();
 };
 app.run = (sql, opts) => db.run(sql, opts);
+app.ensure = (schema) => db.ensure(schema);
 db.onTimeout = (e) => {
   app.problem = { kind: 'db-timeout', error: e };
   renderTopbar();

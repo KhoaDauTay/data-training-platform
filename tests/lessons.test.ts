@@ -1,17 +1,21 @@
 import { describe, expect, it } from 'vitest';
-import { loadLessons, loadTicketTemplates } from '../src/content';
+import { generalNow, loadLessons, loadTicketTemplates } from '../src/content';
+import labSql from '../src/db/lab.sql?raw';
+import { sqlErrorInfo } from '../src/db/run';
 import { compareResults } from '../src/grader';
-import { cueIn, LESSONS_KEY, loadLessonPrefs, markLesson, parseLessons, type Lesson } from '../src/lessons';
-import { CHAPTER_TABLES, SKILLS, tablesUnlocked } from '../src/progress';
+import { cueIn, lessonSchema, LESSONS_KEY, loadLessonPrefs, markLesson, parseLessons } from '../src/lessons';
+import { CHAPTER_TABLES, SKILLS } from '../src/progress';
 import { textOf } from '../src/tickets';
-import { applyVariant, variantsOf } from '../src/variants';
-import { runner } from './helpers';
+import { labRun } from './generalRules';
 
 const VI_DIACRITIC = /[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ]/i;
 const codeSpans = (s: string): string[] => [...s.matchAll(/`([^`]+)`/g)].map((m) => m[1]).sort();
-const ALL_TABLES = Object.values(CHAPTER_TABLES).flat();
+/** L84: lessons run on `lab`. Tables of lab.sql, and every name a lesson could borrow by mistake (Logistics + lab). */
+const LAB_TABLES = [...labSql.matchAll(/^CREATE TABLE (\w+)/gim)].map((m) => m[1].toLowerCase());
+const KNOWN_TABLES = new Set([...Object.values(CHAPTER_TABLES).flat(), ...LAB_TABLES]);
+/** FROM/JOIN identifiers that are a known table name (EXTRACT(… FROM col) and CTE names are not tables, so they are skipped). */
 const tablesIn = (sql: string): string[] =>
-  [...new Set([...sql.matchAll(/\b(?:from|join)\s+([a-z_][a-z0-9_]*)/gi)].map((m) => m[1].toLowerCase()))].filter((x) => ALL_TABLES.includes(x));
+  [...new Set([...sql.matchAll(/\b(?:from|join)\s+([a-z_][a-z0-9_]*)/gi)].map((m) => m[1].toLowerCase()))].filter((x) => KNOWN_TABLES.has(x));
 
 const fakeKV = () => {
   const m = new Map<string, string>();
@@ -63,21 +67,21 @@ describe('parseLessons, cueIn, pref bài học', () => {
   });
 });
 
-/** product-design-v4 §C.5: content rules for every quick lesson, on the real data. */
+/** product-design-v4 §C.5 as amended by L84: content rules for every quick lesson, on the `lab` schema. */
 describe('bài học nhanh (content/lessons.yml)', () => {
   const lessons = [...loadLessons().values()];
   const templates = loadTicketTemplates();
-  const skillOf = (l: Lesson) => SKILLS.find((s) => s.id === l.id)!;
-  /** The ticket that grants the skill, with every variant's Solution. */
-  const solutionsOf = (l: Lesson) => {
-    const t = templates.find((x) => x.grants.includes(l.id))!;
-    return Array.from({ length: Math.max(1, variantsOf(t).length) }, (_, v) => applyVariant(t, v).steps[0].solution);
-  };
 
-  it('mọi kỹ năng trong skills.yml có đúng một bài học (Plan 8a: 38); id là kỹ năng có thật', () => {
+  it('lab.sql có bảng (kiểm chính bộ đọc tên bảng của test này)', () => {
+    expect(LAB_TABLES).toContain('orders');
+    expect(LAB_TABLES.length).toBeGreaterThanOrEqual(10);
+  });
+
+  it('mọi kỹ năng trong skills.yml có đúng một bài học (Plan 8a: 38); id là kỹ năng có thật; mọi bài chạy trên lab', () => {
     expect(SKILLS.filter((s) => !loadLessons().has(s.id)).map((s) => s.id)).toEqual([]);
     expect(lessons).toHaveLength(SKILLS.length);
     expect(lessons.filter((l) => !SKILLS.some((s) => s.id === l.id)).map((l) => l.id)).toEqual([]);
+    expect(lessons.filter((l) => lessonSchema(l) !== 'lab').map((l) => l.id)).toEqual([]);
   });
 
   it.each(lessons)('$id: ≥ 3 dấu hiệu mỗi ngôn ngữ; việc mở kỹ năng dùng ≥ 1 dấu hiệu trong thân đề / Task', (l) => {
@@ -99,25 +103,27 @@ describe('bài học nhanh (content/lessons.yml)', () => {
     expect(l.explain.vi.split(/\s+/).length).toBeLessThanOrEqual(90);
   });
 
-  it.each(lessons)('$id: ví dụ, câu mở đầu và lời giải Thử ngay chạy được, có dòng, chỉ dùng bảng đã mở ở chương của kỹ năng', async (l) => {
-    const run = await runner();
-    const open = tablesUnlocked(skillOf(l).chapter);
-    for (const sql of [l.example, l.try.starter, l.try.solution, l.mistake.sql]) expect(tablesIn(sql).filter((x) => !open.includes(x))).toEqual([]);
-    for (const sql of [l.example, l.try.starter, l.try.solution]) expect((await run(sql)).rows.length).toBeGreaterThan(0);
+  it.each(lessons)('$id: ví dụ, câu sai, câu mở đầu và lời giải Thử ngay chỉ dùng bảng của lab', (l) => {
+    for (const sql of [l.example, l.mistake.sql, l.try.starter, l.try.solution]) expect(tablesIn(sql).filter((x) => !LAB_TABLES.includes(x))).toEqual([]);
   });
 
-  it.each(lessons)('$id: ví dụ và lời giải Thử ngay khác kết quả Solution của việc mở kỹ năng (không lộ đáp án)', async (l) => {
-    const run = await runner();
-    const t = templates.find((x) => x.grants.includes(l.id))!;
-    for (const solution of solutionsOf(l)) {
-      const expected = await run(solution);
-      expect(compareResults(expected, await run(l.example), t.ordered).ok).toBe(false);
-      expect(compareResults(expected, await run(l.try.solution), t.ordered).ok).toBe(false);
-    }
+  it.each(lessons)('$id: ví dụ, câu mở đầu và lời giải Thử ngay chạy trên lab, có dòng; câu sai không lỗi vì thiếu bảng', async (l) => {
+    const run = await labRun();
+    for (const sql of [l.example, l.try.starter, l.try.solution]) expect((await run(sql)).rows.length).toBeGreaterThan(0);
+    const err = await run(l.mistake.sql).then(() => undefined, (e: unknown) => e);
+    if (err) expect(sqlErrorInfo(err)?.code).not.toBe('42P01'); // the mistake teaches SQL, not a table that is not there
+  });
+
+  it.each(lessons)('$id: lời giải Thử ngay khác kết quả của cả ba drill cùng kỹ năng (không là đáp án drill)', async (l) => {
+    const run = await labRun();
+    const drills = generalNow()!.bySkill.get(l.id) ?? [];
+    expect(drills).toHaveLength(3);
+    const mine = await run(l.try.solution);
+    for (const d of drills) expect(compareResults(await run(d.solution), mine, false).ok, d.id).toBe(false);
   });
 
   it.each(lessons)('$id: câu mở đầu Thử ngay chưa đạt; câu sai báo lỗi hoặc ra kết quả khác ví dụ', async (l) => {
-    const run = await runner();
+    const run = await labRun();
     expect(compareResults(await run(l.try.solution), await run(l.try.starter), l.try.ordered).ok).toBe(false);
     const wrong = await run(l.mistake.sql).catch(() => undefined);
     if (wrong) expect(compareResults(await run(l.example), wrong, true).ok).toBe(false);

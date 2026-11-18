@@ -19,6 +19,7 @@ import { hints, renderBrief, shapeCard } from './brief';
 import { goalCard, skillChips, wrapUp } from './chapterView';
 import { byId, h, nodes, richText } from './dom';
 import { isSeen, openLesson } from './lessonCard';
+import { tryPreview } from './tryPreview';
 import { homeHooks, registerHomeSection, registerMode } from './homeView';
 import { laneNote } from './lanePanel';
 import { go } from './router';
@@ -82,7 +83,7 @@ let drillUi: typeof import('./drillBrief') | undefined;
 const loadDrillUi = () => import('./drillBrief').then((m) => {
   if (!drillUi) m.initDrill({
     db: ctx!.db, activeSchema, h, nodes, richText, byId, getLang, locale, app, actions, persist, schemaHooks, erMeta, stepKey, session, hintsShown, today,
-    isSuccess, movedToday, nextCard, SKILLS, hashOf, textOf, hints, shapeCard, openLesson, backToStory, startDrillMode, loadGeneral, generalNow, loadLessons,
+    isSuccess, movedToday, nextCard, SKILLS, hashOf, textOf, hints, shapeCard, tryPreview, openLesson, backToStory, startDrillMode, loadGeneral, generalNow, loadLessons,
     lessonSeen: isSeen, knownSkills, learnSkillOf, learnAdvOf, learnModuleOf, moduleTitle, illustration, visibleTickets, loadTickets, CHAPTERS, domainHash,
   });
   return (drillUi = m);
