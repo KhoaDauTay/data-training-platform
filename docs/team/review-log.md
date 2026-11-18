@@ -457,3 +457,34 @@ Ngân sách sau Task 7 (`node scripts/check-budget.mjs`, KB gz): main 280 / 290,
 - Kiểm tay (Chrome qua claude-in-chrome, cổng 5177, save thử từ `save-v3.json`): Tổng quan vẽ cảnh có mây + parallax (lớp far/mid dịch, về 0); trang Bản đồ: 4 tàu chạy trên 4 tuyến mở, cảng gốc + Busan (tuyến kế tiếp) nhịp; bỏ SGSIN khỏi `routes-seen` → SGSIN được vẽ lại một lần, style xóa sau đó, tuyến khóa giữ `6 6`; màn thăng tiến ch3 có Boon trong thẻ, Lily ở góc dock, Busan thành nét liền màu chương, không vòng nhịp trong dock; Lộ trình/Finance có hình; nút Chạy hiện spinner + "Running…" + `aria-busy`; cột số canh phải.
 - **Không đo được (ghi rõ, không coi là đạt):** chi phí khung hình ≤ 2 ms và long task (Performance panel), tab ẩn 10 s, giả lập reduced motion, Slow 3G. Tab tự động bị bóp rAF (1–8 khung/s) nên cả thời lượng hoạt cảnh cũng không đo được trong trình duyệt. Thay vào đó: `tests/ambient.test.ts` (không đăng ký khi reduced motion, không frame khi khuất/ẩn, stop ngắt observer, một vòng cho nhiều đăng ký), `tests/scene.test.ts` (tổng mỗi `STEPS` không đổi), mọi keyframe mới nằm trong khối `no-preference`, mây `display:none` dưới reduced motion. Cần người kiểm tay trên Edge trước khi phát hành.
 - Ghi chú môi trường: dev server trong worktree không tải được `pglite.wasm` (node_modules là junction ra ngoài allow list của Vite), nên kiểm có DB chạy trên `vite preview`.
+
+## v11 reviews (code review v10...HEAD + end-user QA trên :5174, 2026-11-18)
+
+Kiểm lại: tsc sạch; `npm test` 64 file, 2913 test xanh, không còn unhandled error; build + `check-budget.mjs` đạt mọi nhóm (main 276/290, tickets 105/110, ecom 40/50, general 62/70, learnui 7/25, worker 149/160). Trình duyệt (claude-in-chrome, dev server riêng :5179, localStorage mới, tour `{"step":8}`): E-com ch1-01 không hiện tour; tab Thứ tự thực thi/EXPLAIN/Luồng dữ liệu hiện cho người mới trong E-com; Recap E-com không còn cú pháp Logistics; "Luyện lại việc này" chạy trong E-com; drill g-aggregate-3 sai hiện `count(*)` thành `<code>`; bài học nâng cao A1 có sẵn starter (8 dòng); trang A1 có thẻ; trang Bản đồ: 5 tuyến khóa không còn nút "Đọc hồ sơ tuyến"; ảnh cảnh E-com thấp hơn ~240 px; không lỗi console. B2 (câu Boon) chỉ kiểm bằng test đơn vị (`tests/voice.test.ts`).
+
+| Loại | Việc | Trạng thái |
+|---|---|---|
+| bug (code #1) | `ensure()` bị restart từ chối thì E-com mất dữ liệu cả phiên | Sửa: `ensure` gửi lại khi `DbRestartError` (+ test client) |
+| bug (code #2) | Bản đồ template Practice nhớ domain dùng đầu tiên | Sửa: dựng lại mỗi lần gọi |
+| ux (code #3) | Người mới không thấy tab Steps/Flow/EXPLAIN ở E-com | Sửa: chỉ khóa dần ở Logistics (L76) |
+| bug (code #4) | Card dashboard xếp hàng chạy nhầm domain, đánh dấu slow nhầm | Sửa: `cardRunner` đọc domain lúc xếp (`at`) (+ test) |
+| content (code #5) | "boss" trong E-com/General | Sửa chữ; test L22 quét thêm E-com + General |
+| bug (B1) | Tour đã xong hiện lại ở E-com | Sửa: `tourStep` dừng khi `step >= TOUR_STEPS` (+ test) |
+| bug (B2) | "Thiếu 9 dòng. Thừa 22 dòng" + "Số dòng thì đủ" | Sửa: khóa mới `voice.rowsAndValues` (+ test) |
+| bug (B3) | Recap E-com in SQL Logistics | Sửa: ẩn `syntax` ngoài Logistics (L74) |
+| bug (B4) | Backtick thô trong lời giải thích drill/bài học | Sửa: `richText` cho mẹo sai, trap, concept, task bài học, why của nút nâng cao |
+| content (B5) | Câu chuyện "mở đầu 2025" trái seed | Sửa chữ (ch1 story + ecom-ch1-01), seed giữ (L78) |
+| bug (B6) | Luyện SQL ghi "Chương 2" cho kỹ năng đã qua drill | Sửa: nhãn "Đã luyện drill" theo cùng luật `knownSkills` của Lộ trình (L75) |
+| text (B7) | Trạng thái trống chỉ về chính trang | Sửa: "…chọn một kỹ năng bên dưới." |
+| content (đề 1–7) | "món" hai nghĩa, phễu, "đến nay", hủy, cỡ đơn, thứ tự mã chữ, đáp án kết luận dễ đoán | Sửa cả 7 (VI + EN, hint/reflect/wrong cùng chữ) (L79) |
+| ux #1 | Ô "Thử ngay" bài nâng cao trống | Sửa: bài nâng cao điền sẵn starter (L77) |
+| ux #2 | Ảnh hero quá cao | Sửa: cảnh E-com ≤ 240 px, ảnh Lộ trình `max-w-xs` |
+| ux #3 | Hết 3 drill là ngõ cụt | Sửa: nút chính "Kỹ năng tiếp: …" |
+| ux #4 | Trang nút nâng cao không có thẻ | Sửa: thân trang trong thẻ; rail vẫn liệt kê module (để lại) |
+| ux #5 | Nhãn "▣ Trong nền tảng" khó hiểu | Sửa chữ: "Làm được ngay trong app" / "Một phần làm trong app" / "Đọc tài liệu bên ngoài" |
+| ux #8 | Tuyến khóa vẫn có nút "Đọc hồ sơ tuyến" | Sửa: bỏ nút, dòng phụ đã ghi "mở sau đánh giá ch. N" |
+| ux #12 | Hai nút "tiếp" sau tổng kết chương | Sửa: thanh việc ẩn nút tiếp trên đánh giá đã qua |
+| test | Unhandled rejection `showPane` trong `workRace.test.ts` (có từ v10) | Sửa: `showPane` bỏ qua khi không có `#shell` |
+| ux #6, #7, #9, #10, #11 | Ổ khóa rail Lộ trình, bản đồ E-com bắc–nam, chữ phím tắt trên mobile, cuộn tour/brief, tab Cột của drill | Để lại (L80) |
+| ux | `navLock` ở E-com khóa Sandbox/Dữ liệu tới khi xong việc 1 của E-com | Để lại: nhất quán theo domain, không phải lỗi |
+| content | Reflect E-com: đáp án đúng đôi khi dài nhất | Để lại: review chỉ nêu kết luận đánh giá thăng tiến |
