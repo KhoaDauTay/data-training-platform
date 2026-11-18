@@ -3,7 +3,7 @@
 // Skip/Esc and the announced sentence stay in ui/stage.ts (main) so a completion is announced before this chunk arrives.
 import type { getLang as GetLang, Key, t as T } from '../i18n';
 import type { Rank } from '../progress';
-import type { GATE_WAIT as GateWait, Harbor, Lane, routeOpenedBy as RouteOpenedBy, ROUTES as Routes, Scene, STEPS as Steps } from '../scene';
+import type { durationOf as DurationOf, GATE_WAIT as GateWait, Harbor, Lane, routeOpenedBy as RouteOpenedBy, ROUTES as Routes, Scene, STEPS as Steps } from '../scene';
 import type { CHAPTER_COLOR as ChapterColors, chapterColor as ChapterColorOf, cx as Cx } from '../theme';
 import type { Lang, textOf as TextOf, Ticket } from '../tickets';
 import type { avatar as Avatar } from '../ui/avatar';
@@ -19,13 +19,13 @@ import { arrivalPulse } from './mapMotion';
  */
 export interface ArtDeps {
   t: typeof T; getLang: typeof GetLang; textOf: typeof TextOf;
-  ROUTES: typeof Routes; STEPS: typeof Steps; GATE_WAIT: typeof GateWait; routeOpenedBy: typeof RouteOpenedBy;
+  ROUTES: typeof Routes; STEPS: typeof Steps; GATE_WAIT: typeof GateWait; routeOpenedBy: typeof RouteOpenedBy; durationOf: typeof DurationOf;
   CHAPTER_COLOR: typeof ChapterColors; chapterColor: typeof ChapterColorOf; cx: typeof Cx; PILL: string; DONE_PILL: string;
   h: typeof H; s: typeof S; nodes: typeof Nodes; reducedMotion: typeof ReducedMotion;
   avatar: typeof Avatar; mascot: typeof Mascot; callout: typeof Callout; routeItems: typeof RouteItems;
 }
 let t: typeof T, getLang: typeof GetLang, textOf: typeof TextOf;
-let ROUTES: typeof Routes, STEPS: typeof Steps, GATE_WAIT: typeof GateWait, routeOpenedBy: typeof RouteOpenedBy;
+let ROUTES: typeof Routes, STEPS: typeof Steps, GATE_WAIT: typeof GateWait, routeOpenedBy: typeof RouteOpenedBy, durationOf: typeof DurationOf;
 let CHAPTER_COLOR: typeof ChapterColors, chapterColor: typeof ChapterColorOf, cx: typeof Cx, PILL: string, DONE_PILL: string;
 let h: typeof H, s: typeof S, nodes: typeof Nodes, reducedMotion: typeof ReducedMotion;
 let avatar: typeof Avatar, mascot: typeof Mascot, callout: typeof Callout, routeItems: typeof RouteItems;
@@ -33,7 +33,7 @@ export { drawNewRoutes, liveMap, parallax } from './mapMotion';
 
 /** Called once by loadArt() before anything else here runs. */
 export function init(d: ArtDeps): void {
-  ({ t, getLang, textOf, ROUTES, STEPS, GATE_WAIT, routeOpenedBy, CHAPTER_COLOR, chapterColor, cx, PILL, DONE_PILL } = d);
+  ({ t, getLang, textOf, ROUTES, STEPS, GATE_WAIT, routeOpenedBy, durationOf, CHAPTER_COLOR, chapterColor, cx, PILL, DONE_PILL } = d);
   ({ h, s, nodes, reducedMotion, avatar, mascot, callout, routeItems } = d);
 }
 
@@ -51,6 +51,8 @@ export interface HarborParts {
   drop: SVGGElement;
   ship: SVGGElement;
   trolley: SVGGElement;
+  /** Cable, spreader and load: swings about the trolley (rotate(a 0 125), v6 A2). */
+  hoist: SVGGElement;
   cable: SVGLineElement;
   spreader: SVGRectElement;
   carry: SVGRectElement;
@@ -127,9 +129,10 @@ export function harborScene(h: Harbor, opts: { ambient: boolean; current: number
   const cable = s('line', { x1: 0, y1: 125, x2: 0, y2: CRANE.y, stroke: '#334155', 'stroke-width': 2 });
   const spreader = s('rect', { x: -18, y: CRANE.y, width: 36, height: 4, fill: '#facc15' });
   const carry = s('rect', { x: -16, y: CRANE.y + 4, width: 32, height: 10, class: chapterColor(opts.current).fill, opacity: opts.ambient ? 1 : 0 });
+  const hoist = s('g', { class: amb('cq-hoist') }, cable, spreader, carry);
   const trolley = s('g', { transform: `translate(${CRANE.x},0)` },
     s('rect', { x: -13, y: 117, width: 26, height: 8, rx: 1, fill: '#334155' }),
-    s('g', { class: amb('cq-hoist') }, cable, spreader, carry));
+    hoist);
   const ship = s('g', { 'aria-hidden': 'true' },
     s('path', { d: 'M470 250 L690 250 L676 284 L486 284 Z', fill: url('hull') }),
     s('rect', { x: 470, y: 250, width: 220, height: 4, fill: '#dc2626' }),
@@ -255,7 +258,7 @@ export function harborScene(h: Harbor, opts: { ambient: boolean; current: number
     s('text', { x: 40, y: 338, 'font-family': FONT, 'font-size': 14, 'font-weight': 600, fill: '#f8fafc' }, callA),
     s('text', { x: 40, y: 360, 'font-family': FONT, 'font-size': 14, 'font-weight': 600, fill: '#bae6fd' }, callB));
 
-  const parts: HarborParts = { svg, yard, drop, ship, trolley, cable, spreader, carry, truck, truckBox, barrier, shutter, gateTag, gateText };
+  const parts: HarborParts = { svg, yard, drop, ship, trolley, hoist, cable, spreader, carry, truck, truckBox, barrier, shutter, gateTag, gateText };
   drawYard(parts, h, opts.fresh);
   return parts;
 }
@@ -338,9 +341,9 @@ export function routeMap(h: Harbor): MapParts {
   return parts;
 }
 
-// ---- completion scenes (were in ui/stage.ts) ----
+// ---- completion scenes (were in ui/stage.ts; on GSAP timelines since ui-ux-v6 A2) ----
 
-/** One completion animation. `fast`: skipped or reduced motion, so every tween draws its end state at once. */
+/** One completion animation. `fast`: skipped or reduced motion, so the scene draws its end state at once. */
 export interface Run {
   fast: boolean;
   done: boolean;
@@ -349,6 +352,7 @@ export interface Run {
 }
 
 type Gsap = typeof import('./gsap');
+type Timeline = ReturnType<Gsap['timeline']>;
 let gsapMod: Promise<Gsap> | undefined;
 let gsapReady: Gsap | undefined;
 /**
@@ -374,37 +378,13 @@ export interface Ctx {
   map?: MapParts;
 }
 
-const easeInOut = (x: number): number => (x < 0.5 ? 2 * x * x : 1 - (-2 * x + 2) ** 2 / 2);
-const easeIn = (x: number): number => x * x;
-const easeOut = (x: number): number => 1 - (1 - x) * (1 - x);
-const linear = (x: number): number => x;
-const lerp = (a: number, b: number, x: number): number => a + (b - a) * x;
-
-/** Draws f(0 → 1) over `ms` with requestAnimationFrame. A fast run draws f(1) at once: skip = jump to the end state. */
-function tween(run: Run, ms: number, f: (x: number) => void, ease = easeInOut): Promise<void> {
-  return new Promise((resolve) => {
-    if (run.fast) {
-      f(1);
-      resolve();
-      return;
-    }
-    const t0 = performance.now();
-    const step = (now: number): void => {
-      const x = run.fast ? 1 : Math.min(1, (now - t0) / ms);
-      f(ease(x));
-      if (x < 1) requestAnimationFrame(step);
-      else resolve();
-    };
-    requestAnimationFrame(step);
-  });
-}
-const wait = (run: Run, ms: number): Promise<void> => tween(run, ms, () => {});
-
 const titleOf = (c: Ctx): string => textOf(c.tk, getLang()).title;
 /** Lanes this completion opened (L32: the chapter's lane and/or the lane its ship sailed), as port names. */
 const openedNames = (c: Ctx): string[] => ROUTES.filter((r) => c.after.open.has(r.port) && !c.before.open.has(r.port)).map((r) => r.name);
+/** Where each step of `steps` (ms) starts, in seconds, then the end: marks([400, 400]) = [0, 0.4, 0.8]. */
+const marks = (steps: readonly number[]): number[] => steps.reduce<number[]>((a, ms) => [...a, a[a.length - 1] + ms / 1000], [0]);
 
-// ---- scene parts (geometry of mockup v5) ----
+// ---- scene parts (geometry of mockup v5); §2.3: GSAP tweens a state object and these setters write the attributes ----
 function setCrane(p: HarborParts, x: number, y: number, carry?: string | false): void {
   p.trolley.setAttribute('transform', `translate(${x},0)`);
   p.cable.setAttribute('y2', String(y));
@@ -416,6 +396,11 @@ function setCrane(p: HarborParts, x: number, y: number, carry?: string | false):
     p.carry.setAttribute('opacity', '1');
   }
 }
+/** The load swings `deg` about the trolley (0 = hanging straight: no attribute). */
+function setSway(p: HarborParts, deg: number): void {
+  if (Math.abs(deg) < 0.01) p.hoist.removeAttribute('transform');
+  else p.hoist.setAttribute('transform', `rotate(${deg.toFixed(2)} 0 125)`);
+}
 /** x: 0 = at the berth, 1 = out at sea, shrinking toward Son Tra. */
 function setShip(p: HarborParts, x: number, alpha: number): void {
   p.ship.setAttribute('transform', `translate(${-430 * x},${-12 * x}) translate(580,266) scale(${1 - 0.45 * x}) translate(-580,-266)`);
@@ -426,162 +411,96 @@ function setTruck(p: HarborParts, x: number, alpha = 1): void {
   p.truck.setAttribute('opacity', String(alpha));
 }
 const setBarrier = (p: HarborParts, deg: number): void => p.barrier.setAttribute('transform', `rotate(${deg} 905 339)`);
-const setShutter = (p: HarborParts, open: number): void => p.shutter.setAttribute('height', String(44 * (1 - open)));
+const setShutter = (p: HarborParts, open: number): void => p.shutter.setAttribute('height', String(Math.max(0, 44 * (1 - open))));
 function gateTag(p: HarborParts, label: string): void {
   p.gateText.textContent = label;
   p.gateTag.setAttribute('opacity', label ? '1' : '0');
 }
 
-/** The berthed ship sails out (1.6 s), then sits hidden until berthBack(). */
-async function departBerth(c: Ctx): Promise<void> {
-  const p = c.harbor;
-  if (!p) return;
-  await tween(c.run, 1600, (x) => setShip(p, x, x < 0.7 ? 1 : 1 - (x - 0.7) / 0.3), easeIn);
-  setShip(p, 0, 0);
-}
-async function berthBack(c: Ctx, ms: number): Promise<void> {
-  const p = c.harbor;
-  if (p) await tween(c.run, ms, (x) => setShip(p, 0, x));
+/** Tweens 0 → 1 over [at, at + dur] seconds and hands the eased value to `f` (one of the setters above). */
+function drive(tl: Timeline, at: number, dur: number, ease: string, f: (x: number) => void): void {
+  const o = { x: 0 };
+  tl.to(o, { x: 1, duration: dur, ease, onUpdate: () => f(o.x) }, at);
 }
 
-/** +1 container in this chapter's bay (§1.1), then the yard is redrawn from `after` with a bright edge on it. */
-async function dropContainer(c: Ctx, ms: number): Promise<void> {
+/** End frame of every harbour scene: ship berthed, crane home, truck gone, gate shut, yard redrawn from `after` with the new container marked. */
+function harborEnd(c: Ctx): void {
+  const p = c.harbor;
+  if (!p) return;
+  p.drop.replaceChildren();
+  setShip(p, 0, 1);
+  setCrane(p, CRANE.x, CRANE.y, false);
+  setSway(p, 0);
+  setTruck(p, 640, 0);
+  setBarrier(p, 0);
+  setShutter(p, 0);
+  gateTag(p, '');
+  drawYard(p, c.after, new Set([c.tk.chapter]));
+}
+/** End frame of the map: no ship, no wake, no half-drawn lane; lanes repainted from `after`. */
+function mapEnd(c: Ctx): void {
+  const m = c.map;
+  if (!m) return;
+  m.ship.setAttribute('opacity', '0');
+  m.wake.setAttribute('opacity', '0');
+  for (const path of Object.values(m.routes)) { // DrawSVG's inline dashes go, so paintRoutes() attributes win afterwards
+    path.style.removeProperty('stroke-dasharray');
+    path.style.removeProperty('stroke-dashoffset');
+  }
+  paintRoutes(m, c.after);
+}
+
+/** +1 container falls into this chapter's bay over [at, at + dur] (§1.1), then the yard is redrawn with it. */
+function dropBox(c: Ctx, tl: Timeline, at: number, dur: number): void {
   const p = c.harbor;
   if (!p) return;
   const ch = c.tk.chapter;
   const tier = (c.after.bays[ch] ?? 1) - 1;
-  if (tier < MAX_TIERS) {
-    const b = bayBox(ch, tier);
-    const box = s('rect', { x: b.x, y: b.y - 30, width: b.w, height: b.h - 0.6, class: chapterColor(ch).fill, opacity: 0 });
-    p.drop.append(box);
-    await tween(c.run, ms, (x) => {
-      box.setAttribute('y', String(b.y - 30 * (1 - x)));
-      box.setAttribute('opacity', String(Math.min(1, x * 2)));
-    }, easeIn);
-    box.remove();
-  }
-  drawYard(p, c.after, new Set([ch]));
-}
-
-async function toGate(c: Ctx, ms: number): Promise<void> {
-  const p = c.harbor!;
-  p.truckBox.setAttribute('class', chapterColor(c.tk.chapter).fill);
-  setBarrier(p, 0);
-  await tween(c.run, ms, (x) => setTruck(p, lerp(640, 778, x), Math.min(1, x * 3)), easeOut);
-}
-
-/** A ship runs the lane to `port`, its wake lights up, then the lanes repaint from `after` (a new lane turns solid). */
-async function sail(c: Ctx, port: string, ms: number): Promise<void> {
-  const m = c.map;
-  if (!m) return wait(c.run, ms);
-  const path = m.routes[port];
-  const len = path.getTotalLength();
-  m.wake.setAttribute('d', path.getAttribute('d') ?? '');
-  m.wake.setAttribute('class', chapterColor(c.tk.chapter).stroke);
-  m.wake.setAttribute('stroke-dasharray', String(len));
-  m.wake.setAttribute('opacity', '0.55');
-  m.ship.setAttribute('opacity', '1');
-  const r = ROUTES.find((x) => x.port === port);
-  // Plan 8b: the port pulses during the last 250 ms of the voyage (inside the step, never after it)
-  const pulse = r && !c.run.fast ? window.setTimeout(() => { if (!c.run.fast) arrivalPulse(m, r.x, r.y, chapterColor(c.tk.chapter).stroke); }, Math.max(0, ms - 250)) : 0;
-  await tween(c.run, ms, (x) => {
-    const at = path.getPointAtLength(x * len);
-    const ahead = path.getPointAtLength(Math.min(len, x * len + 1));
-    const deg = (Math.atan2(ahead.y - at.y, ahead.x - at.x) * 180) / Math.PI;
-    const flip = Math.abs(deg) > 90;
-    m.ship.setAttribute('transform', `translate(${at.x},${at.y}) rotate(${flip ? deg + 180 : deg}) scale(${flip ? -1 : 1},1)`);
-    m.wake.setAttribute('stroke-dashoffset', String(len * (1 - x)));
+  if (tier >= MAX_TIERS) return;
+  const b = bayBox(ch, tier);
+  const box = s('rect', { x: b.x, y: b.y - 30, width: b.w, height: b.h - 0.6, class: chapterColor(ch).fill, opacity: 0 });
+  p.drop.append(box);
+  drive(tl, at, dur, 'power2.in', (x) => {
+    box.setAttribute('y', String(b.y - 30 * (1 - x)));
+    box.setAttribute('opacity', String(Math.min(1, x * 3)));
   });
-  window.clearTimeout(pulse);
-  m.ship.setAttribute('opacity', '0');
-  m.wake.setAttribute('opacity', '0');
-  paintRoutes(m, c.after);
+  tl.call(() => { box.remove(); drawYard(p, c.after, new Set([ch])); }, undefined, at + dur);
 }
 
-/**
- * Plan 8b: a lane this promotion opens is drawn in first (solid in its colour, dashoffset len → 0) inside the sail step.
- * Inline style only, removed at the end, so paintRoutes() attributes win afterwards. A fast run draws the end state.
- */
-async function drawLane(c: Ctx, port: string, ms: number): Promise<void> {
-  const m = c.map;
-  if (!m) return;
-  const path = m.routes[port];
-  const len = path.getTotalLength();
-  paintRoutes(m, c.after);
-  path.style.strokeDasharray = `${len} ${len}`;
-  await tween(c.run, ms, (x) => { path.style.strokeDashoffset = String(len * (1 - x)); }, easeOut);
-  path.style.removeProperty('stroke-dasharray');
-  path.style.removeProperty('stroke-dashoffset');
+/** The truck (in this chapter's colour) rolls up to the gate and stops. */
+function toGate(c: Ctx, tl: Timeline, at: number, dur: number): void {
+  const p = c.harbor!;
+  tl.call(() => { p.truckBox.setAttribute('class', chapterColor(c.tk.chapter).fill); setBarrier(p, 0); }, undefined, at);
+  drive(tl, at, dur, 'power2.out', (x) => setTruck(p, 640 + 138 * x, Math.min(1, x * 3)));
+}
+/** The barrier swings up to 80° with a little spring, or back down. */
+function barrier(c: Ctx, tl: Timeline, at: number, dur: number, up: boolean): void {
+  drive(tl, at, dur, up ? 'elastic.out(1,0.6)' : 'power2.inOut', (x) => setBarrier(c.harbor!, 80 * (up ? x : 1 - x)));
 }
 
-// ---- v6 T1: the ship scene on GSAP (§2.3: state objects drive the attribute setters; GSAP moves only the map ship) ----
-/** End frame of `ship`: back at the berth, the new container in its bay, the lanes repainted from `after`. */
-function shipEnd(c: Ctx): void {
-  const p = c.harbor;
-  if (p) {
-    setShip(p, 0, 1);
-    drawYard(p, c.after, new Set([c.tk.chapter]));
-  }
+/** The map ship runs the lane to `port` over [at, at + dur] by MotionPath, its wake drawn behind it (DrawSVG); the port pulses on arrival. */
+function mapSail(c: Ctx, g: Gsap, tl: Timeline, port: string, at: number, dur: number): void {
   const m = c.map;
-  if (m) {
-    m.ship.setAttribute('opacity', '0');
-    m.wake.setAttribute('opacity', '0');
-    paintRoutes(m, c.after);
-  }
-}
-/** STEPS.ship: leave the berth (1.6 s) while sailing the lane on the map; then berth back + container drop. Ends with shipEnd(). */
-function shipTimeline(c: Ctx, g: Gsap): ReturnType<Gsap['timeline']> {
-  const tl = g.timeline();
-  const [sail, back] = STEPS.ship.map((ms) => ms / 1000);
-  const end = sail + back;
-  const p = c.harbor;
-  let box: SVGRectElement | undefined;
-  if (p) {
-    const out = { x: 0 };
-    tl.to(out, { x: 1, duration: 1.6, ease: 'power1.in', onUpdate: () => setShip(p, out.x, out.x < 0.7 ? 1 : 1 - (out.x - 0.7) / 0.3) }, 0)
-      .call(() => setShip(p, 0, 0), undefined, 1.6);
-    const home = { a: 0 };
-    tl.to(home, { a: 1, duration: back, ease: 'power1.inOut', onUpdate: () => setShip(p, 0, home.a) }, sail);
-    const ch = c.tk.chapter;
-    const tier = (c.after.bays[ch] ?? 1) - 1;
-    if (tier < MAX_TIERS) {
-      const b = bayBox(ch, tier);
-      const drop = s('rect', { x: b.x, y: b.y - 30, width: b.w, height: b.h - 0.6, class: chapterColor(ch).fill, opacity: 0 });
-      box = drop;
-      p.drop.append(drop);
-      const d = { x: 0 };
-      tl.to(d, { x: 1, duration: back, ease: 'power1.in', onUpdate: () => {
-        drop.setAttribute('y', String(b.y - 30 * (1 - d.x)));
-        drop.setAttribute('opacity', String(Math.min(1, d.x * 2)));
-      } }, sail);
-    }
-  }
-  const m = c.map;
-  const port = c.scene.to;
   const r = ROUTES.find((x) => x.port === port);
-  if (m && port && r) {
-    const path = m.routes[port];
-    const mirror = m.ship.firstElementChild as SVGGElement;
-    const color = chapterColor(c.tk.chapter).stroke;
-    m.wake.setAttribute('d', path.getAttribute('d') ?? '');
-    m.wake.setAttribute('class', color);
-    tl.call(() => { m.wake.setAttribute('opacity', '0.55'); m.ship.setAttribute('opacity', '1'); }, undefined, 0)
-      .fromTo(m.wake, { drawSVG: '0%' }, { drawSVG: '100%', duration: sail, ease: 'power1.inOut' }, 0)
-      .to(m.ship, {
-        duration: sail, ease: 'power1.inOut',
-        motionPath: { path, align: path, alignOrigin: [0.5, 0.5], autoRotate: true },
-        onUpdate: () => { // heading left: mirror upright instead of sailing upside down (like placeOnPath)
-          const deg = Number(g.gsap.getProperty(m.ship, 'rotation'));
-          mirror.setAttribute('transform', Math.cos((deg * Math.PI) / 180) < 0 ? 'scale(1,-1)' : '');
-        },
-      }, 0)
-      // Plan 8b: the port pulses during the last 250 ms of the voyage (inside the step, never after it)
-      .call(() => { if (!c.run.fast) arrivalPulse(m, r.x, r.y, color); }, undefined, sail - 0.25);
-  }
-  return tl.call(() => {
-    box?.remove();
-    shipEnd(c);
-  }, undefined, end);
+  if (!m || !r) return;
+  const path = m.routes[port];
+  const mirror = m.ship.firstElementChild as SVGGElement;
+  const color = chapterColor(c.tk.chapter).stroke;
+  m.wake.setAttribute('d', path.getAttribute('d') ?? '');
+  m.wake.setAttribute('class', color);
+  tl.call(() => { m.wake.setAttribute('opacity', '0.55'); m.ship.setAttribute('opacity', '1'); }, undefined, at)
+    .fromTo(m.wake, { drawSVG: '0%' }, { drawSVG: '100%', duration: dur, ease: 'power1.inOut', immediateRender: false }, at)
+    .to(m.ship, {
+      duration: dur, ease: 'power1.inOut',
+      motionPath: { path, align: path, alignOrigin: [0.5, 0.5], autoRotate: true },
+      onUpdate: () => { // heading left: mirror upright instead of sailing upside down
+        const deg = Number(g.gsap.getProperty(m.ship, 'rotation'));
+        mirror.setAttribute('transform', Math.cos((deg * Math.PI) / 180) < 0 ? 'scale(1,-1)' : '');
+      },
+    }, at)
+    // Plan 8b: the port pulses during the last 250 ms of the voyage (inside the step, never after it)
+    .call(() => { if (!c.run.fast) arrivalPulse(m, r.x, r.y, color); }, undefined, at + dur - 0.25)
+    .call(() => { m.ship.setAttribute('opacity', '0'); m.wake.setAttribute('opacity', '0'); }, undefined, at + dur);
 }
 
 // ---- cards over the art ----
@@ -602,27 +521,34 @@ function overlay(c: Ctx, card: HTMLElement, centre = false): HTMLElement {
   c.art.append(h('div', { class: pictured ? (centre ? 'absolute top-3 left-1/2 -translate-x-1/2' : 'absolute top-2 right-2') : 'p-3' }, card));
   return card;
 }
-const fadeIn = (run: Run, el: HTMLElement, ms: number): Promise<void> =>
-  tween(run, ms, (x) => {
-    el.style.opacity = String(x);
-    el.style.transform = `translateY(${-8 * (1 - x)}px)`;
-  });
-/** Under reduced motion the final card stays until Close or the next completion (§5). */
-const fadeOut = (run: Run, el: HTMLElement, ms: number): Promise<void> =>
-  reducedMotion() ? Promise.resolve() : tween(run, ms, (x) => { el.style.opacity = String(1 - x); });
+/** End frame of a card part: shown, nothing left of a tween. */
+function shown(...els: HTMLElement[]): void {
+  for (const el of els) {
+    el.style.opacity = '1';
+    el.style.transform = '';
+  }
+}
+function cardIn(tl: Timeline, card: HTMLElement, at: number, dur: number): void {
+  tl.fromTo(card, { opacity: 0, y: -8 }, { opacity: 1, y: 0, duration: dur, ease: 'power2.out', immediateRender: false }, at);
+}
 
-function confetti(c: Ctx, ms: number): Promise<void> {
-  const box = h('div', { class: 'pointer-events-none absolute inset-0 overflow-hidden' });
-  const bits = Array.from({ length: 42 }, (_, i) => {
-    const el = h('span', { class: cx('absolute top-1/3 left-1/2 block h-3 w-2 rounded-sm', CHAPTER_COLOR[(i % 12) + 1].bar) });
-    box.append(el);
-    return { el, vx: (Math.random() - 0.5) * 520, vy: -120 - Math.random() * 160, spin: Math.random() * 720 };
-  });
-  c.art.append(box);
-  return tween(c.run, ms, (x) => bits.forEach((b) => {
-    b.el.style.transform = `translate(${b.vx * x}px, ${b.vy * x + 360 * x * x}px) rotate(${b.spin * x}deg)`;
-    b.el.style.opacity = String(1 - x * x);
-  }), linear).then(() => box.remove());
+interface Stamp { el: HTMLElement; ring: SVGEllipseElement }
+/** A rubber stamp with an ink ring round it (drawn by DrawSVG once the stamp lands). */
+function stampEl(text: string, cls: string): Stamp {
+  const ring = s('ellipse', { cx: 50, cy: 50, rx: 48, ry: 44, fill: 'none', stroke: 'currentColor', 'stroke-width': 2, 'vector-effect': 'non-scaling-stroke', opacity: 0.5 });
+  const el = h('span', { class: cx(STAMP, cls) }, text,
+    s('svg', { viewBox: '0 0 100 100', preserveAspectRatio: 'none', 'aria-hidden': 'true', class: 'pointer-events-none absolute -top-2 -left-2 h-[calc(100%+1rem)] w-[calc(100%+1rem)] overflow-visible' }, ring));
+  el.style.opacity = '0';
+  return { el, ring };
+}
+/** It slams down (scale 1.5 → 1, a little past and back), then the ink spreads round it. */
+function slam(tl: Timeline, st: Stamp, at: number, dur: number): void {
+  tl.fromTo(st.el, { opacity: 0, scale: 1.5, rotation: -10 }, { opacity: 1, scale: 1, rotation: -10, duration: dur, ease: 'back.out(2.2)', immediateRender: false }, at)
+    .fromTo(st.ring, { drawSVG: '0%' }, { drawSVG: '100%', duration: 0.35, ease: 'power2.out' }, at + dur * 0.5);
+}
+function stampEnd(st: Stamp): void {
+  st.el.style.opacity = '1';
+  st.el.style.transform = 'rotate(-10deg)';
 }
 
 function promoCard(c: Ctx): HTMLElement {
@@ -639,82 +565,175 @@ function promoCard(c: Ctx): HTMLElement {
       opened.length ? h('p', { class: 'm-0 text-sm text-muted' }, t('anim.promoRoute', { port: opened.join(', ') })) : null));
 }
 
-// ---- the eight kinds (§2), step durations from STEPS ----
-const PLAY: Record<Scene['kind'], (c: Ctx) => Promise<void>> = {
-  async ship(c) {
-    if (!gsapReady) { // §2.1: GSAP not in yet (still loading or failed): the end state at once, never wait for the network
-      prefetchGsap();
-      shipEnd(c);
-      return;
-    }
-    await gsapReady.play(shipTimeline(c, gsapReady), c.run);
-  },
+// ---- promotion: schedule and confetti (v6 A2) ----
+/**
+ * The promotion's 3.0 s, [from, to] in seconds. With no new lane to draw the ship sails from lane[0] to sail[1]. `lily`:
+ * ui/stage.ts starts her cheer (MOVES.cheer, 700 ms) there, so it ends with the scene.
+ */
+export const PROMO = {
+  drop: [0, 0.4], lane: [0.4, 1.3], sail: [1.3, 2.6], card: [0.4, 0.8], confetti: [0.6, 2.4], berth: [0.4, 2.4], lily: [2.3, 3.0],
+} as const satisfies Record<string, readonly [number, number]>;
 
-  async yard(c) {
+export interface ConfettiBit {
+  /** 0 = the cannon in the lower left corner, 1 = lower right. */
+  side: 0 | 1;
+  /** Physics2D launch angle in degrees (0 = right, -90 = up) and speed in viewBox units per second. */
+  angle: number;
+  velocity: number;
+  /** Seconds after PROMO.confetti[0] this piece leaves. */
+  delay: number;
+  /** Degrees turned over the flight. */
+  spin: number;
+  /** Seconds per half flip (the scaleY flutter that makes a flat piece read as paper). */
+  flip: number;
+  shape: number;
+  /** CHAPTER_COLOR index 1–12. */
+  color: number;
+}
+/** 28 pieces from two cannons, seeded by the ticket id (mulberry32 over an FNV-1a hash): a promotion always throws the same burst. */
+export function confettiBits(id: string, n = 28): ConfettiBit[] {
+  let seed = 2166136261;
+  for (let i = 0; i < id.length; i++) seed = Math.imul(seed ^ id.charCodeAt(i), 16777619);
+  const rnd = (): number => {
+    seed = (seed + 0x6d2b79f5) | 0;
+    let x = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+    x = (x + Math.imul(x ^ (x >>> 7), 61 | x)) ^ x;
+    return ((x ^ (x >>> 14)) >>> 0) / 4294967296;
+  };
+  return Array.from({ length: n }, (_, i) => {
+    const side = (i % 2) as 0 | 1;
+    const tilt = 56 + rnd() * 24; // degrees above the horizon, toward the middle
+    return {
+      side, angle: side ? -180 + tilt : -tilt, velocity: 560 + rnd() * 160, delay: rnd() * 0.3,
+      spin: (rnd() < 0.5 ? -1 : 1) * (240 + rnd() * 480), flip: 0.14 + rnd() * 0.16, shape: Math.floor(rnd() * 3), color: 1 + Math.floor(rnd() * 12),
+    };
+  });
+}
+/** Strip, square, triangle, centred on 0,0 (viewBox units of the dock's harbour crop). */
+const BIT_SHAPE = ['M-6 -2.2h12v4.4h-12z', 'M-3.6 -3.6h7.2v7.2h-7.2z', 'M0 -4.4L4.2 3.2H-4.2z'];
+/**
+ * Physics2D pieces inside the harbour picture (no canvas, never over the page), PROMO.confetti[0] → [1], gone by then.
+ * None at all for a fast run (reduced motion, or skipped before it started).
+ */
+function confetti(c: Ctx, tl: Timeline): SVGGElement | undefined {
+  const p = c.harbor;
+  if (!p || c.run.fast) return undefined;
+  const [from, to] = PROMO.confetti;
+  const group = s('g', { 'aria-hidden': 'true', 'pointer-events': 'none' });
+  for (const b of confettiBits(c.tk.id)) {
+    const piece = s('path', { d: BIT_SHAPE[b.shape], class: CHAPTER_COLOR[b.color].fill, 'data-confetti': '', opacity: 0 });
+    // the crop is x 440–1100, y 140–400: the cannons sit just inside its lower corners (an outer <g> places, GSAP moves the path)
+    group.append(s('g', { transform: `translate(${b.side ? 1080 : 460},392)` }, piece));
+    const at = from + b.delay;
+    const dur = to - at;
+    tl.set(piece, { opacity: 1 }, at)
+      .to(piece, { duration: dur, ease: 'none', physics2D: { velocity: b.velocity, angle: b.angle, gravity: 460, friction: 0.045 } }, at)
+      .to(piece, { rotation: b.spin, duration: dur, ease: 'none' }, at)
+      .to(piece, { scaleY: -1, duration: b.flip, ease: 'sine.inOut', yoyo: true, repeat: Math.max(1, Math.floor(dur / b.flip) - 1) }, at)
+      .to(piece, { opacity: 0, duration: 0.45, ease: 'power1.in' }, to - 0.45);
+  }
+  p.svg.append(group);
+  return group;
+}
+
+// ---- the eight kinds (§2), step lengths from STEPS; each scene ends exactly at durationOf with its end frame ----
+/**
+ * No GSAP (still loading or failed, §2.1): the end frame at once. Otherwise a paused timeline built by `build` and closed
+ * by `end` at durationOf, so the card scenes keep their trailing wait and the end frame is the same either way.
+ */
+function scene(c: Ctx, g: Gsap | undefined, end: () => void, build: (tl: Timeline, g: Gsap) => void): Timeline | undefined {
+  if (!g) {
+    end();
+    return undefined;
+  }
+  const tl = g.timeline();
+  build(tl, g);
+  return tl.call(end, undefined, durationOf(c.scene) / 1000);
+}
+
+type Kind = (c: Ctx, g: Gsap | undefined) => Timeline | undefined;
+const SCENES: Record<Scene['kind'], Kind> = {
+  // leave the berth (1.6 s) while sailing the lane on the map (2.2 s); berth back + container drop
+  ship: (c, g) => scene(c, g, () => { harborEnd(c); mapEnd(c); }, (tl, g) => {
+    const [, sail, end] = marks(STEPS.ship);
+    const p = c.harbor;
+    if (p) {
+      drive(tl, 0, 1.6, 'power1.in', (x) => setShip(p, x, x < 0.7 ? 1 : 1 - (x - 0.7) / 0.3));
+      tl.call(() => setShip(p, 0, 0), undefined, 1.6);
+      drive(tl, sail, end - sail, 'power1.inOut', (a) => setShip(p, 0, a));
+      dropBox(c, tl, sail, end - sail);
+    }
+    if (c.scene.to) mapSail(c, g, tl, c.scene.to, 0, sail);
+  }),
+
+  // lower, lift, travel (inertia; the load swings ±3°), lower (the swing settles), release, trolley home
+  yard: (c, g) => scene(c, g, () => harborEnd(c), (tl) => {
     const p = c.harbor!;
-    const [lowerMs, liftMs, travelMs, downMs, releaseMs, homeMs] = STEPS.yard;
+    const T = marks(STEPS.yard);
     const ch = c.tk.chapter;
     const b = bayBox(ch, Math.min((c.after.bays[ch] ?? 1) - 1, MAX_TIERS - 1));
     const bayX = b.x + b.w / 2;
-    await tween(c.run, lowerMs, (x) => setCrane(p, CRANE.x, lerp(CRANE.y, 220, x), false));
-    setCrane(p, CRANE.x, 220, chapterColor(ch).fill);
-    await tween(c.run, liftMs, (x) => setCrane(p, CRANE.x, lerp(220, 160, x)));
-    await tween(c.run, travelMs, (x) => setCrane(p, lerp(CRANE.x, bayX, x), 160));
-    await tween(c.run, downMs, (x) => setCrane(p, bayX, lerp(160, b.y - 4, x)));
-    setCrane(p, bayX, b.y - 4, false);
-    drawYard(p, c.after, new Set([ch]));
-    await tween(c.run, releaseMs, (x) => setCrane(p, bayX, lerp(b.y - 4, CRANE.y, x)));
-    await tween(c.run, homeMs, (x) => setCrane(p, lerp(bayX, CRANE.x, x), CRANE.y));
-  },
+    const k = { x: CRANE.x, y: CRANE.y, a: 0 };
+    const draw = (): void => { setCrane(p, k.x, k.y); setSway(p, k.a); };
+    const travel = T[3] - T[2];
+    tl.to(k, { y: 220, duration: T[1], ease: 'power2.inOut', onUpdate: draw }, 0)
+      .call(() => setCrane(p, k.x, 220, chapterColor(ch).fill), undefined, T[1])
+      .to(k, { y: 160, duration: T[2] - T[1], ease: 'power2.out', onUpdate: draw }, T[1])
+      .to(k, { x: bayX, duration: travel, ease: 'cq-crane', onUpdate: draw }, T[2])
+      // the load lags while the trolley speeds up, swings ahead while it brakes, then settles as it is lowered
+      .to(k, { a: 3, duration: travel * 0.3, ease: 'sine.out', onUpdate: draw }, T[2])
+      .to(k, { a: -3, duration: travel * 0.7, ease: 'sine.inOut', onUpdate: draw }, T[2] + travel * 0.3)
+      .to(k, { a: 0, duration: T[4] - T[3], ease: 'elastic.out(1,0.5)', onUpdate: draw }, T[3])
+      .to(k, { y: b.y - 4, duration: T[4] - T[3], ease: 'power2.inOut', onUpdate: draw }, T[3])
+      .call(() => { setCrane(p, bayX, b.y - 4, false); drawYard(p, c.after, new Set([ch])); }, undefined, T[4])
+      .to(k, { y: CRANE.y, duration: T[5] - T[4], ease: 'power2.out', onUpdate: draw }, T[4])
+      .to(k, { x: CRANE.x, duration: T[6] - T[5], ease: 'cq-crane', onUpdate: draw }, T[5]);
+  }),
 
-  async customs(c) {
+  // declaration, stamp, truck to gate, [lane wait], barrier, drive through
+  customs: (c, g) => {
     const p = c.harbor!;
     const lane = c.scene.lane ?? 'green';
-    const [showMs, stampMs, gateMs, barrierMs, driveMs] = STEPS.customs;
-    const stamp = h('span', { class: cx(STAMP, 'right-3 bottom-2', LANE[lane].stamp) }, t('anim.stamp', { lane: t(LANE[lane].key) }));
-    stamp.style.opacity = '0';
+    const st = stampEl(t('anim.stamp', { lane: t(LANE[lane].key) }), cx('right-3 bottom-2', LANE[lane].stamp));
     const card = overlay(c, h('div', { class: cx(CARD_OV, 'relative pb-12') },
       h('p', { class: 'm-0 font-semibold text-muted' }, t('anim.declaration')),
       h('p', { class: 'm-0 font-bold' }, titleOf(c)),
-      stamp));
-    await fadeIn(c.run, card, showMs);
-    await tween(c.run, stampMs, (x) => {
-      stamp.style.opacity = String(Math.min(1, x * 2));
-      stamp.style.transform = `rotate(-10deg) scale(${lerp(2.2, 1, x)})`;
-    }, easeIn);
-    await toGate(c, gateMs);
-    const gate = GATE[lane];
-    if (gate) {
-      gateTag(p, t(gate));
-      await wait(c.run, GATE_WAIT[lane]);
-      gateTag(p, '');
-    }
-    await tween(c.run, barrierMs, (x) => setBarrier(p, 80 * x));
-    await Promise.all([
-      tween(c.run, driveMs, (x) => setTruck(p, lerp(778, 960, x), x > 0.7 ? 1 - (x - 0.7) / 0.3 : 1), linear),
-      dropContainer(c, 400),
-      fadeOut(c.run, card, 300),
-    ]);
-    setBarrier(p, 0);
+      st.el));
+    const keep = reducedMotion(); // §5: under reduced motion the card stays until Close
+    return scene(c, g, () => { harborEnd(c); stampEnd(st); card.style.transform = ''; card.style.opacity = keep ? '1' : '0'; }, (tl) => {
+      const [showS, stampS, gateS, barrierS, driveS] = STEPS.customs.map((ms) => ms / 1000);
+      const atGate = showS + stampS + gateS;
+      const up = atGate + GATE_WAIT[lane] / 1000;
+      const go = up + barrierS;
+      cardIn(tl, card, 0, showS);
+      slam(tl, st, showS, stampS);
+      toGate(c, tl, showS + stampS, gateS);
+      const gate = GATE[lane];
+      if (gate) tl.call(() => gateTag(p, t(gate)), undefined, atGate).call(() => gateTag(p, ''), undefined, up);
+      barrier(c, tl, up, barrierS, true);
+      drive(tl, go, driveS, 'none', (x) => setTruck(p, 778 + 182 * x, x > 0.7 ? 1 - (x - 0.7) / 0.3 : 1));
+      barrier(c, tl, go + driveS * 0.72, driveS * 0.28, false); // down once the truck's tail is past the arm (x > 906)
+      dropBox(c, tl, go, 0.4);
+      if (!keep) tl.to(card, { opacity: 0, duration: 0.3, ease: 'power1.in' }, go);
+    });
   },
 
-  async truck(c) {
+  // to gate, barrier, through + shutter opens, into the CFS (barrier down), shutter closes
+  truck: (c, g) => scene(c, g, () => harborEnd(c), (tl) => {
     const p = c.harbor!;
-    const [gateMs, barrierMs, throughMs, inMs, closeMs] = STEPS.truck;
-    await toGate(c, gateMs);
-    await tween(c.run, barrierMs, (x) => setBarrier(p, 80 * x));
-    await Promise.all([
-      tween(c.run, throughMs, (x) => setTruck(p, lerp(778, 960, x)), linear),
-      tween(c.run, throughMs, (x) => setShutter(p, x)),
-    ]);
-    await tween(c.run, inMs, (x) => setTruck(p, lerp(960, 1020, x)), linear);
-    setBarrier(p, 0);
-    await Promise.all([tween(c.run, closeMs, (x) => setShutter(p, 1 - x)), dropContainer(c, closeMs)]);
-    setTruck(p, 640, 0);
-  },
+    const T = marks(STEPS.truck);
+    toGate(c, tl, 0, T[1]);
+    barrier(c, tl, T[1], T[2] - T[1], true);
+    drive(tl, T[2], T[3] - T[2], 'power1.in', (x) => setTruck(p, 778 + 182 * x));
+    drive(tl, T[2], T[3] - T[2], 'power2.inOut', (x) => setShutter(p, x));
+    drive(tl, T[3], T[4] - T[3], 'power2.out', (x) => setTruck(p, 960 + 60 * x));
+    barrier(c, tl, T[3], T[4] - T[3], false);
+    drive(tl, T[4], T[5] - T[4], 'power2.inOut', (x) => setShutter(p, 1 - x));
+    dropBox(c, tl, T[4], T[5] - T[4]);
+  }),
 
-  async quote(c) {
-    const [showMs, wait1, flipMs, wait2] = STEPS.quote; // card-only scenes keep their card: fading it left an empty dock (v10 B3)
+  // show, wait, flip (a turn about the vertical axis), wait; card-only scenes keep their card (v10 B3)
+  quote: (c, g) => {
     const front = h('div', {},
       h('p', { class: 'm-0 font-semibold text-muted' }, t('anim.quoteCard')),
       h('p', { class: 'm-0 font-bold' }, titleOf(c)),
@@ -723,45 +742,41 @@ const PLAY: Record<Scene['kind'], (c: Ctx) => Promise<void>> = {
       h('p', { class: 'm-0 font-semibold text-emerald-800 dark:text-emerald-200' }, t('anim.quoteCard')),
       h('p', { class: 'm-0 font-bold' }, t('anim.quoteAccepted')));
     const card = overlay(c, h('div', { class: CARD_OV }, front, back));
-    await fadeIn(c.run, card, showMs);
-    await wait(c.run, wait1);
-    await tween(c.run, flipMs, (x) => {
-      card.style.transform = `scaleX(${Math.abs(1 - 2 * x)})`; // a flat flip: shrink to the edge, swap faces, grow back
-      if (x >= 0.5) {
-        front.hidden = true;
-        back.hidden = false;
-      }
+    const turn = (): void => { front.hidden = true; back.hidden = false; };
+    return scene(c, g, () => { turn(); shown(card); }, (tl) => {
+      const T = marks(STEPS.quote);
+      const half = (T[3] - T[2]) / 2;
+      cardIn(tl, card, 0, T[1]);
+      tl.to(card, { rotationY: 90, transformPerspective: 700, duration: half, ease: 'power2.in' }, T[2])
+        .call(turn, undefined, T[2] + half)
+        .fromTo(card, { rotationY: -90 }, { rotationY: 0, duration: half, ease: 'back.out(1.6)', immediateRender: false }, T[2] + half);
     });
-    await wait(c.run, wait2);
   },
 
-  async ledger(c) {
-    const [showMs, stampMs, coinsMs, waitMs] = STEPS.ledger;
-    const paid = h('span', { class: cx(STAMP, 'top-3 right-3', LANE.green.stamp) }, t('anim.paid'));
-    paid.style.opacity = '0';
+  // show, PAID stamp, coins drop onto the ledger and pile up, wait
+  ledger: (c, g) => {
+    const paid = stampEl(t('anim.paid'), cx('top-3 right-3', LANE.green.stamp));
     const coins = Array.from({ length: 6 }, (_, i) =>
-      h('span', { class: 'absolute size-4 rounded-full bg-amber-400 ring-2 ring-amber-600', style: `left:${16 + i * 22}px;top:56px` }));
+      h('span', { class: 'absolute right-8 block h-2.5 w-7 rounded-[50%] bg-amber-400 ring-1 ring-amber-700', style: `bottom:${50 + i * 4}px;opacity:0` }));
     const card = overlay(c, h('div', { class: cx(CARD_OV, 'relative') },
       h('p', { class: 'm-0 font-semibold text-muted' }, t('anim.invoice')),
       h('p', { class: 'm-0 pr-20 font-bold' }, titleOf(c)),
-      paid,
+      paid.el,
       ...coins,
-      h('p', { class: 'mt-8 mb-0 rounded-lg bg-ink px-3 py-1.5 text-panel' }, t('anim.ledgerBook'))));
-    await fadeIn(c.run, card, showMs);
-    await tween(c.run, stampMs, (x) => {
-      paid.style.opacity = String(Math.min(1, x * 2));
-      paid.style.transform = `rotate(-10deg) scale(${lerp(2, 1, x)})`;
-    }, easeIn);
-    await tween(c.run, coinsMs, (x) => coins.forEach((coin, i) => {
-      const k = Math.max(0, Math.min(1, x * 1.6 - i * 0.12));
-      coin.style.transform = `translate(${lerp(0, 40, k)}px, ${lerp(0, 44, k) - 30 * Math.sin(k * Math.PI)}px)`;
-      coin.style.opacity = k >= 1 ? '0' : '1';
-    }), linear);
-    await wait(c.run, waitMs);
+      h('p', { class: 'mt-10 mb-0 rounded-lg bg-ink px-3 py-1.5 text-panel' }, t('anim.ledgerBook'))));
+    return scene(c, g, () => { shown(card, ...coins); stampEnd(paid); }, (tl) => {
+      const T = marks(STEPS.ledger);
+      const each = 0.45;
+      cardIn(tl, card, 0, T[1]);
+      slam(tl, paid, T[1], T[2] - T[1]);
+      tl.fromTo(coins, { y: -56, opacity: 0 }, {
+        y: 0, opacity: 1, duration: each, ease: 'bounce.out', stagger: (T[3] - T[2] - each) / (coins.length - 1), immediateRender: false,
+      }, T[2]);
+    });
   },
 
-  async chat(c) {
-    const [showMs, typingMs, bubbleMs, waitMs] = STEPS.chat;
+  // show, typing (three dots bounce out of phase), bubble, wait
+  chat: (c, g) => {
     const dots = [0, 1, 2].map(() => h('span', { class: 'size-1.5 rounded-full bg-muted' }));
     const typing = h('span', { class: 'inline-flex gap-1 rounded-2xl rounded-tl-sm bg-code px-3 py-2' }, ...dots);
     const bubble = h('p', { class: 'm-0 rounded-2xl rounded-tl-sm bg-code px-3 py-2', hidden: true }, t('anim.thanks'));
@@ -770,33 +785,46 @@ const PLAY: Record<Scene['kind'], (c: Ctx) => Promise<void>> = {
     const card = overlay(c, h('div', { class: cx(CARD_OV, 'space-y-2') },
       h('p', { class: 'm-0 flex items-center gap-2' }, avatar({ name: '', dept: 'CS' }, 'md'), h('b', {}, t('anim.customer'))),
       typing, bubble, happy));
-    await fadeIn(c.run, card, showMs);
-    await tween(c.run, typingMs, (x) => dots.forEach((d, i) => {
-      d.style.transform = `translateY(${-3 * Math.max(0, Math.sin(x * 9 - i))}px)`;
-    }), linear);
-    typing.hidden = true;
-    bubble.hidden = false;
-    await tween(c.run, bubbleMs, (x) => {
-      bubble.style.opacity = String(x);
-      happy.style.opacity = String(x);
+    const answered = (): void => { typing.hidden = true; bubble.hidden = false; };
+    return scene(c, g, () => { answered(); shown(card, bubble, happy, ...dots); }, (tl) => {
+      const T = marks(STEPS.chat);
+      cardIn(tl, card, 0, T[1]);
+      tl.to(dots, { y: -4, duration: 0.13, ease: 'sine.out', yoyo: true, repeat: 3, stagger: 0.08 }, T[1])
+        .call(answered, undefined, T[2])
+        .fromTo(bubble, { opacity: 0, y: 6, scale: 0.94 }, { opacity: 1, y: 0, scale: 1, transformOrigin: '0% 0%', duration: 0.3, ease: 'back.out(1.6)', immediateRender: false }, T[2])
+        .fromTo(happy, { opacity: 0, scale: 0.6 }, { opacity: 1, scale: 1, duration: 0.3, ease: 'back.out(2)', immediateRender: false }, T[2] + 0.1);
     });
-    await wait(c.run, waitMs);
   },
 
-  async promotion(c) {
-    const [dropMs, restMs] = STEPS.promotion;
-    const route = c.scene.to ?? routeOpenedBy(c.tk.chapter);
+  // PROMO: last container, the new lane drawn, the ship sails it, the title card, confetti; Lily cheers in the dock (ui/stage.ts)
+  promotion: (c, g) => {
     const card = overlay(c, promoCard(c), true);
-    await dropContainer(c, dropMs);
-    if (!c.run.fast) void confetti(c, restMs);
-    await Promise.all([
-      departBerth(c).then(() => berthBack(c, 400)),
-      route ? (c.after.open.has(route) && !c.before.open.has(route)
-        ? drawLane(c, route, 880).then(() => sail(c, route, 1320)) // 40% draws the new lane, the ship takes the rest: still 2.2 s
-        : sail(c, route, 2200)) : wait(c.run, 2200),
-      fadeIn(c.run, card, 400),
-      wait(c.run, restMs),
-    ]);
+    let bits: SVGGElement | undefined;
+    return scene(c, g, () => { harborEnd(c); mapEnd(c); bits?.remove(); shown(card); }, (tl, g) => {
+      dropBox(c, tl, PROMO.drop[0], PROMO.drop[1] - PROMO.drop[0]);
+      const p = c.harbor;
+      if (p) { // the berthed ship leaves, a new one berths in the last 0.4 s
+        const [b0, b1] = PROMO.berth;
+        drive(tl, b0, b1 - b0 - 0.4, 'power1.in', (x) => setShip(p, x, x < 0.7 ? 1 : 1 - (x - 0.7) / 0.3));
+        tl.call(() => setShip(p, 0, 0), undefined, b1 - 0.4);
+        drive(tl, b1 - 0.4, 0.4, 'power1.inOut', (a) => setShip(p, 0, a));
+      }
+      tl.fromTo(card, { opacity: 0, y: -10, scale: 0.92 }, { opacity: 1, y: 0, scale: 1, duration: PROMO.card[1] - PROMO.card[0], ease: 'back.out(1.7)', immediateRender: false }, PROMO.card[0]);
+      const route = c.scene.to ?? routeOpenedBy(c.tk.chapter);
+      const m = c.map;
+      const r = ROUTES.find((x) => x.port === route);
+      if (m && route && r) {
+        if (c.after.open.has(route) && !c.before.open.has(route)) { // a new lane: drawn in, its port lights up, then the ship sails it
+          const [l0, l1] = PROMO.lane;
+          const color = chapterColor(Math.max(1, r.opens)).stroke;
+          tl.call(() => paintRoutes(m, c.after), undefined, l0)
+            .fromTo(m.routes[route], { drawSVG: '0%' }, { drawSVG: '100%', duration: l1 - l0, ease: 'power1.inOut', immediateRender: false }, l0)
+            .call(() => { if (!c.run.fast) arrivalPulse(m, r.x, r.y, color, 400); }, undefined, l1 - 0.3);
+          mapSail(c, g, tl, route, PROMO.sail[0], PROMO.sail[1] - PROMO.sail[0]);
+        } else mapSail(c, g, tl, route, PROMO.lane[0], PROMO.sail[1] - PROMO.lane[0]);
+      }
+      bits = confetti(c, tl);
+    });
   },
 };
 
@@ -812,5 +840,13 @@ export function build(c: Ctx): void {
   }
   c.art.replaceChildren(...nodes(c.harbor?.svg, c.map?.svg));
 }
-/** Plays the scene of `c` (§2, step durations from STEPS). A fast run draws the end state at once. */
-export const play = (c: Ctx): Promise<void> => PLAY[c.scene.kind](c);
+/**
+ * Plays the scene of `c` (§2; ui-ux-v6 A2: one GSAP timeline of durationOf). A fast run draws the end state at once; with
+ * GSAP not in yet (§2.1) the end state shows at once too and the chunk is fetched for next time, never waited for.
+ */
+export async function play(c: Ctx): Promise<void> {
+  const g = gsapReady;
+  if (!g) prefetchGsap();
+  const tl = SCENES[c.scene.kind](c, g);
+  if (tl && g) await g.play(tl, c.run);
+}

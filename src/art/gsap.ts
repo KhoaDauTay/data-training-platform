@@ -10,6 +10,9 @@ import { Physics2DPlugin } from 'gsap/Physics2DPlugin';
 import type { Run } from './logistics';
 
 gsap.registerPlugin(CustomEase, DrawSVGPlugin, MorphSVGPlugin, MotionPathPlugin, Physics2DPlugin);
+// v6 A2: the crane trolley's inertia (speeds up over the first quarter, runs at an even speed, brakes over the last
+// quarter). Named here because the art chunks may not import GSAP: they use it as ease: 'cq-crane'.
+CustomEase.create('cq-crane', 'M0,0 C0.12,0 0.18,0.06 0.25,0.16 C0.4167,0.3867 0.5833,0.6133 0.75,0.84 C0.82,0.94 0.88,1 1,1');
 
 export { gsap };
 export type Timeline = gsap.core.Timeline;

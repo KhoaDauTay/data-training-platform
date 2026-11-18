@@ -10,7 +10,7 @@ import { textOf, type Ticket } from '../tickets';
 import { byId, reducedMotion } from './dom';
 import { loadEcomArt } from './ecomArt';
 import { grewLately, once, react } from './celebrate';
-import { mascot } from './mascots';
+import { GROW_MS, mascot, MOVES } from './mascots';
 import { stageEsc } from './shortcuts';
 
 // Plan 8b D8b-2: the pictures and scene bodies live in the lazy art chunk (src/art/logistics.ts). This file keeps the
@@ -110,16 +110,18 @@ async function drawAndPlay(c: Ctx, owner: Ctx = c): Promise<void> {
   // ui-ux-v5 A1: Lily just grew (read here, after complete()'s rerender ran syncLily): her grow (900 ms, accessory fades in)
   // replaces the 300 ms pop and starts earlier, so it still ends with the scene (≤ 3.0 s, promotion included).
   const grow = grewLately();
+  // ui-ux-v6 A2: with GSAP in, Lily's rig cheer (MOVES.cheer, 700 ms) is her entrance and ends with the scene (PROMO.lily)
+  const rig = Boolean(loadedGsap());
   const pop = window.setTimeout(() => {
     lily.style.opacity = '1';
     if (c.run.fast) return;
-    if (grow && loadedGsap()) react(lily, true); // v6 M1: the rig cheers and grows (scarf drawn, star morphed, laptop in)
+    if (rig && loadedGsap()) react(lily, grow); // v6 M1: the rig cheers, and grows when she just grew (scarf drawn, star morphed, laptop in)
     else if (grow) {
       lily.classList.add('grow');
       if (lily.getAnimations().length) once(lily, 'grow');
       else lily.classList.remove('grow'); // hidden (below sm): never left to replay once shown
     } else lily.animate([{ transform: 'scale(.6)', opacity: 0 }, { transform: 'scale(1)', opacity: 1 }], { duration: 300, easing: 'cubic-bezier(.3,1.6,.6,1)' });
-  }, Math.max(0, (art.ms?.(c) ?? durationOf(c.scene)) - (grow ? 900 : 300)));
+  }, Math.max(0, (art.ms?.(c) ?? durationOf(c.scene)) - (grow ? GROW_MS : rig ? MOVES.cheer.ms : 300)));
   try {
     await art.play(c);
   } finally {

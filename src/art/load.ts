@@ -1,5 +1,5 @@
 import { getLang, t } from '../i18n';
-import { GATE_WAIT, routeOpenedBy, ROUTES, STEPS } from '../scene';
+import { durationOf, GATE_WAIT, routeOpenedBy, ROUTES, STEPS } from '../scene';
 import { CHAPTER_COLOR, chapterColor, cx, DONE_PILL, PILL } from '../theme';
 import { textOf } from '../tickets';
 import { avatar } from '../ui/avatar';
@@ -18,7 +18,7 @@ let ready: LogisticsArt | undefined;
 export function loadArt(): Promise<LogisticsArt> {
   art ??= import('./logistics').then((m) => {
     m.init({
-      t, getLang, textOf, ROUTES, STEPS, GATE_WAIT, routeOpenedBy, CHAPTER_COLOR, chapterColor, cx, PILL, DONE_PILL,
+      t, getLang, textOf, ROUTES, STEPS, GATE_WAIT, routeOpenedBy, durationOf, CHAPTER_COLOR, chapterColor, cx, PILL, DONE_PILL,
       h, s, nodes, reducedMotion, avatar, mascot, callout, routeItems,
     });
     return (ready = m);
