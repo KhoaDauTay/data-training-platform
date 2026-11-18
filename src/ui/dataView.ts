@@ -59,12 +59,18 @@ export function renderData(host: HTMLElement): void {
   const count = h('p', { class: 'sr-only', 'aria-live': 'polite' });
   const detail = h('section', { class: 'min-w-0', 'aria-labelledby': 'data-table-title' });
   const diagram = h('section', { class: 'mt-6 min-w-0' });
-  // v6 §3.3 (V11): from 1024 px the table list lives in the sidebar; below that it stays at the top of the page.
+  // v6 §3.3 (V11), v12.0 U6: the table list lives in the sidebar when it is wide (≥ 1280 px, expanded); else the page shows a <select>.
   const side = sideExtra();
+  // v12.0 U6: no sidebar list (rail, below 1280 px, phones): a native <select> grouped by chapter, filtered by the search box.
+  const select = side ? undefined : h('select', {
+    id: 'data-select', class: 'mt-2 w-full rounded-lg border border-line bg-panel px-3 py-2 text-ink max-lg:min-h-11', 'aria-label': t('data.pick'),
+    onchange: () => go(select!.value),
+  });
   const picker = h('div', { class: side ? 'min-w-0' : 'min-w-0 lg:sticky lg:top-4 lg:self-start' },
     h('label', { for: 'data-search', class: 'mb-1 block font-semibold' }, t('data.search')),
     Object.assign(search, { placeholder: t('data.searchHint') }),
     count,
+    select ?? null,
     h('h2', { id: 'data-list-title', class: 'sr-only' }, t('data.title')),
     list);
   side?.replaceChildren(picker);
@@ -95,25 +101,34 @@ export function renderData(host: HTMLElement): void {
     const locked = Object.values(chapterTablesOf()).flat().filter((x) => !openSet.has(x) && (!needle || x.includes(needle)));
     count.textContent = needle ? t('data.matches', { n: hits.length }) : '';
     const groups = Object.entries(chapterTablesOf()).map(([c, ts]) => [Number(c), ts.filter((x) => hits.includes(x))] as const).filter(([, ts]) => ts.length);
-    list.replaceChildren(...nodes(
-      needle && hits.length === 0 ? h('p', { class: 'text-muted' }, t('data.none', { q: view.query.trim() })) : null,
-      ...groups.map(([c, ts]) => h('div', { class: 'mt-3' },
-        h('h3', { class: 'm-0 text-sm font-semibold text-muted' }, t('nav.chapterOption', { n: c, title: chapterTitle(c, getLang()) })),
-        h('ul', { class: 'mt-1 grid list-none gap-1 p-0 md:max-lg:grid-cols-2' }, ...ts.map((x) => {
-          const cols = matchCols(x);
-          return h('li', {}, h('a', {
-            href: tableHash(x),
-            class: 'block rounded-lg px-2 py-1 no-underline ring-1 ring-line hover:bg-code aria-[current=page]:bg-accent-soft aria-[current=page]:ring-2 aria-[current=page]:ring-accent',
-            'aria-current': x === sel ? 'page' : false,
-          }, ...nodes(
-            h('code', { class: 'font-semibold' }, x),
-            rowText(x) ? h('span', { class: 'block text-xs text-muted' }, rowText(x)) : null,
-            cols.length ? h('span', { class: 'block text-xs text-muted' }, `${t('data.matchCols')} `, cols.join(', ')) : null)));
-        })))),
-      locked.length ? h('details', { class: 'mt-3 text-muted' },
-        h('summary', { class: 'cursor-pointer text-sm' }, t('data.lockedGroup', { n: locked.length })),
-        h('ul', { class: 'mt-1 list-none space-y-1 p-0 text-sm opacity-75' }, ...locked.map((x) =>
-          h('li', {}, h('code', {}, x), ` · ${t('data.lockedAt', { n: chapterOf(x) })}`)))) : null));
+    const locked2 = locked.length ? h('details', { class: 'mt-3 text-muted' },
+      h('summary', { class: 'cursor-pointer text-sm' }, t('data.lockedGroup', { n: locked.length })),
+      h('ul', { class: 'mt-1 list-none space-y-1 p-0 text-sm opacity-75' }, ...locked.map((x) =>
+        h('li', {}, h('code', {}, x), ` · ${t('data.lockedAt', { n: chapterOf(x) })}`)))) : null;
+    const none = needle && hits.length === 0 ? h('p', { class: 'text-muted' }, t('data.none', { q: view.query.trim() })) : null;
+    if (select) {
+      select.replaceChildren(...groups.map(([c, ts]) => h('optgroup', { label: t('nav.chapterOption', { n: c, title: chapterTitle(c, getLang()) }) },
+        ...ts.map((x) => h('option', { value: x, selected: x === sel }, rowText(x) ? `${x} · ${rowText(x)}` : x)))));
+      if (!hits.includes(sel)) select.prepend(h('option', { value: sel, selected: true, disabled: true }, sel)); // the open table stays named while the search hides it
+      list.replaceChildren(...nodes(none, locked2));
+    } else {
+      list.replaceChildren(...nodes(none,
+        ...groups.map(([c, ts]) => h('div', { class: 'mt-3' },
+          h('h3', { class: 'm-0 text-sm font-semibold text-muted' }, t('nav.chapterOption', { n: c, title: chapterTitle(c, getLang()) })),
+          h('ul', { class: 'mt-1 grid list-none gap-1 p-0' }, ...ts.map((x) => {
+            const cols = matchCols(x);
+            return h('li', {}, h('a', {
+              href: tableHash(x),
+              // v12.0 U7: a list that breathes, no ring per row; the open table keeps its ring
+              class: 'block rounded-lg px-2 py-1 no-underline hover:bg-code max-lg:min-h-11 aria-[current=page]:bg-accent-soft aria-[current=page]:ring-2 aria-[current=page]:ring-accent',
+              'aria-current': x === sel ? 'page' : false,
+            }, ...nodes(
+              h('code', { class: 'font-semibold' }, x),
+              rowText(x) ? h('span', { class: 'block text-xs text-muted' }, rowText(x)) : null,
+              cols.length ? h('span', { class: 'block text-xs text-muted' }, `${t('data.matchCols')} `, cols.join(', ')) : null)));
+          })))),
+        locked2));
+    }
     if (meta) drawColumns(); // <mark> follows the search
   }
 

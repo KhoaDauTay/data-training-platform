@@ -488,6 +488,7 @@ export const vi = {
   'data.refLocked': 'bảng chưa mở',
   'nav.data': 'Dữ liệu',
   'erd.toData': 'Xem toàn bộ cấu trúc ở trang Dữ liệu →',
+  'data.pick': 'Chọn bảng',
   'data.title': 'Cấu trúc dữ liệu',
   'data.intro': 'Các bảng của Cargo Query Logistics bạn đã được mở, cột và quan hệ giữa chúng.',
   'data.searchHint': 'vd. customer_id',

@@ -34,12 +34,15 @@ let extra: HTMLElement | undefined;
 /** v12.0 U7: the current row the sidebar last scrolled to; a redraw scrolls only when the current page changed. */
 let scrolledTo = '';
 
+/** The sidebar shows labels and lists: ≥ 1280 px with the 'open' pref, never on the workspace (v12.0 U6; rail is the default, L85). */
+const sideWide = (): boolean => mq(XL) && parseSidePref(readJson<unknown>(SIDE_KEY)) === 'open' && lastRoute !== 'play';
+
 /**
- * Where the Data page puts its table list (V11): the sidebar from 1024 px, else undefined (the page keeps it). One node for the
- * page's lifetime, so a redraw moves it instead of rebuilding it (the search box keeps focus and IME state).
+ * Where the Data page puts its table list (V11): the sidebar when it is wide, else undefined (the page shows a <select>,
+ * U6). One node for the page's lifetime, so a redraw moves it instead of rebuilding it (search keeps focus and IME state).
  */
 export function sideExtra(): HTMLElement | undefined {
-  return mq(WIDE) ? (extra ??= h('div', { class: 'side-extra mt-2 px-1' })) : undefined;
+  return sideWide() ? (extra ??= h('div', { class: 'side-extra mt-2 px-1' })) : undefined;
 }
 
 interface Row { key: string; href: string; lead: Node; label: string; sub?: string; current: boolean; lock?: string; onclick?: () => void }
@@ -166,7 +169,7 @@ function toggle(route: Route): HTMLElement {
     onclick: () => {
       if (forcedRail) overlay = !overlay;
       else writeJson(SIDE_KEY, expanded ? 'rail' : 'open');
-      renderSidebar(route);
+      if (route === 'data') actions.rerender(); else renderSidebar(route); // the Data list moves between page and sidebar (U6)
     },
   }, h('span', { class: 'grid size-6 shrink-0 place-items-center', 'aria-hidden': 'true' }, icon('panelLeft')), h('span', { class: 'side-label' }, label));
 }
@@ -252,7 +255,7 @@ export function initSidebar(): void {
     if (drawer.open) drawer.close();
     actions.rerender(); // the Data page's list moves between page and sidebar (V11)
   });
-  matchMedia(XL).addEventListener('change', () => renderSidebar(lastRoute));
+  matchMedia(XL).addEventListener('change', () => (lastRoute === 'data' ? actions.rerender() : renderSidebar(lastRoute)));
   // Registered before the tour's Esc (Task 7): an open overlay takes Esc first.
   document.addEventListener('keydown', (e) => {
     if (e.key !== 'Escape' || !overlay || e.defaultPrevented) return;

@@ -491,6 +491,7 @@ export const en: Record<Key, Msg> = {
   'data.refLocked': 'locked table',
   'nav.data': 'Data',
   'erd.toData': 'See the full structure on the Data page →',
+  'data.pick': 'Pick a table',
   'data.title': 'Data structure',
   'data.intro': 'The Cargo Query Logistics tables you have unlocked, their columns and how they link.',
   'data.searchHint': 'e.g. customer_id',
