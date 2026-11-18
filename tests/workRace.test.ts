@@ -44,6 +44,7 @@ vi.mock('../src/ui/dom', () => ({
   h: (_tag: string, attrs?: { onclick?: unknown }, ...kids: unknown[]) => Object.assign(fakeEl(), { onclick: attrs?.onclick, kids }),
   nodes: (...c: unknown[]) => c.filter((x) => x !== null && x !== undefined && x !== false),
   richText: () => fakeEl(),
+  announce: () => {}, // v12.0 A1: tested in tests/a11y.test.ts
   byId: () => fakeEl(),
 }));
 

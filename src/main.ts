@@ -441,6 +441,18 @@ byId('inbox-btn').addEventListener('click', () => (byId('inbox-dialog') as HTMLD
 byId('notebook-btn').addEventListener('click', () => toggleNotebook(byId('notebook-dialog') as HTMLDialogElement));
 byId('replay-btn').addEventListener('click', () => openWelcome(true)); // v4 D-O2: the static version (V10)
 byId('diag-btn').addEventListener('click', () => void copyDiagnostics());
+// v12.0 A7: skip links at the top of the workspace (index.html); on a phone they also switch the pane.
+for (const b of document.querySelectorAll<HTMLButtonElement>('[data-skip]')) {
+  b.addEventListener('click', () => {
+    if (b.dataset.skip === 'work') {
+      showPane('work');
+      work.focus();
+    } else {
+      showPane('panel');
+      byId('panel').focus();
+    }
+  });
+}
 
 for (const b of document.querySelectorAll<HTMLButtonElement>('[data-lang]')) {
   b.addEventListener('click', () => void setLang(b.dataset.lang as Lang).then(() => { // EN may need its chunk first

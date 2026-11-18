@@ -5,7 +5,7 @@ import type { QueryResult } from '../db/run';
 import { compareResults, grade, type GradeResult } from '../grader';
 import { loadHistory, pushHistory, writeHistory } from '../history';
 import { checkLab, checkPlan, isCreateIndex, planLine, type LabSpec, type PlanFail } from '../planCheck';
-import { getLang, isMac, t } from '../i18n';
+import { getLang, isMac, t, type Key } from '../i18n';
 import { LANE_XP } from '../lanes';
 import { SKILLS, xpFor } from '../progress';
 import { isClosed, keepsWork, readDraft, schemaOf, workKey, writeDraft } from '../session';
@@ -16,10 +16,10 @@ import { BLANK, type Ticket } from '../tickets';
 import { DRILL_ID } from '../save';
 import { diffView, verdictText } from './tryPreview';
 import { celebrate } from './celebrate';
-import { h, richText } from './dom';
+import { announce, h, richText } from './dom';
 import { createEditor, type Editor } from './editor';
 import { avatar } from './avatar';
-import { errorNote, errorText, errorView, gradeMessage, mascotOf, voiceKey } from './feedback';
+import { errorNote, errorText, errorView, gradeMessage, mascotOf, runSummary, voiceKey } from './feedback';
 import { mascot, type Mascot, type Pose } from './mascots';
 import { showPane } from './paneTabs';
 import { pageShortcutOf } from './shortcuts';
@@ -119,7 +119,7 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
   const detailBox = h('div');
   const historyBox = h('details', { class: 'mt-2 text-sm' });
   // The tour's mark sits under the buttons, never over the editor (v4 §B.2); main.ts refreshTour() refills it.
-  host.replaceChildren(editorHost, h('div', { class: 'max-md:sticky max-md:bottom-14 max-md:z-10 max-md:bg-panel' }, h('div', { class: 'actions' }, runBtn, explainBtn, formatBtn, submitBtn)), tourSlot('work'), feedback, detailBox, historyBox);
+  host.replaceChildren(editorHost, h('div', { class: 'max-md:sticky max-md:bottom-14 max-md:z-10 max-md:bg-panel' }, h('div', { class: 'actions' }, runBtn, submitBtn, explainBtn, formatBtn)), tourSlot('work'), feedback, detailBox, historyBox);
 
   // The buttons advertise Mod+Enter / Mod+Shift+Enter: honour them when focus is outside the editor too
   // (on a button after a click, the brief heading after picking a ticket). Inside the editor CodeMirror's
@@ -150,13 +150,18 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
       : message.view());
   }
 
+  /** v12.0 U8 (L80 #9): the shortcut beside a short label, hidden on phones; aria-keyshortcuts keeps it for screen readers. */
+  const keys = (k: Key): HTMLElement => h('kbd', { class: 'ml-1.5 font-sans text-xs opacity-75 max-sm:hidden' }, t(k));
+  runBtn.setAttribute('aria-keyshortcuts', isMac ? 'Meta+Enter' : 'Control+Enter');
+  submitBtn.setAttribute('aria-keyshortcuts', isMac ? 'Meta+Shift+Enter' : 'Control+Shift+Enter');
+
   function setButtons(): void {
-    runBtn.textContent = busy && app.dbStatus === 'loading' ? t('work.waitingDb') : t(selection ? 'work.runSel' : 'work.run');
+    runBtn.replaceChildren(t(selection ? 'work.runSel' : 'work.run'), keys('work.runKeys'));
     explainBtn.textContent = t('tab.explain');
     formatBtn.textContent = t('work.format');
-    submitBtn.textContent = t('work.submit');
-    // Plan 8b 8.7: a running query says so (spinner stops under reduced motion with every other animation)
-    if (busy && app.dbStatus !== 'loading') runBtn.replaceChildren(h('span', { class: 'mr-1.5 inline-block size-3 animate-spin rounded-full border-2 border-current border-t-transparent align-[-1px]', 'aria-hidden': 'true' }), t('work.running'));
+    submitBtn.replaceChildren(t('work.submit'), keys('work.submitKeys'));
+    // Plan 8b 8.7: a running query says so (spinner stops under reduced motion). Waiting for the DB is said in the line under the buttons (work.queued), never in the label (U8).
+    if (busy) runBtn.replaceChildren(h('span', { class: 'mr-1.5 inline-block size-3 animate-spin rounded-full border-2 border-current border-t-transparent align-[-1px]', 'aria-hidden': 'true' }), t('work.running'));
     runBtn.setAttribute('aria-busy', String(busy));
     submitBtn.setAttribute('aria-busy', String(busy));
     runBtn.disabled = busy;
@@ -225,6 +230,7 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
     record(historyId, r);
     if (editor !== ed) return;
     app.lastRun = r;
+    announce(runSummary(r, ed.getValue()));
     const failed = r.error !== undefined;
     if (failed) {
       underline(r.error, offset);

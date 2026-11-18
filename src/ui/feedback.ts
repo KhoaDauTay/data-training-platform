@@ -1,5 +1,5 @@
 import { DbFailedError, DbRestartError, QueryTimeoutError, WorkerTaskError } from '../db/client';
-import { sqlErrorInfo } from '../db/run';
+import { sqlErrorInfo, type QueryResult } from '../db/run';
 import { errorMessage, type GradeResult } from '../grader';
 import { t, type Key } from '../i18n';
 import { InvalidSaveError, NewerSaveError } from '../save';
@@ -79,4 +79,14 @@ export function mascotOf(error: unknown): [Mascot, Pose] | undefined {
   if (error instanceof QueryTimeoutError || error instanceof DbRestartError) return ['boon', 'oops'];
   const info = sqlErrorInfo(error);
   return info && explainError(info) ? ['boon', 'think'] : undefined;
+}
+
+/** 1-based line of Postgres' 1-based character position `pos` in `text`. */
+export const lineAt = (text: string, pos: number): number => text.slice(0, Math.max(0, pos - 1)).split('\n').length;
+
+/** v12.0 A1: what a Run did, in one sentence: rows and columns, or the editor line of the error (`offset` = selection start). */
+export function runSummary(r: { result?: QueryResult; error?: unknown; offset: number }, doc: string): string {
+  if (r.result) return t('a11y.ran', { rows: r.result.rows.length, cols: r.result.columns.length });
+  const pos = sqlErrorInfo(r.error)?.position;
+  return pos ? t('a11y.runErrorLine', { line: lineAt(doc, r.offset + pos) }) : t('a11y.runError');
 }

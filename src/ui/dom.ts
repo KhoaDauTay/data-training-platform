@@ -40,6 +40,16 @@ export function richText(text: string): HTMLElement {
 export const byId = (id: string): HTMLElement => document.getElementById(id)!;
 
 /** `<animateMotion>` and JS tweens ignore the CSS reduced-motion rule in style.css, so they check this (flowView, stage). */
+/** v12.0 A1: one polite sentence for screen readers (#announce is aria-live). Cleared first so the same sentence twice is read twice. */
+export function announce(text: string): void {
+  const el = typeof document === 'undefined' ? null : document.getElementById('announce');
+  if (!el) return; // test harnesses without the page (tests/workRace.test.ts)
+  el.textContent = '';
+  setTimeout(() => {
+    el.textContent = text;
+  }, 50);
+}
+
 export function reducedMotion(): boolean {
   return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 }
