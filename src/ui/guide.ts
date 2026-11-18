@@ -69,7 +69,7 @@ function finish(id: string, off = false): void {
   if (active?.guide.id !== id) return;
   active = undefined;
   d$.writeJson(GUIDES_KEY, { ...withSeen(pref(), id), ...(off ? { off } : {}) });
-  redraw(false);
+  redraw(!!document.activeElement?.closest('[data-guide-mark]')); // focus was in the mark: the next mark, or the page title, takes it
 }
 
 function next(): void {
@@ -119,7 +119,11 @@ function refresh(): void {
     placed = slot.firstElementChild?.getAttribute('data-guide-mark') === key ? slot.firstElementChild as HTMLElement : undefined;
     if (!placed) slot.replaceChildren(placed = markOf(a!, key)); // unchanged marks stay, so focus stays inside them
   }
-  if (!placed || !a) return;
+  if (!placed || !a) {
+    if (focusNext) pageTitle()?.focus(); // the mark that held focus is gone: never drop focus on <body>
+    focusNext = false;
+    return;
+  }
   const mark = placed;
   const dialog = mark.closest('dialog');
   if (dialog) dialog.addEventListener('close', () => finish(a.guide.id), { once: true }); // D-G3: closing the lesson = seen
@@ -138,6 +142,13 @@ function refresh(): void {
     });
     d$.announce(a.guide.steps[a.step].text());
   }
+}
+
+/** The workspace's task title, else the visible page's first heading (made focusable, like #brief-title). */
+function pageTitle(): HTMLElement | undefined {
+  const el = [...document.querySelectorAll<HTMLElement>('#brief-title, main:not([hidden]) h1, main:not([hidden]) h2')].find((e) => e.offsetParent !== null);
+  if (el && !el.hasAttribute('tabindex')) el.tabIndex = -1;
+  return el;
 }
 
 /** Called once by drillBrief.ts initDrill. */

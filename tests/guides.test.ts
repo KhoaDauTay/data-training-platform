@@ -75,12 +75,14 @@ describe('guide engine (ui/guide.ts)', () => {
   interface El { tag: string; attrs: Record<string, unknown>; children: unknown[] }
   interface Mark { o: { label: string; text: string; data: Record<string, string>; buttons: (El | null)[] }; closest: () => null; focus: () => void; isConnected: boolean; getAttribute: (k: string) => string }
 
-  async function setup(opts: { knows?: boolean; stored?: unknown } = {}) {
+  async function setup(opts: { knows?: boolean; stored?: unknown; chained?: boolean } = {}) {
     const { vi } = await import('vitest');
     vi.resetModules();
     let stored = opts.stored;
     const slot = { dataset: { guideSlot: 'drill-brief' }, offsetParent: {}, firstElementChild: null as Mark | null, replaceChildren(m?: Mark) { this.firstElementChild = m ?? null; } };
-    vi.stubGlobal('document', { querySelectorAll: () => [slot], querySelector: () => slot.firstElementChild, addEventListener() {} });
+    const title = { offsetParent: {}, focus: vi.fn(), hasAttribute: () => true };
+    const doc = { activeElement: undefined as unknown, querySelectorAll: (sel: string) => (sel.includes('brief-title') ? [title] : [slot]), querySelector: () => slot.firstElementChild, addEventListener() {} };
+    vi.stubGlobal('document', doc);
     vi.stubGlobal('requestAnimationFrame', () => 0);
     const g = await import('../src/ui/guide');
     const hooks: { refresh?: () => void; region?: () => string | undefined } = {};
@@ -96,9 +98,11 @@ describe('guide engine (ui/guide.ts)', () => {
     g.initGuides(deps as never);
     let page = true;
     g.offerGuides(() => (page ? [{ id: 'drill', steps: [{ slot: 'drill-brief', text: () => 'one' }, { slot: 'drill-brief', text: () => 'two' }] }] : []));
+    if (opts.chained) g.offerGuides(() => [{ id: 'drill:open', steps: [{ slot: 'drill-brief', text: () => 'kind' }] }]);
     const mark = () => slot.firstElementChild;
     const click = (label: string) => (mark()!.o.buttons.find((b) => b?.children[0] === label)!.attrs.onclick as () => void)();
-    return { g, hooks, mark, click, stored: () => stored, leave: () => { page = false; }, back: () => { page = true; } };
+    const inMark = () => { doc.activeElement = { closest: () => mark() }; };
+    return { g, hooks, mark, click, inMark, title, stored: () => stored, leave: () => { page = false; }, back: () => { page = true; } };
   }
 
   it('shows the offered guide by itself, steps through it and records it as seen', async () => {
@@ -143,5 +147,25 @@ describe('guide engine (ui/guide.ts)', () => {
     expect(k.mark()!.o.text).toBe('one');
     k.click('Skip (Esc)');
     expect(k.stored()).toEqual({ seen: ['drill'], off: false });
+  });
+
+  it("keeps focus when the mark that held it goes: the next guide's mark, else the page title", async () => {
+    const s = await setup({ chained: true });
+    s.hooks.refresh!();
+    s.click('Next');
+    s.inMark();
+    s.click('Done');
+    expect(s.mark()!.o.text).toBe('kind'); // the drill kind's guide follows the desk's
+    expect(s.mark()!.focus).toHaveBeenCalled();
+    s.inMark();
+    s.click('Skip (Esc)');
+    expect(s.mark()).toBeNull();
+    expect(s.title.focus).toHaveBeenCalled();
+  });
+
+  it('an auto-shown mark never takes focus', async () => {
+    const s = await setup();
+    s.hooks.refresh!();
+    expect(s.mark()!.focus).not.toHaveBeenCalled();
   });
 });
