@@ -12,7 +12,7 @@ import { byId, h, nodes, richText } from './dom';
 import { errorText, errorView } from './feedback';
 import { skillIcon } from './icons';
 import { renderResult } from './resultTable';
-import { markExampleRan, tourRegion, tourSlot } from './coach';
+import { boonRegion, markExampleRan, tourSlot } from './coach';
 import { mascot } from './mascots';
 import { readTour } from '../onboarding';
 import { diffView, runOn, tryPreview, verdictText } from './tryPreview';
@@ -49,6 +49,12 @@ const section = (title: string, ...body: (Node | null)[]): HTMLElement =>
   h('div', { class: 'mt-3' }, h('h4', { class: 'mt-0 mb-1' }, title), ...body);
 
 /** The full card (product-design-v4 §C.2). `titleId` differs between the brief and the dialog; `actions` sit next to the title. */
+/** Boon's tour or guide mark is in this card's region: the lesson dialog, or the brief pane for a card drawn there. */
+function quiet(titleId: string): boolean {
+  const r = boonRegion();
+  return titleId === 'lesson-dialog-title' ? r === 'dialog' : r === 'brief' || r === 'lesson';
+}
+
 function card(l: Lesson, titleId: string, actions: HTMLElement[], tour = false): HTMLElement {
   const lang = getLang();
   const exampleOut = h('div', { class: 'mt-2' });
@@ -212,7 +218,7 @@ function card(l: Lesson, titleId: string, actions: HTMLElement[], tour = false):
     h('div', { class: 'flex flex-wrap items-center justify-between gap-2' },
       h('h3', { id: titleId, tabindex: '-1', class: 'm-0 flex items-center gap-2' },
         // v12 (L87): Boon teaches the lesson; left out while his tour mark is in the same pane (one mascot per region)
-        tour || tourRegion() === 'brief' || tourRegion() === 'lesson' ? skillIcon(l.id, 'size-5') : mascot('boon', 'point', 'size-10 shrink-0'),
+        tour || quiet(titleId) ? skillIcon(l.id, 'size-5') : mascot('boon', 'point', 'size-10 shrink-0'),
         t('lesson.title', { skill: label(l.id) })),
       h('div', { class: 'flex gap-1.5' }, ...actions)),
     h('div', { class: 'mt-2' }, richText(l.concept[lang])),

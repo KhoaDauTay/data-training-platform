@@ -103,7 +103,16 @@ export function tourRegion(): TourSlot | undefined {
   return step === undefined ? undefined : TOUR_SLOT[step];
 }
 
-/** Boon's mark: --sun-ink on --sun (8.3:1), a step counter, the words, its button(s) and "Skip the tour (Esc)". */
+/** Boon's mark (tour and guides, v8 §2.1): --sun-ink on --sun (8.3:1), a label, the words and its buttons. */
+export function boonMark(o: { label: string; aria: string; text: string; buttons: (HTMLElement | null)[]; mascot?: boolean; data: Record<string, string> }): HTMLElement {
+  return h('aside', { class: 'tour my-3 flex items-start gap-3 rounded-(--r-card) bg-sun p-3 text-sun-ink', role: 'note', tabindex: '-1', 'aria-label': o.aria, ...o.data },
+    o.mascot === false ? null : mascot('boon', 'point', 'size-12'),
+    h('div', { class: 'min-w-0 flex-1' },
+      h('p', { class: 'm-0 text-xs font-bold tracking-wider uppercase' }, o.label),
+      h('p', { class: 'mt-1 mb-2' }, o.text),
+      h('div', { class: 'flex flex-wrap gap-2' }, ...o.buttons)));
+}
+
 function mark(step: number): HTMLElement {
   const after = (n: number, toPath = false) => () => {
     ackTour(n);
@@ -111,19 +120,13 @@ function mark(step: number): HTMLElement {
     if (toPath) go('learn');
     else document.querySelector<HTMLElement>('[data-tour-mark]')?.focus(); // the next step's mark, wherever it now sits
   };
-  const el = h('aside', {
-    class: 'tour my-3 flex items-start gap-3 rounded-(--r-card) bg-sun p-3 text-sun-ink', role: 'note', tabindex: '-1',
-    'data-tour-mark': String(step), 'aria-label': t('tour.label', { i: step, n: TOUR_STEPS }),
-  },
-    mascot('boon', 'point', 'size-12'),
-    h('div', { class: 'min-w-0 flex-1' },
-      h('p', { class: 'm-0 text-xs font-bold tracking-wider uppercase' }, t('tour.label', { i: step, n: TOUR_STEPS })),
-      h('p', { class: 'mt-1 mb-2' }, tourText(step)),
-      h('div', { class: 'flex flex-wrap gap-2' },
-        step === 1 || step === 3 ? h('button', { type: 'button', class: 'primary', onclick: after(step) }, t('tour.next')) : null,
-        step === 8 ? h('button', { type: 'button', class: 'primary', onclick: after(8) }, t('tour.done')) : null,
-        step === 8 ? h('button', { type: 'button', onclick: after(8, true) }, t('tour.seePath')) : null,
-        h('button', { type: 'button', onclick: () => skip() }, t('tour.skip')))));
+  const label = t('tour.label', { i: step, n: TOUR_STEPS });
+  const el = boonMark({ label, aria: label, text: tourText(step), data: { 'data-tour-mark': String(step) }, buttons: [
+    step === 1 || step === 3 ? h('button', { type: 'button', class: 'primary', onclick: after(step) }, t('tour.next')) : null,
+    step === 8 ? h('button', { type: 'button', class: 'primary', onclick: after(8) }, t('tour.done')) : null,
+    step === 8 ? h('button', { type: 'button', onclick: after(8, true) }, t('tour.seePath')) : null,
+    h('button', { type: 'button', onclick: () => skip() }, t('tour.skip')),
+  ] });
   reveal(el, step);
   return el;
 }
@@ -156,16 +159,30 @@ function popoverOpen(): boolean {
   }
 }
 
+/** Something else closes on this Esc: a modal, the open notebook, a popover, the completion dock, or focus in CodeMirror. */
+export function escOwned(target: EventTarget | null): boolean {
+  return !!document.querySelector('dialog:modal, dialog#notebook-dialog[open]') || popoverOpen()
+    || document.getElementById('stage')?.hidden === false
+    || (target instanceof Element && !!target.closest('.cm-editor'));
+}
+
 /** Esc skips the tour (v4 §B.4) unless the mark is out of sight or something else owns Esc (tourEscSkips). */
 export function initTour(): void {
   document.addEventListener('keydown', (e) => {
     if (e.key !== 'Escape' || e.defaultPrevented) return;
     const mark = document.querySelector<HTMLElement>('[data-tour-mark]');
-    const target = e.target instanceof Element ? e.target : null;
-    const owned = !!document.querySelector('dialog:modal, dialog#notebook-dialog[open]') || popoverOpen()
-      || document.getElementById('stage')?.hidden === false
-      || !!target?.closest('.cm-editor');
     const markVisible = !!mark && !document.getElementById('shell')?.hidden && mark.offsetParent !== null;
-    if (tourEscSkips({ markVisible, owned })) skip();
+    if (tourEscSkips({ markVisible, owned: escOwned(e.target) })) skip();
   });
 }
+
+// ---- Boon's guides in the General area (v13, product-design-v8 §2): the engine lives in the learnui chunk (ui/guide.ts) ----
+
+/** Filled by ui/guide.ts when the learnui chunk loads; until then no guide shows and boonRegion() is the tour's alone. */
+export const guideHooks: { refresh?: () => void; region?: () => string | undefined } = {};
+/** An empty placeholder a page draws where a guide step may point (`data-guide-slot`, beside the tour's slots, never inside them). */
+export const guideSlot = (slot: string): HTMLElement => h('div', { 'data-guide-slot': slot });
+/** After rerender(): refill every guide slot on the page. */
+export const refreshGuides = (): void => guideHooks.refresh?.();
+/** The region Boon's tour or guide mark is in now ('brief', 'lesson', 'work', 'panel', 'recap', 'dialog', 'page'): no other mascot there. */
+export const boonRegion = (): string | undefined => tourRegion() ?? guideHooks.region?.();

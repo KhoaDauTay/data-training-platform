@@ -27,7 +27,7 @@ import { initStage, playCompletion, relabelStage } from './ui/stage';
 import { prefetchArt } from './art/load';
 import { renderInbox } from './ui/inbox';
 import { createPanel, registerCoreTabs } from './ui/tabs';
-import { coachDone, initTour, refreshTour } from './ui/coach';
+import { coachDone, initTour, refreshGuides, refreshTour } from './ui/coach';
 import { initWelcome, openWelcome, relabelWelcome } from './ui/welcome';
 import { bootPick, readTour, welcomeNeeded, type BootPick } from './onboarding';
 import { loadLessonPrefs } from './lessons';
@@ -260,6 +260,7 @@ function rerender(): void {
   byId('map').hidden = byId('shell').hidden || !(isStory() || session.mode.kind === 'lane');
   if (!byId('map').hidden) syncMap();
   refreshTour(); // the work area's slot is not rebuilt by a rerender
+  refreshGuides(); // v13: Boon's guide marks in the General area (filled once the learnui chunk is in)
   relabelWelcome();
 }
 

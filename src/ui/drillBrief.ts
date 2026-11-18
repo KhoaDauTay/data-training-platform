@@ -6,6 +6,7 @@ import type * as Home from '../home';
 import type * as I18n from '../i18n';
 import { learnText, type LearnKey } from '../i18n/learn';
 import { learnPage as drawLearn } from './learnView';
+import { initGuides, type GuideDeps } from './guide';
 import { drillXp } from '../learn';
 import type * as Practice from '../practice';
 import type * as Progress from '../progress';
@@ -27,7 +28,7 @@ import type * as TryPreview from './tryPreview';
  * Every main-bundle value comes in through `DrillDeps` (only `import type` from main modules, Plan 6 U3: a value import
  * makes Rolldown split main into shared chunks). Values come only from modules that live in lazy chunks.
  */
-export interface DrillDeps {
+export interface DrillDeps extends GuideDeps {
   db: DbClient;
   h: typeof Dom.h; nodes: typeof Dom.nodes; richText: typeof Dom.richText; byId: typeof Dom.byId;
   getLang: typeof I18n.getLang; locale: typeof I18n.locale;
@@ -59,6 +60,7 @@ type DrillMode = Extract<Session.Mode, { kind: 'drill' }>;
 /** Called once by modes.ts right after this chunk loads. */
 export function initDrill(deps: DrillDeps): void {
   d$ = deps;
+  initGuides(deps); // v13: Boon's guides (ui/guide.ts), in this chunk
   deps.schemaHooks.only = () => (deps.activeSchema() === 'lab' ? labCols : undefined); // a drill, or a review drill in Practice
 }
 

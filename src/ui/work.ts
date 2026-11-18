@@ -23,7 +23,7 @@ import { errorNote, errorText, errorView, gradeMessage, mascotOf, runSummary, vo
 import { mascot, type Mascot, type Pose } from './mascots';
 import { showPane } from './paneTabs';
 import { pageShortcutOf } from './shortcuts';
-import { tourRegion, tourSlot } from './coach';
+import { boonRegion, tourSlot } from './coach';
 import type { Panel } from './tabs';
 
 export interface WorkDeps {
@@ -151,7 +151,7 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
   function drawMessage(): void {
     feedback.className = message ? FEEDBACK[message.kind] : '';
     detailBox.replaceChildren(message?.detail?.() ?? '');
-    const who = tourRegion() === 'work' ? undefined : message?.who; // Boon's tour mark is already in this pane
+    const who = boonRegion() === 'work' ? undefined : message?.who; // Boon's tour or guide mark is already in this pane
     feedback.replaceChildren(!message ? '' : who
       ? message.kind === 'good' // one compact line: a small cheering Lily beside it (v10 critic #6)
         ? h('div', { class: 'flex items-center gap-2' }, mascot(who[0], who[1], 'size-8 shrink-0'), h('div', { class: 'min-w-0 flex-1' }, message.view()))

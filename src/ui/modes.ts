@@ -17,7 +17,10 @@ import { BTN_GO, CARD, cx } from '../theme';
 import { applyVariant } from '../variants';
 import { hints, renderBrief, shapeCard } from './brief';
 import { goalCard, skillChips, wrapUp } from './chapterView';
-import { byId, h, nodes, richText } from './dom';
+import { announce, byId, h, nodes, richText } from './dom';
+import { boonMark, escOwned, guideHooks, tourRegion } from './coach';
+import { showPane } from './paneTabs';
+import { readJson, writeJson } from '../storage';
 import { isSeen, openLesson } from './lessonCard';
 import { tryPreview } from './tryPreview';
 import { homeHooks, registerHomeSection, registerMode } from './homeView';
@@ -90,6 +93,7 @@ const loadDrillUi = () => import('./drillBrief').then((m) => {
     db: ctx!.db, activeSchema, h, nodes, richText, byId, getLang, locale, app, actions, persist, schemaHooks, erMeta, stepKey, session, hintsShown, today,
     isSuccess, movedToday, nextCard, SKILLS, hashOf, textOf, hints, shapeCard, tryPreview, openLesson, backToStory, startDrillMode, loadGeneral, generalNow, loadLessons,
     lessonSeen: isSeen, knownSkills, learnSkillOf, learnAdvOf, learnModuleOf, moduleTitle, illustration, loadTickets, CHAPTERS,
+    announce, readJson, writeJson, readTour, boonMark, escOwned, tourRegion, guideHooks, showPane,
   });
   return (drillUi = m);
 });

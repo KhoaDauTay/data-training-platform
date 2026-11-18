@@ -60,6 +60,13 @@ const vi = {
   'adv.done': 'Hoàn thành nút này (thử thách +{xp} XP lần đầu).',
   'adv.links': 'Đọc thêm',
   'adv.newTab': 'mở thẻ mới',
+  // v13 (product-design-v8 §2.1): Boon's guide mark (src/ui/guide.ts)
+  'guide.label': 'Boon chỉ đường · {i}/{n}',
+  'guide.aria': 'Boon chỉ đường, bước {i}/{n}',
+  'guide.next': 'Tiếp',
+  'guide.done': 'Xong',
+  'guide.skip': 'Bỏ qua (Esc)',
+  'guide.off': 'Tắt hướng dẫn',
 } as const;
 
 export type LearnKey = keyof typeof vi;
@@ -119,6 +126,12 @@ const en: Record<LearnKey, string> = {
   'adv.done': 'Node complete (the challenge gave +{xp} XP the first time).',
   'adv.links': 'Read more',
   'adv.newTab': 'opens a new tab',
+  'guide.label': 'Boon shows the way · {i}/{n}',
+  'guide.aria': 'Boon shows the way, step {i} of {n}',
+  'guide.next': 'Next',
+  'guide.done': 'Done',
+  'guide.skip': 'Skip (Esc)',
+  'guide.off': 'Turn off guides',
 };
 
 export const LEARN_DICT = { vi: vi as Record<LearnKey, string>, en };

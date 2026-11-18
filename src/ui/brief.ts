@@ -14,7 +14,7 @@ import { optionOrder, textOf, type Beat, type Ticket, type TicketText } from '..
 import { relatedTables } from '../viz/erd';
 import { mascot } from './mascots';
 import { avatar } from './avatar';
-import { coach, tourRegion, tourSlot } from './coach';
+import { boonRegion, coach, tourSlot } from './coach';
 import { h, nodes, richText } from './dom';
 import { skillIcon } from './icons';
 import { lessonSlot } from './lessonCard';
@@ -140,7 +140,8 @@ export function hints(tk: Ticket, x: TicketText, isDone: boolean, stepIndex = 0)
   }, isStory() && cost > 0
     ? t('brief.hint', { i: shown + 1, n: x.hints.length, cost })
     : t('brief.hintFree', { i: shown + 1, n: x.hints.length })); // Practice: 0 XP, so no cost (P9); chapter 1: free (L54)
-  const tourHere = tourRegion() === 'brief' || tourRegion() === 'lesson'; // one Boon per pane
+  const region = boonRegion();
+  const tourHere = region === 'brief' || region === 'lesson'; // one Boon per pane: the tour's or a guide's mark is here
   const last = Math.min(shown, x.hints.length);
   return h('section', { class: 'hints my-3' },
     last > 1 ? h('ol', { class: 'mt-0 mb-2 space-y-1 text-sm text-muted' }, ...x.hints.slice(0, last - 1).map((s) => h('li', {}, richText(s)))) : null,
