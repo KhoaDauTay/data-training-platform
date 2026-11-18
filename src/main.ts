@@ -162,14 +162,23 @@ async function loadColumns(): Promise<void> {
 function openSchema(s: SchemaId): void {
   want = s;
   syncDbStatus();
-  if (uiReady) renderTopbar();
-  if (db.ready(s) || failedSeeds.has(s)) return; // a failed seed waits for Retry (D10-2), never one 2-minute try per page
   const d = DOMAINS.find((x) => DOMAIN_SCHEMA[x.id] === s);
   // Never replace another banner (save warnings, new version + Reload): those matter more than "preparing".
   const free = (): boolean => !app.notice || app.notice.key.startsWith('domain.');
+  const settled = (): void => {
+    if (s === want && app.notice?.key === 'domain.loading') app.notice = undefined;
+    if (uiReady) renderTopbar();
+  };
+  if (db.ready(s)) return settled(); // enterDomain() may have just said "preparing" for data that is already in
+  if (failedSeeds.has(s)) { // a failed seed waits for Retry (D10-2), never one 2-minute try per page
+    if (d && free()) app.notice = { key: 'domain.failed', params: { name: t(d.name) } };
+    if (uiReady) renderTopbar();
+    return;
+  }
   if (d && free()) app.notice = { key: 'domain.loading', params: { name: t(d.name) } };
   if (uiReady) renderTopbar();
-  db.ensure(s).catch(() => {
+  // settled(): after a restart ensure() resolves at once (the schema is replayed) and onSeeded does not fire again.
+  db.ensure(s).then(settled, () => {
     failedSeeds.add(s);
     if (d && free()) app.notice = { key: 'domain.failed', params: { name: t(d.name) } };
     syncDbStatus();
