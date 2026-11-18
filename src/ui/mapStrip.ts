@@ -204,7 +204,8 @@ export function createMapStrip(host: HTMLElement): { update(view: StripView): vo
       });
 
       // Right after a correct answer the next ticket is the very next one: the main button. Reviewing an older one: a quiet way back.
-      const resume = nav.resume;
+      // v11 UX #12 (L70): a passed promotion review shows the chapter wrap-up with its own "start chapter N": no second way on here.
+      const resume = open?.beat === 'boss' && completed.has(open.id) ? undefined : nav.resume;
       const cont = resume
         ? h('button', {
             type: 'button', 'data-nav': 'continue', onclick: () => go(resume),

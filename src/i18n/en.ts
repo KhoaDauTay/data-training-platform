@@ -143,7 +143,7 @@ export const en: Record<Key, Msg> = {
   'home.skillsHint': 'Each bar is a memory level; a newly learned skill starts at level 1.',
   'home.skillLearned': 'Learned',
   'home.skillOpen': 'Not learned yet',
-  'home.skillDrilled': 'Drills passed · review opens in chapter {n}',
+  'home.skillDrilled': 'Drills passed',
   'home.level': 'Memory level {n}/{max}',
   'home.modes': 'Other modes',
   'career.intern': 'DA intern',

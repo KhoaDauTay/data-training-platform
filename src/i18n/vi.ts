@@ -140,7 +140,7 @@ export const vi = {
   'home.skillsHint': 'Mỗi vạch là một mức nhớ; kỹ năng mới học bắt đầu ở mức 1.',
   'home.skillLearned': 'Đã học',
   'home.skillOpen': 'Chưa học',
-  'home.skillDrilled': 'Đã luyện drill · bài ôn mở ở Chương {n}',
+  'home.skillDrilled': 'Đã luyện drill',
   'home.level': 'Mức nhớ {n}/{max}',
   'home.modes': 'Chế độ khác',
   'career.intern': 'Thực tập sinh DA',

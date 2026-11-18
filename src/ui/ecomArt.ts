@@ -34,5 +34,6 @@ export function ecomArt(kind: 'scene' | 'map'): HTMLElement {
     frame.replaceWith(kind === 'scene' ? a.storeScene(st) : a.deliveryMap(st));
     if (kind === 'map') legend.replaceChildren(h('ul', { class: 'm-0 list-none space-y-0.5 p-0 lg:hidden', 'aria-hidden': 'true' }, ...a.deliveryItems(st).map((x) => h('li', {}, x))));
   }, () => {});
-  return h('div', {}, frame, legend);
+  // v11 UX #2: the shop scene stays under ~240 px high so the overview's content starts above the fold.
+  return h('div', { class: kind === 'scene' ? '[&>svg]:max-h-60' : '' }, frame, legend);
 }

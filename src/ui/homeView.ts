@@ -202,7 +202,7 @@ function skillsSection(m: HomeModel): HTMLElement {
   const onSkill = homeHooks.onSkill;
   const groups = CHAPTERS.map((c) => [c.chapter, m.skills.filter((s) => s.skill.chapter === c.chapter)] as const).filter(([, list]) => list.length > 0);
   // v11 B6: a skill learned through its General drills (the Learning path's rule) says so, not just "Chapter N".
-  const known = knownSkills(app.save, app.tickets, SKILLS.map((x) => x.id));
+  const known = knownSkills(app.save, loadTickets('logistics'), SKILLS.map((x) => x.id)); // same source as learnView's ctx()
   return h('section', { class: 'space-y-10', 'aria-labelledby': 'skills-title' },
     h('h2', { id: 'skills-title', class: 'sr-only' }, t('home.skills')),
     ...groups.map(([n, list]) => h('div', { id: `skills-ch-${n}`, class: 'scroll-mt-4' },
@@ -359,7 +359,8 @@ function lanesSection(): HTMLElement | null {
       lead: icon(harbor.open.has(r.port) ? 'route' : 'lock', 'size-6 text-muted'),
       title: r.name,
       sub: laneInfo(r, harbor),
-      action: h('button', {
+      // v11 UX #8: a locked lane has no brief to read yet; its line says when it opens (lane.lockedAt)
+      action: !harbor.open.has(r.port) ? null : h('button', {
         type: 'button', id: `lane-btn-${r.port}`, class: 'rounded-full px-4 whitespace-nowrap', 'aria-expanded': String(mapLane === r.port), onclick: toggle(r.port),
       }, t('map.openLane')),
     }), mapLane === r.port ? h('li', { class: 'rounded-xl bg-panel p-4 ring-1 ring-line' }, lanePanel(r.port, harbor, (task) => homeHooks.startLane?.(task))) : null])));

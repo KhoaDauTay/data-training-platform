@@ -152,6 +152,10 @@ function recap(g: General, d: Drill, tk: Ticket): HTMLElement {
   const at = group.findIndex((x) => x.id === d.id);
   const next = [...group.slice(at + 1), ...group.slice(0, at)].find((x) => !app.save.completed.includes(x.id));
   const xp = lastXp.get(tk.id);
+  // v11 UX #3: the skill's drills are all passed: the next skill (in learning-path order) with a drill left, not a dead end.
+  const skillAt = d.skill && !next ? d$.SKILLS.findIndex((s) => s.id === d.skill) : -1;
+  const nextSkill = skillAt < 0 ? undefined : d$.SKILLS.slice(skillAt + 1).find((s) => (g.bySkill.get(s.id) ?? []).some((x) => !app.save.completed.includes(x.id)));
+  const nextSkillDrill = nextSkill && g.bySkill.get(nextSkill.id)!.find((x) => !app.save.completed.includes(x.id))!;
   const sql = app.save.graded[d$.stepKey(tk.id, 0)];
   const chapters = d.skill ? appliesIn(d$.loadTickets('logistics'), d.skill) : [];
   return h('section', { class: 'recap my-3 rounded-xl bg-panel p-3 ring-1 ring-accent', 'aria-labelledby': 'drill-recap' },
@@ -161,7 +165,10 @@ function recap(g: General, d: Drill, tk: Ticket): HTMLElement {
     h('div', { class: 'actions mb-0' },
       next
         ? h('button', { type: 'button', class: 'primary', onclick: () => d$.startDrillMode(drillTicket(next), next) }, lt('drill.next'))
-        : h('a', { href: `${d$.hashOf('learn')}/${d.skill ? `skill/${d.skill}` : `adv/${d.node}`}` }, lt('drill.back'))));
+        : nextSkill && nextSkillDrill
+          ? h('button', { type: 'button', class: 'primary', onclick: () => d$.startDrillMode(drillTicket(nextSkillDrill), nextSkillDrill) }, lt('drill.nextSkill', { skill: nextSkill.label[d$.getLang()] }))
+          : null,
+      next ? null : h('a', { href: `${d$.hashOf('learn')}/${d.skill ? `skill/${d.skill}` : `adv/${d.node}`}` }, lt('drill.back'))));
 }
 
 /** work.ts onSolved in drill mode: +10 XP the first time (+20 a challenge), the skill's Leitner card (D8a-10/11), no animation. */
