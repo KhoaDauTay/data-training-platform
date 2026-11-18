@@ -77,6 +77,8 @@ describe('frameOf: luật', () => {
       .toBe(lines('SELECT sum(___) OVER (PARTITION BY ___ ORDER BY ___ ROWS BETWEEN ___ PRECEDING AND CURRENT ROW)', 'FROM t'));
     expect(frameOf('WITH paid AS (SELECT o, sum(a) AS paid FROM p GROUP BY o) SELECT paid.paid FROM paid'))
       .toBe(lines('WITH paid AS (SELECT ___, sum(___) AS ___ FROM p GROUP BY ___)', 'SELECT paid.___', 'FROM paid'));
+    expect(frameOf('WITH o AS (SELECT a - b AS over, c AS last FROM t) SELECT sum(over), o.last FROM o WHERE over > 0'))
+      .toBe(lines('WITH o AS (SELECT ___ - ___ AS ___, ___ AS ___ FROM t)', 'SELECT sum(___), o.___', 'FROM o', 'WHERE ___ > ___'));
     expect(frameOf("SELECT name n FROM t WHERE code LIKE 'A%' -- note\nORDER BY 1")).toBe("SELECT ___ FROM t WHERE ___ LIKE ___ ORDER BY ___");
   });
 

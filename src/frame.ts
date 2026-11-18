@@ -157,10 +157,15 @@ export function frameParts(sql: string, trapWrongs?: string[]): { text: string; 
     const prev = ts[i - 1], next = ts[i + 1];
     if (x.u === 'TRUE' || x.u === 'FALSE') return true;
     if (LITERAL_TYPES.has(x.u)) return !(next?.k === 'str' || prev?.t === '::' || (prev?.u === 'AS' && /^cast$/i.test(ts[owner[i] - 1]?.t ?? '')));
-    if (KEYWORDS.has(x.u) || table[i]) return false;
+    if (table[i]) return false;
+    if (prev?.t === '.') return true; // t.<column>, even one named like a keyword
+    const cast = prev?.u === 'AS' && /^cast$/i.test(ts[owner[i] - 1]?.t ?? '');
+    if (prev?.u === 'AS' && !cast && next?.t !== '(' && x.u !== 'NOT' && x.u !== 'MATERIALIZED') return true; // column alias
+    if (x.u === 'OVER') return !(next?.t === '(' || (next?.k === 'id' && !KEYWORDS.has(next.u))); // ch10-04: a column named `over`
+    if (KEYWORDS.has(x.u)) return false;
     if (next?.t === '(') return false; // function call
     if (prev?.t === '::') return false; // type
-    if (prev?.u === 'AS' && /^cast$/i.test(ts[owner[i] - 1]?.t ?? '')) return false;
+    if (cast) return false;
     const known = names.has(x.t.toLowerCase());
     if (known && (next?.t === '.' || prev?.u === 'OVER')) return false; // qualifier, named window
     return true;
