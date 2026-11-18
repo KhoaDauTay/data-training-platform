@@ -18,7 +18,7 @@ import { applyVariant } from '../variants';
 import { hints, renderBrief, shapeCard } from './brief';
 import { goalCard, skillChips, wrapUp } from './chapterView';
 import { announce, byId, h, loader, nodes, richText } from './dom';
-import { boonMark, escOwned, guideHooks, guideSlot } from './coach';
+import { boonMark, enterMark, escOwned, guideHooks, guideSlot } from './coach';
 import { showPane } from './paneTabs';
 import { readJson, writeJson } from '../storage';
 import { isSeen, openLesson } from './lessonCard';
@@ -93,7 +93,7 @@ const loadDrillUi = () => import('./drillBrief').then((m) => {
     db: ctx!.db, activeSchema, h, nodes, richText, byId, loader, getLang, locale, app, actions, persist, schemaHooks, erMeta, stepKey, session, hintsShown, today,
     isSuccess, movedToday, nextCard, SKILLS, hashOf, textOf, hints, shapeCard, tryPreview, openLesson, backToStory, startDrillMode, loadGeneral, generalNow, loadLessons,
     lessonSeen: isSeen, knownSkills, learnSkillOf, learnAdvOf, learnModuleOf, moduleTitle, illustration, icon, skillIcon, loadTickets, CHAPTERS,
-    announce, readJson, writeJson, readTour, boonMark, escOwned, guideHooks, guideSlot, showPane, parseRoute, mod: keyLabels(isMac).mod,
+    announce, readJson, writeJson, readTour, boonMark, enterMark, escOwned, guideHooks, guideSlot, showPane, parseRoute, mod: keyLabels(isMac).mod,
   });
   return (drillUi = m);
 });

@@ -126,3 +126,17 @@ describe('A4: loader chung (ui-ux-v5)', () => {
     expect(downloading({ loaded: 10, total: 10 })).toBe(false);
   });
 });
+
+describe('B2 + B4 (ui-ux-v5)', () => {
+  it('zz của Lily ngủ chỉ bay khi một trang đang hiện có Lily ngủ; Boon ngủ không', () => {
+    expect(css).toMatch(/body:has\(main:not\(\[hidden\]\) use\[href="#lily-sleep"\]\) #lily-sleep \.zz\s*\{[^}]*animation:[^}]*cq-floatz[^}]*infinite/);
+    expect(css).not.toMatch(/:has\([^)]*boon-sleep/);
+  });
+
+  it('dấu của Boon: vào bằng opacity (không transform trên aside), Boon nhảy là SVG lá', () => {
+    expect(css).toMatch(/\.cq-fade\s*\{[^}]*animation:\s*cq-fade 200ms/);
+    expect(css).toMatch(/@keyframes cq-fade\s*\{[^}]*opacity: 0[^}]*\}/);
+    expect(css).not.toMatch(/@keyframes cq-fade\s*\{[^}]*(transform|translate|scale)/);
+    expect(css).toMatch(/svg\[data-mascot\]\.cq-hop\s*\{[^}]*animation:\s*cq-hop 320ms[^}]*80ms/);
+  });
+});

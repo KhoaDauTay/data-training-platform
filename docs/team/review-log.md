@@ -598,3 +598,13 @@ Trình duyệt (`vite preview --port 5199`, Edge headless hồ sơ mới qua CDP
 - `#/learn/sql/1` từ tổng quan: một lần vẽ, `.cq-glyph-in` + `cq-pop-in` chạy; bấm EN 150 ms sau: lần vẽ lại không có class (không phát lại).
 - Luồng thật (save chỉ `g-select-1`): trang Phần 1 không ✓ → "Tự làm" `g-select-2`, nộp đúng → về `#/learn/sql/1`: một lần vẽ có `.cq-stamp` và 1 ✓, chạy `cq-stamp` + `cq-draw`; bấm EN 150 ms sau: vẽ lại không dấu (không phát lại).
 - Giảm chuyển động: không animation nào, glyph và ✓ ở trạng thái cuối.
+
+### T6 B2 `zz` + B4 dấu Boon (L106)
+
+Đo (gzip -9): main 288,73 / 290 (≤ 289,0; T5 288,66, tức +0,07), CSS 15,50 / 20 (+0,07), learnui 12 / 25. `npm test` xanh, `tsc` sạch, build xanh, `check-budget` ok. Test mới trong `tests/mascots.test.ts` (selector `zz` chỉ Lily ngủ; `cq-fade` chỉ opacity; `cq-hop` trên `svg[data-mascot]`), đỏ trước khi thêm CSS.
+
+Trình duyệt (`vite preview --port 5199`, Edge headless hồ sơ mới qua CDP, ghi `animationstart`; 1280, 375, một lần giảm chuyển động):
+- `zz`: Luyện SQL chưa học gì và bảng điều hành chưa có card (người "biết SQL", không khóa): `cq-floatz` chạy trên `#lily-sleep`; sang `#/d/logistics/play`: không animation nào chạy. Người mới: bảng điều hành là thẻ khóa, không Lily ngủ (đúng L86).
+- Tour ticket 1: bước 1, 2, 3 mỗi bước một lần `cq-fade` + `cq-hop`; đổi ngôn ngữ trong lúc dấu hiện: không gì chạy lại; class gỡ sau khi xong; Esc (focus ngoài editor) bỏ tour.
+- G1 `#/learn`: `path#0` chạy `cq-fade` (bước đầu không có Boon, `mascot: false`), `path#1` chạy `cq-fade` + `cq-hop`; đổi ngôn ngữ: không chạy lại.
+- Giảm chuyển động: không animation nào, dấu hiện ngay.

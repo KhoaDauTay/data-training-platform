@@ -5,7 +5,8 @@ import { SKILLS } from '../progress';
 import { isStory } from '../session';
 import { app, done } from '../state';
 import { localStore, readJson, writeJson, type KV } from '../storage';
-import { h } from './dom';
+import { once } from './celebrate';
+import { h, reducedMotion } from './dom';
 import { mascot } from './mascots';
 import { showPane, type Pane } from './paneTabs';
 import { go } from './router';
@@ -93,6 +94,7 @@ function reveal(el: HTMLElement, step: number): void {
     if (pane && el.isConnected) showPane(pane as Pane); // phone: the pane holding Boon's mark (v10 critic #2)
     if (!el.isConnected || el.offsetParent === null || document.getElementById('shell')?.hidden) return; // drawn in a hidden view: try on the next draw
     scrolled = step;
+    enterMark(el); // laid out for the first time at this step: a redraw of the same step never replays it
     el.scrollIntoView({ block: 'nearest' }); // scroll only: focus stays where the player is typing
   });
 }
@@ -111,6 +113,15 @@ export function boonMark(o: { label: string; aria: string; text: string; buttons
       h('p', { class: 'm-0 text-xs font-bold tracking-wider uppercase' }, o.label),
       h('p', { class: 'mt-1 mb-2' }, o.text),
       h('div', { class: 'flex flex-wrap gap-2' }, ...o.buttons)));
+}
+
+/** ui-ux-v5 B4: a mark of a new step slides in once (style.css): the aside fades, Boon hops. Call only when the step key changes. */
+export function enterMark(el: HTMLElement): void {
+  if (reducedMotion()) return;
+  el.classList.add('cq-fade');
+  once(el, 'cq-fade');
+  const boon = el.querySelector('svg[data-mascot]');
+  if (boon) { boon.classList.add('cq-hop'); once(boon, 'cq-hop'); }
 }
 
 function mark(step: number): HTMLElement {

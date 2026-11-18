@@ -93,6 +93,7 @@ describe('guide engine (ui/guide.ts)', () => {
       readJson: () => stored, writeJson: (_k: string, v: unknown) => { stored = v; return true; },
       readTour: () => (opts.knows ? { step: 8, knows: true } : undefined),
       boonMark: (o: Mark['o']): Mark => ({ o, closest: () => null, focus: vi.fn(), isConnected: true, getAttribute: (k: string) => o.data[k] }),
+      enterMark: () => undefined,
       escOwned: () => false, tourRegion: () => undefined, guideHooks: hooks, showPane: vi.fn(),
     };
     g.initGuides(deps as never);

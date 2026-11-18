@@ -16,7 +16,7 @@ import type * as Storage from '../storage';
 export interface GuideDeps {
   h: typeof Dom.h; announce: typeof Dom.announce; getLang: typeof I18n.getLang; locale: typeof I18n.locale;
   actions: typeof State.actions; readJson: typeof Storage.readJson; writeJson: typeof Storage.writeJson; readTour: typeof Onboarding.readTour;
-  boonMark: typeof Coach.boonMark; escOwned: typeof Coach.escOwned; guideHooks: typeof Coach.guideHooks; guideSlot: typeof Coach.guideSlot;
+  boonMark: typeof Coach.boonMark; enterMark: typeof Coach.enterMark; escOwned: typeof Coach.escOwned; guideHooks: typeof Coach.guideHooks; guideSlot: typeof Coach.guideSlot;
   showPane: typeof PaneTabs.showPane;
 }
 export interface GuideStep {
@@ -155,6 +155,7 @@ function refresh(): void {
     return;
   }
   const mark = placed;
+  if (revealed !== key) d$.enterMark(mark); // ui-ux-v5 B4: a new step only, never a redraw of the same one
   const dialog = mark.closest('dialog');
   if (dialog) dialog.addEventListener('close', () => finish(a.guide.id), { once: true }); // D-G3: closing the lesson = seen
   if (focusNext) {
