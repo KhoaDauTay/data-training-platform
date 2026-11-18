@@ -17,8 +17,8 @@ import { domainLine, navItems } from './topbar';
 /** Device pref (v6 §3.2): the sidebar on wide reading pages. Never in the Save. */
 export const SIDE_KEY = 'cargo-query/sidebar';
 export type SidePref = 'open' | 'rail';
-/** Anything but 'rail' (missing, junk, unreadable storage) is the default: open. */
-export const parseSidePref = (v: unknown): SidePref => (v === 'rail' ? 'rail' : 'open');
+/** v12 (L85): the rail is the default; only a saved 'open' keeps the wide sidebar (names show on hover in the rail). */
+export const parseSidePref = (v: unknown): SidePref => (v === 'open' ? 'open' : 'rail');
 
 /** The current page: a 4 px --accent bar + --accent-soft background, not colour alone (v6 §3.1). */
 const SIDE_LINK = 'flex w-full items-center gap-3 rounded-(--r-ctl) border-0 border-l-4 border-transparent bg-transparent px-3 py-2 text-left font-bold text-ink no-underline hover:bg-code aria-[current=page]:border-accent aria-[current=page]:bg-accent-soft aria-disabled:text-muted';
@@ -47,7 +47,7 @@ interface Row { key: string; href: string; lead: Node; label: string; sub?: stri
 function row(r: Row): HTMLElement {
   const click = r.onclick;
   return h('a', {
-    href: r.href, 'data-side': r.key, class: SIDE_LINK, title: [r.label, r.lock ?? r.sub].filter(Boolean).join(' · '),
+    href: r.href, 'data-side': r.key, class: SIDE_LINK, 'data-tip': [r.label, r.lock ?? r.sub].filter(Boolean).join(' · '),
     'aria-current': r.current ? 'page' : false,
     'aria-disabled': r.lock ? 'true' : false,
     onclick: r.lock ? (e: Event) => e.preventDefault() : click ? (e: Event) => { e.preventDefault(); click(); } : false,
@@ -151,7 +151,7 @@ function toggle(route: Route): HTMLElement {
   const expanded = forcedRail ? overlay : parseSidePref(readJson<unknown>(SIDE_KEY)) === 'open';
   const label = t(expanded ? 'side.collapse' : 'side.expand');
   return h('button', {
-    type: 'button', 'data-side': 'toggle', class: cx(SIDE_LINK, 'mt-auto'), 'aria-expanded': String(expanded), title: label,
+    type: 'button', 'data-side': 'toggle', class: cx(SIDE_LINK, 'mb-2'), 'aria-expanded': String(expanded), 'data-tip': label,
     onclick: () => {
       if (forcedRail) overlay = !overlay;
       else writeJson(SIDE_KEY, expanded ? 'rail' : 'open');
@@ -178,13 +178,42 @@ export function renderSidebar(route: Route): void {
       ...content(route, true)));
   } else {
     side.toggleAttribute('data-overlay', overlay);
-    side.replaceChildren(h('div', { class: 'side-panel' }, ...content(route, false), toggle(route)));
+    side.replaceChildren(h('div', { class: 'side-panel' }, toggle(route), ...content(route, false))); // v12 (L85): expand/collapse at the top left
   }
   if (focused) host.querySelector<HTMLElement>(`[data-side="${CSS.escape(focused)}"]`)?.focus();
 }
 
+/**
+ * v12 (L85): in the 64 px rail the names are hidden; hovering or focusing an item shows its name (and lock reason) in a tip
+ * beside it. A fixed element on <body>, because the rail's panel scrolls and would clip anything positioned inside it.
+ */
+function initRailTips(): void {
+  const tip = h('div', { id: 'side-tip', role: 'tooltip', hidden: true,
+    class: 'pointer-events-none fixed z-50 max-w-64 rounded-(--r-ctl) bg-panel px-3 py-1.5 text-sm font-bold text-ink shadow-lg ring-1 ring-line' });
+  document.body.append(tip);
+  const side = byId('side');
+  const show = (e: Event): void => {
+    const el = (e.target as Element | null)?.closest<HTMLElement>('[data-tip]');
+    const panel = side.querySelector<HTMLElement>('.side-panel');
+    if (!el || !panel || panel.clientWidth > 120 || side.hasAttribute('data-overlay')) return; // labels are visible: no tip
+    const r = el.getBoundingClientRect();
+    tip.textContent = el.dataset.tip ?? '';
+    tip.hidden = false;
+    tip.style.left = `${r.right + 8}px`;
+    tip.style.top = `${r.top + r.height / 2 - tip.offsetHeight / 2}px`;
+  };
+  const hide = (): void => { tip.hidden = true; };
+  side.addEventListener('pointerover', show);
+  side.addEventListener('focusin', show);
+  side.addEventListener('pointerleave', hide);
+  side.addEventListener('focusout', hide);
+  side.addEventListener('scroll', hide, true);
+  side.addEventListener('click', hide);
+}
+
 /** Once at startup: ☰ and the drawer (a modal <dialog>: focus trap, Esc, focus back to ☰), media changes, Esc for the overlay. */
 export function initSidebar(): void {
+  initRailTips();
   const btn = byId('side-btn');
   const drawer = byId('side-drawer') as HTMLDialogElement;
   btn.addEventListener('click', () => {

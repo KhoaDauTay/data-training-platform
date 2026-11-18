@@ -14,5 +14,5 @@ export default defineConfig({
   optimizeDeps: { exclude: ['@electric-sql/pglite'] },
   worker: { format: 'es' },
   // Vitest turns every .css import into '' unless included; tests/theme.test.ts and tests/mascots.test.ts read style.css?raw.
-  test: { css: { include: [/style\.css/] }, testTimeout: 60_000, hookTimeout: 60_000, setupFiles: ['tests/setup.ts'] },
+  test: { css: { include: [/style\.css/] }, exclude: ['**/node_modules/**', '.claude/**'], testTimeout: 60_000, hookTimeout: 60_000, setupFiles: ['tests/setup.ts'] },
 });

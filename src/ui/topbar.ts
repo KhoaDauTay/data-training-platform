@@ -34,7 +34,7 @@ export const navItems = (area: NavItem['area']): NavItem[] => NAV.filter((n) => 
 registerNav({ id: 'home', area: 'top', order: 10, label: 'nav.home', icon: 'home', href: hashOf('home'), current: (r) => r === 'home' });
 registerNav({ id: 'learn', area: 'top', order: 20, label: 'nav.learn', icon: 'route', href: hashOf('learn'), current: (r) => r === 'learn' });
 // Practice (top, order 30), Sandbox (domain, 30, ui/modes.ts) and Data (domain, 50, ui/dataView.ts) register their own.
-registerNav({ id: 'overview', area: 'domain', order: 10, label: 'nav.overview', icon: 'anchor', get href() { return hashOf('overview'); }, current: (r) => r === 'overview' || r === 'soon' });
+registerNav({ id: 'overview', area: 'domain', order: 10, label: 'nav.overview', icon: 'overview', get href() { return hashOf('overview'); }, current: (r) => r === 'overview' || r === 'soon' });
 registerNav({ id: 'play', area: 'domain', order: 20, label: 'nav.play', icon: 'code', get href() { return hashOf('play'); }, current: (r) => r === 'play' });
 registerNav({ id: 'dashboard', area: 'domain', order: 60, label: 'nav.dashboard', icon: 'chart', get href() { return hashOf('dashboard'); }, current: (r) => r === 'dashboard' });
 registerNav({ id: 'map', area: 'domain', order: 70, label: 'nav.map', icon: 'map', get href() { return hashOf('map'); }, current: (r) => r === 'map' });

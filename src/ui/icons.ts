@@ -29,6 +29,7 @@ const P = {
   home: 'M3 11 12 4l9 7 M5 10v10h5v-6h4v6h5V10',
   menu: 'M4 6h16 M4 12h16 M4 18h16',
   panelLeft: 'M3 4h18v16H3z M9 4v16',
+  overview: 'M4 4h7v7H4z M13 4h7v4h-7z M13 10h7v10h-7z M4 13h7v7H4z',
   map: 'M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2z M9 4v14 M15 6v14',
   badge: `${CIRCLE(12, 9, 6)} M8.5 14 7 22l5-3 5 3-1.5-8`,
   star: 'M12 3l2.8 5.7 6.2.9-4.5 4.4 1.1 6.2L12 17.3l-5.6 2.9 1.1-6.2L3 9.6l6.2-.9z',

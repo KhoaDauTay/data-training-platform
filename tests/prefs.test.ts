@@ -105,8 +105,8 @@ describe('sidebar (v6 §3.2)', () => {
     expect(SIDE_KEY).toBe('cargo-query/sidebar');
     expect(parseSidePref('rail')).toBe('rail');
     expect(parseSidePref('open')).toBe('open');
-    expect(parseSidePref(undefined)).toBe('open');
-    expect(parseSidePref({ x: 1 })).toBe('open');
+    expect(parseSidePref(undefined)).toBe('rail');
+    expect(parseSidePref({ x: 1 })).toBe('rail');
   });
 });
 
