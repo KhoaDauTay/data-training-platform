@@ -51,7 +51,9 @@ function row(r: Row): HTMLElement {
     'aria-disabled': r.lock ? 'true' : false,
     onclick: r.lock ? (e: Event) => e.preventDefault() : click ? (e: Event) => { e.preventDefault(); click(); } : false,
   },
-    h('span', { class: 'grid size-6 shrink-0 place-items-center', 'aria-hidden': 'true' }, r.lead),
+    // v12 audit: in the rail the label and the trailing lock are hidden, so a locked row also gets a lock badge on its icon.
+    h('span', { class: cx('relative grid size-6 shrink-0 place-items-center', r.lock && 'text-muted'), 'aria-hidden': 'true' }, r.lead,
+      r.lock ? h('span', { class: 'absolute -right-1.5 -bottom-1 grid size-3.5 place-items-center rounded-full bg-panel ring-1 ring-line' }, icon('lock', 'size-2.5')) : null),
     h('span', { class: 'side-label min-w-0 flex-1' },
       h('span', { class: 'block truncate' }, r.label),
       r.sub || r.lock ? h('span', { class: 'block truncate text-xs font-semibold text-muted' }, r.lock ?? r.sub) : null),

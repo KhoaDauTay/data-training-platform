@@ -77,7 +77,8 @@ describe('onboarding (v4 §B, Plan 7 V8–V9)', () => {
     const order = ['ch1-01', 'ch1-02', 'ch1-03'];
     expect(navLock('sandbox', new Set(), order, true)).toBe('lock.afterTask1');
     expect(navLock('data', new Set(), order, true)).toBe('lock.afterTask1');
-    expect(navLock('dashboard', new Set(['ch1-01']), order, true)).toBe('lock.afterTask2');
+    expect(navLock('dashboard', new Set(), order, true)).toBe('lock.afterTask1');
+    expect(navLock('dashboard', new Set(['ch1-01']), order, true)).toBeUndefined(); // L86: starter cards from task 1
     expect(navLock('dashboard', new Set(['ch1-01', 'ch1-02']), order, true)).toBeUndefined();
     expect(navLock('data', new Set(['ch1-01']), order, true)).toBeUndefined();
     expect(navLock('learn', new Set(), order, true)).toBeUndefined();

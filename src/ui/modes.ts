@@ -28,6 +28,10 @@ import { renderMyData } from './myDataView';
 import type { WorkArea } from './work';
 import { mascot } from './mascots';
 import { illustration } from '../art/load';
+import { gated, navLock, readTour } from '../onboarding';
+
+/** v12 audit: the Overview's Sandbox / My data cards follow the Sandbox sidebar lock (v4 D-O3). */
+const sandboxLock = () => navLock('sandbox', done(), app.tickets.map((x) => x.id), gated(readTour()));
 
 /** Rebuilt on each call from the open domain's templates (v11 review: a memo kept the first domain's tickets). */
 const templates = (): Map<string, Ticket> => new Map(loadTicketTemplates().map((tk) => [tk.id, tk]));
@@ -345,7 +349,7 @@ registerHomeSection({ id: 'drills', order: 23, span: 'full', pages: ['home', 'pr
 registerHomeSection({ id: 'warmup', order: 21, span: 'full', pages: ['home', 'practice'], render: warmupCard });
 registerMode({
   id: 'sandbox', order: 10, icon: 'flask', tint: 'bg-accent-soft text-ink',
-  title: 'mode.sandbox', desc: 'mode.sandboxDesc', open: () => startSandbox(),
+  title: 'mode.sandbox', desc: 'mode.sandboxDesc', open: () => startSandbox(), lock: sandboxLock,
 });
 homeHooks.levelOf = (skill) => app.save.review[skill]?.box ?? 1;
 homeHooks.onSkill = (skill) => void startSkill(skill);
@@ -353,5 +357,5 @@ homeHooks.startLane = (task) => startLane(task);
 // Plan Import (L17, I2): "My data" opens the Sandbox, whose left pane holds the CSV import.
 registerMode({
   id: 'mydata', order: 20, icon: 'folder', tint: 'bg-accent-soft text-ink',
-  title: 'mode.mydata', desc: 'mode.mydataDesc', open: () => startSandbox(),
+  title: 'mode.mydata', desc: 'mode.mydataDesc', open: () => startSandbox(), lock: sandboxLock,
 });

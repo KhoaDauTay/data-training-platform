@@ -492,3 +492,27 @@ Kiểm lại: tsc sạch; `npm test` 64 file, 2913 test xanh, không còn unhand
 ## v11 live (2026-11-18)
 
 - **Đã sửa (L87):** màn chào giờ là Boon, chữ chung cho nền tảng BoonData. Ghi chú cũ: màn chào (Lily) khi người chơi vào thẳng `#/d/ecommerce` vẫn kể câu chuyện Cargo Query Logistics / 12 chương; nên theo domain đang mở (Chợ Lồng Đèn, 6 chương). Thấy trên site live, chưa sửa.
+- **Backlog v12:** màn chào (Lily) khi người chơi vào thẳng `#/d/ecommerce` vẫn kể câu chuyện Cargo Query Logistics / 12 chương; nên theo domain đang mở (Chợ Lồng Đèn, 6 chương). Thấy trên site live, chưa sửa.
+
+## v12 dashboard + locked-state audit (2026-11-18, L86)
+
+Người chơi thử: save mới chỉ xong `ch1-01` (người mới từ màn chào, `cargo-query/tour` = `{ step: 8, knows: false }`), VI, 1267 và 1477 px, preview build trên :5187. Ảnh trước/sau trong scratchpad của phiên (không commit).
+
+| Điều khiển | Trước | Sau |
+|---|---|---|
+| Bảng điều hành, "Card của bạn" | Khung trống "Ghim truy vấn đầu tiên" + nút Sandbox; người chỉ biết `select` ghim được bảng thô | Người mới: khung khóa (ổ khóa, "Bạn sẽ tự tạo card khi học xong … (chương N)"), "Tạo card" dạng khóa có lý do (không phải nút chết), nút thật "Tiếp tục việc đang làm"; 4 card mẫu chạy dữ liệu thật (D-DB1) |
+| Card mẫu khi đã mở tự tạo nhưng chưa có card | — | Hiện dưới khung trống, ghi "tự ẩn khi bạn ghim card đầu tiên" |
+| Ô KPI công ty chưa mở | Số "—" hoặc "???" to (trông như dữ liệu lỗi), chỉ dòng chân có ổ khóa | Nhãn "Đang khóa" có ổ khóa ở góc, thanh trống nét đứt thay số, dòng chân giữ việc mở ô |
+| Ghim lên (tab Kết quả, Sandbox / việc đã xong) | Nút bấm được với `select` | Người mới chưa học `aggregate`: nhãn khóa "Ghim lên: mở khi học xong … (ch. N)", không có nút |
+| Nav trái Bảng điều hành (người mới) | Khóa tới việc 2, nhưng gõ URL vẫn mở trang | Mở sau việc 1 cùng Sandbox/Dữ liệu (card mẫu dùng được ngay) |
+| Nav trái ở dạng rail (mục khóa) | Ổ khóa và lý do nằm trong `side-label` (ẩn ở rail): mục khóa trông như bình thường, bấm không làm gì | Huy hiệu ổ khóa trên icon, icon màu muted; lý do trong tip `data-tip` (L85) |
+| Rail Lộ trình (module chưa học) | Ổ khóa + "Chưa mở" nhưng trang module và drill đều mở (L80 #6) | Đã sửa trên main (L82): mọi module mở, dấu là số kỹ năng đã học; nhánh này không đổi thêm |
+| Thẻ chế độ Sandbox / Dữ liệu của tôi (Tổng quan) | Mở Sandbox kể cả khi nav khóa Sandbox | Theo cùng `navLock('sandbox')`: thẻ khóa (ổ khóa, lý do, `aria-disabled`), không phải nút |
+| Tab bảng dưới (người mới, Logistics) | Tab chưa tới bị ẩn, không có gì báo còn tab | Giữ ẩn (D-O4), thêm dòng muted có ổ khóa "Thêm N tab mở dần khi bạn làm tiếp" |
+| Thanh việc: việc chưa tới | Nút `disabled` + ổ khóa + `aria-label` "khóa" | Giữ (đã hiện khóa rõ) |
+| Chọn chương trong thanh việc | `<option disabled>` | Giữ (native) |
+| Hàng chương trên Tổng quan | Ổ khóa + "mở sau chương N", pill không phải link | Giữ (đã đúng) |
+| Bản đồ: tuyến khóa | Mở hồ sơ tuyến, hồ sơ ghi mở sau chương nào | Giữ (bấm có kết quả đúng: đọc lý do) |
+| Kỹ năng trên Luyện SQL | Main đã đổi: mọi kỹ năng mở luyện | Không đổi |
+| Nút top bar Ôn tập / Hộp thư / Sổ tay | Ẩn khi 0 / luôn chạy | Không đổi |
+| Gõ thẳng URL trang đang khóa (Sandbox/Dữ liệu trước việc 1) | Trang vẫn mở và chạy | Để lại: trang chạy đúng, không phải nút chết; chỉ link trên nav khóa |

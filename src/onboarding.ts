@@ -71,8 +71,8 @@ export const tourEscSkips = (s: EscScene): boolean => s.markVisible && !s.owned;
 /** v4 D-O3 with V9: day-one items show a lock and why, never hidden. `order` = story ticket ids. */
 export function navLock(id: string, completed: ReadonlySet<string>, order: readonly string[], isGated: boolean): Key | undefined {
   if (!isGated) return undefined;
-  if ((id === 'sandbox' || id === 'data') && !completed.has(order[0])) return 'lock.afterTask1';
-  if (id === 'dashboard' && !completed.has(order[1])) return 'lock.afterTask2';
+  // v12 (L86 D-DB1): the dashboard opens with Sandbox and Data, after task 1: its starter cards work from day one.
+  if ((id === 'sandbox' || id === 'data' || id === 'dashboard') && !completed.has(order[0])) return 'lock.afterTask1';
   return undefined;
 }
 
