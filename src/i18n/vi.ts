@@ -74,7 +74,7 @@ export const vi = {
   'preview.colCount': '{n} cột',
   'preview.columns': 'Các cột: {list}',
   'preview.sample': '5 dòng đầu của {table}',
-  'preview.expected': 'Kết quả mong đợi',
+  'preview.expected': 'Kết quả mong đợi (mẫu)',
   'preview.byPosition': 'Số dòng và 3 dòng đầu của đáp án. Cột được chấm theo vị trí, tên cột tùy bạn.',
   'preview.col': 'Cột {n}',
   'preview.loading': 'Đang chuẩn bị dữ liệu luyện tập…',

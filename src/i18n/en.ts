@@ -77,7 +77,7 @@ export const en: Record<Key, Msg> = {
   'preview.colCount': count('column', 'columns'),
   'preview.columns': 'Columns: {list}',
   'preview.sample': 'First 5 rows of {table}',
-  'preview.expected': 'Expected result',
+  'preview.expected': 'Expected result (sample)',
   'preview.byPosition': 'Row count and the first 3 rows of the answer. Columns are checked by position; name them as you like.',
   'preview.col': 'Column {n}',
   'preview.loading': 'Preparing the practice data…',

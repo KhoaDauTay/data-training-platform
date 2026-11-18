@@ -33,11 +33,10 @@ const opened = new Set<string>();
 const seeded = new Set<SchemaId>();
 /** Runs on `schema`, seeding it first (`lab` is seeded lazily, L84); `onWait` is called only while that first seed runs. */
 export async function runOn(schema: SchemaId, sql: string, onWait?: () => void): Promise<QueryResult> {
-  if (!seeded.has(schema)) {
-    onWait?.();
-    await app.ensure(schema);
-    seeded.add(schema);
-  }
+  // Always ensure (a no-op once seeded; after a restart DbClient re-seeds or forgets): the set only decides the wait line.
+  if (!seeded.has(schema)) onWait?.();
+  await app.ensure(schema);
+  seeded.add(schema);
   return app.run(sql, { schema });
 }
 

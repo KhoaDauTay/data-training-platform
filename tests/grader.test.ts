@@ -16,8 +16,21 @@ describe('cellKey', () => {
   });
   it('NULL, ngày, chữ', () => {
     expect(cellKey(null)).toBe('∅');
-    expect(cellKey(new Date('2026-10-31T00:00:00Z'))).toBe('2026-10-31T00:00:00.000Z');
+    expect(cellKey(new Date('2026-10-31T00:00:00Z'))).toBe('2026-10-31');
     expect(cellKey('CQ2610')).toBe('CQ2610');
+  });
+  it('ngày: nửa đêm UTC (date) và nửa đêm giờ máy (timestamp) cùng khóa; thời điểm khác vẫn khác', () => {
+    expect(cellKey(new Date(2026, 9, 1))).toBe('2026-10-01'); // local midnight, how PGlite reads a timestamp
+    expect(cellKey(new Date(Date.UTC(2026, 9, 1)))).toBe('2026-10-01');
+    expect(cellKey(new Date(2026, 9, 1, 8, 30))).not.toBe(cellKey(new Date(2026, 9, 1)));
+    expect(cellKey(new Date(Date.UTC(2026, 9, 1, 0, 0, 1)))).not.toBe(cellKey(new Date(Date.UTC(2026, 9, 1, 0, 0, 2))));
+  });
+  it("trên PGlite: date_trunc('month', timestamp) khớp cùng tháng kiểu date", async () => {
+    const run = await runner();
+    const ts = await run("SELECT date_trunc('month', TIMESTAMP '2026-10-15 13:45:00')");
+    const d = await run("SELECT DATE '2026-10-01'");
+    expect(compareResults(d, ts, false)).toEqual({ ok: true });
+    expect(compareResults(d, await run("SELECT TIMESTAMP '2026-10-01 08:30:00'"), false).ok).toBe(false); // not 07:00: in UTC+7 that is UTC midnight, keyed as a day (cellKey has no column types)
   });
 });
 

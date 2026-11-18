@@ -31,11 +31,24 @@ function roundKey(n: number): string {
   return s === '-0.00' ? '0.00' : s;
 }
 
+const ymd = (y: number, m: number, d: number): string => `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+
+/**
+ * PGlite parses `date` as UTC midnight but `timestamp` (no time zone) as local time, so `date_trunc('month', ts)` and the
+ * same month as a `date` are different instants outside UTC. A Date at exactly UTC midnight, or else at exactly local
+ * midnight, is keyed by its calendar day; any other instant keeps its ISO text.
+ */
+function dateKey(v: Date): string {
+  if (v.getUTCHours() === 0 && v.getUTCMinutes() === 0 && v.getUTCSeconds() === 0 && v.getUTCMilliseconds() === 0) return ymd(v.getUTCFullYear(), v.getUTCMonth(), v.getUTCDate());
+  if (v.getHours() === 0 && v.getMinutes() === 0 && v.getSeconds() === 0 && v.getMilliseconds() === 0) return ymd(v.getFullYear(), v.getMonth(), v.getDate());
+  return v.toISOString();
+}
+
 export function cellKey(v: unknown): string {
   if (v === null || v === undefined) return '∅';
   if (typeof v === 'number' || typeof v === 'bigint') return roundKey(Number(v));
   if (typeof v === 'string' && NUMERIC_RE.test(v)) return roundKey(Number(v));
-  if (v instanceof Date) return v.toISOString();
+  if (v instanceof Date) return dateKey(v);
   if (typeof v === 'object') return JSON.stringify(v);
   return String(v);
 }
