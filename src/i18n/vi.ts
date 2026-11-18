@@ -390,6 +390,7 @@ export const vi = {
   'frame.weakRun': 'Lượt này sẽ không lên mức nhớ',
   'frame.weakPass': 'Lần đạt này không lên mức nhớ',
   'frame.ask': 'Editor đang có câu của bạn. Thay bằng khung? Câu cũ lấy lại được bằng Hoàn tác ({mod}+Z).',
+  'frame.askTry': 'Ô đang có câu của bạn. Thay bằng khung? Nút Hoàn tác lấy lại câu cũ.',
   'frame.replace': 'Thay bằng khung',
   'frame.keep': 'Giữ câu của mình',
   'frame.filled': 'Mình điền khung rồi: còn {n} chỗ ___ cho tên cột và giá trị. Gõ đè lên chỗ đang chọn.',

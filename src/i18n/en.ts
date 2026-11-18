@@ -392,6 +392,7 @@ export const en: Record<Key, Msg> = {
   'frame.weakRun': 'This run will not raise your memory level',
   'frame.weakPass': 'This pass will not raise your memory level',
   'frame.ask': 'The editor holds your own query. Replace it with the scaffold? Undo ({mod}+Z) brings it back.',
+  'frame.askTry': 'The box holds your own query. Replace it with the scaffold? The Undo button brings it back.',
   'frame.replace': 'Replace with the scaffold',
   'frame.keep': 'Keep my query',
   'frame.filled': (p) => `Scaffold filled in: ${p.n === 1 ? '1 blank ___ is' : `${num(p.n)} blanks ___ are`} left for column names and values. Type over the selected one.`,

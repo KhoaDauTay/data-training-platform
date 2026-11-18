@@ -183,7 +183,7 @@ function card(l: Lesson, titleId: string, actions: HTMLElement[], tour = false):
     boonBox.replaceChildren(...nodes(st && h('div', { class: 'mt-2 rounded-2xl bg-sun px-4 py-2 text-sm text-sun-ink [&_p]:my-1' },
       h('p', {}, t('frame.try')),
       st === 'ask'
-        ? h('div', {}, h('p', {}, t('frame.ask')), h('div', { class: 'flex flex-wrap gap-2' },
+        ? h('div', {}, h('p', {}, t('frame.askTry')), h('div', { class: 'flex flex-wrap gap-2' },
           h('button', { type: 'button', 'data-f': 'replace', class: 'primary', onclick: () => void fillTry(true) }, t('frame.replace')),
           h('button', { type: 'button', onclick: () => { boon.set(l.id, 'open'); drawBoon('fill'); } }, t('frame.keep'))))
         : h('div', { class: 'flex flex-wrap items-center gap-2' },
