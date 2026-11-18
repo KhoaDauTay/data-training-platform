@@ -27,6 +27,7 @@ import { registerNav, setActionButton } from './topbar';
 import { renderMyData } from './myDataView';
 import type { WorkArea } from './work';
 import { mascot } from './mascots';
+import { NAV_ICON } from './icons';
 import { illustration } from '../art/load';
 import { gated, navLock, readTour } from '../onboarding';
 
@@ -301,17 +302,17 @@ function warmupCard(): HTMLElement | null {
 
 // Same id replaces topbar.ts's 'play' entry: "Workspace" is current only in story mode (and on a lane task).
 registerNav({
-  id: 'play', area: 'domain', order: 20, label: 'nav.play', icon: 'code', get href() { return hashOf('play'); },
+  id: 'play', area: 'domain', order: 20, label: 'nav.play', icon: NAV_ICON.play, get href() { return hashOf('play'); },
   current: (r) => r === 'play' && (isStory() || session.mode.kind === 'lane'),
   onclick: () => (isStory() ? go('play') : backToStory()),
 });
 // Plan 7 V5: "Practise SQL" is a hub page (#/practice); a run in the workspace still counts as being there.
 registerNav({
-  id: 'practice', area: 'top', order: 30, label: 'nav.practice', icon: 'repeat', href: hashOf('practice'),
+  id: 'practice', area: 'top', order: 30, label: 'nav.practice', icon: NAV_ICON.practice, href: hashOf('practice'),
   current: (r) => r === 'practice' || (r === 'play' && (session.mode.kind === 'practice' || session.mode.kind === 'drill')),
 });
 registerNav({
-  id: 'sandbox', area: 'domain', order: 30, label: 'nav.sandbox', icon: 'flask', get href() { return hashOf('play'); },
+  id: 'sandbox', area: 'domain', order: 30, label: 'nav.sandbox', icon: NAV_ICON.sandbox, get href() { return hashOf('play'); },
   current: (r) => r === 'play' && session.mode.kind === 'sandbox',
   onclick: () => (session.mode.kind === 'sandbox' ? go('play') : startSandbox()),
 });

@@ -11,7 +11,7 @@ import { readJson, writeJson } from '../storage';
 import { cx } from '../theme';
 import { textOf } from '../tickets';
 import { byId, h, nodes } from './dom';
-import { icon } from './icons';
+import { icon, NAV_ICON } from './icons';
 import { domainLine, navItems } from './topbar';
 
 /** Device pref (v6 §3.2): the sidebar on wide reading pages. Never in the Save. */
@@ -31,6 +31,8 @@ const mq = (q: string): boolean => typeof matchMedia === 'function' && matchMedi
 let overlay = false;
 let lastRoute: Route = 'home';
 let extra: HTMLElement | undefined;
+/** v12.0 U7: the current row the sidebar last scrolled to; a redraw scrolls only when the current page changed. */
+let scrolledTo = '';
 
 /**
  * Where the Data page puts its table list (V11): the sidebar from 1024 px, else undefined (the page keeps it). One node for the
@@ -55,7 +57,7 @@ function row(r: Row): HTMLElement {
     h('span', { class: cx('relative grid size-6 shrink-0 place-items-center', r.lock && 'text-muted'), 'aria-hidden': 'true' }, r.lead,
       r.lock ? h('span', { class: 'absolute -right-1.5 -bottom-1 grid size-3.5 place-items-center rounded-full bg-panel ring-1 ring-line' }, icon('lock', 'size-2.5')) : null),
     h('span', { class: 'side-label min-w-0 flex-1' },
-      h('span', { class: 'block truncate' }, r.label),
+      h('span', { class: 'block line-clamp-2' }, r.label), // v12.0 U7: wraps to two lines; the rail's tip shows the full name
       r.sub || r.lock ? h('span', { class: 'block truncate text-xs font-semibold text-muted' }, r.lock ?? r.sub) : null),
     r.lock ? icon('lock', 'side-label size-3.5 text-muted') : null);
 }
@@ -133,7 +135,7 @@ function content(route: Route, drawer: boolean): (Node | string)[] {
     out.push(h('p', { class: GROUP }, t('side.sqlTrack')), ...modules());
   } else if (route === 'practice') {
     const lang = getLang();
-    out.push(row({ key: 'today', href: hashOf('practice'), lead: icon('repeat'), label: t('side.today', { n: reviewCount() }), current: true }),
+    out.push(row({ key: 'today', href: hashOf('practice'), lead: icon(NAV_ICON.practice), label: t('side.today', { n: reviewCount() }), current: true }),
       h('p', { class: GROUP }, t('side.byModule')),
       ...CHAPTERS.filter((c) => SKILLS.some((s) => s.chapter === c.chapter)).map((c) => row({
         key: `p${c.chapter}`, href: hashOf('practice'), lead: h('b', {}, String(c.chapter)), label: moduleTitle(c.chapter, lang), current: false,
@@ -190,6 +192,12 @@ export function renderSidebar(route: Route): void {
     side.replaceChildren(h('div', { class: 'side-panel' }, toggle(route), ...content(route, false))); // v12 (L85): expand/collapse at the top left
   }
   if (focused) host.querySelector<HTMLElement>(`[data-side="${CSS.escape(focused)}"]`)?.focus();
+  const cur = host.querySelector<HTMLElement>('[aria-current="page"][data-side]');
+  const key = `${route}:${cur?.dataset.side ?? ''}`;
+  if (cur && key !== scrolledTo) {
+    scrolledTo = key;
+    cur.scrollIntoView({ block: 'nearest' }); // once per page: a long module list keeps the open module in view
+  }
 }
 
 /**

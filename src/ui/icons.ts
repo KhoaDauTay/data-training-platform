@@ -51,6 +51,7 @@ const P = {
   puzzle: 'M4 8h4a2 2 0 1 1 4 0h4v4a2 2 0 1 1 0 4v4H4z',
   // ---- dashboard and lanes (Plan 5, mockup v6) ----
   table: 'M3 4h18v16H3z M3 9h18 M3 14h18 M9 9v11',
+  database: 'M4 6a8 3 0 1 0 16 0a8 3 0 1 0-16 0 M4 6v12a8 3 0 0 0 16 0V6 M4 12a8 3 0 0 0 16 0',
   lineChart: 'M3 3v18h18 M6 15l4-5 4 3 6-7',
   pin: 'M9 4h6 M10 4v6l-3 4h10l-3-4V4 M12 14v7',
   unpin: 'M9 4h6 M10 4v6l-3 4h10l-3-4V4 M12 14v7 M3 3l18 18',
@@ -138,6 +139,14 @@ export type IconName = keyof typeof P;
 export const iconPaths = (name: IconName): Entry => P[name];
 export const isIconName = (name: string): name is IconName => Object.hasOwn(P, name);
 export const ICON_NAMES = Object.keys(P) as IconName[];
+
+/**
+ * v12.0 U2: one icon per navigation destination (rail, drawer, bottom bar, top nav). Every registerNav reads this table;
+ * tests/icons.test.ts keeps the values unique and apart from the domain icons (DOMAINS), which only name a domain.
+ */
+export const NAV_ICON = {
+  home: 'home', learn: 'route', practice: 'repeat', overview: 'overview', play: 'code', sandbox: 'flask', data: 'database', dashboard: 'chart', map: 'map',
+} as const satisfies Record<string, IconName>;
 
 /** Skill id (content/skills.yml) → icon. tests/icons.test.ts checks every id in skills.yml is here. */
 export const SKILL_ICON: Record<string, IconName> = {

@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { SKILLS } from '../src/progress';
 import { KPIS } from '../src/home';
-import { ICON_NAMES, iconPaths, isIconName, SKILL_ICON, skillIconName } from '../src/ui/icons';
+import { DOMAINS } from '../src/domains';
+import { ICON_NAMES, iconPaths, isIconName, NAV_ICON, SKILL_ICON, skillIconName } from '../src/ui/icons';
+
+const uiSources = import.meta.glob('../src/ui/*.ts', { query: '?raw', import: 'default', eager: true }) as Record<string, string>;
 
 describe('icon kỹ năng và KPI (ui-ux-v3 §e, §c)', () => {
   it('mọi id trong skills.yml có icon riêng (không dùng fallback)', () => {
@@ -44,5 +47,19 @@ describe('icon kỹ năng và KPI (ui-ux-v3 §e, §c)', () => {
       return other ? [`${other} = ${n}`] : [];
     });
     expect(dupes).toEqual([]);
+  });
+});
+
+describe('U2 (v12.0): một icon = một đích', () => {
+  it('mỗi mục điều hướng một icon riêng, không trùng icon lĩnh vực', () => {
+    const used = Object.values(NAV_ICON);
+    expect(new Set(used).size).toBe(used.length);
+    expect(used.filter((n) => DOMAINS.some((d) => (d.icon as string) === n))).toEqual([]);
+    expect(used.filter((n) => !isIconName(n))).toEqual([]);
+  });
+  it('registerNav chỉ lấy icon từ NAV_ICON', () => {
+    const literal = Object.entries(uiSources).flatMap(([file, src]) =>
+      [...src.matchAll(/registerNav\(\{[\s\S]*?\}\);/g)].filter((m) => /icon: '/.test(m[0])).map(() => file));
+    expect(literal).toEqual([]);
   });
 });

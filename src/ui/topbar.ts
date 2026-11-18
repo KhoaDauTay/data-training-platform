@@ -7,7 +7,7 @@ import { domainHash, hashOf, inDomain, soonDomainOf, type Route } from '../route
 import { actions, app, done } from '../state';
 import { getTheme, NAV_LINK, setTheme, THEME_PREFS, TOP_BTN, type ThemePref } from '../theme';
 import { byId, h, nodes } from './dom';
-import { fillIcons, icon, type IconName } from './icons';
+import { fillIcons, icon, NAV_ICON, type IconName } from './icons';
 import { currentRoute } from './router';
 
 const mb = (bytes: number): number => Math.round(bytes / 1e5) / 10;
@@ -31,13 +31,13 @@ const NAV: NavItem[] = [];
 /** Same id replaces the old entry; kept sorted by order. */
 export const registerNav = (item: NavItem): void => upsert(NAV, item);
 export const navItems = (area: NavItem['area']): NavItem[] => NAV.filter((n) => n.area === area);
-registerNav({ id: 'home', area: 'top', order: 10, label: 'nav.home', icon: 'home', href: hashOf('home'), current: (r) => r === 'home' });
-registerNav({ id: 'learn', area: 'top', order: 20, label: 'nav.learn', icon: 'route', href: hashOf('learn'), current: (r) => r === 'learn' });
+registerNav({ id: 'home', area: 'top', order: 10, label: 'nav.home', icon: NAV_ICON.home, href: hashOf('home'), current: (r) => r === 'home' });
+registerNav({ id: 'learn', area: 'top', order: 20, label: 'nav.learn', icon: NAV_ICON.learn, href: hashOf('learn'), current: (r) => r === 'learn' });
 // Practice (top, order 30), Sandbox (domain, 30, ui/modes.ts) and Data (domain, 50, ui/dataView.ts) register their own.
-registerNav({ id: 'overview', area: 'domain', order: 10, label: 'nav.overview', icon: 'overview', get href() { return hashOf('overview'); }, current: (r) => r === 'overview' || r === 'soon' });
-registerNav({ id: 'play', area: 'domain', order: 20, label: 'nav.play', icon: 'code', get href() { return hashOf('play'); }, current: (r) => r === 'play' });
-registerNav({ id: 'dashboard', area: 'domain', order: 60, label: 'nav.dashboard', icon: 'chart', get href() { return hashOf('dashboard'); }, current: (r) => r === 'dashboard' });
-registerNav({ id: 'map', area: 'domain', order: 70, label: 'nav.map', icon: 'map', get href() { return hashOf('map'); }, current: (r) => r === 'map' });
+registerNav({ id: 'overview', area: 'domain', order: 10, label: 'nav.overview', icon: NAV_ICON.overview, get href() { return hashOf('overview'); }, current: (r) => r === 'overview' || r === 'soon' });
+registerNav({ id: 'play', area: 'domain', order: 20, label: 'nav.play', icon: NAV_ICON.play, get href() { return hashOf('play'); }, current: (r) => r === 'play' });
+registerNav({ id: 'dashboard', area: 'domain', order: 60, label: 'nav.dashboard', icon: NAV_ICON.dashboard, get href() { return hashOf('dashboard'); }, current: (r) => r === 'dashboard' });
+registerNav({ id: 'map', area: 'domain', order: 70, label: 'nav.map', icon: NAV_ICON.map, get href() { return hashOf('map'); }, current: (r) => r === 'map' });
 
 /** Mobile bottom bar (v6 §3.2): 56 px targets; the current one is --accent on --panel (5.5:1) and keeps its label. */
 const BOTTOM_LINK = 'flex min-h-14 flex-col items-center justify-center gap-0.5 text-xs font-bold text-muted no-underline aria-[current=page]:text-accent';

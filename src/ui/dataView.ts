@@ -10,11 +10,12 @@ import { h, nodes } from './dom';
 import { drawErd, erdSvg, keyBadges, valuesLine } from './erdView';
 import { errorView } from './feedback';
 import { renderResult } from './resultTable';
+import { NAV_ICON } from './icons';
 import { sideExtra } from './sidebar';
 import { registerNav } from './topbar';
 
 // Order 60 is kept for the dashboard tab (L47 item 7).
-registerNav({ id: 'data', area: 'domain', order: 50, label: 'nav.data', icon: 'table', get href() { return hashOf('data'); }, current: (r) => r === 'data' });
+registerNav({ id: 'data', area: 'domain', order: 50, label: 'nav.data', icon: NAV_ICON.data, get href() { return hashOf('data'); }, current: (r) => r === 'data' });
 
 /** In memory only, never saved (ui-ux-v4 §5). */
 const view = { query: '', scope: 'near' as 'near' | 'all' };
