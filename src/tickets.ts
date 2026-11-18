@@ -20,6 +20,8 @@ export interface Step {
   plan?: PlanSpec;
   /** Chapter 11 `lab:`: the player writes a CREATE INDEX that speeds up this step's Solution (the slow query). */
   lab?: LabSpec;
+  /** L4 (v12.0): `precision:`. Numbers must already be at this many decimals (src/grader.ts); absent = lenient 2-decimal compare. */
+  precision?: number;
 }
 export interface Conclusion { question: string; options: string[]; answer: number }
 /** Player-facing text in one language. `steps` runs parallel to Ticket.steps. */
@@ -209,6 +211,15 @@ export function parseTicket(source: string, origin: string): Ticket {
   perStep('plan', (x) => isName(x.index))?.forEach((x, i) => { if (x) t.steps[i].plan = { index: x.index as string }; });
   perStep('lab', (x) => isName(x.table) && typeof x.ddl === 'string' && typeof x.max_cost_ratio === 'number' && x.max_cost_ratio > 0 && x.max_cost_ratio < 1)
     ?.forEach((x, i) => { if (x) t.steps[i].lab = { table: x.table as string, ddl: x.ddl as string, max_cost_ratio: x.max_cost_ratio as number }; });
+  // L4: like columns: one number on a normal ticket, one entry per step (null = none) on a promotion review.
+  if (fm.precision !== undefined) {
+    const list = t.beat === 'boss' ? fm.precision : [fm.precision];
+    const ok = (x: unknown): boolean => x === null || (Number.isInteger(x) && (x as number) >= 0 && (x as number) <= 6);
+    if (!Array.isArray(list) || list.length !== t.steps.length || !list.every(ok)) {
+      fail('precision: số nguyên 0–6; ticket thường một số, cột mốc một danh sách mỗi bước (null = không có)');
+    }
+    (list as (number | null)[]).forEach((p, i) => { if (p !== null) t.steps[i].precision = p; });
+  }
   if (t.steps.some((st) => st.plan && st.lab)) fail('một bước không thể có cả plan: và lab:');
   if (t.steps.some((st) => st.lab) && fm.wrong !== undefined) fail('bước lab: không có kết quả để so với wrong:');
 

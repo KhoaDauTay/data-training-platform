@@ -148,3 +148,28 @@ describe('grade trên DB thật', () => {
     await expect(grade(run, 'SELEC broken', 'SELECT 1', false)).rejects.toThrow();
   });
 });
+
+describe('precision (L4, v12.0 D10-12)', () => {
+  it('không có precision: như cũ, làm tròn 2 chữ số rồi so', () => {
+    expect(compareResults(res([['1235']]), res([['1234.996']]), false).ok).toBe(true);
+  });
+  it('precision 0: số chưa làm tròn tới đồng là sai; đã làm tròn (kể cả 1235.00) là đúng', () => {
+    expect(compareResults(res([['1235']]), res([['1234.6']]), false, 0).ok).toBe(false);
+    expect(compareResults(res([['1235']]), res([['1235.00']]), false, 0).ok).toBe(true);
+    expect(compareResults(res([[1235]]), res([['1235']]), false, 0).ok).toBe(true);
+  });
+  it('precision 2: số còn chữ số thứ ba là sai', () => {
+    expect(compareResults(res([['0.33']]), res([['0.333']]), false, 2).ok).toBe(false);
+    expect(compareResults(res([['0.33']]), res([['0.330']]), false, 2).ok).toBe(true);
+  });
+  it('-0 sau khi làm tròn vẫn bằng 0', () => {
+    expect(cellKey('-0.001')).toBe(cellKey(0));
+    expect(cellKey('-0.4', 0)).not.toBe(cellKey(0, 0)); // strict: -0.4 is not rounded
+    expect(cellKey('-0', 0)).toBe(cellKey(0, 0));
+  });
+  it('grade() chuyển precision cho compareResults', async () => {
+    const run = await runner();
+    expect((await grade(run, 'SELECT 1235', 'SELECT 1234.996', false)).ok).toBe(true);
+    expect((await grade(run, 'SELECT 1235', 'SELECT 1234.996', false, 0)).ok).toBe(false);
+  });
+});

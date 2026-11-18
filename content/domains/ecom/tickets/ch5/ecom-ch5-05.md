@@ -10,6 +10,7 @@ requires: [cte, case_when, conditional_agg, join, aggregate, group_by, order_by]
 grants: []
 tables: [ad_spend, customers, web_sessions, payments, orders]
 ordered: true
+precision: [0, null, null]
 columns:
   - [{ vi: "Kênh khách đến", en: "Acquisition channel" }, { vi: "Số khách mới", en: "New customers" }, { vi: "Chi phí kênh (đồng)", en: "Channel spend (VND)" }, { vi: "Chi phí cho mỗi khách mới (đồng)", en: "Cost per new customer (VND)" }]
   - [{ vi: "Thiết bị", en: "Device" }, { vi: "Số phiên", en: "Sessions" }, { vi: "Phiên có thêm vào giỏ", en: "Sessions that added to cart" }, { vi: "Phiên ra đơn", en: "Sessions that ordered" }, { vi: "Tỷ lệ ra đơn (%)", en: "Conversion rate (%)" }]

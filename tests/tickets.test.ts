@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import templateRaw from '../content/TEMPLATE.md?raw';
 import { optionOrder, parseTicket, textOf } from '../src/tickets';
 
 const NORMAL = `---
@@ -311,5 +312,16 @@ describe('optionOrder (v10 B5)', () => {
     const withConclusion = loadTickets().filter((tk) => tk.conclusion);
     const first = withConclusion.filter((tk) => optionOrder(`${tk.id}#c`, tk.conclusion!.options.length)[0] === tk.conclusion!.answer).length;
     expect(first).toBeLessThan(withConclusion.length / 2 + 1);
+  });
+});
+
+describe('precision (L4)', () => {
+  const template = templateRaw.replace(/\r\n/g, '\n');
+  it('precision: số nguyên 0–6; ticket thường một số, cột mốc một danh sách mỗi bước (L4)', () => {
+    const withFm = (line: string) => template.replace(/^---\n/, `---\n${line}\n`);
+    expect(parseTicket(template, 'x').steps[0].precision).toBeUndefined();
+    expect(parseTicket(withFm('precision: 0'), 'x').steps[0].precision).toBe(0);
+    expect(() => parseTicket(withFm('precision: 1.5'), 'x')).toThrow(/precision/);
+    expect(() => parseTicket(withFm('precision: [0]'), 'x')).toThrow(/precision/);
   });
 });

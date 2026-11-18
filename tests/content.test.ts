@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import template from '../content/TEMPLATE.md?raw';
 import { loadTicketTemplates, loadTickets } from '../src/content';
-import { compareResults } from '../src/grader';
+import { cellKey, compareResults } from '../src/grader';
 import { KPIS } from '../src/home';
 import { CHAPTER_TABLES, contentProblems, SKILLS, tablesUnlocked } from '../src/progress';
 import { parseTicket, textOf, type TicketText } from '../src/tickets';
@@ -161,6 +161,19 @@ describe('phương pháp học (mọi chương)', () => {
       .filter((s) => !normal.some((t) => [...t.requires, ...t.grants].includes(s.id) && variantsOf(t).length >= 3))
       .map((s) => s.id);
     expect(missing).toEqual([]);
+  });
+});
+
+describe('precision (L4)', () => {
+  it('L4: bước có precision trả mọi số đã ở đúng số chữ số thập phân, ở mọi biến thể', async () => {
+    const run = await runner();
+    const steps = loadTicketTemplates().flatMap((tpl) => Array.from({ length: Math.max(1, variantsOf(tpl).length) }, (_, v) => applyVariant(tpl, v)))
+      .flatMap((tk) => tk.steps.filter((s) => s.precision !== undefined).map((s) => [tk.id, s] as const));
+    expect([...new Set(steps.map(([id]) => id))].sort()).toEqual(['ch12-06', 'ch8-06']);
+    for (const [id, s] of steps) {
+      const r = await run(s.solution);
+      for (const row of r.rows) for (const c of row) expect(cellKey(c, s.precision).endsWith('~'), `${id}: ${String(c)}`).toBe(false);
+    }
   });
 });
 

@@ -81,7 +81,7 @@ describe('biến thể trong nội dung', () => {
         expect(sql, `${t.id}#${i}`).not.toMatch(/current_date|current_timestamp|localtimestamp|now\s*\(/i);
         const r = await run(sql);
         expect(r.rows.length, `${t.id}#${i}`).toBeGreaterThan(0);
-        seen.push(r.rows.map((row) => row.map(cellKey).join('|')).join('\n'));
+        seen.push(r.rows.map((row) => row.map((c) => cellKey(c)).join('|')).join('\n'));
       }
       expect(new Set(seen).size, `${t.id}: các biến thể cho kết quả trùng nhau`).toBe(seen.length);
     }

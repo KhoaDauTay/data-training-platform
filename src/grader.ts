@@ -24,11 +24,13 @@ export type Runner = (sql: string) => Promise<QueryResult>;
 
 const NUMERIC_RE = /^-?\d+(\.\d+)?$/;
 
-// ponytail: every number is compared after rounding to 2 decimals (spec §6). Values that
+// ponytail: without `precision` every number is compared after rounding to 2 decimals (spec §6). Values that
 // straddle a rounding boundary (0.335 vs 0.33499) mismatch; switch to tolerance pairing if players hit it.
-function roundKey(n: number): string {
-  const s = n.toFixed(2);
-  return s === '-0.00' ? '0.00' : s;
+// L4 (v12.0 D10-12): a step with `precision: p` grades rounding: a value not already at p decimals never matches.
+function roundKey(n: number, p = 2, strict = false): string {
+  const s = n.toFixed(p);
+  const key = /^-0(\.0*)?$/.test(s) ? s.slice(1) : s;
+  return strict && Math.abs(n - Number(s)) > 1e-9 ? `${key}~` : key;
 }
 
 const ymd = (y: number, m: number, d: number): string => `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
@@ -44,20 +46,21 @@ function dateKey(v: Date): string {
   return v.toISOString();
 }
 
-export function cellKey(v: unknown): string {
+export function cellKey(v: unknown, precision?: number): string {
+  const num = (n: number): string => roundKey(n, precision ?? 2, precision !== undefined);
   if (v === null || v === undefined) return '∅';
-  if (typeof v === 'number' || typeof v === 'bigint') return roundKey(Number(v));
-  if (typeof v === 'string' && NUMERIC_RE.test(v)) return roundKey(Number(v));
+  if (typeof v === 'number' || typeof v === 'bigint') return num(Number(v));
+  if (typeof v === 'string' && NUMERIC_RE.test(v)) return num(Number(v));
   if (v instanceof Date) return dateKey(v);
   if (typeof v === 'object') return JSON.stringify(v);
   return String(v);
 }
 
-const rowKey = (row: unknown[]) => row.map(cellKey).join('\u0001');
+const rowKey = (row: unknown[], precision?: number) => row.map((c) => cellKey(c, precision)).join('\u0001');
 const DIFF_ROWS = 3;
 
-function columnCheck(expected: QueryResult, actual: QueryResult): ColumnCheck {
-  const bag = (rows: unknown[][], i: number) => rows.map((r) => cellKey(r[i])).sort().join('\u0001');
+function columnCheck(expected: QueryResult, actual: QueryResult, precision?: number): ColumnCheck {
+  const bag = (rows: unknown[][], i: number) => rows.map((r) => cellKey(r[i], precision)).sort().join('\u0001');
   const e = expected.columns.map((_, i) => bag(expected.rows, i));
   const a = actual.columns.map((_, i) => bag(actual.rows, i));
   const mismatched = a.flatMap((k, i) => (k === e[i] ? [] : [i]));
@@ -68,12 +71,12 @@ function columnCheck(expected: QueryResult, actual: QueryResult): ColumnCheck {
   return { mismatched, moved };
 }
 
-export function compareResults(expected: QueryResult, actual: QueryResult, ordered: boolean): GradeResult {
+export function compareResults(expected: QueryResult, actual: QueryResult, ordered: boolean, precision?: number): GradeResult {
   if (expected.columns.length !== actual.columns.length) {
     return { ok: false, reason: 'columns', expected: expected.columns.length, actual: actual.columns.length };
   }
-  const eKeys = expected.rows.map(rowKey);
-  const aKeys = actual.rows.map(rowKey);
+  const eKeys = expected.rows.map((r) => rowKey(r, precision));
+  const aKeys = actual.rows.map((r) => rowKey(r, precision));
   const remaining = new Map<string, number>();
   for (const k of eKeys) remaining.set(k, (remaining.get(k) ?? 0) + 1);
   let extra = 0;
@@ -103,7 +106,7 @@ export function compareResults(expected: QueryResult, actual: QueryResult, order
     const same = expected.rows.length === actual.rows.length;
     return {
       ok: false, reason: 'rows', missing, extra, sample, extraRows, missingRows,
-      expectedRows: expected.rows.length, actualRows: actual.rows.length, ...(same ? { cols: columnCheck(expected, actual) } : {}),
+      expectedRows: expected.rows.length, actualRows: actual.rows.length, ...(same ? { cols: columnCheck(expected, actual, precision) } : {}),
     };
   }
   if (ordered && eKeys.some((k, i) => k !== aKeys[i])) return { ok: false, reason: 'order' };
@@ -114,7 +117,7 @@ export function errorMessage(e: unknown): string {
   return e instanceof Error ? e.message : String(e);
 }
 
-export async function grade(run: Runner, solutionSql: string, playerSql: string, ordered: boolean): Promise<GradeResult> {
+export async function grade(run: Runner, solutionSql: string, playerSql: string, ordered: boolean, precision?: number): Promise<GradeResult> {
   let actual: QueryResult;
   try {
     actual = await run(playerSql);
@@ -123,5 +126,5 @@ export async function grade(run: Runner, solutionSql: string, playerSql: string,
     return error ? { ok: false, reason: 'error', message: error.message, error } : { ok: false, reason: 'error', message: errorMessage(e) };
   }
   const expected = await run(solutionSql); // throws on a broken Solution: content bug, surfaced to the caller
-  return compareResults(expected, actual, ordered);
+  return compareResults(expected, actual, ordered, precision);
 }

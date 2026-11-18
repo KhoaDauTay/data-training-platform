@@ -346,7 +346,7 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
     let planFail: PlanFail | undefined;
     let planError: unknown; // the player's EXPLAIN failed: a DB/SQL error, not a content bug
     try {
-      r = await grade((s) => (s === sql ? playerRun(s) : deps.db.run(s, { schema })), tk.steps[i].solution, sql, tk.ordered);
+      r = await grade((s) => (s === sql ? playerRun(s) : deps.db.run(s, { schema })), tk.steps[i].solution, sql, tk.ordered, tk.steps[i].precision);
       // Still busy: no newer Run/Submit can start before the tip is ready, so this result can never overwrite a newer one.
       if (!r.ok && r.reason !== 'error') tip = await wrongTip(tk, played?.result, r);
       // Chapter 11: a right result must also read the table through an index. EXPLAIN without ANALYZE: costs, no run.

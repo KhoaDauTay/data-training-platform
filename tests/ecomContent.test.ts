@@ -165,9 +165,22 @@ describe('E-com: biến thể', () => {
     for (let i = 0; i < variantsOf(t).length; i++) {
       const r = await run(applyVariant(t, i).steps[0].solution);
       expect(r.rows.length, `#${i}`).toBeGreaterThan(0);
-      seen.push(r.rows.map((row) => row.map(cellKey).join('|')).join('\n'));
+      seen.push(r.rows.map((row) => row.map((c) => cellKey(c)).join('|')).join('\n'));
     }
     expect(new Set(seen).size).toBe(seen.length);
+  });
+});
+
+describe('E-com: precision (L4)', () => {
+  it('L4: bước có precision trả mọi số đã ở đúng số chữ số thập phân, ở mọi biến thể', async () => {
+    const run = await ecomRunner();
+    const steps = templates.flatMap((tpl) => Array.from({ length: Math.max(1, variantsOf(tpl).length) }, (_, v) => applyVariant(tpl, v)))
+      .flatMap((tk) => tk.steps.filter((s) => s.precision !== undefined).map((s) => [tk.id, s] as const));
+    expect([...new Set(steps.map(([id]) => id))].sort()).toEqual(['ecom-ch5-05']);
+    for (const [id, s] of steps) {
+      const r = await run(s.solution);
+      for (const row of r.rows) for (const c of row) expect(cellKey(c, s.precision).endsWith('~'), `${id}: ${String(c)}`).toBe(false);
+    }
   });
 });
 

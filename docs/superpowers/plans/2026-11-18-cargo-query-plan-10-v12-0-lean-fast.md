@@ -82,6 +82,7 @@ Written against HEAD `fe218f1`, which already includes L82/L83 (c6be07a) and L85
 | D10-24 | **Budgets:** new group `gameseed` /^gameSeed-/ 16 KB. `worker` keeps 160 (it shrinks). `main` stays ≤ 290: about 45 new VI strings (thank-you lines, picker, a11y, skip) ≈ +2 KB gz. EN is a lazy chunk (budget `en` 20). | L59: new weight is lazy. |
 | D10-25 | **Metric "data ready"** = `performance.now()` at the first moment the top bar shows the green dot **and** no `domain.loading`/`ecom.loading` notice is visible. Also record `db:ensure:<schema>` (after only). 3 runs each for Logistics, E-commerce direct and SQL only, Edge, `vite preview` build, idle machine, warm HTTP cache. | Same metric before and after; HEAD has no ensure measure. |
 | D10-26 | **L3 and L6 move to Plan 10a** (user, 2026-11-18). | See "Out of scope". |
+| D10-27 | **T10 as built:** `cellKey` keeps `dateKey` (the plan's Step 2 snippet predates it); the column-detail check (`columnCheck`, L84) gets `precision` too, so a strict cell is reported in its column. `cellKey` now has a second parameter, so `row.map(cellKey)` would pass the array index as precision: every caller wraps it (`(c) => cellKey(c)`, tests/variants and ecomContent). | Found while implementing Task 10. |
 
 ## Global Constraints
 

@@ -22,6 +22,7 @@
 #   lab: { table: <bảng>, ddl: "CREATE INDEX …", max_cost_ratio: 0.1 } — phòng thí nghiệm: editor chứa một CREATE INDEX, Solution là câu chậm
 #   (giữ nguyên, hiện ở thẻ bên trái); đạt khi bảng được đọc qua chỉ mục và chi phí sau ≤ tỷ lệ × trước. Không có wrong: ở bước lab.
 #   Ticket thường: một bảng; cột mốc: một danh sách mỗi bước, null = không có. tests/planCheck.test.ts kiểm Solution đạt và cách viết chậm không đạt.
+# precision: 0   (tùy chọn, L4: kết quả phải đã làm tròn tới số chữ số này; chỉ khi đề nói rõ "làm tròn đến đồng"; cột mốc: một danh sách mỗi bước, null = không có)
 id: ch0-01
 chapter: 0
 title: Tiêu đề tiếng Việt
