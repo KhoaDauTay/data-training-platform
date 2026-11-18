@@ -19,7 +19,6 @@ describe('gsap chunk', () => {
 });
 
 // v6 T6: a wrapper that throws while loading turns every scene and the mascot rig into their fallbacks without a word.
-// (Node is laxer than the browser about CustomEase paths: keep them cubic-only, the browser rejects an L command.)
 describe('gsap wrapper', () => {
   it('loads and registers the named eases', async () => {
     const g = await import('../src/art/gsap');
