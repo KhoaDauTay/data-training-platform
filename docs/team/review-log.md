@@ -491,4 +491,4 @@ Kiểm lại: tsc sạch; `npm test` 64 file, 2913 test xanh, không còn unhand
 
 ## v11 live (2026-11-18)
 
-- **Backlog v12:** màn chào (Lily) khi người chơi vào thẳng `#/d/ecommerce` vẫn kể câu chuyện Cargo Query Logistics / 12 chương; nên theo domain đang mở (Chợ Lồng Đèn, 6 chương). Thấy trên site live, chưa sửa.
+- **Đã sửa (L87):** màn chào giờ là Boon, chữ chung cho nền tảng BoonData. Ghi chú cũ: màn chào (Lily) khi người chơi vào thẳng `#/d/ecommerce` vẫn kể câu chuyện Cargo Query Logistics / 12 chương; nên theo domain đang mở (Chợ Lồng Đèn, 6 chương). Thấy trên site live, chưa sửa.

@@ -5,13 +5,15 @@ import { writeJson } from '../storage';
 import { BTN_GO, cx } from '../theme';
 import { COACH_KEY, coachDone, tourText } from './coach';
 import { byId, h } from './dom';
-import { mascot } from './mascots';
+import { relabelScene, teachScene } from './teachScene';
 
 const mb = (bytes: number): number => Math.round(bytes / 1e5) / 10;
 const LOOP = ['welcome.loop1', 'welcome.loop2', 'welcome.loop3', 'welcome.loop4'] as const;
 /** Panel shown (0–2) and whether this is the static replay from the ⋯ menu (V10). In memory only. */
 let panel = 0;
 let replay = false;
+/** L87: Boon teaching Lily, built once per open so a progress redraw keeps its loops and the board's highlight. */
+let scene: HTMLElement | undefined;
 
 const dialog = (): HTMLDialogElement => byId('welcome-dialog') as HTMLDialogElement;
 const title = (text: string) => h('h2', { id: 'welcome-title', tabindex: '-1', class: 'm-0 text-xl font-extrabold' }, text);
@@ -37,7 +39,8 @@ function draw(): void {
   const keep = was?.id === 'welcome-title' ? 'title' : was?.dataset?.w; // progress redraws often: keep the focused button or title
   const ready = app.dbStatus === 'ready';
   const p = app.loadProgress;
-  const lily = ready ? mascot('lily', 'idle', 'size-28', t('welcome.lilyReady')) : mascot('lily', 'sleep', 'size-28', t('welcome.lilySleep'));
+  scene ??= teachScene('lg');
+  relabelScene(scene);
   const db = ready ? t('welcome.dbReady') : p ? t('welcome.dbLoading', { mb: mb(p.loaded) }) : t('db.loading');
   const body = panel === 0
     ? [title(t('welcome.title')), h('p', {}, t('welcome.p1')),
@@ -52,8 +55,8 @@ function draw(): void {
         : [title(t('welcome.ask')), h('div', { class: 'flex flex-col gap-2' },
           h('button', { type: 'button', 'data-w': 'begin', class: cx(BTN_GO, 'px-4 py-2'), disabled: !ready, onclick: () => choose(false) }, t(ready ? 'welcome.begin' : 'welcome.preparing')),
           h('button', { type: 'button', 'data-w': 'knows', class: 'rounded-full px-4 py-2', onclick: () => choose(true) }, t('welcome.knows')))];
-  d.replaceChildren(h('div', { class: 'grid gap-4 sm:grid-cols-[auto_1fr]' },
-    h('div', { class: 'flex flex-col items-center gap-1' }, lily, h('p', { class: 'm-0 max-w-32 text-center text-xs text-muted' }, db)),
+  d.replaceChildren(h('div', { class: 'grid gap-4' },
+    h('div', { class: 'flex flex-col items-center gap-1' }, scene, h('p', { class: 'm-0 text-center text-xs text-muted' }, db)),
     h('div', { class: 'min-w-0' }, ...body,
       h('div', { class: 'mt-4 flex items-center gap-2' },
         panel > 0 ? h('button', { type: 'button', 'data-w': 'back', onclick: () => go(panel - 1) }, t('welcome.back')) : null,
@@ -64,13 +67,15 @@ function draw(): void {
   else if (keep) d.querySelector<HTMLElement>(`[data-w="${keep}"]`)?.focus();
 }
 
-/** First visit, or the ⋯ menu's "Replay the tour" (a static list, V10). Lily's idle loops run only while this is open (V4). */
+/** First visit, or the ⋯ menu's "Replay the tour" (a static list, V10). Boon greets and teaches Lily (L87); the sprite's idle loops run only while this is open (V4). */
 export function openWelcome(asReplay: boolean): void {
   replay = asReplay;
   panel = 0;
+  scene = undefined;
   draw();
   const d = dialog();
   if (!d.open) d.showModal();
+  byId('welcome-title').focus(); // not the first mascot button of the scene
   byId('mascot-sprite').classList.add('live');
 }
 
@@ -89,7 +94,7 @@ export function initWelcome(): void {
   if (welcomeNeeded(done().size, readTour(), coachDone())) openWelcome(false);
 }
 
-/** rerender(), DB status and download progress: language, Lily's pose and the "preparing" button follow. */
+/** rerender(), DB status and download progress: language, the download line and the "preparing" button follow. */
 export function relabelWelcome(): void {
   if (dialog().open) draw();
 }

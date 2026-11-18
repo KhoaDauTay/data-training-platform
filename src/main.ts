@@ -22,7 +22,7 @@ import { initModes, onPracticeWrong, onSolved, renderLeft, renderReviewButton, s
 import { renderNotebook, toggleNotebook } from './ui/notebook';
 import { byId, h } from './ui/dom';
 import { errorText } from './ui/feedback';
-import { leftHome, renderHome } from './ui/homeView';
+import { leftHome, renderHome, syncLily } from './ui/homeView';
 import { initStage, playCompletion, relabelStage } from './ui/stage';
 import { prefetchArt } from './art/load';
 import { renderInbox } from './ui/inbox';
@@ -56,7 +56,7 @@ function onDbStatus(s: DbStatus): void {
   if (s !== 'loading') app.loadProgress = undefined;
   if (!uiReady) return;
   renderTopbar();
-  relabelWelcome(); // Lily wakes up, "I am new" becomes clickable
+  relabelWelcome(); // the download line ends, "I am new" becomes clickable
   if (s === 'ready' && Object.keys(app.columns).length === 0) void loadColumns();
 }
 const db = new DbClient(onDbStatus);
@@ -150,6 +150,7 @@ const syncMap = (): void => mapStrip.update({
 
 /** Language switch and progress changes: redraws text, never remounts the editor. */
 function rerender(): void {
+  syncLily(); // L87: Lily's growth stage on <html data-lily>, before anything draws her
   renderTopbar();
   renderSidebar(currentRoute()); // before the Data page: it fills the sidebar's slot (V11)
   renderInbox();

@@ -9,6 +9,8 @@ import { laneTables } from './lanes';
 import { currentChapter, tablesUnlocked } from './progress';
 import { derive } from './scene';
 import { emptySave, stepKey, writeSave } from './save';
+import { markDay } from './lily';
+import { localDay } from './practice';
 import { shapeOf, type Shape } from './shape';
 import { localStore } from './storage';
 import type { Ticket } from './tickets';
@@ -110,6 +112,7 @@ let persistTimer: ReturnType<typeof setTimeout> | undefined;
 export function persist(now = false): void {
   clearTimeout(persistTimer);
   const write = () => {
+    markDay(localDay(new Date())); // L87: a day with a save write counts toward "Day N with Lily" (device pref)
     if (writeSave(localStore(), app.save)) return;
     app.notice = { key: 'save.writeFailed' };
     actions.rerender();

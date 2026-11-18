@@ -135,7 +135,7 @@ function overview(c: LearnCtx): HTMLElement {
             needs.length ? ` · ${lt('adv.needsFirst', { list: needs.map((id) => nameOf(c, id)).join(', ') })}` : ''));
       })))));
   return h('div', { class: 'space-y-5' },
-    known.size ? d$.illustration('aspect-[480/200] max-w-xs', (il) => il.studyDesk()) : d$.illustration('aspect-[240/120] max-w-sm', (il) => il.emptyPath()), // Plan 8b
+    // L87: the header picture is Boon teaching Lily, section 'teach' of src/ui/homeView.ts (main), drawn above this one
     h('p', { class: 'm-0 text-muted' }, lt('learn.stats', { n: known.size, total: c.skills.length, m: mastered, k: nodesDone, nodes: graded.length })),
     h('div', { class: 'grid gap-6 lg:grid-cols-2' }, sql, adv));
 }

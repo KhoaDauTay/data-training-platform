@@ -7,9 +7,11 @@ import { domainSlot } from '../save';
 import { ecomArt } from './ecomArt';
 import { domainLine } from './topbar';
 import { derive, ROUTES as LANES } from '../scene';
-import { domainHash, soonDomainOf } from '../route';
+import { domainHash, learnAdvOf, learnModuleOf, learnSkillOf, soonDomainOf } from '../route';
 import { laneInfo, lanePanel } from './lanePanel';
-import { mascot } from './mascots';
+import { mascot, setLilyStage } from './mascots';
+import { dayCount, lilyStage, toNextStage } from '../lily';
+import { relabelScene, teachScene } from './teachScene';
 import { currentRoute } from './router';
 import { actions, app, done } from '../state';
 import { BTN_GO, CARD, CARD_ACTION, chapterColor, cx, DONE_PILL, PILL } from '../theme';
@@ -298,10 +300,33 @@ function kpiSection(): HTMLElement {
     icon('arrowRight', 'size-4 text-muted transition group-hover:translate-x-0.5 group-hover:text-accent'));
 }
 
-/** Platform Home (v5 §B.5): Lily and the tagline (v5 §A.3). */
+const STAGE_NAME = ['lily.stage0', 'lily.stage1', 'lily.stage2', 'lily.stage3'] as const;
+/** L87: Lily's growth, from learned skills (General = Logistics, like the learning path), so a domain switch never changes her. */
+function lilyNow(): { stage: 0 | 1 | 2 | 3; next?: number } {
+  const ids = SKILLS.map((x) => x.id);
+  const known = knownSkills(app.save, loadTickets('logistics'), ids).size;
+  return { stage: lilyStage(known, ids.length), next: toNextStage(known, ids.length) };
+}
+/** rerender(): every Lily drawn by mascot() and the teaching scene show the current stage. */
+export const syncLily = (): void => setLilyStage(lilyNow().stage);
+
+/** Platform Home (v5 §B.5): Lily (the player, at her growth stage, L87) and the tagline (v5 §A.3). */
 function helloSection(): HTMLElement {
-  return h('section', { class: 'flex items-center gap-4' }, mascot('lily', 'idle', 'size-16'),
-    h('div', {}, h('p', { class: 'm-0 text-2xl font-extrabold' }, t('app.name')), h('p', { class: 'm-0 text-muted' }, t('home.tagline'))));
+  const { stage, next } = lilyNow();
+  return h('section', { class: 'flex items-center gap-4' }, mascot('lily', 'idle', 'size-20'),
+    h('div', { class: 'min-w-0' }, h('p', { class: 'm-0 text-2xl font-extrabold' }, t('app.name')), h('p', { class: 'm-0 text-muted' }, t('home.tagline')),
+      h('p', { class: 'mt-2 mb-0 text-sm font-semibold' }, t('lily.line', { stage: t(STAGE_NAME[stage]), n: dayCount() })),
+      h('p', { class: 'm-0 text-sm text-muted' }, next === undefined ? t('lily.max') : t('lily.next', { n: next }))));
+}
+
+/** L87: the learning path's overview opens with Boon teaching Lily; kept across redraws (its loops and highlight stay). */
+let learnScene: HTMLElement | undefined;
+function teachSection(): HTMLElement | null {
+  const hash = location.hash;
+  if (learnModuleOf(hash) !== undefined || learnSkillOf(hash) || learnAdvOf(hash)) return null;
+  learnScene ??= teachScene('lg');
+  relabelScene(learnScene);
+  return learnScene;
 }
 
 /** Platform Home (v5 §B.5 #3): Logistics with its chapter and rank, then the domains that are coming (D-N3). */
@@ -367,6 +392,7 @@ function lanesSection(): HTMLElement | null {
     }), mapLane === r.port ? h('li', { class: 'rounded-xl bg-panel p-4 ring-1 ring-line' }, lanePanel(r.port, harbor, (task) => homeHooks.startLane?.(task))) : null])));
 }
 
+registerHomeSection({ id: 'teach', order: 5, span: 'full', pages: ['learn'], render: teachSection });
 registerHomeSection({ id: 'hello', order: 1, span: 'full', pages: ['home'], render: helloSection });
 registerHomeSection({ id: 'harbor', order: 5, span: 'full', pages: ['overview'], render: harborSection });
 registerHomeSection({ id: 'continue', order: 10, span: 'wide', pages: ['home', 'overview'], render: continueCard });
