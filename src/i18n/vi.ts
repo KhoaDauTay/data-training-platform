@@ -147,6 +147,7 @@ export const vi = {
   'home.kicker': 'Tin nhắn mới · Chương {n} · {title}',
   'home.progress': '{done}/{total} việc đã xong',
   'home.resume': 'Mở việc này',
+  'home.resumeLabel': 'Tiếp tục:',
   'home.chapters': 'Lộ trình {n} chương',
   'home.chaptersIntro': 'Mỗi chương mở thêm phòng ban và bảng dữ liệu. Chương đang khóa ghi rõ cần làm gì để mở.',
   'home.status.done': 'Hoàn thành · {done}/{total}',

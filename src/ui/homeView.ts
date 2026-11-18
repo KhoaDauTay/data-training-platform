@@ -2,7 +2,7 @@ import { loadTickets } from '../content';
 import { activeDomain, DOMAINS, type Domain } from '../domains';
 import { homeModel, knownSkills, kpisOf, kpiTiles, learnedSkills, LEVELS, reliesOn, type ChapterCard, type HomeModel } from '../home';
 import { getLang, t, type Key } from '../i18n';
-import { CHAPTERS, chaptersOf, chapterTitle, domainSkills, moduleTitle, rankOf, SKILLS } from '../progress';
+import { CHAPTERS, chaptersOf, chapterTitle, domainSkills, moduleTitle, nextTicket, rankOf, SKILLS } from '../progress';
 import { domainSlot } from '../save';
 import { ecomArt } from './ecomArt';
 import { domainLine } from './topbar';
@@ -108,6 +108,18 @@ function resume(id: string): void {
   else actions.selectTicket(id);
 }
 
+/** v12.0 U5: Home is across domains: one line to go on (task · domain), no colleague's message (that card is the Overview's). */
+function resumeLine(): HTMLElement | null {
+  const next = nextTicket(app.tickets, done());
+  if (!next) return null;
+  const domain = t(DOMAINS.find((d) => d.id === activeDomain())!.name);
+  return h('section', { class: cx(CARD, 'flex flex-wrap items-center gap-3 p-4'), 'aria-labelledby': 'resume-title' },
+    h('p', { id: 'resume-title', class: 'm-0 min-w-0 flex-1' },
+      h('span', { class: 'text-muted' }, t('home.resumeLabel')), ' ', h('b', {}, textOf(next, getLang()).title), h('span', { class: 'text-muted' }, ` · ${domain}`)),
+    h('button', { type: 'button', class: cx(BTN_GO, 'group flex items-center gap-2 px-4 py-2'), onclick: () => resume(next.id) },
+      t('home.resume'), icon('arrowRight', 'size-4 transition group-hover:translate-x-0.5')));
+}
+
 /** `track`/`fill`: whole class strings (height + colours). */
 function progress(value: number, label: string, track: string, fill: string): HTMLElement {
   return h('div', {
@@ -124,7 +136,7 @@ function continueCard(m: HomeModel): HTMLElement {
   const x = next ? textOf(next, lang) : undefined;
   return h('section', { class: cx(CARD, 'flex h-full flex-col gap-4 p-6'), 'aria-labelledby': 'continue-title' },
     h('p', { class: cx('m-0 flex items-center gap-2 text-sm font-semibold', chapterColor(m.chapter).text) },
-      icon('inbox', 'size-4'), t('home.kicker', { n: m.chapter, title: chapterTitle(m.chapter, lang, currentRoute() === 'home' ? CHAPTERS : chaptersOf()) })), // Home follows Logistics (renderHome)
+      icon('inbox', 'size-4'), t('home.kicker', { n: m.chapter, title: chapterTitle(m.chapter, lang, chaptersOf()) })), // Overview only (v12.0 U5)
     h('h2', { id: 'continue-title', class: 'm-0 text-xl font-bold' }, x ? x.title : t('inbox.empty')),
     next && x
       ? h('div', { class: 'flex gap-3' },
@@ -409,7 +421,8 @@ function soonSection(): HTMLElement {
 registerHomeSection({ id: 'teach', order: 5, span: 'full', pages: ['learn'], render: teachSection });
 registerHomeSection({ id: 'hello', order: 1, span: 'full', pages: ['home'], render: helloSection });
 registerHomeSection({ id: 'harbor', order: 5, span: 'full', pages: ['overview'], render: harborSection });
-registerHomeSection({ id: 'continue', order: 10, span: 'wide', pages: ['home', 'overview'], render: continueCard });
+registerHomeSection({ id: 'continue', order: 10, span: 'wide', pages: ['overview'], render: continueCard });
+registerHomeSection({ id: 'resume', order: 10, span: 'full', pages: ['home'], render: resumeLine });
 registerHomeSection({ id: 'soon', order: 10, span: 'full', pages: ['soon'], render: soonSection });
 registerHomeSection({ id: 'career', order: 20, span: 'narrow', pages: ['overview'], render: careerCard });
 registerHomeSection({ id: 'routes', order: 25, span: 'full', pages: ['map'], render: routesSection });

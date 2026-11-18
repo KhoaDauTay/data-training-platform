@@ -150,6 +150,7 @@ export const en: Record<Key, Msg> = {
   'home.kicker': 'New message · Chapter {n} · {title}',
   'home.progress': '{done}/{total} tasks done',
   'home.resume': 'Open this task',
+  'home.resumeLabel': 'Continue:',
   'home.chapters': 'The {n}-chapter path',
   'home.chaptersIntro': 'Each chapter opens new departments and data tables. Each locked chapter says what opens it.',
   'home.status.done': 'Done · {done}/{total}',
