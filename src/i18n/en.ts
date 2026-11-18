@@ -511,6 +511,7 @@ export const en: Record<Key, Msg> = {
   'nav.dashboard': 'Dashboard',
   'home.reliesOn': 'Skills: {skills}',
   'prac.skillGo': 'Practise',
+  'side.moduleSkills': '{k}/{m} skills learned',
   'side.byModule': 'Skills by module',
   'prac.toFirst': 'Go to task 1',
   'hist.empty': 'History: your runs will show here (up to 15)',

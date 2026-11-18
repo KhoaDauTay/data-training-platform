@@ -1,6 +1,6 @@
 import { loadTickets } from '../content';
 import { activeDomain, DOMAINS } from '../domains';
-import { homeModel, type ChapterStatus } from '../home';
+import { knownSkills } from '../home';
 import { getLang, t, type Key } from '../i18n';
 import { CHAPTERS, chaptersOf, chapterTitle, currentChapter, moduleTitle, rankOf, SKILLS, visibleTickets } from '../progress';
 import { gated, navLock, readTour } from '../onboarding';
@@ -23,7 +23,6 @@ export const parseSidePref = (v: unknown): SidePref => (v === 'open' ? 'open' : 
 /** The current page: a 4 px --accent bar + --accent-soft background, not colour alone (v6 §3.1). */
 const SIDE_LINK = 'flex w-full items-center gap-3 rounded-(--r-ctl) border-0 border-l-4 border-transparent bg-transparent px-3 py-2 text-left font-bold text-ink no-underline hover:bg-code aria-[current=page]:border-accent aria-[current=page]:bg-accent-soft aria-disabled:text-muted';
 const GROUP = 'side-group mt-4 mb-1 px-3 text-xs font-bold tracking-wider text-muted uppercase';
-const STATUS: Record<ChapterStatus, Key> = { done: 'home.status.done', current: 'home.status.current', locked: 'home.status.locked', soon: 'home.status.soon' };
 const WIDE = '(min-width: 1024px)';
 const XL = '(min-width: 1280px)';
 const mq = (q: string): boolean => typeof matchMedia === 'function' && matchMedia(q).matches;
@@ -59,19 +58,27 @@ function row(r: Row): HTMLElement {
     r.lock ? icon('lock', 'side-label size-3.5 text-muted') : null);
 }
 
-/** Learning path (v6 §3.3): the 12 SQL modules, one per chapter, with their state. */
+/**
+ * Learning path (v6 §3.3): the SQL modules. v12 (L82): General is never gated by a domain's chapters: every module is open; the
+ * mark says how many of its skills are learned (all: ✓, some: the number in bold, none: the number).
+ */
 function modules(): HTMLElement[] {
   const lang = getLang();
-  const m = homeModel(loadTickets('logistics'), done(), CHAPTERS, SKILLS); // General: the learning path follows Logistics (Plan 9)
-  const open = learnModuleOf(location.hash) ?? SKILLS.find((s) => s.id === learnSkillOf(location.hash))?.chapter ?? m.chapter;
-  return m.chapters.map((c) => row({
-    key: `m${c.chapter}`,
-    href: `${hashOf('learn')}/sql/${c.chapter}`,
-    lead: c.status === 'done' ? icon('check', 'size-5 text-good') : c.status === 'current' ? h('b', {}, String(c.chapter)) : icon('lock', 'size-4 text-muted'),
-    label: `${c.chapter} · ${moduleTitle(c.chapter, lang)}`,
-    sub: t(STATUS[c.status], { done: c.done, total: c.total }),
-    current: c.chapter === open,
-  }));
+  const known = knownSkills(app.save, loadTickets('logistics'), SKILLS.map((s) => s.id));
+  const first = CHAPTERS.find((c) => SKILLS.some((s) => s.chapter === c.chapter && !known.has(s.id)))?.chapter ?? 1;
+  const open = learnModuleOf(location.hash) ?? SKILLS.find((s) => s.id === learnSkillOf(location.hash))?.chapter ?? first;
+  return CHAPTERS.filter((c) => SKILLS.some((s) => s.chapter === c.chapter)).map((c) => {
+    const ids = SKILLS.filter((s) => s.chapter === c.chapter).map((s) => s.id);
+    const k = ids.filter((id) => known.has(id)).length;
+    return row({
+      key: `m${c.chapter}`,
+      href: `${hashOf('learn')}/sql/${c.chapter}`,
+      lead: k === ids.length ? icon('check', 'size-5 text-good') : h('b', { class: k ? '' : 'text-muted' }, String(c.chapter)),
+      label: `${c.chapter} · ${moduleTitle(c.chapter, lang)}`,
+      sub: t('side.moduleSkills', { k, m: ids.length }),
+      current: c.chapter === open,
+    });
+  });
 }
 
 /** Domain header: name, chapter and rank (v6 §3.1: they moved off the top bar's left). */

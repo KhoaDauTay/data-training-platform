@@ -508,6 +508,7 @@ export const vi = {
   'nav.dashboard': 'Bảng điều hành',
   'home.reliesOn': 'Kỹ năng: {skills}',
   'prac.skillGo': 'Luyện',
+  'side.moduleSkills': '{k}/{m} kỹ năng đã học',
   'side.byModule': 'Kỹ năng theo module',
   'prac.toFirst': 'Tới việc 1',
   'hist.empty': 'Lịch sử: các lần chạy của bạn sẽ hiện ở đây (tối đa 15)',

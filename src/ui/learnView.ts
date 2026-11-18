@@ -114,8 +114,8 @@ function overview(c: LearnCtx): HTMLElement {
     h('h2', { id: 'track-sql', class: H2 }, lt('learn.trackSql')),
     h('ul', { class: LIST }, ...modules.map((n) => {
       const ms = moduleState(c, n);
-      return h('li', { class: 'space-y-2 rounded-(--r-card) bg-panel px-5 py-4 ring-1 ring-line' },
-        h('a', { href: `${d$.hashOf('learn')}/sql/${n}`, class: 'font-bold' }, lt('learn.moduleTitle', { n, title: d$.moduleTitle(n, lang) }), tick(ms.done)),
+      return h('li', { class: 'relative cursor-pointer space-y-2 rounded-(--r-card) bg-panel px-5 py-4 ring-1 ring-line hover:ring-accent' }, // v12 L86: the whole card opens it
+        h('a', { href: `${d$.hashOf('learn')}/sql/${n}`, class: 'font-bold after:absolute after:inset-0' }, lt('learn.moduleTitle', { n, title: d$.moduleTitle(n, lang) }), tick(ms.done)),
         h('p', { class: 'm-0 text-sm text-muted' }, lt('learn.moduleLine', { k: ms.learned, m: ms.skills.length })),
         bar(ms.learned, ms.skills.length));
     })));
@@ -127,8 +127,8 @@ function overview(c: LearnCtx): HTMLElement {
       h('ul', { class: LIST }, ...list.map((x) => {
         const st = nodeState(c, x);
         const needs = x.needs.filter((id) => !known.has(id) && !(c.general.nodes.find((y) => y.id === id) && nodeState(c, c.general.nodes.find((y) => y.id === id)!).done));
-        return h('li', { class: 'space-y-1 rounded-(--r-card) bg-panel px-5 py-3 ring-1 ring-line' },
-          h('a', { href: `${d$.hashOf('learn')}/adv/${x.id}`, class: 'font-bold' }, `${x.id.toUpperCase()} · ${x.title[lang]}`, tick(st.done)),
+        return h('li', { class: 'relative cursor-pointer space-y-1 rounded-(--r-card) bg-panel px-5 py-3 ring-1 ring-line hover:ring-accent' },
+          h('a', { href: `${d$.hashOf('learn')}/adv/${x.id}`, class: 'font-bold after:absolute after:inset-0' }, `${x.id.toUpperCase()} · ${x.title[lang]}`, tick(st.done)),
           h('p', { class: 'm-0 text-sm text-muted' },
             `${STATUS_ICON[x.status]} ${lt(`adv.status.${x.status}` as LearnKey)}`,
             x.status === 'external' ? '' : ` · ${lt('learn.drills', { n: st.drills, total: st.total })}`,

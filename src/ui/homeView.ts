@@ -70,10 +70,17 @@ export const LIST = cx(CARD, 'm-0 list-none divide-y divide-line overflow-hidden
 export const GROUP_TITLE = 'mt-0 mb-3 text-xs font-bold tracking-wider text-muted uppercase';
 
 /** One row = one thing (v6 §3.4): 40 px lead · bold title · at most one muted line · at most one action. */
+/** A row's one action covers the whole row (v12, L86): a click anywhere on it follows the action, not only on the button. */
+export const STRETCH = 'after:absolute after:inset-0';
+/** Links inside a stretched row's text stay clickable above the cover. */
+export const ABOVE = 'relative z-10';
+
 export function listRow(r: { lead: Node; title: string; sub?: string | Node; action?: Node | null; current?: boolean; id?: string }): HTMLLIElement {
+  const act = r.action instanceof HTMLElement && /^(A|BUTTON)$/.test(r.action.tagName) && !r.action.hasAttribute('disabled') && r.action.getAttribute('aria-disabled') !== 'true' ? r.action : null;
+  if (act) act.classList.add(...STRETCH.split(' '));
   return h('li', {
     id: r.id ?? false,
-    class: cx('flex items-center gap-4 border-l-4 px-5 py-4', r.current ? 'border-l-accent bg-accent-soft' : 'border-l-transparent'),
+    class: cx('flex items-center gap-4 border-l-4 px-5 py-4', act && 'relative cursor-pointer hover:bg-code', r.current ? 'border-l-accent bg-accent-soft' : 'border-l-transparent'),
     'aria-current': r.current ? 'step' : false,
   },
     h('span', { class: 'grid size-10 shrink-0 place-items-center', 'aria-hidden': 'true' }, r.lead),
@@ -172,9 +179,9 @@ function chapterRow(c: ChapterCard): HTMLLIElement {
   const ids = reliesOn(app.tickets, c.chapter);
   const known = knownSkills(app.save, app.tickets, SKILLS.map((s) => s.id));
   const skillLink = (id: string, i: number): (Node | string)[] => [i ? ', ' : '',
-    h('a', { href: `${hashOf('learn')}/skill/${id}`, class: known.has(id) ? 'text-good' : 'text-muted' }, SKILLS.find((s) => s.id === id)?.label[lang] ?? id, known.has(id) ? ' ✓' : '')];
+    h('a', { href: `${hashOf('learn')}/skill/${id}`, class: cx(ABOVE, known.has(id) ? 'text-good' : 'text-muted') }, SKILLS.find((s) => s.id === id)?.label[lang] ?? id, known.has(id) ? ' ✓' : '')];
   const short = h('span', {}, t('home.reliesOn', { skills: '' }), ...ids.slice(0, 2).flatMap(skillLink),
-    ids.length > 2 ? h('a', { href: `${hashOf('learn')}/sql/${c.chapter}`, class: 'text-muted' }, ` +${ids.length - 2}`) : null);
+    ids.length > 2 ? h('a', { href: `${hashOf('learn')}/sql/${c.chapter}`, class: cx(ABOVE, 'text-muted') }, ` +${ids.length - 2}`) : null);
   return listRow({
     lead: closed
       ? icon('lock', 'size-5 text-muted')
