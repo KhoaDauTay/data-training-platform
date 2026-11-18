@@ -39,3 +39,39 @@ export function guideFor(ctx: GuideCtx, pref: GuidesPref | undefined): string | 
 export type GuideRegion = 'brief' | 'work' | 'dialog' | 'page';
 export const guideRegion = (slot: string): GuideRegion =>
   slot === 'drill-brief' ? 'brief' : slot === 'work' || slot === 'diff' ? 'work' : slot.startsWith('lesson-') ? 'dialog' : 'page';
+
+/** What the open page shows, read from app state by src/ui/guideList.ts (v8 §2.3). */
+export interface GuideState {
+  /** parseRoute(location.hash). */
+  route?: string;
+  /** On #/learn…: the overview, a module (its number), a skill page or an advanced node (`external` = reading links only). */
+  learn?: 'path' | number | 'skill' | 'adv' | 'adv-ext';
+  /** session.mode.kind. */
+  mode: string;
+  /** Kind of the open ticket when it is a General drill (faded | open | trap | challenge); undefined for every other ticket. */
+  drillKind?: string;
+  /** The lesson dialog is open from the General area (openLesson with guide: true); `diff` = its Try box shows the diff. */
+  lesson?: { diff: boolean };
+  /** The work pane shows the diff of a wrong drill submit (L84). */
+  diff: boolean;
+  /** Another modal is open (the welcome screen): nothing shows behind it. */
+  modal?: boolean;
+}
+
+/**
+ * The guides the open place offers, most important first (guideFor picks the first not seen). Only the General area
+ * offers any: never a story ticket, a lane task, E-commerce, a promotion review, a warm-up or the Sandbox (v8 §1.2).
+ */
+export function offeredIds(s: GuideState): string[] {
+  if (s.lesson) return [...(s.lesson.diff ? ['diff'] : []), 'lesson']; // a modal: the page's guides wait behind it
+  if (s.modal) return [];
+  if (s.route === 'learn') {
+    const l = s.learn ?? 'path';
+    return typeof l === 'number' ? ['module-intro', `module:${l}`] : [l];
+  }
+  if (s.route === 'practice') return ['practice'];
+  if (s.route !== 'play' || !s.drillKind) return [];
+  const diff = s.diff ? ['diff'] : [];
+  if (s.mode === 'drill') return [...diff, 'drill', `drill:${s.drillKind}`];
+  return s.mode === 'practice' ? [...diff, 'review'] : [];
+}

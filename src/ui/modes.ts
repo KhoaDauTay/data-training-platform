@@ -2,11 +2,11 @@ import { generalNow, loadGeneral, loadLessons, loadTicketTemplates, loadTickets 
 import type { DbClient } from '../db/client';
 import type { Drill } from '../general';
 import { knownSkills, type HomeModel } from '../home';
-import { getLang, locale, t } from '../i18n';
+import { getLang, isMac, keyLabels, locale, t } from '../i18n';
 import { LANE_XP } from '../lanes';
 import { applyResult, isSuccess, movedToday, nextCard, pickForSkill, retryItem, type PracticeItem } from '../practice';
 import { CHAPTERS, chapterTitle, moduleTitle, nextTicket, SKILLS } from '../progress';
-import { hashOf, learnAdvOf, learnModuleOf, learnSkillOf } from '../route';
+import { hashOf, learnAdvOf, learnModuleOf, learnSkillOf, parseRoute } from '../route';
 import {
   activeSchema, activeStep, activeTicket, hintsShown, isStory, markWarmupDone, practiceFinished, reviewCount, reviewedDrills, reviewToday, session, today, warmupToday, type Mode, type PracticeRun,
 } from '../session';
@@ -18,7 +18,7 @@ import { applyVariant } from '../variants';
 import { hints, renderBrief, shapeCard } from './brief';
 import { goalCard, skillChips, wrapUp } from './chapterView';
 import { announce, byId, h, nodes, richText } from './dom';
-import { boonMark, escOwned, guideHooks, tourRegion } from './coach';
+import { boonMark, escOwned, guideHooks, guideSlot } from './coach';
 import { showPane } from './paneTabs';
 import { readJson, writeJson } from '../storage';
 import { isSeen, openLesson } from './lessonCard';
@@ -93,7 +93,7 @@ const loadDrillUi = () => import('./drillBrief').then((m) => {
     db: ctx!.db, activeSchema, h, nodes, richText, byId, getLang, locale, app, actions, persist, schemaHooks, erMeta, stepKey, session, hintsShown, today,
     isSuccess, movedToday, nextCard, SKILLS, hashOf, textOf, hints, shapeCard, tryPreview, openLesson, backToStory, startDrillMode, loadGeneral, generalNow, loadLessons,
     lessonSeen: isSeen, knownSkills, learnSkillOf, learnAdvOf, learnModuleOf, moduleTitle, illustration, loadTickets, CHAPTERS,
-    announce, readJson, writeJson, readTour, boonMark, escOwned, tourRegion, guideHooks, showPane,
+    announce, readJson, writeJson, readTour, boonMark, escOwned, guideHooks, guideSlot, showPane, parseRoute, mod: keyLabels(isMac).mod,
   });
   return (drillUi = m);
 });
@@ -283,7 +283,8 @@ function reviewCard(m: HomeModel): HTMLElement {
   const none = m.learned === 0 && Object.keys(app.save.review).length === 0;
   const intro = none ? t('prac.locked') : t(due ? 'prac.dueIntro' : 'prac.noneDue', { n: due });
   const p = app.save.practice;
-  return h('section', { class: cx(CARD, 'flex flex-wrap items-center gap-4 p-5'), 'aria-labelledby': 'review-title' },
+  const here = parseRoute(location.hash) === 'practice'; // v13 G7: Boon's guide on the Practise SQL page only
+  return h('div', {}, h('section', { class: cx(CARD, 'flex flex-wrap items-center gap-4 p-5'), 'aria-labelledby': 'review-title' },
     none ? mascot('lily', 'sleep', 'size-16') : null, // v6 §2.4: an empty state
     !none && !due ? h('div', { class: 'w-40 shrink-0' }, illustration('aspect-[240/120]', (il) => il.emptyDrills())) : null, // Plan 8b: nothing due
     h('div', { class: 'min-w-0 flex-1' },
@@ -292,7 +293,9 @@ function reviewCard(m: HomeModel): HTMLElement {
       p.solved + p.weak ? h('p', { class: 'mt-1 mb-0 text-sm text-muted' }, t('prac.stats', { solved: p.solved, weak: p.weak })) : null),
     due ? h('button', { type: 'button', class: cx(BTN_GO, 'px-4 py-2'), onclick: () => startToday() }, t('prac.today', { n: due })) : null,
     // v4 §B.3: nothing learned yet → one way forward.
-    none ? h('button', { type: 'button', class: cx(BTN_GO, 'px-4 py-2'), onclick: () => { location.hash = '#/learn/sql/1'; } }, t('prac.toFirst')) : null);
+    none ? h('button', { type: 'button', class: cx(BTN_GO, 'px-4 py-2'), onclick: () => { location.hash = '#/learn/sql/1'; } }, t('prac.toFirst')) : null,
+    here ? guideHooks.replayBtn?.('practice') ?? null : null),
+  here ? guideSlot('practice-review') : null);
 }
 
 /** Home "Chapter warm-up" (curriculum §5.2): recall tasks from earlier chapters when a chapter starts. Never blocks its first ticket. */

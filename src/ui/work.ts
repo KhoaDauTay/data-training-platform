@@ -23,7 +23,7 @@ import { errorNote, errorText, errorView, gradeMessage, mascotOf, runSummary, vo
 import { mascot, type Mascot, type Pose } from './mascots';
 import { showPane } from './paneTabs';
 import { pageShortcutOf } from './shortcuts';
-import { boonRegion, tourSlot } from './coach';
+import { boonRegion, guideHooks, guideSlot, refreshGuides, tourSlot } from './coach';
 import type { Panel } from './tabs';
 
 export interface WorkDeps {
@@ -125,9 +125,10 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
   const feedback = h('div', { role: 'status' });
   /** A drill's wrong answer (L84): the rows that differ, outside the status line so a screen reader reads one sentence. */
   const detailBox = h('div');
+  guideHooks.diff = () => !!message?.detail; // v13 G6: the diff of a wrong drill submit is showing
   const historyBox = h('details', { class: 'mt-2 text-sm' });
   // The tour's mark sits under the buttons, never over the editor (v4 §B.2); main.ts refreshTour() refills it.
-  host.replaceChildren(editorHost, h('div', { class: 'max-md:sticky max-md:bottom-14 max-md:z-10 max-md:bg-panel' }, h('div', { class: 'actions' }, runBtn, submitBtn, explainBtn, formatBtn)), tourSlot('work'), feedback, detailBox, historyBox);
+  host.replaceChildren(editorHost, h('div', { class: 'max-md:sticky max-md:bottom-14 max-md:z-10 max-md:bg-panel' }, h('div', { class: 'actions' }, runBtn, submitBtn, explainBtn, formatBtn)), tourSlot('work'), guideSlot('work'), feedback, detailBox, guideSlot('diff'), historyBox);
 
   // The buttons advertise Mod+Enter / Mod+Shift+Enter: honour them when focus is outside the editor too
   // (on a button after a click, the brief heading after picking a ticket). Inside the editor CodeMirror's
@@ -147,6 +148,7 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
     message = { kind, view, who, detail };
     fillNote = false;
     drawMessage();
+    refreshGuides(); // v13 G6: a drill's diff may call Boon's guide
   }
   function drawMessage(): void {
     feedback.className = message ? FEEDBACK[message.kind] : '';

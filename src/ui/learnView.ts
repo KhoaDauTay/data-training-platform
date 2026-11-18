@@ -4,6 +4,7 @@ import { learnText, type LearnKey } from '../i18n/learn';
 import { CHALLENGE_XP, moduleState, nodeState, skillState, type LearnCtx } from '../learn';
 import type { Skill } from '../progress';
 import type { DrillDeps } from './drillBrief';
+import { replayBtn } from './guideList';
 
 /**
  * Learning path (Plan 8a Task 9–10, D8a-14): #/learn (two tracks), #/learn/sql/<n> (a module), #/learn/skill/<id>,
@@ -19,6 +20,10 @@ const BTN = 'rounded-full px-4 whitespace-nowrap';
 const ABOVE = 'relative z-10';
 const cx = (...c: string[]): string => c.join(' ');
 const H2 = 'm-0 text-lg font-bold';
+/** The "‹ back" line with "Boon chỉ mình" on its right (v8 §2.1). */
+const backLine = (href: string, text: string, guide: string): HTMLElement =>
+  d$.h('p', { class: 'm-0 flex flex-wrap items-center justify-between gap-2' }, d$.h('a', { href }, text), replayBtn(guide));
+const slot = (name: string): HTMLElement => d$.guideSlot(name);
 
 function ctx(g: General): LearnCtx {
   const { app } = d$;
@@ -67,7 +72,7 @@ function skillBlock(c: LearnCtx, s: Skill, heading: 'h2' | 'h3'): HTMLElement {
     h('p', { class: 'm-0 text-[15px] text-muted' }, s.when[d$.getLang()]),
     d$.loadLessons().has(s.id)
       ? h('p', { class: 'm-0 flex flex-wrap items-center gap-2' }, h('span', {}, lt('learn.lesson')),
-        h('button', { type: 'button', class: cx(BTN, ABOVE), 'aria-haspopup': 'dialog', onclick: () => d$.openLesson(s.id) }, lt('drill.openLesson'), tick(st.lesson)))
+        h('button', { type: 'button', class: cx(BTN, ABOVE), 'aria-haspopup': 'dialog', onclick: () => d$.openLesson(s.id, undefined, { guide: true }) }, lt('drill.openLesson'), tick(st.lesson)))
       : null,
     h('div', { class: 'flex flex-wrap items-center gap-2' }, h('span', {}, lt('learn.drillsLine')),
       ...drills.map((d) => drillButton(d, c.save.completed.includes(d.id)))));
@@ -77,11 +82,12 @@ function modulePage(c: LearnCtx, n: number): HTMLElement {
   const { h } = d$;
   const ms = moduleState(c, n);
   return h('div', { class: 'space-y-5' },
-    h('p', { class: 'm-0' }, h('a', { href: d$.hashOf('learn') }, lt('learn.backAll'))),
+    backLine(d$.hashOf('learn'), lt('learn.backAll'), 'module-intro'),
     h('div', { class: 'flex items-center gap-3' }, h('div', { class: 'w-28 shrink-0' }, d$.illustration('aspect-[160/64]', (il) => il.moduleGlyph(n))), // Plan 8b
       h('h2', { class: 'm-0 text-xl font-bold' }, lt('learn.moduleTitle', { n, title: d$.moduleTitle(n, d$.getLang()) }))),
     h('p', { class: 'm-0 text-muted' }, lt('learn.moduleLine', { k: ms.learned, m: ms.skills.length })),
-    ...d$.SKILLS.filter((s) => s.chapter === n).map((s) => skillBlock(c, s, 'h3')));
+    slot('module-head'),
+    ...d$.SKILLS.filter((s) => s.chapter === n).flatMap((s, i) => (i ? [skillBlock(c, s, 'h3')] : [slot('module-skill'), skillBlock(c, s, 'h3')])));
 }
 
 function skillPage(c: LearnCtx, s: Skill): HTMLElement {
@@ -89,8 +95,10 @@ function skillPage(c: LearnCtx, s: Skill): HTMLElement {
   const lang = d$.getLang();
   const lesson = d$.loadLessons().get(s.id);
   return h('div', { class: 'space-y-5' },
-    h('p', { class: 'm-0' }, h('a', { href: `${d$.hashOf('learn')}/sql/${s.chapter}` }, lt('learn.backModule', { n: s.chapter }))),
+    backLine(`${d$.hashOf('learn')}/sql/${s.chapter}`, lt('learn.backModule', { n: s.chapter }), 'skill'),
+    slot('skill-head'),
     skillBlock(c, s, 'h2'),
+    slot('skill-card'),
     h('section', { class: 'space-y-2 rounded-(--r-card) bg-panel p-5 ring-1 ring-line', 'aria-labelledby': 'skill-card' },
       h('h3', { id: 'skill-card', class: 'm-0 font-bold' }, lt('learn.card')),
       // L93: General shows the lesson's example and mistake (lab, a shop chain), not the card's domain syntax and trap (L82).
@@ -119,6 +127,7 @@ function overview(c: LearnCtx): HTMLElement {
   const modules = [...new Set(c.skills.map((s) => s.chapter))].sort((a, b) => a - b);
   const sql = h('section', { class: 'min-w-0 space-y-3', 'aria-labelledby': 'track-sql' },
     h('h2', { id: 'track-sql', class: H2 }, lt('learn.trackSql')),
+    slot('learn-sql'),
     h('ul', { class: LIST }, ...modules.map((n) => {
       const ms = moduleState(c, n);
       return h('li', { class: 'relative cursor-pointer space-y-2 rounded-(--r-card) bg-panel px-5 py-4 ring-1 ring-line hover:ring-accent' }, // v12 L86: the whole card opens it
@@ -129,6 +138,7 @@ function overview(c: LearnCtx): HTMLElement {
   const groups = (['A', 'B', 'C', 'D'] as const).map((gr) => [gr, c.general.nodes.filter((x) => x.group === gr)] as const);
   const adv = h('section', { id: 'adv', class: 'min-w-0 space-y-3', 'aria-labelledby': 'track-adv' },
     h('h2', { id: 'track-adv', class: H2 }, lt('learn.trackAdv')),
+    slot('learn-adv'),
     ...groups.map(([gr, list]) => h('div', { class: 'space-y-2' },
       h('h3', { class: 'm-0 text-sm font-bold tracking-wide text-muted uppercase' }, lt(`adv.group.${gr}` as LearnKey)),
       h('ul', { class: LIST }, ...list.map((x) => {
@@ -143,7 +153,8 @@ function overview(c: LearnCtx): HTMLElement {
       })))));
   return h('div', { class: 'space-y-5' },
     // L87: the header picture is Boon teaching Lily, section 'teach' of src/ui/homeView.ts (main), drawn above this one
-    h('p', { class: 'm-0 text-muted' }, lt('learn.stats', { n: known.size, total: c.skills.length, m: mastered, k: nodesDone, nodes: graded.length })),
+    slot('learn-head'), // v13 G1 step 1: right under the teaching scene, Boon speaks from it
+    h('p', { class: 'm-0 flex flex-wrap items-center justify-between gap-2 text-muted' }, lt('learn.stats', { n: known.size, total: c.skills.length, m: mastered, k: nodesDone, nodes: graded.length }), replayBtn('path')),
     h('div', { class: 'grid gap-6 lg:grid-cols-2' }, sql, adv));
 }
 
@@ -167,7 +178,7 @@ function advPage(c: LearnCtx, x: AdvNode): HTMLElement {
   };
   const needs = x.needs.flatMap((id, i) => (i ? [', ', need(id)] : [need(id)]));
   return h('div', { class: 'space-y-5' },
-    h('p', { class: 'm-0' }, h('a', { href: `${d$.hashOf('learn')}` }, lt('learn.backAll'))),
+    backLine(d$.hashOf('learn'), lt('learn.backAll'), x.status === 'external' ? 'adv-ext' : 'adv'),
     h('h2', { class: 'm-0 text-xl font-bold' }, `${x.id.toUpperCase()} · ${x.title[lang]}`),
     h('p', { class: 'm-0 text-sm text-muted' }, `${STATUS_ICON[x.status]} ${lt(`adv.status.${x.status}` as LearnKey)}`,
       x.status === 'external' ? '' : ` · ${lt('learn.drills', { n: st.drills, total: st.total })}`),
@@ -175,20 +186,23 @@ function advPage(c: LearnCtx, x: AdvNode): HTMLElement {
     h('div', { class: 'text-[15px] leading-relaxed' }, d$.richText(x.why[lang])),
     st.done ? h('p', { class: 'm-0 font-bold text-good', role: 'status' }, lt('adv.done', { xp: CHALLENGE_XP })) : null,
     x.needs.length ? h('p', { class: 'm-0' }, h('b', {}, lt('adv.needs')), ' ', ...needs) : null,
+    x.needs.length ? slot('adv-needs') : null,
     x.applies ? h('p', { class: 'm-0' }, h('b', {}, lt('learn.usedFor')), ' ', x.applies[lang]) : null,
     x.lesson
       ? h('p', { class: 'm-0 flex flex-wrap items-center gap-2' }, h('span', {}, lt('learn.lesson')),
-        h('button', { type: 'button', class: cx(BTN, ABOVE), 'aria-haspopup': 'dialog', onclick: () => d$.openLesson(x.id, { lesson: x.lesson!, name: () => x.title[d$.getLang()] }) },
+        h('button', { type: 'button', class: cx(BTN, ABOVE), 'aria-haspopup': 'dialog', onclick: () => d$.openLesson(x.id, { lesson: x.lesson!, name: () => x.title[d$.getLang()] }, { guide: true }) },
           lt('drill.openLesson'), tick(d$.lessonSeen(x.id))))
       : null,
     x.drills.length
       ? h('div', { class: 'flex flex-wrap items-center gap-2' }, h('span', {}, lt('learn.drillsLine')),
         ...x.drills.map((d) => drillButton(d, c.save.completed.includes(d.id))))
-      : null),
+      : null,
+    x.drills.length ? slot('adv-drills') : null),
     x.links.length
       ? h('section', { class: 'space-y-1' }, h('h3', { class: 'm-0 font-bold' }, lt('adv.links')),
         h('ul', { class: 'm-0 list-disc space-y-1 pl-5' }, ...x.links.map((l) => h('li', {},
           h('a', { href: l.url, target: '_blank', rel: 'noopener noreferrer' }, l.title[lang], ' ↗',
             h('span', { class: 'sr-only' }, ` (${lt('adv.newTab')})`))))))
-      : null);
+      : null,
+    slot('adv-links'));
 }

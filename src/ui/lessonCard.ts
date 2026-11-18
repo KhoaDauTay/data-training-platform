@@ -12,7 +12,7 @@ import { byId, h, nodes, richText } from './dom';
 import { errorText, errorView } from './feedback';
 import { skillIcon } from './icons';
 import { renderResult } from './resultTable';
-import { boonRegion, markExampleRan, tourSlot } from './coach';
+import { boonRegion, guideHooks, guideSlot, markExampleRan, refreshGuides, tourSlot } from './coach';
 import { mascot } from './mascots';
 import { readTour } from '../onboarding';
 import { diffView, runOn, tryPreview, verdictText } from './tryPreview';
@@ -55,8 +55,9 @@ function quiet(titleId: string): boolean {
   return titleId === 'lesson-dialog-title' ? r === 'dialog' : r === 'brief' || r === 'lesson';
 }
 
-function card(l: Lesson, titleId: string, actions: HTMLElement[], tour = false): HTMLElement {
+function card(l: Lesson, titleId: string, actions: HTMLElement[], tour = false, guided = false): HTMLElement {
   const lang = getLang();
+  const gslot = (name: string): HTMLElement | null => (guided ? guideSlot(name) : null); // v13 G4/G6: only the dialog opened from the General area
   const exampleOut = h('div', { class: 'mt-2' });
   const drawExample = (): void => {
     const e = examples.get(l.id);
@@ -73,6 +74,7 @@ function card(l: Lesson, titleId: string, actions: HTMLElement[], tour = false):
           runExample.disabled = false;
           drawExample();
           markExampleRan(l.id); // tour step 4
+          if (guided) guideHooks.ran?.(); // v13 G4: on to the next step
           if (!exampleOut.isConnected) appActions.rerender(); // the brief was redrawn while it ran (e.g. DB still booting): show it there
         });
     },
@@ -93,6 +95,7 @@ function card(l: Lesson, titleId: string, actions: HTMLElement[], tour = false):
     verdict.className = cx('mb-0', v && (v.ok ? 'good' : 'bad'));
     verdict.textContent = v ? v.text() : '';
     detail.replaceChildren(...nodes(v?.fail && diffView(v.fail)));
+    if (guided) refreshGuides(); // v13 G6: the diff may have come or gone
   };
   const drawYours = (): void => {
     const r = tryRuns.get(l.id);
@@ -214,20 +217,22 @@ function card(l: Lesson, titleId: string, actions: HTMLElement[], tour = false):
   drawBoon();
 
   const skill = skillOf(l.id);
-  return h('section', { class: 'my-3 rounded-xl bg-panel p-3 ring-1 ring-accent', 'aria-labelledby': titleId },
+  return h('section', { class: 'group my-3 rounded-xl bg-panel p-3 ring-1 ring-accent', 'aria-labelledby': titleId },
     h('div', { class: 'flex flex-wrap items-center justify-between gap-2' },
       h('h3', { id: titleId, tabindex: '-1', class: 'm-0 flex items-center gap-2' },
         // v12 (L87): Boon teaches the lesson; left out while his tour mark is in the same pane (one mascot per region)
-        tour || quiet(titleId) ? skillIcon(l.id, 'size-5') : mascot('boon', 'point', 'size-10 shrink-0'),
+        // v13: in the General dialog a guide mark may come and go without a redraw: CSS swaps Boon for the skill icon (v8 §2.4)
+        ...(guided ? [mascot('boon', 'point', 'size-10 shrink-0 group-has-[[data-guide-mark]]:hidden'), skillIcon(l.id, 'size-5 hidden group-has-[[data-guide-mark]]:block')]
+          : [tour || quiet(titleId) ? skillIcon(l.id, 'size-5') : mascot('boon', 'point', 'size-10 shrink-0')]),
         t('lesson.title', { skill: label(l.id) })),
       h('div', { class: 'flex gap-1.5' }, ...actions)),
     h('div', { class: 'mt-2' }, richText(l.concept[lang])),
     skill ? h('p', { class: 'mt-2 mb-0' }, h('b', {}, t('lesson.syntax')), ' ', h('code', {}, skill.syntax)) : null,
-    section(t('lesson.example'), h('pre', { class: 'sql' }, l.example), runExample, tour ? tourSlot('lesson') : null, exampleOut, richText(byMarker(l.explain[lang]))),
-    section(t('lesson.mistake'), h('pre', { class: 'sql' }, l.mistake.sql), richText(l.mistake.why[lang])),
+    section(t('lesson.example'), h('pre', { class: 'sql' }, l.example), runExample, tour ? tourSlot('lesson') : null, gslot('lesson-example'), exampleOut, richText(byMarker(l.explain[lang]))),
+    section(t('lesson.mistake'), h('pre', { class: 'sql' }, l.mistake.sql), richText(l.mistake.why[lang]), gslot('lesson-mistake')),
     l.cues[lang].length ? section(t('lesson.cues'), h('p', { class: 'm-0' }, l.cues[lang].join(' · '))) : null,
-    section(t('lesson.try'), richText(l.try.task[lang]), tryPreview(l.try.solution, lessonSchema(l)), area,
-      h('div', { class: 'actions mb-0' }, runMine, boonBtn, check), boonBox, verdict, detail, yours),
+    section(t('lesson.try'), richText(l.try.task[lang]), gslot('lesson-try'), tryPreview(l.try.solution, lessonSchema(l)), area,
+      h('div', { class: 'actions mb-0' }, runMine, boonBtn, check), gslot('lesson-try-actions'), boonBox, verdict, detail, gslot('lesson-diff'), yours),
     h('p', { class: 'mt-3 mb-0 text-sm' }, h('a', { href: l.docs, target: '_blank', rel: 'noopener noreferrer' }, t('lesson.docs'))));
 }
 
@@ -280,19 +285,27 @@ export function lessonSlot(grants: string[]): HTMLElement | null {
   return host;
 }
 
-/** A skill chip or the handbook: the same card in a modal dialog, readable before the task that teaches it; focus returns to the opener. */
-export function openLesson(id: string, node?: { lesson: Lesson; name: () => string }): void {
+/**
+ * A skill chip or the handbook: the same card in a modal dialog, readable before the task that teaches it; focus returns to the opener.
+ * `guide`: opened from the General area (learning path, drill desk), where Boon's guides G4/G6 may show (v8 §2.2); never from a story chip.
+ */
+export function openLesson(id: string, node?: { lesson: Lesson; name: () => string }, opts?: { guide?: boolean }): void {
   if (node) names.set(id, node.name);
   const l = node?.lesson ?? loadLessons().get(id);
   if (!l) return;
   const dialog = byId('lesson-dialog') as HTMLDialogElement;
   const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+  const guided = !!opts?.guide;
+  guideHooks.lesson = guided ? { diff: () => !!verdicts.get(l.id)?.fail } : undefined; // before card(): the guide engine reads it
   dialog.replaceChildren(card(l, 'lesson-dialog-title', [
+    guided ? guideHooks.replayBtn?.('lesson') ?? null : null,
     h('button', { type: 'button', onclick: () => { markSeen(id, false); dialog.close(); } }, `${t('lesson.gotIt')} ✓`),
     h('button', { type: 'button', onclick: () => dialog.close() }, t('app.close')),
-  ]));
+  ].filter((b): b is HTMLElement => !!b), false, guided));
   dialog.onclose = () => {
+    guideHooks.lesson = undefined;
     if (opener?.isConnected) opener.focus();
   };
   if (!dialog.open) dialog.showModal();
+  if (guided) refreshGuides();
 }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { GUIDES_MAX, guideFor, guideRegion, parseGuides, withSeen } from '../src/guides';
+import { GUIDES_KEY, GUIDES_MAX, guideFor, guideRegion, offeredIds, parseGuides, withSeen } from '../src/guides';
 
 describe('parseGuides (pref cargo-query/guides, v8 §2.1)', () => {
   it('reads a good pref', () => {
@@ -81,7 +81,7 @@ describe('guide engine (ui/guide.ts)', () => {
     let stored = opts.stored;
     const slot = { dataset: { guideSlot: 'drill-brief' }, offsetParent: {}, firstElementChild: null as Mark | null, replaceChildren(m?: Mark) { this.firstElementChild = m ?? null; } };
     const title = { offsetParent: {}, focus: vi.fn(), hasAttribute: () => true };
-    const doc = { activeElement: undefined as unknown, querySelectorAll: (sel: string) => (sel.includes('brief-title') ? [title] : [slot]), querySelector: () => slot.firstElementChild, addEventListener() {} };
+    const doc = { activeElement: undefined as unknown, querySelectorAll: (sel: string) => (sel.includes('tour-mark') ? [] : sel.includes('brief-title') ? [title] : [slot]), querySelector: () => slot.firstElementChild, addEventListener() {} };
     vi.stubGlobal('document', doc);
     vi.stubGlobal('requestAnimationFrame', () => 0);
     const g = await import('../src/ui/guide');
@@ -163,9 +163,74 @@ describe('guide engine (ui/guide.ts)', () => {
     expect(s.title.focus).toHaveBeenCalled();
   });
 
+  it('Done marks the `also` ids seen and runs `done` (G1: Lily cheers); Skip does not run it', async () => {
+    const s = await setup();
+    let cheers = 0;
+    s.g.offerGuides(() => [{ id: 'module-intro', also: ['module:1'], done: () => cheers++, steps: [{ slot: 'drill-brief', text: () => 'm' }] }]);
+    s.g.replayGuide('module-intro');
+    s.click('Skip (Esc)');
+    expect(cheers).toBe(0);
+    s.g.replayGuide('module-intro');
+    s.click('Done');
+    expect(s.stored()).toEqual({ seen: ['module-intro', 'module:1'], off: false });
+    expect(cheers).toBe(1);
+  });
+
   it('an auto-shown mark never takes focus', async () => {
     const s = await setup();
     s.hooks.refresh!();
     expect(s.mark()!.focus).not.toHaveBeenCalled();
+  });
+});
+
+describe('offeredIds (v8 §2.3, General area only)', () => {
+  const base = { mode: 'story', diff: false };
+  it('learning path pages', () => {
+    expect(offeredIds({ ...base, route: 'learn' })).toEqual(['path']);
+    expect(offeredIds({ ...base, route: 'learn', learn: 3 })).toEqual(['module-intro', 'module:3']);
+    expect(offeredIds({ ...base, route: 'learn', learn: 'skill' })).toEqual(['skill']);
+    expect(offeredIds({ ...base, route: 'learn', learn: 'adv' })).toEqual(['adv']);
+    expect(offeredIds({ ...base, route: 'learn', learn: 'adv-ext' })).toEqual(['adv-ext']);
+    expect(offeredIds({ ...base, route: 'practice' })).toEqual(['practice']);
+  });
+  it('the drill desk: the diff first, then the desk, then the kind', () => {
+    expect(offeredIds({ route: 'play', mode: 'drill', drillKind: 'trap', diff: false })).toEqual(['drill', 'drill:trap']);
+    expect(offeredIds({ route: 'play', mode: 'drill', drillKind: 'open', diff: true })).toEqual(['diff', 'drill', 'drill:open']);
+    expect(offeredIds({ route: 'play', mode: 'practice', drillKind: 'open', diff: true })).toEqual(['diff', 'review']);
+  });
+  it('the lesson dialog from the General area hides the page guides', () => {
+    expect(offeredIds({ ...base, route: 'learn', lesson: { diff: false } })).toEqual(['lesson']);
+    expect(offeredIds({ ...base, route: 'play', mode: 'drill', drillKind: 'open', lesson: { diff: true } })).toEqual(['diff', 'lesson']);
+  });
+  it('nothing behind another modal (the welcome screen picks "SQL only" and opens the path behind it)', () => {
+    expect(offeredIds({ ...base, route: 'learn', modal: true })).toEqual([]);
+  });
+  it('never in story, lane, sandbox, a promotion review, a warm-up, E-com or on Home', () => {
+    for (const mode of ['story', 'lane', 'sandbox', 'practice']) expect(offeredIds({ route: 'play', mode, diff: true })).toEqual([]);
+    expect(offeredIds({ route: 'play', mode: 'story', drillKind: 'open', diff: false })).toEqual([]); // a stale kind outside drill/practice
+    for (const route of ['home', 'overview', 'data', 'dashboard', 'map', 'soon', undefined]) expect(offeredIds({ route, mode: 'drill', drillKind: 'open', diff: true })).toEqual([]);
+  });
+});
+
+describe('guide slots (v8 §3.9: every slot a guide names is drawn by a page)', () => {
+  const UI = import.meta.glob('../src/ui/*.ts', { query: '?raw', import: 'default', eager: true }) as Record<string, string>;
+  const SLOTS = ['learn-head', 'learn-sql', 'learn-adv', 'module-head', 'module-skill', 'skill-head', 'skill-card',
+    'lesson-example', 'lesson-mistake', 'lesson-try', 'lesson-try-actions', 'lesson-diff', 'drill-brief', 'work', 'diff',
+    'practice-review', 'practice-hub', 'adv-needs', 'adv-drills', 'adv-links'];
+  const drawn = new Set(Object.values(UI).flatMap((code) => [...code.matchAll(/\b(?:guideSlot|slot|gslot)\('([a-z-]+)'\)/g)].map((m) => m[1])));
+  it('each slot of the guide table has a placeholder in the page code', () => {
+    for (const s of SLOTS) expect(drawn, s).toContain(s);
+  });
+  it('the guide list names no other slot', () => {
+    const list = UI['../src/ui/guideList.ts'];
+    const named = [...list.matchAll(/(?:step\(|slot: )'([a-z-]+)'/g)].map((m) => m[1]);
+    expect(named.length).toBeGreaterThan(10);
+    for (const s of named) expect(SLOTS, s).toContain(s);
+    for (const x of ['example', 'mistake', 'try', 'try-actions']) expect(SLOTS).toContain(`lesson-${x}`); // built as `lesson-${x}`
+  });
+  it("main's ⋯ reset writes the same pref key (main never imports src/guides.ts)", async () => {
+    const main = (await import('../src/main.ts?raw')).default as string;
+    expect(main).toContain(`'${GUIDES_KEY}'`);
+    expect(main).not.toMatch(/from '\.\/guides'/);
   });
 });

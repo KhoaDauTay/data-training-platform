@@ -592,6 +592,7 @@ export const en: Record<Key, Msg> = {
   'prac.toFirst': 'Start Module 1',
   'hist.empty': 'History: your runs will show here (up to 15)',
   'tour.replay': 'Replay the tour',
+  'guide.reset': "Turn Boon's guides back on",
   'lock.afterTask1': 'Opens after your first task',
   'tour.label': 'Tour {i}/{n}',
   'tour.1': 'I am Boon, and I will walk you through your first task. This is a message from {name}. The Task part is the question; the Expected result card says how many columns and rows you need.',

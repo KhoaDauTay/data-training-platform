@@ -179,7 +179,19 @@ export function initTour(): void {
 // ---- Boon's guides in the General area (v13, product-design-v8 §2): the engine lives in the learnui chunk (ui/guide.ts) ----
 
 /** Filled by ui/guide.ts when the learnui chunk loads; until then no guide shows and boonRegion() is the tour's alone. */
-export const guideHooks: { refresh?: () => void; region?: () => string | undefined } = {};
+export const guideHooks: {
+  refresh?: () => void; region?: () => string | undefined;
+  /** "Boon chỉ mình" (v8 §2.1): the guide `id` again from step 1. */
+  replay?: (id: string) => void;
+  /** The "Boon chỉ mình" button of guide `id` (its text lives in the learnui chunk). */
+  replayBtn?: (id: string) => HTMLElement;
+  /** A lesson's example ran (G4 moves on). */
+  ran?: () => void;
+  /** Set by lessonCard.ts while the lesson dialog is open from the General area; `diff`: its Try box shows the diff. */
+  lesson?: { diff: () => boolean };
+  /** Set by work.ts: the work pane shows the diff of a wrong drill submit. */
+  diff?: () => boolean;
+} = {};
 /** An empty placeholder a page draws where a guide step may point (`data-guide-slot`, beside the tour's slots, never inside them). */
 export const guideSlot = (slot: string): HTMLElement => h('div', { 'data-guide-slot': slot });
 /** After rerender(): refill every guide slot on the page. */

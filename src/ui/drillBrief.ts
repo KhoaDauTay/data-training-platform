@@ -7,6 +7,7 @@ import type * as I18n from '../i18n';
 import { learnText, type LearnKey } from '../i18n/learn';
 import { learnPage as drawLearn } from './learnView';
 import { initGuides, type GuideDeps } from './guide';
+import { initGuideList, replayBtn } from './guideList';
 import { drillXp } from '../learn';
 import type * as Practice from '../practice';
 import type * as Progress from '../progress';
@@ -45,6 +46,8 @@ export interface DrillDeps extends GuideDeps {
   learnModuleOf: typeof Route.learnModuleOf; knownSkills: typeof Home.knownSkills; moduleTitle: typeof Progress.moduleTitle; illustration: typeof ArtLoad.illustration;
   // Plan 9 D9-12: the General area reads Logistics, whatever domain is open
   loadTickets: typeof Content.loadTickets; CHAPTERS: typeof Progress.CHAPTERS;
+  // v13 guides (ui/guideList.ts)
+  parseRoute: typeof Route.parseRoute; mod: string;
 }
 
 let d$: DrillDeps;
@@ -61,6 +64,7 @@ type DrillMode = Extract<Session.Mode, { kind: 'drill' }>;
 export function initDrill(deps: DrillDeps): void {
   d$ = deps;
   initGuides(deps); // v13: Boon's guides (ui/guide.ts), in this chunk
+  initGuideList(deps);
   deps.schemaHooks.only = () => (deps.activeSchema() === 'lab' ? labCols : undefined); // a drill, or a review drill in Practice
 }
 
@@ -135,13 +139,15 @@ function drillParts(g: General, d: Drill, tk: Ticket): (Node | null | false | un
   const node = d.node ? g.nodes.find((n) => n.id === d.node) : undefined;
   const lessonBtn = (open: () => void) => h('button', { type: 'button', class: 'px-2 py-0.5 text-sm', onclick: open }, lt('drill.openLesson'));
   const lesson = d.skill
-    ? d$.loadLessons().has(d.skill) && lessonBtn(() => d$.openLesson(d.skill!))
-    : node?.lesson && lessonBtn(() => d$.openLesson(node.id, { lesson: node.lesson!, name: () => node.title[d$.getLang()] }));
+    ? d$.loadLessons().has(d.skill) && lessonBtn(() => d$.openLesson(d.skill!, undefined, { guide: true }))
+    : node?.lesson && lessonBtn(() => d$.openLesson(node.id, { lesson: node.lesson!, name: () => node.title[d$.getLang()] }, { guide: true }));
   return [
     h('header', {},
       h('h2', TITLE, title),
-      h('p', { class: 'mt-1 mb-0 text-sm text-muted' }, lt(`drill.kind.${d.kind}` as LearnKey))),
+      h('p', { class: 'mt-1 mb-0 flex flex-wrap items-center gap-2 text-sm text-muted' }, lt(`drill.kind.${d.kind}` as LearnKey),
+        replayBtn(d$.session.mode.kind === 'drill' ? 'drill' : 'review'))),
     h('div', { class: 'mt-3 text-[15px] leading-relaxed' }, richText(d.task[lang])),
+    d$.guideSlot('drill-brief'), // v13 G5/G7: under the task
     h('p', { class: 'text-sm text-muted' }, lt('drill.data')),
     d$.shapeCard(tk, 0),
     d$.tryPreview(tk.steps[0].solution, 'lab'), // L84: the tables it reads and a sample of the expected result (practice, not story)
@@ -216,7 +222,8 @@ export function practiceHub(): HTMLElement | null {
     h('button', { type: 'button', class: BTN, onclick: () => d$.actions.startDrill(d.id) }, label);
   const head = h('h2', { id: 'hub-title', class: 'm-0 text-lg font-bold' }, lt('hub.title'));
   const wrap = (...kids: (Node | null)[]): HTMLElement =>
-    h('section', { class: 'space-y-3 rounded-(--r-card) bg-panel p-5 ring-1 ring-line', 'aria-labelledby': 'hub-title' }, head, ...d$.nodes(...kids));
+    h('div', {}, h('section', { class: 'space-y-3 rounded-(--r-card) bg-panel p-5 ring-1 ring-line', 'aria-labelledby': 'hub-title' }, head, ...d$.nodes(...kids)),
+      d$.guideSlot('practice-hub')); // v13 G7
   if (known.size === 0) {
     return wrap(h('p', { class: 'm-0 text-[15px] text-muted' }, lt('hub.empty')),
       h('a', { href: `${d$.hashOf('learn')}/sql/1`, class: 'inline-block rounded-full bg-accent px-4 py-2 font-bold text-on-accent no-underline shadow-sm hover:shadow-md' }, lt('hub.start'))); // looks like the call to action it is (BTN_GO, by value: lazy chunk)

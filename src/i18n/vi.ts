@@ -590,6 +590,7 @@ export const vi = {
   'prac.toFirst': 'Bắt đầu Phần 1',
   'hist.empty': 'Lịch sử: các lần chạy của bạn sẽ hiện ở đây (tối đa 15)',
   'tour.replay': 'Xem lại hướng dẫn',
+  'guide.reset': 'Bật lại hướng dẫn của Boon',
   'lock.afterTask1': 'Mở sau khi xong việc đầu tiên',
   'tour.label': 'Hướng dẫn {i}/{n}',
   'tour.1': 'Mình là Boon, mình dẫn bạn qua việc đầu tiên. Đây là tin nhắn của {name}. Phần Yêu cầu là câu hỏi; thẻ Kết quả mong đợi cho biết cần mấy cột, mấy dòng.',

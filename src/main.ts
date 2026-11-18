@@ -460,6 +460,12 @@ Object.assign(actions, {
 byId('inbox-btn').addEventListener('click', () => (byId('inbox-dialog') as HTMLDialogElement).showModal());
 byId('notebook-btn').addEventListener('click', () => toggleNotebook(byId('notebook-dialog') as HTMLDialogElement));
 byId('replay-btn').addEventListener('click', () => openWelcome(true)); // v4 D-O2: the static version (V10)
+/** v13 (v8 §2.1): src/guides.ts GUIDES_KEY, spelled out here so main never imports the lazy guide module (tests/guides.test.ts checks it). */
+const GUIDES_PREF = 'cargo-query/guides';
+byId('guides-btn').addEventListener('click', () => {
+  writeJson(GUIDES_PREF, { seen: [], off: false }); // every guide shows again, once
+  rerender();
+});
 byId('diag-btn').addEventListener('click', () => void copyDiagnostics());
 // v12.0 A7: skip links at the top of the workspace (index.html); on a phone they also switch the pane.
 for (const b of document.querySelectorAll<HTMLButtonElement>('[data-skip]')) {

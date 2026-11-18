@@ -16,7 +16,7 @@ import type * as Storage from '../storage';
 export interface GuideDeps {
   h: typeof Dom.h; announce: typeof Dom.announce; getLang: typeof I18n.getLang; locale: typeof I18n.locale;
   actions: typeof State.actions; readJson: typeof Storage.readJson; writeJson: typeof Storage.writeJson; readTour: typeof Onboarding.readTour;
-  boonMark: typeof Coach.boonMark; escOwned: typeof Coach.escOwned; tourRegion: typeof Coach.tourRegion; guideHooks: typeof Coach.guideHooks;
+  boonMark: typeof Coach.boonMark; escOwned: typeof Coach.escOwned; guideHooks: typeof Coach.guideHooks; guideSlot: typeof Coach.guideSlot;
   showPane: typeof PaneTabs.showPane;
 }
 export interface GuideStep {
@@ -28,13 +28,21 @@ export interface GuideStep {
   /** false: no Boon in the mark (the learning path's first step speaks from the teaching scene, v8 §2.1). */
   mascot?: boolean;
 }
-export interface Guide { id: string; steps: GuideStep[] }
+export interface Guide {
+  id: string; steps: GuideStep[];
+  /** Ids also marked seen when this one ends (a module's full intro covers that module's short one). */
+  also?: string[];
+  /** After Done on the last step (the learning path: Lily cheers, v8 G1). */
+  done?: () => void;
+}
 /** What the open page offers now, from app state (never from the DOM: boonRegion() asks while the page is being drawn). */
 export type GuideProvider = () => Guide[];
 
 let d$: GuideDeps;
 const lt = (key: LearnKey, params?: I18n.Params): string => learnText(d$.getLang(), d$.locale(), key, params);
 const providers: GuideProvider[] = [];
+/** The last focus went into a guide mark: a page redraw that rebuilt it gives focus to the new one (never <body>). */
+let held = false;
 export const offerGuides = (p: GuideProvider): void => void providers.push(p);
 
 /** The guide on screen and its step. Memory only: leaving the page drops it, and it starts again from step 1 next time. */
@@ -52,31 +60,46 @@ function current(): typeof active {
   if (active && !same) revealed = undefined; // left the page: the guide starts over, and is revealed again, next time
   if (active) active = same ? { guide: same, step: Math.min(active.step, same.steps.length - 1) } : undefined;
   if (!active) {
-    const id = guideFor({ offered: list.map((g) => g.id), knows: d$.readTour()?.knows === true, tour: d$.tourRegion() !== undefined }, pref());
+    const id = guideFor({ offered: list.map((g) => g.id), knows: d$.readTour()?.knows === true, tour: tourMarkShown() }, pref());
     const g = list.find((x) => x.id === id);
     if (g?.steps.length) active = { guide: g, step: 0 };
   }
   return active;
 }
 
-function redraw(focus: boolean): void {
+/** A tour mark is on screen (not merely a tour step pending on ticket 1 while the player is on the learning path). */
+const tourMarkShown = (): boolean => [...document.querySelectorAll<HTMLElement>('[data-tour-mark]')].some((e) => e.offsetParent !== null);
+
+/** The guide on screen points into the lesson dialog. */
+const inDialog = (): boolean => !!active && guideRegion(active.guide.steps[active.step].slot) === 'dialog';
+
+/** `dialog`: the guide lives in the lesson dialog, whose card swaps Boon by CSS: refill the slots only. A page rerender would rebuild the button that opened the dialog, and focus could not return to it. */
+function redraw(focus: boolean, dialog = false): void {
   focusNext = focus;
-  d$.actions.rerender(); // mascots elsewhere follow boonRegion(); rerender() ends with refreshGuides()
+  if (dialog) refresh();
+  else d$.actions.rerender(); // mascots elsewhere follow boonRegion(); rerender() ends with refreshGuides()
 }
 
 /** Done, Skip, Esc or the lesson dialog closed (D-G3): seen. A failed write only shows the guide again next time. */
 function finish(id: string, off = false): void {
   if (active?.guide.id !== id) return;
+  const also = active.guide.also ?? [];
+  const dialog = inDialog();
   active = undefined;
-  d$.writeJson(GUIDES_KEY, { ...withSeen(pref(), id), ...(off ? { off } : {}) });
-  redraw(!!document.activeElement?.closest('[data-guide-mark]')); // focus was in the mark: the next mark, or the page title, takes it
+  const seen = [id, ...also].reduce<GuidesPref | undefined>((p, x) => withSeen(p, x), pref());
+  d$.writeJson(GUIDES_KEY, { ...seen, ...(off ? { off } : {}) });
+  redraw(!!document.activeElement?.closest('[data-guide-mark]'), dialog); // focus was in the mark: the next mark, or the page title, takes it
 }
 
 function next(): void {
   if (!active) return;
-  if (active.step + 1 >= active.guide.steps.length) return finish(active.guide.id);
+  if (active.step + 1 >= active.guide.steps.length) {
+    const done = active.guide.done;
+    finish(active.guide.id);
+    return done?.();
+  }
   active.step++;
-  redraw(true);
+  redraw(true, inDialog());
 }
 
 /** "Boon chỉ mình": the page's guide again from step 1, even when seen, turned off or "I know SQL" (D-G1). Nothing is saved until it ends. */
@@ -84,7 +107,7 @@ export function replayGuide(id: string): void {
   const g = providers.flatMap((p) => p()).find((x) => x.id === id);
   if (!g?.steps.length) return;
   active = { guide: g, step: 0 };
-  redraw(true);
+  redraw(true, inDialog());
 }
 
 function markOf(a: NonNullable<typeof active>, key: string): HTMLElement {
@@ -105,19 +128,26 @@ function markOf(a: NonNullable<typeof active>, key: string): HTMLElement {
   });
 }
 
+/** Laid out, or in a workspace pane a phone hides (one pane at a time below 768 px): the mark goes there and its pane is shown. */
+const shown = (slot: HTMLElement): boolean =>
+  slot.offsetParent !== null || (!!slot.closest('#ticket, #work, #panel') && document.getElementById('shell')?.hidden === false);
+
 /** guideHooks.refresh, after every rerender(): the mark goes in the first visible slot its step names; every other slot is emptied. */
 function refresh(): void {
   const a = current();
   const key = a ? `${a.guide.id}#${a.step}` : '';
   let placed: HTMLElement | undefined;
   for (const slot of document.querySelectorAll<HTMLElement>('[data-guide-slot]')) {
-    const here = !!a && !placed && slot.dataset.guideSlot === a.guide.steps[a.step].slot && slot.offsetParent !== null;
+    const here = !!a && !placed && slot.dataset.guideSlot === a.guide.steps[a.step].slot && shown(slot);
     if (!here) {
       slot.replaceChildren();
       continue;
     }
     placed = slot.firstElementChild?.getAttribute('data-guide-mark') === key ? slot.firstElementChild as HTMLElement : undefined;
-    if (!placed) slot.replaceChildren(placed = markOf(a!, key)); // unchanged marks stay, so focus stays inside them
+    if (!placed) {
+      slot.replaceChildren(placed = markOf(a!, key)); // unchanged marks stay, so focus stays inside them
+      if (held && !document.activeElement?.closest('[data-guide-mark]') && revealed === key) focusNext = true; // the page rebuilt the mark that held focus
+    }
   }
   if (!placed || !a) {
     if (focusNext) pageTitle()?.focus(); // the mark that held focus is gone: never drop focus on <body>
@@ -146,7 +176,9 @@ function refresh(): void {
 
 /** The workspace's task title, else the visible page's first heading (made focusable, like #brief-title). */
 function pageTitle(): HTMLElement | undefined {
-  const el = [...document.querySelectorAll<HTMLElement>('#brief-title, main:not([hidden]) h1, main:not([hidden]) h2')].find((e) => e.offsetParent !== null);
+  const modal = document.querySelector('dialog:modal');
+  const el = modal ? modal.querySelector<HTMLElement>('h1, h2, h3') ?? undefined // focus stays inside an open modal (the lesson's title)
+    : [...document.querySelectorAll<HTMLElement>('#brief-title, main:not([hidden]) h1, main:not([hidden]) h2')].find((e) => e.offsetParent !== null);
   if (el && !el.hasAttribute('tabindex')) el.tabIndex = -1;
   return el;
 }
@@ -156,6 +188,13 @@ export function initGuides(deps: GuideDeps): void {
   if (d$) return;
   d$ = deps;
   deps.guideHooks.refresh = refresh;
+  deps.guideHooks.replay = replayGuide;
+  deps.guideHooks.ran = () => {
+    if (active?.guide.steps[active.step].slot === 'lesson-example') next(); // G4: the example ran, on to step 2
+  };
+  // Any dialog closed (lesson, welcome): the page's guide may show again, once the dialog's own `close` listeners ran (D-G3 first).
+  document.addEventListener('close', () => queueMicrotask(refresh), true);
+  document.addEventListener('focusin', (e) => { held = e.target instanceof Element && !!e.target.closest('[data-guide-mark]'); });
   deps.guideHooks.region = () => {
     const a = current();
     return a && guideRegion(a.guide.steps[a.step].slot);
