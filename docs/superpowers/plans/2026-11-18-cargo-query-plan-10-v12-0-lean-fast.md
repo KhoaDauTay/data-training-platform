@@ -60,7 +60,7 @@ Written against HEAD `fe218f1`, which already includes L82/L83 (c6be07a) and L85
 | D10-2 | **One seed budget `ENSURE_TIMEOUT_MS = 120_000`** for every schema (was 30 s for `lab`/`ecom`; the old Logistics boot seed had no timeout at all). A seed that times out or fails is marked **broken** in `DbClient`: requests naming that schema no longer re-seed it. The top bar shows the failed state with "Thử lại database", which restarts the worker and opens the schema again. **Needs user look.** | L46: Logistics took 10–11 s in desktop Edge. Phones are 2–4× slower. 30 s would turn "slow but works" (today) into "never loads". A 2-minute cap is hang detection, not a target. "Broken" prevents a 2-minute re-seed on every Run. |
 | D10-3 | **Only requests that name their schema seed it on demand** (`DbClient.request`/`lab` with `opts.schema`). Default-schema requests (Data page, dashboard, KPI, columns, ER) never seed; `main.ts` opens the domain's schema on every domain route instead. | The workspace, lessons and drills always name their schema. A stray default-schema read (for example a hidden brief at boot) must not start a 10 s Logistics seed for an E-commerce or SQL-only player. |
 | D10-4 | **`app.dbStatus` = status of the data the open page needs** (`want`), derived in `main.ts` from the engine status, `db.ready(want)` and failed seeds. Callers (`topbar.ts`, `welcome.ts`, `work.ts`) are unchanged. | One meaning for the green dot, Lily waking up and "waiting" lines. |
-| D10-5 | **A finished seed calls `dataChanged()`**: `clearMemos()`, `resetCards()`, `work.setSchema(editorSchema())`, `panel.refresh()`, `rerender()`. This is the same callback "My data" uses, now shared. | `memoByKey` drops rejections only. An `information_schema` query that ran before the seed returned empty tables, and that result stays cached (ER, related tables, Data page). |
+| D10-5 | **Every finished seed (`DbClient.onSeeded`, whoever started it: a domain route, a lesson's or drill's named request) calls `dataChanged()`**: `clearMemos()`, `resetCards()`, `work.setSchema(editorSchema())`, `panel.refresh()`, `rerender()`. This is the same callback "My data" uses, now shared. | `memoByKey` drops rejections only. An `information_schema` query that ran before the seed returned empty tables, and that result stays cached (ER, related tables, Data page). |
 | D10-6 | **The picker lives on panel 1 of the welcome dialog**, not on a new screen. It shows only when there is no domain in the hash, no domain pref and `welcomeNeeded(...)` holds. Choices: Logistics, E-commerce, "Chỉ học SQL" (`lab`). Finance is not offered (not live). Esc on the picker = Logistics (the old default). | P2 with the least new UI. A player who will never see the welcome (old saves, skipped coach) is never asked and gets Logistics. |
 | D10-7 | **Pref `cargo-query/domain` may hold `'general'`** (SQL only). Only `bootPick` reads that value. Every other reader still sees `isLiveDomain() === false`, so the open domain reads as Logistics for General pages. **Every domain route writes the pref**, so entering a domain later replaces `'general'` and seeds that domain. No pref and no welcome → Logistics. **Needs user look** (changes a documented pref). | The pref is the remembered place. A second key would be one more thing to keep in sync. |
 | D10-8 | **"Chỉ học SQL" closes the welcome as a skip**: `cargo-query/coach-done` = true, no tour, route `#/learn`. The tour stays available from ⋯ "Xem lại hướng dẫn". | The tour is about Logistics ticket 1 (L76). Skipping matches the Esc path that already exists. |
@@ -161,7 +161,7 @@ CLAUDE.md, docs/team/review-log.md                                              
   | ch12-01 | — | ratio column |
 
   The prompts that say "làm tròn đến/tới đồng" for the result: ch12-06 steps 2, 3, 4; ecom-ch5-05 step 1; ch8-06's body ("làm tròn tới đồng ngay ở từng hóa đơn, trước khi cộng", every step).
-- **Not verified:** the `main.ts`/UI code of Tasks 2–12 (written against HEAD's names), the Vite build, browser timings.
+- **Not verified:** everything else was written against HEAD's names but not run: Task 1's client/worker/init code and its test edits, the `main.ts`/UI code of Tasks 2–12, the Vite build and browser timings. Only the seed order (above) and the L4 candidates were executed.
 
 ---
 
@@ -510,6 +510,7 @@ After this task the app still seeds Logistics at boot, because `main.ts` ensures
 - Produces:
   - `type BootPick = DomainId | 'general'` and `bootPick(hashDomain: DomainId | undefined, pref: unknown, firstVisit: boolean): BootPick | undefined` (`src/onboarding.ts`);
   - `app.dataReady(schema: SchemaId): boolean` (`src/state.ts`);
+  - `DbClient.onSeeded: (schema: SchemaId) => void` (fired once per successful seed);
   - in `main.ts`: `openSchema(s: SchemaId): void`, `dataChanged(): void`;
   - i18n keys `domain.loading`, `domain.failed` (param `name`) and `lesson.preparing`; `ecom.loading`/`ecom.failed` are removed.
 
@@ -618,6 +619,26 @@ After this task the app still seeds Logistics at boot, because `main.ts` ensures
       }
     ```
   - call `this.seedNamed(opts.schema);` as the first line of `request()` and of `lab()`.
+  - one hook for every finished seed, whoever started it (a domain route, a lesson's named request, a drill):
+    ```ts
+      /** v12.0: a seed finished (any caller). main.ts drops cached results and loads the columns here (D10-5). */
+      onSeeded: (schema: SchemaId) => void = () => {};
+    ```
+    and in `seed()`, after `this.ensured.add(schema);`: `this.onSeeded(schema);`
+  - add to `tests/client.test.ts`:
+    ```ts
+      it('onSeeded: mỗi seed xong báo một lần, kể cả seed do query mang schema khởi động', async () => {
+        const { db } = client();
+        const seen: string[] = [];
+        db.onSeeded = (s) => seen.push(s);
+        const w = last();
+        w.ready();
+        void db.run('A', { schema: 'lab' });
+        w.send({ type: 'result', id: w.posted[0].id, result: null });
+        await vi.advanceTimersByTimeAsync(0);
+        expect(seen).toEqual(['lab']);
+      });
+    ```
 
 - [ ] **Step 5: `app.dataReady`.** In `src/state.ts` add `type SchemaId` to the `'./domains'` import, and add to `app` after `run`:
   ```ts
@@ -669,28 +690,32 @@ After this task the app still seeds Logistics at boot, because `main.ts` ensures
    */
   function openSchema(s: SchemaId): void {
     want = s;
-    failedSeeds.delete(s);
-    if (app.notice?.key === 'domain.loading') app.notice = undefined;
     syncDbStatus();
-    if (db.ready(s)) {
-      if (uiReady) renderTopbar();
-      return;
-    }
-    const d = DOMAINS.find((x) => DOMAIN_SCHEMA[x.id] === s);
-    if (d) app.notice = { key: 'domain.loading', params: { name: t(d.name) } };
     if (uiReady) renderTopbar();
-    db.ensure(s).then(() => {
-      if (app.notice?.key === 'domain.loading') app.notice = undefined;
-      syncDbStatus();
-      if (uiReady) dataChanged();
-      if (s === domainSchemaId() && Object.keys(app.columns).length === 0) void loadColumns();
-    }, () => {
+    if (db.ready(s) || failedSeeds.has(s)) return; // a failed seed waits for Retry (D10-2), never one 2-minute try per page
+    const d = DOMAINS.find((x) => DOMAIN_SCHEMA[x.id] === s);
+    // Never replace another banner (save warnings, new version + Reload): those matter more than "preparing".
+    if (d && (!app.notice || app.notice.key.startsWith('domain.'))) app.notice = { key: 'domain.loading', params: { name: t(d.name) } };
+    if (uiReady) renderTopbar();
+    db.ensure(s).catch(() => {
       failedSeeds.add(s);
-      if (d) app.notice = { key: 'domain.failed', params: { name: t(d.name) } };
+      if (d && (!app.notice || app.notice.key.startsWith('domain.'))) app.notice = { key: 'domain.failed', params: { name: t(d.name) } };
       syncDbStatus();
       if (uiReady) renderTopbar();
     });
   }
+
+  /**
+   * Every finished seed, whoever started it (openSchema, a lesson's or drill's named request): status, banner, caches and
+   * columns follow. Queries that ran before it saw empty tables, and memoByKey keeps empty results (D10-5). Registered
+   * before any seed can finish (the engine is still downloading when main.ts runs this).
+   */
+  db.onSeeded = (s) => {
+    if (app.notice?.key === 'domain.loading') app.notice = undefined;
+    syncDbStatus();
+    if (uiReady) dataChanged();
+    if (s === domainSchemaId() && Object.keys(app.columns).length === 0) void loadColumns();
+  };
 
   /** Imported data changed or a seed finished: cached plans, steps, ER metadata and card results describe the old data. */
   function dataChanged(): void {
@@ -701,7 +726,7 @@ After this task the app still seeds Logistics at boot, because `main.ts` ensures
     rerender();
   }
   ```
-  (`work` and `panel` are declared further down; `dataChanged` only runs from a resolved promise, after module setup.)
+  (`work` and `panel` are declared further down; `dataChanged` only runs from `onSeeded`, after module setup, and only once `uiReady`.)
 
   Directly after `app.stepIndex = resumeStep(app.save, selected());` and before `initTopbar();`:
   ```ts
@@ -764,7 +789,10 @@ After this task the app still seeds Logistics at boot, because `main.ts` ensures
   ```ts
     retryDb: () => {
       db.restart();
-      if (want) openSchema(want); // a failed seed is tried again (D10-2); restart() replays the seeded ones
+      if (want) {
+        failedSeeds.delete(want); // the only place a failed seed is tried again (D10-2); restart() replays the seeded ones
+        openSchema(want);
+      }
     },
   ```
 
@@ -815,7 +843,7 @@ After this task the app still seeds Logistics at boot, because `main.ts` ensures
       'lesson.preparing': 'Preparing the example data…',
     ```
   - The quoted button name must equal `'db.retry'` in each language; copy it from there if it differs.
-  - `grep -rn "ecom\.loading\|ecom\.failed" src` must print nothing.
+  - `grep -rn "ecom\.loading\|ecom\.failed" src tests` must print nothing (update any test that used them).
 
 - [ ] **Step 9: Run the tests and watch them pass.**
   ```bash
@@ -831,6 +859,8 @@ After this task the app still seeds Logistics at boot, because `main.ts` ensures
   4. Open `#/d/logistics`. The notice shows; once the dot is green, the brief's "Bảng liên quan" and the Data page are filled (proves `dataChanged()`).
   5. In a fresh tab on `#/d/ecommerce`, open a skill lesson from a skill chip and press "Chạy ví dụ": "Đang chuẩn bị dữ liệu ví dụ…" shows, then the result.
   6. Console: `performance.getEntriesByType('measure').filter((m) => m.name.startsWith('db:ensure'))` lists the seeds.
+  7. Seed started by a lesson, then the domain: on `:5175` pick "Chỉ học SQL", open a skill lesson and run its example (this seeds the lesson's schema through a named request), then open `#/d/logistics`. The brief's "Bảng liên quan", the Columns tab and autocomplete are filled (proves `onSeeded`, not `openSchema`, refreshes the caches). Run this step after Task 3.
+  8. With a corrupt save banner showing (`localStorage['cargo-query-save'] = '{'` on `:5175`, reload), opening a domain keeps the "save corrupt" banner (the loading line never replaces it).
 
 - [ ] **Step 11: Commit.**
   ```bash
@@ -1464,11 +1494,12 @@ After this task the app still seeds Logistics at boot, because `main.ts` ensures
     ```ts
     /** v12.0 A1: one polite sentence for screen readers (#announce is aria-live). Cleared first so the same sentence twice is read twice. */
     export function announce(text: string): void {
-      const el = byId('announce');
+      const el = typeof document === 'undefined' ? null : document.getElementById('announce');
+      if (!el) return; // test harnesses without the page (tests/workRace.test.ts), like showPane's guard
       el.textContent = '';
-      requestAnimationFrame(() => {
+      setTimeout(() => {
         el.textContent = text;
-      });
+      }, 50);
     }
     ```
   - `src/ui/feedback.ts` (add `type QueryResult` to its `'../db/run'` import if missing):
@@ -1547,8 +1578,9 @@ After this task the app still seeds Logistics at boot, because `main.ts` ensures
 
 - [ ] **Step 6: Tests and browser.**
   ```bash
-  npx vitest run tests/a11y.test.ts tests/i18n.test.ts && npx tsc --noEmit && npm test
+  npx vitest run tests/a11y.test.ts tests/i18n.test.ts tests/workRace.test.ts && npx tsc --noEmit && npm test
   ```
+  `tests/workRace.test.ts` runs Run/Submit without the page: `announce()` must be a silent no-op there (no unhandled error).
   Browser `:5174` play:
   - at 1267 px and 375 px, Run and Submit stay on one row (375 px: no shortcut text);
   - Tab from the top of the workspace shows "Tới editor"; Enter puts the caret in the editor (phone: the SQL pane);
@@ -1953,7 +1985,7 @@ After this task the app still seeds Logistics at boot, because `main.ts` ensures
     - `ENSURE_TIMEOUT_MS` 120 s;
     - `DbClient.ready(schema)`;
     - a request that names its schema seeds it first; a failed seed is "broken" until `ensure()`/Retry;
-    - `app.dbStatus` = the open page's data (`want`), and `dataChanged()` runs after each seed.
+    - `app.dbStatus` = the open page's data (`want`), and `DbClient.onSeeded` → `dataChanged()` runs after each seed; `openSchema` never replaces another banner and a failed seed is retried only by Retry.
   - **Commands:** budget groups include `gameseed`.
   - **Onboarding:** the welcome's first-visit domain picker (`bootPick`, `actions.startWith`); `cargo-query/domain` may hold `'general'` (SQL only, read only by `bootPick`; every domain route overwrites it).
   - **Imported data:** the `_my` rename uses the static `LOGISTICS_TABLES` ∪ `ECOM_TABLES`.
