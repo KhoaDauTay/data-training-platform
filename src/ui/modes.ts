@@ -287,7 +287,7 @@ function reviewCard(m: HomeModel): HTMLElement {
   return h('div', {}, h('section', { class: cx(CARD, 'flex flex-wrap items-center gap-4 p-5'), 'aria-labelledby': 'review-title' },
     none ? mascot('lily', 'sleep', 'size-16') : null, // v6 §2.4: an empty state
     !none && !due ? h('div', { class: 'w-40 shrink-0' }, illustration('aspect-[240/120]', (il) => il.emptyDrills())) : null, // Plan 8b: nothing due
-    h('div', { class: 'min-w-0 flex-1' },
+    h('div', { class: 'min-w-48 flex-1' }, // T9: a floor, so the button wraps below at 375 px instead of squeezing the text to one word per line
       h('h2', { id: 'review-title', class: 'm-0 text-lg font-bold' }, t('prac.section')),
       h('p', { class: 'mt-1 mb-0 text-[15px] text-muted' }, intro),
       p.solved + p.weak ? h('p', { class: 'mt-1 mb-0 text-sm text-muted' }, t('prac.stats', { solved: p.solved, weak: p.weak })) : null),
@@ -303,7 +303,7 @@ function warmupCard(): HTMLElement | null {
   const n = warmupToday(() => 0).length;
   if (n === 0) return null;
   return h('section', { class: cx(CARD, 'flex flex-wrap items-center gap-4 p-5'), 'aria-labelledby': 'warmup-title' },
-    h('div', { class: 'min-w-0 flex-1' },
+    h('div', { class: 'min-w-48 flex-1' },
       h('h2', { id: 'warmup-title', class: 'm-0 text-lg font-bold' }, t('warmup.title')),
       h('p', { class: 'mt-1 mb-0 text-[15px] text-muted' }, t('warmup.intro', { n }))),
     h('button', { type: 'button', class: cx(BTN_GO, 'px-4 py-2'), onclick: () => void startPractice(warmupToday(), true) }, t('warmup.start', { n })));

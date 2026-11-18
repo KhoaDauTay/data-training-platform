@@ -633,3 +633,25 @@ Trình duyệt (`vite preview --port 5199`, Edge headless hồ sơ mới qua CDP
 - Vào workspace (`…/play`): không `data-enter`, không `cq-fade`.
 - C2: xóa `cargo-query/days`, nộp đúng ch1-01 thật (Ctrl+Shift+Enter), mở Trang chủ: span `.cq-flip` một lần, câu "Lily (là bạn) · Cún con · Ngày thứ 1 cùng Lily" không đổi; đổi ngôn ngữ ngay sau: span không còn class, không chạy lại; rời rồi về Trang chủ: không lật; tải lại cùng ngày: không lật.
 - Giảm chuyển động: vào Lộ trình không animation nào chạy (`getAnimations()` không có `cq-fade`).
+
+### T9 kiểm cuối (L109)
+
+Đo lại bảng §2 (`check-budget.mjs` ok mọi nhóm; số gzip -9 qua zlib, KiB), so với trước v5 (L99 / T1):
+
+| Nhóm | Trước v5 | Sau v5 | Ước §2 | Trần |
+|---|---|---|---|---|
+| main | 287,70 | 288,88 (+1,18) | +1,2 | 500 (user; D-M1 mốc mềm 289,0 vẫn giữ) |
+| CSS | 15,02 (sau T1) | 15,67 | +1,25 | 20 |
+| `html` | 7,69 (sau T1) | 7,83 | ~8,2 | 9 |
+| ecomart | 1,67 | 2,91 (+1,24) | +1,5 | 10 |
+| illustrations | 2,17 | 1,87 (−0,3) | −0,3 | 15 |
+| learnui | 12,00 | 12,36 | +0,37 | 25 |
+
+`npx tsc --noEmit` sạch, `npm test` 3080 xanh (1 bỏ qua), `npm run build` xanh. T4 không có mục riêng ở đây: kết quả trình duyệt của T4 nằm trong L104.
+
+Trình duyệt (`vite preview --port 5199`, `dist` mới build, Edge headless hồ sơ mới qua CDP, đã tắt sau khi kiểm): 9 trang (`#/`, `#/learn`, `#/learn/sql/1`, `#/practice`, `#/d/logistics`, `…/play`, `…/data`, `…/map`, `#/d/ecommerce`) × 1280/375 × sáng/tối, rồi lại cả bộ với `--force-prefers-reduced-motion` (72 lần mở trang):
+- 0 lỗi console, 0 ngoại lệ; không trang nào cuộn ngang (`scrollWidth − innerWidth` = 0 mọi lần); theme đúng pref ở mọi trang.
+- Có chuyển động: chỉ còn vòng nền đã có cơ chế (Tiên Sa `cq-*` ở Tổng quan Logistics, `cq-pulse`/`cq-float` ở Bản đồ, `cq-sway`/`cq-scoot` ở Tổng quan E-com, cảnh dạy học `cq-wag/nod/tap` ở `#/learn`, `cq-floatz` khi Lily ngủ ở Trang chủ/Luyện SQL); workspace, Dữ liệu và trang Phần không animation nào chạy khi đứng yên (một lần đã xong).
+- Giảm chuyển động: `document.getAnimations()` rỗng ở cả 36 lần mở.
+- Tìm thấy và sửa (L109 #2): thẻ "Ôn tập hôm nay" ở 375 px ép chữ một từ mỗi dòng; sau sửa nút xuống dòng dưới chữ (ảnh chụp lại, cả bộ chạy lại: vẫn 0 lỗi, 0 cuộn ngang).
+- Để lại (L109 #3): top bar 1280 px xuống hai dòng, có từ trước v5.
