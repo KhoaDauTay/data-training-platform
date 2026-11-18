@@ -131,10 +131,10 @@ if (loaded.warning?.kind === 'corrupt') app.notice = { key: 'save.corrupt' };
 const firstOpen = (): string => (nextTicket(app.tickets, done()) ?? app.tickets[app.tickets.length - 1]).id;
 app.selectedId = firstOpen();
 app.stepIndex = resumeStep(app.save, selected()); // reloading mid-review keeps the step reached
-// v12.0 P1/P2: seed only what the player opens, queued before the first render's queries. undefined = first visit: Task 3's
-// welcome picker will ask first; until then a first visitor gets Logistics, as before (else "I am new" never enables).
+// v12.0 P1/P2: seed only what the player opens, queued before the first render's queries. undefined = first visit:
+// nothing is seeded until the welcome picker's choice (startWith); the engine still downloads meanwhile.
 const pick: BootPick | undefined = bootPick(domainOfHash(location.hash), readJson<unknown>(DOMAIN_KEY), welcomeNeeded(done().size, readTour(), coachDone()));
-openSchema(pick === 'general' ? 'lab' : domainSchemaId(pick ?? 'logistics'));
+if (pick) openSchema(pick === 'general' ? 'lab' : domainSchemaId(pick));
 initTopbar(); // icon slots first: applyStatic() then only touches the label spans
 applyStatic();
 
@@ -369,6 +369,24 @@ async function enterDomain(id: DomainId): Promise<void> {
   if (db.ready(schema)) void loadColumns(); // else db.onSeeded loads them
 }
 
+/**
+ * v12.0 P2: a first visitor's choice in the welcome picker. Seeds only that data; "SQL only" seeds `lab` and opens the
+ * learning path. Resolves false when the domain's content could not load (enterDomain shows the banner; the picker stays).
+ */
+async function startWith(c: BootPick): Promise<boolean> {
+  if (c === 'general') {
+    writeJson(DOMAIN_KEY, c);
+    openSchema('lab');
+    go('learn');
+    return true;
+  }
+  if (c !== activeDomain()) await enterDomain(c);
+  if (c !== activeDomain()) return false;
+  writeJson(DOMAIN_KEY, c);
+  openSchema(domainSchemaId(c));
+  return true;
+}
+
 /** Allowlisted payload only (Plan Deploy Task 3): never SQL, messages, drafts or data. Nothing is sent anywhere. */
 async function copyDiagnostics(): Promise<void> {
   const p = app.problem ?? { kind: 'feedback' as const }; // the ⋯ menu copies it with no fault (v4 §B.6)
@@ -411,7 +429,7 @@ Object.assign(actions, {
       failedSeeds.delete(want); // the only place a failed seed is tried again (D10-2); restart() replays the seeded ones
       openSchema(want);
     }
-  }, startDrill: (id: string) => void startDrill(id), openLane: (port: string) => mapStrip.openLane(port), copyDiagnostics: () => void copyDiagnostics(), useSql: (sql: string) => work.setDoc(sql), showTab: (id: string) => panel.show(id),
+  }, startWith, startDrill: (id: string) => void startDrill(id), openLane: (port: string) => mapStrip.openLane(port), copyDiagnostics: () => void copyDiagnostics(), useSql: (sql: string) => work.setDoc(sql), showTab: (id: string) => panel.show(id),
   switchLang: (l: Lang) => void setLang(l).then(() => {
     rerender();
     panel.refresh();
@@ -481,7 +499,7 @@ startRouter((r, initial) => {
   if (d && d !== activeDomain()) void enterDomain(d).then(() => showRoute(r, initial));
   else showRoute(r, initial);
 });
-initWelcome();
+initWelcome(want === undefined); // nothing opened yet (no domain in the hash or the pref): the picker asks first
 
 // "My data" (Plan Import): imported CSVs stay in this browser (IndexedDB) and are replayed into the sandbox schema.
 const myData = new MyData(db, idbStore(), () => dataChanged()); // imported tables: same caches to drop as a finished seed
