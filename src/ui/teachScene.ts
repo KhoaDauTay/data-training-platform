@@ -1,16 +1,16 @@
 import { t } from '../i18n';
 import { cx } from '../theme';
 import { h } from './dom';
+import { rig } from './mascots';
 import { s } from './svg';
 
 /**
  * L87: Boon (the teacher) points at a small board; Lily (the learner, at her growth stage) sits on the other side and listens.
- * One illustration (counts as one mascot for the "one per region" rule). Built from the sprite's parts so only this scene's
+ * One illustration (counts as one mascot for the "one per region" rule). Built from the sprite's parts (rig()) so only this scene's
  * pieces move (style.css `.teach-scene`): Boon's pointer taps, Lily nods and wags, only while on screen (IntersectionObserver);
  * reduced motion = still frame. Lily and Boon are buttons: Lily cheers for 600 ms, Boon taps twice and moves the board's
  * highlight to the next line. No reward, nothing saved.
  */
-const use = (id: string) => s('use', { href: `#${id}` });
 const fig = (vb: string, cls: string, ...kids: SVGElement[]) =>
   s('svg', { viewBox: vb, class: cx('overflow-visible', cls), 'aria-hidden': 'true', focusable: 'false' }, ...kids);
 const BTN = 'shrink-0 cursor-pointer rounded-full border-0 bg-transparent p-0 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent';
@@ -27,18 +27,21 @@ export function teachScene(size: 'md' | 'lg' = 'md'): HTMLElement {
     ...LINES.flatMap((ln, i) => ln.map(([x, w, c]) => s('path', { d: `M${x} ${14.5 + i * 15} h${w}`, stroke: c, 'stroke-width': 4, 'stroke-linecap': 'round' }))),
     s('path', { d: 'M24 56 l-6 14 M56 56 l6 14', stroke: 'var(--wood-dark)', 'stroke-width': 3, 'stroke-linecap': 'round' }));
 
-  const listen = s('g', { class: 'lily-fig' },
-    s('g', { class: 'tb-tail' }, use('lily-tail')), use('lily-body'), use('lily-paws'),
-    s('g', { class: 'tb-nod' }, use('lily-head'), use('lily-eyes-open'), use('lily-smile')));
-  const cheer = use('lily-cheer');
+  // v6 M1: the same parts as mascot() (rig()); the scene's loops go on single parts: Lily's tail, her head parts, Boon's pointing wing.
+  const listen = rig('lily', 'idle');
+  const mark = (g: SVGGElement, cls: string, parts: string[]) => {
+    for (const p of parts) g.querySelector(`[data-part="${p}"]`)?.classList.add(cls);
+  };
+  mark(listen, 'tb-tail', ['tail']);
+  mark(listen, 'tb-nod', ['ear-l', 'ear-r', 'head', 'eyes-open', 'mouth-smile']);
+  const cheer = rig('lily', 'cheer');
   cheer.style.display = 'none';
   const big = size === 'lg' ? 'size-24 sm:size-28' : 'size-20 sm:size-24';
   const lilySvg = fig('0 0 120 120', big, listen, cheer);
   lilySvg.dataset.mascot = 'lily'; // growth stage (style.css)
-  const boonSvg = fig('0 0 120 120', big,
-    use('boon-feet'), use('boon-body'), use('boon-wing-l'), s('g', { class: 'tb-tap' }, use('boon-arm-point')),
-    use('boon-head'), use('boon-bill'), use('boon-glasses'),
-    s('g', {}, s('circle', { cx: 53, cy: 43, r: 2.6, fill: 'var(--boon-ink)' }), s('circle', { cx: 71, cy: 43, r: 2.6, fill: 'var(--boon-ink)' })));
+  const point = rig('boon', 'point');
+  mark(point, 'tb-tap', ['arm-point']);
+  const boonSvg = fig('0 0 120 120', big, point);
 
   let timer: ReturnType<typeof setTimeout> | undefined;
   const lily = h('button', { type: 'button', class: BTN, 'aria-label': t('teach.lily'), onclick: () => {

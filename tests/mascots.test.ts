@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import html from '../index.html?raw';
 import css from '../src/style.css?raw';
-import { POSES } from '../src/ui/mascots';
+import { POSES, RIG } from '../src/ui/mascots';
 
 const start = html.indexOf('<svg id="mascot-sprite"');
 const sprite = html.slice(start, html.indexOf('</svg>', start));
@@ -9,14 +9,31 @@ const ids = new Set([...sprite.matchAll(/\bid="([\w-]+)"/g)].map((m) => m[1]));
 const light = css.split(':root {')[1]?.split('}')[0] ?? '';
 
 describe('linh vật (L57, product-design-v6 §1)', () => {
-  it('sprite có 6 tư thế cho mỗi bạn: Lily (chó) và Boon (vịt)', () => {
-    expect(start).toBeGreaterThan(0);
-    const want = ['lily', 'boon'].flatMap((who) => POSES.map((p) => `${who}-${p}`));
-    expect(want.filter((id) => !sprite.includes(`<symbol id="${id}" viewBox="0 0 120 120">`))).toEqual([]);
+  it('mỗi tư thế (6 cho mỗi bạn) là một công thức phần, và mỗi phần có trong sprite (v6 M1)', () => {
+    for (const who of ['lily', 'boon'] as const) {
+      expect(Object.keys(RIG[who])).toEqual([...POSES]);
+      for (const p of POSES) {
+        expect(RIG[who][p].length).toBeGreaterThan(1);
+        expect(RIG[who][p].filter((part) => !sprite.includes(`<g id="${who}-${part}"`))).toEqual([]);
+      }
+    }
   });
 
-  it('mọi href="#…" trong sprite trỏ tới một id có thật', () => {
-    const refs = [...sprite.matchAll(/href="#([\w-]+)"/g)].map((m) => m[1]);
+  it('logo top bar: symbol boon-idle dựng đúng công thức boon idle, không data-mascot', () => {
+    const sym = sprite.split('<symbol id="boon-idle" viewBox="0 0 120 120">')[1]?.split('</symbol>')[0] ?? '';
+    expect([...sym.matchAll(/href="#boon-([\w-]+)"/g)].map((m) => m[1])).toEqual([...RIG.boon.idle]);
+    expect(html).toMatch(/<svg class="size-9"[^>]*><use href="#boon-idle"><\/use><\/svg>/);
+  });
+
+  it('giai đoạn Lily: khăn, sao, laptop là phần riêng theo biến CSS; mọi tư thế đứng có đủ', () => {
+    for (const [part, v] of [['scarf', 'scarf-on'], ['badge', 'badge-on'], ['laptop', 'prop-on']]) {
+      expect(sprite).toContain(`<g id="lily-${part}" style="opacity:var(--lily-${v})">`);
+      for (const p of POSES.filter((x) => x !== 'sleep')) expect(RIG.lily[p]).toContain(part);
+    }
+  });
+
+  it('mọi href="#…" và url(#…) trong sprite trỏ tới một id có thật', () => {
+    const refs = [...sprite.matchAll(/(?:href="#|url\(#)([\w-]+)/g)].map((m) => m[1]);
     expect(refs.length).toBeGreaterThan(20);
     expect(refs.filter((r) => !ids.has(r))).toEqual([]);
   });
@@ -129,7 +146,7 @@ describe('A4: loader chung (ui-ux-v5)', () => {
 
 describe('B2 + B4 (ui-ux-v5)', () => {
   it('zz của Lily ngủ chỉ bay khi một trang đang hiện có Lily ngủ; Boon ngủ không', () => {
-    expect(css).toMatch(/body:has\(main:not\(\[hidden\]\) use\[href="#lily-sleep"\]\) #lily-sleep \.zz\s*\{[^}]*animation:[^}]*cq-floatz[^}]*infinite/);
+    expect(css).toMatch(/body:has\(main:not\(\[hidden\]\) \[data-mascot=lily\]\[data-pose=sleep\]\) #lily-zz \.zz\s*\{[^}]*animation:[^}]*cq-floatz[^}]*infinite/);
     expect(css).not.toMatch(/:has\([^)]*boon-sleep/);
   });
 

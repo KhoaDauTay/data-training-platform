@@ -32,6 +32,7 @@
   /* Mascot palette (v6 §1.2–1.3): SVG only, never text. */
   --lily-fur: #fdfbf7; --lily-cream: #ece6dc; --lily-ear: #2b2522; --lily-spot: #2b2522; --lily-line: #5a4f47; --lily-ink: #2b2522; --lily-scarf: #1f9e8f; --lily-badge: #ffd166;
   --boon-body: #fdfdfb; --boon-plume: #e3e7e9; --boon-line: #59626a; --boon-wing: #3f8f9e; --boon-belly: #eef1f2; --boon-bill: #f2b544; --boon-ink: #2a2320; --boon-lanyard: #d98e4a;
+  --boon-shade: #ccd3d7; --boon-bill-dark: #d4861f; /* v6 M1: wing/plume shading, bill and feet edge */
   /* L87: Lily's growth stage (adult look by default: the top-bar logo has no data-mascot) and the teaching scene's loops (off). */
   --lily-scarf-on: 1; --lily-badge-on: 1; --lily-prop-on: 0; --lily-size: 1; --lily-wag: none; --lily-nod: none; --boon-tap: none;
   --cheek: #f4a3a3; --wood-dark: #8a4b22; --sky: #e6f4f6; --ground: #e9dcc6;
@@ -51,6 +52,7 @@
   --sun: #4a3a17; --sun-ink: #ffe2a3;
   --lily-fur: #f3f0eb; --lily-cream: #dcd5ca; --lily-ear: #1f1a17; --lily-spot: #1f1a17; --lily-line: #8a7e75; --lily-ink: #1f1a17; --lily-scarf: #2bb3a3;
   --boon-body: #f2f2ef; --boon-plume: #d3d9dc; --boon-line: #858e95; --boon-wing: #3a8391; --boon-belly: #e1e6e7; --boon-bill: #e9ad3e; --boon-ink: #1d1916;
+  --boon-shade: #b9c2c7; --boon-bill-dark: #b8741f;
   --sky: #1d2a2e; --ground: #3a3127; --wood-dark: #6b3a1a;
   --hs-sky0: #1e1b4b; --hs-sky1: #c2643f; --hs-sky2: #f59e0b; --hs-sea0: #1d4e6e; --hs-sea1: #0b1a2e; --hs-sun: #fb923c; --hs-cloud: #f6c3b0;
   /* L13 syntax colours: >= 5.6:1 on --panel and --code */
@@ -249,7 +251,7 @@
 :root[data-lily="0"] [data-mascot=lily] { --lily-size: 0.8; --lily-scarf-on: 0; --lily-badge-on: 0; }
 :root[data-lily="1"] [data-mascot=lily] { --lily-size: 0.9; --lily-badge-on: 0; }
 :root[data-lily="3"] [data-mascot=lily] { --lily-prop-on: 1; }
-svg[data-mascot=lily] > use, svg[data-mascot=lily] > .lily-fig { transform: scale(var(--lily-size)); transform-origin: 60px 116px; }
+svg[data-mascot=lily] > g { transform: scale(var(--lily-size)); transform-origin: 60px 116px; }
 /* ---- L87 teaching scene (src/ui/teachScene.ts): loops only while it is on screen (data-live, IntersectionObserver). ---- */
 @media (prefers-reduced-motion: no-preference) {
   .teach-scene[data-live] { --lily-wag: cq-wag 0.9s ease-in-out infinite; --lily-nod: cq-nod 3.2s ease-in-out infinite; --boon-tap: cq-tap 1.8s ease-in-out infinite; }
@@ -275,12 +277,12 @@ svg.react[data-pose=point] { animation: cq-lean 480ms ease-out; }
 svg.react[data-pose=think] { animation: cq-tilt 500ms ease-out; }
 svg.react[data-pose=oops] { animation: cq-shake 360ms ease-out; }
 /* A1: Lily grows (class `grow`, react() or the dock, only within 4 s of a stage rise). `scale` beside the jump's `translate`;
-   the new stage's accessory and size come in on the <use> (vars registered above), from 300 to 800 ms. */
+   the new stage's accessory and size come in on the rig's outer <g> (vars registered above), from 300 to 800 ms. */
 svg[data-mascot=lily].grow { transform-origin: 50% 100%; animation: cq-grow 900ms ease-out; }
 svg[data-mascot=lily].grow.react[data-pose=cheer] { animation: cq-grow 900ms ease-out, cq-jump 560ms ease-out; }
-:root[data-lily="1"] svg[data-mascot=lily].grow > use { animation: cq-grow1 900ms linear; }
-:root[data-lily="2"] svg[data-mascot=lily].grow > use { animation: cq-grow2 900ms linear; }
-:root[data-lily="3"] svg[data-mascot=lily].grow > use { animation: cq-grow3 900ms linear; }
+:root[data-lily="1"] svg[data-mascot=lily].grow > g { animation: cq-grow1 900ms linear; }
+:root[data-lily="2"] svg[data-mascot=lily].grow > g { animation: cq-grow2 900ms linear; }
+:root[data-lily="3"] svg[data-mascot=lily].grow > g { animation: cq-grow3 900ms linear; }
 .cq-bubble { transform-origin: 0 0; animation: cq-bubble 220ms ease-out; }
 .cq-rise { pointer-events: none; animation: cq-rise 800ms ease-out forwards; }
 @keyframes cq-grow { 0%, 100% { scale: 1; } 35% { scale: 1.18; } 60% { scale: 0.96; } }
@@ -311,7 +313,7 @@ body:has(use[href="#cq-load"]) #mascot-sprite .ld { animation: cq-ld 1.2s ease-i
 @keyframes cq-stamp { from { scale: 1.35; rotate: -8deg; } }
 @keyframes cq-draw { from { stroke-dashoffset: 1; } }
 /* B2: the empty states' sleeping Lily breathes zz while a shown page holds one (the sprite original; welcome keeps .live). */
-body:has(main:not([hidden]) use[href="#lily-sleep"]) #lily-sleep .zz { animation: cq-floatz 2.2s ease-out infinite; }
+body:has(main:not([hidden]) [data-mascot=lily][data-pose=sleep]) #lily-zz .zz { animation: cq-floatz 2.2s ease-out infinite; }
 /* B4: Boon's mark of a new tour/guide step (enterMark(), src/ui/coach.ts): the aside fades in (opacity only: it may sit in a
    stretched-link card, L93), Boon hops on his own <svg>. */
 .cq-fade { animation: cq-fade 200ms ease-out; }

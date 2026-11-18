@@ -5,7 +5,7 @@ import { gzipSync } from 'node:zlib';
 
 // First match wins; 'rest' catches every lazy chunk Rolldown names after modules (Mermaid diagrams, sql-formatter as esm-*).
 const GROUPS = [
-  ['html', /^index\.html$/, 9], // ui-ux-v5 §2: dist/index.html (one level above the assets): the mascot sprite and boot script, 7.9 KB before v5
+  ['html', /^index\.html$/, 12], // ui-ux-v6 D-V6: mascot sprite redrawn as parts (M1, 9.0 KB after T4). ui-ux-v5 §2: dist/index.html (one level above the assets): the mascot sprite and boot script, 7.9 KB before v5
   ['main', /^index-.*\.js$/, 500], // user 2026-11-18: raised from 290 to 500. Before: Plan 7 V1 (needs the user's OK): 268 after Plan 6; routes, sidebar, onboarding and ~90 VI strings. Was 270 (L55)
   ['tickets', /^ticketSources-/, 110], // all ticket markdown, one lazy chunk fetched at boot (src/content.ts): 37 KB after ch1–6, 64 KB after ch7–9, 99 KB after ch10–12 (Plan 4 S7, L40 rule)
   ['lanes', /^laneSources-/, 20], // lane briefs and side tasks (content/lanes/), lazy, fetched at boot beside the tickets (Plan 5)
