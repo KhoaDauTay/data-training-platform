@@ -11,6 +11,7 @@ let art: Promise<EcommerceArt> | undefined;
 export function loadEcomArt(): Promise<EcommerceArt> {
   art ??= import('../art/ecommerce').then((m) => {
     m.initArt({ t, chapterColor, s, h, getLang });
+    m.prefetchGsap(); // ui-ux-v6 S3: the completion dock runs on GSAP
     return m;
   }).catch((e: unknown) => {
     art = undefined;
@@ -34,6 +35,7 @@ export function ecomArt(kind: 'scene' | 'map'): HTMLElement {
     frame.replaceWith(kind === 'scene' ? a.storeScene(st) : a.deliveryMap(st));
     if (kind === 'map') legend.replaceChildren(h('ul', { class: 'm-0 list-none space-y-0.5 p-0 lg:hidden', 'aria-hidden': 'true' }, ...a.deliveryItems(st).map((x) => h('li', {}, x))));
   }, () => {});
-  // v11 UX #2: the shop scene stays under ~240 px high so the overview's content starts above the fold.
-  return h('div', { class: kind === 'scene' ? '[&>svg]:max-h-60' : '' }, frame, legend);
+  // v11 UX #2: the shop scene stays under ~240 px high so the overview's content starts above the fold; the street
+  // bleeds past its viewBox on a wide card (ui-ux-v6 S3), clipped here.
+  return h('div', { class: kind === 'scene' ? 'overflow-hidden [&>svg]:max-h-60' : '' }, frame, legend);
 }

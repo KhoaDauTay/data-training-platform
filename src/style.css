@@ -44,6 +44,11 @@
   --hs-far: #a9cbc6; --hs-mid: #6c9f7c; --hs-near: #3d7b52; --hs-near2: #2f6342; --hs-quay0: #d9dee4; --hs-quay1: #a5aeb9;
   --hs-wall: #4b5563; --hs-road: #475569; --hs-verge: #b5c19a; --hs-shed0: #f1f5f9; --hs-shed1: #cbd5e1; --hs-roof: #64748b;
   --hs-crane: #f97316; --hs-crane-d: #c2410c; --hs-lamp: 0;
+  /* ui-ux-v6 S3 Lantern Market street (src/art/ecommerce.ts): a day market here, the night market in dark mode
+     (--es-night: stars and moon, --es-win: lit windows, --es-glow: lantern and lamp glow). */
+  --es-sky0: #7cc4e8; --es-sky1: #cfe9f3; --es-sky2: #fde9c8; --es-far: #bccbd8; --es-mid: #98abbd; --es-walk: #d9d0c3; --es-curb: #a8a29e;
+  --es-road: #6b7280; --es-wall: #f6d58b; --es-wall2: #ddb45a; --es-shed0: #e8edf2; --es-shed1: #c3ccd6; --es-roof: #55657a;
+  --es-inside: #4b5563; --es-glass: #d6eef6; --es-night: 0; --es-win: 0; --es-glow: 0.3;
   /* L13 syntax colours: >= 4.8:1 on --panel and --code */
   --syn-keyword: #7a2bb0; --syn-string: #a3341a; --syn-number: #0a6b4c; --syn-comment: #5d6b5d;
   --syn-operator: #4a4a52; --syn-type: #0b5fa5; --syn-property: #1d5a7a; --syn-atom: #8a5300;
@@ -65,6 +70,9 @@
   --hs-far: #8a5a72; --hs-mid: #563f62; --hs-near: #2c2a45; --hs-near2: #211f36; --hs-quay0: #545c69; --hs-quay1: #3b424d;
   --hs-wall: #1f2937; --hs-road: #1f2733; --hs-verge: #3b4535; --hs-shed0: #7b8494; --hs-shed1: #586170; --hs-roof: #3b4250;
   --hs-crane: #e8641c; --hs-crane-d: #9a3412; --hs-lamp: 1;
+  --es-sky0: #0b1026; --es-sky1: #221d52; --es-sky2: #6b2f57; --es-far: #2b2853; --es-mid: #1d1b38; --es-walk: #3d3731; --es-curb: #2a2622;
+  --es-road: #1c1d23; --es-wall: #c9a24f; --es-wall2: #9c7a35; --es-shed0: #6f7888; --es-shed1: #4f5766; --es-roof: #2f3542;
+  --es-inside: #141720; --es-glass: #4a5a6e; --es-night: 1; --es-win: 0.85; --es-glow: 0.95;
   /* L13 syntax colours: >= 5.6:1 on --panel and --code */
   --syn-keyword: #d19bff; --syn-string: #ff9e7a; --syn-number: #7ee0b5; --syn-comment: #9aa39a;
   --syn-operator: #c8c8d0; --syn-type: #6cc0ff; --syn-property: #9cdcfe; --syn-atom: #ffcf6b;

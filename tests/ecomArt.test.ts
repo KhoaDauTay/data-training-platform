@@ -62,6 +62,7 @@ describe('E-com: nền và dock khi xong việc (ui-ux-v5 B3)', () => {
     const st = { passed: new Set<number>(), done: 3 };
     const amb = loops(art.storeScene(st) as unknown as Fake).map((n) => n.attrs.class);
     expect(amb.filter((c) => c.includes('cq-sway'))).toHaveLength(3);
+    for (const g of walk(art.storeScene(st) as unknown as Fake).filter((n) => 'data-glow' in n.attrs)) expect(g.attrs.style).toBe('opacity:var(--es-glow)');
     expect(amb.filter((c) => c.includes('cq-scoot'))).toHaveLength(1);
     expect(loops(art.storeScene(st, false) as unknown as Fake)).toEqual([]);
   });
@@ -74,7 +75,7 @@ describe('E-com: nền và dock khi xong việc (ui-ux-v5 B3)', () => {
     expect(rings(art.deliveryMap({ passed: new Set([1, 2]), done: 10 }, false))).toEqual([]);
   });
 
-  it('việc thường, chạy nhanh: trạng thái cuối có thêm đúng 1 gói ở ô kế tiếp, không vòng lặp', async () => {
+  it('việc thường, chạy nhanh: trạng thái cuối có thêm đúng 1 gói ở ô kế tiếp, xe đã đi, không vòng lặp', async () => {
     const c = ctx(false, harbor(12, []), harbor(13, []));
     art.build(c);
     await art.play(c);
@@ -82,12 +83,23 @@ describe('E-com: nền và dock khi xong việc (ui-ux-v5 B3)', () => {
     const ps = parcels(root);
     expect(ps).toHaveLength(13);
     const last = ps[12];
-    // cell 12 = shelf row 1, column 2 (10 per row)
-    expect([last.attrs.x, last.attrs.y]).toEqual([String(640 + 2 * 34), String(278 - 48 - 22)]);
+    // cell 12 = shelf row 1, column 2 (10 per row): the box face of the parcel group
+    expect([last.children[0].attrs.x, last.children[0].attrs.y]).toEqual([String(640 + 2 * 34), String(278 - 48 - 22)]);
     expect(last.attrs.opacity ?? '1').toBe('1');
-    expect(last.attrs.transform ?? 'translate(0,0)').toMatch(/^translate\(0,-?0\)$/);
+    expect(last.attrs.transform).toBeUndefined(); // §2.3: GSAP moves the parcel group, which has no transform attribute of its own
+    expect(walk(root).find((n) => 'data-rider' in n.attrs)?.attrs.opacity).toBe('0'); // the scooter has left
     expect(loops(root)).toEqual([]);
     expect(art.ms(c)).toBe(2200);
+  });
+
+  it('mỗi lần vẽ có id gradient riêng (Tổng quan và dock có thể cùng nằm trong trang)', () => {
+    const st = { passed: new Set<number>(), done: 3 };
+    const ids = (r: SVGSVGElement): string[] => walk(r as unknown as Fake).map((n) => n.attrs.id).filter(Boolean);
+    const a = ids(art.storeScene(st));
+    const b = ids(art.storeScene(st, false));
+    expect(a.length).toBeGreaterThan(3);
+    expect(new Set(a).size).toBe(a.length);
+    expect(a.filter((x) => b.includes(x))).toEqual([]);
   });
 
   it('thăng tiến, chạy nhanh: thành phố mới mở trên bản đồ, lồng đèn sáng, có thẻ chức danh; 3,0 s', async () => {
@@ -100,9 +112,10 @@ describe('E-com: nền và dock khi xong việc (ui-ux-v5 B3)', () => {
     expect(hanoi.length).toBeGreaterThan(0);
     for (const n of hanoi) expect(n.attrs.opacity ?? '1').toBe('1');
     expect(hanoi.find((n) => n.tag === 'circle')?.attrs.class).toBe(chapterColor(1).fill);
-    const lanterns = walk(root).filter((n) => n.tag === 'ellipse');
-    expect(lanterns).toHaveLength(3);
-    for (const l of lanterns) expect(l.attrs.fill).not.toBe('#f97316');
+    expect(walk(root).filter((n) => 'data-lantern' in n.attrs)).toHaveLength(3);
+    const glows = walk(root).filter((n) => 'data-glow' in n.attrs);
+    expect(glows).toHaveLength(3);
+    for (const l of glows) expect(l.attrs.style).toBe('opacity:1'); // lit (unlit glows follow the theme token)
     expect(walk(root).some((n) => n.tag === 'div' && n.style.opacity === '1')).toBe(true);
     expect(loops(root)).toEqual([]);
     expect(art.ms(c)).toBe(3000);
