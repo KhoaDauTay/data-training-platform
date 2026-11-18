@@ -13,7 +13,7 @@ const LOOP = ['welcome.loop1', 'welcome.loop2', 'welcome.loop3', 'welcome.loop4'
 let panel = 0;
 let replay = false;
 /** L87: Boon teaching Lily, built once per open so a progress redraw keeps its loops and the board's highlight. */
-let scene: HTMLElement | undefined;
+let frame: { root: HTMLElement; scene: HTMLElement; db: HTMLElement; rest: HTMLElement } | undefined;
 
 const dialog = (): HTMLDialogElement => byId('welcome-dialog') as HTMLDialogElement;
 const title = (text: string) => h('h2', { id: 'welcome-title', tabindex: '-1', class: 'm-0 text-xl font-extrabold' }, text);
@@ -39,8 +39,13 @@ function draw(): void {
   const keep = was?.id === 'welcome-title' ? 'title' : was?.dataset?.w; // progress redraws often: keep the focused button or title
   const ready = app.dbStatus === 'ready';
   const p = app.loadProgress;
-  scene ??= teachScene('lg');
-  relabelScene(scene);
+  if (!frame) {
+    const scene = teachScene('lg');
+    const db = h('p', { class: 'm-0 text-center text-xs text-muted' });
+    const rest = h('div', { class: 'min-w-0' });
+    frame = { root: h('div', { class: 'grid gap-4' }, h('div', { class: 'flex flex-col items-center gap-1' }, scene, db), rest), scene, db, rest };
+  }
+  relabelScene(frame.scene);
   const db = ready ? t('welcome.dbReady') : p ? t('welcome.dbLoading', { mb: mb(p.loaded) }) : t('db.loading');
   const body = panel === 0
     ? [title(t('welcome.title')), h('p', {}, t('welcome.p1')),
@@ -55,14 +60,15 @@ function draw(): void {
         : [title(t('welcome.ask')), h('div', { class: 'flex flex-col gap-2' },
           h('button', { type: 'button', 'data-w': 'begin', class: cx(BTN_GO, 'px-4 py-2'), disabled: !ready, onclick: () => choose(false) }, t(ready ? 'welcome.begin' : 'welcome.preparing')),
           h('button', { type: 'button', 'data-w': 'knows', class: 'rounded-full px-4 py-2', onclick: () => choose(true) }, t('welcome.knows')))];
-  d.replaceChildren(h('div', { class: 'grid gap-4' },
-    h('div', { class: 'flex flex-col items-center gap-1' }, scene, h('p', { class: 'm-0 text-center text-xs text-muted' }, db)),
-    h('div', { class: 'min-w-0' }, ...body,
+  // The scene stays in place across redraws (its loops and a focused Lily/Boon button survive a progress tick).
+  if (frame.root.parentNode !== d) d.replaceChildren(frame.root);
+  frame.db.textContent = db;
+  frame.rest.replaceChildren(...body,
       h('div', { class: 'mt-4 flex items-center gap-2' },
         panel > 0 ? h('button', { type: 'button', 'data-w': 'back', onclick: () => go(panel - 1) }, t('welcome.back')) : null,
         h('span', { class: 'flex-1 text-center text-sm text-muted' }, t('welcome.page', { i: panel + 1, n: 3 })),
         panel < 2 ? h('button', { type: 'button', 'data-w': 'next', class: 'primary', onclick: () => go(panel + 1) }, t('welcome.next'))
-          : replay ? h('button', { type: 'button', 'data-w': 'close', class: 'primary', onclick: () => d.close() }, t('app.close')) : null))));
+          : replay ? h('button', { type: 'button', 'data-w': 'close', class: 'primary', onclick: () => d.close() }, t('app.close')) : null));
   if (keep === 'title') byId('welcome-title').focus();
   else if (keep) d.querySelector<HTMLElement>(`[data-w="${keep}"]`)?.focus();
 }
@@ -71,7 +77,7 @@ function draw(): void {
 export function openWelcome(asReplay: boolean): void {
   replay = asReplay;
   panel = 0;
-  scene = undefined;
+  frame = undefined;
   draw();
   const d = dialog();
   if (!d.open) d.showModal();

@@ -254,11 +254,11 @@ svg[data-mascot=lily] > use, svg[data-mascot=lily] > .lily-fig { transform: scal
   .teach-scene[data-live] { --lily-wag: cq-wag 0.9s ease-in-out infinite; --lily-nod: cq-nod 3.2s ease-in-out infinite; --boon-tap: cq-tap 1.8s ease-in-out infinite; }
   .teach-scene[data-tap] { --boon-tap: cq-tap 0.3s ease-in-out 2; }
   .teach-scene .tb-tail { transform-box: fill-box; transform-origin: 0% 100%; animation: var(--lily-wag); }
-  .teach-scene .tb-nod { transform-origin: 60px 76px; animation: var(--lily-nod); }
+  .teach-scene .tb-nod { animation: var(--lily-nod); }
   .teach-scene .tb-tap { transform-origin: 84px 84px; animation: var(--boon-tap); }
   .teach-scene .tb-line { transition: opacity 0.2s; }
 }
-.teach-scene .tb-nod { transform: rotate(6deg); }
+.teach-scene .tb-nod { transform: rotate(6deg); transform-origin: 60px 76px; } /* still frame: Lily's head leans toward Boon */
 @keyframes cq-nod { 0%, 100% { transform: rotate(6deg); } 40% { transform: rotate(10deg) translateY(1px); } 55% { transform: rotate(4deg) translateY(-1px); } }
 @keyframes cq-tap { 0%, 100% { transform: rotate(0); } 50% { transform: rotate(-9deg); } }
 @media (prefers-reduced-motion: reduce) {

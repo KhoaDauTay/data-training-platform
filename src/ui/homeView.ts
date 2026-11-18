@@ -324,7 +324,7 @@ let learnScene: HTMLElement | undefined;
 function teachSection(): HTMLElement | null {
   const hash = location.hash;
   if (learnModuleOf(hash) !== undefined || learnSkillOf(hash) || learnAdvOf(hash)) return null;
-  learnScene ??= teachScene('lg');
+  if (!learnScene?.isConnected) learnScene = teachScene('lg'); // reused while shown; a page left and re-entered gets a fresh observer
   relabelScene(learnScene);
   return learnScene;
 }
