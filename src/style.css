@@ -306,10 +306,10 @@ body:has(use[href="#cq-load"]) #mascot-sprite .ld { animation: cq-ld 1.2s ease-i
 .cq-glyph-in [data-acc="2"] { animation-delay: 160ms; }
 .cq-glyph-in [data-acc="3"] { animation-delay: 240ms; }
 .cq-stamp > svg:first-child { animation: cq-stamp 380ms ease-out; }
-.cq-stamp .cq-ck path { stroke-dasharray: 23; animation: cq-draw 300ms ease-out 200ms backwards; }
+.cq-stamp .cq-ck path { stroke-dasharray: 1; animation: cq-draw 300ms ease-out 200ms backwards; }
 @keyframes cq-pop-in { from { scale: 0.6; } }
 @keyframes cq-stamp { from { scale: 1.35; rotate: -8deg; } }
-@keyframes cq-draw { from { stroke-dashoffset: 23; } }
+@keyframes cq-draw { from { stroke-dashoffset: 1; } }
 /* B2: the empty states' sleeping Lily breathes zz while a shown page holds one (the sprite original; welcome keeps .live). */
 body:has(main:not([hidden]) use[href="#lily-sleep"]) #lily-sleep .zz { animation: cq-floatz 2.2s ease-out infinite; }
 /* B4: Boon's mark of a new tour/guide step (enterMark(), src/ui/coach.ts): the aside fades in (opacity only: it may sit in a

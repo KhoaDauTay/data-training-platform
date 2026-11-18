@@ -10,12 +10,12 @@ BoonData's own mascot art (Lily, Boon) is not third-party: CC BY 4.0, `assets/ma
 |---|---|---|---|---|---|
 | Nunito Variable (latin + vietnamese woff2) | `@fontsource-variable/nunito` (npm), font by Vernon Adams et al. | 5.3.0 | SIL OFL 1.1 (`src/assets/fonts/OFL.txt`) | before v6 | `src/assets/fonts/` |
 | GSAP core + MorphSVG, DrawSVG, MotionPath, Physics2D, CustomEase | `gsap` (npm), https://gsap.com | 3.15.1 | GSAP Standard "no charge" licence (https://gsap.com/standard-license): free incl. commercial use for any website/web app; forbids use in a no-code animation builder competing with Webflow and forbids removing the copyright notice. **Not an OSI licence: GSAP code is not MIT.** Keep its `@license` comment in the built chunk. | 2026-11-18 (npm `license` field + licence page) | `src/art/gsap.ts` (only importer), lazy chunk `gsap-*` (v6 T1); `@license` comments kept by `vite.config.ts` |
+| Phosphor Icons (duotone) | `@phosphor-icons/core` (npm, devDependency), https://phosphoricons.com | 2.1.1 | MIT (`node_modules/@phosphor-icons/core/LICENSE`) | 2026-11-18 (npm `license` field + LICENSE file) | `scripts/icons.mjs` copies the paths named in `scripts/icon-map.json` into `src/ui/iconData.ts` (v6 T2); `scripts/icon-custom.json` holds BoonData's own icons in the same grammar (MIT) |
 
 ## Approved for v6 (add the "Where" when the task lands)
 
 | What | Source | Version | Licence | Checked | Task |
 |---|---|---|---|---|---|
-| Phosphor Icons | `@phosphor-icons/core` (npm), https://phosphoricons.com | 2.1.1 | MIT | 2026-11-18 (npm `license` field) | T2 (I1), paths generated into `iconData.ts` (D-V1) |
 | Natural Earth 1:110m coastline | https://www.naturalearthdata.com | 1:110m physical | Public domain ("Crediting the authors is unnecessary", naturalearthdata.com/about/terms-of-use) | 2026-11-18 | S2 route map, simplified paths |
 | Open Peeps (Pablo Stanley) | https://www.openpeeps.com | library as downloaded | CC0 ("copy, modify, distribute, remix … even for commercial purposes, without asking permission") | 2026-11-18 (site text) | P3 / D-V5 portraits, only if used |
 | Open Doodles (Pablo Stanley) | https://www.opendoodles.com | library as downloaded | CC0 ("copy, edit, remix, share, or redraw these images for any purpose without restriction"; "No need to credit"; the about page states no pack/redistribution limit, so the third-party "no packs" note in v6 §1 is not the author's licence) | 2026-11-18 (opendoodles.com/about) | P3 empty states, only if used |
