@@ -121,6 +121,7 @@ describe('route (v5 §B.3, Plan 7)', () => {
     expect(learnSkillOf('#/learn/skill/where')).toBe('where');
     expect(learnSkillOf('#/learn/skill/conditional_agg')).toBe('conditional_agg');
     expect(learnAdvOf('#/learn/adv/b2')).toBe('b2');
+    expect(learnAdvOf('#/learn/adv/B2')).toBe('b2'); // L93: the page prints ids in capitals
     expect(learnSkillOf('#/learn/skill/Where')).toBeUndefined();
     expect(learnSkillOf('#/learn/skill/a-b')).toBeUndefined();
     expect(learnSkillOf('#/learn/skill/')).toBeUndefined();

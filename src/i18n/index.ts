@@ -21,12 +21,9 @@ export async function loadLang(l: Lang = getLang()): Promise<void> {
   if (l === 'en' && !DICT.en) DICT.en = (await import('./en')).en;
 }
 
-function initialLang(): Lang {
-  const saved = readJson<{ lang?: unknown }>(PREFS_KEY)?.lang;
-  if (saved === 'vi' || saved === 'en') return saved;
-  const nav = typeof navigator === 'undefined' ? '' : navigator.language;
-  return nav.toLowerCase().startsWith('vi') ? 'vi' : 'en';
-}
+/** L93: VI unless the player picked EN (prefs). The browser's language is not asked: an English-locale browser opened in EN. */
+export const pickLang = (saved: unknown): Lang => (saved === 'en' ? 'en' : 'vi');
+const initialLang = (): Lang => pickLang(readJson<{ lang?: unknown }>(PREFS_KEY)?.lang);
 
 interface NavLike { platform?: string; userAgentData?: { platform?: string } }
 

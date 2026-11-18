@@ -19,3 +19,11 @@ it('setLang: EN tải chậm không ghi đè VI được chọn sau đó', async
   vi.doUnmock('../src/i18n/en');
   vi.unstubAllGlobals();
 });
+
+it('L93: mặc định là VI, kể cả trình duyệt tiếng Anh; chỉ EN đã chọn mới là EN', async () => {
+  const { pickLang } = await vi.importActual<typeof import('../src/i18n')>('../src/i18n');
+  expect(pickLang(undefined)).toBe('vi');
+  expect(pickLang('fr')).toBe('vi');
+  expect(pickLang('vi')).toBe('vi');
+  expect(pickLang('en')).toBe('en');
+});

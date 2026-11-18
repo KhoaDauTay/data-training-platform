@@ -149,7 +149,8 @@ function content(route: Route, drawer: boolean): (Node | string)[] {
   } else if (inDomain(route)) {
     const order = app.tickets.map((x) => x.id);
     const isGated = gated(readTour());
-    out.push(domainHead(), ...navItems('domain').map((n) => {
+    // The drawer's domain switch already shows this domain (current, chapter · rank): a rule, not a second "Logistics" (L93).
+    out.push(drawer ? h('hr', { class: 'my-2 border-0 border-t border-line' }) : domainHead(), ...navItems('domain').map((n) => {
       const lock = navLock(n.id, done(), order, isGated);
       return row({ key: n.id, href: n.href, lead: icon(n.icon), label: t(n.label), current: n.current(route), onclick: n.onclick, lock: lock && t(lock) });
     }));
@@ -224,11 +225,14 @@ function initRailTips(): void {
   };
   const hide = (): void => { tip.hidden = true; };
   side.addEventListener('pointerover', show);
-  side.addEventListener('focusin', show);
+  // Keyboard focus only: a clicked link keeps focus, and the redraw after navigation gives it back (L93).
+  side.addEventListener('focusin', (e) => { if ((e.target as Element).matches(':focus-visible')) show(e); });
   side.addEventListener('pointerleave', hide);
   side.addEventListener('focusout', hide);
   side.addEventListener('scroll', hide, true);
   side.addEventListener('click', hide);
+  // The sidebar is redrawn on navigation: the item under the tip is gone without a pointerleave/focusout (L93).
+  window.addEventListener('hashchange', hide);
 }
 
 /** Once at startup: ☰ and the drawer (a modal <dialog>: focus trap, Esc, focus back to ☰), media changes, Esc for the overlay. */
