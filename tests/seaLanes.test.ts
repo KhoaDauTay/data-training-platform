@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { COAST, LAND } from '../src/art/coast';
 import { HUB, LANE_GEO, laneCurve, lanePath, xy, type Pt } from '../src/art/seaLanes';
 import { ROUTES } from '../src/scene';
+import { staggerGap } from '../src/art/mapMotion';
 
 /** The generated LAND path (M x y, then relative l dx dy, z) back into polygons. */
 function landRings(): Pt[][] {
@@ -74,6 +75,15 @@ describe('route map geography (ui-ux-v6 S2)', () => {
       const d = lanePath(port);
       expect(d.startsWith(`M${xy(HUB).join(' ')}`)).toBe(true);
       expect(d.endsWith(xy(LANE_GEO[port].port).join(' '))).toBe(true);
+    }
+  });
+
+  it('new lanes draw one after another and the last pin pops by 3 s', () => {
+    for (let n = 1; n <= ROUTES.length; n++) {
+      const gap = staggerGap(n, 1200);
+      expect(gap).toBeGreaterThanOrEqual(0);
+      expect((n - 1) * gap + Math.max(1200, 0.9 * 1200 + 300)).toBeLessThanOrEqual(3000);
+      if (n > 1) expect(gap).toBeGreaterThan(0);
     }
   });
 });

@@ -542,9 +542,12 @@ export function routeMap(h: Harbor): MapParts {
   return parts;
 }
 
-/** The dock's map (A2): a 1000×265 band around `port`'s lane, so the dock is no taller than with the v5 map (375 px: never over the editor). */
+/** The dock's map (A2): a 1000×265 band around `port`'s lane, so the dock is no taller than with the v5 map (375 px: never over the editor); text hidden. */
 export function cropToLane(p: MapParts, port: string | undefined): void {
-  const ys = port && LANE_GEO[port] ? laneCurve(port).flat().map(([, y]) => y) : [xy(HUB)[1]];
+  // place names would render at ~9 px in the 640 px dock (gate: ≥ 11 px), and the dock's sentence names the lanes
+  p.svg.setAttribute('class', 'block w-full [&_text]:hidden');
+  if (!port || !LANE_GEO[port]) return; // no lane (promotions from chapter 6): the whole map, no band holds every pin
+  const ys = laneCurve(port).flat().map(([, y]) => y);
   const band = 265;
   const top = Math.min(COAST.h - band, Math.max(0, (Math.min(...ys) + Math.max(...ys)) / 2 - band / 2));
   p.svg.setAttribute('viewBox', `0 ${Math.round(top)} ${COAST.w} ${band}`);

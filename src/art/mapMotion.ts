@@ -53,6 +53,9 @@ export function sailFleet(g: Gsap, p: MapParts, h: Harbor, order: string[]): () 
   return end;
 }
 
+/** Delay between new lanes (ms): half a lane, less when many, so the last pin pop (0.9 ms + 300) ends by 3 s. */
+export const staggerGap = (n: number, ms: number): number => (n > 1 ? Math.max(0, Math.min(ms / 2, (3000 - Math.max(ms, 0.9 * ms + 300)) / (n - 1))) : 0);
+
 /**
  * Draws each lane of `draw` in (stroke-dashoffset, `ms`), then pops its pin; several new lanes draw one after another
  * (S2 stagger), all within 3 s. The dash pattern goes through WAAPI style
@@ -61,7 +64,7 @@ export function sailFleet(g: Gsap, p: MapParts, h: Harbor, order: string[]): () 
  */
 export function drawNewRoutes(p: MapParts, draw: string[], ms = 1200): Promise<void> {
   if (reduced() || !draw.length) return Promise.resolve();
-  const gap = draw.length > 1 ? Math.min(ms / 2, (3000 - ms) / (draw.length - 1)) : 0;
+  const gap = staggerGap(draw.length, ms);
   return Promise.all(draw.map((port, i) => {
     const path = p.routes[port];
     const pin = p.pins[port];
