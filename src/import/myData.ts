@@ -1,7 +1,7 @@
 import { DbFailedError, DbRestartError } from '../db/client';
 import type { ImportedTable, ImportRequest } from '../db/import';
 import type { QueryResult } from '../db/run';
-import { ECOM_TABLES, GAME_SCHEMA } from '../domains';
+import { ECOM_TABLES, LOGISTICS_TABLES } from '../domains';
 import { inspectCsv, type ImportProblem } from './csv';
 import type { ImportStore, StoredImport } from './store';
 
@@ -25,8 +25,6 @@ function ignoreRestart(e: unknown): void {
   if (!(e instanceof DbRestartError)) throw e;
 }
 
-const GAME_TABLES_SQL = `SELECT table_name FROM information_schema.tables WHERE table_schema = '${GAME_SCHEMA}'`;
-
 /**
  * Owns the list of imported tables: inspect → import in the worker → keep the original file in the store.
  * `onChange` gets the new list after every change (add, remove, clear, restore, a table lost on replay).
@@ -48,12 +46,12 @@ export class MyData {
   }
 
   /**
-   * Plan 9 D9-15: a new import also avoids the e-commerce names (static list: the ecom schema may not be seeded yet).
+   * Plan 9 D9-15: a new import also avoids the e-commerce names (static lists: no schema needs to be seeded).
    * `restore` passes false: a file stored before Plan 9 as `orders` is kept, not deleted (in E-commerce `ecom.orders` wins).
    */
   private async gameTables(withEcom = true): Promise<Set<string>> {
-    const own = (await this.db.run(GAME_TABLES_SQL)).rows.map((r) => String(r[0]));
-    return new Set(withEcom ? [...own, ...ECOM_TABLES] : own);
+    // v12.0 D10-11: static, because the Logistics schema may not be seeded yet (async kept for the callers).
+    return new Set<string>(withEcom ? [...LOGISTICS_TABLES, ...ECOM_TABLES] : LOGISTICS_TABLES);
   }
 
   /**

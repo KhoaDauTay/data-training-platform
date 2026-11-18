@@ -60,6 +60,7 @@ function onDbStatus(s: DbStatus): void {
   if (s === 'ready' && Object.keys(app.columns).length === 0) void loadColumns();
 }
 const db = new DbClient(onDbStatus);
+void db.ensure('game').catch(() => undefined); // v12.0 Task 1 only: Logistics still at boot; Task 2 seeds the domain the player opens
 db.onProgress = (p) => {
   if (app.dbStatus !== 'loading') return; // the steps tab fetches the parser .wasm through the same counting fetch later
   app.loadProgress = p;

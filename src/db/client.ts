@@ -37,12 +37,17 @@ export class DbFailedError extends Error {
 export const PARSER_TIMEOUT_MS = 60_000;
 /** Worst case in the spike (20 MB, 200k rows, 50 columns) took ~6.5 s in Node; the browser is slower. */
 export const IMPORT_TIMEOUT_MS = 30_000;
+/**
+ * One seed's budget (v12.0 D10-2): Logistics took 10–11 s in desktop Edge (L46) and slow phones are 2–4× slower.
+ * Hang detection, not a target.
+ */
+export const ENSURE_TIMEOUT_MS = 120_000;
 
 /** Everything the worker accepts, minus the request id. */
 export type WorkerBody =
   /** `schema` absent = the game schema (Plan 8a D8a-4). */
   | { kind: RequestKind; sql: string; schema?: SchemaId }
-  /** Seeds a lazily seeded schema (`lab`) once; a no-op when it is already there. */
+  /** Seeds a lazily seeded schema (`game`, `lab`, `ecom`) once; a no-op when it is already there. */
   | { kind: 'ensure'; schema: SchemaId }
   | { kind: 'import'; req: ImportRequest; file: Blob }
   | { kind: 'dropImport'; table?: string }
@@ -82,6 +87,8 @@ export class DbClient {
   private imports = new Map<string, { req: ImportRequest; file: Blob }>();
   /** Schemas seeded by ensure(), seeded again after every restart before anything sent later (Plan 8a). */
   private ensured = new Set<SchemaId>();
+  /** Seeds in flight, one per schema: a second caller waits for the same seed instead of queueing another. */
+  private seeding = new Map<SchemaId, Promise<void>>();
   /** Schema for requests that name none (Plan 9 D9-9): the open domain's ('game' = Logistics, 'ecom'). Drills and lessons pass theirs explicitly. */
   defaultSchema: SchemaId = 'game';
   private worker!: Worker;
@@ -107,25 +114,44 @@ export class DbClient {
     return this.enqueue<T>(schema !== 'game' ? { kind, sql, schema } : { kind, sql }, timeoutMs);
   }
 
+  /** v12.0: true once the worker is up and `schema` is seeded on it. */
+  ready(schema: SchemaId): boolean {
+    return this.status === 'ready' && this.ensured.has(schema);
+  }
+
   /**
-   * Seeds `schema` (lab.sql for 'lab') under the import budget, not a query's. Remembered only once it succeeded, and
-   * re-sent after every restart(); a seed that times out is forgotten (no restart loop) and the next ensure() tries again.
+   * Seeds `schema` once (lab.sql, the ecom files, Logistics = 'game') under its own budget, not a query's. Remembered
+   * only once it succeeded and re-sent after every restart(). A seed that times out is forgotten (no restart loop) and
+   * the next ensure() tries again.
    */
-  async ensure(schema: SchemaId): Promise<void> {
-    if (schema === 'game' || this.ensured.has(schema)) return;
-    try {
-      await this.enqueue<void>({ kind: 'ensure', schema }, IMPORT_TIMEOUT_MS);
-    } catch (e) {
-      // v11 review: an ensure queued when another query restarted the worker is sent again on the new one.
-      if (e instanceof DbRestartError) return this.ensure(schema);
-      throw e;
+  ensure(schema: SchemaId): Promise<void> {
+    if (this.ensured.has(schema)) return Promise.resolve();
+    let p = this.seeding.get(schema);
+    if (!p) {
+      p = this.seed(schema).finally(() => this.seeding.delete(schema));
+      this.seeding.set(schema, p);
+    }
+    return p;
+  }
+
+  /** The first enqueue runs synchronously, so the seed is queued ahead of anything sent after ensure() returns. */
+  private async seed(schema: SchemaId): Promise<void> {
+    const start = performance.now();
+    for (;;) {
+      try {
+        await this.enqueue<void>({ kind: 'ensure', schema }, ENSURE_TIMEOUT_MS);
+        break;
+      } catch (e) {
+        if (!(e instanceof DbRestartError)) throw e; // v11 review: queued when another query restarted the worker: send again
+      }
     }
     this.ensured.add(schema);
+    performance.measure(`db:ensure:${schema}`, { start }); // v12.0 §2 measurement (review-log)
   }
 
   private replayEnsured(): void {
     for (const schema of this.ensured) {
-      this.enqueue<void>({ kind: 'ensure', schema }, IMPORT_TIMEOUT_MS).catch((e: Error) => {
+      this.enqueue<void>({ kind: 'ensure', schema }, ENSURE_TIMEOUT_MS).catch((e: Error) => {
         if (e instanceof DbRestartError || e instanceof DbFailedError) return;
         this.ensured.delete(schema);
       });

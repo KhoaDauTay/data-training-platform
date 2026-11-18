@@ -1,5 +1,5 @@
 import { PGlite } from '@electric-sql/pglite';
-import { initDb } from './init';
+import { initEngine } from './init';
 import { countingFetch } from './loadProgress';
 import type { WorkerBody } from './client';
 import { dropImport, importCsv } from './import';
@@ -14,7 +14,8 @@ const ready = (async () => {
   const db = new PGlite();
   await db.waitReady;
   const t1 = performance.now();
-  await initDb(db);
+  await initEngine(db); // v12.0 P1: no seed here; ensure requests seed each schema (lab.ts LAZY_SEEDS)
+  // seedMs now times only the empty setup; the seeds are the client's `db:ensure:<schema>` measures.
   const timings = { bootMs: Math.round(t1 - t0), seedMs: Math.round(performance.now() - t1) };
   return { db, timings };
 })();

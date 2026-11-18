@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { DbClient, DbFailedError, DbRestartError, PARSER_TIMEOUT_MS, QueryTimeoutError, WorkerTaskError, type DbStatus } from '../src/db/client';
+import { DbClient, DbFailedError, DbRestartError, ENSURE_TIMEOUT_MS, PARSER_TIMEOUT_MS, QueryTimeoutError, WorkerTaskError, type DbStatus } from '../src/db/client';
 import { SqlError } from '../src/db/run';
 
 /** Stand-in for the PGlite worker: records posted queries, the test answers them by hand. */
@@ -247,7 +247,7 @@ describe('DbClient', () => {
     expect((w.posted[1] as { schema?: string }).schema).toBeUndefined();
   });
 
-  it('ensure: hạn 30 s, nhớ schema, gửi lại sau restart trước query kế tiếp', async () => {
+  it('ensure: hạn riêng, nhớ schema, gửi lại sau restart trước query kế tiếp', async () => {
     const { db } = client();
     const w = last();
     w.ready();
@@ -258,8 +258,10 @@ describe('DbClient', () => {
     await e;
     await db.ensure('lab'); // already ensured: nothing posted
     expect(w.posted).toHaveLength(1);
-    await expect(db.ensure('game')).resolves.toBeUndefined();
-    expect(w.posted).toHaveLength(1);
+    const g = db.ensure('game'); // v12.0 P1: Logistics is seeded through ensure too
+    expect(w.posted[1]).toMatchObject({ kind: 'ensure', schema: 'game' });
+    w.send({ type: 'result', id: w.posted[1].id, result: null });
+    await g;
     const slow = db.run('SLOW').catch((x: unknown) => x);
     await vi.advanceTimersByTimeAsync(5000);
     expect(await slow).toBeInstanceOf(QueryTimeoutError);
@@ -269,8 +271,10 @@ describe('DbClient', () => {
     w2.ready();
     expect(w2.posted.map((p) => p.kind)).toEqual(['ensure']);
     w2.send({ type: 'result', id: w2.posted[0].id, result: null });
-    expect(w2.posted.map((p) => p.kind)).toEqual(['ensure', 'run']);
-    w2.answer(1);
+    expect(w2.posted.map((p) => p.kind)).toEqual(['ensure', 'ensure']);
+    w2.send({ type: 'result', id: w2.posted[1].id, result: null });
+    expect(w2.posted.map((p) => p.kind)).toEqual(['ensure', 'ensure', 'run']);
+    w2.answer(2);
     await expect(next).resolves.toBeDefined();
   });
 
@@ -295,9 +299,33 @@ describe('DbClient', () => {
     const { db } = client();
     last().ready();
     const e = db.ensure('lab').catch((x: unknown) => x);
-    await vi.advanceTimersByTimeAsync(30_000);
+    await vi.advanceTimersByTimeAsync(ENSURE_TIMEOUT_MS);
     expect(await e).toBeInstanceOf(QueryTimeoutError);
     last().ready();
     expect(last().posted).toEqual([]);
+  });
+
+  it('ensure: hai lần gọi cùng lúc chỉ gửi một yêu cầu; ready() theo schema', async () => {
+    const { db } = client();
+    const w = last();
+    w.ready();
+    expect(db.ready('game')).toBe(false);
+    const a = db.ensure('game');
+    const b = db.ensure('game');
+    expect(w.posted.filter((p) => p.kind === 'ensure')).toHaveLength(1);
+    w.send({ type: 'result', id: w.posted[0].id, result: null });
+    await Promise.all([a, b]);
+    expect(db.ready('game')).toBe(true);
+    expect(db.ready('ecom')).toBe(false);
+  });
+
+  it('ensure chờ hơn 30 s vẫn được (Logistics trên máy chậm, D10-2)', async () => {
+    const { db } = client();
+    const w = last();
+    w.ready();
+    const e = db.ensure('game');
+    await vi.advanceTimersByTimeAsync(60_000);
+    w.send({ type: 'result', id: w.posted[0].id, result: null });
+    await expect(e).resolves.toBeUndefined();
   });
 });

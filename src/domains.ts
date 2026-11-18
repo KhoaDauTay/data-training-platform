@@ -24,6 +24,15 @@ export const ECOM_TABLES = [
   'categories', 'sellers', 'products', 'customers', 'vouchers', 'orders', 'order_items',
   'payments', 'deliveries', 'returns', 'reviews', 'web_sessions', 'ad_spend',
 ] as const;
+/**
+ * Tables of the Logistics schema (src/db/schema.sql; tests/startup.test.ts checks the list). Static because Logistics is
+ * seeded lazily (v12.0 P1): a CSV import must avoid these names even before that seed (D10-11).
+ */
+export const LOGISTICS_TABLES = [
+  'ports', 'carriers', 'employees', 'customers', 'shipments', 'containers', 'shipment_events', 'trucking_orders', 'cfs_receipts',
+  'hs_codes', 'duties_taxes', 'customs_declarations', 'incoterms', 'exchange_rates', 'rate_contracts', 'quotations', 'invoices',
+  'payments', 'vendor_bills', 'master_bills', 'house_bills', 'free_time_terms', 'container_events', 'claims', 'lane_profiles', 'bunker_prices',
+] as const;
 export type SchemaId = keyof typeof SCHEMAS;
 
 /** Schema of each live domain's own tables (story, practice, sandbox, data, dashboard). Plan 9. */

@@ -1,16 +1,19 @@
-import schema from './schema.sql?raw';
-import seed from './seed.sql?raw';
-import { GAME_SCHEMA } from '../domains';
+import type { PGlite } from '@electric-sql/pglite';
 import { SANDBOX_SETUP_SQL } from './import';
+import { ensureSchema } from './lab';
 
 /**
- * v6 §4.4 S1: the game tables are created in their own schema (public stays empty). schema.sql and seed.sql are unchanged:
- * they use bare names, so the session search_path decides where they go. md5 pins in tests/seed.test.ts are unaffected
- * (row::text carries no schema name).
+ * v12.0 P1: the worker boots empty: only `sandbox` and the session search_path `logistics, sandbox` (a schema that does not
+ * exist yet is skipped by Postgres). Each domain's tables come later through ensureSchema (`game` = Logistics).
  */
-export async function initDb(db: { exec(sql: string): Promise<unknown> }): Promise<void> {
-  await db.exec(`CREATE SCHEMA ${GAME_SCHEMA}; SET search_path = ${GAME_SCHEMA};`);
-  await db.exec(schema);
-  await db.exec(seed);
-  await db.exec(SANDBOX_SETUP_SQL);
+export const initEngine = (db: Pick<PGlite, 'exec'>): Promise<unknown> => db.exec(SANDBOX_SETUP_SQL);
+
+/**
+ * Engine + Logistics, as the app booted before v12.0. Tests only (tests/helpers.ts). ensureSchema('game') runs the same
+ * statements the old initDb did (CREATE SCHEMA logistics; SET search_path TO logistics; schema.sql; seed.sql;
+ * SANDBOX_SETUP_SQL), so the md5 pins in tests/seed.test.ts are unchanged.
+ */
+export async function initDb(db: PGlite): Promise<void> {
+  await initEngine(db);
+  await ensureSchema(db, 'game');
 }
