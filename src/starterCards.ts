@@ -33,7 +33,8 @@ export const STARTERS: Partial<Record<DomainId, StarterCard[]>> = {
       id: 's-signups', title: 'starter.ec.signups', kind: 'line', col: 1, tables: ['customers'],
       sql: "SELECT date_trunc('month', signup_date)::date AS month, COUNT(*) AS customers\nFROM customers\nWHERE signup_date >= DATE '2025-11-01' AND signup_date < DATE '2026-11-01'\nGROUP BY 1\nORDER BY 1",
     },
-    { id: 's-sellers', title: 'starter.ec.sellers', kind: 'table', tables: ['sellers'], sql: 'SELECT name, city, joined_on\nFROM sellers\nORDER BY joined_on DESC, name\nLIMIT 10' },
+    // Not the columns of ecom-ch1-01 (every shop's name, city, joined_on): "Xem SQL" must not show an answer.
+    { id: 's-official', title: 'starter.ec.official', kind: 'table', tables: ['sellers'], sql: 'SELECT name, city\nFROM sellers\nWHERE is_official\nORDER BY city, name' },
   ],
 };
 

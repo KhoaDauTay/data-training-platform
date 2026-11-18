@@ -19,7 +19,8 @@ import { bars, line } from './chartView';
 import { byId, h } from './dom';
 import { errorView } from './feedback';
 import { icon, isIconName, type IconName } from './icons';
-import { startSandbox } from './modes';
+import { backToStory, startSandbox } from './modes';
+import { isStory } from '../session';
 import { mascot } from './mascots';
 import { go } from './router';
 import { renderResult } from './resultTable';
@@ -229,7 +230,7 @@ function lockedMine(lock: { skill: string; n: number }): HTMLElement {
             role: 'button', 'aria-disabled': 'true', tabindex: '0', title: hint, 'aria-label': `${t('dash.createLocked')}: ${hint}`,
             class: 'inline-flex cursor-not-allowed items-center gap-1.5 rounded-full border border-dashed border-line px-4 py-2 text-sm font-semibold text-muted',
           }, icon('lock', 'size-4'), t('dash.createLocked'), h('span', { class: 'font-normal' }, ` · ${hint}`)),
-          h('button', { type: 'button', class: cx(BTN_GO, 'px-4 py-2'), onclick: () => go('play') }, t('dash.toTask'))))),
+          h('button', { type: 'button', class: cx(BTN_GO, 'px-4 py-2'), onclick: () => (isStory() ? go('play') : backToStory()) }, t('dash.toTask'))))),
     startersBlock(true));
 }
 
@@ -328,7 +329,7 @@ export function renderDashboard(host: HTMLElement): void {
   host.replaceChildren(h('div', { class: 'mx-auto max-w-6xl space-y-6 px-4 py-6' },
     h('header', {},
       h('h1', { id: 'dashboard-title', tabindex: '-1', class: 'm-0 text-2xl font-bold' }, t('dash.title')),
-      h('p', { class: 'mt-1 mb-0 max-w-3xl text-[15px] text-muted' }, t('dash.intro'))),
+      h('p', { class: 'mt-1 mb-0 max-w-3xl text-[15px] text-muted' }, t(customLock() ? 'dash.introLocked' : 'dash.intro'))),
     mineSection(redraw), // L49: the player's own cards come before the company figures
     companySection(redraw)));
 }
