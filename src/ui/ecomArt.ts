@@ -1,3 +1,4 @@
+import { loadedGsap, loadGsap } from '../art/load';
 import { getLang, t } from '../i18n';
 import { rankOf } from '../progress';
 import { app, done } from '../state';
@@ -10,8 +11,7 @@ let art: Promise<EcommerceArt> | undefined;
 /** The Lantern Market scene and delivery map (Plan 9): one lazy chunk. A failed load is dropped so the next call retries. */
 export function loadEcomArt(): Promise<EcommerceArt> {
   art ??= import('../art/ecommerce').then((m) => {
-    m.initArt({ t, chapterColor, s, h, getLang });
-    m.prefetchGsap(); // ui-ux-v6 S3: the completion dock runs on GSAP
+    m.initArt({ t, chapterColor, s, h, getLang, loadedGsap, loadGsap }); // ui-ux-v6 S3: the dock runs on main's GSAP chunk
     return m;
   }).catch((e: unknown) => {
     art = undefined;

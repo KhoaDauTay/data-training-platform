@@ -42,7 +42,7 @@ beforeAll(async () => {
     el.append(...kids.filter((k): k is Fake => typeof k === 'object' && k !== null));
     return el;
   };
-  art.initArt({ t: ((k: string) => k) as never, chapterColor, s, h: h as never, getLang: () => 'vi' });
+  art.initArt({ t: ((k: string) => k) as never, chapterColor, s, h: h as never, getLang: () => 'vi', loadedGsap: () => undefined, loadGsap: () => {} });
 });
 afterAll(() => vi.unstubAllGlobals());
 

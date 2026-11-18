@@ -3,6 +3,7 @@ import type { Harbor } from '../scene';
 import type * as Theme from '../theme';
 import type * as Dom from '../ui/dom';
 import type * as Svg from '../ui/svg';
+import type * as Load from './load';
 import type { Ctx } from './logistics';
 
 // Main-bundle values come in through initArt (only `import type` from main modules, Plan 6 U3: a value import makes
@@ -12,8 +13,13 @@ let chapterColor: typeof Theme.chapterColor;
 let s: typeof Svg.s;
 let h: typeof Dom.h;
 let getLang: typeof I18n.getLang;
-export function initArt(deps: { t: typeof I18n.t; chapterColor: typeof Theme.chapterColor; s: typeof Svg.s; h: typeof Dom.h; getLang: typeof I18n.getLang }): void {
-  ({ t, chapterColor, s, h, getLang } = deps);
+let loadedGsap: typeof Load.loadedGsap;
+let loadGsap: typeof Load.loadGsap;
+export function initArt(deps: {
+  t: typeof I18n.t; chapterColor: typeof Theme.chapterColor; s: typeof Svg.s; h: typeof Dom.h; getLang: typeof I18n.getLang;
+  loadedGsap: typeof Load.loadedGsap; loadGsap: typeof Load.loadGsap;
+}): void {
+  ({ t, chapterColor, s, h, getLang, loadedGsap, loadGsap } = deps);
 }
 
 /**
@@ -73,7 +79,8 @@ export function deliveryMap(st: EcomArtState, ring = true): SVGSVGElement {
     'aria-label': t('ecom.map.label', { cities: deliveryItems(st).join('; ') }),
   },
     s('rect', { width: 980, height: 300, rx: 12, class: 'fill-sky-100 dark:fill-slate-800' }),
-    s('path', { d: COAST, class: 'fill-slate-300 dark:fill-slate-700', stroke: '#ffffff', 'stroke-opacity': 0.55, 'stroke-width': 2 }),
+    s('path', { d: COAST, class: 'fill-slate-300 dark:fill-slate-700' }),
+    s('path', { d: COAST.slice(0, COAST.indexOf(' L')), fill: 'none', stroke: '#ffffff', 'stroke-opacity': 0.55, 'stroke-width': 2 }), // the shoreline only
     s('g', {}, ...CITIES.map(route)),
     s('g', { 'font-family': FONT, 'font-size': 14, 'font-weight': 600 },
       ...CITIES.flatMap((c) => {
@@ -218,7 +225,7 @@ function drawStore(st: EcomArtState, ambient: boolean, lit: boolean, task = fals
   let rail = '';
   for (let x = 110; x < 414; x += 10) rail += `M${x} 188V200`;
   const parcelG = s('g', { 'data-parcels': '' }, ...Array.from({ length: parcels }, (_, i) => parcel(i)));
-  const rider = task ? scooter(940, 330) : scooter(470, 334);
+  const rider = task ? scooter(940, 330) : scooter(442, 334);
   const shutter = task ? s('rect', { x: 994, y: 174, width: 32, height: 0, fill: '#94a3b8' }) : undefined;
   const lamp = (x: number): El[] => [
     s('circle', { cx: x + 16, cy: 212, r: 44, fill: url('glow'), style: 'opacity:var(--es-glow)' }),
@@ -253,7 +260,7 @@ function drawStore(st: EcomArtState, ambient: boolean, lit: boolean, task = fals
       s('rect', { x: -420, y: 336, width: 1940, height: 6, style: 'fill:var(--es-curb)' }),
       s('rect', { x: -420, y: 342, width: 1940, height: 70, fill: url('road') }),
       s('path', { d: Array.from({ length: 33 }, (_, i) => `M${-400 + i * 60} 374h32`).join(''), stroke: '#f8fafc', 'stroke-opacity': 0.55, 'stroke-width': 3, 'stroke-linecap': 'round' }),
-      ...lamp(540), ...lamp(-220), ...lamp(1290)),
+      ...lamp(590), ...lamp(-220), ...lamp(1290)),
     // the shophouse: upper storey with shutters, balcony and signboard; pent roof; shop window and glass door
     s('g', { 'aria-hidden': 'true' },
       s('rect', { x: 98, y: 104, width: 324, height: 214, style: 'fill:var(--es-wall)' }),
@@ -318,15 +325,7 @@ export const storeScene = (st: EcomArtState, ambient = true, lit = false): SVGSV
 
 // ---- completion dock (ui-ux-v5 B3, on GSAP since ui-ux-v6 S3): the build/play contract of art/logistics; ui/stage.ts owns the dock, Skip, Esc and Lily ----
 
-type Gsap = typeof import('./gsap');
-type Timeline = ReturnType<Gsap['timeline']>;
-let gsapMod: Promise<Gsap> | undefined;
-let gsapReady: Gsap | undefined;
-/** ui-ux-v6 §2.1: the shared lazy `gsap-*` chunk (ui/ecomArt.ts asks for it once this chunk is in). A failed load is dropped so the next call retries. */
-export const prefetchGsap = (): void => {
-  gsapMod ??= import('./gsap').then((m) => (gsapReady = m), (e: unknown) => { gsapMod = undefined; throw e; });
-  gsapMod.catch(() => {});
-};
+type Timeline = ReturnType<typeof import('./gsap')['timeline']>;
 
 const stateOf = (hb: Harbor): EcomArtState => ({ passed: hb.passed, done: Object.values(hb.bays).reduce((a, b) => a + b, 0) });
 
@@ -385,14 +384,16 @@ function end(d: Dock): void {
 export async function play(c: Ctx): Promise<void> {
   const d = docks.get(c);
   if (!d) return;
-  const g = gsapReady;
+  const g = loadedGsap(); // ui-ux-v6 §2.1: the shared `gsap-*` chunk main fetches when idle after the first screen (art/load.ts)
   if (c.run.fast || !g) {
-    if (!c.run.fast) prefetchGsap();
+    if (!c.run.fast) loadGsap();
     end(d);
     return;
   }
   const tl: Timeline = g.timeline();
-  if (d.box) tl.fromTo(d.box, { y: -70, opacity: 0 }, { y: 0, opacity: 1, duration: 0.6, ease: 'bounce.out' }, 0);
+  // drops from inside the bay: the upper shelves fall a shorter way than 70, never from over the roof
+  const top = 278 - Math.floor(Math.min(stateOf(c.before).done, MAX_PARCELS - 1) / SHELF.cols) * 48 - SHELF.h;
+  if (d.box) tl.fromTo(d.box, { y: -Math.max(24, Math.min(70, top - 150)), opacity: 0 }, { y: 0, opacity: 1, duration: 0.6, ease: 'bounce.out' }, 0);
   const { map, card } = d;
   if (map && card) {
     tl.fromTo(card, { opacity: 0, y: -8 }, { opacity: 1, y: 0, duration: 0.4, ease: 'power2.out', immediateRender: false }, 0.4)
