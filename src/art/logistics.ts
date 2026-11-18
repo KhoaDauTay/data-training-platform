@@ -350,10 +350,15 @@ export interface Run {
 
 type Gsap = typeof import('./gsap');
 let gsapMod: Promise<Gsap> | undefined;
-/** ui-ux-v6 §2.1: GSAP's own lazy chunk, never a static import. A failed load is dropped so the next completion retries. */
-const loadGsap = (): Promise<Gsap> => (gsapMod ??= import('./gsap').catch((e: unknown) => { gsapMod = undefined; throw e; }));
-/** src/art/load.ts prefetchArt(): fetch GSAP when idle after the art chunk, so the first completion never waits for it. */
-export const prefetchGsap = (): void => void loadGsap().catch(() => {});
+let gsapReady: Gsap | undefined;
+/**
+ * ui-ux-v6 §2.1: GSAP's own lazy chunk, never a static import, fetched when idle after the art chunk (src/art/load.ts
+ * prefetchArt) and again by a completion that found it missing. A failed load is dropped so the next call retries.
+ */
+export const prefetchGsap = (): void => {
+  gsapMod ??= import('./gsap').then((m) => (gsapReady = m), (e: unknown) => { gsapMod = undefined; throw e; });
+  gsapMod.catch(() => {});
+};
 export interface Ctx {
   run: Run;
   tk: Ticket;
@@ -637,15 +642,12 @@ function promoCard(c: Ctx): HTMLElement {
 // ---- the eight kinds (§2), step durations from STEPS ----
 const PLAY: Record<Scene['kind'], (c: Ctx) => Promise<void>> = {
   async ship(c) {
-    let g: Gsap;
-    try {
-      g = await loadGsap();
-    } catch (e) {
-      console.warn('Animation library unavailable:', e); // §2.1: the end state, the dock keeps its sentence and Close
+    if (!gsapReady) { // §2.1: GSAP not in yet (still loading or failed): the end state at once, never wait for the network
+      prefetchGsap();
       shipEnd(c);
       return;
     }
-    await g.play(shipTimeline(c, g), c.run);
+    await gsapReady.play(shipTimeline(c, gsapReady), c.run);
   },
 
   async yard(c) {
