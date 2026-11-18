@@ -99,6 +99,8 @@ export interface Ticket {
   lane?: string;
   /** Plan 11 §1.4: advanced General nodes (content/general/adv.yml ids) this task applies; shown as "Relies on" links, never in requires. */
   adv?: string[];
+  /** v14 T3 (D-H3): the hint scaffold hides every clause that differs from a `wrong:` answer, like a General trap drill. */
+  trap?: true;
 }
 
 const BEATS: Beat[] = ['teach', 'develop', 'twist', 'rest', 'boss'];
@@ -289,6 +291,7 @@ export function parseTicket(source: string, origin: string): Ticket {
       return { sql: (o!.sql as string).trim(), why: why! };
     });
   }
+  if (fm.trap !== undefined) t.trap = fm.trap === true && t.wrong ? true : fail('trap: true cần wrong: (khung gợi ý giấu mệnh đề khác câu sai)');
 
   if (enPart !== undefined) {
     const en = parseSections(enPart, fail, 'en');

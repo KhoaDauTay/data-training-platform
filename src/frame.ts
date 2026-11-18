@@ -49,7 +49,7 @@ function parens(ts: { t: string }[]): { match: number[]; owner: number[] } {
 const isQueryStart = (x: { u?: string; t: string } | undefined) => x !== undefined && /^(SELECT|WITH)$/i.test(x.t);
 
 export interface Clause { key: string; a: number; b: number; norm: string }
-/** Top-level clauses (L95): SELECT, FROM item, each JOIN item, each ON/USING, WHERE, GROUP BY, HAVING, ORDER BY, LIMIT…, each CTE body. */
+/** Top-level clauses (L95): SELECT, FROM item, each JOIN's words (JT) and item, each ON/USING, WHERE, GROUP BY, HAVING, ORDER BY, LIMIT…, each CTE body. */
 export function topClauses(ts: Tok[]): Clause[] {
   const { match, owner } = parens(ts);
   const out: Clause[] = [], seen: Record<string, number> = {};
@@ -99,6 +99,7 @@ export function topClauses(ts: Tok[]): Clause[] {
     }
     if (!kind) continue;
     close(i);
+    if (kind === 'JOIN') { cur = { kind: 'JT', a: i }; close(i + 1 + skip); } // v14 T3: the join words are a clause of their own (FULL vs LEFT JOIN)
     cur = { kind, a: i + 1 + skip };
     i += skip;
   }
@@ -175,6 +176,21 @@ export function frameParts(sql: string, trapWrongs?: string[]): { text: string; 
   let groups = 0;
   const one = (a: number, b: number) => { if (a < b) { fill(a, b); const g = groups++; for (let i = a; i < b; i++) group[i] = g; } };
 
+  // One list item: `ROLLUP (`/`CUBE (`/`GROUPING SETS (`/a bare `(` list keep their words and parens, each element inside is
+  // one ___ (v9 §3.4: the skill of fin-ch5-04 stays visible); a trailing NULLS FIRST/LAST stays outside the ___.
+  const item = (a: number, b: number, inSet = false) => {
+    let k = a;
+    if (at(k) === 'ROLLUP' || at(k) === 'CUBE') k++;
+    else if (at(k) === 'GROUPING' && at(k + 1) === 'SETS') k += 2;
+    if (ts[k]?.t === '(' && match[k] === b - 1 && (k > a || inSet)) {
+      for (let x = a; x <= k; x++) hole[x] = false;
+      hole[b - 1] = false;
+      for (let x = k + 1, s = x; x <= b - 1; x++) if (x === b - 1 || (ts[x].t === ',' && owner[x] === k)) { item(s, x, true); hole[x] = false; s = x + 1; }
+      return;
+    }
+    if (at(b - 2) === 'NULLS' && b - 2 > a) b -= 2;
+    one(a, b);
+  };
   for (let i = 0; i < n - 1; i++) {
     if (!/^(GROUP|ORDER|PARTITION)$/.test(ts[i].u) || ts[i + 1].u !== 'BY') continue;
     let a = i + 2, j = a, depth = 0;
@@ -182,10 +198,10 @@ export function frameParts(sql: string, trapWrongs?: string[]): { text: string; 
       const t = ts[j].t;
       if (t === '(') depth++;
       else if (t === ')') { if (depth === 0) break; depth--; }
-      else if (depth === 0 && (t === ',' || t === ';')) { one(a, j); a = j + 1; if (t === ';') break; }
+      else if (depth === 0 && (t === ',' || t === ';')) { item(a, j); a = j + 1; if (t === ';') break; }
       else if (depth === 0 && LIST_END.has(ts[j].u) && !(ts[j].u === 'ORDER' && ts[j - 1]?.u === 'BY')) break;
     }
-    one(a, j);
+    item(a, j);
   }
 
   if (trapWrongs?.length) { // D-H3: a clause that differs from the same clause of a wrong answer becomes one ___
@@ -249,19 +265,40 @@ function layout(items: Item[]): string {
     return CLAUSES.has(u);
   };
 
+  /** v14 T3: the width of a clause's first line (up to the end of the clause or a sub-query that breaks). */
+  const width = (i: number, b: number): number => {
+    let s = '';
+    for (let j = i; j < b && (j === i || !clauseStart(j)); j++) {
+      s += glue(items[j - 1], items[j]);
+      if (items[j].text === '(' && !items[j].hole) {
+        if (breaks(j)) break;
+        s += flat(items, j + 1, Math.min(match[j] + 1, b));
+        j = match[j];
+      }
+    }
+    return s.trim().length;
+  };
+
   const block = (a: number, b: number, base: number) => {
     newLine(base);
     let cond = false; // inside WHERE / HAVING / ON
+    let wide = false, between = false, cases = 0; // v14 T3: a clause wider than WIDE puts each top-level AND/OR (WHERE, HAVING) and WHEN/ELSE on its own line
     for (let i = a; i < b; i++) {
       const u = kw(i);
       if (i > a && clauseStart(i)) newLine(base);
-      if (clauseStart(i) || u === 'ON') cond = u === 'WHERE' || u === 'HAVING' || u === 'ON';
+      if (clauseStart(i) || u === 'ON') { cond = u === 'WHERE' || u === 'HAVING' || u === 'ON'; wide = u !== 'ON' && width(i, b) > WIDE; }
+      if (u === 'BETWEEN') between = true;
+      if (u === 'CASE') cases++;
+      if (wide && cases === 1 && (u === 'WHEN' || u === 'ELSE')) newLine(base + 2);
+      if (wide && cases === 1 && u === 'END') newLine(base);
+      if (u === 'END') cases = Math.max(0, cases - 1);
       if (cond && (u === 'AND' || u === 'OR')) {
         let j = i + 1, hasBreak = false;
         for (; j < b && !clauseStart(j) && kw(j) !== 'AND' && kw(j) !== 'OR'; j++) {
           if (items[j].text === '(') { hasBreak ||= breaks(j); j = match[j]; }
         }
-        if (hasBreak) newLine(base + 2);
+        if (hasBreak || (wide && !between && cases === 0)) newLine(base + 2);
+        if (u === 'AND') between = false;
       }
       const prev = items[i - 1];
       if (items[i].text === '(' && !items[i].hole) {

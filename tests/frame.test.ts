@@ -6,7 +6,7 @@ import { grade } from '../src/grader';
 import { blanksIn } from '../src/tickets';
 import { applyVariant, variantsOf } from '../src/variants';
 import { labRun } from './generalRules';
-import { ecomRunner, runner } from './helpers';
+import { ecomRunner, finRunner, runner } from './helpers';
 
 // v13 (product-design-v8 §3.3, §3.9): the scaffold Boon fills into the editor, generated from the Solution.
 const lines = (...xs: string[]) => xs.join('\n');
@@ -68,6 +68,34 @@ describe('frameOf: ví dụ §3.4', () => {
   });
 });
 
+describe('frameOf: Finance (v9 §3.4 (d))', () => {
+  it('ROLLUP/CUBE/GROUPING SETS giữ, mỗi phần tử bên trong một ___; ORDER BY giữ NULLS LAST/FIRST', () => {
+    expect(frameOf("SELECT b.region, b.name, sum(g.amount) FROM gl_entries g JOIN branches b ON b.id = g.branch_id WHERE g.posted_on >= '2026-07-01' GROUP BY ROLLUP (b.region, b.name) ORDER BY b.region NULLS LAST, b.name DESC NULLS FIRST"))
+      .toBe(lines(
+        'SELECT b.___, b.___, sum(g.___)',
+        'FROM gl_entries g',
+        'JOIN branches b ON b.___ = g.___',
+        'WHERE g.___ >= ___',
+        'GROUP BY ROLLUP (___, ___)',
+        'ORDER BY ___ NULLS LAST, ___ NULLS FIRST'));
+    expect(frameOf('SELECT 1 FROM t GROUP BY CUBE (a, b), c')).toBe('SELECT ___ FROM t GROUP BY CUBE (___, ___), ___');
+    expect(frameOf('SELECT 1 FROM t GROUP BY GROUPING SETS ((a, b), (a), ())')).toBe(lines('SELECT ___', 'FROM t', 'GROUP BY GROUPING SETS ((___, ___), (___), ())'));
+    expect(frameOf('SELECT sum(v) OVER (ORDER BY d NULLS LAST) FROM t')).toBe('SELECT sum(___) OVER (ORDER BY ___ NULLS LAST) FROM t');
+  });
+
+  it('bài bẫy: kiểu ghép khác câu sai thì "FULL JOIN" là một ___ (bảng vẫn hiện)', () => {
+    expect(frameOf('SELECT a.k FROM a FULL JOIN b ON b.k = a.k', ['SELECT a.k FROM a LEFT JOIN b ON b.k = a.k']))
+      .toBe('SELECT a.___ FROM a ___ b ON b.___ = a.___');
+  });
+
+  it('WHERE dài: mỗi AND một dòng (AND của BETWEEN giữ); CASE dài: mỗi WHEN/ELSE một dòng', () => {
+    expect(frameOf("SELECT l.code FROM loans l WHERE l.branch_id = 7 AND l.disbursed_on BETWEEN '2026-03-01' AND '2026-05-31' AND l.status = 'active'"))
+      .toBe(lines('SELECT l.___', 'FROM loans l', 'WHERE l.___ = ___', '  AND l.___ BETWEEN ___ AND ___', '  AND l.___ = ___'));
+    expect(frameOf('SELECT loan_id, CASE WHEN dpd = 0 THEN 0 WHEN dpd <= 30 THEN 1 WHEN dpd <= 90 THEN 2 ELSE 3 END AS bucket FROM loan_snapshots'))
+      .toBe(lines('SELECT ___, CASE', '  WHEN ___ = ___ THEN ___', '  WHEN ___ <= ___ THEN ___', '  WHEN ___ <= ___ THEN ___', '  ELSE ___', 'END AS ___', 'FROM loan_snapshots'));
+  });
+});
+
 describe('frameOf: luật', () => {
   it('true/false, ép kiểu, CAST, EXTRACT … FROM, khung cửa sổ, bí danh trùng tên CTE', () => {
     expect(frameOf('SELECT a FROM t WHERE ok = true')).toBe('SELECT ___ FROM t WHERE ___ = ___');
@@ -90,12 +118,13 @@ describe('frameOf: luật', () => {
 
 // ---- sweep: every real Solution (all variants and steps), drill, challenge and "Thử ngay" ----
 
-interface Case { id: string; sql: string; ordered: boolean; precision?: number; trap?: string[]; on: 'game' | 'ecom' | 'lab' }
+interface Case { id: string; sql: string; ordered: boolean; precision?: number; trap?: string[]; on: 'game' | 'ecom' | 'fin' | 'lab' }
 function generalDrills() {
   return generalNowSync.drills; // skill drills + advanced nodes' drills
 }
 const generalNowSync = await loadGeneral();
 await loadDomain('ecommerce');
+await loadDomain('finance');
 
 function cases(): Case[] {
   const out: Case[] = [];
@@ -103,13 +132,15 @@ function cases(): Case[] {
     for (const tpl of tpls) {
       for (let v = 0; v < Math.max(1, variantsOf(tpl).length); v++) {
         const t = applyVariant(tpl, v);
-        t.steps.forEach((s, i) => out.push({ id: `${t.id}#${v}.${i}`, sql: s.solution, ordered: t.ordered, precision: s.precision, on }));
+        const trap = t.trap ? t.wrong?.map((w) => w.sql) : undefined; // the same selector as brief.ts fillBox
+        t.steps.forEach((s, i) => out.push({ id: `${t.id}#${v}.${i}`, sql: s.solution, ordered: t.ordered, precision: s.precision, trap, on }));
       }
     }
   };
   story(loadTicketTemplates('logistics'), 'game');
   story(loadLanes().tasks, 'game');
   story(loadTicketTemplates('ecommerce'), 'ecom');
+  story(loadTicketTemplates('finance'), 'fin');
   for (const d of generalDrills()) out.push({ id: d.id, sql: d.solution, ordered: d.ordered, on: 'lab', trap: d.kind === 'trap' ? d.wrong.map((w) => w.sql) : undefined });
   const lessons = [...loadLessons().values(), ...generalNowSync.nodes.flatMap((n) => (n.lesson ? [n.lesson] : []))];
   for (const l of lessons) out.push({ id: `try:${l.id}`, sql: l.try.solution, ordered: l.try.ordered, on: 'lab' });
@@ -140,9 +171,10 @@ describe('frameOf trên toàn bộ nội dung', () => {
   it('không lộ: không còn chuỗi, số, true/false hay tên cột của schema', async () => {
     const run = await labRun();
     await ecomRunner();
+    await finRunner();
     const names = async (sql: string) => new Set((await run(sql)).rows.map((r) => String(Object.values(r)[0]).toLowerCase()));
-    const columns = await names("SELECT column_name FROM information_schema.columns WHERE table_schema IN ('logistics', 'ecom', 'lab')");
-    const tables = await names("SELECT table_name FROM information_schema.tables WHERE table_schema IN ('logistics', 'ecom', 'lab')");
+    const columns = await names("SELECT column_name FROM information_schema.columns WHERE table_schema IN ('logistics', 'ecom', 'finance', 'lab')");
+    const tables = await names("SELECT table_name FROM information_schema.tables WHERE table_schema IN ('logistics', 'ecom', 'finance', 'lab')");
     expect(columns.size).toBeGreaterThan(100);
     const bad: string[] = [];
     for (const c of ALL) {
@@ -157,7 +189,7 @@ describe('frameOf trên toàn bộ nội dung', () => {
   });
 
   it('đi vòng: điền lại từng ___ ra đúng Solution, và câu đó qua grade() trên PGlite', async () => {
-    const run: Record<Case['on'], (sql: string) => Promise<QueryResult>> = { game: await runner(), ecom: await ecomRunner(), lab: await labRun() };
+    const run: Record<Case['on'], (sql: string) => Promise<QueryResult>> = { game: await runner(), ecom: await ecomRunner(), fin: await finRunner(), lab: await labRun() };
     const bad: string[] = [];
     for (const c of ALL) {
       const { text, holes } = frameParts(c.sql, c.trap);
@@ -170,7 +202,7 @@ describe('frameOf trên toàn bộ nội dung', () => {
     expect(bad).toEqual([]);
   });
 
-  it('bài bẫy: mọi mệnh đề có ở cả Solution lẫn câu sai mà khác nhau là đúng một ___', () => {
+  it('bài bẫy: mọi mệnh đề có ở cả Solution lẫn câu sai mà khác nhau nằm trọn trong một ___', () => {
     const traps = ALL.filter((c) => c.trap);
     expect(traps.length).toBeGreaterThanOrEqual(50);
     for (const c of traps) {
@@ -180,7 +212,8 @@ describe('frameOf trên toàn bộ nội dung', () => {
         const theirs = new Map(topClauses(tokenize(w)).map((x) => [x.key, x.norm]));
         for (const k of topClauses(ts)) {
           if (!theirs.has(k.key) || theirs.get(k.key) === k.norm || k.a >= k.b) continue;
-          expect(holes, `${c.id} ${k.key}`).toContain(c.sql.slice(ts[k.a].s, ts[k.b - 1].e));
+          const text = c.sql.slice(ts[k.a].s, ts[k.b - 1].e); // adjacent clauses merge into one ___ (`FROM ___ ON`)
+          expect(holes.some((x) => x.includes(text)), `${c.id} ${k.key}: ${text}`).toBe(true);
         }
       }
     }
@@ -195,7 +228,7 @@ describe('frameOf trên toàn bộ nội dung', () => {
         const indent = line.length - line.trimStart().length;
         let body = line.trim();
         if (body.startsWith(')')) { expect(indent, `${c.id}: ${line}`).toBe(stack.pop()); body = body.slice(1); }
-        else expect(indent, `${c.id}: ${line}`).toBe((stack.length ? stack.at(-1)! + 2 : 0) + (/^(AND|OR)\b/i.test(body) ? 2 : 0));
+        else expect(indent, `${c.id}: ${line}`).toBe((stack.length ? stack.at(-1)! + 2 : 0) + (/^(AND|OR|WHEN|ELSE)\b/i.test(body) ? 2 : 0));
         const opens = body.endsWith('(');
         if (opens) body = body.slice(0, -1);
         let depth = 0;

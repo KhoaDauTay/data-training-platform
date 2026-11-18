@@ -340,3 +340,15 @@ describe('adv: (Plan 11 §1.4)', () => {
     }
   });
 });
+
+describe('trap: (v14 T3, D-H3 for story tickets)', () => {
+  const template = templateRaw.replace(/\r\n/g, '\n');
+  const withFm = (line: string) => template.replace(/^---\n/, `---\n${line}\n`);
+  it('trap: true giữ qua applyVariant; không có thì undefined; cần wrong:', () => {
+    expect(parseTicket(template, 'x').trap).toBeUndefined();
+    const fm = 'trap: true\nwrong:\n  - { sql: "SELECT 1", vi: "a", en: "a" }';
+    expect(applyVariant(parseTicket(withFm(fm), 'x'), 0).trap).toBe(true);
+    expect(() => parseTicket(withFm('trap: true'), 'x')).toThrow(/trap:/);
+    expect(() => parseTicket(withFm('trap: yes please'), 'x')).toThrow(/trap:/);
+  });
+});

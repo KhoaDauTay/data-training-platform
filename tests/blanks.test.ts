@@ -28,12 +28,12 @@ describe('blanksIn', () => {
 });
 
 describe('nội dung: không có ___ đứng riêng ngoài starter faded', () => {
-  it('ticket, làn, drill, bài học', async () => {
-    await loadDomain('ecommerce');
+  it('ticket (Logistics, E-com, Finance), làn, drill, bài học', async () => {
+    await Promise.all([loadDomain('ecommerce'), loadDomain('finance')]);
     const general = await loadGeneral();
     const bad: string[] = [];
     const check = (name: string, sql: string | undefined) => { if (sql && blanksIn(sql, false)) bad.push(name); };
-    const tickets = [...loadTicketTemplates('logistics'), ...loadTicketTemplates('ecommerce'), ...loadLanes().tasks];
+    const tickets = [...loadTicketTemplates('logistics'), ...loadTicketTemplates('ecommerce'), ...loadTicketTemplates('finance'), ...loadLanes().tasks];
     for (const tpl of tickets) {
       for (let v = 0; v < Math.max(1, variantsOf(tpl).length); v++) {
         const t = applyVariant(tpl, v);

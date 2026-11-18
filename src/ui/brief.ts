@@ -89,7 +89,8 @@ function fillBox(tk: Ticket, i: number, shown: number): HTMLElement | null {
       try {
         const { frameOf } = await import('../frame'); // lazy chunk `frame`
         const drill = DRILL_ID.test(tk.id) ? generalNow()?.byId.get(tk.id) : undefined;
-        sql = frameOf(tk.steps[i].solution, drill?.kind === 'trap' ? drill.wrong.map((w) => w.sql) : undefined);
+        const wrongs = drill?.kind === 'trap' ? drill.wrong : tk.trap ? tk.wrong : undefined;
+        sql = frameOf(tk.steps[i].solution, wrongs?.map((w) => w.sql));
         frameFailed.delete(k);
       } catch {
         frameFailed.add(k);
