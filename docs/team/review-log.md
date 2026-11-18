@@ -534,3 +534,23 @@ After (Plan 10 Task 13, HEAD b58287e + docs, 2026-11-18): same script and condit
 - Design estimate for (b) (§2.3: ~6–8 s instead of ~16–19 s headed, a ratio of about 0.32–0.50): met in direction, slightly short in ratio (0.53 headless). The fixed cost now is the engine boot (~1 s) plus the E-com seed (~2.5 s), which this plan does not touch.
 
 Smoke (Plan 10 Task 13 Step 4), scripted headless Edge on `:5178` with fresh profiles (5174/5175 were in use by other sessions; the L72 test data stays on `:5174`/`:5175` and was not touched): Home, Learning path, module 1, Practise, Overview, Workspace, Data, Dashboard, Map, E-com Overview and Workspace in light and dark at 375 and 1267 px: 0 console errors or exceptions, no horizontal scroll, top bar one line at 375 px (all items overlap one row, 61 px high), rail icons unique on every page. Workspace ticket 1: Run announces "Chạy xong: 24 dòng, 1 cột.", a wrong Submit gives the column-count feedback, the right one "Đúng rồi! +100 XP". E-com session (Overview, Workspace, Data, Dashboard, Home, Learning path, Practise): measures `db:ensure:ecom` and `db:ensure:lab` only, `gameSeed` never fetched, so 0 `logistics` tables (the Task 2 Step 10 check, read from the seeds instead of `information_schema`). First visit on cleared storage: three choices, Next disabled, no seed chunk fetched before the pick; "Chỉ học SQL" closes the dialog, opens `#/learn`, seeds `lab` only, pref `"general"`; reload: no picker, `lab` again; `#/d/logistics` sets the pref to `"logistics"`.
+
+## v13 (product-design-v8, T6 kiểm cuối, 2026-11-18, L99)
+
+Build HEAD f98c36b. Ngân sách (`node scripts/check-budget.mjs`): `main` 287,7 / 290 KB (ước v8 ~286,5–287), `frame` 2,9 / 3 KB, `learnui` 12 / 25, `en` 16 / 20, mọi nhóm khác ok. `npm test` 3059 qua, 1 bỏ qua; `npx tsc --noEmit`, `npm run build` sạch.
+
+Kiểm tay §3.9: Edge headless (CDP), `vite preview` :5199, hồ sơ mới, đã tắt sau khi kiểm. 0 lỗi console/ngoại lệ.
+
+| Kiểm | Kết quả |
+|---|---|
+| General 1280 px (sáng) và 375 px (tối), "Chỉ học SQL" (pref `general`) | G1 3 bước → Xong ghi `{"seen":["path"]}`; G2 (`#/learn/sql/1`), G3 (trang `where`) → Esc bỏ, "Boon chỉ mình" chạy lại; G5 ở bàn luyện bẫy, G7 (`#/practice`, chưa học gì: 1 bước), G8 (`A1`). Không cuộn ngang ở cả hai cỡ; 375 px: dấu G5 nằm trong pane Đề bài, không đè editor |
+| Story ch2-03 (save thử) | Gợi ý 1 không có nút; gợi ý 2 → "Điền khung vào editor" + "Mở luôn gợi ý 3 (−50 XP)" → hỏi → Giữ (hintsUsed 2) → Thay (hintsUsed 3, khung 5 dòng, `___` đầu được chọn) → Nộp còn 6 `___` bị chặn → Ctrl+Z hai lần về câu cũ → nút Hoàn tác |
+| E-com `ecom-ch1-01` | Gợi ý 2 → điền (editor = starter: không hỏi, miễn phí ở bài chương 1) → `SELECT ___, ___, ___ FROM sellers`; Nộp bị chặn; Chạy → lời Boon `sqlerr.blank`; không dấu hướng dẫn nào |
+| Drill `g-where-3` (bẫy) / `g-where-1` (faded) | Bẫy: khung `SELECT ___, ___ FROM orders WHERE ___`, dòng giá "Lần đạt này không lên mức nhớ"; faded: "Đặt lại khung ban đầu" → starter, chọn `___` |
+| Thử ngay `group_by` (từ trang kỹ năng) | G4 hiện trong hộp thoại → Bỏ qua; "Boon chỉ" → điền `SELECT ___, COUNT(*) FROM orders GROUP BY ___`, focus vào ô; "Kiểm câu trả lời" còn 2 `___` bị chặn; Hoàn tác về ô trống |
+
+| Loại | Thấy | Quyết định |
+|---|---|---|
+| ux | Ngay sau khi điền, `___` đầu đang được chọn nên nút là "Chạy vùng chọn": Chạy/{mod}+Enter lúc đó chỉ chạy `___` (lỗi cú pháp), không chạy cả câu | Để lại (L99): lời Boon `sqlerr.blank` vẫn đúng; gõ đè chỗ chọn (mục đích của việc chọn) bỏ vùng chọn |
+| ux | Nút Hoàn tác dưới editor biến mất khi Chạy/Nộp viết dòng phản hồi mới | Để lại: đúng L96 (8), {mod}+Z vẫn lấy lại câu cũ |
+| chưa chạy trên trình duyệt | Bước lab chỉ mục (không nút điền), điền trong Luyện tập, lượt ôn bằng drill (G7 `review`), reduced motion | Đã có unit test (L96, L98); để lại |
