@@ -10,6 +10,7 @@ import { derive, ROUTES as LANES } from '../scene';
 import { domainHash, learnAdvOf, learnModuleOf, learnSkillOf, soonDomainOf } from '../route';
 import { laneInfo, lanePanel, wirePins } from './lanePanel';
 import { mascot, setLilyStage } from './mascots';
+import { gainSince, markGrew } from './celebrate';
 import { dayCount, lilyStage, toNextStage } from '../lily';
 import { relabelScene, teachScene } from './teachScene';
 import { currentRoute } from './router';
@@ -362,15 +363,33 @@ function lilyNow(): { stage: 0 | 1 | 2 | 3; next?: number } {
   const known = knownSkills(app.save, loadTickets('logistics'), ids).size;
   return { stage: lilyStage(known, ids.length), next: toNextStage(known, ids.length) };
 }
-/** rerender(): every Lily drawn by mascot() and the teaching scene show the current stage. */
-export const syncLily = (): void => setLilyStage(lilyNow().stage);
+let lilyMark: { save: object; n: number } | undefined;
+let grewPill = false;
+/**
+ * rerender(): every Lily drawn by mascot() and the teaching scene show the current stage. ui-ux-v5 A1: a rise since the last
+ * call (same save object: the first call and an import only set the mark) starts the 4 s grow window, the Home pill and one
+ * sentence appended to #announce after the event's own sentence (a lane or drill writes it after its rerender()).
+ */
+export function syncLily(): void {
+  const { stage } = lilyNow();
+  const rose = gainSince(lilyMark, app.save, stage) > 0;
+  grewPill = rose || (grewPill && lilyMark?.save === app.save);
+  lilyMark = { save: app.save, n: stage };
+  setLilyStage(stage);
+  if (!rose) return;
+  markGrew();
+  queueMicrotask(() => byId('announce').append(` ${t('lily.grew', { stage: t(STAGE_NAME[stage]) })}`));
+}
+/** main.ts showRoute(): the "Just grew" pill stays until the player first leaves Home. */
+export const leftHello = (): void => { grewPill = false; };
 
 /** Platform Home (v5 §B.5): Lily (the player, at her growth stage, L87) and the tagline (v5 §A.3). */
 function helloSection(): HTMLElement {
   const { stage, next } = lilyNow();
   return h('section', { class: 'flex items-center gap-4' }, mascot('lily', 'idle', 'size-20'),
     h('div', { class: 'min-w-0' }, h('p', { class: 'm-0 text-2xl font-extrabold' }, t('app.name')), h('p', { class: 'm-0 text-muted' }, t('home.tagline')),
-      h('p', { class: 'mt-2 mb-0 text-sm font-semibold' }, t('lily.line', { stage: t(STAGE_NAME[stage]), n: dayCount() })),
+      h('p', { class: 'mt-2 mb-0 text-sm font-semibold' }, t('lily.line', { stage: t(STAGE_NAME[stage]), n: dayCount() }),
+        grewPill ? h('span', { class: 'ml-2 rounded-full bg-sun px-2 py-0.5 text-xs font-bold text-sun-ink' }, t('lily.grewPill')) : null),
       h('p', { class: 'm-0 text-sm text-muted' }, next === undefined ? t('lily.max') : t('lily.next', { n: next }))));
 }
 

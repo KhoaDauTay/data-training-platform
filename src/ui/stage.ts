@@ -8,6 +8,7 @@ import { takeNewRoutes } from '../routesSeen';
 import { app } from '../state';
 import { textOf, type Ticket } from '../tickets';
 import { byId, reducedMotion } from './dom';
+import { grewLately, once } from './celebrate';
 import { mascot } from './mascots';
 import { stageEsc } from './shortcuts';
 
@@ -94,10 +95,18 @@ async function drawAndPlay(c: Ctx, owner: Ctx = c): Promise<void> {
     return;
   }
   lily.style.opacity = '0';
+  // ui-ux-v5 A1: Lily just grew (read here, after complete()'s rerender ran syncLily): her CSS grow (900 ms, accessory fades in)
+  // replaces the 300 ms pop and starts earlier, so it still ends with the scene (≤ 3.0 s, promotion included).
+  const grow = grewLately();
   const pop = window.setTimeout(() => {
     lily.style.opacity = '1';
-    if (!c.run.fast) lily.animate([{ transform: 'scale(.6)', opacity: 0 }, { transform: 'scale(1)', opacity: 1 }], { duration: 300, easing: 'cubic-bezier(.3,1.6,.6,1)' });
-  }, Math.max(0, durationOf(c.scene) - 300));
+    if (c.run.fast) return;
+    if (grow) {
+      lily.classList.add('grow');
+      if (lily.getAnimations().length) once(lily, 'grow');
+      else lily.classList.remove('grow'); // hidden (below sm): never left to replay once shown
+    } else lily.animate([{ transform: 'scale(.6)', opacity: 0 }, { transform: 'scale(1)', opacity: 1 }], { duration: 300, easing: 'cubic-bezier(.3,1.6,.6,1)' });
+  }, Math.max(0, durationOf(c.scene) - (grow ? 900 : 300)));
   try {
     await art.play(c);
   } finally {

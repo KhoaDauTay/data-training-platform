@@ -24,9 +24,10 @@ export function once(el: Element, cls: string): void {
  * event, after its rerender(), never while drawing: a later redraw makes a new <svg> without the class, so nothing replays.
  * The classes go once every animation on the <svg> has ended (react + grow run side by side), at once if none started. Reduced motion: nothing to do.
  */
-export function react(host: Element | null | undefined, grow = false): void {
+export function react(host: Element | null | undefined, grow?: boolean): void {
   const svg = host?.querySelector<SVGSVGElement>('svg[data-mascot]');
   if (!svg || reducedMotion()) return;
+  grow ??= svg.dataset.mascot === 'lily' && grewLately(); // A1: Lily just grew (syncLily, src/ui/homeView.ts)
   svg.classList.remove('react', 'grow');
   void svg.getBoundingClientRect(); // restart if it is still running
   svg.classList.add('react');
@@ -38,7 +39,13 @@ export function react(host: Element | null | undefined, grow = false): void {
   done(); // nothing started (hidden host, a pose without a keyframe): drop the class now, so it never plays later
 }
 
-/** ui-ux-v5 A3: XP gained since the pill was last drawn; 0 on the first draw and after an import (a new save object, page not reloaded). */
-export function xpGain(mark: { save: object; xp: number } | undefined, save: object, xp: number): number {
-  return mark?.save === save ? Math.max(0, xp - mark.xp) : 0;
+/** ui-ux-v5 A3 (XP) and A1 (Lily's stage): rise since the last mark; 0 on the first call and after an import (a new save object, page not reloaded). */
+export function gainSince(mark: { save: object; n: number } | undefined, save: object, n: number): number {
+  return mark?.save === save ? Math.max(0, n - mark.n) : 0;
 }
+
+let grewAt = -Infinity;
+/** A1: syncLily() saw Lily's stage rise (session memory only, D-M2). */
+export const markGrew = (): void => { grewAt = Date.now(); };
+/** A1: Lily grows in the next reaction or dock entrance for 4 s after that (both attach at an event, never while drawing). */
+export const grewLately = (): boolean => Date.now() - grewAt <= 4000;

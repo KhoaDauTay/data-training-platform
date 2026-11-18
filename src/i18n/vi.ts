@@ -638,6 +638,8 @@ export const vi = {
   'lily.line': 'Lily (là bạn) · {stage} · Ngày thứ {n} cùng Lily',
   'lily.next': 'Lily sẽ lớn lên khi bạn học thêm {n} kỹ năng.',
   'lily.max': 'Lily đã là chuyên gia. Ôn đều để giữ phong độ.',
+  'lily.grew': 'Lily đã lớn: {stage}.',
+  'lily.grewPill': 'Vừa lớn',
   'nav.bottom': 'Điều hướng nhanh',
   'nav.domains': 'Chọn lĩnh vực',
   'app.homeLink': 'BoonData, về Trang chủ',

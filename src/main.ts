@@ -22,7 +22,7 @@ import { initModes, onPracticeWrong, onSolved, renderLeft, renderReviewButton, s
 import { renderNotebook, toggleNotebook } from './ui/notebook';
 import { byId, h } from './ui/dom';
 import { errorText } from './ui/feedback';
-import { leftHome, renderHome, syncLily } from './ui/homeView';
+import { leftHello, leftHome, renderHome, syncLily } from './ui/homeView';
 import { initStage, playCompletion, relabelStage } from './ui/stage';
 import { prefetchArt } from './art/load';
 import { renderInbox } from './ui/inbox';
@@ -307,6 +307,7 @@ const TITLE_OF: Partial<Record<Route, string>> = { data: 'data-title', dashboard
 /** Reading pages, #/d/logistics/play = workspace, …/data = Data page, …/dashboard. All stay mounted and only toggle `hidden`, so the editor is never recreated. */
 function showRoute(r: Route, initial: boolean): void {
   const tableSwitch = r === 'data' && shownRoute === 'data'; // #/data/a → #/data/b: only the Data page changes
+  if (shownRoute === 'home' && r !== 'home') leftHello(); // ui-ux-v5 A1: the "Just grew" pill goes once Home was left
   shownRoute = r;
   if (tableSwitch) {
     renderData(byId('data'));

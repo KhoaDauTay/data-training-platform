@@ -7,7 +7,7 @@ import { domainHash, hashOf, inDomain, soonDomainOf, type Route } from '../route
 import { actions, app, done } from '../state';
 import { getTheme, NAV_LINK, setTheme, THEME_PREFS, TOP_BTN, type ThemePref } from '../theme';
 import { byId, h, nodes, reducedMotion } from './dom';
-import { celebrate, xpGain } from './celebrate';
+import { celebrate, gainSince } from './celebrate';
 import { fillIcons, icon, NAV_ICON, type IconName } from './icons';
 import { currentRoute } from './router';
 import { activeSchema } from '../session';
@@ -182,13 +182,13 @@ function renderNotice(): void {
     h('button', { type: 'button', class: 'ml-auto', 'aria-label': t('app.dismiss'), onclick: () => { app.notice = undefined; renderNotice(); } }, '×')));
 }
 
-let xpMark: { save: object; xp: number } | undefined;
+let xpMark: { save: object; n: number } | undefined;
 
 /** ui-ux-v5 A3: the pill pops and a "+N" chip rises when XP grew since the last draw (any source); it starts under the pill so it never leaves the viewport. */
 function drawXp(): void {
   const pill = byId('xp');
-  const gain = xpGain(xpMark, app.save, app.save.xp);
-  xpMark = { save: app.save, xp: app.save.xp };
+  const gain = gainSince(xpMark, app.save, app.save.xp);
+  xpMark = { save: app.save, n: app.save.xp };
   pill.replaceChildren(icon('star', 'size-4'), t('top.xp', { n: app.save.xp })); // a later redraw drops a running chip early (accepted, A3)
   if (!gain || reducedMotion()) return; // reduced motion: no animationend would ever remove the chip
   celebrate(pill);

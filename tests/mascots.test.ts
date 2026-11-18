@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import html from '../index.html?raw';
 import css from '../src/style.css?raw';
 import { POSES } from '../src/ui/mascots';
@@ -77,13 +77,33 @@ describe('chuyển động (ui-ux v5 §1)', () => {
   });
 });
 
-describe('A3: chip "+N" của XP (ui-ux-v5)', () => {
-  it('lần vẽ đầu và sau khi nhập save (đối tượng save mới): 0; tăng: N; không tăng: 0', async () => {
-    const { xpGain } = await import('../src/ui/celebrate');
+describe('A3 + A1: mốc trong phiên (ui-ux-v5)', () => {
+  it('XP: lần vẽ đầu và sau khi nhập save (đối tượng save mới): 0; tăng: N; không tăng: 0', async () => {
+    const { gainSince } = await import('../src/ui/celebrate');
     const save = {};
-    expect(xpGain(undefined, save, 50)).toBe(0);
-    expect(xpGain({ save, xp: 50 }, save, 60)).toBe(10);
-    expect(xpGain({ save, xp: 60 }, save, 60)).toBe(0);
-    expect(xpGain({ save, xp: 60 }, {}, 900)).toBe(0);
+    expect(gainSince(undefined, save, 50)).toBe(0);
+    expect(gainSince({ save, n: 50 }, save, 60)).toBe(10);
+    expect(gainSince({ save, n: 60 }, save, 60)).toBe(0);
+    expect(gainSince({ save, n: 60 }, {}, 900)).toBe(0);
+  });
+
+  it('Lily lớn: lần đầu không; giai đoạn tăng thì có, trong 4 s; nhập save (cao hay thấp hơn) thì không', async () => {
+    const { gainSince, markGrew, grewLately } = await import('../src/ui/celebrate');
+    const save = {};
+    expect(gainSince(undefined, save, 2)).toBe(0);
+    expect(gainSince({ save, n: 0 }, save, 1)).toBeGreaterThan(0);
+    expect(gainSince({ save, n: 1 }, {}, 3)).toBe(0);
+    expect(gainSince({ save, n: 2 }, {}, 0)).toBe(0);
+    vi.useFakeTimers();
+    try {
+      expect(grewLately()).toBe(false);
+      markGrew();
+      vi.advanceTimersByTime(4000);
+      expect(grewLately()).toBe(true);
+      vi.advanceTimersByTime(1);
+      expect(grewLately()).toBe(false);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

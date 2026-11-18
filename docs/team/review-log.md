@@ -577,3 +577,14 @@ Trình duyệt (`vite preview --port 5199`, Edge headless hồ sơ mới qua CDP
 - Drill: chip "+10", XP 100 → 110, Lily `cheer` + `react`.
 - Giảm chuyển động: không `react`, không chip, không animation; số XP đổi ngay.
 - Chưa kiểm trên trình duyệt: nhập save (đã có test `xpGain`) và Boon `oops` (hết giờ, đi cùng đường `say()` + `mascotOf`).
+
+### T3 A1 Lily lớn (L103)
+
+Đo (gzip -9): main 288,47 / 290 KB (≤ 289,0; T2 288,21, tức T3 +0,26 so với ước +0,25), CSS 15,16 / 20, `html` 8 / 9. `tsc` sạch, build xanh. Test mới trong `tests/mascots.test.ts`: mốc `gainSince` (lần đầu không, tăng có, save mới cao hay thấp hơn không) và cửa sổ `grewLately()` 4 s (giả đồng hồ).
+
+Trình duyệt (`vite preview --port 5199`, Edge headless hồ sơ mới qua CDP, save đã xong ch1-01 + ch1-02 = 2 kỹ năng):
+- Story 1280: nộp đúng ch1-03 (giai đoạn 0 → 1). Lily ở dòng phản hồi có `react grow`, chạy `cq-grow` + `cq-jump`, `<use>` chạy `cq-grow1` (khăn mờ dần, cỡ 0,8 → 0,9). Lily trong dock nhận `grow` (`cq-grow` + `cq-grow1`), class gỡ sau khi xong. `#announce`: câu hoàn thành + "Việc tiếp theo" + "Lily đã lớn: Cún nhỏ." Đổi ngôn ngữ ngay sau: không `svg.grow` nào. Trang chủ: pill "Vừa lớn"/"Just grew" cạnh tên giai đoạn; rời sang `#/learn` rồi về: hết pill; tải lại: không pill, không câu báo, `data-lily` 1.
+- Drill 1280 (`g-order-by-1` đã đạt, đạt `g-order-by-2`): `order_by` thành đã học, Lily ở dòng phản hồi `react grow`, câu "Đạt bài luyện, +10 XP. Lily đã lớn: Cún nhỏ." (câu nối không bị câu của drill xóa), pill ở Trang chủ.
+- Story 375: story chuyển sang pane Đề bài nên Lily ở dòng phản hồi không chạy (như A2); Lily trong dock ẩn (`max-sm:hidden`): bản đầu để class `grow` nằm lại, đã sửa (gỡ ngay khi không animation nào chạy). Pill ở Trang chủ có.
+- Giảm chuyển động 375: không `react`/`grow`, Lily đứng ở giai đoạn mới; câu báo và pill vẫn có.
+- Thăng tiến ≤ 3,0 s: theo cấu trúc (Lily lớn bắt đầu `durationOf − 900`, kết thúc cùng cảnh), chưa chạy thăng tiến trên trình duyệt. Nhập save: chỉ test đơn vị.

@@ -274,8 +274,19 @@ svg.react[data-pose=cheer] { animation: cq-jump 560ms ease-out; }
 svg.react[data-pose=point] { animation: cq-lean 480ms ease-out; }
 svg.react[data-pose=think] { animation: cq-tilt 500ms ease-out; }
 svg.react[data-pose=oops] { animation: cq-shake 360ms ease-out; }
+/* A1: Lily grows (class `grow`, react() or the dock, only within 4 s of a stage rise). `scale` beside the jump's `translate`;
+   the new stage's accessory and size come in on the <use> (vars registered above), from 300 to 800 ms. */
+svg[data-mascot=lily].grow { transform-origin: 50% 100%; animation: cq-grow 900ms ease-out; }
+svg[data-mascot=lily].grow.react[data-pose=cheer] { animation: cq-grow 900ms ease-out, cq-jump 560ms ease-out; }
+:root[data-lily="1"] svg[data-mascot=lily].grow > use { animation: cq-grow1 900ms linear; }
+:root[data-lily="2"] svg[data-mascot=lily].grow > use { animation: cq-grow2 900ms linear; }
+:root[data-lily="3"] svg[data-mascot=lily].grow > use { animation: cq-grow3 900ms linear; }
 .cq-bubble { transform-origin: 0 0; animation: cq-bubble 220ms ease-out; }
 .cq-rise { pointer-events: none; animation: cq-rise 800ms ease-out forwards; }
+@keyframes cq-grow { 0%, 100% { scale: 1; } 35% { scale: 1.18; } 60% { scale: 0.96; } }
+@keyframes cq-grow1 { 0%, 33% { --lily-scarf-on: 0; --lily-size: 0.8; } 89%, 100% { --lily-scarf-on: 1; --lily-size: 0.9; } }
+@keyframes cq-grow2 { 0%, 33% { --lily-badge-on: 0; --lily-size: 0.9; } 89%, 100% { --lily-badge-on: 1; --lily-size: 1; } }
+@keyframes cq-grow3 { 0%, 33% { --lily-prop-on: 0; } 89%, 100% { --lily-prop-on: 1; } }
 @keyframes cq-jump { 0%, 50%, 100% { translate: 0 0; } 25% { translate: 0 -6px; } 72% { translate: 0 -3px; } }
 @keyframes cq-lean { 0%, 55%, 100% { rotate: 0deg; } 28% { rotate: -6deg; } 78% { rotate: -3deg; } }
 @keyframes cq-tilt { 0%, 100% { rotate: 0deg; } 25%, 70% { rotate: 5deg; } }

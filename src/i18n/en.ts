@@ -639,6 +639,8 @@ export const en: Record<Key, Msg> = {
   'lily.line': 'Lily (that is you) · {stage} · Day {n} with Lily',
   'lily.next': (p) => `Lily grows when you learn ${p.n} more skill${Number(p.n) === 1 ? '' : 's'}.`,
   'lily.max': 'Lily is an expert now. Keep reviewing to stay sharp.',
+  'lily.grew': 'Lily has grown: {stage}.',
+  'lily.grewPill': 'Just grew',
   'nav.bottom': 'Quick navigation',
   'nav.domains': 'Choose a domain',
   'app.homeLink': 'BoonData, go to Home',
