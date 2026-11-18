@@ -40,16 +40,16 @@
     - id: g-a1-2
       kind: open
       task:
-        vi: "Năm 2026, mỗi cửa hàng mỗi tháng: mã cửa hàng, tháng (`date_trunc`), doanh thu đơn `PAID`, và trung bình của tháng này cùng 2 tháng trước đó của chính cửa hàng đó (làm tròn tới đồng). Xếp theo cửa hàng rồi tháng."
-        en: "For 2026, each store and month: store id, month (`date_trunc`), revenue from `PAID` orders, and the average of this month and the 2 months before for that same store (rounded to whole VND). Sort by store, then month."
+        vi: "Năm 2026, mỗi cửa hàng mỗi tháng: mã cửa hàng, tháng (ngày đầu tháng, `date_trunc`), doanh thu đơn `PAID` (`qty` × `unit_price_vnd`), và trung bình doanh thu của tháng này cùng 2 tháng liền trước của chính cửa hàng đó (làm tròn tới đồng). Chỉ dùng các tháng của năm 2026: tháng 1 là trung bình của chính nó, tháng 2 là trung bình 2 tháng. Cửa hàng nào cũng có bán ở mọi tháng 1–10. Xếp theo cửa hàng rồi tháng."
+        en: "For 2026, each store and month: store id, month (its first day, `date_trunc`), revenue from `PAID` orders (`qty` × `unit_price_vnd`), and the average revenue of this month and the 2 months before for that same store (rounded to whole VND). Use only the months of 2026: January averages itself, February averages 2 months. Every store sold in every month from January to October. Sort by store, then month."
       solution: "WITH m AS (SELECT o.store_id, date_trunc('month', o.order_date) AS month, sum(i.qty * i.unit_price_vnd) AS revenue FROM orders o JOIN order_items i ON i.order_id = o.id WHERE o.status = 'PAID' AND o.order_date >= '2026-01-01' GROUP BY o.store_id, date_trunc('month', o.order_date)) SELECT store_id, month, revenue, round(avg(revenue) OVER (PARTITION BY store_id ORDER BY month ROWS BETWEEN 2 PRECEDING AND CURRENT ROW)) AS avg_3m FROM m ORDER BY store_id, month"
       ordered: true
       hint: { vi: "Mỗi cửa hàng một cửa sổ riêng: `PARTITION BY store_id`, rồi khung 2 dòng trước.", en: "Each store gets its own window: `PARTITION BY store_id`, then a frame of 2 rows before." }
     - id: g-a1-3
       kind: trap
       task:
-        vi: "Cửa hàng 2, tháng 10/2026: mỗi ngày có đơn `PAID` một dòng gồm ngày, doanh thu ngày và tổng doanh thu 7 ngày lịch gần nhất (tính cả ngày đó). Xếp theo ngày."
-        en: "Store 2, October 2026: one row per day with a `PAID` order, with the date, the day's revenue and the total revenue of the last 7 calendar days (that day included). Sort by date."
+        vi: "Cửa hàng 2, tháng 10/2026: mỗi ngày có đơn `PAID` một dòng gồm ngày, doanh thu ngày (`qty` × `unit_price_vnd`) và tổng doanh thu 7 ngày lịch gần nhất (ngày đó và 6 ngày trước nó). Chỉ tính ngày trong tháng 10: doanh thu cuối tháng 9 không cộng vào tổng. Xếp theo ngày."
+        en: "Store 2, October 2026: one row per day with a `PAID` order, with the date, the day's revenue (`qty` × `unit_price_vnd`) and the total revenue of the last 7 calendar days (that day and the 6 days before it). Only October days count: late-September revenue is not added to the total. Sort by date."
       solution: "WITH d AS (SELECT o.order_date, sum(i.qty * i.unit_price_vnd) AS revenue FROM orders o JOIN order_items i ON i.order_id = o.id WHERE o.status = 'PAID' AND o.store_id = 2 AND o.order_date >= '2026-10-01' GROUP BY o.order_date) SELECT order_date, revenue, sum(revenue) OVER (ORDER BY order_date RANGE BETWEEN interval '6 days' PRECEDING AND CURRENT ROW) AS last_7_days FROM d ORDER BY order_date"
       ordered: true
       hint: { vi: "Cửa hàng 2 có 14 ngày trong tháng không bán gì. \"7 ngày lịch\" là khoảng theo giá trị ngày, không phải 7 dòng.", en: "Store 2 had no sales on 14 days of the month. \"7 calendar days\" is a range of date values, not 7 rows." }
@@ -60,8 +60,8 @@
     - id: g-a1-4
       kind: challenge
       task:
-        vi: "Tháng 9 và 10/2026, cửa hàng 3: ngày nào doanh thu `PAID` lớn hơn 3 lần trung bình doanh thu của các ngày có bán trong 7 ngày lịch ngay trước nó (không tính chính ngày đó)? Lấy ngày, doanh thu, trung bình đó (làm tròn tới đồng), xếp theo ngày."
-        en: "September and October 2026, store 3: which days had `PAID` revenue above 3 times the average revenue of the selling days in the 7 calendar days just before (the day itself not included)? Get the date, the revenue and that average (rounded to whole VND), sorted by date."
+        vi: "Tháng 9 và 10/2026, cửa hàng 3: ngày nào doanh thu `PAID` (`qty` × `unit_price_vnd`) lớn hơn 3 lần trung bình doanh thu của các ngày có bán trong 7 ngày lịch ngay trước nó (không tính chính ngày đó)? Các ngày cuối tháng 8 vẫn được tính vào trung bình của đầu tháng 9; ngày không có ngày bán nào trong 7 ngày trước thì không lấy. Lấy ngày, doanh thu, trung bình đó (làm tròn tới đồng), xếp theo ngày."
+        en: "September and October 2026, store 3: which days had `PAID` revenue (`qty` × `unit_price_vnd`) above 3 times the average revenue of the selling days in the 7 calendar days just before (the day itself not included)? Late-August days still count in the average for early September; a day with no selling day in the 7 days before is not taken. Get the date, the revenue and that average (rounded to whole VND), sorted by date."
       solution: "WITH d AS (SELECT o.order_date, sum(i.qty * i.unit_price_vnd) AS revenue FROM orders o JOIN order_items i ON i.order_id = o.id WHERE o.status = 'PAID' AND o.store_id = 3 AND o.order_date >= '2026-08-25' AND o.order_date < '2026-11-01' GROUP BY o.order_date), w AS (SELECT order_date, revenue, avg(revenue) OVER (ORDER BY order_date RANGE BETWEEN interval '7 days' PRECEDING AND interval '1 day' PRECEDING) AS prev_avg FROM d) SELECT order_date, revenue, round(prev_avg) FROM w WHERE order_date >= '2026-09-01' AND revenue > 3 * prev_avg ORDER BY order_date"
       ordered: true
       hint: { vi: "Khung có thể kết thúc trước dòng hiện tại: `... AND interval '1 day' PRECEDING`. Lấy dữ liệu từ cuối tháng 8 để ngày 01/09 cũng có 7 ngày trước.", en: "A frame can end before the current row: `... AND interval '1 day' PRECEDING`. Read data from late August so 1 September also has 7 days before it." }
@@ -104,16 +104,16 @@
     - id: g-a2-2
       kind: open
       task:
-        vi: "Chia khách thành viên thành 4 nhóm theo tổng chi tiêu đơn `PAID` (nhóm 4 chi nhiều nhất). Mỗi nhóm: số nhóm, số khách, chi tiêu nhỏ nhất và lớn nhất trong nhóm, xếp theo nhóm."
-        en: "Split member customers into 4 groups by their total `PAID` spend (group 4 spends the most). For each group: the group number, the number of customers, and the smallest and largest spend in it, sorted by group."
+        vi: "Chia khách thành viên (đơn có `customer_id`) có ít nhất một đơn `PAID` thành 4 nhóm đều nhau theo tổng chi tiêu đơn `PAID` (`qty` × `unit_price_vnd`), nhóm 1 chi ít nhất, nhóm 4 chi nhiều nhất. Mỗi nhóm: số nhóm, số khách, chi tiêu nhỏ nhất và lớn nhất trong nhóm, xếp theo nhóm."
+        en: "Split the member customers (orders with a `customer_id`) who have at least one `PAID` order into 4 equal groups by their total `PAID` spend (`qty` × `unit_price_vnd`), group 1 spending the least and group 4 the most. For each group: the group number, the number of customers, and the smallest and largest spend in it, sorted by group."
       solution: "WITH spend AS (SELECT o.customer_id, sum(i.qty * i.unit_price_vnd) AS total FROM orders o JOIN order_items i ON i.order_id = o.id WHERE o.status = 'PAID' AND o.customer_id IS NOT NULL GROUP BY o.customer_id), g AS (SELECT customer_id, total, NTILE(4) OVER (ORDER BY total, customer_id) AS grp FROM spend) SELECT grp, count(*), min(total), max(total) FROM g GROUP BY grp ORDER BY grp"
       ordered: true
       hint: { vi: "Tính tổng chi tiêu mỗi khách trước (CTE), rồi `NTILE(4) OVER (ORDER BY ...)` tăng dần để nhóm 4 là cao nhất.", en: "First total each customer's spend (a CTE), then `NTILE(4) OVER (ORDER BY ...)` ascending so group 4 is the top." }
     - id: g-a2-3
       kind: trap
       task:
-        vi: "Giá trị đơn điển hình theo kênh: với mỗi kênh (`channel`), lấy trung vị giá trị các đơn `PAID`."
-        en: "Typical order value by channel: for each `channel`, the median value of its `PAID` orders."
+        vi: "Giá trị đơn điển hình theo kênh: với mỗi kênh (`channel`), lấy trung vị giá trị các đơn `PAID` (giá trị đơn = cộng `qty` × `unit_price_vnd` mọi dòng của đơn; số đơn chẵn thì trung vị là trung bình của hai giá trị giữa). Cột: kênh, trung vị."
+        en: "Typical order value by channel: for each `channel`, the median value of its `PAID` orders (order value = `qty` × `unit_price_vnd` added up over the order's lines; with an even number of orders the median is the average of the two middle values). Columns: channel, median."
       solution: "SELECT o.channel, percentile_cont(0.5) WITHIN GROUP (ORDER BY t.total) FROM orders o JOIN (SELECT order_id, sum(qty * unit_price_vnd) AS total FROM order_items GROUP BY order_id) t ON t.order_id = o.id WHERE o.status = 'PAID' GROUP BY o.channel"
       hint: { vi: "\"Điển hình\" ở đây là trung vị, không phải trung bình.", en: "\"Typical\" here means the median, not the average." }
       wrong:
@@ -123,8 +123,8 @@
     - id: g-a2-4
       kind: challenge
       task:
-        vi: "Lấy trung vị giá trị đơn `PAID` của cả chuỗi. Với mỗi cửa hàng: mã cửa hàng và tỷ lệ % đơn `PAID` của cửa hàng có giá trị lớn hơn trung vị đó (làm tròn 1 chữ số thập phân), xếp theo mã cửa hàng."
-        en: "Take the chain-wide median value of `PAID` orders. For each store: the store id and the % of its `PAID` orders worth more than that median (rounded to 1 decimal), sorted by store id."
+        vi: "Lấy trung vị giá trị đơn `PAID` của cả chuỗi (giá trị đơn = cộng `qty` × `unit_price_vnd` mọi dòng của đơn; số đơn chẵn thì lấy trung bình hai giá trị giữa). Với mỗi cửa hàng: mã cửa hàng và tỷ lệ % = số đơn `PAID` của cửa hàng có giá trị lớn hơn trung vị đó / mọi đơn `PAID` của cửa hàng × 100 (làm tròn 1 chữ số thập phân), xếp theo mã cửa hàng."
+        en: "Take the chain-wide median value of `PAID` orders (order value = `qty` × `unit_price_vnd` added up over the order's lines; with an even count, the average of the two middle values). For each store: the store id and the % = the store's `PAID` orders worth more than that median / all of the store's `PAID` orders × 100 (rounded to 1 decimal), sorted by store id."
       solution: "WITH t AS (SELECT o.id, o.store_id, sum(i.qty * i.unit_price_vnd) AS total FROM orders o JOIN order_items i ON i.order_id = o.id WHERE o.status = 'PAID' GROUP BY o.id, o.store_id), m AS (SELECT percentile_cont(0.5) WITHIN GROUP (ORDER BY total) AS med FROM t) SELECT t.store_id, round(100.0 * count(*) FILTER (WHERE t.total > m.med) / count(*), 1) FROM t CROSS JOIN m GROUP BY t.store_id ORDER BY t.store_id"
       ordered: true
       hint: { vi: "Một CTE cho giá trị từng đơn, một CTE cho trung vị (một dòng), ghép bằng `CROSS JOIN`, rồi đếm có điều kiện.", en: "One CTE for each order's value, one for the median (a single row), join them with `CROSS JOIN`, then count with a condition." }
@@ -251,8 +251,8 @@
     - id: g-a4-4
       kind: challenge
       task:
-        vi: "Quý 3/2026, doanh thu đơn `PAID` theo tháng và danh mục, có tổng phụ mỗi tháng và tổng chung. Cột: tháng (`date_trunc`), danh mục, doanh thu, mức (`GROUPING` của hai cột), và tỷ lệ % của dòng so với tổng chung (làm tròn 1 chữ số thập phân)."
-        en: "Q3 2026 revenue from `PAID` orders by month and category, with a subtotal per month and a grand total. Columns: month (`date_trunc`), category, revenue, level (`GROUPING` of both columns), and the row's % of the grand total (rounded to 1 decimal)."
+        vi: "Quý 3/2026 (tháng 7–9), doanh thu đơn `PAID` (`qty` × `unit_price_vnd`) theo tháng và danh mục, có tổng phụ mỗi tháng và tổng chung. Cột: tháng (`date_trunc`), danh mục, doanh thu, mức (một cột: `GROUPING` của cả hai cột trong một lần gọi, ra 0, 1 hoặc 3), và tỷ lệ % của dòng so với doanh thu của dòng tổng chung (mức 3, không cộng các dòng tổng phụ), làm tròn 1 chữ số thập phân."
+        en: "Q3 2026 (July–September) revenue from `PAID` orders (`qty` × `unit_price_vnd`) by month and category, with a subtotal per month and a grand total. Columns: month (`date_trunc`), category, revenue, level (one column: `GROUPING` of both columns in a single call, giving 0, 1 or 3), and the row's % of the grand total row's revenue (level 3, subtotal rows not added), rounded to 1 decimal."
       solution: "WITH r AS (SELECT date_trunc('month', o.order_date) AS month, p.category, sum(i.qty * i.unit_price_vnd) AS revenue, GROUPING(date_trunc('month', o.order_date), p.category) AS level FROM orders o JOIN order_items i ON i.order_id = o.id JOIN products p ON p.id = i.product_id WHERE o.status = 'PAID' AND o.order_date >= '2026-07-01' AND o.order_date < '2026-10-01' GROUP BY ROLLUP (date_trunc('month', o.order_date), p.category)) SELECT month, category, revenue, level, round(100.0 * revenue / max(revenue) FILTER (WHERE level = 3) OVER (), 1) FROM r"
       hint: { vi: "Tổng chung là dòng có mức 3; lấy nó cho mọi dòng bằng một hàm cửa sổ `OVER ()` có `FILTER`.", en: "The grand total is the row at level 3; spread it to every row with a window aggregate `OVER ()` plus `FILTER`." }
 
@@ -302,8 +302,8 @@
     - id: g-a5-3
       kind: trap
       task:
-        vi: "Năm 2026, mỗi cửa hàng: mã cửa hàng, giá trị hàng của đơn `PAID` và của đơn `REFUNDED`, hai cột."
-        en: "For 2026, each store: the store id, the goods value of `PAID` orders and of `REFUNDED` orders, two columns."
+        vi: "Năm 2026, mỗi cửa hàng: mã cửa hàng, giá trị hàng (`qty` × `unit_price_vnd`) của đơn `PAID` và của đơn `REFUNDED`, hai cột theo thứ tự đó. Năm nay cửa hàng nào cũng có cả hai loại đơn."
+        en: "For 2026, each store: the store id, the goods value (`qty` × `unit_price_vnd`) of `PAID` orders and of `REFUNDED` orders, two columns in that order. This year every store has both kinds of orders."
       solution: "SELECT o.store_id, sum(i.qty * i.unit_price_vnd) FILTER (WHERE o.status = 'PAID'), sum(i.qty * i.unit_price_vnd) FILTER (WHERE o.status = 'REFUNDED') FROM orders o JOIN order_items i ON i.order_id = o.id WHERE o.order_date >= '2026-01-01' GROUP BY o.store_id"
       hint: { vi: "Mỗi cột cần dòng của trạng thái riêng, nên trạng thái không được lọc ở `WHERE`.", en: "Each column needs its own status's rows, so the status cannot be filtered in `WHERE`." }
       wrong:
@@ -313,8 +313,8 @@
     - id: g-a5-4
       kind: challenge
       task:
-        vi: "Mỗi cửa hàng: doanh thu đơn `PAID` tháng 8, 9, 10/2026 (ba cột, tháng trống ghi 0) và % thay đổi tháng 10 so với tháng 9 (làm tròn 1 chữ số thập phân). Xếp theo mã cửa hàng."
-        en: "Each store: revenue from `PAID` orders in August, September and October 2026 (three columns, 0 for an empty month) and the % change of October versus September (rounded to 1 decimal). Sort by store id."
+        vi: "Mỗi cửa hàng: doanh thu đơn `PAID` (`qty` × `unit_price_vnd`) tháng 8, 9, 10/2026 (ba cột, tháng trống ghi 0) và % thay đổi tháng 10 so với tháng 9 = (tháng 10 − tháng 9) / tháng 9 × 100, làm tròn 1 chữ số thập phân (cửa hàng nào cũng có doanh thu tháng 9). Xếp theo mã cửa hàng."
+        en: "Each store: revenue from `PAID` orders (`qty` × `unit_price_vnd`) in August, September and October 2026 (three columns, 0 for an empty month) and the % change of October versus September = (October − September) / September × 100, rounded to 1 decimal (every store has September revenue). Sort by store id."
       solution: "WITH p AS (SELECT o.store_id, COALESCE(sum(i.qty * i.unit_price_vnd) FILTER (WHERE o.order_date < '2026-09-01'), 0) AS aug, COALESCE(sum(i.qty * i.unit_price_vnd) FILTER (WHERE o.order_date >= '2026-09-01' AND o.order_date < '2026-10-01'), 0) AS sep, COALESCE(sum(i.qty * i.unit_price_vnd) FILTER (WHERE o.order_date >= '2026-10-01'), 0) AS oct FROM orders o JOIN order_items i ON i.order_id = o.id WHERE o.status = 'PAID' AND o.order_date >= '2026-08-01' GROUP BY o.store_id) SELECT store_id, aug, sep, oct, round(100.0 * (oct - sep) / sep, 1) FROM p ORDER BY store_id"
       ordered: true
       hint: { vi: "Pivot trong một CTE, rồi tính % trên các cột đã xoay.", en: "Pivot in a CTE, then compute the % on the pivoted columns." }
@@ -377,8 +377,8 @@
     - id: g-a6-4
       kind: challenge
       task:
-        vi: "Mỗi nhân viên: mã và đường quản lý từ CEO tới họ, tên nối bằng ` > ` (ví dụ `Ha Minh > Do Lan`). Xếp theo đường quản lý."
-        en: "Each staff member: id and the reporting path from the CEO down to them, names joined by ` > ` (for example `Ha Minh > Do Lan`). Sort by the path."
+        vi: "Mỗi nhân viên: mã và đường quản lý từ CEO tới họ, tên nối bằng ` > ` (ví dụ `Ha Minh > Do Lan`; CEO chỉ có tên mình). Xếp theo chuỗi đường quản lý, tăng dần theo thứ tự chuỗi mặc định."
+        en: "Each staff member: id and the reporting path from the CEO down to them, names joined by ` > ` (for example `Ha Minh > Do Lan`; the CEO has only their own name). Sort by the path text, ascending in the default text order."
       solution: "WITH RECURSIVE t AS (SELECT id, name::text AS path FROM staff WHERE manager_id IS NULL UNION ALL SELECT s.id, t.path || ' > ' || s.name FROM staff s JOIN t ON s.manager_id = t.id) SELECT id, path FROM t ORDER BY path"
       ordered: true
       hint: { vi: "Phần đệ quy nối thêm tên vào cột `path` của cấp trên; phần mở đầu ép kiểu `::text` để hai phần cùng kiểu.", en: "The recursive part appends the name to the parent's `path`; the anchor casts with `::text` so both parts share a type." }
@@ -421,16 +421,16 @@
     - id: g-a7-2
       kind: open
       task:
-        vi: "Mỗi sản phẩm xuất hiện trong mảng `items` của sự kiện: mã sản phẩm, tên và số lần xuất hiện. Xếp theo số lần giảm dần, bằng nhau thì mã nhỏ trước; lấy 5 dòng đầu."
-        en: "Each product that appears in the events' `items` array: product id, name and how many times it appears. Sort by that count descending, ties by smaller id first; keep the first 5 rows."
+        vi: "Mỗi sản phẩm xuất hiện trong mảng `items` của sự kiện (`props` kiểu `jsonb`; mỗi phần tử của `items` là một mã sản phẩm dạng số): mã sản phẩm, tên và số lần xuất hiện. Xếp theo số lần giảm dần, bằng nhau thì mã nhỏ trước; lấy 5 dòng đầu."
+        en: "Each product that appears in the events' `items` array (`props` is `jsonb`; each element of `items` is a numeric product id): product id, name and how many times it appears. Sort by that count descending, ties by smaller id first; keep the first 5 rows."
       solution: "SELECT p.id, p.name, count(*) AS n FROM app_events e CROSS JOIN LATERAL jsonb_array_elements_text(e.props->'items') AS x (item) JOIN products p ON p.id = x.item::int GROUP BY p.id, p.name ORDER BY n DESC, p.id LIMIT 5"
       ordered: true
       hint: { vi: "`jsonb_array_elements_text(props->'items')` cho mỗi phần tử một dòng (chữ); ép `::int` để nối với `products`.", en: "`jsonb_array_elements_text(props->'items')` gives one row (text) per element; cast `::int` to join `products`." }
     - id: g-a7-3
       kind: trap
       task:
-        vi: "Có bao nhiêu sự kiện có ít nhất một sản phẩm trong `items`?"
-        en: "How many events have at least one product in `items`?"
+        vi: "Có bao nhiêu sự kiện mà mảng `items` trong `props` (kiểu `jsonb`) có ít nhất một phần tử? Lấy một con số."
+        en: "How many events have at least one element in the `items` array of `props` (type `jsonb`)? Get one number."
       solution: "SELECT count(*) FROM app_events WHERE jsonb_array_length(props->'items') > 0"
       hint: { vi: "Mảng rỗng `[]` vẫn là một giá trị, không phải NULL.", en: "An empty array `[]` is still a value, not NULL." }
       wrong:
@@ -477,16 +477,16 @@
     - id: g-a8-1
       kind: faded
       task:
-        vi: "Những đăng ký có email thuộc tên miền `mail.vn`, không phân biệt hoa thường: mã và email."
-        en: "The sign-ups whose email is on the `mail.vn` domain, ignoring case: id and email."
+        vi: "Những đăng ký có email thuộc tên miền `mail.vn` (ngay sau `@` là `mail.vn` và hết email), không phân biệt hoa thường; email có khoảng trắng thừa ở cuối vẫn tính. Lấy mã và email gốc."
+        en: "The sign-ups whose email is on the `mail.vn` domain (right after `@` comes `mail.vn` and the email ends), ignoring case; an email with trailing spaces still counts. Get the id and the original email."
       starter: "SELECT id, email FROM raw_signups WHERE email ~* ___"
       solution: "SELECT id, email FROM raw_signups WHERE email ~* '@mail\\.vn\\s*$'"
       hint: { vi: "`~*` không phân biệt hoa thường; chấm trong mẫu phải viết `\\.`, và có thể có khoảng trắng thừa ở cuối.", en: "`~*` ignores case; a dot in the pattern is written `\\.`, and there may be trailing spaces." }
     - id: g-a8-2
       kind: open
       task:
-        vi: "Sau khi đổi email sang chữ thường và bỏ khoảng trắng hai đầu, đếm số đăng ký theo tên miền (phần sau `@`), chỉ tính email hợp lệ có `@`. Cột: tên miền, số đăng ký."
-        en: "After lowercasing the emails and trimming spaces at both ends, count sign-ups per domain (the part after `@`), only for valid emails that have an `@`. Columns: domain, number of sign-ups."
+        vi: "Sau khi đổi email sang chữ thường và bỏ khoảng trắng hai đầu, đếm số đăng ký theo tên miền (phần sau `@`). Chỉ tính email có `@`; email trống hoặc không có `@` thì bỏ. Cột: tên miền, số đăng ký."
+        en: "After lowercasing the emails and trimming spaces at both ends, count sign-ups per domain (the part after `@`). Only emails that contain an `@` count; empty emails or emails without an `@` are left out. Columns: domain, number of sign-ups."
       solution: "SELECT substring(lower(trim(email)) FROM '@([a-z0-9.-]+)$') AS domain, count(*) FROM raw_signups WHERE lower(trim(email)) ~ '^[a-z0-9._]+@[a-z0-9.-]+$' GROUP BY 1"
       hint: { vi: "`substring(x FROM ...)` với một mẫu trả về phần nằm trong ngoặc tròn của mẫu.", en: "`substring(x FROM ...)` with a pattern returns the part inside the pattern's parentheses." }
     - id: g-a8-3
@@ -503,8 +503,8 @@
     - id: g-a8-4
       kind: challenge
       task:
-        vi: "Báo cáo chất lượng bảng đăng ký trong một dòng: số email trống, số email sai định dạng (dùng mẫu của ví dụ, không tính email trống), số điện thoại trống, số ngày đăng ký sau 31/10/2026."
-        en: "A one-row quality report of the sign-ups table: empty emails, badly formatted emails (the example's pattern, empty ones not counted), empty phones, and sign-up dates after 31 October 2026."
+        vi: "Báo cáo chất lượng bảng `raw_signups` trong một dòng, 4 cột theo thứ tự: số email trống (NULL); số email sai định dạng, tức email không trống mà không khớp mẫu `^[a-z0-9._]+@[a-z0-9-]+(\\.[a-z]+)+$` (so nguyên văn, phân biệt hoa thường, không làm sạch trước); số điện thoại trống (NULL); số dòng có ngày đăng ký sau 2026-10-31."
+        en: "A one-row quality report of the `raw_signups` table, 4 columns in this order: empty (NULL) emails; badly formatted emails, i.e. non-empty emails that do not match the pattern `^[a-z0-9._]+@[a-z0-9-]+(\\.[a-z]+)+$` (compared as stored, case-sensitive, not cleaned first); empty (NULL) phones; rows with a sign-up date after 2026-10-31."
       solution: |-
         SELECT count(*) FILTER (WHERE email IS NULL), count(*) FILTER (WHERE email !~ '^[a-z0-9._]+@[a-z0-9-]+(\.[a-z]+)+$'), count(*) FILTER (WHERE phone IS NULL), count(*) FILTER (WHERE signup_date > '2026-10-31') FROM raw_signups
       hint: { vi: "Một `count(*) FILTER (...)` cho mỗi loại lỗi.", en: "One `count(*) FILTER (...)` per kind of problem." }
@@ -540,8 +540,8 @@
     - id: g-a9-1
       kind: faded
       task:
-        vi: "Mỗi khách ở `Hue`: mã khách, mã và ngày của đơn gần nhất (bằng ngày thì mã đơn lớn hơn là gần hơn)."
-        en: "Each customer in `Hue`: customer id, and the id and date of their latest order (on the same date, the larger order id is the later one)."
+        vi: "Mỗi khách ở `Hue`: mã khách, mã và ngày của đơn gần nhất (mọi trạng thái; bằng ngày thì mã đơn lớn hơn là gần hơn). Khách chưa có đơn thì không có dòng."
+        en: "Each customer in `Hue`: customer id, and the id and date of their latest order (every status; on the same date, the larger order id is the later one). A customer with no orders has no row."
       starter: "SELECT c.id, x.id, x.order_date FROM customers c CROSS JOIN LATERAL (SELECT o.id, o.order_date FROM orders o WHERE o.customer_id = c.id ORDER BY o.order_date DESC, o.id DESC LIMIT ___) x WHERE c.city = 'Hue'"
       solution: "SELECT c.id, x.id, x.order_date FROM customers c CROSS JOIN LATERAL (SELECT o.id, o.order_date FROM orders o WHERE o.customer_id = c.id ORDER BY o.order_date DESC, o.id DESC LIMIT 1) x WHERE c.city = 'Hue'"
       hint: { vi: "\"Đơn gần nhất\" là một đơn.", en: "\"The latest order\" is one order." }
@@ -555,8 +555,8 @@
     - id: g-a9-3
       kind: trap
       task:
-        vi: "Mọi khách ở `Hue`: mã khách và ngày đơn `ONLINE` gần nhất của họ; khách chưa từng mua online vẫn có dòng, ngày để trống."
-        en: "Every customer in `Hue`: customer id and the date of their latest `ONLINE` order; customers who never ordered online still get a row with an empty date."
+        vi: "Mọi khách ở `Hue`: mã khách và ngày đơn `ONLINE` gần nhất của họ (đơn mọi trạng thái); khách chưa từng mua online vẫn có dòng, ngày để trống."
+        en: "Every customer in `Hue`: customer id and the date of their latest `ONLINE` order (orders of every status); customers who never ordered online still get a row with an empty date."
       solution: "SELECT c.id, x.order_date FROM customers c LEFT JOIN LATERAL (SELECT o.order_date FROM orders o WHERE o.customer_id = c.id AND o.channel = 'ONLINE' ORDER BY o.order_date DESC LIMIT 1) x ON true WHERE c.city = 'Hue'"
       hint: { vi: "Đề nói khách không có đơn online vẫn phải có dòng.", en: "The request says customers with no online order must still have a row." }
       wrong:
@@ -566,8 +566,8 @@
     - id: g-a9-4
       kind: challenge
       task:
-        vi: "Mỗi cửa hàng: 3 đơn `PAID` có giá trị lớn nhất tháng 10/2026 (bằng giá trị thì mã đơn nhỏ trước). Cột: mã cửa hàng, mã đơn, giá trị. Xếp theo cửa hàng, giá trị giảm dần, mã đơn."
-        en: "Each store: its 3 largest `PAID` orders of October 2026 (equal values: smaller order id first). Columns: store id, order id, value. Sort by store, value descending, order id."
+        vi: "Mỗi cửa hàng: 3 đơn `PAID` có giá trị lớn nhất tháng 10/2026 (giá trị đơn = cộng `qty` × `unit_price_vnd` mọi dòng của đơn; bằng giá trị thì mã đơn nhỏ trước). Cột: mã cửa hàng, mã đơn, giá trị. Xếp theo cửa hàng, giá trị giảm dần, mã đơn."
+        en: "Each store: its 3 largest `PAID` orders of October 2026 (order value = `qty` × `unit_price_vnd` added up over the order's lines; equal values: smaller order id first). Columns: store id, order id, value. Sort by store, value descending, order id."
       solution: "SELECT s.id, x.id, x.total FROM stores s CROSS JOIN LATERAL (SELECT o.id, sum(i.qty * i.unit_price_vnd) AS total FROM orders o JOIN order_items i ON i.order_id = o.id WHERE o.store_id = s.id AND o.status = 'PAID' AND o.order_date >= '2026-10-01' GROUP BY o.id ORDER BY total DESC, o.id LIMIT 3) x ORDER BY s.id, x.total DESC, x.id"
       ordered: true
       hint: { vi: "Trong `LATERAL`: gom theo đơn, xếp theo giá trị rồi mã đơn, `LIMIT 3`.", en: "Inside `LATERAL`: group by order, sort by value then id, `LIMIT 3`." }
@@ -619,8 +619,8 @@
     - id: g-a10-3
       kind: trap
       task:
-        vi: "Mọi sự kiện của người dùng 140 trong tháng 9/2026 (tới hết ngày 30/9): mã, sự kiện, thời điểm. Kế hoạch phải đọc `app_events` qua chỉ mục."
-        en: "Every event of user 140 in September 2026 (through the end of 30 September): id, event, timestamp. The plan must read `app_events` through an index."
+        vi: "Mọi sự kiện của người dùng 140 trong tháng 9/2026, tính trọn ngày 30/9 (`ts` kiểu `timestamp` không múi giờ, có cả giờ): mã, sự kiện, thời điểm. Kế hoạch phải đọc `app_events` qua chỉ mục."
+        en: "Every event of user 140 in September 2026, all of 30 September included (`ts` is a `timestamp` without time zone, with a time of day): id, event, timestamp. The plan must read `app_events` through an index."
       solution: "SELECT id, event, ts FROM app_events WHERE user_id = 140 AND ts >= '2026-09-01' AND ts < '2026-10-01'"
       plan: { index: app_events }
       hint: { vi: "`ts` có cả giờ. Ngày cuối cần trọn cả ngày.", en: "`ts` carries a time of day. The last day needs all of its hours." }
@@ -677,7 +677,7 @@
       hint: { vi: "Mẫu số là số đơn, không phải số dòng hàng: đếm mã đơn khác nhau.", en: "The denominator is the number of orders, not item lines: count distinct order ids." }
     - id: g-b1-2
       kind: open
-      task: { vi: "Tỷ lệ đơn bị hủy (`CANCELLED`) trên tổng số đơn của từng tháng năm 2026, tính theo %, làm tròn 1 chữ số thập phân.", en: "The share of cancelled orders (`CANCELLED`) among all orders for each month of 2026, as a %, rounded to 1 decimal." }
+      task: { vi: "Mỗi tháng năm 2026: tháng (ghi bằng ngày đầu tháng) và tỷ lệ đơn bị hủy (`CANCELLED`) trên tổng số đơn mọi trạng thái của tháng, tính theo %, làm tròn 1 chữ số thập phân.", en: "Each month of 2026: the month (shown as its first day) and the share of cancelled orders (`CANCELLED`) among all orders of every status that month, as a %, rounded to 1 decimal." }
       solution: "SELECT date_trunc('month', order_date)::date AS month, round(100.0 * count(*) FILTER (WHERE status = 'CANCELLED') / count(*), 1) AS cancel_pct FROM orders WHERE order_date >= '2026-01-01' GROUP BY 1"
       hint: { vi: "Tử số là đơn hủy, mẫu số là mọi đơn của tháng: đếm có điều kiện trên cùng một nhóm.", en: "The numerator is cancelled orders, the denominator every order of the month: a conditional count over the same group." }
     - id: g-b1-3
@@ -691,7 +691,7 @@
           en: "You divided by this year's revenue. The growth denominator is the base period: October 2025."
     - id: g-b1-4
       kind: challenge
-      task: { vi: "Bảng KPI năm 2026, mỗi tháng một dòng theo thứ tự tháng: tháng, doanh thu, số đơn, AOV (làm tròn tới đồng) và % tăng doanh thu so với tháng trước (1 chữ số thập phân). Chỉ tính đơn đã thanh toán.", en: "A 2026 KPI table, one row per month in month order: month, revenue, number of orders, AOV (rounded to the dong) and revenue % change from the previous month (1 decimal). Paid orders only." }
+      task: { vi: "Bảng KPI năm 2026, chỉ đơn `PAID`, mỗi tháng một dòng theo thứ tự tháng: tháng (ngày đầu tháng), doanh thu (`qty` × `unit_price_vnd`), số đơn, AOV = doanh thu / số đơn (làm tròn tới đồng) và % tăng doanh thu so với tháng trước (1 chữ số thập phân; tháng 1 để trống).", en: "A 2026 KPI table, `PAID` orders only, one row per month in month order: month (its first day), revenue (`qty` × `unit_price_vnd`), number of orders, AOV = revenue / orders (rounded to the dong) and revenue % change from the previous month (1 decimal; empty for January)." }
       solution: "WITH m AS (SELECT date_trunc('month', o.order_date)::date AS month, sum(i.qty * i.unit_price_vnd) AS revenue, count(DISTINCT o.id) AS orders FROM orders o JOIN order_items i ON i.order_id = o.id WHERE o.status = 'PAID' AND o.order_date >= '2026-01-01' GROUP BY 1) SELECT month, revenue, orders, round(revenue::numeric / orders) AS aov, round(100.0 * (revenue - lag(revenue) OVER (ORDER BY month)) / lag(revenue) OVER (ORDER BY month), 1) AS mom_pct FROM m ORDER BY month"
       ordered: true
       hint: { vi: "Gom theo tháng trong một CTE trước, rồi tính AOV và LAG trên kết quả đã gom.", en: "Group by month in a CTE first, then compute AOV and LAG on the grouped result." }
@@ -731,12 +731,12 @@
       hint: { vi: "Cohort ở đây là tháng: cắt ngày đăng ký về đầu tháng.", en: "The cohort here is a month: truncate the signup date to the start of the month." }
     - id: g-b2-2
       kind: open
-      task: { vi: "Mỗi tháng năm 2026 có bao nhiêu khách mua đơn đã thanh toán đầu tiên của họ? Tháng và số khách.", en: "How many customers made their first paid order in each month of 2026? Month and number of customers." }
+      task: { vi: "Mỗi tháng năm 2026 có bao nhiêu khách mua đơn `PAID` đầu tiên của họ? Chỉ xét đơn có `customer_id`; đơn đầu tiên tính trên mọi đơn `PAID` của khách (cả năm 2025), rồi chỉ giữ các tháng năm 2026. Cột: tháng (ngày đầu tháng), số khách.", en: "How many customers made their first `PAID` order in each month of 2026? Only orders with a `customer_id`; the first order is taken over all of the customer's `PAID` orders (2025 included), then only the 2026 months are kept. Columns: month (its first day), number of customers." }
       solution: "SELECT first_month, count(*) AS customers FROM (SELECT customer_id, date_trunc('month', min(order_date))::date AS first_month FROM orders WHERE status = 'PAID' AND customer_id IS NOT NULL GROUP BY customer_id) f WHERE first_month >= '2026-01-01' GROUP BY first_month"
       hint: { vi: "Tìm tháng mua đầu tiên của mỗi khách trước (MIN theo khách), rồi mới đếm theo tháng đó.", en: "Find each customer's first purchase month first (MIN per customer), then count by that month." }
     - id: g-b2-3
       kind: trap
-      task: { vi: "Với các cohort đăng ký từ tháng 7 tới tháng 12/2025: cỡ cohort và số khách có đơn đã thanh toán ở đúng tháng ngay sau tháng đăng ký. Chú ý cohort tháng 12.", en: "For the signup cohorts from July to December 2025: cohort size and the number of customers with a paid order in exactly the month after their signup month. Watch the December cohort." }
+      task: { vi: "Với các cohort đăng ký (`signup_date`) từ tháng 7 tới tháng 12/2025: tháng cohort (ngày đầu tháng), cỡ cohort (số khách) và số khách có ít nhất một đơn `PAID` trong đúng tháng lịch ngay sau tháng đăng ký. Chú ý: tháng ngay sau 12/2025 là 01/2026.", en: "For the signup cohorts (`signup_date`) from July to December 2025: the cohort month (its first day), the cohort size (customers) and the number of customers with at least one `PAID` order in exactly the calendar month after their signup month. Note: the month after December 2025 is January 2026." }
       solution: "WITH f AS (SELECT id, date_trunc('month', signup_date)::date AS cohort FROM customers WHERE signup_date >= '2025-07-01' AND signup_date < '2026-01-01'), a AS (SELECT DISTINCT customer_id, date_trunc('month', order_date)::date AS m FROM orders WHERE status = 'PAID') SELECT f.cohort, count(DISTINCT f.id) AS size, count(DISTINCT a.customer_id) FILTER (WHERE a.m = f.cohort + interval '1 month') AS m1 FROM f LEFT JOIN a ON a.customer_id = f.id GROUP BY 1"
       hint: { vi: "So sánh cả ngày tháng (đầu tháng), không chỉ số tháng: tháng sau của 12/2025 là 01/2026.", en: "Compare whole dates (month starts), not month numbers: the month after 12/2025 is 01/2026." }
       wrong:
@@ -745,7 +745,7 @@
           en: "Comparing month numbers with `extract(month …)` means 12 + 1 = 13 never matches, and August 2026 also counts as the \"next month\" of July 2025. Compare whole month-start dates."
     - id: g-b2-4
       kind: challenge
-      task: { vi: "Bảng retention cho các cohort đăng ký tháng 1 tới tháng 6/2026, theo thứ tự tháng: tháng cohort, cỡ cohort, rồi % khách mua lại ở tháng thứ 1, thứ 2, thứ 3 sau tháng đăng ký (mỗi tỷ lệ làm tròn 1 chữ số thập phân).", en: "A retention table for the signup cohorts January to June 2026, in month order: cohort month, cohort size, then the % of customers buying again in month 1, 2 and 3 after the signup month (each rate rounded to 1 decimal)." }
+      task: { vi: "Bảng retention cho các cohort đăng ký (`signup_date`) tháng 1 tới tháng 6/2026, theo thứ tự tháng: tháng cohort (ngày đầu tháng), cỡ cohort, rồi % khách mua lại ở tháng thứ 1, 2, 3 sau tháng đăng ký. Mua lại ở tháng thứ N = có ít nhất một đơn `PAID` trong tháng lịch thứ N sau tháng đăng ký (cohort tháng 1 thì tháng thứ 1 là tháng 2). Tỷ lệ = số khách đó / cỡ cohort × 100, mỗi tỷ lệ làm tròn 1 chữ số thập phân.", en: "A retention table for the signup cohorts (`signup_date`) January to June 2026, in month order: cohort month (its first day), cohort size, then the % of customers buying again in month 1, 2 and 3 after the signup month. Buying again in month N = at least one `PAID` order in the Nth calendar month after the signup month (for the January cohort, month 1 is February). Rate = those customers / cohort size × 100, each rounded to 1 decimal." }
       solution: "WITH f AS (SELECT id, date_trunc('month', signup_date)::date AS cohort FROM customers WHERE signup_date >= '2026-01-01' AND signup_date < '2026-07-01'), a AS (SELECT DISTINCT customer_id, date_trunc('month', order_date)::date AS m FROM orders WHERE status = 'PAID') SELECT f.cohort, count(DISTINCT f.id) AS size, round(100.0 * count(DISTINCT a.customer_id) FILTER (WHERE a.m = f.cohort + interval '1 month') / count(DISTINCT f.id), 1) AS m1_pct, round(100.0 * count(DISTINCT a.customer_id) FILTER (WHERE a.m = f.cohort + interval '2 month') / count(DISTINCT f.id), 1) AS m2_pct, round(100.0 * count(DISTINCT a.customer_id) FILTER (WHERE a.m = f.cohort + interval '3 month') / count(DISTINCT f.id), 1) AS m3_pct FROM f LEFT JOIN a ON a.customer_id = f.id GROUP BY 1 ORDER BY 1"
       ordered: true
       hint: { vi: "Một cột cho mỗi tháng thứ N: cùng một phép đếm có điều kiện, chỉ đổi khoảng cách tháng.", en: "One column per month N: the same conditional count, only the month offset changes." }
@@ -783,21 +783,21 @@
       hint: { vi: "Mẫu số là bước đầu tiên của phễu.", en: "The denominator is the first step of the funnel." }
     - id: g-b3-2
       kind: open
-      task: { vi: "Tỷ lệ chuyển đổi từng bước, theo %, làm tròn 1 chữ số thập phân: xem → giỏ, giỏ → thanh toán, thanh toán → trả tiền (3 cột).", en: "Step-by-step conversion, as %, rounded to 1 decimal: view → cart, cart → checkout, checkout → paid (3 columns)." }
+      task: { vi: "Tỷ lệ chuyển đổi từng bước của phễu, theo %, làm tròn 1 chữ số thập phân. Mỗi bước là số phiên (`session_id` khác nhau) có sự kiện đó: `view`, `add_to_cart`, `checkout`, `paid`. Ba cột theo thứ tự: phiên `add_to_cart` / phiên `view`, phiên `checkout` / phiên `add_to_cart`, phiên `paid` / phiên `checkout`.", en: "Step-by-step funnel conversion, as %, rounded to 1 decimal. Each step is the number of sessions (distinct `session_id`) with that event: `view`, `add_to_cart`, `checkout`, `paid`. Three columns in order: `add_to_cart` sessions / `view` sessions, `checkout` sessions / `add_to_cart` sessions, `paid` sessions / `checkout` sessions." }
       solution: "WITH s AS (SELECT count(DISTINCT session_id) FILTER (WHERE event = 'view') AS v, count(DISTINCT session_id) FILTER (WHERE event = 'add_to_cart') AS a, count(DISTINCT session_id) FILTER (WHERE event = 'checkout') AS c, count(DISTINCT session_id) FILTER (WHERE event = 'paid') AS p FROM app_events) SELECT round(100.0 * a / v, 1) AS view_to_cart, round(100.0 * c / a, 1) AS cart_to_checkout, round(100.0 * p / c, 1) AS checkout_to_paid FROM s"
       hint: { vi: "Đếm 4 bước trong một CTE, rồi chia mỗi bước cho bước ngay trước nó.", en: "Count the 4 steps in a CTE, then divide each step by the one right before it." }
     - id: g-b3-3
       kind: trap
-      task: { vi: "Mỗi tháng (theo thời điểm sự kiện): số phiên có xem và số phiên có trả tiền.", en: "For each month (by event time): the number of sessions with a view and the number with a payment." }
+      task: { vi: "Mỗi tháng theo thời điểm sự kiện (`ts`): tháng ghi bằng ngày đầu tháng, kiểu `date` (ví dụ 2026-08-01), số phiên có sự kiện `view` và số phiên có sự kiện `paid` (mỗi phiên đếm một lần trong mỗi cột).", en: "For each month by event time (`ts`): the month as its first day, of type `date` (for example 2026-08-01), the number of sessions with a `view` event and the number with a `paid` event (each session counted once per column)." }
       solution: "SELECT date_trunc('month', ts)::date AS month, count(DISTINCT session_id) FILTER (WHERE event = 'view') AS viewed, count(DISTINCT session_id) FILTER (WHERE event = 'paid') AS paid FROM app_events GROUP BY 1"
-      hint: { vi: "Mỗi cột một điều kiện riêng; không lọc chung ở WHERE.", en: "Each column has its own condition; no shared filter in WHERE." }
+      hint: { vi: "Mỗi cột một điều kiện riêng; không lọc chung ở WHERE. `ts` có cả giờ, nên đổi đầu tháng sang `date`.", en: "Each column has its own condition; do not filter both in WHERE. `ts` has a time of day, so turn the month start into a `date`." }
       wrong:
         - sql: "SELECT date_trunc('month', ts)::date AS month, count(DISTINCT session_id) FILTER (WHERE event = 'view') AS viewed, count(DISTINCT session_id) AS paid FROM app_events WHERE event = 'paid' GROUP BY 1"
           vi: "Lọc `event = 'paid'` ở WHERE thì các sự kiện xem bị bỏ trước khi đếm: cột xem về 0. Đặt điều kiện vào từng cột."
           en: "Filtering `event = 'paid'` in WHERE drops the view events before counting: the view column drops to 0. Put the condition in each column."
     - id: g-b3-4
       kind: challenge
-      task: { vi: "So sánh thiết bị: thiết bị, số phiên có xem, số phiên trả tiền, tỷ lệ % (1 chữ số thập phân). Tỷ lệ cao nhất lên đầu; bằng nhau thì theo tên thiết bị.", en: "Compare devices: device, sessions with a view, sessions that paid, conversion % (1 decimal). Highest rate first; on a tie, by device name." }
+      task: { vi: "So sánh thiết bị (khóa `device` trong cột `props`, kiểu `jsonb`): thiết bị, số phiên có sự kiện `view`, số phiên có sự kiện `paid`, tỷ lệ % = phiên `paid` / phiên `view` × 100 (1 chữ số thập phân). Tỷ lệ cao nhất lên đầu; bằng nhau thì theo tên thiết bị A→Z.", en: "Compare devices (the `device` key in the `props` column, type `jsonb`): device, sessions with a `view` event, sessions with a `paid` event, conversion % = `paid` sessions / `view` sessions × 100 (1 decimal). Highest rate first; on a tie, by device name A→Z." }
       solution: "WITH d AS (SELECT props ->> 'device' AS device, count(DISTINCT session_id) FILTER (WHERE event = 'view') AS viewed, count(DISTINCT session_id) FILTER (WHERE event = 'paid') AS paid FROM app_events GROUP BY 1) SELECT device, viewed, paid, round(100.0 * paid / viewed, 1) AS conversion_pct FROM d ORDER BY conversion_pct DESC, device"
       ordered: true
       hint: { vi: "Lấy thiết bị bằng `->>` từ `props`, gom theo thiết bị trong CTE rồi tính tỷ lệ.", en: "Read the device with `->>` from `props`, group by device in a CTE, then compute the rate." }
@@ -829,18 +829,18 @@
   drills:
     - id: g-b4-1
       kind: faded
-      task: { vi: "Chấm điểm R từ 1 tới 5 bằng NTILE: mua càng gần đây điểm càng cao. Với mỗi điểm: điểm, số khách, số ngày nhỏ nhất và lớn nhất.", en: "Score R from 1 to 5 with NTILE: the more recent the purchase, the higher the score. For each score: the score, number of customers, smallest and largest number of days." }
+      task: { vi: "Chấm điểm R từ 1 tới 5 bằng NTILE cho mọi khách có đơn `PAID` (đơn có `customer_id`): số ngày từ đơn `PAID` gần nhất tới 2026-10-31, mua càng gần đây điểm càng cao. Với mỗi điểm: điểm, số khách, số ngày nhỏ nhất và lớn nhất.", en: "Score R from 1 to 5 with NTILE for every customer with a `PAID` order (orders with a `customer_id`): the days from their latest `PAID` order to 2026-10-31, the more recent the higher the score. For each score: the score, number of customers, smallest and largest number of days." }
       starter: "WITH c AS (SELECT customer_id, DATE '2026-10-31' - max(order_date) AS recency FROM orders WHERE status = 'PAID' AND customer_id IS NOT NULL GROUP BY 1), s AS (SELECT recency, ntile(5) OVER (ORDER BY recency ___) AS r_score FROM c) SELECT r_score, count(*) AS customers, min(recency) AS low, max(recency) AS high FROM s GROUP BY r_score"
       solution: "WITH c AS (SELECT customer_id, DATE '2026-10-31' - max(order_date) AS recency FROM orders WHERE status = 'PAID' AND customer_id IS NOT NULL GROUP BY 1), s AS (SELECT recency, ntile(5) OVER (ORDER BY recency DESC) AS r_score FROM c) SELECT r_score, count(*) AS customers, min(recency) AS low, max(recency) AS high FROM s GROUP BY r_score"
       hint: { vi: "Nhiều ngày = lâu rồi chưa mua = điểm thấp: xếp số ngày giảm dần.", en: "Many days = long since the last purchase = low score: sort days descending." }
     - id: g-b4-2
       kind: open
-      task: { vi: "Chấm điểm F từ 1 tới 5 bằng NTILE theo số đơn đã thanh toán (ít đơn = 1). Với mỗi điểm: điểm, số khách, số đơn nhỏ nhất và lớn nhất.", en: "Score F from 1 to 5 with NTILE on the number of paid orders (fewest = 1). For each score: the score, number of customers, smallest and largest order count." }
+      task: { vi: "Chấm điểm F từ 1 tới 5 bằng NTILE cho mọi khách có đơn `PAID` (đơn có `customer_id`), theo số đơn `PAID` của khách (ít đơn = 1). Khách bằng số đơn ở ranh giới hai nhóm xếp thế nào cũng cho cùng kết quả. Với mỗi điểm: điểm, số khách, số đơn nhỏ nhất và lớn nhất.", en: "Score F from 1 to 5 with NTILE for every customer with a `PAID` order (orders with a `customer_id`), by their number of `PAID` orders (fewest = 1). Customers tied at a group boundary give the same result in any order. For each score: the score, number of customers, smallest and largest order count." }
       solution: "WITH c AS (SELECT customer_id, count(*) AS frequency FROM orders WHERE status = 'PAID' AND customer_id IS NOT NULL GROUP BY 1), s AS (SELECT frequency, ntile(5) OVER (ORDER BY frequency) AS f_score FROM c) SELECT f_score, count(*) AS customers, min(frequency) AS low, max(frequency) AS high FROM s GROUP BY f_score"
       hint: { vi: "Đếm đơn của mỗi khách trong CTE, rồi NTILE(5) trên số đơn.", en: "Count each customer's orders in a CTE, then NTILE(5) on that count." }
     - id: g-b4-3
       kind: trap
-      task: { vi: "Phân bố tần suất: với mỗi số đơn đã thanh toán (1, 2, 3…), có bao nhiêu khách mua đúng ngần ấy đơn?", en: "Frequency distribution: for each number of paid orders (1, 2, 3…), how many customers bought exactly that many orders?" }
+      task: { vi: "Phân bố tần suất của khách có đơn `PAID` (đơn có `customer_id`): với mỗi số đơn `PAID` (1, 2, 3…), có bao nhiêu khách mua đúng ngần ấy đơn? Cột: số đơn, số khách.", en: "Frequency distribution of customers with `PAID` orders (orders with a `customer_id`): for each number of `PAID` orders (1, 2, 3…), how many customers bought exactly that many? Columns: number of orders, number of customers." }
       solution: "SELECT frequency, count(*) AS customers FROM (SELECT o.customer_id, count(DISTINCT o.id) AS frequency FROM orders o JOIN order_items i ON i.order_id = o.id WHERE o.status = 'PAID' AND o.customer_id IS NOT NULL GROUP BY 1) c GROUP BY frequency"
       hint: { vi: "Sau khi nối với dòng hàng, một đơn có nhiều dòng: đếm mã đơn khác nhau.", en: "After joining item lines, one order has several rows: count distinct order ids." }
       wrong:
@@ -849,7 +849,7 @@
           en: "`count(*)` after the join counts item lines, not orders: a customer with one 4-line order counts as 4 purchases."
     - id: g-b4-4
       kind: challenge
-      task: { vi: "Chấm R và F (1–5, NTILE; R: mua càng gần điểm càng cao; F: nhiều đơn điểm cao; bằng nhau thì mã khách nhỏ hơn được điểm thấp hơn). Nhóm 1 = R ≥ 4 và F ≥ 4, nhóm 2 = R ≤ 2 và F ≥ 4 (khách tốt sắp rời), còn lại nhóm 3. Mỗi nhóm: mã nhóm và số khách.", en: "Score R and F (1–5, NTILE; R: more recent scores higher; F: more orders scores higher; on a tie the smaller customer id gets the lower score). Segment 1 = R ≥ 4 and F ≥ 4, segment 2 = R ≤ 2 and F ≥ 4 (good customers drifting away), everyone else segment 3. Per segment: the segment number and the number of customers." }
+      task: { vi: "Chấm R và F (1–5, NTILE) cho mọi khách có đơn `PAID` (đơn có `customer_id`). R theo số ngày từ đơn `PAID` gần nhất tới 2026-10-31 (càng ít ngày điểm càng cao); F theo số đơn `PAID` (nhiều đơn điểm cao); bằng nhau thì mã khách nhỏ hơn được điểm thấp hơn. Nhóm 1 = R ≥ 4 và F ≥ 4, nhóm 2 = R ≤ 2 và F ≥ 4 (khách tốt sắp rời), còn lại nhóm 3. Mỗi nhóm: mã nhóm và số khách.", en: "Score R and F (1–5, NTILE) for every customer with a `PAID` order (orders with a `customer_id`). R by the days from their latest `PAID` order to 2026-10-31 (fewer days scores higher); F by the number of `PAID` orders (more scores higher); on a tie the smaller customer id gets the lower score. Segment 1 = R ≥ 4 and F ≥ 4, segment 2 = R ≤ 2 and F ≥ 4 (good customers drifting away), everyone else segment 3. Per segment: the segment number and the number of customers." }
       solution: "WITH c AS (SELECT customer_id, DATE '2026-10-31' - max(order_date) AS recency, count(*) AS frequency FROM orders WHERE status = 'PAID' AND customer_id IS NOT NULL GROUP BY 1), s AS (SELECT customer_id, ntile(5) OVER (ORDER BY recency DESC, customer_id) AS r, ntile(5) OVER (ORDER BY frequency, customer_id) AS f FROM c) SELECT CASE WHEN r >= 4 AND f >= 4 THEN 1 WHEN r <= 2 AND f >= 4 THEN 2 ELSE 3 END AS segment, count(*) AS customers FROM s GROUP BY 1"
       hint: { vi: "Hai NTILE trong cùng một CTE, mỗi cái một thứ tự; CASE xếp điều kiện hẹp lên trước.", en: "Two NTILEs in the same CTE, each with its own order; CASE puts the narrow conditions first." }
 
@@ -939,12 +939,12 @@
       hint: { vi: "Hôm nay cộng 6 dòng trước là 7 dòng.", en: "Today plus 6 rows before it is 7 rows." }
     - id: g-b6-2
       kind: open
-      task: { vi: "Ngày 09/09/2026 của cửa hàng 3 lệch bao nhiêu lần độ lệch chuẩn so với 28 ngày bán trước (z = (doanh thu − trung bình) / độ lệch chuẩn)? Một con số, làm tròn 2 chữ số.", en: "How many standard deviations from the 28 previous sales days was store 3 on 2026-09-09 (z = (revenue − mean) / standard deviation)? One number, rounded to 2 decimals." }
+      task: { vi: "Ngày 09/09/2026 của cửa hàng 3 lệch bao nhiêu lần độ lệch chuẩn so với 28 ngày bán trước đó (28 ngày có đơn `PAID` gần nhất trước ngày đó, không tính chính nó)? z = (doanh thu − trung bình) / độ lệch chuẩn mẫu (chia cho n − 1); doanh thu = `qty` × `unit_price_vnd` của đơn `PAID`. Một con số, làm tròn 2 chữ số.", en: "How many standard deviations from its 28 previous sales days (the 28 latest days with a `PAID` order before that day, the day itself not included) was store 3 on 2026-09-09? z = (revenue − mean) / sample standard deviation (divided by n − 1); revenue = `qty` × `unit_price_vnd` of `PAID` orders. One number, rounded to 2 decimals." }
       solution: "WITH d AS (SELECT o.order_date AS day, sum(i.qty * i.unit_price_vnd) AS revenue FROM orders o JOIN order_items i ON i.order_id = o.id WHERE o.status = 'PAID' AND o.store_id = 3 GROUP BY 1), s AS (SELECT day, revenue, avg(revenue) OVER w AS m, stddev_samp(revenue) OVER w AS sd FROM d WINDOW w AS (ORDER BY day ROWS BETWEEN 28 PRECEDING AND 1 PRECEDING)) SELECT round((revenue - m) / sd, 2) AS z FROM s WHERE day = '2026-09-09'"
       hint: { vi: "Tính trung bình và độ lệch chuẩn bằng cửa sổ trên mọi ngày trước, rồi mới lọc ra ngày đó.", en: "Compute the mean and standard deviation with a window over all earlier days, then filter that one day." }
     - id: g-b6-3
       kind: trap
-      task: { vi: "Tháng 9/2026, những ngày nào cửa hàng 3 bán hơn gấp đôi trung bình của 28 ngày bán trước đó? Ngày và doanh thu.", en: "In September 2026, on which days did store 3 sell more than twice the average of the 28 previous sales days? Day and revenue." }
+      task: { vi: "Tháng 9/2026, những ngày nào cửa hàng 3 bán (đơn `PAID`, `qty` × `unit_price_vnd`) hơn gấp đôi trung bình của 28 ngày bán trước đó (28 ngày có bán gần nhất trước ngày đó, kể cả ngày trước tháng 9, không tính chính nó)? Ngày và doanh thu.", en: "In September 2026, on which days did store 3 sell (`PAID` orders, `qty` × `unit_price_vnd`) more than twice the average of the 28 previous sales days (the 28 latest selling days before that day, days before September included, the day itself not)? Day and revenue." }
       solution: "WITH d AS (SELECT o.order_date AS day, sum(i.qty * i.unit_price_vnd) AS revenue FROM orders o JOIN order_items i ON i.order_id = o.id WHERE o.status = 'PAID' AND o.store_id = 3 GROUP BY 1), s AS (SELECT day, revenue, avg(revenue) OVER (ORDER BY day ROWS BETWEEN 28 PRECEDING AND 1 PRECEDING) AS m FROM d) SELECT day, revenue FROM s WHERE day >= '2026-09-01' AND day < '2026-10-01' AND revenue > 2 * m"
       hint: { vi: "Lọc tháng sau khi tính cửa sổ, không phải trước.", en: "Filter the month after the window is computed, not before." }
       wrong:
@@ -953,7 +953,7 @@
           en: "Filtering September before the window means early days lose their 28 days of history: the average rests on a few September days only."
     - id: g-b6-4
       kind: challenge
-      task: { vi: "Năm 2026, mỗi cửa hàng có bao nhiêu ngày bán vượt trung bình + 3 lần độ lệch chuẩn của 28 ngày bán trước của chính cửa hàng đó? Mã cửa hàng và số ngày.", en: "In 2026, how many days did each store sell more than the mean + 3 standard deviations of its own 28 previous sales days? Store id and number of days." }
+      task: { vi: "Năm 2026, mỗi cửa hàng có bao nhiêu ngày bán (đơn `PAID`, `qty` × `unit_price_vnd`) vượt trung bình + 3 lần độ lệch chuẩn mẫu (chia cho n − 1) của 28 ngày bán trước của chính cửa hàng đó (kể cả ngày năm 2025, không tính chính ngày đó)? Mã cửa hàng và số ngày; năm nay cửa hàng nào cũng có ít nhất một ngày như vậy.", en: "In 2026, how many days did each store sell (`PAID` orders, `qty` × `unit_price_vnd`) more than the mean + 3 sample standard deviations (divided by n − 1) of its own 28 previous sales days (2025 days included, the day itself not)? Store id and number of days; every store has at least one such day this year." }
       solution: "WITH d AS (SELECT o.store_id, o.order_date AS day, sum(i.qty * i.unit_price_vnd) AS revenue FROM orders o JOIN order_items i ON i.order_id = o.id WHERE o.status = 'PAID' GROUP BY 1, 2), s AS (SELECT store_id, day, revenue, avg(revenue) OVER w AS m, stddev_samp(revenue) OVER w AS sd FROM d WINDOW w AS (PARTITION BY store_id ORDER BY day ROWS BETWEEN 28 PRECEDING AND 1 PRECEDING)) SELECT store_id, count(*) AS anomaly_days FROM s WHERE day >= '2026-01-01' AND revenue > m + 3 * sd GROUP BY store_id"
       hint: { vi: "Thêm `PARTITION BY` cửa hàng vào cửa sổ để mỗi cửa hàng so với chính nó.", en: "Add a `PARTITION BY` store to the window so each store is compared with itself." }
 
@@ -1004,7 +1004,7 @@
           en: "This is the average of an item line, not of an order: the number is several times too small."
     - id: g-b7-4
       kind: challenge
-      task: { vi: "Mỗi danh mục sản phẩm, theo thứ tự tên danh mục: số lượng trung bình mỗi dòng hàng (2 chữ số), độ lệch chuẩn (2 chữ số) và hệ số biến thiên = độ lệch chuẩn / trung bình (3 chữ số).", en: "For each product category, in category-name order: the average quantity per item line (2 decimals), the standard deviation (2 decimals) and the coefficient of variation = standard deviation / mean (3 decimals)." }
+      task: { vi: "Mỗi danh mục sản phẩm, theo thứ tự tên danh mục: số lượng (`qty`) trung bình mỗi dòng hàng (2 chữ số), độ lệch chuẩn mẫu (chia cho n − 1, 2 chữ số) và hệ số biến thiên = độ lệch chuẩn / trung bình, tính từ giá trị chưa làm tròn (3 chữ số). Mọi dòng của `order_items`, mọi trạng thái đơn.", en: "For each product category, in category-name order: the average quantity (`qty`) per item line (2 decimals), the sample standard deviation (divided by n − 1, 2 decimals) and the coefficient of variation = standard deviation / mean, computed from the unrounded values (3 decimals). Every row of `order_items`, every order status." }
       solution: "SELECT p.category, round(avg(i.qty), 2) AS mean_qty, round(stddev_samp(i.qty), 2) AS sd_qty, round(stddev_samp(i.qty) / avg(i.qty), 3) AS cv FROM order_items i JOIN products p ON p.id = i.product_id GROUP BY p.category ORDER BY p.category"
       ordered: true
       hint: { vi: "Ở đây đơn vị là dòng hàng; chia hai hàm gộp trong cùng một nhóm.", en: "Here the unit is the item line; divide two aggregates of the same group." }
@@ -1044,7 +1044,7 @@
       hint: { vi: "So với ngày hôm nay viết dạng ngày trong nháy đơn.", en: "Compare with today's date written in single quotes." }
     - id: g-c1-2
       kind: open
-      task: { vi: "Trong bảng đăng ký thô: bao nhiêu dòng thiếu email, bao nhiêu dòng thiếu số điện thoại? Một dòng, hai số.", en: "In the raw signups: how many rows have no email, how many have no phone? One row, two numbers." }
+      task: { vi: "Trong bảng `raw_signups`: bao nhiêu dòng thiếu email, bao nhiêu dòng thiếu số điện thoại? Thiếu là ô trống (NULL); email hay số sai dạng vẫn tính là có. Một dòng, hai số theo thứ tự đó.", en: "In the `raw_signups` table: how many rows have no email, how many have no phone? Missing means an empty (NULL) value; a badly formatted email or phone still counts as present. One row, two numbers in that order." }
       solution: "SELECT count(*) FILTER (WHERE email IS NULL) AS no_email, count(*) FILTER (WHERE phone IS NULL) AS no_phone FROM raw_signups"
       hint: { vi: "Ô trống là NULL: kiểm bằng IS NULL, mỗi cột một điều kiện riêng.", en: "A blank is NULL: test with IS NULL, one condition per column." }
     - id: g-c1-3
@@ -1058,7 +1058,7 @@
           en: "Without dropping negative amounts, every refunded order also shows up as charged twice."
     - id: g-c1-4
       kind: challenge
-      task: { vi: "Một bảng kiểm gồm 5 phép, mỗi phép một dòng (số phép, số dòng vi phạm): 1 thanh toán mồ côi, 2 đơn thu tiền dương hơn một lần, 3 đăng ký thô có ngày sau 31/10/2026, 4 đăng ký thô có email không đúng dạng chữ-thường@tên-miền (gồm cả email trống), 5 khách hàng không có email.", en: "A check table with 5 checks, one row each (check number, offending rows): 1 orphan payments, 2 orders with more than one positive payment, 3 raw signups dated after 2026-10-31, 4 raw signups whose email is not lowercase@domain (blank emails included), 5 customers without an email." }
+      task: { vi: "Một bảng kiểm gồm 5 phép, mỗi phép một dòng (số phép, số vi phạm): 1 = số dòng `payments` có `order_id` không có trong `orders`; 2 = số đơn có hơn một khoản thanh toán dương; 3 = số dòng `raw_signups` có ngày đăng ký sau 2026-10-31; 4 = số dòng `raw_signups` có email trống (NULL) hoặc không khớp mẫu `^[a-z0-9._]+@[a-z0-9.-]+[.][a-z]+$` (so nguyên văn, phân biệt hoa thường); 5 = số khách trong `customers` không có email (NULL).", en: "A check table with 5 checks, one row each (check number, offending count): 1 = rows of `payments` whose `order_id` is not in `orders`; 2 = orders with more than one positive payment; 3 = rows of `raw_signups` with a sign-up date after 2026-10-31; 4 = rows of `raw_signups` whose email is empty (NULL) or does not match the pattern `^[a-z0-9._]+@[a-z0-9.-]+[.][a-z]+$` (compared as stored, case-sensitive); 5 = customers in `customers` without an email (NULL)." }
       solution: "SELECT 1 AS check_no, count(*) AS problems FROM payments p WHERE NOT EXISTS (SELECT 1 FROM orders o WHERE o.id = p.order_id) UNION ALL SELECT 2, count(*) FROM (SELECT order_id FROM payments WHERE amount_vnd > 0 GROUP BY order_id HAVING count(*) > 1) d UNION ALL SELECT 3, count(*) FROM raw_signups WHERE signup_date > '2026-10-31' UNION ALL SELECT 4, count(*) FROM raw_signups WHERE email IS NULL OR email !~ '^[a-z0-9._]+@[a-z0-9.-]+[.][a-z]+$' UNION ALL SELECT 5, count(*) FROM customers WHERE email IS NULL"
       hint: { vi: "Mỗi phép một câu đếm, nối bằng UNION ALL. Email trống không khớp mẫu nào, nên phải kiểm IS NULL riêng.", en: "One count per check, joined with UNION ALL. A blank email matches no pattern, so test IS NULL separately." }
 
@@ -1095,12 +1095,12 @@
       hint: { vi: "Fact nối với dimension qua khóa của dimension có trong fact.", en: "The fact joins a dimension through that dimension's key stored in the fact." }
     - id: g-c2-2
       kind: open
-      task: { vi: "Doanh thu năm 2026 theo thành phố của cửa hàng và danh mục sản phẩm.", en: "2026 revenue by store city and product category." }
+      task: { vi: "Doanh thu năm 2026 (cộng `revenue_vnd` của `fact_sales`, chỉ có đơn `PAID`) theo thành phố của cửa hàng và danh mục sản phẩm. Cột: thành phố, danh mục, doanh thu.", en: "2026 revenue (`revenue_vnd` of `fact_sales` added up; it holds `PAID` orders only) by store city and product category. Columns: city, category, revenue." }
       solution: "SELECT s.city, p.category, sum(f.revenue_vnd) AS revenue FROM fact_sales f JOIN stores s ON s.id = f.store_id JOIN dim_product p ON p.product_key = f.product_key JOIN dim_date d ON d.date_key = f.date_key WHERE d.year = 2026 GROUP BY s.city, p.category"
       hint: { vi: "Ba bảng quanh fact: cửa hàng, sản phẩm, ngày; gom theo hai cột mô tả.", en: "Three tables around the fact: store, product, date; group by the two describing columns." }
     - id: g-c2-3
       kind: trap
-      task: { vi: "Số đơn đã bán mỗi tháng trong quý 3/2026, chỉ dùng `fact_sales` và `dim_date`.", en: "The number of orders sold each month in Q3 2026, using only `fact_sales` and `dim_date`." }
+      task: { vi: "Số đơn đã bán mỗi tháng trong quý 3/2026, chỉ dùng `fact_sales` và `dim_date`. Mỗi dòng của `fact_sales` là một dòng hàng của một đơn `PAID`. Cột: tháng ghi bằng số (cột `month` của `dim_date`: 7, 8, 9) và số đơn.", en: "The number of orders sold each month in Q3 2026, using only `fact_sales` and `dim_date`. Each row of `fact_sales` is one item line of a `PAID` order. Columns: the month as a number (the `month` column of `dim_date`: 7, 8, 9) and the number of orders." }
       solution: "SELECT d.month, count(DISTINCT f.order_id) AS orders FROM fact_sales f JOIN dim_date d ON d.date_key = f.date_key WHERE d.year = 2026 AND d.month BETWEEN 7 AND 9 GROUP BY d.month"
       hint: { vi: "Grain của fact là dòng hàng; một đơn có nhiều dòng.", en: "The fact grain is the item line; one order has several lines." }
       wrong:
@@ -1148,12 +1148,12 @@
       hint: { vi: "Phiên bản còn hiệu lực khi ngày hết hiệu lực nằm sau ngày đang xét.", en: "A version is valid when its end date falls after the date in question." }
     - id: g-c3-2
       kind: open
-      task: { vi: "Liệt kê khách đã chuyển thành phố: mã khách, thành phố cũ, thành phố mới và ngày chuyển (ngày phiên bản mới bắt đầu).", en: "List the customers who moved city: customer id, old city, new city and the move date (the day the new version starts)." }
+      task: { vi: "Mỗi lần một khách có phiên bản mới trong `dim_customer` là một dòng: mã khách, thành phố của phiên bản cũ, thành phố của phiên bản mới và ngày phiên bản mới bắt đầu (`valid_from`). Tính cả khi hai thành phố giống nhau hoặc trống.", en: "Each time a customer gets a new version in `dim_customer` is one row: customer id, the old version's city, the new version's city and the day the new version starts (`valid_from`). Include it even when the two cities are equal or empty." }
       solution: "SELECT o.customer_id, o.city AS old_city, n.city AS new_city, n.valid_from AS moved_on FROM dim_customer o JOIN dim_customer n ON n.customer_id = o.customer_id AND n.valid_from = o.valid_to"
       hint: { vi: "Nối `dim_customer` với chính nó: phiên bản mới bắt đầu đúng ngày phiên bản cũ hết hiệu lực.", en: "Join `dim_customer` to itself: the new version starts exactly when the old one ends." }
     - id: g-c3-3
       kind: trap
-      task: { vi: "Năm 2025, mỗi thành phố có bao nhiêu đơn đã thanh toán, theo thành phố của khách tại ngày đặt đơn? Chỉ dùng `orders` và `dim_customer`.", en: "In 2025, how many paid orders did each city have, by the customer's city on the order date? Use only `orders` and `dim_customer`." }
+      task: { vi: "Năm 2025, mỗi thành phố có bao nhiêu đơn `PAID`, theo thành phố của khách tại ngày đặt đơn (phiên bản `dim_customer` có hiệu lực từ `valid_from`, tới trước `valid_to`; `valid_to` trống là hiện tại)? Chỉ dùng `orders` và `dim_customer`. Đơn không có khách (`customer_id` trống) không tính; khách có thành phố trống tạo một dòng thành phố trống.", en: "In 2025, how many `PAID` orders did each city have, by the customer's city on the order date (the `dim_customer` version valid from `valid_from` until before `valid_to`; an empty `valid_to` means current)? Use only `orders` and `dim_customer`. Orders with no customer (`customer_id` empty) do not count; customers with an empty city form one empty-city row." }
       solution: "SELECT dc.city, count(*) AS orders FROM orders o JOIN dim_customer dc ON dc.customer_id = o.customer_id AND o.order_date >= dc.valid_from AND (dc.valid_to IS NULL OR o.order_date < dc.valid_to) WHERE o.status = 'PAID' AND o.order_date < '2026-01-01' GROUP BY dc.city"
       hint: { vi: "Điều kiện nối gồm mã khách và ngày đặt đơn nằm trong khoảng hiệu lực.", en: "The join condition has the customer id and the order date inside the validity range." }
       wrong:
@@ -1162,7 +1162,7 @@
           en: "`is_current` gives today's city: the 2025 orders of customers who moved are counted for their new city."
     - id: g-c3-4
       kind: challenge
-      task: { vi: "Mỗi thành phố (bỏ thành phố trống): doanh thu theo thành phố lúc bán và doanh thu theo thành phố hiện tại, cạnh nhau trong một dòng. Thành phố chỉ có ở một bên thì bên kia để trống.", en: "For each city (skip blank cities): revenue by city at sale time and revenue by current city, side by side in one row. A city that appears on only one side leaves the other side empty." }
+      task: { vi: "Trên toàn bộ `fact_sales` (dòng không có khách thì bỏ): mỗi thành phố (bỏ thành phố trống), doanh thu (`revenue_vnd`) theo thành phố lúc bán (phiên bản `customer_key` của dòng) và doanh thu theo thành phố hiện tại (phiên bản `is_current` của cùng `customer_id`), cạnh nhau trong một dòng. Cột: thành phố, doanh thu lúc bán, doanh thu theo thành phố hiện tại; thành phố chỉ có ở một bên thì bên kia để trống.", en: "Over all of `fact_sales` (rows without a customer are left out): for each city (skip blank cities), revenue (`revenue_vnd`) by city at sale time (the row's `customer_key` version) and revenue by current city (the `is_current` version of the same `customer_id`), side by side in one row. Columns: city, revenue at sale time, revenue by current city; a city on only one side leaves the other side empty." }
       solution: "WITH at_sale AS (SELECT dc.city, sum(f.revenue_vnd) AS revenue FROM fact_sales f JOIN dim_customer dc ON dc.customer_key = f.customer_key WHERE dc.city IS NOT NULL GROUP BY dc.city), now_city AS (SELECT cur.city, sum(f.revenue_vnd) AS revenue FROM fact_sales f JOIN dim_customer dc ON dc.customer_key = f.customer_key JOIN dim_customer cur ON cur.customer_id = dc.customer_id AND cur.is_current WHERE cur.city IS NOT NULL GROUP BY cur.city) SELECT city, a.revenue AS at_sale, n.revenue AS current_city FROM at_sale a FULL JOIN now_city n USING (city)"
       hint: { vi: "Hai CTE gom theo thành phố, rồi FULL JOIN theo tên thành phố.", en: "Two CTEs grouped by city, then a FULL JOIN on the city name." }
 
