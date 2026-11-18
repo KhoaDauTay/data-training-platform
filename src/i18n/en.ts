@@ -117,7 +117,7 @@ export const en: Record<Key, Msg> = {
   'prac.dueIntro': (p) => `${p.n} review task${Number(p.n) === 1 ? '' : 's'} today, covering the skills now due. Each one is a short drill on the shop data; get it right and the next review comes later.`,
   'prac.nothingDue': 'Nothing is due for review today. Your review schedule is on the Review card below.',
   'prac.stats': 'Practice so far: {solved} passed, {weak} not yet solid (correct, but after a wrong submit or 2+ hints).',
-  'prac.noneDue': 'No skill is due for review today. To practise more, press Practise on a learned skill on the Practise SQL page.',
+  'prac.noneDue': 'No skill is due for review today. To practise more, pick a skill in the list on the Practise SQL page.',
   'prac.locked': 'Nothing to review yet. Learn your first skill in task 1 and it joins the review queue.',
   'prac.retry': 'Practise this task again (0 XP)',
   'prac.banner': 'Practice · {i} of {n} · 0 XP',

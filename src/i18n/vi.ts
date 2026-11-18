@@ -114,7 +114,7 @@ export const vi = {
   'prac.dueIntro': 'Hôm nay có {n} bài ôn, gom các kỹ năng đã đến hạn. Mỗi bài là một bài luyện ngắn trên dữ liệu cửa hàng; làm đúng thì lần ôn sau giãn ra.',
   'prac.nothingDue': 'Hôm nay không còn bài ôn nào đến hạn. Lịch ôn nằm ở thẻ Ôn tập bên dưới.',
   'prac.stats': 'Đã luyện: {solved} bài đạt, {weak} bài chưa tốt (đúng nhưng có lần nộp sai hoặc từ 2 gợi ý).',
-  'prac.noneDue': 'Hôm nay chưa có kỹ năng nào đến hạn ôn. Muốn luyện thêm, bấm Luyện ở một kỹ năng đã học trong trang Luyện SQL.',
+  'prac.noneDue': 'Hôm nay chưa có kỹ năng nào đến hạn ôn. Muốn luyện thêm, chọn một kỹ năng trong danh sách của trang Luyện SQL.',
   'prac.locked': 'Chưa có gì để ôn. Học xong kỹ năng đầu tiên ở việc 1, kỹ năng đó sẽ vào hàng ôn.',
   'prac.retry': 'Luyện lại việc này (0 XP)',
   'prac.banner': 'Luyện tập · bài {i}/{n} · 0 XP',

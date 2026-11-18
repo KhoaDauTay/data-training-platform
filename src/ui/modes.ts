@@ -275,18 +275,20 @@ export function renderLeft(host: HTMLElement): void {
 /** Home "Review" card (D2 entry 1). Always shown, so nav "Practice" on a fresh save lands on its explanation (P6). */
 function reviewCard(m: HomeModel): HTMLElement {
   const due = reviewCount();
-  const intro = m.learned === 0 ? t('prac.locked') : t(due ? 'prac.dueIntro' : 'prac.noneDue', { n: due });
+  // L93: a skill learned through drills has a review card but no ticket: it is not "nothing learned yet".
+  const none = m.learned === 0 && Object.keys(app.save.review).length === 0;
+  const intro = none ? t('prac.locked') : t(due ? 'prac.dueIntro' : 'prac.noneDue', { n: due });
   const p = app.save.practice;
   return h('section', { class: cx(CARD, 'flex flex-wrap items-center gap-4 p-5'), 'aria-labelledby': 'review-title' },
-    m.learned === 0 ? mascot('lily', 'sleep', 'size-16') : null, // v6 §2.4: an empty state
-    m.learned > 0 && !due ? h('div', { class: 'w-40 shrink-0' }, illustration('aspect-[240/120]', (il) => il.emptyDrills())) : null, // Plan 8b: nothing due
+    none ? mascot('lily', 'sleep', 'size-16') : null, // v6 §2.4: an empty state
+    !none && !due ? h('div', { class: 'w-40 shrink-0' }, illustration('aspect-[240/120]', (il) => il.emptyDrills())) : null, // Plan 8b: nothing due
     h('div', { class: 'min-w-0 flex-1' },
       h('h2', { id: 'review-title', class: 'm-0 text-lg font-bold' }, t('prac.section')),
       h('p', { class: 'mt-1 mb-0 text-[15px] text-muted' }, intro),
       p.solved + p.weak ? h('p', { class: 'mt-1 mb-0 text-sm text-muted' }, t('prac.stats', { solved: p.solved, weak: p.weak })) : null),
     due ? h('button', { type: 'button', class: cx(BTN_GO, 'px-4 py-2'), onclick: () => startToday() }, t('prac.today', { n: due })) : null,
     // v4 §B.3: nothing learned yet → one way forward.
-    m.learned === 0 ? h('button', { type: 'button', class: cx(BTN_GO, 'px-4 py-2'), onclick: () => actions.selectTicket(app.tickets[0].id) }, t('prac.toFirst')) : null);
+    none ? h('button', { type: 'button', class: cx(BTN_GO, 'px-4 py-2'), onclick: () => actions.selectTicket(app.tickets[0].id) }, t('prac.toFirst')) : null);
 }
 
 /** Home "Chapter warm-up" (curriculum §5.2): recall tasks from earlier chapters when a chapter starts. Never blocks its first ticket. */

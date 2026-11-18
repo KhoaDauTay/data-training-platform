@@ -5,7 +5,7 @@ import { getLang, t, type Key } from '../i18n';
 import { CHAPTERS, chaptersOf, chapterTitle, currentChapter, moduleTitle, rankOf, SKILLS, visibleTickets } from '../progress';
 import { gated, navLock, readTour } from '../onboarding';
 import { domainHash, hashOf, inDomain, learnModuleOf, learnSkillOf, type Route } from '../route';
-import { isStory, reviewCount } from '../session';
+import { activeSchema, isStory, reviewCount } from '../session';
 import { actions, app, done } from '../state';
 import { readJson, writeJson } from '../storage';
 import { cx } from '../theme';
@@ -150,7 +150,8 @@ function content(route: Route, drawer: boolean): (Node | string)[] {
     const order = app.tickets.map((x) => x.id);
     const isGated = gated(readTour());
     // The drawer's domain switch already shows this domain (current, chapter · rank): a rule, not a second "Logistics" (L93).
-    out.push(drawer ? h('hr', { class: 'my-2 border-0 border-t border-line' }) : domainHead(), ...navItems('domain').map((n) => {
+    out.push(drawer ? h('hr', { class: 'my-2 border-0 border-t border-line' }) : route === 'play' && activeSchema() === 'lab' ? null : domainHead(), // a General drill: no chapter · rank (L93)
+      ...navItems('domain').map((n) => {
       const lock = navLock(n.id, done(), order, isGated);
       return row({ key: n.id, href: n.href, lead: icon(n.icon), label: t(n.label), current: n.current(route), onclick: n.onclick, lock: lock && t(lock) });
     }));
@@ -224,15 +225,28 @@ function initRailTips(): void {
     tip.style.top = `${r.top + r.height / 2 - tip.offsetHeight / 2}px`;
   };
   const hide = (): void => { tip.hidden = true; };
-  side.addEventListener('pointerover', show);
-  // Keyboard focus only: a clicked link keeps focus, and the redraw after navigation gives it back (L93).
+  // L93: after a click or a navigation the tip stays away until the pointer really moves. The redraw puts a new item under a
+  // resting pointer, and the browser's own pointerover for it would bring the tip straight back.
+  let quiet: { x: number; y: number } | undefined;
+  let at = { x: -1, y: -1 }; // last pointer position over the sidebar
+  const silence = (): void => {
+    hide();
+    quiet = at;
+  };
+  side.addEventListener('pointerover', (e) => { if (!quiet) show(e); });
+  side.addEventListener('pointermove', (e) => {
+    at = { x: e.clientX, y: e.clientY };
+    if (!quiet || (Math.abs(at.x - quiet.x) < 3 && Math.abs(at.y - quiet.y) < 3)) return;
+    quiet = undefined;
+    show(e);
+  });
+  // Keyboard focus only: a clicked link keeps focus, and the redraw after navigation gives it back.
   side.addEventListener('focusin', (e) => { if ((e.target as Element).matches(':focus-visible')) show(e); });
-  side.addEventListener('pointerleave', hide);
+  side.addEventListener('pointerleave', () => { hide(); quiet = undefined; });
   side.addEventListener('focusout', hide);
   side.addEventListener('scroll', hide, true);
-  side.addEventListener('click', hide);
-  // The sidebar is redrawn on navigation: the item under the tip is gone without a pointerleave/focusout (L93).
-  window.addEventListener('hashchange', hide);
+  side.addEventListener('click', silence);
+  window.addEventListener('hashchange', () => silence());
 }
 
 /** Once at startup: ☰ and the drawer (a modal <dialog>: focus trap, Esc, focus back to ☰), media changes, Esc for the overlay. */

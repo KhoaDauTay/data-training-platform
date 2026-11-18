@@ -62,7 +62,7 @@ const splitKey = (key: string): [SchemaId, string] => {
   const i = key.indexOf('|');
   return [key.slice(0, i) as SchemaId, key.slice(i + 1)];
 };
-/** Plan 8a: the drill workspace shows the lab tables, all of them, in the ER and Columns tabs. */
+/** Plan 8a: the drill workspace reads `lab` in the ER and Columns tabs (L93: its Solution's tables first, a switch to all). */
 const inDrill = (): boolean => activeSchema() === 'lab'; // a drill, or a review drill in Practice
 
 function registerPlanTabs(deps: VizDeps): void {
