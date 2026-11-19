@@ -18,7 +18,7 @@ import { avatar } from './avatar';
 import { boonRegion, coach, tourSlot } from './coach';
 import { byId, h, nodes, reducedMotion, richText } from './dom';
 import { once, react } from './celebrate';
-import { icon, skillIcon, type IconName } from './icons';
+import { partHead, skillIcon } from './icons';
 import { lessonSlot } from './lessonCard';
 
 const BEAT: Record<Beat, Key> = { teach: 'beat.teach', develop: 'beat.develop', twist: 'beat.twist', rest: 'beat.rest', boss: 'beat.boss' };
@@ -32,9 +32,6 @@ const reflected = new Map<string, number>();
 const mark = (ok: boolean): string => (ok ? '✓' : '✗');
 
 /** "Expected result": column count and kinds, row count, ordering, author labels from `columns:`. Never Solution column names. */
-/** One label style for the brief's parts (Task, Expected result): icon + small caps above its own box, so the parts read apart. */
-const briefHead = (name: IconName, label: string): HTMLElement =>
-  h('h3', { class: 'm-0 mb-2 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-muted' }, icon(name, 'size-4'), label);
 
 export function shapeCard(tk: Ticket, stepIndex: number): HTMLElement {
   const step = tk.steps[stepIndex];
@@ -44,7 +41,7 @@ export function shapeCard(tk: Ticket, stepIndex: number): HTMLElement {
     const n = exp?.kinds.length ?? labels.length;
     const run = app.lastRun?.key === stepKey(tk.id, stepIndex) ? app.lastRun.result : undefined;
     const cmp = exp && run ? compareShape(exp, shapeOf(run)) : undefined;
-    card.replaceChildren(briefHead('table', t('shape.title')), h('div', { class: 'rounded-xl bg-panel px-4 py-3 ring-1 ring-line' }, ...nodes(
+    card.replaceChildren(partHead('table', t('shape.title')), h('div', { class: 'rounded-xl bg-panel px-4 py-3 ring-1 ring-line' }, ...nodes(
       h('p', { class: 'mt-0 mb-2 font-semibold' }, [t('shape.cols', { n }), exp ? t('shape.rows', { n: exp.rows }) : '…', exp?.rows === 1 ? null : t(tk.ordered ? 'shape.ordered' : 'shape.unordered')].filter(Boolean).join(' · ')), // one row has no order (v10 C4)
       h('ol', { class: 'my-2 flex list-none flex-wrap gap-2 p-0' }, ...Array.from({ length: n }, (_, i) =>
         h('li', { class: 'flex items-center gap-1.5 rounded-lg bg-code px-2 py-1 text-sm' }, // The label already says what the column holds; the kind (text/number/date) only stands in when there is no label.
@@ -351,7 +348,7 @@ export function renderBrief(host: HTMLElement, tk: Ticket, stepIndex: number): v
       x.fallback ? h('p', { class: 'tag' }, t('brief.untranslated')) : null),
     // v10 critic #1: the message, then the Task and the Expected result card, visible without scrolling; the rest below.
     h('div', { class: 'mt-3 rounded-2xl rounded-tl-sm bg-code px-4 py-1 leading-relaxed [&_p]:my-2' }, richText(x.body)),
-    x.task ? h('section', { class: 'mt-5 mb-3', 'aria-label': t('brief.task') }, briefHead('list', t('brief.task')),
+    x.task ? h('section', { class: 'mt-5 mb-3', 'aria-label': t('brief.task') }, partHead('list', t('brief.task')),
       h('div', { class: 'rounded-xl border-l-4 border-accent bg-accent-soft px-4 py-3 leading-relaxed [&_p]:my-1' }, richText(x.task))) : null,
     isStory() ? tourSlot('brief') : null, // tour step 1 right under the Task: both fit the 1267x740 pane (~350 px) together
     boss

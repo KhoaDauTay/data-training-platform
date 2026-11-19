@@ -10,7 +10,7 @@ import { blanksIn, fillAction, firstBlank } from '../tickets';
 import { cx } from '../theme';
 import { byId, h, nodes, richText } from './dom';
 import { errorText, errorView } from './feedback';
-import { skillIcon } from './icons';
+import { icon, partHead, skillIcon, type IconName } from './icons';
 import { renderResult } from './resultTable';
 import { boonRegion, guideHooks, guideSlot, markExampleRan, refreshGuides, tourSlot } from './coach';
 import { mascot } from './mascots';
@@ -45,8 +45,9 @@ function markSeen(id: string, tried: boolean): void {
 /** One paragraph per ①②③ marker (UI/UX review v10 #7). */
 const byMarker = (text: string): string => text.replace(/\s+(?=[②-⑨])/g, '\n\n');
 
-const section = (title: string, ...body: (Node | null)[]): HTMLElement =>
-  h('div', { class: 'mt-3' }, h('h4', { class: 'mt-0 mb-1' }, title), ...body);
+/** L140: one labelled part of the lesson (icon + small caps head, like the brief's Task), divided by a rule, never a box in a box. */
+const section = (name: IconName, title: string, ...body: (Node | null)[]): HTMLElement =>
+  h('section', { class: 'mt-5 border-t border-line pt-4 first:mt-0 first:border-t-0 first:pt-0', 'aria-label': title }, partHead(name, title, 'h4'), ...body);
 
 /** The full card (product-design-v4 §C.2). `titleId` differs between the brief and the dialog; `actions` sit next to the title. */
 /** Boon's tour or guide mark is in this card's region: the lesson dialog, or the brief pane for a card drawn there. */
@@ -217,8 +218,10 @@ function card(l: Lesson, titleId: string, actions: HTMLElement[], tour = false, 
   drawBoon();
 
   const skill = skillOf(l.id);
-  return h('section', { class: cx('my-3 rounded-xl bg-panel p-3 ring-1 ring-accent', guided && 'group'), 'aria-labelledby': titleId },
-    h('div', { class: 'flex flex-wrap items-center justify-between gap-2' },
+  // L140: in the dialog the header (title, Got it, Close) stays on top while the body scrolls; in the brief one frame holds the card.
+  const inDialog = titleId === 'lesson-dialog-title';
+  return h('section', { class: cx(!inDialog && 'my-3 rounded-xl bg-panel p-4 ring-1 ring-accent', guided && 'group'), 'aria-labelledby': titleId },
+    h('div', { class: cx('flex flex-wrap items-center justify-between gap-2', inDialog ? 'sticky top-0 z-10 border-b border-line bg-panel px-5 py-3 max-sm:px-4' : 'mb-4') },
       h('h3', { id: titleId, tabindex: '-1', class: 'm-0 flex items-center gap-2' },
         // v12 (L87): Boon teaches the lesson; left out while his tour mark is in the same pane (one mascot per region)
         // v13: in the General dialog a guide mark may come and go without a redraw: CSS swaps Boon for the skill icon (v8 §2.4)
@@ -226,14 +229,19 @@ function card(l: Lesson, titleId: string, actions: HTMLElement[], tour = false, 
           : [tour || quiet(titleId) ? skillIcon(l.id, 'size-5') : mascot('boon', 'point', 'size-10 shrink-0')]),
         t('lesson.title', { skill: label(l.id) })),
       h('div', { class: 'flex gap-1.5' }, ...actions)),
-    h('div', { class: 'mt-2' }, richText(l.concept[lang])),
-    skill ? h('p', { class: 'mt-2 mb-0' }, h('b', {}, t('lesson.syntax')), ' ', h('code', {}, skill.syntax)) : null,
-    section(t('lesson.example'), h('pre', { class: 'sql' }, l.example), runExample, tour ? tourSlot('lesson') : null, gslot('lesson-example'), exampleOut, richText(byMarker(l.explain[lang]))),
-    section(t('lesson.mistake'), h('pre', { class: 'sql' }, l.mistake.sql), richText(l.mistake.why[lang]), gslot('lesson-mistake')),
-    l.cues[lang].length ? section(t('lesson.cues'), h('p', { class: 'm-0' }, l.cues[lang].join(' · '))) : null,
-    section(t('lesson.try'), richText(l.try.task[lang]), gslot('lesson-try'), tryPreview(l.try.solution, lessonSchema(l)), area,
-      h('div', { class: 'actions mb-0' }, runMine, boonBtn, check), gslot('lesson-try-actions'), boonBox, verdict, detail, gslot('lesson-diff'), yours),
-    h('p', { class: 'mt-3 mb-0 text-sm' }, h('a', { href: l.docs, target: '_blank', rel: 'noopener noreferrer' }, t('lesson.docs'))));
+    h('div', { class: cx('leading-relaxed', inDialog && 'px-5 pt-4 pb-6 max-sm:px-4') },
+      section('book', t('lesson.concept'), richText(l.concept[lang]),
+        skill ? h('p', { class: 'mt-2 mb-0' }, h('b', {}, t('lesson.syntax')), ' ', h('code', {}, skill.syntax)) : null),
+      section('code', t('lesson.example'), h('pre', { class: 'sql' }, l.example), h('div', { class: 'actions mb-0' }, runExample),
+        tour ? tourSlot('lesson') : null, gslot('lesson-example'), exampleOut),
+      section('info', t('lesson.explain'), richText(byMarker(l.explain[lang]))),
+      section('alert', t('lesson.mistake'), h('pre', { class: 'sql' }, l.mistake.sql), richText(l.mistake.why[lang]), gslot('lesson-mistake')),
+      l.cues[lang].length ? section('eye', t('lesson.cues'), h('ul', { class: 'm-0 flex list-none flex-wrap gap-2 p-0' },
+        ...l.cues[lang].map((c) => h('li', { class: 'rounded-lg bg-code px-2 py-1 text-sm' }, c)))) : null,
+      section('flask', t('lesson.try'), richText(l.try.task[lang]), gslot('lesson-try'), tryPreview(l.try.solution, lessonSchema(l)), area,
+        h('div', { class: 'actions mb-0' }, runMine, boonBtn, check), gslot('lesson-try-actions'), boonBox, verdict, detail, gslot('lesson-diff'), yours),
+      h('p', { class: 'mt-5 mb-0 border-t border-line pt-4 text-sm' },
+        h('a', { href: l.docs, target: '_blank', rel: 'noopener noreferrer', class: 'inline-flex items-center gap-1.5' }, icon('external', 'size-4'), t('lesson.docs')))));
 }
 
 /** One line for a lesson that is not open: "Quick lesson: X ✓ · Open again". */
@@ -307,5 +315,6 @@ export function openLesson(id: string, node?: { lesson: Lesson; name: () => stri
     if (opener?.isConnected) opener.focus();
   };
   if (!dialog.open) dialog.showModal();
+  dialog.scrollTop = 0; // L140: one dialog for every lesson; the last one's scroll would carry over
   if (guided) refreshGuides();
 }

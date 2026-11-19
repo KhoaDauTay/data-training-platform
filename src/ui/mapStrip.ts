@@ -36,7 +36,6 @@ export function createMapStrip(host: HTMLElement): { update(view: StripView): vo
     if (last) fill(last);
     dialog.showModal();
   } });
-  dialog.addEventListener('click', (e) => { if (e.target === dialog) dialog.close(); }); // the backdrop (the content box has its own padding)
 
   const start = (task: Ticket): void => {
     dialog.close();
