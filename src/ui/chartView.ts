@@ -21,7 +21,7 @@ import { emptyState } from './tabs';
  */
 export type ChartSize = 'tab' | 'card';
 const SIZES = {
-  tab: { w: 720, labelW: 200, valueW: 90, chars: 28, rowH: 24, lineH: 260, padL: 64, svg: 'h-auto w-full' },
+  tab: { w: 720, labelW: 200, valueW: 90, chars: 28, rowH: 24, lineH: 220, padL: 64, svg: 'h-auto w-full' },
   card: { w: 260, labelW: 92, valueW: 64, chars: 13, rowH: 26, lineH: 170, padL: 48, svg: 'h-auto w-full max-w-[400px] min-w-[260px]' },
 } as const;
 const LABEL = 'fill-muted text-caption';

@@ -186,7 +186,7 @@
   button.primary:disabled { background: var(--code); border-color: var(--disabled); color: var(--disabled); }
   /* ui-ux-v7 T1: one shortcut chip (kbd() in ui/dom.ts); touch screens have no keyboard to press it with (aria-keyshortcuts stays). */
   .kbd { margin-left: 6px; padding: 0 5px; border-radius: 6px; background: var(--surface-2); color: var(--muted); font: 600 12px/16px 'Nunito Variable', system-ui, sans-serif; white-space: nowrap; }
-  @media (hover: none) { .kbd { display: none; } }
+  @media (hover: none), (max-width: 639.98px) { .kbd { display: none; } }
   /* Thin scrollbars in every inner scroll area (panes, panel, tables, dialogs). */
   #ticket, #work, .panel, dialog, .overflow-auto, .overflow-x-auto, .overflow-y-auto { scrollbar-width: thin; scrollbar-color: var(--border-strong) transparent; }
   .tag { display: inline-block; margin-right: 6px; padding: 0 6px; border: 1px solid var(--warn); border-radius: 4px; color: var(--text); font-size: 12px; }
@@ -262,6 +262,7 @@
 #stage[data-mini=true] #stage-art { display: none; }
 #stage[data-mini=true] .stage-row { border-top: 0; }
 #stage[data-mini=true] .stage-mini-icon { display: grid; }
+#stage[data-mini=true] #stage-text { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } /* one line; the full sentence is its title and was announced */
 /* M1: on a phone the editor grows with its text up to half the screen, then scrolls. */
 @media (max-width: 767.98px) {
   .editor .cm-editor { max-height: 50vh; }

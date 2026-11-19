@@ -75,6 +75,8 @@ function fold(mini: boolean): void {
   const stage = byId('stage');
   stage.dataset.mini = String(mini);
   byId('stage-replay').hidden = !mini;
+  const text = byId('stage-text');
+  text.title = mini ? text.textContent ?? '' : '';
 }
 
 function hide(): void {

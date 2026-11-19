@@ -67,7 +67,7 @@ export function renderResult(r: QueryResult, mark?: unknown[], limit = MAX_ROWS,
       ...row.map((v, i) => cell(v, i)));
   });
   const one = fill && isSingleValue(r)
-    ? h('div', { class: 'mb-2 inline-flex flex-col rounded-(--r-ctl) bg-surface-2 px-5 py-3', 'aria-hidden': 'true' },
+    ? h('div', { class: 'mb-2 inline-flex flex-col self-start rounded-(--r-ctl) bg-surface-2 px-5 py-3', 'aria-hidden': 'true' },
       h('span', { class: 'text-caption text-muted' }, r.columns[0]),
       h('span', { class: 'text-display tabular-nums' }, formatCell(r.rows[0][0], r.types[0])))
     : null;
@@ -75,10 +75,10 @@ export function renderResult(r: QueryResult, mark?: unknown[], limit = MAX_ROWS,
     r.rows.length === 0 ? h('p', { class: 'muted' }, t('res.empty')) : null,
     one,
     h('div', { class: cx('overflow-auto rounded-(--r-inset) ring-1 ring-line', fill ? 'max-h-[60dvh] min-h-0 flex-1 shell:max-h-none' : 'max-h-[420px]') },
-      h('table', { class: 'w-auto min-w-[50%]' },
+      h('table', { class: 'w-auto' },
         h('caption', { class: fill && plain ? 'sr-only' : '' }, caption),
         h('thead', {}, h('tr', {},
-          h('th', { scope: 'col', class: 'sticky top-0 bg-surface-2 text-right text-caption font-normal text-muted' }, h('span', { class: 'sr-only' }, t('res.rowNum')), '#'),
+          h('th', { scope: 'col', class: 'sticky top-0 w-px bg-surface-2 text-right text-caption font-normal text-muted' }, h('span', { class: 'sr-only' }, t('res.rowNum')), '#'),
           ...r.columns.map((c, i) => h('th', { scope: 'col', class: cx('sticky top-0 bg-surface-2 align-bottom font-semibold text-ink', num[i] && 'text-right') },
             c, types && typeName(r.types[i]) ? h('span', { class: 'block text-caption font-normal text-muted' }, typeName(r.types[i])) : null)))),
         h('tbody', {}, ...body)),
