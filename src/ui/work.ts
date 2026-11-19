@@ -159,7 +159,7 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
   let extraOpen = false;
   const historyBox = h('details', { class: 'mt-2 text-body-sm' });
   /** V19-A (L162): the last run read in words, under the buttons; redrawn with relabel() and on every edit (its "changed" mark). */
-  const words = wordsLine(() => editor?.runTarget().sql ?? '');
+  const words = wordsLine(() => editor?.runTarget().sql ?? '', deps.db, () => !!ticket?.steps[stepIndex]?.lab);
   // The tour's mark sits under the buttons, never over the editor (v4 §B.2); main.ts refreshTour() refills it.
   host.replaceChildren(editorHost, h('div', { class: '@container max-md:sticky max-md:bottom-14 max-md:z-10 max-md:bg-panel max-md:pt-2 max-md:shadow-[0_-8px_12px_-10px_rgb(0_0_0/0.3)]' }, resultChip, h('div', { class: 'actions' }, runBtn, explainBtn, formatBtn, tools, submitBtn)), words.el, tourSlot('work'), guideSlot('work'), feedback, detailBox, guideSlot('diff'), historyBox);
 

@@ -7,7 +7,9 @@
  */
 import { getLang, t, type Lang } from '../i18n';
 import { app, type LastRun } from '../state';
+import type { DbClient } from '../db/client';
 import type { StepsResult } from '../viz/steps';
+import { WORDS_ONLY } from '../viz/stepText';
 import type { Agg, Cond, JoinKind, Val, WordPart } from '../viz/sqlWords';
 import { h } from './dom';
 
@@ -15,7 +17,7 @@ import { h } from './dom';
 export type Piece = string | { code: string };
 type Words = {
   lead: string; failed: string; changed: string; read: string; and: string; then: string;
-  cols: (n: number) => string; star: string; computing: string; agg: Record<Agg, string>;
+  cols: (n: number) => string; star: string; starPlus: (n: number) => string; computing: string; agg: Record<Agg, string>;
   from: string; join: Record<JoinKind, (t: Piece[]) => Piece[]>;
   where: string; having: string; group: string; sets: string;
   distinct: string; distinctOn: (n: number) => string;
@@ -28,7 +30,7 @@ type Words = {
 const W: Record<Lang, Words> = {
   vi: {
     lead: 'Truy vấn này:', failed: 'Chưa mô tả được câu này bằng lời.', changed: 'đã đổi', read: 'Đọc truy vấn bằng lời', and: ' và ', then: ', rồi ',
-    cols: (n) => `lấy ${n} cột`, star: 'lấy mọi cột', computing: 'có tính', agg: { count: 'đếm', sum: 'tổng', avg: 'trung bình', min: 'nhỏ nhất', max: 'lớn nhất', other: 'hàm gộp khác' },
+    cols: (n) => `lấy ${n} cột`, star: 'lấy mọi cột', starPlus: (n) => `lấy mọi cột (*) và thêm ${n} cột`, computing: 'có tính', agg: { count: 'đếm', sum: 'tổng', avg: 'trung bình', min: 'nhỏ nhất', max: 'lớn nhất', other: 'hàm gộp khác' },
     from: 'từ',
     join: {
       inner: (x) => ['nối với ', ...x],
@@ -61,7 +63,7 @@ const W: Record<Lang, Words> = {
   },
   en: {
     lead: 'This query:', failed: 'This query cannot be read in words yet.', changed: 'changed', read: 'Read the query in words', and: ' and ', then: ', then ',
-    cols: (n) => `takes ${n} column${n === 1 ? '' : 's'}`, star: 'takes every column', computing: 'computing', agg: { count: 'a count', sum: 'a total', avg: 'an average', min: 'a minimum', max: 'a maximum', other: 'another aggregate' },
+    cols: (n) => `takes ${n} column${n === 1 ? '' : 's'}`, star: 'takes every column', starPlus: (n) => `takes every column (*) plus ${n} more`, computing: 'computing', agg: { count: 'a count', sum: 'a total', avg: 'an average', min: 'a minimum', max: 'a maximum', other: 'another aggregate' },
     from: 'from',
     join: {
       inner: (x) => ['joins ', ...x],
@@ -113,7 +115,7 @@ function cond(c: Cond, w: Words): Piece[] {
 export function partWords(p: WordPart, w: Words): Piece[] {
   switch (p.k) {
     case 'select': {
-      const head = p.star && p.cols === 1 ? w.star : w.cols(p.cols);
+      const head = !p.star ? w.cols(p.cols) : p.cols ? w.starPlus(p.cols) : w.star;
       return p.aggs.length ? [`${head} (${w.computing} ${p.aggs.map((a) => w.agg[a]).join(', ')})`] : [head];
     }
     case 'from':
@@ -141,14 +143,8 @@ export function sentence(parts: WordPart[], lang: Lang): { k: WordPart['k']; pie
 /** Plain text of a sentence (announcements and tests). */
 export const plainText = (s: { pieces: Piece[] }[]): string => s.flatMap((x) => x.pieces.map((p) => (typeof p === 'string' ? p : p.code))).join('');
 
-/** Runs faster than this read automatically; slower ones offer a button, so the extra sub-queries never pile up behind a slow query. */
-export const AUTO_MS = 250;
-
-let source: ((run: LastRun) => Promise<StepsResult>) | undefined;
-/** vizTabs registers its `steps` memo here: the line and the Execution order tab share one request per schema + SQL. */
-export function setWordsSource(fn: (run: LastRun) => Promise<StepsResult>): void {
-  source = fn;
-}
+/** What the line needs from DbClient: the parser download and a words-only `steps` request (parse, no sub-query). */
+export type WordsDb = Pick<DbClient, 'loadParser' | 'steps'>;
 
 export interface WordsLine {
   el: HTMLElement;
@@ -156,33 +152,36 @@ export interface WordsLine {
   draw(): void;
 }
 
-export function wordsLine(editorSql: () => string): WordsLine {
+/**
+ * `off()`: the open step is an index lab (L162: no line there, even with an earlier step's run still in lastRun).
+ * The request is `WORDS_ONLY` + SQL: the worker only parses (never the per-clause counts of the Execution order tab, which
+ * can take seconds on a comma join and restart the worker), so every successful run is read at once.
+ */
+export function wordsLine(editorSql: () => string, db: Partial<WordsDb>, off: () => boolean): WordsLine {
   const el = h('p', { class: 'mt-1 mb-0 text-body-sm text-muted', hidden: true });
   let run: LastRun | undefined;
-  let state: { kind: 'idle' | 'wait' } | { kind: 'done'; r: StepsResult } = { kind: 'idle' };
+  let state: { kind: 'wait' | 'failed' } | { kind: 'done'; r: StepsResult } = { kind: 'wait' };
 
   const fetch = (r: LastRun): void => {
-    if (!source) return;
-    state = { kind: 'wait' };
-    source(r).then(
-      (res) => { if (run === r) { state = { kind: 'done', r: res }; paint(); } },
-      () => { if (run === r) { state = { kind: 'idle' }; run = undefined; el.hidden = true; } }, // timeout, restart, SQL error: no line
+    const { loadParser, steps } = db;
+    if (!loadParser || !steps) return void (state = { kind: 'failed' });
+    loadParser.call(db).then(() => steps.call(db, WORDS_ONLY + r.sql, r.schema ? { schema: r.schema } : {})).then(
+      (res) => { if (run === r) { state = { kind: 'done', r: res as StepsResult }; paint(); } },
+      () => { if (run === r) { state = { kind: 'failed' }; paint(); } }, // timeout, restart, no parser: no line, and no retry for this run
     );
   };
 
   function paint(): void {
     const w = W[getLang()];
     const r = run;
-    el.hidden = !r || state.kind === 'wait' || !source;
-    if (el.hidden || !r) return;
+    if (!r || off() || state.kind !== 'done') {
+      el.hidden = true;
+      return;
+    }
+    el.hidden = false;
     const changed = editorSql().trim() !== r.sql.trim()
       ? h('span', { class: 'mr-2 rounded-full bg-warn-soft px-2 text-caption font-semibold text-ink ring-1 ring-warn/40', title: t('res.stale') }, w.changed)
       : null;
-    if (state.kind === 'idle') {
-      el.replaceChildren(h('button', { type: 'button', class: 'min-h-6 rounded-full border border-line bg-panel px-3 font-semibold text-ink hover:bg-code max-md:min-h-11', onclick: () => { fetch(r); paint(); } }, w.read));
-      return;
-    }
-    if (state.kind !== 'done') return;
     const res = state.r;
     if (!res.ok || !res.words) {
       el.replaceChildren(...[changed, w.failed].filter((x) => x !== null));
@@ -197,9 +196,10 @@ export function wordsLine(editorSql: () => string): WordsLine {
     draw() {
       const r = app.lastRun;
       if (r !== run) {
-        run = r?.result ? r : undefined; // an error or an index lab (lastRun cleared): no line
-        state = { kind: 'idle' };
-        if (run && (run.result?.ms ?? 0) <= AUTO_MS) fetch(run);
+        run = r; // a new run, or none (index lab clears lastRun)
+        state = { kind: 'wait' };
+        if (r?.result) fetch(r);
+        else state = { kind: 'failed' }; // an error: no line
       }
       paint();
     },

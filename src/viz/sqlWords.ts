@@ -17,6 +17,7 @@ export type JoinKind = 'inner' | 'left' | 'right' | 'full' | 'cross';
 export type Agg = 'count' | 'sum' | 'avg' | 'min' | 'max' | 'other';
 
 export type WordPart =
+  /** `cols` = items other than `*` / `t.*`; `star` = at least one of those. */
   | { k: 'select'; cols: number; star: boolean; aggs: Agg[] }
   | { k: 'from'; tables: Val[]; joins: { kind: JoinKind; table: Val }[] }
   | { k: 'where'; conds: Cond[] }
@@ -149,6 +150,8 @@ function fromOf(items: Ast[]): WordPart & { k: 'from' } {
  * One part per clause the SELECT has, in reading order: what it takes, from where, which rows, groups, which groups,
  * no duplicates, in which order, how many. The caller has already refused WITH, UNION and window functions.
  */
+const isStar = (t: Ast): boolean => !!t.ResTarget?.val?.ColumnRef?.fields?.at(-1)?.A_Star;
+
 export function sqlWords(sel: Ast): WordPart[] {
   const targets: Ast[] = sel.targetList ?? [];
   /** `ORDER BY 2` / `GROUP BY 1` read as the SELECT item they point at (its alias, else the item). */
@@ -158,8 +161,8 @@ export function sqlWords(sel: Ast): WordPart[] {
   };
   const parts: WordPart[] = [{
     k: 'select',
-    cols: targets.length,
-    star: targets.some((t) => t.ResTarget?.val?.ColumnRef?.fields?.at(-1)?.A_Star),
+    cols: targets.filter((t) => !isStar(t)).length,
+    star: targets.some(isStar),
     aggs: aggsOf(targets),
   }];
   if (sel.fromClause) parts.push(fromOf(sel.fromClause));

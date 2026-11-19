@@ -9,6 +9,7 @@ import { sqlWords, type WordPart } from './sqlWords';
 export { STEP_LABELS, type StepKey, type StepsFailure } from './stepText';
 export type { GroupSample, JoinMatch } from './stepText';
 import type { GroupSample, JoinMatch, StepKey, StepsFailure } from './stepText';
+import { WORDS_ONLY } from './stepText';
 
 /**
  * One clause. `label` and `range` (its span in the player's SQL) are set on FROM and JOIN steps, since several JOIN
@@ -224,6 +225,10 @@ async function fromSteps(sql: string, from: Ast[], range: [number, number] | und
 const cell = (v: unknown): string => (v === null ? 'NULL' : v instanceof Date ? v.toISOString().slice(0, 10) : String(v));
 
 export async function runSteps(db: PGlite, sql: string, opts: RunOpts = {}): Promise<StepsResult> {
+  if (sql.startsWith(WORDS_ONLY)) { // V19-A: the words line under the editor needs the parse only (no sub-query, no timeout risk)
+    const built = await buildSteps(sql.slice(WORDS_ONLY.length));
+    return built.ok ? { ok: true, steps: [], ranges: built.ranges, words: built.words } : built;
+  }
   const built = await buildSteps(sql);
   if (!built.ok) return built;
   const steps: StepRun[] = [];

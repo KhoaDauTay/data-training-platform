@@ -790,4 +790,5 @@ Cách đo: `npx vite build --base=/data-training-platform/` (`MSYS_NO_PATHCONV=1
 
 - Cổng trong worktree: `tsc`, vitest (101 file, 3701 test), build, `check-budget` (main 323/500, parser 392/410), smoke (xem dưới).
 - Ảnh kiểm bằng mắt (Edge headless, preview riêng cổng 5231): sáng VI/EN 1280, sáng 375, tối 1280/375; không cuộn ngang ở 375; tên dài trong `code` xuống dòng bằng `break-words` (bản đầu `break-all` cắt `p.coun|try`, đã sửa); 0 lỗi trang.
-- Đắn đo để người duyệt quyết: lần chạy đầu mỗi phiên tải parser cho mọi người chơi (trước chỉ khi mở tab Thứ tự thực thi); ngưỡng tự đọc 250 ms; main +2,4 KB thay vì +0,6 ước.
+- Review (advisor) trước khi giao, đã sửa: request hỏng từng hỏi lại ở mỗi lần vẽ (vòng lặp sau restart); ngưỡng `result.ms` không chặn được phép nối dấu phẩy (chạy nhanh, đếm lâu) nên dòng nay dùng request chỉ-parse `WORDS_ONLY` (kiểm trên Edge: DB xanh suốt 20 s); `SELECT s.*, p.name` từng đọc "2 cột"; bước index lab sau một bước truy vấn từng còn dòng cũ.
+- Đắn đo để người duyệt quyết: lần chạy đầu mỗi phiên tải parser cho mọi người chơi (trước chỉ khi mở tab Thứ tự thực thi); main +2,4 KB thay vì +0,6 ước.

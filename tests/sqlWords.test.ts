@@ -3,7 +3,8 @@ import { generalNow, loadDomain, loadLessons, loadTicketTemplates } from '../src
 import { DOMAINS } from '../src/domains';
 import { plainText, sentence } from '../src/ui/sqlWordsView';
 import { applyVariant, variantsOf } from '../src/variants';
-import { buildSteps, clauseRanges } from '../src/viz/steps';
+import { buildSteps, clauseRanges, runSteps } from '../src/viz/steps';
+import { WORDS_ONLY } from '../src/viz/stepText';
 import type { WordPart } from '../src/viz/sqlWords';
 
 /** Every Solution of every domain (each variant, each review step) and every General drill and lesson answer. */
@@ -74,5 +75,25 @@ describe('SQL bằng lời (V19-A, L162)', () => {
     const where = r.words.find((p): p is WordPart & { k: 'where' } => p.k === 'where')!;
     expect(where.conds.map((c) => [c.op, 'not' in c && !!c.not])).toEqual([['ne', false], ['between', false], ['like', true], ['exists', true]]);
     expect(r.words.map((p) => p.k)).toEqual(['select', 'from', 'where', 'distinct']);
+  });
+});
+
+describe('request chỉ-parse của dòng bằng lời', () => {
+  it('WORDS_ONLY: không chạy truy vấn con nào (db rỗng vẫn trả words)', async () => {
+    const noDb = {} as Parameters<typeof runSteps>[0]; // any query would throw
+    const r = await runSteps(noDb, `${WORDS_ONLY}SELECT c.id FROM containers c, container_events e WHERE e.container_id = c.id LIMIT 5`);
+    if (!r.ok) throw new Error(r.reason);
+    expect(r.steps).toEqual([]);
+    expect(r.words?.map((p) => p.k)).toEqual(['select', 'from', 'where', 'limit']);
+    expect((await runSteps(noDb, `${WORDS_ONLY}WITH x AS (SELECT 1) SELECT * FROM x`)).ok).toBe(false);
+  });
+
+  it('`*` cùng cột khác: không đếm `*` như một cột', async () => {
+    const r = await buildSteps('SELECT s.*, p.name FROM shipments s JOIN ports p ON p.code = s.pol');
+    if (!r.ok) throw new Error(r.reason);
+    expect(plainText(sentence(r.words, 'vi'))).toBe('lấy mọi cột (*) và thêm 1 cột từ shipments s, nối với ports p');
+    const one = await buildSteps('SELECT * FROM ports');
+    if (!one.ok) throw new Error(one.reason);
+    expect(plainText(sentence(one.words, 'en'))).toBe('takes every column from ports');
   });
 });
