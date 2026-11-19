@@ -903,4 +903,15 @@ export const en: Record<Key, Msg> = {
   'work.noRows': 'Your query returns no rows: a filter or a join removes them all. Take the conditions out one at a time and run again to see where the rows go.',
   // v10 Track A (L154–L156): the JOIN step of the Execution order tab
   'steps.help.join': 'Pairs each row on the left with the rows on the right whose key is equal. JOIN drops a row that finds no partner; LEFT JOIN keeps it and leaves the right-hand columns empty (NULL).',
+  // v10 V10-C (L157): "Tasks you stumbled on", printable cheat sheet
+  'stumble.title': 'Tasks you stumbled on',
+  'stumble.intro': 'Tasks you finished after at least {n} wrong submits. Redo them with other numbers to make them stick: 0 XP, no effect on the chapter.',
+  'stumble.wrong': (p) => `${p.n} wrong submit${Number(p.n) === 1 ? '' : 's'}`,
+  'stumble.go': 'Redo',
+  'stumble.aria': (p) => `Redo: ${p.title} (${p.n} wrong submit${Number(p.n) === 1 ? '' : 's'} before passing)`,
+  'cheat.print': 'Print cheat sheet',
+  'cheat.hint': 'One A4 page of the skills you have learned: name, syntax, common trap.',
+  'cheat.none': 'Learn your first skill to print a cheat sheet.',
+  'cheat.title': 'SQL cheat sheet · BoonData',
+  'cheat.sub': (p) => `${p.n} skill${Number(p.n) === 1 ? '' : 's'} you have learned. Syntax written on the store chain's example tables.`,
 };

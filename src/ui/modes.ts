@@ -35,6 +35,8 @@ import { mascot } from './mascots';
 import { icon, NAV_ICON, skillIcon } from './icons';
 import { illustration, loadedGsap, loadGsap } from '../art/load';
 import { gated, navLock, readTour } from '../onboarding';
+import { STUMBLE_WRONG, stumbledTasks } from '../practice';
+import { readAttempts } from '../insights';
 
 /** v12 audit: the Overview's Sandbox / My data cards follow the Sandbox sidebar lock (v4 D-O3). */
 const sandboxLock = () => navLock('sandbox', done(), app.tickets.map((x) => x.id), gated(readTour()));
@@ -508,6 +510,28 @@ function interviewCard(): HTMLElement {
 }
 registerHomeSection({ id: 'interview', order: 24, span: 'full', pages: ['practice'], render: interviewCard });
 registerHomeSection({ id: 'warmup', order: 21, span: 'full', pages: ['home', 'practice'], render: warmupCard });
+/**
+ * v10 N6 (L157): "Việc bạn từng vấp" on Practise SQL: finished story tasks of the open domain that passed only after 3+ wrong
+ * Submits (device pref cargo-query/attempts, never the Save). Each opens as Practice (another variant, 0 XP) via startRetry.
+ */
+export function stumbleCard(): HTMLElement | null {
+  const list = stumbledTasks(app.tickets, done(), readAttempts());
+  if (list.length === 0) return null;
+  const lang = getLang();
+  return h('section', { class: cx(CARD, 'p-5'), 'aria-labelledby': 'stumble-title' },
+    h('h2', { id: 'stumble-title', class: 'm-0 text-lg font-bold' }, t('stumble.title')),
+    h('p', { class: 'mt-1 mb-3 text-[15px] text-muted' }, t('stumble.intro', { n: STUMBLE_WRONG })),
+    h('ul', { class: 'm-0 grid list-none gap-2 p-0' }, ...list.map((x) => {
+      const title = textOf(app.tickets.find((tk) => tk.id === x.ticketId)!, lang).title;
+      return h('li', {}, h('button', {
+        type: 'button', class: 'flex min-h-11 w-full flex-wrap items-center gap-x-3 gap-y-0.5 px-3 py-2 text-left',
+        'aria-label': t('stumble.aria', { title, n: x.wrong }), onclick: () => void startRetry(x.ticketId),
+      }, h('span', { class: 'min-w-0 flex-1 font-semibold' }, title),
+        h('span', { class: 'shrink-0 text-body-sm text-muted' }, t('stumble.wrong', { n: x.wrong })),
+        h('span', { class: 'shrink-0 text-body-sm font-semibold text-accent' }, t('stumble.go'))));
+    })));
+}
+registerHomeSection({ id: 'stumble', order: 25, span: 'full', pages: ['practice'], render: stumbleCard });
 registerMode({
   id: 'sandbox', order: 10, icon: 'flask', tint: 'bg-accent-soft text-ink',
   title: 'mode.sandbox', desc: 'mode.sandboxDesc', open: () => startSandbox(), lock: sandboxLock,

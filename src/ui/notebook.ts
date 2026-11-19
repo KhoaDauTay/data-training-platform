@@ -3,7 +3,7 @@ import { GLOSSARY, matches } from '../glossary';
 import { knownSkills } from '../home';
 import { getLang, t } from '../i18n';
 import { unlockNote } from '../overview';
-import { SKILLS } from '../progress';
+import { SKILLS, type Skill } from '../progress';
 import { inDomain } from '../route';
 import { generalWork } from '../session';
 import { app } from '../state';
@@ -22,6 +22,38 @@ let opener: HTMLElement | null = null;
 const button = (): HTMLElement => byId('notebook-btn');
 
 /**
+ * v10 N7 (L157): the printable cheat sheet, one A4 of the skills the player has learned (label, syntax, trap from
+ * content/skills.yml, whose syntax lines use the neutral lab tables). Hidden on screen, shown only when printing; fixed
+ * black on white so a dark theme prints readable without backgrounds. Skills only: no business terms, no domain.
+ */
+export function cheatSheet(lang: Lang, skills: readonly Skill[], learned: ReadonlySet<string>): HTMLElement {
+  const own = skills.filter((s) => learned.has(s.id));
+  // Sized so all 38 skills fit one A4 page at the browser's default margins (checked with printToPDF, L157).
+  return h('section', { id: 'cheat-sheet', class: 'hidden bg-white font-sans text-[6.5pt] leading-tight text-black print:block', 'aria-hidden': 'true' },
+    h('h1', { class: 'm-0 mb-0.5 text-[10pt] font-bold' }, t('cheat.title')),
+    h('p', { class: 'm-0 mb-1.5' }, t('cheat.sub', { n: own.length })),
+    h('div', { class: 'columns-3 gap-3' }, ...own.map((s) =>
+      h('article', { class: 'mb-1 break-inside-avoid border-b border-black/20 pb-0.5' },
+        h('h2', { class: 'm-0 text-[7pt] font-bold' }, s.label[lang]),
+        h('code', { lang: 'en', class: 'block font-mono text-[6.5pt] break-words whitespace-pre-wrap' }, s.syntax),
+        h('p', { class: 'm-0' }, h('b', {}, t('nb.trap')), ' ', s.trap[lang])))));
+}
+
+/** Prints the sheet alone: every other body child is hidden for print until `afterprint`, then the sheet is removed. */
+function printSheet(learned: ReadonlySet<string>): void {
+  document.getElementById('cheat-sheet')?.remove();
+  const others = [...document.body.children].filter((e) => !e.classList.contains('print:hidden!'));
+  for (const e of others) e.classList.add('print:hidden!');
+  const sheet = cheatSheet(getLang(), SKILLS, learned);
+  document.body.append(sheet);
+  addEventListener('afterprint', () => {
+    sheet.remove();
+    for (const e of others) e.classList.remove('print:hidden!');
+  }, { once: true });
+  print();
+}
+
+/**
  * Non-modal (show(), not showModal()): the player keeps typing in the editor while it is open, and Esc on the completion
  * dock still works (stageEsc only yields to modal dialogs). Opened from the top-bar button or Home's mode card.
  */
@@ -35,6 +67,8 @@ export function toggleNotebook(dialog: HTMLDialogElement): void {
   const title = h('h2', { id: 'notebook-title', class: 'm-0' });
   const close = h('button', { type: 'button', onclick: () => dialog.close() });
   const list = h('div', {});
+  const printBtn = h('button', { type: 'button', class: 'px-3 py-1 text-body-sm', 'aria-describedby': 'cheat-why' });
+  const printWhy = h('p', { id: 'cheat-why', class: 'mt-1 mb-2 text-body-sm text-muted' });
 
   // Built once per opening; redraw() (also from renderNotebook on every rerender) keeps the input, its text and focus.
   redraw = (): void => {
@@ -45,6 +79,10 @@ export function toggleNotebook(dialog: HTMLDialogElement): void {
     const route = currentRoute();
     const domain = inDomain(route) && !(route === 'play' && generalWork()); // D-N4: General pages show no business terms
     title.textContent = t('nb.title');
+    printBtn.textContent = t('cheat.print');
+    printBtn.toggleAttribute('disabled', learned.size === 0); // nothing learned yet: the reason shows under the button
+    printBtn.onclick = () => printSheet(learned);
+    printWhy.textContent = t(learned.size ? 'cheat.hint' : 'cheat.none');
     close.textContent = t('app.close');
     input.placeholder = t('nb.filter');
     input.setAttribute('aria-label', t('nb.filter'));
@@ -80,7 +118,7 @@ export function toggleNotebook(dialog: HTMLDialogElement): void {
   };
 
   input.addEventListener('input', () => redraw?.());
-  dialog.replaceChildren(h('div', { class: 'mb-2 flex items-center justify-between gap-2' }, title, close), input, list);
+  dialog.replaceChildren(h('div', { class: 'mb-2 flex items-center justify-between gap-2' }, title, close), h('div', {}, printBtn, printWhy), input, list);
   dialog.onkeydown = (e: KeyboardEvent) => {
     if (e.key === 'Escape') {
       e.preventDefault();

@@ -2,9 +2,10 @@ import { describe, expect, it } from 'vitest';
 import { generalNow, loadTicketTemplates, loadTickets } from '../src/content';
 import {
   addDays, applyResult, cardOf, dueSkills, INTERVALS, isSuccess, localDay, nextCard,
-  pickDrill, pickForSkill, QUEUE_MAX, retryItem, reviewQueue, seedReview, variantFor, WARMUP_SIZE, warmupQueue,
+  pickDrill, pickForSkill, QUEUE_MAX, retryItem, reviewQueue, seedReview, STUMBLE_MAX, stumbledTasks, variantFor, WARMUP_SIZE, warmupQueue,
 } from '../src/practice';
 import type { Beat, Ticket } from '../src/tickets';
+import { variantsOf } from '../src/variants';
 
 const T = '2026-11-16';
 const base = loadTickets()[0];
@@ -210,5 +211,32 @@ describe('ôn tập bằng drill (Plan 8a Task 8)', () => {
     const q = reviewQueue({}, ['where'], templates, done, T, () => 0, new Map(), new Set());
     expect(q[0].ticketId).toMatch(/^ch1-/);
     expect(reviewQueue({}, ['where'], templates, done, T, () => 0)).toEqual(q);
+  });
+});
+
+describe('Việc bạn từng vấp (v10 N6, L157)', () => {
+  const tks = [mk('ch1-01', 'teach'), mk('ch1-02', 'develop'), mk('ch1-03', 'twist'), mk('ch1-04', 'rest'), mk('ch1-05', 'boss'),
+    mk('ch2-01', 'teach'), mk('ch2-02', 'develop'), mk('ch2-03', 'twist')];
+  const all = new Set(tks.map((t) => t.id));
+  const at = (passedOn?: number) => ({ runs: 9, submits: passedOn ?? 7, ...(passedOn ? { passedOn } : {}) });
+
+  it('chỉ việc story đã xong, nộp sai ≥ 3 lần (passedOn ≥ 4), không đánh giá thăng tiến (L10)', () => {
+    const attempts = { 'ch1-01': at(4), 'ch1-02': at(3), 'ch1-03': at(), 'ch1-05': at(9), 'g-select-open': at(8), 'ecom-ch1-01': at(8) };
+    expect(stumbledTasks(tks, all, attempts)).toEqual([{ ticketId: 'ch1-01', wrong: 3 }]);
+    expect(stumbledTasks(tks, new Set(['ch1-02']), attempts)).toEqual([]); // not finished: not offered
+  });
+
+  it('khó nhất trước, hòa thì theo thứ tự story, tối đa STUMBLE_MAX', () => {
+    const attempts = Object.fromEntries(tks.map((t, i) => [t.id, at(4 + (i % 2))]));
+    const got = stumbledTasks(tks, all, attempts);
+    expect(got.length).toBe(STUMBLE_MAX);
+    expect(got.map((x) => x.ticketId)).toEqual(['ch1-02', 'ch1-04', 'ch2-01', 'ch2-03', 'ch1-01']);
+  });
+
+  it('mở được: việc có biến thể được luyện bằng biến thể khác (retryItem)', () => {
+    const real = loadTicketTemplates().filter((t) => t.beat !== 'boss' && variantsOf(t).length >= 2);
+    const got = stumbledTasks(real, new Set(real.map((t) => t.id)), Object.fromEntries(real.map((t) => [t.id, at(5)])));
+    expect(got.length).toBe(STUMBLE_MAX);
+    for (const s of got) expect(retryItem(real.find((t) => t.id === s.ticketId)!, () => 0).variant).toBeGreaterThan(0);
   });
 });
