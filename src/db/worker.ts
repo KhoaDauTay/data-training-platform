@@ -1,22 +1,24 @@
-import { PGlite } from '@electric-sql/pglite';
-import { initEngine } from './init';
+import type { PGlite } from '@electric-sql/pglite';
 import { countingFetch } from './loadProgress';
 import type { WorkerBody } from './client';
 import { dropImport, importCsv } from './import';
-import { ensureSchema } from './lab';
+import { ensureSchema, seededSchemas } from './lab';
+import { bootDb, dumpSeeded, idbStore, storeDump } from './snapshot';
 import { runExplain, runLab, runSandboxed, sqlErrorInfo } from './run';
 
 // PGlite fetches its .wasm/.data with the global fetch; count the bytes for the loading status.
 globalThis.fetch = countingFetch(fetch.bind(globalThis), (p) => postMessage({ type: 'progress', ...p }));
 
+// V16-OFFLINE (L143): the seeded cluster is kept in IndexedDB (src/db/snapshot.ts). Not in dev: a seed edit would keep
+// the old __SEED_HASH__ until the dev server restarts.
+const store = !import.meta.env.DEV && typeof indexedDB !== 'undefined' ? idbStore() : undefined;
+
 const ready = (async () => {
   const t0 = performance.now();
-  const db = new PGlite();
-  await db.waitReady;
-  const t1 = performance.now();
-  await initEngine(db); // v12.0 P1: no seed here; ensure requests seed each schema (lab.ts LAZY_SEEDS)
-  // seedMs now times only the empty setup; the seeds are the client's `db:ensure:<schema>` measures.
-  const timings = { bootMs: Math.round(t1 - t0), seedMs: Math.round(performance.now() - t1) };
+  // v12.0 P1: no seed here; ensure requests seed each schema (lab.ts LAZY_SEEDS), unless a snapshot already holds it.
+  const { db, restored } = await bootDb(store);
+  // seedMs is 0 since v12.0 (the seeds are the client's `db:ensure:<schema>` measures); kept for the diagnostics shape.
+  const timings = { bootMs: Math.round(performance.now() - t0), seedMs: 0, restored };
   return { db, timings };
 })();
 
@@ -54,6 +56,18 @@ async function loadParser(id: number): Promise<void> {
   }
 }
 
+/** Queued right after a seed's result is posted: the dump (~0.1 s) waits for its turn like any query, the gzip runs outside. */
+async function snapshot(db: PGlite): Promise<void> {
+  if (!store) return;
+  const d = await dumpSeeded(db).catch(() => undefined);
+  if (!d) return;
+  // Two dumps compressing at once: storeDump keeps the record with more schemas (mayReplace), so the newer one wins.
+  void (async () => {
+    await storeDump(store, d);
+    postMessage({ type: 'snapshot', schemas: d.schemas });
+  })().catch(() => undefined); // only a cache: the next seed tries again
+}
+
 onmessage = (e: MessageEvent<{ id: number } & WorkerBody>) => {
   const { id } = e.data;
   const body: WorkerBody = e.data;
@@ -61,7 +75,9 @@ onmessage = (e: MessageEvent<{ id: number } & WorkerBody>) => {
   queue = queue.then(async () => {
     try {
       const { db } = await ready;
+      const before = seededSchemas(db).size;
       postMessage({ type: 'result', id, result: await handle(db, body) });
+      if (body.kind === 'ensure' && seededSchemas(db).size > before) queue = queue.then(() => snapshot(db));
     } catch (err) {
       // Custom Error fields do not survive postMessage, so send plain fields. Only Postgres errors are SQL errors.
       const error = sqlErrorInfo(err);
