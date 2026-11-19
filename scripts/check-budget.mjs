@@ -14,6 +14,11 @@ const GROUPS = [
   ['art', /^logistics-/, 20], // Plan 8b D8b-2: Tien Sa scene, route map and completion scenes, lazy (prefetched when idle after the first render): 7 KB, took 6 KB off main
   ['illustrations', /^illustrations-/, 15], // Plan 8b D8b-8: drawn illustrations (learning path, modules, empty states, Finance), lazy, fetched by the first page that shows one
   ['css', /^index-.*\.css$/, 20],
+  // ENG-DYNAMO (L245): @dynoxide/wasm-engine 1.5.0 (DynamoDB emulator) copied as plain assets by src/engine/dynamo/worker.ts:
+  // its worker script (69 KB gz -9) + dynoxide_bg.wasm (704) + sqlite3.wasm (391) = 1,170 KB gz, fetched only on the first
+  // DynamoDB run (the lab worker itself, ~2 KB gz, falls in `worker`). Optional (4th field) until a page imports
+  // src/engine/dynamo/client.ts: no importer = nothing built. Never precached (scripts/offline.mjs).
+  ['dynamo', /^(dynoxide-worker|dynoxide_bg|sqlite3)-/, 1300, 'optional'],
   ['worker', /^worker-/, 160],
   ['pglite', /^pglite-/, 5560],
   ['initdb', /^initdb-/, 140],
@@ -49,17 +54,18 @@ for (const [f, path] of files) {
   sums[name] = (sums[name] ?? 0) + gzipSync(readFileSync(path), { level: 9 }).length / 1024;
 }
 let fail = false;
-for (const [name, , budget] of GROUPS) {
+for (const [name, , budget, optional] of GROUPS) {
   const kb = sums[name];
-  const bad = kb === undefined || kb > budget; // a missing group means the build changed shape: look before deploying
+  const bad = (kb === undefined && !optional) || kb > budget; // a missing group means the build changed shape: look before deploying
   fail ||= bad;
-  console.log(`${bad ? 'FAIL' : 'ok  '} ${name.padEnd(10)} ${kb === undefined ? 'not found' : `${kb.toFixed(0).padStart(5)} KB gz / ${budget} KB`}`);
+  console.log(`${bad ? 'FAIL' : 'ok  '} ${name.padEnd(10)} ${kb === undefined ? (optional ? 'not built (no importer yet)' : 'not found') : `${kb.toFixed(0).padStart(5)} KB gz / ${budget} KB`}`);
 }
 // ui-ux-v6 §2.1/§2.2: no GSAP in main, and GSAP's copyright notice kept in its chunk (its licence forbids removing it).
 const text = (re) => files.filter(([f]) => re.test(f)).map(([, path]) => readFileSync(path, 'utf8')).join(' ');
 const gsapText = text(/^gsap-.*\.js$/);
 for (const [ok, what] of [
   [!text(/^index-.*\.js$/).includes('GreenSock'), 'main has no GSAP'],
+  [!text(/^index-.*\.js$/).includes('dynoxide'), 'main has no DynamoDB engine'],
   [/@license Copyright 2008-\d+, GreenSock/.test(gsapText), 'gsap chunk keeps its @license notice'],
 ]) {
   fail ||= !ok;
