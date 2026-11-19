@@ -2,7 +2,8 @@
 id: e-pg-l4-12
 engine: postgres
 level: L4
-module: concurrency
+module: locks
+title: "Mức cô lập và các hiện tượng chúng cho phép"
 title_en: "Isolation levels and the anomalies they allow"
 kind: concept
 minutes: 20
@@ -14,7 +15,7 @@ requires: [e-pg-l4-09]
 sources:
   - https://www.postgresql.org/docs/18/transaction-iso.html
   - https://www.postgresql.org/docs/18/sql-set-transaction.html
-viz: isolationAnomalies
+viz: isolation-anomalies
 quiz:
   - q: { vi: "Ở READ COMMITTED, một giao dịch chạy `SELECT sum(bal) FROM acct` hai lần. Giữa hai lần, phiên khác chuyển tiền và COMMIT. Hai tổng có thể khác nhau không?", en: "Under READ COMMITTED, a transaction runs `SELECT sum(bal) FROM acct` twice. Between them, another session moves money and COMMITs. Can the two sums differ?" }
     options:
@@ -41,17 +42,15 @@ quiz:
 
 ## Ý chính
 
-| Mức cô lập | Dirty read | Non-repeatable read | Phantom read | Serialization anomaly |
-|---|---|---|---|---|
-| READ UNCOMMITTED | chuẩn cho phép, PG không | có thể | có thể | có thể |
-| READ COMMITTED (mặc định) | không | có thể | có thể | có thể |
-| REPEATABLE READ | không | không | chuẩn cho phép, PG không | có thể |
-| SERIALIZABLE | không | không | không | không |
+- READ UNCOMMITTED — dirty read: chuẩn cho phép, PG không; non-repeatable read: có thể; phantom read: có thể; serialization anomaly: có thể
+- READ COMMITTED (mặc định) — dirty read: không; non-repeatable read: có thể; phantom read: có thể; serialization anomaly: có thể
+- REPEATABLE READ — dirty read: không; non-repeatable read: không; phantom read: chuẩn cho phép, PG không; serialization anomaly: có thể
+- SERIALIZABLE — dirty read: không; non-repeatable read: không; phantom read: không; serialization anomaly: không
 
-- **Dirty read**: thấy dữ liệu chưa commit. **Non-repeatable read**: đọc lại một dòng thấy giá trị khác. **Phantom**: chạy lại điều kiện thấy tập dòng khác. **Serialization anomaly**: kết quả cuối không khớp với bất kỳ thứ tự chạy lần lượt nào.
+- Dirty read: thấy dữ liệu chưa commit. Non-repeatable read: đọc lại một dòng thấy giá trị khác. Phantom: chạy lại điều kiện thấy tập dòng khác. Serialization anomaly: kết quả cuối không khớp với bất kỳ thứ tự chạy lần lượt nào.
 - READ UNCOMMITTED trong Postgres chạy y như READ COMMITTED.
-- READ COMMITTED: snapshot **mỗi câu**. Khi `UPDATE` gặp dòng vừa bị người khác sửa, nó chờ người đó xong rồi đánh giá lại điều kiện trên phiên bản mới.
-- REPEATABLE READ: một snapshot cho **cả giao dịch** (từ câu đầu tiên). Gặp xung đột ghi thì báo 40001; ứng dụng phải thử lại cả giao dịch.
+- READ COMMITTED: snapshot mỗi câu. Khi `UPDATE` gặp dòng vừa bị người khác sửa, nó chờ người đó xong rồi đánh giá lại điều kiện trên phiên bản mới.
+- REPEATABLE READ: một snapshot cho cả giao dịch (từ câu đầu tiên). Gặp xung đột ghi thì báo 40001; ứng dụng phải thử lại cả giao dịch.
 - SERIALIZABLE: thêm phát hiện xung đột đọc/ghi (bài sau).
 
 ## Ví dụ
@@ -79,19 +78,17 @@ Sơ đồ hai làn: bật/tắt mức cô lập và xem cùng một kịch bản
 
 # EN
 
-## Key ideas
+## Key idea
 
-| Isolation level | Dirty read | Non-repeatable read | Phantom read | Serialization anomaly |
-|---|---|---|---|---|
-| READ UNCOMMITTED | allowed by the standard, not in PG | possible | possible | possible |
-| READ COMMITTED (default) | no | possible | possible | possible |
-| REPEATABLE READ | no | no | allowed by the standard, not in PG | possible |
-| SERIALIZABLE | no | no | no | no |
+- READ UNCOMMITTED — dirty read: allowed by the standard, not in PG; non-repeatable read: possible; phantom read: possible; serialization anomaly: possible
+- READ COMMITTED (default) — dirty read: no; non-repeatable read: possible; phantom read: possible; serialization anomaly: possible
+- REPEATABLE READ — dirty read: no; non-repeatable read: no; phantom read: allowed by the standard, not in PG; serialization anomaly: possible
+- SERIALIZABLE — dirty read: no; non-repeatable read: no; phantom read: no; serialization anomaly: no
 
-- **Dirty read**: seeing uncommitted data. **Non-repeatable read**: re-reading a row returns a different value. **Phantom**: re-running a condition returns a different set of rows. **Serialization anomaly**: the final result matches no one-at-a-time order of the transactions.
+- Dirty read: seeing uncommitted data. Non-repeatable read: re-reading a row returns a different value. Phantom: re-running a condition returns a different set of rows. Serialization anomaly: the final result matches no one-at-a-time order of the transactions.
 - READ UNCOMMITTED in Postgres behaves exactly like READ COMMITTED.
-- READ COMMITTED: a snapshot **per statement**. When an `UPDATE` meets a row someone else just changed, it waits for them to finish, then re-checks its condition on the new version.
-- REPEATABLE READ: one snapshot for **the whole transaction** (from its first statement). A write conflict raises 40001; the application must retry the whole transaction.
+- READ COMMITTED: a snapshot per statement. When an `UPDATE` meets a row someone else just changed, it waits for them to finish, then re-checks its condition on the new version.
+- REPEATABLE READ: one snapshot for the whole transaction (from its first statement). A write conflict raises 40001; the application must retry the whole transaction.
 - SERIALIZABLE: adds detection of read/write conflicts (next lesson).
 
 ## Example

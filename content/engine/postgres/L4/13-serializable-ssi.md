@@ -2,7 +2,8 @@
 id: e-pg-l4-13
 engine: postgres
 level: L4
-module: concurrency
+module: locks
+title: "SERIALIZABLE: SSI, write skew và SIReadLock"
 title_en: "SERIALIZABLE: SSI, write skew and SIReadLock"
 kind: concept
 minutes: 20
@@ -15,7 +16,7 @@ sources:
   - https://www.postgresql.org/docs/18/transaction-iso.html
   - https://www.postgresql.org/docs/18/view-pg-locks.html
   - https://www.postgresql.org/docs/18/applevel-consistency.html
-viz: isolationAnomalies
+viz: isolation-anomalies
 quiz:
   - q: { vi: "Quy tắc: luôn có ít nhất một bác sĩ trực. Ana và Bình cùng đang trực. Mỗi người chạy giao dịch: đếm số người trực (2), nếu ≥ 2 thì tự đặt mình nghỉ. Hai giao dịch chạy cùng lúc ở REPEATABLE READ. Kết quả?", en: "Rule: at least one doctor must be on call. Ana and Binh are both on call. Each runs a transaction: count who is on call (2), and if ≥ 2, set themselves off. Both run at the same time under REPEATABLE READ. Result?" }
     options:
@@ -42,9 +43,9 @@ quiz:
 
 ## Ý chính
 
-- REPEATABLE READ của Postgres là snapshot isolation. Nó chặn lost update nhưng vẫn cho **write skew**: hai giao dịch đọc cùng dữ liệu, mỗi bên ghi một dòng khác, kết quả chung vi phạm quy tắc mà từng bên đã kiểm tra.
-- SERIALIZABLE = **SSI** (Serializable Snapshot Isolation): vẫn là snapshot, cộng thêm theo dõi phụ thuộc đọc-ghi giữa các giao dịch. Khi thấy một mẫu có thể gây bất thường, Postgres hủy một giao dịch với `could not serialize access …` (SQLSTATE 40001).
-- Việc theo dõi dùng **predicate lock**, mode `SIReadLock`: không chặn ai, không gây deadlock. Mức chi tiết: tuple/trang khi đọc qua index, cả quan hệ khi Seq Scan, nên index tốt cũng giảm hủy giả.
+- REPEATABLE READ của Postgres là snapshot isolation. Nó chặn lost update nhưng vẫn cho write skew: hai giao dịch đọc cùng dữ liệu, mỗi bên ghi một dòng khác, kết quả chung vi phạm quy tắc mà từng bên đã kiểm tra.
+- SERIALIZABLE = SSI (Serializable Snapshot Isolation): vẫn là snapshot, cộng thêm theo dõi phụ thuộc đọc-ghi giữa các giao dịch. Khi thấy một mẫu có thể gây bất thường, Postgres hủy một giao dịch với `could not serialize access …` (SQLSTATE 40001).
+- Việc theo dõi dùng predicate lock, mode `SIReadLock`: không chặn ai, không gây deadlock. Mức chi tiết: tuple/trang khi đọc qua index, cả quan hệ khi Seq Scan, nên index tốt cũng giảm hủy giả.
 - Quy tắc cho ứng dụng: mọi giao dịch SERIALIZABLE phải bọc trong vòng thử lại 40001; giữ giao dịch ngắn; khai `READ ONLY` khi đúng như vậy.
 - Lựa chọn khác: khóa tường minh (`SELECT … FOR UPDATE` trên dòng "đại diện" cho quy tắc) hoặc ràng buộc trong DB. SSI tiện vì không cần biết trước mọi chỗ xung đột.
 
@@ -85,11 +86,11 @@ Chạy cùng kịch bản trên sơ đồ ở REPEATABLE READ và SERIALIZABLE, 
 
 # EN
 
-## Key ideas
+## Key idea
 
-- Postgres' REPEATABLE READ is snapshot isolation. It stops lost updates but still allows **write skew**: two transactions read the same data, each writes a different row, and together they break a rule each of them had checked.
-- SERIALIZABLE = **SSI** (Serializable Snapshot Isolation): still snapshots, plus tracking of read-write dependencies between transactions. When it sees a pattern that could produce an anomaly, Postgres aborts one transaction with `could not serialize access …` (SQLSTATE 40001).
-- The tracking uses **predicate locks**, mode `SIReadLock`: they block nobody and cannot cause deadlocks. Granularity: tuple/page when reading through an index, the whole relation on a Seq Scan, so good indexes also reduce false aborts.
+- Postgres' REPEATABLE READ is snapshot isolation. It stops lost updates but still allows write skew: two transactions read the same data, each writes a different row, and together they break a rule each of them had checked.
+- SERIALIZABLE = SSI (Serializable Snapshot Isolation): still snapshots, plus tracking of read-write dependencies between transactions. When it sees a pattern that could produce an anomaly, Postgres aborts one transaction with `could not serialize access …` (SQLSTATE 40001).
+- The tracking uses predicate locks, mode `SIReadLock`: they block nobody and cannot cause deadlocks. Granularity: tuple/page when reading through an index, the whole relation on a Seq Scan, so good indexes also reduce false aborts.
 - Rules for the application: wrap every SERIALIZABLE transaction in a 40001 retry loop; keep transactions short; declare `READ ONLY` when it is true.
 - Alternatives: explicit locking (`SELECT … FOR UPDATE` on a row that "stands for" the rule) or a constraint in the database. SSI is handy because you do not need to know every conflict point in advance.
 

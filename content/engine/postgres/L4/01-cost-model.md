@@ -2,7 +2,8 @@
 id: e-pg-l4-01
 engine: postgres
 level: L4
-module: planner
+module: planner-stats
+title: "Mô hình chi phí: chi phí của kế hoạch từ đâu ra"
 title_en: "The cost model: where a plan's cost comes from"
 kind: lab
 minutes: 15
@@ -15,7 +16,7 @@ sources:
   - https://www.postgresql.org/docs/18/runtime-config-query.html
   - https://www.postgresql.org/docs/18/using-explain.html
   - https://www.postgresql.org/docs/18/planner-stats.html
-viz: planTree
+viz: plan-tree
 lab:
   setup: |
     DROP TABLE IF EXISTS parcels;
@@ -52,7 +53,7 @@ predict:
 
 ## Ý chính
 
-- "Chi phí" trong `EXPLAIN` là **đơn vị tùy ý** mà planner dùng để so sánh các kế hoạch. Mặc định một trang đọc tuần tự = 1.0 (`seq_page_cost`). Nó không phải mili giây.
+- "Chi phí" trong `EXPLAIN` là đơn vị tùy ý mà planner dùng để so sánh các kế hoạch. Mặc định một trang đọc tuần tự = 1.0 (`seq_page_cost`). Nó không phải mili giây.
 - Năm hằng số chính và giá trị mặc định: `seq_page_cost` 1.0, `random_page_cost` 4.0, `cpu_tuple_cost` 0.01, `cpu_index_tuple_cost` 0.005, `cpu_operator_cost` 0.0025. Thêm `effective_cache_size` (4GB) cho biết bao nhiêu dữ liệu có thể nằm sẵn trong bộ đệm.
 - Seq Scan không lọc: `relpages × seq_page_cost + reltuples × cpu_tuple_cost`. Mỗi điều kiện trong `Filter` cộng thêm `cpu_operator_cost` trên mỗi dòng.
 - `relpages` và `reltuples` trong `pg_class` chỉ được cập nhật khi VACUUM, ANALYZE hoặc vài lệnh DDL chạy. Thống kê cũ → chi phí sai → kế hoạch sai.
@@ -79,9 +80,9 @@ Ba bước: đọc `pg_class`, tự tính chi phí bằng SQL, rồi viết mộ
 
 # EN
 
-## Key ideas
+## Key idea
 
-- The "cost" in `EXPLAIN` is an **arbitrary unit** the planner uses to compare plans. By default one sequentially read page = 1.0 (`seq_page_cost`). It is not milliseconds.
+- The "cost" in `EXPLAIN` is an arbitrary unit the planner uses to compare plans. By default one sequentially read page = 1.0 (`seq_page_cost`). It is not milliseconds.
 - The five main constants and their defaults: `seq_page_cost` 1.0, `random_page_cost` 4.0, `cpu_tuple_cost` 0.01, `cpu_index_tuple_cost` 0.005, `cpu_operator_cost` 0.0025. `effective_cache_size` (4GB) also tells the planner how much data may already be cached.
 - An unfiltered Seq Scan costs `relpages × seq_page_cost + reltuples × cpu_tuple_cost`. Each condition in `Filter` adds `cpu_operator_cost` per row.
 - `relpages` and `reltuples` in `pg_class` are only refreshed by VACUUM, ANALYZE and a few DDL commands. Stale statistics mean wrong costs, and wrong costs mean wrong plans.

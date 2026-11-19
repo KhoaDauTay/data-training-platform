@@ -2,7 +2,8 @@
 id: e-pg-l4-14
 engine: postgres
 level: L4
-module: concurrency
+module: locks
+title: "Khóa tư vấn: khóa do ứng dụng định nghĩa"
 title_en: "Advisory locks: application-defined locks"
 kind: lab
 minutes: 12
@@ -15,7 +16,7 @@ sources:
   - https://www.postgresql.org/docs/18/explicit-locking.html
   - https://www.postgresql.org/docs/18/functions-admin.html
   - https://www.postgresql.org/docs/18/view-pg-locks.html
-viz: lockMatrix
+viz: lock-matrix
 lab:
   setup: |
     DROP TABLE IF EXISTS jobs;
@@ -43,10 +44,10 @@ quiz:
 
 ## Ý chính
 
-- Khóa tư vấn (advisory) là khóa có **ý nghĩa do ứng dụng định**, gắn với một số `bigint` (hoặc hai số `int`). Postgres không gắn nó với bảng nào; chỉ có những phiên cùng dùng số đó mới thấy nhau.
+- Khóa tư vấn (advisory) là khóa có ý nghĩa do ứng dụng định, gắn với một số `bigint` (hoặc hai số `int`). Postgres không gắn nó với bảng nào; chỉ có những phiên cùng dùng số đó mới thấy nhau.
 - Hai cấp:
-  - **cấp phiên** (`pg_advisory_lock`): giữ tới khi gọi `pg_advisory_unlock` hoặc phiên đóng, kể cả khi giao dịch ROLLBACK;
-  - **cấp giao dịch** (`pg_advisory_xact_lock`): tự nhả khi giao dịch kết thúc. An toàn hơn.
+  - cấp phiên (`pg_advisory_lock`): giữ tới khi gọi `pg_advisory_unlock` hoặc phiên đóng, kể cả khi giao dịch ROLLBACK;
+  - cấp giao dịch (`pg_advisory_xact_lock`): tự nhả khi giao dịch kết thúc. An toàn hơn.
 - Dạng `try` (`pg_try_advisory_xact_lock`) trả về true/false ngay, hợp cho "nếu worker khác đang làm thì bỏ qua".
 - Có dạng chia sẻ (`…_shared`) cho nhiều người đọc cùng lúc.
 - Dùng cho: chạy cron đúng một lần trên nhiều máy, tuần tự hóa migration, khóa một "tài nguyên logic" không phải một dòng.
@@ -74,12 +75,12 @@ Hai câu, mỗi câu tự kiểm khóa của mình trong một giao dịch rồi
 
 # EN
 
-## Key ideas
+## Key idea
 
-- An advisory lock is a lock whose **meaning is defined by the application**, tied to a `bigint` key (or two `int` keys). Postgres does not attach it to any table; only sessions using the same key see each other.
+- An advisory lock is a lock whose meaning is defined by the application, tied to a `bigint` key (or two `int` keys). Postgres does not attach it to any table; only sessions using the same key see each other.
 - Two levels:
-  - **session level** (`pg_advisory_lock`): held until `pg_advisory_unlock` is called or the session closes, even if the transaction rolls back;
-  - **transaction level** (`pg_advisory_xact_lock`): released automatically at the end of the transaction. Safer.
+  - session level (`pg_advisory_lock`): held until `pg_advisory_unlock` is called or the session closes, even if the transaction rolls back;
+  - transaction level (`pg_advisory_xact_lock`): released automatically at the end of the transaction. Safer.
 - The `try` form (`pg_try_advisory_xact_lock`) returns true/false at once, which suits "skip it if another worker is on it".
 - Shared forms (`…_shared`) let many readers hold the lock together.
 - Uses: run a cron job exactly once across many machines, serialise migrations, lock a "logical resource" that is not a row.

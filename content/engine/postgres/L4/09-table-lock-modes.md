@@ -2,7 +2,8 @@
 id: e-pg-l4-09
 engine: postgres
 level: L4
-module: concurrency
+module: locks
+title: "Chế độ khóa bảng và pg_locks"
 title_en: "Table-level lock modes and pg_locks"
 kind: lab
 minutes: 20
@@ -14,7 +15,7 @@ requires: []
 sources:
   - https://www.postgresql.org/docs/18/explicit-locking.html
   - https://www.postgresql.org/docs/18/view-pg-locks.html
-viz: lockMatrix
+viz: lock-matrix
 lab:
   setup: |
     DROP TABLE IF EXISTS acct;
@@ -52,23 +53,21 @@ quiz:
 
 Tám chế độ khóa bảng, từ yếu tới mạnh, và ví dụ lệnh lấy nó:
 
-| Chế độ | Ai lấy |
-|---|---|
-| ACCESS SHARE | `SELECT` |
-| ROW SHARE | `SELECT … FOR UPDATE/SHARE` |
-| ROW EXCLUSIVE | `INSERT`, `UPDATE`, `DELETE`, `MERGE` |
-| SHARE UPDATE EXCLUSIVE | `VACUUM`, `ANALYZE`, `CREATE INDEX CONCURRENTLY` |
-| SHARE | `CREATE INDEX` |
-| SHARE ROW EXCLUSIVE | `CREATE TRIGGER` |
-| EXCLUSIVE | `REFRESH MATERIALIZED VIEW CONCURRENTLY` |
-| ACCESS EXCLUSIVE | `DROP TABLE`, `TRUNCATE`, `VACUUM FULL`, nhiều dạng `ALTER TABLE` |
+- ACCESS SHARE — ai lấy: `SELECT`
+- ROW SHARE — ai lấy: `SELECT … FOR UPDATE/SHARE`
+- ROW EXCLUSIVE — ai lấy: `INSERT`, `UPDATE`, `DELETE`, `MERGE`
+- SHARE UPDATE EXCLUSIVE — ai lấy: `VACUUM`, `ANALYZE`, `CREATE INDEX CONCURRENTLY`
+- SHARE — ai lấy: `CREATE INDEX`
+- SHARE ROW EXCLUSIVE — ai lấy: `CREATE TRIGGER`
+- EXCLUSIVE — ai lấy: `REFRESH MATERIALIZED VIEW CONCURRENTLY`
+- ACCESS EXCLUSIVE — ai lấy: `DROP TABLE`, `TRUNCATE`, `VACUUM FULL`, nhiều dạng `ALTER TABLE`
 
 - Tên gọi đánh lừa: chế độ nào cũng là khóa bảng, chữ "ROW" không có nghĩa là khóa dòng. Chỉ bảng xung đột quyết định ai chờ ai.
 - Chỉ ACCESS EXCLUSIVE chặn `SELECT` thường. Đọc không bao giờ chặn ghi thường (MVCC).
 - Khóa được giữ tới cuối giao dịch. Hàng đợi khóa là FIFO: một lệnh đang chờ ACCESS EXCLUSIVE làm mọi lệnh tới sau phải chờ theo.
 - `pg_locks` cho thấy khóa đang giữ và đang chờ (`granted = false`). `lock_timeout` giới hạn thời gian chờ.
 
-**Giới hạn của PGlite:** chỉ có một phiên, nên không thể thấy chờ khóa thật. Bài này cho bạn thấy khóa mà câu của chính bạn đang giữ; phần "ai chờ ai" là sơ đồ.
+Giới hạn của PGlite: chỉ có một phiên, nên không thể thấy chờ khóa thật. Bài này cho bạn thấy khóa mà câu của chính bạn đang giữ; phần "ai chờ ai" là sơ đồ.
 
 ## Ví dụ
 
@@ -87,27 +86,25 @@ Hai câu trong một giao dịch, mỗi câu tự đọc khóa của mình. Sơ 
 
 # EN
 
-## Key ideas
+## Key idea
 
 The eight table lock modes, from weakest to strongest, with a command that takes each:
 
-| Mode | Taken by |
-|---|---|
-| ACCESS SHARE | `SELECT` |
-| ROW SHARE | `SELECT … FOR UPDATE/SHARE` |
-| ROW EXCLUSIVE | `INSERT`, `UPDATE`, `DELETE`, `MERGE` |
-| SHARE UPDATE EXCLUSIVE | `VACUUM`, `ANALYZE`, `CREATE INDEX CONCURRENTLY` |
-| SHARE | `CREATE INDEX` |
-| SHARE ROW EXCLUSIVE | `CREATE TRIGGER` |
-| EXCLUSIVE | `REFRESH MATERIALIZED VIEW CONCURRENTLY` |
-| ACCESS EXCLUSIVE | `DROP TABLE`, `TRUNCATE`, `VACUUM FULL`, many forms of `ALTER TABLE` |
+- ACCESS SHARE — taken by: `SELECT`
+- ROW SHARE — taken by: `SELECT … FOR UPDATE/SHARE`
+- ROW EXCLUSIVE — taken by: `INSERT`, `UPDATE`, `DELETE`, `MERGE`
+- SHARE UPDATE EXCLUSIVE — taken by: `VACUUM`, `ANALYZE`, `CREATE INDEX CONCURRENTLY`
+- SHARE — taken by: `CREATE INDEX`
+- SHARE ROW EXCLUSIVE — taken by: `CREATE TRIGGER`
+- EXCLUSIVE — taken by: `REFRESH MATERIALIZED VIEW CONCURRENTLY`
+- ACCESS EXCLUSIVE — taken by: `DROP TABLE`, `TRUNCATE`, `VACUUM FULL`, many forms of `ALTER TABLE`
 
 - The names mislead: every mode is a table lock, and "ROW" does not mean a row lock. Only the conflict table decides who waits for whom.
 - Only ACCESS EXCLUSIVE blocks a plain `SELECT`. Reads never block ordinary writes (MVCC).
 - Locks are held until the end of the transaction. The lock queue is FIFO: one command waiting for ACCESS EXCLUSIVE makes every later command wait behind it.
 - `pg_locks` shows held and waiting locks (`granted = false`). `lock_timeout` caps the wait.
 
-**PGlite limit:** there is only one session, so a real lock wait cannot be shown. This lesson shows the locks your own statement holds; "who waits for whom" is a diagram.
+PGlite limit: there is only one session, so a real lock wait cannot be shown. This lesson shows the locks your own statement holds; "who waits for whom" is a diagram.
 
 ## Example
 

@@ -3,6 +3,7 @@ id: e-pg-l4-08
 engine: postgres
 level: L4
 module: partitioning
+title: "Thiết kế phân vùng: khóa, ràng buộc và giới hạn"
 title_en: "Designing partitions: key, keys and limits"
 kind: quiz
 minutes: 12
@@ -48,10 +49,10 @@ quiz:
 
 ## Ý chính
 
-- Chọn khóa phân vùng theo **hai câu hỏi**: câu truy vấn hay gặp nhất lọc theo cột nào (để pruning), và dữ liệu cũ bị xóa theo cột nào (để `DROP` phân vùng).
+- Chọn khóa phân vùng theo hai câu hỏi: câu truy vấn hay gặp nhất lọc theo cột nào (để pruning), và dữ liệu cũ bị xóa theo cột nào (để `DROP` phân vùng).
 - PRIMARY KEY/UNIQUE trên bảng phân vùng phải chứa mọi cột khóa phân vùng, và không được là biểu thức.
 - Index trên bảng cha được lan xuống mọi phân vùng (kể cả phân vùng tạo sau). Không có index toàn cục.
-- Số phân vùng: tài liệu nói planner xử lý khá tốt tới vài nghìn phân vùng **nếu** câu hay gặp pruning còn ít phân vùng; không pruning được thì thời gian lập kế hoạch và bộ nhớ tăng theo số phân vùng.
+- Số phân vùng: tài liệu nói planner xử lý khá tốt tới vài nghìn phân vùng nếu câu hay gặp pruning còn ít phân vùng; không pruning được thì thời gian lập kế hoạch và bộ nhớ tăng theo số phân vùng.
 - Phân vùng `DEFAULT` tiện nhưng làm việc thêm phân vùng mới phải quét nó.
 
 ## Ví dụ
@@ -69,12 +70,12 @@ Bốn tình huống thiết kế. Kỹ năng chuyên gia: thiết kế phân vù
 
 # EN
 
-## Key ideas
+## Key idea
 
-- Choose the partition key from **two questions**: which column the most frequent queries filter on (for pruning), and which column old data is deleted by (to `DROP` partitions).
+- Choose the partition key from two questions: which column the most frequent queries filter on (for pruning), and which column old data is deleted by (to `DROP` partitions).
 - A PRIMARY KEY/UNIQUE constraint on a partitioned table must contain every partition key column, and the key cannot be an expression.
 - An index on the parent is propagated to every partition (including ones created later). There is no global index.
-- Number of partitions: the docs say the planner handles up to a few thousand partitions fairly well **if** typical queries prune all but a few; without pruning, planning time and memory grow with the partition count.
+- Number of partitions: the docs say the planner handles up to a few thousand partitions fairly well if typical queries prune all but a few; without pruning, planning time and memory grow with the partition count.
 - A `DEFAULT` partition is handy but makes adding a new partition scan it.
 
 ## Example

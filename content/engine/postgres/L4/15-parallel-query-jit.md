@@ -2,7 +2,8 @@
 id: e-pg-l4-15
 engine: postgres
 level: L4
-module: planner
+module: parallel-jit
+title: "Truy vấn song song và JIT (và vì sao PGlite không có)"
 title_en: "Parallel query and JIT (and why PGlite shows neither)"
 kind: predict
 minutes: 15
@@ -17,7 +18,7 @@ sources:
   - https://www.postgresql.org/docs/18/parallel-plans.html
   - https://www.postgresql.org/docs/18/jit-decision.html
   - https://www.postgresql.org/docs/18/runtime-config-resource.html
-viz: planTree
+viz: plan-tree
 lab:
   setup: |
     DROP TABLE IF EXISTS big;
@@ -62,12 +63,12 @@ quiz:
 
 ## Ý chính
 
-- **Song song**: planner thêm nút `Gather` (hoặc `Gather Merge` để giữ thứ tự). Mọi thứ dưới nó chạy trong nhiều tiến trình worker và cả tiến trình chính (leader). Nút "Parallel" (ví dụ `Parallel Seq Scan`) chia trang cho các worker; `Partial Aggregate` + `Finalize Aggregate` gộp hai tầng.
+- Song song: planner thêm nút `Gather` (hoặc `Gather Merge` để giữ thứ tự). Mọi thứ dưới nó chạy trong nhiều tiến trình worker và cả tiến trình chính (leader). Nút "Parallel" (ví dụ `Parallel Seq Scan`) chia trang cho các worker; `Partial Aggregate` + `Finalize Aggregate` gộp hai tầng.
 - Mặc định: `max_parallel_workers_per_gather` 2, `max_parallel_workers` 8, `max_worker_processes` 8.
-- **Không có kế hoạch song song** khi: `max_parallel_workers_per_gather` = 0; chế độ một người dùng; câu ghi hoặc khóa dòng; câu có thể bị tạm dừng giữa chừng (cursor, vòng `FOR` trong PL/pgSQL); dùng hàm `PARALLEL UNSAFE`; câu chạy bên trong một câu song song khác. Kể cả có kế hoạch, lúc chạy có thể không còn worker rảnh.
-- **JIT** biên dịch biểu thức và việc tách tuple bằng LLVM. Cần bản build có LLVM. Quyết định theo chi phí: `jit_above_cost` 100000, `jit_inline_above_cost` và `jit_optimize_above_cost` 500000.
+- Không có kế hoạch song song khi: `max_parallel_workers_per_gather` = 0; chế độ một người dùng; câu ghi hoặc khóa dòng; câu có thể bị tạm dừng giữa chừng (cursor, vòng `FOR` trong PL/pgSQL); dùng hàm `PARALLEL UNSAFE`; câu chạy bên trong một câu song song khác. Kể cả có kế hoạch, lúc chạy có thể không còn worker rảnh.
+- JIT biên dịch biểu thức và việc tách tuple bằng LLVM. Cần bản build có LLVM. Quyết định theo chi phí: `jit_above_cost` 100000, `jit_inline_above_cost` và `jit_optimize_above_cost` 500000.
 
-**Giới hạn của PGlite** (đo): một backend đơn, `max_parallel_workers_per_gather` = 0 và `max_worker_processes` = 0, đặt giá trị đầu lên 2 vẫn không ra `Gather`; `pg_jit_available()` = false dù `jit` = on. Hai chủ đề này cần server PostgreSQL thật để thực hành.
+Giới hạn của PGlite (đo): một backend đơn, `max_parallel_workers_per_gather` = 0 và `max_worker_processes` = 0, đặt giá trị đầu lên 2 vẫn không ra `Gather`; `pg_jit_available()` = false dù `jit` = on. Hai chủ đề này cần server PostgreSQL thật để thực hành.
 
 ## Ví dụ
 
@@ -95,14 +96,14 @@ Finalize Aggregate
 
 # EN
 
-## Key ideas
+## Key idea
 
-- **Parallel**: the planner adds a `Gather` node (or `Gather Merge` to keep order). Everything below it runs in several worker processes and in the main (leader) process too. "Parallel" nodes (for example `Parallel Seq Scan`) split the pages among workers; `Partial Aggregate` + `Finalize Aggregate` combine in two stages.
+- Parallel: the planner adds a `Gather` node (or `Gather Merge` to keep order). Everything below it runs in several worker processes and in the main (leader) process too. "Parallel" nodes (for example `Parallel Seq Scan`) split the pages among workers; `Partial Aggregate` + `Finalize Aggregate` combine in two stages.
 - Defaults: `max_parallel_workers_per_gather` 2, `max_parallel_workers` 8, `max_worker_processes` 8.
-- **No parallel plan** when: `max_parallel_workers_per_gather` = 0; single-user mode; the query writes or locks rows; the query can be suspended halfway (a cursor, a PL/pgSQL `FOR` loop); it uses a `PARALLEL UNSAFE` function; it runs inside another parallel query. Even with a parallel plan, no worker may be free at run time.
-- **JIT** compiles expressions and tuple deforming with LLVM. It needs an LLVM build. The decision is by cost: `jit_above_cost` 100000, `jit_inline_above_cost` and `jit_optimize_above_cost` 500000.
+- No parallel plan when: `max_parallel_workers_per_gather` = 0; single-user mode; the query writes or locks rows; the query can be suspended halfway (a cursor, a PL/pgSQL `FOR` loop); it uses a `PARALLEL UNSAFE` function; it runs inside another parallel query. Even with a parallel plan, no worker may be free at run time.
+- JIT compiles expressions and tuple deforming with LLVM. It needs an LLVM build. The decision is by cost: `jit_above_cost` 100000, `jit_inline_above_cost` and `jit_optimize_above_cost` 500000.
 
-**PGlite limits** (measured): a single backend, `max_parallel_workers_per_gather` = 0 and `max_worker_processes` = 0, and setting the first to 2 still gives no `Gather`; `pg_jit_available()` = false even though `jit` = on. Both topics need a real PostgreSQL server for hands-on practice.
+PGlite limits (measured): a single backend, `max_parallel_workers_per_gather` = 0 and `max_worker_processes` = 0, and setting the first to 2 still gives no `Gather`; `pg_jit_available()` = false even though `jit` = on. Both topics need a real PostgreSQL server for hands-on practice.
 
 ## Example
 

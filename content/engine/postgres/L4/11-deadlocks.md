@@ -2,7 +2,8 @@
 id: e-pg-l4-11
 engine: postgres
 level: L4
-module: concurrency
+module: locks
+title: "Deadlock: Postgres phát hiện thế nào và cách phòng"
 title_en: "Deadlocks: how Postgres detects them and how to prevent them"
 kind: concept
 minutes: 12
@@ -15,7 +16,7 @@ sources:
   - https://www.postgresql.org/docs/18/explicit-locking.html
   - https://www.postgresql.org/docs/18/runtime-config-locks.html
   - https://www.postgresql.org/docs/18/errcodes-appendix.html
-viz: lockMatrix
+viz: lock-matrix
 quiz:
   - q: { vi: "Hai job chuyển tiền chạy song song: job 1 chuyển 1 → 2, job 2 chuyển 2 → 1, mỗi job cập nhật tài khoản nguồn trước rồi tài khoản đích. Cách sửa gốc là gì?", en: "Two transfer jobs run in parallel: job 1 moves money 1 → 2, job 2 moves 2 → 1, each updating the source account first, then the destination. What is the root fix?" }
     options:
@@ -42,7 +43,7 @@ quiz:
 
 ## Ví dụ
 
-Diễn từng bước (mô phỏng có giải thích; PGlite chỉ có một phiên nên **không chạy thật** được hai phiên):
+Diễn từng bước (mô phỏng có giải thích; PGlite chỉ có một phiên nên không chạy thật được hai phiên):
 
 ```text
 t1  A: BEGIN; UPDATE acct SET bal = bal - 10 WHERE id = 1;   -- A locks row 1
@@ -61,7 +62,7 @@ Bấm qua từng bước trên sơ đồ hai làn thời gian, rồi trả lời
 
 # EN
 
-## Key ideas
+## Key idea
 
 - A deadlock: A holds lock X and waits for Y; B holds Y and waits for X. Neither can let go. It can happen with row locks, table locks or advisory locks.
 - Postgres detects it on its own: a session that waits on a lock longer than `deadlock_timeout` (default 1s, measured on PGlite: 1000 ms) searches the wait graph. If there is a cycle, one transaction is aborted with `ERROR: deadlock detected` (SQLSTATE 40P01).
@@ -70,7 +71,7 @@ Bấm qua từng bước trên sơ đồ hai làn thời gian, rồi trả lời
 
 ## Example
 
-Step by step (an explained simulation; PGlite has a single session, so two sessions **cannot really run** here):
+Step by step (an explained simulation; PGlite has a single session, so two sessions cannot really run here):
 
 ```text
 t1  A: BEGIN; UPDATE acct SET bal = bal - 10 WHERE id = 1;   -- A locks row 1

@@ -2,7 +2,8 @@
 id: e-pg-l4-02
 engine: postgres
 level: L4
-module: planner
+module: planner-stats
+title: "Thống kê cột: MCV, histogram, correlation"
 title_en: "Column statistics: MCV, histogram, correlation"
 kind: lab
 minutes: 15
@@ -15,7 +16,7 @@ sources:
   - https://www.postgresql.org/docs/18/planner-stats.html
   - https://www.postgresql.org/docs/18/row-estimation-examples.html
   - https://www.postgresql.org/docs/18/view-pg-stats.html
-viz: planTree
+viz: plan-tree
 lab:
   setup: |
     DROP TABLE IF EXISTS parcels;
@@ -55,10 +56,10 @@ predict:
 ## Ý chính
 
 - ANALYZE lấy mẫu tối đa 300 × `default_statistics_target` (100) = 30000 dòng mỗi bảng, rồi ghi vào `pg_statistic`. View dễ đọc là `pg_stats`.
-- **MCV** (`most_common_vals` + `most_common_freqs`): các giá trị gặp nhiều nhất. Với điều kiện bằng một hằng số có trong MCV, số dòng ước lượng = tần suất × `reltuples`.
-- **Histogram** (`histogram_bounds`): các giá trị còn lại chia thành các ô có số dòng bằng nhau. Điều kiện khoảng (`<`, `BETWEEN`) được ước lượng bằng cách đếm phần ô bị cắt.
-- **`n_distinct`**: dương = số giá trị khác nhau; âm = tỉ lệ trên số dòng (-1 = duy nhất).
-- **`correlation`**: thứ tự vật lý trên đĩa khớp với thứ tự giá trị tới đâu (-1..1). Gần ±1: Index Scan theo khoảng đọc trang liền nhau, rẻ; gần 0: mỗi dòng có thể là một trang khác.
+- MCV (`most_common_vals` + `most_common_freqs`): các giá trị gặp nhiều nhất. Với điều kiện bằng một hằng số có trong MCV, số dòng ước lượng = tần suất × `reltuples`.
+- Histogram (`histogram_bounds`): các giá trị còn lại chia thành các ô có số dòng bằng nhau. Điều kiện khoảng (`<`, `BETWEEN`) được ước lượng bằng cách đếm phần ô bị cắt.
+- `n_distinct`: dương = số giá trị khác nhau; âm = tỉ lệ trên số dòng (-1 = duy nhất).
+- `correlation`: thứ tự vật lý trên đĩa khớp với thứ tự giá trị tới đâu (-1..1). Gần ±1: Index Scan theo khoảng đọc trang liền nhau, rẻ; gần 0: mỗi dòng có thể là một trang khác.
 - Cột lệch mạnh hoặc nhiều giá trị: tăng mục tiêu riêng cho cột bằng `ALTER TABLE … ALTER COLUMN … SET STATISTICS`, rồi ANALYZE lại.
 
 ## Ví dụ
@@ -85,13 +86,13 @@ Bitmap Heap Scan on parcels  (cost=5.84..164.18 rows=200 width=26)
 
 # EN
 
-## Key ideas
+## Key idea
 
 - ANALYZE samples up to 300 × `default_statistics_target` (100) = 30000 rows per table and writes the result to `pg_statistic`. The readable view is `pg_stats`.
-- **MCV** (`most_common_vals` + `most_common_freqs`): the most frequent values. For an equality with a constant that is in the MCV list, the estimate is frequency × `reltuples`.
-- **Histogram** (`histogram_bounds`): the remaining values split into buckets with equal row counts. Range conditions (`<`, `BETWEEN`) are estimated by counting the part of the buckets they cover.
-- **`n_distinct`**: positive = number of distinct values; negative = a fraction of the row count (-1 = unique).
-- **`correlation`**: how closely the physical order on disk follows the value order (-1..1). Near ±1, a range Index Scan reads neighbouring pages and is cheap; near 0, each row can be a different page.
+- MCV (`most_common_vals` + `most_common_freqs`): the most frequent values. For an equality with a constant that is in the MCV list, the estimate is frequency × `reltuples`.
+- Histogram (`histogram_bounds`): the remaining values split into buckets with equal row counts. Range conditions (`<`, `BETWEEN`) are estimated by counting the part of the buckets they cover.
+- `n_distinct`: positive = number of distinct values; negative = a fraction of the row count (-1 = unique).
+- `correlation`: how closely the physical order on disk follows the value order (-1..1). Near ±1, a range Index Scan reads neighbouring pages and is cheap; near 0, each row can be a different page.
 - For a skewed column or one with many values, raise its own target with `ALTER TABLE … ALTER COLUMN … SET STATISTICS` and ANALYZE again.
 
 ## Example

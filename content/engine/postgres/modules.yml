@@ -1,0 +1,64 @@
+# PostgreSQL modules in display order. Parser (src/engine/content.ts parseModules) reads id/vi/en;
+# product-design-db-engine.md ADD-1 adds level and after ("Học xong bạn làm được…").
+# L4
+- id: planner-stats
+  level: L4
+  vi: "Planner và thống kê"
+  en: "Planner and statistics"
+  after: { vi: "Tính lại chi phí của một kế hoạch và sửa một ước lượng sai bằng `CREATE STATISTICS`.", en: "Recompute a plan's cost and fix a wrong estimate with `CREATE STATISTICS`." }
+- id: joins
+  level: L4
+  vi: "Thuật toán và thứ tự nối"
+  en: "Join algorithms and join order"
+  after: { vi: "Đọc vì sao planner chọn Hash Join, Nested Loop hay Merge Join, và viết câu đổi được lựa chọn đó.", en: "Read why the planner picks a Hash Join, Nested Loop or Merge Join, and write the query that changes that choice." }
+- id: prepared
+  level: L4
+  vi: "Câu đã chuẩn bị và bộ nhớ đệm kế hoạch"
+  en: "Prepared statements and the plan cache"
+  after: { vi: "Nhận ra một câu đã chuẩn bị chậm vì kế hoạch chung và chọn cách sửa.", en: "Recognise a prepared statement made slow by its generic plan and choose the fix." }
+- id: partitioning
+  level: L4
+  vi: "Phân vùng"
+  en: "Partitioning"
+  after: { vi: "Thiết kế phân vùng và chứng minh pruning bằng `EXPLAIN`.", en: "Design partitions and prove pruning with `EXPLAIN`." }
+- id: locks
+  level: L4
+  vi: "Khóa, mức cô lập và SSI"
+  en: "Locks, isolation and SSI"
+  after: { vi: "Nói trước một lệnh lấy khóa nào và chặn ai, chọn mức cô lập đúng và thử lại khi gặp `40001`.", en: "Say in advance which lock a command takes and whom it blocks, choose the right isolation level and retry on `40001`." }
+- id: parallel-jit
+  level: L4
+  vi: "Truy vấn song song và JIT"
+  en: "Parallel query and JIT"
+  after: { vi: "Đọc `Gather` và `JIT:` trong kế hoạch, và biết khi nào một câu không được chạy song song.", en: "Read `Gather` and `JIT:` in a plan, and know when a query cannot run in parallel." }
+# L5
+- id: index-internals
+  level: L5
+  vi: "Bên trong các loại index"
+  en: "Index internals"
+  after: { vi: "Soi trang index thật (B-tree, GIN, BRIN, GiST), giải thích index phình và chọn đúng loại index.", en: "Inspect real index pages (B-tree, GIN, BRIN, GiST), explain index bloat and choose the right index type." }
+- id: integrity
+  level: L5
+  vi: "Toàn vẹn dữ liệu và WAL"
+  en: "Integrity and WAL"
+  after: { vi: "Kiểm index và heap bằng amcheck, và đo bản ghi WAL full-page sau checkpoint.", en: "Check indexes and heap with amcheck, and measure full-page WAL records after a checkpoint." }
+- id: security
+  level: L5
+  vi: "Bảo mật theo dòng (RLS)"
+  en: "Row-level security"
+  after: { vi: "Viết policy để mỗi khách hàng chỉ thấy dòng của mình, và kiểm nó dưới đúng vai trò.", en: "Write policies so each tenant sees only its own rows, and test them under the right role." }
+- id: observe-tune
+  level: L5
+  vi: "Giám sát và tinh chỉnh"
+  en: "Monitoring and tuning"
+  after: { vi: "Tìm câu tốn nhất bằng `pg_stat_statements` và đề xuất chỉnh bộ nhớ dựa trên kế hoạch thật.", en: "Find the costliest query with `pg_stat_statements` and propose memory tuning from the real plan." }
+- id: replication-ops
+  level: L5
+  vi: "Nhân bản và vận hành"
+  en: "Replication and operations"
+  after: { vi: "Vẽ đường đi của WAL tới standby, đọc slot nhân bản, và chọn chiến lược backup/PITR.", en: "Trace WAL to a standby, read replication slots, and choose a backup/PITR strategy." }
+- id: capstone-l5
+  level: L5
+  vi: "Bài tổng kết L5: bảng sự kiện chậm"
+  en: "L5 capstone: the slow events table"
+  after: { vi: "Chẩn đoán một bảng chậm từ thống kê, kế hoạch, phân vùng, index và RLS, rồi đưa ra kết luận.", en: "Diagnose a slow table from statistics, plans, partitions, indexes and RLS, then reach a conclusion." }

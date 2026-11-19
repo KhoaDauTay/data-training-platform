@@ -3,6 +3,7 @@ id: e-pg-l4-07
 engine: postgres
 level: L4
 module: partitioning
+title: "Phân vùng khai báo và partition pruning"
 title_en: "Declarative partitioning and partition pruning"
 kind: lab
 minutes: 20
@@ -14,7 +15,7 @@ requires: [e-pg-l4-02]
 sources:
   - https://www.postgresql.org/docs/18/ddl-partitioning.html
   - https://www.postgresql.org/docs/18/functions-admin.html
-viz: planTree
+viz: plan-tree
 lab:
   setup: |
     DROP TABLE IF EXISTS events;
@@ -53,11 +54,11 @@ predict:
 ## Ý chính
 
 - Phân vùng khai báo: bảng cha `PARTITION BY RANGE | LIST | HASH`, mỗi phân vùng là một bảng thật với giới hạn riêng. Phân vùng `DEFAULT` nhận mọi dòng không khớp.
-- **Pruning** = bỏ phân vùng không thể chứa dòng khớp. Hai thời điểm:
+- Pruning = bỏ phân vùng không thể chứa dòng khớp. Hai thời điểm:
   - lúc lập kế hoạch: điều kiện là hằng → phân vùng thừa biến mất khỏi kế hoạch;
   - lúc chạy: giá trị đến từ tham số hay truy vấn con → phân vùng vẫn trong kế hoạch, nhưng hiện `(never executed)` hoặc `Subplans Removed: n`.
-- Pruning chỉ dùng điều kiện trên **khóa phân vùng**. Bọc khóa trong hàm (`date_trunc('month', created_on) = …`) thường làm mất pruning; hãy viết điều kiện khoảng.
-- Lợi ích thật của phân vùng thường là **vận hành**: xóa dữ liệu cũ bằng `DETACH`/`DROP` một phân vùng thay vì `DELETE` hàng triệu dòng, VACUUM từng phần nhỏ. Không phải lúc nào cũng nhanh hơn một bảng có index tốt.
+- Pruning chỉ dùng điều kiện trên khóa phân vùng. Bọc khóa trong hàm (`date_trunc('month', created_on) = …`) thường làm mất pruning; hãy viết điều kiện khoảng.
+- Lợi ích thật của phân vùng thường là vận hành: xóa dữ liệu cũ bằng `DETACH`/`DROP` một phân vùng thay vì `DELETE` hàng triệu dòng, VACUUM từng phần nhỏ. Không phải lúc nào cũng nhanh hơn một bảng có index tốt.
 
 ## Ví dụ
 
@@ -85,14 +86,14 @@ Hai câu bị pruning lúc lập kế hoạch và một lần đọc cây phân 
 
 # EN
 
-## Key ideas
+## Key idea
 
 - Declarative partitioning: a parent table `PARTITION BY RANGE | LIST | HASH`, where each partition is a real table with its own bounds. A `DEFAULT` partition takes every row that matches no other.
-- **Pruning** drops partitions that cannot hold matching rows. It happens at two moments:
+- Pruning drops partitions that cannot hold matching rows. It happens at two moments:
   - at plan time: the condition is a constant, so the extra partitions disappear from the plan;
   - at run time: the value comes from a parameter or a sub-query, so the partitions stay in the plan but show `(never executed)` or `Subplans Removed: n`.
-- Pruning only uses conditions on the **partition key**. Wrapping the key in a function (`date_trunc('month', created_on) = …`) usually loses pruning; write a range condition instead.
-- The real benefit of partitioning is often **operational**: drop old data with `DETACH`/`DROP` of one partition instead of a `DELETE` of millions of rows, and VACUUM small pieces. It is not always faster than one well-indexed table.
+- Pruning only uses conditions on the partition key. Wrapping the key in a function (`date_trunc('month', created_on) = …`) usually loses pruning; write a range condition instead.
+- The real benefit of partitioning is often operational: drop old data with `DETACH`/`DROP` of one partition instead of a `DELETE` of millions of rows, and VACUUM small pieces. It is not always faster than one well-indexed table.
 
 ## Example
 

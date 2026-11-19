@@ -2,7 +2,8 @@
 id: e-pg-l4-04
 engine: postgres
 level: L4
-module: planner
+module: joins
+title: "Thuật toán nối: Nested Loop, Hash Join, Merge Join"
 title_en: "Join algorithms: Nested Loop, Hash Join, Merge Join"
 kind: lab
 minutes: 20
@@ -15,7 +16,7 @@ sources:
   - https://www.postgresql.org/docs/18/planner-optimizer.html
   - https://www.postgresql.org/docs/18/using-explain.html
   - https://www.postgresql.org/docs/18/runtime-config-query.html
-viz: planTree
+viz: plan-tree
 lab:
   setup: |
     DROP TABLE IF EXISTS order_notes, orders, customers;
@@ -52,11 +53,9 @@ quiz:
 
 ## Ý chính
 
-| Thuật toán | Cách làm | Thắng khi |
-|---|---|---|
-| Nested Loop | với mỗi dòng phía ngoài, tìm dòng khớp phía trong (thường qua index) | phía ngoài rất ít dòng; điều kiện nối không phải dấu bằng |
-| Hash Join | băm phía nhỏ hơn vào bộ nhớ, quét phía lớn và tra bảng băm | nối bằng dấu bằng trên nhiều dòng, không cần thứ tự |
-| Merge Join | hai phía đã sắp theo khóa nối, đi song song như khóa kéo | cả hai phía có sẵn thứ tự (index) hoặc kết quả cần thứ tự đó |
+- Nested Loop — cách làm: với mỗi dòng phía ngoài, tìm dòng khớp phía trong (thường qua index); thắng khi: phía ngoài rất ít dòng; điều kiện nối không phải dấu bằng
+- Hash Join — cách làm: băm phía nhỏ hơn vào bộ nhớ, quét phía lớn và tra bảng băm; thắng khi: nối bằng dấu bằng trên nhiều dòng, không cần thứ tự
+- Merge Join — cách làm: hai phía đã sắp theo khóa nối, đi song song như khóa kéo; thắng khi: cả hai phía có sẵn thứ tự (index) hoặc kết quả cần thứ tự đó
 
 - Hash Join chỉ dùng cho điều kiện bằng. Bảng băm vượt `work_mem` × `hash_mem_multiplier` (mặc định 4MB × 2) thì chia lô và tràn đĩa (`Batches:` > 1 trong `EXPLAIN ANALYZE`).
 - Trong kế hoạch, nút con đầu tiên là phía ngoài; với Hash Join, nút `Hash` là phía được băm.
@@ -94,13 +93,11 @@ Ba câu, ba thuật toán, cùng dữ liệu. Kỹ năng chuyên gia: đọc m�
 
 # EN
 
-## Key ideas
+## Key idea
 
-| Algorithm | How it works | Wins when |
-|---|---|---|
-| Nested Loop | for each outer row, find matching inner rows (usually through an index) | the outer side has very few rows; the join condition is not an equality |
-| Hash Join | hash the smaller side into memory, scan the larger side and probe the hash table | equality join over many rows, no order needed |
-| Merge Join | both sides sorted on the join key, walked side by side like a zip | both sides are already ordered (index) or the result needs that order |
+- Nested Loop — how it works: for each outer row, find matching inner rows (usually through an index); wins when: the outer side has very few rows; the join condition is not an equality
+- Hash Join — how it works: hash the smaller side into memory, scan the larger side and probe the hash table; wins when: equality join over many rows, no order needed
+- Merge Join — how it works: both sides sorted on the join key, walked side by side like a zip; wins when: both sides are already ordered (index) or the result needs that order
 
 - A Hash Join only works for equality conditions. When the hash table goes over `work_mem` × `hash_mem_multiplier` (default 4MB × 2), it splits into batches and spills to disk (`Batches:` > 1 in `EXPLAIN ANALYZE`).
 - In a plan, the first child node is the outer side; in a Hash Join, the `Hash` node is the side being hashed.

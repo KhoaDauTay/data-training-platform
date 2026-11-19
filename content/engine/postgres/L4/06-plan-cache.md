@@ -2,7 +2,8 @@
 id: e-pg-l4-06
 engine: postgres
 level: L4
-module: planner
+module: prepared
+title: "Câu đã chuẩn bị: kế hoạch chung và kế hoạch riêng"
 title_en: "Prepared statements: generic vs custom plans"
 kind: concept
 minutes: 12
@@ -16,7 +17,7 @@ sources:
   - https://www.postgresql.org/docs/18/runtime-config-query.html
   - https://www.postgresql.org/docs/18/sql-explain.html
   - https://www.postgresql.org/docs/18/view-pg-prepared-statements.html
-viz: planTree
+viz: plan-tree
 quiz:
   - q: { vi: "Ứng dụng gọi `PREPARE` một câu lọc theo trạng thái. 5 lần đầu tham số là 'lost' (1%). Lần thứ 6 trở đi, Postgres làm gì?", en: "An application runs `PREPARE` on a query that filters by status. The first 5 calls pass 'lost' (1%). What does Postgres do from the 6th call on?" }
     options:
@@ -37,9 +38,9 @@ quiz:
 ## Ý chính
 
 - `PREPARE` (và driver dùng giao thức mở rộng) cho phép lập kế hoạch một lần, chạy nhiều lần. Có hai loại kế hoạch:
-  - **custom**: lập lại cho giá trị tham số cụ thể, dùng MCV/histogram của đúng giá trị đó;
-  - **generic**: một kế hoạch cho mọi giá trị, tham số là `$1`, ước lượng theo độ chọn lọc trung bình.
-- Luật mặc định (`plan_cache_mode = auto`): **5 lần đầu** dùng custom; sau đó lập generic, và dùng generic nếu chi phí của nó không cao hơn nhiều so với trung bình 5 lần custom.
+  - custom: lập lại cho giá trị tham số cụ thể, dùng MCV/histogram của đúng giá trị đó;
+  - generic: một kế hoạch cho mọi giá trị, tham số là `$1`, ước lượng theo độ chọn lọc trung bình.
+- Luật mặc định (`plan_cache_mode = auto`): 5 lần đầu dùng custom; sau đó lập generic, và dùng generic nếu chi phí của nó không cao hơn nhiều so với trung bình 5 lần custom.
 - Bẫy: dữ liệu lệch. Generic plan chọn theo "giá trị trung bình" có thể rất tệ cho giá trị phổ biến (70% bảng).
 - Công cụ: `EXPLAIN (GENERIC_PLAN)` (từ 16) cho xem kế hoạch chung của một câu có `$1` mà không cần `PREPARE`; `pg_prepared_statements` đếm `generic_plans`/`custom_plans`; `plan_cache_mode` = `force_custom_plan` hoặc `force_generic_plan`.
 
@@ -75,12 +76,12 @@ Hai câu hỏi tình huống. Kỹ năng chuyên gia: chẩn đoán "câu chạy
 
 # EN
 
-## Key ideas
+## Key idea
 
 - `PREPARE` (and drivers using the extended protocol) lets you plan once and run many times. There are two kinds of plan:
-  - **custom**: re-planned for the concrete parameter value, using the MCV/histogram for that value;
-  - **generic**: one plan for every value, with `$1` as the parameter, estimated from an average selectivity.
-- Default rule (`plan_cache_mode = auto`): the **first 5 runs** use custom plans; then a generic plan is built and used if its cost is not much higher than the average of the 5 custom plans.
+  - custom: re-planned for the concrete parameter value, using the MCV/histogram for that value;
+  - generic: one plan for every value, with `$1` as the parameter, estimated from an average selectivity.
+- Default rule (`plan_cache_mode = auto`): the first 5 runs use custom plans; then a generic plan is built and used if its cost is not much higher than the average of the 5 custom plans.
 - The trap: skewed data. A generic plan chosen for the "average value" can be very bad for a common value (70% of the table).
 - Tools: `EXPLAIN (GENERIC_PLAN)` (since 16) shows the generic plan of a query with `$1` without `PREPARE`; `pg_prepared_statements` counts `generic_plans`/`custom_plans`; `plan_cache_mode` = `force_custom_plan` or `force_generic_plan`.
 

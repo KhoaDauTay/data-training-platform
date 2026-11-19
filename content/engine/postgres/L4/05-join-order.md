@@ -2,7 +2,8 @@
 id: e-pg-l4-05
 engine: postgres
 level: L4
-module: planner
+module: joins
+title: "Thứ tự nối, giới hạn gộp và GEQO"
 title_en: "Join order, collapse limits and GEQO"
 kind: predict
 minutes: 12
@@ -15,7 +16,7 @@ sources:
   - https://www.postgresql.org/docs/18/explicit-joins.html
   - https://www.postgresql.org/docs/18/runtime-config-query.html
   - https://www.postgresql.org/docs/18/geqo.html
-viz: planTree
+viz: plan-tree
 lab:
   setup: |
     DROP TABLE IF EXISTS order_notes, orders, customers;
@@ -53,10 +54,10 @@ quiz:
 
 ## Ý chính
 
-- Với JOIN trong (`INNER JOIN` hoặc dấu phẩy), kết quả không phụ thuộc thứ tự viết, nên planner được phép **sắp lại** và chọn thứ tự rẻ nhất.
+- Với JOIN trong (`INNER JOIN` hoặc dấu phẩy), kết quả không phụ thuộc thứ tự viết, nên planner được phép sắp lại và chọn thứ tự rẻ nhất.
 - Planner làm phẳng các JOIN tường minh thành danh sách để sắp lại, nhưng chỉ tới `join_collapse_limit` (mặc định 8) mục. Truy vấn con trong FROM được kéo lên tới `from_collapse_limit` (8).
 - Đặt `join_collapse_limit = 1` buộc planner theo đúng thứ tự viết. Đây là công cụ cuối cùng khi bạn biết rõ hơn planner, không phải mặc định.
-- Từ `geqo_threshold` (12) mục FROM trở lên, planner dùng **GEQO**, một thuật toán di truyền: nhanh hơn nhưng không bảo đảm tìm ra thứ tự tốt nhất.
+- Từ `geqo_threshold` (12) mục FROM trở lên, planner dùng GEQO, một thuật toán di truyền: nhanh hơn nhưng không bảo đảm tìm ra thứ tự tốt nhất.
 - OUTER JOIN bị ràng buộc hơn: không phải mọi cặp đều đổi chỗ được.
 
 ## Ví dụ
@@ -83,12 +84,12 @@ Aggregate
 
 # EN
 
-## Key ideas
+## Key idea
 
-- For inner JOINs (`INNER JOIN` or commas) the result does not depend on the written order, so the planner may **reorder** them and pick the cheapest order.
+- For inner JOINs (`INNER JOIN` or commas) the result does not depend on the written order, so the planner may reorder them and pick the cheapest order.
 - The planner flattens explicit JOINs into a list it can reorder, but only up to `join_collapse_limit` (default 8) items. Sub-queries in FROM are pulled up to `from_collapse_limit` (8).
 - Setting `join_collapse_limit = 1` forces the written order. It is a last resort for when you know better than the planner, not a default.
-- From `geqo_threshold` (12) FROM items on, the planner uses **GEQO**, a genetic algorithm: faster, but with no guarantee of the best order.
+- From `geqo_threshold` (12) FROM items on, the planner uses GEQO, a genetic algorithm: faster, but with no guarantee of the best order.
 - OUTER JOINs are more constrained: not every pair can swap.
 
 ## Example

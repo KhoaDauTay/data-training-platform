@@ -2,7 +2,8 @@
 id: e-pg-l4-03
 engine: postgres
 level: L4
-module: planner
+module: planner-stats
+title: "Thống kê mở rộng cho các cột tương quan"
 title_en: "Extended statistics for correlated columns"
 kind: lab
 minutes: 15
@@ -15,7 +16,7 @@ sources:
   - https://www.postgresql.org/docs/18/planner-stats.html
   - https://www.postgresql.org/docs/18/sql-createstatistics.html
   - https://www.postgresql.org/docs/18/multivariate-statistics-examples.html
-viz: planTree
+viz: plan-tree
 lab:
   setup: |
     DROP TABLE IF EXISTS addr_plain, addr_stats;
@@ -61,7 +62,7 @@ quiz:
 
 ## Ý chính
 
-- Mặc định planner coi các điều kiện trên các cột khác nhau là **độc lập**: độ chọn lọc của `a = x AND b = y` = sel(a) × sel(b). Với cột tương quan (quận → thành phố, mã bưu điện → tỉnh) kết quả thấp hơn thật nhiều lần.
+- Mặc định planner coi các điều kiện trên các cột khác nhau là độc lập: độ chọn lọc của `a = x AND b = y` = sel(a) × sel(b). Với cột tương quan (quận → thành phố, mã bưu điện → tỉnh) kết quả thấp hơn thật nhiều lần.
 - `CREATE STATISTICS` có ba loại: `dependencies` (phụ thuộc hàm, cho điều kiện bằng), `ndistinct` (số tổ hợp khác nhau, cho GROUP BY), `mcv` (danh sách tổ hợp phổ biến, chính xác nhất cho điều kiện bằng và khoảng). Đối tượng thống kê chỉ có dữ liệu sau ANALYZE.
 - Ước lượng sai ở tầng dưới lan lên trên: số dòng thấp giả tạo làm planner chọn Nested Loop, rồi vòng lặp chạy hàng nghìn lần.
 - Kiểm tra: so `rows=` (ước lượng) với `actual rows` trong `EXPLAIN ANALYZE`. Lệch hơn 10 lần ở một nút lọc là dấu hiệu.
@@ -85,9 +86,9 @@ So ước lượng trước và sau, rồi đọc đối tượng thống kê. K
 
 # EN
 
-## Key ideas
+## Key idea
 
-- By default the planner treats conditions on different columns as **independent**: the selectivity of `a = x AND b = y` is sel(a) × sel(b). For correlated columns (district → city, postcode → province) the result is many times too low.
+- By default the planner treats conditions on different columns as independent: the selectivity of `a = x AND b = y` is sel(a) × sel(b). For correlated columns (district → city, postcode → province) the result is many times too low.
 - `CREATE STATISTICS` has three kinds: `dependencies` (functional dependency, for equality conditions), `ndistinct` (number of distinct combinations, for GROUP BY), `mcv` (list of common combinations, the most precise for equality and range conditions). A statistics object only holds data after ANALYZE.
 - A wrong estimate at the bottom spreads upward: an artificially low row count makes the planner choose a Nested Loop, and the loop then runs thousands of times.
 - Check: compare `rows=` (estimate) with `actual rows` in `EXPLAIN ANALYZE`. More than 10× off at a filter node is the sign.
