@@ -95,3 +95,125 @@ Luồng R trong `roadmap-v22-v30.md` chỉ ghi "việc còn mở của v21". Nă
 - **P1:** U1, U2, U3, E1 (đóng v21 trước, hành động 1).
 - **P2:** U16, U18, U19, U20; lối vào người mới (hành động 3).
 - **Product cần user:** §4.6 (version nối DA ↔ Engine, có thể vượt v30 hoặc cắt Dynamo L4–L5), §4.7 (MongoDB path). Ghi vào dòng L khi user trả lời. Không có trả lời thì giữ `roadmap-v22-v30.md` và áp §4.1–§4.5.
+
+
+## UI/UX
+
+Người viết: UI/UX · 2026-11-20. Chỉ rà soát, không sửa code.
+
+### 0. Bản kiểm và cách chạy
+
+- **Bản kiểm:** bản RC build ở máy từ `main` @ `321e98d` (UX-B L196/L197 và UX-C L195 đã gộp; UX-A chưa có). Không phải site live, vì v21 chưa push (xem phần Product §0). Sau `321e98d`, `main` chỉ thêm commit tài liệu.
+- **Cách chạy:**
+  - `vite build --outDir scratchpad\v21rc-dist`, rồi `vite preview --port 5291 --strictPort`.
+  - Edge headless qua CDP (cổng 9391, hồ sơ riêng), có `Network.setBypassServiceWorker`. Giữa các lượt xóa `localStorage`, `sessionStorage` và IndexedDB.
+  - Save: `tests/fixtures/save-v5.json`. Cho dock thăng tiến dùng thêm save "xong việc 1–4 chương 1".
+  - Đã tắt preview và Edge sau khi chạy.
+- **Matrix:** 165 màn hình. 20 trang ở 1280 sáng/tối, 1024 sáng, 375 sáng, 320 sáng, EN 1280; 11 trang ở 1024 tối, 375 tối, 375 tối + giảm chuyển động, EN 375. Thêm các lượt workspace (chạy, biểu đồ, thứ tự thực thi, ER, Cột, lỗi, nộp sai), dock việc thường và dock thăng tiến (1280/1024/375 + giảm chuyển động), màn chào → phút đầu, Sandbox.
+- **Ảnh và số đo:** `C:\Users\KHOA~1.HUY\AppData\Local\Temp\claude\be8c95d1f89f2452\e927c5e6-22a4-40fa-bff6-3a9e8af9fcbc\scratchpad\v21rc\`. Tên file giữ như `v21ux/` và `v21fixB/` để so trước/sau. Số đo: `audit.jsonl` (tương phản, chữ cắt, vùng chạm, tràn ngang) và `measure.jsonl` (top bar, `#status`, bottom nav, h1/h2). Script: `scratchpad\v21rctool\`.
+- **Chưa chạy axe.** E1 được đo trực tiếp bằng `aria-label`, không qua axe.
+
+**Kết quả chung (tự động):**
+
+- **F1 (tương phản):** 0 cặp chữ dưới 4,5:1 trên cả 165 màn hình, sáng lẫn tối. Màu `--good` đổi toàn cục (U15) không làm hỏng chỗ nào.
+- **I2 (cuộn ngang):** không có ở cỡ nào, kể cả 320.
+- **E2 (top bar):** cao 53 px ở 1024/1280 (VI + EN), 61 px ở 375/320.
+- **A1 (popover neo nút):**
+  - Menu lĩnh vực mở dưới chip: lệch trái 0 px, cách đáy nút 6 px, ở cả 4 cỡ. Riêng 320 lệch −6 px vì bị giữ trong màn.
+  - Menu ⋯: mép phải trùng nút ±4 px, cách đáy nút 8–12 px.
+- **C1 (sidebar đẩy):** mở rộng rail thì `<main>` dời phải 192 px, không có scrim, không cuộn ngang. Đúng ở workspace 1280, workspace 1100, Tổng quan 1100 và `#/learn` 1280.
+- **C2 (hộp thoại):** Hộp thư (modal) đóng khi bấm nền, focus về `#inbox-btn`. Sổ tay (không modal) đóng bằng Esc, focus về nút mở.
+- **Lỗi trang:** 0 `console.error` / exception.
+
+### 1. Đã kiểm: thật sự đã sửa (28/29)
+
+Các mục mà `v21-ux-review.md` (✅ L196, "Đã sửa (L195)") và `v21-e2e-findings.md` (✅ L197, "Đã sửa") ghi là đã sửa. Mỗi mục được kiểm lại bằng phép đo của chính nó, ở cỡ và theme nơi lỗi được tìm ra.
+
+| ID | Kết quả kiểm | Ảnh (`v21rc\`) |
+|---|---|---|
+| U4 | Dòng giá trị xuống dòng, cột Kiểu luôn thấy (E-com `categories` 1280, Logistics `ports` 375). | `p-light-1280-d_ecommerce_data`, `p-light-375-d_logistics_data` |
+| U5 | (a) Biểu đồ cao theo thân tab (thân 299 px, SVG 182 px), trục đủ, nhãn "10 nghìn/15 nghìn" thấy hết. (b) Tab hình đầu tiên nâng panel lên 55 %. (c) Nút "Mở rộng" cho ER/Thứ tự thực thi không làm (L196 không nhận), nên ER vẫn chỉ thấy ~4 dòng của một bảng. | `w-light-1280-chart-bar`, `w-light-1280-er`, `w-light-1280-steps` |
+| U6 | Nhãn "SEA · EXPORT", "AIR · IMPORT"… không trùng. | `w-light-1280-chart-bar` |
+| U7 | Tab Cột một bảng: lưới 2 cột, chip FK cùng dòng với cột. | `w-light-1280-columns`, `w-light-1024-columns` |
+| U8 | Việc 1: chỉ một vạch ngăn giữa "Kết quả" và "Cột". | `firstmin-light-1280` |
+| U9 | Khung bảng ôm bảng (`w-fit`). `SELECT *` 22 cột cuộn trong khung: bảng 1568 px trong khung 1160 px, trang không tràn. | `w-light-1280-run-result`, `w-light-1280-select-star`, `w-light-1024-long-sql` |
+| U10 | Nộp sai lần 2 ở 1280×800: khối đỏ + dòng của Lily nằm trọn trong pane (274–398 trong 114–405). SQL 22 dòng ở 1024×700: nút Chạy và phản hồi đều thấy. | `w-light-1280-wrong-2-sqlpane`, `w-light-1024-long-sql` |
+| U12 | Dải huy hiệu nằm giữa cảnh và bản đồ, nhãn "Đạt đánh giá chương 1", Lily cuối dải, không đè cảnh. | `dock-promo-light-1280-mid/end` |
+| U13 | Pill trạng thái 2 dòng ở góc trời trên phải, câu giải thích thành chú thích dưới cảnh (E-com, Finance, sáng + tối). Khung sau hũ Finance giữ theo L148. | `p-light-1280-d_ecommerce`, `p-dark-1280-d_finance` |
+| U14 | Thang sự nghiệp: hàng 2 dòng (chức danh / "sau đánh giá chương N"), không lệch cột. | `p-light-1280-d_finance` |
+| U15 | 0 cặp dưới 4,5:1 (xem §0). | `audit.jsonl` |
+| U17 | `#/me` 375: 0 `li` rỗng. | — |
+| U21 | Danh sách tuyến một cột, tên cảng không gãy, gợi ý thành câu dưới bản đồ. | `p-light-1280-d_logistics_map` |
+| U22 | Màu chương chỉ ở khung ngoài, ô trong 1 px. Nhãn tự tham chiếu `parent_id` vẫn nằm trên đầu bảng, nhưng L195 đã ghi là chưa làm. | `w-light-1280-er`, `p-light-1280-d_ecommerce_data` |
+| U23 | Khối chào là một thẻ rộng bằng các thẻ dưới. | `p-light-1280-home` |
+| U24 | Phòng phỏng vấn: hàng gọn, một nút chính ("Bắt đầu" của bộ đầu). | `p-light-1280-learn_interview` |
+| U25 | 375 E-com: tiêu đề việc trải hết thẻ. Chương khóa chỉ còn một dòng. | `p-light-375-d_ecommerce` |
+| U27 | Hết dòng "Khi nào dùng" lặp. Phần tô màu code chưa làm (đã ghi ở L195). | `p-light-1280-learn_skill_group_by` |
+| U28 | Còn một dấu ✓ (huy hiệu), nhãn thống nhất. | `p-light-1280-learn` |
+| U29 | Khoảng cách meta và nhịp trong thẻ đều. | `p-light-1280-learn_adv_a2` |
+| U31 | Nguồn thẻ là dòng meta dưới tiêu đề; chân thẻ chỉ còn nhóm nút. | `p-light-1280-d_logistics_dashboard` |
+| U32 | Dock việc thường ở 1280 mở ≥ 3 s, rồi thu thành "Xong: Khách hàng chủ lực 2025", câu đủ ở `title`. | `dock-task-light-1280-mid/end` |
+| U33 | Kỹ năng chưa ôn chỉ còn rãnh, không có mẩu teal. Nhãn dài bị cắt nhưng có `title`. | `p-light-1280-me` |
+| U38 | Lỗi 42703 với `cnt`: không còn câu "nháy đơn". | `w-light-1280-sql-error-sqlpane` |
+| E2 | Sandbox: thêm ` LIMIT 2` sau khi chạy thì hiện dải "SQL đã thay đổi" và Ghim tắt. Xóa đi thì cả hai hết. | `s-light-1280-stale-edit` |
+| E3 | `advLine` có `inline-flex min-h-6` (24 px). Audit vùng chạm ở Finance 375: 0 mục nhỏ. | — |
+| E4 | `#stage` có `role=region`, `aria-label` "Việc vừa xong". | — |
+| E5 | Mở drill từ story rồi Back: `#work` không còn `inert`, gõ vào editor story được. Không bắt được khoảnh khắc đang tải: chunk đã có sẵn trong cache. | `w-light-1280-drill-back` |
+
+### 2. Ghi là đã sửa nhưng còn lỗi (1)
+
+| ID | Mức | Trang/cỡ | Thấy gì | Sửa đề xuất | File nghi |
+|---|---|---|---|---|---|
+| U11 (phần 1024) | P2 | Dock thăng tiến, 1024×700 | 375 đã đạt (dock thu thành dòng, không giao "Bắt đầu chương 2"). Ở 1024, L196 nói "dưới 1280 thu thành dòng", nhưng dock vẫn hiện cả cảnh (480×447) trong ≥ 3 s (`SHOW_MS`). Trong lúc đó nó che nút Chạy, dòng "Đúng rồi!" và nửa phải panel. Cuối cùng mới thu (`mini=true`). Ảnh: `dock-promo-light-1024-mid.png` (so với `v21ux\dock-promo-light-1024-end.png`). | Dưới 1280 mở dock ở dạng thu gọn ngay từ đầu (cảnh xem lại bằng "Xem lại"), như 375. Hoặc kiểm `[data-start-chapter]`, Chạy và `#work [role=status]` trước khi mở cả cảnh. | `src/ui/stage.ts` (`fold`, `SHOW_MS`, chỗ quyết định `mini` theo bề rộng) |
+
+### 3. Còn mở, chưa nhận sửa (chờ UX-A), đo lại trên bản này
+
+Các mục này chưa được ghi là đã sửa, nên không tính là "còn lỗi". Ghi lại để UX-A có số đo mới.
+
+- **U1 (P1):** `#rank` bị cắt ở 1280.
+  - VI: "Junior DA" (nội dung 62 px trong 45 px), "Thực tập sinh DA" (111 px trong 28 hoặc 61 px).
+  - EN: "DA intern".
+  - Gặp trên 11–12 trang mỗi domain. Ảnh: `p-light-1280-d_*`, `en-1280-d_finance`.
+- **U2 (P1):** ở 1024, `#domain-status` "Ch. 2/12 Junior DA" có nội dung 76 px trong 46 px, chip XP đè lên. E-com: 68 px trong 21 px. Ảnh: `p-light-1024-d_logistics*`, `dock-promo-light-1024-mid`.
+- **U3 (P1):** `#bottom-nav` cao 113 px ở 375 và 320 (lưới 4 cột, 5 mục). Mục lĩnh vực rớt xuống hàng 2.
+- **E1 (P1 theo checklist K1):**
+  - `#review-btn`: chữ hiện "Ôn tập 5", `aria-label` "Ôn tập, 5 mục đến hạn".
+  - `#inbox-btn` cũng vậy: "Hộp thư 1" so với "Hộp thư, 1 tin mới".
+- **U16, U18, U19, U36 (P2/P3):** vẫn như cũ.
+  - `#/me`: `h1` 22 px bằng `h2`.
+  - `h1` "Lộ trình" trên mọi trang con.
+  - Rail tô "2" trên `#/learn`, `adv/a2`, `adv/d5`, phòng phỏng vấn.
+  - Phút đầu: dòng đầu tin nhắn bị cắt ở mép trên pane.
+- **U20, U26, U30, U34, U35, U37, U39:** không kiểm lại.
+
+### 4. Lỗi mới
+
+| ID | Mức | Trang / trạng thái | Ảnh (`v21rc\`) | Thấy gì | Sửa đề xuất | File nghi |
+|---|---|---|---|---|---|---|
+| R21-U1 | P2 | Dock việc thường, 1024×700, ngay sau khi nộp đạt | `dock-task-light-1024-mid.png` | Không có chỗ trống ở đáy, nên `clearPin()` đẩy dock (480×246) lên sát top bar (y = 71). Dock che thanh việc, gồm cả nút chính **"Việc tiếp theo →"** (việc kế tiếp, checklist H4), che editor và nút Chạy (đo: `covers: Chạy`). Từ U32 dock mở ≥ 3 s (trước ~1,1 s), nên lần che kéo dài gấp ba. Ở 1280 và 375 không bị. | Khi `clearPin()` không tìm được chỗ trống, hoặc chỗ tìm được giao `#map`/nút Chạy, thì mở dock ở dạng thu gọn ngay. Thêm nút tiếp tục của `#map` và nút Chạy vào danh sách `keep`. Kiểm CDP: dock không giao nút tiếp tục ở 1024×700. | `src/ui/stage.ts` (`clearPin`, `SHOW_MS`) |
+| R21-U2 | P2 | Splitter workspace, 1280×800 | `w-light-1280-split-drag-then-chart.png` | L196 hứa `growPanel` "không ghi đè chiều cao người chơi đặt". Thử: kéo panel xuống 30 % (3× ↓ trên `#split-row`, đã lưu `{row:30}`), rồi mở tab Biểu đồ lần đầu. Panel nhảy lên 55 %, trong khi bản lưu vẫn là 30 %, nên lần tải sau lại là 30. Nguyên nhân: `own` chỉ tính một lần trong `initLayout`. Lỗi phụ (P3): kéo **cột** cũng ghi `row` vào bản lưu, nên từ phiên sau `growPanel` không bao giờ chạy nữa, dù người chơi chưa hề chỉnh chiều cao. | Trong `set(part, v, save)`: khi `part === 'row' && save` thì đặt `own = true`. Chỉ coi `row` là "của người chơi" khi chính nó được kéo, ví dụ lưu thêm cờ `rowSet` hoặc chỉ ghi phần vừa đổi. Thêm test trong `tests/` cho `growPanel` sau khi kéo trong phiên. | `src/ui/splitter.ts` (`initLayout`, `grow`, `set`) |
+| R21-U3 | P2 (checklist D1 xếp P1; ít gặp vì phải đổi cỡ khi menu đang mở) | Menu lĩnh vực, mở ở 1280 rồi thu cửa sổ về 375 | `m-light-375-domain-menu-after-resize.png` | Menu chỉ đặt vị trí lúc mở (`toggle`). Sau khi đổi cỡ, nó nằm ở x = 517–773, ngoài màn 375 (`inView: false`), còn chip đã ở x = 104. Menu ⋯ dùng `inset` cố định bên phải nên không bị. | Nghe `resize`: khi menu đang mở thì tính lại vị trí, hoặc `hidePopover()`. | `src/ui/topbar.ts` (`initTopbar`, khối `domainMenu`) |
+| R21-U4 | P2 (tự hết khi sửa U3) | Dock thu gọn, < 1024 (375/320), sau việc hoặc thăng tiến | `wrapup-dark-375.png`, `dock-task-light-375-end.png` | Dòng dock thu gọn đặt ở `bottom-18` (72 px). Bottom nav hiện cao 113 px (U3), nên dòng dock phủ lên hàng nhãn đầu ("Trang chủ", "Lộ trình", "Luyện SQL", "Tiến bộ") cho tới khi bấm Đóng. Ảnh `v21fixB\wrapup-dark-375.png` cũng có lỗi này, nên lỗi đến từ bản sửa U11. | Sửa U3 (nav ≤ 64 px + safe-area) là đủ. Nếu không, đặt `bottom` của `#stage` theo chiều cao thật của `#bottom-nav` (biến CSS do `topbar.ts` ghi). Kiểm: rect `#stage` không giao `#bottom-nav` ở 320/375. | `index.html` (`#stage` `max-lg:bottom-18`), `src/style.css` |
+| R21-U5 | P3 | Workspace 375, nộp sai lần 2 | `w-light-375-wrong-2-sqlpane.png` | Khối phản hồi đỏ bắt đầu ở y = 584. Bottom nav 2 hàng (từ y = 627) che gần hết khối. Đây là hệ quả của U3; U10 chỉ kiểm ở 1280/1024. | Sửa U3. Thêm `scroll-margin-bottom` bằng chiều cao nav cho `#work [role=status]` khi tự cuộn. | `src/ui/work.ts`, `src/style.css` |
+| R21-U6 | P2 (lỗi cũ, chưa có trong `v21-ux-review.md`; checklist G1) | Số trên nút "Ôn tập" theo domain | `p-light-1280-d_ecommerce.png`, `p-light-1280-home.png` | Cùng một save: Trang chủ và Logistics ghi "Ôn tập 5" / "Ôn hôm nay (5)", E-com và Finance ghi "Ôn tập 2". `reviewSkills()` lấy kỹ năng từ `app.tickets` (domain đang mở), trong khi hàng ôn là General (`lab`), không thuộc domain. Có cả ở `v21ux\`, nên không do bản sửa gây ra. | Đếm theo mọi kỹ năng đã học: `knownSkills` của General cộng thẻ ôn, không phụ thuộc domain đang mở. Hoặc ghi rõ phạm vi. | `src/session.ts` (`reviewSkills`, `reviewCount`) |
+
+**Đếm lỗi mới:** P1 = 0 · P2 = 5 (R21-U1, U2, U3, U4, U6) · P3 = 1 (R21-U5).
+
+### 5. Đưa vào v22 (luồng R)
+
+- **Trước khi tag v21:** UX-A (U1, U2, U3, E1).
+  - U3 cũng xóa R21-U4 và R21-U5.
+- **P2, nên gộp vào UX-A** (nhỏ, cùng file với việc đang làm):
+  - R21-U1 + U11 phần 1024: một quy tắc trong `stage.ts`, dưới 1280 dock mở ở dạng thu gọn.
+  - R21-U2 (`splitter.ts`, kèm test).
+  - R21-U3 (`topbar.ts`).
+- **Cho v22:**
+  - R21-U6 (số ôn theo domain).
+  - U5(c): nút "Mở rộng" cho ER/Thứ tự thực thi.
+  - Nhãn tự tham chiếu của ER.
+  - Các P2/P3 còn mở của `v21-ux-review.md`.
+- **Đưa vào `scripts/ux-audit.mjs`** (v22, rẻ, bắt được đúng các lỗi trên):
+  - dock không giao nút tiếp tục / Chạy / `[data-start-chapter]` / `#bottom-nav` ở 1024 và 375;
+  - popover vẫn nằm trong viewport sau `resize`;
+  - `--row` không đổi khi mở tab hình sau khi kéo panel;
+  - số trên `#review-btn` bằng nhau giữa các domain.
