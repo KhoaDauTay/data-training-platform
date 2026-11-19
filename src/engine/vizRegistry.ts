@@ -1,5 +1,5 @@
 /**
- * ENG-CORE (L218): diagrams named by a lesson's `viz:` frontmatter. ENG-VIZ fills VIZ with one lazy import per diagram
+ * ENG-CORE (L221): diagrams named by a lesson's `viz:` frontmatter. ENG-VIZ fills VIZ with one lazy import per diagram
  * (src/engine/viz/**), e.g. `'btree-split': () => import('./viz/btreeSplit').then((m) => m.mount)`.
  *
  * Contract: `mount` draws into an empty `host` once and returns a cleanup (stop timelines, drop listeners). The page keeps

@@ -4,7 +4,7 @@ import { activeDomain, isLiveDomain, type DomainId } from './domains';
  * Hash routes without a framework (product-design-v5 §B.3, v6 §3.3). Practice runs and the Sandbox stay session modes
  * inside 'play' (Plan 7 V5); every reading page (home, learn, practice, overview, map) is drawn in <main id="home">.
  */
-export const ROUTES = ['home', 'learn', 'practice', 'overview', 'play', 'data', 'dashboard', 'map', 'me', 'engine'] as const; // v16 (L142): 'me' = #/me, My progress; ENG-CORE (L217): 'engine' = #/engine…
+export const ROUTES = ['home', 'learn', 'practice', 'overview', 'play', 'data', 'dashboard', 'map', 'me', 'engine'] as const; // v16 (L142): 'me' = #/me, My progress; ENG-CORE (L220): 'engine' = #/engine…
 // v14 T5 (v9 D-F8): 'soon' (the "Coming soon" page) is gone; a remembered 'soon' reads as home (isRoute). A fourth domain gets it back from git.
 export type Route = (typeof ROUTES)[number];
 
@@ -101,7 +101,7 @@ export const learnSkillOf = (hash: string): string | undefined => /^#\/?learn\/s
 export const learnAdvOf = (hash: string): string | undefined => /^#\/?learn\/adv\/([a-z0-9_]+)(?=$|[/?])/i.exec(hash)?.[1].toLowerCase(); // #/learn/adv/A1 = a1 (L93): pages print ids in capitals
 
 /**
- * ENG-CORE (L217): `#/engine/<engine>[/<level>/<lesson id>]` → its parts; kept forever. Only known engine names, `L1`–`L5`
+ * ENG-CORE (L220): `#/engine/<engine>[/<level>/<lesson id>]` → its parts; kept forever. Only known engine names, `L1`–`L5`
  * (either case) and lesson ids `e-…` pass; anything else is dropped (the page falls back to the engine or the overview).
  */
 export function engineRouteOf(hash: string): { engine?: string; level?: string; lesson?: string } {

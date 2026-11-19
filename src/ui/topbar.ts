@@ -30,7 +30,7 @@ export interface NavItem {
   current(route: Route): boolean;
   /** Optional action instead of plain hash navigation (e.g. enter a mode, then go('play')). */
   onclick?: () => void;
-  /** ENG-CORE (L217, design D-E1): not in the 5-slot mobile bottom bar; there that item (by id) stands for it and is current for it too. */
+  /** ENG-CORE (L220, design D-E1): not in the 5-slot mobile bottom bar; there that item (by id) stands for it and is current for it too. */
   mergeInto?: string;
 }
 const NAV: NavItem[] = [];

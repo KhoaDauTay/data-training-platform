@@ -1,7 +1,7 @@
 import type { Lang, Params } from './index';
 
 /**
- * ENG-CORE (L217): UI text of the Database Engine area. It lives in the lazy engine UI chunk, not in vi.ts/en.ts (main
+ * ENG-CORE (L220): UI text of the Database Engine area. It lives in the lazy engine UI chunk, not in vi.ts/en.ts (main
  * bundle). Same rules as the main dictionary: placeholders match, EN differs from VI (tests/i18n.test.ts, ENGINE_SAME).
  * Engine names (PostgreSQL, MongoDB, DynamoDB) are proper names and are not here. No value import from main modules.
  */

@@ -15,7 +15,7 @@ import { registerNav } from './topbar';
 import { runOn, verdictText } from './tryPreview';
 
 /**
- * ENG-CORE (L217): the Database Engine area's main-bundle part: the nav item, the #/engine page section, the sidebar rows,
+ * ENG-CORE (L220): the Database Engine area's main-bundle part: the nav item, the #/engine page section, the sidebar rows,
  * the #/me block and the mobile SQL | Engine switch. Everything else (pages, lesson viewer, graders, VI/EN text, content) is
  * the lazy engineView chunk plus one source chunk per engine, handed every main value here (Plan 6 U3, like ui/meChunk.ts).
  */

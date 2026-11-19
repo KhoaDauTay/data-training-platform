@@ -132,7 +132,7 @@ export const DRILL_ID = /^g-[a-z0-9-]+$/;
  */
 export const INTERVIEW_ID = /^g-iv-/;
 /**
- * ENG-CORE (L217): Database Engine lessons (`e-pg-l1-01`, `e-mg-…`, `e-dy-…`) live in `completed` only, kept by pattern
+ * ENG-CORE (L220): Database Engine lessons (`e-pg-l1-01`, `e-mg-…`, `e-dy-…`) live in `completed` only, kept by pattern
  * (no SAVE_VERSION bump). Loose on purpose: a later id shape must survive a read; tests/engineContent.test.ts holds the
  * exact shape. Never a ticket, so no chapter, rank, Lily stage or "tasks done" count reads them.
  */

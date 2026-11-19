@@ -1,5 +1,5 @@
 /**
- * ENG-CORE (L217): Database Engine lessons, schema ENGINE-CONTENT-V1. Pure: no DOM, no value import from main modules (the
+ * ENG-CORE (L220): Database Engine lessons, schema ENGINE-CONTENT-V1. Pure: no DOM, no value import from main modules (the
  * engine UI chunk imports this; a value import of a main module would split main, Plan 6 U3). The YAML parser comes in as an
  * argument for the same reason (`yaml` lives in main).
  *
@@ -220,7 +220,7 @@ export const partsOf = (l: EngineLesson): string[] =>
   [...(l.quiz ?? []).map((_, i) => `q${i}`), ...(l.predict ? ['p'] : []), ...(l.lab?.steps ?? []).map((_, i) => `s${i}`)];
 export const lessonPassed = (l: EngineLesson, passed: ReadonlySet<string>): boolean => partsOf(l).every((p) => passed.has(p));
 
-/** XP on the first completion only (L217): concept/quiz/predict 5, lab 10 (like a General drill), capstone 20 (like a challenge). */
+/** XP on the first completion only (L220): concept/quiz/predict 5, lab 10 (like a General drill), capstone 20 (like a challenge). */
 export const ENGINE_XP: Record<Kind, number> = { concept: 5, quiz: 5, predict: 5, lab: 10, capstone: 20 };
 export const engineXp = (l: EngineLesson, done: boolean): number => (done ? 0 : ENGINE_XP[l.kind]);
 

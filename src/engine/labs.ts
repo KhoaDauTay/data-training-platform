@@ -3,7 +3,7 @@ import type { GradeResult } from '../grader';
 import type { EngineId, Lab, LabStep } from './content';
 
 /**
- * ENG-CORE (L218): the seam every engine's lab runtime plugs into. The lesson page (src/ui/engineView.ts) calls `prepare`
+ * ENG-CORE (L221): the seam every engine's lab runtime plugs into. The lesson page (src/ui/engineView.ts) calls `prepare`
  * once per lesson visit, then `run` (show the player's result, never graded) and `check` (grade one lab step).
  * Runners are loaded lazily through LAB_RUNNERS; ENG-PGLAB replaces `postgres` (setup, extensions, plan/catalog checks),
  * MONGO adds `mongodb` (src/engine/mongo/**), the DynamoDB track adds `dynamodb`. Same rule as every lazy chunk: a runner

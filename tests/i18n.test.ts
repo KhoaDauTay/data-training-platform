@@ -155,7 +155,7 @@ describe('chữ UI phần Chung (src/i18n/learn.ts, Plan 8a D8a-13)', () => {
   });
 });
 
-describe('chữ UI khu Database Engine (src/i18n/engine.ts, ENG-CORE L217)', () => {
+describe('chữ UI khu Database Engine (src/i18n/engine.ts, ENG-CORE L220)', () => {
   it('placeholder khớp, EN khác VI, không giọng game, không "sắp có"', async () => {
     const { ENGINE_DICT } = await import('../src/i18n/engine');
     for (const [k, v] of Object.entries(ENGINE_DICT.vi)) {

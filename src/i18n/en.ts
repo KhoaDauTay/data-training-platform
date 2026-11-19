@@ -118,7 +118,7 @@ export const en: Record<Key, Msg> = {
   'voice.values': 'The row count is right but some values are off. Could you check the calculation?',
   'voice.rowsAndValues': 'Both the row count and some values are off. Could you check the filters?',
   'nav.practice': 'Practise SQL',
-  'nav.engine': 'Database Engine', // ENG-CORE (L217): a proper name in both languages (SAME_OK)
+  'nav.engine': 'Database Engine', // ENG-CORE (L220): a proper name in both languages (SAME_OK)
   'engine.loading': 'Opening the Database Engine area…',
   'engine.failed': 'Could not load the Database Engine area. Check your connection, then try again.',
   'engine.switch': 'Choose what to learn',

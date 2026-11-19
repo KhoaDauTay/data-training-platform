@@ -135,7 +135,7 @@ function domainSwitch(): HTMLElement {
     })));
 }
 
-/** ENG-CORE (L217): a reading page outside the domains fills its own sidebar rows (the Database Engine area: levels, modules). */
+/** ENG-CORE (L220): a reading page outside the domains fills its own sidebar rows (the Database Engine area: levels, modules). */
 export type SideFill = (ui: { row: (r: Row) => HTMLElement; group: (text: string) => HTMLElement }) => (Node | null)[];
 const pageSide: Partial<Record<Route, SideFill>> = {};
 export const registerSide = (route: Route, fill: SideFill): void => void (pageSide[route] = fill);

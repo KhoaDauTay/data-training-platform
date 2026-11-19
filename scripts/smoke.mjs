@@ -51,7 +51,7 @@ const TICKETS = {
 const drills = parseYaml(readFileSync(join(ROOT, 'content/general/sql.yml'), 'utf8'));
 const DRILL = drills.find((d) => d.kind === 'open'); // an open drill: no ___ starter to fill
 const LESSON = parseYaml(readFileSync(join(ROOT, 'content/lessons.yml'), 'utf8')).find((l) => l.id === TICKETS.logistics.grants[0]);
-// ENG-CORE (L217): a Database Engine lab lesson; its step solutions are read from the file.
+// ENG-CORE (L220): a Database Engine lab lesson; its step solutions are read from the file.
 const ENGINE_LAB = { id: 'e-pg-l1-02', hash: '#/engine/postgres/L1/e-pg-l1-02',
   steps: parseYaml(/^---\r?\n([\s\S]*?)\r?\n---/.exec(readFileSync(join(ROOT, 'content/engine/postgres/L1/02-read-column-types.md'), 'utf8'))[1]).lab.steps.map((x) => x.solution) };
 
