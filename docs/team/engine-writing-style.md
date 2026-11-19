@@ -50,7 +50,7 @@ Mỗi mục trong `content/engine/glossary.yml` có `keep_en`, `vi_term` và `av
 | `keep_en` | Lần đầu trong bài (VI) | Các lần sau (VI) | EN |
 |---|---|---|---|
 | `false` | `vi_term (term)`, ví dụ "trang (page)", "khóa phân vùng (partition key)" | `vi_term` | `term` |
-| `true` | `term`, kèm một câu giải thích ngay sau. Có thể thêm "(từ Việt)" khi giúp hiểu, ví dụ "index (chỉ mục)" | `term` | `term` |
+| `true` | `vi_term`, kèm một câu giải thích ngay sau. Có thể thêm "(từ Việt)" khi giúp hiểu, ví dụ "index (chỉ mục)", "partition key (khóa phân vùng)" | `vi_term` (chữ Anh, đôi khi kèm từ Việt: "index nhiều cột", "luật ESR") | `term` |
 
 - **Lần đầu** tính theo từng bài (mỗi file `.md`), không theo mô-đun. Người học có thể mở bài giữa chừng.
 - **Không bao giờ dùng chữ ở cột `avoid`.**
@@ -60,7 +60,7 @@ Mỗi mục trong `content/engine/glossary.yml` có `keep_en`, `vi_term` và `av
 
 1. **"khóa" chỉ là key.** Lock giữ tiếng Anh: "lock", "row lock", "advisory lock", "deadlock". Viết "giữ lock", "chờ lock", không viết "khóa dòng".
 2. **"tài liệu" chỉ là document của MongoDB.** Documentation viết là "docs chính thức". Nhãn bài không chạy là "Sơ đồ" (§4), không phải "tài liệu".
-3. **"phân vùng"** luôn kèm ngữ cảnh lần đầu: Postgres "bảng phân vùng (partitioned table)"; DynamoDB "phân vùng (partition)" là đơn vị lưu trữ vật lý. `PARTITION BY` của hàm cửa sổ không phải phân vùng.
+3. **"phân vùng" chỉ dùng cho Postgres:** "bảng phân vùng (partitioned table)". DynamoDB giữ tiếng Anh "partition", "partition key", "sort key", như các bài DynamoDB đã viết; lần đầu viết "partition (phân vùng vật lý)", "partition key (khóa phân vùng)", "sort key (khóa sắp xếp)". `PARTITION BY` của hàm cửa sổ không phải phân vùng.
 4. **Engine giữ chữ "index"**, lần đầu viết "index (chỉ mục)". Lý do: tên loại index (GIN, BRIN), tên nút (`Index Scan`), stage (`IXSCAN`) đều là tiếng Anh. Khu SQL/General vẫn dùng "chỉ mục" theo `glossary-vi.md`. Không trộn hai cách trong một bài.
 
 Thêm:
@@ -108,7 +108,12 @@ Thêm:
 
 ## 4. Nhãn trung thực về runtime
 
-Dùng **nguyên văn** bảng nhãn của product design §3.6. Không tạo nhãn mới.
+**Trường `runtime` trong frontmatter** (các bài đã viết dùng, parser V1 chưa đọc):
+
+- `runtime: browser` chỉ khi mọi bước chấm chạy thật trên PGlite, mingo hoặc dynoxide.
+- Còn lại là `runtime: docs`: sơ đồ, quiz, explain/output ghi sẵn, hoặc trích từ docs chính thức. Không ghi `browser` cho bài chỉ có một bước chạy và phần dạy chính là sơ đồ.
+
+Nhãn hiện trên trang dùng **nguyên văn** bảng của product design §3.6. Không tạo nhãn mới.
 
 | Nhãn | Khi nào |
 |---|---|
@@ -129,6 +134,7 @@ Dùng **nguyên văn** bảng nhãn của product design §3.6. Không tạo nh�
 
   Các phần này viết "trên server thật, kết quả là…" và trích output `recorded`.
 - Câu chấm theo luật, không theo server, ghi rõ: "chấm theo luật ESR, không phải `mongod`".
+- **Output trích từ docs chính thức** (không chạy, không ghi từ server của nhóm) thì nói đúng như vậy ngay trước khối output: "Ví dụ trong docs chính thức của <engine> (chưa chạy trong trình duyệt):" / "Example from the official <engine> docs (not run in the browser):". Thêm URL trang đó vào `sources:`. Không gắn nhãn "Kết quả ghi từ…" cho output loại này.
 - Bài dựa trên số đo của knowledge doc thì ghi phiên bản đã đo (PGlite 0.5.16 = PostgreSQL 18.6).
 
 ---

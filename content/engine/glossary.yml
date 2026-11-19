@@ -18,8 +18,9 @@
 #   1. "khóa" chỉ là KEY (khóa chính, khóa phân vùng, khóa sắp xếp, khóa index). LOCK giữ tiếng Anh: lock, row lock,
 #      advisory lock, deadlock. Không bao giờ viết "khóa" cho lock.
 #   2. "tài liệu" chỉ là DOCUMENT của MongoDB. Documentation viết "docs chính thức"; nhãn bài D là "Sơ đồ" (§3.6 product design).
-#   3. "phân vùng" có hai nghĩa, luôn đi kèm ngữ cảnh: Postgres "bảng phân vùng (partitioned table)" / "phân vùng con (partition)";
-#      DynamoDB "phân vùng (partition)" = đơn vị lưu trữ vật lý. PARTITION BY của hàm cửa sổ là "nhóm cửa sổ" (General), không phải phân vùng.
+#   3. "phân vùng" chỉ dùng cho Postgres: "bảng phân vùng (partitioned table)" / "phân vùng con (partition)". DynamoDB giữ tiếng Anh
+#      "partition", "partition key", "sort key" (lần đầu: "partition (phân vùng vật lý)", "partition key (khóa phân vùng)"), như các
+#      bài DynamoDB đã viết. PARTITION BY của hàm cửa sổ là "nhóm cửa sổ" (General), không phải phân vùng.
 #   4. index: khu Engine giữ chữ "index" (tên loại index, tên nút kế hoạch, stage explain đều là tiếng Anh). Lần đầu viết
 #      "index (chỉ mục)". Khu SQL/General vẫn theo glossary-vi.md ("chỉ mục"). Hai cách đã được tách theo khu, không trộn trong một bài.
 #   Ngoài ra: "transaction" giữ tiếng Anh (Finance đã dùng "giao dịch" cho giao dịch tiền); "dòng" = row, không dùng "hàng".
@@ -442,13 +443,13 @@
   en: "Multiversion Concurrency Control: each write creates a new version instead of changing in place, so reads do not block writes. Postgres keeps old versions in the heap itself."
   doc: "https://www.postgresql.org/docs/18/mvcc-intro.html"
 - term: snapshot
-  engines: [postgres, mongodb, dynamodb]
+  engines: [postgres, mongodb]
   level: L3
   keep_en: true
   vi_term: "snapshot"
   avoid: "ảnh chụp màn hình"
-  vi: "Postgres/WiredTiger: tập transaction được coi là đã commit lúc câu (hoặc transaction) bắt đầu, quyết định tuple nào thấy được. MongoDB còn có read concern `snapshot`. DynamoDB dùng chữ này cho bản backup. Nói rõ nghĩa nào."
-  en: "Postgres/WiredTiger: the set of transactions treated as committed when a statement (or transaction) starts, deciding which tuples are visible. MongoDB also has read concern `snapshot`. DynamoDB uses the word for a backup. Say which one."
+  vi: "Postgres/WiredTiger: tập transaction được coi là đã commit lúc câu (hoặc transaction) bắt đầu, quyết định tuple nào thấy được. MongoDB còn có read concern `snapshot`. Nói rõ nghĩa nào."
+  en: "Postgres/WiredTiger: the set of transactions treated as committed when a statement (or transaction) starts, deciding which tuples are visible. MongoDB also has read concern `snapshot`. Say which one."
   doc: "https://www.postgresql.org/docs/18/mvcc-intro.html"
 - term: xmin / xmax
   engines: [postgres]
@@ -492,7 +493,7 @@
   keep_en: true
   vi_term: "VACUUM"
   avoid: "hút bụi, dọn sạch dung lượng"
-  vi: "Dọn dead tuple để chỗ trống được dùng lại, cập nhật visibility map và freeze. Không trả dung lượng cho hệ điều hành, trừ các trang trống ở cuối bảng; muốn bảng nhỏ lại thì `VACUUM FULL` (khóa ACCESS EXCLUSIVE). Không chạy được trong transaction (SQLSTATE 25001)."
+  vi: "Dọn dead tuple để chỗ trống được dùng lại, cập nhật visibility map và freeze. Không trả dung lượng cho hệ điều hành, trừ các trang trống ở cuối bảng; muốn bảng nhỏ lại thì `VACUUM FULL` (lock ACCESS EXCLUSIVE). Không chạy được trong transaction (SQLSTATE 25001)."
   en: "Removes dead tuples so the space can be reused, updates the visibility map and freezes. It does not return space to the OS, except empty pages at the end of the table; to shrink a table use `VACUUM FULL` (ACCESS EXCLUSIVE lock). It cannot run inside a transaction (SQLSTATE 25001)."
   doc: "https://www.postgresql.org/docs/18/routine-vacuuming.html"
 - term: autovacuum
@@ -573,8 +574,8 @@
   keep_en: true
   vi_term: "checkpoint"
   avoid: "trạm kiểm soát, điểm lưu game"
-  vi: "Postgres: ghi mọi trang bẩn xuống đĩa để REDO bắt đầu từ đây (`checkpoint_timeout` 5 min, `max_wal_size` 1 GB mặc định). WiredTiger: snapshot bền ghi khoảng mỗi 60 giây."
-  en: "Postgres: flushes all dirty pages so REDO can start from here (defaults `checkpoint_timeout` 5 min, `max_wal_size` 1 GB). WiredTiger: a durable snapshot written about every 60 seconds."
+  vi: "Postgres: ghi mọi trang bẩn xuống đĩa để REDO bắt đầu từ đây (mặc định `checkpoint_timeout` 5 phút, `max_wal_size` 1 GB). WiredTiger: snapshot bền ghi khoảng mỗi 60 giây."
+  en: "Postgres: flushes all dirty pages so REDO can start from here (defaults: `checkpoint_timeout` 5 minutes, `max_wal_size` 1 GB). WiredTiger: a durable snapshot written about every 60 seconds."
   doc: "https://www.postgresql.org/docs/18/wal-configuration.html"
 - term: full-page write (FPI)
   engines: [postgres]
@@ -609,8 +610,8 @@
   keep_en: true
   vi_term: "`work_mem`"
   avoid: "bộ nhớ làm việc của cả máy"
-  vi: "Bộ nhớ cho mỗi thao tác sort/hash (mặc định 4MB). Vượt thì tràn ra đĩa: `Sort Method: external merge Disk: …`."
-  en: "Memory per sort/hash operation (default 4MB). Above it the operation spills to disk: `Sort Method: external merge Disk: …`."
+  vi: "Bộ nhớ cho mỗi thao tác sort/hash (mặc định 4 MB). Vượt thì tràn ra đĩa: `Sort Method: external merge Disk: …`."
+  en: "Memory per sort/hash operation (default 4 MB). Above it the operation spills to disk: `Sort Method: external merge Disk: …`."
   doc: "https://www.postgresql.org/docs/18/runtime-config-resource.html"
 - term: spill to disk
   engines: [postgres, mongodb]
@@ -791,7 +792,7 @@
   keep_en: true
   vi_term: "row lock"
   avoid: "khóa hàng"
-  vi: "Lock trên từng dòng (`FOR UPDATE`, `FOR NO KEY UPDATE`, `FOR SHARE`, `FOR KEY SHARE`); chờ khóa cần hai phiên nên trong game là bài D."
+  vi: "Lock trên từng dòng (`FOR UPDATE`, `FOR NO KEY UPDATE`, `FOR SHARE`, `FOR KEY SHARE`); chờ lock cần hai phiên nên trong game là bài D."
   en: "A lock on single rows (`FOR UPDATE`, `FOR NO KEY UPDATE`, `FOR SHARE`, `FOR KEY SHARE`); waiting needs two sessions, so in the game it is a D lesson."
   doc: "https://www.postgresql.org/docs/18/explicit-locking.html"
 - term: advisory lock
@@ -1466,19 +1467,19 @@
 - term: partition key
   engines: [dynamodb]
   level: L1
-  keep_en: false
-  vi_term: "khóa phân vùng"
-  avoid: "hash key (tên cũ, chỉ nhắc một lần), khóa ngoại"
-  vi: "Thuộc tính khóa được băm để chọn phân vùng lưu item. Query luôn cần đúng một giá trị partition key. 1–2048 byte."
+  keep_en: true
+  vi_term: "partition key"
+  avoid: "hash key (tên cũ, chỉ nhắc một lần), khóa ngoại, phân vùng của Postgres"
+  vi: "Thuộc tính khóa được băm để chọn partition lưu item. Lần đầu viết \"partition key (khóa phân vùng)\". Query luôn cần đúng một giá trị partition key. 1–2048 byte."
   en: "The key attribute that is hashed to pick the partition storing the item. A Query always needs exactly one partition key value. 1–2048 bytes."
   doc: "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.Partitions.html"
 - term: sort key
   engines: [dynamodb]
   level: L1
-  keep_en: false
-  vi_term: "khóa sắp xếp"
+  keep_en: true
+  vi_term: "sort key"
   avoid: "range key (tên cũ, chỉ nhắc một lần), khóa thứ tự bảng"
-  vi: "Phần thứ hai của khóa kép; item cùng partition key được lưu theo thứ tự sort key, nên Query lọc được bằng `begins_with`, `between`, `<`… 1–1024 byte."
+  vi: "Phần thứ hai của khóa kép (lần đầu: \"sort key (khóa sắp xếp)\"); item cùng partition key được lưu theo thứ tự sort key, nên Query lọc được bằng `begins_with`, `between`, `<`… 1–1024 byte."
   en: "The second part of a composite key; items with the same partition key are stored in sort key order, so a Query can use `begins_with`, `between`, `<`… 1–1024 bytes."
   doc: "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-sort-keys.html"
 - term: simple / composite primary key
@@ -1493,10 +1494,10 @@
 - term: partition (DynamoDB)
   engines: [dynamodb]
   level: L1
-  keep_en: false
-  vi_term: "phân vùng"
-  avoid: "partition của Postgres (bảng con logic)"
-  vi: "Đơn vị lưu trữ vật lý do AWS quản lý. Mỗi phân vùng chịu tối đa 3000 đơn vị đọc và 1000 đơn vị ghi mỗi giây; vượt thì bị throttle."
+  keep_en: true
+  vi_term: "partition"
+  avoid: "phân vùng (dành cho bảng phân vùng Postgres), phân vùng ổ đĩa"
+  vi: "Đơn vị lưu trữ vật lý do AWS quản lý; lần đầu viết \"partition (phân vùng vật lý)\". Mỗi partition chịu tối đa 3000 đơn vị đọc và 1000 đơn vị ghi mỗi giây; vượt thì bị throttle."
   en: "A physical storage unit managed by AWS. Each partition handles at most 3000 read units and 1000 write units per second; beyond that requests are throttled."
   doc: "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.Partitions.html"
 - term: item collection
@@ -1743,7 +1744,7 @@
   keep_en: true
   vi_term: "hot partition"
   avoid: "phân vùng bị nóng máy"
-  vi: "Một giá trị partition key nhận quá nhiều request, dồn tải vào một phân vùng và bị throttle dù cả bảng còn dư capacity."
+  vi: "Một giá trị partition key nhận quá nhiều request, dồn tải vào một partition và bị throttle dù cả bảng còn dư capacity."
   en: "One partition key value gets too many requests, concentrating load on one partition, which is throttled even though the table has spare capacity."
   doc: "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-partition-key-design.html"
 - term: throttling
@@ -1761,7 +1762,7 @@
   keep_en: true
   vi_term: "adaptive capacity / burst capacity"
   avoid: "dung lượng thông minh"
-  vi: "Adaptive: tự dồn capacity cho phân vùng nóng và cô lập item nóng. Burst: giữ capacity chưa dùng tới 300 giây để tiêu khi có đỉnh."
+  vi: "Adaptive: tự dồn capacity cho partition nóng và cô lập item nóng. Burst: giữ capacity chưa dùng tới 300 giây để tiêu khi có đỉnh."
   en: "Adaptive: shifts capacity to hot partitions and isolates hot items. Burst: keeps up to 300 seconds of unused capacity for spikes."
   doc: "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/burst-adaptive-capacity.html"
 - term: write sharding
@@ -1770,7 +1771,7 @@
   keep_en: true
   vi_term: "write sharding"
   avoid: "sharding của MongoDB"
-  vi: "Thêm hậu tố (ngẫu nhiên hoặc tính được) vào partition key để rải ghi ra nhiều phân vùng. Giá: đọc phải Query đủ mọi hậu tố rồi gộp."
+  vi: "Thêm hậu tố (ngẫu nhiên hoặc tính được) vào partition key để rải ghi ra nhiều partition. Giá: đọc phải Query đủ mọi hậu tố rồi gộp."
   en: "Adding a suffix (random or calculated) to the partition key to spread writes over partitions. The price: reads must Query every suffix and merge."
   doc: "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-partition-key-sharding.html"
 - term: capacity mode (on-demand / provisioned)
