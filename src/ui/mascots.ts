@@ -13,7 +13,7 @@ export type Pose = (typeof POSES)[number];
  * v6 M1: a pose is a recipe of sprite parts (<g id="<mascot>-<part>"> in index.html's #mascot-sprite), painted in this order
  * (tests/mascots.test.ts). Lily's collar, scarf, badge, harness and laptop are parts whose opacity follows her growth stage, and
  * every part reads her stage's proportions (lift, head, ears, paws…) from inherited CSS variables (style.css, L132).
- * The top-bar logo is the sprite's own <symbol id="boon-idle">, which repeats boon.idle.
+ * The sprite's <symbol id="boon-idle"> repeats boon.idle (the portfolio's picture); the top-bar logo is <symbol id="boon-mini"> (X3).
  */
 export const RIG = {
   lily: {
@@ -71,9 +71,18 @@ export function movedParts(who: Mascot, pose: Move): { body: string[]; head: str
 }
 
 /** One pose as a <g> of <g data-part="…"><use/></g>: real elements a later rig can move one by one (v6 M1); the outer <g> carries Lily's stage scale. */
-export function rig(who: Mascot, pose: Pose): SVGGElement {
-  return s('g', {}, ...RIG[who][pose].map((p) => s('g', { 'data-part': p }, s('use', { href: `#${who}-${p}` }))));
+export function rig(who: Mascot, pose: Pose, parts: readonly string[] = RIG[who][pose]): SVGGElement {
+  return s('g', {}, ...parts.map((p) => s('g', { 'data-part': p }, s('use', { href: `#${who}-${p}` }))));
 }
+
+/**
+ * ui-ux-v7 X3 (L165): at 32 px or less (size-8 and below) Boon is only his head on a --surface-2 disc, like the top-bar logo
+ * (<symbol id="boon-mini">): the full body is a white blot on cream there. Same parts, so react() still moves them; sleep keeps its own art.
+ */
+const SMALL = /(?:^|\s)size-[1-8](?:\.5)?(?:\s|$)/;
+export const MINI_VIEW = '28 3 64 64';
+export const miniParts = (pose: Pose): string[] => ['mini-bg', ...RIG.boon[pose].filter((p) => HEAD.test(p))];
+const isMini = (who: Mascot, pose: Pose, cls: string): boolean => who === 'boon' && pose !== 'sleep' && SMALL.test(cls);
 
 /**
  * A mascot built from sprite parts (rig()), so no artwork is shipped in JS (Plan 7 V3). Decorative by default (aria-hidden: the words
@@ -86,6 +95,7 @@ export function mascot(who: Mascot, pose: Pose, cls = 'size-12', label?: string,
   // data-pose: picks the one-shot reaction keyframe of react() (src/ui/celebrate.ts, ui-ux-v5 §1).
   // data-stage: this one Lily at another growth stage than the player's (the next-stage silhouette, L132).
   const at: Record<string, string> = stage === undefined ? {} : { 'data-stage': String(stage) };
+  if (isMini(who, pose, cls)) return s('svg', { viewBox: MINI_VIEW, class: cx('shrink-0', cls), 'data-mascot': who, 'data-pose': pose, 'data-mini': '', ...a11y }, rig(who, pose, miniParts(pose)));
   return s('svg', { viewBox: '0 0 120 120', class: cx('shrink-0 overflow-visible', cls), 'data-mascot': who, 'data-pose': pose, ...at, ...a11y }, rig(who, pose));
 }
 
