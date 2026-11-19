@@ -80,7 +80,7 @@ Số này **chưa tính** một bài `capstone` cuối mỗi cấp (§3.5): mỗ
 | `id` | Dạng chặt `e-<mã>-l<n>-<NN>`: `<mã>` ở §1.1, `<n>` = số cấp, `<NN>` = tiền tố tên file. Test nội dung kiểm id khớp đường dẫn và không trùng. Save nhận theo mẫu **lỏng** `ENGINE_ID = /^e-(pg\|mg\|dy)-[a-z0-9-]+$/`, cùng tinh thần `DRILL_ID`, để đổi tên file không làm mất tiến độ |
 | `level` | Chuỗi `L1`…`L5`, trùng thư mục. Route dùng chữ thường `l1`…`l5` |
 | `module` | Slug. Các bài cùng `module` trong một cấp là một mô-đun. Thứ tự trong mô-đun = `NN` |
-| `title_en` | Tiêu đề VI là `# ` đầu thân bài VI. Đây là cách `tickets.ts` vẫn làm |
+| `title_en` | Tiêu đề VI nằm ở trường frontmatter `title`. Parser đã gộp (`src/engine/content.ts`, commit `a33ae40`) **bắt buộc** trường này, xem ADD-0 |
 | `minutes` | Hiện trên dòng bài và trong tổng mô-đun. Không dùng để chấm |
 | `requires` | Chip "Nên học trước" trỏ tới bài đó. **Không khóa** (L121: General không khóa gì; Engine cũng vậy). Test: mọi id được nhắc phải tồn tại, không có vòng |
 | `sources` | Bắt buộc ≥ 1 URL của docs chính thức (`postgresql.org/docs/18`, `mongodb.com/docs`, `docs.aws.amazon.com/amazondynamodb`). Hiện thành "Nguồn" cuối bài |
@@ -89,7 +89,7 @@ Số này **chưa tính** một bài `capstone` cuối mỗi cấp (§3.5): mỗ
 | `lab.steps[].solution` | Câu đáp án của bước, cùng ngôn ngữ với editor. Không bao giờ hiện trước khi đạt |
 | `lab.steps[].check` | Xem §2.3 |
 | `predict.sql` | Câu được hỏi, viết bằng ngôn ngữ của engine. Postgres: SQL. MongoDB: lệnh shell. DynamoDB: request JSON hoặc PartiQL. Tên trường giữ là `sql` |
-| `answer` | Chỉ số (từ 0) trong `options` gốc. Lựa chọn hiện theo `optionOrder(id + '#q<i>')` như kết luận đánh giá thăng tiến. Giá trị lưu và so là chỉ số gốc |
+| `answer` | Chỉ số **từ 0** (parser đã kiểm `0 ≤ answer < options.length`) trong `options` gốc. Lựa chọn hiện theo `optionOrder(id + '#q<i>')` như kết luận đánh giá thăng tiến. Giá trị lưu và so là chỉ số gốc |
 | Thân bài | VI trước (`## Ý chính`, `## Ví dụ`, `## Thực hành` khi có), rồi `# EN` cùng mục. Code span và khối code giống hệt nhau giữa VI và EN. EN không có dấu tiếng Việt. Dùng lại `textOf`-kiểu tách khối như ticket |
 
 ### 2.3 Bốn kiểu `check`: chấm bằng gì
@@ -104,16 +104,18 @@ Số này **chưa tính** một bài `capstone` cuối mỗi cấp (§3.5): mỗ
 | `doc` | mongodb | Lệnh người học và `solution` chạy trên mingo; lệnh ghi chạy trên bản sao `structuredClone` rồi bỏ | `docGrade`: so theo tên trường; bỏ qua thứ tự khóa; mảng có thứ tự; thiếu trường ≠ `null`; số làm tròn 2; ngày theo ms UTC; `_id` mặc định thừa không tính sai (hiện mẹo `_id: 0`) |
 | `doc` | dynamodb | Request người học và `solution` trên dynoxide | Danh sách item bằng nhau (kiểu `S/N/BOOL/L/M`, `N` so theo giá trị). Query mặc định `ordered`, Scan thì không |
 
-Bước có `check: plan` hoặc `rows` trên **dữ liệu sau khi ghi** cần request H-B (`engineLab`, §6.1). Test nội dung chạy mọi `setup` + `solution` trong Node trên runtime thật: PGlite, mingo, dynoxide.
+`rows` và `plan` chỉ dùng cho postgres. `doc` chỉ dùng cho mongodb/dynamodb. `catalog` dùng cho cả ba, mỗi engine một nghĩa như bảng trên. Từ v22, bước có `setup` hoặc `catalog` chạy qua request kịch bản `engineLab` (§6.1). Bước cần chạy ngoài transaction (`VACUUM`, flush stats, WAL) thì cần request H-B (`engineLab`, §6.1). Test nội dung chạy mọi `setup` + `solution` trong Node trên runtime thật: PGlite, mingo, dynoxide.
 
 ### 2.4 Đề xuất cộng thêm (không đổi gì đã có; mọi trường mới đều tùy chọn)
 
 | Mã | Thay đổi | Vì sao | Nếu chưa làm |
 |---|---|---|---|
+| **ADD-0** | Trường `title` (VI) trong frontmatter. Parser đã bắt buộc trường này | Không có chỗ khác cho tiêu đề VI | (đã có trong code) |
 | **ADD-1** | File mới `content/engine/<engine>/modules.yml`: `- { module, level, title: {vi,en}, after: {vi,en} }`. Thứ tự trong file là thứ tự mô-đun trên trang | Tên mô-đun và câu "Học xong bạn làm được…" (§4) không thuộc về một bài nào | Tiêu đề mô-đun lấy từ slug, trang cấp không có câu giá trị: **không đạt** cổng Product (§7) |
 | **ADD-2** | `verified: { version, date }` | Knowledge doc §7.2(7): nguồn trôi, mỗi bài ghi "đúng với phiên bản X, kiểm ngày Y" | Dòng phiên bản lấy từ §1.1 cho mọi bài |
 | **ADD-3** | `recorded: { server, version, date }` cho output ghi sẵn từ server thật (explain Mongo, kết quả hai phiên Postgres…) | Nhãn trung thực "Kết quả ghi từ MongoDB 8.0.x ngày …" (§3.6) | Bài D chỉ có nhãn "Sơ đồ" |
 | **ADD-4** | `predict.expect: { node, table }` (Postgres) và `lab.steps[].target: <sql>` (bước index) | Test kiểm được đáp án `predict` khớp kế hoạch thật trên PGlite, và bước `CREATE INDEX` biết câu đích để chấm | Test chỉ chạy được `predict.sql`, không kiểm được đáp án: rủi ro dạy sai |
+| **ADD-7** | **Luật Product, không phải luật schema:** mỗi `concept` nên có ≥ 1 câu `quiz`; mỗi cấp có đúng một `capstone`. Parser V1 vẫn nhận `concept` không có quiz: bài đó hoàn thành bằng nút "Đã hiểu". Cổng §8 kiểm luật này, test parser thì không | Bài chỉ đọc không đo được giá trị (L215 mục 3) | Bài vẫn hợp lệ, nhưng review Product đánh "Sửa" |
 | **ADD-5** | `quiz[].kind: order` + `options` là các mục cần xếp, `answer` là mảng chỉ số | Câu "xếp thứ tự" (các bước COMMIT ghi WAL, election) đáng giá hơn chọn một | Chỉ có trắc nghiệm một đáp án |
 
 Agent nội dung **không chờ** các mục ADD. Mục nào được chấp nhận thì được thêm vào schema thành V1.1, còn file V1 vẫn hợp lệ.
@@ -128,7 +130,7 @@ Agent nội dung **không chờ** các mục ADD. Mục nào được chấp nh�
   - `## Ý chính` (≤ 150 từ một khối);
   - sơ đồ `viz` (§5) với ‹ Trước / Tiếp › và thanh bước "3/7";
   - `## Ví dụ` (khối code tô màu tĩnh).
-- **Làm:** bấm qua các bước, rồi trả lời câu trong `quiz` (bắt buộc ≥ 1 câu với `concept`; test nội dung kiểm).
+- **Làm:** bấm qua các bước, rồi trả lời câu trong `quiz`. Luật Product ADD-7 yêu cầu ≥ 1 câu. Parser V1 vẫn nhận bài không có câu; khi đó người học hoàn thành bằng nút "Đã hiểu".
 - **Xong khi:** trả lời đúng mọi câu, được thử lại không giới hạn. Sai thì hiện `why` của lựa chọn đúng sau lần sai thứ 2.
 - **Vì sao bắt có câu:** "đọc xong" không đo được. Một câu đúng chứng minh người học nắm được ý của sơ đồ.
 
@@ -300,7 +302,9 @@ Bảng "không có tương đương SQL" (không JOIN, GROUP BY, window phía se
 |---|---|
 | Lab đọc một câu (H-A) | `runSandboxed` trên schema mới `engine` (`SCHEMAS`, seed lười như `lab`, không đụng md5 của `lab`) |
 | Extension (`pageinspect`, `pg_visibility`, `pg_walinspect`, `pg_buffercache`, `pg_freespacemap`, `amcheck`, `bloom`, `btree_gin/gist`, `pg_trgm`, `cube`, `earthdistance`, `pg_stat_statements`) | PGlite chỉ nhận extension lúc tạo. **Spike ES1** (v22) chọn giữa (a) nạp mọi contrib nhỏ (< 100 KB tổng) cho PGlite chính và (b) tạo một PGlite thứ hai chỉ cho Engine, có đo RAM trên điện thoại. Mặc định nghiêng về (a) nếu boot chậm thêm < 150 ms |
-| H-B (UPDATE rồi soi trang, `VACUUM`, flush stats, WAL trước/sau, `SET ROLE`, `PREPARE`) | Request mới `kind: 'engineLab'`: worker chạy `lab.setup` của **tác giả** ngoài transaction, trên schema `engine` dựng lại mỗi lab (`DROP SCHEMA … CASCADE` + setup); sau đó câu người chơi vẫn đi qua `runSandboxed`, một câu, rollback. `VACUUM` báo 25001 nếu chạy trong transaction (đo), nên nó chỉ nằm trong `setup` hoặc một bước có `solution` do worker chạy tay theo hằng số |
+| H-B (UPDATE rồi soi trang, `VACUUM`, flush stats, WAL trước/sau, `SET ROLE`, `PREPARE`) | Request mới `kind: 'engineLab'`, làm qua hai phiên bản:
+  - **v22, bản tối thiểu:** `setup` của tác giả → câu người chơi → câu dò `catalog`, trong **một** transaction rollback. Đủ cho L1–L2.
+  - **v24, thêm phần chạy ngoài transaction:** worker chạy `lab.setup` của **tác giả** ngoài transaction, trên schema `engine` dựng lại mỗi lab (`DROP SCHEMA … CASCADE` + setup); sau đó câu người chơi vẫn đi qua `runSandboxed`, một câu, rollback. `VACUUM` báo 25001 nếu chạy trong transaction (đo), nên nó chỉ nằm trong `setup` hoặc một bước có `solution` do worker chạy tay theo hằng số |
 | Nhiều phiên, autovacuum, parallel, JIT, logical decoding | D (+ `recorded` từ PostgreSQL 18 thật). Spike nhỏ: PGlite có boot được với `wal_level=logical` không |
 
 Timeout 5 s và terminate giữ nguyên. Người chơi vẫn chỉ được một câu, vì PGlite từ chối nhiều câu.
@@ -347,7 +351,7 @@ Một cấp **chưa phát hành** không có thẻ. Trang engine chỉ ghi "L1�
 - **Điện thoại (< 1024, `#bottom-nav`):** không thêm mục thứ sáu.
   - "Lộ trình" đổi nhãn thành **"Học"** và được "đang ở" cả trên `#/learn…` lẫn `#/engine…`.
   - Đầu `#/learn` và `#/engine` có công tắc hai nút **SQL | Database Engine**: `role=tablist`, mỗi nút là link, nhớ lựa chọn cuối trong pref `cargo-query/learn-tab`. Mục "Học" mở trang theo pref đó.
-  - **Cổng:** `#bottom-nav` cao < 72 px ở 320 (checklist K1).
+  - **Cổng:** `#bottom-nav` cao < 72 px ở 320 (checklist I1).
 - **Sidebar** (`#side`, theo mẫu `sideExtra()` của trang Dữ liệu):
   - rộng (≥ 1280, pref không phải `rail`): cây engine → cấp → mô-đun của trang đang mở;
   - rail (64 px): 3 icon engine + 5 chấm cấp;
@@ -399,10 +403,10 @@ Wireframe lab heap, đoán kế hoạch, sơ đồ B-tree split và lab DynamoDB
 | Thứ | Quyết định |
 |---|---|
 | Save | `isWorkId` nhận thêm `ENGINE_ID` (§2.2). Không field mới, không bump `SAVE_VERSION`. Fixture mới `save-v5-engine.json` + test đọc → ghi → đọc giữ id Engine. Bản build cũ đọc save mới sẽ bỏ id Engine: chấp nhận (một site), ghi vào L |
-| `completed` | Bài đạt của **mọi** loại, kể cả `concept` (vì §3.1 có câu chấm) |
+| `completed` | Bài đạt của **mọi** loại, kể cả `concept`. Đạt là trả lời đúng mọi câu, hoặc bấm "Đã hiểu" khi bài không có câu |
 | `bossStep` | Bước đang làm của `lab` nhiều bước và `capstone` |
 | `drafts` | Nháp editor của lab. `graded` **không** ghi (Recap và portfolio chỉ là của SQL) |
-| XP | Lần đạt đầu: `concept`/`quiz`/`predict` +5, `lab` +10, `capstone` +20 mỗi bước. Lần sau: 0. Tính trong chunk Engine lúc đạt, vì `kind` nằm trong nội dung chứ không trong id. Cộng vào `save.xp`. Chức danh vẫn chỉ đổi theo đánh giá thăng tiến của domain |
+| XP | Lần đạt đầu: `concept`/`quiz`/`predict` +5, `lab` +10, `capstone` +20 cho cả bài, như `ENGINE_XP` trong parser. Lần sau: 0. Tính trong chunk Engine lúc đạt, vì `kind` nằm trong nội dung chứ không trong id. Cộng vào `save.xp`. Chức danh vẫn chỉ đổi theo đánh giá thăng tiến của domain |
 | Gợi ý | Miễn phí, không ghi `hintsUsed` |
 | Ôn Leitner | **Không có ở bản này**: schema không có kỹ năng, và `readV2` bỏ khóa lạ. Đề xuất sau v30 (hoặc khi dư sức) là ADD-6, trường `recall: <khóa>` + mẫu khóa `^(pg\|mg\|dy)\.[a-z_]+$` trong `review` |
 | Tổng số không cần chunk | Top bar, Trang chủ và `#/me` chỉ cần "N bài Engine xong", đếm theo mẫu id. Số "/ tổng", mô-đun và cấp xong chỉ có trong chunk Engine |
@@ -414,7 +418,11 @@ Wireframe lab heap, đoán kế hoạch, sơ đồ B-tree split và lab DynamoDB
 
 - **Ở đâu:** `#/engine/best` (tab "Best Practice" thứ tư trên `#/engine`, sau ba engine) và mỗi trang engine có một liên kết tới phần của engine đó. Nó thuộc Engine vì phủ cả SQL lẫn NoSQL, và không chiếm chỗ ở thanh dưới.
 - **Nội dung:** agent Research viết liên tục. Mỗi mục là một **luật có lý do**, một ví dụ "nên / không nên" chạy được (cùng runtime, có `check` như lab) và nguồn chính thức.
-- **Định dạng:** đề xuất dùng lại ENGINE-CONTENT-V1, `kind: lab` hoặc `quiz`, thư mục `content/engine/best/<postgres|mongodb|dynamodb|sql>/`, id `e-bp-…`. Cần chốt cùng agent Research trước v25 (L của v25).
+- **Định dạng (còn mở):** đề xuất dùng lại ENGINE-CONTENT-V1 (`kind: lab` hoặc `quiz`). Có hai chỗ chưa khớp:
+  - thư mục `content/engine/best/…` nằm ngoài danh sách `engine` của schema;
+  - id `e-bp-…` không khớp `ENGINE_ID` (`pg|mg|dy`), nên khi đọc save sẽ bị bỏ.
+
+  Gọn nhất là thêm `bp` vào mẫu id và `best` vào danh sách engine (ADD-8). Chốt cùng agent Research trước v25.
 
 ### 7.6 Chunk và ngân sách
 
@@ -457,7 +465,7 @@ Một cấp chỉ được phát hành khi đủ các điều kiện sau:
 | Lộ trình drill soi gương 11 Phần SQL cho MongoDB (168 drill, 42 kỹ năng), 8 Phần drill DynamoDB, phỏng vấn NoSQL, kiểm tra đầu vào NoSQL | Thang L1–L5 của knowledge doc + schema V1 (không có drill, không có kỹ năng) thay thế. "Gần như tương đương SQL" giữ bằng tab "So với SQL" trên cùng dữ liệu (§4.2). Có thể làm lại sau v30 trên ADD-6 |
 | Bộ mô phỏng DynamoDB tự viết | dynoxide chạy thật Query/Scan/GSI/PartiQL (spike) |
 | Mã loại bài trong id (`e-pg-l-…`) | Schema V1 đặt `kind` trong frontmatter |
-| Dải L215–L239 | L215–L217 đã dùng. Dải mới ở `roadmap-v22-v30.md` §3 |
+| Dải L215–L239 | L215–L218 đã dùng. Dải mới ở `roadmap-v22-v30.md` §3 |
 
 ## 10. Cần user
 

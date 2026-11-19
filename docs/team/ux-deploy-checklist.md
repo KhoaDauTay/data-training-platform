@@ -73,7 +73,7 @@ Mức: **P1** = che hoặc chặn việc chính, hoặc user đã từng báo đ
 | # | Kiểm | Đo | Nguồn | Mức |
 |---|---|---|---|---|
 | D1 | Neo đúng nút (A1); khi cuộn hoặc đổi cỡ, popover đi theo hoặc đóng, không trôi | Thử: mở menu rồi đổi cỡ 1280 → 1024 | `04462c3` | P1 |
-| D2 | Hộp thoại đủ lớn cho nội dung: ở 1280 hộp bài học rộng ≥ 640 px; không có thanh cuộn trong cho nội dung ngắn hơn một màn | Tự động: `dialog.clientWidth`; `scrollHeight > clientHeight` chỉ khi nội dung > 90dvh | User: popup nhỏ, nội dung "stack nhiều div" (L140: hộp bài học `min(900px,100vw-2rem)`) | P1 |
+| D2 | Hộp thoại đủ lớn cho nội dung: ở 1280 hộp bài học rộng ≥ 640 px; không có thanh cuộn trong cho nội dung ngắn hơn một màn | Tự động: `dialog.clientWidth`; `scrollHeight > clientHeight` chỉ khi nội dung > 90dvh | L140 (hộp bài học nới thành `min(900px,100vw-2rem)` sau khi user báo nội dung "stack nhiều div"); brief của người điều phối (L215): popup nhỏ | P1 |
 | D3 | Trong hộp thoại hoặc bài học, các phần tách bằng khoảng cách đều, không lồng khung trong khung | Ảnh: hộp bài học, bài Engine | User (L140) "stack nhiều div lại với nhau khó nhìn"; U27–U29 | P2 |
 | D4 | `<select>` và ô chọn dùng control gốc ở điện thoại | Ảnh 375 trang Dữ liệu | v12.0 U6 | P3 |
 
@@ -91,7 +91,7 @@ Mức: **P1** = che hoặc chặn việc chính, hoặc user đã từng báo đ
 
 | # | Kiểm | Đo | Nguồn | Mức |
 |---|---|---|---|---|
-| F1 | Chữ ≥ 4,5:1 (chữ lớn ≥ 3:1), ở **cả hai theme** | Tự động: màu tính qua canvas, nền ghép alpha (hàm `AUDIT` của v21); cặp mới được thêm vào `tests/theme.test.ts` | U15 (4,35:1); L147 (tương phản chip, chương, bản đồ); user: chữ tối khó đọc ở dark | P1 |
+| F1 | Chữ ≥ 4,5:1 (chữ lớn ≥ 3:1), ở **cả hai theme** | Tự động: màu tính qua canvas, nền ghép alpha (hàm `AUDIT` của v21); cặp mới được thêm vào `tests/theme.test.ts` | U15 (4,35:1); L147 (tương phản chip, chương, bản đồ); brief của người điều phối (L215): tương phản ở theme tối | P1 |
 | F2 | Mọi màu đến từ token, có bản tối (`:root[data-theme=dark]`); SVG và sơ đồ đọc token, không màu cứng | Grep màu hex mới trong `src/**`; ảnh tối của mọi sơ đồ mới | L42, CLAUDE.md Styling | P2 |
 | F3 | Focus ring 2 px `--accent` thấy rõ ở hai theme, không dính mép | Tab qua trang | U20 | P2 |
 | F4 | Đổi theme khi đang mở trang thì sơ đồ, Mermaid, biểu đồ vẽ lại đúng màu | Đổi Light → Dark trên trang có sơ đồ | L42 (`cq-theme`) | P2 |
@@ -100,7 +100,7 @@ Mức: **P1** = che hoặc chặn việc chính, hoặc user đã từng báo đ
 
 | # | Kiểm | Đo | Nguồn | Mức |
 |---|---|---|---|---|
-| G1 | Một con số chỉ hiện **một lần** trong nav/top bar (số chương, số ôn, XP) | Ảnh top bar + sidebar + bottom nav cùng lúc | L12 (không lặp số chương); E1 (badge "Ôn tập 5"); user: số trùng trên nav | P1 |
+| G1 | Một con số chỉ hiện **một lần** trong nav/top bar (số chương, số ôn, XP) | Ảnh top bar + sidebar + bottom nav cùng lúc | L12 (không lặp số chương); E1 (badge "Ôn tập 5"); brief của người điều phối (L215): số trùng trên nav | P1 |
 | G2 | Một đích một icon; một mục nav một nhãn (không có hai "Logistics" trong ngăn kéo) | `tests/icons.test.ts` + ảnh drawer | fcc34c8, `NAV_ICON` | P2 |
 | G3 | Một trạng thái nói một lần ("đang tải" chỉ ở một chỗ, một dấu ✓) | Ảnh trạng thái tải | U28, U35 | P3 |
 | G4 | Tên truy cập chứa chữ hiển thị (nút có badge) | axe `label-content-name-mismatch` = 0 | E1 | P2 |
@@ -112,6 +112,16 @@ Mức: **P1** = che hoặc chặn việc chính, hoặc user đã từng báo đ
 | H1 | `h1` = tên trang con, lớn hơn mọi `h2`; có breadcrumb khi trang sâu hơn 1 tầng | Tự động: cỡ chữ `h1` > `h2` | U16, U18 | P2 |
 | H2 | Nav/rail chỉ tô "đang ở" đúng trang hoặc bài đang mở | Mở bài con, nút nâng cao, drill, bài Engine; kiểm `aria-current` | U19 | P2 |
 | H3 | Một nút chính mỗi vùng | Đếm `button.primary` (pill teal) mỗi section ≤ 1 | U24, ui-ux-v7 T1 | P2 |
+
+### H'. Hành động và trạng thái khóa
+
+| # | Kiểm | Đo | Nguồn | Mức |
+|---|---|---|---|---|
+| H4 | Việc kế tiếp luôn thấy được ở đầu vùng, không nằm cuối một khung phải cuộn mới thấy | Ảnh sau khi nộp đạt, ở 1280×800 và 375 | User L47(2) | P1 |
+| H5 | Xem thông tin phụ (bản đồ, bài học, sơ đồ) **tại chỗ**, không bắt rời bài đang làm | Mở từ workspace rồi đóng: bài, editor và nháp còn nguyên | User L47(3) | P1 |
+| H6 | Control bị khóa luôn có ổ khóa + lý do; không có nút bấm vào mà không có phản hồi | Bấm mọi control khóa trên trang mới | User L86 | P1 |
+| H7 | Thẻ có một hành động chính thì bấm ở bất kỳ đâu trên thẻ cũng mở được | Tự động: `elementFromPoint` ở 4 góc trong thẻ trả về lớp phủ hoặc link chính | L88, L93 | P2 |
+| H8 | Bố cục danh sách cố định: thẻ không lệch vị trí theo độ dài nội dung | Ảnh lộ trình hoặc danh sách, VI + EN | User L47(6) | P2 |
 
 ### I. Responsive và vùng chạm
 
@@ -152,7 +162,7 @@ Mức: **P1** = che hoặc chặn việc chính, hoặc user đã từng báo đ
 
 ## 3. Gợi ý tự động hóa
 
-`scripts/ux-audit.mjs` (luồng QA của v22, đưa công cụ v21 trong scratchpad vào repo) nhận URL + danh sách route và chạy matrix §1. Nó ghi `audit.jsonl` + ảnh, rồi in một bảng theo mã mục ở trên. Các mục ghi "tự động" phải được nó đo: A1, A2, A5, B1, B2, C1, C2, D2, E1, E2, E4, F1, H1, I1, I2, I3, K1. Mục còn lại kiểm bằng ảnh.
+`scripts/ux-audit.mjs` (luồng QA của v22, đưa công cụ v21 trong scratchpad vào repo) nhận URL + danh sách route và chạy matrix §1. Nó ghi `audit.jsonl` + ảnh, rồi in một bảng theo mã mục ở trên. Các mục ghi "tự động" phải được nó đo: A1, A2, A5, B1, B2, C1, C2, D2, E1, E2, E4, F1, H1, H7, I1, I2, I3, K1. Mục còn lại kiểm bằng ảnh.
 
 ---
 

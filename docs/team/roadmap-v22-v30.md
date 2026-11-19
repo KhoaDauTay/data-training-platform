@@ -10,7 +10,10 @@ Người viết: Product Design + UI/UX · 2026-11-20. Chỉ là kế hoạch, k
   - Mọi thứ phải có giá trị.
   - v30 là phiên bản cuối.
   - Có agent Research cho Best Practice.
-  - Luôn ≥ 10 agent làm việc.
+  - Luôn ≥ 10 agent làm việc. L218 điều chỉnh mục này:
+    - tối đa 25 agent cùng lúc;
+    - trong đó **≤ ~10** agent build/test trong worktree code;
+    - phần còn lại làm research, design, UI/UX, nội dung (chỉ kiểm bằng Node).
 - **L216:** commit local trong lúc làm; mỗi version thì push + deploy + tag.
 - **L217:** mỗi version vừa publish phải có UI/UX review bản live và Product nhìn lại, ghi vào `review-vNN.md`. Phát hiện thành việc đầu tiên của version sau. Không dồn review tới cuối.
 
@@ -86,7 +89,7 @@ Mở sau tag v21. Luồng R là các phát hiện còn mở của `v21-ux-review
 | **E-UI** | Chunk `engineui`: trang tổng quan/engine/cấp/bài, trình chấm `quiz`/`predict`, nhãn trung thực, sidebar `sideExtra` cho Engine, bộ nạp + parser ENGINE-CONTENT-V1 + `tests/engineContent.test.ts` (id = đường dẫn, VI/EN, code span, `sources`, `requires`, `viz`) | mới `src/engine/*.ts`, `src/ui/engine*.ts`, `src/i18n/engine.ts`, `src/ui/sidebar.ts` (một nhánh) | L |
 | **E-WS** | Session mode `engine`, điểm rẽ chạy trong `work.ts`, `check: rows|plan|catalog` cho Postgres (câu dò catalog §2.3), `bossStep` cho lab nhiều bước, XP theo loại | `src/ui/work.ts`, `src/session.ts`, mới `src/engine/check.ts` | M |
 | **E-VIZ** | `diagram.ts` + chunk `enginemotion` + token `--eng-*` (sáng/tối, có test tương phản), sơ đồ `pg-query-path` và `pg-btree-split` | mới `src/engine/diagram.ts`, `src/engine/viz/*`, `src/style.css` (khối token) | M |
-| **PG-RT** | Schema `engine` + seed, `SCHEMAS.eng`, request `ensure` cho `engine` | `src/db/engine/*`, `src/domains.ts`, `src/db/worker.ts`, `src/db/client.ts` | S |
+| **PG-RT** | Schema `engine` + seed, `SCHEMAS.eng`, request `ensure` cho `engine`. **`engineLab` tối thiểu:** `setup` tác giả → câu người chơi → câu dò `catalog`, một transaction rollback. Đủ cho `rows/plan/catalog` của L1–L2 và mô-đun `transactions` | `src/db/engine/*`, `src/domains.ts`, `src/db/worker.ts`, `src/db/client.ts`, `src/db/run.ts` | M |
 | **C-PG1** | Nội dung Postgres L1 (10 bài + capstone L1), `modules.yml` (ADD-1) | `content/engine/postgres/L1/**` | M |
 | **C-PG2/3** | Viết trước L2, L3 (phát hành v23/v24) | `content/engine/postgres/L2/**`, `L3/**` | L |
 | **SPIKE** | ES1: extension trong **Web Worker** trình duyệt, chọn một PGlite hay hai, đo RAM trên điện thoại giả lập 375, boot thêm bao nhiêu ms, prototype `engineLab` (setup ngoài transaction + `VACUUM` + `pageinspect`). ES2: mingo với `$jsonSchema`, `$merge/$out`, pipeline update, `arrayFilters`. ES3: dynoxide 1.7 với Streams, TTL, `TransactGetItems`. Kết quả ghi vào `docs/team/spike-engine.md`; code để ở nhánh `spike/engine-*`, không gộp | nhánh spike | M |
@@ -102,7 +105,7 @@ Mở sau tag v21. Luồng R là các phát hiện còn mở của `v21-ux-review
 - `spike-engine.md` có kết luận GO/NO-GO cho ES1–ES3.
 - `ux-audit.mjs` chạy được trên site live.
 
-**L218–L226.**
+**L220–L227.**
 
 ### v23: Postgres L2
 
@@ -124,14 +127,14 @@ Mở sau tag v21. Luồng R là các phát hiện còn mở của `v21-ux-review
 - `pgext` nằm trong trần.
 - Boot domain không chậm hơn v22 quá 10 %.
 
-**L227–L232.**
+**L228–L233.**
 
 ### v24: Postgres L3, bên trong lưu trữ
 
 | Luồng | Nội dung | File | Cỡ |
 |---|---|---|---|
 | **R** | `review-v23.md` | | S–M |
-| **PG-HB** | Request `engineLab` (H-B): dựng lại schema mỗi lab, `setup` của tác giả ngoài transaction, `VACUUM`/flush stats theo hằng số, câu người chơi vẫn qua `runSandboxed` | `src/db/worker.ts`, `src/db/run.ts`, `src/db/client.ts` | M |
+| **PG-HB** | Mở rộng `engineLab` (H-B), phần ngoài transaction: dựng lại schema mỗi lab, `setup` chạy ngoài transaction, `VACUUM`/flush stats theo hằng số, câu người chơi vẫn qua `runSandboxed` | `src/db/worker.ts`, `src/db/run.ts`, `src/db/client.ts` | M |
 | **E-INSIDE** | Tab "Bên trong": vẽ trang heap và WAL record **từ kết quả thật** | `src/ui/engineInside.ts` | M |
 | **E-VIZ** | `pg-heap-page`, `pg-mvcc`, `pg-hot`, `pg-vacuum-vm`, `pg-wal` | `src/engine/viz/*` | L |
 | **C-PG3** | Gộp L3 | `content/engine/postgres/L3/**` | M |
@@ -146,7 +149,7 @@ Mở sau tag v21. Luồng R là các phát hiện còn mở của `v21-ux-review
 - Mọi lab H-B chạy trong Node **và** trong worker trình duyệt (smoke).
 - Không có lab nào phụ thuộc thứ tự mở.
 
-**L233–L238.**
+**L234–L239.**
 
 ### v25: Postgres L4 + Best Practice
 
@@ -166,7 +169,7 @@ Mở sau tag v21. Luồng R là các phát hiện còn mở của `v21-ux-review
 - Mỗi mục Best Practice có ví dụ chạy được và nguồn chính thức.
 - Mọi bài D có câu chấm.
 
-**L239–L244.**
+**L240–L245.**
 
 ### v26: Postgres L5 + capstone, **Postgres đầy đủ**
 
@@ -189,7 +192,7 @@ Mở sau tag v21. Luồng R là các phát hiện còn mở của `v21-ux-review
 - Giải mù đạt.
 - `review-v26.md` của Product kết luận "Postgres đủ". Nếu không đủ, v27 mở bằng luồng R cho Postgres trước Mongo.
 
-**L245–L250.**
+**L246–L251.**
 
 ### v27: MongoDB L1–L2
 
@@ -211,7 +214,7 @@ Mở sau tag v21. Luồng R là các phát hiện còn mở của `v21-ux-review
 - Ca biên mingo ≠ MongoDB (ES2) không có trong bài nào.
 - `mongort` ≤ 45.
 
-**L251–L256.**
+**L252–L257.**
 
 ### v28: MongoDB L3–L5
 
@@ -228,7 +231,7 @@ Mở sau tag v21. Luồng R là các phát hiện còn mở của `v21-ux-review
 - MongoDB 60 bài + 5 capstone.
 - Mọi bài L3/L5 có câu chấm và nhãn trung thực.
 
-**L257–L261.**
+**L258–L262.**
 
 ### v29: DynamoDB L1–L5
 
@@ -247,7 +250,7 @@ Mở sau tag v21. Luồng R là các phát hiện còn mở của `v21-ux-review
 - Trần `dynamort` theo D-E12.
 - Lab Dynamo mở được ở 375 trong ≤ 5 s lần ấm (đo).
 
-**L262–L266.**
+**L263–L267.**
 
 ### v30: Hoàn thiện, phiên bản cuối
 
@@ -260,7 +263,14 @@ Mở sau tag v21. Luồng R là các phát hiện còn mở của `v21-ux-review
 
 **Thoát v30:** cổng chung + tag `v30`. Vòng dừng.
 
-**L267–L270** (L271–L275 dự phòng).
+v30 không còn version sau để nhận review (L217). Vì vậy E-CMP và mọi thứ mới của v30 được review **trước khi tag**:
+
+1. Deploy lên site live.
+2. Chạy checklist, viết `review-v30.md`.
+3. Sửa ngay trong v30 mọi P1/P2.
+4. Tag. P3 còn lại vào backlog.
+
+**L268–L271** (L272–L276 dự phòng).
 
 ---
 
@@ -300,21 +310,21 @@ Một version chỉ được coi là xong khi đã có `review-vNN.md`.
 
 ## 3. Dải số L
 
-L215–L217 đã dùng. Dải v22 cũ (L200–L214) vẫn giữ cho V22-A…E, như ghi ở từng version. Nếu dùng vượt dải, version sau dời cả dải lên, giữ thứ tự, và ghi vào dòng đầu.
+L215–L218 đã dùng. Dải v22 cũ (L200–L214) vẫn giữ cho V22-A…E, như ghi ở từng version. Nếu dùng vượt dải, version sau dời cả dải lên, giữ thứ tự, và ghi vào dòng đầu.
 
 | Dải | Version | Dùng cho |
 |---|---|---|
-| L218 | v22 | User duyệt `product-design-db-engine.md` bản 2 (D-E1, D-E6', D-E11–D-E13) và tài liệu này |
-| L219–L226 | v22 | Kết quả spike ES1–ES3; route/nav/công tắc "Học"; `ENGINE_ID`; schema V1 → V1.1 (các ADD được nhận); `check` Postgres; `diagram.ts`; công cụ `ux-audit` |
-| L227–L232 | v23 | contrib, `predict`, Postgres L2 |
-| L233–L238 | v24 | `engineLab` H-B, tab Bên trong, Postgres L3 |
-| L239–L244 | v25 | Postgres L4, định dạng + phát hành Best Practice, runtime Mongo |
-| L245–L250 | v26 | Postgres L5, capstone, liên kết, kết luận "Postgres đủ" |
-| L251–L256 | v27 | MongoDB L1–L2, runtime Dynamo |
-| L257–L261 | v28 | MongoDB L3–L5, luật ESR |
-| L262–L266 | v29 | DynamoDB, phần pending |
-| L267–L270 | v30 | So sánh engine, thoát vòng |
-| L271–L275 | — | Dự phòng |
+| L219 | v22 | User duyệt `product-design-db-engine.md` bản 2 (D-E1, D-E6', D-E11–D-E13) và tài liệu này |
+| L220–L227 | v22 | Kết quả spike ES1–ES3; route/nav/công tắc "Học"; `ENGINE_ID`; schema V1 → V1.1 (các ADD được nhận); `check` Postgres + `engineLab` tối thiểu; `diagram.ts`; công cụ `ux-audit` |
+| L228–L233 | v23 | contrib, `predict`, Postgres L2 |
+| L234–L239 | v24 | `engineLab` H-B ngoài transaction, tab Bên trong, Postgres L3 |
+| L240–L245 | v25 | Postgres L4, định dạng + phát hành Best Practice, runtime Mongo |
+| L246–L251 | v26 | Postgres L5, capstone, liên kết, kết luận "Postgres đủ" |
+| L252–L257 | v27 | MongoDB L1–L2, runtime Dynamo |
+| L258–L262 | v28 | MongoDB L3–L5, luật ESR |
+| L263–L267 | v29 | DynamoDB, phần pending |
+| L268–L271 | v30 | So sánh engine, thoát vòng |
+| L272–L276 | — | Dự phòng |
 
 ## 4. Rủi ro lịch
 
