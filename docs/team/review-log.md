@@ -841,3 +841,10 @@ Cách đo: `npm run build`, `SMOKE_PERF=3 npm run smoke` (preview của chính c
 - Ngân sách (gzip -9): `ecom` 40,3 → 48,1 KB / 50; `fin` 43,0 → 44,0 / 50. Finance không có F7 (cổng: 7,0 KB trống < 8).
 - Kiểm: tsc, toàn bộ vitest (4057 qua), build, check-budget, smoke (5219) xanh. Edge headless (preview 5227): save xong 30 việc E-com → chơi `ecom-ch7-01..05` (đánh giá 3 bước + kết luận) → Lead DA, 35/35, ngôi sao trên biển hiệu ở Tổng quan và dock; save chỉ có 6 đánh giá → việc 1 chương 7 có lời mời thi vượt → đạt; 0 lỗi trang. Ảnh ở scratchpad `v20d\`.
 - Chờ user: chương F7 (cần chỗ trong chunk `fin`). Chờ chủ i18n: câu dock "thêm một thành phố" ở chương 6–7 E-com; "6 chương" trong `welcome.short.ecommerce` và `domain.ecommerceDesc` (VI/EN).
+
+## V20-B (bộ dữ liệu công khai), 2026-11-19, L176
+
+- Cổng giấy phép: Palmer penguins, CC0 1.0, đọc trên nguồn gốc (README, `LICENSE.md`, `DESCRIPTION` ở commit `8957207b`); ghi ở `assets/THIRD_PARTY.md` với sha256 file gốc và file đã sửa (`NA` → ô rỗng). Không bộ nào bị bỏ.
+- Ngân sách (gzip -9): main 328 720 → 328 928 B (+0,2 KB; trần luồng +0,5). Chunk lười mới `datasetPanel` 3,65 KB gz (đang vào `rest`). File `public/datasets/penguins.csv` 15 203 B. **Gửi chủ `check-budget.mjs` (V20-C):** nhóm `dataset` trần 5 MB cho `dist/datasets/*` (ngoài `dist/assets`, cần quét thêm thư mục) và, nếu muốn tách khỏi `rest`, nhóm `datasetPanel` `/^datasetPanel-/` trần 5 KB.
+- Kiểm Edge headless (preview riêng 5221, hồ sơ mới): Sandbox → "Nạp bộ này" → "đã nạp bảng penguins (344 dòng, 8 cột)", câu 2 đúng → "Đúng rồi!", câu 3 sai → "Cột 2 chưa khớp, cột 1 đúng."; mọi request cùng origin (`/datasets/penguins.csv`), 0 lỗi trang. Sửa theo coordinator: bộ mẫu không bao giờ thay bảng người chơi tự nạp (tên trống `penguins_2`…, nạp lại chỉ thay bản mẫu cũ), và `datasets/` ra khỏi precache của service worker (`scripts/offline.mjs`). `npm run smoke` (5219) OK 40 s.
+- Chờ V20-C: bước smoke "bộ dữ liệu mẫu (nạp → 1 câu đạt)" của tiêu chí thoát §3.5 thuộc `scripts/smoke.mjs` (file của V20-C); kịch bản trên là mẫu (`#datasets-title`, nút "Nạp bộ này", `#datasets-title ~ article ol textarea`).

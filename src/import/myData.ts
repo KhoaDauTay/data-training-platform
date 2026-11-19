@@ -2,7 +2,7 @@ import { DbFailedError, DbRestartError } from '../db/client';
 import type { ImportedTable, ImportRequest } from '../db/import';
 import type { QueryResult } from '../db/run';
 import { ECOM_TABLES, FIN_TABLES, LOGISTICS_TABLES } from '../domains';
-import { inspectCsv, type ImportProblem } from './csv';
+import { inspectCsv, withSuffix, type ImportProblem } from './csv';
 import type { ImportStore, StoredImport } from './store';
 
 /** The part of DbClient that "My data" needs (a PGlite adapter in tests). */
@@ -103,12 +103,35 @@ export class MyData {
     return failed;
   }
 
-  async add(file: Blob, fileName: string): Promise<AddOutcome> {
+  /**
+   * V20-B: the table a sample dataset goes into. A previous copy of the same sample (stored under `fileName`, a name no
+   * real file has) is reused, so loading it again replaces only that copy; otherwise `base`, `base_2`, … whichever no
+   * imported table (loaded or still stored) uses: a sample never replaces a table the player imported.
+   */
+  async sampleName(base: string, fileName: string): Promise<string> {
+    await this.settled();
+    const stored = await this.store.list().catch(() => []);
+    const prev = stored.find((r) => r.fileName === fileName)?.table;
+    if (prev) return prev;
+    const taken = new Set([...this.tables.map((t) => t.table), ...stored.map((r) => r.table)]);
+    let name = base;
+    for (let i = 2; taken.has(name); i++) name = withSuffix(base, `_${i}`);
+    return name;
+  }
+
+  /** V20-B: the loaded table holding the sample stored under `fileName`, if any. */
+  async sampleTable(fileName: string): Promise<string | undefined> {
+    const t = (await this.store.list().catch(() => [])).find((r) => r.fileName === fileName)?.table;
+    return t && this.tables.some((x) => x.table === t) ? t : undefined;
+  }
+
+  /** `nameAs` names the table (default: the file's own name); `fileName` is what the store keeps. */
+  async add(file: Blob, fileName: string, nameAs = fileName): Promise<AddOutcome> {
     await this.settled();
     let imported: ImportedTable;
     let record: StoredImport;
     try {
-      const inspection = await inspectCsv(file, fileName, await this.gameTables(), this.tables.map((t) => t.table));
+      const inspection = await inspectCsv(file, nameAs, await this.gameTables(), this.tables.map((t) => t.table));
       if (!inspection.ok) return inspection;
       const { table, columns, delimiter } = inspection.spec;
       imported = await this.db.importCsv({ table, columns, delimiter }, file);
@@ -119,6 +142,11 @@ export class MyData {
     const persisted = await this.store.put(record);
     this.set([...this.tables.filter((t) => t.table !== imported.table), imported]);
     return { ok: true, table: imported, persisted };
+  }
+
+  /** V20-B: a sample dataset's guided questions are graded on the same DB (sandbox is on every request's search_path). */
+  query(sql: string): Promise<QueryResult> {
+    return this.db.run(sql);
   }
 
   /** Store first: the delete must survive a reload even if the worker is restarting right now. */

@@ -1,0 +1,58 @@
+# V20-B (L176): public datasets the player can load into the Sandbox ("My data").
+# Only CC0 / CC BY / public domain, licence checked on the primary source page; source, version, licence and sha256 in
+# assets/THIRD_PARTY.md. The file sits in public/datasets/, comes only from the app's own origin and only when the player asks
+# (scripts/offline.mjs keeps datasets/ out of the service worker precache; once loaded the copy lives in IndexedDB).
+# `table` = the name the import gives `file` (tableNameFor): never a game table (tests/datasets.test.ts).
+# Questions are graded like "Thử ngay" (grader, 0 XP, nothing saved). Tasks may name columns in backticks, like drills.
+
+ui:
+  title: { vi: Bộ dữ liệu mẫu, en: Sample datasets }
+  intro: { vi: "Dữ liệu công khai, nạp vào Dữ liệu của tôi như một file CSV của bạn. File tải từ chính trang này, không gửi gì ra ngoài.", en: "Public data, loaded into My data like one of your own CSV files. The file comes from this site; nothing is sent anywhere." }
+  load: { vi: Nạp bộ này, en: Load this dataset }
+  loading: { vi: Đang nạp…, en: Loading… }
+  failed: { vi: "Không tải được file mẫu. Kiểm tra mạng rồi thử lại.", en: "Could not download the sample file. Check the connection and try again." }
+  source: { vi: Nguồn, en: Source }
+  licence: { vi: Giấy phép, en: Licence }
+  questions: { vi: "Câu hỏi dẫn dắt (không tính XP)", en: "Guided questions (no XP)" }
+  loadFirst: { vi: Nạp bộ dữ liệu để làm các câu hỏi., en: Load the dataset to answer the questions. }
+  check: { vi: Kiểm tra, en: Check }
+  ok: { vi: Đúng rồi!, en: Correct! }
+  empty: { vi: Viết câu SQL trước đã., en: Write a query first. }
+  answer: { vi: Câu SQL của bạn, en: Your query }
+  table: { vi: Bảng của bộ này, en: This set's table }
+
+datasets:
+  - id: penguins
+    file: penguins.csv
+    table: penguins
+    rows: 344
+    title: { vi: Chim cánh cụt quần đảo Palmer, en: Palmer Archipelago penguins }
+    about:
+      vi: "344 con chim cánh cụt (3 loài, 3 đảo ở Nam Cực, 2007–2009): chiều dài và độ dày mỏ, chiều dài vây, cân nặng, giới tính. Ô trống là số đo bị thiếu (NULL)."
+      en: "344 penguins (3 species, 3 Antarctic islands, 2007–2009): bill length and depth, flipper length, body mass, sex. An empty cell is a missing measurement (NULL)."
+    licence: CC0 1.0
+    licence_url: https://creativecommons.org/publicdomain/zero/1.0/
+    source_url: https://github.com/allisonhorst/palmerpenguins
+    credit: "Horst AM, Hill AP, Gorman KB (2020). palmerpenguins: Palmer Archipelago (Antarctica) penguin data. R package 0.1.1. Data: Dr. Kristen Gorman and the Palmer Station, Antarctica LTER."
+    questions:
+      - task:
+          vi: "Có bao nhiêu con chưa có số đo cân nặng (`body_mass_g`)?"
+          en: "How many penguins have no body mass (`body_mass_g`)?"
+        solution: SELECT COUNT(*) FROM penguins WHERE body_mass_g IS NULL
+      - task:
+          vi: "Mỗi loài (`species`) có bao nhiêu con? Hai cột: loài, số con."
+          en: "How many penguins of each species (`species`)? Two columns: species, count."
+        solution: SELECT species, COUNT(*) FROM penguins GROUP BY species
+      - task:
+          vi: "Cân nặng trung bình của mỗi loài, làm tròn 1 chữ số thập phân (bỏ qua con thiếu số đo). Hai cột: loài, cân nặng trung bình."
+          en: "Average body mass of each species, rounded to 1 decimal place (skip missing values). Two columns: species, average mass."
+        solution: SELECT species, ROUND(AVG(body_mass_g), 1) FROM penguins GROUP BY species
+      - task:
+          vi: "Mỗi đảo (`island`) có bao nhiêu loài khác nhau? Hai cột: đảo, số loài."
+          en: "How many different species live on each island (`island`)? Two columns: island, number of species."
+        solution: SELECT island, COUNT(DISTINCT species) FROM penguins GROUP BY island
+      - task:
+          vi: "Chỉ những con đã biết giới tính (`sex`): chiều dài vây (`flipper_length_mm`) trung bình theo loài và giới tính, làm tròn 1 chữ số thập phân, sắp theo loài rồi giới tính (A→Z). Ba cột: loài, giới tính, vây trung bình."
+          en: "Only penguins whose sex (`sex`) is known: average flipper length (`flipper_length_mm`) by species and sex, rounded to 1 decimal place, sorted by species then sex (A to Z). Three columns: species, sex, average flipper."
+        solution: SELECT species, sex, ROUND(AVG(flipper_length_mm), 1) FROM penguins WHERE sex IS NOT NULL GROUP BY species, sex ORDER BY species, sex
+        ordered: true

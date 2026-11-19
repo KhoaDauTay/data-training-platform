@@ -33,7 +33,7 @@ export function writeServiceWorker(outDir) {
     for (const name of readdirSync(dir)) {
       const path = `${dir}/${name}`;
       if (statSync(path).isDirectory()) walk(path, `${rel}${name}/`);
-      else if (!/^(sw\.js|_headers)$/.test(rel + name)) files.push(rel + name);
+      else if (!/^(sw\.js|_headers|datasets\/.*)$/.test(rel + name)) files.push(rel + name); // V20-B: sample datasets load on demand (then live in IndexedDB), never precached
     }
   };
   walk(outDir, '');

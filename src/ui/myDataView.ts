@@ -1,7 +1,9 @@
 import { DbRestartError, QueryTimeoutError } from '../db/client';
 import type { ImportedTable } from '../db/import';
 import { SqlError } from '../db/run';
-import { t } from '../i18n';
+import { grade } from '../grader';
+import { getLang, t } from '../i18n';
+import { parse as parseYaml } from 'yaml';
 import { IMPORT_LIMITS, MEMORY_WARN_CELLS, type ImportProblem } from '../import/csv';
 import { importedCells, type AddOutcome, type MyData } from '../import/myData';
 import { idbStore } from '../import/store';
@@ -10,6 +12,7 @@ import { schemaHooks, unlockedTables, type Column } from '../state';
 import { cx } from '../theme';
 import { h } from './dom';
 import { errorText } from './feedback';
+import { verdictText } from './tryPreview';
 
 const MB = 1024 * 1024;
 let my: MyData | undefined;
@@ -141,7 +144,33 @@ export function renderMyData(): HTMLElement {
     tables.length
       ? clearButton()
       : null,
+    datasetSection(),
   );
+}
+
+// V20-B (L176): sample datasets. List, text and drawing live in the lazy `datasetPanel` chunk; main only loads it and passes values in.
+let panel: typeof import('../import/datasetPanel') | undefined;
+let panelState: 'idle' | 'loading' | 'failed' = 'idle';
+
+function datasetSection(): HTMLElement | null {
+  if (!my) return null;
+  if (panel) {
+    return panel.datasetPanel({
+      h, cx, parseYaml, lang: getLang(), my, grade, verdictText, errorText, outcomeText, rerender,
+      busy: () => busy,
+      setBusy: (b) => { busy = b; },
+      setStatus: setMyDataStatus,
+    });
+  }
+  if (panelState === 'idle') {
+    panelState = 'loading';
+    import('../import/datasetPanel').then((m) => { panel = m; panelState = 'idle'; rerender(); }, () => { panelState = 'failed'; rerender(); });
+  }
+  // The panel's own text is in the chunk that failed: the app's "could not download a part" line, and a Retry (no load loop).
+  return panelState === 'failed'
+    ? h('p', { class: 'mt-4 text-body-sm text-muted' }, t('err.task'), ' ',
+      h('button', { type: 'button', onclick: () => { panelState = 'idle'; rerender(); } }, t('data.retry')))
+    : null;
 }
 
 /** Two-step "delete all": the first click asks inline (no native confirm(), which blocks the page). */
