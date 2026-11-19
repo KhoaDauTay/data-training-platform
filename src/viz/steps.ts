@@ -9,7 +9,7 @@ import { sqlWords, type WordPart } from './sqlWords';
 export { STEP_LABELS, type StepKey, type StepsFailure } from './stepText';
 export type { GroupSample, JoinMatch } from './stepText';
 import type { GroupSample, JoinMatch, StepKey, StepsFailure } from './stepText';
-import { WORDS_ONLY } from './stepText';
+import { WHY, WORDS_ONLY } from './stepText';
 
 /**
  * One clause. `label` and `range` (its span in the player's SQL) are set on FROM and JOIN steps, since several JOIN
@@ -21,17 +21,17 @@ export interface StepRun {
   label?: string; range?: [number, number]; match?: JoinMatch; groups?: GroupSample[];
 }
 type Ranges = Partial<Record<StepKey, [number, number]>>;
-type Failure = { ok: false; reason: StepsFailure; detail?: string };
+export type Failure = { ok: false; reason: StepsFailure; detail?: string };
 /** `words` (V19-A, L162): the query read clause by clause, from the same parse (src/viz/sqlWords.ts). */
 export type StepsResult = { ok: true; steps: StepRun[]; ranges: Ranges; words?: WordPart[] } | Failure;
 /** The two key queries of one JOIN (matched pairs, left rows without a partner), both on a LEFT JOIN copy of it. */
-type Probe = { kind: JoinMatch['kind']; left: string; right: string; matched: string; unmatched: string };
+export type Probe = { kind: JoinMatch['kind']; left: string; right: string; matched: string; unmatched: string };
 type BuiltStep = { key: StepKey; sql: string | null; label?: string; range?: [number, number]; probe?: Probe };
 type Built = { ok: true; steps: BuiltStep[]; ranges: Ranges; words: WordPart[] } | Failure;
 
 // libpg-query's AST is a large tagged union; these helpers only touch a few well-known fields.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-type Ast = any;
+export type Ast = any;
 
 const STAR = [{ ResTarget: { val: { ColumnRef: { fields: [{ A_Star: {} }] } } } }];
 // Language-neutral alias: results are cached across a VI/EN switch.
@@ -39,7 +39,7 @@ const COUNT = { ResTarget: { name: 'row_count', val: { FuncCall: { funcname: [{ 
 
 // ponytail: an unqualified GROUP BY name that matches both an input column and a SELECT alias
 // resolves to the column in Postgres, but to the alias here. Rare in tickets; fix if a player hits it.
-function groupKeys(sel: Ast): Ast[] {
+export function groupKeys(sel: Ast): Ast[] {
   const targets: Ast[] = sel.targetList ?? [];
   return (sel.groupClause ?? []).map((g: Ast) => {
     const ordinal = g.A_Const?.ival?.ival;
@@ -54,7 +54,7 @@ function groupKeys(sel: Ast): Ast[] {
 }
 
 /** A window function is a FuncCall with an `over` clause anywhere in the subtree (not the word "over" in a string). */
-function hasWindow(node: Ast): boolean {
+export function hasWindow(node: Ast): boolean {
   if (!node || typeof node !== 'object') return false;
   if (node.FuncCall?.over) return true;
   return Object.values(node).some(hasWindow);
@@ -87,7 +87,7 @@ export async function clauseRanges(sql: string): Promise<Ranges> {
 }
 
 /** v10 N1: the FROM item as base table + JOINs in text order, when it is one left-deep chain (no parenthesised or aliased join). */
-function chainOf(from: Ast[] | undefined): Ast[] | undefined {
+export function chainOf(from: Ast[] | undefined): Ast[] | undefined {
   if (from?.length !== 1 || !from[0].JoinExpr) return undefined;
   const levels: Ast[] = [];
   for (let n = from[0]; n; n = n.JoinExpr?.larg) {
@@ -132,7 +132,7 @@ const refName = (n: Ast): string[] | undefined => {
  * v10 N2: `ON a.x = b.y` (one equality of two qualified columns, one of them on the joined table) on an INNER or LEFT
  * JOIN of a plain table. Anything else (USING, NATURAL, RIGHT/FULL, a sub-query, expressions) gets counts only.
  */
-async function probeOf(level: Ast, wrap: (o: Ast) => Promise<string>): Promise<Probe | undefined> {
+export async function probeOf(level: Ast, wrap: (o: Ast) => Promise<string>): Promise<Probe | undefined> {
   const j = level.JoinExpr;
   const kind = j.jointype === 'JOIN_INNER' ? 'inner' : j.jointype === 'JOIN_LEFT' ? 'left' : undefined;
   const q = j.quals?.A_Expr;
@@ -153,7 +153,8 @@ async function probeOf(level: Ast, wrap: (o: Ast) => Promise<string>): Promise<P
   return { kind, left: l.f!.join('.'), right: r.f!.join('.'), matched: pick('NOT NULL', 6), unmatched: pick('NULL', 2) };
 }
 
-export async function buildSteps(sql: string): Promise<Built> {
+/** The one SELECT of sql (no WITH/UNION/window) and wrap, which deparses a SelectStmt built from its parts. Shared with src/viz/why.ts. */
+export async function selectOf(sql: string): Promise<{ ok: true; sel: Ast; wrap: (o: Ast) => Promise<string> } | Failure> {
   await ensureParser();
   let tree: Ast;
   try {
@@ -166,9 +167,15 @@ export async function buildSteps(sql: string): Promise<Built> {
   if (!sel) return { ok: false, reason: 'notSelect' };
   if (sel.withClause || (sel.op && sel.op !== 'SETOP_NONE')) return { ok: false, reason: 'withUnion' };
   if (hasWindow([sel.targetList, sel.sortClause])) return { ok: false, reason: 'window' };
-
   const wrap = async (o: Ast): Promise<string> => String(await
     deparse({ version: tree.version, stmts: [{ stmt: { SelectStmt: { limitOption: 'LIMIT_OPTION_DEFAULT', op: 'SETOP_NONE', ...o } } }] }));
+  return { ok: true, sel, wrap };
+}
+
+export async function buildSteps(sql: string): Promise<Built> {
+  const parsed = await selectOf(sql);
+  if (!parsed.ok) return parsed;
+  const { sel, wrap } = parsed;
   const base = { fromClause: sel.fromClause, whereClause: sel.whereClause };
   // Group by the resolved expressions too: the sub-query has no SELECT alias or ordinal to refer to.
   const keys = groupKeys(sel);
@@ -225,6 +232,8 @@ async function fromSteps(sql: string, from: Ast[], range: [number, number] | und
 const cell = (v: unknown): string => (v === null ? 'NULL' : v instanceof Date ? v.toISOString().slice(0, 10) : String(v));
 
 export async function runSteps(db: PGlite, sql: string, opts: RunOpts = {}): Promise<StepsResult> {
+  // V22-B (L206): "Why this row?" rides the same request (no new kind, worker.ts unchanged); its own lazy chunk.
+  if (sql.startsWith(WHY)) return (await import('./why')).runWhy(db, sql.slice(WHY.length), opts) as unknown as StepsResult; // read as WhyResult
   if (sql.startsWith(WORDS_ONLY)) { // V19-A: the words line under the editor needs the parse only (no sub-query, no timeout risk)
     const built = await buildSteps(sql.slice(WORDS_ONLY.length));
     return built.ok ? { ok: true, steps: [], ranges: built.ranges, words: built.words } : built;
