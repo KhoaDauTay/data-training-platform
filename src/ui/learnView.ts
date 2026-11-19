@@ -20,9 +20,9 @@ const BTN = 'rounded-full px-4 whitespace-nowrap';
 const ABOVE = 'relative z-10';
 const cx = (...c: string[]): string => c.join(' ');
 const H2 = 'm-0 text-title font-bold';
-/** The "‹ back" line with "Boon chỉ mình" on its right (v8 §2.1). */
-const backLine = (href: string, text: string, guide: string): HTMLElement =>
-  d$.h('p', { class: 'm-0 flex flex-wrap items-center justify-between gap-2' }, d$.h('a', { href }, text), replayBtn(guide));
+/** "Boon chỉ mình" on the right (v8 §2.1). v21 U18: the way back up and the page's name are the breadcrumb and h1 above (homeView). */
+const backLine = (guide: string): HTMLElement =>
+  d$.h('p', { class: 'm-0 flex justify-end' }, replayBtn(guide));
 const slot = (name: string): HTMLElement => d$.guideSlot(name);
 /** ui-ux-v5 B1: skill icons that just became "learned" get a one-shot stamp (src/learn.ts stamper). */
 const stamps = stamper();
@@ -97,18 +97,18 @@ function skillStatus(c: LearnCtx, id: string): string {
 }
 
 /** One skill: status, quick lesson, its three drills (v6 §3.4 F5: one roomy block, no stacked chips). */
-function skillBlock(c: LearnCtx, s: Skill, heading: 'h2' | 'h3'): HTMLElement {
+function skillBlock(c: LearnCtx, s: Skill, card: boolean): HTMLElement {
   const { h } = d$;
   const st = skillState(c, s.id);
   const drills = c.general.bySkill.get(s.id) ?? [];
-  const card = heading === 'h3'; // a module page: a click anywhere on the card opens the skill page (L88, L93)
+  // card: a module page, a click anywhere on the card opens the skill page (L88, L93); its name is an h2 under the page's h1 (U18)
   // v5 B1: the icon tile (decorative, the status line says "learned" in words); not an ancestor of the link (L93)
   const tile = h('span', { class: stamps.stamp(s.id, st.learned) ? 'cq-stamp relative grid size-10 shrink-0 place-items-center rounded-full bg-accent-soft text-ink' : 'relative grid size-10 shrink-0 place-items-center rounded-full bg-accent-soft text-ink', 'aria-hidden': 'true' },
     d$.skillIcon(s.id), st.learned ? d$.icon('check', 'cq-ck absolute -right-1 -bottom-1 size-5 rounded-full bg-panel p-0.5 text-good ring-1 ring-line') : null);
   return h('section', { class: card ? 'relative cursor-pointer space-y-3 rounded-(--r-card) bg-panel p-5 ring-1 ring-line hover:ring-accent' : 'space-y-3 rounded-(--r-card) bg-panel p-5 ring-1 ring-line' },
     h('div', { class: 'flex flex-wrap items-center justify-between gap-2' },
       h('div', { class: 'flex min-w-0 items-center gap-3' }, tile,
-        h(heading, { class: H2 }, card ? h('a', { href: `${d$.hashOf('learn')}/skill/${s.id}`, class: 'after:absolute after:inset-0' }, label(s)) : label(s))),
+        card ? h('h2', { class: H2 }, h('a', { href: `${d$.hashOf('learn')}/skill/${s.id}`, class: 'after:absolute after:inset-0' }, label(s))) : null), // a skill page: its name is the h1 (U18)
       h('span', { class: 'text-body-sm text-muted' }, `${skillStatus(c, s.id)} · ${lt('learn.drills', { n: st.drills, total: st.total })}`)),
     h('p', { class: 'm-0 text-[15px] text-muted' }, s.when[d$.getLang()]),
     d$.loadLessons().has(s.id)
@@ -123,12 +123,11 @@ function modulePage(c: LearnCtx, n: number, entered: boolean): HTMLElement {
   const { h } = d$;
   const ms = moduleState(c, n);
   return h('div', { class: 'space-y-5' },
-    backLine(d$.hashOf('learn'), lt('learn.backAll'), 'module-intro'),
+    backLine('module-intro'),
     h('div', { class: 'flex items-center gap-3' }, moduleArt(c, n, entered ? 'cq-glyph-in w-24' : 'w-24', ms.done), // Plan 8b, v6 S4
-      h('h2', { class: 'm-0 text-heading font-bold' }, lt('learn.moduleTitle', { n, title: d$.moduleTitle(n, d$.getLang()) }))),
-    h('p', { class: 'm-0 text-muted' }, lt('learn.moduleLine', { k: ms.learned, m: ms.skills.length })),
+      h('p', { class: 'm-0 text-muted' }, lt('learn.moduleLine', { k: ms.learned, m: ms.skills.length }))),
     slot('module-head'),
-    ...d$.SKILLS.filter((s) => s.chapter === n).flatMap((s, i) => (i ? [skillBlock(c, s, 'h3')] : [slot('module-skill'), skillBlock(c, s, 'h3')])));
+    ...d$.SKILLS.filter((s) => s.chapter === n).flatMap((s, i) => (i ? [skillBlock(c, s, true)] : [slot('module-skill'), skillBlock(c, s, true)])));
 }
 
 function skillPage(c: LearnCtx, s: Skill): HTMLElement {
@@ -136,12 +135,12 @@ function skillPage(c: LearnCtx, s: Skill): HTMLElement {
   const lang = d$.getLang();
   const lesson = d$.loadLessons().get(s.id);
   return h('div', { class: 'space-y-5' },
-    backLine(`${d$.hashOf('learn')}/sql/${s.chapter}`, lt('learn.backModule', { n: s.chapter }), 'skill'),
+    backLine('skill'),
     slot('skill-head'),
-    skillBlock(c, s, 'h2'),
+    skillBlock(c, s, false),
     slot('skill-card'),
     h('section', { class: 'space-y-2 rounded-(--r-card) bg-panel p-5 ring-1 ring-line', 'aria-labelledby': 'skill-card' },
-      h('h3', { id: 'skill-card', class: 'm-0 font-bold' }, lt('learn.card')),
+      h('h2', { id: 'skill-card', class: 'm-0 text-body font-bold' }, lt('learn.card')),
       // L93: General shows the lesson's example and mistake (lab, a shop chain), not the card's domain syntax and trap (L82).
       h('pre', { class: 'sql' }, lesson?.example ?? s.syntax),
       // v21 U27: "when to use it" is already the line under the skill's name; the trap label sits on its paragraph
@@ -258,8 +257,7 @@ function advPage(c: LearnCtx, x: AdvNode): HTMLElement {
   };
   const needs = x.needs.flatMap((id, i) => (i ? [', ', need(id)] : [need(id)]));
   return h('div', { class: 'space-y-5' },
-    backLine(d$.hashOf('learn'), lt('learn.backAll'), x.status === 'external' ? 'adv-ext' : 'adv'),
-    h('h2', { class: 'm-0 text-heading font-bold' }, `${x.id.toUpperCase()} · ${x.title[lang]}`),
+    backLine(x.status === 'external' ? 'adv-ext' : 'adv'),
     statusLine(x, x.status === 'external' ? '' : ` · ${lt('learn.drills', { n: st.drills, total: st.total })}`),
     h('section', { class: 'mt-6 space-y-3 rounded-(--r-card) bg-panel p-5 ring-1 ring-line' },
     h('div', { class: 'text-[15px] leading-relaxed' }, d$.richText(x.why[lang])),
@@ -278,17 +276,17 @@ function advPage(c: LearnCtx, x: AdvNode): HTMLElement {
       : null,
     x.drills.length ? slot('adv-drills') : null),
     x.readings.length
-      ? h('section', { class: 'space-y-3' }, h('h3', { class: 'm-0 font-bold' }, lt('adv.readings')),
+      ? h('section', { class: 'space-y-3' }, h('h2', { class: 'm-0 text-body font-bold' }, lt('adv.readings')),
         h('p', { class: 'm-0 text-muted' }, lt('adv.readingsNote')),
         ...x.readings.map((r) => h('article', { class: 'space-y-2 rounded-(--r-card) bg-panel p-5 ring-1 ring-line' },
-          h('h4', { class: 'm-0 font-bold' }, r.title[lang]),
+          h('h3', { class: 'm-0 font-bold' }, r.title[lang]),
           h('div', { class: 'text-[15px] leading-relaxed' }, d$.richText(r.body[lang])),
           h('div', { class: 'grid gap-3 md:grid-cols-2' },
             h('figure', { class: 'm-0 min-w-0' }, h('figcaption', { class: 'mb-1 text-body-sm text-muted' }, 'SQL'), h('pre', { class: 'sql overflow-x-auto whitespace-pre', lang: 'en', tabindex: '0' }, r.sql)), // v21 U29: scroll, never break an expression
             h('figure', { class: 'm-0 min-w-0' }, h('figcaption', { class: 'mb-1 text-body-sm text-muted' }, 'pandas'), h('pre', { class: 'sql overflow-x-auto whitespace-pre', lang: 'en', tabindex: '0' }, r.pandas))))))
       : null,
     x.links.length
-      ? h('section', { class: 'space-y-1' }, h('h3', { class: 'm-0 font-bold' }, lt('adv.links')),
+      ? h('section', { class: 'space-y-1' }, h('h2', { class: 'm-0 text-body font-bold' }, lt('adv.links')),
         h('ul', { class: 'm-0 list-disc space-y-1 pl-5' }, ...x.links.map((l) => h('li', {},
           h('a', { href: l.url, target: '_blank', rel: 'noopener noreferrer' }, l.title[lang], ' ↗',
             h('span', { class: 'sr-only' }, ` (${lt('adv.newTab')})`))))))

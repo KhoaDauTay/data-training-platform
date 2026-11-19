@@ -440,29 +440,28 @@ export function listPage(): HTMLElement {
     },
   });
   return h('div', { class: 'flex flex-col gap-6' },
-    h('p', { class: 'm-0' }, h('a', { href: d$.hashOf('learn') }, it('iv.back'))),
-    h('h2', { class: 'm-0 text-heading' }, it('iv.title')),
+    // v21 U18: the breadcrumb and the h1 "Phòng phỏng vấn" are drawn above by homeView
     h('p', { class: 'm-0 text-[15px]' }, it('iv.intro')),
     h('section', { class: 'flex flex-col gap-3', 'aria-labelledby': 'iv-sets' },
-      h('h3', { id: 'iv-sets', class: 'm-0 text-title font-bold' }, it('iv.sets')),
+      h('h2', { id: 'iv-sets', class: 'm-0 text-title font-bold' }, it('iv.sets')),
       h('p', { class: 'm-0 text-body-sm text-muted' }, it('iv.setsIntro')),
       h('label', { class: 'flex min-h-6 items-center gap-2' }, pick, it('iv.timerPick')),
       h('ul', { class: 'm-0 flex list-none flex-col gap-3 p-0' }, ...c$.sets.map((s) => {
         const last = p.sets[s.id];
         return h('li', { class: ROW }, h('div', { class: 'flex min-w-0 flex-1 flex-col gap-1' },
-          h('h4', { class: 'm-0 text-body font-bold' }, s.title[lang]),
+          h('h3', { class: 'm-0 text-body font-bold' }, s.title[lang]),
           h('p', { class: 'm-0 text-body-sm text-muted' }, `${it(`iv.level.${s.level}` as IvKey)} · ${it('iv.setLine', { ...range(s.modules), n: s.questions.length, min: s.minutes })}`),
           h('p', { class: 'm-0 text-body-sm' }, knownLine(s.modules)),
           last ? h('p', { class: 'm-0 text-body-sm' }, it('iv.lastSet', { day: last.at, solved: last.solved, total: last.total, time: clock(last.ms) })) : null),
           actions(s.id));
       }))),
     h('section', { class: 'flex flex-col gap-3', 'aria-labelledby': 'iv-th' },
-      h('h3', { id: 'iv-th', class: 'm-0 text-title font-bold' }, it('iv.takeHomes')),
+      h('h2', { id: 'iv-th', class: 'm-0 text-title font-bold' }, it('iv.takeHomes')),
       h('p', { class: 'm-0 text-body-sm text-muted' }, it('iv.thIntro')),
       h('ul', { class: 'm-0 flex list-none flex-col gap-3 p-0' }, ...c$.takeHomes.map((x) => {
         const last = p.takeHomes[x.id];
         return h('li', { class: ROW }, h('div', { class: 'flex min-w-0 flex-1 flex-col gap-1' },
-          h('h4', { class: 'm-0 text-body font-bold' }, x.title[lang]),
+          h('h3', { class: 'm-0 text-body font-bold' }, x.title[lang]),
           h('p', { class: 'm-0 text-body-sm text-muted' }, `${it('iv.thLine', { ...range(x.modules), n: x.steps.length })}`),
           h('p', { class: 'm-0 text-body-sm' }, knownLine(x.modules)),
           last ? h('p', { class: 'm-0 text-body-sm' }, it('iv.lastTh', { day: last.at, k: last.checks.length, m: last.rubric })) : null),

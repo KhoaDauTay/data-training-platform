@@ -24,6 +24,8 @@ export function renderInbox(): void {
     if (list) list.push(tk);
     else threads.set(tk.from.name, [tk]);
   }
+  // U20 (v21): the dialog's first focus goes to the open task (else the newest), never to the scrolling list (a ring around it all).
+  const first = visible.some((x) => x.id === app.selectedId) ? app.selectedId : threads.values().next().value?.[0]?.id;
   byId('inbox-list').replaceChildren(
     fresh ? '' : h('p', { class: 'muted' }, t('inbox.empty')),
     ...[...threads.values()].map((list) => {
@@ -42,6 +44,7 @@ export function renderInbox(): void {
               'block w-full rounded-(--r-card) rounded-tl-sm border-0 bg-code px-3 py-2 text-left ring-1 ring-transparent hover:bg-code hover:ring-line aria-[current=true]:ring-2 aria-[current=true]:ring-accent',
               isDone && 'text-muted'),
             'aria-current': tk.id === app.selectedId ? 'true' : false,
+            autofocus: tk.id === first,
             onclick: () => actions.selectTicket(tk.id),
           },
             h('span', { class: 'block font-semibold' }, textOf(tk, lang).title),

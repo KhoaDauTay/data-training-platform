@@ -1,4 +1,4 @@
-import { generalNow, loadTicketTemplates } from './content';
+import { generalNow, loadTickets, loadTicketTemplates } from './content';
 import { learnedSkills } from './home';
 import { dueSkills, localDay, QUEUE_MAX, reviewQueue, warmupQueue, type PracticeItem } from './practice';
 import { currentChapter, SKILLS, xpFor } from './progress';
@@ -105,9 +105,13 @@ export function reviewToday(rnd: () => number = Math.random, drills = generalNow
   const d = done();
   return reviewQueue(app.save.review, reviewSkills(), loadTicketTemplates(), d, today(), rnd, drills, reviewedDrills);
 }
-/** Skills under review: learned through tickets, or holding a card (a drill passed in the General area creates one, D8a-11). */
+/**
+ * Skills under review: holding a card (a completion in any domain seeds one, so does a passed General drill, D8a-11), plus the
+ * skills learned through Logistics tickets (older saves without cards). R21-U6: never the open domain's tickets, so the count is
+ * the same on every page (Review is General, like the learning path).
+ */
 const reviewSkills = (): Set<string> =>
-  new Set([...learnedSkills(app.tickets, done()), ...Object.keys(app.save.review).filter((s) => SKILLS.some((k) => k.id === s))]);
+  new Set([...learnedSkills(loadTickets('logistics'), done()), ...Object.keys(app.save.review).filter((s) => SKILLS.some((k) => k.id === s))]);
 /** Drills reviewed this session (memory only): the next review of the same skill picks another one. */
 export const reviewedDrills = new Set<string>();
 /** Every skill has drills (tests/general.test.ts), so the drill queue holds one item per due skill: countable without the General chunk. */

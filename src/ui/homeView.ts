@@ -1,4 +1,4 @@
-import { loadTickets } from '../content';
+import { generalNow, loadTickets } from '../content';
 import { activeDomain, DOMAINS, domainText } from '../domains';
 import { homeModel, knownSkills, kpisOf, kpiTiles, LEVELS, reliesOn, resumeTarget, type ChapterCard, type HomeModel } from '../home';
 import { sqlOnly } from '../onboarding';
@@ -569,6 +569,23 @@ const PAGE_TITLE: Record<Page, Key> = {
 };
 const pageOf = (r: string): Page => (r === 'learn' || r === 'practice' || r === 'overview' || r === 'map' || r === 'me' ? r : 'home');
 
+/** v21 U18: the title of a learning-path sub-page (module, skill, advanced node, interview room) and the step above it; main text only. */
+function learnSub(): { title: string; up?: { href: string; text: string } } | undefined {
+  const hash = location.hash;
+  const lang = getLang();
+  const mod = (n: number): string => t('learn.module', { n, title: moduleTitle(n, lang) });
+  const n = learnModuleOf(hash);
+  if (n !== undefined) return { title: mod(n) };
+  const skill = SKILLS.find((s) => s.id === learnSkillOf(hash));
+  if (skill) return { title: skill.label[lang], up: { href: `${hashOf('learn')}/sql/${skill.chapter}`, text: mod(skill.chapter) } };
+  const adv = learnAdvOf(hash);
+  if (adv) {
+    const node = generalNow()?.nodes.find((x) => x.id === adv); // the General chunk draws the page; until it is in, the id alone
+    return { title: node ? `${adv.toUpperCase()} · ${node.title[lang]}` : adv.toUpperCase() };
+  }
+  return isInterviewPage(hash) ? { title: t('prac.interview') } : undefined;
+}
+
 /** Redrawn by rerender() (language switch, progress). Pure DOM from homeModel(); keeps no state of its own. */
 export function renderHome(host: HTMLElement): void {
   const page = pageOf(currentRoute());
@@ -580,14 +597,19 @@ export function renderHome(host: HTMLElement): void {
   const grid = page === 'overview'; // the harbour page keeps its 3-column grid; the others are one 880 px column (v6 §3.3)
   const enter = host.dataset.enter !== undefined; // ui-ux-v5 C1: set by showRoute(), used by this draw only
   delete host.dataset.enter;
-  host.replaceChildren(
+  const sub = page === 'learn' ? learnSub() : undefined;
+  host.replaceChildren(...nodes(
+    // v21 U18: a learning-path sub-page is named by its own h1, under a small trail back up ("Lộ trình › Phần 2").
+    sub ? h('nav', { class: 'mx-auto mt-6 max-w-(--w-read) px-4 text-body-sm text-muted', 'aria-label': t('nav.crumbs') },
+      h('a', { href: hashOf('learn') }, t('nav.learn')),
+      ...(sub.up ? [' › ', h('a', { href: sub.up.href }, sub.up.text)] : [])) : null,
     h('h1', {
       id: 'home-title', tabindex: '-1',
-      class: page === 'home' || page === 'overview' ? 'sr-only' : 'mx-auto mt-6 mb-0 max-w-(--w-read) px-4 text-heading',
-    }, t(PAGE_TITLE[page])),
+      class: page === 'home' || page === 'overview' ? 'sr-only' : cx('mx-auto mb-0 max-w-(--w-read) px-4 text-heading', sub ? 'mt-1' : 'mt-6'),
+    }, sub?.title ?? t(PAGE_TITLE[page])),
     h('div', { class: cx(grid ? 'mx-auto grid max-w-(--w-wide) gap-5 px-4 py-6 lg:grid-cols-3' : 'mx-auto grid max-w-(--w-read) gap-8 px-4 py-6', enter && 'cq-enter') },
       ...nodes(...sections.filter((s) => s.pages.includes(page)).map((s) => {
         const el = s.render(m);
         return el && h('div', { class: cx('min-w-0', grid && SPAN[s.span]) }, el);
-      }))));
+      })))));
 }
