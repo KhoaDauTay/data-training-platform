@@ -57,3 +57,12 @@
   bio: { vi: "Trả lời khách mỗi ngày về lịch trả; muốn số liệu đơn giản để đọc lại qua điện thoại.", en: "Answers customers about their repayment schedule every day; wants figures simple enough to read out on the phone." }
   tables: [customers, schedules]
   look: { skin: medium, hair: black, style: ponytail, accessory: lanyard }
+
+# v20 (L186): the credit committee's policy writer, sender of chapter 7's twist.
+- name: "Ông Thị Mỹ Duyên"
+  dept: Risk
+  employee: null
+  role: { vi: "Chuyên viên chính sách tín dụng", en: "Credit policy officer" }
+  bio: { vi: "Soạn luật duyệt vay cho hội đồng tín dụng; không tin giả thuyết nào chưa được kiểm tra chéo.", en: "Writes the approval rules for the credit committee; trusts no hypothesis until it has been cross-checked." }
+  tables: [applications, customers]
+  look: { skin: light, hair: brown, style: long, accessory: glasses }

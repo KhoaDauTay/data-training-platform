@@ -26,7 +26,8 @@ const GROUPS = [
   ['ecom', /^ecomSources-/, 50], // Plan 9: content/domains/ecom (30 tickets, chapters, people, KPIs), lazy on the first visit (D9-16)
   ['ecomart', /^ecommerce-/, 10], // Plan 9: src/art/ecommerce.ts (store scene, delivery map), lazy
   ['ecomseed', /^ecomSeed-/, 10], // Plan 9: src/db/ecom/{schema,seed}.sql, lazy in the worker on ensure('ecom'): 7.6 KB gz -9 measured on the source (D9-16)
-  ['fin', /^finSources-/, 50], // Plan 11 T2: content/domains/fin (tickets, chapters, people, KPIs), lazy on the first visit (product-design-v9 §6.4)
+  ['fin', /^finSources-/, 50], // Plan 11 T2: content/domains/fin (since v20 L185: tickets of chapters 1–4 + chapters, people, KPIs), lazy on the first visit (product-design-v9 §6.4)
+  ['finlate', /^finLateSources-/, 30], // v20 (L185): Finance tickets of chapters 5–7 (src/finLateSources.ts), fetched in parallel with `fin` by loadDomain('finance'); `fin` keeps ch1–4 + chapters/people/KPIs
   ['finseed', /^finSeed-/, 10], // Plan 11 T1: src/db/fin/{schema,seed}.sql, lazy in the worker on ensure('fin') (product-design-v9 §6.4)
   ['finart', /^finance-/, 10], // Plan 11 T6: src/art/finance.ts (counter scene, branch map, completion dock), lazy; after fin/finseed (finSources-/finSeed- never match ^finance-)
   ['gameseed', /^gameSeed-/, 16], // v12.0 P1 (Plan 10 D10-1): src/db/{schema,seed}.sql, lazy in the worker on ensure('game'): 13.3 KB gz -9 on the source

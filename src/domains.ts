@@ -66,15 +66,16 @@ export const ownerOf = (id: string): DomainId =>
   (Object.keys(DOMAIN_ID) as (keyof typeof DOMAIN_ID)[]).find((d) => DOMAIN_ID[d].test(id)) ?? 'logistics';
 
 /** Main-bundle words of each non-Logistics domain's pages (v9 §6.2): shown before, and without, its art chunk. */
-export interface DomainText { story: Key; dataIntro: Key; sceneTitle: Key; mapTitle: Key; callout: Key; done: Key; promoted: Key }
+/** `opensTo` (v20, L186): the last chapter whose promotion review opens a map point; later reviews say `domain.promotedRank`. */
+export interface DomainText { story: Key; dataIntro: Key; sceneTitle: Key; mapTitle: Key; callout: Key; done: Key; promoted: Key; opensTo: number }
 export const DOMAIN_TEXT: Record<Exclude<DomainId, 'logistics'>, DomainText> = {
   ecommerce: {
     story: 'ecom.briefStory', dataIntro: 'ecom.dataIntro', sceneTitle: 'ecom.scene.title', mapTitle: 'ecom.map.title',
-    callout: 'ecom.scene.callout', done: 'ecom.done', promoted: 'ecom.promoted',
+    callout: 'ecom.scene.callout', done: 'ecom.done', promoted: 'ecom.promoted', opensTo: 5,
   },
   finance: {
     story: 'fin.briefStory', dataIntro: 'fin.dataIntro', sceneTitle: 'fin.scene.title', mapTitle: 'fin.map.title',
-    callout: 'fin.scene.callout', done: 'fin.done', promoted: 'fin.promoted',
+    callout: 'fin.scene.callout', done: 'fin.done', promoted: 'fin.promoted', opensTo: 6,
   },
 };
 /** The open (or given) domain's words; undefined in Logistics, whose pages have their own. */

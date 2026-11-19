@@ -2,6 +2,7 @@ import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { parse } from 'yaml';
 import type { Ctx } from '../src/art/logistics';
 import { bend, BRANCHES, FIN_TEXT, HQ, openBranches, TIER } from '../src/art/finance';
+import { DOMAIN_TEXT } from '../src/domains';
 import type { Harbor } from '../src/scene';
 import { chapterColor } from '../src/theme';
 import type { Ticket } from '../src/tickets';
@@ -17,6 +18,8 @@ describe('bản đồ chi nhánh Finance (product-design-v9 §5.3)', () => {
     expect([...openBranches(new Set())].sort()).toEqual(['Da Nang', 'Hoi An']);
     for (let ch = 1; ch <= 6; ch++) expect(BRANCHES.filter((b) => b.opens === ch)).toHaveLength(1);
     expect(openBranches(new Set([1, 2, 3, 4, 5, 6])).size).toBe(BRANCHES.length);
+    // v20 (L186): chapter 7 opens no branch; its review says domain.promotedRank (ui/stage.ts) and sticks the fourth star
+    expect(DOMAIN_TEXT.finance.opensTo).toBe(Math.max(...BRANCHES.map((b) => b.opens)));
   });
 
   it('không tuyến nào đi qua chấm của chi nhánh khác (cách tâm > 12)', () => {
@@ -162,6 +165,22 @@ describe('Finance: cảnh quầy Hũ Bạc và dock khi xong việc', () => {
     expect(walk(root).some((n) => n.tag === 'div' && n.style.opacity === '1')).toBe(true);
     expect(loops(root)).toEqual([]);
     expect(art.ms(c)).toBe(3000);
+  });
+
+  it('v20: đánh giá chương 7 (★, không chi nhánh mới) dán sao thứ tư; bốn sao nằm trong nhãn, không chồng nhau', async () => {
+    const c = ctx(true, 7, harbor(34, [1, 2, 3, 4, 5, 6]), harbor(35, [1, 2, 3, 4, 5, 6, 7]));
+    art.build(c);
+    await art.play(c);
+    const root = c.art as unknown as Fake;
+    const st = stars(root);
+    expect(st.map((n) => n.attrs['data-star'])).toEqual(['1', '4', '6', '7']);
+    for (const n of st) expect(n.attrs.opacity ?? '1').toBe('1');
+    const xs = st.map((n) => Number(n.children.find((k) => k.tag === 'circle')?.attrs.cx));
+    for (let i = 1; i < xs.length; i++) expect(xs[i] - xs[i - 1]).toBeGreaterThanOrEqual(20);
+    const label = walk(root).find((n) => n.tag === 'rect' && n.attrs.fill === '#fef3c7')!;
+    expect(xs[0] - 10).toBeGreaterThanOrEqual(Number(label.attrs.x));
+    expect(xs[3] + 10).toBeLessThanOrEqual(Number(label.attrs.x) + Number(label.attrs.width));
+    expect(coins(root)).toHaveLength(30); // the jar stays full at 30
   });
 
   it('thăng tiến chương không ★: chi nhánh mở, không thêm sao', async () => {

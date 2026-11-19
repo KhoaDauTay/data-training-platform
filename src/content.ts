@@ -42,7 +42,9 @@ const domainLoading = new Map<DomainId, Promise<void>>();
 /** Lazy content chunk and folder of each non-Logistics domain (Plan 9, Plan 11). */
 const DOMAIN_SOURCES: Partial<Record<DomainId, [() => Promise<typeof import('./ecomSources')>, string]>> = {
   ecommerce: [() => import('./ecomSources'), 'domains/ecom'],
-  finance: [() => import('./finSources'), 'domains/fin'],
+  // v20 (L185): two chunks fetched in parallel, so loadDomain('finance') still resolves with every ticket.
+  finance: [() => Promise.all([import('./finSources'), import('./finLateSources')])
+    .then(([a, b]) => ({ ...a, ticketSources: { ...a.ticketSources, ...b.ticketSources } })), 'domains/fin'],
 };
 
 /**
