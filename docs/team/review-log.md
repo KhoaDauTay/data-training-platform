@@ -775,3 +775,13 @@ Cách đo: `npx vite build --base=/data-training-platform/` (`MSYS_NO_PATHCONV=1
 - **`restart()` + import CSV** (Edge, 1280×860, hồ sơ có snapshot, một bản ghi import `my_csv` 3 dòng đặt sẵn trong IndexedDB `cargo-query`/`imports`): mở lại → `SELECT count(*) FROM my_csv` = 3 (import phát lại sau khi nạp snapshot); `SELECT count(*) FROM generate_series(1, 400000000)` quá 5 s → "Truy vấn lỗi", mốc `db:restart`, `db:ready` lần hai (worker mới nạp lại snapshot); sau đó `my_csv` vẫn 3 dòng, `shipments` 20 000 dòng; 0 exception.
 - Ngân sách (gzip -9, so với ba20cde): main 317 266 → 317 544 B (+0,28 KB, cổng ≤ +3 KB), worker 138 840 → 140 250 B (+1,4 KB, 137/160 KB), html +34 B, `sw.js` 3,9 KB gz (gốc `dist/`, ngoài các nhóm của `check-budget`). Precache: 148 file, ~26 MB thô (PGlite chiếm ~16 MB, vốn đã phải tải).
 - Chưa đo: Chrome, điện thoại, bộ nhớ đỉnh lúc nạp (tar thô ~70–170 MB trong bộ nhớ khi dump/nạp); `lab`; GitHub Pages thật (không nén `.wasm`/`.data` nên precache lần đầu nặng hơn).
+
+## V19-D (portfolio, top bar), 2026-11-19, L170–L171
+
+Cách đo: `npm run build`, `vite preview --port 5217 --strictPort`, Edge headless qua CDP; localStorage đặt trước khi app chạy (trang `manifest.webmanifest` cùng origin). Fixture: save-v5 + Finance xong 30 việc (graded mỗi việc), 5 thẻ Finance (c1–c4 có trong `cards-ran`, c5 không), take-home `g-iv-th-1` đã nộp (live `phase: 'done'`), tên "Lily Tester". Ảnh ở scratchpad `v19d\`.
+
+- Portfolio Finance: sáng/VI 2,7 s, tối/EN 3,3 s (gồm seed Finance); zip mở được bằng `Expand-Archive`: `README.md` + `cards/c1..c4.png` (35–83 KB/ảnh, không trống, đúng theme); c5 (chưa chạy ở máy) chỉ có SQL. Take-home `.md`: đề, 3 bước SQL đã đạt, đoạn tự viết, rubric `[x]/[ ]` 2/5.
+- Nút "Tải ảnh PNG" trên Bảng điều hành (code vẽ đã chuyển sang `portfolioPng`) vẫn tải `boondata-finance-c2.png`.
+- Top bar: 53 px một hàng ở 1024–1600 (L171 số đo). ⋯ ở workspace 700 px có VI/EN + theme; 600/900 px và trang khác không đổi.
+- Ngân sách (gzip -9): main 321 927 B (314,4 KB; roadmap đo 315), `me` 11 346 B (11,1/12), `portfolioPng` 3 314 B (mới, đang tính vào `rest`; đề xuất nhóm 6 KB cho V19-C). `dist/sw.js` có chunk mới trong `FILES`.
+- Chưa làm: F11 (chờ V10-B). Chờ merge: FIX-1 đổi `importedNames` thành Promise và sửa cùng các hàm ở `meView.ts` (code mới đã `await`, sẽ có xung đột nhỏ khi merge).
