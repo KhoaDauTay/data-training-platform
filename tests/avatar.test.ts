@@ -4,6 +4,7 @@ import html from '../index.html?raw';
 import css from '../src/style.css?raw';
 import { LOOK, PEOPLE } from '../src/people';
 import { avatar } from '../src/ui/avatar';
+import { mascot, MINI_VIEW } from '../src/ui/mascots';
 
 // ui-ux-v7 X1 (L164): portraits in the mascot grammar. Every gradient they use lives in the sprite, every colour token in style.css.
 describe('colleague portraits', () => {
@@ -29,5 +30,19 @@ describe('colleague portraits', () => {
   it('decorative, never focusable', () => {
     expect(svg.getAttribute('aria-hidden')).toBe('true');
     expect(svg.getAttribute('focusable')).toBe('false');
+  });
+});
+
+// ui-ux-v7 X3 (L165): Boon at 32 px or less is the small head; larger Boon, sleeping Boon and every Lily keep the full rig.
+describe('small Boon', () => {
+  it('size-8 Boon draws the head on a disc; size-12 Boon and size-8 Lily do not', () => {
+    const small = mascot('boon', 'point', 'size-8 shrink-0');
+    expect(small.getAttribute('viewBox')).toBe(MINI_VIEW);
+    expect(small.querySelector('[data-part="mini-bg"]')).not.toBeNull();
+    expect(small.querySelector('[data-part="body"]')).toBeNull();
+    expect(mascot('boon', 'point', 'size-12').getAttribute('viewBox')).toBe('0 0 120 120');
+    expect(mascot('boon', 'point', 'size-10').getAttribute('viewBox')).toBe('0 0 120 120');
+    expect(mascot('lily', 'think', 'size-8 shrink-0').getAttribute('viewBox')).toBe('0 0 120 120');
+    expect(mascot('boon', 'sleep', 'size-8').getAttribute('viewBox')).toBe('0 0 120 120');
   });
 });

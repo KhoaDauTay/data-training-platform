@@ -93,7 +93,10 @@ export function createPanel(host: HTMLElement): Panel {
     bar.dataset.right = String(bar.scrollLeft + bar.clientWidth < bar.scrollWidth - 1);
   };
   bar.addEventListener('scroll', edges, { passive: true });
-  if (typeof ResizeObserver !== 'undefined') new ResizeObserver(() => { edges(); place(false); }).observe(bar);
+  if (typeof ResizeObserver !== 'undefined') { // the bar, and each tab (a web-font swap or a relabel resizes a tab, not the bar)
+    const ro = new ResizeObserver(() => { edges(); place(false); });
+    for (const el of [bar, ...buttons]) ro.observe(el);
+  }
   // v12 audit: tabs a beginner has not reached are hidden (D-O4), so one muted line says more are coming, never silence.
   // Below md only a lock and "+N" (the sentence is its title and label).
   const more = h('span', { class: 'mb-2.5 flex shrink-0 items-center gap-1 self-center text-caption text-muted', hidden: true }, icon('lock', 'size-3.5'), h('span', { class: 'max-md:hidden' }), h('span', { class: 'md:hidden', 'aria-hidden': 'true' }));
