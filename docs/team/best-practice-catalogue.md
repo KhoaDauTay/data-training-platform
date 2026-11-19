@@ -1952,7 +1952,7 @@ SELECT count(*) AS invalid_indexes FROM pg_index WHERE NOT indisvalid;
   - trên bản cũ hơn: thêm `CHECK (col IS NOT NULL) NOT VALID`, `VALIDATE`, rồi `SET NOT NULL` (bỏ qua bước quét nhờ CHECK hợp lệ), rồi xóa CHECK.
 - **Vì sao:** `ALTER COLUMN … SET NOT NULL` quét cả bảng trong khi giữ `ACCESS EXCLUSIVE`, và thất bại ở cuối nếu còn một dòng NULL.
 - **Nguồn:** https://www.postgresql.org/docs/18/sql-altertable.html (`NOT VALID` "only allowed for foreign-key, CHECK, and not-null constraints"; `SET NOT NULL`: "the table scan is skipped" khi có CHECK hợp lệ)
-- **Cấp:** L4 · **Nối với:** chưa có · **Kiểm:** PGlite (PostgreSQL 18.6). Sai: lỗi `23502` "contains null values" sau khi quét. Đúng: ràng buộc `NOT VALID` được thêm dù 220 đơn vãng lai cũ có `customer_id` NULL, còn dòng mới NULL bị chặn bằng `23502`
+- **Cấp:** L4 · **Nối với:** chưa có · **Kiểm:** PGlite (PostgreSQL 18.6). Sai: lỗi `23502` "contains null values" sau khi quét. Đúng: ràng buộc `NOT VALID` được thêm dù 228 đơn vãng lai cũ (đếm thật) có `customer_id` NULL, còn dòng mới NULL bị chặn bằng `23502`
 
 ```sql
 -- P15 bad
@@ -3174,8 +3174,8 @@ await UpdateItem({ TableName: 'Shop', Key: { PK: { S: 'PRODUCT#B' }, SK: { S: 'C
 // job đêm: Scan + DeleteItem các phiên đăng nhập quá 30 ngày
 ```
 ```js
-// D09 good
-await UpdateTimeToLive({ TableName: 'Shop', TimeToLiveSpecification: { Enabled: true, AttributeName: 'expiresAt' } });
+// D09 good (syntax)
+{ PK: 'SESSION#ab12', SK: 'META', expiresAt: 1764547200 } // TTL attribute = expiresAt (epoch seconds)
 ```
 
 ### D10 · Ghi có điều kiện cho idempotency và optimistic locking / Conditional writes
@@ -3437,7 +3437,7 @@ await Query({ TableName: 'Shop', KeyConditionExpression: 'PK = :pk', ExpressionA
   - câu `SELECT` của PartiQL trên DynamoDB phải có điều kiện `=` hoặc `IN` trên partition key;
   - có thể cấm full scan bằng IAM policy cho PartiQL.
 - **Vì sao:** cú pháp giống SQL nhưng engine vẫn là DynamoDB. Thiếu partition key thì câu lệnh âm thầm thành `Scan` cả bảng, đúng như D06.
-- **Nguồn:** https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/ql-reference.select.html ("can result in a full table scan if an equality or IN condition with a partition key is not provided")
+- **Nguồn:** https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/ql-reference.select.html ("can result in a full table scan" khi `WHERE` thiếu `=`/`IN` trên partition key)
 - **Cấp:** L2 · **Nối với:** skill `where` · **Kiểm:** dynoxide. Sai: 54 RCU (quét cả bảng; trả 20 item vì `customerId` có ở cả item `META`). Đúng: 0,5 RCU, 11 item
 
 ```js
@@ -3573,7 +3573,7 @@ Vì vậy nhiều mục trong "Mười mục giá trị nhất" không có ở �
 
 ### 10.2 Hình dạng AST đã kiểm
 
-Mọi hình dạng dưới đây là JSON thật do `libpg-query` 18.2.4 (bản repo đang ghim) trả về trong Node, không viết theo trí nhớ. Hai điều quan trọng cho người viết matcher:
+Mọi hình dạng dưới đây là JSON thật do `libpg-query` 18.2.4 (bản repo đang ghim) trả về trong Node, không viết theo trí nhớ. Ba điều quan trọng cho người viết matcher:
 
 - **giá trị enum mặc định vẫn có mặt**: `"kind": "AEXPR_OP"`, `"jointype": "JOIN_INNER"`, `"boolop": "NOT_EXPR"`, `"limitOption": "LIMIT_OPTION_DEFAULT"` đều xuất hiện, nên so bằng `===` được;
 - mỗi node là một object một khóa (`{ "A_Expr": {...} }`); tên hàm nằm ở `funcname.at(-1).String.sval` (có thể có schema đứng trước); tên cột ở `ColumnRef.fields[].String.sval`;
