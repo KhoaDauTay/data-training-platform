@@ -17,7 +17,6 @@ objectives:
 requires: [e-mg-l3-10]
 sources:
   - https://www.mongodb.com/docs/manual/reference/explain-results/
-  - https://www.mongodb.com/docs/manual/core/aggregation-pipeline-optimization/
 lab:
   setup: |
     {"collections": {"orders": [

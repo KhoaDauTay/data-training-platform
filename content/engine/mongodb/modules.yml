@@ -1,0 +1,75 @@
+# MongoDB modules in display order. `id`/`vi`/`en` are read by parseModules (src/engine/content.ts);
+# `module`/`level`/`title`/`after` are ADD-1 (product-design-db-engine.md §2.4), `after` = "Học xong bạn làm được…".
+# This file lists L3–L5 only; the L1–L2 track adds its modules above these.
+- id: indexes
+  vi: Các loại index
+  en: Index kinds
+  module: indexes
+  level: L3
+  title: { vi: "Các loại index", en: "Index kinds" }
+  after:
+    vi: chọn đúng loại và thuộc tính index (multikey, partial, unique, TTL) cho một nhu cầu, và đoán index partial có được dùng cho một truy vấn không.
+    en: pick the right index kind and property (multikey, partial, unique, TTL) for a need, and predict whether a partial index can serve a query.
+- id: esr-explain
+  vi: ESR và explain
+  en: ESR and explain
+  module: esr-explain
+  level: L3
+  title: { vi: "ESR và explain", en: "ESR and explain" }
+  after:
+    vi: xếp trường của index kép theo ESR và đọc explain("executionStats") để chỉ ra truy vấn quét cả collection, sắp trong bộ nhớ hay không được phủ.
+    en: order compound index fields by ESR and read explain("executionStats") to spot a query that scans the collection, sorts in memory or is not covered.
+- id: planner-agg
+  vi: Planner và aggregation
+  en: Planner and aggregation
+  module: planner-agg
+  level: L3
+  title: { vi: "Planner và aggregation", en: "Planner and aggregation" }
+  after:
+    vi: tìm truy vấn cần index từ số liệu explain đã ghi, và viết pipeline đặt $match ở đầu.
+    en: find the queries that need an index from recorded explain numbers, and write a pipeline with $match at the front.
+- id: patterns
+  vi: Mẫu thiết kế schema
+  en: Schema design patterns
+  module: patterns
+  level: L4
+  title: { vi: "Mẫu thiết kế schema", en: "Schema design patterns" }
+  after:
+    vi: áp các mẫu Computed Values, Bucket, Outlier, Polymorphic bằng pipeline, và đưa hai phiên bản schema về một dạng.
+    en: apply the Computed Values, Bucket, Outlier and Polymorphic patterns with a pipeline, and bring two schema versions into one shape.
+- id: consistency
+  vi: Nhất quán và transaction
+  en: Consistency and transactions
+  module: consistency
+  level: L4
+  title: { vi: "Nhất quán và transaction", en: "Consistency and transactions" }
+  after:
+    vi: chọn write concern, read concern và session đúng cho một luồng ghi tiền rồi đọc lại từ secondary.
+    en: choose the right write concern, read concern and session for a money write that is read back from a secondary.
+- id: wiredtiger
+  vi: WiredTiger
+  en: WiredTiger
+  module: wiredtiger
+  level: L5
+  title: { vi: "WiredTiger", en: "WiredTiger" }
+  after:
+    vi: giải thích vì sao ghi xung đột trên một tài liệu được chạy lại, và dữ liệu giữa hai checkpoint được phục hồi từ đâu.
+    en: explain why a conflicting write on one document is retried, and where data between two checkpoints is recovered from.
+- id: replication
+  vi: Replica set
+  en: Replica sets
+  module: replication
+  level: L5
+  title: { vi: "Replica set", en: "Replica sets" }
+  after:
+    vi: đọc một kịch bản failover và đoán lần ghi nào bị rollback.
+    en: read a failover scenario and predict which write is rolled back.
+- id: sharding-ts
+  vi: Sharding và time series
+  en: Sharding and time series
+  module: sharding-ts
+  level: L5
+  title: { vi: "Sharding và time series", en: "Sharding and time series" }
+  after:
+    vi: đo cardinality và tần suất của ứng viên shard key, và đoán truy vấn đi tới một shard hay mọi shard.
+    en: measure the cardinality and frequency of shard key candidates, and predict whether a query goes to one shard or every shard.
