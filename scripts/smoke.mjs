@@ -456,6 +456,19 @@ try {
     if (!(Number(n) > 0)) fail(`source rows: ${n}`);
     return { id: GROUPED.id, n: Number(n) };
   });
+  // ---- V22-A (L203): the result map. On each domain's Map page, run the picked point's sample SQL; the result is drawn on the map.
+  await size(1280, 800);
+  await send('Emulation.setEmulatedMedia', { features: [] });
+  for (const d of ['logistics', 'ecommerce', 'finance']) {
+    await step(`V22-A ${d}: map question runs and draws`, async () => {
+      await go(base, `#/d/${d}/map`);
+      await waitFor('the map question', `!!document.querySelector('#home [data-map-run]') && document.getElementById('notice').hidden`, 90000);
+      await ev(`document.querySelector('#home [data-map-run]').click(); true`);
+      await waitFor('the result on the map', `!!document.querySelector('#home [data-map-overlay] circle, #home [data-map-overlay] path') || !!document.querySelector('#home [data-map-error]')`, 60000);
+      if (await ev(`!!document.querySelector('#home [data-map-error]')`)) fail('the sample SQL failed');
+      return ev(`document.querySelectorAll('#home [data-map-overlay] [data-row]').length`);
+    });
+  }
 
   await step('no page errors', async () => {
     if (pageErrors.length) fail(`${pageErrors.length} error(s): ${pageErrors.map((e) => e.text.split('\n')[0]).join(' | ').slice(0, 800)}`);

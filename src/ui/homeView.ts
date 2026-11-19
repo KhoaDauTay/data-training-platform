@@ -7,7 +7,7 @@ import { CHAPTERS, chaptersOf, chapterTitle, domainSkills, moduleTitle, nextTick
 import { domainSlot } from '../save';
 import { domainArt } from './domainArt';
 import { domainLine } from './topbar';
-import { derive, ROUTES as LANES } from '../scene';
+import { derive } from '../scene';
 import { domainHash, isInterviewPage, learnAdvOf, learnModuleOf, learnSkillOf } from '../route';
 import { laneInfo, lanePanel, wirePins } from './lanePanel';
 import { mascot, MOVES, setLilyStage } from './mascots';
@@ -327,51 +327,6 @@ function harborSection(m: HomeModel): HTMLElement {
       ...callout(harbor, m.chapter).map((line) => h('p', { class: 'm-0 text-muted' }, line))));
 }
 
-let stopMap: (() => void) | undefined;
-/** Lane whose brief is open on the Map page (session only). */
-let mapLane: string | undefined;
-
-/** v12.0 U4: a pin or a list row opens that lane's brief beside the map (under it below 1024 px); its name is announced. */
-function pickLane(port: string): void {
-  mapLane = port;
-  actions.rerender();
-  byId('announce').textContent = LANES.find((r) => r.port === port)?.name ?? '';
-  byId('home').querySelector<HTMLElement>('#lane-title')?.scrollIntoView({ block: 'nearest' });
-}
-
-function routesSection(): HTMLElement {
-  const words = domainText();
-  if (words) {
-    return h('section', { class: cx(CARD, 'p-5'), 'aria-labelledby': 'routes-title' },
-      h('h2', { id: 'routes-title', class: 'm-0 mb-2 text-title font-bold' }, t(words.mapTitle)), domainArt('map'));
-  }
-  const harbor = derive(app.tickets, done());
-  // v21 U21: one column, name left and its status right on one line (two 216 px columns broke "Laem / Chabang")
-  const list = h('ul', { class: 'mt-3 mb-0 grid list-none gap-1.5 p-0 text-body-sm' }, ...LANES.map((r) =>
-    h('li', {}, h('button', {
-      type: 'button', id: `lane-btn-${r.port}`, 'aria-current': r.port === mapLane ? 'true' : false,
-      class: cx('flex w-full items-center gap-2 px-3 py-1.5 text-left max-lg:min-h-11', r.port === mapLane && 'ring-2 ring-accent', !harbor.open.has(r.port) && 'text-muted'),
-      onclick: () => pickLane(r.port),
-    }, icon(harbor.open.has(r.port) ? 'route' : 'lock', 'size-4 shrink-0'), h('b', { class: 'min-w-0' }, r.name), h('span', { class: 'ml-auto shrink-0 text-right text-muted' }, laneInfo(r, harbor))))));
-  const brief = mapLane
-    ? h('div', { class: 'min-w-0 rounded-(--r-ctl) p-4 ring-1 ring-line' }, lanePanel(mapLane, harbor, (task) => homeHooks.startLane?.(task)))
-    : null; // no lane picked: the hint is a caption under the map, not a third of the width
-  return h('section', { class: cx(CARD, 'p-5'), 'aria-labelledby': 'routes-title' },
-    h('div', { class: 'mb-2 flex flex-wrap items-end justify-between gap-2' },
-      h('h2', { id: 'routes-title', class: 'm-0 text-title font-bold' }, t('routes.title')),
-      h('p', { class: 'm-0 text-body-sm text-muted' }, t('routes.subtitle'))),
-    // ui-ux-v6 S2: the map takes the card's full width (labels ≥ 11 px from lg); the lane list and the brief sit below it
-    artSlot('aspect-[5/2] rounded-(--r-ctl)', (a) => {
-      stopMap?.(); // one fleet per page: the previous drawing's loop ends here
-      const p = a.routeMap(harbor);
-      wirePins(p, harbor, pickLane);
-      stopMap = a.liveMap(p, harbor, takeNewRoutes(harbor.open), fleetOrder());
-      return p.svg;
-    }),
-    brief ? null : h('p', { class: 'mt-2 mb-0 text-body-sm text-muted' }, t('lane.pick')),
-    h('div', { class: brief ? 'grid gap-4 lg:grid-cols-[minmax(0,1fr)_22rem]' : 'grid' }, h('div', { class: 'min-w-0' }, list), brief ? h('div', { class: 'min-w-0 lg:mt-3' }, brief) : null));
-}
-
 /** L48 D-A1: the company tiles moved to #/dashboard (src/ui/dashboard.ts); Home keeps a one-line teaser that links there. */
 function kpiSection(): HTMLElement {
   const tiles = kpiTiles(kpisOf(), app.tickets, done());
@@ -556,7 +511,6 @@ registerHomeSection({ id: 'harbor', order: 5, span: 'full', pages: ['overview'],
 registerHomeSection({ id: 'continue', order: 10, span: 'wide', pages: ['overview'], render: continueCard });
 registerHomeSection({ id: 'resume', order: 10, span: 'full', pages: ['home'], render: resumeLine });
 registerHomeSection({ id: 'career', order: 20, span: 'narrow', pages: ['overview'], render: careerCard });
-registerHomeSection({ id: 'routes', order: 25, span: 'full', pages: ['map'], render: routesSection });
 registerHomeSection({ id: 'domains', order: 28, span: 'full', pages: ['home'], render: domainsSection });
 registerHomeSection({ id: 'chapters', order: 30, span: 'full', pages: ['overview'], render: chaptersSection });
 registerHomeSection({ id: 'kpi', order: 35, span: 'full', pages: ['overview'], render: kpiSection });

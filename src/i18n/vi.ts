@@ -581,6 +581,8 @@ export const vi = {
   'node.gather': 'Gom kết quả từ các tiến trình chạy song song.',
   'node.fallback': 'Một bước trong kế hoạch thực thi của Postgres.',
   'tab.chart': 'Biểu đồ',
+  'tab.map': 'Bản đồ', // V22-A: the result map (the rest of its text is in the lazy mapTeach chunk)
+  'map.loading': 'Đang vẽ bản đồ…',
   'chart.empty': 'Biểu đồ tự bật khi kết quả có dạng (nhãn, số…) hoặc (ngày, số…), tối đa {max} dòng.',
   'chart.title': '{value} theo {label}',
   'chart.emptyHint': 'Biểu đồ cần một cột chữ hoặc ngày và một cột số (tối đa {max} dòng).',

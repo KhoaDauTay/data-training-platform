@@ -1,5 +1,5 @@
 import type { DbClient } from '../db/client';
-import { domainSchemaId, domainSchemaName } from '../domains';
+import { DOMAIN_SCHEMA, domainSchemaId, domainSchemaName, type DomainId } from '../domains';
 import { t } from '../i18n';
 import { hashOf } from '../route';
 import type { SchemaId } from '../domains';
@@ -20,6 +20,7 @@ import { sandboxTables, visibleTables } from './myDataView';
 import { renderSteps } from './stepsView';
 import { tablesIn } from './tryPreview';
 import { emptyState, registerTab } from './tabs';
+import { loadMapTeach } from './mapPage';
 
 export interface VizDeps {
   db: DbClient;
@@ -114,6 +115,27 @@ function registerChartTab(deps: VizDeps): void {
       const result = app.lastRun?.result;
       if (result) renderChart(host, result);
       else host.append(emptyState('alert', t('chart.runError')));
+    },
+  });
+}
+
+/** V22-A: the last run drawn on its domain's map (lazy mapTeach chunk); a drill on lab has no map. Grows once per new result. */
+function registerMapTab(deps: VizDeps): void {
+  const drawn = new WeakSet<object>();
+  registerTab({
+    id: 'map', from: 'ch2-02', // like the chart: the first task with several groups
+    label: 'tab.map',
+    group: 'output',
+    order: 25,
+    render: (host) => {
+      if (lastRunSql(host, deps) === undefined) return;
+      const r = app.lastRun?.result;
+      if (!r) return void host.append(emptyState('alert', t('chart.runError')));
+      const fresh = !drawn.has(r);
+      drawn.add(r);
+      const schema = app.lastRun?.schema ?? 'game';
+      const d = (Object.keys(DOMAIN_SCHEMA) as DomainId[]).find((x) => DOMAIN_SCHEMA[x] === schema);
+      return load(host, t('map.loading'), loadMapTeach(), (body, m) => void m.tab(body, d, r, fresh));
     },
   });
 }
@@ -224,6 +246,7 @@ function registerSchemaTabs(deps: VizDeps): void {
 /** Called once from main.ts, before the panel is created. */
 export function registerVizTabs(deps: VizDeps): void {
   registerChartTab(deps);
+  registerMapTab(deps);
   registerStepsTab(deps);
   registerPlanTabs(deps);
   registerSchemaTabs(deps);
