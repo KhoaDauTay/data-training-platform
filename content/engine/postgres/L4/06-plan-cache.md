@@ -5,8 +5,8 @@ level: L4
 module: prepared
 title: "Câu đã chuẩn bị: kế hoạch chung và kế hoạch riêng"
 title_en: "Prepared statements: generic vs custom plans"
-kind: concept
-minutes: 12
+kind: lab
+minutes: 15
 objectives:
   - { vi: "Giải thích luật 5 lần đầu dùng kế hoạch riêng (custom) rồi mới cân nhắc kế hoạch chung (generic)", en: "Explain the rule: the first five executions use custom plans before a generic plan is considered" }
   - { vi: "Nhận ra lỗi hiệu năng kinh điển: kế hoạch chung tốt cho giá trị hiếm nhưng tệ cho giá trị phổ biến", en: "Recognise the classic problem: a generic plan good for rare values but bad for common ones" }
@@ -18,6 +18,34 @@ sources:
   - https://www.postgresql.org/docs/18/sql-explain.html
   - https://www.postgresql.org/docs/18/view-pg-prepared-statements.html
 viz: plan-tree
+lab:
+  setup: |
+    DROP TABLE IF EXISTS parcels CASCADE;
+    DROP FUNCTION IF EXISTS plan_lines(text, boolean);
+    CREATE TABLE parcels (id int PRIMARY KEY, status text NOT NULL);
+    INSERT INTO parcels
+      SELECT g, CASE WHEN g % 100 < 70 THEN 'delivered' WHEN g % 100 < 90 THEN 'in_transit' WHEN g % 100 < 99 THEN 'returned' ELSE 'lost' END
+      FROM generate_series(1, 20000) g;
+    CREATE INDEX parcels_status_idx ON parcels (status);
+    ANALYZE parcels;
+    -- helper: the plan of one query as text lines; generic = true plans it with $1 unknown (author code, never player text)
+    CREATE FUNCTION plan_lines(q text, generic boolean DEFAULT false) RETURNS SETOF text LANGUAGE plpgsql AS $$
+    BEGIN
+      IF generic THEN RETURN QUERY EXECUTE 'EXPLAIN (GENERIC_PLAN, COSTS OFF) ' || q;
+      ELSE RETURN QUERY EXECUTE 'EXPLAIN (COSTS OFF) ' || q;
+      END IF;
+    END $$;
+  steps:
+    - task: { vi: "Xem kế hoạch chung (generic) của câu lọc kiện theo trạng thái là tham số `$1`: gọi `plan_lines(..., true)` với câu đó.", en: "Look at the generic plan of the query that filters parcels by a status parameter `$1`: call `plan_lines(..., true)` with that query." }
+      solution: "SELECT * FROM plan_lines('SELECT * FROM parcels WHERE status = $1', true)"
+      check: rows
+      ordered: true
+      hint: { vi: "Câu bên trong là chuỗi: `'SELECT * FROM parcels WHERE status = $1'`.", en: "The inner query is a string: `'SELECT * FROM parcels WHERE status = $1'`." }
+    - task: { vi: "Giờ xem kế hoạch riêng (custom) cho giá trị phổ biến 'delivered' (70% bảng): gọi `plan_lines` với câu có hằng số, không có tham số thứ hai.", en: "Now look at the custom plan for the common value 'delivered' (70% of the table): call `plan_lines` with the query holding the constant, without the second argument." }
+      solution: "SELECT * FROM plan_lines('SELECT * FROM parcels WHERE status = ''delivered''')"
+      check: rows
+      ordered: true
+      hint: { vi: "Trong chuỗi SQL, dấu nháy đơn được viết đôi: `''delivered''`.", en: "Inside an SQL string, single quotes are doubled: `''delivered''`." }
 quiz:
   - q: { vi: "Ứng dụng gọi `PREPARE` một câu lọc theo trạng thái. 5 lần đầu tham số là 'lost' (1%). Lần thứ 6 trở đi, Postgres làm gì?", en: "An application runs `PREPARE` on a query that filters by status. The first 5 calls pass 'lost' (1%). What does Postgres do from the 6th call on?" }
     options:
@@ -72,7 +100,7 @@ Kế hoạch chung vẫn dùng index cho mọi giá trị, kể cả 'delivered'
 
 ## Thực hành
 
-Hai câu hỏi tình huống. Kỹ năng chuyên gia: chẩn đoán "câu chạy lúc nhanh lúc chậm" do kế hoạch chung của câu đã chuẩn bị, và chọn cách sửa đúng chỗ.
+Hai bước đọc kế hoạch thật bằng hàm `plan_lines` (chung với `$1`, riêng với 'delivered'), rồi hai câu hỏi tình huống. Kỹ năng chuyên gia: chẩn đoán "câu chạy lúc nhanh lúc chậm" do kế hoạch chung của câu đã chuẩn bị, và chọn cách sửa đúng chỗ.
 
 # EN
 
@@ -113,4 +141,4 @@ The generic plan uses the index for every value, 'delivered' included, while the
 
 ## Practice
 
-Two scenario questions. Expert skill: diagnose "the query is sometimes fast, sometimes slow" as a prepared statement's generic plan, and fix it in the right place.
+Two steps that read real plans with the `plan_lines` function (generic with `$1`, custom with 'delivered'), then two scenario questions. Expert skill: diagnose "the query is sometimes fast, sometimes slow" as a prepared statement's generic plan, and fix it in the right place.

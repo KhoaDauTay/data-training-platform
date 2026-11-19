@@ -5,7 +5,7 @@ level: L5
 module: observe-tune
 title: "Tinh chỉnh bộ nhớ: work_mem, sort và hash"
 title_en: "Memory tuning: work_mem, sorts and hashes"
-kind: predict
+kind: lab
 minutes: 15
 objectives:
   - { vi: "Đọc `Sort Method` trong `EXPLAIN ANALYZE`: quicksort, top-N heapsort, external merge", en: "Read `Sort Method` in `EXPLAIN ANALYZE`: quicksort, top-N heapsort, external merge" }
@@ -17,30 +17,28 @@ sources:
   - https://www.postgresql.org/docs/18/using-explain.html
 lab:
   setup: |
-    DROP TABLE IF EXISTS big;
+    DROP TABLE IF EXISTS big CASCADE;
     CREATE TABLE big (id int, v int);
     INSERT INTO big SELECT g, (g * 7919) % 100000 FROM generate_series(1, 30000) g;
     ANALYZE big;
   steps:
     - task: { vi: "Đọc bốn thiết lập bộ nhớ: `shared_buffers`, `work_mem`, `maintenance_work_mem`, `hash_mem_multiplier` (tên, giá trị, đơn vị; sắp theo tên).", en: "Read four memory settings: `shared_buffers`, `work_mem`, `maintenance_work_mem`, `hash_mem_multiplier` (name, value, unit; ordered by name)." }
       solution: "SELECT name, setting, unit FROM pg_settings WHERE name IN ('shared_buffers', 'work_mem', 'maintenance_work_mem', 'hash_mem_multiplier') ORDER BY name"
-      check: catalog
+      check: rows
       ordered: true
       hint: { vi: "`setting` đi kèm `unit`: `shared_buffers` tính theo trang 8kB.", en: "`setting` comes with `unit`: `shared_buffers` is counted in 8kB pages." }
     - task: { vi: "10 giá trị `v` nhỏ nhất của `big` (mọi cột, sắp theo `v`). Kế hoạch: Limit trên một Sort.", en: "The 10 smallest `v` values of `big` (every column, ordered by `v`). The plan: a Limit over a Sort." }
       solution: "SELECT * FROM big ORDER BY v LIMIT 10"
       check: plan
       hint: { vi: "ORDER BY rồi LIMIT. Không có index nên phải sắp.", en: "ORDER BY, then LIMIT. There is no index, so it must sort." }
-predict:
-  sql: "EXPLAIN (ANALYZE, COSTS OFF, TIMING OFF, SUMMARY OFF, BUFFERS OFF) SELECT * FROM big ORDER BY v"
-  q: { vi: "Sắp cả 30000 dòng với `work_mem` mặc định 4MB. `Sort Method` là gì?", en: "Sorting all 30000 rows with the default 4MB `work_mem`. What is the `Sort Method`?" }
-  options:
-    - { vi: "`quicksort` trong bộ nhớ (khoảng 1,2 MB)", en: "`quicksort` in memory (about 1.2 MB)" }
-    - { vi: "`external merge` trên đĩa", en: "`external merge` on disk" }
-    - { vi: "`top-N heapsort`", en: "`top-N heapsort`" }
-  answer: 0
-  why: { vi: "Dữ liệu cần sắp vừa trong 4MB nên sắp trong bộ nhớ. Giảm `work_mem` xuống 64kB (ghi lại bên dưới) thì cùng câu chuyển sang `external merge` và ghi đĩa. `top-N heapsort` chỉ xuất hiện khi có LIMIT.", en: "The data to sort fits in 4MB, so it sorts in memory. Lowering `work_mem` to 64kB (captured below) moves the same query to `external merge` on disk. `top-N heapsort` only appears with a LIMIT." }
 quiz:
+  - q: { vi: "Sắp cả 30000 dòng với `work_mem` mặc định 4MB. `Sort Method` là gì?", en: "Sorting all 30000 rows with the default 4MB `work_mem`. What is the `Sort Method`?" }
+    options:
+      - { vi: "`quicksort` trong bộ nhớ (khoảng 1,2 MB)", en: "`quicksort` in memory (about 1.2 MB)" }
+      - { vi: "`external merge` trên đĩa", en: "`external merge` on disk" }
+      - { vi: "`top-N heapsort`", en: "`top-N heapsort`" }
+    answer: 0
+    why: { vi: "Dữ liệu cần sắp vừa trong 4MB nên sắp trong bộ nhớ. Giảm `work_mem` xuống 64kB (ghi lại bên dưới) thì cùng câu chuyển sang `external merge` và ghi đĩa. `top-N heapsort` chỉ xuất hiện khi có LIMIT.", en: "The data to sort fits in 4MB, so it sorts in memory. Lowering `work_mem` to 64kB (captured below) moves the same query to `external merge` on disk. `top-N heapsort` only appears with a LIMIT." }
   - q: { vi: "Server 64 GB RAM, 300 kết nối, câu báo cáo có 4 nút sort/hash. Đặt `work_mem = 256MB` toàn cục có rủi ro gì?", en: "A 64 GB server, 300 connections, a report query with 4 sort/hash nodes. What is the risk of a global `work_mem = 256MB`?" }
     options:
       - { vi: "Không rủi ro, Postgres tự giới hạn tổng", en: "No risk, Postgres caps the total" }
@@ -81,7 +79,7 @@ Limit (actual rows=10.00 loops=1)
 
 ## Thực hành
 
-Đọc thiết lập bộ nhớ, viết một câu top-N, đoán `Sort Method`. Kỹ năng chuyên gia: đọc dấu hiệu tràn đĩa trong kế hoạch và tăng bộ nhớ đúng chỗ, không làm cả server có nguy cơ hết RAM.
+Đọc thiết lập bộ nhớ, viết một câu top-N, rồi trả lời về `Sort Method` dựa trên kết quả thật ở trên. Kỹ năng chuyên gia: đọc dấu hiệu tràn đĩa trong kế hoạch và tăng bộ nhớ đúng chỗ, không làm cả server có nguy cơ hết RAM.
 
 # EN
 
@@ -116,4 +114,4 @@ Limit (actual rows=10.00 loops=1)
 
 ## Practice
 
-Read the memory settings, write a top-N query, predict the `Sort Method`. Expert skill: read the spill signs in a plan and raise memory in the right place, without putting the whole server at risk of running out of RAM.
+Read the memory settings, write a top-N query, then answer about the `Sort Method` from the real output above. Expert skill: read the spill signs in a plan and raise memory in the right place, without putting the whole server at risk of running out of RAM.

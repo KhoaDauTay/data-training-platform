@@ -18,7 +18,7 @@ sources:
 lab:
   setup: |
     CREATE EXTENSION IF NOT EXISTS pg_stat_statements;
-    DROP TABLE IF EXISTS hits;
+    DROP TABLE IF EXISTS hits CASCADE;
     SELECT pg_stat_statements_reset();
     CREATE TABLE hits (id int PRIMARY KEY, n int NOT NULL);
     INSERT INTO hits SELECT g, g % 100 FROM generate_series(1, 1000) g;
@@ -36,7 +36,7 @@ lab:
       hint: { vi: "Hằng số trong câu được thay bằng `$1`, `$2`…, nên ba câu tra theo id gộp thành một dòng.", en: "Constants are replaced with `$1`, `$2`…, so the three lookups by id collapse into one row." }
     - task: { vi: "Đọc trong `pg_stat_user_tables` số lần quét tuần tự và quét index của `hits` (hai cột: seq_scan, idx_scan).", en: "Read from `pg_stat_user_tables` the number of sequential and index scans of `hits` (two columns: seq_scan, idx_scan)." }
       solution: "SELECT seq_scan, idx_scan FROM pg_stat_user_tables WHERE relname = 'hits'"
-      check: catalog
+      check: rows
       hint: { vi: "Phần dựng dữ liệu đã gọi `pg_stat_force_next_flush()` để số liệu hiện ngay.", en: "The setup called `pg_stat_force_next_flush()` so the numbers show at once." }
 quiz:
   - q: { vi: "Câu A chạy 2 giây mỗi lần, 10 lần một ngày. Câu B chạy 5 ms mỗi lần, 2 triệu lần một ngày. Tối ưu câu nào trước để giảm tải server?", en: "Query A takes 2 seconds per run, 10 runs a day. Query B takes 5 ms per run, 2 million runs a day. Which do you optimise first to cut server load?" }

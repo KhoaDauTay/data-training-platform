@@ -18,7 +18,7 @@ sources:
 viz: plan-tree
 lab:
   setup: |
-    DROP TABLE IF EXISTS events;
+    DROP TABLE IF EXISTS events CASCADE;
     CREATE TABLE events (id int NOT NULL, tenant_id int NOT NULL, created_on date NOT NULL, kind text NOT NULL) PARTITION BY RANGE (created_on);
     CREATE TABLE events_2026_08 PARTITION OF events FOR VALUES FROM ('2026-08-01') TO ('2026-09-01');
     CREATE TABLE events_2026_09 PARTITION OF events FOR VALUES FROM ('2026-09-01') TO ('2026-10-01');
@@ -33,7 +33,7 @@ lab:
       hint: { vi: "Lọc trực tiếp trên khóa phân vùng bằng hằng số ngày.", en: "Filter directly on the partition key with literal dates." }
     - task: { vi: "Liệt kê cây phân vùng của `events`: tên quan hệ, tên cha (đều ép text), có phải lá không, cấp. Sắp theo tên quan hệ.", en: "List the partition tree of `events`: relation name, parent name (both cast to text), whether it is a leaf, level. Order by relation name." }
       solution: "SELECT relid::text, parentrelid::text, isleaf, level FROM pg_partition_tree('events') ORDER BY relid::text"
-      check: catalog
+      check: rows
       ordered: true
       hint: { vi: "Hàm `pg_partition_tree(regclass)`.", en: "The `pg_partition_tree(regclass)` function." }
     - task: { vi: "Đếm sự kiện của tenant 7 trong cả tháng 9/2026. Kế hoạch chỉ được chạm `events_2026_09`.", en: "Count tenant 7's events in the whole of September 2026. The plan may only touch `events_2026_09`." }
@@ -41,12 +41,12 @@ lab:
       check: plan
       hint: { vi: "Điều kiện tenant không giúp pruning; điều kiện ngày thì có.", en: "The tenant condition does not prune; the date condition does." }
 predict:
-  sql: "EXPLAIN (ANALYZE, COSTS OFF, TIMING OFF, SUMMARY OFF, BUFFERS OFF) SELECT count(*) FROM events WHERE created_on = (SELECT max(created_on) FROM events_2026_09)"
-  q: { vi: "Ngày cần lọc chỉ biết lúc chạy (từ truy vấn con). Kế hoạch có mấy phân vùng của `events` và chúng được xử lý ra sao?", en: "The date to filter on is only known at run time (from a sub-query). How many `events` partitions are in the plan, and what happens to them?" }
+  sql: "SELECT count(*) FROM events WHERE created_on = (SELECT max(created_on) FROM events_2026_09)"
+  q: { vi: "Ngày cần lọc chỉ biết lúc chạy (từ truy vấn con). Kế hoạch (trước khi chạy) giữ mấy phân vùng của `events` dưới Append?", en: "The date to filter on is only known at run time (from a sub-query). How many `events` partitions does the plan (before running) keep under the Append?" }
   options:
-    - { vi: "Chỉ một phân vùng trong kế hoạch", en: "Only one partition is in the plan" }
-    - { vi: "Cả bốn phân vùng có trong kế hoạch, nhưng ba cái hiện `(never executed)`: pruning lúc chạy", en: "All four partitions are in the plan, but three show `(never executed)`: run-time pruning" }
-    - { vi: "Cả bốn phân vùng đều bị quét hết", en: "All four partitions are fully scanned" }
+    - { vi: "Một: phân vùng tháng 9", en: "One: the September partition" }
+    - { vi: "Cả bốn; ba cái sẽ bị bỏ lúc chạy (`EXPLAIN ANALYZE` hiện chúng là `(never executed)`)", en: "All four; three will be skipped at run time (`EXPLAIN ANALYZE` shows them as `(never executed)`)" }
+    - { vi: "Không phân vùng nào, vì truy vấn con chạy trước", en: "None, because the sub-query runs first" }
   answer: 1
   why: { vi: "Lúc lập kế hoạch Postgres chưa biết ngày, nên giữ mọi phân vùng dưới Append. Lúc chạy, sau khi InitPlan cho ra ngày, nó bỏ qua các phân vùng không thể khớp.", en: "At plan time Postgres does not know the date, so it keeps every partition under the Append. At run time, once the InitPlan returns the date, it skips the partitions that cannot match." }
 ---

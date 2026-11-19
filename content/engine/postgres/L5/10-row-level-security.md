@@ -47,12 +47,12 @@ lab:
       hint: { vi: "Bốn truy vấn con `count(*)` trong một SELECT.", en: "Four `count(*)` sub-queries in one SELECT." }
     - task: { vi: "Liệt kê các policy của `tickets`: tên, permissive, vai trò (ép text), lệnh, điều kiện `qual`. Sắp theo tên.", en: "List the policies of `tickets`: name, permissive, roles (cast to text), command, condition `qual`. Order by name." }
       solution: "SELECT policyname, permissive, roles::text, cmd, qual FROM pg_policies WHERE tablename = 'tickets' ORDER BY policyname"
-      check: catalog
+      check: rows
       ordered: true
       hint: { vi: "View `pg_policies`.", en: "The `pg_policies` view." }
     - task: { vi: "Vì sao owner_sees thấy tất cả? Đọc vai trò hiện tại có phải superuser và có `BYPASSRLS` không, cùng hai cờ RLS của bảng `tickets`. Năm cột: rolname, rolsuper, rolbypassrls, relrowsecurity, relforcerowsecurity.", en: "Why does owner_sees see everything? Read whether the current role is a superuser and has `BYPASSRLS`, along with the two RLS flags of `tickets`. Five columns: rolname, rolsuper, rolbypassrls, relrowsecurity, relforcerowsecurity." }
       solution: "SELECT r.rolname, r.rolsuper, r.rolbypassrls, c.relrowsecurity, c.relforcerowsecurity FROM pg_roles r, pg_class c WHERE r.rolname = current_user AND c.relname = 'tickets'"
-      check: catalog
+      check: rows
       hint: { vi: "`pg_roles` theo `current_user`, `pg_class` theo tên bảng.", en: "`pg_roles` by `current_user`, `pg_class` by table name." }
 quiz:
   - q: { vi: "Bật RLS trên bảng nhưng chưa có policy nào cho vai trò `support`. `support` thấy gì?", en: "RLS is enabled on the table but there is no policy for role `support`. What does `support` see?" }

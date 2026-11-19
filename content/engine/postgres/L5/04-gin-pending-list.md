@@ -21,7 +21,7 @@ viz: gin-postings
 lab:
   setup: |
     CREATE EXTENSION IF NOT EXISTS pageinspect;
-    DROP TABLE IF EXISTS docs, docs2, docs3;
+    DROP TABLE IF EXISTS docs, docs2, docs3 CASCADE;
     CREATE TABLE docs (id int, tags text[] NOT NULL);
     INSERT INTO docs SELECT g, ARRAY['t' || g % 10, 'u' || g % 7] FROM generate_series(1, 2000) g;
     CREATE TABLE docs2 (LIKE docs);
@@ -43,7 +43,7 @@ lab:
       hint: { vi: "`gin_metapage_info(get_raw_page('docs_tags_fast', 0))`, ba lần, nối bằng UNION ALL.", en: "`gin_metapage_info(get_raw_page('docs_tags_fast', 0))`, three times, joined with UNION ALL." }
     - task: { vi: "Đọc tham số lưu trữ của ba index (tên index và `reloptions` ép text), sắp theo tên.", en: "Read the storage parameters of the three indexes (index name and `reloptions` cast to text), ordered by name." }
       solution: "SELECT relname, reloptions::text FROM pg_class WHERE relname IN ('docs_tags_fast', 'docs2_tags_slow', 'docs3_tags_cleaned') ORDER BY relname"
-      check: catalog
+      check: rows
       ordered: true
       hint: { vi: "`pg_class.reloptions` là NULL khi index dùng mặc định (`fastupdate` bật).", en: "`pg_class.reloptions` is NULL when the index uses the defaults (`fastupdate` on)." }
     - task: { vi: "Đếm tài liệu của `docs` có nhãn 'new'. Planner phải dùng `docs_tags_fast` (nó đọc cả pending list).", en: "Count the `docs` documents tagged 'new'. The planner must use `docs_tags_fast` (it also reads the pending list)." }

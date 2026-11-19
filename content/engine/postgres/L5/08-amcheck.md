@@ -18,7 +18,7 @@ viz: btree
 lab:
   setup: |
     CREATE EXTENSION IF NOT EXISTS amcheck;
-    DROP TABLE IF EXISTS invoices;
+    DROP TABLE IF EXISTS invoices CASCADE;
     CREATE TABLE invoices (id int PRIMARY KEY, customer_id int NOT NULL, total int NOT NULL, tags text[] NOT NULL);
     INSERT INTO invoices SELECT g, g % 300, (g * 31) % 9000, ARRAY['k' || g % 5] FROM generate_series(1, 15000) g;
     CREATE INDEX invoices_customer_idx ON invoices (customer_id);

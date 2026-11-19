@@ -21,7 +21,7 @@ viz: gist-boxes
 lab:
   setup: |
     CREATE EXTENSION IF NOT EXISTS pageinspect;
-    DROP TABLE IF EXISTS stores, stores_sp;
+    DROP TABLE IF EXISTS stores, stores_sp CASCADE;
     CREATE TABLE stores (id int PRIMARY KEY, loc point NOT NULL);
     INSERT INTO stores SELECT g, point(g % 100, (g * 37) % 100) FROM generate_series(1, 5000) g;
     CREATE INDEX stores_loc_gist ON stores USING gist (loc);

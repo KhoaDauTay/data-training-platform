@@ -20,7 +20,7 @@ sources:
 lab:
   setup: |
     CREATE EXTENSION IF NOT EXISTS pg_walinspect;
-    DROP TABLE IF EXISTS wal_marks, stock;
+    DROP TABLE IF EXISTS wal_marks, stock CASCADE;
     CREATE TABLE wal_marks (step text PRIMARY KEY, lsn pg_lsn NOT NULL);
     CREATE TABLE stock (id int PRIMARY KEY, qty int NOT NULL) WITH (fillfactor = 70);
     INSERT INTO stock SELECT g, 10 FROM generate_series(1, 100) g;
@@ -37,7 +37,7 @@ lab:
       hint: { vi: "Cột `block_ref` chứa `rel <tablespace>/<db>/<filenode>`; lấy filenode bằng `pg_relation_filenode('stock')`.", en: "The `block_ref` column holds `rel <tablespace>/<db>/<filenode>`; get the filenode with `pg_relation_filenode('stock')`." }
     - task: { vi: "Đọc ba thiết lập liên quan: `full_page_writes`, `checkpoint_timeout`, `max_wal_size` (tên, giá trị, đơn vị; sắp theo tên).", en: "Read three related settings: `full_page_writes`, `checkpoint_timeout`, `max_wal_size` (name, value, unit; ordered by name)." }
       solution: "SELECT name, setting, unit FROM pg_settings WHERE name IN ('full_page_writes', 'checkpoint_timeout', 'max_wal_size') ORDER BY name"
-      check: catalog
+      check: rows
       ordered: true
       hint: { vi: "View `pg_settings`.", en: "The `pg_settings` view." }
 quiz:

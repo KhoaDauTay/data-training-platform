@@ -19,7 +19,7 @@ sources:
 viz: plan-tree
 lab:
   setup: |
-    DROP TABLE IF EXISTS order_notes, orders, customers;
+    DROP TABLE IF EXISTS order_notes, orders, customers CASCADE;
     CREATE TABLE customers (id int PRIMARY KEY, region int NOT NULL);
     INSERT INTO customers SELECT g, g % 5 FROM generate_series(1, 500) g;
     CREATE TABLE orders (id int PRIMARY KEY, customer_id int NOT NULL REFERENCES customers, amount int NOT NULL);

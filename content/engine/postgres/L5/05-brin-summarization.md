@@ -20,7 +20,7 @@ viz: brin-ranges
 lab:
   setup: |
     CREATE EXTENSION IF NOT EXISTS pageinspect;
-    DROP TABLE IF EXISTS readings, readings2;
+    DROP TABLE IF EXISTS readings, readings2 CASCADE;
     CREATE TABLE readings (id int, read_at timestamp NOT NULL, v int NOT NULL);
     INSERT INTO readings SELECT g, TIMESTAMP '2026-10-01' + g * INTERVAL '1 minute', g % 50 FROM generate_series(1, 20000) g;
     CREATE TABLE readings2 (LIKE readings);
@@ -44,15 +44,14 @@ lab:
       solution: "SELECT count(*) FROM readings WHERE read_at >= '2026-10-05' AND read_at < '2026-10-06'"
       check: plan
       hint: { vi: "Điều kiện khoảng trên `read_at` bằng hai hằng thời gian.", en: "A range condition on `read_at` with two literal timestamps." }
-predict:
-  sql: "SELECT attname, correlation FROM pg_stats WHERE tablename = 'readings' ORDER BY attname"
-  q: { vi: "BRIN chỉ hiệu quả khi thứ tự giá trị khớp với thứ tự vật lý. Cột nào hợp với BRIN?", en: "BRIN only works well when value order follows physical order. Which column suits BRIN?" }
-  options:
-    - { vi: "`read_at` (correlation = 1): mỗi khoảng khối có min/max hẹp, không chồng lên nhau", en: "`read_at` (correlation = 1): each block range has a narrow min/max that does not overlap the others" }
-    - { vi: "`v` (correlation gần 0): giá trị lặp lại nên dễ tóm tắt", en: "`v` (correlation near 0): values repeat, so they are easy to summarize" }
-    - { vi: "Cả hai như nhau", en: "Both are the same" }
-  answer: 0
-  why: { vi: "`v` lặp 0..49 trong mọi khoảng, nên min/max của khoảng nào cũng là 0..49 và BRIN không loại được khoảng nào. `read_at` tăng dần theo lần chèn nên BRIN loại được gần hết.", en: "`v` cycles 0..49 in every range, so every range's min/max is 0..49 and BRIN can rule none out. `read_at` grows with insert order, so BRIN rules out almost all of them." }
+quiz:
+  - q: { vi: "BRIN chỉ hiệu quả khi thứ tự giá trị khớp với thứ tự vật lý. Cột nào hợp với BRIN?", en: "BRIN only works well when value order follows physical order. Which column suits BRIN?" }
+    options:
+      - { vi: "`read_at` (correlation = 1): mỗi khoảng khối có min/max hẹp, không chồng lên nhau", en: "`read_at` (correlation = 1): each block range has a narrow min/max that does not overlap the others" }
+      - { vi: "`v` (correlation gần 0): giá trị lặp lại nên dễ tóm tắt", en: "`v` (correlation near 0): values repeat, so they are easy to summarize" }
+      - { vi: "Cả hai như nhau", en: "Both are the same" }
+    answer: 0
+    why: { vi: "`v` lặp 0..49 trong mọi khoảng, nên min/max của khoảng nào cũng là 0..49 và BRIN không loại được khoảng nào. `read_at` tăng dần theo lần chèn nên BRIN loại được gần hết.", en: "`v` cycles 0..49 in every range, so every range's min/max is 0..49 and BRIN can rule none out. `read_at` grows with insert order, so BRIN rules out almost all of them." }
 ---
 
 ## Ý chính
@@ -81,7 +80,7 @@ Aggregate
 
 ## Thực hành
 
-Đọc khoảng khối của index chưa và đã tóm tắt, xem planner dùng BRIN, rồi đoán cột nào hợp BRIN. Kỹ năng chuyên gia: chọn BRIN thay B-tree cho bảng append-only rất lớn, và biết giữ tóm tắt luôn mới.
+Đọc khoảng khối của index chưa và đã tóm tắt, xem planner dùng BRIN, rồi chọn cột nào hợp BRIN. Kỹ năng chuyên gia: chọn BRIN thay B-tree cho bảng append-only rất lớn, và biết giữ tóm tắt luôn mới.
 
 # EN
 
@@ -111,4 +110,4 @@ Aggregate
 
 ## Practice
 
-Read the block ranges of an unsummarized and a summarized index, watch the planner use BRIN, then predict which column suits BRIN. Expert skill: choose BRIN over B-tree for a very large append-only table, and keep its summaries up to date.
+Read the block ranges of an unsummarized and a summarized index, watch the planner use BRIN, then choose which column suits BRIN. Expert skill: choose BRIN over B-tree for a very large append-only table, and keep its summaries up to date.

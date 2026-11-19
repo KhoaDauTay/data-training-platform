@@ -19,7 +19,7 @@ sources:
 viz: plan-tree
 lab:
   setup: |
-    DROP TABLE IF EXISTS parcels;
+    DROP TABLE IF EXISTS parcels CASCADE;
     CREATE TABLE parcels (id int PRIMARY KEY, hub int NOT NULL, status text NOT NULL, day int NOT NULL, weight int NOT NULL);
     INSERT INTO parcels
       SELECT g, g % 20 + 1,
@@ -31,11 +31,11 @@ lab:
   steps:
     - task: { vi: "Liệt kê các giá trị phổ biến nhất của cột `status` và tần suất của chúng (hai cột, ép sang text).", en: "List the most common values of column `status` and their frequencies (two columns, cast to text)." }
       solution: "SELECT most_common_vals::text, most_common_freqs::text FROM pg_stats WHERE tablename = 'parcels' AND attname = 'status'"
-      check: catalog
+      check: rows
       hint: { vi: "Hai mảng song song trong view `pg_stats`.", en: "Two parallel arrays in the `pg_stats` view." }
     - task: { vi: "Với mỗi cột của `parcels`, cho biết `n_distinct` và `correlation`, sắp theo tên cột.", en: "For every column of `parcels`, show `n_distinct` and `correlation`, ordered by column name." }
       solution: "SELECT attname, n_distinct, correlation FROM pg_stats WHERE tablename = 'parcels' ORDER BY attname"
-      check: catalog
+      check: rows
       ordered: true
       hint: { vi: "`n_distinct` âm nghĩa là tỉ lệ so với số dòng (-1 = mọi giá trị khác nhau).", en: "A negative `n_distinct` is a fraction of the row count (-1 = every value is distinct)." }
     - task: { vi: "Đọc mọi cột của các kiện đã thất lạc (trạng thái 'lost', khoảng 1%). Planner nên dùng index trên trạng thái.", en: "Read every column of the lost parcels (status 'lost', about 1%). The planner should use the status index." }
@@ -43,7 +43,7 @@ lab:
       check: plan
       hint: { vi: "Giá trị hiếm → ít trang → đáng đi qua index.", en: "A rare value means few pages, so the index pays off." }
 predict:
-  sql: "EXPLAIN SELECT * FROM parcels WHERE status = 'delivered'"
+  sql: "SELECT * FROM parcels WHERE status = 'delivered'"
   q: { vi: "'delivered' chiếm 70% bảng. Postgres sẽ đọc thế nào, và ước lượng bao nhiêu dòng?", en: "'delivered' is 70% of the table. How will Postgres read it, and how many rows will it estimate?" }
   options:
     - { vi: "Bitmap Heap Scan qua `parcels_status_idx`, khoảng 200 dòng", en: "Bitmap Heap Scan through `parcels_status_idx`, about 200 rows" }

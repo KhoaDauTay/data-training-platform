@@ -18,7 +18,7 @@ sources:
 viz: lock-matrix
 lab:
   setup: |
-    DROP TABLE IF EXISTS acct;
+    DROP TABLE IF EXISTS acct CASCADE;
     CREATE TABLE acct (id int PRIMARY KEY, bal int NOT NULL);
     INSERT INTO acct SELECT g, 100 FROM generate_series(1, 10) g;
   steps:

@@ -19,7 +19,7 @@ sources:
 viz: plan-tree
 lab:
   setup: |
-    DROP TABLE IF EXISTS order_notes, orders, customers;
+    DROP TABLE IF EXISTS order_notes, orders, customers CASCADE;
     CREATE TABLE customers (id int PRIMARY KEY, region int NOT NULL);
     INSERT INTO customers SELECT g, g % 5 FROM generate_series(1, 500) g;
     CREATE TABLE orders (id int PRIMARY KEY, customer_id int NOT NULL REFERENCES customers, amount int NOT NULL);
@@ -34,7 +34,7 @@ lab:
       check: plan
       hint: { vi: "Viết theo đúng thứ tự đề nêu. Planner sẽ tự bắt đầu từ `customers`.", en: "Write the tables in the order given. The planner will start from `customers` on its own." }
 predict:
-  sql: "EXPLAIN (COSTS OFF) SELECT count(*) FROM order_notes n JOIN orders o ON o.id = n.order_id JOIN customers c ON c.id = o.customer_id WHERE c.region = 1 AND c.id < 20"
+  sql: "SELECT count(*) FROM order_notes n JOIN orders o ON o.id = n.order_id JOIN customers c ON c.id = o.customer_id WHERE c.region = 1 AND c.id < 20"
   q: { vi: "Câu viết `order_notes` đầu tiên. Bảng nào nằm ở nút lá đầu tiên (phía ngoài cùng) của kế hoạch?", en: "The query lists `order_notes` first. Which table is at the first leaf (the outermost side) of the plan?" }
   options:
     - { vi: "`order_notes`, vì nó được viết đầu tiên", en: "`order_notes`, because it is written first" }

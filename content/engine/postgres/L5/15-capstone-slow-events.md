@@ -45,7 +45,7 @@ lab:
   steps:
     - task: { vi: "Bước 1, thống kê. Với phân vùng tháng 10 (`events_2026_10`), đọc `n_distinct` và `correlation` của ba cột `created_at`, `plan_tier`, `tenant_id`, sắp theo tên cột.", en: "Step 1, statistics. For the October partition (`events_2026_10`), read `n_distinct` and `correlation` of the three columns `created_at`, `plan_tier`, `tenant_id`, ordered by column name." }
       solution: "SELECT attname, n_distinct, correlation FROM pg_stats WHERE tablename = 'events_2026_10' AND attname IN ('created_at', 'plan_tier', 'tenant_id') ORDER BY attname"
-      check: catalog
+      check: rows
       ordered: true
       hint: { vi: "Mỗi phân vùng có thống kê riêng trong `pg_stats`.", en: "Each partition has its own statistics in `pg_stats`." }
     - task: { vi: "Bước 2, ước lượng. Bảng điều khiển hay lọc theo khách và gói. Với `events_2026_10`, so ước lượng của planner cho khách 7 ở gói 1 với số dòng thật. Hai cột: estimated (dùng hàm `est(text)` có sẵn), actual.", en: "Step 2, estimates. The dashboard often filters by tenant and plan tier. On `events_2026_10`, compare the planner's estimate for tenant 7 on tier 1 with the real row count. Two columns: estimated (use the ready-made `est(text)` function), actual." }
@@ -66,7 +66,7 @@ lab:
       ordered: true
       hint: { vi: "`pg_class` + `pg_relation_size`.", en: "`pg_class` + `pg_relation_size`." }
 predict:
-  sql: "EXPLAIN (COSTS OFF) SELECT count(*) FROM events WHERE tenant_id = 7 AND created_at >= '2026-10-01' AND created_at < '2026-10-08'"
+  sql: "SELECT count(*) FROM events WHERE tenant_id = 7 AND created_at >= '2026-10-01' AND created_at < '2026-10-08'"
   q: { vi: "Trước bước 3: câu bảng điều khiển sẽ được đọc thế nào?", en: "Before step 3: how will the dashboard query be read?" }
   options:
     - { vi: "Append trên cả ba phân vùng, mỗi phân vùng một Seq Scan", en: "An Append over all three partitions, one Seq Scan each" }

@@ -19,7 +19,7 @@ sources:
 viz: plan-tree
 lab:
   setup: |
-    DROP TABLE IF EXISTS addr_plain, addr_stats;
+    DROP TABLE IF EXISTS addr_plain, addr_stats CASCADE;
     DROP FUNCTION IF EXISTS est(text);
     CREATE TABLE addr_plain (id int, city int, district int);
     INSERT INTO addr_plain SELECT g, g % 10, g % 100 FROM generate_series(1, 10000) g;
@@ -41,7 +41,7 @@ lab:
       hint: { vi: "`est` nhận nguyên câu SQL dưới dạng chuỗi.", en: "`est` takes the whole SQL query as a string." }
     - task: { vi: "Đọc đối tượng thống kê của `addr_stats`: tên, các cột (ép text) và phần `dependencies`.", en: "Read the statistics object of `addr_stats`: its name, its columns (cast to text) and its `dependencies`." }
       solution: "SELECT statistics_name, attnames::text, dependencies FROM pg_stats_ext WHERE tablename = 'addr_stats'"
-      check: catalog
+      check: rows
       hint: { vi: "View `pg_stats_ext` giống `pg_stats` nhưng cho thống kê nhiều cột.", en: "The `pg_stats_ext` view is like `pg_stats`, for multi-column statistics." }
 quiz:
   - q: { vi: "Báo cáo lọc `WHERE city = … AND district = …` luôn ước lượng thấp 10 lần và chọn Nested Loop chậm. Sửa thế nào là đúng gốc?", en: "A report filtering `WHERE city = … AND district = …` is always underestimated tenfold and picks a slow Nested Loop. What is the root-cause fix?" }

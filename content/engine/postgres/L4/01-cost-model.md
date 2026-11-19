@@ -19,7 +19,7 @@ sources:
 viz: plan-tree
 lab:
   setup: |
-    DROP TABLE IF EXISTS parcels;
+    DROP TABLE IF EXISTS parcels CASCADE;
     CREATE TABLE parcels (id int PRIMARY KEY, hub int NOT NULL, status text NOT NULL, day int NOT NULL, weight int NOT NULL);
     INSERT INTO parcels
       SELECT g, g % 20 + 1,
@@ -30,7 +30,7 @@ lab:
   steps:
     - task: { vi: "Đọc số trang và số dòng mà planner đang tin cho bảng `parcels` (hai cột: relpages, reltuples).", en: "Read the page count and row count the planner believes for `parcels` (two columns: relpages, reltuples)." }
       solution: "SELECT relpages, reltuples FROM pg_class WHERE relname = 'parcels'"
-      check: catalog
+      check: rows
       hint: { vi: "Hai con số này nằm trong `pg_class`, được ANALYZE/VACUUM cập nhật.", en: "Both numbers live in `pg_class` and are refreshed by ANALYZE/VACUUM." }
     - task: { vi: "Tính chi phí Seq Scan của `SELECT * FROM parcels` bằng công thức: số trang × `seq_page_cost` + số dòng × `cpu_tuple_cost`. Đọc hai hằng số bằng `current_setting`. Một cột tên seq_cost.", en: "Compute the Seq Scan cost of `SELECT * FROM parcels` with the formula pages × `seq_page_cost` + rows × `cpu_tuple_cost`. Read both constants with `current_setting`. One column named seq_cost." }
       solution: "SELECT relpages * current_setting('seq_page_cost')::float8 + reltuples * current_setting('cpu_tuple_cost')::float8 AS seq_cost FROM pg_class WHERE relname = 'parcels'"
@@ -41,7 +41,7 @@ lab:
       check: plan
       hint: { vi: "Gần như mọi dòng đều thỏa điều kiện, nên đọc tuần tự vẫn rẻ nhất.", en: "Almost every row matches, so a sequential read is still the cheapest." }
 predict:
-  sql: "EXPLAIN SELECT * FROM parcels WHERE weight > 100"
+  sql: "SELECT * FROM parcels WHERE weight > 100"
   q: { vi: "Không lọc, Seq Scan trên `parcels` có chi phí 348. Thêm `WHERE weight > 100` thì chi phí tổng là bao nhiêu?", en: "Without a filter the Seq Scan on `parcels` costs 348. With `WHERE weight > 100`, what is the total cost?" }
   options:
     - { vi: "Vẫn 348, vì số trang đọc không đổi", en: "Still 348, because the number of pages read does not change" }

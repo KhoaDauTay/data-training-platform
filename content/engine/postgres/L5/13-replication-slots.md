@@ -25,12 +25,12 @@ lab:
   steps:
     - task: { vi: "Hai slot vật lý đã được tạo: một slot thường, một slot giữ WAL ngay khi tạo (`immediately_reserve`). Liệt kê tên, loại, `active`, có `restart_lsn` chưa (cột has_restart_lsn) và `wal_status`. Sắp theo tên.", en: "Two physical slots were created: a plain one and one that reserves WAL at creation (`immediately_reserve`). List name, type, `active`, whether it has a `restart_lsn` (column has_restart_lsn) and `wal_status`. Order by name." }
       solution: "SELECT slot_name, slot_type, active, restart_lsn IS NOT NULL AS has_restart_lsn, wal_status FROM pg_replication_slots ORDER BY slot_name"
-      check: catalog
+      check: rows
       ordered: true
       hint: { vi: "Không chấm theo giá trị LSN (thay đổi theo máy), chỉ theo việc có hay không.", en: "Do not grade on the LSN value (it changes per machine), only on whether there is one." }
     - task: { vi: "Đọc các thiết lập nhân bản: `wal_level`, `max_wal_senders`, `max_replication_slots`, `max_slot_wal_keep_size`, `synchronous_commit` (tên và giá trị, sắp theo tên).", en: "Read the replication settings: `wal_level`, `max_wal_senders`, `max_replication_slots`, `max_slot_wal_keep_size`, `synchronous_commit` (name and value, ordered by name)." }
       solution: "SELECT name, setting FROM pg_settings WHERE name IN ('wal_level', 'max_wal_senders', 'max_replication_slots', 'max_slot_wal_keep_size', 'synchronous_commit') ORDER BY name"
-      check: catalog
+      check: rows
       ordered: true
       hint: { vi: "`max_slot_wal_keep_size` = -1 nghĩa là slot được giữ WAL không giới hạn.", en: "`max_slot_wal_keep_size` = -1 means a slot may keep WAL without limit." }
 quiz:

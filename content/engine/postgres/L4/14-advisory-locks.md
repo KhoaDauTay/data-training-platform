@@ -19,7 +19,7 @@ sources:
 viz: lock-matrix
 lab:
   setup: |
-    DROP TABLE IF EXISTS jobs;
+    DROP TABLE IF EXISTS jobs CASCADE;
     CREATE TABLE jobs (id int PRIMARY KEY, name text NOT NULL);
     INSERT INTO jobs VALUES (1, 'nightly_invoices'), (2, 'cleanup'), (3, 'reindex_report');
   steps:

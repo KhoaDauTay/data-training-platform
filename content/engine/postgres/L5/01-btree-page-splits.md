@@ -20,7 +20,7 @@ viz: btree
 lab:
   setup: |
     CREATE EXTENSION IF NOT EXISTS pageinspect;
-    DROP TABLE IF EXISTS seq_keys, mixed_keys;
+    DROP TABLE IF EXISTS seq_keys, mixed_keys CASCADE;
     CREATE TABLE seq_keys (k int NOT NULL);
     CREATE INDEX seq_keys_idx ON seq_keys (k);
     INSERT INTO seq_keys SELECT g FROM generate_series(1, 20000) g;
@@ -30,7 +30,7 @@ lab:
   steps:
     - task: { vi: "Đọc metapage của `seq_keys_idx`: trang gốc và số tầng (root, level).", en: "Read the metapage of `seq_keys_idx`: the root page and the number of levels (root, level)." }
       solution: "SELECT root, level FROM bt_metap('seq_keys_idx')"
-      check: catalog
+      check: rows
       hint: { vi: "`bt_metap(text)` của `pageinspect`. Tầng 0 là lá.", en: "`bt_metap(text)` from `pageinspect`. Level 0 is the leaf level." }
     - task: { vi: "So hai index cùng 20000 khóa: với mỗi index và mỗi loại trang (`type`: l = lá, r = gốc), đếm số trang, số mục sống trung bình và số byte trống trung bình (làm tròn). Duyệt mọi trang từ 1 tới trang cuối bằng `generate_series` + `bt_page_stats`. Sắp theo tên index rồi loại trang.", en: "Compare two indexes holding the same 20000 keys: for each index and each page `type` (l = leaf, r = root), count pages, average live items and average free bytes (rounded). Walk every page from 1 to the last with `generate_series` + `bt_page_stats`. Order by index name, then page type." }
       solution: "SELECT i.relname, s.type, count(*) AS pages, round(avg(s.live_items)) AS avg_items, round(avg(s.free_size)) AS avg_free FROM pg_class i, generate_series(1, (pg_relation_size(i.oid) / 8192 - 1)::int) b, bt_page_stats(i.relname, b) s WHERE i.relname IN ('seq_keys_idx', 'mixed_keys_idx') GROUP BY 1, 2 ORDER BY 1, 2"

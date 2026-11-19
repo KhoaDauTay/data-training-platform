@@ -21,14 +21,14 @@ sources:
 viz: plan-tree
 lab:
   setup: |
-    DROP TABLE IF EXISTS big;
+    DROP TABLE IF EXISTS big CASCADE;
     CREATE TABLE big (id int, v int);
     INSERT INTO big SELECT g, (g * 7919) % 100000 FROM generate_series(1, 30000) g;
     ANALYZE big;
   steps:
     - task: { vi: "Đọc ba thiết lập trong `pg_settings`: `max_parallel_workers_per_gather`, `max_worker_processes`, `jit` (tên và giá trị, sắp theo tên).", en: "Read three settings from `pg_settings`: `max_parallel_workers_per_gather`, `max_worker_processes`, `jit` (name and value, ordered by name)." }
       solution: "SELECT name, setting FROM pg_settings WHERE name IN ('max_parallel_workers_per_gather', 'max_worker_processes', 'jit') ORDER BY name"
-      check: catalog
+      check: rows
       ordered: true
       hint: { vi: "Lọc `pg_settings` theo cột `name`.", en: "Filter `pg_settings` on the `name` column." }
     - task: { vi: "Kiểm tra bản PostgreSQL này có JIT không (một cột).", en: "Check whether this PostgreSQL build has JIT available (one column)." }
@@ -36,7 +36,7 @@ lab:
       check: rows
       hint: { vi: "Có một hàm trả về boolean cho đúng câu hỏi này.", en: "One function returns a boolean for exactly this question." }
 predict:
-  sql: "EXPLAIN (COSTS OFF) SELECT count(*) FROM big"
+  sql: "SELECT count(*) FROM big"
   q: { vi: "Trên một server PostgreSQL 18 bình thường (mặc định 2 worker mỗi Gather), bảng lớn sẽ có `Gather` → `Partial Aggregate` → `Parallel Seq Scan`. Trên PGlite thì kế hoạch là gì?", en: "On a normal PostgreSQL 18 server (default 2 workers per Gather), a big table gets `Gather` → `Partial Aggregate` → `Parallel Seq Scan`. What is the plan on PGlite?" }
   options:
     - { vi: "Giống server: có `Gather`", en: "Same as the server: it has `Gather`" }

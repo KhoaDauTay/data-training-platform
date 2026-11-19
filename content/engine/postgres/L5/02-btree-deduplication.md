@@ -19,7 +19,7 @@ viz: btree
 lab:
   setup: |
     CREATE EXTENSION IF NOT EXISTS pageinspect;
-    DROP TABLE IF EXISTS tickets;
+    DROP TABLE IF EXISTS tickets CASCADE;
     CREATE TABLE tickets (id int, prio int NOT NULL);
     INSERT INTO tickets SELECT g, g % 4 FROM generate_series(1, 20000) g;
     CREATE INDEX tickets_prio_dedup ON tickets (prio);
