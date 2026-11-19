@@ -3,7 +3,7 @@ id: e-pg-l1-03
 engine: postgres
 level: L1
 module: types
-title: Khóa tự sinh, UUID và cột tính sẵn
+title: Khóa tự sinh, UUID và cột sinh
 title_en: Generated keys, UUIDs and generated columns
 kind: lab
 runtime: browser
@@ -14,7 +14,7 @@ objectives:
     en: Create an auto-increasing key with `GENERATED ALWAYS AS IDENTITY` instead of managing numbers yourself.
   - vi: Biết khi nào dùng `uuidv7()` (Postgres 18) và vì sao sequence có thể có lỗ hổng.
     en: Know when to use `uuidv7()` (Postgres 18) and why a sequence can have gaps.
-  - vi: Khai báo cột tính sẵn và biết ở Postgres 18 nó mặc định là ảo (`VIRTUAL`).
+  - vi: Khai báo cột sinh (generated column) và biết ở Postgres 18 nó mặc định là ảo (`VIRTUAL`).
     en: Declare a generated column and know that in Postgres 18 it is virtual (`VIRTUAL`) by default.
 requires: [e-pg-l1-02]
 sources:
@@ -27,7 +27,7 @@ lab:
     CREATE SEQUENCE invoice_no START 1000 INCREMENT 10;
   steps:
     - task:
-        vi: "Tạo bảng `tickets`: `id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY`, `public_id uuid NOT NULL DEFAULT uuidv7()`, `price numeric(10,2) NOT NULL`, `qty int NOT NULL`, và `total numeric(12,2)` là cột tính sẵn bằng `price * qty`."
+        vi: "Tạo bảng `tickets`: `id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY`, `public_id uuid NOT NULL DEFAULT uuidv7()`, `price numeric(10,2) NOT NULL`, `qty int NOT NULL`, và `total numeric(12,2)` là cột sinh bằng `price * qty`."
         en: "Create table `tickets`: `id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY`, `public_id uuid NOT NULL DEFAULT uuidv7()`, `price numeric(10,2) NOT NULL`, `qty int NOT NULL`, and `total numeric(12,2)` generated as `price * qty`."
       solution: CREATE TABLE tickets (id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY, public_id uuid NOT NULL DEFAULT uuidv7(), price numeric(10,2) NOT NULL, qty int NOT NULL, total numeric(12,2) GENERATED ALWAYS AS (price * qty))
       check: catalog
@@ -43,7 +43,7 @@ lab:
         vi: "Chỉ ghi `price` và `qty`; `id`, `public_id` và `total` do Postgres điền."
         en: "Give only `price` and `qty`; Postgres fills `id`, `public_id` and `total`."
     - task:
-        vi: "Tìm trong `pg_attribute` các cột tính sẵn của bảng `tickets`: trả về `attname` và `attgenerated`."
+        vi: "Tìm các cột sinh của bảng `tickets` trong `pg_attribute`: trả về `attname` và `attgenerated`."
         en: "Find the generated columns of table `tickets` in `pg_attribute`: return `attname` and `attgenerated`."
       solution: SELECT attname, attgenerated FROM pg_attribute WHERE attrelid = 'tickets'::regclass AND attgenerated <> ''
       check: rows
@@ -53,13 +53,13 @@ lab:
 ---
 ## Ý chính
 
-Identity. `GENERATED ALWAYS AS IDENTITY` gắn một sequence vào cột: mỗi `INSERT` lấy số kế tiếp. `ALWAYS` cấm ghi tay vào cột (trừ khi dùng `OVERRIDING SYSTEM VALUE`); `BY DEFAULT` thì cho phép. Đây là cách chuẩn SQL, thay cho `serial` cũ.
+Identity. `GENERATED ALWAYS AS IDENTITY` gắn một sequence vào cột: mỗi `INSERT` lấy số kế tiếp. `ALWAYS` cấm ghi tay (trừ khi dùng `OVERRIDING SYSTEM VALUE`); `BY DEFAULT` thì cho phép; cả hai thay cho `serial` cũ.
 
-Sequence có lỗ. `nextval()` không bao giờ bị hoàn lại, kể cả khi transaction `ROLLBACK`. Vì thế số có thể nhảy (1, 2, 5...). Đừng dùng id làm "số thứ tự không được thiếu" như số hóa đơn pháp lý.
+Sequence có lỗ: `nextval()` không bao giờ được hoàn lại, kể cả khi `ROLLBACK`, nên số có thể nhảy (1, 2, 5...). Đừng dùng id làm số hóa đơn pháp lý không được thiếu số.
 
-UUID. `uuid` là 16 byte, sinh được ở bất cứ đâu mà không cần hỏi database, hợp cho id công khai hoặc hệ thống nhiều nơi ghi. `gen_random_uuid()` (bản 4) hoàn toàn ngẫu nhiên. Postgres 18 thêm `uuidv7()`: phần đầu là thời điểm tạo, nên giá trị mới luôn ở cuối index B-tree, ít làm xáo trộn trang hơn bản ngẫu nhiên.
+UUID. `uuid` (16 byte) sinh được ở bất cứ đâu, hợp cho id công khai. `gen_random_uuid()` (bản 4) ngẫu nhiên. `uuidv7()` (Postgres 18) bắt đầu bằng thời điểm tạo, nên giá trị mới nằm cuối index (chỉ mục) B-tree, ít xáo trộn trang hơn.
 
-Cột tính sẵn. `GENERATED ALWAYS AS (...)` luôn tính từ các cột khác, không ghi tay được. Có hai loại: `STORED` (tính khi ghi, chiếm chỗ) và `VIRTUAL` (tính khi đọc, không chiếm chỗ). Từ Postgres 18, không ghi gì thì là `VIRTUAL`.
+Cột sinh (generated column). `GENERATED ALWAYS AS (...)` luôn tính từ các cột khác: `STORED` tính khi ghi và chiếm chỗ, `VIRTUAL` tính khi đọc. Từ Postgres 18, không ghi gì thì là `VIRTUAL`.
 
 ## Ví dụ
 
@@ -77,19 +77,19 @@ INSERT INTO demo (id, v) VALUES (7, 'x');
 
 ## Thực hành
 
-Database có sẵn sequence `invoice_no`. Tạo bảng `tickets` với khóa identity, id công khai `uuidv7()` và cột `total` tính sẵn, rồi kiểm tra loại của cột tính sẵn trong catalog.
+Database có sẵn sequence `invoice_no`. Tạo bảng `tickets` với khóa identity, id công khai `uuidv7()` và cột sinh `total`, rồi kiểm tra loại của cột sinh trong catalog.
 
 # EN
 
 ## Key idea
 
-Identity. `GENERATED ALWAYS AS IDENTITY` attaches a sequence to the column: every `INSERT` takes the next number. `ALWAYS` forbids writing the column by hand (unless you use `OVERRIDING SYSTEM VALUE`); `BY DEFAULT` allows it. This is the SQL-standard way and replaces the older `serial`.
+Identity. `GENERATED ALWAYS AS IDENTITY` attaches a sequence to the column: every `INSERT` takes the next number. `ALWAYS` forbids writing it by hand (unless you use `OVERRIDING SYSTEM VALUE`); `BY DEFAULT` allows it; both replace the older `serial`.
 
-Sequences have gaps. `nextval()` is never given back, even when the transaction does `ROLLBACK`. Numbers can therefore jump (1, 2, 5...). Do not use an id as a "no number may be missing" counter such as a legal invoice number.
+Sequences have gaps: `nextval()` is never given back, even on `ROLLBACK`, so numbers can jump (1, 2, 5...). Never use an id as a legal invoice number that may not skip.
 
-UUID. A `uuid` is 16 bytes and can be generated anywhere without asking the database, which suits public ids or systems with many writers. `gen_random_uuid()` (version 4) is fully random. Postgres 18 adds `uuidv7()`: its first part is the creation time, so new values always land at the end of a B-tree index and disturb fewer pages than random ones.
+UUID. A `uuid` (16 bytes) can be generated anywhere, which suits public ids. `gen_random_uuid()` (version 4) is random. `uuidv7()` (Postgres 18) starts with the creation time, so new values land at the end of a B-tree index and disturb fewer pages.
 
-Generated columns. `GENERATED ALWAYS AS (...)` is always computed from other columns and cannot be written by hand. There are two kinds: `STORED` (computed on write, takes space) and `VIRTUAL` (computed on read, takes no space). Since Postgres 18, the default is `VIRTUAL`.
+Generated columns. `GENERATED ALWAYS AS (...)` is always computed from other columns: `STORED` is computed on write and takes space, `VIRTUAL` on read. Since Postgres 18, the default is `VIRTUAL`.
 
 ## Example
 

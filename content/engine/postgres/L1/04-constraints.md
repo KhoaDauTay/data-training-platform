@@ -62,21 +62,21 @@ lab:
 ---
 ## Ý chính
 
-Ràng buộc là luật mà database tự kiểm ở mỗi lần ghi, nên dữ liệu sai không lọt vào dù ứng dụng nào ghi:
+Ràng buộc (constraint) là luật database tự kiểm ở mỗi lần ghi, nên dữ liệu sai không lọt vào dù ứng dụng nào ghi:
 
 - `NOT NULL`: phải có giá trị.
 - `CHECK (...)`: điều kiện phải đúng (hoặc NULL) với mỗi dòng.
-- `UNIQUE`: không hai dòng nào trùng. Postgres tạo một index unique để kiểm.
+- `UNIQUE`: không hai dòng nào trùng; Postgres tạo một index (chỉ mục) unique để kiểm.
 - `PRIMARY KEY`: `UNIQUE` + `NOT NULL`; mỗi bảng tối đa một.
-- `FOREIGN KEY ... REFERENCES`: giá trị phải có ở bảng cha. Mặc định không cho xóa dòng cha còn dòng con trỏ tới; `ON DELETE CASCADE` thì xóa theo.
+- `FOREIGN KEY ... REFERENCES`: khóa ngoại (foreign key), giá trị phải có ở bảng cha. Mặc định không xóa được dòng cha còn dòng con; `ON DELETE CASCADE` thì xóa theo.
 
-Thêm ràng buộc vào bảng đã có dữ liệu bằng `ALTER TABLE ... ADD CONSTRAINT`. Postgres kiểm mọi dòng hiện có; một dòng vi phạm là cả lệnh thất bại.
+`ALTER TABLE ... ADD CONSTRAINT` kiểm mọi dòng hiện có; một dòng vi phạm là cả lệnh thất bại.
 
-NULL và UNIQUE: mặc định hai NULL được coi là khác nhau, nên cột `UNIQUE` chứa được nhiều NULL. Từ PostgreSQL 15, `UNIQUE NULLS NOT DISTINCT` coi mọi NULL là bằng nhau, nên chỉ còn một NULL.
-
-Trong `pg_constraint`, cột `contype` là `c` (check), `f` (foreign key), `p` (primary key), `u` (unique) và `n` (not null: từ Postgres 18, mỗi `NOT NULL` cũng là một dòng trong `pg_constraint`).
+Mặc định hai NULL được coi là khác nhau, nên cột `UNIQUE` chứa được nhiều NULL. Từ PostgreSQL 15, `UNIQUE NULLS NOT DISTINCT` chỉ cho một NULL.
 
 ## Ví dụ
+
+Trong `pg_constraint`, `contype` là `c` (check), `f` (foreign key), `p` (primary key), `u` (unique) và `n` (not null, từ Postgres 18).
 
 ```sql
 -- ERROR: violates check constraint
@@ -104,17 +104,17 @@ Constraints are rules the database checks itself on every write, so bad data can
 
 - `NOT NULL`: a value is required.
 - `CHECK (...)`: the condition must be true (or NULL) for each row.
-- `UNIQUE`: no two rows may match. Postgres creates a unique index to enforce it.
+- `UNIQUE`: no two rows may match; Postgres creates a unique index to enforce it.
 - `PRIMARY KEY`: `UNIQUE` + `NOT NULL`; at most one per table.
-- `FOREIGN KEY ... REFERENCES`: the value must exist in the parent table. By default you cannot delete a parent row that child rows still point to; `ON DELETE CASCADE` deletes them too.
+- `FOREIGN KEY ... REFERENCES`: a foreign key, the value must exist in the parent table. By default a parent row with child rows cannot be deleted; `ON DELETE CASCADE` deletes them too.
 
-Add a constraint to a table that already has data with `ALTER TABLE ... ADD CONSTRAINT`. Postgres checks every existing row; one violating row makes the whole command fail.
+`ALTER TABLE ... ADD CONSTRAINT` checks every existing row; one violating row makes the whole command fail.
 
-NULL and UNIQUE: by default two NULLs count as different, so a `UNIQUE` column can hold many NULLs. Since PostgreSQL 15, `UNIQUE NULLS NOT DISTINCT` treats all NULLs as equal, so only one NULL is allowed.
-
-In `pg_constraint`, column `contype` is `c` (check), `f` (foreign key), `p` (primary key), `u` (unique) and `n` (not null: since Postgres 18, every `NOT NULL` is also a row in `pg_constraint`).
+By default two NULLs count as different, so a `UNIQUE` column can hold many NULLs. Since PostgreSQL 15, `UNIQUE NULLS NOT DISTINCT` allows only one NULL.
 
 ## Example
+
+In `pg_constraint`, `contype` is `c` (check), `f` (foreign key), `p` (primary key), `u` (unique) and `n` (not null, since Postgres 18).
 
 ```sql
 -- ERROR: violates check constraint

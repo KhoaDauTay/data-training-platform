@@ -81,7 +81,7 @@ lab:
 - `vector @@ query` đúng khi văn bản khớp câu hỏi.
 - `ts_rank` cho điểm theo tần suất từ, để xếp kết quả.
 
-Index được khuyên dùng cho tìm kiếm toàn văn là GIN: mỗi lexeme là một khóa, kèm danh sách bài chứa nó. Có thể index thẳng biểu thức `to_tsvector('english', body)` (khi đó câu phải viết đúng biểu thức đó) hoặc lưu sẵn một cột `tsvector` tính sẵn.
+Index được khuyên dùng cho tìm kiếm toàn văn là GIN: mỗi lexeme là một khóa, kèm danh sách bài chứa nó. Có thể index thẳng biểu thức `to_tsvector('english', body)` (khi đó câu phải viết đúng biểu thức đó) hoặc lưu sẵn một cột sinh (generated column) kiểu `tsvector`.
 
 ## Ví dụ
 
@@ -94,7 +94,7 @@ Kết quả: `'crane':3,4 'harbor':2` và `'harbor' & 'crane'`. "The" bị bỏ;
 
 ## Thực hành
 
-12 000 bài viết ngắn về hàng hóa. Tìm, xếp hạng, rồi làm câu tìm dùng index GIN.
+12.000 bài viết ngắn về hàng hóa. Tìm, xếp hạng, rồi làm câu tìm dùng index GIN.
 
 # EN
 

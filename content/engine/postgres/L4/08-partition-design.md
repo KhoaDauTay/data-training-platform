@@ -25,7 +25,7 @@ quiz:
       - { vi: "Thành công nhưng chỉ unique trong từng phân vùng", en: "It succeeds, but is only unique within each partition" }
     answer: 1
     why: { vi: "Mỗi phân vùng có index riêng; Postgres chỉ bảo đảm duy nhất toàn bảng khi khóa phân vùng nằm trong khóa, để hai dòng trùng khóa luôn rơi vào cùng phân vùng.", en: "Each partition has its own index; Postgres can only guarantee table-wide uniqueness when the partition key is part of the key, so two equal keys always land in the same partition." }
-  - q: { vi: "Hệ thống nhiều khách hàng (tenant), 90% câu hỏi là \"tenant X trong 30 ngày qua\", và dữ liệu quá 13 tháng phải xóa. Khóa phân vùng nào hợp lý nhất?", en: "A multi-tenant system: 90% of queries are \"tenant X over the last 30 days\", and data older than 13 months must be deleted. Which partition key fits best?" }
+  - q: { vi: "Hệ thống nhiều khách hàng (tenant), 90 % câu hỏi là \"tenant X trong 30 ngày qua\", và dữ liệu quá 13 tháng phải xóa. Khóa phân vùng nào hợp lý nhất?", en: "A multi-tenant system: 90% of queries are \"tenant X over the last 30 days\", and data older than 13 months must be deleted. Which partition key fits best?" }
     options:
       - { vi: "RANGE theo thời gian (tháng), index `(tenant_id, created_at)` trên bảng cha", en: "RANGE by time (month), with an index `(tenant_id, created_at)` on the parent" }
       - { vi: "HASH theo `tenant_id` với 1000 phân vùng", en: "HASH on `tenant_id` with 1000 partitions" }

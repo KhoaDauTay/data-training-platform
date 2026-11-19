@@ -61,15 +61,15 @@ lab:
 ---
 ## Ý chính
 
-Không có index, muốn tìm đơn của một khách thì Postgres phải đọc mọi dòng (Seq Scan). Index B-tree giữ các giá trị của cột theo thứ tự, mỗi giá trị kèm địa chỉ dòng trong bảng. Tìm một giá trị chỉ cần đi từ gốc xuống lá, vài trang, rồi nhảy thẳng tới các dòng khớp.
+Không có index, muốn tìm đơn của một khách thì Postgres phải đọc mọi dòng (Seq Scan). Index (chỉ mục) B-tree giữ các giá trị của cột theo thứ tự, mỗi giá trị kèm địa chỉ dòng trong bảng. Tìm một giá trị chỉ cần đi từ gốc xuống lá, vài trang, rồi nhảy thẳng tới các dòng khớp.
 
 B-tree là kiểu mặc định của `CREATE INDEX`. Nó dùng được cho `=`, `<`, `<=`, `>`, `>=`, `BETWEEN`, `IN`, `IS NULL` và cho `ORDER BY`.
 
-Index không miễn phí: mỗi `INSERT`, `UPDATE` cột được index hay `DELETE` đều phải sửa thêm index. Chỉ tạo index cho câu hỏi bạn thật sự chạy thường xuyên.
-
-Khi số dòng khớp vừa phải, kế hoạch thường là Bitmap Index Scan rồi Bitmap Heap Scan: gom địa chỉ từ index, sắp theo trang, rồi đọc mỗi trang một lần.
+Index không miễn phí: mỗi `INSERT` và mỗi `UPDATE` cột được index đều phải ghi thêm vào index (`DELETE` để lại mục cũ cho VACUUM dọn sau). Chỉ tạo index cho câu hỏi bạn thật sự chạy thường xuyên.
 
 ## Ví dụ
+
+Khi số dòng khớp vừa phải, kế hoạch thường là Bitmap Index Scan rồi Bitmap Heap Scan: gom địa chỉ từ index, sắp theo trang, rồi đọc mỗi trang một lần.
 
 ```sql
 CREATE INDEX orders_day_idx ON orders (created_at);
@@ -80,7 +80,7 @@ EXPLAIN SELECT id FROM orders WHERE created_at = date '2026-03-01';
 
 ## Thực hành
 
-Bảng `orders` có 20 000 dòng, 500 khách. Tạo index cho `customer_id`, rồi xem câu lọc theo khách đổi kế hoạch thế nào.
+Bảng `orders` có 20.000 dòng, 500 khách. Tạo index cho `customer_id`, rồi xem câu lọc theo khách đổi kế hoạch thế nào.
 
 # EN
 
@@ -90,11 +90,11 @@ Without an index, finding one customer's orders means reading every row (Seq Sca
 
 B-tree is the default type of `CREATE INDEX`. It serves `=`, `<`, `<=`, `>`, `>=`, `BETWEEN`, `IN`, `IS NULL` and `ORDER BY`.
 
-An index is not free: every `INSERT`, every `UPDATE` of an indexed column and every `DELETE` must also change the index. Only index what you really query often.
-
-When a moderate number of rows match, the plan is often a Bitmap Index Scan then a Bitmap Heap Scan: collect addresses from the index, sort them by page, then read each page once.
+An index is not free: every `INSERT` and every `UPDATE` of an indexed column must also write to the index (`DELETE` leaves the old entry for VACUUM to clean up later). Only index what you really query often.
 
 ## Example
+
+When a moderate number of rows match, the plan is often a Bitmap Index Scan then a Bitmap Heap Scan: collect addresses from the index, sort them by page, then read each page once.
 
 ```sql
 CREATE INDEX orders_day_idx ON orders (created_at);

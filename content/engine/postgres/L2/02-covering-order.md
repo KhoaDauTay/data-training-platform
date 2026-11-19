@@ -80,9 +80,9 @@ Index-only scan trả kết quả chỉ từ index, không về bảng. Nó cầ
 - Mọi cột câu dùng đều có trong index. `INCLUDE (amount)` thêm cột vào lá của B-tree mà không làm nó thành một phần của khóa.
 - Postgres phải biết dòng đó nhìn thấy được mà không cần mở trang heap. Nó hỏi visibility map: trang nào có bit all-visible thì bỏ qua heap. Bit này do VACUUM bật.
 
-Bảng vừa nạp có `relallvisible = 0`, nên planner tính rằng index-only scan vẫn phải về heap cho mọi dòng và thường chọn Bitmap Heap Scan. Sau VACUUM, cùng câu đó thành Index Only Scan với `Heap Fetches: 0`. Ở L3 bạn sẽ chạy VACUUM thật và đọc visibility map.
-
 ## Ví dụ
+
+Bảng vừa nạp có `relallvisible = 0`, nên planner tính rằng index-only scan vẫn phải về heap cho mọi dòng và thường chọn Bitmap Heap Scan. Sau VACUUM, cùng câu đó thành Index Only Scan với `Heap Fetches: 0`. Ở L3 bạn sẽ chạy VACUUM thật và đọc visibility map.
 
 ```sql
 CREATE INDEX demo_incl_idx ON orders (customer_id) INCLUDE (amount);
@@ -106,9 +106,9 @@ An index-only scan answers from the index alone, without visiting the table. It 
 - Every column the query uses is in the index. `INCLUDE (amount)` adds a column to the B-tree leaves without making it part of the key.
 - Postgres must know the row is visible without opening the heap page. It asks the visibility map: pages with the all-visible bit skip the heap. VACUUM sets that bit.
 
-A freshly loaded table has `relallvisible = 0`, so the planner reckons an index-only scan would still visit the heap for every row and usually picks a Bitmap Heap Scan. After VACUUM, the same query becomes an Index Only Scan with `Heap Fetches: 0`. In L3 you will run a real VACUUM and read the visibility map.
-
 ## Example
+
+A freshly loaded table has `relallvisible = 0`, so the planner reckons an index-only scan would still visit the heap for every row and usually picks a Bitmap Heap Scan. After VACUUM, the same query becomes an Index Only Scan with `Heap Fetches: 0`. In L3 you will run a real VACUUM and read the visibility map.
 
 ```sql
 CREATE INDEX demo_incl_idx ON orders (customer_id) INCLUDE (amount);

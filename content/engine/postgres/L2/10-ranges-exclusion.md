@@ -82,7 +82,7 @@ INSERT INTO bookings VALUES (99999, 3, tstzrange(timestamptz '2026-01-01 08:30+0
 
 ## Thực hành
 
-Bảng `bookings` có 20 000 lượt đặt hợp lệ của 50 phòng. Thêm ràng buộc chống đặt trùng, dùng index của nó để tìm, rồi tính số giờ đã đặt.
+Bảng `bookings` có 20.000 lượt đặt hợp lệ của 50 phòng. Thêm ràng buộc chống đặt trùng, dùng index của nó để tìm, rồi tính số giờ đã đặt.
 
 # EN
 

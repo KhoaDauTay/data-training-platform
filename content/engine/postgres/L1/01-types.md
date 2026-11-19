@@ -57,16 +57,16 @@ quiz:
 ---
 ## Ý chính
 
-Kiểu của cột quyết định giá trị nào được nhận, phép tính cho ra gì và tốn bao nhiêu chỗ. Bốn lựa chọn hay gặp nhất:
+Cộng 0,1 với 0,2 trong một cột tiền, tổng có đúng bằng 0,3 không? Kiểu của cột quyết định giá trị nhận được, kết quả phép tính và dung lượng:
 
-- Số nguyên: `integer` (4 byte, tới khoảng 2,1 tỉ) và `bigint` (8 byte). Khóa của bảng có thể lớn thì dùng `bigint`.
-- Số thực: `numeric(p, s)` lưu chính xác từng chữ số, hợp với tiền. `real` và `double precision` theo chuẩn IEEE 754, không chính xác: `0.1 + 0.2` không đúng bằng `0.3`. Dùng chúng cho số đo, tọa độ, nơi sai số nhỏ chấp nhận được.
-- Chuỗi: `text`, `varchar(n)` và `char(n)`. Tài liệu Postgres nói rõ ba kiểu này không khác nhau về hiệu năng; `char(n)` còn thường chậm nhất vì phải đệm khoảng trắng. Muốn giới hạn độ dài thì dùng `varchar(n)` hoặc một ràng buộc `CHECK`.
-- Thời gian: `timestamptz` (có múi giờ) lưu một thời điểm tuyệt đối và hiển thị theo `TimeZone` của phiên. `timestamp` (không múi giờ) chỉ là "ngày giờ trên lịch", bỏ qua múi giờ. Sự kiện thật (đặt hàng, đăng nhập) nên là `timestamptz`; ngày thuần dùng `date`.
-
-Ngoài ra có `boolean`, `uuid`, `jsonb`, mảng và nhiều kiểu khác; các bài sau dùng tới.
+- Số nguyên: `integer` (4 byte, tới khoảng 2,1 tỉ) và `bigint` (8 byte), dùng cho khóa có thể lớn.
+- Số thực: `numeric(p, s)` lưu chính xác từng chữ số, hợp với tiền. `real` và `double precision` theo IEEE 754, có sai số: `0.1 + 0.2` không đúng bằng `0.3`. Dùng chúng cho số đo, tọa độ.
+- Chuỗi: docs chính thức nói `text`, `varchar(n)` và `char(n)` không khác nhau về hiệu năng; `char(n)` còn đệm khoảng trắng. Giới hạn độ dài bằng `varchar(n)` hoặc `CHECK`.
+- Thời gian: `timestamptz` lưu một thời điểm tuyệt đối, hiển thị theo `TimeZone` của phiên; `timestamp` chỉ là "ngày giờ trên lịch". Sự kiện thật nên là `timestamptz`; ngày thuần dùng `date`.
 
 ## Ví dụ
+
+Ngoài ra có `boolean`, `uuid`, `jsonb` và mảng; các bài sau dùng tới.
 
 ```sql
 SELECT 0.1::float8 + 0.2::float8 = 0.3 AS float_equal,
@@ -91,16 +91,16 @@ Trả lời ba câu hỏi bên dưới. Trước đó, thử tự nghĩ: bảng 
 
 ## Key idea
 
-A column's type decides which values it accepts, what arithmetic returns and how much space it uses. The four choices you meet most:
+Add 0.1 and 0.2 in a money column: is the total exactly 0.3? A column's type decides the values it accepts, what arithmetic returns and the space it takes:
 
-- Integers: `integer` (4 bytes, up to about 2.1 billion) and `bigint` (8 bytes). Use `bigint` for keys that may grow large.
-- Fractions: `numeric(p, s)` stores every digit exactly, which suits money. `real` and `double precision` follow IEEE 754 and are inexact: `0.1 + 0.2` is not exactly `0.3`. Use them for measurements and coordinates, where a tiny error is fine.
-- Strings: `text`, `varchar(n)` and `char(n)`. The Postgres docs state there is no performance difference between them; `char(n)` is usually the slowest because of its blank padding. To cap a length, use `varchar(n)` or a `CHECK` constraint.
-- Time: `timestamptz` (with time zone) stores an absolute instant and displays it in the session's `TimeZone`. `timestamp` (without time zone) is just "a date and time on a calendar" and ignores zones. Real events (an order, a login) should be `timestamptz`; plain days use `date`.
-
-There are also `boolean`, `uuid`, `jsonb`, arrays and many more; later lessons use them.
+- Integers: `integer` (4 bytes, up to about 2.1 billion) and `bigint` (8 bytes), for keys that may grow large.
+- Fractions: `numeric(p, s)` stores every digit exactly, which suits money. `real` and `double precision` follow IEEE 754 and are inexact: `0.1 + 0.2` is not exactly `0.3`. Use them for measurements and coordinates.
+- Strings: the official docs say `text`, `varchar(n)` and `char(n)` perform the same; `char(n)` also pads with blanks. Cap a length with `varchar(n)` or `CHECK`.
+- Time: `timestamptz` stores an absolute instant, shown in the session's `TimeZone`; `timestamp` is just "a date and time on a calendar". Real events should be `timestamptz`; plain days use `date`.
 
 ## Example
+
+There are also `boolean`, `uuid`, `jsonb` and arrays; later lessons use them.
 
 ```sql
 SELECT 0.1::float8 + 0.2::float8 = 0.3 AS float_equal,

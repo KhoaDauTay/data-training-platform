@@ -54,7 +54,7 @@ lab:
 
 `CREATE TABLE` khai báo tên bảng và danh sách cột. Mỗi cột có tên, kiểu và có thể thêm ràng buộc:
 
-- `PRIMARY KEY`: định danh duy nhất của dòng, tự kèm `NOT NULL` và một index unique.
+- `PRIMARY KEY`: định danh duy nhất của dòng, tự kèm `NOT NULL` và một index (chỉ mục) unique.
 - `NOT NULL`: cột phải có giá trị.
 - `DEFAULT ...`: giá trị dùng khi câu `INSERT` không nhắc tới cột đó.
 

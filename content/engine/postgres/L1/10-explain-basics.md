@@ -40,13 +40,13 @@ lab:
       solution: SELECT id, amount FROM orders WHERE status = 'new'
       check: plan
       hint:
-        vi: Chỉ 5% đơn là "new", đủ ít để index có lợi.
+        vi: Chỉ 5 % đơn là "new", đủ ít để index có lợi.
         en: Only 5% of orders are "new", few enough for the index to pay off.
 predict:
   sql: SELECT * FROM orders WHERE status = 'paid'
   expect: { node: Seq Scan, table: orders }
   q:
-    vi: "Bảng `orders` có 20 000 đơn, 90% là 'paid', và có index `orders_status_idx` trên `status`. Postgres đọc câu này thế nào?"
+    vi: "Bảng `orders` có 20.000 đơn, 90 % là 'paid', và có index `orders_status_idx` trên `status`. Postgres đọc câu này thế nào?"
     en: "Table `orders` has 20,000 orders, 90% of them 'paid', and an index `orders_status_idx` on `status`. How does Postgres read this query?"
   options:
     - { vi: "Index Scan dùng `orders_status_idx`", en: "Index Scan using `orders_status_idx`" }
@@ -55,7 +55,7 @@ predict:
     - { vi: "Index Only Scan", en: "Index Only Scan" }
   answer: 2
   why:
-    vi: "Câu lấy khoảng 18 000 trên 20 000 dòng, tức gần như mọi trang của bảng. Đi qua index rồi nhảy tới từng dòng tốn hơn đọc thẳng cả bảng theo thứ tự, nên planner chọn Seq Scan với `Filter: (status = 'paid'::text)`. Index chỉ có lợi khi câu lấy một phần nhỏ của bảng."
+    vi: "Câu lấy khoảng 18.000 trên 20.000 dòng, tức gần như mọi trang của bảng. Đi qua index rồi nhảy tới từng dòng tốn hơn đọc thẳng cả bảng theo thứ tự, nên planner chọn Seq Scan với `Filter: (status = 'paid'::text)`. Index chỉ có lợi khi câu lấy một phần nhỏ của bảng."
     en: "The query takes about 18,000 of 20,000 rows, which is nearly every page of the table. Going through the index and jumping to each row costs more than reading the whole table in order, so the planner picks a Seq Scan with `Filter: (status = 'paid'::text)`. An index only pays off when a query reads a small part of the table."
 ---
 ## Ý chính
@@ -76,7 +76,7 @@ Planner so chi phí từng cách. Lấy ít dòng thì index thắng; lấy ph�
 EXPLAIN SELECT * FROM orders WHERE status = 'new';
 ```
 
-Chỉ 5% đơn là 'new', nên kế hoạch đổi sang Bitmap Heap Scan qua `orders_status_idx`.
+Chỉ 5 % đơn là 'new', nên kế hoạch đổi sang Bitmap Heap Scan qua `orders_status_idx`.
 
 ## Thực hành
 

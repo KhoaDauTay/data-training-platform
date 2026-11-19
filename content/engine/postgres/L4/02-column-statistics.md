@@ -39,19 +39,19 @@ lab:
       check: rows
       ordered: true
       hint: { vi: "`n_distinct` âm nghĩa là tỉ lệ so với số dòng (-1 = mọi giá trị khác nhau).", en: "A negative `n_distinct` is a fraction of the row count (-1 = every value is distinct)." }
-    - task: { vi: "Đọc mọi cột của các kiện đã thất lạc (trạng thái 'lost', khoảng 1%). Planner nên dùng index trên trạng thái.", en: "Read every column of the lost parcels (status 'lost', about 1%). The planner should use the status index." }
+    - task: { vi: "Đọc mọi cột của các kiện đã thất lạc (trạng thái 'lost', khoảng 1 %). Planner nên dùng index trên trạng thái.", en: "Read every column of the lost parcels (status 'lost', about 1%). The planner should use the status index." }
       solution: "SELECT * FROM parcels WHERE status = 'lost'"
       check: plan
       hint: { vi: "Giá trị hiếm → ít trang → đáng đi qua index.", en: "A rare value means few pages, so the index pays off." }
 predict:
   sql: "SELECT * FROM parcels WHERE status = 'delivered'"
-  q: { vi: "'delivered' chiếm 70% bảng. Postgres sẽ đọc thế nào, và ước lượng bao nhiêu dòng?", en: "'delivered' is 70% of the table. How will Postgres read it, and how many rows will it estimate?" }
+  q: { vi: "'delivered' chiếm 70 % bảng. Postgres sẽ đọc thế nào, và ước lượng bao nhiêu dòng?", en: "'delivered' is 70% of the table. How will Postgres read it, and how many rows will it estimate?" }
   options:
     - { vi: "Bitmap Heap Scan qua `parcels_status_idx`, khoảng 200 dòng", en: "Bitmap Heap Scan through `parcels_status_idx`, about 200 rows" }
     - { vi: "Seq Scan với Filter, 14000 dòng (0.7 × 20000)", en: "Seq Scan with a Filter, 14000 rows (0.7 × 20000)" }
     - { vi: "Index Scan, 14000 dòng", en: "Index Scan, 14000 rows" }
   answer: 1
-  why: { vi: "Ước lượng = tần suất MCV × reltuples = 0.7 × 20000 = 14000. Đọc 70% bảng qua index thì nhảy trang ngẫu nhiên nhiều hơn đọc tuần tự, nên Seq Scan rẻ hơn.", en: "Estimate = MCV frequency × reltuples = 0.7 × 20000 = 14000. Reading 70% of the table through an index means more random page jumps than a sequential read, so the Seq Scan is cheaper." }
+  why: { vi: "Ước lượng = tần suất MCV × reltuples = 0.7 × 20000 = 14000. Đọc 70 % bảng qua index thì nhảy trang ngẫu nhiên nhiều hơn đọc tuần tự, nên Seq Scan rẻ hơn.", en: "Estimate = MCV frequency × reltuples = 0.7 × 20000 = 14000. Reading 70% of the table through an index means more random page jumps than a sequential read, so the Seq Scan is cheaper." }
 ---
 
 ## Ý chính

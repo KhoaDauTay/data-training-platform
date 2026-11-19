@@ -59,13 +59,13 @@ predict:
 ---
 ## Ý chính
 
-Index nhiều cột `(a, b)` xếp khóa theo `a` trước, rồi theo `b` trong cùng một `a`, như danh bạ xếp theo họ rồi tên. Luật chính xác trong tài liệu: các điều kiện bằng trên những cột đầu, cộng với điều kiện khoảng trên cột đầu tiên không có điều kiện bằng, sẽ giới hạn phần index phải quét.
+Index (chỉ mục) nhiều cột `(a, b)` xếp khóa theo `a` trước, rồi theo `b` trong cùng một `a`, như danh bạ xếp theo họ rồi tên. Docs chính thức ghi: các điều kiện bằng trên những cột đầu, cộng với điều kiện khoảng trên cột đầu tiên không có điều kiện bằng, sẽ giới hạn phần index phải quét.
 
 - `WHERE a = 1 AND b > 5`: tốt nhất, quét một đoạn liền.
 - `WHERE a > 1 AND b = 5`: chỉ `a > 1` giới hạn đoạn quét; `b = 5` được kiểm trong index.
 - `WHERE b = 5`: trước Postgres 18 thường phải quét cả index hoặc cả bảng.
 
-Postgres 18 thêm skip scan: nếu cột đầu có ít giá trị, B-tree tra lặp lại `a = N AND b = 5` cho từng N và bỏ qua phần lá không thể khớp. Quy tắc thiết kế vẫn giữ: cột lọc bằng đặt trước, cột lọc khoảng hoặc sắp xếp đặt sau.
+Postgres 18 thêm skip scan: nếu cột đầu có ít giá trị, B-tree tra lặp lại `a = N AND b = 5` cho từng N và bỏ qua phần lá không thể khớp.
 
 ## Ví dụ
 
@@ -77,19 +77,19 @@ Cả hai cột đều có điều kiện bằng, nên `Index Cond` chứa cả `
 
 ## Thực hành
 
-Đoán kế hoạch khi thiếu điều kiện trên cột đầu, xem kế hoạch thật, rồi viết một câu dùng đúng thứ tự cột.
+Quy tắc thiết kế vẫn giữ: cột lọc bằng đặt trước, cột lọc khoảng hoặc sắp xếp đặt sau. Đoán kế hoạch khi thiếu điều kiện trên cột đầu, xem kế hoạch thật, rồi viết một câu dùng đúng thứ tự cột.
 
 # EN
 
 ## Key idea
 
-A multicolumn index `(a, b)` orders keys by `a` first, then by `b` within the same `a`, like a phone book sorted by surname then first name. The exact rule in the docs: equality conditions on the leading columns, plus a range condition on the first column without an equality, limit the part of the index that is scanned.
+A multicolumn index `(a, b)` orders keys by `a` first, then by `b` within the same `a`, like a phone book sorted by surname then first name. The official docs state: equality conditions on the leading columns, plus a range condition on the first column without an equality, limit the part of the index that is scanned.
 
 - `WHERE a = 1 AND b > 5`: best case, one contiguous range is scanned.
 - `WHERE a > 1 AND b = 5`: only `a > 1` limits the scan; `b = 5` is checked inside the index.
 - `WHERE b = 5`: before Postgres 18 this usually meant scanning the whole index or the whole table.
 
-Postgres 18 adds skip scan: if the leading column has few values, the B-tree repeats the lookup `a = N AND b = 5` for each N and skips leaf pages that cannot match. The design rule still holds: equality columns first, range or sort columns after.
+Postgres 18 adds skip scan: if the leading column has few values, the B-tree repeats the lookup `a = N AND b = 5` for each N and skips leaf pages that cannot match.
 
 ## Example
 
@@ -101,4 +101,4 @@ Both columns have an equality, so the `Index Cond` holds both `region` and `day`
 
 ## Practice
 
-Guess the plan when the leading column has no condition, see the real plan, then write a query that uses the columns in the right order.
+The design rule still holds: equality columns first, range or sort columns after. Guess the plan when the leading column has no condition, see the real plan, then write a query that uses the columns in the right order.

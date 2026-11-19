@@ -63,7 +63,7 @@ lab:
       hint: { vi: "Như bài e-pg-l4-09: nối `pg_locks.relation` với `pg_class.oid`.", en: "As in lesson e-pg-l4-09: join `pg_locks.relation` to `pg_class.oid`." }
 predict:
   sql: "SELECT * FROM orders WHERE status = 'lost'"
-  q: { vi: "Đơn thất lạc chiếm 2%. Postgres đọc thế nào?", en: "Lost orders are 2%. How does Postgres read them?" }
+  q: { vi: "Đơn thất lạc chiếm 2 %. Postgres đọc thế nào?", en: "Lost orders are 2%. How does Postgres read them?" }
   options:
     - { vi: "Seq Scan với Filter", en: "A Seq Scan with a Filter" }
     - { vi: "Bitmap Heap Scan qua `orders_status_idx`", en: "A Bitmap Heap Scan through `orders_status_idx`" }

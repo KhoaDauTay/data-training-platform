@@ -104,7 +104,7 @@ Kết quả: `all_rows` 3, `with_x` 2, `not_in_rows` 0, `distinct_rows` 2, `tota
 
 ## Thực hành
 
-Trả lời năm câu hỏi. Chạy thử ví dụ trên nếu muốn kiểm.
+Đoán kết quả của từng dòng trong ví dụ trên, rồi trả lời năm câu hỏi.
 
 # EN
 
@@ -134,4 +134,4 @@ Result: `all_rows` 3, `with_x` 2, `not_in_rows` 0, `distinct_rows` 2, `total` 5.
 
 ## Practice
 
-Answer the five questions. Run the example above if you want to check.
+Guess the result of each line in the example above, then answer the five questions.
