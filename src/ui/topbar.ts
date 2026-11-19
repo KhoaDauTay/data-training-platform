@@ -156,11 +156,15 @@ export function initTopbar(): void {
   fillIcons(byId('domain-menu'));
   // The domain menu opens under its chip, not at the window's left edge (the chip sits after the nav links); kept inside the viewport.
   const domainMenu = byId('domain-menu');
-  domainMenu.addEventListener('toggle', (e) => {
-    if ((e as ToggleEvent).newState !== 'open') return;
+  const place = (): void => {
     const r = byId('domain-btn').getBoundingClientRect();
     const left = Math.max(8, Math.min(r.left, window.innerWidth - domainMenu.offsetWidth - 8));
     domainMenu.style.inset = `${Math.round(r.bottom + 6)}px auto auto ${Math.round(left)}px`;
+  };
+  domainMenu.addEventListener('toggle', (e) => { if ((e as ToggleEvent).newState === 'open') place(); });
+  // R21-U3: a resize while it is open moves the chip (the bar reflows), so the menu follows it.
+  window.addEventListener('resize', () => {
+    try { if (domainMenu.matches(':popover-open')) place(); } catch { /* no Popover API: the menu is not floating */ }
   });
   for (const b of document.querySelectorAll<HTMLButtonElement>('[data-theme-pref]')) {
     const pref = b.dataset.themePref as ThemePref;
