@@ -46,7 +46,7 @@ export function sideExtra(): HTMLElement | undefined {
   return sideWide() ? (extra ??= h('div', { class: 'side-extra mt-2 px-1' })) : undefined;
 }
 
-interface Row { key: string; href: string; lead: Node; label: string; sub?: string; current: boolean; lock?: string; onclick?: () => void }
+export interface Row { key: string; href: string; lead: Node; label: string; sub?: string; current: boolean; lock?: string; onclick?: () => void }
 
 /** One sidebar line. `lock` (v4 D-O3): shown, with a lock and the reason, never followed. */
 function row(r: Row): HTMLElement {
@@ -135,6 +135,11 @@ function domainSwitch(): HTMLElement {
     })));
 }
 
+/** ENG-CORE (L220): a reading page outside the domains fills its own sidebar rows (the Database Engine area: levels, modules). */
+export type SideFill = (ui: { row: (r: Row) => HTMLElement; group: (text: string) => HTMLElement }) => (Node | null)[];
+const pageSide: Partial<Record<Route, SideFill>> = {};
+export const registerSide = (route: Route, fill: SideFill): void => void (pageSide[route] = fill);
+
 function content(route: Route, drawer: boolean): (Node | string)[] {
   const out: (Node | null | undefined)[] = [drawer ? domainSwitch() : null];
   if (route === 'learn' || (route === 'play' && generalWork())) { // v15 Q1: the General workspace shows the SQL track, never a domain's pages
@@ -147,6 +152,8 @@ function content(route: Route, drawer: boolean): (Node | string)[] {
         key: `p${c.chapter}`, href: hashOf('practice'), lead: h('b', {}, String(c.chapter)), label: moduleTitle(c.chapter, lang), current: false,
         onclick: () => document.getElementById(`skills-ch-${c.chapter}`)?.scrollIntoView({ block: 'start' }),
       })));
+  } else if (pageSide[route]) {
+    out.push(...pageSide[route]({ row, group: (text) => h('p', { class: GROUP }, text) }));
   } else if (inDomain(route)) {
     const order = app.tickets.map((x) => x.id);
     const isGated = gated(readTour());

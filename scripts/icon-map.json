@@ -91,6 +91,7 @@
     "partial": ["circle-half", "advanced node partly practised in the app"],
     "external": ["arrow-square-out", "advanced node: read external docs"],
     "user": ["user-circle", "My progress page (#/me, v16 L142)"],
+    "engine": ["hard-drives", "Database Engine area (#/engine, L220): the storage under the database"],
     "image": ["image", "download a dashboard card as a PNG picture (v16 L142)"]
   }
 }

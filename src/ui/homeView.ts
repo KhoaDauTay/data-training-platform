@@ -36,7 +36,7 @@ import { go } from './router';
 /** Width on >= lg screens (3-column grid, Overview only); every section is full width below lg and on the other pages. */
 export type Span = 'full' | 'wide' | 'narrow';
 /** Reading pages drawn in <main id="home"> (v5 §B.4–B.6, v6 §3.3): one per route except play, data and dashboard. */
-export type Page = 'home' | 'learn' | 'practice' | 'overview' | 'map' | 'me';
+export type Page = 'home' | 'learn' | 'practice' | 'overview' | 'map' | 'me' | 'engine';
 export interface HomeSection {
   id: string;
   order: number;
@@ -519,15 +519,15 @@ registerHomeSection({ id: 'skillsTeaser', order: 45, span: 'full', pages: ['home
 registerHomeSection({ id: 'modes', order: 50, span: 'full', pages: ['overview'], render: modesSection });
 
 const PAGE_TITLE: Record<Page, Key> = {
-  home: 'nav.home', learn: 'nav.learn', practice: 'nav.practice', overview: 'nav.overview', map: 'nav.map', me: 'me.title',
+  home: 'nav.home', learn: 'nav.learn', practice: 'nav.practice', overview: 'nav.overview', map: 'nav.map', me: 'me.title', engine: 'nav.engine',
 };
-const pageOf = (r: string): Page => (r === 'learn' || r === 'practice' || r === 'overview' || r === 'map' || r === 'me' ? r : 'home');
+const pageOf = (r: string): Page => (r === 'learn' || r === 'practice' || r === 'overview' || r === 'map' || r === 'me' || r === 'engine' ? r : 'home');
 
 /** Redrawn by rerender() (language switch, progress). Pure DOM from homeModel(); keeps no state of its own. */
 export function renderHome(host: HTMLElement): void {
   const page = pageOf(currentRoute());
   // General pages (Home, learning path, Practise SQL) follow Logistics; domain pages the open domain (Plan 9 D9-12).
-  const general = page === 'home' || page === 'learn' || page === 'practice' || page === 'me';
+  const general = page === 'home' || page === 'learn' || page === 'practice' || page === 'me' || page === 'engine';
   const m = general || activeDomain() === 'logistics'
     ? homeModel(general ? loadTickets('logistics') : app.tickets, done(), CHAPTERS, SKILLS, homeHooks.levelOf)
     : homeModel(app.tickets, done(), chaptersOf(), domainSkills(app.tickets), homeHooks.levelOf);

@@ -55,16 +55,27 @@ const GROUPED = readdirSync(join(ROOT, 'content/tickets')).sort((a, b) => Number
   .flatMap((ch) => readdirSync(join(ROOT, 'content/tickets', ch)).sort().map((f) => `content/tickets/${ch}/${f}`))
   .filter((f) => /## Solution\s*```sql[^`]*GROUP BY/.test(readFileSync(join(ROOT, f), 'utf8'))).map(ticket)[0];
 const LESSON = parseYaml(readFileSync(join(ROOT, 'content/lessons.yml'), 'utf8')).find((l) => l.id === TICKETS.logistics.grants[0]);
+// ENG-CORE (L220): the first Postgres lab in content/engine with no setup and only `rows` steps (the shop chain on `lab`);
+// none yet → its step is skipped. Its step solutions are read from the file.
+const ENGINE_LAB = (() => {
+  const dir = join(ROOT, 'content/engine/postgres');
+  const files = existsSync(dir) ? readdirSync(dir).filter((l) => /^L[1-5]$/.test(l)).flatMap((l) => readdirSync(join(dir, l)).filter((f) => f.endsWith('.md')).map((f) => join(dir, l, f))) : [];
+  for (const f of files.sort()) {
+    const fm = parseYaml(/^---\r?\n([\s\S]*?)\r?\n---/.exec(readFileSync(f, 'utf8'))?.[1] ?? '') ?? {};
+    if (fm.lab && !fm.lab.setup && fm.lab.steps.every((x) => x.check === 'rows')) return { id: fm.id, hash: `#/engine/postgres/${fm.level}/${fm.id}`, steps: fm.lab.steps.map((x) => x.solution) };
+  }
+  return undefined;
+})();
 
 // Every route of src/route.ts once; a new route fails here until the smoke knows its hash.
 const ROUTE_HASH = {
   home: '#/', learn: '#/learn', practice: '#/practice', me: '#/me', overview: '#/d/logistics', play: '#/d/logistics/play',
-  data: '#/d/logistics/data', dashboard: '#/d/logistics/dashboard', map: '#/d/logistics/map',
+  data: '#/d/logistics/data', dashboard: '#/d/logistics/dashboard', map: '#/d/logistics/map', engine: '#/engine',
 };
 const ROUTES = JSON.parse(/export const ROUTES = (\[[^\]]*\])/.exec(readFileSync(join(ROOT, 'src/route.ts'), 'utf8'))[1].replace(/'/g, '"'));
 // V20-C (L179): plus the General sub-pages and the other two domains' pages (the list of tests/axe.test.ts).
 const PAGES = [...ROUTES.filter((r) => ROUTE_HASH[r]).map((r) => ROUTE_HASH[r]), '#/learn/sql/1', '#/learn/skill/select', '#/learn/adv/a2', '#/learn/adv/d5',
-  '#/learn/interview', ...['ecommerce', 'finance'].flatMap((d) => ['', '/play', '/data', '/dashboard', '/map'].map((p) => `#/d/${d}${p}`))];
+  '#/learn/interview', '#/engine/postgres', ...(ENGINE_LAB ? [ENGINE_LAB.hash] : []), ...['ecommerce', 'finance'].flatMap((d) => ['', '/play', '/data', '/dashboard', '/map'].map((p) => `#/d/${d}${p}`))];
 const mainOf = (hash) => (/\/play$/.test(hash) ? 'shell' : /\/data$/.test(hash) ? 'data' : /\/dashboard$/.test(hash) ? 'dashboard' : 'home');
 // axe-core from node_modules (dev dependency, L141; never in dist/), injected into the page over CDP. target-size is off by default.
 const AXE = readFileSync(join(ROOT, 'node_modules/axe-core/axe.min.js'), 'utf8');
@@ -407,6 +418,19 @@ try {
     const got = [...(await ev(completed))].sort();
     if (S(got) !== S(want)) fail(`completed = ${S(got)}, expected ${S(want)}`);
     return got;
+  });
+
+  if (ENGINE_LAB) await step(`engine lab ${ENGINE_LAB.id}: every step submitted, lesson completed`, async () => {
+    await go(base, ENGINE_LAB.hash);
+    await waitFor('the lesson page with its lab', `!!document.querySelector('#engine-page [data-ek="${ENGINE_LAB.id}-s0-code"]')`, 60000);
+    for (const [i, sql] of ENGINE_LAB.steps.entries()) {
+      const at = (what) => `document.querySelector('[data-ek="${ENGINE_LAB.id}-s${i}-${what}"]')`;
+      await ev(`(t => { t.value = ${S(sql)}; t.dispatchEvent(new Event('input', { bubbles: true })); })(${at('code')})`);
+      await ev(`${at('submit')}.click()`);
+      await waitFor(`step ${i + 1} passed`, `[...document.querySelectorAll('#engine-page [role=status].good')].length > ${i}`, 90000);
+    }
+    await waitFor('the lesson in save.completed', `${completed}.includes(${S(ENGINE_LAB.id)})`, 10000);
+    await shot('engine-lab');
   });
 
   for (const r of ROUTES) if (!ROUTE_HASH[r]) await step(`route ${r}`, () => fail(`route '${r}' has no hash in scripts/smoke.mjs`));

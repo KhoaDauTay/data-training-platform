@@ -4,7 +4,7 @@ import { activeDomain, isLiveDomain, type DomainId } from './domains';
  * Hash routes without a framework (product-design-v5 §B.3, v6 §3.3). Practice runs and the Sandbox stay session modes
  * inside 'play' (Plan 7 V5); every reading page (home, learn, practice, overview, map) is drawn in <main id="home">.
  */
-export const ROUTES = ['home', 'learn', 'practice', 'overview', 'play', 'data', 'dashboard', 'map', 'me'] as const; // v16 (L142): 'me' = #/me, My progress
+export const ROUTES = ['home', 'learn', 'practice', 'overview', 'play', 'data', 'dashboard', 'map', 'me', 'engine'] as const; // v16 (L142): 'me' = #/me, My progress; ENG-CORE (L220): 'engine' = #/engine…
 // v14 T5 (v9 D-F8): 'soon' (the "Coming soon" page) is gone; a remembered 'soon' reads as home (isRoute). A fourth domain gets it back from git.
 export type Route = (typeof ROUTES)[number];
 
@@ -15,7 +15,7 @@ export const ROUTE_KEY = 'cargo-query/route';
 const D = (): string => `#/d/${activeDomain()}`;
 const hashTable = (): Record<Route, string> => ({
   home: '#/', learn: '#/learn', practice: '#/practice', overview: D(), play: `${D()}/play`, data: `${D()}/data`,
-  dashboard: `${D()}/dashboard`, map: `${D()}/map`, me: '#/me',
+  dashboard: `${D()}/dashboard`, map: `${D()}/map`, me: '#/me', engine: '#/engine',
 });
 const DOMAIN_PAGE: Record<string, Route> = { '': 'overview', play: 'play', data: 'data', dashboard: 'dashboard', map: 'map' };
 
@@ -74,7 +74,7 @@ export function parseRoute(hash: string): Route | undefined {
   const [a = '', b = '', c = ''] = canonicalHash(hash).replace(/^#\/?/, '').split('?')[0].split('/');
   if (a === '') return 'home';
   if (a === 'learn' && b === 'play') return 'play'; // v15 Q1: the General workspace (a drill or a review of drills)
-  if (a === 'learn' || a === 'practice' || a === 'me') return a;
+  if (a === 'learn' || a === 'practice' || a === 'me' || a === 'engine') return a;
   if (a !== 'd') return 'home';
   return isLiveDomain(b) && Object.hasOwn(DOMAIN_PAGE, c) ? DOMAIN_PAGE[c] : 'home';
 }
@@ -99,6 +99,18 @@ export function learnModuleOf(hash: string): number | undefined {
 export const learnSkillOf = (hash: string): string | undefined => /^#\/?learn\/skill\/([a-z0-9_]+)(?=$|[/?])/.exec(hash)?.[1];
 /** `#/learn/adv/<node>` → the advanced node page (Plan 8a). */
 export const learnAdvOf = (hash: string): string | undefined => /^#\/?learn\/adv\/([a-z0-9_]+)(?=$|[/?])/i.exec(hash)?.[1].toLowerCase(); // #/learn/adv/A1 = a1 (L93): pages print ids in capitals
+
+/**
+ * ENG-CORE (L220): `#/engine/<engine>[/<level>/<lesson id>]` → its parts; kept forever. Only known engine names, `L1`–`L5`
+ * (either case) and lesson ids `e-…` pass; anything else is dropped (the page falls back to the engine or the overview).
+ */
+export function engineRouteOf(hash: string): { engine?: string; level?: string; lesson?: string } {
+  const m = /^#\/?engine(?:\/(postgres|mongodb|dynamodb)(?:\/([lL][1-5])\/(e-[a-z0-9-]+))?)?(?=$|[/?])/.exec(hash);
+  return m ? { engine: m[1], level: m[2]?.toUpperCase(), lesson: m[3] } : {};
+}
+/** The lesson page's hash. */
+export const engineHash = (engine: string, level?: string, lesson?: string): string =>
+  `#/engine/${engine}${level && lesson ? `/${level}/${lesson}` : ''}`;
 
 /** v16 (v7 §5.3): a shared query is at most as long as a dashboard card's SQL. */
 export const SHARE_MAX = 4000;

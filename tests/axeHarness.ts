@@ -112,6 +112,7 @@ export async function visit(hash: string, ready?: () => void): Promise<void> {
     if (domain) expect(activeDomain()).toBe(domain);
     expect(byId(main).querySelector('h1')).not.toBeNull();
     if (route === 'me') expect(document.getElementById('me-name')).not.toBeNull(); // v16: the lazy page drawn, not its loading line
+    if (route === 'engine') expect(document.getElementById('engine-page')).not.toBeNull(); // ENG-CORE (L220): the lazy page drawn
     if (hash === '#/learn/interview') expect(document.getElementById('iv-sets')).not.toBeNull(); // v17: the lazy list, not its loading line
     ready?.();
   }, { timeout: 10_000, interval: 50 });
