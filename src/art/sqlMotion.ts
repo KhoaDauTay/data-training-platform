@@ -163,7 +163,7 @@ export function film(steps: FilmStep[]): Film {
   const dots = dotCounts(steps);
   const unit = (st: FilmStep) => tx(st.groups ? 'groups' : 'rows');
   const svg = s('svg', {
-    viewBox: `0 0 ${steps.length * COLW} 128`, role: 'img', class: 'h-auto w-full min-w-[480px]',
+    viewBox: `0 0 ${steps.length * COLW} 128`, role: 'img', width: steps.length * COLW, class: 'h-auto', // natural size; the wrapper scrolls on a phone
     'aria-label': tx('film', { list: steps.map((st) => `${st.label} ${st.count === undefined ? '–' : fmt(st.count)} ${unit(st)}`).join(', ') }),
   });
   type Col = { g: SVGGElement; kept: SVGCircleElement[]; ghosts: SVGCircleElement[]; count?: SVGTextElement };
@@ -273,6 +273,7 @@ export function guessBox(before: number, after: number, start: (then: () => void
     type: 'button',
     onclick: () => {
       buttons.forEach((b) => { b.disabled = true; b.setAttribute('aria-pressed', String(b === buttons[i])); });
+      buttons[i].prepend('✓ '); // the pick stays readable while all three are disabled
       const band = guessBand(before, after);
       const pct = `${fmt(before ? (after / before) * 100 : 100, 1)} %`;
       start(() => { line.textContent = tx(band === i ? 'right' : 'wrong', { pct, after: fmt(after), before: fmt(before), band: tx(BANDS[band]) }); });
@@ -306,7 +307,7 @@ export function fold(groups: GroupSample[]): Shot {
   const H = Math.max(rows.length, groups.length) * 26 + 30;
   const gy = (gi: number) => 30 + ((gi + 0.5) * (H - 30)) / groups.length;
   const svg = s('svg', {
-    viewBox: `0 0 380 ${H}`, role: 'img', class: 'h-auto w-full max-w-[520px]',
+    viewBox: `0 0 380 ${H}`, role: 'img', width: 380, style: 'max-width:100%;height:auto',
     'aria-label': tx('fold', { list: groups.map((g) => tx('foldItem', { key: g.key, n: fmt(g.n) })).join('; ') }),
   },
   s('text', { x: 70, y: 14, 'text-anchor': 'middle', class: 'fill-ink text-caption font-semibold' }, tx('sampleRows')),
@@ -364,15 +365,17 @@ export function fold(groups: GroupSample[]): Shot {
  * partner gets an ∅ chip (NULL columns); an INNER JOIN one is struck through and tagged "dropped". play(), ≤ 2.5 s:
  * wires draw one by one (120 ms apart), then each ∅ pops and each dropped row fades.
  */
-export function joinPairs(m: JoinMatch, kindLabel: string): Shot {
+export function joinPairs(match: JoinMatch, kindLabel: string): Shot {
+  const ok = match.pairs.filter((p) => p.r !== null);
+  const m = { ...match, pairs: [...ok.slice(0, 2), ...match.pairs.filter((p) => p.r === null), ...ok.slice(2)] };
   const rights = [...new Set(m.pairs.map((p) => p.r).filter((r): r is string => r !== null))];
   const H = Math.max(m.pairs.length, rights.length) * 26 + 30;
   const ly = (j: number) => 43 + j * 26;
-  const ry = (r: string) => 43 + rights.indexOf(r) * 26;
+  const ry = (r: string) => ly(m.pairs.findIndex((p) => p.r === r)); // beside the first row it matched: 1:1 wires run straight, many-to-one converge
   const item = (p: JoinMatch['pairs'][number]) =>
     p.r !== null ? tx('pair', { l: p.l, r: p.r }) : tx(m.kind === 'left' ? 'none' : 'dropped', { l: p.l });
   const svg = s('svg', {
-    viewBox: `0 0 400 ${H}`, role: 'img', class: 'h-auto w-full max-w-[520px]',
+    viewBox: `0 0 400 ${H}`, role: 'img', width: 400, style: 'max-width:100%;height:auto',
     'aria-label': tx('join', { kind: kindLabel, left: m.left, right: m.right, list: m.pairs.map(item).join('; ') }),
   },
   s('text', { x: 60, y: 14, 'text-anchor': 'middle', class: 'fill-ink text-caption font-semibold' }, m.left),
