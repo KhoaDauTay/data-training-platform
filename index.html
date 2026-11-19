@@ -146,6 +146,8 @@
     <!-- Plan 5 (L48/L49): #/dashboard, filled by src/ui/dashboard.ts. -->
     <main id="dashboard" class="shell:min-h-0 shell:flex-1 shell:overflow-auto" data-i18n-aria="nav.dashboard" aria-label="Bảng điều hành" hidden></main>
     <main id="shell" class="shell" hidden>
+      <!-- L141: the page's one <h1> (axe page-has-heading-one); the task title below stays an h2. -->
+      <h1 class="sr-only" data-i18n="nav.play">Làm việc</h1>
       <!-- v12.0 A7: skip links. Buttons, not #hash links (the router owns the hash); the box is out of flow so it never takes a row of the .shell grid. -->
       <div class="absolute z-30 flex gap-2">
         <button type="button" data-skip="work" class="sr-only rounded-full bg-panel ring-2 ring-accent focus:not-sr-only focus:px-4 focus:py-2" data-i18n="skip.editor">Tới editor</button>
