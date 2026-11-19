@@ -277,6 +277,8 @@
 /* W2: the folded dock: the sentence row only (≈ 56 px), with a small check. */
 /* v21 U11: below 1024 the page scrolls; while the dock shows, the page gets room under its last line so "Start chapter N" can always scroll above it. */
 @media (max-width: 1023.98px) { body:has(#stage:not([hidden])) #shell { padding-bottom: 8rem; } }
+/* v21 R21-U4: below 1024 the dock sits 8 px above the bottom nav, whatever its height (--nav-h, measured by ui/stage.ts), never under the home indicator. */
+@media (max-width: 1023.98px) { #stage { bottom: calc(max(var(--nav-h, 4rem), env(safe-area-inset-bottom)) + 0.5rem); } }
 #stage[data-mini=true] #stage-art { display: none; }
 #stage[data-mini=true] .stage-row { border-top: 0; }
 #stage[data-mini=true] .stage-mini-icon { display: grid; }
