@@ -1,0 +1,171 @@
+# Lộ trình MongoDB, Phần 1–6 (product-design-db-engine §3.3): kỹ năng `mg.<slug>`, soi gương Phần 1–6 của SQL.
+# Phần 7–12 nằm ở file riêng (skills-p7-12.yml); gộp lại khi nối runtime.
+# syntax: một câu mongosh chạy được trên bộ dữ liệu chung dataset.json (đã kiểm bằng mingo@7.2.6).
+# Mọi chuỗi đặt trong nháy (dấu phẩy trong { … } sẽ cắt chuỗi nếu không có nháy). Câu lệnh dùng nháy đơn YAML.
+
+# ---- Phần 1: Đọc và lọc
+- id: mg.find
+  part: 1
+  label: { vi: "Tìm tài liệu (find)", en: "Find documents (find)" }
+  syntax: 'db.products.find({ category: "Drinks" })'
+  when: { vi: "Lấy các tài liệu của một collection, có thể kèm điều kiện bằng nhau.", en: "Read the documents of a collection, optionally with an equality condition." }
+  trap: { vi: "Kiểu phải khớp: `\"4\"` (chuỗi) không bằng `4` (số), nên lọc ra rỗng mà không báo lỗi.", en: "Types must match: `\"4\"` (a string) is not `4` (a number), so the filter returns nothing and raises no error." }
+
+- id: mg.projection
+  part: 1
+  label: { vi: "Chọn trường (projection)", en: "Pick fields (projection)" }
+  syntax: 'db.products.find({}, { _id: 0, name: 1, price_vnd: 1 })'
+  when: { vi: "Chỉ lấy những trường câu hỏi cần.", en: "Return only the fields the question needs." }
+  trap: { vi: "`_id` luôn đi kèm trừ khi ghi `_id: 0`. `items: 1` giữ nguyên cả mảng; muốn một trường bên trong thì viết `\"items.product_id\": 1`.", en: "`_id` always comes along unless you write `_id: 0`. `items: 1` keeps the whole array; for one inner field write `\"items.product_id\": 1`." }
+
+- id: mg.filter
+  part: 1
+  label: { vi: "Điều kiện lọc ($gt, $in, $or)", en: "Filter operators ($gt, $in, $or)" }
+  syntax: 'db.products.find({ price_vnd: { $gte: 20000, $lt: 40000 }, category: { $in: ["Drinks", "Snacks"] } })'
+  when: { vi: "So sánh lớn hơn/nhỏ hơn, thuộc một danh sách, hoặc một trong vài điều kiện.", en: "Greater/less than, one of a list, or any of several conditions." }
+  trap: { vi: "Viết cùng một khóa hai lần (`price_vnd: …, price_vnd: …`) thì khóa sau đè khóa trước. Gộp hai toán tử vào một object.", en: "Writing the same key twice (`price_vnd: …, price_vnd: …`) lets the second replace the first. Put both operators in one object." }
+
+- id: mg.sort
+  part: 1
+  label: { vi: "Sắp xếp (sort)", en: "Sort (sort)" }
+  syntax: 'db.products.find().sort({ price_vnd: -1, name: 1 })'
+  when: { vi: "Đề yêu cầu thứ tự: `1` tăng dần, `-1` giảm dần.", en: "The question asks for an order: `1` ascending, `-1` descending." }
+  trap: { vi: "Thứ tự khóa trong `sort` là thứ tự ưu tiên. Thiếu khóa phụ thì tài liệu bằng nhau có thể đổi chỗ.", en: "The key order inside `sort` is the priority. Without a tie-breaker, equal documents can swap places." }
+
+- id: mg.limit
+  part: 1
+  label: { vi: "Lấy top N (limit, skip)", en: "Top N (limit, skip)" }
+  syntax: 'db.products.find().sort({ price_vnd: -1, _id: 1 }).limit(3)'
+  when: { vi: "Chỉ cần N tài liệu đầu sau khi sắp xếp, hoặc một trang kết quả.", en: "You need only the first N documents after sorting, or one page of results." }
+  trap: { vi: "`limit` không kèm `sort` lấy N tài liệu nào tới trước, không phải N cái lớn nhất.", en: "`limit` without `sort` takes whichever N documents come first, not the N largest." }
+
+# ---- Phần 2: Gộp
+- id: mg.group
+  part: 2
+  label: { vi: "Gộp nhóm ($group)", en: "Group ($group)" }
+  syntax: 'db.orders.aggregate([{ $group: { _id: "$store_id", orders: { $sum: 1 } } }])'
+  when: { vi: "Đếm, cộng, lấy trung bình cho mỗi giá trị của một trường.", en: "Count, sum or average for each value of a field." }
+  trap: { vi: "Quên `$` trước tên trường (`_id: \"store_id\"`) thì cả collection gộp thành một nhóm có khóa là chữ `store_id`.", en: "Leaving out the `$` (`_id: \"store_id\"`) folds the whole collection into one group whose key is the text `store_id`." }
+
+- id: mg.group_keys
+  part: 2
+  label: { vi: "Khóa gộp nhiều trường", en: "Multi-field group key" }
+  syntax: 'db.orders.aggregate([{ $group: { _id: { store_id: "$store_id", channel: "$channel" }, n: { $sum: 1 } } }])'
+  when: { vi: "Mỗi tổ hợp của hai trường trở lên là một nhóm.", en: "Each combination of two or more fields is one group." }
+  trap: { vi: "Trường nào không nằm trong `_id` thì bị gộp chung, nên số liệu của các giá trị khác nhau cộng dồn vào nhau.", en: "A field left out of `_id` is merged away, so the figures of its different values add up together." }
+
+- id: mg.match_after_group
+  part: 2
+  label: { vi: "Lọc sau khi gộp ($match sau $group)", en: "Filter after grouping ($match after $group)" }
+  syntax: 'db.orders.aggregate([{ $group: { _id: "$store_id", n: { $sum: 1 } } }, { $match: { n: { $gt: 150 } } }])'
+  when: { vi: "Điều kiện đặt trên con số đã gộp (như HAVING).", en: "The condition is on a grouped figure (like HAVING)." }
+  trap: { vi: "`$match` đặt trước `$group` lọc tài liệu gốc, không phải nhóm. Sau `$group` chỉ còn các trường bạn vừa đặt tên.", en: "A `$match` before `$group` filters the source documents, not the groups. After `$group` only the fields you just named exist." }
+
+# ---- Phần 3: Nối
+- id: mg.lookup
+  part: 3
+  label: { vi: "Nối collection ($lookup)", en: "Join a collection ($lookup)" }
+  syntax: 'db.orders.aggregate([{ $lookup: { from: "stores", localField: "store_id", foreignField: "_id", as: "store" } }])'
+  when: { vi: "Cần thông tin nằm ở collection khác, nối bằng một trường chung.", en: "You need data that lives in another collection, linked by a shared field." }
+  trap: { vi: "`localField` là trường của tài liệu đang xử lý, `foreignField` là trường bên collection kia. Đảo ngược thì mảng kết quả rỗng. Kết quả luôn là mảng.", en: "`localField` is on the current document, `foreignField` on the other collection. Swap them and the joined array is empty. The result is always an array." }
+
+- id: mg.unwind
+  part: 3
+  label: { vi: "Tách mảng ($unwind)", en: "Unwind an array ($unwind)" }
+  syntax: 'db.orders.aggregate([{ $unwind: "$items" }, { $group: { _id: "$items.product_id", units: { $sum: "$items.qty" } } }])'
+  when: { vi: "Tính trên từng phần tử của mảng nhúng, ví dụ từng dòng hàng của đơn.", en: "Work on each element of an embedded array, for example each line of an order." }
+  trap: { vi: "Lọc phần tử bằng `$match` trước `$unwind` vẫn giữ cả đơn, nên mọi dòng của đơn đó bị cộng. Lọc dòng sau `$unwind`.", en: "A `$match` on an element before `$unwind` keeps the whole order, so all its lines get added. Filter lines after `$unwind`." }
+
+- id: mg.lookup_keep
+  part: 3
+  label: { vi: "Giữ tài liệu không nối được", en: "Keep unmatched documents" }
+  syntax: '{ $unwind: { path: "$customer", preserveNullAndEmptyArrays: true } }'
+  when: { vi: "Như LEFT JOIN: tài liệu không có bên kia vẫn phải ở lại.", en: "Like LEFT JOIN: documents with no partner must stay." }
+  trap: { vi: "`$unwind` thường bỏ tài liệu có mảng rỗng, nên đơn khách vãng lai biến mất. Thêm `preserveNullAndEmptyArrays: true`.", en: "A plain `$unwind` drops documents whose array is empty, so walk-in orders vanish. Add `preserveNullAndEmptyArrays: true`." }
+
+- id: mg.lookup_none
+  part: 3
+  label: { vi: "Tìm cái không có cặp", en: "Find what has no match" }
+  syntax: 'db.customers.aggregate([{ $lookup: { from: "orders", localField: "_id", foreignField: "customer_id", as: "orders" } }, { $match: { orders: { $size: 0 } } }])'
+  when: { vi: "Như anti-join: khách chưa mua, sản phẩm chưa có đánh giá.", en: "Like an anti-join: customers who never bought, products with no review." }
+  trap: { vi: "Sau `$lookup` trường `as` luôn tồn tại (có thể là mảng rỗng), nên `$exists: false` không bắt được gì. Dùng `$size: 0`.", en: "After `$lookup` the `as` field always exists (maybe as an empty array), so `$exists: false` catches nothing. Use `$size: 0`." }
+
+# ---- Phần 4: Ngày và thiếu dữ liệu
+- id: mg.date_math
+  part: 4
+  label: { vi: "Tính trên ngày ($dateDiff, $dateAdd)", en: "Date arithmetic ($dateDiff, $dateAdd)" }
+  syntax: '{ $dateDiff: { startDate: "$order_date", endDate: "$delivered_on", unit: "day" } }'
+  when: { vi: "Khoảng cách giữa hai ngày, hoặc một ngày cộng thêm N ngày.", en: "The gap between two dates, or a date plus N days." }
+  trap: { vi: "Trừ thẳng hai ngày (`$subtract`) ra mili giây, không phải số ngày.", en: "Subtracting two dates directly (`$subtract`) gives milliseconds, not days." }
+
+- id: mg.date_bucket
+  part: 4
+  label: { vi: "Gom theo tháng, tuần ($dateTrunc)", en: "Bucket by month or week ($dateTrunc)" }
+  syntax: '{ $group: { _id: { $dateTrunc: { date: "$order_date", unit: "month" } }, n: { $sum: 1 } } }'
+  when: { vi: "Đếm hoặc cộng theo tháng, tuần, năm.", en: "Count or sum per month, week or year." }
+  trap: { vi: "Gộp theo chính trường ngày thì mỗi ngày là một nhóm. Cắt ngày về đầu kỳ trước khi gộp.", en: "Grouping on the raw date makes each day its own group. Truncate to the start of the period first." }
+
+- id: mg.missing_null
+  part: 4
+  label: { vi: "Thiếu trường và null ($exists, $type)", en: "Missing fields vs null ($exists, $type)" }
+  syntax: 'db.reviews.find({ comment: { $exists: false } })'
+  when: { vi: "Phân biệt tài liệu không có trường với tài liệu có trường mang giá trị `null`.", en: "Tell apart a document without the field from one whose field holds `null`." }
+  trap: { vi: "`{ comment: null }` khớp cả hai: trường bằng `null` và trường không có. Dùng `$exists` hoặc `$type: \"null\"` để tách.", en: "`{ comment: null }` matches both: a field equal to `null` and a missing field. Use `$exists` or `$type: \"null\"` to tell them apart." }
+
+# ---- Phần 5: Điều kiện
+- id: mg.cond
+  part: 5
+  label: { vi: "Rẽ nhánh ($cond, $switch)", en: "Branching ($cond, $switch)" }
+  syntax: '{ $switch: { branches: [{ case: { $lt: ["$price_vnd", 20000] }, then: 1 }], default: 2 } }'
+  when: { vi: "Gán nhãn hay giá trị khác nhau theo điều kiện (như CASE WHEN).", en: "Give a different label or value depending on a condition (like CASE WHEN)." }
+  trap: { vi: "`$switch` dừng ở nhánh đúng đầu tiên. Đặt điều kiện rộng lên trước thì các nhánh hẹp không bao giờ tới.", en: "`$switch` stops at the first true branch. Put the wide condition first and the narrow ones are never reached." }
+
+- id: mg.cond_sum
+  part: 5
+  label: { vi: "Đếm có điều kiện", en: "Conditional counts" }
+  syntax: '{ $group: { _id: "$store_id", online: { $sum: { $cond: [{ $eq: ["$channel", "ONLINE"] }, 1, 0] } } } }'
+  when: { vi: "Nhiều con số có điều kiện khác nhau trong cùng một lần gộp.", en: "Several counts with different conditions in the same grouping." }
+  trap: { vi: "`$sum` của một phép so sánh (`true/false`) luôn ra 0, vì `$sum` bỏ qua giá trị không phải số. Đổi sang 1/0 bằng `$cond`.", en: "`$sum` over a comparison (`true/false`) is always 0, because `$sum` ignores non-numbers. Turn it into 1/0 with `$cond`." }
+
+- id: mg.if_null
+  part: 5
+  label: { vi: "Giá trị thay thế ($ifNull)", en: "Fallback value ($ifNull)" }
+  syntax: '{ $ifNull: ["$customer_id", 0] }'
+  when: { vi: "Trường thiếu hoặc `null` thì dùng giá trị khác (như COALESCE).", en: "Use another value when the field is missing or `null` (like COALESCE)." }
+  trap: { vi: "`$ifNull` nhận nhiều đối số và lấy cái đầu tiên có giá trị. Bỏ sót một đối số ở giữa thì bước lùi đó bị nhảy qua.", en: "`$ifNull` takes several arguments and returns the first that has a value. Drop one in the middle and that fallback step is skipped." }
+
+- id: mg.self_lookup
+  part: 5
+  label: { vi: "Nối collection với chính nó", en: "Join a collection to itself" }
+  syntax: 'db.staff.aggregate([{ $lookup: { from: "staff", localField: "manager_id", foreignField: "_id", as: "manager" } }])'
+  when: { vi: "Quan hệ trong cùng collection: nhân viên và quản lý.", en: "A relation inside one collection: staff and their manager." }
+  trap: { vi: "Hướng nối quyết định nghĩa: `manager_id → _id` ra quản lý của mình, `_id → manager_id` ra người dưới quyền.", en: "The direction decides the meaning: `manager_id → _id` gives your manager, `_id → manager_id` gives your reports." }
+
+# ---- Phần 6: Chữ và kiểu
+- id: mg.string_ops
+  part: 6
+  label: { vi: "Xử lý chuỗi ($concat, $substrCP)", en: "String functions ($concat, $substrCP)" }
+  syntax: '{ $concat: [{ $toUpper: { $substrCP: ["$name", 0, 3] } }, "-", "$city"] }'
+  when: { vi: "Ghép, cắt, đổi hoa thường hay đo độ dài chuỗi.", en: "Join, cut, change case or measure the length of strings." }
+  trap: { vi: "`$substrCP` đếm từ 0, không phải từ 1. `$concat` gặp trường thiếu thì cả chuỗi thành `null`.", en: "`$substrCP` counts from 0, not 1. `$concat` with a missing field turns the whole string into `null`." }
+
+- id: mg.regex
+  part: 6
+  label: { vi: "Tìm theo mẫu ($regex)", en: "Pattern match ($regex)" }
+  syntax: 'db.products.find({ name: { $regex: "tea", $options: "i" } })'
+  when: { vi: "Chứa, bắt đầu hay kết thúc bằng một đoạn chữ (như LIKE).", en: "Contains, starts with or ends with some text (like LIKE)." }
+  trap: { vi: "Mặc định phân biệt hoa thường: `^t` không khớp `Toothpaste`. Thêm `$options: \"i\"`.", en: "Matching is case-sensitive by default: `^t` misses `Toothpaste`. Add `$options: \"i\"`." }
+
+- id: mg.distinct
+  part: 6
+  label: { vi: "Giá trị khác nhau (distinct, $addToSet)", en: "Distinct values (distinct, $addToSet)" }
+  syntax: 'db.customers.distinct("city")'
+  when: { vi: "Danh sách hoặc số lượng giá trị không trùng.", en: "The list or the count of unique values." }
+  trap: { vi: "`$addToSet` trên một trường mảng gom cả mảng làm một phần tử. `$unwind` trước để gom từng phần tử.", en: "`$addToSet` on an array field collects whole arrays as items. `$unwind` first to collect single elements." }
+
+- id: mg.convert
+  part: 6
+  label: { vi: "Đổi kiểu ($toInt, $toDate)", en: "Convert types ($toInt, $toDate)" }
+  syntax: '{ $toInt: "$legacy.stars" }'
+  when: { vi: "Số hay ngày bị lưu dạng chữ cần tính toán hoặc so sánh.", en: "Numbers or dates stored as text must be computed or compared." }
+  trap: { vi: "So một chuỗi với một số (`\"4\"` với `4`) không bao giờ khớp. Đổi kiểu trước khi so.", en: "Comparing a string with a number (`\"4\"` with `4`) never matches. Convert first, then compare." }
