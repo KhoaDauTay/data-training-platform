@@ -75,7 +75,7 @@ function onDbStatus(s: DbStatus): void {
   syncDbStatus();
   if (!uiReady) return;
   renderTopbar();
-  relabelWelcome(); // the download line ends, "I am new" becomes clickable
+  relabelWelcome(); // the download line ends
 }
 const registerSw = initServiceWorker(offerUpdate); // V16-OFFLINE (src/pwa.ts)
 const db = new DbClient(onDbStatus);

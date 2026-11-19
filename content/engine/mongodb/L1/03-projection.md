@@ -6,11 +6,12 @@ module: crud
 title: Chỉ lấy trường cần dùng (projection)
 title_en: Returning only the fields you need (projection)
 kind: lab
+runtime: browser
 minutes: 8
 objectives:
   - vi: Viết projection kiểu chọn (`1`) hoặc kiểu bỏ (`0`) và biết không được trộn hai kiểu.
     en: Write an include (`1`) or exclude (`0`) projection and know the two styles cannot be mixed.
-  - vi: Bỏ `_id` khỏi kết quả và lấy một trường trong tài liệu lồng.
+  - vi: Bỏ `_id` khỏi kết quả và lấy một trường trong tài liệu nhúng (embedded document).
     en: Drop `_id` from the result and return one field of an embedded document.
 requires: [e-mg-l1-02]
 sources:

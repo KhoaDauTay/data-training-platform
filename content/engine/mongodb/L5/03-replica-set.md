@@ -50,7 +50,7 @@ quiz:
 Replica set là một primary nhận ghi và các secondary giữ bản sao.
 
 - Primary áp thay đổi rồi ghi nó vào oplog (`local.oplog.rs`), một capped collection. Secondary chép và áp oplog không đồng bộ. Mỗi mục oplog là idempotent: áp một hay nhiều lần cho cùng kết quả.
-- Oplog mặc định bằng 5% dung lượng đĩa trống, tối thiểu 990 MB, tối đa 50 GB. Cửa sổ oplog là khoảng thời gian giữa mục cũ nhất và mới nhất; secondary mất kết nối lâu hơn cửa sổ đó thì không đồng bộ lại bằng replication được nữa.
+- Oplog mặc định bằng 5 % dung lượng đĩa trống, tối thiểu 990 MB, tối đa 50 GB. Cửa sổ oplog là khoảng thời gian giữa mục cũ nhất và mới nhất; secondary mất kết nối lâu hơn cửa sổ đó thì không đồng bộ lại bằng replication được nữa.
 - Các thành viên gửi heartbeat mỗi 2 giây. Primary không trả lời quá 10 giây thì có bầu cử; trong lúc bầu không ghi được. Thời gian trung vị tới khi có primary mới thường không quá 12 giây. Driver thường tự thử lại lần ghi một lần (retryable writes).
 - Thành viên chỉ thành primary nếu có optime cao nhất trong các thành viên nó thấy; priority cao thì gọi bầu sớm hơn; priority 0 không bao giờ thành primary.
 - Primary chỉ thấy thiểu số thành viên bỏ phiếu (chia mạng) thì tự bước xuống.
@@ -63,7 +63,7 @@ rs.printReplicationInfo()
 
 Lệnh này in cỡ oplog và khoảng thời gian nó đang giữ.
 
-Đúng với tài liệu MongoDB hiện hành, kiểm ngày 2026-11-20. Bài này dùng sơ đồ: trình duyệt không có replica set.
+Đúng với docs chính thức của MongoDB hiện hành, kiểm ngày 2026-11-20. Phần chạy thật cần máy chủ thật (nhiều phiên / replica set / AWS). Bài này dùng sơ đồ và kết quả ghi sẵn.
 
 # EN
 
@@ -85,4 +85,4 @@ rs.printReplicationInfo()
 
 This prints the oplog size and the time range it holds.
 
-Matches the current MongoDB manual, checked 2026-11-20. This lesson uses a diagram: the browser has no replica set.
+Matches the current MongoDB manual, checked 2026-11-20. The real run needs a real server (several sessions / replica set / AWS). This lesson uses diagrams and recorded results.

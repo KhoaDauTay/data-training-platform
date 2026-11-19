@@ -3,7 +3,7 @@ id: e-dy-l3-02
 engine: dynamodb
 level: L3
 module: secondary
-title: "LSI và GSI: hai loại chỉ mục phụ"
+title: "LSI và GSI: hai loại index phụ"
 title_en: "LSI and GSI: two kinds of secondary index"
 kind: concept
 runtime: docs
@@ -44,7 +44,7 @@ quiz:
         en: '`city` is fetched from the base table automatically.'
       - vi: 'Không có `city` - GSI chỉ trả được thuộc tính đã project. Muốn có thì GetItem bảng gốc, hoặc project thêm.'
         en: 'No `city` - a GSI can only return projected attributes. Get it with a GetItem on the base table, or project it.'
-      - vi: Request lỗi vì bảng gốc bị khóa.
+      - vi: Request lỗi vì bảng gốc đang bị giữ lock.
         en: The request fails because the base table is locked.
     answer: 1
     why:
@@ -54,14 +54,14 @@ quiz:
 
 ## Ý chính
 
-Một chỉ mục phụ là một bản sao có khóa khác của một phần dữ liệu, để thêm mẫu truy cập mà không cần Scan.
+Một index (chỉ mục) phụ là một bản sao có khóa khác của một phần dữ liệu, để thêm mẫu truy cập mà không Scan.
 
 **GSI (global secondary index)**:
 
 - partition key và sort key tùy ý, không cần duy nhất;
 - thêm hoặc xóa **bất cứ lúc nào**;
 - cập nhật **bất đồng bộ**, chỉ đọc **eventually consistent**;
-- throughput riêng; mỗi lần ghi bảng làm đổi index sẽ tốn thêm WCU cho index;
+- throughput riêng; mỗi lần ghi làm đổi index tốn thêm WCU;
 - chỉ trả thuộc tính đã project.
 
 **LSI (local secondary index)**:

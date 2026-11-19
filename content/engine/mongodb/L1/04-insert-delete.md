@@ -6,6 +6,7 @@ module: crud
 title: Thêm và xóa tài liệu
 title_en: Inserting and deleting documents
 kind: lab
+runtime: browser
 minutes: 10
 objectives:
   - vi: Thêm một hoặc nhiều tài liệu bằng `insertOne` và `insertMany`.

@@ -9,7 +9,7 @@ kind: concept
 minutes: 10
 runtime: docs
 objectives:
-  - vi: "Kể tên sáu nhóm mẫu thiết kế trong tài liệu MongoDB hiện hành"
+  - vi: "Kể tên sáu nhóm mẫu thiết kế trong docs chính thức của MongoDB hiện hành"
     en: "Name the six pattern groups in the current MongoDB manual"
   - vi: "Chọn mẫu theo cách ứng dụng đọc và ghi dữ liệu"
     en: "Pick a pattern from how the application reads and writes data"
@@ -28,10 +28,10 @@ quiz:
       - { vi: "Archive", en: "Archive" }
     answer: 1
     why:
-      vi: "Tài liệu MongoDB: mẫu outlier tách phần đánh giá của sách nổi tiếng sang tài liệu riêng, để một tài liệu quá lớn không làm chậm các tài liệu bình thường."
+      vi: "Docs chính thức của MongoDB: mẫu outlier tách phần đánh giá của sách nổi tiếng sang tài liệu riêng, để một tài liệu quá lớn không làm chậm các tài liệu bình thường."
       en: "The MongoDB docs: the outlier pattern moves the popular book's reviews into separate documents, so one oversized document does not slow down the typical ones."
   - q:
-      vi: "Dữ liệu cảm biến đo mỗi phút. Tài liệu khuyên gì trước khi tự viết mẫu bucket?"
+      vi: "Dữ liệu cảm biến đo mỗi phút. Docs chính thức khuyên gì trước khi tự viết mẫu bucket?"
       en: "Sensor data arrives every minute. What do the docs suggest before hand-writing the bucket pattern?"
     options:
       - { vi: "Dùng collection time series, nó áp dụng mẫu bucket tự động", en: "Use a time series collection, it applies the bucket pattern automatically" }
@@ -45,7 +45,7 @@ quiz:
 
 ## Ý chính
 
-Mẫu thiết kế giúp schema khớp với cách ứng dụng đọc dữ liệu. Tài liệu MongoDB hiện hành chia thành sáu nhóm:
+Mẫu thiết kế giúp schema khớp với cách ứng dụng đọc dữ liệu. Docs chính thức của MongoDB hiện hành chia thành sáu nhóm:
 
 - Computed Values: tính sẵn trong cơ sở dữ liệu để kết quả có ngay khi đọc.
 - Group Data: gom dữ liệu thành nhiều chuỗi nhỏ (bucket), và tách phần bất thường (outlier).
@@ -60,7 +60,7 @@ Các tên cũ như subset hay extended reference không còn là mục riêng tr
 
 Các lab sau làm từng mẫu bằng aggregation trên mingo: pipeline nhận dạng cũ và trả ra dạng mới. Trên `mongod`, bạn sẽ ghi kết quả đó bằng `$merge` hoặc cập nhật hàng loạt; trình duyệt chỉ chạy phần đọc.
 
-Đúng với tài liệu MongoDB hiện hành, kiểm ngày 2026-11-20.
+Đúng với docs chính thức của MongoDB hiện hành, kiểm ngày 2026-11-20.
 
 # EN
 

@@ -6,11 +6,12 @@ module: crud
 title: Tìm tài liệu với find
 title_en: Finding documents with find
 kind: lab
+runtime: browser
 minutes: 10
 objectives:
   - vi: Viết `find` với điều kiện bằng trên một hoặc nhiều trường.
     en: Write `find` with equality conditions on one or more fields.
-  - vi: Lọc trên trường của tài liệu lồng bằng dot notation.
+  - vi: Lọc trên trường của tài liệu nhúng (embedded document) bằng dot notation.
     en: Filter on a field of an embedded document with dot notation.
 requires: [e-mg-l1-01]
 sources:
@@ -59,9 +60,9 @@ lab:
 - Nhiều điều kiện trong một filter được nối bằng AND: tài liệu phải khớp tất cả.
 - Trường lồng dùng dot notation: `"address.city"`. Tên có dấu chấm phải đặt trong dấu nháy.
 
-So bằng trên cả tài liệu lồng, ví dụ `{ address: { city: "Hue" } }`, chỉ khớp khi tài liệu lồng giống hệt, cả các trường lẫn thứ tự trường. Vì vậy gần như luôn dùng dot notation.
+So bằng trên cả tài liệu nhúng, ví dụ `{ address: { city: "Hue" } }`, chỉ khớp khi tài liệu nhúng giống hệt, cả các trường lẫn thứ tự trường. Vì vậy gần như luôn dùng dot notation.
 
-Làm được: tìm đúng các tài liệu theo một hoặc nhiều trường, kể cả trường nằm trong tài liệu lồng.
+Làm được: tìm đúng các tài liệu theo một hoặc nhiều trường, kể cả trường nằm trong tài liệu nhúng.
 
 ## Ví dụ
 

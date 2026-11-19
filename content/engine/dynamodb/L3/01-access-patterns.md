@@ -55,9 +55,9 @@ Với SQL, bạn chuẩn hóa dữ liệu trước rồi viết câu hỏi nào 
 Bốn nguyên tắc từ hướng dẫn thiết kế của AWS:
 
 - **Ít bảng nhất có thể.** Phần lớn ứng dụng chỉ cần một bảng.
-- **Dữ liệu đọc cùng nhau thì nằm cạnh nhau**, trong cùng một item collection.
-- **Dùng thứ tự sort key** để gom và sắp những thứ liên quan.
-- **Rải tải** - partition key có nhiều giá trị, mỗi giá trị được dùng tương đối đều, tránh partition nóng.
+- **Dữ liệu đọc cùng nhau thì nằm cạnh nhau**, trong cùng một item collection (mọi item chung một giá trị partition key).
+- **Dùng thứ tự sort key (khóa sắp xếp)** để gom và sắp những thứ liên quan.
+- **Rải tải** - partition key (khóa phân vùng) có nhiều giá trị, mỗi giá trị được dùng tương đối đều, tránh partition nóng.
 
 ## Ví dụ
 
@@ -74,7 +74,7 @@ Bảng mẫu truy cập của tiệm trà trong các bài sau:
 
 ## Thực hành
 
-Mẫu truy cập mới xuất hiện sau khi ra mắt thì sao? Thêm một GSI (bài kế tiếp). Đó là lý do L3 bắt đầu bằng chỉ mục phụ.
+Mẫu truy cập mới xuất hiện sau khi ra mắt thì sao? Thêm một GSI (bài kế tiếp). Đó là lý do L3 bắt đầu bằng index (chỉ mục) phụ: GSI và LSI.
 
 # EN
 
@@ -104,4 +104,4 @@ The access pattern table of the tea shop in the next lessons:
 
 ## Practice
 
-What about an access pattern that appears after launch? Add a GSI (next lesson). That is why L3 starts with secondary indexes.
+What about an access pattern that appears after launch? Add a GSI (next lesson). That is why L3 starts with secondary indexes: GSIs and LSIs.

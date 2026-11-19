@@ -6,8 +6,9 @@ module: memory
 title: "Kiểm tra cấp L3: bảng việc phình to"
 title_en: "L3 check: the job table that keeps growing"
 kind: capstone
+runtime: browser
 minutes: 30
-viz: hot-chain
+viz: pg-hot
 objectives:
   - vi: Chẩn đoán HOT miss do trang đầy từ trang heap, bộ đếm và index
     en: Diagnose HOT misses caused by full pages from the heap page, the counters and the index
@@ -71,7 +72,7 @@ lab:
         vi: Hai truy vấn con `count(*)` trên `bt_page_items()`.
         en: Two `count(*)` subqueries over `bt_page_items()`.
       fact:
-        vi: "210 so với 200: mỗi UPDATE không HOT của `jobs_full` thêm một mục index (và một tuple chết cho VACUUM), còn `jobs_room` không thêm mục nào."
+        vi: "210 so với 200: mỗi UPDATE không HOT của `jobs_full` thêm một mục index (và một dead tuple cho VACUUM), còn `jobs_room` không thêm mục nào."
         en: "210 versus 200: each non-HOT UPDATE on `jobs_full` added an index entry (and a dead tuple for VACUUM), while `jobs_room` added none."
         probe: SELECT (SELECT count(*) FROM bt_page_items('jobs_full_pkey', 1)), (SELECT count(*) FROM bt_page_items('jobs_room_pkey', 1))
         expect: [[210, 200]]
@@ -104,8 +105,8 @@ quiz:
       - { vi: "Tăng `work_mem`", en: "Raise `work_mem`" }
     answer: 1
     why:
-      vi: "Cột được sửa không có index, nên HOT chỉ thiếu chỗ trống. `fillfactor` chỉ áp cho trang ghi sau này, nên trang hiện có cần viết lại một lần (`VACUUM FULL` khóa bảng trong lúc chạy). Thêm index trên `tries` còn làm tệ hơn: nó cấm HOT hẳn."
-      en: "The updated column has no index, so HOT only lacks free space. `fillfactor` applies to pages written later, so the existing pages need one rewrite (`VACUUM FULL` locks the table while it runs). An index on `tries` would make it worse: it rules HOT out entirely."
+      vi: "Cột được sửa không có index, nên HOT chỉ thiếu chỗ trống. `fillfactor` chỉ áp cho trang ghi sau này, nên trang hiện có cần viết lại một lần (`VACUUM FULL` giữ lock `ACCESS EXCLUSIVE` trên bảng trong lúc chạy). Thêm index trên `tries` còn làm tệ hơn: nó cấm HOT hẳn."
+      en: "The updated column has no index, so HOT only lacks free space. `fillfactor` applies to pages written later, so the existing pages need one rewrite (`VACUUM FULL` holds an `ACCESS EXCLUSIVE` lock on the table while it runs). An index on `tries` would make it worse: it rules HOT out entirely."
 ---
 
 ## Ý chính

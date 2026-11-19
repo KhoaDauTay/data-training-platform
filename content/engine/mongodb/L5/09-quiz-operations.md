@@ -51,7 +51,7 @@ quiz:
 
 ## Ý chính
 
-Ba câu về cửa sổ oplog, ngưỡng của balancer và priority khi bầu primary. Đáp án theo tài liệu MongoDB hiện hành, kiểm ngày 2026-11-20.
+Ba câu về cửa sổ oplog, ngưỡng của balancer và priority khi bầu primary. Đáp án theo docs chính thức của MongoDB hiện hành, kiểm ngày 2026-11-20.
 
 # EN
 

@@ -6,8 +6,9 @@ module: wal
 title: "Lab: đọc bản ghi WAL thật"
 title_en: "Lab: read real WAL records"
 kind: lab
+runtime: browser
 minutes: 20
-viz: wal-flow
+viz: pg-wal
 objectives:
   - vi: Đọc các bản ghi WAL mà một INSERT và một UPDATE sinh ra
     en: Read the WAL records produced by an INSERT and an UPDATE
@@ -76,8 +77,8 @@ lab:
         probe: SELECT string_agg(resource_manager || ' ' || record_type || ' ' || block_fpi_length, ', ' ORDER BY start_lsn, block_id) FROM pg_get_wal_block_info((SELECT lsn FROM mark WHERE name = 'b'), (SELECT lsn FROM mark WHERE name = 'c')) WHERE relfilenode IN (pg_relation_filenode('w'), pg_relation_filenode('w_pkey'))
         expect: [["Heap INSERT 0, Btree INSERT_LEAF 0"]]
     - task:
-        vi: "So hai UPDATE sau CHECKPOINT: với các bản ghi chạm `w` trong đoạn `d` → `f`, lấy `record_type` và một cột đúng/sai `block_fpi_length > 0`, theo `start_lsn`."
-        en: "Compare the two UPDATEs after the CHECKPOINT: for the records touching `w` in the range `d` -> `f`, return `record_type` and a true/false column `block_fpi_length > 0`, by `start_lsn`."
+        vi: "So hai UPDATE sau CHECKPOINT: với các bản ghi chạm `w` trong đoạn `d` → `f`, lấy `record_type` và một cột đúng/sai `block_fpi_length > 0`, theo `start_lsn`. Đoán trước khi chạy: hai UPDATE giống nhau, bản ghi nào mang full-page image?"
+        en: "Compare the two UPDATEs after the CHECKPOINT: for the records touching `w` in the range `d` -> `f`, return `record_type` and a true/false column `block_fpi_length > 0`, by `start_lsn`. Guess before you run it: the two UPDATEs look alike, so which record carries a full-page image?"
       solution: |
         SELECT record_type, block_fpi_length > 0 AS full_page
         FROM pg_get_wal_block_info((SELECT lsn FROM mark WHERE name = 'd'), (SELECT lsn FROM mark WHERE name = 'f'))
@@ -128,7 +129,7 @@ Lọc theo `relfilenode` vì cùng khoảng LSN còn có bản ghi của catalog
 
 ## Thực hành
 
-Bốn bước. Số LSN thật đổi theo máy nên lab chỉ chấm loại bản ghi và các so sánh. Sau lab này bạn đo được một lệnh sinh bao nhiêu WAL, và giải thích được vì sao ngay sau checkpoint WAL tăng vọt (full-page image), một nguyên nhân hay gặp của replication lag và đầy ổ WAL.
+Bốn bước. Số LSN thật đổi theo máy nên lab chỉ chấm loại bản ghi và các so sánh. Sau lab này bạn đo được một lệnh sinh bao nhiêu WAL, và giải thích được vì sao ngay sau checkpoint WAL tăng vọt (full-page image), một nguyên nhân hay gặp của độ trễ nhân bản (replication lag) và đầy ổ WAL.
 
 # EN
 

@@ -47,9 +47,9 @@ predict:
 
 ## Ý chính
 
-Đây là bài đoán theo tài liệu MongoDB (trang "Case-Insensitive Indexes"); trình duyệt không có `mongod`, nên không có explain thật. Tài liệu in sẵn kết luận cho ba truy vấn trên cùng dữ liệu, mỗi dòng là chú thích của chính tài liệu:
+Đây là bài đoán theo docs chính thức của MongoDB (trang "Case-Insensitive Indexes"); trình duyệt không có `mongod`, nên không có explain thật. Docs chính thức in sẵn kết luận cho ba truy vấn trên cùng dữ liệu, mỗi dòng là chú thích của chính trang docs:
 
-- không ghi collation: không dùng index, tìm thấy một tài liệu;
+- không ghi collation: không dùng index (chỉ mục), tìm thấy một tài liệu;
 - `strength: 2`: dùng index, tìm thấy ba;
 - `strength: 1`: không dùng index, tìm thấy ba.
 
@@ -57,7 +57,7 @@ Hai câu hỏi tách nhau: "có dùng index không" phụ thuộc collation có 
 
 ## Ví dụ
 
-Kết luận từ tài liệu MongoDB (chú thích trong trang, không phải explain chạy trong trình duyệt):
+Ví dụ trong docs chính thức của MongoDB (chưa chạy trong trình duyệt); chú thích là của chính trang docs, không phải explain:
 
 ```javascript
 db.fruit.find( { type: "apple" } ) // does not use index, finds one result
@@ -65,7 +65,7 @@ db.fruit.find( { type: "apple" } ).collation( { locale: 'en', strength: 2 } ) //
 db.fruit.find( { type: "apple" } ).collation( { locale: 'en', strength: 1 } ) // does not use the index, finds three results
 ```
 
-Đúng với tài liệu MongoDB hiện hành, kiểm ngày 2026-11-20.
+Đúng với docs chính thức của MongoDB hiện hành, kiểm ngày 2026-11-20.
 
 # EN
 
@@ -81,7 +81,7 @@ These are two separate questions: "is the index used" depends on the collation b
 
 ## Example
 
-The outcome from the MongoDB docs (comments on the page, not an explain run in the browser):
+Example from the official MongoDB docs (not run in the browser); the comments are the page's own, not an explain:
 
 ```javascript
 db.fruit.find( { type: "apple" } ) // does not use index, finds one result

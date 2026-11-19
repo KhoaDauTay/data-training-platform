@@ -46,8 +46,8 @@ lab:
         vi: '`RequestItems` là map từ tên bảng tới `{"Keys": [...]}`. Kết quả không theo thứ tự khóa, nên giữ `isbn` trong projection để ghép lại.'
         en: '`RequestItems` maps each table name to `{"Keys": [...]}`. Results do not come back in key order, so keep `isbn` in the projection to match them up.'
     - task:
-        vi: 'Trong một request - thêm cuốn `978-0-12` (`title` "Batch Basics", `price` 75000), thêm cuốn `978-0-13` (`title` "Many at Once", `price` 82000), và xóa cuốn `978-0-06`.'
-        en: 'In one request - add book `978-0-12` (`title` "Batch Basics", `price` 75000), add book `978-0-13` (`title` "Many at Once", `price` 82000), and delete book `978-0-06`.'
+        vi: 'Trong một request - thêm cuốn `978-0-12` (`title` "Batch Basics", `price` `75000`), thêm cuốn `978-0-13` (`title` "Many at Once", `price` `82000`), và xóa cuốn `978-0-06`.'
+        en: 'In one request - add book `978-0-12` (`title` "Batch Basics", `price` `75000`), add book `978-0-13` (`title` "Many at Once", `price` `82000`), and delete book `978-0-06`.'
       solution: |
         {"op": "BatchWriteItem", "input": {"RequestItems": {"Books": [
           {"PutRequest": {"Item": {"isbn": {"S": "978-0-12"}, "title": {"S": "Batch Basics"}, "price": {"N": "75000"}}}},
@@ -70,8 +70,8 @@ quiz:
         en: Send the whole original batch again.
     answer: 1
     why:
-      vi: Lô chỉ lỗi khi mọi yêu cầu con đều lỗi. Phần chưa làm (ví dụ vì bị giới hạn tốc độ) nằm trong `UnprocessedItems` (hoặc `UnprocessedKeys` với `BatchGetItem`) và phải gửi lại.
-      en: A batch fails only when every request in it fails. Whatever was not done (for example because of throttling) comes back in `UnprocessedItems` (or `UnprocessedKeys` for `BatchGetItem`) and must be sent again.
+      vi: Request báo thành công nên dễ nghĩ cả lô đã ghi xong. Nhưng lô chỉ lỗi khi mọi yêu cầu con đều lỗi. Phần chưa làm (ví dụ vì bị throttle, tức bị giới hạn tốc độ) nằm trong `UnprocessedItems` (hoặc `UnprocessedKeys` với `BatchGetItem`) và phải gửi lại.
+      en: The call reports success, so it is easy to think the whole batch was written. But a batch fails only when every request in it fails. Whatever was not done (for example because of throttling) comes back in `UnprocessedItems` (or `UnprocessedKeys` for `BatchGetItem`) and must be sent again.
   - q:
       vi: Bạn cần tăng `stock` của 30 cuốn sách. `BatchWriteItem` có làm được không?
       en: You need to increase `stock` on 30 books. Can `BatchWriteItem` do it?

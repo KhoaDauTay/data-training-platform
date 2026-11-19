@@ -6,8 +6,9 @@ module: vacuum-hot
 title: "Lab: một UPDATE HOT và một UPDATE không HOT"
 title_en: "Lab: a HOT update and a non-HOT update"
 kind: lab
+runtime: browser
 minutes: 20
-viz: hot-chain
+viz: pg-hot
 objectives:
   - vi: Nhận ra một UPDATE là HOT qua cờ `HEAP_HOT_UPDATED` và `HEAP_ONLY_TUPLE`
     en: Recognise a HOT update by the flags `HEAP_HOT_UPDATED` and `HEAP_ONLY_TUPLE`
@@ -47,8 +48,8 @@ lab:
           FROM heap_page_items(get_raw_page('wallet', 0)), heap_tuple_infomask_flags(t_infomask, t_infomask2) WHERE lp IN (1, 2, 6, 7)
         expect: [[1, "(0,6)", true, false], [2, "(0,7)", false, false], [6, "(0,6)", false, true], [7, "(0,7)", false, false]]
     - task:
-        vi: "Đọc trang lá của index khóa chính `wallet_pkey` (block 1): lấy `itemoffset` và `ctid`."
-        en: "Read the leaf page of the primary key index `wallet_pkey` (block 1): return `itemoffset` and `ctid`."
+        vi: "Đọc trang lá của index khóa chính `wallet_pkey` (block 1): lấy `itemoffset` và `ctid`. Đoán trước khi chạy: khóa chính không đổi, vậy index này có mấy mục cho 5 dòng?"
+        en: "Read the leaf page of the primary key index `wallet_pkey` (block 1): return `itemoffset` and `ctid`. Guess before you run it: no primary key changed, so how many entries does this index hold for 5 rows?"
       solution: SELECT itemoffset, ctid FROM bt_page_items('wallet_pkey', 1)
       check: rows
       ordered: true

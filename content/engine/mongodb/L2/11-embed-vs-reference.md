@@ -6,6 +6,7 @@ module: modeling
 title: Nhúng hay tham chiếu
 title_en: Embed or reference
 kind: concept
+runtime: docs
 minutes: 10
 objectives:
   - vi: Chọn nhúng hay tham chiếu cho một quan hệ dựa trên cách dữ liệu được đọc, ghi và lớn lên.
@@ -30,8 +31,8 @@ quiz:
         en: Store them as a JSON string in one field
     answer: 0
     why:
-      vi: 'Quan hệ "chứa", số lượng nhỏ, đọc và sửa cùng nhau: nhúng cho một lần đọc và một lần ghi atomic.'
-      en: 'A "contains" relationship, few items, read and changed together: embedding gives one read and one atomic write.'
+      vi: 'Collection riêng nghe quen vì giống bảng chi tiết đơn của SQL, nhưng khi đó mỗi lần xem đơn phải `$lookup`. Quan hệ "chứa", số lượng nhỏ, đọc và sửa cùng nhau: nhúng cho một lần đọc và một lần ghi nguyên tử (atomic).'
+      en: 'A separate collection feels familiar because it mirrors an SQL order-lines table, but then every order view needs a `$lookup`. A "contains" relationship, few items, read and changed together: embedding gives one read and one atomic write.'
   - q:
       vi: Mỗi sản phẩm nhận đánh giá của khách, có sản phẩm hàng chục nghìn đánh giá và con số còn tăng mãi. Nên lưu đánh giá thế nào?
       en: Each product collects customer reviews; some products have tens of thousands and the number keeps growing. How should you store reviews?
@@ -69,7 +70,7 @@ Nên nhúng khi:
 
 - dữ liệu được đọc cùng nhau;
 - quan hệ là "có" hoặc "chứa" (đơn chứa dòng hàng);
-- dữ liệu được sửa hoặc lưu trữ cùng nhau. Một lần ghi trên một tài liệu là atomic.
+- dữ liệu được sửa hoặc lưu trữ cùng nhau. Một lần ghi trên một tài liệu là nguyên tử.
 
 Nên tham chiếu khi:
 
@@ -80,7 +81,7 @@ Nên tham chiếu khi:
 
 Ở giữa là chép một ít trường (extended reference), ví dụ tên khách trong đơn: đọc nhanh, không cần `$lookup`, nhưng phải tự cập nhật bản chép nếu cần. Hợp với dữ liệu không đổi hoặc dữ liệu "theo thời điểm".
 
-Thiết kế theo câu hỏi mà ứng dụng hỏi nhiều nhất, không theo hình bảng của SQL.
+Nhiều người nghĩ MongoDB không bắt schema nên không cần thiết kế. Thật ra vẫn phải thiết kế, theo câu hỏi mà ứng dụng hỏi nhiều nhất, không theo hình bảng của SQL.
 
 Làm được: chọn nhúng hay tham chiếu cho một quan hệ và giải thích bằng cách dữ liệu được dùng.
 
@@ -118,7 +119,7 @@ Reference when:
 
 In between is copying a few fields (extended reference), such as the customer's name in an order: fast reads with no `$lookup`, but you must update the copies yourself if needed. It suits data that never changes or point-in-time data.
 
-Design for the questions your application asks most, not for the table shapes of SQL.
+Many people think that since MongoDB enforces no schema, there is nothing to design. In fact you still design, for the questions your application asks most, not for the table shapes of SQL.
 
 You can now: choose embedding or referencing for a relationship and explain it by how the data is used.
 

@@ -32,8 +32,8 @@ lab:
     ]}}
   steps:
     - task:
-        vi: Giảm giá cuốn `978-0-05` thêm 12000 so với giá hiện tại, không đọc giá trước, và trả về item sau khi sửa.
-        en: Lower the price of `978-0-05` by 12000 from its current price, without reading the price first, and return the item after the change.
+        vi: Giảm giá cuốn `978-0-05` thêm `12000` so với giá hiện tại, không đọc giá trước, và trả về item sau khi sửa.
+        en: Lower the price of `978-0-05` by `12000` from its current price, without reading the price first, and return the item after the change.
       solution: |
         {"op": "UpdateItem", "input": {"TableName": "Books",
           "Key": {"isbn": {"S": "978-0-05"}},
@@ -93,7 +93,7 @@ lab:
 - `ADD`: cộng vào số, hoặc thêm phần tử vào tập hợp (bài bộ đếm).
 - `DELETE`: bớt phần tử khỏi tập hợp `SS`/`NS`/`BS`.
 
-Mọi phép tính chạy **ở phía server, trên một item, nguyên tử**: không cần đọc rồi ghi lại, nên hai người sửa cùng lúc không đè lên nhau.
+Mọi phép tính chạy **ở phía server, trên một item, nguyên tử** (atomic): không cần đọc rồi ghi lại, nên hai người sửa cùng lúc không đè lên nhau.
 
 ## Ví dụ
 

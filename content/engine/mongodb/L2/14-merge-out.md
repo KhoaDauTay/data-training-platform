@@ -6,6 +6,7 @@ module: modeling
 title: Lưu kết quả pipeline với $out và $merge
 title_en: Saving pipeline results with $out and $merge
 kind: quiz
+runtime: docs
 minutes: 8
 objectives:
   - vi: Chọn giữa `$out` (thay cả collection) và `$merge` (gộp vào collection có sẵn).
@@ -71,7 +72,7 @@ quiz:
 
 `$merge` hợp với báo cáo cập nhật dần (mỗi đêm chỉ tính ngày mới) hay một "materialized view" tự làm. `$out` hợp khi luôn dựng lại toàn bộ.
 
-Bài này là bài đọc: bản chạy trong trình duyệt chỉ cho đọc, mọi lệnh ghi đều bị bỏ sau khi chạy, nên không chạy thử `$out`/`$merge` ở đây.
+Bài này là bài đọc: bản chạy trong trình duyệt bỏ mọi thay đổi sau mỗi lần chạy, nên `$out`/`$merge` không được chạy ở đây.
 
 Làm được: lưu kết quả một báo cáo thành collection và chọn cách gộp đúng khi chạy lại.
 

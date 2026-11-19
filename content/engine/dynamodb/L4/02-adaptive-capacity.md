@@ -31,7 +31,7 @@ quiz:
       - { vi: "LSI làm collection được tách nhanh hơn", en: "The LSI makes the collection split faster" }
       - { vi: "LSI không ảnh hưởng gì tới việc tách", en: "The LSI has no effect on splitting" }
     answer: 0
-    why: { vi: "Tài liệu AWS nói rõ adaptive capacity không tách collection khi bảng có local secondary index. Đó là một lý do chọn GSI thay cho LSI khi tải dồn vào ít partition key.", en: "The AWS docs state that adaptive capacity does not split item collections when the table has a local secondary index. That is one reason to prefer a GSI over an LSI when load piles onto few partition keys." }
+    why: { vi: "Docs chính thức của AWS nói rõ adaptive capacity không tách collection khi bảng có local secondary index. Đó là một lý do chọn GSI thay cho LSI khi tải dồn vào ít partition key.", en: "The AWS docs state that adaptive capacity does not split item collections when the table has a local secondary index. That is one reason to prefer a GSI over an LSI when load piles onto few partition keys." }
 ---
 
 ## Ý chính

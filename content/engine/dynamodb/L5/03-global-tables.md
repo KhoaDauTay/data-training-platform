@@ -36,9 +36,9 @@ quiz:
 **Global table** sao chép một bảng sang nhiều Region; mỗi Region giữ một bản sao (replica), đọc ghi được ở mọi bản sao. SLA 99,999 %, so với 99,99 % của bảng một vùng.
 
 - **MREC** (mặc định): sao chép **bất đồng bộ**, thường dưới một giây. Xung đột trên cùng item giải bằng **last writer wins**. Đọc mạnh có thể thấy dữ liệu cũ nếu item vừa sửa ở vùng khác. RPO bằng độ trễ sao chép.
-- **MRSC**: mỗi lần ghi đồng bộ sang ít nhất một vùng khác trước khi trả về; đọc mạnh ở mọi bản sao thấy bản mới nhất; **RPO bằng 0**. Phải đúng **ba** vùng (ba bản sao, hoặc hai bản sao và một witness). Không hỗ trợ TTL, LSI và giao dịch.
+- **MRSC**: mỗi lần ghi đồng bộ sang ít nhất một vùng khác trước khi trả về; đọc mạnh ở mọi bản sao thấy bản mới nhất; **RPO bằng 0**. Phải đúng **ba** vùng (ba bản sao, hoặc hai bản sao và một witness). Không hỗ trợ TTL, LSI và transaction.
 - Chế độ chọn lúc tạo, **không đổi được** sau đó.
-- Giao dịch trên MREC chỉ nguyên khối trong Region gọi nó; vùng khác có thể thấy giao dịch xong một nửa.
+- Transaction trên MREC chỉ nguyên khối trong Region gọi nó; vùng khác có thể thấy transaction xong một nửa.
 
 Global table chỉ có trên AWS thật, nên bài này **chưa chạy được trong trình duyệt**.
 

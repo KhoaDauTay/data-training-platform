@@ -6,6 +6,7 @@ module: update-pipeline
 title: Update bằng aggregation pipeline
 title_en: Updates with an aggregation pipeline
 kind: lab
+runtime: browser
 minutes: 14
 objectives:
   - vi: Tính lại một trường từ các trường khác của chính tài liệu bằng update dạng pipeline.
@@ -60,7 +61,7 @@ lab:
 - `$$NOW` là thời điểm hiện tại, giống nhau cho mọi tài liệu trong cùng lệnh: `{ $set: { checkedAt: "$$NOW" } }`.
 - Một chuỗi bắt đầu bằng `$` được hiểu là đường dẫn trường. Muốn ghi đúng chuỗi đó thì bọc trong `$literal` (bài sau).
 
-Lợi ích: không cần đọc tài liệu ra ứng dụng, tính rồi ghi lại. Một lệnh làm hết, atomic trên mỗi tài liệu.
+Lợi ích: không cần đọc tài liệu ra ứng dụng, tính rồi ghi lại. Một lệnh làm hết, nguyên tử (atomic) trên mỗi tài liệu.
 
 Làm được: sửa hàng loạt bằng biểu thức tính từ dữ liệu của chính tài liệu.
 

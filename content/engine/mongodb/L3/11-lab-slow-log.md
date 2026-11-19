@@ -53,13 +53,13 @@ lab:
 
 ## Ý chính
 
-Lab chạy bằng mingo (ngôn ngữ truy vấn MongoDB) trong trình duyệt. mingo không có index và không có explain, nên ở đây ta không đo kế hoạch: ta phân tích những con số explain đã được ghi lại, đúng việc một người vận hành làm với nhật ký truy vấn chậm.
+Lab chạy bằng mingo (ngôn ngữ truy vấn MongoDB) trong trình duyệt. mingo không có index (chỉ mục) và không có explain, nên ở đây ta không đo kế hoạch: ta phân tích những con số explain đã được ghi lại, đúng việc một người vận hành làm với nhật ký truy vấn chậm.
 
-Tài liệu "Interpret Explain Plan Results" nói khoảng cách lớn giữa `totalDocsExamined` và `nReturned` gợi ý truy vấn có thể cần index, và `totalKeysExamined` = 0 nghĩa là không dùng index. Tỉ lệ đọc trên trả về là một con số gọn để xếp hạng.
+Trang docs chính thức "Interpret Explain Plan Results" nói khoảng cách lớn giữa `totalDocsExamined` và `nReturned` gợi ý truy vấn có thể cần index, và `totalKeysExamined` = 0 nghĩa là không dùng index. Tỉ lệ đọc trên trả về là một con số gọn để xếp hạng.
 
 ## Ví dụ
 
-Truy vấn `movies` không index trong tài liệu đọc 21349 tài liệu để trả 3809, tỉ lệ khoảng 5,6. Truy vấn có index tốt thì tỉ lệ gần 1.
+Truy vấn `movies` không index trong docs chính thức đọc 21.349 tài liệu để trả 3809, tỉ lệ khoảng 5,6. Truy vấn có index tốt thì tỉ lệ gần 1.
 
 ## Thực hành
 
@@ -75,7 +75,7 @@ The page "Interpret Explain Plan Results" says a large gap between `totalDocsExa
 
 ## Example
 
-The unindexed `movies` query in the docs reads 21349 documents to return 3809, a ratio of about 5.6. A query with a good index has a ratio close to 1.
+The unindexed `movies` query in the docs reads 21,349 documents to return 3809, a ratio of about 5.6. A query with a good index has a ratio close to 1.
 
 ## Practice
 

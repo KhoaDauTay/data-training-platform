@@ -6,6 +6,7 @@ module: update-pipeline
 title: Bẫy chuỗi bắt đầu bằng $ và $literal
 title_en: The dollar-string trap and $literal
 kind: predict
+runtime: browser
 minutes: 6
 objectives:
   - vi: Đoán đúng chuyện gì xảy ra khi một chuỗi bắt đầu bằng `$` nằm trong update dạng pipeline.

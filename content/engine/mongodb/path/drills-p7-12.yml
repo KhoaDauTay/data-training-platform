@@ -584,7 +584,7 @@
       ] } },
       { $group: { _id: '$city', stores: { $sum: '$st' }, customers: { $sum: '$cu' } } }
     ])
-  hint: { vi: "Mỗi cửa hàng đóng góp 1 vào cột cửa hàng, mỗi khách 1 vào cột khách; ghép rồi gộp theo thành phố.", en: "Each store adds 1 to the store column, each customer 1 to the customer column; stack, then group by city." }
+  hint: { vi: "Mỗi cửa hàng đóng góp 1 vào trường cửa hàng, mỗi khách 1 vào trường khách; ghép rồi gộp theo thành phố.", en: "Each store adds 1 to the store field, each customer 1 to the customer field; stack, then group by city." }
 
 # ---- mg.win_rank (Phần 10)
 - id: e-mg-d-win-rank-1
@@ -951,7 +951,7 @@
   hint: { vi: "Mảng nào lớn mãi theo thời gian?", en: "Which array keeps growing over time?" }
   why: { vi: "Đơn của một khách tăng không giới hạn, nên tham chiếu; trang hồ sơ chỉ cần vài đơn mới nhất.", en: "A customer's orders grow without limit, so reference them; the profile page only needs a few recent ones." }
   wrong:
-    - { option: 0, vi: "\"Đọc cùng nhau\" chưa đủ: mảng đơn lớn mãi sẽ chạm giới hạn 16 MB mỗi tài liệu và làm mỗi lần đọc hồ sơ nặng thêm.", en: "\"Read together\" is not enough: an ever-growing order array hits the 16 MB document limit and makes every profile read heavier." }
+    - { option: 0, vi: "\"Đọc cùng nhau\" chưa đủ: mảng đơn lớn mãi sẽ chạm giới hạn 16 MiB mỗi tài liệu và làm mỗi lần đọc hồ sơ nặng thêm.", en: "\"Read together\" is not enough: an ever-growing order array hits the 16 MiB document limit and makes every profile read heavier." }
 - id: e-mg-d-embed-vs-ref-4
   skill: mg.embed_vs_ref
   kind: review

@@ -6,8 +6,9 @@ module: aggregation
 title: Aggregation pipeline là gì
 title_en: What an aggregation pipeline is
 kind: concept
+runtime: docs
 minutes: 8
-viz: aggregation-pipeline
+viz: mg-pipeline
 objectives:
   - vi: Giải thích pipeline là dãy stage, mỗi stage nhận tài liệu từ stage trước.
     en: Explain that a pipeline is a list of stages, each taking documents from the stage before.
@@ -37,16 +38,16 @@ quiz:
       vi: Vì sao nên đặt `$match` ở đầu pipeline khi được?
       en: Why put `$match` at the start of a pipeline when you can?
     options:
-      - vi: Các stage sau xử lý ít tài liệu hơn, và `$match` đứng đầu dùng được index
+      - vi: Các stage sau xử lý ít tài liệu hơn, và `$match` đứng đầu dùng được index (chỉ mục)
         en: Later stages process fewer documents, and a leading `$match` can use an index
       - vi: Vì `$match` chỉ được phép là stage đầu tiên
         en: Because `$match` is only allowed as the first stage
-      - vi: Vì đặt ở chỗ khác thì kết quả luôn sai
-        en: Because anywhere else the result is always wrong
+      - vi: Không cần quan tâm, bộ tối ưu của MongoDB luôn tự dời mọi `$match` lên đầu
+        en: No need to care, MongoDB's optimizer always moves every `$match` to the front
     answer: 0
     why:
-      vi: "`$match` dùng được ở bất kỳ vị trí nào, nhưng đứng đầu thì nó lọc bớt dữ liệu sớm và có thể đọc qua index. Bộ tối ưu của MongoDB cũng tự dời một số `$match` lên trước khi an toàn."
-      en: "`$match` may appear anywhere, but at the start it trims data early and can read through an index. MongoDB's optimizer also moves some `$match` stages earlier when that is safe."
+      vi: "Nghe hợp lý vì bộ tối ưu của MongoDB có dời `$match` lên trước, nhưng chỉ khi an toàn: một `$match` trên trường do `$group` tạo ra thì không dời được. `$match` dùng được ở bất kỳ vị trí nào, nhưng đứng đầu thì nó lọc bớt dữ liệu sớm và có thể đọc qua index."
+      en: "It sounds right because MongoDB's optimizer does move `$match` earlier, but only when that is safe: a `$match` on a field created by `$group` cannot move. `$match` may appear anywhere, but at the start it trims data early and can read through an index."
 ---
 ## Ý chính
 

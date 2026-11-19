@@ -33,7 +33,7 @@ quiz:
       vi: "Mỗi collection chỉ có một index text, nhưng index đó gồm được nhiều trường. Index wildcard không phục vụ `$text`."
       en: "A collection has only one text index, but that index can hold several fields. A wildcard index cannot serve `$text`."
   - q:
-      vi: "Cửa hàng ở Đà Nẵng có vĩ độ 16.07 và kinh độ 108.22. Viết điểm GeoJSON nào cho index 2dsphere?"
+      vi: "Cửa hàng ở Đà Nẵng có vĩ độ 16,07 và kinh độ 108,22. Viết điểm GeoJSON nào cho index 2dsphere?"
       en: "A store in Da Nang is at latitude 16.07 and longitude 108.22. Which GeoJSON point do you write for a 2dsphere index?"
     options:
       - vi: "`{ type: \"Point\", coordinates: [16.07, 108.22] }`"
@@ -44,7 +44,7 @@ quiz:
         en: "`{ lat: 16.07, lng: 108.22 }`"
     answer: 1
     why:
-      vi: "GeoJSON ghi kinh độ trước, vĩ độ sau. Viết ngược thì 108.22 nằm ở chỗ vĩ độ, ngoài khoảng -90 đến 90 cho phép."
+      vi: "GeoJSON ghi kinh độ trước, vĩ độ sau. Viết ngược thì 108,22 nằm ở chỗ vĩ độ, ngoài khoảng -90 đến 90 cho phép."
       en: "GeoJSON lists longitude first, then latitude. Reversed, 108.22 sits in the latitude slot, outside the allowed -90 to 90."
   - q:
       vi: "Có index không phân biệt hoa thường `{ name: 1 }` với `collation: { locale: \"en\", strength: 2 }`. Truy vấn nào dùng được index này?"
@@ -78,7 +78,7 @@ quiz:
 
 ## Ý chính
 
-Bốn câu hỏi về index text, 2dsphere, collation và hidden. Đáp án dựa trên tài liệu MongoDB hiện hành, kiểm ngày 2026-11-20.
+Bốn câu hỏi về index (chỉ mục) text, 2dsphere, collation và hidden. Đáp án dựa trên docs chính thức của MongoDB hiện hành, kiểm ngày 2026-11-20.
 
 # EN
 

@@ -35,7 +35,7 @@ lab:
       ]
     }}
   steps:
-    - task: { vi: "Bảng `Sessions` lưu phiên đăng nhập; `expires_at` là thời điểm hết hạn (giây epoch). Bây giờ là 1795132800 (2026-11-20 00:00 UTC). Đọc các phiên **còn hiệu lực** của người dùng `USER#u1`.", en: "The `Sessions` table stores login sessions; `expires_at` is the expiry time (epoch seconds). Now is 1795132800 (2026-11-20 00:00 UTC). Read the **still valid** sessions of user `USER#u1`." }
+    - task: { vi: "Bảng `Sessions` lưu phiên đăng nhập; `expires_at` là thời điểm hết hạn (giây epoch). Bây giờ là `1795132800` (2026-11-20 00:00 UTC). Đọc các phiên **còn hiệu lực** của người dùng `USER#u1`.", en: "The `Sessions` table stores login sessions; `expires_at` is the expiry time (epoch seconds). Now is `1795132800` (2026-11-20 00:00 UTC). Read the **still valid** sessions of user `USER#u1`." }
       solution: |
         {"op": "Query", "input": {"TableName": "Sessions", "KeyConditionExpression": "pk = :u", "FilterExpression": "expires_at > :now", "ExpressionAttributeValues": {":u": {"S": "USER#u1"}, ":now": {"N": "1795132800"}}}}
       check: doc

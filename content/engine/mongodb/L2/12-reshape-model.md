@@ -6,6 +6,7 @@ module: modeling
 title: Đổi mô hình bằng pipeline
 title_en: Reshaping a model with a pipeline
 kind: lab
+runtime: browser
 minutes: 14
 objectives:
   - vi: Dựng hình "nhúng" (khách kèm số đơn và tổng chi) từ hai collection tham chiếu nhau.
@@ -52,7 +53,7 @@ lab:
         vi: 'Sau `$lookup`, `orders` là mảng đơn. `$size` đếm đơn; `$map` lấy số dòng mỗi đơn rồi `$sum` cộng lại.'
         en: 'After `$lookup`, `orders` is an array of orders. `$size` counts them; `$map` takes each order''s line count and `$sum` adds them up.'
     - task:
-        vi: 'Màn hình đơn hàng cần tên và thành phố của khách mà không gọi `$lookup` mỗi lần. Trả mọi đơn với `_id`, `status` và `buyer` là tài liệu lồng gồm `name` và `city` của khách.'
+        vi: 'Màn hình đơn hàng cần tên và thành phố của khách mà không gọi `$lookup` mỗi lần. Trả mọi đơn với `_id`, `status` và `buyer` là tài liệu nhúng (embedded document) gồm `name` và `city` của khách.'
         en: 'The order screen needs the customer''s name and city without a `$lookup` on every read. Return every order with `_id`, `status` and `buyer`, an embedded document holding the customer''s `name` and `city`.'
       solution: 'db.orders.aggregate([{ $lookup: { from: "customers", localField: "customer", foreignField: "_id", as: "c" } }, { $project: { status: 1, buyer: { name: { $arrayElemAt: ["$c.name", 0] }, city: { $arrayElemAt: ["$c.city", 0] } } } }])'
       check: doc

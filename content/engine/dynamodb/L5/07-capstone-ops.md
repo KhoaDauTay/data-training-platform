@@ -10,7 +10,7 @@ runtime: browser
 minutes: 25
 objectives:
   - { vi: "Đọc đúng dữ liệu còn hiệu lực khi TTL xóa trễ, và tính giá của item đã hết hạn", en: "Read only still-valid data while TTL deletes late, and price the expired items" }
-  - { vi: "Trả lời mỗi mẫu truy cập bằng đúng một request: Query, GSI thưa, TransactGetItems", en: "Answer each access pattern with exactly one request: Query, sparse GSI, TransactGetItems" }
+  - { vi: "Trả lời mỗi mẫu truy cập bằng đúng một request: Query, sparse GSI, TransactGetItems", en: "Answer each access pattern with exactly one request: Query, sparse GSI, TransactGetItems" }
   - { vi: "Chọn DAX, Streams và cách sao lưu cho từng phần của ứng dụng", en: "Choose DAX, Streams and the backup method for each part of the app" }
 requires: [e-dy-l5-02, e-dy-l4-12, e-dy-l5-06]
 sources:
@@ -50,7 +50,7 @@ lab:
       ]
     }}
   steps:
-    - task: { vi: "Mẫu 1, giỏ hàng còn dùng được: giỏ của khách `CUST#c1` có sort key `CART#<id>` và `expires_at` (giây epoch, là thuộc tính TTL). Bây giờ là 1795132800. Đọc các giỏ **chưa hết hạn** của khách này bằng một request.", en: "Pattern 1, carts still usable: the carts of customer `CUST#c1` have sort key `CART#<id>` and `expires_at` (epoch seconds, the TTL attribute). Now is 1795132800. Read this customer's **unexpired** carts with one request." }
+    - task: { vi: "Mẫu 1, giỏ hàng còn dùng được: giỏ của khách `CUST#c1` có sort key `CART#<id>` và `expires_at` (giây epoch, là thuộc tính TTL). Bây giờ là `1795132800`. Đọc các giỏ **chưa hết hạn** của khách này bằng một request.", en: "Pattern 1, carts still usable: the carts of customer `CUST#c1` have sort key `CART#<id>` and `expires_at` (epoch seconds, the TTL attribute). Now is `1795132800`. Read this customer's **unexpired** carts with one request." }
       solution: |
         {"op": "Query", "input": {"TableName": "FoodApp", "KeyConditionExpression": "pk = :c AND begins_with(sk, :k)", "FilterExpression": "expires_at > :now", "ExpressionAttributeValues": {":c": {"S": "CUST#c1"}, ":k": {"S": "CART#"}, ":now": {"N": "1795132800"}}}}
       check: doc
@@ -69,14 +69,14 @@ lab:
       check: doc
       ordered: true
       expect: { Count: 3, ScannedCount: 3 }
-      hint: { vi: "GSI thưa: Query trên chỉ mục; thứ tự tăng dần của `queue_since` là mặc định.", en: "A sparse GSI: Query the index; ascending `queue_since` order is the default." }
+      hint: { vi: "Sparse GSI: Query trên index; thứ tự tăng dần của `queue_since` là mặc định.", en: "A sparse GSI: Query the index; ascending `queue_since` order is the default." }
     - task: { vi: "Mẫu 4, màn hình xác nhận đơn: đọc `SUMMARY` rồi `PAYMENT` của đơn `o103` (`pk` = `ORDER#o103`) trong một lần đọc tất-cả-hoặc-không, theo thứ tự đó, và xin trả về `ConsumedCapacity`.", en: "Pattern 4, the order confirmation screen: read `SUMMARY` then `PAYMENT` of order `o103` (`pk` = `ORDER#o103`) in one all-or-nothing read, in that order, and ask for `ConsumedCapacity`." }
       solution: |
         {"op": "TransactGetItems", "input": {"TransactItems": [{"Get": {"TableName": "FoodApp", "Key": {"pk": {"S": "ORDER#o103"}, "sk": {"S": "SUMMARY"}}}}, {"Get": {"TableName": "FoodApp", "Key": {"pk": {"S": "ORDER#o103"}, "sk": {"S": "PAYMENT"}}}}], "ReturnConsumedCapacity": "TOTAL"}}
       check: doc
       ordered: true
       expect: { Count: 2 }
-      hint: { vi: "Hai `Get` trong `TransactItems`; kết quả theo đúng thứ tự các `Get`.", en: "Two `Get` in `TransactItems`; the result follows the order of the `Get` actions." }
+      hint: { vi: "Hai `Get` trong `TransactItems`; kết quả theo đúng thứ tự các `Get`.", en: "Two `Get` actions in `TransactItems`; the result follows the order of the `Get` actions." }
 quiz:
   - q: { vi: "Bước 1 trả `Count` 2, `ScannedCount` 5. Một khách khác để lại 40 giỏ, 38 giỏ đã hết hạn nhưng TTL chưa xóa, mỗi giỏ 1 KB. Query bước 1 (đọc cuối cùng) cho khách này tốn bao nhiêu RCU?", en: "Step 1 returns `Count` 2, `ScannedCount` 5. Another customer left 40 carts, 38 of them expired but not yet deleted by TTL, 1 KB each. How many RCU does the step 1 Query (eventually consistent) cost for this customer?" }
     options:
@@ -89,9 +89,9 @@ quiz:
     options:
       - { vi: "200 RCU", en: "200 RCU" }
       - { vi: "400 RCU", en: "400 RCU" }
-      - { vi: "800 RCU: 2 item × 2 RCU giao dịch × 200", en: "800 RCU: 2 items × 2 transactional RCU × 200" }
+      - { vi: "800 RCU: 2 item × 2 RCU transaction × 200", en: "800 RCU: 2 items × 2 transactional RCU × 200" }
     answer: 2
-    why: { vi: "Đọc giao dịch tốn 2 RCU mỗi item tới 4 KB, gấp đôi đọc mạnh. `ConsumedCapacity` ở bước 4 cho thấy 4 RCU một lần mở.", en: "A transactional read costs 2 RCU per item up to 4 KB, double a strong read. `ConsumedCapacity` in step 4 shows 4 RCU per open." }
+    why: { vi: "Đọc trong transaction tốn 2 RCU mỗi item tới 4 KB, gấp đôi đọc mạnh. `ConsumedCapacity` ở bước 4 cho thấy 4 RCU một lần mở.", en: "A transactional read costs 2 RCU per item up to 4 KB, double a strong read. `ConsumedCapacity` in step 4 shows 4 RCU per open." }
   - q: { vi: "Thực đơn của cửa hàng nổi tiếng bị đọc 5000 lần mỗi giây, chấp nhận trễ vài phút. Thanh toán (bước 4) phải luôn đúng. Đặt DAX thế nào?", en: "A popular store's menu is read 5000 times per second, a few minutes of staleness accepted. Payments (step 4) must always be right. Where does DAX go?" }
     options:
       - { vi: "Đọc thực đơn qua DAX; bước 4 là `TransactGetItems` nên DAX chuyển thẳng sang DynamoDB, không lưu", en: "Read the menu through DAX; step 4 is a `TransactGetItems`, so DAX passes it straight to DynamoDB, uncached" }
@@ -119,10 +119,10 @@ quiz:
 
 Bạn vận hành bảng `FoodApp` của một ứng dụng giao đồ ăn. Đi đủ vòng của cấp L5: thiết kế, truy vấn, giá và vận hành.
 
-- **Thiết kế**: `pk = CUST#<id>` gom hồ sơ, giỏ (`CART#…`) và đơn (`ORDER#<time>#<id>`) của một khách. `pk = ORDER#<id>` giữ `SUMMARY` và `PAYMENT` của một đơn. GSI thưa `KitchenQueue` chỉ chứa đơn đang nấu.
+- **Thiết kế**: `pk = CUST#<id>` gom hồ sơ, giỏ (`CART#…`) và đơn (`ORDER#<time>#<id>`) của một khách. `pk = ORDER#<id>` giữ `SUMMARY` và `PAYMENT` của một đơn. Sparse GSI `KitchenQueue` chỉ chứa đơn đang nấu.
 - **TTL**: giỏ có `expires_at`; TTL xóa trễ nên mọi lần đọc giỏ phải lọc theo thời gian.
 - **Ảnh chụp nhất quán**: màn hình xác nhận đọc `SUMMARY` và `PAYMENT` bằng `TransactGetItems`.
-- **Giá**: item bị lọc vẫn tính tiền; đọc giao dịch tốn gấp đôi.
+- **Giá**: item bị lọc vẫn tính tiền; đọc trong transaction tốn gấp đôi.
 - **Vận hành**: DAX cho đọc nóng chấp nhận trễ, Streams cho doanh thu, PITR cho lỗi ghi.
 
 ## Ví dụ

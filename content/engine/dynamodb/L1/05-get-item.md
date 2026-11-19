@@ -54,11 +54,11 @@ lab:
 
 ## Ý chính
 
-`GetItem` đọc **đúng một item** theo **khóa chính đầy đủ**. Nếu bảng có sort key, `Key` phải có cả partition key lẫn sort key. Thiếu một phần là lỗi `ValidationException`, không phải "tìm gần đúng".
+`GetItem` đọc **đúng một item** theo **khóa chính (primary key) đầy đủ**. Nếu bảng có sort key, `Key` phải có cả partition key lẫn sort key. Thiếu một phần là lỗi `ValidationException`, không phải "tìm gần đúng".
 
 Không có item nào khớp thì phản hồi không có `Item`. Đó không phải lỗi, và lần đọc đó **vẫn tốn** capacity.
 
-Mặc định `GetItem` đọc **eventually consistent**. Thêm `"ConsistentRead": true` để đọc strongly consistent, giá gấp đôi (bài L2).
+Mặc định `GetItem` đọc **nhất quán cuối** (eventually consistent): có thể chưa thấy lần ghi vừa xong. Thêm `"ConsistentRead": true` để đọc **nhất quán mạnh** (strongly consistent), giá gấp đôi (bài L2).
 
 ## Ví dụ
 
@@ -82,7 +82,7 @@ Bảng `Books` có 8 cuốn, khóa đơn `isbn`. Kết quả hiện ở tab Kế
 
 When no item matches, the response has no `Item`. That is not an error, and the read **still costs** capacity.
 
-By default `GetItem` is an **eventually consistent** read. Add `"ConsistentRead": true` for a strongly consistent read, at twice the price (level L2).
+By default `GetItem` is an **eventually consistent** read: it may miss a write that just finished. Add `"ConsistentRead": true` for a strongly consistent read, at twice the price (level L2).
 
 ## Example
 

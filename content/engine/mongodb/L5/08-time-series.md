@@ -26,7 +26,7 @@ quiz:
       - { vi: "Không, biểu thức khớp trong lệnh update chỉ được dùng `metaField`", en: "No, the match expression of an update can use only the `metaField`" }
     answer: 1
     why:
-      vi: "Tài liệu: biểu thức khớp trong lệnh update chỉ được chỉ định `metaField`; không cập nhật được các trường khác của tài liệu time series."
+      vi: "Docs chính thức: biểu thức khớp trong lệnh update chỉ được chỉ định `metaField`; không cập nhật được các trường khác của tài liệu time series."
       en: "The docs: match expressions in update commands can only specify the `metaField`; other fields of a time series document cannot be updated."
   - q:
       vi: "Shard một collection time series mới trên MongoDB 8.0. Shard key nên dựa vào trường nào?"
@@ -36,7 +36,7 @@ quiz:
       - { vi: "`metaField`", en: "`metaField`" }
     answer: 1
     why:
-      vi: "Từ 8.0, shard key chứa `timeField` bị deprecated cho collection time series, và tài liệu yêu cầu reshard theo `metaField`."
+      vi: "Từ 8.0, shard key chứa `timeField` bị deprecated cho collection time series, và docs chính thức yêu cầu reshard theo `metaField`."
       en: "From 8.0, shard keys containing the `timeField` are deprecated for time series collections, and the docs ask you to reshard on the `metaField`."
 ---
 
@@ -45,7 +45,7 @@ quiz:
 Dữ liệu time series gồm thời điểm, metadata (nhãn của nguồn, hiếm khi đổi) và các số đo. Collection time series (từ 5.0) ghi dữ liệu cùng nguồn và gần thời điểm cạnh nhau, ở dạng cột theo thứ tự thời gian: ít đĩa hơn, truy vấn và I/O hiệu quả hơn. Nó áp dụng mẫu bucket tự động.
 
 - `timeField` bắt buộc; `metaField` là nhãn nguồn và không thêm được sau khi tạo tài liệu.
-- Từ 6.3, MongoDB tự tạo index kép trên `metaField` và `timeField`.
+- Từ 6.3, MongoDB tự tạo index (chỉ mục) kép trên `metaField` và `timeField`.
 - Nén khối mặc định của collection time series là zstd.
 - Từ 9.0, dữ liệu nằm trong một namespace, gom thành bucket đã nén; khi truy vấn, MongoDB trả lại dạng một tài liệu cho mỗi phép đo.
 - Lệnh update chỉ được khớp theo `metaField`. Shard key chứa `timeField` bị deprecated từ 8.0. Zone sharding không hỗ trợ time series.
@@ -59,7 +59,7 @@ db.createCollection("weather", {
 })
 ```
 
-Đúng với tài liệu MongoDB hiện hành (có ghi chú 6.3, 8.0, 9.0), kiểm ngày 2026-11-20. mingo không có collection time series; lab bucket ở L4 cho thấy cùng ý tưởng.
+Đúng với docs chính thức của MongoDB hiện hành (có ghi chú 6.3, 8.0, 9.0), kiểm ngày 2026-11-20. mingo không có collection time series; lab bucket ở L4 cho thấy cùng ý tưởng.
 
 # EN
 

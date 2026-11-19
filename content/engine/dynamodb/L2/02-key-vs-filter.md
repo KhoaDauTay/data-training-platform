@@ -145,8 +145,8 @@ lab:
     ]}}
   steps:
     - task:
-        vi: Lấy các đơn của `C-02` có `total` trên 500000. So `Count` với `ScannedCount`.
-        en: Get the orders of `C-02` whose `total` is above 500000. Compare `Count` with `ScannedCount`.
+        vi: Lấy các đơn của `C-02` có `total` trên `500000`. Trước khi chạy, đoán `ScannedCount` bằng số đơn trả về hay bằng cả 4 đơn của khách, rồi so `Count` với `ScannedCount`.
+        en: Get the orders of `C-02` whose `total` is above `500000`. Before you run it, guess whether `ScannedCount` equals the orders returned or all 4 orders of the customer, then compare `Count` with `ScannedCount`.
       solution: |
         {"op": "Query", "input": {"TableName": "Orders",
           "KeyConditionExpression": "customerId = :c",
@@ -199,8 +199,8 @@ quiz:
         en: It is zero for the dropped item.
     answer: 1
     why:
-      vi: FilterExpression chạy sau khi Query đã đọc. Capacity tính trên `ScannedCount` (dữ liệu đã đọc), không phải `Count`.
-      en: A FilterExpression runs after the Query has read the items. Capacity is charged on what was read (`ScannedCount`), not on `Count`.
+      vi: Trả về ít item hơn nên dễ nghĩ là trả ít tiền hơn. Nhưng FilterExpression chạy sau khi Query đã đọc. Capacity tính trên `ScannedCount` (dữ liệu đã đọc), không phải `Count`.
+      en: Fewer items come back, so it is easy to think you pay less. But a FilterExpression runs after the Query has read the items. Capacity is charged on what was read (`ScannedCount`), not on `Count`.
 ---
 
 ## Ý chính

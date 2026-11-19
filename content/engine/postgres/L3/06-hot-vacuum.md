@@ -6,8 +6,9 @@ module: vacuum-hot
 title: HOT, prune và VACUUM
 title_en: HOT, pruning and VACUUM
 kind: concept
+runtime: docs
 minutes: 10
-viz: hot-chain
+viz: pg-hot
 objectives:
   - vi: Nêu hai điều kiện của một HOT update
     en: State the two conditions for a HOT update
@@ -32,13 +33,13 @@ quiz:
       vi: "HOT cần cả hai: không đổi cột nào mà index dùng (trừ BRIN), và trang còn chỗ. Câu thứ hai đổi `updated_at`, một cột có index, nên luôn phải chèn mục mới vào mọi index."
       en: "HOT needs both: no column used by an index changes (BRIN aside), and the page has room. The second statement changes `updated_at`, an indexed column, so it always inserts new entries into every index."
   - q:
-      vi: "Việc nào **không** phải là một trong bốn lý do chạy VACUUM theo tài liệu?"
+      vi: "Việc nào **không** phải là một trong bốn lý do chạy VACUUM theo docs chính thức?"
       en: "Which of these is **not** one of the four reasons to VACUUM listed in the docs?"
     options:
-      - { vi: "Thu hồi chỗ của dòng đã chết", en: "Recover the space of dead rows" }
+      - { vi: "Thu hồi chỗ của dead tuple", en: "Recover the space of dead rows" }
       - { vi: "Cập nhật visibility map cho index-only scan", en: "Update the visibility map for index-only scans" }
       - { vi: "Sắp lại dòng theo khóa chính", en: "Reorder rows by primary key" }
-      - { vi: "Chống mất dữ liệu do XID quay vòng", en: "Protect against data loss from XID wraparound" }
+      - { vi: "Chống mất dữ liệu do XID wraparound", en: "Protect against data loss from XID wraparound" }
     answer: 2
     why:
       vi: "Bốn lý do là: thu hồi chỗ, cập nhật thống kê cho planner, cập nhật visibility map, chống wraparound. VACUUM không sắp xếp lại dòng (đó là `CLUSTER`)."
@@ -46,6 +47,8 @@ quiz:
 ---
 
 ## Ý chính
+
+Hai bảng cùng bị UPDATE cả nghìn lần: vì sao một bảng phình to còn bảng kia gần như không?
 
 **HOT** (heap-only tuple): UPDATE mà bản mới nằm cùng trang và không cần mục index mới. Hai điều kiện:
 
@@ -56,7 +59,7 @@ Bản cũ trỏ sang bản mới qua `t_ctid`, tạo một **chuỗi HOT**. Inde
 
 **Prune**: khi một trang gần đầy được đọc, Postgres có thể dọn chuỗi HOT ngay trong trang. Line pointer đầu chuỗi thành **redirect** trỏ tới bản sống.
 
-**VACUUM** làm bốn việc: thu hồi chỗ của tuple chết (ghi vào **free space map**), cập nhật thống kê, bật bit all-visible trong **visibility map**, và freeze tuple cũ để chống XID quay vòng.
+**VACUUM** làm bốn việc: thu hồi chỗ của dead tuple (ghi vào **free space map**), cập nhật thống kê, bật bit all-visible trong **visibility map**, và freeze tuple cũ để chống XID wraparound.
 
 ## Ví dụ
 
@@ -73,6 +76,8 @@ Bấm qua sơ đồ chuỗi HOT: UPDATE → bản mới cùng trang → index v�
 # EN
 
 ## Key idea
+
+Two tables each take a thousand UPDATEs: why does one bloat while the other barely grows?
 
 **HOT** (heap-only tuple): an UPDATE whose new version stays on the same page and needs no new index entry. Two conditions:
 

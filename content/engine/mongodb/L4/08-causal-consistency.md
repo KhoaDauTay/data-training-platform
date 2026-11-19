@@ -36,7 +36,7 @@ quiz:
       - { vi: "Không, chỉ đọc `majority` và ghi `majority` mới được bảo đảm", en: "No, only `majority` reads and `majority` writes are guaranteed" }
     answer: 1
     why:
-      vi: "Tài liệu: session chỉ bảo đảm nhất quán nhân quả cho lần đọc read concern `majority` và lần ghi write concern `majority`."
+      vi: "Docs chính thức: session chỉ bảo đảm nhất quán nhân quả cho lần đọc read concern `majority` và lần ghi write concern `majority`."
       en: "The docs: sessions guarantee causal consistency only for reads with read concern `majority` and writes with write concern `majority`."
 ---
 
@@ -59,7 +59,7 @@ session = db.getMongo().startSession({ causalConsistency: true })
 
 Từ 8.0, `w: "majority"` xác nhận khi đa số đã ghi bền mục oplog, trước khi áp vào dữ liệu. Đọc từ secondary ngay sau đó ngoài session có thể chưa thấy lần ghi; trong session nhân quả thì thấy.
 
-Đúng với tài liệu MongoDB hiện hành, kiểm ngày 2026-11-20. Bài này dùng sơ đồ.
+Đúng với docs chính thức của MongoDB hiện hành, kiểm ngày 2026-11-20. Phần chạy thật cần máy chủ thật (nhiều phiên / replica set / AWS). Bài này dùng sơ đồ và kết quả ghi sẵn.
 
 # EN
 
@@ -82,4 +82,4 @@ session = db.getMongo().startSession({ causalConsistency: true })
 
 From 8.0, `w: "majority"` acknowledges once a majority has durably written the oplog entry, before applying it to the data. A read from a secondary right after, outside a session, may not see the write yet; inside a causal session it does.
 
-Matches the current MongoDB manual, checked 2026-11-20. This lesson uses a diagram.
+Matches the current MongoDB manual, checked 2026-11-20. The real run needs a real server (several sessions / replica set / AWS). This lesson uses diagrams and recorded results.

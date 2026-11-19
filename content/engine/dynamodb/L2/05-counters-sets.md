@@ -3,7 +3,7 @@ id: e-dy-l2-05
 engine: dynamodb
 level: L2
 module: safe-writes
-title: "Bộ đếm nguyên tử và tập hợp với ADD"
+title: "Atomic counter và tập hợp với ADD"
 title_en: "Atomic counters and sets with ADD"
 kind: lab
 runtime: browser
@@ -13,7 +13,7 @@ objectives:
     en: Increase a number with `ADD`, even when the attribute does not exist yet.
   - vi: Tạo và mở rộng một tập hợp chuỗi (`SS`) bằng `ADD`, bớt phần tử bằng `DELETE`.
     en: Create and grow a string set (`SS`) with `ADD`, and remove elements with `DELETE`.
-  - vi: Giải thích vì sao bộ đếm nguyên tử không idempotent.
+  - vi: Giải thích vì sao atomic counter không idempotent.
     en: Explain why an atomic counter is not idempotent.
 requires: [e-dy-l2-03]
 sources:
@@ -66,19 +66,19 @@ quiz:
     options:
       - vi: DynamoDB tự nhận ra lần gửi lại và bỏ qua.
         en: DynamoDB recognises the retry and ignores it.
-      - vi: Bộ đếm có thể bị cộng hai lần, vì bộ đếm nguyên tử không idempotent.
+      - vi: Bộ đếm có thể bị cộng hai lần, vì atomic counter không idempotent.
         en: The counter may be incremented twice, because an atomic counter is not idempotent.
       - vi: Request thứ hai luôn lỗi.
         en: The second request always fails.
     answer: 1
     why:
-      vi: AWS ghi rõ bộ đếm nguyên tử không idempotent. Dùng nó khi sai số nhỏ chấp nhận được (lượt xem). Với tiền hay tồn kho, dùng ghi có điều kiện để lần gửi lại bị từ chối.
-      en: AWS states that atomic counters are not idempotent. Use them where a small error is fine (view counts). For money or stock, use a conditional write so the retry is rejected.
+      vi: Dễ nghĩ DynamoDB nhận ra lần gửi lại, vì SDK tự gửi lại. Nhưng AWS ghi rõ atomic counter không idempotent, mỗi lần gửi là một lần cộng. Dùng nó khi sai số nhỏ chấp nhận được (lượt xem). Với tiền hay tồn kho, dùng ghi có điều kiện để lần gửi lại bị từ chối.
+      en: It is easy to assume DynamoDB spots the retry, since the SDK sends it on its own. But AWS states that atomic counters are not idempotent, so every send is one more addition. Use them where a small error is fine (view counts). For money or stock, use a conditional write so the retry is rejected.
 ---
 
 ## Ý chính
 
-`ADD` có hai nghĩa tùy kiểu:
+`ADD` là cách làm **atomic counter** (bộ đếm nguyên tử): cộng ngay trên server, không đọc trước. `ADD` có hai nghĩa tùy kiểu:
 
 - Với **số**: cộng vào (số âm để trừ). Thuộc tính chưa có thì coi như 0.
 - Với **tập hợp** (`SS`, `NS`, `BS`): thêm phần tử. Thuộc tính chưa có thì tạo tập mới.
@@ -99,13 +99,13 @@ DELETE formats {"paperback"}       -> {"audio", "ebook"}
 
 ## Thực hành
 
-Trang về UpdateExpression của AWS ghi: nhìn chung nên dùng `SET` thay cho `ADD` để thao tác idempotent. Nhưng `SET a = a + :n` cũng cộng lại mỗi lần gửi; chỉ một điều kiện trên chính thuộc tính đang sửa (bài trước) mới làm lần gửi lại vô hại. `ADD` vẫn là cách duy nhất để thêm phần tử vào tập hợp.
+Trang về UpdateExpression của AWS ghi: nhìn chung nên dùng `SET` thay cho `ADD` để thao tác idempotent (gửi lại nhiều lần vẫn cho cùng kết quả). Nhưng `SET a = a + :n` cũng cộng lại mỗi lần gửi; chỉ một điều kiện trên chính thuộc tính đang sửa (bài trước) mới làm lần gửi lại vô hại. `ADD` vẫn là cách duy nhất để thêm phần tử vào tập hợp.
 
 # EN
 
 ## Key idea
 
-`ADD` means two things depending on the type:
+`ADD` is how you build an **atomic counter**: it adds on the server, with no read first. `ADD` means two things depending on the type:
 
 - On a **number**: add to it (a negative number subtracts). A missing attribute counts as 0.
 - On a **set** (`SS`, `NS`, `BS`): add elements. A missing attribute becomes a new set.

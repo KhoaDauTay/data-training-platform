@@ -1599,6 +1599,15 @@
   vi: "Ghi kèm `ConditionExpression`; điều kiện sai thì `ConditionalCheckFailedException` và vẫn tốn WCU. Cách chống lost update; idempotent nếu điều kiện kiểm đúng thuộc tính đang sửa."
   en: "A write with a `ConditionExpression`; if the condition fails you get `ConditionalCheckFailedException` and still pay WCU. It prevents lost updates; it is idempotent when the condition checks the attribute being changed."
   doc: "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.ConditionExpressions.html"
+- term: optimistic locking
+  engines: [dynamodb]
+  level: L2
+  keep_en: true
+  vi_term: "optimistic locking"
+  avoid: "khóa lạc quan"
+  vi: "Cách chống lost update không giữ lock: item mang một thuộc tính số phiên bản, mỗi lần ghi kèm điều kiện phiên bản chưa đổi rồi tăng nó lên. Ai ghi sau với phiên bản cũ thì nhận `ConditionalCheckFailedException`."
+  en: "A way to prevent lost updates without holding a lock: the item carries a version-number attribute, and every write is conditional on that version being unchanged and then increments it. A writer holding an old version gets `ConditionalCheckFailedException`."
+  doc: "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.ConditionExpressions.html"
 - term: atomic counter
   engines: [dynamodb]
   level: L2
@@ -1694,10 +1703,10 @@
 - term: access pattern
   engines: [dynamodb, mongodb]
   level: L3
-  keep_en: true
-  vi_term: "access pattern"
+  keep_en: false
+  vi_term: "mẫu truy cập"
   avoid: "mẫu truy cập mạng, quyền truy cập"
-  vi: "Một câu hỏi cụ thể ứng dụng sẽ đọc/ghi (\"đơn của khách X theo ngày\"). DynamoDB thiết kế khóa từ danh sách access pattern, không từ thực thể."
+  vi: "Một câu hỏi cụ thể ứng dụng sẽ đọc/ghi (\"đơn của khách X theo ngày\"). DynamoDB thiết kế khóa từ danh sách mẫu truy cập, không từ thực thể. Lần đầu viết \"mẫu truy cập (access pattern)\", như product design §4."
   en: "A concrete question the application reads or writes (\"orders of customer X by date\"). DynamoDB keys are designed from the list of access patterns, not from entities."
   doc: "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-general-nosql-design.html"
 - term: single-table design

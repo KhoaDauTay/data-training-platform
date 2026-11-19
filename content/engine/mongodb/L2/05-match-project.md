@@ -6,6 +6,7 @@ module: aggregation
 title: $match, $project và $set trong pipeline
 title_en: $match, $project and $set in a pipeline
 kind: lab
+runtime: browser
 minutes: 12
 objectives:
   - vi: Lọc bằng `$match` rồi đổi hình kết quả bằng `$project`.
@@ -40,7 +41,7 @@ lab:
         vi: "`$match` trước, `$project` sau. `_id` tự giữ lại."
         en: "`$match` first, `$project` second. `_id` is kept automatically."
     - task:
-        vi: Với các đơn `"shipped"`, trả về `_id`, `total` và `vat` bằng 8% của `total`.
+        vi: Với các đơn `"shipped"`, trả về `_id`, `total` và `vat` bằng 8 % của `total`.
         en: For the `"shipped"` orders, return `_id`, `total` and `vat` equal to 8% of `total`.
       solution: 'db.orders.aggregate([{ $match: { status: "shipped" } }, { $project: { total: 1, vat: { $multiply: ["$total", 0.08] } } }])'
       check: doc
@@ -64,7 +65,7 @@ lab:
 
 Trong biểu thức, `"$total"` là giá trị của trường `total`. Một số toán tử biểu thức hay dùng: `$add`, `$subtract`, `$multiply`, `$divide`, `$round`, `$size`, `$cond`, `$dateToString`.
 
-Làm được: lọc rồi trả đúng hình dữ liệu một màn hình cần, kèm các cột tính sẵn.
+Làm được: lọc rồi trả đúng hình dữ liệu một màn hình cần, kèm các trường tính sẵn.
 
 ## Ví dụ
 
@@ -90,7 +91,7 @@ Ba bước trên `orders` (8 đơn ở hai cửa hàng `"S1"` và `"S2"`, tháng
 
 In an expression, `"$total"` is the value of field `total`. Some common expression operators: `$add`, `$subtract`, `$multiply`, `$divide`, `$round`, `$size`, `$cond`, `$dateToString`.
 
-You can now: filter and return exactly the data shape a screen needs, with computed columns.
+You can now: filter and return exactly the data shape a screen needs, with computed fields.
 
 ## Example
 

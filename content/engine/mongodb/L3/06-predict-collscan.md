@@ -23,32 +23,32 @@ predict:
        { year: { $gte: 2000, $lte: 2005 } }
     ).explain("executionStats")
   q:
-    vi: "Collection `movies` có 21349 tài liệu, chỉ có index `_id`. Truy vấn khớp 3809 tài liệu. Explain cho thấy gì?"
-    en: "The `movies` collection has 21349 documents and only the `_id` index. The query matches 3809 documents. What does explain show?"
+    vi: "Collection `movies` có 21.349 tài liệu, chỉ có index `_id`. Truy vấn khớp 3809 tài liệu. Explain cho thấy gì?"
+    en: "The `movies` collection has 21,349 documents and only the `_id` index. The query matches 3809 documents. What does explain show?"
   options:
-    - vi: "`IXSCAN` trên `_id`, `totalKeysExamined` = 21349"
-      en: "`IXSCAN` on `_id`, `totalKeysExamined` = 21349"
-    - vi: "`COLLSCAN`, `totalKeysExamined` = 0, `totalDocsExamined` = 21349"
-      en: "`COLLSCAN`, `totalKeysExamined` = 0, `totalDocsExamined` = 21349"
+    - vi: "`IXSCAN` trên `_id`, `totalKeysExamined` = 21.349"
+      en: "`IXSCAN` on `_id`, `totalKeysExamined` = 21,349"
+    - vi: "`COLLSCAN`, `totalKeysExamined` = 0, `totalDocsExamined` = 21.349"
+      en: "`COLLSCAN`, `totalKeysExamined` = 0, `totalDocsExamined` = 21,349"
     - vi: "`COLLSCAN`, `totalDocsExamined` = 3809"
       en: "`COLLSCAN`, `totalDocsExamined` = 3809"
     - vi: "`FETCH` trên `IXSCAN`, `totalDocsExamined` = 3809"
       en: "`FETCH` over `IXSCAN`, `totalDocsExamined` = 3809"
   answer: 1
   why:
-    vi: "Truy vấn lọc theo `year` mà không có index nào trên `year`, nên planner quét cả collection: đọc 21349 tài liệu để trả 3809. `COLLSCAN` không đọc khóa index nên `totalKeysExamined` = 0."
-    en: "The query filters on `year` and no index covers `year`, so the planner scans the whole collection: it reads 21349 documents to return 3809. A `COLLSCAN` reads no index keys, so `totalKeysExamined` = 0."
+    vi: "Truy vấn lọc theo `year` mà không có index nào trên `year`, nên planner quét cả collection: đọc 21.349 tài liệu để trả 3809. `COLLSCAN` không đọc khóa index nên `totalKeysExamined` = 0."
+    en: "The query filters on `year` and no index covers `year`, so the planner scans the whole collection: it reads 21,349 documents to return 3809. A `COLLSCAN` reads no index keys, so `totalKeysExamined` = 0."
 ---
 
 ## Ý chính
 
-Explain từ tài liệu MongoDB: kết quả dưới đây in trong trang "Interpret Explain Plan Results" trên bộ mẫu `sample_mflix`, không chạy trong trình duyệt. Trình duyệt không có `mongod` thật, nên bài này chỉ đọc và đoán.
+Ví dụ trong docs chính thức của MongoDB (chưa chạy trong trình duyệt): kết quả dưới đây in trong trang "Interpret Explain Plan Results" trên bộ mẫu `sample_mflix`. Trình duyệt không có `mongod` thật, nên bài này chỉ đọc và đoán.
 
 - `winningPlan.stage` là `COLLSCAN`: quét cả collection, từng tài liệu.
-- `totalKeysExamined` = 0: không đọc khóa index nào.
-- `totalDocsExamined` 21349 so với `nReturned` 3809: đọc khoảng 5,6 tài liệu cho mỗi tài liệu trả về. Khoảng cách lớn giữa hai số này là dấu hiệu truy vấn có thể cần index.
+- `totalKeysExamined` = 0: không đọc khóa index (chỉ mục) nào.
+- `totalDocsExamined` 21.349 so với `nReturned` 3809: đọc khoảng 5,6 tài liệu cho mỗi tài liệu trả về. Khoảng cách lớn giữa hai số này là dấu hiệu truy vấn có thể cần index.
 
-Sau khi tạo `{ year: 1 }`, tài liệu cho thấy kế hoạch thành `FETCH` trên `IXSCAN`, và cả ba con số đều là 3809.
+Sau khi tạo `{ year: 1 }`, docs chính thức cho thấy kế hoạch thành `FETCH` trên `IXSCAN`, và cả ba con số đều là 3809.
 
 ## Ví dụ
 
@@ -77,17 +77,17 @@ Sau khi tạo `{ year: 1 }`, tài liệu cho thấy kế hoạch thành `FETCH` 
 }
 ```
 
-Đúng với tài liệu MongoDB hiện hành, kiểm ngày 2026-11-20. Tài liệu ghi chú explain có thể đổi giữa các phiên bản.
+Đúng với docs chính thức của MongoDB hiện hành, kiểm ngày 2026-11-20. Docs chính thức ghi chú explain có thể đổi giữa các phiên bản.
 
 # EN
 
 ## Key idea
 
-Explain from the MongoDB docs: the output below is printed on the page "Interpret Explain Plan Results" for the `sample_mflix` sample set, not run in the browser. The browser has no real `mongod`, so this lesson is read and predict only.
+Example from the official MongoDB docs (not run in the browser): the output below is printed on the page "Interpret Explain Plan Results" for the `sample_mflix` sample set. The browser has no real `mongod`, so this lesson is read and predict only.
 
 - `winningPlan.stage` is `COLLSCAN`: a scan of the whole collection, document by document.
 - `totalKeysExamined` = 0: no index keys were read.
-- `totalDocsExamined` 21349 against `nReturned` 3809: about 5.6 documents read per document returned. A large gap between these two numbers suggests the query may need an index.
+- `totalDocsExamined` 21,349 against `nReturned` 3809: about 5.6 documents read per document returned. A large gap between these two numbers suggests the query may need an index.
 
 After creating `{ year: 1 }`, the docs show the plan becomes `FETCH` over `IXSCAN`, with all three numbers at 3809.
 

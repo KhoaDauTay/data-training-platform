@@ -42,7 +42,7 @@ predict:
 
 ## Ý chính
 
-Explain từ tài liệu MongoDB: hai kết quả dưới đây in trong trang "Interpret Explain Plan Results" (mục Compare Performance of Indexes), không chạy trong trình duyệt. Cả hai đều `FETCH` trên `IXSCAN` và trả 235 tài liệu; khác nhau ở số khóa đọc.
+Ví dụ trong docs chính thức của MongoDB (chưa chạy trong trình duyệt): hai kết quả dưới đây in trong trang "Interpret Explain Plan Results" (mục Compare Performance of Indexes). Cả hai đều `FETCH` trên `IXSCAN` và trả 235 tài liệu; khác nhau ở số khóa đọc.
 
 - `{ year: 1, rated: 1 }`: `totalKeysExamined` 246.
 - `{ rated: 1, year: 1 }`: `totalKeysExamined` 235, bằng đúng số tài liệu trả về.
@@ -80,13 +80,13 @@ Explain từ tài liệu MongoDB: hai kết quả dưới đây in trong trang "
 }
 ```
 
-Đúng với tài liệu MongoDB hiện hành, kiểm ngày 2026-11-20.
+Đúng với docs chính thức của MongoDB hiện hành, kiểm ngày 2026-11-20.
 
 # EN
 
 ## Key idea
 
-Explain from the MongoDB docs: the two results below are printed on the page "Interpret Explain Plan Results" (section Compare Performance of Indexes), not run in the browser. Both are `FETCH` over `IXSCAN` and return 235 documents; they differ in the number of keys read.
+Example from the official MongoDB docs (not run in the browser): the two results below are printed on the page "Interpret Explain Plan Results" (section Compare Performance of Indexes). Both are `FETCH` over `IXSCAN` and return 235 documents; they differ in the number of keys read.
 
 - `{ year: 1, rated: 1 }`: `totalKeysExamined` 246.
 - `{ rated: 1, year: 1 }`: `totalKeysExamined` 235, exactly the number of documents returned.
