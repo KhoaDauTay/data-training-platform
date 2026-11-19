@@ -627,8 +627,8 @@
   hint: { vi: "Đọc luật hòa: cùng hạng rồi nhảy hạng.", en: "Read the tie rule: share a rank, then skip." }
   wrong:
     - query: "db.orders.aggregate([{ $match: { store_id: 1, order_date: { $gte: ISODate('2026-10-01'), $lt: ISODate('2026-11-01') } } }, { $group: { _id: '$order_date', n: { $sum: 1 } } }, { $setWindowFields: { sortBy: { n: -1 }, output: { rk: { $denseRank: {} } } } }])"
-      vi: "`$denseRank` không nhảy hạng: sau ba ngày cùng hạng 1, ngày kế là hạng 2 thay vì hạng 4."
-      en: "`$denseRank` does not skip: after three days sharing rank 1, the next day is rank 2 instead of rank 4."
+      vi: "`$denseRank` không nhảy hạng: ngày ngay sau nhóm cùng hạng 1 nhận hạng 2 thay vì bị nhảy."
+      en: "`$denseRank` does not skip: the day right after the group tied at rank 1 gets rank 2 instead of skipping."
 - id: e-mgp-win-rank-4
   skill: mg.win_rank
   kind: review
@@ -787,10 +787,10 @@
     db.orders.find({ status: 'PAID', store_id: 4, order_date: { $gte: ISODate('2026-10-01') } }).explain('executionStats')
     { winningPlan: { stage: 'FETCH', filter: { store_id: 4, order_date: { $gte: … } },
         inputStage: { stage: 'IXSCAN', keyPattern: { status: 1 } } },
-      executionStats: { nReturned: 25, totalKeysExamined: 1180, totalDocsExamined: 1180 } }
+      executionStats: { nReturned: 25, totalKeysExamined: 1298, totalDocsExamined: 1298 } }
   options:
     - { vi: "Ổn: đã dùng index nên không cần làm gì", en: "Fine: an index is used, nothing to do" }
-    - { vi: "Index kém chọn lọc: đọc khoảng 1.180 tài liệu để trả 25; nên có index ghép gồm `status`, `store_id`, `order_date`", en: "A poorly selective index: about 1,180 documents read to return 25; a compound index on `status`, `store_id`, `order_date` fits better" }
+    - { vi: "Index kém chọn lọc: đọc khoảng 1.300 tài liệu để trả 25; nên có index ghép gồm `status`, `store_id`, `order_date`", en: "A poorly selective index: about 1,300 documents read to return 25; a compound index on `status`, `store_id`, `order_date` fits better" }
     - { vi: "Truy vấn đang quét cả collection", en: "The query is scanning the whole collection" }
   answer: 1
   hint: { vi: "So `totalDocsExamined` với `nReturned`.", en: "Compare `totalDocsExamined` with `nReturned`." }
@@ -824,7 +824,7 @@
   shown: |-
     db.orders.find({ status: 'PAID' }, { _id: 0, status: 1, order_date: 1 }).explain('executionStats')
     { winningPlan: { stage: 'PROJECTION_COVERED', inputStage: { stage: 'IXSCAN', keyPattern: { status: 1, order_date: 1 } } },
-      executionStats: { nReturned: 1096, totalKeysExamined: 1096, totalDocsExamined: 0 } }
+      executionStats: { nReturned: 1298, totalKeysExamined: 1298, totalDocsExamined: 0 } }
   options:
     - { vi: "Truy vấn không trả gì", en: "The query returns nothing" }
     - { vi: "Truy vấn phủ: mọi trường cần đều có trong index, không phải đọc tài liệu", en: "A covered query: every needed field is in the index, no document is read" }
