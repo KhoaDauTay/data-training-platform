@@ -21,12 +21,12 @@ Tài liệu này gồm bốn phần: hiện trạng đo trên bản live, nghiê
 **Logistics** (`routesSection`, `src/ui/homeView.ts`; `routeMap`, `src/art/logistics.ts`):
 
 - Bản đồ thế giới (bờ biển Natural Earth) với 7 tuyến từ Tiên Sa, đội tàu chạy nền. Dưới bản đồ là danh sách tuyến; bấm một tuyến thì mở hồ sơ tuyến và bài tuyến.
-- Hồ sơ mới: mọi tuyến ghi "mở sau đánh giá ch. N", đề nghị bấm cảng để đọc hồ sơ.
+- Hồ sơ mới: Shanghai và Laem Chabang đã mở nhưng ghi "đợt sau" (không có hồ sơ hay bài tuyến); năm tuyến còn lại ghi "mở sau đánh giá ch. N". Tức là hai tuyến duy nhất người mới bấm được thì không có gì bên trong.
 - Save đi xa: nhãn "Rotterdam · 2 chuyến", "Busan · 1 chuyến"…
   - "Chuyến" là **số việc đã xong có cảnh tàu** (`derive()` trong `src/scene.ts`), không phải số lô hàng.
   - 4/7 tuyến ghi "đợt sau" (Shanghai, Laem Chabang, Busan, Los Angeles), vì chỉ có Rotterdam, Singapore và Sydney là có bài tuyến (3 × 3 = 9 việc, tùy chọn).
 
-**E-commerce:** tiêu đề "Bản đồ giao hàng" và một hình SVG (`deliveryMap`). Đường từ Kho Đà Nẵng tới 7 thành phố, tô màu theo chương đã mở. Không có nút, không có danh sách, không có số.
+**E-commerce:** tiêu đề "Bản đồ giao hàng" và một hình SVG (`deliveryMap`). Đường từ Kho Đà Nẵng tới 7 thành phố, tô màu theo chương đã mở. Không có nút và không có số. Ở 375 px có danh sách chữ "Da Nang: đang giao", "Nha Trang: mở sau đánh giá thăng tiến chương 4"; ở 1280 chỉ có hình.
 
 **Finance:** tiêu đề "Bản đồ chi nhánh" và hình SVG 8 chi nhánh, mở dần theo chương.
 
@@ -117,14 +117,14 @@ Ký hiệu: **[đọc]** = đã đọc nguồn gốc; **[tóm tắt]** = chỉ c
 - **BigQuery Studio** **[đọc]** — https://docs.cloud.google.com/bigquery/docs/geospatial-visualize
   - "When your query results contain one or more GEOGRAPHY type columns, you can view the results in an interactive map… click the Visualization tab."
   - Bản đồ là **một cách xem kết quả truy vấn**, đặt cạnh bảng, đúng một câu mỗi lần.
-- **Databricks** **[tóm tắt]** — https://docs.databricks.com/aws/en/dashboards/manage/visualizations/maps
+- **Databricks** **[tóm tắt]** — https://docs.databricks.com/aws/en/dashboards/visualizations/maps
   - Choropleth từ kết quả có cột tên vùng. Tên phải khớp bộ định danh địa điểm có sẵn.
 - **Observable Plot** **[tóm tắt]** — https://observablehq.com/@observablehq/build-your-first-choropleth-map-with-observable-plot
   - Tô vùng bằng giá trị tra theo id.
   - Chia nhỏ theo năm (`fx`) thay cho hoạt cảnh: https://observablehq.com/@fil/faceted-choropleth.
 - **Quy ước bản đồ học:**
-  - Axis Maps **[đọc]** — https://www.axismaps.com/guide/proportional-symbols: "choropleth maps should only be made with standardized data". Ký hiệu tỉ lệ dùng được cho số đếm. Ký hiệu chồng nhau là vấn đề thường gặp, độ trong suốt là giải pháp một phần.
-  - Datawrapper **[tóm tắt]** — https://www.datawrapper.de/docs/category/choropleth-symbol-maps; Penn State GEOG 486 **[tóm tắt]** — https://courses.ems.psu.edu/geog486/book/export/html/893: người đọc ước lượng diện tích ký hiệu kém, nên **phải ghi số**.
+  - Axis Maps **[đọc]** — https://www.axismaps.com/guide/proportional-symbols: "choropleth maps should only be made with standardized data". Ký hiệu tỉ lệ dùng được cho số đếm. Ký hiệu chồng nhau là vấn đề thường gặp, độ trong suốt là giải pháp một phần. Theo tóm tắt tìm kiếm của cùng trang: người đọc ước lượng diện tích ký hiệu kém, nên **phải ghi số**.
+  - Datawrapper **[tóm tắt]** — https://www.datawrapper.de/docs/category/choropleth-symbol-maps (choropleth tô vùng, symbol map đặt ký hiệu tại điểm); Penn State GEOG 486 **[tóm tắt]** — https://courses.ems.psu.edu/geog486/book/export/html/893 (số đếm thì dùng ký hiệu tỉ lệ, hoặc chuẩn hóa trước khi tô màu).
   - Áp vào BoonData:
     - số đếm/tổng (`COUNT`, `SUM`) dùng **chấm to nhỏ**;
     - tỉ lệ, trung bình (`AVG`, %) dùng **màu theo bậc, kèm nhãn số**;
@@ -134,10 +134,10 @@ Ký hiệu: **[đọc]** = đã đọc nguồn gốc; **[tóm tắt]** = chỉ c
 
 - **SQL Murder Mystery** (Knight Lab) **[đọc: README repo]** — https://github.com/NUKnightLab/sql-mysteries
   - "a self-directed lesson to learn SQL concepts and commands": một vụ án, manh mối nằm trong dữ liệu.
-  - Hình duy nhất là sơ đồ lược đồ (`schema.png`). Hình đó là công cụ làm bài, không phải trang trí.
+  - Repo có sơ đồ lược đồ (`schema.png`) mà người chơi dùng để viết JOIN, tức là hình phục vụ việc làm bài (ngoài ra có một ảnh thám tử minh họa).
 - **SQL Island** (TU Kaiserslautern) **[tóm tắt]** — https://sql-island.informatik.uni-kl.de/: câu chuyện thoát đảo, mỗi bước là một câu SQL, phản hồi ngay.
 - **SQL Noir** **[tóm tắt]** — https://www.producthunt.com/products/sql-noir: mỗi vụ một CSDL, viết SQL thật để đi tiếp.
-- **Điểm chung:** "bản đồ" của các game này là **câu hỏi kế tiếp mà dữ liệu trả lời**. Không game nào có bản đồ tiến độ tách khỏi dữ liệu.
+- **Điểm chung (theo README và các tóm tắt, chưa chơi lại từng game):** thứ dẫn người chơi đi tiếp là **câu hỏi kế tiếp mà dữ liệu trả lời**, không phải một bản đồ tiến độ.
 
 ### 2.6 Hỗ trợ tiếp cận (a11y)
 
@@ -154,7 +154,9 @@ Ký hiệu: **[đọc]** = đã đọc nguồn gốc; **[tóm tắt]** = chỉ c
 
 | Ràng buộc | Nguồn | Hệ quả |
 |---|---|---|
-| Không lộ đáp án | L25 | Bản đồ chỉ vẽ (a) kết quả của chính người chơi (`app.lastRun`), hoặc (b) Solution của việc **đã giải**, như `kpiTiles` |
+| Không lộ đáp án | L25 | Bản đồ chỉ vẽ (a) kết quả của chính người chơi (`app.lastRun` hoặc câu chạy trên trang Bản đồ), hoặc (b) Solution của việc **đã giải**, như `kpiTiles`. Câu SQL mẫu trên trang Bản đồ không được trùng kết quả với Solution nào (test như `starterCards.test.ts`) |
+| Không lộ cốt truyện | L49 (`after: 7` cho "+40%") | Câu hỏi/nhiệm vụ chỉ thẳng vào hook E4 (Kite), H1 (Quang Ngai), GRI châu Âu chỉ hiện **sau** chương có việc dùng hook đó (`after: N`) và chỉ dùng bảng đã mở (`unlockedTables()`). Trước mốc đó, câu hỏi ở điểm ấy là câu trung tính (đếm đơn, đếm khoản vay) |
+| Khung của roadmap v22 | `roadmap-v22.md` V22-A, S1, D-V22-1 | Bản đồ phải có SQL người học **tự chạy** ngay trên trang (`runSandboxed`, 0 XP); bấm điểm mở câu hỏi số liệu; kết quả vẽ lại lên bản đồ; phần thưởng tuyến/làn giữ nguyên; chunk lười `mapteach` ≤ 8 KB, main +1 |
 | Không backend, không tile hay API bản đồ ngoài | CLAUDE.md, offline/PWA | Dùng `src/art/coast.ts` (Natural Earth, đã có). Bản đồ Việt Nam vẽ cách điệu như `CITIES`/`BRANCHES` hiện tại |
 | Có khóa địa lý | — | `ports` **không có** tọa độ. Chỉ 7 cảng + Tiên Sa có lon/lat (`LANE_GEO`, `src/art/seaLanes.ts`). Cần một bảng tĩnh cho ~22 mã `ports` (cả sân bay: dùng tọa độ thành phố). `CITIES` (E-com) và `BRANCHES` (Finance) đã khớp tên seed |
 | Khung bản đồ L119 | L119 | lon −12…254,7. **New York (−74°) nằm ngoài khung**, cần mũi tên ở mép hoặc nới khung. VNSGN/VNHPH phải có điểm |
@@ -180,12 +182,12 @@ Ký hiệu: **[đọc]** = đã đọc nguồn gốc; **[tóm tắt]** = chỉ c
   - Kết quả có hai khóa cảng (`pol`, `pod`) thì vẽ đường, độ dày theo giá trị. Nếu cặp cảng có trong `LANE_GEO` thì vẽ theo tuyến biển, không thì vẽ cung tượng trưng có ghi chú.
   - Có cột ngày (`month_end`, `date_trunc`) thì thêm thanh kéo thời gian (native range). Kéo để xem từng tháng; không có nút Play.
 - Bấm một ký hiệu thì sáng dòng đó trong tab Kết quả, và ngược lại (liên kết theo Ainsworth).
-- Trang `#/d/<domain>/map` thành **"Bản đồ kết quả"**:
-  - ở trên: bản đồ to của lần chạy gần nhất ở domain đó, cùng một câu tóm tắt;
-  - ở dưới: 3 **câu hỏi gợi mở** bằng lời (không SQL, không tên cột, theo problem-design §1), mỗi câu có nút "Mở Sandbox".
-  - Ví dụ E-com: "Thành phố nào giao trễ nhiều nhất? Nếu chỉ xét một hãng giao hàng từ tháng 9 thì sao?"
-  - Ví dụ Finance: "Chi nhánh nào có tỉ trọng nợ quá hạn tăng nhanh nhất từ tháng 6 tới tháng 10?"
-  - Sandbox không chấm điểm và không cho starter chứa đáp án.
+- Trang `#/d/<domain>/map` thành **"Bản đồ kết quả"** (khớp khung V22-A):
+  - bản đồ to; **bấm một điểm** (cảng/thành phố/chi nhánh, là `<button>`) mở một câu hỏi số liệu bằng lời cạnh bản đồ, kèm ô SQL nhỏ có sẵn một câu **mẫu chạy được** (Chạy, không Nộp; `runSandboxed` trên schema domain, 0 XP);
+  - câu mẫu cố ý "chưa đủ". Ví dụ E-com: tỉ lệ trễ theo thành phố trên mọi đơn, ra bản đồ gần như đều màu. Câu hỏi hỏi tiếp "Nếu chỉ xét một hãng giao hàng từ tháng 9 thì sao?"; người học tự thêm điều kiện và thấy Hue/Nha Trang/Da Nang lên bậc cao nhất;
+  - ví dụ Finance: câu mẫu ra tỉ trọng nợ quá hạn theo chi nhánh ở một tháng; câu hỏi: "Chi nhánh nào tăng nhanh nhất từ tháng 6 tới tháng 10?" (thanh kéo tháng khi người học thêm cột tháng);
+  - câu hỏi chỉ thẳng vào hook chỉ hiện sau mốc chương (§3); trước đó điểm ấy có câu trung tính;
+  - dưới bản đồ: một câu tóm tắt kết quả + danh sách HTML theo giá trị; danh sách tuyến và hồ sơ tuyến Logistics giữ ở đây (phần thưởng giữ nguyên).
 
 ```
 ┌ Kết quả │ Biểu đồ │ Bản đồ ┐  "SQL đã đổi" khi editor khác lastRun (như mọi tab)
@@ -226,16 +228,17 @@ Kết quả không có cột địa điểm → tab tắt, có dòng lý do:
 - Kéo thanh thời gian thì nội suy màu/kích thước 200 ms. Giảm chuyển động = đổi ngay.
 - Vẽ lại do `rerender()` không chạy hoạt cảnh.
 
-**Khối lượng:** M, khoảng 5–6 ngày.
+**Khối lượng:** M, khoảng 6 ngày dev + 1 ngày duyệt bằng mắt.
 
 - `src/viz/geo.ts` thuần: `geoSpec(result, domain)` nhận dạng khóa và loại số. Test trên PGlite thật với các Solution ở §1.4, kèm ca âm (trùng tên Sydney cảng/sân bay, `region`, NULL).
+- `src/mapQueries.ts` hoặc `content/*/map.yml`: câu hỏi + SQL mẫu mỗi điểm (VI/EN, `after:`). Test: chạy được, chỉ dùng bảng đã mở ở chương đó, không trùng kết quả Solution nào.
 - Bảng tọa độ ~22 cảng + 7 thành phố + 8 chi nhánh.
 - Renderer SVG dùng chung bờ biển/khung với `routeMap`. Bản đồ Việt Nam lấy tọa độ đã có của `CITIES`/`BRANCHES`.
 - Tab và trang, i18n khoảng 20 khóa, kiểm a11y bằng axe.
 
 **Ngân sách:**
 
-- Chunk lười mới `geomap` ≤ 8 KB, nạp khi mở tab hoặc trang.
+- Chunk lười mới (`mapteach`, tên theo roadmap v22) ≤ 8 KB, nạp khi mở tab hoặc trang.
 - Bờ biển nhập từ chunk `art` (đã được nạp trước lúc rảnh).
 - Main thêm khoảng 0,5 KB: đăng ký tab + bảng khóa để quyết định bật tab.
 
@@ -292,8 +295,8 @@ Atlas · Finance                                  [Lớp: ☑ Nợ quá hạn >3
 
 **Ngân sách:**
 
-- `geomap` khoảng 8 KB.
-- Nội dung vào chunk `lanes`/`fin`/`ecom`. Lưu ý `ecom` còn 9,7 KB trống, `fin` đã phải tách (L181, L185).
+- `mapteach` khoảng 8 KB.
+- Nội dung vào chunk `lanes`/`fin`/`ecom`. Đo hôm nay (`check-budget`): `ecom` 48/50 KB (gần trần, phải vào chunk khác), `fin` 30/50 (sau khi tách ở L185).
 
 **Rủi ro:**
 
@@ -328,14 +331,14 @@ Lý do:
 2. Không lộ đáp án ngay từ thiết kế. Không cần nội dung mới, không đổi seed, không đổi Save.
 3. Dữ liệu đã có đủ điểm nóng (§1.4) để câu hỏi gợi mở trên trang có câu trả lời thật.
 
-**Phạm vi đợt 1** (khoảng 6 ngày dev + 1 ngày duyệt bằng mắt):
+**Phạm vi đợt 1** (khoảng 6 ngày dev + 1 ngày duyệt bằng mắt; đây là luồng V22-A):
 
-- tab Bản đồ cho ba domain;
-- trang "Bản đồ kết quả" có 3 câu hỏi gợi mở mỗi domain;
-- chunk `geomap`;
-- danh sách tuyến Logistics và hồ sơ tuyến chuyển xuống Tổng quan (phần C);
-- bỏ khóa giả ở E-com/Finance;
-- đồ hình đẹp của L117–L120 giữ ở Tổng quan và dock.
+- tab Bản đồ trong workspace cho ba domain;
+- trang "Bản đồ kết quả": bấm điểm → câu hỏi + SQL mẫu chạy tại chỗ, kết quả vẽ lại lên bản đồ (đạt S1 của roadmap v22);
+- chunk `mapteach`;
+- danh sách tuyến và hồ sơ tuyến Logistics giữ trên trang, dưới bản đồ (phần thưởng giữ nguyên);
+- từ hướng C chỉ lấy một ý: bỏ hoặc đổi chữ khóa giả ở E-com/Finance (nếu user đồng ý D-M2);
+- đồ họa của L117–L120 giữ ở Tổng quan và dock.
 
 **Đợt 2 (tùy chọn):** ba nhiệm vụ bản đồ của hướng B, chạy trên renderer của A, và loại thẻ dashboard `map` (thêm vào `CARD_KINDS`/`KIND_SKILL`; kiểm `readDashboard` để bản cũ bỏ qua loại lạ, không cần field mới).
 
@@ -351,3 +354,4 @@ Lý do:
 - **D-M2.** Có bỏ khóa thành phố/chi nhánh theo chương ở E-com/Finance không? Khóa là luật game nhưng trái với dữ liệu.
 - **D-M3.** New York: nới khung bản đồ L119 (đổi tỉ lệ 5:2) hay vẽ mũi tên ở mép?
 - **D-M4.** Mục nav "Bản đồ" có giữ tên không, hay đổi thành "Bản đồ kết quả"? `NAV_ICON` vẫn là `map`.
+- **D-M5.** Mốc `after:` cho ba câu hỏi chỉ vào hook (E4, H1, GRI): mặc định là sau đánh giá thăng tiến của chương có việc dùng hook đó (GRI giữ `after: 7` như L49).
