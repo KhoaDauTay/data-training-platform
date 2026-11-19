@@ -72,8 +72,6 @@ export function kpiView(v: KpiValue, unit: string): HTMLElement {
 
 export const KIND_LABEL: Record<CardKind, Key> = { table: 'card.kind.table', number: 'card.kind.number', bar: 'card.kind.bar', line: 'card.kind.line' };
 export const skillOf = (id: string) => SKILLS.find((s) => s.id === id)!;
-/** "Cột: mở khi học …" chapter colour of the skill that opens the kind (product-design-v3 §8). */
-const kindColor = (c: Card) => chapterColor(skillOf(KIND_SKILL[c.kind]).chapter);
 
 /** What a card shows for its result: a big number, the first rows, bars or a line (shared with the pin dialog's preview). */
 export function cardBody(c: Card, r: QueryResult): HTMLElement {
@@ -89,7 +87,7 @@ export function cardBody(c: Card, r: QueryResult): HTMLElement {
   if (!spec || spec.kind !== c.kind) return h('p', { class: 'm-0 text-muted' }, t('chart.empty', { max: MAX_POINTS }));
   const n = c.kind === 'bar' ? BAR_ROWS : MAX_POINTS;
   const shown = { ...r, rows: r.rows.slice(0, n) };
-  return h('div', { class: 'overflow-x-auto' }, c.kind === 'bar' ? bars(shown, spec, col, kindColor(c), 'card') : line(shown, spec, col, kindColor(c), 'card'), cut(n));
+  return h('div', { class: 'overflow-x-auto' }, c.kind === 'bar' ? bars(shown, spec, col, 'card') : line(shown, spec, col, 'card'), cut(n));
 }
 
 /** Once per session, one card after another (src/dashboard.ts cardRunner); a card that timed out is saved as slow. */

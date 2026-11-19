@@ -19,7 +19,7 @@ import { renderFlow } from './flowView';
 import { sandboxTables, visibleTables } from './myDataView';
 import { renderSteps } from './stepsView';
 import { tablesIn } from './tryPreview';
-import { registerTab } from './tabs';
+import { emptyState, registerTab } from './tabs';
 
 export interface VizDeps {
   db: DbClient;
@@ -35,7 +35,7 @@ export interface VizDeps {
 function lastRunSql(host: HTMLElement, deps: VizDeps): string | undefined {
   const run = app.lastRun;
   if (!run) {
-    host.append(h('p', { class: 'muted' }, t('res.runFirst')));
+    host.append(emptyState('code', t('res.runFirst')));
     return undefined;
   }
   if (deps.editorSql().trim() !== run.sql.trim()) host.append(h('p', { class: 'stale', role: 'note' }, t('res.stale')));
@@ -112,8 +112,8 @@ function registerChartTab(deps: VizDeps): void {
     render: (host) => {
       if (lastRunSql(host, deps) === undefined) return;
       const result = app.lastRun?.result;
-      if (result) renderChart(host, result, ticketColor());
-      else host.append(h('p', { class: 'muted' }, t('chart.runError')));
+      if (result) renderChart(host, result);
+      else host.append(emptyState('alert', t('chart.runError')));
     },
   });
 }

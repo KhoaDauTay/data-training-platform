@@ -46,6 +46,7 @@ vi.mock('../src/ui/dom', () => ({
   richText: () => fakeEl(),
   announce: () => {}, // v12.0 A1: tested in tests/a11y.test.ts
   byId: () => fakeEl(),
+  kbd: () => fakeEl(), // ui-ux-v7 T1: the shortcut chip
 }));
 
 vi.mock('../src/ui/avatar', () => ({ avatar: () => fakeEl() }));

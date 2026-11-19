@@ -58,17 +58,36 @@ export function errorNote(e: unknown, sql?: string): string | undefined {
 }
 
 /**
- * Postgres' message unchanged (a real skill to read), then its HINT, then a teaching note in the UI language.
- * `withNote: false` in the Result tab: Boon already explains it under the buttons.
+ * ui-ux-v7 W1: the line of `sql` that holds Postgres' 1-based character `pos`, and a caret line under it. The caret's indent copies
+ * the tabs before it and drops combining marks (a decomposed Vietnamese letter is one column), so `^` sits under the right character.
+ */
+export function caretAt(sql: string, pos: number): { line: string; caret: string; col: number } | undefined {
+  if (!(pos >= 1) || pos > sql.length + 1) return undefined;
+  const before = sql.slice(0, pos - 1);
+  const start = before.lastIndexOf('\n') + 1;
+  const end = sql.indexOf('\n', start);
+  const line = (end < 0 ? sql.slice(start) : sql.slice(start, end)).replace(/\r$/, '');
+  const prefix = before.slice(start).replace(/[̀-ͯ]/g, '');
+  return { line, caret: `${prefix.replace(/[^\t]/g, ' ')}^`, col: [...prefix].length + 1 };
+}
+
+/**
+ * Postgres' message unchanged (a real skill to read) after its SQLSTATE chip, the SQL line with a caret at `position` (when the
+ * SQL is known), then its HINT, then a teaching note in the UI language. `withNote: false` in the Result tab: Boon already explains it under the buttons.
  */
 export function errorView(e: unknown, withNote = true, sql?: string): HTMLElement {
   const info = sqlErrorInfo(e);
   if (!info) return h('pre', { class: 'error' }, errorText(e));
   const note = withNote && explainError(info, sql);
+  const at = sql && info.position ? caretAt(sql, info.position) : undefined;
   return h('div', { class: 'space-y-1' },
-    h('pre', { class: 'error' }, info.message),
-    info.hint ? h('p', { class: 'muted' }, `HINT: ${info.hint}`) : null,
-    note ? h('p', { class: 'border-l-4 border-accent pl-2' }, t(note)) : null);
+    h('p', { class: 'm-0 flex flex-wrap items-baseline gap-2' },
+      h('span', { lang: 'en', class: 'rounded-(--r-chip) bg-panel px-2 text-caption font-bold tabular-nums text-bad ring-1 ring-bad/40' }, info.code),
+      h('span', { lang: 'en', class: 'error font-mono text-body-sm' }, info.message)),
+    at ? h('pre', { lang: 'en', class: 'm-0 overflow-x-auto font-mono text-body-sm text-ink' }, at.line, '\n',
+      h('span', { class: 'font-bold text-bad', 'aria-hidden': 'true' }, at.caret), h('span', { class: 'sr-only' }, ` ${t('err.at', { n: at.col })}`)) : null,
+    info.hint ? h('p', { class: 'muted m-0' }, `HINT: ${info.hint}`) : null,
+    note ? h('p', { class: 'm-0 border-l-4 border-accent pl-2' }, t(note)) : null);
 }
 
 /**

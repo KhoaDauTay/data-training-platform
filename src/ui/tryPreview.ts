@@ -95,7 +95,7 @@ export function tryPreview(solution: string, schema: SchemaId): HTMLElement {
         pending(meta) ? loading() : m ? h('div', { class: 'space-y-1.5' }, ...tables.map((x) => tableBox(schema, x, m))) : errorView(meta.error)),
       h('div', {}, subhead(t('preview.expected')),
         h('p', { class: 'mt-0 mb-1 text-sm text-muted' }, t('preview.byPosition')),
-        pending(exp) ? loading() : e ? renderResult(positional(e.rows, e.columns.length, e.types), undefined, 3) : errorView(exp.error))));
+        pending(exp) ? loading() : e ? renderResult(positional(e.rows, e.columns.length, e.types), undefined, 3, undefined, { types: false }) : errorView(exp.error))));
   };
   draw();
   for (const c of [meta.p, exp.p]) void c.then(() => host.isConnected && draw());
@@ -139,7 +139,7 @@ export const hasDiff = (r: Fail): r is Extract<Fail, { reason: 'rows' }> => r.re
 export function diffView(r: Fail): HTMLElement | null {
   if (!hasDiff(r)) return null;
   const block = (title: string, rows: unknown[][], n: number): HTMLElement | null =>
-    rows.length ? h('div', {}, subhead(title), renderResult(positional(rows, rows[0].length), undefined, 3, t('diff.caption', { shown: rows.length, n }))) : null;
+    rows.length ? h('div', {}, subhead(title), renderResult(positional(rows, rows[0].length), undefined, 3, t('diff.caption', { shown: rows.length, n }), { types: false })) : null;
   return h('div', { class: 'mt-2 space-y-2' }, ...nodes(
     block(t('diff.extra'), r.extraRows, r.extra),
     block(t('diff.missing'), r.missingRows, r.missing)));

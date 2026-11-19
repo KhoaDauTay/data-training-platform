@@ -11,12 +11,12 @@ import { SKILLS, xpFor } from '../progress';
 import { isClosed, keepsWork, readDraft, schemaOf, workKey, writeDraft } from '../session';
 import { app, done, editorSchema, initialDoc, persist, stepKey, type LastRun } from '../state';
 import { localStore } from '../storage';
-import { BTN_SUBMIT } from '../theme';
+import { BTN_SECONDARY, BTN_SUBMIT, cx } from '../theme';
 import { blanksIn, fillAction, firstBlank, type Ticket } from '../tickets';
 import { DRILL_ID } from '../save';
 import { diffView, hasDiff, verdictText } from './tryPreview';
 import { celebrate, react } from './celebrate';
-import { announce, h, richText } from './dom';
+import { announce, h, kbd, richText } from './dom';
 import { createEditor, type Editor } from './editor';
 import { avatar } from './avatar';
 import { errorNote, errorText, errorView, gradeMessage, mascotOf, runSummary, voiceKey } from './feedback';
@@ -117,18 +117,40 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
   let fillNote = false;
 
   const editorHost = h('div', { lang: 'en', class: 'editor overflow-hidden rounded-xl ring-1 ring-line' });
-  const runBtn = h('button', { type: 'button', onclick: () => void run() });
+  // ui-ux-v7 W1/M1: Run is the second level, Submit the main button (right); 44 px targets on phones.
+  const runBtn = h('button', { type: 'button', class: cx(BTN_SECONDARY, 'px-4 max-md:min-h-11'), onclick: () => void run() });
   // EXPLAIN always describes what was just run: run the editor SQL, and open the tab only if that run succeeded for this editor.
-  const explainBtn = h('button', { type: 'button', onclick: () => void run('explain') });
-  const formatBtn = h('button', { type: 'button', onclick: () => void format() });
-  const submitBtn = h('button', { type: 'button', class: BTN_SUBMIT, onclick: () => void submit() });
+  // Format and EXPLAIN show inline when the pane is ≥ 640 px wide, else in the "⋯ Tools" menu (a container query on the row).
+  const tool = (onclick: () => void, menu: boolean) => h('button', {
+    type: 'button',
+    class: menu ? 'w-full rounded-(--r-inset) border-0 bg-transparent px-3 py-2 text-left whitespace-nowrap hover:bg-code' : '@max-[640px]:hidden',
+    onclick: () => {
+      if (menu) tools.open = false;
+      onclick();
+    },
+  });
+  const explainBtn = tool(() => void run('explain'), false);
+  const formatBtn = tool(() => void format(), false);
+  const explainItem = tool(() => void run('explain'), true);
+  const formatItem = tool(() => void format(), true);
+  const toolsLabel = h('span');
+  const tools = h('details', { class: 'relative @min-[640px]:hidden' },
+    h('summary', { class: 'flex min-h-6 cursor-pointer list-none items-center gap-1 rounded-full border border-line bg-panel px-3 py-1.5 font-semibold hover:bg-code max-md:min-h-11 [&::-webkit-details-marker]:hidden' }, h('span', { 'aria-hidden': 'true' }, '⋯'), toolsLabel),
+    h('div', { class: 'absolute bottom-full left-0 z-20 mb-1 flex min-w-40 flex-col rounded-(--r-ctl) bg-panel p-1 shadow-(--shadow-2) ring-1 ring-line' }, explainItem, formatItem));
+  const submitBtn = h('button', { type: 'button', class: cx(BTN_SUBMIT, 'max-md:min-h-11'), onclick: () => void submit() });
+  /** M1: after a Run/Submit on a phone, one chip says what came back and opens the Result pane (never switched to by itself). */
+  const resultChip = h('button', { type: 'button', class: 'mb-1 block min-h-11 w-full rounded-(--r-chip) md:hidden border border-line bg-surface-2 px-3 text-body-sm font-semibold text-ink', hidden: true, onclick: () => showPane('panel') });
+  const chip = (r?: LastRun): void => {
+    resultChip.hidden = !r;
+    resultChip.textContent = !r ? '' : r.result ? `${t('work.resultChip', { n: r.result.rows.length })} →` : `${t('work.errorChip')} →`;
+  };
   const feedback = h('div', { role: 'status' });
   /** A drill's wrong answer (L84): the rows that differ, outside the status line so a screen reader reads one sentence. */
   const detailBox = h('div');
   guideHooks.diff = () => !!message?.detail; // v13 G6: the diff of a wrong drill submit is showing
   const historyBox = h('details', { class: 'mt-2 text-sm' });
   // The tour's mark sits under the buttons, never over the editor (v4 §B.2); main.ts refreshTour() refills it.
-  host.replaceChildren(editorHost, h('div', { class: 'max-md:sticky max-md:bottom-14 max-md:z-10 max-md:bg-panel' }, h('div', { class: 'actions' }, runBtn, submitBtn, explainBtn, formatBtn)), tourSlot('work'), guideSlot('work'), feedback, detailBox, guideSlot('diff'), historyBox);
+  host.replaceChildren(editorHost, h('div', { class: '@container max-md:sticky max-md:bottom-14 max-md:z-10 max-md:bg-panel max-md:pt-2 max-md:shadow-[0_-8px_12px_-10px_rgb(0_0_0/0.3)]' }, resultChip, h('div', { class: 'actions' }, runBtn, explainBtn, formatBtn, tools, submitBtn)), tourSlot('work'), guideSlot('work'), feedback, detailBox, guideSlot('diff'), historyBox);
 
   // The buttons advertise Mod+Enter / Mod+Shift+Enter: honour them when focus is outside the editor too
   // (on a button after a click, the brief heading after picking a ticket). Inside the editor CodeMirror's
@@ -163,15 +185,16 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
       : message.view());
   }
 
-  /** v12.0 U8 (L80 #9): the shortcut beside a short label, hidden on phones; aria-keyshortcuts keeps it for screen readers. */
-  const keys = (k: Key): HTMLElement => h('kbd', { class: 'ml-1.5 font-sans text-xs opacity-75 max-sm:hidden' }, t(k));
+  /** v12.0 U8 (L80 #9), ui-ux-v7 T1: the shortcut chip beside a short label, hidden on touch screens; aria-keyshortcuts keeps it for screen readers. */
+  const keys = (k: Key): HTMLElement => kbd(t(k));
   runBtn.setAttribute('aria-keyshortcuts', isMac ? 'Meta+Enter' : 'Control+Enter');
   submitBtn.setAttribute('aria-keyshortcuts', isMac ? 'Meta+Shift+Enter' : 'Control+Shift+Enter');
 
   function setButtons(): void {
     runBtn.replaceChildren(t(selection ? 'work.runSel' : 'work.run'), keys('work.runKeys'));
-    explainBtn.textContent = t('tab.explain');
-    formatBtn.textContent = t('work.format');
+    for (const b of [explainBtn, explainItem]) b.textContent = t('tab.explain');
+    for (const b of [formatBtn, formatItem]) b.replaceChildren(t('work.format'), b === formatBtn ? keys('work.formatKeys') : '');
+    toolsLabel.textContent = t('work.tools');
     submitBtn.replaceChildren(t('work.submit'), keys('work.submitKeys'));
     // Plan 8b 8.7: a running query says so (spinner stops under reduced motion). Waiting for the DB is said in the line under the buttons (work.queued), never in the label (U8).
     if (busy) runBtn.replaceChildren(h('span', { class: 'mr-1.5 inline-block size-3 animate-spin rounded-full border-2 border-current border-t-transparent align-[-1px]', 'aria-hidden': 'true' }), t('work.running'));
@@ -179,7 +202,8 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
     submitBtn.setAttribute('aria-busy', String(busy));
     runBtn.disabled = busy;
     explainBtn.disabled = busy;
-    explainBtn.hidden = !!ticket?.steps[stepIndex]?.lab; // a lab editor holds CREATE INDEX: Run already shows both plans
+    explainItem.disabled = busy;
+    explainBtn.hidden = explainItem.hidden = !!ticket?.steps[stepIndex]?.lab; // a lab editor holds CREATE INDEX: Run already shows both plans
     submitBtn.disabled = busy;
     submitBtn.hidden = !ticket || isClosed(ticket.id);
   }
@@ -257,7 +281,7 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
       drawMessage();
     }
     deps.panel.show(failed || (!tab && SCHEMA_TABS.has(deps.panel.active)) ? 'result' : tab ?? deps.panel.active);
-    if (!failed) showPane('panel'); // phone: the result; an error stays here, under Boon's explanation
+    chip(r); // phone: a chip to the result, never a pane switch (the player may be editing; ui-ux-v7 M1)
     deps.onRun();
   }
 
@@ -381,6 +405,7 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
     if (played) record(story ? tk.id : undefined, played);
     if (editor !== ed) return; // stale: never credit or message a ticket the player has left
     if (played) app.lastRun = played;
+    chip(played);
     deps.onRun();
     if (!r) {
       say('bad', () => t('work.contentBug', { msg: errorText(solutionError) }));
@@ -396,7 +421,7 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
         avatar(tk.from), h('span', { class: 'rounded-2xl rounded-tl-sm bg-panel px-3 py-1.5 text-ink' }, t(voiceKey(fail)))) : null);
       if (fail.reason === 'error') {
         underline(err, 0);
-        say('bad', () => h('div', {}, err !== undefined ? errorView(err) : gradeMessage(fail), voice()), mascotOf(err));
+        say('bad', () => h('div', {}, err !== undefined ? errorView(err, true, sql) : gradeMessage(fail), voice()), mascotOf(err));
       } else {
         if (fail.reason === 'rows' && played?.result) played.mark = fail.sample;
         // A General drill (practice, L84) says which columns differ and shows the rows; story, lane and E-com tickets keep L25.
@@ -468,6 +493,7 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
           deps.panel.show('columns'); // nothing run yet: show the tables first
         }
         message = undefined;
+        chip();
         selection = false; // the new editor starts with an empty selection
         editor?.destroy();
         editor = createEditor(editorHost, {

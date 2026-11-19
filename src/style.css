@@ -243,9 +243,25 @@
   body { height: 100dvh; display: flex; flex-direction: column; overflow: hidden; }
   .shell { flex: 1; min-height: 0; display: grid; grid-template-rows: minmax(0, 1fr) 12px minmax(0, var(--row, 40%)); padding-bottom: 12px; }
   .workspace { min-height: 0; grid-template-columns: minmax(0, var(--col, 40%)) 12px minmax(0, 1fr); }
-  #ticket, #work, .panel { overflow: auto; min-height: 0; }
-  .panel { margin: 0; }
+  #ticket, #work { overflow: auto; min-height: 0; }
+  .panel { margin: 0; min-height: 0; display: flex; flex-direction: column; overflow: hidden; }
   .split { display: block; }
+  /* ui-ux-v7 W1: one scroll area. The tab body scrolls; the Result tab (.res-fill) is a column whose table box takes the rest and scrolls itself. */
+  .tab-body { flex: 1; min-height: 0; overflow: auto; display: flex; flex-direction: column; }
+  .tab-body > .res-fill { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+}
+/* W1: the tab bar never wraps; a fade on the side that has more tabs (data-left/right set by ui/tabs.ts). */
+.tab-bar { scrollbar-width: none; }
+.tab-bar[data-right=true] { mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent); }
+.tab-bar[data-left=true] { mask-image: linear-gradient(to left, #000 calc(100% - 28px), transparent); }
+.tab-bar[data-left=true][data-right=true] { mask-image: linear-gradient(to right, transparent, #000 28px, #000 calc(100% - 28px), transparent); }
+/* W2: the folded dock: the sentence row only (≈ 56 px), with a small check. */
+#stage[data-mini=true] #stage-art { display: none; }
+#stage[data-mini=true] .stage-row { border-top: 0; }
+#stage[data-mini=true] .stage-mini-icon { display: grid; }
+/* M1: on a phone the editor grows with its text up to half the screen, then scrolls. */
+@media (max-width: 767.98px) {
+  .editor .cm-editor { max-height: 50vh; }
 }
 
 /* ---- CodeMirror DOM (third-party): plain CSS. ---- */
