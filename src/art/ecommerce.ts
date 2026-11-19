@@ -367,7 +367,6 @@ function end(d: Dock): void {
   if (d.card) {
     for (const g of d.store.glows) g.setAttribute('style', 'opacity:1');
     d.card.style.opacity = '1';
-    d.card.style.transform = '';
     d.ring?.remove();
   } else {
     d.store.shutter?.setAttribute('height', '144');
@@ -421,3 +420,6 @@ export async function play(c: Ctx): Promise<void> {
 
 /** Dock length, for Lily's entry at its end (ui/stage.ts). */
 export const ms = (c: Ctx): number => (c.tk.beat === 'boss' ? 3000 : 2200);
+
+/** The names every domain art chunk exports (ui/domainArt.ts). */
+export { storeScene as scene, deliveryMap as map, deliveryItems as items };

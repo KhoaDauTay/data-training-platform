@@ -26,6 +26,7 @@ const GROUPS = [
   ['ecomseed', /^ecomSeed-/, 10], // Plan 9: src/db/ecom/{schema,seed}.sql, lazy in the worker on ensure('ecom'): 7.6 KB gz -9 measured on the source (D9-16)
   ['fin', /^finSources-/, 50], // Plan 11 T2: content/domains/fin (tickets, chapters, people, KPIs), lazy on the first visit (product-design-v9 §6.4)
   ['finseed', /^finSeed-/, 10], // Plan 11 T1: src/db/fin/{schema,seed}.sql, lazy in the worker on ensure('fin') (product-design-v9 §6.4)
+  ['finart', /^finance-/, 10], // Plan 11 T6: src/art/finance.ts (counter scene, branch map, completion dock), lazy; after fin/finseed (finSources-/finSeed- never match ^finance-)
   ['gameseed', /^gameSeed-/, 16], // v12.0 P1 (Plan 10 D10-1): src/db/{schema,seed}.sql, lazy in the worker on ensure('game'): 13.3 KB gz -9 on the source
   ['gsap', /^gsap-/, 50], // ui-ux-v6 §2.1: src/art/gsap.ts (GSAP 3.15.1 core + MorphSVG, DrawSVG, MotionPath, Physics2D, CustomEase), lazy: 45 KB measured in v6
   ['frame', /^frame-/, 4], // v13 (product-design-v8 §4): src/frame.ts, the hint scaffold, lazy on the first "fill the scaffold" (brief.ts, lessonCard.ts): 2.9 KB gz; v14 T3 (ROLLUP, NULLS, JT clause, WHERE/CASE breaks; v9 R3 allows +1 KB): 3.2 KB gz

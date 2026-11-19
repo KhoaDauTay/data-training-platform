@@ -2,7 +2,7 @@ import { getLang, t, type Key } from '../i18n';
 import { LANE_XP, laneLabel } from '../lanes';
 import { activeDomain, domainText } from '../domains';
 import { chaptersOf, chapterTitle } from '../progress';
-import { ecomArt } from './ecomArt';
+import { domainArt } from './domainArt';
 import { derive, ROUTES, type Harbor } from '../scene';
 import { artSlot } from '../art/load';
 import { fleetOrder, takeNewRoutes } from '../routesSeen';
@@ -61,7 +61,7 @@ export function createMapStrip(host: HTMLElement): { update(view: StripView): vo
         h('div', { class: 'mb-3 flex items-start gap-2' },
           h('h2', { id: 'map-dialog-title', class: 'm-0 flex-1 text-lg font-bold' }, t(words.mapTitle)),
           h('form', { method: 'dialog' }, h('button', { class: 'flex items-center gap-1 px-2 py-1 text-sm' }, icon('x', 'size-4'), t('app.close')))),
-        ecomArt('map')));
+        domainArt('map')));
       return;
     }
     const harbor = derive(tickets, completed);

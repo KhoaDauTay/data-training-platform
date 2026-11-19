@@ -4,7 +4,7 @@ import { homeModel, knownSkills, kpisOf, kpiTiles, LEVELS, reliesOn, type Chapte
 import { getLang, t, type Key } from '../i18n';
 import { CHAPTERS, chaptersOf, chapterTitle, domainSkills, moduleTitle, nextTicket, rankOf, SKILLS } from '../progress';
 import { domainSlot } from '../save';
-import { ecomArt } from './ecomArt';
+import { domainArt } from './domainArt';
 import { domainLine } from './topbar';
 import { derive, ROUTES as LANES } from '../scene';
 import { domainHash, learnAdvOf, learnModuleOf, learnSkillOf } from '../route';
@@ -282,7 +282,7 @@ function harborSection(m: HomeModel): HTMLElement {
   const words = domainText();
   if (words) { // Plan 9 D9-13: the domain's own scene, never the harbour
     return h('section', { class: cx(CARD, 'overflow-hidden'), 'aria-labelledby': 'harbor-title' },
-      h('h2', { id: 'harbor-title', class: 'm-0 px-4 pt-3 text-lg font-bold' }, t(words.sceneTitle)), ecomArt('scene'));
+      h('h2', { id: 'harbor-title', class: 'm-0 px-4 pt-3 text-lg font-bold' }, t(words.sceneTitle)), domainArt('scene'));
   }
   const harbor = derive(app.tickets, done());
   const fresh = freshChapters();
@@ -316,7 +316,7 @@ function routesSection(): HTMLElement {
   const words = domainText();
   if (words) {
     return h('section', { class: cx(CARD, 'p-5'), 'aria-labelledby': 'routes-title' },
-      h('h2', { id: 'routes-title', class: 'm-0 mb-2 text-lg font-bold' }, t(words.mapTitle)), ecomArt('map'));
+      h('h2', { id: 'routes-title', class: 'm-0 mb-2 text-lg font-bold' }, t(words.mapTitle)), domainArt('map'));
   }
   const harbor = derive(app.tickets, done());
   const list = h('ul', { class: 'mt-3 mb-0 grid list-none gap-1.5 p-0 text-sm sm:grid-cols-2' }, ...LANES.map((r) =>

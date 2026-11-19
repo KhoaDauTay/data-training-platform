@@ -8,7 +8,7 @@ import { takeNewRoutes } from '../routesSeen';
 import { app } from '../state';
 import { textOf, type Ticket } from '../tickets';
 import { byId, reducedMotion } from './dom';
-import { loadEcomArt } from './ecomArt';
+import { loadDomainArt } from './domainArt';
 import { grewLately, once, react } from './celebrate';
 import { GROW_MS, mascot, MOVES } from './mascots';
 import { stageEsc } from './shortcuts';
@@ -18,10 +18,10 @@ import { stageEsc } from './shortcuts';
 
 /**
  * ui-ux-v5 B3: the completion picture per domain, each a lazy chunk with the art/logistics contract (`run.fast` = end state
- * only; `ms` = length, default durationOf). A domain not listed only gets the sentence. Finance adds one line here.
+ * only; `ms` = length, default durationOf).
  */
 interface DockArt { build(c: Ctx): void; play(c: Ctx): Promise<void>; ms?(c: Ctx): number }
-const DOCK: Partial<Record<DomainId, () => Promise<DockArt>>> = { logistics: loadArt, ecommerce: loadEcomArt };
+const DOCK: Record<DomainId, () => Promise<DockArt>> = { logistics: loadArt, ecommerce: () => loadDomainArt('ecommerce'), finance: () => loadDomainArt('finance') };
 let dock: () => Promise<DockArt> = loadArt;
 
 let current: Run = { fast: true, done: true };
