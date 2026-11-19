@@ -785,3 +785,9 @@ Cách đo: `npx vite build --base=/data-training-platform/` (`MSYS_NO_PATHCONV=1
 - Các lần hỏng trong lúc viết, đều do script: trang Dữ liệu đổi hash sang `#/d/logistics/data/ports` (chấp nhận hash con); nộp drill khi editor còn bị thay (chờ chấm xanh DB, gõ lại khi editor bị thay); một lần `Page.navigate` (đổi hash) + `Page.reload` liền nhau không mở drill trong 60 s (giờ qua `about:blank` rồi tải hẳn `#/learn/play/<id>`).
 - **Ghi nhận từ script, chưa tái hiện như lỗi người chơi thấy:** sau khi mở drill bằng một lần tải trang, editor đôi khi bị dựng lại sau khi DB đã xanh và script đã gõ (`attempt: 2` trong report ở 1 trên 4 lượt cuối, 3 trên 6 lượt trước đó). Nếu người chơi gặp đúng lúc đó thì chữ vừa gõ mất và lần Nộp chỉ vào lịch sử. Vòng gõ lại che việc này; dấu vết duy nhất là `attempt` trong `smoke-report.json`. Cần một luồng xem `main.ts` (mở lại drill / `ensure('lab')` / chunk `learnui`).
 - Chưa kiểm: workflow trên runner GitHub (Chrome Linux, `--no-sandbox`, `upload-artifact@v7`) chưa chạy lần nào; theme tối; người chơi có tiến độ sẵn.
+
+## v19 V19-A SQL bằng lời (N8), 2026-11-19, L162
+
+- Cổng trong worktree: `tsc`, vitest (101 file, 3701 test), build, `check-budget` (main 323/500, parser 392/410), smoke (xem dưới).
+- Ảnh kiểm bằng mắt (Edge headless, preview riêng cổng 5231): sáng VI/EN 1280, sáng 375, tối 1280/375; không cuộn ngang ở 375; tên dài trong `code` xuống dòng bằng `break-words` (bản đầu `break-all` cắt `p.coun|try`, đã sửa); 0 lỗi trang.
+- Đắn đo để người duyệt quyết: lần chạy đầu mỗi phiên tải parser cho mọi người chơi (trước chỉ khi mở tab Thứ tự thực thi); ngưỡng tự đọc 250 ms; main +2,4 KB thay vì +0,6 ước.

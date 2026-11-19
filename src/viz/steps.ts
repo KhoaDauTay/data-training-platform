@@ -3,6 +3,7 @@ import { parse, scan } from 'libpg-query';
 import { deparse } from 'pgsql-deparser';
 import { runSandboxed, type QueryResult, type RunOpts } from '../db/run';
 import { ensureParser } from './parser';
+import { sqlWords, type WordPart } from './sqlWords';
 
 // Labels and help live in a parser-free module so the UI bundle never pulls in libpg-query.
 export { STEP_LABELS, type StepKey, type StepsFailure } from './stepText';
@@ -20,11 +21,12 @@ export interface StepRun {
 }
 type Ranges = Partial<Record<StepKey, [number, number]>>;
 type Failure = { ok: false; reason: StepsFailure; detail?: string };
-export type StepsResult = { ok: true; steps: StepRun[]; ranges: Ranges } | Failure;
+/** `words` (V19-A, L162): the query read clause by clause, from the same parse (src/viz/sqlWords.ts). */
+export type StepsResult = { ok: true; steps: StepRun[]; ranges: Ranges; words?: WordPart[] } | Failure;
 /** The two key queries of one JOIN (matched pairs, left rows without a partner), both on a LEFT JOIN copy of it. */
 type Probe = { kind: JoinMatch['kind']; left: string; right: string; matched: string; unmatched: string };
 type BuiltStep = { key: StepKey; sql: string | null; label?: string; range?: [number, number]; probe?: Probe };
-type Built = { ok: true; steps: BuiltStep[]; ranges: Ranges } | Failure;
+type Built = { ok: true; steps: BuiltStep[]; ranges: Ranges; words: WordPart[] } | Failure;
 
 // libpg-query's AST is a large tagged union; these helpers only touch a few well-known fields.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -191,7 +193,7 @@ export async function buildSteps(sql: string): Promise<Built> {
     if (key === 'from') steps.push(...(await fromSteps(sql, sel.fromClause, ranges.from, wrap)));
     else steps.push({ key, sql: present ? await wrap(o) : null });
   }
-  return { ok: true, steps, ranges };
+  return { ok: true, steps, ranges, words: sqlWords(sel) };
 }
 
 /**
@@ -243,7 +245,7 @@ export async function runSteps(db: PGlite, sql: string, opts: RunOpts = {}): Pro
       steps.push({ key: s.key, skipped: false, sql: s.sql, label: s.label, range: s.range, error: e instanceof Error ? e.message : String(e) });
     }
   }
-  return { ok: true, steps, ranges: built.ranges };
+  return { ok: true, steps, ranges: built.ranges, words: built.words };
 }
 
 /** v10 N2: up to 6 matched pairs and 2 left rows without a partner. A failed probe only drops the picture. */

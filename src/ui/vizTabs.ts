@@ -18,6 +18,7 @@ import { errorView } from './feedback';
 import { renderFlow } from './flowView';
 import { sandboxTables, visibleTables } from './myDataView';
 import { renderSteps } from './stepsView';
+import { setWordsSource } from './sqlWordsView';
 import { tablesIn } from './tryPreview';
 import { emptyState, registerTab } from './tabs';
 
@@ -86,6 +87,7 @@ function registerStepsTab(deps: VizDeps): void {
     const [schema, sql] = splitKey(key);
     return deps.db.loadParser().then(() => deps.db.steps<StepsResult>(sql, { schema }));
   });
+  setWordsSource((r) => stepsFor(`${r.schema ?? 'game'}|${r.sql}`)); // V19-A: the words line under the editor reads the same request
   registerTab({
     id: 'steps', from: 'ch1-03', newAt: 'ch1-03', // v4 §B.2: first ORDER BY
     label: 'tab.steps',

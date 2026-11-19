@@ -26,6 +26,7 @@ import { markArrived } from './resultTable';
 import { mascot, type Mascot, type Pose } from './mascots';
 import { showPane } from './paneTabs';
 import { pageShortcutOf } from './shortcuts';
+import { wordsLine } from './sqlWordsView';
 import { boonRegion, guideHooks, guideSlot, refreshGuides, tourSlot } from './coach';
 import type { Panel } from './tabs';
 
@@ -157,8 +158,10 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
   /** The extra-rows <details> stays open across a redraw (rerender → relabel) until the next message. */
   let extraOpen = false;
   const historyBox = h('details', { class: 'mt-2 text-body-sm' });
+  /** V19-A (L162): the last run read in words, under the buttons; redrawn with relabel() and on every edit (its "changed" mark). */
+  const words = wordsLine(() => editor?.runTarget().sql ?? '');
   // The tour's mark sits under the buttons, never over the editor (v4 §B.2); main.ts refreshTour() refills it.
-  host.replaceChildren(editorHost, h('div', { class: '@container max-md:sticky max-md:bottom-14 max-md:z-10 max-md:bg-panel max-md:pt-2 max-md:shadow-[0_-8px_12px_-10px_rgb(0_0_0/0.3)]' }, resultChip, h('div', { class: 'actions' }, runBtn, explainBtn, formatBtn, tools, submitBtn)), tourSlot('work'), guideSlot('work'), feedback, detailBox, guideSlot('diff'), historyBox);
+  host.replaceChildren(editorHost, h('div', { class: '@container max-md:sticky max-md:bottom-14 max-md:z-10 max-md:bg-panel max-md:pt-2 max-md:shadow-[0_-8px_12px_-10px_rgb(0_0_0/0.3)]' }, resultChip, h('div', { class: 'actions' }, runBtn, explainBtn, formatBtn, tools, submitBtn)), words.el, tourSlot('work'), guideSlot('work'), feedback, detailBox, guideSlot('diff'), historyBox);
 
   // The buttons advertise Mod+Enter / Mod+Shift+Enter: honour them when focus is outside the editor too
   // (on a button after a click, the brief heading after picking a ticket). Inside the editor CodeMirror's
@@ -506,6 +509,7 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
 
   function relabel(): void {
     setButtons();
+    words.draw();
     drawMessage();
     drawHistory();
     editor?.setLabel(t('work.editorLabel'));
@@ -532,6 +536,7 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
           schema: editorSchema(),
           label: t('work.editorLabel'),
           onChange: (v) => {
+            words.draw();
             writeDraft(v);
             persist();
             if (fillNote) { // the first edit after "Fill the scaffold": its Undo would now only undo that edit (like the Try-it box)
@@ -545,6 +550,7 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
           onSelection: (nonEmpty) => {
             selection = nonEmpty;
             setButtons();
+            words.draw();
           },
         });
       }
