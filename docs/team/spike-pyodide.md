@@ -79,6 +79,89 @@ Nhận xét:
 - Bộ nhớ riêng của tiến trình Edge dao động quá mạnh (0,5–1,3 GB cho tiến trình lớn nhất; có lượt chạy kèm Pyodide còn thấp hơn lượt chỉ PGlite). Vì vậy không dùng số này.
 - Cần đo lại trên máy rảnh và trên một điện thoại Android tầm trung trước khi build.
 
+### 2.5 Đo lại (V19-0, 2026-11-20)
+
+**Kết luận: NO-GO** cho V20-A theo cổng của roadmap-v18-v20 §2.5. Máy rảnh thì đạt (ấm 5,8 s ≤ 10 s). Cổng CPU 4× (≤ 20 s) không chứng minh được: ước lượng là khoảng 21–23 s.
+
+**Cách đo:**
+
+- Prototype nhánh `spike/pyodide-l139` (1fc7396), checkout vào một worktree tạm, nay đã gỡ.
+- Tự host trên `vite preview`, cổng 5231 (`Cache-Control: no-cache`, nên lần ấm là revalidate 304 + cache code wasm). File Pyodide 314.0.7 + pandas đã kiểm sha256 với `pyodide-lock.json`.
+- Edge headless qua CDP. Mỗi phiên là một profile mới: lần lạnh, rồi lần ấm trong cùng trình duyệt. Chạy tuần tự, không chạy song song.
+- Thay đổi so với L139 (chỉ trong worktree, không commit): worker PGlite seed cả **Logistics** (`game`) lẫn `lab`, đúng điều kiện "tab không bị kill" của cổng.
+- "pandas sẵn sàng" = từ lúc mở trang tới khi cả PGlite đã seed lẫn `import pandas` đều xong (`pandasReadyWallMs`).
+
+**Điều kiện máy (lệch cổng):**
+
+- CPU nền là **24 % bận** (76 % rảnh) trong 60 s trước khi đo, không đạt mức < 15 %. Trong lúc đo là 45 % bận.
+- Nguyên nhân: hai dev server Vite của user ở cổng 5173/5174 tự chiếm khoảng 1,6 luồng mỗi cái. Chúng phải chạy tiếp nên không tắt; các preview khác đang rảnh.
+- Máy 16 luồng. Không có agent nào khác chạy.
+
+**Số đo (trung vị của 5 lần; khoảng ghi trong ngoặc):**
+
+| Đo | 1× lạnh | 1× ấm | CDP 4× lạnh* | CDP 4× ấm* |
+|---|---|---|---|---|
+| pandas sẵn sàng (PGlite Logistics+lab cùng chạy) | **6,84 s** (6,76–6,97) | **5,77 s** (5,71–5,93) | 7,23 s | 6,14 s |
+| PGlite sẵn sàng (lab + Logistics) | 6,68 s | 5,41 s | 7,13 s | 5,75 s |
+| Pyodide: lõi / `loadPackage` / `import pandas` | 2,41 / 0,97 / 3,46 s | 1,90 / 0,78 / 3,11 s | | |
+| Chỉ Pyodide, không PGlite (n = 3) | 6,0–7,3 s | 5,1–5,3 s | | |
+| Chỉ PGlite (n = 2) | 5,6–6,7 s | 4,8–5,2 s | | |
+
+\* **CDP `Emulation.setCPUThrottlingRate` không áp cho worker.** Lệnh gửi tới phiên worker bị Edge từ chối ("Operation is only supported for pages, not workers"). Vòng lặp hiệu chuẩn chạy chậm 6,7× trên trang nhưng 1,0× trong worker. Pyodide và PGlite đều chạy trong worker, nên hai cột 4× ở trên **không phải** số 4× thật, chỉ là phần trang bị chậm.
+
+Thử thay bằng Job object của Windows (giới hạn affinity và trần CPU):
+
+- Một lượt với 4 lõi, trần tổng 1 lõi: lạnh 20,4 s, ấm 12,0 s.
+- Đây không phải mô hình "mỗi lõi chậm 4×": một luồng chạy một mình vẫn được trọn một lõi. Vì vậy số này không dùng làm cổng.
+- Mẻ 1 lõi ở 25 % bị dừng trước khi có số.
+
+**Ước lượng 4×:** khởi động gần như chỉ tốn CPU (tự host trên localhost, mạng không đáng kể), nên nhân tuyến tính:
+
+- Pyodide một mình ở lần ấm: 5,1–5,3 s × 4 ≈ **21 s**.
+- Lần ấm cả trang: 5,77 s × 4 ≈ **23 s**.
+- Phần PGlite (Logistics + lab): 4,8–5,4 s × 4 ≈ 19–22 s.
+
+Cả hai worker đều vượt hoặc chạm 20 s.
+
+**Bài tập (1×, trung vị):**
+
+| Việc | Thời gian |
+|---|---|
+| SQL 4.284 dòng | 53–58 ms |
+| → DataFrame | 28–30 ms |
+| groupby / merge / pivot | 28 / 6 / 52 ms |
+| Đổi kết quả để chấm | 23–27 ms |
+| 50.000 dòng: SQL / → DataFrame | 0,50–0,61 s / 0,10–0,13 s |
+| Chấm đúng/sai | đúng ở cả 20 lần |
+
+**Bộ nhớ:**
+
+- Heap wasm Pyodide (`HEAPU8`): **90 MB** khi có pandas và đã chạy các bài; 75 MB khi chỉ boot.
+- JS heap (`Runtime.getHeapUsage`): worker Python 20 MB, worker PGlite 5 MB, trang 12 MB.
+- Backing store: worker Python 43 MB, worker PGlite 178–197 MB.
+- Bộ nhớ riêng của các tiến trình Edge: tổng ≈ 1,05–1,12 GB; tiến trình lớn nhất 0,72–0,77 GB.
+
+**Ổn định:** không lượt nào `Inspector.targetCrashed` hay báo lỗi khi PGlite (Logistics đã seed) và Pyodide cùng chạy. Điều kiện "tab không bị kill" đạt trên desktop.
+
+**Cỡ tải:** bộ file tới lúc pandas dùng được là **14,08 MB gzip -9** (21,4 MB thô). Khớp ước lượng 14 MB của L139.
+
+**Đối chiếu cổng V20-A:**
+
+| Tiêu chí | Kết quả |
+|---|---|
+| Ấm, máy rảnh ≤ 10 s | 5,77 s: **đạt** (máy bận nền 24 %) |
+| Ấm, CPU 4× ≤ 20 s | ≈ 21–23 s (ước lượng; CDP không chậm được worker): **không đạt** |
+| Tab không bị kill | **đạt** |
+| Heap JS + wasm ghi lại | **đạt** |
+
+**Theo roadmap:**
+
+- **NO-GO.** D5 giữ `external`. V20-A chuyển sang phương án lùi "Python ngoài app": nút D5 thêm 3 bài đọc và notebook Kaggle công khai, chỉ link, cỡ S.
+- Mở lại khi user đo được trên một điện thoại Android thật ở lần ấm ≤ 20 s (roadmap §6, "chờ user").
+- Phần đắt nhất là `import pandas` (~3,1 s ở 1×) và việc seed Logistics chạy song song. Nếu mở lại, có hai hướng giảm:
+  - module Python chỉ seed `lab`, không seed Logistics;
+  - dùng snapshot trạng thái Pyodide.
+
 ## 3. Những điều đã kiểm được
 
 - **Chấm điểm dùng lại `compareResults` (`src/grader.ts`):**
