@@ -413,6 +413,8 @@ export const vi = {
   'res.shown': 'Kết quả: {n} dòng (hiển thị {max} dòng đầu)',
   'res.tooBig': 'Kết quả quá lớn: chỉ nhận {n} dòng đầu. Thêm điều kiện lọc hoặc LIMIT.',
   'res.mismatch': 'không khớp',
+  'why.btn': 'Vì sao?',
+  'why.failed': 'Không tải được phần giải thích, bấm lại để thử.',
   'res.meta': '{rows} dòng · {cols} cột · {ms} ms',
   'res.rowNum': 'Số thứ tự dòng',
   'err.at': 'lỗi ở ký tự {n}',

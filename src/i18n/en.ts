@@ -414,6 +414,8 @@ export const en: Record<Key, Msg> = {
   'res.shown': (p) => `Result: ${num(p.n)} rows (showing the first ${num(p.max)})`,
   'res.tooBig': (p) => `Result too large: only the first ${num(p.n)} rows were kept. Add a filter or a LIMIT.`,
   'res.mismatch': 'no match',
+  'why.btn': 'Why?',
+  'why.failed': 'The explanation did not load, click again to retry.',
   'res.meta': (p) => `${count('row', 'rows')({ n: p.rows })} · ${count('column', 'columns')({ n: p.cols })} · ${num(p.ms)} ms`,
   'res.rowNum': 'Row number',
   'err.at': 'error at character {n}',

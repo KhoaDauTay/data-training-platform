@@ -48,6 +48,7 @@ const GROUPS = [
   ['pglab', /^pglabWorker-/, 150, true],
   ['pgext', /^(pageinspect|pg_visibility|amcheck|pg_walinspect|pg_buffercache|pg_freespacemap|bloom|btree_gin|btree_gist|pg_trgm|pg_stat_statements|ltree)\.tar-.*\.gz$/, 145, true],
   ['pgcrypto', /^pgcrypto\.tar-.*\.gz$/, 1160, true], // bundles OpenSSL: fetched only by a lab that names pgcrypto
+  ['why', /^(why|whyView)-/, 6], // V22-B (L206): "Vì sao?" under a result row: src/ui/whyView.ts (VI/EN inside) + src/viz/why.ts (worker, beside the steps chunk), lazy on the first click
   ['rest', /./, 1560],
 ];
 

@@ -41,6 +41,7 @@ import { initSidebar, renderSidebar } from './ui/sidebar';
 import { initTopbar, renderTopbar, syncMenuCopies } from './ui/topbar';
 import { mountWork } from './ui/work';
 import { registerVizTabs } from './ui/vizTabs';
+import { initWhy } from './ui/whyButton';
 import { initMyData, setMyDataStatus } from './ui/myDataView';
 import { clearMemos } from './viz/memo';
 import { createMapStrip } from './ui/mapStrip';
@@ -243,6 +244,7 @@ function dataChanged(): void {
 }
 
 registerCoreTabs(() => work.currentSql(), () => pinBar(() => work.currentSql()));
+initWhy(db); // V22-B
 registerVizTabs({ db, show: (id) => panel.show(id), active: () => panel.active, editorSql: () => work.currentSql() });
 const panel = createPanel(byId('panel'));
 const work = mountWork(byId('work'), {

@@ -50,6 +50,10 @@ const TICKETS = {
 };
 const drills = parseYaml(readFileSync(join(ROOT, 'content/general/sql.yml'), 'utf8'));
 const DRILL = drills.find((d) => d.kind === 'open'); // an open drill: no ___ starter to fill
+// V22-B (L206): the first Logistics Solution with GROUP BY, in story order (chapters by number, files by name).
+const GROUPED = readdirSync(join(ROOT, 'content/tickets')).sort((a, b) => Number(a.slice(2)) - Number(b.slice(2)))
+  .flatMap((ch) => readdirSync(join(ROOT, 'content/tickets', ch)).sort().map((f) => `content/tickets/${ch}/${f}`))
+  .filter((f) => /## Solution\s*```sql[^`]*GROUP BY/.test(readFileSync(join(ROOT, f), 'utf8'))).map(ticket)[0];
 const LESSON = parseYaml(readFileSync(join(ROOT, 'content/lessons.yml'), 'utf8')).find((l) => l.id === TICKETS.logistics.grants[0]);
 
 // Every route of src/route.ts once; a new route fails here until the smoke knows its hash.
@@ -434,6 +438,24 @@ try {
     }
   }
   writeFileSync(join(OUT, 'axe-report.json'), JSON.stringify(axeFound, null, 1));
+
+  // ---- V22-B (L206, roadmap-v22 S2): Run the first GROUP BY Solution in the workspace, "Vì sao?" on row 1 shows its source-row count.
+  await step(`why: row 1 of ${GROUPED.id}`, async () => {
+    await size(1280, 800);
+    await send('Emulation.setEmulatedMedia', { features: [] });
+    await go(base, '#/d/logistics/play');
+    await waitFor('the editor and the DB ready', `!!${EDITOR} && !!document.querySelector('#db-status .bg-good')`, 90000);
+    await ev(`(${EDITOR}).focus()`);
+    await key('a', MOD, 'KeyA', 65);
+    await send('Input.insertText', { text: GROUPED.sql });
+    await key('Enter', MOD, 'Enter', 13);
+    const btn = `[...document.querySelectorAll('#shell td button[aria-expanded]')].find((b) => b.textContent === 'Vì sao?')`;
+    await waitFor('a "Vì sao?" button on the result', `!!${btn}`, 60000);
+    await ev(`${btn}.click()`);
+    const n = await waitFor('the source-row count', `(/gom (\\d+) dòng nguồn/.exec(document.querySelector('#shell tr[data-why]')?.textContent ?? '') ?? [])[1]`, 60000);
+    if (!(Number(n) > 0)) fail(`source rows: ${n}`);
+    return { id: GROUPED.id, n: Number(n) };
+  });
 
   await step('no page errors', async () => {
     if (pageErrors.length) fail(`${pageErrors.length} error(s): ${pageErrors.map((e) => e.text.split('\n')[0]).join(' | ').slice(0, 800)}`);
