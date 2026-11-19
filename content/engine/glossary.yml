@@ -1866,3 +1866,68 @@
   vi: "`mongos` gửi truy vấn tới mọi shard rồi gộp kết quả, vì truy vấn không có shard key."
   en: "`mongos` sends the query to every shard and merges the results, because the query lacks the shard key."
   doc: "https://www.mongodb.com/docs/manual/core/sharded-cluster-query-router/"
+
+# ───────────────────────── Best Practice (vòng 3, content/engine/best/**) ─────────────────────────
+- term: sargable
+  engines: [postgres]
+  level: L2
+  keep_en: true
+  vi_term: "sargable"
+  avoid: "tìm kiếm được"
+  vi: "Điều kiện để cột đứng một mình ở một vế (`order_date >= …`), nên index trên cột đó dùng được. Bọc cột trong hàm (`date_trunc('month', order_date) = …`) làm điều kiện mất tính sargable."
+  en: "A condition with the bare column on one side (`order_date >= …`), so an index on that column can be used. Wrapping the column in a function (`date_trunc('month', order_date) = …`) makes it non-sargable."
+  doc: "https://www.postgresql.org/docs/18/indexes-types.html"
+- term: anti join
+  engines: [postgres]
+  level: L2
+  keep_en: true
+  vi_term: "anti join"
+  avoid: "phép nối ngược"
+  vi: "Lấy các dòng bên trái **không** có dòng khớp bên phải: `NOT EXISTS (…)` hoặc `LEFT JOIN … WHERE right_table.id IS NULL`. Planner hiện nó thành nút `Hash Anti Join`."
+  en: "Keep the left rows that have **no** match on the right: `NOT EXISTS (…)` or `LEFT JOIN … WHERE right_table.id IS NULL`. The planner shows it as a `Hash Anti Join` node."
+  doc: "https://www.postgresql.org/docs/18/functions-subquery.html"
+- term: fan-out (join)
+  engines: [postgres]
+  level: L2
+  keep_en: true
+  vi_term: "fan-out"
+  avoid: "quạt ra"
+  vi: "Join một dòng với nhiều dòng (1-n) nhân số dòng lên. Join cha với hai bảng con cùng lúc làm mỗi giá trị bị lặp, nên `sum` bị nhân mà không báo lỗi."
+  en: "Joining one row to many (1-n) multiplies the rows. Joining a parent to two child tables at once repeats every value, so `sum` is multiplied with no error."
+  doc: "https://www.postgresql.org/docs/18/queries-table-expressions.html"
+- term: grain
+  engines: [postgres]
+  level: L2
+  keep_en: false
+  vi_term: "mức chi tiết"
+  avoid: "hạt"
+  vi: "Một dòng của bảng đại diện cho cái gì: một đơn, một dòng hàng, một ngày của một cửa hàng. Hai bảng chỉ cộng hay join an toàn khi cùng mức chi tiết."
+  en: "What one row of a table stands for: one order, one order line, one store-day. Two tables can only be summed or joined safely at the same grain."
+  doc: "https://www.postgresql.org/docs/18/queries-with.html"
+- term: date spine
+  engines: [postgres]
+  level: L2
+  keep_en: false
+  vi_term: "trục ngày"
+  avoid: "xương sống ngày"
+  vi: "Danh sách đủ mọi kỳ (ngày, tháng) sinh bằng `generate_series`, để `LEFT JOIN` dữ liệu vào và kỳ không có sự kiện vẫn hiện số 0."
+  en: "A complete list of periods (days, months) built with `generate_series`, so data can be `LEFT JOIN`ed onto it and empty periods still show 0."
+  doc: "https://www.postgresql.org/docs/18/functions-srf.html"
+- term: SQL injection
+  engines: [postgres]
+  level: L1
+  keep_en: true
+  vi_term: "SQL injection"
+  avoid: "tiêm SQL"
+  vi: "Chữ người dùng nhập được ghép thẳng vào câu SQL và trở thành cú pháp (`x' OR '1'='1`). Chặn bằng tham số (`$1`, prepared statement) và `format('%I')` cho tên."
+  en: "User text concatenated into a SQL statement becomes syntax (`x' OR '1'='1`). Prevent it with parameters (`$1`, prepared statements) and `format('%I')` for names."
+  doc: "https://www.postgresql.org/docs/18/sql-prepare.html"
+- term: reserved word (DynamoDB)
+  engines: [dynamodb]
+  level: L1
+  keep_en: false
+  vi_term: "từ dành riêng"
+  avoid: "từ cấm"
+  vi: "Hơn 500 từ (`status`, `name`, `date`…) không được viết thẳng trong biểu thức; phải đi qua placeholder `#x` trong `ExpressionAttributeNames`, nếu không request bị `ValidationException`."
+  en: "Over 500 words (`status`, `name`, `date`…) cannot appear directly in an expression; they must go through a `#x` placeholder in `ExpressionAttributeNames`, or the request fails with `ValidationException`."
+  doc: "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/ReservedWords.html"
