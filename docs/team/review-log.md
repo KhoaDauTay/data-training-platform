@@ -809,3 +809,9 @@ Cách đo: `npm run build`, `vite preview --port 5217 --strictPort`, Edge headle
 - **Không làm:** T8 (vẽ lại cảnh E-com/Finance) không thuộc V19-B trong roadmap (thuộc P2/v18, L148 đã dừng ở T7); không có commit T8. X2 không thêm chỗ gọi (lý do ở L165).
 - Kiểm: `npx tsc --noEmit`, `npx vitest run --no-file-parallelism --testTimeout=60000` (100 file, 3 699 test), `npm run build`, `node scripts/check-budget.mjs` (main 322 / 500, html 10 / 12, css 19 / 20), `npm run smoke` (5219) OK trước và sau.
 - **Chờ user (không chặn):** xem ảnh `x1-r3-{light,dark}.png` và `x3-*.png` (scratchpad của phiên, đường dẫn trong L164/L165); chê thì revert commit "v7 P3 X1" (về D-U7) và/hoặc "v7 P3 X3".
+## v19 V19-A SQL bằng lời (N8), 2026-11-19, L162
+
+- Cổng trong worktree: `tsc`, vitest (101 file, 3701 test), build, `check-budget` (main 323/500, parser 392/410), smoke (xem dưới).
+- Ảnh kiểm bằng mắt (Edge headless, preview riêng cổng 5231): sáng VI/EN 1280, sáng 375, tối 1280/375; không cuộn ngang ở 375; tên dài trong `code` xuống dòng bằng `break-words` (bản đầu `break-all` cắt `p.coun|try`, đã sửa); 0 lỗi trang.
+- Review (advisor) trước khi giao, đã sửa: request hỏng từng hỏi lại ở mỗi lần vẽ (vòng lặp sau restart); ngưỡng `result.ms` không chặn được phép nối dấu phẩy (chạy nhanh, đếm lâu) nên dòng nay dùng request chỉ-parse `WORDS_ONLY` (kiểm trên Edge: DB xanh suốt 20 s); `SELECT s.*, p.name` từng đọc "2 cột"; bước index lab sau một bước truy vấn từng còn dòng cũ.
+- Đắn đo để người duyệt quyết: lần chạy đầu mỗi phiên tải parser cho mọi người chơi (trước chỉ khi mở tab Thứ tự thực thi); main +2,4 KB thay vì +0,6 ước.
