@@ -31,10 +31,12 @@
   --r-card: 20px; --r-ctl: 14px;
   /* Mascot palette (v6 §1.2–1.3): SVG only, never text. */
   --lily-fur: #fdfbf7; --lily-cream: #ece6dc; --lily-ear: #2b2522; --lily-spot: #2b2522; --lily-line: #5a4f47; --lily-ink: #2b2522; --lily-scarf: #1f9e8f; --lily-badge: #ffd166; --lily-collar: #c8414f; --lily-harness: #b8641c;
+  /* L134 P3: the accessory colours the player can pick (same in both themes: ≥ 3:1 on fur, --bg and --panel of each, tests/theme.test.ts). */
+  --lily-acc1: #c0477a; --lily-acc2: #1a8f82; --lily-acc3: #2d7fc0; --lily-acc4: #8a55c9; --lily-acc5: #b8641c; --lily-acc6: #2f8a3e;
   --boon-body: #fdfdfb; --boon-plume: #e3e7e9; --boon-line: #59626a; --boon-wing: #3f8f9e; --boon-belly: #eef1f2; --boon-bill: #f2b544; --boon-ink: #2a2320; --boon-lanyard: #d98e4a;
   --boon-shade: #ccd3d7; --boon-bill-dark: #d4861f; /* v6 M1: wing/plume shading, bill and feet edge */
   /* L87/L132: Lily's growth stage (grown-up look, stage 3, by default) and the teaching scene's loops (off). */
-  --lily-size: 1; --lily-head: 0.92; --lily-lift: 5; --lily-paw: 1; --lily-ears: 1; --lily-ear-tilt: 0; --lily-tail: 1.05; --lily-chest: 1; --lily-spot1: 1; --lily-spot2: 1; --lily-spot3: 0; --lily-shut: 0; --lily-collar-on: 0; --lily-scarf-on: 1; --lily-badge-on: 1; --lily-harness-on: 0; --lily-prop-on: 0;
+  --lily-size: 1; --lily-head: 0.92; --lily-lift: 5; --lily-paw: 1; --lily-ears: 1; --lily-ear-tilt: 0; --lily-tail: 1.05; --lily-chest: 1; --lily-spot1: 1; --lily-spot2: 1; --lily-spot3: 0; --lily-shut: 0; --lily-eye: 1; --lily-perk: 0; --lily-collar-on: 0; --lily-scarf-on: 1; --lily-badge-on: 1; --lily-harness-on: 0; --lily-prop-on: 0;
   --lily-wag: none; --lily-nod: none; --boon-tap: none;
   --cheek: #f4a3a3; --wood-dark: #8a4b22; --sky: #e6f4f6; --ground: #e9dcc6;
   /* ui-ux-v6 S2: the route map (sea gradient, graticule, coastline, label halo) */
@@ -254,13 +256,21 @@
 /* ---- L87: Lily grows with the player. <html data-lily> is set by rerender() (main.ts); mascot('lily') marks its <svg> data-mascot. ---- */
 /* L132: six stages, one row each (= LOOK in src/lily.ts, tests/mascots.test.ts). An instance's data-stage (the next-stage silhouette)
    wins over <html data-lily>. The sprite parts read these through <use> (index.html). */
-:root[data-lily="0"] [data-mascot=lily]:not([data-stage]), [data-mascot=lily][data-stage="0"] { --lily-size: 0.8; --lily-head: 1; --lily-lift: 0; --lily-paw: 0.85; --lily-ears: 0.75; --lily-ear-tilt: 0; --lily-tail: 0.55; --lily-chest: 0.92; --lily-spot1: 0; --lily-spot2: 0; --lily-spot3: 0; --lily-shut: 1; --lily-collar-on: 0; --lily-scarf-on: 0; --lily-badge-on: 0; --lily-harness-on: 0; --lily-prop-on: 0; }
-:root[data-lily="1"] [data-mascot=lily]:not([data-stage]), [data-mascot=lily][data-stage="1"] { --lily-size: 0.84; --lily-head: 1; --lily-lift: 1; --lily-paw: 1; --lily-ears: 1.15; --lily-ear-tilt: 8; --lily-tail: 0.75; --lily-chest: 0.95; --lily-spot1: 0.5; --lily-spot2: 0; --lily-spot3: 0; --lily-shut: 0; --lily-collar-on: 1; --lily-scarf-on: 0; --lily-badge-on: 0; --lily-harness-on: 0; --lily-prop-on: 0; }
-:root[data-lily="2"] [data-mascot=lily]:not([data-stage]), [data-mascot=lily][data-stage="2"] { --lily-size: 0.92; --lily-head: 0.96; --lily-lift: 6; --lily-paw: 1.2; --lily-ears: 1.1; --lily-ear-tilt: 4; --lily-tail: 1; --lily-chest: 0.92; --lily-spot1: 1; --lily-spot2: 0; --lily-spot3: 0; --lily-shut: 0; --lily-collar-on: 0; --lily-scarf-on: 1; --lily-badge-on: 0; --lily-harness-on: 0; --lily-prop-on: 0; }
-:root[data-lily="3"] [data-mascot=lily]:not([data-stage]), [data-mascot=lily][data-stage="3"] { --lily-size: 1; --lily-head: 0.92; --lily-lift: 5; --lily-paw: 1; --lily-ears: 1; --lily-ear-tilt: 0; --lily-tail: 1.05; --lily-chest: 1; --lily-spot1: 1; --lily-spot2: 1; --lily-spot3: 0; --lily-shut: 0; --lily-collar-on: 0; --lily-scarf-on: 1; --lily-badge-on: 1; --lily-harness-on: 0; --lily-prop-on: 0; }
-:root[data-lily="4"] [data-mascot=lily]:not([data-stage]), [data-mascot=lily][data-stage="4"] { --lily-size: 1.05; --lily-head: 0.9; --lily-lift: 6; --lily-paw: 1.05; --lily-ears: 0.95; --lily-ear-tilt: -3; --lily-tail: 1.15; --lily-chest: 1.06; --lily-spot1: 1; --lily-spot2: 1; --lily-spot3: 1; --lily-shut: 0; --lily-collar-on: 0; --lily-scarf-on: 1; --lily-badge-on: 1; --lily-harness-on: 1; --lily-prop-on: 0; }
-:root[data-lily="5"] [data-mascot=lily]:not([data-stage]), [data-mascot=lily][data-stage="5"] { --lily-size: 1.08; --lily-head: 0.9; --lily-lift: 6; --lily-paw: 1.05; --lily-ears: 0.95; --lily-ear-tilt: -3; --lily-tail: 1.15; --lily-chest: 1.06; --lily-spot1: 1; --lily-spot2: 1; --lily-spot3: 1; --lily-shut: 0; --lily-collar-on: 0; --lily-scarf-on: 1; --lily-badge-on: 1; --lily-harness-on: 1; --lily-prop-on: 1; }
+:root[data-lily="0"] [data-mascot=lily]:not([data-stage]), [data-mascot=lily][data-stage="0"] { --lily-size: 0.83; --lily-head: 1; --lily-lift: -3; --lily-paw: 0.85; --lily-ears: 0.75; --lily-ear-tilt: 0; --lily-tail: 0.55; --lily-chest: 0.92; --lily-spot1: 0; --lily-spot2: 0; --lily-spot3: 0; --lily-shut: 1; --lily-eye: 1.1; --lily-perk: 0; --lily-collar-on: 0; --lily-scarf-on: 0; --lily-badge-on: 0; --lily-harness-on: 0; --lily-prop-on: 0; }
+:root[data-lily="1"] [data-mascot=lily]:not([data-stage]), [data-mascot=lily][data-stage="1"] { --lily-size: 0.84; --lily-head: 1; --lily-lift: 1; --lily-paw: 1; --lily-ears: 1.15; --lily-ear-tilt: 8; --lily-tail: 0.75; --lily-chest: 0.95; --lily-spot1: 0.5; --lily-spot2: 0; --lily-spot3: 0; --lily-shut: 0; --lily-eye: 1.1; --lily-perk: 0; --lily-collar-on: 1; --lily-scarf-on: 0; --lily-badge-on: 0; --lily-harness-on: 0; --lily-prop-on: 0; }
+:root[data-lily="2"] [data-mascot=lily]:not([data-stage]), [data-mascot=lily][data-stage="2"] { --lily-size: 0.92; --lily-head: 0.96; --lily-lift: 8; --lily-paw: 1.25; --lily-ears: 1.1; --lily-ear-tilt: 4; --lily-tail: 0.9; --lily-chest: 0.86; --lily-spot1: 1; --lily-spot2: 0; --lily-spot3: 0; --lily-shut: 0; --lily-eye: 1.1; --lily-perk: 0; --lily-collar-on: 0; --lily-scarf-on: 1; --lily-badge-on: 0; --lily-harness-on: 0; --lily-prop-on: 0; }
+:root[data-lily="3"] [data-mascot=lily]:not([data-stage]), [data-mascot=lily][data-stage="3"] { --lily-size: 1; --lily-head: 0.92; --lily-lift: 5; --lily-paw: 1; --lily-ears: 1; --lily-ear-tilt: 0; --lily-tail: 1.05; --lily-chest: 1; --lily-spot1: 1; --lily-spot2: 1; --lily-spot3: 0; --lily-shut: 0; --lily-eye: 1; --lily-perk: 0; --lily-collar-on: 0; --lily-scarf-on: 1; --lily-badge-on: 1; --lily-harness-on: 0; --lily-prop-on: 0; }
+:root[data-lily="4"] [data-mascot=lily]:not([data-stage]), [data-mascot=lily][data-stage="4"] { --lily-size: 1.05; --lily-head: 0.88; --lily-lift: 6; --lily-paw: 1.05; --lily-ears: 0.95; --lily-ear-tilt: -3; --lily-tail: 1.15; --lily-chest: 1.1; --lily-spot1: 1; --lily-spot2: 1; --lily-spot3: 1; --lily-shut: 0; --lily-eye: 1; --lily-perk: 2; --lily-collar-on: 0; --lily-scarf-on: 1; --lily-badge-on: 1; --lily-harness-on: 1; --lily-prop-on: 0; }
+:root[data-lily="5"] [data-mascot=lily]:not([data-stage]), [data-mascot=lily][data-stage="5"] { --lily-size: 1.08; --lily-head: 0.88; --lily-lift: 6; --lily-paw: 1.05; --lily-ears: 0.95; --lily-ear-tilt: -3; --lily-tail: 1.2; --lily-chest: 1.12; --lily-spot1: 1; --lily-spot2: 1; --lily-spot3: 1; --lily-shut: 0; --lily-eye: 1; --lily-perk: 3; --lily-collar-on: 0; --lily-scarf-on: 1; --lily-badge-on: 1; --lily-harness-on: 1; --lily-prop-on: 1; }
 svg[data-mascot=lily] > g { transform: scale(var(--lily-size)); transform-origin: 60px 116px; }
+/* L134 P3: the colour the player picked (<html data-lily-acc>, src/lily.ts ACC_AT) on her collar, scarf and harness only; on the
+   instance, never on :root, since --lily-scarf also colours Boon's sparkle. */
+:root[data-lily-acc="1"] [data-mascot=lily] { --lily-collar: var(--lily-acc1); --lily-scarf: var(--lily-acc1); --lily-harness: var(--lily-acc1); }
+:root[data-lily-acc="2"] [data-mascot=lily] { --lily-collar: var(--lily-acc2); --lily-scarf: var(--lily-acc2); --lily-harness: var(--lily-acc2); }
+:root[data-lily-acc="3"] [data-mascot=lily] { --lily-collar: var(--lily-acc3); --lily-scarf: var(--lily-acc3); --lily-harness: var(--lily-acc3); }
+:root[data-lily-acc="4"] [data-mascot=lily] { --lily-collar: var(--lily-acc4); --lily-scarf: var(--lily-acc4); --lily-harness: var(--lily-acc4); }
+:root[data-lily-acc="5"] [data-mascot=lily] { --lily-collar: var(--lily-acc5); --lily-scarf: var(--lily-acc5); --lily-harness: var(--lily-acc5); }
+:root[data-lily-acc="6"] [data-mascot=lily] { --lily-collar: var(--lily-acc6); --lily-scarf: var(--lily-acc6); --lily-harness: var(--lily-acc6); }
 /* ---- L87 teaching scene (src/ui/teachScene.ts): loops only while it is on screen (data-live, IntersectionObserver). ---- */
 @media (prefers-reduced-motion: no-preference) {
   .teach-scene[data-live] { --lily-wag: cq-wag 0.9s ease-in-out infinite; --lily-nod: cq-nod 3.2s ease-in-out infinite; --boon-tap: cq-tap 1.8s ease-in-out infinite; }
@@ -270,7 +280,7 @@ svg[data-mascot=lily] > g { transform: scale(var(--lily-size)); transform-origin
   .teach-scene .tb-tap { transform-origin: 84px 84px; animation: var(--boon-tap); }
   .teach-scene .tb-line { transition: opacity 0.2s; }
 }
-.teach-scene .tb-nod { transform: rotate(6deg); transform-origin: 60px calc(76px - var(--lily-lift) * 1px); } /* still frame: Lily's head leans toward Boon */
+.teach-scene .tb-nod { transform: rotate(6deg); transform-origin: 60px calc(76px - (var(--lily-lift) + var(--lily-perk)) * 1px); } /* still frame: Lily's head leans toward Boon */
 @keyframes cq-nod { 0%, 100% { transform: rotate(6deg); } 40% { transform: rotate(10deg) translateY(1px); } 55% { transform: rotate(4deg) translateY(-1px); } }
 @keyframes cq-tap { 0%, 100% { transform: rotate(0); } 50% { transform: rotate(-9deg); } }
 /* ---- v5 motion (ui-ux-v5 §1). Base styles are the end state; one-shot classes go on at an event, never while drawing (react(),
@@ -287,6 +297,8 @@ svg[data-mascot=lily] > g { transform: scale(var(--lily-size)); transform-origin
 @property --lily-spot2 { syntax: '<number>'; inherits: true; initial-value: 1; }
 @property --lily-spot3 { syntax: '<number>'; inherits: true; initial-value: 0; }
 @property --lily-shut { syntax: '<number>'; inherits: true; initial-value: 0; }
+@property --lily-eye { syntax: '<number>'; inherits: true; initial-value: 1; }
+@property --lily-perk { syntax: '<number>'; inherits: true; initial-value: 0; }
 @property --lily-collar-on { syntax: '<number>'; inherits: true; initial-value: 0; }
 @property --lily-scarf-on { syntax: '<number>'; inherits: true; initial-value: 1; }
 @property --lily-badge-on { syntax: '<number>'; inherits: true; initial-value: 1; }
@@ -313,11 +325,11 @@ svg[data-mascot=lily].grow.react[data-pose=cheer] { animation: cq-grow 2400ms ea
 .cq-bubble { transform-origin: 0 0; animation: cq-bubble 220ms ease-out; }
 .cq-rise { pointer-events: none; animation: cq-rise 800ms ease-out forwards; }
 @keyframes cq-grow { 0%, 25%, 83%, 100% { scale: 1; } 12% { scale: 0.94; } 92% { scale: 1.08; } }
-@keyframes cq-grow1 { 0%, 12% { --lily-size: 0.8; --lily-lift: 0; --lily-paw: 0.85; --lily-ears: 0.75; --lily-ear-tilt: 0; --lily-tail: 0.55; --lily-chest: 0.92; --lily-spot1: 0; --lily-shut: 1; --lily-collar-on: 0; } 62%, 100% { --lily-size: 0.84; --lily-lift: 1; --lily-paw: 1; --lily-ears: 1.15; --lily-ear-tilt: 8; --lily-tail: 0.75; --lily-chest: 0.95; --lily-spot1: 0.5; --lily-shut: 0; --lily-collar-on: 1; } }
-@keyframes cq-grow2 { 0%, 12% { --lily-size: 0.84; --lily-head: 1; --lily-lift: 1; --lily-paw: 1; --lily-ears: 1.15; --lily-ear-tilt: 8; --lily-tail: 0.75; --lily-chest: 0.95; --lily-spot1: 0.5; --lily-collar-on: 1; --lily-scarf-on: 0; } 62%, 100% { --lily-size: 0.92; --lily-head: 0.96; --lily-lift: 6; --lily-paw: 1.2; --lily-ears: 1.1; --lily-ear-tilt: 4; --lily-tail: 1; --lily-chest: 0.92; --lily-spot1: 1; --lily-collar-on: 0; --lily-scarf-on: 1; } }
-@keyframes cq-grow3 { 0%, 12% { --lily-size: 0.92; --lily-head: 0.96; --lily-lift: 6; --lily-paw: 1.2; --lily-ears: 1.1; --lily-ear-tilt: 4; --lily-tail: 1; --lily-chest: 0.92; --lily-spot2: 0; --lily-badge-on: 0; } 62%, 100% { --lily-size: 1; --lily-head: 0.92; --lily-lift: 5; --lily-paw: 1; --lily-ears: 1; --lily-ear-tilt: 0; --lily-tail: 1.05; --lily-chest: 1; --lily-spot2: 1; --lily-badge-on: 1; } }
-@keyframes cq-grow4 { 0%, 12% { --lily-size: 1; --lily-head: 0.92; --lily-lift: 5; --lily-paw: 1; --lily-ears: 1; --lily-ear-tilt: 0; --lily-tail: 1.05; --lily-chest: 1; --lily-spot3: 0; --lily-harness-on: 0; } 62%, 100% { --lily-size: 1.05; --lily-head: 0.9; --lily-lift: 6; --lily-paw: 1.05; --lily-ears: 0.95; --lily-ear-tilt: -3; --lily-tail: 1.15; --lily-chest: 1.06; --lily-spot3: 1; --lily-harness-on: 1; } }
-@keyframes cq-grow5 { 0%, 12% { --lily-size: 1.05; --lily-prop-on: 0; } 62%, 100% { --lily-size: 1.08; --lily-prop-on: 1; } }
+@keyframes cq-grow1 { 0%, 12% { --lily-size: 0.83; --lily-lift: -3; --lily-paw: 0.85; --lily-ears: 0.75; --lily-ear-tilt: 0; --lily-tail: 0.55; --lily-chest: 0.92; --lily-spot1: 0; --lily-shut: 1; --lily-collar-on: 0; } 62%, 100% { --lily-size: 0.84; --lily-lift: 1; --lily-paw: 1; --lily-ears: 1.15; --lily-ear-tilt: 8; --lily-tail: 0.75; --lily-chest: 0.95; --lily-spot1: 0.5; --lily-shut: 0; --lily-collar-on: 1; } }
+@keyframes cq-grow2 { 0%, 12% { --lily-size: 0.84; --lily-head: 1; --lily-lift: 1; --lily-paw: 1; --lily-ears: 1.15; --lily-ear-tilt: 8; --lily-tail: 0.75; --lily-chest: 0.95; --lily-spot1: 0.5; --lily-collar-on: 1; --lily-scarf-on: 0; } 62%, 100% { --lily-size: 0.92; --lily-head: 0.96; --lily-lift: 8; --lily-paw: 1.25; --lily-ears: 1.1; --lily-ear-tilt: 4; --lily-tail: 0.9; --lily-chest: 0.86; --lily-spot1: 1; --lily-collar-on: 0; --lily-scarf-on: 1; } }
+@keyframes cq-grow3 { 0%, 12% { --lily-size: 0.92; --lily-head: 0.96; --lily-lift: 8; --lily-paw: 1.25; --lily-ears: 1.1; --lily-ear-tilt: 4; --lily-tail: 0.9; --lily-chest: 0.86; --lily-spot2: 0; --lily-eye: 1.1; --lily-badge-on: 0; } 62%, 100% { --lily-size: 1; --lily-head: 0.92; --lily-lift: 5; --lily-paw: 1; --lily-ears: 1; --lily-ear-tilt: 0; --lily-tail: 1.05; --lily-chest: 1; --lily-spot2: 1; --lily-eye: 1; --lily-badge-on: 1; } }
+@keyframes cq-grow4 { 0%, 12% { --lily-size: 1; --lily-head: 0.92; --lily-lift: 5; --lily-paw: 1; --lily-ears: 1; --lily-ear-tilt: 0; --lily-tail: 1.05; --lily-chest: 1; --lily-spot3: 0; --lily-perk: 0; --lily-harness-on: 0; } 62%, 100% { --lily-size: 1.05; --lily-head: 0.88; --lily-lift: 6; --lily-paw: 1.05; --lily-ears: 0.95; --lily-ear-tilt: -3; --lily-tail: 1.15; --lily-chest: 1.1; --lily-spot3: 1; --lily-perk: 2; --lily-harness-on: 1; } }
+@keyframes cq-grow5 { 0%, 12% { --lily-size: 1.05; --lily-tail: 1.15; --lily-chest: 1.1; --lily-perk: 2; --lily-prop-on: 0; } 62%, 100% { --lily-size: 1.08; --lily-tail: 1.2; --lily-chest: 1.12; --lily-perk: 3; --lily-prop-on: 1; } }
 @keyframes cq-jump { 0%, 50%, 100% { translate: 0 0; } 25% { translate: 0 -6px; } 72% { translate: 0 -3px; } }
 @keyframes cq-lean { 0%, 55%, 100% { rotate: 0deg; } 28% { rotate: -6deg; } 78% { rotate: -3deg; } }
 @keyframes cq-tilt { 0%, 100% { rotate: 0deg; } 25%, 70% { rotate: 5deg; } }

@@ -85,7 +85,7 @@ describe('theme', () => {
     const light = tokens(':root');
     const dark = { ...light, ...tokens(':root[data-theme=dark]') };
     for (const [name, tk] of [['light', light], ['dark', dark]] as const) {
-      for (const fg of ['lily-collar', 'lily-harness']) {
+      for (const fg of ['lily-collar', 'lily-harness', ...[1, 2, 3, 4, 5, 6].map((n) => `lily-acc${n}`)]) { // L134 P3 palette
         for (const bg of ['lily-fur', 'bg', 'panel']) expect(ratio(tk[fg], tk[bg]), `${name} ${fg}/${bg}`).toBeGreaterThanOrEqual(3);
       }
     }

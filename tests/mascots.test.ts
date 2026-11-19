@@ -40,9 +40,17 @@ describe('linh vật (L57, product-design-v6 §1)', () => {
       expect(sprite.split(open)[1]?.startsWith('<g style="transform:'), id).toBe(true);
     }
     // every stage variable the sprite reads is registered (tweens as a number) and listed in LOOK
-    const used = new Set([...sprite.matchAll(/var\(--lily-([\w-]+?)\)/g)].map((m) => m[1]).filter((v) => /^(size|head|lift|paw|ears|ear-tilt|tail|chest|spot\d|shut|[\w]+-on)$/.test(v)));
+    const used = new Set([...sprite.matchAll(/var\(--lily-([\w-]+?)\)/g)].map((m) => m[1]).filter((v) => /^(size|head|lift|perk|paw|ears|ear-tilt|tail|chest|spot\d|shut|eye|[\w]+-on)$/.test(v)));
     expect(used.size).toBeGreaterThan(12);
     for (const v of used) expect(css, v).toContain(`@property --lily-${v} {`);
+  });
+
+  it('L134: Lily ngủ có đốm theo ba bậc như khi thức (sơ sinh trắng trơn); mõm dài ra theo đầu; mắt cún to trong nhóm con', () => {
+    const sleep = sprite.split('<g id="lily-sleep">')[1]?.split('</g>\n')[0] ?? '';
+    for (const n of [1, 2, 3]) expect(sleep).toContain(`style="opacity:var(--lily-spot${n})"`);
+    const head = sprite.split('<g id="lily-head">')[1]?.split('\n')[0] ?? '';
+    expect(head).toContain('scaleY(calc(1 + (1 - var(--lily-head))');
+    expect(sprite).toContain('<g style="transform:scale(var(--lily-eye))');
   });
 
   it('mọi href="#…" và url(#…) trong sprite trỏ tới một id có thật', () => {
@@ -199,7 +207,10 @@ describe('rig GSAP (ui-ux-v6 M1, T5)', () => {
     const { pivotOf, PIVOT } = await import('../src/ui/mascots');
     const { LOOK } = await import('../src/lily');
     expect(pivotOf('lily', 0)).toEqual(PIVOT.lily);
-    expect(pivotOf('lily', LOOK[2].lift)).toEqual({ feet: '60 112', neck: '60 66', tail: '80 106', 'arm-point': '72 82' });
+    expect(pivotOf('lily', LOOK[2].lift)).toEqual({ feet: '60 112', neck: '60 64', tail: '80 106', 'arm-point': '72 80' });
+    // L134: the seasoned chest-out posture raises the neck, not the pointing paw; the newborn sits lower
+    expect(pivotOf('lily', LOOK[4].lift, LOOK[4].perk)).toEqual({ feet: '60 112', neck: '60 64', tail: '80 106', 'arm-point': '72 82' });
+    expect(pivotOf('lily', LOOK[0].lift, LOOK[0].perk).neck).toBe('60 75');
     expect(pivotOf('boon', 6)).toEqual(PIVOT.boon);
   });
 });
