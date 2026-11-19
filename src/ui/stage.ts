@@ -151,6 +151,9 @@ async function drawAndPlay(c: Ctx, owner: Ctx = c): Promise<void> {
 export function relabelStage(): void {
   const c = shown;
   if (!c || byId('stage').hidden) return;
+  // W2: the folded line belongs to the task just solved; opening another task (no hash change) closes it, so it never sits
+  // over the next task or takes its first Esc.
+  if (current.done && app.selectedId !== c.tk.id) return hide();
   byId('stage-text').textContent = sentence(c);
   if (c.lang === getLang()) return;
   c.lang = getLang();

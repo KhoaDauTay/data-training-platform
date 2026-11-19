@@ -45,11 +45,16 @@ function barPath(x0: number, x1: number, y: number, hgt: number): string {
 
 /** Horizontal bars, label left, value at the bar's end; dashed vertical grid at nice steps with labels below. `width`: the tab's measured width. */
 export function bars(r: QueryResult, spec: ChartSpec, col: number, size: ChartSize = 'tab', width?: number): SVGSVGElement {
-  const { labelW, valueW, chars, svg } = SIZES[size];
   const W = width ?? SIZES[size].w;
+  // A narrow tab (phone) shrinks the label and value columns with the width, so the plot keeps at least half of it.
+  const fit = size === 'tab' && W < 720 ? W / 720 : 1;
+  const { svg } = SIZES[size];
+  const labelW = Math.max(72, Math.round(SIZES[size].labelW * fit));
+  const valueW = Math.max(52, Math.round(SIZES[size].valueW * fit));
+  const chars = Math.max(9, Math.round(SIZES[size].chars * fit));
   const rowH = size === 'tab' ? Math.max(SIZES.tab.rowH, Math.min(40, Math.floor(200 / Math.max(1, r.rows.length)))) : SIZES.card.rowH; // tab: ≥ 220 px tall
   const vals = r.rows.map((row) => Number(row[col] ?? 0));
-  const ticks = niceTicks(...valueRange(vals), size === 'tab' ? 5 : 3);
+  const ticks = niceTicks(...valueRange(vals), size === 'tab' && W >= 560 ? 5 : 3);
   const [lo, hi] = [ticks[0], ticks.at(-1)!];
   const x = (v: number) => labelW + (((Number.isFinite(v) ? v : 0) - lo) / (hi - lo)) * (W - labelW - valueW); // NaN/Infinity: no bar, value still printed
   const x0 = x(0); // negatives grow left of the zero line
@@ -85,7 +90,7 @@ export function line(r: QueryResult, spec: ChartSpec, col: number, size: ChartSi
     .filter((p): p is { t: number; v: number; raw: unknown } => p.t !== undefined && p.v !== null && Number.isFinite(p.v))
     .sort((a, b) => a.t - b.t);
   const [t0, t1] = [pts[0]?.t ?? 0, pts.at(-1)?.t ?? 1];
-  const ticks = niceTicks(...valueRange(pts.map((p) => p.v)), size === 'tab' ? 5 : 3);
+  const ticks = niceTicks(...valueRange(pts.map((p) => p.v)), size === 'tab' && W >= 560 ? 5 : 3);
   const [vmin, vmax] = [ticks[0], ticks.at(-1)!];
   const x = (tm: number) => pad.l + ((tm - t0) / Math.max(1, t1 - t0)) * (W - pad.l - pad.r);
   const y = (v: number) => pad.t + (1 - (v - vmin) / (vmax - vmin)) * (H - pad.t - pad.b);
@@ -97,7 +102,7 @@ export function line(r: QueryResult, spec: ChartSpec, col: number, size: ChartSi
     ...ticks.map((v) => s('g', {},
       s('line', { x1: pad.l, x2: W - pad.r, y1: y(v), y2: y(v), class: v === 0 ? 'stroke-line-strong' : GRID, 'stroke-dasharray': v !== 0 && '2 3' }),
       s('text', { x: pad.l - 6, y: y(v) + 4, 'text-anchor': 'end', class: LABEL }, short(v)))),
-    ...spread(pts.length, size === 'tab' ? 6 : 3).map((i, k, all) => s('text', {
+    ...spread(pts.length, size === 'tab' && W >= 560 ? 6 : 3).map((i, k, all) => s('text', {
       x: x(pts[i].t), y: H - 8, class: LABEL, 'text-anchor': all.length > 1 && k === 0 ? 'start' : k === all.length - 1 && all.length > 1 ? 'end' : 'middle',
     }, formatCell(pts[i].raw, r.types[spec.label]))),
     pts.length > 1 ? s('path', { d: `M${xy[0]}L${xy.slice(1).join('L')}L${x(t1).toFixed(1)},${y(Math.max(vmin, 0)).toFixed(1)}L${x(t0).toFixed(1)},${y(Math.max(vmin, 0)).toFixed(1)}Z`, class: 'fill-chart', 'fill-opacity': '0.12' }) : null,
