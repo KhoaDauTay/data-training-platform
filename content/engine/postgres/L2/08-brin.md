@@ -72,7 +72,7 @@ Opclass khác: `minmax-multi` (nhiều khoảng mỗi khối), `bloom`, `inclusi
 SELECT round(corr(id, extract(epoch FROM taken_at))::numeric, 3) AS physical_order FROM readings;
 ```
 
-Kết quả là 1: thứ tự ghi trùng thứ tự thời gian, đúng điều kiện để BRIN có ích.
+Kết quả `1.000`: thứ tự ghi trùng thứ tự thời gian, đúng điều kiện để BRIN có ích.
 
 ## Thực hành
 
@@ -96,7 +96,7 @@ Other opclasses: `minmax-multi` (several intervals per range), `bloom`, `inclusi
 SELECT round(corr(id, extract(epoch FROM taken_at))::numeric, 3) AS physical_order FROM readings;
 ```
 
-The result is 1: write order matches time order, exactly the condition for BRIN to help.
+Result `1.000`: write order matches time order, exactly the condition for BRIN to help.
 
 ## Practice
 

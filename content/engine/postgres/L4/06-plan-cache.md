@@ -70,7 +70,7 @@ quiz:
   - custom: lập lại cho giá trị tham số cụ thể, dùng MCV/histogram của đúng giá trị đó;
   - generic: một kế hoạch cho mọi giá trị, tham số là `$1`, ước lượng theo độ chọn lọc trung bình.
 - Luật mặc định (`plan_cache_mode = auto`): 5 lần đầu dùng custom; sau đó lập generic, và dùng generic nếu chi phí của nó không cao hơn nhiều so với trung bình 5 lần custom.
-- Bẫy: dữ liệu lệch. Kế hoạch chung chọn theo "giá trị trung bình" có thể rất tệ cho giá trị phổ biến (70 % bảng).
+- Bẫy: dữ liệu lệch. Generic plan chọn theo "giá trị trung bình" có thể rất tệ cho giá trị phổ biến (70 % bảng).
 
 ## Ví dụ
 
@@ -96,7 +96,7 @@ SELECT name, generic_plans, custom_plans FROM pg_prepared_statements;
 by_status | 1 | 1
 ```
 
-Kế hoạch chung vẫn dùng index cho mọi giá trị, kể cả 'delivered', trong khi kế hoạch riêng cho 'delivered' là Seq Scan (bài e-pg-l4-02).
+Kế hoạch chung vẫn dùng index cho mọi giá trị, kể cả 'delivered', trong khi custom plan cho 'delivered' là Seq Scan (bài e-pg-l4-02).
 
 ## Thực hành
 

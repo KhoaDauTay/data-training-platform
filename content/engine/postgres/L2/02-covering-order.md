@@ -45,8 +45,8 @@ lab:
         vi: "`CREATE INDEX name ON table (key) INCLUDE (extra)`."
         en: "`CREATE INDEX name ON table (key) INCLUDE (extra)`."
     - task:
-        vi: "Bảng vừa nạp và chưa VACUUM. Đọc `relallvisible` (số trang có bit all-visible) của bảng `orders` trong `pg_class`."
-        en: "The table was just loaded and never vacuumed. Read `relallvisible` (pages marked all-visible) of table `orders` from `pg_class`."
+        vi: "Bảng vừa nạp và chưa VACUUM. Đoán trước: số này là 0, một nửa hay bằng số trang của bảng? Đọc `relallvisible` (số trang có bit all-visible) của bảng `orders` trong `pg_class`."
+        en: "The table was just loaded and never vacuumed. Guess first: is the number 0, half, or every page of the table? Read `relallvisible` (pages marked all-visible) of table `orders` from `pg_class`."
       solution: SELECT relallvisible FROM pg_class WHERE relname = 'orders'
       check: rows
       hint:

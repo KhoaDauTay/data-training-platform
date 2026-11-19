@@ -36,7 +36,7 @@ lab:
       RETURN (j->0->'Plan'->>'Plan Rows')::bigint;
     END $$;
   steps:
-    - task: { vi: "Mỗi quận (`district`) chỉ thuộc một thành phố (`city`). So ba con số cho điều kiện city = 3 và district = 33: ước lượng trên `addr_plain`, ước lượng trên `addr_stats`, và số dòng thật. Ba cột: plain, with_stats, actual. Dùng hàm `est(text)` có sẵn.", en: "Each `district` belongs to exactly one `city`. Compare three numbers for city = 3 and district = 33: the estimate on `addr_plain`, the estimate on `addr_stats`, and the real count. Three columns: plain, with_stats, actual. Use the ready-made `est(text)` function." }
+    - task: { vi: "Mỗi quận (`district`) chỉ thuộc một thành phố (`city`). So ba con số cho điều kiện city = 3 và district = 33: ước lượng trên `addr_plain`, ước lượng trên `addr_stats`, và số dòng thật. Ba cột: plain, with_stats, actual. Dùng hàm `est(text)` có sẵn. Đoán trước: ước lượng trên bảng không có thống kê mở rộng thấp hơn, cao hơn hay bằng số thật?", en: "Each `district` belongs to exactly one `city`. Compare three numbers for city = 3 and district = 33: the estimate on `addr_plain`, the estimate on `addr_stats`, and the real count. Three columns: plain, with_stats, actual. Use the ready-made `est(text)` function. Guess first: is the estimate without extended statistics lower than, higher than or equal to the real count?" }
       solution: "SELECT est('SELECT * FROM addr_plain WHERE city = 3 AND district = 33') AS plain, est('SELECT * FROM addr_stats WHERE city = 3 AND district = 33') AS with_stats, (SELECT count(*) FROM addr_plain WHERE city = 3 AND district = 33) AS actual"
       check: rows
       hint: { vi: "`est` nhận nguyên câu SQL dưới dạng chuỗi.", en: "`est` takes the whole SQL query as a string." }

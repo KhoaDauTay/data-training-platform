@@ -32,7 +32,7 @@ lab:
     UPDATE stock SET qty = qty - 1 WHERE id = 2;
     INSERT INTO wal_marks VALUES ('end', pg_current_wal_insert_lsn());
   steps:
-    - task: { vi: "Giữa hai mốc 'start' và 'end' trong `wal_marks`, liệt kê các bản ghi của resource manager 'Heap' chạm tới bảng `stock`: loại bản ghi và cột full_page (true nếu bản ghi chứa ảnh cả trang). Sắp theo `start_lsn`.", en: "Between the 'start' and 'end' marks in `wal_marks`, list the 'Heap' resource-manager records that touch table `stock`: record type and a column full_page (true if the record carries a full-page image). Order by `start_lsn`." }
+    - task: { vi: "Giữa hai mốc 'start' và 'end' trong `wal_marks`, liệt kê các bản ghi của resource manager 'Heap' chạm tới bảng `stock`: loại bản ghi và cột full_page (true nếu bản ghi chứa ảnh cả trang). Sắp theo `start_lsn`. Đoán trước: hai UPDATE trên cùng trang, cái nào mang ảnh cả trang?", en: "Between the 'start' and 'end' marks in `wal_marks`, list the 'Heap' resource-manager records that touch table `stock`: record type and a column full_page (true if the record carries a full-page image). Order by `start_lsn`. Guess first: of the two UPDATEs on the same page, which carries the full-page image?" }
       solution: "SELECT record_type, fpi_length > 0 AS full_page FROM pg_get_wal_records_info((SELECT lsn FROM wal_marks WHERE step = 'start'), (SELECT lsn FROM wal_marks WHERE step = 'end')) WHERE resource_manager = 'Heap' AND block_ref LIKE '%/' || pg_relation_filenode('stock') || ' %' ORDER BY start_lsn"
       check: rows
       ordered: true

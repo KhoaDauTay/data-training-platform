@@ -52,8 +52,8 @@ quiz:
 
 ## Ý chính
 
-- Backup logic: `pg_dump`/`pg_dumpall` xuất SQL hoặc dạng nén; nhất quán tại một thời điểm, khôi phục được sang phiên bản khác; chậm với dữ liệu lớn.
-- Backup vật lý: sao thư mục dữ liệu (`pg_basebackup`) + lưu trữ WAL liên tục (`archive_library`). Khôi phục = base backup + replay WAL tới đích: thời điểm, LSN, tên điểm khôi phục. Đó là PITR.
+- Backup logic: `pg_dump`/`pg_dumpall` nhất quán tại một thời điểm, khôi phục được sang phiên bản khác; chậm với dữ liệu lớn.
+- Backup vật lý: sao thư mục dữ liệu (`pg_basebackup`) + lưu trữ WAL liên tục (`archive_command` hoặc `archive_library`). Khôi phục = base backup + replay WAL tới đích: thời điểm, LSN, tên điểm khôi phục. Đó là PITR.
 - Nhân bản không phải backup: lỗi logic (xóa nhầm) được nhân bản ngay.
 - Failover: `pg_promote()` nâng standby, nhưng quyết định khi nào nâng và cô lập primary cũ là việc của công cụ HA bên ngoài.
 - Autovacuum sản xuất: ngưỡng = `autovacuum_vacuum_threshold` + `autovacuum_vacuum_scale_factor` × số dòng (mặc định 50 + 0,2 × số dòng), từ 18 không vượt `autovacuum_vacuum_max_threshold` (100 triệu, đo trên PGlite). Bảng lớn cần tham số riêng; không bao giờ tắt autovacuum vì nó còn freeze tuple chống wraparound.
@@ -79,8 +79,8 @@ Bốn tình huống vận hành. Kỹ năng chuyên gia: chọn chiến lược 
 
 ## Key idea
 
-- Logical backup: `pg_dump`/`pg_dumpall` export SQL or a compressed format; consistent at one moment, restorable into another version; slow for very large data.
-- Physical backup: copy the data directory (`pg_basebackup`) + continuous WAL archiving (`archive_library`). Restore = base backup + WAL replay up to a target: a time, an LSN, a named restore point. That is PITR.
+- Logical backup: `pg_dump`/`pg_dumpall` consistent at one moment, restorable into another version; slow for very large data.
+- Physical backup: copy the data directory (`pg_basebackup`) + continuous WAL archiving (`archive_command` or `archive_library`). Restore = base backup + WAL replay up to a target: a time, an LSN, a named restore point. That is PITR.
 - Replication is not a backup: a logical mistake (an accidental delete) is replicated at once.
 - Failover: `pg_promote()` promotes a standby, but deciding when to promote and fencing the old primary is the job of an external HA tool.
 - Production autovacuum: threshold = `autovacuum_vacuum_threshold` + `autovacuum_vacuum_scale_factor` × rows (default 50 + 0.2 × rows), and since 18 never above `autovacuum_vacuum_max_threshold` (100 million, measured on PGlite). Large tables need their own parameters; never turn autovacuum off, because it also freezes tuples against wraparound.

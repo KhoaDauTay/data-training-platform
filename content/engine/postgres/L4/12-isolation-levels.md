@@ -45,7 +45,7 @@ quiz:
 
 Hai câu `SELECT sum(bal)` trong cùng một transaction trả hai tổng khác nhau: lỗi hay bình thường? Tùy mức cô lập (isolation level):
 
-- Read Uncommitted: chạy y như Read Committed; Postgres không bao giờ cho dirty read.
+- Read Uncommitted: chuẩn SQL cho phép dirty read, nhưng Postgres chạy y như Read Committed nên không bao giờ có dirty read.
 - Read Committed (mặc định): snapshot mỗi câu, nên có thể có non-repeatable read và phantom read. Khi `UPDATE` gặp dòng vừa bị người khác sửa, nó chờ người đó xong rồi đánh giá lại điều kiện trên phiên bản mới.
 - Repeatable Read: một snapshot cho cả transaction (từ câu đầu tiên). Không có non-repeatable read, và chặt hơn chuẩn SQL: cũng không có phantom read. Serialization anomaly vẫn có thể xảy ra. Gặp xung đột ghi thì báo 40001; ứng dụng phải thử lại cả transaction.
 - Serializable: thêm phát hiện xung đột đọc/ghi (bài sau), nên không còn serialization anomaly.
@@ -83,7 +83,7 @@ Sơ đồ hai làn: bật/tắt mức cô lập và xem cùng một kịch bản
 
 Two `SELECT sum(bal)` queries inside one transaction return different totals: a bug or normal? It depends on the isolation level:
 
-- Read Uncommitted: behaves exactly like Read Committed; Postgres never allows a dirty read.
+- Read Uncommitted: the SQL standard allows dirty reads, but Postgres runs it exactly like Read Committed, so a dirty read never happens.
 - Read Committed (default): a snapshot per statement, so non-repeatable reads and phantom reads can happen. When an `UPDATE` meets a row someone else just changed, it waits for them to finish, then re-checks its condition on the new version.
 - Repeatable Read: one snapshot for the whole transaction (from its first statement). No non-repeatable reads and, stricter than the SQL standard, no phantom reads either. Serialization anomalies are still possible. A write conflict raises 40001; the application must retry the whole transaction.
 - Serializable: adds detection of read/write conflicts (next lesson), so no serialization anomaly.

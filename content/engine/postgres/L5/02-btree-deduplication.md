@@ -27,7 +27,7 @@ lab:
     CREATE INDEX tickets_prio_nodedup ON tickets (prio) WITH (deduplicate_items = off);
     CREATE INDEX tickets_prio_incl ON tickets (prio) INCLUDE (id);
   steps:
-    - task: { vi: "So kích thước (số trang 8 KB) của ba index có tên bắt đầu bằng `tickets_prio`, sắp theo tên.", en: "Compare the size (number of 8 KB pages) of the three indexes whose names start with `tickets_prio`, ordered by name." }
+    - task: { vi: "So kích thước (số trang 8 KB) của ba index có tên bắt đầu bằng `tickets_prio`, sắp theo tên. Đoán trước: index có INCLUDE nhỏ như bản có dedup hay to như bản tắt dedup?", en: "Compare the size (number of 8 KB pages) of the three indexes whose names start with `tickets_prio`, ordered by name. Guess first: is the index with INCLUDE as small as the deduplicated one or as big as the one with deduplication off?" }
       solution: "SELECT relname, pg_relation_size(oid) / 8192 AS pages FROM pg_class WHERE relname LIKE 'tickets_prio%' ORDER BY relname"
       check: rows
       ordered: true
