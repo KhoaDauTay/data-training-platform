@@ -43,7 +43,7 @@ import { clearMemos } from './viz/memo';
 import { createMapStrip } from './ui/mapStrip';
 import { renderData } from './ui/dataView';
 import { renderDashboard, resetCards } from './ui/dashboard';
-import { registerServiceWorker } from './pwa';
+import { initServiceWorker } from './pwa';
 
 initTheme(); // index.html already set data-theme before paint; this adds the OS listener for 'system'
 // The DB (PGlite download + seed, the slowest part of startup) boots in parallel with the ticket chunk below.
@@ -62,7 +62,7 @@ function syncDbStatus(): void {
 }
 function onDbStatus(s: DbStatus): void {
   engine = s;
-  if (s === 'ready' && !dbWasReady) setTimeout(() => registerServiceWorker(offerUpdate), 2000); // V16-OFFLINE: after the first boot
+  if (s === 'ready' && !dbWasReady) setTimeout(registerSw, 2000); // V16-OFFLINE: after the first boot
   if (s === 'ready') dbWasReady = true;
   if (s === 'failed') app.problem = { kind: dbWasReady ? 'worker-crash' : 'db-init-failed' }; // P10
   if (s !== 'loading') app.loadProgress = undefined;
@@ -71,6 +71,7 @@ function onDbStatus(s: DbStatus): void {
   renderTopbar();
   relabelWelcome(); // the download line ends, "I am new" becomes clickable
 }
+const registerSw = initServiceWorker(offerUpdate); // V16-OFFLINE (src/pwa.ts)
 const db = new DbClient(onDbStatus);
 db.onProgress = (p) => {
   if (engine !== 'loading') return; // the steps tab fetches the parser .wasm through the same counting fetch later

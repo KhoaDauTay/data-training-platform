@@ -1,10 +1,12 @@
 import type { PGlite } from '@electric-sql/pglite';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { ensureSchema, seededSchemas } from '../src/db/lab';
+import { runSandboxed } from '../src/db/run';
 import {
   bootDb,
   CURRENT_KEY,
   dumpSeeded,
+  ensureTracked,
   mayReplace,
   SNAPSHOT_FORMAT,
   snapshotSchemas,
@@ -80,8 +82,10 @@ describe('snapshot round trip (real PGlite)', () => {
 
   beforeAll(async () => {
     ({ db: seeded } = await bootDb()); // no store: an empty engine, as before v16
-    await ensureSchema(seeded, 'game');
-    await ensureSchema(seeded, 'lab');
+    expect(await ensureTracked(seeded, 'game')).toBe(true);
+    await runSandboxed(seeded, 'SELECT count(*) FROM shipments'); // read-only: takes no transaction id, the DB stays clean
+    expect(await ensureTracked(seeded, 'lab')).toBe(true);
+    expect(await ensureTracked(seeded, 'lab')).toBe(false); // already there
     want = {
       events: await md5(seeded, 'logistics.container_events'),
       orders: await md5(seeded, 'lab.orders'),
@@ -113,12 +117,28 @@ describe('snapshot round trip (real PGlite)', () => {
     }
   });
 
-  it('no dump while sandbox holds an imported table', async () => {
-    await seeded.exec('CREATE UNLOGGED TABLE sandbox.my_csv AS SELECT 1 AS x');
+  it('a rolled-back write (dead tuples) is never baked into a snapshot: the plan cost stays the seed’s', async () => {
+    const { db } = await bootDb();
     try {
-      expect(await dumpSeeded(seeded)).toBeUndefined();
+      expect(await ensureTracked(db, 'game')).toBe(true);
+      await db.exec('BEGIN; UPDATE logistics.container_events SET container_id = container_id; ROLLBACK');
+      expect(await cost(db)).not.toBe(want.cost); // the bloat this guards against
+      expect(await ensureTracked(db, 'lab')).toBe(false); // a later seed: no dump of the bloated table
+      expect(await dumpSeeded(db)).toBeUndefined();
     } finally {
-      await seeded.exec('DROP TABLE sandbox.my_csv');
+      await db.close();
+    }
+  });
+
+  it('no dump while sandbox holds an imported table', async () => {
+    // an import is a write too, so the transaction-id guard alone already refuses; the sandbox check is the second line
+    const { db } = await bootDb();
+    try {
+      await db.exec('CREATE UNLOGGED TABLE sandbox.my_csv AS SELECT 1 AS x');
+      expect(await ensureTracked(db, 'lab')).toBe(false);
+      expect(await dumpSeeded(db)).toBeUndefined();
+    } finally {
+      await db.close();
     }
   });
 

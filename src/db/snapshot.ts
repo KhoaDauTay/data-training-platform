@@ -2,7 +2,7 @@ import { PGlite } from '@electric-sql/pglite';
 import { SCHEMAS, type SchemaId } from '../domains';
 import { SANDBOX_SETUP_SQL } from './import';
 import { initEngine } from './init';
-import { markSeeded, seededSchemas } from './lab';
+import { ensureSchema, markSeeded, seededSchemas } from './lab';
 
 /**
  * V16-OFFLINE (L143, spike S-a L137): the seeded cluster, dumped once a schema is seeded and loaded on the next boot
@@ -61,6 +61,7 @@ async function emptyDb(): Promise<{ db: PGlite; restored: SchemaId[] }> {
   const db = new PGlite();
   await db.waitReady;
   await initEngine(db);
+  cleanMark.set(db, await nextXid(db));
   return { db, restored: [] };
 }
 
@@ -82,6 +83,7 @@ export async function bootDb(store?: SnapshotStore, key: SnapshotKey = CURRENT_K
         if (found.rows[0]?.n !== names.length) throw new Error('snapshot: schema missing');
         await db.exec(`DROP SCHEMA IF EXISTS sandbox CASCADE; ${SANDBOX_SETUP_SQL}`);
         markSeeded(db, ids);
+        cleanMark.set(db, await nextXid(db));
         return { db, restored: ids };
       } catch {
         await db?.close().catch(() => undefined);
@@ -95,10 +97,31 @@ export async function bootDb(store?: SnapshotStore, key: SnapshotKey = CURRENT_K
   return emptyDb();
 }
 
-/** Uncompressed dump (~0.1 s), taken inside the worker queue. None while `sandbox` holds an imported table. */
+/**
+ * Next transaction id after the last seed or boot, or null once anything else wrote. A rolled-back write still leaves
+ * dead tuples (and moved sequences): the planner sizes tables by their pages, so a dump then would bake in other plan
+ * costs than the seed's (chapter 11). Read-only queries take no transaction id, so a session of SELECTs stays clean.
+ */
+const cleanMark = new WeakMap<PGlite, string | null>();
+const nextXid = async (db: PGlite): Promise<string> =>
+  (await db.query<{ x: string }>('SELECT pg_snapshot_xmax(pg_current_snapshot())::text AS x')).rows[0].x;
+
+/** ensureSchema for the worker: returns true when it seeded something new on a DB nothing else has written to (dumpSeeded may run). */
+export async function ensureTracked(db: PGlite, id: SchemaId): Promise<boolean> {
+  const mark = cleanMark.get(db);
+  if (mark === undefined || (mark !== null && mark !== (await nextXid(db)))) cleanMark.set(db, null);
+  const before = seededSchemas(db).size;
+  await ensureSchema(db, id);
+  if (seededSchemas(db).size === before) return false;
+  if (cleanMark.get(db) === null) return false;
+  cleanMark.set(db, await nextXid(db));
+  return true;
+}
+
+/** Uncompressed dump (~0.1 s), taken inside the worker queue. None while `sandbox` holds an imported table, none after a write. */
 export async function dumpSeeded(db: PGlite): Promise<{ tar: Blob; schemas: SchemaId[] } | undefined> {
   const schemas = [...seededSchemas(db)];
-  if (!schemas.length) return undefined;
+  if (!schemas.length || !cleanMark.get(db) || cleanMark.get(db) !== (await nextXid(db))) return undefined;
   const r = await db.query<{ n: number }>("SELECT count(*)::int AS n FROM pg_class WHERE relnamespace = 'sandbox'::regnamespace");
   if (r.rows[0]?.n !== 0) return undefined;
   return { tar: await db.dumpDataDir('none'), schemas };

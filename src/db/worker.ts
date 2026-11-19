@@ -2,8 +2,7 @@ import type { PGlite } from '@electric-sql/pglite';
 import { countingFetch } from './loadProgress';
 import type { WorkerBody } from './client';
 import { dropImport, importCsv } from './import';
-import { ensureSchema, seededSchemas } from './lab';
-import { bootDb, dumpSeeded, idbStore, storeDump } from './snapshot';
+import { bootDb, dumpSeeded, ensureTracked, idbStore, storeDump } from './snapshot';
 import { runExplain, runLab, runSandboxed, sqlErrorInfo } from './run';
 
 // PGlite fetches its .wasm/.data with the global fetch; count the bytes for the loading status.
@@ -30,7 +29,10 @@ ready.then(
 async function handle(db: PGlite, body: WorkerBody): Promise<unknown> {
   if (body.kind === 'import') return importCsv(db, body.req, body.file);
   if (body.kind === 'dropImport') return dropImport(db, body.table);
-  if (body.kind === 'ensure') return ensureSchema(db, body.schema);
+  if (body.kind === 'ensure') {
+    if (await ensureTracked(db, body.schema)) queue = queue.then(() => snapshot(db)); // after this result is posted
+    return undefined;
+  }
   const opts = { schema: body.schema };
   if (body.kind === 'explain') return runExplain(db, body.sql, opts);
   if (body.kind === 'lab') return runLab(db, body.ddl, body.sql, body.table, opts);
@@ -75,9 +77,7 @@ onmessage = (e: MessageEvent<{ id: number } & WorkerBody>) => {
   queue = queue.then(async () => {
     try {
       const { db } = await ready;
-      const before = seededSchemas(db).size;
       postMessage({ type: 'result', id, result: await handle(db, body) });
-      if (body.kind === 'ensure' && seededSchemas(db).size > before) queue = queue.then(() => snapshot(db));
     } catch (err) {
       // Custom Error fields do not survive postMessage, so send plain fields. Only Postgres errors are SQL errors.
       const error = sqlErrorInfo(err);

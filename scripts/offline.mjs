@@ -25,7 +25,7 @@ export const pgliteVersion = () => JSON.parse(readFileSync('node_modules/@electr
 /**
  * Turns dist/sw.js (copied from public/sw.js) into this build's service worker: prepends VERSION (hash of every file
  * name in dist/ and of index.html), FILES (every file in dist/: worker chunks, .wasm, .data and public files included)
- * and ENTRY (the entry chunk index.html must name, so a stale index.html from the HTTP cache is never precached).
+ * and HTML_SHA256 (index.html's hash, so a stale index.html from the HTTP cache is never precached).
  */
 export function writeServiceWorker(outDir) {
   const files = [];
@@ -38,10 +38,9 @@ export function writeServiceWorker(outDir) {
   };
   walk(outDir, '');
   files.sort();
-  const html = readFileSync(`${outDir}/index.html`, 'utf8');
-  const entry = /assets\/(index-[\w-]+\.js)/.exec(html)?.[1];
-  if (!entry) throw new Error('sw: no entry chunk in index.html');
-  const head = `const VERSION = ${JSON.stringify(sha256(files.join('\n'), html))};\nconst FILES = ${JSON.stringify(files)};\nconst ENTRY = ${JSON.stringify(entry)};\n`;
+  const html = readFileSync(`${outDir}/index.html`);
+  const htmlHash = createHash('sha256').update(html).digest('hex');
+  const head = `const VERSION = ${JSON.stringify(sha256(files.join('\n'), html))};\nconst FILES = ${JSON.stringify(files)};\nconst HTML_SHA256 = ${JSON.stringify(htmlHash)};\n`;
   writeFileSync(`${outDir}/sw.js`, head + readFileSync(`${outDir}/sw.js`, 'utf8'));
   return files.length;
 }
