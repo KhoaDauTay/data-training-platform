@@ -18,8 +18,11 @@ export function registerServiceWorker(onUpdate: (apply: () => void) => void): vo
       const offer = (): void => {
         if (reg.waiting && sw.controller) onUpdate(() => reg.waiting?.postMessage('skipWaiting'));
       };
+      // The browser checks for an update on navigation, so the new version may already be installing when this runs.
+      const watch = (): void => reg.installing?.addEventListener('statechange', offer);
       offer();
-      reg.addEventListener('updatefound', () => reg.installing?.addEventListener('statechange', offer));
+      watch();
+      reg.addEventListener('updatefound', watch);
     },
     () => undefined, // offline support is optional: the app works the same without it
   );

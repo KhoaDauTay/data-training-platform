@@ -57,6 +57,13 @@ export function mayReplace(old: unknown, next: readonly SchemaId[], key: Snapsho
  * Boots the engine: from the stored snapshot when it fits (sandbox emptied: its UNLOGGED import tables come back empty,
  * and imports are replayed by DbClient as after any restart), else empty as before v16. Never throws for a bad snapshot.
  */
+async function emptyDb(): Promise<{ db: PGlite; restored: SchemaId[] }> {
+  const db = new PGlite();
+  await db.waitReady;
+  await initEngine(db);
+  return { db, restored: [] };
+}
+
 export async function bootDb(store?: SnapshotStore, key: SnapshotKey = CURRENT_KEY): Promise<{ db: PGlite; restored: SchemaId[] }> {
   if (store) {
     const rec = await store.get().catch(() => undefined);
@@ -78,14 +85,14 @@ export async function bootDb(store?: SnapshotStore, key: SnapshotKey = CURRENT_K
         return { db, restored: ids };
       } catch {
         await db?.close().catch(() => undefined);
+        // Dropped only once an empty engine boots: if that fails too (offline without the engine's files), the snapshot was not the problem.
+        const fresh = await emptyDb();
         await store.delete().catch(() => undefined);
+        return fresh;
       }
     }
   }
-  const db = new PGlite();
-  await db.waitReady;
-  await initEngine(db);
-  return { db, restored: [] };
+  return emptyDb();
 }
 
 /** Uncompressed dump (~0.1 s), taken inside the worker queue. None while `sandbox` holds an imported table. */

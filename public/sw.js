@@ -44,7 +44,7 @@ self.addEventListener('fetch', (e) => {
   e.respondWith(
     caches
       .open(CACHE)
-      .then((c) => c.match(key))
+      .then((c) => c.match(key, { ignoreVary: true })) // precached without the Origin header module scripts send (Vary: Origin)
       .then((hit) => hit || fetch(req)),
   );
 });
