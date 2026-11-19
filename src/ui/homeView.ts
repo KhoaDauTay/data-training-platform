@@ -84,16 +84,18 @@ export const STRETCH = 'after:absolute after:inset-0';
 /** Links inside a stretched row's text stay clickable above the cover. */
 export const ABOVE = 'relative z-10';
 
-export function listRow(r: { lead: Node; title: string; sub?: string | Node; action?: Node | null; current?: boolean; id?: string }): HTMLLIElement {
+/** `stack` (ui-ux-v7 M2, the Overview's chapter rows): below sm the action drops under the text and the title stays one line. */
+export function listRow(r: { lead: Node; title: string; sub?: string | Node; action?: Node | null; current?: boolean; id?: string; stack?: boolean }): HTMLLIElement {
   const act = r.action instanceof HTMLElement && /^(A|BUTTON)$/.test(r.action.tagName) && !r.action.hasAttribute('disabled') && r.action.getAttribute('aria-disabled') !== 'true' ? r.action : null;
   if (act) act.classList.add(...STRETCH.split(' '));
+  if (r.stack && r.action instanceof HTMLElement) r.action.classList.add('max-sm:ml-14', 'max-sm:basis-full');
   return h('li', {
     id: r.id ?? false,
-    class: cx('flex items-center gap-4 border-l-4 px-5 py-4', act && 'relative cursor-pointer hover:bg-code', r.current ? 'border-l-accent bg-accent-soft' : 'border-l-transparent'),
+    class: cx('flex items-center gap-4 border-l-4 px-5 py-4', r.stack && 'max-sm:flex-wrap max-sm:gap-y-2 max-sm:px-4', act && 'relative cursor-pointer hover:bg-code', r.current ? 'border-l-accent bg-accent-soft' : 'border-l-transparent'),
     'aria-current': r.current ? 'step' : false,
   },
     h('span', { class: 'grid size-10 shrink-0 place-items-center', 'aria-hidden': 'true' }, r.lead),
-    h('span', { class: 'min-w-0 flex-1' }, h('b', { class: 'block' }, r.title), r.sub ? h('span', { class: 'block text-body-sm text-muted' }, r.sub) : null),
+    h('span', { class: 'min-w-0 flex-1' }, h('b', { class: cx('block', r.stack && 'max-sm:truncate'), title: r.stack ? r.title : false }, r.title), r.sub ? h('span', { class: 'block text-body-sm text-muted' }, r.sub) : null),
     r.action ?? null);
 }
 
@@ -216,6 +218,7 @@ function chapterRow(c: ChapterCard): HTMLLIElement {
     sub: closed ? (c.status === 'soon' ? t('home.soonHint') : t('home.lockedAfter', { n: c.chapter - 1 })) : adv ? h('span', { class: 'flex flex-wrap gap-x-3' }, short, adv) : short,
     action: closed ? statusPill(c) : h('a', { href: `${hashOf('learn')}/sql/${c.chapter}`, class: 'no-underline', title: t('learn.module', { n: c.chapter, title: moduleTitle(c.chapter, lang) }) }, statusPill(c)),
     current: c.status === 'current',
+    stack: true,
   });
 }
 
