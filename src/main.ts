@@ -20,6 +20,7 @@ import { domainHash, domainOfHash, drillOfHash, isInterviewId, sharedOf, type Ro
 import type { Ticket } from './tickets';
 import { bootGeneral, dropGeneral, initModes, interviewStep, ivPresence, onPracticeWrong, onSolved, openShared, renderLeft, renderReviewButton, reopenInterview, startDrill, startLane, startSandbox } from './ui/modes';
 import './ui/me'; // v16 (L142): #/me nav item and page section; the page itself is the lazy meView chunk
+import './ui/engine'; // ENG-CORE (L217): #/engine nav item, page, sidebar rows and #/me block; the pages are the lazy engineView chunk
 import { earlyOffer } from './ui/chapterView';
 import { renderNotebook, toggleNotebook } from './ui/notebook';
 import { byId, h, initLightDismiss } from './ui/dom';
@@ -342,7 +343,7 @@ function nextStep(): void {
 
 let shownRoute: Route | undefined;
 /** Reading pages share <main id="home"> (src/ui/homeView.ts draws the one the route names). */
-const PAGE_ROUTES: ReadonlySet<Route> = new Set<Route>(['home', 'learn', 'practice', 'overview', 'map', 'me']);
+const PAGE_ROUTES: ReadonlySet<Route> = new Set<Route>(['home', 'learn', 'practice', 'overview', 'map', 'me', 'engine']);
 const TITLE_OF: Partial<Record<Route, string>> = { data: 'data-title', dashboard: 'dashboard-title', play: 'brief-title' };
 /** Reading pages, #/d/logistics/play = workspace, …/data = Data page, …/dashboard. All stay mounted and only toggle `hidden`, so the editor is never recreated. */
 function showRoute(r: Route, initial: boolean): void {

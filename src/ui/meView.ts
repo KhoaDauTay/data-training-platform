@@ -55,7 +55,7 @@ const readName = (): string => {
   const v = d.readJson<unknown>(NAME_KEY);
   return typeof v === 'string' ? v.slice(0, 60) : '';
 };
-const isDrill = (id: string): boolean => id.startsWith('g-');
+const isDrill = (id: string): boolean => id.startsWith('g-') || id.startsWith('e-'); // ENG-CORE (L217): Database Engine lessons are no tasks either
 /** V19-D (L170): card pictures, the zip and the take-home file, a lazy chunk of their own (`me` is near its budget). */
 const pngChunk = (): Promise<typeof import('./portfolioPng')> => import('./portfolioPng');
 

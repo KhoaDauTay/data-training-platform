@@ -30,6 +30,8 @@ export interface NavItem {
   current(route: Route): boolean;
   /** Optional action instead of plain hash navigation (e.g. enter a mode, then go('play')). */
   onclick?: () => void;
+  /** ENG-CORE (L217, design D-E1): not in the 5-slot mobile bottom bar; there that item (by id) stands for it and is current for it too. */
+  mergeInto?: string;
 }
 const NAV: NavItem[] = [];
 /** Same id replaces the old entry; kept sorted by order. */
@@ -77,8 +79,12 @@ function renderNav(): void {
   const live = DOMAINS.find((d) => d.id === activeDomain())!;
   const none = noDomain(); // v15: the item names no domain
   byId('nav').replaceChildren(...top.map((n) => navLink(n, route, NAV_LINK, t(n.label))));
+  const bottom = top.filter((n) => !n.mergeInto).map((n) => {
+    const merged = top.filter((m) => m.mergeInto === n.id);
+    return merged.length ? { ...n, current: (r: Route) => n.current(r) || merged.some((m) => m.current(r)) } : n;
+  });
   byId('bottom-nav').replaceChildren(
-    ...top.map((n) => navLink(n, route, BOTTOM_LINK, icon(n.icon, 'size-5'), h('span', {}, t(n.label)))),
+    ...bottom.map((n) => navLink(n, route, BOTTOM_LINK, icon(n.icon, 'size-5'), h('span', {}, t(n.label)))),
     h('a', { href: hashOf('overview'), class: BOTTOM_LINK, 'aria-current': inDomain(route) && !(route === 'play' && generalWork()) ? 'page' : false },
       icon(none ? 'database' : live.icon, 'size-5'), h('span', {}, t(none ? 'home.domains' : live.name))));
 }
