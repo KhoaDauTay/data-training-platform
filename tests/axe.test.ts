@@ -5,6 +5,8 @@
 import { beforeAll, describe, expect, it, vi } from 'vitest';
 import axe from 'axe-core';
 import html from '../index.html?raw';
+import { activeDomain } from '../src/domains';
+import { domainOfHash, parseRoute } from '../src/route';
 
 class SilentWorker { onmessage = null; onerror = null; postMessage() {} terminate() {} }
 const byId = (id: string): HTMLElement => document.getElementById(id)!;
@@ -41,16 +43,44 @@ beforeAll(async () => {
   await import('../src/main');
 });
 
-/** Violations as "rule: count first targets", so a failure names what to fix. */
-async function violations(): Promise<string[]> {
-  const r = await axe.run(modal ?? document, { rules: { 'color-contrast': { enabled: false } } });
-  return r.violations.map((v) => `${v.id}: ${v.nodes.length} ${v.nodes.slice(0, 4).map((n) => n.target.join(' ')).join(' | ')}`);
+/**
+ * Violations and "incomplete" results as "rule: count first targets", so a failure names what to fix. Incomplete counts too:
+ * jsdom gaps (no elementsFromPoint) turned real violations into "incomplete" before, which an empty violation list hid.
+ */
+async function problems(): Promise<string[]> {
+  const r = await axe.run(modal ?? document, { elementRef: true, rules: { 'color-contrast': { enabled: false } } });
+  const incomplete = r.incomplete
+    .map((x) => ({ ...x, id: `incomplete ${x.id}`, nodes: x.nodes.filter((n) => !reviewed(x.id, n.element)) }))
+    .filter((x) => x.nodes.length > 0);
+  return [...r.violations, ...incomplete]
+    .map((v) => `${v.id}: ${v.nodes.length} ${v.nodes.slice(0, 4).map((n) => n.target.join(' ')).join(' | ')}`);
+}
+/**
+ * "Needs review" results checked by hand. label-content-name-mismatch on the top-bar logo link: axe measures the visible
+ * text with a canvas, which jsdom lacks, so it cannot tell whether "BoonData" is readable text; the visible "BoonData" is
+ * the start of its name "BoonData, về Trang chủ" / "BoonData, go to Home" (WCAG 2.5.3 holds).
+ */
+const reviewed = (rule: string, el: Element | undefined): boolean =>
+  rule === 'label-content-name-mismatch' && el?.matches('header a[href="#/"]') === true && el.textContent === 'BoonData';
+/** Waits until the router has drawn `hash` (its <main> shown, its domain entered), so axe never checks the page before. */
+async function visit(hash: string): Promise<void> {
+  location.hash = hash;
+  const route = parseRoute(hash);
+  const main = route === 'play' ? 'shell' : route === 'data' || route === 'dashboard' ? route : 'home';
+  const domain = domainOfHash(hash);
+  await vi.waitFor(() => {
+    expect(document.body.dataset.route).toBe(route);
+    expect(byId(main).hidden).toBe(false);
+    if (domain) expect(activeDomain()).toBe(domain);
+    expect(byId(main).querySelector('h1')).not.toBeNull();
+  }, { timeout: 10_000, interval: 50 });
+  await wait(100); // the redraws that follow (sidebar, chips)
 }
 
 const PAGES = ['#/', '#/learn', '#/learn/sql/1', '#/learn/skill/select', '#/learn/adv/a2', '#/practice',
   '#/d/logistics', '#/d/logistics/play', '#/d/logistics/data/ports', '#/d/logistics/dashboard', '#/d/logistics/map',
-  '#/d/ecommerce', '#/d/ecommerce/play', '#/d/ecommerce/data', '#/d/ecommerce/dashboard',
-  '#/d/finance', '#/d/finance/play', '#/d/finance/data', '#/d/finance/dashboard'];
+  '#/d/ecommerce', '#/d/ecommerce/play', '#/d/ecommerce/data', '#/d/ecommerce/dashboard', '#/d/ecommerce/map',
+  '#/d/finance', '#/d/finance/play', '#/d/finance/data', '#/d/finance/dashboard', '#/d/finance/map'];
 
 // Dialogs over the Logistics workspace, opened the way the player opens them.
 const next = (): void => document.querySelector<HTMLElement>('#welcome-dialog [data-w=next]')!.click();
@@ -69,28 +99,24 @@ describe('axe-core (v15 Q10)', () => {
   it('first visit: the welcome dialog with the domain picker', async () => {
     await wait(300);
     expect(modal?.id).toBe('welcome-dialog');
-    const v = await violations();
+    const v = await problems();
     modal!.dispatchEvent(new Event('cancel', { cancelable: true })); // Esc: Logistics, tour skipped
     modal!.close();
     expect(v).toEqual([]);
   });
 
   it.each(PAGES)('page %s', async (hash) => {
-    location.hash = hash;
-    await wait(400);
+    await visit(hash);
     expect(modal).toBeUndefined();
-    expect(await violations()).toEqual([]);
+    expect(await problems()).toEqual([]);
   });
 
   it.each(DIALOGS)('dialog: %s', async (name, open) => {
-    if (location.hash !== '#/d/logistics/play') {
-      location.hash = '#/d/logistics/play';
-      await wait(400);
-    }
+    if (location.hash !== '#/d/logistics/play') await visit('#/d/logistics/play');
     await open();
     await wait(100);
     expect(document.querySelector('dialog[open]')).not.toBeNull();
-    const v = await violations();
+    const v = await problems();
     if (!name.startsWith('welcome') || name.endsWith('3/3')) for (const d of document.querySelectorAll<HTMLDialogElement>('dialog[open]')) d.close();
     expect(v).toEqual([]);
   });
