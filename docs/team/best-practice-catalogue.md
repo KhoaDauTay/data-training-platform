@@ -15,7 +15,6 @@ Tài liệu này là nguyên liệu cho khu **Best Practice** sắp có. Nó đi
     - wiki "Don't Do This" và SQL Style Guide được đọc toàn bộ;
     - mọi câu trích nguyên văn và mọi con số (giới hạn, chi phí, thời gian) đã được tìm thấy trên đúng trang dẫn;
     - phần diễn giải còn lại dựa trên tài liệu nhưng chưa đối chiếu từng câu;
-  - **Nguồn** (URL chính thức, đã mở ngày 2026-11-20);
   - **Cấp** L1–L5, cùng thang với `db-engine-knowledge.md` §3–5: L1 người mới, L2 thực hành, L3 bên trong / hiệu năng, L4 đồng thời và quy mô, L5 chuyên gia;
   - **Nối với** skill có thật trong `content/skills.yml` (`null_logic`, `sargable`…) hoặc node nâng cao trong `content/general/adv.yml` (`a1`…`d8`). "Chưa có" nghĩa là app chưa có bài nào dạy ý đó.
 - **Kiểm** cho biết ví dụ đã được chạy thật hay chưa:
@@ -1191,9 +1190,6 @@ EXPLAIN (COSTS OFF) SELECT id, amount_vnd FROM payments WHERE order_id = 1234;
   - cột khoảng đứng đầu buộc quét mọi `store_id` trong khoảng ngày rồi lọc lại;
   - tài liệu mô tả đúng ví dụ `(a, b, c)` với `a = 5 AND b >= 42 AND c < 77`.
   - Từ PostgreSQL 18, B-tree có **skip scan**: index vẫn dùng được khi cột đầu không có điều kiện, nhờ lặp qua từng giá trị của cột đầu. Cách này chỉ tốt khi cột đầu có ít giá trị. Thứ tự "bằng trước, khoảng sau" vẫn là lựa chọn rẻ nhất, như số cost đo được ở dưới.
-  - B-tree chỉ thu hẹp phạm vi quét bằng các cột đầu liên tiếp có điều kiện bằng, cộng một cột khoảng;
-  - cột khoảng đứng đầu buộc quét mọi `store_id` trong khoảng ngày rồi lọc lại;
-  - tài liệu mô tả đúng ví dụ `(a, b, c)` với `a = 5 AND b >= 42 AND c < 77`.
 - **Nguồn:** https://www.postgresql.org/docs/18/indexes-multicolumn.html
 - **Cấp:** L3 · **Nối với:** skill `index_design` · **Kiểm:** PGlite, cost Đúng < Sai (cùng truy vấn, chỉ khác thứ tự cột)
 
@@ -1394,7 +1390,6 @@ EXPLAIN (ANALYZE, BUFFERS, COSTS ON) SELECT count(*) FROM orders WHERE status = 
 - **Luật:**
   - bảng bị `UPDATE` thường xuyên trên các cột **không** có index thì đặt `fillfactor` dưới 100 (mặc định của bảng) để còn chỗ trống trong trang;
   - giá trị cụ thể (ví dụ 80) phải đo theo tải: tài liệu chỉ nêu khoảng 10–100;
-  - bảng bị `UPDATE` thường xuyên trên các cột **không** có index thì để `fillfactor` 70–90 để còn chỗ trống trong trang;
   - không index cột hay bị sửa (cột trạng thái, `updated_at`) nếu không thật sự cần.
 - **Vì sao:**
   - HOT (heap-only tuple) update chỉ xảy ra khi không cột index nào đổi **và** trang còn chỗ cho phiên bản mới;
@@ -1429,7 +1424,6 @@ SELECT reloptions FROM pg_class WHERE relname = 'job_good';
   - https://www.postgresql.org/docs/18/routine-vacuuming.html
   - https://www.postgresql.org/docs/18/runtime-config-client.html (`idle_in_transaction_session_timeout`)
 - **Cấp:** L3 · **Nối với:** chưa có · **Kiểm:** PGlite, chạy được (chỉ là cú pháp: PGlite một phiên, không tái hiện được phiên treo)
-- **Cấp:** L3 · **Nối với:** chưa có · **Kiểm:** cú pháp (PGlite một phiên, không tái hiện được phiên treo)
 
 ```sql
 -- P03 bad
@@ -1877,7 +1871,6 @@ db.orders.createIndex({ createdAt: 1, status: 1, total: -1 })
 // M07 good (syntax)
 db.orders.createIndex({ status: 1, total: -1, createdAt: 1 });
 db.orders.find({ status: 'PAID', createdAt: { $gte: new Date('2026-10-01') } }).sort({ total: -1 })
-db.orders.find({ status: 'PAID', createdAt: { $gte: ISODate('2026-10-01') } }).sort({ total: -1 })
 ```
 
 ### M08 · Chỉ lấy trường cần dùng / Project only what you need
@@ -1942,8 +1935,6 @@ db.orders.aggregate([
   - dùng multi-document transaction khi thật sự phải sửa nhiều tài liệu cùng lúc;
   - giữ nó ngắn: mặc định transaction phải xong trong dưới một phút (`transactionLifetimeLimitSeconds`), quá hạn sẽ bị hủy;
   - mỗi transaction sửa ít tài liệu;
-  - giữ nó ngắn (mặc định bị hủy sau 60 giây);
-  - mỗi transaction sửa ít tài liệu (tài liệu khuyên chia nhỏ khi hơn 1.000);
   - xử lý lỗi `TransientTransactionError` bằng retry.
 - **Vì sao:** transaction tốn hơn thao tác đơn lẻ, giữ tài nguyên và gây xung đột ghi. Nhu cầu transaction thường xuyên là dấu hiệu mô hình chưa hợp access pattern.
 - **Nguồn:**
@@ -2008,7 +1999,6 @@ db.orders.dropIndex({ status: 1 })
 
 - **Luật:**
   - ghi dữ liệu không được mất (thanh toán, đơn) dùng `w: 'majority'` (đây là write concern mặc định ngầm định trong đa số cấu hình replica set, nhưng driver hay cấu hình cụm có thể đặt khác);
-  - ghi dữ liệu không được mất (thanh toán, đơn) dùng `w: 'majority'` (mặc định từ MongoDB 5.0 với đa số cấu hình replica set);
   - đọc cần thấy dữ liệu đã xác nhận thì dùng read concern `majority`;
   - không hạ `w: 0` / `w: 1` để "nhanh hơn" cho dữ liệu này.
 - **Vì sao:** lần ghi chỉ được primary xác nhận có thể bị rollback khi primary đổi trước khi bản sao kịp nhận.
@@ -2224,7 +2214,6 @@ Ví dụ DynamoDB là minh họa (**cú pháp**). Chúng ghi item theo dạng JS
 - **Nguồn:**
   - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-use-s3-too.html
   - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/read-write-operations.html (đọc tròn lên bội 4 KB, ghi bội 1 KB; `UpdateItem` tính theo kích thước lớn hơn của item trước/sau, kể cả khi chỉ sửa một thuộc tính)
-  - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/CapacityUnitCalculations.html
   - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/ServiceQuotas.html
 - **Cấp:** L2 · **Nối với:** chưa có (giống M03) · **Kiểm:** cú pháp
 
