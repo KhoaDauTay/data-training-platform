@@ -196,9 +196,9 @@ function skillsCard(all: Ticket[]): HTMLElement {
   const row = (s: { id: string; box: number }) => {
     const skill = d.SKILLS.find((x) => x.id === s.id);
     return d.h('li', { class: 'grid grid-cols-[minmax(0,10rem)_1fr_4.5rem] items-center gap-3 max-sm:grid-cols-[minmax(0,8rem)_1fr_4rem]' },
-      d.h('a', { href: `${d.hashOf('learn')}/skill/${s.id}`, class: 'truncate text-body-sm' }, skill?.label[lang] ?? s.id),
+      d.h('a', { href: `${d.hashOf('learn')}/skill/${s.id}`, class: 'truncate text-body-sm', title: skill?.label[lang] ?? s.id }, skill?.label[lang] ?? s.id),
       d.h('span', { class: 'block h-2.5 rounded-full bg-code', 'aria-hidden': 'true' },
-        d.h('span', { class: s.box && s.box <= 2 ? 'block h-full rounded-full bg-warn' : 'block h-full rounded-full bg-accent', style: `width:${Math.max(4, s.box * 20)}%` })),
+        d.h('span', { class: s.box && s.box <= 2 ? 'block h-full rounded-full bg-warn' : 'block h-full rounded-full bg-accent', style: `width:${s.box * 20}%` })),
       d.h('span', { class: 'text-right text-body-sm text-muted tabular-nums' }, s.box ? m('skills.box', { box: s.box }) : m('skills.noCard')));
   };
   return card(title(m('skills.title'), 'sigma'),
@@ -373,8 +373,8 @@ function portfolioCard(list: Scope[]): HTMLElement {
       return n
         ? d.h('li', { class: 'flex flex-wrap items-center gap-3' }, go(m('pf.th.download'), () => void saveTakeHomes(), pfBusy === 'general'),
           d.h('span', { class: 'text-body-sm text-muted' }, m('pf.th.count', { n })))
-        : d.h('li', { class: 'flex flex-wrap items-center gap-2 text-body-sm text-muted' }, d.icon('lock', 'size-4'), m('pf.th.none'), ' ',
-          d.h('a', { href: `${d.hashOf('learn')}/interview` }, m('pf.th.go')));
+        : d.h('li', { class: 'flex items-start gap-2 text-body-sm text-muted' }, d.icon('lock', 'mt-0.5 size-4 shrink-0'), // v21 U17: the icon stays beside its sentence
+          d.h('span', {}, m('pf.th.none'), ' ', d.h('a', { href: `${d.hashOf('learn')}/interview` }, m('pf.th.go'))));
     }
     if (!s.open) return d.h('li', { class: 'flex items-center gap-2 text-body-sm text-muted' }, d.icon('lock', 'size-4'), m('pf.locked', { domain: s.what }));
     const entries = portfolioEntries(s.tickets, d.app.save, (tk) => d.textOf(tk, lang));

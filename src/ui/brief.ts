@@ -322,7 +322,7 @@ export function advLine(ids: string[], linkClass = ''): HTMLElement | null {
   const line = h('span', { class: 'inline-flex flex-wrap items-center gap-x-1.5' });
   const fill = () => {
     const nodes = generalNow()?.nodes;
-    line.replaceChildren(h('span', { class: 'text-muted' }, t('brief.adv')), ...ids.map((id) => h('a', { href: `${hashOf('learn')}/adv/${id}`, class: linkClass },
+    line.replaceChildren(h('span', { class: 'text-muted' }, t('brief.adv')), ...ids.map((id) => h('a', { href: `${hashOf('learn')}/adv/${id}`, class: cx('inline-flex min-h-6 items-center', linkClass) } /* v21 E3: a 24 px target */,
       nodes?.find((n) => n.id === id)?.title[getLang()] ?? t('brief.advLoading'))));
   };
   fill();
