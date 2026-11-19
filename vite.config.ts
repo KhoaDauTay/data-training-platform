@@ -1,6 +1,7 @@
 import tailwindcss from '@tailwindcss/vite';
 import { loadEnv, type Plugin } from 'vite';
 import { defineConfig } from 'vitest/config';
+import { contentJson } from './scripts/contentJson.mjs';
 import { pgliteVersion, seedHash, writeServiceWorker } from './scripts/offline.mjs';
 
 // GITHUB_SHA is set by GitHub Actions; local builds and tests report 'dev'.
@@ -19,7 +20,8 @@ const serviceWorker = (): Plugin => {
 };
 
 export default defineConfig({
-  plugins: [tailwindcss(), serviceWorker()],
+  // V22-E (L201): content/**/*.yml and `.md?fm` frontmatter become JSON at build time (dev and Vitest too): no `yaml` in the browser.
+  plugins: [contentJson(), tailwindcss(), serviceWorker()],
   // No `base` here: GitHub Pages passes `--base=/<repo>/` on the CLI; '/' keeps dev and Cloudflare Pages unchanged.
   define: {
     __BUILD__: JSON.stringify(sha ? sha.slice(0, 7) : 'dev'),

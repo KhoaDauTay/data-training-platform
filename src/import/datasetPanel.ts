@@ -1,6 +1,6 @@
 // V20-B (L176): the "Sample datasets" block of Sandbox → My data, its own lazy chunk (`datasetPanel-*`, with datasets.yml).
 // Imports only types from main modules: every main value comes in through PanelDeps (a value import would make Rolldown split main, Plan 6 U3).
-import raw from '../../content/general/datasets.yml?raw';
+import raw from '../../content/general/datasets.yml';
 import type { GradeResult, Runner } from '../grader';
 import type { Lang } from '../i18n';
 import type { h as H } from '../ui/dom';
@@ -11,7 +11,6 @@ type Fail = Extract<GradeResult, { ok: false }>;
 export interface PanelDeps {
   h: typeof H;
   cx: (...c: (string | false | null | undefined)[]) => string;
-  parseYaml: (s: string) => unknown;
   lang: Lang;
   my: MyData;
   grade: (run: Runner, solution: string, player: string, ordered: boolean) => Promise<GradeResult>;
@@ -94,7 +93,7 @@ function question(d: Dataset, table: string, i: number, ui: Datasets['ui'], x: P
 
 export function datasetPanel(x: PanelDeps): HTMLElement {
   const { h } = x;
-  sets ??= parseDatasets(raw, x.parseYaml);
+  sets ??= parseDatasets(raw);
   const { ui } = sets;
   const tx = (b: Bi): string => b[x.lang];
   const sig = x.my.tables.map((t) => t.table).join(',');

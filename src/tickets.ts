@@ -1,4 +1,3 @@
-import { parse as parseYaml } from 'yaml';
 import { bilingualOf, type Bilingual } from './progress';
 import type { LabSpec, PlanSpec } from './planCheck';
 import { parseScene, type Scene } from './scene';
@@ -105,7 +104,6 @@ export interface Ticket {
 
 const BEATS: Beat[] = ['teach', 'develop', 'twist', 'rest', 'boss'];
 const FORMATS: Format[] = ['worked', 'faded', 'open'];
-const FM_RE = /^---\n([\s\S]*?)\n---\n([\s\S]*)$/;
 const EN_RE = /^# EN[ \t]*$/m;
 const SQL_RE = /```sql\n([\s\S]*?)```/;
 const VAR_RE = /\{\{(\w+)\}\}/g;
@@ -168,14 +166,19 @@ function templateNames(t: Ticket): Set<string> {
   return new Set(all.flatMap((s) => [...s.matchAll(VAR_RE)].map((m) => m[1])));
 }
 
-export function parseTicket(source: string, origin: string): Ticket {
+/**
+ * A ticket file as the build gives it (V22-E, L201): `import x from 'file.md?fm'` = frontmatter parsed to JSON + the
+ * markdown body, CRLF already normalised (scripts/contentJson.mjs `mdData`), or null when the file has no `---` block.
+ */
+export type TicketSource = { fm: unknown; body: string } | null;
+
+export function parseTicket(source: TicketSource, origin: string): Ticket {
   const fail = (msg: string): never => {
     throw new Error(`${origin}: ${msg}`);
   };
-  const m = FM_RE.exec(source.replace(/\r\n/g, '\n'));
-  if (!m) return fail('thiếu frontmatter ---');
-  const fm = (parseYaml(m[1]) ?? {}) as Record<string, unknown>;
-  const [viPart, enPart, extra] = m[2].split(EN_RE);
+  if (!source) return fail('thiếu frontmatter ---');
+  const fm = (source.fm ?? {}) as Record<string, unknown>;
+  const [viPart, enPart, extra] = source.body.split(EN_RE);
   if (extra !== undefined) fail('chỉ được một khối "# EN"');
   const vi = parseSections(viPart, fail, 'vi');
 

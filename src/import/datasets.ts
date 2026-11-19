@@ -27,8 +27,8 @@ export const DATASET_FILE = /^[a-z0-9_-]+\.csv$/;
 const bi = (x: unknown): x is Bi => !!x && typeof (x as Bi).vi === 'string' && typeof (x as Bi).en === 'string';
 const str = (x: unknown): x is string => typeof x === 'string' && x.length > 0;
 
-export function parseDatasets(raw: string, parseYaml: (s: string) => unknown): Datasets {
-  const y = parseYaml(raw) as { ui: Record<string, unknown>; datasets: Record<string, unknown>[] };
+export function parseDatasets(data: unknown): Datasets {
+  const y = data as { ui: Record<string, unknown>; datasets: Record<string, unknown>[] };
   if (!y?.ui || !Object.values(y.ui).every(bi)) throw new Error('datasets.yml: bad ui');
   const datasets = (y.datasets ?? []).map((d): Dataset => {
     const qs = d.questions as Record<string, unknown>[];

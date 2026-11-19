@@ -1,12 +1,11 @@
-import { parse as parseYaml } from 'yaml';
-import raw from '../content/glossary.yml?raw';
+import raw from '../content/glossary.yml';
 import { isLiveDomain, type DomainId } from './domains';
 
 /** `domain` (v15 Q5, D-N4): the domain whose Notebook shows the term; Logistics when the entry names none. */
 export interface Term { term: string; vi: string; en: string; columns: string[]; domain: DomainId }
 
-export function parseGlossary(source: string): Term[] {
-  const data = parseYaml(source) as unknown;
+/** `data` is the parsed YAML (V22-E: JSON at build time, scripts/contentJson.mjs). */
+export function parseGlossary(data: unknown): Term[] {
   if (!Array.isArray(data)) throw new Error('glossary.yml: cần một danh sách');
   return data.map((entry, i) => {
     const x = (entry ?? {}) as Record<string, unknown>;

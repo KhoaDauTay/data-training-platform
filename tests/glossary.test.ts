@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { GLOSSARY, matches, normalize, parseGlossary } from '../src/glossary';
+import { GLOSSARY, matches, normalize, parseGlossary as glossaryOf } from '../src/glossary';
+import { parse as parseYaml } from 'yaml';
+const parseGlossary = (src: string) => glossaryOf(parseYaml(src)); // V22-E: the parser takes parsed YAML
 import { GAME_SCHEMA } from '../src/domains';
 import { ecomRunner, finRunner, runner } from './helpers';
 

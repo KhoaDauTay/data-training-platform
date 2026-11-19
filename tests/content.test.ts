@@ -4,7 +4,10 @@ import { loadTicketTemplates, loadTickets } from '../src/content';
 import { cellKey, compareResults } from '../src/grader';
 import { KPIS } from '../src/home';
 import { CHAPTER_TABLES, contentProblems, SKILLS, tablesUnlocked } from '../src/progress';
-import { parseTicket, textOf, type TicketText } from '../src/tickets';
+import { parseTicket as ticketOf, textOf, type TicketText } from '../src/tickets';
+import { mdData } from '../scripts/contentJson.mjs';
+// V22-E: parseTicket takes the build's { fm, body }; these tests keep writing markdown.
+const parseTicket = (src: string, origin: string) => ticketOf(mdData(src), origin);
 import { applyVariant, variantsOf } from '../src/variants';
 import { runner } from './helpers';
 

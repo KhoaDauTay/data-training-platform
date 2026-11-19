@@ -3,7 +3,6 @@ import type { ImportedTable } from '../db/import';
 import { SqlError } from '../db/run';
 import { grade } from '../grader';
 import { getLang, t } from '../i18n';
-import { parse as parseYaml } from 'yaml';
 import { IMPORT_LIMITS, MEMORY_WARN_CELLS, type ImportProblem } from '../import/csv';
 import { importedCells, type AddOutcome, type MyData } from '../import/myData';
 import { idbStore } from '../import/store';
@@ -156,7 +155,7 @@ function datasetSection(): HTMLElement | null {
   if (!my) return null;
   if (panel) {
     return panel.datasetPanel({
-      h, cx, parseYaml, lang: getLang(), my, grade, verdictText, errorText, outcomeText, rerender,
+      h, cx, lang: getLang(), my, grade, verdictText, errorText, outcomeText, rerender,
       busy: () => busy,
       setBusy: (b) => { busy = b; },
       setStatus: setMyDataStatus,

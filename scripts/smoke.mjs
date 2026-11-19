@@ -15,6 +15,7 @@
 //
 //   SMOKE_PERF=3 npm run smoke      # V20-C (L178) instead of the scenario: per run and domain, a fresh profile opens #/d/<d>
 //                                   # (seed) and reloads it (snapshot); FCP, first <h1>, DB ready, long tasks -> smoke-out/perf-report.json
+//                                   # V22-E: at CPU 1x and 4x (page only), plus ScriptDuration (CDP Performance.getMetrics)
 import { spawn, spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -277,7 +278,8 @@ async function closeBrowser() {
   ws?.close();
   ws = browserWs = undefined;
   stop(browserChild);
-  if (profile) rmSync(profile, { recursive: true, force: true, maxRetries: 10, retryDelay: 300 });
+  // V22-E: Edge can hold a profile file a little longer on Windows (EPERM); a leftover temp dir must not end the run.
+  try { if (profile) rmSync(profile, { recursive: true, force: true, maxRetries: 10, retryDelay: 300 }); } catch {}
   profile = undefined;
 }
 
@@ -299,30 +301,40 @@ async function perfLoad(schema) {
       long: before, longTasks: before.length, longMs: before.reduce((a, [, d]) => a + d, 0), longMax: Math.max(0, ...before.map(([, d]) => d)),
       bootJs: js.map((r) => r.name.split('/').pop().replace(/-[\\w-]{8}\\.js$/, '')) }; })()`);
 }
+// V22-E: each run is measured at CPU 1x and 4x (Emulation.setCPUThrottlingRate on the page target only; the DB worker is
+// not throttled, L187, so 4x measures render and main-thread work, not the seed). `script` = CDP Performance.getMetrics
+// ScriptDuration (ms of main-thread script) read at "DB ready"; the metric restarts with each document, so it covers one load.
+const RATES = [1, 4];
+const scriptMs = async () => Math.round(1000 * (await send('Performance.getMetrics')).metrics.find((m) => m.name === 'ScriptDuration').value);
 async function perf(base) {
   const rows = [];
   for (let run = 1; run <= PERF_RUNS; run++) {
-    for (const d of Object.keys(SCHEMA_OF)) {
+    for (const cpu of RATES) for (const d of Object.keys(SCHEMA_OF)) {
       await startBrowser();
       await size(1280, 800);
+      await send('Emulation.setCPUThrottlingRate', { rate: cpu });
+      await send('Performance.enable');
       await send('Page.addScriptToEvaluateOnNewDocument', { source: PERF_PROBE });
       await go(base, `#/d/${d}`);
       const first = await perfLoad(SCHEMA_OF[d]);
+      first.script = await scriptMs();
       await waitFor('db:snapshot', `performance.getEntriesByName('db:snapshot').length > 0`, 60000);
       await ev('window.__old = true');
       await send('Page.reload');
       await waitFor('the reloaded document', '!window.__old && !!window.__perf', 30000);
       const second = await perfLoad(SCHEMA_OF[d]);
-      rows.push({ run, domain: d, first, second });
-      console.log(`run ${run} ${d.padEnd(9)} first: fcp ${first.fcp} render ${first.render} db ${first.db} long ${first.longTasks}/${first.longMs}ms`
-        + ` | second: fcp ${second.fcp} render ${second.render} db ${second.db} long ${second.longTasks}/${second.longMs}ms`);
+      second.script = await scriptMs();
+      rows.push({ run, cpu, domain: d, first, second });
+      console.log(`run ${run} cpu ${cpu}x ${d.padEnd(9)} first: fcp ${first.fcp} render ${first.render} db ${first.db} script ${first.script} long ${first.longTasks}/${first.longMs}ms`
+        + ` | second: fcp ${second.fcp} render ${second.render} db ${second.db} script ${second.script} long ${second.longTasks}/${second.longMs}ms`);
       await closeBrowser();
     }
   }
   const med = (xs) => xs.sort((a, b) => a - b)[Math.floor(xs.length / 2)];
   const summary = {};
-  for (const d of Object.keys(SCHEMA_OF)) for (const k of ['first', 'second']) for (const f of ['fcp', 'render', 'db', 'longTasks', 'longMs', 'longMax'])
-    summary[`${d}.${k}.${f}`] = med(rows.filter((r) => r.domain === d).map((r) => r[k][f]));
+  for (const cpu of RATES) for (const d of Object.keys(SCHEMA_OF)) for (const k of ['first', 'second'])
+    for (const f of ['fcp', 'render', 'db', 'script', 'longTasks', 'longMs', 'longMax'])
+      summary[`${cpu}x.${d}.${k}.${f}`] = med(rows.filter((r) => r.domain === d && r.cpu === cpu).map((r) => r[k][f]));
   console.log('medians', summary, 'boot js (first visit):', rows[0].first.bootJs.join(', '));
   writeFileSync(join(OUT, 'perf-report.json'), JSON.stringify({ base, at: new Date().toISOString(), rows, summary }, null, 1));
 }

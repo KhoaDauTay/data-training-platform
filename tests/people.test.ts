@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { loadTickets } from '../src/content';
 import schema from '../src/db/schema.sql?raw';
-import { parsePeople, PEOPLE, personOf, roleLine } from '../src/people';
+import { parsePeople as peopleOf, PEOPLE, personOf, roleLine } from '../src/people';
+import { parse as parseYaml } from 'yaml';
+const parsePeople = (src: string, origin?: string) => peopleOf(parseYaml(src), origin); // V22-E: the parser takes parsed YAML
 import { runner } from './helpers';
 
 const VI_DIACRITIC = /[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ]/i;
