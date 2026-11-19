@@ -14,7 +14,7 @@ objectives:
     en: Use the `partitionBy`, `sortBy` and `window` options of `$setWindowFields`.
 requires: [e-mg-l2-06]
 sources:
-  - https://www.mongodb.com/docs/manual/reference/operator/aggregation/setWindowFields/
+  - https://www.mongodb.com/docs/manual/reference/operator/aggregation/setwindowfields/
   - https://www.mongodb.com/docs/manual/reference/operator/aggregation/rank/
   - https://www.mongodb.com/docs/manual/reference/operator/aggregation/shift/
 lab:

@@ -15,7 +15,7 @@ objectives:
 requires: [e-mg-l1-05]
 sources:
   - https://www.mongodb.com/docs/manual/reference/operator/update/push/
-  - https://www.mongodb.com/docs/manual/reference/operator/update/addToSet/
+  - https://www.mongodb.com/docs/manual/reference/operator/update/addtoset/
   - https://www.mongodb.com/docs/manual/reference/operator/update/pull/
 lab:
   setup: |

@@ -17,7 +17,7 @@ sources:
   - https://www.mongodb.com/docs/manual/reference/operator/aggregation/match/
   - https://www.mongodb.com/docs/manual/reference/operator/aggregation/project/
   - https://www.mongodb.com/docs/manual/reference/operator/aggregation/set/
-  - https://www.mongodb.com/docs/manual/reference/operator/aggregation/dateToString/
+  - https://www.mongodb.com/docs/manual/reference/operator/aggregation/datetostring/
 lab:
   setup: |
     {"collections": {"orders": [

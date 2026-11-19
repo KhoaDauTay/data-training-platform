@@ -15,7 +15,7 @@ objectives:
 requires: [e-mg-l1-03]
 sources:
   - https://www.mongodb.com/docs/manual/tutorial/insert-documents/
-  - https://www.mongodb.com/docs/manual/tutorial/remove-documents/
+  - https://www.mongodb.com/docs/manual/tutorial/delete-documents/
 lab:
   setup: |
     {"collections": {"products": [

@@ -16,7 +16,7 @@ requires: [e-mg-l2-11]
 sources:
   - https://www.mongodb.com/docs/manual/data-modeling/best-practices/
   - https://www.mongodb.com/docs/manual/data-modeling/design-patterns/
-  - https://www.mongodb.com/docs/manual/reference/operator/aggregation/arrayElemAt/
+  - https://www.mongodb.com/docs/manual/reference/operator/aggregation/arrayelemat/
 lab:
   setup: |
     {"collections": {

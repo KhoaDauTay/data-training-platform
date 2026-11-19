@@ -15,8 +15,8 @@ objectives:
 requires: [e-mg-l1-04]
 sources:
   - https://www.mongodb.com/docs/manual/tutorial/update-documents/
-  - https://www.mongodb.com/docs/manual/reference/operator/update/
-  - https://www.mongodb.com/docs/manual/reference/method/db.collection.updateOne/
+  - https://www.mongodb.com/docs/manual/reference/mql/update/
+  - https://www.mongodb.com/docs/manual/reference/method/db.collection.updateone/
 lab:
   setup: |
     {"collections": {"products": [

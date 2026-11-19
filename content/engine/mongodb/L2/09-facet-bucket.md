@@ -16,7 +16,7 @@ requires: [e-mg-l2-06]
 sources:
   - https://www.mongodb.com/docs/manual/reference/operator/aggregation/bucket/
   - https://www.mongodb.com/docs/manual/reference/operator/aggregation/facet/
-  - https://www.mongodb.com/docs/manual/reference/operator/aggregation/sortByCount/
+  - https://www.mongodb.com/docs/manual/reference/operator/aggregation/sortbycount/
 lab:
   setup: |
     {"collections": {"orders": [

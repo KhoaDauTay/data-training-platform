@@ -16,7 +16,7 @@ requires: [e-mg-l1-07]
 sources:
   - https://www.mongodb.com/docs/manual/reference/method/cursor.sort/
   - https://www.mongodb.com/docs/manual/reference/method/cursor.skip/
-  - https://www.mongodb.com/docs/manual/reference/method/db.collection.countDocuments/
+  - https://www.mongodb.com/docs/manual/reference/method/db.collection.countdocuments/
 lab:
   setup: |
     {"collections": {"products": [

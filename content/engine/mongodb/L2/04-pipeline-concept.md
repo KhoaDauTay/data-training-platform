@@ -17,7 +17,7 @@ requires: [e-mg-l1-10]
 sources:
   - https://www.mongodb.com/docs/manual/core/aggregation-pipeline/
   - https://www.mongodb.com/docs/manual/core/aggregation-pipeline-optimization/
-  - https://www.mongodb.com/docs/manual/reference/operator/aggregation-pipeline/
+  - https://www.mongodb.com/docs/manual/reference/mql/aggregation-stages/
 quiz:
   - q:
       vi: 'Pipeline `[{ $group: { _id: "$store", n: { $sum: 1 } } }, { $match: { status: "paid" } }]` trả về gì?'
