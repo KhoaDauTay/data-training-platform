@@ -66,6 +66,8 @@ const vi = {
   'adv.needs': 'Cần trước:',
   'adv.done': 'Hoàn thành nút này (thử thách +{xp} XP lần đầu).',
   'adv.links': 'Đọc thêm',
+  'adv.readings': 'Bài đọc ngắn: từ SQL sang pandas',
+  'adv.readingsNote': 'Mã chỉ để đọc, không chạy trong ứng dụng. Thử bằng Python trên máy bạn hoặc notebook Kaggle.',
   'adv.newTab': 'mở thẻ mới',
   // v13 (product-design-v8 §2.1): Boon's guide mark (src/ui/guide.ts)
   'guide.label': 'Boon chỉ đường · {i}/{n}',
@@ -104,7 +106,7 @@ const vi = {
   'g.review': 'Mỗi lượt ôn là một bài luyện của một kỹ năng tới hạn. Không tính XP; chỉ đổi mức nhớ.',
   'g.adv.1': 'Bài nâng cao dựa trên vài kỹ năng nền. Có ✓ là bạn đã học; chưa có thì bấm để xem trước, không bắt buộc.',
   'g.adv.2': 'Mỗi bài có bài học riêng, vài bài luyện và một Thử thách cuối, +{xp} XP lần đầu đạt.',
-  'g.adv.ext': 'Bài này học qua các link đọc thêm; link mở ở tab mới.',
+  'g.adv.ext': 'Bài này học ngoài ứng dụng: đọc phần trên trang (nếu có) rồi theo các link đọc thêm; link mở ở tab mới.',
 } as const;
 
 export type LearnKey = keyof typeof vi;
@@ -170,6 +172,8 @@ const en: Record<LearnKey, string> = {
   'adv.needs': 'Needs first:',
   'adv.done': 'Node complete (the challenge gave +{xp} XP the first time).',
   'adv.links': 'Read more',
+  'adv.readings': 'Short readings: from SQL to pandas',
+  'adv.readingsNote': 'The code is for reading only; it does not run in the app. Try it with Python on your computer or in a Kaggle notebook.',
   'adv.newTab': 'opens a new tab',
   'guide.label': 'Boon shows the way · {i}/{n}',
   'guide.aria': 'Boon shows the way, step {i} of {n}',
@@ -206,7 +210,7 @@ const en: Record<LearnKey, string> = {
   'g.review': 'Each review item is a drill for one skill that is due. No XP; only the box changes.',
   'g.adv.1': "An advanced topic builds on a few basic skills. A ✓ means you know it; if not, click to look first. It's optional.",
   'g.adv.2': 'Each topic has its own lesson, a few drills and a final challenge: +{xp} XP the first time you pass it.',
-  'g.adv.ext': 'This one is learned through the reading links; they open in a new tab.',
+  'g.adv.ext': 'This one is learned outside the app: read what is on this page (if any), then follow the reading links; they open in a new tab.',
 };
 
 export const LEARN_DICT = { vi: vi as Record<LearnKey, string>, en };

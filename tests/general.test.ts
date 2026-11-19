@@ -169,6 +169,22 @@ describe('nội dung: lộ trình DA nâng cao (content/general/adv.yml)', () =>
     }
   });
 
+  it('D5 (V20-A NO-GO, L173): đúng 3 bài đọc SQL ↔ pandas; EN không dấu, code span VI = EN; SQL chạy trên lab; chỉ link chính thức', async () => {
+    const d5 = nodes.find((n) => n.id === 'd5')!;
+    expect(d5.status).toBe('external');
+    expect(d5.readings).toHaveLength(3);
+    expect(nodes.filter((n) => n.id !== 'd5').every((n) => n.readings.length === 0)).toBe(true);
+    const run = await labRun();
+    for (const r of d5.readings) {
+      for (const b of [r.title, r.body]) {
+        expect(b.en.replace(/`[^`]+`/g, '')).not.toMatch(VI_DIACRITIC);
+        expect(codeSpans(b.en)).toEqual(codeSpans(b.vi));
+      }
+      expect((await run(r.sql)).rows.length, r.sql).toBeGreaterThan(0);
+    }
+    expect(d5.links.map((l) => new URL(l.url).host).sort()).toEqual(['docs.python.org', 'pandas.pydata.org', 'pandas.pydata.org', 'www.kaggle.com']);
+  });
+
   it('needs: mọi id là kỹ năng hoặc nút có thật, không vòng', () => {
     const byId = new Map(nodes.map((n) => [n.id, n]));
     for (const n of nodes) for (const x of n.needs) expect(SKILLS.some((s) => s.id === x) || byId.has(x), `${n.id} → ${x}`).toBe(true);

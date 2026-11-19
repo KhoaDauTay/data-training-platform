@@ -59,7 +59,7 @@ const ROUTE_HASH = {
 };
 const ROUTES = JSON.parse(/export const ROUTES = (\[[^\]]*\])/.exec(readFileSync(join(ROOT, 'src/route.ts'), 'utf8'))[1].replace(/'/g, '"'));
 // V20-C (L179): plus the General sub-pages and the other two domains' pages (the list of tests/axe.test.ts).
-const PAGES = [...ROUTES.filter((r) => ROUTE_HASH[r]).map((r) => ROUTE_HASH[r]), '#/learn/sql/1', '#/learn/skill/select', '#/learn/adv/a2',
+const PAGES = [...ROUTES.filter((r) => ROUTE_HASH[r]).map((r) => ROUTE_HASH[r]), '#/learn/sql/1', '#/learn/skill/select', '#/learn/adv/a2', '#/learn/adv/d5',
   '#/learn/interview', ...['ecommerce', 'finance'].flatMap((d) => ['', '/play', '/data', '/dashboard', '/map'].map((p) => `#/d/${d}${p}`))];
 const mainOf = (hash) => (/\/play$/.test(hash) ? 'shell' : /\/data$/.test(hash) ? 'data' : /\/dashboard$/.test(hash) ? 'dashboard' : 'home');
 // axe-core from node_modules (dev dependency, L141; never in dist/), injected into the page over CDP. target-size is off by default.
