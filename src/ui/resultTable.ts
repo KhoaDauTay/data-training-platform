@@ -88,7 +88,7 @@ export function renderResult(r: QueryResult, mark?: unknown[], limit = MAX_ROWS,
   return h('div', { class: cx('result', fill && 'flex min-h-0 flex-1 flex-col') },
     r.rows.length === 0 ? h('p', { class: 'muted' }, t('res.empty')) : null,
     one,
-    h('div', { class: cx('overflow-auto rounded-(--r-inset) ring-1 ring-line', fill ? 'max-h-[60dvh] min-h-0 flex-1 shell:max-h-none' : 'max-h-[420px]') },
+    h('div', { tabindex: '0', class: cx('overflow-auto rounded-(--r-inset) ring-1 ring-line', fill ? 'max-h-[60dvh] min-h-0 flex-1 shell:max-h-none' : 'max-h-[420px]') }, // V20-C: keyboard-scrollable (axe)
       h('table', { class: 'w-auto' },
         h('caption', { class: fill && plain ? 'sr-only' : '' }, caption),
         h('thead', {}, h('tr', {},

@@ -128,6 +128,12 @@ export function loadInterview(): Promise<InterviewContent> {
 export const generalNow = (): General | undefined => general;
 
 /** Story mode always plays variants[0]. */
+const storyCache = new WeakMap<Ticket[], Ticket[]>();
 export function loadTickets(d: DomainId = activeDomain()): Ticket[] {
-  return loadTicketTemplates(d).map((t) => applyVariant(t, 0));
+  // V20-C (L178): the top bar, sidebar and Home call this on every draw; applying variant 0 to every ticket cost 40–50 ms
+  // at boot. Keyed by the parsed template list, so a reload of a domain's content gets a fresh list. A copy, never shared.
+  const list = loadTicketTemplates(d);
+  let story = storyCache.get(list);
+  if (!story) storyCache.set(list, (story = list.map((t) => applyVariant(t, 0))));
+  return story.slice();
 }
