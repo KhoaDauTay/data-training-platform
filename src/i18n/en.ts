@@ -122,6 +122,7 @@ export const en: Record<Key, Msg> = {
   'engine.loading': 'Opening the Database Engine area…',
   'engine.failed': 'Could not load the Database Engine area. Check your connection, then try again.',
   'engine.switch': 'Choose what to learn',
+  'nav.learnBoth': 'Learn',
   'nav.me': 'Progress',
   'me.title': 'My progress',
   'me.loading': 'Opening your progress page…',

@@ -213,12 +213,16 @@ export function lessonProblems(l: EngineLesson, ids: ReadonlySet<string>): strin
 export const isRight = (q: Question, picked: number | undefined): boolean => picked === q.answer;
 
 /**
- * Graded parts of a lesson, each passed once in a visit: every quiz item, the predict question, every lab step. A lesson
- * with none (a concept) is completed by its "mark as learned" button.
+ * Graded parts of a lesson, each passed once in a visit: every quiz item, the predict question, every lab step that can be
+ * graded here (`gradable`, src/engine/labs.ts: a runner exists and handles the step's check). A lesson with none (a concept,
+ * or a lab whose engine does not run in the browser) is completed by its "mark as learned" button.
  */
-export const partsOf = (l: EngineLesson): string[] =>
-  [...(l.quiz ?? []).map((_, i) => `q${i}`), ...(l.predict ? ['p'] : []), ...(l.lab?.steps ?? []).map((_, i) => `s${i}`)];
-export const lessonPassed = (l: EngineLesson, passed: ReadonlySet<string>): boolean => partsOf(l).every((p) => passed.has(p));
+export type Gradable = (l: EngineLesson, step: LabStep) => boolean;
+export const partsOf = (l: EngineLesson, gradable: Gradable = () => true): string[] =>
+  [...(l.quiz ?? []).map((_, i) => `q${i}`), ...(l.predict ? ['p'] : []),
+    ...(l.lab?.steps ?? []).flatMap((s, i) => (gradable(l, s) ? [`s${i}`] : []))];
+export const lessonPassed = (l: EngineLesson, passed: ReadonlySet<string>, gradable?: Gradable): boolean =>
+  partsOf(l, gradable).every((p) => passed.has(p));
 
 /** XP on the first completion only (L220): concept/quiz/predict 5, lab 10 (like a General drill), capstone 20 (like a challenge). */
 export const ENGINE_XP: Record<Kind, number> = { concept: 5, quiz: 5, predict: 5, lab: 10, capstone: 20 };

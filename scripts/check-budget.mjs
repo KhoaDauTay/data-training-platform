@@ -37,14 +37,14 @@ const GROUPS = [
   ['sqlmotion', /^sqlMotion-/, 8], // v10 Track A (L154): src/art/sqlMotion.ts, the Execution order film, GROUP BY fold, JOIN pairs and the guess, VI/EN text inside; lazy on the first draw of that tab
   ['portfolioPng', /^portfolioPng-/, 6], // V19-D (L170): src/ui/portfolioPng.ts + src/portfolio.ts (card pictures, portfolio zip, take-home file), lazy on the first picture or portfolio click: 3.2 KB gz
   ['datasetPanel', /^datasetPanel-/, 5], // V20-B: Sandbox sample-dataset panel, lazy (4.0 KB gz); the CSV itself is public/datasets/, fetched on click, not in assets
-  ['engine', /^engineSources-/, 40], // ENG-CORE (L220): content/engine/<engine>/** as raw text, one lazy chunk per engine (engineSources-pg/-mg/-dy), fetched together on the first #/engine or #/me visit: 3 KB gz with the 3 sample lessons
-  ['engineui', /^engineView-/, 20], // ENG-CORE (L220): src/ui/engineView.ts + src/engine/{content,labs,vizRegistry}.ts + src/i18n/engine.ts (pages, lesson viewer, graders, VI/EN text), lazy: 9.7 KB gz at T1
+  ['engine', /^engineSources-/, 40], // ENG-CORE (L220): content/engine/<engine>/** as raw text, one lazy chunk per engine (engineSources-pg/-mg/-dy), fetched together on the first #/engine or #/me visit (empty until content lands; the 3 samples in tests/fixtures/engine were 3 KB gz)
+  ['engineui', /^engineView-/, 20], // ENG-CORE (L220): src/ui/engineView.ts + src/engine/{content,labs,vizRegistry,inside}.ts + src/i18n/engine.ts (pages, lesson viewer, graders, VI/EN text), lazy: 9.7 KB gz at T1
   // ENG-PGLAB (L230): the engine lab's own worker (src/engine/pglab/pglabWorker.ts: a second PGlite JS bundle + session +
   // checkers; the .wasm/.data are shared with the game worker) and the contrib tarballs it fetches only when a lab names
-  // them (already gzip). 133 / 136 / 1150 KB measured 2026-11-20. Optional (`true`) until ENG-CORE imports PgLabClient.
-  ['pglab', /^pglabWorker-/, 150, true],
-  ['pgext', /^(pageinspect|pg_visibility|amcheck|pg_walinspect|pg_buffercache|pg_freespacemap|bloom|btree_gin|btree_gist|pg_trgm|pg_stat_statements|ltree)\.tar-.*\.gz$/, 145, true],
-  ['pgcrypto', /^pgcrypto\.tar-.*\.gz$/, 1160, true], // bundles OpenSSL: fetched only by a lab that names pgcrypto
+  // them (already gzip). 133 / 136 / 1150 KB measured 2026-11-20. Required since ENG-CORE's LAB_RUNNERS.postgres loads it (L220).
+  ['pglab', /^pglabWorker-/, 150],
+  ['pgext', /^(pageinspect|pg_visibility|amcheck|pg_walinspect|pg_buffercache|pg_freespacemap|bloom|btree_gin|btree_gist|pg_trgm|pg_stat_statements|ltree)\.tar-.*\.gz$/, 145],
+  ['pgcrypto', /^pgcrypto\.tar-.*\.gz$/, 1160], // bundles OpenSSL: fetched only by a lab that names pgcrypto
   ['rest', /./, 1560],
 ];
 

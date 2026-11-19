@@ -1,6 +1,6 @@
 import type { QueryResult } from '../db/run';
 import type { GradeResult } from '../grader';
-import type { EngineId, Lab, LabStep } from './content';
+import type { EngineId, EngineLesson, Lab, LabStep } from './content';
 
 /**
  * ENG-CORE (L221): the seam every engine's lab runtime plugs into. The lesson page (src/ui/engineView.ts) calls `prepare`
@@ -66,6 +66,14 @@ export function pgLabRunner(env: LabEnv): LabRunner {
     },
   };
 }
+
+/**
+ * Whether a lab step can be graded in the browser (it then counts toward the lesson's completion). Postgres: `doc` never;
+ * `plan` only with `setup` (ENG-PGLAB); rows/catalog always. Other engines: whenever a runner is registered (it may still
+ * answer `unsupported` for one step: then the step is passed by hand, see engineView). Update with each new runner.
+ */
+export const gradable = (l: EngineLesson, step: LabStep): boolean =>
+  !!LAB_RUNNERS[l.engine] && step.check !== 'doc' && !(l.engine === 'postgres' && step.check === 'plan' && !l.lab?.setup);
 
 /** Engine → its runner, loaded on the first lab of that engine. An engine without one shows its labs read-only. */
 export const LAB_RUNNERS: Partial<Record<EngineId, (env: LabEnv) => Promise<LabRunner>>> = {

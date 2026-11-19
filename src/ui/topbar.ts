@@ -81,7 +81,7 @@ function renderNav(): void {
   byId('nav').replaceChildren(...top.map((n) => navLink(n, route, NAV_LINK, t(n.label))));
   const bottom = top.filter((n) => !n.mergeInto).map((n) => {
     const merged = top.filter((m) => m.mergeInto === n.id);
-    return merged.length ? { ...n, current: (r: Route) => n.current(r) || merged.some((m) => m.current(r)) } : n;
+    return merged.length ? { ...n, label: 'nav.learnBoth' as const, current: (r: Route) => n.current(r) || merged.some((m) => m.current(r)) } : n;
   });
   byId('bottom-nav').replaceChildren(
     ...bottom.map((n) => navLink(n, route, BOTTOM_LINK, icon(n.icon, 'size-5'), h('span', {}, t(n.label)))),

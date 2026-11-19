@@ -118,6 +118,9 @@ lab: { steps: [{ task: { vi: a, en: a }, solution: SELECT 1, check: rows, hint: 
     expect(partsOf(quiz)).toEqual(['q0', 'p', 's0']);
     expect(lessonPassed(quiz, new Set(['q0', 'p']))).toBe(false);
     expect(lessonPassed(quiz, new Set(['q0', 'p', 's0']))).toBe(true);
+    // a step that cannot be graded here never blocks completion
+    expect(partsOf(quiz, () => false)).toEqual(['q0', 'p']);
+    expect(lessonPassed(quiz, new Set(['q0', 'p']), () => false)).toBe(true);
     const concept = parseEngineLesson(FM(BASE), PATH, parse);
     expect(partsOf(concept)).toEqual([]); // completed by its button
   });

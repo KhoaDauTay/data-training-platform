@@ -7,6 +7,8 @@ import { engineHash, engineRouteOf, hashOf, parseRoute } from '../src/route';
 import { ENGINE_ID, isWorkId, parseSave, type Known } from '../src/save';
 import { SKILLS } from '../src/progress';
 import { decodeInfomask, heapView } from '../src/engine/inside';
+import { gradable } from '../src/engine/labs';
+import type { EngineLesson, LabStep } from '../src/engine/content';
 
 const known: Known = { ticketIds: new Set(['ch1-01']), laneIds: new Set(), skills: new Set(['select']) };
 
@@ -57,6 +59,19 @@ describe('chunk lười engineView không import giá trị từ module main (Pl
   it.each(Object.keys(files))('%s', (f) => {
     const values = [...files[f].matchAll(/^import (?!type )[^;]*? from '([^']+)';/gm)].map((m) => m[1]);
     for (const v of values) expect([f, v]).toEqual([f, expect.stringMatching(/^(\.\.\/engine\/\w+|\.\.\/i18n\/engine|\.\/(content|labs|vizRegistry))$/)]);
+  });
+});
+
+describe('gradable: bước nào tính vào hoàn thành bài', () => {
+  const step = (check: LabStep['check']): LabStep => ({ task: { vi: 'a', en: 'a' }, solution: 'x', check, ordered: false, hint: { vi: 'a', en: 'a' } });
+  const lesson = (engine: EngineLesson['engine'], setup?: string) => ({ engine, lab: { steps: [], ...(setup ? { setup } : {}) } }) as unknown as EngineLesson;
+  it('Postgres: rows/catalog luôn; plan chỉ khi có setup; doc không bao giờ; engine chưa có runner thì không', () => {
+    expect(gradable(lesson('postgres'), step('rows'))).toBe(true);
+    expect(gradable(lesson('postgres'), step('catalog'))).toBe(true);
+    expect(gradable(lesson('postgres'), step('plan'))).toBe(false);
+    expect(gradable(lesson('postgres', 'CREATE TABLE t (a int)'), step('plan'))).toBe(true);
+    expect(gradable(lesson('postgres'), step('doc'))).toBe(false);
+    expect(gradable(lesson('dynamodb'), step('rows'))).toBe(false);
   });
 });
 

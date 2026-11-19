@@ -3,7 +3,7 @@ import {
   type EngineId, type EngineLesson, type Level, type ModuleName, type Question, type Tree,
 } from '../engine/content';
 import { heapView } from '../engine/inside';
-import { LAB_RUNNERS, type LabEnv, type LabOutput, type LabRunner } from '../engine/labs';
+import { gradable, LAB_RUNNERS, type LabEnv, type LabOutput, type LabRunner } from '../engine/labs';
 import { vizLoader } from '../engine/vizRegistry';
 import type * as I18n from '../i18n';
 import { engineText, type EngineKey } from '../i18n/engine';
@@ -176,7 +176,7 @@ function complete(l: EngineLesson): void {
 }
 function passPart(l: EngineLesson, v: Visit, part: string): void {
   v.passed.add(part);
-  if (lessonPassed(l, v.passed)) complete(l);
+  if (lessonPassed(l, v.passed, gradable)) complete(l);
 }
 
 function question(l: EngineLesson, v: Visit, q: Question, part: string, label: string): HTMLElement {
@@ -340,7 +340,7 @@ function lessonPage(l: EngineLesson): HTMLElement {
   const { h, cls } = d;
   const v = visitOf(l.id);
   const ok = done();
-  const parts = partsOf(l);
+  const parts = partsOf(l, gradable);
   const all = flat(l.engine);
   const next = all[all.indexOf(l) + 1];
   const module = trees[l.engine].levels.find((x) => x.level === l.level)!.modules.find((m) => m.id === l.module)!;

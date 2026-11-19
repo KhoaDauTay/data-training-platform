@@ -120,6 +120,7 @@ export const vi = {
   'engine.loading': 'Đang mở khu Database Engine…',
   'engine.failed': 'Không tải được khu Database Engine. Kiểm tra kết nối mạng rồi thử lại.',
   'engine.switch': 'Chọn phần học',
+  'nav.learnBoth': 'Học', // L219 D-E1: the phone bottom bar's one item for Lộ trình + Database Engine
   'nav.me': 'Tiến bộ',
   'me.title': 'Tiến bộ của tôi',
   'me.loading': 'Đang mở trang tiến bộ…',
