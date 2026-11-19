@@ -160,6 +160,17 @@ describe('engineViz shell', () => {
   });
 });
 
+describe('engineViz ENG-CORE slot', () => {
+  it('vizMount draws into the host and its cleanup removes it', async () => {
+    const mount = await V.vizMount('partitionsHash', { h, s, getLang, reducedMotion: () => false, loadedGsap: () => gsapMod, loadGsap: () => {} });
+    const host = document.createElement('div');
+    const stop = mount(host, { lang: 'en', reducedMotion: true });
+    expect(host.querySelector('figure svg')).not.toBeNull();
+    stop();
+    expect(host.childElementCount).toBe(0);
+  });
+});
+
 describe('engineViz facts', () => {
   it('lock conflict table is symmetric and matches the documented anchors', () => {
     const C = V.LOCK_CONFLICTS;

@@ -4,9 +4,11 @@
 import './pgStorage';
 import './pgIndex';
 import './pgPlan';
-import { vizFor, type VizFactory } from './registry';
+import { type Deps, init } from './engineVizCore';
+import { type Lang, vizFor, type VizFactory } from './registry';
 
 export { init } from './engineVizCore';
+export type { Deps } from './engineVizCore';
 export { registerViz, vizFor, vizNames } from './registry';
 
 /** MongoDB and DynamoDB diagrams: their own lazy chunk (engineVizNosql), registered on first use. */
@@ -25,3 +27,18 @@ export type { HeapModel, HeapRow, HotModel, MvccModel, VacuumModel, WalModel } f
 export type { BrinModel, BtreeModel, GinModel, GistModel } from './pgIndex';
 export { LOCK_CONFLICTS, LOCK_MODES } from './pgPlan';
 export type { LockModel, PlanVizNode } from './pgPlan';
+
+
+/**
+ * ENG-CORE's slot (src/engine/vizRegistry.ts on the ENG-CORE branch, L218: `VizMount = (host, ctx) => cleanup`). One line
+ * per diagram fills it: `VIZ.heapPage = () => import('./viz/engineViz').then((m) => m.vizMount('heapPage', deps))`.
+ * `ctx.reducedMotion` overrides the OS setting; a lab passes its rows through `model`.
+ */
+export async function vizMount(name: string, deps: Deps, model?: unknown): Promise<(host: HTMLElement, ctx: { lang: Lang; reducedMotion: boolean }) => () => void> {
+  const f = await loadViz(name);
+  return (host, ctx) => {
+    init({ ...deps, reducedMotion: () => ctx.reducedMotion || deps.reducedMotion() });
+    const v = f?.(host, { lang: ctx.lang, model });
+    return () => v?.destroy();
+  };
+}
