@@ -887,4 +887,6 @@ export const vi = {
   'pin.locked': 'Ghim lên: mở khi học xong {skill} (ch. {n})',
   'lock.tabsHidden': 'Thêm {n} tab mở dần khi bạn làm tiếp',
   'lock.skillChapter': 'Đang khóa · mở ở chương {n}',
+  // v10 Track A (L154–L156): the JOIN step of the Execution order tab
+  'steps.help.join': 'Ghép mỗi dòng bên trái với các dòng bên phải có khóa bằng nhau. JOIN bỏ dòng không tìm được cặp; LEFT JOIN giữ dòng đó và để trống (NULL) các cột bên phải.',
 } satisfies Record<string, Msg>;

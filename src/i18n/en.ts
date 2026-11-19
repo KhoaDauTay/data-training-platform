@@ -886,4 +886,6 @@ export const en: Record<Key, Msg> = {
   'pin.locked': 'Pin: opens when you learn {skill} (ch. {n})',
   'lock.tabsHidden': (p) => `${p.n} more tab${Number(p.n) === 1 ? '' : 's'} open as you go`,
   'lock.skillChapter': 'Locked · opens in chapter {n}',
+  // v10 Track A (L154–L156): the JOIN step of the Execution order tab
+  'steps.help.join': 'Pairs each row on the left with the rows on the right whose key is equal. JOIN drops a row that finds no partner; LEFT JOIN keeps it and leaves the right-hand columns empty (NULL).',
 };
