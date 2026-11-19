@@ -35,6 +35,7 @@ const GROUPS = [
   ['me', /^meView-/, 12], // v16 (L142): src/ui/meView.ts + src/me.ts + src/i18n/me.ts (#/me page, certificates, portfolio, dashboard file/PNG exports), lazy on the first #/me visit or export click
   ['sqlmotion', /^sqlMotion-/, 8], // v10 Track A (L154): src/art/sqlMotion.ts, the Execution order film, GROUP BY fold, JOIN pairs and the guess, VI/EN text inside; lazy on the first draw of that tab
   ['portfolioPng', /^portfolioPng-/, 6], // V19-D (L170): src/ui/portfolioPng.ts + src/portfolio.ts (card pictures, portfolio zip, take-home file), lazy on the first picture or portfolio click: 3.2 KB gz
+  ['datasetPanel', /^datasetPanel-/, 5], // V20-B: Sandbox sample-dataset panel, lazy (4.0 KB gz); the CSV itself is public/datasets/, fetched on click, not in assets
   ['rest', /./, 1560],
 ];
 
