@@ -9,24 +9,37 @@ import { sqlOnly } from '../src/onboarding';
 import { unlockNote } from '../src/overview';
 import { SKILLS } from '../src/progress';
 import { textOf } from '../src/tickets';
-import { canonicalHash, domainOfHash, LEARN_PLAY, parseRoute, workspaceHash } from '../src/route';
+import { canonicalHash, domainOfHash, drillHash, drillOfHash, LEARN_PLAY, parseRoute, workspaceHash } from '../src/route';
 
 /** v15 "Ranh giới sạch" (product-roadmap-v15 §3, §5): the General area and the domains no longer leak into each other. */
 
 describe('Q1: the General workspace has its own hash (D-N2)', () => {
   it('a drill is never on a #/d/… route: the domain workspace is an alias of #/learn/play', () => {
-    for (const d of ['logistics', 'ecommerce', 'finance']) expect(workspaceHash(`#/d/${d}/play`, true)).toBe(LEARN_PLAY);
-    expect(workspaceHash(canonicalHash('#/play'), true)).toBe(LEARN_PLAY); // the pre-Plan 7 alias too
+    for (const d of ['logistics', 'ecommerce', 'finance']) expect(workspaceHash(`#/d/${d}/play`, LEARN_PLAY)).toBe(LEARN_PLAY);
+    expect(workspaceHash(canonicalHash('#/play'), LEARN_PLAY)).toBe(LEARN_PLAY); // the pre-Plan 7 alias too
     expect(parseRoute(LEARN_PLAY)).toBe('play');
     expect(domainOfHash(LEARN_PLAY)).toBeUndefined();
   });
 
   it('other hashes are kept; #/learn/play without a drill (a reload) goes to Practise SQL', () => {
-    expect(workspaceHash('#/d/logistics/play', false)).toBe('#/d/logistics/play');
-    expect(workspaceHash('#/d/finance/data/loans', true)).toBe('#/d/finance/data/loans');
-    expect(workspaceHash('#/learn/skill/where', true)).toBe('#/learn/skill/where');
-    expect(workspaceHash(LEARN_PLAY, false)).toBe('#/practice');
-    expect(workspaceHash(LEARN_PLAY, true)).toBe(LEARN_PLAY);
+    expect(workspaceHash('#/d/logistics/play', undefined)).toBe('#/d/logistics/play');
+    expect(workspaceHash('#/d/finance/data/loans', LEARN_PLAY)).toBe('#/d/finance/data/loans');
+    expect(workspaceHash('#/learn/skill/where', LEARN_PLAY)).toBe('#/learn/skill/where');
+    expect(workspaceHash(LEARN_PLAY, undefined)).toBe('#/practice');
+    expect(workspaceHash(LEARN_PLAY, LEARN_PLAY)).toBe(LEARN_PLAY);
+  });
+
+  it('a drill keeps its own hash, so a reload reopens it instead of dropping the player on the hub', () => {
+    const h = drillHash('g-where-open');
+    expect(h).toBe('#/learn/play/g-where-open');
+    expect(drillOfHash(h)).toBe('g-where-open');
+    expect(parseRoute(h)).toBe('play');
+    expect(domainOfHash(h)).toBeUndefined();
+    expect(workspaceHash(h, undefined)).toBe(h); // page load, nothing open yet: main.ts reopens the drill
+    expect(workspaceHash('#/d/logistics/play', h)).toBe(h); // a drill open in a domain's workspace hash
+    expect(workspaceHash(LEARN_PLAY, h)).toBe(h);
+    expect(drillOfHash('#/learn/play/<script>')).toBeUndefined();
+    expect(drillOfHash('#/learn/play')).toBeUndefined();
   });
 });
 

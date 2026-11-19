@@ -7,6 +7,7 @@ import type { Drill } from './general';
 import { domainSlot, DRILL_ID, SANDBOX_DRAFT_MAX } from './save';
 import { app, done, draftKey, selected, stepKey } from './state';
 import { readJson, writeJson, type KV } from './storage';
+import { drillHash, LEARN_PLAY } from './route';
 import type { Ticket } from './tickets';
 
 export interface PracticeRun {
@@ -48,6 +49,9 @@ export function playSchema(): SchemaId {
 }
 /** v15 Q1: the workspace holds a drill or a review of drills; it lives on #/learn/play, outside every domain. */
 export const generalWork = (): boolean => playSchema() === 'lab';
+/** The General workspace's hash for what it holds: a drill's own hash (a reload reopens it), LEARN_PLAY for a review of drills, else undefined (v15 Q1). */
+export const generalHash = (): string | undefined =>
+  !generalWork() ? undefined : session.mode.kind === 'drill' ? drillHash(session.mode.drill.id) : LEARN_PLAY;
 
 /** Real local day for the Leitner schedule (never the in-game date). */
 export const today = (): string => localDay(new Date());

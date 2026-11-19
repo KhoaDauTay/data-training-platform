@@ -34,14 +34,21 @@ export function canonicalHash(hash: string): string {
 /** v15 Q1 (D-N2): a drill and a review of drills open the workspace here, outside every domain. */
 export const LEARN_PLAY = '#/learn/play';
 /**
- * The workspace's hash for what it holds (`lab` = a drill or a review of drills). `#/d/<d>/play` holding one is an alias of
+ * The workspace's hash for what it holds (`lab` = the General workspace's own hash while it holds a drill (drillHash) or a
+ * review of drills (LEARN_PLAY), else undefined). `#/d/<d>/play` holding one is an alias of
  * LEARN_PLAY, kept forever like canonicalHash; LEARN_PLAY holding nothing General (a reload drops the session) → the
  * Practise SQL hub. Any other hash is returned as it is.
  */
-export function workspaceHash(hash: string, lab: boolean): string {
-  if (lab) return /^#\/?d\/[a-z]+\/play(?=$|[/?])/.test(hash) ? LEARN_PLAY : hash;
+export function workspaceHash(hash: string, lab: string | undefined): string {
+  if (lab) return /^#\/?(d\/[a-z]+|learn)\/play(?=$|[/?])/.test(hash) ? lab : hash;
+  if (drillOfHash(hash)) return hash; // a reload on a drill reopens it (main.ts), never the hub: the player keeps their place
   return /^#\/?learn\/play(?=$|[/?])/.test(hash) ? '#/practice' : hash;
 }
+
+/** The General workspace holding one drill: `#/learn/play/<drill id>`, so a reload reopens that drill (its draft is in the save). */
+export const drillHash = (id: string): string => `${LEARN_PLAY}/${id}`;
+/** The drill id in a drill workspace hash, else undefined. Ids are checked against the drill id pattern (never free text). */
+export const drillOfHash = (hash: string): string | undefined => /^#\/?learn\/play\/(g-[a-z0-9-]+)$/.exec(hash)?.[1];
 
 /** '' (no hash) → undefined, so the remembered route can be used; any unknown path falls back to home. */
 export function parseRoute(hash: string): Route | undefined {

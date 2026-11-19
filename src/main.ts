@@ -14,9 +14,9 @@ import { loadSave, parseSave, serializeSave, type Known } from './save';
 import { actions, app, done, editorSchema, persist, selected, type Column } from './state';
 import { resumeStep } from './overview';
 import { seedReview } from './practice';
-import { generalWork, isStory, playSchema, session, today } from './session';
+import { generalHash, isStory, playSchema, session, today } from './session';
 import { localStore, readJson, writeJson } from './storage';
-import { domainOfHash, type Route } from './route';
+import { domainOfHash, drillOfHash, type Route } from './route';
 import type { Ticket } from './tickets';
 import { initModes, onPracticeWrong, onSolved, renderLeft, renderReviewButton, startDrill } from './ui/modes';
 import { renderNotebook, toggleNotebook } from './ui/notebook';
@@ -536,7 +536,10 @@ startRouter((r, initial) => {
   else if (r === 'play') openSchema('lab'); // v15 Q1: #/learn/play, a drill or a review of drills
   if (d && d !== activeDomain()) void enterDomain(d).then(() => showRoute(r, initial));
   else showRoute(r, initial);
-}, generalWork);
+}, generalHash);
+// A reload on a drill (#/learn/play/<id>) reopens that drill with its saved draft; the session itself is never saved.
+const reopen = drillOfHash(location.hash);
+if (reopen) void startDrill(reopen);
 initWelcome(want === undefined); // nothing opened yet (no domain in the hash or the pref): the picker asks first
 
 // "My data" (Plan Import): imported CSVs stay in this browser (IndexedDB) and are replayed into the sandbox schema.
