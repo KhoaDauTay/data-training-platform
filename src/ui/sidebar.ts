@@ -28,7 +28,7 @@ const WIDE = '(min-width: 1024px)';
 const XL = '(min-width: 1280px)';
 const mq = (q: string): boolean => typeof matchMedia === 'function' && matchMedia(q).matches;
 
-/** The rail's overlay (v6 §3.2: opens over the page, never resizes the splitter frame). In memory only; a new page closes it. */
+/** The rail expanded in place (user 2026-11-20: it pushes the page right, no scrim; was v6 §3.2's overlay). In memory only; a new page closes it. */
 let overlay = false;
 let lastRoute: Route = 'home';
 let extra: HTMLElement | undefined;
@@ -281,12 +281,5 @@ export function initSidebar(): void {
     overlay = false;
     renderSidebar(lastRoute);
     byId('side').querySelector<HTMLElement>('[data-side="toggle"]')?.focus();
-  });
-  // A click on the scrim (#side's ::after, so the target is #side itself) or anywhere outside the panel closes the overlay (v10 UX #12).
-  document.addEventListener('pointerdown', (e) => {
-    const side = byId('side');
-    if (!overlay || (e.target instanceof Node && side.contains(e.target) && e.target !== side)) return;
-    overlay = false;
-    renderSidebar(lastRoute);
   });
 }
