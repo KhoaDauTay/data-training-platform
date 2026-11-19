@@ -3,7 +3,7 @@
 # role: vai trò nghiệp vụ thật; bio: một câu tính cách (giọng của người viết ticket giữ đúng câu này).
 # tables: bảng người này phụ trách (tên thật trong src/db/schema.sql, không dịch; thẻ người gửi chỉ hiện bảng đã mở).
 # look: tham số chân dung SVG (src/ui/avatar.ts):
-#   skin light|medium|tan|deep · hair black|brown|grey · style short|long|bun|side
+#   skin light|medium|tan|deep · hair black|brown|grey · style short|long|bun|side|curly|ponytail
 #   accessory none|helmet|glasses|headset|tie|scarf|lanyard
 # Mọi chuỗi đặt trong nháy kép; EN không dấu.
 
@@ -61,7 +61,7 @@
   role: { vi: "Nhân viên chứng từ & booking (B/L, HBL/MBL)", en: "Documentation and booking officer (B/L, HBL/MBL)" }
   bio: { vi: "Soi từng số vận đơn, không để lô nào lệch sổ.", en: "Checks every bill of lading number and never lets a shipment drift off the books." }
   tables: [shipments, containers, incoterms, master_bills, house_bills]
-  look: { skin: light, hair: black, style: long, accessory: lanyard }
+  look: { skin: light, hair: black, style: ponytail, accessory: lanyard }
 
 - name: "Bùi Long"
   dept: Ops
@@ -93,7 +93,7 @@
   role: { vi: "Nhân viên kinh doanh", en: "Sales executive" }
   bio: { vi: "Lúc nào cũng vừa gặp khách về, cần số liệu ngay.", en: "Always just back from a customer visit and needs numbers right away." }
   tables: [customers]
-  look: { skin: medium, hair: black, style: short, accessory: tie }
+  look: { skin: medium, hair: black, style: curly, accessory: tie }
 
 - name: "Phạm Tâm"
   dept: Finance

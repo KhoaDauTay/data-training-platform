@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import html from '../index.html?raw';
 import css from '../src/style.css?raw';
-import { POSES, RIG } from '../src/ui/mascots';
+import { MINI_VIEW, miniParts, POSES, RIG } from '../src/ui/mascots';
 
 const start = html.indexOf('<svg id="mascot-sprite"');
 const sprite = html.slice(start, html.indexOf('</svg>', start));
@@ -19,10 +19,21 @@ describe('linh vật (L57, product-design-v6 §1)', () => {
     }
   });
 
-  it('logo top bar: symbol boon-idle dựng đúng công thức boon idle, không data-mascot', () => {
+  it('symbol boon-idle (ảnh portfolio) dựng đúng công thức boon idle', () => {
     const sym = sprite.split('<symbol id="boon-idle" viewBox="0 0 120 120">')[1]?.split('</symbol>')[0] ?? '';
     expect([...sym.matchAll(/href="#boon-([\w-]+)"/g)].map((m) => m[1])).toEqual([...RIG.boon.idle]);
-    expect(html).toMatch(/<svg class="size-9"[^>]*><use href="#boon-idle"><\/use><\/svg>/);
+  });
+
+  it('X3 (L165): logo top bar là Boon nhỏ (boon-mini = nền tròn + phần đầu của idle), không data-mascot; mọi <use> trỏ tới phần có thật', () => {
+    const sym = sprite.split(`<symbol id="boon-mini" viewBox="${MINI_VIEW}">`)[1]?.split('</symbol>')[0] ?? '';
+    const uses = [...sym.matchAll(/href="#boon-([\w-]+)"/g)].map((m) => m[1]);
+    expect(uses).toEqual(miniParts('idle'));
+    expect(uses.filter((p) => !ids.has(`boon-${p}`))).toEqual([]);
+    expect(html).toMatch(/<svg class="size-9"[^>]*><use href="#boon-mini"><\/use><\/svg>/);
+    for (const p of POSES.filter((x) => x !== 'sleep')) { // mascot('boon', pose, 'size-8') draws these
+      expect(miniParts(p).length, p).toBeGreaterThan(3);
+      expect(miniParts(p).filter((part) => !ids.has(`boon-${part}`)), p).toEqual([]);
+    }
   });
 
   it('giai đoạn Lily: khăn, sao, laptop là phần riêng theo biến CSS; mọi tư thế đứng có đủ', () => {

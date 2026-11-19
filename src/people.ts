@@ -7,7 +7,7 @@ import { bilingualOf, type Bilingual } from './progress';
 export const LOOK = {
   skin: ['light', 'medium', 'tan', 'deep'],
   hair: ['black', 'brown', 'grey'],
-  style: ['short', 'long', 'bun', 'side'],
+  style: ['short', 'long', 'bun', 'side', 'curly', 'ponytail'], // curly/ponytail: ui-ux-v7 X1 (L164)
   accessory: ['none', 'helmet', 'glasses', 'headset', 'tie', 'scarf', 'lanyard'],
 } as const;
 export type Look = { [K in keyof typeof LOOK]: (typeof LOOK)[K][number] };

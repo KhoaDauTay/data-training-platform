@@ -236,15 +236,21 @@ describe('FIX-1 (L147, ui-ux-v7 P1 leftovers): type steps, shadow tokens, chip/a
     expect(bad).toEqual([]);
   });
 
-  it('colleague portraits: shirt vs backdrop ≥ 3:1 (WCAG 1.4.11 graphics), eyes vs every skin tone ≥ 3:1', () => {
+  it('colleague portraits (X1, L164): shirt vs backdrop ≥ 3:1 (WCAG 1.4.11 graphics); eyes, outline and black hair vs every skin token ≥ 3:1 in both themes', () => {
     const src = sources['../src/ui/avatar.ts'];
-    const skins = [...src.match(/const SKIN[^{]*\{([^}]*)\}/)![1].matchAll(/'(#[0-9a-f]{6})'/g)].map((m) => m[1]);
     const ink = src.match(/const INK = '(#[0-9a-f]{6})'/)![1];
-    expect(skins.length).toBeGreaterThan(2);
-    const bad = [
-      ...Object.entries(DEPT).filter(([, d]) => ratio(d.shirt, d.backdrop) < 3).map(([n, d]) => `${n} shirt ${d.shirt}/${d.backdrop} ${ratio(d.shirt, d.backdrop).toFixed(2)}`),
-      ...skins.filter((s) => ratio(ink, s) < 3).map((s) => `eyes ${ink} on skin ${s} ${ratio(ink, s).toFixed(2)}`),
-    ];
+    const skinKeys = [...src.match(/const SKIN[^{]*\{([^}]*)\}/)![1].matchAll(/var\(--(pp-skin-\w+)\)/g)].map((m) => m[1]);
+    expect(skinKeys).toHaveLength(4);
+    const bad = Object.entries(DEPT).filter(([, d]) => ratio(d.shirt, d.backdrop) < 3).map(([n, d]) => `${n} shirt ${d.shirt}/${d.backdrop} ${ratio(d.shirt, d.backdrop).toFixed(2)}`);
+    for (const [theme, tk] of [['light', light], ['dark', dark]] as const) {
+      for (const k of skinKeys) {
+        expect(tk[k], `${theme} ${k}`).toMatch(/^#/);
+        if (ratio(ink, tk[k]) < 3) bad.push(`${theme} eyes ${ink} on ${k} ${tk[k]} ${ratio(ink, tk[k]).toFixed(2)}`);
+      }
+      // the face outline reads against the lightest skin, and the outline against every backdrop
+      if (ratio(tk['pp-line'], tk['pp-skin-light']) < 3) bad.push(`${theme} pp-line on pp-skin-light`);
+      for (const [n, d] of Object.entries(DEPT)) if (ratio(tk['pp-line'], d.backdrop) < 3) bad.push(`${theme} pp-line on ${n} backdrop`);
+    }
     expect(bad).toEqual([]);
   });
 
