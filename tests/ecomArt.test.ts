@@ -120,4 +120,19 @@ describe('E-com: nền và dock khi xong việc (ui-ux-v5 B3)', () => {
     expect(loops(root)).toEqual([]);
     expect(art.ms(c)).toBe(3000);
   });
+
+  it('V20-D: đánh giá chương 7 gắn ngôi sao vàng lên biển hiệu (mốc của chương 7), cảnh vẽ lại giữ sao', async () => {
+    const stars = (r: Fake): Fake[] => walk(r).filter((n) => 'data-star' in n.attrs);
+    expect(stars(art.storeScene({ passed: new Set([1, 2, 3, 4, 5, 6]), done: 30 }) as unknown as Fake)).toHaveLength(0);
+    expect(stars(art.storeScene({ passed: new Set([7]), done: 1 }) as unknown as Fake)).toHaveLength(1);
+    const c = ctx(true, harbor(34, [1, 2, 3, 4, 5, 6]), harbor(35, [1, 2, 3, 4, 5, 6, 7]));
+    (c.tk as { chapter: number }).chapter = 7;
+    art.build(c);
+    await art.play(c);
+    const s = stars(c.art as unknown as Fake);
+    expect(s).toHaveLength(1);
+    expect(s[0].attrs.opacity).toBe('1');
+    expect(s[0].attrs.transform).toBeUndefined();
+    expect(parcels(c.art as unknown as Fake)).toHaveLength(30); // the shelves stay full at 30
+  });
 });

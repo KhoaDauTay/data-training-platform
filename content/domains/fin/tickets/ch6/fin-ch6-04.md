@@ -15,6 +15,10 @@ columns:
   - { vi: "Sản phẩm", en: "Product" }
   - { vi: "Trung vị tiền gốc (đồng)", en: "Median principal (VND)" }
   - { vi: "Tiền gốc trung bình (đồng)", en: "Average principal (VND)" }
+variants:
+  - { from: "2026-01-01", to: "2027-01-01", d1: "01/01/2026", d2: "31/12/2026", d1_en: "1 January 2026", d2_en: "31 December 2026" }
+  - { from: "2025-01-01", to: "2026-01-01", d1: "01/01/2025", d2: "31/12/2025", d1_en: "1 January 2025", d2_en: "31 December 2025" }
+  - { from: "2024-07-01", to: "2025-01-01", d1: "01/07/2024", d2: "31/12/2024", d1_en: "1 July 2024", d2_en: "31 December 2024" }
 reflect:
   q: { vi: "Khi nào trung vị và trung bình khác nhau nhiều?", en: "When do the median and the average differ a lot?" }
   options:
@@ -24,14 +28,14 @@ reflect:
   answer: 0
   why: { vi: "Trung vị là khoản đứng giữa khi xếp theo tiền gốc, nên không bị vài khoản lệch kéo đi. Trung bình thì cộng tất cả.", en: "The median is the loan in the middle when sorted by principal, so a few outliers do not move it. The average adds everything up." }
 wrong:
-  - sql: "SELECT p.name, round(avg(l.principal)), round(avg(l.principal)) FROM loans l JOIN products p ON p.id = l.product_id WHERE l.disbursed_on >= '2026-01-01' AND l.disbursed_on < '2027-01-01' GROUP BY p.name ORDER BY 2 DESC, 1"
+  - sql: "SELECT p.name, round(avg(l.principal)), round(avg(l.principal)) FROM loans l JOIN products p ON p.id = l.product_id WHERE l.disbursed_on >= '{{from}}' AND l.disbursed_on < '{{to}}' GROUP BY p.name ORDER BY 2 DESC, 1"
     vi: "Cột trung vị đang là trung bình. Trung vị là giá trị đứng giữa khi xếp tiền gốc từ nhỏ đến lớn, cần hàm phân vị 0,5."
     en: "The median column holds the average. The median is the middle value when principals are sorted from small to large; it needs the 0.5 percentile function."
 ---
 Mình đang thiết kế lại hạn mức cho từng sản phẩm. Trung bình dễ bị vài khoản rất lớn kéo lên, nên mình muốn xem cả trung vị, tức khoản đứng giữa, để biết một khoản vay "điển hình" lớn cỡ nào.
 
 ## Task
-Các khoản giải ngân trong năm 2026, theo từng sản phẩm: tên sản phẩm, trung vị tiền gốc và tiền gốc trung bình, cả hai làm tròn tới đồng. Trung vị lớn nhất lên đầu; bằng nhau thì theo tên sản phẩm.
+Các khoản giải ngân từ {{d1}} đến hết {{d2}}, theo từng sản phẩm: tên sản phẩm, trung vị tiền gốc và tiền gốc trung bình, cả hai làm tròn tới đồng. Trung vị lớn nhất lên đầu; bằng nhau thì theo tên sản phẩm.
 
 ## Hints
 1. Trung vị là phân vị 0,5: xếp tiền gốc trong nhóm từ nhỏ đến lớn và lấy giá trị đứng giữa. Ghép tên sản phẩm từ danh sách sản phẩm. Bài nâng cao "Phân vị" giải thích hàm này.
@@ -43,7 +47,7 @@ Các khoản giải ngân trong năm 2026, theo từng sản phẩm: tên sản 
 SELECT p.name, round(percentile_cont(0.5) WITHIN GROUP (ORDER BY l.principal)::numeric), round(avg(l.principal))
 FROM loans l
 JOIN products p ON p.id = l.product_id
-WHERE l.disbursed_on >= '2026-01-01' AND l.disbursed_on < '2027-01-01'
+WHERE l.disbursed_on >= '{{from}}' AND l.disbursed_on < '{{to}}'
 GROUP BY p.name
 ORDER BY 2 DESC, 1
 ```
@@ -52,7 +56,7 @@ ORDER BY 2 DESC, 1
 I am redesigning the credit limits of each product. An average is easily pulled up by a few very large loans, so I also want the median, the loan in the middle, to see how big a "typical" loan is.
 
 ## Task
-The loans paid out in 2026, per product: product name, median principal and average principal, both rounded to the dong. Largest median first; on a tie, by product name.
+The loans paid out from {{d1_en}} to {{d2_en}}, per product: product name, median principal and average principal, both rounded to the dong. Largest median first; on a tie, by product name.
 
 ## Hints
 1. The median is the 0.5 percentile: sort the principals in the group from small to large and take the middle value. Take the product name from the product list. The advanced lesson "Percentiles" explains this function.

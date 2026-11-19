@@ -42,6 +42,14 @@
   tables: [deliveries, returns]
   look: { skin: tan, hair: black, style: bun, accessory: lanyard }
 
+- name: "Mạc Thùy Linh"
+  dept: Category
+  employee: null
+  role: { vi: "Quản lý quan hệ với các shop", en: "Seller relations manager" }
+  bio: { vi: "Gọi cho shop trước khi gửi cảnh báo; luôn mang số liệu theo.", en: "Calls a shop before sending a warning, always with the figures in hand." }
+  tables: [sellers, reviews]
+  look: { skin: light, hair: brown, style: bun, accessory: glasses }
+
 - name: "Hồ Ngọc Diệp"
   dept: CS
   employee: null

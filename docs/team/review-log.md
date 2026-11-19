@@ -801,3 +801,9 @@ Cách đo: `npm run build`, `vite preview --port 5217 --strictPort`, Edge headle
 - Top bar: 53 px một hàng ở 1024–1600, EN tối, Tổng quan Logistics/Finance + workspace E-com (L171). ⋯ ở workspace 700 px có VI/EN + theme; 600/900 px và trang khác không đổi.
 - Ngân sách (gzip -9): main 321 927 B (314,4 KB; roadmap đo 315), `me` 11 346 B (11,1/12), `portfolioPng` 3 314 B (mới, đang tính vào `rest`; đề xuất nhóm 6 KB cho V19-C). `dist/sw.js` có chunk mới trong `FILES`.
 - Chưa làm: F11 (chờ V10-B). Chờ merge: FIX-1 đổi `importedNames` thành Promise và sửa cùng các hàm ở `meView.ts` (code mới đã `await`, sẽ có xung đột nhỏ khi merge).
+
+## v20 V20-D (chương 7 E-com, biến thể), 2026-11-19, L180–L181
+
+- Ngân sách (gzip -9): `ecom` 40,3 → 48,1 KB / 50; `fin` 43,0 → 44,0 / 50. Finance không có F7 (cổng: 7,0 KB trống < 8).
+- Kiểm: tsc, toàn bộ vitest (4057 qua), build, check-budget, smoke (5219) xanh. Edge headless (preview 5227): save xong 30 việc E-com → chơi `ecom-ch7-01..05` (đánh giá 3 bước + kết luận) → Lead DA, 35/35, ngôi sao trên biển hiệu ở Tổng quan và dock; save chỉ có 6 đánh giá → việc 1 chương 7 có lời mời thi vượt → đạt; 0 lỗi trang. Ảnh ở scratchpad `v20d\`.
+- Chờ user: chương F7 (cần chỗ trong chunk `fin`); câu dock "thêm một thành phố" ở chương 6–7 E-com.
