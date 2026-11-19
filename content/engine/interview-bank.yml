@@ -4,7 +4,8 @@
 #   concept  -> `q`, `answer` (mẫu trả lời), `rubric` (3–5 tiêu chí tự chấm)
 #   diagnose -> `q`, `exhibits` (đoạn để đọc), `answer`, `rubric`. Mỗi exhibit có `label`, `shown` và `source`:
 #                 pglite-0.5.16  = chạy thật trên PGlite 0.5.16 (PostgreSQL 18.6) trong Node, từ `fixtures.<fixture>` + `setup` + `sql`
-#                                  (EXPLAIN ANALYZE với COSTS/BUFFERS/TIMING/SUMMARY tắt trừ khi `sql` ghi khác; số dòng không phụ thuộc máy)
+#                                  (EXPLAIN ANALYZE với COSTS/BUFFERS/TIMING/SUMMARY tắt trừ khi `sql` ghi khác; số dòng không phụ thuộc máy;
+#                                  mỗi DB mới; `setup` tách theo `;` và chạy từng lệnh một, vì VACUUM không chạy được trong exec nhiều lệnh)
 #                 mongodb-docs   = trích từ tài liệu MongoDB tại `url` (đã rút gọn bằng '...'), chưa chạy trong trình duyệt (D-E13)
 #                 illustrative   = đoạn minh họa tự soạn theo cấu trúc explain trong tài liệu, không phải bản ghi mongod
 #                 aws-rules      = số tính từ luật dung lượng của AWS; `calc` giữ đầu vào để kiểm lại
@@ -423,7 +424,7 @@ questions:
             Index Cond: ((customer_id >= 100) AND (customer_id <= 120))
             Heap Fetches: 0
             Index Searches: 1
-    answer: { vi: "`VACUUM orders`. Chỉ mục không lưu thông tin hiển thị theo MVCC, nên index-only scan chỉ bỏ qua bảng khi visibility map đánh dấu page là all-visible. Ngay sau khi nạp, chưa page nào được đánh dấu, nên planner đoán phải đọc heap anyway và chọn bitmap (72 page). Sau VACUUM, `Heap Fetches: 0`: không chạm bảng. Bảng ghi nhiều thì Heap Fetches tăng lại cho tới lần vacuum kế.", en: "`VACUUM orders`. Indexes hold no MVCC visibility, so an index-only scan can skip the table only for pages the visibility map marks all-visible. Right after loading none are marked, so the planner expects heap reads anyway and picks a bitmap scan (72 pages). After VACUUM, `Heap Fetches: 0`: the table is not touched. On a write-heavy table Heap Fetches grows again until the next vacuum." }
+    answer: { vi: "`VACUUM orders`. Chỉ mục không lưu thông tin hiển thị theo MVCC, nên index-only scan chỉ bỏ qua bảng khi visibility map đánh dấu page là all-visible. Ngay sau khi nạp, chưa page nào được đánh dấu, nên planner đoán đằng nào cũng phải đọc heap và chọn bitmap (72 page). Sau VACUUM, `Heap Fetches: 0`: không chạm bảng. Bảng ghi nhiều thì Heap Fetches tăng lại cho tới lần vacuum kế.", en: "`VACUUM orders`. Indexes hold no MVCC visibility, so an index-only scan can skip the table only for pages the visibility map marks all-visible. Right after loading none are marked, so the planner expects heap reads anyway and picks a bitmap scan (72 pages). After VACUUM, `Heap Fetches: 0`: the table is not touched. On a write-heavy table Heap Fetches grows again until the next vacuum." }
     rubric:
       - { vi: "Gọi đúng VACUUM", en: "Names VACUUM" }
       - { vi: "Giải thích visibility map", en: "Explains the visibility map" }
@@ -681,11 +682,11 @@ questions:
         source: pglite-0.5.16
         fixture: pg-shop
         setup: "CREATE INDEX ON orders (created_at, id);"
-        sql: "EXPLAIN (ANALYZE, COSTS OFF, BUFFERS OFF, TIMING OFF, SUMMARY OFF) SELECT id, total FROM orders WHERE (created_at, id) > ('2026-08-04', 15000) ORDER BY created_at, id LIMIT 20"
+        sql: "EXPLAIN (ANALYZE, COSTS OFF, BUFFERS OFF, TIMING OFF, SUMMARY OFF) SELECT id, total FROM orders WHERE (created_at, id) > ('2026-08-03', 15000) ORDER BY created_at, id LIMIT 20"
         shown: |-
           Limit (actual rows=20.00 loops=1)
             ->  Index Scan using orders_created_at_id_idx on orders (actual rows=20.00 loops=1)
-                  Index Cond: (ROW(created_at, id) > ROW('2026-08-04'::date, 15000))
+                  Index Cond: (ROW(created_at, id) > ROW('2026-08-03'::date, 15000))
                   Index Searches: 1
     answer: { vi: "Với OFFSET, Postgres vẫn phải đọc và bỏ 15.000 dòng (`actual rows=15020`) trước khi trả 20: chi phí tăng theo số trang. Keyset pagination nhớ khóa của dòng cuối trang trước và nhảy thẳng tới đó qua chỉ mục bằng so sánh hàng `(created_at, id) > (…)`: chỉ đọc 20 dòng, trang nào cũng nhanh như nhau. Đổi lại không nhảy được tới \"trang 750\" tùy ý, và cần khóa sắp xếp duy nhất (thêm `id`).", en: "With OFFSET, Postgres still reads and discards 15,000 rows (`actual rows=15020`) before returning 20: cost grows with the page number. Keyset pagination remembers the previous page's last key and jumps there through the index with a row comparison `(created_at, id) > (…)`: it reads 20 rows, every page equally fast. The cost: no jumping to an arbitrary \"page 750\", and the sort key must be unique (add `id`)." }
     rubric:
@@ -1038,7 +1039,7 @@ questions:
       - { vi: "Giải thích replace thay cả tài liệu", en: "Explains replace swaps the whole document" }
       - { vi: "Đưa câu $set đúng", en: "Gives the correct $set" }
       - { vi: "Kể thêm toán tử cập nhật", en: "Names more update operators" }
-    doc: https://www.mongodb.com/docs/manual/reference/method/db.collection.updateOne/
+    doc: https://www.mongodb.com/docs/manual/reference/method/db.collection.updateone/
   - id: e-iv-mg-junior-05
     engine: mongodb
     band: junior
@@ -1049,7 +1050,7 @@ questions:
       - { vi: "Giải thích \"bất kỳ phần tử\"", en: "Explains \"any element\"" }
       - { vi: "Viết đúng $elemMatch", en: "Writes $elemMatch correctly" }
       - { vi: "Biết đây là bẫy dữ liệu sai lặng lẽ", en: "Knows this is a silent wrong-data trap" }
-    doc: https://www.mongodb.com/docs/manual/reference/operator/query/elemMatch/
+    doc: https://www.mongodb.com/docs/manual/reference/operator/query/elemmatch/
   - id: e-iv-mg-junior-06
     engine: mongodb
     band: junior
@@ -1060,7 +1061,7 @@ questions:
       - { vi: "Định nghĩa upsert và $setOnInsert", en: "Defines upsert and $setOnInsert" }
       - { vi: "Thấy được tranh chấp", en: "Sees the race" }
       - { vi: "Chỉ mục duy nhất + retry", en: "Unique index + retry" }
-    doc: https://www.mongodb.com/docs/manual/reference/method/db.collection.updateOne/
+    doc: https://www.mongodb.com/docs/manual/reference/method/db.collection.updateone/
   - id: e-iv-mg-junior-07
     engine: mongodb
     band: junior
@@ -1082,7 +1083,7 @@ questions:
       - { vi: "Đếm thật vs metadata", en: "Real count vs metadata" }
       - { vi: "Biết estimated không nhận filter", en: "Knows estimated takes no filter" }
       - { vi: "Nêu khi nào có thể lệch", en: "States when it can be wrong" }
-    doc: https://www.mongodb.com/docs/manual/reference/method/db.collection.countDocuments/
+    doc: https://www.mongodb.com/docs/manual/reference/method/db.collection.countdocuments/
   - id: e-iv-mg-junior-09
     engine: mongodb
     band: junior
@@ -1270,7 +1271,7 @@ questions:
     band: mid
     kind: concept
     q: { vi: "Chỉ mục một phần (partial) và chỉ mục thưa (sparse) khác nhau thế nào? Làm sao để email duy nhất nhưng cho phép nhiều tài liệu không có email?", en: "How do partial and sparse indexes differ? How do you make email unique while allowing many documents without one?" }
-    answer: { vi: "Sparse bỏ qua tài liệu thiếu trường được đánh chỉ mục. Partial dùng `partialFilterExpression` bất kỳ (tập con toán tử như `$exists`, `$gt`, `$eq`, `$type`), linh hoạt hơn và được khuyên dùng thay sparse. Truy vấn phải chứa điều kiện bao hàm bộ lọc thì planner mới dùng. Email duy nhất có thể vắng: `createIndex({ email: 1 }, { unique: true, partialFilterExpression: { email: { $exists: true } } })`; ràng buộc duy nhất chỉ áp lên tài liệu nằm trong chỉ mục.", en: "Sparse skips documents missing the indexed field. Partial uses any `partialFilterExpression` (a subset of operators such as `$exists`, `$gt`, `$eq`, `$type`), is more flexible and recommended over sparse. The query must include a condition implied by the filter for the planner to use it. Unique optional email: `createIndex({ email: 1 }, { unique: true, partialFilterExpression: { email: { $exists: true } } })`; uniqueness applies only to documents in the index." }
+    answer: { vi: "Sparse bỏ qua tài liệu thiếu trường được đánh chỉ mục. Partial dùng `partialFilterExpression` bất kỳ (tập con toán tử như `$exists`, `$gt`, `$eq`, `$type`), linh hoạt hơn và được khuyên dùng thay sparse. Truy vấn phải chứa điều kiện bao hàm bộ lọc thì planner mới dùng. Email duy nhất có thể vắng: `createIndex({ email: 1 }, { unique: true, partialFilterExpression: { email: { $exists: true } } })`; ràng buộc duy nhất chỉ áp lên tài liệu nằm trong chỉ mục.", en: "Sparse skips documents missing the indexed field. Partial uses any `partialFilterExpression` (a subset of operators such as `$exists`, `$gt`, `$eq`, `$type`), is more flexible and recommended over sparse. The query's condition must imply the filter (be a subset of it) for the planner to use the index. Unique optional email: `createIndex({ email: 1 }, { unique: true, partialFilterExpression: { email: { $exists: true } } })`; uniqueness applies only to documents in the index." }
     rubric:
       - { vi: "Phân biệt sparse/partial", en: "Distinguishes sparse/partial" }
       - { vi: "Truy vấn phải khớp bộ lọc", en: "Query must match the filter" }
@@ -1443,7 +1444,7 @@ questions:
       - { vi: "Lưu resume token + resumeAfter/startAfter", en: "Resume token + resumeAfter/startAfter" }
       - { vi: "Giới hạn cửa sổ oplog", en: "The oplog window limit" }
       - { vi: "Xử lý idempotent", en: "Idempotent processing" }
-    doc: https://www.mongodb.com/docs/manual/changeStreams/
+    doc: https://www.mongodb.com/docs/manual/changestreams/
   - id: e-iv-mg-senior-03
     engine: mongodb
     band: senior
@@ -1597,10 +1598,10 @@ questions:
     band: senior
     kind: concept
     q: { vi: "Tạo chỉ mục mới trên collection 500 GB đang phục vụ production: ảnh hưởng gì và làm thế nào cho an toàn?", en: "Building a new index on a 500 GB collection serving production: what is the impact and how do you do it safely?" }
-    answer: { vi: "Từ 4.2, việc tạo chỉ mục chỉ giữ khóa độc quyền ngắn ở đầu và cuối, đọc/ghi vẫn chạy, nhưng nó tốn CPU, I/O và bộ nhớ (giới hạn `maxIndexBuildMemoryUsageMegabytes`), và chạy đồng thời trên mọi thành viên replica set; commit cần đa số thành viên có phiếu xong. Làm an toàn: giờ thấp điểm, kiểm dung lượng đĩa, theo dõi độ trễ nhân bản; với tải rất nặng, dùng rolling build: tách từng nút khỏi replica set, tạo chỉ mục, đưa lại, cuối cùng stepDown primary.", en: "Since 4.2 an index build holds an exclusive lock only briefly at start and end, reads/writes continue, but it consumes CPU, I/O and memory (bounded by `maxIndexBuildMemoryUsageMegabytes`), and runs simultaneously on all replica set members; committing needs a majority of voting members to finish. Safely: off-peak, check disk space, watch replication lag; for very heavy load, a rolling build: take each member out, build, rejoin, finally step down the primary." }
+    answer: { vi: "Từ 4.2, việc tạo chỉ mục chỉ giữ khóa độc quyền ngắn ở đầu và cuối, đọc/ghi vẫn chạy, nhưng nó tốn CPU, I/O và bộ nhớ (giới hạn `maxIndexBuildMemoryUsageMegabytes`), và chạy đồng thời trên mọi thành viên replica set; mặc định (`commitQuorum: 'votingMembers'`) chỉ commit khi mọi thành viên có phiếu mang dữ liệu đã xong, nên một nút chậm làm cả việc tạo chỉ mục chờ. Làm an toàn: giờ thấp điểm, kiểm dung lượng đĩa, theo dõi độ trễ nhân bản; với tải rất nặng, dùng rolling build: tách từng nút khỏi replica set, tạo chỉ mục, đưa lại, cuối cùng stepDown primary.", en: "Since 4.2 an index build holds an exclusive lock only briefly at start and end, reads/writes continue, but it consumes CPU, I/O and memory (bounded by `maxIndexBuildMemoryUsageMegabytes`), and runs simultaneously on all replica set members; by default (`commitQuorum: 'votingMembers'`) it commits only when every data-bearing voting member has finished, so one slow member holds the whole build. Safely: off-peak, check disk space, watch replication lag; for very heavy load, a rolling build: take each member out, build, rejoin, finally step down the primary." }
     rubric:
       - { vi: "Biết khóa ngắn từ 4.2 nhưng tốn tài nguyên", en: "Knows the brief locks since 4.2 but resource cost" }
-      - { vi: "Chạy đồng thời trên replica set, commit theo đa số", en: "Runs on all members, commits by majority" }
+      - { vi: "Chạy đồng thời trên replica set, commitQuorum mặc định là mọi nút có phiếu", en: "Runs on all members, default commitQuorum is all voting members" }
       - { vi: "Biện pháp an toàn / rolling build", en: "Safety measures / rolling build" }
     doc: https://www.mongodb.com/docs/manual/core/index-creation/
   - id: e-iv-mg-senior-14
@@ -1802,7 +1803,7 @@ questions:
       - { vi: "Change stream + resume token bền", en: "Change stream + durable resume token" }
       - { vi: "Kích thước oplog theo thời gian chết", en: "Oplog sized to the outage" }
       - { vi: "Nạp idempotent và phương án snapshot", en: "Idempotent loads and a snapshot fallback" }
-    doc: https://www.mongodb.com/docs/manual/changeStreams/
+    doc: https://www.mongodb.com/docs/manual/changestreams/
   - id: e-iv-mg-staff-13
     engine: mongodb
     band: staff
@@ -1973,16 +1974,16 @@ questions:
     kind: diagnose
     q: { vi: "API \"đơn bị hủy\" dùng `Scan` với `FilterExpression` và trả về `Count: 10, ScannedCount: 5000`. Item trung bình 0,8 KB, đọc eventually consistent. Tính chi phí và giải thích vì sao bộ lọc không giúp.", en: "The \"cancelled orders\" API uses a `Scan` with a `FilterExpression` and returns `Count: 10, ScannedCount: 5000`. Items average 0.8 KB, eventually consistent. Compute the cost and explain why the filter does not help." }
     exhibits:
-      - label: { vi: "Phản hồi Scan (trích)", en: "Scan response (excerpt)" }
+      - label: { vi: "Tổng của các trang Scan (cộng từ các phản hồi)", en: "Totals across the Scan pages (summed from the responses)" }
         source: aws-rules
         shown: |-
-          { "Count": 10, "ScannedCount": 5000, "ConsumedCapacity": { "TableName": "Orders", "CapacityUnits": 500 } }
+          summed over all pages: Count 10, ScannedCount 5000, ConsumedCapacity 500
           item size ~ 0.8 KB; eventually consistent; 1 MB page limit
         calc:
           - { expr: "5000 * 0.8", expect: 4000 }
           - { expr: "Math.ceil(5000 * 0.8 / 4) * 0.5", expect: 500 }
           - { expr: "Math.ceil(5000 * 0.8 / 1024)", expect: 4 }
-    answer: { vi: "Scan đọc 5.000 item × 0,8 KB = 4.000 KB → 1.000 khối 4 KB × 0,5 = 500 RCU, rồi mới lọc giữ 10. `FilterExpression` chạy **sau** khi đọc, nên tính tiền theo `ScannedCount`, không theo `Count`. 4.000 KB cũng vượt trang 1 MB, nên thực tế cần ít nhất 4 lượt gọi với `LastEvaluatedKey`. Sửa: GSI thưa có khóa chỉ được đặt trên đơn bị hủy (ví dụ `cancelled_at`), Query trên nó chỉ đọc 10 item.", en: "The scan reads 5,000 items × 0.8 KB = 4,000 KB → 1,000 blocks of 4 KB × 0.5 = 500 RCU, then filters down to 10. `FilterExpression` runs **after** reading, so you pay for `ScannedCount`, not `Count`. 4,000 KB also exceeds the 1 MB page, so it really takes at least 4 calls with `LastEvaluatedKey`. Fix: a sparse GSI whose key is set only on cancelled orders (say `cancelled_at`); a Query on it reads just 10 items." }
+    answer: { vi: "Cộng qua các trang, Scan đọc 5.000 item × 0,8 KB = 4.000 KB → 1.000 khối 4 KB × 0,5 = 500 RCU, rồi mới lọc giữ 10. `FilterExpression` chạy **sau** khi đọc, nên tính tiền theo `ScannedCount`, không theo `Count`. 4.000 KB cũng vượt trang 1 MB, nên thực tế cần ít nhất 4 lượt gọi với `LastEvaluatedKey`. Sửa: GSI thưa có khóa chỉ được đặt trên đơn bị hủy (ví dụ `cancelled_at`), Query trên nó chỉ đọc 10 item.", en: "Summed over its pages, the scan reads 5,000 items × 0.8 KB = 4,000 KB → 1,000 blocks of 4 KB × 0.5 = 500 RCU, then filters down to 10. `FilterExpression` runs **after** reading, so you pay for `ScannedCount`, not `Count`. 4,000 KB also exceeds the 1 MB page, so it really takes at least 4 calls with `LastEvaluatedKey`. Fix: a sparse GSI whose key is set only on cancelled orders (say `cancelled_at`); a Query on it reads just 10 items." }
     rubric:
       - { vi: "Tính đúng 500 RCU", en: "Computes 500 RCU correctly" }
       - { vi: "Bộ lọc chạy sau khi đọc, trả theo ScannedCount", en: "Filter runs after reading, you pay for ScannedCount" }
@@ -2545,13 +2546,14 @@ questions:
       - label: { vi: "Đầu vào", en: "Input" }
         source: aws-rules
         shown: |-
-          { "Count": 50, "ScannedCount": 1000 }
+          summed over the pages of one API call: Count 50, ScannedCount 1000
           item size 2 KB, eventually consistent; alternative: sparse GSI with only unpaid orders (50 items read)
         calc:
           - { expr: "Math.ceil(1000 * 2 / 4) * 0.5", expect: 250 }
           - { expr: "Math.ceil(50 * 2 / 4) * 0.5", expect: 12.5 }
           - { expr: "250 / 12.5", expect: 20 }
-    answer: { vi: "Hiện tại: đọc 1.000 × 2 KB = 2.000 KB → 500 khối × 0,5 = 250 RCU mỗi lần gọi, để trả 50 item. GSI thưa (`unpaid_pk = CUST#<id>` chỉ đặt khi chưa thanh toán, REMOVE khi trả xong): 50 × 2 KB = 100 KB → 25 khối × 0,5 = 12,5 RCU, rẻ hơn 20 lần (đổi lại chi phí ghi GSI khi trạng thái đổi). Thêm nữa, khi khách có > 1 MB đơn, Query hiện tại phải nhiều trang mới đủ 50 kết quả.", en: "Today: 1,000 × 2 KB = 2,000 KB read → 500 blocks × 0.5 = 250 RCU per call, to return 50 items. Sparse GSI (`unpaid_pk = CUST#<id>` set only while unpaid, REMOVEd once paid): 50 × 2 KB = 100 KB → 25 blocks × 0.5 = 12.5 RCU, 20× cheaper (in exchange for GSI writes on status changes). Also, once a customer has > 1 MB of orders, the current Query needs several pages to collect the 50 results." }
+          - { expr: "Math.ceil(1000 * 2 / 1024)", expect: 2 }
+    answer: { vi: "Hiện tại: đọc 1.000 × 2 KB = 2.000 KB → 500 khối × 0,5 = 250 RCU mỗi lần gọi, để trả 50 item. GSI thưa (`unpaid_pk = CUST#<id>` chỉ đặt khi chưa thanh toán, REMOVE khi trả xong): 50 × 2 KB = 100 KB → 25 khối × 0,5 = 12,5 RCU, rẻ hơn 20 lần (đổi lại chi phí ghi GSI khi trạng thái đổi). Thêm nữa, 2.000 KB vượt trang 1 MB, nên Query hiện tại đã phải gọi ít nhất 2 trang mới đủ 50 kết quả; GSI thưa chỉ cần một lần gọi.", en: "Today: 1,000 × 2 KB = 2,000 KB read → 500 blocks × 0.5 = 250 RCU per call, to return 50 items. Sparse GSI (`unpaid_pk = CUST#<id>` set only while unpaid, REMOVEd once paid): 50 × 2 KB = 100 KB → 25 blocks × 0.5 = 12.5 RCU, 20× cheaper (in exchange for GSI writes on status changes). Also, 2,000 KB exceeds the 1 MB page, so the current Query already needs at least 2 pages to collect the 50 results; the sparse GSI needs one call." }
     rubric:
       - { vi: "250 RCU vs 12,5 RCU", en: "250 RCU vs 12.5 RCU" }
       - { vi: "Thiết kế GSI thưa đúng (đặt/xóa thuộc tính)", en: "Correct sparse GSI design (set/remove attribute)" }
