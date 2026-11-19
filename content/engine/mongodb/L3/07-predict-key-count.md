@@ -36,8 +36,8 @@ predict:
       en: "The same, because both hold the same two fields"
   answer: 1
   why:
-    vi: "Với `{ rated: 1, year: 1 }`, phần `rated: \"PG\"` cố định một khối, trong khối đó các `year` từ 2000 đến 2005 nằm liền nhau: đọc đúng 235 khóa. Với `{ year: 1, rated: 1 }`, MongoDB phải đi qua mọi khóa của các năm 2000 đến 2005 và bỏ những khóa không phải PG: 246 khóa."
-    en: "With `{ rated: 1, year: 1 }`, `rated: \"PG\"` fixes one block, and inside it the `year` values 2000 to 2005 are contiguous: exactly 235 keys. With `{ year: 1, rated: 1 }`, MongoDB walks every key of the years 2000 to 2005 and skips the non-PG ones: 246 keys."
+    vi: "Với `{ rated: 1, year: 1 }`, phần `rated: \"PG\"` cố định một khối, trong khối đó các `year` từ 2000 đến 2005 nằm liền nhau: đọc đúng 235 khóa. Với `{ year: 1, rated: 1 }`, khóa PG nằm rải trong sáu khối năm riêng; MongoDB nhảy qua từng khối nên đọc thêm vài khóa ở chỗ chuyển khối: 246 khóa."
+    en: "With `{ rated: 1, year: 1 }`, `rated: \"PG\"` fixes one block, and inside it the `year` values 2000 to 2005 are contiguous: exactly 235 keys. With `{ year: 1, rated: 1 }`, the PG keys sit in six separate year blocks; MongoDB jumps from block to block and reads a few extra keys at each boundary: 246 keys."
 ---
 
 ## Ý chính

@@ -58,8 +58,8 @@ lab:
         vi: "`$match` trước, rồi `$group` với `$dateTrunc` (`unit: \"day\"`) trên `$toDate` của `createdAt`."
         en: "`$match` first, then `$group` with `$dateTrunc` (`unit: \"day\"`) on the `$toDate` of `createdAt`."
     - task:
-        vi: "Bước 2: doanh thu đơn `paid` theo vùng: nối `stores` để lấy `region`. Trả `_id` là vùng, `revenue`, `stores` là mảng mã cửa hàng có doanh thu trong vùng, tăng dần. Xếp `revenue` giảm dần."
-        en: "Step 2: revenue of `paid` orders by region: join `stores` to get the `region`. Return `_id` as the region, `revenue`, `stores` the ascending array of store codes with revenue in that region. Order by `revenue` descending."
+        vi: "Bước 2: doanh thu đơn `paid` theo vùng: nối `stores` để lấy `region`. Trả `_id` là vùng, `revenue`, `stores` là mảng mã cửa hàng có doanh thu trong vùng, tăng dần. Xếp `revenue` giảm dần, hòa thì `_id` tăng dần."
+        en: "Step 2: revenue of `paid` orders by region: join `stores` to get the `region`. Return `_id` as the region, `revenue`, `stores` the ascending array of store codes with revenue in that region. Order by `revenue` descending, ties by `_id` ascending."
       solution: |
         db.orders.aggregate([
           { $match: { status: "paid" } },
@@ -68,7 +68,7 @@ lab:
           { $unwind: "$s" },
           { $sort: { _id: 1 } },
           { $group: { _id: "$s.region", revenue: { $sum: "$revenue" }, stores: { $push: "$_id" } } },
-          { $sort: { revenue: -1 } }
+          { $sort: { revenue: -1, _id: 1 } }
         ])
       check: doc
       ordered: true

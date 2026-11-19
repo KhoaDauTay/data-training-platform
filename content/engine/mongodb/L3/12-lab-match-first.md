@@ -17,6 +17,7 @@ objectives:
 requires: [e-mg-l3-10]
 sources:
   - https://www.mongodb.com/docs/manual/reference/explain-results/
+  - https://www.mongodb.com/docs/manual/core/aggregation-pipeline-optimization/
 lab:
   setup: |
     {"collections": {"orders": [
@@ -48,7 +49,7 @@ lab:
 
 ## Ý chính
 
-Lab chạy bằng mingo trong trình duyệt: kết quả được chấm thật, còn phần index chỉ đúng trên `mongod`. Trang "Explain Results" mô tả: các stage `$match`, `$sort`, `$limit` đứng đầu pipeline được gộp vào `$cursor`; `$match` gộp vào thành `filter` của kế hoạch truy vấn, nên có thể dùng index. Một `$match` đứng sau `$unwind` hay `$group` thì không còn là phần của truy vấn đầu vào.
+Lab chạy bằng mingo trong trình duyệt: kết quả được chấm thật, còn phần index chỉ đúng trên `mongod`. Trang "Explain Results" mô tả: các stage `$match`, `$sort`, `$limit` đứng đầu pipeline được gộp vào `$cursor`; `$match` gộp vào thành `filter` của kế hoạch truy vấn, nên có thể dùng index. Trang "Aggregation Pipeline Optimization" ghi: server dùng được index cho `$match` nếu nó là stage đầu sau các tối ưu của planner. Trình tối ưu tự đưa `$match` lên trước `$sort` hay trước `$project`/`$addFields`, nhưng trang này không mô tả việc đưa `$match` qua `$unwind` hay `$group`, nên đừng trông vào nó: tự đặt `$match` đầu tiên và kiểm bằng `explain`.
 
 Đặt `$match` đầu tiên còn giảm việc cho mọi stage sau: `$unwind` chỉ nhân dòng của đơn đã trả tiền.
 
@@ -61,7 +62,7 @@ db.orders.aggregate([
 ])
 ```
 
-Pipeline trên cho cùng kết quả lọc nhưng `$unwind` chạy trên mọi đơn trước. Mở tab "Pipeline từng bước" để so số tài liệu sau mỗi stage.
+Pipeline trên cho cùng kết quả lọc nhưng, trên mingo, `$unwind` chạy trên mọi đơn trước. Mở tab "Pipeline từng bước" để so số tài liệu sau mỗi stage.
 
 ## Thực hành
 
@@ -71,7 +72,7 @@ Viết pipeline doanh thu theo cửa hàng. Bộ chấm so kết quả; hãy t�
 
 ## Key idea
 
-This lab runs on mingo in the browser: the result is really graded, while the index part only holds on `mongod`. The page "Explain Results" describes that leading `$match`, `$sort` and `$limit` stages are absorbed into `$cursor`; an absorbed `$match` becomes the `filter` of the query plan, so it can use an index. A `$match` after `$unwind` or `$group` is no longer part of the input query.
+This lab runs on mingo in the browser: the result is really graded, while the index part only holds on `mongod`. The page "Explain Results" describes that leading `$match`, `$sort` and `$limit` stages are absorbed into `$cursor`; an absorbed `$match` becomes the `filter` of the query plan, so it can use an index. The page "Aggregation Pipeline Optimization" says the server can use an index for `$match` if it is the first stage after the planner's optimizations. The optimizer moves `$match` ahead of `$sort` or of `$project`/`$addFields` by itself, but that page describes no move of `$match` across `$unwind` or `$group`, so do not count on it: put `$match` first yourself and check with `explain`.
 
 Putting `$match` first also cuts work for every later stage: `$unwind` only multiplies the lines of paid orders.
 
@@ -84,7 +85,7 @@ db.orders.aggregate([
 ])
 ```
 
-The pipeline above filters the same way, but `$unwind` runs over every order first. Open the "Pipeline step by step" tab to compare document counts after each stage.
+The pipeline above filters the same way, but on mingo `$unwind` runs over every order first. Open the "Pipeline step by step" tab to compare document counts after each stage.
 
 ## Practice
 

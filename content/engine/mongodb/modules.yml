@@ -26,8 +26,8 @@
   level: L3
   title: { vi: "Planner và aggregation", en: "Planner and aggregation" }
   after:
-    vi: tìm truy vấn cần index từ số liệu explain đã ghi, và viết pipeline đặt $match ở đầu.
-    en: find the queries that need an index from recorded explain numbers, and write a pipeline with $match at the front.
+    vi: tìm truy vấn cần index từ số liệu explain đã ghi, và viết đúng một pipeline báo cáo có lọc, tách mảng và gộp.
+    en: find the queries that need an index from recorded explain numbers, and write a correct report pipeline that filters, unwinds and groups.
 - id: patterns
   vi: Mẫu thiết kế schema
   en: Schema design patterns
