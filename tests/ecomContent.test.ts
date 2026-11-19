@@ -37,9 +37,9 @@ const tablesIn = (sql: string): string[] =>
 const SQLISH = /\b(SELECT|FROM|WHERE|GROUP BY|ORDER BY|JOIN|HAVING|LIMIT|COUNT|SUM|AVG|DISTINCT|OVER|PARTITION|CASE|WITH)\b|\b[a-z]+_[a-z_]+\b/g;
 
 describe('E-com: cấu trúc', () => {
-  it('30 ticket, 6 chương, id ecom-chN-0M', () => {
-    expect(templates).toHaveLength(30);
-    expect(chapters.map((c) => c.chapter)).toEqual([1, 2, 3, 4, 5, 6]);
+  it('35 ticket, 7 chương, id ecom-chN-0M', () => {
+    expect(templates).toHaveLength(35);
+    expect(chapters.map((c) => c.chapter)).toEqual([1, 2, 3, 4, 5, 6, 7]);
     expect(templates.filter((t) => !/^ecom-ch\d+-\d\d$/.test(t.id)).map((t) => t.id)).toEqual([]);
   });
 
@@ -96,7 +96,7 @@ describe('E-com: Solution', () => {
 });
 
 describe('E-com: phương pháp học', () => {
-  it.each([1, 2, 3, 4, 5, 6])('chương %i: teach là worked, đúng một faded là develop đầu', (c) => {
+  it.each([1, 2, 3, 4, 5, 6, 7])('chương %i: teach là worked, đúng một faded là develop đầu', (c) => {
     const inC = templates.filter((t) => t.chapter === c);
     expect(inC.find((t) => t.beat === 'teach')?.format).toBe('worked');
     expect(inC.filter((t) => t.format === 'faded').map((t) => t.id)).toEqual([inC.find((t) => t.beat === 'develop')?.id]);

@@ -80,3 +80,16 @@
     - { vi: "Xếp hạng trong từng nhóm", en: "Rank within each group", skills: [window_rank] }
     - { vi: "So với kỳ trước, đơn trước", en: "Compare with the previous period or order", skills: [window_lag] }
     - { vi: "Cộng dồn và tỷ trọng mà không mất dòng", en: "Running totals and shares without losing rows", skills: [window_agg] }
+
+- chapter: 7
+  title: { vi: "Điều tra điểm đánh giá", en: "Investigating the ratings" }
+  career: { vi: "Lead DA", en: "Lead DA" }
+  tier: true
+  tables: []
+  story:
+    vi: "Sau vòng gọi vốn, điểm đánh giá của sàn tụt trong quý 3. Chương này không có kỹ năng mới: bạn dùng lại mọi thứ đã học để tìm nguyên nhân, kiểm tra chéo giả thuyết và báo cáo cho nhà sáng lập."
+    en: "After the funding round, the marketplace's ratings dropped in Q3. This chapter has no new skill: you use everything you have learned to find the cause, cross-check the hypotheses and report to the founder."
+  outcomes:
+    - { vi: "Đặt hai kỳ cạnh nhau và so", en: "Put two periods side by side and compare", skills: [conditional_agg, having] }
+    - { vi: "So bằng tỷ lệ, kiểm tra chéo theo một chiều khác", en: "Compare with rates and cross-check along another dimension", skills: [cte, multi_join] }
+    - { vi: "Báo cáo theo tháng bằng hàm cửa sổ", en: "Report month by month with window functions", skills: [window_lag, window_rank, window_agg] }

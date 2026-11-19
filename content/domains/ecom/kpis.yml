@@ -5,3 +5,4 @@
 - { id: ecomCategoryRevenue, ticket: ecom-ch3-02, kind: bar, label: { vi: "Doanh thu hàng tháng 10/2026 theo nhóm hàng", en: "October 2026 goods revenue by category" }, icon: trophy, unit: { vi: "đồng", en: "VND" } }
 - { id: ecomNeverBought, ticket: ecom-ch3-03, kind: rowcount, label: { vi: "Khách đăng ký tháng 9/2026 chưa mua lần nào", en: "September 2026 signups who never bought" }, icon: clockOff }
 - { id: ecomKiteLate, ticket: ecom-ch4-01, kind: rowcount, label: { vi: "Kiện Kite Logistics gửi tháng 10/2026 trễ hơn 2 ngày", en: "Kite Logistics parcels shipped in October 2026 over 2 days late" }, icon: clockAlert }
+- { id: ecomDamageRate, ticket: ecom-ch7-02, kind: bar, label: { vi: "Tỷ lệ trả vì hỏng quý 3/2026, năm shop cao nhất (%)", en: "Q3 2026 damage return rate, top five shops (%)" }, icon: chart }

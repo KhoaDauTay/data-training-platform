@@ -109,9 +109,16 @@ type El = SVGElement;
 const cxs = (...c: (string | false)[]): string => c.filter(Boolean).join(' ');
 const only = (els: (El | null)[]): El[] => els.filter((x): x is El => x !== null);
 
-/** Parcels on the shelf: one per completed task, at most 30 (6 chapters × 5 tasks), coloured by chapter. Shelf r sits at y = 278 − 48r. */
+/** Parcels on the shelf: one per completed task, at most 30 (the three shelves of chapters 1–6), coloured by chapter. Shelf r sits at y = 278 − 48r. */
 const SHELF = { x: 640, cols: 10, w: 30, h: 22 };
 const MAX_PARCELS = 30;
+/** V20-D: chapter 7 (no new city: every delivery city is open by then) pins a gold star on the shop's signboard instead. */
+export const STAR_CHAPTER = 7;
+/** A `<g>` with no transform around the star, so the dock's GSAP pop moves the group only (ui-ux-v6 §2.3). */
+const signStar = (): SVGGElement => s('g', { 'data-star': '' }, s('path', {
+  d: 'M174 113L177.8 122.7L188.3 123.4L180.2 130L182.8 140.1L174 134.5L165.2 140.1L167.8 130L159.7 123.4L170.2 122.7Z', // the sign's left corner: the dock's title card covers the right one
+  fill: '#facc15', stroke: '#b45309', 'stroke-width': 2, 'stroke-linejoin': 'round',
+}));
 /** A cardboard box: face in the chapter colour, shaded side, lit flap, packing tape, label. The group has no transform (GSAP moves it, §2.3). */
 function parcel(i: number): SVGGElement {
   const x = SHELF.x + (i % SHELF.cols) * (SHELF.w + 4);
@@ -311,6 +318,7 @@ function drawStore(st: EcomArtState, ambient: boolean, lit: boolean, task = fals
       shutter,
       s('circle', { cx: 960, cy: 168, r: 40, fill: url('glow'), style: 'opacity:var(--es-glow)' })),
     parcelG,
+    st.passed.has(STAR_CHAPTER) && signStar(),
     // the scooter at the kerb (the CSS loop moves a wrapper: the scooter keeps its own transform attribute)
     ambient ? s('g', { class: 'cq-scoot' }, rider) : rider);
   return { svg, parcels: parcelG, glows, rider, shutter };
@@ -329,7 +337,7 @@ type Timeline = ReturnType<typeof import('./gsap')['timeline']>;
 
 const stateOf = (hb: Harbor): EcomArtState => ({ passed: hb.passed, done: Object.values(hb.bays).reduce((a, b) => a + b, 0) });
 
-interface Dock { store: Store; box?: SVGGElement; road?: SVGPathElement; map?: SVGSVGElement; card?: HTMLElement; ring?: SVGCircleElement }
+interface Dock { store: Store; star?: SVGGElement; box?: SVGGElement; road?: SVGPathElement; map?: SVGSVGElement; card?: HTMLElement; ring?: SVGCircleElement }
 const docks = new WeakMap<Ctx, Dock>();
 
 /** A task: the warehouse close-up. A promotion review: the whole shop, the delivery map and the title card. */
@@ -344,6 +352,11 @@ export function build(c: Ctx): void {
     d.box = parcel(before.done);
     d.box.setAttribute('opacity', '0');
     store.parcels.append(d.box);
+  }
+  if (boss && c.tk.chapter === STAR_CHAPTER && !before.passed.has(STAR_CHAPTER)) {
+    d.star = signStar();
+    d.star.setAttribute('opacity', '0');
+    store.svg.append(d.star);
   }
   if (boss) {
     d.map = deliveryMap(after, false);
@@ -364,6 +377,7 @@ export function build(c: Ctx): void {
 /** End frame: the new parcel on its shelf; a task: door shut, scooter gone; a promotion: lanterns lit, card shown (the map is drawn from `after`). */
 function end(d: Dock): void {
   d.box?.setAttribute('opacity', '1');
+  d.star?.setAttribute('opacity', '1');
   if (d.card) {
     for (const g of d.store.glows) g.setAttribute('style', 'opacity:1');
     d.card.style.opacity = '1';
@@ -407,6 +421,7 @@ export async function play(c: Ctx): Promise<void> {
       map.append(d.ring);
       tl.fromTo(d.ring, { attr: { r: 6 }, opacity: 0.85 }, { attr: { r: 22 }, opacity: 0, duration: 1, ease: 'power2.out', immediateRender: false }, 1.85);
     }
+    if (d.star) tl.fromTo(d.star, { opacity: 0, scale: 0.3, rotation: -90, transformOrigin: '50% 50%' }, { opacity: 1, scale: 1, rotation: 0, duration: 0.5, ease: 'back.out(2.5)' }, 1.7);
   } else {
     if (d.store.shutter) tl.to(d.store.shutter, { attr: { height: 144 }, duration: 0.4, ease: 'power2.in' }, 0.6);
     if (d.road) {

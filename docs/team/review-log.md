@@ -835,3 +835,9 @@ Cách đo: `npm run build`, `SMOKE_PERF=3 npm run smoke` (preview của chính c
 - Main gz -9: v18 328 590 B, trước 328 720 B, sau 328 760 B (+40 B). Không cắt main (321 KB < 330).
 - axe: 23 trang × (1280 sáng, 375 tối): trước sửa 4 lỗi serious `scrollable-region-focusable` (Dữ liệu Logistics 1280 + 375, Dữ liệu Finance 375, Bảng điều hành Finance 375); sau sửa 0 phát hiện mọi mức. 320 px: không cuộn ngang ở 23 trang. Smoke OK 77,7 s.
 - Chờ: nhóm ngân sách `dataset` (dist/datasets/, ≤ 5 MB) và `datasetPanel` (≤ 5 KB) cùng bước smoke "nạp bộ dữ liệu mẫu → 1 câu đạt" của V20-B: V20-B chưa ở `main` khi luồng này xong (một nhóm không có file làm `check-budget` fail), thêm khi merge. Nhóm `py` chờ V20-A.
+
+## v20 V20-D (chương 7 E-com, biến thể), 2026-11-19, L180–L181
+
+- Ngân sách (gzip -9): `ecom` 40,3 → 48,1 KB / 50; `fin` 43,0 → 44,0 / 50. Finance không có F7 (cổng: 7,0 KB trống < 8).
+- Kiểm: tsc, toàn bộ vitest (4057 qua), build, check-budget, smoke (5219) xanh. Edge headless (preview 5227): save xong 30 việc E-com → chơi `ecom-ch7-01..05` (đánh giá 3 bước + kết luận) → Lead DA, 35/35, ngôi sao trên biển hiệu ở Tổng quan và dock; save chỉ có 6 đánh giá → việc 1 chương 7 có lời mời thi vượt → đạt; 0 lỗi trang. Ảnh ở scratchpad `v20d\`.
+- Chờ user: chương F7 (cần chỗ trong chunk `fin`). Chờ chủ i18n: câu dock "thêm một thành phố" ở chương 6–7 E-com; "6 chương" trong `welcome.short.ecommerce` và `domain.ecommerceDesc` (VI/EN).
