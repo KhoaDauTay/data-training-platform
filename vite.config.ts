@@ -14,7 +14,7 @@ export default defineConfig({
   optimizeDeps: { exclude: ['@electric-sql/pglite'] },
   worker: { format: 'es' },
   // ui-ux-v6 §2.2: Vite 8 drops @license comments when it minifies; GSAP's licence forbids removing its notice (check-budget.mjs checks it).
-  build: { rolldownOptions: { output: { comments: { legal: true } } } },
+  build: { rolldownOptions: { input: ['index.html', 'spike.html'], output: { comments: { legal: true } } } },
   // Vitest turns every .css import into '' unless included; tests/theme.test.ts and tests/mascots.test.ts read style.css?raw.
   test: { css: { include: [/style\.css/] }, exclude: ['**/node_modules/**', '.claude/**'], testTimeout: 60_000, hookTimeout: 60_000, setupFiles: ['tests/setup.ts'] },
 });
