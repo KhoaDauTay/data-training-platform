@@ -33,7 +33,7 @@
      backgrounds (text on them = --text/--muted or the matching --good/--bad/--warn), page widths, the one chart colour (C1, D-U2). */
   --surface-2: #f6f0e7; --border-strong: #cfc2b2;
   --shadow-1: 0 1px 2px rgb(42 35 32 / 0.06), 0 2px 8px rgb(42 35 32 / 0.06); --shadow-2: 0 12px 32px rgb(42 35 32 / 0.18);
-  --good-soft: #edf8f0; --bad-soft: #fdecea; --warn-soft: #fcf0dc; --info-soft: #e4f0f7;
+  --good-soft: #edf8f0; --bad-soft: #fdecea; --warn-soft: #fcf0dc; --info-soft: #e4f0f7; --eng-ptr: #1f5f99; /* ENG-VIZ L235: pointer/arrow ink of the Database Engine diagrams */
   --w-read: 880px; --w-wide: 1120px;
   --chart-1: var(--accent); --chart-grid: var(--border);
   /* Mascot palette (v6 §1.2–1.3): SVG only, never text. */
@@ -82,7 +82,7 @@
   --sun: #43350f; --sun-ink: #ffe6ad;
   --surface-2: #2b2622; --border-strong: #7d7166;
   --shadow-1: 0 0 0 1px var(--border-strong); --shadow-2: 0 0 0 1px var(--border-strong), 0 12px 32px rgb(0 0 0 / 0.5);
-  --good-soft: #163420; --bad-soft: #3d1f1b; --warn-soft: #3a2c10; --info-soft: #142c39;
+  --good-soft: #163420; --bad-soft: #3d1f1b; --warn-soft: #3a2c10; --info-soft: #142c39; --eng-ptr: #8cc7f2;
   --lily-fur: #f3f0eb; --lily-cream: #dcd5ca; --lily-ear: #1f1a17; --lily-spot: #1f1a17; --lily-line: #8a7e75; --lily-ink: #1f1a17; --lily-scarf: #2bb3a3;
   --boon-body: #f2f2ef; --boon-plume: #d3d9dc; --boon-line: #858e95; --boon-wing: #3a8391; --boon-belly: #e1e6e7; --boon-bill: #e9ad3e; --boon-ink: #1d1916;
   --boon-shade: #b9c2c7; --boon-bill-dark: #b8741f;
