@@ -1,0 +1,47 @@
+# PostgreSQL modules in display order (ADD-1). `id`/`vi`/`en` are what parseModules (src/engine/content.ts) reads today;
+# `module`/`level`/`title`/`after` are the ADD-1 shape. L3 entries only here: merge other levels' entries around them.
+- id: pages
+  module: pages
+  level: L3
+  vi: Trang heap và TOAST
+  en: Heap pages and TOAST
+  title: { vi: Trang heap và TOAST, en: Heap pages and TOAST }
+  after:
+    vi: nhìn một trang heap thật và nói dòng nào nằm ở đâu, kể cả giá trị lớn bị đẩy ra TOAST
+    en: look at a real heap page and say which row lives where, including large values moved out to TOAST
+- id: mvcc
+  module: mvcc
+  level: L3
+  vi: MVCC và phiên bản dòng
+  en: MVCC and row versions
+  title: { vi: MVCC và phiên bản dòng, en: MVCC and row versions }
+  after:
+    vi: giải thích vì sao UPDATE, DELETE và ROLLBACK làm bảng phình, bằng `xmin`/`xmax` đọc trên trang thật
+    en: explain why UPDATE, DELETE and ROLLBACK make a table grow, using `xmin`/`xmax` read from a real page
+- id: vacuum-hot
+  module: vacuum-hot
+  level: L3
+  vi: HOT, VACUUM và freeze
+  en: HOT, VACUUM and freeze
+  title: { vi: "HOT, VACUUM và freeze", en: "HOT, VACUUM and freeze" }
+  after:
+    vi: chọn fillfactor cho bảng cập nhật nhiều, kiểm HOT bằng số đếm, đọc visibility map và tuổi `relfrozenxid`
+    en: pick a fillfactor for an update-heavy table, check HOT with the counters, read the visibility map and the `relfrozenxid` age
+- id: wal
+  module: wal
+  level: L3
+  vi: WAL và checkpoint
+  en: WAL and checkpoints
+  title: { vi: WAL và checkpoint, en: WAL and checkpoints }
+  after:
+    vi: đọc bản ghi WAL thật của một INSERT và thấy full-page image sau checkpoint
+    en: read the real WAL records of an INSERT and spot the full-page image after a checkpoint
+- id: memory
+  module: memory
+  level: L3
+  vi: Bộ nhớ và kiểm tra cấp L3
+  en: Memory and the L3 check
+  title: { vi: Bộ nhớ và kiểm tra cấp L3, en: Memory and the L3 check }
+  after:
+    vi: thấy `external merge Disk:` và sửa bằng `work_mem`, rồi chẩn đoán trọn một bảng phình vì HOT miss
+    en: spot `external merge Disk:` and fix it with `work_mem`, then diagnose a table bloated by HOT misses end to end
