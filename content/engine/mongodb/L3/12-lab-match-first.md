@@ -49,7 +49,7 @@ lab:
 
 ## Ý chính
 
-Lab chạy bằng mingo trong trình duyệt: kết quả được chấm thật, còn phần index chỉ đúng trên `mongod`. Trang "Explain Results" mô tả: các stage `$match`, `$sort`, `$limit` đứng đầu pipeline được gộp vào `$cursor`; `$match` gộp vào thành `filter` của kế hoạch truy vấn, nên có thể dùng index. Trang "Aggregation Pipeline Optimization" ghi: server dùng được index cho `$match` nếu nó là stage đầu sau các tối ưu của planner. Trình tối ưu tự đưa `$match` lên trước `$sort` hay trước `$project`/`$addFields`, nhưng trang này không mô tả việc đưa `$match` qua `$unwind` hay `$group`, nên đừng trông vào nó: tự đặt `$match` đầu tiên và kiểm bằng `explain`.
+Lab chạy bằng mingo trong trình duyệt: kết quả được chấm thật, còn phần index (chỉ mục) chỉ đúng trên `mongod`. Trang "Explain Results" mô tả: các stage `$match`, `$sort`, `$limit` đứng đầu pipeline được gộp vào `$cursor`; `$match` gộp vào thành `filter` của kế hoạch truy vấn, nên có thể dùng index. Trang "Aggregation Pipeline Optimization" ghi: server dùng được index cho `$match` nếu nó là stage đầu sau các tối ưu của planner. Trình tối ưu tự đưa `$match` lên trước `$sort` hay trước `$project`/`$addFields`, nhưng trang này không mô tả việc đưa `$match` qua `$unwind` hay `$group`, nên đừng trông vào nó: tự đặt `$match` đầu tiên và kiểm bằng `explain`.
 
 Đặt `$match` đầu tiên còn giảm việc cho mọi stage sau: `$unwind` chỉ nhân dòng của đơn đã trả tiền.
 

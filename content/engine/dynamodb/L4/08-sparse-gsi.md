@@ -3,14 +3,14 @@ id: e-dy-l4-08
 engine: dynamodb
 level: L4
 module: patterns
-title: "GSI thưa: chỉ mục chỉ chứa thứ bạn cần tìm"
+title: "Sparse GSI: index chỉ chứa thứ bạn cần tìm"
 title_en: "Sparse GSI: an index holding only what you look for"
 kind: lab
 runtime: browser
 minutes: 10
 objectives:
   - { vi: "Giải thích vì sao item thiếu thuộc tính khóa của GSI không có mặt trong GSI", en: "Explain why an item missing a GSI key attribute is absent from the GSI" }
-  - { vi: "Tìm một tập nhỏ item (phiếu đang mở) bằng Query trên GSI thưa thay vì Scan", en: "Find a small subset of items (open tickets) with a Query on a sparse GSI instead of a Scan" }
+  - { vi: "Tìm một tập nhỏ item (phiếu đang mở) bằng Query trên sparse GSI thay vì Scan", en: "Find a small subset of items (open tickets) with a Query on a sparse GSI instead of a Scan" }
 requires: []
 sources:
   - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-indexes-general-sparse-indexes.html
@@ -145,13 +145,13 @@ lab:
       ]
     }}
   steps:
-    - task: { vi: "Bảng `Tickets` có 120 phiếu hỗ trợ. Chỉ phiếu đang mở mới có `open_queue` và `opened_at`, là khóa của GSI `OpenByQueue`. Đọc mọi phiếu đang mở của hàng `SHIPPING`.", en: "The `Tickets` table holds 120 support tickets. Only open tickets carry `open_queue` and `opened_at`, the keys of the GSI `OpenByQueue`. Read every open ticket of the `SHIPPING` queue." }
+    - task: { vi: "Bảng `Tickets` có 120 phiếu hỗ trợ. Chỉ phiếu đang mở mới có `open_queue` và `opened_at`, là khóa của GSI `OpenByQueue`. Đọc mọi phiếu đang mở của hàng đợi `SHIPPING`.", en: "The `Tickets` table holds 120 support tickets. Only open tickets carry `open_queue` and `opened_at`, the keys of the GSI `OpenByQueue`. Read every open ticket of the `SHIPPING` queue." }
       solution: |
         {"op": "Query", "input": {"TableName": "Tickets", "IndexName": "OpenByQueue", "KeyConditionExpression": "open_queue = :q", "ExpressionAttributeValues": {":q": {"S": "SHIPPING"}}}}
       check: doc
       expect: { Count: 5, ScannedCount: 5 }
       hint: { vi: "Query trên GSI cần `IndexName`; điều kiện đặt lên partition key của GSI.", en: "A Query on a GSI needs `IndexName`; the condition goes on the GSI's partition key." }
-    - task: { vi: "Lấy đúng một phiếu: phiếu đang mở lâu nhất của hàng `ACCOUNT`.", en: "Get exactly one ticket: the longest-open ticket of the `ACCOUNT` queue." }
+    - task: { vi: "Lấy đúng một phiếu: phiếu đang mở lâu nhất của hàng đợi `ACCOUNT`.", en: "Get exactly one ticket: the longest-open ticket of the `ACCOUNT` queue." }
       solution: |
         {"op": "Query", "input": {"TableName": "Tickets", "IndexName": "OpenByQueue", "KeyConditionExpression": "open_queue = :q", "ExpressionAttributeValues": {":q": {"S": "ACCOUNT"}}, "ScanIndexForward": true, "Limit": 1}}
       check: doc
@@ -167,15 +167,15 @@ predict:
     - { vi: "10, mọi phiếu đang mở", en: "10, every open ticket" }
     - { vi: "120, mọi phiếu", en: "120, every ticket" }
   answer: 2
-  why: { vi: "Scan đọc cả 120 item rồi mới lọc. GSI thưa chỉ có 10 item (các phiếu đang mở), nên Query trên nó chỉ đọc 5 item của hàng `SHIPPING`.", en: "The Scan reads all 120 items before filtering. The sparse GSI holds only 10 items (the open tickets), so a Query on it reads just the 5 items of the `SHIPPING` queue." }
+  why: { vi: "Đáp án 5 nghe hợp lý vì chỉ 5 phiếu được trả về. Nhưng Scan đọc cả 120 item rồi mới lọc. Sparse GSI chỉ có 10 item (các phiếu đang mở), nên Query trên nó chỉ đọc 5 item của hàng đợi `SHIPPING`.", en: "5 sounds right because only 5 tickets come back. But the Scan reads all 120 items before filtering. The sparse GSI holds only 10 items (the open tickets), so a Query on it reads just the 5 items of the `SHIPPING` queue." }
 ---
 
 ## Ý chính
 
-DynamoDB chỉ ghi một mục vào GSI **khi item có đủ thuộc tính khóa của GSI**. Thiếu partition key (hoặc sort key, nếu GSI có) thì item không có mặt trong GSI. GSI mà chỉ chứa một phần nhỏ bảng gọi là **GSI thưa**.
+DynamoDB chỉ ghi item vào GSI **khi item có đủ thuộc tính khóa của GSI**. Thiếu partition key (hoặc sort key, nếu GSI có) thì item không có mặt trong GSI. GSI mà chỉ chứa một phần nhỏ bảng gọi là **sparse GSI** (GSI thưa).
 
 - Đặt thuộc tính khóa của GSI khi item vào trạng thái cần tìm (phiếu mở), xóa thuộc tính đó khi item rời trạng thái (phiếu đóng).
-- Query trên GSI thưa chỉ đọc vài item, trong khi Scan bảng gốc đọc tất cả.
+- Query trên sparse GSI chỉ đọc vài item, trong khi Scan bảng gốc đọc tất cả.
 - Chọn sort key của GSI là thứ có ích để sắp (ngày mở phiếu), để "cũ nhất trước" là một Query có `Limit`.
 - GSI ghi ít hơn bảng gốc, nên tốn ít capacity ghi hơn.
 

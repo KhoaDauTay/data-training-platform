@@ -28,7 +28,7 @@ quiz:
       - { vi: "0,256 GB", en: "0.256 GB" }
     answer: 1
     why:
-      vi: "Mặc định là giá trị lớn hơn giữa 50% của (RAM trừ 1 GB) và 0,256 GB: 0,5 nhân 15 GB bằng 7,5 GB."
+      vi: "Mặc định là giá trị lớn hơn giữa 50 % của (RAM trừ 1 GB) và 0,256 GB: 0,5 nhân 15 GB bằng 7,5 GB."
       en: "The default is the larger of 50% of (RAM minus 1 GB) and 0.256 GB: 0.5 times 15 GB is 7.5 GB."
   - q:
       vi: "`mongod` dừng đột ngột 40 giây sau checkpoint gần nhất. Khi khởi động lại, dữ liệu của 40 giây đó lấy từ đâu?"
@@ -50,14 +50,14 @@ WiredTiger là storage engine mặc định của MongoDB.
 - MVCC: đầu mỗi thao tác, WiredTiger cho nó một snapshot tại một thời điểm.
 - Checkpoint: cứ 60 giây, dữ liệu của một snapshot được ghi xuống đĩa nhất quán trên mọi file. Checkpoint cũ còn hợp lệ trong lúc ghi checkpoint mới, nên sập giữa chừng vẫn phục hồi được.
 - Journal: write-ahead log giữ mọi thay đổi giữa hai checkpoint, nén snappy. Sập giữa hai checkpoint thì phát lại journal.
-- Nén: collection dùng block compression snappy, index dùng prefix compression, collection time series mặc định zstd.
-- Cache nội bộ mặc định: lớn hơn giữa 50% của (RAM trừ 1 GB) và 0,256 GB. Phần RAM còn lại hệ điều hành dùng làm filesystem cache (giữ dữ liệu ở dạng nén). Chạy trong container thì phải tự đặt cỡ cache.
+- Nén: collection dùng block compression snappy, index (chỉ mục) dùng prefix compression, collection time series mặc định zstd.
+- Cache nội bộ mặc định: lớn hơn giữa 50 % của (RAM trừ 1 GB) và 0,256 GB. Phần RAM còn lại hệ điều hành dùng làm filesystem cache (giữ dữ liệu ở dạng nén). Chạy trong container thì phải tự đặt cỡ cache.
 
 ## Ví dụ
 
-Máy 4 GB RAM: 0,5 nhân (4 GB trừ 1 GB) bằng 1,5 GB cache. Tài liệu khuyên không tăng cache quá mặc định; nếu cần, dùng `--wiredTigerCacheSizePct`.
+Máy 4 GB RAM: 0,5 nhân (4 GB trừ 1 GB) bằng 1,5 GB cache. Docs chính thức khuyên không tăng cache quá mặc định; nếu cần, dùng `--wiredTigerCacheSizePct`.
 
-Đúng với tài liệu MongoDB hiện hành, kiểm ngày 2026-11-20. Bài này dùng sơ đồ: trình duyệt không có WiredTiger.
+Đúng với docs chính thức của MongoDB hiện hành, kiểm ngày 2026-11-20. Bài này dùng sơ đồ: trình duyệt không có WiredTiger.
 
 # EN
 

@@ -6,6 +6,7 @@ module: crud
 title: Sửa tài liệu và upsert
 title_en: Updating documents and upserts
 kind: lab
+runtime: browser
 minutes: 12
 objectives:
   - vi: Dùng `$set`, `$inc`, `$unset` với `updateOne` và `updateMany`.
@@ -73,7 +74,7 @@ Thiếu toán tử, ví dụ `{ price: 1 }`, là lỗi với `updateOne`; muốn
 
 Upsert: với `{ upsert: true }`, nếu không có tài liệu nào khớp, MongoDB tạo tài liệu mới từ các điều kiện bằng của filter (ở đây `_id`) rồi áp các toán tử update lên nó. `$setOnInsert` đặt giá trị chỉ khi tài liệu được tạo mới.
 
-Một lệnh update trên một tài liệu luôn atomic: mọi thay đổi trong lệnh cùng xảy ra hoặc không cái nào xảy ra.
+Một lệnh update trên một tài liệu luôn nguyên tử (atomic): mọi thay đổi trong lệnh cùng xảy ra hoặc không cái nào xảy ra.
 
 Làm được: sửa đúng trường trên đúng tài liệu và ghi "sửa hoặc tạo" trong một lệnh.
 

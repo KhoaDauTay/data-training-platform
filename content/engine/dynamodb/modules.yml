@@ -7,8 +7,8 @@
     vi: Bảng, item và khóa
     en: Tables, items and keys
   after:
-    vi: thiết kế khóa chính cho mẫu truy cập "mọi đơn của một khách" và tạo bảng đó.
-    en: design the primary key for the access pattern "every order of one customer" and create that table.
+    vi: thiết kế khóa chính cho mẫu truy cập "mọi đơn của một khách" và tạo bảng đó
+    en: design the primary key for the access pattern "every order of one customer" and create that table
 - id: crud
   vi: Đọc và ghi một item
   en: Read and write one item
@@ -18,8 +18,8 @@
     vi: Đọc và ghi một item
     en: Read and write one item
   after:
-    vi: đọc, thêm, sửa và xóa một item theo khóa, và lấy lại bản trước hoặc sau khi ghi.
-    en: read, insert, update and delete one item by its key, and get back the image before or after the write.
+    vi: đọc, thêm, sửa và xóa một item theo khóa, và lấy lại bản trước hoặc sau khi ghi
+    en: read, insert, update and delete one item by its key, and get back the image before or after the write
 - id: query-scan
   vi: Query và Scan
   en: Query and Scan
@@ -29,8 +29,8 @@
     vi: Query và Scan
     en: Query and Scan
   after:
-    vi: đọc một item collection bằng Query, phân trang nó, và chỉ ra Scan đọc nhiều hơn bao nhiêu item.
-    en: read an item collection with Query, page through it, and show how many more items a Scan reads.
+    vi: đọc một item collection bằng Query, phân trang nó, và chỉ ra Scan đọc nhiều hơn bao nhiêu item
+    en: read an item collection with Query, page through it, and show how many more items a Scan reads
 - id: expressions
   vi: Biểu thức
   en: Expressions
@@ -40,8 +40,8 @@
     vi: Biểu thức
     en: Expressions
   after:
-    vi: viết Query đặt điều kiện vào khóa thay vì vào bộ lọc, và sửa item bằng UpdateExpression.
-    en: write a Query that puts its condition on the key instead of the filter, and change an item with an UpdateExpression.
+    vi: viết Query đặt điều kiện vào khóa thay vì vào bộ lọc, và sửa item bằng UpdateExpression
+    en: write a Query that puts its condition on the key instead of the filter, and change an item with an UpdateExpression
 - id: safe-writes
   vi: Ghi an toàn
   en: Safe writes
@@ -51,8 +51,8 @@
     vi: Ghi an toàn
     en: Safe writes
   after:
-    vi: chống ghi đè mất dữ liệu bằng điều kiện, dùng bộ đếm nguyên tử và ghi theo lô.
-    en: prevent lost updates with a condition, use an atomic counter and write in batches.
+    vi: chống ghi đè mất dữ liệu bằng điều kiện, dùng bộ đếm nguyên tử và ghi theo lô
+    en: prevent lost updates with a condition, use an atomic counter and write in batches
 - id: partiql-cost
   vi: PartiQL và chi phí
   en: PartiQL and cost
@@ -62,19 +62,19 @@
     vi: PartiQL và chi phí
     en: PartiQL and cost
   after:
-    vi: tính trước cỡ item và RCU/WCU của một request, rồi đối chiếu với ConsumedCapacity.
-    en: work out an item's size and the RCU/WCU of a request ahead of time, then compare with ConsumedCapacity.
+    vi: tính trước cỡ item và RCU/WCU của một request, rồi đối chiếu với `ConsumedCapacity`
+    en: work out an item's size and the RCU/WCU of a request ahead of time, then compare with `ConsumedCapacity`
 - id: secondary
-  vi: Chỉ mục phụ
+  vi: Index phụ
   en: Secondary indexes
   module: secondary
   level: L3
   title:
-    vi: Chỉ mục phụ
+    vi: Index phụ
     en: Secondary indexes
   after:
-    vi: thêm GSI hoặc LSI cho một mẫu truy cập mới mà không phải Scan, và chọn projection cho nó.
-    en: add a GSI or LSI for a new access pattern without a Scan, and choose its projection.
+    vi: thêm GSI hoặc LSI cho một mẫu truy cập mới mà không phải Scan, và chọn projection cho nó
+    en: add a GSI or LSI for a new access pattern without a Scan, and choose its projection
 - id: single-table
   vi: Thiết kế một bảng
   en: Single-table design
@@ -84,8 +84,8 @@
     vi: Thiết kế một bảng
     en: Single-table design
   after:
-    vi: gom nhiều mẫu truy cập vào một bảng bằng tiền tố thực thể, sort key phân cấp và adjacency list.
-    en: fit several access patterns into one table with entity prefixes, hierarchical sort keys and adjacency lists.
+    vi: gom nhiều mẫu truy cập vào một bảng bằng tiền tố thực thể, sort key phân cấp và adjacency list
+    en: fit several access patterns into one table with entity prefixes, hierarchical sort keys and adjacency lists
 - id: scale
   vi: Quy mô và partition nóng
   en: Scale and hot partitions
@@ -95,8 +95,8 @@
     vi: Quy mô và partition nóng
     en: Scale and hot partitions
   after:
-    vi: rải một khóa nóng ra nhiều shard, đọc lại bằng một Query mỗi shard và tính trước số RCU/WCU mỗi partition phải chịu.
-    en: spread a hot key over several shards, read it back with one Query per shard and work out the RCU/WCU each partition has to carry.
+    vi: rải một khóa nóng ra nhiều shard, đọc lại bằng một Query mỗi shard và tính trước số RCU/WCU mỗi partition phải chịu
+    en: spread a hot key over several shards, read it back with one Query per shard and work out the RCU/WCU each partition has to carry
 - id: patterns
   vi: Mẫu thiết kế nâng cao
   en: Advanced design patterns
@@ -106,19 +106,19 @@
     vi: Mẫu thiết kế nâng cao
     en: Advanced design patterns
   after:
-    vi: dùng adjacency list, GSI thưa, GSI dùng chung và sort key phân cấp để trả lời một mẫu truy cập bằng đúng một Query.
-    en: use an adjacency list, a sparse GSI, an overloaded GSI and hierarchical sort keys to answer an access pattern with exactly one Query.
+    vi: dùng adjacency list, sparse GSI, GSI overloading và sort key phân cấp để trả lời một mẫu truy cập bằng đúng một Query
+    en: use an adjacency list, a sparse GSI, an overloaded GSI and hierarchical sort keys to answer an access pattern with exactly one Query
 - id: transactions
-  vi: Giao dịch
+  vi: Transaction
   en: Transactions
   module: transactions
   level: L4
   title:
-    vi: Giao dịch
+    vi: Transaction
     en: Transactions
   after:
-    vi: đọc hoặc ghi hai item cùng thành công hoặc cùng không, và tính giá gấp đôi của giao dịch.
-    en: read or write two items so that both succeed or neither does, and price the double cost of a transaction.
+    vi: đọc hoặc ghi hai item cùng thành công hoặc cùng không, và tính giá gấp đôi của transaction
+    en: read or write two items so that both succeed or neither does, and price the double cost of a transaction
 - id: design-case
   vi: 'Kiểm tra cấp L4: thiết kế theo mẫu truy cập'
   en: 'Level L4 check: access-pattern-first design'
@@ -128,8 +128,8 @@
     vi: 'Kiểm tra cấp L4: thiết kế theo mẫu truy cập'
     en: 'Level L4 check: access-pattern-first design'
   after:
-    vi: đi từ danh sách mẫu truy cập tới khóa, GSI, shard và ước lượng chi phí cho một ứng dụng thật.
-    en: go from a list of access patterns to keys, GSIs, shards and a cost estimate for a real application.
+    vi: đi từ danh sách mẫu truy cập tới khóa, GSI, shard và ước lượng chi phí cho một ứng dụng thật
+    en: go from a list of access patterns to keys, GSIs, shards and a cost estimate for a real application
 - id: streams-ttl
   vi: Streams và TTL
   en: Streams and TTL
@@ -139,8 +139,8 @@
     vi: Streams và TTL
     en: Streams and TTL
   after:
-    vi: lọc item đã hết hạn TTL khỏi kết quả đọc và thiết kế một bộ xử lý Streams không phụ thuộc thứ tự giữa các item.
-    en: filter TTL-expired items out of a read and design a Streams consumer that does not rely on ordering across items.
+    vi: lọc item đã hết hạn TTL khỏi kết quả đọc và thiết kế một bộ xử lý Streams không phụ thuộc thứ tự giữa các item
+    en: filter TTL-expired items out of a read and design a Streams consumer that does not rely on ordering across items
 - id: global-ops
   vi: Đa vùng và vận hành
   en: Multi-Region and operations
@@ -150,8 +150,8 @@
     vi: Đa vùng và vận hành
     en: Multi-Region and operations
   after:
-    vi: chọn chế độ global table (MREC hay MRSC) và cách sao lưu (PITR hay backup theo yêu cầu) cho một ứng dụng hai vùng, và quyết định mẫu đọc nào nên đi qua DAX.
-    en: choose a global table mode (MREC or MRSC) and a backup method (PITR or on-demand backup) for a two-Region application, and decide which read patterns should go through DAX.
+    vi: chọn chế độ global table (MREC hay MRSC) và cách sao lưu (PITR hay backup theo yêu cầu) cho một ứng dụng hai vùng, và quyết định mẫu đọc nào nên đi qua DAX
+    en: choose a global table mode (MREC or MRSC) and a backup method (PITR or on-demand backup) for a two-Region application, and decide which read patterns should go through DAX
 - id: ops-case
   vi: "Kiểm tra cấp L5: vận hành ứng dụng"
   en: "Level L5 check: running an application"
@@ -159,5 +159,5 @@
   level: L5
   title: { vi: "Kiểm tra cấp L5: vận hành ứng dụng", en: "Level L5 check: running an application" }
   after:
-    vi: trả lời các mẫu truy cập của một ứng dụng thật bằng Query, GSI thưa và TransactGetItems, tính giá của item hết hạn và đọc giao dịch, rồi chọn DAX, Streams và PITR cho đúng chỗ.
-    en: answer a real application's access patterns with Query, a sparse GSI and TransactGetItems, price expired items and transactional reads, then put DAX, Streams and PITR in the right places.
+    vi: trả lời các mẫu truy cập của một ứng dụng thật bằng Query, sparse GSI và `TransactGetItems`, tính giá của item hết hạn và của đọc trong transaction, rồi chọn DAX, Streams và PITR cho đúng chỗ
+    en: answer a real application's access patterns with Query, a sparse GSI and `TransactGetItems`, price expired items and transactional reads, then put DAX, Streams and PITR in the right places

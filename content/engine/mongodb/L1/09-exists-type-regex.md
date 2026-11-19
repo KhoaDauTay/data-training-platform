@@ -6,6 +6,7 @@ module: query-ops
 title: Trường thiếu, null, kiểu và regex
 title_en: Missing fields, null, types and regex
 kind: lab
+runtime: browser
 minutes: 12
 objectives:
   - vi: Phân biệt trường thiếu và trường bằng `null` bằng `$exists` và `$type`.
@@ -62,7 +63,7 @@ lab:
         en: "`{ email: null }` matches both cases: the field is `null` or the field is missing."
     - task:
         vi: Lấy các sản phẩm có chữ `tea` trong `name`, không phân biệt hoa thường.
-        en: Return the products whose `name` contains `tea`, ignoring case.
+        en: Return the products with `tea` in their `name`, ignoring case.
       solution: 'db.products.find({ name: { $regex: "tea", $options: "i" } })'
       check: doc
       hint:
@@ -78,7 +79,7 @@ MongoDB không bắt mọi tài liệu có cùng trường, nên "không có ema
 - `{ email: { $type: "null" } }` chỉ khớp trường bằng `null`.
 - `$type` nhận tên kiểu BSON (`"string"`, `"int"`, `"double"`, `"date"`, `"array"`…) hoặc `"number"` cho mọi kiểu số.
 
-`$regex` lọc chuỗi theo biểu thức chính quy. `$options: "i"` bỏ qua hoa thường. Mẫu bắt đầu bằng `^` (neo đầu chuỗi) và phân biệt hoa thường là dạng dùng index hiệu quả nhất; mẫu không neo phải xét mọi giá trị.
+`$regex` lọc chuỗi theo biểu thức chính quy. `$options: "i"` bỏ qua hoa thường. Mẫu bắt đầu bằng `^` (neo đầu chuỗi) và phân biệt hoa thường là dạng dùng index (chỉ mục) hiệu quả nhất; mẫu không neo phải xét mọi giá trị.
 
 Làm được: tìm đúng tài liệu thiếu dữ liệu, kiểm kiểu của một trường, và tìm theo một phần của chuỗi.
 

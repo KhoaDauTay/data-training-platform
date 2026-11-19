@@ -135,7 +135,7 @@
   label: { vi: "Nhúng hay tham chiếu", en: "Embed or reference" }
   syntax: "orders: { _id, store_id, items: [{ product_id, name, qty, unit_price_vnd }] }"
   when: { vi: "Nhúng thứ luôn đọc cùng nhau và có giới hạn; tham chiếu thứ lớn dần không giới hạn hoặc dùng chung nhiều nơi.", en: "Embed what is always read together and bounded; reference what grows without limit or is shared in many places." }
-  trap: { vi: "Nhúng mảng lớn dần mãi (mọi đơn của một khách) sẽ chạm giới hạn 16 MB và làm mỗi lần đọc nặng thêm.", en: "Embedding an ever-growing array (all orders of a customer) hits the 16 MB limit and makes every read heavier." }
+  trap: { vi: "Nhúng mảng lớn dần mãi (mọi đơn của một khách) sẽ chạm giới hạn 16 MiB và làm mỗi lần đọc nặng thêm.", en: "Embedding an ever-growing array (all orders of a customer) hits the 16 MiB limit and makes every read heavier." }
 
 - id: mg.array_ops
   part: 12

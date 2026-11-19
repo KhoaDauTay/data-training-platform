@@ -6,6 +6,7 @@ module: query-ops
 title: Sắp xếp, phân trang và đếm
 title_en: Sorting, paging and counting
 kind: lab
+runtime: browser
 minutes: 10
 objectives:
   - vi: Sắp xếp kết quả theo một hoặc nhiều trường, rồi lấy trang thứ n bằng `skip` và `limit`.

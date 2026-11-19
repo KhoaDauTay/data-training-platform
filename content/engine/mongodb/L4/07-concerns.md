@@ -28,7 +28,7 @@ quiz:
       - { vi: "Client nhận lỗi và ghi lại tự động", en: "The client gets an error and writes again automatically" }
     answer: 1
     why:
-      vi: "Tài liệu: với `w: 1`, dữ liệu có thể bị rollback nếu primary bước xuống trước khi lần ghi được chép sang secondary nào. `w: \"majority\"` chờ đa số thành viên bỏ phiếu ghi bền vào oplog."
+      vi: "Docs chính thức: với `w: 1`, dữ liệu có thể bị rollback nếu primary bước xuống trước khi lần ghi được chép sang secondary nào. `w: \"majority\"` chờ đa số thành viên bỏ phiếu ghi bền vào oplog."
       en: "The docs: with `w: 1`, data can be rolled back if the primary steps down before the write reaches any secondary. `w: \"majority\"` waits for a majority of voting members to durably write it to their oplog."
   - q:
       vi: "Lần ghi `w: \"majority\"` với `wtimeout: 1000` trả lỗi hết giờ. Dữ liệu đã ghi trên primary thì sao?"
@@ -38,7 +38,7 @@ quiz:
       - { vi: "MongoDB không hoàn tác: lần ghi vẫn có thể sẽ đạt write concern sau đó", en: "MongoDB does not undo it: the write may still reach the write concern later" }
     answer: 1
     why:
-      vi: "Tài liệu: khi quá `wtimeout`, MongoDB trả lỗi write concern nhưng không hoàn tác thay đổi đã thành công. Lỗi chỉ nói chưa xác nhận kịp."
+      vi: "Docs chính thức: khi quá `wtimeout`, MongoDB trả lỗi write concern nhưng không hoàn tác thay đổi đã thành công. Lỗi chỉ nói chưa xác nhận kịp."
       en: "The docs: past `wtimeout`, MongoDB returns a write concern error but does not undo the successful change. The error only says it was not confirmed in time."
 ---
 
@@ -54,9 +54,9 @@ Write concern là mức xác nhận bạn đòi cho một lần ghi: `{ w, j, wt
 Read concern quyết định đọc thấy gì:
 
 - `local`: dữ liệu của node, có thể bị rollback. Mặc định cho đọc từ primary và secondary.
-- `majority`: dữ liệu đa số đã xác nhận, bền kể cả khi có sự cố.
+- `majority`: dữ liệu đa số đã xác nhận, bền kể cả khi primary sập.
 - `linearizable`: phản ánh mọi lần ghi majority đã xong trước khi đọc bắt đầu; chỉ đọc trên primary, cần bộ lọc trúng một tài liệu, nên dùng kèm `maxTimeMS`.
-- `snapshot`: dữ liệu majority tại một thời điểm, dùng trong transaction đa tài liệu và một số lệnh đọc.
+- `snapshot`: dữ liệu majority tại một thời điểm, dùng trong transaction nhiều tài liệu và một số lệnh đọc.
 
 ## Ví dụ
 
@@ -68,7 +68,7 @@ db.payments.insertOne(
 db.payments.find({ orderId: 7 }).readConcern("majority")
 ```
 
-Đúng với tài liệu MongoDB hiện hành (8.x), kiểm ngày 2026-11-20. Bài này dùng sơ đồ: trình duyệt không có replica set.
+Đúng với docs chính thức của MongoDB hiện hành (8.x), kiểm ngày 2026-11-20. Phần chạy thật cần máy chủ thật (nhiều phiên / replica set / AWS). Bài này dùng sơ đồ và kết quả ghi sẵn.
 
 # EN
 
@@ -84,7 +84,7 @@ Write concern is the acknowledgement you ask for on a write: `{ w, j, wtimeout }
 Read concern decides what a read can see:
 
 - `local`: the node's data, which may be rolled back. The default for reads on the primary and on secondaries.
-- `majority`: data acknowledged by a majority, durable even after a failure.
+- `majority`: data acknowledged by a majority, durable even if the primary fails.
 - `linearizable`: reflects every majority write completed before the read started; primary only, needs a filter that hits one document, and should be used with `maxTimeMS`.
 - `snapshot`: majority data at one point in time, used in multi-document transactions and some read commands.
 
@@ -98,4 +98,4 @@ db.payments.insertOne(
 db.payments.find({ orderId: 7 }).readConcern("majority")
 ```
 
-Matches the current MongoDB manual (8.x), checked 2026-11-20. This lesson uses a diagram: the browser has no replica set.
+Matches the current MongoDB manual (8.x), checked 2026-11-20. The real run needs a real server (several sessions / replica set / AWS). This lesson uses diagrams and recorded results.

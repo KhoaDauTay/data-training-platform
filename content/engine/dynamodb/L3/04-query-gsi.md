@@ -184,8 +184,8 @@ quiz:
         en: DynamoDB ignores the parameter.
     answer: 1
     why:
-      vi: Bộ mô phỏng trả đúng lỗi này - "Consistent reads are not supported on global secondary indexes".
-      en: The emulator returns exactly this error - "Consistent reads are not supported on global secondary indexes".
+      vi: Nghe như GSI chỉ là một bảng khác nên đọc strong được như bảng gốc. Thật ra GSI cập nhật bất đồng bộ, nên DynamoDB từ chối `ConsistentRead`; bộ mô phỏng trả đúng lỗi này - "Consistent reads are not supported on global secondary indexes".
+      en: It sounds as if a GSI is just another table, so it should allow strong reads like the base table. In fact a GSI is updated asynchronously, so DynamoDB refuses `ConsistentRead`; the emulator returns exactly this error - "Consistent reads are not supported on global secondary indexes".
 ---
 
 ## Ý chính

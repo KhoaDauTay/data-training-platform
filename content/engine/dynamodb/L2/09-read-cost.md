@@ -24,7 +24,7 @@ predict:
       "ConsistentRead": true}},
      "ReturnConsumedCapacity": "TOTAL"}}
   q:
-    vi: Hai item nặng 1,5 KB và 6,5 KB. Request đọc strongly consistent này tốn bao nhiêu RCU?
+    vi: Hai item nặng 1,5 KB và 6,5 KB. Request đọc nhất quán mạnh (strongly consistent) này tốn bao nhiêu RCU?
     en: The two items weigh 1.5 KB and 6.5 KB. How many RCU does this strongly consistent request consume?
   options:
     - vi: "2"
@@ -41,7 +41,7 @@ predict:
     en: BatchGetItem rounds **each item** up to a multiple of 4 KB before adding - 4 KB + 8 KB = 12 KB, which is 3 RCU strong (1.5 if eventual). Not 1.5 + 6.5 = 8 KB.
 quiz:
   - q:
-      vi: Một Query trả 10 item, tổng 40,8 KB, đọc eventually consistent. Tốn bao nhiêu RCU?
+      vi: Một Query trả 10 item, tổng 40,8 KB, đọc nhất quán cuối. Tốn bao nhiêu RCU?
       en: A Query returns 10 items totalling 40.8 KB, eventually consistent. How many RCU?
     options:
       - vi: "5"
@@ -57,7 +57,7 @@ quiz:
       vi: Query cộng cỡ mọi item đã đọc **rồi mới** làm tròn - 40,8 KB thành 44 KB, tức 11 RCU strong, chia đôi cho eventual là 5,5.
       en: A Query adds up all items read **then** rounds - 40.8 KB becomes 44 KB, which is 11 RCU strong, halved to 5.5 for eventual.
   - q:
-      vi: Scan đọc 1000 item, mỗi item 100 byte, bộ lọc giữ lại 20 item. Đọc eventually consistent tốn bao nhiêu RCU?
+      vi: Scan đọc 1000 item, mỗi item 100 byte, bộ lọc giữ lại 20 item. Đọc nhất quán cuối tốn bao nhiêu RCU?
       en: A Scan reads 1,000 items of 100 bytes each, and its filter keeps 20. How many RCU for an eventually consistent read?
     options:
       - vi: "0,5 - chỉ 20 item được trả về"
@@ -71,7 +71,7 @@ quiz:
       vi: Scan tính theo item **đã đọc**, không theo item trả về. 1000 × 100 = 100.000 byte, khoảng 97,7 KB, làm tròn lên 100 KB = 25 RCU strong, 12,5 eventual.
       en: A Scan is charged for items **read**, not items returned. 1,000 × 100 = 100,000 bytes, about 97.7 KB, rounded up to 100 KB = 25 RCU strong, 12.5 eventual.
   - q:
-      vi: GetItem một item 3,5 KB, chỉ lấy một thuộc tính 100 byte bằng ProjectionExpression, eventually consistent. Tốn bao nhiêu?
+      vi: GetItem một item 3,5 KB, chỉ lấy một thuộc tính 100 byte bằng ProjectionExpression, đọc nhất quán cuối. Tốn bao nhiêu?
       en: GetItem on a 3.5 KB item, returning one 100-byte attribute with a ProjectionExpression, eventually consistent. What does it cost?
     options:
       - vi: "0,5 RCU"
@@ -90,9 +90,9 @@ quiz:
 
 Đơn vị đọc:
 
-- 1 RCU = một lần đọc **strongly consistent** item tới 4 KB.
-- Đọc **eventually consistent** (mặc định) tốn một nửa.
-- Đọc trong giao dịch tốn gấp đôi strong.
+- 1 RCU (read capacity unit, đơn vị năng lực đọc) = một lần đọc **nhất quán mạnh** (strongly consistent) item tới 4 KB.
+- Đọc **nhất quán cuối** (eventually consistent, mặc định) tốn một nửa.
+- Đọc trong transaction tốn gấp đôi đọc nhất quán mạnh.
 
 Cỡ luôn làm tròn lên bội số 4 KB, nhưng làm tròn **ở đâu** tùy thao tác:
 
@@ -123,7 +123,7 @@ Bật `"ReturnConsumedCapacity": "TOTAL"` để DynamoDB trả con số thật. 
 
 The read unit:
 
-- 1 RCU = one **strongly consistent** read of an item up to 4 KB.
+- 1 RCU (read capacity unit) = one **strongly consistent** read of an item up to 4 KB.
 - An **eventually consistent** read (the default) costs half.
 - A transactional read costs twice a strong read.
 

@@ -64,7 +64,7 @@ quiz:
 
 ## Ý chính
 
-DynamoDB giữ tốc độ ổn định ở mọi cỡ bảng bằng một luật: mỗi request chỉ chạm **một item** hoặc **một item collection** tìm được qua khóa. Vì thế nó **không có** JOIN, GROUP BY, window hay subquery phía server.
+DynamoDB giữ tốc độ ổn định ở mọi cỡ bảng bằng một luật: mỗi request chỉ chạm **một item** hoặc **một item collection** (nhóm item cùng partition key) tìm được qua khóa. Vì thế nó **không có** JOIN, GROUP BY, window hay subquery phía server.
 
 Thay cho chúng:
 
@@ -107,10 +107,10 @@ The AWS rule: list the access patterns first, then design the keys.
 The hard limits to know:
 
 - An item is at most **400 KB**, counting both attribute **names** and values. An item with "shirt-color" = "R" and "shirt-size" = "M" weighs 23 bytes.
-- A partition key is 1-2048 bytes long, a sort key 1-1024 bytes.
+- A partition key is 1–2048 bytes long, a sort key 1–1024 bytes.
 - Nesting goes at most 32 levels deep.
 - Each `Query` or `Scan` call returns at most **1 MB**, with a `LastEvaluatedKey` when there is more.
-- Table and index names are 3-255 characters long.
+- Table and index names are 3–255 characters long.
 
 ## Practice
 

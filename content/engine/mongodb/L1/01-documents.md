@@ -6,10 +6,11 @@ module: documents
 title: Tài liệu, collection và kiểu BSON
 title_en: Documents, collections and BSON types
 kind: concept
+runtime: docs
 minutes: 8
-viz: bson-doc
+viz: mg-bson-doc
 objectives:
-  - vi: Đọc một tài liệu và chỉ ra trường nào là giá trị đơn, trường nào là tài liệu lồng, trường nào là mảng.
+  - vi: Đọc một tài liệu và chỉ ra trường nào là giá trị đơn, trường nào là tài liệu nhúng, trường nào là mảng.
     en: Read a document and point out which fields are plain values, which are embedded documents and which are arrays.
   - vi: Biết các kiểu BSON hay gặp (ObjectId, Date, int, double, Decimal128) và hai giới hạn của một tài liệu.
     en: Know the common BSON types (ObjectId, Date, int, double, Decimal128) and the two limits of a document.
@@ -23,7 +24,7 @@ quiz:
       vi: "Trong tài liệu ví dụ, `address` là gì?"
       en: "In the example document, what is `address`?"
     options:
-      - vi: Một tài liệu lồng (embedded document) có hai trường
+      - vi: Một tài liệu nhúng (embedded document) có hai trường
         en: An embedded document with two fields
       - vi: Một mảng gồm hai chuỗi
         en: An array of two strings
@@ -31,7 +32,7 @@ quiz:
         en: A foreign key into another collection
     answer: 0
     why:
-      vi: "`address` nằm trong dấu ngoặc nhọn `{ }` nên là một tài liệu lồng. Mảng dùng ngoặc vuông `[ ]`, như `tags`."
+      vi: "`address` nằm trong dấu ngoặc nhọn `{ }` nên là một tài liệu nhúng. Mảng dùng ngoặc vuông `[ ]`, như `tags`."
       en: "`address` is wrapped in curly braces `{ }`, so it is an embedded document. Arrays use square brackets `[ ]`, like `tags`."
   - q:
       vi: Một tài liệu BSON được lớn tối đa bao nhiêu?
@@ -48,7 +49,7 @@ quiz:
       vi: Giới hạn là 16 MiB mỗi tài liệu. Tệp lớn hơn thì dùng GridFS; dữ liệu lớn dần không giới hạn thì nên tách ra tài liệu khác.
       en: The limit is 16 MiB per document. Larger files go to GridFS; data that grows without bound belongs in separate documents.
   - q:
-      vi: Bạn cần lưu số tiền chính xác tới từng đồng lẻ (ví dụ 19.99) mà không sai số làm tròn. Kiểu BSON nào hợp nhất?
+      vi: Bạn cần lưu số tiền chính xác tới từng đồng lẻ (ví dụ 19,99) mà không sai số làm tròn. Kiểu BSON nào hợp nhất?
       en: You must store money exactly (for example 19.99) with no rounding error. Which BSON type fits best?
     options:
       - vi: Decimal128
@@ -59,7 +60,7 @@ quiz:
         en: string
     answer: 0
     why:
-      vi: "`double` là số dấu phẩy động nhị phân nên 19.99 không được lưu chính xác. Decimal128 lưu số thập phân đúng như viết; chuỗi thì không tính toán được."
+      vi: "`double` là số dấu phẩy động nhị phân nên 19,99 không được lưu chính xác. Decimal128 lưu số thập phân đúng như viết; chuỗi thì không tính toán được."
       en: "`double` is binary floating point, so 19.99 is not stored exactly. Decimal128 keeps the decimal value as written; a string cannot be used in arithmetic."
 ---
 ## Ý chính
@@ -69,7 +70,7 @@ MongoDB lưu dữ liệu thành tài liệu (document): các cặp tên và giá
 Giá trị của một trường có thể là:
 
 - giá trị đơn: chuỗi, số, boolean, ngày, `null`;
-- tài liệu lồng trong `{ }`, ví dụ địa chỉ;
+- tài liệu nhúng trong `{ }`, ví dụ địa chỉ;
 - mảng trong `[ ]`, ví dụ danh sách nhãn hoặc các dòng hàng của một đơn.
 
 Trên đĩa và trên mạng, tài liệu được mã hóa thành BSON (JSON nhị phân). BSON có thêm kiểu mà JSON không có: `ObjectId` (12 byte: 4 byte thời điểm tạo, 5 byte ngẫu nhiên, 3 byte bộ đếm), `Date` (số mili giây từ 1970, UTC), `int`, `long`, `double` và `Decimal128` cho số thập phân chính xác.
@@ -93,7 +94,7 @@ Làm được: đọc một tài liệu, gọi đúng tên từng phần, và ch
 }
 ```
 
-`address` là tài liệu lồng, `tags` là mảng, `joined` là kiểu Date, `balance` là Decimal128.
+`address` là tài liệu nhúng, `tags` là mảng, `joined` là kiểu Date, `balance` là Decimal128.
 
 ## Thực hành
 

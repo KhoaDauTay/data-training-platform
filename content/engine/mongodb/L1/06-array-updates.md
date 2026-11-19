@@ -6,6 +6,7 @@ module: crud
 title: Sửa mảng với $push, $addToSet, $pull
 title_en: Updating arrays with $push, $addToSet, $pull
 kind: lab
+runtime: browser
 minutes: 10
 objectives:
   - vi: Thêm phần tử vào mảng bằng `$push` (kể cả nhiều phần tử với `$each`) và `$addToSet`.
@@ -71,7 +72,7 @@ Mảng là một phần của tài liệu, nên sửa mảng cũng là update tr
 
 Không ghi hai toán tử lên cùng một trường trong một lệnh (ví dụ `$push` và `$pull` cùng `tags`): MongoDB báo xung đột.
 
-Vì một update trên một tài liệu là atomic, hai người cùng `$push` vào một mảng không làm mất phần tử của nhau. Đọc mảng ra, sửa trong ứng dụng rồi ghi đè lại thì có thể mất.
+Vì một update trên một tài liệu là nguyên tử (atomic), hai người cùng `$push` vào một mảng không làm mất phần tử của nhau. Đọc mảng ra, sửa trong ứng dụng rồi ghi đè lại thì có thể mất.
 
 Làm được: thêm, thêm không trùng và bỏ phần tử trong mảng mà không ghi đè cả mảng.
 

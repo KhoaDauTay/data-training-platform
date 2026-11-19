@@ -38,7 +38,7 @@ predict:
 
 ## Ý chính
 
-Đây là bài đoán theo tài liệu MongoDB (trang "Write Concern" và "Replica Set Elections"); trình duyệt không có replica set. Các sự thật dùng:
+Đây là bài đoán theo docs chính thức của MongoDB (trang "Write Concern" và "Replica Set Elections"); trình duyệt không có replica set. Các sự thật dùng:
 
 - `w: 1` chỉ chờ primary; dữ liệu có thể bị rollback nếu primary bước xuống trước khi chép sang secondary nào.
 - `w: "majority"` chờ đa số thành viên bỏ phiếu mang dữ liệu ghi bền mục oplog.
@@ -53,7 +53,7 @@ Lệnh 1 ở đây sống sót nhờ thứ tự oplog, không nhờ write concer
 db.orders.insertOne({ _id: 3 }, { writeConcern: { w: "majority", wtimeout: 5000 } })
 ```
 
-Đúng với tài liệu MongoDB hiện hành, kiểm ngày 2026-11-20.
+Đúng với docs chính thức của MongoDB hiện hành, kiểm ngày 2026-11-20. Phần chạy thật cần máy chủ thật (nhiều phiên / replica set / AWS). Bài này dùng sơ đồ và kết quả ghi sẵn.
 
 # EN
 
@@ -74,4 +74,4 @@ Command 1 survives here because of oplog order, not because of its own write con
 db.orders.insertOne({ _id: 3 }, { writeConcern: { w: "majority", wtimeout: 5000 } })
 ```
 
-Matches the current MongoDB manual, checked 2026-11-20.
+Matches the current MongoDB manual, checked 2026-11-20. The real run needs a real server (several sessions / replica set / AWS). This lesson uses diagrams and recorded results.

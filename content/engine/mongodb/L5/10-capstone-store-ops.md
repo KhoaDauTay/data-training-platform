@@ -92,7 +92,7 @@ predict:
       en: "`{ createdAt: -1, store: 1, status: 1 }`"
   answer: 1
   why:
-    vi: "Theo luật ESR trong tài liệu MongoDB: hai trường bằng `store`, `status` trước, trường sắp `createdAt` sau, trường khoảng `total` cuối. Đặt `total` trước `createdAt` thì phải sắp trong bộ nhớ."
+    vi: "Theo luật ESR trong docs chính thức của MongoDB: hai trường bằng `store`, `status` trước, trường sắp `createdAt` sau, trường khoảng `total` cuối. Đặt `total` trước `createdAt` thì phải sắp trong bộ nhớ."
     en: "By the ESR rule in the MongoDB docs: the equality fields `store`, `status` first, the sort field `createdAt` next, the range field `total` last. Putting `total` before `createdAt` forces an in-memory sort."
 quiz:
   - q:
@@ -113,7 +113,7 @@ quiz:
 Bài cuối cấp L5, gồm hai phần với hai nhãn khác nhau:
 
 - Hai bước lab chạy thật bằng mingo trong trình duyệt (ngôn ngữ truy vấn MongoDB): báo cáo theo ngày (mẫu bucket) và theo vùng (`$lookup`).
-- Câu đoán index và câu kết luận dựa trên tài liệu MongoDB (luật ESR, write concern); trình duyệt không có `mongod`, nên phần này không chạy thật.
+- Câu đoán index (chỉ mục) và câu kết luận dựa trên docs chính thức của MongoDB (luật ESR, write concern); trình duyệt không có `mongod`, nên phần này không chạy thật: câu đoán index chấm theo luật ESR, không phải `mongod`.
 
 ## Thực hành
 
@@ -126,7 +126,7 @@ Làm hai bước lab theo thứ tự, rồi chọn index cho truy vấn bảng �
 The final lesson of level L5, in two parts with two different labels:
 
 - Two lab steps that really run on mingo in the browser (the MongoDB query language): a daily report (bucket pattern) and a regional report (`$lookup`).
-- The index prediction and the conclusion question rest on the MongoDB docs (the ESR rule, write concern); the browser has no `mongod`, so this part does not run for real.
+- The index prediction and the conclusion question rest on the MongoDB docs (the ESR rule, write concern); the browser has no `mongod`, so this part does not run for real: the index prediction is graded by the ESR rule, not by `mongod`.
 
 ## Practice
 

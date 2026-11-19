@@ -6,8 +6,9 @@ module: pages
 title: Một trang heap trông thế nào
 title_en: What a heap page looks like
 kind: concept
+runtime: docs
 minutes: 8
-viz: heap-page
+viz: pg-heap-page
 objectives:
   - vi: Kể đúng bốn phần của một trang 8 KB (header, line pointer, chỗ trống, tuple)
     en: Name the four parts of an 8 KB page (header, line pointers, free space, tuples)
@@ -44,12 +45,14 @@ quiz:
 
 ## Ý chính
 
-Bảng (heap) là một dãy trang 8192 byte. Mỗi trang có:
+Bảng có ba dòng thì chúng nằm ở đâu trên đĩa, và index tìm lại chúng bằng cách nào?
+
+Bảng là một heap: dãy trang (page) 8192 byte, dòng mới vào trang nào còn chỗ, không theo thứ tự nào. Mỗi trang có:
 
 - header 24 byte (`pd_lsn`, `pd_lower`, `pd_upper`, `pd_special`…);
 - mảng line pointer, mỗi cái 4 byte, mọc từ đầu trang xuống;
 - chỗ trống ở giữa;
-- các tuple, xếp từ cuối trang lên. Mỗi tuple có header cố định 23 byte (`t_xmin`, `t_xmax`, `t_ctid`, các cờ…).
+- các tuple (mỗi tuple là một phiên bản của một dòng), xếp từ cuối trang lên. Mỗi tuple có header cố định 23 byte (`t_xmin`, `t_xmax`, `t_ctid`, các cờ…).
 
 `ctid` = (số trang, số line pointer). Line pointer là lớp gián tiếp: tuple dời chỗ trong trang thì chỉ line pointer đổi, index không đổi.
 
@@ -70,12 +73,14 @@ Bấm qua sơ đồ trang: INSERT ba dòng, xem line pointer mọc xuống và t
 
 ## Key idea
 
-A table (heap) is a sequence of 8192-byte pages. Each page has:
+A table has three rows: where do they live on disk, and how does an index find them again?
+
+A table is a heap: a sequence of 8192-byte pages, where a new row goes into any page with room, in no particular order. Each page has:
 
 - a 24-byte header (`pd_lsn`, `pd_lower`, `pd_upper`, `pd_special`…);
 - an array of 4-byte line pointers growing down from the top;
 - free space in the middle;
-- tuples, stacked up from the end of the page. Each tuple has a fixed 23-byte header (`t_xmin`, `t_xmax`, `t_ctid`, flags…).
+- tuples (each tuple is one version of a row), stacked up from the end of the page. Each tuple has a fixed 23-byte header (`t_xmin`, `t_xmax`, `t_ctid`, flags…).
 
 `ctid` = (page number, line pointer number). The line pointer is an indirection: when a tuple moves inside the page only its line pointer changes, indexes do not.
 

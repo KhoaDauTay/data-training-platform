@@ -39,13 +39,13 @@ predict:
 
 ## Ý chính
 
-Đây là bài đoán theo tài liệu MongoDB (trang "Partial Indexes"); trình duyệt không chạy `mongod`, nên không có explain thật ở đây. Luật trong tài liệu: MongoDB không dùng index partial cho truy vấn hay sắp xếp nếu việc đó làm thiếu kết quả. Muốn dùng, điều kiện của truy vấn phải nằm trong bộ lọc của index (bằng nó hoặc hẹp hơn).
+Đây là bài đoán theo docs chính thức của MongoDB (trang "Partial Indexes"); trình duyệt không chạy `mongod`, nên không có explain thật ở đây. Luật trong tài liệu: MongoDB không dùng index (chỉ mục) partial cho truy vấn hay sắp xếp nếu việc đó làm thiếu kết quả. Muốn dùng, điều kiện của truy vấn phải nằm trong bộ lọc của index (bằng nó hoặc hẹp hơn).
 
 - `{ year: 2005 }`: nằm trong `year > 2000`, dùng được.
 - `{ year: { $gt: 2010 } }`: hẹp hơn bộ lọc, dùng được.
 - `{ year: { $gt: 1990 } }`: rộng hơn bộ lọc, không dùng được.
 
-Tài liệu cũng nhắc: việc so tập con không giống nhau với mọi toán tử, nên trước khi dựa vào một index partial, hãy kiểm bằng `explain()`.
+Docs chính thức cũng nhắc: việc so tập con không giống nhau với mọi toán tử, nên trước khi dựa vào một index partial, hãy kiểm bằng `explain()`.
 
 ## Ví dụ
 
@@ -54,7 +54,7 @@ db.movies.find( { year: 2005 } ).explain("executionStats")
 db.movies.find( { year: { $gt: 2010 } } ).explain("executionStats")
 ```
 
-Đúng với tài liệu MongoDB hiện hành, kiểm ngày 2026-11-20.
+Đúng với docs chính thức của MongoDB hiện hành, kiểm ngày 2026-11-20.
 
 # EN
 

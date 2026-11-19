@@ -30,8 +30,8 @@ quiz:
       - { vi: "Không, mỗi giá trị shard key chỉ nằm trong một chunk, nên tối đa 7 chunk", en: "No, each shard key value lives in one chunk, so there are at most 7 chunks" }
     answer: 1
     why:
-      vi: "Cardinality giới hạn số chunk tối đa: 7 giá trị thì tối đa 7 chunk, nên shard thứ 8 không có gì để giữ. Tài liệu khuyên dùng index kép để tăng cardinality."
-      en: "Cardinality caps the number of chunks: 7 values means at most 7 chunks, so an 8th shard has nothing to hold. The docs suggest a compound key to raise cardinality."
+      vi: "Cardinality giới hạn số chunk tối đa: 7 giá trị thì tối đa 7 chunk, nên shard thứ 8 không có gì để giữ. Docs chính thức khuyên dùng shard key kép (nhiều trường) để tăng cardinality."
+      en: "Cardinality caps the number of chunks: 7 values means at most 7 chunks, so an 8th shard has nothing to hold. The docs suggest a compound shard key to raise cardinality."
   - q:
       vi: "Shard key là thời điểm tạo, luôn tăng. Điều gì xảy ra với lượt chèn mới?"
       en: "The shard key is the creation time, always increasing. What happens to new inserts?"
@@ -40,7 +40,7 @@ quiz:
       - { vi: "Dồn vào chunk có cận trên `MaxKey`, một shard thành điểm nóng", en: "They all go to the chunk bounded by `MaxKey`, one shard becomes a hot spot" }
     answer: 1
     why:
-      vi: "Giá trị luôn tăng đi vào chunk có cận trên `MaxKey`. Tài liệu khuyên dùng hashed sharding cho khóa đơn điệu."
+      vi: "Giá trị luôn tăng đi vào chunk có cận trên `MaxKey`. Docs chính thức khuyên dùng hashed sharding cho khóa đơn điệu."
       en: "Ever-increasing values go to the chunk bounded by `MaxKey`. The docs recommend hashed sharding for a monotonic key."
 ---
 
@@ -63,7 +63,7 @@ sh.shardCollection("shop.orders", { customerId: 1 })
 sh.shardCollection("shop.events", { deviceId: "hashed" })
 ```
 
-Đúng với tài liệu MongoDB hiện hành, kiểm ngày 2026-11-20. Bài này dùng sơ đồ: trình duyệt không có sharded cluster.
+Đúng với docs chính thức của MongoDB hiện hành, kiểm ngày 2026-11-20. Phần chạy thật cần máy chủ thật (nhiều phiên / replica set / AWS). Bài này dùng sơ đồ và kết quả ghi sẵn.
 
 # EN
 
@@ -86,4 +86,4 @@ sh.shardCollection("shop.orders", { customerId: 1 })
 sh.shardCollection("shop.events", { deviceId: "hashed" })
 ```
 
-Matches the current MongoDB manual, checked 2026-11-20. This lesson uses a diagram: the browser has no sharded cluster.
+Matches the current MongoDB manual, checked 2026-11-20. The real run needs a real server (several sessions / replica set / AWS). This lesson uses diagrams and recorded results.

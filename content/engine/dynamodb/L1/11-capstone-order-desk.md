@@ -203,6 +203,21 @@ lab:
       hint:
         vi: '`Query` với `Select` là `COUNT`. Một `Scan` cũng đếm được, nhưng đọc cả 120 item.'
         en: '`Query` with `Select` set to `COUNT`. A `Scan` could count too, but it reads all 120 items.'
+quiz:
+  - q:
+      vi: 'Một đồng nghiệp đề xuất làm bước 5 bằng `Scan` có `FilterExpression` trên `customerId` và `Select` là `COUNT`, "vì chỉ trả về một con số nên rẻ". Bạn trả lời thế nào?'
+      en: 'A colleague suggests doing step 5 with a `Scan` that has a `FilterExpression` on `customerId` and `Select` set to `COUNT`, "because it only returns one number, so it is cheap". What do you answer?'
+    options:
+      - vi: Đồng ý, vì bộ lọc và `COUNT` làm phản hồi nhỏ nên tốn ít capacity.
+        en: Agree, because the filter and `COUNT` keep the response small, so it uses little capacity.
+      - vi: Không, vì `Scan` vẫn đọc cả 120 item rồi mới lọc; `Query` chỉ đọc 4 item của `C-09`.
+        en: No, because the `Scan` still reads all 120 items before filtering; the `Query` reads only the 4 items of `C-09`.
+      - vi: Không, vì `Scan` không đếm được, chỉ `Query` mới có `Select`.
+        en: No, because a `Scan` cannot count; only `Query` has `Select`.
+    answer: 1
+    why:
+      vi: 'Nghe hợp lý vì kết quả trả về nhỏ thật. Nhưng giá tính theo item đã đọc: bộ lọc và `COUNT` áp sau khi đọc, nên `Scan` có `ScannedCount` là 120. `Query` đi thẳng vào item collection của `C-09`: `ScannedCount` 4. `Scan` cũng có `Select`, nó chỉ đắt hơn.'
+      en: 'It sounds right because the response really is small. But you pay for items read: the filter and `COUNT` apply after the read, so the `Scan` has a `ScannedCount` of 120. The `Query` goes straight to the item collection of `C-09`: `ScannedCount` 4. A `Scan` has `Select` too; it is just more expensive.'
 ---
 
 ## Ý chính

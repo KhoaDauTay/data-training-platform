@@ -35,8 +35,8 @@ lab:
     ]}}
   steps:
     - task:
-        vi: 'Thêm cuốn `978-0-11` (`title` "Safe Writes", `price` 99000) nhưng chỉ khi chưa có cuốn nào mang `isbn` đó.'
-        en: 'Add book `978-0-11` (`title` "Safe Writes", `price` 99000), but only if no book has that `isbn` yet.'
+        vi: 'Thêm cuốn `978-0-11` (`title` "Safe Writes", `price` `99000`) nhưng chỉ khi chưa có cuốn nào mang `isbn` đó.'
+        en: 'Add book `978-0-11` (`title` "Safe Writes", `price` `99000`), but only if no book has that `isbn` yet.'
       solution: |
         {"op": "PutItem", "input": {"TableName": "Books",
           "Item": {"isbn": {"S": "978-0-11"}, "title": {"S": "Safe Writes"}, "price": {"N": "99000"}},
@@ -60,8 +60,8 @@ lab:
         vi: Điều kiện và phép trừ dùng chung chỗ giữ chỗ `:q`.
         en: The condition and the subtraction share the placeholder `:q`.
     - task:
-        vi: Bạn đã đọc giá cuốn `978-0-04` là 88000 và muốn đổi thành 92000. Chỉ ghi nếu giá vẫn là 88000, để không đè lên thay đổi của người khác.
-        en: You read the price of `978-0-04` as 88000 and want to change it to 92000. Write only if the price is still 88000, so you do not overwrite someone else's change.
+        vi: Bạn đã đọc giá cuốn `978-0-04` là `88000` và muốn đổi thành `92000`. Chỉ ghi nếu giá vẫn là `88000`, để không đè lên thay đổi của người khác.
+        en: You read the price of `978-0-04` as `88000` and want to change it to `92000`. Write only if the price is still `88000`, so you do not overwrite someone else's change.
       solution: |
         {"op": "UpdateItem", "input": {"TableName": "Books",
           "Key": {"isbn": {"S": "978-0-04"}},
@@ -70,7 +70,7 @@ lab:
           "ExpressionAttributeValues": {":new": {"N": "92000"}, ":old": {"N": "88000"}}}}
       check: doc
       hint:
-        vi: 'Đây là khóa lạc quan: điều kiện kiểm giá trị bạn đã đọc.'
+        vi: 'Đây là optimistic locking: điều kiện kiểm giá trị bạn đã đọc.'
         en: 'This is optimistic locking: the condition checks the value you read.'
 quiz:
   - q:
@@ -85,27 +85,27 @@ quiz:
         en: The write is rejected and costs nothing.
     answer: 1
     why:
-      vi: Theo AWS, khi điều kiện sai DynamoDB vẫn tiêu thụ WCU theo cỡ item đang có (tối thiểu 1). Thêm `ReturnValuesOnConditionCheckFailure` là `ALL_OLD` để lấy item hiện tại trong lỗi mà không cần đọc lại.
-      en: Per AWS, when the condition is false DynamoDB still consumes WCU based on the existing item size (at least 1). Add `ReturnValuesOnConditionCheckFailure` set to `ALL_OLD` to get the current item inside the error without reading it again.
+      vi: Dễ nghĩ một lần ghi không xảy ra thì không mất gì. Nhưng theo AWS, khi điều kiện sai DynamoDB vẫn tiêu thụ WCU theo cỡ item đang có (tối thiểu 1). Thêm `ReturnValuesOnConditionCheckFailure` là `ALL_OLD` để lấy item hiện tại trong lỗi mà không cần đọc lại.
+      en: It is easy to think a write that never happened costs nothing. But per AWS, when the condition is false DynamoDB still consumes WCU based on the existing item size (at least 1). Add `ReturnValuesOnConditionCheckFailure` set to `ALL_OLD` to get the current item inside the error without reading it again.
 ---
 
 ## Ý chính
 
-`ConditionExpression` biến một lần ghi thành "ghi **nếu**". DynamoDB kiểm điều kiện trên item hiện tại và ghi trong cùng một bước nguyên tử. Ba mẫu hay dùng:
+`ConditionExpression` biến một lần ghi thành "ghi **nếu**". DynamoDB kiểm điều kiện trên item hiện tại và ghi trong cùng một bước nguyên tử (atomic). Ba mẫu hay dùng:
 
 - **Chỉ thêm**: `attribute_not_exists(pk)`. `PutItem` thường sẽ ghi đè im lặng.
 - **Không vượt giới hạn**: `stock >= :q` khi trừ kho.
-- **Khóa lạc quan**: `version = :read` (hoặc giá trị bạn đã đọc), rồi `SET version = version + :one`.
+- **Optimistic locking** (chống lost update: hai người cùng đọc rồi cùng ghi, người ghi sau đè mất thay đổi của người trước): `version = :read` (hoặc giá trị bạn đã đọc), rồi `SET version = version + :one`.
 
 Khi điều kiện sai:
 
 - request lỗi với `ConditionalCheckFailedException`, item không đổi;
-- **vẫn tốn WCU** theo cỡ item đang có (tối thiểu 1), dù phản hồi lỗi không báo con số đó;
+- **vẫn tốn WCU** (đơn vị năng lực ghi) theo cỡ item đang có (tối thiểu 1), dù phản hồi lỗi không báo con số đó;
 - `ReturnValuesOnConditionCheckFailure: "ALL_OLD"` gửi kèm item hiện tại trong lỗi.
 
 ## Ví dụ
 
-Khóa lạc quan với số phiên bản:
+Optimistic locking với số phiên bản:
 
 ```json
 {"UpdateExpression": "SET price = :p, version = version + :one",
@@ -115,7 +115,7 @@ Khóa lạc quan với số phiên bản:
 
 ## Thực hành
 
-Ghi có điều kiện idempotent khi điều kiện kiểm chính thuộc tính đang sửa: gửi lại bước 3 lần nữa sẽ bị từ chối vì giá đã là 92000, nên không có gì bị ghi hai lần.
+Ghi có điều kiện idempotent khi điều kiện kiểm chính thuộc tính đang sửa: gửi lại bước 3 lần nữa sẽ bị từ chối vì giá đã là `92000`, nên không có gì bị ghi hai lần.
 
 # EN
 
@@ -125,7 +125,7 @@ A `ConditionExpression` turns a write into "write **if**". DynamoDB checks the c
 
 - **Insert only**: `attribute_not_exists(pk)`. A plain `PutItem` would overwrite silently.
 - **Stay within a limit**: `stock >= :q` when taking stock.
-- **Optimistic locking**: `version = :read` (or the value you read), then `SET version = version + :one`.
+- **Optimistic locking** (against lost updates: two people read, then both write, and the later write wipes out the earlier one): `version = :read` (or the value you read), then `SET version = version + :one`.
 
 When the condition is false:
 
@@ -145,4 +145,4 @@ Optimistic locking with a version number:
 
 ## Practice
 
-A conditional write is idempotent when the condition checks the attribute being changed: sending step 3 again is rejected because the price is already 92000, so nothing is written twice.
+A conditional write is idempotent when the condition checks the attribute being changed: sending step 3 again is rejected because the price is already `92000`, so nothing is written twice.

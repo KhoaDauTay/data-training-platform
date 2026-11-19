@@ -49,7 +49,7 @@ lab:
 
 Lab chạy bằng mingo trong trình duyệt. Mẫu Outlier: hầu hết sản phẩm có ít đánh giá, vài sản phẩm có rất nhiều. Thay vì thiết kế mọi tài liệu cho trường hợp hiếm, tài liệu chính giữ một số mục đầu và một cờ `hasOverflow`; phần tràn nằm ở tài liệu riêng. Ứng dụng đọc cờ để biết khi nào cần lấy thêm.
 
-Điều này cũng giữ tài liệu dưới giới hạn 16 MiB của BSON, và tránh mảng không có trần làm index multikey phình.
+Điều này cũng giữ tài liệu dưới giới hạn 16 MiB của BSON, và tránh mảng không có trần làm index (chỉ mục) multikey phình.
 
 ## Ví dụ
 

@@ -144,8 +144,8 @@ lab:
     ]}}
   steps:
     - task:
-        vi: Lấy các đơn của `C-07` có `total` trên 500000, từ nhỏ tới lớn, bằng LSI `byTotal` (khóa `customerId`, `total`; project `ALL`), đọc bản mới nhất.
-        en: Get the orders of `C-07` with `total` above 500000, smallest first, using LSI `byTotal` (keys `customerId`, `total`; projection `ALL`), reading the latest version.
+        vi: Lấy các đơn của `C-07` có `total` trên 500.000, từ nhỏ tới lớn, bằng LSI `byTotal` (khóa `customerId`, `total`; project `ALL`), đọc bản mới nhất.
+        en: Get the orders of `C-07` with `total` above 500,000, smallest first, using LSI `byTotal` (keys `customerId`, `total`; projection `ALL`), reading the latest version.
       solution: |
         {"op": "Query", "input": {"TableName": "Orders", "IndexName": "byTotal",
           "KeyConditionExpression": "customerId = :c AND #t > :x",
@@ -196,7 +196,7 @@ Query LSI byTotal, ScanIndexForward false, Limit 1 -> reads 1 item
 
 ## Thực hành
 
-`C-07` có 4 đơn, 3 đơn trên 500000. Bộ mô phỏng hỗ trợ LSI với `ConsistentRead`; khi LSI không project thuộc tính bạn xin bằng `ProjectionExpression`, nó chưa tự lấy từ bảng như DynamoDB thật, nên LSI trong bài dùng projection `ALL`.
+`C-07` có 4 đơn, 3 đơn trên 500.000. Bộ mô phỏng hỗ trợ LSI với `ConsistentRead`; khi LSI không project thuộc tính bạn xin bằng `ProjectionExpression`, nó chưa tự lấy từ bảng như DynamoDB thật, nên LSI trong bài dùng projection `ALL`.
 
 # EN
 
@@ -222,4 +222,4 @@ Query LSI byTotal, ScanIndexForward false, Limit 1 -> reads 1 item
 
 ## Practice
 
-`C-07` has 4 orders, 3 of them above 500000. The emulator supports LSIs with `ConsistentRead`; when an LSI does not project an attribute you request with `ProjectionExpression`, it does not yet fetch it from the table the way real DynamoDB does, so the LSI in this lesson uses an `ALL` projection.
+`C-07` has 4 orders, 3 of them above 500,000. The emulator supports LSIs with `ConsistentRead`; when an LSI does not project an attribute you request with `ProjectionExpression`, it does not yet fetch it from the table the way real DynamoDB does, so the LSI in this lesson uses an `ALL` projection.

@@ -32,8 +32,8 @@ lab:
     ]}}
   steps:
     - task:
-        vi: 'Thêm vào `Books` cuốn mới - `isbn` `978-0-09`, `title` "Write Paths", `author` "Vo Khanh", `price` 110000, `stock` 10.'
-        en: 'Add a new book to `Books` - `isbn` `978-0-09`, `title` "Write Paths", `author` "Vo Khanh", `price` 110000, `stock` 10.'
+        vi: 'Thêm vào `Books` cuốn mới - `isbn` `978-0-09`, `title` "Write Paths", `author` "Vo Khanh", `price` `110000`, `stock` 10.'
+        en: 'Add a new book to `Books` - `isbn` `978-0-09`, `title` "Write Paths", `author` "Vo Khanh", `price` `110000`, `stock` 10.'
       solution: |
         {"op": "PutItem", "input": {"TableName": "Books", "Item": {
           "isbn": {"S": "978-0-09"}, "title": {"S": "Write Paths"}, "author": {"S": "Vo Khanh"},
@@ -43,8 +43,8 @@ lab:
         vi: '`Item` chứa mọi thuộc tính, mỗi giá trị có nhãn kiểu. Số viết trong chuỗi - `{"N": "110000"}`.'
         en: '`Item` holds every attribute, each value with a type tag. Numbers go inside a string - `{"N": "110000"}`.'
     - task:
-        vi: 'Ghi đè cuốn `978-0-02` bằng item chỉ có `isbn`, `title` "Keys and Values" và `price` 90000, và trả về bản cũ để thấy những gì đã mất.'
-        en: 'Overwrite book `978-0-02` with an item that has only `isbn`, `title` "Keys and Values" and `price` 90000, and return the old image to see what was lost.'
+        vi: 'Ghi đè cuốn `978-0-02` bằng item chỉ có `isbn`, `title` "Keys and Values" và `price` `90000`, và trả về bản cũ. Trước khi chạy, đoán xem sau lệnh này cuốn đó còn `author` và `stock` không.'
+        en: 'Overwrite book `978-0-02` with an item that has only `isbn`, `title` "Keys and Values" and `price` `90000`, and return the old image. Before you run it, guess whether the book still has `author` and `stock` afterwards.'
       solution: |
         {"op": "PutItem", "input": {"TableName": "Books",
           "Item": {"isbn": {"S": "978-0-02"}, "title": {"S": "Keys and Values"}, "price": {"N": "90000"}},
@@ -52,7 +52,7 @@ lab:
       check: doc
       hint:
         vi: '`PutItem` chỉ nhận `ReturnValues` là `NONE` hoặc `ALL_OLD`.'
-        en: '`PutItem` accepts only `NONE` or `ALL_OLD` for `ReturnValues`.'
+        en: '`PutItem` accepts `ReturnValues` of `NONE` or `ALL_OLD` only.'
 ---
 
 ## Ý chính

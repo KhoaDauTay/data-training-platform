@@ -6,6 +6,7 @@ module: memory
 title: "Lab: shared buffers, trang bẩn và sort tràn đĩa"
 title_en: "Lab: shared buffers, dirty pages and sorts that spill to disk"
 kind: lab
+runtime: browser
 minutes: 20
 objectives:
   - vi: Đếm trang của một bảng đang nằm trong shared buffers và trang nào bẩn
@@ -30,7 +31,7 @@ lab:
   steps:
     - task:
         vi: "Lab đã nạp `big`, VACUUM, CHECKPOINT, rồi sửa một dòng. Đếm số buffer của fork chính (`relforknumber = 0`) của `big` trong `pg_buffercache`, và bao nhiêu trong số đó bẩn (`isdirty`)."
-        en: "The lab loaded `big`, vacuumed it, ran a CHECKPOINT, then updated one row. Count the buffers of `big`'s main fork (`relforknumber = 0`) in `pg_buffercache`, and how many of them are dirty (`isdirty`)."
+        en: "The lab loaded `big`, vacuumed it, ran a CHECKPOINT, then updated one row. Count the buffers of the main fork (`relforknumber = 0`) of `big` in `pg_buffercache`, and how many of them are dirty (`isdirty`)."
       solution: |
         SELECT count(*) AS buffers, count(*) FILTER (WHERE isdirty) AS dirty
         FROM pg_buffercache
@@ -53,21 +54,21 @@ lab:
         vi: "`pg_buffercache` có một dòng cho mỗi buffer, kể cả buffer trống."
         en: "`pg_buffercache` has one row per buffer, empty ones included."
       fact:
-        vi: "128MB = 16384 buffer × 8 KB: shared buffers là một mảng trang cố định, dùng chung cho mọi bảng và index."
-        en: "128MB = 16384 buffers x 8 KB: shared buffers are a fixed array of pages shared by every table and index."
+        vi: "`128MB` = 16.384 buffer × 8 KB: shared buffers là một mảng trang cố định, dùng chung cho mọi bảng và index."
+        en: "`128MB` = 16,384 buffers x 8 KB: shared buffers are a fixed array of pages shared by every table and index."
         probe: SELECT current_setting('shared_buffers'), count(*) FROM pg_buffercache
         expect: [["128MB", 16384]]
     - task:
-        vi: "Hàm `sort_plan(mem)` chạy `EXPLAIN ANALYZE` của câu sắp xếp cả bảng `big` với `work_mem` = `mem`. Gọi nó với `'64kB'` và chỉ giữ dòng chứa `Sort Method`."
-        en: "The function `sort_plan(mem)` runs `EXPLAIN ANALYZE` of a query sorting all of `big` with `work_mem` = `mem`. Call it with `'64kB'` and keep only the line containing `Sort Method`."
+        vi: "Hàm `sort_plan(mem)` chạy `EXPLAIN ANALYZE` của câu sắp xếp cả bảng `big` với `work_mem` = `mem`. Gọi nó với `'64kB'` và chỉ giữ dòng chứa `Sort Method`. Đoán trước khi chạy: 120 trang có sort vừa trong `'64kB'` không?"
+        en: "The function `sort_plan(mem)` runs `EXPLAIN ANALYZE` of a query sorting all of `big` with `work_mem` = `mem`. Call it with `'64kB'` and keep only the line containing `Sort Method`. Guess before you run it: can a 120-page table be sorted within `'64kB'`?"
       solution: SELECT l FROM sort_plan('64kB') AS l WHERE l LIKE '%Sort Method%'
       check: rows
       hint:
         vi: "`sort_plan()` trả về các dòng chữ; lọc bằng `LIKE '%Sort Method%'`."
         en: "`sort_plan()` returns text lines; filter with `LIKE '%Sort Method%'`."
       fact:
-        vi: "Với 64 kB, sort không vừa bộ nhớ: `external merge`, ghi 424 kB file tạm ra đĩa."
-        en: "With 64 kB the sort does not fit in memory: `external merge`, writing 424 kB of temporary files to disk."
+        vi: "Với 64 KB, sort không vừa bộ nhớ: `external merge`, ghi 424 KB file tạm ra đĩa."
+        en: "With 64 KB the sort does not fit in memory: `external merge`, writing 424 KB of temporary files to disk."
         probe: SELECT trim(l) FROM sort_plan('64kB') AS l WHERE l LIKE '%Sort Method%'
         expect: [["Sort Method: external merge  Disk: 424kB"]]
     - task:
@@ -87,9 +88,9 @@ lab:
 
 ## Ý chính
 
-Postgres đọc và ghi trang qua **shared buffers**, một mảng trang 8 KB dùng chung (`shared_buffers`, mặc định 128MB). Trang bị sửa thành **bẩn**; checkpoint (hoặc background writer) mới ghi nó xuống đĩa, sau khi WAL đã bền.
+Postgres đọc và ghi trang qua **shared buffers**, một mảng trang 8 KB dùng chung (`shared_buffers`, mặc định 128 MB). Trang bị sửa thành **trang bẩn (dirty page)**: đã đổi trong bộ nhớ, chưa ghi xuống đĩa; checkpoint (hoặc background writer) mới ghi nó xuống đĩa, sau khi WAL đã bền.
 
-Bộ nhớ riêng của một câu thì khác: mỗi nút sort hay hash được tối đa `work_mem` (mặc định 4MB). Vượt quá thì nó tràn ra file tạm trên đĩa và chậm hẳn.
+Bộ nhớ riêng của một câu thì khác: mỗi nút sort hay hash được tối đa `work_mem` (mặc định 4 MB). Vượt quá thì nó tràn ra file tạm trên đĩa và chậm hẳn.
 
 ## Ví dụ
 
@@ -101,15 +102,15 @@ WHERE relfilenode = pg_relation_filenode('big') AND relforknumber = 0;
 
 ## Thực hành
 
-Bốn bước. Sau lab này bạn thấy được `external merge Disk:` trong kế hoạch của một câu chậm và sửa bằng `work_mem` (đặt cho phiên hoặc cho đúng câu đó, không tăng bừa cho cả server).
+Bốn bước. Sau lab này bạn thấy được `external merge Disk:` trong kế hoạch thực thi (execution plan) của một câu chậm và sửa bằng `work_mem` (đặt cho phiên hoặc cho đúng câu đó, không tăng bừa cho cả server).
 
 # EN
 
 ## Key idea
 
-Postgres reads and writes pages through **shared buffers**, a shared array of 8 KB pages (`shared_buffers`, 128MB by default). A changed page becomes **dirty**; a checkpoint (or the background writer) writes it to disk later, once the WAL is durable.
+Postgres reads and writes pages through **shared buffers**, a shared array of 8 KB pages (`shared_buffers`, 128 MB by default). A changed page becomes **dirty**: changed in memory, not yet written to disk; a checkpoint (or the background writer) writes it to disk later, once the WAL is durable.
 
-A query's private memory is different: each sort or hash node gets up to `work_mem` (4MB by default). Beyond that it spills to temporary files on disk and gets much slower.
+A query's private memory is different: each sort or hash node gets up to `work_mem` (4 MB by default). Beyond that it spills to temporary files on disk and gets much slower.
 
 ## Example
 

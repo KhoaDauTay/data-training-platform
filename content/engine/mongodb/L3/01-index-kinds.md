@@ -49,11 +49,11 @@ quiz:
 
 ## Ý chính
 
-Bạn không khai báo "multikey". Tạo index trên một trường có giá trị là mảng thì MongoDB tự làm nó thành index multikey: mỗi giá trị khác nhau trong mảng là một khóa, và mọi khóa trỏ về cùng một tài liệu. Mảng không có trần thì index phình theo.
+Bạn không khai báo "multikey". Tạo index (chỉ mục) trên một trường có giá trị là mảng thì MongoDB tự làm nó thành index multikey: mỗi giá trị khác nhau trong mảng là một khóa, và mọi khóa trỏ về cùng một tài liệu. Mảng không có trần thì index phình theo.
 
 - Index kép multikey: mỗi tài liệu có tối đa một trường được index là mảng. Hai trường cùng là mảng thì không tạo được index, và khi đã có index thì không chèn được tài liệu như vậy.
 - Index hashed không thể là multikey. Index multikey không làm shard key được.
-- Index partial chỉ chứa tài liệu khớp `partialFilterExpression`. MongoDB không dùng nó nếu việc đó làm thiếu kết quả, nên điều kiện của truy vấn phải nằm trọn trong bộ lọc. Tài liệu khuyên dùng partial thay cho sparse.
+- Index partial chỉ chứa tài liệu khớp `partialFilterExpression`. MongoDB không dùng nó nếu việc đó làm thiếu kết quả, nên điều kiện của truy vấn phải nằm trọn trong bộ lọc. Docs chính thức khuyên dùng partial thay cho sparse.
 - Index TTL: một tác vụ nền xóa tài liệu hết hạn, chạy mỗi 60 giây. Trường phải là ngày (mảng ngày thì lấy ngày sớm nhất). TTL không là index kép và không đặt trên `_id`.
 
 ## Ví dụ
@@ -71,7 +71,7 @@ db.sessions.createIndex({ lastSeen: 1 }, { expireAfterSeconds: 3600 })
 
 Với index partial ở trên, `{ year: 2005 }` và `{ year: { $gt: 2010 } }` dùng được index. `{ year: { $gt: 1990 } }` thì không, vì nó gồm cả phim 1991 đến 2000 mà index không giữ.
 
-Đúng với tài liệu MongoDB hiện hành (8.x), kiểm ngày 2026-11-20.
+Đúng với docs chính thức của MongoDB hiện hành (8.x), kiểm ngày 2026-11-20.
 
 # EN
 

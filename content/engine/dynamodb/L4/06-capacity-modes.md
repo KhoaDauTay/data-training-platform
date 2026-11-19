@@ -44,7 +44,7 @@ Dù chọn chế độ nào, phép tính đơn vị vẫn giống nhau, và tr�
 Ước lượng chi phí theo ba bước:
 
 - liệt kê mẫu truy cập và số lần mỗi giây của từng mẫu;
-- đổi từng mẫu ra RCU/WCU (cỡ item, kiểu đọc, giao dịch thì nhân 2);
+- đổi từng mẫu ra RCU/WCU (cỡ item, kiểu đọc, transaction thì nhân 2);
 - cộng lại cho cả bảng, rồi xem khóa nào gánh phần lớn nhất để quyết định shard.
 
 Bài này nói về hóa đơn AWS nên **chưa chạy được trong trình duyệt**; `ConsumedCapacity` trong các lab là con số để bạn tập đối chiếu.

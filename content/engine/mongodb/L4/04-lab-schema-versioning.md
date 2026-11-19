@@ -60,7 +60,7 @@ lab:
 
 ## Ý chính
 
-Lab chạy bằng mingo trong trình duyệt. Mẫu Schema Versioning: khi schema đổi, bạn không phải di chuyển mọi tài liệu ngay. Tài liệu mới ghi `schemaVersion`, tài liệu cũ giữ dạng cũ, và ứng dụng (hoặc một pipeline đọc) biết cách đọc cả hai. Tài liệu MongoDB nêu đúng ví dụ này: thông tin liên hệ tách trường riêng được gom thành một tài liệu `contacts` linh hoạt.
+Lab chạy bằng mingo trong trình duyệt. Mẫu Schema Versioning: khi schema đổi, bạn không phải di chuyển mọi tài liệu ngay. Tài liệu mới ghi `schemaVersion`, tài liệu cũ giữ dạng cũ, và ứng dụng (hoặc một pipeline đọc) biết cách đọc cả hai. Docs chính thức của MongoDB nêu đúng ví dụ này: thông tin liên hệ tách trường riêng được gom thành một tài liệu `contacts` linh hoạt.
 
 Chú ý một bẫy: trường thiếu không giống trường `null`. Khi dựng `{ type: "home", value: "$homePhone" }` mà `homePhone` không có, `value` là trường thiếu, và `$type` của nó trả `"missing"`.
 

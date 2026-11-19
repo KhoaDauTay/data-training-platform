@@ -6,6 +6,7 @@ module: aggregation
 title: Hàm cửa sổ với $setWindowFields
 title_en: Window functions with $setWindowFields
 kind: lab
+runtime: browser
 minutes: 15
 objectives:
   - vi: Tính tổng chạy, xếp hạng và giá trị của tài liệu liền trước mà không gom tài liệu lại.

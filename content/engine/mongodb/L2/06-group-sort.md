@@ -6,6 +6,7 @@ module: aggregation
 title: Gom nhóm với $group
 title_en: Grouping with $group
 kind: lab
+runtime: browser
 minutes: 14
 objectives:
   - vi: Gom tài liệu theo một khóa và tổng hợp bằng `$sum`, `$avg`, `$max`.
@@ -57,8 +58,8 @@ lab:
         vi: "Thứ tự ra của `$group` không cố định, nên phải `$sort` nếu cần thứ tự."
         en: "`$group` output order is not fixed, so `$sort` when you need an order."
     - task:
-        vi: 'Đếm số đơn có `total` trên 100000. Kết quả là một tài liệu với trường `bigOrders`.'
-        en: 'Count the orders whose `total` is above 100000. The result is one document with field `bigOrders`.'
+        vi: 'Đếm số đơn có `total` trên `100000`. Kết quả là một tài liệu với trường `bigOrders`.'
+        en: 'Count the orders whose `total` is above `100000`. The result is one document with field `bigOrders`.'
       solution: 'db.orders.aggregate([{ $match: { total: { $gt: 100000 } } }, { $count: "bigOrders" }])'
       check: doc
       hint:

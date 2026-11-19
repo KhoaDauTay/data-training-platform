@@ -142,6 +142,35 @@ lab:
       hint:
         vi: Sort key phân cấp, tiền tố kết thúc bằng `#`.
         en: A hierarchical sort key, with the prefix ending in `#`.
+quiz:
+  - q:
+      vi: Mẫu 4 dùng một Query trên `GSI1`. Vì sao không Scan bảng `Shop` với `FilterExpression` giữ item có `SK = PRODUCT#P-01`?
+      en: Pattern 4 uses one Query on `GSI1`. Why not Scan table `Shop` with a `FilterExpression` that keeps items with `SK = PRODUCT#P-01`?
+    options:
+      - vi: Hai cách tốn như nhau, vì Scan có bộ lọc chỉ tính tiền item khớp.
+        en: Both cost the same, because a filtered Scan only charges for the matching items.
+      - vi: Scan đọc và tính RCU cho mọi item của bảng rồi mới lọc; Query trên `GSI1` chỉ đọc item cạnh của `P-01`.
+        en: The Scan reads and charges RCU for every item of the table before filtering; the Query on `GSI1` reads only the edge items of `P-01`.
+      - vi: Scan không đọc được item cạnh, vì chúng chỉ nằm trong GSI.
+        en: A Scan cannot read edge items, because they live only in the GSI.
+    answer: 1
+    why:
+      vi: 'Nghe hợp lý vì kết quả trả về ít. Nhưng `FilterExpression` chạy sau khi đọc: `ScannedCount` là cả bảng, RCU tính theo phần đã đọc. Item cạnh vẫn nằm trong bảng; GSI chỉ là bản sao có khóa đảo.'
+      en: 'It sounds right because few items come back. But the `FilterExpression` runs after the read: `ScannedCount` is the whole table, and RCU is charged on what was read. The edge items still live in the table; the GSI is only a copy with swapped keys.'
+  - q:
+      vi: Có nên thêm GSI thứ hai cho mẫu 5 (cửa hàng theo tỉnh) không?
+      en: Should you add a second GSI for pattern 5 (stores by city)?
+    options:
+      - vi: Có, mỗi mẫu truy cập cần một GSI riêng.
+        en: Yes, every access pattern needs its own GSI.
+      - vi: Không - `PK = STORE` và tiền tố sort key đã trả lời bằng một Query trên bảng; GSI chỉ thêm WCU cho mỗi lần ghi.
+        en: No - `PK = STORE` and the sort key prefix already answer it with one Query on the table; a GSI would only add WCU to every write.
+      - vi: Có, vì `begins_with` trên bảng gốc tốn hơn Query trên GSI.
+        en: Yes, because `begins_with` on the base table costs more than a Query on a GSI.
+    answer: 1
+    why:
+      vi: Nghe hợp lý nếu nghĩ GSI là cách duy nhất để có mẫu truy cập mới. Mẫu nào khóa của bảng đã phục vụ được (ở đây sort key phân cấp) thì không cần index; mỗi GSI có projection riêng và tốn thêm WCU mỗi khi item của nó đổi.
+      en: It sounds right if a GSI seems to be the only way to add an access pattern. A pattern the table's own keys already serve (here the hierarchical sort key) needs no index; every GSI has its own projection and costs extra WCU whenever its items change.
 ---
 
 ## Ý chính

@@ -40,9 +40,9 @@ predict:
 
 ## Ý chính
 
-Đây là bài đoán theo tài liệu MongoDB, không có `mongod` trong trình duyệt. Hai câu trong tài liệu quyết định đáp án:
+Đây là bài đoán theo docs chính thức của MongoDB, không có `mongod` trong trình duyệt. Hai câu trong docs chính thức quyết định đáp án:
 
-- Trang "Explain Results", mục Sort Stage: nếu MongoDB không dùng được index để có thứ tự, kết quả có stage `SORT` (sắp trong bộ nhớ); kế hoạch không có `SORT` nghĩa là thứ tự lấy từ index.
+- Trang "Explain Results", mục Sort Stage: nếu MongoDB không dùng được index (chỉ mục) để có thứ tự, kết quả có stage `SORT` (sắp trong bộ nhớ); kế hoạch không có `SORT` nghĩa là thứ tự lấy từ index.
 - Trang ESR: muốn tránh sắp trong bộ nhớ thì đặt trường khoảng sau trường sắp xếp.
 
 Ngoại lệ là ERS: nếu điều kiện khoảng rất chọn lọc, sắp vài tài liệu trong bộ nhớ có thể rẻ hơn.
@@ -53,7 +53,7 @@ Ngoại lệ là ERS: nếu điều kiện khoảng rất chọn lọc, sắp v�
 db.movies.createIndex({ directors: 1, year: 1, runtime: 1 })
 ```
 
-Đúng với tài liệu MongoDB hiện hành, kiểm ngày 2026-11-20.
+Đúng với docs chính thức của MongoDB hiện hành, kiểm ngày 2026-11-20.
 
 # EN
 

@@ -6,6 +6,7 @@ module: query-ops
 title: So sánh và kết hợp điều kiện
 title_en: Comparison and logical operators
 kind: lab
+runtime: browser
 minutes: 10
 objectives:
   - vi: Lọc theo khoảng với `$gt`, `$gte`, `$lt`, `$lte` và theo danh sách với `$in`, `$nin`.
@@ -28,16 +29,16 @@ lab:
     ]}}
   steps:
     - task:
-        vi: Lấy `name` và `price` (không kèm `_id`) của các sản phẩm giá trên 50000.
-        en: Return `name` and `price` (no `_id`) of the products priced above 50000.
+        vi: Lấy `name` và `price` (không kèm `_id`) của các sản phẩm giá trên `50000`.
+        en: Return `name` and `price` (no `_id`) of the products priced above `50000`.
       solution: 'db.products.find({ price: { $gt: 50000 } }, { name: 1, price: 1, _id: 0 })'
       check: doc
       hint:
         vi: "Toán tử nằm trong tài liệu con của trường: `{ price: { $gt: 50000 } }`."
         en: "The operator sits in a sub-document of the field: `{ price: { $gt: 50000 } }`."
     - task:
-        vi: Lấy các sản phẩm có giá từ 20000 tới 60000, tính cả hai đầu.
-        en: Return the products priced from 20000 to 60000, both ends included.
+        vi: Lấy các sản phẩm có giá từ `20000` tới `60000`, tính cả hai đầu.
+        en: Return the products priced from `20000` to `60000`, both ends included.
       solution: 'db.products.find({ price: { $gte: 20000, $lte: 60000 } })'
       check: doc
       hint:
@@ -52,8 +53,8 @@ lab:
         vi: Nhiều giá trị cho cùng một trường thì `$in` gọn hơn `$or`.
         en: For several values of one field, `$in` is shorter than `$or`.
     - task:
-        vi: Lấy các sản phẩm sắp hết (tồn dưới 10) hoặc đắt (giá từ 100000 trở lên).
-        en: Return the products that are running low (stock under 10) or expensive (price 100000 or more).
+        vi: Lấy các sản phẩm sắp hết (tồn dưới 10) hoặc đắt (giá từ `100000` trở lên).
+        en: Return the products that are running low (stock under 10) or expensive (price `100000` or more).
       solution: 'db.products.find({ $or: [{ stock: { $lt: 10 } }, { price: { $gte: 100000 } }] })'
       check: doc
       hint:
@@ -83,7 +84,7 @@ db.products.find({ $or: [{ category: "gift" }, { tags: "gift" }] })
 
 ## Thực hành
 
-Bốn bước trên `products` (6 sản phẩm, giá từ 15000 tới 350000).
+Bốn bước trên `products` (6 sản phẩm, giá từ 15.000 tới 350.000).
 
 # EN
 
@@ -110,4 +111,4 @@ db.products.find({ $or: [{ category: "gift" }, { tags: "gift" }] })
 
 ## Practice
 
-Four steps on `products` (6 products, priced from 15000 to 350000).
+Four steps on `products` (6 products, priced from 15,000 to 350,000).

@@ -6,6 +6,7 @@ module: pages
 title: "Lab: giá trị lớn thật ra nằm ở đâu (TOAST)"
 title_en: "Lab: where a large value really lives (TOAST)"
 kind: lab
+runtime: browser
 minutes: 15
 objectives:
   - vi: So độ dài logic với số byte lưu thật bằng `pg_column_size()`
@@ -26,8 +27,8 @@ lab:
     DO $$ BEGIN EXECUTE format('CREATE VIEW doc_toast AS SELECT chunk_id, chunk_seq, length(chunk_data) AS len FROM %s', (SELECT reltoastrelid::regclass FROM pg_class WHERE relname = 'doc')); END $$;
   steps:
     - task:
-        vi: Với mỗi dòng của `doc` (theo `id`), lấy `id`, số ký tự của `body` và số byte `body` chiếm thật.
-        en: For each row of `doc` (by `id`), return `id`, the character length of `body` and the bytes `body` really takes.
+        vi: "Với mỗi dòng của `doc` (theo `id`), lấy `id`, số ký tự của `body` và số byte `body` chiếm thật. Đoán trước khi chạy: dòng nào chiếm ít byte nhất?"
+        en: "For each row of `doc` (by `id`), return `id`, the character length of `body` and the bytes `body` really takes. Guess before you run it: which row takes the fewest bytes?"
       solution: SELECT id, length(body), pg_column_size(body) FROM doc ORDER BY id
       check: rows
       ordered: true
@@ -35,8 +36,8 @@ lab:
         vi: "`length()` đếm ký tự, `pg_column_size()` đếm byte lưu trữ."
         en: "`length()` counts characters, `pg_column_size()` counts stored bytes."
       fact:
-        vi: "Dòng 3 dài 100000 ký tự nhưng chỉ chiếm 1156 byte (nén). Dòng 2 dài 6400 ký tự và chiếm đủ 6400 byte: chuỗi md5 gần như ngẫu nhiên, nén không lợi."
-        en: "Row 3 is 100000 characters but takes only 1156 bytes (compressed). Row 2 is 6400 characters and takes the full 6400 bytes: an md5 string is nearly random and does not compress."
+        vi: "Dòng 3 dài 100.000 ký tự nhưng chỉ chiếm 1156 byte (nén). Dòng 2 dài 6400 ký tự và chiếm đủ 6400 byte: chuỗi md5 gần như ngẫu nhiên, nén không lợi."
+        en: "Row 3 is 100,000 characters but takes only 1156 bytes (compressed). Row 2 is 6400 characters and takes the full 6400 bytes: an md5 string is nearly random and does not compress."
         probe: SELECT id, length(body), pg_column_size(body) FROM doc ORDER BY id
         expect: [[1, 100, 101], [2, 6400, 6400], [3, 100000, 1156]]
     - task:
@@ -84,7 +85,7 @@ lab:
 
 ## Ý chính
 
-Một dòng không được vượt quá một trang, nên Postgres có TOAST. Khi dòng rộng hơn khoảng 2 kB (`TOAST_TUPLE_THRESHOLD`), Postgres **nén** cột dài trước. Nếu vẫn chưa đủ nhỏ, nó **đẩy giá trị ra** một bảng TOAST riêng, cắt thành chunk, và trên trang chỉ còn con trỏ 18 byte.
+Một dòng không được vượt quá một trang, nên Postgres có TOAST. Khi dòng rộng hơn khoảng 2 KB (`TOAST_TUPLE_THRESHOLD`), Postgres **nén** cột dài trước. Nếu vẫn chưa đủ nhỏ, nó **đẩy giá trị ra** một bảng TOAST riêng, cắt thành chunk, và trên trang chỉ còn con trỏ 18 byte.
 
 ## Ví dụ
 
@@ -102,7 +103,7 @@ Bốn bước, mỗi bước kiểm một con số thật. Sau lab này bạn gi
 
 ## Key idea
 
-A row cannot span pages, so Postgres has TOAST. When a row is wider than about 2 kB (`TOAST_TUPLE_THRESHOLD`), Postgres first **compresses** the long columns. If that is still not small enough, it **moves the value out** to a separate TOAST table, cut into chunks, and only an 18-byte pointer stays on the page.
+A row cannot span pages, so Postgres has TOAST. When a row is wider than about 2 KB (`TOAST_TUPLE_THRESHOLD`), Postgres first **compresses** the long columns. If that is still not small enough, it **moves the value out** to a separate TOAST table, cut into chunks, and only an 18-byte pointer stays on the page.
 
 ## Example
 

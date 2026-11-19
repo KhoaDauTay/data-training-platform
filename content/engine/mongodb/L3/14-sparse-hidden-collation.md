@@ -59,9 +59,9 @@ quiz:
 
 ## Ý chính
 
-Ba thuộc tính này không đổi loại index, chỉ đổi index chứa gì, ai thấy nó và so chuỗi ra sao. Bài đọc theo tài liệu MongoDB, không có `mongod` trong trình duyệt.
+Ba thuộc tính này không đổi loại index (chỉ mục), chỉ đổi index chứa gì, ai thấy nó và so chuỗi ra sao. Bài đọc theo docs chính thức của MongoDB, không có `mongod` trong trình duyệt.
 
-- **Sparse**: chỉ có khóa cho tài liệu có trường đó, kể cả khi giá trị là `null`; tài liệu thiếu trường bị bỏ. Nếu dùng index sparse làm thiếu kết quả của truy vấn hay sắp xếp, MongoDB không dùng nó trừ khi `hint()` chỉ định. `countDocuments({}, { hint: ... })` với index sparse đếm thiếu. Index `2d`, `2dsphere`, `text` và wildcard luôn sparse. Sparse + unique: không cho trùng giá trị, nhưng nhiều tài liệu được thiếu trường. Tài liệu khuyên dùng partial khi cần lọc chính xác hơn "có trường hay không".
+- **Sparse**: chỉ có khóa cho tài liệu có trường đó, kể cả khi giá trị là `null`; tài liệu thiếu trường bị bỏ. Nếu dùng index sparse làm thiếu kết quả của truy vấn hay sắp xếp, MongoDB không dùng nó trừ khi `hint()` chỉ định. `countDocuments({}, { hint: ... })` với index sparse đếm thiếu. Index `2d`, `2dsphere`, `text` và wildcard luôn sparse. Sparse + unique: không cho trùng giá trị, nhưng nhiều tài liệu được thiếu trường. Docs chính thức khuyên dùng partial khi cần lọc chính xác hơn "có trường hay không".
 - **Hidden**: ẩn khỏi planner, để đo tác động của việc xóa index mà không phải xóa. Index ẩn vẫn được cập nhật khi ghi, vẫn tốn đĩa và bộ nhớ, vẫn giữ unique, index TTL ẩn vẫn xóa tài liệu hết hạn. Không ẩn được index `_id`, không `hint()` được index ẩn. Cần `featureCompatibilityVersion` từ `7.0`. Bỏ ẩn thì dùng được ngay, không phải dựng lại.
 - **Collation**: luật so chuỗi theo ngôn ngữ. `strength` 1 chỉ so chữ gốc (bỏ dấu và hoa thường), 2 so thêm dấu (bỏ hoa thường), 3 là mặc định (so cả hoa thường). Index tạo với `strength` 1 hoặc 2 là index không phân biệt hoa thường. Muốn index phục vụ so chuỗi, truy vấn phải ghi **cùng** collation; collation khác (kể cả khác `strength`) thì không dùng được. Collection có collation mặc định thì index và truy vấn mới thừa hưởng nó. `$regex` không theo collation nên không dùng được index loại này.
 
@@ -77,7 +77,7 @@ db.fruit.createIndex({ type: 1 }, { collation: { locale: "en", strength: 2 } })
 db.fruit.find({ type: "apple" }).collation({ locale: "en", strength: 2 })
 ```
 
-Kết quả `getIndexes()` từ tài liệu MongoDB sau khi ẩn (trường `hidden` chỉ hiện khi bằng `true`):
+Ví dụ trong docs chính thức của MongoDB (chưa chạy trong trình duyệt): kết quả `getIndexes()` sau khi ẩn (trường `hidden` chỉ hiện khi bằng `true`):
 
 ```javascript
 [
@@ -86,7 +86,7 @@ Kết quả `getIndexes()` từ tài liệu MongoDB sau khi ẩn (trường `hid
 ]
 ```
 
-Đúng với tài liệu MongoDB hiện hành, kiểm ngày 2026-11-20.
+Đúng với docs chính thức của MongoDB hiện hành, kiểm ngày 2026-11-20.
 
 # EN
 
@@ -110,7 +110,7 @@ db.fruit.createIndex({ type: 1 }, { collation: { locale: "en", strength: 2 } })
 db.fruit.find({ type: "apple" }).collation({ locale: "en", strength: 2 })
 ```
 
-The `getIndexes()` output from the MongoDB docs after hiding (the `hidden` field shows only when it is `true`):
+Example from the official MongoDB docs (not run in the browser): the `getIndexes()` output after hiding (the `hidden` field shows only when it is `true`):
 
 ```javascript
 [

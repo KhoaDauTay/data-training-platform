@@ -6,6 +6,7 @@ module: aggregation
 title: "Bài cuối L2: Báo cáo tuần cho cửa hàng"
 title_en: "L2 capstone: The shop's weekly report"
 kind: capstone
+runtime: browser
 minutes: 25
 objectives:
   - vi: Dựng báo cáo doanh thu theo tuần bằng một pipeline, kèm so sánh với tuần trước và tổng cộng dồn.
@@ -89,15 +90,15 @@ quiz:
         en: The week starting 2026-10-12
     answer: 0
     why:
-      vi: 'Tuần 19/10 có 310000, giảm 350000 so với 660000 của tuần 12/10. Tuần 26/10 giảm 250000 (từ 310000 xuống 60000). Tuần 12/10 tăng.'
-      en: 'The week of Oct 19 has 310000, down 350000 from 660000 in the week of Oct 12. The week of Oct 26 drops 250000 (310000 to 60000). The week of Oct 12 went up.'
+      vi: 'Tuần 2026-10-19 có 310.000, giảm 350.000 so với 660.000 của tuần 2026-10-12. Tuần 2026-10-26 giảm 250.000 (từ 310.000 xuống 60.000). Tuần 2026-10-12 tăng.'
+      en: 'The week of 2026-10-19 has 310,000, down 350,000 from 660,000 in the week of 2026-10-12. The week of 2026-10-26 drops 250,000 (310,000 to 60,000). The week of 2026-10-12 went up.'
 ---
 ## Ý chính
 
 Bài cuối của L2 là một báo cáo tuần thật: gom theo tuần, so với tuần trước, cộng dồn, rồi chia theo nhóm sản phẩm.
 
 - `$dateTrunc` đưa một ngày về đầu đơn vị thời gian (ngày, tuần, tháng). Với tuần, `startOfWeek` chọn ngày bắt đầu.
-- `$setWindowFields` chạy sau `$group`, trên các dòng tuần, để thêm cột "tuần trước" và "cộng dồn" mà không mất dòng nào.
+- `$setWindowFields` chạy sau `$group`, trên các tài liệu tuần, để thêm trường "tuần trước" và "cộng dồn" mà không mất tài liệu nào.
 - Doanh thu theo nhóm sản phẩm cần cả mảng nhúng (`lines`) lẫn collection tham chiếu (`products`): `$unwind` rồi `$lookup`.
 
 Làm được: tự viết báo cáo doanh thu theo tuần, theo nhóm và theo xu hướng bằng một pipeline.
@@ -122,7 +123,7 @@ Bốn bước, mỗi bước là một phần của báo cáo, rồi một câu 
 The L2 capstone is a real weekly report: group by week, compare with the previous week, add a running total, then split by product category.
 
 - `$dateTrunc` maps a date to the start of a time unit (day, week, month). For weeks, `startOfWeek` picks the first day.
-- `$setWindowFields` runs after `$group`, over the weekly rows, to add "previous week" and "to date" columns without losing any row.
+- `$setWindowFields` runs after `$group`, over the weekly documents, to add "previous week" and "to date" fields without losing any document.
 - Revenue per category needs both the embedded array (`lines`) and the referenced collection (`products`): `$unwind`, then `$lookup`.
 
 You can now: write weekly, per-category and trend revenue reports with one pipeline on your own.

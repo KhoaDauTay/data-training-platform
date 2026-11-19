@@ -200,7 +200,7 @@ lab:
 
 ## Ý chính
 
-`Query` đọc **một item collection**: mọi item có cùng partition key, theo thứ tự sort key. `KeyConditionExpression` có hai phần:
+`Query` đọc **một item collection**: mọi item có cùng partition key (khóa phân vùng), theo thứ tự sort key (khóa sắp xếp). `KeyConditionExpression` có hai phần:
 
 - Partition key: **bắt buộc**, chỉ so `=`.
 - Sort key: **tùy chọn**, một trong `=`, `<`, `<=`, `>`, `>=`, `BETWEEN … AND …`, `begins_with(…)`.

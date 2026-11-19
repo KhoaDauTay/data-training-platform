@@ -9,28 +9,28 @@ kind: concept
 runtime: docs
 minutes: 8
 objectives:
-  - { vi: "Nêu giới hạn của một giao dịch: 100 hành động, 4 MB, không hai hành động trên một item, một account và một Region", en: "State a transaction's limits: 100 actions, 4 MB, no two actions on one item, one account and one Region" }
-  - { vi: "Giải thích vì sao mỗi item trong giao dịch tốn gấp đôi capacity, kể cả khi giao dịch bị hủy", en: "Explain why each item in a transaction costs double capacity, even when the transaction is cancelled" }
-  - { vi: "Dùng client token để gửi lại một giao dịch an toàn trong 10 phút", en: "Use a client token to resend a transaction safely within 10 minutes" }
+  - { vi: "Nêu giới hạn của một transaction: 100 hành động, 4 MB, không hai hành động trên một item, một account và một Region", en: "State a transaction's limits: 100 actions, 4 MB, no two actions on one item, one account and one Region" }
+  - { vi: "Giải thích vì sao mỗi item trong transaction tốn gấp đôi capacity, kể cả khi transaction bị hủy", en: "Explain why each item in a transaction costs double capacity, even when the transaction is cancelled" }
+  - { vi: "Dùng client token để gửi lại một transaction an toàn trong 10 phút", en: "Use a client token to resend a transaction safely within 10 minutes" }
 requires: []
 sources:
   - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/transaction-apis.html
   - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/read-write-operations.html
 quiz:
-  - q: { vi: "Một giao dịch ghi 3 item, mỗi item 500 byte, chạy 1 lần mỗi giây. Cần bao nhiêu WCU?", en: "A transaction writes 3 items of 500 bytes each, once per second. How many WCU does it need?" }
+  - q: { vi: "Một transaction ghi 3 item, mỗi item 500 byte, chạy 1 lần mỗi giây. Cần bao nhiêu WCU?", en: "A transaction writes 3 items of 500 bytes each, once per second. How many WCU does it need?" }
     options:
       - { vi: "3 WCU", en: "3 WCU" }
       - { vi: "6 WCU: mỗi item một lần chuẩn bị và một lần xác nhận", en: "6 WCU: one prepare and one commit per item" }
       - { vi: "1,5 WCU", en: "1.5 WCU" }
     answer: 1
-    why: { vi: "DynamoDB ghi mỗi item hai lần (prepare + commit). 500 byte làm tròn lên 1 KB = 1 WCU, nhân 2, nhân 3 item = 6 WCU. Đây chính là ví dụ trong tài liệu AWS.", en: "DynamoDB writes each item twice (prepare + commit). 500 bytes round up to 1 KB = 1 WCU, times 2, times 3 items = 6 WCU. This is the example in the AWS docs." }
-  - q: { vi: "Giao dịch bị hủy vì một `ConditionCheck` sai. Capacity thì sao?", en: "A transaction is cancelled because one `ConditionCheck` is false. What about capacity?" }
+    why: { vi: "DynamoDB ghi mỗi item hai lần (prepare + commit). 500 byte làm tròn lên 1 KB = 1 WCU, nhân 2, nhân 3 item = 6 WCU. Đây chính là ví dụ trong docs chính thức của AWS.", en: "DynamoDB writes each item twice (prepare + commit). 500 bytes round up to 1 KB = 1 WCU, times 2, times 3 items = 6 WCU. This is the example in the AWS docs." }
+  - q: { vi: "Transaction bị hủy vì một `ConditionCheck` sai. Capacity thì sao?", en: "A transaction is cancelled because one `ConditionCheck` is false. What about capacity?" }
     options:
       - { vi: "Không tốn gì, vì không có gì được ghi", en: "Nothing is consumed, since nothing was written" }
-      - { vi: "Vẫn tốn capacity cho các item nó đã thử, như giao dịch thành công", en: "It still consumes capacity for the items it attempted, like a successful one" }
+      - { vi: "Vẫn tốn capacity cho các item nó đã thử, như transaction thành công", en: "It still consumes capacity for the items it attempted, like a successful one" }
       - { vi: "Chỉ tốn cho item có điều kiện sai", en: "Only the item with the false condition is charged" }
     answer: 1
-    why: { vi: "Tài liệu AWS: capacity của giao dịch bị hủy vẫn bị tiêu như giao dịch thành công. Gom quá nhiều hành động vào một giao dịch làm tăng cả xác suất hủy lẫn tiền mất khi hủy.", en: "The AWS docs: a cancelled transaction still consumes capacity like a successful one. Packing too many actions into one transaction raises both the chance of cancellation and the cost of it." }
+    why: { vi: "Nghe hợp lý vì không có gì được ghi. Nhưng docs chính thức của AWS ghi: capacity của transaction bị hủy vẫn bị tiêu như transaction thành công. Gom quá nhiều hành động vào một transaction làm tăng cả xác suất hủy lẫn tiền mất khi hủy.", en: "It sounds right since nothing was written. But the AWS docs say: a cancelled transaction still consumes capacity like a successful one. Packing too many actions into one transaction raises both the chance of cancellation and the cost of it." }
   - q: { vi: "Mạng bị timeout, bạn gửi lại cùng `TransactWriteItems` với cùng client token sau 3 phút. Chuyện gì xảy ra nếu lần đầu đã thành công?", en: "The network timed out and you resend the same `TransactWriteItems` with the same client token after 3 minutes. What happens if the first call succeeded?" }
     options:
       - { vi: "Ghi lần nữa, số dư bị trừ hai lần", en: "It writes again and the balance is charged twice" }
@@ -44,15 +44,15 @@ quiz:
 
 `TransactWriteItems` gom tối đa **100 hành động** (`Put`, `Update`, `Delete`, `ConditionCheck`) thành một thao tác tất-cả-hoặc-không. Khác `BatchWriteItem`, nơi một phần có thể thành công còn phần khác thì không.
 
-- Tối đa 100 item khác nhau, tổng **4 MB**, trong một account và **một Region**. Không có giao dịch xuyên Region kể cả với global table.
+- Tối đa 100 item khác nhau, tổng **4 MB**, trong một account và **một Region**. Không có transaction xuyên Region kể cả với global table.
 - **Không hai hành động trên cùng một item**: ví dụ không thể vừa `ConditionCheck` vừa `Update` một item.
 - Không dùng được trên index.
-- **Giá gấp đôi**: DynamoDB đọc/ghi mỗi item hai lần (prepare + commit). Capacity vẫn bị tiêu khi giao dịch bị hủy.
+- **Giá gấp đôi**: DynamoDB đọc/ghi mỗi item hai lần (prepare + commit). Capacity vẫn bị tiêu khi transaction bị hủy.
 - **Idempotent**: kèm `ClientRequestToken` thì gửi lại trong 10 phút sẽ không ghi lần hai.
-- **Cô lập**: serializable giữa giao dịch và `PutItem`/`UpdateItem`/`DeleteItem`/`GetItem`; read-committed giữa giao dịch và `Query`/`Scan`/`BatchGetItem` (tính cả thao tác).
-- Hủy vì điều kiện sai, xung đột với giao dịch khác hoặc thiếu capacity sẽ báo `TransactionCanceledException`, kèm danh sách lý do theo đúng thứ tự hành động.
+- **Cô lập**: serializable giữa transaction và `PutItem`/`UpdateItem`/`DeleteItem`/`GetItem`; read-committed giữa transaction và `Query`/`Scan`/`BatchGetItem` (tính cả thao tác).
+- Hủy vì điều kiện sai, xung đột với transaction khác hoặc thiếu capacity sẽ báo `TransactionCanceledException`, kèm danh sách lý do theo đúng thứ tự hành động.
 
-Bộ máy DynamoDB trong trình duyệt (dynoxide 1.5.0) trả `UnsupportedOperation` cho `TransactWriteItems`, nên API này **chưa chạy được trong trình duyệt**. Hai bài sau dùng phần chạy được: `TransactGetItems` và giao dịch PartiQL `ExecuteTransaction`.
+Bộ máy DynamoDB trong trình duyệt (dynoxide 1.5.0) trả `UnsupportedOperation` cho `TransactWriteItems`, nên API này **chưa chạy được trong trình duyệt**. Hai bài sau dùng phần chạy được: `TransactGetItems` và transaction PartiQL `ExecuteTransaction`.
 
 ## Ví dụ
 

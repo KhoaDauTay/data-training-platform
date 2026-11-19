@@ -62,7 +62,7 @@ lab:
 
 ## Ý chính
 
-Lab chạy bằng mingo trong trình duyệt. Trên cluster thật, `analyzeShardKey` (từ 7.0) đo cardinality, tần suất và tính đơn điệu từ truy vấn mẫu. Ở đây ta đo hai chỉ số đầu trực tiếp trên dữ liệu bằng aggregation, cùng ý nghĩa như tài liệu mô tả:
+Lab chạy bằng mingo trong trình duyệt. Trên cluster thật, `analyzeShardKey` (từ 7.0) đo cardinality, tần suất và tính đơn điệu từ truy vấn mẫu. Ở đây ta đo hai chỉ số đầu trực tiếp trên dữ liệu bằng aggregation, cùng ý nghĩa như docs chính thức mô tả:
 
 - `distinct` thấp nghĩa là ít chunk tối đa.
 - `topShare` cao nghĩa là một giá trị chiếm phần lớn tài liệu, chunk của nó dễ thành điểm nóng.

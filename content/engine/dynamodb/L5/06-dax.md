@@ -22,9 +22,9 @@ quiz:
     options:
       - { vi: "Kết quả mới, vì DAX là write-through", en: "The new result, because DAX is write-through" }
       - { vi: "Kết quả cũ trong query cache, tới khi TTL của kết quả đó hết hoặc nó bị LRU loại", en: "The old result from the query cache, until that result's TTL expires or LRU evicts it" }
-      - { vi: "Lỗi, vì query cache bị khóa khi có lần ghi", en: "An error, because the query cache is locked during a write" }
+      - { vi: "Lỗi, vì query cache bị giữ lock khi có lần ghi", en: "An error, because the query cache is locked during a write" }
     answer: 1
-    why: { vi: "Write-through chỉ cập nhật item cache. Item cache và query cache độc lập: lần ghi không làm mất hiệu lực hay sửa kết quả `Query`/`Scan` đã lưu.", en: "Write-through only updates the item cache. The item cache and the query cache are independent: a write neither invalidates nor changes a stored `Query`/`Scan` result." }
+    why: { vi: "Đáp án \"kết quả mới\" nghe hợp lý vì DAX là write-through. Nhưng write-through chỉ cập nhật item cache. Item cache và query cache độc lập: lần ghi không làm mất hiệu lực hay sửa kết quả `Query`/`Scan` đã lưu.", en: "\"The new result\" sounds right because DAX is write-through. But write-through only updates the item cache. The item cache and the query cache are independent: a write neither invalidates nor changes a stored `Query`/`Scan` result." }
   - q: { vi: "Request nào DAX **không** lưu vào bộ đệm, mà chuyển thẳng sang DynamoDB?", en: "Which request does DAX **not** cache, passing it straight to DynamoDB?" }
     options:
       - { vi: "`GetItem` đọc cuối cùng (mặc định)", en: "An eventually consistent `GetItem` (the default)" }

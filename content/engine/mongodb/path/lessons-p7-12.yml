@@ -612,8 +612,8 @@
 
 - id: mg.embed_vs_ref
   concept:
-    vi: "Mô hình tài liệu xuất phát từ cách đọc. Nhúng (embed) thứ luôn đọc cùng, có giới hạn và thuộc riêng một tài liệu: dòng hàng trong đơn. Tham chiếu (lưu `_id` của tài liệu khác) thứ lớn dần không giới hạn hoặc dùng chung: đơn của một khách, đánh giá của sản phẩm. Ở giữa có các mẫu: extended reference (chép vài trường hay đọc bên cạnh khóa tham chiếu), subset (nhúng vài phần tử mới nhất, phần còn lại ở collection riêng). Giới hạn cứng: 16 MB mỗi tài liệu."
-    en: "Document models start from how data is read. Embed what is always read together, bounded and owned by one document: lines inside an order. Reference (store another document's `_id`) what grows without limit or is shared: a customer's orders, a product's reviews. In between are patterns: extended reference (copy a few hot fields next to the reference key), subset (embed the few latest elements, keep the rest in their own collection). Hard limit: 16 MB per document."
+    vi: "Mô hình tài liệu xuất phát từ cách đọc. Nhúng (embed) thứ luôn đọc cùng, có giới hạn và thuộc riêng một tài liệu: dòng hàng trong đơn. Tham chiếu (lưu `_id` của tài liệu khác) thứ lớn dần không giới hạn hoặc dùng chung: đơn của một khách, đánh giá của sản phẩm. Ở giữa có các mẫu: extended reference (chép vài trường hay đọc bên cạnh khóa tham chiếu), subset (nhúng vài phần tử mới nhất, phần còn lại ở collection riêng). Giới hạn cứng: 16 MiB mỗi tài liệu."
+    en: "Document models start from how data is read. Embed what is always read together, bounded and owned by one document: lines inside an order. Reference (store another document's `_id`) what grows without limit or is shared: a customer's orders, a product's reviews. In between are patterns: extended reference (copy a few hot fields next to the reference key), subset (embed the few latest elements, keep the rest in their own collection). Hard limit: 16 MiB per document."
   example: |-
     // nhúng / embedded:      orders    { _id, store_id, items: [{ product_id, qty, unit_price_vnd }] }
     // tham chiếu / reference: orders    { _id, customer_id, … }  ->  customers { _id, name, email }
@@ -631,8 +631,8 @@
         { $lookup: { from: 'orders', localField: '_id', foreignField: 'customer_id', as: 'orders' } },
         { $limit: 1 }
       ])
-    vi: "Gắn toàn bộ đơn vào hồ sơ khách như thể nhúng: mảng `orders` lớn mãi theo thời gian; ghi thật như vậy sẽ chạm giới hạn 16 MB."
-    en: "Attaching every order to the customer profile as if embedded: the `orders` array keeps growing; storing it that way would hit the 16 MB limit."
+    vi: "Gắn toàn bộ đơn vào hồ sơ khách như thể nhúng: mảng `orders` lớn mãi theo thời gian; ghi thật như vậy sẽ chạm giới hạn 16 MiB."
+    en: "Attaching every order to the customer profile as if embedded: the `orders` array keeps growing; storing it that way would hit the 16 MiB limit."
   try:
     format: choice
     task:

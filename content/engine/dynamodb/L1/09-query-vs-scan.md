@@ -158,8 +158,8 @@ lab:
         vi: Khách là partition key, nên đây là một `Query`.
         en: The customer is the partition key, so this is a `Query`.
     - task:
-        vi: Bây giờ lấy đúng các đơn đó bằng `Scan` có bộ lọc trên `customerId`, rồi so `ScannedCount` với bước 1.
-        en: Now get the same orders with a `Scan` filtered on `customerId`, and compare `ScannedCount` with step 1.
+        vi: Bây giờ lấy đúng các đơn đó bằng `Scan` có bộ lọc trên `customerId`. Trước khi chạy, đoán `ScannedCount` bằng 4 như bước 1 hay lớn hơn, rồi chạy và so.
+        en: Now get the same orders with a `Scan` filtered on `customerId`. Before you run it, guess whether `ScannedCount` is 4 like step 1 or larger, then run it and compare.
       solution: |
         {"op": "Scan", "input": {"TableName": "Orders",
           "FilterExpression": "customerId = :c",
@@ -187,7 +187,7 @@ lab:
 
 ## Ý chính
 
-- `Query` đi thẳng tới một item collection qua partition key. Nó chỉ đọc item của collection đó.
+- `Query` đi thẳng tới một item collection qua partition key (khóa phân vùng). Nó chỉ đọc item của collection đó.
 - `Scan` đọc **mọi item** của bảng, theo thứ tự băm (không phải thứ tự bạn muốn), rồi mới áp `FilterExpression`.
 
 Phản hồi cho biết hai con số:
@@ -210,7 +210,7 @@ Bảng 120 item thì chênh 30 lần. Bảng 10 triệu item thì `Scan` phải 
 
 ## Thực hành
 
-Scan vẫn có chỗ dùng: bảng nhỏ, việc chạy một lần, xuất dữ liệu. Với câu hỏi lặp lại, hãy thiết kế khóa (hoặc index ở L3) để thành `Query`.
+Scan vẫn có chỗ dùng: bảng nhỏ, việc chạy một lần, xuất dữ liệu. Với câu hỏi lặp lại, hãy thiết kế khóa (hoặc index (chỉ mục) ở L3) để thành `Query`.
 
 # EN
 

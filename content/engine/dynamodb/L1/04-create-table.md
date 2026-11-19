@@ -43,9 +43,9 @@ lab:
 
 `CreateTable` chỉ mô tả **khóa**, không mô tả cột:
 
-- `KeySchema`: thuộc tính nào là partition key (`HASH`), thuộc tính nào là sort key (`RANGE`).
+- `KeySchema`: thuộc tính nào là partition key (khóa phân vùng, `HASH`), thuộc tính nào là sort key (khóa sắp xếp, `RANGE`).
 - `AttributeDefinitions`: kiểu (`S`, `N` hoặc `B`) của **đúng** các thuộc tính dùng làm khóa của bảng hoặc của index. Khai thêm thuộc tính thường ở đây là lỗi `ValidationException`.
-- `BillingMode`: `PAY_PER_REQUEST` (on-demand, trả theo request) hoặc `PROVISIONED` (đặt trước RCU/WCU). On-demand là chế độ mặc định và được AWS khuyên dùng.
+- `BillingMode`: `PAY_PER_REQUEST` (on-demand, trả theo request) hoặc `PROVISIONED` (đặt trước RCU/WCU, đơn vị năng lực đọc/ghi mỗi giây). On-demand là chế độ mặc định và được AWS khuyên dùng.
 
 ## Ví dụ
 
@@ -67,7 +67,7 @@ Mẫu truy cập "mọi đơn của một khách, theo thời gian" cho bạn lu
 
 - `KeySchema`: which attribute is the partition key (`HASH`) and which is the sort key (`RANGE`).
 - `AttributeDefinitions`: the type (`S`, `N` or `B`) of **exactly** the attributes used as keys of the table or of an index. Declaring an ordinary attribute here is a `ValidationException`.
-- `BillingMode`: `PAY_PER_REQUEST` (on-demand, pay per request) or `PROVISIONED` (reserve RCU/WCU ahead). On-demand is the default and the mode AWS recommends.
+- `BillingMode`: `PAY_PER_REQUEST` (on-demand, pay per request) or `PROVISIONED` (reserve RCU/WCU, read/write capacity units per second, ahead). On-demand is the default and the mode AWS recommends.
 
 ## Example
 

@@ -126,7 +126,7 @@ predict:
     - { vi: "48, mọi phiếu của ngày 2026-11-20", en: "48, every vote of 2026-11-20" }
     - { vi: "80, mọi item trong bảng", en: "80, every item in the table" }
   answer: 2
-  why: { vi: "Scan đọc toàn bảng (80 item của hai ngày) rồi mới lọc; `Count` vẫn là 6 nhưng bạn trả tiền cho 80 item đã đọc. Query đi thẳng tới một item collection.", en: "A Scan reads the whole table (80 items over two days) and filters afterwards; `Count` is still 6 but you pay for the 80 items read. A Query goes straight to one item collection." }
+  why: { vi: "Đáp án 6 nghe hợp lý vì kết quả chỉ có 6 phiếu. Nhưng Scan đọc toàn bảng (80 item của hai ngày) rồi mới lọc; `Count` vẫn là 6 nhưng bạn trả tiền cho 80 item đã đọc. Query đi thẳng tới một item collection.", en: "6 sounds right because only 6 votes come back. But a Scan reads the whole table (80 items over two days) and filters afterwards; `Count` is still 6 but you pay for the 80 items read. A Query goes straight to one item collection." }
 ---
 
 ## Ý chính
