@@ -190,7 +190,7 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
     feedback.replaceChildren(!message ? '' : who
       ? message.kind === 'good' // one compact line: a small cheering Lily beside it (v10 critic #6); a solve reads larger (v10 F3)
         ? h('div', { class: 'flex items-center gap-2' }, mascot(who[0], who[1], who[1] === 'cheer' ? 'size-10 shrink-0' : 'size-8 shrink-0'),
-          h('div', { class: cx('min-w-0 flex-1', who[1] === 'cheer' && 'text-lg font-bold') }, message.view()))
+          h('div', { class: cx('min-w-0 flex-1', who[1] === 'cheer' && 'text-title font-bold') }, message.view()))
         : h('div', { class: 'flex items-start gap-3' }, mascot(who[0], who[1], 'size-12'), h('div', { class: 'min-w-0 flex-1' }, message.view()))
       : message.view());
   }

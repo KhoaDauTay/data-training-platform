@@ -569,7 +569,7 @@ export function stumbleCard(): HTMLElement | null {
   if (list.length === 0) return null;
   const lang = getLang();
   return h('section', { class: cx(CARD, 'p-5'), 'aria-labelledby': 'stumble-title' },
-    h('h2', { id: 'stumble-title', class: 'm-0 text-lg font-bold' }, t('stumble.title')),
+    h('h2', { id: 'stumble-title', class: 'm-0 text-title font-bold' }, t('stumble.title')),
     h('p', { class: 'mt-1 mb-3 text-[15px] text-muted' }, t('stumble.intro', { n: STUMBLE_WRONG })),
     h('ul', { class: 'm-0 grid list-none gap-2 p-0' }, ...list.map((x) => {
       const title = textOf(app.tickets.find((tk) => tk.id === x.ticketId)!, lang).title;
