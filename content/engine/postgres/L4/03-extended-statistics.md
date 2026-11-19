@@ -64,7 +64,7 @@ quiz:
 ## Ý chính
 
 - Mặc định planner coi các điều kiện trên các cột khác nhau là độc lập: độ chọn lọc của `a = x AND b = y` = sel(a) × sel(b). Với cột tương quan (quận → thành phố, mã bưu điện → tỉnh) kết quả thấp hơn thật nhiều lần.
-- `CREATE STATISTICS` có ba loại: `dependencies` (phụ thuộc hàm, cho điều kiện bằng), `ndistinct` (số tổ hợp khác nhau, cho GROUP BY), `mcv` (danh sách tổ hợp phổ biến, chính xác nhất cho điều kiện bằng và khoảng). Đối tượng thống kê chỉ có dữ liệu sau ANALYZE.
+- `CREATE STATISTICS` có ba loại: `dependencies` (phụ thuộc hàm, cho điều kiện bằng), `ndistinct` (số tổ hợp khác nhau, cho GROUP BY), `mcv` (danh sách tổ hợp phổ biến, chính xác nhất cho điều kiện bằng và khoảng). Chỉ có dữ liệu sau ANALYZE.
 - Ước lượng sai ở tầng dưới lan lên trên: số dòng thấp giả tạo làm planner chọn Nested Loop, rồi vòng lặp chạy hàng nghìn lần.
 - Kiểm tra: so `rows=` (ước lượng) với `actual rows` trong `EXPLAIN ANALYZE`. Lệch hơn 10 lần ở một nút lọc là dấu hiệu.
 
@@ -79,7 +79,7 @@ statistics_name  attnames         dependencies
 addr_stats_dep   {city,district}  {"3 => 2": 1.000000}
 ```
 
-Không có thống kê mở rộng: 10000 × 1/10 × 1/100 = 10. Có `dependencies`: Postgres biết cột 3 (district) quyết định cột 2 (city) với độ chắc 1.0, nên chỉ tính sel(district) = 1/100 → 100 dòng, đúng bằng thật.
+Không có thống kê mở rộng: 10.000 × 1/10 × 1/100 = 10. Có `dependencies`: Postgres biết cột 3 (district) quyết định cột 2 (city) với độ chắc 1,0, nên chỉ tính sel(district) = 1/100 → 100 dòng, đúng bằng thật.
 
 ## Thực hành
 
@@ -90,7 +90,7 @@ So ước lượng trước và sau, rồi đọc đối tượng thống kê. K
 ## Key idea
 
 - By default the planner treats conditions on different columns as independent: the selectivity of `a = x AND b = y` is sel(a) × sel(b). For correlated columns (district → city, postcode → province) the result is many times too low.
-- `CREATE STATISTICS` has three kinds: `dependencies` (functional dependency, for equality conditions), `ndistinct` (number of distinct combinations, for GROUP BY), `mcv` (list of common combinations, the most precise for equality and range conditions). A statistics object only holds data after ANALYZE.
+- `CREATE STATISTICS` has three kinds: `dependencies` (functional dependency, for equality conditions), `ndistinct` (number of distinct combinations, for GROUP BY), `mcv` (list of common combinations, the most precise for equality and range conditions). It only holds data after ANALYZE.
 - A wrong estimate at the bottom spreads upward: an artificially low row count makes the planner choose a Nested Loop, and the loop then runs thousands of times.
 - Check: compare `rows=` (estimate) with `actual rows` in `EXPLAIN ANALYZE`. More than 10× off at a filter node is the sign.
 
@@ -105,7 +105,7 @@ statistics_name  attnames         dependencies
 addr_stats_dep   {city,district}  {"3 => 2": 1.000000}
 ```
 
-Without extended statistics: 10000 × 1/10 × 1/100 = 10. With `dependencies`, Postgres knows column 3 (district) determines column 2 (city) with degree 1.0, so it only uses sel(district) = 1/100, giving 100 rows, exactly the real count.
+Without extended statistics: 10,000 × 1/10 × 1/100 = 10. With `dependencies`, Postgres knows column 3 (district) determines column 2 (city) with degree 1.0, so it only uses sel(district) = 1/100, giving 100 rows, exactly the real count.
 
 ## Practice
 

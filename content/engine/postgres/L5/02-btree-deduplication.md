@@ -62,7 +62,7 @@ quiz:
 
 ## Ví dụ
 
-Kết quả thật trên PGlite, 20000 dòng, `prio` chỉ có 4 giá trị:
+Kết quả thật trên PGlite, 20.000 dòng, `prio` chỉ có 4 giá trị:
 
 ```text
 relname               pages
@@ -94,7 +94,7 @@ So kích thước, đọc posting list và cờ `allequalimage`. Kỹ năng chuy
 
 ## Example
 
-Real output from PGlite, 20000 rows, `prio` has only 4 values:
+Real output from PGlite, 20,000 rows, `prio` has only 4 values:
 
 ```text
 relname               pages

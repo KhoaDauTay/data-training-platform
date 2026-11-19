@@ -39,7 +39,7 @@ quiz:
 
 Ba cơ chế dọn mục chết trong B-tree:
 
-- Simple deletion: khi một Index Scan thấy mục trỏ tới tuple đã chết với mọi giao dịch, nó đặt bit `LP_DEAD` trên mục. Khi lá sắp tách, các mục có bit này bị xóa trước.
+- Simple deletion: khi một Index Scan thấy mục trỏ tới tuple đã chết với mọi transaction, nó đặt bit `LP_DEAD` trên mục. Khi lá sắp tách, các mục có bit này bị xóa trước.
 - Bottom-up deletion (từ 14): khi lá sắp tách mà Postgres đoán nguyên nhân là version churn (nhiều phiên bản của cùng dòng logic, do UPDATE không sửa cột của index này), nó kiểm tra heap cho các mục nghi là rác trong đúng lá đó và xóa chúng. Thường tránh được việc tách.
 - VACUUM (kể cả autovacuum): dọn "từ trên xuống" mọi mục trỏ tới tuple chết, kích hoạt bởi ngưỡng số lượng của cả bảng.
 

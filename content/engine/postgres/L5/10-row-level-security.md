@@ -88,7 +88,7 @@ quiz:
 - Mẫu nhiều khách: một vai trò cho ứng dụng (không sở hữu bảng) + policy dựa trên `current_setting('app.tenant_id')` hoặc theo vai trò. Index trên `tenant_id` vì điều kiện policy được thêm vào mọi câu.
 - View mặc định (`security_invoker` = false) áp policy của chủ view. Bài này dùng điều đó để thử ba vai trò trong một câu.
 
-Giới hạn khi chạy: mỗi bài là một câu trong một giao dịch, nên không đổi được `SET ROLE` giữa chừng; mỗi vai trò được thử qua một view do vai trò đó sở hữu. Vai trò hiện tại của PGlite là superuser.
+Giới hạn khi chạy: mỗi bài là một câu trong một transaction, nên không đổi được `SET ROLE` giữa chừng; mỗi vai trò được thử qua một view do vai trò đó sở hữu. Vai trò hiện tại của PGlite là superuser.
 
 ## Ví dụ
 

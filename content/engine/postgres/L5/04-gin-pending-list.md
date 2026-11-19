@@ -55,15 +55,15 @@ quiz:
   - q: { vi: "Pending list của GIN được chuyển vào cấu trúc chính khi nào?", en: "When is a GIN pending list moved into the main structure?" }
     options:
       - { vi: "Sau mỗi INSERT", en: "After every INSERT" }
-      - { vi: "Khi VACUUM hoặc autoanalyze chạy, khi gọi `gin_clean_pending_list`, hoặc khi nó vượt `gin_pending_list_limit` (mặc định 4MB)", en: "When VACUUM or autoanalyze runs, when `gin_clean_pending_list` is called, or when it grows past `gin_pending_list_limit` (default 4MB)" }
+      - { vi: "Khi VACUUM hoặc autoanalyze chạy, khi gọi `gin_clean_pending_list`, hoặc khi nó vượt `gin_pending_list_limit` (mặc định 4 MB)", en: "When VACUUM or autoanalyze runs, when `gin_clean_pending_list` is called, or when it grows past `gin_pending_list_limit` (default 4 MB)" }
       - { vi: "Chỉ khi REINDEX", en: "Only on REINDEX" }
     answer: 1
     why: { vi: "Đúng như tài liệu GIN. Cái giá: mọi lần tìm kiếm phải quét cả pending list, và một INSERT làm nó vượt ngưỡng sẽ tự dọn và chậm hẳn. Ứng dụng cần thời gian phản hồi đều thì đặt `fastupdate = off`.", en: "As the GIN docs say. The price: every search must also scan the pending list, and the INSERT that pushes it past the limit does the cleanup and is much slower. An app that needs steady response times sets `fastupdate = off`." }
-  - q: { vi: "Gọi `gin_clean_pending_list` trong một giao dịch rồi ROLLBACK. Pending list có quay lại không?", en: "You call `gin_clean_pending_list` inside a transaction, then ROLLBACK. Does the pending list come back?" }
+  - q: { vi: "Gọi `gin_clean_pending_list` trong một transaction rồi ROLLBACK. Pending list có quay lại không?", en: "You call `gin_clean_pending_list` inside a transaction, then ROLLBACK. Does the pending list come back?" }
     options:
       - { vi: "Có, ROLLBACK hoàn tác mọi thứ", en: "Yes, ROLLBACK undoes everything" }
       - { vi: "Không: việc dọn sắp xếp lại trang index, không đổi dữ liệu logic, nên không bị hoàn tác (đo trên PGlite: lần gọi thứ hai trả 0)", en: "No: the flush reorganises index pages without changing logical data, so it is not undone (measured on PGlite: a second call returns 0)" }
-      - { vi: "Hàm báo lỗi trong giao dịch", en: "The function errors inside a transaction" }
+      - { vi: "Hàm báo lỗi trong transaction", en: "The function errors inside a transaction" }
     answer: 1
     why: { vi: "Index là cấu trúc vật lý; chuyển mục từ pending list vào cây không làm thay đổi dòng nào thấy được. Tương tự cho `brin_summarize_new_values`. Đây cũng là lý do bài lab dọn pending list trong phần dựng dữ liệu, không trong câu của bạn.", en: "An index is a physical structure; moving entries from the pending list into the tree changes no visible row. The same goes for `brin_summarize_new_values`. That is also why this lab flushes the pending list in its setup, not in your statement." }
   - q: { vi: "Một GIN trên `jsonb` chỉ phục vụ truy vấn `@>`. Opclass nào nhỏ và nhanh hơn?", en: "A GIN index on `jsonb` only serves `@>` queries. Which opclass is smaller and faster?" }
@@ -79,7 +79,7 @@ quiz:
 
 - GIN là index đảo: mỗi giá trị được tách thành nhiều khóa (từ trong `tsvector`, phần tử mảng, khóa/giá trị `jsonb`). Mỗi khóa trỏ tới danh sách TID chứa nó: posting list khi ngắn, posting tree (một B-tree TID) khi dài.
 - Một dòng mới có thể thêm hàng chục khóa, nên chèn trực tiếp rất tốn. Với `fastupdate` (bật mặc định), dòng mới vào một pending list chưa sắp, rồi được chuyển hàng loạt vào cấu trúc chính.
-- Pending list được dọn khi: VACUUM/autoanalyze; gọi `gin_clean_pending_list`; vượt `gin_pending_list_limit` (mặc định 4MB, đặt riêng được cho từng index).
+- Pending list được dọn khi: VACUUM/autoanalyze; gọi `gin_clean_pending_list`; vượt `gin_pending_list_limit` (mặc định 4 MB, đặt riêng được cho từng index).
 - Tìm kiếm luôn đọc cả pending list, nên pending list dài làm đọc chậm. Nếu cần thời gian đọc đều, đặt `fastupdate = off`.
 - GIN không hỗ trợ index-only scan và không lưu trọng số; truy vấn FTS có trọng số phải đọc lại heap (`Recheck`).
 
@@ -101,7 +101,7 @@ Aggregate
 
 Ở `docs_tags_fast`, 300 dòng có nhãn `new` vẫn nằm trong pending list (2 trang); ở hai index kia chúng đã vào cây. Cả ba đều ghi `n_entries` = 17 (10 nhãn `t*` + 7 nhãn `u*` lúc dựng index): con số thống kê này không được cập nhật theo từng lần chèn, nên đừng dùng nó để đếm khóa hiện tại.
 
-Đo thêm: gọi `gin_clean_pending_list` trong một giao dịch rồi ROLLBACK không đưa pending list trở lại. Việc dọn index không phải thay đổi dữ liệu nên không bị hoàn tác.
+Đo thêm: gọi `gin_clean_pending_list` trong một transaction rồi ROLLBACK không đưa pending list trở lại. Việc dọn index không phải thay đổi dữ liệu nên không bị hoàn tác.
 
 ## Thực hành
 
@@ -113,7 +113,7 @@ Aggregate
 
 - GIN is an inverted index: each value is split into many keys (words of a `tsvector`, array elements, `jsonb` keys/values). Each key points to the list of TIDs that contain it: a posting list when short, a posting tree (a B-tree of TIDs) when long.
 - A new row can add dozens of keys, so inserting directly is expensive. With `fastupdate` (on by default), new rows go into an unsorted pending list and are later moved into the main structure in bulk.
-- The pending list is flushed by: VACUUM/autoanalyze; a call to `gin_clean_pending_list`; growing past `gin_pending_list_limit` (default 4MB, settable per index).
+- The pending list is flushed by: VACUUM/autoanalyze; a call to `gin_clean_pending_list`; growing past `gin_pending_list_limit` (default 4 MB, settable per index).
 - Searches always read the pending list too, so a long pending list slows reads. For steady read times, set `fastupdate = off`.
 - GIN does not support index-only scans and does not store weights; a weighted FTS query has to re-read the heap (`Recheck`).
 

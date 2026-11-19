@@ -53,7 +53,7 @@ quiz:
 - Chọn khóa phân vùng theo hai câu hỏi: câu truy vấn hay gặp nhất lọc theo cột nào (để pruning), và dữ liệu cũ bị xóa theo cột nào (để `DROP` phân vùng).
 - PRIMARY KEY/UNIQUE trên bảng phân vùng phải chứa mọi cột khóa phân vùng, và không được là biểu thức.
 - Index trên bảng cha được lan xuống mọi phân vùng (kể cả phân vùng tạo sau). Không có index toàn cục.
-- Số phân vùng: tài liệu nói planner xử lý khá tốt tới vài nghìn phân vùng nếu câu hay gặp pruning còn ít phân vùng; không pruning được thì thời gian lập kế hoạch và bộ nhớ tăng theo số phân vùng.
+- Số phân vùng: docs chính thức nói planner xử lý khá tốt tới vài nghìn phân vùng nếu câu hay gặp pruning còn ít phân vùng; không pruning được thì thời gian lập kế hoạch và bộ nhớ tăng theo số phân vùng.
 - Phân vùng `DEFAULT` tiện nhưng làm việc thêm phân vùng mới phải quét nó.
 
 ## Ví dụ

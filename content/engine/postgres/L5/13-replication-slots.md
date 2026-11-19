@@ -45,7 +45,7 @@ quiz:
   - q: { vi: "`synchronous_commit = remote_apply` với một standby đồng bộ nghĩa là gì?", en: "What does `synchronous_commit = remote_apply` with a synchronous standby mean?" }
     options:
       - { vi: "COMMIT trả về khi WAL đã ghi xuống đĩa của primary", en: "COMMIT returns once WAL is flushed on the primary" }
-      - { vi: "COMMIT chỉ trả về khi standby đã replay giao dịch, nên đọc trên standby ngay sau đó thấy được dữ liệu", en: "COMMIT only returns once the standby has replayed the transaction, so a read on the standby right after sees the data" }
+      - { vi: "COMMIT chỉ trả về khi standby đã replay transaction, nên đọc trên standby ngay sau đó thấy được dữ liệu", en: "COMMIT only returns once the standby has replayed the transaction, so a read on the standby right after sees the data" }
       - { vi: "Standby nhận WAL theo lô mỗi giờ", en: "The standby receives WAL in hourly batches" }
     answer: 1
     why: { vi: "Thang đo: `remote_write` (standby đã nhận, ghi vào OS), `on` (standby đã flush), `remote_apply` (standby đã replay). Mức càng cao thì commit càng chậm nhưng càng ít mất dữ liệu và đọc trên standby càng nhất quán.", en: "The scale: `remote_write` (the standby received it and wrote it to the OS), `on` (the standby flushed it), `remote_apply` (the standby replayed it). Higher levels make commits slower but lose less data and make standby reads more consistent." }
@@ -59,7 +59,7 @@ quiz:
 
 ## Ý chính
 
-- Streaming replication: standby nhận WAL từ primary qua một tiến trình walsender và replay nó. Mặc định bất đồng bộ: commit trả về trước khi standby nhận, trễ thường dưới một giây, có thể mất vài giao dịch cuối khi primary hỏng.
+- Streaming replication: standby nhận WAL từ primary qua một tiến trình walsender và replay nó. Mặc định bất đồng bộ: commit trả về trước khi standby nhận, trễ thường dưới một giây, có thể mất vài transaction cuối khi primary hỏng.
 - Đồng bộ: `synchronous_standby_names` (`FIRST n (…)` hoặc `ANY n (…)`) cùng `synchronous_commit` (`remote_write`, `on`, `remote_apply`). Hot standby cho phép đọc trên standby.
 - Slot nhân bản (vật lý hoặc logic) ghi nhớ người nhận đã đọc tới đâu (`restart_lsn`) và giữ WAL từ đó. Giới hạn bằng `max_slot_wal_keep_size`; `wal_status` cho biết slot còn an toàn hay WAL đã bị mất.
 - Logical decoding giải mã WAL thành thay đổi theo dòng (cho logical replication, CDC). Cần `wal_level = logical`; slot logic gắn với một database, có thể gửi lặp sau sự cố, mỗi lúc một người nhận.

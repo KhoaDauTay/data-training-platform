@@ -40,7 +40,7 @@ lab:
     - task: { vi: "`readings2` giống hệt `readings`, nhưng phần dựng dữ liệu đã gọi `brin_summarize_new_values('readings2_brin')`. Làm lại phép đếm của bước 1 cho `readings2_brin` và `readings2`.", en: "`readings2` is identical to `readings`, but the setup called `brin_summarize_new_values('readings2_brin')`. Repeat step 1's count for `readings2_brin` and `readings2`." }
       solution: "SELECT count(*) AS ranges, max(blknum) AS last_blk, pg_relation_size('readings2') / 8192 AS heap_pages FROM brin_page_items(get_raw_page('readings2_brin', 2), 'readings2_brin')"
       check: rows
-      hint: { vi: "Cùng câu bước 1, đổi tên bảng và index. VACUUM cũng tóm tắt khoảng mới, nhưng không chạy được trong giao dịch.", en: "Step 1's query with the table and index names changed. VACUUM also summarizes new ranges, but it cannot run inside a transaction." }
+      hint: { vi: "Cùng câu bước 1, đổi tên bảng và index. VACUUM cũng tóm tắt khoảng mới, nhưng không chạy được trong transaction.", en: "Step 1's query with the table and index names changed. VACUUM also summarizes new ranges, but it cannot run inside a transaction." }
     - task: { vi: "Đếm số đo trong ngày 2026-10-05. Planner phải dùng `readings_brin`.", en: "Count the readings on 2026-10-05. The planner must use `readings_brin`." }
       solution: "SELECT count(*) FROM readings WHERE read_at >= '2026-10-05' AND read_at < '2026-10-06'"
       check: plan
@@ -65,7 +65,7 @@ quiz:
 
 ## Ví dụ
 
-Kết quả thật trên PGlite (20000 dòng lúc tạo index, thêm 4000 dòng sau):
+Kết quả thật trên PGlite (20.000 dòng lúc tạo index, thêm 4000 dòng sau):
 
 ```text
 readings_brin   (not summarized)  ranges 16  last_blk 120  heap_pages 153
@@ -95,7 +95,7 @@ Aggregate
 
 ## Example
 
-Real output from PGlite (20000 rows when the index was built, 4000 more afterwards):
+Real output from PGlite (20,000 rows when the index was built, 4000 more afterwards):
 
 ```text
 readings_brin   (not summarized)  ranges 16  last_blk 120  heap_pages 153

@@ -47,20 +47,19 @@ quiz:
     options:
       - { vi: "Vẫn Merge Join", en: "Still a Merge Join" }
       - { vi: "Hash Join trên hai Seq Scan", en: "A Hash Join over two Seq Scans" }
-      - { vi: "Nested Loop 20000 lần", en: "A Nested Loop running 20000 times" }
+      - { vi: "Nested Loop 20.000 lần", en: "A Nested Loop running 20,000 times" }
     answer: 1
     why: { vi: "Không cần thứ tự nữa, hai lần đọc tuần tự + một bảng băm rẻ hơn hai lần đi index. Merge Join chỉ thắng khi thứ tự có sẵn hoặc được dùng lại.", en: "Once no order is needed, two sequential reads plus one hash table beat two index walks. A Merge Join only wins when the order is free or reused." }
 ---
 
 ## Ý chính
 
-- Nested Loop — cách làm: với mỗi dòng phía ngoài, tìm dòng khớp phía trong (thường qua index); thắng khi: phía ngoài rất ít dòng; điều kiện nối không phải dấu bằng
-- Hash Join — cách làm: băm phía nhỏ hơn vào bộ nhớ, quét phía lớn và tra bảng băm; thắng khi: nối bằng dấu bằng trên nhiều dòng, không cần thứ tự
-- Merge Join — cách làm: hai phía đã sắp theo khóa nối, đi song song như khóa kéo; thắng khi: cả hai phía có sẵn thứ tự (index) hoặc kết quả cần thứ tự đó
+- Nested Loop: với mỗi dòng phía ngoài, tìm dòng khớp phía trong (thường qua index). Thắng khi phía ngoài rất ít dòng, hoặc điều kiện nối không phải dấu bằng.
+- Hash Join: băm phía nhỏ hơn vào bộ nhớ, quét phía lớn và tra bảng băm. Thắng khi nối bằng dấu bằng trên nhiều dòng, không cần thứ tự.
+- Merge Join: hai phía đã sắp theo khóa nối, đi song song như khóa kéo. Thắng khi cả hai phía có sẵn thứ tự (index) hoặc kết quả cần thứ tự đó.
 
-- Hash Join chỉ dùng cho điều kiện bằng. Bảng băm vượt `work_mem` × `hash_mem_multiplier` (mặc định 4MB × 2) thì chia lô và tràn đĩa (`Batches:` > 1 trong `EXPLAIN ANALYZE`).
+- Hash Join chỉ dùng cho điều kiện bằng. Bảng băm vượt `work_mem` × `hash_mem_multiplier` (mặc định 4 MB × 2) thì chia lô và tràn đĩa (`Batches:` > 1 trong `EXPLAIN ANALYZE`).
 - Trong kế hoạch, nút con đầu tiên là phía ngoài; với Hash Join, nút `Hash` là phía được băm.
-- Planner chọn theo chi phí, nên số dòng ước lượng sai (bài trước) là nguyên nhân số một của thuật toán nối sai.
 
 ## Ví dụ
 
@@ -90,19 +89,20 @@ Merge Join
 
 ## Thực hành
 
+Planner chọn theo chi phí, nên số dòng ước lượng sai (bài trước) là nguyên nhân số một của thuật toán nối sai.
+
 Ba câu, ba thuật toán, cùng dữ liệu. Kỹ năng chuyên gia: đọc một kế hoạch và nói ngay vì sao thuật toán nối đó được chọn, rồi biết sửa ước lượng hay index nào để đổi nó.
 
 # EN
 
 ## Key idea
 
-- Nested Loop — how it works: for each outer row, find matching inner rows (usually through an index); wins when: the outer side has very few rows; the join condition is not an equality
-- Hash Join — how it works: hash the smaller side into memory, scan the larger side and probe the hash table; wins when: equality join over many rows, no order needed
-- Merge Join — how it works: both sides sorted on the join key, walked side by side like a zip; wins when: both sides are already ordered (index) or the result needs that order
+- Nested Loop: for each outer row, find matching inner rows (often via an index). Wins when the outer side has very few rows, or the join condition is not an equality.
+- Hash Join: hash the smaller side into memory, scan the larger side and probe the hash table. Wins for equality joins over many rows, no order needed.
+- Merge Join: both sides sorted on the join key, walked side by side like a zip. Wins when both sides are already ordered (index) or the result needs that order.
 
-- A Hash Join only works for equality conditions. When the hash table goes over `work_mem` × `hash_mem_multiplier` (default 4MB × 2), it splits into batches and spills to disk (`Batches:` > 1 in `EXPLAIN ANALYZE`).
+- A Hash Join needs an equality. When the hash table goes over `work_mem` × `hash_mem_multiplier` (default 4 MB × 2), it splits into batches and spills to disk (`Batches:` > 1 in `EXPLAIN ANALYZE`).
 - In a plan, the first child node is the outer side; in a Hash Join, the `Hash` node is the side being hashed.
-- The planner chooses by cost, so a wrong row estimate (previous lesson) is the number one cause of a wrong join algorithm.
 
 ## Example
 
@@ -131,5 +131,7 @@ Merge Join
 ```
 
 ## Practice
+
+The planner chooses by cost, so a wrong row estimate (previous lesson) is the number one cause of a wrong join algorithm.
 
 Three queries, three algorithms, same data. Expert skill: read a plan and say at once why that join algorithm was chosen, then know which estimate or index to fix to change it.

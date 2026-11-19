@@ -33,7 +33,7 @@ lab:
       solution: "SELECT root, level FROM bt_metap('seq_keys_idx')"
       check: rows
       hint: { vi: "`bt_metap(text)` của `pageinspect`. Tầng 0 là lá.", en: "`bt_metap(text)` from `pageinspect`. Level 0 is the leaf level." }
-    - task: { vi: "So hai index cùng 20000 khóa: với mỗi index và mỗi loại trang (`type`: l = lá, r = gốc), đếm số trang, số mục sống trung bình và số byte trống trung bình (làm tròn). Duyệt mọi trang từ 1 tới trang cuối bằng `generate_series` + `bt_page_stats`. Sắp theo tên index rồi loại trang.", en: "Compare two indexes holding the same 20000 keys: for each index and each page `type` (l = leaf, r = root), count pages, average live items and average free bytes (rounded). Walk every page from 1 to the last with `generate_series` + `bt_page_stats`. Order by index name, then page type." }
+    - task: { vi: "So hai index cùng 20.000 khóa: với mỗi index và mỗi loại trang (`type`: l = lá, r = gốc), đếm số trang, số mục sống trung bình và số byte trống trung bình (làm tròn). Duyệt mọi trang từ 1 tới trang cuối bằng `generate_series` + `bt_page_stats`. Sắp theo tên index rồi loại trang.", en: "Compare two indexes holding the same 20,000 keys: for each index and each page `type` (l = leaf, r = root), count pages, average live items and average free bytes (rounded). Walk every page from 1 to the last with `generate_series` + `bt_page_stats`. Order by index name, then page type." }
       solution: "SELECT i.relname, s.type, count(*) AS pages, round(avg(s.live_items)) AS avg_items, round(avg(s.free_size)) AS avg_free FROM pg_class i, generate_series(1, (pg_relation_size(i.oid) / 8192 - 1)::int) b, bt_page_stats(i.relname, b) s WHERE i.relname IN ('seq_keys_idx', 'mixed_keys_idx') GROUP BY 1, 2 ORDER BY 1, 2"
       check: rows
       ordered: true
@@ -44,7 +44,7 @@ lab:
       ordered: true
       hint: { vi: "Ở trang trong (không phải lá), `ctid` trỏ tới trang con: (số trang, …).", en: "On an internal (non-leaf) page, `ctid` points to a child page: (page number, …)." }
 quiz:
-  - q: { vi: "Vì sao `seq_keys_idx` có 55 lá còn `mixed_keys_idx` có 73 lá, dù cùng 20000 khóa?", en: "Why does `seq_keys_idx` have 55 leaves and `mixed_keys_idx` 73, with the same 20000 keys?" }
+  - q: { vi: "Vì sao `seq_keys_idx` có 55 lá còn `mixed_keys_idx` có 73 lá, dù cùng 20.000 khóa?", en: "Why does `seq_keys_idx` have 55 leaves and `mixed_keys_idx` 73, with the same 20,000 keys?" }
     options:
       - { vi: "Khóa tăng dần luôn chèn vào lá phải nhất; khi lá đó đầy, Postgres tách lệch để giữ trang trái gần đầy (theo fillfactor 90). Khóa lộn xộn chèn vào giữa, tách đôi trang, nên lá chỉ đầy một phần", en: "Ascending keys always go into the rightmost leaf; when it fills, Postgres splits unevenly and keeps the left page nearly full (fillfactor 90). Scattered keys land in the middle and split pages in two, so leaves stay partly full" }
       - { vi: "Index khóa lộn xộn có dedup", en: "The scattered-key index uses deduplication" }
@@ -56,14 +56,14 @@ quiz:
 ## Ý chính
 
 - B-tree của Postgres có metapage ở trang 0, một gốc, các tầng trong và tầng lá (tầng 0). Lá chứa khóa + TID trỏ về heap; trang trong chứa khóa phân cách + đường xuống trang con (downlink).
-- Cây rất thấp: với khóa `int`, mỗi lá chứa vài trăm mục, nên 20000 khóa chỉ cần 2 tầng (gốc + lá). Hàng trăm triệu dòng thường chỉ 3–4 tầng.
+- Cây rất thấp: với khóa `int`, mỗi lá chứa vài trăm mục, nên 20.000 khóa chỉ cần 2 tầng (gốc + lá). Hàng trăm triệu dòng thường chỉ 3–4 tầng.
 - Page split: lá không còn chỗ cho mục mới thì một phần mục chuyển sang trang mới, và cha nhận thêm một downlink; cha đầy thì tách tiếp lên trên; gốc đầy thì có gốc mới và cây cao thêm một tầng.
 - Chèn khóa luôn tăng (id tự tăng, thời gian) đi vào lá phải nhất, và Postgres tách lệch để trang trái được đầy theo `fillfactor` (mặc định 90 cho B-tree). Chèn lộn xộn (UUID ngẫu nhiên) tách giữa trang, nên index to hơn và nhiều trang hơn.
 - `bt_metap`, `bt_page_stats`, `bt_page_items` thuộc `pageinspect`. Chúng đọc trang thật, không phải mô phỏng.
 
 ## Ví dụ
 
-Kết quả thật trên PGlite (cùng 20000 khóa `int`):
+Kết quả thật trên PGlite (cùng 20.000 khóa `int`):
 
 ```text
 bt_metap('seq_keys_idx'):  root 3, level 1
@@ -86,14 +86,14 @@ Ba câu đọc trang thật. Sơ đồ B-tree cho bạn bấm từng bước m�
 ## Key idea
 
 - A Postgres B-tree has a metapage at page 0, one root, internal levels and the leaf level (level 0). Leaves hold keys + TIDs pointing into the heap; internal pages hold separator keys + links down to child pages (downlinks).
-- The tree is very shallow: with `int` keys a leaf holds a few hundred items, so 20000 keys need only 2 levels (root + leaves). Hundreds of millions of rows usually take 3–4 levels.
+- The tree is very shallow: with `int` keys a leaf holds a few hundred items, so 20,000 keys need only 2 levels (root + leaves). Hundreds of millions of rows usually take 3–4 levels.
 - Page split: when a leaf has no room for a new item, part of its items move to a new page and the parent gets one more downlink; a full parent splits in turn; a full root gets a new root and the tree grows one level.
 - Always-increasing keys (serial ids, timestamps) go into the rightmost leaf, and Postgres splits unevenly so the left page stays filled to `fillfactor` (90 by default for B-tree). Scattered inserts (random UUIDs) split pages in the middle, so the index is larger with more pages.
 - `bt_metap`, `bt_page_stats` and `bt_page_items` come from `pageinspect`. They read real pages, not a simulation.
 
 ## Example
 
-Real output from PGlite (the same 20000 `int` keys):
+Real output from PGlite (the same 20,000 `int` keys):
 
 ```text
 bt_metap('seq_keys_idx'):  root 3, level 1

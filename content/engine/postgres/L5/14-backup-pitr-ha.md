@@ -41,13 +41,13 @@ quiz:
       - { vi: "Không rủi ro", en: "No risk" }
     answer: 0
     why: { vi: "Postgres không tự làm failover; công cụ bên ngoài phải bảo đảm primary cũ không còn nhận ghi trước khi nâng standby. Sau đó primary cũ thường phải dựng lại (ví dụ bằng `pg_rewind`).", en: "Postgres does not fail over on its own; the external tool must make sure the old primary can no longer accept writes before promoting the standby. Afterwards the old primary usually has to be rebuilt (for example with `pg_rewind`)." }
-  - q: { vi: "Bảng 500 triệu dòng, mặc định `autovacuum_vacuum_scale_factor` = 0.2 và ngưỡng 50. Autovacuum chạy khi nào, và nên chỉnh gì?", en: "A 500-million-row table, default `autovacuum_vacuum_scale_factor` = 0.2 and threshold 50. When does autovacuum run, and what should you tune?" }
+  - q: { vi: "Bảng 500 triệu dòng, mặc định `autovacuum_vacuum_scale_factor` = 0,2 và ngưỡng 50. Autovacuum chạy khi nào, và nên chỉnh gì?", en: "A 500-million-row table, default `autovacuum_vacuum_scale_factor` = 0.2 and threshold 50. When does autovacuum run, and what should you tune?" }
     options:
       - { vi: "Sau khoảng 100 triệu dòng chết; hạ scale factor riêng cho bảng đó (`ALTER TABLE … SET (autovacuum_vacuum_scale_factor = 0.01)`)", en: "After about 100 million dead rows; lower the scale factor for that table (`ALTER TABLE … SET (autovacuum_vacuum_scale_factor = 0.01)`)" }
       - { vi: "Mỗi phút; tắt autovacuum", en: "Every minute; turn autovacuum off" }
       - { vi: "Không bao giờ; chạy VACUUM FULL hằng ngày", en: "Never; run VACUUM FULL daily" }
     answer: 0
-    why: { vi: "Ngưỡng = threshold + scale_factor × số dòng = 50 + 0.2 × 500 triệu ≈ 100 triệu, và từ 18 còn bị chặn trên bởi `autovacuum_vacuum_max_threshold` (mặc định 100 triệu). Quá trễ cho bảng lớn. Chỉnh theo từng bảng; không tắt autovacuum (nó còn chống wraparound); `VACUUM FULL` khóa ACCESS EXCLUSIVE cả bảng.", en: "Threshold = threshold + scale_factor × rows = 50 + 0.2 × 500 million ≈ 100 million, and since 18 it is also capped by `autovacuum_vacuum_max_threshold` (default 100 million). Far too late for a big table. Tune per table; never turn autovacuum off (it also prevents wraparound); `VACUUM FULL` takes ACCESS EXCLUSIVE on the whole table." }
+    why: { vi: "Ngưỡng = threshold + scale_factor × số dòng = 50 + 0,2 × 500 triệu ≈ 100 triệu, và từ 18 còn bị chặn trên bởi `autovacuum_vacuum_max_threshold` (mặc định 100 triệu). Quá trễ cho bảng lớn. Chỉnh theo từng bảng; không tắt autovacuum (nó còn chống wraparound); `VACUUM FULL` khóa ACCESS EXCLUSIVE cả bảng.", en: "Threshold = threshold + scale_factor × rows = 50 + 0.2 × 500 million ≈ 100 million, and since 18 it is also capped by `autovacuum_vacuum_max_threshold` (default 100 million). Far too late for a big table. Tune per table; never turn autovacuum off (it also prevents wraparound); `VACUUM FULL` takes ACCESS EXCLUSIVE on the whole table." }
 ---
 
 ## Ý chính
@@ -56,7 +56,7 @@ quiz:
 - Backup vật lý: sao thư mục dữ liệu (`pg_basebackup`) + lưu trữ WAL liên tục (`archive_command` hoặc `archive_library`). Khôi phục = base backup + replay WAL tới đích: thời điểm, LSN, tên điểm khôi phục. Đó là PITR.
 - Nhân bản không phải backup: lỗi logic (xóa nhầm) được nhân bản ngay.
 - Failover: Postgres có `pg_promote()` để nâng standby, nhưng quyết định khi nào nâng và cô lập primary cũ là việc của công cụ HA bên ngoài.
-- Autovacuum sản xuất: ngưỡng = `autovacuum_vacuum_threshold` + `autovacuum_vacuum_scale_factor` × số dòng (mặc định 50 + 0.2 × số dòng), từ 18 không vượt `autovacuum_vacuum_max_threshold` (100 triệu, đo trên PGlite). Bảng lớn cần tham số riêng; không bao giờ tắt autovacuum vì nó còn đóng băng tuple chống wraparound.
+- Autovacuum sản xuất: ngưỡng = `autovacuum_vacuum_threshold` + `autovacuum_vacuum_scale_factor` × số dòng (mặc định 50 + 0,2 × số dòng), từ 18 không vượt `autovacuum_vacuum_max_threshold` (100 triệu, đo trên PGlite). Bảng lớn cần tham số riêng; không bao giờ tắt autovacuum vì nó còn đóng băng tuple chống wraparound.
 
 Không có phần chạy thật: PGlite không có lưu trữ WAL, standby hay tiến trình autovacuum nền (đo: chỉ một `standalone backend`). Bài này là câu hỏi tình huống dựa trên tài liệu chính thức.
 
