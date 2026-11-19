@@ -51,9 +51,17 @@ const TICKETS = {
 const drills = parseYaml(readFileSync(join(ROOT, 'content/general/sql.yml'), 'utf8'));
 const DRILL = drills.find((d) => d.kind === 'open'); // an open drill: no ___ starter to fill
 const LESSON = parseYaml(readFileSync(join(ROOT, 'content/lessons.yml'), 'utf8')).find((l) => l.id === TICKETS.logistics.grants[0]);
-// ENG-CORE (L220): a Database Engine lab lesson; its step solutions are read from the file.
-const ENGINE_LAB = { id: 'e-pg-l1-02', hash: '#/engine/postgres/L1/e-pg-l1-02',
-  steps: parseYaml(/^---\r?\n([\s\S]*?)\r?\n---/.exec(readFileSync(join(ROOT, 'content/engine/postgres/L1/02-read-column-types.md'), 'utf8'))[1]).lab.steps.map((x) => x.solution) };
+// ENG-CORE (L220): the first Postgres lab in content/engine with no setup and only `rows` steps (the shop chain on `lab`);
+// none yet → its step is skipped. Its step solutions are read from the file.
+const ENGINE_LAB = (() => {
+  const dir = join(ROOT, 'content/engine/postgres');
+  const files = existsSync(dir) ? readdirSync(dir).filter((l) => /^L[1-5]$/.test(l)).flatMap((l) => readdirSync(join(dir, l)).filter((f) => f.endsWith('.md')).map((f) => join(dir, l, f))) : [];
+  for (const f of files.sort()) {
+    const fm = parseYaml(/^---\r?\n([\s\S]*?)\r?\n---/.exec(readFileSync(f, 'utf8'))?.[1] ?? '') ?? {};
+    if (fm.lab && !fm.lab.setup && fm.lab.steps.every((x) => x.check === 'rows')) return { id: fm.id, hash: `#/engine/postgres/${fm.level}/${fm.id}`, steps: fm.lab.steps.map((x) => x.solution) };
+  }
+  return undefined;
+})();
 
 // Every route of src/route.ts once; a new route fails here until the smoke knows its hash.
 const ROUTE_HASH = {
@@ -63,7 +71,7 @@ const ROUTE_HASH = {
 const ROUTES = JSON.parse(/export const ROUTES = (\[[^\]]*\])/.exec(readFileSync(join(ROOT, 'src/route.ts'), 'utf8'))[1].replace(/'/g, '"'));
 // V20-C (L179): plus the General sub-pages and the other two domains' pages (the list of tests/axe.test.ts).
 const PAGES = [...ROUTES.filter((r) => ROUTE_HASH[r]).map((r) => ROUTE_HASH[r]), '#/learn/sql/1', '#/learn/skill/select', '#/learn/adv/a2', '#/learn/adv/d5',
-  '#/learn/interview', '#/engine/postgres', ENGINE_LAB.hash, '#/engine/postgres/L1/e-pg-l1-03', ...['ecommerce', 'finance'].flatMap((d) => ['', '/play', '/data', '/dashboard', '/map'].map((p) => `#/d/${d}${p}`))];
+  '#/learn/interview', '#/engine/postgres', ...(ENGINE_LAB ? [ENGINE_LAB.hash] : []), ...['ecommerce', 'finance'].flatMap((d) => ['', '/play', '/data', '/dashboard', '/map'].map((p) => `#/d/${d}${p}`))];
 const mainOf = (hash) => (/\/play$/.test(hash) ? 'shell' : /\/data$/.test(hash) ? 'data' : /\/dashboard$/.test(hash) ? 'dashboard' : 'home');
 // axe-core from node_modules (dev dependency, L141; never in dist/), injected into the page over CDP. target-size is off by default.
 const AXE = readFileSync(join(ROOT, 'node_modules/axe-core/axe.min.js'), 'utf8');
@@ -408,7 +416,7 @@ try {
     return got;
   });
 
-  await step(`engine lab ${ENGINE_LAB.id}: every step submitted, lesson completed`, async () => {
+  if (ENGINE_LAB) await step(`engine lab ${ENGINE_LAB.id}: every step submitted, lesson completed`, async () => {
     await go(base, ENGINE_LAB.hash);
     await waitFor('the lesson page with its lab', `!!document.querySelector('#engine-page [data-ek="${ENGINE_LAB.id}-s0-code"]')`, 60000);
     for (const [i, sql] of ENGINE_LAB.steps.entries()) {

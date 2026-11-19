@@ -1,6 +1,6 @@
-// ENG-CORE (L220): Database Engine content, schema ENGINE-CONTENT-V1 (src/engine/content.ts). Every file under content/engine
-// parses, ids are unique and match the path, requires resolve, VI/EN parity, EN without diacritics, code identical VI/EN,
-// sources are https URLs, every module has a name; Postgres `check: rows` solutions run on `lab`.
+// ENG-CORE (L220): Database Engine content, schema ENGINE-CONTENT-V1 (src/engine/content.ts). Every lesson file under
+// content/engine (and the three samples in tests/fixtures/engine, which exercise every kind) parses, ids are unique and match the path, requires resolve, VI/EN parity, EN without diacritics, code identical VI/EN,
+// sources are https URLs, modules.yml entries are used and bilingual; Postgres `check: rows` solutions run on `lab`.
 import { describe, expect, it } from 'vitest';
 import { parse } from 'yaml';
 import {
@@ -10,36 +10,41 @@ import {
 import { compareResults } from '../src/grader';
 import { labRun } from './generalRules';
 
-const files = import.meta.glob<string>('../content/engine/**/*.md', { query: '?raw', import: 'default', eager: true });
-const moduleFiles = import.meta.glob<string>('../content/engine/*/modules.yml', { query: '?raw', import: 'default', eager: true });
-const lessons: EngineLesson[] = Object.entries(files).map(([p, s]) => parseEngineLesson(s, p, parse));
-const ids = new Set(lessons.map((l) => l.id));
+const files = import.meta.glob<string>(['../content/engine/*/L*/*.md', './fixtures/engine/*/L*/*.md'], { query: '?raw', import: 'default', eager: true });
+const moduleFiles = import.meta.glob<string>(['../content/engine/*/modules.yml', './fixtures/engine/*/modules.yml'], { query: '?raw', import: 'default', eager: true });
+const fixture = (p: string): boolean => p.includes('/fixtures/');
+const parsed = Object.entries(files).map(([p, s]) => ({ p, l: parseEngineLesson(s, p, parse) }));
+/** Real content and the samples are separate sets (the samples reuse real ids on purpose: they are never shipped). */
+const sets = [parsed.filter((x) => !fixture(x.p)).map((x) => x.l), parsed.filter((x) => fixture(x.p)).map((x) => x.l)];
+const lessons = sets[1];
 
 describe('content/engine (ENGINE-CONTENT-V1)', () => {
-  it('có ít nhất 3 bài Postgres L1 mẫu (khái niệm, lab, câu hỏi)', () => {
+  it('mẫu (tests/fixtures/engine): bài Postgres L1 khái niệm, lab, câu hỏi', () => {
     const pg = lessons.filter((l) => l.engine === 'postgres' && l.level === 'L1');
     for (const k of ['concept', 'lab', 'quiz'] as const) expect(pg.some((l) => l.kind === k)).toBe(true);
   });
 
-  it('id không trùng', () => expect(ids.size).toBe(lessons.length));
-
-  it.each(lessons.map((l) => [l.id, l] as const))('%s: luật nội dung', (_, l) => {
-    expect(lessonProblems(l, ids)).toEqual([]);
+  it.each(sets.map((s, i) => [i ? 'mẫu' : 'content/engine', s] as const))('%s: id không trùng', (_, set) => {
+    expect(new Set(set.map((l) => l.id)).size).toBe(set.length);
   });
 
-  it('mỗi module có tên VI/EN trong modules.yml, mọi tên trong modules.yml đều được dùng', () => {
-    for (const engine of new Set(lessons.map((l) => l.engine))) {
-      const path = Object.keys(moduleFiles).find((p) => p.includes(`/engine/${engine}/`));
-      expect([engine, path]).not.toEqual([engine, undefined]);
-      const names = parseModules(moduleFiles[path!], path!, parse);
-      const used = new Set(lessons.filter((l) => l.engine === engine).map((l) => l.module));
-      expect(new Set(names.map((n) => n.id))).toEqual(used);
-      for (const n of names) expect(n.en).not.toMatch(/[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ]/i);
+  it.each(parsed.map((x) => [x.p, x] as const))('%s: luật nội dung', (_, x) => {
+    const set = sets[fixture(x.p) ? 1 : 0];
+    expect(lessonProblems(x.l, new Set(set.map((l) => l.id)))).toEqual([]);
+  });
+
+  it.each(Object.keys(moduleFiles))('%s: mỗi mục có id, VI, EN (không dấu) và được dùng', (path) => {
+    const set = sets[fixture(path) ? 1 : 0];
+    const engine = /engine\/(\w+)\/modules/.exec(path)![1];
+    const used = new Set(set.filter((l) => l.engine === engine).map((l) => l.module));
+    for (const n of parseModules(moduleFiles[path], path, parse)) {
+      expect([n.id, used.has(n.id)]).toEqual([n.id, true]);
+      expect(n.en).not.toMatch(/[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ]/i);
     }
   });
 
-  it('requires không vòng', () => {
-    const by = new Map(lessons.map((l) => [l.id, l]));
+  it.each(sets.map((s, i) => [i ? 'mẫu' : 'content/engine', s] as const))('%s: requires không vòng', (_, set) => {
+    const by = new Map(set.map((l) => [l.id, l]));
     const seen = new Set<string>();
     const visit = (id: string, path: string[]): void => {
       expect(path).not.toContain(id);
@@ -47,10 +52,10 @@ describe('content/engine (ENGINE-CONTENT-V1)', () => {
       for (const r of by.get(id)?.requires ?? []) visit(r, [...path, id]);
       seen.add(id);
     };
-    for (const l of lessons) visit(l.id, []);
+    for (const l of set) visit(l.id, []);
   });
 
-  const pgRows = lessons.filter((l) => l.engine === 'postgres' && !l.lab?.setup)
+  const pgRows = parsed.map((x) => x.l).filter((l) => l.engine === 'postgres' && !l.lab?.setup)
     .flatMap((l) => (l.lab?.steps ?? []).filter((s) => s.check === 'rows').map((s, i) => [`${l.id} bước ${i + 1}`, s] as const));
   it.each(pgRows)('%s: Solution chạy trên lab; ordered ⇒ ORDER BY', async (_, s) => {
     const run = await labRun();

@@ -257,7 +257,7 @@ function labView(l: EngineLesson, v: Visit): HTMLElement {
   const live = !!LAB_RUNNERS[l.engine];
   return h('section', { class: 'space-y-4', 'aria-labelledby': `${l.id}-lab` },
     h('h3', { id: `${l.id}-lab`, class: 'm-0 text-title font-bold' }, et('lab.title')),
-    h('p', { class: 'm-0 text-body-sm text-muted' }, live ? (l.engine === 'postgres' ? et('lab.data') : '') : et('lab.noRunner')),
+    h('p', { class: 'm-0 text-body-sm text-muted' }, live ? (l.engine === 'postgres' && !l.lab!.setup ? et('lab.data') : '') : et('lab.noRunner')),
     ...steps.map((s, i) => {
       const out = v.out[i];
       const msg = v.msg[i];

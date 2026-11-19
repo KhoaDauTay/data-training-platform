@@ -35,8 +35,8 @@ export interface LabEnv {
 }
 
 /**
- * Postgres on the existing `lab` schema (ENG-CORE default until ENG-PGLAB): one statement, rolled back, so `setup` cannot
- * run here and only `check: rows` is graded (by grade(), like a General drill).
+ * Postgres on the existing `lab` schema (the shop chain, seeded lazily): one statement, rolled back, so `setup` cannot run
+ * here; `check: rows` and `catalog` are graded by grade() like a General drill, `plan`/`doc` are `unsupported`.
  */
 export function pgLabRunner(env: LabEnv): LabRunner {
   return {
@@ -45,7 +45,7 @@ export function pgLabRunner(env: LabEnv): LabRunner {
     },
     run: (_lab, code) => env.sql(code),
     check: async (lab, step, code) => {
-      if (lab.setup || step.check !== 'rows') return { ok: false, reason: 'unsupported' };
+      if (lab.setup || (step.check !== 'rows' && step.check !== 'catalog')) return { ok: false, reason: 'unsupported' };
       const r = await env.grade(env.sql, step.solution, code, step.ordered);
       return r.ok ? r : { ok: false, reason: r.reason === 'error' ? 'error' : 'wrong', message: env.verdict(r) };
     },
@@ -54,5 +54,17 @@ export function pgLabRunner(env: LabEnv): LabRunner {
 
 /** Engine → its runner, loaded on the first lab of that engine. An engine without one shows its labs read-only. */
 export const LAB_RUNNERS: Partial<Record<EngineId, (env: LabEnv) => Promise<LabRunner>>> = {
-  postgres: async (env) => pgLabRunner(env),
+  postgres: async (env) => {
+    // A lab without `setup` reads the shop chain on `lab`; one with `setup` runs on ENG-PGLAB's own worker (fresh database per
+    // script, extensions on demand, rows/plan/catalog checks, L230), loaded only then.
+    const onLab = pgLabRunner(env);
+    let script: Promise<LabRunner> | undefined;
+    const pick = (lab: Lab): Promise<LabRunner> =>
+      lab.setup ? (script ??= import('./pglab/runner').then((m) => m.pgScriptRunner(env)).catch((e: unknown) => { script = undefined; throw e; })) : Promise.resolve(onLab);
+    return {
+      prepare: async (lab) => (await pick(lab)).prepare(lab),
+      run: async (lab, code) => (await pick(lab)).run(lab, code),
+      check: async (lab, step, code) => (await pick(lab)).check(lab, step, code),
+    };
+  },
 };

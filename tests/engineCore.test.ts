@@ -31,7 +31,7 @@ describe('route #/engine (kept forever)', () => {
 
 describe('id e-… trong Save', () => {
   it('ENGINE_ID / isWorkId', () => {
-    for (const id of ['e-pg-l1-01', 'e-mg-l3-12', 'e-dy-l5-02']) expect([id, isWorkId(new Set(), id)]).toEqual([id, true]);
+    for (const id of ['e-pg-l1-01', 'e-mg-l3-12', 'e-dy-l5-02', 'e-mg-d-lookup-3', 'e-dy-d-gsi-1']) expect([id, isWorkId(new Set(), id)]).toEqual([id, true]);
     for (const id of ['e-my-l1-01', 'e-pg', 'ecom-ch1-01x', 'E-PG-L1-01']) expect([id, ENGINE_ID.test(id)]).toEqual([id, false]);
   });
 
