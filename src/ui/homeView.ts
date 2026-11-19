@@ -448,7 +448,7 @@ let albumOpen = false; // Home redraws on every rerender(): the <details> keeps 
 /** L134 P2: the six stages with the day each was reached (device pref; "earlier" when unknown), the rest as silhouettes. */
 function lilyAlbum(stage: LilyStage): HTMLElement {
   const pref = readLily();
-  const first = firstDay();
+  const first = firstDay() ?? localDay(new Date()); // nothing saved yet: today is day 1 (dayCount)
   const fmt = (d: string) => new Date(`${d}T00:00`).toLocaleDateString(getLang() === 'vi' ? 'vi-VN' : 'en-GB', { day: 'numeric', month: 'numeric', year: 'numeric' });
   const shots = STAGE_NAME.map((name, n) => {
     const on = reachedOn(pref, n, stage, first);
