@@ -60,14 +60,14 @@ Nhận xét:
 - Khởi động **chủ yếu tốn CPU**: compile wasm và `import pandas`. Trên máy rảnh, cache HTTP chỉ bớt khoảng 2 s.
 - Dưới tải CPU, lần ấm gần như chậm bằng lần lạnh (15,6 → 13,8 s; 13,4 → 12,1 s).
 - Vì vậy điện thoại yếu sẽ chậm hơn rõ rệt. Spike chưa đo trên thiết bị thật.
-- Một lượt tự host mất kết quả: CDP driver mất socket. Ba lượt chạy lại sau đó đều xong, nên lỗi không lặp lại.
+- Một lượt tự host (kèm matplotlib, lúc máy bận) mất kết quả vì socket CDP bị đóng. Chưa rõ nguyên nhân: có thể là driver, cũng có thể Edge đã chết. Ba lượt chạy lại sau đó đều xong, nên lỗi không lặp lại.
 
 ### 2.3 Bài tập (sau khi pandas đã sẵn sàng; số khi rảnh, ngoặc là khi máy bận)
 
 | Việc | Thời gian |
 |---|---|
 | SQL 4.284 dòng trong PGlite | 42 ms (110–315) |
-| QueryResult → DataFrame (JSON qua `postMessage`) | 23–33 ms (60–221) |
+| QueryResult → DataFrame: đường `toPy` / đường JSON | 23–33 ms (60–221) / ≈ 95 ms (chỉ đo lúc máy bận) |
 | groupby / merge / pivot_table | 28–35 / 6–8 / 43–55 ms (tới 333 / 123 / 689) |
 | Đổi hai DataFrame về QueryResult để chấm | 21 ms |
 | 50.000 dòng × 8 cột: SQL / → DataFrame | 2,3 s / 372 ms (máy bận) |
@@ -90,13 +90,21 @@ Nhận xét:
   - Int có NULL đọc ra `float64`.
   - `date` là `Date`; spike đổi sang chuỗi ISO trước khi gửi.
   - Cần ánh xạ theo `types`: 1700 → `float64`; int2/4/8 có NULL → `Int64`; 1082/1114 → `datetime64`; bool. Đã kiểm 1700 và `Int64`.
-- **Bẫy `null`:** `pyodide.toPy` đổi `null` của JS thành `pyodide.ffi.jsnull`, không phải `None`, nên ép `Int64` bị lỗi. Cách sửa: gửi chuỗi JSON rồi `json.loads` trong Python. Cách này cũng nhanh hơn.
-- **Ngắt code chạy quá lâu:** `setInterruptBuffer` của Pyodide cần `SharedArrayBuffer`, tức phải cách ly cross-origin (COOP/COEP). GitHub Pages không đặt được header này. Vậy cách duy nhất là **`terminate()` worker rồi khởi động lại**, giống cách PGlite đang làm. Khởi động lại tốn lại khoảng 4,6 s (ấm), trên máy yếu thì lâu hơn.
+- **Bẫy `null`:**
+  - Quan sát: qua `toPy`, cột int có NULL ra dtype `object` và ép `Int64` bị lỗi; qua JSON thì chạy đúng.
+  - Nguyên nhân: Pyodide mặc định đổi `null` của JS thành `jsnull`, không phải `None`. Điều này khớp với `pyodide.d.ts`, nơi tùy chọn `convertNullToNone` đã deprecated.
+  - Cách sửa: gửi chuỗi JSON rồi `json.loads` trong Python. Spike chưa so tốc độ hai đường trong cùng điều kiện.
+- **Ngắt code chạy quá lâu:** `setInterruptBuffer` của Pyodide cần `SharedArrayBuffer`, tức phải cách ly cross-origin (COOP/COEP). GitHub Pages không đặt được header này, nên **trên Pages** chỉ còn cách **`terminate()` worker rồi khởi động lại**, giống cách PGlite đang làm. Khởi động lại tốn lại khoảng 4,6 s (ấm), trên máy yếu thì lâu hơn. Cloudflare Pages (deploy.md §6) đặt được COOP/COEP, nên đây là một quyết định về chỗ host. Chưa kiểm COEP có làm hỏng việc nạp tài nguyên khác của app không.
 - **Hai engine trong hai worker riêng chạy ổn:** PGlite seed `lab` song song với lúc Pyodide khởi động. Không đụng nhau, và khi một worker bị terminate thì worker kia không ảnh hưởng.
 
 ## 4. Giấy phép, CDN hay tự host, ngân sách
 
-**Giấy phép** (đọc từ `METADATA` của từng wheel; dòng cho `assets/THIRD_PARTY.md` khi build thật):
+**Giấy phép** (dòng cho `assets/THIRD_PARTY.md` khi build thật):
+
+- Lấy từ trường `License`/`License-Expression` trong `METADATA` của wheel: pandas, numpy, pytz, six, fonttools, pyparsing, pillow, packaging, contourpy, matplotlib.
+- Chỉ lấy từ classifier (trường `License` không rõ): kiwisolver, cycler, python-dateutil.
+- Chưa đọc file giấy phép: CPython trong wasm, cùng các thư viện C được nhúng vào wasm.
+- Khi build thật, phải đọc file LICENSE của từng gói.
 
 | Gói | Giấy phép |
 |---|---|
@@ -169,6 +177,9 @@ Lý do giữ hẹp:
   4. Chuẩn hóa (§3), đổi về `QueryResult`, rồi so bằng `compareResults` với đáp án Python của bài (cũng chạy trong worker), có `ordered` khi cần.
 - **Biểu đồ:** **không dùng matplotlib** (tiết kiệm 9,4 MB và 2 s cho hình đầu). Người học trả DataFrame hai cột; app vẽ bằng renderer bar/line của dashboard có sẵn.
 - **Nội dung:** `content/general/py.yml`, cùng khuôn drill (`faded | open | trap`, `hint`, `wrong`), id `g-py-…` lưu vào `save.completed` như drill hiện tại. Không bump save.
+  - `DRILL_ID` (`/^g-[a-z0-9-]+$/`, `src/save.ts`) nhận id này.
+  - `skillOfDrill` (`src/home.ts`) trả `undefined`, vì `py_…` không phải skill id, nên drill Python không làm "học" thêm skill SQL nào.
+  - Chưa kiểm các chỗ khác đọc `completed` (XP, practice hub).
 - **Tài nguyên:**
   - `scripts/pyodide.mjs` tải bản pin 314.0.x vào `public/pyodide/` lúc build và kiểm sha256;
   - thêm nhóm `py` vào `check-budget.mjs`;
