@@ -1,4 +1,3 @@
-import { parse as parseYaml } from 'yaml';
 import { grade } from '../grader';
 import { getLang, locale, t } from '../i18n';
 import { engineHash, engineRouteOf, hashOf } from '../route';
@@ -25,13 +24,13 @@ let view: EngineView | undefined;
 let failed = false;
 
 function engineChunk(): Promise<EngineView> {
-  pending ??= Promise.all([import('./engineView'), import('../engineSources-pg'), import('../engineSources-mg'), import('../engineSources-dy')])
-    .then(([m, postgres, mongodb, dynamodb]) => {
+  pending ??= Promise.all([import('./engineView'), import('../engineSources')])
+    .then(([m, src]) => {
       m.initEngine({
-        h, icon, t, getLang, locale, app, persist, announce, loader, reducedMotion, isDark, parseYaml, renderResult, errorView, optionOrder,
+        h, icon, t, getLang, locale, app, persist, announce, loader, reducedMotion, isDark, renderResult, errorView, optionOrder,
         engineHash, engineRouteOf, hashOf, rerender: () => actions.rerender(), cls: { CARD, BTN_GO, BTN_SECONDARY, PILL, cx },
         lab: { sql: (text) => runOn('lab', text), grade: (run, solution, player, ordered) => grade(run, solution, player, ordered), verdict: verdictText },
-      }, { postgres, mongodb, dynamodb });
+      }, src);
       failed = false;
       return (view = m);
     }, (e: unknown) => {

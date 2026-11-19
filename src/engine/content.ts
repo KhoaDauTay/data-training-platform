@@ -22,10 +22,20 @@ export const CHECKS = ['rows', 'plan', 'catalog', 'doc'] as const;
 export type Check = (typeof CHECKS)[number];
 
 export interface Bi { vi: string; en: string }
-export interface LabStep { task: Bi; solution: string; check: Check; ordered: boolean; hint: Bi }
+/**
+ * Additive fields (integration, L247): `expect` = engine numbers the player's result must also show (DynamoDB `Count`,
+ * `ScannedCount`); `fact` = a verified sentence shown after the step passes (`probe`/`expect` are the reviewers' check,
+ * re-run by scripts/e2e.mjs); `target` = the query a `CREATE INDEX` step is for.
+ */
+export interface Fact extends Bi { probe?: string; expect?: unknown[][] }
+export interface LabStep { task: Bi; solution: string; check: Check; ordered: boolean; hint: Bi; expect?: Record<string, number>; fact?: Fact; target?: string }
 export interface Lab { setup?: string; steps: LabStep[] }
 export interface Question { q: Bi; options: Bi[]; answer: number; why: Bi }
-export interface Predict extends Question { sql: string }
+/** `expect` (Postgres): the plan node the real EXPLAIN (FORMAT JSON) shows, `{ node, table?, index? }`. */
+export interface Predict extends Question { sql: string; expect?: { node: string; table?: string; index?: string } }
+/** `browser`: runs here; `docs`: numbers come from the official docs, nothing runs (the page says so). */
+export const RUNTIMES = ['browser', 'docs'] as const;
+export type Runtime = (typeof RUNTIMES)[number];
 export const SECTIONS = { idea: ['Ý chính', 'Key idea'], example: ['Ví dụ', 'Example'], practice: ['Thực hành', 'Practice'] } as const;
 export type SectionId = keyof typeof SECTIONS;
 export interface Section { id: SectionId; text: Bi }
@@ -37,6 +47,7 @@ export interface EngineLesson {
   module: string;
   title: Bi;
   kind: Kind;
+  runtime?: Runtime;
   minutes: number;
   objectives: Bi[];
   requires: string[];
@@ -57,14 +68,23 @@ const FM_RE = /^---\n([\s\S]*?)\n---\n([\s\S]*)$/;
 const EN_RE = /^# EN[ \t]*$/m;
 
 type Yaml = (text: string) => unknown;
+/** A lesson file as the build gives it (V22-E `?fm`, scripts/contentJson.mjs): frontmatter already parsed, body as text. */
+export interface LessonSource { fm: unknown; body?: string }
+/** Frontmatter keys of the lesson index (`?fm&meta=…`): parseEngineLesson on a source without body gives a list-only lesson. */
+export const META_KEYS = 'id,engine,level,module,title,title_en,kind,minutes,requires,runtime';
 
-export function parseEngineLesson(source: string, path: string, yaml: Yaml): EngineLesson {
+/** `source`: the `?fm` object (the app), or the raw file text plus a YAML parser (tests, tools). */
+export function parseEngineLesson(source: string | LessonSource, path: string, yaml?: Yaml): EngineLesson {
   const fail = (msg: string): never => {
     throw new Error(`${path}: ${msg}`);
   };
   const where = PATH_RE.exec(path.replace(/\\/g, '/')) ?? fail('đường dẫn phải là content/engine/<engine>/L<n>/<NN>-<slug>.md');
-  const m = FM_RE.exec(source.replace(/\r\n/g, '\n')) ?? fail('thiếu frontmatter ---');
-  const fm = (yaml(m[1]) ?? {}) as Record<string, unknown>;
+  let src: LessonSource;
+  if (typeof source === 'string') {
+    const m = FM_RE.exec(source.replace(/\r\n/g, '\n')) ?? fail('thiếu frontmatter ---');
+    src = { fm: yaml ? yaml(m[1]) : fail('cần bộ đọc YAML'), body: m[2] };
+  } else src = source ?? fail('thiếu frontmatter ---');
+  const fm = (src.fm ?? {}) as Record<string, unknown>;
   const str = (k: string): string => (typeof fm[k] === 'string' && fm[k] ? fm[k] : fail(`thiếu ${k}`));
   const bi = (v: unknown, what: string): Bi => {
     const b = v as Partial<Bi> | undefined;
@@ -77,6 +97,14 @@ export function parseEngineLesson(source: string, path: string, yaml: Yaml): Eng
     if (options.length < 2) fail(`${what} cần ít nhất 2 lựa chọn`);
     const answer = typeof x.answer === 'number' && Number.isInteger(x.answer) && x.answer >= 0 && x.answer < options.length ? x.answer : fail(`${what}.answer phải là chỉ số của một lựa chọn`);
     return { q: bi(x.q, `${what}.q`), options, answer, why: bi(x.why, `${what}.why`) };
+  };
+  const counts = (v: unknown, what: string): Record<string, number> => {
+    const o = (v ?? {}) as Record<string, unknown>;
+    return typeof v === 'object' && !Array.isArray(v) && Object.values(o).every((n) => typeof n === 'number') ? (o as Record<string, number>) : fail(`${what} phải là { tên: số }`);
+  };
+  const fact = (v: unknown, what: string): Fact => {
+    const f = (v ?? {}) as Record<string, unknown>;
+    return { ...bi(f, what), ...(typeof f.probe === 'string' ? { probe: f.probe } : {}), ...(Array.isArray(f.expect) ? { expect: f.expect as unknown[][] } : {}) };
   };
 
   const [engine, level, nn] = [where[1] as EngineId, where[2] as Level, where[3]];
@@ -96,6 +124,9 @@ export function parseEngineLesson(source: string, path: string, yaml: Yaml): Eng
     order: Number(nn),
   };
   if (lesson.id !== lessonIdFor(engine, level, nn)) fail(`id phải là ${lessonIdFor(engine, level, nn)} (theo đường dẫn)`);
+  if (fm.runtime !== undefined) lesson.runtime = RUNTIMES.includes(fm.runtime as Runtime) ? (fm.runtime as Runtime) : fail(`runtime phải là một trong ${RUNTIMES.join(', ')}`);
+  // An index entry (no body): the header only; the lesson's own chunk is parsed in full when it opens.
+  if (src.body === undefined) return lesson;
   if (!lesson.objectives.length) fail('cần ít nhất một objectives');
   if (fm.viz !== undefined) lesson.viz = /^[a-z0-9-]+$/.test(String(fm.viz)) ? String(fm.viz) : fail('viz phải là [a-z0-9-]+');
   if (fm.lab !== undefined) {
@@ -108,6 +139,9 @@ export function parseEngineLesson(source: string, path: string, yaml: Yaml): Eng
         check: CHECKS.includes(s.check as Check) ? (s.check as Check) : fail(`lab.steps[${i}].check phải là một trong ${CHECKS.join(', ')}`),
         ordered: s.ordered === true,
         hint: bi(s.hint, `lab.steps[${i}].hint`),
+        ...(s.expect !== undefined ? { expect: counts(s.expect, `lab.steps[${i}].expect`) } : {}),
+        ...(s.fact !== undefined ? { fact: fact(s.fact, `lab.steps[${i}].fact`) } : {}),
+        ...(typeof s.target === 'string' && s.target.trim() ? { target: s.target.trim() } : {}),
       };
     });
     if (!steps.length) fail('lab cần ít nhất một bước');
@@ -117,12 +151,17 @@ export function parseEngineLesson(source: string, path: string, yaml: Yaml): Eng
   if (fm.predict !== undefined) {
     const p = fm.predict as Record<string, unknown>;
     lesson.predict = { sql: typeof p.sql === 'string' && p.sql.trim() ? p.sql.trim() : fail('predict.sql trống'), ...question(p, 'predict') };
+    const x = p.expect as Record<string, unknown> | undefined;
+    if (x !== undefined) {
+      if (typeof x?.node !== 'string') fail('predict.expect cần node');
+      lesson.predict.expect = { node: String(x.node), ...(x.table ? { table: String(x.table) } : {}), ...(x.index ? { index: String(x.index) } : {}) };
+    }
   }
   if ((kind === 'lab' || kind === 'capstone') && !lesson.lab) fail(`kind ${kind} cần lab`);
   if (kind === 'quiz' && !lesson.quiz?.length) fail('kind quiz cần quiz');
   if (kind === 'predict' && !lesson.predict) fail('kind predict cần predict');
 
-  const [viPart, enPart, extra] = m[2].split(EN_RE);
+  const [viPart, enPart, extra] = src.body.split(EN_RE);
   if (enPart === undefined) fail('thiếu khối "# EN"');
   if (extra !== undefined) fail('chỉ được một khối "# EN"');
   const vi = sectionsOf(viPart, 0, fail);
@@ -148,8 +187,8 @@ function sectionsOf(part: string, lang: 0 | 1, fail: (msg: string) => never): { 
 
 /** Optional `content/engine/<engine>/modules.yml`: `- { id, vi, en }`, the modules' names in display order. */
 export interface ModuleName { id: string; vi: string; en: string }
-export function parseModules(source: string, path: string, yaml: Yaml): ModuleName[] {
-  const v = yaml(source);
+export function parseModules(source: string | unknown, path: string, yaml?: Yaml): ModuleName[] {
+  const v = typeof source === 'string' ? (yaml ?? ((): never => { throw new Error(`${path}: cần bộ đọc YAML`); }))(source) : source;
   if (!Array.isArray(v)) throw new Error(`${path}: phải là danh sách`);
   return v.map((x: Record<string, unknown>, i) => {
     if (typeof x?.id !== 'string' || typeof x.vi !== 'string' || typeof x.en !== 'string') throw new Error(`${path}[${i}]: cần id, vi, en`);
@@ -187,7 +226,8 @@ export function lessonProblems(l: EngineLesson, ids: ReadonlySet<string>): strin
   const pairs: [string, Bi][] = [
     ['title', l.title], ...l.objectives.map((b, i): [string, Bi] => [`objectives[${i}]`, b]),
     ...l.sections.map((s): [string, Bi] => [`## ${SECTIONS[s.id][1]}`, s.text]),
-    ...(l.lab?.steps ?? []).flatMap((s, i): [string, Bi][] => [[`lab.steps[${i}].task`, s.task], [`lab.steps[${i}].hint`, s.hint]]),
+    ...(l.lab?.steps ?? []).flatMap((s, i): [string, Bi][] => [[`lab.steps[${i}].task`, s.task], [`lab.steps[${i}].hint`, s.hint],
+      ...(s.fact ? [[`lab.steps[${i}].fact`, { vi: s.fact.vi, en: s.fact.en }] as [string, Bi]] : [])]),
     ...[...(l.quiz ?? []), ...(l.predict ? [l.predict] : [])].flatMap((q, i): [string, Bi][] =>
       [[`q${i}`, q.q], [`why${i}`, q.why], ...q.options.map((o, j): [string, Bi] => [`q${i}.options[${j}]`, o])]),
   ];

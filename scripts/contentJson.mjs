@@ -12,6 +12,15 @@ export function mdData(text) {
 }
 
 /**
+ * Integration (L247): `?fm&meta=a,b` keeps only those frontmatter keys and drops the body: an index chunk (the Database
+ * Engine lesson list) without every lesson's text, which then loads per file through plain `?fm`.
+ */
+export function metaData(text, keys) {
+  const d = mdData(text);
+  return d && { fm: Object.fromEntries(keys.filter((k) => d.fm && Object.hasOwn(d.fm, k)).map((k) => [k, d.fm[k]])) };
+}
+
+/**
  * Vite plugin: `import x from '…/file.yml'` gives the parsed data, and `import x from '…/file.md?fm'` (also through
  * import.meta.glob with `query: '?fm'`) gives mdData(). Any project file, so future content folders (content/engine/**)
  * ship as JSON without touching this. `?raw` imports are untouched (tests still read the text).
@@ -23,7 +32,8 @@ export const contentJson = () => ({
     if (id.includes('/node_modules/')) return;
     const [file, query = ''] = id.split('?');
     const q = new URLSearchParams(query);
-    const data = /\.ya?ml$/.test(file) && [...q.keys()].every((k) => k === 'import') ? yamlData(code) : q.has('fm') && file.endsWith('.md') ? mdData(code) : undefined;
+    const data = /\.ya?ml$/.test(file) && [...q.keys()].every((k) => k === 'import') ? yamlData(code)
+      : q.has('fm') && file.endsWith('.md') ? (q.has('meta') ? metaData(code, q.get('meta').split(',')) : mdData(code)) : undefined;
     if (data === undefined) return;
     return { code: `export default ${JSON.stringify(data)};`, map: null };
   },

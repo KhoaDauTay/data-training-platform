@@ -27,7 +27,7 @@ predict:
     - vi: "700, vì index sparse không có khóa cho 300 phim thiếu `rated`"
       en: "700, because the sparse index has no key for the 300 movies without `rated`"
     - vi: "Lỗi, vì không được `hint()` một index sparse"
-      en: "An error, because a sparse index cannot be hinted"
+      en: "An error, because a sparse index cannot be passed to `hint()`"
   answer: 1
   why:
     vi: "Không có `hint()`, planner tự tránh index sparse khi kết quả sẽ thiếu. `hint()` bỏ qua kiểm tra đó, nên câu đếm chỉ thấy tài liệu có khóa trong index: 700. Muốn đếm đúng cả collection thì gọi `countDocuments()` không `hint()`."

@@ -76,7 +76,7 @@ lab:
       check: doc
       ordered: true
       expect: { Count: 2 }
-      hint: { vi: "Hai `Get` trong `TransactItems`; kết quả theo đúng thứ tự các `Get`.", en: "Two `Get` actions in `TransactItems`; the result follows their order." }
+      hint: { vi: "Hai `Get` trong `TransactItems`; kết quả theo đúng thứ tự các `Get`.", en: "Two `Get` in `TransactItems`; the result follows the order of the `Get` actions." }
 quiz:
   - q: { vi: "Bước 1 trả `Count` 2, `ScannedCount` 5. Một khách khác để lại 40 giỏ, 38 giỏ đã hết hạn nhưng TTL chưa xóa, mỗi giỏ 1 KB. Query bước 1 (đọc cuối cùng) cho khách này tốn bao nhiêu RCU?", en: "Step 1 returns `Count` 2, `ScannedCount` 5. Another customer left 40 carts, 38 of them expired but not yet deleted by TTL, 1 KB each. How many RCU does the step 1 Query (eventually consistent) cost for this customer?" }
     options:

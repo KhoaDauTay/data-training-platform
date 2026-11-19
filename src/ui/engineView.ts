@@ -1,6 +1,6 @@
 import {
   blocksOf, ENGINES, engineXp, isRight, lessonPassed, parseEngineLesson, parseModules, partsOf, progressOf, SECTIONS, treeOf,
-  type EngineId, type EngineLesson, type Level, type ModuleName, type Question, type Tree,
+  type EngineId, type EngineLesson, type LessonSource, type Level, type ModuleName, type Question, type Tree,
 } from '../engine/content';
 import { heapView } from '../engine/inside';
 import { gradable, LAB_RUNNERS, type LabEnv, type LabOutput, type LabRunner } from '../engine/labs';
@@ -24,13 +24,14 @@ import type { Row } from './sidebar';
 export interface EngineDeps {
   h: typeof Dom.h; icon: typeof Icons.icon; t: typeof I18n.t; getLang: typeof I18n.getLang; locale: typeof I18n.locale;
   app: typeof State.app; persist: typeof State.persist; announce: typeof Dom.announce; loader: typeof Dom.loader;
-  reducedMotion: typeof Dom.reducedMotion; isDark: () => boolean; parseYaml: (text: string) => unknown;
+  reducedMotion: typeof Dom.reducedMotion; isDark: () => boolean;
   renderResult: typeof ResultTable.renderResult; errorView: typeof Feedback.errorView; optionOrder: typeof Tickets.optionOrder;
   engineHash: typeof Route.engineHash; engineRouteOf: typeof Route.engineRouteOf; hashOf: typeof Route.hashOf; rerender: () => void;
   cls: { CARD: string; BTN_GO: string; BTN_SECONDARY: string; PILL: string; cx: (...c: (string | false | null | undefined)[]) => string };
   lab: LabEnv;
 }
-export type EngineSources = Record<EngineId, { lessons: Record<string, string>; modules: Record<string, string> }>;
+/** src/engineSources.ts: the lesson index (list fields only), one lazy chunk per lesson, and every engine's modules.yml. */
+export interface EngineSources { meta: Record<string, LessonSource>; full: Record<string, () => Promise<LessonSource>>; modules: Record<string, unknown> }
 
 let d: EngineDeps;
 let lessons: EngineLesson[] = [];
@@ -42,11 +43,26 @@ const et = (key: EngineKey, params?: I18n.Params): string => engineText(d.getLan
 /** Parses every engine's content (throws on a broken file: the main part shows the load failure and Retry). */
 export function initEngine(deps: EngineDeps, src: EngineSources): void {
   d = deps;
-  lessons = ENGINES.flatMap((e) => Object.entries(src[e].lessons).map(([path, s]) => parseEngineLesson(s, path, deps.parseYaml)));
+  fullSrc = src.full;
+  lessons = Object.entries(src.meta).map(([path, s]) => parseEngineLesson(s, path));
   for (const e of ENGINES) {
-    const names: ModuleName[] = Object.entries(src[e].modules).flatMap(([path, s]) => parseModules(s, path, deps.parseYaml));
+    const names: ModuleName[] = Object.entries(src.modules).filter(([path]) => path.includes(`/${e}/`)).flatMap(([path, s]) => parseModules(s, path));
     trees[e] = treeOf(e, lessons, names);
   }
+}
+
+/** Full lessons (sections, lab, quiz), parsed from their own chunk on first open; a failed load is retried by Retry. */
+let fullSrc: EngineSources['full'] = {};
+const fulls = new Map<string, EngineLesson | 'loading' | 'failed'>();
+const pathOf = (l: EngineLesson): string | undefined => Object.keys(fullSrc).find((p) => p.includes(`/${l.engine}/${l.level}/${String(l.order).padStart(2, '0')}-`));
+export function fullLesson(l: EngineLesson): EngineLesson | 'loading' | 'failed' {
+  const have = fulls.get(l.id);
+  if (have) return have;
+  const path = pathOf(l);
+  if (!path) return 'failed';
+  fulls.set(l.id, 'loading');
+  void fullSrc[path]().then((s) => fulls.set(l.id, parseEngineLesson(s, path)), () => fulls.set(l.id, 'failed')).finally(() => d.rerender());
+  return 'loading';
 }
 
 const done = (): Set<string> => new Set(d.app.save.completed);
@@ -81,7 +97,13 @@ export function enginePage(): HTMLElement {
   const r = d.engineRouteOf(location.hash);
   const engine = ENGINES.find((e) => e === r.engine);
   const lesson = engine && lessons.find((l) => l.id === r.lesson && l.engine === engine);
-  const page = lesson ? lessonPage(lesson) : engine ? enginePg(engine) : overview();
+  const f = lesson && fullLesson(lesson);
+  const page = !lesson ? (engine ? enginePg(engine) : overview())
+    : f === 'loading' ? d.h('p', { class: 'm-0 flex min-h-40 items-start gap-2 text-muted', 'aria-live': 'polite' }, d.loader(), d.t('engine.loading'))
+      : f === 'failed' ? d.h('div', { role: 'alert', class: 'space-y-2' }, d.h('p', { class: 'm-0' }, d.t('engine.failed')),
+        d.h('button', { type: 'button', onclick: () => { fulls.delete(lesson.id); d.rerender(); } }, d.t('data.retry')))
+        : lessonPage(f!);
+  if (f === 'loading' || f === 'failed') return page; // not #engine-page yet: smoke and the axe harness wait for the drawn lesson
   page.id = 'engine-page'; // drawn (not the loading line): tests/axeHarness.ts and scripts/smoke.mjs wait for it
   return page;
 }
@@ -342,7 +364,7 @@ function lessonPage(l: EngineLesson): HTMLElement {
   const ok = done();
   const parts = partsOf(l, gradable);
   const all = flat(l.engine);
-  const next = all[all.indexOf(l) + 1];
+  const next = all[all.findIndex((x) => x.id === l.id) + 1];
   const module = trees[l.engine].levels.find((x) => x.level === l.level)!.modules.find((m) => m.id === l.module)!;
   const req = l.requires.map((id) => lessons.find((x) => x.id === id)).filter((x): x is EngineLesson => !!x);
   const isDone = ok.has(l.id);

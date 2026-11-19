@@ -44,7 +44,8 @@ const GROUPS = [
   ['sqlmotion', /^sqlMotion-/, 8], // v10 Track A (L154): src/art/sqlMotion.ts, the Execution order film, GROUP BY fold, JOIN pairs and the guess, VI/EN text inside; lazy on the first draw of that tab
   ['portfolioPng', /^portfolioPng-/, 6], // V19-D (L170): src/ui/portfolioPng.ts + src/portfolio.ts (card pictures, portfolio zip, take-home file), lazy on the first picture or portfolio click: 3.2 KB gz
   ['datasetPanel', /^datasetPanel-/, 5], // V20-B: Sandbox sample-dataset panel, lazy (4.0 KB gz); the CSV itself is public/datasets/, fetched on click, not in assets
-  ['engine', /^engineSources-/, 40], // ENG-CORE (L220): content/engine/<engine>/** as raw text, one lazy chunk per engine (engineSources-pg/-mg/-dy), fetched together on the first #/engine or #/me visit (empty until content lands; the 3 samples in tests/fixtures/engine were 3 KB gz)
+  ['engine', /^engineSources-/, 40], // ENG-CORE (L220), L247: the Database Engine lesson index (list fields of every lesson as JSON, src/engineSources.ts), fetched on the first #/engine or #/me visit: 23 KB gz for 195 lessons
+  ['engineLesson', /^\d\d-[a-z0-9-]+-[\w-]{8}\.js$/, 8, 'each'], // L247: one lazy chunk per lesson (content/engine/<engine>/L<n>/<NN>-<slug>.md as JSON), fetched when it opens; per file, 5.9 KB gz max at integration
   ['engineui', /^engineView-/, 20], // ENG-CORE (L220): src/ui/engineView.ts + src/engine/{content,labs,vizRegistry,inside}.ts + src/i18n/engine.ts (pages, lesson viewer, graders, VI/EN text), lazy: 9.7 KB gz at T1
   // ENG-PGLAB (L230): the engine lab's own worker (src/engine/pglab/pglabWorker.ts: a second PGlite JS bundle + session +
   // checkers; the .wasm/.data are shared with the game worker) and the contrib tarballs it fetches only when a lab names
@@ -61,15 +62,20 @@ const GROUPS = [
 
 const dir = process.argv[2] ?? 'dist/assets';
 const sums = {};
+const maxes = {};
 const files = readdirSync(dir).map((f) => [f, `${dir}/${f}`]);
 if (existsSync(`${dir}/../index.html`)) files.push(['index.html', `${dir}/../index.html`]);
 for (const [f, path] of files) {
   const [name] = GROUPS.find(([, re]) => re.test(f));
-  sums[name] = (sums[name] ?? 0) + gzipSync(readFileSync(path), { level: 9 }).length / 1024;
+  const kb = gzipSync(readFileSync(path), { level: 9 }).length / 1024;
+  sums[name] = (sums[name] ?? 0) + kb;
+  maxes[name] = Math.max(maxes[name] ?? 0, kb);
 }
 let fail = false;
-for (const [name, , budget, optional] of GROUPS) {
-  const kb = sums[name];
+for (const [name, , budget, mode] of GROUPS) {
+  const optional = mode === 'optional';
+  // 'each' (L247): the budget is per file (one lazy chunk per lesson, only the open one is fetched); the line shows the largest.
+  const kb = mode === 'each' ? maxes[name] : sums[name];
   if (kb === undefined && optional) {
     console.log(`skip ${name.padEnd(10)} not in this build (not wired yet)`);
     continue;
