@@ -37,6 +37,12 @@ const GROUPS = [
   ['sqlmotion', /^sqlMotion-/, 8], // v10 Track A (L154): src/art/sqlMotion.ts, the Execution order film, GROUP BY fold, JOIN pairs and the guess, VI/EN text inside; lazy on the first draw of that tab
   ['portfolioPng', /^portfolioPng-/, 6], // V19-D (L170): src/ui/portfolioPng.ts + src/portfolio.ts (card pictures, portfolio zip, take-home file), lazy on the first picture or portfolio click: 3.2 KB gz
   ['datasetPanel', /^datasetPanel-/, 5], // V20-B: Sandbox sample-dataset panel, lazy (4.0 KB gz); the CSV itself is public/datasets/, fetched on click, not in assets
+  // ENG-PGLAB (L230): the engine lab's own worker (src/engine/pglab/pglabWorker.ts: a second PGlite JS bundle + session +
+  // checkers; the .wasm/.data are shared with the game worker) and the contrib tarballs it fetches only when a lab names
+  // them (already gzip). 133 / 136 / 1150 KB measured 2026-11-20. Optional (`true`) until ENG-CORE imports PgLabClient.
+  ['pglab', /^pglabWorker-/, 150, true],
+  ['pgext', /^(pageinspect|pg_visibility|amcheck|pg_walinspect|pg_buffercache|pg_freespacemap|bloom|btree_gin|btree_gist|pg_trgm|pg_stat_statements|ltree)\.tar-.*\.gz$/, 145, true],
+  ['pgcrypto', /^pgcrypto\.tar-.*\.gz$/, 1160, true], // bundles OpenSSL: fetched only by a lab that names pgcrypto
   ['rest', /./, 1560],
 ];
 
@@ -49,8 +55,12 @@ for (const [f, path] of files) {
   sums[name] = (sums[name] ?? 0) + gzipSync(readFileSync(path), { level: 9 }).length / 1024;
 }
 let fail = false;
-for (const [name, , budget] of GROUPS) {
+for (const [name, , budget, optional] of GROUPS) {
   const kb = sums[name];
+  if (kb === undefined && optional) {
+    console.log(`skip ${name.padEnd(10)} not in this build (not wired yet)`);
+    continue;
+  }
   const bad = kb === undefined || kb > budget; // a missing group means the build changed shape: look before deploying
   fail ||= bad;
   console.log(`${bad ? 'FAIL' : 'ok  '} ${name.padEnd(10)} ${kb === undefined ? 'not found' : `${kb.toFixed(0).padStart(5)} KB gz / ${budget} KB`}`);
