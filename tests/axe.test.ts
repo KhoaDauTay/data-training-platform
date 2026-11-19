@@ -74,11 +74,12 @@ async function visit(hash: string): Promise<void> {
     if (domain) expect(activeDomain()).toBe(domain);
     expect(byId(main).querySelector('h1')).not.toBeNull();
     if (route === 'me') expect(document.getElementById('me-name')).not.toBeNull(); // v16: the lazy page drawn, not its loading line
+    if (hash === '#/learn/interview') expect(document.getElementById('iv-sets')).not.toBeNull(); // v17: the lazy list, not its loading line
   }, { timeout: 10_000, interval: 50 });
   await wait(100); // the redraws that follow (sidebar, chips)
 }
 
-const PAGES = ['#/', '#/learn', '#/learn/sql/1', '#/learn/skill/select', '#/learn/adv/a2', '#/practice', '#/me',
+const PAGES = ['#/', '#/learn', '#/learn/sql/1', '#/learn/skill/select', '#/learn/adv/a2', '#/learn/interview', '#/practice', '#/me',
   '#/d/logistics', '#/d/logistics/play', '#/d/logistics/data/ports', '#/d/logistics/dashboard', '#/d/logistics/map',
   '#/d/ecommerce', '#/d/ecommerce/play', '#/d/ecommerce/data', '#/d/ecommerce/dashboard', '#/d/ecommerce/map',
   '#/d/finance', '#/d/finance/play', '#/d/finance/data', '#/d/finance/dashboard', '#/d/finance/map'];

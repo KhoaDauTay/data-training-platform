@@ -20,6 +20,7 @@ const GROUPS = [
   ['parser', /^(libpg-query|parser|steps)-/, 410],
   ['fonts', /\.woff2$/, 60], // Plan 7 V2: Nunito variable, latin 39 KB + vietnamese 13 KB (woff2 is already compressed)
   ['general', /^generalSources-/, 70], // Plan 8a D8a-12: drills (content/general/sql.yml) + advanced nodes (adv.yml) + parsers, lazy, fetched only when a drill or General page opens
+  ['interview', /^interview(Sources|View)-/, 25], // v17 I5 (L144): 19 KB gz at T1 (content 12 + UI 7). The interview room, lazy: content/general/interview.yml + parser (interviewSources) and its UI + VI/EN text (interviewView), fetched only on #/learn/interview or a run
   ['learnui', /^(learnView|drillBrief)-/, 25], // Plan 8a D8a-12/13: General UI (drill workspace, learning path) and its VI/EN text, lazy
   ['ecom', /^ecomSources-/, 50], // Plan 9: content/domains/ecom (30 tickets, chapters, people, KPIs), lazy on the first visit (D9-16)
   ['ecomart', /^ecommerce-/, 10], // Plan 9: src/art/ecommerce.ts (store scene, delivery map), lazy

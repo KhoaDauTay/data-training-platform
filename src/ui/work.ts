@@ -14,7 +14,7 @@ import { app, done, editorSchema, initialDoc, persist, stepKey, type LastRun } f
 import { localStore } from '../storage';
 import { BTN_SECONDARY, BTN_SUBMIT, cx } from '../theme';
 import { blanksIn, fillAction, firstBlank, type Ticket } from '../tickets';
-import { DRILL_ID } from '../save';
+import { DRILL_ID, INTERVIEW_ID } from '../save';
 import { diffView, hasDiff, verdictText } from './tryPreview';
 import { celebrate, react } from './celebrate';
 import { announce, h, kbd, richText } from './dom';
@@ -430,7 +430,8 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
       } else {
         if (fail.reason === 'rows' && played?.result) played.mark = fail.sample;
         // A General drill (practice, L84) says which columns differ and shows the rows; story, lane and E-com tickets keep L25.
-        const drill = DRILL_ID.test(tk.id);
+        // v17: an interview question shows no expected rows (that would be the answer), only the story's facts
+        const drill = DRILL_ID.test(tk.id) && !INTERVIEW_ID.test(tk.id);
         say('bad', () => h('div', {}, drill ? verdictText(fail) : gradeMessage(fail), tip ? h('div', { class: 'mt-2' }, richText(tip())) : null, voice()),
           undefined, drill && hasDiff(fail) ? () => diffView(fail) : undefined); // detail set = G6's tables show
       }

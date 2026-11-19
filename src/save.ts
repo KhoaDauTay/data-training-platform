@@ -125,7 +125,14 @@ const isString = (x: unknown): x is string => typeof x === 'string';
  */
 export const DRILL_ID = /^g-[a-z0-9-]+$/;
 // Plan 9 D9-7 / v14: e-commerce and finance ticket ids (ECOM_ID, FIN_ID) are kept by pattern for the same reason (lazy domain chunks).
-const isWorkId = (ids: ReadonlySet<string>, id: string): boolean => ids.has(id) || DRILL_ID.test(id) || ECOM_ID.test(id) || FIN_ID.test(id);
+/**
+ * v17 I5 (L144): interview questions and take-home steps (`g-iv-…`) match DRILL_ID so the drill engine runs them on `lab`, but
+ * the interview room writes nothing to the save (its results are the device pref `cargo-query/interview`). A save that holds
+ * one anyway (an old bug, an edited file) drops it on read: it never counts as completed or learned.
+ */
+export const INTERVIEW_ID = /^g-iv-/;
+const isWorkId = (ids: ReadonlySet<string>, id: string): boolean =>
+  !INTERVIEW_ID.test(id) && (ids.has(id) || DRILL_ID.test(id) || ECOM_ID.test(id) || FIN_ID.test(id));
 
 function pickRecord<T>(v: unknown, ok: (x: unknown) => x is T, ticketIds: ReadonlySet<string>): Record<string, T> {
   const out: Record<string, T> = {};

@@ -1,5 +1,6 @@
 import { activeDomain, type DomainId } from './domains';
 import type { General } from './general';
+import type { InterviewContent } from './interview';
 import { parseKpis, setDomainKpis } from './home';
 import { parseLaneBriefs, type LaneBrief } from './lanes';
 import { parse as parseYaml } from 'yaml';
@@ -103,6 +104,20 @@ export function loadGeneral(): Promise<General> {
     .then(({ sqlDrills, advNodes, buildGeneral }) => (general = buildGeneral(parseYaml(sqlDrills), parseYaml(advNodes), parseLessonBody)))
     .catch((e: unknown) => {
       generalLoading = undefined;
+      throw e;
+    }));
+}
+
+let interviewLoading: Promise<InterviewContent> | undefined;
+/**
+ * v17 I5 (L144): the interview room's sets and take-homes, their own lazy chunk (src/interviewSources.ts, budget `interview`).
+ * Never part of loadContent(); a failed load is dropped so the next call retries.
+ */
+export function loadInterview(): Promise<InterviewContent> {
+  return (interviewLoading ??= import('./interviewSources')
+    .then(({ interviewYml, buildInterview }) => buildInterview(parseYaml(interviewYml)))
+    .catch((e: unknown) => {
+      interviewLoading = undefined;
       throw e;
     }));
 }

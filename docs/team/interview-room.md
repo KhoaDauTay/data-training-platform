@@ -1,5 +1,7 @@
 # Phòng phỏng vấn (v17 I5): thiết kế lớp nội dung + dữ liệu
 
+> **Đã nối UI (L144, decision-log).** Chỗ nào dưới đây khác L144 thì L144 đúng: trang là `#/learn/interview` (không phải `#/practice/interview`); Save **bỏ** id `g-iv-…` khi đọc (`INTERVIEW_ID`), không giữ; pref `cargo-query/interview` giữ một lượt đang làm cho **mỗi** bộ đề / take-home (`live[id]`).
+
 Track F (L138). Chỉ nội dung và dữ liệu, chưa có UI, chưa có route; UI làm sau v16. Nguồn: `product-roadmap-v15.md` I5, D-N10, tiêu chí thành công v17.
 
 ## 1. Định dạng dữ liệu

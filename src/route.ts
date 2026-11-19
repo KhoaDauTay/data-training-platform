@@ -50,6 +50,12 @@ export const drillHash = (id: string): string => `${LEARN_PLAY}/${id}`;
 /** The drill id in a drill workspace hash, else undefined. Ids are checked against the drill id pattern (never free text). */
 export const drillOfHash = (hash: string): string | undefined => /^#\/?learn\/play\/(g-[a-z0-9-]+)$/.exec(hash)?.[1];
 
+/** v17 I5 (L144): the interview room's list page, in the General area. A run uses drillHash(<question or step id>). */
+export const INTERVIEW_PAGE = '#/learn/interview';
+export const isInterviewPage = (hash: string): boolean => /^#\/?learn\/interview(?=$|[/?])/.test(hash);
+/** Interview questions and take-home steps (`g-iv-…`): drillOfHash matches them too, so the boot reopens them as an interview. */
+export const isInterviewId = (id: string): boolean => id.startsWith('g-iv-');
+
 /** '' (no hash) → undefined, so the remembered route can be used; any unknown path falls back to home. */
 export function parseRoute(hash: string): Route | undefined {
   if (hash === '') return undefined;

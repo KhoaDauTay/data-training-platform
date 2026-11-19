@@ -45,7 +45,7 @@ export interface GuideState {
   /** parseRoute(location.hash). */
   route?: string;
   /** On #/learn…: the overview, a module (its number), a skill page or an advanced node (`external` = reading links only). */
-  learn?: 'path' | number | 'skill' | 'adv' | 'adv-ext';
+  learn?: 'path' | number | 'skill' | 'adv' | 'adv-ext' | 'interview';
   /** session.mode.kind. */
   mode: string;
   /** Kind of the open ticket when it is a General drill (faded | open | trap | challenge); undefined for every other ticket. */
@@ -67,6 +67,7 @@ export function offeredIds(s: GuideState): string[] {
   if (s.modal) return [];
   if (s.route === 'learn') {
     const l = s.learn ?? 'path';
+    if (l === 'interview') return []; // v17 I5 (L144): the interview room has no guide of Boon's
     return typeof l === 'number' ? ['module-intro', `module:${l}`] : [l];
   }
   if (s.route === 'practice') return ['practice'];

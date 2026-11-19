@@ -202,7 +202,11 @@ function overview(c: LearnCtx): HTMLElement {
     slot('learn-head'), // v13 G1 step 1: right under the teaching scene, Boon speaks from it
     h('p', { class: 'm-0 flex flex-wrap items-center justify-between gap-2 text-muted' }, lt('learn.stats', { n: known.size, total: c.skills.length, m: mastered, k: nodesDone, nodes: graded.length }), replayBtn('path')),
     placementCard(c),
-    h('div', { class: 'grid gap-6 lg:grid-cols-2' }, sql, adv));
+    h('div', { class: 'grid gap-6 lg:grid-cols-2' }, sql, adv),
+    // v17 I5 (L144): the interview room, a page of its own (#/learn/interview, lazy chunk `interview`)
+    h('section', { class: 'relative cursor-pointer space-y-1 rounded-(--r-card) bg-panel px-5 py-4 ring-1 ring-line hover:ring-accent', 'aria-labelledby': 'track-iv' },
+      h('h2', { id: 'track-iv', class: H2 }, h('a', { href: `${d$.hashOf('learn')}/interview`, class: 'after:absolute after:inset-0' }, lt('learn.interview'))),
+      h('p', { class: 'm-0 text-body-sm text-muted' }, lt('learn.interviewLine'))));
 }
 
 /**

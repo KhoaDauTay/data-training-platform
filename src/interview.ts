@@ -1,11 +1,11 @@
-import { bilingualOf, DRILL_ID, parseDrill, type Drill } from './general';
+import { bilingualOf, DRILL_ID, drillTicket, parseDrill, type Drill } from './general';
 import type { Bilingual } from './progress';
 import type { Ticket } from './tickets';
 
 /**
  * v17 I5 interview room (docs/team/interview-room.md, L138): timed question sets and take-home assignments on `lab`.
- * Pure parser over already-parsed YAML (content/general/interview.yml). Not wired into any chunk yet: it imports values
- * only from src/general.ts (lazy chunk generalSources), never from a main-bundle module (Plan 6 U3).
+ * Pure parser over already-parsed YAML (content/general/interview.yml), in the lazy chunk src/interviewSources.ts (L144): it
+ * imports values only from src/general.ts (lazy), never from a main-bundle module (Plan 6 U3).
  * Ids match DRILL_ID (`g-iv-…`), so the drill engine runs them on `lab` (schemaOf) unchanged; skillOfDrill never reads a
  * skill out of them, and the room never calls complete(): nothing reaches save.completed.
  */
@@ -111,5 +111,32 @@ export function takeHomeTicket(th: TakeHome): Ticket {
     hints: th.steps.map((s) => s.hint.vi),
     steps: th.steps.map((s, i) => ({ ...steps('vi')[i], solution: s.solution })),
     en: { title: th.title.en, body: th.brief.en, task: '', hints: th.steps.map((s) => s.hint.en), steps: steps('en') },
+  };
+}
+
+/** Where an item id (a question `g-iv-<set>-<n>` or a take-home step `g-iv-th-<n>-<k>`) sits: its run, question index, step. */
+export interface ItemPlace { run: string; kind: 'set' | 'th'; index: number; step: number }
+/** v17 UI (L144): the parsed content plus the lookups the interview room needs. Built in the lazy interview chunk. */
+export interface InterviewContent extends Interview {
+  /** A set's questions as drill tickets, or a take-home as one stepped ticket; undefined for an unknown id. */
+  ticketsOf(run: string): Ticket[] | undefined;
+  /** The place of a question or step id from a hash (looked up, never trusted as a pattern). */
+  placeOf(item: string): ItemPlace | undefined;
+}
+
+export function buildInterview(data: unknown): InterviewContent {
+  const iv = parseInterview(data);
+  const places = new Map<string, ItemPlace>();
+  for (const s of iv.sets) s.questions.forEach((q, index) => places.set(q.id, { run: s.id, kind: 'set', index, step: 0 }));
+  for (const th of iv.takeHomes) th.steps.forEach((x, step) => places.set(x.id, { run: th.id, kind: 'th', index: 0, step }));
+  return {
+    ...iv,
+    ticketsOf(run) {
+      const set = iv.sets.find((s) => s.id === run);
+      if (set) return set.questions.map(drillTicket);
+      const th = iv.takeHomes.find((x) => x.id === run);
+      return th && [takeHomeTicket(th)];
+    },
+    placeOf: (item) => places.get(item),
   };
 }
