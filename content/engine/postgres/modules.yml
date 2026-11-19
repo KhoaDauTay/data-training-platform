@@ -1,11 +1,154 @@
-# PostgreSQL modules in display order (ADD-1). `id`/`vi`/`en` are what parseModules (src/engine/content.ts) reads today;
-# `module`/`level`/`title`/`after` are the ADD-1 shape. L3 entries only here: merge other levels' entries around them.
+- id: types
+  module: types
+  level: L1
+  vi: Kiểu dữ liệu và bảng
+  en: Data types and tables
+  title:
+    vi: Kiểu dữ liệu và bảng
+    en: Data types and tables
+  after:
+    vi: Chọn kiểu cho một bảng mới, dùng khóa identity hoặc uuidv7, và chỉ ra vì sao tiền không để float8.
+    en: Choose the types for a new table, use an identity or uuidv7 key, and explain why money never goes in float8.
+- id: constraints
+  module: constraints
+  level: L1
+  vi: Ràng buộc, khóa và NULL
+  en: Constraints, keys and NULL
+  title:
+    vi: Ràng buộc, khóa và NULL
+    en: Constraints, keys and NULL
+  after:
+    vi: Thêm CHECK, khóa ngoại và UNIQUE để database tự từ chối dữ liệu sai ngay lúc ghi.
+    en: Add CHECK, foreign key and UNIQUE constraints so the database itself rejects bad data at write time.
+- id: transactions
+  module: transactions
+  level: L1
+  vi: Schema và transaction
+  en: Schemas and transactions
+  title:
+    vi: Schema và transaction
+    en: Schemas and transactions
+  after:
+    vi: Tách bảng theo schema, gọi đúng bảng qua search_path, và gói nhiều thay đổi để chúng cùng thành công hoặc cùng không xảy ra.
+    en: Split tables into schemas, reach the right table through search_path, and group changes so they all succeed or none happen.
+- id: views
+  module: views
+  level: L1
+  vi: View và materialized view
+  en: Views and materialized views
+  title:
+    vi: View và materialized view
+    en: Views and materialized views
+  after:
+    vi: Lưu một câu hỏi thành view, và biết khi nào cần materialized view cùng REFRESH.
+    en: Save a query as a view, and know when you need a materialized view and REFRESH.
+- id: first-index
+  module: first-index
+  level: L1
+  vi: Index đầu tiên và EXPLAIN
+  en: First index and EXPLAIN
+  title:
+    vi: Index đầu tiên và EXPLAIN
+    en: First index and EXPLAIN
+  after:
+    vi: Tạo index B-tree cho một câu hay chạy, đọc một dòng EXPLAIN và biết câu có dùng index không.
+    en: Create a B-tree index for a frequent query, read an EXPLAIN line and tell whether the query uses the index.
+- id: capstone-l1
+  module: capstone-l1
+  level: L1
+  vi: Kiểm tra cấp L1
+  en: Level L1 check
+  title:
+    vi: Kiểm tra cấp L1
+    en: Level L1 check
+  after:
+    vi: Đưa một bảng đang chạy về trạng thái an toàn và nhanh, chứng minh bằng EXPLAIN.
+    en: Bring a live table to a safe and fast state, and prove it with EXPLAIN.
+- id: btree-multi
+  module: btree-multi
+  level: L2
+  vi: B-tree nhiều cột và index-only
+  en: Multicolumn B-tree and index-only scans
+  title:
+    vi: B-tree nhiều cột và index-only
+    en: Multicolumn B-tree and index-only scans
+  after:
+    vi: Thiết kế index nhiều cột đúng thứ tự cho một câu có lọc và sắp xếp, và thêm INCLUDE để khỏi về bảng.
+    en: Design a multicolumn index in the right order for a query that filters and sorts, and add INCLUDE to skip the table.
+- id: partial-expr
+  module: partial-expr
+  level: L2
+  vi: Index partial, biểu thức và unique
+  en: Partial, expression and unique indexes
+  title:
+    vi: Index partial, biểu thức và unique
+    en: Partial, expression and unique indexes
+  after:
+    vi: Làm một index nhỏ chỉ phủ phần dữ liệu câu cần, và index theo biểu thức như lower(email).
+    en: Build a small index that covers only the rows a query needs, and index an expression such as lower(email).
+- id: index-types
+  module: index-types
+  level: L2
+  vi: Các loại index
+  en: Index types
+  title:
+    vi: Các loại index
+    en: Index types
+  after:
+    vi: Chọn đúng Hash, GIN, SP-GiST, BRIN, bloom hay GiST cho mảng, khoảng thời gian, dữ liệu theo thứ tự ghi và lọc nhiều cột.
+    en: Pick Hash, GIN, SP-GiST, BRIN, bloom or GiST correctly for arrays, time ranges, append-ordered data and many-column filters.
+- id: search
+  module: search
+  level: L2
+  vi: Tìm kiếm chữ và jsonb
+  en: Text search and jsonb
+  title:
+    vi: Tìm kiếm chữ và jsonb
+    en: Text search and jsonb
+  after:
+    vi: Làm tìm kiếm chữ và lọc jsonb có index, thay cho LIKE '%x%' quét cả bảng.
+    en: Build indexed text search and jsonb filters instead of a LIKE '%x%' that scans the whole table.
+- id: explain-analyze
+  module: explain-analyze
+  level: L2
+  vi: EXPLAIN ANALYZE và thống kê
+  en: EXPLAIN ANALYZE and statistics
+  title:
+    vi: EXPLAIN ANALYZE và thống kê
+    en: EXPLAIN ANALYZE and statistics
+  after:
+    vi: Đọc ước lượng so với thực tế, dòng Buffers, và tìm trong pg_stats lý do planner đoán như vậy.
+    en: Read estimated versus actual rows and the Buffers line, and find in pg_stats why the planner guessed that way.
+- id: geo-lite
+  module: geo-lite
+  level: L2
+  vi: Điểm, khoảng cách và GiST
+  en: Points, distance and GiST
+  title:
+    vi: Điểm, khoảng cách và GiST
+    en: Points, distance and GiST
+  after:
+    vi: Tìm 5 điểm gần nhất bằng index GiST thay vì sắp xếp cả bảng.
+    en: Find the 5 nearest points with a GiST index instead of sorting the whole table.
+- id: capstone-l2
+  module: capstone-l2
+  level: L2
+  vi: Kiểm tra cấp L2
+  en: Level L2 check
+  title:
+    vi: Kiểm tra cấp L2
+    en: Level L2 check
+  after:
+    vi: Tìm câu chậm, chọn đúng loại index cho nó và chứng minh cải thiện bằng EXPLAIN.
+    en: Find a slow query, pick the right index type for it and prove the gain with EXPLAIN.
 - id: pages
   module: pages
   level: L3
   vi: Trang heap và TOAST
   en: Heap pages and TOAST
-  title: { vi: Trang heap và TOAST, en: Heap pages and TOAST }
+  title:
+    vi: Trang heap và TOAST
+    en: Heap pages and TOAST
   after:
     vi: nhìn một trang heap thật và nói dòng nào nằm ở đâu, kể cả giá trị lớn bị đẩy ra TOAST
     en: look at a real heap page and say which row lives where, including large values moved out to TOAST
@@ -14,7 +157,9 @@
   level: L3
   vi: MVCC và phiên bản dòng
   en: MVCC and row versions
-  title: { vi: MVCC và phiên bản dòng, en: MVCC and row versions }
+  title:
+    vi: MVCC và phiên bản dòng
+    en: MVCC and row versions
   after:
     vi: giải thích vì sao UPDATE, DELETE và ROLLBACK làm bảng phình, bằng `xmin`/`xmax` đọc trên trang thật
     en: explain why UPDATE, DELETE and ROLLBACK make a table grow, using `xmin`/`xmax` read from a real page
@@ -23,7 +168,9 @@
   level: L3
   vi: HOT, VACUUM và freeze
   en: HOT, VACUUM and freeze
-  title: { vi: "HOT, VACUUM và freeze", en: "HOT, VACUUM and freeze" }
+  title:
+    vi: HOT, VACUUM và freeze
+    en: HOT, VACUUM and freeze
   after:
     vi: chọn fillfactor cho bảng cập nhật nhiều, kiểm HOT bằng số đếm, đọc visibility map và tuổi `relfrozenxid`
     en: pick a fillfactor for an update-heavy table, check HOT with the counters, read the visibility map and the `relfrozenxid` age
@@ -32,7 +179,9 @@
   level: L3
   vi: WAL và checkpoint
   en: WAL and checkpoints
-  title: { vi: WAL và checkpoint, en: WAL and checkpoints }
+  title:
+    vi: WAL và checkpoint
+    en: WAL and checkpoints
   after:
     vi: đọc bản ghi WAL thật của một INSERT và thấy full-page image sau checkpoint
     en: read the real WAL records of an INSERT and spot the full-page image after a checkpoint
@@ -41,7 +190,9 @@
   level: L3
   vi: Bộ nhớ và kiểm tra cấp L3
   en: Memory and the L3 check
-  title: { vi: Bộ nhớ và kiểm tra cấp L3, en: Memory and the L3 check }
+  title:
+    vi: Bộ nhớ và kiểm tra cấp L3
+    en: Memory and the L3 check
   after:
     vi: thấy `external merge Disk:` và sửa bằng `work_mem`, rồi chẩn đoán trọn một bảng phình vì HOT miss
     en: spot `external merge Disk:` and fix it with `work_mem`, then diagnose a table bloated by HOT misses end to end
