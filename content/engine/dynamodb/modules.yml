@@ -52,5 +52,14 @@
   level: L5
   title: { vi: "Đa vùng và vận hành", en: "Multi-Region and operations" }
   after:
-    vi: chọn chế độ global table (MREC hay MRSC) và cách sao lưu (PITR hay backup theo yêu cầu) cho một ứng dụng hai vùng.
-    en: choose a global table mode (MREC or MRSC) and a backup method (PITR or on-demand backup) for a two-Region application.
+    vi: chọn chế độ global table (MREC hay MRSC) và cách sao lưu (PITR hay backup theo yêu cầu) cho một ứng dụng hai vùng, và quyết định mẫu đọc nào nên đi qua DAX.
+    en: choose a global table mode (MREC or MRSC) and a backup method (PITR or on-demand backup) for a two-Region application, and decide which read patterns should go through DAX.
+- id: ops-case
+  vi: "Kiểm tra cấp L5: vận hành ứng dụng"
+  en: "Level L5 check: running an application"
+  module: ops-case
+  level: L5
+  title: { vi: "Kiểm tra cấp L5: vận hành ứng dụng", en: "Level L5 check: running an application" }
+  after:
+    vi: trả lời các mẫu truy cập của một ứng dụng thật bằng Query, GSI thưa và TransactGetItems, tính giá của item hết hạn và đọc giao dịch, rồi chọn DAX, Streams và PITR cho đúng chỗ.
+    en: answer a real application's access patterns with Query, a sparse GSI and TransactGetItems, price expired items and transactional reads, then put DAX, Streams and PITR in the right places.
