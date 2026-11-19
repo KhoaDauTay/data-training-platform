@@ -3,7 +3,7 @@ import { generalNow, loadDomain, loadTickets, loadTicketTemplates } from '../src
 import type { DomainId } from '../src/domains';
 import { homeModel, kpisOf, kpiTiles, knownSkills, learnedSkills } from '../src/home';
 import { placementItems } from '../src/learn';
-import { seedReview, reviewQueue, warmupQueue } from '../src/practice';
+import { pickForSkill, seedReview, reviewQueue, warmupQueue } from '../src/practice';
 import {
   chaptersOf, chapterTablesOf, contentProblems, currentChapter, domainSkills, earlyReview, isOptional, nextTicket, passedChapters, rankOf, SKILLS, visibleTickets,
 } from '../src/progress';
@@ -102,6 +102,8 @@ describe.each(DOMAINS)('%s: đánh giá thăng tiến làm sớm', (d) => {
     expect(reviewQueue(review, learned, loadTicketTemplates(d), done, TODAY, () => 0)).toEqual([]);
     // Warm-up draws from finished non-review tasks only: a review-only player has none, so no warm-up card (documented, L145).
     expect(warmupQueue(review, learned, loadTicketTemplates(d), done, 2, TODAY, () => 0)).toEqual([]);
+    // No finished task practises these skills: "Practise" on #/practice falls back to the skill page (startSkill, ui/modes.ts).
+    for (const s of learned) expect(pickForSkill(s, loadTicketTemplates(d), done, () => 0)).toBeUndefined();
   });
 
   it('contentProblems không đổi', () => {

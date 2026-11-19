@@ -152,7 +152,10 @@ export async function startToday(): Promise<boolean> {
 /** Entry 2: one skill (Home skill topics). */
 export function startSkill(skill: string): boolean {
   const item = pickForSkill(skill, [...templates().values()], done(), Math.random);
-  return item ? startPractice([item]) : false;
+  if (item && startPractice([item])) return true;
+  // L145: learned through a promotion review taken early, no finished task practises it: its page (lesson + drills), never a dead button.
+  location.hash = `${hashOf('learn')}/skill/${skill}`;
+  return false;
 }
 
 /** Entry 3: redo a finished task, another variant when it has one. Never a promotion review (L10). */
