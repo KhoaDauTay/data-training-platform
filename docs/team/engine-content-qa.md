@@ -226,3 +226,120 @@ Người làm: agent Content QA · 2026-11-20 · nhánh `content-qa` (từ `v22-
 | dynamodb/L2/08-item-size.md | facts | all five size answers recomputed by hand and correct (incl. "Đà Nẵng" = 11 bytes UTF-8) |
 | dynamodb/L1-L2 | scanner "phân vùng"/"mục"/"later" | false positives: mandated glosses "khóa phân vùng"/"phân vùng vật lý", "chỉ mục", plain English "later" |
 | dynamodb/L4/07-adjacency-list.md | pedagogy F11 (DY4) | No quiz added here; DY4 now covered by the new quiz in L3/07 |
+
+
+---
+
+# Pass 2
+
+Người làm: agent Content QA · 2026-11-20 · nhánh `content-qa2` (từ `v22-engine`). Chỉ sửa nội dung, không code, không build (L218).
+
+**Phạm vi:**
+- Postgres L1 (12 bài), L2 (17), L4 (16), L5 (15) và `postgres/modules.yml`. Pass 1 chưa xem các file này.
+- Các mục máy móc trong danh sách "Còn lại" của pass 1: Ý chính quá 150 từ (MongoDB, DynamoDB) và thuật ngữ còn thiếu trong glossary.
+
+**Cách làm:**
+- **Script quét** (chạy trên VI và EN, ngoài code span):
+  - `avoid` của glossary Postgres;
+  - "khóa" dùng cho lock, "giao dịch", "tài liệu", "sự cố";
+  - số VI/EN, %, đơn vị;
+  - code span VI = EN;
+  - `answer` trong khoảng, concept có quiz;
+  - `viz`, `runtime`, `title`;
+  - số từ Ý chính, concept có mở bằng câu hỏi không.
+- **Đọc từng bài:** đọc mọi quiz/predict theo dạng câu hỏi, đáp án và `why`, cùng phần thân VI. Việc này để kiểm:
+  - đáp án đánh số từ 0;
+  - lựa chọn sai là hiểu lầm thật;
+  - có đoán trước khi chạy;
+  - nhãn runtime trung thực.
+- **Bất biến:** một script so frontmatter đã parse với `v22-engine`: `lab.setup`, mọi `solution`/`check`/`ordered`/`expect`/`plan` của bước, `predict` (trừ chữ), `answer` và số lựa chọn của mọi câu quiz, `recorded`. Kết quả: 0 khác biệt ở mọi file `content/engine/**`. Vì không đổi SQL/setup/solution/sự thật nào, không cần chạy lại PGlite. Mọi YAML vẫn parse được.
+- **Số từ:** đếm theo khoảng trắng, như pass 1 (VI đếm theo âm tiết, code span tính cả).
+
+**Quy ước chốt thêm trong pass 2:**
+- **`viz` theo tên đã đăng ký trong `src/engine/viz` (L238).** Danh sách: `pg-heap-page`, `pg-mvcc-timeline`, `pg-hot-chain`, `pg-vacuum-flow`, `pg-btree`, `pg-wal-flow`, `pg-gin-postings`, `pg-brin-ranges`, `pg-gist-boxes`, `pg-plan-tree`, `pg-lock-matrix`, `pg-isolation-anomalies`.
+  - Không theo danh mục ở product design §5, vì `pg-mvcc`, `pg-hot`… không có hình nào vẽ.
+  - Vì vậy L3 (pass 1) cũng được đổi tên.
+- **`runtime`:**
+  - `concept`/`quiz` là `docs`;
+  - `lab`/`predict`/`capstone` là `browser`, vì mọi bước chấm chạy trên PGlite, kể cả L4/15 (song song/JIT) và L5/13 (slot), vốn đọc thiết lập và slot thật;
+  - phần không chạy được đã có câu nói rõ ngay trong bài.
+- **Bài `docs` cần nhiều phiên hoặc server thật:** thêm dòng BE nguyên văn style §4 vào đầu `## Thực hành`. Các bài: L4/10–13, L5/14.
+- **Lock và key:**
+  - "khóa" chỉ giữ cho key: khóa chính, khóa ngoại, khóa phân vùng, cột khóa, khóa của index GIN/B-tree/jsonb.
+  - Mọi lock viết bằng chữ lock: lock mode, row lock, advisory lock, predicate lock, "giữ/chờ/lấy lock".
+- **Mức cô lập trong văn:** viết Read Uncommitted / Read Committed / Repeatable Read / Serializable. Trong code span và khối code vẫn để HOA.
+
+## Đã sửa (pass 2)
+
+| File | Rule | Note |
+|---|---|---|
+| postgres/L1–L5 (60 bài) | runtime label | Thêm `runtime:` sau `kind:` (12 `docs`, 48 `browser`) |
+| postgres/L1–L5 (mọi bài có `viz`, kể cả L3) | viz name `pg-*` | `plan-tree`→`pg-plan-tree`, `lock-matrix`→`pg-lock-matrix`, `isolation-anomalies`→`pg-isolation-anomalies`, `btree`/`pg-btree-split`→`pg-btree`, `gin-postings`/`pg-gin`→`pg-gin-postings`, `brin-ranges`/`pg-brin`→`pg-brin-ranges`, `gist-boxes`/`pg-gist`→`pg-gist-boxes`, `pg-query-path`→`pg-plan-tree`, `pg-mvcc`→`pg-mvcc-timeline`, `pg-hot`→`pg-hot-chain`, `pg-vacuum-vm`→`pg-vacuum-flow`, `pg-wal`→`pg-wal-flow`; L5/09 thêm `viz: pg-wal-flow`; L2/14 đổi thành `pg-lock-matrix` vì bài bấm sơ đồ lock khi tạo index |
+| postgres/L1–L5 | numbers VI/EN | VI: `20 000`→`20.000`, `20000`→`20.000`, `0.7`→`0,7`, `90%`→`90 %` (~40 chỗ); EN: `20000`→`20,000`, `100000`→`100,000`; cả hai: `4MB`/`64kB`/`8kB`/`4GB`→`4 MB`/`64 KB`/`8 KB`/`4 GB`. Code span và output giữ nguyên. L2/08 "Kết quả 1.000" (correlation) → "Kết quả là 1" / "The result is 1" |
+| postgres/L1/01-types.md | concept opens with question; Ý chính 202→146; "tài liệu" | Mở bằng "0,1 + 0,2 có bằng 0,3?"; "Tài liệu Postgres" → "docs chính thức"; dòng "Ngoài ra…" sang `## Ví dụ` |
+| postgres/L1/02, 03, 04, 09 | first-use gloss | "index (chỉ mục)" lần đầu; L1/04 "ràng buộc (constraint)", "khóa ngoại (foreign key)" |
+| postgres/L1/03-identity-uuid-generated.md | glossary `generated column` | "cột tính sẵn" → "cột sinh" (lần đầu "cột sinh (generated column)", cả `title`); span VI/EN cùng thứ tự ở bước 3; Ý chính 187→148 |
+| postgres/L1/04-constraints.md | Ý chính 197→~145 | Đoạn `contype` sang `## Ví dụ` (VI+EN) |
+| postgres/L1/05-null-semantics.md | honest runtime | Bài quiz/docs: "Chạy thử ví dụ trên" → "Đoán kết quả của từng dòng trong ví dụ trên" |
+| postgres/L1/07-transactions.md | concept opens with question; isolation casing | Câu hỏi "trừ tiền A xong thì máy sập"; READ COMMITTED → Read Committed trong quiz |
+| postgres/L1/09-first-index.md | facts | "mỗi `INSERT`, `UPDATE` hay `DELETE` đều phải sửa index" là sai cho `DELETE`. Sửa: `DELETE` để mục cũ cho VACUUM dọn (VI+EN). Đoạn Bitmap sang `## Ví dụ` |
+| postgres/L2/01, 05 | "tài liệu" = docs | → "docs chính thức"; L2/01 "Quy tắc thiết kế…" sang `## Thực hành` (168→~150) |
+| postgres/L2/02, 06, 08, 11, 16 | Ý chính ≤ 150 | Chuyển đoạn cuối (visibility map; ghi GIN chậm; opclass BRIN; toán tử jsonb khác; earthdistance/PostGIS) sang `## Ví dụ`/`## Thực hành` (VI+EN) |
+| postgres/L2/06-arrays-gin.md | predict-before-run | Bước 3 hỏi trước "viết bằng `= ANY` thì có dùng index không?" (kết quả trái trực giác, trước đây chỉ cho xem) |
+| postgres/L2/11-jsonb.md | "tài liệu" chỉ là MongoDB document | "tài liệu chứa cặp đó" → "giá trị `jsonb` chứa cặp đó"; hint bước 3 → "`doc` chứa…" |
+| postgres/L2/12-full-text.md | glossary generated column | "cột `tsvector` tính sẵn" → "cột sinh (generated column) kiểu `tsvector`" |
+| postgres/L2/14-explain-analyze.md | concept opens with question; lock-as-khóa; Ý chính 187→150 | Mở bằng "Planner đoán 5 dòng nhưng câu trả về 4800"; "khóa SHARE" → "giữ lock SHARE"; "sơ đồ khóa" → "sơ đồ lock"; đoạn `CREATE INDEX CONCURRENTLY` sang `## Thực hành`; 19800 → 19.800 / 19,800 |
+| postgres/L2/15-pg-stats.md | code span order; numbers | EN predict.q đổi thứ tự cho `EXPLAIN` trước `rows=`; lựa chọn `10000` → `10.000`/`10,000`; why `0.1 ×` → `0,1 ×` (VI) |
+| postgres/L4/01, 02, 04, 06, 07 | Ý chính ≤ 150 | Chuyển phần "tinh chỉnh", `SET STATISTICS`, "nguyên nhân số một", "Công cụ", "lợi ích vận hành" sang `## Thực hành`. L4/04 bỏ định dạng bảng "— cách làm: …; thắng khi: …" thành câu |
+| postgres/L4/01-cost-model.md | glossary cost | Lần đầu "Chi phí (cost)"; số VI `1,0`, `0,0025`… |
+| postgres/L4/02-column-statistics.md | code span order | EN Practice: `pg_stats` trước `rows=` như VI |
+| postgres/L4/06-plan-cache.md | "giao dịch"; "tài liệu"; version | → transaction; "nguyên văn tài liệu PREPARE" → "đúng như docs chính thức của PREPARE"; "(từ 16)" → "(từ PostgreSQL 16)"; "generic/custom plan" giữa câu VI → "kế hoạch chung/riêng" |
+| postgres/L4/07-partition-pruning.md | misconception stated (pedagogy §1.2-3) | Đoạn chuyển sang Thực hành nói thẳng "Nhiều người nghĩ bảng phân vùng luôn nhanh hơn. Thật ra…" (VI+EN) |
+| postgres/L4/08-partition-design.md | "tài liệu" | → "docs chính thức" |
+| postgres/L4/09–16 | glossary-avoid transaction | "giao dịch" → "transaction" ở mọi văn VI (~45 chỗ) |
+| postgres/L4/09-table-lock-modes.md | lock-as-khóa; banned "sự cố"; title; Ý chính 219→~140 | `title` "Chế độ khóa bảng…" → "Lock mode trên bảng và pg_locks"; "khóa dòng/khóa bảng/chờ khóa/lấy khóa" → row lock / lock trên bảng / chờ lock / lấy lock; why "Đây là sự cố" → "Đây là chuyện"; danh sách 8 mode gọn "MODE: lệnh"; đoạn `pg_locks` + giới hạn PGlite sang `## Ví dụ` |
+| postgres/L4/10-row-locks.md | lock-as-khóa; title; concept question; facts; BE line | `title` "Khóa dòng…" → "Row lock…"; mở bằng "giữ row lock trên 2 triệu dòng: Postgres nhớ ở đâu?"; VI ghi "từ mạnh tới yếu" nhưng danh sách là yếu → mạnh: sửa "từ yếu tới mạnh"; quiz options/why: "A khóa dòng" → "A giữ row lock", "khóa ngoại không khóa gì" → "không lấy lock nào"; why nêu hiểu lầm lock escalation (P5); dòng BE + `NOWAIT`/`SKIP LOCKED` sang Thực hành |
+| postgres/L4/11-deadlocks.md | concept question; lock-as-khóa; units; BE line | Mở bằng hai job chuyển tiền ngược chiều; "khóa tư vấn (advisory)" → "advisory lock"; "1s" → "1 giây"/"1 second" trong văn; "Tài liệu" → docs |
+| postgres/L4/12-isolation-levels.md | concept question; isolation casing; Ý chính 201→~140; BE line | Viết lại: mở bằng câu hỏi "hai tổng khác nhau"; mỗi mức một dòng (mức nào cho hiện tượng nào); định nghĩa bốn hiện tượng sang `## Ví dụ`; "tài liệu Postgres" → docs |
+| postgres/L4/13-serializable-ssi.md | concept question; title casing; lock wording; BE line | `title` "SERIALIZABLE:" → "Serializable:" (VI+EN); mở bằng ca trực bác sĩ; "khóa vị từ" → "predicate lock", "khóa tường minh" → "lock tường minh"; "Lựa chọn khác" + "Quy tắc cho ứng dụng" sang Thực hành |
+| postgres/L4/14-advisory-locks.md | glossary-avoid "khóa tư vấn"; title | `title` "Khóa tư vấn: khóa do ứng dụng…" → "Advisory lock: lock do ứng dụng…"; mọi "khóa tư vấn/cấp giao dịch/hàm khóa/số khóa" → advisory lock / cấp transaction / hàm lock / số của lock; "Tài liệu" → docs |
+| postgres/L4/15-parallel-query-jit.md | honest docs output (style §4); avoid "kế hoạch chạy"; numbers | Khối Parallel Aggregation: "Ví dụ trong docs chính thức của PostgreSQL… (chưa chạy trong trình duyệt)" / "Example from the official PostgreSQL docs… (not run in the browser)"; đoạn giới hạn PGlite sang `## Ví dụ`; 100000/500000 → 100.000/100,000 |
+| postgres/L4/16-capstone-slow-report.md | banned "sự cố"; lock-as-khóa | "hai sự cố" → "hai vấn đề"; "Bước 4, khóa." → "Bước 4, lock."; "ALTER không khóa gì" → "không lấy lock nào" |
+| postgres/L4/*, L1/07, L1/L2 | isolation casing | READ COMMITTED/REPEATABLE READ/SERIALIZABLE → Read Committed/Repeatable Read/Serializable trong văn và `title` (VI+EN; code giữ HOA) |
+| postgres/L5/01, 05, 06, 10, 13, 14 | Ý chính ≤ 150 | Chuyển các phần sau sang `## Ví dụ` hoặc `## Thực hành` (VI+EN): dòng pageinspect, các opclass BRIN, đoạn pageinspect GiST, giới hạn chạy RLS, view `security_invoker`, giới hạn PGlite của replication. Rút gọn vài câu |
+| postgres/L5/03-btree-index-deletion.md | concept question; Ý chính 217→~145 | Mở bằng "chỉ UPDATE `last_seen` mà index `user_id` vẫn phình"; "(từ 14)" → "(từ PostgreSQL 14)"; dedup/HOT sang Thực hành; "Tài liệu" → docs |
+| postgres/L5/02, 04, 09, 10, 12 | "tài liệu" = docs | → "docs chính thức"; L5/04 bước 3 "Đếm tài liệu của `docs`" → "Đếm các dòng của `docs`" |
+| postgres/L5/07-choose-index-am.md | Ý chính 237→~145 | Bảng AM gọn "toán tử · mạnh ở · lưu ý" (VI+EN, cùng code span); "Quy trình chuyên gia" sang Thực hành |
+| postgres/L5/08-amcheck.md | lock-as-khóa | "kỹ hơn nhưng khóa mạnh hơn" → "giữ lock mạnh hơn" |
+| postgres/L5/13-replication-slots.md | banned "sự cố"; "tài liệu" | "sau sự cố" ×3 → "sau khi máy sập"; "Tài liệu logical decoding" → "Docs chính thức (logical decoding)" |
+| postgres/L5/14-backup-pitr-ha.md | BE line; honest docs output; glossary freeze; lock | "Không có phần chạy thật…" → dòng BE + giới hạn đo được, đặt đầu Thực hành; khối PITR "Ví dụ theo docs chính thức… (chưa chạy trong trình duyệt)"; "đóng băng tuple" → "freeze tuple"; "VACUUM FULL khóa ACCESS EXCLUSIVE" → "giữ lock ACCESS EXCLUSIVE" |
+| postgres/L5/15-capstone-slow-events.md | wording | "ước lượng hàng chờ sai" (vô nghĩa) → "ước lượng số dòng sai" (khớp EN) |
+| postgres/modules.yml | after-lines; lock; plan cache | `after` của L1/L2/L4/L5 viết thường đầu câu, bỏ dấu chấm cuối (như L3, MongoDB, DynamoDB); `uuidv7()`, `float8`, `search_path`, `lower(email)`, `LIKE '%x%'`, `pg_stats` vào backtick (VI = EN); "Khóa, mức cô lập và SSI" → "Lock, mức cô lập và SSI" (cả `vi` và `title.vi`); "lấy khóa nào" → "lấy lock nào"; "chờ khóa" → "chờ lock"; "bộ nhớ đệm kế hoạch" → "plan cache". Mọi `module:` của 75 bài có trong file; `vi`/`en` = `title.vi`/`title.en` |
+| content/engine/glossary.yml | glossary-missing | 21 mục mới, đủ 9 trường, `doc` lấy từ `sources:` của bài dùng từ đó. Postgres: prepared statement, predicate lock (SIReadLock), exclusion constraint, metapage, version churn. MongoDB: dot notation, positional operator, extended reference pattern, computed pattern, accumulator ("phép tổng hợp"), window function (`$setWindowFields`), collation, query shape, multi-planner, write conflict, intent lock, resume token, heartbeat, optime, capped collection, shard key cardinality |
+| mongodb (14 bài), dynamodb (4 bài) | Ý chính > 150 (pass 1 "Còn lại") | Chuyển đoạn cuối của Ý chính và Key idea sang đầu `## Ví dụ`/`## Example`. Chỉ làm khi VI và EN có cùng số đoạn và Ý chính còn ≥ 100 từ. Bài MongoDB: L1/01, L1/05, L1/06, L1/10, L2/02, L2/04, L2/11, L2/13, L3/05, L3/10, L4/01, L4/07, L4/08, L5/05. Bài DynamoDB: L4/06, L5/01, L5/02, L5/04. Chữ không đổi |
+
+## Đã kiểm, không cần sửa (pass 2)
+
+| File | Rule | Note |
+|---|---|---|
+| postgres/L1, L2, L4, L5 | answer 0-based, why khớp | Đọc mọi quiz/predict (≈ 90 câu): đáp án trong khoảng, `why` nói đúng lựa chọn được đánh dấu |
+| postgres/L1, L2, L4, L5 | wrong options = real misconceptions | Có đủ hiểu lầm của §2: PG1 (L1/10, L2/17), PG4 (L2/17 quiz `count(*)`), PG5 (L2/14, L2/17), PG6 (L2/01), PG7 (L4/12 quiz 0 và 2, L4/13), PG8 (L5/01 qua `REINDEX`). Lựa chọn cố ý vô lý (kiểu "Không sai gì", "Không rủi ro") giữ lại vì luôn đi cùng ít nhất một lựa chọn sai là hiểu lầm thật |
+| postgres/L1–L5 | `title` VI | Có ở mọi bài |
+| postgres/L4/09, L4/14, L4/15, L5/11, L5/13 | honest runtime | Bước chấm chạy thật (đọc `pg_locks` của câu mình, slot vật lý, thiết lập); phần "ai chờ ai", parallel, standby đều đã nói là sơ đồ hoặc giới hạn PGlite |
+| postgres/L5/11 | glossary "quét tuần tự" | Nói về bộ đếm `seq_scan`, không phải tên nút: giữ |
+| postgres/L4/08, L1/04 `title` | "khóa" | Là key (khóa phân vùng, khóa chính/ngoại): đúng |
+
+## Còn lại (pass 2)
+
+| File | Rule | Note |
+|---|---|---|
+| docs/team/product-design-db-engine.md §5 | viz catalog vs registry | Danh mục §5 (`pg-query-path`, `pg-mvcc`, `pg-partition-prune`, `pg-replication`…) khác tên đã đăng ký trong `src/engine/viz` (L238). Nội dung nay theo registry. Cần sửa §5 theo L238, hoặc vẽ thêm `pg-partition-prune` (L4/07–08) và `pg-replication` (L5/13): các bài này chưa có sơ đồ đúng chủ đề (L4/07 tạm dùng `pg-plan-tree`) |
+| mongodb/L1/01-documents.md | viz | `mg-bson-doc` đã có trong registry (`src/engine/viz`), nên mục pass 1 về viz này có thể đóng khi §5 được cập nhật |
+| mongodb L3/01, L3/13, L3/14, L4/10, L5/01, L5/03, L5/08; dynamodb L4/01, L4/02, L4/11, L5/03, L5/06 | Ý chính ≤ 150 | Còn quá 150 từ. Ý chính là một danh sách dài, nên chuyển đoạn sẽ để lại < 100 từ. Cần viết lại (dynamodb L4/01, L4/02, L5/03: chuyển đoạn BE/runtime ra là đủ, nhưng hai bản VI/EN khác số đoạn nên không làm máy móc) |
+| mongodb L1–L5 (solutions, setup, predict) | style §5.2 mongosh quotes | Chưa đổi nháy kép sang nháy đơn. Đó là `solution`/`setup`/`predict.sql`, không sai, mà đổi thì phải chạy lại mingo |
+| postgres/L4/10–13, L5/14 | BE line wording | Dòng BE nguyên văn style §4 có "replica set / AWS", lạc chỗ trong bài Postgres. Đề nghị style §4 cho một biến thể Postgres ("cần nhiều phiên / server thật") |
+| content/engine/glossary.yml `generated column` | vi_term | `vi_term` "cột sinh" đọc gượng, nên L1/03 đã đổi "cột tính sẵn" theo glossary. Nếu nhóm thích "cột tính sẵn" thì sửa glossary và đổi lại các chỗ ở L1/03 và L2/12 |
+| content/engine/glossary.yml `cost` | keep_en true | Bài Postgres viết "chi phí" (planner). Pass 2 chỉ chú thích "Chi phí (cost)" lần đầu ở L4/01. Cần chốt: dùng "cost" trong văn VI, hay đổi glossary sang `keep_en: false` "chi phí" |
+| postgres/L1/12-capstone-registrations.md | pedagogy capstone | Câu kết luận quiz 1 chỉ có 2 lựa chọn; chưa kiểm capstone L1/L2 theo luật chuyển giao §3.5 |
+| postgres/L2/*, L4/* (`task` có giá trị `1.50`, `9.50`, `(500,500)`) | numbers | Giá trị người học gõ vào SQL, giữ dấu chấm như pass 1 quyết với số trong drill MongoDB. Cách sạch là đặt trong backtick |
+| Pass 1 "Còn lại" (các mục khác) | — | Vẫn mở: capstone MongoDB L3/L4, các mục pedagogy F1/F2/F3/F7/F12, PartiQL `"Orders"`, facts DynamoDB L2/10–11, `requires: []`, các mục glossary của DynamoDB (access pattern, eventual consistency) |
