@@ -53,7 +53,7 @@ vi.mock('../src/ui/avatar', () => ({ avatar: () => fakeEl() }));
 vi.mock('../src/ui/mascots', () => ({ mascot: () => fakeEl() })); // Task 9: the feedback line draws a mascot (SVG)
 
 const { app } = await import('../src/state');
-const { mountWork } = await import('../src/ui/work');
+const { mountWork, staleFlip } = await import('../src/ui/work');
 const { HISTORY_KEY } = await import('../src/history');
 const { QueryTimeoutError } = await import('../src/db/client');
 const { SqlError } = await import('../src/db/run');
@@ -526,5 +526,35 @@ describe('chương 11: chấm kế hoạch và phòng thí nghiệm chỉ mục'
     expect(historyOf('L').map((e) => e.sql)).toEqual(['CREATE INDEX ON t (a)']);
     expect(app.lastRun).toBeUndefined();
     expect(deps.panel.refresh).toHaveBeenCalled(); // the tabs redraw without the old run
+  });
+});
+
+describe('v21 E2: sửa SQL sau khi chạy vẽ lại panel một lần mỗi lần đổi trạng thái', () => {
+  it('lệch khỏi lần chạy → vẽ lại; gõ tiếp → không; về đúng SQL → vẽ lại; lần chạy mới bắt đầu lại', () => {
+    const run = { sql: 'SELECT 1' };
+    let [redraw, seen] = staleFlip({ stale: false }, run, 'SELECT 1');
+    expect(redraw).toBe(false);
+    [redraw, seen] = staleFlip(seen, run, 'SELECT 12');
+    expect(redraw).toBe(true);
+    [redraw, seen] = staleFlip(seen, run, 'SELECT 123');
+    expect(redraw).toBe(false);
+    [redraw, seen] = staleFlip(seen, run, 'SELECT 1 ');
+    expect(redraw).toBe(true);
+    [redraw] = staleFlip(seen, { sql: 'SELECT 1' }, 'SELECT 2'); // a new run was drawn matching the editor
+    expect(redraw).toBe(true);
+    expect(staleFlip({ stale: false }, undefined, 'x')[0]).toBe(false); // nothing run yet: no strip
+  });
+
+  it('gõ trong editor sau một lần chạy: panel vẽ lại để hiện dải "SQL đã thay đổi" và khóa Ghim', async () => {
+    const { work, deps } = setup();
+    open(work, ticket('A'));
+    editors[0].opts.onRun();
+    release();
+    await flush();
+    deps.panel.refresh.mockClear();
+    (editors[0].opts as unknown as { onChange(v: string): void }).onChange('SELECT 9');
+    expect(deps.panel.refresh).toHaveBeenCalledOnce();
+    (editors[0].opts as unknown as { onChange(v: string): void }).onChange('SELECT 99');
+    expect(deps.panel.refresh).toHaveBeenCalledOnce();
   });
 });

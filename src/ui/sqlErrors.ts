@@ -59,5 +59,7 @@ const BY_CODE: Record<string, Key> = {
 export function explainError(e: SqlErrorInfo, sql?: string): Key | undefined {
   if (sql && blanksIn(sql, false)) return 'sqlerr.blank';
   for (const [re, key] of BY_MESSAGE) if (re.test(e.message)) return key;
+  // v21 U38: the single-quote note only when the unknown "column" was written like a value (a capital: Europe, SEA), never for cnt
+  if (e.code === '42703' && sql && e.position && /^[\p{L}\w]*\p{Lu}/u.test(sql.slice(e.position - 1))) return 'sqlerr.valueQuote';
   return e.code ? BY_CODE[e.code] : undefined;
 }

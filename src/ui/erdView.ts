@@ -54,7 +54,8 @@ export function valuesLine(values: Promise<Record<string, string[]>> | undefined
   const el = h('span', { class: cx('block text-caption text-muted', cls), hidden: true });
   values?.then((v) => {
     if (!v[column]) return;
-    el.textContent = v[column].join(' · ');
+    // v21 U7: a value never breaks inside itself ("United / States"); the line wraps between values
+    el.replaceChildren(...v[column].flatMap((x, i) => [i ? ' · ' : '', h('span', { class: 'whitespace-nowrap' }, x)]));
     el.hidden = false;
   }, () => {});
   return el;

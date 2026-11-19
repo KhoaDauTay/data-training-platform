@@ -7,10 +7,13 @@ const r = (types: number[], rows: unknown[][]): QueryResult => ({ columns: types
 
 describe('chartSpec', () => {
   it('nhãn chữ + số → cột; mọi cột số sau cột đầu đều là chuỗi giá trị', () => {
-    expect(chartSpec(r([25, 20, 1700], [['a', 1, '2.5']]))).toEqual({ kind: 'bar', label: 0, values: [1, 2] });
+    expect(chartSpec(r([25, 20, 1700], [['a', 1, '2.5']]))).toEqual({ kind: 'bar', labels: [0], values: [1, 2] });
+  });
+  it('GROUP BY hai cột chữ: nhãn ghép cả hai (v21 U6)', () => {
+    expect(chartSpec(r([25, 25, 20], [['SEA', 'EXPORT', 3]]))).toEqual({ kind: 'bar', labels: [0, 1], values: [2] });
   });
   it('ngày + số → đường', () => {
-    expect(chartSpec(r([1082, 20], [[new Date(), 3]]))).toEqual({ kind: 'line', label: 0, values: [1] });
+    expect(chartSpec(r([1082, 20], [[new Date(), 3]]))).toEqual({ kind: 'line', labels: [0], values: [1] });
   });
   it('không vẽ khi: 1 cột, cột đầu là số, không có cột số, quá 60 dòng, rỗng', () => {
     expect(chartSpec(r([20], [[1]]))).toBeNull();
