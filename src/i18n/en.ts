@@ -886,4 +886,7 @@ export const en: Record<Key, Msg> = {
   'pin.locked': 'Pin: opens when you learn {skill} (ch. {n})',
   'lock.tabsHidden': (p) => `${p.n} more tab${Number(p.n) === 1 ? '' : 's'} open as you go`,
   'lock.skillChapter': 'Locked · opens in chapter {n}',
+  // ---- v10 Track B (L151–L153): feedback after a run ----
+  'work.extraRows': 'See your extra rows',
+  'work.noRows': 'Your query returns no rows: a filter or a join removes them all. Take the conditions out one at a time and run again to see where the rows go.',
 };

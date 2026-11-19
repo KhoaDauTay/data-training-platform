@@ -71,10 +71,17 @@ export function tourStep(f: TourFacts): number | undefined {
   const tour = f.tour;
   if (!f.onFirst || f.skipped || !tour || tour.knows || tour.step >= TOUR_STEPS) return undefined;
   if (f.solved) return 8;
+  if (tour.step >= TOUR_STEPS - 1) return undefined; // step 8 was shown and the player left ticket 1 (L152): never step 7 again
   const passed = [true, false, f.ran, false, f.exampleRan, f.columnsSeen, f.shapeOk, f.solved];
   for (let n = 1; n <= 7; n++) if (tour.step < n && !passed[n]) return n;
   return 7;
 }
+
+/**
+ * L152: step 8 tidies itself away. Its pref is 7 while it shows (refreshTour acks the step before); once the player is anywhere
+ * but a solved ticket 1 (next task, another domain, Practice, Sandbox, a reload elsewhere) the tour counts as finished.
+ */
+export const tourLeft = (f: TourFacts): boolean => !!f.tour && !f.tour.knows && f.tour.step === TOUR_STEPS - 1 && !(f.onFirst && f.solved);
 
 /** What Esc sees when the tour might take it (coach.ts initTour). */
 export interface EscScene {
