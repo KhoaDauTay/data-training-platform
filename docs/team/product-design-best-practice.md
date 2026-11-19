@@ -52,10 +52,10 @@ Số trong mockup là minh họa, trừ "Sai = 0" của Q02 (đo trong catalogue
 | Track | SQL = Q + A (33), PostgreSQL = S + I + P + X (35), MongoDB = M (14), DynamoDB = D (13). **Chỉ track đã phát hành mới có tab**: v25 có SQL + PostgreSQL, v27 thêm MongoDB, v29 thêm DynamoDB. Không tab xám |
 | Một mục | Luật, Vì sao, cặp **Không nên / Nên** cạnh nhau, nút **"Chạy cả hai"** với số đo thật (dòng, giá trị, nút kế hoạch, planner cost; không bao giờ ms), một câu kiểm, "Sau thẻ này bạn tránh được…", nguồn chính thức, cấp L1–L5 |
 | Nội dung | ENGINE-CONTENT-V1 + **ADD-8**: `engine: best`, id `e-bp-<mã>` (vd. `e-bp-q02`), file `content/engine/best/<track>/<mã>-<slug>.md`, khối `pair` mới |
-| Boon nhắc | Lint nhẹ trên SQL người chơi sau khi chạy xong. 10 luật: Q01, Q02, Q06, Q10, Q11, Q12, Q13, Q15, Q22, A05. Tối đa một gợi ý mỗi lần, không chặn, không trừ điểm, không đổi chấm điểm. Đọc chung một lần parse với dòng "SQL bằng lời" (L162) |
+| Boon nhắc | Lint nhẹ trên SQL người chơi sau khi chạy xong. 10 luật: Q01, Q02, Q06, Q10, Q11, Q12, Q13, Q15, Q22, A05 (Q22 có sẵn nhưng tắt ở v25, §5.5). Chỉ sau khi việc đã đạt, ở Sandbox, hoặc khi chạy lại việc đã xong. Tối đa một gợi ý mỗi lần, không chặn, không trừ điểm, không đổi chấm điểm. Đọc chung một lần parse với dòng "SQL bằng lời" (L162) |
 | Báo nhầm | Một luật **không bao giờ nhắc** ở việc mà chính Solution của việc đó vi phạm luật ấy. Test chạy lint trên mọi Solution, drill, bài học, lab Engine. Nộp sai thì lời giải thích `wrong:` thắng và lint im |
 | Tiến độ | Xong thẻ = đúng câu kiểm. Id vào `completed`, XP +5 lần đầu. **Không bump Save**, không Leitner |
-| Ngân sách | main ≤ +0,3 KB. Chữ và logic nằm trong chunk lười: `engineui` (trang), `bpsql`/`bppg`/`bpmg`/`bpdy` (nội dung), nhóm `steps` (lint) |
+| Ngân sách | main ≤ +0,3 KB. Chữ và logic nằm trong chunk lười: `engineui` (trang), `bptip` (thẻ Boon nhắc), `bpindex`, `bpsql`/`bppg`/`bpmg`/`bpdy` (nội dung), nhóm `steps` (lint) |
 | v25 | 4 luồng, file tách nhau: **BP-C** nội dung, **BP-T** parser + test, **BP-UI** trang + quiz, **BP-LINT** Boon nhắc. Dùng L240–L242 |
 
 ---
@@ -165,7 +165,7 @@ Best Practice **không nhắc domain nào** (như Engine, L82). Tên bảng tron
 |---|---|---|---|
 | `lab` | Q, A (33 mục), một câu đọc mỗi bên | `runOn()` (`src/ui/tryPreview.ts`): `ensure('lab')` → request `run` trong `runSandboxed` | v25 |
 | `engine` | S, I, P, X có DDL hoặc `setup` | request `engineLab`: `setup` của tác giả → câu Sai/Đúng → câu dò, trong transaction rollback | v22 (bản tối thiểu) |
-| `engine-hb` | mục `plan` cần `VACUUM ANALYZE` (I04, I01–I03, I05, I08, P09), mục cần `SET ROLE` (X02, X04) | `engineLab` phần ngoài transaction (H-B) | v24 |
+| `engine-hb` | mục cần lệnh không chạy được trong transaction. Chắc chắn: I04 (`VACUUM ANALYZE` cho visibility map, catalogue §0). Các mục S/I/P/X khác do BP-C xếp loại theo dòng "Kiểm:" của từng mục (`ANALYZE`, `CREATE ROLE`, `SET LOCAL ROLE` chạy được trong transaction) | `engineLab` phần ngoài transaction (H-B) | v24 |
 | `mingo` | M có "Kiểm: mingo" (4 mục) | `mongoWorker` | v27 |
 | `dynoxide` | D chạy được trên dynoxide (do luồng nội dung v29 chọn) | `dynamoWorker` | v29 |
 | `none` | `check: syntax` (25 mục: index Mongo, shard, cấu hình, phần lớn D, X05, P04) | Không chạy. Không có nút; chỉ có mã + nguồn + nhãn "Chỉ cú pháp" | v25 |
@@ -185,6 +185,7 @@ Best Practice **không nhắc domain nào** (như Engine, L82). Tên bảng tron
 | `diff` | Số dòng, 3 dòng đầu (bảng nhỏ, tiêu đề cột theo **tên thật**: đây không phải bài chấm, không có gì để lộ), giá trị đơn nếu 1×1 | "Khác kết quả: bản Không nên trả 0, bản Nên trả 312." Dùng `compareResults` có sẵn (`extraRows`/`missingRows`) |
 | `same` | Số dòng | "Cùng kết quả. Khác ở cách đọc và giữ code." |
 | `plan` | Nút quét chính của bảng đích (Seq / Index / Index Only / Bitmap) + **planner cost** tổng, từ `EXPLAIN (FORMAT JSON)` không ANALYZE (luật ch11) | "Cùng kết quả. Kế hoạch: Seq Scan cost 1 204 → Index Scan cost 8,4." |
+| `runs` | Số dòng, 3 dòng đầu của mỗi bản | "Cả hai chạy được. Khác ở …" (một câu `why` ngắn của mục). Mục I02/I03 so cost hoặc kích thước: `expect.compare: cost | size` |
 | `error` | Bản Sai: SQLSTATE + câu dạy của `sqlErrors.ts`. Bản Đúng: kết quả | "Bản Không nên báo lỗi 22012 (chia cho 0)." |
 | `syntax` | Không chạy | Không có câu |
 
@@ -269,7 +270,7 @@ sources:
 verified: { version: "PostgreSQL 18.6", date: 2026-11-20 }   # ADD-2
 pair:                      # ADD-8
   runtime: lab             # lab | engine | engine-hb | mingo | dynoxide | none
-  check: diff              # diff | same | plan | error | syntax
+  check: diff              # diff | same | plan | error | runs | syntax ("runs" = catalogue "chạy được")
   setup: null              # chỉ runtime engine/engine-hb/mingo/dynoxide; kịch bản của tác giả
   bad: |
     SELECT count(*) FROM customers c
@@ -356,9 +357,10 @@ Boon nhắc không bao giờ được thành gợi ý đáp án miễn phí. Th�
 1. Ghi chú lỗi SQLSTATE (lần chạy lỗi): **không lint**.
 2. **Nộp sai** và khớp một `wrong:` → lời giải thích `wrong:`, **không lint**.
 3. Nộp sai, không khớp `wrong:` → bẫy của kỹ năng (có sẵn), **không lint**.
-4. **Run** (không chấm) hoặc **nộp đúng**, Sandbox, drill đã đạt → được lint.
+4. **Run trên một việc chưa đạt**: **không lint**. Một Run trả rỗng kèm lời nhắc Q02 chính là gợi ý miễn phí.
+5. **Nộp đúng**, Run/nộp lại một việc **đã đạt**, Sandbox, drill đã đạt, lab Engine đã đạt bước → được lint.
 
-Vì sao cả bước 3 cũng im lặng: một luật "sai âm thầm" như Q02 có thể chính là lý do người chơi sai. Khi đó lint sẽ là gợi ý miễn phí, và Practice/story đã có giá gợi ý (25 %). Sau khi đạt, Boon nhắc vẫn dạy được: "câu này đúng vì hôm nay dữ liệu không có NULL".
+Vì sao bước 3 và 4 cũng im lặng: một luật "sai âm thầm" như Q02 có thể chính là lý do người chơi sai. Khi đó lint sẽ là gợi ý miễn phí, và Practice/story đã có giá gợi ý (25 %). Sau khi đạt, Boon nhắc vẫn dạy được: "câu này đúng vì hôm nay dữ liệu không có NULL".
 
 ### 5.4 Mười luật
 
@@ -374,20 +376,22 @@ Mọi luật đọc **cây parse thô** của `libpg-query`, không đọc `Word
 | 6 | **Q15** HAVING không có aggregate | `havingClause` không chứa `FuncCall` gộp | Không | hiệu năng/đọc |
 | 7 | **Q10** LIMIT không ORDER BY | `limitCount` có, `sortClause` rỗng, ở câu ngoài cùng | Bỏ qua `LIMIT 0`, và bỏ qua khi câu là `SELECT … LIMIT n` không FROM | kết quả không ổn định |
 | 8 | **Q11** hàm bọc cột trong WHERE | `FuncCall` (`date_trunc`, `extract`, `lower`, `upper`, `trim`, `::date`) bọc `ColumnRef` ở vế so sánh của `WHERE` | Main lọc lại: cột đó là **cột đầu của một index có thật** trong schema (`pg_indexes`, một lần mỗi schema, `memoByKey`). Không có index thì sargable không đổi gì, nên không nhắc | hiệu năng |
-| 9 | **Q22** `GROUP BY 1` / `ORDER BY 2` | Mục là `A_Const` số nguyên | Không | phong cách |
+| 9 | **Q22** `GROUP BY 1` / `ORDER BY 2` | Mục là `A_Const` số nguyên | **Không có trong `LINT_ON` ở v25** (xem §5.5): nội dung đang dạy và dùng số thứ tự. Thẻ Q22 vẫn có | phong cách |
 | 10 | **A05** `CURRENT_DATE`/`now()` | `SQLValueFunction` hoặc `FuncCall now` | Không. Lời nhắc nói "dữ liệu dừng ở 31/10/2026; viết ngày cụ thể" | sai âm thầm (theo ngày) |
 
 ### 5.5 Chính sách báo nhầm
 
 1. **Solution sạch.** Một luật không bao giờ nhắc ở một việc mà Solution (mọi biến thể, mọi bước) của việc đó vi phạm luật ấy.
-   - Test tính sẵn danh sách `(ticketId, rule)` bị miễn, và so với bản ghi trong `src/viz/bpLint.ts` (`EXEMPT`).
-   - Đo nhanh hôm nay: `ecom-ch3-04` dùng `ORDER BY 3` (Q22). Một Solution của `adv.yml` dùng `GROUP BY 1` và `lower(trim(email))` trong WHERE (Q22, Q11 không có index nên tự lọc).
+   - `EXEMPT` (danh sách `(ticketId, rule)`) được sinh bởi script test và nằm trong chunk `bpindex` (§10), nơi `bpTip` đọc nó. Test so bản trong chunk với tập vi phạm đo lại.
+   - Đo thô hôm nay (grep, 2026-11-20): `GROUP BY <số>`/`ORDER BY <số>` có trong khoảng 57 file nội dung (47 file có `ORDER BY <số>`, 29 file có `GROUP BY <số>`), trong khi chỉ có 148 file việc + 114 drill + 28 node. Q22 chắc chắn vượt trần 5 % ở mục 2, nên **Q22 tắt ở v25**. Nó chỉ được bật khi luồng nội dung bỏ số thứ tự khỏi Solution, việc này không thuộc v25.
+   - Q11: Solution `lower(trim(email))` của `adv.yml` không bị nhắc, vì cột đó không có index (bộ lọc của luật).
+   - Q10, Q12, Q13, Q15: chưa đo. Trần 5 % quyết định ở v25.
    - Luồng nội dung **không** phải sửa các Solution này.
 2. **Trần miễn.** Một luật bị miễn ở > 5 % Solution thì không được bật: nó quá ồn. Test fail cho tới khi luật được thu hẹp.
 3. **Cặp của chính mục.** `pair.bad` của mục có `lint` phải kích luật, `pair.good` thì không. Thêm ≥ 3 câu dương và ≥ 3 câu âm mỗi luật trong `tests/bpLint.test.ts`.
 4. **Công tắc một chỗ.** `LINT_ON` (mảng id trong `bpLint.ts`): bỏ một id là tắt luật cho mọi người, không đụng nội dung. Review sau version (L217) thấy luật nào bị người chơi tắt nhiều (đọc từ pref của máy test, không có telemetry) hoặc báo nhầm thì bỏ khỏi `LINT_ON` ở luồng R.
 5. **Không nhắc lại.** Một luật đã hiện ở một việc thì không hiện lại ở việc đó (`seen` = `rule@ticketId`). Ở Sandbox thì một lần mỗi luật mỗi phiên.
-6. **Câu nhắc nói "có thể".** Với Q10, Q11, Q22: "Câu này chạy đúng. Nếu…, nên…". Không bao giờ nói "sai" khi kết quả đúng.
+6. **Câu nhắc nói "có thể".** Với Q10, Q11: "Câu này chạy đúng. Nếu…, nên…". Không bao giờ nói "sai" khi kết quả đúng.
 
 ### 5.6 Hiển thị và đóng (mockup 02)
 
@@ -395,7 +399,7 @@ Mọi luật đọc **cây parse thô** của `libpg-query`, không đọc `Word
 - **Nội dung:**
   - nhãn "BOON NHẮC" (`text-caption` 800);
   - một hoặc hai câu `lint.tip`;
-  - link "Vì sao? (thẻ Q02)" → dialog mục (§2.4);
+  - link "Vì sao? (thẻ Q02)" → dialog mục (§2.4). Dialog do BP-UI xuất (`openBestDialog(id)` trong `engineBest.ts`); BP-LINT chỉ gọi;
   - link "Đừng nhắc luật này";
   - nút × "Ẩn".
 - **Không tự cướp focus.** Câu nhắc được nối vào câu `announce()` của lần chạy: "… Boon nhắc: …". Không có `aria-live` thứ hai.
@@ -408,15 +412,15 @@ Mọi luật đọc **cây parse thô** của `libpg-query`, không đọc `Word
   - "Bật lại Boon nhắc" ở cùng chỗ (xóa `mute`).
   - Không thêm vào menu `⋯` (`topbar.ts` không phải file của luồng này).
 - **Pref thiết bị** `cargo-query/bp-tips` = `{ off: boolean, mute: string[], seen: string[], fixed: number }`, parse bằng `parseBpTips` (bỏ dữ liệu hỏng, `seen` ≤ 500 mục, mới nhất giữ lại). Không vào Save, như `cargo-query/guides`.
-- **Người mới:** chương 1 Logistics chỉ bật Q01 và A05. Đủ 9 luật còn lại từ khi có `knownSkills` ≥ 3. Mục đích là không dội lời nhắc vào người đang học SELECT.
+- **Người mới:** chương 1 Logistics chỉ bật Q01 và A05. Đủ 7 luật còn lại (8 trừ Q22 đang tắt) từ khi có `knownSkills` ≥ 3. Mục đích là không dội lời nhắc vào người đang học SELECT.
 
 ### 5.7 Luồng kỹ thuật (để luồng code chia file)
 
 1. `src/viz/bpLint.ts` (thuần, cùng nhóm `steps`/parser): `bpLint(tree) → { rule, column? }[]`.
 2. `src/viz/steps.ts` gọi nó trong nhánh `WORDS_ONLY`, và trả thêm trường tùy chọn `bp?` cạnh `words` (fixture cũ không phải sửa).
 3. `src/ui/sqlWordsView.ts` đã nhận phản hồi đó. Nó chuyển `bp` qua một hook `onBp(list, sql)`.
-4. `src/ui/bpTip.ts` (main, nhỏ) lo các việc sau:
-   - lọc theo vị trí, kết quả chấm, pref, `EXEMPT`, `erMeta`/index;
+4. Main chỉ giữ **chỗ gắn + hook** (`bpSlot`, vài dòng). Lần đầu `bp` khác rỗng, main `import()` `src/ui/bpTip.ts` (chunk lười `bptip`). Chunk này lo các việc sau:
+   - lọc theo vị trí, kết quả chấm, pref, `EXEMPT` (từ `bpindex`), `erMeta`/index;
    - chọn một luật theo ưu tiên;
    - `import()` chunk nội dung track SQL để lấy `tip`, rồi vẽ thẻ.
 
@@ -504,13 +508,14 @@ Mọi luật đọc **cây parse thô** của `libpg-query`, không đọc `Word
 
 | Nhóm | Nội dung | Trần đề xuất | Ước lượng |
 |---|---|---|---|
-| main | Route `best` (nếu E-FND chưa có), `bpTip.ts` (lọc + vẽ thẻ, không có chữ mục), pref | **+0,3 KB** | 0,3 |
+| main | Route `best` (nếu E-FND chưa có), chỗ gắn + hook `bpSlot` | **+0,3 KB** | 0,2 |
+| `bptip` (mới, lười) | `bpTip.ts`: lọc, chọn luật, vẽ thẻ, pref `cargo-query/bp-tips`, hoàn tác | 4 | ~2,5 |
 | `engineui` | `src/ui/engineBest.ts` (lưới, trang mục, Chạy cả hai, Kiểm nhanh) + khóa `et()` | trần 20 giữ nguyên; luồng ghi số đo | +4 |
 | `steps` (nhóm parser) | `bpLint.ts` | trong 410 hiện có | +1,2 |
 | `bpsql` (mới) | 33 mục Q + A + `tracks.yml` | 20 | ~16 |
 | `bppg` (mới, v25) | 35 mục S I P X | 20 | ~17 |
 | `bpmg` (v27), `bpdy` (v29) | 14 / 13 mục | 10 / 10 | ~7 / ~6 |
-| `bpindex` (mới) | Chỉ mục nhỏ `{ id, track, skills, title }`, để chip trang kỹ năng và lưới không phải tải cả track | 3 | ~2 |
+| `bpindex` (mới) | Chỉ mục nhỏ `{ id, track, skills, title }` + `EXEMPT` + `lint.tip` của 10 mục, để chip trang kỹ năng, lưới và Boon nhắc không phải tải cả track | 4 | ~3 |
 
 - `learnui` chỉ thêm chip kỹ năng (≈ 0,2 KB). Nó đọc `bpindex` qua `DrillDeps`, không import giá trị từ main (luật Plan 6 U3).
 - Mỗi luồng **nối một dòng** nhóm vào `scripts/check-budget.mjs` trong commit gộp của luồng đó.
@@ -525,7 +530,7 @@ Mọi luật đọc **cây parse thô** của `libpg-query`, không đọc `Word
 |---|---|
 | `tests/bestPractice.test.ts` | Mọi luật nội dung §4.3. Cụ thể: chạy `bad`/`good` trên PGlite (schema `lab` hoặc `engine` + `setup`; mục `plan` sau `VACUUM ANALYZE` một lần như script của catalogue, vì I04 cần visibility map) hoặc mingo, rồi khẳng định `check` + `expect`. Đây chính là script kiểm của catalogue, thành test thật |
 | `tests/bpLint.test.ts` | Mỗi luật ≥ 3 câu dương, ≥ 3 câu âm. `pair.bad` kích và `pair.good` không kích. Chạy lint trên **mọi** Solution (3 domain, mọi biến thể, mọi bước), 114 drill + 28 node nâng cao, ví dụ/đáp án bài học, `solution` lab Engine: tập vi phạm phải bằng `EXEMPT`, mỗi luật miễn ≤ 5 %. Không ném trên câu lạ (WITH, UNION, window, DDL) |
-| `tests/bpTip.test.ts` | Thứ tự ưu tiên §5.3: nộp sai + `wrong:` → không lint; nộp sai không `wrong:` → không lint; đánh giá, phỏng vấn, index lab, Thử ngay → không lint; chỉ một thẻ; `seen`/`mute`/`off` có tác dụng; gate người mới; `parseBpTips` bỏ dữ liệu hỏng; `fixed` chỉ tăng khi chạy lại thành công mà hết vi phạm |
+| `tests/bpTip.test.ts` | Thứ tự ưu tiên §5.3: nộp sai + `wrong:` → không lint; nộp sai không `wrong:` → không lint; Run trên việc chưa đạt → không lint; Run lại việc đã đạt → lint; đánh giá, phỏng vấn, index lab, Thử ngay → không lint; chỉ một thẻ; `seen`/`mute`/`off` có tác dụng; gate người mới; `parseBpTips` bỏ dữ liệu hỏng; `fixed` chỉ tăng khi chạy lại thành công mà hết vi phạm |
 | `tests/save*.test.ts` | Fixture có `e-bp-q02` trong `completed`: đọc → ghi → đọc giữ nguyên (cùng fixture `save-v5-engine.json` của E-FND nếu `bp` vào từ v22) |
 
 ### 11.2 Mở rộng
@@ -554,8 +559,8 @@ Một track chỉ phát hành khi:
 |---|---|---|---|---|
 | **BP-C** (agent Research/nội dung, không build) | Chuyển 33 mục Q + A và 35 mục S I P X của catalogue thành file theo §4. Viết `avoid`, `quiz`, `lint.tip` cho 10 mục. Bắt đầu viết trước từ v23 trong worktree riêng, gộp ở v25 | `content/engine/best/tracks.yml`, `content/engine/best/sql/**`, `content/engine/best/postgres/**` | L | Không. Kiểm bằng `tests/bestPractice.test.ts` của BP-T khi gộp |
 | **BP-T** (test + parser) | ADD-8 trong parser (`engine: best`, `track`, `pair`, `avoid`, `lint`, `skills`, `adv`, id `e-bp-<mã>`); bộ nạp lười `bpsql`/`bppg`/`bpindex`; test nội dung chạy cặp trên PGlite; `ENGINE_ID` có `bp` nếu v22 chưa làm | `src/engine/content.ts` (nhánh `best`), mới `src/engine/best.ts`, `src/bestSources.ts`, `tests/bestPractice.test.ts`, `tests/fixtures/` (chỉ thêm), `src/save.ts` (một dòng, chỉ khi cần) | M | Làm đầu v25. BP-UI và BP-LINT dùng kiểu của nó |
-| **BP-UI** (trang + quiz) | Route `best` (nếu E-FND chưa có), lưới track, trang mục, "Chạy cả hai" (`lab` + `engine`; `engine-hb` chỉ khi v24 đã có H-B), Kiểm nhanh, dòng `#/engine`, nhóm sidebar, link trang engine, chip trang kỹ năng, khối `#/me` | mới `src/ui/engineBest.ts`; `src/i18n/engine.ts` (khối khóa `best.*`); `src/ui/engineSide.ts` / trang tổng quan Engine (một nhánh, file của E-UI); `src/ui/learnView.ts` (một chỗ chip); `src/route.ts` (chỉ khi thiếu) | M | BP-T |
-| **BP-LINT** (Boon nhắc) | `bpLint.ts`, trường `bp` trong phản hồi `WORDS_ONLY`, `bpTip.ts`, một chỗ gắn trong `work.ts`, pref `cargo-query/bp-tips`, công tắc trên `#/engine/best` (qua hook xuất từ `bpTip.ts`, để BP-UI chỉ gọi) | mới `src/viz/bpLint.ts`, `src/ui/bpTip.ts`, `tests/bpLint.test.ts`, `tests/bpTip.test.ts`; `src/viz/steps.ts` (nhánh `WORDS_ONLY`), `src/ui/sqlWordsView.ts` (hook), `src/ui/work.ts` (một dòng) | M | BP-T cho `lint.tip`. Có thể bắt đầu song song, dùng fixture chữ tạm |
+| **BP-UI** (trang + quiz) | Route `best` (nếu E-FND chưa có), lưới track, trang mục, "Chạy cả hai" (`lab` + `engine`; `engine-hb` chỉ khi v24 đã có H-B), Kiểm nhanh, dòng `#/engine`, nhóm sidebar, link trang engine, chip trang kỹ năng, khối `#/me` | mới `src/ui/engineBest.ts`; `src/i18n/engine.ts` (khối khóa `best.*`); file sidebar và trang tổng quan của E-UI (tên do E-UI v22 đặt; một nhánh mỗi file); export `openBestDialog`; `src/ui/learnView.ts` (một chỗ chip); `src/route.ts` (chỉ khi thiếu) | M | BP-T |
+| **BP-LINT** (Boon nhắc) | `bpLint.ts`, trường `bp` trong phản hồi `WORDS_ONLY`, `bpTip.ts`, một chỗ gắn trong `work.ts`, pref `cargo-query/bp-tips`, công tắc trên `#/engine/best` (qua hook xuất từ `bpTip.ts`, để BP-UI chỉ gọi) | mới `src/viz/bpLint.ts`, `src/ui/bpTip.ts` (chunk `bptip`), chỗ gắn `bpSlot` trong main, `tests/bpLint.test.ts`, `tests/bpTip.test.ts`; `src/viz/steps.ts` (nhánh `WORDS_ONLY`), `src/ui/sqlWordsView.ts` (hook), `src/ui/work.ts` (một dòng) | M | BP-T cho `lint.tip`. Có thể bắt đầu song song, dùng fixture chữ tạm |
 
 **Xung đột file:**
 
@@ -592,7 +597,7 @@ Một track chỉ phát hành khi:
 |---|---|---|
 | L240 | ADD-8: `engine: best`, id `e-bp-<mã>`, `track`, `pair`, `avoid`, `lint`; `ENGINE_ID` có `bp` (hoặc ghi rằng đã vào từ v22) | BP-T |
 | L241 | Vị trí `#/engine/best` + tab track; phát hành SQL + PostgreSQL; số đo nhóm `bpsql`/`bppg`/`bpindex`/`engineui`; mục `engine-hb` nào phát hành ở `none` | BP-UI + BP-C |
-| L242 | Boon nhắc: 10 luật, `LINT_ON`, `EXEMPT` thật đo được, ưu tiên §5.3, gate người mới, pref `cargo-query/bp-tips` | BP-LINT |
+| L242 | Boon nhắc: 10 luật định nghĩa, 9 bật (Q22 tắt tới khi nội dung bỏ số thứ tự), `LINT_ON`, `EXEMPT` thật đo được, ưu tiên §5.3, gate người mới, pref `cargo-query/bp-tips` | BP-LINT |
 | L243–L245 | Còn lại cho Postgres L4 và runtime Mongo | (không thuộc tài liệu này) |
 
 - Mongo: một L trong dải v27 (L252–L257). Dynamo: một L trong dải v29 (L263–L267).
