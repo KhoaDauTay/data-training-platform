@@ -110,7 +110,7 @@ function openPinDialog(sql: string, r: QueryResult, from: string, editorSql: () 
 
   dialog.append(h('div', { class: 'space-y-4 p-5' },
     h('div', { class: 'flex items-center gap-2' },
-      h('h2', { id: 'pin-dialog-title', class: 'm-0 flex-1 text-lg font-bold' }, t('pin.title')),
+      h('h2', { id: 'pin-dialog-title', class: 'm-0 flex-1 text-title font-bold' }, t('pin.title')),
       h('span', { class: 'text-body-sm text-muted' }, t('dash.count', { n: domainSlot(app.save, activeDomain()).dashboard.cards.length, max: MAX_CARDS }))),
     h('fieldset', { class: 'm-0 border-0 p-0' }, h('legend', { class: 'mb-1 text-body-sm font-semibold' }, t('pin.kind')), h('div', { class: 'flex flex-wrap gap-2' }, ...radios)),
     h('label', { class: 'block text-body-sm font-semibold', for: 'pin-title' }, t('pin.cardTitle'), title),

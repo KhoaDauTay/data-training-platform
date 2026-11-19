@@ -41,7 +41,7 @@ function kpiResult(tk: Ticket, step: number): Promise<QueryResult> {
   return run;
 }
 
-const BIG = 'm-0 text-3xl font-bold tabular-nums';
+const BIG = 'm-0 text-display font-bold tabular-nums';
 const KIND_ICON: Record<Kpi['kind'], IconName> = { number: 'hash', rowcount: 'list', bar: 'chart' };
 const kpiIcon = (k: Kpi): IconName => (k.icon && isIconName(k.icon) ? k.icon : KIND_ICON[k.kind]);
 const ICON_BTN = 'grid size-10 shrink-0 place-items-center p-0 sm:size-8';
@@ -163,8 +163,11 @@ function playerCard(c: Card, i: number, n: number, redraw: () => void): HTMLElem
     h('details', { class: 'text-body-sm' },
       h('summary', { class: 'cursor-pointer text-muted' }, t('dash.sql')),
       h('pre', { class: 'sql mt-2 mb-0 max-h-48 overflow-auto' }, c.sql)),
-    h('div', { class: 'mt-auto flex flex-wrap items-center gap-1 text-body-sm text-muted' },
-      h('span', { class: 'mr-auto' }, sourceLine(c), ' · ', ran),
+    // ui-ux-v7 D1 (L148): one footer row, source · time on the left (cut with …), the five icon buttons in one chip-shaped
+    // group on the right that never wraps; below sm the source line takes its own line above the group (never a stray wrap).
+    h('div', { class: 'mt-auto flex items-center gap-2 text-body-sm text-muted max-sm:flex-col max-sm:items-stretch' },
+      h('span', { class: 'min-w-0 flex-1 truncate', title: sourceLine(c) }, sourceLine(c), ' · ', ran),
+      h('span', { class: 'flex shrink-0 items-center gap-0.5 self-end rounded-(--r-chip) bg-surface-2 p-0.5' },
       btn('up', 'up', t('dash.up', { title: c.title }), () => move(-1), i === 0),
       btn('down', 'down', t('dash.down', { title: c.title }), () => move(1), i === n - 1),
       btn('rerun', 'refresh', t('dash.rerun', { title: c.title }), rerun),
@@ -176,7 +179,7 @@ function playerCard(c: Card, i: number, n: number, redraw: () => void): HTMLElem
         save();
         byId('dash-mine-title').focus();
         announce(t('dash.unpinned', { title: c.title }));
-      })));
+      }))));
   return article;
 }
 
@@ -236,7 +239,7 @@ function startersBlock(locked: boolean): HTMLElement | null {
 function lockedMine(lock: { skill: string; n: number }): HTMLElement {
   const hint = t('dash.createLockedHint', lock);
   return h('section', { 'aria-labelledby': 'dash-mine-title' },
-    h('h2', { id: 'dash-mine-title', tabindex: '-1', class: 'm-0 text-lg font-bold' }, t('dash.mine')),
+    h('h2', { id: 'dash-mine-title', tabindex: '-1', class: 'm-0 text-title font-bold' }, t('dash.mine')),
     h('div', { class: cx(CARD, 'mt-3 flex flex-wrap items-start gap-4 p-5') },
       h('span', { class: 'grid size-10 shrink-0 place-items-center rounded-(--r-inset) bg-code text-muted', 'aria-hidden': 'true' }, icon('lock')),
       h('div', { class: 'min-w-0 flex-1' },
@@ -266,10 +269,10 @@ function mineSection(redraw: () => void): HTMLElement {
   }).join(' · ');
   return h('section', { 'aria-labelledby': 'dash-mine-title' },
     h('div', { class: 'flex flex-wrap items-center gap-x-3 gap-y-2' },
-      h('h2', { id: 'dash-mine-title', tabindex: '-1', class: 'm-0 text-lg font-bold' }, t('dash.mine')),
+      h('h2', { id: 'dash-mine-title', tabindex: '-1', class: 'm-0 text-title font-bold' }, t('dash.mine')),
       h('span', { class: 'text-body-sm text-muted' }, t('dash.count', { n: cards.length, max: MAX_CARDS })),
       h('span', { class: 'ml-auto flex flex-wrap gap-2' },
-        cards.length ? h('button', { type: 'button', class: 'flex items-center gap-1.5 px-3 py-1 text-body-sm', onclick: () => void meTools().then((m) => say(m.exportDash()), () => say(t('me.failed'))) }, icon('download', 'size-4'), t('dash.export')) : null,
+        cards.length ? h('button', { type: 'button', class: 'flex items-center gap-1.5 px-3 py-1 text-body-sm', onclick: () => void meTools().then((m) => m.exportDash()).then(say, () => say(t('me.failed'))) }, icon('download', 'size-4'), t('dash.export')) : null,
         h('button', { type: 'button', class: 'flex items-center gap-1.5 px-3 py-1 text-body-sm', onclick: () => void meTools().then((m) => m.importDashFile((msg) => say(msg)), () => say(t('me.failed'))) }, icon('upload', 'size-4'), t('dash.import')),
         cards.length ? h('button', { type: 'button', class: 'flex items-center gap-1.5 px-3 py-1 text-body-sm', onclick: () => startSandbox() }, icon('flask', 'size-4'), t('dash.toSandbox')) : null)), // empty: the empty state holds it
     dashMsg ? h('p', { class: 'mt-2 mb-0 text-body-sm', role: 'status' }, dashMsg) : null,
@@ -327,6 +330,35 @@ function kpiTile(tile: KpiTile, redraw: () => void): HTMLElement {
     h('p', { class: 'mt-auto mb-0 flex items-start gap-1.5 text-body-sm text-muted' }, icon(open ? 'link' : 'lock', 'mt-0.5 size-4'), h('span', {}, foot)));
 }
 
+/** Why a tile is still locked: its task (chapter, title, sender) or the board's later question. */
+function lockedFoot(tile: KpiTile): string {
+  const lang = getLang();
+  return tile.ticket ? t('home.kpiLocked', { n: tile.ticket.chapter, title: textOf(tile.ticket, lang).title, name: tile.ticket.from.name })
+    : t('home.kpiLater', { n: chapterOfId(tile.kpi.ticket) });
+}
+
+/**
+ * ui-ux-v7 D1 (D-U9, L148): the locked company tiles are one row, not a wall of identical "locked" cards: "N tiles to
+ * open", their icons, the next one (story order) and, on click, a one-line list. Opened tiles stay full cards.
+ */
+function lockedRow(locked: KpiTile[]): HTMLElement | null {
+  if (!locked.length) return null;
+  const lang = getLang();
+  const order = (x: KpiTile): number => (x.ticket ? app.tickets.indexOf(x.ticket) : Infinity);
+  const next = [...locked].sort((a, b) => order(a) - order(b))[0];
+  return h('details', { class: cx(CARD, 'mt-4 px-4 py-3') },
+    h('summary', { class: 'flex cursor-pointer flex-wrap items-center gap-x-3 gap-y-1' },
+      h('span', { class: 'grid size-9 shrink-0 place-items-center rounded-(--r-inset) bg-code text-muted', 'aria-hidden': 'true' }, icon('lock')),
+      h('span', { class: 'min-w-0 flex-1' },
+        h('b', { class: 'block' }, t('dash.lockedRow', { n: locked.length })),
+        h('span', { class: 'block text-body-sm text-muted' }, t('dash.lockedNext', { label: next.kpi.label[lang], why: lockedFoot(next) }))),
+      h('span', { class: 'flex items-center gap-1 text-muted opacity-70 max-sm:hidden', 'aria-hidden': 'true' }, ...locked.slice(0, 8).map((x) => icon(kpiIcon(x.kpi), 'size-4'))),
+      h('span', { class: 'text-body-sm font-semibold text-accent' }, t('dash.seeAll'))),
+    h('ul', { class: 'mt-3 mb-0 list-none divide-y divide-line p-0' }, ...locked.map((x) => h('li', { class: 'flex items-start gap-3 py-2' },
+      h('span', { class: 'mt-0.5 text-muted', 'aria-hidden': 'true' }, icon(kpiIcon(x.kpi), 'size-4')),
+      h('span', { class: 'min-w-0' }, h('b', { class: 'block text-body-sm' }, x.kpi.label[lang]), h('span', { class: 'block text-caption text-muted' }, lockedFoot(x)))))));
+}
+
 function companySection(redraw: () => void): HTMLElement {
   const lang = getLang();
   const tiles = kpiTiles(kpisOf(), app.tickets, done());
@@ -335,10 +367,11 @@ function companySection(redraw: () => void): HTMLElement {
   const gone = tiles.filter((x) => hidden.has(x.kpi.id));
   return h('section', { 'aria-labelledby': 'dash-company-title' },
     h('div', { class: 'flex flex-wrap items-baseline gap-x-3' },
-      h('h2', { id: 'dash-company-title', tabindex: '-1', class: 'm-0 text-lg font-bold' }, t('dash.company')),
+      h('h2', { id: 'dash-company-title', tabindex: '-1', class: 'm-0 text-title font-bold' }, t('dash.company')),
       h('span', { class: 'text-body-sm text-muted' }, t('dash.companyOpen', { n: tiles.filter((x) => x.open).length, total: tiles.length }))),
     h('p', { class: 'mt-1 mb-3 text-[15px] text-muted' }, t('dash.companyIntro')),
-    h('div', { class: 'grid gap-4 sm:grid-cols-2 lg:grid-cols-4' }, ...shown.map((x) => kpiTile(x, redraw))),
+    h('div', { class: 'grid gap-4 sm:grid-cols-2 lg:grid-cols-4' }, ...shown.filter((x) => x.open && x.ticket).map((x) => kpiTile(x, redraw))),
+    lockedRow(shown.filter((x) => !(x.open && x.ticket))),
     gone.length
       ? h('details', { class: 'mt-3' },
         h('summary', { class: 'cursor-pointer text-body-sm text-muted' }, t('dash.hidden', { n: gone.length })),
@@ -354,7 +387,7 @@ export function renderDashboard(host: HTMLElement): void {
   redrawDash = redraw;
   host.replaceChildren(h('div', { class: 'mx-auto max-w-(--w-wide) space-y-6 px-4 py-6' },
     h('header', {},
-      h('h1', { id: 'dashboard-title', tabindex: '-1', class: 'm-0 text-2xl font-bold' }, t('dash.title')),
+      h('h1', { id: 'dashboard-title', tabindex: '-1', class: 'm-0 text-display font-bold' }, t('dash.title')),
       h('p', { class: 'mt-1 mb-0 max-w-3xl text-[15px] text-muted' }, t(customLock() ? 'dash.introLocked' : 'dash.intro'))),
     mineSection(redraw), // L49: the player's own cards come before the company figures
     companySection(redraw)));

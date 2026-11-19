@@ -9,14 +9,18 @@ import { sqlOnly } from '../src/onboarding';
 import { unlockNote } from '../src/overview';
 import { SKILLS } from '../src/progress';
 import { textOf } from '../src/tickets';
-import { canonicalHash, domainOfHash, drillHash, drillOfHash, LEARN_PLAY, parseRoute, workspaceHash } from '../src/route';
+import { canonicalHash, domainOfHash, drillHash, drillOfHash, generalNav, LEARN_PLAY, parseRoute, workspaceHash } from '../src/route';
 
 /** v15 "Ranh giới sạch" (product-roadmap-v15 §3, §5): the General area and the domains no longer leak into each other. */
 
 describe('Q1: the General workspace has its own hash (D-N2)', () => {
-  it('a drill is never on a #/d/… route: the domain workspace is an alias of #/learn/play', () => {
-    for (const d of ['logistics', 'ecommerce', 'finance']) expect(workspaceHash(`#/d/${d}/play`, LEARN_PLAY)).toBe(LEARN_PLAY);
-    expect(workspaceHash(canonicalHash('#/play'), LEARN_PLAY)).toBe(LEARN_PLAY); // the pre-Plan 7 alias too
+  it('a drill is never on a #/d/… route: Back to a domain workspace leaves the General work (FIX-1, L147 amends the L135 alias)', () => {
+    for (const d of ['logistics', 'ecommerce', 'finance']) {
+      expect(generalNav(`#/d/${d}/play`, LEARN_PLAY)).toBe('leave');
+      expect(generalNav(`#/d/${d}/play`, drillHash('g-where-open'))).toBe('leave');
+      expect(workspaceHash(`#/d/${d}/play`, undefined)).toBe(`#/d/${d}/play`);
+    }
+    expect(generalNav(canonicalHash('#/play'), LEARN_PLAY)).toBe('leave'); // the pre-Plan 7 hash too
     expect(parseRoute(LEARN_PLAY)).toBe('play');
     expect(domainOfHash(LEARN_PLAY)).toBeUndefined();
   });
@@ -36,10 +40,30 @@ describe('Q1: the General workspace has its own hash (D-N2)', () => {
     expect(parseRoute(h)).toBe('play');
     expect(domainOfHash(h)).toBeUndefined();
     expect(workspaceHash(h, undefined)).toBe(h); // page load, nothing open yet: main.ts reopens the drill
-    expect(workspaceHash('#/d/logistics/play', h)).toBe(h); // a drill open in a domain's workspace hash
-    expect(workspaceHash(LEARN_PLAY, h)).toBe(h);
+    expect(generalNav(LEARN_PLAY, h)).toBe('leave'); // Back to the review a drill replaced: that review is gone…
+    expect(workspaceHash(LEARN_PLAY, undefined)).toBe('#/practice'); // …so the hub, where it starts again
     expect(drillOfHash('#/learn/play/<script>')).toBeUndefined();
+    expect(generalNav('#/learn/play/<script>', h)).toBe('leave');
     expect(drillOfHash('#/learn/play')).toBeUndefined();
+  });
+});
+
+describe('FIX-1 (L147): Back and Forward in the General workspace', () => {
+  const a = drillHash('g-where-open');
+  const b = drillHash('g-select-open');
+  it('Back to an older drill or interview question opens it; the open one, a review or other pages change nothing', () => {
+    expect(generalNav(a, b)).toEqual({ open: 'g-where-open' });
+    expect(workspaceHash(a, b)).toBe(a); // never swapped back to the open drill
+    expect(generalNav(drillHash('g-iv-junior-1-2'), drillHash('g-iv-junior-1-3'))).toEqual({ open: 'g-iv-junior-1-2' });
+    expect(generalNav(a, LEARN_PLAY)).toEqual({ open: 'g-where-open' }); // a drill hash during a review of drills
+    expect(generalNav(a, a)).toBeUndefined();
+    expect(generalNav(LEARN_PLAY, LEARN_PLAY)).toBeUndefined();
+    for (const x of ['#/learn/skill/where', '#/practice', '#/d/finance/data/loans', '#/']) expect(generalNav(x, a)).toBeUndefined();
+  });
+  it('after Exit (nothing General open), Back or Forward to a drill hash reopens that drill instead of showing the story', () => {
+    expect(generalNav(a, undefined)).toEqual({ open: 'g-where-open' });
+    expect(generalNav('#/d/logistics/play', undefined)).toBeUndefined();
+    expect(generalNav(LEARN_PLAY, undefined)).toBeUndefined(); // workspaceHash sends it to the hub
   });
 });
 

@@ -75,7 +75,7 @@ export function renderData(host: HTMLElement): void {
     list);
   side?.replaceChildren(picker);
   host.replaceChildren(h('div', { class: 'mx-auto max-w-(--w-wide) px-4 py-6' },
-    h('h1', { id: 'data-title', tabindex: '-1', class: 'm-0 text-2xl font-bold' }, t('data.title')),
+    h('h1', { id: 'data-title', tabindex: '-1', class: 'm-0 text-display font-bold' }, t('data.title')),
     h('p', { class: 'mt-1 text-muted' }, t(domainText()?.dataIntro ?? 'data.intro')),
     h('div', { class: side ? 'mt-4 grid gap-5' : 'mt-4 grid gap-5 lg:grid-cols-[18rem_1fr]' },
       side ? null : picker,
@@ -149,7 +149,7 @@ export function renderData(host: HTMLElement): void {
   }
 
   function drawDetail(): void {
-    const title = h('h2', { id: 'data-table-title', tabindex: '-1', class: 'm-0 font-mono text-xl' }, sel);
+    const title = h('h2', { id: 'data-table-title', tabindex: '-1', class: 'm-0 font-mono text-heading' }, sel);
     if (metaError !== undefined) {
       detail.replaceChildren(title, errorView(metaError), h('button', { type: 'button', onclick: () => renderData(host) }, t('data.retry')));
       return;
@@ -193,7 +193,7 @@ export function renderData(host: HTMLElement): void {
     }, label);
     const fig = h('div', {}, h('p', { class: 'text-muted' }, t('erd.drawing')));
     diagram.replaceChildren(
-      h('h2', { class: 'mt-0 text-lg' }, t('tab.erd')),
+      h('h2', { class: 'mt-0 text-title' }, t('tab.erd')),
       h('div', { class: 'mb-2 flex flex-wrap gap-1', role: 'group', 'aria-label': t('erd.scope') }, btn('near', t('data.scopeNear')), btn('all', t('erd.scopeAll'))),
       fig);
     const m = meta;

@@ -39,14 +39,24 @@ export function domainArt(kind: 'scene' | 'map'): HTMLElement {
   const dom = activeDomain() as ArtDomain;
   const d = done();
   const st = { passed: new Set(rankOf(app.tickets, d).passed), done: app.tickets.filter((x) => d.has(x.id)).length };
-  const frame = h('div', { class: cx('w-full bg-accent-soft', kind === 'scene' ? 'aspect-[1100/400] max-h-60' : 'aspect-[980/300] rounded-(--r-ctl)'), 'aria-hidden': 'true' });
-  const legend = h('div', { class: 'px-4 py-3 text-body-sm text-muted' }, h('p', { class: 'm-0' }, t(domainText(dom)?.callout ?? 'ecom.scene.callout')));
+  const frame = h('div', { class: cx('w-full bg-accent-soft', kind === 'scene' ? 'aspect-[1100/400] max-sm:aspect-auto max-sm:h-[190px]' : 'aspect-[980/300] rounded-(--r-ctl)'), 'aria-hidden': 'true' });
+  // the scene's words are HTML around it (ui/homeView.ts harborSection, like Tien Sa); the map keeps its legend here
+  const legend = kind === 'scene' ? null : h('div', { class: 'px-4 py-3 text-body-sm text-muted' }, h('p', { class: 'm-0' }, t(domainText(dom)?.callout ?? 'ecom.scene.callout')));
   void loadDomainArt(dom).then((a) => {
     if (!frame.isConnected) return; // redrawn meanwhile
-    frame.replaceWith(kind === 'scene' ? a.scene(st) : a.map(st));
-    if (kind === 'map') legend.replaceChildren(h('ul', { class: 'm-0 list-none space-y-0.5 p-0 lg:hidden', 'aria-hidden': 'true' }, ...a.items(st).map((x) => h('li', {}, x))));
+    frame.replaceWith(kind === 'scene' ? hero(a.scene(st)) : a.map(st));
+    if (legend) legend.replaceChildren(h('ul', { class: 'm-0 list-none space-y-0.5 p-0 lg:hidden', 'aria-hidden': 'true' }, ...a.items(st).map((x) => h('li', {}, x))));
   }, () => {});
-  // v11 UX #2: the scene stays under ~240 px high so the overview's content starts above the fold; the street bleeds
-  // past its viewBox on a wide card (ui-ux-v6 S3), clipped here.
-  return h('div', { class: kind === 'scene' ? 'overflow-hidden [&>svg]:max-h-60' : '' }, frame, legend);
+  // ui-ux-v7 I1 (L148): the hero is as tall as Tien Sa's (1100×400); the street bleeds past its viewBox (ui-ux-v6 S3), clipped here.
+  return h('div', { class: kind === 'scene' ? 'overflow-hidden' : '' }, frame, legend);
+}
+
+/**
+ * ui-ux-v7 I1: below sm the scene is cut around its middle (slice, safe zone ~x 160–940 of 1100) at 190 px high instead
+ * of shrinking to a ~90 px strip. Only the Overview's copy: the dock re-crops its own viewBox.
+ */
+function hero(svg: SVGSVGElement): SVGSVGElement {
+  svg.setAttribute('preserveAspectRatio', 'xMidYMid slice');
+  svg.classList.add('max-sm:h-[190px]');
+  return svg;
 }

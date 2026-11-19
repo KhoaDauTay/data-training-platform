@@ -52,8 +52,8 @@ describe('src/learn.ts', () => {
     const s = save({ completed: ['g-where-1', 'g-where-2'], review: { where: { box: 4, due: '2026-11-20' } } });
     expect(drillState(s, 'g-where-1')).toBe('done');
     expect(drillState(s, 'g-where-3')).toBe('todo');
-    expect(skillState(ctx(s, ['where']), 'where')).toEqual({ lesson: true, drills: 2, total: 3, learned: true, mastered: true });
-    expect(skillState(ctx(save()), 'select')).toEqual({ lesson: false, drills: 0, total: 3, learned: false, mastered: false });
+    expect(skillState(ctx(s, ['where']), 'where')).toEqual({ lesson: true, drills: 2, total: 4, learned: true, mastered: true });
+    expect(skillState(ctx(save()), 'select')).toEqual({ lesson: false, drills: 0, total: 4, learned: false, mastered: false });
     const m1 = moduleState(ctx(s), 1);
     expect(m1.skills).toEqual(SKILLS.filter((x) => x.chapter === 1).map((x) => x.id));
     expect(m1.learned).toBe(1);

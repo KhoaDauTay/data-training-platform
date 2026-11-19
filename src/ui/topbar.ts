@@ -152,6 +152,14 @@ export function initTopbar(): void {
   fillIcons(document.querySelector('header.topbar')!);
   fillIcons(byId('more-menu'));
   fillIcons(byId('domain-menu'));
+  // The domain menu opens under its chip, not at the window's left edge (the chip sits after the nav links); kept inside the viewport.
+  const domainMenu = byId('domain-menu');
+  domainMenu.addEventListener('toggle', (e) => {
+    if ((e as ToggleEvent).newState !== 'open') return;
+    const r = byId('domain-btn').getBoundingClientRect();
+    const left = Math.max(8, Math.min(r.left, window.innerWidth - domainMenu.offsetWidth - 8));
+    domainMenu.style.inset = `${Math.round(r.bottom + 6)}px auto auto ${Math.round(left)}px`;
+  });
   for (const b of document.querySelectorAll<HTMLButtonElement>('[data-theme-pref]')) {
     const pref = b.dataset.themePref as ThemePref;
     if (!THEME_PREFS.includes(pref)) continue;
@@ -228,7 +236,7 @@ function drawXp(): void {
   tick(t0);
   celebrate(pill);
   // aria-hidden: the feedback line already says "+N XP" (work.correctXp).
-  const chip = h('span', { 'aria-hidden': 'true', class: 'cq-rise absolute top-full right-0 mt-1 whitespace-nowrap rounded-full bg-sun px-1.5 text-caption font-bold text-sun-ink shadow-sm' }, `+${gain}`);
+  const chip = h('span', { 'aria-hidden': 'true', class: 'cq-rise absolute top-full right-0 mt-1 whitespace-nowrap rounded-full bg-sun px-1.5 text-caption font-bold text-sun-ink shadow-(--shadow-1)' }, `+${gain}`);
   chip.addEventListener('animationend', () => chip.remove(), { once: true });
   pill.append(chip);
 }

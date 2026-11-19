@@ -53,6 +53,7 @@ Mọi SQL chỉ chạy trên schema `lab`. "Hôm nay" là 2026-10-31; ngày luô
 
 - **Đồng hồ:** `minutes` là giờ gợi ý. Người học bật hoặc tắt đồng hồ trước khi bắt đầu.
   - Hết giờ chỉ hiện "Hết giờ" và cho làm tiếp. Không khóa bài, không trừ gì.
+  - **Chỉ tính giờ trong phòng (FIX-1, L147).** Đồng hồ (và thời gian "đã làm" ghi vào kết quả, cả khi đồng hồ tắt) dừng khi người học rời phòng: sang trang khác, đổi chế độ (drill, Sandbox, câu chuyện), thoát lượt, ẩn tab hay đóng tab. Lượt đang làm ghi `away` (thời điểm rời) vào `live[id]` của pref; khi quay lại (trang workspace hiện lại, tab hiện lại, mở lại lượt từ trang phòng, tải lại) `start` được dời tới đúng bằng thời gian vắng, nên `elapsed = (away ?? now) − start` (`src/interviewPrefs.ts`: `elapsed`, `setPresence`). Đóng tab hôm nay, mở lại ngày mai: đồng hồ còn đúng chỗ đã dừng. "Hết giờ" chỉ báo một lần mỗi lượt (theo id bộ đề, không theo `start`), và không báo khi đang vắng mặt. Pref cũ không có `away` vẫn đọc được (coi như đang ở trong phòng).
 - **Khi đồng hồ chạy:** không shape card, không gợi ý, không khung (`frameOf`), không preview "Kết quả mong đợi". Đó là "câu không có khung" mà roadmap nhắc tới.
 - **Khi đồng hồ tắt (chế độ tập):** `hint` hiện được, không tính phí.
 - **Không bao giờ hiện Solution:** đây không phải chỗ tra đáp án.

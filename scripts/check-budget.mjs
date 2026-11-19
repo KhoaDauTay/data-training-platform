@@ -19,7 +19,8 @@ const GROUPS = [
   ['initdb', /^initdb-/, 140],
   ['parser', /^(libpg-query|parser|steps)-/, 410],
   ['fonts', /\.woff2$/, 60], // Plan 7 V2: Nunito variable, latin 39 KB + vietnamese 13 KB (woff2 is already compressed)
-  ['general', /^generalSources-/, 70], // Plan 8a D8a-12: drills (content/general/sql.yml) + advanced nodes (adv.yml) + parsers, lazy, fetched only when a drill or General page opens
+  ['general', /^generalSources-/, 40], // v19 L167: skill drills (content/general/sql.yml, 4 per skill since L168) + parsers, lazy: 31 KB gz after the split (was 68/70 with adv.yml, Plan 8a D8a-12)
+  ['generalAdv', /^generalAdvSources-/, 50], // v19 L167: advanced DA track (content/general/adv.yml), its own lazy chunk: 46 KB gz (roadmap §2.6 guessed ≤ 15; adv.yml is the bigger file)
   ['interview', /^interview(Sources|View)-/, 25], // v17 I5 (L144): 19 KB gz at T1 (content 12 + UI 7). The interview room, lazy: content/general/interview.yml + parser (interviewSources) and its UI + VI/EN text (interviewView), fetched only on #/learn/interview or a run
   ['learnui', /^(learnView|drillBrief)-/, 25], // Plan 8a D8a-12/13: General UI (drill workspace, learning path) and its VI/EN text, lazy
   ['ecom', /^ecomSources-/, 50], // Plan 9: content/domains/ecom (30 tickets, chapters, people, KPIs), lazy on the first visit (D9-16)
@@ -32,6 +33,8 @@ const GROUPS = [
   ['gsap', /^gsap-/, 50], // ui-ux-v6 §2.1: src/art/gsap.ts (GSAP 3.15.1 core + MorphSVG, DrawSVG, MotionPath, Physics2D, CustomEase), lazy: 45 KB measured in v6
   ['frame', /^frame-/, 4], // v13 (product-design-v8 §4): src/frame.ts, the hint scaffold, lazy on the first "fill the scaffold" (brief.ts, lessonCard.ts): 2.9 KB gz; v14 T3 (ROLLUP, NULLS, JT clause, WHERE/CASE breaks; v9 R3 allows +1 KB): 3.2 KB gz
   ['me', /^meView-/, 12], // v16 (L142): src/ui/meView.ts + src/me.ts + src/i18n/me.ts (#/me page, certificates, portfolio, dashboard file/PNG exports), lazy on the first #/me visit or export click
+  ['sqlmotion', /^sqlMotion-/, 8], // v10 Track A (L154): src/art/sqlMotion.ts, the Execution order film, GROUP BY fold, JOIN pairs and the guess, VI/EN text inside; lazy on the first draw of that tab
+  ['portfolioPng', /^portfolioPng-/, 6], // V19-D (L170): src/ui/portfolioPng.ts + src/portfolio.ts (card pictures, portfolio zip, take-home file), lazy on the first picture or portfolio click: 3.2 KB gz
   ['rest', /./, 1560],
 ];
 
@@ -48,7 +51,7 @@ for (const [name, , budget] of GROUPS) {
   const kb = sums[name];
   const bad = kb === undefined || kb > budget; // a missing group means the build changed shape: look before deploying
   fail ||= bad;
-  console.log(`${bad ? 'FAIL' : 'ok  '} ${name.padEnd(7)} ${kb === undefined ? 'not found' : `${kb.toFixed(0).padStart(5)} KB gz / ${budget} KB`}`);
+  console.log(`${bad ? 'FAIL' : 'ok  '} ${name.padEnd(10)} ${kb === undefined ? 'not found' : `${kb.toFixed(0).padStart(5)} KB gz / ${budget} KB`}`);
 }
 // ui-ux-v6 §2.1/§2.2: no GSAP in main, and GSAP's copyright notice kept in its chunk (its licence forbids removing it).
 const text = (re) => files.filter(([f]) => re.test(f)).map(([, path]) => readFileSync(path, 'utf8')).join(' ');

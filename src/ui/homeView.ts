@@ -25,7 +25,7 @@ import { hashOf } from '../route';
 import { textOf, type Ticket } from '../tickets';
 import { avatar } from './avatar';
 import { advLine } from './brief';
-import { icon, skillIcon, type IconName } from './icons';
+import { domainBadge, icon, skillIcon, type IconName } from './icons';
 import { byId, h, nodes } from './dom';
 import { artSlot } from '../art/load';
 import { fleetOrder, takeNewRoutes } from '../routesSeen';
@@ -84,16 +84,18 @@ export const STRETCH = 'after:absolute after:inset-0';
 /** Links inside a stretched row's text stay clickable above the cover. */
 export const ABOVE = 'relative z-10';
 
-export function listRow(r: { lead: Node; title: string; sub?: string | Node; action?: Node | null; current?: boolean; id?: string }): HTMLLIElement {
+/** `stack` (ui-ux-v7 M2, the Overview's chapter rows): below sm the action drops under the text and the title stays one line. */
+export function listRow(r: { lead: Node; title: string; sub?: string | Node; action?: Node | null; current?: boolean; id?: string; stack?: boolean }): HTMLLIElement {
   const act = r.action instanceof HTMLElement && /^(A|BUTTON)$/.test(r.action.tagName) && !r.action.hasAttribute('disabled') && r.action.getAttribute('aria-disabled') !== 'true' ? r.action : null;
   if (act) act.classList.add(...STRETCH.split(' '));
+  if (r.stack && r.action instanceof HTMLElement) r.action.classList.add('max-sm:ml-14', 'max-sm:basis-full');
   return h('li', {
     id: r.id ?? false,
-    class: cx('flex items-center gap-4 border-l-4 px-5 py-4', act && 'relative cursor-pointer hover:bg-code', r.current ? 'border-l-accent bg-accent-soft' : 'border-l-transparent'),
+    class: cx('flex items-center gap-4 border-l-4 px-5 py-4', r.stack && 'max-sm:flex-wrap max-sm:gap-y-2 max-sm:px-4', act && 'relative cursor-pointer hover:bg-code', r.current ? 'border-l-accent bg-accent-soft' : 'border-l-transparent'),
     'aria-current': r.current ? 'step' : false,
   },
     h('span', { class: 'grid size-10 shrink-0 place-items-center', 'aria-hidden': 'true' }, r.lead),
-    h('span', { class: 'min-w-0 flex-1' }, h('b', { class: 'block' }, r.title), r.sub ? h('span', { class: 'block text-body-sm text-muted' }, r.sub) : null),
+    h('span', { class: 'min-w-0 flex-1' }, h('b', { class: cx('block', r.stack && 'max-sm:truncate'), title: r.stack ? r.title : false }, r.title), r.sub ? h('span', { class: 'block text-body-sm text-muted' }, r.sub) : null),
     r.action ?? null);
 }
 
@@ -141,7 +143,7 @@ function continueCard(m: HomeModel): HTMLElement {
   return h('section', { class: cx(CARD, 'flex h-full flex-col gap-4 p-6'), 'aria-labelledby': 'continue-title' },
     h('p', { class: cx('m-0 flex items-center gap-2 text-body-sm font-semibold', chapterColor(m.chapter).text) },
       icon('inbox', 'size-4'), t('home.kicker', { n: m.chapter, title: chapterTitle(m.chapter, lang, chaptersOf()) })), // Overview only (v12.0 U5)
-    h('h2', { id: 'continue-title', class: 'm-0 text-xl font-bold' }, x ? x.title : t('inbox.empty')),
+    h('h2', { id: 'continue-title', class: 'm-0 text-heading font-bold' }, x ? x.title : t('inbox.empty')),
     next && x
       ? h('div', { class: 'flex gap-3' },
         avatar(next.from, 'lg'),
@@ -170,7 +172,7 @@ function careerCard(): HTMLElement {
   const now = rows.filter((r) => reached(r.at)).pop();
   return h('section', { class: cx(CARD, 'flex h-full flex-col gap-3 p-6'), 'aria-labelledby': 'career-title' },
     h('h2', { id: 'career-title', class: 'm-0 flex items-center gap-2 text-body-sm font-semibold text-muted' }, icon('badge', 'size-4'), t('home.career')),
-    rank.career ? h('p', { class: 'm-0 text-lg font-semibold' }, rank.career[lang]) : null,
+    rank.career ? h('p', { class: 'm-0 text-title font-semibold' }, rank.career[lang]) : null,
     h('ol', { class: 'm-0 list-none space-y-2 p-0' }, ...rows.map((r) => h('li', {
       class: cx('flex items-center gap-2 text-[15px]', !reached(r.at) && 'text-muted'),
       'aria-current': r === now ? 'step' : false,
@@ -211,18 +213,19 @@ function chapterRow(c: ChapterCard): HTMLLIElement {
       ? icon('lock', 'size-5 text-muted')
       : c.status === 'done'
         ? h('span', { class: 'grid size-10 place-items-center rounded-full bg-good text-on-accent' }, icon('check', 'size-5'))
-        : h('span', { class: cx('grid size-10 place-items-center rounded-full text-lg font-bold', chapterColor(c.chapter).chip) }, String(c.chapter)),
+        : h('span', { class: cx('grid size-10 place-items-center rounded-full text-title font-bold', chapterColor(c.chapter).chip) }, String(c.chapter)),
     title: `${c.chapter} · ${chapterTitle(c.chapter, lang)}`,
     sub: closed ? (c.status === 'soon' ? t('home.soonHint') : t('home.lockedAfter', { n: c.chapter - 1 })) : adv ? h('span', { class: 'flex flex-wrap gap-x-3' }, short, adv) : short,
     action: closed ? statusPill(c) : h('a', { href: `${hashOf('learn')}/sql/${c.chapter}`, class: 'no-underline', title: t('learn.module', { n: c.chapter, title: moduleTitle(c.chapter, lang) }) }, statusPill(c)),
     current: c.status === 'current',
+    stack: true,
   });
 }
 
 function chaptersSection(m: HomeModel): HTMLElement {
   return h('section', { 'aria-labelledby': 'chapters-title' },
     h('div', { class: 'mb-3 flex flex-wrap items-end justify-between gap-2' },
-      h('h2', { id: 'chapters-title', class: 'm-0 text-lg font-bold' }, t('home.chapters', { n: m.chapters.length })),
+      h('h2', { id: 'chapters-title', class: 'm-0 text-title font-bold' }, t('home.chapters', { n: m.chapters.length })),
       h('p', { class: 'm-0 text-body-sm text-muted' }, t('home.chaptersIntro'))),
     h('ul', { class: LIST }, ...m.chapters.map(chapterRow)));
 }
@@ -253,7 +256,7 @@ function skillsSection(m: HomeModel): HTMLElement {
 function modesSection(): HTMLElement | null {
   if (modes.length === 0) return null;
   return h('section', { 'aria-labelledby': 'modes-title' },
-    h('h2', { id: 'modes-title', class: 'mb-3 text-lg font-bold' }, t('home.modes')),
+    h('h2', { id: 'modes-title', class: 'mb-3 text-title font-bold' }, t('home.modes')),
     h('div', { class: 'grid gap-3 sm:grid-cols-3' }, ...modes.map((md) => {
       const why = md.lock?.();
       if (why) {
@@ -292,8 +295,17 @@ let stopScene: (() => void) | undefined;
 function harborSection(m: HomeModel): HTMLElement {
   const words = domainText();
   if (words) { // Plan 9 D9-13: the domain's own scene, never the harbour
-    return h('section', { class: cx(CARD, 'overflow-hidden'), 'aria-labelledby': 'harbor-title' },
-      h('h2', { id: 'harbor-title', class: 'm-0 px-4 pt-3 text-lg font-bold' }, t(words.sceneTitle)), domainArt('scene'));
+    // ui-ux-v7 I1 (L148): the same frame as Tien Sa: a full-bleed hero, the place name as a pill top left and the status
+    // as a pill bottom left (from lg; below lg the picture is too small for them and the same lines show as HTML under it).
+    const d = done();
+    const lines = [t('scene.done', { done: app.tickets.filter((x) => d.has(x.id)).length }), t('harbor.callB', { passed: rankOf(app.tickets, d).passed.length, n: m.chapter })];
+    return h('section', { class: cx(CARD, 'relative overflow-hidden'), 'aria-labelledby': 'harbor-title' },
+      h('h2', { id: 'harbor-title', class: 'absolute top-3 left-3 z-10 m-0 rounded-(--r-chip) bg-[#0f172a]/70 px-3 py-1 text-body-sm font-bold text-white max-lg:sr-only' }, t(words.sceneTitle)),
+      domainArt('scene'),
+      h('div', { class: 'absolute bottom-3 left-3 z-10 max-w-md rounded-(--r-inset) bg-[#0f172a]/70 px-3 py-2 text-body-sm text-white max-lg:sr-only' },
+        ...lines.map((x) => h('p', { class: 'm-0 font-semibold' }, x)), h('p', { class: 'm-0 mt-1 text-caption' }, t(words.callout))),
+      h('div', { class: 'px-4 py-3 text-body-sm lg:hidden', 'aria-hidden': 'true' },
+        h('p', { class: 'm-0 font-bold' }, t(words.sceneTitle)), ...[...lines, t(words.callout)].map((x) => h('p', { class: 'm-0 text-muted' }, x))));
   }
   const harbor = derive(app.tickets, done());
   const fresh = freshChapters();
@@ -327,7 +339,7 @@ function routesSection(): HTMLElement {
   const words = domainText();
   if (words) {
     return h('section', { class: cx(CARD, 'p-5'), 'aria-labelledby': 'routes-title' },
-      h('h2', { id: 'routes-title', class: 'm-0 mb-2 text-lg font-bold' }, t(words.mapTitle)), domainArt('map'));
+      h('h2', { id: 'routes-title', class: 'm-0 mb-2 text-title font-bold' }, t(words.mapTitle)), domainArt('map'));
   }
   const harbor = derive(app.tickets, done());
   const list = h('ul', { class: 'mt-3 mb-0 grid list-none gap-1.5 p-0 text-body-sm sm:grid-cols-2' }, ...LANES.map((r) =>
@@ -341,7 +353,7 @@ function routesSection(): HTMLElement {
     : h('p', { class: 'm-0 self-start rounded-(--r-ctl) bg-code p-4 text-body-sm text-muted' }, t('lane.pick'));
   return h('section', { class: cx(CARD, 'p-5'), 'aria-labelledby': 'routes-title' },
     h('div', { class: 'mb-2 flex flex-wrap items-end justify-between gap-2' },
-      h('h2', { id: 'routes-title', class: 'm-0 text-lg font-bold' }, t('routes.title')),
+      h('h2', { id: 'routes-title', class: 'm-0 text-title font-bold' }, t('routes.title')),
       h('p', { class: 'm-0 text-body-sm text-muted' }, t('routes.subtitle'))),
     // ui-ux-v6 S2: the map takes the card's full width (labels ≥ 11 px from lg); the lane list and the brief sit below it
     artSlot('aspect-[5/2] rounded-(--r-ctl)', (a) => {
@@ -428,7 +440,7 @@ function helloSection(): HTMLElement {
   const flip = app.dayFlip;
   app.dayFlip = false;
   return h('section', { class: 'grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-4 gap-y-2' }, petButton(), // phones: the card takes its own row
-    h('div', { class: 'min-w-0' }, h('p', { class: 'm-0 text-2xl font-extrabold' }, t('app.name')), h('p', { class: 'm-0 text-muted' }, t('home.tagline')),
+    h('div', { class: 'min-w-0' }, h('p', { class: 'm-0 text-display font-extrabold' }, t('app.name')), h('p', { class: 'm-0 text-muted' }, t('home.tagline')),
       h('p', { class: 'mt-2 mb-0 text-body-sm font-semibold' }, pre, h('span', { class: flip && 'cq-flip' }, String(dayCount())), post,
         grewPill ? h('span', { class: 'ml-2 rounded-full bg-sun px-2 py-0.5 text-caption font-bold text-sun-ink' }, t('lily.grewPill')) : null)),
     lilyCard(stage, known, next));
@@ -516,7 +528,7 @@ function domainsSection(): HTMLElement {
   return h('section', { 'aria-labelledby': 'domains-title' },
     h('h2', { id: 'domains-title', class: GROUP_TITLE }, t('home.domains')),
     h('ul', { class: LIST }, ...DOMAINS.map((d) => listRow({
-      lead: icon(d.icon, 'size-6'),
+      lead: domainBadge(d.id, d.icon), // ui-ux-v7 I1: the domain's badge in its identity colour
       title: t(d.name),
       sub: domainLine(d.id),
       action: h('a', { href: domainHash(d.id), class: cx(BTN_SECONDARY, 'px-4 py-2 whitespace-nowrap no-underline') }, t('home.enter')),

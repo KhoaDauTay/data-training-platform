@@ -19,7 +19,7 @@ export async function erdSvg(definition: string): Promise<string> {
     themeVariables: {
       background: v('--panel'), primaryColor: v('--panel'), mainBkg: v('--panel'), primaryTextColor: v('--text'), textColor: v('--text'),
       primaryBorderColor: v('--border-strong'), lineColor: v('--muted'), secondaryColor: v('--surface-2'), tertiaryColor: v('--surface-2'),
-      attributeBackgroundColorOdd: v('--panel'), attributeBackgroundColorEven: v('--surface-2'), rowOdd: v('--panel'), rowEven: v('--surface-2'), nodeBorder: v('--border-strong'), fontFamily: "'Nunito Variable', system-ui, sans-serif",
+      attributeBackgroundColorOdd: v('--panel'), attributeBackgroundColorEven: v('--surface-2'), rowOdd: v('--panel'), rowEven: v('--surface-2'), nodeBorder: v('--border-strong'), edgeLabelBackground: v('--surface-2'), labelBackgroundColor: v('--surface-2'), fontFamily: "'Nunito Variable', system-ui, sans-serif",
     },
   });
   return (await m.render(`erd-${++seq}`, definition)).svg;

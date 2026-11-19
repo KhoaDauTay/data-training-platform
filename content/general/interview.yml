@@ -1,4 +1,4 @@
-# Phòng phỏng vấn (v17 I5, docs/team/interview-room.md, L138). Dữ liệu: schema `lab` (src/db/lab.sql), "hôm nay" = 2026-10-31.
+# Phòng phỏng vấn (v17 I5, docs/team/interview-room.md, L138; v19 L169: + mid-3, senior-1, g-iv-th-4/5). Dữ liệu: schema `lab` (src/db/lab.sql), "hôm nay" = 2026-10-31.
 # Bộ đề: đúng 5 câu, id g-iv-<bộ>-<n>, không starter (không khung), `skills` = mọi kỹ năng Solution dùng.
 # Take-home: 3–4 bước như đánh giá thăng tiến (mọi bước ordered), một đoạn tự viết + rubric tự chấm.
 
@@ -105,6 +105,77 @@ sets:
         solution: "SELECT customer_id FROM assignments WHERE experiment_id = 1 AND converted EXCEPT SELECT customer_id FROM assignments WHERE experiment_id = 2 AND converted"
         hint: { vi: "Hai danh sách mã khách; lấy những mã có ở danh sách đầu mà không có ở danh sách sau.", en: "Two lists of customer ids; take the ids in the first list that are not in the second." }
 
+  - id: mid-3
+    level: mid
+    modules: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
+    minutes: 30
+    title: { vi: "DA trung cấp: vòng SQL sản phẩm số 30 phút", en: "Mid-level DA: 30-minute product analytics SQL round" }
+    questions:
+      - id: g-iv-mid-3-1
+        skills: [where, aggregate, group_by, conditional_agg, cast]
+        task: { vi: "Thí nghiệm `checkout_button` (mã 1): mỗi nhóm (`variant`) có bao nhiêu khách và tỉ lệ khách chuyển đổi (`converted`) là bao nhiêu phần trăm? Làm tròn 1 chữ số thập phân.", en: "Experiment `checkout_button` (id 1): how many customers does each group (`variant`) have, and what percentage of them converted (`converted`)? Round to 1 decimal." }
+        solution: "SELECT variant, COUNT(*) AS customers, ROUND(100.0 * COUNT(*) FILTER (WHERE converted) / COUNT(*), 1) AS pct FROM assignments WHERE experiment_id = 1 GROUP BY variant"
+        hint: { vi: "Đếm có điều kiện cho tử số, đếm tất cả cho mẫu số, trong từng nhóm; nhân với một số thập phân trước khi chia.", en: "A conditional count for the numerator and a plain count for the denominator, within each group; multiply by a decimal before dividing." }
+      - id: g-iv-mid-3-2
+        skills: [string_fn, aggregate, group_by]
+        task: { vi: "Họ tên trong `raw_signups` được nhập tay: thừa khoảng trắng hai đầu, chữ hoa/thường lộn xộn. Chuẩn hóa họ tên (bỏ khoảng trắng hai đầu, viết hoa chữ cái đầu mỗi từ) rồi đếm mỗi họ tên chuẩn có bao nhiêu lượt đăng ký. Lấy họ tên chuẩn và số lượt.", en: "The full names in `raw_signups` were typed by hand: extra spaces at both ends, mixed upper/lower case. Normalise the name (strip the spaces at both ends, capitalise the first letter of each word), then count the sign-ups per normalised name. Get the normalised name and the count." }
+        solution: "SELECT initcap(trim(full_name)) AS name, COUNT(*) AS signups FROM raw_signups GROUP BY initcap(trim(full_name))"
+        hint: { vi: "Gom theo chính biểu thức đã làm sạch, không theo cột gốc.", en: "Group by the cleaned expression itself, not by the raw column." }
+      - id: g-iv-mid-3-3
+        skills: [where, join, multi_join, aggregate, group_by, cte, window_agg, cast, order_by]
+        task: { vi: "Quý 3/2026 (tháng 7 đến hết tháng 9): doanh thu đơn đã thanh toán (`PAID`) của mỗi danh mục và tỉ trọng phần trăm của danh mục trên tổng doanh thu quý, làm tròn 1 chữ số thập phân. Doanh thu một dòng hàng = số lượng × đơn giá. Lấy danh mục, doanh thu và tỉ trọng, doanh thu cao nhất lên đầu.", en: "Q3 2026 (July to the end of September): each category's paid-order (`PAID`) revenue and its percentage share of the quarter's total revenue, rounded to 1 decimal. The revenue of an order line = quantity × unit price. Get the category, the revenue and the share, highest revenue first." }
+        solution: "WITH c AS (SELECT p.category, SUM(i.qty * i.unit_price_vnd) AS revenue FROM orders o JOIN order_items i ON i.order_id = o.id JOIN products p ON p.id = i.product_id WHERE o.status = 'PAID' AND o.order_date >= '2026-07-01' AND o.order_date < '2026-10-01' GROUP BY p.category) SELECT category, revenue, ROUND(100.0 * revenue / SUM(revenue) OVER (), 1) AS share FROM c ORDER BY revenue DESC"
+        ordered: true
+        hint: { vi: "Tính doanh thu mỗi danh mục ở một bước; tổng của cả quý là một tổng trên mọi dòng của kết quả đó, giữ nguyên từng dòng.", en: "Compute each category's revenue in one step; the quarter total is a sum over every row of that result that keeps each row." }
+      - id: g-iv-mid-3-4
+        skills: [where, join, self_join]
+        task: { vi: "`dim_customer` giữ lịch sử thành phố của khách: khách đã chuyển nhà có một dòng cũ và một dòng hiện hành (`is_current`). Với mỗi khách đã chuyển: mã khách, thành phố cũ và thành phố hiện tại.", en: "`dim_customer` keeps the customers' city history: a customer who moved has an old row and a current row (`is_current`). For each customer who moved: the customer id, the old city and the current city." }
+        solution: "SELECT o.customer_id, o.city, n.city FROM dim_customer o JOIN dim_customer n ON n.customer_id = o.customer_id AND n.is_current WHERE NOT o.is_current"
+        hint: { vi: "Dùng `dim_customer` hai lần: một bản cho dòng cũ, một bản cho dòng hiện hành, nối theo `customer_id`.", en: "Use `dim_customer` twice: one copy for the old row, one for the current row, joined on `customer_id`." }
+      - id: g-iv-mid-3-5
+        skills: [where, date_bucket, aggregate, group_by, cte, window_lag, order_by]
+        task: { vi: "Từ tháng 1/2026, mỗi tháng có bao nhiêu khách mới đăng ký và tăng/giảm bao nhiêu so với tháng trước (tháng 1 để trống)? Lấy ngày đầu tháng, số khách mới và mức thay đổi, theo tháng tăng dần.", en: "From January 2026, how many new customers signed up each month, and how much is that up or down from the previous month (empty for January)? Get the first day of the month, the new customers and the change, by month ascending." }
+        solution: "WITH m AS (SELECT date_trunc('month', signup_date)::date AS month, COUNT(*) AS n FROM customers WHERE signup_date >= '2026-01-01' GROUP BY date_trunc('month', signup_date)) SELECT month, n, n - LAG(n) OVER (ORDER BY month) AS change FROM m ORDER BY month"
+        ordered: true
+        hint: { vi: "Đếm theo tháng ở một bước, rồi đọc giá trị của dòng ngay trước theo thứ tự tháng.", en: "Count per month in one step, then read the value of the row just before, in month order." }
+
+  - id: senior-1
+    level: senior
+    modules: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
+    minutes: 40
+    title: { vi: "DA cấp cao: vòng SQL 40 phút", en: "Senior DA: 40-minute SQL round" }
+    questions:
+      - id: g-iv-senior-1-1
+        skills: [where, null_logic, date_math, aggregate, cte, window_lag, order_by]
+        task: { vi: "Với các đơn đã thanh toán (`PAID`) của khách có tài khoản: trung bình hai đơn liên tiếp của cùng một khách cách nhau bao nhiêu ngày (cả chuỗi, một con số)? Hai đơn cùng ngày thì đơn có mã nhỏ hơn đứng trước. Làm tròn 1 chữ số thập phân.", en: "For paid orders (`PAID`) of customers with an account: on average, how many days apart are two consecutive orders of the same customer (whole chain, one number)? For two orders on the same day, the smaller id comes first. Round to 1 decimal." }
+        solution: "WITH g AS (SELECT customer_id, order_date - LAG(order_date) OVER (PARTITION BY customer_id ORDER BY order_date, id) AS gap FROM orders WHERE status = 'PAID' AND customer_id IS NOT NULL) SELECT ROUND(AVG(gap), 1) FROM g"
+        hint: { vi: "Mỗi đơn nhìn lại đơn trước của chính khách đó; đơn đầu tiên không có khoảng cách và hàm trung bình tự bỏ qua nó.", en: "Each order looks back at the same customer's previous order; the first order has no gap, and the average skips it by itself." }
+      - id: g-iv-senior-1-2
+        skills: [where, join, multi_join, null_logic, aggregate, group_by, cte, multi_cte, window_rank, order_by]
+        task: { vi: "Năm 2026, ở mỗi thành phố (khách không rõ thành phố không tính): hai khách chi tiêu nhiều nhất trên các đơn đã thanh toán (`PAID`). Mỗi thành phố đúng hai dòng: chi tiêu bằng nhau thì khách có mã nhỏ hơn đứng trước. Doanh thu một dòng hàng = số lượng × đơn giá. Lấy thành phố, tên khách, số tiền và thứ tự (1 hoặc 2), theo thành phố A→Z rồi thứ tự.", en: "In 2026, in each city (customers with an unknown city left out): the two customers who spent the most on paid orders (`PAID`). Exactly two rows per city: on equal spend, the smaller customer id comes first. The revenue of an order line = quantity × unit price. Get the city, the customer name, the amount and the position (1 or 2), by city A→Z then position." }
+        solution: "WITH s AS (SELECT c.city, c.id, c.name, SUM(i.qty * i.unit_price_vnd) AS spent FROM customers c JOIN orders o ON o.customer_id = c.id JOIN order_items i ON i.order_id = o.id WHERE o.status = 'PAID' AND o.order_date >= '2026-01-01' AND c.city IS NOT NULL GROUP BY c.city, c.id, c.name), r AS (SELECT city, id, name, spent, ROW_NUMBER() OVER (PARTITION BY city ORDER BY spent DESC, id) AS rn FROM s) SELECT city, name, spent, rn FROM r WHERE rn <= 2 ORDER BY city, rn"
+        ordered: true
+        hint: { vi: "\"Đúng hai dòng\" nghĩa là đánh số liên tục, không cho trùng hạng; đánh số ở một bước, lọc ở bước sau.", en: "\"Exactly two rows\" means numbering without shared positions; number in one step, filter in the next." }
+      - id: g-iv-senior-1-3
+        skills: [aggregate, group_by, distinct, cte, window_agg, cast, order_by]
+        task: { vi: "Phễu trên ứng dụng: với mỗi loại sự kiện trong `app_events`, có bao nhiêu phiên (`session_id`) có sự kiện đó, và bằng bao nhiêu phần trăm số phiên của bước đông nhất? Làm tròn 1 chữ số thập phân. Lấy sự kiện, số phiên và tỉ lệ, đông nhất lên đầu.", en: "The app funnel: for each event type in `app_events`, how many sessions (`session_id`) have that event, and what percentage is that of the busiest step's sessions? Round to 1 decimal. Get the event, the sessions and the percentage, busiest first." }
+        solution: "WITH s AS (SELECT event, COUNT(*) AS sessions FROM (SELECT DISTINCT session_id, event FROM app_events) x GROUP BY event) SELECT event, sessions, ROUND(100.0 * sessions / MAX(sessions) OVER (), 1) AS pct FROM s ORDER BY sessions DESC"
+        ordered: true
+        hint: { vi: "Một phiên có thể ghi một sự kiện nhiều lần: đếm mỗi cặp phiên-sự kiện một lần. Bước đông nhất là giá trị lớn nhất trên mọi dòng của kết quả đó.", en: "A session can log an event more than once: count each session-event pair once. The busiest step is the largest value over every row of that result." }
+      - id: g-iv-senior-1-4
+        skills: [where, order_by, sargable, index_design]
+        task: { vi: "Các sự kiện của người dùng số 200 trong tháng 10/2026 (`ts` kiểu `timestamp` không múi giờ): tên sự kiện và thời điểm, theo thứ tự thời gian. Bài chấm cả kế hoạch: `app_events` phải được đọc qua chỉ mục `app_events(user_id, ts)`.", en: "User 200's events in October 2026 (`ts` is a `timestamp` without time zone): the event name and the time, in time order. The plan is graded too: `app_events` must be read through the `app_events(user_id, ts)` index." }
+        solution: "SELECT event, ts FROM app_events WHERE user_id = 200 AND ts >= '2026-10-01' AND ts < '2026-11-01' ORDER BY ts"
+        ordered: true
+        plan: { index: app_events }
+        hint: { vi: "So bằng trên cột đầu của chỉ mục, một khoảng nửa mở trên cột thứ hai; không bọc `ts` trong hàm.", en: "Equality on the index's first column, a half-open range on the second; do not wrap `ts` in a function." }
+      - id: g-iv-senior-1-5
+        skills: [where, join, multi_join, left_join, aggregate, group_by, date_bucket, coalesce, cte, window_agg, order_by]
+        task: { vi: "Cửa hàng `Hai Chau` (mã 1), tháng 1 đến tháng 10/2026: mỗi tháng có mục tiêu trong `store_targets`, lấy mục tiêu, doanh thu đơn đã thanh toán (`PAID`, 0 nếu tháng đó không bán được gì) và khoản chênh lệch cộng dồn từ đầu năm (doanh thu trừ mục tiêu). Doanh thu một dòng hàng = số lượng × đơn giá. Theo tháng tăng dần.", en: "Store `Hai Chau` (id 1), January to October 2026: for each month with a target in `store_targets`, get the first day of the month, the target, the paid-order (`PAID`) revenue (0 when nothing was sold that month) and the running gap since the start of the year (revenue minus target). The revenue of an order line = quantity × unit price. By month ascending." }
+        solution: "WITH a AS (SELECT date_trunc('month', o.order_date)::date AS month, SUM(i.qty * i.unit_price_vnd) AS revenue FROM orders o JOIN order_items i ON i.order_id = o.id WHERE o.status = 'PAID' AND o.store_id = 1 AND o.order_date >= '2026-01-01' GROUP BY date_trunc('month', o.order_date)) SELECT t.month, t.target_vnd, COALESCE(a.revenue, 0) AS revenue, SUM(COALESCE(a.revenue, 0) - t.target_vnd) OVER (ORDER BY t.month) AS gap FROM store_targets t LEFT JOIN a ON a.month = t.month WHERE t.store_id = 1 AND t.month < '2026-11-01' ORDER BY t.month"
+        ordered: true
+        hint: { vi: "Đi từ bảng mục tiêu và giữ mọi tháng; khoảng chênh của từng tháng cộng dồn theo thứ tự tháng.", en: "Start from the targets and keep every month; each month's gap adds up in month order." }
+
 takeHomes:
   - id: g-iv-th-1
     modules: [1, 2, 3, 4, 5]
@@ -188,4 +259,60 @@ takeHomes:
       - { vi: "Nói rõ không có đơn nào thiếu thanh toán và phần còn lại đều khớp (dẫn số đơn khớp).", en: "Says clearly that no order lacks a payment and the rest all match (quotes the number of matching orders)." }
       - { vi: "Đề xuất thứ tự xử lý có lý do: hoàn tiền thu trùng cho khách trước, truy nguồn các khoản không có đơn sau (hoặc ngược lại, có giải thích).", en: "Proposes an order of work with a reason: refund the double charges first, trace the payments with no order next (or the other way round, with a reason)." }
       - { vi: "Giải thích vì sao đơn hoàn tiền được coi là khớp khi tổng ròng bằng 0.", en: "Explains why a refunded order counts as matching when its net total is 0." }
+      - { vi: "Viết cho người không biết SQL: không tên bảng, không tên cột, không quá 120 chữ.", en: "Written for someone who does not know SQL: no table names, no column names, at most 120 words." }
+
+  - id: g-iv-th-4
+    modules: [1, 2, 3, 4, 5, 6, 7, 8]
+    title: { vi: "Phễu thanh toán trên ứng dụng", en: "The app checkout funnel" }
+    brief: { vi: "Nhóm sản phẩm muốn biết bao nhiêu phiên trên ứng dụng đi tới bước thanh toán xong (sự kiện `paid`), khác nhau thế nào theo thiết bị (khóa `device` trong `props`) và theo tháng, và người dùng mất bao lâu để trả tiền. Một phiên là một `session_id`; dữ liệu từ tháng 8 đến hết tháng 10/2026. Làm ba bước rồi viết một đoạn ngắn cho trưởng nhóm sản phẩm.", en: "The product team wants to know how many app sessions reach a completed payment (event `paid`), how that differs by device (the `device` key in `props`) and by month, and how long people take to pay. A session is one `session_id`; the data runs from August to the end of October 2026. Do the three steps, then write a short paragraph for the product lead." }
+    steps:
+      - title: { vi: "Theo thiết bị", en: "By device" }
+        task: { vi: "Mỗi thiết bị: số phiên, số phiên có sự kiện `paid` và tỉ lệ phần trăm (làm tròn 1 chữ số thập phân), theo tên thiết bị A→Z.", en: "Each device: the number of sessions, the sessions with a `paid` event and the percentage (rounded to 1 decimal), by device name A→Z." }
+        solution: "SELECT props->>'device' AS device, COUNT(DISTINCT session_id) AS sessions, COUNT(DISTINCT session_id) FILTER (WHERE event = 'paid') AS paid, ROUND(100.0 * COUNT(DISTINCT session_id) FILTER (WHERE event = 'paid') / COUNT(DISTINCT session_id), 1) AS pct FROM app_events GROUP BY props->>'device' ORDER BY device"
+        ordered: true
+        hint: { vi: "Một phiên có nhiều sự kiện: đếm mã phiên không lặp, và đếm có điều kiện cho các phiên đã trả tiền.", en: "A session has many events: count distinct session ids, and count conditionally for the sessions that paid." }
+      - title: { vi: "Theo tháng", en: "By month" }
+        task: { vi: "Mỗi tháng (theo thời điểm sự kiện): ngày đầu tháng, số phiên, số phiên có `paid` và tỉ lệ phần trăm (1 chữ số thập phân), theo tháng tăng dần.", en: "Each month (by the event time): the first day of the month, the sessions, the sessions with `paid` and the percentage (1 decimal), by month ascending." }
+        solution: "SELECT date_trunc('month', ts)::date AS month, COUNT(DISTINCT session_id) AS sessions, COUNT(DISTINCT session_id) FILTER (WHERE event = 'paid') AS paid, ROUND(100.0 * COUNT(DISTINCT session_id) FILTER (WHERE event = 'paid') / COUNT(DISTINCT session_id), 1) AS pct FROM app_events GROUP BY date_trunc('month', ts) ORDER BY month"
+        ordered: true
+        hint: { vi: "Cách đếm như bước 1, chỉ đổi nhóm sang tháng của `ts`.", en: "The same counting as step 1, grouped by the month of `ts` instead." }
+      - title: { vi: "Thời gian tới lúc trả tiền", en: "Time to pay" }
+        task: { vi: "Với các phiên có `paid`: mỗi thiết bị có bao nhiêu phiên như vậy, và trung bình mất bao nhiêu phút từ sự kiện đầu tiên của phiên tới sự kiện `paid` đầu tiên (làm tròn 1 chữ số thập phân)? Theo tên thiết bị A→Z.", en: "For the sessions with `paid`: how many such sessions does each device have, and on average how many minutes pass from the session's first event to its first `paid` event (rounded to 1 decimal)? By device name A→Z." }
+        solution: "WITH s AS (SELECT session_id, MAX(props->>'device') AS device, MIN(ts) AS started, MIN(ts) FILTER (WHERE event = 'paid') AS paid_at FROM app_events GROUP BY session_id) SELECT device, COUNT(*) AS paid_sessions, ROUND(AVG(EXTRACT(EPOCH FROM paid_at - started) / 60), 1) AS minutes FROM s WHERE paid_at IS NOT NULL GROUP BY device ORDER BY device"
+        ordered: true
+        hint: { vi: "Bước 1 (đặt tên): một dòng mỗi phiên với thời điểm bắt đầu và thời điểm trả tiền (trống nếu không trả). Bước 2: giữ phiên đã trả, đổi khoảng thời gian ra phút.", en: "Step 1 (give it a name): one row per session with its start time and its payment time (empty if it never paid). Step 2: keep the sessions that paid and turn the interval into minutes." }
+    conclusion: { vi: "Viết 3–5 câu gửi trưởng nhóm sản phẩm: tỉ lệ phiên trả tiền là bao nhiêu, thiết bị nào tốt nhất/kém nhất, tháng 10 có gì đáng chú ý, và bạn đề xuất xem gì tiếp.", en: "Write 3–5 sentences for the product lead: what share of sessions pay, which device does best and worst, what stands out in October, and what you suggest looking at next." }
+    rubric:
+      - { vi: "Nêu tỉ lệ chung khoảng 27% (241 trên 900 phiên) và thiết bị cao nhất (`web`, 30,0%) / thấp nhất (`ios`, 23,8%), khớp với bước 1.", en: "States the overall rate of about 27% (241 of 900 sessions) and the best (`web`, 30.0%) and worst (`ios`, 23.8%) device, matching step 1." }
+      - { vi: "Nhận ra tháng 10 giảm xuống 25,0% sau hai tháng quanh 27,5%, và nói rõ đó mới là một tháng nên chưa phải xu hướng chắc chắn.", en: "Notices that October drops to 25.0% after two months around 27.5%, and says that one month is not yet a sure trend." }
+      - { vi: "Dẫn thời gian trả tiền (khoảng 9 phút, gần như như nhau giữa các thiết bị) và rút ra rằng chênh lệch nằm ở việc có trả hay không, không ở tốc độ.", en: "Quotes the time to pay (about 9 minutes, nearly the same on every device) and concludes that the gap is in whether people pay, not in how fast." }
+      - { vi: "Có một đề xuất cụ thể (ví dụ xem bước nào trên `ios` rơi nhiều nhất trong phễu).", en: "Makes one concrete suggestion (for example, find the funnel step where `ios` loses the most sessions)." }
+      - { vi: "Viết cho người không biết SQL: không tên bảng, không tên cột, không quá 120 chữ.", en: "Written for someone who does not know SQL: no table names, no column names, at most 120 words." }
+
+  - id: g-iv-th-5
+    modules: [1, 2, 3, 4, 5, 6, 7, 8]
+    title: { vi: "Banner miễn phí giao hàng có hiệu quả?", en: "Did the free-shipping banner work?" }
+    brief: { vi: "Thí nghiệm `free_shipping_banner` (mã 2, trong `experiments`) chia khách thành hai nhóm A và B (`assignments`). Cột `converted` do công cụ thí nghiệm ghi. Quản lý marketing muốn biết có nên bật banner cho mọi khách không. Doanh thu chỉ tính đơn đã thanh toán (`PAID`) đặt trong thời gian thí nghiệm, tính cả ngày bắt đầu và ngày kết thúc; doanh thu một dòng hàng = số lượng × đơn giá. Làm ba bước rồi viết một đoạn ngắn cho chị ấy.", en: "Experiment `free_shipping_banner` (id 2, in `experiments`) split customers into two groups, A and B (`assignments`). The `converted` column is written by the experiment tool. The marketing manager wants to know whether to turn the banner on for every customer. Revenue counts only paid orders (`PAID`) placed during the experiment, start and end days included; the revenue of an order line = quantity × unit price. Do the three steps, then write a short paragraph for her." }
+    steps:
+      - title: { vi: "Tỉ lệ chuyển đổi theo công cụ", en: "Conversion as the tool reports it" }
+        task: { vi: "Mọi thí nghiệm: mã thí nghiệm, nhóm, số khách, số khách chuyển đổi (`converted`) và tỉ lệ phần trăm (1 chữ số thập phân), theo mã thí nghiệm rồi nhóm.", en: "Every experiment: the experiment id, the group, the customers, the customers who converted (`converted`) and the percentage (1 decimal), by experiment id then group." }
+        solution: "SELECT experiment_id, variant, COUNT(*) AS customers, COUNT(*) FILTER (WHERE converted) AS converted, ROUND(100.0 * COUNT(*) FILTER (WHERE converted) / COUNT(*), 1) AS pct FROM assignments GROUP BY experiment_id, variant ORDER BY experiment_id, variant"
+        ordered: true
+        hint: { vi: "Gom theo thí nghiệm và nhóm; đếm có điều kiện cho số khách chuyển đổi.", en: "Group by experiment and group; count conditionally for the converted customers." }
+      - title: { vi: "Đơn và doanh thu thật", en: "Real orders and revenue" }
+        task: { vi: "Thí nghiệm 2, mỗi nhóm: số khách, số đơn đã thanh toán trong thời gian thí nghiệm và doanh thu (0 nếu không có), theo nhóm A→B. Khách không mua gì vẫn được tính vào số khách.", en: "Experiment 2, each group: the customers, the paid orders placed during the experiment and the revenue (0 if none), by group A→B. Customers who bought nothing still count among the customers." }
+        solution: "SELECT a.variant, COUNT(DISTINCT a.customer_id) AS customers, COUNT(DISTINCT o.id) AS orders, COALESCE(SUM(i.qty * i.unit_price_vnd), 0) AS revenue FROM assignments a JOIN experiments e ON e.id = a.experiment_id LEFT JOIN orders o ON o.customer_id = a.customer_id AND o.status = 'PAID' AND o.order_date >= e.started_on AND o.order_date <= e.ended_on LEFT JOIN order_items i ON i.order_id = o.id WHERE a.experiment_id = 2 GROUP BY a.variant ORDER BY a.variant"
+        ordered: true
+        hint: { vi: "Đi từ khách được chia nhóm và giữ cả khách không có đơn; điều kiện thời gian nằm ở phép nối với đơn hàng.", en: "Start from the assigned customers and keep those with no order; the date condition sits in the join to the orders." }
+      - title: { vi: "Doanh thu trên mỗi khách", en: "Revenue per customer" }
+        task: { vi: "Thí nghiệm 2, mỗi nhóm: số khách, số khách có mua (doanh thu lớn hơn 0) và doanh thu trung bình mỗi khách được chia vào nhóm (làm tròn tới đồng), theo nhóm A→B.", en: "Experiment 2, each group: the customers, the customers who bought (revenue above 0) and the average revenue per assigned customer (rounded to the dong), by group A→B." }
+        solution: "WITH r AS (SELECT a.variant, a.customer_id, COALESCE(SUM(i.qty * i.unit_price_vnd), 0) AS revenue FROM assignments a JOIN experiments e ON e.id = a.experiment_id LEFT JOIN orders o ON o.customer_id = a.customer_id AND o.status = 'PAID' AND o.order_date >= e.started_on AND o.order_date <= e.ended_on LEFT JOIN order_items i ON i.order_id = o.id WHERE a.experiment_id = 2 GROUP BY a.variant, a.customer_id) SELECT variant, COUNT(*) AS customers, COUNT(*) FILTER (WHERE revenue > 0) AS buyers, ROUND(AVG(revenue)) AS per_customer FROM r GROUP BY variant ORDER BY variant"
+        ordered: true
+        hint: { vi: "Bước 1 (đặt tên): một dòng mỗi khách với doanh thu của họ, 0 nếu không mua. Bước 2: gom theo nhóm.", en: "Step 1 (give it a name): one row per customer with their revenue, 0 if they bought nothing. Step 2: group by group." }
+    conclusion: { vi: "Viết 3–5 câu gửi quản lý marketing: banner có hiệu quả không, vì sao hai cách đo cho kết luận khác nhau, và bạn khuyên làm gì.", en: "Write 3–5 sentences for the marketing manager: did the banner work, why do the two measures disagree, and what do you advise." }
+    rubric:
+      - { vi: "Nêu mâu thuẫn: theo công cụ, nhóm B chuyển đổi thấp hơn (17,3% so với 20,7%), nhưng nhóm B có nhiều khách mua hơn (66 so với 57) và doanh thu mỗi khách cao hơn (khoảng 338 nghìn so với 239 nghìn đồng).", en: "States the contradiction: by the tool, group B converted less (17.3% vs 20.7%), yet group B had more buyers (66 vs 57) and higher revenue per customer (about 338 thousand vs 239 thousand VND)." }
+      - { vi: "Đặt câu hỏi về định nghĩa \"chuyển đổi\" của công cụ (nó không khớp với đơn đã thanh toán) thay vì tin ngay một con số.", en: "Questions the tool's definition of \"converted\" (it does not match the paid orders) instead of trusting one number." }
+      - { vi: "Cảnh báo cỡ mẫu: mỗi nhóm chỉ 150 khách, nên chênh lệch vài khách có thể do ngẫu nhiên.", en: "Warns about sample size: each group has only 150 customers, so a gap of a few customers may be chance." }
+      - { vi: "Đưa ra khuyên có điều kiện (ví dụ chạy tiếp hoặc chạy lại với định nghĩa chuyển đổi rõ ràng trước khi bật cho mọi khách).", en: "Gives conditional advice (for example, run it longer or again with a clear conversion definition before turning it on for everyone)." }
       - { vi: "Viết cho người không biết SQL: không tên bảng, không tên cột, không quá 120 chữ.", en: "Written for someone who does not know SQL: no table names, no column names, at most 120 words." }

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  ackTour, gated, navLock, parseTour, readTour, startTour, tabOpen, TOUR_KEY, tourEscSkips, tourStep, welcomeNeeded, type TourFacts,
+  ackTour, gated, navLock, parseTour, readTour, startTour, tabOpen, TOUR_KEY, tourEscSkips, tourLeft, tourStep, welcomeNeeded, type TourFacts,
   bootPick,
 } from '../src/onboarding';
 import type { KV } from '../src/storage';
@@ -59,6 +59,18 @@ describe('onboarding (v4 §B, Plan 7 V8–V9)', () => {
     expect(at({}, 8)).toBeUndefined(); // v11 B1: tour over, another domain's unsolved first ticket
     expect(at({ ran: true, columnsSeen: true }, 3)).toBe(4); // the lesson step still waits
     expect(at({}, 5)).toBe(6); // reload: lastRun is gone, steps 1–5 were passed
+  });
+
+  it('L152: bước 8 tự đóng khi người chơi rời việc 1 đã xong (việc kế, domain khác, Practice, tải lại ở việc khác)', () => {
+    const shown = { step: 7, knows: false }; // refreshTour acks step 7 while step 8 shows
+    expect(tourLeft({ ...base, tour: shown, solved: true })).toBe(false); // still on solved ticket 1: step 8 stays
+    expect(tourStep({ ...base, tour: shown, solved: true })).toBe(8);
+    expect(tourLeft({ ...base, tour: shown, onFirst: false })).toBe(true); // next task, Sandbox, Practice
+    expect(tourLeft({ ...base, tour: shown })).toBe(true); // another domain's unsolved ticket 1
+    expect(tourStep({ ...base, tour: shown })).toBeUndefined(); // never "Submit" (step 7) there
+    expect(tourLeft({ ...base, tour: { step: 6, knows: false }, onFirst: false })).toBe(false); // step 8 never shown: nothing to close
+    expect(tourLeft({ ...base, tour: { step: 8, knows: false }, onFirst: false })).toBe(false); // already over
+    expect(tourLeft({ ...base, tour: undefined, onFirst: false })).toBe(false);
   });
 
   it('không có tour: ngoài việc 1, đã bỏ qua, đã biết SQL, chưa qua màn chào', () => {

@@ -94,6 +94,15 @@ Ba dòng `scene:` đề xuất (ch1-04, ch1-05, ch2-01) **chưa sửa vào conte
 - **Trang chủ không phát lại hoạt cảnh.** Nó vẽ trạng thái đã tính lại; container mới nhất có viền sáng và nhãn nhỏ "Mới" tới khi người chơi rời Trang chủ (so `completed` hiện tại với lần mở Trang chủ trước, chỉ giữ trong bộ nhớ phiên).
 - Hoạt cảnh mới bắt đầu khi hoạt cảnh cũ chưa xong: cái cũ nhảy tới trạng thái cuối, cái mới chạy. Không xếp hàng.
 
+## 4b. Quy cách cảnh của domain (ui-ux-v7 I1, L148)
+
+- **Khung:** cảnh Tổng quan tràn khung như Tiên Sa (viewBox 1100×400, không thanh tiêu đề, không chú thích dưới). Tên nơi là pill trên trái; trạng thái (việc xong, chương đã qua, câu luật "mỗi việc xong là…") là pill dưới trái từ `lg`; dưới `lg` các dòng đó là HTML dưới hình. Pill là HTML phủ lên (`ui/homeView.ts` harborSection), không phải chữ SVG.
+- **Điện thoại:** dưới 640 px cảnh cắt giữa (`preserveAspectRatio="xMidYMid slice"`, cao 190 px; vùng an toàn ~x 160–940). Chỉ bản Tổng quan (`hero()` trong `ui/domainArt.ts`); dock tự cắt viewBox của nó.
+- **Chiều sâu / ánh sáng / ngày đêm:** ba lớp xa–giữa–gần, nắng trên trái, mặt sáng/tối bằng alpha; theme tối là đêm của chính cảnh.
+- **Màu nhận diện:** Logistics teal biển, E-com đỏ đèn lồng, Finance vàng đồng (token `--dom-*`, huy hiệu `domainBadge()`).
+- **Vật chính phải nổi:** vật đếm tiến độ (kiện hàng, hũ xu) có nền tối hoặc viền đủ tương phản để không chìm vào trời sáng (Hũ Bạc: tủ trưng bày tối).
+- Không vẽ người trong cảnh; Lily chỉ ở dock.
+
 ## 5. Giảm chuyển động
 
 - Bật khi `prefers-reduced-motion: reduce` **hoặc** người chơi bật "Giảm chuyển động" trong Cài đặt (công tắc mặc định theo hệ điều hành). Công tắc cũng **tắt hoạt cảnh nền** của cảnh cảng (sóng, khói, đèn hải đăng).

@@ -15,11 +15,11 @@ const tickets = loadTickets();
 const sources = import.meta.glob('../src/**/*.ts', { query: '?raw', import: 'default', eager: true }) as Record<string, string>;
 
 describe('không ngõ cụt trên phần Chung', () => {
-  it('mọi kỹ năng (38): bài học, 3 drill, ít nhất một chương "Áp dụng ở"', () => {
+  it('mọi kỹ năng (38): bài học, 4 drill, ít nhất một chương "Áp dụng ở"', () => {
     expect(SKILLS).toHaveLength(38);
     for (const s of SKILLS) {
       expect([s.id, loadLessons().has(s.id)]).toEqual([s.id, true]);
-      expect([s.id, g.bySkill.get(s.id)?.length]).toEqual([s.id, 3]);
+      expect([s.id, g.bySkill.get(s.id)?.length]).toEqual([s.id, 4]);
       expect([s.id, appliesIn(tickets, s.id).length > 0]).toEqual([s.id, true]);
     }
   });

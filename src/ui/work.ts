@@ -1,3 +1,4 @@
+import { cue } from './sound';
 import type { SQLNamespace } from '@codemirror/lang-sql';
 import type { DbClient } from '../db/client';
 import { SqlError, sqlErrorInfo } from '../db/run';
@@ -20,7 +21,8 @@ import { celebrate, react } from './celebrate';
 import { announce, h, kbd, richText } from './dom';
 import { createEditor, type Editor } from './editor';
 import { avatar } from './avatar';
-import { errorNote, errorText, errorView, gradeMessage, mascotOf, runSummary, voiceKey } from './feedback';
+import { errorNote, errorText, errorView, extraRowsOffer, extraRowsView, gradeMessage, mascotOf, runSummary, voiceKey } from './feedback';
+import { markArrived } from './resultTable';
 import { mascot, type Mascot, type Pose } from './mascots';
 import { showPane } from './paneTabs';
 import { pageShortcutOf } from './shortcuts';
@@ -30,10 +32,10 @@ import type { Panel } from './tabs';
 export interface WorkDeps {
   db: DbClient;
   panel: Panel;
-  /** Normal ticket solved. */
-  onSolved(t: Ticket): void;
-  /** A boss step other than the last one solved. */
-  onStepSolved(): void;
+  /** Normal ticket solved; `sql` = the SQL that was graded (not the editor's text by the time the result arrives). */
+  onSolved(t: Ticket, sql: string): void;
+  /** A boss step other than the last one solved (`sql` as above). */
+  onStepSolved(sql: string): void;
   /** Last boss step solved: the conclusion opens. */
   onConclusion(t: Ticket): void;
   /** After every Run/Submit (the brief redraws its shape card). */
@@ -148,7 +150,12 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
   const feedback = h('div', { role: 'status' });
   /** A drill's wrong answer (L84): the rows that differ, outside the status line so a screen reader reads one sentence. */
   const detailBox = h('div');
-  guideHooks.diff = () => !!message?.detail; // v13 G6: the diff of a wrong drill submit is showing
+  guideHooks.diff = () => !!message?.detail && !!ticket && DRILL_ID.test(ticket.id); // v13 G6: the diff of a wrong drill submit (not a story's extra rows) is showing
+  /** L151: wrong submits per step this session (the extra rows open from the second), and steps that already had a row-count miss (A7). */
+  const wrongs = new Map<string, number>();
+  const rowsMissed = new Set<string>();
+  /** The extra-rows <details> stays open across a redraw (rerender → relabel) until the next message. */
+  let extraOpen = false;
   const historyBox = h('details', { class: 'mt-2 text-body-sm' });
   // The tour's mark sits under the buttons, never over the editor (v4 §B.2); main.ts refreshTour() refills it.
   host.replaceChildren(editorHost, h('div', { class: '@container max-md:sticky max-md:bottom-14 max-md:z-10 max-md:bg-panel max-md:pt-2 max-md:shadow-[0_-8px_12px_-10px_rgb(0_0_0/0.3)]' }, resultChip, h('div', { class: 'actions' }, runBtn, explainBtn, formatBtn, tools, submitBtn)), tourSlot('work'), guideSlot('work'), feedback, detailBox, guideSlot('diff'), historyBox);
@@ -169,6 +176,7 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
   /** `who`: a mascot beside the words (V7), at most one, in this line under the buttons only. */
   function say(kind: 'good' | 'bad', view: () => Node | string, who?: [Mascot, Pose], detail?: () => Node | null): void {
     message = { kind, view, who, detail };
+    extraOpen = false;
     fillNote = false;
     drawMessage();
     refreshGuides(); // v13 G6: a drill's diff may call Boon's guide
@@ -180,8 +188,9 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
     detailBox.replaceChildren(message?.detail?.() ?? '');
     const who = boonRegion() === 'work' ? undefined : message?.who; // Boon's tour or guide mark is already in this pane
     feedback.replaceChildren(!message ? '' : who
-      ? message.kind === 'good' // one compact line: a small cheering Lily beside it (v10 critic #6)
-        ? h('div', { class: 'flex items-center gap-2' }, mascot(who[0], who[1], 'size-8 shrink-0'), h('div', { class: 'min-w-0 flex-1' }, message.view()))
+      ? message.kind === 'good' // one compact line: a small cheering Lily beside it (v10 critic #6); a solve reads larger (v10 F3)
+        ? h('div', { class: 'flex items-center gap-2' }, mascot(who[0], who[1], who[1] === 'cheer' ? 'size-10 shrink-0' : 'size-8 shrink-0'),
+          h('div', { class: cx('min-w-0 flex-1', who[1] === 'cheer' && 'text-title font-bold') }, message.view()))
         : h('div', { class: 'flex items-start gap-3' }, mascot(who[0], who[1], 'size-12'), h('div', { class: 'min-w-0 flex-1' }, message.view()))
       : message.view());
   }
@@ -271,6 +280,7 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
     noteTry(historyId, 'runs', codeOf(r.error)); // v16 I2: device-only statistics (src/insights.ts)
     if (editor !== ed) return;
     app.lastRun = r;
+    if (r.result) markArrived(r.result); // L153: its rows fade in once in the Result tab
     announce(runSummary(r, ed.getValue()));
     const failed = r.error !== undefined;
     if (failed) {
@@ -410,6 +420,7 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
     noteTry(story ? tk.id : undefined, 'submits', codeOf(played?.error));
     if (editor !== ed) return; // stale: never credit or message a ticket the player has left
     if (played) app.lastRun = played;
+    if (played?.result) markArrived(played.result);
     chip(played);
     deps.onRun();
     if (!r) {
@@ -418,7 +429,10 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
     }
     if (!r.ok) {
       deps.onWrong?.();
+      if (story) cue('bad'); // X2 (L148): never in Practice or reviews; silent unless the player turned sound on
       const fail = r;
+      const n = (wrongs.get(k) ?? 0) + 1;
+      wrongs.set(k, n);
       const err = played?.error;
       // The sender answers in the chat under the grader's facts (re-translated on a language switch like every message).
       // A drill (Plan 8a) has no sender: no voice line.
@@ -432,8 +446,17 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
         // A General drill (practice, L84) says which columns differ and shows the rows; story, lane and E-com tickets keep L25.
         // v17: an interview question shows no expected rows (that would be the answer), only the story's facts
         const drill = DRILL_ID.test(tk.id) && !INTERVIEW_ID.test(tk.id);
-        say('bad', () => h('div', {}, drill ? verdictText(fail) : gradeMessage(fail), tip ? h('div', { class: 'mt-2' }, richText(tip())) : null, voice()),
-          undefined, drill && hasDiff(fail) ? () => diffView(fail) : undefined); // detail set = G6's tables show
+        // v10 A7 (L87 roles): no row left = Boon explains (a filter or join removes them all); the step's first row-count miss = Lily wonders.
+        const empty = fail.reason === 'rows' && fail.actualRows === 0;
+        const who: [Mascot, Pose] | undefined = empty ? ['boon', 'think'] : fail.reason === 'rows' && !rowsMissed.has(k) ? ['lily', 'think'] : undefined;
+        if (fail.reason === 'rows') rowsMissed.add(k);
+        const extras = extraRowsOffer(fail, n, tk);
+        const mine = played?.result;
+        const detail = drill && hasDiff(fail) ? () => diffView(fail) // detail set = G6's tables show
+          : extras && mine && fail.reason === 'rows' ? () => extraRowsView(mine, extras, fail.extra, extraOpen, (o) => { extraOpen = o; })
+          : undefined;
+        say('bad', () => h('div', {}, drill ? verdictText(fail) : gradeMessage(fail), empty ? h('p', { class: 'mt-2 mb-0' }, t('work.noRows')) : null,
+          tip ? h('div', { class: 'mt-2' }, richText(tip())) : null, voice()), who, detail);
       }
       deps.panel.show('result');
       return;
@@ -462,7 +485,7 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
       if (i === tk.steps.length - 1) notePass(tk.id);
     }
     if (i < tk.steps.length - 1) {
-      deps.onStepSolved(); // setTicket() for the next step clears the message, so say it afterwards
+      deps.onStepSolved(sql); // setTicket() for the next step clears the message, so say it afterwards
       say('good', () => t('work.stepDone', { i: i + 1 }), ['lily', 'cheer']);
       celebrate(feedback);
     } else if (tk.conclusion) {
@@ -472,7 +495,7 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
       // XP of this first solve (story: complete() adds it; lane: LANE_XP once); a re-solve, Practice or a drill (chapter 0, its Recap says its XP) shows none.
       const xp = !story || tk.chapter === 0 ? 0 : tk.lane ? (app.save.lanes.includes(tk.id) ? 0 : LANE_XP) : done().has(tk.id) ? 0 : xpFor(tk, app.save.hintsUsed[tk.id] ?? 0);
       say('good', () => (xp ? t('work.correctXp', { n: xp }) : t('work.correct')), ['lily', 'cheer']);
-      deps.onSolved(tk);
+      deps.onSolved(tk, sql);
       celebrate(feedback); // after onSolved: its rerender() redraws the message and would reset className
     }
   }

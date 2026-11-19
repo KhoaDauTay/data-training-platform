@@ -105,7 +105,7 @@
     -->
     <header class="topbar flex flex-wrap items-center gap-x-2 gap-y-2 max-sm:flex-nowrap lg:flex-nowrap max-sm:gap-x-1.5 border-b border-line bg-panel px-3 py-2 lg:px-4">
       <button id="side-btn" type="button" class="grid size-11 shrink-0 place-items-center border-0 bg-transparent p-0 lg:hidden" aria-controls="side-drawer" aria-expanded="false" data-i18n-aria="side.open" aria-label="Mở điều hướng"><span data-icon="menu"></span></button>
-      <a href="#/" class="flex shrink-0 items-center gap-2 text-ink no-underline max-[360px]:hidden" data-i18n-aria="app.homeLink" aria-label="BoonData, về Trang chủ"><svg class="size-9" viewBox="0 0 120 120" aria-hidden="true" focusable="false"><use href="#boon-idle"></use></svg><span class="text-lg font-extrabold tracking-tight max-sm:hidden">BoonData</span></a>
+      <a href="#/" class="flex shrink-0 items-center gap-2 text-ink no-underline max-[360px]:hidden" data-i18n-aria="app.homeLink" aria-label="BoonData, về Trang chủ"><svg class="size-9" viewBox="0 0 120 120" aria-hidden="true" focusable="false"><use href="#boon-idle"></use></svg><span class="text-title font-extrabold tracking-tight max-sm:hidden">BoonData</span></a>
       <nav id="nav" class="flex shrink-0 gap-1 max-lg:hidden" data-i18n-aria="nav.label" aria-label="Điều hướng chính"></nav>
       <button id="domain-btn" type="button" popovertarget="domain-menu" class="flex shrink-0 items-center gap-1.5 rounded-full border-0 bg-code px-3 py-1.5 font-bold text-ink hover:bg-accent-soft max-sm:px-2.5" data-i18n-title="nav.domains" title="Chọn lĩnh vực"><span id="domain-icon" class="contents"><span data-icon="anchor" data-icon-class="size-4"></span></span><span id="domain-label" class="max-sm:sr-only">Logistics</span><span id="domain-chapter" class="whitespace-nowrap sm:hidden" aria-hidden="true"></span><span data-icon="chevronRight" data-icon-class="size-3.5 rotate-90 max-sm:hidden"></span></button>
       <div id="status" class="ml-auto flex min-w-0 items-center gap-2 text-body-sm">
@@ -119,14 +119,14 @@
       </div>
       <div class="top-prefs flex shrink-0 items-center max-sm:hidden lg:max-[1440px]:hidden gap-1 rounded-full bg-code p-1">
         <div class="flex gap-0.5" role="group" data-i18n-aria="top.lang" aria-label="Ngôn ngữ">
-          <button type="button" data-lang="vi" aria-pressed="true" class="rounded-full border-0 bg-transparent px-2 py-0.5 text-body-sm text-ink hover:bg-panel aria-pressed:bg-panel aria-pressed:font-bold aria-pressed:shadow-sm">VI</button>
-          <button type="button" data-lang="en" aria-pressed="false" class="rounded-full border-0 bg-transparent px-2 py-0.5 text-body-sm text-ink hover:bg-panel aria-pressed:bg-panel aria-pressed:font-bold aria-pressed:shadow-sm">EN</button>
+          <button type="button" data-lang="vi" aria-pressed="true" class="rounded-full border-0 bg-transparent px-2 py-0.5 text-body-sm text-ink hover:bg-panel aria-pressed:bg-panel aria-pressed:font-bold aria-pressed:shadow-(--shadow-1)">VI</button>
+          <button type="button" data-lang="en" aria-pressed="false" class="rounded-full border-0 bg-transparent px-2 py-0.5 text-body-sm text-ink hover:bg-panel aria-pressed:bg-panel aria-pressed:font-bold aria-pressed:shadow-(--shadow-1)">EN</button>
         </div>
         <span class="mx-1 h-5 w-px bg-line" aria-hidden="true"></span>
         <div class="flex gap-0.5" role="group" data-i18n-aria="top.theme" aria-label="Giao diện">
-          <button type="button" data-theme-pref="light" aria-pressed="false" class="grid size-7 place-items-center rounded-full border-0 bg-transparent p-0 text-ink hover:bg-panel aria-pressed:bg-panel aria-pressed:shadow-sm" data-i18n-aria="theme.light" aria-label="Sáng"><span data-icon="sun" data-icon-class="size-4"></span></button>
-          <button type="button" data-theme-pref="system" aria-pressed="true" class="grid size-7 place-items-center rounded-full border-0 bg-transparent p-0 text-ink hover:bg-panel aria-pressed:bg-panel aria-pressed:shadow-sm" data-i18n-aria="theme.system" aria-label="Theo hệ thống"><span data-icon="monitor" data-icon-class="size-4"></span></button>
-          <button type="button" data-theme-pref="dark" aria-pressed="false" class="grid size-7 place-items-center rounded-full border-0 bg-transparent p-0 text-ink hover:bg-panel aria-pressed:bg-panel aria-pressed:shadow-sm" data-i18n-aria="theme.dark" aria-label="Tối"><span data-icon="moon" data-icon-class="size-4"></span></button>
+          <button type="button" data-theme-pref="light" aria-pressed="false" class="grid size-7 place-items-center rounded-full border-0 bg-transparent p-0 text-ink hover:bg-panel aria-pressed:bg-panel aria-pressed:shadow-(--shadow-1)" data-i18n-aria="theme.light" aria-label="Sáng"><span data-icon="sun" data-icon-class="size-4"></span></button>
+          <button type="button" data-theme-pref="system" aria-pressed="true" class="grid size-7 place-items-center rounded-full border-0 bg-transparent p-0 text-ink hover:bg-panel aria-pressed:bg-panel aria-pressed:shadow-(--shadow-1)" data-i18n-aria="theme.system" aria-label="Theo hệ thống"><span data-icon="monitor" data-icon-class="size-4"></span></button>
+          <button type="button" data-theme-pref="dark" aria-pressed="false" class="grid size-7 place-items-center rounded-full border-0 bg-transparent p-0 text-ink hover:bg-panel aria-pressed:bg-panel aria-pressed:shadow-(--shadow-1)" data-i18n-aria="theme.dark" aria-label="Tối"><span data-icon="moon" data-icon-class="size-4"></span></button>
         </div>
       </div>
       <div class="flex shrink-0 items-center gap-2">
@@ -157,9 +157,9 @@
       </div>
       <!-- Below 768 px only (style.css): one pane at a time, src/ui/paneTabs.ts. -->
       <div id="pane-tabs" role="tablist" class="pane-tabs mb-3 grid grid-cols-3 gap-1 rounded-full bg-code p-1" data-i18n-aria="area.panes" aria-label="Khu làm việc">
-        <button type="button" role="tab" data-pane="ticket" aria-controls="ticket" class="rounded-full border-0 bg-transparent px-2 py-2 text-body-sm font-semibold text-ink aria-selected:bg-panel aria-selected:shadow-sm" data-i18n="pane.ticket">Đề bài</button>
-        <button type="button" role="tab" data-pane="work" aria-controls="work" class="rounded-full border-0 bg-transparent px-2 py-2 text-body-sm font-semibold text-ink aria-selected:bg-panel aria-selected:shadow-sm">SQL</button>
-        <button type="button" role="tab" data-pane="panel" aria-controls="panel" class="rounded-full border-0 bg-transparent px-2 py-2 text-body-sm font-semibold text-ink aria-selected:bg-panel aria-selected:shadow-sm" data-i18n="pane.result">Kết quả</button>
+        <button type="button" role="tab" data-pane="ticket" aria-controls="ticket" class="rounded-full border-0 bg-transparent px-2 py-2 text-body-sm font-semibold text-ink aria-selected:bg-panel aria-selected:shadow-(--shadow-1)" data-i18n="pane.ticket">Đề bài</button>
+        <button type="button" role="tab" data-pane="work" aria-controls="work" class="rounded-full border-0 bg-transparent px-2 py-2 text-body-sm font-semibold text-ink aria-selected:bg-panel aria-selected:shadow-(--shadow-1)">SQL</button>
+        <button type="button" role="tab" data-pane="panel" aria-controls="panel" class="rounded-full border-0 bg-transparent px-2 py-2 text-body-sm font-semibold text-ink aria-selected:bg-panel aria-selected:shadow-(--shadow-1)" data-i18n="pane.result">Kết quả</button>
       </div>
       <div class="workspace">
         <section id="ticket" class="min-w-0 rounded-(--r-card) bg-panel px-4 py-3 ring-1 ring-line" data-i18n-aria="area.ticket" aria-label="Đề bài"></section>
@@ -177,7 +177,7 @@
     <!-- v4 §B.2 layer 1 (Plan 7): welcome screen during the DB download, and the static tour replay; filled by src/ui/welcome.ts. -->
     <dialog id="welcome-dialog" class="w-[min(640px,calc(100vw-2rem))]" aria-labelledby="welcome-title"></dialog>
     <dialog id="inbox-dialog" aria-labelledby="inbox-title">
-      <h2 id="inbox-title" class="text-lg" data-i18n="top.inbox">Hộp thư</h2>
+      <h2 id="inbox-title" class="text-title" data-i18n="top.inbox">Hộp thư</h2>
       <div id="inbox-list" class="max-h-[60dvh] overflow-auto"></div>
       <form method="dialog" class="mt-3 flex justify-end"><button data-i18n="app.close">Đóng</button></form>
     </dialog>
@@ -199,7 +199,7 @@
     <dialog id="lesson-dialog" class="max-h-[min(92dvh,1100px)] w-[min(900px,calc(100vw-2rem))] max-w-none overflow-auto p-0 max-sm:mb-0 max-sm:max-h-[96dvh] max-sm:w-full max-sm:rounded-b-none" aria-labelledby="lesson-dialog-title"></dialog>
     <dialog id="notebook-dialog" class="fixed inset-auto top-16 right-4 z-30 m-0 max-h-[calc(100dvh-6rem)] w-[min(380px,calc(100vw-2rem))] overflow-auto max-sm:inset-x-4 max-sm:top-auto max-sm:bottom-4 max-sm:max-h-[60dvh] max-sm:w-auto" aria-labelledby="notebook-title"></dialog>
     <!-- L42: replaces part of L11; holds only Export / Import progress. Outside <header> so focus uses --accent. -->
-    <div id="more-menu" popover class="m-0 min-w-52 rounded-(--r-ctl) border-0 bg-panel p-1 text-ink shadow-lg ring-1 ring-line [inset:3.5rem_1rem_auto_auto]">
+    <div id="more-menu" popover class="m-0 min-w-52 rounded-(--r-ctl) border-0 bg-panel p-1 text-ink shadow-(--shadow-2) ring-1 ring-line [inset:3.5rem_1rem_auto_auto]">
       <div class="flex flex-col">
         <!-- v12.0 U1: below 640 px the bar keeps one line; these copy the bar's Inbox / Review / Notebook and settings. v6 F1 (D-V9): from 1024 to 1439 px the bar folds VI|EN and theme in here. -->
         <div data-menu-prefs class="mb-1 flex flex-col border-b border-line pb-1 sm:max-lg:hidden min-[1440px]:hidden">
@@ -229,7 +229,7 @@
       </div>
     </div>
     <!-- v5 §B.2: domain switch; Finance and E-commerce open their "Coming soon" page (filled by src/ui/topbar.ts). -->
-    <div id="domain-menu" popover class="m-0 min-w-64 rounded-(--r-card) border-0 bg-panel p-1 text-ink shadow-lg ring-1 ring-line [inset:3.5rem_auto_auto_1rem]"></div>
+    <div id="domain-menu" popover class="m-0 min-w-64 rounded-(--r-card) border-0 bg-panel p-1 text-ink shadow-(--shadow-2) ring-1 ring-line [inset:3.5rem_auto_auto_1rem]"></div>
     <input id="import-input" type="file" accept="application/json" hidden />
     <p id="announce" class="sr-only" aria-live="polite"></p>
     <script type="module" src="/src/main.ts"></script>

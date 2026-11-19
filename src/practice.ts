@@ -1,4 +1,5 @@
 import type { Drill } from './general';
+import type { Attempt } from './insights';
 import type { Ticket } from './tickets';
 import { variantsOf } from './variants';
 
@@ -107,8 +108,8 @@ export function reviewQueue(
   return out;
 }
 
-const KIND_ORDER = ['open', 'trap', 'faded'] as const;
-/** A drill of `skill` for a review: not reviewed yet this session (`seen`), open first, then trap, then faded; all seen → any. */
+const KIND_ORDER = ['open', 'trap', 'review', 'faded'] as const; // v19 L168: + review
+/** A drill of `skill` for a review: not reviewed yet this session (`seen`), open, trap, review, then faded; all seen → any. */
 export function pickDrill(skill: string, drills: ReadonlyMap<string, readonly Drill[]>, seen: ReadonlySet<string>, rnd: () => number): Drill | undefined {
   const all = drills.get(skill) ?? [];
   const fresh = all.filter((d) => !seen.has(d.id));
@@ -165,4 +166,23 @@ export function applyResult(
       weak: state.practice.weak + (success ? 0 : 1),
     },
   };
+}
+
+/** v10 N6 (L157): a story task counts as "stumbled" from this many wrong Submits before its first pass. */
+export const STUMBLE_WRONG = 3;
+export const STUMBLE_MAX = 5;
+export interface Stumble { ticketId: string; wrong: number }
+
+/**
+ * "Việc bạn từng vấp": finished story tasks of `templates` (the open domain) that passed only after ≥ STUMBLE_WRONG wrong
+ * Submits, read from the device pref `cargo-query/attempts` (`passedOn` counts the passing Submit too). Never a promotion
+ * review (L10). Hardest first, then story order; at most STUMBLE_MAX. Ids of drills, lanes or other domains are skipped.
+ */
+export function stumbledTasks(templates: Ticket[], completed: Set<string>, attempts: Record<string, Attempt>): Stumble[] {
+  const out: Stumble[] = [];
+  for (const t of practicePool(templates, completed)) {
+    const wrong = (attempts[t.id]?.passedOn ?? 0) - 1;
+    if (wrong >= STUMBLE_WRONG) out.push({ ticketId: t.id, wrong });
+  }
+  return out.sort((a, b) => b.wrong - a.wrong).slice(0, STUMBLE_MAX); // stable: ties keep story order
 }

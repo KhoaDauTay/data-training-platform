@@ -92,7 +92,7 @@ export function wrapUp(chapter: number, onQuick?: () => void): HTMLElement {
   return h('section', { class: 'wrapup my-3 scroll-mt-4 rounded-(--r-ctl) bg-panel p-4 ring-1 ring-line', 'aria-labelledby': 'wrapup-title' },
     h('div', { class: 'flex items-center gap-3' },
       mascot('lily', 'cheer', 'size-16'), mascot('boon', 'cheer', 'size-16'),
-      h('h3', { id: 'wrapup-title', tabindex: '-1', class: 'm-0 text-lg font-bold' }, t('sum.title', { n: chapter, title: chapterTitle(chapter, lang) }))),
+      h('h3', { id: 'wrapup-title', tabindex: '-1', class: 'm-0 text-title font-bold' }, t('sum.title', { n: chapter, title: chapterTitle(chapter, lang) }))),
     career ? h('p', { class: 'mt-3 rounded-(--r-inset) bg-sun px-3 py-2 font-semibold text-sun-ink' }, t('sum.career', { career })) : null,
     outcomeList(chapter),
     s.skills.length ? h('p', {}, t('sum.skills', { list: s.skills.map(skillLabel).join(', ') })) : null,
