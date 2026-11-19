@@ -353,29 +353,29 @@
     en: "Mongo has no FULL JOIN. To put two sides together without losing a key: turn each side into documents of the same shape with 0 for the other side (`{ $literal: 0 }`), stack them with `$unionWith`, then `$group` by key and sum. A key on one side only still appears, with 0 on the other side."
   example: |-
     db.orders.aggregate([
-      { $match: { order_date: ISODate('2026-10-30') } },
-      { $project: { _id: 0, s: '$store_id', d30: { $literal: 1 }, d31: { $literal: 0 } } },
+      { $match: { order_date: ISODate('2026-10-26') } },
+      { $project: { _id: 0, s: '$store_id', d26: { $literal: 1 }, d27: { $literal: 0 } } },
       { $unionWith: { coll: 'orders', pipeline: [
-        { $match: { order_date: ISODate('2026-10-31') } },
-        { $project: { _id: 0, s: '$store_id', d30: { $literal: 0 }, d31: { $literal: 1 } } }
+        { $match: { order_date: ISODate('2026-10-27') } },
+        { $project: { _id: 0, s: '$store_id', d26: { $literal: 0 }, d27: { $literal: 1 } } }
       ] } },
-      { $group: { _id: '$s', d30: { $sum: '$d30' }, d31: { $sum: '$d31' } } }
+      { $group: { _id: '$s', d26: { $sum: '$d26' }, d27: { $sum: '$d27' } } }
     ])
   explain:
-    vi: "① Mỗi đơn ngày 30 thành `{ s, d30: 1, d31: 0 }`. ② Mỗi đơn ngày 31 thành `{ s, d30: 0, d31: 1 }`. ③ `$group` cộng theo cửa hàng. Cửa hàng chỉ bán một trong hai ngày vẫn hiện, ngày còn lại là 0. `$literal` giữ số 0/1 là giá trị, không phải lệnh chọn trường."
-    en: "① Each order of the 30th becomes `{ s, d30: 1, d31: 0 }`. ② Each order of the 31st becomes `{ s, d30: 0, d31: 1 }`. ③ `$group` sums per store. A store selling on only one of the days still shows, with 0 for the other. `$literal` keeps 0/1 as values, not field selections."
+    vi: "① Mỗi đơn ngày 26 thành `{ s, d26: 1, d27: 0 }`. ② Mỗi đơn ngày 27 thành `{ s, d26: 0, d27: 1 }`. ③ `$group` cộng theo cửa hàng. Cửa hàng chỉ bán một trong hai ngày vẫn hiện, ngày còn lại là 0. `$literal` giữ số 0/1 là giá trị, không phải lệnh chọn trường."
+    en: "① Each order of the 26th becomes `{ s, d26: 1, d27: 0 }`. ② Each order of the 27th becomes `{ s, d26: 0, d27: 1 }`. ③ `$group` sums per store. A store selling on only one of the days still shows, with 0 for the other. `$literal` keeps 0/1 as values, not field selections."
   mistake:
     query: |-
       db.orders.aggregate([
-        { $match: { order_date: ISODate('2026-10-30') } },
-        { $group: { _id: '$store_id', d30: { $sum: 1 } } },
+        { $match: { order_date: ISODate('2026-10-26') } },
+        { $group: { _id: '$store_id', d26: { $sum: 1 } } },
         { $lookup: { from: 'orders', let: { s: '$_id' }, pipeline: [
-          { $match: { order_date: ISODate('2026-10-31'), $expr: { $eq: ['$store_id', '$$s'] } } }
+          { $match: { order_date: ISODate('2026-10-27'), $expr: { $eq: ['$store_id', '$$s'] } } }
         ], as: 'o' } },
-        { $project: { d30: 1, d31: { $size: '$o' } } }
+        { $project: { d26: 1, d27: { $size: '$o' } } }
       ])
-    vi: "Đi từ ngày 30 rồi `$lookup` sang ngày 31 là left join: cửa hàng chỉ bán ngày 31 không hiện."
-    en: "Starting from the 30th and `$lookup` into the 31st is a left join: a store selling only on the 31st does not show."
+    vi: "Đi từ ngày 26 rồi `$lookup` sang ngày 27 là left join: cửa hàng chỉ bán ngày 27 không hiện."
+    en: "Starting from the 26th and `$lookup` into the 27th is a left join: a store selling only on the 27th does not show."
   try:
     task:
       vi: "Mỗi sản phẩm bán qua kênh `STORE` hoặc `ONLINE` ngày 2026-10-31 (`_id` là mã sản phẩm): số lượng bán tại quầy (`store_qty`) và trực tuyến (`online_qty`), thiếu thì 0."
@@ -532,7 +532,7 @@
     // minh họa / illustrative:
     { winningPlan: { stage: 'FETCH', filter: { status: { $eq: 'PAID' } },
         inputStage: { stage: 'IXSCAN', keyPattern: { store_id: 1, order_date: -1 }, direction: 'forward' } },
-      executionStats: { nReturned: 130, totalKeysExamined: 164, totalDocsExamined: 164 } }
+      executionStats: { nReturned: 96, totalKeysExamined: 106, totalDocsExamined: 106 } }
   explain:
     vi: "① `IXSCAN` trên `{ store_id: 1, order_date: -1 }`: tìm đúng cửa hàng 4 và đã có sẵn thứ tự ngày, nên không có stage `SORT`. ② `FETCH` đọc từng tài liệu rồi lọc `status`, vì `status` không nằm trong index. ③ Số tài liệu đọc lớn hơn số trả về một chút: thêm `status` vào index sẽ khít hơn."
     en: "① `IXSCAN` on `{ store_id: 1, order_date: -1 }`: finds store 4 directly and already has the date order, so there is no `SORT` stage. ② `FETCH` reads each document then filters `status`, because `status` is not in the index. ③ Slightly more documents read than returned: adding `status` to the index would fit tighter."
@@ -654,7 +654,7 @@
     en: "Embedded arrays can be handled inside the document. Filtering documents: `{ items: { $elemMatch: { … } } }` makes every condition match the same element. Transforming: `$filter` keeps matching elements, `$map` transforms each element, `$reduce` folds the array into one value, `$size` counts. No need to `$unwind` and `$group` back."
   example: |-
     db.orders.aggregate([
-      { $match: { _id: { $in: [1, 2, 3] } } },
+      { $match: { _id: { $in: [618, 619, 620] } } },
       { $project: {
         n: { $size: '$items' },
         products: { $map: { input: '$items', in: '$$this.product_id' } },
@@ -666,7 +666,7 @@
     vi: "① `$size`: số dòng hàng. ② `$map`: mảng mã sản phẩm, `$$this` là phần tử hiện tại. ③ `$reduce`: cộng dồn giá trị dòng vào `$$value` bắt đầu từ 0. ④ `$filter`: chỉ dòng có số lượng từ 4. Mỗi đơn vẫn là một tài liệu."
     en: "① `$size`: the number of lines. ② `$map`: the array of product ids, `$$this` is the current element. ③ `$reduce`: adds each line value into `$$value` starting from 0. ④ `$filter`: only lines with a quantity of 4 or more. Each order stays one document."
   mistake:
-    query: "db.orders.find({ 'items.product_id': 21, 'items.qty': { $gte: 4 } }).count()"
+    query: "db.orders.countDocuments({ 'items.product_id': 21, 'items.qty': { $gte: 4 } })"
     vi: "Hai điều kiện trên đường dẫn `items.…` khớp riêng: một dòng là sản phẩm 21, một dòng khác có số lượng 4 cũng tính. Cần cùng dòng thì dùng `$elemMatch`."
     en: "Two conditions on `items.…` paths match separately: one line is product 21, another line has quantity 4, and it still counts. For the same line use `$elemMatch`."
   try:
@@ -697,7 +697,7 @@
     vi: "① `$type: 'int'` kiểm kiểu BSON, `$not` đảo lại: giữ tài liệu mà `birth_year` thiếu, `null` hoặc sai kiểu. ② `$or` gom hai luật: phạm một luật là đủ. ③ Đây là danh sách cần sửa trước khi bật `$jsonSchema`, nếu không validator sẽ chặn mọi lần cập nhật các tài liệu này."
     en: "① `$type: 'int'` checks the BSON type, `$not` inverts it: keep documents whose `birth_year` is missing, `null` or the wrong type. ② `$or` combines two rules: breaking one is enough. ③ This is the list to fix before turning on `$jsonSchema`, otherwise the validator will block every update to these documents."
   mistake:
-    query: "db.customers.find({ birth_year: { $type: 'null' } }).count()"
+    query: "db.customers.countDocuments({ birth_year: { $type: 'null' } })"
     vi: "`$type: 'null'` chỉ bắt giá trị `null`, bỏ sót tài liệu thiếu hẳn trường và giá trị sai kiểu như chuỗi. Luật \"phải là số nguyên\" nên kiểm bằng `$not: { $type: 'int' }`."
     en: "`$type: 'null'` only catches `null` values and misses documents without the field and values of the wrong type such as strings. A \"must be an integer\" rule is checked with `$not: { $type: 'int' }`."
   try:
