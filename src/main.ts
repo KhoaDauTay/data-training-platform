@@ -574,6 +574,9 @@ uiReady = true; // nothing awaited since loadContent(), so no DB callback was mi
 rerender();
 prefetchArt(); // the art chunk (scene, map, completion scenes) once the first screen is up (Plan 8b)
 if (app.dbStatus === 'ready') void loadColumns();
+// Plan 9 D9-12: the domain in the URL, else the last one opened (General pages keep it), before the router builds hashes;
+// before a General reopen too: entering a domain resets the session to story and rebuilds the editor (it hid the drill).
+if (pick && pick !== 'general' && pick !== activeDomain()) await enterDomain(pick);
 // A reload on a drill (#/learn/play/<id>) reopens that drill with its saved draft; the session itself is never saved.
 // v17: an interview question or take-home step (`g-iv-…`) reopens its run from the device pref instead (never the Save).
 // FIX-1 (L147): opened here, before the workspace's first editor, so that editor is the drill's (never the story's, rebuilt
@@ -584,8 +587,6 @@ if (!reopened) work.setTicket(selected(), app.stepIndex);
 initLightDismiss(); // L140: a click on any modal dialog's backdrop closes it like Esc
 initSidebar(); // its Esc (close the overlay) goes before the tour's
 initTour();
-// Plan 9 D9-12: the domain in the URL, else the last one opened (General pages keep it), before the router builds hashes.
-if (pick && pick !== 'general' && pick !== activeDomain()) await enterDomain(pick);
 startRouter((r, initial) => {
   const d = domainOfHash(location.hash);
   if (d) openPage(r, d); // a domain page needs its data (seeded once)
