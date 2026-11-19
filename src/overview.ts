@@ -1,6 +1,7 @@
 import { chapterTablesOf, xpFor } from './progress';
 import type { Save } from './save';
-import type { Ticket } from './tickets';
+import { t } from './i18n';
+import { textOf, type Lang, type Ticket } from './tickets';
 
 /** An outcome without skills (a chapter that teaches nothing new, e.g. ch12) is ticked once the whole chapter is done. */
 export function outcomeDone(skills: string[], chapter: number, tickets: Ticket[], completed: Set<string>, learned: Set<string>): boolean {
@@ -23,6 +24,14 @@ export function chapterSummary(tickets: Ticket[], save: Save, chapter: number): 
 }
 
 export const grantedBy = (tickets: Ticket[], skill: string): Ticket | undefined => tickets.find((t) => t.grants.includes(skill));
+/**
+ * v15 Q4: the Notebook's line under a skill not learned yet: the title of the open domain's task that teaches it, never its
+ * id; the learning path when that domain teaches no such task or the Notebook is open outside a domain (General pages).
+ */
+export function unlockNote(tickets: Ticket[], skill: string, lang: Lang, inDomain: boolean): string {
+  const tk = inDomain ? grantedBy(tickets, skill) : undefined;
+  return tk ? t('nb.unlockAt', { title: textOf(tk, lang).title }) : t('nb.unlockPath');
+}
 
 /** Promotion-review step to reopen at (save.bossStep), clamped; 0 for normal or completed tickets. */
 export function resumeStep(save: Save, t: Ticket | undefined): number {

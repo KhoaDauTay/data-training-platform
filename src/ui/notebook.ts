@@ -1,14 +1,18 @@
+import { activeDomain } from '../domains';
 import { GLOSSARY, matches } from '../glossary';
-import { learnedSkills } from '../home';
+import { knownSkills } from '../home';
 import { getLang, t } from '../i18n';
-import { grantedBy } from '../overview';
+import { unlockNote } from '../overview';
 import { SKILLS } from '../progress';
-import { app, done } from '../state';
+import { inDomain } from '../route';
+import { generalWork } from '../session';
+import { app } from '../state';
 import type { Lang } from '../tickets';
 import { byId, h, nodes } from './dom';
 import { registerMode } from './homeView';
 import { skillIcon } from './icons';
 import { hasLesson, openLesson } from './lessonCard';
+import { currentRoute } from './router';
 
 const ITEM = 'border-b border-line py-2';
 
@@ -36,7 +40,10 @@ export function toggleNotebook(dialog: HTMLDialogElement): void {
   redraw = (): void => {
     const lang = getLang();
     const other: Lang = lang === 'vi' ? 'en' : 'vi';
-    const learned = learnedSkills(app.tickets, done());
+    const ids = SKILLS.map((s) => s.id);
+    const learned = knownSkills(app.save, app.tickets, ids); // v15: drills and review cards count too (a "SQL only" player)
+    const route = currentRoute();
+    const domain = inDomain(route) && !(route === 'play' && generalWork()); // D-N4: General pages show no business terms
     title.textContent = t('nb.title');
     close.textContent = t('app.close');
     input.placeholder = t('nb.filter');
@@ -45,7 +52,8 @@ export function toggleNotebook(dialog: HTMLDialogElement): void {
     const cards = SKILLS.filter((s) => matches(q, s.id, s.label.vi, s.label.en));
     // A skill's quick lesson can be read before the skill is learned (product-design-v4 §C.3).
     const lesson = (id: string) => hasLesson(id) ? h('button', { type: 'button', class: 'mt-1 px-2 py-0.5 text-sm', onclick: () => openLesson(id) }, t('nb.lesson')) : null;
-    const terms = GLOSSARY.filter((g) => matches(q, g.term, g.vi, g.en, ...g.columns));
+    const own = domain ? GLOSSARY.filter((g) => g.domain === activeDomain()) : [];
+    const terms = own.filter((g) => matches(q, g.term, g.vi, g.en, ...g.columns));
     list.replaceChildren(...nodes(
       h('h3', {}, t('nb.cards')),
       ...cards.map((s) =>
@@ -58,9 +66,9 @@ export function toggleNotebook(dialog: HTMLDialogElement): void {
               lesson(s.id))
           : h('article', { class: ITEM },
               h('h4', { class: 'm-0 flex items-center gap-2 text-muted' }, skillIcon(s.id), s.label[lang]),
-              h('p', { class: 'my-0.5 text-sm text-muted' }, t('nb.unlockAt', { id: grantedBy(app.tickets, s.id)?.id ?? '—' })),
+              h('p', { class: 'my-0.5 text-sm text-muted' }, unlockNote(app.tickets, s.id, lang, domain)),
               lesson(s.id))),
-      h('h3', {}, t('nb.terms')),
+      own.length ? h('h3', {}, t('nb.terms')) : null,
       ...terms.map((g) =>
         h('article', { class: ITEM },
           h('h4', { class: 'm-0' }, g.term),

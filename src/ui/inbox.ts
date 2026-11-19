@@ -7,13 +7,18 @@ import { textOf, type Ticket } from '../tickets';
 import { avatar } from './avatar';
 import { byId, h } from './dom';
 import { setActionButton } from './topbar';
+import { currentRoute } from './router';
+import { generalWork } from '../session';
+import { sqlOnly } from '../onboarding';
 
 /** One conversation per colleague (L18 ★1): the thread with the newest ticket first, newest ticket first inside it. */
 export function renderInbox(): void {
   const d = done();
   const visible = visibleTickets(app.tickets, d);
   const fresh = visible.filter((x) => !d.has(x.id)).length;
-  setActionButton(byId('inbox-btn'), t('top.inbox'), fresh, t('top.inboxNew', { n: fresh }));
+  // v15: the open domain's mail is no news to a "SQL only" player or in the General workspace (no red dot there).
+  const badge = sqlOnly() || (currentRoute() === 'play' && generalWork()) ? 0 : fresh;
+  setActionButton(byId('inbox-btn'), t('top.inbox'), badge, t('top.inboxNew', { n: badge }));
   const lang = getLang();
   const threads = new Map<string, Ticket[]>();
   for (const tk of [...visible].reverse()) {

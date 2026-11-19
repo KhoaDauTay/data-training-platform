@@ -1,6 +1,7 @@
 import { loadTickets } from '../content';
 import { activeDomain, DOMAINS, domainText } from '../domains';
-import { homeModel, knownSkills, kpisOf, kpiTiles, LEVELS, reliesOn, type ChapterCard, type HomeModel } from '../home';
+import { homeModel, knownSkills, kpisOf, kpiTiles, LEVELS, reliesOn, resumeTarget, type ChapterCard, type HomeModel } from '../home';
+import { sqlOnly } from '../onboarding';
 import { getLang, t, type Key } from '../i18n';
 import { CHAPTERS, chaptersOf, chapterTitle, domainSkills, moduleTitle, nextTicket, rankOf, SKILLS } from '../progress';
 import { domainSlot } from '../save';
@@ -103,16 +104,21 @@ function resume(id: string): void {
   else actions.selectTicket(id);
 }
 
-/** v12.0 U5: Home is across domains: one line to go on (task · domain), no colleague's message (that card is the Overview's). */
+/** v12.0 U5: Home is across domains: one line to go on (task · domain), no colleague's message (that card is the Overview's). v15 Q2: or the General area's. */
 function resumeLine(): HTMLElement | null {
-  const next = nextTicket(app.tickets, done());
-  if (!next) return null;
-  const domain = t(DOMAINS.find((d) => d.id === activeDomain())!.name);
+  const r = resumeTarget(app.save.completed, nextTicket(app.tickets, done()), sqlOnly(), SKILLS.map((s) => s.id));
+  if (!r) return null;
+  const lang = getLang();
+  const go = h('span', { class: 'flex items-center gap-2' }, t(r.kind === 'ticket' ? 'home.resume' : 'home.resumeSkill'), icon('arrowRight', 'size-4 transition group-hover:translate-x-0.5'));
+  const btn = cx(BTN_GO, 'group px-4 py-2');
   return h('section', { class: cx(CARD, 'flex flex-wrap items-center gap-3 p-4'), 'aria-labelledby': 'resume-title' },
     h('p', { id: 'resume-title', class: 'm-0 min-w-0 flex-1' },
-      h('span', { class: 'text-muted' }, t('home.resumeLabel')), ' ', h('b', {}, textOf(next, getLang()).title), h('span', { class: 'text-muted' }, ` · ${domain}`)),
-    h('button', { type: 'button', class: cx(BTN_GO, 'group flex items-center gap-2 px-4 py-2'), onclick: () => resume(next.id) },
-      t('home.resume'), icon('arrowRight', 'size-4 transition group-hover:translate-x-0.5')));
+      h('span', { class: 'text-muted' }, t('home.resumeLabel')), ' ',
+      h('b', {}, r.kind === 'ticket' ? textOf(r.ticket, lang).title : r.kind === 'skill' ? SKILLS.find((s) => s.id === r.skill)!.label[lang] : t('nav.learn')),
+      r.kind === 'learn' ? null : h('span', { class: 'text-muted' }, ` · ${r.kind === 'ticket' ? t(DOMAINS.find((d) => d.id === activeDomain())!.name) : t('nav.learn')}`)),
+    r.kind === 'ticket'
+      ? h('button', { type: 'button', class: btn, onclick: () => resume(r.ticket.id) }, go)
+      : h('a', { href: r.kind === 'skill' ? `${hashOf('learn')}/skill/${r.skill}` : hashOf('learn'), class: cx(btn, 'no-underline') }, go));
 }
 
 /** `track`/`fill`: whole class strings (height + colours). */

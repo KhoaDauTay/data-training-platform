@@ -1,15 +1,17 @@
 import { describe, expect, it } from 'vitest';
 import { GLOSSARY, matches, normalize, parseGlossary } from '../src/glossary';
 import { GAME_SCHEMA } from '../src/domains';
-import { runner } from './helpers';
+import { ecomRunner, finRunner, runner } from './helpers';
 
 const VI_DIACRITIC = /[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ]/i;
 
 describe('parseGlossary', () => {
   it('đọc mục hợp lệ, columns mặc định rỗng', () => {
     expect(parseGlossary('- { term: TEU, vi: "Đơn vị 20 ft", en: "20 ft unit" }')).toEqual([
-      { term: 'TEU', vi: 'Đơn vị 20 ft', en: '20 ft unit', columns: [] },
+      { term: 'TEU', vi: 'Đơn vị 20 ft', en: '20 ft unit', columns: [], domain: 'logistics' },
     ]);
+    expect(parseGlossary('- { term: SKU, vi: x, en: y, domain: ecommerce }')[0].domain).toBe('ecommerce');
+    expect(() => parseGlossary('- { term: A, vi: x, en: y, domain: general }')).toThrow(/#1.*domain/);
   });
 
   it('báo lỗi kèm số thứ tự khi thiếu trường hoặc sai dạng', () => {
@@ -37,11 +39,18 @@ describe('content/glossary.yml', () => {
     for (const g of GLOSSARY) expect(`${g.term} ${g.en}`, g.term).not.toMatch(VI_DIACRITIC);
   });
 
-  it('mọi cột trong columns tồn tại trong DB', async () => {
-    const run = await runner();
-    const r = await run(`SELECT table_name || '.' || column_name FROM information_schema.columns WHERE table_schema = '${GAME_SCHEMA}'`);
-    const existing = new Set(r.rows.map((row) => String(row[0])));
-    const missing = GLOSSARY.flatMap((g) => g.columns.filter((c) => !existing.has(c)).map((c) => `${g.term}: ${c}`));
+  it('mọi cột trong columns tồn tại trong schema của domain đó (v15 Q5)', async () => {
+    const runs = { logistics: [await runner(), GAME_SCHEMA], ecommerce: [await ecomRunner(), 'ecom'], finance: [await finRunner(), 'finance'] } as const;
+    const missing: string[] = [];
+    for (const [domain, [run, schema]] of Object.entries(runs)) {
+      const r = await run(`SELECT table_name || '.' || column_name FROM information_schema.columns WHERE table_schema = '${schema}'`);
+      const existing = new Set(r.rows.map((row) => String(row[0])));
+      missing.push(...GLOSSARY.filter((g) => g.domain === domain).flatMap((g) => g.columns.filter((c) => !existing.has(c)).map((c) => `${g.term}: ${c}`)));
+    }
     expect(missing).toEqual([]);
+  });
+
+  it('mỗi domain có thuật ngữ riêng (D-N4)', () => {
+    for (const d of ['logistics', 'ecommerce', 'finance']) expect(GLOSSARY.filter((g) => g.domain === d).length, d).toBeGreaterThanOrEqual(5);
   });
 });

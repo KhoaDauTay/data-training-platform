@@ -25,6 +25,22 @@ export interface HomeModel {
 
 export const LEVELS = 5;
 
+/**
+ * v15 Q2: what Home's "Continue" line opens. The last thing passed (Save keeps `completed` in order, no timestamps) was a
+ * drill → that skill's page (`learn` for a node drill); a "SQL only" player who has opened no domain → the learning path;
+ * else the open domain's next task (none once all are done). It never names a domain the player has not opened (v15 §5).
+ */
+export type Resume = { kind: 'skill'; skill: string } | { kind: 'learn' } | { kind: 'ticket'; ticket: Ticket };
+export function resumeTarget(completed: readonly string[], next: Ticket | undefined, sqlOnly: boolean, skillIds: readonly string[]): Resume | undefined {
+  const last = completed.at(-1);
+  if (last?.startsWith('g-')) {
+    const skill = skillOfDrill(last, skillIds);
+    return skill ? { kind: 'skill', skill } : { kind: 'learn' };
+  }
+  if (sqlOnly) return { kind: 'learn' };
+  return next && { kind: 'ticket', ticket: next };
+}
+
 /** Skills taught by the completed tickets. Shared by Home, Practice and the chapter goals (Plan 1c). */
 export const learnedSkills = (tickets: Ticket[], completed: Set<string>): Set<string> =>
   new Set(tickets.filter((t) => completed.has(t.id)).flatMap((t) => t.grants));

@@ -1,7 +1,9 @@
 import { parse as parseYaml } from 'yaml';
 import raw from '../content/glossary.yml?raw';
+import { isLiveDomain, type DomainId } from './domains';
 
-export interface Term { term: string; vi: string; en: string; columns: string[] }
+/** `domain` (v15 Q5, D-N4): the domain whose Notebook shows the term; Logistics when the entry names none. */
+export interface Term { term: string; vi: string; en: string; columns: string[]; domain: DomainId }
 
 export function parseGlossary(source: string): Term[] {
   const data = parseYaml(source) as unknown;
@@ -17,7 +19,9 @@ export function parseGlossary(source: string): Term[] {
     if (!Array.isArray(columns) || columns.some((c) => typeof c !== 'string')) {
       throw new Error(`glossary.yml #${i + 1}: "columns" phải là danh sách chuỗi`);
     }
-    return { term: str('term'), vi: str('vi'), en: str('en'), columns: columns as string[] };
+    const domain = x.domain ?? 'logistics';
+    if (!isLiveDomain(domain)) throw new Error(`glossary.yml #${i + 1}: "domain" không có`);
+    return { term: str('term'), vi: str('vi'), en: str('en'), columns: columns as string[], domain };
   });
 }
 

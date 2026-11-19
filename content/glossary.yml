@@ -1,5 +1,6 @@
 # Thuật ngữ giao nhận cho Sổ tay (theo docs/team/glossary-vi.md, L51). term = mã/viết tắt dùng chung; vi/en = định nghĩa ngắn.
-# columns: chỉ cột đang có trong DB (table.column). Không có cột tương ứng thì để [].
+# columns: chỉ cột đang có trong DB (table.column) của schema domain đó. Không có cột tương ứng thì để [].
+# domain (v15 Q5, D-N4): logistics (mặc định) | ecommerce | finance. Sổ tay chỉ hiện thuật ngữ của domain đang mở; trang General không hiện thuật ngữ nào.
 - term: TEU
   vi: "Đơn vị tương đương một container 20 feet. Container 40 feet tính là 2 TEU."
   en: "Twenty-foot Equivalent Unit: one 20 ft container. A 40 ft container counts as 2 TEU."
@@ -165,3 +166,55 @@
   vi: "Thông quan: hàng được hải quan cho qua sau khi khai báo; hàng luồng đỏ phải kiểm hóa (kiểm tra thực tế) trước."
   en: "Clearance: customs releases the goods after the declaration; red-lane goods need a physical inspection first."
   columns: [customs_declarations.cleared_date]
+# E-commerce (Chợ Lồng Đèn)
+- term: SKU
+  domain: ecommerce
+  vi: "Mã định danh một mặt hàng trong kho (Stock Keeping Unit); mỗi sản phẩm một mã riêng."
+  en: "Stock Keeping Unit: the code of one item in the catalogue; each product has its own."
+  columns: [products.sku]
+- term: AOV
+  domain: ecommerce
+  vi: "Giá trị đơn trung bình (Average Order Value): tổng tiền hàng chia số đơn."
+  en: "Average Order Value: total sales divided by the number of orders."
+  columns: [order_items.quantity, order_items.unit_price]
+- term: COD
+  domain: ecommerce
+  vi: "Thanh toán khi nhận hàng (Cash On Delivery): khách trả tiền cho người giao hàng."
+  en: "Cash On Delivery: the customer pays the courier when the parcel arrives."
+  columns: [payments.method]
+- term: Voucher
+  domain: ecommerce
+  vi: "Mã giảm giá theo chiến dịch: giảm một phần trăm cho đơn từ một mức tối thiểu, trong một khoảng ngày."
+  en: "Discount code of a campaign: a percentage off orders above a minimum, valid for a date range."
+  columns: [vouchers.discount_pct, vouchers.min_order, orders.voucher_id]
+- term: Return rate
+  domain: ecommerce
+  vi: "Tỷ lệ hoàn hàng: số món bị yêu cầu trả lại chia số món đã bán."
+  en: "Share of sold items that customers asked to send back."
+  columns: [returns.reason, returns.status]
+# Finance (Tín dụng Hũ Bạc)
+- term: DPD
+  domain: finance
+  vi: "Số ngày quá hạn (Days Past Due) của kỳ trả chưa trả lâu nhất; 0 là không quá hạn."
+  en: "Days Past Due of the oldest unpaid instalment; 0 means nothing is overdue."
+  columns: [loan_snapshots.dpd]
+- term: Outstanding
+  domain: finance
+  vi: "Dư nợ: phần tiền gốc khách chưa trả tại một thời điểm."
+  en: "The principal the customer has not repaid yet at a given date."
+  columns: [loan_snapshots.outstanding]
+- term: Disbursement
+  domain: finance
+  vi: "Giải ngân: ngày và số tiền gốc công ty chuyển cho khách khi khoản vay bắt đầu."
+  en: "The day the lender pays out the principal and the loan starts."
+  columns: [loans.disbursed_on, loans.principal]
+- term: Instalment
+  domain: finance
+  vi: "Kỳ trả góp: một lần trả theo lịch, gồm gốc và lãi đến hạn."
+  en: "One scheduled payment, made of the principal and interest due."
+  columns: [schedules.instalment_no, schedules.due_on]
+- term: NPL
+  domain: finance
+  vi: "Nợ xấu (Non-Performing Loan): khoản vay quá hạn trên 90 ngày."
+  en: "Non-Performing Loan: a loan more than 90 days past due."
+  columns: [loan_snapshots.dpd]
