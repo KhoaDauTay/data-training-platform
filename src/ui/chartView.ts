@@ -27,7 +27,11 @@ const SIZES = {
 const LABEL = 'fill-muted text-caption';
 const VALUE = 'fill-ink text-caption tabular-nums';
 const GRID = 'stroke-chart-grid';
+/** A bar's name: every key column, joined (v21 U6: "SEA · EXPORT", never two bars both named "SEA"). */
+const nameOf = (r: QueryResult, spec: ChartSpec, row: unknown[]): string => spec.labels.map((i) => formatCell(row[i], r.types[i])).join(' · ');
 const AXIS_H = 18;
+/** The one-screen app shell (style.css `@custom-variant shell`). */
+const SHELL = '(min-width: 1024px) and (min-height: 700px)';
 
 /** Axis ticks and card values print "1,2 triệu" / "1.2M" (VI long form: the short "N"/"Tr" is unclear, like kpiNumber); exact values are in each mark's tooltip. */
 const short = (n: number): string =>
@@ -44,7 +48,7 @@ function barPath(x0: number, x1: number, y: number, hgt: number): string {
 }
 
 /** Horizontal bars, label left, value at the bar's end; dashed vertical grid at nice steps with labels below. `width`: the tab's measured width. */
-export function bars(r: QueryResult, spec: ChartSpec, col: number, size: ChartSize = 'tab', width?: number): SVGSVGElement {
+export function bars(r: QueryResult, spec: ChartSpec, col: number, size: ChartSize = 'tab', width?: number, height?: number): SVGSVGElement {
   const W = width ?? SIZES[size].w;
   // A narrow tab (phone) shrinks the label and value columns with the width, so the plot keeps at least half of it.
   const fit = size === 'tab' && W < 720 ? W / 720 : 1;
@@ -52,7 +56,11 @@ export function bars(r: QueryResult, spec: ChartSpec, col: number, size: ChartSi
   const labelW = Math.max(72, Math.round(SIZES[size].labelW * fit));
   const valueW = Math.max(52, Math.round(SIZES[size].valueW * fit));
   const chars = Math.max(9, Math.round(SIZES[size].chars * fit));
-  const rowH = size === 'tab' ? Math.max(SIZES.tab.rowH, Math.min(40, Math.floor(200 / Math.max(1, r.rows.length)))) : SIZES.card.rowH; // tab: ≥ 220 px tall
+  const n = Math.max(1, r.rows.length);
+  // tab: ≥ 220 px tall; v21 U5: given the tab body's height, rows shrink (to 20 px) so the bars and the axis fit without a scroll
+  const rowH = size === 'card' ? SIZES.card.rowH
+    : height ? Math.max(20, Math.min(40, Math.floor((height - AXIS_H - 4) / n)))
+      : Math.max(SIZES.tab.rowH, Math.min(40, Math.floor(200 / n)));
   const vals = r.rows.map((row) => Number(row[col] ?? 0));
   const ticks = niceTicks(...valueRange(vals), size === 'tab' && W >= 560 ? 5 : 3);
   const [lo, hi] = [ticks[0], ticks.at(-1)!];
@@ -65,7 +73,7 @@ export function bars(r: QueryResult, spec: ChartSpec, col: number, size: ChartSi
       s('text', { x: x(v), y: plot + 13, 'text-anchor': 'middle', class: LABEL }, short(v)))),
     s('line', { x1: x0, x2: x0, y1: 0, y2: plot, class: 'stroke-line-strong' }),
     ...r.rows.map((row, i) => {
-      const label = formatCell(row[spec.label], r.types[spec.label]);
+      const label = nameOf(r, spec, row);
       const xv = x(vals[i]);
       const y = i * rowH + 4;
       return s('g', {},
@@ -81,12 +89,13 @@ const spread = (len: number, n: number): number[] =>
   len <= n ? [...Array(len).keys()] : [...new Set(Array.from({ length: n }, (_, k) => Math.round((k * (len - 1)) / (n - 1))))];
 
 /** One line over dates: nice y grid with labels, 4–6 date labels, a soft area under the line, points only up to 24, the last value labelled. */
-export function line(r: QueryResult, spec: ChartSpec, col: number, size: ChartSize = 'tab', width?: number): SVGSVGElement {
-  const { lineH: H, padL, svg } = SIZES[size];
+export function line(r: QueryResult, spec: ChartSpec, col: number, size: ChartSize = 'tab', width?: number, height?: number): SVGSVGElement {
+  const { padL, svg } = SIZES[size];
+  const H = height ? Math.max(140, Math.min(360, height)) : SIZES[size].lineH; // v21 U5: the tab body's height, axis included
   const W = width ?? SIZES[size].w;
   const pad = { l: padL, r: size === 'tab' ? 56 : 36, t: 12, b: 26 };
   const pts = r.rows
-    .map((row) => ({ t: (row[spec.label] as Date | null)?.getTime(), v: row[col] === null ? null : Number(row[col]), raw: row[spec.label] }))
+    .map((row) => ({ t: (row[spec.labels[0]] as Date | null)?.getTime(), v: row[col] === null ? null : Number(row[col]), raw: row[spec.labels[0]] }))
     .filter((p): p is { t: number; v: number; raw: unknown } => p.t !== undefined && p.v !== null && Number.isFinite(p.v))
     .sort((a, b) => a.t - b.t);
   const [t0, t1] = [pts[0]?.t ?? 0, pts.at(-1)?.t ?? 1];
@@ -95,7 +104,7 @@ export function line(r: QueryResult, spec: ChartSpec, col: number, size: ChartSi
   const x = (tm: number) => pad.l + ((tm - t0) / Math.max(1, t1 - t0)) * (W - pad.l - pad.r);
   const y = (v: number) => pad.t + (1 - (v - vmin) / (vmax - vmin)) * (H - pad.t - pad.b);
   const xy = pts.map((p) => `${x(p.t).toFixed(1)},${y(p.v).toFixed(1)}`);
-  const at = (p: { raw: unknown; v: number }) => `${formatCell(p.raw, r.types[spec.label])}: ${fmt(p.v)}`;
+  const at = (p: { raw: unknown; v: number }) => `${formatCell(p.raw, r.types[spec.labels[0]])}: ${fmt(p.v)}`;
   const last = pts.at(-1);
   const focusable = size === 'tab';
   return s('svg', { viewBox: `0 0 ${W} ${H}`, class: svg, role: 'img', 'aria-label': t('chart.lineAria', { col: r.columns[col] }) },
@@ -104,7 +113,7 @@ export function line(r: QueryResult, spec: ChartSpec, col: number, size: ChartSi
       s('text', { x: pad.l - 6, y: y(v) + 4, 'text-anchor': 'end', class: LABEL }, short(v)))),
     ...spread(pts.length, size === 'tab' && W >= 560 ? 6 : 3).map((i, k, all) => s('text', {
       x: x(pts[i].t), y: H - 8, class: LABEL, 'text-anchor': all.length > 1 && k === 0 ? 'start' : k === all.length - 1 && all.length > 1 ? 'end' : 'middle',
-    }, formatCell(pts[i].raw, r.types[spec.label]))),
+    }, formatCell(pts[i].raw, r.types[spec.labels[0]]))),
     pts.length > 1 ? s('path', { d: `M${xy[0]}L${xy.slice(1).join('L')}L${x(t1).toFixed(1)},${y(Math.max(vmin, 0)).toFixed(1)}L${x(t0).toFixed(1)},${y(Math.max(vmin, 0)).toFixed(1)}Z`, class: 'fill-chart', 'fill-opacity': '0.12' }) : null,
     s('polyline', { points: xy.join(' '), 'stroke-width': 2, 'stroke-linejoin': 'round', class: 'fill-none stroke-chart' }),
     ...(pts.length <= 24 ? pts : last ? [last] : []).map((p) => s('circle', { cx: x(p.t).toFixed(1), cy: y(p.v).toFixed(1), r: 4, class: 'fill-chart stroke-panel', 'stroke-width': 2, ...(focusable ? { tabindex: '0', 'aria-label': at(p) } : {}) },
@@ -128,11 +137,21 @@ export function renderChart(host: HTMLElement, r: QueryResult): void {
   const area = h('div', { class: 'min-w-0' });
   let col = spec.values[0];
   let drawnW = 0;
+  let drawnH = 0;
+  // v21 U5: in the one-screen shell the tab body has a fixed height: the chart fills what is left of it under the title, so the
+  // axis is never cut. Elsewhere (phone, short screens) the page scrolls and the chart keeps its own height.
+  const box = (): HTMLElement | null => (typeof matchMedia === 'function' && matchMedia(SHELL).matches ? area.closest<HTMLElement>('.tab-body') : null);
+  const room = (): number => {
+    const b = box();
+    return b ? Math.floor(b.getBoundingClientRect().bottom - area.getBoundingClientRect().top - 8) : 0;
+  };
   const draw = () => {
     const w = Math.max(320, Math.round(area.clientWidth || SIZES.tab.w));
+    const hgt = room();
     drawnW = w;
-    title.textContent = t('chart.title', { value: r.columns[col], label: r.columns[spec.label] });
-    area.replaceChildren(spec.kind === 'bar' ? bars(r, spec, col, 'tab', w) : line(r, spec, col, 'tab', w));
+    drawnH = hgt;
+    title.textContent = t('chart.title', { value: r.columns[col], label: spec.labels.map((i) => r.columns[i]).join(' · ') });
+    area.replaceChildren(spec.kind === 'bar' ? bars(r, spec, col, 'tab', w, hgt || undefined) : line(r, spec, col, 'tab', w, hgt || undefined));
   };
   const picker = spec.values.length > 1
     ? h('label', { class: 'inline-flex items-center gap-2 text-body-sm' }, t('chart.valueCol'), (() => {
@@ -149,8 +168,10 @@ export function renderChart(host: HTMLElement, r: QueryResult): void {
   if (typeof ResizeObserver !== 'undefined') {
     const ro = new ResizeObserver(() => {
       if (!area.isConnected) return ro.disconnect(); // the tab was redrawn: this chart is gone
-      if (Math.abs(Math.max(320, area.clientWidth) - drawnW) > 8) draw();
+      if (Math.abs(Math.max(320, area.clientWidth) - drawnW) > 8 || Math.abs(room() - drawnH) > 8) draw();
     });
     ro.observe(area);
+    const b = box();
+    if (b) ro.observe(b); // the splitter (or growPanel) changes the panel's height
   }
 }

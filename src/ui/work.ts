@@ -84,6 +84,13 @@ const FEEDBACK: Record<'good' | 'bad', string> = {
  * empty result looks like every mistake that filters too much, so it is never matched against `wrong:` (tests/content.test.ts:
  * a `wrong:` SQL always returns rows). Each `wrong:` SQL runs once per ticket+variant (its text has the variant applied).
  */
+export type Seen = { run?: object; stale: boolean };
+/** v21 E2 (pure): after an edit to `v`, must the panel be redrawn (the editor started or stopped differing from `run`)? */
+export function staleFlip(seen: Seen, run: { sql: string } | undefined, v: string): [boolean, Seen] {
+  const stale = !!run && v.trim() !== run.sql.trim();
+  return [stale !== (seen.run === run ? seen.stale : false), { run, stale }];
+}
+
 export function wrongTipper(run: (sql: string, tk: Ticket) => Promise<QueryResult>) {
   const results = new Map<string, Promise<QueryResult | null>>();
   const resultOf = (tk: Ticket, sql: string): Promise<QueryResult | null> => {
@@ -185,6 +192,30 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
     refreshGuides(); // v13 G6: a drill's diff may call Boon's guide
     // ui-ux-v5 A2: the mascot reacts once, after the event's synchronous rerender() (solved → complete(), fill → brief) redrew the line.
     if (who) queueMicrotask(() => react(feedback));
+    queueMicrotask(reveal);
+    setTimeout(reveal, 400); // again once the lines above it (the query summary, Lily's line) have settled
+  }
+  /**
+   * v21 E2: the tabs describe app.lastRun; when an edit makes the editor differ from it (or match it again), the open tab is redrawn
+   * once, so its "SQL changed" strip and Pin's "Run again before pinning" show while typing, not only after the next run.
+   * A new run redraws the panel with the editor matching it, so `seen` starts over (not stale) for each run.
+   */
+  let seen: Seen = { stale: false };
+  function staleCheck(v: string): void {
+    const [redraw, next] = staleFlip(seen, app.lastRun, v);
+    seen = next;
+    if (redraw) deps.panel.refresh();
+  }
+  /**
+   * v21 U10: the SQL pane scrolls (never the page) just enough to show the new feedback, its top kept in view. Only where the pane
+   * is its own scroll box (the one-screen shell); a phone page is left where it is.
+   */
+  function reveal(): void {
+    const pane = feedback.closest?.<HTMLElement>('#work');
+    if (!pane || pane.scrollHeight <= pane.clientHeight || !feedback.firstChild) return;
+    const f = feedback.getBoundingClientRect();
+    const p = pane.getBoundingClientRect();
+    if (f.bottom > p.bottom) pane.scrollTop += Math.min(f.bottom - p.bottom + 8, f.top - p.top - 8);
   }
   function drawMessage(): void {
     feedback.className = message ? FEEDBACK[message.kind] : '';
@@ -537,6 +568,7 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
           label: t('work.editorLabel'),
           onChange: (v) => {
             words.draw();
+            staleCheck(v);
             writeDraft(v);
             persist();
             if (fillNote) { // the first edit after "Fill the scaffold": its Undo would now only undo that edit (like the Try-it box)

@@ -150,6 +150,9 @@ export function startDrill(id: string, still: () => boolean = () => true): Promi
   const btn = document.activeElement instanceof HTMLButtonElement ? document.activeElement : undefined;
   btn?.setAttribute('aria-busy', 'true');
   if (btn) btn.disabled = true;
+  // v21 E5: the open task's editor takes no keys meanwhile (they would land in its draft, not the drill's)
+  const work = document.getElementById('work');
+  work?.setAttribute('inert', '');
   return loadDrillUi().then(async (m) => {
     await m.prepareLab();
     if (still()) await m.openDrill(id);
@@ -161,6 +164,7 @@ export function startDrill(id: string, still: () => boolean = () => true): Promi
   }).finally(() => {
     btn?.removeAttribute('aria-busy');
     if (btn) btn.disabled = false;
+    work?.removeAttribute('inert');
   });
 }
 /**
