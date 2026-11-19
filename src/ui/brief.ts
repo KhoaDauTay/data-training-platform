@@ -17,7 +17,7 @@ import { mascot } from './mascots';
 import { avatar } from './avatar';
 import { boonRegion, coach, tourSlot } from './coach';
 import { byId, h, nodes, reducedMotion, richText } from './dom';
-import { once, react } from './celebrate';
+import { once, react, tick } from './celebrate';
 import { partHead, skillIcon } from './icons';
 import { lessonSlot } from './lessonCard';
 
@@ -198,8 +198,9 @@ function exampleCard(tk: Ticket, x: TicketText): HTMLElement | null {
     richText(x.example),
     h('button', {
       type: 'button',
-      onclick: () => {
+      onclick: (e: Event) => {
         actions.useSql(sql);
+        tick(e.currentTarget as HTMLElement); // X4 (L166): a check mark for 1 s
         status.textContent = t('brief.exampleCopied'); // the draft was replaced: say how to get it back
       },
     }, t('brief.useExample')),

@@ -31,8 +31,11 @@ export interface Panel {
   readonly active: string;
 }
 
-/** Open tab (aria-selected): --text with a --accent underline, so the state is not colour alone (L23). */
-const TAB = 'shrink-0 rounded-t-lg rounded-b-none border-x-0 border-t-0 border-b-2 border-transparent bg-transparent px-3 py-1.5 whitespace-nowrap text-muted hover:bg-code aria-selected:border-accent aria-selected:font-bold aria-selected:text-ink';
+/**
+ * Open tab (aria-selected): --text, bold, with a --accent underline, so the state is not colour alone (L23). The underline is one
+ * element (`ink`) that slides to the new tab in 160 ms (ui-ux-v7 X4, L166); the tab's own border stays transparent.
+ */
+const TAB = 'shrink-0 rounded-t-lg rounded-b-none border-x-0 border-t-0 border-b-2 border-transparent bg-transparent px-3 py-1.5 whitespace-nowrap text-muted hover:bg-code aria-selected:font-bold aria-selected:text-ink';
 
 /**
  * ui-ux-v7 W1: one empty state for every tab: a muted 32 px icon, one sentence, at most one action. No mascot (one per region;
@@ -68,14 +71,29 @@ export function createPanel(host: HTMLElement): Panel {
     }));
   // ui-ux-v7 W1: a 1 px rule between groups (was an unexplained ml-4 gap); never wraps: it scrolls sideways, with a fade on the side that has more.
   const rule = () => h('span', { class: 'mx-1 h-4 w-px shrink-0 self-center bg-line', 'aria-hidden': 'true' });
-  const bar = h('div', { class: 'tab-bar mb-2.5 flex flex-nowrap gap-1 overflow-x-auto border-b border-line', role: 'tablist', 'data-i18n-aria': 'tab.list', 'aria-label': t('tab.list') },
-    ...buttons.flatMap((b, i) => (i > 0 && tabs[i].group !== tabs[i - 1].group ? [rule(), b] : [b])));
+  const ink = h('span', { class: 'pointer-events-none absolute bottom-0 left-0 h-0.5 w-0 rounded-full bg-accent', 'aria-hidden': 'true' });
+  const bar = h('div', { class: 'tab-bar relative mb-2.5 flex flex-nowrap gap-1 overflow-x-auto border-b border-line', role: 'tablist', 'data-i18n-aria': 'tab.list', 'aria-label': t('tab.list') },
+    ...buttons.flatMap((b, i) => (i > 0 && tabs[i].group !== tabs[i - 1].group ? [rule(), b] : [b])), ink);
+  // X4: the underline sits under the open tab. It slides only when the open tab changes (a click, a chip, a new task); a redraw,
+  // a resize or the first paint puts it in place at once. Reduced motion: style.css drops every transition.
+  let placed = '';
+  const place = (slide: boolean): void => {
+    const b = buttons[tabs.findIndex((x) => x.id === active)];
+    if (!b?.offsetWidth) return; // hidden panel (a phone pane): placed when it shows (ResizeObserver)
+    const at = `${b.offsetLeft}:${b.offsetWidth}`;
+    if (at === placed) return;
+    // the class list is literal for Tailwind's scanner; toggled before the move, so the browser transitions it (or not)
+    for (const c of ['transition-[left,width]', 'duration-160', 'ease-out']) ink.classList.toggle(c, slide && placed !== '');
+    ink.style.left = `${b.offsetLeft}px`;
+    ink.style.width = `${b.offsetWidth}px`;
+    placed = at;
+  };
   const edges = () => {
     bar.dataset.left = String(bar.scrollLeft > 1);
     bar.dataset.right = String(bar.scrollLeft + bar.clientWidth < bar.scrollWidth - 1);
   };
   bar.addEventListener('scroll', edges, { passive: true });
-  if (typeof ResizeObserver !== 'undefined') new ResizeObserver(edges).observe(bar);
+  if (typeof ResizeObserver !== 'undefined') new ResizeObserver(() => { edges(); place(false); }).observe(bar);
   // v12 audit: tabs a beginner has not reached are hidden (D-O4), so one muted line says more are coming, never silence.
   // Below md only a lock and "+N" (the sentence is its title and label).
   const more = h('span', { class: 'mb-2.5 flex shrink-0 items-center gap-1 self-center text-caption text-muted', hidden: true }, icon('lock', 'size-3.5'), h('span', { class: 'max-md:hidden' }), h('span', { class: 'md:hidden', 'aria-hidden': 'true' }));
@@ -93,7 +111,7 @@ export function createPanel(host: HTMLElement): Panel {
     shown[j].focus();
   });
 
-  function label(): void {
+  function label(slide = false): void {
     const reached = new Set(visibleTickets(app.tickets, done()).map((x) => x.id));
     const isGated = gated(readTour()) && activeDomain() === 'logistics'; // `from` ids are Logistics tickets
     const later = tabs.filter((tab) => !tabOpen(tab.from, reached, isGated) && tab.id !== active).length;
@@ -111,11 +129,13 @@ export function createPanel(host: HTMLElement): Panel {
       b.replaceChildren(t(tab.label), tab.newAt === app.selectedId ? h('span', { class: 'ml-1.5 rounded bg-accent px-1 text-[11px] text-on-accent' }, t('tab.new')) : '');
     });
     edges();
+    place(slide); // a relabel can change a tab's width (language, the "new" chip): followed without sliding
   }
 
   function show(id: string): void {
+    const before = active;
     active = tabs.some((x) => x.id === id) ? id : tabs[0].id;
-    label();
+    label(active !== before);
     body.setAttribute('aria-labelledby', `tab-${active}`);
     // A fresh host per render: a slow async render of a tab left behind writes into a detached node.
     const target = h('div');

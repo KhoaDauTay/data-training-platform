@@ -1,6 +1,7 @@
 import { type GsapArt, loadedGsap, loadGsap } from '../art/load';
 import type { Timeline } from '../art/gsap';
 import { reducedMotion } from './dom';
+import { icon } from './icons';
 import { LAST_STAGE, LOOK, type LilyStage, stageOf } from '../lily';
 import { type Mascot, type Move, MOVES, movedParts, pivotOf, type Pose } from './mascots';
 
@@ -200,3 +201,17 @@ let grewFrom = 0;
 export const markGrew = (from = 0): void => { grewAt = Date.now(); grewFrom = from; };
 /** A1: Lily grows in the next reaction or dock entrance for 4 s after that (both attach at an event, never while drawing). */
 export const grewLately = (): boolean => Date.now() - grewAt <= 4000;
+
+/**
+ * ui-ux-v7 X4 (L166): a copy button shows a check mark for 1 s after it did its job (its label stays; the status line next to it
+ * still says what happened). No transform on the button (L93); a second click restarts the second.
+ */
+const ticks = new WeakMap<HTMLElement, ReturnType<typeof setTimeout>>();
+export function tick(btn: HTMLElement): void {
+  clearTimeout(ticks.get(btn));
+  btn.querySelector(':scope > [data-tick]')?.remove();
+  const mark = icon('check', 'mr-1.5 inline size-4 align-[-3px] text-good');
+  mark.dataset.tick = '';
+  btn.prepend(mark);
+  ticks.set(btn, setTimeout(() => mark.remove(), 1000));
+}
