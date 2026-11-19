@@ -27,6 +27,13 @@ export interface PanelDeps {
 let sets: Datasets | undefined;
 const drafts = new Map<string, string>();
 const verdicts = new Map<string, { ok: boolean; text: string }>();
+/** Dataset id → the table its copy lives in (`penguins`, or `penguins_2` when the player owns `penguins`); re-read when the table list changes. */
+const tableOf = new Map<string, string | undefined>();
+let tablesSig: string | undefined;
+/** Stored file name of a sample copy: a `/` never appears in a real file's name, so a player's own file never matches. */
+const markerOf = (d: Dataset): string => `sample/${d.file}`;
+/** The Solution, on the copy's table name (`d.table` is a plain identifier, so it is safe inside the pattern). */
+export const onTable = (sql: string, d: Pick<Dataset, 'table'>, table: string): string => sql.replace(new RegExp(String.raw`\b${d.table}\b`, 'g'), table);
 
 async function loadSample(d: Dataset, ui: Datasets['ui'], x: PanelDeps): Promise<void> {
   if (x.busy()) return;
@@ -35,7 +42,12 @@ async function loadSample(d: Dataset, ui: Datasets['ui'], x: PanelDeps): Promise
   let line: string;
   try {
     // Same origin only (datasetUrl); then the player's own import path: D3 limits, `_my` names, IndexedDB.
-    line = x.outcomeText(await x.my.add(await fetchDataset(d.file), d.file));
+    const blob = await fetchDataset(d.file);
+    // Never over a table the player imported: a free name, or the previous copy of this same sample.
+    const table = await x.my.sampleName(d.table, markerOf(d));
+    const r = await x.my.add(blob, markerOf(d), `${table}.csv`);
+    if (r.ok) tableOf.set(d.id, r.table.table);
+    line = x.outcomeText(r);
   } catch {
     line = ui.failed[x.lang];
   }
@@ -43,7 +55,7 @@ async function loadSample(d: Dataset, ui: Datasets['ui'], x: PanelDeps): Promise
   x.setStatus(`${d.file}: ${line}`);
 }
 
-function question(d: Dataset, i: number, ui: Datasets['ui'], x: PanelDeps): HTMLElement {
+function question(d: Dataset, table: string, i: number, ui: Datasets['ui'], x: PanelDeps): HTMLElement {
   const { h, cx } = x;
   const tx = (b: Bi): string => b[x.lang];
   const key = `${d.id}#${i}`;
@@ -66,7 +78,7 @@ function question(d: Dataset, i: number, ui: Datasets['ui'], x: PanelDeps): HTML
         check.disabled = true;
         try {
           // The real grader against the dataset's answer, 0 XP, nothing saved (like "Thử ngay").
-          const r = await x.grade((sql) => x.my.query(sql), q.solution, area.value, q.ordered);
+          const r = await x.grade((sql) => x.my.query(sql), onTable(q.solution, d, table), area.value, q.ordered);
           verdicts.set(key, r.ok ? { ok: true, text: tx(ui.ok) } : { ok: false, text: x.verdictText(r) });
         } catch (e) {
           verdicts.set(key, { ok: false, text: x.errorText(e) });
@@ -85,7 +97,11 @@ export function datasetPanel(x: PanelDeps): HTMLElement {
   sets ??= parseDatasets(raw, x.parseYaml);
   const { ui } = sets;
   const tx = (b: Bi): string => b[x.lang];
-  const loaded = new Set(x.my.tables.map((t) => t.table));
+  const sig = x.my.tables.map((t) => t.table).join(',');
+  if (sig !== tablesSig) {
+    tablesSig = sig;
+    for (const d of sets.datasets) void x.my.sampleTable(markerOf(d)).then((t) => { if (t !== tableOf.get(d.id)) { tableOf.set(d.id, t); x.rerender(); } });
+  }
   const link = (href: string, text: string, rel: string): HTMLElement => h('a', { href, target: '_blank', rel }, text);
   return h('section', { class: 'mt-4 border-t border-line pt-3', 'aria-labelledby': 'datasets-title' },
     h('h3', { id: 'datasets-title', class: 'mt-0' }, tx(ui.title)),
@@ -97,8 +113,15 @@ export function datasetPanel(x: PanelDeps): HTMLElement {
         `${tx(ui.source)}: `, link(d.source_url, d.credit, 'noopener noreferrer'), ` ${tx(ui.licence)}: `, link(d.licence_url, d.licence, 'noopener noreferrer license')),
       h('button', { type: 'button', class: 'primary', disabled: x.busy(), onclick: () => void loadSample(d, ui, x) }, tx(ui.load)),
       h('h4', { class: 'mb-1' }, tx(ui.questions)),
-      loaded.has(d.table)
-        ? h('ol', { class: 'pl-5' }, ...d.questions.map((_, i) => question(d, i, ui, x)))
-        : h('p', { class: 'text-body-sm text-muted' }, tx(ui.loadFirst)))),
+      ...questions(d, ui, x))),
   );
+}
+
+/** The copy's table and its questions, or a hint to load the set first. */
+function questions(d: Dataset, ui: Datasets['ui'], x: PanelDeps): HTMLElement[] {
+  const { h } = x;
+  const table = tableOf.get(d.id);
+  if (!table || !x.my.tables.some((t) => t.table === table)) return [h('p', { class: 'text-body-sm text-muted' }, ui.loadFirst[x.lang])];
+  return [h('p', { class: 'my-1 text-body-sm' }, `${ui.table[x.lang]}: `, h('code', {}, table)),
+    h('ol', { class: 'pl-5' }, ...d.questions.map((_, i) => question(d, table, i, ui, x)))];
 }

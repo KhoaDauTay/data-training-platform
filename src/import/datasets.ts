@@ -32,7 +32,7 @@ export function parseDatasets(raw: string, parseYaml: (s: string) => unknown): D
   if (!y?.ui || !Object.values(y.ui).every(bi)) throw new Error('datasets.yml: bad ui');
   const datasets = (y.datasets ?? []).map((d): Dataset => {
     const qs = d.questions as Record<string, unknown>[];
-    const ok = str(d.id) && str(d.file) && DATASET_FILE.test(d.file) && str(d.table) && Number.isInteger(d.rows)
+    const ok = str(d.id) && str(d.file) && DATASET_FILE.test(d.file) && str(d.table) && /^[a-z_][a-z0-9_]*$/.test(d.table) && Number.isInteger(d.rows)
       && bi(d.title) && bi(d.about) && str(d.licence) && str(d.licence_url) && str(d.source_url) && str(d.credit)
       && Array.isArray(qs) && qs.every((q) => bi(q.task) && str(q.solution));
     if (!ok) throw new Error(`datasets.yml: bad dataset ${String(d.id)}`);

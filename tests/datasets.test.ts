@@ -6,6 +6,11 @@ import { compareResults } from '../src/grader';
 import { IMPORT_LIMITS, inspectCsv } from '../src/import/csv';
 import { DATASET_FILE, datasetUrl, fetchDataset, parseDatasets } from '../src/import/datasets';
 import { freshDb } from './helpers';
+import { dropImport } from '../src/db/import';
+import { MyData } from '../src/import/myData';
+import { memoryStore } from '../src/import/store';
+import { onTable } from '../src/import/datasetPanel';
+import offlineMjs from '../scripts/offline.mjs?raw';
 import { parse as parseYaml } from 'yaml';
 import panelTs from '../src/import/datasetPanel.ts?raw';
 import yml from '../content/general/datasets.yml?raw';
@@ -89,4 +94,34 @@ describe('V20-B bộ dữ liệu mẫu', () => {
     await fetchDataset('penguins.csv', get);
     expect(new URL(asked).origin).toBe(new URL((globalThis as unknown as { location: { href: string } }).location.href).origin);
   });
+
+  it('không bao giờ thay bảng người chơi tự nạp: bộ mẫu lấy tên trống (penguins_2), nạp lại chỉ thay bản mẫu cũ', async () => {
+    const pg = await freshDb();
+    const db = { run: (sql: string) => runSandboxed(pg, sql), importCsv: (req: Parameters<typeof importCsv>[1], f: Blob) => importCsv(pg, req, f), dropImport: (t?: string) => dropImport(pg, t) };
+    const store = memoryStore();
+    const my = new MyData(db, store, () => {});
+    const d = datasets[0];
+    const marker = `sample/${d.file}`;
+    const sample = new Blob([fileOf(d.file)]);
+    // The player's own file named like the sample.
+    expect(await my.add(new Blob(['x\n1\n']), d.file)).toMatchObject({ ok: true, table: { table: d.table } });
+    const name = await my.sampleName(d.table, marker);
+    expect(name).toBe(`${d.table}_2`);
+    expect(await my.add(sample, marker, `${name}.csv`)).toMatchObject({ ok: true, table: { table: name, rows: d.rows } });
+    expect((await runSandboxed(pg, `SELECT count(*) FROM ${d.table}`)).rows).toEqual([[1]]); // the player's table is untouched
+    expect(await my.sampleTable(marker)).toBe(name);
+    // Loading again reuses (replaces) the earlier sample copy, never a third table.
+    expect(await my.sampleName(d.table, marker)).toBe(name);
+    // Every answer runs on the renamed copy.
+    for (const q of d.questions) expect((await runSandboxed(pg, onTable(q.solution, d, name))).rows.length).toBeGreaterThan(0);
+    expect(onTable('SELECT * FROM penguins p JOIN penguins_x y ON 1=1', { table: 'penguins' }, 'penguins_2')).toBe('SELECT * FROM penguins_2 p JOIN penguins_x y ON 1=1');
+    // A free name also skips a table still stored but not yet replayed.
+    const my2 = new MyData(db, memoryStore([{ ...store.records.get(d.table)!, table: d.table }]), () => {});
+    expect(await my2.sampleName(d.table, marker)).toBe(`${d.table}_2`);
+  });
+
+  it('service worker không precache datasets/ (tải khi bấm, sau đó nằm trong IndexedDB)', () => {
+    expect(offlineMjs).toContain(String.raw`_headers|datasets\/.*)$/`);
+  });
 });
+

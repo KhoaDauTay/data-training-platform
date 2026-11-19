@@ -1,7 +1,7 @@
 # V20-B (L176): public datasets the player can load into the Sandbox ("My data").
 # Only CC0 / CC BY / public domain, licence checked on the primary source page; source, version, licence and sha256 in
-# assets/THIRD_PARTY.md. The file sits in public/datasets/, comes only from the app's own origin and is imported only when the player asks
-# (the PWA service worker precaches it with every file in dist/, so keep sets small).
+# assets/THIRD_PARTY.md. The file sits in public/datasets/, comes only from the app's own origin and only when the player asks
+# (scripts/offline.mjs keeps datasets/ out of the service worker precache; once loaded the copy lives in IndexedDB).
 # `table` = the name the import gives `file` (tableNameFor): never a game table (tests/datasets.test.ts).
 # Questions are graded like "Thử ngay" (grader, 0 XP, nothing saved). Tasks may name columns in backticks, like drills.
 
@@ -19,6 +19,7 @@ ui:
   ok: { vi: Đúng rồi!, en: Correct! }
   empty: { vi: Viết câu SQL trước đã., en: Write a query first. }
   answer: { vi: Câu SQL của bạn, en: Your query }
+  table: { vi: Bảng của bộ này, en: This set's table }
 
 datasets:
   - id: penguins
