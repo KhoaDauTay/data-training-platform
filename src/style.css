@@ -393,3 +393,8 @@ svg[data-mascot].cq-hop { animation: cq-hop 320ms ease-out 80ms backwards; }
 
 /* v13 (product-design-v8 §2.1): the block a guide step talks about (the one right under its slot) gets a static sun outline; Boon's words name it too. */
 [data-guide-slot]:has(> [data-guide-mark]) + section { outline: 2px solid var(--sun); outline-offset: 2px; }
+/* L132: the "Your Lily" growth bar, the same in every engine (a native <progress> ignores accent-color in some). */
+.lily-bar { appearance: none; border: 0; border-radius: 999px; background: var(--code); overflow: hidden; }
+.lily-bar::-webkit-progress-bar { background: var(--code); }
+.lily-bar::-webkit-progress-value { background: var(--accent); border-radius: 999px; }
+.lily-bar::-moz-progress-bar { background: var(--accent); border-radius: 999px; }

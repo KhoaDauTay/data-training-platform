@@ -412,7 +412,7 @@ function lilyCard(stage: LilyStage, known: number, next: number | undefined): HT
     h('div', { class: 'min-w-0 flex-1' },
       h('p', { class: 'm-0 text-sm font-bold' }, t('lily.card')),
       h('p', { class: 'm-0 text-sm text-muted' }, line),
-      up === undefined ? null : h('progress', { class: 'mt-2 h-2 w-full accent-accent', max: String(goal), value: String(known), 'aria-labelledby': 'lily-grow' }),
+      up === undefined ? null : h('progress', { class: 'lily-bar mt-2 h-2 w-full', max: String(goal), value: String(known), 'aria-labelledby': 'lily-grow' }),
       up === undefined ? null : h('p', { id: 'lily-grow', class: 'm-0 text-xs text-muted' }, t('lily.growBar', { k: known, next: goal }))),
     up === undefined ? null : h('div', { class: 'flex w-20 shrink-0 flex-col items-center gap-1 text-center text-xs text-muted' },
       mascot('lily', 'idle', 'size-10 lily-shadow-fig', undefined, up), t('lily.nextShadow', { stage: t(STAGE_NAME[up]) })));
