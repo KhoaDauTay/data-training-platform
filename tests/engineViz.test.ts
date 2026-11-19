@@ -20,7 +20,7 @@ beforeAll(async () => {
   for (const n of V.NOSQL_VIZ) expect(await V.loadViz(n)).toBeTypeOf('function');
 });
 
-const POSTGRES = ['heapPage', 'mvccTimeline', 'hotChain', 'vacuumFlow', 'btree', 'walFlow', 'ginPostings', 'brinRanges', 'gistBoxes', 'planTree', 'lockMatrix', 'isolationAnomalies'];
+const POSTGRES = ['pg-heap-page', 'pg-mvcc-timeline', 'pg-hot-chain', 'pg-vacuum-flow', 'pg-btree', 'pg-wal-flow', 'pg-gin-postings', 'pg-brin-ranges', 'pg-gist-boxes', 'pg-plan-tree', 'pg-lock-matrix', 'pg-isolation-anomalies'];
 const NOSQL = V.NOSQL_VIZ;
 
 /** Checks one drawn frame: finite numbers, shapes and (estimated) labels inside the viewBox. */
@@ -103,14 +103,14 @@ describe('engineViz shell', () => {
     reduced = true;
     const host = document.createElement('div');
     document.body.append(host);
-    const v = V.vizFor('heapPage')!(host, { lang: 'en' });
+    const v = V.vizFor('pg-heap-page')!(host, { lang: 'en' });
     const [back, play, next] = [...host.querySelectorAll('button')];
-    expect(back.disabled).toBe(true);
+    expect(back.getAttribute('aria-disabled')).toBe('true');
     next.click();
     expect(v.index).toBe(1);
     host.querySelector('figure')!.dispatchEvent(new KeyboardEvent('keydown', { key: 'End', bubbles: true }));
     expect(v.index).toBe(v.count - 1);
-    expect(next.disabled).toBe(true);
+    expect(next.getAttribute('aria-disabled')).toBe('true');
     host.querySelector('figure')!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Home', bubbles: true }));
     expect(v.index).toBe(0);
     host.querySelector('figure')!.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }));
@@ -129,7 +129,7 @@ describe('engineViz shell', () => {
       reduced = !motion;
       const host = document.createElement('div');
       document.body.append(host);
-      const v = V.vizFor('heapPage')!(host, { lang: 'vi', start: i - 1 });
+      const v = V.vizFor('pg-heap-page')!(host, { lang: 'vi', start: i - 1 });
       v.go(i, true);
       const svg = host.querySelector('svg')!;
       if (motion) expect(svg.outerHTML).not.toBe(''); // mid-tween now
@@ -150,7 +150,7 @@ describe('engineViz shell', () => {
       { lp: '2', lp_off: '8150', lp_len: '41', lp_flags: '1', t_xmin: '9', t_xmax: '0', t_ctid: '(0,2)' },
       ...Array.from({ length: 9 }, (_, i) => ({ lp: String(i + 3), lp_off: String(8100 - i * 40), lp_len: '40', lp_flags: '1', t_xmin: '9', t_xmax: '0', t_ctid: `(0,${i + 3})` })),
     ];
-    const v = V.vizFor('heapPage')!(host, { lang: 'en', model: rows });
+    const v = V.vizFor('pg-heap-page')!(host, { lang: 'en', model: rows });
     const svg = host.querySelector('svg')!;
     for (let i = 0; i < v.count; i++) {
       v.go(i);
@@ -161,12 +161,25 @@ describe('engineViz shell', () => {
 });
 
 describe('engineViz ENG-CORE slot', () => {
+  it('names are pg-/mg-/dy- kebab case and the old camelCase names still resolve', () => {
+    for (const n of [...POSTGRES, ...NOSQL]) {
+      expect(n).toMatch(/^(pg|mg|dy)-[a-z0-9]+(-[a-z0-9]+)*$/);
+      expect(V.vizFor(V.aliasOf(n))).toBe(V.vizFor(n));
+    }
+    expect(V.aliasOf('pg-heap-page')).toBe('heapPage');
+    expect(V.aliasOf('mg-compound-index-esr')).toBe('compoundIndexESR');
+  });
   it('vizMount draws into the host and its cleanup removes it', async () => {
     const mount = await V.vizMount('partitionsHash', { h, s, getLang, reducedMotion: () => false, loadedGsap: () => gsapMod, loadGsap: () => {} });
     const host = document.createElement('div');
-    const stop = mount(host, { lang: 'en', reducedMotion: true });
+    const d = mount(host, { lang: 'en', reducedMotion: true, step: 2 });
     expect(host.querySelector('figure svg')).not.toBeNull();
-    stop();
+    expect(d.steps.length).toBeGreaterThanOrEqual(3);
+    expect(d.index).toBe(2);
+    expect(host.querySelector('[role=status]')!.textContent).toBe(d.steps[2].text);
+    d.go(0);
+    expect(d.index).toBe(0);
+    d.destroy();
     expect(host.childElementCount).toBe(0);
   });
 });

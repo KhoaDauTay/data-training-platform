@@ -6,7 +6,7 @@ import { box, cut, define, fill, line, num, type Shape, text, type Tone } from '
 /** Leaf pages of a two-level B-tree (sorted keys), the key to insert and the leaf capacity (keys per page). */
 export interface BtreeModel { leaves: number[][]; insert: number; cap?: number }
 type Key = { v: string; k: string; tone?: Tone };
-define<BtreeModel>('btree', { leaves: [[3, 8, 12, 15], [20, 25, 28, 29], [41, 44, 47]], insert: 27, cap: 4 }, (m, tr) => {
+define<BtreeModel>('pg-btree', { leaves: [[3, 8, 12, 15], [20, 25, 28, 29], [41, 44, 47]], insert: 27, cap: 4 }, (m, tr) => {
   const cap = m.cap ?? 4;
   const kw = (k: Key) => Math.max(18, k.v.length * 6.6 + 6);
   const leafW = (l: Key[]) => Math.max(40, l.reduce((a, k) => a + kw(k), 0) + 8);
@@ -77,7 +77,7 @@ define<BtreeModel>('btree', { leaves: [[3, 8, 12, 15], [20, 25, 28, 29], [41, 44
 
 // ── ginPostings ─────────────────────────────────────────────────────────────────────────────────────────────────
 export interface GinModel { docs: string[]; query: [string, string]; added: string }
-define<GinModel>('ginPostings', { docs: ['red apple pie', 'green apple', 'apple pie recipe', 'red wine', 'pie crust'], query: ['apple', 'pie'], added: 'apple tart' }, (m, tr) => {
+define<GinModel>('pg-gin-postings', { docs: ['red apple pie', 'green apple', 'apple pie recipe', 'red wine', 'pie crust'], query: ['apple', 'pie'], added: 'apple tart' }, (m, tr) => {
   const docs = m.docs.slice(0, 6);
   const words = (d: string) => [...new Set(d.toLowerCase().split(/\W+/).filter(Boolean))];
   const index = (ds: string[]) => {
@@ -128,7 +128,7 @@ define<GinModel>('ginPostings', { docs: ['red apple pie', 'green apple', 'apple 
 /** Rows like `brin_page_items` (blknum + the minmax summary) for the table in physical order, and a shuffled copy. */
 export interface BrinModel { ranges: { blk: unknown; min: unknown; max: unknown }[]; shuffled?: { blk: unknown; min: unknown; max: unknown }[]; query: [number, number]; pagesPerRange?: number }
 const RANGES = Array.from({ length: 8 }, (_, i) => ({ blk: i * 128, min: i * 1000 + 1, max: i * 1000 + 1000 }));
-define<BrinModel>('brinRanges', {
+define<BrinModel>('pg-brin-ranges', {
   ranges: RANGES, query: [2500, 3400],
   shuffled: RANGES.map((r, i) => ({ blk: r.blk, min: 3 + i * 7, max: 7990 - i * 11 })),
 }, (m, tr) => {
@@ -170,7 +170,7 @@ define<BrinModel>('brinRanges', {
 // ── gistBoxes ───────────────────────────────────────────────────────────────────────────────────────────────────
 /** Points in a 0..100 square, the KNN query point and k. */
 export interface GistModel { points: [number, number][]; query: [number, number]; k?: number }
-define<GistModel>('gistBoxes', {
+define<GistModel>('pg-gist-boxes', {
   points: [[8, 14], [18, 30], [12, 42], [40, 70], [52, 82], [46, 60], [78, 22], [88, 36], [70, 12]],
   query: [58, 48], k: 2,
 }, (m, tr) => {

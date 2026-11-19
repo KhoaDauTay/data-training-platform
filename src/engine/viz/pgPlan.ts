@@ -14,7 +14,7 @@ const PLAN_SAMPLE: PlanVizNode[] = [
   { id: 5, parent: 3, type: 'Hash', estRows: 120, cost: 3.2 },
   { id: 6, parent: 5, type: 'Index Scan', relation: 'customers', estRows: 120, cost: 3.2 },
 ];
-define<PlanVizNode[]>('planTree', PLAN_SAMPLE, (nodes0, tr) => {
+define<PlanVizNode[]>('pg-plan-tree', PLAN_SAMPLE, (nodes0, tr) => {
   const nodes = nodes0.slice(0, 9);
   const kids = (id: number) => nodes.filter((n) => n.parent === id);
   const root = nodes.find((n) => n.parent === null || !nodes.some((p) => p.id === n.parent)) ?? nodes[0];
@@ -78,7 +78,7 @@ const ABBR = ['AS', 'RS', 'RE', 'SUE', 'S', 'SRE', 'E', 'AE'];
 /** Row i, column j = 1 when mode i conflicts with mode j. */
 export const LOCK_CONFLICTS = ['00000001', '00000011', '00001111', '00011111', '00110111', '00111111', '01111111', '11111111'];
 export interface LockModel { waits: [string, string][]; cycle?: [string, string][] }
-define<LockModel>('lockMatrix', { waits: [['T2', 'T1'], ['T3', 'T1'], ['T3', 'T2']], cycle: [['T1', 'T2'], ['T2', 'T1']] }, (m, tr) => {
+define<LockModel>('pg-lock-matrix', { waits: [['T2', 'T1'], ['T3', 'T1'], ['T3', 'T2']], cycle: [['T1', 'T2'], ['T2', 'T1']] }, (m, tr) => {
   const C = 22;
   const X0 = 46;
   const Y0 = 30;
@@ -134,7 +134,7 @@ define<LockModel>('lockMatrix', { waits: [['T2', 'T1'], ['T3', 'T1'], ['T3', 'T2
 
 // ── isolationAnomalies ──────────────────────────────────────────────────────────────────────────────────────────
 type Ev = [lane: 0 | 1, label: string, tone?: Tone];
-define<Record<string, never>>('isolationAnomalies', {}, (_m, tr) => {
+define<Record<string, never>>('pg-isolation-anomalies', {}, (_m, tr) => {
   const lanes: Shape[] = [text('l1', 10, 52, 'T1', { b: true }), text('l2', 10, 108, 'T2', { b: true }), line('r1', 34, 52, 330, 52, { ink: 'edge' }), line('r2', 34, 108, 330, 108, { ink: 'edge' })];
   const story = (id: string, head: string, evs: Ev[], verdict: string, ok: boolean): Shape[] => [
     ...lanes,

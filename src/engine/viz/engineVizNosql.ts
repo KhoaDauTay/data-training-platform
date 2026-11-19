@@ -30,7 +30,7 @@ export function bsonRows(doc: Record<string, unknown>, depth = 0, out: Bson[] = 
   }
   return { rows: out, size };
 }
-define<Record<string, unknown>>('bsonDoc', {
+define<Record<string, unknown>>('mg-bson-doc', {
   _id: { $oid: '665f1c2ab4e0a1d2c3f4e5a6' }, name: 'Lan', age: 31, score: 4.5, tags: ['vip', 'new'], addr: { city: 'Hue' }, joined: { $date: '2026-10-31T00:00:00Z' },
 }, (doc, tr) => {
   const { rows: all, size } = bsonRows(doc);
@@ -80,7 +80,7 @@ define<Record<string, unknown>>('bsonDoc', {
 
 // ── compoundIndexESR ────────────────────────────────────────────────────────────────────────────────────────────
 export interface EsrModel { docs: { status: string; created: number; total: number }[]; eq: string; min: number }
-define<EsrModel>('compoundIndexESR', {
+define<EsrModel>('mg-compound-index-esr', {
   eq: 'A', min: 50,
   docs: [[1, 70], [2, 20], [3, 90], [4, 55], [5, 10], [6, 80]].flatMap(([c, t]) => [{ status: 'A', created: c, total: t }, { status: 'B', created: c, total: (t * 7) % 100 }]),
 }, (m, tr) => {
@@ -120,7 +120,7 @@ define<EsrModel>('compoundIndexESR', {
 
 // ── aggregationPipeline ─────────────────────────────────────────────────────────────────────────────────────────
 export interface PipeModel { input: number; stages: { op: string; arg?: string; out: number }[] }
-define<PipeModel>('aggregationPipeline', {
+define<PipeModel>('mg-aggregation-pipeline', {
   input: 1000,
   stages: [
     { op: '$match', arg: 'status: "PAID"', out: 240 }, { op: '$unwind', arg: '"$lines"', out: 610 },
@@ -159,7 +159,7 @@ define<PipeModel>('aggregationPipeline', {
 });
 
 // ── replicaSetOplog ─────────────────────────────────────────────────────────────────────────────────────────────
-define<{ writes: string[] }>('replicaSetOplog', { writes: ['insert x:1', 'update x:2'] }, (m, tr) => {
+define<{ writes: string[] }>('mg-replica-set-oplog', { writes: ['insert x:1', 'update x:2'] }, (m, tr) => {
   const N = { P: [170, 44], S1: [70, 150], S2: [270, 150] } as const;
   type St = { names: [string, string, string]; down?: boolean; logs: [number, number, number]; pull?: boolean; ack?: boolean };
   const draw = (s: St): Shape[] => {
@@ -199,7 +199,7 @@ define<{ writes: string[] }>('replicaSetOplog', { writes: ['insert x:1', 'update
 });
 
 // ── shardChunks ─────────────────────────────────────────────────────────────────────────────────────────────────
-define<{ shards: number }>('shardChunks', { shards: 3 }, (m, tr) => {
+define<{ shards: number }>('mg-shard-chunks', { shards: 3 }, (m, tr) => {
   const S = Math.min(3, Math.max(2, m.shards));
   const cw = 100;
   const sx = (i: number) => 10 + i * (cw + 10);
@@ -238,7 +238,7 @@ define<{ shards: number }>('shardChunks', { shards: 3 }, (m, tr) => {
 /** FNV-1a, 32 bit: a stand-in for DynamoDB's internal hash (only the "same key, same partition" property matters). */
 export const fnv = (s: string): number => [...s].reduce((h, c) => Math.imul(h ^ c.charCodeAt(0), 16777619) >>> 0, 2166136261);
 export interface PartModel { keys: string[]; partitions: number; hot: string }
-define<PartModel>('partitionsHash', { keys: ['CUST#1', 'CUST#2', 'CUST#3', 'CUST#4', 'CUST#5', 'CUST#6', 'CUST#7'], partitions: 4, hot: 'CUST#3' }, (m, tr) => {
+define<PartModel>('dy-partitions-hash', { keys: ['CUST#1', 'CUST#2', 'CUST#3', 'CUST#4', 'CUST#5', 'CUST#6', 'CUST#7'], partitions: 4, hot: 'CUST#3' }, (m, tr) => {
   const keys = m.keys.slice(0, 7);
   const P = Math.min(4, Math.max(2, m.partitions));
   const part = (k: string) => fnv(k) % P;
@@ -276,7 +276,7 @@ define<PartModel>('partitionsHash', { keys: ['CUST#1', 'CUST#2', 'CUST#3', 'CUST
 
 // ── gsiProjection (DynamoDB) ────────────────────────────────────────────────────────────────────────────────────
 type Item = { pk: string; sk: string; status?: string; total: number; note: string };
-define<{ items: Item[] }>('gsiProjection', {
+define<{ items: Item[] }>('dy-gsi-projection', {
   items: [
     { pk: 'CUST#1', sk: 'ORDER#2026-10-03', status: 'PAID', total: 120, note: 'gift wrap' },
     { pk: 'CUST#1', sk: 'ORDER#2026-10-21', status: 'SHIPPED', total: 45, note: '' },
@@ -313,7 +313,7 @@ define<{ items: Item[] }>('gsiProjection', {
 });
 
 // ── singleTableItems (DynamoDB) ─────────────────────────────────────────────────────────────────────────────────
-define<{ items: [string, string, string][] }>('singleTableItems', {
+define<{ items: [string, string, string][] }>('dy-single-table-items', {
   items: [
     ['CUST#1', 'PROFILE', 'Lan · VIP'], ['CUST#1', 'ORDER#2026-09-28', '45'], ['CUST#1', 'ORDER#2026-10-03', '120'], ['CUST#1', 'ORDER#2026-10-21', '60'],
     ['CUST#2', 'PROFILE', 'Minh'], ['CUST#2', 'ORDER#2026-10-09', '80'], ['ORDER#2026-10-03', 'ITEM#1', 'tea × 2'], ['ORDER#2026-10-03', 'ITEM#2', 'cup × 1'],

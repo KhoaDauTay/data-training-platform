@@ -18,7 +18,7 @@ export const HEAP_SAMPLE: HeapModel = {
 };
 const MAX_T = 5;
 const FLAG = ['unused', 'normal', 'redirect', 'dead'];
-define<HeapModel | HeapRow[]>('heapPage', HEAP_SAMPLE, (m0, tr) => {
+define<HeapModel | HeapRow[]>('pg-heap-page', HEAP_SAMPLE, (m0, tr) => {
   const m = Array.isArray(m0) ? { rows: m0 } : m0;
   const rows = m.rows.map((r) => ({
     lp: num(r.lp) ?? 0, off: num(r.lp_off) ?? 0, len: num(r.lp_len) ?? 0, flags: num(r.lp_flags) ?? 1,
@@ -121,7 +121,7 @@ define<HeapModel | HeapRow[]>('heapPage', HEAP_SAMPLE, (m0, tr) => {
 
 // ── hotChain ────────────────────────────────────────────────────────────────────────────────────────────────────
 export interface HotModel { xids: [number, number, number]; index: string; key: number }
-define<HotModel>('hotChain', { xids: [740, 741, 742], index: 'notes_pkey', key: 7 }, (m, tr) => {
+define<HotModel>('pg-hot-chain', { xids: [740, 741, 742], index: 'notes_pkey', key: 7 }, (m, tr) => {
   const W = 340;
   const Y = 96;
   const [x1, x2, x3] = m.xids;
@@ -175,7 +175,7 @@ define<HotModel>('hotChain', { xids: [740, 741, 742], index: 'notes_pkey', key: 
 
 // ── mvccTimeline ────────────────────────────────────────────────────────────────────────────────────────────────
 export interface MvccModel { xids: [number, number]; before: string; after: string }
-define<MvccModel>('mvccTimeline', { xids: [100, 101], before: 'price 10', after: 'price 12' }, (m, tr) => {
+define<MvccModel>('pg-mvcc-timeline', { xids: [100, 101], before: 'price 10', after: 'price 12' }, (m, tr) => {
   const [a, b] = m.xids;
   const LA = 44;
   const LB = 96;
@@ -215,7 +215,7 @@ define<MvccModel>('mvccTimeline', { xids: [100, 101], before: 'price 10', after:
 // ── vacuumFlow ──────────────────────────────────────────────────────────────────────────────────────────────────
 /** One string per heap page, one letter per tuple: l live, d dead, n new (inserted by a transaction still running). */
 export interface VacuumModel { pages: string[] }
-define<VacuumModel>('vacuumFlow', { pages: ['ldld', 'llln', 'ddll'] }, (m, tr) => {
+define<VacuumModel>('pg-vacuum-flow', { pages: ['ldld', 'llln', 'ddll'] }, (m, tr) => {
   const pages = m.pages.slice(0, 3);
   const PW = 100;
   const px = (i: number) => 10 + i * (PW + 10);
@@ -257,7 +257,7 @@ define<VacuumModel>('vacuumFlow', { pages: ['ldld', 'llln', 'ddll'] }, (m, tr) =
 // ── walFlow ─────────────────────────────────────────────────────────────────────────────────────────────────────
 /** Rows of `pg_get_wal_records_info` (start_lsn, resource_manager, record_type, fpi_length) and the checkpoint's redo LSN. */
 export interface WalModel { redo: string; records: { start_lsn: string; resource_manager: string; record_type: string; fpi_length: unknown }[] }
-define<WalModel>('walFlow', {
+define<WalModel>('pg-wal-flow', {
   redo: '0/1A2B000',
   records: [
     { start_lsn: '0/1A2B0D8', resource_manager: 'Heap', record_type: 'UPDATE', fpi_length: 7954 },

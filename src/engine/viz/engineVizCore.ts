@@ -24,7 +24,8 @@ let D: Deps;
 export const init = (deps: Deps): void => void (D = deps);
 
 // ── shapes ──────────────────────────────────────────────────────────────────────────────────────────────────────
-/** Fill + edge pairs (tokens contrast-tested in tests/theme.test.ts; text on any of them is --text). */
+/** Fill + edge pairs (tokens contrast-tested in tests/theme.test.ts; text on any of them is --text). Meaningful strokes are
+ * never --border/--border-strong (1.3–1.8:1, engine-ux-spec §1.2): neutral edges use --muted (≥ 4.5:1). */
 export type Tone = 'cell' | 'live' | 'dead' | 'new' | 'ptr' | 'warm' | 'free' | 'ghost' | 'plain';
 /** Text and line colours. */
 export type Ink = 'ink' | 'muted' | 'live' | 'dead' | 'new' | 'ptr' | 'warm' | 'edge';
@@ -40,12 +41,12 @@ export interface Diagram { title: string; w: number; h: number; frames: Frame[] 
 export type Tr = (vi: string, en: string) => string;
 
 const FILL: Record<Tone, [string, string]> = {
-  cell: ['--surface-2', '--border-strong'], live: ['--good-soft', '--good'], dead: ['--bad-soft', '--bad'],
-  new: ['--accent-soft', '--accent'], ptr: ['--info-soft', '--eng-ptr'], warm: ['--warn-soft', '--warn'],
-  free: ['--panel', '--border-strong'], ghost: ['--panel', '--border-strong'], plain: ['--panel', '--border-strong'],
+  cell: ['--surface-2', '--muted'], live: ['--good-soft', '--good'], dead: ['--bad-soft', '--bad'],
+  new: ['--accent-soft', '--accent'], ptr: ['--info-soft', '--info'], warm: ['--warn-soft', '--warn'],
+  free: ['--panel', '--muted'], ghost: ['--panel', '--muted'], plain: ['--panel', '--muted'],
 };
 const INK: Record<Ink, string> = {
-  ink: '--text', muted: '--muted', live: '--good', dead: '--bad', new: '--accent', ptr: '--eng-ptr', warm: '--warn', edge: '--border-strong',
+  ink: '--text', muted: '--muted', live: '--good', dead: '--bad', new: '--accent', ptr: '--info', warm: '--warn', edge: '--muted',
 };
 const TAG = { r: 'rect', t: 'text', l: 'line', c: 'circle', p: 'path' } as const;
 /** Model key → SVG attribute of the numbers a tween may move. */
@@ -157,9 +158,9 @@ const UI = {
   vi: { back: 'Trước', next: 'Tiếp', play: 'Chạy hết', pause: 'Dừng', step: 'Bước {i}/{n}', all: 'Mô tả từng bước', keys: 'Dùng ← → để chuyển bước' },
   en: { back: 'Back', next: 'Next', play: 'Play', pause: 'Pause', step: 'Step {i} of {n}', all: 'Every step in words', keys: 'Use ← → to change steps' },
 };
-const BTN = 'rounded-full border border-accent bg-panel px-3 py-1 font-bold text-accent hover:bg-accent-soft disabled:border-line disabled:text-disabled';
+const BTN = 'rounded-full border border-accent bg-panel px-3 py-1 font-bold text-accent hover:bg-accent-soft aria-disabled:border-line aria-disabled:text-disabled';
 /** Play: each step tweens (≤ 0.55 s) then holds; the whole step stays under 3 s (L101). Stops at the last step, never loops. */
-const HOLD_MS = 2200;
+const HOLD_MS = 2050; // the 0.55 s tween + 1.5 s rest (engine-ux-spec §6); 4 s per frame under reduced motion
 
 export function mount(host: HTMLElement, d: Diagram, lang: Lang, start = 0): VizHandle {
   const ui = UI[lang];
@@ -198,24 +199,26 @@ export function mount(host: HTMLElement, d: Diagram, lang: Lang, start = 0): Viz
     say.textContent = d.frames[to].say;
     counter.textContent = `${to + 1} / ${n}`;
     items.forEach((li, j) => (j === to ? li.setAttribute('aria-current', 'step') : li.removeAttribute('aria-current')));
-    back.disabled = to === 0;
-    next.disabled = to === n - 1;
-    play.disabled = to === n - 1 && timer === undefined;
+    // aria-disabled, not disabled: the control keeps its focus at either end (engine-ux-spec §6)
+    back.setAttribute('aria-disabled', String(to === 0));
+    next.setAttribute('aria-disabled', String(to === n - 1));
+    play.setAttribute('aria-disabled', String(to === n - 1 && timer === undefined));
   };
   const tick = (): void => {
     if (at >= n - 1 || !fig.isConnected) return halt();
     go(at + 1, true);
     if (at >= n - 1) {
       halt();
-      play.disabled = true;
+      play.setAttribute('aria-disabled', 'true');
       return;
     }
-    timer = window.setTimeout(tick, HOLD_MS);
+    timer = window.setTimeout(tick, D.reducedMotion() ? 4000 : HOLD_MS);
   };
   back.onclick = () => { halt(); go(at - 1); };
   next.onclick = () => { halt(); go(at + 1, true); };
   play.onclick = () => {
     if (timer !== undefined) return halt();
+    if (at >= n - 1) return;
     play.textContent = ui.pause;
     play.setAttribute('aria-pressed', 'true');
     tick();
@@ -234,6 +237,7 @@ export function mount(host: HTMLElement, d: Diagram, lang: Lang, start = 0): Viz
     el: fig,
     get count() { return n; },
     get index() { return at; },
+    steps: d.frames.map((f) => ({ text: f.say })),
     texts: d.frames.map((f) => f.say),
     go: (i, animate) => { halt(); go(i, animate); },
     destroy: () => { halt(); st.stop(); fig.remove(); },
