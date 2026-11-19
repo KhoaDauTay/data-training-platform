@@ -5,8 +5,10 @@ let current: Route = 'home';
 export const currentRoute = (): Route => current;
 
 let labHash = (): string | undefined => undefined;
+let started = false;
 /** Navigates through the hash, so Back/Forward work; a no-op when already there. The General workspace is LEARN_PLAY (v15 Q1). */
 export function go(r: Route): void {
+  if (!started) return; // FIX-1: a drill reopened at boot (main.ts) before the router: the URL already names it
   const lab = labHash();
   const to = r === 'play' && lab ? lab : hashOf(r);
   if (location.hash !== to) location.hash = to;
@@ -23,6 +25,7 @@ export function startRouter(
   general: { open(id: string): void; leave(): void },
 ): void {
   labHash = lab;
+  started = true;
   const apply = (r: Route, initial: boolean) => {
     current = r;
     writeJson(ROUTE_KEY, location.hash.startsWith(LEARN_PLAY) ? 'practice' : r); // never reopen a domain's workspace for General work; a drill's own hash reopens it

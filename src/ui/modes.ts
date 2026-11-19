@@ -6,7 +6,7 @@ import { getLang, isMac, keyLabels, locale, t } from '../i18n';
 import { LANE_XP } from '../lanes';
 import { applyResult, isSuccess, movedToday, nextCard, pickForSkill, retryItem, seedReview, type PracticeItem } from '../practice';
 import { CHAPTERS, chapterTitle, moduleTitle, nextTicket, SKILLS } from '../progress';
-import { drillHash, hashOf, INTERVIEW_PAGE, isInterviewPage, learnAdvOf, learnModuleOf, learnSkillOf, parseRoute, SHARE_MAX, shareHash } from '../route';
+import { drillHash, hashOf, INTERVIEW_PAGE, isInterviewId, isInterviewPage, learnAdvOf, learnModuleOf, learnSkillOf, parseRoute, SHARE_MAX, shareHash } from '../route';
 import { activeDomain } from '../domains';
 import {
   activeSchema, activeStep, activeTicket, generalWork, hintsShown, interviewClosed, ivHooks, ivItemId, readDraft, isStory, markWarmupDone, practiceFinished, reviewCount, reviewedDrills, reviewToday, session, today, warmupToday, type Mode, type PracticeRun,
@@ -161,7 +161,22 @@ export function startDrill(id: string, still: () => boolean = () => true): Promi
     if (btn) btn.disabled = false;
   });
 }
-export const startDrillMode = (ticket: Ticket, drill: Drill): void => enter({ kind: 'drill', ticket, drill, wrong: 0 });
+/**
+ * FIX-1 (L147): a reload on #/learn/play/<drill or g-iv-… id>, awaited by main.ts before the workspace's first editor, so the
+ * editor is built once for the drill (never the story's, then rebuilt). Loads only the chunks; `lab` seeds behind it.
+ * False (unknown id, a chunk that failed): main.ts falls back to openGeneral after the router starts.
+ */
+export async function bootGeneral(id: string): Promise<boolean> {
+  try {
+    if (isInterviewId(id)) (await loadIvUi()).reopen(id);
+    else await (await loadDrillUi()).openDrill(id, false);
+    if (isInterviewId(id)) void loadDrillUi().then((m) => m.prepareLab()).catch(() => {});
+    return generalWork();
+  } catch {
+    return false;
+  }
+}
+export const startDrillMode =(ticket: Ticket, drill: Drill): void => enter({ kind: 'drill', ticket, drill, wrong: 0 });
 
 /**
  * v17 I5 (L144): the interview room UI (src/ui/interviewView.ts) and its content (src/interviewSources.ts) are lazy chunks

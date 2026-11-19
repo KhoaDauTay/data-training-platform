@@ -72,8 +72,10 @@ export function initDrill(deps: DrillDeps): void {
 }
 
 /** Seeds `lab` (once per worker) and loads the General content, then opens drill `id` in the workspace. */
-export async function openDrill(id: string): Promise<void> {
-  const g = await prepareLab();
+export async function openDrill(id: string, waitLab = true): Promise<void> {
+  // FIX-1 (L147): a reload on a drill opens it before the first editor is built; `lab` seeds behind it (requests name it).
+  const g = waitLab ? await prepareLab() : await d$.loadGeneral();
+  if (!waitLab) void prepareLab().catch(() => {});
   const drill = g.byId.get(id);
   if (!drill) throw new Error(`unknown drill ${id}`);
   d$.startDrillMode(drillTicket(drill), drill);

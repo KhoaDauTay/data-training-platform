@@ -18,7 +18,7 @@ import { generalHash, isStory, parseSessionNote, playSchema, session, sessionNot
 import { localStore, readJson, writeJson } from './storage';
 import { domainHash, domainOfHash, drillOfHash, isInterviewId, sharedOf, type Route } from './route';
 import type { Ticket } from './tickets';
-import { dropGeneral, initModes, interviewStep, ivPresence, onPracticeWrong, onSolved, openShared, renderLeft, renderReviewButton, reopenInterview, startDrill, startLane, startSandbox } from './ui/modes';
+import { bootGeneral, dropGeneral, initModes, interviewStep, ivPresence, onPracticeWrong, onSolved, openShared, renderLeft, renderReviewButton, reopenInterview, startDrill, startLane, startSandbox } from './ui/modes';
 import './ui/me'; // v16 (L142): #/me nav item and page section; the page itself is the lazy meView chunk
 import { earlyOffer } from './ui/chapterView';
 import { renderNotebook, toggleNotebook } from './ui/notebook';
@@ -561,7 +561,13 @@ uiReady = true; // nothing awaited since loadContent(), so no DB callback was mi
 rerender();
 prefetchArt(); // the art chunk (scene, map, completion scenes) once the first screen is up (Plan 8b)
 if (app.dbStatus === 'ready') void loadColumns();
-work.setTicket(selected(), app.stepIndex);
+// A reload on a drill (#/learn/play/<id>) reopens that drill with its saved draft; the session itself is never saved.
+// v17: an interview question or take-home step (`g-iv-…`) reopens its run from the device pref instead (never the Save).
+// FIX-1 (L147): opened here, before the workspace's first editor, so that editor is the drill's (never the story's, rebuilt
+// a moment later under the player's first keystrokes); lab seeds behind it. A failure falls back to openGeneral below.
+const reopen = drillOfHash(location.hash);
+const reopened = reopen ? await bootGeneral(reopen) : false;
+if (!reopened) work.setTicket(selected(), app.stepIndex);
 initLightDismiss(); // L140: a click on any modal dialog's backdrop closes it like Esc
 initSidebar(); // its Esc (close the overlay) goes before the tour's
 initTour();
@@ -581,10 +587,7 @@ startRouter((r, initial) => {
   }
   ivPresence(r === 'play' && !document.hidden); // FIX-1: the interview clock runs only in the room
 }, generalHash, { open: openGeneral, leave: dropGeneral });
-// A reload on a drill (#/learn/play/<id>) reopens that drill with its saved draft; the session itself is never saved.
-// v17: an interview question or take-home step (`g-iv-…`) reopens its run from the device pref instead (never the Save).
-const reopen = drillOfHash(location.hash);
-if (reopen) openGeneral(reopen);
+if (reopen && !reopened) openGeneral(reopen);
 document.addEventListener('visibilitychange', () => ivPresence(!document.hidden && currentRoute() === 'play'));
 // The Sandbox or a lane task open at the last pagehide (a reload) comes back on the same domain's workspace; the note is read once.
 const note = parseSessionNote(readJson<unknown>(SESSION_KEY));

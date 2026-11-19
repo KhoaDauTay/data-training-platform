@@ -1,10 +1,14 @@
-import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { loadDomain, loadTickets, loadTicketTemplates } from '../src/content';
 import { peopleOf } from '../src/people';
 import { CHAPTERS } from '../src/progress';
 import { BTN_SUBMIT, CHAPTER_COLOR, chapterColor, cx, DEPT, deptColor, thanksKey } from '../src/theme';
 import css from '../src/style.css?raw';
+
+// Tailwind's palette (oklch), read from disk: Vitest turns other .css imports into '' and tsconfig has no Node types.
+const nodeFs = 'node:fs';
+const { readFileSync } = (await import(/* @vite-ignore */ nodeFs)) as { readFileSync(path: string, enc: 'utf8'): string };
+const twTheme = readFileSync('node_modules/tailwindcss/theme.css', 'utf8');
 
 /** WCAG 2.x relative luminance and contrast ratio. */
 const lum = (hex: string): number => {
@@ -199,7 +203,7 @@ describe('FIX-1 (L147, ui-ux-v7 P1 leftovers): type steps, shadow tokens, chip/a
     return `#${lin.map((c) => Math.min(1, Math.max(0, c))).map((c) => (c <= 0.0031308 ? 12.92 * c : 1.055 * c ** (1 / 2.4) - 0.055))
       .map((c) => Math.round(c * 255).toString(16).padStart(2, '0')).join('')}`;
   }
-  const PALETTE: Record<string, string> = Object.fromEntries([...readFileSync('node_modules/tailwindcss/theme.css', 'utf8')
+  const PALETTE: Record<string, string> = Object.fromEntries([...twTheme
     .matchAll(/--color-([a-z]+-\d+):\s*oklch\(([\d.]+)%\s+([\d.]+)\s+([\d.]+)\)/g)]
     .map((m) => [m[1], oklchHex(Number(m[2]) / 100, Number(m[3]), Number(m[4]))]));
   const pick = (cls: string, re: RegExp): string => PALETTE[cls.match(re)?.[1] ?? ''];
