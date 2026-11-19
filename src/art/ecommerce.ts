@@ -7,7 +7,7 @@ import type * as Load from './load';
 import type { Ctx } from './logistics';
 
 // Main-bundle values come in through initArt (only `import type` from main modules, Plan 6 U3: a value import makes
-// Rolldown split main into shared chunks). src/ui/ecomArt.ts calls it right after the chunk loads.
+// Rolldown split main into shared chunks). src/ui/domainArt.ts calls it right after the chunk loads.
 let t: typeof I18n.t;
 let chapterColor: typeof Theme.chapterColor;
 let s: typeof Svg.s;
@@ -319,7 +319,7 @@ function drawStore(st: EcomArtState, ambient: boolean, lit: boolean, task = fals
 /**
  * The shop and warehouse. `ambient` (the Overview, ui-ux-v5 B3): the lanterns sway and the scooter leaves the kerb and
  * comes back (CSS loops, off under reduced motion), and the street bleeds past the viewBox so a wide card shows no
- * empty bands (ui/ecomArt.ts clips it). The dock draws it still. `lit`: the lanterns glow at full strength.
+ * empty bands (ui/domainArt.ts clips it). The dock draws it still. `lit`: the lanterns glow at full strength.
  */
 export const storeScene = (st: EcomArtState, ambient = true, lit = false): SVGSVGElement => drawStore(st, ambient, lit).svg;
 

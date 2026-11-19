@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { parse } from 'yaml';
 import type { Ctx } from '../src/art/logistics';
-import { BRANCHES, FIN_TEXT, openBranches, TIER } from '../src/art/finance';
+import { bend, BRANCHES, FIN_TEXT, HQ, openBranches, TIER } from '../src/art/finance';
 import type { Harbor } from '../src/scene';
 import { chapterColor } from '../src/theme';
 import type { Ticket } from '../src/tickets';
@@ -17,6 +17,19 @@ describe('bản đồ chi nhánh Finance (product-design-v9 §5.3)', () => {
     expect([...openBranches(new Set())].sort()).toEqual(['Da Nang', 'Hoi An']);
     for (let ch = 1; ch <= 6; ch++) expect(BRANCHES.filter((b) => b.opens === ch)).toHaveLength(1);
     expect(openBranches(new Set([1, 2, 3, 4, 5, 6])).size).toBe(BRANCHES.length);
+  });
+
+  it('không tuyến nào đi qua chấm của chi nhánh khác (cách tâm > 12)', () => {
+    for (const b of BRANCHES) {
+      if (b === HQ) continue;
+      const k = bend(b);
+      for (let i = 1; i < 100; i++) {
+        const u = i / 100;
+        const x = (1 - u) ** 2 * HQ.x + 2 * (1 - u) * u * k.x + u * u * b.x;
+        const y = (1 - u) ** 2 * HQ.y + 2 * (1 - u) * u * k.y + u * u * b.y;
+        for (const o of BRANCHES) if (o !== b && o !== HQ) expect(Math.hypot(x - o.x, y - o.y), `${b.name} → ${o.name}`).toBeGreaterThan(12);
+      }
+    }
   });
 
   it('nhãn sao trên hũ = các chương ★ (tier) của content/domains/fin/chapters.yml', () => {

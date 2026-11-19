@@ -68,7 +68,7 @@ export const BRANCHES = [
   { name: 'Da Nang', opens: 0, x: 420, y: 204, lx: 420, ly: 236 },
   { name: 'Hoi An', opens: 0, x: 508, y: 188, lx: 516, ly: 220 },
   { name: 'Hue', opens: 1, x: 214, y: 196, lx: 214, ly: 228 },
-  { name: 'Lien Chieu', opens: 2, x: 340, y: 182, lx: 326, ly: 214 },
+  { name: 'Lien Chieu', opens: 2, x: 336, y: 224, lx: 320, ly: 256 },
   { name: 'Tam Ky', opens: 3, x: 614, y: 176, lx: 614, ly: 208 },
   { name: 'Dong Ha', opens: 4, x: 92, y: 214, lx: 92, ly: 246 },
   { name: 'Quang Ngai', opens: 5, x: 742, y: 160, lx: 742, ly: 192 },
@@ -79,6 +79,11 @@ const HQ = BRANCHES[0];
 /** The shoreline, west (north) to east (south), with Son Tra jutting out past Da Nang. */
 const SHORE = 'M-10 150 C60 160 120 176 180 164 C240 152 280 140 320 146 C350 150 360 134 384 124 C404 116 418 132 410 150 C404 164 440 162 470 156 C540 142 600 132 680 118 C760 104 830 92 900 84 C930 80 960 76 990 74';
 const LAND = `${SHORE} L990 310 L-10 310 Z`;
+
+/** Control point of the route from the head office to `b`: bends seaward, over the labels, more for a farther branch. */
+export const bend = (b: Branch): { x: number; y: number } =>
+  ({ x: (HQ.x + b.x) / 2, y: Math.min(HQ.y, b.y) - 16 - Math.abs(b.x - HQ.x) / 8 });
+export { HQ };
 
 export const openBranches = (passed: ReadonlySet<number>): Set<string> =>
   new Set(BRANCHES.filter((b) => b.opens === 0 || passed.has(b.opens)).map((b) => b.name));
@@ -101,10 +106,9 @@ export function map(st: FinArtState, ring = true): SVGSVGElement {
   const last = ring ? BRANCHES.filter((b) => b.opens && open.has(b.name)).pop() : undefined;
   const route = (b: Branch): SVGPathElement => {
     const isOpen = open.has(b.name);
-    const mx = (HQ.x + b.x) / 2;
-    const my = Math.min(HQ.y, b.y) - 16 - Math.abs(b.x - HQ.x) / 8; // bends seaward, over the labels
+    const k = bend(b);
     return s('path', {
-      d: `M${HQ.x} ${HQ.y} Q${mx} ${my} ${b.x} ${b.y}`, fill: 'none', 'stroke-width': 3, 'stroke-linecap': 'round',
+      d: `M${HQ.x} ${HQ.y} Q${k.x} ${k.y} ${b.x} ${b.y}`, fill: 'none', 'stroke-width': 3, 'stroke-linecap': 'round',
       class: isOpen ? colourOf(b).stroke : 'stroke-slate-400 dark:stroke-slate-500',
       'stroke-dasharray': isOpen ? false : '6 6', 'data-branch': b.name,
     });
@@ -148,7 +152,7 @@ export function map(st: FinArtState, ring = true): SVGSVGElement {
             class: isOpen ? colourOf(b).fill : 'fill-slate-400 dark:fill-slate-500', 'data-branch': b.name,
           }),
           s('text', { x: b.lx, y: b.ly, class: isOpen ? 'fill-slate-900 dark:fill-slate-100' : 'fill-slate-600 dark:fill-slate-300', 'data-branch': b.name }, b.name),
-          b === HQ && s('text', { x: b.lx, y: b.ly + 16, 'font-size': 12, 'font-weight': 600, class: 'fill-teal-800 dark:fill-teal-300' }, tx('hq')),
+          b === HQ && s('text', { x: b.lx, y: b.ly + 17, 'font-size': 14, 'font-weight': 600, class: 'fill-teal-800 dark:fill-teal-300' }, tx('hq')),
         ]);
       })));
 }
@@ -417,7 +421,7 @@ export function build(c: Ctx): void {
       h('p', { class: 'm-0 text-base font-bold sm:text-lg' }, (c.rankAfter.career ?? c.rankAfter.tier)?.[getLang()] ?? t('career.intern')));
     d.card.style.opacity = '0';
   } else {
-    // the teller window and the jar (same aspect as the full scene); the coin leaves the counter ledge, arcs over to the lid's slot
+    // the teller window and the jar (the dock's 520×276 frame, a little wider); the coin leaves the counter ledge, arcs over to the lid's slot
     counter.svg.setAttribute('viewBox', '290 54 580 308');
     d.path = s('path', { d: `M440 280C500 120 640 64 ${JX} 98`, fill: 'none' });
     const fill = chapterColor(c.tk.chapter).fill;
