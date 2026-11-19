@@ -1,0 +1,4 @@
+# Module names of the PostgreSQL track, in display order (src/engine/content.ts parseModules). One entry per `module:` used.
+- id: types
+  vi: Kiểu dữ liệu
+  en: Data types
