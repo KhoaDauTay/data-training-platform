@@ -57,6 +57,8 @@ export const vi = {
   'lesson.collapse': 'Thu gọn',
   'lesson.syntax': 'Cú pháp:',
   'lesson.example': 'Ví dụ',
+  'lesson.concept': 'Ý chính',
+  'lesson.explain': 'Ví dụ chạy thế nào',
   'lesson.runExample': 'Chạy ví dụ',
   'lesson.mistake': 'Lỗi hay gặp',
   'lesson.cues': 'Dấu hiệu trong đề',

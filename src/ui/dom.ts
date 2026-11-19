@@ -62,3 +62,29 @@ export function reducedMotion(): boolean {
 
 /** Number in the current UI language with at most `digits` decimals: 25677 → "25.677" (vi) / "25,677" (en); 0.125 → "0,13" / "0.13". */
 export const fmt = (n: number, digits = 2): string => n.toLocaleString(locale(), { maximumFractionDigits: digits });
+
+type Box = { left: number; top: number; right: number; bottom: number };
+/** L140: a point outside the dialog's box. Clicks on the dialog's own padding or scrollbar land on the dialog too, inside its box. */
+export const outsideBox = (r: Box, x: number, y: number): boolean => x < r.left || x > r.right || y < r.top || y > r.bottom;
+
+/**
+ * L140 (Track H): every modal <dialog> closes on a click on its backdrop, through the Esc path (a cancelable `cancel`, then
+ * close()), so each dialog's own cancel/close handlers run and focus returns as with Esc. Both the press and the release must
+ * be on the backdrop: a drag or a text selection that starts inside and ends outside never closes. The non-modal notebook is
+ * left out on purpose (it stays open while the player types in the editor); popovers light-dismiss natively. Once, at startup.
+ */
+export function initLightDismiss(): void {
+  const backdropOf = (e: MouseEvent): HTMLDialogElement | null => {
+    const d = e.target;
+    return d instanceof HTMLDialogElement && d.matches(':modal') && outsideBox(d.getBoundingClientRect(), e.clientX, e.clientY) ? d : null;
+  };
+  let down: HTMLDialogElement | null = null;
+  document.addEventListener('pointerdown', (e) => (down = backdropOf(e)), true);
+  document.addEventListener('click', (e) => {
+    const d = backdropOf(e);
+    const ok = d && d === down;
+    down = null;
+    if (!ok) return;
+    if (d.dispatchEvent(new Event('cancel', { cancelable: true }))) d.close();
+  }, true);
+}

@@ -262,10 +262,9 @@ export function initSidebar(): void {
     btn.setAttribute('aria-expanded', 'false');
     renderSidebar(lastRoute);
   });
-  // The backdrop (the dialog box itself has no padding) and any followed link close it.
+  // Any followed link closes it; the backdrop is initLightDismiss() (L140).
   drawer.addEventListener('click', (e) => {
-    const el = e.target as Element;
-    if (el === drawer || el.closest('a[href]:not([aria-disabled])')) drawer.close();
+    if ((e.target as Element).closest('a[href]:not([aria-disabled])')) drawer.close();
   });
   matchMedia(WIDE).addEventListener('change', () => {
     if (drawer.open) drawer.close();

@@ -20,7 +20,7 @@ import { domainOfHash, type Route } from './route';
 import type { Ticket } from './tickets';
 import { initModes, onPracticeWrong, onSolved, renderLeft, renderReviewButton, startDrill } from './ui/modes';
 import { renderNotebook, toggleNotebook } from './ui/notebook';
-import { byId, h } from './ui/dom';
+import { byId, h, initLightDismiss } from './ui/dom';
 import { errorText } from './ui/feedback';
 import { leftHello, leftHome, renderHome, syncLily } from './ui/homeView';
 import { initStage, playCompletion, relabelStage } from './ui/stage';
@@ -531,6 +531,7 @@ rerender();
 prefetchArt(); // the art chunk (scene, map, completion scenes) once the first screen is up (Plan 8b)
 if (app.dbStatus === 'ready') void loadColumns();
 work.setTicket(selected(), app.stepIndex);
+initLightDismiss(); // L140: a click on any modal dialog's backdrop closes it like Esc
 initSidebar(); // its Esc (close the overlay) goes before the tour's
 initTour();
 // Plan 9 D9-12: the domain in the URL, else the last one opened (General pages keep it), before the router builds hashes.

@@ -60,6 +60,8 @@ export const en: Record<Key, Msg> = {
   'lesson.collapse': 'Collapse',
   'lesson.syntax': 'Syntax:',
   'lesson.example': 'Example',
+  'lesson.concept': 'Key idea',
+  'lesson.explain': 'How the example works',
   'lesson.runExample': 'Run the example',
   'lesson.mistake': 'Common mistake',
   'lesson.cues': 'Signs in a request',
