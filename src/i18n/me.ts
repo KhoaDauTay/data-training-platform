@@ -68,8 +68,8 @@ const vi = {
   'co.ecommerce': 'sàn Chợ Lồng Đèn',
   'co.finance': 'công ty Tín dụng Hũ Bạc',
   'pf.title': 'Portfolio SQL',
-  'pf.intro': 'Một file Markdown gồm câu hỏi nghiệp vụ, câu SQL đã đạt chấm và kết luận của từng việc, sẵn để đưa lên GitHub. Chỉ có SQL đã đạt; không có dữ liệu bạn tự nhập.',
-  'pf.download': 'Tải portfolio {domain} (.md)',
+  'pf.intro': 'Một file .zip: README.md gồm câu hỏi nghiệp vụ, câu SQL đã đạt chấm và kết luận của từng việc, cùng ảnh các thẻ Bảng điều hành, sẵn để đưa lên GitHub. Chỉ có SQL đã đạt; không có dữ liệu bạn tự nhập.',
+  'pf.download': 'Tải portfolio {domain} (.zip)',
   'pf.count': '{n} việc có SQL đã đạt',
   'pf.locked': 'Mở cùng chứng nhận {domain}',
   'pf.h1': 'Portfolio SQL: {domain}',
@@ -80,7 +80,7 @@ const vi = {
   'pf.step': 'Bước {i}: {title}',
   'pf.conclusion': 'Kết luận',
   'pf.cards': 'Bảng điều hành',
-  'pf.cardsNote': 'Chỉ có SQL của thẻ; ảnh thẻ tải riêng trong Bảng điều hành. Thẻ dùng dữ liệu bạn tự nhập không có ở đây.',
+  'pf.cardsNote': 'Ảnh thẻ nằm trong thư mục cards/, chụp lúc xuất; thẻ chưa từng chạy trên máy này hoặc chạy quá lâu chỉ có SQL. Thẻ dùng dữ liệu bạn tự nhập không có ở đây.',
   'data.note': 'Lịch ngày học, lỗi hay gặp và số lần nộp chỉ ở trình duyệt này: Xuất tiến độ không mang theo chúng.',
   'loadingDomains': 'Đang tải nội dung lĩnh vực…',
   'dash.exported': 'Đã xuất {n} thẻ.',
@@ -94,6 +94,15 @@ const vi = {
   'dash.pngWait': 'Thẻ chưa có kết quả để chụp. Chạy thẻ trước.',
   'dash.pngDone': 'Đã tải ảnh thẻ {title}.',
   'png.footer': 'BoonData · dữ liệu hư cấu',
+  // V19-D (L170)
+  'pf.shooting': 'Đang chụp ảnh thẻ {i}/{n}…',
+  'pf.saved': 'Đã tải portfolio: {n} việc, {p} ảnh thẻ.',
+  'pf.failed': 'Chưa tạo được file. Thử lại.',
+  'pf.th.download': 'Tải portfolio take-home (.md)',
+  'pf.th.count': 'Bài take-home đã nộp: {n}',
+  'pf.th.none': 'Nộp một bài take-home để có portfolio take-home.',
+  'pf.th.go': 'Mở Phòng phỏng vấn',
+  'pf.th.saved': 'Đã tải portfolio take-home: {n} bài.',
 };
 export type MeKey = keyof typeof vi;
 
@@ -161,8 +170,8 @@ const en: Record<MeKey, string> = {
   'co.ecommerce': 'the Lantern Market marketplace',
   'co.finance': 'Silver Jar Credit',
   'pf.title': 'SQL portfolio',
-  'pf.intro': 'One Markdown file with each task’s business question, the SQL that passed the grader and its conclusion, ready for GitHub. Passed SQL only; none of the data you imported.',
-  'pf.download': 'Download the {domain} portfolio (.md)',
+  'pf.intro': 'One .zip file: a README.md with each task’s business question, the SQL that passed the grader and its conclusion, plus pictures of your dashboard cards, ready for GitHub. Passed SQL only; none of the data you imported.',
+  'pf.download': 'Download the {domain} portfolio (.zip)',
   'pf.count': '{n} tasks with passed SQL',
   'pf.locked': 'Opens with the {domain} certificate',
   'pf.h1': 'SQL portfolio: {domain}',
@@ -173,7 +182,7 @@ const en: Record<MeKey, string> = {
   'pf.step': 'Step {i}: {title}',
   'pf.conclusion': 'Conclusion',
   'pf.cards': 'Dashboard',
-  'pf.cardsNote': 'Card SQL only; download card pictures from the dashboard. Cards on data you imported are left out.',
+  'pf.cardsNote': 'Card pictures are in the cards/ folder, taken at export; a card never run on this device or too slow has its SQL only. Cards on data you imported are left out.',
   'data.note': 'Study days, frequent mistakes and submit counts stay in this browser: Export progress does not carry them.',
   'loadingDomains': 'Loading the domains’ content…',
   'dash.exported': 'Exported {n} cards.',
@@ -187,6 +196,15 @@ const en: Record<MeKey, string> = {
   'dash.pngWait': 'The card has no result to capture yet. Run it first.',
   'dash.pngDone': 'Saved the picture of {title}.',
   'png.footer': 'BoonData · fictional data',
+  // V19-D (L170)
+  'pf.shooting': 'Taking card picture {i}/{n}…',
+  'pf.saved': 'Portfolio saved: {n} tasks, {p} card pictures.',
+  'pf.failed': 'Could not make the file. Try again.',
+  'pf.th.download': 'Download the take-home portfolio (.md)',
+  'pf.th.count': 'Take-homes handed in: {n}',
+  'pf.th.none': 'Hand in a take-home to get a take-home portfolio.',
+  'pf.th.go': 'Open the interview room',
+  'pf.th.saved': 'Take-home portfolio saved: {n} take-homes.',
 };
 
 export const ME_DICT = { vi: vi as Record<MeKey, string>, en };

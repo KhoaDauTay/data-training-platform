@@ -15,10 +15,12 @@ import type * as Tickets from '../tickets';
 import type { Ticket } from '../tickets';
 import type * as Dom from './dom';
 import type * as Icons from './icons';
+import type { QueryResult } from '../db/run';
+import type * as IvPrefs from '../interviewPrefs';
 import { meText, type MeKey } from '../i18n/me';
 import {
   calendar, certificateSvg, dashFile, importDash as readDashFile, portfolioEntries, portfolioMd, strengths, topErrors, touchesSandbox,
-  trySummary, type CertScope,
+  trySummary, type CertScope, type PortfolioEntry,
 } from '../me';
 
 /**
@@ -39,6 +41,9 @@ export interface MeDeps {
   DOMAINS: typeof Domains.DOMAINS; DOMAIN_ID: typeof Domains.DOMAIN_ID; activeDomain: typeof Domains.activeDomain;
   domainSlot: typeof SaveMod.domainSlot; readDashboard: typeof Dash.readDashboard; MAX_CARDS: number;
   hashOf: typeof Route.hashOf; importedNames: () => string[];
+  /** V19-D (L170): portfolio card pictures and take-homes. */
+  run: (sql: string, dom: DomainId) => Promise<QueryResult>; cardBody: (c: Card, r: QueryResult) => HTMLElement; ranHere: (c: Card) => boolean;
+  loadInterview: typeof Content.loadInterview; interviewPrefs: () => IvPrefs.InterviewPrefs; passedTakeHomes: typeof IvPrefs.passedTakeHomes;
   cls: { CARD: string; BTN_GO: string; BTN_SECONDARY: string; cx: (...p: (string | false | null | undefined)[]) => string };
 }
 let d: MeDeps;
@@ -51,6 +56,8 @@ const readName = (): string => {
   return typeof v === 'string' ? v.slice(0, 60) : '';
 };
 const isDrill = (id: string): boolean => id.startsWith('g-');
+/** V19-D (L170): card pictures, the zip and the take-home file, a lazy chunk of their own (`me` is near its budget). */
+const pngChunk = (): Promise<typeof import('./portfolioPng')> => import('./portfolioPng');
 
 // ---------- domain content: loaded once, only for domains the player has played ----------
 
@@ -285,27 +292,101 @@ function certCard(list: Scope[], waiting: boolean): HTMLElement {
     d.h('ul', { class: 'm-0 grid list-none gap-3 p-0' }, ...list.map(item)));
 }
 
+/** The portfolio line being built (one at a time) and the last sentence about it (role=status). */
+let pfBusy: CertScope | undefined;
+let pfMsg = '';
+function pfSay(msg: string): void {
+  pfMsg = msg;
+  d.announce(msg);
+  d.rerender();
+}
+
+/**
+ * V19-D (L170): a domain portfolio is a zip, README.md + cards/<id>.png (GitHub strips `data:` images in Markdown). Only
+ * cards that ran on this device, are not marked slow and read no imported data are run again for a picture (imported SQL
+ * never runs by itself, review-log Plan 5); the others keep their SQL only.
+ */
+async function savePortfolio(s: Scope & { scope: DomainId }, entries: PortfolioEntry[]): Promise<void> {
+  const dom = s.scope;
+  const lang = d.getLang();
+  pfBusy = dom;
+  try {
+    const imported = await d.importedNames(); // FIX-1: stored imports too, even before restore ends
+    const cards = d.domainSlot(d.app.save, dom).dashboard.cards;
+    const shoot = cards.filter((c) => !c.slow && d.ranHere(c) && !touchesSandbox(c.sql, imported));
+    const pp = await pngChunk();
+    const pics = await pp.cardPictures(dom, shoot, {
+      run: d.run, cardBody: d.cardBody, cardClass: d.cls.cx(d.cls.CARD, 'flex flex-col gap-3 p-4'), footer: m('png.footer'),
+      onCard: (i) => pfSay(m('pf.shooting', { i: i + 1, n: shoot.length })),
+    });
+    const at = new Date();
+    const md = portfolioMd({
+      lang, scope: dom, what: s.what, name: readName(), date: at.toLocaleDateString(d.locale()), entries, cards, imported, pics: new Set(pics.keys()),
+    });
+    download(`boondata-${dom}-portfolio.zip`, pp.portfolioZip(md, pics, at));
+    pfBusy = undefined;
+    pfSay(m('pf.saved', { n: entries.length, p: pics.size }));
+  } catch {
+    pfBusy = undefined;
+    pfSay(m('pf.failed'));
+  }
+}
+
+/** V19-D (L170): the take-homes the learner handed in, as one Markdown file; only on their own click (interviewPrefs). */
+async function saveTakeHomes(): Promise<void> {
+  const lang = d.getLang();
+  pfBusy = 'general';
+  try {
+    const [content, pp, imported] = await Promise.all([d.loadInterview(), pngChunk(), d.importedNames()]);
+    const prefs = d.interviewPrefs();
+    const entries = d.passedTakeHomes(prefs).flatMap((r) => {
+      const th = content.takeHomes.find((x) => x.id === r.id);
+      if (!th) return [];
+      const live = prefs.live[r.id]?.phase === 'done' ? prefs.live[r.id] : undefined; // a run started again holds drafts, not passed SQL
+      return [{
+        title: th.title[lang], brief: th.brief[lang], text: r.text,
+        steps: th.steps.map((st) => {
+          const sql = live?.passed[st.id];
+          return { title: st.title[lang], ...(sql && !touchesSandbox(sql, imported) ? { sql } : {}) };
+        }),
+        rubric: th.rubric.map((line, i) => ({ line: line[lang], ticked: r.checks.includes(i) })),
+      }];
+    });
+    const md = pp.takeHomeMd({ lang, name: readName(), date: new Date().toLocaleDateString(d.locale()), entries });
+    download('boondata-take-home-portfolio.md', new Blob([md], { type: 'text/markdown' }));
+    pfBusy = undefined;
+    pfSay(m('pf.th.saved', { n: entries.length }));
+  } catch {
+    pfBusy = undefined;
+    pfSay(m('pf.failed'));
+  }
+}
+
 function portfolioCard(list: Scope[]): HTMLElement {
   const lang = d.getLang();
+  const go = (label: string, onclick: () => void, busy: boolean): HTMLElement =>
+    d.h('button', { type: 'button', class: d.cls.cx(d.cls.BTN_GO, 'flex items-center gap-1.5 px-4 py-1.5 text-body-sm'), onclick, disabled: !!pfBusy, 'aria-busy': busy ? 'true' : false },
+      d.icon('download', 'size-4'), label);
   const item = (s: Scope): HTMLElement | null => {
-    if (s.scope === 'general') return null;
-    const dom = s.scope;
+    if (s.scope === 'general') {
+      const n = d.passedTakeHomes(d.interviewPrefs()).length;
+      return n
+        ? d.h('li', { class: 'flex flex-wrap items-center gap-3' }, go(m('pf.th.download'), () => void saveTakeHomes(), pfBusy === 'general'),
+          d.h('span', { class: 'text-body-sm text-muted' }, m('pf.th.count', { n })))
+        : d.h('li', { class: 'flex flex-wrap items-center gap-2 text-body-sm text-muted' }, d.icon('lock', 'size-4'), m('pf.th.none'), ' ',
+          d.h('a', { href: `${d.hashOf('learn')}/interview` }, m('pf.th.go')));
+    }
     if (!s.open) return d.h('li', { class: 'flex items-center gap-2 text-body-sm text-muted' }, d.icon('lock', 'size-4'), m('pf.locked', { domain: s.what }));
     const entries = portfolioEntries(s.tickets, d.app.save, (tk) => d.textOf(tk, lang));
-    const save = () => {
-      const md = portfolioMd({
-        lang, scope: dom, what: s.what, name: readName(), date: new Date().toLocaleDateString(d.locale()), entries,
-        cards: d.domainSlot(d.app.save, dom).dashboard.cards, imported: d.importedNames(),
-      });
-      download(`boondata-${dom}-portfolio.md`, new Blob([md], { type: 'text/markdown' }));
-    };
+    const dom = { ...s, scope: s.scope };
     return d.h('li', { class: 'flex flex-wrap items-center gap-3' },
-      d.h('button', { type: 'button', class: d.cls.cx(d.cls.BTN_GO, 'flex items-center gap-1.5 px-4 py-1.5 text-body-sm'), onclick: save }, d.icon('download', 'size-4'), m('pf.download', { domain: s.what })),
+      go(m('pf.download', { domain: s.what }), () => void savePortfolio(dom, entries), pfBusy === s.scope),
       d.h('span', { class: 'text-body-sm text-muted' }, m('pf.count', { n: entries.length })));
   };
   return card(title(m('pf.title'), 'book'),
     d.h('p', { class: 'm-0 text-body-sm text-muted' }, m('pf.intro')),
-    d.h('ul', { class: 'm-0 list-none space-y-2 p-0' }, ...list.map(item).filter((x): x is HTMLElement => !!x)));
+    d.h('ul', { class: 'm-0 list-none space-y-2 p-0' }, ...list.map(item).filter((x): x is HTMLElement => !!x)),
+    d.h('p', { class: 'm-0 text-body-sm', role: 'status' }, pfMsg));
 }
 
 /** The #/me page body (section `me` of <main id="home">), redrawn by rerender(). */
@@ -355,93 +436,10 @@ export function importDashFile(done: (msg: string) => void): void {
   input.click();
 }
 
-const STYLE_PROPS = ['fill', 'stroke', 'stroke-width', 'stroke-dasharray', 'stroke-linecap', 'opacity', 'fill-opacity', 'stroke-opacity', 'font-size', 'font-family', 'font-weight', 'text-anchor', 'dominant-baseline'];
-/** A chart <svg> copy whose look does not depend on the page's CSS (classes and variables resolved per element). */
-function frozenSvg(svg: SVGSVGElement): { text: string; w: number; h: number } {
-  const copy = svg.cloneNode(true) as SVGSVGElement;
-  const from = [svg, ...svg.querySelectorAll('*')];
-  const to = [copy, ...copy.querySelectorAll('*')];
-  from.forEach((el, i) => {
-    const cs = getComputedStyle(el);
-    to[i].setAttribute('style', STYLE_PROPS.map((p) => `${p}:${cs.getPropertyValue(p)}`).join(';'));
-    to[i].removeAttribute('class');
-  });
-  const r = svg.getBoundingClientRect();
-  const w = Math.max(1, Math.round(r.width));
-  const hgt = Math.max(1, Math.round(r.height));
-  copy.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
-  copy.setAttribute('width', String(w));
-  copy.setAttribute('height', String(hgt));
-  return { text: new XMLSerializer().serializeToString(copy), w, h: hgt };
-}
-
 /** One card as a PNG (title, what the card shows, "BoonData · fictional data"); refused for cards on imported data. */
 export async function cardPng(article: HTMLElement, c: Card): Promise<string> {
-  if (touchesSandbox(c.sql, d.importedNames())) return m('dash.pngSandbox');
-  const body = article.querySelector<HTMLElement>('[data-card-body][data-ready]'); // a card with a result (not its Run button)
-  const chart = c.kind === 'bar' || c.kind === 'line' ? body?.querySelector<SVGSVGElement>(':scope > div > svg') : undefined;
-  const table = c.kind === 'table' ? body?.querySelector('table') : undefined;
-  const big = c.kind === 'number' ? body?.querySelector('p > span[aria-hidden=true]') : undefined;
-  if (!body || (!chart && !table && !big)) return m('dash.pngWait');
-  const cs = getComputedStyle(article);
-  const bg = cs.backgroundColor;
-  const ink = cs.color;
-  const muted = getComputedStyle(document.documentElement).getPropertyValue('--muted').trim() || ink;
-  const font = "Nunito, 'Segoe UI', system-ui, sans-serif";
-  const W = 800;
-  const canvas = document.createElement('canvas');
-  const g = canvas.getContext('2d');
-  if (!g) return m('dash.pngWait');
-  let rows: string[][] = [];
-  let pic: { img: HTMLImageElement; w: number; h: number } | undefined;
-  if (chart) {
-    const f = frozenSvg(chart);
-    const img = new Image();
-    await new Promise<void>((ok, fail) => {
-      img.onload = () => ok();
-      img.onerror = () => fail(new Error('image'));
-      img.src = svgUrl(f.text);
-    });
-    const k = Math.min(1, (W - 48) / f.w);
-    pic = { img, w: f.w * k, h: f.h * k };
-  } else if (table) {
-    // Header cells: the column name only (not the type line or the screen-reader label); the row-number column is left out.
-    const cell = (x: Element): string => (x.tagName === 'TH' ? [...x.childNodes].filter((n) => n.nodeType === 3).map((n) => n.textContent).join('') : x.textContent ?? '').trim();
-    rows = [...table.querySelectorAll('tr')].slice(0, 11).map((tr) => [...tr.querySelectorAll('th,td')].map(cell).slice(1));
-  }
-  const bodyH = pic ? pic.h : table ? rows.length * 30 + 8 : 80;
-  const H = 72 + bodyH + 56;
-  const scale = 2;
-  canvas.width = W * scale;
-  canvas.height = H * scale;
-  g.scale(scale, scale);
-  g.fillStyle = bg;
-  g.fillRect(0, 0, W, H);
-  g.fillStyle = ink;
-  g.font = `700 22px ${font}`;
-  g.fillText(c.title.slice(0, 70), 24, 44);
-  if (pic) g.drawImage(pic.img, 24, 64, pic.w, pic.h);
-  else if (table) {
-    const n = Math.max(1, ...rows.map((r) => r.length));
-    const colW = (W - 48) / n;
-    rows.forEach((r, i) => {
-      g.font = `${i === 0 ? 700 : 400} 15px ${font}`;
-      g.fillStyle = i === 0 ? muted : ink;
-      r.forEach((cell, j) => {
-        let s = cell;
-        while (s.length > 1 && g.measureText(s).width > colW - 10) s = `${s.slice(0, -2)}…`;
-        g.fillText(s, 24 + j * colW, 92 + i * 30);
-      });
-    });
-  } else if (big) {
-    g.font = `800 48px ${font}`;
-    g.fillText((big.textContent ?? '').trim().slice(0, 30), 24, 132);
-  }
-  g.font = `600 13px ${font}`;
-  g.fillStyle = muted;
-  g.textAlign = 'right';
-  g.fillText(m('png.footer'), W - 24, H - 22);
-  const blob = await new Promise<Blob | null>((ok) => canvas.toBlob(ok, 'image/png'));
+  if (touchesSandbox(c.sql, await d.importedNames())) return m('dash.pngSandbox');
+  const blob = await (await pngChunk()).cardBlob(article, c, m('png.footer')); // V19-D: the drawing lives in the portfolioPng chunk
   if (!blob) return m('dash.pngWait');
   download(`boondata-${d.activeDomain()}-${c.id}.png`, blob);
   return m('dash.pngDone', { title: c.title });

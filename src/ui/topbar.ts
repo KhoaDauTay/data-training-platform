@@ -251,6 +251,10 @@ export function renderTopbar(): void {
   const rank = byId('rank');
   rank.textContent = rank.title = rankOf(app.tickets, done()).tier?.[lang] ?? t('career.intern'); // title: F1 truncates it on a tight bar
   drawXp();
+  // V19-D (L171): style.css hides the bar's VI|EN + theme in the workspace below 768 px, so ⋯ holds them there from 640 px too.
+  const menuPrefs = document.querySelector('[data-menu-prefs]');
+  menuPrefs?.classList.toggle('sm:max-lg:hidden', route !== 'play');
+  menuPrefs?.classList.toggle('md:max-lg:hidden', route === 'play');
   renderSettings();
   byId('db-status').replaceChildren(...nodes(
     dbStatusView(),

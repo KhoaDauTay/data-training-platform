@@ -170,8 +170,11 @@ export function portfolioEntries(tickets: readonly Ticket[], save: Pick<Save, 'c
 /** A fence longer than any backtick run inside the SQL. */
 const fence = (sql: string): string => '`'.repeat(Math.max(3, ...[...sql.matchAll(/`+/g)].map((r) => r[0].length + 1)));
 
-/** The portfolio file. cards: the domain's dashboard cards; those reading imported data (imported names) are left out. */
-export function portfolioMd(p: { lang: Lang; scope: DomainId; what: string; name: string; date: string; entries: PortfolioEntry[]; cards: readonly { title: string; sql: string }[]; imported: readonly string[] }): string {
+/**
+ * The portfolio file. cards: the domain's dashboard cards; those reading imported data (imported names) are left out.
+ * pics: ids of cards with a picture beside the file (V19-D, L170: the zip's cards/<id>.png).
+ */
+export function portfolioMd(p: { lang: Lang; scope: DomainId; what: string; name: string; date: string; entries: PortfolioEntry[]; cards: readonly { id?: string; title: string; sql: string }[]; imported: readonly string[]; pics?: ReadonlySet<string> }): string {
   const m = (k: MeKey, q?: Record<string, string | number>): string => meText(p.lang, k, q);
   const out = [
     `# ${m('pf.h1', { domain: p.what })}`, '',
@@ -191,7 +194,8 @@ export function portfolioMd(p: { lang: Lang; scope: DomainId; what: string; name
     out.push(`## ${m('pf.cards')}`, '', `_${m('pf.cardsNote')}_`, '');
     for (const c of cards) {
       const f = fence(c.sql);
-      out.push(`### ${c.title}`, '', `${f}sql`, c.sql.trim(), f, '');
+      const pic = c.id && p.pics?.has(c.id) ? [`![${c.title.replace(/[[\]]/g, '')}](cards/${c.id}.png)`, ''] : [];
+      out.push(`### ${c.title}`, '', ...pic, `${f}sql`, c.sql.trim(), f, '');
     }
   }
   return out.join('\n');
