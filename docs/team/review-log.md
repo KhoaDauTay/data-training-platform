@@ -775,3 +775,9 @@ Cách đo: `npx vite build --base=/data-training-platform/` (`MSYS_NO_PATHCONV=1
 - **`restart()` + import CSV** (Edge, 1280×860, hồ sơ có snapshot, một bản ghi import `my_csv` 3 dòng đặt sẵn trong IndexedDB `cargo-query`/`imports`): mở lại → `SELECT count(*) FROM my_csv` = 3 (import phát lại sau khi nạp snapshot); `SELECT count(*) FROM generate_series(1, 400000000)` quá 5 s → "Truy vấn lỗi", mốc `db:restart`, `db:ready` lần hai (worker mới nạp lại snapshot); sau đó `my_csv` vẫn 3 dòng, `shipments` 20 000 dòng; 0 exception.
 - Ngân sách (gzip -9, so với ba20cde): main 317 266 → 317 544 B (+0,28 KB, cổng ≤ +3 KB), worker 138 840 → 140 250 B (+1,4 KB, 137/160 KB), html +34 B, `sw.js` 3,9 KB gz (gốc `dist/`, ngoài các nhóm của `check-budget`). Precache: 148 file, ~26 MB thô (PGlite chiếm ~16 MB, vốn đã phải tải).
 - Chưa đo: Chrome, điện thoại, bộ nhớ đỉnh lúc nạp (tar thô ~70–170 MB trong bộ nhớ khi dump/nạp); `lab`; GitHub Pages thật (không nén `.wasm`/`.data` nên precache lần đầu nặng hơn).
+
+## v19 V19-C (General sâu hơn), 2026-11-19, L167–L169
+
+- Tách `general`: `generalSources` 31 KB gz / 40, `generalAdvSources` 46 KB gz / 50 (roadmap đoán ≤ 15: sai chiều, xem L167). interview 24 / 25.
+- Nội dung: +38 drill ôn (152 drill kỹ năng), +2 bộ đề (`mid-3`, `senior-1`), +2 take-home (`g-iv-th-4`, `g-iv-th-5`). Mọi Solution chạy trên `lab`; khác các drill cùng kỹ năng, "Thử ngay" và (câu phỏng vấn) mọi drill General.
+- Ngoài danh sách file của luồng (sửa 1–2 dòng mỗi file): `src/practice.ts` (`KIND_ORDER`), `src/i18n/learn.ts` (nhãn + hướng dẫn kind `review`, số đếm trong 4 câu), `src/i18n/interview.ts` (`iv.level.senior`), `tests/practice.test.ts`, `tests/learn.test.ts`.

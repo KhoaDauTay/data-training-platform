@@ -114,10 +114,10 @@ describe('bài học nhanh (content/lessons.yml)', () => {
     if (err) expect(sqlErrorInfo(err)?.code).not.toBe('42P01'); // the mistake teaches SQL, not a table that is not there
   });
 
-  it.each(lessons)('$id: lời giải Thử ngay khác kết quả của cả ba drill cùng kỹ năng (không là đáp án drill)', async (l) => {
+  it.each(lessons)('$id: lời giải Thử ngay khác kết quả của cả bốn drill cùng kỹ năng (không là đáp án drill)', async (l) => {
     const run = await labRun();
     const drills = generalNow()!.bySkill.get(l.id) ?? [];
-    expect(drills).toHaveLength(3);
+    expect(drills).toHaveLength(4);
     const mine = await run(l.try.solution);
     for (const d of drills) expect(compareResults(await run(d.solution), mine, false).ok, d.id).toBe(false);
   });

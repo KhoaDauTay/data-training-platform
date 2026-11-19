@@ -183,10 +183,12 @@ describe('ôn tập bằng drill (Plan 8a Task 8)', () => {
   const done = new Set(['ch1-01', 'ch1-02', 'ch1-03', 'ch1-04', 'ch1-05']);
   const skills = ['select', 'where', 'order_by', 'limit', 'aggregate', 'group_by', 'having'];
 
-  it('mỗi kỹ năng đến hạn một drill của chính nó, ưu tiên open → trap → faded, bỏ drill đã ôn trong phiên', () => {
+  it('mỗi kỹ năng đến hạn một drill của chính nó, ưu tiên open → trap → review → faded, bỏ drill đã ôn trong phiên', () => {
     expect(pickDrill('where', g.bySkill, new Set(), () => 0)?.kind).toBe('open');
     const open = g.bySkill.get('where')!.find((d) => d.kind === 'open')!.id;
     expect(pickDrill('where', g.bySkill, new Set([open]), () => 0)?.kind).toBe('trap');
+    const trap = g.bySkill.get('where')!.find((d) => d.kind === 'trap')!.id;
+    expect(pickDrill('where', g.bySkill, new Set([open, trap]), () => 0)?.kind).toBe('review'); // v19 L168
     const all = new Set(g.bySkill.get('where')!.map((d) => d.id));
     expect(pickDrill('where', g.bySkill, all, () => 0)?.skill).toBe('where'); // all seen: reuse rather than skip the skill
     expect(pickDrill('nope', g.bySkill, new Set(), () => 0)).toBeUndefined();

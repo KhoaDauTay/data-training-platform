@@ -8,7 +8,7 @@ import { SKILLS } from '../src/progress';
 import { DRILL_ID } from '../src/save';
 import { compareResults } from '../src/grader';
 import { textOf } from '../src/tickets';
-import { codeSpans, distinctResults, drillRules, labRun, VI_DIACRITIC } from './generalRules';
+import { ANSWER_WORDS, codeSpans, distinctResults, drillRules, labRun, prose, VI_DIACRITIC } from './generalRules';
 
 const iv = parseInterview(parseYaml(interviewYml));
 const skillIds = SKILLS.map((s) => s.id);
@@ -29,9 +29,6 @@ const FEATURES: [RegExp, string][] = [
   [/\b(RANK|DENSE_RANK|ROW_NUMBER)\(\)/, 'window_rank'], [/\b(LAG|LEAD)\(/, 'window_lag'], [/\b(SUM|AVG|COUNT|MIN|MAX)\([^()]*\) OVER\b/, 'window_agg'],
 ];
 const used = (sql: string): string[] => FEATURES.filter(([re]) => re.test(sql)).map(([, s]) => s);
-/** SQL keywords that give the answer away; prompts may name tables/columns/values in backticks only. */
-const ANSWER_WORDS = /\b(SELECT|FROM|WHERE|JOIN|GROUP BY|HAVING|ORDER BY|LIMIT|OVER|PARTITION|WITH|CASE|COALESCE|EXISTS|UNION|EXCEPT|INTERSECT|DISTINCT|LAG|LEAD|RANK|ROW_NUMBER|FILTER|NULL|LIKE|CURRENT_DATE)\b/;
-const prose = (s: string): string => s.replace(/`[^`]+`/g, '');
 
 describe('parser phòng phỏng vấn', () => {
   const Q = (id: string, extra = '') => `
@@ -62,7 +59,7 @@ takeHomes: []`;
     expect(() => parse(set(five.replace(Q('g-iv-s1-5'), '')))).toThrow(/5 câu/);
     expect(() => parse(set(five.replace('g-iv-s1-2', 'g-iv-s1-9')))).toThrow(/g-iv-s1-2/);
     expect(() => parse(set(five.replace(Q('g-iv-s1-1'), Q('g-iv-s1-1', '\n        starter: "SELECT ___"'))))).toThrow(/starter/);
-    expect(() => parse(set(five).replace('level: junior', 'level: senior'))).toThrow(/level/);
+    expect(() => parse(set(five).replace('level: junior', 'level: lead'))).toThrow(/level/);
     expect(() => parse(set(five).replace('takeHomes: []', '') + set(five).split('sets:')[1])).toThrow(/trùng/);
     expect(() => parse(set(five.replace('skills: [select]', 'skills: []')))).toThrow(/skills/);
   });
@@ -98,11 +95,21 @@ describe('nội dung: content/general/interview.yml', () => {
   const steps = iv.takeHomes.flatMap((t) => t.steps);
   const all = [...questions, ...steps];
 
-  it('ít nhất 2 bộ đề (junior + mid) × 5 câu và đúng 3 take-home', () => {
-    expect(iv.sets.length).toBeGreaterThanOrEqual(2);
-    expect(new Set(iv.sets.map((s) => s.level))).toEqual(new Set(['junior', 'mid']));
+  it('5 bộ đề (junior, mid, senior) × 5 câu và đúng 5 take-home (v19 L169: + mid-3, senior-1, g-iv-th-4/5)', () => {
+    expect(iv.sets.map((s) => s.id)).toEqual(['junior-1', 'mid-1', 'mid-2', 'mid-3', 'senior-1']);
+    expect(new Set(iv.sets.map((s) => s.level))).toEqual(new Set(['junior', 'mid', 'senior']));
     for (const s of iv.sets) expect(s.questions).toHaveLength(SET_SIZE);
-    expect(iv.takeHomes).toHaveLength(3);
+    expect(iv.takeHomes).toHaveLength(5);
+  });
+
+  it('mid-3 và senior-1 phủ Phần 1–11 và có CTE lẫn window', () => {
+    for (const id of ['mid-3', 'senior-1']) {
+      const s = iv.sets.find((x) => x.id === id)!;
+      expect(s.modules, id).toEqual(Array.from({ length: 11 }, (_, i) => i + 1));
+      const sk = new Set(s.questions.flatMap((q) => used(q.solution)));
+      expect(sk.has('cte'), id).toBe(true);
+      expect(['window_rank', 'window_lag', 'window_agg'].some((x) => sk.has(x)), id).toBe(true);
+    }
   });
 
   it('id khớp DRILL_ID (chạy trên lab như drill), không đọc ra kỹ năng nào, không trùng drill General', () => {
