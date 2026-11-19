@@ -5,6 +5,11 @@ import { CHAPTERS } from '../src/progress';
 import { BTN_SUBMIT, CHAPTER_COLOR, chapterColor, cx, DEPT, deptColor, thanksKey } from '../src/theme';
 import css from '../src/style.css?raw';
 
+// Tailwind's palette (oklch), read from disk: Vitest turns other .css imports into '' and tsconfig has no Node types.
+const nodeFs = 'node:fs';
+const { readFileSync } = (await import(/* @vite-ignore */ nodeFs)) as { readFileSync(path: string, enc: 'utf8'): string };
+const twTheme = readFileSync('node_modules/tailwindcss/theme.css', 'utf8');
+
 /** WCAG 2.x relative luminance and contrast ratio. */
 const lum = (hex: string): number => {
   const [r, g, b] = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255)
@@ -174,5 +179,94 @@ describe('L1 (v12.0): lời cảm ơn', () => {
     expect(thanksKey('Finance', 'ecom-ch2-03')).not.toBe(thanksKey('Finance', 'ecom-ch2-04'));
     expect(thanksKey('Finance', 'ecom-ch2-05')).not.toBe(thanksKey('Finance', 'ecom-ch3-01'));
     expect(thanksKey('Nobody', 'x')).toMatch(/^chat\.thanksOps/);
+  });
+});
+
+describe('FIX-1 (L147, ui-ux-v7 P1 leftovers): type steps, shadow tokens, chip/avatar/scene contrast', () => {
+  const sources = import.meta.glob<string>(['../src/**/*.ts', '../index.html'], { query: '?raw', import: 'default', eager: true });
+
+  it('no text-lg…3xl (named steps by role: title / heading / display) and no Tailwind shadow sizes (--shadow-1 / --shadow-2)', () => {
+    const bad = Object.entries(sources).flatMap(([file, src]) => src.split('\n')
+      .map((line, i) => `${file.replace('../', '')}:${i + 1}: ${line.trim()}`)
+      .filter((line) => /(?<=[\s'"`:])(text-(lg|xl|2xl|3xl)|shadow-(sm|md|lg|xl|2xl))(?=[\s'"`])/.test(line)));
+    expect(bad).toEqual([]);
+  });
+
+  /** Tailwind v4's palette is oklch: converted to sRGB hex (clipped), so every chip pair is checked, not a hand-typed table. */
+  function oklchHex(L: number, C: number, h: number): string {
+    const a = C * Math.cos((h * Math.PI) / 180);
+    const b = C * Math.sin((h * Math.PI) / 180);
+    const l = (L + 0.3963377774 * a + 0.2158037573 * b) ** 3;
+    const m = (L - 0.1055613458 * a - 0.0638541728 * b) ** 3;
+    const s = (L - 0.0894841775 * a - 1.291485548 * b) ** 3;
+    const lin = [4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s, -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s, -0.0041960863 * l - 0.7034186147 * m + 1.707614701 * s];
+    return `#${lin.map((c) => Math.min(1, Math.max(0, c))).map((c) => (c <= 0.0031308 ? 12.92 * c : 1.055 * c ** (1 / 2.4) - 0.055))
+      .map((c) => Math.round(c * 255).toString(16).padStart(2, '0')).join('')}`;
+  }
+  const PALETTE: Record<string, string> = Object.fromEntries([...twTheme
+    .matchAll(/--color-([a-z]+-\d+):\s*oklch\(([\d.]+)%\s+([\d.]+)\s+([\d.]+)\)/g)]
+    .map((m) => [m[1], oklchHex(Number(m[2]) / 100, Number(m[3]), Number(m[4]))]));
+  const pick = (cls: string, re: RegExp): string => PALETTE[cls.match(re)?.[1] ?? ''];
+  const LIGHT_TEXT = /(?<!dark:)\btext-(\w+-\d+)/;
+  const DARK_TEXT = /dark:text-(\w+-\d+)/;
+  const light = tokens(':root');
+  const dark = { ...light, ...tokens(':root[data-theme=dark]') };
+
+  it("the oklch converter matches Tailwind's own sRGB values (±3 per channel)", () => {
+    const KNOWN = { 'red-100': '#ffe2e2', 'red-800': '#9f0712', 'red-950': '#460809', 'indigo-800': '#372aac', 'indigo-200': '#c6d2ff', 'indigo-950': '#1e1a4d' };
+    for (const [k, hex] of Object.entries(KNOWN)) {
+      for (const i of [1, 3, 5]) expect(Math.abs(parseInt(PALETTE[k].slice(i, i + 2), 16) - parseInt(hex.slice(i, i + 2), 16)), `${k} ${PALETTE[k]} vs ${hex}`).toBeLessThanOrEqual(3);
+    }
+  });
+
+  it('every chapter and department chip (and the neutral ones) ≥ 4.5:1 in both themes; chapter text colour on bg/panel too', () => {
+    const chips = [...Object.entries(CHAPTER_COLOR).map(([n, c]) => [`chapter ${n}`, c.chip]), ['chapter ?', chapterColor(99).chip],
+      ...Object.entries(DEPT).map(([n, d]) => [n, d.chip]), ['dept ?', deptColor('nobody')]];
+    const bad: string[] = [];
+    for (const [name, chip] of chips) {
+      const pairs = { light: [pick(chip, LIGHT_TEXT), pick(chip, /(?<!dark:)\bbg-(\w+-\d+)/)], dark: [pick(chip, DARK_TEXT), pick(chip, /dark:bg-(\w+-\d+)/)] };
+      for (const [th, [fg, bg]] of Object.entries(pairs)) if (!fg || !bg || ratio(fg, bg) < 4.5) bad.push(`${name} ${th} ${fg}/${bg}`);
+    }
+    for (const [n, c] of Object.entries(CHAPTER_COLOR)) {
+      for (const bg of ['bg', 'panel']) {
+        if (ratio(pick(c.text, LIGHT_TEXT), light[bg]) < 4.5) bad.push(`chapter ${n} text light on ${bg}`);
+        if (ratio(pick(c.text, DARK_TEXT), dark[bg]) < 4.5) bad.push(`chapter ${n} text dark on ${bg}`);
+      }
+    }
+    expect(bad).toEqual([]);
+  });
+
+  it('colleague portraits: shirt vs backdrop ≥ 3:1 (WCAG 1.4.11 graphics), eyes vs every skin tone ≥ 3:1', () => {
+    const src = sources['../src/ui/avatar.ts'];
+    const skins = [...src.match(/const SKIN[^{]*\{([^}]*)\}/)![1].matchAll(/'(#[0-9a-f]{6})'/g)].map((m) => m[1]);
+    const ink = src.match(/const INK = '(#[0-9a-f]{6})'/)![1];
+    expect(skins.length).toBeGreaterThan(2);
+    const bad = [
+      ...Object.entries(DEPT).filter(([, d]) => ratio(d.shirt, d.backdrop) < 3).map(([n, d]) => `${n} shirt ${d.shirt}/${d.backdrop} ${ratio(d.shirt, d.backdrop).toFixed(2)}`),
+      ...skins.filter((s) => ratio(ink, s) < 3).map((s) => `eyes ${ink} on skin ${s} ${ratio(ink, s).toFixed(2)}`),
+    ];
+    expect(bad).toEqual([]);
+  });
+
+  it('scene text: map labels (open, locked, head office) ≥ 4.5:1 on their halo or map background, read from the art sources', () => {
+    const bad: string[] = [];
+    for (const f of ['logistics', 'finance', 'ecommerce']) {
+      const src = sources[`../src/art/${f}.ts`];
+      const labels = [...src.matchAll(/'(fill-\w+-\d+ dark:fill-\w+-\d+)'/g)].map((m) => m[1])
+        .filter((cls, i, all) => all.indexOf(cls) === i && src.split('\n').some((line) => line.includes(cls) && /s\('text'|_TEXT =/.test(line)));
+      expect(labels.length, f).toBeGreaterThan(0);
+      // behind a label: the halo (Logistics, Finance) or the E-com map's sea rect and coast (it has no halo)
+      const behind = f === 'ecommerce'
+        ? [...src.matchAll(/class: '(fill-\w+-\d+) (dark:fill-\w+-\d+)' \}\)/g)].slice(0, 2).map((m) => [PALETTE[m[1].slice(5)], PALETTE[m[2].slice(10)]])
+        : [[light['map-halo'], dark['map-halo']]];
+      for (const cls of labels) {
+        const [, l, d] = cls.match(/fill-(\w+-\d+) dark:fill-(\w+-\d+)/)!;
+        for (const [bgL, bgD] of behind) {
+          if (ratio(PALETTE[l], bgL) < 4.5) bad.push(`${f} ${cls} light on ${bgL} ${ratio(PALETTE[l], bgL).toFixed(2)}`);
+          if (ratio(PALETTE[d], bgD) < 4.5) bad.push(`${f} ${cls} dark on ${bgD} ${ratio(PALETTE[d], bgD).toFixed(2)}`);
+        }
+      }
+    }
+    expect(bad).toEqual([]);
   });
 });

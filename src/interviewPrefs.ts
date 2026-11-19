@@ -33,6 +33,23 @@ export interface LiveRun {
   checks: number[];
   /** Time taken, set when the run ends. */
   ms?: number;
+  /** FIX-1 (L147): Date.now() when the player left the room (another page, a hidden or closed tab); the clock is paused. */
+  away?: number;
+}
+
+/** Time spent in the room: the clock stands still while `away` is set (FIX-1, docs/team/interview-room.md). */
+export const elapsed = (l: LiveRun, now: number): number => Math.max(0, (l.away ?? now) - l.start);
+/**
+ * Leaving (`here` false) stamps `away`; coming back moves `start` forward by the time away, so elapsed() skips it. Returns
+ * whether anything changed (the caller then stores the run). Mutates `l`.
+ */
+export function setPresence(l: LiveRun, here: boolean, now: number): boolean {
+  if (here === (l.away === undefined)) return false;
+  if (here) {
+    l.start += Math.max(0, now - l.away!);
+    delete l.away;
+  } else l.away = now;
+  return true;
 }
 /** `live`: the run in progress per set or take-home, so leaving one never drops another. */
 export interface InterviewPrefs { sets: Record<string, SetResult>; takeHomes: Record<string, TakeHomeResult>; live: Record<string, LiveRun> }
@@ -83,6 +100,7 @@ export function parseInterviewPrefs(v: unknown): InterviewPrefs {
       drafts: texts(l.drafts), passed: texts(l.passed), hints: ids(l.hints), phase: l.phase as LiveRun['phase'],
       text: typeof l.text === 'string' ? l.text.slice(0, TEXT_MAX) : '', checks: indexes(l.checks),
       ...(count(l.ms, 864e5) !== undefined ? { ms: l.ms as number } : {}),
+      ...(count(l.away, 1e13) !== undefined && (l.away as number) >= (l.start as number) ? { away: l.away as number } : {}),
     }
     : undefined));
   for (const [k, l] of Object.entries(live)) if (l.id !== k) delete live[k];

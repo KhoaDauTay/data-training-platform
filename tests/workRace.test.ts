@@ -263,7 +263,7 @@ describe('Practice không đụng tiến độ câu chuyện', () => {
     const { actions } = await import('../src/state');
     const complete = vi.spyOn(actions, 'complete').mockImplementation(() => {});
     const tk = ticket('A');
-    onSolved(tk);
+    onSolved(tk, 'SELECT 1');
     expect(complete).toHaveBeenCalledWith(tk);
     complete.mockRestore();
   });

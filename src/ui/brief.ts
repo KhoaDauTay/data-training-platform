@@ -347,7 +347,7 @@ export function renderBrief(host: HTMLElement, tk: Ticket, stepIndex: number): v
         tk.lane || isStory() ? h('span', { class: cx(PILL, chapterColor(tk.chapter).chip) }, // Practice has its own banner: no "New skill" badge (v10 UX #6)
           tk.lane ? t('lane.badge', { name: ROUTES.find((r) => r.port === tk.lane)?.name ?? tk.lane }) : t(BEAT[tk.beat])) : null,
         isDone ? `✓ ${t('inbox.done')}` : ''),
-      h('h2', { id: 'brief-title', tabindex: '-1', class: 'm-0 text-lg font-bold' }, x.title),
+      h('h2', { id: 'brief-title', tabindex: '-1', class: 'm-0 text-title font-bold' }, x.title),
       x.fallback ? h('p', { class: 'tag' }, t('brief.untranslated')) : null),
     // v10 critic #1: the message, then the Task and the Expected result card, visible without scrolling; the rest below.
     h('div', { class: 'mt-3 rounded-(--r-card) rounded-tl-sm bg-code px-4 py-1 leading-relaxed [&_p]:my-2' }, richText(x.body)),

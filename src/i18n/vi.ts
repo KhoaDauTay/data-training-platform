@@ -127,6 +127,7 @@ export const vi = {
   'sbx.shareDone': 'Đã chép link. Người mở link thấy câu SQL trong Sandbox, chưa chạy.',
   'sbx.shareManual': 'Chép link này:',
   'sbx.shareLong': 'Câu SQL dài quá {max} ký tự, không tạo được link.',
+  'sbx.shareMine': 'Câu SQL này đọc dữ liệu bạn đã nhập, mà dữ liệu đó không bao giờ rời trình duyệt này: không tạo link.',
   'share.note': 'Câu SQL này được chia sẻ cho bạn và chưa chạy. Đọc trước khi chạy; mọi câu đều chạy trong BEGIN … ROLLBACK nên không sửa được dữ liệu.',
   'share.ask': 'Mở câu SQL được chia sẻ? Câu nháp Sandbox hiện tại của bạn sẽ bị thay.',
   'share.open': 'Mở câu được chia sẻ',

@@ -6,7 +6,7 @@ const SKIN: Record<Look['skin'], string> = { light: '#f5d0b0', medium: '#e0a878'
 const HAIR: Record<Look['hair'], string> = { black: '#1f1b18', brown: '#6b4226', grey: '#a3a3a3' };
 const SIZE = { sm: 'size-7', md: 'size-10', lg: 'size-12' } as const;
 const DEFAULT: Look = { skin: 'medium', hair: 'black', style: 'short', accessory: 'none' };
-const INK = '#1f2937';
+const INK = '#0c0a09'; // eyes and glasses: ≥ 3:1 on every skin tone, the deep one included (FIX-1, tests/theme.test.ts)
 
 /** Long hair falls behind the head, so it is drawn before the face. */
 const hairBack = (l: Look): SVGElement[] =>

@@ -41,7 +41,7 @@ function kpiResult(tk: Ticket, step: number): Promise<QueryResult> {
   return run;
 }
 
-const BIG = 'm-0 text-3xl font-bold tabular-nums';
+const BIG = 'm-0 text-display font-bold tabular-nums';
 const KIND_ICON: Record<Kpi['kind'], IconName> = { number: 'hash', rowcount: 'list', bar: 'chart' };
 const kpiIcon = (k: Kpi): IconName => (k.icon && isIconName(k.icon) ? k.icon : KIND_ICON[k.kind]);
 const ICON_BTN = 'grid size-10 shrink-0 place-items-center p-0 sm:size-8';
@@ -239,7 +239,7 @@ function startersBlock(locked: boolean): HTMLElement | null {
 function lockedMine(lock: { skill: string; n: number }): HTMLElement {
   const hint = t('dash.createLockedHint', lock);
   return h('section', { 'aria-labelledby': 'dash-mine-title' },
-    h('h2', { id: 'dash-mine-title', tabindex: '-1', class: 'm-0 text-lg font-bold' }, t('dash.mine')),
+    h('h2', { id: 'dash-mine-title', tabindex: '-1', class: 'm-0 text-title font-bold' }, t('dash.mine')),
     h('div', { class: cx(CARD, 'mt-3 flex flex-wrap items-start gap-4 p-5') },
       h('span', { class: 'grid size-10 shrink-0 place-items-center rounded-(--r-inset) bg-code text-muted', 'aria-hidden': 'true' }, icon('lock')),
       h('div', { class: 'min-w-0 flex-1' },
@@ -269,10 +269,10 @@ function mineSection(redraw: () => void): HTMLElement {
   }).join(' · ');
   return h('section', { 'aria-labelledby': 'dash-mine-title' },
     h('div', { class: 'flex flex-wrap items-center gap-x-3 gap-y-2' },
-      h('h2', { id: 'dash-mine-title', tabindex: '-1', class: 'm-0 text-lg font-bold' }, t('dash.mine')),
+      h('h2', { id: 'dash-mine-title', tabindex: '-1', class: 'm-0 text-title font-bold' }, t('dash.mine')),
       h('span', { class: 'text-body-sm text-muted' }, t('dash.count', { n: cards.length, max: MAX_CARDS })),
       h('span', { class: 'ml-auto flex flex-wrap gap-2' },
-        cards.length ? h('button', { type: 'button', class: 'flex items-center gap-1.5 px-3 py-1 text-body-sm', onclick: () => void meTools().then((m) => say(m.exportDash()), () => say(t('me.failed'))) }, icon('download', 'size-4'), t('dash.export')) : null,
+        cards.length ? h('button', { type: 'button', class: 'flex items-center gap-1.5 px-3 py-1 text-body-sm', onclick: () => void meTools().then((m) => m.exportDash()).then(say, () => say(t('me.failed'))) }, icon('download', 'size-4'), t('dash.export')) : null,
         h('button', { type: 'button', class: 'flex items-center gap-1.5 px-3 py-1 text-body-sm', onclick: () => void meTools().then((m) => m.importDashFile((msg) => say(msg)), () => say(t('me.failed'))) }, icon('upload', 'size-4'), t('dash.import')),
         cards.length ? h('button', { type: 'button', class: 'flex items-center gap-1.5 px-3 py-1 text-body-sm', onclick: () => startSandbox() }, icon('flask', 'size-4'), t('dash.toSandbox')) : null)), // empty: the empty state holds it
     dashMsg ? h('p', { class: 'mt-2 mb-0 text-body-sm', role: 'status' }, dashMsg) : null,
@@ -367,7 +367,7 @@ function companySection(redraw: () => void): HTMLElement {
   const gone = tiles.filter((x) => hidden.has(x.kpi.id));
   return h('section', { 'aria-labelledby': 'dash-company-title' },
     h('div', { class: 'flex flex-wrap items-baseline gap-x-3' },
-      h('h2', { id: 'dash-company-title', tabindex: '-1', class: 'm-0 text-lg font-bold' }, t('dash.company')),
+      h('h2', { id: 'dash-company-title', tabindex: '-1', class: 'm-0 text-title font-bold' }, t('dash.company')),
       h('span', { class: 'text-body-sm text-muted' }, t('dash.companyOpen', { n: tiles.filter((x) => x.open).length, total: tiles.length }))),
     h('p', { class: 'mt-1 mb-3 text-[15px] text-muted' }, t('dash.companyIntro')),
     h('div', { class: 'grid gap-4 sm:grid-cols-2 lg:grid-cols-4' }, ...shown.filter((x) => x.open && x.ticket).map((x) => kpiTile(x, redraw))),
@@ -387,7 +387,7 @@ export function renderDashboard(host: HTMLElement): void {
   redrawDash = redraw;
   host.replaceChildren(h('div', { class: 'mx-auto max-w-(--w-wide) space-y-6 px-4 py-6' },
     h('header', {},
-      h('h1', { id: 'dashboard-title', tabindex: '-1', class: 'm-0 text-2xl font-bold' }, t('dash.title')),
+      h('h1', { id: 'dashboard-title', tabindex: '-1', class: 'm-0 text-display font-bold' }, t('dash.title')),
       h('p', { class: 'mt-1 mb-0 max-w-3xl text-[15px] text-muted' }, t(customLock() ? 'dash.introLocked' : 'dash.intro'))),
     mineSection(redraw), // L49: the player's own cards come before the company figures
     companySection(redraw)));

@@ -4,6 +4,7 @@ import { SqlError } from '../db/run';
 import { t } from '../i18n';
 import { IMPORT_LIMITS, MEMORY_WARN_CELLS, type ImportProblem } from '../import/csv';
 import { importedCells, type AddOutcome, type MyData } from '../import/myData';
+import { idbStore } from '../import/store';
 import { session } from '../session';
 import { schemaHooks, unlockedTables, type Column } from '../state';
 import { cx } from '../theme';
@@ -19,8 +20,8 @@ let busy = false;
 /** Imported tables count only in Sandbox (spec §7b "Hiển thị", I4). */
 export const sandboxTables = (): ImportedTable[] => (session.mode.kind === 'sandbox' && my ? my.tables : []);
 
-/** v16 (L142): every imported table name, whatever the mode: exports leave out SQL that reads them. */
-export const importedNames = (): string[] => (my ? my.tables.map((x) => x.table) : []);
+/** v16 (L142): every imported table name, whatever the mode: exports leave out SQL that reads them (FIX-1: stored ones too, before restore ends). */
+export const importedNames = (): Promise<string[]> => (my ? my.names() : idbStore().list().then((r) => r.map((x) => x.table), () => []));
 /** Unlocked game tables, plus imported ones in Sandbox: what the ER tab draws. */
 export const visibleTables = (): string[] => [...unlockedTables(), ...sandboxTables().map((x) => x.table)];
 

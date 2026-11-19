@@ -143,7 +143,7 @@ function continueCard(m: HomeModel): HTMLElement {
   return h('section', { class: cx(CARD, 'flex h-full flex-col gap-4 p-6'), 'aria-labelledby': 'continue-title' },
     h('p', { class: cx('m-0 flex items-center gap-2 text-body-sm font-semibold', chapterColor(m.chapter).text) },
       icon('inbox', 'size-4'), t('home.kicker', { n: m.chapter, title: chapterTitle(m.chapter, lang, chaptersOf()) })), // Overview only (v12.0 U5)
-    h('h2', { id: 'continue-title', class: 'm-0 text-xl font-bold' }, x ? x.title : t('inbox.empty')),
+    h('h2', { id: 'continue-title', class: 'm-0 text-heading font-bold' }, x ? x.title : t('inbox.empty')),
     next && x
       ? h('div', { class: 'flex gap-3' },
         avatar(next.from, 'lg'),
@@ -172,7 +172,7 @@ function careerCard(): HTMLElement {
   const now = rows.filter((r) => reached(r.at)).pop();
   return h('section', { class: cx(CARD, 'flex h-full flex-col gap-3 p-6'), 'aria-labelledby': 'career-title' },
     h('h2', { id: 'career-title', class: 'm-0 flex items-center gap-2 text-body-sm font-semibold text-muted' }, icon('badge', 'size-4'), t('home.career')),
-    rank.career ? h('p', { class: 'm-0 text-lg font-semibold' }, rank.career[lang]) : null,
+    rank.career ? h('p', { class: 'm-0 text-title font-semibold' }, rank.career[lang]) : null,
     h('ol', { class: 'm-0 list-none space-y-2 p-0' }, ...rows.map((r) => h('li', {
       class: cx('flex items-center gap-2 text-[15px]', !reached(r.at) && 'text-muted'),
       'aria-current': r === now ? 'step' : false,
@@ -213,7 +213,7 @@ function chapterRow(c: ChapterCard): HTMLLIElement {
       ? icon('lock', 'size-5 text-muted')
       : c.status === 'done'
         ? h('span', { class: 'grid size-10 place-items-center rounded-full bg-good text-on-accent' }, icon('check', 'size-5'))
-        : h('span', { class: cx('grid size-10 place-items-center rounded-full text-lg font-bold', chapterColor(c.chapter).chip) }, String(c.chapter)),
+        : h('span', { class: cx('grid size-10 place-items-center rounded-full text-title font-bold', chapterColor(c.chapter).chip) }, String(c.chapter)),
     title: `${c.chapter} · ${chapterTitle(c.chapter, lang)}`,
     sub: closed ? (c.status === 'soon' ? t('home.soonHint') : t('home.lockedAfter', { n: c.chapter - 1 })) : adv ? h('span', { class: 'flex flex-wrap gap-x-3' }, short, adv) : short,
     action: closed ? statusPill(c) : h('a', { href: `${hashOf('learn')}/sql/${c.chapter}`, class: 'no-underline', title: t('learn.module', { n: c.chapter, title: moduleTitle(c.chapter, lang) }) }, statusPill(c)),
@@ -225,7 +225,7 @@ function chapterRow(c: ChapterCard): HTMLLIElement {
 function chaptersSection(m: HomeModel): HTMLElement {
   return h('section', { 'aria-labelledby': 'chapters-title' },
     h('div', { class: 'mb-3 flex flex-wrap items-end justify-between gap-2' },
-      h('h2', { id: 'chapters-title', class: 'm-0 text-lg font-bold' }, t('home.chapters', { n: m.chapters.length })),
+      h('h2', { id: 'chapters-title', class: 'm-0 text-title font-bold' }, t('home.chapters', { n: m.chapters.length })),
       h('p', { class: 'm-0 text-body-sm text-muted' }, t('home.chaptersIntro'))),
     h('ul', { class: LIST }, ...m.chapters.map(chapterRow)));
 }
@@ -256,7 +256,7 @@ function skillsSection(m: HomeModel): HTMLElement {
 function modesSection(): HTMLElement | null {
   if (modes.length === 0) return null;
   return h('section', { 'aria-labelledby': 'modes-title' },
-    h('h2', { id: 'modes-title', class: 'mb-3 text-lg font-bold' }, t('home.modes')),
+    h('h2', { id: 'modes-title', class: 'mb-3 text-title font-bold' }, t('home.modes')),
     h('div', { class: 'grid gap-3 sm:grid-cols-3' }, ...modes.map((md) => {
       const why = md.lock?.();
       if (why) {
@@ -339,7 +339,7 @@ function routesSection(): HTMLElement {
   const words = domainText();
   if (words) {
     return h('section', { class: cx(CARD, 'p-5'), 'aria-labelledby': 'routes-title' },
-      h('h2', { id: 'routes-title', class: 'm-0 mb-2 text-lg font-bold' }, t(words.mapTitle)), domainArt('map'));
+      h('h2', { id: 'routes-title', class: 'm-0 mb-2 text-title font-bold' }, t(words.mapTitle)), domainArt('map'));
   }
   const harbor = derive(app.tickets, done());
   const list = h('ul', { class: 'mt-3 mb-0 grid list-none gap-1.5 p-0 text-body-sm sm:grid-cols-2' }, ...LANES.map((r) =>
@@ -353,7 +353,7 @@ function routesSection(): HTMLElement {
     : h('p', { class: 'm-0 self-start rounded-(--r-ctl) bg-code p-4 text-body-sm text-muted' }, t('lane.pick'));
   return h('section', { class: cx(CARD, 'p-5'), 'aria-labelledby': 'routes-title' },
     h('div', { class: 'mb-2 flex flex-wrap items-end justify-between gap-2' },
-      h('h2', { id: 'routes-title', class: 'm-0 text-lg font-bold' }, t('routes.title')),
+      h('h2', { id: 'routes-title', class: 'm-0 text-title font-bold' }, t('routes.title')),
       h('p', { class: 'm-0 text-body-sm text-muted' }, t('routes.subtitle'))),
     // ui-ux-v6 S2: the map takes the card's full width (labels ≥ 11 px from lg); the lane list and the brief sit below it
     artSlot('aspect-[5/2] rounded-(--r-ctl)', (a) => {
@@ -440,7 +440,7 @@ function helloSection(): HTMLElement {
   const flip = app.dayFlip;
   app.dayFlip = false;
   return h('section', { class: 'grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-4 gap-y-2' }, petButton(), // phones: the card takes its own row
-    h('div', { class: 'min-w-0' }, h('p', { class: 'm-0 text-2xl font-extrabold' }, t('app.name')), h('p', { class: 'm-0 text-muted' }, t('home.tagline')),
+    h('div', { class: 'min-w-0' }, h('p', { class: 'm-0 text-display font-extrabold' }, t('app.name')), h('p', { class: 'm-0 text-muted' }, t('home.tagline')),
       h('p', { class: 'mt-2 mb-0 text-body-sm font-semibold' }, pre, h('span', { class: flip && 'cq-flip' }, String(dayCount())), post,
         grewPill ? h('span', { class: 'ml-2 rounded-full bg-sun px-2 py-0.5 text-caption font-bold text-sun-ink' }, t('lily.grewPill')) : null)),
     lilyCard(stage, known, next));

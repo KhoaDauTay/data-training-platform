@@ -420,9 +420,9 @@ export function build(c: Ctx): void {
     }
     d.map = map(after, false);
     // top left, over the counter's sign: the jar (and its new star) stays in view; no translate class, so GSAP's y never fights it
-    d.card = h('div', { class: 'absolute top-3 left-3 w-64 max-w-[55%] rounded-(--r-card) bg-panel p-2 text-center sm:p-3 shadow-xl ring-2 ring-amber-500' },
+    d.card = h('div', { class: 'absolute top-3 left-3 w-64 max-w-[55%] rounded-(--r-card) bg-panel p-2 text-center sm:p-3 shadow-(--shadow-2) ring-2 ring-amber-500' },
       h('p', { class: 'm-0 text-body-sm font-semibold text-amber-800 dark:text-amber-200' }, t('anim.promoKicker', { n: c.tk.chapter })),
-      h('p', { class: 'm-0 text-body font-bold sm:text-lg' }, (c.rankAfter.career ?? c.rankAfter.tier)?.[getLang()] ?? t('career.intern')));
+      h('p', { class: 'm-0 text-body font-bold sm:text-title' }, (c.rankAfter.career ?? c.rankAfter.tier)?.[getLang()] ?? t('career.intern')));
     d.card.style.opacity = '0';
   } else {
     // the teller window and the jar (the dock's 520×276 frame, a little wider); the coin leaves the counter ledge, arcs over to the lid's slot

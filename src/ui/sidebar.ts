@@ -190,7 +190,7 @@ export function renderSidebar(route: Route): void {
   if (drawer.open) {
     drawer.replaceChildren(h('div', { class: 'flex min-h-full flex-col gap-1 p-3' },
       h('div', { class: 'mb-2 flex items-center justify-between' },
-        h('h2', { id: 'side-drawer-title', class: 'm-0 text-lg' }, t('side.title')),
+        h('h2', { id: 'side-drawer-title', class: 'm-0 text-title' }, t('side.title')),
         h('form', { method: 'dialog' }, h('button', { class: 'grid size-11 place-items-center p-0', 'aria-label': t('app.close') }, icon('x')))),
       ...content(route, true)));
   } else {
@@ -212,7 +212,7 @@ export function renderSidebar(route: Route): void {
  */
 function initRailTips(): void {
   const tip = h('div', { id: 'side-tip', role: 'tooltip', hidden: true,
-    class: 'pointer-events-none fixed z-50 max-w-64 rounded-(--r-ctl) bg-panel px-3 py-1.5 text-body-sm font-bold text-ink shadow-lg ring-1 ring-line' });
+    class: 'pointer-events-none fixed z-50 max-w-64 rounded-(--r-ctl) bg-panel px-3 py-1.5 text-body-sm font-bold text-ink shadow-(--shadow-2) ring-1 ring-line' });
   document.body.append(tip);
   const side = byId('side');
   const show = (e: Event): void => {

@@ -38,7 +38,7 @@ export interface MeDeps {
   knownSkills: typeof Home.knownSkills; textOf: typeof Tickets.textOf;
   DOMAINS: typeof Domains.DOMAINS; DOMAIN_ID: typeof Domains.DOMAIN_ID; activeDomain: typeof Domains.activeDomain;
   domainSlot: typeof SaveMod.domainSlot; readDashboard: typeof Dash.readDashboard; MAX_CARDS: number;
-  hashOf: typeof Route.hashOf; importedNames: () => string[];
+  hashOf: typeof Route.hashOf; importedNames: () => Promise<string[]>;
   cls: { CARD: string; BTN_GO: string; BTN_SECONDARY: string; cx: (...p: (string | false | null | undefined)[]) => string };
 }
 let d: MeDeps;
@@ -292,10 +292,11 @@ function portfolioCard(list: Scope[]): HTMLElement {
     const dom = s.scope;
     if (!s.open) return d.h('li', { class: 'flex items-center gap-2 text-body-sm text-muted' }, d.icon('lock', 'size-4'), m('pf.locked', { domain: s.what }));
     const entries = portfolioEntries(s.tickets, d.app.save, (tk) => d.textOf(tk, lang));
-    const save = () => {
+    const save = async () => {
+      const imported = await d.importedNames(); // FIX-1: stored imports too, even before restore ends
       const md = portfolioMd({
         lang, scope: dom, what: s.what, name: readName(), date: new Date().toLocaleDateString(d.locale()), entries,
-        cards: d.domainSlot(d.app.save, dom).dashboard.cards, imported: d.importedNames(),
+        cards: d.domainSlot(d.app.save, dom).dashboard.cards, imported,
       });
       download(`boondata-${dom}-portfolio.md`, new Blob([md], { type: 'text/markdown' }));
     };
@@ -326,9 +327,9 @@ export function mePage(): HTMLElement {
 // ---------- dashboard: file export/import and card pictures (v7 §5.1) ----------
 
 /** Downloads the open domain's cards (title, kind, SQL); cards on imported data stay out. Returns the sentence to show. */
-export function exportDash(): string {
+export async function exportDash(): Promise<string> {
   const dom = d.activeDomain();
-  const { file, dropped } = dashFile(dom, d.domainSlot(d.app.save, dom).dashboard.cards, d.importedNames());
+  const { file, dropped } = dashFile(dom, d.domainSlot(d.app.save, dom).dashboard.cards, await d.importedNames());
   if (file.cards.length) download(`boondata-${dom}.boondash.json`, new Blob([JSON.stringify(file, null, 2)], { type: 'application/json' }));
   return [file.cards.length ? m('dash.exported', { n: file.cards.length }) : m('dash.nothing'), dropped ? m('dash.dropped', { n: dropped }) : ''].join(' ').trim();
 }
@@ -376,8 +377,11 @@ function frozenSvg(svg: SVGSVGElement): { text: string; w: number; h: number } {
 }
 
 /** One card as a PNG (title, what the card shows, "BoonData · fictional data"); refused for cards on imported data. */
+/** FIX-1 (L147): a share link never carries SQL that reads the player's imported tables (stored ones too) or `sandbox.`. */
+export const readsImported = async (sql: string): Promise<boolean> => touchesSandbox(sql, await d.importedNames());
+
 export async function cardPng(article: HTMLElement, c: Card): Promise<string> {
-  if (touchesSandbox(c.sql, d.importedNames())) return m('dash.pngSandbox');
+  if (touchesSandbox(c.sql, await d.importedNames())) return m('dash.pngSandbox');
   const body = article.querySelector<HTMLElement>('[data-card-body][data-ready]'); // a card with a result (not its Run button)
   const chart = c.kind === 'bar' || c.kind === 'line' ? body?.querySelector<SVGSVGElement>(':scope > div > svg') : undefined;
   const table = c.kind === 'table' ? body?.querySelector('table') : undefined;
