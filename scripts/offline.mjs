@@ -33,7 +33,9 @@ export function writeServiceWorker(outDir) {
     for (const name of readdirSync(dir)) {
       const path = `${dir}/${name}`;
       if (statSync(path).isDirectory()) walk(path, `${rel}${name}/`);
-      else if (!/^(sw\.js|_headers|datasets\/.*)$/.test(rel + name)) files.push(rel + name); // V20-B: sample datasets load on demand (then live in IndexedDB), never precached
+      // V20-B: sample datasets load on demand (then live in IndexedDB), never precached. ENG-DYNAMO (L245): nor the
+      // DynamoDB engine (~1.2 MB gz), fetched from the network on the first DynamoDB run.
+      else if (!/^(sw\.js|_headers|datasets\/.*)$/.test(rel + name) && !/^assets\/(dynoxide-worker|dynoxide_bg|sqlite3)-/.test(rel + name)) files.push(rel + name);
     }
   };
   walk(outDir, '');
