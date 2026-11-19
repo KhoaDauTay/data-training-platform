@@ -705,3 +705,45 @@ Cổng cuối (T12, sau khi sửa giấy tờ): `npx tsc --noEmit` sạch, `npm 
 ### v6 final review (2026-11-19, commits b2997b7..7143906)
 
 Checked against ui-ux-v6 and CLAUDE.md: GSAP is imported only by `src/art/gsap.ts` and always loaded lazily (`import()` in `art/load.ts`; main has no `GreenSock`, the `gsap-*` chunk keeps `@license`); every timeline is paused until `play()`, reduced motion takes `run.fast`/`still()` or returns before any tween, and the CSS loops are killed by the global reduce rule; one-shot marks (C1 enter, C2 flip, S4 unlock stamp, B4 step key) are consumed at draw, so a rerender never replays them; L87 roles and one mascot per region hold (the guide box on `#/learn` has no Boon beside the teach scene); THIRD_PARTY.md lists GSAP, Phosphor and Natural Earth. Screenshot sweep (`scratchpad\v6shots\T13\shots\`, 1280/375/320, light + dark, reduced motion) showed no horizontal scroll and no console errors. Fixed: Tien Sa label pills were sized by a 0.6 em/char guess and left an empty end at 1280 (now measured once laid out); a second scaffold fill within 600 ms had its flash cleared early by the first fill's timer. Gates: tsc, npm test (3118 passed), build, budgets (main 302/500, art 17/20, gsap 44/50, html 9/12).
+
+## v14 T7 (Finance: tài liệu và kiểm toàn bộ), 2026-11-19
+
+Bản build `vite preview --strictPort` 5199, Edge headless, mỗi lần chạy một hồ sơ mới, điều khiển bằng CDP. Script ở scratchpad `fin-t7\`. Đã tắt preview và mọi Edge đã mở. Không chạy test hay build song song khi đo.
+
+**(b) Seed `finance` trên trình duyệt** (luật dừng 15 s):
+- Màn chào, chọn Finance (người mới):
+  - `db:ensure:fin` 1,64 / 1,66 / 1,89 s.
+  - Từ lúc bấm tới lúc seed xong: 1,73 / 1,74 / 1,98 s.
+- Trang chủ, bấm thẻ Finance (hồ sơ đã chọn "Chỉ học SQL"):
+  - `db:ensure:fin` 1,17 / 1,24 / 1,33 s.
+  - Từ lúc bấm tới khi Tổng quan có số "x/30 việc" và banner tắt: 1,29 / 1,29 / 1,46 s.
+- Không lần nào có `db:ensure:game` (Logistics không bị seed). 0 lỗi console.
+
+**(c) Đi trọn 30 việc bằng Solution** (biến thể 0, đúng như người chơi):
+- Mỗi việc: dán Solution vào editor, đọc lại editor so với Solution, bấm Nộp.
+- Đánh giá thăng tiến: cả 3 bước. `bossStep` tăng đúng sau từng bước.
+- Câu kết luận: chọn một đáp án sai trước (hiện "Chưa đúng…"), rồi chọn đáp án đúng theo `value` (thứ tự đáp án bị xáo).
+- Kết quả: 30/30 xong, 6.050 XP, 0 lỗi console. Câu đọc to đúng theo domain: "Thêm một đồng vào hũ" và "Thêm một chi nhánh trên bản đồ".
+
+| Hạng mục | Kết quả |
+|---|---|
+| Chức danh (`#rank`) | Thực tập sinh DA → F1 Chuyên viên phân tích tập sự → F2, F3 giữ → F4 Chuyên viên rủi ro tín dụng → F5 giữ → F6 Chuyên viên rủi ro cao cấp. Câu đọc to nêu bậc nghề cả ở F2/F3/F5 ("… · sổ vay", "Chuyên viên phân tích tín dụng", "… · ngân sách"). |
+| Bản đồ chi nhánh (`aria-label` của hộp thoại bản đồ) | Đầu: 2 chi nhánh hoạt động (Da Nang, Hoi An). Sau mỗi đánh giá thêm đúng một: Hue, Lien Chieu, Tam Ky, Dong Ha, Quang Ngai, Quy Nhon. Cuối: 8/8. |
+| Gợi ý → điền khung, mỗi chương một việc (F1-03, F2-03, F3-03, F4-03, F5-01, F6-03; ba việc sau là `trap:`) | Editor nhận đúng `frameOf()` (với `wrong:` ở việc bẫy). Nộp khung bị từ chối: "Còn n chỗ trống ___ …; lần này không tính là nộp sai" (n = 7/10/15/21/34/9). Solution sau đó đạt. |
+| Tải lại trang | `version` 5, đủ 30 id `fin-`, có slot `byDomain.finance`, 23 thẻ ôn tập. |
+| Ôn tập | Các thẻ do việc Finance tạo đến hạn ngày mai, nên hôm nay trang Luyện SQL ghi "chưa có kỹ năng nào đến hạn". Lùi ngày đến hạn trong save thì nút top bar hiện "Ôn tập, 5 mục đến hạn" (`QUEUE_MAX`). Không chạy một lượt ôn: lượt ôn dùng drill General trên `lab`. |
+| Luyện lại (F2-01) | "Luyện lại việc này (0 XP)" mở biến thể 2. Solution của biến thể 2 đạt; `practice.solved` 0 → 1. |
+| Chuyển domain Finance → E-com → Logistics → Finance (Sandbox) | Tab Cột, bảng `customers`: Finance có `full_name, birth_year, city, monthly_income`; E-com có `email` (UK), `signup_date`; Logistics có `name, industry`. Autocomplete gõ `loan`: Finance gợi ý `loan_snapshots`, `loans`; E-com và Logistics không. `SELECT * FROM shipments`: Finance/E-com báo 42P01 kèm lời giải thích; Logistics ra 1 dòng. |
+| Bảng điều hành | Ghim thẻ từ Sandbox Finance: thẻ chỉ hiện ở `#/d/finance/dashboard`, không ở E-com hay Logistics. Save có `byDomain.finance.dashboard.cards = ["T7 regions"]`. |
+| Ảnh | Tổng quan Finance sau 30 việc: hũ đầy, 3 nhãn sao, lộ trình sự nghiệp 4 bậc (`shots\overview-30.png`, cùng ảnh sau mỗi đánh giá). |
+
+**Ghi nhận, không sửa trong T7** (L131):
+1. **Lần vào đầu, schema `lab` bị seed trước khi người chơi chọn domain.**
+   - Trái với CLAUDE.md "nothing is seeded before the pick" (v12.0 P2).
+   - Nguyên nhân: workspace luôn được vẽ, kể cả khi đang ẩn. Brief của ticket Logistics 1 vẽ thẻ bài học nhanh. Phần "Thử ngay" của thẻ gọi `tryPreview` → `ensure('lab')` (L84).
+   - Lỗi này có từ trước Finance (không phải lỗi v14).
+   - Ảnh hưởng: seed Finance phải xếp hàng sau `lab`, chậm thêm ~0,5 s. Chênh lệch giữa hai cách đo ở (b) đến từ đây.
+2. **Autocomplete không gợi ý tên cột khi gõ trống** (`where monthly`) ở cả ba domain; chỉ gợi ý tên bảng. Đây là cách `@codemirror/lang-sql` vẫn chạy, không riêng Finance.
+3. **R6 (người mới vào thẳng F1) chưa được đánh giá với người thật.** Lượt chơi ở đây dùng Solution có sẵn.
+
+Cổng: `npx tsc --noEmit` sạch, `npm test` 3364 xanh (1 bỏ qua, 82 file), `npm run build` xanh, `check-budget` xanh (main 302/500, fin 43/50, finseed 7/10, finart 7/10, frame 3/4, worker 135/160).
