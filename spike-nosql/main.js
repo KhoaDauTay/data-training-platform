@@ -80,6 +80,26 @@ async function benchDynamo() {
   await time('partiql_select', 'ExecuteStatement', { Statement: `SELECT * FROM "Orders" WHERE pk = 'CUST#7'` });
   await time('transact_write', 'TransactWriteItems', { TransactItems: [{ Put: { TableName: 'Orders', Item: { pk: { S: 'X' }, sk: { S: 'Y' } } } }] });
   await time('bad_key_type', 'GetItem', { TableName: 'Orders', Key: { pk: { N: '7' }, sk: { S: 'x' } } }, true);
+  // Teaching probes: the "EXPLAIN" of DynamoDB is ScannedCount vs Count, consumed capacity and paging.
+  const sc = await c.execute('Scan', { TableName: 'Orders', FilterExpression: '#t >= :x', ExpressionAttributeNames: { '#t': 'total' }, ExpressionAttributeValues: { ':x': { N: '990' } }, ReturnConsumedCapacity: 'TOTAL', Limit: 1000 });
+  D.scan_cost = { Count: sc.Count, ScannedCount: sc.ScannedCount, ConsumedCapacity: sc.ConsumedCapacity, hasLEK: !!sc.LastEvaluatedKey };
+  const qc = await c.execute('Query', { TableName: 'Orders', KeyConditionExpression: 'pk = :p', ExpressionAttributeValues: { ':p': { S: 'CUST#7' } }, ReturnConsumedCapacity: 'INDEXES', Limit: 7 });
+  const q2 = await c.execute('Query', { TableName: 'Orders', KeyConditionExpression: 'pk = :p', ExpressionAttributeValues: { ':p': { S: 'CUST#7' } }, Limit: 7, ExclusiveStartKey: qc.LastEvaluatedKey });
+  D.query_cost = { Count: qc.Count, ConsumedCapacity: qc.ConsumedCapacity, page2: q2.Count, page2HasLEK: !!q2.LastEvaluatedKey };
+  await time('partiql_txn', 'ExecuteTransaction', { TransactStatements: [{ Statement: `INSERT INTO "Orders" VALUE {'pk': 'T', 'sk': '1'}` }, { Statement: `UPDATE "Orders" SET total = 1 WHERE pk = 'CUST#7' AND sk = 'ORDER#2026-08#7'` }] });
+  // Seed cost: single PutItem per call vs BatchWriteItem of 25.
+  let s2 = performance.now();
+  for (let i = 0; i < 200; i++) await c.execute('PutItem', { TableName: 'Orders', Item: { pk: { S: 'P' }, sk: { S: String(i) } } });
+  D.put_single_200 = { ms: +(performance.now() - s2).toFixed(0) };
+  // Reset options: DeleteTable + CreateTable, or a fresh worker.
+  s2 = performance.now();
+  await c.execute('DeleteTable', { TableName: 'Orders' });
+  await c.execute('CreateTable', { TableName: 'Orders', BillingMode: 'PAY_PER_REQUEST', AttributeDefinitions: [{ AttributeName: 'pk', AttributeType: 'S' }], KeySchema: [{ AttributeName: 'pk', KeyType: 'HASH' }] });
+  D.reset_drop_create = { ms: +(performance.now() - s2).toFixed(1) };
+  s2 = performance.now();
+  const c2 = new EngineClient({ assetBase: new URL('./dynoxide/', location.href), ephemeral: true, name: 'second' });
+  await c2.ready();
+  D.reset_new_worker = { ms: +(performance.now() - s2).toFixed(1) };
 }
 
 (async () => {
