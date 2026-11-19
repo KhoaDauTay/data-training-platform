@@ -60,7 +60,7 @@ Hiệu năng (L178, máy bận, trung vị 3 lượt): lần đầu "DB sẵn s�
 | # | Thấy gì | Bằng chứng | Ai xử lý |
 |---|---|---|---|
 | G1 | **Bản đồ không dạy gì.** Logistics: tuyến tô màu, "Rotterdam · 2 chuyến", danh sách "0/3 bài tuyến"; không câu SQL nào, không số liệu nào người học tự tính ra. Finance: một khung bản đồ chi nhánh tĩnh, nửa màn hình trống, không bấm được gì. User đã nói "vô nghĩa". | `live\17`, `live\33`, `ret\1280_d_logistics_map` | **V22-A** |
-| G2 | **Kết quả sai/đúng nhưng không biết "vì sao ra số này".** "SQL bằng lời" (L162) mô tả câu, tab Thứ tự thực thi đếm dòng mỗi mệnh đề; chưa chỗ nào trả lời "dòng kết quả này gom từ những dòng nào" (GROUP BY) hay "ghép với dòng nào" (JOIN): hai khái niệm khó nhất. | đọc code `src/viz/steps.ts`, `ui/resultTable.ts` | **V22-B** |
+| G2 | **Kết quả sai/đúng nhưng không biết "vì sao ra số này".** "SQL bằng lời" (L162) mô tả câu, tab Thứ tự thực thi (L154–L156) đếm dòng mỗi mệnh đề, phim gộp GROUP BY với tối đa 3 nhóm mẫu (`GroupSample` = khóa + số dòng) và vài cặp JOIN mẫu (`JoinMatch`) do hệ thống chọn. Chưa chỗ nào trả lời câu người học hỏi khi nhìn **một dòng cụ thể** trong bảng kết quả: "dòng *này* gom từ những dòng nào, số này cộng từ đâu" (GROUP BY) hay "dòng *này* ghép với dòng nào" (JOIN). | `src/viz/stepText.ts` (`GroupSample`, `JoinMatch`), `src/viz/steps.ts` (`matchOf`), L154–L156 | **V22-B** |
 | G3 | **Người quay lại sau 15 ngày gặp ba thẻ luyện chồng nhau** (Ôn đầu chương, Ôn tập hôm nay (5), Bài luyện trên dữ liệu cửa hàng) trước khi thấy domain; không có câu "lần trước bạn dừng ở…", không mục tiêu nào người học tự đặt. Không có cách nhắc nào ngoài việc tự nhớ mở lại trang. | `ret\1280_`, `ret\375_` | **V22-C** |
 | G4 | **Nội dung kẹt ngân sách:** tickets 105/110, ecom 48/50, interview 24/25. 26 việc Logistics < 3 biến thể. | §1.1 | **V22-D** (sau V22-E) |
 | G5 | **Boot còn nặng:** YAML parse 150–187 ms mỗi lần mở, `yaml` ~25 KB gz trong main (ước lượng L178). Chưa đo với CPU chậm. | L178 | **V22-E** |
@@ -84,28 +84,28 @@ Tiêu chí thành công (đo được bằng smoke, `SMOKE_PERF`, axe, budget, v
 |---|---|---|
 | S1 | Bản đồ ở cả ba domain có ≥ 1 hành động dẫn tới một câu SQL chạy được trên schema của domain; smoke đi một hành động như vậy tới kết quả | `tests/map*.test.ts` (mọi điểm/tuyến có SQL chạy được), bước smoke mới |
 | S2 | "Vì sao ra dòng này" có trên mọi kết quả có GROUP BY hoặc JOIN (story, làn, drill, Sandbox); với mọi Solution có GROUP BY, tổng số dòng nguồn của các nhóm = số dòng sau WHERE (câu không HAVING; có HAVING thì ≤) | `tests/why.test.ts` trên mọi Solution ba domain + drill |
-| S3 | Người quay lại (save mẫu, nghỉ ≥ 7 ngày): Trang chủ có đúng **1** thẻ "Buổi học hôm nay" thay cho 3 thẻ luyện; chiều cao Trang chủ 375 giảm ≥ 30 % so với đo ở đầu luồng | smoke + `scrollHeight` |
-| S4 | Main ≤ 305 KB gz (từ 325, ước lượng), `yaml` không còn trong main; CPU main thread lần hai ≤ 320 ms (từ 445–472); không domain nào chậm hơn số v20 quá 10 % | `check-budget`, `SMOKE_PERF=3` |
-| S5 | tickets ≤ 90 / 110 sau tách; 0/57 việc thường Logistics < 3 biến thể; phòng phỏng vấn 7 bộ đề + 7 take-home | budget, `tests/content.test.ts`, `tests/interview.test.ts` |
+| S3 | Người quay lại (save mẫu, nghỉ ≥ 7 ngày): Trang chủ có đúng **1** thẻ "Buổi học hôm nay" thay cho 3 thẻ luyện; chiều cao nội dung Trang chủ 375 giảm ≥ 30 % so với mốc đo ở đầu luồng | smoke đo `scrollHeight` của khung cuộn chứa `<main id="home">` (không phải `documentElement`: ở app này nó luôn bằng cao khung nhìn), ghi mốc vào `review-log.md` trước khi sửa |
+| S4 | `yaml` không còn trong main; main giảm ≥ 15 KB gz so với 325 (L178 ước lượng −25); thời gian script main thread lần hai (CDP `Performance.getMetrics` `ScriptDuration`, V22-E thêm vào `SMOKE_PERF`) giảm ≥ 100 ms so với mốc đo đầu luồng; không domain nào chậm hơn số v20 quá 10 % | `check-budget`, `SMOKE_PERF=3` |
+| S5 | `tickets` ≤ 70 / 110 và `ticketLate` ≤ 50 / 50 sau tách và sau biến thể; 0/57 việc thường Logistics < 3 biến thể; phòng phỏng vấn 7 bộ đề + 7 take-home | budget, `tests/content.test.ts`, `tests/interview.test.ts` |
 | S6 | axe 0 serious/critical trên mọi trang mới/đổi (1280 sáng, 375 tối); 320 px không cuộn ngang | smoke |
 
 ---
 
 ## 3. Luồng
 
-Một việc tuần tự mở đường (V22-E) rồi bốn luồng song song. File không giao nhau, trừ chỗ ghi rõ thứ tự. Giao thức worktree, cổng, merge, deploy, i18n, dependency, luật dừng: **`roadmap-v18-v20.md` §5 giữ nguyên**. Chủ `scripts/check-budget.mjs` ở v22: **V22-E** (luồng khác gửi tên nhóm + trần). Chủ `scripts/smoke.mjs`: mỗi luồng thêm bước của mình **ở cuối** danh sách bước, trong một khối có chú thích tên luồng (như i18n). Không luồng nào đổi Save (§4 D-V22-3).
+Một việc tuần tự mở đường (V22-E) rồi bốn luồng song song. File không giao nhau, trừ chỗ ghi rõ thứ tự. Giao thức worktree, cổng, merge, deploy, i18n, dependency, luật dừng: **`roadmap-v18-v20.md` §5 giữ nguyên**. `scripts/check-budget.mjs`: V22-E đổi cấu trúc (nhóm late); **mỗi luồng tự thêm dòng nhóm của mình trong commit gộp của nó**, nối thêm cuối bảng, có chú thích tên luồng (một nhóm không có file làm `check-budget` fail, review-log V20-C, nên không thể thêm trước). Chủ `scripts/smoke.mjs`: mỗi luồng thêm bước của mình **ở cuối** danh sách bước, trong một khối có chú thích tên luồng (như i18n). Không luồng nào đổi Save (§4 D-V22-3).
 
 ### V22-E · Nhẹ hơn (mở đường, chạy trước)
 
 - **Người chơi thấy:** mở app nhanh hơn, nhất là trên điện thoại; không có gì mới trên màn hình.
 - **Việc:**
   1. YAML nội dung thành JSON **lúc build** (đề xuất L178): plugin Vite nhỏ trong `vite.config.ts` đọc `content/**/*.yml` và frontmatter vé, xuất JSON; `src/content.ts`/`src/tickets.ts` đọc JSON; `yaml` chỉ còn trong test và script. Vitest vẫn đọc YAML qua cùng hàm chuyển, nên test nội dung không đổi.
-  2. Tách chunk `tickets` theo mẫu L185: `ticketSources` (ch1–6) + `ticketLateSources` (ch7–12, trần 40), tải song song, `loadContent()` chỉ xong khi đủ. Tương tự `ecomSources` → `ecom` (ch1–4 + YAML) + `ecomLate`, và `interviewSources` tách nội dung khỏi parser nếu đo thấy lợi. Mục đích: để V22-D có chỗ.
+  2. Tách chunk `tickets` theo mẫu L185: `ticketSources` (ch1–6) + `ticketLateSources` (ch7–12, trần 50), tải song song, `loadContent()` chỉ xong khi đủ. Tương tự `ecomSources` → `ecom` (ch1–4 + YAML) + `ecomLate` (trần 25). Phòng phỏng vấn **không** tách được để có chỗ: nhóm `interview` khớp cả `interviewSources` lẫn `interviewView`, nên tách trong nhóm không giảm tổng; xem §4 D-V22-9. Mục đích: để V22-D có chỗ.
   3. Đo "máy yếu" bằng `Emulation.setCPUThrottlingRate` 4× **trên trang** (L187: không áp cho worker, nên chỉ đo render và main thread, ghi rõ giới hạn) thêm vào `SMOKE_PERF`.
   4. Dời `laneSources` khỏi boot (chỉ cần khi mở Bản đồ/làn ở Logistics), nếu đo thấy lợi.
-- **File:** `vite.config.ts`, `src/content.ts`, `src/tickets.ts` (chỉ loader), `src/ticketSources.ts` + mới `src/ticketLateSources.ts`, `src/ecomSources.ts` + mới `src/ecomLateSources.ts`, `src/interview*Sources.ts`, `package.json` (không dependency mới), `scripts/check-budget.mjs`, `scripts/smoke.mjs` (chỉ phần `SMOKE_PERF`), tests loader.
-- **Ngân sách (ước lượng):** main −20 đến −25; tickets 105 → ~60 + late ~45; ecom 48 → ~30 + late ~18; mọi trần cũ giữ.
-- **Test:** nội dung parse từ JSON = parse từ YAML (so sâu từng vé ba domain + General); `check-budget` fail nếu `index-*.js` chứa chuỗi nhận diện của thư viện `yaml`; `SMOKE_PERF` ghi số 1× và 4×.
+- **File:** `vite.config.ts`, mọi file `src/` đang `import … from 'yaml'` (đo: `src/content.ts`, `src/tickets.ts`, `src/progress.ts`, `src/lessons.ts`, `src/people.ts`, `src/lanes.ts`, `src/glossary.ts`, `src/home.ts`, `src/ui/myDataView.ts`; riêng `myDataView` có thể là đọc YAML của bộ dữ liệu mẫu, kiểm trước khi đổi), `src/general.ts`/`src/interview.ts` nếu chunk lười của chúng kéo `yaml`, `src/ticketSources.ts` + mới `src/ticketLateSources.ts`, `src/ecomSources.ts` + mới `src/ecomLateSources.ts`, `src/interview*Sources.ts`, `package.json` (không dependency mới), `scripts/check-budget.mjs`, `scripts/smoke.mjs` (chỉ phần `SMOKE_PERF`), tests loader.
+- **Ngân sách (ước lượng):** main −15 đến −25 (L178); tickets 105 → ~60 + `ticketLate` ~45 (trần mới 50); ecom 48 → ~30 + `ecomLate` ~18 (trần mới 25); mọi trần cũ giữ.
+- **Test:** nội dung parse từ JSON = parse từ YAML (so sâu từng vé ba domain + General); `check-budget` fail nếu `index-*.js` chứa chuỗi nhận diện của thư viện `yaml`; `SMOKE_PERF` ghi số 1× và 4× và `ScriptDuration` (mốc cho S4, đo trước khi sửa).
 - **Cỡ:** M. **Chặn bởi:** tag `v21`. **Chặn:** V22-D. Không chặn A/B/C (họ không đụng loader).
 
 ### V22-A · Bản đồ biết dạy (chờ `map-research.md`)
@@ -114,20 +114,21 @@ User chê trực tiếp, nên đây là luồng ưu tiên. **Phương án cụ t
 
 - **Người chơi thấy (khung):** Bản đồ thành một cách **xem dữ liệu bằng SQL**, không chỉ là phần thưởng trang trí. Mỗi cảng/chi nhánh/thành phố trên bản đồ mở ra một câu hỏi số liệu có thật trong schema của domain (`ports`/`shipments`, `branches`/`loans`, thành phố giao hàng của E-com), người học tự viết hoặc sửa SQL để trả lời, và kết quả được vẽ lại lên bản đồ (độ dày tuyến, cỡ điểm). Phần thưởng hiện có (tuyến mở sau đánh giá, làn phụ) giữ nguyên.
 - **Luật:** không lộ đáp án việc story (L25); không cột/bảng bị khóa (`unlockedTables()`); chạy qua `runSandboxed` như Sandbox, 0 XP nếu không phải việc; chữ VI/EN trong chunk lười của luồng; một linh vật mỗi vùng; giảm chuyển động = khung cuối; SVG bản đồ giữ `coast.ts`/`seaLanes.ts` (không vẽ lại bờ biển).
-- **File (dự kiến):** mới `src/ui/mapPage.ts` (chuyển `routesSection` ra khỏi `ui/homeView.ts`: commit đầu tiên của luồng, gộp sớm để V22-C không đụng), `src/ui/lanePanel.ts`, `src/art/logistics.ts` (chỉ `routeMap`), `src/art/mapMotion.ts`, `map()` trong `src/art/ecommerce.ts` và `src/art/finance.ts`, mới `src/mapQueries.ts` (thuần) hoặc `content/*/map.yml`, tests mới.
+- **File (dự kiến):** `src/ui/domainArt.ts` (đường vẽ bản đồ E-com/Finance), mới `src/ui/mapPage.ts` (chuyển `routesSection` ra khỏi `ui/homeView.ts`: commit đầu tiên của luồng, gộp sớm để V22-C không đụng), `src/ui/lanePanel.ts`, `src/art/logistics.ts` (chỉ `routeMap`), `src/art/mapMotion.ts`, `map()` trong `src/art/ecommerce.ts` và `src/art/finance.ts`, mới `src/mapQueries.ts` (thuần) hoặc `content/*/map.yml`, tests mới.
 - **Ngân sách (ước lượng):** main +1; chunk lười mới `mapteach` ≤ 8; `art`/`ecomart`/`finart` không vượt trần.
 - **Test:** mọi điểm bản đồ có SQL chạy được trên schema của nó và chỉ dùng bảng đã mở ở chương tương ứng; SQL đó không trùng kết quả với Solution của việc nào (như `starterCards.test.ts`); smoke: mở Bản đồ ba domain, chạy một câu, kết quả vẽ lên bản đồ.
 - **Cỡ:** L (ước lượng, chờ phương án). **Chặn bởi:** `map-research.md` + user chọn phương án (§4 D-V22-1). **Chặn:** không. **Giao file với T8:** nếu user chọn làm T8 ở v22 (§4 D-V22-4), T8 gộp vào luồng này (cùng `art/ecommerce.ts`/`finance.ts`), không thành luồng riêng.
 
 ### V22-B · "Vì sao ra dòng này" (giải thích kết quả)
 
+- **Khác gì cái đã có:** tab Thứ tự thực thi (L154–L156) cho **3 nhóm mẫu và vài cặp JOIN do hệ thống chọn**, chỉ khóa + số đếm, ở một tab khác. V22-B trả lời cho **đúng dòng người học đang nhìn** trong bảng kết quả, hiện **dòng nguồn thật** và phép cộng của cột gộp, ngay tại chỗ. Luồng dùng lại `matchOf`/cách dựng câu phụ của `src/viz/steps.ts`, không viết parser hay probe thứ hai.
 - **Người chơi thấy:** trong bảng kết quả, mỗi dòng có nút nhỏ "Vì sao?" (chỉ khi câu có GROUP BY, JOIN hoặc aggregate). Bấm vào thì ô ngay dưới dòng mở ra:
   - **GROUP BY:** "Dòng này gom **14** dòng của `shipments` có `pod = 'NLRTM'`", kèm 5 dòng nguồn đầu tiên và các cột đã gộp (`sum(weight)` = 12 + 9 + …).
   - **JOIN:** "Dòng này ghép dòng `shipments` id 812 với `customers` id 33 qua `customer_id`", hai dòng cạnh nhau. LEFT JOIN không có cặp thì ghi "không có dòng khớp, nên các cột bên phải là trống".
   - **WITH/UNION/window/subquery:** "Chưa giải thích được câu này", không lỗi.
 - **Ở đâu:** story, làn, drill, Sandbox, "Thử ngay". **Mô tả kết quả của chính người chơi** (`app.lastRun`), không bao giờ Solution, nên không lộ đáp án (L25). Không có ở index lab và đánh giá thăng tiến khi chưa đạt (giữ độ khó của bài kiểm tra).
-- **Code:** dựng từ cây `libpg-query` mà request `steps` đã parse (như L162): `src/viz/why.ts` (thuần, trả mã + tham số, không chữ dịch) sinh câu phụ "dòng nguồn" bằng `pgsql-deparser`: mệnh đề FROM/JOIN/WHERE của người chơi + điều kiện bằng khóa nhóm của dòng được chọn (giá trị đi qua tham số, không nối chuỗi). Chạy qua `runSandboxed` hiện có, request `run` có `schema`; không request mới, không sửa `db/worker.ts`. View `src/ui/whyView.ts` trong chunk lười `why`; một chỗ gắn trong `ui/resultTable.ts`. Chữ VI/EN trong chunk.
-- **File:** mới `src/viz/why.ts`, `src/ui/whyView.ts`, `ui/resultTable.ts` (một hook), `scripts/check-budget.mjs` qua V22-E (nhóm `why` ≤ 6), tests mới.
+- **Code:** dựng từ cây `libpg-query` mà request `steps` đã parse (như L162), dùng lại helper dựng câu phụ và probe JOIN của `src/viz/steps.ts` (export thêm, không chép): `src/viz/why.ts` (thuần, trả mã + tham số, không chữ dịch) sinh câu phụ "dòng nguồn" bằng `pgsql-deparser`: mệnh đề FROM/JOIN/WHERE của người chơi + điều kiện bằng khóa nhóm của dòng được chọn (giá trị đi qua tham số, không nối chuỗi). Chạy qua `runSandboxed` hiện có, request `run` có `schema`; không request mới, không sửa `db/worker.ts`. View `src/ui/whyView.ts` trong chunk lười `why`; một chỗ gắn trong `ui/resultTable.ts`. Chữ VI/EN trong chunk.
+- **File:** mới `src/viz/why.ts`, `src/viz/steps.ts` (chỉ export helper), `src/ui/whyView.ts`, `ui/resultTable.ts` (một hook), `scripts/check-budget.mjs` (dòng nhóm `why` ≤ 6, trong commit gộp), tests mới.
 - **Ngân sách (ước lượng):** main +0,4; `why` ≤ 6; `parser` không đổi.
 - **Test:** `tests/why.test.ts` chạy trên **mọi Solution** ba domain + drill có GROUP BY: với mỗi dòng kết quả, `count(*)` của câu dòng nguồn = giá trị `count(*)` (nếu Solution có) và tổng số dòng nguồn mọi nhóm = số dòng sau WHERE (không HAVING; có HAVING thì ≤); câu JOIN: mỗi dòng kết quả tìm được đúng cặp; giá trị NULL trong khóa nhóm dùng `IS NOT DISTINCT FROM`; khóa là ngày/numeric dạng chuỗi của PGlite vẫn khớp. Smoke: chạy Solution việc GROUP BY đầu tiên, bấm "Vì sao?" dòng 1, thấy số dòng nguồn.
 - **Cỡ:** M–L. **Chặn bởi:** không. **Chặn:** không.
@@ -156,7 +157,7 @@ Luật cứng (như Lily, `lily-growth.md` §3): **không chuỗi ngày, không 
   3. **E-com:** ≥ 3 biến thể cho mọi việc thường còn thiếu, nếu `ecom` sau tách còn chỗ.
 - **Không làm:** chương mới, domain thứ tư (§4 D-V22-5), drill Python (NO-GO L187).
 - **File:** `content/tickets/**`, `content/domains/ecom/**`, `content/general/interview.yml`, tests nội dung. Không seed mới (mọi biến thể dựa trên dữ liệu có sẵn; cần dữ liệu mới thì khối mới **cuối** seed, `setseed()` riêng, md5 cũ không đổi).
-- **Ngân sách (ước lượng):** tickets + ticketLate ≤ 100 tổng; interview ≤ 25 (sau tách của V22-E); ecom + ecomLate ≤ 60 tổng.
+- **Ngân sách (ước lượng, trần từng chunk):** `tickets` ≤ 70 / 110, `ticketLate` ≤ 50 / 50 (26 việc × ~0,3 KB biến thể ≈ +8); `ecom` ≤ 50, `ecomLate` ≤ 25; `interview` +2 bộ đề + 2 take-home ≈ +5 (L169 cùng lượng: +5) nên **không vừa 25**: theo §4 D-V22-9 (nhóm `interviewContent` riêng, hoặc nâng trần 25 → 32). Không có quyết định thì luồng chỉ làm phần biến thể.
 - **Test:** toàn bộ luật nội dung (`tests/variants.test.ts`: mọi biến thể chạy, khác nhau, không sót giá trị biến thể 0; `wrong:` khác Solution trong mọi biến thể; EN không dấu; code span VI = EN); bộ đề mới chỉ dùng kỹ năng của Phần đã khai (`tests/interview.test.ts`).
 - **Cỡ:** L (phần lớn là viết và kiểm nội dung). **Chặn bởi:** V22-E (chỗ trong chunk). **Chặn:** không.
 
@@ -185,7 +186,7 @@ Thứ tự gộp: V22-E → commit đầu của V22-A → V22-B, V22-C → phầ
 ### 3.8 Tiêu chí thoát v22
 
 1. Năm việc (E, A, B, C, D) gộp, hoặc bỏ theo luật §5.4 của roadmap-v18-v20, có dòng "v22 · bỏ" trong `review-log.md`.
-2. tsc, toàn bộ vitest (`--no-file-parallelism --testTimeout=60000`), build, `check-budget` xanh. Trần mềm v22: **main ≤ 310** (sau V22-E), css ≤ 20, en ≤ 20, `why` ≤ 6, `mapteach` ≤ 8, interview ≤ 25, me ≤ 12.
+2. tsc, toàn bộ vitest (`--no-file-parallelism --testTimeout=60000`), build, `check-budget` xanh. Trần mềm v22: **main ≤ (số đo ngay sau V22-E) + 4** (A +1, B +0,4, C +2, dư 0,6) và không bao giờ > 325; css ≤ 20, en ≤ 20, `why` ≤ 6, `mapteach` ≤ 8, `ticketLate` ≤ 50, `ecomLate` ≤ 25, interview theo D-V22-9, me ≤ 12.
 3. Smoke xanh ở preview và site thật, gồm bước mới: Bản đồ ba domain (S1), "Vì sao?" (S2), người quay lại (S3), axe trên trang mới (S6).
 4. `SMOKE_PERF=3` (1× và 4× CPU trang) ghi vào `review-log.md` "v22", so với số v20 (L178): S4.
 5. Giấy tờ: một dòng L mỗi luồng (§5), `CLAUDE.md` (JSON lúc build, chunk late, `cargo-query/goal`, `why`, bản đồ mới).
@@ -204,6 +205,7 @@ Thứ tự gộp: V22-E → commit đầu của V22-A → V22-B, V22-C → phầ
 | **D-V22-5** | Domain thứ tư / chương mới | **Không** trong v22: chiều sâu (biến thể, phỏng vấn) và "vì sao" giúp junior DA hơn bối cảnh mới; ngân sách nội dung vừa mới có chỗ | Không |
 | **D-V22-6** | Nút "Vì sao?" ở đánh giá thăng tiến | **Chỉ sau khi bước đó đạt** (giữ độ khó của bài kiểm tra) | Chỉ sau khi đạt |
 | **D-V22-7** | File `.ics` nhắc lịch | **Làm** (không mạng, người học tự thêm vào lịch); không làm thông báo trình duyệt | Làm |
+| **D-V22-9** | Phòng phỏng vấn đã 24/25: thêm 2 bộ đề + 2 take-home cần ~+5 KB | **Tách nội dung thành nhóm `interviewContent` riêng** (trần 25), giữ `interview` cho UI; không nâng trần | V22-D chỉ làm biến thể, không bộ đề mới |
 | **D-V22-8** | Đo trên điện thoại Android thật (Pyodide, máy yếu) | User đo nếu có máy; vòng không chờ | Giữ NO-GO Python; V22-E dùng CPU 4× trên trang |
 
 ---
