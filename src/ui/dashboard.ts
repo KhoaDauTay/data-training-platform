@@ -66,7 +66,7 @@ export function kpiView(v: KpiValue, unit: string): HTMLElement {
   return h('ul', { class: 'm-0 list-none space-y-1.5 p-0' }, ...v.bars.map((b) =>
     h('li', { class: 'grid grid-cols-[minmax(0,8rem)_1fr_auto] items-center gap-2 text-sm', title: `${b.label}: ${b.full}${unit ? ` ${unit}` : ''}` },
       h('span', { class: 'truncate' }, b.label),
-      h('span', { class: 'h-2.5 rounded bg-slate-500 dark:bg-slate-400', style: `width:${Math.round((b.value / max) * 100)}%`, 'aria-hidden': 'true' }),
+      h('span', { class: 'h-2.5 rounded-r-[3px] bg-chart', style: `width:${Math.round((b.value / max) * 100)}%`, 'aria-hidden': 'true' }),
       h('span', { class: 'tabular-nums' }, b.text, unit ? h('span', { class: 'text-muted' }, ` ${unit}`) : null))));
 }
 
@@ -124,7 +124,7 @@ function playerCard(c: Card, i: number, n: number, redraw: () => void): HTMLElem
     save();
   };
   if (c.slow) {
-    body.append(h('div', { class: 'rounded-lg bg-amber-50 p-3 text-sm text-amber-950 ring-1 ring-amber-300 dark:bg-amber-950/40 dark:text-amber-100 dark:ring-amber-800' },
+    body.append(h('div', { class: 'rounded-(--r-inset) bg-warn-soft p-3 text-sm text-ink ring-1 ring-warn/40' },
       h('p', { class: 'm-0 flex items-center gap-1.5 font-semibold' }, icon('alert', 'size-4'), t('dash.slowTitle')),
       h('p', { class: 'mt-1 mb-2' }, t('dash.slow')),
       h('button', { type: 'button', class: 'flex items-center gap-1.5 px-3 py-1', onclick: rerun }, icon('refresh', 'size-4'), t('dash.retrySlow'))));
@@ -334,7 +334,7 @@ function companySection(redraw: () => void): HTMLElement {
 /** Redrawn by main.ts (route shown, language switch, progress); main.ts focuses the title after a route change. */
 export function renderDashboard(host: HTMLElement): void {
   const redraw = (): void => renderDashboard(host);
-  host.replaceChildren(h('div', { class: 'mx-auto max-w-6xl space-y-6 px-4 py-6' },
+  host.replaceChildren(h('div', { class: 'mx-auto max-w-(--w-wide) space-y-6 px-4 py-6' },
     h('header', {},
       h('h1', { id: 'dashboard-title', tabindex: '-1', class: 'm-0 text-2xl font-bold' }, t('dash.title')),
       h('p', { class: 'mt-1 mb-0 max-w-3xl text-[15px] text-muted' }, t(customLock() ? 'dash.introLocked' : 'dash.intro'))),

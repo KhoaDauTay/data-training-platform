@@ -74,7 +74,7 @@ export function renderData(host: HTMLElement): void {
     h('h2', { id: 'data-list-title', class: 'sr-only' }, t('data.title')),
     list);
   side?.replaceChildren(picker);
-  host.replaceChildren(h('div', { class: 'mx-auto max-w-[1120px] px-4 py-6' },
+  host.replaceChildren(h('div', { class: 'mx-auto max-w-(--w-wide) px-4 py-6' },
     h('h1', { id: 'data-title', tabindex: '-1', class: 'm-0 text-2xl font-bold' }, t('data.title')),
     h('p', { class: 'mt-1 text-muted' }, t(domainText()?.dataIntro ?? 'data.intro')),
     h('div', { class: side ? 'mt-4 grid gap-5' : 'mt-4 grid gap-5 lg:grid-cols-[18rem_1fr]' },

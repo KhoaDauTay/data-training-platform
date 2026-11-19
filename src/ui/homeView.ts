@@ -15,7 +15,7 @@ import { dayCount, LAST_STAGE, type LilyStage, lilyStage, toNextStage } from '..
 import { relabelScene, teachScene } from './teachScene';
 import { currentRoute } from './router';
 import { actions, app, done } from '../state';
-import { BTN_GO, CARD, CARD_ACTION, chapterColor, cx, DONE_PILL, PILL } from '../theme';
+import { BTN_GO, BTN_SECONDARY, CARD, CARD_ACTION, chapterColor, cx, DONE_PILL, PILL } from '../theme';
 import { roleLine } from '../people';
 import { upsert } from '../registry';
 import { hashOf } from '../route';
@@ -164,7 +164,7 @@ function careerCard(): HTMLElement {
       class: cx('flex items-center gap-2 text-[15px]', !reached(r.at) && 'text-muted'),
       'aria-current': r === now ? 'step' : false,
     },
-      h('span', { class: cx('size-2.5 shrink-0 rounded-full', reached(r.at) ? 'bg-emerald-600' : 'bg-line'), 'aria-hidden': 'true' }),
+      h('span', { class: cx('size-2.5 shrink-0 rounded-full', reached(r.at) ? 'bg-good' : 'bg-line'), 'aria-hidden': 'true' }),
       r === now ? h('b', { class: 'whitespace-nowrap' }, r.title) : h('span', { class: 'whitespace-nowrap' }, r.title), // never wraps under its dot
       r === now
         ? h('span', { class: cx(PILL, 'ml-auto', DONE_PILL) }, t('home.careerNow'))
@@ -199,7 +199,7 @@ function chapterRow(c: ChapterCard): HTMLLIElement {
     lead: closed
       ? icon('lock', 'size-5 text-muted')
       : c.status === 'done'
-        ? h('span', { class: 'grid size-10 place-items-center rounded-full bg-emerald-700 text-white' }, icon('check', 'size-5'))
+        ? h('span', { class: 'grid size-10 place-items-center rounded-full bg-good text-on-accent' }, icon('check', 'size-5'))
         : h('span', { class: cx('grid size-10 place-items-center rounded-full text-lg font-bold', chapterColor(c.chapter).chip) }, String(c.chapter)),
     title: `${c.chapter} · ${chapterTitle(c.chapter, lang)}`,
     sub: closed ? (c.status === 'soon' ? t('home.soonHint') : t('home.lockedAfter', { n: c.chapter - 1 })) : adv ? h('span', { class: 'flex flex-wrap gap-x-3' }, short, adv) : short,
@@ -436,7 +436,7 @@ function domainsSection(): HTMLElement {
       lead: icon(d.icon, 'size-6'),
       title: t(d.name),
       sub: domainLine(d.id),
-      action: h('a', { href: domainHash(d.id), class: cx(BTN_GO, 'px-4 py-2 whitespace-nowrap no-underline') }, t('home.enter')),
+      action: h('a', { href: domainHash(d.id), class: cx(BTN_SECONDARY, 'px-4 py-2 whitespace-nowrap no-underline') }, t('home.enter')),
     }))));
 }
 
@@ -481,9 +481,9 @@ export function renderHome(host: HTMLElement): void {
   host.replaceChildren(
     h('h1', {
       id: 'home-title', tabindex: '-1',
-      class: page === 'home' || page === 'overview' ? 'sr-only' : 'mx-auto mt-6 mb-0 max-w-[880px] px-4 text-2xl font-extrabold',
+      class: page === 'home' || page === 'overview' ? 'sr-only' : 'mx-auto mt-6 mb-0 max-w-(--w-read) px-4 text-heading',
     }, t(PAGE_TITLE[page])),
-    h('div', { class: cx(grid ? 'mx-auto grid max-w-[1120px] gap-5 px-4 py-6 lg:grid-cols-3' : 'mx-auto grid max-w-[880px] gap-8 px-4 py-6', enter && 'cq-enter') },
+    h('div', { class: cx(grid ? 'mx-auto grid max-w-(--w-wide) gap-5 px-4 py-6 lg:grid-cols-3' : 'mx-auto grid max-w-(--w-read) gap-8 px-4 py-6', enter && 'cq-enter') },
       ...nodes(...sections.filter((s) => s.pages.includes(page)).map((s) => {
         const el = s.render(m);
         return el && h('div', { class: cx('min-w-0', grid && SPAN[s.span]) }, el);

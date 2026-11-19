@@ -96,7 +96,7 @@ function renderDomainMenu(): void {
 function dbStatusView(): Node {
   if (app.dbStatus === 'ready') {
     return h('span', { class: 'flex items-center', title: t('db.ready') },
-      h('span', { class: 'size-2.5 rounded-full bg-emerald-600 ring-2 ring-emerald-600/25', 'aria-hidden': 'true' }),
+      h('span', { class: 'size-2.5 rounded-full bg-good ring-2 ring-good/25', 'aria-hidden': 'true' }),
       h('span', { class: 'sr-only' }, t('db.ready')));
   }
   if (app.dbStatus === 'failed') return h('button', { type: 'button', class: TOP_BTN, onclick: () => actions.retryDb() }, t('db.retry'));
@@ -109,7 +109,7 @@ function dbStatusView(): Node {
   // A dot and a short figure (full words on hover and for screen readers): an inline sentence wrapped the bar (v10 UX #4/#5).
   const short = downloaded ? '' : known ? `${Math.round((p.loaded / p.total!) * 100)}%` : `${mb(p.loaded)} MB`;
   return h('span', { class: 'flex items-center gap-1.5 text-xs whitespace-nowrap text-muted', title: text },
-    h('span', { class: 'size-2.5 animate-pulse rounded-full bg-amber-500', 'aria-hidden': 'true' }),
+    h('span', { class: 'size-2.5 animate-pulse rounded-full bg-warn', 'aria-hidden': 'true' }),
     short ? h('span', { 'aria-hidden': 'true' }, short) : null,
     h('span', { class: 'sr-only' }, text));
 }

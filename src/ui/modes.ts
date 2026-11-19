@@ -13,7 +13,7 @@ import {
 import { DRILL_ID } from '../save';
 import { actions, app, done, erMeta, persist, schemaHooks, selected, stepKey } from '../state';
 import { textOf, type Ticket } from '../tickets';
-import { BTN_GO, CARD, cx } from '../theme';
+import { BTN_GO, BTN_SECONDARY, CARD, cx } from '../theme';
 import { applyVariant } from '../variants';
 import { hints, renderBrief, shapeCard } from './brief';
 import { goalCard, skillChips, wrapUp } from './chapterView';
@@ -291,9 +291,9 @@ function reviewCard(m: HomeModel): HTMLElement {
       h('h2', { id: 'review-title', class: 'm-0 text-lg font-bold' }, t('prac.section')),
       h('p', { class: 'mt-1 mb-0 text-[15px] text-muted' }, intro),
       p.solved + p.weak ? h('p', { class: 'mt-1 mb-0 text-sm text-muted' }, t('prac.stats', { solved: p.solved, weak: p.weak })) : null),
-    due ? h('button', { type: 'button', class: cx(BTN_GO, 'px-4 py-2'), onclick: () => startToday() }, t('prac.today', { n: due })) : null,
+    due ? h('button', { type: 'button', class: cx(here ? BTN_GO : BTN_SECONDARY, 'px-4 py-2'), onclick: () => startToday() }, t('prac.today', { n: due })) : null,
     // v4 §B.3: nothing learned yet → one way forward.
-    none ? h('button', { type: 'button', class: cx(BTN_GO, 'px-4 py-2'), onclick: () => { location.hash = '#/learn/sql/1'; } }, t('prac.toFirst')) : null,
+    none ? h('button', { type: 'button', class: cx(here ? BTN_GO : BTN_SECONDARY, 'px-4 py-2'), onclick: () => { location.hash = '#/learn/sql/1'; } }, t('prac.toFirst')) : null,
     here ? guideHooks.replayBtn?.('practice') ?? null : null),
   here ? guideSlot('practice-review') : null);
 }
@@ -306,7 +306,7 @@ function warmupCard(): HTMLElement | null {
     h('div', { class: 'min-w-48 flex-1' },
       h('h2', { id: 'warmup-title', class: 'm-0 text-lg font-bold' }, t('warmup.title')),
       h('p', { class: 'mt-1 mb-0 text-[15px] text-muted' }, t('warmup.intro', { n }))),
-    h('button', { type: 'button', class: cx(BTN_GO, 'px-4 py-2'), onclick: () => void startPractice(warmupToday(), true) }, t('warmup.start', { n })));
+    h('button', { type: 'button', class: cx(BTN_SECONDARY, 'px-4 py-2'), onclick: () => void startPractice(warmupToday(), true) }, t('warmup.start', { n })));
 }
 
 // Same id replaces topbar.ts's 'play' entry: "Workspace" is current only in story mode (and on a lane task).

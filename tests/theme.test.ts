@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { loadDomain, loadTickets, loadTicketTemplates } from '../src/content';
 import { peopleOf } from '../src/people';
 import { CHAPTERS } from '../src/progress';
-import { CHAPTER_COLOR, chapterColor, cx, DEPT, deptColor, thanksKey } from '../src/theme';
+import { BTN_SUBMIT, CHAPTER_COLOR, chapterColor, cx, DEPT, deptColor, thanksKey } from '../src/theme';
 import css from '../src/style.css?raw';
 
 /** WCAG 2.x relative luminance and contrast ratio. */
@@ -27,6 +27,10 @@ const TEXT_PAIRS: [string, string][] = [
   ['accent', 'panel'], ['accent', 'bg'], ['on-accent', 'accent'],
   ['good', 'panel'], ['bad', 'panel'], ['warn', 'panel'], ['good', 'bg'], ['bad', 'bg'], ['warn', 'bg'],
   ['sun-ink', 'sun'],
+  // ui-ux-v7 T1 (L136): surface-2 (table head, kbd chip, inset) and the semantic soft backgrounds
+  ['text', 'surface-2'], ['muted', 'surface-2'], ['accent', 'surface-2'], ['accent', 'accent-soft'],
+  ...['good', 'bad', 'warn', 'info'].flatMap((k): [string, string][] => [['text', `${k}-soft`], ['muted', `${k}-soft`]]),
+  ['good', 'good-soft'], ['bad', 'bad-soft'], ['warn', 'warn-soft'], ['accent', 'info-soft'],
   ...['keyword', 'string', 'number', 'comment', 'operator', 'type', 'property', 'atom']
     .flatMap((s): [string, string][] => [[`syn-${s}`, 'panel'], [`syn-${s}`, 'code']]),
 ];
@@ -70,6 +74,21 @@ describe('theme', () => {
       .filter((line) => /\bclass(Name)?\s*[:=]\s*`/.test(line) || /\b(bg|text|ring|border|from|via|to|fill|stroke)-\$\{/.test(line)));
     expect(Object.keys(sources).length).toBeGreaterThan(20);
     expect(bad).toEqual([]);
+  });
+
+  it('ui-ux-v7 T1 (D-U8): src/ui không dùng lớp màu thô ngoài bảng màu (token hoặc theme.ts)', () => {
+    const sources = import.meta.glob<string>('../src/ui/*.ts', { query: '?raw', import: 'default', eager: true });
+    const ALLOW = new Set<string>([]); // avatar.ts draws with hex, not classes; add a file here only with a reason
+    const bad = Object.entries(sources).filter(([f]) => !ALLOW.has(f.replace('../src/ui/', ''))).flatMap(([file, src]) => src.split('\n')
+      .map((line, i) => `${file.replace('../src/', '')}:${i + 1}: ${line.trim()}`)
+      .filter((line) => /\b(bg|text|ring|border|fill|stroke)-(emerald|rose|amber|slate|sky)-\d+/.test(line)));
+    expect(Object.keys(sources).length).toBeGreaterThan(20);
+    expect(bad).toEqual([]);
+  });
+
+  it('ui-ux-v7 T1: Nộp là nút chính --accent ở cả hai theme', () => {
+    expect(BTN_SUBMIT.split(' ')).toContain('bg-accent');
+    expect(BTN_SUBMIT).not.toMatch(/emerald/);
   });
 
   it('chữ trên nền ≥ 4,5:1 ở cả hai theme (WCAG AA, product-design-v6 §2.3)', () => {

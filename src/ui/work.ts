@@ -70,8 +70,8 @@ export function planFailText(f: PlanFail, lab: boolean): string {
 }
 
 const FEEDBACK: Record<'good' | 'bad', string> = {
-  good: 'mt-2 rounded-xl bg-emerald-50 px-3 py-1.5 text-sm font-semibold text-emerald-900 ring-1 ring-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-100 dark:ring-emerald-800',
-  bad: 'mt-2 rounded-xl bg-rose-50 p-3 text-sm text-rose-900 ring-1 ring-rose-200 dark:bg-rose-950/40 dark:text-rose-100 dark:ring-rose-800',
+  good: 'mt-2 rounded-(--r-ctl) bg-good-soft px-3 py-1.5 text-sm font-semibold text-ink ring-1 ring-good/40',
+  bad: 'mt-2 rounded-(--r-ctl) bg-bad-soft p-3 text-sm text-ink ring-1 ring-bad/40',
 };
 
 /**

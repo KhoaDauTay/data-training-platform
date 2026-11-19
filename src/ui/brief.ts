@@ -229,7 +229,7 @@ function reflectCard(tk: Ticket): HTMLElement | null {
     const pick = reflected.get(tk.id);
     buttons.forEach((b, i) => {
       const right = pick !== undefined && i === r.answer;
-      b.className = cx('text-left', right && 'ring-2 ring-emerald-500');
+      b.className = cx('text-left', right && 'ring-2 ring-good');
       b.setAttribute('aria-pressed', pick === i ? 'true' : 'false');
       b.replaceChildren(...nodes(
         right ? `${mark(true)} ` : pick === i ? `${mark(false)} ` : null,
@@ -277,13 +277,13 @@ function recap(tk: Ticket, x: TicketText): HTMLElement {
   const skills = SKILLS.filter((s) => ids.includes(s.id));
   const next = nextTicket(app.tickets, done());
   const hintsUsed = app.save.hintsUsed[tk.id] ?? 0;
-  return h('section', { class: 'recap my-3 rounded-xl bg-emerald-50 p-4 ring-1 ring-emerald-300 dark:bg-emerald-950/40 dark:ring-emerald-800' },
-    h('h3', { tabindex: '-1', class: 'mt-0 text-emerald-900 dark:text-emerald-200' }, t('recap.title')),
+  return h('section', { class: 'recap my-3 rounded-(--r-ctl) bg-good-soft p-4 ring-1 ring-good/40' },
+    h('h3', { tabindex: '-1', class: 'mt-0 text-good' }, t('recap.title')),
     h('p', {}, tk.lane ? t('lane.xp', { n: LANE_XP }) : t('recap.xp', { n: xpFor(tk, hintsUsed), hints: hintsUsed })),
     h('h4', {}, t(tk.grants.length ? 'recap.learned' : 'recap.review')),
     h('ul', { class: 'space-y-1' }, ...skills.map((s) =>
       h('li', {},
-        h('span', { class: 'inline-flex items-center gap-1.5 align-middle' }, skillIcon(s.id, 'size-5 text-emerald-800 dark:text-emerald-300'), h('b', {}, s.label[lang])),
+        h('span', { class: 'inline-flex items-center gap-1.5 align-middle' }, skillIcon(s.id, 'size-5 text-good'), h('b', {}, s.label[lang])),
         ...(activeDomain() === 'logistics' ? [' ', h('code', {}, s.syntax)] : []), h('p', { class: 'muted' }, s.when[lang])))),
     reflectCard(tk),
     ...tk.steps.map((s, i) => h('div', { class: 'my-2 grid gap-2 sm:grid-cols-2' },
