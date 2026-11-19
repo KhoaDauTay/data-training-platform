@@ -19,6 +19,7 @@ import { localStore, readJson, writeJson } from './storage';
 import { domainHash, domainOfHash, drillOfHash, isInterviewId, sharedOf, type Route } from './route';
 import type { Ticket } from './tickets';
 import { bootGeneral, dropGeneral, initModes, interviewStep, ivPresence, onPracticeWrong, onSolved, openShared, renderLeft, renderReviewButton, reopenInterview, startDrill, startLane, startSandbox } from './ui/modes';
+import './ui/mapPage'; // V22-A: the Map page section (was routesSection in ui/homeView.ts)
 import './ui/me'; // v16 (L142): #/me nav item and page section; the page itself is the lazy meView chunk
 import { earlyOffer } from './ui/chapterView';
 import { renderNotebook, toggleNotebook } from './ui/notebook';
