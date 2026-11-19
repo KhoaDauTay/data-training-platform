@@ -845,5 +845,5 @@ Cách đo: `npm run build`, `SMOKE_PERF=3 npm run smoke` (preview của chính c
 ## v20 V20-D2 (chương F7 Finance, tách chunk `fin`), 2026-11-20, L185–L186
 
 - Ngân sách (gzip -9): `fin` 44,0 → 30,1 KB / 50 (chương 1–4 + YAML), `finlate` mới 23,8 / 30 (chương 5–7); main 324,8 / 500.
-- Kiểm: tsc, toàn bộ vitest (4120 qua; `axe.test.ts` welcome lỗi một lần với kết quả `incomplete heading-order` khi build chạy song song, chạy lại 32/32 qua), build, check-budget, smoke (5233) xanh. Edge headless (5236): chơi `fin-ch7-01..05` → Trưởng nhóm phân tích rủi ro, 4 sao trên hũ, KPI `finLateByMethod`, dock "Lên bậc mới: …"; thi vượt từ save chỉ có 6 đánh giá → đạt; 0 lỗi trang. Ảnh ở scratchpad `v20d2\`.
+- Kiểm: tsc, toàn bộ vitest (4120 qua trên commit cuối, chạy riêng; một lần trước đó `axe.test.ts` welcome báo `incomplete heading-order` khi build chạy song song), build, check-budget, smoke (5233) xanh. Edge headless (5236): chơi `fin-ch7-01..05` → Trưởng nhóm phân tích rủi ro, 4 sao trên hũ, KPI `finLateByMethod`, dock "Lên bậc mới: …"; thi vượt từ save chỉ có 6 đánh giá → đạt; 0 lỗi trang. Ảnh ở scratchpad `v20d2\`.
 - Chờ user: không. Mốc bản đồ chương 7 là ngôi sao (không có chi nhánh thứ 9 trong seed).

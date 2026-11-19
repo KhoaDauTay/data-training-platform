@@ -30,7 +30,7 @@ conclusion_en:
     - "Raise the approval threshold to 750 points for all three channels"
     - "Keep the rule as it is, since bad debt is the same in every channel"
 ---
-Đây là buổi đánh giá thăng tiến cuối cùng. Hội đồng tín dụng họp tuần sau để chốt luật duyệt vay 2027, và mình muốn một đề xuất có số liệu: loại hồ sơ nào rủi ro thật, năm nay mình đã giải ngân cho nó bao nhiêu, và nó dồn vào chi nhánh nào. Làm đúng cả ba là bạn lên trưởng nhóm phân tích rủi ro.
+Hội đồng tín dụng họp tuần sau để chốt luật duyệt vay 2027, và mình muốn một đề xuất có số liệu: loại hồ sơ nào rủi ro thật, năm nay mình đã giải ngân cho nó bao nhiêu, và nó dồn vào chi nhánh nào. Làm đúng cả ba là bạn lên trưởng nhóm phân tích rủi ro.
 
 ## Step 1: Rủi ro theo kênh và nhóm điểm
 Các khoản giải ngân từ tháng 1 đến hết tháng 6/2026, có ít nhất một ảnh chụp cuối tháng. Mỗi kênh nộp hồ sơ và mỗi nhóm điểm lúc nộp (nhóm 1 dưới 600 điểm, nhóm 2 từ 600 đến dưới 700, nhóm 3 từ 700 trở lên): số khoản vay, số khoản từng quá hạn trên 30 ngày ở ít nhất một ảnh chụp cuối tháng, và tỷ lệ phần trăm (làm tròn 2 chữ số thập phân). Xếp theo kênh, rồi theo nhóm.
@@ -93,7 +93,7 @@ ORDER BY 3, name
 3. `WITH o AS (SELECT b.name, round(100.0 * COALESCE(sum(...) FILTER (...), 0) / sum(s.outstanding), 2) AS pct FROM ... GROUP BY b.name) SELECT name, pct, RANK() OVER (ORDER BY pct DESC) FROM o ORDER BY 3, name`
 
 # EN
-This is the last promotion review. The credit committee meets next week to settle the 2027 approval rule, and I want a proposal backed by figures: which kind of application is really risky, how much we have paid out on it this year, and which branch it piles up in. Get all three right and you become the risk analytics lead.
+The credit committee meets next week to settle the 2027 approval rule, and I want a proposal backed by figures: which kind of application is really risky, how much we have paid out on it this year, and which branch it piles up in. Get all three right and you become the risk analytics lead.
 
 ## Step 1: Risk by channel and score band
 The loans paid out from January to the end of June 2026 that have at least one month-end picture. For each application channel and each score band at application time (band 1 under 600 points, band 2 from 600 to under 700, band 3 from 700 up): the number of loans, the number over 30 days past due in at least one month-end picture, and the percentage (rounded to 2 decimals). Sort by channel, then by band.
