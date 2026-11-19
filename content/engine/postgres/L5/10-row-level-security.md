@@ -62,7 +62,7 @@ quiz:
       - { vi: "Không dòng nào: không có policy nghĩa là từ chối mặc định", en: "No rows: no policy means default deny" }
       - { vi: "Lỗi quyền", en: "A permission error" }
     answer: 1
-    why: { vi: "Tài liệu: khi RLS bật mà không có policy áp dụng, bảng hành xử như từ chối mặc định: không dòng nào thấy hay sửa được. Lab cho `support` = 0.", en: "The docs: with RLS on and no applicable policy, the table is default-deny: no row can be seen or changed. The lab gives `support` = 0." }
+    why: { vi: "Docs chính thức: khi RLS bật mà không có policy áp dụng, bảng hành xử như từ chối mặc định: không dòng nào thấy hay sửa được. Lab cho `support` = 0.", en: "The docs: with RLS on and no applicable policy, the table is default-deny: no row can be seen or changed. The lab gives `support` = 0." }
   - q: { vi: "Policy `FOR UPDATE ... USING (tenant_id = 1)` không có `WITH CHECK`. Khách 1 chạy `UPDATE tickets SET tenant_id = 2 WHERE id = 3`. Chuyện gì xảy ra?", en: "A policy `FOR UPDATE ... USING (tenant_id = 1)` has no `WITH CHECK`. Tenant 1 runs `UPDATE tickets SET tenant_id = 2 WHERE id = 3`. What happens?" }
     options:
       - { vi: "Dòng được chuyển sang khách 2", en: "The row moves to tenant 2" }
@@ -83,14 +83,15 @@ quiz:
 
 - `ALTER TABLE … ENABLE ROW LEVEL SECURITY` bật RLS. Không có policy áp dụng = từ chối mặc định.
 - `CREATE POLICY … FOR … TO … USING (…) WITH CHECK (…)`: `USING` lọc dòng đã có (SELECT, UPDATE, DELETE); `WITH CHECK` kiểm dòng mới (INSERT, UPDATE). Chỉ có `USING` thì nó làm luôn `WITH CHECK`.
-- Policy permissive (mặc định) gộp với nhau bằng OR; policy `AS RESTRICTIVE` gộp bằng AND với kết quả đó. Restrictive hợp cho luật chung như "không bao giờ thấy dòng đã lưu trữ".
+- Policy permissive (mặc định) gộp với nhau bằng OR; policy `AS RESTRICTIVE` gộp bằng AND với kết quả đó.
 - Ai bỏ qua RLS: superuser, vai trò `BYPASSRLS`, chủ bảng (trừ khi `FORCE ROW LEVEL SECURITY`). Kiểm tra ràng buộc (unique, khóa ngoại) không đi qua RLS.
 - Mẫu nhiều khách: một vai trò cho ứng dụng (không sở hữu bảng) + policy dựa trên `current_setting('app.tenant_id')` hoặc theo vai trò. Index trên `tenant_id` vì điều kiện policy được thêm vào mọi câu.
-- View mặc định (`security_invoker` = false) áp policy của chủ view. Bài này dùng điều đó để thử ba vai trò trong một câu.
-
-Giới hạn khi chạy: mỗi bài là một câu trong một transaction, nên không đổi được `SET ROLE` giữa chừng; mỗi vai trò được thử qua một view do vai trò đó sở hữu. Vai trò hiện tại của PGlite là superuser.
 
 ## Ví dụ
+
+View mặc định (`security_invoker` = false) áp policy của chủ view. Bài này dùng điều đó để thử ba vai trò trong một câu.
+
+Giới hạn khi chạy: mỗi bài là một câu trong một transaction, nên không đổi được `SET ROLE` giữa chừng; mỗi vai trò được thử qua một view do vai trò đó sở hữu. Vai trò hiện tại của PGlite là superuser.
 
 Kết quả thật trên PGlite (30 vé, 3 khách, mỗi vé thứ năm đã lưu trữ):
 
@@ -104,7 +105,7 @@ tenant_1_rows  PERMISSIVE   {tenant_1}  SELECT  (tenant_id = 1)
 tenant_2_rows  PERMISSIVE   {tenant_2}  SELECT  (tenant_id = 2)
 ```
 
-Khách 2 có 10 vé, policy restrictive bỏ 2 vé đã lưu trữ. `support` không có policy nên thấy 0.
+Khách 2 có 10 vé, policy restrictive (luật chung "không bao giờ thấy dòng đã lưu trữ") bỏ 2 vé đã lưu trữ. `support` không có policy nên thấy 0.
 
 ## Thực hành
 
@@ -116,14 +117,15 @@ Ba câu: đếm theo vai trò, đọc policy, giải thích vì sao vai trò hi�
 
 - `ALTER TABLE … ENABLE ROW LEVEL SECURITY` turns RLS on. No applicable policy = default deny.
 - `CREATE POLICY … FOR … TO … USING (…) WITH CHECK (…)`: `USING` filters existing rows (SELECT, UPDATE, DELETE); `WITH CHECK` validates new rows (INSERT, UPDATE). With only `USING`, it also serves as `WITH CHECK`.
-- Permissive policies (the default) are combined with OR; `AS RESTRICTIVE` policies are combined with AND on top of that. Restrictive suits global rules such as "never show archived rows".
+- Permissive policies (the default) are combined with OR; `AS RESTRICTIVE` policies are combined with AND on top of that.
 - Who bypasses RLS: superusers, `BYPASSRLS` roles, the table owner (unless `FORCE ROW LEVEL SECURITY`). Constraint checks (unique, foreign keys) do not go through RLS.
 - Multi-tenant pattern: one application role (not the table owner) + policies based on `current_setting('app.tenant_id')` or on roles. Index `tenant_id`, because the policy condition is added to every query.
-- A default view (`security_invoker` = false) applies the policies of the view owner. This lesson uses that to try three roles in one statement.
-
-Running limit: each lesson is one statement in one transaction, so `SET ROLE` cannot change midway; each role is tried through a view that the role owns. PGlite's current role is a superuser.
 
 ## Example
+
+A default view (`security_invoker` = false) applies the policies of the view owner. This lesson uses that to try three roles in one statement.
+
+Running limit: each lesson is one statement in one transaction, so `SET ROLE` cannot change midway; each role is tried through a view that the role owns. PGlite's current role is a superuser.
 
 Real output from PGlite (30 tickets, 3 tenants, every fifth ticket archived):
 

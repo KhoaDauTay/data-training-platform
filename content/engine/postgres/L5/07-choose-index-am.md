@@ -72,15 +72,15 @@ quiz:
 
 ## Ý chính
 
-- B-tree — toán tử tiêu biểu: `<` `<=` `=` `>=` `>`, `BETWEEN`, `IN`, `IS NULL`, `LIKE 'abc%'`; mạnh ở: mặc định; UNIQUE; sắp xếp; index-only; lưu ý: luật cột đầu (18 có skip scan)
-- Hash — toán tử tiêu biểu: chỉ `=`; mạnh ở: khóa dài, chỉ so bằng; lưu ý: không UNIQUE, không nhiều cột
-- GIN — toán tử tiêu biểu: `@>` `<@` `&&` `?` `@@`; mạnh ở: mảng, `jsonb`, full-text, trigram; lưu ý: ghi chậm hơn (pending list); không index-only
-- GiST — toán tử tiêu biểu: `&&` `<@` `@>` `<->` …; mạnh ở: hình học, range, exclusion constraint, KNN; lưu ý: lossy với nhiều opclass
-- SP-GiST — toán tử tiêu biểu: như GiST cho điểm/chuỗi; mạnh ở: dữ liệu phân bố lệch, quadtree, radix; lưu ý: không cân bằng
-- BRIN — toán tử tiêu biểu: `<` `=` `>` (minmax); mạnh ở: bảng cực lớn, dữ liệu theo thứ tự chèn; lưu ý: lossy, cần correlation cao
-- bloom — toán tử tiêu biểu: `=`; mạnh ở: lọc bằng trên nhiều tổ hợp cột; lưu ý: extension, lossy, không UNIQUE
+Mỗi dòng: toán tử · mạnh ở · lưu ý.
 
-- Quy trình chuyên gia: (1) liệt kê truy vấn và toán tử thật; (2) xem kiểu dữ liệu và phân bố (`pg_stats`, correlation); (3) xem mẫu ghi (append-only, update nhiều); (4) chọn AM rồi kiểm bằng EXPLAIN trên dữ liệu thật; (5) đo kích thước và chi phí ghi.
+- B-tree: `<` `<=` `=` `>=` `>`, `BETWEEN`, `IN`, `IS NULL`, `LIKE 'abc%'` · mặc định; UNIQUE; sắp xếp; index-only · luật cột đầu (18 có skip scan)
+- Hash: chỉ `=` · khóa dài, chỉ so bằng · không UNIQUE, không nhiều cột
+- GIN: `@>` `<@` `&&` `?` `@@` · mảng, `jsonb`, full-text, trigram · ghi chậm hơn (pending list); không index-only
+- GiST: `&&` `<@` `@>` `<->` … · hình học, range, exclusion constraint, KNN · lossy với nhiều opclass
+- SP-GiST: như GiST cho điểm/chuỗi · dữ liệu phân bố lệch, quadtree, radix · không cân bằng
+- BRIN: `<` `=` `>` (minmax) · bảng cực lớn, dữ liệu theo thứ tự chèn · lossy, cần correlation cao
+- bloom: `=` · lọc bằng trên nhiều tổ hợp cột · extension, lossy, không UNIQUE
 
 ## Ví dụ
 
@@ -96,21 +96,23 @@ SP-GiST     stores_loc_spgist   Bitmap Index Scan for loc <@ box
 
 ## Thực hành
 
+Quy trình chuyên gia: (1) liệt kê truy vấn và toán tử thật; (2) xem kiểu dữ liệu và phân bố (`pg_stats`, correlation); (3) xem mẫu ghi (append-only, update nhiều); (4) chọn AM rồi kiểm bằng EXPLAIN trên dữ liệu thật; (5) đo kích thước và chi phí ghi.
+
 Sáu tình huống. Kỹ năng chuyên gia: từ một yêu cầu truy vấn và mẫu dữ liệu, chọn đúng AM, opclass và giải thích vì sao các lựa chọn khác kém hơn.
 
 # EN
 
 ## Key idea
 
-- B-tree — typical operators: `<` `<=` `=` `>=` `>`, `BETWEEN`, `IN`, `IS NULL`, `LIKE 'abc%'`; strong at: the default; UNIQUE; ordering; index-only; watch out: leading-column rule (18 adds skip scan)
-- Hash — typical operators: `=` only; strong at: long keys, equality only; watch out: no UNIQUE, no multiple columns
-- GIN — typical operators: `@>` `<@` `&&` `?` `@@`; strong at: arrays, `jsonb`, full text, trigrams; watch out: slower writes (pending list); no index-only
-- GiST — typical operators: `&&` `<@` `@>` `<->` …; strong at: geometry, ranges, exclusion constraints, KNN; watch out: lossy for many opclasses
-- SP-GiST — typical operators: like GiST for points/strings; strong at: skewed data, quadtrees, radix trees; watch out: unbalanced
-- BRIN — typical operators: `<` `=` `>` (minmax); strong at: huge tables, data in insert order; watch out: lossy, needs high correlation
-- bloom — typical operators: `=`; strong at: equality filters over many column combinations; watch out: an extension, lossy, no UNIQUE
+Each line: operators · strong at · watch out.
 
-- The expert routine: (1) list the real queries and operators; (2) look at the data type and distribution (`pg_stats`, correlation); (3) look at the write pattern (append-only, update-heavy); (4) pick the access method and check it with EXPLAIN on real data; (5) measure size and write cost.
+- B-tree: `<` `<=` `=` `>=` `>`, `BETWEEN`, `IN`, `IS NULL`, `LIKE 'abc%'` · the default; UNIQUE; ordering; index-only · leading-column rule (18 adds skip scan)
+- Hash: `=` only · long keys, equality only · no UNIQUE, no multiple columns
+- GIN: `@>` `<@` `&&` `?` `@@` · arrays, `jsonb`, full text, trigrams · slower writes (pending list); no index-only
+- GiST: `&&` `<@` `@>` `<->` … · geometry, ranges, exclusion constraints, KNN · lossy for many opclasses
+- SP-GiST: like GiST for points/strings · skewed data, quadtrees, radix trees · unbalanced
+- BRIN: `<` `=` `>` (minmax) · huge tables, data in insert order · lossy, needs high correlation
+- bloom: `=` · equality filters over many column combinations · an extension, lossy, no UNIQUE
 
 ## Example
 
@@ -125,5 +127,7 @@ SP-GiST     stores_loc_spgist   Bitmap Index Scan for loc <@ box
 ```
 
 ## Practice
+
+The expert routine: (1) list the real queries and operators; (2) look at the data type and distribution (`pg_stats`, correlation); (3) look at the write pattern (append-only, update-heavy); (4) pick the access method and check it with EXPLAIN on real data; (5) measure size and write cost.
 
 Six scenarios. Expert skill: from a query requirement and a data pattern, choose the right access method and opclass, and explain why the alternatives are worse.

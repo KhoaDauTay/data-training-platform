@@ -49,7 +49,7 @@ quiz:
       - { vi: "`(amount numeric)`", en: "`(amount numeric)`" }
       - { vi: "`(status text)` với collation mặc định xác định", en: "`(status text)` with a deterministic default collation" }
     answer: 1
-    why: { vi: "Tài liệu liệt kê: `numeric`, `jsonb`, `float4`/`float8`, kiểu chứa (composite, mảng, range), `text` với collation không xác định, và mọi index có `INCLUDE`. Lý do: hai giá trị \"bằng nhau\" có thể khác biểu diễn (ví dụ `1.0` và `1.00`).", en: "The docs list: `numeric`, `jsonb`, `float4`/`float8`, container types (composite, array, range), `text` with a nondeterministic collation, and every index with `INCLUDE`. The reason: two \"equal\" values can have different representations (for example `1.0` and `1.00`)." }
+    why: { vi: "Docs chính thức liệt kê: `numeric`, `jsonb`, `float4`/`float8`, kiểu chứa (composite, mảng, range), `text` với collation không xác định, và mọi index có `INCLUDE`. Lý do: hai giá trị \"bằng nhau\" có thể khác biểu diễn (ví dụ `1.0` và `1.00`).", en: "The docs list: `numeric`, `jsonb`, `float4`/`float8`, container types (composite, array, range), `text` with a nondeterministic collation, and every index with `INCLUDE`. The reason: two \"equal\" values can have different representations (for example `1.0` and `1.00`)." }
 ---
 
 ## Ý chính

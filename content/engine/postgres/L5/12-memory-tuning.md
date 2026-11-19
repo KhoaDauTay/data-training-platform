@@ -46,7 +46,7 @@ quiz:
       - { vi: "Mỗi nút của mỗi câu được dùng tới 256 MB (hash còn nhân `hash_mem_multiplier`), nên lúc cao điểm tổng có thể vượt RAM và server bị hết bộ nhớ", en: "Every node of every query may use up to 256 MB (hashes times `hash_mem_multiplier`), so at peak the total can exceed RAM and the server runs out of memory" }
       - { vi: "Chỉ ảnh hưởng VACUUM", en: "It only affects VACUUM" }
     answer: 1
-    why: { vi: "Tài liệu: một câu phức tạp có thể chạy nhiều sort/hash song song, mỗi cái dùng tới `work_mem`, và nhiều phiên làm cùng lúc. Cách đúng: giữ mặc định thấp, nâng cho phiên hoặc vai trò báo cáo (`SET work_mem`, `ALTER ROLE … SET work_mem`).", en: "The docs: a complex query can run several sorts/hashes at once, each up to `work_mem`, and many sessions do it at the same time. The right way: keep the default low, raise it for the reporting session or role (`SET work_mem`, `ALTER ROLE … SET work_mem`)." }
+    why: { vi: "Docs chính thức: một câu phức tạp có thể chạy nhiều sort/hash song song, mỗi cái dùng tới `work_mem`, và nhiều phiên làm cùng lúc. Cách đúng: giữ mặc định thấp, nâng cho phiên hoặc vai trò báo cáo (`SET work_mem`, `ALTER ROLE … SET work_mem`).", en: "The docs: a complex query can run several sorts/hashes at once, each up to `work_mem`, and many sessions do it at the same time. The right way: keep the default low, raise it for the reporting session or role (`SET work_mem`, `ALTER ROLE … SET work_mem`)." }
 ---
 
 ## Ý chính

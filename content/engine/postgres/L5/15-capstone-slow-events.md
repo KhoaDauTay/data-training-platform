@@ -106,7 +106,7 @@ Một hệ thống nhiều khách hàng (60 khách, mỗi khách một gói cố
 - bảng điều khiển của một khách: "khách X trong 7 ngày qua";
 - báo cáo toàn hệ thống: "mọi sự kiện trong một ngày".
 
-Người dùng báo bảng điều khiển chậm và ước lượng hàng chờ sai. Nhiệm vụ: chẩn đoán từ số liệu thật, không đoán mò. Năm bước dùng lại cả L4 và L5: thống kê cột, thống kê mở rộng, pruning, luật cột đầu của B-tree, BRIN và chi phí index.
+Người dùng báo bảng điều khiển chậm và ước lượng số dòng sai. Nhiệm vụ: chẩn đoán từ số liệu thật, không đoán mò. Năm bước dùng lại cả L4 và L5: thống kê cột, thống kê mở rộng, pruning, luật cột đầu của B-tree, BRIN và chi phí index.
 
 ## Ví dụ
 

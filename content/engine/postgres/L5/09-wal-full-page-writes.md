@@ -56,7 +56,7 @@ quiz:
       - { vi: "WAL phình vì nhiều trang hơn phải ghi ảnh cả trang sau mỗi checkpoint, cộng thêm I/O ghi trang bẩn thường xuyên", en: "WAL grows because more pages need a full-page image after each checkpoint, plus frequent I/O to flush dirty pages" }
       - { vi: "Mất dữ liệu đã commit", en: "Committed data is lost" }
     answer: 1
-    why: { vi: "Tài liệu WAL Configuration: checkpoint dày làm giảm thời gian phục hồi nhưng tăng chi phí I/O và lượng WAL do full-page write. Mặc định 5 phút / 1 GB là điểm cân bằng thường dùng.", en: "WAL Configuration docs: frequent checkpoints cut recovery time but raise I/O cost and WAL volume through full-page writes. The 5 min / 1 GB defaults are the usual balance." }
+    why: { vi: "Docs chính thức (WAL Configuration): checkpoint dày làm giảm thời gian phục hồi nhưng tăng chi phí I/O và lượng WAL do full-page write. Mặc định 5 phút / 1 GB là điểm cân bằng thường dùng.", en: "WAL Configuration docs: frequent checkpoints cut recovery time but raise I/O cost and WAL volume through full-page writes. The 5 min / 1 GB defaults are the usual balance." }
 ---
 
 ## Ý chính

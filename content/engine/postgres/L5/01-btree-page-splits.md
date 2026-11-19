@@ -56,10 +56,9 @@ quiz:
 ## Ý chính
 
 - B-tree của Postgres có metapage ở trang 0, một gốc, các tầng trong và tầng lá (tầng 0). Lá chứa khóa + TID trỏ về heap; trang trong chứa khóa phân cách + đường xuống trang con (downlink).
-- Cây rất thấp: với khóa `int`, mỗi lá chứa vài trăm mục, nên 20.000 khóa chỉ cần 2 tầng (gốc + lá). Hàng trăm triệu dòng thường chỉ 3–4 tầng.
-- Page split: lá không còn chỗ cho mục mới thì một phần mục chuyển sang trang mới, và cha nhận thêm một downlink; cha đầy thì tách tiếp lên trên; gốc đầy thì có gốc mới và cây cao thêm một tầng.
-- Chèn khóa luôn tăng (id tự tăng, thời gian) đi vào lá phải nhất, và Postgres tách lệch để trang trái được đầy theo `fillfactor` (mặc định 90 cho B-tree). Chèn lộn xộn (UUID ngẫu nhiên) tách giữa trang, nên index to hơn và nhiều trang hơn.
-- `bt_metap`, `bt_page_stats`, `bt_page_items` thuộc `pageinspect`. Chúng đọc trang thật, không phải mô phỏng.
+- Với khóa `int`, mỗi lá chứa vài trăm mục, nên 20.000 khóa chỉ cần 2 tầng (gốc + lá). Hàng trăm triệu dòng thường chỉ 3–4 tầng.
+- Page split: lá không còn chỗ cho mục mới thì một phần mục sang trang mới và cha nhận thêm một downlink; cha đầy thì tách tiếp; gốc đầy thì cây cao thêm một tầng.
+- Chèn khóa luôn tăng (id tự tăng, thời gian) đi vào lá phải nhất, và Postgres tách lệch để trang trái được đầy theo `fillfactor` (mặc định 90). Chèn lộn xộn (UUID ngẫu nhiên) tách giữa trang, nên index to hơn.
 
 ## Ví dụ
 
@@ -79,17 +78,18 @@ Gốc của `seq_keys_idx` có 55 mục, mỗi mục là một downlink xuống 
 
 ## Thực hành
 
+`bt_metap`, `bt_page_stats`, `bt_page_items` thuộc `pageinspect`. Chúng đọc trang thật, không phải mô phỏng.
+
 Ba câu đọc trang thật. Sơ đồ B-tree cho bạn bấm từng bước một lần tách lá rồi so với số liệu trên. Kỹ năng chuyên gia: nhìn số trang và độ đầy của lá để biết index có phình vì kiểu chèn hay không, và khi nào đáng `REINDEX`.
 
 # EN
 
 ## Key idea
 
-- A Postgres B-tree has a metapage at page 0, one root, internal levels and the leaf level (level 0). Leaves hold keys + TIDs pointing into the heap; internal pages hold separator keys + links down to child pages (downlinks).
-- The tree is very shallow: with `int` keys a leaf holds a few hundred items, so 20,000 keys need only 2 levels (root + leaves). Hundreds of millions of rows usually take 3–4 levels.
-- Page split: when a leaf has no room for a new item, part of its items move to a new page and the parent gets one more downlink; a full parent splits in turn; a full root gets a new root and the tree grows one level.
-- Always-increasing keys (serial ids, timestamps) go into the rightmost leaf, and Postgres splits unevenly so the left page stays filled to `fillfactor` (90 by default for B-tree). Scattered inserts (random UUIDs) split pages in the middle, so the index is larger with more pages.
-- `bt_metap`, `bt_page_stats` and `bt_page_items` come from `pageinspect`. They read real pages, not a simulation.
+- A B-tree has a metapage at page 0, a root, internal levels and the leaf level (level 0). Leaves hold keys + TIDs pointing into the heap; internal pages hold separator keys + downlinks to child pages.
+- With `int` keys a leaf holds a few hundred items, so 20,000 keys need only 2 levels (root + leaves). Hundreds of millions of rows take 3–4 levels.
+- Page split: when a leaf has no room for a new item, part of its items move to a new page and the parent gets one more downlink; a full parent splits in turn; a full root makes the tree one level taller.
+- Always-increasing keys (serial ids, timestamps) go into the rightmost leaf, and Postgres splits unevenly so the left page stays at `fillfactor` (90 by default). Scattered inserts (random UUIDs) split pages in the middle, so the index is larger.
 
 ## Example
 
@@ -108,5 +108,7 @@ seq_keys_idx    r    1     55        7056
 The root of `seq_keys_idx` has 55 items, one downlink per leaf.
 
 ## Practice
+
+`bt_metap`, `bt_page_stats` and `bt_page_items` come from `pageinspect`. They read real pages, not a simulation.
 
 Three queries that read real pages. The B-tree diagram lets you step through a leaf split and compare it with the figures above. Expert skill: look at page counts and leaf fill to tell whether an index is bloated by its insert pattern, and when a `REINDEX` is worth it.

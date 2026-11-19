@@ -57,11 +57,10 @@ quiz:
 
 ## Ý chính
 
-- BRIN (Block Range INdex) lưu một tóm tắt cho mỗi khoảng `pages_per_range` trang heap (mặc định 128). Với opclass minmax, tóm tắt là min và max của khoảng.
-- Truy vấn khoảng: BRIN trả về mọi khoảng có thể chứa dòng khớp (một bitmap theo trang), rồi Bitmap Heap Scan đọc và kiểm lại các trang đó. Index cực nhỏ, nhưng lossy.
-- Chỉ hiệu quả khi giá trị tương quan với vị trí vật lý (`correlation` gần ±1): log, cảm biến, thời gian chèn. Dữ liệu xáo trộn làm mọi khoảng có min/max rộng, và BRIN không loại được gì.
-- Tóm tắt khoảng mới: trang mới thuộc một khoảng đã tóm tắt thì tóm tắt được cập nhật; trang mới mở ra một khoảng mới thì khoảng đó chưa có tóm tắt cho tới khi VACUUM chạy, khi gọi `brin_summarize_new_values` / `brin_summarize_range`, hoặc khi autovacuum xử lý yêu cầu nếu index đặt `autosummarize = on` (mặc định off).
-- Các opclass khác: minmax-multi (nhiều khoảng mỗi tóm tắt, chịu được ngoại lệ), bloom, inclusion (hộp bao cho hình học).
+- BRIN (Block Range INdex) lưu một tóm tắt cho mỗi khoảng `pages_per_range` trang heap (mặc định 128). Opclass minmax lưu min và max.
+- Truy vấn khoảng: BRIN trả về mọi khoảng có thể chứa dòng khớp, rồi Bitmap Heap Scan đọc và kiểm lại các trang đó. Index cực nhỏ, nhưng lossy.
+- Chỉ hiệu quả khi giá trị tương quan với vị trí vật lý (`correlation` gần ±1), như log hay thời gian chèn. Dữ liệu xáo trộn làm mọi khoảng có min/max rộng, và BRIN không loại được gì.
+- Tóm tắt khoảng mới: trang mới thuộc một khoảng đã tóm tắt thì tóm tắt được cập nhật; trang mở ra khoảng mới thì khoảng đó chưa có tóm tắt cho tới khi VACUUM chạy, khi gọi `brin_summarize_new_values` / `brin_summarize_range`, hoặc khi autovacuum xử lý yêu cầu nếu index đặt `autosummarize = on` (mặc định off).
 
 ## Ví dụ
 
@@ -81,17 +80,18 @@ Aggregate
 
 ## Thực hành
 
+Các opclass khác: minmax-multi (nhiều khoảng mỗi tóm tắt, chịu được ngoại lệ), bloom, inclusion (hộp bao cho hình học).
+
 Đọc khoảng khối của index chưa và đã tóm tắt, xem planner dùng BRIN, rồi chọn cột nào hợp BRIN. Kỹ năng chuyên gia: chọn BRIN thay B-tree cho bảng append-only rất lớn, và biết giữ tóm tắt luôn mới.
 
 # EN
 
 ## Key idea
 
-- BRIN (Block Range INdex) stores one summary per range of `pages_per_range` heap pages (128 by default). With the minmax opclass, the summary is the range's min and max.
-- Range query: BRIN returns every range that might hold matching rows (a page bitmap), then a Bitmap Heap Scan reads and re-checks those pages. The index is tiny but lossy.
-- It only works when values correlate with physical position (`correlation` near ±1): logs, sensors, insert time. Shuffled data gives every range a wide min/max and BRIN rules nothing out.
+- BRIN (Block Range INdex) stores one summary per range of `pages_per_range` heap pages (128 by default). The minmax opclass stores the min and max.
+- Range query: BRIN returns every range that might hold matching rows, then a Bitmap Heap Scan reads and re-checks those pages. The index is tiny but lossy.
+- It only works when values correlate with physical position (`correlation` near ±1), such as logs or insert time. Shuffled data gives every range a wide min/max and BRIN rules nothing out.
 - Summarizing new ranges: a new page inside an already summarized range updates that summary; a new page that opens a new range leaves that range unsummarized until VACUUM runs, `brin_summarize_new_values` / `brin_summarize_range` is called, or autovacuum serves the request when the index has `autosummarize = on` (off by default).
-- Other opclasses: minmax-multi (several intervals per summary, tolerates outliers), bloom, inclusion (bounding boxes for geometry).
 
 ## Example
 
@@ -110,5 +110,7 @@ Aggregate
 16 ranges × 8 pages = pages 0–127 are summarized; pages 128–152 (4 ranges) have no summary. `brin_summarize_new_values` returns 4 and the second index has all 20 ranges. Also measured: summarization is not undone by ROLLBACK, because it only changes the index, not the data.
 
 ## Practice
+
+Other opclasses: minmax-multi (several intervals per summary, tolerates outliers), bloom, inclusion (bounding boxes for geometry).
 
 Read the block ranges of an unsummarized and a summarized index, watch the planner use BRIN, then choose which column suits BRIN. Expert skill: choose BRIN over B-tree for a very large append-only table, and keep its summaries up to date.

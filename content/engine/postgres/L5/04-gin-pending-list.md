@@ -47,7 +47,7 @@ lab:
       check: rows
       ordered: true
       hint: { vi: "`pg_class.reloptions` là NULL khi index dùng mặc định (`fastupdate` bật).", en: "`pg_class.reloptions` is NULL when the index uses the defaults (`fastupdate` on)." }
-    - task: { vi: "Đếm tài liệu của `docs` có nhãn 'new'. Planner phải dùng `docs_tags_fast` (nó đọc cả pending list).", en: "Count the `docs` documents tagged 'new'. The planner must use `docs_tags_fast` (it also reads the pending list)." }
+    - task: { vi: "Đếm các dòng của `docs` có nhãn 'new'. Planner phải dùng `docs_tags_fast` (nó đọc cả pending list).", en: "Count the `docs` documents tagged 'new'. The planner must use `docs_tags_fast` (it also reads the pending list)." }
       solution: "SELECT count(*) FROM docs WHERE tags @> ARRAY['new']"
       check: plan
       hint: { vi: "Toán tử chứa của mảng là `@>`.", en: "The array containment operator is `@>`." }
@@ -58,7 +58,7 @@ quiz:
       - { vi: "Khi VACUUM hoặc autoanalyze chạy, khi gọi `gin_clean_pending_list`, hoặc khi nó vượt `gin_pending_list_limit` (mặc định 4 MB)", en: "When VACUUM or autoanalyze runs, when `gin_clean_pending_list` is called, or when it grows past `gin_pending_list_limit` (default 4 MB)" }
       - { vi: "Chỉ khi REINDEX", en: "Only on REINDEX" }
     answer: 1
-    why: { vi: "Đúng như tài liệu GIN. Cái giá: mọi lần tìm kiếm phải quét cả pending list, và một INSERT làm nó vượt ngưỡng sẽ tự dọn và chậm hẳn. Ứng dụng cần thời gian phản hồi đều thì đặt `fastupdate = off`.", en: "As the GIN docs say. The price: every search must also scan the pending list, and the INSERT that pushes it past the limit does the cleanup and is much slower. An app that needs steady response times sets `fastupdate = off`." }
+    why: { vi: "Đúng như docs chính thức của GIN. Cái giá: mọi lần tìm kiếm phải quét cả pending list, và một INSERT làm nó vượt ngưỡng sẽ tự dọn và chậm hẳn. Ứng dụng cần thời gian phản hồi đều thì đặt `fastupdate = off`.", en: "As the GIN docs say. The price: every search must also scan the pending list, and the INSERT that pushes it past the limit does the cleanup and is much slower. An app that needs steady response times sets `fastupdate = off`." }
   - q: { vi: "Gọi `gin_clean_pending_list` trong một transaction rồi ROLLBACK. Pending list có quay lại không?", en: "You call `gin_clean_pending_list` inside a transaction, then ROLLBACK. Does the pending list come back?" }
     options:
       - { vi: "Có, ROLLBACK hoàn tác mọi thứ", en: "Yes, ROLLBACK undoes everything" }

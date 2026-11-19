@@ -32,20 +32,18 @@ quiz:
       - { vi: "Một lần tách lá sắp xảy ra mà Postgres đoán là do version churn (index không bị UPDATE sửa về mặt logic)", en: "An imminent leaf split that Postgres suspects is caused by version churn (an index not logically changed by the UPDATE)" }
       - { vi: "Lệnh `REINDEX`", en: "A `REINDEX` command" }
     answer: 1
-    why: { vi: "Tài liệu: bottom-up deletion là phản ứng với một \"version churn page split\" dự kiến, nhắm vào một lá, dựa trên phân biệt định tính giữa dòng logic và phiên bản. Ngược lại, VACUUM là dọn \"từ trên xuống\" theo ngưỡng định lượng của cả bảng.", en: "The docs: bottom-up deletion reacts to an anticipated \"version churn page split\", targets one leaf, and is based on qualitative distinctions between logical rows and versions. VACUUM, by contrast, is \"top-down\" cleanup driven by table-wide quantitative thresholds." }
+    why: { vi: "Docs chính thức: bottom-up deletion là phản ứng với một \"version churn page split\" dự kiến, nhắm vào một lá, dựa trên phân biệt định tính giữa dòng logic và phiên bản. Ngược lại, VACUUM là dọn \"từ trên xuống\" theo ngưỡng định lượng của cả bảng.", en: "The docs: bottom-up deletion reacts to an anticipated \"version churn page split\", targets one leaf, and is based on qualitative distinctions between logical rows and versions. VACUUM, by contrast, is \"top-down\" cleanup driven by table-wide quantitative thresholds." }
 ---
 
 ## Ý chính
 
-Ba cơ chế dọn mục chết trong B-tree:
+Ứng dụng chỉ UPDATE cột `last_seen`, vậy mà index trên `user_id` vẫn phình: vì sao, và ai dọn? Ba cơ chế dọn mục chết trong B-tree:
 
-- Simple deletion: khi một Index Scan thấy mục trỏ tới tuple đã chết với mọi transaction, nó đặt bit `LP_DEAD` trên mục. Khi lá sắp tách, các mục có bit này bị xóa trước.
-- Bottom-up deletion (từ 14): khi lá sắp tách mà Postgres đoán nguyên nhân là version churn (nhiều phiên bản của cùng dòng logic, do UPDATE không sửa cột của index này), nó kiểm tra heap cho các mục nghi là rác trong đúng lá đó và xóa chúng. Thường tránh được việc tách.
-- VACUUM (kể cả autovacuum): dọn "từ trên xuống" mọi mục trỏ tới tuple chết, kích hoạt bởi ngưỡng số lượng của cả bảng.
+- Simple deletion: Index Scan thấy mục trỏ tới tuple đã chết với mọi transaction thì đặt bit `LP_DEAD`. Khi lá sắp tách, các mục có bit này bị xóa trước.
+- Bottom-up deletion (từ PostgreSQL 14): lá sắp tách mà Postgres đoán là do version churn (nhiều phiên bản của cùng dòng logic) thì nó kiểm heap cho các mục nghi là rác trong đúng lá đó và xóa chúng, thường tránh được việc tách.
+- VACUUM: dọn "từ trên xuống" mọi mục trỏ tới dead tuple, theo ngưỡng của cả bảng.
 
-- Tại sao cần bottom-up deletion: UPDATE không HOT (vì đổi một cột có index, hoặc trang heap hết chỗ) chèn mục mới vào mọi index. Trước 14, các index "không liên quan" phình dần cho tới khi VACUUM chạy; tách lá thì không bao giờ gộp lại.
-- Kết hợp với dedup: posting list của các phiên bản trùng khóa giúp lá chịu được churn lâu hơn trước khi phải dọn.
-- Giảm churn từ gốc: để UPDATE thành HOT (không index cột hay đổi; `fillfactor` heap thấp hơn để còn chỗ trên trang).
+Vì sao có churn: UPDATE không HOT (đổi một cột có index, hoặc trang heap hết chỗ) chèn mục mới vào mọi index, kể cả index "không liên quan".
 
 ## Ví dụ
 
@@ -60,21 +58,21 @@ insert u42 -> (9,8)       -- would split
 
 ## Thực hành
 
+Lá đã tách thì không bao giờ gộp lại. Posting list của dedup giúp lá chịu được churn lâu hơn. Giảm churn từ gốc: để UPDATE thành HOT (không index cột hay đổi; `fillfactor` heap thấp hơn để còn chỗ trên trang).
+
 Bấm qua sơ đồ một lá B-tree đầy lên vì version churn, rồi hai câu hỏi. Kỹ năng chuyên gia: giải thích index phình dưới tải UPDATE và chọn cách sửa: thiết kế cho HOT, fillfactor, hay `REINDEX CONCURRENTLY` khi đã phình.
 
 # EN
 
 ## Key idea
 
-Three mechanisms remove dead items from a B-tree:
+The application only UPDATEs `last_seen`, yet the index on `user_id` still grows: why, and who cleans it? Three mechanisms remove dead items from a B-tree:
 
-- Simple deletion: when an Index Scan sees an item pointing to a tuple that is dead to every transaction, it sets the `LP_DEAD` bit on the item. When the leaf is about to split, items with this bit are deleted first.
-- Bottom-up deletion (since 14): when a leaf is about to split and Postgres suspects version churn (many versions of the same logical row, from UPDATEs that did not change this index's columns), it checks the heap for the suspected garbage items in that one leaf and deletes them. It usually avoids the split.
-- VACUUM (including autovacuum): "top-down" removal of every item that points to a dead tuple, triggered by table-wide quantitative thresholds.
+- Simple deletion: an Index Scan that sees an item pointing to a tuple dead to every transaction sets its `LP_DEAD` bit. When the leaf is about to split, items with this bit are deleted first.
+- Bottom-up deletion (since PostgreSQL 14): when a leaf is about to split and Postgres suspects version churn (many versions of the same logical row), it checks the heap for suspected garbage in that leaf and deletes it, usually avoiding the split.
+- VACUUM: "top-down" removal of every item that points to a dead tuple, triggered by table-wide thresholds.
 
-- Why bottom-up deletion is needed: a non-HOT UPDATE (an indexed column changed, or the heap page was full) inserts a new entry into every index. Before 14, the "unrelated" indexes slowly bloated until VACUUM ran, and a leaf split is never merged back.
-- With deduplication: posting lists of same-key versions let a leaf absorb churn longer before cleanup is needed.
-- Reduce churn at the source: make UPDATEs HOT (do not index columns that change often; a lower heap `fillfactor` leaves room on the page).
+Where the churn comes from: a non-HOT UPDATE (an indexed column changed, or the heap page was full) inserts a new entry into every index, including "unrelated" ones.
 
 ## Example
 
@@ -88,5 +86,7 @@ insert u42 -> (9,8)       -- would split
 ```
 
 ## Practice
+
+A split leaf is never merged back. Deduplication posting lists let a leaf absorb churn longer. Reduce churn at the source: make UPDATEs HOT (do not index columns that change often; a lower heap `fillfactor` leaves room on the page).
 
 Step through the diagram of a B-tree leaf filling up with version churn, then two questions. Expert skill: explain index bloat under UPDATE load and pick the fix: design for HOT, fillfactor, or `REINDEX CONCURRENTLY` once it has bloated.
