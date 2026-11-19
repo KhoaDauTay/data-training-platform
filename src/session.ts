@@ -49,6 +49,26 @@ export function playSchema(): SchemaId {
 }
 /** v15 Q1: the workspace holds a drill or a review of drills; it lives on #/learn/play, outside every domain. */
 export const generalWork = (): boolean => playSchema() === 'lab';
+
+/**
+ * The session mode is never saved (a reload used to be story mode). Only to survive a reload, the Sandbox and a lane task
+ * are noted at pagehide in this device pref and read once on the next load (drills keep theirs in the hash, drillHash).
+ * Practice runs are a random queue and stay in memory.
+ */
+export const SESSION_KEY = 'cargo-query/session';
+export type SessionNote = { kind: 'sandbox'; domain: DomainId } | { kind: 'lane'; domain: DomainId; id: string };
+export function sessionNote(mode: Mode, domain: DomainId): SessionNote | null {
+  if (mode.kind === 'sandbox') return { kind: 'sandbox', domain };
+  return mode.kind === 'lane' ? { kind: 'lane', domain, id: mode.ticket.id } : null;
+}
+/** Anything else stored (old, edited, broken) reads as null. */
+export function parseSessionNote(v: unknown): SessionNote | null {
+  if (!v || typeof v !== 'object') return null;
+  const o = v as Record<string, unknown>;
+  if (typeof o.domain !== 'string') return null;
+  if (o.kind === 'sandbox') return { kind: 'sandbox', domain: o.domain as DomainId };
+  return o.kind === 'lane' && typeof o.id === 'string' ? { kind: 'lane', domain: o.domain as DomainId, id: o.id } : null;
+}
 /** The General workspace's hash for what it holds: a drill's own hash (a reload reopens it), LEARN_PLAY for a review of drills, else undefined (v15 Q1). */
 export const generalHash = (): string | undefined =>
   !generalWork() ? undefined : session.mode.kind === 'drill' ? drillHash(session.mode.drill.id) : LEARN_PLAY;

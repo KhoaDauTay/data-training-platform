@@ -14,11 +14,11 @@ import { loadSave, parseSave, serializeSave, type Known } from './save';
 import { actions, app, done, editorSchema, persist, selected, type Column } from './state';
 import { resumeStep } from './overview';
 import { seedReview } from './practice';
-import { generalHash, isStory, playSchema, session, today } from './session';
+import { generalHash, isStory, parseSessionNote, playSchema, session, sessionNote, SESSION_KEY, today } from './session';
 import { localStore, readJson, writeJson } from './storage';
 import { domainOfHash, drillOfHash, type Route } from './route';
 import type { Ticket } from './tickets';
-import { initModes, onPracticeWrong, onSolved, renderLeft, renderReviewButton, startDrill } from './ui/modes';
+import { initModes, onPracticeWrong, onSolved, renderLeft, renderReviewButton, startDrill, startLane, startSandbox } from './ui/modes';
 import { renderNotebook, toggleNotebook } from './ui/notebook';
 import { byId, h, initLightDismiss } from './ui/dom';
 import { errorText } from './ui/feedback';
@@ -540,6 +540,15 @@ startRouter((r, initial) => {
 // A reload on a drill (#/learn/play/<id>) reopens that drill with its saved draft; the session itself is never saved.
 const reopen = drillOfHash(location.hash);
 if (reopen) void startDrill(reopen);
+// The Sandbox or a lane task open at the last pagehide (a reload) comes back on the same domain's workspace; the note is read once.
+const note = parseSessionNote(readJson<unknown>(SESSION_KEY));
+writeJson(SESSION_KEY, null);
+if (note && !reopen && currentRoute() === 'play' && domainOfHash(location.hash) === note.domain && activeDomain() === note.domain) {
+  const lane = note.kind === 'lane' ? loadLanes().tasks.find((x) => x.id === note.id) : undefined;
+  if (note.kind === 'sandbox') startSandbox();
+  else if (lane) startLane(lane);
+}
+window.addEventListener('pagehide', () => writeJson(SESSION_KEY, sessionNote(session.mode, activeDomain())));
 initWelcome(want === undefined); // nothing opened yet (no domain in the hash or the pref): the picker asks first
 
 // "My data" (Plan Import): imported CSVs stay in this browser (IndexedDB) and are replayed into the sandbox schema.
