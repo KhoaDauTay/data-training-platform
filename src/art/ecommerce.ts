@@ -116,7 +116,7 @@ const MAX_PARCELS = 30;
 export const STAR_CHAPTER = 7;
 /** A `<g>` with no transform around the star, so the dock's GSAP pop moves the group only (ui-ux-v6 §2.3). */
 const signStar = (): SVGGElement => s('g', { 'data-star': '' }, s('path', {
-  d: 'M346 113L349.8 122.7L360.3 123.4L352.2 130L354.8 140.1L346 134.5L337.2 140.1L339.8 130L331.7 123.4L342.2 122.7Z',
+  d: 'M174 113L177.8 122.7L188.3 123.4L180.2 130L182.8 140.1L174 134.5L165.2 140.1L167.8 130L159.7 123.4L170.2 122.7Z', // the sign's left corner: the dock's title card covers the right one
   fill: '#facc15', stroke: '#b45309', 'stroke-width': 2, 'stroke-linejoin': 'round',
 }));
 /** A cardboard box: face in the chapter colour, shaded side, lit flap, packing tape, label. The group has no transform (GSAP moves it, §2.3). */

@@ -38,7 +38,7 @@ Các đánh giá viết từ tháng {{first}} đến hết tháng {{last}}: vớ
 ## Hints
 1. Ngày viết nằm ở đánh giá, ngày nhận hàng nằm ở danh mục giao hàng; hai bảng chung mã đơn. Trừ hai ngày, rồi lấy trung bình theo số sao.
 2. Ghép `d.order_id = r.order_id`; số ngày là `r.created_on - d.delivered_on`; làm tròn `ROUND(AVG(...), 2)`.
-3. `SELECT r.rating, ROUND(AVG(r.created_on - d.delivered_on), 2) FROM reviews r JOIN deliveries d ON ... GROUP BY r.rating ORDER BY r.rating`
+3. `SELECT r.rating, ROUND(AVG(r.created_on - d.delivered_on), 2) FROM reviews r JOIN deliveries d ON ... WHERE ... GROUP BY r.rating ORDER BY r.rating`
 
 ## Solution
 ```sql
@@ -59,4 +59,4 @@ Reviews written from {{first_en}} to the end of {{last_en}}: for each star level
 ## Hints
 1. The writing date is on the review, the delivery date is in the delivery list; the two tables share the order number. Subtract the two dates, then average by stars.
 2. Join on `d.order_id = r.order_id`; the days are `r.created_on - d.delivered_on`; round with `ROUND(AVG(...), 2)`.
-3. `SELECT r.rating, ROUND(AVG(r.created_on - d.delivered_on), 2) FROM reviews r JOIN deliveries d ON ... GROUP BY r.rating ORDER BY r.rating`
+3. `SELECT r.rating, ROUND(AVG(r.created_on - d.delivered_on), 2) FROM reviews r JOIN deliveries d ON ... WHERE ... GROUP BY r.rating ORDER BY r.rating`

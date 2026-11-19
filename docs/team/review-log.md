@@ -806,4 +806,4 @@ Cách đo: `npm run build`, `vite preview --port 5217 --strictPort`, Edge headle
 
 - Ngân sách (gzip -9): `ecom` 40,3 → 48,1 KB / 50; `fin` 43,0 → 44,0 / 50. Finance không có F7 (cổng: 7,0 KB trống < 8).
 - Kiểm: tsc, toàn bộ vitest (4057 qua), build, check-budget, smoke (5219) xanh. Edge headless (preview 5227): save xong 30 việc E-com → chơi `ecom-ch7-01..05` (đánh giá 3 bước + kết luận) → Lead DA, 35/35, ngôi sao trên biển hiệu ở Tổng quan và dock; save chỉ có 6 đánh giá → việc 1 chương 7 có lời mời thi vượt → đạt; 0 lỗi trang. Ảnh ở scratchpad `v20d\`.
-- Chờ user: chương F7 (cần chỗ trong chunk `fin`); câu dock "thêm một thành phố" ở chương 6–7 E-com.
+- Chờ user: chương F7 (cần chỗ trong chunk `fin`). Chờ chủ i18n: câu dock "thêm một thành phố" ở chương 6–7 E-com; "6 chương" trong `welcome.short.ecommerce` và `domain.ecommerceDesc` (VI/EN).
