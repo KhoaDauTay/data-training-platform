@@ -179,7 +179,8 @@ function refresh(): void {
 function pageTitle(): HTMLElement | undefined {
   const modal = document.querySelector('dialog:modal');
   const el = modal ? modal.querySelector<HTMLElement>('h1, h2, h3') ?? undefined // focus stays inside an open modal (the lesson's title)
-    : [...document.querySelectorAll<HTMLElement>('#brief-title, main:not([hidden]) h1, main:not([hidden]) h2')].find((e) => e.offsetParent !== null);
+    // not the workspace's screen-reader-only page name (L141): it would come before #brief-title
+    : [...document.querySelectorAll<HTMLElement>('#brief-title, main:not([hidden]) h1:not(.sr-only), main:not([hidden]) h2')].find((e) => e.offsetParent !== null);
   if (el && !el.hasAttribute('tabindex')) el.tabIndex = -1;
   return el;
 }
