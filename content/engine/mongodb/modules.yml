@@ -50,6 +50,15 @@
   after:
     vi: chọn đúng loại và thuộc tính index (multikey, partial, unique, TTL) cho một nhu cầu, và đoán index partial có được dùng cho một truy vấn không.
     en: pick the right index kind and property (multikey, partial, unique, TTL) for a need, and predict whether a partial index can serve a query.
+- id: special-indexes
+  vi: Index đặc biệt
+  en: Special indexes
+  module: special-indexes
+  level: L3
+  title: { vi: "Index đặc biệt", en: "Special indexes" }
+  after:
+    vi: chọn index wildcard, text, 2dsphere hay hashed cho một nhu cầu, dùng sparse, hidden và collation đúng chỗ, và đoán index sparse hay index có collation có được dùng cho một truy vấn không.
+    en: pick a wildcard, text, 2dsphere or hashed index for a need, use sparse, hidden and collation where they fit, and predict whether a sparse index or an index with a collation can serve a query.
 - id: esr-explain
   vi: ESR và explain
   en: ESR and explain
