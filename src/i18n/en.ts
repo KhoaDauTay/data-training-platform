@@ -579,6 +579,8 @@ export const en: Record<Key, Msg> = {
   'node.gather': 'Collects results from parallel worker processes.',
   'node.fallback': "A step in Postgres' execution plan.",
   'tab.chart': 'Chart',
+  'tab.map': 'Map',
+  'map.loading': 'Drawing the map…',
   'chart.empty': 'The chart appears when the result looks like (label, number…) or (date, number…), up to {max} rows.',
   'chart.title': '{value} by {label}',
   'chart.emptyHint': 'A chart needs one text or date column and one number column (up to {max} rows).',

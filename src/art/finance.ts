@@ -501,3 +501,6 @@ export async function play(c: Ctx): Promise<void> {
 
 /** Dock length, for Lily's entry at its end (ui/stage.ts). */
 export const ms = (c: Ctx): number => (c.tk.beat === 'boss' ? 3000 : 2200);
+
+/** V22-A: the result map (ui/mapTeach.ts) places branches where this map draws them. */
+export { BRANCHES as places };
