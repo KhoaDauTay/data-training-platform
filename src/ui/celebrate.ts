@@ -52,6 +52,7 @@ export function react(host: Element | null | undefined, grow?: boolean): void {
 
 const ATTRS = ['style', 'transform', 'data-svg-origin'];
 const playing = new WeakMap<SVGSVGElement, Timeline>();
+const grows = new WeakSet<SVGSVGElement>(); // the playing timeline is a grow ceremony (L134: a click on Lily skips it)
 const DOT = 'M60 77.3a1.9 1.9 0 1 1 0 3.8a1.9 1.9 0 1 1 0-3.8z'; // the badge star starts as a dot (MorphSVG)
 
 /**
@@ -71,7 +72,7 @@ function rigReact({ timeline }: GsapArt, svg: SVGSVGElement, grow: boolean): voi
   const part = (p: string) => svg.querySelector<SVGGElement>(`[data-part="${p}"]`);
   const all = (ps: string[]) => ps.map(part).filter((x) => x !== null);
   const stage = stageOf(svg.dataset.stage ?? document.documentElement.dataset.lily);
-  const at = pivotOf(who, who === 'lily' ? LOOK[stage].lift : 0); // L132: her neck sits higher on longer legs
+  const at = who === 'lily' ? pivotOf(who, LOOK[stage].lift, LOOK[stage].perk) : pivotOf(who); // L132: her neck sits higher on longer legs
   const tl = timeline();
   if (pose in MOVES) {
     const m = movedParts(who, pose as Move);
@@ -98,8 +99,12 @@ function rigReact({ timeline }: GsapArt, svg: SVGSVGElement, grow: boolean): voi
       tl.to(extra, { keyframes: [...beat, ...beat] }, 0);
     }
   }
-  if (grow && who === 'lily') growLily(tl, svg, stage, part, keep);
+  if (grow && who === 'lily') {
+    growLily(tl, svg, stage, part, keep);
+    grows.add(svg);
+  }
   const end = () => {
+    grows.delete(svg);
     tl.revert();
     // revert() leaves GSAP's identity transforms (matrix(1,0,0,1,0,0), translate3d(0,0,0)): put every attribute back as drawn
     for (const [el, k, v] of kept) {
@@ -117,7 +122,7 @@ function rigReact({ timeline }: GsapArt, svg: SVGSVGElement, grow: boolean): voi
 /** The CSS variables of one stage's look (src/lily.ts LOOK), for GSAP (registered with @property, so they tween as numbers). */
 const vars = (stage: LilyStage, keys: readonly string[]): Record<string, number> =>
   Object.fromEntries(keys.map((k) => [`--lily-${k}`, LOOK[stage][k as keyof (typeof LOOK)[number]]]));
-const SHAPE = ['size', 'head', 'lift', 'paw', 'ears', 'ear-tilt', 'tail', 'chest', 'shut'];
+const SHAPE = ['size', 'head', 'lift', 'perk', 'paw', 'ears', 'ear-tilt', 'tail', 'chest', 'shut', 'eye'];
 const GEAR = ['collar-on', 'scarf-on', 'badge-on', 'harness-on', 'prop-on'];
 
 /**
@@ -171,11 +176,18 @@ function growLily(tl: Timeline, svg: SVGSVGElement, to: LilyStage, part: (p: str
   }
 }
 
-/** L132: a grow ceremony that is playing on this <svg> (or the one inside `host`) jumps to its end frame (Skip, Esc). */
+/**
+ * L132: a grow ceremony that is playing on this <svg> (or the one inside `host`) jumps to its end frame (Skip, Esc, a click on Lily,
+ * L134); the CSS fallback just drops its classes (the base style is the end frame). True when a ceremony was cut short.
+ */
 export function settle(host: Element | null | undefined): void {
   const svg = host?.matches?.('svg[data-mascot]') ? host as SVGSVGElement : host?.querySelector<SVGSVGElement>('svg[data-mascot]');
-  if (svg) playing.get(svg)?.progress(1);
+  if (!svg) return;
+  playing.get(svg)?.progress(1);
+  svg.classList.remove('grow');
 }
+/** L134: a grow ceremony is playing on this <svg> (the GSAP rig or the CSS fallback). */
+export const growing = (svg: SVGSVGElement): boolean => grows.has(svg) || svg.classList.contains('grow');
 
 /** ui-ux-v5 A3 (XP) and A1 (Lily's stage): rise since the last mark; 0 on the first call and after an import (a new save object, page not reloaded). */
 export function gainSince(mark: { save: object; n: number } | undefined, save: object, n: number): number {

@@ -51,13 +51,14 @@ export const PIVOT: Record<Mascot, Record<string, string>> = {
   boon: { feet: '60 112', neck: '60 62', 'arm-point': '84 76', 'arm-chin': '84 80' },
 };
 /**
- * Lily's stage lifts her body, legs and head by LOOK[stage].lift units (src/lily.ts): her neck and pointing paw sit that much higher
- * than PIVOT says (feet and tail root stay on the ground), so a head tilt still turns around the neck (L132).
+ * Lily's stage lifts her body, legs and head by LOOK[stage].lift units (src/lily.ts), and her chest and head by .perk more (L134):
+ * her neck and pointing paw sit that much higher than PIVOT says (feet and tail root stay on the ground), so a head tilt still
+ * turns around the neck (L132).
  */
-export function pivotOf(who: Mascot, lift = 0): Record<string, string> {
-  if (who !== 'lily' || !lift) return PIVOT[who];
-  const up = (v: string) => v.replace(/ ([\d.]+)$/, (_, y: string) => ` ${Number(y) - lift}`);
-  return { ...PIVOT.lily, neck: up(PIVOT.lily.neck), 'arm-point': up(PIVOT.lily['arm-point']) };
+export function pivotOf(who: Mascot, lift = 0, perk = 0): Record<string, string> {
+  if (who !== 'lily' || (!lift && !perk)) return PIVOT[who];
+  const up = (v: string, by: number) => v.replace(/ ([\d.]+)$/, (_, y: string) => ` ${Number(y) - by}`);
+  return { ...PIVOT.lily, neck: up(PIVOT.lily.neck, lift + perk), 'arm-point': up(PIVOT.lily['arm-point'], lift) };
 }
 /** Lily grows (v5 A1, L132 ceremony) in 2.4 s, like cq-grow in style.css. */
 export const GROW_MS = 2400;
@@ -88,7 +89,10 @@ export function mascot(who: Mascot, pose: Pose, cls = 'size-12', label?: string,
   return s('svg', { viewBox: '0 0 120 120', class: cx('shrink-0 overflow-visible', cls), 'data-mascot': who, 'data-pose': pose, ...at, ...a11y }, rig(who, pose));
 }
 
-/** rerender(): Lily's stage on <html data-lily> (0–5, src/lily.ts). */
-export function setLilyStage(stage: number): void {
-  document.documentElement.dataset.lily = String(stage);
+/** rerender(): Lily's stage on <html data-lily> (0–5, src/lily.ts) and her accessory colour on data-lily-acc (none = default, L134). */
+export function setLilyStage(stage: number, acc?: number): void {
+  const d = document.documentElement.dataset;
+  d.lily = String(stage);
+  if (acc === undefined) delete d.lilyAcc;
+  else d.lilyAcc = String(acc);
 }

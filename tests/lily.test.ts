@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import html from '../index.html?raw';
 import css from '../src/style.css?raw';
 import { vi } from '../src/i18n/vi';
-import { DAYS_KEY, DAYS_MAX, dayCount, type LilyStage, lilyStage, LOOK, markDay, parseDays, STAGE_AT, toNextStage, withDay } from '../src/lily';
+import { ACC_AT, accAt, DAYS_KEY, DAYS_MAX, dayCount, LILY_KEY, type LilyStage, lilyStage, LOOK, markDay, markStages, parseDays, parseLilyPref, reachedOn, readLily, setAcc, STAGE_AT, toNextStage, withDay } from '../src/lily';
 import type { KV } from '../src/storage';
 
 const mem = (init: Record<string, string> = {}): KV & { data: Record<string, string> } => {
@@ -33,7 +33,7 @@ describe('Lily lớn lên (L87)', () => {
     const NEW_NAME = ['Sơ sinh', 'Cún con', 'Cún nhỏ', 'Trưởng thành', 'Dày dạn', 'Chuyên gia'];
     expect(NEW_NAME.map((_, i) => vi[`lily.stage${i}` as keyof typeof vi])).toEqual(NEW_NAME);
     // figure height in viewBox units: 97 before (ear tip to feet); the head (50 units, ear tip to neck) scales, the lift adds
-    const height = (s: LilyStage) => LOOK[s].size * (97 + LOOK[s].lift - (1 - LOOK[s].head) * 50);
+    const height = (s: LilyStage) => LOOK[s].size * (97 + LOOK[s].lift + LOOK[s].perk - (1 - LOOK[s].head) * 50);
     for (let k = 0; k <= 38; k++) {
       const old = OLD_AT.filter((at) => k >= at).length - 1;
       const now = lilyStage(k, 38);
@@ -87,5 +87,38 @@ describe('Lily lớn lên (L87)', () => {
       const vars = Object.fromEntries([...row.matchAll(/--lily-([\w-]+):\s*([-\d.]+)/g)].map((m) => [m[1], Number(m[2])]));
       expect(vars, `stage ${n}`).toEqual(look);
     }
+  });
+  it('L134: từ giai đoạn 2, mỗi lần lớn đổi dáng (≥ 3 tỉ lệ), không chỉ phụ kiện; sơ sinh ngồi bệt, dày dạn ưỡn ngực', () => {
+    const SHAPE = ['size', 'head', 'lift', 'perk', 'paw', 'ears', 'ear-tilt', 'tail', 'chest', 'eye'] as const;
+    for (let n = 2; n <= 5; n++) expect(SHAPE.filter((k) => LOOK[n][k] !== LOOK[n - 1][k]).length, `stage ${n}`).toBeGreaterThanOrEqual(3);
+    expect(LOOK[0].lift).toBeLessThan(0);
+    expect(LOOK[4].perk).toBeGreaterThan(0);
+    expect([0, 1, 2].map((n) => LOOK[n].eye)).toEqual([1.1, 1.1, 1.1]);
+  });
+
+  it('L134 pref cargo-query/lily: dữ liệu xấu bị bỏ, ngày chỉ ghi lần đầu, màu không mất khi ghi ngày', () => {
+    expect(parseLilyPref(undefined)).toEqual({ at: {} });
+    expect(parseLilyPref('x')).toEqual({ at: {} });
+    expect(parseLilyPref({ at: { 0: '2026-11-01', 1: '2026-11-02', 2: 'hôm qua', 6: '2026-11-03', 3: 5 }, acc: 2.5 })).toEqual({ at: { 1: '2026-11-02' } });
+    expect(parseLilyPref({ at: [], acc: 7 })).toEqual({ at: {} });
+    expect(parseLilyPref({ acc: ACC_AT.length })).toEqual({ at: {}, acc: ACC_AT.length });
+    const kv = mem({ [LILY_KEY]: '{bad json' });
+    expect(readLily(kv)).toEqual({ at: {} });
+    setAcc(2, kv);
+    markStages(0, 2, '2026-11-19', kv);
+    markStages(1, 3, '2026-11-20', kv);
+    expect(readLily(kv)).toEqual({ at: { 1: '2026-11-19', 2: '2026-11-19', 3: '2026-11-20' }, acc: 2 });
+    setAcc(undefined, kv);
+    expect(readLily(kv)).toEqual({ at: { 1: '2026-11-19', 2: '2026-11-19', 3: '2026-11-20' } });
+  });
+
+  it('L134 album và màu: chưa tới / trước đây / có ngày; màu chưa mở ở giai đoạn này đọc như mặc định', () => {
+    const pref = { at: { 2: '2026-11-19', 5: '2026-12-01' }, acc: 4 };
+    expect([0, 1, 2, 3, 4].map((n) => reachedOn(pref, n, 3, '2026-11-01'))).toEqual(['2026-11-01', null, '2026-11-19', null, undefined]);
+    expect(reachedOn(pref, 0, 0)).toBeNull();
+    expect(reachedOn(pref, 5, 3)).toBeUndefined(); // a day from before a lower save was imported
+    expect(accAt(pref, ACC_AT[3] - 1)).toBeUndefined();
+    expect(accAt(pref, ACC_AT[3])).toBe(4);
+    expect(accAt({ at: {} }, 5)).toBeUndefined();
   });
 });
