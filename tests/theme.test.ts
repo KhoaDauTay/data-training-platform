@@ -31,6 +31,7 @@ const TEXT_PAIRS: [string, string][] = [
   ['muted', 'panel'], ['muted', 'bg'], ['muted', 'code'], ['muted', 'accent-soft'], ['muted', 'sea'],
   ['accent', 'panel'], ['accent', 'bg'], ['on-accent', 'accent'],
   ['good', 'panel'], ['bad', 'panel'], ['warn', 'panel'], ['good', 'bg'], ['bad', 'bg'], ['warn', 'bg'],
+  ['good', 'accent-soft'], // v21 U15: a learned skill link ✓ on the current chapter row
   ['sun-ink', 'sun'],
   // ui-ux-v7 T1 (L136): surface-2 (table head, kbd chip, inset) and the semantic soft backgrounds
   ['text', 'surface-2'], ['muted', 'surface-2'], ['accent', 'surface-2'], ['accent', 'accent-soft'],

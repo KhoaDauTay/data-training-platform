@@ -24,7 +24,7 @@
    v6 §2.2 (L57): warm cream, teal accent; every text pair is checked in tests/theme.test.ts. */
 :root {
   --bg: #fbf7f0; --panel: #ffffff; --text: #2a2320; --muted: #6b5f57; --border: #e8dfd3;
-  --accent: #0f766e; --accent-soft: #dcf2ee; --on-accent: #ffffff; --good: #1a7f37; --bad: #b42318; --warn: #9a4f00;
+  --accent: #0f766e; --accent-soft: #dcf2ee; --on-accent: #ffffff; --good: #17752f; --bad: #b42318; --warn: #9a4f00;
   --code: #f4eee5; --sea: #e8f1f8; --land: #d9e2ea; --bar: #1f3b57; --disabled: #8a8a90;
   /* Boon's speech bubbles and the XP pill. */
   --sun: #ffe9bd; --sun-ink: #5c3d00;
