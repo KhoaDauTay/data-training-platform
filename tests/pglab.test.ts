@@ -200,4 +200,20 @@ describe('pglab setup + ENG-CORE runner', () => {
     expect(await lab.check(L, { ...step, check: 'doc' }, '')).toEqual({ ok: false, reason: 'unsupported' });
     await expect(lab.prepare({ setup: 'CREATE EXTENSION plpython3u;', steps: [] } as unknown as Lab)).rejects.toThrow();
   });
+
+  it('L249: a DDL catalog step is graded on the catalog, and a later step sees the earlier DDL', async () => {
+    const env = {
+      grade: (run: (s: string) => Promise<QueryResult>, sol: string, player: string, ordered: boolean) => grade(run, sol, player, ordered),
+      verdict: (g: { reason: string }) => g.reason,
+    };
+    const lab = pgScriptRunner(env, { run: runLabScript, reset: () => undefined });
+    const ddl = { solution: 'CREATE INDEX t_v_idx ON t (v)', check: 'catalog', ordered: false } as LabStep;
+    const plan = { solution: "SELECT id FROM t WHERE v = 'x5'", check: 'plan', ordered: false } as LabStep;
+    const L = { setup: "CREATE TABLE t (id int PRIMARY KEY, v text);\nINSERT INTO t SELECT g, 'x' || g FROM generate_series(1, 5000) g;\nANALYZE t;", steps: [ddl, plan] } as unknown as Lab;
+    expect(await lab.check(L, ddl, 'CREATE INDEX t_v_idx ON t (v)')).toEqual({ ok: true });
+    expect(await lab.check(L, ddl, 'CREATE INDEX wrong_name ON t (v)')).toMatchObject({ ok: false, reason: 'wrong', why: 'catalog' });
+    expect(await lab.check(L, ddl, 'CREATE INDEX t_v_idx ON t (id)')).toMatchObject({ ok: false, reason: 'wrong' });
+    expect(await lab.check(L, plan, "SELECT id FROM t WHERE v = 'x5'")).toEqual({ ok: true });
+    expect(await lab.check(L, plan, "SELECT id FROM t WHERE v || '' = 'x5'")).toMatchObject({ ok: false, reason: 'wrong', why: 'plan' });
+  });
 });
