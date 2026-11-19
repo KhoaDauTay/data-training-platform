@@ -902,4 +902,6 @@ export const vi = {
   // ---- v10 Track B (L151–L153): feedback after a run ----
   'work.extraRows': 'Xem dòng thừa của bạn',
   'work.noRows': 'Truy vấn không còn dòng nào: một điều kiện lọc hoặc phép ghép bảng đang loại hết dòng. Bỏ bớt từng điều kiện rồi chạy lại để thấy dòng mất ở đâu.',
+  // v10 Track A (L154–L156): the JOIN step of the Execution order tab
+  'steps.help.join': 'Ghép mỗi dòng bên trái với các dòng bên phải có khóa bằng nhau. JOIN bỏ dòng không tìm được cặp; LEFT JOIN giữ dòng đó và để trống (NULL) các cột bên phải.',
 } satisfies Record<string, Msg>;

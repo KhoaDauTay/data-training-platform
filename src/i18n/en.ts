@@ -901,4 +901,6 @@ export const en: Record<Key, Msg> = {
   // ---- v10 Track B (L151–L153): feedback after a run ----
   'work.extraRows': 'See your extra rows',
   'work.noRows': 'Your query returns no rows: a filter or a join removes them all. Take the conditions out one at a time and run again to see where the rows go.',
+  // v10 Track A (L154–L156): the JOIN step of the Execution order tab
+  'steps.help.join': 'Pairs each row on the left with the rows on the right whose key is equal. JOIN drops a row that finds no partner; LEFT JOIN keeps it and leaves the right-hand columns empty (NULL).',
 };

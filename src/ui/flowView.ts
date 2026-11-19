@@ -7,6 +7,10 @@ const COL = 210;
 const ROW = 64;
 const BOX_W = 168;
 const BOX_H = 40;
+/** v10 A9 (L156): one run of the dots, 1.6 s each, the last one starting 1.2 s in (≤ 3 s), then still. */
+const DOT_S = 1.6;
+/** Plans whose dots already ran: a redraw (language, tab switch) of the same memoised plan never replays them. */
+const ran = new WeakSet<Plan>();
 
 /** Leaves on the left, root on the right; edge width grows with log(rows). */
 export function renderFlow(host: HTMLElement, plan: Plan): void {
@@ -27,6 +31,7 @@ export function renderFlow(host: HTMLElement, plan: Plan): void {
   const width = (maxDepth + 1) * COL;
   const height = Math.max(1, leaf) * ROW;
   const animate = !reducedMotion();
+  const runs: [SVGAnimationElement, number][] = [];
 
   const root = s('svg', { viewBox: `-10 -10 ${width} ${height + 10}`, role: 'img', 'aria-label': t('flow.aria'), class: 'h-auto w-full min-w-[480px]' });
   for (const n of nodes.slice(1)) {
@@ -39,8 +44,11 @@ export function renderFlow(host: HTMLElement, plan: Plan): void {
     const w = 1.5 + (8 * Math.log10(n.rows + 1)) / Math.log10(maxRows + 1);
     root.append(s('path', { d, class: 'fill-none stroke-accent/30', 'stroke-width': w.toFixed(1) }));
     if (animate && n.rows > 0) {
-      root.append(s('circle', { r: 4, class: 'fill-accent' },
-        s('animateMotion', { dur: '1.6s', repeatCount: 'indefinite', path: d, begin: `${(n.id % 4) * 0.4}s` })));
+      // Hidden at rest (opacity 0, also parks the dot's 0,0 out of sight); begun only by play() below.
+      const move = s('animateMotion', { dur: `${DOT_S}s`, begin: 'indefinite', path: d });
+      const fade = s('animate', { attributeName: 'opacity', values: '0;1;1;0', keyTimes: '0;0.1;0.9;1', dur: `${DOT_S}s`, begin: 'indefinite' });
+      root.append(s('circle', { r: 4, class: 'fill-accent', opacity: 0 }, move, fade));
+      runs.push([move, (n.id % 4) * 0.4], [fade, (n.id % 4) * 0.4]);
     }
   }
   for (const n of nodes) {
@@ -52,8 +60,14 @@ export function renderFlow(host: HTMLElement, plan: Plan): void {
       s('text', { x: 8, y: 16, class: 'fill-ink text-caption font-semibold' }, label),
       s('text', { x: 8, y: 32, class: 'fill-ink text-caption tabular-nums' }, rows)));
   }
+  const play = (): void => runs.forEach(([a, at]) => a.beginElementAt?.(at));
   host.append(
     h('p', { class: 'muted' }, t('flow.intro')),
+    runs.length ? h('div', { class: 'actions' }, h('button', { type: 'button', onclick: play }, t('steps.play'))) : '',
     h('div', { class: 'overflow-auto' }, root),
   );
+  if (runs.length && !ran.has(plan)) {
+    ran.add(plan);
+    requestAnimationFrame(play); // once per plan, when the tab first shows it (SMIL needs the element in the page)
+  }
 }
