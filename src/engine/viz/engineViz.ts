@@ -36,6 +36,7 @@ export async function loadViz(name: string): Promise<VizFactory | undefined> {
 export const VIZ_ALIAS: Record<string, string> = {
   'pg-btree-split': 'pg-btree',
   'pg-locks': 'pg-lock-matrix',
+  'pg-vacuum-vm': 'pg-vacuum-flow',
   'mg-pipeline': 'mg-aggregation-pipeline',
   'mg-esr': 'mg-compound-index-esr',
   'mg-replica-election': 'mg-replica-set-oplog',
