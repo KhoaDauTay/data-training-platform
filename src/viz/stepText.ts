@@ -1,4 +1,9 @@
 export type StepKey = 'from' | 'join' | 'where' | 'group' | 'having' | 'select' | 'distinct' | 'order' | 'limit';
+/**
+ * V19-A (L162): a `steps` request whose SQL starts with this only parses and returns `words` (no sub-query), so the
+ * line under the editor never runs the per-clause counts. A control character: no typed SQL starts with it.
+ */
+export const WORDS_ONLY = '\u0001words\u0001';
 export type StepsFailure = 'syntax' | 'multi' | 'notSelect' | 'withUnion' | 'window';
 
 /** Clause names are SQL keywords, the same in both languages (the help text is in src/i18n: steps.help.*). */

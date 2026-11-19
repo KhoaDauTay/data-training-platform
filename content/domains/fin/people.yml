@@ -32,7 +32,7 @@
   role: { vi: "Trưởng nhóm thu hồi nợ", en: "Collections lead" }
   bio: { vi: "Tai nghe không rời; nhớ khách nào hứa trả ngày nào.", en: "Never without his headset; remembers which customer promised to pay on which day." }
   tables: [collection_calls, repayments]
-  look: { skin: deep, hair: black, style: short, accessory: headset }
+  look: { skin: deep, hair: black, style: curly, accessory: headset }
 
 - name: "Lư Thảo Vy"
   dept: Finance
@@ -56,4 +56,4 @@
   role: { vi: "Trưởng nhóm chăm sóc khách hàng", en: "Customer care lead" }
   bio: { vi: "Trả lời khách mỗi ngày về lịch trả; muốn số liệu đơn giản để đọc lại qua điện thoại.", en: "Answers customers about their repayment schedule every day; wants figures simple enough to read out on the phone." }
   tables: [customers, schedules]
-  look: { skin: medium, hair: black, style: long, accessory: lanyard }
+  look: { skin: medium, hair: black, style: ponytail, accessory: lanyard }

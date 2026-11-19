@@ -19,7 +19,7 @@ import { parse as parseYaml } from 'yaml';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const OUT = join(ROOT, 'smoke-out');
-const PORT = 5219; // V10-D: never 5173/5174 (dev servers of other sessions)
+const PORT = Number(process.env.SMOKE_PORT) || 5219; // V10-D: never 5173/5174 (dev servers of other sessions); SMOKE_PORT lets parallel worktrees run at once
 const T0 = Date.now();
 
 const DEFAULT_BROWSER = {
