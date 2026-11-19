@@ -4229,6 +4229,7 @@ Theo `product-design-best-practice.md` §4 (ENGINE-CONTENT-V1 + ADD-8). File ở
 
 - Bắt buộc: 10 mục có lint ở §5.4 của thiết kế (Q01, Q02, Q06, Q10, Q11, Q12, Q13, Q15, Q22, A05; mỗi thẻ có `lint.tip`, Q22 vẫn tắt ở v25) và "Mười mục giá trị nhất" (Q02, Q06, Q07, Q11, Q12, A03, A01, S10, M01, D02).
 - Phần còn lại: mục chạy được và "Sai ≠ Đúng", nặng về SQL và PostgreSQL vì hai track này phát hành trước (v25).
+- Cổng Product §11.3 mục 3 (câu kiểm không lộ đáp án): 15 thẻ (Q01, Q02, Q05, S01, S03, S08, X01, M15–M18, D06, D14, D15, D18) đã bỏ khối `## Ví dụ`, vì khối đó nêu đúng kết quả mà câu kiểm hỏi; số đo hiện sau "Chạy cả hai". Các thẻ còn khối Ví dụ chỉ nêu số mà câu kiểm không hỏi. Vẫn cần agent "giải mù" của cổng chạy thật trước khi phát hành.
 - Bỏ lại có chủ đích: mục mà bản "Đúng" mới là bản báo lỗi (S02, S04, S06, S07, P05, X02). `check: error` của ADD-8 nghĩa là bản "Không nên" báo lỗi, nên các mục này cần dựng lại kịch bản mới làm thẻ được.
 
 Số thẻ: SQL 18, PostgreSQL 10, MongoDB 6, DynamoDB 6.
@@ -4287,7 +4288,7 @@ Một script tạm ngoài repo (`bp3/verify.mjs`, không commit) đọc chính c
   - `dynoxide`: `DynamoEngine` + `parseRequest` + `labProblem` của `v22-engine` (`src/engine/dynamo/`) trên `@dynoxide/wasm-engine` 1.5.0.
 - **Khẳng định:** `diff` khác theo vị trí cột, `same` bằng (DynamoDB: không xét thứ tự item); `plan` đúng nút quét trên `expect.table`; `error` đúng SQLSTATE hoặc kiểu lỗi DynamoDB; `expect.compare: cost | size | rcu` thì bản Nên nhỏ hơn hẳn. Mỗi bản < 300 ms trong Node (lâu nhất 9 ms; `setup` lâu nhất ≈ 1 s, I06).
 - **Lint:** 10 thẻ có `lint`: `pair.bad` kích luật (cây parse `libpg-query` 18.2.4, matcher của §10 cộng luật Q22), `pair.good` thì không. Q11 lọc thêm "cột là cột đầu của một index có thật trong `lab`", Q12 "cột kiểu timestamp".
-- **Chữ:** id = `e-bp-` + mã file; `track` = thư mục; `module` thuộc `areas`; `skills`/`adv` có thật; `requires` là id Engine có thật ở `v22-engine` (`0ede43d`); nguồn thuộc danh sách cho phép; code span VI = EN (cả frontmatter); EN không dấu; không "boss", "sắp có", "later", "sự cố"; không chữ ở cột `avoid` của glossary theo engine; mỗi mục thân bài ≤ 130 từ.
+- **Chữ:** id = `e-bp-` + mã file; `track` = thư mục; `module` thuộc `areas`; `skills`/`adv` có thật; `requires` là id Engine có thật ở `v22-engine` (`0ede43d`); nguồn thuộc danh sách cho phép; code span VI = EN (cả frontmatter); EN không dấu; không "boss", "sắp có", "later", "sự cố"; không chữ ở cột `avoid` của glossary theo engine; mỗi mục thân bài ≤ 120 từ (không tính dòng tiêu đề); không bản `good` SQL nào kích bất kỳ luật nào trong 10 luật lint.
 
 ### 11.3 Chỗ ADD-8 chưa nói, thẻ đã chọn cách (BP-T chốt khi viết parser)
 
@@ -4298,21 +4299,23 @@ Một script tạm ngoài repo (`bp3/verify.mjs`, không commit) đọc chính c
 | Bản Sai/Đúng của DynamoDB | Một request `{"op", "input"}` mỗi bản | Như editor (`parseRequest`); các mục cần vòng lặp hay nhiều lệnh (D01, D03) chưa làm thẻ |
 | Mục index (I02–I06) | `setup` dựng **hai bảng cùng dữ liệu**, mỗi bảng một thiết kế index; Sai/Đúng là cùng câu trên hai bảng; `check: runs` + `expect.compare: cost` (I03: `size`) | ADD-8 không có "câu dò" (probe) sau DDL. Nếu BP-T thêm `probe`, các thẻ này có thể đổi về một bảng |
 | `expect.compare: rcu` | D06 (cùng kết quả, RCU khác) | Thiết kế chỉ nêu `cost | size`; đây là cùng ý cho DynamoDB |
+| Loader và test hiện có | Không đổi gì | Loader Engine (`src/engineSources-{pg,mg,dy}.ts` ở nhánh `content-qa2`) glob `content/engine/<engine>/L*/*.md`, nên không quét `best/`. `tests/contentJson.test.ts` (`v22-engine`) glob `content/**/*.{md,yml}` và so frontmatter JSON với YAML: thẻ dùng ngày dạng chuỗi có nháy, không có giá trị thành `Date`, nên qua được |
+| Chú thích lần đầu (style §2.1) | Đã sửa cho "tài liệu (document)", "thuộc tính (attribute)", "partition key (khóa phân vùng)", "sort key (khóa sắp xếp)" | Script chưa kiểm luật này; reviewer kiểm tay |
 | Q11 trên `lab` | `expect.good: Index Only Scan` sau `VACUUM ANALYZE` (như test §11.1 của thiết kế); không VACUUM thì là `Bitmap Heap Scan` | Thân thẻ nói cả hai, không hứa một nút |
 
 ### 11.4 Ngân sách
 
-- `sql`: 60.2 KB thô, 16.9 KB gzip -9 (cả file, trước khi build đổi YAML sang JSON).
-- `postgres`: 38.0 KB thô, 11.0 KB gzip -9 (cả file, trước khi build đổi YAML sang JSON).
-- `mongodb`: 25.6 KB thô, 7.2 KB gzip -9 (cả file, trước khi build đổi YAML sang JSON).
-- `dynamodb`: 59.1 KB thô, 9.4 KB gzip -9 (cả file, trước khi build đổi YAML sang JSON).
+- `sql`: 59.2 KB thô, 16.6 KB gzip -9 (cả file, trước khi build đổi YAML sang JSON).
+- `postgres`: 36.6 KB thô, 10.7 KB gzip -9 (cả file, trước khi build đổi YAML sang JSON).
+- `mongodb`: 24.6 KB thô, 6.9 KB gzip -9 (cả file, trước khi build đổi YAML sang JSON).
+- `dynamodb`: 57.8 KB thô, 9.0 KB gzip -9 (cả file, trước khi build đổi YAML sang JSON).
 
-Trần thiết kế §10: `bpsql` 20, `bppg` 20, `bpmg` 10, `bpdy` 10 (cho đủ track). Phần lớn byte của DynamoDB là dữ liệu `setup`.
+Trần thiết kế §10: `bpsql` 20, `bppg` 20, `bpmg` 10, `bpdy` 10 (cho đủ track). Phần lớn byte của DynamoDB là dữ liệu `setup`. Theo tỷ lệ hiện tại (≈ 0,9 KB gzip mỗi thẻ SQL, ≈ 1,1 KB mỗi thẻ PostgreSQL), đủ 33 mục SQL ≈ 30 KB và 35 mục PostgreSQL ≈ 37 KB: **vượt trần 20**. BP-T cần tách chunk (ví dụ theo khu Q/A, S/I/P/X) hoặc nâng trần, ghi vào L của v25.
 
 ## 12. Bản đồ: mục Best Practice → bài Database Engine
 
-Bài Engine đọc ở nhánh `v22-engine` (commit `0ede43d`): 195 id (`e-pg-…` 75, `e-mg-…` 65, `e-dy-…` 55). Lộ trình drill `content/engine/mongodb/path/*.yml` là một hệ khác (drill, không phải bài) nên không tính.
-"Bài liên quan" = bài dạy cơ chế mà mục dựa vào, hoặc bài có lab/câu hỏi chạm đúng bẫy đó. Thẻ dùng các id này làm `requires` (chip "Nên biết trước"). "—" = chưa bài Engine nào dạy; mục đó chỉ nối với General hoặc đứng riêng.
+Bài Engine đọc ở nhánh `v22-engine` (commit `0ede43d`): 195 id (`e-pg-…` 75, `e-mg-…` 65, `e-dy-…` 55). Lộ trình MongoDB `content/engine/mongodb/path/*.yml` (42 bài học nhanh `mg.<kỹ năng>` + drill) không có id `e-…` nên `requires` không trỏ tới được; nối riêng ở §12.10.
+"Bài liên quan" được chọn theo tiêu đề và mục tiêu của bài. Riêng 40 mục có thẻ: mỗi id trong `requires` của thẻ đã được grep xác nhận bài đó có nói đúng thuật ngữ của mục (ví dụ `elemMatch`, `preserveNullAndEmptyArrays`, `INCLUDE`); id không qua bước này đã bị bỏ khỏi thẻ và khỏi bảng. Các dòng còn lại là ứng viên theo tiêu đề, cần người viết thẻ kiểm lại. "—" = chưa bài Engine nào dạy.
 
 ### 12.1 1. Viết truy vấn SQL (Q)
 
@@ -4328,9 +4331,9 @@ Bài Engine đọc ở nhánh `v22-engine` (commit `0ede43d`): 195 id (`e-pg-…
 | Q08 | Explicit JOIN syntax | — |  |
 | Q09 | Name your columns | `e-mg-l1-03` |  |
 | Q10 | ORDER BY with a tiebreaker | `e-pg-l1-11`, `e-mg-l1-10`, `e-dy-l1-10` | `e-bp-q10` |
-| Q11 | Keep predicates sargable | `e-pg-l1-10`, `e-pg-l2-04` | `e-bp-q11` |
+| Q11 | Keep predicates sargable | `e-pg-l2-04` | `e-bp-q11` |
 | Q12 | Half-open ranges, not BETWEEN | `e-pg-l1-01`, `e-pg-l2-10` | `e-bp-q12` |
-| Q13 | Cast before dividing integers | `e-pg-l1-01` | `e-bp-q13` |
+| Q13 | Cast before dividing integers | — | `e-bp-q13` |
 | Q14 | Conditional aggregation with FILTER | — |  |
 | Q15 | WHERE for rows, HAVING for groups | `e-mg-l3-12`, `e-mg-l2-06` | `e-bp-q15` |
 | Q16 | UNION ALL unless you mean DISTINCT | — |  |
@@ -4364,8 +4367,8 @@ Bài Engine đọc ở nhánh `v22-engine` (commit `0ede43d`): 195 id (`e-pg-…
 | A16 | lag and lead need PARTITION BY the entity | `e-mg-l2-10` |  |
 | A17 | Top N: choose the tie rule on purpose | `e-pg-l1-11` |  |
 | A18 | Don't average averages | `e-mg-l2-06` | `e-bp-a18` |
-| A19 | AT TIME ZONE works in opposite directions | `e-pg-l1-01` |  |
-| A20 | Add 1 day, not 24 hours, across DST | `e-pg-l1-01` |  |
+| A19 | AT TIME ZONE works in opposite directions | — |  |
+| A20 | Add 1 day, not 24 hours, across DST | — |  |
 | A21 | Distinct counts are not additive | — |  |
 | A22 | Profile the columns before you analyse | `e-pg-l2-15` |  |
 | A23 | Check freshness before you send numbers | — |  |
@@ -4382,13 +4385,13 @@ Bài Engine đọc ở nhánh `v22-engine` (commit `0ede43d`): 195 id (`e-pg-…
 | S05 | Prefer time-ordered UUIDv7 | `e-pg-l1-03` |  |
 | S06 | Let constraints enforce the rules | `e-pg-l1-04`, `e-pg-l1-12` |  |
 | S07 | NULLS NOT DISTINCT | `e-pg-l1-04`, `e-pg-l1-05` |  |
-| S08 | Lower-case snake_case names | `e-pg-l1-02` | `e-bp-s08` |
+| S08 | Lower-case snake_case names | — | `e-bp-s08` |
 | S09 | Normalise OLTP, denormalise on purpose | `e-pg-l1-08`, `e-mg-l2-11` |  |
 | S10 | tenant_id everywhere, RLS forced | `e-pg-l5-10`, `e-pg-l1-06` | `e-bp-s10` |
 | S11 | Partition for a reason | `e-pg-l4-07`, `e-pg-l4-08` |  |
 | S12 | jsonb for the dynamic part only | `e-pg-l2-11` |  |
-| S13 | Meaningful, uniform name suffixes | `e-pg-l1-02` |  |
-| S14 | Do not name things after SQL key words | `e-pg-l1-02` |  |
+| S13 | Meaningful, uniform name suffixes | — |  |
+| S14 | Do not name things after SQL key words | — |  |
 
 ### 12.4 4. Index (I)
 
@@ -4399,7 +4402,7 @@ Bài Engine đọc ở nhánh `v22-engine` (commit `0ede43d`): 195 id (`e-pg-…
 | I03 | Partial indexes for the hot subset | `e-pg-l2-03`, `e-mg-l3-01`, `e-mg-l3-02` | `e-bp-i03` |
 | I04 | Covering indexes with INCLUDE | `e-pg-l2-02`, `e-pg-l3-09`, `e-mg-l3-09` | `e-bp-i04` |
 | I05 | Expression indexes | `e-pg-l2-04` | `e-bp-i05` |
-| I06 | Index your foreign keys | `e-pg-l1-04`, `e-pg-l1-09` | `e-bp-i06` |
+| I06 | Index your foreign keys | `e-pg-l1-09` | `e-bp-i06` |
 | I07 | Pick the index type for the operator | `e-pg-l2-05`, `e-pg-l2-06`, `e-pg-l2-07`, `e-pg-l2-08`, `e-pg-l2-09`, `e-pg-l2-12`, `e-pg-l2-13`, `e-pg-l2-16`, `e-pg-l2-17`, `e-pg-l5-07` |  |
 | I08 | Low-cardinality columns | `e-pg-l2-03`, `e-pg-l2-15`, `e-pg-l4-02` |  |
 | I09 | Remove unused and duplicate indexes | `e-mg-l3-14`, `e-pg-l5-11` |  |
@@ -4414,7 +4417,7 @@ Bài Engine đọc ở nhánh `v22-engine` (commit `0ede43d`): 195 id (`e-pg-…
 | P04 | Pool connections | — |  |
 | P05 | Build indexes CONCURRENTLY | `e-pg-l2-14`, `e-pg-l4-16` |  |
 | P06 | Add constraints NOT VALID, then VALIDATE | `e-pg-l1-04` |  |
-| P07 | Cheap vs table-rewriting ALTERs | `e-pg-l1-02` |  |
+| P07 | Cheap vs table-rewriting ALTERs | — |  |
 | P08 | Batch large UPDATE and DELETE | `e-pg-l3-15`, `e-pg-l4-16` |  |
 | P09 | Extended statistics for correlated columns | `e-pg-l2-15`, `e-pg-l4-03` |  |
 | P10 | Tune autovacuum thresholds per large table | `e-pg-l3-15`, `e-pg-l5-14` |  |
@@ -4516,7 +4519,7 @@ Bài Engine đọc ở nhánh `v22-engine` (commit `0ede43d`): 195 id (`e-pg-…
 
 ### 12.9 Tổng kết
 
-- 129/160 mục có ít nhất một bài Engine liên quan; 31 mục chưa có (phần lớn là Q/A thuần SQL phân tích, bảo mật X, vận hành MongoDB/DynamoDB vòng 3).
+- 122/160 mục có ít nhất một bài Engine liên quan; 38 mục chưa có (phần lớn là Q/A thuần SQL phân tích, bảo mật X, vận hành MongoDB/DynamoDB vòng 3).
 - 139/195 bài Engine được ít nhất một mục dùng tới.
 
 **Bài Engine chưa có mục Best Practice nào (56):**

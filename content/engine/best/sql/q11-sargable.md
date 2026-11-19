@@ -14,7 +14,7 @@ objectives:
 avoid:
   vi: "Quét cả bảng dù cột đã có index, chỉ vì cột bị bọc trong hàm."
   en: "A full table scan on an indexed column, only because the column is wrapped in a function."
-requires: [e-pg-l1-10, e-pg-l2-04]
+requires: [e-pg-l2-04]
 skills: [sargable, explain_read]
 adv: []
 sources:

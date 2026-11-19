@@ -72,10 +72,6 @@ quiz:
 - Top N, khoảng `BETWEEN` và phân trang đều sai mà không có lỗi nào.
 - Kiểu `N` được sắp theo giá trị số.
 
-## Ví dụ
-
-Cùng năm điểm, `Query` giảm dần lấy 3 item. Bảng có `score` kiểu `S` trả `9, 80, 75`. Bảng có `score` kiểu `N` trả `250, 100, 80`.
-
 # EN
 
 ## Key idea
@@ -88,6 +84,3 @@ Store scores, amounts, quantities and epoch seconds as type `N`. If you must put
 - Top N, `BETWEEN` ranges and pagination all go wrong with no error.
 - Type `N` sorts by numeric value.
 
-## Example
-
-Same five scores, a descending `Query` takes 3 items. The table whose `score` is type `S` returns `9, 80, 75`. The table whose `score` is type `N` returns `250, 100, 80`.

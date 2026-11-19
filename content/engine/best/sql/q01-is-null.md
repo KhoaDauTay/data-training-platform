@@ -58,10 +58,6 @@ Kiểm giá trị thiếu bằng `IS NULL` hoặc `IS NOT NULL`. Không bao gi�
 - `WHERE` chỉ giữ dòng có điều kiện true, nên `= NULL` luôn trả 0 dòng.
 - Postgres không báo lỗi, nên bạn chỉ thấy một con số 0 trông rất hợp lý.
 
-## Ví dụ
-
-Trên dữ liệu cửa hàng (`lab`), bản `= NULL` đếm 0 khách. Bản `IS NULL` đếm 13 khách chưa có email.
-
 # EN
 
 ## Key idea
@@ -74,6 +70,3 @@ Test for a missing value with `IS NULL` or `IS NOT NULL`. Never write `= NULL` o
 - `WHERE` keeps only rows whose condition is true, so `= NULL` always returns 0 rows.
 - Postgres raises no error, so all you see is a plausible-looking 0.
 
-## Example
-
-On the shop data (`lab`), the `= NULL` version counts 0 customers. The `IS NULL` version counts the 13 customers with no email.

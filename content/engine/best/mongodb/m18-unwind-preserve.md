@@ -58,17 +58,13 @@ quiz:
 
 ## Ý chính
 
-Khi báo cáo phải giữ mọi tài liệu cha (khách có giỏ rỗng vẫn phải hiện 0), dùng `preserveNullAndEmptyArrays: true`, rồi đếm có điều kiện.
+Khi báo cáo phải giữ mọi tài liệu (document) cha (khách có giỏ rỗng vẫn phải hiện 0), dùng `preserveNullAndEmptyArrays: true`, rồi đếm có điều kiện.
 
 ## Vì sao
 
 - Mặc định `$unwind` không sinh tài liệu nào khi mảng null, thiếu hoặc rỗng.
 - Giống INNER JOIN thay cho LEFT JOIN trong SQL: dòng có số 0 biến khỏi báo cáo.
 - Sau khi giữ lại, `$sum: 1` sẽ đếm cả tài liệu không có phần tử, nên phải đếm có điều kiện (`$cond` + `$ifNull`).
-
-## Ví dụ
-
-Bản mặc định chỉ còn người dùng 1 với 2 dòng. Bản giữ lại trả cả ba: người dùng 1 có 2 dòng, người dùng 2 và 3 có 0.
 
 # EN
 
@@ -82,6 +78,3 @@ When a report must keep every parent document (a customer with an empty cart mus
 - It is like an INNER JOIN instead of a LEFT JOIN in SQL: the rows with 0 vanish from the report.
 - Once they are kept, `$sum: 1` would also count documents with no element, so count conditionally (`$cond` + `$ifNull`).
 
-## Example
-
-The default version keeps only user 1, with 2 lines. The preserving version returns all three: user 1 with 2 lines, users 2 and 3 with 0.

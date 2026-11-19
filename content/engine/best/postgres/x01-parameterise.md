@@ -57,10 +57,6 @@ Giá trị từ người dùng đi vào SQL qua tham số: `$1`, prepared statem
 - Tham số luôn là **giá trị**, không bao giờ là cú pháp.
 - Công cụ phân tích (notebook, dashboard có ô lọc) cũng ghép chuỗi nếu bạn để nó làm vậy.
 
-## Ví dụ
-
-Cùng chữ độc. Câu ghép chuỗi đếm 4 thành viên (mọi dòng). Câu `EXECUTE` với tham số đếm 0.
-
 # EN
 
 ## Key idea
@@ -73,6 +69,3 @@ User input reaches SQL through parameters: `$1`, prepared statements, the driver
 - A parameter is always a **value**, never syntax.
 - Analyst tools (notebooks, dashboards with filter boxes) concatenate strings too if you let them.
 
-## Example
-
-Same malicious text. The concatenated query counts 4 members (every row). The `EXECUTE` with a parameter counts 0.

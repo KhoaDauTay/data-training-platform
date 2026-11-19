@@ -68,10 +68,6 @@ quiz:
 - Lỗi này không báo gì: câu vẫn chạy, chỉ trả 0.
 - Planner biến `NOT EXISTS` thành anti join, thường rẻ hơn.
 
-## Ví dụ
-
-Trên dữ liệu cửa hàng (`lab`), bản `NOT IN` trả 0 khách vì có đơn vãng lai. Bản `NOT EXISTS` trả đúng số khách chưa mua gì từ 2026-10-01.
-
 # EN
 
 ## Key idea
@@ -84,6 +80,3 @@ To keep rows "not in the other set", use `NOT EXISTS`. Use `NOT IN` only with a 
 - Nothing warns you: the query runs and simply returns 0.
 - The planner turns `NOT EXISTS` into an anti join, which is usually cheaper.
 
-## Example
-
-On the shop data (`lab`), the `NOT IN` version returns 0 customers because of walk-in orders. The `NOT EXISTS` version returns the real number of customers who bought nothing since 2026-10-01.

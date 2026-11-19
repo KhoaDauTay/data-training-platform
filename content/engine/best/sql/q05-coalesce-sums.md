@@ -62,10 +62,6 @@ Sau `LEFT JOIN`, `sum` hay `max` của một nhóm không khớp dòng nào là 
 - NULL lan sang phép tính sau đó: `NULL + 1` là NULL.
 - Trong báo cáo, NULL hiện thành ô trống, người đọc không biết là 0 hay là thiếu dữ liệu.
 
-## Ví dụ
-
-Cửa hàng 4 mở ngày 2025-09-01. Trước ngày đó nó không có đơn: bản `sum` trả NULL cho cửa hàng 4, bản `coalesce` trả 0.
-
 # EN
 
 ## Key idea
@@ -77,6 +73,3 @@ After a `LEFT JOIN`, the `sum` or `max` of a group with no matching rows is NULL
 - NULL spreads into any arithmetic that uses it: `NULL + 1` is NULL.
 - In a report NULL shows as a blank cell, and readers cannot tell 0 from missing data.
 
-## Example
-
-Store 4 opened on 2025-09-01. Before that date it has no orders: the `sum` version returns NULL for store 4, the `coalesce` version returns 0.

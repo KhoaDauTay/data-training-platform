@@ -71,7 +71,7 @@ quiz:
 
 ## Vì sao
 
-- `$match` ở đầu pipeline dùng được index và giảm số tài liệu đi qua các stage sau.
+- `$match` ở đầu pipeline dùng được index và giảm số tài liệu (document) đi qua các stage sau.
 - `$sort` + `$limit` cạnh nhau được gộp thành top-k, không phải sắp xếp toàn bộ.
 - Optimizer chỉ tự đẩy `$match` lên trong một số trường hợp, đừng trông vào nó.
 

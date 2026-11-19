@@ -14,7 +14,7 @@ objectives:
 avoid:
   vi: "Mỗi lần join từ cha sang con, hay xóa một dòng cha, là một lần quét cả bảng con."
   en: "Every join from parent to child, or every delete of a parent row, scans the whole child table."
-requires: [e-pg-l1-04, e-pg-l1-09]
+requires: [e-pg-l1-09]
 skills: [index_design, join]
 adv: []
 sources:

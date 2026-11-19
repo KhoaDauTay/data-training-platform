@@ -52,17 +52,13 @@ quiz:
 
 ## Ý chính
 
-Khi các điều kiện phải đúng trên **cùng một** phần tử của mảng tài liệu con (cùng một dòng hàng có `sku = 'A'` **và** `qty ≥ 2`), dùng `$elemMatch`.
+Khi các điều kiện phải đúng trên **cùng một** phần tử của mảng tài liệu (document) con (cùng một dòng hàng có `sku = 'A'` **và** `qty ≥ 2`), dùng `$elemMatch`.
 
 ## Vì sao
 
 - Viết bằng dot notation (`'items.sku'`, `'items.qty'`), mỗi điều kiện có thể được một phần tử khác nhau thỏa.
-- Docs MongoDB gọi đó là "a combination of elements": kết quả thừa mà không báo lỗi.
+- Docs MongoDB gọi đó là "any combination of elements": kết quả thừa mà không báo lỗi.
 - Đây giống điều kiện trên cùng một dòng con trong SQL, không phải hai dòng bất kỳ.
-
-## Ví dụ
-
-Bản dot notation trả đơn 1 và 4 (đơn 1 có A qty 1 và B qty 2). Bản `$elemMatch` chỉ trả đơn 4.
 
 # EN
 
@@ -73,9 +69,6 @@ When the conditions must hold on the **same** element of an array of subdocument
 ## Why
 
 - Written with dot notation (`'items.sku'`, `'items.qty'`), each condition can be met by a different element.
-- The MongoDB docs call this "a combination of elements": extra results, with no error.
+- The MongoDB docs call this "any combination of elements": extra results, with no error.
 - It is like a condition on one child row in SQL, not on any two rows.
 
-## Example
-
-The dot-notation version returns orders 1 and 4 (order 1 has A with qty 1 and B with qty 2). The `$elemMatch` version returns only order 4.

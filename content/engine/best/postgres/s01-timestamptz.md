@@ -60,10 +60,6 @@ Một thời điểm có thật lưu bằng `timestamptz`. Chỉ dùng `timestam
 - Lưu "giờ UTC" trong `timestamp` cũng không giúp: database vẫn không biết đó là UTC.
 - `timestamptz` cũng chỉ tốn 8 byte, như `timestamp`.
 
-## Ví dụ
-
-Cùng chuỗi `'2026-10-31 08:00:00+07'` ghi vào hai bảng, rồi đọc trong phiên UTC. Bảng `timestamp` trả `2026-10-31 08:00:00` (sai 7 tiếng). Bảng `timestamptz` trả `2026-10-31 01:00:00+00` (đúng thời điểm).
-
 # EN
 
 ## Key idea
@@ -76,6 +72,3 @@ Store a real instant as `timestamptz`. Use `timestamp` (without time zone) only 
 - Storing "UTC time" in `timestamp` does not help: the database still does not know it is UTC.
 - `timestamptz` takes 8 bytes too, like `timestamp`.
 
-## Example
-
-The same string `'2026-10-31 08:00:00+07'` goes into two tables and is read back in a UTC session. The `timestamp` table returns `2026-10-31 08:00:00` (7 hours off). The `timestamptz` table returns `2026-10-31 01:00:00+00` (the right instant).

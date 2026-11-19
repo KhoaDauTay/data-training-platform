@@ -55,13 +55,9 @@ Nói rõ bạn muốn gì: chỉ giá trị null thì `{ $type: 'null' }`, chỉ
 
 ## Vì sao
 
-- Trong MongoDB, `{ city: null }` khớp cả tài liệu có `city: null` lẫn tài liệu (document) không có trường `city`.
+- Trong MongoDB, `{ city: null }` khớp cả tài liệu (document) có `city: null` lẫn tài liệu không có trường `city`.
 - Hai nhóm đó thường khác nghĩa: "đã hỏi, khách không khai" và "dữ liệu cũ, chưa từng hỏi".
 - SQL không có khái niệm "thiếu cột", nên người quen SQL hay bỏ sót điểm này.
-
-## Ví dụ
-
-Trên bốn tài liệu `users`, `{ city: null }` trả `_id` 2 và 3. `{ city: { $type: 'null' } }` chỉ trả 2.
 
 # EN
 
@@ -75,6 +71,3 @@ Say what you mean: for a null value only use `{ $type: 'null' }`, for a missing 
 - The two groups usually mean different things: "asked, the customer left it blank" and "old data, never asked".
 - SQL has no notion of a "missing column", so people coming from SQL often miss this.
 
-## Example
-
-On four `users` documents, `{ city: null }` returns `_id` 2 and 3. `{ city: { $type: 'null' } }` returns only 2.

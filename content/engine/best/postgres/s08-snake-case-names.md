@@ -14,7 +14,7 @@ objectives:
 avoid:
   vi: "Lỗi \"không tồn tại\" mỗi khi ai đó quên nháy kép đúng hoa thường."
   en: "\"Does not exist\" errors every time someone forgets the exact quoted case."
-requires: [e-pg-l1-02]
+requires: []
 skills: [select]
 adv: []
 sources:
@@ -58,10 +58,6 @@ Tên bảng và cột viết chữ thường, `snake_case`, không cần nháy k
 - Tạo bằng `"SalesDaily"` thì mọi truy vấn về sau phải nháy đúng hoa thường; quên là lỗi `42P01` (bảng) hoặc `42703` (cột).
 - Công cụ, ORM và đồng nghiệp đều phải nhớ quy tắc đó.
 
-## Ví dụ
-
-`SELECT SaleDay, Revenue FROM SalesDaily` báo `relation "salesdaily" does not exist`. Bảng `sales_daily` đọc được mà không cần nháy, và alias vẫn cho cột tên `Revenue`.
-
 # EN
 
 ## Key idea
@@ -74,6 +70,3 @@ Name tables and columns in lower-case `snake_case` that never needs double quote
 - Create it as `"SalesDaily"` and every query after that must quote the exact case; forgetting gives error `42P01` (table) or `42703` (column).
 - Tools, ORMs and colleagues all have to remember that rule.
 
-## Example
-
-`SELECT SaleDay, Revenue FROM SalesDaily` fails with `relation "salesdaily" does not exist`. Table `sales_daily` reads without quotes, and the alias still names the column `Revenue`.

@@ -51,17 +51,13 @@ quiz:
 
 ## Ý chính
 
-"Khác X" mà chỉ muốn tài liệu có giá trị thật thì viết thêm `$exists: true` và loại `null`: `{ $exists: true, $nin: ['Da Nang', null] }`.
+"Khác X" mà chỉ muốn tài liệu (document) có giá trị thật thì viết thêm `$exists: true` và loại `null`: `{ $exists: true, $nin: ['Da Nang', null] }`.
 
 ## Vì sao
 
 - `$ne` và `$nin` chọn cả tài liệu không có trường đó, và cả tài liệu có giá trị null.
 - Đây là bẫy ngược với SQL: `city <> 'Da Nang'` trong SQL **bỏ** NULL, còn MongoDB **giữ** cả null lẫn thiếu.
 - Người chuyển từ SQL sang dễ đếm thừa mà không biết.
-
-## Ví dụ
-
-Trên bốn tài liệu `users`, `$ne` trả `_id` 2, 3 và 4. Bản có `$exists` và loại `null` chỉ trả 4.
 
 # EN
 
@@ -75,6 +71,3 @@ When "not X" should cover only documents with a real value, add `$exists: true` 
 - It is the opposite trap from SQL: `city <> 'Da Nang'` in SQL **drops** NULLs, while MongoDB **keeps** both null and missing.
 - People moving from SQL easily over-count without noticing.
 
-## Example
-
-On four `users` documents, `$ne` returns `_id` 2, 3 and 4. The version with `$exists` that excludes `null` returns only 4.

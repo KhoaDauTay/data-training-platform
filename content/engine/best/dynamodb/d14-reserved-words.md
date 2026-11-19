@@ -101,17 +101,13 @@ quiz:
 
 ## Ý chính
 
-Tên thuộc tính trùng từ dành riêng (`status`, `total`, `name`, `date`, `count`…) phải viết qua placeholder `#x` trong mọi biểu thức. Tốt nhất là không đặt tên như vậy ngay từ đầu.
+Tên thuộc tính (attribute) trùng từ dành riêng (`status`, `total`, `name`, `date`, `count`…) phải viết qua placeholder `#x` trong mọi biểu thức. Tốt nhất là không đặt tên như vậy ngay từ đầu.
 
 ## Vì sao
 
 - DynamoDB có hơn 500 từ dành riêng.
 - Biểu thức dùng thẳng tên đó bị từ chối bằng `ValidationException`. Không sai âm thầm, nhưng lỗi chỉ lộ ra lúc chạy.
 - Giống tên cột phải nháy kép trong SQL.
-
-## Ví dụ
-
-`status = :s` bị từ chối vì `status` là từ dành riêng. `#s = :s` với `ExpressionAttributeNames` trả 6 đơn đã trả của `CUST#2`.
 
 # EN
 
@@ -125,6 +121,3 @@ An attribute name that is a reserved word (`status`, `total`, `name`, `date`, `c
 - An expression that uses the name directly is rejected with `ValidationException`. Nothing goes silently wrong, but the error only shows up at run time.
 - It is like a column name that needs double quotes in SQL.
 
-## Example
-
-`status = :s` is rejected because `status` is a reserved word. `#s = :s` with `ExpressionAttributeNames` returns the 6 paid orders of `CUST#2`.

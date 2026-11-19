@@ -108,10 +108,6 @@ Truy vấn trong luồng ứng dụng dùng `GetItem` hoặc `Query` trên bản
 - `FilterExpression` lọc sau khi đã đọc.
 - `Query` dùng partition key để chỉ đọc đúng item collection cần.
 
-## Ví dụ
-
-Cùng 8 đơn của khách `CUST#2`. `Scan` + filter: `ScannedCount` 48, 1,5 RCU. `Query`: `ScannedCount` 8, 0,5 RCU. Số RCU là số dynoxide báo theo quy tắc khối 4 KB, không phải hóa đơn AWS.
-
 # EN
 
 ## Key idea
@@ -124,6 +120,3 @@ Application reads use `GetItem` or `Query` on a table or index. `Scan` is for ba
 - `FilterExpression` filters after the read.
 - `Query` uses the partition key to read only the item collection you need.
 
-## Example
-
-Same 8 orders of customer `CUST#2`. `Scan` + filter: `ScannedCount` 48, 1.5 RCU. `Query`: `ScannedCount` 8, 0.5 RCU. The RCU numbers are what dynoxide reports by the 4 KB block rule, not an AWS bill.

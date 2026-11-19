@@ -90,17 +90,13 @@ quiz:
 
 ## Ý chính
 
-Mọi điều kiện trên partition key và sort key (`=`, `<`, `BETWEEN`, `begins_with`) viết trong `KeyConditionExpression`. `FilterExpression` chỉ dành cho thuộc tính thường.
+Mọi điều kiện trên partition key và sort key (`=`, `<`, `BETWEEN`, `begins_with`) viết trong `KeyConditionExpression`. `FilterExpression` chỉ dành cho thuộc tính (attribute) thường.
 
 ## Vì sao
 
 - Điều kiện khóa thu hẹp phần dữ liệu được **đọc**; filter chỉ bỏ bớt thứ **đã đọc**.
 - Với `Query`, AWS từ chối hẳn filter trên khóa.
 - Cùng ý với điều kiện sargable trong SQL: điều kiện phải dùng được khóa.
-
-## Ví dụ
-
-Filter trên `sk` bị từ chối bằng `ValidationException`. Đặt `sk BETWEEN` trong điều kiện khóa trả 7 ngày bán, 0,5 RCU.
 
 # EN
 
@@ -114,6 +110,3 @@ Every condition on the partition key and sort key (`=`, `<`, `BETWEEN`, `begins_
 - For `Query`, AWS rejects a filter on a key outright.
 - Same idea as a sargable condition in SQL: the condition must be able to use the key.
 
-## Example
-
-The filter on `sk` is rejected with `ValidationException`. Putting `sk BETWEEN` in the key condition returns 7 sales days for 0.5 RCU.

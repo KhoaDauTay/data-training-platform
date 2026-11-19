@@ -14,7 +14,7 @@ objectives:
 avoid:
   vi: "Tỷ lệ 29 % hiện thành 0."
   en: "A 29% share that shows up as 0."
-requires: [e-pg-l1-01]
+requires: []
 skills: [cast, conditional_agg]
 adv: []
 sources:

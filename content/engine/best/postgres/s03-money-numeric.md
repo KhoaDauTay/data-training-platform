@@ -53,10 +53,6 @@ Tiền lưu bằng `numeric(p, s)`, hoặc `bigint` theo đơn vị nhỏ nhất
 - Số thực nhị phân không biểu diễn đúng 0,1: docs gọi nó là "inexact". Tổng lệch vài đồng và phép so sánh bằng sai.
 - `money` phụ thuộc thiết lập `lc_monetary` và không có phần lẻ dưới cent.
 
-## Ví dụ
-
-`0.1 + 0.2 = 0.3` trả false với `float8`, trả true với `numeric`.
-
 # EN
 
 ## Key idea
@@ -68,6 +64,3 @@ Store money as `numeric(p, s)`, or as `bigint` in the smallest unit (dong, cents
 - Binary floating point cannot represent 0.1 exactly: the docs call it "inexact". Totals drift by a few units and equality checks fail.
 - `money` depends on the `lc_monetary` setting and has no fraction below a cent.
 
-## Example
-
-`0.1 + 0.2 = 0.3` returns false with `float8` and true with `numeric`.
