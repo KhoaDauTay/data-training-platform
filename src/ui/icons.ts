@@ -22,7 +22,7 @@ export const ICON_NAMES = Object.keys(P) as IconName[];
  * tests/icons.test.ts keeps the values unique and apart from the domain icons (DOMAINS), which only name a domain.
  */
 export const NAV_ICON = {
-  home: 'home', learn: 'route', practice: 'repeat', overview: 'overview', play: 'code', sandbox: 'flask', data: 'database', dashboard: 'chart', map: 'map',
+  home: 'home', learn: 'route', practice: 'repeat', overview: 'overview', play: 'code', sandbox: 'flask', data: 'database', dashboard: 'chart', map: 'map', me: 'user',
 } as const satisfies Record<string, IconName>;
 
 /** Skill id (content/skills.yml) → icon. tests/icons.test.ts checks every id in skills.yml is here. */

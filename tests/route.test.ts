@@ -95,7 +95,7 @@ describe('route (v5 §B.3, Plan 7)', () => {
   });
 
   it('ROUTES và inDomain', () => {
-    expect(ROUTES).toEqual(['home', 'learn', 'practice', 'overview', 'play', 'data', 'dashboard', 'map']);
+    expect(ROUTES).toEqual(['home', 'learn', 'practice', 'overview', 'play', 'data', 'dashboard', 'map', 'me']);
     expect(ROUTES.filter(inDomain)).toEqual(['overview', 'play', 'data', 'dashboard', 'map']);
   });
 

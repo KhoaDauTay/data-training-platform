@@ -6,11 +6,12 @@ import { getLang, isMac, keyLabels, locale, t } from '../i18n';
 import { LANE_XP } from '../lanes';
 import { applyResult, isSuccess, movedToday, nextCard, pickForSkill, retryItem, type PracticeItem } from '../practice';
 import { CHAPTERS, chapterTitle, moduleTitle, nextTicket, SKILLS } from '../progress';
-import { hashOf, learnAdvOf, learnModuleOf, learnSkillOf, parseRoute } from '../route';
+import { hashOf, learnAdvOf, learnModuleOf, learnSkillOf, parseRoute, SHARE_MAX, shareHash } from '../route';
+import { activeDomain } from '../domains';
 import {
   activeSchema, activeStep, activeTicket, generalWork, hintsShown, isStory, markWarmupDone, practiceFinished, reviewCount, reviewedDrills, reviewToday, session, today, warmupToday, type Mode, type PracticeRun,
 } from '../session';
-import { DRILL_ID } from '../save';
+import { domainSlot, DRILL_ID } from '../save';
 import { actions, app, done, erMeta, persist, schemaHooks, selected, stepKey } from '../state';
 import { textOf, type Ticket } from '../tickets';
 import { BTN_GO, BTN_SECONDARY, CARD, cx } from '../theme';
@@ -53,6 +54,8 @@ const focusTitle = (): void => document.getElementById('brief-title')?.focus();
 /** Every mode switch rebuilds the editor (`force`): a practice item may share the story ticket's id. */
 function enter(mode: Mode): void {
   session.mode = mode;
+  if (mode.kind !== 'sandbox') shared = undefined; // a shared query's strip belongs to that Sandbox visit only
+  shareLine = '';
   ctx?.rerender();
   ctx?.work.setTicket(activeTicket(), activeStep(), true);
   go('play');
@@ -209,10 +212,49 @@ function nextItem(): void {
 
 const TITLE = { id: 'brief-title', tabindex: '-1', class: 'm-0 text-lg font-bold' };
 
+/** v16 (v7 §5.3, L142): a `#/share` link's SQL. `ask` = the player's own draft would be replaced: they choose first. */
+let shared: { sql: string; ask: boolean } | undefined;
+let shareLine: Node | string = '';
+/** Opens the open domain's Sandbox with a shared query in the editor, never run (main.ts, after the route). */
+export function openShared(sql: string): void {
+  const lock = sandboxLock();
+  if (lock) {
+    app.notice = { key: 'share.locked', params: { why: t(lock) } };
+    return void ctx?.rerender();
+  }
+  const draft = domainSlot(app.save, activeDomain()).sandboxDraft;
+  shared = { sql, ask: !!draft.trim() && draft.trim() !== sql.trim() };
+  startSandbox();
+  if (!shared.ask) ctx?.work.setDoc(sql);
+  ctx?.rerender();
+}
+function shareLink(): void {
+  const sql = ctx?.work.currentSql().trim() ?? '';
+  if (!sql) return;
+  const say = (v: Node | string) => {
+    shareLine = v;
+    ctx?.rerender();
+  };
+  if (sql.length > SHARE_MAX) return say(t('sbx.shareLong', { max: SHARE_MAX }));
+  const url = `${location.origin}${location.pathname}${shareHash(sql, activeDomain())}`;
+  navigator.clipboard.writeText(url).then(() => say(t('sbx.shareDone')),
+    () => say(h('label', { class: 'block' }, t('sbx.shareManual'), h('input', { type: 'text', readonly: true, value: url, class: 'mt-1 block w-full rounded-(--r-ctl) border border-line bg-panel px-2 py-1 font-mono text-caption', onfocus: (e: Event) => (e.target as HTMLInputElement).select() }))));
+}
+
 function sandboxPane(host: HTMLElement): void {
+  const s = shared;
+  const strip = s && h('div', { class: 'mb-3 rounded-(--r-ctl) bg-warn-soft p-3 text-body-sm ring-1 ring-warn/40', role: 'status' },
+    h('p', { class: 'm-0' }, t(s.ask ? 'share.ask' : 'share.note')),
+    s.ask ? h('div', { class: 'actions mb-0' },
+      h('button', { type: 'button', class: 'primary', onclick: () => { s.ask = false; ctx?.work.setDoc(s.sql); ctx?.rerender(); } }, t('share.open')),
+      h('button', { type: 'button', onclick: () => { shared = undefined; ctx?.rerender(); } }, t('share.keep'))) : null);
   host.replaceChildren(
     h('h2', TITLE, t('sbx.title')),
+    strip ?? '',
     h('p', { class: 'text-[15px] leading-relaxed' }, t('sbx.intro')),
+    h('div', { class: 'mb-3' },
+      h('button', { type: 'button', class: 'flex items-center gap-1.5 px-3 py-1 text-body-sm', onclick: shareLink }, icon('link', 'size-4'), t('sbx.share')),
+      shareLine ? h('div', { class: 'mt-1 text-body-sm', role: 'status' }, shareLine) : null),
     renderMyData(),
     h('div', { class: 'actions' }, h('button', { type: 'button', onclick: () => backToStory() }, t('prac.exit'))),
   );

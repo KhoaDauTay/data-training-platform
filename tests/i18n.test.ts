@@ -127,6 +127,21 @@ describe('nhãn phím tắt theo hệ điều hành', () => {
   });
 });
 
+describe('chữ trang Tiến bộ của tôi (src/i18n/me.ts, v16 L142)', () => {
+  it('placeholder khớp, EN khác VI, không giọng game; chứng nhận nói "không xác minh"', async () => {
+    const { ME_DICT } = await import('../src/i18n/me');
+    for (const [k, v] of Object.entries(ME_DICT.vi)) {
+      const e = ME_DICT.en[k as keyof typeof ME_DICT.en];
+      expect([k, placeholders(e)]).toEqual([k, placeholders(v)]);
+      expect([k, e]).not.toEqual([k, v]);
+      expect(`${v} ${e}`).not.toMatch(GAME_TONE);
+      expect(`${k}: ${e}`).not.toMatch(/[ăâđêôơưạảấầẩẫậắằẳẵặẹẻẽếềểễệỉịọỏốồổỗộớờởỡợụủứừửữựỳỵỷỹ]/i);
+    }
+    expect(ME_DICT.vi['cert.verify']).toContain('không xác minh');
+    expect(ME_DICT.en['cert.verify']).toContain('not verified');
+  });
+});
+
 describe('chữ UI phần Chung (src/i18n/learn.ts, Plan 8a D8a-13)', () => {
   it('placeholder khớp, EN khác VI (trừ SAME_OK), không giọng game', async () => {
     const { LEARN_DICT } = await import('../src/i18n/learn');
