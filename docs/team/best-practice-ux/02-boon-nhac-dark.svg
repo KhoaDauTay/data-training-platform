@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1820" height="1010" viewBox="0 0 1820 1010" role="img" aria-labelledby="t d">
+<title id="t">Boon nhắc trong workspace 1280 và 375 (tối)</title>
+<desc id="d">Workspace việc story sau khi nộp đúng: dòng phản hồi, thẻ Boon nhắc về NOT IN với link Vì sao và Đừng nhắc luật này, nút đóng; bản 375 và bốn trạng thái.</desc>
+<!-- BoonData Best Practice UX mockup, theme dark. Hex values = tokens of src/style.css (:root[data-theme=dark]). Purple dashed = spec annotation, not UI. -->
+<defs><filter id="sh1" x="-5%" y="-5%" width="110%" height="120%"><feDropShadow dx="0" dy="1" stdDeviation="2" flood-color="#000000" flood-opacity="0.08"/></filter></defs>
+<rect x="0" y="0" width="1820" height="1010" fill="#0b0a09"/>
+<text x="40" y="40" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="22" font-weight="800" fill="#f8f3ed">02 · "Boon nhắc" trong workspace · 1280 và 375</text>
+<text x="40" y="64" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="14" fill="#d0c5b9">Việc story đã chạy xong (đúng hoặc chỉ Run). Một gợi ý, không chặn, không trừ điểm, không đổi chấm.</text>
+<rect x="1380" y="26" width="16" height="12" rx="0" fill="none" stroke="#dcaeff" stroke-width="1.5" stroke-dasharray="4 3"/>
+<text x="1402" y="37" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="12" fill="#dcaeff">tím đứt = chú thích spec, không phải UI</text>
+<rect x="40" y="90" width="1280" height="800" rx="0" fill="#131110" stroke="#7d7166" stroke-width="1"/>
+<rect x="40" y="90" width="1280" height="53" rx="0" fill="#201c19"/>
+<line x1="40" y1="143" x2="1320" y2="143" stroke="#4d443c" stroke-width="1"/>
+<text x="60" y="123" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="18" font-weight="800" fill="#f8f3ed">BoonData</text>
+<rect x="40" y="144" width="64" height="746" rx="0" fill="#201c19"/>
+<line x1="104" y1="144" x2="104" y2="890" stroke="#4d443c" stroke-width="1"/>
+<rect x="104" y="144" width="400" height="746" rx="0" fill="#131110"/>
+<line x1="504" y1="144" x2="504" y2="890" stroke="#4d443c" stroke-width="1"/>
+<text x="128" y="180" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="12" font-weight="700" fill="#d0c5b9">Chương 7 · Việc 3</text>
+<text x="128" y="208" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="18" font-weight="800" fill="#f8f3ed">Khách chưa đặt lại từ tháng 10</text>
+<text x="128" y="238" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="14" fill="#f8f3ed">Bao nhiêu khách chưa có đơn nào từ</text>
+<text x="128" y="258" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="14" fill="#f8f3ed">đầu tháng 10?</text>
+<rect x="528" y="168" width="768" height="150" rx="14" fill="#2b2622"/>
+<text x="544" y="198" font-family="ui-monospace, 'Cascadia Mono', Consolas, monospace" font-size="12" fill="#d0c5b9">1</text>
+<text x="568" y="198" font-family="ui-monospace, 'Cascadia Mono', Consolas, monospace" font-size="14" fill="#f8f3ed" xml:space="preserve"><tspan fill="#dcaeff" font-weight="700">SELECT</tspan> count(*) <tspan fill="#dcaeff" font-weight="700">FROM</tspan> customers c</text>
+<text x="544" y="222" font-family="ui-monospace, 'Cascadia Mono', Consolas, monospace" font-size="12" fill="#d0c5b9">2</text>
+<text x="568" y="222" font-family="ui-monospace, 'Cascadia Mono', Consolas, monospace" font-size="14" fill="#f8f3ed" xml:space="preserve"><tspan fill="#dcaeff" font-weight="700">WHERE</tspan> c.id <tspan fill="#dcaeff" font-weight="700">NOT IN</tspan> (</text>
+<text x="544" y="246" font-family="ui-monospace, 'Cascadia Mono', Consolas, monospace" font-size="12" fill="#d0c5b9">3</text>
+<text x="568" y="246" font-family="ui-monospace, 'Cascadia Mono', Consolas, monospace" font-size="14" fill="#f8f3ed" xml:space="preserve"><tspan fill="#dcaeff" font-weight="700">  SELECT</tspan> s.customer_id <tspan fill="#dcaeff" font-weight="700">FROM</tspan> shipments s</text>
+<text x="544" y="270" font-family="ui-monospace, 'Cascadia Mono', Consolas, monospace" font-size="12" fill="#d0c5b9">4</text>
+<text x="568" y="270" font-family="ui-monospace, 'Cascadia Mono', Consolas, monospace" font-size="14" fill="#f8f3ed" xml:space="preserve"><tspan fill="#dcaeff" font-weight="700">  WHERE</tspan> s.booking_date &gt;= <tspan fill="#ffab8a">'2026-10-01'</tspan>)</text>
+<rect x="528" y="334" width="96" height="36" rx="18" fill="#201c19" stroke="#7d7166" stroke-width="1"/>
+<text x="576" y="357" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="14" font-weight="700" fill="#f8f3ed" text-anchor="middle">Chạy</text>
+<rect x="632" y="334" width="96" height="36" rx="18" fill="#62dccb"/>
+<text x="680" y="357" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="14" font-weight="700" fill="#082320" text-anchor="middle">Nộp</text>
+<text x="744" y="357" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="12" fill="#d0c5b9">Ctrl+Enter chạy · Ctrl+Shift+Enter nộp</text>
+<circle cx="540" cy="398" r="9" fill="#74de93"/>
+<path d="M536,398 l3,3 l5,-6" fill="none" stroke="#201c19" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="558" y="403" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="14" font-weight="700" fill="#74de93">Đúng rồi! 1 dòng khớp kết quả mong đợi. +40 XP</text>
+<rect x="528" y="420" width="768" height="104" rx="16" fill="#43350f"/>
+<circle cx="558" cy="452" r="15" fill="#ffffff" stroke="#6b6b6b" stroke-width="1.5"/>
+<path d="M569,453 l10.5,3 l-10.5,4 z" fill="#f2a33a" stroke="#8a5a14" stroke-width="1"/>
+<circle cx="561" cy="449" r="2.2" fill="#2a2320"/>
+<text x="586" y="448" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="12" font-weight="800" fill="#ffe6ad">BOON NHẮC</text>
+<text x="586" y="470" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="14" fill="#ffe6ad">Câu này đúng vì hôm nay không có mã khách trống. Nếu subquery trả một NULL,</text>
+<text x="586" y="490" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="14" fill="#ffe6ad">NOT IN sẽ trả 0 dòng mà không báo lỗi. NOT EXISTS an toàn hơn.</text>
+<text x="586" y="514" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="13" font-weight="800" fill="#ffe6ad">Vì sao? (thẻ Q02)</text>
+<line x1="586" y1="517" x2="700" y2="517" stroke="#ffe6ad" stroke-width="1"/>
+<text x="724" y="514" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="13" font-weight="700" fill="#ffe6ad">Đừng nhắc luật này</text>
+<line x1="724" y1="517" x2="844" y2="517" stroke="#ffe6ad" stroke-width="1"/>
+<rect x="1256" y="430" width="28" height="28" rx="14" fill="none" stroke="#ffe6ad" stroke-width="1"/>
+<text x="1270" y="449" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="16" font-weight="800" fill="#ffe6ad" text-anchor="middle">×</text>
+<rect x="524" y="416" width="776" height="112" rx="6" fill="none" stroke="#dcaeff" stroke-width="1.5" stroke-dasharray="4 3"/>
+<circle cx="1300" cy="416" r="10" fill="#dcaeff"/>
+<text x="1300" y="420" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="12" font-weight="800" fill="#0b0a09" text-anchor="middle">1</text>
+<text x="528" y="560" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="14" font-weight="800" fill="#62dccb">Kết quả</text>
+<rect x="528" y="568" width="56" height="3" rx="0" fill="#62dccb"/>
+<text x="610" y="560" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="14" font-weight="600" fill="#d0c5b9">Biểu đồ</text>
+<text x="692" y="560" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="14" font-weight="600" fill="#d0c5b9">Thứ tự thực thi</text>
+<text x="838" y="560" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="14" font-weight="600" fill="#d0c5b9">EXPLAIN</text>
+<text x="920" y="560" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="14" font-weight="600" fill="#d0c5b9">ER</text>
+<text x="962" y="560" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="14" font-weight="600" fill="#d0c5b9">Cột</text>
+<line x1="528" y1="571" x2="1296" y2="571" stroke="#4d443c" stroke-width="1"/>
+<rect x="528" y="588" width="160" height="60" rx="10" fill="#201c19" stroke="#4d443c" stroke-width="1"/>
+<text x="544" y="612" font-family="ui-monospace, 'Cascadia Mono', Consolas, monospace" font-size="13" font-weight="800" fill="#f8f3ed">count</text>
+<text x="544" y="636" font-family="ui-monospace, 'Cascadia Mono', Consolas, monospace" font-size="13" fill="#f8f3ed">57</text>
+<text x="528" y="680" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="12" fill="#dcaeff">Dòng "SQL bằng lời" và gợi ý dùng chung một lần parse (request steps WORDS_ONLY).</text>
+<rect x="1370" y="90" width="375" height="800" rx="0" fill="#131110" stroke="#7d7166" stroke-width="1"/>
+<rect x="1370" y="90" width="375" height="48" rx="0" fill="#201c19"/>
+<line x1="1370" y1="138" x2="1745" y2="138" stroke="#4d443c" stroke-width="1"/>
+<text x="1386" y="120" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="16" font-weight="800" fill="#f8f3ed">BoonData</text>
+<rect x="1386" y="154" width="343" height="110" rx="12" fill="#2b2622"/>
+<text x="1398" y="178" font-family="ui-monospace, 'Cascadia Mono', Consolas, monospace" font-size="11" fill="#f8f3ed" xml:space="preserve"><tspan fill="#dcaeff" font-weight="700">SELECT</tspan> count(*) <tspan fill="#dcaeff" font-weight="700">FROM</tspan> customers c</text>
+<text x="1398" y="200" font-family="ui-monospace, 'Cascadia Mono', Consolas, monospace" font-size="11" fill="#f8f3ed" xml:space="preserve"><tspan fill="#dcaeff" font-weight="700">WHERE</tspan> c.id <tspan fill="#dcaeff" font-weight="700">NOT IN</tspan> (</text>
+<text x="1398" y="222" font-family="ui-monospace, 'Cascadia Mono', Consolas, monospace" font-size="11" fill="#f8f3ed" xml:space="preserve"><tspan fill="#dcaeff" font-weight="700">  SELECT</tspan> s.customer_id <tspan fill="#dcaeff" font-weight="700">FROM</tspan> shipments s</text>
+<text x="1398" y="244" font-family="ui-monospace, 'Cascadia Mono', Consolas, monospace" font-size="11" fill="#f8f3ed" xml:space="preserve"><tspan fill="#dcaeff" font-weight="700">  WHERE</tspan> s.booking_date &gt;=<tspan fill="#ffab8a">'…'</tspan>)</text>
+<rect x="1386" y="276" width="120" height="36" rx="18" fill="#201c19" stroke="#7d7166" stroke-width="1"/>
+<text x="1446" y="299" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="14" font-weight="700" fill="#f8f3ed" text-anchor="middle">Chạy</text>
+<rect x="1514" y="276" width="120" height="36" rx="18" fill="#62dccb"/>
+<text x="1574" y="299" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="14" font-weight="700" fill="#082320" text-anchor="middle">Nộp</text>
+<circle cx="1398" cy="338" r="9" fill="#74de93"/>
+<path d="M1394,338 l3,3 l5,-6" fill="none" stroke="#201c19" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="1414" y="343" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="14" font-weight="700" fill="#74de93">Đúng rồi! +40 XP</text>
+<rect x="1386" y="362" width="343" height="172" rx="16" fill="#43350f"/>
+<circle cx="1412" cy="392" r="13" fill="#ffffff" stroke="#6b6b6b" stroke-width="1.5"/>
+<path d="M1421,393 l9.1,3 l-9.1,4 z" fill="#f2a33a" stroke="#8a5a14" stroke-width="1"/>
+<circle cx="1415" cy="389" r="2.2" fill="#2a2320"/>
+<text x="1434" y="392" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="12" font-weight="800" fill="#ffe6ad">BOON NHẮC</text>
+<text x="1402" y="422" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="14" fill="#ffe6ad">Nếu subquery trả một NULL, NOT IN</text>
+<text x="1402" y="442" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="14" fill="#ffe6ad">trả 0 dòng mà không báo lỗi.</text>
+<text x="1402" y="462" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="14" fill="#ffe6ad">NOT EXISTS an toàn hơn.</text>
+<rect x="1398" y="486" width="130" height="36" rx="18" fill="none" stroke="#ffe6ad" stroke-width="1"/>
+<text x="1463" y="509" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="13" font-weight="800" fill="#ffe6ad" text-anchor="middle">Vì sao?</text>
+<rect x="1536" y="486" width="150" height="36" rx="18" fill="none" stroke="#ffe6ad" stroke-width="1"/>
+<text x="1611" y="509" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="12" font-weight="700" fill="#ffe6ad" text-anchor="middle">Đừng nhắc luật này</text>
+<rect x="1693" y="372" width="28" height="28" rx="14" fill="none" stroke="#ffe6ad" stroke-width="1"/>
+<text x="1707" y="391" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="16" font-weight="800" fill="#ffe6ad" text-anchor="middle">×</text>
+<rect x="1380" y="356" width="355" height="184" rx="6" fill="none" stroke="#dcaeff" stroke-width="1.5" stroke-dasharray="4 3"/>
+<circle cx="1735" cy="356" r="10" fill="#dcaeff"/>
+<text x="1735" y="360" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="12" font-weight="800" fill="#0b0a09" text-anchor="middle">2</text>
+<text x="1386" y="562" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="14" font-weight="800" fill="#f8f3ed">Trạng thái</text>
+<rect x="1386" y="576" width="343" height="58" rx="12" fill="#201c19" stroke="#4d443c" stroke-width="1"/>
+<text x="1398" y="600" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="13" font-weight="800" fill="#f8f3ed">Đã ẩn (×)</text>
+<text x="1398" y="620" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="12" fill="#d0c5b9">Gợi ý mất; không hiện lại cho việc này + luật này.</text>
+<rect x="1386" y="642" width="343" height="58" rx="12" fill="#201c19" stroke="#4d443c" stroke-width="1"/>
+<text x="1398" y="666" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="13" font-weight="800" fill="#f8f3ed">Đừng nhắc luật này</text>
+<text x="1398" y="686" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="12" fill="#d0c5b9">Dòng ngắn: "Đã tắt nhắc Q02 · Hoàn tác" (5 s).</text>
+<rect x="1386" y="708" width="343" height="58" rx="12" fill="#201c19" stroke="#4d443c" stroke-width="1"/>
+<text x="1398" y="732" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="13" font-weight="800" fill="#f8f3ed">Nộp sai, có wrong:</text>
+<text x="1398" y="752" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="12" fill="#d0c5b9">Không có Boon nhắc: lời giải thích wrong: thắng.</text>
+<rect x="1386" y="774" width="343" height="58" rx="12" fill="#201c19" stroke="#4d443c" stroke-width="1"/>
+<text x="1398" y="798" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="13" font-weight="800" fill="#f8f3ed">Đánh giá thăng tiến</text>
+<text x="1398" y="818" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="12" fill="#d0c5b9">Không lint (như thi). Không lint index lab.</text>
+<rect x="1380" y="570" width="355" height="270" rx="6" fill="none" stroke="#dcaeff" stroke-width="1.5" stroke-dasharray="4 3"/>
+<circle cx="1735" cy="570" r="10" fill="#dcaeff"/>
+<text x="1735" y="574" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="12" font-weight="800" fill="#0b0a09" text-anchor="middle">3</text>
+<text x="40" y="930" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="13" fill="#dcaeff">1 · Thẻ Boon nhắc đặt ngay dưới dòng phản hồi, trên thanh tab; nền --sun như mọi lời Boon. Không gạch chân trong editor (gạch chân chỉ dành cho lỗi SQL).</text>
+<text x="40" y="952" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="13" fill="#dcaeff">2 · 375: hai link thành nút cao 36 + vùng chạm 44; nút × 28 px (vùng chạm 44). Không che bảng kết quả.</text>
+<text x="40" y="974" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="13" fill="#dcaeff">3 · Ẩn và tắt chỉ ghi pref thiết bị cargo-query/bp-tips; không vào Save. "Bật lại Boon nhắc" ở trang Best Practice.</text>
+</svg>
