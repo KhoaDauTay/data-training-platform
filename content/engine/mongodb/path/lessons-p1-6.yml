@@ -24,8 +24,8 @@
 
 - id: mg.projection
   concept:
-    vi: "Object thứ hai của `find` là projection: chọn trường trả về. `1` là giữ, `0` là bỏ. `_id` luôn đi kèm trừ khi bạn ghi `_id: 0`. Trường bên trong tài liệu con hay mảng viết bằng dấu chấm, như `\"lines.product_id\"`."
-    en: "The second object of `find` is the projection: it picks the returned fields. `1` keeps, `0` drops. `_id` always comes along unless you write `_id: 0`. A field inside a sub-document or an array uses a dot, like `\"lines.product_id\"`."
+    vi: "Object thứ hai của `find` là projection: chọn trường trả về. `1` là giữ, `0` là bỏ. `_id` luôn đi kèm trừ khi bạn ghi `_id: 0`. Trường bên trong tài liệu con hay mảng viết bằng dấu chấm, như `\"items.product_id\"`."
+    en: "The second object of `find` is the projection: it picks the returned fields. `1` keeps, `0` drops. `_id` always comes along unless you write `_id: 0`. A field inside a sub-document or an array uses a dot, like `\"items.product_id\"`."
   example: 'db.products.find({}, { _id: 0, name: 1, price_vnd: 1 })'
   explain:
     vi: "① `{}`: không lọc, lấy cả 30 sản phẩm. ② `{ _id: 0, name: 1, price_vnd: 1 }`: chỉ giữ `name` và `price_vnd`, bỏ `_id`. Thứ tự trường trong tài liệu không quan trọng khi chấm."
@@ -170,21 +170,21 @@
 
 - id: mg.unwind
   concept:
-    vi: "Một đơn có mảng `lines`. `$unwind: \"$lines\"` biến mỗi phần tử thành một tài liệu riêng: đơn 3 dòng thành 3 tài liệu, mỗi cái có `lines` là một object. Sau đó `$group` tính được trên từng dòng, ví dụ cộng `lines.qty`."
-    en: "An order has a `lines` array. `$unwind: \"$lines\"` turns each element into its own document: a 3-line order becomes 3 documents, each with `lines` as one object. Then `$group` can work per line, for example summing `lines.qty`."
-  example: 'db.orders.aggregate([{ $match: { _id: 618 } }, { $unwind: "$lines" }, { $project: { _id: 0, product_id: "$lines.product_id", qty: "$lines.qty" } }])'
+    vi: "Một đơn có mảng `items`. `$unwind: \"$items\"` biến mỗi phần tử thành một tài liệu riêng: đơn 3 dòng thành 3 tài liệu, mỗi cái có `items` là một object. Sau đó `$group` tính được trên từng dòng, ví dụ cộng `items.qty`."
+    en: "An order has a `items` array. `$unwind: \"$items\"` turns each element into its own document: a 3-line order becomes 3 documents, each with `items` as one object. Then `$group` can work per line, for example summing `items.qty`."
+  example: 'db.orders.aggregate([{ $match: { _id: 618 } }, { $unwind: "$items" }, { $project: { _id: 0, product_id: "$items.product_id", qty: "$items.qty" } }])'
   explain:
     vi: "① `$match`: đơn 618. ② `$unwind`: mỗi dòng hàng một tài liệu. ③ `$project`: đưa `product_id` và `qty` của dòng ra ngoài. Đơn có bao nhiêu dòng thì có bấy nhiêu tài liệu."
     en: "① `$match`: order 618. ② `$unwind`: one document per line. ③ `$project`: lift the line's `product_id` and `qty` out. You get as many documents as the order has lines."
   mistake:
-    query: 'db.orders.aggregate([{ $match: { _id: 618 } }, { $project: { _id: 0, product_id: "$lines.product_id", qty: "$lines.qty" } }])'
-    vi: "Không `$unwind`: `$lines.qty` trên mảng trả về cả mảng số lượng, nên bạn có một tài liệu chứa hai mảng thay vì một tài liệu mỗi dòng."
-    en: "No `$unwind`: `$lines.qty` on an array returns the whole array of quantities, so you get one document holding two arrays instead of one per line."
+    query: 'db.orders.aggregate([{ $match: { _id: 618 } }, { $project: { _id: 0, product_id: "$items.product_id", qty: "$items.qty" } }])'
+    vi: "Không `$unwind`: `$items.qty` trên mảng trả về cả mảng số lượng, nên bạn có một tài liệu chứa hai mảng thay vì một tài liệu mỗi dòng."
+    en: "No `$unwind`: `$items.qty` on an array returns the whole array of quantities, so you get one document holding two arrays instead of one per line."
   try:
     task:
-      vi: "Trong các đơn của cửa hàng 4 (`orders`): tổng số lượng bán (`units`, cộng `qty` của từng dòng trong `lines`) cho mỗi sản phẩm; khóa `_id` là `product_id`."
-      en: "In the orders of store 4 (`orders`): the total quantity sold (`units`, adding the `qty` of each line in `lines`) per product; the `_id` key is the `product_id`."
-    solution: 'db.orders.aggregate([{ $match: { store_id: 4 } }, { $unwind: "$lines" }, { $group: { _id: "$lines.product_id", units: { $sum: "$lines.qty" } } }])'
+      vi: "Trong các đơn của cửa hàng 4 (`orders`): tổng số lượng bán (`units`, cộng `qty` của từng dòng trong `items`) cho mỗi sản phẩm; khóa `_id` là `product_id`."
+      en: "In the orders of store 4 (`orders`): the total quantity sold (`units`, adding the `qty` of each line in `items`) per product; the `_id` key is the `product_id`."
+    solution: 'db.orders.aggregate([{ $match: { store_id: 4 } }, { $unwind: "$items" }, { $group: { _id: "$items.product_id", units: { $sum: "$items.qty" } } }])'
 
 - id: mg.lookup_keep
   concept:

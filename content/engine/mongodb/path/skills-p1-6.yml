@@ -16,7 +16,7 @@
   label: { vi: "Chọn trường (projection)", en: "Pick fields (projection)" }
   syntax: 'db.products.find({}, { _id: 0, name: 1, price_vnd: 1 })'
   when: { vi: "Chỉ lấy những trường câu hỏi cần.", en: "Return only the fields the question needs." }
-  trap: { vi: "`_id` luôn đi kèm trừ khi ghi `_id: 0`. `lines: 1` giữ nguyên cả mảng; muốn một trường bên trong thì viết `\"lines.product_id\": 1`.", en: "`_id` always comes along unless you write `_id: 0`. `lines: 1` keeps the whole array; for one inner field write `\"lines.product_id\": 1`." }
+  trap: { vi: "`_id` luôn đi kèm trừ khi ghi `_id: 0`. `items: 1` giữ nguyên cả mảng; muốn một trường bên trong thì viết `\"items.product_id\": 1`.", en: "`_id` always comes along unless you write `_id: 0`. `items: 1` keeps the whole array; for one inner field write `\"items.product_id\": 1`." }
 
 - id: mg.filter
   part: 1
@@ -72,7 +72,7 @@
 - id: mg.unwind
   part: 3
   label: { vi: "Tách mảng ($unwind)", en: "Unwind an array ($unwind)" }
-  syntax: 'db.orders.aggregate([{ $unwind: "$lines" }, { $group: { _id: "$lines.product_id", units: { $sum: "$lines.qty" } } }])'
+  syntax: 'db.orders.aggregate([{ $unwind: "$items" }, { $group: { _id: "$items.product_id", units: { $sum: "$items.qty" } } }])'
   when: { vi: "Tính trên từng phần tử của mảng nhúng, ví dụ từng dòng hàng của đơn.", en: "Work on each element of an embedded array, for example each line of an order." }
   trap: { vi: "Lọc phần tử bằng `$match` trước `$unwind` vẫn giữ cả đơn, nên mọi dòng của đơn đó bị cộng. Lọc dòng sau `$unwind`.", en: "A `$match` on an element before `$unwind` keeps the whole order, so all its lines get added. Filter lines after `$unwind`." }
 

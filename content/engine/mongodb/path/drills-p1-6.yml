@@ -3,7 +3,7 @@
 # task nêu collection/trường trong backtick, không gọi tên toán tử là đáp án, không có `$`.
 # solution: một câu mongosh (find/sort/limit/skip, aggregate, distinct). faded có `___` trong starter; review không starter.
 # trap: wrong: [{ query, vi, en }], chạy được và ra kết quả khác solution theo luật chấm §3.5.
-# dataset.json (dùng chung cho cả 12 Phần): stores 5, products 30, customers 300, staff 20, orders 811 (chỉ từ 2026-05-01, mảng `lines` nhúng), reviews 197.
+# dataset.json (dùng chung cho cả 12 Phần): stores 5, products 30, customers 300, staff 20, orders 811 (chỉ từ 2026-05-01, mảng `items` nhúng), reviews 197.
 #   Ngày lưu dạng chuỗi ISO; `_meta.dateFields` liệt kê trường ngày, loader phải đổi sang Date (UTC) trước khi chạy, null giữ nguyên null.
 #   Móc: khách vãng lai không có `customer_id`; đơn ONLINE luôn có `shipped_on`/`delivered_on` (null = chưa), đơn STORE không có hai trường đó;
 #   khách: thiếu `email` (13), `city: null` (17), thiếu `birth_year` (27), 30 khách chưa có đơn; reviews: `comment` null (21) / thiếu (49),
@@ -56,11 +56,11 @@
 - id: e-mg-d-projection-3
   skill: mg.projection
   kind: trap
-  task: { vi: "Các đơn của cửa hàng 4 trong `orders`: giữ `_id` và, trong mỗi phần tử của `lines`, chỉ `product_id`.", en: "The orders of store 4 in `orders`: keep `_id` and, inside each element of `lines`, only `product_id`." }
-  solution: 'db.orders.find({ store_id: 4 }, { "lines.product_id": 1 })'
-  hint: { vi: "Trường bên trong mảng viết bằng dấu chấm, trong nháy: `\"lines.product_id\"`.", en: "A field inside an array uses a dot, in quotes: `\"lines.product_id\"`." }
+  task: { vi: "Các đơn của cửa hàng 4 trong `orders`: giữ `_id` và, trong mỗi phần tử của `items`, chỉ `product_id`.", en: "The orders of store 4 in `orders`: keep `_id` and, inside each element of `items`, only `product_id`." }
+  solution: 'db.orders.find({ store_id: 4 }, { "items.product_id": 1 })'
+  hint: { vi: "Trường bên trong mảng viết bằng dấu chấm, trong nháy: `\"items.product_id\"`.", en: "A field inside an array uses a dot, in quotes: `\"items.product_id\"`." }
   wrong:
-    - { query: 'db.orders.find({ store_id: 4 }, { lines: 1 })', vi: "`lines: 1` giữ nguyên mỗi dòng hàng, kèm cả `qty` và `unit_price_vnd`. Dùng đường dẫn có dấu chấm để chỉ giữ một trường bên trong.", en: "`lines: 1` keeps every line whole, `qty` and `unit_price_vnd` included. Use a dotted path to keep one inner field only." }
+    - { query: 'db.orders.find({ store_id: 4 }, { items: 1 })', vi: "`items: 1` giữ nguyên mỗi dòng hàng, kèm cả `qty` và `unit_price_vnd`. Dùng đường dẫn có dấu chấm để chỉ giữ một trường bên trong.", en: "`items: 1` keeps every line whole, `qty` and `unit_price_vnd` included. Use a dotted path to keep one inner field only." }
 - id: e-mg-d-projection-4
   skill: mg.projection
   kind: review
@@ -257,7 +257,7 @@
 - id: e-mg-d-lookup-1
   skill: mg.lookup
   kind: faded
-  task: { vi: "Các đơn của khách 147 trong `orders`: gắn tài liệu cửa hàng (từ `stores`, theo `store_id`) vào mảng `store`, rồi giữ `store_id` và `store.city`.", en: "The orders of customer 147 in `orders`: attach the store document (from `stores`, by `store_id`) as the `store` array, then keep `store_id` and `store.city`." }
+  task: { vi: "Các đơn của khách 147 trong `orders`: gắn tài liệu cửa hàng (từ `stores`, theo `store_id`) vào mảng `store`, rồi giữ `_id`, `store_id` và `store.city`.", en: "The orders of customer 147 in `orders`: attach the store document (from `stores`, by `store_id`) as the `store` array, then keep `_id`, `store_id` and `store.city`." }
   starter: 'db.orders.aggregate([{ $match: { customer_id: 147 } }, { $lookup: { from: ___, localField: ___, foreignField: ___, as: "store" } }, { $project: { store_id: 1, "store.city": 1 } }])'
   solution: 'db.orders.aggregate([{ $match: { customer_id: 147 } }, { $lookup: { from: "stores", localField: "store_id", foreignField: "_id", as: "store" } }, { $project: { store_id: 1, "store.city": 1 } }])'
   hint: { vi: "`from: \"stores\"`; trường của đơn là `store_id`, trường bên cửa hàng là `_id`.", en: "`from: \"stores\"`; the order's field is `store_id`, the store's field is `_id`." }
@@ -270,7 +270,7 @@
 - id: e-mg-d-lookup-3
   skill: mg.lookup
   kind: trap
-  task: { vi: "Các đơn online đã hoàn tiền (`status` là `REFUNDED`, `channel` là `ONLINE`) trong `orders`: gắn khách hàng (từ `customers` theo `customer_id`) vào mảng `customer`, giữ `customer.name`.", en: "Refunded online orders (`status` is `REFUNDED`, `channel` is `ONLINE`) in `orders`: attach the customer (from `customers` by `customer_id`) as the `customer` array, keep `customer.name`." }
+  task: { vi: "Các đơn online đã hoàn tiền (`status` là `REFUNDED`, `channel` là `ONLINE`) trong `orders`: gắn khách hàng (từ `customers` theo `customer_id`) vào mảng `customer`, giữ `_id` và `customer.name`.", en: "Refunded online orders (`status` is `REFUNDED`, `channel` is `ONLINE`) in `orders`: attach the customer (from `customers` by `customer_id`) as the `customer` array, keep `_id` and `customer.name`." }
   solution: 'db.orders.aggregate([{ $match: { status: "REFUNDED", channel: "ONLINE" } }, { $lookup: { from: "customers", localField: "customer_id", foreignField: "_id", as: "customer" } }, { $project: { "customer.name": 1 } }])'
   hint: { vi: "`localField` thuộc đơn (`customer_id`), `foreignField` thuộc khách (`_id`).", en: "`localField` belongs to the order (`customer_id`), `foreignField` to the customer (`_id`)." }
   wrong:
@@ -278,7 +278,7 @@
 - id: e-mg-d-lookup-4
   skill: mg.lookup
   kind: review
-  task: { vi: "Đánh giá nhập từ trang cũ (`source` là `import`) trong `reviews`: gắn khách (từ `customers` theo `customer_id`) vào mảng `customer`, giữ `rating` và `customer.name`.", en: "Reviews imported from the old site (`source` is `import`) in `reviews`: attach the customer (from `customers` by `customer_id`) as the `customer` array, keep `rating` and `customer.name`." }
+  task: { vi: "Đánh giá nhập từ trang cũ (`source` là `import`) trong `reviews`: gắn khách (từ `customers` theo `customer_id`) vào mảng `customer`, giữ `_id`, `rating` và `customer.name`.", en: "Reviews imported from the old site (`source` is `import`) in `reviews`: attach the customer (from `customers` by `customer_id`) as the `customer` array, keep `_id`, `rating` and `customer.name`." }
   solution: 'db.reviews.aggregate([{ $match: { source: "import" } }, { $lookup: { from: "customers", localField: "customer_id", foreignField: "_id", as: "customer" } }, { $project: { rating: 1, "customer.name": 1 } }])'
   hint: { vi: "Nối `customer_id` của đánh giá với `_id` của khách.", en: "Link the review's `customer_id` to the customer's `_id`." }
 
@@ -287,35 +287,35 @@
   skill: mg.unwind
   kind: faded
   task: { vi: "Đơn 700 trong `orders`: một tài liệu cho mỗi dòng hàng, gồm `product_id` và `qty` của dòng, không `_id`.", en: "Order 700 in `orders`: one document per line, with the line's `product_id` and `qty`, no `_id`." }
-  starter: 'db.orders.aggregate([{ $match: { _id: 700 } }, { ___: ___ }, { $project: { _id: 0, product_id: "$lines.product_id", qty: "$lines.qty" } }])'
-  solution: 'db.orders.aggregate([{ $match: { _id: 700 } }, { $unwind: "$lines" }, { $project: { _id: 0, product_id: "$lines.product_id", qty: "$lines.qty" } }])'
-  hint: { vi: "`$unwind: \"$lines\"` tách mảng thành từng tài liệu.", en: "`$unwind: \"$lines\"` splits the array into separate documents." }
+  starter: 'db.orders.aggregate([{ $match: { _id: 700 } }, { ___: ___ }, { $project: { _id: 0, product_id: "$items.product_id", qty: "$items.qty" } }])'
+  solution: 'db.orders.aggregate([{ $match: { _id: 700 } }, { $unwind: "$items" }, { $project: { _id: 0, product_id: "$items.product_id", qty: "$items.qty" } }])'
+  hint: { vi: "`$unwind: \"$items\"` tách mảng thành từng tài liệu.", en: "`$unwind: \"$items\"` splits the array into separate documents." }
 - id: e-mg-d-unwind-2
   skill: mg.unwind
   kind: open
-  task: { vi: "Doanh thu (`revenue`) của mỗi cửa hàng trong `orders`: cộng `qty` × `unit_price_vnd` của mọi dòng trong `lines`; `_id` là `store_id`.", en: "The revenue (`revenue`) of each store in `orders`: add `qty` times `unit_price_vnd` over every line in `lines`; `_id` is the `store_id`." }
-  solution: 'db.orders.aggregate([{ $unwind: "$lines" }, { $group: { _id: "$store_id", revenue: { $sum: { $multiply: ["$lines.qty", "$lines.unit_price_vnd"] } } } }])'
+  task: { vi: "Doanh thu (`revenue`) của mỗi cửa hàng trong `orders`: cộng `qty` × `unit_price_vnd` của mọi dòng trong `items`; `_id` là `store_id`.", en: "The revenue (`revenue`) of each store in `orders`: add `qty` times `unit_price_vnd` over every line in `items`; `_id` is the `store_id`." }
+  solution: 'db.orders.aggregate([{ $unwind: "$items" }, { $group: { _id: "$store_id", revenue: { $sum: { $multiply: ["$items.qty", "$items.unit_price_vnd"] } } } }])'
   hint: { vi: "Tách dòng hàng, rồi cộng `$multiply` của số lượng và đơn giá.", en: "Split the lines, then add the `$multiply` of quantity and unit price." }
 - id: e-mg-d-unwind-3
   skill: mg.unwind
   kind: trap
-  task: { vi: "Tổng số lượng (`units`) của sản phẩm 9 đã bán ở mỗi cửa hàng: cộng `qty` của những dòng `lines` có `product_id` là 9; `_id` là `store_id`.", en: "The total quantity (`units`) of product 9 sold at each store: add the `qty` of the `lines` whose `product_id` is 9; `_id` is the `store_id`." }
-  solution: 'db.orders.aggregate([{ $unwind: "$lines" }, { $match: { "lines.product_id": 9 } }, { $group: { _id: "$store_id", units: { $sum: "$lines.qty" } } }])'
+  task: { vi: "Tổng số lượng (`units`) của sản phẩm 9 đã bán ở mỗi cửa hàng: cộng `qty` của những dòng `items` có `product_id` là 9; `_id` là `store_id`.", en: "The total quantity (`units`) of product 9 sold at each store: add the `qty` of the `items` whose `product_id` is 9; `_id` is the `store_id`." }
+  solution: 'db.orders.aggregate([{ $unwind: "$items" }, { $match: { "items.product_id": 9 } }, { $group: { _id: "$store_id", units: { $sum: "$items.qty" } } }])'
   hint: { vi: "Lọc từng dòng hàng, nên lọc sau khi tách mảng.", en: "You filter single lines, so filter after splitting the array." }
   wrong:
-    - { query: 'db.orders.aggregate([{ $match: { "lines.product_id": 9 } }, { $unwind: "$lines" }, { $group: { _id: "$store_id", units: { $sum: "$lines.qty" } } }])', vi: "Lọc trước khi tách: bạn giữ cả đơn có sản phẩm 9, rồi cộng số lượng của mọi dòng trong đơn đó, kể cả sản phẩm khác.", en: "Filtering before splitting keeps whole orders that contain product 9, then adds the quantity of every line in them, other products included." }
+    - { query: 'db.orders.aggregate([{ $match: { "items.product_id": 9 } }, { $unwind: "$items" }, { $group: { _id: "$store_id", units: { $sum: "$items.qty" } } }])', vi: "Lọc trước khi tách: bạn giữ cả đơn có sản phẩm 9, rồi cộng số lượng của mọi dòng trong đơn đó, kể cả sản phẩm khác.", en: "Filtering before splitting keeps whole orders that contain product 9, then adds the quantity of every line in them, other products included." }
 - id: e-mg-d-unwind-4
   skill: mg.unwind
   kind: review
-  task: { vi: "Số lượng trung bình trên một dòng hàng (`avg_qty`, từ `qty` trong `lines`) theo từng kênh bán trong `orders`; `_id` là `channel`.", en: "The average quantity per order line (`avg_qty`, from `qty` in `lines`) for each sales channel in `orders`; `_id` is the `channel`." }
-  solution: 'db.orders.aggregate([{ $unwind: "$lines" }, { $group: { _id: "$channel", avg_qty: { $avg: "$lines.qty" } } }])'
-  hint: { vi: "Tách dòng hàng trước, rồi lấy trung bình `lines.qty`.", en: "Split the lines first, then average `lines.qty`." }
+  task: { vi: "Số lượng trung bình trên một dòng hàng (`avg_qty`, từ `qty` trong `items`) theo từng kênh bán trong `orders`; `_id` là `channel`.", en: "The average quantity per order line (`avg_qty`, from `qty` in `items`) for each sales channel in `orders`; `_id` is the `channel`." }
+  solution: 'db.orders.aggregate([{ $unwind: "$items" }, { $group: { _id: "$channel", avg_qty: { $avg: "$items.qty" } } }])'
+  hint: { vi: "Tách dòng hàng trước, rồi lấy trung bình `items.qty`.", en: "Split the lines first, then average `items.qty`." }
 
 # ---- mg.lookup_keep (Phần 3)
 - id: e-mg-d-lookup-keep-1
   skill: mg.lookup_keep
   kind: faded
-  task: { vi: "Các đơn đã trả tại quầy của cửa hàng 2 (`channel` là `STORE`, `status` là `PAID`) trong `orders`: gắn khách (một object `customer`, từ `customers` theo `customer_id`), giữ `customer.name`; đơn không có khách vẫn phải có mặt.", en: "Paid in-store orders of store 2 (`channel` is `STORE`, `status` is `PAID`) in `orders`: attach the customer (one `customer` object, from `customers` by `customer_id`), keep `customer.name`; orders without a customer must still appear." }
+  task: { vi: "Các đơn đã trả tại quầy của cửa hàng 2 (`channel` là `STORE`, `status` là `PAID`) trong `orders`: gắn khách (một object `customer`, từ `customers` theo `customer_id`), giữ `_id` và `customer.name`; đơn không có khách vẫn phải có mặt.", en: "Paid in-store orders of store 2 (`channel` is `STORE`, `status` is `PAID`) in `orders`: attach the customer (one `customer` object, from `customers` by `customer_id`), keep `_id` and `customer.name`; orders without a customer must still appear." }
   starter: 'db.orders.aggregate([{ $match: { store_id: 2, channel: "STORE", status: "PAID" } }, { $lookup: { from: "customers", localField: "customer_id", foreignField: "_id", as: "customer" } }, { $unwind: { path: "$customer", ___: ___ } }, { $project: { "customer.name": 1 } }])'
   solution: 'db.orders.aggregate([{ $match: { store_id: 2, channel: "STORE", status: "PAID" } }, { $lookup: { from: "customers", localField: "customer_id", foreignField: "_id", as: "customer" } }, { $unwind: { path: "$customer", preserveNullAndEmptyArrays: true } }, { $project: { "customer.name": 1 } }])'
   hint: { vi: "Tùy chọn giữ mảng rỗng là `preserveNullAndEmptyArrays: true`.", en: "The option that keeps empty arrays is `preserveNullAndEmptyArrays: true`." }
@@ -328,7 +328,7 @@
 - id: e-mg-d-lookup-keep-3
   skill: mg.lookup_keep
   kind: trap
-  task: { vi: "Các đơn đã trả tại quầy của cửa hàng 1 (`channel` là `STORE`, `status` là `PAID`) trong `orders`: gắn khách (một object `customer`, từ `customers` theo `customer_id`), giữ `customer.city`; đơn vãng lai không có khách vẫn phải có mặt.", en: "Paid in-store orders of store 1 (`channel` is `STORE`, `status` is `PAID`) in `orders`: attach the customer (one `customer` object, from `customers` by `customer_id`), keep `customer.city`; walk-in orders with no customer must still appear." }
+  task: { vi: "Các đơn đã trả tại quầy của cửa hàng 1 (`channel` là `STORE`, `status` là `PAID`) trong `orders`: gắn khách (một object `customer`, từ `customers` theo `customer_id`), giữ `_id` và `customer.city`; đơn vãng lai không có khách vẫn phải có mặt.", en: "Paid in-store orders of store 1 (`channel` is `STORE`, `status` is `PAID`) in `orders`: attach the customer (one `customer` object, from `customers` by `customer_id`), keep `_id` and `customer.city`; walk-in orders with no customer must still appear." }
   solution: 'db.orders.aggregate([{ $match: { store_id: 1, channel: "STORE", status: "PAID" } }, { $lookup: { from: "customers", localField: "customer_id", foreignField: "_id", as: "customer" } }, { $unwind: { path: "$customer", preserveNullAndEmptyArrays: true } }, { $project: { "customer.city": 1 } }])'
   hint: { vi: "Đơn vãng lai có mảng `customer` rỗng; tách mảng mà vẫn giữ chúng.", en: "Walk-in orders have an empty `customer` array; unwind while keeping them." }
   wrong:
@@ -543,9 +543,9 @@
 - id: e-mg-d-if-null-4
   skill: mg.if_null
   kind: review
-  task: { vi: "Khách ở `Hanoi` trong `customers`: `name` và `contact` (không `_id`): `email` nếu có, ngược lại chuỗi `none`.", en: "Customers in `Hanoi` in `customers`: `name` and `contact` (no `_id`): the `email` when there is one, otherwise the string `none`." }
-  solution: 'db.customers.aggregate([{ $match: { city: "Hanoi" } }, { $project: { _id: 0, name: 1, contact: { $ifNull: ["$email", "none"] } } }])'
-  hint: { vi: "Giá trị thay thế ở đây là chuỗi `\"none\"`.", en: "The fallback here is the string `\"none\"`." }
+  task: { vi: "Khách ở `Hanoi` trong `customers`: `name` và `contact` (không `_id`): `email` nếu có, ngược lại chuỗi rỗng `\"\"`.", en: "Customers in `Hanoi` in `customers`: `name` and `contact` (no `_id`): the `email` when there is one, otherwise the empty string `\"\"`." }
+  solution: 'db.customers.aggregate([{ $match: { city: "Hanoi" } }, { $project: { _id: 0, name: 1, contact: { $ifNull: ["$email", ""] } } }])'
+  hint: { vi: "Giá trị thay thế ở đây là chuỗi rỗng `\"\"`.", en: "The fallback here is the empty string `\"\"`." }
 
 # ---- mg.self_lookup (Phần 5)
 - id: e-mg-d-self-lookup-1
@@ -646,16 +646,16 @@
   skill: mg.distinct
   kind: open
   task: { vi: "Mỗi cửa hàng trong `orders`: số khách khác nhau đã mua (`customers`, đếm `customer_id` không lặp; đơn không có khách không tính); `_id` là `store_id`.", en: "For each store in `orders`: the number of different customers who bought (`customers`, counting `customer_id` without repeats; orders without a customer do not count); `_id` is the `store_id`." }
-  solution: 'db.orders.aggregate([{ $group: { _id: "$store_id", c: { $addToSet: "$customer_id" } } }, { $project: { customers: { $size: "$c" } } }])'
-  hint: { vi: "Gom `customer_id` không lặp vào một mảng bằng `$addToSet`, rồi đếm bằng `$size`.", en: "Collect unique `customer_id` values into an array with `$addToSet`, then count with `$size`." }
+  solution: 'db.orders.aggregate([{ $match: { customer_id: { $gt: 0 } } }, { $group: { _id: "$store_id", c: { $addToSet: "$customer_id" } } }, { $project: { customers: { $size: "$c" } } }])'
+  hint: { vi: "Bỏ đơn không có khách trước, gom `customer_id` không lặp vào một mảng bằng `$addToSet`, rồi đếm bằng `$size`.", en: "Drop orders without a customer first, collect unique `customer_id` values into an array with `$addToSet`, then count with `$size`." }
 - id: e-mg-d-distinct-3
   skill: mg.distinct
   kind: trap
-  task: { vi: "Mỗi cửa hàng trong `orders`: số sản phẩm khác nhau đã bán (`products`, đếm `product_id` không lặp qua mọi dòng trong `lines`); `_id` là `store_id`.", en: "For each store in `orders`: the number of different products sold (`products`, counting `product_id` without repeats across every line in `lines`); `_id` is the `store_id`." }
-  solution: 'db.orders.aggregate([{ $unwind: "$lines" }, { $group: { _id: "$store_id", p: { $addToSet: "$lines.product_id" } } }, { $project: { products: { $size: "$p" } } }])'
-  hint: { vi: "`lines.product_id` của một đơn là một mảng; tách dòng trước khi gom.", en: "An order's `lines.product_id` is an array; split the lines before collecting." }
+  task: { vi: "Mỗi cửa hàng trong `orders`: số sản phẩm khác nhau đã bán (`products`, đếm `product_id` không lặp qua mọi dòng trong `items`); `_id` là `store_id`.", en: "For each store in `orders`: the number of different products sold (`products`, counting `product_id` without repeats across every line in `items`); `_id` is the `store_id`." }
+  solution: 'db.orders.aggregate([{ $unwind: "$items" }, { $group: { _id: "$store_id", p: { $addToSet: "$items.product_id" } } }, { $project: { products: { $size: "$p" } } }])'
+  hint: { vi: "`items.product_id` của một đơn là một mảng; tách dòng trước khi gom.", en: "An order's `items.product_id` is an array; split the lines before collecting." }
   wrong:
-    - { query: 'db.orders.aggregate([{ $group: { _id: "$store_id", p: { $addToSet: "$lines.product_id" } } }, { $project: { products: { $size: "$p" } } }])', vi: "Không tách dòng: mỗi đơn góp cả mảng `product_id` làm một phần tử, nên bạn đếm số tổ hợp sản phẩm khác nhau, không phải số sản phẩm.", en: "No split: each order adds its whole `product_id` array as one item, so you count different product combinations, not products." }
+    - { query: 'db.orders.aggregate([{ $group: { _id: "$store_id", p: { $addToSet: "$items.product_id" } } }, { $project: { products: { $size: "$p" } } }])', vi: "Không tách dòng: mỗi đơn góp cả mảng `product_id` làm một phần tử, nên bạn đếm số tổ hợp sản phẩm khác nhau, không phải số sản phẩm.", en: "No split: each order adds its whole `product_id` array as one item, so you count different product combinations, not products." }
 - id: e-mg-d-distinct-4
   skill: mg.distinct
   kind: review
