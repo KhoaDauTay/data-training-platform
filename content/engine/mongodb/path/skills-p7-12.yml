@@ -1,0 +1,162 @@
+# Lộ trình MongoDB, Phần 7–12 (product-design-db-engine §3.3). Id kỹ năng `mg.<id>` (ENGINE_SKILL).
+# `part` = Phần; `sql` = kỹ năng SQL tương ứng trong content/skills.yml (Phần 12 không có).
+# Dữ liệu: content/engine/mongodb/path/dataset.json (stores, products, customers, orders có mảng `items` nhúng).
+# Mọi chuỗi đặt trong nháy kép.
+
+# ---- Phần 7: Truy vấn lồng
+- id: mg.lookup_pipeline
+  part: 7
+  sql: [scalar_subquery, correlated_value]
+  label: { vi: "Nối có điều kiện ($lookup + pipeline)", en: "Conditional join ($lookup + pipeline)" }
+  syntax: "{ $lookup: { from: 'orders', let: { sid: '$_id' }, pipeline: [{ $match: { $expr: { $eq: ['$store_id', '$$sid'] } } }], as: 'o' } }"
+  when: { vi: "Cần nối theo nhiều điều kiện, hoặc lọc, sắp, cắt bớt tài liệu bên kia trước khi gắn vào.", en: "The join needs several conditions, or the other side must be filtered, sorted or cut before it is attached." }
+  trap: { vi: "Biến của `let` đọc với tiền tố `$$` (`'$$sid'`) và chỉ dùng được trong `$expr`; viết `'$sid'` là đọc một trường không có.", en: "A `let` variable is read with the `$$` prefix (`'$$sid'`) and only inside `$expr`; writing `'$sid'` reads a field that does not exist." }
+
+- id: mg.in_other
+  part: 7
+  sql: [in_subquery, exists]
+  label: { vi: "Giữ tài liệu có mặt ở collection khác (semi-join)", en: "Keep documents found in another collection (semi-join)" }
+  syntax: "{ $lookup: { …, as: 'hit' } }, { $match: { hit: { $ne: [] } } }"
+  when: { vi: "Câu hỏi \"những ai đã từng…\": chỉ cần biết có hay không, không cần dữ liệu bên kia.", en: "\"Who has ever…\" questions: you only need to know whether a match exists, not its data." }
+  trap: { vi: "`$unwind` sau `$lookup` nhân tài liệu theo số lần khớp, nên một khách hiện nhiều lần.", en: "`$unwind` after `$lookup` repeats a document once per match, so one customer shows up many times." }
+
+- id: mg.facet
+  part: 7
+  sql: [scalar_subquery]
+  label: { vi: "Nhiều phép tính trên cùng dữ liệu ($facet)", en: "Several computations over the same data ($facet)" }
+  syntax: "{ $facet: { by_status: [{ $group: { _id: '$status', n: { $sum: 1 } } }], total: [{ $count: 'n' }] } }"
+  when: { vi: "Một màn hình cần cùng lúc tổng, phân nhóm và top N của một tập đã lọc.", en: "One screen needs a total, a breakdown and a top N of the same filtered set at once." }
+  trap: { vi: "Hai `$group` nối tiếp không phải hai phép tính song song: cái thứ hai chỉ thấy kết quả của cái thứ nhất.", en: "Two `$group` stages in a row are not two parallel computations: the second only sees the output of the first." }
+
+# ---- Phần 8: Pipeline nhiều bước
+- id: mg.stages
+  part: 8
+  sql: [cte, multi_cte]
+  label: { vi: "Đọc pipeline như các bước WITH", en: "Read a pipeline as WITH steps" }
+  syntax: "[{ $match: … }, { $group: { _id: { s: '$store_id', d: '$order_date' }, n: { $sum: 1 } } }, { $group: { _id: '$_id.s', avg: { $avg: '$n' } } }]"
+  when: { vi: "Phải gộp hai lần (theo ngày rồi theo cửa hàng), hoặc lọc trên một con số vừa tính.", en: "You must aggregate twice (per day, then per store), or filter on a number you just computed." }
+  trap: { vi: "Mỗi stage chỉ thấy đầu ra của stage trước: sau `$group` không còn `items` hay `order_date` gốc.", en: "Each stage only sees the previous stage's output: after `$group` the original `items` and `order_date` are gone." }
+
+- id: mg.first_per_group
+  part: 8
+  sql: [distinct_on]
+  label: { vi: "Tài liệu đầu tiên của mỗi nhóm", en: "First document of each group" }
+  syntax: "{ $sort: { price_vnd: 1, name: 1 } }, { $group: { _id: '$category', name: { $first: '$name' }, price: { $first: '$price_vnd' } } }"
+  when: { vi: "Mỗi nhóm lấy một tài liệu trọn vẹn: rẻ nhất, mới nhất, cũ nhất…", en: "One whole document per group: the cheapest, the latest, the oldest…" }
+  trap: { vi: "`$min` trên từng trường lấy mỗi trường từ một tài liệu khác nhau; sắp trước rồi lấy `$first` thì mọi trường cùng một tài liệu.", en: "`$min` on each field takes each field from a different document; sort first and take `$first` so every field comes from one document." }
+
+- id: mg.set_fields
+  part: 8
+  sql: [cte]
+  label: { vi: "Thêm và bỏ trường ($set, $unset)", en: "Add and drop fields ($set, $unset)" }
+  syntax: "{ $set: { price_k: { $divide: ['$price_vnd', 1000] } } }, { $unset: 'category' }"
+  when: { vi: "Giữ nguyên tài liệu, chỉ thêm một trường tính được hoặc bỏ đi vài trường.", en: "Keep the document as is, only add a computed field or drop a few fields." }
+  trap: { vi: "`$project` chỉ giữ những trường được nêu; muốn giữ phần còn lại thì dùng `$set`.", en: "`$project` keeps only the fields it names; to keep the rest use `$set`." }
+
+# ---- Phần 9: Gộp tập
+- id: mg.union_with
+  part: 9
+  sql: [union]
+  label: { vi: "Ghép tài liệu hai collection ($unionWith)", en: "Stack two collections ($unionWith)" }
+  syntax: "{ $project: { _id: 0, city: 1 } }, { $unionWith: { coll: 'customers', pipeline: [{ $project: { _id: 0, city: 1 } }] } }"
+  when: { vi: "Một danh sách gồm tài liệu từ hai nguồn có cùng hình dạng.", en: "One list made of documents from two sources with the same shape." }
+  trap: { vi: "`$unionWith` giữ trùng như UNION ALL; muốn mỗi giá trị một lần thì `$group` theo nó.", en: "`$unionWith` keeps duplicates like UNION ALL; for each value once, `$group` on it." }
+
+- id: mg.except_like
+  part: 9
+  sql: [except, anti_join]
+  label: { vi: "Có ở A mà không có ở B", en: "In A but not in B" }
+  syntax: "{ $lookup: { …, as: 'hit' } }, { $match: { hit: { $size: 0 } } }"
+  when: { vi: "\"Chưa từng\": sản phẩm chưa bán ở đâu, khách chưa mua gì trong kỳ.", en: "\"Never\": products never sold somewhere, customers with no purchase in a period." }
+  trap: { vi: "Điều kiện thời gian hay cửa hàng phải nằm trong pipeline của `$lookup`, không thì \"chưa bán trong tháng\" thành \"chưa bán bao giờ\".", en: "The period or store condition must sit inside the `$lookup` pipeline, otherwise \"not sold this month\" becomes \"never sold\"." }
+
+- id: mg.full_like
+  part: 9
+  sql: [full_join]
+  label: { vi: "Đặt hai bên cạnh nhau, thiếu thì 0", en: "Two sides side by side, 0 when missing" }
+  syntax: "{ $unionWith: { coll: 'orders', pipeline: [ … ] } }, { $group: { _id: '$product_id', a: { $sum: '$a' }, b: { $sum: '$b' } } }"
+  when: { vi: "So hai kỳ, hai cửa hàng, hai nguồn mà khóa có thể chỉ có ở một bên.", en: "Compare two periods, stores or sources where a key may exist on one side only." }
+  trap: { vi: "Bắt đầu từ một bên rồi `$lookup` sang bên kia là left join: khóa chỉ có ở bên kia biến mất.", en: "Starting from one side and `$lookup` into the other is a left join: keys only on the other side disappear." }
+
+# ---- Phần 10: Cửa sổ
+- id: mg.win_rank
+  part: 10
+  sql: [window_rank]
+  label: { vi: "Xếp hạng ($setWindowFields)", en: "Ranking ($setWindowFields)" }
+  syntax: "{ $setWindowFields: { partitionBy: '$category', sortBy: { price_vnd: -1 }, output: { rk: { $rank: {} } } } }"
+  when: { vi: "Mỗi tài liệu cần thứ hạng trong nhóm mà không gộp tài liệu lại.", en: "Each document needs its rank inside a group without collapsing documents." }
+  trap: { vi: "`$rank` cho cùng hạng rồi nhảy, `$denseRank` không nhảy, `$documentNumber` luôn khác nhau: đọc kỹ luật hòa.", en: "`$rank` shares a rank then skips, `$denseRank` does not skip, `$documentNumber` is always distinct: read the tie rule." }
+
+- id: mg.win_shift
+  part: 10
+  sql: [window_lag]
+  label: { vi: "Giá trị tài liệu liền trước/sau ($shift)", en: "Previous/next document's value ($shift)" }
+  syntax: "{ $setWindowFields: { sortBy: { _id: 1 }, output: { prev: { $shift: { output: '$n', by: -1 } } } } }"
+  when: { vi: "So với ngày, tháng, đơn liền trước hoặc liền sau.", en: "Compare with the day, month or order just before or just after." }
+  trap: { vi: "Thiếu `partitionBy` thì tài liệu đầu của cửa hàng 2 lấy giá trị cuối của cửa hàng 1.", en: "Without `partitionBy` the first document of store 2 takes store 1's last value." }
+
+- id: mg.win_agg
+  part: 10
+  sql: [window_agg]
+  label: { vi: "Tổng chạy và trung bình trượt (window)", en: "Running totals and moving averages (window)" }
+  syntax: "{ $setWindowFields: { sortBy: { _id: 1 }, output: { run: { $sum: '$rev', window: { documents: ['unbounded', 'current'] } } } } }"
+  when: { vi: "Lũy kế tới hôm nay, trung bình 3 ngày, tỉ trọng trên tổng.", en: "Running total up to today, 3-day average, share of the total." }
+  trap: { vi: "Không ghi `window` thì cửa sổ là cả nhóm, kể cả khi có `sortBy`: ra tổng của cả nhóm chứ không phải tổng chạy (khác SQL).", en: "Without `window` the window is the whole partition, even with `sortBy`: you get the group total, not a running total (unlike SQL)." }
+
+# ---- Phần 11: Hiệu năng (mingo không có index: đọc explain ghi sẵn, chấm index theo luật)
+- id: mg.explain_read
+  part: 11
+  sql: [explain_read]
+  label: { vi: "Đọc explain()", en: "Read explain()" }
+  syntax: "db.orders.find({ status: 'PAID' }).explain('executionStats')"
+  when: { vi: "Truy vấn chậm: xem `winningPlan` (COLLSCAN hay IXSCAN) và so `totalDocsExamined` với `nReturned`.", en: "A slow query: check `winningPlan` (COLLSCAN or IXSCAN) and compare `totalDocsExamined` with `nReturned`." }
+  trap: { vi: "Có IXSCAN chưa chắc tốt: đọc 50.000 tài liệu để trả 20 vẫn là index chọn sai.", en: "IXSCAN is not automatically good: examining 50,000 documents to return 20 still means a poor index." }
+
+- id: mg.esr
+  part: 11
+  sql: [index_design]
+  label: { vi: "Thứ tự trường index ghép (ESR)", en: "Compound index field order (ESR)" }
+  syntax: "db.orders.createIndex({ status: 1, order_date: -1, store_id: 1 })"
+  when: { vi: "Một truy vấn vừa lọc bằng, vừa sắp, vừa lọc khoảng: Equality → Sort → Range.", en: "A query that filters by equality, sorts and filters a range: Equality → Sort → Range." }
+  trap: { vi: "Đặt trường khoảng (`$gt`, `$lt`) trước trường sắp thì Mongo phải sắp trong bộ nhớ (SORT stage).", en: "Putting the range field (`$gt`, `$lt`) before the sort field forces an in-memory SORT stage." }
+
+- id: mg.covered
+  part: 11
+  sql: [index_design, sargable]
+  label: { vi: "Truy vấn phủ (covered query)", en: "Covered query" }
+  syntax: "db.orders.find({ status: 'PAID' }, { _id: 0, status: 1, order_date: 1 })"
+  when: { vi: "Mọi trường lọc và trả về đều nằm trong index: Mongo không phải đọc tài liệu.", en: "Every filtered and returned field is in the index: Mongo never reads the documents." }
+  trap: { vi: "`_id` được trả mặc định; không ghi `_id: 0` thì truy vấn không còn phủ (trừ khi `_id` nằm trong index).", en: "`_id` is returned by default; without `_id: 0` the query is no longer covered (unless `_id` is in the index)." }
+
+# ---- Phần 12: Mô hình tài liệu (Mongo riêng)
+- id: mg.embed_vs_ref
+  part: 12
+  sql: []
+  label: { vi: "Nhúng hay tham chiếu", en: "Embed or reference" }
+  syntax: "orders: { _id, store_id, items: [{ product_id, name, qty, unit_price_vnd }] }"
+  when: { vi: "Nhúng thứ luôn đọc cùng nhau và có giới hạn; tham chiếu thứ lớn dần không giới hạn hoặc dùng chung nhiều nơi.", en: "Embed what is always read together and bounded; reference what grows without limit or is shared in many places." }
+  trap: { vi: "Nhúng mảng lớn dần mãi (mọi đơn của một khách) sẽ chạm giới hạn 16 MB và làm mỗi lần đọc nặng thêm.", en: "Embedding an ever-growing array (all orders of a customer) hits the 16 MB limit and makes every read heavier." }
+
+- id: mg.array_ops
+  part: 12
+  sql: []
+  label: { vi: "Làm việc với mảng nhúng", en: "Working with embedded arrays" }
+  syntax: "{ items: { $elemMatch: { product_id: 9, qty: { $gte: 5 } } } }; { $filter: { input: '$items', as: 'i', cond: … } }"
+  when: { vi: "Lọc, đếm, biến đổi phần tử mảng ngay trong tài liệu, không cần `$unwind`.", en: "Filter, count or transform array elements inside the document, without `$unwind`." }
+  trap: { vi: "Hai điều kiện trên `items.a` và `items.b` có thể khớp hai phần tử khác nhau; cần cùng một phần tử thì dùng `$elemMatch`.", en: "Two conditions on `items.a` and `items.b` can match two different elements; for the same element use `$elemMatch`." }
+
+- id: mg.schema_validation
+  part: 12
+  sql: []
+  label: { vi: "Luật hình dạng tài liệu (validator)", en: "Document shape rules (validator)" }
+  syntax: "{ email: { $not: { $type: 'string' } } }"
+  when: { vi: "Trước khi bật validator `$jsonSchema`, tìm những tài liệu đang phạm luật.", en: "Before turning on a `$jsonSchema` validator, find the documents that break the rule today." }
+  trap: { vi: "`{ x: null }` khớp cả trường thiếu lẫn `null`, nhưng một chuỗi rỗng hay một số vẫn lọt; kiểm kiểu bằng `$type`.", en: "`{ x: null }` matches both a missing field and `null`, but an empty string or a number still slips through; check the type with `$type`." }
+
+- id: mg.bucket_pattern
+  part: 12
+  sql: []
+  label: { vi: "Mẫu bucket và mẫu tính sẵn", en: "Bucket and computed patterns" }
+  syntax: "{ $group: { _id: { s: '$store_id', d: '$order_date' }, count: { $sum: 1 }, ids: { $push: '$_id' } } }"
+  when: { vi: "Nhiều sự kiện nhỏ theo thời gian: gom thành một tài liệu mỗi cửa hàng mỗi ngày/tháng, kèm số đếm tính sẵn.", en: "Many small events over time: group them into one document per store per day or month, with counts computed in advance." }
+  trap: { vi: "Khóa bucket theo tháng mà thiếu năm thì tháng 10/2025 và 10/2026 chung một bucket.", en: "A month bucket key without the year puts October 2025 and October 2026 into the same bucket." }
