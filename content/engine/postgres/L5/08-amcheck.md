@@ -6,15 +6,16 @@ module: integrity
 title: "Kiểm index và heap bằng amcheck"
 title_en: "Verifying indexes and heap with amcheck"
 kind: lab
+runtime: browser
 minutes: 15
 objectives:
   - { vi: "Chạy `bt_index_check` (kể cả `heapallindexed`) trên nhiều index trong một câu", en: "Run `bt_index_check` (including `heapallindexed`) on several indexes in one statement" }
   - { vi: "Kiểm heap bằng `verify_heapam` và đọc kết quả rỗng là \"không thấy hỏng\"", en: "Check the heap with `verify_heapam` and read an empty result as \"no corruption found\"" }
-  - { vi: "Biết khác biệt giữa `bt_index_check` và `bt_index_parent_check`, và khóa mà mỗi hàm cần", en: "Know the difference between `bt_index_check` and `bt_index_parent_check`, and the lock each one needs" }
+  - { vi: "Biết khác biệt giữa `bt_index_check` và `bt_index_parent_check`, và lock mà mỗi hàm cần", en: "Know the difference between `bt_index_check` and `bt_index_parent_check`, and the lock each one needs" }
 requires: [e-pg-l5-01]
 sources:
   - https://www.postgresql.org/docs/18/amcheck.html
-viz: btree
+viz: pg-btree
 lab:
   setup: |
     CREATE EXTENSION IF NOT EXISTS amcheck;
@@ -44,7 +45,7 @@ quiz:
       - { vi: "`bt_index_check`: lấy `AccessShareLock` như một SELECT, không chặn ghi", en: "`bt_index_check`: takes `AccessShareLock` like a SELECT and does not block writes" }
       - { vi: "`bt_index_parent_check`: kiểm thêm quan hệ cha-con, nhưng lấy `ShareLock` nên chặn INSERT/UPDATE/DELETE", en: "`bt_index_parent_check`: also checks parent/child relationships, but takes `ShareLock`, which blocks INSERT/UPDATE/DELETE" }
     answer: 0
-    why: { vi: "`bt_index_parent_check` kỹ hơn nhưng khóa mạnh hơn; dùng nó trên bản sao hoặc trong cửa sổ bảo trì. `heapallindexed` thêm kiểm \"mọi tuple heap đều có trong index\" với chi phí thời gian.", en: "`bt_index_parent_check` is more thorough but locks harder; run it on a replica or in a maintenance window. `heapallindexed` adds the check that every heap tuple is in the index, at a cost in time." }
+    why: { vi: "`bt_index_parent_check` kỹ hơn nhưng giữ lock mạnh hơn; dùng nó trên bản sao hoặc trong cửa sổ bảo trì. `heapallindexed` thêm kiểm \"mọi tuple heap đều có trong index\" với chi phí thời gian.", en: "`bt_index_parent_check` is more thorough but locks harder; run it on a replica or in a maintenance window. `heapallindexed` adds the check that every heap tuple is in the index, at a cost in time." }
   - q: { vi: "amcheck báo một index B-tree hỏng. Bước tiếp theo hợp lý?", en: "amcheck reports a corrupt B-tree index. A sensible next step?" }
     options:
       - { vi: "`REINDEX INDEX CONCURRENTLY` rồi kiểm lại, đồng thời tìm nguyên nhân (phần cứng, đổi collation hệ điều hành, lỗi phần mềm)", en: "`REINDEX INDEX CONCURRENTLY`, check again, and look for the cause (hardware, an OS collation change, a software bug)" }
@@ -82,7 +83,7 @@ Các hàm kiểm trả về `void`; câu dùng `LATERAL` để gọi hàm cho t�
 
 ## Thực hành
 
-Ba lần kiểm: B-tree, heap và GIN. Kỹ năng chuyên gia: đưa amcheck vào kiểm tra định kỳ, chọn đúng hàm theo khóa được phép, và biết xử lý khi nó báo hỏng.
+Ba lần kiểm: B-tree, heap và GIN. Kỹ năng chuyên gia: đưa amcheck vào kiểm tra định kỳ, chọn đúng hàm theo lock được phép, và biết xử lý khi nó báo hỏng.
 
 # EN
 

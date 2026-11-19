@@ -6,9 +6,10 @@ module: index-types
 title: Mảng và index GIN
 title_en: Arrays and GIN indexes
 kind: lab
+runtime: browser
 minutes: 12
 verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-20" }
-viz: pg-gin
+viz: pg-gin-postings
 objectives:
   - vi: Lưu nhãn trong cột mảng và lọc bằng `= ANY`, `@>` và `&&`.
     en: Store tags in an array column and filter with `= ANY`, `@>` and `&&`.
@@ -52,8 +53,8 @@ lab:
         vi: "`CREATE INDEX name ON table USING gin (col)`."
         en: "`CREATE INDEX name ON table USING gin (col)`."
     - task:
-        vi: "Lấy `id, title` của các bài có nhãn `postgres`. Kế hoạch phải dùng `posts_tags_idx`."
-        en: "Return `id, title` of the posts tagged `postgres`. The plan must use `posts_tags_idx`."
+        vi: "Lấy `id, title` của các bài có nhãn `postgres`. Đoán trước: viết bằng `= ANY` thì kế hoạch có dùng index không? Kế hoạch phải dùng `posts_tags_idx`."
+        en: "Return `id, title` of the posts tagged `postgres`. Guess first: written with `= ANY`, would the plan use the index? The plan must use `posts_tags_idx`."
       solution: SELECT id, title FROM posts WHERE tags @> ARRAY['postgres']
       check: plan
       hint:
@@ -72,9 +73,9 @@ B-tree không giúp được các câu này, vì nó so cả mảng như một g
 
 Bẫy: GIN cho mảng hiểu `@>`, `<@`, `&&` và `=`, nhưng không hiểu `= ANY(...)`. Cùng ý nghĩa, viết bằng `@>` mới dùng được index.
 
-GIN đọc nhanh nhưng ghi chậm hơn B-tree, vì một dòng sinh ra nhiều khóa.
-
 ## Ví dụ
+
+GIN đọc nhanh nhưng ghi chậm hơn B-tree, vì một dòng sinh ra nhiều khóa.
 
 ```sql
 CREATE INDEX demo_tags_idx ON posts USING gin (tags);
@@ -85,7 +86,7 @@ Dù có index GIN, câu `= ANY` vẫn là Seq Scan.
 
 ## Thực hành
 
-200 trên 30 000 bài có nhãn `postgres`. Đếm theo nhãn, tạo index GIN, rồi viết câu dùng được nó.
+200 trên 30.000 bài có nhãn `postgres`. Đếm theo nhãn, tạo index GIN, rồi viết câu dùng được nó.
 
 # EN
 
@@ -101,9 +102,9 @@ A B-tree cannot help with these, because it compares the whole array as one valu
 
 Trap: GIN on arrays understands `@>`, `<@`, `&&` and `=`, but not `= ANY(...)`. Same meaning, but only the `@>` form can use the index.
 
-GIN reads fast but writes slower than a B-tree, because one row produces many keys.
-
 ## Example
+
+GIN reads fast but writes slower than a B-tree, because one row produces many keys.
 
 ```sql
 CREATE INDEX demo_tags_idx ON posts USING gin (tags);

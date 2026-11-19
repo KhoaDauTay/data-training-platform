@@ -8,7 +8,7 @@ title_en: "Lab: what VACUUM changes on the page, the FSM and the visibility map"
 kind: lab
 runtime: browser
 minutes: 25
-viz: pg-vacuum-vm
+viz: pg-vacuum-flow
 objectives:
   - vi: Đọc trạng thái line pointer sau VACUUM (`lp_flags` 0 unused, 1 normal, 2 redirect)
     en: Read line pointer states after VACUUM (`lp_flags` 0 unused, 1 normal, 2 redirect)

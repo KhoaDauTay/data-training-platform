@@ -8,7 +8,7 @@ title_en: "Lab: read what UPDATE, DELETE and ROLLBACK leave behind"
 kind: lab
 runtime: browser
 minutes: 20
-viz: pg-mvcc
+viz: pg-mvcc-timeline
 objectives:
   - vi: Thấy UPDATE để lại bản cũ có `xmax` trỏ sang bản mới
     en: See an UPDATE leave the old version with an `xmax` pointing to the new one

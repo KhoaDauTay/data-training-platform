@@ -6,9 +6,10 @@ module: search
 title: jsonb và jsonb_path_ops
 title_en: jsonb and jsonb_path_ops
 kind: lab
+runtime: browser
 minutes: 12
 verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-20" }
-viz: pg-gin
+viz: pg-gin-postings
 objectives:
   - vi: Đọc trường trong `jsonb` bằng `->` và `->>`, lọc bằng `@>`.
     en: Read `jsonb` fields with `->` and `->>`, and filter with `@>`.
@@ -59,15 +60,15 @@ lab:
       solution: SELECT id FROM products WHERE doc @> '{"brand":"Acme","size":"M"}'
       check: plan
       hint:
-        vi: "`doc @> '{...}'`: tài liệu chứa mọi cặp khóa/giá trị đã cho. `doc ->> 'brand' = 'Acme'` thì không dùng được index GIN này."
-        en: "`doc @> '{...}'`: the document contains every listed key/value pair. `doc ->> 'brand' = 'Acme'` cannot use this GIN index."
+        vi: "`doc @> '{...}'`: `doc` chứa mọi cặp khóa/giá trị đã cho. `doc ->> 'brand' = 'Acme'` thì không dùng được index GIN này."
+        en: "`doc @> '{...}'`: `doc` contains every listed key/value pair. `doc ->> 'brand' = 'Acme'` cannot use this GIN index."
 ---
 ## Ý chính
 
 `jsonb` lưu JSON đã phân tích sẵn ở dạng nhị phân: đọc nhanh, khóa không trùng, không giữ khoảng trắng hay thứ tự khóa. (`json` giữ nguyên chữ gốc, hầu như chỉ dùng khi cần đúng văn bản ban đầu.)
 
 - `doc -> 'size'` trả `jsonb`; `doc ->> 'size'` trả `text`.
-- `doc @> '{"size":"M"}'`: tài liệu chứa cặp đó.
+- `doc @> '{"size":"M"}'`: giá trị `jsonb` chứa cặp đó.
 - `doc ? 'brand'`: có khóa `brand`.
 
 Index GIN cho `jsonb` có hai opclass:
@@ -75,9 +76,9 @@ Index GIN cho `jsonb` có hai opclass:
 - `jsonb_ops` (mặc định): một khóa index cho mỗi khóa và mỗi giá trị. Phục vụ `@>`, `?`, `?|`, `?&` và jsonpath.
 - `jsonb_path_ops`: một mã băm cho mỗi đường dẫn tới giá trị. Index nhỏ hơn và tìm `@>` nhanh hơn, nhưng không phục vụ `?` (có khóa hay không).
 
-Cả hai chỉ giúp các toán tử trên. `doc ->> 'brand' = 'Acme'` là một biểu thức khác; muốn index nó thì cần index biểu thức B-tree trên `(doc ->> 'brand')`.
-
 ## Ví dụ
+
+Cả hai chỉ giúp các toán tử trên. `doc ->> 'brand' = 'Acme'` là một biểu thức khác; muốn index nó thì cần index biểu thức B-tree trên `(doc ->> 'brand')`.
 
 ```sql
 SELECT doc -> 'size' AS as_jsonb, doc ->> 'size' AS as_text, doc ? 'brand' AS has_brand
@@ -86,7 +87,7 @@ FROM products WHERE id = 5;
 
 ## Thực hành
 
-20 000 sản phẩm lưu trong một cột `jsonb`, 1% là hãng Acme. Đọc trường, tạo index `jsonb_path_ops`, rồi lọc bằng `@>`.
+20.000 sản phẩm lưu trong một cột `jsonb`, 1 % là hãng Acme. Đọc trường, tạo index `jsonb_path_ops`, rồi lọc bằng `@>`.
 
 # EN
 
@@ -95,7 +96,7 @@ FROM products WHERE id = 5;
 `jsonb` stores JSON already parsed into a binary form: fast to read, no duplicate keys, no whitespace or key order kept. (`json` keeps the original text and is mostly used when you need that exact text.)
 
 - `doc -> 'size'` returns `jsonb`; `doc ->> 'size'` returns `text`.
-- `doc @> '{"size":"M"}'`: the document contains that pair.
+- `doc @> '{"size":"M"}'`: the `jsonb` value contains that pair.
 - `doc ? 'brand'`: the key `brand` exists.
 
 A GIN index on `jsonb` has two opclasses:
@@ -103,9 +104,9 @@ A GIN index on `jsonb` has two opclasses:
 - `jsonb_ops` (default): one index key per key and per value. Serves `@>`, `?`, `?|`, `?&` and jsonpath.
 - `jsonb_path_ops`: one hash per path to a value. Smaller and faster for `@>`, but it does not serve `?` (key exists).
 
-Both only help those operators. `doc ->> 'brand' = 'Acme'` is a different expression; to index it you need a B-tree expression index on `(doc ->> 'brand')`.
-
 ## Example
+
+Both only help those operators. `doc ->> 'brand' = 'Acme'` is a different expression; to index it you need a B-tree expression index on `(doc ->> 'brand')`.
 
 ```sql
 SELECT doc -> 'size' AS as_jsonb, doc ->> 'size' AS as_text, doc ? 'brand' AS has_brand

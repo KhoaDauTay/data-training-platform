@@ -6,9 +6,10 @@ module: transactions
 title: Transaction và savepoint
 title_en: Transactions and savepoints
 kind: concept
+runtime: docs
 minutes: 10
 verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-20" }
-viz: pg-mvcc
+viz: pg-mvcc-timeline
 objectives:
   - vi: Gói nhiều câu ghi trong `BEGIN ... COMMIT` để chúng cùng thành công hoặc cùng bị hủy.
     en: Wrap several writes in `BEGIN ... COMMIT` so they all succeed or are all undone.
@@ -45,20 +46,20 @@ quiz:
       vi: "Thay đổi chưa commit không ai khác thấy. Nhờ MVCC, đọc không chờ ghi: B đọc phiên bản đã commit mà không bị chặn."
       en: "Uncommitted changes are invisible to everyone else. Thanks to MVCC, readers do not wait for writers: B reads the committed version without blocking."
   - q:
-      vi: "Mức cô lập mặc định là READ COMMITTED. Trong một transaction, bạn chạy cùng một câu `SELECT count(*)` hai lần; giữa hai lần, phiên khác thêm một dòng và `COMMIT`. Lần thứ hai thấy gì?"
-      en: "The default isolation level is READ COMMITTED. Inside one transaction you run the same `SELECT count(*)` twice; in between, another session inserts a row and runs `COMMIT`. What does the second run see?"
+      vi: "Mức cô lập mặc định là Read Committed. Trong một transaction, bạn chạy cùng một câu `SELECT count(*)` hai lần; giữa hai lần, phiên khác thêm một dòng và `COMMIT`. Lần thứ hai thấy gì?"
+      en: "The default isolation level is Read Committed. Inside one transaction you run the same `SELECT count(*)` twice; in between, another session inserts a row and runs `COMMIT`. What does the second run see?"
     options:
       - { vi: "Cùng con số với lần đầu: một transaction luôn thấy dữ liệu đứng yên", en: "The same number as the first: a transaction always sees frozen data" }
       - { vi: "Con số mới, có cả dòng vừa commit", en: "The new number, including the row just committed" }
       - { vi: "Lỗi, vì dữ liệu đã đổi", en: "An error, because the data changed" }
     answer: 1
     why:
-      vi: "Ở READ COMMITTED, mỗi câu lệnh lấy một ảnh chụp (snapshot) mới, nên câu sau thấy những gì đã commit trước nó. Muốn cả transaction thấy cùng một ảnh chụp thì dùng `REPEATABLE READ` (học kỹ ở L4)."
-      en: "Under READ COMMITTED each statement takes a fresh snapshot, so a later statement sees whatever was committed before it. For one snapshot across the whole transaction use `REPEATABLE READ` (covered in depth in L4)."
+      vi: "Ở Read Committed, mỗi câu lệnh lấy một ảnh chụp (snapshot) mới, nên câu sau thấy những gì đã commit trước nó. Muốn cả transaction thấy cùng một ảnh chụp thì dùng `REPEATABLE READ` (học kỹ ở L4)."
+      en: "Under Read Committed each statement takes a fresh snapshot, so a later statement sees whatever was committed before it. For one snapshot across the whole transaction use `REPEATABLE READ` (covered in depth in L4)."
 ---
 ## Ý chính
 
-Transaction gói nhiều câu thành một đơn vị "tất cả hoặc không gì cả". Ví dụ chuyển tiền: trừ tài khoản A và cộng tài khoản B phải cùng xảy ra.
+Trừ tiền tài khoản A xong thì máy sập, trước khi kịp cộng cho B: tiền đi đâu? Transaction gói nhiều câu thành một đơn vị "tất cả hoặc không gì cả".
 
 - `BEGIN` mở transaction; `COMMIT` ghi lại mọi thay đổi; `ROLLBACK` hủy hết.
 - Không có `BEGIN` thì mỗi câu là một transaction riêng, tự commit.
@@ -92,7 +93,7 @@ Sơ đồ cho thấy hai phiên trên cùng một dòng theo thời gian. Bấm 
 
 ## Key idea
 
-A transaction groups several statements into one "all or nothing" unit. A money transfer is the classic case: debiting account A and crediting account B must both happen.
+You debit account A and the machine dies before B is credited: where did the money go? A transaction groups several statements into one "all or nothing" unit.
 
 - `BEGIN` opens a transaction; `COMMIT` keeps every change; `ROLLBACK` undoes them all.
 - Without `BEGIN`, each statement is its own transaction and commits by itself.

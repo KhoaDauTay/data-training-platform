@@ -8,7 +8,7 @@ title_en: "L3 check: the job table that keeps growing"
 kind: capstone
 runtime: browser
 minutes: 30
-viz: pg-hot
+viz: pg-hot-chain
 objectives:
   - vi: Chẩn đoán HOT miss do trang đầy từ trang heap, bộ đếm và index
     en: Diagnose HOT misses caused by full pages from the heap page, the counters and the index

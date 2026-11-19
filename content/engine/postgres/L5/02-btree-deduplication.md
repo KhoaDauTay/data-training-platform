@@ -6,6 +6,7 @@ module: index-internals
 title: "B-tree: dedup và posting list"
 title_en: "B-tree deduplication and posting lists"
 kind: lab
+runtime: browser
 minutes: 15
 objectives:
   - { vi: "Thấy posting list thật: một khóa + mảng TID trong `bt_page_items`", en: "See a real posting list: one key + a TID array in `bt_page_items`" }
@@ -15,7 +16,7 @@ requires: [e-pg-l5-01]
 sources:
   - https://www.postgresql.org/docs/18/btree.html
   - https://www.postgresql.org/docs/18/pageinspect.html
-viz: btree
+viz: pg-btree
 lab:
   setup: |
     CREATE EXTENSION IF NOT EXISTS pageinspect;
@@ -26,7 +27,7 @@ lab:
     CREATE INDEX tickets_prio_nodedup ON tickets (prio) WITH (deduplicate_items = off);
     CREATE INDEX tickets_prio_incl ON tickets (prio) INCLUDE (id);
   steps:
-    - task: { vi: "So kích thước (số trang 8 KB) của ba index có tên bắt đầu bằng `tickets_prio`, sắp theo tên.", en: "Compare the size (number of 8 KB pages) of the three indexes whose names start with `tickets_prio`, ordered by name." }
+    - task: { vi: "So kích thước (số trang 8 KB) của ba index có tên bắt đầu bằng `tickets_prio`, sắp theo tên. Đoán trước: index có INCLUDE nhỏ như bản có dedup hay to như bản tắt dedup?", en: "Compare the size (number of 8 KB pages) of the three indexes whose names start with `tickets_prio`, ordered by name. Guess first: is the index with INCLUDE as small as the deduplicated one or as big as the one with deduplication off?" }
       solution: "SELECT relname, pg_relation_size(oid) / 8192 AS pages FROM pg_class WHERE relname LIKE 'tickets_prio%' ORDER BY relname"
       check: rows
       ordered: true
@@ -48,7 +49,7 @@ quiz:
       - { vi: "`(amount numeric)`", en: "`(amount numeric)`" }
       - { vi: "`(status text)` với collation mặc định xác định", en: "`(status text)` with a deterministic default collation" }
     answer: 1
-    why: { vi: "Tài liệu liệt kê: `numeric`, `jsonb`, `float4`/`float8`, kiểu chứa (composite, mảng, range), `text` với collation không xác định, và mọi index có `INCLUDE`. Lý do: hai giá trị \"bằng nhau\" có thể khác biểu diễn (ví dụ `1.0` và `1.00`).", en: "The docs list: `numeric`, `jsonb`, `float4`/`float8`, container types (composite, array, range), `text` with a nondeterministic collation, and every index with `INCLUDE`. The reason: two \"equal\" values can have different representations (for example `1.0` and `1.00`)." }
+    why: { vi: "Docs chính thức liệt kê: `numeric`, `jsonb`, `float4`/`float8`, kiểu chứa (composite, mảng, range), `text` với collation không xác định, và mọi index có `INCLUDE`. Lý do: hai giá trị \"bằng nhau\" có thể khác biểu diễn (ví dụ `1.0` và `1.00`).", en: "The docs list: `numeric`, `jsonb`, `float4`/`float8`, container types (composite, array, range), `text` with a nondeterministic collation, and every index with `INCLUDE`. The reason: two \"equal\" values can have different representations (for example `1.0` and `1.00`)." }
 ---
 
 ## Ý chính
@@ -61,7 +62,7 @@ quiz:
 
 ## Ví dụ
 
-Kết quả thật trên PGlite, 20000 dòng, `prio` chỉ có 4 giá trị:
+Kết quả thật trên PGlite, 20.000 dòng, `prio` chỉ có 4 giá trị:
 
 ```text
 relname               pages
@@ -93,7 +94,7 @@ So kích thước, đọc posting list và cờ `allequalimage`. Kỹ năng chuy
 
 ## Example
 
-Real output from PGlite, 20000 rows, `prio` has only 4 values:
+Real output from PGlite, 20,000 rows, `prio` has only 4 values:
 
 ```text
 relname               pages

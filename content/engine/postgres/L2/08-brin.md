@@ -6,11 +6,12 @@ module: index-types
 title: BRIN cho dữ liệu ghi theo thời gian
 title_en: BRIN for data written in time order
 kind: predict
+runtime: browser
 minutes: 10
 verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-20" }
-viz: pg-brin
+viz: pg-brin-ranges
 objectives:
-  - vi: Chọn BRIN cho cột tăng dần theo thứ tự ghi (thời gian đo, log), và giải thích vì sao index của 30 000 dòng chỉ chiếm vài trang.
+  - vi: Chọn BRIN cho cột tăng dần theo thứ tự ghi (thời gian đo, log), và giải thích vì sao index của 30.000 dòng chỉ chiếm vài trang.
     en: Choose BRIN for a column that grows in write order (measurement time, logs), and explain why the index for 30,000 rows takes only a few pages.
   - vi: 'Biết BRIN là index "thô": nó loại trừ khối trang, rồi phải kiểm lại từng dòng (`Recheck Cond`).'
     en: Know BRIN is a lossy index that rules out block ranges and then rechecks each row (`Recheck Cond`).
@@ -44,7 +45,7 @@ predict:
   sql: SELECT count(*) FROM readings WHERE taken_at >= timestamptz '2026-03-01 00:00+00' AND taken_at < timestamptz '2026-03-02 00:00+00'
   expect: { node: Bitmap Index Scan, index: readings_taken_brin }
   q:
-    vi: "30 000 số đo, mỗi 10 phút một số, ghi theo đúng thứ tự thời gian. Có index BRIN trên `taken_at`. Đếm số đo của một ngày thì kế hoạch là gì?"
+    vi: "30.000 số đo, mỗi 10 phút một số, ghi theo đúng thứ tự thời gian. Có index BRIN trên `taken_at`. Đếm số đo của một ngày thì kế hoạch là gì?"
     en: "30,000 readings, one every 10 minutes, written in time order. There is a BRIN index on `taken_at`. What is the plan for counting one day's readings?"
   options:
     - { vi: "Seq Scan: BRIN chỉ là bản tóm tắt, không dùng để tìm được", en: "Seq Scan: BRIN is only a summary and cannot be used for lookups" }
@@ -63,15 +64,15 @@ BRIN (Block Range INdex) không lưu từng dòng. Nó chia bảng thành các k
 - Index cực nhỏ: một dòng tóm tắt cho mỗi khối, thay vì một mục cho mỗi dòng như B-tree.
 - Chỉ hiệu quả khi giá trị tương quan với vị trí vật lý trong bảng: dữ liệu ghi theo thời gian, id tăng dần. Nếu giá trị bị xáo trộn, mọi khối đều có min nhỏ và max lớn, và BRIN không loại được khối nào.
 
-Opclass khác: `minmax-multi` (nhiều khoảng mỗi khối), `bloom`, `inclusion` (cho kiểu hình học, range).
-
 ## Ví dụ
+
+Opclass khác: `minmax-multi` (nhiều khoảng mỗi khối), `bloom`, `inclusion` (cho kiểu hình học, range).
 
 ```sql
 SELECT round(corr(id, extract(epoch FROM taken_at))::numeric, 3) AS physical_order FROM readings;
 ```
 
-Kết quả 1.000: thứ tự ghi trùng thứ tự thời gian, đúng điều kiện để BRIN có ích.
+Kết quả `1.000`: thứ tự ghi trùng thứ tự thời gian, đúng điều kiện để BRIN có ích.
 
 ## Thực hành
 
@@ -87,15 +88,15 @@ BRIN (Block Range INdex) does not store individual rows. It divides the table in
 - A tiny index: one summary row per range, instead of one entry per row like a B-tree.
 - Only effective when values correlate with the physical position in the table: data written in time order, increasing ids. If values are shuffled, every range has a small min and a large max, and BRIN rules out nothing.
 
-Other opclasses: `minmax-multi` (several intervals per range), `bloom`, `inclusion` (for geometric and range types).
-
 ## Example
+
+Other opclasses: `minmax-multi` (several intervals per range), `bloom`, `inclusion` (for geometric and range types).
 
 ```sql
 SELECT round(corr(id, extract(epoch FROM taken_at))::numeric, 3) AS physical_order FROM readings;
 ```
 
-Result 1.000: write order matches time order, exactly the condition for BRIN to help.
+Result `1.000`: write order matches time order, exactly the condition for BRIN to help.
 
 ## Practice
 

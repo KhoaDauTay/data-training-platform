@@ -6,11 +6,12 @@ module: capstone-l4
 title: "Bài tổng kết L4: báo cáo chậm và migration làm treo"
 title_en: "L4 capstone: a slow report and a migration that froze the app"
 kind: capstone
+runtime: browser
 minutes: 30
 objectives:
   - { vi: "Đi từ ước lượng sai tới thuật toán nối sai, dùng `pg_stats` và ước lượng thật", en: "Go from a wrong estimate to a wrong join algorithm, using `pg_stats` and real estimates" }
   - { vi: "Chứng minh câu tra một khách dùng Nested Loop qua index", en: "Prove that the one-customer lookup uses a Nested Loop through an index" }
-  - { vi: "Đọc khóa mà một lệnh ghi thật sự lấy, và đề xuất cách chạy migration không làm treo ứng dụng", en: "Read the locks a write really takes, and propose how to run a migration without freezing the app" }
+  - { vi: "Đọc lock mà một lệnh ghi thật sự lấy, và đề xuất cách chạy migration không làm treo ứng dụng", en: "Read the locks a write really takes, and propose how to run a migration without freezing the app" }
 requires: [e-pg-l4-02, e-pg-l4-03, e-pg-l4-04, e-pg-l4-09, e-pg-l4-12]
 sources:
   - https://www.postgresql.org/docs/18/planner-stats.html
@@ -18,7 +19,7 @@ sources:
   - https://www.postgresql.org/docs/18/explicit-locking.html
   - https://www.postgresql.org/docs/18/runtime-config-client.html
   - https://www.postgresql.org/docs/18/transaction-iso.html
-viz: plan-tree
+viz: pg-plan-tree
 lab:
   setup: |
     DROP TABLE IF EXISTS orders, customers CASCADE;
@@ -55,20 +56,20 @@ lab:
       solution: "SELECT o.id, o.amount FROM customers c JOIN orders o ON o.customer_id = c.id WHERE c.id = 42"
       check: plan
       hint: { vi: "Lọc khách bằng khóa chính rồi JOIN.", en: "Filter the customer by primary key, then JOIN." }
-    - task: { vi: "Bước 4, khóa. Trong cùng một câu: đặt đơn 1 sang 'open' (CTE UPDATE … RETURNING), rồi liệt kê tên quan hệ và chế độ khóa trong `pg_locks` cho mọi quan hệ có tên bắt đầu bằng `orders`. Sắp theo tên rồi chế độ.", en: "Step 4, locks. In one statement: set order 1 to 'open' (a CTE UPDATE … RETURNING), then list the relation name and lock mode in `pg_locks` for every relation whose name starts with `orders`. Order by name, then mode." }
+    - task: { vi: "Bước 4, lock. Trong cùng một câu: đặt đơn 1 sang 'open' (CTE UPDATE … RETURNING), rồi liệt kê tên quan hệ và lock mode trong `pg_locks` cho mọi quan hệ có tên bắt đầu bằng `orders`. Sắp theo tên rồi chế độ.", en: "Step 4, locks. In one statement: set order 1 to 'open' (a CTE UPDATE … RETURNING), then list the relation name and lock mode in `pg_locks` for every relation whose name starts with `orders`. Order by name, then mode." }
       solution: "WITH u AS (UPDATE orders SET status = 'open' WHERE id = 1 RETURNING id) SELECT c.relname, l.mode FROM u, pg_locks l JOIN pg_class c ON c.oid = l.relation WHERE c.relname LIKE 'orders%' ORDER BY 1, 2"
       check: rows
       ordered: true
       hint: { vi: "Như bài e-pg-l4-09: nối `pg_locks.relation` với `pg_class.oid`.", en: "As in lesson e-pg-l4-09: join `pg_locks.relation` to `pg_class.oid`." }
 predict:
   sql: "SELECT * FROM orders WHERE status = 'lost'"
-  q: { vi: "Đơn thất lạc chiếm 2%. Postgres đọc thế nào?", en: "Lost orders are 2%. How does Postgres read them?" }
+  q: { vi: "Đơn thất lạc chiếm 2 %. Postgres đọc thế nào?", en: "Lost orders are 2%. How does Postgres read them?" }
   options:
     - { vi: "Seq Scan với Filter", en: "A Seq Scan with a Filter" }
     - { vi: "Bitmap Heap Scan qua `orders_status_idx`", en: "A Bitmap Heap Scan through `orders_status_idx`" }
     - { vi: "Index Only Scan", en: "An Index Only Scan" }
   answer: 1
-  why: { vi: "Tần suất MCV 0.02 × 20000 = 400 dòng: đủ hiếm để đi qua index, đủ nhiều để gom theo trang bằng bitmap. Câu cần mọi cột nên không thể Index Only Scan.", en: "MCV frequency 0.02 × 20000 = 400 rows: rare enough for the index, enough rows to group by page with a bitmap. The query needs every column, so an Index Only Scan is impossible." }
+  why: { vi: "Tần suất MCV 0,02 × 20.000 = 400 dòng: đủ hiếm để đi qua index, đủ nhiều để gom theo trang bằng bitmap. Câu cần mọi cột nên không thể Index Only Scan.", en: "MCV frequency 0.02 × 20,000 = 400 rows: rare enough for the index, enough rows to group by page with a bitmap. The query needs every column, so an Index Only Scan is impossible." }
 quiz:
   - q: { vi: "Kết luận 1. Bước 2 ước lượng 20, thật 100. Khi bảng này là phía ngoài của một phép nối lớn, hậu quả và cách sửa?", en: "Conclusion 1. Step 2 estimated 20 against 100 real rows. When this table is the outer side of a big join, what follows and what is the fix?" }
     options:
@@ -80,27 +81,27 @@ quiz:
   - q: { vi: "Kết luận 2. Cần chạy `ALTER TABLE orders ADD COLUMN note text` giữa giờ làm việc, khi một báo cáo dài đang đọc `orders`. Cách an toàn?", en: "Conclusion 2. You must run `ALTER TABLE orders ADD COLUMN note text` during business hours while a long report is reading `orders`. The safe way?" }
     options:
       - { vi: "`SET lock_timeout = '2s'` rồi chạy ALTER, thất bại thì thử lại sau; vì ALTER cần ACCESS EXCLUSIVE và lệnh đang chờ sẽ chặn mọi lệnh đến sau", en: "`SET lock_timeout = '2s'`, then run the ALTER and retry on failure; the ALTER needs ACCESS EXCLUSIVE, and a waiting command blocks every command behind it" }
-      - { vi: "Chạy thẳng, ALTER không khóa gì", en: "Just run it, ALTER locks nothing" }
+      - { vi: "Chạy thẳng, ALTER không lấy lock nào", en: "Just run it, ALTER locks nothing" }
       - { vi: "Đặt `deadlock_timeout = 0`", en: "Set `deadlock_timeout = 0`" }
     answer: 0
-    why: { vi: "Hàng đợi khóa là FIFO: ALTER đang chờ báo cáo sẽ chặn cả các SELECT ngắn phía sau. `lock_timeout` để migration tự bỏ cuộc thay vì làm treo ứng dụng.", en: "The lock queue is FIFO: an ALTER waiting for the report blocks even short SELECTs behind it. `lock_timeout` makes the migration give up instead of freezing the app." }
+    why: { vi: "Hàng đợi lock là FIFO: ALTER đang chờ báo cáo sẽ chặn cả các SELECT ngắn phía sau. `lock_timeout` để migration tự bỏ cuộc thay vì làm treo ứng dụng.", en: "The lock queue is FIFO: an ALTER waiting for the report blocks even short SELECTs behind it. `lock_timeout` makes the migration give up instead of freezing the app." }
   - q: { vi: "Kết luận 3. Báo cáo gồm ba câu (tổng đơn, tổng tiền, theo vùng) phải khớp nhau trong khi đơn mới vẫn được ghi. Mức cô lập nào?", en: "Conclusion 3. The report runs three statements (order count, total amount, by region) that must agree while new orders keep arriving. Which isolation level?" }
     options:
-      - { vi: "READ COMMITTED (mặc định)", en: "READ COMMITTED (the default)" }
-      - { vi: "REPEATABLE READ (khai báo `READ ONLY`): cả ba câu thấy cùng một snapshot", en: "REPEATABLE READ (as a `READ ONLY` transaction): all three statements see the same snapshot" }
-      - { vi: "READ UNCOMMITTED", en: "READ UNCOMMITTED" }
+      - { vi: "Read Committed (mặc định)", en: "Read Committed (the default)" }
+      - { vi: "Repeatable Read (khai báo `READ ONLY`): cả ba câu thấy cùng một snapshot", en: "Repeatable Read (as a `READ ONLY` transaction): all three statements see the same snapshot" }
+      - { vi: "Read Uncommitted", en: "Read Uncommitted" }
     answer: 1
-    why: { vi: "READ COMMITTED lấy snapshot mỗi câu, nên ba con số có thể lệch nhau. Giao dịch chỉ đọc không gặp lỗi xung đột ghi.", en: "READ COMMITTED takes a snapshot per statement, so the three figures can disagree. A read-only transaction never hits a write conflict." }
+    why: { vi: "Read Committed lấy snapshot mỗi câu, nên ba con số có thể lệch nhau. Transaction chỉ đọc không gặp lỗi xung đột ghi.", en: "Read Committed takes a snapshot per statement, so the three figures can disagree. A read-only transaction never hits a write conflict." }
 ---
 
 ## Ý chính
 
-Đội bán hàng báo hai sự cố cùng tuần:
+Đội bán hàng báo hai vấn đề cùng tuần:
 
 - báo cáo theo vùng lúc nhanh lúc chậm;
 - một migration giữa giờ làm việc làm cả ứng dụng treo vài phút.
 
-Nhiệm vụ: tìm bằng chứng cho từng sự cố bằng số liệu thật, rồi kết luận. Bốn bước dùng lại cả L4: thống kê cột (MCV), thống kê mở rộng, thuật toán nối, khóa bảng; ba câu kết luận thêm mức cô lập.
+Nhiệm vụ: tìm bằng chứng cho từng vấn đề bằng số liệu thật, rồi kết luận. Bốn bước dùng lại cả L4: thống kê cột (MCV), thống kê mở rộng, thuật toán nối, lock trên bảng; ba câu kết luận thêm mức cô lập.
 
 ## Ví dụ
 
@@ -120,7 +121,7 @@ Nested Loop
 
 ## Thực hành
 
-Bốn bước có chấm, một câu đoán kế hoạch, ba câu kết luận. Kỹ năng chuyên gia: tách một "hệ thống chậm" thành hai nguyên nhân khác nhau (ước lượng sai, chờ khóa), chứng minh từng cái bằng `pg_stats`, `EXPLAIN` và `pg_locks`, và đề xuất cách sửa đúng chỗ.
+Bốn bước có chấm, một câu đoán kế hoạch, ba câu kết luận. Kỹ năng chuyên gia: tách một "hệ thống chậm" thành hai nguyên nhân khác nhau (ước lượng sai, chờ lock), chứng minh từng cái bằng `pg_stats`, `EXPLAIN` và `pg_locks`, và đề xuất cách sửa đúng chỗ.
 
 # EN
 

@@ -8,7 +8,7 @@ title_en: "Lab: freeze a page"
 kind: lab
 runtime: browser
 minutes: 15
-viz: pg-vacuum-vm
+viz: pg-vacuum-flow
 objectives:
   - vi: Thấy cờ `HEAP_XMIN_FROZEN` sau `VACUUM (FREEZE)` trong khi `xmin` vẫn giữ nguyên
     en: See the `HEAP_XMIN_FROZEN` flag after `VACUUM (FREEZE)` while `xmin` stays the same

@@ -6,6 +6,7 @@ module: capstone-l1
 title: "Kiểm tra cấp L1: bảng đăng ký sự kiện"
 title_en: "Level L1 check: the event sign-up table"
 kind: capstone
+runtime: browser
 minutes: 15
 verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-20" }
 objectives:

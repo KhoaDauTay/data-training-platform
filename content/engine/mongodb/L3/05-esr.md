@@ -52,12 +52,12 @@ Index (chỉ mục) MongoDB là B-tree. Index kép `{ a: 1, b: 1, c: 1 }` sắp 
 
 Docs chính thức của MongoDB khuyên xếp trường theo ESR: Equality (so bằng) trước, Sort (trường sắp xếp) sau đó, Range (khoảng) cuối cùng. Trong một khối bằng, khóa đã có sẵn thứ tự nên MongoDB đọc theo index mà không phải sắp lại.
 
+## Ví dụ
+
 Nếu range đứng trước sort, thứ tự sort bị vỡ qua các giá trị range, MongoDB phải sắp trong bộ nhớ và explain có stage `SORT`. Theo docs chính thức, kế hoạch không có stage `SORT` nghĩa là thứ tự lấy từ index. Khi điều kiện khoảng rất chọn lọc, đặt range trước sort (ERS) có thể rẻ hơn, vì chỉ còn vài tài liệu phải sắp.
 
 - `$ne`, `$nin` và `$regex` là range.
 - `$in` một mình như nhiều phép bằng. Đi với `.sort()`: mảng dưới 201 phần tử được tách thành phép bằng rồi trộn theo thứ tự index (`SORT_MERGE`); từ 201 phần tử trở lên thì như range. Docs chính thức nói ngưỡng này không cam kết giữ nguyên giữa các phiên bản.
-
-## Ví dụ
 
 Ví dụ trong docs chính thức: `directors` là equality, `year` là sort, `runtime` là range.
 
@@ -80,12 +80,12 @@ MongoDB indexes are B-trees. The compound index `{ a: 1, b: 1, c: 1 }` sorts key
 
 The MongoDB docs recommend the ESR order: Equality fields first, then Sort fields, then Range fields last. Inside an equality block the keys are already ordered, so MongoDB reads in index order with no extra sort.
 
+## Example
+
 If the range comes before the sort, the sort order breaks across range values, MongoDB must sort in memory and explain shows a `SORT` stage. Per the docs, a plan with no `SORT` stage got its order from the index. When the range predicate is very selective, range before sort (ERS) can be cheaper, because only a few documents are left to sort.
 
 - `$ne`, `$nin` and `$regex` are ranges.
 - `$in` alone acts as several equality matches. With `.sort()`: an array with fewer than 201 elements is expanded into equality matches and merged in index order (`SORT_MERGE`); with 201 or more it acts like a range. The docs say this threshold is not guaranteed to stay the same across versions.
-
-## Example
 
 The example from the docs: `directors` is equality, `year` is sort, `runtime` is range.
 

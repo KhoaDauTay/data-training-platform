@@ -75,13 +75,13 @@ Giá trị của một trường có thể là:
 
 Trên đĩa và trên mạng, tài liệu được mã hóa thành BSON (JSON nhị phân). BSON có thêm kiểu mà JSON không có: `ObjectId` (12 byte: 4 byte thời điểm tạo, 5 byte ngẫu nhiên, 3 byte bộ đếm), `Date` (số mili giây từ 1970, UTC), `int`, `long`, `double` và `Decimal128` cho số thập phân chính xác.
 
+## Ví dụ
+
 Mọi tài liệu có trường `_id`, duy nhất trong collection. Không đặt thì MongoDB tự sinh một `ObjectId`.
 
 Hai giới hạn: một tài liệu tối đa 16 MiB, và lồng tối đa 100 tầng.
 
 Làm được: đọc một tài liệu, gọi đúng tên từng phần, và chọn kiểu BSON hợp cho tiền, ngày và mã.
-
-## Ví dụ
 
 ```js
 {
@@ -114,13 +114,13 @@ A field's value can be:
 
 On disk and on the wire, documents are encoded as BSON (binary JSON). BSON adds types that JSON lacks: `ObjectId` (12 bytes: 4-byte creation time, 5 random bytes, 3-byte counter), `Date` (milliseconds since 1970, UTC), `int`, `long`, `double` and `Decimal128` for exact decimals.
 
+## Example
+
 Every document has an `_id` field, unique in its collection. If you leave it out, MongoDB generates an `ObjectId`.
 
 Two limits: a document is at most 16 MiB, and nesting goes at most 100 levels deep.
 
 You can now: read a document, name each part correctly, and pick a suitable BSON type for money, dates and codes.
-
-## Example
 
 ```js
 {

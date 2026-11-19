@@ -53,12 +53,12 @@ Write concern là mức xác nhận bạn đòi cho một lần ghi: `{ w, j, wt
 
 Read concern quyết định đọc thấy gì:
 
+## Ví dụ
+
 - `local`: dữ liệu của node, có thể bị rollback. Mặc định cho đọc từ primary và secondary.
 - `majority`: dữ liệu đa số đã xác nhận, bền kể cả khi primary sập.
 - `linearizable`: phản ánh mọi lần ghi majority đã xong trước khi đọc bắt đầu; chỉ đọc trên primary, cần bộ lọc trúng một tài liệu, nên dùng kèm `maxTimeMS`.
 - `snapshot`: dữ liệu majority tại một thời điểm, dùng trong transaction nhiều tài liệu và một số lệnh đọc.
-
-## Ví dụ
 
 ```javascript
 db.payments.insertOne(
@@ -83,12 +83,12 @@ Write concern is the acknowledgement you ask for on a write: `{ w, j, wtimeout }
 
 Read concern decides what a read can see:
 
+## Example
+
 - `local`: the node's data, which may be rolled back. The default for reads on the primary and on secondaries.
 - `majority`: data acknowledged by a majority, durable even if the primary fails.
 - `linearizable`: reflects every majority write completed before the read started; primary only, needs a filter that hits one document, and should be used with `maxTimeMS`.
 - `snapshot`: majority data at one point in time, used in multi-document transactions and some read commands.
-
-## Example
 
 ```javascript
 db.payments.insertOne(

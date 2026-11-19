@@ -6,6 +6,7 @@ module: partitioning
 title: "Thiết kế phân vùng: khóa, ràng buộc và giới hạn"
 title_en: "Designing partitions: key, keys and limits"
 kind: quiz
+runtime: docs
 minutes: 12
 objectives:
   - { vi: "Chọn khóa phân vùng theo câu hỏi hay gặp nhất và cách xóa dữ liệu cũ", en: "Choose the partition key from the most frequent queries and the way old data is removed" }
@@ -24,7 +25,7 @@ quiz:
       - { vi: "Thành công nhưng chỉ unique trong từng phân vùng", en: "It succeeds, but is only unique within each partition" }
     answer: 1
     why: { vi: "Mỗi phân vùng có index riêng; Postgres chỉ bảo đảm duy nhất toàn bảng khi khóa phân vùng nằm trong khóa, để hai dòng trùng khóa luôn rơi vào cùng phân vùng.", en: "Each partition has its own index; Postgres can only guarantee table-wide uniqueness when the partition key is part of the key, so two equal keys always land in the same partition." }
-  - q: { vi: "Hệ thống nhiều khách hàng (tenant), 90% câu hỏi là \"tenant X trong 30 ngày qua\", và dữ liệu quá 13 tháng phải xóa. Khóa phân vùng nào hợp lý nhất?", en: "A multi-tenant system: 90% of queries are \"tenant X over the last 30 days\", and data older than 13 months must be deleted. Which partition key fits best?" }
+  - q: { vi: "Hệ thống nhiều khách hàng (tenant), 90 % câu hỏi là \"tenant X trong 30 ngày qua\", và dữ liệu quá 13 tháng phải xóa. Khóa phân vùng nào hợp lý nhất?", en: "A multi-tenant system: 90% of queries are \"tenant X over the last 30 days\", and data older than 13 months must be deleted. Which partition key fits best?" }
     options:
       - { vi: "RANGE theo thời gian (tháng), index `(tenant_id, created_at)` trên bảng cha", en: "RANGE by time (month), with an index `(tenant_id, created_at)` on the parent" }
       - { vi: "HASH theo `tenant_id` với 1000 phân vùng", en: "HASH on `tenant_id` with 1000 partitions" }
@@ -52,7 +53,7 @@ quiz:
 - Chọn khóa phân vùng theo hai câu hỏi: câu truy vấn hay gặp nhất lọc theo cột nào (để pruning), và dữ liệu cũ bị xóa theo cột nào (để `DROP` phân vùng).
 - PRIMARY KEY/UNIQUE trên bảng phân vùng phải chứa mọi cột khóa phân vùng, và không được là biểu thức.
 - Index trên bảng cha được lan xuống mọi phân vùng (kể cả phân vùng tạo sau). Không có index toàn cục.
-- Số phân vùng: tài liệu nói planner xử lý khá tốt tới vài nghìn phân vùng nếu câu hay gặp pruning còn ít phân vùng; không pruning được thì thời gian lập kế hoạch và bộ nhớ tăng theo số phân vùng.
+- Số phân vùng: docs chính thức nói planner xử lý khá tốt tới vài nghìn phân vùng nếu câu hay gặp pruning còn ít phân vùng; không pruning được thì thời gian lập kế hoạch và bộ nhớ tăng theo số phân vùng.
 - Phân vùng `DEFAULT` tiện nhưng làm việc thêm phân vùng mới phải quét nó.
 
 ## Ví dụ

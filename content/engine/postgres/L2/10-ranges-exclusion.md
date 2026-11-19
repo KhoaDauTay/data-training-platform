@@ -6,9 +6,10 @@ module: index-types
 title: "Khoảng thời gian, GiST và ràng buộc không chồng lịch"
 title_en: "Time ranges, GiST and a no-double-booking constraint"
 kind: lab
+runtime: browser
 minutes: 12
 verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-20" }
-viz: pg-gist
+viz: pg-gist-boxes
 objectives:
   - vi: Lưu lịch đặt phòng bằng kiểu `tstzrange` và hỏi "chồng lên nhau" bằng `&&`.
     en: Store bookings as `tstzrange` and ask "do they overlap?" with `&&`.
@@ -81,7 +82,7 @@ INSERT INTO bookings VALUES (99999, 3, tstzrange(timestamptz '2026-01-01 08:30+0
 
 ## Thực hành
 
-Bảng `bookings` có 20 000 lượt đặt hợp lệ của 50 phòng. Thêm ràng buộc chống đặt trùng, dùng index của nó để tìm, rồi tính số giờ đã đặt.
+Bảng `bookings` có 20.000 lượt đặt hợp lệ của 50 phòng. Thêm ràng buộc chống đặt trùng, dùng index của nó để tìm, rồi tính số giờ đã đặt.
 
 # EN
 

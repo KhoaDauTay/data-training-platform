@@ -6,6 +6,7 @@ module: capstone-l2
 title: "Kiểm tra cấp L2: trang tìm sản phẩm chậm"
 title_en: "Level L2 check: the slow product search page"
 kind: capstone
+runtime: browser
 minutes: 15
 verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-20" }
 objectives:
@@ -82,7 +83,7 @@ quiz:
       - { vi: "Nên dùng Hash thay B-tree", en: "Use Hash instead of B-tree" }
     answer: 1
     why:
-      vi: "Index chỉ có lợi khi câu lấy một phần nhỏ của bảng. Lấy 10 000 trên 30 000 dòng thì đọc tuần tự rẻ hơn; index thứ tư chỉ thêm một lần ghi index cho mỗi `INSERT`."
+      vi: "Index chỉ có lợi khi câu lấy một phần nhỏ của bảng. Lấy 10.000 trên 30.000 dòng thì đọc tuần tự rẻ hơn; index thứ tư chỉ thêm một lần ghi index cho mỗi `INSERT`."
       en: "An index only pays off when a query reads a small part of the table. Reading 10,000 of 30,000 rows is cheaper sequentially; a fourth index just adds one more index write to every `INSERT`."
   - q:
       vi: "\"`SELECT count(*) FROM catalog` sẽ đếm bằng khóa chính, nên rất nhanh.\" Trên bảng vừa nạp (chưa VACUUM), kế hoạch thật là gì?"

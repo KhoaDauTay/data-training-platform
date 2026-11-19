@@ -6,6 +6,7 @@ module: first-index
 title: Index giúp cả ORDER BY ... LIMIT
 title_en: An index also serves ORDER BY ... LIMIT
 kind: predict
+runtime: browser
 minutes: 7
 verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-20" }
 objectives:
@@ -43,10 +44,10 @@ predict:
   sql: SELECT id, created_at FROM orders ORDER BY created_at DESC LIMIT 5
   expect: { node: Index Scan, table: orders, index: orders_created_idx }
   q:
-    vi: "Bảng `orders` có 20 000 dòng và index `orders_created_idx` trên `created_at`. Lấy 5 đơn mới nhất thì kế hoạch là gì?"
+    vi: "Bảng `orders` có 20.000 dòng và index `orders_created_idx` trên `created_at`. Lấy 5 đơn mới nhất thì kế hoạch là gì?"
     en: "Table `orders` has 20,000 rows and an index `orders_created_idx` on `created_at`. What is the plan for the 5 newest orders?"
   options:
-    - { vi: "Seq Scan, rồi Sort cả 20 000 dòng, rồi Limit", en: "Seq Scan, then Sort all 20,000 rows, then Limit" }
+    - { vi: "Seq Scan, rồi Sort cả 20.000 dòng, rồi Limit", en: "Seq Scan, then Sort all 20,000 rows, then Limit" }
     - { vi: "Limit trên Index Scan Backward dùng `orders_created_idx`, không có Sort", en: "Limit over an Index Scan Backward using `orders_created_idx`, no Sort" }
     - { vi: "Bitmap Heap Scan, rồi Sort", en: "Bitmap Heap Scan, then Sort" }
   answer: 1

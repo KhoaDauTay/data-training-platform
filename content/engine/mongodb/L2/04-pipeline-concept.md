@@ -64,11 +64,11 @@ Các stage hay dùng:
 
 Thứ tự stage là một phần của câu hỏi: sau `$group` các trường cũ không còn nữa. Đặt `$match` sớm để các stage sau làm ít việc hơn.
 
+## Ví dụ
+
 `aggregate` chỉ đọc. Kết quả là một danh sách tài liệu mới, collection gốc không đổi (trừ khi dùng `$out`/`$merge`, một bài sau ở L2).
 
 Làm được: đọc một pipeline và nói hình dạng tài liệu sau từng stage.
-
-## Ví dụ
 
 ```js
 db.orders.aggregate([
@@ -99,11 +99,11 @@ Common stages:
 
 Stage order is part of the question: after `$group` the old fields are gone. Put `$match` early so later stages do less work.
 
+## Example
+
 `aggregate` only reads. The result is a new list of documents and the collection is unchanged (unless you use `$out`/`$merge`, a later L2 lesson).
 
 You can now: read a pipeline and tell the shape of the documents after each stage.
-
-## Example
 
 ```js
 db.orders.aggregate([

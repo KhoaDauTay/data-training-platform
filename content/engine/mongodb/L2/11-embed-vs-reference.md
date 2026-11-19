@@ -79,13 +79,13 @@ Nên tham chiếu khi:
 - hai phần được ghi vào lúc khác nhau, hoặc phần con tồn tại độc lập;
 - chép dữ liệu ra nhiều nơi thì quá khó giữ cho khớp.
 
+## Ví dụ
+
 Ở giữa là chép một ít trường (extended reference), ví dụ tên khách trong đơn: đọc nhanh, không cần `$lookup`, nhưng phải tự cập nhật bản chép nếu cần. Hợp với dữ liệu không đổi hoặc dữ liệu "theo thời điểm".
 
 Nhiều người nghĩ MongoDB không bắt schema nên không cần thiết kế. Thật ra vẫn phải thiết kế, theo câu hỏi mà ứng dụng hỏi nhiều nhất, không theo hình bảng của SQL.
 
 Làm được: chọn nhúng hay tham chiếu cho một quan hệ và giải thích bằng cách dữ liệu được dùng.
-
-## Ví dụ
 
 ```js
 // embedded: one read returns the whole order
@@ -117,13 +117,13 @@ Reference when:
 - the parts are written at different times, or the child exists on its own;
 - copying the data to many places would be too hard to keep consistent.
 
+## Example
+
 In between is copying a few fields (extended reference), such as the customer's name in an order: fast reads with no `$lookup`, but you must update the copies yourself if needed. It suits data that never changes or point-in-time data.
 
 Many people think that since MongoDB enforces no schema, there is nothing to design. In fact you still design, for the questions your application asks most, not for the table shapes of SQL.
 
 You can now: choose embedding or referencing for a relationship and explain it by how the data is used.
-
-## Example
 
 ```js
 // embedded: one read returns the whole order

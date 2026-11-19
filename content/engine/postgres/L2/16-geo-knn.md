@@ -6,9 +6,10 @@ module: geo-lite
 title: "5 điểm gần nhất: GiST, KNN và earthdistance"
 title_en: "The 5 nearest points: GiST, KNN and earthdistance"
 kind: lab
+runtime: browser
 minutes: 14
 verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-20" }
-viz: pg-gist
+viz: pg-gist-boxes
 objectives:
   - vi: Tìm N điểm gần nhất bằng `ORDER BY loc <-> p LIMIT n` đi qua index GiST, không sắp xếp cả bảng.
     en: Find the N nearest points with `ORDER BY loc <-> p LIMIT n` through a GiST index, without sorting the whole table.
@@ -77,8 +78,6 @@ Postgres có sẵn kiểu hình học phẳng: `point`, `box`, `circle`, `polygo
 
 Câu "5 cửa hàng gần nhất" (KNN) không có index thì phải tính khoảng cách cho mọi dòng rồi sắp xếp. Index GiST giữ các điểm trong cây hộp bao (R-tree): mỗi nút là một hình chữ nhật bao các con. Với `ORDER BY loc <-> p LIMIT 5`, GiST duyệt hộp gần `p` nhất trước và dừng sau 5 điểm. Điều kiện để dùng được: khoảng cách nằm trong `ORDER BY`, một phía là hằng, và có `LIMIT`.
 
-Kiểu `point` là mặt phẳng, đơn vị tùy bạn. Trên Trái Đất, vĩ độ/kinh độ không phải mặt phẳng: extension `earthdistance` (cần `cube`) đổi tọa độ sang điểm trên mặt cầu bằng `ll_to_earth`, và `earth_distance` trả mét. Khi cần hình học đầy đủ (đa giác thật, hệ tọa độ, chiếu bản đồ) thì dùng PostGIS, một extension riêng ngoài lõi.
-
 ## Ví dụ
 
 ```sql
@@ -89,7 +88,9 @@ Số cửa hàng trong vòng tròn bán kính 50 quanh (500,500).
 
 ## Thực hành
 
-30 000 cửa hàng trên ô 1000 x 1000 và ba thành phố có tọa độ thật. Tạo index GiST, tìm 5 điểm gần nhất qua index, rồi tính khoảng cách thật bằng km.
+Kiểu `point` là mặt phẳng, đơn vị tùy bạn. Trên Trái Đất, vĩ độ/kinh độ không phải mặt phẳng: extension `earthdistance` (cần `cube`) đổi tọa độ sang điểm trên mặt cầu bằng `ll_to_earth`, và `earth_distance` trả mét. Khi cần hình học đầy đủ (đa giác thật, hệ tọa độ, chiếu bản đồ) thì dùng PostGIS, một extension riêng ngoài lõi.
+
+30.000 cửa hàng trên ô 1000 x 1000 và ba thành phố có tọa độ thật. Tạo index GiST, tìm 5 điểm gần nhất qua index, rồi tính khoảng cách thật bằng km.
 
 # EN
 
@@ -98,8 +99,6 @@ Số cửa hàng trong vòng tròn bán kính 50 quanh (500,500).
 Postgres ships flat geometric types: `point`, `box`, `circle`, `polygon`. The `<->` operator is distance; `<@` means "is inside".
 
 Without an index, "the 5 nearest shops" (KNN) must compute the distance of every row and sort. A GiST index keeps points in a tree of bounding boxes (an R-tree): each node is a rectangle around its children. For `ORDER BY loc <-> p LIMIT 5`, GiST visits the boxes nearest to `p` first and stops after 5 points. To be usable: the distance is in `ORDER BY`, one side is a constant, and there is a `LIMIT`.
-
-The `point` type is flat, in whatever unit you choose. On Earth, latitude/longitude is not a plane: the `earthdistance` extension (which needs `cube`) turns coordinates into a point on a sphere with `ll_to_earth`, and `earth_distance` returns metres. For full geometry (real polygons, coordinate systems, map projections) use PostGIS, a separate extension outside core.
 
 ## Example
 
@@ -110,5 +109,7 @@ SELECT count(*) AS inside FROM shops WHERE loc <@ circle '((500,500),50)';
 The number of shops inside the circle of radius 50 around (500,500).
 
 ## Practice
+
+The `point` type is flat, in whatever unit you choose. On Earth, latitude/longitude is not a plane: the `earthdistance` extension (which needs `cube`) turns coordinates into a point on a sphere with `ll_to_earth`, and `earth_distance` returns metres. For full geometry (real polygons, coordinate systems, map projections) use PostGIS, a separate extension outside core.
 
 30,000 shops on a 1000 x 1000 square and three cities with real coordinates. Create a GiST index, find the 5 nearest points through it, then compute real distances in km.

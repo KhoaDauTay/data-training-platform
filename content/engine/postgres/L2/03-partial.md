@@ -6,6 +6,7 @@ module: partial-expr
 title: Index partial chỉ phủ dòng cần thiết
 title_en: Partial indexes cover only the rows you need
 kind: lab
+runtime: browser
 minutes: 12
 verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-20" }
 objectives:
@@ -33,7 +34,7 @@ lab:
     ANALYZE tasks;
   steps:
     - task:
-        vi: "Chỉ 2% việc còn mở, và màn hình chính chỉ hỏi việc đang mở theo hạn. Tạo index tên `tasks_open_due_idx` trên `due_date`, chỉ cho các dòng `status = 'open'`."
+        vi: "Chỉ 2 % việc còn mở, và màn hình chính chỉ hỏi việc đang mở theo hạn. Tạo index tên `tasks_open_due_idx` trên `due_date`, chỉ cho các dòng `status = 'open'`."
         en: "Only 2% of tasks are open, and the main screen only asks for open tasks by due date. Create an index named `tasks_open_due_idx` on `due_date`, only for rows with `status = 'open'`."
       solution: CREATE INDEX tasks_open_due_idx ON tasks (due_date) WHERE status = 'open'
       target: SELECT id, due_date FROM tasks WHERE status = 'open' AND due_date < date '2026-03-01'
@@ -89,7 +90,7 @@ Người 2 đã có một việc mở, nên việc mở thứ hai bị từ ch�
 
 ## Thực hành
 
-Bảng `tasks` có 30 000 việc, 600 việc đang mở. Làm một index partial cho màn hình chính, so kích thước, rồi giữ luật một việc mở mỗi người.
+Bảng `tasks` có 30.000 việc, 600 việc đang mở. Làm một index partial cho màn hình chính, so kích thước, rồi giữ luật một việc mở mỗi người.
 
 # EN
 
