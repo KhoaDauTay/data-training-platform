@@ -64,6 +64,7 @@ export function renderSteps(host: HTMLElement, sql: string, result: StepsResult,
   let timer: number | undefined;
   let film: ReturnType<Motion['film']> | undefined;
   let playing = false;
+  let runs = 0;
 
   const pipe = h('div', { class: 'my-2 flex flex-wrap items-center gap-1.5', role: 'group', 'aria-label': t('steps.pipe') });
   const detail = h('div');
@@ -150,7 +151,9 @@ export function renderSteps(host: HTMLElement, sql: string, result: StepsResult,
     playing = true;
     playBtn.textContent = t('steps.pause');
     if (film && motionReady?.canPlay()) {
+      const run = ++runs; // a film stopped by a newer one must not reset the button under it
       return film.play((i) => { current = i; draw('film'); }).then(() => {
+        if (run !== runs) return;
         playing = false;
         playBtn.textContent = t('steps.play');
       });
