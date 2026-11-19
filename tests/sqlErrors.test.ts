@@ -68,6 +68,12 @@ describe('lỗi biết dạy', () => {
     expect((await errorOf('SELECT 1; SELECT 2')).position).toBeUndefined();
   });
 
+  it('v21 U38: nháy đơn chỉ khi tên lỗi trông như một giá trị', async () => {
+    const value = 'SELECT * FROM ports WHERE country = Japan';
+    expect(explainError(await errorOf(value), value)).toBe('sqlerr.valueQuote');
+    expect(explainError(await errorOf('SELECT cnt FROM ports'), 'SELECT cnt FROM ports')).toBe('sqlerr.42703');
+  });
+
   it('lỗi lạ thì không có giải thích', () => {
     expect(explainError({ message: 'something else', code: '99999' })).toBeUndefined();
     expect(explainError({ message: 'something else', code: '42P20' })).toBeUndefined(); // 42P20 is told apart by message only

@@ -6,15 +6,16 @@ export const NUMERIC = new Set([21, 23, 20, 700, 701, 1700]);
 const TEMPORAL = new Set([1082, 1114, 1184]);
 export const MAX_POINTS = 60;
 
-export type ChartSpec = { kind: 'bar' | 'line'; label: number; values: number[] };
+/** `labels`: the key columns a bar's name is built from (every non-number column, v21 U6: "SEA · EXPORT"); a line has its date only. */
+export type ChartSpec = { kind: 'bar' | 'line'; labels: number[]; values: number[] };
 
 export function chartSpec(r: QueryResult): ChartSpec | null {
   if (r.rows.length === 0 || r.rows.length > MAX_POINTS || r.columns.length < 2) return null;
   const values = r.types.map((t, i) => (i > 0 && NUMERIC.has(t) ? i : -1)).filter((i) => i > 0);
   if (values.length === 0) return null;
-  if (TEMPORAL.has(r.types[0])) return { kind: 'line', label: 0, values };
+  if (TEMPORAL.has(r.types[0])) return { kind: 'line', labels: [0], values };
   if (NUMERIC.has(r.types[0])) return null;
-  return { kind: 'bar', label: 0, values };
+  return { kind: 'bar', labels: r.types.map((t, i) => (NUMERIC.has(t) ? -1 : i)).filter((i) => i >= 0), values };
 }
 
 /** Value axis for bars and lines: always contains 0 (the baseline), so 0–1 ratios and negatives scale as they are. Only an all-zero series needs a guard. */

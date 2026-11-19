@@ -5,7 +5,7 @@ import { hashOf } from '../route';
 import type { SchemaId } from '../domains';
 import { activeSchema, activeTicket, session } from '../session';
 import { app, erMeta, selected, showsParents, textValues, unlockedTables } from '../state';
-import { chapterColor, THEME_EVENT } from '../theme';
+import { chapterColor, cx, THEME_EVENT } from '../theme';
 import { erDefinition, relatedTables, tablesInQuery, type ErMetadata } from '../viz/erd';
 import { memoByKey } from '../viz/memo';
 import { flattenPlan, type Plan } from '../viz/plan';
@@ -227,13 +227,17 @@ function registerSchemaTabs(deps: VizDeps): void {
       const drill = inDrill();
       const open = new Set(drill ? meta.cols.map((c) => c.table) : visibleTables()); // a drill: every lab table is open, so an FK names its parent
       const game = new Set(drill ? meta.cols.map((c) => c.table) : unlockedTables()); // imported Sandbox tables get no value lists
-      body.append(...scopeBar(s, deps), h('div', { class: 'grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-2' }, ...s.tables.map((table) => {
+      // v21 U7: one table uses the whole panel (from sm): name, type and keys on the left, its values beside them. Several tables share the
+      // width (auto-fit: no empty tracks) and a column's values go under it. A column's keys always stay on its line.
+      const one = s.tables.length === 1;
+      body.append(...scopeBar(s, deps), h('div', { class: one ? '' : 'grid grid-cols-[repeat(auto-fit,minmax(min(340px,100%),1fr))] gap-x-6 gap-y-2' }, ...s.tables.map((table) => {
         const values = game.has(table) ? textValues(table, drill ? 'lab' : domainSchemaId()) : undefined;
-        return h('div', {},
+        return h('div', { class: 'min-w-0' },
           h('h3', { class: 'm-0' }, table),
-          h('ul', { class: 'mt-1 mb-2 list-none space-y-0.5 pl-2 text-body-sm' }, ...meta.cols.filter((c) => c.table === table).map((c) =>
-            h('li', { class: 'flex flex-wrap items-center gap-1' }, h('code', {}, c.name), h('span', { class: 'muted' }, c.type), ...keyBadges(meta.cons, table, c.name, open),
-              valuesLine(values, c.name, 'basis-full pl-2')))));
+          h('ul', { class: cx('mt-1 mb-2 list-none pl-2 text-body-sm', one ? 'space-y-1 sm:grid sm:grid-cols-[max-content_minmax(0,1fr)] sm:gap-x-6 sm:gap-y-1 sm:space-y-0' : 'space-y-1') }, ...meta.cols.filter((c) => c.table === table).map((c) =>
+            h('li', { class: one ? 'sm:col-span-2 sm:grid sm:grid-cols-subgrid sm:items-baseline' : '' },
+              h('span', { class: 'flex flex-wrap items-center gap-1' }, h('code', {}, c.name), h('span', { class: 'muted' }, c.type), ...keyBadges(meta.cons, table, c.name, open)),
+              valuesLine(values, c.name, one ? 'max-sm:pl-2' : 'pl-2')))));
       })));
     }),
   });

@@ -71,17 +71,33 @@ function sentence(c: Ctx): string {
 
 /**
  * ui-ux-v7 W2 (D-U3): what the dock shows once its motion has ended. A task folds to its sentence row (≈ 56 px, "Replay" and
- * Close), so it covers only the bottom edge of the result; a promotion keeps the whole scene (the celebration, L32).
+ * Close), so it covers only the bottom edge of the result; a promotion keeps the whole scene (the celebration, L32), but only on
+ * a wide screen (v21 U11: below 1280 px the scene covered "Start chapter N" and Run; there it folds too, "Replay" shows it again).
  */
-export const dockEnd = (kind: string): 'mini' | 'full' => (kind === 'promotion' ? 'full' : 'mini');
+export const dockEnd = (kind: string, wide = true): 'mini' | 'full' => (kind === 'promotion' && wide ? 'full' : 'mini');
+const wide = (): boolean => matchMedia('(min-width: 1280px)').matches;
+/** v21 U32: the folded row says it short ("Done: <title>"); the full sentence was announced and is its title. */
+function shortSentence(c: Ctx): string {
+  if (c.tk.beat !== 'boss') return t('anim.doneShort', { title: titleOf(c) });
+  const lang = getLang();
+  return t('anim.promoShort', { rank: (c.rankAfter.career ?? c.rankAfter.tier)?.[lang] ?? t('career.intern') });
+}
 function fold(mini: boolean): void {
   const stage = byId('stage');
   stage.dataset.mini = String(mini);
   byId('stage-replay').hidden = !mini;
   const text = byId('stage-text');
-  text.title = mini ? text.textContent ?? '' : '';
+  text.title = mini && shown ? sentence(shown) : '';
+  if (shown) text.textContent = mini ? shortSentence(shown) : sentence(shown);
   if (mini) stage.style.bottom = ''; // v10 F3: folded, back to its bottom edge
 }
+/** v21 U32: a task's dock stays open at least this long (its scene used to fold after ~1.1 s, before anyone saw it); Skip cuts it. */
+const SHOW_MS = 3000;
+let wake: (() => void) | undefined;
+const linger = (ms: number): Promise<void> => new Promise((done) => {
+  const id = window.setTimeout(done, ms);
+  wake = () => { window.clearTimeout(id); done(); };
+});
 /**
  * v10 F3 (L153): the full dock covers neither the Result tab's Pin chip (pin.ts: the last item of the line above the table) nor the
  * "Correct!" line under the editor. It stays at its bottom edge when it can, else rises just above one of them, never over the top
@@ -135,8 +151,9 @@ async function drawAndPlay(c: Ctx, owner: Ctx = c): Promise<void> {
   if (byId('stage').dataset.mini !== 'true') clearPin(); // the scene's height is known now
   // D8b-6: Lily cheers in the dock's corner for every kind, popping in beside the last step (no extra time). Decorative
   // (the sentence says it all), never takes a click; hidden below sm where the cards fill the dock's width.
-  const lily = mascot('lily', 'cheer', 'pointer-events-none absolute right-2 bottom-2 size-14 max-sm:hidden');
-  c.art.append(lily);
+  const slot = c.art.querySelector('[data-lily-slot]'); // v21 U12: the promotion band has her place, out of the map
+  const lily = mascot('lily', 'cheer', slot ? 'pointer-events-none block size-12 max-sm:hidden' : 'pointer-events-none absolute right-2 bottom-2 size-14 max-sm:hidden');
+  (slot ?? c.art).append(lily);
   if (c.run.fast) {
     await art.play(c);
     return;
@@ -175,7 +192,7 @@ export function relabelStage(): void {
   // W2: the folded line belongs to the task just solved; opening another task (no hash change) closes it, so it never sits
   // over the next task or takes its first Esc.
   if (current.done && app.selectedId !== c.tk.id) return hide();
-  byId('stage-text').textContent = sentence(c);
+  fold(byId('stage').dataset.mini === 'true'); // the sentence (or its short form) in the new language
   if (c.lang === getLang()) return;
   c.lang = getLang();
   queue = queue
@@ -189,6 +206,7 @@ export function relabelStage(): void {
 function finish(run: Run): void {
   run.fast = true;
   run.skip?.();
+  wake?.(); // U32: Skip ends the linger too
   settle(document.getElementById('stage')); // L132: Lily's grow ceremony jumps to her new look with the scene
 }
 function skip(): void {
@@ -211,14 +229,17 @@ function replay(): void {
       fold(false);
       setSkipLabel(run.fast ? 'app.close' : 'anim.skip');
       again.art.replaceChildren();
+      const start = performance.now();
       try {
         await drawAndPlay(again);
+        await linger(SHOW_MS - (performance.now() - start)); // asked for: shown ≥ 3 s even as a still frame, Close cuts it
       } finally {
         run.done = true;
+        wake = undefined;
       }
       if (current !== run) return;
       setSkipLabel('app.close');
-      fold(dockEnd(again.scene.kind) === 'mini');
+      fold(dockEnd(again.scene.kind, wide()) === 'mini');
     })
     .catch((e: unknown) => console.warn('Completion replay failed:', e));
 }
@@ -274,16 +295,19 @@ export function playCompletion(tk: Ticket, before: Set<string>, after: Set<strin
       setSkipLabel(run.fast ? 'app.close' : 'anim.skip');
       fold(false);
       byId('stage').hidden = false;
+      const start = performance.now();
       try {
         await drawAndPlay(c);
+        if (!run.fast || c.scene.kind === 'promotion') await linger(SHOW_MS - (performance.now() - start)); // reduced motion: a promotion's still frame stays 3 s before it folds
       } finally {
         run.done = true;
+        wake = undefined;
       }
       if (current !== run) return;
       setSkipLabel('app.close');
       // W2: a task folds to one line (reduced motion: at once, no transition) and stays until Close, the next completion or a page change;
-      // a promotion keeps its scene and, with motion, still closes after ≥ 8 s so its new title can be read (v10 critic #3).
-      const end = dockEnd(c.scene.kind);
+      // a promotion keeps its scene on a wide screen and, with motion, still closes after ≥ 8 s so its new title can be read (v10 critic #3).
+      const end = dockEnd(c.scene.kind, wide());
       fold(end === 'mini');
       if (end === 'full' && !reducedMotion()) hideTimer = window.setTimeout(hide, 8000);
     })

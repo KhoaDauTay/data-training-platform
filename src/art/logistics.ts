@@ -745,11 +745,11 @@ const LANE: Record<Lane, { key: Key; stamp: string }> = {
 };
 const GATE: Record<Lane, Key | undefined> = { green: undefined, yellow: 'anim.gateYellow', red: 'anim.gateRed' };
 
-/** Top right over a picture (centred for the promotion card); on its own when the kind has no picture (quote, ledger, chat). */
-function overlay(c: Ctx, card: HTMLElement, centre = false): HTMLElement {
+/** Top right over a picture; on its own when the kind has no picture (quote, ledger, chat). */
+function overlay(c: Ctx, card: HTMLElement): HTMLElement {
   const pictured = Boolean(c.harbor || c.map);
   card.style.opacity = '0';
-  c.art.append(h('div', { class: pictured ? (centre ? 'absolute top-3 left-1/2 -translate-x-1/2' : 'absolute top-2 right-2') : 'p-3' }, card));
+  c.art.append(h('div', { class: pictured ? 'absolute top-2 right-2' : 'p-3' }, card));
   return card;
 }
 /** End frame of a card part: shown, nothing left of a tween. */
@@ -788,12 +788,15 @@ function promoCard(c: Ctx): HTMLElement {
   const to = c.rankAfter.tier?.[lang] ?? t('career.intern');
   const opened = openedNames(c);
   // Plan 8b D8b-6 (Plan 7 V18): Boon cheers beside the promotion card; Lily cheers in the dock (ui/stage.ts)
-  return h('div', { class: 'flex w-80 max-w-[calc(100vw-4rem)] items-center gap-3 rounded-(--r-card) bg-panel p-4 shadow-(--shadow-2) ring-2 ring-amber-500' },
-    mascot('boon', 'cheer', 'size-14'),
-    h('div', { class: 'min-w-0 flex-1 text-center' },
-      h('p', { class: 'm-0 text-body-sm font-semibold tracking-wide text-amber-800 uppercase dark:text-amber-200' }, t('anim.promoKicker', { n: c.tk.chapter })),
-      h('p', { class: 'm-0 text-title font-bold' }, from !== to ? `${from} → ${to}` : t('anim.promoStep', { career: c.rankAfter.career?.[lang] ?? to })),
-      opened.length ? h('p', { class: 'm-0 text-body-sm text-muted' }, t('anim.promoRoute', { port: opened.join(', ') })) : null));
+  // v21 U12: a band between the harbour and the map (never over the scene), the kicker one short line; Lily stands at its right
+  // end (ui/stage.ts fills [data-lily-slot]), out of the map.
+  return h('div', { class: 'flex items-center gap-3 border-y border-amber-500/60 bg-panel px-4 py-2' },
+    mascot('boon', 'cheer', 'size-12 shrink-0'),
+    h('div', { class: 'min-w-0 flex-1' },
+      h('p', { class: 'm-0 text-caption font-semibold tracking-wide text-amber-800 uppercase dark:text-amber-200' }, t('anim.promoKicker', { n: c.tk.chapter })),
+      h('p', { class: 'm-0 text-body font-bold' }, from !== to ? `${from} → ${to}` : t('anim.promoStep', { career: c.rankAfter.career?.[lang] ?? to })),
+      opened.length ? h('p', { class: 'm-0 text-caption text-muted' }, t('anim.promoRoute', { port: opened.join(', ') })) : null),
+    h('span', { class: 'shrink-0', 'data-lily-slot': '' }));
 }
 
 // ---- promotion: schedule and confetti (v6 A2) ----
@@ -1029,7 +1032,7 @@ const SCENES: Record<Scene['kind'], Kind> = {
 
   // PROMO: last container, the new lane drawn, the ship sails it, the title card, confetti; Lily cheers in the dock (ui/stage.ts)
   promotion: (c, g) => {
-    const card = overlay(c, promoCard(c), true);
+    const card = c.art.querySelector<HTMLElement>('[data-promo]') ?? c.art.appendChild(promoCard(c)); // build() put it between the pictures
     let bits: SVGGElement | undefined;
     return scene(c, g, () => { harborEnd(c); mapEnd(c); bits?.remove(); shown(card); }, (tl, g) => {
       dropBox(c, tl, PROMO.drop[0], PROMO.drop[1] - PROMO.drop[0]);
@@ -1040,7 +1043,7 @@ const SCENES: Record<Scene['kind'], Kind> = {
         tl.call(() => setShip(p, 0, 0), undefined, b1 - 0.4);
         drive(tl, b1 - 0.4, 0.4, 'power1.inOut', (a) => setShip(p, 0, a));
       }
-      tl.fromTo(card, { opacity: 0, y: -10, scale: 0.92 }, { opacity: 1, y: 0, scale: 1, duration: PROMO.card[1] - PROMO.card[0], ease: 'back.out(1.7)', immediateRender: false }, PROMO.card[0]);
+      tl.fromTo(card, { opacity: 0 }, { opacity: 1, duration: PROMO.card[1] - PROMO.card[0], ease: 'power2.out', immediateRender: false }, PROMO.card[0]); // a band in the layout: opacity only
       const route = c.scene.to ?? routeOpenedBy(c.tk.chapter);
       const m = c.map;
       const r = ROUTES.find((x) => x.port === route);
@@ -1070,7 +1073,14 @@ export function build(c: Ctx): void {
     cropToLane(c.map, c.scene.to ?? routeOpenedBy(c.tk.chapter));
     c.map.rings.replaceChildren(); // no endless pulse in the dock (Plan 8b: loops only on reading pages); arrivalPulse() uses the group once
   }
-  c.art.replaceChildren(...nodes(c.harbor?.svg, c.map?.svg));
+  // v21 U12: the promotion band sits in the layout between the pictures from the start (the dock's height and Lily's place are
+  // known before the scene plays); the scene only fades it in.
+  const band = k === 'promotion' ? promoCard(c) : undefined;
+  if (band) {
+    band.dataset.promo = '';
+    band.style.opacity = '0';
+  }
+  c.art.replaceChildren(...nodes(c.harbor?.svg, band, c.map?.svg));
 }
 /**
  * Plays the scene of `c` (§2; ui-ux-v6 A2: one GSAP timeline of durationOf). A fast run draws the end state at once; with
