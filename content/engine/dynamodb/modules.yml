@@ -1,0 +1,56 @@
+# DynamoDB modules L4–L5 in display order (merge after the L1–L3 entries). `id`/`vi`/`en` are read by parseModules
+# (src/engine/content.ts); `module`/`level`/`title`/`after` are ADD-1 (product-design-db-engine.md §2.4), `after` = "Học xong bạn làm được…".
+- id: scale
+  vi: Quy mô và partition nóng
+  en: Scale and hot partitions
+  module: scale
+  level: L4
+  title: { vi: "Quy mô và partition nóng", en: "Scale and hot partitions" }
+  after:
+    vi: rải một khóa nóng ra nhiều shard, đọc lại bằng một Query mỗi shard và tính trước số RCU/WCU mỗi partition phải chịu.
+    en: spread a hot key over several shards, read it back with one Query per shard and work out the RCU/WCU each partition has to carry.
+- id: patterns
+  vi: Mẫu thiết kế nâng cao
+  en: Advanced design patterns
+  module: patterns
+  level: L4
+  title: { vi: "Mẫu thiết kế nâng cao", en: "Advanced design patterns" }
+  after:
+    vi: dùng adjacency list, GSI thưa, GSI dùng chung và sort key phân cấp để trả lời một mẫu truy cập bằng đúng một Query.
+    en: use an adjacency list, a sparse GSI, an overloaded GSI and hierarchical sort keys to answer an access pattern with exactly one Query.
+- id: transactions
+  vi: Giao dịch
+  en: Transactions
+  module: transactions
+  level: L4
+  title: { vi: "Giao dịch", en: "Transactions" }
+  after:
+    vi: đọc hoặc ghi hai item cùng thành công hoặc cùng không, và tính giá gấp đôi của giao dịch.
+    en: read or write two items so that both succeed or neither does, and price the double cost of a transaction.
+- id: design-case
+  vi: "Kiểm tra cấp L4: thiết kế theo mẫu truy cập"
+  en: "Level L4 check: access-pattern-first design"
+  module: design-case
+  level: L4
+  title: { vi: "Kiểm tra cấp L4: thiết kế theo mẫu truy cập", en: "Level L4 check: access-pattern-first design" }
+  after:
+    vi: đi từ danh sách mẫu truy cập tới khóa, GSI, shard và ước lượng chi phí cho một ứng dụng thật.
+    en: go from a list of access patterns to keys, GSIs, shards and a cost estimate for a real application.
+- id: streams-ttl
+  vi: Streams và TTL
+  en: Streams and TTL
+  module: streams-ttl
+  level: L5
+  title: { vi: "Streams và TTL", en: "Streams and TTL" }
+  after:
+    vi: lọc item đã hết hạn TTL khỏi kết quả đọc và thiết kế một bộ xử lý Streams không phụ thuộc thứ tự giữa các item.
+    en: filter TTL-expired items out of a read and design a Streams consumer that does not rely on ordering across items.
+- id: global-ops
+  vi: Đa vùng và vận hành
+  en: Multi-Region and operations
+  module: global-ops
+  level: L5
+  title: { vi: "Đa vùng và vận hành", en: "Multi-Region and operations" }
+  after:
+    vi: chọn chế độ global table (MREC hay MRSC) và cách sao lưu (PITR hay backup theo yêu cầu) cho một ứng dụng hai vùng.
+    en: choose a global table mode (MREC or MRSC) and a backup method (PITR or on-demand backup) for a two-Region application.
