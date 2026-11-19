@@ -9,7 +9,12 @@
 // Asserts: cargo-query-save.completed holds exactly the ids submitted; cargo-query/lessons.tried holds the lesson; no
 // Runtime.exceptionThrown and no console.error; no horizontal scroll at 375; #notice closed once the page is ready; with
 // reduced motion the completion dock shows its end state ("Xem lại · Đóng") at once and does not move.
+// V20-C (L179): axe-core (node_modules, injected over CDP) on every page of PAGES at 1280 light and 375 dark, failing on
+// a serious or critical violation (target-size on); no horizontal scroll at 320 too. Findings: smoke-out/axe-report.json.
 // Writes smoke-out/smoke-report.json + one screenshot per step; exits 1 when an assertion fails.
+//
+//   SMOKE_PERF=3 npm run smoke      # V20-C (L178) instead of the scenario: per run and domain, a fresh profile opens #/d/<d>
+//                                   # (seed) and reloads it (snapshot); FCP, first <h1>, DB ready, long tasks -> smoke-out/perf-report.json
 import { spawn, spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -52,8 +57,21 @@ const ROUTE_HASH = {
   home: '#/', learn: '#/learn', practice: '#/practice', me: '#/me', overview: '#/d/logistics', play: '#/d/logistics/play',
   data: '#/d/logistics/data', dashboard: '#/d/logistics/dashboard', map: '#/d/logistics/map',
 };
-const ROUTE_MAIN = { play: 'shell', data: 'data', dashboard: 'dashboard' }; // the rest draw into <main id="home">
 const ROUTES = JSON.parse(/export const ROUTES = (\[[^\]]*\])/.exec(readFileSync(join(ROOT, 'src/route.ts'), 'utf8'))[1].replace(/'/g, '"'));
+// V20-C (L179): plus the General sub-pages and the other two domains' pages (the list of tests/axe.test.ts).
+const PAGES = [...ROUTES.filter((r) => ROUTE_HASH[r]).map((r) => ROUTE_HASH[r]), '#/learn/sql/1', '#/learn/skill/select', '#/learn/adv/a2',
+  '#/learn/interview', ...['ecommerce', 'finance'].flatMap((d) => ['', '/play', '/data', '/dashboard', '/map'].map((p) => `#/d/${d}${p}`))];
+const mainOf = (hash) => (/\/play$/.test(hash) ? 'shell' : /\/data$/.test(hash) ? 'data' : /\/dashboard$/.test(hash) ? 'dashboard' : 'home');
+// axe-core from node_modules (dev dependency, L141; never in dist/), injected into the page over CDP. target-size is off by default.
+const AXE = readFileSync(join(ROOT, 'node_modules/axe-core/axe.min.js'), 'utf8');
+const AXE_RUN = `(async () => {
+  // finite animations first (page fade, section steps): axe would read colours mid-fade. Endless loops (mascots, map) stay.
+  await Promise.race([Promise.all(document.getAnimations().filter((a) => Number.isFinite(a.effect?.getComputedTiming().endTime))
+    .map((a) => a.finished.catch(() => {}))), new Promise((r) => setTimeout(r, 3000))]);
+  const r = await axe.run(document, { resultTypes: ['violations'], rules: { 'target-size': { enabled: true } } });
+  return r.violations.map((v) => ({ id: v.id, impact: v.impact, help: v.help, count: v.nodes.length,
+    nodes: v.nodes.slice(0, 5).map((n) => ({ target: n.target.join(' '), why: (n.failureSummary ?? '').slice(0, 300) })) }));
+})()`;
 
 // ---- report
 rmSync(OUT, { recursive: true, force: true });
@@ -114,12 +132,13 @@ let cdpId = 0;
 const pending = new Map();
 let profile;
 let browserWs;
+let browserChild;
 async function startBrowser() {
   profile = mkdtempSync(join(tmpdir(), 'boondata-smoke-'));
   const args = ['--headless=new', '--remote-debugging-port=0', `--user-data-dir=${profile}`, '--no-first-run', '--no-default-browser-check',
     '--disable-extensions', '--mute-audio', 'about:blank'];
   if (process.env.CI) args.unshift('--no-sandbox'); // GitHub's ubuntu runner has no user namespace sandbox for Chrome
-  const child = spawn(BROWSER, args, { stdio: 'ignore' });
+  const child = browserChild = spawn(BROWSER, args, { stdio: 'ignore' });
   owned.push(child);
   child.on('error', () => {});
   let port;
@@ -231,8 +250,80 @@ async function solve(id, sql, ms = 90000) {
   fail(`could not type the Solution of ${id} into a stable editor`);
 }
 
+async function closeBrowser() {
+  try {
+    if (browserWs) {
+      const b = new WebSocket(browserWs);
+      await Promise.race([new Promise((r) => b.addEventListener('open', r)), sleep(2000)]);
+      if (b.readyState === 1) b.send(JSON.stringify({ id: 1, method: 'Browser.close' }));
+      await sleep(500);
+    }
+  } catch {}
+  ws?.close();
+  ws = browserWs = undefined;
+  stop(browserChild);
+  if (profile) rmSync(profile, { recursive: true, force: true, maxRetries: 10, retryDelay: 300 });
+  profile = undefined;
+}
+
+// ---- V20-C performance mode (SMOKE_PERF=<runs>): per domain and run, a fresh profile opens #/d/<domain> (first visit:
+// seed) and reloads it (second visit: snapshot). Times are ms from navigation start. Long tasks are counted up to "DB ready".
+const PERF_RUNS = Number(process.env.SMOKE_PERF) || 0;
+const SCHEMA_OF = { logistics: 'game', ecommerce: 'ecom', finance: 'fin' };
+const PERF_PROBE = `(() => { const p = window.__perf = { longTasks: [] };
+  new PerformanceObserver((l) => { for (const e of l.getEntries()) p.longTasks.push([Math.round(e.startTime), Math.round(e.duration)]); })
+    .observe({ type: 'longtask', buffered: true });
+  const seen = () => { if (!p.render && document.querySelector('main:not([hidden]) h1')) p.render = Math.round(performance.now()); };
+  new MutationObserver(seen).observe(document, { childList: true, subtree: true, attributes: true, attributeFilter: ['hidden'] }); })()`;
+async function perfLoad(schema) {
+  const m = await waitFor(`db:ensure:${schema}`, `(() => { const e = performance.getEntriesByName('db:ensure:${schema}')[0];
+    return e && window.__perf.render && { db: Math.round(e.startTime + e.duration) }; })()`, 120000);
+  return ev(`(() => { const p = window.__perf, db = ${m.db}; const before = p.longTasks.filter(([s]) => s < db);
+    const js = performance.getEntriesByType('resource').filter((r) => /\\.js$/.test(r.name) && r.startTime < p.render);
+    return { fcp: Math.round(performance.getEntriesByName('first-contentful-paint')[0]?.startTime ?? 0), render: p.render, db,
+      long: before, longTasks: before.length, longMs: before.reduce((a, [, d]) => a + d, 0), longMax: Math.max(0, ...before.map(([, d]) => d)),
+      bootJs: js.map((r) => r.name.split('/').pop().replace(/-[\\w-]{8}\\.js$/, '')) }; })()`);
+}
+async function perf(base) {
+  const rows = [];
+  for (let run = 1; run <= PERF_RUNS; run++) {
+    for (const d of Object.keys(SCHEMA_OF)) {
+      await startBrowser();
+      await size(1280, 800);
+      await send('Page.addScriptToEvaluateOnNewDocument', { source: PERF_PROBE });
+      await go(base, `#/d/${d}`);
+      const first = await perfLoad(SCHEMA_OF[d]);
+      await waitFor('db:snapshot', `performance.getEntriesByName('db:snapshot').length > 0`, 60000);
+      await ev('window.__old = true');
+      await send('Page.reload');
+      await waitFor('the reloaded document', '!window.__old && !!window.__perf', 30000);
+      const second = await perfLoad(SCHEMA_OF[d]);
+      rows.push({ run, domain: d, first, second });
+      console.log(`run ${run} ${d.padEnd(9)} first: fcp ${first.fcp} render ${first.render} db ${first.db} long ${first.longTasks}/${first.longMs}ms`
+        + ` | second: fcp ${second.fcp} render ${second.render} db ${second.db} long ${second.longTasks}/${second.longMs}ms`);
+      await closeBrowser();
+    }
+  }
+  const med = (xs) => xs.sort((a, b) => a - b)[Math.floor(xs.length / 2)];
+  const summary = {};
+  for (const d of Object.keys(SCHEMA_OF)) for (const k of ['first', 'second']) for (const f of ['fcp', 'render', 'db', 'longTasks', 'longMs', 'longMax'])
+    summary[`${d}.${k}.${f}`] = med(rows.filter((r) => r.domain === d).map((r) => r[k][f]));
+  console.log('medians', summary, 'boot js (first visit):', rows[0].first.bootJs.join(', '));
+  writeFileSync(join(OUT, 'perf-report.json'), JSON.stringify({ base, at: new Date().toISOString(), rows, summary }, null, 1));
+}
+
 // ---- the run
 let base = '';
+if (PERF_RUNS) {
+  try {
+    base = URL_ARG ? (URL_ARG.endsWith('/') ? URL_ARG : URL_ARG + '/') : await startPreview();
+    await perf(base);
+  } finally {
+    await closeBrowser();
+    for (const c of owned) stop(c);
+  }
+  process.exit(0);
+}
 try {
   await step('start', async () => {
     base = URL_ARG ? (URL_ARG.endsWith('/') ? URL_ARG : URL_ARG + '/') : await startPreview();
@@ -315,23 +406,34 @@ try {
   });
 
   for (const r of ROUTES) if (!ROUTE_HASH[r]) await step(`route ${r}`, () => fail(`route '${r}' has no hash in scripts/smoke.mjs`));
-  for (const [w, hgt] of [[1280, 800], [375, 740]]) {
+  // V20-C: axe at 1280 light and 375 dark (0 serious/critical), horizontal scroll at 375 and 320.
+  const axeFound = [];
+  for (const [w, hgt, theme, withAxe] of [[1280, 800, 'light', true], [375, 740, 'dark', true], [320, 640, 'light', false]]) {
     await size(w, hgt);
-    for (const r of ROUTES.filter((x) => ROUTE_HASH[x])) {
-      const hash = ROUTE_HASH[r];
-      await step(`${w}px ${hash}`, async () => {
+    await send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-color-scheme', value: theme }] });
+    for (const hash of PAGES) {
+      await step(`${w}px ${theme} ${hash}`, async () => {
         await go(base, hash);
-        const main = ROUTE_MAIN[r] ?? 'home';
+        const main = mainOf(hash);
         await waitFor(`<main id="${main}"> with an h1`, `(location.hash === ${S(hash)} || location.hash.startsWith(${S(hash + '/')})) && (m => m && !m.hidden && !!m.querySelector('h1'))(document.getElementById(${S(main)}))`, 30000);
         await waitFor('#notice closed (DB/domain ready)', `document.getElementById('notice').hidden`, 90000);
-        const m = await ev(`({ sw: document.documentElement.scrollWidth, iw: window.innerWidth,
+        const m = await ev(`({ sw: document.documentElement.scrollWidth, iw: window.innerWidth, theme: document.documentElement.dataset.theme,
           main: (x => x.scrollWidth - x.clientWidth)(document.getElementById(${S(main)})) })`);
         // against the emulated width, not innerWidth: a mobile viewport may zoom out and grow innerWidth with the content
         if (w <= 375 && Math.max(m.sw, m.iw) > w) fail(`horizontal scroll: scrollWidth ${m.sw}, innerWidth ${m.iw} > ${w}`);
-        return m;
+        if (m.theme !== theme) fail(`<html data-theme> is ${m.theme}, expected ${theme}`);
+        if (!withAxe) return m;
+        if (!(await ev('!!window.axe'))) await send('Runtime.evaluate', { expression: AXE });
+        if (!(await ev('!!window.axe'))) fail('axe-core did not load into the page');
+        const found = await ev(AXE_RUN);
+        if (found.length) axeFound.push({ page: `${w}px ${theme} ${hash}`, found });
+        const bad = found.filter((v) => v.impact === 'serious' || v.impact === 'critical');
+        if (bad.length) fail(`axe: ${bad.map((v) => `${v.id} (${v.impact}, ${v.count}× e.g. ${v.nodes[0].target})`).join('; ')}`);
+        return { ...m, axe: found.map((v) => `${v.id} ${v.impact} ${v.count}`) };
       });
     }
   }
+  writeFileSync(join(OUT, 'axe-report.json'), JSON.stringify(axeFound, null, 1));
 
   await step('no page errors', async () => {
     if (pageErrors.length) fail(`${pageErrors.length} error(s): ${pageErrors.map((e) => e.text.split('\n')[0]).join(' | ').slice(0, 800)}`);
@@ -341,17 +443,8 @@ try {
   steps.push({ name: 'run', ok: false, error: String(e?.message ?? e) });
   console.log(`FAIL run: ${e?.message ?? e}`);
 } finally {
-  try {
-    if (browserWs) {
-      const b = new WebSocket(browserWs);
-      await Promise.race([new Promise((r) => b.addEventListener('open', r)), sleep(2000)]);
-      if (b.readyState === 1) b.send(JSON.stringify({ id: 1, method: 'Browser.close' }));
-      await sleep(500);
-    }
-  } catch {}
-  ws?.close();
+  await closeBrowser();
   for (const c of owned) stop(c);
-  if (profile) rmSync(profile, { recursive: true, force: true, maxRetries: 10, retryDelay: 300 });
 }
 
 const report = { ok: !failed, base, browser: BROWSER, ms: Date.now() - T0, at: new Date().toISOString(), steps, pageErrors,

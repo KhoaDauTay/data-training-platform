@@ -132,7 +132,7 @@ export function renderData(host: HTMLElement): void {
     if (meta) drawColumns(); // <mark> follows the search
   }
 
-  const columnsHost = h('div', { class: 'overflow-auto' });
+  const columnsHost = h('div', { class: 'overflow-auto', tabindex: '0' }); // V20-C (L179): a scroll region the keyboard can reach (axe scrollable-region-focusable)
   function drawColumns(): void {
     const needle = q();
     const cell = 'border-b border-line px-2 py-1.5 text-left align-top';

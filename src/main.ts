@@ -76,12 +76,19 @@ function onDbStatus(s: DbStatus): void {
 }
 const registerSw = initServiceWorker(offerUpdate); // V16-OFFLINE (src/pwa.ts)
 const db = new DbClient(onDbStatus);
+// V20-C (L178): the download fires one progress event per fetched chunk (hundreds while the engine loads, 176 ms of
+// redraws on a reload); the line is redrawn at most every 200 ms, with the latest value. Ready/failed redraw at once.
+let progressTimer: ReturnType<typeof setTimeout> | undefined;
 db.onProgress = (p) => {
   if (engine !== 'loading') return; // the steps tab fetches the parser .wasm through the same counting fetch later
   app.loadProgress = p;
-  if (!uiReady) return;
-  renderTopbar();
-  relabelWelcome();
+  if (!uiReady || progressTimer) return;
+  progressTimer = setTimeout(() => {
+    progressTimer = undefined;
+    if (engine !== 'loading') return;
+    renderTopbar();
+    relabelWelcome();
+  }, 200);
 };
 app.run = (sql, opts) => db.run(sql, opts);
 app.ensure = (schema) => db.ensure(schema);

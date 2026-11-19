@@ -815,3 +815,23 @@ Cách đo: `npm run build`, `vite preview --port 5217 --strictPort`, Edge headle
 - Ảnh kiểm bằng mắt (Edge headless, preview riêng cổng 5231): sáng VI/EN 1280, sáng 375, tối 1280/375; không cuộn ngang ở 375; tên dài trong `code` xuống dòng bằng `break-words` (bản đầu `break-all` cắt `p.coun|try`, đã sửa); 0 lỗi trang.
 - Review (advisor) trước khi giao, đã sửa: request hỏng từng hỏi lại ở mỗi lần vẽ (vòng lặp sau restart); ngưỡng `result.ms` không chặn được phép nối dấu phẩy (chạy nhanh, đếm lâu) nên dòng nay dùng request chỉ-parse `WORDS_ONLY` (kiểm trên Edge: DB xanh suốt 20 s); `SELECT s.*, p.name` từng đọc "2 cột"; bước index lab sau một bước truy vấn từng còn dòng cũ.
 - Đắn đo để người duyệt quyết: lần chạy đầu mỗi phiên tải parser cho mọi người chơi (trước chỉ khi mở tab Thứ tự thực thi); main +2,4 KB thay vì +0,6 ước.
+
+## v20 V20-C (hiệu năng + axe trong smoke), 2026-11-19, L178–L179
+
+Cách đo: `npm run build`, `SMOKE_PERF=3 npm run smoke` (preview của chính cây, hoặc `vite preview` 5220 của tag `v18` build trong scratchpad), Edge headless, mỗi lượt × domain một hồ sơ mới; ms từ lúc điều hướng; trung vị 3 lượt. **Máy bận** (các luồng v19/v20 khác chạy song song), nên số lần đầu (seed, tải ~5 MB PGlite) dao động 6–14 s; so sánh dựa vào lần hai, profile CPU và byte gz.
+
+| Domain · lần | v18 render / DB / long task | trước (main ec050d7) | sau |
+|---|---|---|---|
+| Logistics lần đầu | 1349 / 10776 / 417 | 1375 / 11152 / 391 | 1306 / 8260 / 330 |
+| Logistics snapshot | 406 / 1997 / 320 | 366 / 1665 / 250 | 341 / 1409 / 169 |
+| E-com lần đầu | 1557 / 10407 / 445 | 1691 / 8143 / 352 | 1368 / 7138 / 318 |
+| E-com snapshot | 448 / 1599 / 262 | 413 / 1416 / 228 | 370 / 1357 / 205 |
+| Finance lần đầu | 1734 / 9455 / 409 | 1882 / 7846 / 437 | 1310 / 5906 / 341 |
+| Finance snapshot | 489 / 1527 / 337 | 427 / 1333 / 296 | 364 / 1073 / 214 |
+
+- FCP: lần đầu ~1,0–1,1 s, snapshot 56–92 ms (service worker), ba bản như nhau. Không bản nào chậm hơn v18 quá 10 %.
+- CPU main thread (profile lần hai, tới DB sẵn sàng): 684 / 694 / 658 ms → 449 / 445 / 472 ms (Logistics / E-com / Finance). Còn lại lớn nhất: parse YAML 150–187 ms (đề xuất ở L178).
+- JS tải trước render (lần đầu): `index`, `preload-helper`, `ticketSources`, `laneSources`, `lessonSources`, `worker`, `rolldown-runtime`, `logistics` (art, prefetch), như v18.
+- Main gz -9: v18 328 590 B, trước 328 720 B, sau 328 760 B (+40 B). Không cắt main (321 KB < 330).
+- axe: 23 trang × (1280 sáng, 375 tối): trước sửa 4 lỗi serious `scrollable-region-focusable` (Dữ liệu Logistics 1280 + 375, Dữ liệu Finance 375, Bảng điều hành Finance 375); sau sửa 0 phát hiện mọi mức. 320 px: không cuộn ngang ở 23 trang. Smoke OK 77,7 s.
+- Chờ: nhóm ngân sách `dataset` (dist/datasets/, ≤ 5 MB) và `datasetPanel` (≤ 5 KB) cùng bước smoke "nạp bộ dữ liệu mẫu → 1 câu đạt" của V20-B: V20-B chưa ở `main` khi luồng này xong (một nhóm không có file làm `check-budget` fail), thêm khi merge. Nhóm `py` chờ V20-A.
