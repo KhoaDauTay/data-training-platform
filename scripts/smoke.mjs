@@ -244,14 +244,18 @@ try {
 
   await step('welcome: pick Logistics, begin', async () => {
     await go(base, '');
-    await waitFor('the welcome dialog', `!!document.querySelector('dialog[open] [data-w="pick-logistics"]')`, 30000);
-    await ev(`document.querySelector('[data-w="pick-logistics"]').click()`);
-    for (let i = 0; i < 2; i++) {
-      await waitFor('Next', `(b => b && !b.disabled)(document.querySelector('dialog[open] [data-w="next"]'))`, 60000);
-      await ev(`document.querySelector('dialog[open] [data-w="next"]').click()`);
+    // ui-ux-v7 O1 (L148): language → domain (picking a card advances) → begin; walk whatever panel is showing.
+    await waitFor('the welcome dialog', `!!document.querySelector('dialog[open] [data-w]')`, 30000);
+    const vis = (sel) => `(b => b && b.offsetParent && !b.disabled)(document.querySelector('dialog[open] ${sel}'))`;
+    let begun = false;
+    for (let i = 0; i < 8 && !begun; i++) {
+      await waitFor('a welcome button', `${vis('[data-w="begin"]')} || ${vis('[data-w="pick-logistics"]')} || ${vis('[data-w="next"]')}`, 120000);
+      for (const w of ['begin', 'pick-logistics', 'next']) {
+        if (await ev(vis(`[data-w="${w}"]`))) { await ev(`document.querySelector('dialog[open] [data-w="${w}"]').click()`); begun = w === 'begin'; break; }
+      }
+      await sleep(300);
     }
-    await waitFor('Begin (DB ready)', `(b => b && !b.disabled)(document.querySelector('dialog[open] [data-w="begin"]'))`, 120000);
-    await ev(`document.querySelector('dialog[open] [data-w="begin"]').click()`);
+    if (!begun) throw new Error('never reached Begin on the welcome dialog');
     await waitFor('the workspace', `!!${EDITOR} && !document.querySelector('dialog[open]')`, 30000);
   });
 
