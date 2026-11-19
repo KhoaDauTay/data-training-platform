@@ -391,13 +391,13 @@ function helloSection(): HTMLElement {
   const [pre, post] = t('lily.line', { stage: t(STAGE_NAME[stage]), n: '' }).split('');
   const flip = app.dayFlip;
   app.dayFlip = false;
-  const lily = mascot('lily', 'idle', 'size-24'); // L132 P-L5: 96 px, so six stages read apart
+  const lily = mascot('lily', 'idle', 'size-24 sm:row-span-2'); // L132 P-L5: 96 px, so six stages read apart
   lily.dataset.lilyHello = '';
-  return h('section', { class: 'flex items-center gap-4' }, lily,
+  return h('section', { class: 'grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-4 gap-y-2' }, lily, // phones: the card takes its own row
     h('div', { class: 'min-w-0' }, h('p', { class: 'm-0 text-2xl font-extrabold' }, t('app.name')), h('p', { class: 'm-0 text-muted' }, t('home.tagline')),
       h('p', { class: 'mt-2 mb-0 text-sm font-semibold' }, pre, h('span', { class: flip && 'cq-flip' }, String(dayCount())), post,
-        grewPill ? h('span', { class: 'ml-2 rounded-full bg-sun px-2 py-0.5 text-xs font-bold text-sun-ink' }, t('lily.grewPill')) : null),
-      lilyCard(stage, known, next)));
+        grewPill ? h('span', { class: 'ml-2 rounded-full bg-sun px-2 py-0.5 text-xs font-bold text-sun-ink' }, t('lily.grewPill')) : null)),
+    lilyCard(stage, known, next));
 }
 
 /**
@@ -408,7 +408,7 @@ function lilyCard(stage: LilyStage, known: number, next: number | undefined): HT
   const up = next === undefined || stage === LAST_STAGE ? undefined : (stage + 1) as LilyStage;
   const goal = known + (next ?? 0);
   const line = up === undefined ? t('lily.max') : stage === 0 ? t('lily.newborn') : t('lily.next', { n: next! });
-  return h('div', { class: 'mt-2 flex max-w-md items-center gap-3 rounded-(--r-ctl) bg-panel p-3 ring-1 ring-line' },
+  return h('div', { class: 'col-span-2 flex max-w-md items-center gap-3 rounded-(--r-ctl) bg-panel p-3 ring-1 ring-line sm:col-span-1' },
     h('div', { class: 'min-w-0 flex-1' },
       h('p', { class: 'm-0 text-sm font-bold' }, t('lily.card')),
       h('p', { class: 'm-0 text-sm text-muted' }, line),
