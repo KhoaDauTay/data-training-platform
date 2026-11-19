@@ -2,6 +2,8 @@
 
 Người viết: agent Research · 2026-11-20 · theo L215 mục 6 ("luôn có Agent research đi collect kiến thức, tiêu chí, best practice về SQL, và NoSQL chuẩn bị đưa nó vào mục mới Best Practice"). **Chỉ là tài liệu nghiên cứu**: không sửa `src/`, `content/`, test hay `decision-log.md`.
 
+**Vòng 2** (agent Research, 2026-11-20): thêm 43 mục (A12–A21, P10–P26, M15–M22, D14–D21), chạy thật mọi ví dụ DynamoDB trên `@dynoxide/wasm-engine` 1.5.0 (§8), thêm đặc tả lint 10 luật với AST đã kiểm (§10). Mã cũ giữ nguyên; D01–D13 được thay ví dụ bằng request chạy được, luật và nguồn không đổi.
+
 Tài liệu này là nguyên liệu cho khu **Best Practice** sắp có. Nó đi cùng `db-engine-knowledge.md` (bản đồ kiến thức theo engine, L1 → L5) và dùng lại các nguồn `[Sn]` đã mở ở đó. Đề xuất cách khu Best Practice hoạt động trong app nằm ở §9.
 
 ## 0. Quy ước
@@ -29,8 +31,10 @@ Tài liệu này là nguyên liệu cho khu **Best Practice** sắp có. Nó đi
     - chạy lại không có bước này, mọi mục vẫn qua trừ **I04**: không có visibility map, planner bỏ `Index Only Scan` và chọn Seq Scan;
     - test trong app (§9.1) phải làm cùng bước đó trước khi kiểm các mục kế hoạch.
   - Script kiểm là file tạm ngoài repo, không commit. §9.1 đề xuất biến nó thành test thật.
-  - **mingo**: khối Mongo đã chạy trên `mingo` 7.2.7 (cài tạm ngoài repo) với dữ liệu mẫu ở §7.0.
-  - **cú pháp**: chỉ minh họa. Đó là index, shard key, transaction Mongo, cấu hình vận hành, mọi ví dụ DynamoDB. Không chạy được trong trình duyệt, hoặc runtime không mô phỏng ý đó (mingo không có index, xem `db-engine-knowledge.md` §1.5).
+  - **mingo**: khối Mongo đã chạy trên `mingo` 7.2.7 (cài tạm ngoài repo) với dữ liệu mẫu ở §7.0. Vòng 2 chạy trên `mingo` 7.2.6 (M01, M05, M08, M09 cho cùng kết quả; M15–M22 mới, dữ liệu thêm ở §7.1).
+  - **dynoxide** (vòng 2): khối DynamoDB đã chạy trên `@dynoxide/wasm-engine` 1.5.0 trong Node, mỗi khối một engine mới với dữ liệu §8.0. Ghi kèm `Count`/`ScannedCount`, RCU/WCU dynoxide báo, hoặc kiểu lỗi.
+  - **(notx)** (vòng 2): khối SQL có hậu tố này chạy ngoài transaction trên một PGlite mới (§5.1).
+  - **cú pháp**: chỉ minh họa. Đó là index, shard key, transaction Mongo, cấu hình vận hành, và phần DynamoDB mà emulator không có (TTL D09, capacity mode D11). Không chạy được trong trình duyệt, hoặc runtime không mô phỏng ý đó (mingo không có index, xem `db-engine-knowledge.md` §1.5).
 - **Mỗi khối mã** bắt đầu bằng một dòng chú thích `-- <mã> bad` / `-- <mã> good` (Mongo: `// <mã> …`). Script kiểm đọc chính file này, nên ví dụ trong tài liệu là đúng thứ đã chạy.
 - **Trích dẫn:** ý được diễn đạt lại; chỉ trích nguyên văn vài chữ khi cần.
   - [SQL Style Guide](https://www.sqlstyle.guide/) của Simon Holywell theo giấy phép CC BY-SA 4.0: chỉ dẫn link, không chép.
@@ -39,17 +43,17 @@ Tài liệu này là nguyên liệu cho khu **Best Practice** sắp có. Nó đi
 
 ## Tóm tắt
 
-| Khu | Mã | Số mục | Kiểm PGlite / mingo |
+| Khu | Mã | Số mục | Kiểm PGlite / mingo / dynoxide |
 |---|---|---|---|
 | 1. Viết truy vấn SQL | Q | 22 | 22 |
-| 2. SQL cho data analyst | A | 11 | 11 |
+| 2. SQL cho data analyst | A | 21 | 21 |
 | 3. Thiết kế schema PostgreSQL | S | 12 | 12 |
 | 4. Index | I | 9 | 9 |
-| 5. Hiệu năng và vận hành | P | 9 | 8 |
+| 5. Hiệu năng và vận hành | P | 26 | 24 |
 | 6. Bảo mật | X | 5 | 3 (+ X04 qua S10) |
-| 7. MongoDB | M | 14 | 4 |
-| 8. DynamoDB | D | 13 | 0 (cú pháp) |
-| **Tổng** | | **95** | **69** |
+| 7. MongoDB | M | 22 | 12 |
+| 8. DynamoDB | D | 21 | 19 (dynoxide) |
+| **Tổng** | | **138** | **122** |
 
 **Mười mục giá trị nhất** cho người học BoonData (lỗi thật hay gặp, sai âm thầm, có thể bắt bằng lint):
 
@@ -826,6 +830,241 @@ SELECT count(*) AS all_payments,
 FROM payments p LEFT JOIN orders o ON o.id = p.order_id;
 ```
 
+### A12 · Kiểm dữ liệu bằng truy vấn "phải trả 0 dòng" / Data tests are queries that must return zero rows
+
+- **Luật:**
+  - mỗi giả định của báo cáo (khóa không trùng, không mồ côi, số lượng dương, tổng khớp) viết thành một truy vấn trả về **các dòng vi phạm**;
+  - gom các test bằng `UNION ALL`, mỗi dòng một tên test và số lỗi;
+  - chạy trước mỗi lần gửi số. Test đạt khi `failures = 0`.
+- **Vì sao:**
+  - `count(*)` "trông ổn" không chứng minh gì;
+  - một truy vấn trả ra chính dòng sai vừa là cảnh báo vừa là chỗ bắt đầu sửa;
+  - đây cũng là cách dbt định nghĩa data test: câu `select` tìm bản ghi "failing", "zero failing rows" là đạt.
+- **Nguồn:**
+  - https://docs.getdbt.com/docs/build/data-tests
+  - node `c1` (Kiểm chất lượng dữ liệu) của app
+- **Cấp:** L2 · **Nối với:** skill `anti_join`, `having`, `union`; node `c1` · **Kiểm:** PGlite, chạy được: Sai chỉ ra 1.395 khoản trả; Đúng bắt được `orphan_payment` = 8 (hook có chủ đích của `lab`), hai test còn lại 0
+
+```sql
+-- A12 bad
+SELECT count(*) AS payments FROM payments;
+```
+```sql
+-- A12 good
+SELECT 'orphan_payment' AS test, count(*) AS failures
+FROM payments p WHERE NOT EXISTS (SELECT 1 FROM orders o WHERE o.id = p.order_id)
+UNION ALL
+SELECT 'duplicate_order_line', count(*)
+FROM (SELECT order_id, line_no FROM order_items GROUP BY order_id, line_no HAVING count(*) > 1) d
+UNION ALL
+SELECT 'non_positive_qty', count(*) FROM order_items WHERE qty <= 0;
+```
+
+### A13 · Một định nghĩa chỉ số, đặt tên và ghi chú ngay trong database / One documented definition per metric
+
+- **Luật:**
+  - mỗi chỉ số dùng chung (doanh thu ròng, khách hoạt động) có **một** định nghĩa: một view (hoặc model) có tên rõ;
+  - ghi định nghĩa bằng lời bằng `COMMENT ON VIEW` / `COMMENT ON COLUMN`: tính gì, loại gì, đơn vị, theo ngày nào, ai sở hữu;
+  - báo cáo đọc từ view đó, không chép lại công thức.
+- **Vì sao:** hai báo cáo tự viết "doanh thu" với bộ lọc khác nhau sẽ ra hai con số khác nhau cho cùng một tháng, và không ai biết số nào đúng.
+- **Nguồn:**
+  - https://www.postgresql.org/docs/18/sql-comment.html ("COMMENT stores, replaces, or removes the comment on a database object.")
+  - https://www.postgresql.org/docs/18/sql-createview.html
+- **Cấp:** L2 · **Nối với:** node `b1` (KPI), `c2` · **Kiểm:** PGlite, chạy được: Sai hai "doanh thu tháng 10" lệch nhau (105.026.700 so với 100.981.700, khác ở khoản hoàn tiền); Đúng `obj_description` trả lại đúng định nghĩa
+
+```sql
+-- A13 bad
+SELECT sum(amount_vnd) FILTER (WHERE amount_vnd > 0) AS revenue_report_a,
+       sum(amount_vnd) AS revenue_report_b
+FROM payments WHERE paid_at >= TIMESTAMP '2026-10-01' AND paid_at < TIMESTAMP '2026-11-01';
+```
+```sql
+-- A13 good
+CREATE VIEW metric_net_revenue_daily AS
+SELECT paid_at::date AS day, sum(amount_vnd) AS net_revenue_vnd
+FROM payments
+GROUP BY paid_at::date;
+COMMENT ON VIEW metric_net_revenue_daily IS
+  'Net revenue per day in VND: payments minus refunds (negative rows), by payment day. Owner: analytics.';
+SELECT obj_description('metric_net_revenue_daily'::regclass, 'pg_class') AS definition;
+```
+
+### A14 · Mẫu ngẫu nhiên phải lặp lại được / Make random samples reproducible
+
+- **Luật:**
+  - lấy mẫu để kiểm tay hay chia nhóm thì dùng `TABLESAMPLE … REPEATABLE (seed)` hoặc `setseed()` trước `random()`, và ghi seed lại;
+  - mọi truy vấn trong báo cáo phải cho cùng kết quả khi chạy lại trên cùng dữ liệu: ngày "hôm nay" cố định (A05), `ORDER BY` có tiebreaker (Q10).
+- **Vì sao:** `ORDER BY random()` cho mẫu khác nhau mỗi lần, nên người review không tái hiện được con số, và kết luận "mẫu cho thấy…" không kiểm được.
+- **Nguồn:** https://www.postgresql.org/docs/18/sql-select.html#SQL-FROM (`REPEATABLE`: "the same seed and argument values will select the same sample", khi bảng không đổi)
+- **Cấp:** L2 · **Nối với:** node `b5` (A/B test) · **Kiểm:** PGlite: Sai `same_sample = false`, Đúng `true`
+
+```sql
+-- A14 bad
+SELECT (SELECT array_agg(id ORDER BY id) FROM (SELECT id FROM orders ORDER BY random() LIMIT 20) s)
+     = (SELECT array_agg(id ORDER BY id) FROM (SELECT id FROM orders ORDER BY random() LIMIT 20) s) AS same_sample;
+```
+```sql
+-- A14 good
+SELECT (SELECT array_agg(id ORDER BY id) FROM orders TABLESAMPLE BERNOULLI (2) REPEATABLE (42))
+     = (SELECT array_agg(id ORDER BY id) FROM orders TABLESAMPLE BERNOULLI (2) REPEATABLE (42)) AS same_sample;
+```
+
+### A15 · `last_value` cần khung tới cuối partition / last_value needs a frame to the end of the partition
+
+- **Luật:**
+  - dùng `last_value`/`nth_value` thì luôn ghi khung `ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING`;
+  - hoặc đảo chiều: `first_value(…) OVER (… ORDER BY … DESC)`.
+- **Vì sao:** khung mặc định khi có `ORDER BY` chỉ chạy tới dòng hiện tại (và các dòng ngang hàng), nên `last_value` trả về chính dòng hiện tại. Tài liệu nói thẳng: "likely to give unhelpful results for last_value".
+- **Nguồn:** https://www.postgresql.org/docs/18/functions-window.html
+- **Cấp:** L3 · **Nối với:** skill `window_agg`; node `a1` · **Kiểm:** PGlite, Sai ≠ Đúng: "ngày đơn cuối của mỗi cửa hàng" ra 1.051 cặp (Sai) thay vì 5 (Đúng)
+
+```sql
+-- A15 bad
+SELECT count(*) FROM (
+  SELECT DISTINCT store_id, last_value(order_date) OVER (PARTITION BY store_id ORDER BY order_date) AS last_order
+  FROM orders
+) t;
+```
+```sql
+-- A15 good
+SELECT count(*) FROM (
+  SELECT DISTINCT store_id,
+         last_value(order_date) OVER (PARTITION BY store_id ORDER BY order_date
+                                      ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) AS last_order
+  FROM orders
+) t;
+```
+
+### A16 · `lag`/`lead` theo thực thể phải có `PARTITION BY` / lag and lead need PARTITION BY the entity
+
+- **Luật:** "đơn trước của cùng khách", "tháng trước của cùng cửa hàng": `lag(...) OVER (PARTITION BY khách ORDER BY ngày, id)`.
+- **Vì sao:** thiếu `PARTITION BY`, đơn đầu tiên của mỗi khách nhận ngày đơn cuối của khách **trước đó** trong thứ tự sắp. Khoảng cách giữa hai lần mua bị tính sai mà không có NULL nào báo hiệu.
+- **Nguồn:** https://www.postgresql.org/docs/18/tutorial-window.html; https://www.postgresql.org/docs/18/functions-window.html (`lag`)
+- **Cấp:** L2 · **Nối với:** skill `window_lag`; node `b2` (cohort) · **Kiểm:** PGlite, Sai ≠ Đúng: 1.199 đơn "có đơn trước" (Sai) thay vì 900 (Đúng): 300 khách thành viên, đơn đầu của 299 khách sau người đầu tiên bị gán "đơn trước" của người khác
+
+```sql
+-- A16 bad
+SELECT count(*) FILTER (WHERE prev_date IS NOT NULL) AS orders_with_previous
+FROM (SELECT customer_id, lag(order_date) OVER (ORDER BY customer_id, order_date, id) AS prev_date
+      FROM orders WHERE customer_id IS NOT NULL) t;
+```
+```sql
+-- A16 good
+SELECT count(*) FILTER (WHERE prev_date IS NOT NULL) AS orders_with_previous
+FROM (SELECT customer_id, lag(order_date) OVER (PARTITION BY customer_id ORDER BY order_date, id) AS prev_date
+      FROM orders WHERE customer_id IS NOT NULL) t;
+```
+
+### A17 · Top N: chọn luật hòa (tie) có chủ đích / Top N: choose the tie rule on purpose
+
+- **Luật:**
+  - "top N" phải nói rõ khi bằng điểm thì sao: `rank()` (giữ mọi dòng bằng nhau, có thể hơn N), `dense_rank()`, hay `row_number()` với tiebreaker nghiệp vụ trong `ORDER BY`;
+  - không dùng `row_number()` với `ORDER BY` không duy nhất.
+- **Vì sao:** `row_number()` cắt ngẫu nhiên giữa các dòng bằng nhau: sản phẩm nào lọt top đổi giữa các lần chạy, và hai sản phẩm bằng điểm bị đối xử khác nhau.
+- **Nguồn:** https://www.postgresql.org/docs/18/functions-window.html (`rank`: "the row_number of the first row in its peer group")
+- **Cấp:** L2 · **Nối với:** skill `window_rank`; node `a9` · **Kiểm:** PGlite, Sai ≠ Đúng: top 2 theo số dòng bán, Sai 2 sản phẩm (chọn 1 trong 3 sản phẩm cùng 158), Đúng 4
+
+```sql
+-- A17 bad
+SELECT product_id, lines FROM (
+  SELECT product_id, count(*) AS lines, row_number() OVER (ORDER BY count(*) DESC) AS rn
+  FROM order_items GROUP BY product_id
+) t WHERE rn <= 2 ORDER BY lines DESC, product_id;
+```
+```sql
+-- A17 good
+SELECT product_id, lines FROM (
+  SELECT product_id, count(*) AS lines, rank() OVER (ORDER BY count(*) DESC) AS rnk
+  FROM order_items GROUP BY product_id
+) t WHERE rnk <= 2 ORDER BY lines DESC, product_id;
+```
+
+### A18 · Trung bình của trung bình / Don't average averages
+
+- **Luật:** tỷ lệ và trung bình tổng thể tính từ dữ liệu chi tiết (`sum(x) / count(*)` trên toàn tập), không lấy trung bình của các trung bình nhóm. Cần gộp từ bảng tổng hợp thì giữ cả tử và mẫu.
+- **Vì sao:** mỗi nhóm nhận trọng số bằng nhau, bất kể cỡ nhóm. Cửa hàng ít đơn kéo lệch con số chung.
+- **Nguồn:** https://www.postgresql.org/docs/18/functions-aggregate.html
+- **Cấp:** L2 · **Nối với:** skill `aggregate`, `group_by`; node `b1` · **Kiểm:** PGlite, Sai ≠ Đúng: giá trị đơn trung bình 474.919 (Sai) so với 477.959 (Đúng)
+
+```sql
+-- A18 bad
+SELECT round(avg(store_avg)) AS avg_order_vnd FROM (
+  SELECT o.store_id, avg(t.total) AS store_avg
+  FROM orders o JOIN (SELECT order_id, sum(qty * unit_price_vnd) AS total FROM order_items GROUP BY order_id) t ON t.order_id = o.id
+  GROUP BY o.store_id
+) s;
+```
+```sql
+-- A18 good
+SELECT round(avg(t.total)) AS avg_order_vnd
+FROM (SELECT order_id, sum(qty * unit_price_vnd) AS total FROM order_items GROUP BY order_id) t;
+```
+
+### A19 · `AT TIME ZONE` đổi chiều theo kiểu dữ liệu / AT TIME ZONE works in opposite directions
+
+- **Luật:**
+  - `timestamp` (không múi giờ) chứa giờ UTC thì đổi sang giờ Việt Nam bằng **hai bước**: `ts AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Ho_Chi_Minh'`;
+  - `timestamptz` chỉ cần một bước (A02);
+  - ghi rõ trong tài liệu bảng cột `timestamp` đang chứa giờ của múi nào.
+- **Vì sao:**
+  - với `timestamp`, `AT TIME ZONE z` hiểu giá trị **là giờ tại z** và trả `timestamptz`;
+  - với `timestamptz`, nó đổi **sang** giờ tại z.
+  - Viết một bước trên `timestamp` UTC là dịch ngược 7 giờ: đơn 20:00 UTC (03:00 sáng hôm sau ở Việt Nam) bị xếp vào hôm trước.
+- **Nguồn:** https://www.postgresql.org/docs/18/functions-datetime.html#FUNCTIONS-DATETIME-ZONECONVERT
+- **Cấp:** L3 · **Nối với:** skill `date_math`, `date_bucket` · **Kiểm:** PGlite, Sai ≠ Đúng: Sai ra ngày 2026-10-31, Đúng 2026-11-01
+
+```sql
+-- A19 bad
+SET LOCAL TIME ZONE 'UTC';
+SELECT (TIMESTAMP '2026-10-31 20:00:00' AT TIME ZONE 'Asia/Ho_Chi_Minh')::date AS sales_day;
+```
+```sql
+-- A19 good
+SET LOCAL TIME ZONE 'UTC';
+SELECT (TIMESTAMP '2026-10-31 20:00:00' AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Ho_Chi_Minh')::date AS sales_day;
+```
+
+### A20 · Cộng `interval '1 day'`, không `'24 hours'`, khi muốn "cùng giờ hôm sau" / Add 1 day, not 24 hours, across DST
+
+- **Luật:** lịch hẹn, "cùng giờ ngày mai", lặp theo ngày: cộng `interval '1 day'` trên `timestamptz` ở đúng múi giờ phiên. Đo thời lượng thật (SLA, thời gian xử lý) mới dùng giờ.
+- **Vì sao:** ở múi giờ có giờ mùa hè, ngày đổi giờ dài 23 hoặc 25 tiếng. `'24 hours'` lệch một giờ so với lịch. Việt Nam không đổi giờ, nhưng dữ liệu đối tác châu Âu/Mỹ thì có.
+- **Nguồn:** https://www.postgresql.org/docs/18/functions-datetime.html (đoạn đầu: `interval '1 day'` "does not necessarily have the same result as" `interval '24 hours'`)
+- **Cấp:** L3 · **Nối với:** skill `date_math` · **Kiểm:** PGlite, Sai ≠ Đúng: ở `Europe/Berlin` qua đêm đổi giờ 25/10/2026, Sai ra 08:00, Đúng 09:00
+
+```sql
+-- A20 bad
+SET LOCAL TIME ZONE 'Europe/Berlin';
+SELECT (TIMESTAMPTZ '2026-10-24 09:00:00' + interval '24 hours')::text AS next_meeting;
+```
+```sql
+-- A20 good
+SET LOCAL TIME ZONE 'Europe/Berlin';
+SELECT (TIMESTAMPTZ '2026-10-24 09:00:00' + interval '1 day')::text AS next_meeting;
+```
+
+### A21 · Đếm khách riêng biệt không cộng dồn được / Distinct counts are not additive
+
+- **Luật:**
+  - số khách riêng biệt của tháng tính trực tiếp trên cả tháng (`count(DISTINCT …)` trên khoảng tháng), không cộng số khách riêng biệt của từng ngày;
+  - bảng tổng hợp theo ngày phải ghi rõ cột nào cộng được (doanh thu, số đơn) và cột nào không (khách riêng biệt, tỷ lệ).
+- **Vì sao:** một khách quay lại ba ngày được đếm ba lần, nên MAU bị phồng.
+- **Nguồn:** https://www.postgresql.org/docs/18/functions-aggregate.html (`count(DISTINCT …)`); https://www.postgresql.org/docs/18/sql-expressions.html#SYNTAX-AGGREGATES
+- **Cấp:** L2 · **Nối với:** skill `distinct`, `aggregate`; node `b1`, `b2` · **Kiểm:** PGlite, Sai ≠ Đúng: tháng 10 có 266 "khách" (Sai) so với 200 (Đúng)
+
+```sql
+-- A21 bad
+SELECT sum(dau) AS october_users FROM (
+  SELECT ts::date AS day, count(DISTINCT user_id) AS dau
+  FROM app_events WHERE ts >= TIMESTAMP '2026-10-01' AND ts < TIMESTAMP '2026-11-01'
+  GROUP BY ts::date
+) d;
+```
+```sql
+-- A21 good
+SELECT count(DISTINCT user_id) AS october_users
+FROM app_events WHERE ts >= TIMESTAMP '2026-10-01' AND ts < TIMESTAMP '2026-11-01';
+```
+
 ## 3. Thiết kế schema PostgreSQL (S)
 
 ### S01 · Thời điểm dùng `timestamptz` / Store instants as timestamptz
@@ -1561,6 +1800,437 @@ ANALYZE orders;
 EXPLAIN SELECT count(*) FROM orders WHERE channel = 'ONLINE' AND status = 'PAID';
 ```
 
+### 5.1 Vòng 2: vận hành sâu hơn (L3–L5)
+
+Các mục P10–P26 đi theo thang Engine của `db-engine-knowledge.md` §3.3–3.5. Cách kiểm như §0, thêm một quy ước:
+
+- khối có hậu tố `(notx)` chạy **ngoài** `BEGIN … ROLLBACK`, trên một PGlite mới nạp `lab.sql`, từng câu một. Đó là các lệnh không chạy được trong transaction (`VACUUM`, `… CONCURRENTLY`), cần bộ đếm thống kê (`pg_stat_force_next_flush()`, đo ở `db-engine-knowledge.md` §1.3) hoặc trạng thái phiên (`PREPARE`, `SET`);
+- câu lỗi trong khối `(notx)` được ghi lại (`ERR <SQLSTATE>`) rồi chạy tiếp, vì có mục cần chính lỗi đó (P14).
+
+### P10 · Autovacuum: chỉnh ngưỡng theo bảng lớn, đừng chờ 20% / Tune autovacuum thresholds per large table
+
+- **Luật:**
+  - bảng lớn ghi nhiều thì hạ `autovacuum_vacuum_scale_factor` (và `autovacuum_analyze_scale_factor`) **cho riêng bảng đó** bằng storage parameter, kèm ngưỡng cố định `autovacuum_vacuum_threshold`;
+  - bảng chỉ insert (log, sự kiện) chỉnh thêm `autovacuum_vacuum_insert_scale_factor` để visibility map được cập nhật cho index-only scan (I04);
+  - PostgreSQL 18 có thêm trần `autovacuum_vacuum_max_threshold` (mặc định 100 triệu tuple) cho bảng rất lớn.
+- **Vì sao:**
+  - ngưỡng vacuum = Minimum(max threshold, base threshold + scale factor × số tuple);
+  - với mặc định 50 + 0,2 × N, bảng 10 triệu dòng phải có hơn 2 triệu dead tuple mới được vacuum: bảng và index phình trước khi được dọn.
+- **Nguồn:**
+  - https://www.postgresql.org/docs/18/routine-vacuuming.html#AUTOVACUUM (công thức ngưỡng)
+  - https://www.postgresql.org/docs/18/runtime-config-vacuum.html#GUC-AUTOVACUUM-VACUUM-MAX-THRESHOLD
+  - https://www.postgresql.org/docs/18/sql-createtable.html (storage parameter `autovacuum_*`)
+- **Cấp:** L3 · **Nối với:** chưa có (L3 Postgres, `db-engine-knowledge.md` §3.3) · **Kiểm:** PGlite, chạy được: Sai tính ra 2.000.050 dead tuple cho bảng 10 triệu dòng và `max_threshold` = 100000000; Đúng ghi đủ bốn tham số vào `reloptions`. Autovacuum không chạy trong PGlite (không có worker nền), nên hiệu quả thật không đo được
+
+```sql
+-- P10 bad
+SELECT current_setting('autovacuum_vacuum_threshold')::int
+     + current_setting('autovacuum_vacuum_scale_factor')::float8 * 10000000 AS dead_rows_before_vacuum_10m,
+       current_setting('autovacuum_vacuum_max_threshold') AS max_threshold;
+```
+```sql
+-- P10 good
+ALTER TABLE app_events SET (autovacuum_vacuum_scale_factor = 0.01, autovacuum_vacuum_threshold = 1000,
+                            autovacuum_vacuum_insert_scale_factor = 0.01, autovacuum_analyze_scale_factor = 0.02);
+SELECT reloptions FROM pg_class WHERE relname = 'app_events';
+```
+
+### P11 · Đo tỷ lệ HOT update, đừng đoán / Measure the HOT ratio
+
+- **Luật:**
+  - sau khi đặt `fillfactor` (P02), kiểm hiệu quả bằng `n_tup_hot_upd / n_tup_upd` trong `pg_stat_user_tables`;
+  - `fillfactor` mới chỉ áp cho trang được ghi sau đó: bảng có sẵn cần viết lại (`VACUUM FULL`, `CLUSTER` hoặc công cụ online) mới có chỗ trống;
+  - tỷ lệ HOT thấp trên bảng sửa nhiều là dấu hiệu index trên cột hay đổi, hoặc trang đầy.
+- **Vì sao:** HOT update chỉ xảy ra khi không cột index nào đổi **và** trang còn chỗ. Một con số đo được cho biết `fillfactor` hay việc bỏ index có đáng hay không.
+- **Nguồn:**
+  - https://www.postgresql.org/docs/18/storage-hot.html
+  - https://www.postgresql.org/docs/18/monitoring-stats.html#MONITORING-PG-STAT-ALL-TABLES-VIEW (`n_tup_hot_upd`: "Number of rows HOT updated")
+- **Cấp:** L3 · **Nối với:** chưa có · **Kiểm:** PGlite `(notx)`, cùng một `UPDATE` 1.153 dòng trên cột không index: Sai (trang đầy sau `VACUUM ANALYZE`) 56 HOT; Đúng (`fillfactor = 80` + `VACUUM FULL`) 128 HOT. Phần còn lại không HOT vì một trang 80% vẫn không đủ chỗ cho mọi phiên bản mới trong cùng một lệnh
+
+```sql
+-- P11 bad (notx)
+UPDATE orders SET delivered_on = delivered_on + 1 WHERE delivered_on IS NOT NULL;
+SELECT pg_stat_force_next_flush();
+SELECT n_tup_upd, n_tup_hot_upd FROM pg_stat_user_tables WHERE relname = 'orders';
+```
+```sql
+-- P11 good (notx)
+ALTER TABLE orders SET (fillfactor = 80);
+VACUUM FULL orders;
+UPDATE orders SET delivered_on = delivered_on + 1 WHERE delivered_on IS NOT NULL;
+SELECT pg_stat_force_next_flush();
+SELECT n_tup_upd, n_tup_hot_upd FROM pg_stat_user_tables WHERE relname = 'orders';
+```
+
+### P12 · Index phình: đo kích thước, xây lại bằng `REINDEX CONCURRENTLY` / Watch index bloat, rebuild concurrently
+
+- **Luật:**
+  - theo dõi `pg_relation_size` của index hay bị sửa (cột thời gian, trạng thái) theo thời gian;
+  - khi index lớn bất thường so với dữ liệu, xây lại bằng `REINDEX INDEX CONCURRENTLY` (không chặn ghi);
+  - đừng `REINDEX` thường trên bảng đang phục vụ: nó giữ `ACCESS EXCLUSIVE`.
+- **Vì sao:** `VACUUM` thu hồi entry chết nhưng trang B-tree chỉ còn vài khóa vẫn được giữ lại, nên index không tự co. Tài liệu: "periodic reindexing is recommended" cho kiểu xóa/sửa này.
+- **Nguồn:**
+  - https://www.postgresql.org/docs/18/routine-reindex.html
+  - https://www.postgresql.org/docs/18/sql-reindex.html
+- **Cấp:** L3 · **Nối với:** skill `index_design` · **Kiểm:** PGlite `(notx)`: sau ba lần `UPDATE` cả 1.928 dòng và `VACUUM`, index `ts` là 188.416 byte (Sai); sau `REINDEX INDEX CONCURRENTLY` còn 65.536 byte (Đúng)
+
+```sql
+-- P12 bad (notx)
+CREATE INDEX app_events_ts_ix ON app_events (ts);
+UPDATE app_events SET ts = ts + interval '1 second';
+UPDATE app_events SET ts = ts + interval '1 second';
+UPDATE app_events SET ts = ts + interval '1 second';
+VACUUM app_events;
+SELECT pg_relation_size('app_events_ts_ix') AS index_bytes;
+```
+```sql
+-- P12 good (notx)
+CREATE INDEX app_events_ts_ix ON app_events (ts);
+UPDATE app_events SET ts = ts + interval '1 second';
+UPDATE app_events SET ts = ts + interval '1 second';
+UPDATE app_events SET ts = ts + interval '1 second';
+VACUUM app_events;
+REINDEX INDEX CONCURRENTLY app_events_ts_ix;
+SELECT pg_relation_size('app_events_ts_ix') AS index_bytes;
+```
+
+### P13 · Biết mỗi lệnh DDL lấy khóa gì, và luôn đặt `lock_timeout` / Know each DDL's lock, always set lock_timeout
+
+- **Luật:**
+  - trước khi chạy migration, tra (hoặc thử trong transaction rồi xem `pg_locks`) mức khóa của từng lệnh;
+  - lệnh lấy `ACCESS EXCLUSIVE` (phần lớn `ALTER TABLE`) phải ngắn, đặt `SET LOCAL lock_timeout` vài giây và có retry;
+  - `CREATE INDEX` thường lấy `SHARE` (chặn ghi suốt lúc dựng), nên trên bảng đang phục vụ dùng `CONCURRENTLY` (P05).
+- **Vì sao:** lệnh DDL đang **chờ** khóa cũng chặn mọi truy vấn xếp sau nó. Không có `lock_timeout`, một `ALTER TABLE` chờ sau một truy vấn dài có thể làm đứng cả bảng.
+- **Nguồn:**
+  - https://www.postgresql.org/docs/18/explicit-locking.html#LOCKING-TABLES (`SHARE`: "Acquired by CREATE INDEX (without CONCURRENTLY)")
+  - https://www.postgresql.org/docs/18/sql-altertable.html ("An ACCESS EXCLUSIVE lock is acquired unless explicitly noted.")
+  - https://www.postgresql.org/docs/18/runtime-config-client.html#GUC-LOCK-TIMEOUT
+- **Cấp:** L4 · **Nối với:** chưa có · **Kiểm:** PGlite, chạy được: `pg_locks` cùng transaction cho thấy Sai giữ `AccessExclusiveLock`, Đúng giữ `ShareLock` với `lock_timeout` = `2s`. Một phiên nên không tái hiện được cảnh chờ khóa
+
+```sql
+-- P13 bad
+ALTER TABLE orders ADD COLUMN note text;
+SELECT mode FROM pg_locks WHERE relation = 'orders'::regclass AND granted ORDER BY mode;
+```
+```sql
+-- P13 good
+SET LOCAL lock_timeout = '2s';
+CREATE INDEX orders_shipped_ix ON orders (shipped_on);
+SELECT current_setting('lock_timeout') AS lock_timeout, mode
+FROM pg_locks WHERE relation = 'orders'::regclass AND granted ORDER BY mode;
+```
+
+### P14 · `CONCURRENTLY` thất bại để lại index `INVALID`: tìm và dọn / Find and drop invalid indexes after a failed concurrent build
+
+- **Luật:**
+  - sau mỗi `CREATE [UNIQUE] INDEX CONCURRENTLY` thất bại, chạy truy vấn tìm `NOT indisvalid`;
+  - xóa (`DROP INDEX CONCURRENTLY`) rồi dựng lại, hoặc `REINDEX INDEX CONCURRENTLY`;
+  - đừng chạy lại với `IF NOT EXISTS`: lệnh thấy tên đã có và bỏ qua, index hỏng vẫn nằm đó.
+- **Vì sao:** index `INVALID` không được dùng để đọc nhưng **vẫn được cập nhật** mỗi lần ghi, và index `UNIQUE` hỏng vẫn có thể chặn bản ghi trùng.
+- **Nguồn:** https://www.postgresql.org/docs/18/sql-createindex.html#SQL-CREATEINDEX-CONCURRENTLY ("fail but leave behind an 'invalid' index")
+- **Cấp:** L4 · **Nối với:** skill `index_design` · **Kiểm:** PGlite `(notx)`: unique index trên `customer_id` (có trùng) báo `23505`; Sai: chạy lại `IF NOT EXISTS`, index vẫn `indisvalid = false`; Đúng: tìm thấy, xóa, dựng index thường, còn 0 index invalid
+
+```sql
+-- P14 bad (notx)
+CREATE UNIQUE INDEX CONCURRENTLY orders_customer_uq ON orders (customer_id);
+CREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS orders_customer_uq ON orders (customer_id);
+SELECT indexrelid::regclass AS index_name, indisvalid FROM pg_index WHERE indexrelid = 'orders_customer_uq'::regclass;
+```
+```sql
+-- P14 good (notx)
+CREATE UNIQUE INDEX CONCURRENTLY orders_customer_uq ON orders (customer_id);
+SELECT indexrelid::regclass AS invalid_index FROM pg_index WHERE NOT indisvalid;
+DROP INDEX CONCURRENTLY orders_customer_uq;
+CREATE INDEX CONCURRENTLY orders_customer_ix ON orders (customer_id);
+SELECT count(*) AS invalid_indexes FROM pg_index WHERE NOT indisvalid;
+```
+
+### P15 · `NOT NULL` trên bảng lớn: `NOT VALID` trước (PostgreSQL 18) / Add NOT NULL as NOT VALID first
+
+- **Luật:**
+  - PostgreSQL 18 cho phép ràng buộc not-null `NOT VALID`: áp ngay cho dòng mới, không quét dòng cũ; sửa dữ liệu cũ theo lô (P08), rồi `VALIDATE CONSTRAINT`;
+  - trên bản cũ hơn: thêm `CHECK (col IS NOT NULL) NOT VALID`, `VALIDATE`, rồi `SET NOT NULL` (bỏ qua bước quét nhờ CHECK hợp lệ), rồi xóa CHECK.
+- **Vì sao:** `ALTER COLUMN … SET NOT NULL` quét cả bảng trong khi giữ `ACCESS EXCLUSIVE`, và thất bại ở cuối nếu còn một dòng NULL.
+- **Nguồn:** https://www.postgresql.org/docs/18/sql-altertable.html (`NOT VALID` "only allowed for foreign-key, CHECK, and not-null constraints"; `SET NOT NULL`: "the table scan is skipped" khi có CHECK hợp lệ)
+- **Cấp:** L4 · **Nối với:** chưa có · **Kiểm:** PGlite (PostgreSQL 18.6). Sai: lỗi `23502` "contains null values" sau khi quét. Đúng: ràng buộc `NOT VALID` được thêm dù 228 đơn vãng lai cũ (đếm thật) có `customer_id` NULL, còn dòng mới NULL bị chặn bằng `23502`
+
+```sql
+-- P15 bad
+ALTER TABLE orders ALTER COLUMN customer_id SET NOT NULL;
+```
+```sql
+-- P15 good
+ALTER TABLE orders ADD CONSTRAINT orders_customer_nn NOT NULL customer_id NOT VALID;
+INSERT INTO orders (id, customer_id, store_id, order_date, channel, status) VALUES (999999, NULL, 1, DATE '2026-10-31', 'POS', 'PAID');
+```
+
+### P16 · Đổi kiểu cột: biết khi nào bảng bị viết lại / Know which type changes rewrite the table
+
+- **Luật:**
+  - đổi kiểu không tương thích nhị phân (`int` → `bigint`, `text` → `int`) viết lại cả bảng và mọi index: làm bằng cột mới + backfill theo lô + đổi tên, hoặc trong khung bảo trì;
+  - nới `varchar(n)` lên `varchar(m)` lớn hơn, hay `varchar` → `text`, chỉ sửa catalog;
+  - kiểm bằng `relfilenode` trước/sau trên bản sao.
+- **Vì sao:** viết lại giữ `ACCESS EXCLUSIVE` suốt thời gian chép bảng. Chọn `bigint` từ đầu cho khóa có thể vượt 2,1 tỷ rẻ hơn nhiều so với đổi sau.
+- **Nguồn:** https://www.postgresql.org/docs/18/sql-altertable.html ("will normally cause the entire table and its indexes to be rewritten", trừ khi kiểu cũ binary coercible)
+- **Cấp:** L4 · **Nối với:** skill `cast` · **Kiểm:** PGlite, chạy được: Sai `relfilenode` đổi (bảng bị viết lại), Đúng `relfilenode` giữ nguyên
+
+```sql
+-- P16 bad
+CREATE TEMP TABLE before_alter AS SELECT relfilenode AS before FROM pg_class WHERE relname = 'order_items';
+ALTER TABLE order_items ALTER COLUMN qty TYPE bigint;
+SELECT before, (SELECT relfilenode FROM pg_class WHERE relname = 'order_items') AS after FROM before_alter;
+```
+```sql
+-- P16 good
+CREATE TABLE notes (id int PRIMARY KEY, body varchar(50));
+CREATE TEMP TABLE before_alter AS SELECT relfilenode AS before FROM pg_class WHERE relname = 'notes';
+ALTER TABLE notes ALTER COLUMN body TYPE varchar(200);
+SELECT before, (SELECT relfilenode FROM pg_class WHERE relname = 'notes') AS after FROM before_alter;
+```
+
+### P17 · Lọc partition bằng khoảng trên chính khóa, không bọc hàm / Prune partitions with plain ranges on the key
+
+- **Luật:** điều kiện trên khóa partition viết dạng `key >= a AND key < b`, không bọc khóa trong hàm (`date_trunc`, `extract`, ép kiểu).
+- **Vì sao:** planner chỉ cắt partition khi so được điều kiện với biên partition. `date_trunc('month', at) = …` là một biểu thức khác, nên mọi partition đều bị quét. Đây là Q11 (sargable) áp cho partition.
+- **Nguồn:** https://www.postgresql.org/docs/18/ddl-partitioning.html#DDL-PARTITION-PRUNING
+- **Cấp:** L4 · **Nối với:** skill `sargable`, `explain_read` · **Kiểm:** PGlite, kế hoạch: Sai `Append` quét `ev_2026_09` và `ev_2026_10`; Đúng chỉ `ev_2026_10`
+
+```sql
+-- P17 bad
+CREATE TABLE ev (id bigint NOT NULL, at date NOT NULL, kind text NOT NULL, PRIMARY KEY (id, at)) PARTITION BY RANGE (at);
+CREATE TABLE ev_2026_09 PARTITION OF ev FOR VALUES FROM ('2026-09-01') TO ('2026-10-01');
+CREATE TABLE ev_2026_10 PARTITION OF ev FOR VALUES FROM ('2026-10-01') TO ('2026-11-01');
+EXPLAIN (COSTS OFF) SELECT count(*) FROM ev WHERE date_trunc('month', at) = DATE '2026-10-01';
+```
+```sql
+-- P17 good
+CREATE TABLE ev (id bigint NOT NULL, at date NOT NULL, kind text NOT NULL, PRIMARY KEY (id, at)) PARTITION BY RANGE (at);
+CREATE TABLE ev_2026_09 PARTITION OF ev FOR VALUES FROM ('2026-09-01') TO ('2026-10-01');
+CREATE TABLE ev_2026_10 PARTITION OF ev FOR VALUES FROM ('2026-10-01') TO ('2026-11-01');
+EXPLAIN (COSTS OFF) SELECT count(*) FROM ev WHERE at >= DATE '2026-10-01' AND at < DATE '2026-11-01';
+```
+
+### P18 · Tạo partition trước khi dữ liệu tới / Create partitions ahead of the data
+
+- **Luật:**
+  - partition theo thời gian được tạo trước ít nhất một kỳ (job định kỳ), và có cảnh báo khi còn ít kỳ trống;
+  - partition `DEFAULT` chỉ là lưới an toàn: khi đã có dữ liệu trong `DEFAULT`, mỗi lần thêm partition mới Postgres phải quét `DEFAULT` để kiểm.
+- **Vì sao:** dòng không thuộc partition nào làm `INSERT` lỗi, tức ứng dụng ngừng ghi đúng lúc sang kỳ mới.
+- **Nguồn:** https://www.postgresql.org/docs/18/ddl-partitioning.html ("an appropriate partition must be added manually"; `DEFAULT` "will be scanned to verify that it contains no records")
+- **Cấp:** L4 · **Nối với:** chưa có · **Kiểm:** PGlite. Sai: lỗi `23514` "no partition of relation "ev" found for row". Đúng: dòng vào `ev_2026_11`
+
+```sql
+-- P18 bad
+CREATE TABLE ev (id bigint NOT NULL, at date NOT NULL, kind text NOT NULL, PRIMARY KEY (id, at)) PARTITION BY RANGE (at);
+CREATE TABLE ev_2026_10 PARTITION OF ev FOR VALUES FROM ('2026-10-01') TO ('2026-11-01');
+INSERT INTO ev VALUES (1, DATE '2026-11-01', 'login');
+```
+```sql
+-- P18 good
+CREATE TABLE ev (id bigint NOT NULL, at date NOT NULL, kind text NOT NULL, PRIMARY KEY (id, at)) PARTITION BY RANGE (at);
+CREATE TABLE ev_2026_10 PARTITION OF ev FOR VALUES FROM ('2026-10-01') TO ('2026-11-01');
+CREATE TABLE ev_2026_11 PARTITION OF ev FOR VALUES FROM ('2026-11-01') TO ('2026-12-01');
+INSERT INTO ev VALUES (1, DATE '2026-11-01', 'login');
+SELECT tableoid::regclass AS partition FROM ev;
+```
+
+### P19 · Prepared statement và dữ liệu lệch: coi chừng generic plan / Prepared statements on skewed data: watch the generic plan
+
+- **Luật:**
+  - truy vấn tham số hóa trên cột phân bố lệch (vài giá trị chiếm phần lớn bảng) phải được kiểm bằng `EXPLAIN EXECUTE` với giá trị thật, cả giá trị phổ biến lẫn hiếm;
+  - khi generic plan ước lượng sai, đặt `plan_cache_mode = force_custom_plan` cho phiên/role đó, hoặc tách truy vấn.
+- **Vì sao:**
+  - sau năm lần chạy với custom plan, Postgres có thể chuyển sang một generic plan dùng chung cho mọi giá trị;
+  - generic plan ước lượng theo selectivity trung bình. Hiệu năng "đột nhiên tệ" ở lần chạy thứ sáu là một dạng plan regression kinh điển.
+- **Nguồn:**
+  - https://www.postgresql.org/docs/18/sql-prepare.html ("the first five executions are done with custom plans")
+  - https://www.postgresql.org/docs/18/runtime-config-query.html#GUC-PLAN-CACHE-MODE
+- **Cấp:** L4 · **Nối với:** skill `explain_read`; node `a10` · **Kiểm:** PGlite `(notx)`, kế hoạch: với `'PAID'` (1.298/1.428 dòng), generic plan (Sai) ước lượng `rows=476` và chọn `Index Only Scan` với `$1`; custom plan (Đúng) ước lượng `rows=1298`, chọn `Seq Scan`
+
+```sql
+-- P19 bad (notx)
+CREATE INDEX orders_status_ix ON orders (status);
+ANALYZE orders;
+PREPARE by_status(text) AS SELECT count(*) FROM orders WHERE status = $1;
+SET plan_cache_mode = force_generic_plan;
+EXPLAIN EXECUTE by_status('PAID');
+```
+```sql
+-- P19 good (notx)
+CREATE INDEX orders_status_ix ON orders (status);
+ANALYZE orders;
+PREPARE by_status(text) AS SELECT count(*) FROM orders WHERE status = $1;
+SET plan_cache_mode = force_custom_plan;
+EXPLAIN EXECUTE by_status('PAID');
+```
+
+### P20 · Tăng statistics target cho từng cột lệch, không tăng toàn cục / Raise the statistics target per column
+
+- **Luật:** cột lệch hoặc có rất nhiều giá trị mà planner hay ước lượng sai (P01) thì `ALTER TABLE … ALTER COLUMN … SET STATISTICS n` (tối đa 10000) rồi `ANALYZE`. Giữ `default_statistics_target` mặc định 100.
+- **Vì sao:**
+  - target quyết định số giá trị phổ biến (MCV) và số biên histogram mà `ANALYZE` giữ;
+  - tăng toàn cục làm mọi `ANALYZE` và mọi lần lập kế hoạch chậm hơn cho cả những cột không cần.
+- **Nguồn:**
+  - https://www.postgresql.org/docs/18/planner-stats.html
+  - https://www.postgresql.org/docs/18/sql-altertable.html (`SET STATISTICS`: "The target can be set in the range 0 to 10000"; chỉ lấy `SHARE UPDATE EXCLUSIVE`)
+- **Cấp:** L4 · **Nối với:** skill `explain_read` · **Kiểm:** PGlite, chạy được: `order_items.order_id` với target 100 có 100 MCV và 101 biên; với 1000 có 1000 MCV và 428 biên
+
+```sql
+-- P20 bad
+ANALYZE order_items;
+SELECT cardinality(most_common_vals::text::text[]) AS mcv, cardinality(histogram_bounds::text::text[]) AS bounds
+FROM pg_stats WHERE tablename = 'order_items' AND attname = 'order_id';
+```
+```sql
+-- P20 good
+ALTER TABLE order_items ALTER COLUMN order_id SET STATISTICS 1000;
+ANALYZE order_items;
+SELECT cardinality(most_common_vals::text::text[]) AS mcv, cardinality(histogram_bounds::text::text[]) AS bounds
+FROM pg_stats WHERE tablename = 'order_items' AND attname = 'order_id';
+```
+
+### P21 · GIN cho `jsonb`: `jsonb_path_ops` không phục vụ `?` / jsonb_path_ops does not serve key-exists
+
+- **Luật:**
+  - chỉ hỏi chứa (`@>`) và jsonpath (`@?`, `@@`): `jsonb_path_ops` (nhỏ hơn, nhanh hơn);
+  - cần hỏi khóa có tồn tại (`?`, `?|`, `?&`): opclass mặc định `jsonb_ops`;
+  - chọn theo toán tử của truy vấn thật, rồi kiểm bằng `EXPLAIN`.
+- **Vì sao:** index không hỗ trợ toán tử thì planner bỏ qua nó: tốn chỗ và chi phí ghi mà không được dùng.
+- **Nguồn:**
+  - https://www.postgresql.org/docs/18/gin.html#GIN-BUILTIN-OPCLASSES
+  - https://www.postgresql.org/docs/18/datatype-json.html#JSON-INDEXING ("does not support the key-exists operators")
+- **Cấp:** L3 · **Nối với:** node `a7`, `a10` · **Kiểm:** PGlite, kế hoạch: Sai `Seq Scan` dù có GIN `jsonb_path_ops`; Đúng `Bitmap Index Scan on app_events_props_ix`
+
+```sql
+-- P21 bad
+CREATE INDEX app_events_props_path_ix ON app_events USING gin (props jsonb_path_ops);
+EXPLAIN (COSTS OFF) SELECT count(*) FROM app_events WHERE props ? 'coupon';
+```
+```sql
+-- P21 good
+CREATE INDEX app_events_props_ix ON app_events USING gin (props);
+EXPLAIN (COSTS OFF) SELECT count(*) FROM app_events WHERE props ? 'coupon';
+```
+
+### P22 · Một khóa `jsonb` hay lọc bằng `=`/khoảng: B-tree trên biểu thức `->>` / Expression B-tree for one hot jsonb key
+
+- **Luật:**
+  - khi luôn lọc một khóa cụ thể bằng `props ->> 'k' = …` hoặc khoảng, dựng B-tree trên đúng biểu thức `((props ->> 'k'))`;
+  - GIN chỉ phục vụ toán tử của nó (`@>`, `?`…), không phục vụ `->>` + `=`;
+  - nếu khóa đó quan trọng tới mức này, cân nhắc đưa thành cột thật (S12).
+- **Vì sao:** planner chỉ dùng expression index khi truy vấn viết **đúng** biểu thức đã index.
+- **Nguồn:**
+  - https://www.postgresql.org/docs/18/indexes-expressional.html
+  - https://www.postgresql.org/docs/18/datatype-json.html#JSON-INDEXING
+- **Cấp:** L3 · **Nối với:** node `a7`; skill `index_design` · **Kiểm:** PGlite, kế hoạch: Sai `Seq Scan` (GIN không dùng được); Đúng `Index Scan using app_events_screen_ix`
+
+```sql
+-- P22 bad
+CREATE INDEX app_events_props_path_ix ON app_events USING gin (props jsonb_path_ops);
+EXPLAIN (COSTS OFF) SELECT count(*) FROM app_events WHERE props ->> 'screen' = 'payment';
+```
+```sql
+-- P22 good
+CREATE INDEX app_events_screen_ix ON app_events ((props ->> 'screen'));
+ANALYZE app_events;
+EXPLAIN (COSTS OFF) SELECT count(*) FROM app_events WHERE props ->> 'screen' = 'payment';
+```
+
+### P23 · Sau pooler: `SET LOCAL`, không `SET` / Behind a transaction pooler use SET LOCAL
+
+- **Luật:**
+  - ứng dụng đi qua pooler ở chế độ transaction (P04) chỉ đặt tham số bằng `SET LOCAL` trong transaction, hoặc gắn sẵn cho role (P24);
+  - không dùng tính năng gắn với phiên (`SET`, advisory lock phiên, `LISTEN`, bảng tạm);
+  - prepared statement ở mức giao thức cần PgBouncer bật `max_prepared_statements`.
+- **Vì sao:** `SET` sống tới hết **phiên**. Sau pooler, phiên server được trao cho client khác ở transaction kế tiếp, nên cấu hình của request này rò sang request khác.
+- **Nguồn:**
+  - https://www.pgbouncer.org/config.html (`server_reset_query`: "clients must not use any session-based features"; `max_prepared_statements`)
+  - https://www.postgresql.org/docs/18/sql-set.html (`SET LOCAL` chỉ tới hết transaction)
+- **Cấp:** L4 · **Nối với:** chưa có · **Kiểm:** PGlite `(notx)`, một phiên đóng vai "kết nối dùng chung": Sai, `SHOW` của request sau vẫn thấy `1s`; Đúng thấy `0` (mặc định)
+
+```sql
+-- P23 bad (notx)
+SET statement_timeout = '1s';
+SHOW statement_timeout;
+```
+```sql
+-- P23 good (notx)
+BEGIN;
+SET LOCAL statement_timeout = '1s';
+COMMIT;
+SHOW statement_timeout;
+```
+
+### P24 · Timeout theo role, không trong `postgresql.conf` / Set timeouts per role
+
+- **Luật:** mỗi role có giới hạn riêng: `statement_timeout` cho role báo cáo/analyst, `idle_in_transaction_session_timeout` cho role ứng dụng, `lock_timeout` cho role migration (P13).
+- **Vì sao:**
+  - một truy vấn phân tích chạy quên giờ giữ tài nguyên và chặn vacuum (P03);
+  - đặt `statement_timeout` toàn server "is not recommended because it would affect all sessions", kể cả job bảo trì.
+- **Nguồn:**
+  - https://www.postgresql.org/docs/18/runtime-config-client.html#GUC-STATEMENT-TIMEOUT
+  - https://www.postgresql.org/docs/18/sql-alterrole.html
+- **Cấp:** L3 · **Nối với:** chưa có · **Kiểm:** PGlite, chạy được: Sai `statement_timeout` = 0 (không giới hạn); Đúng `rolconfig` = `{statement_timeout=30s, idle_in_transaction_session_timeout=60s}`
+
+```sql
+-- P24 bad
+SET statement_timeout = 0;
+SHOW statement_timeout;
+```
+```sql
+-- P24 good
+CREATE ROLE analyst_ro NOLOGIN;
+ALTER ROLE analyst_ro SET statement_timeout = '30s';
+ALTER ROLE analyst_ro SET idle_in_transaction_session_timeout = '60s';
+SELECT rolconfig FROM pg_roles WHERE rolname = 'analyst_ro';
+```
+
+### P25 · Tìm truy vấn tốn nhất bằng `pg_stat_statements` / Find the costliest queries with pg_stat_statements
+
+- **Luật:**
+  - bật `pg_stat_statements` (`shared_preload_libraries`) trên mọi môi trường thật;
+  - ưu tiên tối ưu theo `total_exec_time` (tổng cộng dồn), không theo một lần chạy chậm;
+  - so `mean_exec_time` trước/sau mỗi lần deploy để bắt plan regression (P19);
+  - `pg_stat_statements_reset()` sau khi đã lưu ảnh chụp.
+- **Vì sao:** truy vấn 5 ms chạy một triệu lần tốn hơn truy vấn 5 s chạy một lần. Không có số cộng dồn thì tối ưu nhầm chỗ.
+- **Nguồn:** https://www.postgresql.org/docs/18/pgstatstatements.html
+- **Cấp:** L5 · **Nối với:** skill `explain_read`; node `a10` · **Kiểm:** cú pháp. Extension phải nạp lúc khởi tạo PGlite (`extensions`), script kiểm không làm. Đã đo riêng ở `db-engine-knowledge.md` §1.2
+
+```sql
+-- P25 bad (syntax)
+EXPLAIN ANALYZE SELECT count(*) FROM orders WHERE status = 'PAID';
+```
+```sql
+-- P25 good (syntax)
+SELECT query, calls, round(total_exec_time) AS total_ms, round(mean_exec_time::numeric, 2) AS mean_ms
+FROM pg_stat_statements
+ORDER BY total_exec_time DESC
+LIMIT 10;
+```
+
+### P26 · Theo dõi tuổi transaction ID (wraparound) / Monitor transaction ID age
+
+- **Luật:**
+  - theo dõi `age(datfrozenxid)` của từng database và `age(relfrozenxid)` của bảng lớn nhất, cảnh báo khi vượt một tỷ lệ của `autovacuum_freeze_max_age`;
+  - tìm và gỡ thứ chặn freeze: transaction mở lâu, replication slot bỏ quên, prepared transaction treo.
+- **Vì sao:**
+  - transaction ID 32 bit quay vòng;
+  - nếu không freeze kịp, Postgres ngừng cấp transaction ID mới (dừng ghi) để bảo vệ dữ liệu, và cần `VACUUM` toàn database mới chạy lại được;
+  - kích thước đĩa không báo trước điều này.
+- **Nguồn:** https://www.postgresql.org/docs/18/routine-vacuuming.html#VACUUM-FOR-WRAPAROUND
+- **Cấp:** L5 · **Nối với:** chưa có · **Kiểm:** PGlite, chạy được: Sai chỉ ra số byte; Đúng ra tuổi từng database (79–82) và phần trăm so với `autovacuum_freeze_max_age`
+
+```sql
+-- P26 bad
+SELECT pg_database_size(current_database()) AS bytes;
+```
+```sql
+-- P26 good
+SELECT datname, age(datfrozenxid) AS xid_age,
+       round(100.0 * age(datfrozenxid) / current_setting('autovacuum_freeze_max_age')::int, 2) AS pct_of_freeze_max
+FROM pg_database ORDER BY xid_age DESC;
+```
+
 ## 6. Bảo mật (X)
 
 ### X01 · Truy vấn tham số hóa, không ghép chuỗi / Parameterise, never concatenate
@@ -2037,9 +2707,249 @@ db.orders_customer_11.find({})
 db.orders.find({ customerId: 11 }, { _id: 1 })
 ```
 
+### 7.1 Dữ liệu mẫu bổ sung (vòng 2)
+
+Các mục M15–M22 chạy trên `mingo` **7.2.6** (cài tạm ngoài repo), với `MDATA` ở §7.0 cộng khối dưới đây. Script kiểm vòng 2 cũng chạy lại M01, M05, M08, M09 trên 7.2.6: kết quả như vòng 1. Khối có nhiều lệnh thì kết quả là của lệnh cuối; lệnh ghi chạy trên bản sao dữ liệu của riêng khối đó.
+
+```js
+// MDATA2
+const data2 = {
+  users: [
+    { _id: 1, name: 'An', city: 'Da Nang' }, { _id: 2, name: 'Binh', city: null },
+    { _id: 3, name: 'Chi' }, { _id: 4, name: 'Dung', city: 'Hue' }
+  ],
+  carts: [
+    { _id: 1, userId: 1, items: [{ sku: 'A', qty: 1 }, { sku: 'B', qty: 2 }] },
+    { _id: 2, userId: 2, items: [] },
+    { _id: 3, userId: 3 }
+  ],
+  logins: [
+    { _id: 1, userId: 1, at: '2026-9-30' }, { _id: 2, userId: 2, at: '2026-10-02' }, { _id: 3, userId: 4, at: '2026-11-01' }
+  ],
+  logins_typed: [
+    { _id: 1, userId: 1, at: new Date('2026-09-30') }, { _id: 2, userId: 2, at: new Date('2026-10-02') }, { _id: 3, userId: 4, at: new Date('2026-11-01') }
+  ]
+};
+```
+
+### M15 · Nhiều điều kiện trên cùng một phần tử mảng: `$elemMatch` / One array element, many conditions: $elemMatch
+
+- **Luật:** khi các điều kiện phải đúng **trên cùng một** phần tử của mảng tài liệu con (cùng một dòng hàng có `sku = 'A'` **và** `qty ≥ 2`), dùng `$elemMatch`.
+- **Vì sao:** viết bằng dot notation (`'items.sku'`, `'items.qty'`), mỗi điều kiện có thể được thỏa bởi một phần tử khác nhau. Tài liệu gọi đó là "any combination of elements". Kết quả thừa mà không báo lỗi.
+- **Nguồn:** https://www.mongodb.com/docs/manual/tutorial/query-array-of-documents/ (mục "Combination of Elements Satisfies the Criteria")
+- **Cấp:** L2 · **Nối với:** skill `where`, `join` (đối chiếu: điều kiện trên cùng một dòng con) · **Kiểm:** mingo, Sai ≠ Đúng: Sai `[1, 4]` (đơn 1 có A qty 1 và B qty 2), Đúng `[4]`
+
+```js
+// M15 bad
+db.orders.find({ 'items.sku': 'A', 'items.qty': { $gte: 2 } }, { _id: 1 })
+```
+```js
+// M15 good
+db.orders.find({ items: { $elemMatch: { sku: 'A', qty: { $gte: 2 } } } }, { _id: 1 })
+```
+
+### M16 · `{ field: null }` khớp cả trường thiếu / null also matches missing fields
+
+- **Luật:** nói rõ ý định: chỉ giá trị null thì `{ $type: 'null' }`, chỉ trường không có thì `{ $exists: false }`; `{ field: null }` chỉ dùng khi muốn cả hai.
+- **Vì sao:** `{ city: null }` trả cả tài liệu có `city: null` lẫn tài liệu không có trường `city`. Đếm "khách chưa khai thành phố" sẽ lẫn hai nhóm khác nghĩa.
+- **Nguồn:** https://www.mongodb.com/docs/manual/tutorial/query-for-null-fields/
+- **Cấp:** L1 · **Nối với:** skill `null_logic` · **Kiểm:** mingo, Sai ≠ Đúng: Sai `[2, 3]`, Đúng `[2]`
+
+```js
+// M16 bad
+db.users.find({ city: null }, { _id: 1 })
+```
+```js
+// M16 good
+db.users.find({ city: { $type: 'null' } }, { _id: 1 })
+```
+
+### M17 · `$ne` / `$nin` trả cả tài liệu thiếu trường / $ne and $nin include missing fields
+
+- **Luật:** "khác X" mà chỉ muốn tài liệu có giá trị thật thì thêm `$exists: true` và loại `null`.
+- **Vì sao:** `$ne` chọn cả tài liệu không có trường đó. Đây là bẫy ngược với SQL: `city <> 'Da Nang'` trong SQL **bỏ** NULL (Q03), còn Mongo **giữ** cả null lẫn thiếu.
+- **Nguồn:** https://www.mongodb.com/docs/manual/reference/operator/query/ne/ ("This includes documents that do not contain the field.")
+- **Cấp:** L2 · **Nối với:** skill `null_logic` · **Kiểm:** mingo, Sai ≠ Đúng: Sai `[2, 3, 4]`, Đúng `[4]`
+
+```js
+// M17 bad
+db.users.find({ city: { $ne: 'Da Nang' } }, { _id: 1 })
+```
+```js
+// M17 good
+db.users.find({ city: { $exists: true, $nin: ['Da Nang', null] } }, { _id: 1 })
+```
+
+### M18 · `$unwind` bỏ mất tài liệu có mảng rỗng hoặc thiếu / $unwind drops empty and missing arrays
+
+- **Luật:** khi báo cáo phải giữ mọi tài liệu cha (khách có giỏ rỗng vẫn phải hiện 0), dùng `preserveNullAndEmptyArrays: true` rồi đếm có điều kiện.
+- **Vì sao:** mặc định `$unwind` không sinh tài liệu nào khi mảng null, thiếu hoặc rỗng. Giống INNER JOIN thay cho LEFT JOIN trong SQL: dòng 0 biến mất khỏi báo cáo.
+- **Nguồn:** https://www.mongodb.com/docs/manual/reference/operator/aggregation/unwind/ (mục "Missing Field" và `preserveNullAndEmptyArrays`)
+- **Cấp:** L2 · **Nối với:** skill `left_join`, `coalesce` · **Kiểm:** mingo, Sai ≠ Đúng: Sai chỉ còn người dùng 1, Đúng có cả 2 và 3 với `lines: 0`
+
+```js
+// M18 bad
+db.carts.aggregate([
+  { $unwind: '$items' },
+  { $group: { _id: '$userId', lines: { $sum: 1 } } },
+  { $sort: { _id: 1 } }
+])
+```
+```js
+// M18 good
+db.carts.aggregate([
+  { $unwind: { path: '$items', preserveNullAndEmptyArrays: true } },
+  { $group: { _id: '$userId', lines: { $sum: { $cond: [{ $ifNull: ['$items', false] }, 1, 0] } } } },
+  { $sort: { _id: 1 } }
+])
+```
+
+### M19 · Ngày giờ lưu kiểu `Date`, không lưu chuỗi / Store dates as Date, not strings
+
+- **Luật:** thời điểm lưu kiểu `Date` (BSON date, UTC). Nếu dữ liệu nguồn là chuỗi, đổi khi nạp (`$dateFromString`), không để mỗi truy vấn tự so chuỗi.
+- **Vì sao:**
+  - chuỗi so theo byte ("simple binary comparison"), nên `'2026-9-30'` lớn hơn `'2026-10-01'` và rơi khỏi khoảng tháng 9;
+  - toán tử so sánh chỉ so cùng kiểu BSON (type bracketing), nên trộn chuỗi và `Date` trong một trường làm khoảng thời gian thiếu dữ liệu âm thầm.
+- **Nguồn:**
+  - https://www.mongodb.com/docs/manual/reference/bson-type-comparison-order/
+  - https://www.mongodb.com/docs/manual/reference/operator/aggregation/dateFromString/
+- **Cấp:** L1 · **Nối với:** skill `date_math`, `cast` · **Kiểm:** mingo, Sai ≠ Đúng: khoảng tháng 9, Sai `[]`, Đúng `[1]`
+
+```js
+// M19 bad
+db.logins.find({ at: { $gte: '2026-09-01', $lt: '2026-10-01' } }, { _id: 1 })
+```
+```js
+// M19 good
+db.logins_typed.find({ at: { $gte: new Date('2026-09-01'), $lt: new Date('2026-10-01') } }, { _id: 1 })
+```
+
+### M20 · Sửa mọi phần tử khớp: `$[<id>]` + `arrayFilters`, không `$` / Update all matching elements with filtered positional
+
+- **Luật:** cần sửa **mọi** phần tử mảng thỏa điều kiện thì dùng `$[<identifier>]` với `arrayFilters`. Toán tử `$` chỉ sửa phần tử khớp **đầu tiên**.
+- **Vì sao:** `$` là "placeholder for the first element that matches". Giảm giá mọi dòng dưới 50 bằng `$` chỉ đổi một dòng, phần còn lại giữ giá cũ.
+- **Nguồn:**
+  - https://www.mongodb.com/docs/manual/reference/operator/update/positional/
+  - https://www.mongodb.com/docs/manual/reference/operator/update/positional-filtered/
+- **Cấp:** L2 · **Nối với:** chưa có · **Kiểm:** mingo, Sai ≠ Đúng: đơn 5, Sai chỉ giảm SKU C (30 → 15), Đúng giảm cả C và B (15 → 7,5)
+
+```js
+// M20 bad
+db.orders.updateOne({ _id: 5, 'items.price': { $lt: 50 } }, { $mul: { 'items.$.price': 0.5 } });
+db.orders.find({ _id: 5 }, { _id: 0, items: 1 })
+```
+```js
+// M20 good
+db.orders.updateOne({ _id: 5 }, { $mul: { 'items.$[cheap].price': 0.5 } }, { arrayFilters: [{ 'cheap.price': { $lt: 50 } }] });
+db.orders.find({ _id: 5 }, { _id: 0, items: 1 })
+```
+
+### M21 · Trung bình của trung bình không phải trung bình / An average of averages is not the average
+
+- **Luật:** giá trị đơn trung bình tính `$avg` trên từng đơn, một lần. Nếu buộc phải gộp từ các nhóm, giữ `sum` và `count` của từng nhóm rồi chia ở cuối.
+- **Vì sao:** `$avg` của các trung bình nhóm cho mỗi nhóm trọng số như nhau, bất kể nhóm có 1 hay 100 đơn. Cùng bẫy với A18 trong SQL.
+- **Nguồn:** https://www.mongodb.com/docs/manual/reference/operator/aggregation/avg/
+- **Cấp:** L2 · **Nối với:** skill `aggregate`, `group_by` · **Kiểm:** mingo, Sai ≠ Đúng: Sai 160,83, Đúng 136,25
+
+```js
+// M21 bad
+db.orders.aggregate([
+  { $match: { status: 'PAID' } },
+  { $group: { _id: '$customerId', avgTotal: { $avg: '$total' } } },
+  { $group: { _id: null, avgOrder: { $avg: '$avgTotal' } } }
+])
+```
+```js
+// M21 good
+db.orders.aggregate([
+  { $match: { status: 'PAID' } },
+  { $group: { _id: null, avgOrder: { $avg: '$total' } } }
+])
+```
+
+### M22 · Nhiều giá trị của cùng một trường: `$in`, không `$or` / $in instead of $or on one field
+
+- **Luật:** so bằng nhiều giá trị của **một** trường thì viết `{ field: { $in: [...] } }`; `$or` dành cho điều kiện trên các trường khác nhau.
+- **Vì sao:** tài liệu `$or` khuyên dùng `$in` cho trường hợp này: ngắn hơn, và một index trên trường đó phục vụ trọn câu lệnh.
+- **Nguồn:** https://www.mongodb.com/docs/manual/reference/operator/query/or/ (mục "$or Compared to $in")
+- **Cấp:** L1 · **Nối với:** skill `where`, `in_subquery` · **Kiểm:** mingo, Sai = Đúng (cùng 5 đơn); lợi ích về index không đo được vì mingo không có index
+
+```js
+// M22 bad
+db.orders.find({ $or: [{ status: 'PAID' }, { status: 'CANCELLED' }] }, { _id: 1 })
+```
+```js
+// M22 good
+db.orders.find({ status: { $in: ['PAID', 'CANCELLED'] } }, { _id: 1 })
+```
+
 ## 8. DynamoDB (D)
 
-Ví dụ DynamoDB là minh họa (**cú pháp**). Chúng ghi item theo dạng JSON của API (`PK`, `SK` là tên thuộc tính khóa tự đặt), hoặc theo tham số `Query`. Runtime `@dynoxide/wasm-engine` chưa có trong repo (`db-engine-knowledge.md` §1.5). Khi khu DynamoDB có runtime, các mục D06, D10, D12 là ứng viên chạy thật đầu tiên.
+Vòng 2 (2026-11-20) chạy thật các ví dụ DynamoDB trên `@dynoxide/wasm-engine` **1.5.0** (bản `spike-nosql-browser.md` đã đo), trong Node:
+
+- engine chạy trong một `worker_threads` giả lập Web Worker, chế độ `ephemeral` (SQLite trong bộ nhớ);
+- mỗi khối được chạy trên một engine mới, nạp lại dữ liệu §8.0, nên lệnh ghi của khối này không ảnh hưởng khối khác;
+- mỗi khối là các lệnh `await <Operation>({...})` với request đúng dạng DynamoDB JSON của API; script kiểm ghi lại `Count`, `ScannedCount`, `ConsumedCapacity` hoặc kiểu lỗi (`EngineError.type`);
+- số RCU/WCU ở dòng **Kiểm** là **số dynoxide 1.5.0 báo**. Chúng khớp quy tắc tài liệu (đọc theo khối 4 KB, ghi theo khối 1 KB), nhưng không phải hóa đơn AWS;
+- giới hạn của emulator: không có throttle theo partition, không TTL, không `TransactWriteItems` (trả `UnsupportedOperation`). Mục nào dựa vào các thứ này vẫn ghi **cú pháp** và nói lý do;
+- emulator kiểm tra đầu vào như AWS: tên bảng/index ít nhất 3 ký tự, từ dành riêng, điều kiện trên khóa trong `FilterExpression`, đọc strong trên GSI. Các lỗi đó được dùng làm bằng chứng ở D13, D14, D15.
+
+Khối có hậu tố `(syntax)` là khối không chạy.
+
+### 8.0 Dữ liệu mẫu cho các ví dụ chạy được
+
+Một bảng `Shop` kiểu single-table (40 khách, 400 đơn, mỗi đơn có một bản trong item collection của khách và một item `META`), hai GSI (`ByStatus`, thưa `PendingByWarehouse`), cùng ba bảng nhỏ cho D04 và D18. Tổng 1.135 item trong `Shop`.
+
+```js
+// DDATA
+const S = (v) => ({ S: String(v) }), N = (v) => ({ N: String(v) });
+const keyAttr = (n, t = 'S') => ({ AttributeName: n, AttributeType: t });
+const tables = [
+  { TableName: 'Shop', BillingMode: 'PAY_PER_REQUEST',
+    KeySchema: [{ AttributeName: 'PK', KeyType: 'HASH' }, { AttributeName: 'SK', KeyType: 'RANGE' }],
+    AttributeDefinitions: [keyAttr('PK'), keyAttr('SK'), keyAttr('status'), keyAttr('warehouseId'), keyAttr('pendingAt')],
+    GlobalSecondaryIndexes: [
+      { IndexName: 'ByStatus', KeySchema: [{ AttributeName: 'status', KeyType: 'HASH' }], Projection: { ProjectionType: 'ALL' } },
+      { IndexName: 'PendingByWarehouse',
+        KeySchema: [{ AttributeName: 'warehouseId', KeyType: 'HASH' }, { AttributeName: 'pendingAt', KeyType: 'RANGE' }],
+        Projection: { ProjectionType: 'INCLUDE', NonKeyAttributes: ['customerId', 'total'] } }] },
+  { TableName: 'StoreDaysBad', BillingMode: 'PAY_PER_REQUEST',
+    KeySchema: [{ AttributeName: 'PK', KeyType: 'HASH' }, { AttributeName: 'SK', KeyType: 'RANGE' }],
+    AttributeDefinitions: [keyAttr('PK'), keyAttr('SK')] },
+  { TableName: 'BoardText', BillingMode: 'PAY_PER_REQUEST',
+    KeySchema: [{ AttributeName: 'PK', KeyType: 'HASH' }, { AttributeName: 'score', KeyType: 'RANGE' }],
+    AttributeDefinitions: [keyAttr('PK'), keyAttr('score')] },
+  { TableName: 'BoardNum', BillingMode: 'PAY_PER_REQUEST',
+    KeySchema: [{ AttributeName: 'PK', KeyType: 'HASH' }, { AttributeName: 'score', KeyType: 'RANGE' }],
+    AttributeDefinitions: [keyAttr('PK'), keyAttr('score', 'N')] }
+];
+const shop = [], bad = [], text = [], num = [];
+for (let c = 4700; c < 4740; c++) shop.push({ PK: S('CUSTOMER#' + c), SK: S('PROFILE'), name: S('Customer ' + c) });
+for (let i = 0; i < 400; i++) {
+  const id = 9000 + i, c = 4700 + (i * 7) % 40, day = String(1 + (i % 31)).padStart(2, '0');
+  const at = `2026-10-${day}T${String(8 + (i % 12)).padStart(2, '0')}:00:00Z`;
+  const status = i % 10 === 0 ? 'PENDING' : i % 10 === 1 ? 'CANCELLED' : 'PAID';
+  const o = { customerId: S(c), status: S(status), total: N(50 + (i * 37) % 450), warehouseId: S('WH' + (i % 3)) };
+  if (status === 'PENDING') o.pendingAt = S(at);
+  shop.push({ PK: S('CUSTOMER#' + c), SK: S(`ORDER#${at}#${id}`), ...o });
+  shop.push({ PK: S('ORDER#' + id), SK: S('META'), version: N(1), ...o });
+}
+for (let i = 0; i < 100; i++) {
+  shop.push({ PK: S('EVENTS#2026-10-31'), SK: S('ts#' + String(i).padStart(3, '0')) });
+  shop.push({ PK: S('EVENTS#2026-10-31#' + (i % 10)), SK: S('ts#' + String(i).padStart(3, '0')) });
+}
+for (let d = new Date('2026-09-01'); d < new Date('2026-12-01'); d.setUTCDate(d.getUTCDate() + 1)) {
+  const iso = d.toISOString().slice(0, 10), [y, m, dd] = iso.split('-');
+  shop.push({ PK: S('STORE#3'), SK: S('SALE#' + iso), revenue: N(1000) });
+  bad.push({ PK: S('STORE#3'), SK: S(`${dd}/${m}/${y}`), revenue: N(1000) });
+}
+shop.push({ PK: S('PRODUCT#A'), SK: S('DETAIL'), manualPdfBase64: S('x'.repeat(350 * 1024)), views: N(10234) });
+shop.push({ PK: S('PRODUCT#B'), SK: S('DETAIL'), manualS3Key: S('s3://bucket/manuals/B.pdf') });
+shop.push({ PK: S('PRODUCT#B'), SK: S('COUNTERS'), views: N(10234) });
+shop.push({ PK: S('PAGE#home'), SK: S('COUNTER'), views: N(0) });
+for (const s of [9, 75, 80, 100, 250]) { text.push({ PK: S('BOARD'), score: S(s) }); num.push({ PK: S('BOARD'), score: N(s) }); }
+const items = { Shop: shop, StoreDaysBad: bad, BoardText: text, BoardNum: num };
+```
 
 ### D01 · Liệt kê access pattern trước, thiết kế khóa sau / Access patterns first
 
@@ -2052,17 +2962,20 @@ Ví dụ DynamoDB là minh họa (**cú pháp**). Chúng ghi item theo dạng JS
 - **Nguồn:**
   - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-general-nosql-design.html
   - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/data-modeling.html
-- **Cấp:** L1 · **Nối với:** chưa có (node `d7`: lấy yêu cầu) · **Kiểm:** cú pháp
+- **Cấp:** L1 · **Nối với:** chưa có (node `d7`: lấy yêu cầu) · **Kiểm:** dynoxide, Sai = Đúng (Count 10). Sai: `Scan` có ScannedCount 1135, tốn 54 RCU. Đúng: ba lần gọi, mỗi lần 0,5 RCU
 
 ```js
-// D01 bad (syntax)
-// "Cứ tạo bảng Orders với khóa orderId, cần gì thì Scan + FilterExpression sau."
+// D01 bad
+await Scan({ TableName: 'Shop', FilterExpression: 'customerId = :c AND begins_with(SK, :o)',
+  ExpressionAttributeValues: { ':c': { S: '4711' }, ':o': { S: 'ORDER#' } }, ReturnConsumedCapacity: 'TOTAL' });
 ```
 ```js
-// D01 good (syntax)
-// AP1 lấy đơn theo id                 -> GetItem  PK = ORDER#<id>
-// AP2 đơn của một khách, mới nhất trước -> Query    PK = CUSTOMER#<id>, SK begins_with ORDER#, ScanIndexForward = false
-// AP3 đơn chưa giao của một kho        -> Query GSI1 PK = WAREHOUSE#<id>#PENDING
+// D01 good
+await GetItem({ TableName: 'Shop', Key: { PK: { S: 'ORDER#9001' }, SK: { S: 'META' } }, ReturnConsumedCapacity: 'TOTAL' });          // AP1
+await Query({ TableName: 'Shop', KeyConditionExpression: 'PK = :pk AND begins_with(SK, :o)', ScanIndexForward: false,      // AP2
+  ExpressionAttributeValues: { ':pk': { S: 'CUSTOMER#4711' }, ':o': { S: 'ORDER#' } }, ReturnConsumedCapacity: 'TOTAL' });
+await Query({ TableName: 'Shop', IndexName: 'PendingByWarehouse', KeyConditionExpression: 'warehouseId = :w',            // AP3
+  ExpressionAttributeValues: { ':w': { S: 'WH0' } }, ReturnConsumedCapacity: 'TOTAL' });
 ```
 
 ### D02 · Partition key nhiều giá trị, tải đều / High-cardinality, evenly accessed partition keys
@@ -2079,15 +2992,17 @@ Ví dụ DynamoDB là minh họa (**cú pháp**). Chúng ghi item theo dạng JS
   - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-partition-key-design.html
   - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-partition-key-uniform-load.html
   - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/burst-adaptive-capacity.html
-- **Cấp:** L2 · **Nối với:** chưa có · **Kiểm:** cú pháp
+- **Cấp:** L2 · **Nối với:** chưa có · **Kiểm:** dynoxide, chạy được: GSI `ByStatus` dồn 640 trên 800 item có `status` vào một khóa `PAID`; khóa `CUSTOMER#4711` giữ 11 item. Throttle theo partition không mô phỏng được (emulator một nút)
 
 ```js
-// D02 bad (syntax)
-{ PK: 'STATUS#PENDING', SK: 'ORDER#2026-10-31T08:00:00Z#9001' }
+// D02 bad
+await Query({ TableName: 'Shop', IndexName: 'ByStatus', KeyConditionExpression: '#s = :s',
+  ExpressionAttributeNames: { '#s': 'status' }, ExpressionAttributeValues: { ':s': { S: 'PAID' } }, Select: 'COUNT' });
 ```
 ```js
-// D02 good (syntax)
-{ PK: 'CUSTOMER#4711', SK: 'ORDER#2026-10-31T08:00:00Z#9001', status: 'PENDING' }
+// D02 good
+await Query({ TableName: 'Shop', KeyConditionExpression: 'PK = :pk',
+  ExpressionAttributeValues: { ':pk': { S: 'CUSTOMER#4711' } }, Select: 'COUNT' });
 ```
 
 ### D03 · Rải khóa nóng bằng hậu tố (write sharding) / Write sharding for hot keys
@@ -2097,15 +3012,21 @@ Ví dụ DynamoDB là minh họa (**cú pháp**). Chúng ghi item theo dạng JS
   - đọc thì hỏi song song N khóa rồi gộp.
 - **Vì sao:** chia một khóa nóng thành N khóa trên N partition, nhân giới hạn ghi lên N lần.
 - **Nguồn:** https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-partition-key-sharding.html
-- **Cấp:** L3 · **Nối với:** chưa có · **Kiểm:** cú pháp
+- **Cấp:** L3 · **Nối với:** chưa có · **Kiểm:** dynoxide, Sai = Đúng (Count 100 = 10 khóa × 10). Lợi ích chia tải ghi không đo được trên emulator
 
 ```js
-// D03 bad (syntax)
-{ PK: 'EVENTS#2026-10-31', SK: 'ts#…' }
+// D03 bad
+await Query({ TableName: 'Shop', KeyConditionExpression: 'PK = :pk',
+  ExpressionAttributeValues: { ':pk': { S: 'EVENTS#2026-10-31' } }, Select: 'COUNT' });
 ```
 ```js
-// D03 good (syntax)
-{ PK: 'EVENTS#2026-10-31#' + (hash(orderId) % 10), SK: 'ts#…' }
+// D03 good
+let total = 0;
+for (let k = 0; k < 10; k++) {
+  const r = await Query({ TableName: 'Shop', KeyConditionExpression: 'PK = :pk',
+    ExpressionAttributeValues: { ':pk': { S: 'EVENTS#2026-10-31#' + k } }, Select: 'COUNT' });
+  total += r.Count;
+}
 ```
 
 ### D04 · Sort key phân cấp để `begins_with` / Hierarchical sort keys
@@ -2116,16 +3037,17 @@ Ví dụ DynamoDB là minh họa (**cú pháp**). Chúng ghi item theo dạng JS
   - đặt đúng thứ tự cấp thì mỗi mức "drill-down" là một `Query`, không cần index thêm;
   - tiền tố phiên bản (`v0_`) giữ bản hiện hành dễ lấy.
 - **Nguồn:** https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-sort-keys.html
-- **Cấp:** L2 · **Nối với:** skill `order_by` (tư duy sắp xếp) · **Kiểm:** cú pháp
+- **Cấp:** L2 · **Nối với:** skill `order_by` (tư duy sắp xếp) · **Kiểm:** dynoxide, Sai ≠ Đúng: `BETWEEN` trên chuỗi `dd/mm/yyyy` trả 90 item (lẫn cả tháng 9 và 11), Đúng 31
 
 ```js
-// D04 bad (syntax)
-{ PK: 'STORE#3', SK: '31/10/2026' }
+// D04 bad
+await Query({ TableName: 'StoreDaysBad', KeyConditionExpression: 'PK = :pk AND SK BETWEEN :a AND :b',
+  ExpressionAttributeValues: { ':pk': { S: 'STORE#3' }, ':a': { S: '01/10/2026' }, ':b': { S: '31/10/2026' } }, Select: 'COUNT' });
 ```
 ```js
-// D04 good (syntax)
-{ TableName: 'Shop', KeyConditionExpression: 'PK = :pk AND begins_with(SK, :m)',
-  ExpressionAttributeValues: { ':pk': { S: 'STORE#3' }, ':m': { S: 'ORDER#2026-10' } } }
+// D04 good
+await Query({ TableName: 'Shop', KeyConditionExpression: 'PK = :pk AND begins_with(SK, :m)',
+  ExpressionAttributeValues: { ':pk': { S: 'STORE#3' }, ':m': { S: 'SALE#2026-10' } }, Select: 'COUNT' });
 ```
 
 ### D05 · Item collection: thứ đọc cùng nhau chung partition key / Item collections for related data
@@ -2140,18 +3062,18 @@ Ví dụ DynamoDB là minh họa (**cú pháp**). Chúng ghi item theo dạng JS
 - **Nguồn:**
   - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/data-modeling.html
   - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-adjacency-graphs.html
-- **Cấp:** L3 · **Nối với:** skill `join` (đối chiếu) · **Kiểm:** cú pháp
+- **Cấp:** L3 · **Nối với:** skill `join` (đối chiếu) · **Kiểm:** dynoxide. Sai: `GetItem` + `Scan` (ScannedCount 1135, 54 RCU). Đúng: một `Query`, 11 item, 0,5 RCU
 
 ```js
-// D05 bad (syntax)
-// GetItem Customers(4711), rồi Scan Orders với FilterExpression customerId = 4711
+// D05 bad
+await GetItem({ TableName: 'Shop', Key: { PK: { S: 'CUSTOMER#4711' }, SK: { S: 'PROFILE' } }, ReturnConsumedCapacity: 'TOTAL' });
+await Scan({ TableName: 'Shop', FilterExpression: 'customerId = :c AND begins_with(PK, :p)',
+  ExpressionAttributeValues: { ':c': { S: '4711' }, ':p': { S: 'CUSTOMER#' } }, ReturnConsumedCapacity: 'TOTAL' });
 ```
 ```js
-// D05 good (syntax)
-[{ PK: 'CUSTOMER#4711', SK: 'PROFILE', name: 'An' },
- { PK: 'CUSTOMER#4711', SK: 'ORDER#2026-10-30#9000', total: 120 },
- { PK: 'CUSTOMER#4711', SK: 'ORDER#2026-10-31#9001', total: 75 }]
-// Query PK = CUSTOMER#4711 -> hồ sơ + đơn trong một lần gọi
+// D05 good
+await Query({ TableName: 'Shop', KeyConditionExpression: 'PK = :pk',
+  ExpressionAttributeValues: { ':pk': { S: 'CUSTOMER#4711' } }, ReturnConsumedCapacity: 'TOTAL' });
 ```
 
 ### D06 · `Query`, đừng `Scan` / Query, don't Scan
@@ -2162,15 +3084,17 @@ Ví dụ DynamoDB là minh họa (**cú pháp**). Chúng ghi item theo dạng JS
   - `FilterExpression` không giảm chi phí: lọc **sau** khi đã đọc.
 - **Vì sao:** `Scan` đọc và tính phí mọi item, ăn hết capacity của bảng, làm throttle các request khác.
 - **Nguồn:** https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-query-scan.html
-- **Cấp:** L1 · **Nối với:** skill `where`, `sargable` (cùng ý "dùng khóa để thu hẹp") · **Kiểm:** cú pháp
+- **Cấp:** L1 · **Nối với:** skill `where`, `sargable` (cùng ý "dùng khóa để thu hẹp") · **Kiểm:** dynoxide. Sai: ScannedCount 1135, Count 11, 54 RCU. Đúng: ScannedCount 11, 0,5 RCU
 
 ```js
-// D06 bad (syntax)
-{ TableName: 'Shop', FilterExpression: 'customerId = :c', ExpressionAttributeValues: { ':c': { S: '4711' } } } // Scan
+// D06 bad
+await Scan({ TableName: 'Shop', FilterExpression: 'PK = :pk',
+  ExpressionAttributeValues: { ':pk': { S: 'CUSTOMER#4711' } }, ReturnConsumedCapacity: 'TOTAL' });
 ```
 ```js
-// D06 good (syntax)
-{ TableName: 'Shop', KeyConditionExpression: 'PK = :pk', ExpressionAttributeValues: { ':pk': { S: 'CUSTOMER#4711' } } } // Query
+// D06 good
+await Query({ TableName: 'Shop', KeyConditionExpression: 'PK = :pk',
+  ExpressionAttributeValues: { ':pk': { S: 'CUSTOMER#4711' } }, ReturnConsumedCapacity: 'TOTAL' });
 ```
 
 ### D07 · GSI: ít, chiếu tối thiểu, sparse khi được / Lean, sparse GSIs
@@ -2187,18 +3111,19 @@ Ví dụ DynamoDB là minh họa (**cú pháp**). Chúng ghi item theo dạng JS
   - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-indexes-general.html
   - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/SecondaryIndexes.html
   - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-gsi-overloading.html
-- **Cấp:** L3 · **Nối với:** skill `index_design` (giống partial index I03) · **Kiểm:** cú pháp
+- **Cấp:** L3 · **Nối với:** skill `index_design` (giống partial index I03) · **Kiểm:** dynoxide. GSI `ByStatus` chứa 800 item, GSI thưa `PendingByWarehouse` chỉ 80. Cùng câu hỏi "đơn chờ ở WH0": Sai đọc 80 item rồi lọc còn 28 (ScannedCount 80), Đúng đọc đúng 28
 
 ```js
-// D07 bad (syntax)
-{ IndexName: 'ByStatus', KeySchema: [{ AttributeName: 'status', KeyType: 'HASH' }], Projection: { ProjectionType: 'ALL' } }
+// D07 bad
+await Scan({ TableName: 'Shop', IndexName: 'ByStatus', Select: 'COUNT' });
+await Query({ TableName: 'Shop', IndexName: 'ByStatus', KeyConditionExpression: '#s = :s', FilterExpression: 'warehouseId = :w',
+  ExpressionAttributeNames: { '#s': 'status' }, ExpressionAttributeValues: { ':s': { S: 'PENDING' }, ':w': { S: 'WH0' } } });
 ```
 ```js
-// D07 good (syntax)
-// chỉ đơn đang chờ có thuộc tính pendingAt -> GSI thưa
-{ IndexName: 'PendingByWarehouse',
-  KeySchema: [{ AttributeName: 'warehouseId', KeyType: 'HASH' }, { AttributeName: 'pendingAt', KeyType: 'RANGE' }],
-  Projection: { ProjectionType: 'INCLUDE', NonKeyAttributes: ['customerId', 'total'] } }
+// D07 good
+await Scan({ TableName: 'Shop', IndexName: 'PendingByWarehouse', Select: 'COUNT' });
+await Query({ TableName: 'Shop', IndexName: 'PendingByWarehouse', KeyConditionExpression: 'warehouseId = :w',
+  ExpressionAttributeValues: { ':w': { S: 'WH0' } } });
 ```
 
 ### D08 · Item nhỏ: phần lớn để S3 / Keep items small
@@ -2215,16 +3140,19 @@ Ví dụ DynamoDB là minh họa (**cú pháp**). Chúng ghi item theo dạng JS
   - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-use-s3-too.html
   - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/read-write-operations.html (đọc tròn lên bội 4 KB, ghi bội 1 KB; `UpdateItem` tính theo kích thước lớn hơn của item trước/sau, kể cả khi chỉ sửa một thuộc tính)
   - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/ServiceQuotas.html
-- **Cấp:** L2 · **Nối với:** chưa có (giống M03) · **Kiểm:** cú pháp
+- **Cấp:** L2 · **Nối với:** chưa có (giống M03) · **Kiểm:** dynoxide: `UpdateItem` sửa một thuộc tính trên item ~350 KB tốn 351 WCU; trên item nhỏ tách riêng tốn 1 WCU (đúng quy tắc 1 KB mỗi WCU)
 
 ```js
-// D08 bad (syntax)
-{ PK: 'PRODUCT#A', SK: 'DETAIL', manualPdfBase64: '…350 KB…', views: 10234 }
+// D08 bad
+await UpdateItem({ TableName: 'Shop', Key: { PK: { S: 'PRODUCT#A' }, SK: { S: 'DETAIL' } },
+  UpdateExpression: 'ADD #v :one', ExpressionAttributeNames: { '#v': 'views' },
+  ExpressionAttributeValues: { ':one': { N: '1' } }, ReturnConsumedCapacity: 'TOTAL' });
 ```
 ```js
-// D08 good (syntax)
-[{ PK: 'PRODUCT#A', SK: 'DETAIL', manualS3Key: 's3://bucket/manuals/A.pdf' },
- { PK: 'PRODUCT#A', SK: 'COUNTERS', views: 10234 }]
+// D08 good
+await UpdateItem({ TableName: 'Shop', Key: { PK: { S: 'PRODUCT#B' }, SK: { S: 'COUNTERS' } },
+  UpdateExpression: 'ADD #v :one', ExpressionAttributeNames: { '#v': 'views' },
+  ExpressionAttributeValues: { ':one': { N: '1' } }, ReturnConsumedCapacity: 'TOTAL' });
 ```
 
 ### D09 · Dữ liệu theo thời gian: TTL hoặc bảng theo kỳ / Time series: TTL or per-period tables
@@ -2239,7 +3167,7 @@ Ví dụ DynamoDB là minh họa (**cú pháp**). Chúng ghi item theo dạng JS
 - **Nguồn:**
   - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/TTL.html
   - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-time-series.html
-- **Cấp:** L3 · **Nối với:** chưa có (giống S11 drop partition) · **Kiểm:** cú pháp
+- **Cấp:** L3 · **Nối với:** chưa có (giống S11 drop partition) · **Kiểm:** cú pháp: dynoxide 1.5.0 trả `UnsupportedOperation` cho `UpdateTimeToLive` (README của gói ghi TTL chưa có)
 
 ```js
 // D09 bad (syntax)
@@ -2263,19 +3191,27 @@ Ví dụ DynamoDB là minh họa (**cú pháp**). Chúng ghi item theo dạng JS
   - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.ConditionExpressions.html
   - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/transaction-apis.html
   - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/WorkingWithItems.html
-- **Cấp:** L3 · **Nối với:** chưa có · **Kiểm:** cú pháp
+- **Cấp:** L3 · **Nối với:** chưa có · **Kiểm:** dynoxide. Sai: `PutItem` ghi đè âm thầm, item chỉ còn `status`. Đúng: `ConditionalCheckFailedException` ở lần tạo trùng và ở lần cập nhật thứ hai cùng `version`
 
 ```js
-// D10 bad (syntax)
-{ TableName: 'Shop', Item: { PK: { S: 'ORDER#9001' }, SK: { S: 'META' }, status: { S: 'PAID' } } } // PutItem ghi đè
+// D10 bad
+await PutItem({ TableName: 'Shop', Item: { PK: { S: 'ORDER#9001' }, SK: { S: 'META' }, status: { S: 'PAID' } } });
+await GetItem({ TableName: 'Shop', Key: { PK: { S: 'ORDER#9001' }, SK: { S: 'META' } } });
 ```
 ```js
-// D10 good (syntax)
-{ TableName: 'Shop', Key: { PK: { S: 'ORDER#9001' }, SK: { S: 'META' } },
+// D10 good
+await PutItem({ TableName: 'Shop', Item: { PK: { S: 'ORDER#9001' }, SK: { S: 'META' }, status: { S: 'PAID' } },
+  ConditionExpression: 'attribute_not_exists(PK)' });
+await UpdateItem({ TableName: 'Shop', Key: { PK: { S: 'ORDER#9000' }, SK: { S: 'META' } },
   UpdateExpression: 'SET #s = :paid, version = version + :one',
   ConditionExpression: 'version = :v AND #s = :pending',
   ExpressionAttributeNames: { '#s': 'status' },
-  ExpressionAttributeValues: { ':paid': { S: 'PAID' }, ':pending': { S: 'PENDING' }, ':v': { N: '3' }, ':one': { N: '1' } } }
+  ExpressionAttributeValues: { ':paid': { S: 'PAID' }, ':pending': { S: 'PENDING' }, ':v': { N: '1' }, ':one': { N: '1' } } });
+await UpdateItem({ TableName: 'Shop', Key: { PK: { S: 'ORDER#9000' }, SK: { S: 'META' } },
+  UpdateExpression: 'SET #s = :paid, version = version + :one',
+  ConditionExpression: 'version = :v AND #s = :pending',
+  ExpressionAttributeNames: { '#s': 'status' },
+  ExpressionAttributeValues: { ':paid': { S: 'PAID' }, ':pending': { S: 'PENDING' }, ':v': { N: '1' }, ':one': { N: '1' } } });
 ```
 
 ### D11 · Chọn chế độ capacity theo dạng tải / Pick the capacity mode for the traffic
@@ -2308,15 +3244,21 @@ Ví dụ DynamoDB là minh họa (**cú pháp**). Chúng ghi item theo dạng JS
   - `Limit` là số item **đọc**, không phải số item khớp sau `FilterExpression`.
 - **Vì sao:** chỉ đọc trang đầu là âm thầm thiếu dữ liệu. Một trang rỗng không có nghĩa là hết.
 - **Nguồn:** https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Query.Pagination.html
-- **Cấp:** L2 · **Nối với:** skill `limit` (giống keyset Q21) · **Kiểm:** cú pháp
+- **Cấp:** L2 · **Nối với:** skill `limit` (giống keyset Q21) · **Kiểm:** dynoxide, Sai ≠ Đúng. Sai: trang đầu Count 3 (còn `LastEvaluatedKey`). Đúng: bốn trang 3 + 1 + 0 + 0 = 4; một trang Count 0 vẫn có `LastEvaluatedKey`
 
 ```js
-// D12 bad (syntax)
-const page = await ddb.query(params); return page.Items;
+// D12 bad
+const page = await Query({ TableName: 'Shop', KeyConditionExpression: 'PK = :pk', FilterExpression: '#t > :t', ExpressionAttributeNames: { '#t': 'total' }, Limit: 3,
+  ExpressionAttributeValues: { ':pk': { S: 'CUSTOMER#4711' }, ':t': { N: '300' } } });
 ```
 ```js
-// D12 good (syntax)
-let items = [], key; do { const p = await ddb.query({ ...params, ExclusiveStartKey: key }); items.push(...p.Items); key = p.LastEvaluatedKey; } while (key);
+// D12 good
+let n = 0, key;
+do {
+  const p = await Query({ TableName: 'Shop', KeyConditionExpression: 'PK = :pk', FilterExpression: '#t > :t', ExpressionAttributeNames: { '#t': 'total' }, Limit: 3,
+    ExpressionAttributeValues: { ':pk': { S: 'CUSTOMER#4711' }, ':t': { N: '300' } }, ExclusiveStartKey: key });
+  n += p.Count; key = p.LastEvaluatedKey;
+} while (key);
 ```
 
 ### D13 · Đọc strongly consistent chỉ khi cần / Strong reads only when needed
@@ -2327,15 +3269,213 @@ let items = [], key; do { const p = await ddb.query({ ...params, ExclusiveStartK
   - GSI không hỗ trợ đọc strongly consistent.
 - **Vì sao:** strong read tốn gấp đôi và chỉ có trên bảng/LSI. Thiết kế dựa vào strong read trên GSI là không làm được.
 - **Nguồn:** https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.ReadConsistency.html
-- **Cấp:** L2 · **Nối với:** chưa có · **Kiểm:** cú pháp
+- **Cấp:** L2 · **Nối với:** chưa có · **Kiểm:** dynoxide. Sai: `ValidationException` "Consistent reads are not supported on global secondary indexes" (khớp tài liệu API `Query`). Đúng: `GetItem` 0,5 RCU khi đọc eventual, 1 RCU khi strong
 
 ```js
-// D13 bad (syntax)
-{ TableName: 'Shop', IndexName: 'PendingByWarehouse', ConsistentRead: true, KeyConditionExpression: 'warehouseId = :w' } // GSI từ chối
+// D13 bad
+await Query({ TableName: 'Shop', IndexName: 'PendingByWarehouse', ConsistentRead: true,
+  KeyConditionExpression: 'warehouseId = :w', ExpressionAttributeValues: { ':w': { S: 'WH0' } } });
 ```
 ```js
-// D13 good (syntax)
-{ TableName: 'Shop', Key: { PK: { S: 'ORDER#9001' }, SK: { S: 'META' } }, ConsistentRead: true } // GetItem ngay sau khi trả tiền
+// D13 good
+await GetItem({ TableName: 'Shop', Key: { PK: { S: 'ORDER#9001' }, SK: { S: 'META' } }, ReturnConsumedCapacity: 'TOTAL' });
+await GetItem({ TableName: 'Shop', Key: { PK: { S: 'ORDER#9001' }, SK: { S: 'META' } }, ConsistentRead: true, ReturnConsumedCapacity: 'TOTAL' });
+```
+
+### D14 · Từ dành riêng phải qua `ExpressionAttributeNames` / Reserved words need name placeholders
+
+- **Luật:**
+  - tên thuộc tính trùng từ dành riêng (`status`, `total`, `name`, `date`, `count`…) phải viết qua placeholder `#x` trong mọi expression;
+  - tốt nhất là không đặt tên thuộc tính trùng từ dành riêng ngay từ đầu.
+- **Vì sao:** DynamoDB có hơn 500 từ dành riêng; expression dùng thẳng tên đó bị từ chối bằng `ValidationException` chứ không chạy sai âm thầm, nhưng lỗi chỉ lộ ra lúc chạy.
+- **Nguồn:**
+  - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/ReservedWords.html (cả `STATUS` và `TOTAL` có trong danh sách)
+  - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.NamingRulesDataTypes.html#HowItWorks.NamingRules.Reserved
+- **Cấp:** L1 · **Nối với:** chưa có (giống tên cột phải đặt trong nháy kép ở S08) · **Kiểm:** dynoxide. Sai: `ValidationException` "Attribute name is a reserved keyword; reserved keyword: status". Đúng: Count 10, ScannedCount 11
+
+```js
+// D14 bad
+await Query({ TableName: 'Shop', KeyConditionExpression: 'PK = :pk', FilterExpression: 'status = :s',
+  ExpressionAttributeValues: { ':pk': { S: 'CUSTOMER#4711' }, ':s': { S: 'PAID' } } });
+```
+```js
+// D14 good
+await Query({ TableName: 'Shop', KeyConditionExpression: 'PK = :pk', FilterExpression: '#s = :s',
+  ExpressionAttributeNames: { '#s': 'status' },
+  ExpressionAttributeValues: { ':pk': { S: 'CUSTOMER#4711' }, ':s': { S: 'PAID' } } });
+```
+
+### D15 · Điều kiện trên sort key đặt trong `KeyConditionExpression` / Sort-key conditions belong in the key condition
+
+- **Luật:** mọi điều kiện trên partition key và sort key (`=`, `<`, `BETWEEN`, `begins_with`) viết trong `KeyConditionExpression`; `FilterExpression` chỉ cho thuộc tính thường.
+- **Vì sao:**
+  - key condition thu hẹp phần dữ liệu được **đọc**, filter chỉ bỏ bớt thứ **đã đọc**;
+  - với `Query`, AWS từ chối hẳn filter trên khóa: "A filter expression cannot contain partition key or sort key attributes."
+- **Nguồn:**
+  - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Query.FilterExpression.html
+  - https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_Query.html (`KeyConditionExpression`)
+- **Cấp:** L2 · **Nối với:** skill `where`, `sargable` (cùng ý: điều kiện phải "dùng được khóa") · **Kiểm:** dynoxide. Sai: `ValidationException` "Filter Expression can only contain non-primary key attributes". Đúng: Count 7, 0,5 RCU
+
+```js
+// D15 bad
+await Query({ TableName: 'Shop', KeyConditionExpression: 'PK = :pk', FilterExpression: 'SK BETWEEN :a AND :b',
+  ExpressionAttributeValues: { ':pk': { S: 'STORE#3' }, ':a': { S: 'SALE#2026-10-01' }, ':b': { S: 'SALE#2026-10-07' } },
+  ReturnConsumedCapacity: 'TOTAL' });
+```
+```js
+// D15 good
+await Query({ TableName: 'Shop', KeyConditionExpression: 'PK = :pk AND SK BETWEEN :a AND :b',
+  ExpressionAttributeValues: { ':pk': { S: 'STORE#3' }, ':a': { S: 'SALE#2026-10-01' }, ':b': { S: 'SALE#2026-10-07' } },
+  ReturnConsumedCapacity: 'TOTAL' });
+```
+
+### D16 · `Select: COUNT` và `ProjectionExpression` không làm đọc rẻ hơn / Counting and projecting do not cut read cost
+
+- **Luật:**
+  - đừng `Scan` với `Select: 'COUNT'` để đếm trong luồng ứng dụng: nó tốn đúng bằng đọc cả item;
+  - `ProjectionExpression` chỉ giảm dữ liệu trả về mạng, không giảm RCU;
+  - con số hay hỏi thì giữ sẵn trong một item bộ đếm (D17) hoặc tổng hợp qua Streams.
+- **Vì sao:** RCU tính theo kích thước item đã đọc, không theo dữ liệu trả về. Tài liệu `Query` nói `COUNT` "uses the same quantity of read capacity units as getting the items".
+- **Nguồn:**
+  - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Scan.html#Scan.CapacityUnits
+  - https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_Query.html (`Select`)
+- **Cấp:** L2 · **Nối với:** skill `aggregate` (khác SQL: không có `count(*)` rẻ phía server) · **Kiểm:** dynoxide. Sai: `Scan` COUNT 54 RCU = `Scan` lấy đủ 54 RCU; `Query` item ~350 KB có projection 44 RCU = không projection 44 RCU. Đúng: đọc bộ đếm 0,5 RCU
+
+```js
+// D16 bad
+await Scan({ TableName: 'Shop', Select: 'COUNT', ReturnConsumedCapacity: 'TOTAL' });
+await Scan({ TableName: 'Shop', ReturnConsumedCapacity: 'TOTAL' });
+await Query({ TableName: 'Shop', KeyConditionExpression: 'PK = :pk', ProjectionExpression: 'SK',
+  ExpressionAttributeValues: { ':pk': { S: 'PRODUCT#A' } }, ReturnConsumedCapacity: 'TOTAL' });
+await Query({ TableName: 'Shop', KeyConditionExpression: 'PK = :pk',
+  ExpressionAttributeValues: { ':pk': { S: 'PRODUCT#A' } }, ReturnConsumedCapacity: 'TOTAL' });
+```
+```js
+// D16 good
+await GetItem({ TableName: 'Shop', Key: { PK: { S: 'PAGE#home' }, SK: { S: 'COUNTER' } }, ReturnConsumedCapacity: 'TOTAL' });
+```
+
+### D17 · Bộ đếm: `UpdateItem … ADD`, không đọc rồi ghi lại / Atomic counters, not read-modify-write
+
+- **Luật:**
+  - tăng/giảm số bằng một `UpdateItem` với `ADD` (hoặc `SET x = x + :n`);
+  - không `GetItem` rồi `PutItem` giá trị mới;
+  - bộ đếm nguyên tử không idempotent: retry có thể đếm hai lần. Số tiền và tồn kho dùng ghi có điều kiện (D10).
+- **Vì sao:** hai client cùng đọc giá trị cũ rồi cùng ghi đè thì mất một lần cập nhật (lost update). `UpdateItem` áp từng lần ghi theo thứ tự nhận.
+- **Nguồn:** https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/WorkingWithItems.html#WorkingWithItems.AtomicCounters
+- **Cấp:** L2 · **Nối với:** chưa có (giống `UPDATE … SET x = x + 1` thay cho đọc rồi ghi trong SQL) · **Kiểm:** dynoxide, Sai ≠ Đúng: hai lượt đọc 0 rồi cùng ghi 1, kết quả 1; Đúng hai lần `ADD`, kết quả 2
+
+```js
+// D17 bad
+const a = await GetItem({ TableName: 'Shop', Key: { PK: { S: 'PAGE#home' }, SK: { S: 'COUNTER' } } });
+const b = await GetItem({ TableName: 'Shop', Key: { PK: { S: 'PAGE#home' }, SK: { S: 'COUNTER' } } });
+await PutItem({ TableName: 'Shop', Item: { ...a.Item, views: { N: String(Number(a.Item.views.N) + 1) } } });
+await PutItem({ TableName: 'Shop', Item: { ...b.Item, views: { N: String(Number(b.Item.views.N) + 1) } } });
+await GetItem({ TableName: 'Shop', Key: { PK: { S: 'PAGE#home' }, SK: { S: 'COUNTER' } } });
+```
+```js
+// D17 good
+for (let i = 0; i < 2; i++)
+  await UpdateItem({ TableName: 'Shop', Key: { PK: { S: 'PAGE#home' }, SK: { S: 'COUNTER' } },
+    UpdateExpression: 'ADD #v :one', ExpressionAttributeNames: { '#v': 'views' }, ExpressionAttributeValues: { ':one': { N: '1' } } });
+await GetItem({ TableName: 'Shop', Key: { PK: { S: 'PAGE#home' }, SK: { S: 'COUNTER' } } });
+```
+
+### D18 · Số lưu kiểu `N`, nhất là khi làm sort key / Store numbers as N, especially in sort keys
+
+- **Luật:** điểm, số tiền, số lượng, epoch giây lưu kiểu `N`. Nếu buộc phải để trong sort key dạng chuỗi (ghép khóa), đệm số 0 tới độ dài cố định.
+- **Vì sao:** sort key kiểu `S` sắp theo byte UTF-8, nên `"9"` đứng sau `"80"` và `"250"`. Top N, khoảng `BETWEEN` và phân trang đều sai âm thầm.
+- **Nguồn:**
+  - https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_Query.html (`ScanIndexForward`: Number theo thứ tự số, String theo byte UTF-8)
+  - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.NamingRulesDataTypes.html#HowItWorks.DataTypes.String
+- **Cấp:** L1 · **Nối với:** skill `order_by`, `cast` · **Kiểm:** dynoxide, Sai ≠ Đúng: top 3 giảm dần là `9, 80, 75` với `S`, là `250, 100, 80` với `N`
+
+```js
+// D18 bad
+await Query({ TableName: 'BoardText', KeyConditionExpression: 'PK = :pk', ScanIndexForward: false, Limit: 3,
+  ExpressionAttributeValues: { ':pk': { S: 'BOARD' } } });
+```
+```js
+// D18 good
+await Query({ TableName: 'BoardNum', KeyConditionExpression: 'PK = :pk', ScanIndexForward: false, Limit: 3,
+  ExpressionAttributeValues: { ':pk': { S: 'BOARD' } } });
+```
+
+### D19 · `BatchWriteItem`: tối đa 25 yêu cầu, lặp lại `UnprocessedItems` / Batch in 25s and retry unprocessed items
+
+- **Luật:**
+  - chia lô 25 yêu cầu put/delete;
+  - sau mỗi lần gọi, gửi lại `UnprocessedItems` với exponential backoff tới khi rỗng;
+  - batch không có điều kiện và không nguyên tử: cần "tất cả hoặc không" thì dùng transaction (D21).
+- **Vì sao:**
+  - quá 25 yêu cầu thì cả lô bị từ chối;
+  - khi bị throttle, AWS trả phần chưa ghi trong `UnprocessedItems` thay vì báo lỗi, nên bỏ qua trường này là mất dữ liệu âm thầm.
+- **Nguồn:** https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_BatchWriteItem.html
+- **Cấp:** L2 · **Nối với:** chưa có (giống P08 sửa lớn theo lô) · **Kiểm:** dynoxide. Sai: `ValidationException` với 26 yêu cầu. Đúng: 2 lô, `UnprocessedItems` rỗng, `Query` đếm đủ 26. Emulator không throttle nên không tái hiện được `UnprocessedItems` khác rỗng
+
+```js
+// D19 bad
+const puts = Array.from({ length: 26 }, (_, i) => ({ PutRequest: { Item: { PK: { S: 'IMPORT#1' }, SK: { S: 'ROW#' + i } } } }));
+await BatchWriteItem({ RequestItems: { Shop: puts } });
+```
+```js
+// D19 good
+const rows = Array.from({ length: 26 }, (_, i) => ({ PutRequest: { Item: { PK: { S: 'IMPORT#1' }, SK: { S: 'ROW#' + i } } } }));
+for (let i = 0; i < rows.length; i += 25) {
+  let req = { Shop: rows.slice(i, i + 25) };
+  while (req && Object.keys(req).length) {
+    const r = await BatchWriteItem({ RequestItems: req });
+    req = r.UnprocessedItems; // retry with backoff in real code
+  }
+}
+await Query({ TableName: 'Shop', KeyConditionExpression: 'PK = :pk', ExpressionAttributeValues: { ':pk': { S: 'IMPORT#1' } }, Select: 'COUNT' });
+```
+
+### D20 · PartiQL `SELECT` phải có partition key trong `WHERE` / PartiQL SELECT needs the partition key
+
+- **Luật:**
+  - câu `SELECT` của PartiQL trên DynamoDB phải có điều kiện `=` hoặc `IN` trên partition key;
+  - có thể cấm full scan bằng IAM policy cho PartiQL.
+- **Vì sao:** cú pháp giống SQL nhưng engine vẫn là DynamoDB. Thiếu partition key thì câu lệnh âm thầm thành `Scan` cả bảng, đúng như D06.
+- **Nguồn:** https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/ql-reference.select.html ("can result in a full table scan" khi `WHERE` thiếu `=`/`IN` trên partition key)
+- **Cấp:** L2 · **Nối với:** skill `where` · **Kiểm:** dynoxide. Sai: 54 RCU (quét cả bảng; trả 20 item vì `customerId` có ở cả item `META`). Đúng: 0,5 RCU, 11 item
+
+```js
+// D20 bad
+await ExecuteStatement({ Statement: `SELECT * FROM "Shop" WHERE "customerId" = '4711'`, ReturnConsumedCapacity: 'TOTAL' });
+```
+```js
+// D20 good
+await ExecuteStatement({ Statement: `SELECT * FROM "Shop" WHERE "PK" = 'CUSTOMER#4711'`, ReturnConsumedCapacity: 'TOTAL' });
+```
+
+### D21 · Nhiều item phải đổi cùng nhau thì dùng transaction / Use a transaction when several items must change together
+
+- **Luật:**
+  - khi nhiều item phải nhất quán (đơn và bản sao trong item collection của khách, chuyển tiền), ghi chúng trong một transaction: `TransactWriteItems` hoặc PartiQL `ExecuteTransaction`;
+  - không dùng transaction cho việc chỉ một item (giá gấp đôi, D10);
+  - một transaction PartiQL chỉ gồm toàn câu đọc hoặc toàn câu ghi, tối đa 100 câu.
+- **Vì sao:** hai `UpdateItem` riêng lẻ có thể thành công một nửa. Transaction hủy cả nhóm khi một điều kiện sai (`TransactionCanceledException`).
+- **Nguồn:**
+  - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/transaction-apis.html
+  - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/ql-reference.multiplestatements.transactions.html
+- **Cấp:** L3 · **Nối với:** chưa có (giống `BEGIN … COMMIT` trong SQL) · **Kiểm:** dynoxide, Sai ≠ Đúng. Sai: lệnh thứ hai hỏng điều kiện, item `META` vẫn đã thành `PAID` (dở dang). Đúng: `TransactionCanceledException` với lý do `[None, ConditionalCheckFailed]`, `META` vẫn `PENDING`. Ví dụ dùng PartiQL vì dynoxide 1.5.0 trả `UnsupportedOperation` cho `TransactWriteItems`; `TransactGetItems` có
+
+```js
+// D21 bad
+await UpdateItem({ TableName: 'Shop', Key: { PK: { S: 'ORDER#9000' }, SK: { S: 'META' } },
+  UpdateExpression: 'SET #s = :paid', ExpressionAttributeNames: { '#s': 'status' }, ExpressionAttributeValues: { ':paid': { S: 'PAID' } } });
+await UpdateItem({ TableName: 'Shop', Key: { PK: { S: 'CUSTOMER#4700' }, SK: { S: 'ORDER#2026-10-01T08:00:00Z#9000' } },
+  UpdateExpression: 'SET #s = :paid', ConditionExpression: '#s = :cancelled', ExpressionAttributeNames: { '#s': 'status' },
+  ExpressionAttributeValues: { ':paid': { S: 'PAID' }, ':cancelled': { S: 'CANCELLED' } } });
+await GetItem({ TableName: 'Shop', Key: { PK: { S: 'ORDER#9000' }, SK: { S: 'META' } }, ProjectionExpression: '#s', ExpressionAttributeNames: { '#s': 'status' } });
+```
+```js
+// D21 good
+await ExecuteTransaction({ TransactStatements: [
+  { Statement: `UPDATE "Shop" SET "status" = 'PAID' WHERE "PK" = 'ORDER#9000' AND "SK" = 'META'` },
+  { Statement: `UPDATE "Shop" SET "status" = 'PAID' WHERE "PK" = 'CUSTOMER#4700' AND "SK" = 'ORDER#2026-10-01T08:00:00Z#9000' AND "status" = 'CANCELLED'` }] });
+await GetItem({ TableName: 'Shop', Key: { PK: { S: 'ORDER#9000' }, SK: { S: 'META' } }, ProjectionExpression: '#s', ExpressionAttributeNames: { '#s': 'status' } });
 ```
 
 ## 9. Đề xuất: khu Best Practice trong app
@@ -2393,8 +3533,10 @@ Dựng trên những gì đã có. Không thêm framework, không backend.
 | Q12 | `BETWEEN` trên cột kiểu timestamp (cần kiểu cột: lấy từ `erMeta`) |
 | Q13 | phép `/` giữa hai `count(…)` không ép kiểu |
 | Q15 | `HAVING` không chứa aggregate |
-| Q22 | `GROUP BY`/`ORDER BY` bằng số thứ tự |
+| A15 | `last_value`/`nth_value` có `ORDER BY` trong `OVER` mà không ghi khung (thay Q22, vòng 2) |
 | A05 | `CURRENT_DATE` / `now()` |
+
+Đặc tả chi tiết (AST đã kiểm, lời nhắc VI/EN, báo nhầm, cặp test): §10.
 
 ### 9.4 Quiz
 
@@ -2413,5 +3555,84 @@ Dựng trên những gì đã có. Không thêm framework, không backend.
 4. Quiz.
 5. Khu S, I, P, X đi cùng khu Postgres của Database Engine.
 6. M khi `mingo` vào repo.
-7. D khi có runtime DynamoDB.
+7. D khi `@dynoxide/wasm-engine` vào repo: vòng 2 đã chạy được D01–D21 trừ D09, D11 trên bản 1.5.0.
 
+## 10. Đặc tả lint: 10 luật đầu tiên (vòng 2)
+
+Chi tiết hóa §9.3. Vẫn chỉ là tài liệu: không có mã trong `src/`.
+
+### 10.1 Cách chọn
+
+Mười luật được chọn theo ba điều kiện, theo thứ tự:
+
+1. **sai âm thầm hoặc chậm hẳn**: kết quả sai mà không có lỗi, hoặc mất index;
+2. **nhận ra được từ AST của một câu `SELECT`**, không cần chạy, không cần dữ liệu; chỉ Q12 cần thêm kiểu cột (đã có trong `erMeta`);
+3. **ít báo nhầm** trên SQL người chơi viết trong game.
+
+Vì vậy nhiều mục trong "Mười mục giá trị nhất" không có ở đây: Q07, A01, A03, S10, M01, D02 là lỗi thiết kế hoặc ý nghĩa, AST một câu không đủ để thấy. Q22 (style) bị thay bằng A15 (`last_value` không khung): sai âm thầm, nhận ra chắc chắn.
+
+### 10.2 Hình dạng AST đã kiểm
+
+Mọi hình dạng dưới đây là JSON thật do `libpg-query` 18.2.4 (bản repo đang ghim) trả về trong Node, không viết theo trí nhớ. Ba điều quan trọng cho người viết matcher:
+
+- **giá trị enum mặc định vẫn có mặt**: `"kind": "AEXPR_OP"`, `"jointype": "JOIN_INNER"`, `"boolop": "NOT_EXPR"`, `"limitOption": "LIMIT_OPTION_DEFAULT"` đều xuất hiện, nên so bằng `===` được;
+- mỗi node là một object một khóa (`{ "A_Expr": {...} }`); tên hàm nằm ở `funcname.at(-1).String.sval` (có thể có schema đứng trước); tên cột ở `ColumnRef.fields[].String.sval`;
+- khung window nằm ở `over.frameOptions` (bitmask). Khung mặc định là `1058`; bit `1` (`FRAMEOPTION_NONDEFAULT`) bật khi người viết ghi khung. Ví dụ `ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING` là `309`.
+
+Một prototype 10 luật (~60 dòng, file tạm ngoài repo) đã chạy trên các cặp test dưới đây: mọi câu **Sai** kích hoạt, mọi câu **Đúng** không. Cột "Báo nhầm đã thử" là kết quả thật của câu thử thứ ba.
+
+### 10.3 Bảng luật
+
+Giọng: Boon nói, ngôi thứ nhất, một câu, không trách (L87). EN không dấu.
+
+| Mục | Mẫu AST (đã kiểm) | Lời Boon VI / EN |
+|---|---|---|
+| Q01 | `A_Expr` có `kind = AEXPR_OP`, `name[0].String.sval` ∈ {`=`, `<>`, `!=`}, và `lexpr` hoặc `rexpr` là `A_Const` với `isnull: true` | VI: "Mình thấy so sánh `= NULL`: so với NULL luôn ra 'không biết', nên điều kiện này không bao giờ đúng. Thử `IS NULL` nhé." · EN: "I see a comparison with `= NULL`: it is never true, so no row passes. Try `IS NULL`." |
+| Q02 | `BoolExpr` `boolop = NOT_EXPR`, `args[0]` là `SubLink` với `subLinkType = ANY_SUBLINK` (có `subselect`) | VI: "`NOT IN` với một truy vấn con sẽ ra rỗng nếu truy vấn con có một NULL. Mình hay dùng `NOT EXISTS` cho chắc." · EN: "`NOT IN` over a subquery returns nothing if the subquery yields a NULL. `NOT EXISTS` is the safe choice." |
+| Q06 | `SelectStmt` có `JoinExpr` `jointype = JOIN_LEFT` với `rarg.RangeVar` (tên = `alias.aliasname` ?? `relname`), và `whereClause` có `ColumnRef` mà `fields[0]` là tên đó, không nằm trong `NullTest` hay `SubLink` | VI: "Điều kiện trên bảng bên phải của LEFT JOIN đặt ở `WHERE` sẽ bỏ các dòng không khớp, thành INNER JOIN. Bạn muốn đặt nó trong `ON` không?" · EN: "A filter on the right table of a LEFT JOIN in `WHERE` drops unmatched rows, so it acts like an INNER JOIN. Move it into `ON`?" |
+| Q10 | `SelectStmt` có `limitCount` và không có `sortClause`; bỏ qua khi cha trực tiếp là `SubLink` (`EXISTS (… LIMIT 1)`) | VI: "Có `LIMIT` mà không có `ORDER BY`: mỗi lần chạy có thể ra những dòng khác nhau." · EN: "`LIMIT` without `ORDER BY` can return different rows on each run." |
+| Q11 | trong `whereClause`, `A_Expr` (`AEXPR_OP`, `AEXPR_BETWEEN`, `AEXPR_IN`) có `lexpr` là `FuncCall` (không phải aggregate) nhận `ColumnRef` làm đối số, hoặc `TypeCast` có `arg` là `ColumnRef` | VI: "Mình thấy cột bị bọc trong hàm ở `WHERE`, nên index trên cột đó không dùng được. Viết thành khoảng trên chính cột thử xem." · EN: "The column is wrapped in a function in `WHERE`, so an index on it cannot be used. Try a range on the bare column." |
+| Q12 | `A_Expr` `kind = AEXPR_BETWEEN`, `lexpr` là `ColumnRef` có kiểu `timestamp…` theo `erMeta` | VI: "`BETWEEN` trên cột thời điểm bỏ sót mọi thứ sau 00:00 của ngày cuối. Khoảng nửa mở `>= … AND < …` an toàn hơn." · EN: "`BETWEEN` on a timestamp misses everything after midnight of the last day. Use a half-open range `>= ... AND < ...`." |
+| Q13 | `A_Expr` `AEXPR_OP` `name = '/'`, `lexpr` và `rexpr` đều là `FuncCall` `count` (không bọc `TypeCast`) | VI: "Chia hai `count` cho nhau là chia số nguyên, phần lẻ bị bỏ. Ép một vế sang `numeric` nhé." · EN: "Dividing two `count`s is integer division and drops the fraction. Cast one side to `numeric`." |
+| Q15 | `SelectStmt` có `havingClause` không chứa `FuncCall` nào có tên aggregate | VI: "Điều kiện này không dùng hàm gộp, nên đặt ở `WHERE` sẽ lọc sớm hơn và dễ đọc hơn." · EN: "This condition has no aggregate, so it belongs in `WHERE`, where it filters earlier." |
+| A05 | `SQLValueFunction` với `op` ∈ {`SVFOP_CURRENT_DATE`, `SVFOP_CURRENT_TIMESTAMP(_N)`, `SVFOP_LOCALTIMESTAMP(_N)`}, hoặc `FuncCall` tên ∈ {`now`, `clock_timestamp`, `statement_timestamp`, `transaction_timestamp`} | VI: "Ở công ty, 'hôm nay' là 31/10/2026. Mình ghi thẳng ngày đó để báo cáo chạy lại vẫn ra cùng số." · EN: "Here 'today' is 2026-10-31. Write that date so the report gives the same numbers when run again." |
+| A15 | `FuncCall` tên `last_value` hoặc `nth_value`, có `over.orderClause` và `(over.frameOptions & 1) === 0` | VI: "Khung mặc định dừng ở dòng hiện tại, nên `last_value` trả chính dòng này. Thêm `ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING`." · EN: "The default frame stops at the current row, so `last_value` returns this row. Add `ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING`." |
+
+### 10.4 Báo nhầm và cách tránh
+
+| Mục | Báo nhầm đã thử (kết quả) | Ghi chú |
+|---|---|---|
+| Q01 | `UPDATE … SET email = NULL` (không báo) | phép gán là `ResTarget`, không phải `A_Expr` |
+| Q02 | `status NOT IN ('PAID', 'CANCELLED')` (không báo) | danh sách hằng là `A_Expr` `AEXPR_IN`, không phải `SubLink` |
+| Q06 | `LEFT JOIN … WHERE o.id IS NULL` (không báo) | anti join (A11) hợp lệ: cột nằm trong `NullTest`. Chưa xử lý: `COALESCE(o.x, 0) > 0` hay `IS DISTINCT FROM` vẫn bị báo; join lồng nhiều tầng chỉ lấy `rarg` là `RangeVar` |
+| Q10 | `EXISTS (SELECT 1 … LIMIT 1)` (không báo) | `LIMIT` trong subquery ở `FROM` vẫn bị báo, đúng ý |
+| Q11 | `lower(email) = '…'` (**báo**) | đúng là không sargable, trừ khi có expression index (I05). Lint không biết index nào tồn tại, nên lời nhắc chỉ nói "index trên cột" |
+| Q12 | `order_date BETWEEN …` trên cột `date` (không báo) | cần kiểu cột; không tra được `erMeta` (bảng import, CTE) thì không báo |
+| Q13 | `count(*) / count(DISTINCT customer_id)` (**báo**) | không phải báo nhầm: vẫn là chia nguyên. `sum(int)/count` chưa bắt (cần kiểu) |
+| Q15 | `HAVING bool_and(…)` (không báo) | danh sách aggregate phải đủ, kể cả aggregate do người dùng tạo; không chắc thì không báo |
+| A05 | `INSERT … VALUES (now())` (**báo**) | game chỉ có `SELECT`; nếu lint chạy cả Sandbox với lệnh ghi thì chỉ xét `SelectStmt` |
+| A15 | `last_value(…) OVER (ORDER BY order_date, id)` cố ý lấy chính dòng (**báo**) | hiếm và vô nghĩa; giữ báo |
+
+### 10.5 Cặp test
+
+Mỗi luật có một câu **Sai** (phải báo) và một câu **Đúng** (không được báo), chạy trên `lab`. Chúng là đề xuất cho `tests/bpLint.test.ts` (§9.1).
+
+| Mục | Sai | Đúng |
+|---|---|---|
+| Q01 | `SELECT count(*) FROM customers WHERE email = NULL` | `SELECT count(*) FROM customers WHERE email IS NULL` |
+| Q02 | `SELECT count(*) FROM customers c WHERE c.id NOT IN (SELECT o.customer_id FROM orders o)` | `SELECT count(*) FROM customers c WHERE NOT EXISTS (SELECT 1 FROM orders o WHERE o.customer_id = c.id)` |
+| Q06 | `SELECT c.id, count(o.id) FROM customers c LEFT JOIN orders o ON o.customer_id = c.id WHERE o.channel = 'ONLINE' GROUP BY c.id` | `SELECT c.id, count(o.id) FROM customers c LEFT JOIN orders o ON o.customer_id = c.id AND o.channel = 'ONLINE' GROUP BY c.id` |
+| Q10 | `SELECT id, order_date FROM orders LIMIT 5` | `SELECT id, order_date FROM orders ORDER BY order_date DESC, id DESC LIMIT 5` |
+| Q11 | `SELECT count(*) FROM orders WHERE date_trunc('month', order_date) = DATE '2026-10-01'` | `SELECT count(*) FROM orders WHERE order_date >= DATE '2026-10-01' AND order_date < DATE '2026-11-01'` |
+| Q12 | `SELECT count(*) FROM payments WHERE paid_at BETWEEN '2026-10-01' AND '2026-10-31'` | `SELECT count(*) FROM payments WHERE paid_at >= TIMESTAMP '2026-10-01' AND paid_at < TIMESTAMP '2026-11-01'` |
+| Q13 | `SELECT count(*) FILTER (WHERE channel = 'ONLINE') / count(*) AS online_share FROM orders` | `SELECT count(*) FILTER (WHERE channel = 'ONLINE')::numeric / count(*) AS online_share FROM orders` |
+| Q15 | `SELECT store_id, count(*) FROM orders GROUP BY store_id HAVING store_id <> 4` | `SELECT store_id, count(*) FROM orders WHERE store_id <> 4 GROUP BY store_id` |
+| A05 | `SELECT count(*) FROM orders WHERE order_date >= CURRENT_DATE - 30` | `SELECT count(*) FROM orders WHERE order_date >= DATE '2026-10-31' - 30` |
+| A15 | `SELECT DISTINCT store_id, last_value(order_date) OVER (PARTITION BY store_id ORDER BY order_date) FROM orders` | `SELECT DISTINCT store_id, last_value(order_date) OVER (PARTITION BY store_id ORDER BY order_date ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) FROM orders` |
+
+### 10.6 Ghi chú triển khai
+
+- Đi cây bằng một hàm duyệt chung (mọi khóa viết hoa đầu là một node); mỗi luật là một hàm thuần `(stmt, colTypes) => boolean`. Không cần deparser.
+- Chỉ lint câu đã chạy **thành công** (§9.3), nên AST luôn parse được.
+- Thứ tự ưu tiên khi nhiều luật cùng báo (chỉ hiện một): Q02, Q06, Q01, A15, Q12, Q13, Q10, Q11, A05, Q15. Sai âm thầm trước, hiệu năng sau, style cuối.
+- Mỗi lời nhắc có link "Vì sao?" tới thẻ của mục cùng mã.

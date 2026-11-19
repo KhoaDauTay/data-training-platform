@@ -1,0 +1,1868 @@
+# Bảng thuật ngữ Database Engine (PostgreSQL, MongoDB, DynamoDB), dùng chung cho mọi agent viết bài
+# content/engine/** (ENGINE-CONTENT-V1). Cách viết: docs/team/engine-writing-style.md. Sự thật và con số chỉ lấy từ
+# docs/team/db-engine-knowledge.md (nguồn [Sn] ở §8). Chưa có code nào đọc file này: nó là chuẩn tra cứu, không phải Sổ tay.
+#
+# Trường của mỗi mục (đủ cả 9 trường ở mọi mục):
+#   term     tên gốc tiếng Anh, viết như docs chính thức của engine đó. Không dấu tiếng Việt.
+#   engines  [postgres | mongodb | dynamodb]: engine nào dùng từ này.
+#   level    cấp đầu tiên dạy từ này (L1..L5).
+#   keep_en  true = trong văn VI vẫn viết chữ tiếng Anh `vi_term`; false = viết từ Việt `vi_term`.
+#            Lần đầu trong một bài luôn viết kèm chữ kia trong ngoặc: keep_en false → "trang (page)";
+#            keep_en true → "heap" và câu giải thích ngắn ngay sau (không bắt buộc ngoặc VI).
+#   vi_term  chữ dùng trong văn VI sau lần đầu. EN luôn dùng `term`.
+#   avoid    cách dịch sai hoặc gây hiểu lầm, không bao giờ dùng.
+#   vi / en  giải thích 1–2 câu. EN không có dấu tiếng Việt.
+#   doc      một trang docs chính thức (postgresql.org/docs/18, mongodb.com/docs, docs.aws.amazon.com/amazondynamodb).
+#
+# Bốn va chạm chữ, đã chốt (mọi bài theo đúng):
+#   1. "khóa" chỉ là KEY (khóa chính, khóa phân vùng, khóa sắp xếp, khóa index). LOCK giữ tiếng Anh: lock, row lock,
+#      advisory lock, deadlock. Không bao giờ viết "khóa" cho lock.
+#   2. "tài liệu" chỉ là DOCUMENT của MongoDB. Documentation viết "docs chính thức"; nhãn bài D là "Sơ đồ" (§3.6 product design).
+#   3. "phân vùng" chỉ dùng cho Postgres: "bảng phân vùng (partitioned table)" / "phân vùng con (partition)". DynamoDB giữ tiếng Anh
+#      "partition", "partition key", "sort key" (lần đầu: "partition (phân vùng vật lý)", "partition key (khóa phân vùng)"), như các
+#      bài DynamoDB đã viết. PARTITION BY của hàm cửa sổ là "nhóm cửa sổ" (General), không phải phân vùng.
+#   4. index: khu Engine giữ chữ "index" (tên loại index, tên nút kế hoạch, stage explain đều là tiếng Anh). Lần đầu viết
+#      "index (chỉ mục)". Khu SQL/General vẫn theo glossary-vi.md ("chỉ mục"). Hai cách đã được tách theo khu, không trộn trong một bài.
+#   Ngoài ra: "transaction" giữ tiếng Anh (Finance đã dùng "giao dịch" cho giao dịch tiền); "dòng" = row, không dùng "hàng".
+
+# ───────────────────────── Nền chung và PostgreSQL L1–L2 ─────────────────────────
+- term: transaction
+  engines: [postgres, mongodb, dynamodb]
+  level: L1
+  keep_en: true
+  vi_term: "transaction"
+  avoid: "giao dịch"
+  vi: "Một nhóm thao tác hoặc thành công hết hoặc không để lại gì. Postgres bọc bằng `BEGIN … COMMIT`; MongoDB và DynamoDB có transaction nhiều tài liệu / nhiều item với giới hạn riêng."
+  en: "A group of operations that either all succeed or leave nothing behind. Postgres wraps it in `BEGIN … COMMIT`; MongoDB and DynamoDB offer multi-document / multi-item transactions with their own limits."
+  doc: "https://www.postgresql.org/docs/18/tutorial-transactions.html"
+- term: ACID
+  engines: [postgres, mongodb, dynamodb]
+  level: L1
+  keep_en: true
+  vi_term: "ACID"
+  avoid: "axit"
+  vi: "Bốn tính chất của transaction: nguyên tử (atomicity), nhất quán (consistency), cô lập (isolation), bền vững (durability)."
+  en: "The four transaction properties: atomicity, consistency, isolation, durability."
+  doc: "https://www.postgresql.org/docs/18/glossary.html"
+- term: atomicity
+  engines: [postgres, mongodb, dynamodb]
+  level: L1
+  keep_en: false
+  vi_term: "tính nguyên tử"
+  avoid: "tính hạt nhân"
+  vi: "Thao tác hoặc xảy ra trọn vẹn hoặc không xảy ra. Trong MongoDB, thao tác trên một tài liệu luôn nguyên tử."
+  en: "An operation either happens completely or not at all. In MongoDB a write to a single document is always atomic."
+  doc: "https://www.mongodb.com/docs/manual/core/write-operations-atomicity/"
+- term: durability
+  engines: [postgres, mongodb, dynamodb]
+  level: L1
+  keep_en: false
+  vi_term: "tính bền vững"
+  avoid: "độ bền (nghĩa cơ học)"
+  vi: "Đã commit thì không mất khi máy sập. Postgres đạt được nhờ WAL; MongoDB nhờ journal và write concern."
+  en: "Once committed, data survives a crash. Postgres gets it from the WAL; MongoDB from the journal and write concern."
+  doc: "https://www.postgresql.org/docs/18/wal-intro.html"
+- term: commit / rollback
+  engines: [postgres, mongodb, dynamodb]
+  level: L1
+  keep_en: true
+  vi_term: "commit / rollback"
+  avoid: "cam kết / quay lui"
+  vi: "Commit ghi chốt transaction; rollback bỏ toàn bộ thay đổi của nó. Lab Postgres trong game luôn chạy trong `BEGIN … ROLLBACK`."
+  en: "Commit makes a transaction final; rollback discards all its changes. Postgres labs in the game always run inside `BEGIN … ROLLBACK`."
+  doc: "https://www.postgresql.org/docs/18/tutorial-transactions.html"
+- term: savepoint
+  engines: [postgres]
+  level: L1
+  keep_en: true
+  vi_term: "savepoint"
+  avoid: "điểm lưu game"
+  vi: "Mốc bên trong một transaction để rollback một phần mà không bỏ cả transaction."
+  en: "A marker inside a transaction that lets you roll back part of it without abandoning the whole transaction."
+  doc: "https://www.postgresql.org/docs/18/sql-savepoint.html"
+- term: schema
+  engines: [postgres, mongodb]
+  level: L1
+  keep_en: true
+  vi_term: "schema"
+  avoid: "lược đồ (dễ nhầm với sơ đồ)"
+  vi: "Postgres: không gian tên chứa bảng, tìm theo `search_path`. MongoDB: hình dạng tài liệu, có thể ép bằng `$jsonSchema`. Nói rõ nghĩa nào khi dùng."
+  en: "Postgres: a namespace holding tables, resolved through `search_path`. MongoDB: the shape of documents, optionally enforced with `$jsonSchema`. Say which meaning you use."
+  doc: "https://www.postgresql.org/docs/18/ddl-schemas.html"
+- term: search_path
+  engines: [postgres]
+  level: L1
+  keep_en: true
+  vi_term: "`search_path`"
+  avoid: "đường dẫn tìm kiếm (khi nói về tham số)"
+  vi: "Danh sách schema Postgres dò lần lượt khi tên bảng không ghi schema."
+  en: "The list of schemas Postgres tries in order when a table name has no schema."
+  doc: "https://www.postgresql.org/docs/18/ddl-schemas.html"
+- term: constraint
+  engines: [postgres]
+  level: L1
+  keep_en: false
+  vi_term: "ràng buộc"
+  avoid: "hạn chế"
+  vi: "Luật dữ liệu do DB kiểm: `PRIMARY KEY`, `FOREIGN KEY`, `UNIQUE`, `CHECK`, `NOT NULL`. Ghi sai luật thì câu lệnh bị từ chối."
+  en: "A data rule the database enforces: `PRIMARY KEY`, `FOREIGN KEY`, `UNIQUE`, `CHECK`, `NOT NULL`. A write that breaks it is rejected."
+  doc: "https://www.postgresql.org/docs/18/ddl-constraints.html"
+- term: primary key
+  engines: [postgres, mongodb, dynamodb]
+  level: L1
+  keep_en: false
+  vi_term: "khóa chính"
+  avoid: "chìa khóa chính"
+  vi: "Giá trị xác định duy nhất một dòng/tài liệu/item. MongoDB là `_id`; DynamoDB là partition key, hoặc partition key + sort key."
+  en: "The value that identifies exactly one row/document/item. In MongoDB it is `_id`; in DynamoDB it is the partition key, or partition key + sort key."
+  doc: "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.CoreComponents.html"
+- term: foreign key
+  engines: [postgres]
+  level: L1
+  keep_en: false
+  vi_term: "khóa ngoại"
+  avoid: "khóa nước ngoài"
+  vi: "Cột trỏ tới khóa của bảng khác; Postgres từ chối giá trị không có cha. MongoDB và DynamoDB không có khóa ngoại."
+  en: "A column that points to another table's key; Postgres rejects a value with no parent. MongoDB and DynamoDB have no foreign keys."
+  doc: "https://www.postgresql.org/docs/18/ddl-constraints.html"
+- term: generated column
+  engines: [postgres]
+  level: L1
+  keep_en: false
+  vi_term: "cột sinh"
+  avoid: "cột tự tăng"
+  vi: "Cột tính từ cột khác. Từ Postgres 18, mặc định là cột ảo (tính lúc đọc, không lưu)."
+  en: "A column computed from other columns. Since Postgres 18 the default is virtual (computed on read, not stored)."
+  doc: "https://www.postgresql.org/docs/18/ddl-generated-columns.html"
+- term: jsonb
+  engines: [postgres]
+  level: L1
+  keep_en: true
+  vi_term: "`jsonb`"
+  avoid: "JSON nhị phân của MongoDB"
+  vi: "Kiểu JSON đã phân tích sẵn của Postgres, đánh index được bằng GIN. Không phải BSON."
+  en: "Postgres' pre-parsed JSON type, indexable with GIN. It is not BSON."
+  doc: "https://www.postgresql.org/docs/18/datatype-json.html"
+- term: index
+  engines: [postgres, mongodb, dynamodb]
+  level: L1
+  keep_en: true
+  vi_term: "index"
+  avoid: "mục lục"
+  vi: "Cấu trúc phụ giúp tìm dòng/tài liệu mà không đọc hết. Đổi lại, mỗi lần ghi phải cập nhật thêm index và tốn thêm chỗ. Lần đầu viết \"index (chỉ mục)\"."
+  en: "An extra structure that finds rows/documents without reading everything. The price: every write must also update it, and it takes space."
+  doc: "https://www.postgresql.org/docs/18/indexes-intro.html"
+- term: B-tree
+  engines: [postgres, mongodb]
+  level: L1
+  keep_en: true
+  vi_term: "B-tree"
+  avoid: "cây nhị phân"
+  vi: "Cây cân bằng nhiều nhánh, giữ khóa có thứ tự nên trả lời được so sánh bằng và khoảng. Index mặc định của Postgres; index MongoDB cũng là B-tree."
+  en: "A balanced many-way tree that keeps keys sorted, so it answers equality and range lookups. Postgres' default index; MongoDB indexes are B-trees too."
+  doc: "https://www.postgresql.org/docs/18/btree.html"
+- term: execution plan
+  engines: [postgres, mongodb]
+  level: L1
+  keep_en: false
+  vi_term: "kế hoạch thực thi"
+  avoid: "kế hoạch chạy (dịch lỏng), plan (giữa câu VI)"
+  vi: "Cây các bước DB chọn để trả lời một câu. Postgres in bằng `EXPLAIN`; MongoDB bằng `explain()`."
+  en: "The tree of steps the database chooses to answer a query. Postgres prints it with `EXPLAIN`; MongoDB with `explain()`."
+  doc: "https://www.postgresql.org/docs/18/using-explain.html"
+- term: EXPLAIN / EXPLAIN ANALYZE
+  engines: [postgres]
+  level: L1
+  keep_en: true
+  vi_term: "`EXPLAIN` / `EXPLAIN ANALYZE`"
+  avoid: "giải thích (khi nói về lệnh)"
+  vi: "`EXPLAIN` in kế hoạch và cost ước lượng; `ANALYZE` chạy thật và thêm số dòng thật. Từ Postgres 18 `BUFFERS` bật mặc định khi có `ANALYZE`."
+  en: "`EXPLAIN` prints the plan with estimated cost; `ANALYZE` runs it and adds actual row counts. Since Postgres 18, `BUFFERS` is on by default with `ANALYZE`."
+  doc: "https://www.postgresql.org/docs/18/using-explain.html"
+- term: Seq Scan
+  engines: [postgres]
+  level: L1
+  keep_en: true
+  vi_term: "Seq Scan"
+  avoid: "quét tuần tự (khi nói về tên nút)"
+  vi: "Nút đọc mọi trang của bảng. Không phải lúc nào cũng xấu: khi điều kiện trúng phần lớn bảng, nó rẻ hơn dùng index."
+  en: "The node that reads every page of a table. Not always bad: when a filter matches most of the table it is cheaper than an index."
+  doc: "https://www.postgresql.org/docs/18/using-explain.html"
+- term: Index Scan
+  engines: [postgres]
+  level: L1
+  keep_en: true
+  vi_term: "Index Scan"
+  avoid: "quét chỉ mục (khi nói về tên nút)"
+  vi: "Nút đi theo index tới từng dòng rồi đọc dòng đó trong heap. Bước đọc heap mới là phần tốn."
+  en: "The node that follows the index to each row, then reads that row from the heap. The heap visit is the costly part."
+  doc: "https://www.postgresql.org/docs/18/using-explain.html"
+- term: Index Only Scan
+  engines: [postgres]
+  level: L2
+  keep_en: true
+  vi_term: "Index Only Scan"
+  avoid: "quét chỉ index (bỏ mất ý heap fetch)"
+  vi: "Trả lời chỉ từ index, bỏ qua heap ở những trang all-visible trong visibility map. `Heap Fetches` đếm số lần vẫn phải vào heap."
+  en: "Answers from the index alone, skipping the heap on pages marked all-visible in the visibility map. `Heap Fetches` counts the heap visits still needed."
+  doc: "https://www.postgresql.org/docs/18/indexes-index-only-scans.html"
+- term: Bitmap Heap Scan
+  engines: [postgres]
+  level: L2
+  keep_en: true
+  vi_term: "Bitmap Heap Scan"
+  avoid: "quét ảnh bitmap"
+  vi: "Hai bước: Bitmap Index Scan đánh dấu các trang cần đọc, rồi Bitmap Heap Scan đọc mỗi trang một lần theo thứ tự vật lý."
+  en: "Two steps: a Bitmap Index Scan marks the pages to read, then the Bitmap Heap Scan reads each page once in physical order."
+  doc: "https://www.postgresql.org/docs/18/using-explain.html"
+- term: multicolumn index
+  engines: [postgres]
+  level: L2
+  keep_en: true
+  vi_term: "index nhiều cột"
+  avoid: "index đa chiều"
+  vi: "Index trên nhiều cột theo thứ tự; dùng tốt nhất khi điều kiện có cột đầu. Postgres 18 thêm skip scan, chỉ giúp khi cột đầu ít giá trị."
+  en: "An index on several columns in order; it works best when the filter includes the leading column. Postgres 18 adds skip scan, which helps only when the leading column has few values."
+  doc: "https://www.postgresql.org/docs/18/indexes-multicolumn.html"
+- term: covering index (INCLUDE)
+  engines: [postgres]
+  level: L2
+  keep_en: true
+  vi_term: "covering index"
+  avoid: "index bao phủ toàn bảng"
+  vi: "Index chứa thêm cột không phải khóa (`INCLUDE`) để câu đọc trả lời được bằng Index Only Scan."
+  en: "An index that carries extra non-key columns (`INCLUDE`) so a query can be answered by an Index Only Scan."
+  doc: "https://www.postgresql.org/docs/18/indexes-index-only-scans.html"
+- term: partial index
+  engines: [postgres, mongodb]
+  level: L2
+  keep_en: true
+  vi_term: "partial index"
+  avoid: "index dở dang"
+  vi: "Index chỉ chứa các dòng/tài liệu thỏa một điều kiện. Câu truy vấn phải chứa điều kiện đó thì mới dùng được."
+  en: "An index holding only the rows/documents that match a condition. A query can use it only if it contains that condition."
+  doc: "https://www.postgresql.org/docs/18/indexes-partial.html"
+- term: expression index
+  engines: [postgres]
+  level: L2
+  keep_en: true
+  vi_term: "expression index"
+  avoid: "index biểu cảm"
+  vi: "Index trên kết quả của một biểu thức, ví dụ `lower(email)`. Câu truy vấn phải viết đúng biểu thức đó."
+  en: "An index on the result of an expression, e.g. `lower(email)`. The query must use the same expression."
+  doc: "https://www.postgresql.org/docs/18/indexes-expressional.html"
+- term: GIN
+  engines: [postgres]
+  level: L2
+  keep_en: true
+  vi_term: "GIN"
+  avoid: "rượu gin; index ngược (khi thay tên)"
+  vi: "Generalized Inverted Index: mỗi phần tử (từ, khóa jsonb, phần tử mảng) trỏ tới danh sách dòng chứa nó. Hợp cho `jsonb`, mảng, full-text, trigram."
+  en: "Generalized Inverted Index: each element (word, jsonb key, array element) points to the list of rows containing it. Fits `jsonb`, arrays, full-text, trigrams."
+  doc: "https://www.postgresql.org/docs/18/gin.html"
+- term: posting list
+  engines: [postgres]
+  level: L5
+  keep_en: true
+  vi_term: "posting list"
+  avoid: "danh sách bài đăng"
+  vi: "Danh sách TID gắn với một khóa trong GIN (và trong B-tree đã dedup). Dài quá thì GIN chuyển sang posting tree."
+  en: "The list of TIDs attached to one key in GIN (and in a deduplicated B-tree). When it grows too long GIN moves it into a posting tree."
+  doc: "https://www.postgresql.org/docs/18/gin.html"
+- term: pending list (fastupdate)
+  engines: [postgres]
+  level: L5
+  keep_en: true
+  vi_term: "pending list"
+  avoid: "danh sách chờ duyệt"
+  vi: "Vùng đệm của GIN: dòng mới được ghi vào đây trước rồi gộp vào cây sau, để ghi nhanh hơn; đổi lại câu đọc phải quét thêm vùng này."
+  en: "GIN's staging area: new entries land here and are merged into the tree later, making writes faster at the cost of reads scanning it too."
+  doc: "https://www.postgresql.org/docs/18/gin.html"
+- term: BRIN
+  engines: [postgres]
+  level: L2
+  keep_en: true
+  vi_term: "BRIN"
+  avoid: "index khối nhỏ gọn (dịch mất tên)"
+  vi: "Block Range Index: lưu tóm tắt (min/max) cho từng dải trang. Rất nhỏ, chỉ hiệu quả khi giá trị đi cùng thứ tự vật lý (ví dụ thời gian ghi tăng dần)."
+  en: "Block Range Index: stores a summary (min/max) per range of pages. Tiny, and useful only when values follow physical order (e.g. an ever-increasing timestamp)."
+  doc: "https://www.postgresql.org/docs/18/brin.html"
+- term: GiST
+  engines: [postgres]
+  level: L2
+  keep_en: true
+  vi_term: "GiST"
+  avoid: "ý chính (gist)"
+  vi: "Generalized Search Tree: cây theo hộp bao, cho hình học, khoảng, full-text, và tìm gần nhất (KNN)."
+  en: "Generalized Search Tree: a tree of bounding boxes for geometry, ranges, full-text and nearest-neighbour (KNN) search."
+  doc: "https://www.postgresql.org/docs/18/gist.html"
+- term: SP-GiST
+  engines: [postgres]
+  level: L2
+  keep_en: true
+  vi_term: "SP-GiST"
+  avoid: "GiST song song"
+  vi: "Space-Partitioned GiST: cây chia không gian không chồng lấn (quad-tree, k-d tree, radix tree)."
+  en: "Space-Partitioned GiST: trees that split space into non-overlapping parts (quad-tree, k-d tree, radix tree)."
+  doc: "https://www.postgresql.org/docs/18/spgist.html"
+- term: hash index
+  engines: [postgres, mongodb]
+  level: L2
+  keep_en: true
+  vi_term: "hash index"
+  avoid: "index băm nhỏ (hash = mã băm mật khẩu)"
+  vi: "Postgres: index chỉ cho so sánh bằng. MongoDB (hashed index): dùng chủ yếu cho sharding, không unique, không mảng, không cover được."
+  en: "Postgres: an index for equality only. MongoDB (hashed index): mainly for sharding; not unique, no arrays, cannot cover a query."
+  doc: "https://www.postgresql.org/docs/18/indexes-types.html"
+- term: bloom index
+  engines: [postgres]
+  level: L2
+  keep_en: true
+  vi_term: "bloom index"
+  avoid: "index nở hoa"
+  vi: "Index của extension `bloom`: chữ ký nhiều cột, có thể báo nhầm \"có\" nên luôn kiểm lại dòng thật."
+  en: "The `bloom` extension's index: a multi-column signature that can give false positives, so rows are always rechecked."
+  doc: "https://www.postgresql.org/docs/18/bloom.html"
+- term: full-text search (tsvector, tsquery)
+  engines: [postgres]
+  level: L2
+  keep_en: false
+  vi_term: "tìm kiếm toàn văn"
+  avoid: "tìm kiếm toàn bộ văn bản bằng LIKE"
+  vi: "Tách văn bản thành từ gốc (`tsvector`) rồi so với câu hỏi (`tsquery`); đánh index bằng GIN hoặc GiST."
+  en: "Splits text into normalised lexemes (`tsvector`) and matches them against a query (`tsquery`); indexed with GIN or GiST."
+  doc: "https://www.postgresql.org/docs/18/textsearch-indexes.html"
+- term: trigram (pg_trgm)
+  engines: [postgres]
+  level: L2
+  keep_en: true
+  vi_term: "trigram"
+  avoid: "bát quái"
+  vi: "Bộ ba ký tự liên tiếp; `pg_trgm` dùng chúng để index `LIKE '%…%'` và tìm chuỗi gần giống."
+  en: "Three consecutive characters; `pg_trgm` uses them to index `LIKE '%…%'` and find similar strings."
+  doc: "https://www.postgresql.org/docs/18/pgtrgm.html"
+- term: operator class
+  engines: [postgres]
+  level: L2
+  keep_en: true
+  vi_term: "operator class"
+  avoid: "lớp toán tử (khó hiểu)"
+  vi: "Bộ toán tử một index hiểu cho một kiểu, ví dụ `jsonb_path_ops`, `gin_trgm_ops`. Chọn sai thì index không dùng được."
+  en: "The set of operators an index understands for a type, e.g. `jsonb_path_ops`, `gin_trgm_ops`. The wrong one leaves the index unusable."
+  doc: "https://www.postgresql.org/docs/18/indexes-opclass.html"
+- term: CREATE INDEX CONCURRENTLY
+  engines: [postgres]
+  level: L2
+  keep_en: true
+  vi_term: "`CREATE INDEX CONCURRENTLY`"
+  avoid: "tạo index song song (nhầm với parallel)"
+  vi: "Tạo index mà không chặn ghi vào bảng, đổi lại chậm hơn và không chạy trong transaction. Cần nhiều phiên nên trong game là bài D."
+  en: "Builds an index without blocking writes, at the cost of being slower and not running inside a transaction. It needs several sessions, so in the game it is a D lesson."
+  doc: "https://www.postgresql.org/docs/18/sql-createindex.html"
+- term: KNN search
+  engines: [postgres, mongodb]
+  level: L2
+  keep_en: true
+  vi_term: "tìm KNN"
+  avoid: "thuật toán KNN học máy"
+  vi: "Tìm k phần tử gần nhất theo khoảng cách, ví dụ `ORDER BY p <-> point(…) LIMIT 5` dùng GiST."
+  en: "Find the k nearest items by distance, e.g. `ORDER BY p <-> point(…) LIMIT 5` using GiST."
+  doc: "https://www.postgresql.org/docs/18/indexes-types.html"
+
+# ───────────────────────── PostgreSQL L3: lưu trữ, MVCC, WAL ─────────────────────────
+- term: page (block)
+  engines: [postgres]
+  level: L3
+  keep_en: false
+  vi_term: "trang"
+  avoid: "khối dữ liệu (block = trang), trang web"
+  vi: "Đơn vị đọc/ghi của Postgres, 8 KB. Header 24 byte, mỗi line pointer 4 byte, header mỗi tuple 23 byte."
+  en: "Postgres' unit of reading and writing, 8 KB. 24-byte header, 4 bytes per line pointer, 23-byte header per tuple."
+  doc: "https://www.postgresql.org/docs/18/storage-page-layout.html"
+- term: heap
+  engines: [postgres]
+  level: L3
+  keep_en: true
+  vi_term: "heap"
+  avoid: "đống, vùng heap của bộ nhớ chương trình"
+  vi: "File chứa dòng của bảng, không theo thứ tự nào. Index trỏ vào heap bằng TID."
+  en: "The file that holds a table's rows in no particular order. Indexes point into the heap by TID."
+  doc: "https://www.postgresql.org/docs/18/storage-page-layout.html"
+- term: tuple
+  engines: [postgres]
+  level: L3
+  keep_en: true
+  vi_term: "tuple"
+  avoid: "bộ (toán học)"
+  vi: "Một phiên bản vật lý của một dòng trong heap. Một dòng có thể có nhiều tuple (MVCC)."
+  en: "One physical version of a row in the heap. A row can have several tuples (MVCC)."
+  doc: "https://www.postgresql.org/docs/18/storage-page-layout.html"
+- term: line pointer (item pointer)
+  engines: [postgres]
+  level: L3
+  keep_en: true
+  vi_term: "line pointer"
+  avoid: "con trỏ dòng lệnh"
+  vi: "Ô 4 byte ở đầu trang trỏ tới vị trí tuple trong trang; trạng thái có thể là NORMAL, REDIRECT (HOT), DEAD, UNUSED."
+  en: "A 4-byte slot at the start of a page pointing to a tuple inside the page; its state can be NORMAL, REDIRECT (HOT), DEAD or UNUSED."
+  doc: "https://www.postgresql.org/docs/18/storage-page-layout.html"
+- term: TID / ctid
+  engines: [postgres]
+  level: L3
+  keep_en: true
+  vi_term: "TID (`ctid`)"
+  avoid: "mã định danh dòng vĩnh viễn"
+  vi: "Địa chỉ vật lý (trang, line pointer) của một tuple, ví dụ `(0,84)`. Đổi khi UPDATE hoặc VACUUM FULL, nên không dùng làm khóa."
+  en: "The physical address (page, line pointer) of a tuple, e.g. `(0,84)`. It changes on UPDATE or VACUUM FULL, so never use it as a key."
+  doc: "https://www.postgresql.org/docs/18/ddl-system-columns.html"
+- term: fillfactor
+  engines: [postgres]
+  level: L3
+  keep_en: true
+  vi_term: "fillfactor"
+  avoid: "hệ số lấp đầy ổ đĩa"
+  vi: "Phần trăm trang được lấp khi INSERT; chừa chỗ trống để UPDATE sau thành HOT trong cùng trang."
+  en: "The percentage of a page filled on INSERT; the free space left lets later UPDATEs stay HOT in the same page."
+  doc: "https://www.postgresql.org/docs/18/sql-createtable.html"
+- term: TOAST
+  engines: [postgres]
+  level: L3
+  keep_en: true
+  vi_term: "TOAST"
+  avoid: "bánh mì nướng"
+  vi: "Cơ chế nén và tách giá trị lớn (từ khoảng 2 KB) ra bảng phụ; một giá trị tối đa 1 GB; có 4 chiến lược lưu."
+  en: "The mechanism that compresses and moves large values (from about 2 KB) to a side table; one value can be up to 1 GB; there are 4 storage strategies."
+  doc: "https://www.postgresql.org/docs/18/storage-toast.html"
+- term: MVCC
+  engines: [postgres, mongodb]
+  level: L3
+  keep_en: true
+  vi_term: "MVCC"
+  avoid: "kiểm soát phiên bản code"
+  vi: "Multiversion Concurrency Control: mỗi lần ghi tạo phiên bản mới thay vì sửa tại chỗ, nên đọc không chặn ghi. Postgres giữ bản cũ ngay trong heap."
+  en: "Multiversion Concurrency Control: each write creates a new version instead of changing in place, so reads do not block writes. Postgres keeps old versions in the heap itself."
+  doc: "https://www.postgresql.org/docs/18/mvcc-intro.html"
+- term: snapshot
+  engines: [postgres, mongodb]
+  level: L3
+  keep_en: true
+  vi_term: "snapshot"
+  avoid: "ảnh chụp màn hình"
+  vi: "Postgres/WiredTiger: tập transaction được coi là đã commit lúc câu (hoặc transaction) bắt đầu, quyết định tuple nào thấy được. MongoDB còn có read concern `snapshot`. Nói rõ nghĩa nào."
+  en: "Postgres/WiredTiger: the set of transactions treated as committed when a statement (or transaction) starts, deciding which tuples are visible. MongoDB also has read concern `snapshot`. Say which one."
+  doc: "https://www.postgresql.org/docs/18/mvcc-intro.html"
+- term: xmin / xmax
+  engines: [postgres]
+  level: L3
+  keep_en: true
+  vi_term: "`xmin` / `xmax`"
+  avoid: "giá trị nhỏ nhất / lớn nhất"
+  vi: "Hai cột hệ thống của tuple: id transaction đã tạo nó và id transaction đã xóa/thay nó (0 nếu còn sống)."
+  en: "Two system columns of a tuple: the id of the transaction that created it and of the one that deleted/replaced it (0 while alive)."
+  doc: "https://www.postgresql.org/docs/18/ddl-system-columns.html"
+- term: transaction ID (XID)
+  engines: [postgres]
+  level: L3
+  keep_en: true
+  vi_term: "XID"
+  avoid: "số hóa đơn giao dịch"
+  vi: "Số 32 bit Postgres cấp cho transaction có ghi; so sánh theo vòng tròn nên phải freeze trước khi quay vòng."
+  en: "The 32-bit number Postgres gives a writing transaction; compared modulo wrap-around, so old rows must be frozen before it wraps."
+  doc: "https://www.postgresql.org/docs/18/routine-vacuuming.html"
+- term: dead tuple
+  engines: [postgres]
+  level: L3
+  keep_en: true
+  vi_term: "dead tuple"
+  avoid: "dòng đã xóa (dòng đã mất hẳn)"
+  vi: "Tuple không còn transaction nào nhìn thấy, chờ VACUUM dọn. Đếm ở `n_dead_tup`."
+  en: "A tuple no transaction can see any more, waiting for VACUUM. Counted in `n_dead_tup`."
+  doc: "https://www.postgresql.org/docs/18/routine-vacuuming.html"
+- term: HOT (heap-only tuple)
+  engines: [postgres]
+  level: L3
+  keep_en: true
+  vi_term: "HOT update"
+  avoid: "cập nhật nóng"
+  vi: "UPDATE không đổi cột nào có index và còn chỗ trong cùng trang: tuple mới không cần mục index mới, và chuỗi được dọn bằng line pointer REDIRECT."
+  en: "An UPDATE that changes no indexed column and fits in the same page: the new tuple needs no new index entry, and the chain is cleaned up through a REDIRECT line pointer."
+  doc: "https://www.postgresql.org/docs/18/storage-hot.html"
+- term: VACUUM
+  engines: [postgres]
+  level: L3
+  keep_en: true
+  vi_term: "VACUUM"
+  avoid: "hút bụi, dọn sạch dung lượng"
+  vi: "Dọn dead tuple để chỗ trống được dùng lại, cập nhật visibility map và freeze. Không trả dung lượng cho hệ điều hành, trừ các trang trống ở cuối bảng; muốn bảng nhỏ lại thì `VACUUM FULL` (lock ACCESS EXCLUSIVE). Không chạy được trong transaction (SQLSTATE 25001)."
+  en: "Removes dead tuples so the space can be reused, updates the visibility map and freezes. It does not return space to the OS, except empty pages at the end of the table; to shrink a table use `VACUUM FULL` (ACCESS EXCLUSIVE lock). It cannot run inside a transaction (SQLSTATE 25001)."
+  doc: "https://www.postgresql.org/docs/18/routine-vacuuming.html"
+- term: autovacuum
+  engines: [postgres]
+  level: L3
+  keep_en: true
+  vi_term: "autovacuum"
+  avoid: "tự động hút bụi"
+  vi: "Tiến trình nền tự chạy VACUUM và ANALYZE theo ngưỡng. PGlite báo `autovacuum = on` nhưng chỉ có một tiến trình, nên bài autovacuum là bài D."
+  en: "The background process that runs VACUUM and ANALYZE by threshold. PGlite reports `autovacuum = on` but has a single process, so autovacuum lessons are D lessons."
+  doc: "https://www.postgresql.org/docs/18/routine-vacuuming.html"
+- term: visibility map
+  engines: [postgres]
+  level: L3
+  keep_en: true
+  vi_term: "visibility map"
+  avoid: "bản đồ hiển thị giao diện"
+  vi: "Hai bit mỗi trang: all-visible (mọi tuple ai cũng thấy, Index Only Scan bỏ qua heap được) và all-frozen."
+  en: "Two bits per page: all-visible (every tuple visible to everyone, so an Index Only Scan can skip the heap) and all-frozen."
+  doc: "https://www.postgresql.org/docs/18/storage-vm.html"
+- term: free space map (FSM)
+  engines: [postgres]
+  level: L3
+  keep_en: true
+  vi_term: "free space map"
+  avoid: "bản đồ miễn phí"
+  vi: "Ghi mỗi trang còn trống bao nhiêu để INSERT/UPDATE tìm chỗ."
+  en: "Records how much free space each page has so INSERT/UPDATE can find room."
+  doc: "https://www.postgresql.org/docs/18/storage-fsm.html"
+- term: freeze
+  engines: [postgres]
+  level: L3
+  keep_en: true
+  vi_term: "freeze"
+  avoid: "đóng băng (khi dùng như tên thao tác), treo máy"
+  vi: "VACUUM đánh dấu tuple đủ cũ là \"thấy được với mọi transaction\" để XID của nó không còn cần so sánh nữa."
+  en: "VACUUM marks a sufficiently old tuple as visible to every transaction so its XID no longer needs comparing."
+  doc: "https://www.postgresql.org/docs/18/routine-vacuuming.html"
+- term: transaction ID wraparound
+  engines: [postgres]
+  level: L3
+  keep_en: true
+  vi_term: "wraparound"
+  avoid: "tràn số nguyên bình thường"
+  vi: "XID 32 bit quay vòng; tuple chưa freeze sẽ bỗng thành \"ở tương lai\" và biến mất. Postgres ngừng nhận ghi trước khi điều đó xảy ra. Trong game là bài D."
+  en: "The 32-bit XID wraps around; unfrozen tuples would suddenly look like they are in the future and vanish. Postgres stops accepting writes before that happens. In the game this is a D lesson."
+  doc: "https://www.postgresql.org/docs/18/routine-vacuuming.html"
+- term: WAL (write-ahead log)
+  engines: [postgres]
+  level: L3
+  keep_en: true
+  vi_term: "WAL"
+  avoid: "tường (wall), nhật ký lỗi"
+  vi: "Luật ghi log trước: mô tả thay đổi được ghi bền vào WAL trước khi trang dữ liệu được ghi. Sau khi sập, Postgres phát lại (REDO) WAL từ checkpoint cuối."
+  en: "The write-ahead rule: a change is durably written to the WAL before the data page is. After a crash Postgres replays (REDO) the WAL from the last checkpoint."
+  doc: "https://www.postgresql.org/docs/18/wal-intro.html"
+- term: WAL record
+  engines: [postgres]
+  level: L3
+  keep_en: true
+  vi_term: "WAL record"
+  avoid: "kỷ lục WAL"
+  vi: "Một mục trong WAL mô tả một thay đổi; `pg_walinspect` cho xem `resource_manager`, `record_type`, `fpi_length`."
+  en: "One WAL entry describing a change; `pg_walinspect` shows `resource_manager`, `record_type`, `fpi_length`."
+  doc: "https://www.postgresql.org/docs/18/pgwalinspect.html"
+- term: LSN
+  engines: [postgres]
+  level: L3
+  keep_en: true
+  vi_term: "LSN"
+  avoid: "số thứ tự dòng (line number)"
+  vi: "Log Sequence Number: vị trí byte trong WAL, viết kiểu `0/16B3748`. Mỗi trang nhớ LSN của lần sửa cuối."
+  en: "Log Sequence Number: a byte position in the WAL, written like `0/16B3748`. Each page remembers the LSN of its last change."
+  doc: "https://www.postgresql.org/docs/18/wal-internals.html"
+- term: checkpoint
+  engines: [postgres, mongodb]
+  level: L3
+  keep_en: true
+  vi_term: "checkpoint"
+  avoid: "trạm kiểm soát, điểm lưu game"
+  vi: "Postgres: ghi mọi trang bẩn xuống đĩa để REDO bắt đầu từ đây (mặc định `checkpoint_timeout` 5 phút, `max_wal_size` 1 GB). WiredTiger: snapshot bền ghi khoảng mỗi 60 giây."
+  en: "Postgres: flushes all dirty pages so REDO can start from here (defaults: `checkpoint_timeout` 5 minutes, `max_wal_size` 1 GB). WiredTiger: a durable snapshot written about every 60 seconds."
+  doc: "https://www.postgresql.org/docs/18/wal-configuration.html"
+- term: full-page write (FPI)
+  engines: [postgres]
+  level: L3
+  keep_en: true
+  vi_term: "full-page write"
+  avoid: "ghi trang đầy"
+  vi: "Lần sửa đầu tiên của một trang sau checkpoint ghi cả trang vào WAL (full-page image) để chống trang bị ghi dở. Thấy được qua `fpi_length`."
+  en: "The first change to a page after a checkpoint writes the whole page into the WAL (full-page image) to guard against torn pages. Visible as `fpi_length`."
+  doc: "https://www.postgresql.org/docs/18/wal-configuration.html"
+- term: shared buffers (buffer pool)
+  engines: [postgres]
+  level: L3
+  keep_en: true
+  vi_term: "shared buffers"
+  avoid: "bộ đệm chia sẻ mạng"
+  vi: "Vùng nhớ chứa bản sao trang; đọc trúng ở đây là `shared hit`, phải lấy từ đĩa là `read`. PGlite có 16384 buffer (128 MB / 8 KB)."
+  en: "The memory area holding copies of pages; a read found here is a `shared hit`, one fetched from disk is a `read`. PGlite has 16384 buffers (128 MB / 8 KB)."
+  doc: "https://www.postgresql.org/docs/18/runtime-config-resource.html"
+- term: dirty page
+  engines: [postgres, mongodb]
+  level: L3
+  keep_en: false
+  vi_term: "trang bẩn"
+  avoid: "trang lỗi"
+  vi: "Trang trong bộ nhớ đã sửa nhưng chưa ghi xuống file dữ liệu; checkpoint ghi chúng xuống."
+  en: "A page changed in memory but not yet written to the data file; a checkpoint writes it out."
+  doc: "https://www.postgresql.org/docs/18/wal-configuration.html"
+- term: work_mem
+  engines: [postgres]
+  level: L3
+  keep_en: true
+  vi_term: "`work_mem`"
+  avoid: "bộ nhớ làm việc của cả máy"
+  vi: "Bộ nhớ cho mỗi thao tác sort/hash (mặc định 4 MB). Vượt thì tràn ra đĩa: `Sort Method: external merge Disk: …`."
+  en: "Memory per sort/hash operation (default 4 MB). Above it the operation spills to disk: `Sort Method: external merge Disk: …`."
+  doc: "https://www.postgresql.org/docs/18/runtime-config-resource.html"
+- term: spill to disk
+  engines: [postgres, mongodb]
+  level: L3
+  keep_en: false
+  vi_term: "tràn ra đĩa"
+  avoid: "rò rỉ đĩa"
+  vi: "Thao tác cần nhiều bộ nhớ hơn giới hạn thì ghi tạm ra đĩa. Postgres theo `work_mem`; MongoDB aggregation 100 MB mỗi stage, cần `allowDiskUse`."
+  en: "An operation needing more memory than allowed writes temporary data to disk. Postgres follows `work_mem`; MongoDB aggregation allows 100 MB per stage and needs `allowDiskUse`."
+  doc: "https://www.mongodb.com/docs/manual/core/aggregation-pipeline-limits/"
+- term: pageinspect
+  engines: [postgres]
+  level: L3
+  keep_en: true
+  vi_term: "`pageinspect`"
+  avoid: "thanh tra trang"
+  vi: "Extension đọc thô nội dung trang: `heap_page_items`, `bt_page_items`, `gin_metapage_info`… Chạy được trong PGlite."
+  en: "The extension that reads raw page contents: `heap_page_items`, `bt_page_items`, `gin_metapage_info`… It runs in PGlite."
+  doc: "https://www.postgresql.org/docs/18/pageinspect.html"
+
+# ───────────────────────── PostgreSQL L4: planner, đồng thời ─────────────────────────
+- term: planner (optimizer)
+  engines: [postgres, mongodb]
+  level: L4
+  keep_en: true
+  vi_term: "planner"
+  avoid: "người lập kế hoạch, sổ kế hoạch"
+  vi: "Phần của DB chọn kế hoạch rẻ nhất trong các kế hoạch có thể. Postgres dựa trên cost; MongoDB thử chạy các ứng viên rồi chọn (multi-planner)."
+  en: "The part of the database that picks the cheapest of the possible plans. Postgres uses cost estimates; MongoDB races candidate plans and picks one (multi-planner)."
+  doc: "https://www.postgresql.org/docs/18/planner-optimizer.html"
+- term: cost
+  engines: [postgres]
+  level: L1
+  keep_en: true
+  vi_term: "cost"
+  avoid: "chi phí tiền, mili giây"
+  vi: "Số ước lượng của planner, đơn vị tùy ý (mặc định đọc một trang tuần tự = 1). Không phải thời gian; game không bao giờ chấm bằng mili giây."
+  en: "The planner's estimate in arbitrary units (by default one sequential page read = 1). It is not time; the game never grades in milliseconds."
+  doc: "https://www.postgresql.org/docs/18/runtime-config-query.html"
+- term: selectivity
+  engines: [postgres, mongodb]
+  level: L4
+  keep_en: false
+  vi_term: "độ chọn lọc"
+  avoid: "tính kén chọn"
+  vi: "Tỉ lệ dòng thỏa một điều kiện. Điều kiện chọn lọc cao (ít dòng) mới đáng dùng index."
+  en: "The fraction of rows that match a condition. Only highly selective conditions (few rows) make an index worthwhile."
+  doc: "https://www.postgresql.org/docs/18/planner-stats.html"
+- term: cardinality estimate
+  engines: [postgres]
+  level: L4
+  keep_en: false
+  vi_term: "ước lượng số dòng"
+  avoid: "lực lượng (toán học)"
+  vi: "Số dòng planner đoán mỗi nút trả về (`rows=` trong EXPLAIN). Đoán sai xa thì kế hoạch dễ sai."
+  en: "The number of rows the planner expects each node to return (`rows=` in EXPLAIN). A badly wrong guess easily leads to a bad plan."
+  doc: "https://www.postgresql.org/docs/18/planner-stats.html"
+- term: statistics (pg_stats, ANALYZE)
+  engines: [postgres]
+  level: L4
+  keep_en: false
+  vi_term: "thống kê"
+  avoid: "báo cáo thống kê kinh doanh"
+  vi: "Dữ liệu `ANALYZE` thu về mỗi cột: `n_distinct`, giá trị phổ biến (MCV), histogram, correlation; đọc ở `pg_stats`."
+  en: "What `ANALYZE` collects per column: `n_distinct`, most common values (MCV), histogram, correlation; read them in `pg_stats`."
+  doc: "https://www.postgresql.org/docs/18/planner-stats.html"
+- term: extended statistics
+  engines: [postgres]
+  level: L4
+  keep_en: false
+  vi_term: "thống kê mở rộng"
+  avoid: "thống kê nâng cao (chung chung)"
+  vi: "Thống kê trên nhiều cột cùng lúc (`CREATE STATISTICS`) để planner biết các cột phụ thuộc nhau."
+  en: "Statistics across several columns (`CREATE STATISTICS`) so the planner knows the columns depend on each other."
+  doc: "https://www.postgresql.org/docs/18/planner-stats.html"
+- term: join strategy (nested loop, hash join, merge join)
+  engines: [postgres]
+  level: L4
+  keep_en: true
+  vi_term: "Nested Loop / Hash Join / Merge Join"
+  avoid: "vòng lặp lồng nhau (khi nói tên nút)"
+  vi: "Ba cách Postgres nối hai bảng. Thứ tự nối do planner chọn, giới hạn bởi `join_collapse_limit`; nhiều bảng quá thì dùng GEQO."
+  en: "The three ways Postgres joins two tables. The join order is chosen by the planner, bounded by `join_collapse_limit`; with many tables it uses GEQO."
+  doc: "https://www.postgresql.org/docs/18/planner-optimizer.html"
+- term: generic plan / custom plan
+  engines: [postgres]
+  level: L4
+  keep_en: true
+  vi_term: "generic plan / custom plan"
+  avoid: "kế hoạch chung chung"
+  vi: "Câu `PREPARE` có thể dùng kế hoạch theo giá trị tham số cụ thể (custom) hoặc một kế hoạch dùng chung (generic); chỉnh bằng `plan_cache_mode`."
+  en: "A `PREPARE`d statement can use a plan built for the actual parameter values (custom) or one shared plan (generic); controlled by `plan_cache_mode`."
+  doc: "https://www.postgresql.org/docs/18/sql-prepare.html"
+- term: table partitioning
+  engines: [postgres]
+  level: L4
+  keep_en: false
+  vi_term: "bảng phân vùng"
+  avoid: "phân mảnh, phân vùng ổ đĩa"
+  vi: "Một bảng logic chia thành nhiều bảng con (partition) theo range, list hoặc hash."
+  en: "One logical table split into child tables (partitions) by range, list or hash."
+  doc: "https://www.postgresql.org/docs/18/ddl-partitioning.html"
+- term: partition pruning
+  engines: [postgres]
+  level: L4
+  keep_en: true
+  vi_term: "partition pruning"
+  avoid: "cắt tỉa cây"
+  vi: "Planner (hoặc executor) bỏ qua các partition không thể chứa dòng thỏa điều kiện."
+  en: "The planner (or executor) skips partitions that cannot contain matching rows."
+  doc: "https://www.postgresql.org/docs/18/ddl-partitioning.html"
+- term: parallel query
+  engines: [postgres]
+  level: L4
+  keep_en: true
+  vi_term: "parallel query"
+  avoid: "truy vấn đồng thời (concurrent)"
+  vi: "Nhiều worker cùng chạy một câu, gom kết quả ở nút `Gather`. PGlite không có worker nên không bao giờ ra `Gather`: bài D."
+  en: "Several workers run one query, combined at a `Gather` node. PGlite has no workers, so it never shows `Gather`: a D lesson."
+  doc: "https://www.postgresql.org/docs/18/how-parallel-query-works.html"
+- term: JIT
+  engines: [postgres]
+  level: L4
+  keep_en: true
+  vi_term: "JIT"
+  avoid: "đúng lúc (just in time logistics)"
+  vi: "Biên dịch biểu thức sang mã máy bằng LLVM cho câu nặng. PGlite có `pg_jit_available() = false`: bài D."
+  en: "Compiles expressions to machine code with LLVM for heavy queries. PGlite has `pg_jit_available() = false`: a D lesson."
+  doc: "https://www.postgresql.org/docs/18/jit-decision.html"
+- term: isolation level
+  engines: [postgres, mongodb, dynamodb]
+  level: L4
+  keep_en: false
+  vi_term: "mức cô lập"
+  avoid: "mức cách ly (y tế)"
+  vi: "Mức transaction thấy thay đổi của transaction khác. Postgres: Read Committed (mặc định), Repeatable Read, Serializable; Read Uncommitted chạy như Read Committed."
+  en: "How much a transaction sees of others' changes. Postgres: Read Committed (default), Repeatable Read, Serializable; Read Uncommitted behaves like Read Committed."
+  doc: "https://www.postgresql.org/docs/18/transaction-iso.html"
+- term: dirty read / non-repeatable read / phantom read
+  engines: [postgres]
+  level: L4
+  keep_en: true
+  vi_term: "dirty read / non-repeatable read / phantom read"
+  avoid: "đọc bẩn / đọc ma (dịch sát, khó hiểu)"
+  vi: "Ba hiện tượng chuẩn SQL dùng để định nghĩa mức cô lập. Postgres không bao giờ cho dirty read, và Repeatable Read của nó không có phantom."
+  en: "The three SQL-standard phenomena that define isolation levels. Postgres never allows dirty reads, and its Repeatable Read has no phantoms."
+  doc: "https://www.postgresql.org/docs/18/transaction-iso.html"
+- term: write skew
+  engines: [postgres]
+  level: L4
+  keep_en: true
+  vi_term: "write skew"
+  avoid: "ghi lệch dữ liệu (sai nghĩa)"
+  vi: "Hai transaction cùng đọc một điều kiện, mỗi bên ghi chỗ khác, cộng lại phá điều kiện. Repeatable Read không chặn được; Serializable thì có."
+  en: "Two transactions read the same condition, each writes somewhere else, and together they break it. Repeatable Read does not stop it; Serializable does."
+  doc: "https://www.postgresql.org/docs/18/transaction-iso.html"
+- term: SSI (Serializable Snapshot Isolation)
+  engines: [postgres]
+  level: L4
+  keep_en: true
+  vi_term: "SSI"
+  avoid: "khóa toàn bộ bảng"
+  vi: "Cách Postgres làm Serializable: theo dõi phụ thuộc đọc-ghi (`SIReadLock`) và hủy một transaction với lỗi `40001`. Ứng dụng phải chạy lại cả transaction."
+  en: "How Postgres implements Serializable: it tracks read-write dependencies (`SIReadLock`) and aborts one transaction with error `40001`. The application must retry the whole transaction."
+  doc: "https://www.postgresql.org/docs/18/transaction-iso.html"
+- term: lock mode
+  engines: [postgres]
+  level: L4
+  keep_en: true
+  vi_term: "lock mode"
+  avoid: "chế độ khóa màn hình; \"khóa\" (dành cho key)"
+  vi: "Tám mức lock bảng từ ACCESS SHARE tới ACCESS EXCLUSIVE, và bốn mức row lock; bảng xung đột quyết định ai phải chờ ai. Xem trong `pg_locks`."
+  en: "Eight table lock levels from ACCESS SHARE to ACCESS EXCLUSIVE, plus four row lock levels; the conflict table decides who waits for whom. Inspect them in `pg_locks`."
+  doc: "https://www.postgresql.org/docs/18/explicit-locking.html"
+- term: row lock
+  engines: [postgres]
+  level: L4
+  keep_en: true
+  vi_term: "row lock"
+  avoid: "khóa hàng"
+  vi: "Lock trên từng dòng (`FOR UPDATE`, `FOR NO KEY UPDATE`, `FOR SHARE`, `FOR KEY SHARE`); chờ lock cần hai phiên nên trong game là bài D."
+  en: "A lock on single rows (`FOR UPDATE`, `FOR NO KEY UPDATE`, `FOR SHARE`, `FOR KEY SHARE`); waiting needs two sessions, so in the game it is a D lesson."
+  doc: "https://www.postgresql.org/docs/18/explicit-locking.html"
+- term: advisory lock
+  engines: [postgres]
+  level: L4
+  keep_en: true
+  vi_term: "advisory lock"
+  avoid: "khóa tư vấn"
+  vi: "Lock do ứng dụng tự đặt theo một số (`pg_advisory_lock(42)`), DB không gắn nó với dữ liệu nào. Chạy được trong PGlite."
+  en: "A lock the application takes on a number (`pg_advisory_lock(42)`); the database ties it to no data. It runs in PGlite."
+  doc: "https://www.postgresql.org/docs/18/explicit-locking.html"
+- term: deadlock
+  engines: [postgres, mongodb]
+  level: L4
+  keep_en: true
+  vi_term: "deadlock"
+  avoid: "khóa chết, bế tắc (dùng không kèm deadlock)"
+  vi: "Hai transaction chờ lock của nhau. Postgres phát hiện sau `deadlock_timeout` và hủy một bên."
+  en: "Two transactions each wait for the other's lock. Postgres detects it after `deadlock_timeout` and aborts one."
+  doc: "https://www.postgresql.org/docs/18/explicit-locking.html"
+- term: lost update
+  engines: [postgres, dynamodb]
+  level: L4
+  keep_en: true
+  vi_term: "lost update"
+  avoid: "bản cập nhật bị thất lạc"
+  vi: "Hai bên đọc cùng giá trị rồi cùng ghi, bản ghi sau đè mất bản trước. Chặn bằng row lock, mức cô lập cao hơn, hoặc conditional write (DynamoDB)."
+  en: "Two clients read the same value and both write; the later write silently overwrites the earlier. Prevent it with a row lock, a stricter isolation level or a conditional write (DynamoDB)."
+  doc: "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/WorkingWithItems.html"
+
+# ───────────────────────── PostgreSQL L5: nội tạng, nhân bản, bảo mật ─────────────────────────
+- term: page split
+  engines: [postgres]
+  level: L5
+  keep_en: true
+  vi_term: "page split"
+  avoid: "chia trang web"
+  vi: "Trang B-tree đầy thì tách đôi và đẩy một khóa lên trang cha."
+  en: "A full B-tree page splits in two and pushes a key up to its parent."
+  doc: "https://www.postgresql.org/docs/18/btree.html"
+- term: deduplication (B-tree)
+  engines: [postgres]
+  level: L5
+  keep_en: true
+  vi_term: "deduplication"
+  avoid: "xóa dòng trùng trong bảng"
+  vi: "B-tree gộp các mục cùng khóa thành một posting list để index nhỏ hơn. Không đụng tới dữ liệu bảng."
+  en: "The B-tree merges entries with the same key into one posting list to shrink the index. It does not touch table data."
+  doc: "https://www.postgresql.org/docs/18/btree.html"
+- term: bottom-up index deletion
+  engines: [postgres]
+  level: L5
+  keep_en: true
+  vi_term: "bottom-up deletion"
+  avoid: "xóa từ dưới lên của cây gia phả"
+  vi: "Trước khi split, B-tree thử xóa các mục trỏ tới phiên bản đã chết do UPDATE không HOT tạo ra."
+  en: "Before a split, the B-tree tries to delete entries pointing to dead versions created by non-HOT UPDATEs."
+  doc: "https://www.postgresql.org/docs/18/btree.html"
+- term: amcheck
+  engines: [postgres]
+  level: L5
+  keep_en: true
+  vi_term: "`amcheck`"
+  avoid: "kiểm tra buổi sáng"
+  vi: "Extension kiểm cấu trúc index (và heap) có hỏng không, ví dụ `bt_index_check`."
+  en: "The extension that verifies index (and heap) structure is not corrupted, e.g. `bt_index_check`."
+  doc: "https://www.postgresql.org/docs/18/amcheck.html"
+- term: pg_stat_statements
+  engines: [postgres]
+  level: L5
+  keep_en: true
+  vi_term: "`pg_stat_statements`"
+  avoid: "báo cáo thống kê (chung chung)"
+  vi: "Extension gom số lần gọi, thời gian, buffer của mỗi câu đã chuẩn hóa; nơi đầu tiên tìm câu chậm."
+  en: "The extension that aggregates calls, time and buffers per normalised statement; the first place to look for slow queries."
+  doc: "https://www.postgresql.org/docs/18/pgstatstatements.html"
+- term: streaming replication
+  engines: [postgres]
+  level: L5
+  keep_en: true
+  vi_term: "streaming replication"
+  avoid: "phát trực tuyến video"
+  vi: "Primary gửi WAL liên tục cho standby để phát lại; đồng bộ (chờ standby xác nhận) hoặc bất đồng bộ. Cần hai server: bài D."
+  en: "The primary streams WAL to a standby that replays it; synchronous (waits for the standby) or asynchronous. Needs two servers: a D lesson."
+  doc: "https://www.postgresql.org/docs/18/warm-standby.html"
+- term: replication
+  engines: [postgres, mongodb, dynamodb]
+  level: L5
+  keep_en: false
+  vi_term: "nhân bản"
+  avoid: "sao lưu (backup là việc khác)"
+  vi: "Giữ bản sao dữ liệu trên nhiều máy để chịu lỗi và đọc rải. Postgres: streaming/logical replication; MongoDB: replica set; DynamoDB: tự động trong Region, global tables giữa Region."
+  en: "Keeping copies of the data on several machines for fault tolerance and read scaling. Postgres: streaming/logical replication; MongoDB: replica set; DynamoDB: automatic within a Region, global tables across Regions."
+  doc: "https://www.mongodb.com/docs/manual/replication/"
+- term: primary / standby (hot standby)
+  engines: [postgres]
+  level: L5
+  keep_en: true
+  vi_term: "primary / standby"
+  avoid: "máy chủ chính/phụ (master/slave)"
+  vi: "Primary nhận ghi; standby phát lại WAL, và hot standby cho phép đọc trong lúc đó."
+  en: "The primary accepts writes; a standby replays WAL, and a hot standby also serves reads meanwhile."
+  doc: "https://www.postgresql.org/docs/18/hot-standby.html"
+- term: replication slot
+  engines: [postgres]
+  level: L5
+  keep_en: true
+  vi_term: "replication slot"
+  avoid: "khe cắm"
+  vi: "Đối tượng nhớ bên nhận đã đọc tới đâu; WAL được giữ cho tới khi slot đọc xong, nên slot bị bỏ quên làm đầy đĩa."
+  en: "An object that remembers how far a consumer has read; WAL is kept until the slot consumes it, so a forgotten slot fills the disk."
+  doc: "https://www.postgresql.org/docs/18/warm-standby.html"
+- term: logical decoding
+  engines: [postgres]
+  level: L5
+  keep_en: true
+  vi_term: "logical decoding"
+  avoid: "giải mã logic (toán học)"
+  vi: "Đọc WAL thành thay đổi dạng dòng (INSERT/UPDATE/DELETE) cho ứng dụng khác. Cần `wal_level = logical`; PGlite chỉ có `replica` nên là bài D."
+  en: "Turns WAL into row-level changes (INSERT/UPDATE/DELETE) for other applications. Needs `wal_level = logical`; PGlite only has `replica`, so it is a D lesson."
+  doc: "https://www.postgresql.org/docs/18/logicaldecoding-explanation.html"
+- term: logical replication
+  engines: [postgres]
+  level: L5
+  keep_en: true
+  vi_term: "logical replication"
+  avoid: "nhân bản có lý"
+  vi: "Nhân bản theo bảng bằng publication/subscription, dựa trên logical decoding; khác streaming replication chép cả cụm."
+  en: "Table-level replication through publication/subscription, built on logical decoding; unlike streaming replication, which copies the whole cluster."
+  doc: "https://www.postgresql.org/docs/18/logical-replication.html"
+- term: PITR (point-in-time recovery)
+  engines: [postgres, dynamodb]
+  level: L5
+  keep_en: true
+  vi_term: "PITR"
+  avoid: "khôi phục điểm (thiếu thời gian)"
+  vi: "Khôi phục về một thời điểm bất kỳ: Postgres = base backup + phát lại WAL lưu trữ; DynamoDB có PITR bật theo bảng. Bài D."
+  en: "Restore to any moment: Postgres = base backup + replay of archived WAL; DynamoDB offers PITR per table. A D lesson."
+  doc: "https://www.postgresql.org/docs/18/continuous-archiving.html"
+- term: failover
+  engines: [postgres, mongodb]
+  level: L5
+  keep_en: true
+  vi_term: "failover"
+  avoid: "thất bại toàn bộ"
+  vi: "Chuyển vai primary sang máy khác khi primary chết. MongoDB làm tự động bằng election; Postgres cần công cụ ngoài."
+  en: "Moving the primary role to another machine when the primary dies. MongoDB does it automatically by election; Postgres needs external tooling."
+  doc: "https://www.mongodb.com/docs/manual/core/replica-set-elections/"
+- term: RLS (row-level security)
+  engines: [postgres]
+  level: L5
+  keep_en: true
+  vi_term: "RLS"
+  avoid: "bảo mật cấp hàng"
+  vi: "Policy lọc dòng mỗi role thấy (`USING`) và được ghi (`WITH CHECK`); permissive cộng gộp, restrictive phải thỏa tất cả. Chủ bảng bỏ qua trừ khi `FORCE`."
+  en: "Policies that filter the rows a role can see (`USING`) and write (`WITH CHECK`); permissive ones combine with OR, restrictive ones must all pass. The table owner bypasses them unless `FORCE` is set."
+  doc: "https://www.postgresql.org/docs/18/ddl-rowsecurity.html"
+- term: role
+  engines: [postgres]
+  level: L5
+  keep_en: true
+  vi_term: "role"
+  avoid: "vai diễn"
+  vi: "Người dùng hoặc nhóm quyền của Postgres; lab RLS đổi bằng `SET ROLE`."
+  en: "A Postgres user or permission group; RLS labs switch with `SET ROLE`."
+  doc: "https://www.postgresql.org/docs/18/user-manag.html"
+- term: extension
+  engines: [postgres]
+  level: L2
+  keep_en: true
+  vi_term: "extension"
+  avoid: "phần mở rộng tên file"
+  vi: "Gói thêm tính năng (`CREATE EXTENSION`). PGlite chỉ nạp extension lúc khởi tạo."
+  en: "A package that adds features (`CREATE EXTENSION`). PGlite loads extensions only at start-up."
+  doc: "https://www.postgresql.org/docs/18/sql-createextension.html"
+
+# ───────────────────────── MongoDB L1–L2 ─────────────────────────
+- term: document
+  engines: [mongodb]
+  level: L1
+  keep_en: false
+  vi_term: "tài liệu"
+  avoid: "văn bản, docs (documentation)"
+  vi: "Bản ghi của MongoDB: cặp trường-giá trị, lồng được, lưu dạng BSON. Tối đa 16 MiB và 100 tầng lồng."
+  en: "MongoDB's record: field-value pairs that can nest, stored as BSON. At most 16 MiB and 100 levels of nesting."
+  doc: "https://www.mongodb.com/docs/manual/core/document/"
+- term: collection
+  engines: [mongodb]
+  level: L1
+  keep_en: true
+  vi_term: "collection"
+  avoid: "bộ sưu tập"
+  vi: "Nhóm tài liệu, tương tự bảng nhưng không ép cùng hình dạng (trừ khi có validation)."
+  en: "A group of documents, like a table but with no enforced shape (unless validation is set)."
+  doc: "https://www.mongodb.com/docs/manual/core/databases-and-collections/"
+- term: BSON
+  engines: [mongodb]
+  level: L1
+  keep_en: true
+  vi_term: "BSON"
+  avoid: "JSON (BSON có thêm kiểu)"
+  vi: "Dạng nhị phân của tài liệu, có thêm kiểu JSON không có: ObjectId, Date, Decimal128, số nguyên 32/64 bit…"
+  en: "The binary form of documents, with types JSON lacks: ObjectId, Date, Decimal128, 32/64-bit integers…"
+  doc: "https://www.mongodb.com/docs/manual/reference/bson-types/"
+- term: ObjectId
+  engines: [mongodb]
+  level: L1
+  keep_en: true
+  vi_term: "`ObjectId`"
+  avoid: "id đối tượng (khi nói về kiểu)"
+  vi: "Giá trị 12 byte mặc định cho `_id`, có dấu thời gian ở đầu nên gần như tăng dần."
+  en: "The default 12-byte `_id` value; it starts with a timestamp, so it is roughly increasing."
+  doc: "https://www.mongodb.com/docs/manual/reference/bson-types/"
+- term: _id
+  engines: [mongodb]
+  level: L1
+  keep_en: true
+  vi_term: "`_id`"
+  avoid: "số thứ tự dòng"
+  vi: "Khóa chính của mọi tài liệu, luôn có index unique không xóa được. `find` trả nó mặc định; bỏ bằng `_id: 0`."
+  en: "Every document's primary key, always backed by a unique index that cannot be dropped. `find` returns it by default; drop it with `_id: 0`."
+  doc: "https://www.mongodb.com/docs/manual/core/document/"
+- term: field / dot notation
+  engines: [mongodb]
+  level: L1
+  keep_en: false
+  vi_term: "trường"
+  avoid: "cột (MongoDB không có cột), lĩnh vực"
+  vi: "Tên-giá trị trong tài liệu. Trường lồng gọi bằng dấu chấm: `'address.city'`, `'items.0.sku'`."
+  en: "A name-value pair in a document. Nested fields are addressed with dots: `'address.city'`, `'items.0.sku'`."
+  doc: "https://www.mongodb.com/docs/manual/core/document/"
+- term: embedded document
+  engines: [mongodb]
+  level: L1
+  keep_en: false
+  vi_term: "tài liệu nhúng"
+  avoid: "tài liệu đính kèm"
+  vi: "Tài liệu nằm trong tài liệu khác (một trường hoặc phần tử mảng). Nhúng giữ dữ liệu đọc cùng nhau ở một chỗ."
+  en: "A document inside another document (a field or array element). Embedding keeps data read together in one place."
+  doc: "https://www.mongodb.com/docs/manual/data-modeling/"
+- term: embedding vs referencing
+  engines: [mongodb]
+  level: L2
+  keep_en: false
+  vi_term: "nhúng / tham chiếu"
+  avoid: "chuẩn hóa / phi chuẩn hóa (chỉ gần đúng)"
+  vi: "Hai cách nối dữ liệu liên quan: nhúng vào cùng tài liệu, hoặc lưu `_id` của tài liệu khác rồi `$lookup`. Chọn theo cách ứng dụng đọc."
+  en: "Two ways to relate data: embed it in the same document, or store another document's `_id` and `$lookup` it. Choose by how the application reads."
+  doc: "https://www.mongodb.com/docs/manual/data-modeling/"
+- term: projection (MongoDB)
+  engines: [mongodb]
+  level: L1
+  keep_en: true
+  vi_term: "projection"
+  avoid: "phép chiếu (toán học), máy chiếu"
+  vi: "Tham số thứ hai của `find` chọn trường trả về (`{ name: 1, _id: 0 }`). Khác projection của DynamoDB GSI."
+  en: "The second argument of `find` that picks returned fields (`{ name: 1, _id: 0 }`). Different from a DynamoDB GSI projection."
+  doc: "https://www.mongodb.com/docs/manual/tutorial/project-fields-from-query-results/"
+- term: query operator
+  engines: [mongodb]
+  level: L1
+  keep_en: false
+  vi_term: "toán tử truy vấn"
+  avoid: "nhà điều hành truy vấn"
+  vi: "Toán tử bắt đầu bằng `$` trong bộ lọc: `$eq`, `$gt`, `$in`, `$exists`, `$type`, `$regex`, `$elemMatch`."
+  en: "The `$` operators in a filter: `$eq`, `$gt`, `$in`, `$exists`, `$type`, `$regex`, `$elemMatch`."
+  doc: "https://www.mongodb.com/docs/manual/reference/operator/query/"
+- term: update operator
+  engines: [mongodb]
+  level: L1
+  keep_en: false
+  vi_term: "toán tử cập nhật"
+  avoid: "cập nhật phần mềm"
+  vi: "Toán tử sửa một phần tài liệu: `$set`, `$inc`, `$push`, `$addToSet`, `$pull`, positional `$`."
+  en: "Operators that change part of a document: `$set`, `$inc`, `$push`, `$addToSet`, `$pull`, positional `$`."
+  doc: "https://www.mongodb.com/docs/manual/reference/operator/update/"
+- term: upsert
+  engines: [mongodb, dynamodb]
+  level: L1
+  keep_en: true
+  vi_term: "upsert"
+  avoid: "nâng cấp (upgrade)"
+  vi: "Cập nhật nếu có, chèn mới nếu chưa. MongoDB cần `upsert: true`; `UpdateItem` của DynamoDB luôn upsert."
+  en: "Update if it exists, insert if not. MongoDB needs `upsert: true`; DynamoDB `UpdateItem` always upserts."
+  doc: "https://www.mongodb.com/docs/manual/reference/method/db.collection.updateOne/"
+- term: aggregation pipeline
+  engines: [mongodb]
+  level: L2
+  keep_en: true
+  vi_term: "aggregation pipeline"
+  avoid: "đường ống nước"
+  vi: "Chuỗi stage, mỗi stage nhận tài liệu của stage trước và trả tài liệu cho stage sau. Tối đa 1000 stage."
+  en: "A chain of stages, each taking the previous stage's documents and passing documents on. At most 1000 stages."
+  doc: "https://www.mongodb.com/docs/manual/aggregation/"
+- term: aggregation stage
+  engines: [mongodb]
+  level: L2
+  keep_en: true
+  vi_term: "stage"
+  avoid: "sân khấu, giai đoạn dự án"
+  vi: "Một bước của pipeline: `$match`, `$project`, `$group`, `$sort`, `$limit`, `$unwind`, `$lookup`, `$facet`, `$bucket`, `$setWindowFields`…"
+  en: "One step of a pipeline: `$match`, `$project`, `$group`, `$sort`, `$limit`, `$unwind`, `$lookup`, `$facet`, `$bucket`, `$setWindowFields`…"
+  doc: "https://www.mongodb.com/docs/manual/reference/operator/aggregation-pipeline/"
+- term: $lookup
+  engines: [mongodb]
+  level: L2
+  keep_en: true
+  vi_term: "`$lookup`"
+  avoid: "JOIN (y hệt SQL)"
+  vi: "Left outer join tới collection khác trong cùng database; kết quả luôn là một mảng, kể cả rỗng. Không có index ở trường bên kia thì chậm trên dữ liệu lớn."
+  en: "A left outer join to another collection in the same database; the result is always an array, even when empty. Without an index on the foreign field it is slow on large data."
+  doc: "https://www.mongodb.com/docs/manual/reference/operator/aggregation/lookup/"
+- term: $unwind
+  engines: [mongodb]
+  level: L2
+  keep_en: true
+  vi_term: "`$unwind`"
+  avoid: "thư giãn"
+  vi: "Tách một tài liệu có mảng thành một tài liệu mỗi phần tử."
+  en: "Turns a document with an array into one document per element."
+  doc: "https://www.mongodb.com/docs/manual/reference/operator/aggregation/unwind/"
+- term: pipeline update
+  engines: [mongodb]
+  level: L2
+  keep_en: true
+  vi_term: "update bằng pipeline"
+  avoid: "cập nhật đường ống"
+  vi: "Update nhận một mảng stage (`$set`, `$unset`, `$replaceWith`…) để tính giá trị mới từ trường khác; giá trị chữ bắt đầu bằng `$` phải bọc `$literal`."
+  en: "An update that takes an array of stages (`$set`, `$unset`, `$replaceWith`…) to compute new values from other fields; a literal starting with `$` must be wrapped in `$literal`."
+  doc: "https://www.mongodb.com/docs/manual/tutorial/update-documents-with-aggregation-pipeline/"
+- term: schema validation ($jsonSchema)
+  engines: [mongodb]
+  level: L2
+  keep_en: true
+  vi_term: "schema validation"
+  avoid: "xác thực người dùng"
+  vi: "Luật hình dạng tài liệu gắn vào collection; mặc định tài liệu sai bị từ chối, có thể đặt chỉ cảnh báo."
+  en: "Document shape rules attached to a collection; by default an invalid document is rejected, and it can be set to warn only."
+  doc: "https://www.mongodb.com/docs/manual/core/schema-validation/"
+- term: mongosh
+  engines: [mongodb]
+  level: L1
+  keep_en: true
+  vi_term: "mongosh"
+  avoid: "Mongo Shell cũ (`mongo`)"
+  vi: "Shell chính thức của MongoDB. Editor trong game nhận một tập con: `db.<collection>.<command>(…)` với giá trị chữ, đọc như dữ liệu."
+  en: "MongoDB's official shell. The game's editor accepts a subset: `db.<collection>.<command>(…)` with literal values, parsed as data."
+  doc: "https://www.mongodb.com/docs/mongodb-shell/"
+
+# ───────────────────────── MongoDB L3: index, explain ─────────────────────────
+- term: single field / compound index
+  engines: [mongodb]
+  level: L3
+  keep_en: true
+  vi_term: "single field index / compound index"
+  avoid: "index hợp chất (hóa học)"
+  vi: "Index một trường hoặc nhiều trường theo thứ tự. Tối đa 64 index mỗi collection và 32 trường mỗi compound index."
+  en: "An index on one field, or several fields in order. At most 64 indexes per collection and 32 fields per compound index."
+  doc: "https://www.mongodb.com/docs/manual/core/indexes/index-types/index-compound/"
+- term: ESR (Equality, Sort, Range)
+  engines: [mongodb]
+  level: L3
+  keep_en: true
+  vi_term: "luật ESR"
+  avoid: "luật cứng không ngoại lệ"
+  vi: "Thứ tự trường trong compound index: bằng trước, sort sau, khoảng cuối. `$ne`, `$nin`, `$regex` tính là khoảng. Khi khoảng rất chọn lọc, đặt khoảng trước sort (ERS) có thể tốt hơn."
+  en: "Field order in a compound index: equality first, then sort, then range. `$ne`, `$nin`, `$regex` count as ranges. When the range is very selective, putting it before the sort (ERS) can win."
+  doc: "https://www.mongodb.com/docs/manual/tutorial/equality-sort-range-guideline/"
+- term: multikey index
+  engines: [mongodb]
+  level: L3
+  keep_en: true
+  vi_term: "multikey index"
+  avoid: "index nhiều khóa chính"
+  vi: "Index trên trường mảng: mỗi phần tử một mục. Một compound index chỉ được có tối đa một trường mảng mỗi tài liệu."
+  en: "An index on an array field: one entry per element. A compound index may have at most one array field per document."
+  doc: "https://www.mongodb.com/docs/manual/core/indexes/index-types/index-multikey/"
+- term: covered query
+  engines: [mongodb]
+  level: L3
+  keep_en: true
+  vi_term: "covered query"
+  avoid: "truy vấn được bảo hiểm"
+  vi: "Truy vấn trả lời chỉ bằng index: trong explain, `IXSCAN` không nằm dưới `FETCH` và `totalDocsExamined` = 0. Tương đương Index Only Scan của Postgres."
+  en: "A query answered from the index alone: in explain, `IXSCAN` is not under a `FETCH` and `totalDocsExamined` is 0. The equivalent of a Postgres Index Only Scan."
+  doc: "https://www.mongodb.com/docs/manual/reference/explain-results/"
+- term: sparse index / hidden index
+  engines: [mongodb]
+  level: L3
+  keep_en: true
+  vi_term: "sparse index / hidden index"
+  avoid: "index thưa thớt dữ liệu / index bí mật"
+  vi: "Sparse: bỏ qua tài liệu không có trường. Hidden: planner không dùng nhưng index vẫn được cập nhật, để thử xóa an toàn."
+  en: "Sparse: skips documents without the field. Hidden: the planner ignores it but it is still maintained, so you can trial a drop safely."
+  doc: "https://www.mongodb.com/docs/manual/core/index-sparse/"
+- term: wildcard index
+  engines: [mongodb]
+  level: L3
+  keep_en: true
+  vi_term: "wildcard index"
+  avoid: "index đại diện"
+  vi: "Index `$**` trên các trường không biết trước tên; luôn sparse."
+  en: "A `$**` index over fields whose names are not known in advance; always sparse."
+  doc: "https://www.mongodb.com/docs/manual/core/indexes/index-types/index-wildcard/"
+- term: TTL index (MongoDB)
+  engines: [mongodb]
+  level: L3
+  keep_en: true
+  vi_term: "TTL index"
+  avoid: "hạn dùng sản phẩm"
+  vi: "Index trên trường ngày; luồng nền chạy khoảng 60 giây một lần xóa tài liệu hết hạn. Không compound, không trên `_id`."
+  en: "An index on a date field; a background task runs about every 60 seconds and deletes expired documents. Not compound, not on `_id`."
+  doc: "https://www.mongodb.com/docs/manual/core/index-ttl/"
+- term: explain (MongoDB)
+  engines: [mongodb]
+  level: L3
+  keep_en: true
+  vi_term: "`explain()`"
+  avoid: "giải thích (khi nói về lệnh)"
+  vi: "Ba mức `queryPlanner`, `executionStats`, `allPlansExecution`. Đọc `nReturned`, `totalKeysExamined`, `totalDocsExamined`. mingo không có explain: output trong bài là ghi sẵn từ `mongod` thật."
+  en: "Three verbosities `queryPlanner`, `executionStats`, `allPlansExecution`. Read `nReturned`, `totalKeysExamined`, `totalDocsExamined`. mingo has no explain: lesson output is recorded from a real `mongod`."
+  doc: "https://www.mongodb.com/docs/manual/reference/explain-results/"
+- term: COLLSCAN / IXSCAN / FETCH
+  engines: [mongodb]
+  level: L3
+  keep_en: true
+  vi_term: "COLLSCAN / IXSCAN / FETCH"
+  avoid: "quét bộ sưu tập"
+  vi: "Stage trong explain: đọc cả collection; đọc index; lấy tài liệu theo con trỏ từ index. `SORT` nghĩa là sort trong bộ nhớ."
+  en: "Explain stages: read the whole collection; read an index; fetch documents pointed to by the index. `SORT` means an in-memory sort."
+  doc: "https://www.mongodb.com/docs/manual/reference/explain-results/"
+- term: plan cache
+  engines: [mongodb, postgres]
+  level: L3
+  keep_en: true
+  vi_term: "plan cache"
+  avoid: "bộ nhớ đệm tiền mặt"
+  vi: "MongoDB nhớ kế hoạch thắng cho mỗi hình dạng truy vấn (Missing → Inactive → Active); DDL xóa cache. Postgres có cache cho câu `PREPARE` (generic plan)."
+  en: "MongoDB remembers the winning plan per query shape (Missing → Inactive → Active); DDL clears it. Postgres caches plans for `PREPARE`d statements (generic plan)."
+  doc: "https://www.mongodb.com/docs/manual/core/query-plans/"
+
+# ───────────────────────── MongoDB L4: concern, transaction, pattern ─────────────────────────
+- term: write concern
+  engines: [mongodb]
+  level: L4
+  keep_en: true
+  vi_term: "write concern"
+  avoid: "mối lo khi ghi"
+  vi: "Mức xác nhận một lần ghi cần (`w`, `j`, `wtimeout`). Mặc định ngầm là `w: majority` (có ngoại lệ khi có arbiter)."
+  en: "How much acknowledgement a write needs (`w`, `j`, `wtimeout`). The implicit default is `w: majority` (with an exception when there is an arbiter)."
+  doc: "https://www.mongodb.com/docs/manual/reference/write-concern/"
+- term: read concern
+  engines: [mongodb]
+  level: L4
+  keep_en: true
+  vi_term: "read concern"
+  avoid: "mối lo khi đọc"
+  vi: "Mức chắc chắn của dữ liệu đọc: `local` (mặc định), `available`, `majority`, `linearizable`, `snapshot`."
+  en: "How certain the data you read must be: `local` (default), `available`, `majority`, `linearizable`, `snapshot`."
+  doc: "https://www.mongodb.com/docs/manual/reference/read-concern/"
+- term: read preference
+  engines: [mongodb]
+  level: L4
+  keep_en: true
+  vi_term: "read preference"
+  avoid: "sở thích đọc"
+  vi: "Chọn đọc từ primary hay secondary. Đọc từ secondary có thể thấy dữ liệu cũ."
+  en: "Chooses whether reads go to the primary or a secondary. Reading from a secondary may return stale data."
+  doc: "https://www.mongodb.com/docs/manual/core/read-preference/"
+- term: causal consistency
+  engines: [mongodb]
+  level: L4
+  keep_en: false
+  vi_term: "nhất quán nhân quả"
+  avoid: "nhất quán ngẫu nhiên"
+  vi: "Phiên đảm bảo đọc thấy chính lần ghi của mình và theo đúng thứ tự; chỉ đủ bốn đảm bảo khi dùng read concern và write concern `majority`."
+  en: "A session guarantees you read your own writes and in order; all four guarantees hold only with `majority` read and write concern."
+  doc: "https://www.mongodb.com/docs/manual/core/causal-consistency-read-write-concerns/"
+- term: eventual consistency / strong consistency
+  engines: [dynamodb, mongodb]
+  level: L2
+  keep_en: false
+  vi_term: "nhất quán cuối / nhất quán mạnh"
+  avoid: "nhất quán sự kiện (event)"
+  vi: "Nhất quán cuối: đọc có thể chưa thấy lần ghi vừa xong, nhưng rồi sẽ thấy. Nhất quán mạnh: luôn thấy lần ghi đã thành công. Đọc mạnh trên DynamoDB tốn gấp đôi RCU; GSI chỉ có nhất quán cuối."
+  en: "Eventual: a read may not yet see a just-finished write, but will. Strong: a read always sees every successful write. A strongly consistent DynamoDB read costs twice the RCU; GSIs are eventual only."
+  doc: "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.ReadConsistency.html"
+- term: multi-document transaction
+  engines: [mongodb]
+  level: L4
+  keep_en: true
+  vi_term: "transaction nhiều tài liệu"
+  avoid: "giao dịch nhiều văn bản"
+  vi: "Cần replica set; giới hạn chạy 60 giây theo mặc định; tốn hơn ghi một tài liệu. Thao tác một tài liệu đã nguyên tử nên không cần transaction."
+  en: "Needs a replica set; runs for at most 60 seconds by default; costs more than a single-document write. A single-document write is already atomic and needs no transaction."
+  doc: "https://www.mongodb.com/docs/manual/core/transactions/"
+- term: change stream
+  engines: [mongodb]
+  level: L4
+  keep_en: true
+  vi_term: "change stream"
+  avoid: "luồng tiền lẻ"
+  vi: "Theo dõi thay đổi đã majority-commit của collection/database; tiếp tục được bằng resume token. Cần replica set: bài D."
+  en: "Watches majority-committed changes on a collection/database; resumable with a resume token. Needs a replica set: a D lesson."
+  doc: "https://www.mongodb.com/docs/manual/changeStreams/"
+- term: schema design pattern
+  engines: [mongodb]
+  level: L4
+  keep_en: true
+  vi_term: "pattern thiết kế"
+  avoid: "hoa văn"
+  vi: "Mẫu chính thức của MongoDB: Computed, Group Data, Polymorphic, Schema Versioning, Archive, Single Collection…"
+  en: "MongoDB's official patterns: Computed, Group Data, Polymorphic, Schema Versioning, Archive, Single Collection…"
+  doc: "https://www.mongodb.com/docs/manual/data-modeling/design-patterns/"
+
+# ───────────────────────── MongoDB L5: WiredTiger, replica set, sharding ─────────────────────────
+- term: WiredTiger
+  engines: [mongodb]
+  level: L5
+  keep_en: true
+  vi_term: "WiredTiger"
+  avoid: "con hổ có dây"
+  vi: "Storage engine mặc định của MongoDB: concurrency theo tài liệu (xung đột thì retry), MVCC bằng snapshot, checkpoint khoảng 60 giây, journal, nén (snappy mặc định)."
+  en: "MongoDB's default storage engine: document-level concurrency (retry on conflict), MVCC via snapshots, a checkpoint about every 60 seconds, a journal, compression (snappy by default)."
+  doc: "https://www.mongodb.com/docs/manual/core/wiredtiger/"
+- term: storage engine
+  engines: [mongodb, postgres]
+  level: L5
+  keep_en: true
+  vi_term: "storage engine"
+  avoid: "động cơ lưu kho"
+  vi: "Tầng quản lý dữ liệu trên đĩa và trong bộ nhớ. MongoDB: WiredTiger. Postgres gọi là table access method (heap là mặc định)."
+  en: "The layer managing data on disk and in memory. MongoDB: WiredTiger. Postgres calls it a table access method (heap is the default)."
+  doc: "https://www.mongodb.com/docs/manual/core/storage-engines/"
+- term: journal
+  engines: [mongodb]
+  level: L5
+  keep_en: true
+  vi_term: "journal"
+  avoid: "tạp chí, nhật ký cá nhân"
+  vi: "Log ghi trước của WiredTiger giữa hai checkpoint; vai trò như WAL của Postgres. `j: true` chờ ghi journal."
+  en: "WiredTiger's write-ahead log between checkpoints; the same role as Postgres' WAL. `j: true` waits for the journal write."
+  doc: "https://www.mongodb.com/docs/manual/core/journaling/"
+- term: replica set
+  engines: [mongodb]
+  level: L4
+  keep_en: true
+  vi_term: "replica set"
+  avoid: "bộ bản sao (dịch sát)"
+  vi: "Nhóm `mongod` giữ cùng dữ liệu: một primary nhận ghi, các secondary chép theo oplog. Tối đa 50 thành viên, 7 thành viên bỏ phiếu."
+  en: "A group of `mongod`s holding the same data: one primary takes writes, secondaries copy it through the oplog. At most 50 members, 7 of them voting."
+  doc: "https://www.mongodb.com/docs/manual/replication/"
+- term: primary / secondary / arbiter
+  engines: [mongodb]
+  level: L4
+  keep_en: true
+  vi_term: "primary / secondary / arbiter"
+  avoid: "chính / phụ / trọng tài bóng đá"
+  vi: "Vai trong replica set: nhận ghi; giữ bản sao; chỉ bỏ phiếu, không giữ dữ liệu."
+  en: "Replica set roles: takes writes; holds a copy; votes only, holds no data."
+  doc: "https://www.mongodb.com/docs/manual/replication/"
+- term: oplog
+  engines: [mongodb]
+  level: L5
+  keep_en: true
+  vi_term: "oplog"
+  avoid: "nhật ký vận hành (dịch mất tên)"
+  vi: "Collection giới hạn ghi lại mọi thao tác ghi trên primary; secondary đọc và áp dụng lại."
+  en: "A capped collection recording every write on the primary; secondaries read and re-apply it."
+  doc: "https://www.mongodb.com/docs/manual/core/replica-set-oplog/"
+- term: election
+  engines: [mongodb]
+  level: L5
+  keep_en: true
+  vi_term: "election"
+  avoid: "bầu cử chính trị"
+  vi: "Chọn primary mới khi không nghe thấy primary trong `electionTimeoutMillis` (10 giây mặc định); heartbeat 2 giây."
+  en: "Choosing a new primary when the primary is not heard within `electionTimeoutMillis` (10 seconds by default); heartbeat every 2 seconds."
+  doc: "https://www.mongodb.com/docs/manual/core/replica-set-elections/"
+- term: rollback (replica set)
+  engines: [mongodb]
+  level: L5
+  keep_en: true
+  vi_term: "rollback (replica set)"
+  avoid: "rollback transaction (khác nghĩa)"
+  vi: "Khi primary cũ quay lại, các lần ghi chưa tới majority của nó bị gỡ bỏ. Ghi với `w: majority` thì không bị rollback kiểu này."
+  en: "When a former primary rejoins, its writes that never reached a majority are undone. Writes with `w: majority` are not rolled back this way."
+  doc: "https://www.mongodb.com/docs/manual/core/replica-set-rollbacks/"
+- term: sharding / shard
+  engines: [mongodb]
+  level: L5
+  keep_en: true
+  vi_term: "sharding / shard"
+  avoid: "mảnh vỡ, phân mảnh ổ đĩa"
+  vi: "Chia một collection ra nhiều shard (mỗi shard là một replica set) theo shard key, qua router `mongos` và config server."
+  en: "Spreading a collection over several shards (each a replica set) by shard key, through the `mongos` router and config servers."
+  doc: "https://www.mongodb.com/docs/manual/sharding/"
+- term: shard key
+  engines: [mongodb]
+  level: L5
+  keep_en: true
+  vi_term: "shard key"
+  avoid: "khóa mảnh, chìa khóa"
+  vi: "Trường quyết định tài liệu nằm ở shard nào. Cần cardinality cao, tần suất đều, không tăng đơn điệu (nếu tăng đơn điệu thì dùng hashed). Truy vấn không có shard key phải hỏi mọi shard (scatter-gather)."
+  en: "The field that decides which shard holds a document. It needs high cardinality, even frequency and no monotonic growth (use hashed if it grows monotonically). A query without the shard key asks every shard (scatter-gather)."
+  doc: "https://www.mongodb.com/docs/manual/core/sharding-choose-a-shard-key/"
+- term: chunk / range
+  engines: [mongodb]
+  level: L5
+  keep_en: true
+  vi_term: "chunk"
+  avoid: "khúc, cục"
+  vi: "Một dải liên tục giá trị shard key thuộc về một shard. (Chưa đối chiếu cỡ mặc định: không ghi con số.)"
+  en: "A contiguous range of shard key values owned by one shard. (Default size not verified: do not state a number.)"
+  doc: "https://www.mongodb.com/docs/manual/core/sharding-data-partitioning/"
+- term: balancer
+  engines: [mongodb]
+  level: L5
+  keep_en: true
+  vi_term: "balancer"
+  avoid: "cân bằng tải mạng (load balancer)"
+  vi: "Tiến trình nền dời dữ liệu giữa các shard để chúng đều nhau."
+  en: "The background process that moves data between shards to keep them even."
+  doc: "https://www.mongodb.com/docs/manual/core/sharding-balancer-administration/"
+- term: mongos / config server
+  engines: [mongodb]
+  level: L5
+  keep_en: true
+  vi_term: "mongos / config server"
+  avoid: "máy chủ cấu hình (khi nói tên vai)"
+  vi: "`mongos` định tuyến truy vấn tới shard; config server giữ metadata của cụm."
+  en: "`mongos` routes queries to shards; config servers hold the cluster metadata."
+  doc: "https://www.mongodb.com/docs/manual/core/sharded-cluster-query-router/"
+- term: time series collection
+  engines: [mongodb]
+  level: L5
+  keep_en: true
+  vi_term: "time series collection"
+  avoid: "chuỗi thời gian phim"
+  vi: "Collection gom số đo theo `timeField` và `metaField` vào bucket, lưu dạng cột; tự tạo index trên meta + time."
+  en: "A collection that groups measurements by `timeField` and `metaField` into buckets stored column-wise; it creates an index on meta + time automatically."
+  doc: "https://www.mongodb.com/docs/manual/core/timeseries-collections/"
+
+# ───────────────────────── DynamoDB L1–L2 ─────────────────────────
+- term: table (DynamoDB)
+  engines: [dynamodb]
+  level: L1
+  keep_en: false
+  vi_term: "bảng"
+  avoid: "bảng quan hệ có schema cố định"
+  vi: "Tập item; chỉ khóa chính được khai báo trước, các thuộc tính khác tự do."
+  en: "A set of items; only the primary key is declared up front, other attributes are free."
+  doc: "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.CoreComponents.html"
+- term: item
+  engines: [dynamodb]
+  level: L1
+  keep_en: true
+  vi_term: "item"
+  avoid: "món hàng, mục"
+  vi: "Một bản ghi DynamoDB. Tối đa 400 KB, tính cả tên thuộc tính."
+  en: "One DynamoDB record. At most 400 KB, attribute names included."
+  doc: "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Constraints.html"
+- term: attribute
+  engines: [dynamodb]
+  level: L1
+  keep_en: false
+  vi_term: "thuộc tính"
+  avoid: "cột, trường"
+  vi: "Cặp tên-giá trị trong item, có kiểu `S`, `N`, `B`, `BOOL`, `NULL`, `L`, `M`, `SS`, `NS`, `BS`. Lồng tối đa 32 tầng."
+  en: "A name-value pair in an item, typed `S`, `N`, `B`, `BOOL`, `NULL`, `L`, `M`, `SS`, `NS`, `BS`. Nesting goes at most 32 levels."
+  doc: "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.NamingRulesDataTypes.html"
+- term: partition key
+  engines: [dynamodb]
+  level: L1
+  keep_en: true
+  vi_term: "partition key"
+  avoid: "hash key (tên cũ, chỉ nhắc một lần), khóa ngoại, phân vùng của Postgres"
+  vi: "Thuộc tính khóa được băm để chọn partition lưu item. Lần đầu viết \"partition key (khóa phân vùng)\". Query luôn cần đúng một giá trị partition key. 1–2048 byte."
+  en: "The key attribute that is hashed to pick the partition storing the item. A Query always needs exactly one partition key value. 1–2048 bytes."
+  doc: "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.Partitions.html"
+- term: sort key
+  engines: [dynamodb]
+  level: L1
+  keep_en: true
+  vi_term: "sort key"
+  avoid: "range key (tên cũ, chỉ nhắc một lần), khóa thứ tự bảng"
+  vi: "Phần thứ hai của khóa kép (lần đầu: \"sort key (khóa sắp xếp)\"); item cùng partition key được lưu theo thứ tự sort key, nên Query lọc được bằng `begins_with`, `between`, `<`… 1–1024 byte."
+  en: "The second part of a composite key; items with the same partition key are stored in sort key order, so a Query can use `begins_with`, `between`, `<`… 1–1024 bytes."
+  doc: "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-sort-keys.html"
+- term: simple / composite primary key
+  engines: [dynamodb]
+  level: L1
+  keep_en: false
+  vi_term: "khóa đơn / khóa kép"
+  avoid: "khóa đơn giản / khóa tổng hợp"
+  vi: "Khóa đơn = chỉ partition key. Khóa kép = partition key + sort key."
+  en: "Simple = partition key only. Composite = partition key + sort key."
+  doc: "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.CoreComponents.html"
+- term: partition (DynamoDB)
+  engines: [dynamodb]
+  level: L1
+  keep_en: true
+  vi_term: "partition"
+  avoid: "phân vùng (dành cho bảng phân vùng Postgres), phân vùng ổ đĩa"
+  vi: "Đơn vị lưu trữ vật lý do AWS quản lý; lần đầu viết \"partition (phân vùng vật lý)\". Mỗi partition chịu tối đa 3000 đơn vị đọc và 1000 đơn vị ghi mỗi giây; vượt thì bị throttle."
+  en: "A physical storage unit managed by AWS. Each partition handles at most 3000 read units and 1000 write units per second; beyond that requests are throttled."
+  doc: "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.Partitions.html"
+- term: item collection
+  engines: [dynamodb]
+  level: L1
+  keep_en: true
+  vi_term: "item collection"
+  avoid: "bộ sưu tập món hàng"
+  vi: "Mọi item có cùng partition key (cả trong bảng và LSI), sắp theo sort key. Có LSI thì một item collection tối đa 10 GB."
+  en: "All items sharing a partition key (in the table and its LSIs), sorted by sort key. With an LSI an item collection is capped at 10 GB."
+  doc: "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/LSI.html"
+- term: GetItem / PutItem / UpdateItem / DeleteItem
+  engines: [dynamodb]
+  level: L1
+  keep_en: true
+  vi_term: "GetItem / PutItem / UpdateItem / DeleteItem"
+  avoid: "lấy / đặt / sửa / xóa món"
+  vi: "Bốn thao tác trên một item theo đủ khóa chính. `PutItem` thay cả item; `UpdateItem` sửa một phần (và upsert). `ReturnValues` trả item trước/sau."
+  en: "The four single-item operations by full primary key. `PutItem` replaces the whole item; `UpdateItem` changes part of it (and upserts). `ReturnValues` returns the item before/after."
+  doc: "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/WorkingWithItems.html"
+- term: Query
+  engines: [dynamodb]
+  level: L1
+  keep_en: true
+  vi_term: "Query"
+  avoid: "truy vấn SQL tùy ý"
+  vi: "Đọc các item của một partition key, có thể giới hạn theo sort key. Chỉ đọc phần cần, nên rẻ hơn Scan."
+  en: "Reads the items of one partition key, optionally bounded by the sort key. It reads only what it needs, so it is cheaper than a Scan."
+  doc: "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Query.html"
+- term: Scan
+  engines: [dynamodb]
+  level: L1
+  keep_en: true
+  vi_term: "Scan"
+  avoid: "quét mã vạch"
+  vi: "Đọc mọi item của bảng hoặc index, tốn RCU theo dung lượng đọc chứ không theo số item trả về."
+  en: "Reads every item of a table or index, charging RCU by data read, not by items returned."
+  doc: "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Scan.html"
+- term: pagination (LastEvaluatedKey)
+  engines: [dynamodb]
+  level: L1
+  keep_en: false
+  vi_term: "phân trang"
+  avoid: "đánh số trang in"
+  vi: "Query/Scan trả tối đa 1 MB mỗi lần; còn `LastEvaluatedKey` thì gửi lại bằng `ExclusiveStartKey`. Hết khi không còn `LastEvaluatedKey`."
+  en: "Query/Scan return at most 1 MB per call; when `LastEvaluatedKey` is present, send it back as `ExclusiveStartKey`. You are done when there is no `LastEvaluatedKey`."
+  doc: "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Query.Pagination.html"
+- term: KeyConditionExpression
+  engines: [dynamodb]
+  level: L2
+  keep_en: true
+  vi_term: "`KeyConditionExpression`"
+  avoid: "điều kiện khóa (bỏ tên tham số)"
+  vi: "Điều kiện trên khóa của Query: bằng trên partition key, so sánh trên sort key. Quyết định phần dữ liệu được đọc."
+  en: "The key condition of a Query: equality on the partition key, comparisons on the sort key. It decides which data is read."
+  doc: "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Query.KeyConditionExpressions.html"
+- term: FilterExpression
+  engines: [dynamodb]
+  level: L2
+  keep_en: true
+  vi_term: "`FilterExpression`"
+  avoid: "bộ lọc làm rẻ truy vấn"
+  vi: "Lọc sau khi đã đọc: không giảm RCU. Thấy rõ qua `ScannedCount` (đã đọc) và `Count` (trả về). `Limit` tính trước filter."
+  en: "Filters after reading: it does not reduce RCU. Compare `ScannedCount` (read) with `Count` (returned). `Limit` applies before the filter."
+  doc: "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Query.FilterExpression.html"
+- term: ProjectionExpression
+  engines: [dynamodb]
+  level: L1
+  keep_en: true
+  vi_term: "`ProjectionExpression`"
+  avoid: "projection của GSI (khác nghĩa)"
+  vi: "Chọn thuộc tính trả về. Không giảm RCU, vì cỡ tính theo item đã đọc."
+  en: "Picks the attributes to return. It does not reduce RCU, since size is charged on items read."
+  doc: "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.ProjectionExpressions.html"
+- term: UpdateExpression
+  engines: [dynamodb]
+  level: L2
+  keep_en: true
+  vi_term: "`UpdateExpression`"
+  avoid: "biểu thức nâng cấp"
+  vi: "Bốn mệnh đề `SET`, `REMOVE`, `ADD`, `DELETE` để sửa một phần item."
+  en: "Four clauses `SET`, `REMOVE`, `ADD`, `DELETE` that change part of an item."
+  doc: "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.UpdateExpressions.html"
+- term: expression attribute names / values
+  engines: [dynamodb]
+  level: L2
+  keep_en: true
+  vi_term: "`ExpressionAttributeNames` / `ExpressionAttributeValues`"
+  avoid: "biến môi trường"
+  vi: "Chỗ thay tên (`#n`) và giá trị (`:v`) trong biểu thức. Bắt buộc dùng `#n` khi tên thuộc tính là từ dành riêng, nếu không sẽ có `ValidationException`. Biểu thức tối đa 4 KB."
+  en: "Placeholders for names (`#n`) and values (`:v`) in expressions. `#n` is required when an attribute name is a reserved word, or you get a `ValidationException`. Expressions are at most 4 KB."
+  doc: "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.ExpressionAttributeNames.html"
+- term: conditional write
+  engines: [dynamodb]
+  level: L2
+  keep_en: true
+  vi_term: "conditional write"
+  avoid: "ghi có điều khoản hợp đồng"
+  vi: "Ghi kèm `ConditionExpression`; điều kiện sai thì `ConditionalCheckFailedException` và vẫn tốn WCU. Cách chống lost update; idempotent nếu điều kiện kiểm đúng thuộc tính đang sửa."
+  en: "A write with a `ConditionExpression`; if the condition fails you get `ConditionalCheckFailedException` and still pay WCU. It prevents lost updates; it is idempotent when the condition checks the attribute being changed."
+  doc: "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.ConditionExpressions.html"
+- term: atomic counter
+  engines: [dynamodb]
+  level: L2
+  keep_en: true
+  vi_term: "atomic counter"
+  avoid: "bộ đếm hạt nhân"
+  vi: "`UpdateItem` với `SET n = n + :one` hoặc `ADD`; không bị lost update nhưng không idempotent: gửi lại là cộng hai lần."
+  en: "`UpdateItem` with `SET n = n + :one` or `ADD`; no lost updates, but not idempotent: a retry adds twice."
+  doc: "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/WorkingWithItems.html"
+- term: idempotent
+  engines: [dynamodb, mongodb, postgres]
+  level: L2
+  keep_en: true
+  vi_term: "idempotent"
+  avoid: "bất biến"
+  vi: "Chạy một lần hay nhiều lần cho cùng kết quả, nên gửi lại khi lỗi mạng là an toàn."
+  en: "Running it once or many times gives the same result, so retrying after a network error is safe."
+  doc: "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/WorkingWithItems.html"
+- term: BatchGetItem / BatchWriteItem
+  engines: [dynamodb]
+  level: L2
+  keep_en: true
+  vi_term: "BatchGetItem / BatchWriteItem"
+  avoid: "lô hàng"
+  vi: "Gom nhiều request trong một lần gọi: Get tối đa 100 item, Write tối đa 25 item, mỗi lần 16 MB. Không có batch update, không nguyên tử."
+  en: "Groups requests into one call: Get up to 100 items, Write up to 25 items, 16 MB per call. No batch update, not atomic."
+  doc: "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/WorkingWithItems.html"
+- term: PartiQL
+  engines: [dynamodb]
+  level: L2
+  keep_en: true
+  vi_term: "PartiQL"
+  avoid: "SQL đầy đủ"
+  vi: "Cú pháp kiểu SQL cho DynamoDB (`ExecuteStatement`, batch, `ExecuteTransaction`). Chỉ một tập con; `SELECT` không có khóa vẫn là Scan."
+  en: "SQL-like syntax for DynamoDB (`ExecuteStatement`, batch, `ExecuteTransaction`). Only a subset; a `SELECT` without the key is still a Scan."
+  doc: "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/ql-reference.html"
+- term: RCU / WCU (capacity unit)
+  engines: [dynamodb]
+  level: L2
+  keep_en: true
+  vi_term: "RCU / WCU"
+  avoid: "đơn vị tiền tệ"
+  vi: "1 RCU = 1 lần đọc mạnh hoặc 2 lần đọc cuối mỗi giây cho item ≤ 4 KB; 1 WCU = 1 lần ghi mỗi giây cho item ≤ 1 KB. Làm tròn lên theo cỡ item. dynoxide trả `ConsumedCapacity`."
+  en: "1 RCU = one strongly consistent or two eventually consistent reads per second for an item up to 4 KB; 1 WCU = one write per second for an item up to 1 KB. Sizes round up. dynoxide returns `ConsumedCapacity`."
+  doc: "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/CapacityUnitCalculations.html"
+- term: item size
+  engines: [dynamodb]
+  level: L2
+  keep_en: false
+  vi_term: "cỡ item"
+  avoid: "số thuộc tính"
+  vi: "Tổng byte tên thuộc tính + byte giá trị (chuỗi UTF-8; số khoảng 1 byte mỗi 2 chữ số + 1; List/Map thêm 3 byte + 1 byte mỗi phần tử). Lưu trữ cộng thêm 100 byte mỗi item."
+  en: "The sum of attribute name bytes and value bytes (UTF-8 strings; numbers about 1 byte per 2 digits + 1; List/Map add 3 bytes + 1 byte per element). Storage adds 100 bytes per item."
+  doc: "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/CapacityUnitCalculations.html"
+
+# ───────────────────────── DynamoDB L3: index và mô hình ─────────────────────────
+- term: GSI (global secondary index)
+  engines: [dynamodb]
+  level: L3
+  keep_en: true
+  vi_term: "GSI"
+  avoid: "index toàn cầu (nhiều Region)"
+  vi: "Index với partition/sort key tùy ý, thêm/xóa lúc nào cũng được, throughput riêng, chỉ nhất quán cuối (cập nhật bất đồng bộ), chỉ đọc được thuộc tính đã project. Tối đa 20 mỗi bảng."
+  en: "An index with any partition/sort key, added or removed at any time, with its own throughput, eventually consistent only (updated asynchronously), reading only projected attributes. Up to 20 per table."
+  doc: "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/GSI.html"
+- term: LSI (local secondary index)
+  engines: [dynamodb]
+  level: L3
+  keep_en: true
+  vi_term: "LSI"
+  avoid: "index cục bộ trên máy"
+  vi: "Cùng partition key, sort key khác; chỉ tạo cùng lúc với bảng; đọc mạnh được; giới hạn 10 GB mỗi item collection. Tối đa 5 mỗi bảng."
+  en: "Same partition key, different sort key; created only with the table; supports strong reads; caps each item collection at 10 GB. Up to 5 per table."
+  doc: "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/LSI.html"
+- term: projection (DynamoDB index)
+  engines: [dynamodb]
+  level: L3
+  keep_en: true
+  vi_term: "projection"
+  avoid: "`ProjectionExpression` (khác nghĩa)"
+  vi: "Thuộc tính được chép vào index: `KEYS_ONLY`, `INCLUDE` (tối đa 100 thuộc tính tổng các index), `ALL`. Chép nhiều thì đọc tiện, ghi và lưu tốn hơn."
+  en: "The attributes copied into an index: `KEYS_ONLY`, `INCLUDE` (up to 100 attributes across indexes), `ALL`. More copied means easier reads, costlier writes and storage."
+  doc: "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/SecondaryIndexes.html"
+- term: sparse index (DynamoDB)
+  engines: [dynamodb]
+  level: L3
+  keep_en: true
+  vi_term: "sparse index"
+  avoid: "index hỏng"
+  vi: "GSI chỉ chứa item có thuộc tính khóa của index; dùng để lọc rẻ một nhóm nhỏ item."
+  en: "A GSI that holds only items having the index key attribute; a cheap way to pick out a small group of items."
+  doc: "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-indexes-general-sparse-indexes.html"
+- term: access pattern
+  engines: [dynamodb, mongodb]
+  level: L3
+  keep_en: true
+  vi_term: "access pattern"
+  avoid: "mẫu truy cập mạng, quyền truy cập"
+  vi: "Một câu hỏi cụ thể ứng dụng sẽ đọc/ghi (\"đơn của khách X theo ngày\"). DynamoDB thiết kế khóa từ danh sách access pattern, không từ thực thể."
+  en: "A concrete question the application reads or writes (\"orders of customer X by date\"). DynamoDB keys are designed from the list of access patterns, not from entities."
+  doc: "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-general-nosql-design.html"
+- term: single-table design
+  engines: [dynamodb]
+  level: L3
+  keep_en: true
+  vi_term: "single-table design"
+  avoid: "thiết kế một bảng luôn tốt hơn"
+  vi: "Nhiều loại thực thể trong một bảng, khóa đặt để đọc chung trong một Query. Có giá: khó học, backup/stream dùng chung. Nếu ứng dụng không đọc nhiều thực thể cùng lúc, nhiều bảng là đủ."
+  en: "Several entity types in one table, keyed so one Query reads them together. It has costs: a steep learning curve, shared backup/streams. If the application never reads entities together, multiple tables are fine."
+  doc: "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/data-modeling-foundations.html"
+- term: hierarchical sort key
+  engines: [dynamodb]
+  level: L3
+  keep_en: false
+  vi_term: "sort key phân cấp"
+  avoid: "khóa cây thư mục"
+  vi: "Sort key ghép `country#region#city` để Query theo tiền tố ở mọi cấp với `begins_with`."
+  en: "A composite sort key `country#region#city` so a Query can match a prefix at any level with `begins_with`."
+  doc: "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-sort-keys.html"
+- term: adjacency list
+  engines: [dynamodb]
+  level: L3
+  keep_en: true
+  vi_term: "adjacency list"
+  avoid: "danh sách hàng xóm"
+  vi: "Mẫu lưu quan hệ nhiều-nhiều: mỗi cạnh là một item; GSI đảo PK/SK để đọc chiều ngược lại."
+  en: "A pattern for many-to-many relations: each edge is an item; a GSI that swaps PK/SK reads the reverse direction."
+  doc: "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-adjacency-graphs.html"
+- term: GSI overloading
+  engines: [dynamodb]
+  level: L3
+  keep_en: true
+  vi_term: "GSI overloading"
+  avoid: "GSI quá tải"
+  vi: "Dùng chung một GSI cho nhiều access pattern bằng cách ghi giá trị khác loại vào cùng thuộc tính khóa."
+  en: "Serving several access patterns from one GSI by writing different kinds of values into the same key attribute."
+  doc: "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-adjacency-graphs.html"
+
+# ───────────────────────── DynamoDB L4–L5: quy mô, transaction, sự kiện ─────────────────────────
+- term: hot partition / hot key
+  engines: [dynamodb]
+  level: L4
+  keep_en: true
+  vi_term: "hot partition"
+  avoid: "phân vùng bị nóng máy"
+  vi: "Một giá trị partition key nhận quá nhiều request, dồn tải vào một partition và bị throttle dù cả bảng còn dư capacity."
+  en: "One partition key value gets too many requests, concentrating load on one partition, which is throttled even though the table has spare capacity."
+  doc: "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-partition-key-design.html"
+- term: throttling
+  engines: [dynamodb]
+  level: L4
+  keep_en: true
+  vi_term: "throttle"
+  avoid: "bóp ga, chặn vĩnh viễn"
+  vi: "AWS từ chối request vượt capacity (`ProvisionedThroughputExceededException`/`ThrottlingException`); SDK tự retry có backoff. dynoxide không mô phỏng: bài D."
+  en: "AWS rejects requests above capacity (`ProvisionedThroughputExceededException`/`ThrottlingException`); SDKs retry with backoff. dynoxide does not simulate it: a D lesson."
+  doc: "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/burst-adaptive-capacity.html"
+- term: adaptive capacity / burst capacity
+  engines: [dynamodb]
+  level: L4
+  keep_en: true
+  vi_term: "adaptive capacity / burst capacity"
+  avoid: "dung lượng thông minh"
+  vi: "Adaptive: tự dồn capacity cho partition nóng và cô lập item nóng. Burst: giữ capacity chưa dùng tới 300 giây để tiêu khi có đỉnh."
+  en: "Adaptive: shifts capacity to hot partitions and isolates hot items. Burst: keeps up to 300 seconds of unused capacity for spikes."
+  doc: "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/burst-adaptive-capacity.html"
+- term: write sharding
+  engines: [dynamodb]
+  level: L4
+  keep_en: true
+  vi_term: "write sharding"
+  avoid: "sharding của MongoDB"
+  vi: "Thêm hậu tố (ngẫu nhiên hoặc tính được) vào partition key để rải ghi ra nhiều partition. Giá: đọc phải Query đủ mọi hậu tố rồi gộp."
+  en: "Adding a suffix (random or calculated) to the partition key to spread writes over partitions. The price: reads must Query every suffix and merge."
+  doc: "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-partition-key-sharding.html"
+- term: capacity mode (on-demand / provisioned)
+  engines: [dynamodb]
+  level: L4
+  keep_en: true
+  vi_term: "on-demand / provisioned"
+  avoid: "theo yêu cầu khách hàng"
+  vi: "On-demand (mặc định, được khuyên dùng): trả theo request. Provisioned: đặt trước RCU/WCU, có auto scaling. Quota 40.000 RCU/WCU mỗi bảng."
+  en: "On-demand (the default and recommended): pay per request. Provisioned: reserve RCU/WCU, with auto scaling. Quota 40,000 RCU/WCU per table."
+  doc: "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/capacity-mode.html"
+- term: TransactWriteItems / TransactGetItems
+  engines: [dynamodb]
+  level: L4
+  keep_en: true
+  vi_term: "TransactWriteItems / TransactGetItems"
+  avoid: "giao dịch ngân hàng"
+  vi: "Transaction tối đa 100 item / 4 MB, không hai hành động trên cùng item, không xuyên Region, tốn gấp đôi capacity. dynoxide trả `UnsupportedOperation`: bài D; PartiQL `ExecuteTransaction` chạy được."
+  en: "Transactions of up to 100 items / 4 MB, no two actions on the same item, not across Regions, at twice the capacity cost. dynoxide returns `UnsupportedOperation`: a D lesson; PartiQL `ExecuteTransaction` runs."
+  doc: "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/transaction-apis.html"
+- term: DynamoDB Streams
+  engines: [dynamodb]
+  level: L5
+  keep_en: true
+  vi_term: "DynamoDB Streams"
+  avoid: "luồng video"
+  vi: "Log thay đổi giữ 24 giờ; mỗi record đúng một lần, đúng thứ tự theo từng item; 4 kiểu view; tối đa 2 reader mỗi shard."
+  en: "A change log kept for 24 hours; each record appears exactly once, in order per item; 4 view types; at most 2 readers per shard."
+  doc: "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Streams.html"
+- term: TTL (DynamoDB)
+  engines: [dynamodb]
+  level: L5
+  keep_en: true
+  vi_term: "TTL"
+  avoid: "xóa ngay khi hết hạn"
+  vi: "Thuộc tính số (epoch giây); item hết hạn bị xóa trong vòng vài ngày, không tốn WCU, hiện trong stream như xóa của dịch vụ. Câu đọc phải tự lọc item đã hết hạn."
+  en: "A number attribute (epoch seconds); expired items are deleted within a few days, at no WCU cost, and appear in the stream as service deletions. Reads must filter out expired items themselves."
+  doc: "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/TTL.html"
+- term: global tables
+  engines: [dynamodb]
+  level: L5
+  keep_en: true
+  vi_term: "global tables"
+  avoid: "bảng toàn cục của Postgres"
+  vi: "Bảng được nhân bản sang nhiều Region; có chế độ nhất quán cuối nhiều Region (MREC) và nhất quán mạnh nhiều Region (MRSC). Chỉ đọc hiểu: bài D."
+  en: "A table replicated across Regions, with multi-Region eventual (MREC) and multi-Region strong (MRSC) consistency modes. Reading only: a D lesson."
+  doc: "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/GlobalTables.html"
+- term: DAX
+  engines: [dynamodb]
+  level: L5
+  keep_en: true
+  vi_term: "DAX"
+  avoid: "ngôn ngữ DAX của Power BI"
+  vi: "Bộ nhớ đệm trong bộ nhớ đặt trước DynamoDB cho đọc nhất quán cuối. Chỉ đọc hiểu."
+  en: "An in-memory cache in front of DynamoDB for eventually consistent reads. Reading only."
+  doc: "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/DAX.html"
+- term: Region
+  engines: [dynamodb]
+  level: L4
+  keep_en: true
+  vi_term: "Region"
+  avoid: "vùng miền, khu vực địa lý trong dữ liệu"
+  vi: "Vùng hạ tầng AWS (ví dụ `ap-southeast-1`). Bảng thuộc một Region; transaction không xuyên Region."
+  en: "An AWS infrastructure area (e.g. `ap-southeast-1`). A table lives in one Region; transactions do not cross Regions."
+  doc: "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/GlobalTables.html"
+
+# ───────────────────────── Phân tán chung ─────────────────────────
+- term: hash vs range partitioning
+  engines: [postgres, mongodb, dynamodb]
+  level: L4
+  keep_en: false
+  vi_term: "chia theo hash / chia theo khoảng"
+  avoid: "phân mảnh ổ đĩa"
+  vi: "Hash rải đều nhưng mất thứ tự; khoảng giữ thứ tự nhưng dễ dồn ghi vào đầu mới nhất. DynamoDB băm partition key; MongoDB có ranged và hashed shard key; Postgres có `PARTITION BY RANGE/LIST/HASH`."
+  en: "Hash spreads evenly but loses order; range keeps order but piles new writes at the newest end. DynamoDB hashes the partition key; MongoDB has ranged and hashed shard keys; Postgres has `PARTITION BY RANGE/LIST/HASH`."
+  doc: "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.Partitions.html"
+- term: quorum / majority
+  engines: [mongodb, dynamodb]
+  level: L5
+  keep_en: false
+  vi_term: "đa số"
+  avoid: "số đông người dùng"
+  vi: "Quá nửa số thành viên bỏ phiếu. Ghi tới đa số thì không mất khi failover; bầu primary cũng cần đa số."
+  en: "More than half of the voting members. A write acknowledged by a majority survives failover; electing a primary also needs a majority."
+  doc: "https://www.mongodb.com/docs/manual/reference/write-concern/"
+- term: scatter-gather
+  engines: [mongodb]
+  level: L5
+  keep_en: true
+  vi_term: "scatter-gather"
+  avoid: "rải rác thu gom rác"
+  vi: "`mongos` gửi truy vấn tới mọi shard rồi gộp kết quả, vì truy vấn không có shard key."
+  en: "`mongos` sends the query to every shard and merges the results, because the query lacks the shard key."
+  doc: "https://www.mongodb.com/docs/manual/core/sharded-cluster-query-router/"
