@@ -6,6 +6,7 @@ import { knownSkills } from '../src/home';
 import { engineHash, engineRouteOf, hashOf, parseRoute } from '../src/route';
 import { ENGINE_ID, isWorkId, parseSave, type Known } from '../src/save';
 import { SKILLS } from '../src/progress';
+import { decodeInfomask, heapView } from '../src/engine/inside';
 
 const known: Known = { ticketIds: new Set(['ch1-01']), laneIds: new Set(), skills: new Set(['select']) };
 
@@ -56,5 +57,23 @@ describe('chunk lười engineView không import giá trị từ module main (Pl
   it.each(Object.keys(files))('%s', (f) => {
     const values = [...files[f].matchAll(/^import (?!type )[^;]*? from '([^']+)';/gm)].map((m) => m[1]);
     for (const v of values) expect([f, v]).toEqual([f, expect.stringMatching(/^(\.\.\/engine\/\w+|\.\.\/i18n\/engine|\.\/(content|labs|vizRegistry))$/)]);
+  });
+});
+
+describe('Bên trong: pageinspect → line pointer + cờ infomask (thuần)', () => {
+  it('decodeInfomask', () => {
+    expect(decodeInfomask(0x0100 | 0x0800, 0x4000)).toEqual(['XMIN_COMMITTED', 'XMAX_INVALID', 'HOT_UPDATED']);
+    expect(decodeInfomask(0x0300, 0x8000)).toEqual(['XMIN_FROZEN', 'HEAP_ONLY']);
+    expect(decodeInfomask()).toEqual([]);
+  });
+  it('heapView: không phải pageinspect, thiếu cột, đủ cột', () => {
+    expect(heapView({ columns: ['a'], rows: [] })).toBeUndefined();
+    expect(heapView({ columns: ['lp', 't_xmin'], rows: [] })).toEqual({ missing: ['t_ctid'] });
+    const v = heapView({ columns: ['lp', 'lp_flags', 't_xmin', 't_xmax', 't_ctid', 't_infomask', 't_infomask2'],
+      rows: [[1, 2, null, null, null, null, null], [2, 1, '740', '0', '(0,2)', 0x0900, 0x8000], [3, 3, null, null, null, null, null]] });
+    expect(v).toEqual({ dead: 2, hot: 0, rows: [
+      { lp: '1', flag: 'redirect', xmin: '', xmax: '', ctid: '', flags: [] },
+      { lp: '2', flag: 'normal', xmin: '740', xmax: '0', ctid: '(0,2)', flags: ['XMIN_COMMITTED', 'XMAX_INVALID', 'HEAP_ONLY'] },
+      { lp: '3', flag: 'dead', xmin: '', xmax: '', ctid: '', flags: [] }] });
   });
 });

@@ -10,8 +10,23 @@ import type { EngineId, Lab, LabStep } from './content';
  * imports only types from main modules and gets main values through `LabEnv`.
  */
 
-/** A table for the Result view (QueryResult-compatible: `types` = Postgres type OIDs, empty for a document engine). */
-export type LabOutput = QueryResult;
+/**
+ * Engine numbers a runner may add beside the table (coordinator decision 2, engine-ux-spec Q-C2): DynamoDB (table,
+ * scannedCount, count, consumedCapacity), Mongo explain, Postgres plans before/after an index and catalog rows. Each one
+ * shown is drawn in its own line under the result; absent fields draw nothing.
+ */
+export interface LabMeta {
+  table?: string;
+  scannedCount?: number;
+  count?: number;
+  consumedCapacity?: number;
+  explain?: { stages: string[]; keysExamined: number; docsExamined: number };
+  planBefore?: string;
+  planAfter?: string;
+  catalog?: unknown[][];
+}
+/** A table for the Result view (QueryResult-compatible: `types` = Postgres type OIDs, empty for a document engine) + meta. */
+export type LabOutput = QueryResult & { meta?: LabMeta };
 /** `unsupported`: this runner cannot do the step's check kind or the lab's setup (the page says so; nothing is graded). */
 export type LabVerdict = { ok: true } | { ok: false; reason: 'wrong' | 'error' | 'unsupported'; message?: string };
 

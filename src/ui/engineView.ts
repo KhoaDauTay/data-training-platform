@@ -1,9 +1,9 @@
-import type { QueryResult } from '../db/run';
 import {
   blocksOf, ENGINES, engineXp, isRight, lessonPassed, parseEngineLesson, parseModules, partsOf, progressOf, SECTIONS, treeOf,
   type EngineId, type EngineLesson, type Level, type ModuleName, type Question, type Tree,
 } from '../engine/content';
-import { LAB_RUNNERS, type LabEnv, type LabRunner } from '../engine/labs';
+import { heapView } from '../engine/inside';
+import { LAB_RUNNERS, type LabEnv, type LabOutput, type LabRunner } from '../engine/labs';
 import { vizLoader } from '../engine/vizRegistry';
 import type * as I18n from '../i18n';
 import { engineText, type EngineKey } from '../i18n/engine';
@@ -141,7 +141,7 @@ interface Visit {
   says: Record<string, 'right' | 'wrong' | 'pick'>;
   passed: Set<string>;
   code: string[];
-  out: ({ result: QueryResult } | { error: unknown } | undefined)[];
+  out: ({ result: LabOutput } | { error: unknown } | undefined)[];
   msg: ({ ok: boolean; text: string } | undefined)[];
   busy?: number;
   runner?: Promise<LabRunner>;
@@ -276,8 +276,46 @@ function labView(l: EngineLesson, v: Visit): HTMLElement {
           v.busy === i ? h('span', { class: 'flex items-center gap-2 text-body-sm text-muted' }, d.loader(), et('lab.preparing')) : null) : null,
         h('details', {}, h('summary', { class: 'cursor-pointer text-body-sm font-semibold' }, et('lab.hint')), h('p', { class: 'mt-2 mb-0 text-body-sm' }, ...inline(s.hint[lang()]))),
         h('p', { role: 'status', class: cls.cx('m-0 text-body-sm', msg ? (msg.ok ? 'good' : 'bad') : '') }, msg?.text ?? ''),
-        out ? h('div', { class: 'overflow-x-auto' }, 'result' in out ? d.renderResult(out.result) : d.errorView(out.error)) : null);
+        out ? h('div', { class: 'overflow-x-auto' }, 'result' in out ? d.renderResult(out.result) : d.errorView(out.error)) : null,
+        out && 'result' in out ? metaView(out.result) : null,
+        out && 'result' in out ? insideView(out.result) : null);
     }));
+}
+
+/** Engine numbers beside the result (LabMeta); nothing when the runner gave none. */
+function metaView(r: LabOutput): HTMLElement | null {
+  const m = r.meta;
+  if (!m) return null;
+  const { h } = d;
+  const pairs: [EngineKey, string][] = [];
+  if (m.table !== undefined) pairs.push(['meta.table', m.table]);
+  for (const k of ['scannedCount', 'count', 'consumedCapacity'] as const) if (m[k] !== undefined) pairs.push([`meta.${k}`, m[k]!.toLocaleString(d.locale())]);
+  if (m.explain) {
+    pairs.push(['meta.stages', m.explain.stages.join(' → ')], ['meta.keysExamined', m.explain.keysExamined.toLocaleString(d.locale())],
+      ['meta.docsExamined', m.explain.docsExamined.toLocaleString(d.locale())]);
+  }
+  const plans = (['planBefore', 'planAfter'] as const).filter((k) => m[k]);
+  return h('section', { class: 'space-y-2', 'aria-label': et('meta.title') },
+    pairs.length ? h('dl', { class: 'm-0 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-body-sm' },
+      ...pairs.flatMap(([k, v]) => [h('dt', { class: 'text-muted' }, et(k)), h('dd', { class: 'm-0 font-semibold tabular-nums' }, v)])) : null,
+    ...plans.map((k) => h('div', {}, h('p', { class: 'm-0 text-body-sm text-muted' }, et(`meta.${k}`)), h('pre', { class: 'sql m-0 overflow-x-auto' }, m[k]!))),
+    m.catalog?.length ? h('div', {}, h('p', { class: 'm-0 text-body-sm text-muted' }, et('meta.catalog')),
+      h('pre', { class: 'sql m-0 overflow-x-auto' }, m.catalog.map((row) => row.map(String).join(' | ')).join('\n'))) : null);
+}
+
+/** "Bên trong" (engine-ux-spec §5.3): a pageinspect result as line pointers with decoded infomask flags, or the missing columns. */
+function insideView(r: LabOutput): HTMLElement | null {
+  const v = heapView(r);
+  if (!v) return null;
+  const { h } = d;
+  if ('missing' in v) return h('p', { class: 'm-0 text-body-sm text-muted' }, et('inside.missing', { cols: v.missing.join(', ') }));
+  const head = ['lp', 'lp_flags', 't_xmin', 't_xmax', 't_ctid', 'infomask'];
+  return h('figure', { class: 'm-0 space-y-2' },
+    h('figcaption', { class: 'text-body-sm' }, h('b', {}, `${et('inside.title')}: `), et('inside.caption', { n: v.rows.length, dead: v.dead, hot: v.hot })),
+    h('div', { class: 'overflow-x-auto' }, h('table', { class: 'text-body-sm', lang: 'en' },
+      h('thead', {}, h('tr', {}, ...head.map((c) => h('th', { scope: 'col', class: 'px-2 text-left font-mono' }, c)))),
+      h('tbody', {}, ...v.rows.map((x) => h('tr', { class: x.flag === 'dead' ? 'bad' : x.flags.includes('HOT_UPDATED') || x.flag === 'redirect' ? 'warn' : '' },
+        ...[x.lp, x.flag, x.xmin, x.xmax, x.ctid, x.flags.join(' ')].map((c) => h('td', { class: 'px-2 font-mono whitespace-nowrap' }, c))))))));
 }
 
 /** One host per lesson, remounted only when the language or theme changes (vizRegistry contract). */
@@ -370,15 +408,14 @@ export function sideRows(ui: { row: (r: Row) => HTMLElement; group: (text: strin
     }),
   ];
   if (!open) return out;
+  // engine-ux-spec §3.1: one row per level, badge `L1` + its short name + done/total; the one current row is the smallest unit
+  // holding the page (the open lesson's level; on the engine page the engine row above).
   for (const lv of trees[open].levels) {
-    if (!lv.modules.length) continue;
-    out.push(ui.group(levelName(lv.level)));
-    lv.modules.forEach((m, i) => {
-      const p = progressOf(m.lessons, ok);
-      out.push(ui.row({ key: `e:${open}:${lv.level}:${m.id}`, href: lessonHash(m.lessons[0]),
-        lead: p.done === p.total ? d.icon('check', 'size-5 text-good') : d.h('b', {}, String(i + 1)),
-        label: m.name[lang()], sub: et('me.line', { k: p.done, n: p.total }), current: m.lessons.some((x) => x.id === r.lesson) }));
-    });
+    const all = lv.modules.flatMap((m) => m.lessons);
+    const p = progressOf(all, ok);
+    out.push(ui.row({ key: `e:${open}:${lv.level}`, href: all[0] ? lessonHash(all[0]) : d.engineHash(open),
+      lead: p.total && p.done === p.total ? d.icon('check', 'size-5 text-good') : d.h('b', { class: 'text-caption' }, lv.level),
+      label: et(`level.${lv.level}`), sub: et('me.line', { k: p.done, n: p.total }), current: all.some((x) => x.id === r.lesson) }));
   }
   return out;
 }
