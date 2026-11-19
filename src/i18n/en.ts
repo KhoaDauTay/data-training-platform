@@ -129,6 +129,7 @@ export const en: Record<Key, Msg> = {
   'sbx.shareDone': 'Link copied. Whoever opens it sees the SQL in the Sandbox, not run yet.',
   'sbx.shareManual': 'Copy this link:',
   'sbx.shareLong': 'The SQL is longer than {max} characters: no link.',
+  'sbx.shareMine': 'This SQL reads your imported data, which never leaves this browser: no link.',
   'share.note': 'This SQL was shared with you and has not run. Read it before you run it; every query runs inside BEGIN … ROLLBACK, so it cannot change the data.',
   'share.ask': 'Open the shared SQL? It replaces your current Sandbox draft.',
   'share.open': 'Open the shared SQL',

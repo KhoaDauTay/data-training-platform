@@ -30,10 +30,10 @@ import type { Panel } from './tabs';
 export interface WorkDeps {
   db: DbClient;
   panel: Panel;
-  /** Normal ticket solved. */
-  onSolved(t: Ticket): void;
-  /** A boss step other than the last one solved. */
-  onStepSolved(): void;
+  /** Normal ticket solved; `sql` = the SQL that was graded (not the editor's text by the time the result arrives). */
+  onSolved(t: Ticket, sql: string): void;
+  /** A boss step other than the last one solved (`sql` as above). */
+  onStepSolved(sql: string): void;
   /** Last boss step solved: the conclusion opens. */
   onConclusion(t: Ticket): void;
   /** After every Run/Submit (the brief redraws its shape card). */
@@ -462,7 +462,7 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
       if (i === tk.steps.length - 1) notePass(tk.id);
     }
     if (i < tk.steps.length - 1) {
-      deps.onStepSolved(); // setTicket() for the next step clears the message, so say it afterwards
+      deps.onStepSolved(sql); // setTicket() for the next step clears the message, so say it afterwards
       say('good', () => t('work.stepDone', { i: i + 1 }), ['lily', 'cheer']);
       celebrate(feedback);
     } else if (tk.conclusion) {
@@ -472,7 +472,7 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
       // XP of this first solve (story: complete() adds it; lane: LANE_XP once); a re-solve, Practice or a drill (chapter 0, its Recap says its XP) shows none.
       const xp = !story || tk.chapter === 0 ? 0 : tk.lane ? (app.save.lanes.includes(tk.id) ? 0 : LANE_XP) : done().has(tk.id) ? 0 : xpFor(tk, app.save.hintsUsed[tk.id] ?? 0);
       say('good', () => (xp ? t('work.correctXp', { n: xp }) : t('work.correct')), ['lily', 'cheer']);
-      deps.onSolved(tk);
+      deps.onSolved(tk, sql);
       celebrate(feedback); // after onSolved: its rerender() redraws the message and would reset className
     }
   }

@@ -34,15 +34,27 @@ export function canonicalHash(hash: string): string {
 /** v15 Q1 (D-N2): a drill and a review of drills open the workspace here, outside every domain. */
 export const LEARN_PLAY = '#/learn/play';
 /**
- * The workspace's hash for what it holds (`lab` = the General workspace's own hash while it holds a drill (drillHash) or a
- * review of drills (LEARN_PLAY), else undefined). `#/d/<d>/play` holding one is an alias of
- * LEARN_PLAY, kept forever like canonicalHash; LEARN_PLAY holding nothing General (a reload drops the session) → the
- * Practise SQL hub. Any other hash is returned as it is.
+ * The workspace's hash for what it holds (`lab` = the General workspace's own hash while it holds a drill or an interview
+ * question (drillHash) or a review of drills (LEARN_PLAY), else undefined). A drill hash is kept: a reload or Back reopens that
+ * drill (main.ts). LEARN_PLAY without its review of drills (a reload drops the session, or Back after a drill replaced the
+ * review) → the Practise SQL hub. Any other hash is returned as it is. FIX-1 (L147, amends L135): `#/d/<d>/play` is no longer
+ * an alias of the open General work (Back to it seemed to do nothing); generalNav leaves the General work instead.
  */
 export function workspaceHash(hash: string, lab: string | undefined): string {
-  if (lab) return /^#\/?(d\/[a-z]+|learn)\/play(?=$|[/?])/.test(hash) ? lab : hash;
-  if (drillOfHash(hash)) return hash; // a reload on a drill reopens it (main.ts), never the hub: the player keeps their place
-  return /^#\/?learn\/play(?=$|[/?])/.test(hash) ? '#/practice' : hash;
+  if (drillOfHash(hash)) return hash;
+  return /^#\/?learn\/play(?=$|[/?])/.test(hash) && lab !== LEARN_PLAY ? '#/practice' : hash;
+}
+
+/**
+ * FIX-1 (L147): what a hashchange (Back, Forward, a link) means for the General work. `{ open }`: the hash names another drill or
+ * interview question than the open one (`lab`), so main.ts opens it (drafts are already saved on every edit). `'leave'`: General
+ * work is open and the hash is a domain's workspace or LEARN_PLAY without its review, so the session drops back to the story.
+ */
+export function generalNav(hash: string, lab: string | undefined): { open: string } | 'leave' | undefined {
+  const id = drillOfHash(hash);
+  if (id) return lab && drillOfHash(lab) === id ? undefined : { open: id };
+  if (!lab || hash === lab) return undefined;
+  return /^#\/?(d\/[a-z]+|learn)\/play(?=$|[/?])/.test(hash) ? 'leave' : undefined;
 }
 
 /** The General workspace holding one drill: `#/learn/play/<drill id>`, so a reload reopens that drill (its draft is in the save). */

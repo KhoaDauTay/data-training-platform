@@ -10,7 +10,7 @@ import { knownSkills } from '../src/home';
 import { getLang, locale } from '../src/i18n';
 import { IV_DICT, ivText, type IvKey } from '../src/i18n/interview';
 import { buildInterview } from '../src/interview';
-import { INTERVIEW_KEY, parseInterviewPrefs, passedTakeHomes, TEXT_MAX } from '../src/interviewPrefs';
+import { elapsed, INTERVIEW_KEY, parseInterviewPrefs, passedTakeHomes, setPresence, TEXT_MAX } from '../src/interviewPrefs';
 import { drillHash, drillOfHash, hashOf, INTERVIEW_PAGE, isInterviewId, isInterviewPage, parseRoute, workspaceHash } from '../src/route';
 import { emptySave, INTERVIEW_ID, parseSave, SAVE_VERSION, serializeSave, type Known } from '../src/save';
 import {
@@ -44,6 +44,27 @@ describe('pref cargo-query/interview', () => {
     expect(p.live['junior-1'].drafts).toEqual({ 'g-iv-junior-1-3': 'SELECT 1' });
     expect(passedTakeHomes(p).map((x) => x.id)).toEqual(['g-iv-th-1']);
     for (const bad of [null, 1, 'x', [], { sets: [], live: { id: 'Bad Id' } }]) expect(parseInterviewPrefs(bad)).toEqual({ sets: {}, takeHomes: {}, live: {} });
+  });
+});
+
+describe('FIX-1 (L147): đồng hồ dừng khi rời phòng', () => {
+  const live = (o: Record<string, unknown> = {}) => parseInterviewPrefs({ live: { 'mid-1': {
+    id: 'mid-1', timer: true, start: 1_000, index: 0, step: 0, solved: [], drafts: {}, passed: {}, hints: [], phase: 'work', text: '', checks: [], ...o,
+  } } }).live['mid-1'];
+  it('elapsed bỏ thời gian vắng mặt; pause lưu được qua pref; pref cũ không có away vẫn đọc', () => {
+    const l = live();
+    expect(l.away).toBeUndefined();
+    expect(elapsed(l, 61_000)).toBe(60_000);
+    expect(setPresence(l, false, 61_000)).toBe(true);
+    expect(setPresence(l, false, 99_000)).toBe(false); // already away: the first stamp holds
+    expect(elapsed(l, 3_600_000)).toBe(60_000); // an hour later, still one minute
+    const stored = live({ start: l.start, away: l.away }); // a closed tab: the pause is in the pref
+    expect(stored.away).toBe(61_000);
+    expect(setPresence(stored, true, 3_600_000)).toBe(true);
+    expect(stored.away).toBeUndefined();
+    expect(elapsed(stored, 3_610_000)).toBe(70_000);
+    expect(live({ away: 'x' }).away).toBeUndefined();
+    expect(live({ away: 500 }).away).toBeUndefined(); // before the start: dropped
   });
 });
 
@@ -121,7 +142,7 @@ describe('một bộ đề và một take-home qua UI: Save không đổi, kết
     };
     view.initInterview({
       h, nodes, richText, announce: () => undefined, getLang, locale, app, actions, session, ivItemId, ivHooks, readDraft, today, readJson, writeJson, hashOf, drillHash,
-      SKILLS, knownSkills, loadTickets, showPane: () => undefined, prefs: { key: INTERVIEW_KEY, parse: parseInterviewPrefs, textMax: TEXT_MAX },
+      SKILLS, knownSkills, loadTickets, showPane: () => undefined, prefs: { key: INTERVIEW_KEY, parse: parseInterviewPrefs, textMax: TEXT_MAX, elapsed, setPresence },
       enter: (r) => { session.mode = { kind: 'interview', run: r }; actions.rerender(); },
       openEditor: () => void editors++,
       leave: () => { left++; session.mode = { kind: 'story' }; },
@@ -147,7 +168,7 @@ describe('một bộ đề và một take-home qua UI: Save không đổi, kết
     writeDraft('SELECT 1');
     expect(workKey()).toBe('interview#g-iv-junior-1-1');
     expect(readDraft()).toBe('SELECT 1');
-    view.solved();
+    view.solved('SELECT 1');
     expect(run().solved).toEqual(['g-iv-junior-1-1']);
     expect(host.textContent).toContain(it_('iv.solved'));
     button('iv.next').click();
@@ -172,12 +193,21 @@ describe('một bộ đề và một take-home qua UI: Save không đổi, kết
     view.reopen('g-iv-mid-1-3');
     expect(activeTicket()?.id).toBe('g-iv-mid-1-3');
     expect(run().timer).toBe(true); // the pref's run, not a new one
+    // FIX-1: away from the room (another page, hidden tab) the clock stands still, stored in the pref; back = it goes on
+    const start = run().start;
+    view.presence(false);
+    expect(parseInterviewPrefs(readJson(INTERVIEW_KEY)).live['mid-1'].away).toBe(run().away);
+    run().away! -= 10 * 60_000; // left ten minutes ago
+    view.presence(true);
+    expect(run().away).toBeUndefined();
+    expect(run().start).toBeGreaterThanOrEqual(start + 10 * 60_000);
+    expect(host.querySelector('#iv-clock')?.textContent).not.toBe(it_('iv.timeUp'));
     // time up: a note, the run goes on, a right answer still counts, the result says the timer was on
-    run().start -= 26 * 60_000;
+    run().start = Date.now() - 26 * 60_000;
     view.pane(host, run());
     expect(host.querySelector('#iv-clock')?.textContent).toBe(it_('iv.timeUp'));
     writeDraft('SELECT 2');
-    view.solved();
+    view.solved('SELECT 2');
     expect(run().solved).toEqual(['g-iv-mid-1-3']);
     button('iv.finish').click();
     expect(parseInterviewPrefs(readJson(INTERVIEW_KEY)).sets['mid-1']).toMatchObject({ solved: 1, total: 5, timer: true });
@@ -190,15 +220,15 @@ describe('một bộ đề và một take-home qua UI: Save không đổi, kết
     const th = content.takeHomes[0];
     view.start(th.id, false, true);
     expect(activeStep()).toBe(0);
-    writeDraft('SELECT 1 AS a');
-    view.stepSolved();
+    writeDraft('SELECT 1 AS a -- edited while Submit ran');
+    view.stepSolved('SELECT 1 AS a'); // FIX-1: the graded SQL, not the editor's text
     expect(activeStep()).toBe(1);
     expect(readDraft()).toBe('SELECT 1 AS a'); // step 2 starts from the SQL that passed step 1
     expect(editors).toBeGreaterThan(0);
     view.reopen(th.steps[th.steps.length - 1].id); // a hash past the step reached
     expect(activeStep()).toBe(1);
-    for (let i = activeStep(); i < th.steps.length - 1; i++) view.stepSolved();
-    view.solved(); // the last step: the written conclusion
+    for (let i = activeStep(); i < th.steps.length - 1; i++) view.stepSolved('SELECT 1');
+    view.solved('SELECT 1'); // the last step: the written conclusion
     expect(run().phase).toBe('write');
     expect(interviewClosed()).toBe(true);
     button('iv.toRubric').click();

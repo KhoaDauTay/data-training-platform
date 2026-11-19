@@ -65,6 +65,16 @@ export class MyData {
     return p;
   }
 
+  /**
+   * FIX-1 (L147): every imported table name, for the export guard (touchesSandbox). `tables` alone misses files still being
+   * replayed and files whose replay hit a restart (kept in the store for the next load), so the stored names count too.
+   * Never waits for restore: it sits behind the DB boot.
+   */
+  async names(): Promise<string[]> {
+    const stored = await this.store.list().catch(() => []);
+    return [...new Set([...this.tables.map((t) => t.table), ...stored.map((r) => r.table)])];
+  }
+
   private async settled(): Promise<void> {
     await this.restoring.catch(() => {});
   }

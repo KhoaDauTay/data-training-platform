@@ -19,12 +19,13 @@ import { applyVariant } from '../variants';
 import { hints, renderBrief, shapeCard } from './brief';
 import { earlyCard, goalCard, optionalNote, skillChips, wrapUp } from './chapterView';
 import { announce, byId, h, loader, nodes, reducedMotion, richText } from './dom';
+import { meChunk } from './meChunk';
 import { boonMark, enterMark, escOwned, guideHooks, guideSlot } from './coach';
 import { showPane } from './paneTabs';
 import { readJson, writeJson } from '../storage';
 import { isSeen, openLesson } from './lessonCard';
 import { tryPreview } from './tryPreview';
-import { INTERVIEW_KEY, parseInterviewPrefs, TEXT_MAX } from '../interviewPrefs';
+import { elapsed, INTERVIEW_KEY, parseInterviewPrefs, setPresence, TEXT_MAX } from '../interviewPrefs';
 import { homeHooks, registerHomeSection, registerMode } from './homeView';
 import { laneNote } from './lanePanel';
 import { go } from './router';
@@ -54,6 +55,7 @@ const focusTitle = (): void => document.getElementById('brief-title')?.focus();
 
 /** Every mode switch rebuilds the editor (`force`): a practice item may share the story ticket's id. */
 function enter(mode: Mode): void {
+  ivAway();
   session.mode = mode;
   if (mode.kind !== 'sandbox') shared = undefined; // a shared query's strip belongs to that Sandbox visit only
   shareLine = '';
@@ -106,11 +108,25 @@ export function leaveGeneral(): void {
   const m = session.mode;
   const back = m.kind === 'drill' ? `${hashOf('learn')}/${m.drill.skill ? `skill/${m.drill.skill}` : `adv/${m.drill.node}`}`
     : m.kind === 'interview' ? INTERVIEW_PAGE : hashOf('practice'); // v17: an interview run stays in the pref, resumable from its page
+  ivAway();
   session.mode = { kind: 'story' };
   location.hash = back; // before the redraw: the workspace is about to hide, so the story brief's previews stay idle (Q7)
   ctx?.rerender();
   ctx?.work.setTicket(activeTicket(), activeStep(), true); // the next visit to the workspace starts on the story's editor
 }
+/** FIX-1 (L147): Back to a domain's workspace (or LEARN_PLAY without its review) while General work is open: story mode, hash untouched. */
+export function dropGeneral(): void {
+  ivAway();
+  session.mode = { kind: 'story' };
+  ctx?.rerender();
+  ctx?.work.setTicket(activeTicket(), activeStep(), true);
+}
+/** FIX-1 (L147): the interview clock stops while the player is out of the room (another route, a hidden tab, another mode). */
+export const ivPresence = (here: boolean): void => ivUi?.presence(here);
+/** Before the session leaves an interview run: pause its clock and store it while runNow() still finds it. */
+const ivAway = (): void => {
+  if (session.mode.kind === 'interview') ivPresence(false);
+};
 /** Plan 8a: the drill workspace's left pane and credit live in a lazy chunk (src/ui/drillBrief.ts, budget `learnui`). */
 let drillUi: typeof import('./drillBrief') | undefined;
 /** Every main-bundle value the chunk uses is handed over here (Plan 6 U3: the chunk imports only types from main modules). */
@@ -123,15 +139,23 @@ const loadDrillUi = () => import('./drillBrief').then((m) => {
   });
   return (drillUi = m);
 });
-/** Opens a General drill: seeds `lab` and loads the drills first (main.ts actions.startDrill). */
-export function startDrill(id: string): Promise<void> {
+/**
+ * Opens a General drill: seeds `lab` and loads the drills first (main.ts actions.startDrill). `still`: a hash-driven open
+ * (FIX-1) checks the URL still names this drill once lab is ready, so a slow seed never pulls the player back. True = opened.
+ */
+export function startDrill(id: string, still: () => boolean = () => true): Promise<boolean> {
   // Seeding lab can take a moment on the first drill: the clicked button stays disabled until the drill opens; a failure says so.
   const btn = document.activeElement instanceof HTMLButtonElement ? document.activeElement : undefined;
   btn?.setAttribute('aria-busy', 'true');
   if (btn) btn.disabled = true;
-  return loadDrillUi().then((m) => m.openDrill(id)).catch(() => {
+  return loadDrillUi().then(async (m) => {
+    await m.prepareLab();
+    if (still()) await m.openDrill(id);
+    return true;
+  }).catch(() => {
     app.notice = { key: 'learn.failed' };
     ctx?.rerender();
+    return false;
   }).finally(() => {
     btn?.removeAttribute('aria-busy');
     if (btn) btn.disabled = false;
@@ -148,7 +172,7 @@ let ivUi: typeof import('./interviewView') | undefined;
 const loadIvUi = () => Promise.all([import('./interviewView'), loadInterview()]).then(([m, content]) => {
   if (!ivUi) m.initInterview({
     h, nodes, richText, announce, getLang, locale, app, actions, session, ivItemId, ivHooks, readDraft, today, readJson, writeJson, hashOf, drillHash,
-    SKILLS, knownSkills, loadTickets, showPane, prefs: { key: INTERVIEW_KEY, parse: parseInterviewPrefs, textMax: TEXT_MAX }, enter: (run) => enter({ kind: 'interview', run }), leave: leaveGeneral, startRun: (id, timer, fresh) => void startInterview(id, timer, fresh),
+    SKILLS, knownSkills, loadTickets, showPane, prefs: { key: INTERVIEW_KEY, parse: parseInterviewPrefs, textMax: TEXT_MAX, elapsed, setPresence }, enter: (run) => enter({ kind: 'interview', run }), leave: leaveGeneral, startRun: (id, timer, fresh) => void startInterview(id, timer, fresh),
     openEditor: (force) => {
       ctx?.work.setTicket(activeTicket(), activeStep(), force);
       ctx?.work.focus();
@@ -157,24 +181,30 @@ const loadIvUi = () => Promise.all([import('./interviewView'), loadInterview()])
   return (ivUi = m);
 });
 /** Seeds `lab` (and the lab columns for autocomplete) and loads the interview chunk, then runs `then` on it. */
-function withInterview(then: (m: typeof import('./interviewView')) => void): Promise<void> {
+function withInterview(then: (m: typeof import('./interviewView')) => void): Promise<boolean> {
   const btn = document.activeElement instanceof HTMLButtonElement ? document.activeElement : undefined;
   btn?.setAttribute('aria-busy', 'true');
   if (btn) btn.disabled = true;
-  return Promise.all([loadIvUi(), loadDrillUi().then((m) => m.prepareLab())]).then(([m]) => then(m)).catch(() => {
+  return Promise.all([loadIvUi(), loadDrillUi().then((m) => m.prepareLab())]).then(([m]) => {
+    then(m);
+    return true;
+  }).catch(() => {
     app.notice = { key: 'learn.failed' };
     ctx?.rerender();
+    return false;
   }).finally(() => {
     btn?.removeAttribute('aria-busy');
     if (btn) btn.disabled = false;
   });
 }
 /** List page: start a set or take-home (`fresh`) or resume the one in progress. */
-export const startInterview = (id: string, timer: boolean, fresh: boolean): Promise<void> => withInterview((m) => m.start(id, timer, fresh));
-/** A reload on #/learn/play/<g-iv-…> (main.ts): reopen that run at that question. */
-export const reopenInterview = (item: string): Promise<void> => withInterview((m) => m.reopen(item));
-/** work.ts onStepSolved: a take-home's next step (main.ts sends story reviews to nextStep()). */
-export const interviewStep = (): void => ivUi?.stepSolved();
+export const startInterview = (id: string, timer: boolean, fresh: boolean): Promise<boolean> => withInterview((m) => m.start(id, timer, fresh));
+/** A reload, Back or Forward on #/learn/play/<g-iv-…> (main.ts): reopen that run at that question (`still` as in startDrill). */
+export const reopenInterview = (item: string, still: () => boolean = () => true): Promise<boolean> => withInterview((m) => {
+  if (still()) m.reopen(item);
+});
+/** work.ts onStepSolved: a take-home's next step (main.ts sends story reviews to nextStep()); `sql` = what was graded. */
+export const interviewStep = (sql: string): void => ivUi?.stepSolved(sql);
 /** Plan 5: a lane side task in the workspace. It never becomes the next ticket and counts for no chapter (D-B1). */
 export const startLane = (task: Ticket): void => enter({ kind: 'lane', ticket: task });
 /** "Về việc đang làm": the story's next ticket (mockup v6 screen D), or the open one when everything is done. */
@@ -207,9 +237,9 @@ export function startRetry(ticketId: string): boolean {
 }
 
 /** work.ts onSolved: Practice moves Leitner boxes only; a lane task gives flat XP; the story completes the ticket (XP, animation). */
-export const onSolved = (tk: Ticket): void =>
+export const onSolved = (tk: Ticket, sql: string): void =>
   (session.mode.kind === 'practice' ? onPracticeSolved() : session.mode.kind === 'lane' ? completeLane(tk)
-    : session.mode.kind === 'drill' ? drillUi?.completeDrill(tk) : session.mode.kind === 'interview' ? ivUi?.solved() : actions.complete(tk));
+    : session.mode.kind === 'drill' ? drillUi?.completeDrill(tk) : session.mode.kind === 'interview' ? ivUi?.solved(sql) : actions.complete(tk));
 
 /** Correct lane side task: saved apart from `completed`, LANE_XP whatever hints were opened, no animation (D-B1). */
 function completeLane(tk: Ticket): void {
@@ -288,7 +318,7 @@ export function openShared(sql: string): void {
   if (!shared.ask) ctx?.work.setDoc(sql);
   ctx?.rerender();
 }
-function shareLink(): void {
+async function shareLink(): Promise<void> {
   const sql = ctx?.work.currentSql().trim() ?? '';
   if (!sql) return;
   const say = (v: Node | string) => {
@@ -296,9 +326,14 @@ function shareLink(): void {
     ctx?.rerender();
   };
   if (sql.length > SHARE_MAX) return say(t('sbx.shareLong', { max: SHARE_MAX }));
+  // FIX-1 (L147): never a link for SQL on the player's imported tables (the same guard as the exports); unsure = no link.
+  const mine = await meChunk().then((m) => m.readsImported(sql), () => undefined);
+  if (mine !== false) return say(t(mine ? 'sbx.shareMine' : 'me.failed'));
   const url = `${location.origin}${location.pathname}${shareHash(sql, activeDomain())}`;
-  navigator.clipboard.writeText(url).then(() => say(t('sbx.shareDone')),
-    () => say(h('label', { class: 'block' }, t('sbx.shareManual'), h('input', { type: 'text', readonly: true, value: url, class: 'mt-1 block w-full rounded-(--r-ctl) border border-line bg-panel px-2 py-1 font-mono text-caption', onfocus: (e: Event) => (e.target as HTMLInputElement).select() }))));
+  const manual = () => say(h('label', { class: 'block' }, t('sbx.shareManual'), h('input', { type: 'text', readonly: true, value: url, class: 'mt-1 block w-full rounded-(--r-ctl) border border-line bg-panel px-2 py-1 font-mono text-caption', onfocus: (e: Event) => (e.target as HTMLInputElement).select() })));
+  // No Clipboard API (an http origin, an old browser): the box to copy by hand, never a throw.
+  if (typeof navigator.clipboard?.writeText !== 'function') return manual();
+  navigator.clipboard.writeText(url).then(() => say(t('sbx.shareDone')), manual);
 }
 
 function sandboxPane(host: HTMLElement): void {
@@ -313,7 +348,7 @@ function sandboxPane(host: HTMLElement): void {
     strip ?? '',
     h('p', { class: 'text-[15px] leading-relaxed' }, t('sbx.intro')),
     h('div', { class: 'mb-3' },
-      h('button', { type: 'button', class: 'flex items-center gap-1.5 px-3 py-1 text-body-sm', onclick: shareLink }, icon('link', 'size-4'), t('sbx.share')),
+      h('button', { type: 'button', class: 'flex items-center gap-1.5 px-3 py-1 text-body-sm', onclick: () => void shareLink() }, icon('link', 'size-4'), t('sbx.share')),
       shareLine ? h('div', { class: 'mt-1 text-body-sm', role: 'status' }, shareLine) : null),
     renderMyData(),
     h('div', { class: 'actions' }, h('button', { type: 'button', onclick: () => backToStory() }, t('prac.exit'))),

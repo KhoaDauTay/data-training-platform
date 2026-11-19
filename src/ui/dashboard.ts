@@ -269,7 +269,7 @@ function mineSection(redraw: () => void): HTMLElement {
       h('h2', { id: 'dash-mine-title', tabindex: '-1', class: 'm-0 text-lg font-bold' }, t('dash.mine')),
       h('span', { class: 'text-body-sm text-muted' }, t('dash.count', { n: cards.length, max: MAX_CARDS })),
       h('span', { class: 'ml-auto flex flex-wrap gap-2' },
-        cards.length ? h('button', { type: 'button', class: 'flex items-center gap-1.5 px-3 py-1 text-body-sm', onclick: () => void meTools().then((m) => say(m.exportDash()), () => say(t('me.failed'))) }, icon('download', 'size-4'), t('dash.export')) : null,
+        cards.length ? h('button', { type: 'button', class: 'flex items-center gap-1.5 px-3 py-1 text-body-sm', onclick: () => void meTools().then((m) => m.exportDash()).then(say, () => say(t('me.failed'))) }, icon('download', 'size-4'), t('dash.export')) : null,
         h('button', { type: 'button', class: 'flex items-center gap-1.5 px-3 py-1 text-body-sm', onclick: () => void meTools().then((m) => m.importDashFile((msg) => say(msg)), () => say(t('me.failed'))) }, icon('upload', 'size-4'), t('dash.import')),
         cards.length ? h('button', { type: 'button', class: 'flex items-center gap-1.5 px-3 py-1 text-body-sm', onclick: () => startSandbox() }, icon('flask', 'size-4'), t('dash.toSandbox')) : null)), // empty: the empty state holds it
     dashMsg ? h('p', { class: 'mt-2 mb-0 text-body-sm', role: 'status' }, dashMsg) : null,

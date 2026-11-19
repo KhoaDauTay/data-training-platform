@@ -141,3 +141,29 @@ describe('store', () => {
     expect(await s.clear()).toBe(false);
   });
 });
+
+describe('FIX-1 (L147): exports never carry SQL on imported tables, even before restore() ends', () => {
+  const MINE: StoredImport = { ...REC, table: 'my_sales' };
+  const cards = [
+    { id: 'a', title: 'A', kind: 'table', sql: 'SELECT * FROM my_sales' },
+    { id: 'b', title: 'B', kind: 'table', sql: 'SELECT * FROM ports' },
+  ];
+  it('names() lists stored files while their replay is still running, and after a replay that hit a restart', async () => {
+    const { dashFile } = await import('../src/me');
+    const hanging: ImportDb = { ...failingDb(new Error('unused')), importCsv: () => new Promise(() => {}) };
+    const slow = new MyData(hanging, memoryStore([MINE]), () => {});
+    void slow.restore(); // never settles: the DB is still booting
+    expect(slow.tables).toEqual([]);
+    expect(await slow.names()).toEqual(['my_sales']);
+    expect(dashFile('logistics', cards as never, await slow.names()).file.cards.map((c) => c.title)).toEqual(['B']);
+
+    for (const error of [new DbRestartError(), new DbFailedError('boot')]) {
+      const store = memoryStore([MINE]);
+      const my = new MyData(failingDb(error), store, () => {});
+      expect(await my.restore()).toHaveLength(1);
+      expect(my.tables).toEqual([]); // not replayed…
+      expect(store.records.has('my_sales')).toBe(true); // …but kept for the next load
+      expect(await my.names()).toEqual(['my_sales']);
+    }
+  });
+});

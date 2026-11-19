@@ -1,4 +1,4 @@
-import { canonicalHash, hashOf, initialRoute, LEARN_PLAY, parseRoute, ROUTE_KEY, workspaceHash, type Route } from '../route';
+import { canonicalHash, generalNav, hashOf, initialRoute, LEARN_PLAY, parseRoute, ROUTE_KEY, workspaceHash, type Route } from '../route';
 import { readJson, writeJson } from '../storage';
 
 let current: Route = 'home';
@@ -17,7 +17,11 @@ export function go(r: Route): void {
  * `initial` is true only for the first show on page load (callers skip moving focus then).
  * `lab`: the workspace holds a drill or a review of drills (v15 Q1: its hash is LEARN_PLAY, never a domain's).
  */
-export function startRouter(show: (r: Route, initial: boolean) => void, lab: () => string | undefined): void {
+export function startRouter(
+  show: (r: Route, initial: boolean) => void,
+  lab: () => string | undefined,
+  general: { open(id: string): void; leave(): void },
+): void {
   labHash = lab;
   const apply = (r: Route, initial: boolean) => {
     current = r;
@@ -35,6 +39,10 @@ export function startRouter(show: (r: Route, initial: boolean) => void, lab: () 
   if (parseRoute(location.hash) !== first) history.replaceState(history.state, '', hashOf(first));
   apply(first, true);
   window.addEventListener('hashchange', () => {
+    // FIX-1 (L147): Back/Forward to another drill or question opens it; to a domain's workspace leaves the General work.
+    const nav = generalNav(canonicalHash(location.hash), labHash());
+    if (nav === 'leave') general.leave();
+    else if (nav) general.open(nav.open);
     upgrade();
     apply(parseRoute(location.hash) ?? 'home', false);
   });

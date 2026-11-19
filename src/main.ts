@@ -18,7 +18,7 @@ import { generalHash, isStory, parseSessionNote, playSchema, session, sessionNot
 import { localStore, readJson, writeJson } from './storage';
 import { domainHash, domainOfHash, drillOfHash, isInterviewId, sharedOf, type Route } from './route';
 import type { Ticket } from './tickets';
-import { initModes, interviewStep, onPracticeWrong, onSolved, openShared, renderLeft, renderReviewButton, reopenInterview, startDrill, startLane, startSandbox } from './ui/modes';
+import { dropGeneral, initModes, interviewStep, ivPresence, onPracticeWrong, onSolved, openShared, renderLeft, renderReviewButton, reopenInterview, startDrill, startLane, startSandbox } from './ui/modes';
 import './ui/me'; // v16 (L142): #/me nav item and page section; the page itself is the lazy meView chunk
 import { earlyOffer } from './ui/chapterView';
 import { renderNotebook, toggleNotebook } from './ui/notebook';
@@ -145,10 +145,22 @@ window.addEventListener('hashchange', () => { // before the router's listener, s
 /** Never run, never saved as a route: the SQL goes into the Sandbox editor once the domain's workspace is shown. */
 const takeShare = (r: Route): void => {
   const s = pendingShare;
-  if (!s || r !== 'play' || activeDomain() !== s.d) return;
+  if (!s) return;
+  if (r !== 'play' || domainOfHash(location.hash) !== s.d) pendingShare = undefined; // FIX-1: a share that cannot apply now never lingers
+  if (!pendingShare || activeDomain() !== s.d) return;
   pendingShare = undefined;
   openShared(s.sql);
 };
+/**
+ * FIX-1 (L147): the drill or interview question a hash names (a reload, Back, Forward), opened once `lab` is ready if the URL
+ * still names it; one that cannot open leaves its hash for the open General work's (or Practise SQL) without a new entry.
+ */
+function openGeneral(id: string): void {
+  const still = (): boolean => drillOfHash(location.hash) === id;
+  void (isInterviewId(id) ? reopenInterview(id, still) : startDrill(id, still)).then((ok) => {
+    if (!ok && still()) location.replace(generalHash() ?? '#/practice');
+  });
+}
 
 const firstOpen = (): string => (nextTicket(app.tickets, done()) ?? app.tickets[app.tickets.length - 1]).id;
 app.selectedId = firstOpen();
@@ -227,7 +239,7 @@ const work = mountWork(byId('work'), {
   panel,
   onSolved, // practice: Leitner only, no complete(), no animation
   onWrong: onPracticeWrong,
-  onStepSolved: () => (session.mode.kind === 'interview' ? interviewStep() : nextStep()), // a take-home's steps never touch bossStep
+  onStepSolved: (sql) => (session.mode.kind === 'interview' ? interviewStep(sql) : nextStep()), // a take-home's steps never touch bossStep
   onConclusion: (t) => {
     app.conclusionFor = t.id;
     rerender();
@@ -567,11 +579,13 @@ startRouter((r, initial) => {
     showRoute(r, initial);
     takeShare(r);
   }
-}, generalHash);
+  ivPresence(r === 'play' && !document.hidden); // FIX-1: the interview clock runs only in the room
+}, generalHash, { open: openGeneral, leave: dropGeneral });
 // A reload on a drill (#/learn/play/<id>) reopens that drill with its saved draft; the session itself is never saved.
 // v17: an interview question or take-home step (`g-iv-…`) reopens its run from the device pref instead (never the Save).
 const reopen = drillOfHash(location.hash);
-if (reopen) void (isInterviewId(reopen) ? reopenInterview(reopen) : startDrill(reopen));
+if (reopen) openGeneral(reopen);
+document.addEventListener('visibilitychange', () => ivPresence(!document.hidden && currentRoute() === 'play'));
 // The Sandbox or a lane task open at the last pagehide (a reload) comes back on the same domain's workspace; the note is read once.
 const note = parseSessionNote(readJson<unknown>(SESSION_KEY));
 writeJson(SESSION_KEY, null);

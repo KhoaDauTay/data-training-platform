@@ -29,7 +29,7 @@ export interface InterviewDeps {
   readJson: typeof Storage.readJson; writeJson: typeof Storage.writeJson;
   hashOf: typeof Route.hashOf; drillHash: typeof Route.drillHash; showPane: typeof PaneTabs.showPane;
   /** src/interviewPrefs.ts by value through main: the v16 portfolio may import it from main, so this chunk never does (Plan 6 U3). */
-  prefs: { key: typeof Prefs.INTERVIEW_KEY; parse: typeof Prefs.parseInterviewPrefs; textMax: number };
+  prefs: { key: typeof Prefs.INTERVIEW_KEY; parse: typeof Prefs.parseInterviewPrefs; textMax: number; elapsed: typeof Prefs.elapsed; setPresence: typeof Prefs.setPresence };
   SKILLS: typeof Progress.SKILLS; knownSkills: typeof Home.knownSkills; loadTickets: typeof Content.loadTickets;
   /** Opens the run in the workspace (session mode + new editor + #/learn/play/<id>). */
   enter(run: InterviewRun): void;
@@ -87,6 +87,8 @@ function build(id: string, timer: boolean, fresh: boolean): InterviewRun {
   if (!tickets) throw new Error(`unknown interview ${id}`);
   const set = setOf(id);
   const old = fresh ? undefined : read().live[id];
+  if (old?.phase === 'work') d$.prefs.setPresence(old, true, Date.now()); // FIX-1: the time away (even a closed tab) is not counted
+  if (fresh) toldUp.delete(id);
   const live: LiveRun = old ?? {
     id, timer: !!set && timer, start: Date.now(), index: 0, step: 0, solved: [], drafts: {}, passed: {}, hints: [], phase: 'work', text: '', checks: [],
   };
@@ -113,6 +115,7 @@ export function reopen(item: string): void {
   const run = build(place.run, false, false);
   if (run.kind === 'set') run.index = place.index;
   else run.step = Math.min(place.step, run.step);
+  syncHash(run); // FIX-1: a clamped take-home step replaces the hash, so enter() → go('play') adds no history entry
   d$.enter(run);
   saveLive();
 }
@@ -122,17 +125,17 @@ function syncHash(run: InterviewRun): void {
   const to = d$.drillHash(d$.ivItemId(run));
   if (location.hash !== to) history.replaceState(history.state, '', to);
 }
-function markPassed(run: InterviewRun): void {
+function markPassed(run: InterviewRun, sql: string): void {
   const id = d$.ivItemId(run);
-  run.passed[id] = d$.readDraft() ?? ''; // the editor's text = what Submit just graded (a step may start from the step before)
+  run.passed[id] = sql; // what Submit graded (FIX-1: not the editor's text, which may have changed while it ran)
   if (!run.solved.includes(id)) run.solved.push(id);
 }
 
 /** work.ts onSolved in interview mode: a set question is marked right; a take-home's last step opens the written conclusion. 0 XP. */
-export function solved(): void {
+export function solved(sql: string): void {
   const run = runNow();
   if (!run || run.phase !== 'work') return;
-  markPassed(run);
+  markPassed(run, sql);
   if (run.kind === 'th') run.phase = 'write';
   saveLive();
   d$.actions.rerender();
@@ -144,10 +147,10 @@ export function solved(): void {
 }
 
 /** work.ts onStepSolved in interview mode: the next take-home step, starting from the SQL that just passed. */
-export function stepSolved(): void {
+export function stepSolved(sql: string): void {
   const run = runNow();
   if (!run || run.kind !== 'th') return;
-  markPassed(run);
+  markPassed(run, sql);
   run.step++;
   saveLive();
   syncHash(run);
@@ -168,7 +171,7 @@ function goTo(run: InterviewRun, index: number): void {
 
 function finishSet(run: InterviewRun): void {
   run.phase = 'done';
-  run.ms = Date.now() - run.start;
+  run.ms = d$.prefs.elapsed(run, Date.now());
   const p = read();
   p.sets[run.id] = { at: d$.today(), solved: run.solved.length, total: run.tickets.length, ms: run.ms, timer: run.timer };
   write(withLive(p, run));
@@ -187,8 +190,19 @@ function recordTakeHome(run: InterviewRun, th: TakeHome): void {
 
 // ---- the clock: one text node updated every second, never a rerender() ----
 let ticker: number | undefined;
-/** Runs (by start time) whose "time's up" was already announced: once per run. */
-const toldUp = new Set<number>();
+/** Runs (by set id) whose "time's up" was already announced: once per run (a fresh start clears it). */
+const toldUp = new Set<string>();
+
+/**
+ * FIX-1 (L147): the player left the room (`here` false: another page or mode, a hidden or closed tab) or came back. The run's
+ * clock stops while away; the pause is stored, so a closed tab reopened tomorrow resumes where it stood.
+ */
+export function presence(here: boolean): void {
+  const run = runNow();
+  if (!run || run.phase !== 'work' || !d$.prefs.setPresence(run, here, Date.now())) return;
+  saveLive();
+  if (here) tick();
+}
 function tick(): void {
   const run = runNow();
   const el = document.getElementById('iv-clock');
@@ -197,11 +211,11 @@ function tick(): void {
     ticker = undefined;
     return;
   }
-  const left = run.minutes * 60_000 - (Date.now() - run.start);
+  const left = run.minutes * 60_000 - d$.prefs.elapsed(run, Date.now());
   el.textContent = left > 0 ? it('iv.clock', { time: clock(left) }) : it('iv.timeUp');
   el.classList.toggle('font-bold', left <= 0);
-  if (left <= 0 && !toldUp.has(run.start)) {
-    toldUp.add(run.start);
+  if (left <= 0 && run.away === undefined && !toldUp.has(run.id)) {
+    toldUp.add(run.id); // by run id: a resume moves `start`, which would announce it again
     d$.announce(it('iv.timeUpSay'));
   }
 }
@@ -276,7 +290,7 @@ function setPane(run: InterviewRun): HTMLElement {
 function setSummary(run: InterviewRun, set: InterviewSet): HTMLElement {
   const { h } = d$;
   const lang = d$.getLang();
-  const ms = run.ms ?? Date.now() - run.start;
+  const ms = run.ms ?? d$.prefs.elapsed(run, Date.now());
   return h('div', {},
     h('h2', TITLE, it('iv.result', { solved: run.solved.length, total: set.questions.length })),
     h('p', { class: 'mt-1 text-body-sm text-muted' }, set.title[lang]),
