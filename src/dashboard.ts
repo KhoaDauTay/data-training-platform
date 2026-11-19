@@ -9,7 +9,7 @@ import { chartSpec, MAX_POINTS, NUMERIC, type ChartSpec } from './viz/chart';
  */
 export const CARD_KINDS = ['table', 'number', 'bar', 'line'] as const;
 export type CardKind = (typeof CARD_KINDS)[number];
-/** `col`: value column (number, bar, line); bars and lines take their labels from column 0 (chartSpec). Array position = order. */
+/** `col`: value column (number, bar, line); bars take their names from every key column, lines from column 0 (chartSpec). Array position = order. */
 export interface Card { id: string; title: string; sql: string; kind: CardKind; col?: number; slow?: true; source: string }
 export interface Dashboard { cards: Card[]; hidden: string[] }
 
