@@ -1,4 +1,4 @@
-import { loadTickets } from '../content';
+import { generalNow, loadTickets } from '../content';
 import { activeDomain, DOMAINS, domainText } from '../domains';
 import { homeModel, knownSkills, kpisOf, kpiTiles, LEVELS, reliesOn, resumeTarget, type ChapterCard, type HomeModel } from '../home';
 import { sqlOnly } from '../onboarding';
@@ -439,7 +439,8 @@ function helloSection(): HTMLElement {
   const [pre, post] = t('lily.line', { stage: t(STAGE_NAME[stage]), n: '' }).split('');
   const flip = app.dayFlip;
   app.dayFlip = false;
-  return h('section', { class: 'grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-4 gap-y-2' }, petButton(), // phones: the card takes its own row
+  // v21 U23: one card as wide as the cards below it (Lily left, words and her progress right), not a narrower box beside a free Lily.
+  return h('section', { class: 'grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-5 gap-y-3 rounded-(--r-card) bg-panel p-5 ring-1 ring-line' }, petButton(), // phones: the progress takes its own row
     h('div', { class: 'min-w-0' }, h('p', { class: 'm-0 text-display font-extrabold' }, t('app.name')), h('p', { class: 'm-0 text-muted' }, t('home.tagline')),
       h('p', { class: 'mt-2 mb-0 text-body-sm font-semibold' }, pre, h('span', { class: flip && 'cq-flip' }, String(dayCount())), post,
         grewPill ? h('span', { class: 'ml-2 rounded-full bg-sun px-2 py-0.5 text-caption font-bold text-sun-ink' }, t('lily.grewPill')) : null)),
@@ -455,7 +456,7 @@ function lilyCard(stage: LilyStage, known: number, next: number | undefined): HT
   const up = next === undefined || stage === LAST_STAGE ? undefined : (stage + 1) as LilyStage;
   const goal = known + (next ?? 0);
   const line = up === undefined ? t('lily.max') : stage === 0 ? t('lily.newborn') : t('lily.growBar', { k: known, next: goal });
-  return h('div', { class: 'col-span-2 max-w-md rounded-(--r-ctl) bg-panel p-3 ring-1 ring-line sm:col-span-1' },
+  return h('div', { class: 'col-span-2 rounded-(--r-ctl) p-3 ring-1 ring-line sm:col-span-1' },
     h('div', { class: 'flex items-center gap-3' },
       h('div', { class: 'min-w-0 flex-1' },
         h('p', { class: 'm-0 text-body-sm font-bold' }, t('lily.card')),
@@ -562,6 +563,23 @@ const PAGE_TITLE: Record<Page, Key> = {
 };
 const pageOf = (r: string): Page => (r === 'learn' || r === 'practice' || r === 'overview' || r === 'map' || r === 'me' ? r : 'home');
 
+/** v21 U18: the title of a learning-path sub-page (module, skill, advanced node, interview room) and the step above it; main text only. */
+function learnSub(): { title: string; up?: { href: string; text: string } } | undefined {
+  const hash = location.hash;
+  const lang = getLang();
+  const mod = (n: number): string => t('learn.module', { n, title: moduleTitle(n, lang) });
+  const n = learnModuleOf(hash);
+  if (n !== undefined) return { title: mod(n) };
+  const skill = SKILLS.find((s) => s.id === learnSkillOf(hash));
+  if (skill) return { title: skill.label[lang], up: { href: `${hashOf('learn')}/sql/${skill.chapter}`, text: mod(skill.chapter) } };
+  const adv = learnAdvOf(hash);
+  if (adv) {
+    const node = generalNow()?.nodes.find((x) => x.id === adv); // the General chunk draws the page; until it is in, the id alone
+    return { title: node ? `${adv.toUpperCase()} · ${node.title[lang]}` : adv.toUpperCase() };
+  }
+  return isInterviewPage(hash) ? { title: t('prac.interview') } : undefined;
+}
+
 /** Redrawn by rerender() (language switch, progress). Pure DOM from homeModel(); keeps no state of its own. */
 export function renderHome(host: HTMLElement): void {
   const page = pageOf(currentRoute());
@@ -573,14 +591,19 @@ export function renderHome(host: HTMLElement): void {
   const grid = page === 'overview'; // the harbour page keeps its 3-column grid; the others are one 880 px column (v6 §3.3)
   const enter = host.dataset.enter !== undefined; // ui-ux-v5 C1: set by showRoute(), used by this draw only
   delete host.dataset.enter;
-  host.replaceChildren(
+  const sub = page === 'learn' ? learnSub() : undefined;
+  host.replaceChildren(...nodes(
+    // v21 U18: a learning-path sub-page is named by its own h1, under a small trail back up ("Lộ trình › Phần 2").
+    sub ? h('nav', { class: 'mx-auto mt-6 max-w-(--w-read) px-4 text-body-sm text-muted', 'aria-label': t('nav.crumbs') },
+      h('a', { href: hashOf('learn') }, t('nav.learn')),
+      ...(sub.up ? [' › ', h('a', { href: sub.up.href }, sub.up.text)] : [])) : null,
     h('h1', {
       id: 'home-title', tabindex: '-1',
-      class: page === 'home' || page === 'overview' ? 'sr-only' : 'mx-auto mt-6 mb-0 max-w-(--w-read) px-4 text-heading',
-    }, t(PAGE_TITLE[page])),
+      class: page === 'home' || page === 'overview' ? 'sr-only' : cx('mx-auto mb-0 max-w-(--w-read) px-4 text-heading', sub ? 'mt-1' : 'mt-6'),
+    }, sub?.title ?? t(PAGE_TITLE[page])),
     h('div', { class: cx(grid ? 'mx-auto grid max-w-(--w-wide) gap-5 px-4 py-6 lg:grid-cols-3' : 'mx-auto grid max-w-(--w-read) gap-8 px-4 py-6', enter && 'cq-enter') },
       ...nodes(...sections.filter((s) => s.pages.includes(page)).map((s) => {
         const el = s.render(m);
         return el && h('div', { class: cx('min-w-0', grid && SPAN[s.span]) }, el);
-      }))));
+      })))));
 }

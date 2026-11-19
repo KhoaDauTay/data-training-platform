@@ -46,13 +46,14 @@ export function sideExtra(): HTMLElement | undefined {
   return sideWide() ? (extra ??= h('div', { class: 'side-extra mt-2 px-1' })) : undefined;
 }
 
-interface Row { key: string; href: string; lead: Node; label: string; sub?: string; current: boolean; lock?: string; onclick?: () => void }
+/** `full`: the whole name (rail tip, screen readers) when `label` drops what the lead already shows (user 2026-11-20: no "2 · …" beside a "2" badge). */
+interface Row { key: string; href: string; lead: Node; label: string; full?: string; sub?: string; current: boolean; lock?: string; onclick?: () => void }
 
 /** One sidebar line. `lock` (v4 D-O3): shown, with a lock and the reason, never followed. */
 function row(r: Row): HTMLElement {
   const click = r.onclick;
   return h('a', {
-    href: r.href, 'data-side': r.key, class: SIDE_LINK, 'data-tip': [r.label, r.lock ?? r.sub].filter(Boolean).join(' · '),
+    href: r.href, 'data-side': r.key, class: SIDE_LINK, 'data-tip': [r.full ?? r.label, r.lock ?? r.sub].filter(Boolean).join(' · '),
     'aria-current': r.current ? 'page' : false,
     'aria-disabled': r.lock ? 'true' : false,
     onclick: r.lock ? (e: Event) => e.preventDefault() : click ? (e: Event) => { e.preventDefault(); click(); } : false,
@@ -61,7 +62,8 @@ function row(r: Row): HTMLElement {
     h('span', { class: cx('relative grid size-6 shrink-0 place-items-center', r.lock && 'text-muted'), 'aria-hidden': 'true' }, r.lead,
       r.lock ? h('span', { class: 'absolute -right-1.5 -bottom-1 grid size-3.5 place-items-center rounded-full bg-panel ring-1 ring-line' }, icon('lock', 'size-2.5')) : null),
     h('span', { class: 'side-label min-w-0 flex-1' },
-      h('span', { class: 'block line-clamp-2' }, r.label), // v12.0 U7: wraps to two lines; the rail's tip shows the full name
+      r.full ? h('span', { class: 'sr-only' }, r.full) : null,
+      h('span', { class: 'block line-clamp-2', 'aria-hidden': r.full ? 'true' : false }, r.label), // v12.0 U7: wraps to two lines; the rail's tip shows the full name
       r.sub || r.lock ? h('span', { class: 'block truncate text-caption font-semibold text-muted' }, r.lock ?? r.sub) : null),
     r.lock ? icon('lock', 'side-label size-3.5 text-muted') : null);
 }
@@ -73,8 +75,9 @@ function row(r: Row): HTMLElement {
 function modules(): HTMLElement[] {
   const lang = getLang();
   const known = knownSkills(app.save, loadTickets('logistics'), SKILLS.map((s) => s.id));
-  const first = CHAPTERS.find((c) => SKILLS.some((s) => s.chapter === c.chapter && !known.has(s.id)))?.chapter ?? 1;
-  const open = learnModuleOf(location.hash) ?? SKILLS.find((s) => s.id === learnSkillOf(location.hash))?.chapter ?? first;
+  // U19 (v21): only the module that holds the open page or drill is current; the overview, advanced nodes and the interview room mark none.
+  const skill = learnSkillOf(location.hash) ?? (generalWork() ? SKILLS.find((s) => app.selectedId?.startsWith(`g-${s.id}-`))?.id : undefined);
+  const open = learnModuleOf(location.hash) ?? SKILLS.find((s) => s.id === skill)?.chapter;
   return CHAPTERS.filter((c) => SKILLS.some((s) => s.chapter === c.chapter)).map((c) => {
     const ids = SKILLS.filter((s) => s.chapter === c.chapter).map((s) => s.id);
     const k = ids.filter((id) => known.has(id)).length;
@@ -82,7 +85,8 @@ function modules(): HTMLElement[] {
       key: `m${c.chapter}`,
       href: `${hashOf('learn')}/sql/${c.chapter}`,
       lead: k === ids.length ? icon('check', 'size-5 text-good') : h('b', { class: k ? '' : 'text-muted' }, String(c.chapter)),
-      label: `${c.chapter} · ${moduleTitle(c.chapter, lang)}`,
+      label: moduleTitle(c.chapter, lang), // the badge already says the number (user 2026-11-20)
+      full: t('learn.module', { n: c.chapter, title: moduleTitle(c.chapter, lang) }),
       sub: t('side.moduleSkills', { k, m: ids.length }),
       current: c.chapter === open,
     });
@@ -144,7 +148,7 @@ function content(route: Route, drawer: boolean): (Node | string)[] {
     out.push(row({ key: 'today', href: hashOf('practice'), lead: icon(NAV_ICON.practice), label: t('side.today', { n: reviewCount() }), current: true }),
       h('p', { class: GROUP }, t('side.byModule')),
       ...CHAPTERS.filter((c) => SKILLS.some((s) => s.chapter === c.chapter)).map((c) => row({
-        key: `p${c.chapter}`, href: hashOf('practice'), lead: h('b', {}, String(c.chapter)), label: moduleTitle(c.chapter, lang), current: false,
+        key: `p${c.chapter}`, href: hashOf('practice'), lead: h('b', {}, String(c.chapter)), label: moduleTitle(c.chapter, lang), full: t('learn.module', { n: c.chapter, title: moduleTitle(c.chapter, lang) }), current: false,
         onclick: () => document.getElementById(`skills-ch-${c.chapter}`)?.scrollIntoView({ block: 'start' }),
       })));
   } else if (inDomain(route)) {
@@ -162,19 +166,31 @@ function content(route: Route, drawer: boolean): (Node | string)[] {
   return nodes(...out);
 }
 
-/** Bottom button: collapse/expand on wide reading pages (saved), else the rail's overlay (not saved, v6 §3.2). */
+/** While the sidebar narrows (200 ms, style.css) its names are hidden at once, so they never wrap letter by letter. */
+let closeTimer: ReturnType<typeof setTimeout> | undefined;
+function closing(): void {
+  const side = byId('side');
+  side.setAttribute('data-closing', '');
+  clearTimeout(closeTimer);
+  closeTimer = setTimeout(() => side.removeAttribute('data-closing'), 250);
+}
+
+/** Top-left button: collapse/expand on wide reading pages (saved), else the rail's overlay (not saved, v6 §3.2). */
 function toggle(route: Route): HTMLElement {
   const forcedRail = route === 'play' || !mq(XL);
   const expanded = forcedRail ? overlay : parseSidePref(readJson<unknown>(SIDE_KEY)) === 'open';
   const label = t(expanded ? 'side.collapse' : 'side.expand');
   return h('button', {
-    type: 'button', 'data-side': 'toggle', class: cx(SIDE_LINK, 'mb-2'), 'aria-expanded': String(expanded), 'data-tip': label,
+    // User 2026-11-20: icon only, top left of the nav in line with the rail's icons; the name is its aria-label (tip in the rail, title when wide).
+    type: 'button', 'data-side': 'toggle', class: cx(SIDE_LINK.replace('w-full ', ''), 'side-toggle mb-2'), // own width; style.css stretches it in the rail
+    'aria-expanded': String(expanded), 'aria-label': label, 'data-tip': label, title: expanded ? label : false,
     onclick: () => {
+      if (expanded) closing(); // the names fade out before the width shrinks (style.css)
       if (forcedRail) overlay = !overlay;
       else writeJson(SIDE_KEY, expanded ? 'rail' : 'open');
       if (route === 'data') actions.rerender(); else renderSidebar(route); // the Data list moves between page and sidebar (U6)
     },
-  }, h('span', { class: 'grid size-6 shrink-0 place-items-center', 'aria-hidden': 'true' }, icon('panelLeft')), h('span', { class: 'side-label' }, label));
+  }, h('span', { class: 'grid size-6 shrink-0 place-items-center', 'aria-hidden': 'true' }, icon('panelLeft')));
 }
 
 /** Redrawn by rerender() and on every route change (cheap; focus inside is put back by data-side). */
@@ -279,6 +295,7 @@ export function initSidebar(): void {
     if (e.key !== 'Escape' || !overlay || e.defaultPrevented) return;
     e.preventDefault();
     overlay = false;
+    closing();
     renderSidebar(lastRoute);
     byId('side').querySelector<HTMLElement>('[data-side="toggle"]')?.focus();
   });

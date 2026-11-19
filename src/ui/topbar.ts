@@ -44,7 +44,7 @@ registerNav({ id: 'dashboard', area: 'domain', order: 60, label: 'nav.dashboard'
 registerNav({ id: 'map', area: 'domain', order: 70, label: 'nav.map', icon: NAV_ICON.map, get href() { return hashOf('map'); }, current: (r) => r === 'map' });
 
 /** Mobile bottom bar (v6 §3.2): 56 px targets; the current one is --accent on --panel (5.5:1) and keeps its label. */
-const BOTTOM_LINK = 'flex min-h-14 flex-col items-center justify-center gap-0.5 text-caption font-bold text-muted no-underline aria-[current=page]:text-accent';
+const BOTTOM_LINK = 'flex min-h-14 min-w-0 flex-col items-center justify-center gap-0.5 px-0.5 text-center text-caption leading-tight font-bold text-muted no-underline aria-[current=page]:text-accent'; // U3 (v21): five columns, one row
 const MENU_ITEM = 'flex w-full items-center gap-2 rounded-(--r-ctl) px-3 py-2 text-ink no-underline hover:bg-code';
 
 /**
@@ -132,8 +132,10 @@ export function setActionButton(btn: HTMLElement, label: string, count: number, 
     badge.hidden = count === 0;
     badge.textContent = count > 99 ? '99+' : String(count);
   }
-  if (count > 0) btn.setAttribute('aria-label', aria);
+  // v21 E1: the name starts with what the button shows ("Ôn tập 5", WCAG 2.5.3 label in name); the sentence is its description (title).
+  if (count > 0) btn.setAttribute('aria-label', `${label} ${badge?.textContent ?? count}`);
   else btn.removeAttribute('aria-label');
+  btn.title = count > 0 ? aria : label;
 }
 
 const THEME_LABEL: Record<ThemePref, Key> = { light: 'theme.light', system: 'theme.system', dark: 'theme.dark' };
@@ -171,6 +173,13 @@ export function initTopbar(): void {
   // v12.0 U1: the ⋯ menu's phone copies press the real bar buttons (same dialogs, counts and aria-expanded).
   for (const p of document.querySelectorAll<HTMLButtonElement>('[data-proxy]')) p.addEventListener('click', () => byId(p.dataset.proxy!).click());
   byId('import-btn').addEventListener('click', () => (byId('import-input') as HTMLInputElement).click());
+  // v21 U37: "Skip to content" before the bar: focus the page's own heading (the workspace keeps its editor/result skips).
+  byId('skip-main').addEventListener('click', () => {
+    const main = document.querySelector<HTMLElement>('body main:not([hidden])');
+    const target = main?.querySelector<HTMLElement>('h1[tabindex], [id$="-title"][tabindex]') ?? main?.querySelector<HTMLElement>('[data-skip]') ?? main;
+    if (target && !target.hasAttribute('tabindex') && !target.matches('button, a[href]')) target.tabIndex = -1;
+    target?.focus();
+  });
 }
 
 /** v12.0 U1: the ⋯ copies show what the bar buttons show (Review hidden at 0; the count is in the bar button's aria-label). */
@@ -255,9 +264,9 @@ export function renderTopbar(): void {
   // Chapter and rank belong to the domain (v5 §B.2); the General workspace (#/learn/play) is not in it (L82, L93, v15 Q1).
   const domainChrome = inDomain(route) && !(route === 'play' && generalWork());
   byId('domain-status').hidden = !domainChrome;
-  byId('domain-chapter').textContent = domainChrome ? t('top.chapterTiny', { n: ch }) : ''; // U1: "Ch.4" in the chip on phones
+  byId('domain-chapter').textContent = domainChrome ? t('top.chapterTiny', { n: ch }) : ''; // v21 U2: "Ch.4" in the chip below 1280 px (#domain-status shows from xl, never squeezed)
   const rank = byId('rank');
-  rank.textContent = rank.title = rankOf(app.tickets, done()).tier?.[lang] ?? t('career.intern'); // title: F1 truncates it on a tight bar
+  rank.textContent = rankOf(app.tickets, done()).tier?.[lang] ?? t('career.intern'); // v21 U1: whole, from 1600 px only (never cut)
   drawXp();
   // V19-D (L171): style.css hides the bar's VI|EN + theme in the workspace below 768 px, so ⋯ holds them there from 640 px too.
   const menuPrefs = document.querySelector('[data-menu-prefs]');
