@@ -24,7 +24,8 @@
       in style.css. ui-ux-v6 M1 (L115): parts <g id="<who>-<part>">; a pose is a recipe of parts (RIG, src/ui/mascots.ts), and
       <symbol id="boon-idle"> (the top-bar logo) repeats one. Art: CC BY 4.0 (assets/mascots/LICENSE). Not display:none: CSS animations do not run
       there. The idle loops run only while this <svg> has class `live` (the welcome screen, Plan 7 V4). Lily's growth stage
-      (L87) comes from --lily-scarf-on / --lily-badge-on / --lily-prop-on set on the <use> host ([data-mascot=lily], style.css).
+      (L87, L132) comes from the --lily-* stage variables (size, lift, head, ears, paws, tail, chest, spots, eyes, accessories) set on
+      the <use> host ([data-mascot=lily], style.css); each part reads them from inline style on a wrapper group inside it.
     -->
     <svg id="mascot-sprite" class="absolute size-0 overflow-hidden" aria-hidden="true" focusable="false">
       <defs>

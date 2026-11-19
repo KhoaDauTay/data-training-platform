@@ -17,11 +17,11 @@ export type Pose = (typeof POSES)[number];
  */
 export const RIG = {
   lily: {
-    idle: ['shadow', 'tail', 'body', 'harness', 'arm-down', 'collar', 'scarf', 'badge', 'ear-l', 'ear-r', 'head', 'eyes-open', 'mouth-smile', 'laptop'],
-    point: ['shadow', 'tail', 'body', 'harness', 'arm-point', 'collar', 'scarf', 'badge', 'ear-l', 'ear-r', 'head', 'eyes-open', 'mouth-smile', 'laptop'],
+    idle: ['shadow', 'tail', 'body', 'arm-down', 'harness', 'collar', 'scarf', 'badge', 'ear-l', 'ear-r', 'head', 'eyes-open', 'mouth-smile', 'laptop'],
+    point: ['shadow', 'tail', 'body', 'arm-point', 'harness', 'collar', 'scarf', 'badge', 'ear-l', 'ear-r', 'head', 'eyes-open', 'mouth-smile', 'laptop'],
     cheer: ['shadow', 'tail', 'body', 'harness', 'collar', 'scarf', 'badge', 'ear-l', 'ear-r', 'head', 'eyes-happy', 'mouth-open', 'arm-up', 'fx-sparkle', 'laptop'],
     think: ['shadow', 'tail', 'body', 'harness', 'collar', 'scarf', 'badge', 'ear-l', 'ear-r', 'head', 'eyes-open', 'mouth-flat', 'arm-chin', 'fx-question', 'laptop'],
-    oops: ['shadow', 'tail', 'body', 'harness', 'arm-down', 'collar', 'scarf', 'badge', 'ear-l', 'ear-r', 'head', 'eyes-dizzy', 'mouth-wavy', 'fx-sweat', 'laptop'],
+    oops: ['shadow', 'tail', 'body', 'arm-down', 'harness', 'collar', 'scarf', 'badge', 'ear-l', 'ear-r', 'head', 'eyes-dizzy', 'mouth-wavy', 'fx-sweat', 'laptop'],
     sleep: ['sleep', 'zz'],
   },
   boon: {
