@@ -690,6 +690,12 @@ export const vi = {
   'welcome.page': 'Bước {i}/{n}',
   'welcome.dbReady': 'Dữ liệu sẵn sàng!',
   'welcome.dbLoading': 'Boon đang chuẩn bị dữ liệu… {mb} MB',
+  'welcome.pickTitle': 'Bắt đầu ở đâu?',
+  'welcome.short.logistics': 'Cảng biển, giao nhận · 12 chương',
+  'welcome.short.finance': 'Cho vay tiêu dùng · 6 chương',
+  'welcome.short.ecommerce': 'Bán lẻ trực tuyến · 6 chương',
+  'welcome.short.general': 'Bài học + bài luyện theo kỹ năng',
+  'welcome.entering': 'Đang mở lĩnh vực đã chọn…',
   // L87: the teaching scene (Boon teaches, Lily = the player listens) and Lily's growth on Home
   'teach.scene': 'Boon đang dạy Lily (là bạn) bên tấm bảng',
   'teach.lily': 'Lily (là bạn): bấm để Lily reo lên',

@@ -76,10 +76,14 @@ export const outsideBox = (r: Box, x: number, y: number): boolean => x < r.left 
  * be on the backdrop: a drag or a text selection that starts inside and ends outside never closes. The non-modal notebook is
  * left out on purpose (it stays open while the player types in the editor); popovers light-dismiss natively. Once, at startup.
  */
+/** L148: a modal carrying this attribute ignores backdrop clicks (the first-run welcome: a stray click must not choose for the player). */
+export const NO_LIGHT_DISMISS = 'data-no-light-dismiss';
+export const lightDismissable = (d: Element): boolean => !d.hasAttribute(NO_LIGHT_DISMISS);
+
 export function initLightDismiss(): void {
   const backdropOf = (e: MouseEvent): HTMLDialogElement | null => {
     const d = e.target;
-    return d instanceof HTMLDialogElement && d.matches(':modal') && outsideBox(d.getBoundingClientRect(), e.clientX, e.clientY) ? d : null;
+    return d instanceof HTMLDialogElement && d.matches(':modal') && lightDismissable(d) && outsideBox(d.getBoundingClientRect(), e.clientX, e.clientY) ? d : null;
   };
   let down: HTMLDialogElement | null = null;
   document.addEventListener('pointerdown', (e) => (down = backdropOf(e)), true);

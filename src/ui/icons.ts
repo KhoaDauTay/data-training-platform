@@ -61,3 +61,15 @@ export function fillIcons(root: ParentNode = document): void {
 /** One label style for the parts of a brief or a quick lesson (Task, Expected result, Example…): icon + small caps above its body, so the parts read apart (e7dd585, L140). */
 export const partHead = (name: IconName, label: string, tag: 'h3' | 'h4' = 'h3'): HTMLElement =>
   h(tag, { class: 'm-0 mb-2 flex items-center gap-1.5 text-caption font-bold uppercase tracking-wide text-muted' }, icon(name, 'size-4'), label);
+
+/** ui-ux-v7 I1 (L148): each domain's identity colour as whole literal classes (tokens --dom-*, both themes). `general` = SQL only (accent). */
+const DOMAIN_TINT = {
+  logistics: 'bg-dom-logistics-soft text-dom-logistics ring-dom-logistics/40',
+  ecommerce: 'bg-dom-ecommerce-soft text-dom-ecommerce ring-dom-ecommerce/40',
+  finance: 'bg-dom-finance-soft text-dom-finance ring-dom-finance/40',
+  general: 'bg-accent-soft text-accent ring-accent/40',
+} as const;
+/** A domain's badge: its Phosphor icon on a round tile in the domain colour. Decorative (the domain name is always beside it). */
+export const domainBadge = (d: keyof typeof DOMAIN_TINT, name: IconName, size: 'md' | 'lg' = 'md'): HTMLElement =>
+  h('span', { class: cx('grid shrink-0 place-items-center rounded-full ring-1', DOMAIN_TINT[d], size === 'lg' ? 'size-14' : 'size-10'), 'aria-hidden': 'true' },
+    icon(name, size === 'lg' ? 'size-8' : 'size-6'));
