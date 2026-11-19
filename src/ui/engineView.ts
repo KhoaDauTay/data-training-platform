@@ -284,7 +284,7 @@ async function labAction(l: EngineLesson, v: Visit, i: number, submit: boolean):
   }
 }
 
-/** One sentence for a lab verdict: a runner's ready text, else its `why` code (L247), else the generic line. */
+/** One sentence for a lab verdict: a runner's ready text, else its `why` code (L248), else the generic line. */
 function verdictLine(x: LabVerdict): string {
   if (x.ok) return x.tip === 'extraId' ? et('tip.extraId') : et('lab.passed');
   if (x.reason === 'unsupported') return et('lab.unsupported');
@@ -293,7 +293,7 @@ function verdictLine(x: LabVerdict): string {
   return x.why && Object.hasOwn(ENGINE_DICT.vi, key) ? et(key as EngineKey, x.params) : et('wrong');
 }
 
-/** After a right predict (Postgres): EXPLAIN (FORMAT JSON) of the question's query on the lab's own data (L247). */
+/** After a right predict (Postgres): EXPLAIN (FORMAT JSON) of the question's query on the lab's own data (L248). */
 function realPlan(l: EngineLesson, v: Visit): HTMLElement {
   const { h, cls } = d;
   const p = v.plan;
@@ -497,14 +497,14 @@ export function sideRows(ui: { row: (r: Row) => HTMLElement; group: (text: strin
 }
 
 
-// ---- MongoDB path ("Lộ trình NoSQL", L247): 12 parts of skills on one shared dataset, each a short lesson and 4 drills
+// ---- MongoDB path ("Lộ trình NoSQL", L248): 12 parts of skills on one shared dataset, each a short lesson and 4 drills
 
 type PathChunk = typeof import('../engineMongoPath');
 type MongoRunnerMod = typeof import('../engine/mongo/runner');
 let pathMod: PathChunk | 'loading' | 'failed' | undefined;
 let mongo: Promise<ReturnType<MongoRunnerMod['mongoRunner']>> | undefined;
 const PATH_LAB = { setup: 'path', steps: [] };
-/** Drill XP on the first pass, like a General drill (L247). */
+/** Drill XP on the first pass, like a General drill (L248). */
 const PATH_XP = 10;
 const slugOf = (skill: string): string => skill.replace(/^mg\./, '').replace(/_/g, '-');
 

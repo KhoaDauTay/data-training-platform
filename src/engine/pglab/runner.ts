@@ -6,7 +6,7 @@ import { PgLabClient } from './client';
 import type { PgExtension } from './script';
 
 /**
- * ENG-PGLAB (L230) + integration (L247): ENG-CORE's Postgres LabRunner on the lab runtime, for labs with `setup`.
+ * ENG-PGLAB (L230) + integration (L248): ENG-CORE's Postgres LabRunner on the lab runtime, for labs with `setup`.
  * Every call starts from a fresh database: `setup`, then the earlier steps' solutions that change something (a later step
  * may read an index an earlier one created, content/engine/postgres/README.md), then the statement. So setup may
  * VACUUM/ANALYZE and nothing carries over. Extensions = every `CREATE EXTENSION x` in setup plus the ones whose functions

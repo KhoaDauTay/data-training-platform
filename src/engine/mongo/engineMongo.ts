@@ -17,7 +17,7 @@ export interface Dataset {
 /** Seed data per lab, one lazy JSON chunk each (`mongoSeed*`). Add a lab's data here. */
 const DATASETS: Record<string, () => Promise<Dataset>> = {
   shop: () => import('./data/mongoSeedShop.json').then((m) => datasetOf(m.default)),
-  // Integration (L247): the MongoDB path's shared dataset (content/engine/mongodb/path, dates as ISO strings + _meta).
+  // Integration (L248): the MongoDB path's shared dataset (content/engine/mongodb/path, dates as ISO strings + _meta).
   path: () => Promise.all([import('../../../content/engine/mongodb/path/dataset.json'), import('./pathDataset')]).then(([m, p]) => p.pathDataset(m.default)),
 };
 export const DATASET_IDS = Object.keys(DATASETS);

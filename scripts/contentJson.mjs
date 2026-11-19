@@ -12,7 +12,7 @@ export function mdData(text) {
 }
 
 /**
- * Integration (L247): `?fm&meta=a,b` keeps only those frontmatter keys and drops the body: an index chunk (the Database
+ * Integration (L248): `?fm&meta=a,b` keeps only those frontmatter keys and drops the body: an index chunk (the Database
  * Engine lesson list) without every lesson's text, which then loads per file through plain `?fm`.
  */
 export function metaData(text, keys) {

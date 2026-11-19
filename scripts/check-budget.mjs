@@ -19,7 +19,7 @@ const GROUPS = [
   // its worker script (69 KB gz -9) + dynoxide_bg.wasm (704) + sqlite3.wasm (391) = 1,170 KB gz, fetched only on the first
   // DynamoDB run (the lab worker itself, ~2 KB gz, falls in `worker`). Optional (4th field) until a page imports
   // src/engine/dynamo/client.ts: no importer = nothing built. Never precached (scripts/offline.mjs).
-  ['dynamo', /^(dynoxide-worker|dynoxide_bg|sqlite3)-/, 1300], // required since L247 (LAB_RUNNERS.dynamodb imports the client)
+  ['dynamo', /^(dynoxide-worker|dynoxide_bg|sqlite3)-/, 1300], // required since L248 (LAB_RUNNERS.dynamodb imports the client)
   ['worker', /^worker-/, 160],
   ['pglite', /^pglite-/, 5560],
   ['initdb', /^initdb-/, 140],
@@ -44,24 +44,24 @@ const GROUPS = [
   ['sqlmotion', /^sqlMotion-/, 8], // v10 Track A (L154): src/art/sqlMotion.ts, the Execution order film, GROUP BY fold, JOIN pairs and the guess, VI/EN text inside; lazy on the first draw of that tab
   ['portfolioPng', /^portfolioPng-/, 6], // V19-D (L170): src/ui/portfolioPng.ts + src/portfolio.ts (card pictures, portfolio zip, take-home file), lazy on the first picture or portfolio click: 3.2 KB gz
   ['datasetPanel', /^datasetPanel-/, 5], // V20-B: Sandbox sample-dataset panel, lazy (4.0 KB gz); the CSV itself is public/datasets/, fetched on click, not in assets
-  ['engine', /^engineSources-/, 40], // ENG-CORE (L220), L247: the Database Engine lesson index (list fields of every lesson as JSON, src/engineSources.ts), fetched on the first #/engine or #/me visit: 23 KB gz for 195 lessons
-  ['engineLesson', /^\d\d-[a-z0-9-]+-[\w-]{8}\.js$/, 8, 'each'], // L247: one lazy chunk per lesson (content/engine/<engine>/L<n>/<NN>-<slug>.md as JSON), fetched when it opens; per file, 5.9 KB gz max at integration
+  ['engine', /^engineSources-/, 40], // ENG-CORE (L220), L248: the Database Engine lesson index (list fields of every lesson as JSON, src/engineSources.ts), fetched on the first #/engine or #/me visit: 23 KB gz for 195 lessons
+  ['engineLesson', /^\d\d-[a-z0-9-]+-[\w-]{8}\.js$/, 8, 'each'], // L248: one lazy chunk per lesson (content/engine/<engine>/L<n>/<NN>-<slug>.md as JSON), fetched when it opens; per file, 5.9 KB gz max at integration
   ['engineui', /^engineView-/, 20], // ENG-CORE (L220): src/ui/engineView.ts + src/engine/{content,labs,vizRegistry,inside}.ts + src/i18n/engine.ts (pages, lesson viewer, graders, VI/EN text), lazy: 9.7 KB gz at T1
   // ENG-PGLAB (L230): the engine lab's own worker (src/engine/pglab/pglabWorker.ts: a second PGlite JS bundle + session +
   // checkers; the .wasm/.data are shared with the game worker) and the contrib tarballs it fetches only when a lab names
   // them (already gzip). 133 / 136 / 1150 KB measured 2026-11-20. Required since ENG-CORE's LAB_RUNNERS.postgres loads it (L220).
   ['pglab', /^pglabWorker-/, 150],
-  ['pgext', /^(pageinspect|pg_visibility|amcheck|pg_walinspect|pg_buffercache|pg_freespacemap|bloom|btree_gin|btree_gist|pg_trgm|pg_stat_statements|ltree|cube|earthdistance)\.tar-.*\.gz$/, 160], // L247: + cube, earthdistance (L2 geo lesson)
+  ['pgext', /^(pageinspect|pg_visibility|amcheck|pg_walinspect|pg_buffercache|pg_freespacemap|bloom|btree_gin|btree_gist|pg_trgm|pg_stat_statements|ltree|cube|earthdistance)\.tar-.*\.gz$/, 160], // L248: + cube, earthdistance (L2 geo lesson)
   ['pgcrypto', /^pgcrypto\.tar-.*\.gz$/, 1160], // bundles OpenSSL: fetched only by a lab that names pgcrypto
   ['why', /^(why|whyView)-/, 6], // V22-B (L206): "Vì sao?" under a result row: src/ui/whyView.ts (VI/EN inside) + src/viz/why.ts (worker, beside the steps chunk), lazy on the first click
   ['mapteach', /^mapTeach-/, 8], // V22-A (L203): src/ui/mapTeach.ts + src/viz/geo.ts + src/mapQueries.ts (result map: Map tab and Map page questions, VI/EN inside), lazy on the first Map page or Map tab
   ['engineVizNosql', /^engineVizNosql-/, 15], // ENG-VIZ (L236): MongoDB + DynamoDB diagrams (src/engine/viz/engineVizNosql.ts), lazy from engineViz's loadViz()
   ['engineViz', /^engineViz(Core)?-/, 30], // ENG-VIZ (L235/L236): diagram engine (engineVizCore-*, shared with the NoSQL chunk) + Postgres diagrams (engineViz-*), lazy; built as a second entry until ENG-CORE imports it
-  // L247: the lab runtimes' main-thread side, lazy on the first lab of an engine: the three LabRunner adapters (runner-*),
+  // L248: the lab runtimes' main-thread side, lazy on the first lab of an engine: the three LabRunner adapters (runner-*),
   // the Mongo engine (mingo + shell parser, engineMongo-*, loaded in its worker), its shop data and the NoSQL path dataset
   // (content/engine/mongodb/path/dataset.json, dataset-*): 75 KB gz at integration.
   ['engineLab', /^(runner|engineMongo|mongoSeed\w*|dataset)-[\w-]{8}\.js$/, 90],
-  // L247: the MongoDB path ("Lộ trình NoSQL"): 12 parts of skills, lessons and 168 drills (content/engine/mongodb/path/*.yml as
+  // L248: the MongoDB path ("Lộ trình NoSQL"): 12 parts of skills, lessons and 168 drills (content/engine/mongodb/path/*.yml as
   // JSON) + the shell parser for its ESR/covered rules, lazy on the first path page: 72 KB gz at integration.
   ['enginePath', /^engineMongoPath-/, 80],
   ['rest', /./, 1560],
@@ -81,7 +81,7 @@ for (const [f, path] of files) {
 let fail = false;
 for (const [name, , budget, mode] of GROUPS) {
   const optional = mode === 'optional';
-  // 'each' (L247): the budget is per file (one lazy chunk per lesson, only the open one is fetched); the line shows the largest.
+  // 'each' (L248): the budget is per file (one lazy chunk per lesson, only the open one is fetched); the line shows the largest.
   const kb = mode === 'each' ? maxes[name] : sums[name];
   if (kb === undefined && optional) {
     console.log(`skip ${name.padEnd(10)} not in this build (not wired yet)`);

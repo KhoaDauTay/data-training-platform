@@ -5,7 +5,7 @@ import type { EngineId, EngineLesson, Lab, LabStep } from './content';
 /**
  * ENG-CORE (L221): the seam every engine's lab runtime plugs into. The lesson page (src/ui/engineView.ts) calls `prepare`
  * once per lesson visit, then `run` (show the player's result, never graded) and `check` (grade one lab step).
- * Runners are loaded lazily through LAB_RUNNERS (integration L247): `postgres` = the shop chain on `lab` or ENG-PGLAB's
+ * Runners are loaded lazily through LAB_RUNNERS (integration L248): `postgres` = the shop chain on `lab` or ENG-PGLAB's
  * script runner, `mongodb` = ENG-MONGO's MongoLabClient (src/engine/mongo/runner.ts), `dynamodb` = ENG-DYNAMO's client
  * (src/engine/dynamo/runner.ts). Same rule as every lazy chunk: a runner imports only types from main modules and gets
  * main values through `LabEnv`.
@@ -30,7 +30,7 @@ export interface LabMeta {
 export type LabOutput = QueryResult & { meta?: LabMeta };
 /**
  * `unsupported`: this runner cannot do the step's check kind or the lab's setup (the page says so; nothing is graded).
- * `why` (L247): a stable code the page translates (`why.<code>` in src/i18n/engine.ts) with `params`; `message` is ready text.
+ * `why` (L248): a stable code the page translates (`why.<code>` in src/i18n/engine.ts) with `params`; `message` is ready text.
  */
 export type LabVerdict = { ok: true; tip?: string } | { ok: false; reason: 'wrong' | 'error' | 'unsupported'; message?: string; why?: string; params?: Record<string, string | number> };
 

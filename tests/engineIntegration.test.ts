@@ -1,4 +1,4 @@
-// Integration (L247): the engine area's seams over the real content. Every MongoDB and DynamoDB lab step's Solution passes
+// Integration (L248): the engine area's seams over the real content. Every MongoDB and DynamoDB lab step's Solution passes
 // its own check on the real runtime (mingo, dynoxide in Node) through the runners the page uses, writes are graded on the
 // state they leave, DynamoDB `expect` counts hold, every `viz:` name resolves to an ENG-VIZ diagram, the lesson index
 // query keeps META_KEYS, and the NoSQL path's covered/ESR rules (moved here from tests/mongoPath.test.ts) grade right.

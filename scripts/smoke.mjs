@@ -69,6 +69,19 @@ const ENGINE_LAB = (() => {
   return undefined;
 })();
 
+// L248: engine lessons the smoke plays (read from content, so a renamed file fails here, not silently).
+const engineLesson = (rel) => {
+  const fm = parseYaml(/^---\r?\n([\s\S]*?)\r?\n---/.exec(readFileSync(join(ROOT, 'content/engine', rel), 'utf8'))[1]);
+  return { ...fm, hash: `#/engine/${fm.engine}/${fm.level}/${fm.id}` };
+};
+const ENGINE = {
+  heap: engineLesson('postgres/L3/05-xmin-xmax-lab.md'),
+  mongo: engineLesson('mongodb/L1/04-insert-delete.md'),
+  dynamo: engineLesson('dynamodb/L1/09-query-vs-scan.md'),
+  quiz: engineLesson('postgres/L3/11-wraparound-quiz.md'),
+  predict: engineLesson('postgres/L1/10-explain-basics.md'),
+};
+
 // Every route of src/route.ts once; a new route fails here until the smoke knows its hash.
 const ROUTE_HASH = {
   home: '#/', learn: '#/learn', practice: '#/practice', me: '#/me', overview: '#/d/logistics', play: '#/d/logistics/play',
@@ -503,6 +516,59 @@ try {
     }
     await waitFor('the lesson in save.completed', `${completed}.includes(${S(ENGINE_LAB.id)})`, 10000);
     await shot('engine-lab');
+  });
+
+  // L248: engine runtimes in the real app. `submit(l, i)` types step i's Solution and waits for its green status line.
+  const submitStep = async (l, i) => {
+    const at = (what) => `document.querySelector('[data-ek="${l.id}-s${i}-${what}"]')`;
+    await ev(`(t => { t.value = ${S(l.lab.steps[i].solution)}; t.dispatchEvent(new Event('input', { bubbles: true })); })(${at('code')})`);
+    await ev(`${at('submit')}.click()`);
+    await waitFor(`${l.id} step ${i + 1} passed`, `(${at('code')})?.closest('div').querySelector('[role=status]')?.classList.contains('good')`, 120000);
+  };
+  const openLesson = async (l) => {
+    await go(base, l.hash);
+    await waitFor(`${l.id} drawn`, `!!document.querySelector('#engine-page #engine-lesson-title')`, 60000);
+  };
+  await step(`engine ${ENGINE.heap.id}: pageinspect step passes and the heap diagram draws the real rows`, async () => {
+    await openLesson(ENGINE.heap);
+    await submitStep(ENGINE.heap, 1);
+    await waitFor('pg-heap-page diagram with one line pointer per row', `(f => f && f.querySelectorAll('tbody tr').length === 5 && !!f.querySelector('[data-viz="pg-heap-page"] svg'))(document.querySelector('[data-inside]'))`, 60000);
+    await shot('engine-heap');
+  });
+  await step(`engine ${ENGINE.mongo.id}: every MongoDB step passes, lesson completed`, async () => {
+    await openLesson(ENGINE.mongo);
+    for (const i of ENGINE.mongo.lab.steps.keys()) await submitStep(ENGINE.mongo, i);
+    await waitFor('the lesson in save.completed', `${completed}.includes(${S(ENGINE.mongo.id)})`, 10000);
+    await shot('engine-mongo');
+  });
+  await step(`engine ${ENGINE.dynamo.id}: DynamoDB Query passes and shows ScannedCount`, async () => {
+    await openLesson(ENGINE.dynamo);
+    await submitStep(ENGINE.dynamo, 0);
+    const meta = await ev(`[...document.querySelectorAll('#engine-page section[aria-label] dt')].map((x) => x.textContent + '=' + x.nextElementSibling.textContent)`);
+    if (!meta.some((x) => /^(Đã quét|Scanned)=\d/.test(x))) fail(`no ScannedCount line: ${S(meta)}`);
+    await shot('engine-dynamo');
+    return meta;
+  });
+  await step(`engine ${ENGINE.quiz.id}: quiz answered right, lesson completed`, async () => {
+    await openLesson(ENGINE.quiz);
+    for (const [i, q] of ENGINE.quiz.quiz.entries()) {
+      await ev(`document.querySelector('[data-ek="${ENGINE.quiz.id}-q${i}-${q.answer}"]').click()`);
+      await ev(`document.querySelector('[data-ek="${ENGINE.quiz.id}-q${i}-check"]').click()`);
+    }
+    await waitFor('the quiz lesson in save.completed', `${completed}.includes(${S(ENGINE.quiz.id)})`, 10000);
+  });
+  await step(`engine ${ENGINE.predict.id}: predict answered, the real plan shows ${ENGINE.predict.predict.expect?.node}`, async () => {
+    await openLesson(ENGINE.predict);
+    const id = ENGINE.predict.id;
+    await ev(`document.querySelector('[data-ek="${id}-p-${ENGINE.predict.predict.answer}"]').click()`);
+    await ev(`document.querySelector('[data-ek="${id}-p-check"]').click()`);
+    await waitFor('"see the real plan"', `!!document.querySelector('[data-ek="${id}-plan"]')`, 10000);
+    await ev(`document.querySelector('[data-ek="${id}-plan"]').click()`);
+    await waitFor('the plan', `!!document.querySelector('[data-plan]')`, 90000);
+    const plan = await ev(`document.querySelector('[data-plan]').textContent`);
+    if (!plan.includes(ENGINE.predict.predict.expect.node)) fail(`plan has no ${ENGINE.predict.predict.expect.node}: ${plan}`);
+    await shot('engine-predict');
+    return plan;
   });
 
   for (const r of ROUTES) if (!ROUTE_HASH[r]) await step(`route ${r}`, () => fail(`route '${r}' has no hash in scripts/smoke.mjs`));

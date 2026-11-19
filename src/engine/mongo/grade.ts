@@ -73,7 +73,7 @@ function diff(expected: MongoDoc[], actual: MongoDoc[]): { missing: MongoDoc[]; 
   return { missing, extra };
 }
 
-/** `strictId` (L247): `_id` is graded like any field (a covered query must drop it), so no extraId retry. */
+/** `strictId` (L248): `_id` is graded like any field (a covered query must drop it), so no extraId retry. */
 export function gradeDocs(expected: MongoDoc[], actual: MongoDoc[], opts: { ordered?: boolean; strictId?: boolean } = {}): DocGrade {
   const ordered = opts.ordered ?? false;
   const g = compare(expected, actual, ordered);

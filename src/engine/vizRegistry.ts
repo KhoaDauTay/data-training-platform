@@ -1,7 +1,7 @@
 import type * as EngineViz from './viz/engineViz';
 
 /**
- * ENG-CORE (L221) + integration (L247): diagrams named by a lesson's `viz:` frontmatter, drawn by ENG-VIZ's lazy chunk
+ * ENG-CORE (L221) + integration (L248): diagrams named by a lesson's `viz:` frontmatter, drawn by ENG-VIZ's lazy chunk
  * `engineViz` (src/engine/viz/engineViz.ts), reached only through import() here: it is no longer a second Vite entry.
  *
  * A name is resolved in that chunk (`resolveViz`: exact, the content alias table, the lesson engine's `pg-`/`mg-`/`dy-`

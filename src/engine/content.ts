@@ -23,7 +23,7 @@ export type Check = (typeof CHECKS)[number];
 
 export interface Bi { vi: string; en: string }
 /**
- * Additive fields (integration, L247): `expect` = engine numbers the player's result must also show (DynamoDB `Count`,
+ * Additive fields (integration, L248): `expect` = engine numbers the player's result must also show (DynamoDB `Count`,
  * `ScannedCount`); `fact` = a verified sentence shown after the step passes (`probe`/`expect` are the reviewers' check,
  * re-run by scripts/e2e.mjs); `target` = the query a `CREATE INDEX` step is for.
  */

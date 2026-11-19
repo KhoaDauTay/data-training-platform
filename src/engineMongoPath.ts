@@ -1,4 +1,4 @@
-// L247: the MongoDB path ("Lộ trình NoSQL", content/engine/mongodb/path/*.yml, already JSON at build: V22-E) and its rule
+// L248: the MongoDB path ("Lộ trình NoSQL", content/engine/mongodb/path/*.yml, already JSON at build: V22-E) and its rule
 // graders, one lazy chunk (budget `enginePath`) loaded by the engine UI on the first path page. The dataset itself
 // (dataset.json) loads in the Mongo lab worker as dataset id `path` (src/engine/mongo/engineMongo.ts).
 import { pathContent } from './engine/mongo/path';

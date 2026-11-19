@@ -1,4 +1,4 @@
-// Integration (L247): ENG-CORE's LabRunner for MongoDB lessons and the NoSQL path's drills, on ENG-MONGO's MongoLabClient.
+// Integration (L248): ENG-CORE's LabRunner for MongoDB lessons and the NoSQL path's drills, on ENG-MONGO's MongoLabClient.
 // Lazy chunk (LAB_RUNNERS.mongodb); only types from main modules. `lab.setup` = inline lab data (`{"collections": …}`,
 // dates as `{"$date": …}`) or a dataset id (`shop`, `path`). A write is graded on the collection as it left it (the worker
 // returns it, kind 'write'), on a copy thrown away afterwards like BEGIN … ROLLBACK.

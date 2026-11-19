@@ -1,4 +1,4 @@
-// Integration (L247): the MongoDB path ("Lộ trình NoSQL", content/engine/mongodb/path/): its shapes and the two rule
+// Integration (L248): the MongoDB path ("Lộ trình NoSQL", content/engine/mongodb/path/): its shapes and the two rule
 // graders the path uses besides result comparison (Equality → Sort → Range for a createIndex, covered queries).
 // Pure: the shell parser only, no mingo; the UI chunk and tests/mongoPath.test.ts import it.
 import { parseShell } from './parse';

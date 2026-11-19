@@ -194,7 +194,7 @@ describe('pglab setup + ENG-CORE runner', () => {
     expect(await lab.check(L, step, 'SELECT id FROM t WHERE id <= 3')).toMatchObject({ ok: false, reason: 'wrong' });
     const plan = { solution: 'SELECT v FROM t WHERE id = 5', check: 'plan' as const, ordered: false } as LabStep;
     expect(await lab.check(L, plan, 'SELECT v FROM t WHERE 5 = id')).toEqual({ ok: true });
-    // L247: a right plan with the wrong rows is still wrong
+    // L248: a right plan with the wrong rows is still wrong
     expect(await lab.check(L, plan, 'SELECT v || id FROM t WHERE id = 7')).toMatchObject({ ok: false, reason: 'wrong' });
     expect(await lab.check(L, plan, "SELECT v FROM t WHERE v = 'x'")).toMatchObject({ ok: false, reason: 'wrong' });
     expect(await lab.check(L, { ...step, check: 'doc' }, '')).toEqual({ ok: false, reason: 'unsupported' });

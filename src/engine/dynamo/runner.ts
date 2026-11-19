@@ -1,4 +1,4 @@
-// Integration (L247): ENG-CORE's LabRunner for DynamoDB lessons on ENG-DYNAMO's client. Lazy chunk (LAB_RUNNERS.dynamodb);
+// Integration (L248): ENG-CORE's LabRunner for DynamoDB lessons on ENG-DYNAMO's client. Lazy chunk (LAB_RUNNERS.dynamodb);
 // only types from main modules. A lesson's `lab.setup` is `{ "tables": [CreateTable input], "items": { table: [plain JSON] } }`:
 // the engine speaks typed DynamoDB JSON only (plain JSON is a SerializationException), so items are marshalled here.
 import type { Lab, LabStep } from '../content';

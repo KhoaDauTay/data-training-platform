@@ -29,7 +29,7 @@ export async function loadViz(name: string): Promise<VizFactory | undefined> {
 }
 
 /**
- * Integration (L247): names lesson content uses for a diagram with a different name here. Bare names get the lesson
+ * Integration (L248): names lesson content uses for a diagram with a different name here. Bare names get the lesson
  * engine's prefix first (`btree` → `pg-btree`), and a prefix of exactly one diagram resolves to it (`pg-gin` →
  * `pg-gin-postings`), so this table holds only the names neither rule finds.
  */

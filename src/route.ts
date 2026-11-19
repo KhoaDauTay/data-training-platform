@@ -109,7 +109,7 @@ export function engineRouteOf(hash: string): { engine?: string; level?: string; 
   return m ? { engine: m[1], level: m[2]?.toUpperCase(), lesson: m[3] } : {};
 }
 /**
- * L247: `#/engine/mongodb/path[/<skill>]` → the NoSQL path page ('') or one skill's page (its slug: `mg.lookup_pipeline` is
+ * L248: `#/engine/mongodb/path[/<skill>]` → the NoSQL path page ('') or one skill's page (its slug: `mg.lookup_pipeline` is
  * `lookup-pipeline`); undefined elsewhere. Kept forever, like the lesson hashes.
  */
 export const enginePathOf = (hash: string): string | undefined => /^#\/?engine\/mongodb\/path(?:\/([a-z0-9-]+))?(?=$|[/?])/.exec(hash)?.[1] ?? (/^#\/?engine\/mongodb\/path(?=$|[/?])/.test(hash) ? '' : undefined);
