@@ -3,7 +3,7 @@ import { BAR_ROWS, CARD_KINDS, cardRunner, CUSTOM_SKILL, customCardsOpen, colGon
 import { QueryTimeoutError } from '../db/client';
 import type { QueryResult } from '../db/run';
 import { activeDomain, domainSchemaId } from '../domains';
-import { chapterOfId, kpisOf, kpiNumber, kpiTiles, kpiValue, learnedSkills, type Kpi, type KpiTile, type KpiValue } from '../home';
+import { chapterOfId, kpisOf, kpiNumber, kpiTiles, kpiValue, knownSkills, type Kpi, type KpiTile, type KpiValue } from '../home';
 import { getLang, t, type Key } from '../i18n';
 import { laneLabel } from '../lanes';
 import { domainSkills, SKILLS } from '../progress';
@@ -184,9 +184,12 @@ const starters = cardRunner((sql, d) => app.run(sql, { schema: domainSchemaId(d)
  * D-DB1 (L86): why the player cannot make cards yet, or undefined when they can. One function for the dashboard, Pin and
  * the pin dialog. `n` is the domain's chapter that teaches the skill.
  */
+/** Skills that open card kinds: learned anywhere (story ticket, ≥ 2 General drills, or a review card), like knownSkills elsewhere. */
+export const cardSkills = (): Set<string> => knownSkills(app.save, app.tickets, SKILLS.map((s) => s.id));
+
 export function customLock(): { skill: string; n: number } | undefined {
   const cards = domainSlot(app.save, activeDomain()).dashboard.cards.length;
-  if (customCardsOpen(learnedSkills(app.tickets, done()), cards, gated(readTour()))) return undefined;
+  if (customCardsOpen(cardSkills(), cards, gated(readTour()))) return undefined;
   const s = domainSkills(app.tickets).find((x) => x.id === CUSTOM_SKILL) ?? skillOf(CUSTOM_SKILL);
   return { skill: s.label[getLang()], n: s.chapter };
 }
@@ -241,7 +244,7 @@ function mineSection(redraw: () => void): HTMLElement {
   const cards = domainSlot(app.save, activeDomain()).dashboard.cards;
   const lock = customLock();
   if (lock) return lockedMine(lock);
-  const learned = learnedSkills(app.tickets, done());
+  const learned = cardSkills();
   // One plain line, not a chip row (v6 §3.4, v10 UX #20).
   const kinds = CARD_KINDS.map((k) => {
     const skill = skillOf(KIND_SKILL[k]);

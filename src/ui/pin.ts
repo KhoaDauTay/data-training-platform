@@ -1,14 +1,13 @@
 import { CARD_KINDS, KIND_SKILL, markRan, MAX_CARD_SQL, MAX_CARD_TITLE, MAX_CARDS, nextCardId, pinBlock, valueCols, type Card, type CardKind } from '../dashboard';
 import type { QueryResult } from '../db/run';
 import { activeDomain } from '../domains';
-import { learnedSkills } from '../home';
 import { domainSlot } from '../save';
 import { getLang, t } from '../i18n';
 import { activeTicket, session } from '../session';
 import { actions, app, done, persist } from '../state';
 import { BTN_GO, cx } from '../theme';
 import { textOf } from '../tickets';
-import { cardBody, customLock, KIND_LABEL, skillOf } from './dashboard';
+import { cardBody, cardSkills, customLock, KIND_LABEL, skillOf } from './dashboard';
 import { h } from './dom';
 import { icon } from './icons';
 
@@ -51,7 +50,7 @@ export function pinBar(editorSql: () => string): HTMLElement | null {
 /** Pin dialog (mockup v6 screen B): type (locked ones greyed with the skill that opens them), title, value column, preview from the last run. */
 function openPinDialog(sql: string, r: QueryResult, from: string, editorSql: () => string): void {
   const lang = getLang();
-  const learned = learnedSkills(app.tickets, done());
+  const learned = cardSkills();
   const usable = (k: CardKind) => learned.has(KIND_SKILL[k]) && valueCols(k, r).length > 0;
   let kind: CardKind | undefined = (['line', 'bar', 'number', 'table'] as const).find((k) => usable(k) && (k !== 'number' || r.rows.length === 1)) ?? CARD_KINDS.find(usable);
   let col = kind ? valueCols(kind, r)[0] : 0;
