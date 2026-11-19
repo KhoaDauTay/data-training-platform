@@ -699,7 +699,6 @@ export const vi = {
   'welcome.pickLabel': 'Chọn nơi bắt đầu',
   'welcome.pickSql': 'Chỉ học SQL',
   'welcome.pickSqlDesc': 'Bài học và bài luyện ngắn theo từng kỹ năng, trên dữ liệu một chuỗi cửa hàng.',
-  'welcome.preparing': 'Đang chuẩn bị dữ liệu…',
   'welcome.knows': 'Đã biết SQL, bỏ qua',
   'welcome.tourTitle': '8 bước của hướng dẫn',
   'welcome.back': 'Quay lại',
