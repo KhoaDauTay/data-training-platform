@@ -17,6 +17,7 @@ import { announce, h } from './dom';
 import { cardBody } from './dashboard';
 import { icon, skillIcon } from './icons';
 import { importedNames } from './myDataView';
+import { thisWeek } from './homeView';
 
 /**
  * v16 (L142): loads the lazy `meView` chunk (#/me page, certificates, portfolio, dashboard file and picture exports) and hands
@@ -30,7 +31,7 @@ export function meChunk(): Promise<MeView> {
   pending ??= import('./meView').then((m) => {
     m.initMe({
       h, announce, icon, skillIcon, t, getLang, locale, app, persist, rerender: () => actions.rerender(), readJson, writeJson, readErrors, readAttempts,
-      days: () => parseDays(readJson<unknown>(DAYS_KEY)), loadTickets, loadDomain, chaptersOf, rankOf, SKILLS, knownSkills, textOf, DOMAINS, DOMAIN_ID,
+      days: () => parseDays(readJson<unknown>(DAYS_KEY)), week: thisWeek, loadTickets, loadDomain, chaptersOf, rankOf, SKILLS, knownSkills, textOf, DOMAINS, DOMAIN_ID,
       activeDomain, domainSlot, readDashboard, MAX_CARDS, hashOf, importedNames, cls: { CARD, BTN_GO, BTN_SECONDARY, cx },
       // V19-D (L170): portfolio card pictures (a card body as the dashboard draws it) and take-homes
       run: (sql, dom) => app.run(sql, { schema: domainSchemaId(dom) }), cardBody, ranHere: (c) => ranHere(c),

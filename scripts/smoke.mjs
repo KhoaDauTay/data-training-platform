@@ -566,6 +566,44 @@ try {
     });
   }
 
+  // ---- V22-C (L208, roadmap-v22 S3): a returning player (save-v5 with chapter 2 not started, 15 days away) sees Boon's
+  // welcome-back line and exactly one "Buổi học hôm nay" card (no warm-up, review or drill card on Home, one primary button);
+  // Home at 375 is <= 70 % of the 1694 px measured before V22-C (review-log "V22-C"). Then a weekly goal shows on Lily's card.
+  await step('V22-C: returning player, one session card, Home height at 375', async () => {
+    await size(375, 740);
+    await send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-color-scheme', value: 'light' }] });
+    const pad = (n) => String(n).padStart(2, '0');
+    const day = (back) => { const d = new Date(); d.setDate(d.getDate() - back); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; };
+    const fx = JSON.parse(readFileSync(join(ROOT, 'tests/fixtures/save-v5.json'), 'utf8'));
+    const state = {
+      'cargo-query-save': { ...fx, completed: fx.completed.filter((id) => !id.startsWith('ch2-')), review: { select: { box: 3, due: day(1) }, where: { box: 2, due: day(2) } } },
+      'cargo-query/tour': { step: 8, knows: false }, 'cargo-query/domain': 'logistics', 'cargo-query/coach-done': true,
+      'cargo-query/days': [day(40), day(30), day(22), day(15)], 'cargo-query/goal': {},
+    };
+    const init = Object.entries(state).map(([k, v]) => `localStorage.setItem(${S(k)}, ${S(S(v))});`).join('');
+    const { identifier } = await send('Page.addScriptToEvaluateOnNewDocument', { source: `if (location.protocol.startsWith('http') && !sessionStorage.getItem('v22c')) { sessionStorage.setItem('v22c', '1'); ${init} }` });
+    await send('Page.navigate', { url: 'about:blank' });
+    await waitFor('about:blank', `location.href === 'about:blank'`, 10000);
+    await go(base, '#/');
+    await waitFor('Home with the session card', `!!document.querySelector('#home [data-session]') && document.getElementById('notice').hidden`, 60000);
+    await send('Page.removeScriptToEvaluateOnNewDocument', { identifier });
+    await sleep(1500); // fonts and the Lily sprite settle; the height is read twice below and must agree
+    const H = `(() => { let e = document.getElementById('home'); while (e && !/(auto|scroll)/.test(getComputedStyle(e).overflowY)) e = e.parentElement; return (e || document.scrollingElement).scrollHeight; })()`;
+    const h1 = await ev(H);
+    const h2 = await waitFor('a stable Home height', `(h => h === ${h1} && h)(${H})`, 5000).catch(() => ev(H));
+    const m = await ev(`({ sessions: document.querySelectorAll('#home [data-session]').length, back: !!document.querySelector('#home [data-welcome-back]'),
+      old: ['warmup-title', 'review-title', 'hub-title'].filter((id) => document.getElementById(id)),
+      primary: [...document.querySelectorAll('#home button, #home a')].filter((b) => b.offsetParent && /(^| )bg-accent( |$)/.test(b.className)).length })`);
+    if (m.sessions !== 1) fail(`${m.sessions} session cards, expected 1`);
+    if (!m.back) fail('no welcome-back line after 15 days away');
+    if (m.old.length) fail(`practice cards still on Home: ${m.old.join(', ')}`);
+    if (m.primary !== 1) fail(`${m.primary} primary buttons on Home, expected 1`);
+    if (h2 > 0.7 * 1694) fail(`Home is ${h2} px at 375, over 70 % of 1694`);
+    await ev(`(s => { s.closest('details').open = true; s.value = '5'; s.dispatchEvent(new Event('change', { bubbles: true })); })(document.querySelector('#home [data-session] details select'))`);
+    await waitFor('the weekly goal on Lily\'s card', `/\\/5/.test(document.querySelector('#home [data-goal]')?.textContent ?? '')`, 5000);
+    return { ...m, height: h2, ratio: Math.round((h2 / 1694) * 1000) / 1000 };
+  });
+
   await step('no page errors', async () => {
     if (pageErrors.length) fail(`${pageErrors.length} error(s): ${pageErrors.map((e) => e.text.split('\n')[0]).join(' | ').slice(0, 800)}`);
   });

@@ -891,3 +891,15 @@ Cách đo: `npm run build` của cây, `SMOKE_BOOT=3` (mới, `scripts/smoke.mjs
 - Main không chứa `pglab`/`dynoxide`/`mingo` (grep `index-*.js`: 0/0/0). `yaml` đã lọt lại vào main qua `src/ui/engine.ts` (ENG-CORE gộp sau V22-E): đổi thành `import('yaml')` trong chunk lười của Engine. Main 337,75 → 306,83 kB gz (số của Vite); `check-budget` "main has no yaml library" FAIL → ok.
 - Đo, không làm: preload wasm PGlite (worker spawn ~50 ms sau main, không còn gì để kéo lên ở máy local); seed Logistics trong Edge chậm hơn Node 3× là đòn bẩy còn lại cho "DB sẵn sàng", không đụng vì luật seed (md5 ghim).
 - Kiểm: tsc; build; vitest `--no-file-parallelism` 4735 qua, 2 FAIL có sẵn trên `v22-engine` (`tests/engineContent.test.ts`: `dynamodb/L5/07-capstone-ops.md` lab.steps[3].hint và `mongodb/L3/16-predict-sparse-hint.md` q0.options[2], code VI ≠ EN; nội dung không đụng); `check-budget`: 1 FAIL có sẵn `engine` 372 KB gz / 40 (nội dung Engine, quyết định của người điều phối, không nâng trần ở đây); `SMOKE_PORT=5289 npm run smoke` OK 81,3 s.
+# v22 V22-C (Quay lại có lý do: thẻ "Buổi học hôm nay", câu chào lại, mục tiêu tuần, nhắc .ics), 2026-11-20, L208–L210
+
+Mốc S3, đo **trước khi sửa** (cây `v22-engine` c86ae84, `npm run build` + `vite preview` 5288, Edge headless, hồ sơ mới, 375×740 `mobile`, `scrollHeight` của khung cuộn chứa `<main id="home">`). Người quay lại = `tests/fixtures/save-v5.json` bỏ `ch2-*` (chương 2 chưa làm việc nào, nên có thẻ Ôn đầu chương), thẻ ôn `select`/`where` tới hạn, tour xong, `cargo-query/days` ngày cuối cách 15 ngày; người mới = tour bước 0, chưa save.
+
+| Trang chủ | trước 375 / 1280 | sau 375 / 1280 | thẻ luyện trên Trang chủ | nút chính (pill teal) |
+|---|---|---|---|---|
+| Người quay lại | **1694** / 1257 px | **1184** / 964 px (−30,1 % / −23,3 %) | 3 → 1 ("Buổi học hôm nay") | 1 ("Mở việc này") → 1 ("Bắt đầu") |
+| Người mới | 1473 / 1100 px | 1016 / 781 px | 2 → 0 | 2 ("Mở việc này", "Bắt đầu từ Phần 1") → 1 |
+
+- Smoke bước V22-C dựng lại đúng trạng thái này và fail nếu Home 375 > 0,7 × 1694, thiếu câu chào lại, ≠ 1 thẻ buổi học hoặc ≠ 1 nút chính.
+- Ảnh (8 trước + 8 sau, 375/1280 sáng/tối, mới/quay lại): scratchpad `v22c/before-*.png`, `v22c/after-*.png`.
+- Ngân sách (gzip -9): main 334 331 → 336 474 B (+2,1 KB: chữ VI/EN, `goal.ts`, thẻ buổi học); `ics` 0,7 KB (nhóm mới, trần 2); `me` 11,26 → ~11,3 / 12 (một dòng tuần này); css 20 080 B (không lớp mới ngoài lớp đã có). Main > 307 không do V22-C: `src/ui/engine.ts` (ENG-CORE, gộp sau V22-E) kéo lại `yaml` vào main (`check-budget` FAIL "main has no yaml library" và `engine` 379/40 có sẵn trên `v22-engine` trước luồng này).
