@@ -6,6 +6,7 @@ module: replication-ops
 title: "Vận hành: backup, PITR, failover và autovacuum sản xuất"
 title_en: "Operations: backup, PITR, failover and production autovacuum"
 kind: quiz
+runtime: docs
 minutes: 15
 objectives:
   - { vi: "Phân biệt backup logic (`pg_dump`) và backup vật lý + lưu trữ WAL (PITR)", en: "Tell logical backups (`pg_dump`) from physical backups + WAL archiving (PITR)" }

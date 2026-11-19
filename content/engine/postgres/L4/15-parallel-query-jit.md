@@ -6,6 +6,7 @@ module: parallel-jit
 title: "Truy vấn song song và JIT (và vì sao PGlite không có)"
 title_en: "Parallel query and JIT (and why PGlite shows neither)"
 kind: predict
+runtime: browser
 minutes: 15
 objectives:
   - { vi: "Đọc `Gather`/`Gather Merge` và nhận ra phần nào của kế hoạch chạy song song", en: "Read `Gather`/`Gather Merge` and spot which part of a plan runs in parallel" }
@@ -18,7 +19,7 @@ sources:
   - https://www.postgresql.org/docs/18/parallel-plans.html
   - https://www.postgresql.org/docs/18/jit-decision.html
   - https://www.postgresql.org/docs/18/runtime-config-resource.html
-viz: plan-tree
+viz: pg-plan-tree
 lab:
   setup: |
     DROP TABLE IF EXISTS big CASCADE;

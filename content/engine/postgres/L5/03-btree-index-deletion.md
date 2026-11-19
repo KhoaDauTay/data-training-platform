@@ -6,6 +6,7 @@ module: index-internals
 title: "B-tree tự dọn: simple và bottom-up deletion"
 title_en: "How B-tree indexes clean themselves: simple and bottom-up deletion"
 kind: concept
+runtime: docs
 minutes: 12
 objectives:
   - { vi: "Phân biệt ba cách dọn mục chết trong B-tree: simple deletion, bottom-up deletion, VACUUM", en: "Tell apart the three ways a B-tree drops dead items: simple deletion, bottom-up deletion and VACUUM" }
@@ -16,7 +17,7 @@ sources:
   - https://www.postgresql.org/docs/18/btree.html
   - https://www.postgresql.org/docs/18/storage-hot.html
   - https://www.postgresql.org/docs/18/routine-vacuuming.html
-viz: btree
+viz: pg-btree
 quiz:
   - q: { vi: "Bảng `sessions` có index trên `user_id` và `last_seen`. Ứng dụng cập nhật `last_seen` liên tục. Index `user_id` nhận gì sau mỗi UPDATE?", en: "Table `sessions` has indexes on `user_id` and `last_seen`. The app updates `last_seen` constantly. What does the `user_id` index get after each UPDATE?" }
     options:

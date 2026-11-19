@@ -6,6 +6,7 @@ module: integrity
 title: "Kiểm index và heap bằng amcheck"
 title_en: "Verifying indexes and heap with amcheck"
 kind: lab
+runtime: browser
 minutes: 15
 objectives:
   - { vi: "Chạy `bt_index_check` (kể cả `heapallindexed`) trên nhiều index trong một câu", en: "Run `bt_index_check` (including `heapallindexed`) on several indexes in one statement" }
@@ -14,7 +15,7 @@ objectives:
 requires: [e-pg-l5-01]
 sources:
   - https://www.postgresql.org/docs/18/amcheck.html
-viz: btree
+viz: pg-btree
 lab:
   setup: |
     CREATE EXTENSION IF NOT EXISTS amcheck;

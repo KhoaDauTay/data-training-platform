@@ -6,6 +6,7 @@ module: index-internals
 title: "Bên trong BRIN: khoảng khối và tóm tắt"
 title_en: "BRIN internals: block ranges and summarization"
 kind: lab
+runtime: browser
 minutes: 20
 objectives:
   - { vi: "Đọc tóm tắt min/max của từng khoảng khối bằng `brin_page_items`", en: "Read the min/max summary of each block range with `brin_page_items`" }
@@ -16,7 +17,7 @@ sources:
   - https://www.postgresql.org/docs/18/brin.html
   - https://www.postgresql.org/docs/18/pageinspect.html
   - https://www.postgresql.org/docs/18/sql-createindex.html
-viz: brin-ranges
+viz: pg-brin-ranges
 lab:
   setup: |
     CREATE EXTENSION IF NOT EXISTS pageinspect;

@@ -6,6 +6,7 @@ module: index-internals
 title: "Chọn loại index (access method)"
 title_en: "Choosing an index access method"
 kind: quiz
+runtime: docs
 minutes: 15
 objectives:
   - { vi: "Chọn B-tree, Hash, GIN, GiST, SP-GiST, BRIN hay bloom từ kiểu dữ liệu, toán tử và mẫu ghi", en: "Choose B-tree, Hash, GIN, GiST, SP-GiST, BRIN or bloom from the data type, operators and write pattern" }
@@ -17,7 +18,7 @@ sources:
   - https://www.postgresql.org/docs/18/indexes-index-only-scans.html
   - https://www.postgresql.org/docs/18/bloom.html
   - https://www.postgresql.org/docs/18/textsearch-indexes.html
-viz: plan-tree
+viz: pg-plan-tree
 quiz:
   - q: { vi: "Bảng log 2 tỉ dòng, chỉ chèn thêm, truy vấn luôn là \"khoảng thời gian X đến Y\". Ổ đĩa đắt. Chọn gì cho cột thời gian?", en: "A 2-billion-row append-only log table; queries are always \"time range X to Y\". Disk is expensive. What goes on the timestamp column?" }
     options:

@@ -6,6 +6,7 @@ module: partitioning
 title: "Phân vùng khai báo và partition pruning"
 title_en: "Declarative partitioning and partition pruning"
 kind: lab
+runtime: browser
 minutes: 20
 objectives:
   - { vi: "Viết câu để planner chỉ đọc đúng phân vùng cần (pruning lúc lập kế hoạch)", en: "Write a query the planner prunes to the one partition it needs (plan-time pruning)" }
@@ -15,7 +16,7 @@ requires: [e-pg-l4-02]
 sources:
   - https://www.postgresql.org/docs/18/ddl-partitioning.html
   - https://www.postgresql.org/docs/18/functions-admin.html
-viz: plan-tree
+viz: pg-plan-tree
 lab:
   setup: |
     DROP TABLE IF EXISTS events CASCADE;

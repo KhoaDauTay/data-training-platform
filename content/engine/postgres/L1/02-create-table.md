@@ -6,6 +6,7 @@ module: types
 title: Tạo bảng đầu tiên
 title_en: Creating your first table
 kind: lab
+runtime: browser
 minutes: 8
 verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-20" }
 objectives:

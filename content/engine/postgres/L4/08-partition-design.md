@@ -6,6 +6,7 @@ module: partitioning
 title: "Thiết kế phân vùng: khóa, ràng buộc và giới hạn"
 title_en: "Designing partitions: key, keys and limits"
 kind: quiz
+runtime: docs
 minutes: 12
 objectives:
   - { vi: "Chọn khóa phân vùng theo câu hỏi hay gặp nhất và cách xóa dữ liệu cũ", en: "Choose the partition key from the most frequent queries and the way old data is removed" }

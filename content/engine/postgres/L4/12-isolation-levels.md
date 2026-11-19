@@ -6,6 +6,7 @@ module: locks
 title: "Mức cô lập và các hiện tượng chúng cho phép"
 title_en: "Isolation levels and the anomalies they allow"
 kind: concept
+runtime: docs
 minutes: 20
 objectives:
   - { vi: "Định nghĩa dirty read, non-repeatable read, phantom read, serialization anomaly", en: "Define dirty read, non-repeatable read, phantom read and serialization anomaly" }
@@ -15,7 +16,7 @@ requires: [e-pg-l4-09]
 sources:
   - https://www.postgresql.org/docs/18/transaction-iso.html
   - https://www.postgresql.org/docs/18/sql-set-transaction.html
-viz: isolation-anomalies
+viz: pg-isolation-anomalies
 quiz:
   - q: { vi: "Ở READ COMMITTED, một giao dịch chạy `SELECT sum(bal) FROM acct` hai lần. Giữa hai lần, phiên khác chuyển tiền và COMMIT. Hai tổng có thể khác nhau không?", en: "Under READ COMMITTED, a transaction runs `SELECT sum(bal) FROM acct` twice. Between them, another session moves money and COMMITs. Can the two sums differ?" }
     options:

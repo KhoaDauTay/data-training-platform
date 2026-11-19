@@ -6,9 +6,10 @@ module: first-index
 title: "Có index, sao vẫn Seq Scan?"
 title_en: "There is an index, so why a Seq Scan?"
 kind: predict
+runtime: browser
 minutes: 8
 verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-20" }
-viz: pg-query-path
+viz: pg-plan-tree
 objectives:
   - vi: "Đọc một dòng `EXPLAIN`: tên nút, `cost=A..B`, `rows=` ước lượng."
     en: "Read an `EXPLAIN` line: the node name, `cost=A..B`, the estimated `rows=`."

@@ -6,6 +6,7 @@ module: constraints
 title: Ràng buộc và khóa
 title_en: Constraints and keys
 kind: lab
+runtime: browser
 minutes: 12
 verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-20" }
 objectives:

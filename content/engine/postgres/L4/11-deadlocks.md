@@ -6,6 +6,7 @@ module: locks
 title: "Deadlock: Postgres phát hiện thế nào và cách phòng"
 title_en: "Deadlocks: how Postgres detects them and how to prevent them"
 kind: concept
+runtime: docs
 minutes: 12
 objectives:
   - { vi: "Đi từng bước một deadlock hai phiên và chỉ ra chu trình chờ", en: "Walk through a two-session deadlock step by step and point to the wait cycle" }
@@ -16,7 +17,7 @@ sources:
   - https://www.postgresql.org/docs/18/explicit-locking.html
   - https://www.postgresql.org/docs/18/runtime-config-locks.html
   - https://www.postgresql.org/docs/18/errcodes-appendix.html
-viz: lock-matrix
+viz: pg-lock-matrix
 quiz:
   - q: { vi: "Hai job chuyển tiền chạy song song: job 1 chuyển 1 → 2, job 2 chuyển 2 → 1, mỗi job cập nhật tài khoản nguồn trước rồi tài khoản đích. Cách sửa gốc là gì?", en: "Two transfer jobs run in parallel: job 1 moves money 1 → 2, job 2 moves 2 → 1, each updating the source account first, then the destination. What is the root fix?" }
     options:

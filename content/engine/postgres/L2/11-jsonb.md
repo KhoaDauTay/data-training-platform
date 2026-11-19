@@ -6,9 +6,10 @@ module: search
 title: jsonb và jsonb_path_ops
 title_en: jsonb and jsonb_path_ops
 kind: lab
+runtime: browser
 minutes: 12
 verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-20" }
-viz: pg-gin
+viz: pg-gin-postings
 objectives:
   - vi: Đọc trường trong `jsonb` bằng `->` và `->>`, lọc bằng `@>`.
     en: Read `jsonb` fields with `->` and `->>`, and filter with `@>`.

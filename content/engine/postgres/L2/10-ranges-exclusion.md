@@ -6,9 +6,10 @@ module: index-types
 title: "Khoảng thời gian, GiST và ràng buộc không chồng lịch"
 title_en: "Time ranges, GiST and a no-double-booking constraint"
 kind: lab
+runtime: browser
 minutes: 12
 verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-20" }
-viz: pg-gist
+viz: pg-gist-boxes
 objectives:
   - vi: Lưu lịch đặt phòng bằng kiểu `tstzrange` và hỏi "chồng lên nhau" bằng `&&`.
     en: Store bookings as `tstzrange` and ask "do they overlap?" with `&&`.

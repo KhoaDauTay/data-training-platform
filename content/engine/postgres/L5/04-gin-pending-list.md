@@ -6,6 +6,7 @@ module: index-internals
 title: "Bên trong GIN: posting tree và pending list"
 title_en: "GIN internals: posting trees and the pending list"
 kind: lab
+runtime: browser
 minutes: 20
 objectives:
   - { vi: "Giải thích GIN là index đảo: mỗi khóa (từ, phần tử mảng) trỏ tới một posting list/tree các TID", en: "Explain GIN as an inverted index: each key (word, array element) points to a posting list/tree of TIDs" }
@@ -17,7 +18,7 @@ sources:
   - https://www.postgresql.org/docs/18/pageinspect.html
   - https://www.postgresql.org/docs/18/functions-admin.html
   - https://www.postgresql.org/docs/18/runtime-config-client.html
-viz: gin-postings
+viz: pg-gin-postings
 lab:
   setup: |
     CREATE EXTENSION IF NOT EXISTS pageinspect;

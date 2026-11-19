@@ -6,6 +6,7 @@ module: planner-stats
 title: "Thống kê cột: MCV, histogram, correlation"
 title_en: "Column statistics: MCV, histogram, correlation"
 kind: lab
+runtime: browser
 minutes: 15
 objectives:
   - { vi: "Đọc `most_common_vals`, `most_common_freqs`, `n_distinct` và `correlation` trong `pg_stats`", en: "Read `most_common_vals`, `most_common_freqs`, `n_distinct` and `correlation` in `pg_stats`" }
@@ -16,7 +17,7 @@ sources:
   - https://www.postgresql.org/docs/18/planner-stats.html
   - https://www.postgresql.org/docs/18/row-estimation-examples.html
   - https://www.postgresql.org/docs/18/view-pg-stats.html
-viz: plan-tree
+viz: pg-plan-tree
 lab:
   setup: |
     DROP TABLE IF EXISTS parcels CASCADE;

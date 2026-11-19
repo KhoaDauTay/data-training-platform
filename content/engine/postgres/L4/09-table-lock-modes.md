@@ -6,6 +6,7 @@ module: locks
 title: "Chế độ khóa bảng và pg_locks"
 title_en: "Table-level lock modes and pg_locks"
 kind: lab
+runtime: browser
 minutes: 20
 objectives:
   - { vi: "Kể tám chế độ khóa bảng và lệnh nào lấy chế độ nào", en: "Name the eight table lock modes and which command takes which" }
@@ -15,7 +16,7 @@ requires: []
 sources:
   - https://www.postgresql.org/docs/18/explicit-locking.html
   - https://www.postgresql.org/docs/18/view-pg-locks.html
-viz: lock-matrix
+viz: pg-lock-matrix
 lab:
   setup: |
     DROP TABLE IF EXISTS acct CASCADE;

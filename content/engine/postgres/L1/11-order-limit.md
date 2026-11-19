@@ -6,6 +6,7 @@ module: first-index
 title: Index giúp cả ORDER BY ... LIMIT
 title_en: An index also serves ORDER BY ... LIMIT
 kind: predict
+runtime: browser
 minutes: 7
 verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-20" }
 objectives:

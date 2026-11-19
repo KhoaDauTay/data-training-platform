@@ -6,6 +6,7 @@ module: constraints
 title: NULL không phải là một giá trị
 title_en: NULL is not a value
 kind: quiz
+runtime: docs
 minutes: 8
 verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-20" }
 objectives:

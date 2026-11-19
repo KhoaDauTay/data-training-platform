@@ -6,6 +6,7 @@ module: capstone-l5
 title: "Bài tổng kết L5: bảng sự kiện chậm"
 title_en: "L5 capstone: the slow events table"
 kind: capstone
+runtime: browser
 minutes: 35
 objectives:
   - { vi: "Chẩn đoán một bảng sự kiện nhiều khách hàng từ `pg_stats`, ước lượng và kế hoạch thật", en: "Diagnose a multi-tenant events table from `pg_stats`, estimates and real plans" }
@@ -18,7 +19,7 @@ sources:
   - https://www.postgresql.org/docs/18/brin.html
   - https://www.postgresql.org/docs/18/indexes-multicolumn.html
   - https://www.postgresql.org/docs/18/sql-createstatistics.html
-viz: plan-tree
+viz: pg-plan-tree
 lab:
   setup: |
     DROP TABLE IF EXISTS events CASCADE;

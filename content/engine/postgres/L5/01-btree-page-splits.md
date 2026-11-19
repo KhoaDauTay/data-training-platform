@@ -6,6 +6,7 @@ module: index-internals
 title: "Bên trong B-tree: tầng, trang và tách trang"
 title_en: "B-tree internals: levels, pages and splits"
 kind: lab
+runtime: browser
 minutes: 20
 objectives:
   - { vi: "Đọc metapage (`bt_metap`) và thống kê từng trang (`bt_page_stats`) của một B-tree thật", en: "Read the metapage (`bt_metap`) and per-page statistics (`bt_page_stats`) of a real B-tree" }
@@ -16,7 +17,7 @@ sources:
   - https://www.postgresql.org/docs/18/btree.html
   - https://www.postgresql.org/docs/18/pageinspect.html
   - https://www.postgresql.org/docs/18/sql-createindex.html
-viz: btree
+viz: pg-btree
 lab:
   setup: |
     CREATE EXTENSION IF NOT EXISTS pageinspect;

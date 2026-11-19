@@ -6,6 +6,7 @@ module: planner-stats
 title: "Mô hình chi phí: chi phí của kế hoạch từ đâu ra"
 title_en: "The cost model: where a plan's cost comes from"
 kind: lab
+runtime: browser
 minutes: 15
 objectives:
   - { vi: "Tính lại chi phí của một Seq Scan từ relpages, reltuples và các hằng số chi phí", en: "Recompute a Seq Scan's cost from relpages, reltuples and the cost constants" }
@@ -16,7 +17,7 @@ sources:
   - https://www.postgresql.org/docs/18/runtime-config-query.html
   - https://www.postgresql.org/docs/18/using-explain.html
   - https://www.postgresql.org/docs/18/planner-stats.html
-viz: plan-tree
+viz: pg-plan-tree
 lab:
   setup: |
     DROP TABLE IF EXISTS parcels CASCADE;

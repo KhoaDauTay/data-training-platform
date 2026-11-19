@@ -6,9 +6,10 @@ module: first-index
 title: Index B-tree đầu tiên
 title_en: Your first B-tree index
 kind: lab
+runtime: browser
 minutes: 10
 verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-20" }
-viz: pg-btree-split
+viz: pg-btree
 objectives:
   - vi: Tạo một index B-tree cho cột hay lọc và kiểm tra Postgres có dùng nó không.
     en: Create a B-tree index on a column you filter often and check that Postgres uses it.

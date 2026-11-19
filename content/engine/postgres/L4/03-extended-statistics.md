@@ -6,6 +6,7 @@ module: planner-stats
 title: "Thống kê mở rộng cho các cột tương quan"
 title_en: "Extended statistics for correlated columns"
 kind: lab
+runtime: browser
 minutes: 15
 objectives:
   - { vi: "Nhận ra ước lượng thấp do planner coi hai cột là độc lập", en: "Spot an underestimate caused by the planner treating two columns as independent" }
@@ -16,7 +17,7 @@ sources:
   - https://www.postgresql.org/docs/18/planner-stats.html
   - https://www.postgresql.org/docs/18/sql-createstatistics.html
   - https://www.postgresql.org/docs/18/multivariate-statistics-examples.html
-viz: plan-tree
+viz: pg-plan-tree
 lab:
   setup: |
     DROP TABLE IF EXISTS addr_plain, addr_stats CASCADE;

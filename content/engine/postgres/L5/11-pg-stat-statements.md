@@ -6,6 +6,7 @@ module: observe-tune
 title: "Tìm câu tốn nhất: pg_stat_statements và pg_stat_*"
 title_en: "Finding the costliest queries: pg_stat_statements and pg_stat_*"
 kind: lab
+runtime: browser
 minutes: 20
 objectives:
   - { vi: "Đọc `pg_stat_statements`: câu đã chuẩn hóa (hằng thành `$1`), số lần gọi, số dòng", en: "Read `pg_stat_statements`: normalised query text (constants become `$1`), calls, rows" }

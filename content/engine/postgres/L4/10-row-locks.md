@@ -6,6 +6,7 @@ module: locks
 title: "Khóa dòng: bốn mức, ghi trong tuple"
 title_en: "Row locks: four strengths, stored in the tuple"
 kind: concept
+runtime: docs
 minutes: 15
 objectives:
   - { vi: "Phân biệt `FOR UPDATE`, `FOR NO KEY UPDATE`, `FOR SHARE`, `FOR KEY SHARE` và bảng xung đột của chúng", en: "Tell apart `FOR UPDATE`, `FOR NO KEY UPDATE`, `FOR SHARE`, `FOR KEY SHARE` and their conflict table" }
@@ -16,7 +17,7 @@ sources:
   - https://www.postgresql.org/docs/18/explicit-locking.html
   - https://www.postgresql.org/docs/18/sql-select.html
   - https://www.postgresql.org/docs/18/pageinspect.html
-viz: lock-matrix
+viz: pg-lock-matrix
 quiz:
   - q: { vi: "Giao dịch A chèn đơn hàng tham chiếu khách 42 (khóa ngoại). Giao dịch B cùng lúc `UPDATE customers SET region = 3 WHERE id = 42` (không đổi khóa). B có phải chờ A không?", en: "Transaction A inserts an order that references customer 42 (foreign key). Transaction B at the same time runs `UPDATE customers SET region = 3 WHERE id = 42` (key unchanged). Must B wait for A?" }
     options:

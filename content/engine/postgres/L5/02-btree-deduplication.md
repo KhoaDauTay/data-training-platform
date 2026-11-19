@@ -6,6 +6,7 @@ module: index-internals
 title: "B-tree: dedup và posting list"
 title_en: "B-tree deduplication and posting lists"
 kind: lab
+runtime: browser
 minutes: 15
 objectives:
   - { vi: "Thấy posting list thật: một khóa + mảng TID trong `bt_page_items`", en: "See a real posting list: one key + a TID array in `bt_page_items`" }
@@ -15,7 +16,7 @@ requires: [e-pg-l5-01]
 sources:
   - https://www.postgresql.org/docs/18/btree.html
   - https://www.postgresql.org/docs/18/pageinspect.html
-viz: btree
+viz: pg-btree
 lab:
   setup: |
     CREATE EXTENSION IF NOT EXISTS pageinspect;

@@ -6,6 +6,7 @@ module: locks
 title: "Khóa tư vấn: khóa do ứng dụng định nghĩa"
 title_en: "Advisory locks: application-defined locks"
 kind: lab
+runtime: browser
 minutes: 12
 objectives:
   - { vi: "Dùng khóa tư vấn cấp giao dịch để chỉ một worker chạy một việc", en: "Use transaction-level advisory locks so only one worker runs a job" }
@@ -16,7 +17,7 @@ sources:
   - https://www.postgresql.org/docs/18/explicit-locking.html
   - https://www.postgresql.org/docs/18/functions-admin.html
   - https://www.postgresql.org/docs/18/view-pg-locks.html
-viz: lock-matrix
+viz: pg-lock-matrix
 lab:
   setup: |
     DROP TABLE IF EXISTS jobs CASCADE;

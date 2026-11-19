@@ -6,6 +6,7 @@ module: capstone-l2
 title: "Kiểm tra cấp L2: trang tìm sản phẩm chậm"
 title_en: "Level L2 check: the slow product search page"
 kind: capstone
+runtime: browser
 minutes: 15
 verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-20" }
 objectives:

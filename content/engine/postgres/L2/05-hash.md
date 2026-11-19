@@ -6,6 +6,7 @@ module: index-types
 title: Index Hash chỉ biết dấu bằng
 title_en: A Hash index only knows equality
 kind: predict
+runtime: browser
 minutes: 7
 verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-20" }
 objectives:

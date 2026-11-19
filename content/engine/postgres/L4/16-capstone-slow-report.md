@@ -6,6 +6,7 @@ module: capstone-l4
 title: "Bài tổng kết L4: báo cáo chậm và migration làm treo"
 title_en: "L4 capstone: a slow report and a migration that froze the app"
 kind: capstone
+runtime: browser
 minutes: 30
 objectives:
   - { vi: "Đi từ ước lượng sai tới thuật toán nối sai, dùng `pg_stats` và ước lượng thật", en: "Go from a wrong estimate to a wrong join algorithm, using `pg_stats` and real estimates" }
@@ -18,7 +19,7 @@ sources:
   - https://www.postgresql.org/docs/18/explicit-locking.html
   - https://www.postgresql.org/docs/18/runtime-config-client.html
   - https://www.postgresql.org/docs/18/transaction-iso.html
-viz: plan-tree
+viz: pg-plan-tree
 lab:
   setup: |
     DROP TABLE IF EXISTS orders, customers CASCADE;

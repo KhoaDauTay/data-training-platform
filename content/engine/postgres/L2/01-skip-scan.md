@@ -6,9 +6,10 @@ module: btree-multi
 title: "Index nhiều cột: luật cột đầu và skip scan"
 title_en: "Multicolumn indexes: the leading-column rule and skip scan"
 kind: predict
+runtime: browser
 minutes: 10
 verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-20" }
-viz: pg-btree-split
+viz: pg-btree
 objectives:
   - vi: Đặt thứ tự cột của index nhiều cột theo cách câu hỏi lọc dữ liệu.
     en: Order the columns of a multicolumn index the way your queries filter.

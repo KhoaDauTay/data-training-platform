@@ -6,6 +6,7 @@ module: partial-expr
 title: Index partial chỉ phủ dòng cần thiết
 title_en: Partial indexes cover only the rows you need
 kind: lab
+runtime: browser
 minutes: 12
 verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-20" }
 objectives:

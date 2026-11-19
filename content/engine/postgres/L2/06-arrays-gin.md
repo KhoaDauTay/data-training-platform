@@ -6,9 +6,10 @@ module: index-types
 title: Mảng và index GIN
 title_en: Arrays and GIN indexes
 kind: lab
+runtime: browser
 minutes: 12
 verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-20" }
-viz: pg-gin
+viz: pg-gin-postings
 objectives:
   - vi: Lưu nhãn trong cột mảng và lọc bằng `= ANY`, `@>` và `&&`.
     en: Store tags in an array column and filter with `= ANY`, `@>` and `&&`.

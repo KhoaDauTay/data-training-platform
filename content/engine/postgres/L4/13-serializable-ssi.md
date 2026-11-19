@@ -6,6 +6,7 @@ module: locks
 title: "SERIALIZABLE: SSI, write skew và SIReadLock"
 title_en: "SERIALIZABLE: SSI, write skew and SIReadLock"
 kind: concept
+runtime: docs
 minutes: 20
 objectives:
   - { vi: "Nhận ra write skew: hai giao dịch đọc chung, ghi riêng, cùng làm hỏng một quy tắc", en: "Recognise write skew: two transactions read the same data, write different rows, and together break a rule" }
@@ -16,7 +17,7 @@ sources:
   - https://www.postgresql.org/docs/18/transaction-iso.html
   - https://www.postgresql.org/docs/18/view-pg-locks.html
   - https://www.postgresql.org/docs/18/applevel-consistency.html
-viz: isolation-anomalies
+viz: pg-isolation-anomalies
 quiz:
   - q: { vi: "Quy tắc: luôn có ít nhất một bác sĩ trực. Ana và Bình cùng đang trực. Mỗi người chạy giao dịch: đếm số người trực (2), nếu ≥ 2 thì tự đặt mình nghỉ. Hai giao dịch chạy cùng lúc ở REPEATABLE READ. Kết quả?", en: "Rule: at least one doctor must be on call. Ana and Binh are both on call. Each runs a transaction: count who is on call (2), and if ≥ 2, set themselves off. Both run at the same time under REPEATABLE READ. Result?" }
     options:

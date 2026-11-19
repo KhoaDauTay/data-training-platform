@@ -6,6 +6,7 @@ module: explain-analyze
 title: "pg_stats: planner đoán số dòng từ đâu"
 title_en: "pg_stats: where the planner's row guesses come from"
 kind: predict
+runtime: browser
 minutes: 10
 verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-20" }
 objectives:

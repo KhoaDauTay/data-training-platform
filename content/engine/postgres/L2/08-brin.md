@@ -6,9 +6,10 @@ module: index-types
 title: BRIN cho dữ liệu ghi theo thời gian
 title_en: BRIN for data written in time order
 kind: predict
+runtime: browser
 minutes: 10
 verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-20" }
-viz: pg-brin
+viz: pg-brin-ranges
 objectives:
   - vi: Chọn BRIN cho cột tăng dần theo thứ tự ghi (thời gian đo, log), và giải thích vì sao index của 30 000 dòng chỉ chiếm vài trang.
     en: Choose BRIN for a column that grows in write order (measurement time, logs), and explain why the index for 30,000 rows takes only a few pages.

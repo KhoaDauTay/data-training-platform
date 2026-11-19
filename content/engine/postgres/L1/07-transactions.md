@@ -6,9 +6,10 @@ module: transactions
 title: Transaction và savepoint
 title_en: Transactions and savepoints
 kind: concept
+runtime: docs
 minutes: 10
 verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-20" }
-viz: pg-mvcc
+viz: pg-mvcc-timeline
 objectives:
   - vi: Gói nhiều câu ghi trong `BEGIN ... COMMIT` để chúng cùng thành công hoặc cùng bị hủy.
     en: Wrap several writes in `BEGIN ... COMMIT` so they all succeed or are all undone.

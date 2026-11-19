@@ -6,6 +6,7 @@ module: prepared
 title: "Câu đã chuẩn bị: kế hoạch chung và kế hoạch riêng"
 title_en: "Prepared statements: generic vs custom plans"
 kind: lab
+runtime: browser
 minutes: 15
 objectives:
   - { vi: "Giải thích luật 5 lần đầu dùng kế hoạch riêng (custom) rồi mới cân nhắc kế hoạch chung (generic)", en: "Explain the rule: the first five executions use custom plans before a generic plan is considered" }
@@ -17,7 +18,7 @@ sources:
   - https://www.postgresql.org/docs/18/runtime-config-query.html
   - https://www.postgresql.org/docs/18/sql-explain.html
   - https://www.postgresql.org/docs/18/view-pg-prepared-statements.html
-viz: plan-tree
+viz: pg-plan-tree
 lab:
   setup: |
     DROP TABLE IF EXISTS parcels CASCADE;

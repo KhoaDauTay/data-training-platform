@@ -6,6 +6,7 @@ module: security
 title: "Bảo mật theo dòng (RLS) cho hệ thống nhiều khách hàng"
 title_en: "Row-level security for a multi-tenant system"
 kind: lab
+runtime: browser
 minutes: 25
 objectives:
   - { vi: "Viết policy permissive theo vai trò và một policy restrictive gộp bằng AND", en: "Write role-based permissive policies and a restrictive policy combined with AND" }

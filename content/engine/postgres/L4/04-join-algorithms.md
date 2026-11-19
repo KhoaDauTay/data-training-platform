@@ -6,6 +6,7 @@ module: joins
 title: "Thuật toán nối: Nested Loop, Hash Join, Merge Join"
 title_en: "Join algorithms: Nested Loop, Hash Join, Merge Join"
 kind: lab
+runtime: browser
 minutes: 20
 objectives:
   - { vi: "Nói được khi nào planner chọn Nested Loop, Hash Join, Merge Join", en: "Say when the planner picks a Nested Loop, a Hash Join or a Merge Join" }
@@ -16,7 +17,7 @@ sources:
   - https://www.postgresql.org/docs/18/planner-optimizer.html
   - https://www.postgresql.org/docs/18/using-explain.html
   - https://www.postgresql.org/docs/18/runtime-config-query.html
-viz: plan-tree
+viz: pg-plan-tree
 lab:
   setup: |
     DROP TABLE IF EXISTS order_notes, orders, customers CASCADE;

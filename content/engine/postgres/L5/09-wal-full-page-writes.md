@@ -6,7 +6,9 @@ module: integrity
 title: "WAL đào sâu: full-page write sau checkpoint"
 title_en: "WAL in depth: full-page writes after a checkpoint"
 kind: lab
+runtime: browser
 minutes: 20
+viz: pg-wal-flow
 objectives:
   - { vi: "Đọc bản ghi WAL thật giữa hai LSN bằng `pg_get_wal_records_info`", en: "Read real WAL records between two LSNs with `pg_get_wal_records_info`" }
   - { vi: "Thấy lần sửa đầu tiên của một trang sau checkpoint ghi cả trang (FPI), lần sau thì không", en: "See that the first change to a page after a checkpoint writes the whole page (FPI) and later changes do not" }

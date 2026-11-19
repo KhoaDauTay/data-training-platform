@@ -6,9 +6,10 @@ module: search
 title: Tìm kiếm toàn văn với tsvector và GIN
 title_en: Full-text search with tsvector and GIN
 kind: lab
+runtime: browser
 minutes: 14
 verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-20" }
-viz: pg-gin
+viz: pg-gin-postings
 objectives:
   - vi: Viết tìm kiếm theo từ bằng `to_tsvector`, `to_tsquery` và `@@`, xếp hạng bằng `ts_rank`.
     en: Write word search with `to_tsvector`, `to_tsquery` and `@@`, and rank with `ts_rank`.

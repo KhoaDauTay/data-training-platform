@@ -6,6 +6,7 @@ module: replication-ops
 title: "Nhân bản: streaming, slot và logical decoding"
 title_en: "Replication: streaming, slots and logical decoding"
 kind: lab
+runtime: browser
 minutes: 20
 objectives:
   - { vi: "Vẽ đường đi của WAL từ primary tới standby và nói đồng bộ/bất đồng bộ khác nhau ở đâu", en: "Trace WAL from the primary to a standby and say where synchronous and asynchronous differ" }

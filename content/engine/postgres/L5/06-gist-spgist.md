@@ -6,6 +6,7 @@ module: index-internals
 title: "GiST và SP-GiST: hộp bao và chia không gian"
 title_en: "GiST and SP-GiST: bounding boxes vs space partitioning"
 kind: lab
+runtime: browser
 minutes: 20
 objectives:
   - { vi: "Đọc khóa hộp bao thật trong trang gốc của một GiST bằng `gist_page_items`", en: "Read real bounding-box keys on a GiST root page with `gist_page_items`" }
@@ -17,7 +18,7 @@ sources:
   - https://www.postgresql.org/docs/18/spgist.html
   - https://www.postgresql.org/docs/18/indexes-types.html
   - https://www.postgresql.org/docs/18/pageinspect.html
-viz: gist-boxes
+viz: pg-gist-boxes
 lab:
   setup: |
     CREATE EXTENSION IF NOT EXISTS pageinspect;

@@ -6,9 +6,10 @@ module: geo-lite
 title: "5 điểm gần nhất: GiST, KNN và earthdistance"
 title_en: "The 5 nearest points: GiST, KNN and earthdistance"
 kind: lab
+runtime: browser
 minutes: 14
 verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-20" }
-viz: pg-gist
+viz: pg-gist-boxes
 objectives:
   - vi: Tìm N điểm gần nhất bằng `ORDER BY loc <-> p LIMIT n` đi qua index GiST, không sắp xếp cả bảng.
     en: Find the N nearest points with `ORDER BY loc <-> p LIMIT n` through a GiST index, without sorting the whole table.

@@ -8,7 +8,7 @@ title_en: HOT, pruning and VACUUM
 kind: concept
 runtime: docs
 minutes: 10
-viz: pg-hot
+viz: pg-hot-chain
 objectives:
   - vi: Nêu hai điều kiện của một HOT update
     en: State the two conditions for a HOT update

@@ -6,6 +6,7 @@ module: observe-tune
 title: "Tinh chỉnh bộ nhớ: work_mem, sort và hash"
 title_en: "Memory tuning: work_mem, sorts and hashes"
 kind: lab
+runtime: browser
 minutes: 15
 objectives:
   - { vi: "Đọc `Sort Method` trong `EXPLAIN ANALYZE`: quicksort, top-N heapsort, external merge", en: "Read `Sort Method` in `EXPLAIN ANALYZE`: quicksort, top-N heapsort, external merge" }

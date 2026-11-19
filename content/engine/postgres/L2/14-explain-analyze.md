@@ -6,9 +6,10 @@ module: explain-analyze
 title: "Đọc EXPLAIN ANALYZE, và tạo index trên bảng đang chạy"
 title_en: "Reading EXPLAIN ANALYZE, and indexing a live table"
 kind: concept
+runtime: docs
 minutes: 12
 verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-20" }
-viz: pg-locks
+viz: pg-plan-tree
 objectives:
   - vi: So số dòng ước lượng với số dòng thật, đọc `Buffers:` và `Rows Removed by Filter` để tìm nút đắt.
     en: Compare estimated and actual rows, and read `Buffers:` and `Rows Removed by Filter` to find the expensive node.

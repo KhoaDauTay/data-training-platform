@@ -6,6 +6,7 @@ module: joins
 title: "Thứ tự nối, giới hạn gộp và GEQO"
 title_en: "Join order, collapse limits and GEQO"
 kind: predict
+runtime: browser
 minutes: 12
 objectives:
   - { vi: "Biết planner tự sắp lại thứ tự JOIN, không theo thứ tự bạn viết", en: "Know that the planner reorders JOINs instead of following the written order" }
@@ -16,7 +17,7 @@ sources:
   - https://www.postgresql.org/docs/18/explicit-joins.html
   - https://www.postgresql.org/docs/18/runtime-config-query.html
   - https://www.postgresql.org/docs/18/geqo.html
-viz: plan-tree
+viz: pg-plan-tree
 lab:
   setup: |
     DROP TABLE IF EXISTS order_notes, orders, customers CASCADE;
