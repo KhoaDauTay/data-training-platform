@@ -1,4 +1,4 @@
-import { generalNow, loadGeneral, loadLessons, loadTicketTemplates, loadTickets } from '../content';
+import { generalNow, loadGeneral, loadInterview, loadLessons, loadTicketTemplates, loadTickets } from '../content';
 import type { DbClient } from '../db/client';
 import type { Drill } from '../general';
 import { knownSkills, type HomeModel } from '../home';
@@ -6,9 +6,9 @@ import { getLang, isMac, keyLabels, locale, t } from '../i18n';
 import { LANE_XP } from '../lanes';
 import { applyResult, isSuccess, movedToday, nextCard, pickForSkill, retryItem, type PracticeItem } from '../practice';
 import { CHAPTERS, chapterTitle, moduleTitle, nextTicket, SKILLS } from '../progress';
-import { hashOf, learnAdvOf, learnModuleOf, learnSkillOf, parseRoute } from '../route';
+import { drillHash, hashOf, INTERVIEW_PAGE, isInterviewPage, learnAdvOf, learnModuleOf, learnSkillOf, parseRoute } from '../route';
 import {
-  activeSchema, activeStep, activeTicket, generalWork, hintsShown, isStory, markWarmupDone, practiceFinished, reviewCount, reviewedDrills, reviewToday, session, today, warmupToday, type Mode, type PracticeRun,
+  activeSchema, activeStep, activeTicket, generalWork, hintsShown, interviewClosed, ivHooks, ivItemId, readDraft, isStory, markWarmupDone, practiceFinished, reviewCount, reviewedDrills, reviewToday, session, today, warmupToday, type Mode, type PracticeRun,
 } from '../session';
 import { DRILL_ID } from '../save';
 import { actions, app, done, erMeta, persist, schemaHooks, selected, stepKey } from '../state';
@@ -23,6 +23,7 @@ import { showPane } from './paneTabs';
 import { readJson, writeJson } from '../storage';
 import { isSeen, openLesson } from './lessonCard';
 import { tryPreview } from './tryPreview';
+import { INTERVIEW_KEY, parseInterviewPrefs, TEXT_MAX } from '../interviewPrefs';
 import { homeHooks, registerHomeSection, registerMode } from './homeView';
 import { laneNote } from './lanePanel';
 import { go } from './router';
@@ -91,7 +92,8 @@ export const backToStory = (): void => enter({ kind: 'story' });
  */
 export function leaveGeneral(): void {
   const m = session.mode;
-  const back = m.kind === 'drill' ? `${hashOf('learn')}/${m.drill.skill ? `skill/${m.drill.skill}` : `adv/${m.drill.node}`}` : hashOf('practice');
+  const back = m.kind === 'drill' ? `${hashOf('learn')}/${m.drill.skill ? `skill/${m.drill.skill}` : `adv/${m.drill.node}`}`
+    : m.kind === 'interview' ? INTERVIEW_PAGE : hashOf('practice'); // v17: an interview run stays in the pref, resumable from its page
   session.mode = { kind: 'story' };
   location.hash = back; // before the redraw: the workspace is about to hide, so the story brief's previews stay idle (Q7)
   ctx?.rerender();
@@ -105,7 +107,7 @@ const loadDrillUi = () => import('./drillBrief').then((m) => {
     db: ctx!.db, activeSchema, h, nodes, richText, byId, loader, getLang, locale, app, actions, persist, schemaHooks, erMeta, stepKey, session, hintsShown, today,
     isSuccess, movedToday, nextCard, SKILLS, hashOf, textOf, hints, shapeCard, tryPreview, openLesson, leave: leaveGeneral, startDrillMode, loadGeneral, generalNow, loadLessons,
     lessonSeen: isSeen, knownSkills, learnSkillOf, learnAdvOf, learnModuleOf, moduleTitle, illustration, loadedGsap, loadGsap, reducedMotion, icon, skillIcon, loadTickets, CHAPTERS,
-    announce, readJson, writeJson, readTour, boonMark, enterMark, escOwned, guideHooks, guideSlot, showPane, parseRoute, mod: keyLabels(isMac).mod,
+    announce, readJson, writeJson, readTour, boonMark, enterMark, escOwned, guideHooks, guideSlot, showPane, parseRoute, mod: keyLabels(isMac).mod, isInterviewPage,
   });
   return (drillUi = m);
 });
@@ -124,6 +126,43 @@ export function startDrill(id: string): Promise<void> {
   });
 }
 export const startDrillMode = (ticket: Ticket, drill: Drill): void => enter({ kind: 'drill', ticket, drill, wrong: 0 });
+
+/**
+ * v17 I5 (L144): the interview room UI (src/ui/interviewView.ts) and its content (src/interviewSources.ts) are lazy chunks
+ * (budget `interview`); main values reach the UI only through InterviewDeps (Plan 6 U3). A run is session mode `interview`
+ * on `lab` (keepsWork() false: no history, no graded SQL); it never calls complete() and writes nothing to the Save.
+ */
+let ivUi: typeof import('./interviewView') | undefined;
+const loadIvUi = () => Promise.all([import('./interviewView'), loadInterview()]).then(([m, content]) => {
+  if (!ivUi) m.initInterview({
+    h, nodes, richText, announce, getLang, locale, app, actions, session, ivItemId, ivHooks, readDraft, today, readJson, writeJson, hashOf, drillHash,
+    SKILLS, knownSkills, loadTickets, showPane, prefs: { key: INTERVIEW_KEY, parse: parseInterviewPrefs, textMax: TEXT_MAX }, enter: (run) => enter({ kind: 'interview', run }), leave: leaveGeneral, startRun: (id, timer, fresh) => void startInterview(id, timer, fresh),
+    openEditor: (force) => {
+      ctx?.work.setTicket(activeTicket(), activeStep(), force);
+      ctx?.work.focus();
+    },
+  }, content);
+  return (ivUi = m);
+});
+/** Seeds `lab` (and the lab columns for autocomplete) and loads the interview chunk, then runs `then` on it. */
+function withInterview(then: (m: typeof import('./interviewView')) => void): Promise<void> {
+  const btn = document.activeElement instanceof HTMLButtonElement ? document.activeElement : undefined;
+  btn?.setAttribute('aria-busy', 'true');
+  if (btn) btn.disabled = true;
+  return Promise.all([loadIvUi(), loadDrillUi().then((m) => m.prepareLab())]).then(([m]) => then(m)).catch(() => {
+    app.notice = { key: 'learn.failed' };
+    ctx?.rerender();
+  }).finally(() => {
+    btn?.removeAttribute('aria-busy');
+    if (btn) btn.disabled = false;
+  });
+}
+/** List page: start a set or take-home (`fresh`) or resume the one in progress. */
+export const startInterview = (id: string, timer: boolean, fresh: boolean): Promise<void> => withInterview((m) => m.start(id, timer, fresh));
+/** A reload on #/learn/play/<g-iv-…> (main.ts): reopen that run at that question. */
+export const reopenInterview = (item: string): Promise<void> => withInterview((m) => m.reopen(item));
+/** work.ts onStepSolved: a take-home's next step (main.ts sends story reviews to nextStep()). */
+export const interviewStep = (): void => ivUi?.stepSolved();
 /** Plan 5: a lane side task in the workspace. It never becomes the next ticket and counts for no chapter (D-B1). */
 export const startLane = (task: Ticket): void => enter({ kind: 'lane', ticket: task });
 /** "Về việc đang làm": the story's next ticket (mockup v6 screen D), or the open one when everything is done. */
@@ -155,7 +194,7 @@ export function startRetry(ticketId: string): boolean {
 /** work.ts onSolved: Practice moves Leitner boxes only; a lane task gives flat XP; the story completes the ticket (XP, animation). */
 export const onSolved = (tk: Ticket): void =>
   (session.mode.kind === 'practice' ? onPracticeSolved() : session.mode.kind === 'lane' ? completeLane(tk)
-    : session.mode.kind === 'drill' ? drillUi?.completeDrill(tk) : actions.complete(tk));
+    : session.mode.kind === 'drill' ? drillUi?.completeDrill(tk) : session.mode.kind === 'interview' ? ivUi?.solved() : actions.complete(tk));
 
 /** Correct lane side task: saved apart from `completed`, LANE_XP whatever hints were opened, no animation (D-B1). */
 function completeLane(tk: Ticket): void {
@@ -276,12 +315,16 @@ export function renderReviewButton(btn: HTMLButtonElement): void {
 /** Left pane for the current mode; main.ts rerender() calls this instead of renderBrief(). */
 export function renderLeft(host: HTMLElement): void {
   const m = session.mode;
-  const finished = practiceFinished();
+  const finished = practiceFinished() || interviewClosed(); // v17: a set's summary, a take-home's conclusion: no editor
   byId('work').hidden = finished;
   byId('split-col').hidden = finished; // no draggable splitter beside an empty column
   if (m.kind === 'sandbox') sandboxPane(host);
   else if (m.kind === 'practice') practicePane(host, m.run);
   else if (m.kind === 'lane') lanePane(host, m.ticket);
+  else if (m.kind === 'interview') {
+    if (ivUi) ivUi.pane(host, m.run);
+    else void loadIvUi().then(() => ctx?.rerender());
+  }
   else if (m.kind === 'drill') {
     if (drillUi) drillUi.drillPane(host, m);
     else void loadDrillUi().then(() => ctx?.rerender());
@@ -358,7 +401,22 @@ function loadLearn(): void {
   void ctx?.db.ensure('lab').catch(() => undefined); // seeded in the background: the drills open faster (D8a-3)
   Promise.all([loadDrillUi(), loadGeneral()]).then(() => (learnLoad = 'idle'), () => (learnLoad = 'failed')).finally(() => ctx?.rerender());
 }
+/** v17: #/learn/interview, drawn by the interview chunk from its content and the pref (no DB wait). */
+let ivLoad: 'idle' | 'loading' | 'failed' = 'idle';
+function interviewSection(): HTMLElement {
+  if (ivUi) return ivUi.listPage();
+  if (ivLoad === 'idle') {
+    ivLoad = 'loading';
+    void ctx?.db.ensure('lab').catch(() => undefined); // seeded in the background: a run opens faster
+    loadIvUi().then(() => (ivLoad = 'idle'), () => (ivLoad = 'failed')).finally(() => ctx?.rerender());
+  }
+  return ivLoad === 'failed'
+    ? h('div', { role: 'alert', class: 'space-y-2' }, h('p', { class: 'm-0' }, t('learn.failed')),
+      h('button', { type: 'button', onclick: () => { ivLoad = 'idle'; ctx?.rerender(); } }, t('data.retry')))
+    : h('p', { class: 'm-0 flex min-h-40 items-start gap-2 text-muted', 'aria-live': 'polite' }, loader(), t('learn.loading'));
+}
 function learnSection(): HTMLElement {
+  if (isInterviewPage(location.hash)) return interviewSection();
   const page = generalNow() && drillUi?.learnPage();
   if (page) return page;
   if (learnLoad === 'idle') loadLearn();
@@ -369,6 +427,15 @@ function learnSection(): HTMLElement {
 }
 registerHomeSection({ id: 'module', order: 10, span: 'full', pages: ['learn'], render: learnSection });
 registerHomeSection({ id: 'drills', order: 23, span: 'full', pages: ['home', 'practice'], render: drillHub }); // Task 11: Home's "today" also suggests one drill
+/** v17 I5 (L144): Practise SQL links to the interview room (#/learn/interview); drawn from main text only, no chunk. */
+function interviewCard(): HTMLElement {
+  return h('section', { class: cx(CARD, 'flex flex-wrap items-center gap-4 p-5'), 'aria-labelledby': 'iv-card-title' },
+    h('div', { class: 'min-w-48 flex-1' },
+      h('h2', { id: 'iv-card-title', class: 'm-0 text-lg font-bold' }, t('prac.interview')),
+      h('p', { class: 'mt-1 mb-0 text-[15px] text-muted' }, t('prac.interviewDesc'))),
+    h('a', { href: INTERVIEW_PAGE, class: cx(BTN_SECONDARY, 'px-4 py-2 no-underline') }, t('prac.interviewGo')));
+}
+registerHomeSection({ id: 'interview', order: 24, span: 'full', pages: ['practice'], render: interviewCard });
 registerHomeSection({ id: 'warmup', order: 21, span: 'full', pages: ['home', 'practice'], render: warmupCard });
 registerMode({
   id: 'sandbox', order: 10, icon: 'flask', tint: 'bg-accent-soft text-ink',

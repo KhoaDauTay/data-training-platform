@@ -8,7 +8,7 @@ import { domainSlot } from '../save';
 import { domainArt } from './domainArt';
 import { domainLine } from './topbar';
 import { derive, ROUTES as LANES } from '../scene';
-import { domainHash, learnAdvOf, learnModuleOf, learnSkillOf } from '../route';
+import { domainHash, isInterviewPage, learnAdvOf, learnModuleOf, learnSkillOf } from '../route';
 import { laneInfo, lanePanel, wirePins } from './lanePanel';
 import { mascot, MOVES, setLilyStage } from './mascots';
 import { gainSince, growing, markGrew, react, settle } from './celebrate';
@@ -501,7 +501,7 @@ function accPicker(stage: LilyStage, acc: number | undefined): HTMLElement {
 let learnScene: HTMLElement | undefined;
 function teachSection(): HTMLElement | null {
   const hash = location.hash;
-  if (learnModuleOf(hash) !== undefined || learnSkillOf(hash) || learnAdvOf(hash)) return null;
+  if (learnModuleOf(hash) !== undefined || learnSkillOf(hash) || learnAdvOf(hash) || isInterviewPage(hash)) return null;
   if (!learnScene?.isConnected) learnScene = teachScene('lg'); // reused while shown; a page left and re-entered gets a fresh observer
   relabelScene(learnScene);
   return learnScene;

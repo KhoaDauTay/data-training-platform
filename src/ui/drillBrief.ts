@@ -50,7 +50,7 @@ export interface DrillDeps extends GuideDeps {
   // Plan 9 D9-12: the General area reads Logistics, whatever domain is open
   loadTickets: typeof Content.loadTickets; CHAPTERS: typeof Progress.CHAPTERS;
   // v13 guides (ui/guideList.ts)
-  parseRoute: typeof Route.parseRoute; mod: string;
+  parseRoute: typeof Route.parseRoute; mod: string; isInterviewPage: typeof Route.isInterviewPage;
 }
 
 let d$: DrillDeps;

@@ -11,7 +11,7 @@ import { downloading } from '../db/loadProgress';
 import { celebrate, gainSince } from './celebrate';
 import { fillIcons, icon, NAV_ICON, type IconName } from './icons';
 import { currentRoute } from './router';
-import { generalWork } from '../session';
+import { generalWork, session } from '../session';
 import { sqlOnly } from '../onboarding';
 
 const mb = (bytes: number): number => Math.round(bytes / 1e5) / 10;
@@ -36,7 +36,7 @@ const NAV: NavItem[] = [];
 export const registerNav = (item: NavItem): void => upsert(NAV, item);
 export const navItems = (area: NavItem['area']): NavItem[] => NAV.filter((n) => n.area === area);
 registerNav({ id: 'home', area: 'top', order: 10, label: 'nav.home', icon: NAV_ICON.home, href: hashOf('home'), current: (r) => r === 'home' });
-registerNav({ id: 'learn', area: 'top', order: 20, label: 'nav.learn', icon: NAV_ICON.learn, href: hashOf('learn'), current: (r) => r === 'learn' });
+registerNav({ id: 'learn', area: 'top', order: 20, label: 'nav.learn', icon: NAV_ICON.learn, href: hashOf('learn'), current: (r) => r === 'learn' || (r === 'play' && session.mode.kind === 'interview') }); // v17: the interview room lives under #/learn
 // Practice (top, order 30), Sandbox (domain, 30, ui/modes.ts) and Data (domain, 50, ui/dataView.ts) register their own.
 registerNav({ id: 'overview', area: 'domain', order: 10, label: 'nav.overview', icon: NAV_ICON.overview, get href() { return hashOf('overview'); }, current: (r) => r === 'overview' });
 registerNav({ id: 'play', area: 'domain', order: 20, label: 'nav.play', icon: NAV_ICON.play, get href() { return hashOf('play'); }, current: (r) => r === 'play' });

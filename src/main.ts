@@ -10,15 +10,15 @@ import { applyStatic, loadLang, setLang, t, type Lang } from './i18n';
 import { MyData } from './import/myData';
 import { idbStore } from './import/store';
 import { contentProblems, nextTicket, SKILLS, xpFor } from './progress';
-import { loadSave, parseSave, serializeSave, type Known } from './save';
+import { INTERVIEW_ID, loadSave, parseSave, serializeSave, type Known } from './save';
 import { actions, app, done, editorSchema, persist, selected, type Column } from './state';
 import { resumeStep } from './overview';
 import { seedReview } from './practice';
 import { generalHash, isStory, playSchema, session, today } from './session';
 import { localStore, readJson, writeJson } from './storage';
-import { domainOfHash, drillOfHash, type Route } from './route';
+import { domainOfHash, drillOfHash, isInterviewId, type Route } from './route';
 import type { Ticket } from './tickets';
-import { initModes, onPracticeWrong, onSolved, renderLeft, renderReviewButton, startDrill } from './ui/modes';
+import { initModes, interviewStep, onPracticeWrong, onSolved, renderLeft, renderReviewButton, reopenInterview, startDrill } from './ui/modes';
 import { renderNotebook, toggleNotebook } from './ui/notebook';
 import { byId, h, initLightDismiss } from './ui/dom';
 import { errorText } from './ui/feedback';
@@ -205,7 +205,7 @@ const work = mountWork(byId('work'), {
   panel,
   onSolved, // practice: Leitner only, no complete(), no animation
   onWrong: onPracticeWrong,
-  onStepSolved: nextStep,
+  onStepSolved: () => (session.mode.kind === 'interview' ? interviewStep() : nextStep()), // a take-home's steps never touch bossStep
   onConclusion: (t) => {
     app.conclusionFor = t.id;
     rerender();
@@ -324,7 +324,7 @@ function showRoute(r: Route, initial: boolean): void {
 
 /** Correct answer: save at once, stay on the ticket and show the Recap (no auto-jump). */
 function complete(tk: Ticket): void {
-  if (done().has(tk.id)) return;
+  if (done().has(tk.id) || INTERVIEW_ID.test(tk.id)) return; // v17 L144: the interview room never completes anything
   const before = done();
   const gained = xpFor(tk, app.save.hintsUsed[tk.id] ?? 0);
   app.save.completed.push(tk.id);
@@ -538,8 +538,9 @@ startRouter((r, initial) => {
   else showRoute(r, initial);
 }, generalHash);
 // A reload on a drill (#/learn/play/<id>) reopens that drill with its saved draft; the session itself is never saved.
+// v17: an interview question or take-home step (`g-iv-…`) reopens its run from the device pref instead (never the Save).
 const reopen = drillOfHash(location.hash);
-if (reopen) void startDrill(reopen);
+if (reopen) void (isInterviewId(reopen) ? reopenInterview(reopen) : startDrill(reopen));
 initWelcome(want === undefined); // nothing opened yet (no domain in the hash or the pref): the picker asks first
 
 // "My data" (Plan Import): imported CSVs stay in this browser (IndexedDB) and are replayed into the sandbox schema.

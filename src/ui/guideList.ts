@@ -19,6 +19,7 @@ function state(): GuideState {
   const g = d$.generalNow();
   const node = g?.nodes.find((x) => x.id === d$.learnAdvOf(hash));
   const learn = route !== 'learn' ? undefined
+    : d$.isInterviewPage(hash) ? 'interview'
     : d$.SKILLS.some((s) => s.id === d$.learnSkillOf(hash)) ? 'skill'
       : node ? (node.status === 'external' ? 'adv-ext' : 'adv') : d$.learnModuleOf(hash) ?? 'path';
   const m = d$.session.mode;

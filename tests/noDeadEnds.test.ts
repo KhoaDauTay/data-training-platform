@@ -53,12 +53,13 @@ describe('không ngõ cụt trên phần Chung', () => {
       expect(parseRoute(`#/learn/adv/${n.id}`)).toBe('learn');
       expect(learnAdvOf(`#/learn/adv/${n.id}`)).toBe(n.id);
     }
+    expect(parseRoute('#/learn/interview')).toBe('learn'); // v17 I5 (L144)
   });
 
   it('không "đợt sau"/"sắp có"/"coming soon"/"later batch" trên đường Chung; khóa advSoon không còn', () => {
     const banned = /đợt sau|sắp có|coming soon|later batch/i;
     for (const lang of ['vi', 'en'] as const) for (const [k, v] of Object.entries(LEARN_DICT[lang])) expect([k, v]).not.toEqual([k, expect.stringMatching(banned)]);
-    for (const f of ['../src/ui/learnView.ts', '../src/ui/drillBrief.ts', '../src/i18n/learn.ts']) {
+    for (const f of ['../src/ui/learnView.ts', '../src/ui/drillBrief.ts', '../src/i18n/learn.ts', '../src/ui/interviewView.ts', '../src/i18n/interview.ts']) {
       expect(sources[f]).toBeTypeOf('string');
       expect([f, banned.test(sources[f])]).toEqual([f, false]);
     }

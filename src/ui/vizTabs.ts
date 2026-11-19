@@ -136,7 +136,8 @@ function scoped(meta: ErMetadata): Scoped {
   if (inDrill()) {
     // L93: like a ticket, a drill opens on the tables its Solution reads (the same ones "Tables used" shows, L84), switch to all of lab.
     const lab = [...new Set(meta.cols.map((c) => c.table))].sort();
-    const own = tk ? tablesIn(tk.steps[0].solution, lab) : [];
+    // v17 (L144): an interview question names no tables: every lab table, no switch (its Solution's tables would be a hint)
+    const own = tk && session.mode.kind !== 'interview' ? tablesIn(tk.steps[0].solution, lab) : [];
     const r = relatedTables(own, lab, meta.cons, 10, false);
     if (r.tables.length === 0 || app.schemaScope === 'all') return { tables: lab, dropped: [], switchable: r.tables.length > 0 };
     return { tables: [...r.tables].sort(), dropped: [], switchable: true };

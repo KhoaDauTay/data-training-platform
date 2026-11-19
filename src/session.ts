@@ -4,6 +4,7 @@ import { dueSkills, localDay, QUEUE_MAX, reviewQueue, warmupQueue, type Practice
 import { currentChapter, SKILLS, xpFor } from './progress';
 import { activeDomain, domainSchemaId, type DomainId, type SchemaId } from './domains';
 import type { Drill } from './general';
+import type { LiveRun } from './interviewPrefs';
 import { domainSlot, DRILL_ID, SANDBOX_DRAFT_MAX } from './save';
 import { app, done, draftKey, selected, stepKey } from './state';
 import { readJson, writeJson, type KV } from './storage';
@@ -32,7 +33,28 @@ export interface PracticeRun {
 /** Modes inside the #/play route (not routes of their own). `lane`: a lane side task (Plan 5), outside chapter progress. */
 export type Mode = { kind: 'story' } | { kind: 'practice'; run: PracticeRun } | { kind: 'sandbox' } | { kind: 'lane'; ticket: Ticket }
   /** Plan 8a: a General drill on `lab` (drillTicket(drill)); `wrong` = wrong submits this visit (Leitner result). */
-  | { kind: 'drill'; ticket: Ticket; drill: Drill; wrong: number; framed?: boolean };
+  | { kind: 'drill'; ticket: Ticket; drill: Drill; wrong: number; framed?: boolean }
+  /** v17 I5 (L144): an interview set or take-home on `lab`; nothing it does reaches the Save (see InterviewRun). */
+  | { kind: 'interview'; run: InterviewRun };
+
+/**
+ * An interview run in memory (its LiveRun part is mirrored to the device pref `cargo-query/interview` by the lazy interview
+ * UI, through `ivHooks.changed`). `tickets`: a set's five questions (drillTicket) or the take-home as one stepped ticket.
+ * keepsWork() is false, so work.ts writes no history and no graded SQL; drafts live in `drafts`, hints in `hints`.
+ */
+export interface InterviewRun extends LiveRun {
+  kind: 'set' | 'th';
+  tickets: Ticket[];
+  minutes: number;
+}
+/** Set by the interview chunk: called after every draft change, so a reload keeps the run's place and text. */
+export const ivHooks: { changed?(): void } = {};
+/** The question or take-home step on screen (its id is the hash, the draft key and the `solved` entry). */
+export function ivItemId(run: InterviewRun): string {
+  return run.kind === 'th' ? `${run.id}-${run.step + 1}` : run.tickets[run.index]?.id ?? '';
+}
+/** The run's editor is closed: a set's summary, or a take-home's written conclusion and rubric. */
+export const interviewClosed = (): boolean => session.mode.kind === 'interview' && session.mode.run.phase !== 'work';
 
 export const session: { mode: Mode } = { mode: { kind: 'story' } };
 export const isStory = (): boolean => session.mode.kind === 'story';
@@ -51,7 +73,8 @@ export function playSchema(): SchemaId {
 export const generalWork = (): boolean => playSchema() === 'lab';
 /** The General workspace's hash for what it holds: a drill's own hash (a reload reopens it), LEARN_PLAY for a review of drills, else undefined (v15 Q1). */
 export const generalHash = (): string | undefined =>
-  !generalWork() ? undefined : session.mode.kind === 'drill' ? drillHash(session.mode.drill.id) : LEARN_PLAY;
+  !generalWork() ? undefined : session.mode.kind === 'drill' ? drillHash(session.mode.drill.id)
+    : session.mode.kind === 'interview' ? drillHash(ivItemId(session.mode.run)) : LEARN_PLAY;
 
 /** Real local day for the Leitner schedule (never the in-game date). */
 export const today = (): string => localDay(new Date());
@@ -90,16 +113,18 @@ export function activeTicket(): Ticket | undefined {
   if (m.kind === 'sandbox') return undefined;
   if (m.kind === 'practice') return m.run.index < m.run.tickets.length ? m.run.tickets[m.run.index] : undefined;
   if (m.kind === 'lane' || m.kind === 'drill') return m.ticket;
+  if (m.kind === 'interview') return m.run.tickets[m.run.index];
   return selected();
 }
 
-export const activeStep = (): number => (session.mode.kind === 'story' ? app.stepIndex : 0);
+export const activeStep = (): number => (session.mode.kind === 'story' ? app.stepIndex : session.mode.kind === 'interview' ? session.mode.run.step : 0);
 
 export function workKey(): string {
   const m = session.mode;
   if (m.kind === 'sandbox') return 'sandbox';
   if (m.kind === 'practice') return `practice#${m.run.id}#${m.run.index}`;
   if (m.kind === 'lane' || m.kind === 'drill') return stepKey(m.ticket.id, 0);
+  if (m.kind === 'interview') return `interview#${ivItemId(m.run)}`;
   return draftKey();
 }
 
@@ -127,6 +152,8 @@ export function readDraft(): string | undefined {
     return draft.trim() ? draft : sandboxSeen(activeDomain()) ? '' : sandboxStarter();
   }
   if (m.kind === 'practice') return m.run.draft === '' ? undefined : m.run.draft;
+  // A take-home step with no draft starts from the SQL that passed the step before, like a promotion review (never from the Save).
+  if (m.kind === 'interview') return m.run.drafts[ivItemId(m.run)] ?? (m.run.step > 0 ? m.run.passed[`${m.run.id}-${m.run.step}`] : undefined);
   return app.save.drafts[workKey()];
 }
 
@@ -139,6 +166,10 @@ export function writeDraft(v: string): void {
   else if (m.kind === 'practice') {
     if (!practiceFinished()) m.run.draft = v;
   }
+  else if (m.kind === 'interview') {
+    if (m.run.phase === 'work') m.run.drafts[ivItemId(m.run)] = v;
+    ivHooks.changed?.();
+  }
   else app.save.drafts[workKey()] = v;
 }
 
@@ -147,10 +178,12 @@ export const isClosed = (ticketId: string): boolean =>
   (session.mode.kind === 'story' && done().has(ticketId)) || (session.mode.kind === 'lane' && app.save.lanes.includes(ticketId));
 
 export function hintsShown(ticketId: string): number {
+  if (session.mode.kind === 'interview') return 0; // the interview pane draws its own free hint (timer off only), never save.hintsUsed
   return session.mode.kind === 'practice' ? session.mode.run.hints : app.save.hintsUsed[ticketId] ?? 0;
 }
 
 export function useHint(ticketId: string): void {
+  if (session.mode.kind === 'interview') return;
   if (session.mode.kind === 'practice') session.mode.run.hints++;
   else app.save.hintsUsed[ticketId] = hintsShown(ticketId) + 1;
 }
@@ -164,6 +197,7 @@ export function framePrice(tk: Ticket): { xp: number; hint: number } | 'weak' | 
   const m = session.mode;
   const n = tk.hints.length;
   if (m.kind === 'drill') return m.framed ? 'free' : 'weak';
+  if (m.kind === 'interview') return 'free'; // no scaffold is offered there; never charge the Save
   if (m.kind === 'practice') return m.run.hints >= 2 ? 'free' : 'weak'; // isSuccess: ≤ 1 hint
   const xp = m.kind === 'lane' ? 0 : xpFor(tk, hintsShown(tk.id)) - xpFor(tk, n);
   return xp > 0 ? { xp, hint: n } : 'free';
@@ -173,6 +207,7 @@ export function framePrice(tk: Ticket): { xp: number; hint: number } | 'weak' | 
 export function payFrame(tk: Ticket): void {
   const m = session.mode;
   if (m.kind === 'drill') m.framed = true;
+  else if (m.kind === 'interview') return;
   else if (m.kind === 'practice') m.run.hints = Math.max(m.run.hints, 2, tk.hints.length);
   else app.save.hintsUsed[tk.id] = Math.max(hintsShown(tk.id), tk.hints.length);
 }
