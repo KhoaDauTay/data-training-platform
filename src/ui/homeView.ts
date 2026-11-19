@@ -10,8 +10,8 @@ import { derive, ROUTES as LANES } from '../scene';
 import { domainHash, learnAdvOf, learnModuleOf, learnSkillOf } from '../route';
 import { laneInfo, lanePanel, wirePins } from './lanePanel';
 import { mascot, setLilyStage } from './mascots';
-import { gainSince, markGrew } from './celebrate';
-import { dayCount, lilyStage, toNextStage } from '../lily';
+import { gainSince, markGrew, react } from './celebrate';
+import { dayCount, LAST_STAGE, type LilyStage, lilyStage, toNextStage } from '../lily';
 import { relabelScene, teachScene } from './teachScene';
 import { currentRoute } from './router';
 import { actions, app, done } from '../state';
@@ -353,12 +353,12 @@ function kpiSection(): HTMLElement {
     icon('arrowRight', 'size-4 text-muted transition group-hover:translate-x-0.5 group-hover:text-accent'));
 }
 
-const STAGE_NAME = ['lily.stage0', 'lily.stage1', 'lily.stage2', 'lily.stage3'] as const;
+const STAGE_NAME = ['lily.stage0', 'lily.stage1', 'lily.stage2', 'lily.stage3', 'lily.stage4', 'lily.stage5'] as const;
 /** L87: Lily's growth, from learned skills (General = Logistics, like the learning path), so a domain switch never changes her. */
-function lilyNow(): { stage: 0 | 1 | 2 | 3; next?: number } {
+function lilyNow(): { stage: LilyStage; known: number; next?: number } {
   const ids = SKILLS.map((x) => x.id);
   const known = knownSkills(app.save, loadTickets('logistics'), ids).size;
-  return { stage: lilyStage(known, ids.length), next: toNextStage(known, ids.length) };
+  return { stage: lilyStage(known, ids.length), known, next: toNextStage(known, ids.length) };
 }
 let lilyMark: { save: object; n: number } | undefined;
 let grewPill = false;
@@ -371,27 +371,51 @@ export function syncLily(): void {
   const { stage } = lilyNow();
   const rose = gainSince(lilyMark, app.save, stage) > 0;
   grewPill = rose || (grewPill && lilyMark?.save === app.save);
+  if (rose) markGrew(lilyMark!.n); // L132: the ceremony plays from the stage she had, however many she jumped
   lilyMark = { save: app.save, n: stage };
   setLilyStage(stage);
   if (!rose) return;
-  markGrew();
-  queueMicrotask(() => byId('announce').append(` ${t('lily.grew', { stage: t(STAGE_NAME[stage]) })}`));
+  queueMicrotask(() => {
+    byId('announce').append(` ${t('lily.grew', { stage: t(STAGE_NAME[stage]) })}`);
+    // L132: Home on screen: the hello Lily plays it once (drawn by this rerender; attached at the event, never while drawing)
+    if (!byId('home').hidden) react(document.querySelector('#home [data-lily-hello]'), true);
+  });
 }
 /** main.ts showRoute(): the "Just grew" pill stays until the player first leaves Home. */
 export const leftHello = (): void => { grewPill = false; };
 
 /** Platform Home (v5 §B.5): Lily (the player, at her growth stage, L87) and the tagline (v5 §A.3). */
 function helloSection(): HTMLElement {
-  const { stage, next } = lilyNow();
+  const { stage, known, next } = lilyNow();
   // ui-ux-v5 C2: the day number is its own <span>, flipped once on the first draw after a new day was written.
   const [pre, post] = t('lily.line', { stage: t(STAGE_NAME[stage]), n: '' }).split('');
   const flip = app.dayFlip;
   app.dayFlip = false;
-  return h('section', { class: 'flex items-center gap-4' }, mascot('lily', 'idle', 'size-20'),
+  const lily = mascot('lily', 'idle', 'size-24'); // L132 P-L5: 96 px, so six stages read apart
+  lily.dataset.lilyHello = '';
+  return h('section', { class: 'flex items-center gap-4' }, lily,
     h('div', { class: 'min-w-0' }, h('p', { class: 'm-0 text-2xl font-extrabold' }, t('app.name')), h('p', { class: 'm-0 text-muted' }, t('home.tagline')),
       h('p', { class: 'mt-2 mb-0 text-sm font-semibold' }, pre, h('span', { class: flip && 'cq-flip' }, String(dayCount())), post,
         grewPill ? h('span', { class: 'ml-2 rounded-full bg-sun px-2 py-0.5 text-xs font-bold text-sun-ink' }, t('lily.grewPill')) : null),
-      h('p', { class: 'm-0 text-sm text-muted' }, next === undefined ? t('lily.max') : t('lily.next', { n: next }))));
+      lilyCard(stage, known, next)));
+}
+
+/**
+ * L132 "Your Lily": how far to the next stage (a labelled <progress>) and that stage as a silhouette (a Lily of her own data-stage,
+ * decorative: its name is the caption). Nothing to feed, nothing that drops: only what she becomes next.
+ */
+function lilyCard(stage: LilyStage, known: number, next: number | undefined): HTMLElement {
+  const up = next === undefined || stage === LAST_STAGE ? undefined : (stage + 1) as LilyStage;
+  const goal = known + (next ?? 0);
+  const line = up === undefined ? t('lily.max') : stage === 0 ? t('lily.newborn') : t('lily.next', { n: next! });
+  return h('div', { class: 'mt-2 flex max-w-md items-center gap-3 rounded-(--r-ctl) bg-panel p-3 ring-1 ring-line' },
+    h('div', { class: 'min-w-0 flex-1' },
+      h('p', { class: 'm-0 text-sm font-bold' }, t('lily.card')),
+      h('p', { class: 'm-0 text-sm text-muted' }, line),
+      up === undefined ? null : h('progress', { class: 'mt-2 h-2 w-full accent-accent', max: String(goal), value: String(known), 'aria-labelledby': 'lily-grow' }),
+      up === undefined ? null : h('p', { id: 'lily-grow', class: 'm-0 text-xs text-muted' }, t('lily.growBar', { k: known, next: goal }))),
+    up === undefined ? null : h('div', { class: 'flex w-20 shrink-0 flex-col items-center gap-1 text-center text-xs text-muted' },
+      mascot('lily', 'idle', 'size-10 lily-shadow-fig', undefined, up), t('lily.nextShadow', { stage: t(STAGE_NAME[up]) })));
 }
 
 /** L87: the learning path's overview opens with Boon teaching Lily; kept across redraws (its loops and highlight stay). */
