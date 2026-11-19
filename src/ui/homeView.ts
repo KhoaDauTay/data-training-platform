@@ -140,7 +140,8 @@ function continueCard(m: HomeModel): HTMLElement {
   const next = m.next;
   const x = next ? textOf(next, lang) : undefined;
   const early = earlyOffer(); // L145: a quiet second button, never the main one
-  return h('section', { class: cx(CARD, 'flex h-full flex-col gap-4 p-6'), 'aria-labelledby': 'continue-title' },
+  // v21 U25: p-4 on phones, so the task title gets the card's width (at p-6 a balanced title broke into two short lines)
+  return h('section', { class: cx(CARD, 'flex h-full flex-col gap-4 p-6 max-sm:p-4'), 'aria-labelledby': 'continue-title' },
     h('p', { class: cx('m-0 flex items-center gap-2 text-body-sm font-semibold', chapterColor(m.chapter).text) },
       icon('inbox', 'size-4'), t('home.kicker', { n: m.chapter, title: chapterTitle(m.chapter, lang, chaptersOf()) })), // Overview only (v12.0 U5)
     h('h2', { id: 'continue-title', class: 'm-0 text-heading font-bold' }, x ? x.title : t('inbox.empty')),
@@ -173,15 +174,15 @@ function careerCard(): HTMLElement {
   return h('section', { class: cx(CARD, 'flex h-full flex-col gap-3 p-6'), 'aria-labelledby': 'career-title' },
     h('h2', { id: 'career-title', class: 'm-0 flex items-center gap-2 text-body-sm font-semibold text-muted' }, icon('badge', 'size-4'), t('home.career')),
     rank.career ? h('p', { class: 'm-0 text-title font-semibold' }, rank.career[lang]) : null,
+    // v21 U14: a two-line row on purpose (title, then "after review N" as a caption), never two squeezed columns.
     h('ol', { class: 'm-0 list-none space-y-2 p-0' }, ...rows.map((r) => h('li', {
-      class: cx('flex items-center gap-2 text-[15px]', !reached(r.at) && 'text-muted'),
+      class: cx('flex items-start gap-2 text-[15px]', !reached(r.at) && 'text-muted'),
       'aria-current': r === now ? 'step' : false,
     },
-      h('span', { class: cx('size-2.5 shrink-0 rounded-full', reached(r.at) ? 'bg-good' : 'bg-line'), 'aria-hidden': 'true' }),
-      r === now ? h('b', { class: 'whitespace-nowrap' }, r.title) : h('span', { class: 'whitespace-nowrap' }, r.title), // never wraps under its dot
-      r === now
-        ? h('span', { class: cx(PILL, 'ml-auto', DONE_PILL) }, t('home.careerNow'))
-        : reached(r.at) ? null : h('span', { class: 'ml-auto text-body-sm' }, t('home.careerAt', { n: r.at }))))));
+      h('span', { class: cx('mt-2 size-2.5 shrink-0 rounded-full', reached(r.at) ? 'bg-good' : 'bg-line'), 'aria-hidden': 'true' }),
+      h('span', { class: 'min-w-0 flex-1' }, r === now ? h('b', {}, r.title) : h('span', {}, r.title),
+        r === now || reached(r.at) ? null : h('span', { class: 'block text-caption' }, t('home.careerAt', { n: r.at }))),
+      r === now ? h('span', { class: cx(PILL, 'shrink-0', DONE_PILL) }, t('home.careerNow')) : null))));
 }
 
 /** Small status badge: the only coloured text on the card (L23). */
@@ -216,7 +217,8 @@ function chapterRow(c: ChapterCard): HTMLLIElement {
         : h('span', { class: cx('grid size-10 place-items-center rounded-full text-title font-bold', chapterColor(c.chapter).chip) }, String(c.chapter)),
     title: `${c.chapter} · ${chapterTitle(c.chapter, lang)}`,
     sub: closed ? (c.status === 'soon' ? t('home.soonHint') : t('home.lockedAfter', { n: c.chapter - 1 })) : adv ? h('span', { class: 'flex flex-wrap gap-x-3' }, short, adv) : short,
-    action: closed ? statusPill(c) : h('a', { href: `${hashOf('learn')}/sql/${c.chapter}`, class: 'no-underline', title: t('learn.module', { n: c.chapter, title: moduleTitle(c.chapter, lang) }) }, statusPill(c)),
+    // v21 U25: below sm a locked row is its one caption line ("To open: …"); the grey "Locked" bar would repeat it.
+    action: closed ? h('span', { class: 'max-sm:hidden' }, statusPill(c)) : h('a', { href: `${hashOf('learn')}/sql/${c.chapter}`, class: 'no-underline', title: t('learn.module', { n: c.chapter, title: moduleTitle(c.chapter, lang) }) }, statusPill(c)),
     current: c.status === 'current',
     stack: true,
   });
@@ -302,8 +304,10 @@ function harborSection(m: HomeModel): HTMLElement {
     return h('section', { class: cx(CARD, 'relative overflow-hidden'), 'aria-labelledby': 'harbor-title' },
       h('h2', { id: 'harbor-title', class: 'absolute top-3 left-3 z-10 m-0 rounded-(--r-chip) bg-[#0f172a]/70 px-3 py-1 text-body-sm font-bold text-white max-lg:sr-only' }, t(words.sceneTitle)),
       domainArt('scene'),
-      h('div', { class: 'absolute bottom-3 left-3 z-10 max-w-md rounded-(--r-inset) bg-[#0f172a]/70 px-3 py-2 text-body-sm text-white max-lg:sr-only' },
-        ...lines.map((x) => h('p', { class: 'm-0 font-semibold' }, x)), h('p', { class: 'm-0 mt-1 text-caption' }, t(words.callout))),
+      // v21 U13: a two-line status pill in the sky (top right), never over the street or the counter; the callout is a caption under the picture.
+      h('div', { class: 'absolute top-3 right-3 z-10 rounded-(--r-inset) bg-[#0f172a]/70 px-3 py-1.5 text-body-sm text-white max-lg:sr-only' },
+        ...lines.map((x) => h('p', { class: 'm-0 font-semibold' }, x))),
+      h('div', { class: 'px-4 py-3 text-body-sm max-lg:sr-only' }, h('p', { class: 'm-0 text-muted' }, t(words.callout))),
       h('div', { class: 'px-4 py-3 text-body-sm lg:hidden', 'aria-hidden': 'true' },
         h('p', { class: 'm-0 font-bold' }, t(words.sceneTitle)), ...[...lines, t(words.callout)].map((x) => h('p', { class: 'm-0 text-muted' }, x))));
   }
@@ -342,15 +346,16 @@ function routesSection(): HTMLElement {
       h('h2', { id: 'routes-title', class: 'm-0 mb-2 text-title font-bold' }, t(words.mapTitle)), domainArt('map'));
   }
   const harbor = derive(app.tickets, done());
-  const list = h('ul', { class: 'mt-3 mb-0 grid list-none gap-1.5 p-0 text-body-sm sm:grid-cols-2' }, ...LANES.map((r) =>
+  // v21 U21: one column, name left and its status right on one line (two 216 px columns broke "Laem / Chabang")
+  const list = h('ul', { class: 'mt-3 mb-0 grid list-none gap-1.5 p-0 text-body-sm' }, ...LANES.map((r) =>
     h('li', {}, h('button', {
       type: 'button', id: `lane-btn-${r.port}`, 'aria-current': r.port === mapLane ? 'true' : false,
       class: cx('flex w-full items-center gap-2 px-3 py-1.5 text-left max-lg:min-h-11', r.port === mapLane && 'ring-2 ring-accent', !harbor.open.has(r.port) && 'text-muted'),
       onclick: () => pickLane(r.port),
-    }, icon(harbor.open.has(r.port) ? 'route' : 'lock', 'size-4'), h('b', {}, r.name), h('span', { class: 'ml-auto text-muted' }, laneInfo(r, harbor))))));
+    }, icon(harbor.open.has(r.port) ? 'route' : 'lock', 'size-4 shrink-0'), h('b', { class: 'min-w-0' }, r.name), h('span', { class: 'ml-auto shrink-0 text-right text-muted' }, laneInfo(r, harbor))))));
   const brief = mapLane
     ? h('div', { class: 'min-w-0 rounded-(--r-ctl) p-4 ring-1 ring-line' }, lanePanel(mapLane, harbor, (task) => homeHooks.startLane?.(task)))
-    : h('p', { class: 'm-0 self-start rounded-(--r-ctl) bg-code p-4 text-body-sm text-muted' }, t('lane.pick'));
+    : null; // no lane picked: the hint is a caption under the map, not a third of the width
   return h('section', { class: cx(CARD, 'p-5'), 'aria-labelledby': 'routes-title' },
     h('div', { class: 'mb-2 flex flex-wrap items-end justify-between gap-2' },
       h('h2', { id: 'routes-title', class: 'm-0 text-title font-bold' }, t('routes.title')),
@@ -363,7 +368,8 @@ function routesSection(): HTMLElement {
       stopMap = a.liveMap(p, harbor, takeNewRoutes(harbor.open), fleetOrder());
       return p.svg;
     }),
-    h('div', { class: 'grid gap-4 lg:grid-cols-[minmax(0,1fr)_22rem]' }, h('div', { class: 'min-w-0' }, list), h('div', { class: 'min-w-0 lg:mt-3' }, brief)));
+    brief ? null : h('p', { class: 'mt-2 mb-0 text-body-sm text-muted' }, t('lane.pick')),
+    h('div', { class: brief ? 'grid gap-4 lg:grid-cols-[minmax(0,1fr)_22rem]' : 'grid' }, h('div', { class: 'min-w-0' }, list), brief ? h('div', { class: 'min-w-0 lg:mt-3' }, brief) : null));
 }
 
 /** L48 D-A1: the company tiles moved to #/dashboard (src/ui/dashboard.ts); Home keeps a one-line teaser that links there. */
@@ -439,7 +445,8 @@ function helloSection(): HTMLElement {
   const [pre, post] = t('lily.line', { stage: t(STAGE_NAME[stage]), n: '' }).split('');
   const flip = app.dayFlip;
   app.dayFlip = false;
-  return h('section', { class: 'grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-4 gap-y-2' }, petButton(), // phones: the card takes its own row
+  // v21 U23: one card as wide as the cards below it: Lily left, the title, tagline and her progress right (one left edge).
+  return h('section', { class: cx(CARD, 'grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-4 gap-y-3 p-5') }, petButton(), // phones: the card takes its own row
     h('div', { class: 'min-w-0' }, h('p', { class: 'm-0 text-display font-extrabold' }, t('app.name')), h('p', { class: 'm-0 text-muted' }, t('home.tagline')),
       h('p', { class: 'mt-2 mb-0 text-body-sm font-semibold' }, pre, h('span', { class: flip && 'cq-flip' }, String(dayCount())), post,
         grewPill ? h('span', { class: 'ml-2 rounded-full bg-sun px-2 py-0.5 text-caption font-bold text-sun-ink' }, t('lily.grewPill')) : null)),
@@ -455,7 +462,7 @@ function lilyCard(stage: LilyStage, known: number, next: number | undefined): HT
   const up = next === undefined || stage === LAST_STAGE ? undefined : (stage + 1) as LilyStage;
   const goal = known + (next ?? 0);
   const line = up === undefined ? t('lily.max') : stage === 0 ? t('lily.newborn') : t('lily.growBar', { k: known, next: goal });
-  return h('div', { class: 'col-span-2 max-w-md rounded-(--r-ctl) bg-panel p-3 ring-1 ring-line sm:col-span-1' },
+  return h('div', { class: 'col-span-2 rounded-(--r-ctl) bg-panel p-3 ring-1 ring-line sm:col-start-2' },
     h('div', { class: 'flex items-center gap-3' },
       h('div', { class: 'min-w-0 flex-1' },
         h('p', { class: 'm-0 text-body-sm font-bold' }, t('lily.card')),

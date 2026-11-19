@@ -141,7 +141,7 @@ export function renderData(host: HTMLElement): void {
       h('thead', { class: 'max-sm:hidden' }, h('tr', {}, ...['#', t('data.col.name'), t('data.col.type'), t('data.col.null'), t('data.col.key')].map((x) => h('th', { class: cell }, x)))),
       h('tbody', { class: 'max-sm:block' }, ...colsOf(sel).map((c, i) => h('tr', { class: 'max-sm:flex max-sm:flex-wrap max-sm:items-center max-sm:gap-x-2 max-sm:border-b max-sm:border-line max-sm:py-1.5' },
         h('td', { class: cx(cell, 'text-muted max-sm:hidden') }, String(i + 1)),
-        h('td', { class: cx(cell, 'max-sm:basis-full max-sm:border-0 max-sm:p-0 max-sm:font-semibold') }, h('code', {}, needle && c.name.includes(needle) ? h('mark', {}, c.name) : c.name),
+        h('td', { class: cx(cell, 'whitespace-normal break-words max-sm:basis-full max-sm:border-0 max-sm:p-0 max-sm:font-semibold') }, h('code', {}, needle && c.name.includes(needle) ? h('mark', {}, c.name) : c.name),
           valuesLine(values, c.name, 'mt-0.5 font-normal')),
         h('td', { class: cx(cell, 'max-sm:border-0 max-sm:p-0') }, c.type),
         h('td', { class: cx(cell, 'max-sm:border-0 max-sm:p-0') }, h('code', {}, c.nullable ? 'NULL' : 'NOT NULL')),

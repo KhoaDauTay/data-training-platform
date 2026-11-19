@@ -136,7 +136,7 @@ function playerCard(c: Card, i: number, n: number, redraw: () => void): HTMLElem
       markRan(c);
       body.replaceChildren(cardBody(c, r));
       body.dataset.ready = ''; // v16: what the card's PNG captures
-      if (r.ms !== undefined) ran.textContent = t('dash.ran', { ms: r.ms });
+      if (r.ms !== undefined) ran.textContent = ` · ${t('dash.ran', { ms: r.ms })}`;
     }, (e: unknown) => {
       if (e instanceof QueryTimeoutError) redraw(); // now marked slow
       else body.replaceChildren(errorView(e));
@@ -158,16 +158,17 @@ function playerCard(c: Card, i: number, n: number, redraw: () => void): HTMLElem
   const article: HTMLElement = h('article',{ class: cx(CARD, 'flex min-w-0 flex-col gap-3 p-4', c.kind === 'table' && 'sm:col-span-2') },
     h('div', { class: 'flex items-start gap-2' },
       h('span', { class: 'grid size-9 shrink-0 place-items-center rounded-(--r-inset) bg-code', 'aria-hidden': 'true' }, icon(KIND_ICONS[c.kind])),
-      h('h3', { class: 'm-0 min-w-0 flex-1 self-center text-body-sm leading-snug font-semibold break-words' }, c.title)),
+      // v21 U31: where it came from is a meta line under the title (whole, never cut); the footer holds only the buttons
+      h('div', { class: 'min-w-0 flex-1 self-center' },
+        h('h3', { class: 'm-0 text-body-sm leading-snug font-semibold break-words' }, c.title),
+        h('p', { class: 'm-0 text-caption break-words text-muted' }, sourceLine(c), ran))),
     body,
     h('details', { class: 'text-body-sm' },
       h('summary', { class: 'cursor-pointer text-muted' }, t('dash.sql')),
       h('pre', { class: 'sql mt-2 mb-0 max-h-48 overflow-auto' }, c.sql)),
-    // ui-ux-v7 D1 (L148): one footer row, source · time on the left (cut with …), the five icon buttons in one chip-shaped
-    // group on the right that never wraps; below sm the source line takes its own line above the group (never a stray wrap).
-    h('div', { class: 'mt-auto flex items-center gap-2 text-body-sm text-muted max-sm:flex-col max-sm:items-stretch' },
-      h('span', { class: 'min-w-0 flex-1 truncate', title: sourceLine(c) }, sourceLine(c), ' · ', ran),
-      h('span', { class: 'flex shrink-0 items-center gap-0.5 self-end rounded-(--r-chip) bg-surface-2 p-0.5' },
+    // ui-ux-v7 D1 (L148): the five icon buttons in one chip-shaped group on the right that never wraps.
+    h('div', { class: 'mt-auto flex justify-end' },
+      h('span', { class: 'flex shrink-0 items-center gap-0.5 rounded-(--r-chip) bg-surface-2 p-0.5' },
       btn('up', 'up', t('dash.up', { title: c.title }), () => move(-1), i === 0),
       btn('down', 'down', t('dash.down', { title: c.title }), () => move(1), i === n - 1),
       btn('rerun', 'refresh', t('dash.rerun', { title: c.title }), rerun),

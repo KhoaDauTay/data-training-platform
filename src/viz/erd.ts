@@ -173,7 +173,7 @@ export function erDefinition(cols: ErColumn[], cons: ErConstraint[], tables: str
     lines.push('  }');
   }
   const stroke = color && HEX.test(color) ? `,stroke:${color}` : '';
-  for (const t of tables) if (highlight.has(t)) lines.push(`  style ${m(t)} stroke-width:3px${stroke}`);
+  for (const t of tables) if (highlight.has(t)) lines.push(`  style ${m(t)} stroke-width:2px${stroke}`); // v21 U22: 2 px; drawErd keeps the inner cells thin
   return lines.join('\n');
 }
 

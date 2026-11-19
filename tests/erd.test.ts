@@ -84,7 +84,7 @@ describe('erDefinition escape tên (header CSV, L36)', () => {
     const lines = def.split('\n');
     // Only our own lines: header, direction, 1 relationship, 2 table blocks (4 + 3 lines), 1 style.
     expect(lines).toHaveLength(2 + 1 + 4 + 3 + 1);
-    expect(lines.filter((l) => /^\s*(style|click)\b/.test(l))).toEqual(['  style bad_table_ stroke-width:3px,stroke:#0284c7']);
+    expect(lines.filter((l) => /^\s*(style|click)\b/.test(l))).toEqual(['  style bad_table_ stroke-width:2px,stroke:#0284c7']);
     const label = mermaidName(evil);
     expect(label).toMatch(/^\w+$/);
     expect(def).toContain(`_2026_orders |o--o{ bad_table_ : "${label}"`);
@@ -94,7 +94,7 @@ describe('erDefinition escape tên (header CSV, L36)', () => {
 
   it('màu không phải hex bị bỏ, chỉ còn viền đậm', () => {
     const def = erDefinition(cols, [], ['bad table}'], new Set(['bad table}']), 'red;fill:url(x)');
-    expect(def).toContain('  style bad_table_ stroke-width:3px');
+    expect(def).toContain('  style bad_table_ stroke-width:2px');
     expect(def).not.toContain('url(');
   });
 });
