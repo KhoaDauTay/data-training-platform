@@ -6,6 +6,7 @@ module: design-case
 title: "Kiểm tra cấp L4: thiết kế bảng cho ứng dụng thi đấu trực tuyến"
 title_en: "Level L4 check: designing the table for an online quiz app"
 kind: capstone
+runtime: browser
 minutes: 25
 objectives:
   - { vi: "Đi từ danh sách mẫu truy cập tới khóa chính, GSI thưa và khóa shard", en: "Go from a list of access patterns to the primary key, a sparse GSI and sharded keys" }

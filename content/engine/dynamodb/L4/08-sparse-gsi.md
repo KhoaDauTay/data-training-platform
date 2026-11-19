@@ -6,6 +6,7 @@ module: patterns
 title: "GSI thưa: chỉ mục chỉ chứa thứ bạn cần tìm"
 title_en: "Sparse GSI: an index holding only what you look for"
 kind: lab
+runtime: browser
 minutes: 10
 objectives:
   - { vi: "Giải thích vì sao item thiếu thuộc tính khóa của GSI không có mặt trong GSI", en: "Explain why an item missing a GSI key attribute is absent from the GSI" }

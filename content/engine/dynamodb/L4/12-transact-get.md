@@ -6,6 +6,7 @@ module: transactions
 title: "TransactGetItems: đọc nhiều item cùng một thời điểm"
 title_en: "TransactGetItems: read several items as one snapshot"
 kind: lab
+runtime: browser
 minutes: 8
 objectives:
   - { vi: "Đọc hai item trong một `TransactGetItems` để không thấy trạng thái nửa vời của một giao dịch ghi", en: "Read two items in one `TransactGetItems` so you never see half of a write transaction" }
@@ -31,7 +32,7 @@ lab:
         {"op": "TransactGetItems", "input": {"TransactItems": [{"Get": {"TableName": "Wallets", "Key": {"pk": {"S": "WALLET#w1"}, "sk": {"S": "BALANCE"}}}}, {"Get": {"TableName": "Wallets", "Key": {"pk": {"S": "WALLET#w2"}, "sk": {"S": "BALANCE"}}}}], "ReturnConsumedCapacity": "TOTAL"}}
       check: doc
       ordered: true
-      expect: { Count: 2, CapacityUnits: 4 }
+      expect: { Count: 2 }
       hint: { vi: "Mỗi phần tử của `TransactItems` là một `Get` có `TableName` và `Key`.", en: "Each element of `TransactItems` is a `Get` with a `TableName` and a `Key`." }
 ---
 

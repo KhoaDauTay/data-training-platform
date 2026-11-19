@@ -6,6 +6,7 @@ module: scale
 title: "Tính xem partition nào sẽ nóng"
 title_en: "Work out which partition will run hot"
 kind: quiz
+runtime: docs
 minutes: 6
 objectives:
   - { vi: "Đổi số thao tác mỗi giây thành RCU/WCU theo cỡ item và kiểu đọc", en: "Turn operations per second into RCU/WCU from item size and read type" }

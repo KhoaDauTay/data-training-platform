@@ -6,6 +6,7 @@ module: patterns
 title: "GSI dùng chung: một chỉ mục, nhiều kiểu tra cứu"
 title_en: "Overloaded GSI: one index, many kinds of lookup"
 kind: lab
+runtime: browser
 minutes: 12
 objectives:
   - { vi: "Dùng một thuộc tính chung chứa giá trị khác nhau tùy loại item", en: "Use one shared attribute that holds a different kind of value per item type" }

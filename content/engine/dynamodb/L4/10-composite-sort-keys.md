@@ -6,6 +6,7 @@ module: patterns
 title: "Sort key phân cấp và item phiên bản"
 title_en: "Hierarchical sort keys and version items"
 kind: lab
+runtime: browser
 minutes: 12
 objectives:
   - { vi: "Ghép sort key theo cấp (thành phố, quận, cửa hàng) để Query ở cấp nào cũng được", en: "Build a sort key by level (city, district, store) so a Query works at any level" }

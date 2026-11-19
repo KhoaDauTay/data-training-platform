@@ -6,6 +6,7 @@ module: transactions
 title: "Giao dịch PartiQL bị hủy: không ghi nửa chừng"
 title_en: "A cancelled PartiQL transaction: no half writes"
 kind: predict
+runtime: browser
 minutes: 6
 objectives:
   - { vi: "Đoán kết quả của một giao dịch có một điều kiện sai", en: "Predict the outcome of a transaction with one false condition" }

@@ -9,7 +9,7 @@ kind: concept
 runtime: docs
 minutes: 7
 objectives:
-  - { vi: "Phân biệt PITR (liên tục, tới 35 ngày, theo giây) và backup theo yêu cầu (giữ tới khi xóa)", en: "Tell PITR (continuous, up to 35 days, per second) from on-demand backups (kept until deleted)" }
+  - { vi: "Phân biệt PITR (liên tục, tới 35 ngày, theo giây) và backup theo yêu cầu (chụp toàn bộ khi bạn gọi)", en: "Tell PITR (continuous, up to 35 days, per second) from on-demand backups (a full copy when you call it)" }
   - { vi: "Biết khôi phục luôn tạo bảng mới và những cài đặt phải làm lại", en: "Know that a restore always creates a new table and which settings must be redone" }
 requires: []
 sources:
@@ -37,7 +37,7 @@ quiz:
 DynamoDB có hai cách sao lưu, đều **không tiêu throughput** của bảng:
 
 - **PITR** (point-in-time recovery): sao lưu liên tục, khôi phục về **bất kỳ giây nào** trong tối đa **35 ngày** (`RecoveryPeriodInDays` từ 1 tới 35, mặc định 35). Tắt rồi bật lại thì mốc bắt đầu bị đặt lại.
-- **Backup theo yêu cầu**: chụp toàn bộ bảng khi bạn gọi, **giữ tới khi bạn xóa**, không giới hạn số lượng. Dùng cho lưu trữ dài hạn hoặc trước một thay đổi lớn.
+- **Backup theo yêu cầu**: chụp toàn bộ bảng khi bạn gọi, **không giới hạn số lượng**. Dùng cho lưu trữ dài hạn hoặc trước một thay đổi lớn.
 - Khôi phục luôn tạo **bảng mới**, không ghi đè bảng cũ. Có thể khôi phục sang Region khác.
 - Phải tự cài lại trên bảng mới: auto scaling, IAM, metric và alarm CloudWatch, tag, Streams, TTL, deletion protection, PITR.
 - Backup không bảo đảm nhất quán nhân quả giữa các item, dù độ lệch thường dưới một giây.
@@ -60,7 +60,7 @@ before a risky migration                on-demand backup, then migrate
 DynamoDB has two backup methods, neither **consumes the table's throughput**:
 
 - **PITR** (point-in-time recovery): continuous backups, restore to **any second** within up to **35 days** (`RecoveryPeriodInDays` from 1 to 35, default 35). Disabling and re-enabling resets the start point.
-- **On-demand backup**: a full copy of the table when you call it, **kept until you delete it**, with no limit on how many. Use it for long-term retention or before a big change.
+- **On-demand backup**: a full copy of the table when you call it, with **no limit on how many**. Use it for long-term retention or before a big change.
 - A restore always creates a **new table**, never overwriting the old one. It can restore into another Region.
 - On the new table you must set up again: auto scaling, IAM, CloudWatch metrics and alarms, tags, Streams, TTL, deletion protection, PITR.
 - A backup does not guarantee causal consistency across items, though the skew is usually under a second.

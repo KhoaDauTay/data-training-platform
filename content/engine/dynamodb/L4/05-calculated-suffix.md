@@ -6,6 +6,7 @@ module: scale
 title: "Hậu tố tính được: shard mà vẫn GetItem được"
 title_en: "Calculated suffix: sharded, yet still one GetItem away"
 kind: lab
+runtime: browser
 minutes: 10
 objectives:
   - { vi: "Tính shard của một item từ chính thuộc tính bạn hay tra cứu", en: "Compute an item's shard from the attribute you look it up by" }

@@ -6,6 +6,7 @@ module: global-ops
 title: "Bộ máy trong trình duyệt khác DynamoDB thật ở đâu"
 title_en: "Where the in-browser engine differs from real DynamoDB"
 kind: quiz
+runtime: docs
 minutes: 5
 objectives:
   - { vi: "Biết phần nào của L4–L5 đã chạy thật trong trình duyệt và phần nào chỉ có trên AWS", en: "Know which parts of L4–L5 ran for real in the browser and which exist only on AWS" }

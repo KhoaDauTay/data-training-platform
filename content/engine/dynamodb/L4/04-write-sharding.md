@@ -6,6 +6,7 @@ module: scale
 title: "Write sharding: rải một khóa nóng bằng hậu tố ngẫu nhiên"
 title_en: "Write sharding: spread a hot key with a random suffix"
 kind: lab
+runtime: browser
 minutes: 12
 objectives:
   - { vi: "Đọc một shard bằng một Query và thấy Query chỉ đọc đúng item của shard đó", en: "Read one shard with one Query and see that the Query reads only that shard's items" }

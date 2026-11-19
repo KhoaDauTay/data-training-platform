@@ -6,6 +6,7 @@ module: patterns
 title: "Adjacency list: quan hệ nhiều-nhiều trong một bảng"
 title_en: "Adjacency list: many-to-many in one table"
 kind: lab
+runtime: browser
 minutes: 12
 objectives:
   - { vi: "Lưu nút và cạnh của quan hệ nhiều-nhiều trong cùng một bảng", en: "Store the nodes and edges of a many-to-many relation in the same table" }

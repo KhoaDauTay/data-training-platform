@@ -6,6 +6,7 @@ module: streams-ttl
 title: "TTL: hết hạn chưa có nghĩa là đã biến mất"
 title_en: "TTL: expired does not mean gone"
 kind: lab
+runtime: browser
 minutes: 10
 objectives:
   - { vi: "Lưu thời điểm hết hạn bằng số giây epoch kiểu Number", en: "Store the expiry time as epoch seconds of type Number" }
