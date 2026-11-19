@@ -10,7 +10,7 @@ class SilentWorker { onmessage = null; onerror = null; postMessage() {} terminat
 
 beforeAll(() => boot({ worker: SilentWorker }));
 
-const PAGES = ['#/', '#/learn', '#/learn/sql/1', '#/learn/skill/select', '#/learn/adv/a2', '#/learn/interview', '#/practice', '#/me',
+const PAGES = ['#/', '#/learn', '#/learn/sql/1', '#/learn/skill/select', '#/learn/adv/a2', '#/learn/adv/d5', '#/learn/interview', '#/practice', '#/me',
   '#/d/logistics', '#/d/logistics/play', '#/d/logistics/data/ports', '#/d/logistics/dashboard', '#/d/logistics/map',
   '#/d/ecommerce', '#/d/ecommerce/play', '#/d/ecommerce/data', '#/d/ecommerce/dashboard', '#/d/ecommerce/map',
   '#/d/finance', '#/d/finance/play', '#/d/finance/data', '#/d/finance/dashboard', '#/d/finance/map'];

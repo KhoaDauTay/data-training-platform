@@ -54,6 +54,8 @@ export interface AdvNode {
   lesson?: Lesson;
   drills: Drill[];
   links: { title: Bilingual; url: string }[];
+  /** V20-A fallback (L173): short side-by-side readings on an `external` node; code is shown, never run. */
+  readings: { title: Bilingual; body: Bilingual; sql: string; pandas: string }[];
 }
 export interface General { drills: Drill[]; nodes: AdvNode[]; bySkill: Map<string, Drill[]>; byId: Map<string, Drill> }
 
@@ -126,6 +128,10 @@ export function parseAdv(data: unknown, origin: string, parseLessonBody: LessonB
       const url = typeof l.url === 'string' && l.url.startsWith('https://') ? l.url : fail('link cần url https://');
       return { title: both(l.title, 'link.title'), url };
     });
+    const code = (v: unknown, what: string): string => (typeof v === 'string' && v.trim() ? v.trim() : fail(`thiếu ${what}`));
+    const readings = (Array.isArray(o.readings) ? o.readings : []).map((r: Raw) => ({
+      title: both(r.title, 'reading.title'), body: both(r.body, 'reading.body'), sql: code(r.sql, 'reading.sql'), pandas: code(r.pandas, 'reading.pandas'),
+    }));
     const drills = (Array.isArray(o.drills) ? o.drills : []).map((d: Raw) => parseDrill(d, origin, { node: id }));
     let lesson: Lesson | undefined;
     if (status !== 'external') {
@@ -137,7 +143,7 @@ export function parseAdv(data: unknown, origin: string, parseLessonBody: LessonB
       id, group, status, title: both(o.title, 'title'), why: both(o.why, 'why'), needs,
       ...(o.applies !== undefined ? { applies: both(o.applies, 'applies') } : {}),
       ...(lesson ? { lesson } : {}),
-      drills, links,
+      drills, links, readings,
     };
   });
   unique(nodes.flatMap((n) => n.drills), origin);

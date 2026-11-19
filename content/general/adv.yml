@@ -1908,8 +1908,47 @@
   title: { vi: "Python và pandas", en: "Python and pandas" }
   why: { vi: "Phân tích ngoài SQL và tự động hóa báo cáo lặp lại.", en: "Analysis beyond SQL and automating repeated reports." }
   needs: [group_by, join]
+  readings:
+    - title: { vi: "1. SELECT và WHERE: chọn cột, lọc bằng mặt nạ", en: "1. SELECT and WHERE: pick columns, filter with a mask" }
+      body:
+        vi: "Một bảng trong pandas là một DataFrame. Danh sách tên cột trong `[[...]]` là SELECT. WHERE là một mặt nạ đúng/sai: mỗi so sánh cho một cột True/False, ghép bằng `&` (AND) hoặc `|` (OR), mỗi vế trong ngoặc tròn. Viết `==`, không phải `=`."
+        en: "A table in pandas is a DataFrame. A list of column names in `[[...]]` is SELECT. WHERE is a true/false mask: each comparison gives a column of True/False, combined with `&` (AND) or `|` (OR), each side in parentheses. Write `==`, not `=`."
+      sql: |-
+        SELECT id, store_id, order_date
+        FROM orders
+        WHERE status = 'PAID' AND channel = 'ONLINE'
+      pandas: |-
+        mask = (orders["status"] == "PAID") & (orders["channel"] == "ONLINE")
+        orders[mask][["id", "store_id", "order_date"]]
+    - title: { vi: "2. GROUP BY: groupby rồi agg", en: "2. GROUP BY: groupby, then agg" }
+      body:
+        vi: "`groupby` là GROUP BY, `agg` là danh sách hàm gộp: mỗi cột một hàm. `size` đếm dòng như `count(*)`; `count` bỏ ô trống như `count(qty)`. Khác SQL: mặc định `groupby` bỏ nhóm có khóa trống, muốn giữ thì thêm `dropna=False`."
+        en: "`groupby` is GROUP BY, `agg` is the list of aggregates: one function per column. `size` counts rows like `count(*)`; `count` skips empty cells like `count(qty)`. Unlike SQL, `groupby` drops groups with an empty key by default; add `dropna=False` to keep them."
+      sql: |-
+        SELECT order_id, sum(qty) AS qty, count(*) AS lines
+        FROM order_items
+        GROUP BY order_id
+      pandas: |-
+        order_items.groupby("order_id").agg(
+            {"qty": "sum", "line_no": "size"}
+        )
+    - title: { vi: "3. JOIN: merge", en: "3. JOIN: merge" }
+      body:
+        vi: "`pd.merge` là JOIN, mặc định là INNER JOIN. Cột nối cùng tên thì dùng `on`, khác tên thì `left_on` và `right_on`. `how=\"left\"` là LEFT JOIN. Hai bảng có cột trùng tên (ở đây là `id`) thì pandas thêm đuôi `_x` và `_y`, giống việc bạn phải đặt bí danh trong SQL."
+        en: "`pd.merge` is JOIN, an INNER JOIN by default. Use `on` when the key columns share a name, `left_on` and `right_on` when they do not. `how=\"left\"` is a LEFT JOIN. When both tables have a column with the same name (here `id`), pandas adds the suffixes `_x` and `_y`, much like the aliases you write in SQL."
+      sql: |-
+        SELECT o.id, s.city
+        FROM orders o
+        LEFT JOIN stores s ON s.id = o.store_id
+      pandas: |-
+        import pandas as pd
+        pd.merge(orders, stores, left_on="store_id",
+                 right_on="id", how="left")[["id_x", "city"]]
   links:
-    - { title: { vi: "Kaggle Learn: Pandas", en: "Kaggle Learn: Pandas" }, url: "https://www.kaggle.com/learn/pandas" }
+    - { title: { vi: "pandas: So sánh với SQL (tài liệu chính thức)", en: "pandas: Comparison with SQL (official docs)" }, url: "https://pandas.pydata.org/docs/getting_started/comparison/comparison_with_sql.html" }
+    - { title: { vi: "pandas: 10 phút với pandas", en: "pandas: 10 minutes to pandas" }, url: "https://pandas.pydata.org/docs/user_guide/10min.html" }
+    - { title: { vi: "Python: Hướng dẫn chính thức", en: "Python: The official tutorial" }, url: "https://docs.python.org/3/tutorial/" }
+    - { title: { vi: "Kaggle Learn: Pandas (miễn phí, có notebook)", en: "Kaggle Learn: Pandas (free, with notebooks)" }, url: "https://www.kaggle.com/learn/pandas" }
 
 - id: d6
   group: D

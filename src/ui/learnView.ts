@@ -277,6 +277,16 @@ function advPage(c: LearnCtx, x: AdvNode): HTMLElement {
         ...x.drills.map((d) => drillButton(d, c.save.completed.includes(d.id))))
       : null,
     x.drills.length ? slot('adv-drills') : null),
+    x.readings.length
+      ? h('section', { class: 'space-y-3' }, h('h3', { class: 'm-0 font-bold' }, lt('adv.readings')),
+        h('p', { class: 'm-0 text-muted' }, lt('adv.readingsNote')),
+        ...x.readings.map((r) => h('article', { class: 'space-y-2 rounded-(--r-card) bg-panel p-5 ring-1 ring-line' },
+          h('h4', { class: 'm-0 font-bold' }, r.title[lang]),
+          h('div', { class: 'text-[15px] leading-relaxed' }, d$.richText(r.body[lang])),
+          h('div', { class: 'grid gap-3 md:grid-cols-2' },
+            h('figure', { class: 'm-0 min-w-0' }, h('figcaption', { class: 'mb-1 text-body-sm text-muted' }, 'SQL'), h('pre', { class: 'sql', lang: 'en' }, r.sql)),
+            h('figure', { class: 'm-0 min-w-0' }, h('figcaption', { class: 'mb-1 text-body-sm text-muted' }, 'pandas'), h('pre', { class: 'sql', lang: 'en' }, r.pandas))))))
+      : null,
     x.links.length
       ? h('section', { class: 'space-y-1' }, h('h3', { class: 'm-0 font-bold' }, lt('adv.links')),
         h('ul', { class: 'm-0 list-disc space-y-1 pl-5' }, ...x.links.map((l) => h('li', {},
