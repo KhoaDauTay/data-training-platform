@@ -1,0 +1,74 @@
+# DynamoDB modules in display order. `id`/`vi`/`en` are read by parseModules (src/engine/content.ts);
+# `module`/`level`/`title`/`after` are ADD-1 (product-design-db-engine.md §2.4), `after` = "Học xong bạn làm được…".
+- id: keys
+  vi: Bảng, item và khóa
+  en: Tables, items and keys
+  module: keys
+  level: L1
+  title: { vi: "Bảng, item và khóa", en: "Tables, items and keys" }
+  after:
+    vi: thiết kế khóa chính cho mẫu truy cập "mọi đơn của một khách" và tạo bảng đó.
+    en: design the primary key for the access pattern "every order of one customer" and create that table.
+- id: crud
+  vi: Đọc và ghi một item
+  en: Read and write one item
+  module: crud
+  level: L1
+  title: { vi: "Đọc và ghi một item", en: "Read and write one item" }
+  after:
+    vi: đọc, thêm, sửa và xóa một item theo khóa, và lấy lại bản trước hoặc sau khi ghi.
+    en: read, insert, update and delete one item by its key, and get back the image before or after the write.
+- id: query-scan
+  vi: Query và Scan
+  en: Query and Scan
+  module: query-scan
+  level: L1
+  title: { vi: "Query và Scan", en: "Query and Scan" }
+  after:
+    vi: đọc một item collection bằng Query, phân trang nó, và chỉ ra Scan đọc nhiều hơn bao nhiêu item.
+    en: read an item collection with Query, page through it, and show how many more items a Scan reads.
+- id: expressions
+  vi: Biểu thức
+  en: Expressions
+  module: expressions
+  level: L2
+  title: { vi: "Biểu thức", en: "Expressions" }
+  after:
+    vi: viết Query đặt điều kiện vào khóa thay vì vào bộ lọc, và sửa item bằng UpdateExpression.
+    en: write a Query that puts its condition on the key instead of the filter, and change an item with an UpdateExpression.
+- id: safe-writes
+  vi: Ghi an toàn
+  en: Safe writes
+  module: safe-writes
+  level: L2
+  title: { vi: "Ghi an toàn", en: "Safe writes" }
+  after:
+    vi: chống ghi đè mất dữ liệu bằng điều kiện, dùng bộ đếm nguyên tử và ghi theo lô.
+    en: prevent lost updates with a condition, use an atomic counter and write in batches.
+- id: partiql-cost
+  vi: PartiQL và chi phí
+  en: PartiQL and cost
+  module: partiql-cost
+  level: L2
+  title: { vi: "PartiQL và chi phí", en: "PartiQL and cost" }
+  after:
+    vi: tính trước cỡ item và RCU/WCU của một request, rồi đối chiếu với ConsumedCapacity.
+    en: work out an item's size and the RCU/WCU of a request ahead of time, then compare with ConsumedCapacity.
+- id: secondary
+  vi: Chỉ mục phụ
+  en: Secondary indexes
+  module: secondary
+  level: L3
+  title: { vi: "Chỉ mục phụ", en: "Secondary indexes" }
+  after:
+    vi: thêm GSI hoặc LSI cho một mẫu truy cập mới mà không phải Scan, và chọn projection cho nó.
+    en: add a GSI or LSI for a new access pattern without a Scan, and choose its projection.
+- id: single-table
+  vi: Thiết kế một bảng
+  en: Single-table design
+  module: single-table
+  level: L3
+  title: { vi: "Thiết kế một bảng", en: "Single-table design" }
+  after:
+    vi: gom nhiều mẫu truy cập vào một bảng bằng tiền tố thực thể, sort key phân cấp và adjacency list.
+    en: fit several access patterns into one table with entity prefixes, hierarchical sort keys and adjacency lists.
