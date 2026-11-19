@@ -164,7 +164,7 @@ Các mục mà `v21-ux-review.md` (✅ L196, "Đã sửa (L195)") và `v21-e2e-f
 
 | ID | Mức | Trang/cỡ | Thấy gì | Sửa đề xuất | File nghi |
 |---|---|---|---|---|---|
-| U11 (phần 1024) | P2 | Dock thăng tiến, 1024×700 | 375 đã đạt (dock thu thành dòng, không giao "Bắt đầu chương 2"). Ở 1024, L196 nói "dưới 1280 thu thành dòng", nhưng dock vẫn hiện cả cảnh (480×447) trong ≥ 3 s (`SHOW_MS`). Trong lúc đó nó che nút Chạy, dòng "Đúng rồi!" và nửa phải panel. Cuối cùng mới thu (`mini=true`). Ảnh: `dock-promo-light-1024-mid.png` (so với `v21ux\dock-promo-light-1024-end.png`). | Dưới 1280 mở dock ở dạng thu gọn ngay từ đầu (cảnh xem lại bằng "Xem lại"), như 375. Hoặc kiểm `[data-start-chapter]`, Chạy và `#work [role=status]` trước khi mở cả cảnh. | `src/ui/stage.ts` (`fold`, `SHOW_MS`, chỗ quyết định `mini` theo bề rộng) |
+| ✅ U11 (phần 1024; đã sửa, L221) | P2 | Dock thăng tiến, 1024×700 | 375 đã đạt (dock thu thành dòng, không giao "Bắt đầu chương 2"). Ở 1024, L196 nói "dưới 1280 thu thành dòng", nhưng dock vẫn hiện cả cảnh (480×447) trong ≥ 3 s (`SHOW_MS`). Trong lúc đó nó che nút Chạy, dòng "Đúng rồi!" và nửa phải panel. Cuối cùng mới thu (`mini=true`). Ảnh: `dock-promo-light-1024-mid.png` (so với `v21ux\dock-promo-light-1024-end.png`). | Dưới 1280 mở dock ở dạng thu gọn ngay từ đầu (cảnh xem lại bằng "Xem lại"), như 375. Hoặc kiểm `[data-start-chapter]`, Chạy và `#work [role=status]` trước khi mở cả cảnh. | `src/ui/stage.ts` (`fold`, `SHOW_MS`, chỗ quyết định `mini` theo bề rộng) |
 
 ### 3. Còn mở, chưa nhận sửa (chờ UX-A), đo lại trên bản này
 
