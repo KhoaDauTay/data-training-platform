@@ -65,6 +65,21 @@ describe('DbClient', () => {
     expect(FakeWorker.all).toHaveLength(1);
   });
 
+  it('V16: a snapshot notice from the worker leaves the query in flight untouched', async () => {
+    const { db } = client();
+    const w = last();
+    w.ready();
+    const a = db.run('A');
+    w.send({ type: 'snapshot', schemas: ['game'] });
+    w.answer(0);
+    await expect(a).resolves.toMatchObject({ rows: [[0]] });
+    // a worker booted from the snapshot answers ensure at once (the schema is marked seeded)
+    const e = db.ensure('game');
+    w.send({ type: 'result', id: w.posted[1].id, result: null });
+    await expect(e).resolves.toBeUndefined();
+    expect(db.ready('game')).toBe(true);
+  });
+
   it('query chưa ready thì xếp hàng, gửi khi ready', async () => {
     const { db } = client();
     const w = last();

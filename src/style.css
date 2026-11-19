@@ -61,6 +61,9 @@
   --es-inside: #4b5563; --es-glass: #d6eef6; --es-night: 0; --es-win: 0; --es-glow: 0.3;
   /* v14 T6 Silver Jar counter (src/art/finance.ts): its facade; sky, street, night and window light reuse --es-*. */
   --fs-wall: #f3ead8; --fs-wall2: #d8c9a8;
+  /* ui-ux-v7 I1 (L148): one identity colour per domain (badges, the welcome cards): sea teal, lantern red, jar copper. */
+  --dom-logistics: #0f766e; --dom-logistics-soft: #d5efea; --dom-ecommerce: #b42318; --dom-ecommerce-soft: #fbe2dc;
+  --dom-finance: #93590b; --dom-finance-soft: #f8e8c6;
   /* L13 syntax colours: >= 4.8:1 on --panel and --code */
   --syn-keyword: #7a2bb0; --syn-string: #a3341a; --syn-number: #0a6b4c; --syn-comment: #5d6b5d;
   --syn-operator: #4a4a52; --syn-type: #0b5fa5; --syn-property: #1d5a7a; --syn-atom: #8a5300;
@@ -91,6 +94,8 @@
   --es-road: #1c1d23; --es-wall: #c9a24f; --es-wall2: #9c7a35; --es-shed0: #6f7888; --es-shed1: #4f5766; --es-roof: #2f3542;
   --es-inside: #141720; --es-glass: #4a5a6e; --es-night: 1; --es-win: 0.85; --es-glow: 0.95;
   --fs-wall: #a89a80; --fs-wall2: #7d7260;
+  --dom-logistics: #62dccb; --dom-logistics-soft: #15332f; --dom-ecommerce: #ff9a8a; --dom-ecommerce-soft: #3d1c18;
+  --dom-finance: #f2c46b; --dom-finance-soft: #3a2c12;
   /* L13 syntax colours; K1 (L136): >= 7:1 on --panel and --code */
   --syn-keyword: #dcaeff; --syn-string: #ffab8a; --syn-number: #86e8bd; --syn-comment: #b3bab3;
   --syn-operator: #d6d6dd; --syn-type: #86ccff; --syn-property: #a8e2ff; --syn-atom: #ffd57d;
@@ -124,6 +129,12 @@
   --color-info-soft: var(--info-soft);
   --color-chart: var(--chart-1);
   --color-chart-grid: var(--chart-grid);
+  --color-dom-logistics: var(--dom-logistics);
+  --color-dom-logistics-soft: var(--dom-logistics-soft);
+  --color-dom-ecommerce: var(--dom-ecommerce);
+  --color-dom-ecommerce-soft: var(--dom-ecommerce-soft);
+  --color-dom-finance: var(--dom-finance);
+  --color-dom-finance-soft: var(--dom-finance-soft);
 }
 @theme {
   /* ui-ux-v7 T1 (D-U1): six named type steps; use these, not text-xs…3xl. A step's weight is a default (font-bold etc. still wins). */

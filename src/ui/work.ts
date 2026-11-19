@@ -1,3 +1,4 @@
+import { cue } from './sound';
 import type { SQLNamespace } from '@codemirror/lang-sql';
 import type { DbClient } from '../db/client';
 import { SqlError, sqlErrorInfo } from '../db/run';
@@ -418,6 +419,7 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
     }
     if (!r.ok) {
       deps.onWrong?.();
+      if (story) cue('bad'); // X2 (L148): never in Practice or reviews; silent unless the player turned sound on
       const fail = r;
       const err = played?.error;
       // The sender answers in the chat under the grader's facts (re-translated on a language switch like every message).

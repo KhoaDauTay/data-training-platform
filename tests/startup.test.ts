@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import src from '../src/main.ts?raw';
 import { PGlite } from '@electric-sql/pglite';
 import worker from '../src/db/worker.ts?raw';
+import snapshot from '../src/db/snapshot.ts?raw';
 import schemaSql from '../src/db/schema.sql?raw';
 import { initEngine } from '../src/db/init';
 import { ensureSchema } from '../src/db/lab';
@@ -29,7 +30,9 @@ describe('khởi động', () => {
 describe('v12.0 P1: worker khởi động rỗng, Logistics seed lười', () => {
   it('worker không còn nạp schema.sql/seed.sql lúc khởi động', () => {
     expect(worker).not.toMatch(/seed\.sql|schema\.sql|initDb\(/);
-    expect(worker).toContain('initEngine(');
+    expect(worker).toContain('bootDb('); // V16: from the snapshot, else empty (initEngine)
+    expect(snapshot).not.toMatch(/seed\.sql|schema\.sql|initDb\(/);
+    expect(snapshot).toContain('initEngine(');
   });
 
   it('boot rỗng → ecom → game: không có bảng logistics trước khi ensure, đủ 26 bảng sau, search_path giữ nguyên', async () => {

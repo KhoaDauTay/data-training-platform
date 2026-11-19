@@ -1,0 +1,12 @@
+{
+  "name": "BoonData",
+  "short_name": "BoonData",
+  "description": "Học SQL và phân tích dữ liệu bằng việc thật, ngay trong trình duyệt. Learn SQL and data analysis through real work.",
+  "lang": "vi",
+  "start_url": ".",
+  "scope": ".",
+  "display": "standalone",
+  "background_color": "#fbf7f0",
+  "theme_color": "#0f766e",
+  "icons": [{ "src": "favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }]
+}

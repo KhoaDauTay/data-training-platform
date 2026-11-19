@@ -30,6 +30,7 @@ import { prefetchArt } from './art/load';
 import { renderInbox } from './ui/inbox';
 import { createPanel, registerCoreTabs } from './ui/tabs';
 import { coachDone, initTour, refreshGuides, refreshTour } from './ui/coach';
+import { initSound, relabelSound } from './ui/sound';
 import { initWelcome, openWelcome, relabelWelcome } from './ui/welcome';
 import { bootPick, readTour, welcomeNeeded, type BootPick } from './onboarding';
 import { loadLessonPrefs } from './lessons';
@@ -45,6 +46,7 @@ import { clearMemos } from './viz/memo';
 import { createMapStrip } from './ui/mapStrip';
 import { renderData } from './ui/dataView';
 import { renderDashboard, resetCards } from './ui/dashboard';
+import { initServiceWorker } from './pwa';
 
 initTheme(); // index.html already set data-theme before paint; this adds the OS listener for 'system'
 // The DB (PGlite download + seed, the slowest part of startup) boots in parallel with the ticket chunk below.
@@ -63,6 +65,7 @@ function syncDbStatus(): void {
 }
 function onDbStatus(s: DbStatus): void {
   engine = s;
+  if (s === 'ready' && !dbWasReady) setTimeout(registerSw, 2000); // V16-OFFLINE: after the first boot
   if (s === 'ready') dbWasReady = true;
   if (s === 'failed') app.problem = { kind: dbWasReady ? 'worker-crash' : 'db-init-failed' }; // P10
   if (s !== 'loading') app.loadProgress = undefined;
@@ -71,6 +74,7 @@ function onDbStatus(s: DbStatus): void {
   renderTopbar();
   relabelWelcome(); // the download line ends, "I am new" becomes clickable
 }
+const registerSw = initServiceWorker(offerUpdate); // V16-OFFLINE (src/pwa.ts)
 const db = new DbClient(onDbStatus);
 db.onProgress = (p) => {
   if (engine !== 'loading') return; // the steps tab fetches the parser .wasm through the same counting fetch later
@@ -283,6 +287,7 @@ function rerender(): void {
   renderLeft(byId('ticket'));
   work.relabel();
   relabelStage();
+  relabelSound();
   renderNotebook();
   // Story workspace and lane tasks only: selectTicket() forces story mode, so Practice and Sandbox must not show the task bar (ui-ux-v4 §2).
   byId('map').hidden = byId('shell').hidden || !(isStory() || session.mode.kind === 'lane');
@@ -496,6 +501,7 @@ Object.assign(actions, {
 
 byId('inbox-btn').addEventListener('click', () => (byId('inbox-dialog') as HTMLDialogElement).showModal());
 byId('notebook-btn').addEventListener('click', () => toggleNotebook(byId('notebook-dialog') as HTMLDialogElement));
+initSound(); // ui-ux-v7 X2 (L148): the ⋯ menu's sound switch, off by default
 byId('replay-btn').addEventListener('click', () => openWelcome(true)); // v4 D-O2: the static version (V10)
 /** v13 (v8 §2.1): src/guides.ts GUIDES_KEY, spelled out here so main never imports the lazy guide module (tests/guides.test.ts checks it). */
 const GUIDES_PREF = 'cargo-query/guides';
@@ -546,6 +552,13 @@ byId('export-btn').addEventListener('click', () => {
     renderTopbar();
   }
 });
+
+/** V16-OFFLINE: a new version is installed and waiting; its reload button lets it take over (every tab reloads). */
+function offerUpdate(apply: () => void): void {
+  if (app.notice && app.notice.key !== 'app.newVersion') return; // never replaces another banner; the next visit offers it again
+  app.notice = { key: 'app.newVersion', reload: true, apply };
+  if (uiReady) renderTopbar();
+}
 
 // A lazy chunk (sql-formatter; Plan 1b: Mermaid, libpg-query) 404s after a deploy: offer a reload.
 window.addEventListener('vite:preloadError', () => {
