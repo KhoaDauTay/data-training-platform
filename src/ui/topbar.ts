@@ -228,7 +228,7 @@ function drawXp(): void {
   tick(t0);
   celebrate(pill);
   // aria-hidden: the feedback line already says "+N XP" (work.correctXp).
-  const chip = h('span', { 'aria-hidden': 'true', class: 'cq-rise absolute top-full right-0 mt-1 whitespace-nowrap rounded-full bg-sun px-1.5 text-caption font-bold text-sun-ink shadow-sm' }, `+${gain}`);
+  const chip = h('span', { 'aria-hidden': 'true', class: 'cq-rise absolute top-full right-0 mt-1 whitespace-nowrap rounded-full bg-sun px-1.5 text-caption font-bold text-sun-ink shadow-(--shadow-1)' }, `+${gain}`);
   chip.addEventListener('animationend', () => chip.remove(), { once: true });
   pill.append(chip);
 }

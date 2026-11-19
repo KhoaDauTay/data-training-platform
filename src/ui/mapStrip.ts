@@ -61,7 +61,7 @@ export function createMapStrip(host: HTMLElement): { update(view: StripView): vo
     if (words) { // Plan 9 D9-14: the domain's own map, no lanes
       dialog.replaceChildren(h('div', { class: 'p-5' },
         h('div', { class: 'mb-3 flex items-start gap-2' },
-          h('h2', { id: 'map-dialog-title', class: 'm-0 flex-1 text-lg font-bold' }, t(words.mapTitle)),
+          h('h2', { id: 'map-dialog-title', class: 'm-0 flex-1 text-title font-bold' }, t(words.mapTitle)),
           h('form', { method: 'dialog' }, h('button', { class: 'flex items-center gap-1 px-2 py-1 text-body-sm' }, icon('x', 'size-4'), t('app.close')))),
         domainArt('map')));
       return;
@@ -88,7 +88,7 @@ export function createMapStrip(host: HTMLElement): { update(view: StripView): vo
     dialog.replaceChildren(h('div', { class: 'p-5' },
       h('div', { class: 'flex items-start gap-2' },
         h('div', { class: 'flex-1' },
-          h('h2', { id: 'map-dialog-title', class: 'm-0 text-lg font-bold' }, t('routes.title')),
+          h('h2', { id: 'map-dialog-title', class: 'm-0 text-title font-bold' }, t('routes.title')),
           h('p', { class: 'mt-1 mb-3 text-body-sm text-muted' }, t('map.lanes', { n: harbor.open.size, total: ROUTES.length }), ' · ', t('lane.pickShort'))),
         h('form', { method: 'dialog' }, h('button', { class: 'flex items-center gap-1 px-2 py-1 text-body-sm' }, icon('x', 'size-4'), t('app.close')))),
       // ui-ux-v6 S2: the map spans the dialog (labels ≥ 11 px from lg); the lane list and the brief sit below it

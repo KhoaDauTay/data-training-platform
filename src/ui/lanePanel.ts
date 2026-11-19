@@ -40,7 +40,7 @@ export function lanePanel(port: string, harbor: Harbor, start: (task: Ticket) =>
   const lang = getLang();
   const r = ROUTES.find((x) => x.port === port)!;
   const brief = loadLanes().briefs.find((b) => b.port === port);
-  const title = h('h3', { id: 'lane-title', tabindex: '-1', class: 'm-0 text-lg font-bold' }, [r.name, brief?.country[lang], port].filter(Boolean).join(' · '));
+  const title = h('h3', { id: 'lane-title', tabindex: '-1', class: 'm-0 text-title font-bold' }, [r.name, brief?.country[lang], port].filter(Boolean).join(' · '));
   const head = h('p', { class: 'm-0 text-body-sm font-semibold text-muted' }, t('lane.brief'));
   if (!harbor.open.has(port) || !brief) {
     return h('div', { class: 'space-y-2' }, head, title,
@@ -54,7 +54,7 @@ export function lanePanel(port: string, harbor: Harbor, start: (task: Ticket) =>
     head, title,
     h('p', { class: 'm-0' }, brief.intro[lang]),
     h('div', { class: 'grid grid-cols-3 gap-2 text-center' }, ...brief.numbers.filter((x) => shown(x, passed)).map((x) =>
-      h('div', { class: 'rounded-(--r-ctl) bg-code p-2' }, h('b', { class: 'block text-xl tabular-nums' }, x.value ?? ''), h('span', { class: 'text-caption text-muted' }, x.text[lang])))),
+      h('div', { class: 'rounded-(--r-ctl) bg-code p-2' }, h('b', { class: 'block text-heading tabular-nums' }, x.value ?? ''), h('span', { class: 'text-caption text-muted' }, x.text[lang])))),
     h('dl', { class: 'm-0 space-y-1.5 text-body-sm' }, ...brief.facts.filter((x) => shown(x, passed)).map((x) =>
       h('div', {}, h('dt', { class: 'inline font-semibold' }, `${x.label?.[lang] ?? ''}: `), h('dd', { class: 'inline' }, x.text[lang])))),
     h('p', { class: 'm-0 rounded-(--r-inset) border-l-4 border-accent bg-accent-soft p-2 text-body-sm' }, h('b', {}, t('lane.asked')), ' ', brief.asked[lang]),

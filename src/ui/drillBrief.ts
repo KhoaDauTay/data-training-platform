@@ -110,7 +110,7 @@ function nameOf(g: General, d: Drill): string {
   return d.skill ? d$.SKILLS.find((s) => s.id === d.skill)?.label[lang] ?? d.skill : g.nodes.find((n) => n.id === d.node)?.title[lang] ?? d.node ?? '';
 }
 
-const TITLE = { id: 'brief-title', tabindex: '-1', class: 'm-0 text-lg font-bold' };
+const TITLE = { id: 'brief-title', tabindex: '-1', class: 'm-0 text-title font-bold' };
 
 /** Left pane of the drill workspace: title, task, expected shape (no labels, D8a-6), tables used and expected rows (L84), a free hint, the lesson, the Recap. */
 export function drillPane(host: HTMLElement, m: DrillMode): void {
@@ -223,7 +223,7 @@ export function practiceHub(): HTMLElement | null {
   const done = (d: Drill): boolean => app.save.completed.includes(d.id);
   const go = (d: Drill, label: string): HTMLElement =>
     h('button', { type: 'button', class: BTN, onclick: () => d$.actions.startDrill(d.id) }, label);
-  const head = h('h2', { id: 'hub-title', class: 'm-0 text-lg font-bold' }, lt('hub.title'));
+  const head = h('h2', { id: 'hub-title', class: 'm-0 text-title font-bold' }, lt('hub.title'));
   const wrap = (...kids: (Node | null)[]): HTMLElement =>
     h('div', {}, h('section', { class: 'space-y-3 rounded-(--r-card) bg-panel p-5 ring-1 ring-line', 'aria-labelledby': 'hub-title' }, head, ...d$.nodes(...kids)),
       d$.guideSlot('practice-hub')); // v13 G7
@@ -235,7 +235,7 @@ export function practiceHub(): HTMLElement | null {
   }
   if (known.size === 0) {
     return wrap(h('p', { class: 'm-0 text-[15px] text-muted' }, lt('hub.empty')),
-      h('a', { href: `${d$.hashOf('learn')}/sql/1`, class: 'inline-block rounded-full bg-accent px-4 py-2 font-bold text-on-accent no-underline shadow-sm hover:shadow-md' }, lt('hub.start'))); // looks like the call to action it is (BTN_GO, by value: lazy chunk)
+      h('a', { href: `${d$.hashOf('learn')}/sql/1`, class: 'inline-block rounded-full bg-accent px-4 py-2 font-bold text-on-accent no-underline shadow-(--shadow-1)' }, lt('hub.start'))); // looks like the call to action it is (BTN_GO, by value: lazy chunk)
   }
   const box = (s: string): number => app.save.review[s]?.box ?? 1;
   const weakest = [...known].sort((a, b) => box(a) - box(b) || ids.indexOf(a) - ids.indexOf(b))[0];

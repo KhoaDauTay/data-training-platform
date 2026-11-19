@@ -19,7 +19,7 @@ const BTN = 'rounded-full px-4 whitespace-nowrap';
 /** Buttons inside a card whose title link covers it (L88) stay clickable above the cover. */
 const ABOVE = 'relative z-10';
 const cx = (...c: string[]): string => c.join(' ');
-const H2 = 'm-0 text-lg font-bold';
+const H2 = 'm-0 text-title font-bold';
 /** The "‹ back" line with "Boon chỉ mình" on its right (v8 §2.1). */
 const backLine = (href: string, text: string, guide: string): HTMLElement =>
   d$.h('p', { class: 'm-0 flex flex-wrap items-center justify-between gap-2' }, d$.h('a', { href }, text), replayBtn(guide));
@@ -125,7 +125,7 @@ function modulePage(c: LearnCtx, n: number, entered: boolean): HTMLElement {
   return h('div', { class: 'space-y-5' },
     backLine(d$.hashOf('learn'), lt('learn.backAll'), 'module-intro'),
     h('div', { class: 'flex items-center gap-3' }, moduleArt(c, n, entered ? 'cq-glyph-in w-24' : 'w-24', ms.done), // Plan 8b, v6 S4
-      h('h2', { class: 'm-0 text-xl font-bold' }, lt('learn.moduleTitle', { n, title: d$.moduleTitle(n, d$.getLang()) }))),
+      h('h2', { class: 'm-0 text-heading font-bold' }, lt('learn.moduleTitle', { n, title: d$.moduleTitle(n, d$.getLang()) }))),
     h('p', { class: 'm-0 text-muted' }, lt('learn.moduleLine', { k: ms.learned, m: ms.skills.length })),
     slot('module-head'),
     ...d$.SKILLS.filter((s) => s.chapter === n).flatMap((s, i) => (i ? [skillBlock(c, s, 'h3')] : [slot('module-skill'), skillBlock(c, s, 'h3')])));
@@ -248,7 +248,7 @@ function advPage(c: LearnCtx, x: AdvNode): HTMLElement {
   const needs = x.needs.flatMap((id, i) => (i ? [', ', need(id)] : [need(id)]));
   return h('div', { class: 'space-y-5' },
     backLine(d$.hashOf('learn'), lt('learn.backAll'), x.status === 'external' ? 'adv-ext' : 'adv'),
-    h('h2', { class: 'm-0 text-xl font-bold' }, `${x.id.toUpperCase()} · ${x.title[lang]}`),
+    h('h2', { class: 'm-0 text-heading font-bold' }, `${x.id.toUpperCase()} · ${x.title[lang]}`),
     statusLine(x, x.status === 'external' ? '' : ` · ${lt('learn.drills', { n: st.drills, total: st.total })}`),
     h('section', { class: 'space-y-3 rounded-(--r-card) bg-panel p-5 ring-1 ring-line' },
     h('div', { class: 'text-[15px] leading-relaxed' }, d$.richText(x.why[lang])),

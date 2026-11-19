@@ -45,7 +45,7 @@ let d$: InterviewDeps;
 let c$: InterviewContent;
 const it = (key: IvKey, params?: I18n.Params): string => ivText(d$.getLang(), d$.locale(), key, params);
 const CARD = 'flex flex-col gap-2 rounded-(--r-card) bg-panel p-5 ring-1 ring-line'; // gap, not space-y: the m-0 children would cancel it
-const TITLE = { id: 'brief-title', tabindex: '-1', class: 'm-0 text-lg font-bold' };
+const TITLE = { id: 'brief-title', tabindex: '-1', class: 'm-0 text-title font-bold' };
 /** "Run the timer" on the list page: off by default (D-N10), remembered for this page load only. */
 let timerPick = false;
 
@@ -439,7 +439,7 @@ export function listPage(): HTMLElement {
     h('h2', { class: 'm-0 text-heading' }, it('iv.title')),
     h('p', { class: 'm-0 text-[15px]' }, it('iv.intro')),
     h('section', { class: 'flex flex-col gap-3', 'aria-labelledby': 'iv-sets' },
-      h('h3', { id: 'iv-sets', class: 'm-0 text-lg font-bold' }, it('iv.sets')),
+      h('h3', { id: 'iv-sets', class: 'm-0 text-title font-bold' }, it('iv.sets')),
       h('p', { class: 'm-0 text-body-sm text-muted' }, it('iv.setsIntro')),
       h('label', { class: 'flex min-h-6 items-center gap-2' }, pick, it('iv.timerPick')),
       h('ul', { class: 'm-0 flex list-none flex-col gap-3 p-0' }, ...c$.sets.map((s) => {
@@ -452,7 +452,7 @@ export function listPage(): HTMLElement {
           actions(s.id));
       }))),
     h('section', { class: 'flex flex-col gap-3', 'aria-labelledby': 'iv-th' },
-      h('h3', { id: 'iv-th', class: 'm-0 text-lg font-bold' }, it('iv.takeHomes')),
+      h('h3', { id: 'iv-th', class: 'm-0 text-title font-bold' }, it('iv.takeHomes')),
       h('p', { class: 'm-0 text-body-sm text-muted' }, it('iv.thIntro')),
       h('ul', { class: 'm-0 flex list-none flex-col gap-3 p-0' }, ...c$.takeHomes.map((x) => {
         const last = p.takeHomes[x.id];

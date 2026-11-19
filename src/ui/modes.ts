@@ -300,7 +300,7 @@ function nextItem(): void {
   focusTitle();
 }
 
-const TITLE = { id: 'brief-title', tabindex: '-1', class: 'm-0 text-lg font-bold' };
+const TITLE = { id: 'brief-title', tabindex: '-1', class: 'm-0 text-title font-bold' };
 
 /** v16 (v7 §5.3, L142): a `#/share` link's SQL. `ask` = the player's own draft would be replaced: they choose first. */
 let shared: { sql: string; ask: boolean } | undefined;
@@ -450,7 +450,7 @@ function reviewCard(m: HomeModel): HTMLElement {
     none ? mascot('lily', 'sleep', 'size-16') : null, // v6 §2.4: an empty state
     !none && !due ? h('div', { class: 'w-40 shrink-0' }, illustration('aspect-[240/120]', (il) => il.emptyDrills())) : null, // Plan 8b: nothing due
     h('div', { class: 'min-w-48 flex-1' }, // T9: a floor, so the button wraps below at 375 px instead of squeezing the text to one word per line
-      h('h2', { id: 'review-title', class: 'm-0 text-lg font-bold' }, t('prac.section')),
+      h('h2', { id: 'review-title', class: 'm-0 text-title font-bold' }, t('prac.section')),
       h('p', { class: 'mt-1 mb-0 text-[15px] text-muted' }, intro),
       p.solved + p.weak ? h('p', { class: 'mt-1 mb-0 text-body-sm text-muted' }, t('prac.stats', { solved: p.solved, weak: p.weak })) : null),
     due ? h('button', { type: 'button', class: cx(here ? BTN_GO : BTN_SECONDARY, 'px-4 py-2'), onclick: () => startToday() }, t('prac.today', { n: due })) : null,
@@ -466,7 +466,7 @@ function warmupCard(): HTMLElement | null {
   if (n === 0) return null;
   return h('section', { class: cx(CARD, 'flex flex-wrap items-center gap-4 p-5'), 'aria-labelledby': 'warmup-title' },
     h('div', { class: 'min-w-48 flex-1' },
-      h('h2', { id: 'warmup-title', class: 'm-0 text-lg font-bold' }, t('warmup.title')),
+      h('h2', { id: 'warmup-title', class: 'm-0 text-title font-bold' }, t('warmup.title')),
       h('p', { class: 'mt-1 mb-0 text-[15px] text-muted' }, t('warmup.intro', { n }))),
     h('button', { type: 'button', class: cx(BTN_SECONDARY, 'px-4 py-2'), onclick: () => void startPractice(warmupToday(), true) }, t('warmup.start', { n })));
 }
@@ -537,7 +537,7 @@ registerHomeSection({ id: 'drills', order: 23, span: 'full', pages: ['home', 'pr
 function interviewCard(): HTMLElement {
   return h('section', { class: cx(CARD, 'flex flex-wrap items-center gap-4 p-5'), 'aria-labelledby': 'iv-card-title' },
     h('div', { class: 'min-w-48 flex-1' },
-      h('h2', { id: 'iv-card-title', class: 'm-0 text-lg font-bold' }, t('prac.interview')),
+      h('h2', { id: 'iv-card-title', class: 'm-0 text-title font-bold' }, t('prac.interview')),
       h('p', { class: 'mt-1 mb-0 text-[15px] text-muted' }, t('prac.interviewDesc'))),
     h('a', { href: INTERVIEW_PAGE, class: cx(BTN_SECONDARY, 'px-4 py-2 no-underline') }, t('prac.interviewGo')));
 }

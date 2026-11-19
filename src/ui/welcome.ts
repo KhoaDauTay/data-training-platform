@@ -24,7 +24,7 @@ let entering = false;
 let frame: { root: HTMLElement; scene: HTMLElement; db: HTMLElement; rest: HTMLElement } | undefined;
 
 const dialog = (): HTMLDialogElement => byId('welcome-dialog') as HTMLDialogElement;
-const title = (text: string) => h('h2', { id: 'welcome-title', tabindex: '-1', class: 'm-0 text-xl font-extrabold' }, text);
+const title = (text: string) => h('h2', { id: 'welcome-title', tabindex: '-1', class: 'm-0 text-heading font-extrabold' }, text);
 
 /** v4 §B.2 step 3: a beginner gets the tour on ticket 1; "I know SQL" gets no tour, collapsed lessons and every tab (v4 §C.6, V9). */
 function choose(knows: boolean): void {

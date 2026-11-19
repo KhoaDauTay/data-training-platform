@@ -81,7 +81,7 @@ export const PILL = 'inline-flex items-center gap-1 rounded-full px-2 py-0.5 tex
 export const DEPT_CHIP = 'rounded-(--r-inset) px-2 py-0.5 text-caption font-bold uppercase';
 /** Teal call to action, a pill (v6 §2.1): --on-accent on --accent = 5.5:1 light, 8.9:1 dark. Hover never uses filter/transform: they make the
  * pill the containing block of a stretched row's ::after (L88), so the cover shrank under the pointer and the click missed (L93). */
-export const BTN_GO = 'rounded-full border-0 bg-accent font-bold text-on-accent shadow-sm hover:bg-accent/90 hover:shadow-md';
+export const BTN_GO = 'rounded-full border-0 bg-accent font-bold text-on-accent shadow-(--shadow-1) hover:bg-accent/90';
 /** ui-ux-v7 T1: the second level (bordered, accent text: 4.7:1 on --accent-soft hover). One BTN_GO per region or card, the rest are this or BTN_GHOST. */
 export const BTN_SECONDARY = 'rounded-full border border-accent bg-panel font-bold text-accent hover:bg-accent-soft';
 /** Third level: text only. */
@@ -96,7 +96,7 @@ export const NAV_LINK = 'rounded-full px-3 py-1.5 font-bold whitespace-nowrap te
 export const DONE_PILL = 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200';
 
 /** Clickable card (ui-ux-v3 §d): lift, shadow and an accent ring on hover and keyboard focus. Static cards stay CARD. */
-export const CARD_ACTION = 'rounded-(--r-card) bg-panel ring-1 ring-line transition hover:-translate-y-0.5 hover:bg-panel hover:shadow-md hover:ring-2 hover:ring-accent focus-visible:ring-2 focus-visible:ring-accent';
+export const CARD_ACTION = 'rounded-(--r-card) bg-panel ring-1 ring-line transition hover:-translate-y-0.5 hover:bg-panel hover:shadow-(--shadow-1) hover:ring-2 hover:ring-accent focus-visible:ring-2 focus-visible:ring-accent';
 
 /**
  * Light / Dark / follow the OS (L42). Stored as `theme` in the device prefs (PREFS_KEY, next to `lang`), never in the Save.

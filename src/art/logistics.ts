@@ -734,7 +734,7 @@ function mapSail(c: Ctx, g: Gsap, tl: Timeline, port: string, at: number, dur: n
 }
 
 // ---- cards over the art ----
-const CARD_OV = 'w-64 max-w-[calc(100vw-4rem)] rounded-(--r-ctl) bg-panel p-3 text-body-sm shadow-lg ring-1 ring-line';
+const CARD_OV = 'w-64 max-w-[calc(100vw-4rem)] rounded-(--r-ctl) bg-panel p-3 text-body-sm shadow-(--shadow-2) ring-1 ring-line';
 const STAMP = 'absolute rounded-(--r-inset) border-[3px] px-2 py-0.5 text-[15px] font-extrabold tracking-wide uppercase';
 /** Lane colour is never the only signal: the stamp spells the lane out (§6). */
 const LANE: Record<Lane, { key: Key; stamp: string }> = {
@@ -787,11 +787,11 @@ function promoCard(c: Ctx): HTMLElement {
   const to = c.rankAfter.tier?.[lang] ?? t('career.intern');
   const opened = openedNames(c);
   // Plan 8b D8b-6 (Plan 7 V18): Boon cheers beside the promotion card; Lily cheers in the dock (ui/stage.ts)
-  return h('div', { class: 'flex w-80 max-w-[calc(100vw-4rem)] items-center gap-3 rounded-(--r-card) bg-panel p-4 shadow-xl ring-2 ring-amber-500' },
+  return h('div', { class: 'flex w-80 max-w-[calc(100vw-4rem)] items-center gap-3 rounded-(--r-card) bg-panel p-4 shadow-(--shadow-2) ring-2 ring-amber-500' },
     mascot('boon', 'cheer', 'size-14'),
     h('div', { class: 'min-w-0 flex-1 text-center' },
       h('p', { class: 'm-0 text-body-sm font-semibold tracking-wide text-amber-800 uppercase dark:text-amber-200' }, t('anim.promoKicker', { n: c.tk.chapter })),
-      h('p', { class: 'm-0 text-lg font-bold' }, from !== to ? `${from} → ${to}` : t('anim.promoStep', { career: c.rankAfter.career?.[lang] ?? to })),
+      h('p', { class: 'm-0 text-title font-bold' }, from !== to ? `${from} → ${to}` : t('anim.promoStep', { career: c.rankAfter.career?.[lang] ?? to })),
       opened.length ? h('p', { class: 'm-0 text-body-sm text-muted' }, t('anim.promoRoute', { port: opened.join(', ') })) : null));
 }
 
