@@ -1,0 +1,7 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>NoSQL spike</title>
+<textarea id="src" rows="6" cols="100">db.orders.aggregate([{ $group: { _id: '$status', n: { $sum: 1 } } }])</textarea>
+<button id="run">Run (Mongo)</button>
+<pre id="out"></pre>
+<script type="module" src="./main.js"></script>
