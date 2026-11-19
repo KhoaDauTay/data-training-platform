@@ -51,16 +51,19 @@ const TICKETS = {
 const drills = parseYaml(readFileSync(join(ROOT, 'content/general/sql.yml'), 'utf8'));
 const DRILL = drills.find((d) => d.kind === 'open'); // an open drill: no ___ starter to fill
 const LESSON = parseYaml(readFileSync(join(ROOT, 'content/lessons.yml'), 'utf8')).find((l) => l.id === TICKETS.logistics.grants[0]);
+// ENG-CORE (L217): a Database Engine lab lesson; its step solutions are read from the file.
+const ENGINE_LAB = { id: 'e-pg-l1-02', hash: '#/engine/postgres/L1/e-pg-l1-02',
+  steps: parseYaml(/^---\r?\n([\s\S]*?)\r?\n---/.exec(readFileSync(join(ROOT, 'content/engine/postgres/L1/02-read-column-types.md'), 'utf8'))[1]).lab.steps.map((x) => x.solution) };
 
 // Every route of src/route.ts once; a new route fails here until the smoke knows its hash.
 const ROUTE_HASH = {
   home: '#/', learn: '#/learn', practice: '#/practice', me: '#/me', overview: '#/d/logistics', play: '#/d/logistics/play',
-  data: '#/d/logistics/data', dashboard: '#/d/logistics/dashboard', map: '#/d/logistics/map',
+  data: '#/d/logistics/data', dashboard: '#/d/logistics/dashboard', map: '#/d/logistics/map', engine: '#/engine',
 };
 const ROUTES = JSON.parse(/export const ROUTES = (\[[^\]]*\])/.exec(readFileSync(join(ROOT, 'src/route.ts'), 'utf8'))[1].replace(/'/g, '"'));
 // V20-C (L179): plus the General sub-pages and the other two domains' pages (the list of tests/axe.test.ts).
 const PAGES = [...ROUTES.filter((r) => ROUTE_HASH[r]).map((r) => ROUTE_HASH[r]), '#/learn/sql/1', '#/learn/skill/select', '#/learn/adv/a2', '#/learn/adv/d5',
-  '#/learn/interview', ...['ecommerce', 'finance'].flatMap((d) => ['', '/play', '/data', '/dashboard', '/map'].map((p) => `#/d/${d}${p}`))];
+  '#/learn/interview', '#/engine/postgres', ENGINE_LAB.hash, '#/engine/postgres/L1/e-pg-l1-03', ...['ecommerce', 'finance'].flatMap((d) => ['', '/play', '/data', '/dashboard', '/map'].map((p) => `#/d/${d}${p}`))];
 const mainOf = (hash) => (/\/play$/.test(hash) ? 'shell' : /\/data$/.test(hash) ? 'data' : /\/dashboard$/.test(hash) ? 'dashboard' : 'home');
 // axe-core from node_modules (dev dependency, L141; never in dist/), injected into the page over CDP. target-size is off by default.
 const AXE = readFileSync(join(ROOT, 'node_modules/axe-core/axe.min.js'), 'utf8');
@@ -403,6 +406,19 @@ try {
     const got = [...(await ev(completed))].sort();
     if (S(got) !== S(want)) fail(`completed = ${S(got)}, expected ${S(want)}`);
     return got;
+  });
+
+  await step(`engine lab ${ENGINE_LAB.id}: every step submitted, lesson completed`, async () => {
+    await go(base, ENGINE_LAB.hash);
+    await waitFor('the lesson page with its lab', `!!document.querySelector('#engine-page [data-ek="${ENGINE_LAB.id}-s0-code"]')`, 60000);
+    for (const [i, sql] of ENGINE_LAB.steps.entries()) {
+      const at = (what) => `document.querySelector('[data-ek="${ENGINE_LAB.id}-s${i}-${what}"]')`;
+      await ev(`(t => { t.value = ${S(sql)}; t.dispatchEvent(new Event('input', { bubbles: true })); })(${at('code')})`);
+      await ev(`${at('submit')}.click()`);
+      await waitFor(`step ${i + 1} passed`, `[...document.querySelectorAll('#engine-page [role=status].good')].length > ${i}`, 90000);
+    }
+    await waitFor('the lesson in save.completed', `${completed}.includes(${S(ENGINE_LAB.id)})`, 10000);
+    await shot('engine-lab');
   });
 
   for (const r of ROUTES) if (!ROUTE_HASH[r]) await step(`route ${r}`, () => fail(`route '${r}' has no hash in scripts/smoke.mjs`));
