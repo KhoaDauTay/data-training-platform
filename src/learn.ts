@@ -1,5 +1,6 @@
 import type { AdvNode, Drill, General } from './general';
 import type { Skill } from './progress';
+import type { PracticeItem } from './practice';
 import type { Save } from './save';
 import type { Ticket } from './tickets';
 
@@ -88,4 +89,20 @@ export function stamper() {
     fresh: (id: string, learned: boolean): boolean => learned && !seen.has(id),
     spend(id: string): void { seen.add(id); },
   };
+}
+
+/**
+ * v17 I4 (L145): the General entry check. One `open` drill per module (Phần n = the skills of chapter n) not learned yet:
+ * the drill of the module's last skill (skills.yml order) that has one. Passing it (the practice rule `isSuccess`) seeds a
+ * review card for every skill of the module, so they count as learned (D8a-11) and come back in the review; a weak pass
+ * or a skipped item writes nothing. 0 XP, nothing in `completed`.
+ */
+export function placementItems(skills: readonly Skill[], general: General, known: ReadonlySet<string>): PracticeItem[] {
+  const modules = [...new Set(skills.map((s) => s.chapter))].sort((a, b) => a - b);
+  return modules.flatMap((n) => {
+    const own = skills.filter((s) => s.chapter === n).map((s) => s.id);
+    if (own.every((s) => known.has(s))) return [];
+    const drill = [...own].reverse().map((s) => general.bySkill.get(s)?.find((d) => d.kind === 'open')).find((d) => d);
+    return drill ? [{ ticketId: drill.id, variant: 0, skills: own }] : [];
+  });
 }

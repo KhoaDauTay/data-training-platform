@@ -27,6 +27,8 @@ export interface PracticeRun {
   draft: string;
   /** Started from the chapter warm-up card. */
   warmup?: boolean;
+  /** v17 I4 (L145): the General entry check: a pass seeds the module's review cards, anything else writes nothing. */
+  placement?: boolean;
 }
 
 /** Modes inside the #/play route (not routes of their own). `lane`: a lane side task (Plan 5), outside chapter progress. */

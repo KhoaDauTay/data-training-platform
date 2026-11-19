@@ -20,6 +20,7 @@ import { domainHash, domainOfHash, drillOfHash, sharedOf, type Route } from './r
 import type { Ticket } from './tickets';
 import { initModes, onPracticeWrong, onSolved, openShared, renderLeft, renderReviewButton, startDrill, startLane, startSandbox } from './ui/modes';
 import './ui/me'; // v16 (L142): #/me nav item and page section; the page itself is the lazy meView chunk
+import { earlyOffer } from './ui/chapterView';
 import { renderNotebook, toggleNotebook } from './ui/notebook';
 import { byId, h, initLightDismiss } from './ui/dom';
 import { errorText } from './ui/feedback';
@@ -240,7 +241,7 @@ initModes({ work, rerender, db });
 // The task bar needs no query: it is drawn before the DB is ready.
 const mapStrip = createMapStrip(byId('map'));
 const syncMap = (): void => mapStrip.update({
-  tickets: app.tickets, completed: done(), selectedId: app.selectedId, lane: session.mode.kind === 'lane' ? session.mode.ticket : undefined,
+  tickets: app.tickets, completed: done(), selectedId: app.selectedId, early: earlyOffer()?.id, lane: session.mode.kind === 'lane' ? session.mode.ticket : undefined,
 });
 
 /**
@@ -350,7 +351,10 @@ function complete(tk: Ticket): void {
   const gained = xpFor(tk, app.save.hintsUsed[tk.id] ?? 0);
   app.save.completed.push(tk.id);
   app.save.xp += gained;
-  app.save.review = seedReview(app.save.review, tk.grants, today()); // first review tomorrow
+  // First review tomorrow. L145: a promotion review stands for its chapter, so a review taken early also seeds the cards of
+  // the skills its skipped tasks teach (known through the card, like a General drill; a linear player has them all already).
+  const skills = tk.beat === 'boss' ? app.tickets.filter((x) => x.chapter === tk.chapter).flatMap((x) => x.grants) : tk.grants;
+  app.save.review = seedReview(app.save.review, skills, today());
   delete app.save.bossStep[tk.id];
   persist(true);
   playCompletion(tk, before, done()); // first completion only: the early return above skips re-solves

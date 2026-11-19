@@ -1,7 +1,7 @@
 import { parse as parseYaml } from 'yaml';
 import kpiSource from '../content/kpis.yml?raw';
 import type { QueryResult } from './db/run';
-import { currentChapter, nextTicket, type Bilingual, type Chapter, type Skill } from './progress';
+import { currentChapter, nextTicket, passedChapters, passedSkills, type Bilingual, type Chapter, type Skill } from './progress';
 import { activeDomain, type DomainId } from './domains';
 import type { Save } from './save';
 import type { Lang, Ticket } from './tickets';
@@ -41,9 +41,12 @@ export function resumeTarget(completed: readonly string[], next: Ticket | undefi
   return next && { kind: 'ticket', ticket: next };
 }
 
-/** Skills taught by the completed tickets. Shared by Home, Practice and the chapter goals (Plan 1c). */
-export const learnedSkills = (tickets: Ticket[], completed: Set<string>): Set<string> =>
-  new Set(tickets.filter((t) => completed.has(t.id)).flatMap((t) => t.grants));
+/**
+ * Skills taught by the completed tickets, plus every skill of a chapter whose promotion review is passed, also when it
+ * was taken early (L145: the review stands for the chapter). Shared by Home, Practice and the chapter goals (Plan 1c).
+ */
+export const learnedSkills = (tickets: Ticket[], completed: ReadonlySet<string>): Set<string> =>
+  new Set([...tickets.filter((t) => completed.has(t.id)).flatMap((t) => t.grants), ...passedSkills(tickets, completed)]);
 
 // Plan 8a (moved from src/learn.ts in Task 11 so the Logistics chapter rows can tick learned skills without the General chunk).
 /**
@@ -62,8 +65,7 @@ export function skillOfDrill(id: string, skillIds: readonly string[]): string | 
  */
 export function knownSkills(save: Save, tickets: Ticket[], skillIds: readonly string[]): Set<string> {
   const done = new Set(save.completed);
-  const out = new Set<string>();
-  for (const t of tickets) if (done.has(t.id)) for (const s of t.grants) out.add(s);
+  const out = learnedSkills(tickets, done);
   const drills = new Map<string, number>();
   for (const id of save.completed) {
     const s = skillOfDrill(id, skillIds);
@@ -89,6 +91,7 @@ export function homeModel(
   const chapter = currentChapter(tickets, completed);
   const solved = tickets.filter((t) => completed.has(t.id));
   const learned = learnedSkills(tickets, completed);
+  const passed = passedChapters(tickets, completed);
   return {
     next: nextTicket(tickets, completed),
     chapter,
@@ -99,7 +102,7 @@ export function homeModel(
       const own = tickets.filter((t) => t.chapter === c.chapter);
       const done = own.filter((t) => completed.has(t.id)).length;
       const status: ChapterStatus =
-        own.length === 0 ? 'soon' : done === own.length ? 'done' : c.chapter === chapter ? 'current' : 'locked';
+        own.length === 0 ? 'soon' : done === own.length || passed.has(c.chapter) ? 'done' : c.chapter === chapter ? 'current' : 'locked';
       return {
         chapter: c.chapter, status, done, total: own.length,
         skills: skills.filter((s) => s.chapter === c.chapter),

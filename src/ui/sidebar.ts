@@ -2,6 +2,7 @@ import { loadTickets } from '../content';
 import { activeDomain, DOMAINS } from '../domains';
 import { knownSkills } from '../home';
 import { getLang, t, type Key } from '../i18n';
+import { earlyOffer } from './chapterView';
 import { CHAPTERS, chaptersOf, chapterTitle, currentChapter, moduleTitle, rankOf, SKILLS, visibleTickets } from '../progress';
 import { gated, navLock, readTour, sqlOnly } from '../onboarding';
 import { domainHash, hashOf, inDomain, learnModuleOf, learnSkillOf, type Route } from '../route';
@@ -108,6 +109,8 @@ function tasks(): HTMLElement | null {
   const lang = getLang();
   const d = done();
   const reached = new Set(visibleTickets(app.tickets, d).map((x) => x.id));
+  const early = earlyOffer(); // L145: the review offered early opens like the task bar's button
+  if (early) reached.add(early.id);
   const own = app.tickets.filter((x) => x.chapter === tk.chapter);
   return h('div', { class: 'side-extra' },
     h('p', { class: GROUP }, t('nav.chapterOption', { n: tk.chapter, title: chapterTitle(tk.chapter, lang) })),
