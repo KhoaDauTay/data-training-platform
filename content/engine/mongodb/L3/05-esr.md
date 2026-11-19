@@ -42,24 +42,24 @@ quiz:
       - { vi: "Sort", en: "Sort" }
     answer: 1
     why:
-      vi: "Tài liệu ghi rõ `$ne` và `$nin` là toán tử range, không phải equality. `$regex` cũng là range."
+      vi: "Docs chính thức ghi rõ `$ne` và `$nin` là toán tử range, không phải equality. `$regex` cũng là range."
       en: "The docs state that `$ne` and `$nin` are range operators, not equality. `$regex` is a range too."
 ---
 
 ## Ý chính
 
-Index MongoDB là B-tree. Index kép `{ a: 1, b: 1, c: 1 }` sắp khóa theo `a`, trong cùng `a` thì theo `b`, rồi theo `c`, như một danh bạ xếp theo họ rồi tên. Truy vấn chỉ quét được một đoạn liền của index khi các trường đứng trước đã bị cố định bằng phép so bằng.
+Index (chỉ mục) MongoDB là B-tree. Index kép `{ a: 1, b: 1, c: 1 }` sắp khóa theo `a`, trong cùng `a` thì theo `b`, rồi theo `c`, như một danh bạ xếp theo họ rồi tên. Truy vấn chỉ quét được một đoạn liền của index khi các trường đứng trước đã bị cố định bằng phép so bằng.
 
-Tài liệu MongoDB khuyên xếp trường theo ESR: Equality (so bằng) trước, Sort (trường sắp xếp) sau đó, Range (khoảng) cuối cùng. Trong một khối bằng, khóa đã có sẵn thứ tự nên MongoDB đọc theo index mà không phải sắp lại.
+Docs chính thức của MongoDB khuyên xếp trường theo ESR: Equality (so bằng) trước, Sort (trường sắp xếp) sau đó, Range (khoảng) cuối cùng. Trong một khối bằng, khóa đã có sẵn thứ tự nên MongoDB đọc theo index mà không phải sắp lại.
 
-Nếu range đứng trước sort, thứ tự sort bị vỡ qua các giá trị range, MongoDB phải sắp trong bộ nhớ và explain có stage `SORT`. Theo tài liệu, kế hoạch không có stage `SORT` nghĩa là thứ tự lấy từ index. Khi điều kiện khoảng rất chọn lọc, đặt range trước sort (ERS) có thể rẻ hơn, vì chỉ còn vài tài liệu phải sắp.
+Nếu range đứng trước sort, thứ tự sort bị vỡ qua các giá trị range, MongoDB phải sắp trong bộ nhớ và explain có stage `SORT`. Theo docs chính thức, kế hoạch không có stage `SORT` nghĩa là thứ tự lấy từ index. Khi điều kiện khoảng rất chọn lọc, đặt range trước sort (ERS) có thể rẻ hơn, vì chỉ còn vài tài liệu phải sắp.
 
 - `$ne`, `$nin` và `$regex` là range.
-- `$in` một mình như nhiều phép bằng. Đi với `.sort()`: mảng dưới 201 phần tử được tách thành phép bằng rồi trộn theo thứ tự index (`SORT_MERGE`); từ 201 phần tử trở lên thì như range. Tài liệu nói ngưỡng này không cam kết giữ nguyên giữa các phiên bản.
+- `$in` một mình như nhiều phép bằng. Đi với `.sort()`: mảng dưới 201 phần tử được tách thành phép bằng rồi trộn theo thứ tự index (`SORT_MERGE`); từ 201 phần tử trở lên thì như range. Docs chính thức nói ngưỡng này không cam kết giữ nguyên giữa các phiên bản.
 
 ## Ví dụ
 
-Ví dụ trong tài liệu: `directors` là equality, `year` là sort, `runtime` là range.
+Ví dụ trong docs chính thức: `directors` là equality, `year` là sort, `runtime` là range.
 
 ```javascript
 db.movies.find(
@@ -70,13 +70,13 @@ db.movies.find(
 db.movies.createIndex({ directors: 1, year: 1, runtime: 1 })
 ```
 
-Đúng với tài liệu MongoDB hiện hành (8.x), kiểm ngày 2026-11-20.
+Đúng với docs chính thức của MongoDB hiện hành (8.x), kiểm ngày 2026-11-20.
 
 # EN
 
 ## Key idea
 
-MongoDB indexes are B-trees. The compound index `{ a: 1, b: 1, c: 1 }` sorts keys by `a`, then by `b` within the same `a`, then by `c`, like a phone book ordered by family name then given name. A query scans one contiguous part of the index only when the fields in front are fixed by equality.
+MongoDB indexes are B-trees. The compound index `{ a: 1, b: 1, c: 1 }` sorts keys by `a`, then within the same `a` by `b`, then by `c`, like a phone book ordered by family name then given name. A query scans one contiguous part of the index only when the fields in front are fixed by equality.
 
 The MongoDB docs recommend the ESR order: Equality fields first, then Sort fields, then Range fields last. Inside an equality block the keys are already ordered, so MongoDB reads in index order with no extra sort.
 

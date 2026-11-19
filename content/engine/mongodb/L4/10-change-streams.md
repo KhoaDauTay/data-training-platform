@@ -26,7 +26,7 @@ quiz:
       - { vi: "Không tiếp tục được, vì oplog không còn đủ lịch sử tới thao tác của token", en: "It cannot resume, because the oplog no longer holds history back to the token's operation" }
     answer: 1
     why:
-      vi: "Tài liệu: oplog phải còn đủ lịch sử để tìm thao tác ứng với token. Ứng dụng phải chịu mất sự kiện hoặc đọc lại toàn bộ."
+      vi: "Docs chính thức: oplog phải còn đủ lịch sử để tìm thao tác ứng với token. Ứng dụng phải chịu mất sự kiện hoặc đọc lại toàn bộ."
       en: "The docs: the oplog must hold enough history to find the token's operation. The application must accept the gap or reload everything."
   - q:
       vi: "Bạn cần cả tài liệu sau khi cập nhật, không chỉ phần thay đổi. Tùy chọn nào?"
@@ -58,7 +58,7 @@ let resumeToken = cursor.next()._id
 let resumedCursor = db.inventory.watch( [ ], { resumeAfter: resumeToken } )
 ```
 
-Đúng với tài liệu MongoDB hiện hành, kiểm ngày 2026-11-20. Bài này dùng sơ đồ: mingo không có oplog.
+Đúng với docs chính thức của MongoDB hiện hành, kiểm ngày 2026-11-20. Phần chạy thật cần máy chủ thật (nhiều phiên / replica set / AWS). Bài này dùng sơ đồ và kết quả ghi sẵn. mingo không có oplog.
 
 # EN
 
@@ -80,4 +80,4 @@ let resumeToken = cursor.next()._id
 let resumedCursor = db.inventory.watch( [ ], { resumeAfter: resumeToken } )
 ```
 
-Matches the current MongoDB manual, checked 2026-11-20. This lesson uses a diagram: mingo has no oplog.
+Matches the current MongoDB manual, checked 2026-11-20. The real run needs a real server (several sessions / replica set / AWS). This lesson uses diagrams and recorded results. mingo has no oplog.

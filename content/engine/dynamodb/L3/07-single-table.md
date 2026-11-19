@@ -48,6 +48,20 @@ quiz:
     why:
       vi: Khóa chung cho phép nhiều loại thực thể dùng chung bảng và chung index (GSI overloading). Tên ngắn cũng làm item nhẹ hơn, nhưng đó không phải lý do chính.
       en: Generic keys let many entity types share the table and its indexes (GSI overloading). Short names also make items lighter, but that is not the main reason.
+  - q:
+      vi: Tiệm muốn lưu thêm nhật ký đăng nhập. Nhật ký chỉ ghi, không bao giờ được đọc cùng khách hay đơn, và cần lớp lưu trữ rẻ (Standard-IA) với lịch backup riêng. Đặt nó ở đâu?
+      en: The shop wants to store a login log as well. The log is write-only, never read together with customers or orders, and needs a cheap table class (Standard-IA) and its own backup schedule. Where should it go?
+    options:
+      - vi: Vào bảng `Shop` - single-table luôn tốt hơn nhiều bảng.
+        en: Into table `Shop` - a single table is always better than several tables.
+      - vi: Một bảng riêng - nó không được đọc cùng thực thể nào, còn table class và backup đặt theo từng bảng.
+        en: A separate table - it is never read with any other entity, and table class and backups are set per table.
+      - vi: Vào bảng `Shop`, kèm một GSI riêng cho nhật ký.
+        en: Into table `Shop`, with a GSI of its own for the log.
+    answer: 1
+    why:
+      vi: 'Nghe hợp lý vì bài này khen single-table. Nhưng lợi ích của nó chỉ có khi các thực thể được đọc cùng nhau trong một Query. Nhật ký không bao giờ đọc cùng ai, mà table class, backup và Streams lại đặt theo bảng. AWS ghi rõ: ứng dụng không truy vấn nhiều thực thể cùng lúc thì nhiều bảng là đủ.'
+      en: 'It sounds right because this lesson praises single-table design. But its benefit exists only when entities are read together in one Query. The log is never read with anything, while table class, backups and Streams are set per table. AWS says it plainly: if the app does not query several entities together, multiple tables are good enough.'
 ---
 
 ## Ý chính

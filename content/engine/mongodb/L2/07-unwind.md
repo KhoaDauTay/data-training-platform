@@ -6,6 +6,7 @@ module: aggregation
 title: Tách mảng với $unwind
 title_en: Splitting arrays with $unwind
 kind: lab
+runtime: browser
 minutes: 12
 objectives:
   - vi: Dùng `$unwind` để biến mỗi phần tử mảng thành một tài liệu, rồi gom nhóm theo phần tử.
@@ -81,7 +82,7 @@ db.orders.aggregate([
 
 ## Thực hành
 
-Ba bước trên `orders`. Đơn 9 là đơn nháp chưa có dòng hàng nào.
+Ba bước trên `orders`. Đơn 9 là đơn nháp chưa có dòng hàng nào. Trước bước 3, đoán trước: với `$unwind` mặc định, đơn 9 có hiện trong kết quả không?
 
 # EN
 
@@ -110,4 +111,4 @@ db.orders.aggregate([
 
 ## Practice
 
-Three steps on `orders`. Order 9 is a draft with no line yet.
+Three steps on `orders`. Order 9 is a draft with no line yet. Before step 3, predict: with a default `$unwind`, does order 9 show up in the result?

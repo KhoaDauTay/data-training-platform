@@ -25,7 +25,7 @@ quiz:
       - { vi: "Có thể hết giờ hoặc không bao giờ được xác nhận, vì đa số tính bằng 2 thành viên mang dữ liệu", en: "It may time out or never be acknowledged, because the majority equals the 2 data-bearing members" }
     answer: 1
     why:
-      vi: "Với P-S-A, đa số tính được là 2 mà chỉ có 2 thành viên mang dữ liệu, nên cần cả hai. Arbiter không giữ dữ liệu nên không xác nhận được. Tài liệu khuyên dùng P-S-S."
+      vi: "Với P-S-A, đa số tính được là 2 mà chỉ có 2 thành viên mang dữ liệu, nên cần cả hai. Arbiter không giữ dữ liệu nên không xác nhận được. Docs chính thức khuyên dùng P-S-S."
       en: "For P-S-A the calculated majority is 2 and there are only 2 data-bearing members, so both are needed. The arbiter holds no data and cannot acknowledge. The docs recommend P-S-S."
   - q:
       vi: "Bạn cần đọc một tài liệu theo `_id` phản ánh mọi lần ghi majority đã xong trước khi đọc, trên primary. Read concern nào?"
@@ -46,13 +46,13 @@ quiz:
       - { vi: "Lệnh ghi ngoài bị hoàn tác", en: "The outside write is undone" }
     answer: 0
     why:
-      vi: "Tài liệu: nếu một lần ghi ngoài transaction sửa tài liệu mà thao tác trong transaction định sửa sau đó, transaction hủy vì write conflict."
+      vi: "Docs chính thức: nếu một lần ghi ngoài transaction sửa tài liệu mà thao tác trong transaction định sửa sau đó, transaction hủy vì write conflict."
       en: "The docs: if a write outside the transaction modifies a document that an operation in the transaction later tries to modify, the transaction aborts with a write conflict."
 ---
 
 ## Ý chính
 
-Ba câu về write concern với arbiter, read concern `linearizable` và write conflict trong transaction. Đáp án theo tài liệu MongoDB hiện hành, kiểm ngày 2026-11-20.
+Ba câu về write concern với arbiter, read concern `linearizable` và write conflict trong transaction. Đáp án theo docs chính thức của MongoDB hiện hành, kiểm ngày 2026-11-20.
 
 # EN
 

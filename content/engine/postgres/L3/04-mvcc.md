@@ -6,8 +6,9 @@ module: mvcc
 title: "MVCC: mỗi UPDATE là một phiên bản mới"
 title_en: "MVCC: every UPDATE is a new version"
 kind: concept
+runtime: docs
 minutes: 10
-viz: mvcc-timeline
+viz: pg-mvcc
 objectives:
   - vi: Giải thích UPDATE = tuple mới + `xmax` trên tuple cũ
     en: Explain UPDATE = new tuple + `xmax` on the old tuple
@@ -39,29 +40,31 @@ quiz:
       - { vi: "1.001", en: "1,001" }
     answer: 1
     why:
-      vi: "Mỗi UPDATE để lại bản cũ (có `xmax`) và thêm bản mới. Bản cũ chỉ biến mất khi VACUUM dọn, và chỉ khi không còn giao dịch nào cần nó."
+      vi: "Mỗi UPDATE để lại bản cũ (có `xmax`) và thêm bản mới. Bản cũ chỉ biến mất khi VACUUM dọn, và chỉ khi không còn transaction nào cần nó."
       en: "Each UPDATE leaves the old version (with `xmax`) and adds a new one. The old version disappears only when VACUUM removes it, and only once no transaction still needs it."
   - q:
-      vi: "Giao dịch A đang đọc bảng ở mức REPEATABLE READ. Giao dịch B sửa một dòng rồi COMMIT. A đọc lại dòng đó thấy gì?"
-      en: "Transaction A is reading a table at REPEATABLE READ. Transaction B updates a row and commits. What does A see when it reads that row again?"
+      vi: "Transaction A đang đọc bảng ở mức Repeatable Read. Transaction B sửa một dòng rồi COMMIT. A đọc lại dòng đó thấy gì?"
+      en: "Transaction A is reading a table at Repeatable Read. Transaction B updates a row and commits. What does A see when it reads that row again?"
     options:
       - { vi: "Bản mới của B", en: "B's new version" }
       - { vi: "Bản cũ, vì snapshot của A có trước khi B commit", en: "The old version, because A's snapshot predates B's commit" }
       - { vi: "A bị chặn cho tới khi B xong", en: "A is blocked until B finishes" }
     answer: 1
     why:
-      vi: "Ở REPEATABLE READ, A dùng một snapshot cho cả giao dịch. Bản cũ vẫn còn trên trang nên A đọc nó mà không phải chờ ai. Ở READ COMMITTED, mỗi câu lấy snapshot mới nên câu sau của A sẽ thấy bản của B."
-      en: "At REPEATABLE READ, A uses one snapshot for the whole transaction. The old version is still on the page, so A reads it without waiting for anyone. At READ COMMITTED each statement takes a new snapshot, so A's next statement would see B's version."
+      vi: "Ở Repeatable Read, A dùng một snapshot cho cả transaction. Bản cũ vẫn còn trên trang nên A đọc nó mà không phải chờ ai. Ở Read Committed, mỗi câu lấy snapshot mới nên câu sau của A sẽ thấy bản của B."
+      en: "At Repeatable Read, A uses one snapshot for the whole transaction. The old version is still on the page, so A reads it without waiting for anyone. At Read Committed each statement takes a new snapshot, so A's next statement would see B's version."
 ---
 
 ## Ý chính
 
-Postgres không ghi đè dòng. Mỗi tuple mang hai số giao dịch:
+UPDATE một dòng 1 lần, bảng có thêm mấy phiên bản?
 
-- `xmin`: giao dịch đã chèn nó;
-- `xmax`: giao dịch đã xóa hay thay nó (0 nếu chưa ai).
+Postgres không ghi đè dòng. Mỗi tuple (một phiên bản của dòng nằm trên trang) mang hai số transaction:
 
-UPDATE = chèn tuple mới (`xmin` = giao dịch hiện tại) + ghi `xmax` lên tuple cũ, và `t_ctid` của tuple cũ trỏ sang bản mới. Mỗi câu đọc có một **snapshot**: danh sách giao dịch đã commit lúc nó bắt đầu. Nó chọn phiên bản có `xmin` nằm trong snapshot và `xmax` chưa. Vì vậy người đọc không phải khóa, người ghi không phải chờ người đọc.
+- `xmin`: transaction đã chèn nó;
+- `xmax`: transaction đã xóa hay thay nó (0 nếu chưa ai).
+
+UPDATE = chèn tuple mới (`xmin` = transaction hiện tại) + ghi `xmax` lên tuple cũ, và `t_ctid` của tuple cũ trỏ sang bản mới. Mỗi câu đọc có một **snapshot**: danh sách transaction đã commit lúc nó bắt đầu. Nó chọn phiên bản có `xmin` nằm trong snapshot và `xmax` chưa. Vì vậy người đọc không cần lock, người ghi không phải chờ người đọc.
 
 Cái giá: bản cũ nằm lại trên trang cho tới khi VACUUM dọn. Đây là gốc của chuyện bảng phình.
 
@@ -71,7 +74,7 @@ Cái giá: bản cũ nằm lại trên trang cho tới khi VACUUM dọn. Đây l
 SELECT ctid, xmin, xmax, * FROM acct;
 ```
 
-Phiên bản thấy được luôn có `xmax` = 0, hoặc `xmax` của một giao dịch chưa commit / đã hủy / chỉ khóa dòng.
+Phiên bản thấy được luôn có `xmax` = 0, hoặc `xmax` của một transaction chưa commit / đã hủy / chỉ giữ row lock trên dòng.
 
 ## Thực hành
 
@@ -81,7 +84,9 @@ Bấm qua sơ đồ hai làn thời gian (phiên A, phiên B). PGlite chỉ có 
 
 ## Key idea
 
-Postgres never overwrites a row. Every tuple carries two transaction numbers:
+UPDATE one row once: how many versions does the table now hold?
+
+Postgres never overwrites a row. Every tuple (one version of a row stored on the page) carries two transaction numbers:
 
 - `xmin`: the transaction that inserted it;
 - `xmax`: the transaction that deleted or replaced it (0 if none).

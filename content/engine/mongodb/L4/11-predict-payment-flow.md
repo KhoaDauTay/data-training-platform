@@ -35,15 +35,15 @@ predict:
       en: "Never, because a secondary can read only after a checkpoint"
   answer: 1
   why:
-    vi: "Từ 8.0, `w: \"majority\"` xác nhận khi đa số đã ghi bền mục oplog, còn việc áp vào dữ liệu là không đồng bộ. Tài liệu nói truy vấn trên secondary ngay sau đó có thể chưa thấy lần ghi, và khuyên dùng session nhân quả."
+    vi: "Từ 8.0, `w: \"majority\"` xác nhận khi đa số đã ghi bền mục oplog, còn việc áp vào dữ liệu là không đồng bộ. Docs chính thức nói truy vấn trên secondary ngay sau đó có thể chưa thấy lần ghi, và khuyên dùng session nhân quả."
     en: "From 8.0, `w: \"majority\"` acknowledges once a majority has durably written the oplog entry, while applying it to the data is asynchronous. The docs say a query on a secondary right after may not see the write, and recommend a causally consistent session."
 ---
 
 ## Ý chính
 
-Đây là bài đoán theo tài liệu MongoDB (trang "Write Concern", mục Reads after w: majority Writes); trình duyệt không có replica set nên không chạy thật.
+Đây là bài đoán theo docs chính thức của MongoDB (trang "Write Concern", mục Reads after w: majority Writes); trình duyệt không có replica set nên không chạy thật.
 
-Câu trong tài liệu: từ MongoDB 8.0, ghi `{ w: "majority" }` trả xác nhận sau khi đa số thành viên mang dữ liệu ghi bền mục oplog, rồi các thành viên áp thay đổi không đồng bộ. Truy vấn trên secondary ngay sau xác nhận có thể đọc trước khi secondary áp lần ghi. Ứng dụng cần đọc ngay thay đổi đó từ secondary thì chạy trong session nhân quả.
+Câu trong docs chính thức: từ MongoDB 8.0, ghi `{ w: "majority" }` trả xác nhận sau khi đa số thành viên mang dữ liệu ghi bền mục oplog, rồi các thành viên áp thay đổi không đồng bộ. Truy vấn trên secondary ngay sau xác nhận có thể đọc trước khi secondary áp lần ghi. Ứng dụng cần đọc ngay thay đổi đó từ secondary thì chạy trong session nhân quả.
 
 ## Ví dụ
 
@@ -53,7 +53,7 @@ session = db.getMongo().startSession({ causalConsistency: true })
 
 Trong session đó, ghi với `w: "majority"` và đọc với read concern `majority`: lần đọc trên secondary chờ tới khi oplog của nó đạt thời điểm của lần ghi.
 
-Đúng với tài liệu MongoDB hiện hành (8.x), kiểm ngày 2026-11-20.
+Đúng với docs chính thức của MongoDB hiện hành (8.x), kiểm ngày 2026-11-20. Phần chạy thật cần máy chủ thật (nhiều phiên / replica set / AWS). Bài này dùng sơ đồ và kết quả ghi sẵn.
 
 # EN
 
@@ -71,4 +71,4 @@ session = db.getMongo().startSession({ causalConsistency: true })
 
 In that session, write with `w: "majority"` and read with read concern `majority`: the read on a secondary waits until its oplog reaches the write's time.
 
-Matches the current MongoDB manual (8.x), checked 2026-11-20.
+Matches the current MongoDB manual (8.x), checked 2026-11-20. The real run needs a real server (several sessions / replica set / AWS). This lesson uses diagrams and recorded results.

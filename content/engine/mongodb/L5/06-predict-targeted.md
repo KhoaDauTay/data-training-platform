@@ -37,7 +37,7 @@ predict:
 
 ## Ý chính
 
-Đây là bài đoán theo tài liệu MongoDB (trang "Routing with mongos"); trình duyệt không có sharded cluster.
+Đây là bài đoán theo docs chính thức của MongoDB (trang "Routing with mongos"); trình duyệt không có sharded cluster.
 
 - Truy vấn có shard key, hoặc tiền tố của shard key kép, được gửi tới shard (hay nhóm shard) giữ chunk phù hợp: targeted.
 - Truy vấn không có shard key bị gửi tới mọi shard, `mongos` chờ tất cả trả lời rồi gộp: broadcast hay scatter-gather. Thêm shard không làm loại này nhanh lên tuyến tính.
@@ -53,7 +53,7 @@ db.orders.find({ a: 1 })
 db.orders.find({ a: 1, b: 2 })
 ```
 
-Đúng với tài liệu MongoDB hiện hành, kiểm ngày 2026-11-20.
+Đúng với docs chính thức của MongoDB hiện hành, kiểm ngày 2026-11-20. Phần chạy thật cần máy chủ thật (nhiều phiên / replica set / AWS). Bài này dùng sơ đồ và kết quả ghi sẵn.
 
 # EN
 
@@ -75,4 +75,4 @@ db.orders.find({ a: 1 })
 db.orders.find({ a: 1, b: 2 })
 ```
 
-Matches the current MongoDB manual, checked 2026-11-20.
+Matches the current MongoDB manual, checked 2026-11-20. The real run needs a real server (several sessions / replica set / AWS). This lesson uses diagrams and recorded results.

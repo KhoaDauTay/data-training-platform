@@ -44,13 +44,13 @@ quiz:
         en: "No, explain ignores the plan cache, picks again and writes nothing to the cache"
     answer: 1
     why:
-      vi: "Tài liệu: explain bỏ qua mọi mục trong plan cache và không tạo mục mới. Muốn xem cache thì dùng `$planCacheStats`."
+      vi: "Docs chính thức: explain bỏ qua mọi mục trong plan cache và không tạo mục mới. Muốn xem cache thì dùng `$planCacheStats`."
       en: "The docs: explain ignores all plan cache entries and creates no new one. To see the cache, use `$planCacheStats`."
 ---
 
 ## Ý chính
 
-Với mỗi truy vấn, planner chọn một kế hoạch trong các kế hoạch ứng viên dựa trên index đang có. Multi-planner cho các ứng viên chạy thử một lúc ngắn; kế hoạch thắng là kế hoạch trả nhiều kết quả nhất trong lúc thử mà tốn ít việc nhất. Từ 8.3, khi lần thử không phân định, cost-based ranker (CBR) có thể chấm chi phí từng nút để chọn; hiện CBR chỉ được gọi cho một số ít truy vấn.
+Với mỗi truy vấn, planner chọn một kế hoạch trong các kế hoạch ứng viên dựa trên index (chỉ mục) đang có. Multi-planner cho các ứng viên chạy thử một lúc ngắn; kế hoạch thắng là kế hoạch trả nhiều kết quả nhất trong lúc thử mà tốn ít việc nhất. Từ 8.3, khi lần thử không phân định, cost-based ranker (CBR) có thể chấm chi phí từng nút để chọn; hiện CBR chỉ được gọi cho một số ít truy vấn.
 
 Kế hoạch thắng được cất trong plan cache theo hình dạng truy vấn (query shape) và dùng lại cho truy vấn cùng hình dạng. Mỗi hình dạng có một trong ba trạng thái:
 
@@ -66,7 +66,7 @@ Plan cache mất khi `mongod` khởi động lại, bị xóa khi có DDL trên 
 db.orders.aggregate([ { $planCacheStats: {} } ])
 ```
 
-Đúng với tài liệu MongoDB hiện hành (có ghi chú 8.0 và 8.3), kiểm ngày 2026-11-20.
+Đúng với docs chính thức của MongoDB hiện hành (có ghi chú 8.0 và 8.3), kiểm ngày 2026-11-20.
 
 # EN
 

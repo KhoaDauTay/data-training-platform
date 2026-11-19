@@ -57,7 +57,7 @@ lab:
 
 Lab chạy bằng mingo trong trình duyệt. Mẫu Bucket gom một chuỗi dài thành nhiều nhóm nhỏ: thay vì một tài liệu cho mỗi phép đo, ta có một tài liệu cho mỗi cảm biến mỗi giờ, kèm số liệu tóm tắt (`count`, trung bình) và mảng các giá trị. Đọc một giờ của một cảm biến chỉ còn mở một tài liệu.
 
-Tài liệu MongoDB nhắc: collection time series áp dụng mẫu bucket tự động và hợp với hầu hết trường hợp. Tự làm bucket khi bạn cần hình dạng riêng, ví dụ phân trang đánh giá theo nhóm 10.
+Docs chính thức của MongoDB nhắc: collection time series áp dụng mẫu bucket tự động và hợp với hầu hết trường hợp. Tự làm bucket khi bạn cần hình dạng riêng, ví dụ phân trang đánh giá theo nhóm 10.
 
 ## Ví dụ
 

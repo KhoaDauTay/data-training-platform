@@ -6,6 +6,7 @@ module: query-ops
 title: Truy vấn trong mảng và $elemMatch
 title_en: Querying arrays and $elemMatch
 kind: lab
+runtime: browser
 minutes: 14
 objectives:
   - vi: Lọc tài liệu có mảng chứa một giá trị, chứa đủ nhiều giá trị (`$all`) hoặc có độ dài cho trước (`$size`).
@@ -56,7 +57,7 @@ lab:
   steps:
     - task:
         vi: Lấy các sản phẩm có nhãn `"gift"` trong mảng `tags`.
-        en: Return the products whose `tags` array contains `"gift"`.
+        en: Return the products with `"gift"` in their `tags` array.
       solution: 'db.products.find({ tags: "gift" })'
       check: doc
       hint:
@@ -108,7 +109,7 @@ Với mảng tài liệu như `lines`, `"lines.sku"` nhìn vào trường `sku` 
 
 Bẫy quan trọng: nhiều điều kiện dạng dot notation trên cùng một mảng có thể được thỏa bởi các phần tử khác nhau. Muốn mọi điều kiện đúng trên cùng một phần tử thì dùng `$elemMatch`.
 
-Làm được: tìm đúng tài liệu theo nội dung mảng, kể cả mảng tài liệu lồng.
+Làm được: tìm đúng tài liệu theo nội dung mảng, kể cả mảng tài liệu nhúng (embedded document).
 
 ## Ví dụ
 

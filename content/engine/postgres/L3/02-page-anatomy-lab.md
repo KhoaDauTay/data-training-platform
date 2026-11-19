@@ -6,8 +6,9 @@ module: pages
 title: "Lab: mở một trang heap"
 title_en: "Lab: open a heap page"
 kind: lab
+runtime: browser
 minutes: 15
-viz: heap-page
+viz: pg-heap-page
 objectives:
   - vi: Đọc header trang (`lower`, `upper`) và tính chỗ trống
     en: Read the page header (`lower`, `upper`) and compute the free space
@@ -74,7 +75,7 @@ lab:
         vi: Phép trừ ngay trong `SELECT` trên `page_header()`.
         en: A subtraction right in the `SELECT` over `page_header()`.
       fact:
-        vi: "Còn 8052 byte trống: ba dòng ngắn chỉ dùng chưa tới 2% trang. Mỗi dòng mới tốn thêm 4 byte line pointer cộng tuple của nó."
+        vi: "Còn 8052 byte trống: ba dòng ngắn chỉ dùng chưa tới 2 % trang. Mỗi dòng mới tốn thêm 4 byte line pointer cộng tuple của nó."
         en: "8052 bytes are free: three short rows use under 2% of the page. Each new row costs another 4-byte line pointer plus its tuple."
         probe: SELECT upper - lower FROM page_header(get_raw_page('notes', 0))
         expect: [[8052]]

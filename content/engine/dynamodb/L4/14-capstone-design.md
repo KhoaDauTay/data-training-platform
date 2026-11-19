@@ -9,7 +9,7 @@ kind: capstone
 runtime: browser
 minutes: 25
 objectives:
-  - { vi: "Đi từ danh sách mẫu truy cập tới khóa chính, GSI thưa và khóa shard", en: "Go from a list of access patterns to the primary key, a sparse GSI and sharded keys" }
+  - { vi: "Đi từ danh sách mẫu truy cập tới khóa chính, sparse GSI và khóa shard", en: "Go from a list of access patterns to the primary key, a sparse GSI and sharded keys" }
   - { vi: "Trả lời mỗi mẫu truy cập bằng đúng một request, không Scan", en: "Answer each access pattern with exactly one request, no Scan" }
   - { vi: "Ước lượng WCU/RCU và số shard cho bảng xếp hạng", en: "Estimate WCU/RCU and the shard count for the leaderboard" }
 requires: [e-dy-l4-05, e-dy-l4-08, e-dy-l4-10]
@@ -118,7 +118,7 @@ lab:
         {"op": "Query", "input": {"TableName": "QuizApp", "IndexName": "LiveNow", "KeyConditionExpression": "live_region = :r", "ExpressionAttributeValues": {":r": {"S": "VN"}}}}
       check: doc
       expect: { Count: 2, ScannedCount: 2 }
-      hint: { vi: "Đây là GSI thưa: Query trên nó, không Scan bảng.", en: "This is a sparse GSI: Query it, do not Scan the table." }
+      hint: { vi: "Đây là sparse GSI: Query trên nó, không Scan bảng.", en: "This is a sparse GSI: Query it, do not Scan the table." }
     - task: { vi: "Mẫu 4, bảng xếp hạng trong ngày: điểm của ngày 2026-11-20 được rải ra 4 shard `BOARD#2026-11-20#<shard>`, sort key `S#<score>#<player>`. Đọc 3 điểm cao nhất của shard 2 (ứng dụng sẽ gộp 4 shard).", en: "Pattern 4, today's leaderboard: the scores of 2026-11-20 are spread over 4 shards `BOARD#2026-11-20#<shard>`, sort key `S#<score>#<player>`. Read the top 3 scores of shard 2 (the application merges the 4 shards)." }
       solution: |
         {"op": "Query", "input": {"TableName": "QuizApp", "KeyConditionExpression": "pk = :b", "ExpressionAttributeValues": {":b": {"S": "BOARD#2026-11-20#2"}}, "ScanIndexForward": false, "Limit": 3}}
@@ -156,7 +156,7 @@ Bạn thiết kế bảng `QuizApp` cho một ứng dụng thi đố vui trực 
 
 - **Liệt kê mẫu truy cập** (và tần suất) trước khi nghĩ tới khóa.
 - **Khóa chính** phục vụ các mẫu theo người chơi: `pk = PLAYER#<id>`, `sk = PROFILE` cho hồ sơ, `sk = MATCH#<time>#<match>` cho lịch sử.
-- **GSI thưa** `LiveNow` (`live_region`, `live_since`) cho các trận đang chạy: chỉ trận đang chạy có hai thuộc tính này.
+- **Sparse GSI** (GSI thưa) `LiveNow` (`live_region`, `live_since`) cho các trận đang chạy: chỉ trận đang chạy có hai thuộc tính này.
 - **Khóa shard** cho bảng xếp hạng: một ngày là một khóa rất nóng, nên rải ra 4 shard `BOARD#<day>#<shard>`, sort key là điểm đệm số 0.
 - **Ước lượng chi phí** cho mẫu nặng nhất (câu hỏi cuối bài).
 

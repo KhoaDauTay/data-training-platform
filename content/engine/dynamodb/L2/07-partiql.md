@@ -175,8 +175,8 @@ lab:
         vi: '`UPDATE` của PartiQL sửa đúng một item, nên `WHERE` phải nêu khóa chính đầy đủ.'
         en: 'A PartiQL `UPDATE` changes exactly one item, so `WHERE` must name the full primary key.'
     - task:
-        vi: 'Bằng PartiQL, thêm đơn mới cho `C-04` - `orderId` `2026-10-30#O-221`, `status` `NEW`, `total` 260000, `city` "Hue".'
-        en: 'With PartiQL, add a new order for `C-04` - `orderId` `2026-10-30#O-221`, `status` `NEW`, `total` 260000, `city` "Hue".'
+        vi: 'Bằng PartiQL, thêm đơn mới cho `C-04` - `orderId` `2026-10-30#O-221`, `status` `NEW`, `total` `260000`, `city` "Hue".'
+        en: 'With PartiQL, add a new order for `C-04` - `orderId` `2026-10-30#O-221`, `status` `NEW`, `total` `260000`, `city` "Hue".'
       solution: |
         INSERT INTO Orders VALUE {'customerId': 'C-04', 'orderId': '2026-10-30#O-221', 'status': 'NEW', 'total': 260000, 'city': 'Hue'}
       check: doc
@@ -196,15 +196,15 @@ quiz:
         en: It is rejected right away.
     answer: 1
     why:
-      vi: PartiQL chỉ đổi cú pháp. Không có điều kiện bằng (hoặc `IN`) trên partition key thì DynamoDB phải đọc cả bảng, với đúng giá và độ chậm của Scan.
-      en: PartiQL only changes the syntax. Without an equality (or `IN`) on the partition key, DynamoDB has to read the whole table, at the price and speed of a Scan.
+      vi: Có `WHERE` nên trông như SQL dùng index. Nhưng PartiQL chỉ đổi cú pháp. Không có điều kiện bằng (hoặc `IN`) trên partition key thì DynamoDB phải đọc cả bảng, với đúng giá và độ chậm của Scan.
+      en: It has a `WHERE`, so it looks like SQL using an index. But PartiQL only changes the syntax. Without an equality (or `IN`) on the partition key, DynamoDB has to read the whole table, at the price and speed of a Scan.
 ---
 
 ## Ý chính
 
 PartiQL cho phép viết request DynamoDB bằng cú pháp giống SQL, qua `ExecuteStatement`. Các luật của DynamoDB vẫn giữ nguyên:
 
-- `SELECT` có điều kiện bằng (hoặc `IN`) trên partition key thành **Query**. Thiếu điều kiện đó thì thành **Scan** cả bảng.
+- `SELECT` có điều kiện bằng (hoặc `IN`) trên partition key (khóa phân vùng) thành **Query**. Thiếu điều kiện đó thì thành **Scan** cả bảng.
 - `UPDATE` và `DELETE` sửa **một item**, nên `WHERE` phải nêu khóa chính đầy đủ.
 - `INSERT` lỗi nếu khóa đã có, khác `PutItem` vốn ghi đè.
 - Không có JOIN, GROUP BY hay hàm gộp.
@@ -213,7 +213,7 @@ Cú pháp: chuỗi trong nháy đơn `'…'`, tên trùng từ dành riêng tron
 
 ## Ví dụ
 
-Đọc từ một index (L3) bằng tên dạng `"Orders"."byStatus"`:
+Đọc từ một index (chỉ mục) ở bài L3 bằng tên dạng `"Orders"."byStatus"`:
 
 ```text
 SELECT * FROM "Orders"."byStatus" WHERE "status" = 'NEW'

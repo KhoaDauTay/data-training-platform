@@ -29,22 +29,22 @@ predict:
       en: "One command gets a write conflict error, `qty` ends at 9 or 8"
     - vi: "WiredTiger phát hiện xung đột và tự chạy lại một lệnh; cả hai thành công, `qty` là 7"
       en: "WiredTiger detects the conflict and retries one command itself; both succeed, `qty` ends at 7"
-    - vi: "Collection bị khóa độc quyền, lệnh thứ hai chờ hết lệnh đầu"
-      en: "The collection is locked exclusively, the second command waits for the first"
+    - vi: "Collection bị giữ lock độc quyền, lệnh thứ hai chờ hết lệnh đầu"
+      en: "The collection holds an exclusive lock, the second command waits for the first"
   answer: 1
   why:
-    vi: "Tài liệu WiredTiger: kiểm soát lạc quan, chỉ intent lock ở mức collection; khi hai thao tác xung đột, một bên gặp write conflict và MongoDB chạy lại nó một cách trong suốt. Mỗi lệnh trên một tài liệu là atomic, nên `qty` giảm đủ 3. Khác với transaction đa tài liệu: ở đó write conflict làm transaction hủy và ứng dụng phải chạy lại."
+    vi: "Docs chính thức về WiredTiger: kiểm soát lạc quan, chỉ intent lock ở mức collection; khi hai thao tác xung đột, một bên gặp write conflict và MongoDB chạy lại nó một cách trong suốt. Mỗi lệnh trên một tài liệu là atomic, nên `qty` giảm đủ 3. Khác với transaction nhiều tài liệu: ở đó write conflict làm transaction hủy và ứng dụng phải chạy lại."
     en: "The WiredTiger docs: optimistic control with only intent locks at the collection level; when two operations conflict, one hits a write conflict and MongoDB retries it transparently. Each single-document command is atomic, so `qty` drops by the full 3. Unlike a multi-document transaction: there a write conflict aborts the transaction and the application must retry."
 ---
 
 ## Ý chính
 
-Đây là bài đoán theo tài liệu MongoDB (trang "WiredTiger Storage Engine", mục Document Level Concurrency); trình duyệt không chạy WiredTiger. Hai câu quyết định:
+Đây là bài đoán theo docs chính thức của MongoDB (trang "WiredTiger Storage Engine", mục Document Level Concurrency); trình duyệt không chạy WiredTiger. Hai câu quyết định:
 
 - WiredTiger chỉ giữ intent lock ở mức global, database, collection; hai client sửa hai tài liệu khác nhau không chờ nhau.
 - Khi hai thao tác xung đột trên cùng tài liệu, một thao tác gặp write conflict và MongoDB chạy lại nó, ứng dụng không cần làm gì.
 
-Trong transaction đa tài liệu thì khác: write conflict làm transaction hủy, ứng dụng phải bắt lỗi và chạy lại cả transaction.
+Trong transaction nhiều tài liệu thì khác: write conflict làm transaction hủy, ứng dụng phải bắt lỗi và chạy lại cả transaction.
 
 ## Ví dụ
 
@@ -54,7 +54,7 @@ db.stock.find({ _id: "A" })
 
 Sau hai lệnh, tài liệu có `qty` bằng 7.
 
-Đúng với tài liệu MongoDB hiện hành, kiểm ngày 2026-11-20.
+Đúng với docs chính thức của MongoDB hiện hành, kiểm ngày 2026-11-20.
 
 # EN
 

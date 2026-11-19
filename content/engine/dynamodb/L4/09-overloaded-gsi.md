@@ -3,7 +3,7 @@ id: e-dy-l4-09
 engine: dynamodb
 level: L4
 module: patterns
-title: "GSI dùng chung: một chỉ mục, nhiều kiểu tra cứu"
+title: "GSI dùng chung: một index, nhiều kiểu tra cứu"
 title_en: "Overloaded GSI: one index, many kinds of lookup"
 kind: lab
 runtime: browser
@@ -78,13 +78,13 @@ lab:
 
 ## Ý chính
 
-Mỗi bảng mặc định có tối đa 20 GSI, nhưng bạn có thể tra cứu theo nhiều trường hơn thế bằng **GSI dùng chung** (overloading):
+Mỗi bảng mặc định có tối đa 20 GSI, nhưng bạn có thể tra cứu theo nhiều thuộc tính hơn thế bằng **GSI overloading** (GSI dùng chung):
 
 - mọi item có chung một thuộc tính (ở đây `lookup`), nhưng giá trị mang nghĩa khác nhau tùy loại item: tên với hồ sơ, mã kho với item kho, ngày với item vào làm;
 - GSI lấy **sort key của bảng** làm partition key và thuộc tính chung làm sort key;
 - partition key của GSI chọn "loại câu hỏi", sort key trả lời câu hỏi bằng `=`, `BETWEEN` hay `begins_with`.
 
-Một GSI thay cho ba, tức ít chỉ mục phải ghi và ít quota phải dùng. Đổi lại, giá trị trong `lookup` phải được chọn sao cho sắp đúng theo chuỗi (ngày `YYYY-MM-DD`, mã có tiền tố).
+Một GSI thay cho ba, tức ít index phải ghi và ít quota phải dùng. Đổi lại, giá trị trong `lookup` phải được chọn sao cho sắp đúng theo chuỗi (ngày `YYYY-MM-DD`, mã có tiền tố).
 
 ## Ví dụ
 

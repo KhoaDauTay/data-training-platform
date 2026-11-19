@@ -6,11 +6,12 @@ module: query-ops
 title: "Bài cuối L1: Một ngày ở cửa hàng"
 title_en: "L1 capstone: A day at the shop"
 kind: capstone
+runtime: browser
 minutes: 20
 objectives:
   - vi: Kết hợp find, projection, toán tử truy vấn, sort và các lệnh ghi để xử lý việc thật của một cửa hàng.
     en: Combine find, projection, query operators, sort and write commands to handle a shop's real tasks.
-  - vi: Giải thích vì sao một update trên một tài liệu là atomic.
+  - vi: Giải thích vì sao một update trên một tài liệu là nguyên tử (atomic).
     en: Explain why an update on a single document is atomic.
 requires: [e-mg-l1-06, e-mg-l1-08, e-mg-l1-10]
 sources:
@@ -100,14 +101,14 @@ quiz:
         en: It may lose the whole `tags` array
     answer: 0
     why:
-      vi: Một thao tác ghi trên một tài liệu là atomic, kể cả khi nó sửa nhiều trường và tài liệu lồng. Cần nhiều tài liệu cùng đổi một lúc thì mới phải nghĩ tới transaction.
+      vi: Một thao tác ghi trên một tài liệu là nguyên tử, kể cả khi nó sửa nhiều trường và tài liệu nhúng (embedded document). Cần nhiều tài liệu cùng đổi một lúc thì mới phải nghĩ tới transaction.
       en: A write on a single document is atomic, even when it changes several fields and embedded documents. Only when several documents must change together do you need a transaction.
 ---
 ## Ý chính
 
 Bài cuối của L1 gom mọi thứ đã học vào một ngày làm việc: tìm và chiếu trường, lọc theo khoảng và trong mảng, sắp xếp, đếm, sửa nhiều tài liệu và sửa một tài liệu bằng nhiều toán tử.
 
-Mọi thao tác ghi trên một tài liệu là atomic. Đó là lý do mô hình tài liệu thường nhúng dữ liệu đi cùng nhau (như các dòng hàng trong đơn) vào cùng một tài liệu: một lệnh đổi được tất cả, không cần transaction.
+Mọi thao tác ghi trên một tài liệu là nguyên tử. Đó là lý do mô hình tài liệu thường nhúng dữ liệu đi cùng nhau (như các dòng hàng trong đơn) vào cùng một tài liệu: một lệnh đổi được tất cả, không cần transaction.
 
 Làm được: tự xử lý các yêu cầu hằng ngày của một cửa hàng trên MongoDB bằng các lệnh CRUD.
 

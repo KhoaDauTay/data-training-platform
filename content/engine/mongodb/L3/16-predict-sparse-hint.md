@@ -27,7 +27,7 @@ predict:
     - vi: "700, vì index sparse không có khóa cho 300 phim thiếu `rated`"
       en: "700, because the sparse index has no key for the 300 movies without `rated`"
     - vi: "Lỗi, vì không được `hint()` một index sparse"
-      en: "An error, because a sparse index cannot be hinted"
+      en: "An error, because you cannot `hint()` a sparse index"
   answer: 1
   why:
     vi: "Không có `hint()`, planner tự tránh index sparse khi kết quả sẽ thiếu. `hint()` bỏ qua kiểm tra đó, nên câu đếm chỉ thấy tài liệu có khóa trong index: 700. Muốn đếm đúng cả collection thì gọi `countDocuments()` không `hint()`."
@@ -36,9 +36,9 @@ predict:
 
 ## Ý chính
 
-Đây là bài đoán theo tài liệu MongoDB (trang "Sparse Indexes"); trình duyệt không có `mongod`. Con số 1000 và 700 là ví dụ của bài, không phải số đo. Tài liệu chỉ nêu luật:
+Đây là bài đoán theo docs chính thức của MongoDB (trang "Sparse Indexes"); trình duyệt không có `mongod`. Con số 1000 và 700 là ví dụ của bài, không phải số đo. Docs chính thức chỉ nêu luật:
 
-- index sparse bỏ tài liệu thiếu trường được index;
+- index (chỉ mục) sparse bỏ tài liệu thiếu trường được index;
 - planner không dùng index sparse nếu kết quả sẽ thiếu, trừ khi `hint()` chỉ định nó;
 - vì vậy đừng `hint()` một index sparse khi đếm mọi tài liệu của collection: kết quả sẽ sai.
 
@@ -46,14 +46,14 @@ predict:
 
 ## Ví dụ
 
-Theo tài liệu MongoDB:
+Theo docs chính thức của MongoDB:
 
 ```javascript
 db.movies.countDocuments( {}, { hint: { rated: 1 } } ) // counts only documents with the rated field
 db.movies.countDocuments() // correct count of the whole collection
 ```
 
-Đúng với tài liệu MongoDB hiện hành, kiểm ngày 2026-11-20.
+Đúng với docs chính thức của MongoDB hiện hành, kiểm ngày 2026-11-20.
 
 # EN
 

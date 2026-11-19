@@ -40,10 +40,10 @@ quiz:
 
 DynamoDB chia dữ liệu của bảng thành nhiều **partition**: mỗi partition là một phần lưu trữ trên SSD, được sao chép sang nhiều Availability Zone. Bạn không bao giờ tự quản partition.
 
-- Khi ghi, giá trị **partition key** đi qua một hàm băm nội bộ. Kết quả băm chọn partition. Sort key không được băm.
+- Khi ghi, giá trị **partition key** (khóa phân vùng) đi qua một hàm băm nội bộ. Kết quả băm chọn partition. Sort key không được băm.
 - Các item cùng partition key nằm gần nhau, sắp tăng dần theo sort key: đó là **item collection**. Bảng không có LSI thì DynamoDB còn tự chia một collection lớn qua nhiều partition.
 - DynamoDB thêm partition khi bạn tăng throughput vượt sức partition hiện có, hoặc khi một partition đầy.
-- Mỗi partition chịu tối đa **3000 thao tác đọc** và **1000 thao tác ghi** mỗi giây. Vượt mức đó trên một partition thì có thể bị throttle, kể cả khi cả bảng còn dư capacity.
+- Mỗi partition chịu tối đa **3000 thao tác đọc** và **1000 thao tác ghi** mỗi giây. Vượt mức đó trên một partition thì có thể bị throttle (request bị từ chối tạm thời, phải gửi lại), kể cả khi cả bảng còn dư capacity.
 
 Hệ quả: cả bảng nhanh hay chậm phụ thuộc vào việc tải có rải đều trên nhiều giá trị partition key hay không. Một partition key chỉ có vài giá trị (ngày hôm nay, một mã cửa hàng lớn) sẽ dồn tải vào một chỗ.
 
@@ -59,7 +59,7 @@ hash("VOTE#2026-11-20#0") -> partition 0
 hash("VOTE#2026-11-20#1") -> partition 3
 ```
 
-Thêm hậu tố sau ngày làm số giá trị partition key tăng lên, tải được rải ra. Bài 4 làm việc này trên dữ liệu thật.
+Thêm hậu tố sau ngày làm số giá trị partition key tăng lên, tải được rải ra. Bài 4 làm việc này trong lab chạy bằng dynoxide.
 
 # EN
 
@@ -86,4 +86,4 @@ hash("VOTE#2026-11-20#0") -> partition 0
 hash("VOTE#2026-11-20#1") -> partition 3
 ```
 
-Adding a suffix after the date multiplies the partition key values and spreads the load. Lesson 4 does this on real data.
+Adding a suffix after the date multiplies the partition key values and spreads the load. Lesson 4 does this in a lab that runs on dynoxide.

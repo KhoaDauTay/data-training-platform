@@ -91,7 +91,7 @@ POLICY#refund v001            Refund within 7 days
 POLICY#refund v004            Refund within 30 days, receipt needed
 ```
 
-Ghi phiên bản mới là hai lần ghi (item `v005` và item `v000`). Muốn hai lần ghi cùng thành công hoặc cùng không thì dùng giao dịch, xem mô-đun Giao dịch.
+Ghi phiên bản mới là hai lần ghi (item `v005` và item `v000`). Muốn hai lần ghi cùng thành công hoặc cùng không thì dùng transaction, xem mô-đun về transaction.
 
 ## Thực hành
 

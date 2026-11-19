@@ -6,6 +6,7 @@ module: aggregation
 title: Chia khoảng với $bucket, nhiều báo cáo với $facet
 title_en: Ranges with $bucket, several reports with $facet
 kind: lab
+runtime: browser
 minutes: 12
 objectives:
   - vi: Chia tài liệu vào các khoảng giá trị bằng `$bucket`.
@@ -31,8 +32,8 @@ lab:
     ]}}
   steps:
     - task:
-        vi: 'Đếm số đơn theo ba khoảng `total`: dưới 100000, từ 100000 tới dưới 300000, từ 300000 tới dưới 1000000. Mỗi khoảng một kết quả: `_id` là cận dưới, `orders` là số đơn.'
-        en: 'Count orders in three `total` ranges: under 100000, 100000 up to 300000, 300000 up to 1000000. One result per range: `_id` is the lower bound, `orders` the number of orders.'
+        vi: 'Đếm số đơn theo ba khoảng `total`: dưới `100000`, từ `100000` tới dưới `300000`, từ `300000` tới dưới `1000000`. Mỗi khoảng một kết quả: `_id` là cận dưới, `orders` là số đơn.'
+        en: 'Count orders in three `total` ranges: under `100000`, `100000` up to `300000`, `300000` up to `1000000`. One result per range: `_id` is the lower bound, `orders` the number of orders.'
       solution: 'db.orders.aggregate([{ $bucket: { groupBy: "$total", boundaries: [0, 100000, 300000, 1000000], output: { orders: { $sum: 1 } } } }])'
       check: doc
       ordered: true
@@ -77,7 +78,7 @@ db.orders.aggregate([
 
 ## Thực hành
 
-Hai bước trên `orders` (8 đơn, `total` từ 25000 tới 450000).
+Hai bước trên `orders` (8 đơn, `total` từ 25.000 tới 450.000).
 
 # EN
 
@@ -110,4 +111,4 @@ db.orders.aggregate([
 
 ## Practice
 
-Two steps on `orders` (8 orders, `total` from 25000 to 450000).
+Two steps on `orders` (8 orders, `total` from 25,000 to 450,000).

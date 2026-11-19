@@ -9,8 +9,8 @@ kind: lab
 runtime: browser
 minutes: 8
 objectives:
-  - { vi: "Đọc hai item trong một `TransactGetItems` để không thấy trạng thái nửa vời của một giao dịch ghi", en: "Read two items in one `TransactGetItems` so you never see half of a write transaction" }
-  - { vi: "Đối chiếu `ConsumedCapacity`: đọc giao dịch tốn 2 RCU mỗi item tới 4 KB", en: "Check `ConsumedCapacity`: a transactional read costs 2 RCU per item up to 4 KB" }
+  - { vi: "Đọc hai item trong một `TransactGetItems` để không thấy trạng thái nửa vời của một transaction ghi", en: "Read two items in one `TransactGetItems` so you never see half of a write transaction" }
+  - { vi: "Đối chiếu `ConsumedCapacity`: đọc trong transaction tốn 2 RCU mỗi item tới 4 KB", en: "Check `ConsumedCapacity`: a transactional read costs 2 RCU per item up to 4 KB" }
 requires: [e-dy-l4-11]
 sources:
   - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/transaction-apis.html
@@ -38,11 +38,11 @@ lab:
 
 ## Ý chính
 
-Hai `GetItem` riêng lẻ có thể rơi vào hai phía của một giao dịch ghi: bạn thấy ví `w1` đã bị trừ nhưng ví `w2` chưa được cộng. `TransactGetItems` gom tối đa **100** `Get` thành một lần đọc tất-cả-hoặc-không, serializable với `TransactWriteItems`: bạn thấy toàn bộ một giao dịch ghi, hoặc không thấy gì của nó.
+Hai `GetItem` riêng lẻ có thể rơi vào hai phía của một transaction ghi: bạn thấy ví `w1` đã bị trừ nhưng ví `w2` chưa được cộng. `TransactGetItems` gom tối đa **100** `Get` thành một lần đọc tất-cả-hoặc-không, serializable với `TransactWriteItems`: bạn thấy toàn bộ một transaction ghi, hoặc không thấy gì của nó.
 
 - Kết quả `Responses` theo đúng thứ tự các `Get`. Item không tồn tại thì phần tử đó rỗng.
-- Giá: đọc giao dịch tốn **2 RCU** cho mỗi item tới 4 KB (đọc mạnh 1, đọc cuối cùng 0,5).
-- Bị hủy (`TransactionCanceledException`) nếu va vào một giao dịch ghi đang chạy trên cùng item.
+- Giá: đọc trong transaction tốn **2 RCU** cho mỗi item tới 4 KB (đọc mạnh 1, đọc cuối cùng 0,5).
+- Bị hủy (`TransactionCanceledException`) nếu va vào một transaction ghi đang chạy trên cùng item.
 
 Dùng nó khi cần một ảnh chụp nhất quán của vài item, không dùng thay cho mọi lần đọc.
 

@@ -6,6 +6,7 @@ module: aggregation
 title: Ghép collection với $lookup
 title_en: Joining collections with $lookup
 kind: lab
+runtime: browser
 minutes: 14
 objectives:
   - vi: Ghép tài liệu từ collection khác bằng `$lookup` (localField / foreignField).
@@ -63,6 +64,21 @@ lab:
       hint:
         vi: "Bắt đầu từ `customers`, ghép `orders`; khách không có đơn nhận mảng rỗng."
         en: "Start from `customers` and join `orders`; a customer with no order gets an empty array."
+quiz:
+  - q:
+      vi: 'Khách `"c6"` chưa có đơn. Chạy `$lookup` từ `customers` sang `orders` với `as: "orders"`, không có stage nào sau đó. `"c6"` ra sao trong kết quả?'
+      en: 'Customer `"c6"` has no order. You run a `$lookup` from `customers` to `orders` with `as: "orders"` and no stage after it. What happens to `"c6"` in the result?'
+    options:
+      - vi: Bị loại khỏi kết quả, vì không có cặp nào để ghép
+        en: It is dropped from the result, because there is nothing to join it with
+      - vi: Vẫn có mặt, với `orders` là mảng rỗng
+        en: It is still there, with `orders` an empty array
+      - vi: Vẫn có mặt, với `orders` bằng `null`
+        en: It is still there, with `orders` equal to `null`
+    answer: 1
+    why:
+      vi: 'Lựa chọn đầu nghe hợp lý nếu bạn nghĩ `$lookup` giống hệt JOIN mặc định (INNER) của SQL. Thật ra `$lookup` là left outer join: tài liệu bên trái luôn được giữ, và trường `as` luôn là một mảng, không có cặp thì mảng rỗng chứ không phải `null`. Bước 3 dùng đúng điều này để tìm khách chưa đặt đơn.'
+      en: 'The first option sounds right if you think `$lookup` works exactly like SQL''s default (INNER) JOIN. In fact `$lookup` is a left outer join: the left document is always kept, and the `as` field is always an array, empty rather than `null` when nothing matches. Step 3 relies on exactly this to find customers with no order.'
 ---
 ## Ý chính
 

@@ -34,13 +34,13 @@ predict:
       en: "No, because a multikey index can never cover a query"
   answer: 1
   why:
-    vi: "Theo tài liệu, index multikey phủ được truy vấn chỉ khi truy vấn không trả về trường mảng và không dùng `$elemMatch`. Projection ở đây trả `genres`, nên không phủ. Đổi projection thành `{ _id: 0, title: 1 }` thì được phủ."
+    vi: "Theo docs chính thức, index multikey phủ được truy vấn chỉ khi truy vấn không trả về trường mảng và không dùng `$elemMatch`. Projection ở đây trả `genres`, nên không phủ. Đổi projection thành `{ _id: 0, title: 1 }` thì được phủ."
     en: "Per the docs, a multikey index covers a query only when the query does not return the array field and does not use `$elemMatch`. This projection returns `genres`, so it is not covered. With the projection `{ _id: 0, title: 1 }` it is covered."
 ---
 
 ## Ý chính
 
-Đây là bài đoán theo tài liệu MongoDB (trang "Multikey Indexes", mục Covered Queries); không có `mongod` trong trình duyệt nên không có explain thật. Index multikey phủ được truy vấn khi đủ ba điều:
+Đây là bài đoán theo docs chính thức của MongoDB (trang "Multikey Indexes", mục Covered Queries); không có `mongod` trong trình duyệt nên không có explain thật. Index (chỉ mục) multikey phủ được truy vấn khi đủ ba điều:
 
 - truy vấn không trả về trường mảng (nên index phải là index kép, có thêm trường không phải mảng);
 - truy vấn không dùng `$elemMatch`;
@@ -48,7 +48,7 @@ predict:
 
 ## Ví dụ
 
-Tài liệu nêu hai truy vấn được phủ bởi `{ genres: 1, title: 1 }`:
+Docs chính thức nêu hai truy vấn được phủ bởi `{ genres: 1, title: 1 }`:
 
 ```javascript
 db.movies.find(
@@ -62,7 +62,7 @@ db.movies.find(
 )
 ```
 
-Đúng với tài liệu MongoDB hiện hành, kiểm ngày 2026-11-20.
+Đúng với docs chính thức của MongoDB hiện hành, kiểm ngày 2026-11-20.
 
 # EN
 

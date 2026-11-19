@@ -6,6 +6,7 @@ module: modeling
 title: Luật kiểm tra với $jsonSchema
 title_en: Schema validation with $jsonSchema
 kind: concept
+runtime: docs
 minutes: 10
 objectives:
   - vi: Viết một validator `$jsonSchema` đòi trường bắt buộc và kiểu BSON cho từng trường.
@@ -77,7 +78,7 @@ Hai núm chỉnh:
 - `validationLevel`: `"strict"` (mặc định) kiểm mọi lần thêm và sửa; `"moderate"` bỏ qua lần sửa tài liệu vốn đã sai;
 - `validationAction`: `"error"` (mặc định) từ chối thao tác sai; `"warn"` vẫn ghi và chỉ ghi vi phạm vào log.
 
-Bản mới còn thêm hành động `"errorAndLog"` (8.1) và mức `"constraint"` (9.0), mức này bảo đảm mọi tài liệu trong collection đều hợp lệ.
+Bản mới còn thêm hành động `"errorAndLog"` (MongoDB 8.1) và mức `"constraint"` (MongoDB 9.0), mức này bảo đảm mọi tài liệu trong collection đều hợp lệ.
 
 Validator chỉ kiểm lúc ghi, không sửa dữ liệu cũ. Dùng `$jsonSchema` trong `find` để tìm tài liệu hợp lệ, và bọc trong `$nor` để tìm tài liệu sai.
 
@@ -123,7 +124,7 @@ Two knobs:
 - `validationLevel`: `"strict"` (the default) checks every insert and update; `"moderate"` skips updates to documents that were already invalid;
 - `validationAction`: `"error"` (the default) rejects the bad write; `"warn"` still writes it and only logs the violation.
 
-Newer releases add the action `"errorAndLog"` (8.1) and the level `"constraint"` (9.0), which guarantees every document in the collection is valid.
+Newer releases add the action `"errorAndLog"` (MongoDB 8.1) and the level `"constraint"` (MongoDB 9.0), which guarantees every document in the collection is valid.
 
 A validator only checks writes; it does not fix old data. Use `$jsonSchema` in `find` to find valid documents, and wrap it in `$nor` to find invalid ones.
 

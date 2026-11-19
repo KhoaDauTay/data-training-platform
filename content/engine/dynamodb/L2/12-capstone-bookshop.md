@@ -32,8 +32,8 @@ lab:
     ]}}
   steps:
     - task:
-        vi: 'Nhà phát hành hay gửi trùng sách. Thêm cuốn `978-0-14` (`title` "Shift Notes", `price` 64000), nhưng chỉ khi chưa có cuốn nào mang `isbn` đó.'
-        en: 'The publisher often sends duplicates. Add book `978-0-14` (`title` "Shift Notes", `price` 64000), but only if no book has that `isbn` yet.'
+        vi: 'Nhà phát hành hay gửi trùng sách. Thêm cuốn `978-0-14` (`title` "Shift Notes", `price` `64000`), nhưng chỉ khi chưa có cuốn nào mang `isbn` đó.'
+        en: 'The publisher often sends duplicates. Add book `978-0-14` (`title` "Shift Notes", `price` `64000`), but only if no book has that `isbn` yet.'
       solution: |
         {"op": "PutItem", "input": {"TableName": "Books",
           "Item": {"isbn": {"S": "978-0-14"}, "title": {"S": "Shift Notes"}, "price": {"N": "64000"}},
@@ -57,8 +57,8 @@ lab:
         vi: Phép trừ và điều kiện dùng chung `:q`.
         en: The subtraction and the condition share `:q`.
     - task:
-        vi: Bạn đọc giá cuốn `978-0-07` là 160000 và muốn hạ còn 150000, nhưng không được đè lên thay đổi của đồng nghiệp ca trước.
-        en: You read the price of `978-0-07` as 160000 and want to drop it to 150000, without overwriting a change a colleague made on the previous shift.
+        vi: Bạn đọc giá cuốn `978-0-07` là `160000` và muốn hạ còn `150000`, nhưng không được đè lên thay đổi của đồng nghiệp ca trước.
+        en: You read the price of `978-0-07` as `160000` and want to drop it to `150000`, without overwriting a change a colleague made on the previous shift.
       solution: |
         {"op": "UpdateItem", "input": {"TableName": "Books",
           "Key": {"isbn": {"S": "978-0-07"}},
@@ -89,11 +89,26 @@ lab:
       hint:
         vi: Điều kiện bằng trên partition key, nên chỉ đọc một item.
         en: An equality on the partition key, so only one item is read.
+quiz:
+  - q:
+      vi: 'Ở bước 3, DynamoDB trả `ConditionalCheckFailedException`. Điều đó nói gì, và bạn làm gì tiếp?'
+      en: 'In step 3, DynamoDB returns `ConditionalCheckFailedException`. What does it tell you, and what do you do next?'
+    options:
+      - vi: DynamoDB đang trục trặc; gửi lại đúng request đó cho tới khi được.
+        en: DynamoDB is having trouble; send the same request again until it works.
+      - vi: Giá đã không còn là giá bạn đọc, vì có người sửa trước; đọc lại giá mới rồi quyết định lại.
+        en: The price is no longer the one you read, because someone changed it first; read the new price and decide again.
+      - vi: Lần ghi không xảy ra nên không tốn gì; bỏ qua và làm bước tiếp.
+        en: The write did not happen, so it cost nothing; ignore it and move on.
+    answer: 1
+    why:
+      vi: 'Một lỗi nghe như lỗi hệ thống nên dễ muốn gửi lại. Nhưng đây là optimistic locking làm đúng việc: điều kiện `price = :old` sai nghĩa là đồng nghiệp đã đổi giá. Gửi lại y hệt vẫn bị từ chối. Lần bị từ chối vẫn tốn WCU, nên cũng không phải "không tốn gì".'
+      en: 'An exception sounds like a system fault, so resending is tempting. But this is optimistic locking doing its job: a false `price = :old` means a colleague changed the price. Sending the same request again is rejected again. The rejected write still consumed WCU, so it is not free either.'
 ---
 
 ## Ý chính
 
-Bài kiểm tra cấp L2 là một ca trực: thêm sách mới mà không ghi đè, trừ kho không âm, sửa giá theo khóa lạc quan, tra nhiều cuốn một lúc và kiểm lại bằng PartiQL. Mọi lần ghi đều có điều kiện; mọi lần đọc đều đi theo khóa.
+Bài kiểm tra cấp L2 là một ca trực: thêm sách mới mà không ghi đè, trừ kho không âm, sửa giá bằng optimistic locking, tra nhiều cuốn một lúc và kiểm lại bằng PartiQL. Mọi lần ghi đều có điều kiện; mọi lần đọc đều đi theo khóa.
 
 ## Thực hành
 

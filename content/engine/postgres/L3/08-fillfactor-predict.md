@@ -6,8 +6,9 @@ module: vacuum-hot
 title: "Đoán trước: fillfactor có cứu được HOT không?"
 title_en: "Predict: can fillfactor save HOT?"
 kind: predict
+runtime: browser
 minutes: 8
-viz: hot-chain
+viz: pg-hot
 objectives:
   - vi: Đoán một UPDATE có HOT không khi trang đầy và khi trang còn chỗ
     en: Predict whether an UPDATE is HOT on a full page and on a page with room
@@ -42,7 +43,7 @@ predict:
     - { vi: "Không cái nào", en: "Neither" }
   answer: 1
   why:
-    vi: "Cột không có index mới là một nửa điều kiện. `jobs_full` xếp 58 dòng vào trang 0 và chỉ còn 48 byte trống, nên bản mới phải sang trang khác: không HOT. `jobs_room` chỉ xếp 40 dòng/trang, chừa khoảng 30% cho UPDATE, nên bản mới ở lại trang 0: HOT."
+    vi: "Cột không có index mới là một nửa điều kiện. `jobs_full` xếp 58 dòng vào trang 0 và chỉ còn 48 byte trống, nên bản mới phải sang trang khác: không HOT. `jobs_room` chỉ xếp 40 dòng/trang, chừa khoảng 30 % cho UPDATE, nên bản mới ở lại trang 0: HOT."
     en: "An unindexed column is only half the condition. `jobs_full` packs 58 rows into page 0 and leaves just 48 bytes free, so the new version must move to another page: not HOT. `jobs_room` puts only 40 rows per page, keeping about 30% for UPDATEs, so the new version stays on page 0: HOT."
   fact:
     vi: "Kết quả thật: `jobs_full` 1 UPDATE, 0 HOT; `jobs_room` 1 UPDATE, 1 HOT."
@@ -52,7 +53,7 @@ predict:
 
 ## Ý chính
 
-`fillfactor` là phần trăm trang mà INSERT được lấp. Mặc định 100 cho bảng. Đặt 70 nghĩa là chừa 30% mỗi trang cho các bản UPDATE sau này, để chúng ở lại trang cũ và được HOT.
+`fillfactor` là phần trăm trang mà INSERT được lấp. Mặc định 100 cho bảng. Đặt 70 nghĩa là chừa 30 % mỗi trang cho các bản UPDATE sau này, để chúng ở lại trang cũ và được HOT.
 
 ## Ví dụ
 
@@ -60,7 +61,7 @@ predict:
 CREATE TABLE jobs_room(id int PRIMARY KEY, pad char(100)) WITH (fillfactor = 70);
 ```
 
-Cái giá: bảng to hơn khoảng 40% lúc mới nạp, và quét toàn bảng đọc nhiều trang hơn.
+Cái giá: bảng to hơn khoảng 40 % lúc mới nạp, và quét toàn bảng đọc nhiều trang hơn.
 
 ## Thực hành
 

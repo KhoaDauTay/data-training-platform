@@ -6,8 +6,9 @@ module: wal
 title: "WAL: ghi nhật ký trước, ghi trang sau"
 title_en: "WAL: log first, pages later"
 kind: concept
+runtime: docs
 minutes: 10
-viz: wal-flow
+viz: pg-wal
 objectives:
   - vi: Phát biểu luật WAL và vì sao COMMIT chỉ cần flush WAL
     en: State the WAL rule and why COMMIT only needs to flush the WAL
@@ -30,7 +31,7 @@ quiz:
       - { vi: "Báo COMMIT → ghi WAL và trang cùng lúc ở checkpoint sau", en: "Report COMMIT -> write WAL and pages together at the next checkpoint" }
     answer: 0
     why:
-      vi: "Luật WAL: thay đổi trang chỉ được ghi xuống đĩa sau khi bản ghi WAL mô tả nó đã bền. COMMIT chỉ chờ flush WAL (ghi tuần tự, rẻ); trang dữ liệu bẩn có thể nằm trong bộ đệm rất lâu, vì sau sự cố Postgres phát lại WAL để dựng lại chúng."
+      vi: "Luật WAL: thay đổi trang chỉ được ghi xuống đĩa sau khi bản ghi WAL mô tả nó đã bền. COMMIT chỉ chờ flush WAL (ghi tuần tự, rẻ); trang dữ liệu bẩn có thể nằm trong bộ đệm rất lâu, vì sau khi máy sập Postgres phát lại WAL để dựng lại chúng."
       en: "The WAL rule: a page change may reach disk only after the WAL record describing it is durable. COMMIT waits only for the WAL flush (sequential, cheap); dirty data pages may stay in the buffer for a long time, because after a crash Postgres replays the WAL to rebuild them."
   - q:
       vi: "Vì sao lần sửa **đầu tiên** của một trang sau mỗi checkpoint làm WAL to hơn hẳn?"
@@ -47,7 +48,9 @@ quiz:
 
 ## Ý chính
 
-**Luật WAL**: thay đổi của một trang dữ liệu chỉ được ghi xuống đĩa **sau khi** bản ghi WAL mô tả nó đã được flush. Nhờ vậy COMMIT chỉ cần flush WAL (ghi tuần tự), còn trang bẩn ghi sau. Sau sự cố, Postgres **phát lại** (REDO) WAL từ checkpoint gần nhất.
+COMMIT vừa xong thì máy sập, trang chưa kịp xuống đĩa: dữ liệu còn không?
+
+WAL (write-ahead log) là nhật ký mọi thay đổi, ghi tuần tự. **Luật WAL**: thay đổi của một trang dữ liệu chỉ được ghi xuống đĩa **sau khi** bản ghi WAL mô tả nó đã được flush. Nhờ vậy COMMIT chỉ cần flush WAL (ghi tuần tự), còn trang bẩn (dirty page) ghi sau. Sau khi máy sập, Postgres **phát lại** (REDO) WAL từ checkpoint gần nhất.
 
 - **LSN**: vị trí byte trong WAL. Mỗi trang lưu `pd_lsn` = byte ngay sau bản ghi WAL cuối cùng sửa nó.
 - **Checkpoint**: mọi trang bẩn được ghi xuống đĩa; replay bắt đầu từ đây. Mặc định mỗi `checkpoint_timeout` (5 phút) hoặc khi WAL sắp vượt `max_wal_size` (1 GB).
@@ -70,7 +73,9 @@ Bấm qua sơ đồ: trang bẩn trong bộ đệm → bản ghi WAL ghi trướ
 
 ## Key idea
 
-**The WAL rule**: a change to a data page may be written to disk only **after** the WAL record describing it has been flushed. So COMMIT only needs a WAL flush (a sequential write) and dirty pages are written later. After a crash Postgres **replays** (REDO) the WAL from the latest checkpoint.
+COMMIT has just returned, then the machine crashes before the data page reaches disk: is that data still there?
+
+The WAL (write-ahead log) is a sequential log of every change. **The WAL rule**: a change to a data page may be written to disk only **after** the WAL record describing it has been flushed. So COMMIT only needs a WAL flush (a sequential write) and dirty pages are written later. After a crash Postgres **replays** (REDO) the WAL from the latest checkpoint.
 
 - **LSN**: a byte position in the WAL. Every page stores `pd_lsn` = the byte right after the last WAL record that changed it.
 - **Checkpoint**: all dirty pages are written to disk; replay starts here. By default every `checkpoint_timeout` (5 minutes) or when WAL is about to exceed `max_wal_size` (1 GB).

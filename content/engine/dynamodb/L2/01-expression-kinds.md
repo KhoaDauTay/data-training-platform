@@ -27,16 +27,16 @@ quiz:
       vi: 'Request có `"FilterExpression": "total > 500000"`. DynamoDB trả lỗi gì và sửa thế nào?'
       en: 'A request has `"FilterExpression": "total > 500000"`. What error comes back, and how do you fix it?'
     options:
-      - vi: Không lỗi gì.
-        en: No error at all.
+      - vi: Không lỗi gì, biểu thức lọc nhận giá trị viết thẳng như mệnh đề WHERE của SQL.
+        en: No error at all, a filter takes literal values just like an SQL WHERE clause.
       - vi: '`ValidationException` vì `total` là từ dành riêng và số phải qua chỗ giữ chỗ - viết `#t > :x` và khai cả hai.'
         en: '`ValidationException` because `total` is a reserved word and the number must go through a placeholder - write `#t > :x` and declare both.'
       - vi: '`ConditionalCheckFailedException`.'
         en: '`ConditionalCheckFailedException`.'
     answer: 1
     why:
-      vi: Biểu thức không nhận giá trị viết thẳng, và mọi từ dành riêng (`total`, `status`, `name`, `date`…) phải được thay bằng một tên `#…` trong `ExpressionAttributeNames`.
-      en: Expressions never take literal values, and every reserved word (`total`, `status`, `name`, `date`...) must be replaced by a `#…` name declared in `ExpressionAttributeNames`.
+      vi: Câu này trông giống WHERE của SQL nên dễ nghĩ là chạy được. Nhưng biểu thức DynamoDB không nhận giá trị viết thẳng, và mọi từ dành riêng (`total`, `status`, `name`, `date`…) phải được thay bằng một tên `#…` trong `ExpressionAttributeNames`.
+      en: It looks like an SQL WHERE, so it is easy to think it runs. But DynamoDB expressions never take literal values, and every reserved word (`total`, `status`, `name`, `date`...) must be replaced by a `#…` name declared in `ExpressionAttributeNames`.
   - q:
       vi: Biểu thức lọc `#a = :v OR #b = :v` có bao nhiêu toán tử theo cách DynamoDB đếm?
       en: How many operators does the filter `#a = :v OR #b = :v` have, the way DynamoDB counts them?

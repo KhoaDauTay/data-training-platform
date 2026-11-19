@@ -43,7 +43,7 @@ quiz:
         en: "It works but indexes only the first element of each array"
     answer: 1
     why:
-      vi: "Tài liệu: mỗi tài liệu được index có tối đa một trường mảng trong một index kép multikey. Không tạo được index nếu hai trường cùng là mảng."
+      vi: "Docs chính thức: mỗi tài liệu được index có tối đa một trường mảng trong một index kép multikey. Không tạo được index nếu hai trường cùng là mảng."
       en: "The docs: each indexed document can have at most one array field in a compound multikey index. The index cannot be built when two fields are arrays."
   - q:
       vi: "Bạn muốn xóa phiên đăng nhập sau 1 giờ không hoạt động. Câu nào đúng?"
@@ -63,7 +63,7 @@ quiz:
 
 ## Ý chính
 
-Ba câu hỏi về multikey, partial, unique và TTL. Đáp án dựa trên tài liệu MongoDB hiện hành, kiểm ngày 2026-11-20.
+Ba câu hỏi về multikey, partial, unique và TTL. Đáp án dựa trên docs chính thức của MongoDB hiện hành, kiểm ngày 2026-11-20.
 
 # EN
 

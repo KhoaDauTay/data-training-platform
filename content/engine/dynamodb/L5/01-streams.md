@@ -11,7 +11,7 @@ minutes: 8
 objectives:
   - { vi: "Nêu ba bảo đảm của Streams: giữ 24 giờ, mỗi bản ghi đúng một lần, đúng thứ tự trong từng item", en: "State the three guarantees of Streams: kept 24 hours, each record exactly once, in order within each item" }
   - { vi: "Chọn kiểu view phù hợp (KEYS_ONLY, NEW_IMAGE, OLD_IMAGE, NEW_AND_OLD_IMAGES)", en: "Pick the right view type (KEYS_ONLY, NEW_IMAGE, OLD_IMAGE, NEW_AND_OLD_IMAGES)" }
-  - { vi: "Thiết kế bộ xử lý không dựa vào thứ tự giữa các item hay tính nguyên khối của giao dịch", en: "Design a consumer that does not rely on ordering across items or on transaction atomicity" }
+  - { vi: "Thiết kế bộ xử lý không dựa vào thứ tự giữa các item hay tính nguyên khối của transaction", en: "Design a consumer that does not rely on ordering across items or on transaction atomicity" }
 requires: []
 sources:
   - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Streams.html
@@ -27,10 +27,10 @@ quiz:
   - q: { vi: "Một `TransactWriteItems` sửa ba item. Bộ xử lý Streams nhìn thấy gì?", en: "One `TransactWriteItems` changes three items. What does the Streams consumer see?" }
     options:
       - { vi: "Một bản ghi gộp cả ba item", en: "One record covering all three items" }
-      - { vi: "Ba bản ghi, có thể đến vào các thời điểm khác nhau và xen với bản ghi của giao dịch khác", en: "Three records, possibly arriving at different times and interleaved with other transactions' records" }
-      - { vi: "Không có bản ghi nào, giao dịch đi đường riêng", en: "No records, transactions take a separate path" }
+      - { vi: "Ba bản ghi, có thể đến vào các thời điểm khác nhau và xen với bản ghi của transaction khác", en: "Three records, possibly arriving at different times and interleaved with other transactions' records" }
+      - { vi: "Không có bản ghi nào, transaction đi đường riêng", en: "No records, transactions take a separate path" }
     answer: 1
-    why: { vi: "Thay đổi của giao dịch lan sang Streams dần dần; bộ xử lý không được giả định tính nguyên khối hay thứ tự của giao dịch.", en: "A transaction's changes propagate to Streams gradually; consumers must not assume transaction atomicity or ordering." }
+    why: { vi: "Thay đổi của transaction lan sang Streams dần dần; bộ xử lý không được giả định tính nguyên khối hay thứ tự của transaction.", en: "A transaction's changes propagate to Streams gradually; consumers must not assume transaction atomicity or ordering." }
   - q: { vi: "Bạn muốn biết số tiền cũ và mới mỗi khi một đơn bị sửa. Chọn view nào?", en: "You want both the old and the new amount whenever an order changes. Which view type?" }
     options:
       - { vi: "`KEYS_ONLY`", en: "`KEYS_ONLY`" }
@@ -50,7 +50,7 @@ Bật **DynamoDB Streams** trên bảng thì mỗi lần tạo, sửa hay xóa m
 - Bốn kiểu view: `KEYS_ONLY`, `NEW_IMAGE`, `OLD_IMAGE`, `NEW_AND_OLD_IMAGES`.
 - Bản ghi nằm trong các **shard**; mỗi shard đang mở ứng với đúng một partition của bảng. Không nên có quá **2** tiến trình cùng đọc một shard.
 - `PutItem`/`UpdateItem` không đổi dữ liệu thì không sinh bản ghi.
-- Thay đổi của một giao dịch đến dần, có thể xen với giao dịch khác.
+- Thay đổi của một transaction đến dần, có thể xen với transaction khác.
 
 Bộ máy trong trình duyệt (dynoxide 1.5.0) trả `UnsupportedOperation` cho các API Streams, nên bài này **chưa chạy được trong trình duyệt**.
 

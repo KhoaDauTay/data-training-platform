@@ -54,11 +54,11 @@ quiz:
 
 ## Ý chính
 
-DynamoDB lưu dữ liệu trong **bảng**. Mỗi bảng chứa các **item**, giống một dòng. Mỗi item là một tập **thuộc tính**, giống một ô có tên.
+DynamoDB lưu dữ liệu trong **bảng**. Mỗi bảng chứa các **item**, giống một dòng. Mỗi item là một tập **thuộc tính** (attribute), giống một ô có tên.
 
-Bảng không khai báo cột. Lúc tạo bảng bạn chỉ khai báo **khóa chính**: tên và kiểu của thuộc tính khóa. Mọi thuộc tính khác do từng item tự mang. Vì vậy hai sách trong bảng `Books` có thể khác nhau: cuốn này có `tags`, cuốn kia không.
+Bảng không khai báo cột. Lúc tạo bảng bạn chỉ khai báo **khóa chính** (primary key): tên và kiểu của thuộc tính khóa. Mọi thuộc tính khác do từng item tự mang. Vì vậy hai sách trong bảng `Books` có thể khác nhau: cuốn này có `tags`, cuốn kia không.
 
-Câu hỏi cũng đổi. Với SQL bạn hỏi "mọi dòng thỏa điều kiện X". Với DynamoDB bạn hỏi "đưa tôi item có khóa này" hoặc "mọi item có partition key này". Bài sau nói về khóa.
+Câu hỏi cũng đổi. Với SQL bạn hỏi "mọi dòng thỏa điều kiện X". Với DynamoDB bạn hỏi "đưa tôi item có khóa này" hoặc "mọi item có partition key (khóa phân vùng) này". Bài sau nói về khóa.
 
 ## Ví dụ
 

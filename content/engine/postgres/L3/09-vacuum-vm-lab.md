@@ -6,8 +6,9 @@ module: vacuum-hot
 title: "Lab: VACUUM đổi gì trên trang, FSM và visibility map"
 title_en: "Lab: what VACUUM changes on the page, the FSM and the visibility map"
 kind: lab
+runtime: browser
 minutes: 25
-viz: vacuum-flow
+viz: pg-vacuum-vm
 objectives:
   - vi: Đọc trạng thái line pointer sau VACUUM (`lp_flags` 0 unused, 1 normal, 2 redirect)
     en: Read line pointer states after VACUUM (`lp_flags` 0 unused, 1 normal, 2 redirect)
@@ -117,8 +118,8 @@ lab:
         probe: SELECT (SELECT all_visible FROM pg_visibility_map_summary('reading_fresh')), (SELECT all_visible FROM pg_visibility_map_summary('reading_touched')), pg_relation_size('reading_touched') / 8192, (SELECT ctid::text FROM reading_touched WHERE id = 5)
         expect: [[0, 43, 45, "(44,57)"]]
     - task:
-        vi: "Chạy `EXPLAIN (ANALYZE, COSTS OFF, TIMING OFF, SUMMARY OFF, BUFFERS OFF)` cho câu lấy `id` của 20 dòng đầu (`id <= 20`) trong `reading_fresh`."
-        en: "Run `EXPLAIN (ANALYZE, COSTS OFF, TIMING OFF, SUMMARY OFF, BUFFERS OFF)` for the query reading `id` of the first 20 rows (`id <= 20`) of `reading_fresh`."
+        vi: "Chạy `EXPLAIN (ANALYZE, COSTS OFF, TIMING OFF, SUMMARY OFF, BUFFERS OFF)` cho câu lấy `id` của 20 dòng đầu (`id <= 20`) trong `reading_fresh`. Đoán trước khi chạy: Index Only Scan có phải về heap lần nào không?"
+        en: "Run `EXPLAIN (ANALYZE, COSTS OFF, TIMING OFF, SUMMARY OFF, BUFFERS OFF)` for the query reading `id` of the first 20 rows (`id <= 20`) of `reading_fresh`. Guess before you run it: does the Index Only Scan go back to the heap at all?"
       solution: EXPLAIN (ANALYZE, COSTS OFF, TIMING OFF, SUMMARY OFF, BUFFERS OFF) SELECT id FROM reading_fresh WHERE id <= 20
       check: rows
       hint:
@@ -130,8 +131,8 @@ lab:
         probe: SELECT heap_fetches('SELECT id FROM reading_fresh WHERE id <= 20'), heap_fetches('SELECT id FROM reading_touched WHERE id <= 20')
         expect: [["Heap Fetches: 20", "Heap Fetches: 20"]]
     - task:
-        vi: "`space_vac` và `space_full` cùng có 1.000 dòng rồi bị xóa 900 dòng đầu. `space_vac` qua `VACUUM`, `space_full` qua `VACUUM FULL`. Lấy tên bảng, số trang (`pg_relation_size` chia 8192) và tổng byte trống theo FSM (`sum(avail)` của `pg_freespace`), theo tên bảng."
-        en: "`space_vac` and `space_full` both had 1,000 rows, then lost the first 900. `space_vac` got `VACUUM`, `space_full` got `VACUUM FULL`. Return the table name, the number of pages (`pg_relation_size` divided by 8192) and the total free bytes per the FSM (`sum(avail)` of `pg_freespace`), by table name."
+        vi: "`space_vac` và `space_full` cùng có 1.000 dòng rồi bị xóa 900 dòng đầu. `space_vac` qua `VACUUM`, `space_full` qua `VACUUM FULL`. Lấy tên bảng, số trang (`pg_relation_size` chia 8192) và tổng byte trống theo FSM (`sum(avail)` của `pg_freespace`), theo tên bảng. Đoán trước khi chạy: sau `VACUUM`, `space_vac` còn bao nhiêu trang so với lúc có 1.000 dòng?"
+        en: "`space_vac` and `space_full` both had 1,000 rows, then lost the first 900. `space_vac` got `VACUUM`, `space_full` got `VACUUM FULL`. Return the table name, the number of pages (`pg_relation_size` divided by 8192) and the total free bytes per the FSM (`sum(avail)` of `pg_freespace`), by table name. Guess before you run it: after `VACUUM`, how many pages does `space_vac` keep compared with when it held 1,000 rows?"
       solution: |
         SELECT t, pg_relation_size(t) / 8192 AS pages, (SELECT sum(avail) FROM pg_freespace(t::regclass)) AS fsm_free
         FROM unnest(ARRAY['space_full', 'space_vac']) AS t
@@ -142,8 +143,8 @@ lab:
         vi: "`pg_freespace(table)` trả một dòng mỗi block với cột `avail`."
         en: "`pg_freespace(table)` returns one row per block with an `avail` column."
       fact:
-        vi: "`VACUUM` không trả chỗ cho hệ điều hành: `space_vac` vẫn 18 trang, chỗ của 900 dòng chỉ được ghi vào FSM để dòng mới dùng lại. `VACUUM FULL` viết lại bảng: `space_full` còn 2 trang (nhưng khóa bảng suốt lúc chạy)."
-        en: "`VACUUM` does not give space back to the OS: `space_vac` is still 18 pages, the space of the 900 rows is only recorded in the FSM for new rows to reuse. `VACUUM FULL` rewrites the table: `space_full` is down to 2 pages (but it locks the table while it runs)."
+        vi: "`VACUUM` không trả chỗ cho hệ điều hành: `space_vac` vẫn 18 trang, chỗ của 900 dòng chỉ được ghi vào FSM để dòng mới dùng lại. `VACUUM FULL` viết lại bảng: `space_full` còn 2 trang (nhưng giữ lock `ACCESS EXCLUSIVE` trên bảng suốt lúc chạy)."
+        en: "`VACUUM` does not give space back to the OS: `space_vac` is still 18 pages, the space of the 900 rows is only recorded in the FSM for new rows to reuse. `VACUUM FULL` rewrites the table: `space_full` is down to 2 pages (but it holds an `ACCESS EXCLUSIVE` lock on the table while it runs)."
         probe: SELECT t, pg_relation_size(t) / 8192, (SELECT sum(avail) FROM pg_freespace(t::regclass)) > 90000 FROM unnest(ARRAY['space_full', 'space_vac']) AS t ORDER BY t
         expect: [[space_full, 2, false], [space_vac, 18, true]]
 ---
@@ -152,9 +153,9 @@ lab:
 
 Một lần VACUUM:
 
-- biến tuple chết thành line pointer **unused** (dùng lại được), hoặc **redirect** khi nó là đầu một chuỗi HOT mà index còn trỏ vào;
+- biến dead tuple (tuple không còn transaction nào thấy) thành line pointer **unused** (dùng lại được), hoặc **redirect** khi nó là đầu một chuỗi HOT mà index còn trỏ vào;
 - ghi chỗ trống vào **free space map** để INSERT sau tìm tới;
-- bật bit **all-visible** trong **visibility map** khi mọi tuple trên trang thấy được với mọi giao dịch.
+- bật bit **all-visible** trong **visibility map** khi mọi tuple trên trang thấy được với mọi transaction.
 
 Index-only scan chỉ bỏ qua heap ở trang all-visible. Bất kỳ thay đổi nào trên trang cũng tắt bit đó.
 
@@ -167,7 +168,7 @@ SELECT all_visible, all_frozen FROM pg_visibility_map_summary('reading_touched')
 
 ## Thực hành
 
-Sáu bước so bảng chưa VACUUM với bảng đã VACUUM, và `VACUUM` với `VACUUM FULL`. Sau lab này bạn chẩn đoán được bloat do VACUUM không theo kịp: trang đầy tuple chết, FSM trống, và "Index Only Scan" vẫn chậm vì `Heap Fetches` cao. Cách chữa là VACUUM thường hơn (chỉnh autovacuum), không phải thêm index.
+Sáu bước so bảng chưa VACUUM với bảng đã VACUUM, và `VACUUM` với `VACUUM FULL`. Sau lab này bạn chẩn đoán được bloat do VACUUM không theo kịp: trang đầy dead tuple, FSM trống, và "Index Only Scan" vẫn chậm vì `Heap Fetches` cao. Cách chữa là VACUUM thường hơn (chỉnh autovacuum), không phải thêm index.
 
 # EN
 

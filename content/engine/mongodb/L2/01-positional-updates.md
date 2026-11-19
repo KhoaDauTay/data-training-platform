@@ -6,6 +6,7 @@ module: update-pipeline
 title: Sửa phần tử trong mảng ($, $[], arrayFilters)
 title_en: Updating array elements ($, $[], arrayFilters)
 kind: lab
+runtime: browser
 minutes: 14
 objectives:
   - vi: Sửa đúng phần tử mảng đã khớp filter bằng toán tử vị trí `$`.
@@ -38,16 +39,16 @@ lab:
         vi: 'Đưa `"lines.sku": "p3"` vào filter, rồi `"lines.$.qty"` trỏ tới đúng dòng đã khớp.'
         en: 'Put `"lines.sku": "p3"` in the filter, then `"lines.$.qty"` points at the line that matched.'
     - task:
-        vi: Đơn 5 được giảm 10% trên mọi dòng hàng. Nhân `price` của mọi dòng với 0.9.
-        en: Order 5 gets 10% off every line. Multiply the `price` of every line by 0.9.
+        vi: Đơn 5 được giảm 10 % trên mọi dòng hàng. Nhân `price` của mọi dòng với `0.9`.
+        en: Order 5 gets 10% off every line. Multiply the `price` of every line by `0.9`.
       solution: 'db.orders.updateOne({ _id: 5 }, { $mul: { "lines.$[].price": 0.9 } })'
       check: doc
       hint:
         vi: "`$[]` nghĩa là mọi phần tử của mảng; `$mul` nhân giá trị."
         en: "`$[]` means every element of the array; `$mul` multiplies the value."
     - task:
-        vi: Giá sản phẩm `"p1"` được sửa thành 23000 trong mọi đơn có nó. Chỉ đổi các dòng `"p1"`.
-        en: The price of product `"p1"` is corrected to 23000 in every order that has it. Change only the `"p1"` lines.
+        vi: Giá sản phẩm `"p1"` được sửa thành `23000` trong mọi đơn có nó. Chỉ đổi các dòng `"p1"`.
+        en: The price of product `"p1"` is corrected to `23000` in every order that has it. Change only the `"p1"` lines.
       solution: 'db.orders.updateMany({ "lines.sku": "p1" }, { $set: { "lines.$[l].price": 23000 } }, { arrayFilters: [{ "l.sku": "p1" }] })'
       check: doc
       hint:
@@ -72,7 +73,7 @@ Ba cách trỏ vào phần tử của mảng trong update:
 
 Tên `<id>` bắt đầu bằng chữ thường và chỉ có chữ, số. `arrayFilters` là đối số thứ ba của `updateOne`/`updateMany`.
 
-Sửa tại chỗ như vậy tốt hơn đọc cả mảng về ứng dụng rồi ghi đè: lệnh là atomic trên tài liệu, và không làm mất thay đổi của người khác lên các phần tử khác.
+Sửa tại chỗ như vậy tốt hơn đọc cả mảng về ứng dụng rồi ghi đè: lệnh là nguyên tử (atomic) trên tài liệu, và không làm mất thay đổi của người khác lên các phần tử khác.
 
 Làm được: sửa đúng dòng hàng trong đơn mà không ghi lại cả mảng.
 

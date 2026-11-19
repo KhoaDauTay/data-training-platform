@@ -36,13 +36,13 @@ predict:
       en: "No, because `$regex` can never use an index"
   answer: 1
   why:
-    vi: "Truy vấn được phủ khi mọi trường của truy vấn và mọi trường trả về đều trong cùng index. `_id` được trả về mặc định, nên phải ghi `{ title: 1, _id: 0 }` như ví dụ trong tài liệu. Khi đó explain có `IXSCAN` không nằm dưới `FETCH`."
+    vi: "Truy vấn được phủ khi mọi trường của truy vấn và mọi trường trả về đều trong cùng index. `_id` được trả về mặc định, nên phải ghi `{ title: 1, _id: 0 }` như ví dụ trong docs chính thức. Khi đó explain có `IXSCAN` không nằm dưới `FETCH`."
     en: "A query is covered when every queried field and every returned field is in the same index. `_id` is returned by default, so you must write `{ title: 1, _id: 0 }` as in the docs example. Then explain shows an `IXSCAN` that is not under a `FETCH`."
 ---
 
 ## Ý chính
 
-Đây là bài đoán theo tài liệu MongoDB (trang "Query Optimization" và "Explain Results"); trình duyệt không có `mongod`. Index phủ truy vấn khi:
+Đây là bài đoán theo docs chính thức của MongoDB (trang "Query Optimization" và "Explain Results"); trình duyệt không có `mongod`. Index (chỉ mục) phủ truy vấn khi:
 
 - mọi trường trong truy vấn đều thuộc index;
 - mọi trường trả về đều thuộc cùng index đó;
@@ -52,7 +52,7 @@ Trong explain, truy vấn được phủ có stage `IXSCAN` không phải con ch
 
 ## Ví dụ
 
-Ví dụ được phủ trong tài liệu (chú ý `_id: 0`):
+Ví dụ được phủ trong docs chính thức (chú ý `_id: 0`):
 
 ```javascript
 db.movies.find(
@@ -61,7 +61,7 @@ db.movies.find(
 ).limit(3)
 ```
 
-Đúng với tài liệu MongoDB hiện hành, kiểm ngày 2026-11-20.
+Đúng với docs chính thức của MongoDB hiện hành, kiểm ngày 2026-11-20.
 
 # EN
 

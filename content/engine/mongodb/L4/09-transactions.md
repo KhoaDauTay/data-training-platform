@@ -3,7 +3,7 @@ id: e-mg-l4-09
 engine: mongodb
 level: L4
 module: consistency
-title: "Transaction đa tài liệu"
+title: "Transaction nhiều tài liệu"
 title_en: "Multi-document transactions"
 kind: concept
 minutes: 10
@@ -11,7 +11,7 @@ runtime: docs
 objectives:
   - vi: "Biết thao tác trên một tài liệu luôn atomic"
     en: "Know that an operation on one document is always atomic"
-  - vi: "Biết khi nào cần transaction đa tài liệu và các giới hạn của nó"
+  - vi: "Biết khi nào cần transaction nhiều tài liệu và các giới hạn của nó"
     en: "Know when a multi-document transaction is needed and its limits"
 requires: [e-mg-l4-07]
 sources:
@@ -26,8 +26,8 @@ quiz:
       - { vi: "Không, thao tác trên một tài liệu là atomic", en: "No, an operation on one document is atomic" }
     answer: 1
     why:
-      vi: "Tài liệu: thao tác trên một tài liệu là atomic. Nhúng dữ liệu liên quan vào một tài liệu giảm nhu cầu transaction đa tài liệu."
-      en: "The docs: an operation on a single document is atomic. Embedding related data in one document reduces the need for multi-document transactions."
+      vi: "Nghe hợp lý vì hai trường cùng đổi, như hai câu UPDATE trong SQL. Nhưng docs chính thức nói thao tác trên một tài liệu là atomic, nên một `updateOne` đã đủ. Transaction nhiều tài liệu tốn hơn ghi một tài liệu; nhúng dữ liệu liên quan vào một tài liệu giảm nhu cầu dùng nó."
+      en: "It sounds right because two fields change, like two UPDATE statements in SQL. But the docs say an operation on a single document is atomic, so one `updateOne` is enough. A multi-document transaction costs more than a single-document write; embedding related data in one document reduces the need for it."
   - q:
       vi: "Một transaction chạy quá lâu với cấu hình mặc định. Điều gì xảy ra?"
       en: "A transaction runs too long with the default settings. What happens?"
@@ -42,13 +42,13 @@ quiz:
 
 ## Ý chính
 
-Trong MongoDB, thao tác trên một tài liệu là atomic. Khi cần atomic trên nhiều tài liệu (nhiều collection, nhiều shard), dùng transaction đa tài liệu. Tài liệu nhấn mạnh: transaction tốn hơn ghi một tài liệu và không thay thế cho thiết kế schema tốt.
+Trong MongoDB, thao tác trên một tài liệu là atomic. Khi cần atomic trên nhiều tài liệu (nhiều collection, nhiều shard), dùng transaction nhiều tài liệu. Docs chính thức nhấn mạnh: transaction tốn hơn ghi một tài liệu và không thay thế cho thiết kế schema tốt.
 
 - Cần replica set (FCV từ 4.0) hoặc sharded cluster (từ 4.2). Standalone không có transaction.
 - Mặc định phải xong trong dưới một phút (`transactionLifetimeLimitSeconds`).
 - Mỗi mục oplog của transaction vẫn phải dưới 16 MB (giới hạn tài liệu BSON).
 - Read concern và write concern đặt ở mức transaction. Đọc `snapshot` chỉ bảo đảm khi commit với `w: "majority"`.
-- Transaction chờ tối đa 5 ms để lấy khóa, không được thì hủy. Ghi ngoài transaction đụng tài liệu transaction sắp sửa làm transaction hủy vì write conflict.
+- Transaction chờ tối đa 5 ms để lấy lock, không được thì hủy. Ghi ngoài transaction đụng tài liệu transaction sắp sửa làm transaction hủy vì write conflict.
 
 ## Ví dụ
 
@@ -58,7 +58,7 @@ session.startTransaction( { readConcern: { level: "snapshot" }, writeConcern: { 
 session.commitTransaction()
 ```
 
-Đúng với tài liệu MongoDB hiện hành, kiểm ngày 2026-11-20. Trình duyệt không chạy transaction thật: mingo không có transaction.
+Đúng với docs chính thức của MongoDB hiện hành, kiểm ngày 2026-11-20. Phần chạy thật cần máy chủ thật (nhiều phiên / replica set / AWS). Bài này dùng sơ đồ và kết quả ghi sẵn. mingo không có transaction.
 
 # EN
 
@@ -80,4 +80,4 @@ session.startTransaction( { readConcern: { level: "snapshot" }, writeConcern: { 
 session.commitTransaction()
 ```
 
-Matches the current MongoDB manual, checked 2026-11-20. The browser runs no real transaction: mingo has none.
+Matches the current MongoDB manual, checked 2026-11-20. The real run needs a real server (several sessions / replica set / AWS). This lesson uses diagrams and recorded results. mingo has no transactions.

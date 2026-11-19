@@ -51,14 +51,14 @@ quiz:
 
 ## Ý chính
 
-Mỗi bảng có một **khóa chính**, chọn lúc tạo bảng và không đổi được nữa. Có hai loại:
+Mỗi bảng có một **khóa chính** (primary key), chọn lúc tạo bảng và không đổi được nữa. Có hai loại:
 
-- **Khóa đơn**: chỉ có **partition key**. Bảng `Books` dùng `isbn`, mỗi `isbn` là một item.
-- **Khóa kép**: **partition key + sort key**. Bảng `Orders` dùng `customerId` + `orderId`. Một khách có nhiều đơn, mỗi đơn một `orderId`.
+- **Khóa đơn** (simple key): chỉ có **partition key** (khóa phân vùng). Bảng `Books` dùng `isbn`, mỗi `isbn` là một item.
+- **Khóa kép** (composite key): **partition key + sort key** (khóa sắp xếp). Bảng `Orders` dùng `customerId` + `orderId`. Một khách có nhiều đơn, mỗi đơn một `orderId`.
 
 Thuộc tính khóa chỉ được là chuỗi, số hoặc nhị phân.
 
-**Partition key chọn chỗ ở.** DynamoDB đưa giá trị partition key qua một hàm băm nội bộ. Kết quả băm quyết định item nằm ở **partition** nào. Partition là một đơn vị lưu trữ, được nhân bản sang nhiều Availability Zone.
+**Partition key chọn chỗ ở.** DynamoDB đưa giá trị partition key qua một hàm băm nội bộ. Kết quả băm quyết định item nằm ở **partition** (phân vùng vật lý) nào. Partition là một đơn vị lưu trữ, được nhân bản sang nhiều Availability Zone.
 
 **Sort key chọn thứ tự.** Các item cùng partition key được lưu cạnh nhau, sắp theo sort key. Nhóm đó gọi là một **item collection**.
 
