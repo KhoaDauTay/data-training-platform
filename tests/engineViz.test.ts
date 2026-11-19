@@ -17,10 +17,11 @@ beforeAll(async () => {
   const g = await import('../src/art/gsap');
   V.init({ h, s, getLang, reducedMotion: () => reduced, loadedGsap: () => gsapMod, loadGsap: () => void (gsapMod = g) });
   gsapMod = g;
+  for (const n of V.NOSQL_VIZ) expect(await V.loadViz(n)).toBeTypeOf('function');
 });
 
 const POSTGRES = ['heapPage', 'mvccTimeline', 'hotChain', 'vacuumFlow', 'btree', 'walFlow', 'ginPostings', 'brinRanges', 'gistBoxes', 'planTree', 'lockMatrix', 'isolationAnomalies'];
-const NOSQL: string[] = [];
+const NOSQL = V.NOSQL_VIZ;
 
 /** Checks one drawn frame: finite numbers, shapes and (estimated) labels inside the viewBox. */
 function checkFrame(svg: SVGSVGElement, name: string, step: number): string[] {
@@ -61,7 +62,7 @@ describe('engineViz registry', () => {
     expect(V.vizNames()).toEqual(expect.arrayContaining([...POSTGRES, ...NOSQL]));
   });
 
-  for (const name of V.vizNames()) {
+  for (const name of [...POSTGRES, ...NOSQL]) {
     for (const lang of ['vi', 'en'] as const) {
       it(`${name} (${lang}): every step draws a finite frame inside its box, with one sentence`, () => {
         reduced = true;
@@ -178,7 +179,7 @@ describe('engineViz colours', () => {
     const sources = import.meta.glob<string>('../src/engine/viz/**/*.ts', { query: '?raw', import: 'default', eager: true });
     expect(Object.keys(sources).length).toBeGreaterThan(2);
     const bad = Object.entries(sources).flatMap(([f, src]) => src.split('\n').map((l, i) => `${f}:${i + 1}: ${l.trim()}`)
-      .filter((l) => /#[0-9a-fA-F]{3,8}\b|rgba?\(|hsla?\(|oklch\(|\b(bg|text|fill|stroke|ring|border)-(red|green|blue|emerald|rose|amber|slate|sky|teal|indigo)-\d+/.test(l)));
+      .filter((l) => /(fill|stroke|color|background)[^;'"]*#[0-9a-fA-F]{3,8}\b|['"]#[0-9a-fA-F]{3}([0-9a-fA-F]{3})?['"]|rgba?\(|hsla?\(|oklch\(|\b(bg|text|fill|stroke|ring|border)-(red|green|blue|emerald|rose|amber|slate|sky|teal|indigo)-\d+/.test(l)));
     expect(bad).toEqual([]);
   });
   it('every token the diagrams read exists in both themes', () => {

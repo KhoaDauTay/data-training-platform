@@ -1,5 +1,5 @@
 import type { PlanNode } from '../../viz/plan';
-import { arc, box, cut, define, fill, line, num, type Shape, text, type Tone } from './core';
+import { arc, box, cut, define, fill, line, num, type Shape, text, type Tone } from './engineVizCore';
 
 // ENG-VIZ Postgres planner and concurrency diagrams (knowledge map P12, C4): plan tree, locks, isolation anomalies.
 

@@ -37,7 +37,8 @@ const GROUPS = [
   ['sqlmotion', /^sqlMotion-/, 8], // v10 Track A (L154): src/art/sqlMotion.ts, the Execution order film, GROUP BY fold, JOIN pairs and the guess, VI/EN text inside; lazy on the first draw of that tab
   ['portfolioPng', /^portfolioPng-/, 6], // V19-D (L170): src/ui/portfolioPng.ts + src/portfolio.ts (card pictures, portfolio zip, take-home file), lazy on the first picture or portfolio click: 3.2 KB gz
   ['datasetPanel', /^datasetPanel-/, 5], // V20-B: Sandbox sample-dataset panel, lazy (4.0 KB gz); the CSV itself is public/datasets/, fetched on click, not in assets
-  ['engineViz', /^engineViz/, 30], // ENG-VIZ (L235/L236): src/engine/viz/** (diagram engine + Postgres diagrams in engineViz-*, NoSQL in engineVizNosql-*), lazy; built as a second entry until ENG-CORE imports it
+  ['engineVizNosql', /^engineVizNosql-/, 15], // ENG-VIZ (L236): MongoDB + DynamoDB diagrams (src/engine/viz/engineVizNosql.ts), lazy from engineViz's loadViz()
+  ['engineViz', /^engineViz(Core)?-/, 30], // ENG-VIZ (L235/L236): diagram engine (engineVizCore-*, shared with the NoSQL chunk) + Postgres diagrams (engineViz-*), lazy; built as a second entry until ENG-CORE imports it
   ['rest', /./, 1560],
 ];
 

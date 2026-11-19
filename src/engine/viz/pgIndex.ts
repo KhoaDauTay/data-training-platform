@@ -1,4 +1,4 @@
-import { box, cut, define, fill, line, num, type Shape, text, type Tone } from './core';
+import { box, cut, define, fill, line, num, type Shape, text, type Tone } from './engineVizCore';
 
 // ENG-VIZ Postgres index diagrams (knowledge map P6, P7, P9): B-tree, GIN, BRIN, GiST.
 

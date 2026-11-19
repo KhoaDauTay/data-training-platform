@@ -1,4 +1,4 @@
-import { arc, box, cut, define, fill, line, num, type Frame, type Shape, text, type Tone } from './core';
+import { arc, box, cut, define, fill, line, num, type Frame, type Shape, text, type Tone } from './engineVizCore';
 
 // ENG-VIZ Postgres storage diagrams (knowledge map P2–P5): heap page, HOT chain, MVCC, VACUUM, WAL.
 
