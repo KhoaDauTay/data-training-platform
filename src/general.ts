@@ -5,7 +5,7 @@ import type { Ticket, Wrong } from './tickets';
 /**
  * General area (Plan 8a): drills per skill (content/general/sql.yml) and the advanced DA track (content/general/adv.yml).
  * Both run on the `lab` schema. Pure parsers over already-parsed YAML; this module rides in the lazy chunk
- * src/generalSources.ts, so it imports no value from a main-bundle module (Plan 6 U3: Rolldown would split main into
+ * src/generalSources.ts (adv.yml is its own chunk src/generalAdvSources.ts since v19, L167), so it imports no value from a main-bundle module (Plan 6 U3: Rolldown would split main into
  * shared chunks). The YAML parser and parseLessonBody come in as arguments from src/content.ts.
  */
 
@@ -21,8 +21,9 @@ export const bilingualOf = (v: unknown): Bilingual | undefined => {
   const b = { vi: o.vi.trim(), en: o.en.trim() };
   return b.vi && b.en ? b : undefined;
 };
-export type DrillKind = 'faded' | 'open' | 'trap' | 'challenge';
-const KINDS: DrillKind[] = ['faded', 'open', 'trap', 'challenge'];
+/** v19 V19-C (L168): `review` = a fourth skill drill for the Leitner review queue, written from scratch (no starter). */
+export type DrillKind = 'faded' | 'open' | 'trap' | 'review' | 'challenge';
+const KINDS: DrillKind[] = ['faded', 'open', 'trap', 'review', 'challenge'];
 export interface Drill {
   id: string;
   /** Skill id (sql.yml) or node id (adv.yml): exactly one is set. */
@@ -72,6 +73,7 @@ export function parseDrill(o: Raw, origin: string, owner: { skill?: string; node
   const both = (v: unknown, what: string): Bilingual => bilingualOf(v) ?? fail(`${what} cần { vi, en }`);
   const starter = o.starter === undefined ? undefined : text(o.starter, 'starter');
   if (kind === 'faded' && !starter?.includes(BLANK)) fail(`faded cần starter có ${BLANK}`);
+  if (kind === 'review' && starter !== undefined) fail('review không có starter (ôn = tự viết lại)');
   const wrong = (Array.isArray(o.wrong) ? o.wrong : o.wrong === undefined ? [] : fail('wrong cần một danh sách')) as Raw[];
   if (kind === 'trap' && wrong.length === 0) fail('trap cần wrong');
   const plan = o.plan as Raw | undefined;

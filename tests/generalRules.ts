@@ -9,6 +9,9 @@ import { seededDb } from './helpers';
 
 /** Content rules shared by the skill drills (Task 4) and the advanced nodes' drills (Task 5), on a DB with `lab` seeded. */
 export const VI_DIACRITIC = /[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ]/i;
+/** SQL keywords that give the answer away; drill/question prompts may name tables/columns/values in backticks only (D8a-7). */
+export const ANSWER_WORDS = /\b(SELECT|FROM|WHERE|JOIN|GROUP BY|HAVING|ORDER BY|LIMIT|OVER|PARTITION|WITH|CASE|COALESCE|EXISTS|UNION|EXCEPT|INTERSECT|DISTINCT|LAG|LEAD|RANK|ROW_NUMBER|FILTER|NULL|LIKE|CURRENT_DATE)\b/;
+export const prose = (s: string): string => s.replace(/`[^`]+`/g, '');
 export const codeSpans = (s: string): string[] => [...s.matchAll(/`([^`]+)`/g)].map((m) => m[1]).sort();
 
 export async function labRun(): Promise<(sql: string) => Promise<QueryResult>> {

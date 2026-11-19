@@ -785,3 +785,9 @@ Cách đo: `npx vite build --base=/data-training-platform/` (`MSYS_NO_PATHCONV=1
 - Các lần hỏng trong lúc viết, đều do script: trang Dữ liệu đổi hash sang `#/d/logistics/data/ports` (chấp nhận hash con); nộp drill khi editor còn bị thay (chờ chấm xanh DB, gõ lại khi editor bị thay); một lần `Page.navigate` (đổi hash) + `Page.reload` liền nhau không mở drill trong 60 s (giờ qua `about:blank` rồi tải hẳn `#/learn/play/<id>`).
 - **Ghi nhận từ script, chưa tái hiện như lỗi người chơi thấy:** sau khi mở drill bằng một lần tải trang, editor đôi khi bị dựng lại sau khi DB đã xanh và script đã gõ (`attempt: 2` trong report ở 1 trên 4 lượt cuối, 3 trên 6 lượt trước đó). Nếu người chơi gặp đúng lúc đó thì chữ vừa gõ mất và lần Nộp chỉ vào lịch sử. Vòng gõ lại che việc này; dấu vết duy nhất là `attempt` trong `smoke-report.json`. Cần một luồng xem `main.ts` (mở lại drill / `ensure('lab')` / chunk `learnui`).
 - Chưa kiểm: workflow trên runner GitHub (Chrome Linux, `--no-sandbox`, `upload-artifact@v7`) chưa chạy lần nào; theme tối; người chơi có tiến độ sẵn.
+
+## v19 V19-C (General sâu hơn), 2026-11-19, L167–L169
+
+- Tách `general`: `generalSources` 31 KB gz / 40, `generalAdvSources` 46 KB gz / 50 (roadmap đoán ≤ 15: sai chiều, xem L167). interview 24 / 25.
+- Nội dung: +38 drill ôn (152 drill kỹ năng), +2 bộ đề (`mid-3`, `senior-1`), +2 take-home (`g-iv-th-4`, `g-iv-th-5`). Mọi Solution chạy trên `lab`; khác các drill cùng kỹ năng, "Thử ngay" và (câu phỏng vấn) mọi drill General.
+- Ngoài danh sách file của luồng (sửa 1–2 dòng mỗi file): `src/practice.ts` (`KIND_ORDER`), `src/i18n/learn.ts` (nhãn + hướng dẫn kind `review`, số đếm trong 4 câu), `src/i18n/interview.ts` (`iv.level.senior`), `tests/practice.test.ts`, `tests/learn.test.ts`.

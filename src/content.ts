@@ -96,12 +96,14 @@ let general: General | undefined;
 let generalLoading: Promise<General> | undefined;
 
 /**
- * Plan 8a: drills and advanced nodes, their own lazy chunk (src/generalSources.ts). Never part of loadContent(): only the
+ * Plan 8a: drills and advanced nodes, lazy chunks src/generalSources.ts + src/generalAdvSources.ts (v19, L167). Never part of loadContent(): only the
  * General pages, reviews and the drill workspace call it. A failed load is dropped so the next call retries.
  */
 export function loadGeneral(): Promise<General> {
-  return (generalLoading ??= import('./generalSources')
-    .then(({ sqlDrills, advNodes, buildGeneral }) => (general = buildGeneral(parseYaml(sqlDrills), parseYaml(advNodes), parseLessonBody)))
+  // ponytail: both chunks are fetched together (in parallel), so a review or the practice hub also downloads adv.yml.
+  // Fetching it only on adv pages needs callers that ask for drills alone (ui/modes.ts, ui/drillBrief.ts): add then (L167).
+  return (generalLoading ??= Promise.all([import('./generalSources'), import('./generalAdvSources')])
+    .then(([{ sqlDrills, buildGeneral }, { advNodes }]) => (general = buildGeneral(parseYaml(sqlDrills), parseYaml(advNodes), parseLessonBody)))
     .catch((e: unknown) => {
       generalLoading = undefined;
       throw e;

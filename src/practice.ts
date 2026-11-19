@@ -108,8 +108,8 @@ export function reviewQueue(
   return out;
 }
 
-const KIND_ORDER = ['open', 'trap', 'faded'] as const;
-/** A drill of `skill` for a review: not reviewed yet this session (`seen`), open first, then trap, then faded; all seen → any. */
+const KIND_ORDER = ['open', 'trap', 'review', 'faded'] as const; // v19 L168: + review
+/** A drill of `skill` for a review: not reviewed yet this session (`seen`), open, trap, review, then faded; all seen → any. */
 export function pickDrill(skill: string, drills: ReadonlyMap<string, readonly Drill[]>, seen: ReadonlySet<string>, rnd: () => number): Drill | undefined {
   const all = drills.get(skill) ?? [];
   const fresh = all.filter((d) => !seen.has(d.id));

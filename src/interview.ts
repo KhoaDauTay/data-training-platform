@@ -10,7 +10,7 @@ import type { Ticket } from './tickets';
  * skill out of them, and the room never calls complete(): nothing reaches save.completed.
  */
 
-export const LEVELS = ['junior', 'mid'] as const;
+export const LEVELS = ['junior', 'mid', 'senior'] as const; // senior: v19 L169
 export type Level = (typeof LEVELS)[number];
 /** A question = a drill without a frame (no starter), tagged with the skills its Solution uses. */
 export interface Question extends Drill { skills: string[] }

@@ -12,7 +12,7 @@ import { generalNow } from '../src/content';
 import { SKILLS } from '../src/progress';
 import { textOf } from '../src/tickets';
 import { compareResults } from '../src/grader';
-import { codeSpans, distinctResults, drillRules, labRun, VI_DIACRITIC } from './generalRules';
+import { ANSWER_WORDS, codeSpans, distinctResults, drillRules, labRun, prose, VI_DIACRITIC } from './generalRules';
 
 const DRILL = `
 - id: g-where-1
@@ -80,6 +80,8 @@ describe('parser drill và nút nâng cao', () => {
     expect(() => parseDrills(DRILL.replace('kind: open', 'kind: weird'), 'x')).toThrow(/kind/);
     expect(() => parseDrills(DRILL.replace('kind: open', 'kind: faded\n  starter: "SELECT name FROM products"'), 'x')).toThrow(/___/);
     expect(() => parseDrills(DRILL.replace('kind: open', 'kind: trap'), 'x')).toThrow(/wrong/);
+    expect(parseDrills(DRILL.replace('kind: open', 'kind: review'), 'x')[0].kind).toBe('review');
+    expect(() => parseDrills(DRILL.replace('kind: open', 'kind: review\n  starter: "SELECT name FROM products"'), 'x')).toThrow(/starter/);
     expect(() => parseDrills(DRILL.replace('g-where-1', 'where_1'), 'x')).toThrow(/id/);
     expect(() => parseDrills(DRILL + DRILL, 'x')).toThrow(/trùng/);
   });
@@ -122,13 +124,21 @@ describe('nội dung: drill theo kỹ năng (content/general/sql.yml)', () => {
   const g = generalNow()!;
   const skillDrills = g.drills.filter((d) => d.skill);
 
-  it('mỗi kỹ năng trong skills.yml có đúng 3 drill: một faded, một open, một trap', () => {
-    for (const s of SKILLS) expect([s.id, (g.bySkill.get(s.id) ?? []).map((d) => d.kind).sort()]).toEqual([s.id, ['faded', 'open', 'trap']]);
+  it('mỗi kỹ năng trong skills.yml có đúng 4 drill: faded, open, trap, review (v19 L168); review id g-<kỹ năng>-4, không starter', () => {
+    for (const s of SKILLS) expect([s.id, (g.bySkill.get(s.id) ?? []).map((d) => d.kind).sort()]).toEqual([s.id, ['faded', 'open', 'review', 'trap']]);
+    for (const d of skillDrills.filter((x) => x.kind === 'review')) {
+      expect(d.id).toBe(`g-${d.skill!.replace(/_/g, '-')}-4`);
+      expect(d.starter, d.id).toBeUndefined();
+    }
     expect(skillDrills.filter((d) => !SKILLS.some((s) => s.id === d.skill)).map((d) => d.id)).toEqual([]);
   });
 
   it.each(SKILLS.map((s) => s.id))('%s: hai drill cùng kỹ năng không cùng kết quả', async (id) => {
     expect(await distinctResults(g.bySkill.get(id) ?? [])).toEqual([]);
+  });
+
+  it.each(skillDrills.filter((d) => d.kind === 'review'))('$id: đề ôn không nói từ khóa SQL của đáp án (ngoài backtick)', (d) => {
+    for (const s of [d.task.vi, d.task.en]) expect(prose(s)).not.toMatch(ANSWER_WORDS);
   });
 
   drillRules(skillDrills);
