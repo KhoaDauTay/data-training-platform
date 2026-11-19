@@ -270,6 +270,9 @@ try {
     await step(`${d}: submit ${tk.id}${d === 'finance' ? ' (reduced motion)' : ''}`, async () => {
       if (d === 'finance') await send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-reduced-motion', value: 'reduce' }] });
       await go(base, `#/d/${d}/play`);
+      // every label the dock's button gets: with motion the first one is "Bỏ qua" (anim.skip), reduced motion goes straight to Close
+      if (d === 'finance') await ev(`(() => { window.__skipLabels = []; const b = document.getElementById('stage-skip');
+        new MutationObserver(() => window.__skipLabels.push(b.dataset.i18n)).observe(b, { attributes: true, attributeFilter: ['data-i18n'] }); })()`);
       // the domain's own ticket 1 is open once its starter is in the editor (the editor is recreated when the domain is entered)
       if (tk.starter) await waitFor(`${tk.id}'s starter`, `${S(norm(tk.starter))} === (${editorText}).replace(/\\s+/g, ' ').trim()`, 90000);
       return solve(tk.id, tk.sql);
@@ -286,12 +289,16 @@ try {
     await sleep(300); // the one fixed wait: two pictures 300 ms apart must be equal (GSAP runs on rAF, getAnimations() cannot see it)
     const b = (await send('Page.captureScreenshot', { format: 'png', clip: box })).data;
     if (a !== b) fail('the dock changed within 300 ms under reduced motion');
+    const labels = await ev('window.__skipLabels');
+    if (!labels.length || labels.includes('anim.skip')) fail(`dock button labels ${S(labels)}: expected Close only (no Skip, no scene)`);
     await send('Emulation.setEmulatedMedia', { features: [] });
   });
 
   await step(`drill ${DRILL.id}`, async () => {
+    // a fresh load of the drill hash reopens that drill (route.ts drillOfHash); about:blank first, so it is a real load, not a hashchange
+    await send('Page.navigate', { url: 'about:blank' });
+    await waitFor('about:blank', `location.href === 'about:blank'`, 10000);
     await go(base, `#/learn/play/${DRILL.id}`);
-    await send('Page.reload'); // a load on a drill hash reopens that drill (route.ts drillOfHash)
     await waitFor('the drill workspace', `location.hash === ${S('#/learn/play/' + DRILL.id)} && !!${EDITOR}`, 60000);
     return solve(DRILL.id, DRILL.solution);
   });
@@ -313,8 +320,10 @@ try {
         const main = ROUTE_MAIN[r] ?? 'home';
         await waitFor(`<main id="${main}"> with an h1`, `(location.hash === ${S(hash)} || location.hash.startsWith(${S(hash + '/')})) && (m => m && !m.hidden && !!m.querySelector('h1'))(document.getElementById(${S(main)}))`, 30000);
         await waitFor('#notice closed (DB/domain ready)', `document.getElementById('notice').hidden`, 90000);
-        const m = await ev(`({ sw: document.documentElement.scrollWidth, iw: window.innerWidth })`);
-        if (w <= 375 && m.sw > m.iw) fail(`horizontal scroll: scrollWidth ${m.sw} > innerWidth ${m.iw}`);
+        const m = await ev(`({ sw: document.documentElement.scrollWidth, iw: window.innerWidth,
+          main: (x => x.scrollWidth - x.clientWidth)(document.getElementById(${S(main)})) })`);
+        // against the emulated width, not innerWidth: a mobile viewport may zoom out and grow innerWidth with the content
+        if (w <= 375 && Math.max(m.sw, m.iw) > w) fail(`horizontal scroll: scrollWidth ${m.sw}, innerWidth ${m.iw} > ${w}`);
         return m;
       });
     }

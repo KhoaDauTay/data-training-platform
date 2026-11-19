@@ -41,7 +41,7 @@ jobs:
       - run: npx vite build      # default base "/": the smoke serves dist/ itself (ci.yml's dist uses the Pages base)
       - run: npm run smoke
       - if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: smoke-out
           path: smoke-out/
@@ -68,7 +68,7 @@ jobs:
       - run: npm ci             # the smoke reads content/** with the `yaml` package
       - run: npm run smoke
       - if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: smoke-out-live
           path: smoke-out/
