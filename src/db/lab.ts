@@ -26,6 +26,14 @@ const LAZY_SEEDS: Partial<Record<SchemaId, () => Promise<string[]>>> = {
 };
 const seeded = new WeakMap<PGlite, Set<SchemaId>>();
 
+/** Schemas seeded on `db` (V16-OFFLINE: what a snapshot of it holds). */
+export const seededSchemas = (db: PGlite): ReadonlySet<SchemaId> => seeded.get(db) ?? new Set();
+
+/** A DB loaded from a snapshot already holds these schemas: ensureSchema is then a no-op for them (src/db/snapshot.ts). */
+export function markSeeded(db: PGlite, ids: readonly SchemaId[]): void {
+  seeded.set(db, new Set([...seededSchemas(db), ...ids]));
+}
+
 /**
  * Seeds `id` once per DB, each file with only its schema on the path. A failed seed
  * drops the half-built schema and restores the session search_path. `source` replaces the seed files (tests only).

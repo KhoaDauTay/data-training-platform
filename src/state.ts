@@ -34,7 +34,8 @@ export interface LastRun {
 }
 
 /** A banner under the top bar. Stored as a key so a language switch re-translates it. */
-export interface Notice { key: Key; params?: Params; reload?: boolean }
+/** `apply`: what the reload button does instead of location.reload() (a waiting service worker takes over first, V16-OFFLINE). */
+export interface Notice { key: Key; params?: Params; reload?: boolean; apply?: () => void }
 
 export interface Column { name: string; type: string }
 

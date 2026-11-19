@@ -6,7 +6,8 @@ import type { SchemaId } from '../domains';
 export type DbStatus = 'loading' | 'ready' | 'failed';
 /** `parser`: loads the SQL parser (wasm + lazy chunk) for `steps`, with its own long budget. */
 export type RequestKind = 'run' | 'explain' | 'steps' | 'parser';
-export interface DbTimings { bootMs: number; seedMs: number }
+/** `restored`: schemas the worker loaded from its seeded-DB snapshot instead of seeding (V16-OFFLINE). */
+export interface DbTimings { bootMs: number; seedMs: number; restored?: string[] }
 
 // Errors carry no user-facing text: the UI translates them by class (instanceof).
 export class QueryTimeoutError extends Error {
@@ -58,6 +59,8 @@ type WorkerMessage =
   | { type: 'ready'; timings: DbTimings }
   | { type: 'initError'; message: string }
   | ({ type: 'progress' } & LoadProgress)
+  /** V16-OFFLINE: the seeded-DB snapshot was stored (a mark for measurements only). */
+  | { type: 'snapshot'; schemas: string[] }
   | { type: 'result'; id: number; result: unknown }
   | { type: 'error'; id: number; error: SqlErrorInfo }
   | { type: 'fault'; id: number; message: string };
@@ -294,6 +297,8 @@ export class DbClient {
       this.pump();
     } else if (m.type === 'initError') {
       this.fail(m.message);
+    } else if (m.type === 'snapshot') {
+      performance.mark('db:snapshot', { detail: m.schemas });
     } else if (m.type === 'progress') {
       this.onProgress?.({ loaded: m.loaded, total: m.total });
     } else if (this.side.has(m.id)) {

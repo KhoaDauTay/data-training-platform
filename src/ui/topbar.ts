@@ -201,7 +201,7 @@ function renderNotice(): void {
     wait && loader(),
     h('span', {}, t(n.key, n.params)),
     bar && h('progress', { class: 'h-1.5 w-40 accent-accent max-sm:order-last max-sm:w-full', 'aria-hidden': 'true', max: String(p!.total), value: String(p!.loaded) }),
-    n.reload ? h('button', { type: 'button', onclick: () => location.reload() }, t('app.reload')) : null,
+    n.reload ? h('button', { type: 'button', onclick: () => (n.apply ? n.apply() : location.reload()) }, t('app.reload')) : null,
     h('button', { type: 'button', class: 'ml-auto', 'aria-label': t('app.dismiss'), onclick: () => { app.notice = undefined; renderNotice(); } }, '×')));
 }
 
