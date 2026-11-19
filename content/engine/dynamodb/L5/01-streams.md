@@ -52,9 +52,9 @@ Bật **DynamoDB Streams** trên bảng thì mỗi lần tạo, sửa hay xóa m
 - `PutItem`/`UpdateItem` không đổi dữ liệu thì không sinh bản ghi.
 - Thay đổi của một transaction đến dần, có thể xen với transaction khác.
 
-Bộ máy trong trình duyệt (dynoxide 1.5.0) trả `UnsupportedOperation` cho các API Streams, nên bài này **chưa chạy được trong trình duyệt**.
-
 ## Ví dụ
+
+Bộ máy trong trình duyệt (dynoxide 1.5.0) trả `UnsupportedOperation` cho các API Streams, nên bài này **chưa chạy được trong trình duyệt**.
 
 Một bộ xử lý (thường là Lambda) cộng doanh thu theo cửa hàng:
 
@@ -80,9 +80,9 @@ With **DynamoDB Streams** on, every time an item is created, updated or deleted 
 - A `PutItem`/`UpdateItem` that changes no data writes no record.
 - A transaction's changes arrive gradually and may interleave with other transactions.
 
-The in-browser engine (dynoxide 1.5.0) returns `UnsupportedOperation` for the Streams APIs, so this lesson does not run in the browser yet.
-
 ## Example
+
+The in-browser engine (dynoxide 1.5.0) returns `UnsupportedOperation` for the Streams APIs, so this lesson does not run in the browser yet.
 
 A consumer (usually Lambda) adds up revenue per store:
 

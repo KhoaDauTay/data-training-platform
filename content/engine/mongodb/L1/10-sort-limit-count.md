@@ -75,9 +75,9 @@ Không có `sort`, thứ tự trả về không được hứa trước. Phân t
 
 `countDocuments(filter)` đếm chính xác số tài liệu khớp.
 
-Làm được: lấy top N, lấy một trang bất kỳ của danh sách đã xếp, và đếm kết quả.
-
 ## Ví dụ
+
+Làm được: lấy top N, lấy một trang bất kỳ của danh sách đã xếp, và đếm kết quả.
 
 ```js
 db.products.find({ category: "drink" }).sort({ stock: 1, _id: 1 }).limit(2)
@@ -100,9 +100,9 @@ Without `sort`, the order of results is not guaranteed. Paging always needs a `s
 
 `countDocuments(filter)` counts the matching documents exactly.
 
-You can now: take a top N, fetch any page of a sorted list, and count results.
-
 ## Example
+
+You can now: take a top N, fetch any page of a sorted list, and count results.
 
 ```js
 db.products.find({ category: "drink" }).sort({ stock: 1, _id: 1 }).limit(2)

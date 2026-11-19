@@ -42,9 +42,9 @@ DynamoDB có hai cách sao lưu, đều **không tiêu throughput** của bảng
 - Phải tự cài lại trên bảng mới: auto scaling, IAM, metric và alarm CloudWatch, tag, Streams, TTL, deletion protection, PITR.
 - Backup không bảo đảm nhất quán nhân quả giữa các item, dù độ lệch thường dưới một giây.
 
-Sao lưu và khôi phục chỉ có trên AWS thật, nên bài này **chưa chạy được trong trình duyệt**.
-
 ## Ví dụ
+
+Sao lưu và khôi phục chỉ có trên AWS thật, nên bài này **chưa chạy được trong trình duyệt**.
 
 ```text
 need                                    choose
@@ -65,9 +65,9 @@ DynamoDB has two backup methods, neither **consumes the table's throughput**:
 - On the new table you must set up again: auto scaling, IAM, CloudWatch metrics and alarms, tags, Streams, TTL, deletion protection, PITR.
 - A backup does not guarantee causal consistency across items, though the skew is usually under a second.
 
-Backup and restore exist only on real AWS, so this lesson does not run in the browser yet.
-
 ## Example
+
+Backup and restore exist only on real AWS, so this lesson does not run in the browser yet.
 
 ```text
 need                                    choose

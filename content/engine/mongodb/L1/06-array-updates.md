@@ -74,9 +74,9 @@ Không ghi hai toán tử lên cùng một trường trong một lệnh (ví d�
 
 Vì một update trên một tài liệu là nguyên tử (atomic), hai người cùng `$push` vào một mảng không làm mất phần tử của nhau. Đọc mảng ra, sửa trong ứng dụng rồi ghi đè lại thì có thể mất.
 
-Làm được: thêm, thêm không trùng và bỏ phần tử trong mảng mà không ghi đè cả mảng.
-
 ## Ví dụ
+
+Làm được: thêm, thêm không trùng và bỏ phần tử trong mảng mà không ghi đè cả mảng.
 
 ```js
 db.customers.updateOne({ _id: "c1" }, { $addToSet: { tags: "vip" } })
@@ -103,9 +103,9 @@ Do not apply two operators to the same field in one command (for example `$push`
 
 Because an update on one document is atomic, two clients that `$push` to the same array never lose each other's elements. Reading the array, changing it in the application and writing it back can lose them.
 
-You can now: add, add without duplicates and remove array elements without overwriting the whole array.
-
 ## Example
+
+You can now: add, add without duplicates and remove array elements without overwriting the whole array.
 
 ```js
 db.customers.updateOne({ _id: "c1" }, { $addToSet: { tags: "vip" } })

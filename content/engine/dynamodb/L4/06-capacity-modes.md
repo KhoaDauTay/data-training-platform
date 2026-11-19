@@ -43,13 +43,13 @@ Dù chọn chế độ nào, phép tính đơn vị vẫn giống nhau, và tr�
 
 Ước lượng chi phí theo ba bước:
 
+## Ví dụ
+
 - liệt kê mẫu truy cập và số lần mỗi giây của từng mẫu;
 - đổi từng mẫu ra RCU/WCU (cỡ item, kiểu đọc, transaction thì nhân 2);
 - cộng lại cho cả bảng, rồi xem khóa nào gánh phần lớn nhất để quyết định shard.
 
 Bài này nói về hóa đơn AWS nên **chưa chạy được trong trình duyệt**; `ConsumedCapacity` trong các lab là con số để bạn tập đối chiếu.
-
-## Ví dụ
 
 ```text
 pattern            per second  size    type       units
@@ -72,13 +72,13 @@ Whichever mode you choose, the unit arithmetic is the same, and the per-partitio
 
 Estimate cost in three steps:
 
+## Example
+
 - list the access patterns and how many times per second each runs;
 - turn each pattern into RCU/WCU (item size, read type, times 2 for a transaction);
 - add them up for the table, then see which key carries the biggest share to decide on sharding.
 
 This lesson is about the AWS bill, so it does not run in the browser yet; `ConsumedCapacity` in the labs is the number you practise checking against.
-
-## Example
 
 ```text
 pattern            per second  size    type       units

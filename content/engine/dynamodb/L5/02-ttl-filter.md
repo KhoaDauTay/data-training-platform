@@ -67,9 +67,9 @@ quiz:
 - Trước khi bị xóa, bạn vẫn sửa được item hoặc lùi hạn; khi đó nên dùng điều kiện để chắc item chưa bị xóa.
 - Lần xóa của TTL vào Streams như **service deletion** và được gỡ khỏi LSI/GSI như lần xóa thường.
 
-Bộ máy trong trình duyệt chưa có tiến trình TTL (`UpdateTimeToLive` trả `UnsupportedOperation`), nên ở đây không item nào tự biến mất. Đó lại đúng là tình huống cần học: item hết hạn vẫn còn, bạn phải tự lọc.
-
 ## Ví dụ
+
+Bộ máy trong trình duyệt chưa có tiến trình TTL (`UpdateTimeToLive` trả `UnsupportedOperation`), nên ở đây không item nào tự biến mất. Đó lại đúng là tình huống cần học: item hết hạn vẫn còn, bạn phải tự lọc.
 
 ```text
 pk        sk      expires_at    now = 1795132800
@@ -92,9 +92,9 @@ USER#u1   SES#05  1795136400    valid (1 hour left)  -> returned
 - Before deletion you can still update the item or push the expiry back; use a condition to make sure it has not been deleted meanwhile.
 - A TTL delete reaches Streams as a **service deletion** and is removed from LSIs/GSIs like a normal delete.
 
-The in-browser engine has no TTL process (`UpdateTimeToLive` returns `UnsupportedOperation`), so no item disappears by itself here. That is exactly the situation to learn: expired items are still there and you must filter them yourself.
-
 ## Example
+
+The in-browser engine has no TTL process (`UpdateTimeToLive` returns `UnsupportedOperation`), so no item disappears by itself here. That is exactly the situation to learn: expired items are still there and you must filter them yourself.
 
 ```text
 pk        sk      expires_at    now = 1795132800

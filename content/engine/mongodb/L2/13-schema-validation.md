@@ -80,13 +80,13 @@ Hai núm chỉnh:
 
 Bản mới còn thêm hành động `"errorAndLog"` (MongoDB 8.1) và mức `"constraint"` (MongoDB 9.0), mức này bảo đảm mọi tài liệu trong collection đều hợp lệ.
 
+## Ví dụ
+
 Validator chỉ kiểm lúc ghi, không sửa dữ liệu cũ. Dùng `$jsonSchema` trong `find` để tìm tài liệu hợp lệ, và bọc trong `$nor` để tìm tài liệu sai.
 
 Bài này là bài đọc: thư viện chạy truy vấn trong trình duyệt không có validator của collection, nên ở đây không chạy thử.
 
 Làm được: viết luật kiểm tra cho một collection và chọn mức áp dụng hợp với dữ liệu cũ.
-
-## Ví dụ
 
 ```js
 db.createCollection("orders", {
@@ -126,13 +126,13 @@ Two knobs:
 
 Newer releases add the action `"errorAndLog"` (MongoDB 8.1) and the level `"constraint"` (MongoDB 9.0), which guarantees every document in the collection is valid.
 
+## Example
+
 A validator only checks writes; it does not fix old data. Use `$jsonSchema` in `find` to find valid documents, and wrap it in `$nor` to find invalid ones.
 
 This is a reading lesson: the library that runs queries in the browser has no collection validators, so nothing runs here.
 
 You can now: write validation rules for a collection and choose how strictly they apply to old data.
-
-## Example
 
 ```js
 db.createCollection("orders", {

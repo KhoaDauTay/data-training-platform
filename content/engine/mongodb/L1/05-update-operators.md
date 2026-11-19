@@ -76,9 +76,9 @@ Upsert: với `{ upsert: true }`, nếu không có tài liệu nào khớp, Mong
 
 Một lệnh update trên một tài liệu luôn nguyên tử (atomic): mọi thay đổi trong lệnh cùng xảy ra hoặc không cái nào xảy ra.
 
-Làm được: sửa đúng trường trên đúng tài liệu và ghi "sửa hoặc tạo" trong một lệnh.
-
 ## Ví dụ
+
+Làm được: sửa đúng trường trên đúng tài liệu và ghi "sửa hoặc tạo" trong một lệnh.
 
 ```js
 db.products.updateMany({ stock: { $lt: 5 } }, { $set: { lowStock: true } })
@@ -105,9 +105,9 @@ Upsert: with `{ upsert: true }`, if no document matches, MongoDB builds a new do
 
 An update on a single document is always atomic: every change in the command happens, or none does.
 
-You can now: change the right fields on the right documents and write "update or create" as one command.
-
 ## Example
+
+You can now: change the right fields on the right documents and write "update or create" as one command.
 
 ```js
 db.products.updateMany({ stock: { $lt: 5 } }, { $set: { lowStock: true } })

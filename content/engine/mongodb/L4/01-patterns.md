@@ -54,9 +54,9 @@ Mẫu thiết kế giúp schema khớp với cách ứng dụng đọc dữ li�
 - Archive: chuyển dữ liệu cũ ra chỗ khác để phần hay dùng nhanh hơn.
 - Single Collection: gom tài liệu liên quan của nhiều loại vào một collection, nối bằng tham chiếu.
 
-Các tên cũ như subset hay extended reference không còn là mục riêng trên trang này.
-
 ## Ví dụ
+
+Các tên cũ như subset hay extended reference không còn là mục riêng trên trang này.
 
 Các lab sau làm từng mẫu bằng aggregation trên mingo: pipeline nhận dạng cũ và trả ra dạng mới. Trên `mongod`, bạn sẽ ghi kết quả đó bằng `$merge` hoặc cập nhật hàng loạt; trình duyệt chỉ chạy phần đọc.
 
@@ -75,9 +75,9 @@ Design patterns make the schema match how the application reads data. The curren
 - Archive: move old data elsewhere so the frequently used part is faster.
 - Single Collection: group related documents of several types into one collection, linked by references.
 
-Older names such as subset or extended reference are no longer separate entries on this page.
-
 ## Example
+
+Older names such as subset or extended reference are no longer separate entries on this page.
 
 The next labs build each pattern with aggregation on mingo: the pipeline reads the old shape and returns the new one. On `mongod` you would write that result with `$merge` or a bulk update; the browser runs only the read part.
 
