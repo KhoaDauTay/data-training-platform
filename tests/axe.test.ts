@@ -4,7 +4,7 @@
 // A player with progress, the dark theme, a drill open and 375 px: tests/axeProgress.test.ts (FIX-1, L147). Shared setup:
 // tests/axeHarness.ts.
 import { beforeAll, describe, expect, it } from 'vitest';
-import { boot, byId, openModal, problems, visit } from './axeHarness';
+import { boot, byId, openModal, problems, settle, visit } from './axeHarness';
 
 class SilentWorker { onmessage = null; onerror = null; postMessage() {} terminate() {} }
 
@@ -30,7 +30,7 @@ const DIALOGS: [string, () => unknown][] = [
 
 describe('axe-core (v15 Q10)', () => {
   it('first visit: the welcome dialog with the domain picker', async () => {
-    await new Promise((r) => setTimeout(r, 300));
+    await settle(); // the welcome dialog drawn and still (axe caches heading order)
     const modal = openModal();
     expect(modal?.id).toBe('welcome-dialog');
     const v = await problems();
