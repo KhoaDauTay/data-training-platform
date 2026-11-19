@@ -1,6 +1,6 @@
 # Drill lộ trình MongoDB, Phần 7–12: 4 mỗi kỹ năng (faded, open, trap, review; L168), id `e-mg-d-<kỹ năng>-<n>` (khớp ENGINE_ID)
 # (tên kỹ năng bỏ tiền tố `mg.`, `_` thành `-`). Dữ liệu: content/engine/mongodb/path/dataset.json.
-# Lời giải là tập con mongosh (product-design-db-engine §4.2): db.<coll>.find(...)[.sort/.limit/.skip/.count], .aggregate([...]),
+# Lời giải là tập con mongosh (product-design-db-engine §4.2): db.<coll>.find(...)[.sort/.limit/.skip], .countDocuments(...), .aggregate([...]),
 # .distinct(...), .createIndex(...). Ngày là ISODate('YYYY-MM-DD') (trường *_date, *_on là Date UTC nửa đêm).
 # Chấm theo §3.5: khớp theo tên trường, multiset trừ khi `ordered: true`; `wrong: [{ query, vi, en }]`.
 # Định dạng ngoài kết quả tài liệu (Phần 11–12, vì mingo không có index/explain):

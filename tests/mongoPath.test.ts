@@ -108,7 +108,6 @@ describe('MongoDB path: manifest and ids', () => {
       expect(d.id, d.id).toMatch(ENGINE_ID);
       expect(d.id, d.id).toMatch(new RegExp(`^e-mg-d-${slug(d.skill)}-[1-9]\\d*$`));
     }
-    expect('e-mgp-facet-1').not.toMatch(/^e-mg-d-/); // the old Parts 7–12 prefix is gone
   });
 
   it('every skill has a lesson and exactly 4 drills (faded, open, trap, review)', () => {
@@ -217,6 +216,9 @@ describe('MongoDB path: every query runs on the real dataset (mingo)', () => {
     }
     const sol = run(t.solution!);
     expect(nonEmpty(sol), 'try is empty').toBe(true);
+    const rev = run(t.solution!, reversed);
+    if (t.ordered) expect(resultKey(rev)).toBe(resultKey(sol));
+    else expect(sortedKey(rev)).toBe(sortedKey(sol));
     const mine = sortedKey(sol);
     for (const d of drills.filter((x) => x.skill === l.id && runs(x))) expect(sortedKey(run(d.solution!)), `try equals ${d.id}`).not.toBe(mine);
     if (ex) expect(mine, 'try equals example').not.toBe(sortedKey(ex));
