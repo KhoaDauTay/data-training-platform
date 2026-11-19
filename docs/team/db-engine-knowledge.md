@@ -1,48 +1,74 @@
-# Bản đồ kiến thức: khu "Database Engine" (PostgreSQL, MySQL/InnoDB + MariaDB, MongoDB, DynamoDB)
+# Bản đồ kiến thức: khu "Database Engine" (PostgreSQL, MongoDB, DynamoDB)
 
 Người viết: agent Research · 2026-11-20 · **Chỉ là tài liệu nghiên cứu**. Không sửa `src/`, `content/`, test hay `decision-log.md`.
 
-Tài liệu này là "danh mục nguồn" mà `product-design-db-engine.md` (R5, §2, §4, spike E-S1/E-S2) chờ. Nó có ba phần:
+**Phạm vi (user chốt 2026-11-20):** chỉ giữ ba engine, mỗi engine là một **thang đầy đủ từ người mới (L1) tới chuyên gia bên trong (L5)**.
 
-- **§1:** kết quả đo PGlite 0.5.16 thật. Đây là các số "đo" mà product design cần.
-- **§2–§6:** đề cương theo thứ tự phụ thuộc. Mỗi chủ đề có mục tiêu học, sự thật kèm nguồn, mức thực hành trong trình duyệt và phần phải giải thích bằng sơ đồ.
-- **§7–§8:** khoảng trống, chỗ phải sửa trong product design, và danh sách nguồn.
+- **PostgreSQL:** đầy đủ từ beginner tới mức cao nhất.
+- **MongoDB:** đầy đủ từ beginner tới mức cao nhất.
+- **DynamoDB:** dựa trên thư viện chạy trong trình duyệt. Phần nào cần backend thì để "pending".
+- **MySQL/MariaDB bị bỏ.** Bản trước của tài liệu này (commit `7ccb566`) có phần InnoDB, ai cần thì xem lại ở đó.
+
+Tài liệu này là "danh mục nguồn" mà `product-design-db-engine.md` (R5, §2, §4, spike E-S1/E-S2) chờ. Nó dùng cùng runtime đã chọn trong `spike-nosql-browser.md`:
+
+| Engine | Runtime trong trình duyệt |
+|---|---|
+| PostgreSQL | PGlite |
+| MongoDB | `mingo` (không có index, không có explain) |
+| DynamoDB | `@dynoxide/wasm-engine` (không có `TransactWriteItems`, nạp ~1 ms/item) |
 
 **Quy ước:**
 
-- `[Sn]` trỏ tới §8. Mọi số liệu đều dẫn nguồn chính thức (docs, README, mã nguồn) và đã được mở đọc ngày 2026-11-20.
-- Câu có nhãn **(chưa đối chiếu)** là kiến thức chung chưa mở nguồn. Phải kiểm tra trước khi viết vào bài.
-- **(đo)** là kết quả chạy thật trên máy này, PGlite 0.5.16 trong Node 24.
+- `[Sn]` trỏ tới §8. Mọi số liệu đều dẫn nguồn chính thức và đã được mở đọc ngày 2026-11-20, trừ chỗ ghi khác.
+- **(chưa đối chiếu)** là kiến thức chung chưa mở nguồn. Phải kiểm trước khi viết vào bài.
+- **(đo)** là kết quả chạy thật trên máy này, PGlite 0.5.16 trong **Node 24**. Chưa đo trong Web Worker của trình duyệt.
+- Ghi chú học tập riêng của user chỉ được dùng để **kiểm độ phủ và thứ tự chủ đề**. Không có sự thật nào lấy từ đó. Mọi sự thật đều dựng lại từ docs chính thức.
 
 **Phiên bản được mô tả:**
 
 | Engine | Phiên bản |
 |---|---|
 | PostgreSQL | 18 (PGlite 0.5.16 = **PostgreSQL 18.6**, đo) |
-| MySQL | 8.4 LTS |
-| MariaDB | 11.x (KB hiện hành) |
-| MongoDB | Manual hiện hành (8.x) |
+| MongoDB | Manual hiện hành. Trang đã nhắc tới 8.3 và 9.0, nên mỗi bài phải ghi "đúng với phiên bản X" |
 | DynamoDB | Developer Guide hiện hành |
 
-Prose tiếng Việt, thuật ngữ giữ tiếng Anh.
+**Ký hiệu thực hành** (chi tiết ở §1.4):
+
+| Ký hiệu | Nghĩa |
+|---|---|
+| **H** | Chạy thật trong trình duyệt. **H-A**: một câu đọc trong `runSandboxed`. **H-B**: cần request kịch bản mới trong worker |
+| **D** | Sơ đồ, hoạt hình, bài đọc hoặc output ghi sẵn từ server thật |
+| **BE** | Muốn thực hành thật thì cần backend. Dự án chỉ cho phép backend Python, và hiện chưa có |
 
 ---
 
 ## 0. Tóm tắt một trang
 
-| Engine | Mô-đun (thứ tự phụ thuộc) | Chạy thật trong trình duyệt |
-|---|---|---|
-| **Nền chung (C)** | C1 Phân cấp lưu trữ, trang · C2 Cây B/B+ · C3 Log trước, phục hồi · C4 Đồng thời: khóa vs MVCC · C5 Cost model, thống kê | Chỉ sơ đồ + ví dụ PGlite |
-| **PostgreSQL (P)** | P1 Từ SQL tới đĩa · P2 Heap, trang, TOAST · P3 MVCC · P4 VACUUM, HOT, freeze, visibility map · P5 WAL, buffer · P6 B-tree sâu · P7 Các loại index khác · P8 Index nâng cao (partial, expression, unique, concurrent, index-only) · P9 GEO (PostGIS) · P10 Full-text, trigram, jsonb · P11 Vector (pgvector) · P12 Thống kê, planner, partitioning | **Có**, rất sâu: `pageinspect`, `pg_visibility`, `amcheck`, `pg_walinspect`, `pg_buffercache`, `pg_freespacemap`, `bloom`, `btree_gin/gist`, `pg_trgm`, `pg_stat_statements` (đo); PostGIS 3.6.2 và pgvector 0.8.7 qua **gói riêng** (đo) |
-| **MySQL/InnoDB (M)** + MariaDB | M1 Server layer vs storage engine · M2 Clustered PK B+tree, secondary index · M3 Trang, fill, merge · M4 Undo, MVCC, purge · M5 Redo, doublewrite · M6 Khóa record/gap/next-key · M7 AHI, covering, invisible/descending · M8 FULLTEXT, SPATIAL · M9 EXPLAIN / optimizer · M10 MariaDB khác ở đâu | **Không** (không có engine WASM đã kiểm chứng). Sơ đồ + `EXPLAIN` ghi sẵn |
-| **MongoDB (G)** | G1 Document model, BSON · G2 WiredTiger · G3 Index cơ bản + ESR · G4 Multikey, wildcard, text, geo, hashed · G5 Thuộc tính index (unique, partial, sparse, TTL, hidden) · G6 Planner, explain · G7 Aggregation · G8 Schema design patterns · G9 Transactions | Chờ spike (mingo không có index/planner) |
-| **DynamoDB (D)** | D1 Bảng, item, khóa · D2 Partition, adaptive capacity · D3 Đọc/ghi, consistency, capacity unit · D4 Query vs Scan, biểu thức · D5 LSI/GSI, projection · D6 Access-pattern-first, single-table · D7 Conditional write, transactions · D8 Streams, TTL | Chỉ mô phỏng tự viết |
+| Engine | L1 Người mới | L2 Thực hành | L3 Hiệu năng / mô hình | L4 Đồng thời / quy mô | L5 Bên trong, vận hành | % bài chạy thật trong trình duyệt |
+|---|---|---|---|---|---|---|
+| **PostgreSQL** | DDL, kiểu, ràng buộc, transaction, EXPLAIN đầu tiên | Mọi loại index, FTS, jsonb, trigram, EXPLAIN ANALYZE | Trang, heap, TOAST, MVCC, HOT, VACUUM, WAL | Lock, isolation, SSI, cost model, thống kê, join planning, partitioning, parallel, JIT | Nội tạng từng index AM, amcheck, replication, logical decoding, RLS, tuning, extension | **~77 %** (51/66 bài) |
+| **MongoDB** | BSON, CRUD, toán tử truy vấn | Update operator, pipeline update, aggregation, mô hình nhúng/tham chiếu, validation | Index mọi loại, ESR, covered, explain, plan cache | Concern, causal consistency, transaction, pattern, change stream, TTL | WiredTiger, replication, election, sharding, time series | **~45 %** (27/60) |
+| **DynamoDB** | Bảng, item, khóa, CRUD, Query vs Scan | Biểu thức, conditional write, batch, PartiQL, phép tính RCU/WCU | LSI/GSI, projection, single-table, mọi mẫu khóa | Partition, adaptive capacity, hot partition, write sharding, transaction, capacity mode | Streams, TTL, global tables, backup (đọc) | **~66 %** (35/53) |
 
-**Ba phát hiện chính (đo):**
+**Phát hiện chính (đo):**
 
-1. PGlite 0.5.16 cho **quan sát bên trong thật**: line pointer, HOT redirect, `xmin/xmax`, B-tree meta, visibility map, WAL record, `Buffers:` trong EXPLAIN, `Heap Fetches: 0`. Không cần mô phỏng cho phần lớn track Postgres.
-2. **pgvector và PostGIS có cho PGlite**, khác với điều `product-design-db-engine.md` §0/§2.2/§4.1 đang ghi. Gói pgvector nặng ~50 KB nén, PostGIS ~20 MB.
-3. **`pg_overexplain` không dùng được** dù có tarball. Product design §0 đang liệt kê nó là "có".
+1. PGlite cho **quan sát bên trong thật**, gồm:
+   - line pointer, HOT redirect, `xmin/xmax`;
+   - B-tree meta, GIN metapage, GiST page items, BRIN ranges;
+   - visibility map, WAL record;
+   - `Buffers:` trong EXPLAIN, sort tràn đĩa (`external merge Disk: 1976kB`);
+   - RLS qua `SET ROLE`, advisory lock trong `pg_locks`.
+
+   Phần lớn thang Postgres không cần mô phỏng.
+2. PGlite **không có**:
+   - nhiều phiên đồng thời (một backend);
+   - parallel query (đặt `max_parallel_workers_per_gather = 2` vẫn không ra `Gather`);
+   - JIT (`pg_jit_available() = false`);
+   - logical decoding (`wal_level` = replica, nên tạo slot báo lỗi).
+
+   Đây là phần "BE" của Postgres.
+3. **pgvector 0.8.7 và PostGIS 3.6.2 chạy được trong PGlite** qua gói riêng, ghim `@electric-sql/pglite-pgvector@0.0.17` / `@electric-sql/pglite-postgis@0.2.16` (đo). Product design hiện **không** dùng hai gói này: PostGIS ~20 MB vượt trần ~3 MB của D-E6, và thêm dependency cần user duyệt. Thang dưới đây coi chúng là **tùy chọn**. Nếu không bật, P9/P11 là bài đọc + bản nhẹ (`cube`, `earthdistance`, kiểu hình học lõi).
+4. `pg_overexplain` có tarball nhưng **không có wrapper chính thức**. Tự viết wrapper thì chạy được (đo).
 
 ---
 
@@ -54,365 +80,556 @@ Prose tiếng Việt, thuật ngữ giữ tiếng Anh.
 - **`version()`:** `PostgreSQL 18.6 (PGlite 0.5.16) on wasm32-unknown-emscripten … 32-bit`.
 - **Thiết lập đọc được:**
   - `block_size` = 8192, `shared_buffers` = 128MB;
-  - `wal_level` = replica, `autovacuum` = on, `max_parallel_workers_per_gather` = 0;
+  - `wal_level` = replica, `autovacuum` = on;
+  - `max_parallel_workers_per_gather` = 0, `jit` = on nhưng `pg_jit_available()` = false;
   - `pg_stat_activity` chỉ có **1** dòng, `backend_type` = `standalone backend`.
-- **Danh sách extension trên site PGlite:** [S1]. Danh sách tarball đọc trực tiếp từ `node_modules/@electric-sql/pglite/dist`.
+- **Danh sách extension trên site PGlite:** [S1]. Tarball đọc trực tiếp từ `node_modules/@electric-sql/pglite/dist`.
 
 ### 1.2 Bảng extension
 
-Cột "Gọi thử" là một lệnh thật đã chạy và có kết quả. Kích thước là kích thước tarball `.tar.gz`, đọc bằng `stat`.
+Cột "Gọi thử" là một lệnh thật đã chạy và có kết quả. Cỡ là kích thước tarball `.tar.gz`.
 
-| Extension | Đường import | Cỡ tarball | Gọi thử (đo) | Dùng cho mô-đun |
+| Extension | Đường import | Cỡ | Gọi thử (đo) | Cấp |
 |---|---|---|---|---|
-| `pageinspect` | `@electric-sql/pglite/contrib/pageinspect` | 16 KB | `heap_page_items(get_raw_page('t',0))`, `bt_metap`, `bt_page_items`, `brin_page_items` | P2, P3, P4, P6, P7 |
-| `pg_visibility` | `…/contrib/pg_visibility` | 4.5 KB | `pg_visibility_map('t')` → `all_visible`/`all_frozen` theo block | P4, P8 |
-| `amcheck` | `…/contrib/amcheck` | 21 KB | `bt_index_check('t_pkey')` | P6 |
-| `pg_walinspect` | `…/contrib/pg_walinspect` | 4.6 KB | `pg_get_wal_records_info(lsn1, lsn2)` → `resource_manager`, `record_type`, `fpi_length`, `block_ref` | P5 |
-| `pg_buffercache` | `…/contrib/pg_buffercache` | 4.5 KB | `count(*)` = 16384 buffer (128 MB / 8 KB) | P1, P5 |
-| `pg_freespacemap` | `…/contrib/pg_freespacemap` | 1.6 KB | `pg_freespace('t')` → byte trống mỗi trang | P2, P4 |
-| `bloom` | `…/contrib/bloom` | 5.4 KB | `CREATE INDEX … USING bloom` | P7 |
-| `btree_gin` / `btree_gist` | `…/contrib/btree_gin`, `…/btree_gist` | 5.4 / 22 KB | `CREATE EXTENSION` | P7 |
-| `pg_trgm` | `…/contrib/pg_trgm` | 15 KB | `gin(v gin_trgm_ops)`, `gist(v gist_trgm_ops)` | P10 |
-| `pg_stat_statements` | `…/contrib/pg_stat_statements` | (có) | `calls`, `query` được ghi **mà không cần preload** | P12 |
-| `cube`, `earthdistance`, `hstore`, `ltree`, `pg_surgery`, `pgcrypto`… | `…/contrib/<tên>` | (có) | `CREATE EXTENSION` OK | P9 (bản nhẹ), phụ |
-| **`vector` (pgvector 0.8.7)** | gói riêng `@electric-sql/pglite-pgvector` **@0.0.17** | ~50 KB | HNSW + IVFFlat tạo được; `ORDER BY e <-> … LIMIT 5` → `Index Scan … Order By` | P11 |
-| **`postgis` (3.6.2, GEOS 3.14, PROJ 9.7)** | gói riêng `@electric-sql/pglite-postgis` **@0.2.16** | **~20 MB** | geography + GiST: `ST_DWithin` → `Index Cond: (g && _st_expand(…))`; geometry + GiST KNN `<->` → `Index Scan … Order By` | P9 |
-| `pg_overexplain` | tarball có, **không** có `contrib/pg_overexplain.js` | – | `LOAD 'pg_overexplain'` → *could not access file* | **không dùng được** |
+| `pageinspect` | `@electric-sql/pglite/contrib/pageinspect` | 16 KB | `heap_page_items(get_raw_page(…))`, `bt_metap`, `bt_page_items`, `brin_page_items`, `gin_metapage_info`, `gist_page_items` | L3, L5 |
+| `pg_visibility` | `…/contrib/pg_visibility` | 4.5 KB | `pg_visibility_map('t')` → `all_visible`/`all_frozen` | L3 |
+| `amcheck` | `…/contrib/amcheck` | 21 KB | `bt_index_check('t_pkey')` | L5 |
+| `pg_walinspect` | `…/contrib/pg_walinspect` | 4.6 KB | `pg_get_wal_records_info(lsn1, lsn2)` → `resource_manager`, `record_type`, `fpi_length`, `block_ref` | L3, L5 |
+| `pg_buffercache` | `…/contrib/pg_buffercache` | 4.5 KB | `count(*)` = 16384 buffer (128 MB / 8 KB) | L3 |
+| `pg_freespacemap` | `…/contrib/pg_freespacemap` | 1.6 KB | `pg_freespace('t')` | L3 |
+| `bloom` | `…/contrib/bloom` | 5.4 KB | `CREATE INDEX … USING bloom` | L2 |
+| `btree_gin` / `btree_gist` | `…/contrib/btree_gin`, `…/btree_gist` | 5.4 / 22 KB | `CREATE EXTENSION` | L2 |
+| `pg_trgm` | `…/contrib/pg_trgm` | 15 KB | `gin(v gin_trgm_ops)`, `gist(v gist_trgm_ops)` | L2 |
+| `pg_stat_statements` | `…/contrib/pg_stat_statements` | (có) | ghi cả `vacuum t` chạy **trước** `CREATE EXTENSION`. Tùy chọn `extensions` nạp module lúc boot, đóng vai `shared_preload_libraries` | L5 |
+| `cube`, `earthdistance`, `hstore`, `pg_surgery` | `…/contrib/<tên>` | (có) | chỉ `CREATE EXTENSION` OK | L2 (GEO nhẹ) |
+| `ltree`, `pgcrypto` | `…/contrib/<tên>` | (có) | `'a.b.c'::ltree`; `digest('x','sha256')` | phụ |
+| `vector` (pgvector 0.8.7) | gói riêng `@electric-sql/pglite-pgvector@0.0.17` | ~50 KB | HNSW + IVFFlat; `ORDER BY e <-> … LIMIT 5` → `Index Scan … Order By` | L2 tùy chọn |
+| `postgis` (3.6.2, GEOS 3.14, PROJ 9.7) | gói riêng `@electric-sql/pglite-postgis@0.2.16` | **~20 MB** | geography + GiST: `ST_DWithin` → `Index Cond: (g && _st_expand(…))`; geometry + GiST KNN → `Index Scan … Order By` | L2 tùy chọn |
+| `pg_overexplain` | tarball có, **không** có `contrib/*.js`; tự viết `{ name, setup: async () => ({ bundlePath }) }` như `contrib/pageinspect.js` | (có) | `LOAD` OK; `EXPLAIN (DEBUG)` in `Plan Node ID`, `PlannedStmt`; `EXPLAIN (RANGE_TABLE)` in `RTI 1…`, `Relation Lock Mode` | L5 tùy chọn |
 
 **Ghi chú về phiên bản gói:**
 
-- Bản mới nhất `pglite-pgvector@0.0.18` và `pglite-postgis@0.2.17` có peer `@electric-sql/pglite` = **0.5.17**. Với 0.5.16 phải ghim **0.0.17 / 0.2.16** (`npm view … peerDependencies`, đo).
-- Repo ghim PGlite chính xác, nên nâng PGlite thì nâng cặp extension cùng lúc.
-- Trang extension cũng ghi PostGIS là "18.8 MB" và còn issue trạng thái #916 [S1].
+- Bản mới nhất `pglite-pgvector@0.0.18` / `pglite-postgis@0.2.17` có peer `@electric-sql/pglite` = **0.5.17**. Với 0.5.16 phải ghim **0.0.17 / 0.2.16** (đo).
+- Nâng PGlite thì nâng cặp extension cùng lúc.
+- Trang extension ghi PostGIS "18.8 MB", còn issue trạng thái #916 [S1].
 
 ### 1.3 Quan sát bên trong được gì (đo)
 
 | Hiện tượng | Câu SQL | Kết quả thật |
 |---|---|---|
-| Tuple cũ/mới sau UPDATE | `heap_page_items` (cùng phiên, trước VACUUM) | `lp 1: t_xmin 752, t_xmax 753, t_ctid (0,84)` → phiên bản mới ở lp 84; `t_infomask2` = 16386 (cờ HOT_UPDATED) |
-| HOT chain sau VACUUM | cùng câu, sau `VACUUM t` | `lp 1: lp_flags 2 (REDIRECT), lp_off 84`, các cột tuple = NULL. Line pointer chuyển hướng, không còn tuple |
+| Tuple cũ/mới sau UPDATE | `heap_page_items` (cùng phiên, trước VACUUM) | `lp 1: t_xmin 752, t_xmax 753, t_ctid (0,84)`; `t_infomask2` = 16386 (cờ HOT_UPDATED) |
+| HOT chain sau VACUUM | cùng câu, sau `VACUUM t` | `lp 1: lp_flags 2 (REDIRECT), lp_off 84`, cột tuple = NULL |
 | Bộ đếm HOT | `pg_stat_force_next_flush()` rồi `pg_stat_user_tables` | `n_tup_upd 3, n_tup_hot_upd 3, n_dead_tup 3`. **Phải flush trước**, không thì đọc ra 0 |
-| Visibility map | `pg_visibility_map('t')` sau VACUUM | `all_visible = true` mọi block, `all_frozen = false` |
+| Visibility map | `pg_visibility_map('t')` sau VACUUM | `all_visible = true`, `all_frozen = false` |
 | Index-only scan | `EXPLAIN (ANALYZE, BUFFERS) SELECT id …` | `Index Only Scan … Heap Fetches: 0 … Index Searches: 1 … Buffers: shared hit=3` |
-| Bitmap scan | `EXPLAIN (ANALYZE, BUFFERS) SELECT * … BETWEEN` | `Bitmap Heap Scan … Heap Blocks: exact=1`, `Bitmap Index Scan` |
+| Bitmap scan | `EXPLAIN (ANALYZE, BUFFERS) … BETWEEN` | `Bitmap Heap Scan … Heap Blocks: exact=1` |
+| Sort tràn đĩa | `SET work_mem='64kB'` + `EXPLAIN ANALYZE … ORDER BY v` | `Sort Method: external merge Disk: 1976kB`, `temp read=728 written=770` |
+| GIN | `gin_metapage_info(get_raw_page('gi',0))` | `n_pending_pages 0, n_entries 10, n_data_pages 7` |
+| GiST | `gist_page_items(get_raw_page('gs',0),'gs')` | khóa là hộp bao `(22,14),(0,0)` |
+| BRIN | `brin_page_items(…)` | `{1 .. 2000}` cho range block 0 |
+| B-tree | `bt_metap('t_pkey')` | `root 3, level 1, allequalimage true` |
 | Thống kê | `pg_stats` | `n_distinct -1`, `histogram_bounds {1,20,40,…}` |
-| fillfactor | `pg_class.reloptions` | `{fillfactor=70}`; `pg_freespace` thấy ~2.7 KB trống mỗi trang |
-| B-tree | `bt_metap('t_pkey')` | `root 3, level 1, allequalimage true` (dedup an toàn) |
-| BRIN | `brin_page_items(get_raw_page('t_id_idx',2),'t_id_idx')` | `{1 .. 2000}` cho range block 0 |
+| RLS | `ENABLE ROW LEVEL SECURITY` + policy `id < 5` + `SET ROLE alice` | `count = 4` |
+| Prepared | `PREPARE s(int) …; EXPLAIN EXECUTE s(5)` | `Index Scan using t_pkey` |
+| Advisory lock | `pg_advisory_lock(42)` rồi `pg_locks` | `advisory / ExclusiveLock` |
+| Parallel | `SET max_parallel_workers_per_gather=2; EXPLAIN SELECT count(*)` | `Aggregate → Seq Scan`, **không** có `Gather` |
+| JIT | `pg_jit_available()` | `false` |
+| Logical decoding | `pg_create_logical_replication_slot('s1','test_decoding')` | lỗi *logical decoding requires "wal_level" >= "logical"* |
 
-### 1.4 Ba mức thực hành
+### 1.4 Ba mức thực hành của Postgres
 
-Cột "Thực hành" ở §2–§6 dùng ba mức. Ranh giới mức do **mô hình chạy của game** quyết định, không phải do PGlite: `runSandboxed` chạy một câu trong `BEGIN … ROLLBACK`.
+Ranh giới mức do **mô hình chạy của game** quyết định, không phải do PGlite: `runSandboxed` chạy một câu trong `BEGIN … ROLLBACK`.
 
-- **A: chạy ngay.** Một câu đọc duy nhất trên một bảng đã seed: catalog, `EXPLAIN`, các hàm đọc của `pageinspect`, `pg_visibility`, `pg_stats`. Điều kiện: extension đã nạp lúc tạo PGlite. Hiện `initEngine` chưa nạp, nên cần thêm `extensions` + `CREATE EXTENSION` vào schema mới.
-- **B: cần request kịch bản mới,** giống `lab`/`runLab`. Đó là mọi thứ nhiều bước hoặc phải tồn tại sau câu:
+- **H-A, chạy ngay:** một câu đọc duy nhất trên bảng đã seed. Gồm catalog, `EXPLAIN`, hàm đọc của `pageinspect`, `pg_stats`.
+  - Điều kiện: extension đã nạp lúc tạo PGlite.
+  - Hiện repo tạo PGlite bằng `new PGlite()`, không có `extensions` (`src/db/snapshot.ts`), và `initEngine` (`src/db/init.ts`) chỉ dựng `sandbox`.
+  - Index lab có sẵn (`runLab`) nhận mọi `CREATE [UNIQUE] INDEX` không `CONCURRENTLY` (`isCreateIndex`, `src/planCheck.ts`). Index cần opclass của extension (`gin_trgm_ops`, `bloom`) thì phải nạp extension trước.
+- **H-B, cần request kịch bản mới** (giống `lab`). Gồm:
   - `UPDATE` rồi soi trang;
-  - `VACUUM` (đo: `VACUUM cannot run inside a transaction block`, SQLSTATE 25001);
+  - `VACUUM` (đo: *VACUUM cannot run inside a transaction block*, SQLSTATE 25001);
   - `pg_stat_force_next_flush()` + đọc bộ đếm;
-  - tạo index rồi giữ lại;
-  - so WAL trước/sau một ghi.
+  - giữ index;
+  - so WAL trước/sau;
+  - `SET ROLE` nhiều bước;
+  - `PREPARE`/`EXECUTE`.
 
-  Worker chạy một kịch bản cố định do nội dung định nghĩa, tên đối tượng lấy từ hằng số, không lấy từ chữ người chơi. Xong thì dọn (DROP schema hoặc dựng lại).
-- **C: chỉ sơ đồ hoặc hoạt hình.**
-  - PGlite **một backend** (đo), nên không có hai phiên đồng thời, lock wait, deadlock, `CREATE INDEX CONCURRENTLY` thật, autovacuum worker (đo: `last_autovacuum` NULL, chỉ có `standalone backend`), parallel query (`max_parallel_workers_per_gather = 0`), replication.
-  - Toàn bộ MySQL/MariaDB, MongoDB, DynamoDB cũng ở mức C, trừ khi spike tìm được runtime trung thực.
+  Kịch bản cố định do nội dung định nghĩa, tên đối tượng lấy từ hằng số.
+- **D:** mọi thứ cần nhiều phiên, worker nền, LLVM hoặc `wal_level = logical`.
+  - Nhiều phiên: lock wait, deadlock, SSI, `CONCURRENTLY`.
+  - Worker nền: autovacuum, parallel.
+  - Chưa kiểm: PGlite có khởi động được với `wal_level = logical` không. Đây là một spike nhỏ đáng làm.
+
+### 1.5 Runtime NoSQL (theo `spike-nosql-browser.md`, không đo lại ở đây)
+
+**MongoDB: `mingo` 7.2.7** [S97], MIT, ~35 KB gz cả worker.
+
+- Có: query, projection, update, aggregation.
+- **Không có index, không có `explain()`.** Ghi chạy trên bản sao `structuredClone` rồi bỏ.
+- Đo trong spike: mọi truy vấn < 250 ms trên 20k tài liệu.
+- Chưa kiểm trong spike: `$jsonSchema`, `$merge`/`$out`, pipeline update đủ stage. Phải kiểm trước khi xếp bài L2 vào H.
+
+**DynamoDB: `@dynoxide/wasm-engine` 1.7.0** [S98], Rust + SQLite → WASM, ~1,2 MB gz.
+
+- Có:
+  - CreateTable có GSI/LSI;
+  - Get/Put/Update/Delete;
+  - Query/Scan có `ConsumedCapacity`, `ScannedCount`, `LastEvaluatedKey`;
+  - PartiQL `ExecuteStatement`/`ExecuteTransaction`;
+  - `ValidationException` khi dùng từ dành riêng.
+- `TransactWriteItems` trả `UnsupportedOperation`.
+- Nạp ~1 ms/item.
+- Chưa kiểm: Streams, TTL, `TransactGetItems`, throttling. Emulator một nút gần như chắc chắn không mô phỏng throttle theo partition. Đây là nhận định, chưa đo.
 
 ---
 
-## 2. Nền chung (C): học trước mọi engine
+## 2. Nền chung (C): học trước cả ba engine
 
-Mục tiêu là mô hình tư duy chung, để khi sang engine nào người học chỉ hỏi "engine này chọn khác ở đâu".
-
-| # | Chủ đề | Mục tiêu học (người học làm được) | Sự thật chính | Thực hành |
+| # | Chủ đề | Mục tiêu học | Sự thật chính | Thực hành |
 |---|---|---|---|---|
-| C1 | Phân cấp lưu trữ, trang | Giải thích vì sao DB đọc theo **trang** cố định chứ không theo dòng; ước lượng số trang của một bảng | PG trang 8 KB [S2]; InnoDB trang mặc định 16 KB [S20] | A: `pg_relation_size / 8192` = `relpages` (đo: 25 trang cho 2000 dòng, ff 70) |
-| C2 | Cây B/B+ | Vẽ cây cho một dãy khóa, chỉ ra nút gốc/nội/lá, split, vì sao chiều cao nhỏ | PG B-tree là Lehman–Yao (chưa đối chiếu, xem `src/backend/access/nbtree/README` [S11]); InnoDB index là B-tree, trừ spatial dùng R-tree [S20]; MongoDB index dùng B-tree [S30] | A: `bt_metap` (level, root) |
-| C3 | Ghi log trước | Nói đúng luật WAL: log phải bền trước khi trang dữ liệu được ghi; REDO khi crash | Câu gốc của PG [S8]; WiredTiger journal + checkpoint [S31] | B: `pg_walinspect` trước/sau một `INSERT` |
-| C4 | Đồng thời | Phân biệt khóa và đa phiên bản; biết mỗi engine giữ "bản cũ" ở đâu (heap PG, undo InnoDB, snapshot WiredTiger) | [S5][S21][S31] | C (một backend) |
-| C5 | Cost model, thống kê | Đọc được "chi phí planner" là đơn vị ước lượng, không phải mili giây; biết thống kê đến từ đâu | [S10] | A: `EXPLAIN`, `pg_stats` |
-
-**Sơ đồ cần có:**
-
-- C1: trang ↔ đĩa ↔ buffer;
-- C2: chèn và split theo bước (product design §5.3 đã có wireframe);
-- C3: dòng thời gian WAL flush vs page flush khi COMMIT, crash, replay;
-- C4: hai giao dịch, ba engine, mỗi engine giữ bản cũ ở một chỗ khác nhau.
+| C1 | Trang và phân cấp lưu trữ | Giải thích vì sao DB đọc theo trang; ước lượng số trang | PG trang 8 KB [S2] | H-A: `pg_relation_size/8192` = `relpages` (đo: 25 trang cho 2000 dòng, ff 70) |
+| C2 | Cây B/B+ | Vẽ cây, split, vì sao cây thấp | Index PG mặc định B-tree [S9]; index MongoDB là B-tree [S30] | H-A: `bt_metap` |
+| C3 | Ghi log trước | Luật WAL, REDO | [S8]; journal + checkpoint của WiredTiger [S31] | H-B: `pg_walinspect` |
+| C4 | Đồng thời | Khóa vs đa phiên bản; mỗi engine giữ bản cũ ở đâu | heap PG [S5]; snapshot WiredTiger [S31]; DynamoDB read-committed [S53] | D |
+| C5 | Phân tán | Hash vs range partitioning; nhân bản; quorum | Partition DynamoDB [S51]; shard key MongoDB [S86]; streaming replication PG [S67] | D |
+| C6 | Cost model | "Chi phí" là đơn vị ước lượng, không phải ms | [S62] | H-A |
 
 ---
 
-## 3. PostgreSQL (P): track sâu nhất
+## 3. PostgreSQL: thang L1 → L5
 
-Thứ tự phụ thuộc: P1 → P2 → P3 → P4 → P5. Sau đó P6 → P7 → P8. Nhánh song song P9/P10/P11 cần P7. P12 cần P6 + C5.
+Tiên quyết: lộ trình SQL của app (General). Ghi chú chi tiết từng chủ đề (P1–P17) ở §3.6.
 
-Chín mô-đun của product design §2.2 ánh xạ như sau:
+### 3.1 L1 Người mới: "Dùng Postgres đúng cách"
 
-| Product design §2.2 | Ở đây |
-|---|---|
-| 1 | P1 |
-| 2 | P2 |
-| 3 | P3 |
-| 4 | P4 |
-| 5 | P5 |
-| 6 | P6 + P8 |
-| 7 | P7 |
-| 8 | P9 + P10 + P11 |
-| 9 | P12 |
-
-### P1. Từ câu SQL tới đĩa
-- **Mục tiêu:** kể đúng parser → rewriter → planner → executor; biết shared buffers là cache trang dùng chung.
-- **Sự thật:** trang 8 KB, đổi được lúc biên dịch [S2]. PG 18 có hệ thống I/O bất đồng bộ (`io_method`, `pg_aios`) [S12].
-- **Thực hành:** A, `pg_buffercache` đếm buffer của một quan hệ.
-- **Sơ đồ:** đường đi của một câu qua bốn tầng.
-
-### P2. Heap, trang, tuple, TOAST, fillfactor
+- **Tiên quyết:** SELECT/JOIN/GROUP BY.
+- **Ước lượng:** 10 bài, **10 H**.
 - **Mục tiêu:**
-  - đọc một trang bằng `heap_page_items`;
-  - giải thích `ctid`, line pointer, `pd_lower/pd_upper`;
-  - đoán khi nào một giá trị bị TOAST;
-  - chọn fillfactor cho bảng hay UPDATE.
-- **Sự thật:**
-  - Header trang 24 byte: `pd_lsn`, `pd_checksum`, `pd_lower`, `pd_upper`, `pd_special`, `pd_prune_xid`…
-  - ItemId 4 byte.
-  - Header tuple cố định 23 byte (`t_xmin`, `t_xmax`, `t_cid`, `t_ctid` 6 byte, `t_infomask2`, `t_infomask`, `t_hoff`) [S2].
-  - TOAST bật khi dòng rộng hơn `TOAST_TUPLE_THRESHOLD` (thường 2 kB) và ép tới `TOAST_TUPLE_TARGET` (thường 2 kB, chỉnh được `toast_tuple_target`).
-  - Chunk khoảng 2000 byte. Con trỏ TOAST 18 byte. Giá trị tối đa 1 GB.
-  - 4 chiến lược `PLAIN | EXTENDED | EXTERNAL | MAIN` [S3]. Phương thức nén qua `default_toast_compression` [S3].
-- **Thực hành:**
-  - A: `heap_page_items`, `pg_freespace`, `pg_column_size`.
-  - B: so trang trước/sau UPDATE.
-- **Sơ đồ:** trang 8 KB với line pointer mọc từ đầu, tuple mọc từ cuối. Product design đã có wireframe "Bên trong" vẽ từ kết quả thật.
+  - tạo bảng với kiểu phù hợp (`numeric` vs `float8`, `timestamptz`, `text`, `jsonb`, `uuid` + `uuidv7()` mới ở 18 [S12]);
+  - ràng buộc (PK, FK, UNIQUE, CHECK, NOT NULL), `NULLS NOT DISTINCT` [S70];
+  - schema và `search_path`;
+  - transaction `BEGIN/COMMIT/ROLLBACK`, savepoint;
+  - generated column, ảo là mặc định ở 18 [S12];
+  - index B-tree đầu tiên;
+  - đọc `EXPLAIN` cơ bản (Seq Scan vs Index Scan, `cost=…`).
+- **Thực hành:** H-A, lab và index lab có sẵn.
 
-### P3. MVCC
+### 3.2 L2 Thực hành: "Chọn đúng index, đọc đúng kế hoạch"
+
+- **Tiên quyết:** L1.
+- **Ước lượng:** 14 bài, 13 H + 1 D (`CONCURRENTLY`). Thêm 3 bài nếu bật PostGIS/pgvector.
 - **Mục tiêu:**
-  - giải thích UPDATE = tuple mới + đánh dấu `xmax` tuple cũ;
-  - đọc `xmin/xmax` để biết ai thấy phiên bản nào;
-  - nói vì sao reader không chặn writer.
-- **Sự thật:**
-  - `t_xmin` là XID chèn, `t_xmax` là XID xóa, `t_ctid` trỏ tới phiên bản mới hơn [S2].
-  - Đo: sau UPDATE, tuple cũ có `t_xmax 753` và `t_ctid (0,84)`.
-- **Thực hành:**
-  - A: `SELECT xmin, xmax, ctid, *` (cột hệ thống).
-  - B: UPDATE rồi `heap_page_items` trong cùng kịch bản.
-  - C: hai phiên đồng thời, snapshot, các mức cô lập.
-- **Sơ đồ:** hai giao dịch trên cùng dòng, ai thấy gì theo thời gian.
+  - B-tree nhiều cột: luật cột đầu, skip scan ở 18 [S71];
+  - `INCLUDE` và index-only [S6];
+  - partial, expression, unique index [S70];
+  - Hash, GIN (`jsonb_ops`/`jsonb_path_ops`, mảng), GiST, SP-GiST, BRIN, bloom [S9][S13][S14][S15];
+  - full-text (`tsvector`, `tsquery`, GIN vs GiST) [S72] và `pg_trgm`;
+  - `EXPLAIN (ANALYZE, BUFFERS)` (BUFFERS mặc định ở 18 [S12]);
+  - `pg_stats` cơ bản;
+  - GEO bản nhẹ (kiểu lõi + KNN GiST [S9], `earthdistance`);
+  - tùy chọn: PostGIS [S18][S73], pgvector [S74].
+- **Thực hành:** H-A + index lab. `CREATE INDEX CONCURRENTLY` là D vì cần phiên khác [S70].
 
-### P4. VACUUM, HOT, freeze, visibility map
+### 3.3 L3 Bên trong lưu trữ: "Một dòng nằm ở đâu, sống bao lâu"
+
+- **Tiên quyết:** L2.
+- **Ước lượng:** 12 bài, 9 H-B + 3 D.
 - **Mục tiêu:**
-  - kể 4 lý do VACUUM;
-  - giải thích HOT (khi nào xảy ra, vì sao fillfactor giúp);
-  - đọc visibility map;
-  - hiểu wraparound và freeze.
-- **Sự thật:**
-  - VACUUM để (1) thu hồi chỗ, (2) cập nhật thống kê, (3) cập nhật visibility map, (4) chống wraparound XID/multixact [S5].
-  - XID 32 bit, so modulo 2³². Mỗi bảng phải được vacuum ít nhất một lần mỗi ~2 tỉ giao dịch.
-  - Cảnh báo khi còn ~40 triệu. Từ chối ghi khi còn < 3 triệu.
-  - `autovacuum_freeze_max_age` mặc định 200 triệu [S5].
-  - Freeze là một bit cờ từ 9.4, giữ nguyên `xmin` [S5].
-  - HOT cần hai điều: (a) UPDATE không đổi cột nào mà index (trừ index summarizing, trong lõi chỉ BRIN) dùng; (b) trang cũ còn đủ chỗ. Giảm fillfactor tăng khả năng HOT [S4].
-  - Visibility map nhỏ hơn heap "bốn bậc độ lớn" [S6].
-- **Thực hành:**
-  - B (bắt buộc, vì `VACUUM` không chạy trong transaction, đo): UPDATE → `heap_page_items` (thấy cờ HOT) → `VACUUM` → `lp_flags = 2` redirect (đo) → `pg_visibility_map`.
-  - B: tỉ lệ HOT qua `n_tup_hot_upd` (cần `pg_stat_force_next_flush()`, đo).
-  - C: autovacuum, wraparound thật.
-- **Sơ đồ:** chuỗi HOT trước/sau prune; đồng hồ XID quay vòng; bit all-visible/all-frozen.
+  - trang (header 24 B, line pointer 4 B, tuple header 23 B) [S2];
+  - TOAST (ngưỡng ~2 kB, 4 chiến lược, 1 GB) [S3];
+  - MVCC qua `xmin/xmax/ctid`;
+  - HOT và fillfactor [S4];
+  - VACUUM, visibility map, FSM [S5];
+  - freeze và wraparound (D);
+  - WAL: record, LSN, full-page write, checkpoint (`checkpoint_timeout` 5 min, `max_wal_size` 1 GB) [S69];
+  - shared buffers và `pg_buffercache`;
+  - sort/hash tràn đĩa theo `work_mem` (4MB mặc định [S65], đo được `external merge`).
+- **D:** wraparound thật, crash rồi replay, nhịp checkpoint.
 
-### P5. WAL, checkpoint, buffer
-- **Mục tiêu:** đọc một bản ghi WAL; giải thích LSN, `pd_lsn` trên trang, full-page image; vì sao commit chỉ cần fsync WAL.
-- **Sự thật:**
-  - Luật WAL, REDO, fsync tuần tự, nhiều commit chung một fsync, PITR [S8].
-  - `pd_lsn` = byte kế sau bản ghi WAL cuối sửa trang [S2].
-  - Checkpoint, full-page writes và cỡ segment **chưa đối chiếu**: trang [S8] không nói. Phải đọc `wal-configuration.html` / `wal-internals.html` trước khi viết số.
-- **Thực hành:** B, `pg_current_wal_lsn()` trước/sau một ghi, rồi `pg_get_wal_records_info` (đo: thấy `Heap INSERT+INIT`, `fpi_length`, `blkref`). C: crash và replay.
-- **Sơ đồ:** dòng thời gian COMMIT. Câu hỏi sắp thứ tự trong product design §2.2 dùng được.
+### 3.4 L4 Đồng thời và planner: "Vì sao chọn kế hoạch này, ai chặn ai"
 
-### P6. B-tree sâu
-- **Mục tiêu:**
-  - đọc `bt_metap`/`bt_page_items`;
-  - giải thích deduplication (posting list) và bottom-up deletion;
-  - thiết kế index nhiều cột đúng thứ tự;
-  - biết skip scan của PG 18.
-- **Sự thật:**
-  - **Deduplication:** bật mặc định, gộp bản trùng thành posting list, làm lười khi trang đầy. Tắt bằng `deduplicate_items = off`.
-    - Không an toàn cho `numeric`, `jsonb`, `float4/8`, collation không xác định, `char`.
-    - Không dùng cho kiểu container và **mọi index có `INCLUDE`** [S7].
-    - Đo: `bt_metap.allequalimage = true` trên khóa `int`.
-  - **Bottom-up deletion:** từ PG 14, dọn "version churn" khi sắp split [S7].
-  - **Skip scan (PG 18):** index nhiều cột dùng được cả khi cột đầu không có điều kiện [S12]. EXPLAIN ANALYZE có thêm số lượt tra index, hiển thị "Index Searches" (đo) [S12].
-  - B-tree hỗ trợ `< <= = >= >`, `BETWEEN`, `IN`, `IS NULL`, `LIKE 'foo%'` neo đầu [S9].
-- **Thực hành:**
-  - A: `bt_metap`, `bt_page_items`, `bt_index_check` (amcheck).
-  - A: đoán kế hoạch, index lab có sẵn (`runLab`).
-- **Sơ đồ:** split trang lá; posting list; skip scan nhảy qua các giá trị cột đầu.
+- **Tiên quyết:** L3.
+- **Ước lượng:** 14 bài, 8 H + 6 D.
+- **H (8):**
+  - cost model, 5 hằng số [S62];
+  - `pg_stats` sâu (MCV, histogram, correlation);
+  - extended statistics [S10];
+  - thứ tự join, `join_collapse_limit`/GEQO [S62];
+  - `plan_cache_mode` generic vs custom (đo `PREPARE`);
+  - partitioning và pruning [S16];
+  - bảng lock mode qua `pg_locks` trong một phiên;
+  - advisory lock (đo).
+- **D (6):**
+  - các mức cô lập và hiện tượng [S61];
+  - SSI và `SIReadLock` [S61];
+  - row lock 4 mức và chờ khóa [S60];
+  - deadlock [S60];
+  - parallel query (`Gather`) [S64];
+  - JIT [S63].
+- Cả 6 bài D sẽ thành H nếu có **backend Python + PostgreSQL thật**: nhiều kết nối, có LLVM, có worker.
 
-### P7. Các loại index khác
+### 3.5 L5 Chuyên gia: "Nội tạng index, nhân bản, bảo mật, tinh chỉnh"
 
-| Loại | Toán tử, mục đích [S9] | Chi tiết |
+- **Tiên quyết:** L4.
+- **Ước lượng:** 16 bài, 11 H + 5 D.
+- **H (11):**
+  - B-tree: split, dedup, bottom-up deletion, qua `bt_page_items` [S7];
+  - GIN: pending list và `fastupdate`, qua `gin_metapage_info` [S13];
+  - BRIN: summarization, `autosummarize`, `brin_summarize_new_values` [S14];
+  - GiST/SP-GiST: hộp bao vs quad/k-d, qua `gist_page_items` (SP-GiST chưa có hàm pageinspect, nên chỉ D, chưa đối chiếu);
+  - `amcheck`;
+  - WAL đào sâu: `fpi_length` sau checkpoint;
+  - RLS: `USING`/`WITH CHECK`, permissive/restrictive, `FORCE`, `BYPASSRLS` [S68], đo với `SET ROLE`;
+  - `pg_stat_statements`;
+  - giám sát `pg_stat_*`;
+  - tinh chỉnh bộ nhớ (`work_mem`, `maintenance_work_mem` 64MB [S65]);
+  - `pg_overexplain` (tùy chọn).
+- **D (5):**
+  - streaming replication, sync/async, hot standby, slot [S67];
+  - logical decoding và slot giữ WAL [S66];
+  - autovacuum trong sản xuất;
+  - backup và PITR [S8];
+  - HA/failover.
+- Nếu có backend: replication cần **hai** server, logical decoding cần `wal_level = logical`.
+
+### 3.6 Ghi chú chủ đề Postgres (nguồn và chi tiết)
+
+**P1 Từ SQL tới đĩa.**
+
+- parser → rewriter → planner → executor.
+- Trang 8 KB, đổi được lúc biên dịch [S2].
+- PG 18 có AIO: `io_method` mặc định `worker`, `effective_io_concurrency` 16 [S65][S12].
+
+**P2 Heap, trang, TOAST.**
+
+- Header trang 24 byte (`pd_lsn`, `pd_checksum`, `pd_lower`, `pd_upper`, `pd_special`, `pd_prune_xid`…). ItemId 4 byte. Header tuple 23 byte (`t_xmin`, `t_xmax`, `t_cid`, `t_ctid` 6 byte, `t_infomask2`, `t_infomask`, `t_hoff`) [S2].
+- TOAST bật khi dòng > `TOAST_TUPLE_THRESHOLD` (thường 2 kB), ép tới `TOAST_TUPLE_TARGET` (`toast_tuple_target`).
+- Chunk ~2000 byte, con trỏ 18 byte, tối đa 1 GB.
+- `PLAIN | EXTENDED | EXTERNAL | MAIN`. Nén qua `default_toast_compression` / `COMPRESSION` [S3]. Tên phương thức (pglz, lz4): chưa đối chiếu.
+
+**P3 MVCC.**
+
+- `t_xmin` là XID chèn, `t_xmax` là XID xóa, `t_ctid` trỏ phiên bản mới hơn [S2].
+- Đo: tuple cũ có `t_xmax 753`, `t_ctid (0,84)`.
+
+**P4 VACUUM, HOT, freeze.**
+
+- **Bốn lý do VACUUM:** chỗ trống, thống kê, visibility map, wraparound. `VACUUM FULL` cần `ACCESS EXCLUSIVE` [S5].
+- **Wraparound:**
+  - XID 32 bit. Phải vacuum mỗi bảng trong ~2 tỉ giao dịch.
+  - Cảnh báo khi còn ~40 triệu. Chỉ cho đọc khi còn < 3 triệu.
+  - `autovacuum_freeze_max_age` = 200 triệu. Freeze là bit cờ, giữ `xmin` [S5].
+  - Không có autovacuum cho partitioned/temp table [S5].
+- **HOT cần hai điều:** không đổi cột được index (trừ index summarizing, tức BRIN), và trang còn chỗ. fillfactor thấp giúp HOT [S4].
+- **Visibility map** nhỏ hơn heap ~4 bậc [S6].
+
+**P5 WAL.**
+
+- Luật WAL, REDO, fsync tuần tự, nhóm commit, PITR [S8].
+- **Checkpoint:** mọi trang bẩn được flush + bản ghi checkpoint. Chạy mỗi `checkpoint_timeout` (5 min) hoặc khi sắp vượt `max_wal_size` (1 GB).
+- `full_page_writes`: lần sửa đầu tiên mỗi trang sau checkpoint thì ghi cả trang [S69].
+- `pd_lsn` [S2].
+- Segment 16 MB: trang [S67] nhắc "16MB segment" (cỡ mặc định thì chưa đối chiếu ở trang cấu hình).
+
+**P6 B-tree.**
+
+- **Dedup:** mặc định bật, tắt bằng `deduplicate_items`.
+  - Không áp cho `numeric`, `jsonb`, `float`, collation không xác định, container type.
+  - Không áp cho **mọi index có `INCLUDE`** [S7].
+- **Bottom-up deletion** từ 14 [S7].
+- **Skip scan (18):** ví dụ `(x,y)` + `WHERE y = 7700`, chỉ khi `x` ít giá trị [S71][S12].
+- **Luật cột đầu:** equality trên các cột đầu + inequality trên cột đầu tiên không có equality [S71].
+- Tối đa 32 cột kể cả INCLUDE. Chỉ B-tree, GiST, GIN, BRIN cho nhiều cột [S71].
+- fillfactor B-tree mặc định 90 [S70].
+
+**P7 Các AM khác.**
+
+| AM | Nguồn | Chi tiết |
 |---|---|---|
-| Hash | chỉ `=`, băm 32 bit | |
-| GiST | hạ tầng nhiều chiến lược, hình học 2D (`&&`, `@>`, `<@`, `<<`…) | **KNN `ORDER BY … <-> … LIMIT`** |
-| SP-GiST | cây không cân bằng (quadtree, k-d, radix) | KNN với opclass có toán tử thứ tự |
-| GIN | inverted index cho giá trị nhiều thành phần | opclass `array_ops`, `jsonb_ops` (thêm `? ?| ?&`), `jsonb_path_ops` (chỉ `@> @? @@`, nhanh hơn), `tsvector_ops`. Pending list `fastupdate` được dọn khi VACUUM/autoanalyze, `gin_clean_pending_list` hoặc vượt `gin_pending_list_limit` [S13]. PG 18 build GIN song song [S12] |
-| BRIN | tóm tắt mỗi dải block | opclass minmax, minmax-multi (`values_per_range` mặc định 32), inclusion, bloom (`false_positive_rate` mặc định 0.01). `autosummarize` mặc định off. `brin_summarize_new_values()`. Hiệu quả khi giá trị tương quan với thứ tự vật lý [S14] |
-| bloom (contrib) | chỉ `=` | chữ ký mặc định 80 bit, 2 bit mỗi cột; opclass sẵn cho `int4`, `text`; lossy; không UNIQUE, không tìm NULL; hợp bảng nhiều cột lọc tổ hợp tùy ý [S15] |
+| Hash | [S9] | chỉ `=`, băm 32 bit |
+| GiST | [S9] | hình học 2D, **KNN** `ORDER BY … <-> … LIMIT` |
+| SP-GiST | [S9] | quadtree, k-d, radix; KNN với opclass có toán tử thứ tự |
+| GIN | [S13] | opclass `array_ops`, `jsonb_ops` (thêm `? ?\| ?&`), `jsonb_path_ops` (`@> @? @@`, nhanh hơn), `tsvector_ops`. Pending list được dọn khi VACUUM/autoanalyze, khi gọi `gin_clean_pending_list` hoặc khi vượt `gin_pending_list_limit` [S13]. Build song song từ 18 [S12] |
+| BRIN | [S14][S70] | `pages_per_range` 128; minmax, minmax-multi (`values_per_range` 32), inclusion, bloom (`false_positive_rate` 0.01); `autosummarize` off |
+| bloom | [S15] | 80 bit, 2 bit/cột; `int4`, `text`; chỉ `=`; không UNIQUE, không NULL |
 
-- **Mục tiêu:** chọn đúng loại index theo toán tử của câu hỏi; biết loại nào lossy (recheck).
-- **Thực hành:** A, `CREATE INDEX` mọi loại trên đều chạy (đo) trong lab có sẵn; `brin_page_items` (đo); `EXPLAIN` thấy `Recheck Cond`.
+**P8 Index nâng cao.**
 
-### P8. Index nâng cao: index-only, covering, partial, expression, unique, concurrent
-- **Mục tiêu:** biết khi nào có Index Only Scan; dùng `INCLUDE`; viết partial và expression index; hiểu `CONCURRENTLY` đổi gì.
-- **Sự thật:**
-  - Index-only cần: (1) loại index hỗ trợ (B-tree luôn có; GiST/SP-GiST một số opclass; **GIN không**); (2) câu chỉ dùng cột có trong index.
-  - Lợi chỉ khi phần lớn trang heap có bit all-visible.
-  - `INCLUDE` chỉ cho B-tree, GiST, SP-GiST. Cột INCLUDE không thuộc khóa unique, không là biểu thức [S6].
-  - `CREATE INDEX CONCURRENTLY` không dùng được trên bảng partitioned. Cách làm: `ON ONLY` + build từng partition + `ATTACH` [S16].
-  - Partial và expression index: [S17] **(chưa đối chiếu chi tiết)**.
-- **Thực hành:**
-  - A: `Heap Fetches: 0` (đo), partial/expression qua index lab.
-  - B: so `Heap Fetches` trước/sau VACUUM.
-  - C: `CONCURRENTLY` (hai pha, chờ giao dịch khác; cần nhiều phiên).
-- **Sơ đồ:** index-only scan hỏi visibility map trước khi về heap.
+- **Index-only** cần AM hỗ trợ (B-tree luôn có; GiST/SP-GiST một số opclass; **GIN không**) và câu chỉ dùng cột trong index. Chỉ lợi khi phần lớn trang có bit all-visible [S6].
+- **`INCLUDE`:** chỉ B-tree, GiST, SP-GiST; không biểu thức [S6].
+- **Partial:** `WHERE`, kể cả UNIQUE trên một tập con. Expression: `((lower(title)))` [S70].
+- **`CONCURRENTLY`:**
+  - index được ghi là *invalid* trong một transaction, rồi quét bảng **hai** lần trong hai transaction nữa;
+  - phải chờ mọi giao dịch có thể dùng bảng;
+  - lỗi thì để lại index invalid (vẫn tốn chi phí cập nhật);
+  - không chạy trong transaction block [S70];
+  - không dùng trên bảng partitioned (dùng `ON ONLY` + `ATTACH`) [S16];
+  - lấy `SHARE UPDATE EXCLUSIVE`, còn `CREATE INDEX` thường lấy `SHARE` [S60].
 
-### P9. GEO: kiểu hình học lõi → PostGIS
+**P9 GEO.**
+
+- **Lõi:** `point/box/polygon/circle` + GiST/SP-GiST [S9]; `cube`/`earthdistance`.
+- **PostGIS:**
+  - `geometry` (mặt phẳng) vs `geography` (spheroid mặc định, mét, chỉ SRID địa lý; mặc định 4326); geometry không SRID là 0.
+  - Index chỉ chứa **bounding box**.
+  - GiST là R-tree trên GiST, đa năng nhất. BRIN nhỏ, cần dữ liệu đã sắp, không kNN. SP-GiST cho quad/k-d [S18].
+- **KNN `<->` của PostGIS** [S73]:
+  - chỉ dùng **GiST** 2D;
+  - chỉ trong `ORDER BY`;
+  - một phía phải là **hằng**;
+  - KNN thật từ 2.2.0; geography tính trên cầu (không spheroid).
+- **Đo:** SP-GiST không được chọn cho KNN, khớp với [S73].
+
+**P10 FTS, trigram, jsonb.**
+
+- **GIN là kiểu index FTS được khuyên dùng:** inverted, không lưu trọng số nên truy vấn có trọng số phải recheck.
+- **GiST lossy:** chữ ký `siglen` mặc định 124 byte, tối đa 2024; build GIN nhanh hơn khi tăng `maintenance_work_mem` [S72].
+- `jsonb_ops` vs `jsonb_path_ops` [S13].
+- `pg_trgm` có cả GIN và GiST (đo).
+
+**P11 pgvector 0.8.7** [S74], README ở tag `v0.8.7`:
+
+- **Index tối đa:** `vector` 2 000 chiều, `halfvec` 4 000, `bit` 64 000, `sparsevec` 1 000 phần tử khác 0. Giới hạn lưu 16 000 chiều chỉ thấy ở README `master`, chưa đối chiếu với 0.8.7.
+- **HNSW:** `m` 16, `ef_construction` 64, `hnsw.ef_search` 40.
+- **IVFFlat:** `lists` ≈ rows/1000 (≤ 1M dòng) hoặc √rows; `probes` 1, nên bắt đầu ở √lists.
+- **Toán tử:** `<-> <#> <=> <+> <~> <%>`.
+- **Lọc:** WHERE áp **sau** index. Iterative scan từ 0.8.0 (`hnsw.iterative_scan`, `hnsw.max_scan_tuples`).
+
+**P12 Planner, thống kê, partitioning.**
+
+- **Hằng số chi phí** [S62]:
+
+  | Hằng số | Mặc định |
+  |---|---|
+  | `seq_page_cost` | 1.0 |
+  | `random_page_cost` | 4.0 |
+  | `cpu_tuple_cost` | 0.01 |
+  | `cpu_index_tuple_cost` | 0.005 |
+  | `cpu_operator_cost` | 0.0025 |
+  | `effective_cache_size` | 4GB |
+  | `default_statistics_target` | 100 |
+  | `geqo_threshold` | 12 |
+  | `from_collapse_limit` / `join_collapse_limit` | 8 |
+  | `plan_cache_mode` | `auto` |
+
+- `reltuples`/`relpages` chỉ cập nhật khi VACUUM/ANALYZE/một số DDL. Extended stats: `dependencies`, `ndistinct`, `mcv` [S10].
+- **PG 18** [S12]: bỏ self-join thừa; OR → mảng; Right Semi Join; incremental sort trong merge join; bỏ cột GROUP BY phụ thuộc hàm.
+- **Partitioning:** range/list/hash. Pruning lúc plan và lúc chạy (`Subplans Removed`). Index cha "ảo". UNIQUE/PK phải chứa mọi cột khóa partition [S16].
+
+**P13 Lock và isolation.**
+
+- **8 lock mode cấp bảng:**
+
+  | Lock mode | Ai lấy |
+  |---|---|
+  | `ACCESS SHARE` | SELECT |
+  | `ROW SHARE` | SELECT … FOR … |
+  | `ROW EXCLUSIVE` | INSERT/UPDATE/DELETE/MERGE |
+  | `SHARE UPDATE EXCLUSIVE` | VACUUM, ANALYZE, CIC |
+  | `SHARE` | CREATE INDEX |
+  | `SHARE ROW EXCLUSIVE` | CREATE TRIGGER |
+  | `EXCLUSIVE` | REFRESH MV CONCURRENTLY |
+  | `ACCESS EXCLUSIVE` | DROP/TRUNCATE/VACUUM FULL… |
+
+  Chỉ `ACCESS EXCLUSIVE` chặn SELECT thường.
+- **4 khóa dòng:** `FOR UPDATE` > `FOR NO KEY UPDATE` > `FOR SHARE` > `FOR KEY SHARE`.
+- **Deadlock:** tự phát hiện và hủy một bên. Phòng bằng thứ tự khóa nhất quán.
+- **Advisory lock:** cấp phiên hoặc cấp giao dịch. Bẫy `LIMIT` [S60]. `deadlock_timeout` mặc định (chưa đối chiếu).
+- **Isolation:**
+  - Read Uncommitted chạy như Read Committed. Read Committed là mặc định: snapshot mỗi câu.
+  - Repeatable Read = snapshot isolation, có thể báo *could not serialize access due to concurrent update*.
+  - Serializable = **SSI**, lỗi `40001`, phải retry.
+  - Predicate lock `SIReadLock` không chặn và không gây deadlock; seq scan lấy predicate lock cấp quan hệ; `READ ONLY DEFERRABLE` [S61].
+
+**P14 Replication và logical decoding.**
+
+- **Streaming:** standby replay WAL; mặc định bất đồng bộ (trễ thường < 1 s).
+- **Đồng bộ:** `synchronous_standby_names` (`FIRST n` / `ANY n`) với `synchronous_commit` (`remote_write`, `on`, `remote_apply`). Hot standby. Slot vật lý giữ WAL, giới hạn bằng `max_slot_wal_keep_size` [S67].
+- **Logical decoding:** slot mỗi database, tên duy nhất toàn cluster, bền qua crash; chỉ lưu vị trí lúc checkpoint nên **có thể gửi lặp**; mỗi lúc chỉ một receiver.
+- **Slot bị bỏ quên** giữ WAL và catalog, cực đoan thì dẫn tới wraparound. Có exported snapshot, đồng bộ slot cho failover [S66]. Plugin `test_decoding`/`pgoutput` (chưa đối chiếu).
+
+**P15 Parallel query và JIT.**
+
+- **Parallel:** `Gather`/`Gather Merge`, leader cũng làm việc.
+  - Mặc định: `max_parallel_workers_per_gather` 2, `max_parallel_workers` 8, `max_worker_processes` 8 [S64][S65].
+  - Khi nào **không** song song: mục 15.2 (chưa đối chiếu).
+- **JIT** cần build có LLVM.
+  - Các mốc chi phí: `jit_above_cost` 100000; `jit_inline_above_cost` và `jit_optimize_above_cost` cùng 500000 [S62][S63].
+  - EXPLAIN in `JIT: Inlining/Optimization/Expressions/Deforming` [S63].
+
+**P16 RLS và bảo mật.**
+
+- Bật RLS mà không có policy thì **từ chối hết**.
+- `USING` (dòng thấy được) vs `WITH CHECK` (dòng ghi được). Chỉ `USING` thì nó cũng làm `WITH CHECK`.
+- Permissive gộp `OR`, restrictive gộp `AND`.
+- Chủ bảng bỏ qua RLS trừ khi `FORCE`. Superuser và `BYPASSRLS` luôn bỏ qua. Kiểm tra ràng buộc (unique, FK) cũng bỏ qua RLS.
+- `row_security = off` báo lỗi chứ không bỏ qua [S68].
+
+**P17 Tinh chỉnh và giám sát.**
+
+- Mặc định: `shared_buffers` 128MB, `work_mem` 4MB, `maintenance_work_mem` 64MB [S65].
+- Giám sát: `pg_stat_statements`, `pg_stat_user_tables` (cần flush, đo).
+
+---
+
+## 4. MongoDB: thang L1 → L5
+
+Runtime: **mingo** cho truy vấn, update, aggregation. Index, explain, replication, sharding không có trong trình duyệt.
+
+### 4.1 L1 Người mới: "Tài liệu và CRUD"
+
+- **Ước lượng:** 10 bài, **10 H**.
 - **Mục tiêu:**
-  - phân biệt `geometry` (mặt phẳng) và `geography` (cầu, mét);
-  - hiểu SRID;
-  - biết index chỉ chứa **bounding box** (lọc thô, rồi lọc chính xác);
-  - viết KNN `<->`;
-  - chọn GiST / SP-GiST / BRIN.
-- **Sự thật [S18]:**
-  - `geography` dùng spheroid mặc định, kết quả hàm đo bằng mét, chỉ nhận SRID địa lý. Không ghi SRID thì geography mặc định 4326, geometry mặc định 0.
-  - **GiST** = R-tree trên GiST, đa năng nhất.
-  - **BRIN** nhỏ, build nhanh, nhưng chậm hơn khi truy vấn. Cần dữ liệu đã sắp theo không gian, không tự cập nhật, **không hỗ trợ kNN**.
-  - **SP-GiST** cho quad-tree/k-d tree, lossy.
-- **Đo:**
-  - geography + GiST cho `ST_DWithin` thành `Index Cond: (g && _st_expand(...))` + `Filter: st_dwithin(...)`, tức là lọc thô bằng hộp rồi lọc chính xác.
-  - geometry + **GiST** cho KNN `<->` thành `Index Scan … Order By`.
-  - Cùng câu trên bảng chỉ có **SP-GiST** cho `Seq Scan + Sort` (20k điểm). Phải đọc lại trang PostGIS về KNN cho SP-GiST trước khi dạy SP-GiST làm KNN.
-- **Bản nhẹ không cần PostGIS:** kiểu `point/box/polygon/circle` lõi + GiST/SP-GiST + KNN [S9]; `cube` + `earthdistance` (có trong gói, đo).
-- **Thực hành:** A với PostGIS **nếu** chấp nhận tải ~20 MB lười (D-E6 product design đặt trần ~3 MB, nên hiện **không đạt**). Mặc định chỉ dùng bản nhẹ.
+  - mô hình tài liệu, kiểu BSON (ObjectId, Date, Decimal128…: chưa đối chiếu trang `bson-types`);
+  - giới hạn 16 MiB và 100 tầng lồng [S40];
+  - `insertOne/Many`, `find` + projection, `updateOne/Many` (`$set`, `$inc`, `$push`, `$addToSet`, `$pull`, upsert), `deleteMany`;
+  - toán tử truy vấn (`$eq/$gt/$in/$exists/$type/$regex/$elemMatch`, dot notation, truy vấn mảng);
+  - `sort/limit/skip`, `countDocuments`;
+  - thao tác trên **một** tài liệu luôn atomic [S48].
 
-### P10. Full-text, trigram, jsonb
-- **Mục tiêu:** dựng `tsvector`/`tsquery`, xếp hạng; index GIN cho FTS; tìm mờ bằng trigram; chọn `jsonb_ops` hay `jsonb_path_ops`.
-- **Sự thật:**
-  - `tsvector_ops`, `jsonb_ops` vs `jsonb_path_ops` [S13].
-  - Index cho FTS (GIN vs GiST) [S19] **(chưa đối chiếu)**.
-  - `pg_trgm` có `gin_trgm_ops` và `gist_trgm_ops` (đo: cả hai tạo được).
-- **Thực hành:** A.
+### 4.2 L2 Thực hành: "Biến đổi dữ liệu"
 
-### P11. Vector: pgvector
-- **Mục tiêu:** hiểu ANN là xấp xỉ; chọn HNSW hay IVFFlat; chỉnh `ef_search`/`probes`; biết bẫy lọc sau index.
-- **Sự thật [S24]:**
-  - `vector` lưu tới 16 000 chiều, index tới 2 000. `halfvec` index tới 4 000. `bit` index tới 64 000. `sparsevec` HNSW tới 1 000 phần tử khác 0.
-  - HNSW mặc định `m = 16`, `ef_construction = 64`, `hnsw.ef_search = 40`.
-  - IVFFlat: `lists` ≈ rows/1000 (≤ 1M dòng), `ivfflat.probes` mặc định 1.
-  - Toán tử: `<->` L2, `<#>` âm tích vô hướng, `<=>` cosine, `<+>` L1, `<~>` Hamming, `<%>` Jaccard.
-  - 0.8.0 thêm iterative scan (`hnsw.iterative_scan`, `hnsw.max_scan_tuples` = 20 000).
-  - WHERE được áp **sau** index scan, nên có thể trả ít dòng hơn LIMIT.
-- **Thực hành:** A khi nạp gói 50 KB (đo: HNSW được chọn cho `ORDER BY e <-> … LIMIT 5`).
-- **Sơ đồ:** đồ thị HNSW nhiều tầng, cụm IVFFlat.
-
-### P12. Thống kê, planner, EXPLAIN, partitioning
+- **Ước lượng:** 14 bài, 12 H + 2 D.
 - **Mục tiêu:**
-  - đọc `pg_stats` (MCV, histogram, `n_distinct`);
-  - giải thích ước lượng sai và sửa bằng `CREATE STATISTICS`;
-  - đọc các nút EXPLAIN;
-  - thiết kế partition và thấy pruning.
-- **Sự thật:**
-  - `reltuples`/`relpages` chỉ cập nhật bởi VACUUM/ANALYZE/một số DDL.
-  - `default_statistics_target` = 100.
-  - Extended stats: `dependencies`, `ndistinct`, `mcv` [S10].
-  - PG 18: `EXPLAIN ANALYZE` tự kèm `BUFFERS` (đo); bỏ self-join thừa; OR → mảng; Right Semi Join; incremental sort trong merge join [S12].
-  - Partition: range/list/hash. Pruning lúc lập kế hoạch và lúc chạy (`Subplans Removed`). Index trên bảng cha là "ảo". UNIQUE/PK phải chứa mọi cột partition key [S16].
-- **Thực hành:**
-  - A: `pg_stats`, `EXPLAIN`, `pg_stat_statements` (đo).
-  - B: `CREATE STATISTICS` + `ANALYZE` rồi so ước lượng.
-  - C: parallel plans (0 worker, đo).
+  - update operator đủ bộ (positional `$`, `arrayFilters`: chưa đối chiếu);
+  - **pipeline update** (`$set/$addFields`, `$unset/$project`, `$replaceRoot/$replaceWith`, `$$NOW`, bẫy `$literal`) [S89];
+  - aggregation: `$match/$project/$group/$sort/$limit/$unwind/$lookup/$facet/$bucket/$setWindowFields` (mingo chạy được, đo trong spike);
+  - nhúng vs tham chiếu;
+  - schema validation `$jsonSchema`: mặc định từ chối tài liệu sai, có thể chỉ cảnh báo [S88]. Mức `strict/moderate` và hành động `error/warn` chưa đối chiếu ở trang con.
+- **D (2):** `$merge`/`$out` và validation level, nếu mingo không làm được (chưa kiểm).
+
+### 4.3 L3 Hiệu năng: "Index, explain, planner"
+
+- **Ước lượng:** 12 bài, **0 H + 12 D** (explain ghi sẵn từ mongod thật, hoặc planner mô phỏng theo luật có ghi rõ "mô phỏng").
+- **Mục tiêu:**
+  - `_id` unique, không xóa được; index là B-tree [S30]; tối đa 64 index, 32 trường mỗi compound [S40];
+  - **ESR**: `$ne/$nin/$regex` là range; `$in` + sort < 201 phần tử thì như equality (`SORT_MERGE`) [S41];
+  - **multikey**: tối đa một trường mảng mỗi tài liệu trong compound; cover chỉ khi không trả mảng và không `$elemMatch` [S42];
+  - **covered query**: `IXSCAN` không nằm dưới `FETCH` [S76];
+  - **partial**: tập toán tử; truy vấn phải chứa điều kiện lọc; không kết hợp với `sparse`; unique chỉ áp lên tài liệu được index [S77];
+  - **sparse, hidden**: chưa đối chiếu;
+  - **TTL**: luồng nền 60 s, chỉ date, không compound, không `_id` [S45];
+  - **wildcard** `$**`: sparse, không `$text` [S43];
+  - **text**: một index mỗi collection; docs khuyên dùng MongoDB Search thay thế [S78];
+  - **2dsphere/2d** [S44];
+  - **hashed**: dùng cho sharding, không mảng, không unique, cắt số thực về int 64, không cover [S79];
+  - **explain**: `queryPlanner/executionStats/allPlansExecution`; `nReturned`, `totalKeysExamined`, `totalDocsExamined`; stage `COLLSCAN/IXSCAN/FETCH/SORT/EXPRESS_*` [S76];
+  - **planner**: multi-planner + CBR dự phòng từ 8.3; plan cache Missing → Inactive → Active; DDL xóa cache; `setQuerySettings` thay index filter [S46];
+  - **tối ưu aggregation**: dời `$match` lên trước; gộp `$sort+$limit`; gộp `$lookup+$unwind`; stage nào dùng được index [S75]. Giới hạn 100 MB mỗi stage, `allowDiskUse`, 1000 stage [S80].
+- **BE:** mongod thật (Python + pymongo) biến cả 12 bài thành H.
+
+### 4.4 L4 Nhất quán, giao dịch, mẫu thiết kế
+
+- **Ước lượng:** 12 bài, 5 H + 7 D.
+- **H (5):**
+  - 6 pattern chính thức: Computed, Group Data, Polymorphic, Schema Versioning, Archive, Single Collection [S47];
+  - di chuyển schema theo phiên bản.
+- **D (7):**
+  - write concern (`w`, `j`, `wtimeout`; mặc định ngầm `w: majority`, ngoại lệ khi có arbiter) [S82];
+  - read concern (`local` mặc định, `available`, `majority`, `linearizable`, `snapshot`) [S83];
+  - read preference (chưa đối chiếu);
+  - causal consistency: 4 đảm bảo, chỉ đủ cả 4 khi dùng `majority` + `majority` [S81];
+  - transaction đa tài liệu (replica set FCV 4.0, sharded 4.2; `snapshot` + `majority`; giới hạn 60 s) [S48][S40];
+  - change streams (cần replica set; chỉ thay đổi đã majority-commit; resume token `resumeAfter`/`startAfter`; `updateLookup`; pre/post image từ 6.0) [S84];
+  - TTL đang chạy.
+- **BE:** replica set thật (ít nhất một nút ở chế độ replica set) cho transaction và change streams.
+
+### 4.5 L5 Bên trong và phân tán
+
+- **Ước lượng:** 12 bài, **0 H + 12 D**.
+- **Mục tiêu:**
+  - **WiredTiger:** document-level concurrency, xung đột thì retry, snapshot, checkpoint 60 s, journal snappy, nén snappy/prefix/zstd, cache max(50%(RAM−1GB), 256MB) [S31];
+  - **replication và election:** `electionTimeoutMillis` 10 s, trung vị ~12 s, heartbeat 2 s, 50 thành viên / 7 phiếu, priority, rollback [S85];
+  - **sharding:** shard key (cardinality, frequency, monotonic → hashed), scatter-gather, `reshardCollection` (5.0), `refineCollectionShardKey`, `analyzeShardKey` (7.0) [S86]; chunk và balancer (chưa đối chiếu);
+  - **time series:** `timeField`/`metaField`, bucket, định dạng cột, index tự tạo trên meta+time, giới hạn update [S87];
+  - **chỉ đọc:** Atlas Search, Vector Search [S78].
+- **BE:** replica set cần 3 tiến trình; sharding cần config server + mongos + shard. Nặng cho backend Python học tập, nên giữ D kể cả khi có backend, trừ election/oplog.
 
 ---
 
-## 4. MySQL / InnoDB (M) và MariaDB
+## 5. DynamoDB: thang L1 → L5
 
-Thứ tự: M1 → M2 → M3 → M4 → M5 → M6, rồi M7–M9, M10 cuối.
+Runtime: **@dynoxide/wasm-engine**. Giữ mỗi bài ≤ 1–2k item vì nạp ~1 ms/item (spike).
 
-**Thực hành: mức C toàn bộ.** Mỗi mô-đun nên có một **lab "cùng câu trên PGlite"** để so: cùng bảng, cùng câu, khác cách lưu.
+### 5.1 L1 Người mới: "Bảng, item, khóa"
 
-| # | Chủ đề | Mục tiêu | Sự thật kèm nguồn |
-|---|---|---|---|
-| M1 | Server layer vs storage engine | Biết InnoDB là một storage engine cắm dưới tầng SQL | (chưa đối chiếu; xem chương "Alternative Storage Engines" của MySQL 8.4) |
-| M2 | Clustered index | Giải thích bảng **là** cây B+ theo PK; vì sao PK ngắn và tăng dần tốt hơn | Thứ tự chọn clustered index: PK → UNIQUE đầu tiên mà mọi cột NOT NULL → `GEN_CLUST_INDEX` trên row ID 6 byte. Mỗi bản ghi secondary index chứa **cột PK**; PK dài làm mọi secondary index to ra [S22] |
-| M3 | Trang, fill, merge | Ước lượng độ đầy trang khi chèn tuần tự vs ngẫu nhiên | Trang mặc định 16 KB (`innodb_page_size`). Chèn tuần tự để trống 1/16 nên trang ~15/16 đầy; ngẫu nhiên 1/2–15/16. Sorted index build theo `innodb_fill_factor`. `MERGE_THRESHOLD` mặc định 50% [S20] |
-| M4 | Undo, MVCC, purge | So "bản cũ trong undo" (InnoDB) với "bản cũ trong heap" (PG) | Cột ẩn `DB_TRX_ID` 6 B, `DB_ROLL_PTR` 7 B, `DB_ROW_ID` 6 B. Insert undo bỏ khi commit; update undo giữ tới khi không snapshot nào cần. **Purge** xóa vật lý. Secondary index không có cột ẩn: bản cũ bị delete-mark rồi purge, và khi đó **covering index không dùng được** [S21] |
-| M5 | Redo, doublewrite | So redo log với WAL; doublewrite chống ghi rách trang | Mặc định 8.4: `innodb_doublewrite_files` 2, `innodb_doublewrite_pages` 128, `innodb_log_buffer_size` 64 MiB [S23]. Cơ chế chi tiết redo (chưa đối chiếu) |
-| M6 | Khóa | Phân biệt record, gap, next-key, insert-intention, AUTO-INC, predicate lock (SPATIAL); giải thích vì sao REPEATABLE READ chặn phantom | Định nghĩa và ví dụ `BETWEEN 10 AND 20 FOR UPDATE` chặn chèn 15. Mặc định REPEATABLE READ + next-key lock [S25] |
-| M7 | AHI, covering, invisible, descending | Biết AHI tự xây từ mẫu truy cập; ẩn index để thử trước khi xóa; dùng index DESC cho ORDER BY trộn chiều | AHI dựng từ **tiền tố khóa**, theo trang hay truy cập; `innodb_adaptive_hash_index_parts` = 8 (tối đa 512) [S26]. **Mặc định AHI = OFF ở 8.4** (8.0 là ON) [S23]. Invisible: vẫn được bảo trì, unique vẫn ép, PK không ẩn được, `use_invisible_indexes` [S27]. Descending: chỉ BTREE, không HASH/FULLTEXT/SPATIAL; EXPLAIN ghi `Backward index scan` [S28] |
-| M8 | FULLTEXT, SPATIAL | So FULLTEXT InnoDB với GIN của PG; SPATIAL (R-tree) với GiST | FULLTEXT là inverted index trong **6 bảng phụ** chia theo ký tự đầu; `FTS_DOC_ID` tăng dần, khoảng cách tối đa 65535; xóa chỉ ghi vào `FTS_*_DELETED`, dọn bằng `OPTIMIZE TABLE` + `innodb_optimize_fulltext_only`; chỉ thấy dữ liệu đã commit [S29]. SPATIAL: cột NOT NULL, optimizer chỉ dùng khi cột có **thuộc tính SRID** [S34] |
-| M9 | EXPLAIN, optimizer | Đọc `type`, `key`, `Extra`; dùng `FORMAT=TREE` và `EXPLAIN ANALYZE` | TRADITIONAL (mặc định), JSON, TREE. Chỉ TREE thấy hash join. `EXPLAIN ANALYZE` **chạy thật**, luôn TREE, cho thời gian và rows thật mỗi iterator [S33] |
-| M10 | MariaDB khác ở đâu | Không coi MariaDB = MySQL | Xem bảng dưới |
+- **Ước lượng:** 9 bài, **9 H**.
+- **Mục tiêu:**
+  - mô hình tư duy (truy vấn theo khóa, không JOIN);
+  - item tối đa **400 KB, tính cả tên thuộc tính**;
+  - PK 1–2048 B, SK 1–1024 B; lồng 32 tầng [S50];
+  - khóa đơn vs kép; hash(PK) → partition, item collection sắp theo SK [S51];
+  - `PutItem/GetItem/UpdateItem` (upsert)/`DeleteItem`, `ReturnValues` [S96];
+  - Query vs Scan; 1 MB mỗi lần; phân trang bằng `LastEvaluatedKey` [S50];
+  - `ProjectionExpression`.
 
-**MariaDB khác ở đâu:**
+### 5.2 L2 Thực hành: "Biểu thức và chi phí"
 
-- **Ignored indexes (10.6):** `ALTER TABLE … ALTER INDEX k IGNORED`, tương đương invisible của MySQL. Hint trỏ tới index bị ignore thì báo lỗi [S35].
-- **`innodb_adaptive_hash_index`:** mặc định OFF. Kiểu enum (`IF_SPECIFIED`) từ 13.1.1.
-- **`innodb_change_buffering`:** deprecated 10.9, **gỡ ở 11.0** [S36]. MySQL 8.4 vẫn giữ biến này, chỉ đổi mặc định thành `none` [S23].
-- **Vector:** kiểu `VECTOR(n)` + `VECTOR INDEX` (HNSW sửa đổi, `M` 3–200, euclidean/cosine) từ 11.7, GA ở 11.8 LTS. Chỉ dùng index cho `ORDER BY distance … LIMIT` [S37].
-- **Descending index:** làm ở MDEV-13756 (nhánh 10.8). Có báo cáo optimizer không luôn chọn index DESC (MDEV-27419) [S38]. **Chưa có trang KB chính thức đọc được**, nên coi là chưa đối chiếu.
-- **Tài liệu khác biệt theo cặp phiên bản:** [S39].
+- **Ước lượng:** 12 bài, 11 H + 1 D.
+- **Mục tiêu:**
+  - `KeyConditionExpression`; `FilterExpression` lọc **sau** khi đọc (spike: `Count 20, ScannedCount 1000`);
+  - `UpdateExpression` SET/REMOVE/ADD/DELETE; alias từ dành riêng;
+  - giới hạn biểu thức: 4 KB, 300 toán tử, `IN` 100 [S50];
+  - **conditional write:** chống lost update; `ConditionalCheckFailedException`; `ReturnValuesOnConditionCheckFailure`; **vẫn tốn WCU khi điều kiện sai**; idempotent nếu kiểm đúng thuộc tính đang sửa [S96];
+  - atomic counter không idempotent [S96];
+  - batch: Get 100 / 16 MB, Write 25 / 16 MB, không có Update [S50][S96];
+  - **PartiQL**: `ExecuteStatement`, batch, transaction (DynamoDB chỉ hỗ trợ một tập con) [S93];
+  - **tính cỡ item:** chuỗi = byte tên + byte UTF-8; số ≈ tên + 1 B mỗi 2 chữ số + 1; List/Map +3 B và +1 B mỗi phần tử; lưu trữ +100 B mỗi item [S94];
+  - **RCU/WCU:** 1 RCU = 1 strong hoặc 2 eventual/s cho ≤ 4 KB; 1 WCU = 1 KB [S50]; dynoxide trả `ConsumedCapacity`.
+- **D:** eventual vs strong. Emulator một nút không cho thấy đọc cũ [S53].
+
+### 5.3 L3 Mô hình: "Access pattern trước, khóa sau"
+
+- **Ước lượng:** 12 bài, 11 H + 1 D.
+- **Mục tiêu:**
+  - **LSI vs GSI** [S54]:
+    - GSI: khóa tùy ý, thêm/xóa lúc nào cũng được, **chỉ eventual**, throughput riêng, chỉ đọc thuộc tính đã project;
+    - LSI: chỉ tạo cùng bảng, **10 GB** mỗi PK, strong được;
+    - 5 LSI, 20 GSI, 100 thuộc tính `INCLUDE` [S49].
+  - Projection `KEYS_ONLY/INCLUDE/ALL`; sparse index (chưa đối chiếu ở `bp-indexes-general-sparse`).
+  - **Access-pattern-first**, ít bảng nhất có thể, giữ dữ liệu liên quan cạnh nhau, dùng thứ tự sort, rải tải [S55].
+  - Single-table design.
+  - **Sort key phân cấp** `country#region#…`; phiên bản `v0_` [S92].
+  - **Adjacency list** (nhiều-nhiều) + GSI đảo ngược; materialized graph, GSI overloading [S95].
+- **D:** độ trễ lan truyền của GSI.
+
+### 5.4 L4 Quy mô và giao dịch
+
+- **Ước lượng:** 12 bài, 4 H + 8 D.
+- **H (4):**
+  - write sharding hậu tố ngẫu nhiên vs hậu tố tính được, và giá phải trả khi đọc [S91];
+  - PartiQL `ExecuteTransaction`;
+  - bài tính chi phí giao dịch (×2) [S50].
+- **D (8):**
+  - partition: throttle khi > **3000 đọc / 1000 ghi** mỗi partition;
+  - adaptive capacity (tăng ngay, cô lập item nóng, không tách collection khi có LSI);
+  - burst 300 s [S52];
+  - hot partition;
+  - `TransactWriteItems`/`TransactGetItems`: ≤ 100 item, 4 MB, không hai hành động trên một item, prepare + commit, token 10 phút, serializable vs read-committed, không xuyên Region [S56][S50]; dynoxide không hỗ trợ;
+  - capacity mode: **on-demand là mặc định và được khuyên dùng**; provisioned + auto scaling [S90];
+  - quota: 40k RCU/WCU mỗi bảng [S49].
+- **BE?** Throttle và adaptive capacity chỉ có trên DynamoDB thật. Backend Python không tái tạo trung thực được (nhận định). `TransactWriteItems` có thể có trong emulator khác (DynamoDB Local, moto: chưa kiểm). Vì vậy **pending** đúng như user cho phép.
+
+### 5.5 L5 Sự kiện và vận hành
+
+- **Ước lượng:** 8 bài, **0 H + 8 D**. Nếu dynoxide có Streams/TTL thì 2 bài đầu thành H (chưa kiểm).
+- **Mục tiêu:**
+  - **Streams:** giữ 24 h; mỗi record đúng một lần; thứ tự **theo item**; 4 view type; một shard ứng với một partition; ≤ 2 reader mỗi shard [S57];
+  - **TTL:** epoch giây; xóa "trong vòng vài ngày"; **không tốn WCU**; hiện trong stream như service deletion; phải lọc item đã hết hạn [S58];
+  - **global tables** MREC/MRSC [S53];
+  - vector index (5 mỗi bảng, 4096 chiều) [S49];
+  - PITR/backup, DAX (chỉ đọc).
 
 ---
 
-## 5. MongoDB (G)
+## 6. Kết luận theo engine
 
-Thứ tự: G1 → G2 → G3 → G4 → G5 → G6. Song song có G7 (cần G1) và G8 (cần G3, G7). G9 cuối.
+Tính theo số bài ước lượng ở §3–§5. H gồm cả H-B, tức cần request worker mới.
 
-| # | Chủ đề | Mục tiêu | Sự thật kèm nguồn |
-|---|---|---|---|
-| G1 | Document model, BSON | Mô hình hóa một thực thể thành tài liệu; biết giới hạn | Tài liệu BSON tối đa **16 MiB** (lớn hơn thì GridFS); lồng tối đa **100** tầng; namespace 255 byte (235 nếu shard) [S40] |
-| G2 | WiredTiger | Giải thích document-level concurrency, snapshot MVCC, checkpoint, journal, nén, cache | Optimistic concurrency, intent lock cấp global/db/collection, xung đột thì retry. Snapshot đầu mỗi thao tác. **Checkpoint mỗi 60 s**. Journal (WAL) snappy. Nén collection **snappy**, index **prefix compression**, time-series **zstd**. Cache mặc định max(50% (RAM − 1 GB), 256 MB) [S31] |
-| G3 | Index cơ bản, compound, **ESR** | Xếp khóa compound theo Equality → Sort → Range; biết biến thể ERS | `_id` unique tự có, không xóa được; index là B-tree [S30]. Tối đa **64** index mỗi collection, **32** trường mỗi compound [S40]. ESR: `$ne/$nin/$regex` là range. `$in` + sort: < 201 phần tử thì như equality (`SORT_MERGE`), ≥ 201 như range; ngưỡng không cam kết [S41] |
-| G4 | Multikey, wildcard, text, geo, hashed | Biết index nào hợp dữ liệu nào và bẫy của nó | Multikey tự tạo khi trường là mảng, mỗi phần tử một khóa. Compound multikey: **tối đa một trường mảng mỗi tài liệu**. Cover chỉ khi không trả trường mảng và không `$elemMatch` [S42]. Wildcard `$**`: sparse, bỏ `_id`, không hỗ trợ `$text`, chậm hơn index nhắm đích [S43]. 2dsphere: GeoJSON trên cầu, luôn sparse; compound 2d chỉ một trường vị trí; phiên bản 4 mặc định từ 8.3 [S44]. Text, hashed (chưa đối chiếu, trang con của [S30]) |
-| G5 | Thuộc tính index | Dùng unique, partial, sparse, TTL, hidden đúng chỗ | TTL: tác vụ nền chạy **mỗi 60 s**, chỉ trường date (mảng thì lấy ngày sớm nhất); **không compound**; không trên `_id`; `expireAfterSeconds` 0..2147483647 [S45]. Partial/sparse/hidden (chưa đối chiếu) |
-| G6 | Planner, explain | Đọc `IXSCAN/FETCH/SORT/COLLSCAN`, `keysExamined/docsExamined/nReturned`; hiểu plan cache | Multi-planner chọn plan trả nhiều kết quả nhất trong thời gian thử với ít việc nhất. Từ **8.3** có cost-based ranker làm dự phòng. Plan cache: trạng thái Missing → Inactive → Active, xóa khi có DDL. Index filter deprecated ở 8.0, thay bằng `setQuerySettings`. `explain()` không dùng và không ghi cache [S46]. Tên stage và verbosity (chưa đối chiếu, trang explain-results) |
-| G7 | Aggregation pipeline | Viết `$match → $group → $sort → $project`, `$lookup`, `$unwind`; biết stage đầu nào dùng index | (chưa đối chiếu: `aggregation-pipeline` và `aggregation-pipeline-optimization`) |
-| G8 | Schema design patterns | Nhúng vs tham chiếu; chọn pattern | Manual hiện liệt kê 6 pattern: Computed Values, Group Data, Polymorphic, Schema Versioning, Archive, Single Collection [S47]. Các tên cũ (bucket, outlier, subset, extended reference…) **không còn** trên trang này. Nếu dạy thì dẫn trang khác hoặc gọi đúng tên mới |
-| G9 | Transactions | Biết thao tác một tài liệu luôn atomic; khi nào cần multi-document | Đa tài liệu: replica set từ FCV 4.0, sharded từ 4.2. Read concern `snapshot` + write concern `majority`. Tốn hơn ghi một tài liệu, "không thay thế thiết kế schema tốt" [S48]. Mặc định `transactionLifetimeLimitSeconds` **60 s** [S40] |
-
-**Thực hành:**
-
-- **Cú pháp truy vấn:** mingo, chờ spike E-S3 của product design.
-- **Index, planner, WiredTiger:** mức C. Dùng `explain` ghi sẵn từ MongoDB thật, có ghi phiên bản.
-
-**Sơ đồ:**
-
-- multikey nổ khóa;
-- ESR: index scan có/không SORT;
-- vòng đời plan cache;
-- checkpoint + journal.
-
----
-
-## 6. DynamoDB (D)
-
-Thứ tự: D1 → D2 → D3 → D4 → D5 → D6 → D7 → D8.
-
-**Thực hành: mức C**, dùng mô phỏng TS (product design §4.4). Mọi công thức mô phỏng phải lấy đúng số dưới đây.
-
-| # | Chủ đề | Mục tiêu | Sự thật kèm nguồn |
-|---|---|---|---|
-| D1 | Bảng, item, khóa | Chọn khóa đơn (PK) hay kép (PK + SK); tính cỡ item | Item tối đa **400 KB**, gồm cả độ dài **tên** thuộc tính. Partition key 1–2048 byte, sort key 1–1024 byte. Lồng tối đa 32 tầng. Number 38 chữ số [S50] |
-| D2 | Partition, adaptive capacity | Giải thích hash(PK) → partition; item collection sắp theo SK; hot partition | Hàm băm nội bộ trên partition key. Cùng PK thì nằm gần nhau, tăng dần theo SK (item collection). Không có LSI thì collection được chia qua nhiều partition [S51]. Throttle khi một partition vượt **3000 thao tác đọc / 1000 ghi**. Adaptive capacity tăng **ngay**, cô lập item nóng; **không** tách collection khi bảng có LSI. Burst giữ tới **300 s** capacity chưa dùng [S52] |
-| D3 | Đọc/ghi, consistency, đơn vị capacity | Tính RCU/WCU; chọn eventual hay strong | 1 RCU = 1 strong hoặc 2 eventual/s cho item ≤ 4 KB. 1 WCU = 1 ghi/s cho ≤ 1 KB. Giao dịch ×2 [S50]. Eventual mặc định, rẻ bằng nửa. Strong chỉ trên bảng và LSI, **không** trên GSI hay stream. Isolation read-committed. Global tables: MREC (mặc định) / MRSC [S53] |
-| D4 | Query vs Scan, biểu thức | Viết `KeyConditionExpression`; biết FilterExpression lọc **sau** khi đọc | Query/Scan trả tối đa **1 MB** mỗi lần, phân trang bằng `LastEvaluatedKey`. Biểu thức ≤ 4 KB, ≤ 300 toán tử, `IN` ≤ 100 toán hạng. BatchGet 100 item / 16 MB, BatchWrite 25 / 16 MB [S50] |
-| D5 | LSI, GSI, projection | Chọn LSI hay GSI; chọn projection | GSI: khóa tùy ý, thêm/xóa lúc nào cũng được, **chỉ eventual**, throughput riêng, chỉ đọc được thuộc tính đã project. LSI: cùng PK, **chỉ tạo khi tạo bảng**, giới hạn **10 GB** mỗi giá trị PK, dùng throughput bảng, tự lấy thuộc tính không project [S54]. Hạn mức: 5 LSI (cố định), 20 GSI (mặc định, tăng được), 100 thuộc tính `INCLUDE` cộng dồn [S49]. **Vector index** mới: 5 mỗi bảng, 4096 chiều, tính vào quota GSI [S49] |
-| D6 | Access-pattern-first, single-table | Liệt kê access pattern **trước**, rồi thiết kế khóa; giữ ít bảng | "Đừng thiết kế schema trước khi biết câu hỏi". Giữ càng ít bảng càng tốt. Nguyên tắc: để dữ liệu liên quan cạnh nhau, dùng thứ tự sort, rải tải tránh hot spot, dùng GSI [S55] |
-| D7 | Conditional write, transactions | Dùng `ConditionExpression` cho ghi lạc quan; biết giá của giao dịch | `TransactWriteItems`/`TransactGetItems`: ≤ 100 item, ≤ 4 MB, không hai hành động trên cùng item, một account/Region. Mỗi item **2 lần đọc/ghi** ngầm (prepare + commit), tốn cả khi bị hủy. Client token idempotent **10 phút**. Serializable với Put/Update/Delete/GetItem, read-committed với Query/Scan/BatchGet. Không xuyên Region [S56][S50]. Conditional write chi tiết (chưa đối chiếu) |
-| D8 | Streams, TTL | Dùng stream cho CDC; dùng TTL dọn dữ liệu | Stream giữ **24 h**. Mỗi record xuất hiện đúng một lần. Thứ tự đảm bảo **theo item**, không theo partition. 4 view type (`KEYS_ONLY`, `NEW_IMAGE`, `OLD_IMAGE`, `NEW_AND_OLD_IMAGES`). Một shard ứng với một partition. ≤ 2 reader mỗi shard [S57]. TTL: Number epoch **giây**, xóa trong vòng "vài ngày", **không tốn WCU**, hiện trong stream như service deletion, item hết hạn vẫn có thể đọc thấy nên phải lọc [S58] |
-
-**Sơ đồ:**
-
-- hash ring / partition sáng theo tải;
-- adaptive capacity tách partition nóng;
-- GSI cập nhật bất đồng bộ;
-- prepare/commit của giao dịch.
+| Engine | Tổng bài | H (trình duyệt) | D (sơ đồ/đọc/ghi sẵn) | Trong D, thành H nếu có backend Python | Kết luận |
+|---|---|---|---|---|---|
+| **PostgreSQL** | 66 (+3 tùy chọn) | **51 (77 %)** | 15 (23 %) | ~11 (17 %): isolation, SSI, khóa dòng, deadlock, parallel, JIT, CIC, replication, logical decoding, failover, autovacuum | **GO đầy đủ L1–L5 trong trình duyệt.** L3/L5 cần request kịch bản mới (H-B). Phần đồng thời là sơ đồ cho tới khi có backend |
+| **MongoDB** | 60 | **27 (45 %)** | 33 (55 %) | ~27 (45 %): toàn bộ L3, L4 phần concern/transaction/change stream, L5 phần replication/WiredTiger | **GO L1–L2 (và pattern ở L4).** L3 hiệu năng là bài đọc + explain ghi sẵn: đây là lỗ lớn nhất, chỉ backend mongod mới vá được. Sharding vẫn là sơ đồ dù có backend |
+| **DynamoDB** | 53 | **35 (66 %)** | 18 (34 %) | ít: emulator khác có thể thêm `TransactWriteItems`; throttle/adaptive/global tables chỉ có trên AWS thật | **GO L1–L3 với dynoxide.** L4–L5 phần lớn là đọc. **Pending** `TransactWriteItems` và Streams/TTL cho tới khi kiểm dynoxide hoặc có backend |
 
 ---
 
@@ -422,106 +639,130 @@ Thứ tự: D1 → D2 → D3 → D4 → D5 → D6 → D7 → D8.
 
 | Chỗ | Đang ghi | Đúng (đo/nguồn) |
 |---|---|---|
-| §0, §4.1: `pg_overexplain` có trong gói | có | tarball có nhưng **không nạp được**: `LOAD` báo lỗi, không có `contrib/*.js` (đo) |
-| §0, §2.2 mô-đun 8, §4.1 E-S2: "không có pgvector, PostGIS" | không có | **có**, qua gói riêng ghim **pglite-pgvector@0.0.17 / pglite-postgis@0.2.16** cho PGlite 0.5.16 (đo). pgvector ~50 KB tarball, trong trần D-E6. PostGIS ~20 MB, **vượt** trần ~3 MB của D-E6 |
-| §2.2 mô-đun 1–2, 4–6: "cần spike E-S1" | chờ | `pageinspect`, `pg_visibility`, `pg_walinspect`, `pg_buffercache`, `amcheck` **chạy** trong PGlite Node (đo). Còn phải đo trong **Web Worker trình duyệt** (tải tarball qua `fetch`) |
-| §2.2 mô-đun 3 | "UPDATE rồi thấy dòng cũ/mới" | đúng (đo). Lưu ý `pg_stat_*` cần `pg_stat_force_next_flush()` mới có số |
-| §2.2 mô-đun 2 | "Postgres 17/18" | PGlite 0.5.16 = **18.6** (đo); dẫn `/docs/18/` |
+| §0, §4.1: `pg_overexplain` có trong gói | có | có tarball, **không có wrapper chính thức**; tự viết wrapper thì chạy (đo) |
+| §0, §2.2 mô-đun 8, §4.1 E-S2: "không có pgvector, PostGIS" | không có | **có** qua gói riêng ghim `0.0.17` / `0.2.16` (đo). pgvector ~50 KB (trong trần D-E6); PostGIS ~20 MB (**vượt** trần) |
+| §2.2 mô-đun 1–2, 4–6: "cần spike E-S1" | chờ | các extension inspect chạy trong PGlite **Node** (đo). Còn phải đo trong Web Worker trình duyệt |
+| §2.2 mô-đun 2 | "Postgres 17/18" | PGlite 0.5.16 = **18.6** |
+| §2.3 MySQL, §2.6 MariaDB | track MySQL | **user bỏ MySQL/MariaDB** (2026-11-20) |
 
 ### 7.2 Khoảng trống lớn nhất
 
-1. **Không có runtime trung thực cho MySQL, MongoDB (index/planner) và DynamoDB.**
-   - Ba engine này chỉ ở mức C.
-   - Mọi "đoán kế hoạch" phải dùng output ghi sẵn từ server thật. Cần một script chụp ngoài app, ghi phiên bản, và bị chặn khi đổi phiên bản.
-   - Chưa kiểm chứng có engine WASM tương thích MySQL/Mongo nào, việc này thuộc `spike-nosql-browser.md`.
-2. **Đồng thời không chạy được ở đâu cả:** PGlite một backend (đo). MVCC hai phiên, lock wait, deadlock, gap lock, `CONCURRENTLY`, autovacuum, parallel query đều chỉ là hoạt hình. Đây là phần "bên trong" khó nhất và dễ dạy sai nhất.
-3. **Mức B cần một request kịch bản mới trong worker** (VACUUM, UPDATE + soi trang, flush stats). Việc này đụng `runSandboxed` (`BEGIN → ROLLBACK`) và luật "một câu". Product design §4.1 đã dự kiến `engineLab`. Tài liệu này xác nhận nhu cầu bằng lỗi 25001 đo được.
-4. **Extension phải nạp lúc tạo PGlite.** Thêm `extensions` vào `initEngine` làm tải thêm. Hiện chưa có cơ chế nạp lười sau boot (chưa đối chiếu với API PGlite). Cần spike: nạp hết các contrib nhỏ (tổng < 100 KB) hay tạo PGlite thứ hai cho Engine.
-5. **PostGIS 20 MB:** chỉ khả thi như tải tùy chọn có nút bấm. Nếu không thì P9 dùng kiểu hình học lõi + `cube`/`earthdistance`, và PostGIS chỉ là bài đọc.
-6. **Chưa đối chiếu:** checkpoint/full-page writes/cỡ segment WAL; partial/expression index chi tiết; FTS index; mặc định autovacuum threshold; MongoDB text/hashed/partial/sparse/hidden, aggregation, tên stage explain; DynamoDB conditional write; redo log InnoDB; descending index MariaDB (chỉ có Jira). Phải đọc trước khi viết bài.
-7. **Nguồn trôi:** MongoDB 8.3 đổi planner và `2dsphereIndexVersion`; MySQL 8.4 đổi hàng loạt mặc định (AHI, change buffering, io_capacity); DynamoDB thêm vector index. Mỗi bài cần dòng "đúng với phiên bản X, kiểm ngày Y".
+1. **Đồng thời ở cả ba engine là D.**
+   - PGlite một backend.
+   - mingo không có replica set.
+   - dynoxide một nút, không throttle.
+
+   Đây là phần "bên trong" khó và dễ dạy sai nhất. Cần hoạt hình làm cẩn thận, kèm output ghi sẵn từ server thật có ghi phiên bản.
+2. **MongoDB L3 không có runtime:** không index, không explain. Chỉ backend Python + mongod thật mới vá được.
+3. **Request H-B cho Postgres:** VACUUM, UPDATE rồi soi trang, flush stats. Việc này đụng luật "một câu, `BEGIN … ROLLBACK`" của `runSandboxed`.
+4. **Nạp extension lúc tạo PGlite:** cần chọn giữa nạp mọi contrib nhỏ (< 100 KB) hay tạo một PGlite riêng cho khu Engine. Spike nhỏ thêm: PGlite có khởi động được với `wal_level = logical` không (mở khóa P14 logical decoding).
+5. **Chưa kiểm ở runtime NoSQL:**
+   - mingo: `$jsonSchema`, `$merge/$out`;
+   - dynoxide: Streams, TTL, `TransactGetItems`.
+6. **Chưa đối chiếu:**
+   - Postgres: tên phương thức nén TOAST, cỡ segment WAL mặc định, `deadlock_timeout`, điều kiện parallel (15.2), pageinspect cho SP-GiST, plugin logical;
+   - MongoDB: kiểu BSON, positional/`arrayFilters`, sparse/hidden index, validation level/action, read preference, chunk/balancer;
+   - DynamoDB: sparse index.
+7. **Nguồn trôi:**
+   - MongoDB manual đã nói tới 8.3 (CBR, 2dsphere v4) và 9.0 (time series một namespace, `$match` dời trước `$lookup`);
+   - DynamoDB vừa thêm vector index và bulk put.
+
+   Mỗi bài cần dòng "đúng với phiên bản X, kiểm ngày Y".
 
 ---
 
 ## 8. Nguồn
 
-Tất cả đã mở đọc ngày 2026-11-20, trừ khi ghi khác.
+Đã mở đọc ngày 2026-11-20, trừ chỗ ghi "chưa mở".
 
-**PGlite**
+**PGlite và runtime**
 
 - [S1] PGlite Extensions: https://pglite.dev/extensions/
-- Gói npm (đo bằng `npm view`): `@electric-sql/pglite@0.5.16`, `@electric-sql/pglite-pgvector@0.0.17`, `@electric-sql/pglite-postgis@0.2.16`.
+- [S97] mingo (npm, 7.2.7): https://www.npmjs.com/package/mingo
+- [S98] @dynoxide/wasm-engine (npm, 1.7.0): https://www.npmjs.com/package/@dynoxide/wasm-engine · https://dynoxide.dev
+- Số đo runtime NoSQL: `docs/team/spike-nosql-browser.md` (repo này).
 
 **PostgreSQL 18**
 
-- [S2] Database Page Layout: https://www.postgresql.org/docs/18/storage-page-layout.html
+- [S2] Page Layout: https://www.postgresql.org/docs/18/storage-page-layout.html
 - [S3] TOAST: https://www.postgresql.org/docs/18/storage-toast.html
-- [S4] Heap-Only Tuples (HOT): https://www.postgresql.org/docs/18/storage-hot.html
+- [S4] HOT: https://www.postgresql.org/docs/18/storage-hot.html
 - [S5] Routine Vacuuming: https://www.postgresql.org/docs/18/routine-vacuuming.html
-- [S6] Index-Only Scans and Covering Indexes: https://www.postgresql.org/docs/18/indexes-index-only-scans.html
-- [S7] B-Tree Indexes (implementation, dedup, bottom-up deletion): https://www.postgresql.org/docs/18/btree.html
-- [S8] Write-Ahead Logging: https://www.postgresql.org/docs/18/wal-intro.html
+- [S6] Index-Only Scans: https://www.postgresql.org/docs/18/indexes-index-only-scans.html
+- [S7] B-Tree: https://www.postgresql.org/docs/18/btree.html
+- [S8] WAL intro: https://www.postgresql.org/docs/18/wal-intro.html
 - [S9] Index Types: https://www.postgresql.org/docs/18/indexes-types.html
-- [S10] Statistics Used by the Planner: https://www.postgresql.org/docs/18/planner-stats.html
-- [S11] nbtree README (mã nguồn, chưa mở): https://github.com/postgres/postgres/blob/master/src/backend/access/nbtree/README
+- [S10] Planner Statistics: https://www.postgresql.org/docs/18/planner-stats.html
 - [S12] Release 18: https://www.postgresql.org/docs/18/release-18.html
-- [S13] GIN Indexes: https://www.postgresql.org/docs/18/gin.html
-- [S14] BRIN Indexes: https://www.postgresql.org/docs/18/brin.html
+- [S13] GIN: https://www.postgresql.org/docs/18/gin.html
+- [S14] BRIN: https://www.postgresql.org/docs/18/brin.html
 - [S15] bloom: https://www.postgresql.org/docs/18/bloom.html
-- [S16] Table Partitioning: https://www.postgresql.org/docs/18/ddl-partitioning.html
-- [S17] Partial Indexes / Indexes on Expressions (chưa mở): https://www.postgresql.org/docs/18/indexes-partial.html, https://www.postgresql.org/docs/18/indexes-expressional.html
-- [S19] Preferred Index Types for Text Search (chưa mở): https://www.postgresql.org/docs/18/textsearch-indexes.html
+- [S16] Partitioning: https://www.postgresql.org/docs/18/ddl-partitioning.html
+- [S60] Explicit Locking: https://www.postgresql.org/docs/18/explicit-locking.html
+- [S61] Transaction Isolation: https://www.postgresql.org/docs/18/transaction-iso.html
+- [S62] Query Planning config: https://www.postgresql.org/docs/18/runtime-config-query.html
+- [S63] JIT decision: https://www.postgresql.org/docs/18/jit-decision.html
+- [S64] Parallel Query: https://www.postgresql.org/docs/18/how-parallel-query-works.html
+- [S65] Resource Consumption config: https://www.postgresql.org/docs/18/runtime-config-resource.html
+- [S66] Logical Decoding concepts: https://www.postgresql.org/docs/18/logicaldecoding-explanation.html
+- [S67] Log-Shipping Standby / Streaming Replication: https://www.postgresql.org/docs/18/warm-standby.html
+- [S68] Row Security Policies: https://www.postgresql.org/docs/18/ddl-rowsecurity.html
+- [S69] WAL Configuration: https://www.postgresql.org/docs/18/wal-configuration.html
+- [S70] CREATE INDEX: https://www.postgresql.org/docs/18/sql-createindex.html
+- [S71] Multicolumn Indexes: https://www.postgresql.org/docs/18/indexes-multicolumn.html
+- [S72] Text Search Indexes: https://www.postgresql.org/docs/18/textsearch-indexes.html
 
 **PostGIS, pgvector**
 
-- [S18] PostGIS, Data Management (geometry/geography, SRID, spatial indexes): https://postgis.net/docs/using_postgis_dbmanagement.html
-- [S24] pgvector README: https://github.com/pgvector/pgvector/blob/master/README.md
-
-**MySQL 8.4**
-
-- [S20] InnoDB Physical Structure: https://dev.mysql.com/doc/refman/8.4/en/innodb-physical-structure.html
-- [S21] InnoDB Multi-Versioning: https://dev.mysql.com/doc/refman/8.4/en/innodb-multi-versioning.html
-- [S22] Clustered and Secondary Indexes: https://dev.mysql.com/doc/refman/8.4/en/innodb-index-types.html
-- [S23] What Is New in MySQL 8.4 (bảng đổi mặc định InnoDB): https://dev.mysql.com/doc/refman/8.4/en/mysql-nutshell.html
-- [S25] InnoDB Locking: https://dev.mysql.com/doc/refman/8.4/en/innodb-locking.html
-- [S26] Adaptive Hash Index: https://dev.mysql.com/doc/refman/8.4/en/innodb-adaptive-hash.html
-- [S27] Invisible Indexes: https://dev.mysql.com/doc/refman/8.4/en/invisible-indexes.html
-- [S28] Descending Indexes: https://dev.mysql.com/doc/refman/8.4/en/descending-indexes.html
-- [S29] InnoDB Full-Text Indexes: https://dev.mysql.com/doc/refman/8.4/en/innodb-fulltext-index.html
-- [S33] EXPLAIN Statement: https://dev.mysql.com/doc/refman/8.4/en/explain.html
-- [S34] Spatial Index Optimization: https://dev.mysql.com/doc/refman/8.4/en/spatial-index-optimization.html
-
-**MariaDB**
-
-- [S35] Ignored Indexes: https://mariadb.com/docs/server/ha-and-performance/optimization-and-tuning/optimization-and-indexes/ignored-indexes
-- [S36] InnoDB System Variables: https://mariadb.com/docs/server/server-usage/storage-engines/innodb/innodb-system-variables
-- [S37] Vector Overview: https://mariadb.com/docs/server/reference/sql-structure/vectors/vector-overview
-- [S38] MDEV-13756 (descending indexes): https://jira.mariadb.org/browse/MDEV-13756 · MDEV-27419: https://jira.mariadb.org/browse/MDEV-27419
-- [S39] MariaDB vs MySQL Compatibility: https://mariadb.com/kb/en/mariadb-vs-mysql-compatibility/
+- [S18] PostGIS Data Management: https://postgis.net/docs/using_postgis_dbmanagement.html
+- [S73] PostGIS `<->`: https://postgis.net/docs/geometry_distance_knn.html
+- [S74] pgvector README tại tag v0.8.7: https://github.com/pgvector/pgvector/blob/v0.8.7/README.md
 
 **MongoDB**
 
 - [S30] Indexes: https://www.mongodb.com/docs/manual/indexes/
-- [S31] WiredTiger Storage Engine: https://www.mongodb.com/docs/manual/core/wiredtiger/
-- [S40] Limits and Thresholds: https://www.mongodb.com/docs/manual/reference/limits/
-- [S41] ESR Guideline: https://www.mongodb.com/docs/manual/tutorial/equality-sort-range-guideline/
-- [S42] Multikey Indexes: https://www.mongodb.com/docs/manual/core/indexes/index-types/index-multikey/
-- [S43] Wildcard Indexes: https://www.mongodb.com/docs/manual/core/indexes/index-types/index-wildcard/
-- [S44] 2dsphere Indexes: https://www.mongodb.com/docs/manual/core/indexes/index-types/geospatial/2dsphere/
-- [S45] TTL Indexes: https://www.mongodb.com/docs/manual/core/index-ttl/
+- [S31] WiredTiger: https://www.mongodb.com/docs/manual/core/wiredtiger/
+- [S40] Limits: https://www.mongodb.com/docs/manual/reference/limits/
+- [S41] ESR: https://www.mongodb.com/docs/manual/tutorial/equality-sort-range-guideline/
+- [S42] Multikey: https://www.mongodb.com/docs/manual/core/indexes/index-types/index-multikey/
+- [S43] Wildcard: https://www.mongodb.com/docs/manual/core/indexes/index-types/index-wildcard/
+- [S44] 2dsphere: https://www.mongodb.com/docs/manual/core/indexes/index-types/geospatial/2dsphere/
+- [S45] TTL: https://www.mongodb.com/docs/manual/core/index-ttl/
 - [S46] Query Plans: https://www.mongodb.com/docs/manual/core/query-plans/
 - [S47] Schema Design Patterns: https://www.mongodb.com/docs/manual/data-modeling/design-patterns/
 - [S48] Transactions: https://www.mongodb.com/docs/manual/core/transactions/
+- [S75] Aggregation Optimization: https://www.mongodb.com/docs/manual/core/aggregation-pipeline-optimization/
+- [S76] Explain Results: https://www.mongodb.com/docs/manual/reference/explain-results/
+- [S77] Partial Indexes: https://www.mongodb.com/docs/manual/core/index-partial/
+- [S78] Text Indexes: https://www.mongodb.com/docs/manual/core/indexes/index-types/index-text/
+- [S79] Hashed Indexes: https://www.mongodb.com/docs/manual/core/indexes/index-types/index-hashed/
+- [S80] Aggregation Limits: https://www.mongodb.com/docs/manual/core/aggregation-pipeline-limits/
+- [S81] Causal Consistency: https://www.mongodb.com/docs/manual/core/causal-consistency-read-write-concerns/
+- [S82] Write Concern: https://www.mongodb.com/docs/manual/reference/write-concern/
+- [S83] Read Concern: https://www.mongodb.com/docs/manual/reference/read-concern/
+- [S84] Change Streams: https://www.mongodb.com/docs/manual/changeStreams/
+- [S85] Replica Set Elections: https://www.mongodb.com/docs/manual/core/replica-set-elections/
+- [S86] Choose a Shard Key: https://www.mongodb.com/docs/manual/core/sharding-choose-a-shard-key/
+- [S87] Time Series: https://www.mongodb.com/docs/manual/core/timeseries-collections/
+- [S88] Schema Validation: https://www.mongodb.com/docs/manual/core/schema-validation/
+- [S89] Updates with Aggregation Pipeline: https://www.mongodb.com/docs/manual/tutorial/update-documents-with-aggregation-pipeline/
 
 **DynamoDB**
 
 - [S49] Service Quotas: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/ServiceQuotas.html
 - [S50] Constraints: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Constraints.html
-- [S51] Partitions and Data Distribution: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.Partitions.html
+- [S51] Partitions: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.Partitions.html
 - [S52] Burst and Adaptive Capacity: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/burst-adaptive-capacity.html
 - [S53] Read Consistency: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.ReadConsistency.html
 - [S54] Secondary Indexes: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/SecondaryIndexes.html
-- [S55] NoSQL Design for DynamoDB: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-general-nosql-design.html
-- [S56] Transactions: How It Works: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/transaction-apis.html
-- [S57] DynamoDB Streams: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Streams.html
-- [S58] Time to Live: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/TTL.html
+- [S55] NoSQL Design: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-general-nosql-design.html
+- [S56] Transactions: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/transaction-apis.html
+- [S57] Streams: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Streams.html
+- [S58] TTL: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/TTL.html
+- [S90] Capacity Modes: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/capacity-mode.html
+- [S91] Write Sharding: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-partition-key-sharding.html
+- [S92] Sort Keys: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-sort-keys.html
+- [S93] PartiQL: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/ql-reference.html
+- [S94] Item Sizes: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/CapacityUnitCalculations.html
+- [S95] Adjacency Lists / Graphs: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-adjacency-graphs.html
+- [S96] Working with Items (conditional writes, counters, batch): https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/WorkingWithItems.html
