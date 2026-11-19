@@ -4,13 +4,14 @@ import { activeDomain, domainText } from '../domains';
 import { chaptersOf, chapterTitle, nextTicket, passedChapters, visibleTickets } from '../progress';
 import { domainArt } from './domainArt';
 import { derive, ROUTES, type Harbor } from '../scene';
-import { artSlot } from '../art/load';
+import { artSlot, loadedGsap, loadGsap } from '../art/load';
 import { fleetOrder, takeNewRoutes } from '../routesSeen';
 import { actions, app } from '../state';
 import { BTN_GO, cx } from '../theme';
 import { textOf, type Ticket } from '../tickets';
 import { navTargets } from '../viz/progressDots';
-import { byId, h } from './dom';
+import { byId, h, reducedMotion } from './dom';
+import { s as svg } from './svg';
 import { icon } from './icons';
 import { laneInfo, lanePanel, stateOf, tasksOf, wirePins } from './lanePanel';
 import { startLane, toCurrentTask } from './modes';
@@ -23,6 +24,19 @@ const STATE_KEY: Record<Exclude<TaskState, 'locked'>, Key> = {
   done: 'map.beat.done', current: 'map.beat.current', optional: 'map.beat.optional', early: 'map.beat.early',
 };
 const ARROW = 'grid size-10 shrink-0 place-items-center p-0 sm:size-8';
+
+/**
+ * v10 A8 (L157): how far the chapter's progress line under the task buttons reaches: from the first button's centre to the
+ * button after the last finished task (the last button once it is done). `to` 0 = nothing finished yet, no line.
+ * Buttons sit in equal cells, so a button's centre is at (i + 0.5) / n of the row.
+ */
+export function chapterLine(chapter: readonly Ticket[], completed: ReadonlySet<string>): { n: number; to: number } {
+  const n = chapter.length;
+  let last = -1;
+  chapter.forEach((x, i) => { if (completed.has(x.id)) last = i; });
+  return { n, to: last < 0 ? 0 : Math.min(last + 1, n - 1) };
+}
+const pct = (i: number, n: number): string => `${((i + 0.5) / n) * 100}%`;
 
 /**
  * #map under the top bar (index.html), shown only in story mode on #/play by main.ts (ui-ux-v4 §2, replaces L35/L37):
@@ -39,6 +53,35 @@ export function createMapStrip(host: HTMLElement): { update(view: StripView): vo
     if (last) fill(last);
     dialog.showModal();
   } });
+
+  // A8: one SVG kept across redraws (like mapBtn), so the 600 ms draw survives the rerenders that follow a completion.
+  const track = svg('line', { y1: '50%', y2: '50%', class: 'stroke-line', 'stroke-width': 2, 'stroke-linecap': 'round' });
+  const reach = svg('line', { y1: '50%', y2: '50%', class: 'stroke-accent', 'stroke-width': 2, 'stroke-linecap': 'round' });
+  const lineSvg = svg('svg', { class: 'pointer-events-none absolute inset-x-0 -bottom-1.5 h-1 w-full overflow-visible', 'aria-hidden': 'true', focusable: 'false' }, track, reach);
+  let shown: { key: string; save: object; to: number } | undefined;
+  let drawing: { kill(): void } | undefined;
+  /** Sets the line; a first completion in the same chapter (same save object: an import only redraws) draws the new part. */
+  function drawLine(key: string, n: number, to: number): void {
+    track.setAttribute('x1', pct(0, n));
+    track.setAttribute('x2', pct(n - 1, n));
+    const was = shown;
+    shown = { key, save: app.save, to };
+    if (was?.key === key && was.save === app.save && was.to === to) return; // a plain redraw: never replays (L105)
+    drawing?.kill();
+    drawing = undefined;
+    reach.setAttribute('x1', pct(0, n));
+    reach.setAttribute('x2', pct(to, n));
+    reach.style.display = to > 0 ? '' : 'none';
+    if (!was || was.key !== key || was.save !== app.save || to <= was.to) return; // first draw, other chapter, import: static
+    const g = loadedGsap();
+    if (!g) return loadGsap(); // the end state is drawn; the next completion animates
+    if (reducedMotion()) return;
+    const from = `0% ${(was.to / to) * 100}%`;
+    const tl = g.timeline().fromTo(reach, { drawSVG: from }, { drawSVG: '0% 100%', duration: 0.6, ease: 'power1.inOut' });
+    tl.eventCallback('onComplete', () => { tl.revert(); if (drawing === tl) drawing = undefined; });
+    drawing = { kill: () => tl.progress(1).revert() };
+    tl.play();
+  }
 
   const start = (task: Ticket): void => {
     dialog.close();
@@ -209,10 +252,13 @@ export function createMapStrip(host: HTMLElement): { update(view: StripView): vo
           }, t(nav.next === resume ? 'nav.continueNext' : 'nav.continueBack'))
         : null;
 
+      const line = chapterLine(tickets.filter((x) => x.chapter === chapter), completed);
+      drawLine(`${activeDomain()}|${chapter}`, line.n, line.to);
       mapBtn.replaceChildren(icon('map', 'size-4'), h('span', { class: 'max-sm:sr-only' }, t('map.see')));
       host.replaceChildren(h('nav', { class: 'flex flex-wrap items-center gap-x-3 gap-y-1.5 px-4 py-1.5 text-body-sm', 'aria-label': t('nav.tasks') },
         select,
-        h('div', { class: 'flex shrink-0 items-center gap-1 max-sm:order-3 max-sm:w-full max-sm:flex-wrap max-sm:justify-center' }, arrow('prev'), ...tasks, arrow('next')),
+        h('div', { class: 'flex shrink-0 items-center gap-1 max-sm:order-3 max-sm:w-full max-sm:flex-wrap max-sm:justify-center' }, arrow('prev'),
+          h('div', { class: 'relative flex' }, ...tasks.map((b) => h('span', { class: 'px-0.5' }, b)), lineSvg), arrow('next')),
         cont ? h('div', { class: 'shrink-0 max-sm:order-4 max-sm:w-full' }, cont) : null,
         h('div', { class: 'ml-auto flex shrink-0 items-center gap-2 text-muted max-sm:order-2' },
           activeDomain() === 'logistics' ? h('span', { class: 'max-sm:hidden' }, t('map.lanes', { n: derive(tickets, completed).open.size, total: ROUTES.length })) : null,

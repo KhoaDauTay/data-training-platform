@@ -887,4 +887,15 @@ export const vi = {
   'pin.locked': 'Ghim lên: mở khi học xong {skill} (ch. {n})',
   'lock.tabsHidden': 'Thêm {n} tab mở dần khi bạn làm tiếp',
   'lock.skillChapter': 'Đang khóa · mở ở chương {n}',
+  // v10 V10-C (L157): "Việc bạn từng vấp", printable cheat sheet
+  'stumble.title': 'Việc bạn từng vấp',
+  'stumble.intro': 'Những việc bạn đã xong sau ít nhất {n} lần nộp sai. Làm lại với số liệu khác để chắc tay hơn: 0 XP, không tính vào chương.',
+  'stumble.wrong': 'nộp sai {n} lần',
+  'stumble.go': 'Làm lại',
+  'stumble.aria': 'Làm lại: {title} (nộp sai {n} lần trước khi đạt)',
+  'cheat.print': 'In thẻ tra cứu',
+  'cheat.hint': 'Một trang A4 các kỹ năng bạn đã học: tên, cú pháp, bẫy hay gặp.',
+  'cheat.none': 'Học kỹ năng đầu tiên để in thẻ tra cứu.',
+  'cheat.title': 'Thẻ tra cứu SQL · BoonData',
+  'cheat.sub': '{n} kỹ năng bạn đã học. Cú pháp viết trên bảng ví dụ của chuỗi cửa hàng.',
 } satisfies Record<string, Msg>;
