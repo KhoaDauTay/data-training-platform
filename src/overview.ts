@@ -18,7 +18,8 @@ export function chapterSummary(tickets: Ticket[], save: Save, chapter: number): 
   return {
     xp: done.reduce((sum, t) => sum + xpFor(t, save.hintsUsed[t.id] ?? 0), 0),
     hints: done.reduce((sum, t) => sum + (save.hintsUsed[t.id] ?? 0), 0),
-    skills: done.flatMap((t) => t.grants),
+    // L145: a passed review stands for the chapter, so its skills count also when its tasks were skipped.
+    skills: (done.some((t) => t.beat === 'boss') ? tickets.filter((t) => t.chapter === chapter) : done).flatMap((t) => t.grants),
     newTables: chapterTablesOf()[chapter + 1] ?? [],
   };
 }

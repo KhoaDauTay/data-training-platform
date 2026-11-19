@@ -40,7 +40,7 @@ export interface DrillDeps extends GuideDeps {
   isSuccess: typeof Practice.isSuccess; movedToday: typeof Practice.movedToday; nextCard: typeof Practice.nextCard;
   SKILLS: typeof Progress.SKILLS; hashOf: typeof Route.hashOf; textOf: typeof Tickets.textOf;
   hints: typeof Brief.hints; shapeCard: typeof Brief.shapeCard; tryPreview: typeof TryPreview.tryPreview; openLesson: typeof LessonCard.openLesson;
-  leave: typeof Modes.leaveGeneral; startDrillMode: typeof Modes.startDrillMode;
+  leave: typeof Modes.leaveGeneral; startDrillMode: typeof Modes.startDrillMode; startPlacement: typeof Modes.startPlacement;
   loadGeneral: typeof Content.loadGeneral; generalNow: typeof Content.generalNow; loadLessons: typeof Content.loadLessons;
   // Learning path (Task 9-10)
   lessonSeen: typeof LessonCard.isSeen; learnSkillOf: typeof Route.learnSkillOf; learnAdvOf: typeof Route.learnAdvOf;

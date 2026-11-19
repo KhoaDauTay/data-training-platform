@@ -17,6 +17,7 @@ import { localDay } from '../practice';
 import { relabelScene, teachScene } from './teachScene';
 import { currentRoute } from './router';
 import { actions, app, done } from '../state';
+import { earlyOffer } from './chapterView';
 import { BTN_GO, BTN_SECONDARY, CARD, CARD_ACTION, chapterColor, cx, DONE_PILL, PILL } from '../theme';
 import { roleLine } from '../people';
 import { upsert } from '../registry';
@@ -136,6 +137,7 @@ function continueCard(m: HomeModel): HTMLElement {
   const label = t('home.progress', { done: m.done, total: m.total });
   const next = m.next;
   const x = next ? textOf(next, lang) : undefined;
+  const early = earlyOffer(); // L145: a quiet second button, never the main one
   return h('section', { class: cx(CARD, 'flex h-full flex-col gap-4 p-6'), 'aria-labelledby': 'continue-title' },
     h('p', { class: cx('m-0 flex items-center gap-2 text-body-sm font-semibold', chapterColor(m.chapter).text) },
       icon('inbox', 'size-4'), t('home.kicker', { n: m.chapter, title: chapterTitle(m.chapter, lang, chaptersOf()) })), // Overview only (v12.0 U5)
@@ -154,6 +156,8 @@ function continueCard(m: HomeModel): HTMLElement {
     h('div', { class: 'flex flex-wrap gap-2' },
       next ? h('button', { type: 'button', class: cx(BTN_GO, 'group flex items-center gap-2 px-4 py-2'), onclick: () => resume(next.id) },
         t('home.resume'), icon('arrowRight', 'size-4 transition group-hover:translate-x-0.5')) : null,
+      early ? h('button', { type: 'button', class: cx(BTN_SECONDARY, 'flex items-center gap-2 px-4 py-2'), title: t('early.intro', { n: early.chapter }), onclick: () => actions.selectTicket(early.id) },
+        icon('badge', 'size-4'), t('early.start')) : null,
       h('button', { type: 'button', class: 'flex items-center gap-2 px-4 py-2 font-semibold', onclick: openInbox }, icon('inbox', 'size-4'), t('top.inbox'))));
 }
 
@@ -181,7 +185,7 @@ function careerCard(): HTMLElement {
 /** Small status badge: the only coloured text on the card (L23). */
 function statusPill(c: ChapterCard): HTMLElement | null {
   const n = { done: c.done, total: c.total };
-  if (c.status === 'done') return h('span', { class: cx(PILL, DONE_PILL) }, t('home.status.done', n));
+  if (c.status === 'done') return h('span', { class: cx(PILL, DONE_PILL) }, t(c.done < c.total ? 'home.status.passed' : 'home.status.done', n)); // L145: review passed early
   if (c.status === 'current') return h('span', { class: cx(PILL, chapterColor(c.chapter).chip) }, t('home.status.current', n));
   return h('span', { class: cx(PILL, 'bg-code text-muted') }, t(c.status === 'soon' ? 'home.status.soon' : 'home.status.locked', n)); // same words as the sidebar (v10 critic #7)
 }

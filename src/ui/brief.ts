@@ -4,7 +4,7 @@ import { activeDomain, domainSchemaName, domainText } from '../domains';
 import { DRILL_ID } from '../save';
 import { LANE_XP } from '../lanes';
 import { roleLine } from '../people';
-import { chaptersOf, nextTicket, SKILLS, xpFor } from '../progress';
+import { chaptersOf, nextTicket, SKILLS, visibleTickets, xpFor } from '../progress';
 import { hashOf } from '../route';
 import { ROUTES } from '../scene';
 import { compareShape, shapeOf, type Kind, type Shape } from '../shape';
@@ -267,6 +267,9 @@ function sentBubbles(tk: Ticket): HTMLElement {
 /** The SQL that passed the grader; saves from before `graded` existed fall back to the draft. */
 const gradedSql = (tk: Ticket, i: number): string => app.save.graded[stepKey(tk.id, i)] ?? app.save.drafts[stepKey(tk.id, i)] ?? '';
 
+/** L145: optional tasks left (chapters whose review was passed early): the Recap must not say everything is done. */
+const optionalLeft = (): number => visibleTickets(app.tickets, done()).filter((x) => !done().has(x.id)).length;
+
 /** On a closed ticket: skills learned (or reviewed), your SQL next to the reference, XP, "Next ticket". */
 function recap(tk: Ticket, x: TicketText): HTMLElement {
   const lang = getLang();
@@ -289,7 +292,7 @@ function recap(tk: Ticket, x: TicketText): HTMLElement {
       h('figure', {}, h('figcaption', { class: 'mb-1 text-body-sm text-muted' }, t('recap.reference')), h('pre', { class: 'sql' }, s.lab?.ddl ?? s.solution)))), // lab step: the reference index, not the slow query
     // One way on (v10 critic #3): the task bar's continue button for a story task, the wrap-up for a promotion review.
     tk.lane && next ? h('button', { type: 'button', class: 'primary', onclick: () => actions.selectTicket(next.id) }, t('nav.continueBack'))
-      : next ? null : h('p', {}, t('recap.allDone')));
+      : next ? null : h('p', {}, optionalLeft() ? t('recap.allDoneOptional', { n: optionalLeft() }) : t('recap.allDone')));
 }
 
 /**

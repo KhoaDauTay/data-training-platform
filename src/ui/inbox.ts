@@ -1,6 +1,6 @@
 import { getLang, t } from '../i18n';
 import { roleLine } from '../people';
-import { visibleTickets } from '../progress';
+import { isOptional, passedChapters, visibleTickets } from '../progress';
 import { actions, app, done, unlockedTables } from '../state';
 import { cx, DEPT_CHIP, deptColor } from '../theme';
 import { textOf, type Ticket } from '../tickets';
@@ -12,7 +12,8 @@ import { noDomain, setActionButton } from './topbar';
 export function renderInbox(): void {
   const d = done();
   const visible = visibleTickets(app.tickets, d);
-  const fresh = visible.filter((x) => !d.has(x.id)).length;
+  const passed = passedChapters(app.tickets, d);
+  const fresh = visible.filter((x) => !d.has(x.id) && !isOptional(x, d, passed)).length; // L145: optional tasks are no news
   // v15: the open domain's mail is no news to a "SQL only" player or in the General workspace (no red dot there).
   const badge = noDomain() ? 0 : fresh;
   setActionButton(byId('inbox-btn'), t('top.inbox'), badge, t('top.inboxNew', { n: badge }));

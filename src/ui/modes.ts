@@ -4,7 +4,7 @@ import type { Drill } from '../general';
 import { knownSkills, type HomeModel } from '../home';
 import { getLang, isMac, keyLabels, locale, t } from '../i18n';
 import { LANE_XP } from '../lanes';
-import { applyResult, isSuccess, movedToday, nextCard, pickForSkill, retryItem, type PracticeItem } from '../practice';
+import { applyResult, isSuccess, movedToday, nextCard, pickForSkill, retryItem, seedReview, type PracticeItem } from '../practice';
 import { CHAPTERS, chapterTitle, moduleTitle, nextTicket, SKILLS } from '../progress';
 import { hashOf, learnAdvOf, learnModuleOf, learnSkillOf, parseRoute } from '../route';
 import {
@@ -16,7 +16,7 @@ import { textOf, type Ticket } from '../tickets';
 import { BTN_GO, BTN_SECONDARY, CARD, cx } from '../theme';
 import { applyVariant } from '../variants';
 import { hints, renderBrief, shapeCard } from './brief';
-import { goalCard, skillChips, wrapUp } from './chapterView';
+import { earlyCard, goalCard, optionalNote, skillChips, wrapUp } from './chapterView';
 import { announce, byId, h, loader, nodes, reducedMotion, richText } from './dom';
 import { boonMark, enterMark, escOwned, guideHooks, guideSlot } from './coach';
 import { showPane } from './paneTabs';
@@ -63,7 +63,7 @@ function enter(mode: Mode): void {
 const itemTicket = (i: PracticeItem): Ticket | undefined =>
   DRILL_ID.test(i.ticketId) ? drillUi?.reviewTicket(i.ticketId) : templates().has(i.ticketId) ? applyVariant(templates().get(i.ticketId)!, i.variant) : undefined;
 
-export function startPractice(items: PracticeItem[], warmup = false): boolean {
+export function startPractice(items: PracticeItem[], warmup = false, placement = false): boolean {
   const usable = items.flatMap((i) => (itemTicket(i) ? [i] : []));
   if (usable.length === 0) return false;
   enter({
@@ -78,9 +78,18 @@ export function startPractice(items: PracticeItem[], warmup = false): boolean {
       passed: 0,
       draft: '',
       warmup,
+      placement,
     },
   });
   return true;
+}
+
+/** v17 I4 (L145): the General entry check (items from learn.ts placementItems), a practice run of drills on `lab`. */
+export function startPlacement(items: PracticeItem[]): void {
+  void loadDrillUi().then((m) => m.prepareLab()).then(() => void startPractice(items, false, true), () => {
+    app.notice = { key: 'learn.failed' };
+    ctx?.rerender();
+  });
 }
 
 export const startSandbox = (): void => enter({ kind: 'sandbox' });
@@ -105,7 +114,7 @@ const loadDrillUi = () => import('./drillBrief').then((m) => {
     db: ctx!.db, activeSchema, h, nodes, richText, byId, loader, getLang, locale, app, actions, persist, schemaHooks, erMeta, stepKey, session, hintsShown, today,
     isSuccess, movedToday, nextCard, SKILLS, hashOf, textOf, hints, shapeCard, tryPreview, openLesson, leave: leaveGeneral, startDrillMode, loadGeneral, generalNow, loadLessons,
     lessonSeen: isSeen, knownSkills, learnSkillOf, learnAdvOf, learnModuleOf, moduleTitle, illustration, loadedGsap, loadGsap, reducedMotion, icon, skillIcon, loadTickets, CHAPTERS,
-    announce, readJson, writeJson, readTour, boonMark, enterMark, escOwned, guideHooks, guideSlot, showPane, parseRoute, mod: keyLabels(isMac).mod,
+    startPlacement, announce, readJson, writeJson, readTour, boonMark, enterMark, escOwned, guideHooks, guideSlot, showPane, parseRoute, mod: keyLabels(isMac).mod,
   });
   return (drillUi = m);
 });
@@ -181,6 +190,15 @@ export function onPracticeSolved(): void {
   if (!item || run.result) return;
   const ok = isSuccess(run.wrong, run.hints);
   const day = today();
+  if (run.placement) { // L145: the entry check never moves a box down, never counts in the practice totals
+    if (ok) app.save.review = seedReview(app.save.review, item.skills, day);
+    persist(true);
+    run.result = ok ? 'ok' : 'weak';
+    if (ok) run.passed++;
+    reviewedDrills.add(item.ticketId);
+    ctx?.rerender();
+    return;
+  }
   // Warm-up: a success moves each box at most once a day, so redoing the warm-up cannot farm boxes (derived from the save).
   const skills = ok ? item.skills.filter((s) => !movedToday(app.save.review[s], day)) : item.skills; // any practice path (review, warm-up, redo): a skill moves up at most once a day
   const next = applyResult({ review: app.save.review, practice: app.save.practice }, skills, ok, day);
@@ -220,12 +238,16 @@ function sandboxPane(host: HTMLElement): void {
 
 function practicePane(host: HTMLElement, run: PracticeRun): void {
   const finished = run.index >= run.items.length;
-  const status = finished ? t('prac.done', { ok: run.passed, n: run.items.length }) : t('prac.banner', { i: run.index + 1, n: run.items.length });
+  const p = run.placement; // L145: the General entry check has its own words
+  const status = finished ? t(p ? 'place.done' : 'prac.done', { ok: run.passed, n: run.items.length })
+    : t(p ? 'place.banner' : 'prac.banner', { i: run.index + 1, n: run.items.length });
   const banner = h('div', { class: 'mb-3 rounded-(--r-ctl) bg-accent-soft p-3 ring-1 ring-accent', role: 'status' },
     finished ? h('h2', TITLE, status) : h('p', { class: 'm-0 font-semibold' }, status),
-    run.result ? h('p', { class: 'mt-1 mb-0' }, t(run.result === 'ok' ? 'prac.ok' : 'prac.weak')) : null,
+    run.result ? h('p', { class: 'mt-1 mb-0' }, t(run.result === 'ok' ? (p ? 'place.ok' : 'prac.ok') : (p ? 'place.weak' : 'prac.weak'))) : null,
+    p && !finished && !run.result ? h('p', { class: 'mt-1 mb-0 text-body-sm' }, t('place.rule')) : null,
     h('div', { class: 'actions mb-0' },
       run.result && !finished ? h('button', { type: 'button', class: 'primary', onclick: () => nextItem() }, t('prac.next')) : null,
+      p && !finished && !run.result ? h('button', { type: 'button', onclick: () => nextItem() }, t('place.skip')) : null, // a skipped item writes nothing
       generalWork() ? h('button', { type: 'button', onclick: () => leaveGeneral() }, t('prac.exitReview'))
         : h('button', { type: 'button', onclick: () => backToStory() }, t('prac.exit'))));
   const body = h('div');
@@ -244,8 +266,12 @@ function practicePane(host: HTMLElement, run: PracticeRun): void {
 function storyPane(host: HTMLElement): void {
   const tk = selected();
   renderBrief(host, tk, app.stepIndex);
-  host.querySelector('[data-brief-extra]')?.replaceWith(skillChips(tk) ?? '', (tk.beat === 'teach' && goalCard(tk.chapter)) || '');
-  if (!done().has(tk.id)) return;
+  host.querySelector('[data-brief-extra]')?.replaceWith(skillChips(tk) ?? '', optionalNote(tk) ?? '', (tk.beat === 'teach' && goalCard(tk.chapter)) || '');
+  if (!done().has(tk.id)) {
+    const early = earlyCard(tk); // L145: last in the brief, under the task, so it never competes with the work
+    if (early) host.append(early);
+    return;
+  }
   if (tk.beat !== 'boss') {
     host.append(h('div', { class: 'actions' }, h('button', { type: 'button', onclick: () => startRetry(tk.id) }, t('prac.retry'))));
     return;

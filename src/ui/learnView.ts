@@ -1,7 +1,7 @@
 import type { AdvNode, Drill, General } from '../general';
 import type { Params } from '../i18n';
 import { learnText, type LearnKey } from '../i18n/learn';
-import { CHALLENGE_XP, moduleState, nodeState, skillState, stamper, type LearnCtx } from '../learn';
+import { CHALLENGE_XP, moduleState, nodeState, placementItems, skillState, stamper, type LearnCtx } from '../learn';
 import type { Skill } from '../progress';
 import type { DrillDeps } from './drillBrief';
 import { replayBtn } from './guideList';
@@ -201,7 +201,26 @@ function overview(c: LearnCtx): HTMLElement {
     // L87: the header picture is Boon teaching Lily, section 'teach' of src/ui/homeView.ts (main), drawn above this one
     slot('learn-head'), // v13 G1 step 1: right under the teaching scene, Boon speaks from it
     h('p', { class: 'm-0 flex flex-wrap items-center justify-between gap-2 text-muted' }, lt('learn.stats', { n: known.size, total: c.skills.length, m: mastered, k: nodesDone, nodes: graded.length }), replayBtn('path')),
+    placementCard(c),
     h('div', { class: 'grid gap-6 lg:grid-cols-2' }, sql, adv));
+}
+
+/**
+ * v17 I4 (L145): "Already know SQL?": the entry check, one drill per module not learned yet. Never offered to a beginner
+ * (`gated`: picked "I'm new" on the welcome screen); for everyone else a quiet card with a secondary button.
+ */
+function placementCard(c: LearnCtx): HTMLElement | null {
+  const tour = d$.readTour();
+  if (tour && !tour.knows) return null;
+  const items = placementItems(c.skills, c.general, c.known);
+  if (items.length === 0) return null;
+  const { h } = d$;
+  return h('section', { class: 'flex flex-wrap items-center gap-3 rounded-(--r-card) bg-panel px-5 py-4 ring-1 ring-line', 'aria-labelledby': 'place-title' },
+    h('div', { class: 'min-w-48 flex-1' },
+      h('h2', { id: 'place-title', class: 'm-0 text-body font-bold' }, lt('place.title')),
+      h('p', { class: 'mt-1 mb-0 text-body-sm text-muted' }, lt('place.intro', { n: items.length }))),
+    h('button', { type: 'button', class: cx(BTN, 'border border-accent bg-panel py-2 font-bold text-accent hover:bg-accent-soft'), onclick: () => d$.startPlacement(items) },
+      lt('place.start', { n: items.length })));
 }
 
 /** Label of a skill id or a node id. */

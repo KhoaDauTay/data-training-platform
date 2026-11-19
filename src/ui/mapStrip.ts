@@ -1,7 +1,7 @@
 import { getLang, t, type Key } from '../i18n';
 import { LANE_XP, laneLabel } from '../lanes';
 import { activeDomain, domainText } from '../domains';
-import { chaptersOf, chapterTitle } from '../progress';
+import { chaptersOf, chapterTitle, nextTicket, passedChapters, visibleTickets } from '../progress';
 import { domainArt } from './domainArt';
 import { derive, ROUTES, type Harbor } from '../scene';
 import { artSlot } from '../art/load';
@@ -16,9 +16,12 @@ import { laneInfo, lanePanel, stateOf, tasksOf, wirePins } from './lanePanel';
 import { startLane, toCurrentTask } from './modes';
 
 /** `lane`: the lane side task open in the workspace (Plan 5); the bar then shows that lane's tasks instead of the chapter's. */
-export interface StripView { tickets: Ticket[]; completed: Set<string>; selectedId: string; lane?: Ticket }
-type TaskState = 'done' | 'current' | 'locked';
-const STATE_KEY: Record<Exclude<TaskState, 'locked'>, Key> = { done: 'map.beat.done', current: 'map.beat.current' };
+/** `early`: the promotion review offered before the chapter's tasks (L145, `earlyOffer`); its button is open, not locked. */
+export interface StripView { tickets: Ticket[]; completed: Set<string>; selectedId: string; lane?: Ticket; early?: string }
+type TaskState = 'done' | 'current' | 'optional' | 'early' | 'locked';
+const STATE_KEY: Record<Exclude<TaskState, 'locked'>, Key> = {
+  done: 'map.beat.done', current: 'map.beat.current', optional: 'map.beat.optional', early: 'map.beat.early',
+};
 const ARROW = 'grid size-10 shrink-0 place-items-center p-0 sm:size-8';
 
 /**
@@ -141,7 +144,10 @@ export function createMapStrip(host: HTMLElement): { update(view: StripView): vo
       }
       const lang = getLang();
       const open = tickets.find((x) => x.id === selectedId);
-      const first = tickets.find((x) => !completed.has(x.id));
+      const first = nextTicket(tickets, completed);
+      const reach = new Set(visibleTickets(tickets, completed).map((x) => x.id));
+      if (view.early) reach.add(view.early);
+      const passed = passedChapters(tickets, completed);
       const chapter = open?.chapter ?? first?.chapter ?? 1;
       const nav = navTargets(tickets, completed, selectedId);
       const title = (id: string) => textOf(tickets.find((x) => x.id === id)!, lang).title;
@@ -154,13 +160,13 @@ export function createMapStrip(host: HTMLElement): { update(view: StripView): vo
         'aria-label': t('nav.chapter'),
         onchange: () => {
           const c = Number(select.value);
-          const id = first?.chapter === c ? first.id : tickets.find((x) => x.chapter === c && completed.has(x.id))?.id;
+          const id = first?.chapter === c ? first.id : tickets.find((x) => x.chapter === c && reach.has(x.id))?.id;
           if (id) go(id);
         },
       }, ...chaptersOf().map((c) => {
         const own = tickets.filter((x) => x.chapter === c.chapter);
-        const reachable = own.some((x) => completed.has(x.id) || x === first);
-        const allDone = own.length > 0 && own.every((x) => completed.has(x.id));
+        const reachable = own.some((x) => reach.has(x.id));
+        const allDone = own.length > 0 && (own.every((x) => completed.has(x.id)) || passed.has(c.chapter));
         return h('option', { value: String(c.chapter), disabled: !reachable, selected: c.chapter === chapter },
           t('nav.chapterOption', { n: c.chapter, title: chapterTitle(c.chapter, lang) }) + (allDone ? ' ✓' : reachable ? '' : ` ${t('nav.chapterLocked')}`));
       }));
@@ -175,7 +181,8 @@ export function createMapStrip(host: HTMLElement): { update(view: StripView): vo
       };
 
       const tasks = tickets.filter((x) => x.chapter === chapter).map((x, i) => {
-        const state: TaskState = completed.has(x.id) ? 'done' : x === first ? 'current' : 'locked';
+        const state: TaskState = completed.has(x.id) ? 'done' : x === first ? 'current'
+          : x.id === view.early ? 'early' : reach.has(x.id) ? 'optional' : 'locked';
         const n = i + 1;
         // A locked task never shows its title (no spoilers): only "{n}. Locked".
         const label = state === 'locked' ? `${n}. ${t('nav.taskLocked')}` : t('nav.task', { n, title: textOf(x, lang).title, state: t(STATE_KEY[state]) });

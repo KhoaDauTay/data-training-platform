@@ -181,14 +181,47 @@ export function tablesUnlocked(chapter: number, tables: Record<number, string[]>
     .flatMap(([, tables]) => tables);
 }
 
+/** Chapters whose promotion review (beat: boss) is in `completed`. */
+export const passedChapters = (tickets: readonly Ticket[], completed: ReadonlySet<string>): Set<number> =>
+  new Set(tickets.filter((t) => t.beat === 'boss' && completed.has(t.id)).map((t) => t.chapter));
+
+/**
+ * v17 I4 (D-N11, L145): a normal task not done in a chapter whose promotion review is passed (taken early) is optional:
+ * still playable with its XP, never "the next task". With a linear save (no review taken early) nothing is optional.
+ */
+export const isOptional = (t: Ticket, completed: ReadonlySet<string>, passed: ReadonlySet<number>): boolean =>
+  t.beat !== 'boss' && !completed.has(t.id) && passed.has(t.chapter);
+
+/** Next task in story order: the first not done that is not optional. A linear save gets the first not done, as before L145. */
 export function nextTicket(tickets: Ticket[], completed: Set<string>): Ticket | undefined {
-  return tickets.find((t) => !completed.has(t.id));
+  const passed = passedChapters(tickets, completed);
+  return tickets.find((t) => !completed.has(t.id) && !passed.has(t.chapter));
 }
 
+/** Tasks the player can open: done, the next one, and the optional ones of chapters passed early (L145). */
 export function visibleTickets(tickets: Ticket[], completed: Set<string>): Ticket[] {
   const next = nextTicket(tickets, completed);
-  return tickets.filter((t) => completed.has(t.id) || t === next);
+  const passed = passedChapters(tickets, completed);
+  return tickets.filter((t) => completed.has(t.id) || t === next || isOptional(t, completed, passed));
 }
+
+/**
+ * v17 I4 (D-N11, L145): the promotion review the player may take now, before the chapter's normal tasks: the review of
+ * the chapter they have entered (the next task's chapter), unless the next task already is that review. Whether to offer
+ * it is the UI's call (`earlyOffer`, src/ui/chapterView.ts: never to beginners in chapter 1); its tables are open from the
+ * chapter's first task, so nothing else changes.
+ */
+export function earlyReview(tickets: Ticket[], completed: Set<string>): Ticket | undefined {
+  const next = nextTicket(tickets, completed);
+  if (!next || next.beat === 'boss') return undefined;
+  return tickets.find((t) => t.chapter === next.chapter && t.beat === 'boss' && !completed.has(t.id));
+}
+
+/** Skills a passed chapter counts as learned (L145): what its tasks teach, done or skipped. */
+export const passedSkills = (tickets: readonly Ticket[], completed: ReadonlySet<string>): string[] => {
+  const passed = passedChapters(tickets, completed);
+  return tickets.filter((t) => passed.has(t.chapter)).flatMap((t) => t.grants);
+};
 
 export function currentChapter(tickets: Ticket[], completed: Set<string>): number {
   return nextTicket(tickets, completed)?.chapter ?? Math.max(1, ...tickets.map((t) => t.chapter));
@@ -213,7 +246,7 @@ export interface Rank {
 }
 
 export function rankOf(tickets: Ticket[], completed: Set<string>, chapters: Chapter[] = chaptersOf()): Rank {
-  const passed = tickets.filter((t) => t.beat === 'boss' && completed.has(t.id)).map((t) => t.chapter).sort((a, b) => a - b);
+  const passed = [...passedChapters(tickets, completed)].sort((a, b) => a - b);
   const reached = chapters.filter((c) => passed.includes(c.chapter));
   const tier = reached.filter((c) => c.tier).pop()?.career;
   const career = reached[reached.length - 1]?.career;
