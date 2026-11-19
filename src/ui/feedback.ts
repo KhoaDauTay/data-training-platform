@@ -2,9 +2,9 @@ import { DbFailedError, DbRestartError, QueryTimeoutError, WorkerTaskError } fro
 import { sqlErrorInfo, type QueryResult } from '../db/run';
 import { errorMessage, type GradeResult } from '../grader';
 import { t, type Key } from '../i18n';
-import { InvalidSaveError, NewerSaveError } from '../save';
+import { DRILL_ID, InvalidSaveError, NewerSaveError } from '../save';
 import { h } from './dom';
-import { formatCell } from './resultTable';
+import { formatCell, renderResult } from './resultTable';
 import type { Mascot, Pose } from './mascots';
 import { explainError } from './sqlErrors';
 
@@ -37,6 +37,24 @@ export function gradeMessage(r: Exclude<GradeResult, { ok: true }>): string {
       return parts.join(' ');
     }
   }
+}
+
+/**
+ * L151 (v10 N3): a wrong story, lane or E-com/Finance submit (not a drill, which has its own diff, nor an interview question or a
+ * promotion review, which show no rows) offers, from the step's second wrong submit, up to 3 of the player's OWN rows that are not
+ * in the answer. Never the missing rows: those are answer values (L25, L84). undefined = nothing to offer.
+ */
+export function extraRowsOffer(r: GradeResult, wrongs: number, tk: { id: string; beat: string }): unknown[][] | undefined {
+  if (r.ok || r.reason !== 'rows' || !r.extra || !r.extraRows.length || wrongs < 2 || tk.beat === 'boss' || DRILL_ID.test(tk.id)) return undefined;
+  return r.extraRows;
+}
+
+/** The offer, closed by default: the player's own column names and types (their result, not the Solution's), ≤ 3 rows. */
+export function extraRowsView(result: QueryResult, rows: unknown[][], n: number, open: boolean, onToggle: (open: boolean) => void): HTMLElement {
+  const d = h('details', { class: 'mt-2 text-body-sm', open, ontoggle: () => onToggle(d.open) },
+    h('summary', { class: 'cursor-pointer font-semibold' }, t('work.extraRows')),
+    h('div', { class: 'mt-1' }, renderResult({ columns: result.columns, types: result.types, rows }, undefined, 3, t('diff.caption', { shown: rows.length, n }))));
+  return d;
 }
 
 /** Every error class carries no text of its own; this is the one place that turns them into words. */

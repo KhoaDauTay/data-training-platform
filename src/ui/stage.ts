@@ -78,6 +78,23 @@ function fold(mini: boolean): void {
   byId('stage-replay').hidden = !mini;
   const text = byId('stage-text');
   text.title = mini ? text.textContent ?? '' : '';
+  if (mini) stage.style.bottom = ''; // v10 F3: folded, back to its bottom edge
+}
+/**
+ * v10 F3 (L153): the full dock covers neither the Result tab's Pin chip (pin.ts: the last item of the line above the table) nor the
+ * "Correct!" line under the editor. It stays at its bottom edge when it can, else rises just above one of them, never over the top
+ * bar (64 px); fold(true) puts it back.
+ */
+function clearPin(): void {
+  const stage = byId('stage');
+  stage.style.bottom = '';
+  if (stage.hidden) return;
+  const box = stage.getBoundingClientRect();
+  const keep = [...document.querySelectorAll('#panel .res-fill > div:not(.result) > :last-child, #work [role=status]')]
+    .map((e) => e.getBoundingClientRect()).filter((r) => r.width && r.height && r.right > box.left && r.left < box.right);
+  const free = (top: number): boolean => top >= 64 && !keep.some((r) => r.bottom > top && r.top < top + box.height);
+  const top = [box.top, ...keep.map((r) => r.top - 8 - box.height).sort((a, b) => b - a)].find(free);
+  if (top !== undefined && top !== box.top) stage.style.bottom = `${innerHeight - top - box.height}px`;
 }
 
 function hide(): void {
@@ -113,6 +130,7 @@ async function drawAndPlay(c: Ctx, owner: Ctx = c): Promise<void> {
   }
   if (shown !== owner) return; // hidden (route change) or a newer completion took the dock while the chunk loaded
   art.build(c);
+  if (byId('stage').dataset.mini !== 'true') clearPin(); // the scene's height is known now
   // D8b-6: Lily cheers in the dock's corner for every kind, popping in beside the last step (no extra time). Decorative
   // (the sentence says it all), never takes a click; hidden below sm where the cards fill the dock's width.
   const lily = mascot('lily', 'cheer', 'pointer-events-none absolute right-2 bottom-2 size-14 max-sm:hidden');

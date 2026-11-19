@@ -1,7 +1,7 @@
 import type { QueryResult } from '../db/run';
 import { t } from '../i18n';
 import { cx } from '../theme';
-import { h } from './dom';
+import { h, reducedMotion } from './dom';
 
 export const MAX_ROWS = 500;
 const DATE_OID = 1082;
@@ -31,6 +31,18 @@ const TYPE_NAMES: Record<number, string> = {
 export const typeName = (oid: number | undefined): string => (oid === undefined ? '' : TYPE_NAMES[oid] ?? '');
 /** D-U10: one row × one column also shows as a big number above the table (the table stays: grading compares tables). */
 export const isSingleValue = (r: QueryResult): boolean => r.rows.length === 1 && r.columns.length === 1;
+
+/** L153 (v10 A4): results that just came back from a Run/Submit (work.ts), with the time they arrived. */
+const arrived = new WeakMap<QueryResult, number>();
+/** Marks `r` as just arrived: its table, drawn within the next 800 ms, fades its first rows in once. */
+export const markArrived = (r: QueryResult): void => void arrived.set(r, Date.now());
+/** A redraw later (tab switch, language) never replays it; a redraw inside the window replays at most 400 ms of fade. */
+const ARRIVAL_MS = 800;
+/** Opacity only, on the first 10 rows, 25 ms apart, 150 ms each: ≤ 375 ms. None under reduced motion (Element.animate ignores the CSS rule). */
+function fadeIn(rows: HTMLElement[]): void {
+  if (reducedMotion()) return;
+  rows.slice(0, 10).forEach((tr, i) => tr.animate?.([{ opacity: 0 }, { opacity: 1 }], { duration: 150, delay: i * 25, easing: 'ease-out', fill: 'backwards' }));
+}
 
 export interface ResultOpts {
   /** The Result tab (W1): the table fills the panel and is its only scroll area, the caption moves into the status bar, 1×1 gets the number card. */
@@ -66,6 +78,8 @@ export function renderResult(r: QueryResult, mark?: unknown[], limit = MAX_ROWS,
         bad ? h('span', { class: 'mr-1 rounded-(--r-chip) bg-bad px-1.5 font-bold text-on-accent' }, t('res.mismatch')) : null, String(n + 1)),
       ...row.map((v, i) => cell(v, i)));
   });
+  const at = arrived.get(r);
+  if (at !== undefined && Date.now() - at < ARRIVAL_MS) fadeIn(body);
   const one = fill && isSingleValue(r)
     ? h('div', { class: 'mb-2 inline-flex flex-col self-start rounded-(--r-ctl) bg-surface-2 px-5 py-3', 'aria-hidden': 'true' },
       h('span', { class: 'text-caption text-muted' }, r.columns[0]),

@@ -1,6 +1,6 @@
 import { getLang, t, type Key } from '../i18n';
 import { loadLessonPrefs } from '../lessons';
-import { ackTour, readTour, TOUR_SLOT, TOUR_STEPS, tourEscSkips, tourStep, type TourFacts, type TourSlot } from '../onboarding';
+import { ackTour, readTour, TOUR_SLOT, TOUR_STEPS, tourEscSkips, tourLeft, tourStep, type TourFacts, type TourSlot } from '../onboarding';
 import { SKILLS } from '../progress';
 import { isStory } from '../session';
 import { app, done } from '../state';
@@ -72,11 +72,16 @@ function facts(): TourFacts {
 }
 
 const TEXT: Record<number, Key> = { 1: 'tour.1', 2: 'tour.2', 3: 'tour.3', 4: 'tour.4', 5: 'tour.5', 6: 'tour.6', 7: 'tour.7', 8: 'tour.8' };
-const skillLabel = (id: string | undefined): string => SKILLS.find((s) => s.id === id)?.label[getLang()] ?? '';
+/** Every skill a ticket teaches, as one list ("SELECT and WHERE"): Finance's ticket 1 teaches two (L152). */
+const skillLabels = (ids: readonly string[] = []): string => {
+  const lang = getLang();
+  const labels = ids.map((id) => SKILLS.find((s) => s.id === id)?.label[lang]).filter((l): l is string => !!l);
+  return new Intl.ListFormat(lang, { type: 'conjunction' }).format(labels);
+};
 /** A step's words, with ticket 1's sender and skills filled in (also listed by the welcome screen's replay, V10). */
 export function tourText(step: number): string {
   const [first, second] = app.tickets;
-  return t(TEXT[step], { name: first?.from.name ?? '', skill: skillLabel(first?.grants[0]), next: skillLabel(second?.grants[0]) });
+  return t(TEXT[step], { name: first?.from.name ?? '', skill: skillLabels(first?.grants), next: skillLabels(second?.grants) });
 }
 
 function skip(): void {
@@ -96,6 +101,11 @@ function reveal(el: HTMLElement, step: number): void {
     scrolled = step;
     enterMark(el); // laid out for the first time at this step: a redraw of the same step never replays it
     el.scrollIntoView({ block: 'nearest' }); // scroll only: focus stays where the player is typing
+    if (step !== 1) return;
+    // L152 (v10 F2): step 1 talks about the Expected result card right under it: bring that card into view too, never the mark out of it
+    el.closest('[data-tour-slot]')?.nextElementSibling?.scrollIntoView({ block: 'nearest' });
+    const box = el.closest('#ticket')?.getBoundingClientRect();
+    if (box && el.getBoundingClientRect().top < box.top) el.scrollIntoView({ block: 'start' });
   });
 }
 
@@ -106,7 +116,11 @@ export function tourRegion(): TourSlot | undefined {
 }
 
 /** Boon's mark (tour and guides, v8 §2.1): --sun-ink on --sun (8.3:1), a label, the words and its buttons. */
-export function boonMark(o: { label: string; aria: string; text: string; buttons: (HTMLElement | null)[]; mascot?: boolean; data: Record<string, string> }): HTMLElement {
+export function boonMark(o: { label: string; aria: string; text: string; buttons: (HTMLElement | null)[]; mascot?: boolean; compact?: boolean; data: Record<string, string> }): HTMLElement {
+  // L152: one line (label, the words cut with an ellipsis, the buttons), so it no longer pushes the Expected result card down
+  if (o.compact) return h('aside', { class: 'tour my-2 flex items-center gap-2 rounded-(--r-card) bg-sun px-3 py-1.5 text-sun-ink', role: 'note', tabindex: '-1', 'aria-label': o.aria, ...o.data },
+    h('p', { class: 'm-0 min-w-0 flex-1 truncate', title: o.text }, h('span', { class: 'text-caption font-bold tracking-wider uppercase' }, o.label), ' · ', o.text),
+    ...o.buttons);
   return h('aside', { class: 'tour my-3 flex items-start gap-3 rounded-(--r-card) bg-sun p-3 text-sun-ink', role: 'note', tabindex: '-1', 'aria-label': o.aria, ...o.data },
     o.mascot === false ? null : mascot('boon', 'point', 'size-12'),
     h('div', { class: 'min-w-0 flex-1' },
@@ -124,6 +138,9 @@ export function enterMark(el: HTMLElement): void {
   if (boon) { boon.classList.add('cq-hop'); once(boon, 'cq-hop'); }
 }
 
+/** Step 1 shrinks to one line once the player has run something (L152, v10 F2): they are past reading the brief. */
+const compactNow = (step: number): boolean => step === 1 && app.lastRun !== undefined;
+
 function mark(step: number): HTMLElement {
   const after = (n: number, toPath = false) => () => {
     ackTour(n);
@@ -132,7 +149,8 @@ function mark(step: number): HTMLElement {
     else document.querySelector<HTMLElement>('[data-tour-mark]')?.focus(); // the next step's mark, wherever it now sits
   };
   const label = t('tour.label', { i: step, n: TOUR_STEPS });
-  const el = boonMark({ label, aria: label, text: tourText(step), data: { 'data-tour-mark': String(step) }, buttons: [
+  const compact = compactNow(step);
+  const el = boonMark({ label, aria: label, text: tourText(step), compact, data: { 'data-tour-mark': String(step), ...(compact ? { 'data-tour-compact': '' } : {}) }, buttons: [
     step === 1 || step === 3 ? h('button', { type: 'button', class: 'primary', onclick: after(step) }, t('tour.next')) : null,
     step === 8 ? h('button', { type: 'button', class: 'primary', onclick: after(8) }, t('tour.done')) : null,
     step === 8 ? h('button', { type: 'button', onclick: after(8, true) }, t('tour.seePath')) : null,
@@ -152,11 +170,14 @@ export function tourSlot(slot: TourSlot): HTMLElement {
 
 /** After anything that may move the tour (rerender, a tab opened, an example run): refill every slot on the page. */
 export function refreshTour(): void {
-  const step = tourStep(facts());
+  const f = facts();
+  if (tourLeft(f)) ackTour(TOUR_STEPS); // L152: step 8 was shown and the player moved on: the tour is over, here and in every domain
+  const step = tourStep(f);
   if (step !== undefined && step > 1) ackTour(step - 1); // passed steps survive a reload (app.lastRun does not)
   for (const slot of document.querySelectorAll<HTMLElement>('[data-tour-slot]')) {
     const here = step !== undefined && TOUR_SLOT[step] === slot.dataset.tourSlot;
-    if (here && slot.firstElementChild?.getAttribute('data-tour-mark') === String(step)) continue; // unchanged: keep focus inside
+    const old = slot.firstElementChild;
+    if (here && old?.getAttribute('data-tour-mark') === String(step) && old.hasAttribute('data-tour-compact') === compactNow(step)) continue; // unchanged: keep focus inside
     slot.replaceChildren(...(here ? [mark(step)] : []));
   }
 }

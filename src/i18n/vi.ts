@@ -899,4 +899,7 @@ export const vi = {
   'pin.locked': 'Ghim lên: mở khi học xong {skill} (ch. {n})',
   'lock.tabsHidden': 'Thêm {n} tab mở dần khi bạn làm tiếp',
   'lock.skillChapter': 'Đang khóa · mở ở chương {n}',
+  // ---- v10 Track B (L151–L153): feedback after a run ----
+  'work.extraRows': 'Xem dòng thừa của bạn',
+  'work.noRows': 'Truy vấn không còn dòng nào: một điều kiện lọc hoặc phép ghép bảng đang loại hết dòng. Bỏ bớt từng điều kiện rồi chạy lại để thấy dòng mất ở đâu.',
 } satisfies Record<string, Msg>;
