@@ -20,9 +20,9 @@ type Load = () => Promise<unknown>;
 type Scope = { postMessage: (m: unknown) => void; onmessage: unknown };
 
 /** Ops that change data: the next run re-seeds the lab first, so every run starts from pristine data. */
-const WRITES = new Set<DynamoOp>(['PutItem', 'UpdateItem', 'DeleteItem', 'BatchWriteItem', 'CreateTable']);
+const WRITES = new Set<DynamoOp>(['PutItem', 'UpdateItem', 'DeleteItem', 'BatchWriteItem', 'CreateTable', 'TransactWriteItems', 'ExecuteTransaction']);
 /** Ops that report ConsumedCapacity when asked; a request that does not say gets 'TOTAL' (the Query-vs-Scan lesson). */
-const CAPACITY = new Set<DynamoOp>(['GetItem', 'PutItem', 'UpdateItem', 'DeleteItem', 'Query', 'Scan', 'BatchGetItem', 'BatchWriteItem', 'ExecuteStatement']);
+const CAPACITY = new Set<DynamoOp>(['GetItem', 'PutItem', 'UpdateItem', 'DeleteItem', 'Query', 'Scan', 'BatchGetItem', 'BatchWriteItem', 'ExecuteStatement', 'TransactGetItems', 'TransactWriteItems', 'ExecuteTransaction']);
 
 async function hook(load: Load): Promise<Call> {
   const g = globalThis as unknown as Scope;
@@ -61,7 +61,9 @@ function toError(e: unknown): Error {
 
 function normalize(op: DynamoOp, raw: Record<string, unknown>, ms: number): DynamoResult {
   const r = raw as { Items?: Item[]; Item?: Item; Responses?: Record<string, Item[]>; Attributes?: Item; Count?: number; ScannedCount?: number; ConsumedCapacity?: unknown; LastEvaluatedKey?: Item };
-  const Items = r.Items ?? (r.Item ? [r.Item] : r.Responses ? Object.values(r.Responses).flat() : r.Attributes ? [r.Attributes] : []);
+  // TransactGetItems and ExecuteTransaction answer with `Responses: [{ Item }]` (one per action, in order); BatchGetItem with `Responses: { table: items }`.
+  const resp = r.Responses as unknown;
+  const Items = r.Items ?? (r.Item ? [r.Item] : Array.isArray(resp) ? (resp as { Item?: Item }[]).flatMap((x) => (x?.Item ? [x.Item] : [])) : r.Responses ? Object.values(r.Responses).flat() : r.Attributes ? [r.Attributes] : []);
   const out: DynamoResult = { op, Items, Count: r.Count ?? Items.length, raw, ms };
   if (r.ScannedCount !== undefined) out.ScannedCount = r.ScannedCount;
   if (r.ConsumedCapacity !== undefined) out.ConsumedCapacity = r.ConsumedCapacity;
@@ -74,7 +76,7 @@ const isWrite = (req: DynamoRequest) =>
 
 /** Checks a lab's data before it reaches the engine (it comes from content, but a broken file must fail clearly). */
 export function labProblem(lab: DynamoLab): string | undefined {
-  if (!Array.isArray(lab?.tables) || lab.tables.length === 0 || lab.tables.length > MAX_LAB_TABLES) return `tables: 1..${MAX_LAB_TABLES}`;
+  if (!Array.isArray(lab?.tables) || lab.tables.length > MAX_LAB_TABLES) return `tables: 0..${MAX_LAB_TABLES}`; // 0: a CreateTable lab starts empty
   const items = Object.values(lab.items ?? {});
   if (!items.every(Array.isArray)) return 'items: { <table>: [item] }';
   const n = items.reduce((s, a) => s + a.length, 0);

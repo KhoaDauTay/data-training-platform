@@ -73,12 +73,13 @@ function diff(expected: MongoDoc[], actual: MongoDoc[]): { missing: MongoDoc[]; 
   return { missing, extra };
 }
 
-export function gradeDocs(expected: MongoDoc[], actual: MongoDoc[], opts: { ordered?: boolean } = {}): DocGrade {
+/** `strictId` (L247): `_id` is graded like any field (a covered query must drop it), so no extraId retry. */
+export function gradeDocs(expected: MongoDoc[], actual: MongoDoc[], opts: { ordered?: boolean; strictId?: boolean } = {}): DocGrade {
   const ordered = opts.ordered ?? false;
   const g = compare(expected, actual, ordered);
   if (g.ok) return g;
   const solutionHasId = expected.some((d) => Object.hasOwn(d, '_id'));
-  if (!solutionHasId && actual.some((d) => Object.hasOwn(d, '_id'))) {
+  if (!opts.strictId && !solutionHasId && actual.some((d) => Object.hasOwn(d, '_id'))) {
     const again = compare(expected, actual.map(withoutId), ordered);
     if (again.ok) return { ok: true, tip: 'extraId' };
   }
@@ -86,7 +87,7 @@ export function gradeDocs(expected: MongoDoc[], actual: MongoDoc[], opts: { orde
 }
 
 /** Grades one run against the Solution's run: values (count, distinct) exactly, documents with gradeDocs. */
-export function gradeMongo(expected: MongoResult, actual: MongoResult, opts: { ordered?: boolean } = {}): DocGrade {
+export function gradeMongo(expected: MongoResult, actual: MongoResult, opts: { ordered?: boolean; strictId?: boolean } = {}): DocGrade {
   if (expected.value !== undefined || actual.value !== undefined)
     return canon(expected.value) === canon(actual.value) ? { ok: true } : { ok: false, reason: 'value' };
   return gradeDocs(expected.docs, actual.docs, opts);

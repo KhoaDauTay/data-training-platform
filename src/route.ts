@@ -108,8 +108,14 @@ export function engineRouteOf(hash: string): { engine?: string; level?: string; 
   const m = /^#\/?engine(?:\/(postgres|mongodb|dynamodb)(?:\/([lL][1-5])\/(e-[a-z0-9-]+))?)?(?=$|[/?])/.exec(hash);
   return m ? { engine: m[1], level: m[2]?.toUpperCase(), lesson: m[3] } : {};
 }
+/**
+ * L247: `#/engine/mongodb/path[/<skill>]` → the NoSQL path page ('') or one skill's page (its slug: `mg.lookup_pipeline` is
+ * `lookup-pipeline`); undefined elsewhere. Kept forever, like the lesson hashes.
+ */
+export const enginePathOf = (hash: string): string | undefined => /^#\/?engine\/mongodb\/path(?:\/([a-z0-9-]+))?(?=$|[/?])/.exec(hash)?.[1] ?? (/^#\/?engine\/mongodb\/path(?=$|[/?])/.test(hash) ? '' : undefined);
+export const enginePathHash = (skill?: string): string => `#/engine/mongodb/path${skill ? `/${skill}` : ''}`;
 /** The lesson page's hash. */
-export const engineHash = (engine: string, level?: string, lesson?: string): string =>
+export const engineHash =(engine: string, level?: string, lesson?: string): string =>
   `#/engine/${engine}${level && lesson ? `/${level}/${lesson}` : ''}`;
 
 /** v16 (v7 §5.3): a shared query is at most as long as a dashboard card's SQL. */

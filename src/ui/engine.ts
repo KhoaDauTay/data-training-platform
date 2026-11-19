@@ -1,10 +1,12 @@
 import { grade } from '../grader';
 import { getLang, locale, t } from '../i18n';
-import { engineHash, engineRouteOf, hashOf } from '../route';
+import { engineHash, enginePathHash, enginePathOf, engineRouteOf, hashOf } from '../route';
 import { actions, app, persist } from '../state';
 import { BTN_GO, BTN_SECONDARY, CARD, cx, isDark, PILL } from '../theme';
 import { optionOrder } from '../tickets';
+import { loadedGsap, loadGsap } from '../art/load';
 import { announce, h, loader, reducedMotion } from './dom';
+import { s } from './svg';
 import { errorView } from './feedback';
 import { registerHomeSection } from './homeView';
 import { icon, NAV_ICON } from './icons';
@@ -28,8 +30,9 @@ function engineChunk(): Promise<EngineView> {
     .then(([m, src]) => {
       m.initEngine({
         h, icon, t, getLang, locale, app, persist, announce, loader, reducedMotion, isDark, renderResult, errorView, optionOrder,
-        engineHash, engineRouteOf, hashOf, rerender: () => actions.rerender(), cls: { CARD, BTN_GO, BTN_SECONDARY, PILL, cx },
-        lab: { sql: (text) => runOn('lab', text), grade: (run, solution, player, ordered) => grade(run, solution, player, ordered), verdict: verdictText },
+        engineHash, engineRouteOf, enginePathOf, enginePathHash, hashOf, rerender: () => actions.rerender(), cls: { CARD, BTN_GO, BTN_SECONDARY, PILL, cx },
+        lab: { sql: (text) => runOn('lab', text), grade: (run, solution, player, ordered) => grade(run, solution, player, ordered), verdict: verdictText, lang: getLang },
+        viz: { h, s, reducedMotion, loadedGsap, loadGsap, getLang },
       }, src);
       failed = false;
       return (view = m);

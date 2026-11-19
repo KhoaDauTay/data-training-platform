@@ -3,6 +3,8 @@ import { amcheck } from '@electric-sql/pglite/contrib/amcheck';
 import { bloom } from '@electric-sql/pglite/contrib/bloom';
 import { btree_gin } from '@electric-sql/pglite/contrib/btree_gin';
 import { btree_gist } from '@electric-sql/pglite/contrib/btree_gist';
+import { cube } from '@electric-sql/pglite/contrib/cube';
+import { earthdistance } from '@electric-sql/pglite/contrib/earthdistance';
 import { ltree } from '@electric-sql/pglite/contrib/ltree';
 import { pageinspect } from '@electric-sql/pglite/contrib/pageinspect';
 import { pg_buffercache } from '@electric-sql/pglite/contrib/pg_buffercache';
@@ -23,7 +25,7 @@ import { runCheck } from './check';
  */
 export const EXTENSIONS: Record<PgExtension, Extension> = {
   pageinspect, pg_visibility, amcheck, pg_walinspect, pg_buffercache, pg_freespacemap,
-  bloom, btree_gin, btree_gist, pg_trgm, pg_stat_statements, ltree, pgcrypto,
+  bloom, btree_gin, btree_gist, pg_trgm, pg_stat_statements, ltree, pgcrypto, cube, earthdistance,
 };
 
 /** Rows kept per step; lab output is catalog-sized, the UI shows less. */

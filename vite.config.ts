@@ -33,9 +33,8 @@ export default defineConfig({
   optimizeDeps: { exclude: ['@electric-sql/pglite'] },
   worker: { format: 'es' },
   // ui-ux-v6 §2.2: Vite 8 drops @license comments when it minifies; GSAP's licence forbids removing its notice (check-budget.mjs checks it).
-  // ENG-VIZ (L236): src/engine/viz/engineViz.ts is a second entry until ENG-CORE imports it lazily, so the chunk is built and
-  // budgeted (check-budget group engineViz) without a call site in main. Its exports are kept (preserveEntrySignatures).
-  build: { rolldownOptions: { input: { index: 'index.html', engineViz: 'src/engine/viz/engineViz.ts' }, preserveEntrySignatures: 'exports-only', output: { comments: { legal: true } } } },
+  // ENG-VIZ (L236) was a second build entry until L247: src/engine/vizRegistry.ts now loads engineViz lazily.
+  build: { rolldownOptions: { output: { comments: { legal: true } } } },
   // Vitest turns every .css import into '' unless included; tests/theme.test.ts and tests/mascots.test.ts read style.css?raw.
   test: { css: { include: [/style\.css/] }, exclude: ['**/node_modules/**', '.claude/**'], testTimeout: 60_000, hookTimeout: 60_000, setupFiles: ['tests/setup.ts'] },
 });

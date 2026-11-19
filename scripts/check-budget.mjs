@@ -19,7 +19,7 @@ const GROUPS = [
   // its worker script (69 KB gz -9) + dynoxide_bg.wasm (704) + sqlite3.wasm (391) = 1,170 KB gz, fetched only on the first
   // DynamoDB run (the lab worker itself, ~2 KB gz, falls in `worker`). Optional (4th field) until a page imports
   // src/engine/dynamo/client.ts: no importer = nothing built. Never precached (scripts/offline.mjs).
-  ['dynamo', /^(dynoxide-worker|dynoxide_bg|sqlite3)-/, 1300, 'optional'],
+  ['dynamo', /^(dynoxide-worker|dynoxide_bg|sqlite3)-/, 1300], // required since L247 (LAB_RUNNERS.dynamodb imports the client)
   ['worker', /^worker-/, 160],
   ['pglite', /^pglite-/, 5560],
   ['initdb', /^initdb-/, 140],
@@ -51,12 +51,19 @@ const GROUPS = [
   // checkers; the .wasm/.data are shared with the game worker) and the contrib tarballs it fetches only when a lab names
   // them (already gzip). 133 / 136 / 1150 KB measured 2026-11-20. Required since ENG-CORE's LAB_RUNNERS.postgres loads it (L220).
   ['pglab', /^pglabWorker-/, 150],
-  ['pgext', /^(pageinspect|pg_visibility|amcheck|pg_walinspect|pg_buffercache|pg_freespacemap|bloom|btree_gin|btree_gist|pg_trgm|pg_stat_statements|ltree)\.tar-.*\.gz$/, 145],
+  ['pgext', /^(pageinspect|pg_visibility|amcheck|pg_walinspect|pg_buffercache|pg_freespacemap|bloom|btree_gin|btree_gist|pg_trgm|pg_stat_statements|ltree|cube|earthdistance)\.tar-.*\.gz$/, 160], // L247: + cube, earthdistance (L2 geo lesson)
   ['pgcrypto', /^pgcrypto\.tar-.*\.gz$/, 1160], // bundles OpenSSL: fetched only by a lab that names pgcrypto
   ['why', /^(why|whyView)-/, 6], // V22-B (L206): "Vì sao?" under a result row: src/ui/whyView.ts (VI/EN inside) + src/viz/why.ts (worker, beside the steps chunk), lazy on the first click
   ['mapteach', /^mapTeach-/, 8], // V22-A (L203): src/ui/mapTeach.ts + src/viz/geo.ts + src/mapQueries.ts (result map: Map tab and Map page questions, VI/EN inside), lazy on the first Map page or Map tab
   ['engineVizNosql', /^engineVizNosql-/, 15], // ENG-VIZ (L236): MongoDB + DynamoDB diagrams (src/engine/viz/engineVizNosql.ts), lazy from engineViz's loadViz()
   ['engineViz', /^engineViz(Core)?-/, 30], // ENG-VIZ (L235/L236): diagram engine (engineVizCore-*, shared with the NoSQL chunk) + Postgres diagrams (engineViz-*), lazy; built as a second entry until ENG-CORE imports it
+  // L247: the lab runtimes' main-thread side, lazy on the first lab of an engine: the three LabRunner adapters (runner-*),
+  // the Mongo engine (mingo + shell parser, engineMongo-*, loaded in its worker), its shop data and the NoSQL path dataset
+  // (content/engine/mongodb/path/dataset.json, dataset-*): 75 KB gz at integration.
+  ['engineLab', /^(runner|engineMongo|mongoSeed\w*|dataset)-[\w-]{8}\.js$/, 90],
+  // L247: the MongoDB path ("Lộ trình NoSQL"): 12 parts of skills, lessons and 168 drills (content/engine/mongodb/path/*.yml as
+  // JSON) + the shell parser for its ESR/covered rules, lazy on the first path page: 72 KB gz at integration.
+  ['enginePath', /^engineMongoPath-/, 80],
   ['rest', /./, 1560],
 ];
 

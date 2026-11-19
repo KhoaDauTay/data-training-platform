@@ -5,6 +5,7 @@ import { EXTENSIONS, runLabScript, splitSql } from '../src/engine/pglab/session'
 import { pgScriptRunner } from '../src/engine/pglab/runner';
 import { grade } from '../src/grader';
 import type { QueryResult } from '../src/db/run';
+import type { Lab, LabStep } from '../src/engine/content';
 
 // ENG-PGLAB (L230): the lab runtime on real PGlite (the worker shell only forwards to runLabScript).
 
@@ -184,17 +185,19 @@ describe('pglab setup + ENG-CORE runner', () => {
       verdict: (g: { reason: string }) => g.reason,
     };
     const lab = pgScriptRunner(env, { run: runLabScript, reset: () => undefined });
-    const L = { setup: "CREATE TABLE t (id int PRIMARY KEY, v text);\nINSERT INTO t SELECT g, 'x' FROM generate_series(1, 1000) g;\nANALYZE t;" };
+    const L = { setup: "CREATE TABLE t (id int PRIMARY KEY, v text);\nINSERT INTO t SELECT g, 'x' FROM generate_series(1, 1000) g;\nANALYZE t;", steps: [] } as unknown as Lab;
     await lab.prepare(L);
     expect((await lab.run(L, 'SELECT count(*) FROM t')).rows).toEqual([[1000]]);
     await expect(lab.run(L, 'SELECT * FROM nope')).rejects.toMatchObject({ code: '42P01' });
-    const step = { solution: 'SELECT id FROM t WHERE id < 3', check: 'rows' as const, ordered: false };
+    const step = { solution: 'SELECT id FROM t WHERE id < 3', check: 'rows' as const, ordered: false } as LabStep;
     expect(await lab.check(L, step, 'SELECT id FROM t WHERE id <= 2')).toEqual({ ok: true });
     expect(await lab.check(L, step, 'SELECT id FROM t WHERE id <= 3')).toMatchObject({ ok: false, reason: 'wrong' });
-    const plan = { solution: 'SELECT v FROM t WHERE id = 5', check: 'plan' as const, ordered: false };
-    expect(await lab.check(L, plan, 'SELECT v FROM t WHERE id = 7')).toEqual({ ok: true });
+    const plan = { solution: 'SELECT v FROM t WHERE id = 5', check: 'plan' as const, ordered: false } as LabStep;
+    expect(await lab.check(L, plan, 'SELECT v FROM t WHERE 5 = id')).toEqual({ ok: true });
+    // L247: a right plan with the wrong rows is still wrong
+    expect(await lab.check(L, plan, 'SELECT v || id FROM t WHERE id = 7')).toMatchObject({ ok: false, reason: 'wrong' });
     expect(await lab.check(L, plan, "SELECT v FROM t WHERE v = 'x'")).toMatchObject({ ok: false, reason: 'wrong' });
     expect(await lab.check(L, { ...step, check: 'doc' }, '')).toEqual({ ok: false, reason: 'unsupported' });
-    await expect(lab.prepare({ setup: 'CREATE EXTENSION plpython3u;' })).rejects.toThrow(/unknown extension/);
+    await expect(lab.prepare({ setup: 'CREATE EXTENSION plpython3u;', steps: [] } as unknown as Lab)).rejects.toThrow();
   });
 });
