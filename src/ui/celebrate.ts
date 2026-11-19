@@ -1,7 +1,8 @@
 import { type GsapArt, loadedGsap, loadGsap } from '../art/load';
 import type { Timeline } from '../art/gsap';
 import { reducedMotion } from './dom';
-import { GROW_MS, type Mascot, type Move, MOVES, movedParts, PIVOT, type Pose } from './mascots';
+import { LAST_STAGE, LOOK, type LilyStage, stageOf } from '../lily';
+import { type Mascot, type Move, MOVES, movedParts, pivotOf, type Pose } from './mascots';
 
 /** One short "pop" on `el` when the player gets something right. motion-safe: skips it under prefers-reduced-motion. */
 export function celebrate(el: HTMLElement): void {
@@ -51,7 +52,6 @@ export function react(host: Element | null | undefined, grow?: boolean): void {
 
 const ATTRS = ['style', 'transform', 'data-svg-origin'];
 const playing = new WeakMap<SVGSVGElement, Timeline>();
-const SIZE = [0.8, 0.9, 1, 1]; // --lily-size per stage (style.css, L87)
 const DOT = 'M60 77.3a1.9 1.9 0 1 1 0 3.8a1.9 1.9 0 1 1 0-3.8z'; // the badge star starts as a dot (MorphSVG)
 
 /**
@@ -70,7 +70,8 @@ function rigReact({ timeline }: GsapArt, svg: SVGSVGElement, grow: boolean): voi
   const pose = svg.dataset.pose as Pose;
   const part = (p: string) => svg.querySelector<SVGGElement>(`[data-part="${p}"]`);
   const all = (ps: string[]) => ps.map(part).filter((x) => x !== null);
-  const at = PIVOT[who];
+  const stage = stageOf(svg.dataset.stage ?? document.documentElement.dataset.lily);
+  const at = pivotOf(who, who === 'lily' ? LOOK[stage].lift : 0); // L132: her neck sits higher on longer legs
   const tl = timeline();
   if (pose in MOVES) {
     const m = movedParts(who, pose as Move);
@@ -97,7 +98,7 @@ function rigReact({ timeline }: GsapArt, svg: SVGSVGElement, grow: boolean): voi
       tl.to(extra, { keyframes: [...beat, ...beat] }, 0);
     }
   }
-  if (grow && who === 'lily') growLily(tl, svg, part, keep);
+  if (grow && who === 'lily') growLily(tl, svg, stage, part, keep);
   const end = () => {
     tl.revert();
     // revert() leaves GSAP's identity transforms (matrix(1,0,0,1,0,0), translate3d(0,0,0)): put every attribute back as drawn
@@ -113,16 +114,32 @@ function rigReact({ timeline }: GsapArt, svg: SVGSVGElement, grow: boolean): voi
   tl.play();
 }
 
+/** The CSS variables of one stage's look (src/lily.ts LOOK), for GSAP (registered with @property, so they tween as numbers). */
+const vars = (stage: LilyStage, keys: readonly string[]): Record<string, number> =>
+  Object.fromEntries(keys.map((k) => [`--lily-${k}`, LOOK[stage][k as keyof (typeof LOOK)[number]]]));
+const SHAPE = ['size', 'head', 'lift', 'paw', 'ears', 'ear-tilt', 'tail', 'chest', 'shut'];
+const GEAR = ['collar-on', 'scarf-on', 'badge-on', 'harness-on', 'prop-on'];
+
 /**
- * v5 A1 on the rig: Lily bounces and grows to her new size, and the new accessory arrives: the scarf is drawn then filled (stage 1,
- * DrawSVG), the star morphs from a dot (2, MorphSVG), the laptop slides in (3). DrawSVG/MorphSVG cannot reach inside a <use>, so
- * the scarf or star is copied from the sprite into this instance's part (same picture, so it stays after the revert).
+ * L132 grow ceremony on the rig (2.4 s = GROW_MS, docs/team/lily-growth.md §3.1), from the stage she had (markGrew) to the one she
+ * has now, in one go however many stages she jumped: 0–0.3 s she crouches; 0.3–1.5 s every proportion eases to the new stage;
+ * 0.6–1.6 s the new spots come in tier by tier; 1.2–2.0 s the accessories change and the newest one arrives (collar drawn, scarf drawn
+ * then filled, star morphed from a dot, harness drawn, laptop slides in); 2.0–2.4 s a hop. The variables are tweened inline on this
+ * <svg> and reverted at the end, where the stage rule of style.css already shows the same end frame. DrawSVG/MorphSVG cannot reach
+ * inside a <use>, so the arriving part is copied from the sprite into this instance (same picture, so it stays after the revert).
  */
-function growLily(tl: Timeline, svg: SVGSVGElement, part: (p: string) => SVGGElement | null, keep: (el: Element) => void): void {
-  const stage = Number(document.documentElement.dataset.lily ?? 0);
-  const s = GROW_MS / 1000;
-  tl.to(svg, { keyframes: { scale: [1, 1.18, 0.96, 1] }, transformOrigin: '50% 100%', duration: s, ease: 'power1.out' }, 0);
-  if (SIZE[stage - 1] !== SIZE[stage]) tl.fromTo(svg, { '--lily-size': SIZE[stage - 1] }, { '--lily-size': SIZE[stage], duration: s * 0.6, ease: 'back.out(1.6)' }, s * 0.3);
+function growLily(tl: Timeline, svg: SVGSVGElement, to: LilyStage, part: (p: string) => SVGGElement | null, keep: (el: Element) => void): void {
+  const from = Math.min(grewFrom, to - 1) as LilyStage;
+  if (to < 1) return;
+  tl.to(svg, { keyframes: [{ scale: 0.94, duration: 0.3, ease: 'power1.in' }, { scale: 1, duration: 0.4, ease: 'back.out(2)' }], transformOrigin: '50% 100%' }, 0);
+  tl.fromTo(svg, vars(from, SHAPE), { ...vars(to, SHAPE), duration: 1.2, ease: 'back.out(1.4)' }, 0.3);
+  ['spot1', 'spot2', 'spot3'].forEach((k, i) => {
+    if (LOOK[from][k as 'spot1'] !== LOOK[to][k as 'spot1']) tl.fromTo(svg, vars(from, [k]), { ...vars(to, [k]), duration: 0.4 }, 0.6 + i * 0.3);
+  });
+  tl.fromTo(svg, vars(from, GEAR), { ...vars(to, GEAR), duration: 0.8, ease: 'power1.inOut' }, 1.2);
+  tl.to(svg, { keyframes: [{ y: -8, duration: 0.2, ease: 'power2.out' }, { y: 0, duration: 0.2, ease: 'bounce.out' }] }, 2.0);
+  const sparkle = part('fx-sparkle');
+  if (sparkle) tl.from(sparkle, { opacity: 0, scale: 0.6, svgOrigin: '60 60', duration: 0.4 }, 2.0);
   const inline = (name: string): SVGGElement | undefined => {
     const g = part(name);
     const src = document.getElementById(`lily-${name}`);
@@ -133,19 +150,31 @@ function growLily(tl: Timeline, svg: SVGSVGElement, part: (p: string) => SVGGEle
     keep(c);
     return c;
   };
-  if (stage === 1) {
+  const draw = (name: string, at: number): void => { // a band is drawn along its path (the coloured stroke, the last path)
+    const band = [...inline(name)?.querySelectorAll('path') ?? []].at(-1);
+    if (band) tl.fromTo(band, { drawSVG: '0%' }, { drawSVG: '100%', duration: 0.6, ease: 'power1.inOut' }, at);
+  };
+  if (to === 1) draw('collar', 1.2);
+  else if (to === 2) {
     const [shape, line] = inline('scarf')?.querySelectorAll('path') ?? [];
     if (!shape) return;
-    tl.fromTo(shape, { drawSVG: '0%', fillOpacity: 0 }, { drawSVG: '100%', duration: s * 0.45, ease: 'power1.inOut' }, s * 0.2)
-      .to(shape, { fillOpacity: 1, duration: s * 0.25 }, s * 0.65);
-    if (line) tl.from(line, { opacity: 0, duration: s * 0.25 }, s * 0.65);
-  } else if (stage === 2) {
+    tl.fromTo(shape, { drawSVG: '0%', fillOpacity: 0 }, { drawSVG: '100%', duration: 0.5, ease: 'power1.inOut' }, 1.2)
+      .to(shape, { fillOpacity: 1, duration: 0.3 }, 1.7);
+    if (line) tl.from(line, { opacity: 0, duration: 0.3 }, 1.7);
+  } else if (to === 3) {
     const star = inline('badge')?.querySelector('path');
-    if (star) tl.from(star, { morphSVG: DOT, duration: s * 0.5, ease: 'back.out(1.7)' }, s * 0.35);
-  } else if (stage === 3) {
+    if (star) tl.from(star, { morphSVG: DOT, duration: 0.6, ease: 'back.out(1.7)' }, 1.3);
+  } else if (to === 4) draw('harness', 1.2);
+  else if (to === LAST_STAGE) {
     const laptop = part('laptop');
-    if (laptop) tl.from(laptop, { x: -24, opacity: 0, duration: s * 0.5, ease: 'power2.out' }, s * 0.35);
+    if (laptop) tl.from(laptop, { x: -24, duration: 0.6, ease: 'power2.out' }, 1.3);
   }
+}
+
+/** L132: a grow ceremony that is playing on this <svg> (or the one inside `host`) jumps to its end frame (Skip, Esc). */
+export function settle(host: Element | null | undefined): void {
+  const svg = host?.matches?.('svg[data-mascot]') ? host as SVGSVGElement : host?.querySelector<SVGSVGElement>('svg[data-mascot]');
+  if (svg) playing.get(svg)?.progress(1);
 }
 
 /** ui-ux-v5 A3 (XP) and A1 (Lily's stage): rise since the last mark; 0 on the first call and after an import (a new save object, page not reloaded). */
@@ -154,7 +183,8 @@ export function gainSince(mark: { save: object; n: number } | undefined, save: o
 }
 
 let grewAt = -Infinity;
-/** A1: syncLily() saw Lily's stage rise (session memory only, D-M2). */
-export const markGrew = (): void => { grewAt = Date.now(); };
+let grewFrom = 0;
+/** A1: syncLily() saw Lily's stage rise from `from` (session memory only, D-M2); the ceremony plays from there (L132). */
+export const markGrew = (from = 0): void => { grewAt = Date.now(); grewFrom = from; };
 /** A1: Lily grows in the next reaction or dock entrance for 4 s after that (both attach at an event, never while drawing). */
 export const grewLately = (): boolean => Date.now() - grewAt <= 4000;

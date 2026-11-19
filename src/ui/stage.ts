@@ -9,7 +9,7 @@ import { app } from '../state';
 import { textOf, type Ticket } from '../tickets';
 import { byId, reducedMotion } from './dom';
 import { loadDomainArt } from './domainArt';
-import { grewLately, once, react } from './celebrate';
+import { grewLately, once, react, settle } from './celebrate';
 import { GROW_MS, mascot, MOVES } from './mascots';
 import { stageEsc } from './shortcuts';
 
@@ -108,7 +108,7 @@ async function drawAndPlay(c: Ctx, owner: Ctx = c): Promise<void> {
     return;
   }
   lily.style.opacity = '0';
-  // ui-ux-v5 A1: Lily just grew (read here, after complete()'s rerender ran syncLily): her grow (900 ms, accessory fades in)
+  // ui-ux-v5 A1: Lily just grew (read here, after complete()'s rerender ran syncLily): her grow (GROW_MS 2.4 s, L132)
   // replaces the 300 ms pop and starts earlier, so it still ends with the scene (≤ 3.0 s, promotion included).
   const grow = grewLately();
   // ui-ux-v6 A2: with GSAP in, Lily's rig cheer (MOVES.cheer, 700 ms) is her entrance and ends with the scene (PROMO.lily)
@@ -152,6 +152,7 @@ export function relabelStage(): void {
 function finish(run: Run): void {
   run.fast = true;
   run.skip?.();
+  settle(document.getElementById('stage')); // L132: Lily's grow ceremony jumps to her new look with the scene
 }
 function skip(): void {
   if (!current.done) finish(current); // jump to the end state; the sentence was already announced

@@ -81,6 +81,21 @@ describe('theme', () => {
     expect(bad).toEqual([]);
   });
 
+  it('L132: vòng cổ, đai và bóng giai đoạn sau ≥ 3:1 (đồ họa, WCAG 1.4.11) ở cả hai theme', () => {
+    const light = tokens(':root');
+    const dark = { ...light, ...tokens(':root[data-theme=dark]') };
+    for (const [name, tk] of [['light', light], ['dark', dark]] as const) {
+      for (const fg of ['lily-collar', 'lily-harness']) {
+        for (const bg of ['lily-fur', 'bg', 'panel']) expect(ratio(tk[fg], tk[bg]), `${name} ${fg}/${bg}`).toBeGreaterThanOrEqual(3);
+      }
+    }
+    // the silhouette is the figure in black (light) or white (dark) at the .lily-shadow-fig opacity, over --panel
+    const mix = (fg: number, a: number, bg: string) => `#${[1, 3, 5].map((i) => Math.round(fg * a + parseInt(bg.slice(i, i + 2), 16) * (1 - a)).toString(16).padStart(2, '0')).join('')}`;
+    const alpha = (sel: string) => Number(css.split(`${sel} { filter:`)[1]?.match(/opacity\(([\d.]+)\)/)?.[1]);
+    expect(ratio(mix(0, alpha('.lily-shadow-fig'), light.panel), light.panel)).toBeGreaterThanOrEqual(3);
+    expect(ratio(mix(255, alpha(':root[data-theme=dark] .lily-shadow-fig'), dark.panel), dark.panel)).toBeGreaterThanOrEqual(3);
+  });
+
   it('token ấm của v6 (L57) và bo góc 20/14', () => {
     expect(tokens(':root')).toMatchObject({ bg: '#fbf7f0', accent: '#0f766e', sun: '#ffe9bd', 'sun-ink': '#5c3d00' });
     expect(tokens(':root[data-theme=dark]')).toMatchObject({ bg: '#1a1714', accent: '#5ed3c3', sun: '#4a3a17' });

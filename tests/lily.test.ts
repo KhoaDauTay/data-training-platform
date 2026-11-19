@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import html from '../index.html?raw';
 import css from '../src/style.css?raw';
-import { DAYS_KEY, DAYS_MAX, dayCount, lilyStage, markDay, parseDays, toNextStage, withDay } from '../src/lily';
+import { vi } from '../src/i18n/vi';
+import { DAYS_KEY, DAYS_MAX, dayCount, type LilyStage, lilyStage, LOOK, markDay, parseDays, STAGE_AT, toNextStage, withDay } from '../src/lily';
 import type { KV } from '../src/storage';
 
 const mem = (init: Record<string, string> = {}): KV & { data: Record<string, string> } => {
@@ -10,18 +11,37 @@ const mem = (init: Record<string, string> = {}): KV & { data: Record<string, str
 };
 
 describe('Lily lớn lên (L87)', () => {
-  it('giai đoạn theo số kỹ năng đã học: 0–2, 3–9, 10–24, 25+ hoặc học hết', () => {
-    expect([0, 2, 3, 9, 10, 24, 25, 38].map((n) => lilyStage(n, 38))).toEqual([0, 0, 1, 1, 2, 2, 3, 3]);
-    expect(lilyStage(12, 12)).toBe(3); // every skill learned
+  it('6 giai đoạn (L132): 0, 1–2, 3–9, 10–17, 18–24, 25+ hoặc học hết', () => {
+    expect(STAGE_AT).toEqual([0, 1, 3, 10, 18, 25]);
+    expect([0, 1, 2, 3, 9, 10, 17, 18, 24, 25, 38].map((n) => lilyStage(n, 38))).toEqual([0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5]);
+    expect(lilyStage(12, 12)).toBe(5); // every skill learned
     expect(lilyStage(0, 0)).toBe(0);
   });
 
   it('còn bao nhiêu kỹ năng tới giai đoạn sau; giai đoạn cuối thì không có', () => {
-    expect(toNextStage(0, 38)).toBe(3);
-    expect(toNextStage(4, 38)).toBe(6);
-    expect(toNextStage(24, 38)).toBe(1);
+    expect([0, 1, 2, 3, 9, 10, 17, 18, 24].map((n) => toNextStage(n, 38))).toEqual([1, 2, 1, 7, 1, 8, 1, 7, 1]);
     expect(toNextStage(25, 38)).toBeUndefined();
     expect(toNextStage(10, 12)).toBe(2); // capped by the skills left
+  });
+
+  it('cập nhật không làm ai tụt (§5.3): cao hình không giảm, phụ kiện cũ còn, tên cũ giữ (trừ k = 0 và 18–24 lên Dày dạn)', () => {
+    // Before L132: stages at 0/3/10/25, --lily-size 0.8/0.9/1/1, scarf from 1, star from 2, laptop at 3. Kept here, not in the code.
+    const OLD_AT = [0, 3, 10, 25];
+    const OLD_SIZE = [0.8, 0.9, 1, 1];
+    const OLD_GEAR = [[], ['scarf-on'], ['scarf-on', 'badge-on'], ['scarf-on', 'badge-on', 'prop-on']] as const;
+    const OLD_NAME = ['Cún con', 'Cún nhỏ', 'Trưởng thành', 'Chuyên gia'];
+    const NEW_NAME = ['Sơ sinh', 'Cún con', 'Cún nhỏ', 'Trưởng thành', 'Dày dạn', 'Chuyên gia'];
+    expect(NEW_NAME.map((_, i) => vi[`lily.stage${i}` as keyof typeof vi])).toEqual(NEW_NAME);
+    // figure height in viewBox units: 97 before (ear tip to feet); the head (50 units, ear tip to neck) scales, the lift adds
+    const height = (s: LilyStage) => LOOK[s].size * (97 + LOOK[s].lift - (1 - LOOK[s].head) * 50);
+    for (let k = 0; k <= 38; k++) {
+      const old = OLD_AT.filter((at) => k >= at).length - 1;
+      const now = lilyStage(k, 38);
+      expect(height(now), `k=${k}`).toBeGreaterThanOrEqual(97 * OLD_SIZE[old]);
+      for (const g of OLD_GEAR[old]) expect(LOOK[now][g], `k=${k} ${g}`).toBe(1);
+      const renamed = k === 0 || (k >= 18 && k <= 24);
+      expect(NEW_NAME[now] === OLD_NAME[old], `k=${k}`).toBe(!renamed);
+    }
   });
 
   it('pref ngày: chỉ chuỗi ngày hợp lệ, không trùng, có thứ tự, tối đa 366', () => {
@@ -53,10 +73,19 @@ describe('Lily lớn lên (L87)', () => {
     expect(markDay('2026-12-01', mem({ [DAYS_KEY]: '["2026-12-01"]' }))).toBe(false); // already stored (another tab)
   });
 
-  it('sprite: khăn, huy hiệu và laptop theo biến giai đoạn; mặc định (logo) là Lily trưởng thành', () => {
-    for (const v of ['scarf', 'badge', 'prop']) expect(html).toContain(`style="opacity:var(--lily-${v}-on)"`);
+  it('sprite: phụ kiện theo biến giai đoạn; không data-lily thì là Lily trưởng thành (giai đoạn 3)', () => {
+    for (const v of ['collar', 'scarf', 'badge', 'harness', 'prop']) expect(html).toContain(`style="opacity:var(--lily-${v}-on)"`);
     const root = css.split(':root {')[1]?.split('}')[0] ?? '';
-    expect(root).toMatch(/--lily-scarf-on: 1; --lily-badge-on: 1; --lily-prop-on: 0; --lily-size: 1;/);
-    for (const n of [0, 1, 3]) expect(css).toContain(`:root[data-lily="${n}"] [data-mascot=lily]`);
+    for (const [k, v] of Object.entries(LOOK[3])) expect(root).toContain(`--lily-${k}: ${v};`);
+  });
+
+  it('bảng CSS mỗi giai đoạn đặt đủ mọi biến, đúng bằng LOOK; data-stage của một bản sao thắng <html data-lily>', () => {
+    for (const [n, look] of LOOK.entries()) {
+      const sel = `:root[data-lily="${n}"] [data-mascot=lily]:not([data-stage]), [data-mascot=lily][data-stage="${n}"] {`;
+      const row = css.split(sel)[1]?.split('}')[0] ?? '';
+      expect(row, `stage ${n}`).not.toBe('');
+      const vars = Object.fromEntries([...row.matchAll(/--lily-([\w-]+):\s*([-\d.]+)/g)].map((m) => [m[1], Number(m[2])]));
+      expect(vars, `stage ${n}`).toEqual(look);
+    }
   });
 });

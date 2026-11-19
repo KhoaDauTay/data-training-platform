@@ -11,16 +11,17 @@ export type Pose = (typeof POSES)[number];
 
 /**
  * v6 M1: a pose is a recipe of sprite parts (<g id="<mascot>-<part>"> in index.html's #mascot-sprite), painted in this order
- * (tests/mascots.test.ts). Lily's scarf, badge and laptop are parts whose opacity follows her growth stage (style.css).
+ * (tests/mascots.test.ts). Lily's collar, scarf, badge, harness and laptop are parts whose opacity follows her growth stage, and
+ * every part reads her stage's proportions (lift, head, ears, paws…) from inherited CSS variables (style.css, L132).
  * The top-bar logo is the sprite's own <symbol id="boon-idle">, which repeats boon.idle.
  */
 export const RIG = {
   lily: {
-    idle: ['shadow', 'tail', 'body', 'arm-down', 'scarf', 'badge', 'ear-l', 'ear-r', 'head', 'eyes-open', 'mouth-smile', 'laptop'],
-    point: ['shadow', 'tail', 'body', 'arm-point', 'scarf', 'badge', 'ear-l', 'ear-r', 'head', 'eyes-open', 'mouth-smile', 'laptop'],
-    cheer: ['shadow', 'tail', 'body', 'scarf', 'badge', 'ear-l', 'ear-r', 'head', 'eyes-happy', 'mouth-open', 'arm-up', 'fx-sparkle', 'laptop'],
-    think: ['shadow', 'tail', 'body', 'scarf', 'badge', 'ear-l', 'ear-r', 'head', 'eyes-open', 'mouth-flat', 'arm-chin', 'fx-question', 'laptop'],
-    oops: ['shadow', 'tail', 'body', 'arm-down', 'scarf', 'badge', 'ear-l', 'ear-r', 'head', 'eyes-dizzy', 'mouth-wavy', 'fx-sweat', 'laptop'],
+    idle: ['shadow', 'tail', 'body', 'harness', 'arm-down', 'collar', 'scarf', 'badge', 'ear-l', 'ear-r', 'head', 'eyes-open', 'mouth-smile', 'laptop'],
+    point: ['shadow', 'tail', 'body', 'harness', 'arm-point', 'collar', 'scarf', 'badge', 'ear-l', 'ear-r', 'head', 'eyes-open', 'mouth-smile', 'laptop'],
+    cheer: ['shadow', 'tail', 'body', 'harness', 'collar', 'scarf', 'badge', 'ear-l', 'ear-r', 'head', 'eyes-happy', 'mouth-open', 'arm-up', 'fx-sparkle', 'laptop'],
+    think: ['shadow', 'tail', 'body', 'harness', 'collar', 'scarf', 'badge', 'ear-l', 'ear-r', 'head', 'eyes-open', 'mouth-flat', 'arm-chin', 'fx-question', 'laptop'],
+    oops: ['shadow', 'tail', 'body', 'harness', 'arm-down', 'collar', 'scarf', 'badge', 'ear-l', 'ear-r', 'head', 'eyes-dizzy', 'mouth-wavy', 'fx-sweat', 'laptop'],
     sleep: ['sleep', 'zz'],
   },
   boon: {
@@ -49,8 +50,17 @@ export const PIVOT: Record<Mascot, Record<string, string>> = {
   lily: { feet: '60 112', neck: '60 72', tail: '80 106', 'arm-point': '72 88' },
   boon: { feet: '60 112', neck: '60 62', 'arm-point': '84 76', 'arm-chin': '84 80' },
 };
-/** Lily grows (v5 A1) in 900 ms, like cq-grow in style.css. */
-export const GROW_MS = 900;
+/**
+ * Lily's stage lifts her body, legs and head by LOOK[stage].lift units (src/lily.ts): her neck and pointing paw sit that much higher
+ * than PIVOT says (feet and tail root stay on the ground), so a head tilt still turns around the neck (L132).
+ */
+export function pivotOf(who: Mascot, lift = 0): Record<string, string> {
+  if (who !== 'lily' || !lift) return PIVOT[who];
+  const up = (v: string) => v.replace(/ ([\d.]+)$/, (_, y: string) => ` ${Number(y) - lift}`);
+  return { ...PIVOT.lily, neck: up(PIVOT.lily.neck), 'arm-point': up(PIVOT.lily['arm-point']) };
+}
+/** Lily grows (v5 A1, L132 ceremony) in 2.4 s, like cq-grow in style.css. */
+export const GROW_MS = 2400;
 const GROUND = new Set(['shadow', 'laptop']); // stay on the floor while she jumps or shakes
 const HEAD = /^(head|ear-|eyes-|mouth-|glasses|plume)/;
 export function movedParts(who: Mascot, pose: Move): { body: string[]; head: string[]; extra: string[] } {
@@ -69,14 +79,16 @@ export function rig(who: Mascot, pose: Pose): SVGGElement {
  * sit next to it, v6 §1.4 rule 2); pass `label` only for a picture that stands alone (the welcome screen).
  * Sizes (rule 4): size-12 in a line, size-16 on a card, size-24 to size-28 beside a bubble.
  */
-export function mascot(who: Mascot, pose: Pose, cls = 'size-12', label?: string): SVGSVGElement {
+export function mascot(who: Mascot, pose: Pose, cls = 'size-12', label?: string, stage?: number): SVGSVGElement {
   const a11y: Record<string, string> = label ? { role: 'img', 'aria-label': label } : { 'aria-hidden': 'true', focusable: 'false' };
   // data-mascot: Lily's growth stage (L87, <html data-lily> + style.css) reaches every Lily drawn here, never the top-bar logo.
   // data-pose: picks the one-shot reaction keyframe of react() (src/ui/celebrate.ts, ui-ux-v5 §1).
-  return s('svg', { viewBox: '0 0 120 120', class: cx('shrink-0 overflow-visible', cls), 'data-mascot': who, 'data-pose': pose, ...a11y }, rig(who, pose));
+  // data-stage: this one Lily at another growth stage than the player's (the next-stage silhouette, L132).
+  const at: Record<string, string> = stage === undefined ? {} : { 'data-stage': String(stage) };
+  return s('svg', { viewBox: '0 0 120 120', class: cx('shrink-0 overflow-visible', cls), 'data-mascot': who, 'data-pose': pose, ...at, ...a11y }, rig(who, pose));
 }
 
-/** rerender(): Lily's stage on <html data-lily> (0–3, src/lily.ts). */
+/** rerender(): Lily's stage on <html data-lily> (0–5, src/lily.ts). */
 export function setLilyStage(stage: number): void {
   document.documentElement.dataset.lily = String(stage);
 }

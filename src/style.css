@@ -30,11 +30,12 @@
   --sun: #ffe9bd; --sun-ink: #5c3d00;
   --r-card: 20px; --r-ctl: 14px;
   /* Mascot palette (v6 §1.2–1.3): SVG only, never text. */
-  --lily-fur: #fdfbf7; --lily-cream: #ece6dc; --lily-ear: #2b2522; --lily-spot: #2b2522; --lily-line: #5a4f47; --lily-ink: #2b2522; --lily-scarf: #1f9e8f; --lily-badge: #ffd166;
+  --lily-fur: #fdfbf7; --lily-cream: #ece6dc; --lily-ear: #2b2522; --lily-spot: #2b2522; --lily-line: #5a4f47; --lily-ink: #2b2522; --lily-scarf: #1f9e8f; --lily-badge: #ffd166; --lily-collar: #c8414f; --lily-harness: #b8641c;
   --boon-body: #fdfdfb; --boon-plume: #e3e7e9; --boon-line: #59626a; --boon-wing: #3f8f9e; --boon-belly: #eef1f2; --boon-bill: #f2b544; --boon-ink: #2a2320; --boon-lanyard: #d98e4a;
   --boon-shade: #ccd3d7; --boon-bill-dark: #d4861f; /* v6 M1: wing/plume shading, bill and feet edge */
-  /* L87: Lily's growth stage (adult look by default: the top-bar logo has no data-mascot) and the teaching scene's loops (off). */
-  --lily-scarf-on: 1; --lily-badge-on: 1; --lily-prop-on: 0; --lily-size: 1; --lily-wag: none; --lily-nod: none; --boon-tap: none;
+  /* L87/L132: Lily's growth stage (grown-up look, stage 3, by default) and the teaching scene's loops (off). */
+  --lily-size: 1; --lily-head: 0.92; --lily-lift: 5; --lily-paw: 1; --lily-ears: 1; --lily-ear-tilt: 0; --lily-tail: 1.05; --lily-chest: 1; --lily-spot1: 1; --lily-spot2: 1; --lily-spot3: 0; --lily-shut: 0; --lily-collar-on: 0; --lily-scarf-on: 1; --lily-badge-on: 1; --lily-harness-on: 0; --lily-prop-on: 0;
+  --lily-wag: none; --lily-nod: none; --boon-tap: none;
   --cheek: #f4a3a3; --wood-dark: #8a4b22; --sky: #e6f4f6; --ground: #e9dcc6;
   /* ui-ux-v6 S2: the route map (sea gradient, graticule, coastline, label halo) */
   --map-sea-1: #dcedf6; --map-sea-2: #b9d9ea; --map-grid: rgb(52 110 150 / 0.16); --map-coast: #ffffff; --map-halo: #eef6fb;
@@ -251,9 +252,14 @@
 @keyframes cq-eyes { 0%, 92%, 100% { transform: scaleY(1); } 95% { transform: scaleY(0.1); } }
 @keyframes cq-floatz { 0% { transform: translate(0, 0); opacity: 0; } 30% { opacity: 1; } 100% { transform: translate(8px, -14px); opacity: 0; } }
 /* ---- L87: Lily grows with the player. <html data-lily> is set by rerender() (main.ts); mascot('lily') marks its <svg> data-mascot. ---- */
-:root[data-lily="0"] [data-mascot=lily] { --lily-size: 0.8; --lily-scarf-on: 0; --lily-badge-on: 0; }
-:root[data-lily="1"] [data-mascot=lily] { --lily-size: 0.9; --lily-badge-on: 0; }
-:root[data-lily="3"] [data-mascot=lily] { --lily-prop-on: 1; }
+/* L132: six stages, one row each (= LOOK in src/lily.ts, tests/mascots.test.ts). An instance's data-stage (the next-stage silhouette)
+   wins over <html data-lily>. The sprite parts read these through <use> (index.html). */
+:root[data-lily="0"] [data-mascot=lily]:not([data-stage]), [data-mascot=lily][data-stage="0"] { --lily-size: 0.8; --lily-head: 1; --lily-lift: 0; --lily-paw: 0.85; --lily-ears: 0.75; --lily-ear-tilt: 0; --lily-tail: 0.55; --lily-chest: 0.92; --lily-spot1: 0; --lily-spot2: 0; --lily-spot3: 0; --lily-shut: 1; --lily-collar-on: 0; --lily-scarf-on: 0; --lily-badge-on: 0; --lily-harness-on: 0; --lily-prop-on: 0; }
+:root[data-lily="1"] [data-mascot=lily]:not([data-stage]), [data-mascot=lily][data-stage="1"] { --lily-size: 0.84; --lily-head: 1; --lily-lift: 1; --lily-paw: 1; --lily-ears: 1.15; --lily-ear-tilt: 8; --lily-tail: 0.75; --lily-chest: 0.95; --lily-spot1: 0.5; --lily-spot2: 0; --lily-spot3: 0; --lily-shut: 0; --lily-collar-on: 1; --lily-scarf-on: 0; --lily-badge-on: 0; --lily-harness-on: 0; --lily-prop-on: 0; }
+:root[data-lily="2"] [data-mascot=lily]:not([data-stage]), [data-mascot=lily][data-stage="2"] { --lily-size: 0.92; --lily-head: 0.96; --lily-lift: 6; --lily-paw: 1.2; --lily-ears: 1.1; --lily-ear-tilt: 4; --lily-tail: 1; --lily-chest: 0.92; --lily-spot1: 1; --lily-spot2: 0; --lily-spot3: 0; --lily-shut: 0; --lily-collar-on: 0; --lily-scarf-on: 1; --lily-badge-on: 0; --lily-harness-on: 0; --lily-prop-on: 0; }
+:root[data-lily="3"] [data-mascot=lily]:not([data-stage]), [data-mascot=lily][data-stage="3"] { --lily-size: 1; --lily-head: 0.92; --lily-lift: 5; --lily-paw: 1; --lily-ears: 1; --lily-ear-tilt: 0; --lily-tail: 1.05; --lily-chest: 1; --lily-spot1: 1; --lily-spot2: 1; --lily-spot3: 0; --lily-shut: 0; --lily-collar-on: 0; --lily-scarf-on: 1; --lily-badge-on: 1; --lily-harness-on: 0; --lily-prop-on: 0; }
+:root[data-lily="4"] [data-mascot=lily]:not([data-stage]), [data-mascot=lily][data-stage="4"] { --lily-size: 1.05; --lily-head: 0.9; --lily-lift: 6; --lily-paw: 1.05; --lily-ears: 0.95; --lily-ear-tilt: -3; --lily-tail: 1.15; --lily-chest: 1.06; --lily-spot1: 1; --lily-spot2: 1; --lily-spot3: 1; --lily-shut: 0; --lily-collar-on: 0; --lily-scarf-on: 1; --lily-badge-on: 1; --lily-harness-on: 1; --lily-prop-on: 0; }
+:root[data-lily="5"] [data-mascot=lily]:not([data-stage]), [data-mascot=lily][data-stage="5"] { --lily-size: 1.08; --lily-head: 0.9; --lily-lift: 6; --lily-paw: 1.05; --lily-ears: 0.95; --lily-ear-tilt: -3; --lily-tail: 1.15; --lily-chest: 1.06; --lily-spot1: 1; --lily-spot2: 1; --lily-spot3: 1; --lily-shut: 0; --lily-collar-on: 0; --lily-scarf-on: 1; --lily-badge-on: 1; --lily-harness-on: 1; --lily-prop-on: 1; }
 svg[data-mascot=lily] > g { transform: scale(var(--lily-size)); transform-origin: 60px 116px; }
 /* ---- L87 teaching scene (src/ui/teachScene.ts): loops only while it is on screen (data-live, IntersectionObserver). ---- */
 @media (prefers-reduced-motion: no-preference) {
@@ -264,14 +270,27 @@ svg[data-mascot=lily] > g { transform: scale(var(--lily-size)); transform-origin
   .teach-scene .tb-tap { transform-origin: 84px 84px; animation: var(--boon-tap); }
   .teach-scene .tb-line { transition: opacity 0.2s; }
 }
-.teach-scene .tb-nod { transform: rotate(6deg); transform-origin: 60px 76px; } /* still frame: Lily's head leans toward Boon */
+.teach-scene .tb-nod { transform: rotate(6deg); transform-origin: 60px calc(76px - var(--lily-lift) * 1px); } /* still frame: Lily's head leans toward Boon */
 @keyframes cq-nod { 0%, 100% { transform: rotate(6deg); } 40% { transform: rotate(10deg) translateY(1px); } 55% { transform: rotate(4deg) translateY(-1px); } }
 @keyframes cq-tap { 0%, 100% { transform: rotate(0); } 50% { transform: rotate(-9deg); } }
 /* ---- v5 motion (ui-ux-v5 §1). Base styles are the end state; one-shot classes go on at an event, never while drawing (react(),
    src/ui/celebrate.ts); transform only on leaf SVGs (mascot, icon), never on a link, button or card (L93). Reduced motion: the rule below. ---- */
 @property --lily-size { syntax: '<number>'; inherits: true; initial-value: 1; }
+@property --lily-head { syntax: '<number>'; inherits: true; initial-value: 0.92; }
+@property --lily-lift { syntax: '<number>'; inherits: true; initial-value: 5; }
+@property --lily-paw { syntax: '<number>'; inherits: true; initial-value: 1; }
+@property --lily-ears { syntax: '<number>'; inherits: true; initial-value: 1; }
+@property --lily-ear-tilt { syntax: '<number>'; inherits: true; initial-value: 0; }
+@property --lily-tail { syntax: '<number>'; inherits: true; initial-value: 1.05; }
+@property --lily-chest { syntax: '<number>'; inherits: true; initial-value: 1; }
+@property --lily-spot1 { syntax: '<number>'; inherits: true; initial-value: 1; }
+@property --lily-spot2 { syntax: '<number>'; inherits: true; initial-value: 1; }
+@property --lily-spot3 { syntax: '<number>'; inherits: true; initial-value: 0; }
+@property --lily-shut { syntax: '<number>'; inherits: true; initial-value: 0; }
+@property --lily-collar-on { syntax: '<number>'; inherits: true; initial-value: 0; }
 @property --lily-scarf-on { syntax: '<number>'; inherits: true; initial-value: 1; }
 @property --lily-badge-on { syntax: '<number>'; inherits: true; initial-value: 1; }
+@property --lily-harness-on { syntax: '<number>'; inherits: true; initial-value: 0; }
 @property --lily-prop-on { syntax: '<number>'; inherits: true; initial-value: 0; }
 /* A2: individual translate/rotate, so cq-grow's `scale` (A1) can run beside them. */
 svg[data-mascot].react { transform-origin: 50% 100%; }
@@ -279,19 +298,26 @@ svg.react[data-pose=cheer] { animation: cq-jump 560ms ease-out; }
 svg.react[data-pose=point] { animation: cq-lean 480ms ease-out; }
 svg.react[data-pose=think] { animation: cq-tilt 500ms ease-out; }
 svg.react[data-pose=oops] { animation: cq-shake 360ms ease-out; }
-/* A1: Lily grows (class `grow`, react() or the dock, only within 4 s of a stage rise). `scale` beside the jump's `translate`;
-   the new stage's accessory and size come in on the rig's outer <g> (vars registered above), from 300 to 800 ms. */
-svg[data-mascot=lily].grow { transform-origin: 50% 100%; animation: cq-grow 900ms ease-out; }
-svg[data-mascot=lily].grow.react[data-pose=cheer] { animation: cq-grow 900ms ease-out, cq-jump 560ms ease-out; }
-:root[data-lily="1"] svg[data-mascot=lily].grow > g { animation: cq-grow1 900ms linear; }
-:root[data-lily="2"] svg[data-mascot=lily].grow > g { animation: cq-grow2 900ms linear; }
-:root[data-lily="3"] svg[data-mascot=lily].grow > g { animation: cq-grow3 900ms linear; }
+/* A1 + L132: Lily grows (class `grow`, react() or the dock, only within 4 s of a stage rise; 2.4 s like GROW_MS). `scale` beside the
+   jump's `translate`; the outer <g> eases from the previous stage's look to the new one (vars registered above). The GSAP rig does
+   the full ceremony (src/ui/celebrate.ts growLily); this is the fallback until the gsap chunk is in. */
+svg[data-mascot=lily].grow { transform-origin: 50% 100%; animation: cq-grow 2400ms ease-out; }
+svg[data-mascot=lily].grow.react[data-pose=cheer] { animation: cq-grow 2400ms ease-out, cq-jump 560ms ease-out; }
+:root[data-lily="1"] svg[data-mascot=lily].grow > g { animation: cq-grow1 2400ms ease-in-out; }
+:root[data-lily="2"] svg[data-mascot=lily].grow > g { animation: cq-grow2 2400ms ease-in-out; }
+:root[data-lily="3"] svg[data-mascot=lily].grow > g { animation: cq-grow3 2400ms ease-in-out; }
+:root[data-lily="4"] svg[data-mascot=lily].grow > g { animation: cq-grow4 2400ms ease-in-out; }
+:root[data-lily="5"] svg[data-mascot=lily].grow > g { animation: cq-grow5 2400ms ease-in-out; }
+.lily-shadow-fig { filter: brightness(0) opacity(0.45); } /* L132: the next stage, as a flat silhouette (Home card) */
+:root[data-theme=dark] .lily-shadow-fig { filter: brightness(0) invert(1) opacity(0.5); }
 .cq-bubble { transform-origin: 0 0; animation: cq-bubble 220ms ease-out; }
 .cq-rise { pointer-events: none; animation: cq-rise 800ms ease-out forwards; }
-@keyframes cq-grow { 0%, 100% { scale: 1; } 35% { scale: 1.18; } 60% { scale: 0.96; } }
-@keyframes cq-grow1 { 0%, 33% { --lily-scarf-on: 0; --lily-size: 0.8; } 89%, 100% { --lily-scarf-on: 1; --lily-size: 0.9; } }
-@keyframes cq-grow2 { 0%, 33% { --lily-badge-on: 0; --lily-size: 0.9; } 89%, 100% { --lily-badge-on: 1; --lily-size: 1; } }
-@keyframes cq-grow3 { 0%, 33% { --lily-prop-on: 0; } 89%, 100% { --lily-prop-on: 1; } }
+@keyframes cq-grow { 0%, 25%, 83%, 100% { scale: 1; } 12% { scale: 0.94; } 92% { scale: 1.08; } }
+@keyframes cq-grow1 { 0%, 12% { --lily-size: 0.8; --lily-lift: 0; --lily-paw: 0.85; --lily-ears: 0.75; --lily-ear-tilt: 0; --lily-tail: 0.55; --lily-chest: 0.92; --lily-spot1: 0; --lily-shut: 1; --lily-collar-on: 0; } 62%, 100% { --lily-size: 0.84; --lily-lift: 1; --lily-paw: 1; --lily-ears: 1.15; --lily-ear-tilt: 8; --lily-tail: 0.75; --lily-chest: 0.95; --lily-spot1: 0.5; --lily-shut: 0; --lily-collar-on: 1; } }
+@keyframes cq-grow2 { 0%, 12% { --lily-size: 0.84; --lily-head: 1; --lily-lift: 1; --lily-paw: 1; --lily-ears: 1.15; --lily-ear-tilt: 8; --lily-tail: 0.75; --lily-chest: 0.95; --lily-spot1: 0.5; --lily-collar-on: 1; --lily-scarf-on: 0; } 62%, 100% { --lily-size: 0.92; --lily-head: 0.96; --lily-lift: 6; --lily-paw: 1.2; --lily-ears: 1.1; --lily-ear-tilt: 4; --lily-tail: 1; --lily-chest: 0.92; --lily-spot1: 1; --lily-collar-on: 0; --lily-scarf-on: 1; } }
+@keyframes cq-grow3 { 0%, 12% { --lily-size: 0.92; --lily-head: 0.96; --lily-lift: 6; --lily-paw: 1.2; --lily-ears: 1.1; --lily-ear-tilt: 4; --lily-tail: 1; --lily-chest: 0.92; --lily-spot2: 0; --lily-badge-on: 0; } 62%, 100% { --lily-size: 1; --lily-head: 0.92; --lily-lift: 5; --lily-paw: 1; --lily-ears: 1; --lily-ear-tilt: 0; --lily-tail: 1.05; --lily-chest: 1; --lily-spot2: 1; --lily-badge-on: 1; } }
+@keyframes cq-grow4 { 0%, 12% { --lily-size: 1; --lily-head: 0.92; --lily-lift: 5; --lily-paw: 1; --lily-ears: 1; --lily-ear-tilt: 0; --lily-tail: 1.05; --lily-chest: 1; --lily-spot3: 0; --lily-harness-on: 0; } 62%, 100% { --lily-size: 1.05; --lily-head: 0.9; --lily-lift: 6; --lily-paw: 1.05; --lily-ears: 0.95; --lily-ear-tilt: -3; --lily-tail: 1.15; --lily-chest: 1.06; --lily-spot3: 1; --lily-harness-on: 1; } }
+@keyframes cq-grow5 { 0%, 12% { --lily-size: 1.05; --lily-prop-on: 0; } 62%, 100% { --lily-size: 1.08; --lily-prop-on: 1; } }
 @keyframes cq-jump { 0%, 50%, 100% { translate: 0 0; } 25% { translate: 0 -6px; } 72% { translate: 0 -3px; } }
 @keyframes cq-lean { 0%, 55%, 100% { rotate: 0deg; } 28% { rotate: -6deg; } 78% { rotate: -3deg; } }
 @keyframes cq-tilt { 0%, 100% { rotate: 0deg; } 25%, 70% { rotate: 5deg; } }

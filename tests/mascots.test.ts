@@ -26,10 +26,23 @@ describe('linh vật (L57, product-design-v6 §1)', () => {
   });
 
   it('giai đoạn Lily: khăn, sao, laptop là phần riêng theo biến CSS; mọi tư thế đứng có đủ', () => {
-    for (const [part, v] of [['scarf', 'scarf-on'], ['badge', 'badge-on'], ['laptop', 'prop-on']]) {
+    for (const [part, v] of [['collar', 'collar-on'], ['scarf', 'scarf-on'], ['badge', 'badge-on'], ['harness', 'harness-on'], ['laptop', 'prop-on']]) {
       expect(sprite).toContain(`<g id="lily-${part}" style="opacity:var(--lily-${v})">`);
       for (const p of POSES.filter((x) => x !== 'sleep')) expect(RIG.lily[p]).toContain(part);
     }
+  });
+
+  it('L132: biến hình giai đoạn nằm trên nhóm con, không trên phần mang vòng lặp idle (.tail, .eyes)', () => {
+    for (const id of ['lily-tail', 'lily-eyes-open']) {
+      const open = sprite.match(new RegExp(`<g id="${id}"[^>]*>`))?.[0] ?? '';
+      expect(open, id).toMatch(/class="(tail|eyes)"/);
+      expect(open, id).not.toContain('style=');
+      expect(sprite.split(open)[1]?.startsWith('<g style="transform:'), id).toBe(true);
+    }
+    // every stage variable the sprite reads is registered (tweens as a number) and listed in LOOK
+    const used = new Set([...sprite.matchAll(/var\(--lily-([\w-]+?)\)/g)].map((m) => m[1]).filter((v) => /^(size|head|lift|paw|ears|ear-tilt|tail|chest|spot\d|shut|[\w]+-on)$/.test(v)));
+    expect(used.size).toBeGreaterThan(12);
+    for (const v of used) expect(css, v).toContain(`@property --lily-${v} {`);
   });
 
   it('mọi href="#…" và url(#…) trong sprite trỏ tới một id có thật', () => {
@@ -86,10 +99,12 @@ describe('chuyển động (ui-ux v5 §1)', () => {
     expect(reduce).toMatch(/^\s*\{\s*\*\s*\{[^}]*animation:\s*none\s*!important/);
   });
 
-  it('@property cho các biến giai đoạn của Lily, giá trị đầu bằng :root', () => {
-    for (const v of ['--lily-size', '--lily-scarf-on', '--lily-badge-on', '--lily-prop-on']) {
-      const root = light.split(`${v}:`)[1]?.split(';')[0].trim();
-      expect(css).toContain(`@property ${v} { syntax: '<number>'; inherits: true; initial-value: ${root}; }`);
+  it('@property cho mọi biến giai đoạn của Lily (LOOK), giá trị đầu = :root = giai đoạn 3', async () => {
+    const { LOOK } = await import('../src/lily');
+    for (const [k, v] of Object.entries(LOOK[3])) {
+      const root = light.split(`--lily-${k}:`)[1]?.split(';')[0].trim();
+      expect(root, k).toBe(String(v));
+      expect(css).toContain(`@property --lily-${k} { syntax: '<number>'; inherits: true; initial-value: ${v}; }`);
     }
   });
 });
@@ -175,7 +190,16 @@ describe('rig GSAP (ui-ux-v6 M1, T5)', () => {
     expect(movedParts('lily', 'cheer').extra).toEqual(['tail']);
     expect(movedParts('boon', 'point').extra).toEqual(['arm-point']);
     expect(movedParts('boon', 'think').extra).toEqual(['arm-chin']);
-    expect(GROW_MS).toBe(900);
+    expect(GROW_MS).toBe(2400); // L132 ceremony, ≤ 3 s
     expect(css).toContain(`animation: cq-grow ${GROW_MS}ms`);
+    for (const n of [1, 2, 3, 4, 5]) expect(css).toContain(`:root[data-lily="${n}"] svg[data-mascot=lily].grow > g { animation: cq-grow${n} ${GROW_MS}ms`);
+  });
+
+  it('L132: điểm xoay theo độ nâng thân của giai đoạn (cổ, tay chỉ); chân và gốc đuôi ở đất', async () => {
+    const { pivotOf, PIVOT } = await import('../src/ui/mascots');
+    const { LOOK } = await import('../src/lily');
+    expect(pivotOf('lily', 0)).toEqual(PIVOT.lily);
+    expect(pivotOf('lily', LOOK[2].lift)).toEqual({ feet: '60 112', neck: '60 66', tail: '80 106', 'arm-point': '72 82' });
+    expect(pivotOf('boon', 6)).toEqual(PIVOT.boon);
   });
 });
