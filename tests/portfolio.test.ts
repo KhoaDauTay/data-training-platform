@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { portfolioMd } from '../src/me';
+import type { Card } from '../src/dashboard';
+import { pictureCards, portfolioMd } from '../src/me';
 import { crc32, takeHomeMd, zip } from '../src/portfolio';
 
 /** V19-D (L170): portfolio card pictures (zip) and the take-home portfolio. */
@@ -45,6 +46,14 @@ describe('portfolio README with card pictures', () => {
   });
 });
 
+describe('which cards get a picture', () => {
+  it('only cards that ran here, are not slow and read no imported data (checked before running)', () => {
+    const c = (id: string, sql: string, extra: Partial<Card> = {}): Card => ({ id, title: id, sql, kind: 'table', source: 'sandbox', ...extra });
+    const cards = [c('ok', 'SELECT 1'), c('slow', 'SELECT 2', { slow: true }), c('notRan', 'SELECT 3'), c('mine', 'SELECT * FROM "My_Sales"'), c('sb', 'SELECT * FROM sandbox.x')];
+    expect(pictureCards(cards, ['my_sales'], (x) => x.id !== 'notRan').map((x) => x.id)).toEqual(['ok']);
+  });
+});
+
 describe('take-home portfolio', () => {
   const entry = {
     title: 'Which stores miss?', brief: 'The regional manager needs…', text: 'Store 3 missed most.\nFrom September all met.',
@@ -62,6 +71,13 @@ describe('take-home portfolio', () => {
     expect(md).toMatch(/not verified/);
     expect(md).toMatch(/no longer on this device/); // step 2 has no SQL left: never a draft
     expect(takeHomeMd({ lang: 'vi', name: 'An', date: 'x', entries: [entry] })).toMatch(/hư cấu[\s\S]*không xác minh/);
+  });
+  it('VI and EN texts: same placeholders, EN differs and has no Vietnamese diacritics', () => {
+    const vi = takeHomeMd({ lang: 'vi', name: '', date: 'D', entries: [entry] });
+    const en = takeHomeMd({ lang: 'en', name: '', date: 'D', entries: [entry] });
+    expect(vi).not.toBe(en);
+    for (const md of [vi, en]) expect(md).not.toMatch(/\{\w+\}/);
+    expect(en.replace(entry.text, '')).not.toMatch(/[ăâđêôơưàáạảãèéẹẻẽìíịỉĩòóọỏõùúụủũỳýỵỷỹ]/i);
   });
   it('the lazy chunk imports only types from main modules (Plan 6 U3)', () => {
     const sources = import.meta.glob(['../src/ui/portfolioPng.ts', '../src/portfolio.ts'], { query: '?raw', import: 'default', eager: true }) as Record<string, string>;

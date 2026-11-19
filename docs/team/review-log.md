@@ -782,6 +782,6 @@ Cách đo: `npm run build`, `vite preview --port 5217 --strictPort`, Edge headle
 
 - Portfolio Finance: sáng/VI 2,7 s, tối/EN 3,3 s (gồm seed Finance); zip mở được bằng `Expand-Archive`: `README.md` + `cards/c1..c4.png` (35–83 KB/ảnh, không trống, đúng theme); c5 (chưa chạy ở máy) chỉ có SQL. Take-home `.md`: đề, 3 bước SQL đã đạt, đoạn tự viết, rubric `[x]/[ ]` 2/5.
 - Nút "Tải ảnh PNG" trên Bảng điều hành (code vẽ đã chuyển sang `portfolioPng`) vẫn tải `boondata-finance-c2.png`.
-- Top bar: 53 px một hàng ở 1024–1600 (L171 số đo). ⋯ ở workspace 700 px có VI/EN + theme; 600/900 px và trang khác không đổi.
+- Top bar: 53 px một hàng ở 1024–1600, EN tối, Tổng quan Logistics/Finance + workspace E-com (L171). ⋯ ở workspace 700 px có VI/EN + theme; 600/900 px và trang khác không đổi.
 - Ngân sách (gzip -9): main 321 927 B (314,4 KB; roadmap đo 315), `me` 11 346 B (11,1/12), `portfolioPng` 3 314 B (mới, đang tính vào `rest`; đề xuất nhóm 6 KB cho V19-C). `dist/sw.js` có chunk mới trong `FILES`.
 - Chưa làm: F11 (chờ V10-B). Chờ merge: FIX-1 đổi `importedNames` thành Promise và sửa cùng các hàm ở `meView.ts` (code mới đã `await`, sẽ có xung đột nhỏ khi merge).

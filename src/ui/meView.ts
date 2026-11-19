@@ -20,7 +20,7 @@ import type * as IvPrefs from '../interviewPrefs';
 import { meText, type MeKey } from '../i18n/me';
 import {
   calendar, certificateSvg, dashFile, importDash as readDashFile, portfolioEntries, portfolioMd, strengths, topErrors, touchesSandbox,
-  trySummary, type CertScope, type PortfolioEntry,
+  trySummary, pictureCards, type CertScope, type PortfolioEntry,
 } from '../me';
 
 /**
@@ -313,7 +313,7 @@ async function savePortfolio(s: Scope & { scope: DomainId }, entries: PortfolioE
   try {
     const imported = await d.importedNames(); // FIX-1: stored imports too, even before restore ends
     const cards = d.domainSlot(d.app.save, dom).dashboard.cards;
-    const shoot = cards.filter((c) => !c.slow && d.ranHere(c) && !touchesSandbox(c.sql, imported));
+    const shoot = pictureCards(cards, imported, d.ranHere);
     const pp = await pngChunk();
     const pics = await pp.cardPictures(dom, shoot, {
       run: d.run, cardBody: d.cardBody, cardClass: d.cls.cx(d.cls.CARD, 'flex flex-col gap-3 p-4'), footer: m('png.footer'),

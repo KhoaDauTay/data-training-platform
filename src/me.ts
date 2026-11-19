@@ -167,6 +167,13 @@ export function portfolioEntries(tickets: readonly Ticket[], save: Pick<Save, 'c
   });
 }
 
+/**
+ * V19-D (L170): the cards a portfolio may run again for a picture: ran on this device, not slow, no imported data. Filtered
+ * before running (imported SQL never runs by itself; a picture carries result rows, not only SQL).
+ */
+export const pictureCards = (cards: readonly Card[], imported: readonly string[], ranHere: (c: Card) => boolean): Card[] =>
+  cards.filter((c) => !c.slow && ranHere(c) && !touchesSandbox(c.sql, imported));
+
 /** A fence longer than any backtick run inside the SQL. */
 const fence = (sql: string): string => '`'.repeat(Math.max(3, ...[...sql.matchAll(/`+/g)].map((r) => r[0].length + 1)));
 
