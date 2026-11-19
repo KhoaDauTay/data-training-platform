@@ -55,5 +55,6 @@ describe('ui-ux-v7 W2: dock thu gọn', () => {
   it('việc thường thu thành một dòng, thăng tiến giữ cả cảnh', () => {
     for (const k of ['ship', 'yard', 'customs', 'truck', 'quote', 'ledger', 'chat']) expect(dockEnd(k)).toBe('mini');
     expect(dockEnd('promotion')).toBe('full');
+    expect(dockEnd('promotion', false)).toBe('mini'); // v21 U11: below 1280 px it folds too
   });
 });

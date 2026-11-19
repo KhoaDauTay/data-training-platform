@@ -143,8 +143,8 @@ function skillPage(c: LearnCtx, s: Skill): HTMLElement {
       h('h2', { id: 'skill-card', class: 'm-0 text-body font-bold' }, lt('learn.card')),
       // L93: General shows the lesson's example and mistake (lab, a shop chain), not the card's domain syntax and trap (L82).
       h('pre', { class: 'sql' }, lesson?.example ?? s.syntax),
-      h('p', { class: 'm-0' }, h('b', {}, lt('learn.when')), ' ', s.when[lang]),
-      h('div', {}, h('b', {}, lt('learn.trap')), d$.richText(lesson?.mistake.why[lang] ?? s.trap[lang]),
+      // v21 U27: "when to use it" is already the line under the skill's name; the trap label sits on its paragraph
+      h('div', { class: 'space-y-1 [&_p]:my-0' }, h('b', {}, lt('learn.trap')), d$.richText(lesson?.mistake.why[lang] ?? s.trap[lang]),
         lesson ? h('pre', { class: 'sql' }, lesson.mistake.sql) : null)));
 }
 
@@ -182,7 +182,7 @@ function overview(c: LearnCtx): HTMLElement {
       return h('li', { class: 'relative flex cursor-pointer items-center gap-3 rounded-(--r-card) bg-panel px-5 py-4 ring-1 ring-line hover:ring-accent' }, // v12 L86: the whole card opens it
         moduleArt(c, n, 'w-14 sm:w-20', ms.done), // v5 B1: static glyph (L93); v6 S4: done badge
         h('div', { class: 'min-w-0 flex-1 space-y-2' },
-          h('a', { href: `${d$.hashOf('learn')}/sql/${n}`, class: 'font-bold after:absolute after:inset-0' }, lt('learn.moduleTitle', { n, title: d$.moduleTitle(n, lang) }), tick(ms.done)),
+          h('a', { href: `${d$.hashOf('learn')}/sql/${n}`, class: 'font-bold after:absolute after:inset-0' }, lt('learn.moduleTitle', { n, title: d$.moduleTitle(n, lang) })), // v21 U28: the glyph's badge is the one ✓
           h('p', { class: 'm-0 text-body-sm text-muted' }, lt('learn.moduleLine', { k: ms.learned, m: ms.skills.length })),
           bar(ms.learned, ms.skills.length)));
     })));
@@ -259,7 +259,7 @@ function advPage(c: LearnCtx, x: AdvNode): HTMLElement {
   return h('div', { class: 'space-y-5' },
     backLine(x.status === 'external' ? 'adv-ext' : 'adv'),
     statusLine(x, x.status === 'external' ? '' : ` · ${lt('learn.drills', { n: st.drills, total: st.total })}`),
-    h('section', { class: 'space-y-3 rounded-(--r-card) bg-panel p-5 ring-1 ring-line' },
+    h('section', { class: 'mt-6 space-y-3 rounded-(--r-card) bg-panel p-5 ring-1 ring-line' },
     h('div', { class: 'text-[15px] leading-relaxed' }, d$.richText(x.why[lang])),
     st.done ? h('p', { class: 'm-0 font-bold text-good', role: 'status' }, lt('adv.done', { xp: CHALLENGE_XP })) : null,
     x.needs.length ? h('p', { class: 'm-0' }, h('b', {}, lt('adv.needs')), ' ', ...needs) : null,
@@ -282,8 +282,8 @@ function advPage(c: LearnCtx, x: AdvNode): HTMLElement {
           h('h3', { class: 'm-0 font-bold' }, r.title[lang]),
           h('div', { class: 'text-[15px] leading-relaxed' }, d$.richText(r.body[lang])),
           h('div', { class: 'grid gap-3 md:grid-cols-2' },
-            h('figure', { class: 'm-0 min-w-0' }, h('figcaption', { class: 'mb-1 text-body-sm text-muted' }, 'SQL'), h('pre', { class: 'sql', lang: 'en' }, r.sql)),
-            h('figure', { class: 'm-0 min-w-0' }, h('figcaption', { class: 'mb-1 text-body-sm text-muted' }, 'pandas'), h('pre', { class: 'sql', lang: 'en' }, r.pandas))))))
+            h('figure', { class: 'm-0 min-w-0' }, h('figcaption', { class: 'mb-1 text-body-sm text-muted' }, 'SQL'), h('pre', { class: 'sql overflow-x-auto whitespace-pre', lang: 'en', tabindex: '0' }, r.sql)), // v21 U29: scroll, never break an expression
+            h('figure', { class: 'm-0 min-w-0' }, h('figcaption', { class: 'mb-1 text-body-sm text-muted' }, 'pandas'), h('pre', { class: 'sql overflow-x-auto whitespace-pre', lang: 'en', tabindex: '0' }, r.pandas))))))
       : null,
     x.links.length
       ? h('section', { class: 'space-y-1' }, h('h2', { class: 'm-0 text-body font-bold' }, lt('adv.links')),

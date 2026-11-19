@@ -373,7 +373,7 @@ function portfolioCard(list: Scope[]): HTMLElement {
       return n
         ? d.h('li', { class: 'flex flex-wrap items-center gap-3' }, go(m('pf.th.download'), () => void saveTakeHomes(), pfBusy === 'general'),
           d.h('span', { class: 'text-body-sm text-muted' }, m('pf.th.count', { n })))
-        : d.h('li', { class: 'flex items-start gap-2 text-body-sm text-muted' }, d.icon('lock', 'mt-0.5 size-4 shrink-0'), // U17: icon and sentence on one line
+        : d.h('li', { class: 'flex items-start gap-2 text-body-sm text-muted' }, d.icon('lock', 'mt-0.5 size-4 shrink-0'), // v21 U17: the icon stays beside its sentence
           d.h('span', {}, m('pf.th.none'), ' ', d.h('a', { href: `${d.hashOf('learn')}/interview` }, m('pf.th.go'))));
     }
     if (!s.open) return d.h('li', { class: 'flex items-start gap-2 text-body-sm text-muted' }, d.icon('lock', 'mt-0.5 size-4 shrink-0'), d.h('span', {}, m('pf.locked', { domain: s.what })));

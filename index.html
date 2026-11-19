@@ -190,7 +190,7 @@
       <form method="dialog" class="mt-3 flex justify-end"><button data-i18n="app.close">Đóng</button></form>
     </dialog>
     <!-- ui-ux-v7 W2 (D-U3): 480 px from 1024 px so it covers less of the result; a task's dock folds to one line once its motion ends (data-mini, ui/stage.ts). -->
-    <div id="stage" class="pointer-events-none fixed inset-x-4 bottom-4 z-40 max-lg:bottom-18 sm:left-auto sm:w-[480px]" hidden>
+    <div id="stage" role="region" data-i18n-aria="anim.region" aria-label="Việc vừa xong" class="pointer-events-none fixed inset-x-4 bottom-4 z-40 max-lg:bottom-18 sm:left-auto sm:w-[480px]" hidden>
       <div class="overflow-hidden rounded-(--r-card) bg-panel shadow-(--shadow-2) ring-1 ring-line">
         <div id="stage-art" class="relative" aria-hidden="true"></div>
         <div class="stage-row flex items-center gap-3 border-t border-line px-4 py-2">

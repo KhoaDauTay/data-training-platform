@@ -9,6 +9,10 @@ import { h } from './dom';
 import { icon, type IconName } from './icons';
 import { errorText, errorView } from './feedback';
 import { renderResult } from './resultTable';
+import { growPanel } from './splitter';
+
+/** v21 U5: tabs that draw a picture; the first one opened in a session raises a short panel (growPanel). */
+const PICTURE = new Set(['chart', 'steps', 'explain', 'flow', 'erd']);
 
 export type TabGroup = 'output' | 'query' | 'schema';
 export interface TabSpec {
@@ -72,8 +76,14 @@ export function createPanel(host: HTMLElement): Panel {
   // ui-ux-v7 W1: a 1 px rule between groups (was an unexplained ml-4 gap); never wraps: it scrolls sideways, with a fade on the side that has more.
   const rule = () => h('span', { class: 'mx-1 h-4 w-px shrink-0 self-center bg-line', 'aria-hidden': 'true' });
   const ink = h('span', { class: 'pointer-events-none absolute bottom-0 left-0 h-0.5 w-0 rounded-full bg-accent', 'aria-hidden': 'true' });
+  const rules = new Map<number, HTMLElement>(); // tab index → the rule before it (first tab of a group)
   const bar = h('div', { class: 'tab-bar relative mb-2.5 flex flex-nowrap gap-1 overflow-x-auto border-b border-line', role: 'tablist', 'data-i18n-aria': 'tab.list', 'aria-label': t('tab.list') },
-    ...buttons.flatMap((b, i) => (i > 0 && tabs[i].group !== tabs[i - 1].group ? [rule(), b] : [b])), ink);
+    ...buttons.flatMap((b, i) => {
+      if (i === 0 || tabs[i].group === tabs[i - 1].group) return [b];
+      const r = rule();
+      rules.set(i, r);
+      return [r, b];
+    }), ink);
   // X4: the underline sits under the open tab. It slides only when the open tab changes (a click, a chip, a new task); a redraw,
   // a resize or the first paint puts it in place at once. Reduced motion: style.css drops every transition.
   let placed = '';
@@ -131,6 +141,10 @@ export function createPanel(host: HTMLElement): Panel {
       b.tabIndex = on ? 0 : -1;
       b.replaceChildren(t(tab.label), tab.newAt === app.selectedId ? h('span', { class: 'ml-1.5 rounded bg-accent px-1 text-[11px] text-on-accent' }, t('tab.new')) : '');
     });
+    // v21 U8: a rule only between two groups that both show a tab (a hidden middle group left "| |" on task 1)
+    for (const [i, r] of rules) {
+      r.hidden = !tabs.some((x, j) => j >= i && x.group === tabs[i].group && !buttons[j].hidden) || !buttons.slice(0, i).some((b) => !b.hidden);
+    }
     edges();
     place(slide); // a relabel can change a tab's width (language, the "new" chip): followed without sliding
   }
@@ -139,6 +153,7 @@ export function createPanel(host: HTMLElement): Panel {
     const before = active;
     active = tabs.some((x) => x.id === id) ? id : tabs[0].id;
     label(active !== before);
+    if (PICTURE.has(active)) growPanel();
     body.setAttribute('aria-labelledby', `tab-${active}`);
     // A fresh host per render: a slow async render of a tab left behind writes into a detached node.
     const target = h('div');

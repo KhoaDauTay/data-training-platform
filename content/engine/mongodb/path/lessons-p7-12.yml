@@ -1,0 +1,756 @@
+# Bài học nhanh lộ trình MongoDB, Phần 7–12: một bài mỗi kỹ năng (cùng khuôn content/lessons.yml: concept, example,
+# explain, mistake, try, docs). Ví dụ, lỗi hay gặp và "Thử ngay" chạy trên content/engine/mongodb/path/dataset.json.
+# `mistake.query` là truy vấn sai nhưng chạy được (hoặc minh họa, Phần 11); `try` theo cùng định dạng drill
+# (format: choice / grade: esr / grade: covered như drills-p7-12.yml). Lời giải thích không ghi con số phụ thuộc dữ liệu.
+
+- id: mg.lookup_pipeline
+  concept:
+    vi: "`$lookup` dạng pipeline gắn tài liệu của collection khác theo điều kiện tùy ý. `let` đặt tên cho trường của tài liệu hiện tại; trong `pipeline`, đọc chúng với tiền tố `$$` bên trong `$expr`. Pipeline con có thể lọc, sắp, cắt bớt trước khi gắn: giống một subquery tương quan trong SQL."
+    en: "The pipeline form of `$lookup` attaches documents of another collection under any condition. `let` names fields of the current document; inside `pipeline` you read them with the `$$` prefix within `$expr`. The sub-pipeline can filter, sort and cut before attaching: like a correlated subquery in SQL."
+  example: |-
+    db.stores.aggregate([
+      { $lookup: { from: 'orders', let: { sid: '$_id' }, pipeline: [
+        { $match: { $expr: { $eq: ['$store_id', '$$sid'] } } },
+        { $sort: { order_date: 1, _id: 1 } },
+        { $limit: 1 }
+      ], as: 'first' } },
+      { $project: { _id: 0, name: 1, first_order: { $arrayElemAt: ['$first.order_date', 0] } } }
+    ])
+  explain:
+    vi: "① `let: { sid: '$_id' }`: mã cửa hàng hiện tại thành biến `sid`. ② `$expr` + `'$$sid'`: chỉ giữ đơn của cửa hàng đó. ③ `$sort` + `$limit: 1` ngay trong pipeline con: chỉ gắn đơn đầu tiên. ④ `$arrayElemAt`: lấy ngày ra khỏi mảng. Mỗi cửa hàng một tài liệu."
+    en: "① `let: { sid: '$_id' }`: the current store id becomes the variable `sid`. ② `$expr` + `'$$sid'`: keep only that store's orders. ③ `$sort` + `$limit: 1` inside the sub-pipeline: attach only the first order. ④ `$arrayElemAt`: pull the date out of the array. One document per store."
+  mistake:
+    query: |-
+      db.stores.aggregate([
+        { $lookup: { from: 'orders', let: { sid: '$_id' }, pipeline: [
+          { $match: { store_id: '$$sid' } }
+        ], as: 'o' } },
+        { $project: { _id: 0, name: 1, n: { $size: '$o' } } }
+      ])
+    vi: "Biến `$$sid` đặt trong `$match` thường (không có `$expr`) bị hiểu là chuỗi chữ `'$$sid'`, nên không đơn nào khớp và mọi cửa hàng ra 0."
+    en: "`$$sid` inside a plain `$match` (no `$expr`) is read as the literal string `'$$sid'`, so no order matches and every store gets 0."
+  try:
+    task:
+      vi: "Mỗi danh mục sản phẩm (`_id` là danh mục, đi từ collection `products` gộp theo `category`): số đơn `CANCELLED` có chứa ít nhất một sản phẩm của danh mục đó (`cancelled`)."
+      en: "Each product category (`_id` is the category, start from `products` grouped by `category`): the number of `CANCELLED` orders containing at least one product of that category (`cancelled`)."
+    starter: |-
+      db.products.aggregate([
+        { $group: { _id: '$category', pids: { $push: '$_id' } } },
+        { $lookup: { from: 'orders', let: { p: '$pids' }, pipeline: [
+          { $match: { status: 'CANCELLED' } }
+        ], as: 'o' } },
+        { $project: { cancelled: { $size: '$o' } } }
+      ])
+    solution: |-
+      db.products.aggregate([
+        { $group: { _id: '$category', pids: { $push: '$_id' } } },
+        { $lookup: { from: 'orders', let: { p: '$pids' }, pipeline: [
+          { $match: { status: 'CANCELLED' } },
+          { $match: { $expr: { $gt: [{ $size: { $setIntersection: ['$items.product_id', '$$p'] } }, 0] } } }
+        ], as: 'o' } },
+        { $project: { cancelled: { $size: '$o' } } }
+      ])
+  docs: https://www.mongodb.com/docs/manual/reference/operator/aggregation/lookup/
+
+- id: mg.in_other
+  concept:
+    vi: "Semi-join: giữ tài liệu khi có ít nhất một tài liệu khớp ở collection khác, không cần dữ liệu bên đó. Trong Mongo: `$lookup` (thêm `$limit: 1` trong pipeline cho nhẹ), rồi `$match: { hit: { $ne: [] } }`. Giống `WHERE id IN (…)` hay `EXISTS` của SQL: mỗi tài liệu xuất hiện tối đa một lần."
+    en: "Semi-join: keep a document when at least one document matches in another collection, without needing that data. In Mongo: `$lookup` (add `$limit: 1` in the pipeline to keep it light), then `$match: { hit: { $ne: [] } }`. Like SQL's `WHERE id IN (…)` or `EXISTS`: each document appears at most once."
+  example: |-
+    db.stores.aggregate([
+      { $lookup: { from: 'orders', let: { sid: '$_id' }, pipeline: [
+        { $match: { channel: 'ONLINE', $expr: { $eq: ['$store_id', '$$sid'] } } },
+        { $limit: 1 }
+      ], as: 'hit' } },
+      { $match: { hit: { $ne: [] } } },
+      { $project: { _id: 0, name: 1 } }
+    ])
+  explain:
+    vi: "① Pipeline con tìm đơn `ONLINE` của cửa hàng. ② `$limit: 1`: thấy một đơn là đủ để trả lời \"có\". ③ `hit: { $ne: [] }`: giữ cửa hàng có ít nhất một đơn như vậy. Mỗi cửa hàng hiện một lần dù có bao nhiêu đơn."
+    en: "① The sub-pipeline finds the store's `ONLINE` orders. ② `$limit: 1`: one order is enough to answer \"yes\". ③ `hit: { $ne: [] }`: keep stores with at least one such order. Each store shows once however many orders it has."
+  mistake:
+    query: |-
+      db.stores.aggregate([
+        { $lookup: { from: 'orders', localField: '_id', foreignField: 'store_id', as: 'o' } },
+        { $unwind: '$o' },
+        { $match: { 'o.channel': 'ONLINE' } },
+        { $project: { _id: 0, name: 1 } }
+      ])
+    vi: "`$unwind` biến mỗi đơn khớp thành một tài liệu, nên tên cửa hàng lặp lại theo số đơn `ONLINE`."
+    en: "`$unwind` turns each matching order into its own document, so the store name repeats once per `ONLINE` order."
+  try:
+    task:
+      vi: "Những sản phẩm nằm trong ít nhất một đơn `REFUNDED` từ 2026-07-01: chỉ tên (`name`), mỗi sản phẩm một lần."
+      en: "The products found in at least one `REFUNDED` order from 2026-07-01: the name (`name`) only, each product once."
+    starter: |-
+      db.stores.aggregate([
+        { $lookup: { from: 'orders', let: { sid: '$_id' }, pipeline: [
+          { $match: { channel: 'ONLINE', $expr: { $eq: ['$store_id', '$$sid'] } } },
+          { $limit: 1 }
+        ], as: 'hit' } },
+        { $match: { hit: { $ne: [] } } },
+        { $project: { _id: 0, name: 1 } }
+      ])
+    solution: |-
+      db.products.aggregate([
+        { $lookup: { from: 'orders', let: { pid: '$_id' }, pipeline: [
+          { $match: { status: 'REFUNDED', order_date: { $gte: ISODate('2026-07-01') }, $expr: { $in: ['$$pid', '$items.product_id'] } } },
+          { $limit: 1 }
+        ], as: 'hit' } },
+        { $match: { hit: { $ne: [] } } },
+        { $project: { _id: 0, name: 1 } }
+      ])
+  docs: https://www.mongodb.com/docs/manual/reference/operator/aggregation/lookup/
+
+- id: mg.facet
+  concept:
+    vi: "`$facet` chạy nhiều pipeline con trên cùng một tập tài liệu đầu vào và trả đúng một tài liệu, mỗi trường là kết quả (một mảng) của một pipeline con. Hợp cho màn hình cần cùng lúc tổng, phân nhóm và top N. Mỗi mảng có thứ tự, nên sắp bên trong pipeline con."
+    en: "`$facet` runs several sub-pipelines over the same input documents and returns exactly one document, each field holding one sub-pipeline's result (an array). Good for a screen that needs a total, a breakdown and a top N at once. Each array is ordered, so sort inside the sub-pipeline."
+  example: |-
+    db.orders.aggregate([
+      { $match: { store_id: 3, order_date: { $gte: ISODate('2026-10-01'), $lt: ISODate('2026-11-01') } } },
+      { $facet: {
+        total: [{ $count: 'n' }],
+        by_status: [{ $group: { _id: '$status', n: { $sum: 1 } } }, { $sort: { _id: 1 } }],
+        latest: [{ $sort: { order_date: -1, _id: -1 } }, { $limit: 3 }, { $project: { order_date: 1 } }]
+      } }
+    ])
+  explain:
+    vi: "① `$match` lọc một lần. ② `$facet` đưa cùng các đơn đó vào ba pipeline con. ③ `total` đếm, `by_status` gộp và sắp, `latest` lấy 3 đơn mới nhất. Kết quả là một tài liệu có ba mảng."
+    en: "① `$match` filters once. ② `$facet` feeds the same orders into three sub-pipelines. ③ `total` counts, `by_status` groups and sorts, `latest` takes the 3 newest orders. The result is one document with three arrays."
+  mistake:
+    query: |-
+      db.orders.aggregate([
+        { $match: { store_id: 3, order_date: { $gte: ISODate('2026-10-01'), $lt: ISODate('2026-11-01') } } },
+        { $group: { _id: '$status', n: { $sum: 1 } } },
+        { $count: 'total' }
+      ])
+    vi: "`$count` sau `$group` đếm số nhóm trạng thái, không phải số đơn: stage sau chỉ thấy đầu ra của stage trước."
+    en: "`$count` after `$group` counts status groups, not orders: a later stage only sees the earlier stage's output."
+  try:
+    task:
+      vi: "Sản phẩm danh mục `Household`, trả một tài liệu có `n` (một phần tử `{ n }`: số sản phẩm) và `cheapest` (sản phẩm rẻ nhất: `name`, `price_vnd`, không `_id`; cùng giá thì tên A→Z)."
+      en: "Products in `Household`, return one document with `n` (one element `{ n }`: the product count) and `cheapest` (the cheapest product: `name`, `price_vnd`, no `_id`; on the same price, name A→Z)."
+    starter: |-
+      db.products.aggregate([
+        { $match: { category: 'Household' } },
+        { $facet: {
+          n: [],
+          cheapest: []
+        } }
+      ])
+    solution: |-
+      db.products.aggregate([
+        { $match: { category: 'Household' } },
+        { $facet: {
+          n: [{ $count: 'n' }],
+          cheapest: [{ $sort: { price_vnd: 1, name: 1 } }, { $limit: 1 }, { $project: { _id: 0, name: 1, price_vnd: 1 } }]
+        } }
+      ])
+  docs: https://www.mongodb.com/docs/manual/reference/operator/aggregation/facet/
+
+- id: mg.stages
+  concept:
+    vi: "Một pipeline là chuỗi bước, mỗi bước nhận đầu ra của bước trước: đọc như các bước `WITH` của SQL. Gộp hai lần (theo ngày rồi theo cửa hàng) là hai `$group` nối nhau; lọc trên con số vừa tính là `$match` đặt sau `$group` (như HAVING)."
+    en: "A pipeline is a chain of steps, each taking the previous step's output: read it like SQL `WITH` steps. Aggregating twice (per day, then per store) is two `$group` stages in a row; filtering on a number just computed is a `$match` after `$group` (like HAVING)."
+  example: |-
+    db.orders.aggregate([
+      { $match: { status: 'PAID', order_date: { $gte: ISODate('2026-10-01'), $lt: ISODate('2026-11-01') } } },
+      { $unwind: '$items' },
+      { $group: { _id: '$_id', value: { $sum: { $multiply: ['$items.qty', '$items.unit_price_vnd'] } } } },
+      { $match: { value: { $gte: 500000 } } },
+      { $count: 'big_orders' }
+    ])
+  explain:
+    vi: "① Lọc đơn `PAID` tháng 10. ② `$unwind`: mỗi dòng hàng một tài liệu. ③ `$group` theo đơn: giá trị mỗi đơn. ④ `$match` trên `value` vừa tính: đơn từ 500.000 đồng. ⑤ `$count`: đếm. Bước ④ không đọc được `order_date` nữa vì bước ③ đã bỏ nó."
+    en: "① Keep October `PAID` orders. ② `$unwind`: one document per line. ③ `$group` by order: each order's value. ④ `$match` on the fresh `value`: orders of 500,000 VND or more. ⑤ `$count`: count them. Step ④ can no longer read `order_date` because step ③ dropped it."
+  mistake:
+    query: |-
+      db.orders.aggregate([
+        { $group: { _id: '$store_id', n: { $sum: 1 } } },
+        { $match: { order_date: { $gte: ISODate('2026-10-01') } } }
+      ])
+    vi: "Lọc ngày sau `$group`: tài liệu nhóm không còn `order_date`, nên không nhóm nào khớp. Lọc dòng gốc phải đặt trước `$group`."
+    en: "Filtering the date after `$group`: group documents no longer have `order_date`, so no group matches. Filters on source rows go before `$group`."
+  try:
+    task:
+      vi: "Năm 2026, mỗi cửa hàng (`_id` là mã cửa hàng): số tháng có hơn 30 đơn (`busy_months`). Cửa hàng không có tháng nào như vậy thì không cần hiện."
+      en: "Year 2026, each store (`_id` is the store id): the number of months with more than 30 orders (`busy_months`). Stores with no such month need not appear."
+    starter: |-
+      db.orders.aggregate([
+        { $match: { order_date: { $gte: ISODate('2026-01-01'), $lt: ISODate('2027-01-01') } } }
+      ])
+    solution: |-
+      db.orders.aggregate([
+        { $match: { order_date: { $gte: ISODate('2026-01-01'), $lt: ISODate('2027-01-01') } } },
+        { $group: { _id: { s: '$store_id', m: { $month: '$order_date' } }, n: { $sum: 1 } } },
+        { $match: { n: { $gt: 30 } } },
+        { $group: { _id: '$_id.s', busy_months: { $sum: 1 } } }
+      ])
+  docs: https://www.mongodb.com/docs/manual/core/aggregation-pipeline/
+
+- id: mg.first_per_group
+  concept:
+    vi: "Lấy nguyên một tài liệu mỗi nhóm (rẻ nhất, mới nhất): `$sort` theo tiêu chí và tiêu chí phụ, rồi `$group` với `$first` cho mọi trường cần. Mọi `$first` lấy từ cùng tài liệu đứng đầu nhóm. Giống `DISTINCT ON` của Postgres."
+    en: "Take one whole document per group (the cheapest, the latest): `$sort` by the rule and a tie-breaker, then `$group` with `$first` for every field you need. Every `$first` reads the same leading document of the group. Like Postgres' `DISTINCT ON`."
+  example: |-
+    db.orders.aggregate([
+      { $match: { customer_id: { $ne: null } } },
+      { $sort: { order_date: -1, _id: -1 } },
+      { $group: { _id: '$customer_id', last_order: { $first: '$_id' }, last_date: { $first: '$order_date' } } },
+      { $sort: { _id: 1 } },
+      { $limit: 5 }
+    ])
+  explain:
+    vi: "① Bỏ đơn vãng lai. ② Sắp mới nhất trước, cùng ngày thì mã lớn trước. ③ `$group` theo khách: `$first` lấy mã và ngày của cùng một đơn đứng đầu. ④ Sắp theo khách và lấy 5 dòng để xem."
+    en: "① Drop walk-in orders. ② Newest first, then the larger id. ③ `$group` by customer: `$first` takes the id and date of the same leading order. ④ Sort by customer and keep 5 rows to look at."
+  mistake:
+    query: |-
+      db.products.aggregate([
+        { $group: { _id: '$category', name: { $min: '$name' }, price_vnd: { $min: '$price_vnd' } } }
+      ])
+    vi: "`$min` tính riêng từng trường: tên nhỏ nhất theo bảng chữ cái và giá thấp nhất thường thuộc hai sản phẩm khác nhau."
+    en: "`$min` works field by field: the alphabetically smallest name and the lowest price usually belong to two different products."
+  try:
+    task:
+      vi: "Mỗi danh mục (`_id`): sản phẩm đắt nhất, tên (`name`) và giá (`price_vnd`); cùng giá thì tên A→Z."
+      en: "Each category (`_id`): the most expensive product, its name (`name`) and price (`price_vnd`); on the same price, name A→Z."
+    starter: |-
+      db.products.aggregate([
+        { $sort: {} },
+        { $group: { _id: '$category' } }
+      ])
+    solution: |-
+      db.products.aggregate([
+        { $sort: { price_vnd: -1, name: 1 } },
+        { $group: { _id: '$category', name: { $first: '$name' }, price_vnd: { $first: '$price_vnd' } } }
+      ])
+  docs: https://www.mongodb.com/docs/manual/reference/operator/aggregation/first/
+
+- id: mg.set_fields
+  concept:
+    vi: "`$set` (tên khác: `$addFields`) thêm hoặc ghi đè trường mà giữ nguyên mọi trường khác; `$unset` bỏ trường. Còn `$project` chọn lại toàn bộ hình dạng: trường nào không nêu thì mất (trừ `_id`)."
+    en: "`$set` (also called `$addFields`) adds or overwrites fields and keeps every other field; `$unset` removes fields. `$project` instead reshapes everything: any field it does not name is gone (except `_id`)."
+  example: |-
+    db.orders.aggregate([
+      { $match: { order_date: ISODate('2026-10-31') } },
+      { $set: { value: { $sum: { $map: { input: '$items', in: { $multiply: ['$$this.qty', '$$this.unit_price_vnd'] } } } } } },
+      { $unset: ['items', 'shipped_on', 'delivered_on'] }
+    ])
+  explain:
+    vi: "① Lọc đơn một ngày. ② `$set` thêm `value` (giá trị đơn) và giữ mọi trường khác. ③ `$unset` nhận một tên hoặc một mảng tên để bỏ. Kết quả: mỗi đơn gọn hơn, có thêm giá trị."
+    en: "① Keep one day's orders. ② `$set` adds `value` (the order value) and keeps every other field. ③ `$unset` takes one name or an array of names to drop. Result: each order is leaner and carries its value."
+  mistake:
+    query: |-
+      db.products.aggregate([
+        { $project: { price_k: { $divide: ['$price_vnd', 1000] } } }
+      ])
+    vi: "`$project` chỉ giữ `_id` và `price_k`: tên, danh mục và giá đều mất. Muốn thêm một trường mà giữ phần còn lại thì dùng `$set`."
+    en: "`$project` keeps only `_id` and `price_k`: the name, category and price are all gone. To add a field and keep the rest, use `$set`."
+  try:
+    task:
+      vi: "Khách ở `Can Tho`: giữ mọi trường, thêm `signup_year` = năm đăng ký, bỏ `signup_date` và `birth_year`."
+      en: "Customers in `Can Tho`: keep every field, add `signup_year` = the signup year, drop `signup_date` and `birth_year`."
+    starter: |-
+      db.customers.aggregate([
+        { $match: { city: 'Can Tho' } }
+      ])
+    solution: |-
+      db.customers.aggregate([
+        { $match: { city: 'Can Tho' } },
+        { $set: { signup_year: { $year: '$signup_date' } } },
+        { $unset: ['signup_date', 'birth_year'] }
+      ])
+  docs: https://www.mongodb.com/docs/manual/reference/operator/aggregation/set/
+
+- id: mg.union_with
+  concept:
+    vi: "`$unionWith` nối thêm tài liệu của collection khác (qua một pipeline tùy chọn) vào cuối luồng hiện tại. Giống `UNION ALL`: giữ trùng. Muốn mỗi giá trị một lần (`UNION`) thì `$group` theo giá trị đó. Nên làm hai bên cùng hình dạng bằng `$project`."
+    en: "`$unionWith` appends another collection's documents (through an optional pipeline) to the current stream. Like `UNION ALL`: duplicates stay. For each value once (`UNION`), `$group` on it. Give both sides the same shape with `$project`."
+  example: |-
+    db.stores.aggregate([
+      { $project: { _id: 0, city: 1, kind: 'store' } },
+      { $unionWith: { coll: 'customers', pipeline: [
+        { $match: { city: 'Hanoi' } },
+        { $project: { _id: 0, city: 1, kind: 'customer' } }
+      ] } },
+      { $group: { _id: { city: '$city', kind: '$kind' }, n: { $sum: 1 } } }
+    ])
+  explain:
+    vi: "① Mỗi cửa hàng thành `{ city, kind: 'store' }`. ② `$unionWith` thêm khách ở `Hanoi` với `kind: 'customer'`. ③ `$group` đếm theo thành phố và loại. Chuỗi cố định như `'store'` trong `$project` là một giá trị, không phải đường dẫn trường."
+    en: "① Each store becomes `{ city, kind: 'store' }`. ② `$unionWith` appends customers in `Hanoi` with `kind: 'customer'`. ③ `$group` counts per city and kind. A fixed string like `'store'` in `$project` is a value, not a field path."
+  mistake:
+    query: |-
+      db.stores.aggregate([
+        { $project: { _id: 0, city: 1 } },
+        { $unionWith: { coll: 'customers', pipeline: [{ $project: { _id: 0, city: 1 } }] } }
+      ])
+    vi: "Không `$group` thì mỗi thành phố lặp lại theo số cửa hàng và số khách ở đó, kể cả `null` của khách không rõ thành phố."
+    en: "Without `$group` each city repeats once per store and per customer there, plus `null` for customers with no city."
+  try:
+    task:
+      vi: "Những năm (`_id` là năm) có cửa hàng khai trương hoặc có khách đăng ký, mỗi năm một lần."
+      en: "The years (`_id` is the year) in which a store opened or a customer signed up, each year once."
+    starter: |-
+      db.stores.aggregate([
+        { $project: { _id: 0, y: { $year: '$opened_on' } } }
+      ])
+    solution: |-
+      db.stores.aggregate([
+        { $project: { _id: 0, y: { $year: '$opened_on' } } },
+        { $unionWith: { coll: 'customers', pipeline: [{ $project: { _id: 0, y: { $year: '$signup_date' } } }] } },
+        { $group: { _id: '$y' } }
+      ])
+  docs: https://www.mongodb.com/docs/manual/reference/operator/aggregation/unionWith/
+
+- id: mg.except_like
+  concept:
+    vi: "\"Có ở A mà không có ở B\" (`EXCEPT`, anti-join): `$lookup` từ A sang B, rồi giữ tài liệu có mảng kết quả rỗng: `$match: { hit: { $size: 0 } }`. Mọi điều kiện của B (kỳ, cửa hàng) phải nằm trong pipeline của `$lookup`."
+    en: "\"In A but not in B\" (`EXCEPT`, anti-join): `$lookup` from A into B, then keep documents whose result array is empty: `$match: { hit: { $size: 0 } }`. Every condition on B (period, store) must live inside the `$lookup` pipeline."
+  example: |-
+    db.stores.aggregate([
+      { $lookup: { from: 'orders', let: { sid: '$_id' }, pipeline: [
+        { $match: { order_date: ISODate('2026-10-31'), $expr: { $eq: ['$store_id', '$$sid'] } } },
+        { $limit: 1 }
+      ], as: 'hit' } },
+      { $match: { hit: { $size: 0 } } },
+      { $project: { _id: 0, name: 1 } }
+    ])
+  explain:
+    vi: "① Với mỗi cửa hàng, tìm một đơn ngày 31/10/2026. ② `$size: 0`: giữ cửa hàng không có đơn nào hôm đó. ③ Ngày nằm trong pipeline con, nên câu hỏi là \"không bán hôm đó\", không phải \"chưa bán bao giờ\"."
+    en: "① For each store, look for one order on 31 October 2026. ② `$size: 0`: keep stores with no order that day. ③ The date sits in the sub-pipeline, so the question is \"no sale that day\", not \"never sold\"."
+  mistake:
+    query: |-
+      db.stores.aggregate([
+        { $lookup: { from: 'orders', localField: '_id', foreignField: 'store_id', as: 'hit' } },
+        { $match: { hit: { $size: 0 }, 'hit.order_date': ISODate('2026-10-31') } },
+        { $project: { _id: 0, name: 1 } }
+      ])
+    vi: "Lọc ngày bên ngoài, trên mảng đã rỗng: hai điều kiện mâu thuẫn nên không bao giờ có kết quả."
+    en: "Filtering the date outside, on an array that is already empty: the two conditions contradict, so nothing ever comes back."
+  try:
+    task:
+      vi: "Những sản phẩm không nằm trong đơn `CANCELLED` nào từ 2026-09-01: chỉ tên (`name`)."
+      en: "The products not found in any `CANCELLED` order from 2026-09-01: the name (`name`) only."
+    starter: |-
+      db.products.aggregate([
+        { $lookup: { from: 'orders', let: { pid: '$_id' }, pipeline: [], as: 'hit' } }
+      ])
+    solution: |-
+      db.products.aggregate([
+        { $lookup: { from: 'orders', let: { pid: '$_id' }, pipeline: [
+          { $match: { status: 'CANCELLED', order_date: { $gte: ISODate('2026-09-01') }, $expr: { $in: ['$$pid', '$items.product_id'] } } },
+          { $limit: 1 }
+        ], as: 'hit' } },
+        { $match: { hit: { $size: 0 } } },
+        { $project: { _id: 0, name: 1 } }
+      ])
+  docs: https://www.mongodb.com/docs/manual/reference/operator/aggregation/lookup/
+
+- id: mg.full_like
+  concept:
+    vi: "Mongo không có FULL JOIN. Để đặt hai bên cạnh nhau mà không mất khóa nào: biến mỗi bên thành tài liệu cùng hình dạng, ghi 0 cho phía còn lại (`{ $literal: 0 }`), ghép bằng `$unionWith`, rồi `$group` theo khóa và cộng. Khóa chỉ có ở một bên vẫn còn, phía kia ra 0."
+    en: "Mongo has no FULL JOIN. To put two sides together without losing a key: turn each side into documents of the same shape with 0 for the other side (`{ $literal: 0 }`), stack them with `$unionWith`, then `$group` by key and sum. A key on one side only still appears, with 0 on the other side."
+  example: |-
+    db.orders.aggregate([
+      { $match: { order_date: ISODate('2026-10-30') } },
+      { $project: { _id: 0, s: '$store_id', d30: { $literal: 1 }, d31: { $literal: 0 } } },
+      { $unionWith: { coll: 'orders', pipeline: [
+        { $match: { order_date: ISODate('2026-10-31') } },
+        { $project: { _id: 0, s: '$store_id', d30: { $literal: 0 }, d31: { $literal: 1 } } }
+      ] } },
+      { $group: { _id: '$s', d30: { $sum: '$d30' }, d31: { $sum: '$d31' } } }
+    ])
+  explain:
+    vi: "① Mỗi đơn ngày 30 thành `{ s, d30: 1, d31: 0 }`. ② Mỗi đơn ngày 31 thành `{ s, d30: 0, d31: 1 }`. ③ `$group` cộng theo cửa hàng. Cửa hàng chỉ bán một trong hai ngày vẫn hiện, ngày còn lại là 0. `$literal` giữ số 0/1 là giá trị, không phải lệnh chọn trường."
+    en: "① Each order of the 30th becomes `{ s, d30: 1, d31: 0 }`. ② Each order of the 31st becomes `{ s, d30: 0, d31: 1 }`. ③ `$group` sums per store. A store selling on only one of the days still shows, with 0 for the other. `$literal` keeps 0/1 as values, not field selections."
+  mistake:
+    query: |-
+      db.orders.aggregate([
+        { $match: { order_date: ISODate('2026-10-30') } },
+        { $group: { _id: '$store_id', d30: { $sum: 1 } } },
+        { $lookup: { from: 'orders', let: { s: '$_id' }, pipeline: [
+          { $match: { order_date: ISODate('2026-10-31'), $expr: { $eq: ['$store_id', '$$s'] } } }
+        ], as: 'o' } },
+        { $project: { d30: 1, d31: { $size: '$o' } } }
+      ])
+    vi: "Đi từ ngày 30 rồi `$lookup` sang ngày 31 là left join: cửa hàng chỉ bán ngày 31 không hiện."
+    en: "Starting from the 30th and `$lookup` into the 31st is a left join: a store selling only on the 31st does not show."
+  try:
+    task:
+      vi: "Mỗi sản phẩm bán qua kênh `STORE` hoặc `ONLINE` ngày 2026-10-31 (`_id` là mã sản phẩm): số lượng bán tại quầy (`store_qty`) và trực tuyến (`online_qty`), thiếu thì 0."
+      en: "Each product sold through `STORE` or `ONLINE` on 2026-10-31 (`_id` is the product id): the in-store quantity (`store_qty`) and the online quantity (`online_qty`), 0 when missing."
+    starter: |-
+      db.orders.aggregate([
+        { $match: { channel: 'STORE', order_date: ISODate('2026-10-31') } },
+        { $unwind: '$items' }
+      ])
+    solution: |-
+      db.orders.aggregate([
+        { $match: { channel: 'STORE', order_date: ISODate('2026-10-31') } },
+        { $unwind: '$items' },
+        { $project: { _id: 0, p: '$items.product_id', a: '$items.qty', b: { $literal: 0 } } },
+        { $unionWith: { coll: 'orders', pipeline: [
+          { $match: { channel: 'ONLINE', order_date: ISODate('2026-10-31') } },
+          { $unwind: '$items' },
+          { $project: { _id: 0, p: '$items.product_id', a: { $literal: 0 }, b: '$items.qty' } }
+        ] } },
+        { $group: { _id: '$p', store_qty: { $sum: '$a' }, online_qty: { $sum: '$b' } } }
+      ])
+  docs: https://www.mongodb.com/docs/manual/reference/operator/aggregation/unionWith/
+
+- id: mg.win_rank
+  concept:
+    vi: "`$setWindowFields` thêm trường tính trên một nhóm tài liệu mà không gộp chúng lại. `partitionBy` chia nhóm, `sortBy` cho thứ tự, `output` khai trường mới. Xếp hạng: `$rank` (cùng hạng rồi nhảy), `$denseRank` (cùng hạng, không nhảy), `$documentNumber` (luôn khác nhau)."
+    en: "`$setWindowFields` adds fields computed over a group of documents without collapsing them. `partitionBy` splits groups, `sortBy` gives the order, `output` declares new fields. Ranking: `$rank` (ties share, then skip), `$denseRank` (ties share, no skip), `$documentNumber` (always distinct)."
+  example: |-
+    db.customers.aggregate([
+      { $match: { city: 'Can Tho', birth_year: { $gte: 1995 } } },
+      { $setWindowFields: { sortBy: { birth_year: -1 }, output: {
+        rk: { $rank: {} }, dense: { $denseRank: {} }, num: { $documentNumber: {} }
+      } } },
+      { $project: { _id: 0, name: 1, birth_year: 1, rk: 1, dense: 1, num: 1 } }
+    ])
+  explain:
+    vi: "① Khách ở `Can Tho` sinh từ 1995. ② Sắp năm sinh giảm dần: trẻ nhất trước. ③ Ba cách xếp hạng cạnh nhau: khi hai người cùng năm, `rk` cùng số rồi nhảy, `dense` cùng số không nhảy, `num` vẫn khác nhau. Mọi tài liệu vẫn còn."
+    en: "① Customers in `Can Tho` born from 1995. ② Sort birth year descending: youngest first. ③ Three rankings side by side: when two share a year, `rk` shares then skips, `dense` shares without skipping, `num` stays distinct. Every document remains."
+  mistake:
+    query: |-
+      db.customers.aggregate([
+        { $match: { city: 'Can Tho', birth_year: { $gte: 1995 } } },
+        { $sort: { birth_year: -1 } },
+        { $group: { _id: '$birth_year', n: { $sum: 1 } } }
+      ])
+    vi: "`$group` gộp mất từng khách: còn lại mỗi năm một dòng chứ không có thứ hạng của từng người."
+    en: "`$group` collapses the customers: one row per year is left, not each person's rank."
+  try:
+    task:
+      vi: "Năm 2026, mỗi cửa hàng (`_id` là mã cửa hàng): số đơn `CANCELLED` (`n`) và hạng (`rk`), nhiều nhất hạng 1; cùng số thì cùng hạng và hạng sau bị nhảy."
+      en: "Year 2026, each store (`_id` is the store id): the number of `CANCELLED` orders (`n`) and the rank (`rk`), the most is rank 1; the same number shares a rank and the next rank is skipped."
+    starter: |-
+      db.orders.aggregate([
+        { $match: { status: 'CANCELLED', order_date: { $gte: ISODate('2026-01-01') } } },
+        { $group: { _id: '$store_id', n: { $sum: 1 } } }
+      ])
+    solution: |-
+      db.orders.aggregate([
+        { $match: { status: 'CANCELLED', order_date: { $gte: ISODate('2026-01-01') } } },
+        { $group: { _id: '$store_id', n: { $sum: 1 } } },
+        { $setWindowFields: { sortBy: { n: -1 }, output: { rk: { $rank: {} } } } }
+      ])
+  docs: https://www.mongodb.com/docs/manual/reference/operator/aggregation/setWindowFields/
+
+- id: mg.win_shift
+  concept:
+    vi: "`$shift` trong `$setWindowFields` lấy giá trị của tài liệu cách tài liệu hiện tại `by` vị trí theo `sortBy`: `by: -1` là liền trước (như `LAG`), `by: 1` là liền sau (như `LEAD`). Không có tài liệu đó thì ra `null` (hoặc giá trị `default`)."
+    en: "`$shift` inside `$setWindowFields` takes the value of the document `by` positions away from the current one in `sortBy` order: `by: -1` is the one before (like `LAG`), `by: 1` the one after (like `LEAD`). With no such document you get `null` (or the `default` value)."
+  example: |-
+    db.orders.aggregate([
+      { $match: { store_id: 4, order_date: { $gte: ISODate('2026-10-25') } } },
+      { $group: { _id: '$order_date', n: { $sum: 1 } } },
+      { $setWindowFields: { sortBy: { _id: 1 }, output: {
+        prev: { $shift: { output: '$n', by: -1, default: 0 } }
+      } } },
+      { $set: { change: { $subtract: ['$n', '$prev'] } } }
+    ])
+  explain:
+    vi: "① Số đơn mỗi ngày của cửa hàng 4 từ 25/10/2026. ② `$shift` `by: -1`: số của ngày có đơn liền trước; `default: 0` thay cho `null` ở ngày đầu. ③ `$set` tính mức tăng giảm. Lưu ý: \"liền trước\" là tài liệu trước, không phải ngày lịch trước."
+    en: "① Store 4's daily order count from 25 October 2026. ② `$shift` `by: -1`: the previous day-with-orders' count; `default: 0` replaces `null` on the first day. ③ `$set` computes the change. Note: \"previous\" means the previous document, not the previous calendar day."
+  mistake:
+    query: |-
+      db.orders.aggregate([
+        { $match: { store_id: 4, order_date: { $gte: ISODate('2026-10-25') } } },
+        { $group: { _id: '$order_date', n: { $sum: 1 } } },
+        { $setWindowFields: { sortBy: { _id: 1 }, output: { prev: { $shift: { output: '$n', by: 1 } } } } }
+      ])
+    vi: "`by: 1` là tài liệu liền sau, nên `prev` thực ra là ngày hôm sau; ngày cuối ra `null`."
+    en: "`by: 1` is the next document, so `prev` is actually the following day; the last day gets `null`."
+  try:
+    task:
+      vi: "Các cửa hàng theo ngày khai trương, sớm nhất trước: tên (`name`), ngày mở (`opened_on`) và tên cửa hàng mở ngay trước đó (`opened_before`, cửa hàng đầu là `null`). Không `_id`."
+      en: "Stores by opening date, earliest first: the name (`name`), opening date (`opened_on`) and the name of the store opened just before (`opened_before`, `null` for the first). No `_id`."
+    starter: |-
+      db.stores.aggregate([
+        { $setWindowFields: { sortBy: { opened_on: 1 }, output: {} } }
+      ])
+    solution: |-
+      db.stores.aggregate([
+        { $setWindowFields: { sortBy: { opened_on: 1 }, output: { opened_before: { $shift: { output: '$name', by: -1 } } } } },
+        { $project: { _id: 0, name: 1, opened_on: 1, opened_before: 1 } }
+      ])
+  docs: https://www.mongodb.com/docs/manual/reference/operator/aggregation/shift/
+
+- id: mg.win_agg
+  concept:
+    vi: "Hàm gộp (`$sum`, `$avg`, `$count`…) trong `$setWindowFields` tính trên một cửa sổ quanh tài liệu hiện tại. `window: { documents: [a, b] }` đếm theo vị trí ('unbounded', 'current' hoặc số); `window: { range: [a, b], unit: 'day' }` theo giá trị của `sortBy`. Không ghi `window` thì cửa sổ là cả nhóm, kể cả khi có `sortBy` (khác SQL)."
+    en: "Accumulators (`$sum`, `$avg`, `$count`…) inside `$setWindowFields` work over a window around the current document. `window: { documents: [a, b] }` counts positions ('unbounded', 'current' or a number); `window: { range: [a, b], unit: 'day' }` uses the `sortBy` value. Without `window` the window is the whole partition, even with `sortBy` (unlike SQL)."
+  example: |-
+    db.orders.aggregate([
+      { $match: { store_id: 5, order_date: { $gte: ISODate('2026-10-01'), $lt: ISODate('2026-11-01') } } },
+      { $group: { _id: '$order_date', n: { $sum: 1 } } },
+      { $setWindowFields: { sortBy: { _id: 1 }, output: {
+        running: { $sum: '$n', window: { documents: ['unbounded', 'current'] } },
+        last7: { $sum: '$n', window: { range: [-6, 0], unit: 'day' } },
+        month: { $sum: '$n' }
+      } } }
+    ])
+  explain:
+    vi: "① Số đơn mỗi ngày của cửa hàng 5 trong tháng 10/2026. ② `running`: lũy kế từ đầu tới ngày hiện tại. ③ `last7`: tổng 7 ngày lịch tính tới hôm nay (ngày không có đơn vẫn tính là ngày). ④ `month`: không có `window`, nên mọi dòng đều là tổng cả tháng."
+    en: "① Store 5's daily order count in October 2026. ② `running`: cumulative up to the current day. ③ `last7`: the total over the 7 calendar days up to today (days without orders still count as days). ④ `month`: no `window`, so every row shows the month total."
+  mistake:
+    query: |-
+      db.orders.aggregate([
+        { $match: { store_id: 5, order_date: { $gte: ISODate('2026-10-01'), $lt: ISODate('2026-11-01') } } },
+        { $group: { _id: '$order_date', n: { $sum: 1 } } },
+        { $setWindowFields: { sortBy: { _id: 1 }, output: { running: { $sum: '$n' } } } }
+      ])
+    vi: "Thiếu `window`: Mongo cộng cả nhóm, nên `running` của mọi ngày bằng tổng tháng. SQL thì mặc định chạy tới dòng hiện tại khi có ORDER BY."
+    en: "No `window`: Mongo sums the whole partition, so every day's `running` equals the month total. SQL defaults to running up to the current row when ORDER BY is present."
+  try:
+    task:
+      vi: "Cửa hàng 4, tháng 10/2026: mỗi ngày có đơn (`_id` là ngày), số đơn (`n`) và tổng số đơn của 3 ngày lịch tính tới ngày đó (`last3`, gồm ngày đó và 2 ngày trước)."
+      en: "Store 4, October 2026: each day with orders (`_id` is the day), the order count (`n`) and the total over the 3 calendar days up to that day (`last3`, that day and the 2 before)."
+    starter: |-
+      db.orders.aggregate([
+        { $match: { store_id: 4, order_date: { $gte: ISODate('2026-10-01'), $lt: ISODate('2026-11-01') } } },
+        { $group: { _id: '$order_date', n: { $sum: 1 } } }
+      ])
+    solution: |-
+      db.orders.aggregate([
+        { $match: { store_id: 4, order_date: { $gte: ISODate('2026-10-01'), $lt: ISODate('2026-11-01') } } },
+        { $group: { _id: '$order_date', n: { $sum: 1 } } },
+        { $setWindowFields: { sortBy: { _id: 1 }, output: { last3: { $sum: '$n', window: { range: [-2, 0], unit: 'day' } } } } }
+      ])
+  docs: https://www.mongodb.com/docs/manual/reference/operator/aggregation/setWindowFields/
+
+- id: mg.explain_read
+  concept:
+    vi: "`explain('executionStats')` cho biết Mongo đã đọc dữ liệu thế nào. Xem `winningPlan`: `COLLSCAN` là quét cả collection, `IXSCAN` là dò index, `FETCH` là đọc tài liệu theo index, `SORT` là sắp trong bộ nhớ. Rồi so `totalKeysExamined`, `totalDocsExamined` với `nReturned`: càng gần nhau càng tốt. Trình duyệt này chạy mingo, không có index hay planner, nên các đoạn explain ở đây là minh họa."
+    en: "`explain('executionStats')` tells how Mongo read the data. Look at `winningPlan`: `COLLSCAN` scans the whole collection, `IXSCAN` walks an index, `FETCH` loads documents from the index, `SORT` sorts in memory. Then compare `totalKeysExamined` and `totalDocsExamined` with `nReturned`: the closer, the better. This browser runs mingo, which has no index or planner, so the explain output here is illustrative."
+  example: |-
+    db.orders.find({ store_id: 4, status: 'PAID' }).sort({ order_date: -1 }).explain('executionStats')
+    // minh họa / illustrative:
+    { winningPlan: { stage: 'FETCH', filter: { status: { $eq: 'PAID' } },
+        inputStage: { stage: 'IXSCAN', keyPattern: { store_id: 1, order_date: -1 }, direction: 'forward' } },
+      executionStats: { nReturned: 130, totalKeysExamined: 164, totalDocsExamined: 164 } }
+  explain:
+    vi: "① `IXSCAN` trên `{ store_id: 1, order_date: -1 }`: tìm đúng cửa hàng 4 và đã có sẵn thứ tự ngày, nên không có stage `SORT`. ② `FETCH` đọc từng tài liệu rồi lọc `status`, vì `status` không nằm trong index. ③ Số tài liệu đọc lớn hơn số trả về một chút: thêm `status` vào index sẽ khít hơn."
+    en: "① `IXSCAN` on `{ store_id: 1, order_date: -1 }`: finds store 4 directly and already has the date order, so there is no `SORT` stage. ② `FETCH` reads each document then filters `status`, because `status` is not in the index. ③ Slightly more documents read than returned: adding `status` to the index would fit tighter."
+  mistake:
+    query: "db.orders.find({ store_id: 4 }).explain()"
+    vi: "`explain()` không có tham số chỉ cho kế hoạch, không có số tài liệu đã đọc; muốn biết truy vấn tốn bao nhiêu thì dùng `explain('executionStats')`."
+    en: "`explain()` with no argument shows only the plan, not how many documents were read; to see the cost use `explain('executionStats')`."
+  try:
+    format: choice
+    illustrative: true
+    task:
+      vi: "Explain dưới đây đọc bao nhiêu tài liệu cho mỗi tài liệu trả về, và nên làm gì?"
+      en: "In the explain below, how many documents are read per document returned, and what should you do?"
+    shown: |-
+      db.customers.find({ city: 'Hue', birth_year: 1998 }).explain('executionStats')
+      { winningPlan: { stage: 'COLLSCAN' },
+        executionStats: { nReturned: 2, totalKeysExamined: 0, totalDocsExamined: 300 } }
+    options:
+      - { vi: "1 trên 1, không cần làm gì", en: "1 per 1, nothing to do" }
+      - { vi: "Khoảng 150 trên 1 vì quét cả collection; tạo index `{ city: 1, birth_year: 1 }`", en: "About 150 per 1 because of a full scan; create the index `{ city: 1, birth_year: 1 }`" }
+      - { vi: "0 vì không có khóa nào được xét", en: "0 because no keys were examined" }
+    answer: 1
+    why:
+      vi: "`COLLSCAN` đọc 300 tài liệu để trả 2. Hai điều kiện bằng trên `city` và `birth_year` hợp với một index ghép trên hai trường đó."
+      en: "`COLLSCAN` reads 300 documents to return 2. Two equality conditions on `city` and `birth_year` fit a compound index on those two fields."
+  docs: https://www.mongodb.com/docs/manual/reference/explain-results/
+
+- id: mg.esr
+  concept:
+    vi: "Luật ESR xếp trường của index ghép: trước hết các trường lọc bằng (Equality), rồi các trường sắp (Sort, đúng thứ tự và chiều của `sort()`), cuối cùng các trường lọc khoảng (Range: `$gt`, `$lt`, `$in` nhiều giá trị…). Đặt Range trước Sort thì index không trả sẵn thứ tự và Mongo phải sắp trong bộ nhớ. Ở đây bài được chấm theo luật, vì mingo không có index thật."
+    en: "The ESR rule orders a compound index's fields: first equality filters (Equality), then the sort fields (Sort, in the same order and direction as `sort()`), finally the range filters (Range: `$gt`, `$lt`, multi-value `$in`…). Putting Range before Sort means the index no longer returns the order and Mongo sorts in memory. Drills here are graded by the rule, since mingo has no real index."
+  example: |-
+    // truy vấn / query:
+    db.orders.find({ store_id: 2, order_date: { $gte: ISODate('2026-09-01') } }).sort({ _id: -1 })
+    // index theo ESR / ESR index:
+    db.orders.createIndex({ store_id: 1, _id: -1, order_date: 1 })
+  explain:
+    vi: "① E: `store_id` lọc bằng, đứng đầu. ② S: `_id` là trường sắp, đúng chiều `-1`. ③ R: `order_date` lọc khoảng, đứng cuối. Index trả đơn của cửa hàng 2 theo `_id` giảm dần, và chỉ bỏ qua những khóa có ngày ngoài khoảng."
+    en: "① E: `store_id` is an equality filter, first. ② S: `_id` is the sort field, in the `-1` direction. ③ R: `order_date` is a range filter, last. The index returns store 2's orders by `_id` descending and only skips keys whose date is out of range."
+  mistake:
+    query: "db.orders.createIndex({ store_id: 1, order_date: 1, _id: -1 })"
+    vi: "Viết theo thứ tự xuất hiện trong truy vấn: trường khoảng `order_date` đứng trước trường sắp `_id`, nên kết quả phải sắp lại trong bộ nhớ."
+    en: "Written in the order the query mentions them: the range field `order_date` comes before the sort field `_id`, so the result has to be sorted again in memory."
+  try:
+    grade: esr
+    task:
+      vi: "Tạo index ghép phục vụ truy vấn: đơn kênh `STORE` có ngày giao từ 2026-10-01, sắp theo cửa hàng tăng dần rồi ngày đặt mới nhất trước."
+      en: "Create a compound index for the query: `STORE` channel orders delivered from 2026-10-01, sorted by store ascending then order date newest first."
+    query: "db.orders.find({ channel: 'STORE', delivered_on: { $gte: ISODate('2026-10-01') } }).sort({ store_id: 1, order_date: -1 })"
+    starter: "db.orders.createIndex({ })"
+    solution: "db.orders.createIndex({ channel: 1, store_id: 1, order_date: -1, delivered_on: 1 })"
+  docs: https://www.mongodb.com/docs/manual/tutorial/equality-sort-range-guideline/
+
+- id: mg.covered
+  concept:
+    vi: "Truy vấn phủ (covered) trả lời hoàn toàn từ index, không đọc tài liệu: mọi trường lọc và mọi trường trả về đều nằm trong một index, `_id` bị bỏ bằng `_id: 0` (trừ khi `_id` nằm trong index), và không trường nào là mảng. Trong explain: `PROJECTION_COVERED`, `totalDocsExamined: 0`."
+    en: "A covered query is answered entirely from an index, without reading documents: every filtered and returned field is in one index, `_id` is dropped with `_id: 0` (unless `_id` is in the index), and no field is an array. In explain: `PROJECTION_COVERED`, `totalDocsExamined: 0`."
+  example: |-
+    // index: { city: 1, birth_year: 1 }
+    db.customers.find({ city: 'Hanoi', birth_year: { $gte: 2000 } }, { _id: 0, city: 1, birth_year: 1 })
+  explain:
+    vi: "① Lọc trên `city` và `birth_year`, cả hai trong index. ② Chỉ trả hai trường đó. ③ `_id: 0`: không có nó thì Mongo phải mở tài liệu để lấy `_id`. Kết quả đúng như truy vấn thường, nhưng không chạm tài liệu nào."
+    en: "① Filter on `city` and `birth_year`, both in the index. ② Return only those two fields. ③ `_id: 0`: without it Mongo must open each document to fetch `_id`. Same result as a normal query, but no document is touched."
+  mistake:
+    query: "db.customers.find({ city: 'Hanoi', birth_year: { $gte: 2000 } }, { _id: 0, name: 1, birth_year: 1 })"
+    vi: "`name` không nằm trong index, nên Mongo phải đọc từng tài liệu (`FETCH`): kết quả vẫn đúng nhưng không còn phủ."
+    en: "`name` is not in the index, so Mongo must read each document (`FETCH`): the result is still right but no longer covered."
+  try:
+    grade: covered
+    index: "{ channel: 1, status: 1, order_date: 1 }"
+    task:
+      vi: "Có index `{ channel: 1, status: 1, order_date: 1 }`. Viết truy vấn phủ: đơn `ONLINE` bị `CANCELLED`, chỉ trả ngày đặt (`order_date`)."
+      en: "There is an index `{ channel: 1, status: 1, order_date: 1 }`. Write a covered query: `ONLINE` orders that were `CANCELLED`, returning only the order date (`order_date`)."
+    starter: "db.orders.find({ channel: 'ONLINE', status: 'CANCELLED' })"
+    solution: "db.orders.find({ channel: 'ONLINE', status: 'CANCELLED' }, { _id: 0, order_date: 1 })"
+  docs: https://www.mongodb.com/docs/manual/core/query-optimization/#covered-query
+
+- id: mg.embed_vs_ref
+  concept:
+    vi: "Mô hình tài liệu xuất phát từ cách đọc. Nhúng (embed) thứ luôn đọc cùng, có giới hạn và thuộc riêng một tài liệu: dòng hàng trong đơn. Tham chiếu (lưu `_id` của tài liệu khác) thứ lớn dần không giới hạn hoặc dùng chung: đơn của một khách, đánh giá của sản phẩm. Ở giữa có các mẫu: extended reference (chép vài trường hay đọc bên cạnh khóa tham chiếu), subset (nhúng vài phần tử mới nhất, phần còn lại ở collection riêng). Giới hạn cứng: 16 MB mỗi tài liệu."
+    en: "Document models start from how data is read. Embed what is always read together, bounded and owned by one document: lines inside an order. Reference (store another document's `_id`) what grows without limit or is shared: a customer's orders, a product's reviews. In between are patterns: extended reference (copy a few hot fields next to the reference key), subset (embed the few latest elements, keep the rest in their own collection). Hard limit: 16 MB per document."
+  example: |-
+    // nhúng / embedded:      orders    { _id, store_id, items: [{ product_id, qty, unit_price_vnd }] }
+    // tham chiếu / reference: orders    { _id, customer_id, … }  ->  customers { _id, name, email }
+    db.orders.aggregate([
+      { $match: { _id: 1206 } },
+      { $lookup: { from: 'customers', localField: 'customer_id', foreignField: '_id', as: 'customer' } },
+      { $project: { items: 1, 'customer.name': 1 } }
+    ])
+  explain:
+    vi: "① `items` nhúng sẵn: đọc đơn là có dòng hàng, không cần nối. ② Khách là tham chiếu qua `customer_id`: cần `$lookup` khi muốn tên khách. ③ Nếu tên khách được in trên mọi hóa đơn, chép `name` vào đơn (extended reference) sẽ bỏ được bước nối."
+    en: "① `items` is embedded: reading the order gives the lines, no join. ② The customer is referenced through `customer_id`: you need `$lookup` for the name. ③ If the customer name is printed on every order, copying `name` into the order (extended reference) removes the join."
+  mistake:
+    query: |-
+      db.customers.aggregate([
+        { $lookup: { from: 'orders', localField: '_id', foreignField: 'customer_id', as: 'orders' } },
+        { $limit: 1 }
+      ])
+    vi: "Gắn toàn bộ đơn vào hồ sơ khách như thể nhúng: mảng `orders` lớn mãi theo thời gian; ghi thật như vậy sẽ chạm giới hạn 16 MB."
+    en: "Attaching every order to the customer profile as if embedded: the `orders` array keeps growing; storing it that way would hit the 16 MB limit."
+  try:
+    format: choice
+    task:
+      vi: "Mỗi cửa hàng có một quản lý, thông tin quản lý (tên, điện thoại) chỉ hiện trên trang cửa hàng và đổi vài năm một lần. Mô hình nào hợp?"
+      en: "Each store has one manager; the manager's details (name, phone) show only on the store page and change every few years. Which model fits?"
+    options:
+      - { vi: "Nhúng `manager: { name, phone }` trong `stores`", en: "Embed `manager: { name, phone }` in `stores`" }
+      - { vi: "Collection `managers` riêng và `$lookup` mỗi lần mở trang", en: "A separate `managers` collection and a `$lookup` on every page view" }
+      - { vi: "Nhúng mọi cửa hàng vào tài liệu của quản lý", en: "Embed every store in the manager's document" }
+    answer: 0
+    why:
+      vi: "Quan hệ một-một, nhỏ, luôn đọc cùng trang cửa hàng: nhúng là một lần đọc và không có mảng lớn dần."
+      en: "A small one-to-one relation, always read with the store page: embedding is one read and no growing array."
+  docs: https://www.mongodb.com/docs/manual/data-modeling/concepts/embedding-vs-references/
+
+- id: mg.array_ops
+  concept:
+    vi: "Mảng nhúng xử lý được ngay trong tài liệu. Lọc tài liệu: `{ items: { $elemMatch: { … } } }` buộc mọi điều kiện khớp cùng một phần tử. Biến đổi: `$filter` giữ phần tử thỏa điều kiện, `$map` biến từng phần tử, `$reduce` gộp mảng thành một giá trị, `$size` đếm. Không cần `$unwind` rồi `$group` lại."
+    en: "Embedded arrays can be handled inside the document. Filtering documents: `{ items: { $elemMatch: { … } } }` makes every condition match the same element. Transforming: `$filter` keeps matching elements, `$map` transforms each element, `$reduce` folds the array into one value, `$size` counts. No need to `$unwind` and `$group` back."
+  example: |-
+    db.orders.aggregate([
+      { $match: { _id: { $in: [1, 2, 3] } } },
+      { $project: {
+        n: { $size: '$items' },
+        products: { $map: { input: '$items', in: '$$this.product_id' } },
+        total: { $reduce: { input: '$items', initialValue: 0, in: { $add: ['$$value', { $multiply: ['$$this.qty', '$$this.unit_price_vnd'] }] } } },
+        bulk: { $filter: { input: '$items', as: 'i', cond: { $gte: ['$$i.qty', 4] } } }
+      } }
+    ])
+  explain:
+    vi: "① `$size`: số dòng hàng. ② `$map`: mảng mã sản phẩm, `$$this` là phần tử hiện tại. ③ `$reduce`: cộng dồn giá trị dòng vào `$$value` bắt đầu từ 0. ④ `$filter`: chỉ dòng có số lượng từ 4. Mỗi đơn vẫn là một tài liệu."
+    en: "① `$size`: the number of lines. ② `$map`: the array of product ids, `$$this` is the current element. ③ `$reduce`: adds each line value into `$$value` starting from 0. ④ `$filter`: only lines with a quantity of 4 or more. Each order stays one document."
+  mistake:
+    query: "db.orders.find({ 'items.product_id': 21, 'items.qty': { $gte: 4 } }).count()"
+    vi: "Hai điều kiện trên đường dẫn `items.…` khớp riêng: một dòng là sản phẩm 21, một dòng khác có số lượng 4 cũng tính. Cần cùng dòng thì dùng `$elemMatch`."
+    en: "Two conditions on `items.…` paths match separately: one line is product 21, another line has quantity 4, and it still counts. For the same line use `$elemMatch`."
+  try:
+    task:
+      vi: "Các đơn ngày 2026-10-30: mã đơn (`_id`) và `qty_total`, tổng số lượng của mọi dòng, tính ngay trên mảng."
+      en: "Orders of 2026-10-30: the order id (`_id`) and `qty_total`, the total quantity across all lines, computed on the array itself."
+    starter: |-
+      db.orders.aggregate([
+        { $match: { order_date: ISODate('2026-10-30') } }
+      ])
+    solution: |-
+      db.orders.aggregate([
+        { $match: { order_date: ISODate('2026-10-30') } },
+        { $project: { qty_total: { $reduce: { input: '$items', initialValue: 0, in: { $add: ['$$value', '$$this.qty'] } } } } }
+      ])
+  docs: https://www.mongodb.com/docs/manual/reference/operator/query/elemMatch/
+
+- id: mg.schema_validation
+  concept:
+    vi: "Mongo không ép hình dạng tài liệu, trừ khi collection có validator: `db.createCollection('customers', { validator: { $jsonSchema: { required: ['email'], properties: { email: { bsonType: 'string' } } } } })`. Một collection có thể chứa nhiều hình dạng hợp lệ (mẫu polymorphic, phân biệt bằng một trường như `kind`). Trước khi bật luật, tìm tài liệu đang phạm bằng toán tử truy vấn: `$type`, `$exists`, `$not`, `$or`."
+    en: "Mongo does not enforce document shape unless the collection has a validator: `db.createCollection('customers', { validator: { $jsonSchema: { required: ['email'], properties: { email: { bsonType: 'string' } } } } })`. One collection may hold several valid shapes (the polymorphic pattern, told apart by a field such as `kind`). Before turning a rule on, find today's violators with query operators: `$type`, `$exists`, `$not`, `$or`."
+  example: |-
+    db.customers.find(
+      { $or: [{ birth_year: { $not: { $type: 'int' } } }, { signup_date: { $not: { $type: 'date' } } }] },
+      { name: 1, birth_year: 1, signup_date: 1 }
+    )
+  explain:
+    vi: "① `$type: 'int'` kiểm kiểu BSON, `$not` đảo lại: giữ tài liệu mà `birth_year` thiếu, `null` hoặc sai kiểu. ② `$or` gom hai luật: phạm một luật là đủ. ③ Đây là danh sách cần sửa trước khi bật `$jsonSchema`, nếu không validator sẽ chặn mọi lần cập nhật các tài liệu này."
+    en: "① `$type: 'int'` checks the BSON type, `$not` inverts it: keep documents whose `birth_year` is missing, `null` or the wrong type. ② `$or` combines two rules: breaking one is enough. ③ This is the list to fix before turning on `$jsonSchema`, otherwise the validator will block every update to these documents."
+  mistake:
+    query: "db.customers.find({ birth_year: { $type: 'null' } }).count()"
+    vi: "`$type: 'null'` chỉ bắt giá trị `null`, bỏ sót tài liệu thiếu hẳn trường và giá trị sai kiểu như chuỗi. Luật \"phải là số nguyên\" nên kiểm bằng `$not: { $type: 'int' }`."
+    en: "`$type: 'null'` only catches `null` values and misses documents without the field and values of the wrong type such as strings. A \"must be an integer\" rule is checked with `$not: { $type: 'int' }`."
+  try:
+    task:
+      vi: "Luật cho `orders`: `shipped_on` phải là ngày với mọi đơn kênh `ONLINE`. Mỗi trạng thái (`_id` là trạng thái): số đơn `ONLINE` đang phạm luật (`n`)."
+      en: "A rule for `orders`: `shipped_on` must be a date for every `ONLINE` order. Per status (`_id` is the status): the number of `ONLINE` orders breaking it today (`n`)."
+    starter: |-
+      db.orders.aggregate([
+        { $match: { channel: 'ONLINE' } }
+      ])
+    solution: |-
+      db.orders.aggregate([
+        { $match: { channel: 'ONLINE', shipped_on: { $not: { $type: 'date' } } } },
+        { $group: { _id: '$status', n: { $sum: 1 } } }
+      ])
+  docs: https://www.mongodb.com/docs/manual/core/schema-validation/
+
+- id: mg.bucket_pattern
+  concept:
+    vi: "Mẫu bucket gom nhiều sự kiện nhỏ theo thời gian thành một tài liệu mỗi khóa mỗi khoảng (cửa hàng × ngày, cảm biến × giờ): ít tài liệu hơn, index nhỏ hơn, đọc một khoảng là đọc vài tài liệu. Đi kèm thường là mẫu tính sẵn (computed): giữ `count`, `revenue` trong bucket, cập nhật lúc ghi, để báo cáo khỏi tính lại. Khóa thời gian phải đầy đủ (năm + tháng), dùng `$dateTrunc`."
+    en: "The bucket pattern groups many small events over time into one document per key per interval (store × day, sensor × hour): fewer documents, smaller indexes, and reading a range reads a few documents. It often comes with the computed pattern: keep `count`, `revenue` in the bucket, updated on write, so reports never recompute. The time key must be complete (year + month), so use `$dateTrunc`."
+  example: |-
+    db.orders.aggregate([
+      { $match: { store_id: 2, order_date: { $gte: ISODate('2026-10-01'), $lt: ISODate('2026-11-01') } } },
+      { $sort: { _id: 1 } },
+      { $group: {
+        _id: { store: '$store_id', week: { $dateTrunc: { date: '$order_date', unit: 'week', startOfWeek: 'monday' } } },
+        count: { $sum: 1 },
+        orders: { $push: { id: '$_id', day: '$order_date' } }
+      } },
+      { $sort: { '_id.week': 1 } }
+    ])
+  explain:
+    vi: "① Đơn cửa hàng 2 tháng 10/2026. ② Khóa bucket: cửa hàng + đầu tuần (thứ Hai). ③ `count` là số tính sẵn; `orders` giữ sự kiện thô theo thứ tự mã. Một báo cáo theo tuần chỉ đọc vài bucket thay vì từng đơn."
+    en: "① Store 2 orders in October 2026. ② The bucket key: store + week start (Monday). ③ `count` is a precomputed number; `orders` keeps the raw events in id order. A weekly report reads a few buckets instead of every order."
+  mistake:
+    query: |-
+      db.orders.aggregate([
+        { $group: { _id: { store: '$store_id', week: { $week: '$order_date' } }, count: { $sum: 1 } } }
+      ])
+    vi: "`$week` chỉ là số tuần 0–53 trong năm: tuần 40 của 2025 và của 2026 chung một bucket."
+    en: "`$week` is just the week number 0–53 within a year: week 40 of 2025 and of 2026 share one bucket."
+  try:
+    task:
+      vi: "Năm 2026: một bucket mỗi kênh mỗi quý (`_id` gồm `channel` và `quarter`, `quarter` là ngày đầu quý) với số đơn (`count`)."
+      en: "Year 2026: one bucket per channel per quarter (`_id` holds `channel` and `quarter`, `quarter` being the first day of the quarter) with the order count (`count`)."
+    starter: |-
+      db.orders.aggregate([
+        { $match: { order_date: { $gte: ISODate('2026-01-01'), $lt: ISODate('2027-01-01') } } }
+      ])
+    solution: |-
+      db.orders.aggregate([
+        { $match: { order_date: { $gte: ISODate('2026-01-01'), $lt: ISODate('2027-01-01') } } },
+        { $group: { _id: { channel: '$channel', quarter: { $dateTrunc: { date: '$order_date', unit: 'quarter' } } }, count: { $sum: 1 } } }
+      ])
+  docs: https://www.mongodb.com/docs/manual/data-modeling/design-patterns/group-data/bucket-pattern/

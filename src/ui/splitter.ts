@@ -5,7 +5,10 @@ export const LAYOUT_KEY = 'cargo-query/layout';
 interface Layout { col: number; row: number }
 type Part = keyof Layout;
 
-const DEFAULT: Layout = { col: 40, row: 40 };
+// v21 U5/U10: 45 % (was 40): the editor now grows with its text from 4 lines (style.css), so the panel gets the room it gave up.
+const DEFAULT: Layout = { col: 40, row: 45 };
+/** v21 U5: a picture tab (chart, steps, plan, ER) needs this much of the shell; see growPanel. */
+export const PICTURE_ROW = 55;
 const LIMITS: Record<Part, [number, number]> = { col: [25, 60], row: [20, 70] };
 const clamp = (part: Part, v: number) => Math.min(LIMITS[part][1], Math.max(LIMITS[part][0], Math.round(v)));
 
@@ -20,8 +23,24 @@ export function parseLayout(saved: unknown): Layout {
  * Two keyboard-operable separators for the ≥ 1024×700 app shell. CSS reads --col/--row from `shell`.
  * ←/→ (column) and ↑/↓ (panel) move 5%, Home/End jump to the limits, double-click resets.
  */
+let grow: ((row: number) => void) | undefined;
+let grown = false;
+/**
+ * v21 U5: the first picture tab opened in a session raises the default bottom panel to `row` % (never a height the player stored,
+ * never lowers it, not saved by itself; once: a panel the player drags back down afterwards stays where they put it).
+ */
+export function growPanel(row = PICTURE_ROW): void {
+  if (grown || !grow) return;
+  grown = true;
+  grow(row);
+}
+
 export function initLayout(shell: HTMLElement, handles: Record<Part, HTMLElement>): void {
-  const layout = parseLayout(readJson<unknown>(LAYOUT_KEY));
+  const saved = readJson<unknown>(LAYOUT_KEY);
+  const layout = parseLayout(saved);
+  // a height the player set (a stored row) is never overridden
+  const own = !!saved && typeof saved === 'object' && Number.isFinite((saved as Record<string, unknown>).row);
+  grow = (row) => { if (!own && layout.row < row) set('row', row, false); };
 
   const set = (part: Part, v: number, save = true) => {
     layout[part] = clamp(part, v);

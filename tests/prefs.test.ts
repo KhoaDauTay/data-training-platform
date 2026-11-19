@@ -18,11 +18,11 @@ describe('splitter: kích thước đọc từ storage', () => {
   });
 
   it('không phải số hữu hạn → mặc định (không ra NaN%)', () => {
-    expect(parseLayout({ col: 'x', row: null })).toEqual({ col: 40, row: 40 });
-    expect(parseLayout({ col: '50', row: Infinity })).toEqual({ col: 40, row: 40 });
-    expect(parseLayout(undefined)).toEqual({ col: 40, row: 40 });
-    expect(parseLayout([1, 2])).toEqual({ col: 40, row: 40 });
-    expect(parseLayout('oops')).toEqual({ col: 40, row: 40 });
+    expect(parseLayout({ col: 'x', row: null })).toEqual({ col: 40, row: 45 });
+    expect(parseLayout({ col: '50', row: Infinity })).toEqual({ col: 40, row: 45 });
+    expect(parseLayout(undefined)).toEqual({ col: 40, row: 45 });
+    expect(parseLayout([1, 2])).toEqual({ col: 40, row: 45 });
+    expect(parseLayout('oops')).toEqual({ col: 40, row: 45 });
   });
 
   it('LAYOUT_KEY không đổi', () => {

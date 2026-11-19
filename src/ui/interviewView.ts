@@ -44,7 +44,8 @@ export interface InterviewDeps {
 let d$: InterviewDeps;
 let c$: InterviewContent;
 const it = (key: IvKey, params?: I18n.Params): string => ivText(d$.getLang(), d$.locale(), key, params);
-const CARD = 'flex flex-col gap-2 rounded-(--r-card) bg-panel p-5 ring-1 ring-line'; // gap, not space-y: the m-0 children would cancel it
+/** v21 U24: a list row (text left, its button right from sm), not a tall card per set. */
+const ROW = 'flex flex-wrap items-center gap-x-4 gap-y-2 rounded-(--r-card) bg-panel px-5 py-3 ring-1 ring-line';
 const TITLE = { id: 'brief-title', tabindex: '-1', class: 'm-0 text-title font-bold' };
 /** "Run the timer" on the list page: off by default (D-N10), remembered for this page load only. */
 let timerPick = false;
@@ -417,10 +418,14 @@ export function listPage(): HTMLElement {
   const ids = d$.SKILLS.map((s) => s.id);
   const known = d$.knownSkills(d$.app.save, d$.loadTickets('logistics'), ids); // General pages follow Logistics (Plan 9 D9-12)
   const resumable = (id: string): boolean => !!p.live[id] && p.live[id].phase !== 'done';
-  const actions = (id: string): HTMLElement => h('div', { class: 'actions mb-0' }, ...(resumable(id)
-    ? [h('button', { type: 'button', class: 'primary', onclick: () => void d$.startRun(id, false, false) }, it('iv.resume')),
+  // v21 U24 (v7 T1): one main button on the page: the run in progress, else the first set whose skills are all learned, else the first set.
+  const ready = (modules: number[]): boolean => d$.SKILLS.filter((s) => modules.includes(s.chapter)).every((s) => known.has(s.id));
+  const all = [...c$.sets, ...c$.takeHomes];
+  const main = (all.find((x) => resumable(x.id)) ?? c$.sets.find((x) => ready(x.modules)) ?? c$.sets[0])?.id;
+  const actions = (id: string): HTMLElement => h('div', { class: 'actions mb-0 shrink-0' }, ...(resumable(id)
+    ? [h('button', { type: 'button', class: id === main ? 'primary' : '', onclick: () => void d$.startRun(id, false, false) }, it('iv.resume')),
       h('button', { type: 'button', onclick: () => void d$.startRun(id, timerPick, true) }, it('iv.restart'))]
-    : [h('button', { type: 'button', class: 'primary', onclick: () => void d$.startRun(id, timerPick, true) },
+    : [h('button', { type: 'button', class: id === main ? 'primary' : '', onclick: () => void d$.startRun(id, timerPick, true) },
       timerPick && setOf(id) ? it('iv.startTimed', { min: setOf(id)!.minutes }) : it('iv.start'))]));
   const knownLine = (modules: number[]): string => {
     const skills = d$.SKILLS.filter((s) => modules.includes(s.chapter));
@@ -443,11 +448,11 @@ export function listPage(): HTMLElement {
       h('label', { class: 'flex min-h-6 items-center gap-2' }, pick, it('iv.timerPick')),
       h('ul', { class: 'm-0 flex list-none flex-col gap-3 p-0' }, ...c$.sets.map((s) => {
         const last = p.sets[s.id];
-        return h('li', { class: CARD },
+        return h('li', { class: ROW }, h('div', { class: 'flex min-w-0 flex-1 flex-col gap-1' },
           h('h3', { class: 'm-0 text-body font-bold' }, s.title[lang]),
           h('p', { class: 'm-0 text-body-sm text-muted' }, `${it(`iv.level.${s.level}` as IvKey)} · ${it('iv.setLine', { ...range(s.modules), n: s.questions.length, min: s.minutes })}`),
           h('p', { class: 'm-0 text-body-sm' }, knownLine(s.modules)),
-          last ? h('p', { class: 'm-0 text-body-sm' }, it('iv.lastSet', { day: last.at, solved: last.solved, total: last.total, time: clock(last.ms) })) : null,
+          last ? h('p', { class: 'm-0 text-body-sm' }, it('iv.lastSet', { day: last.at, solved: last.solved, total: last.total, time: clock(last.ms) })) : null),
           actions(s.id));
       }))),
     h('section', { class: 'flex flex-col gap-3', 'aria-labelledby': 'iv-th' },
@@ -455,11 +460,11 @@ export function listPage(): HTMLElement {
       h('p', { class: 'm-0 text-body-sm text-muted' }, it('iv.thIntro')),
       h('ul', { class: 'm-0 flex list-none flex-col gap-3 p-0' }, ...c$.takeHomes.map((x) => {
         const last = p.takeHomes[x.id];
-        return h('li', { class: CARD },
+        return h('li', { class: ROW }, h('div', { class: 'flex min-w-0 flex-1 flex-col gap-1' },
           h('h3', { class: 'm-0 text-body font-bold' }, x.title[lang]),
-          h('p', { class: 'm-0 text-body-sm text-muted' }, it('iv.thLine', { ...range(x.modules), n: x.steps.length })),
+          h('p', { class: 'm-0 text-body-sm text-muted' }, `${it('iv.thLine', { ...range(x.modules), n: x.steps.length })}`),
           h('p', { class: 'm-0 text-body-sm' }, knownLine(x.modules)),
-          last ? h('p', { class: 'm-0 text-body-sm' }, it('iv.lastTh', { day: last.at, k: last.checks.length, m: last.rubric })) : null,
+          last ? h('p', { class: 'm-0 text-body-sm' }, it('iv.lastTh', { day: last.at, k: last.checks.length, m: last.rubric })) : null),
           actions(x.id));
       }))));
 }

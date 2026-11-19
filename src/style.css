@@ -24,7 +24,7 @@
    v6 §2.2 (L57): warm cream, teal accent; every text pair is checked in tests/theme.test.ts. */
 :root {
   --bg: #fbf7f0; --panel: #ffffff; --text: #2a2320; --muted: #6b5f57; --border: #e8dfd3;
-  --accent: #0f766e; --accent-soft: #dcf2ee; --on-accent: #ffffff; --good: #1a7f37; --bad: #b42318; --warn: #9a4f00;
+  --accent: #0f766e; --accent-soft: #dcf2ee; --on-accent: #ffffff; --good: #17752f; --bad: #b42318; --warn: #9a4f00;
   --code: #f4eee5; --sea: #e8f1f8; --land: #d9e2ea; --bar: #1f3b57; --disabled: #8a8a90;
   /* Boon's speech bubbles and the XP pill. */
   --sun: #ffe9bd; --sun-ink: #5c3d00;
@@ -273,7 +273,7 @@
   body { height: 100dvh; display: flex; flex-direction: column; overflow: hidden; }
   .shell { flex: 1; min-height: 0; display: grid; grid-template-rows: minmax(0, 1fr) 12px minmax(0, var(--row, 40%)); padding-bottom: 12px; }
   .workspace { min-height: 0; grid-template-columns: minmax(0, var(--col, 40%)) 12px minmax(0, 1fr); }
-  #ticket, #work { overflow: auto; min-height: 0; }
+  #ticket, #work { overflow: auto; min-height: 0; scrollbar-gutter: stable; } /* v21 U10: no shift of Submit when the pane grows a scrollbar */
   .panel { margin: 0; min-height: 0; display: flex; flex-direction: column; overflow: hidden; }
   .split { display: block; }
   /* ui-ux-v7 W1: one scroll area. The tab body scrolls; the Result tab (.res-fill) is a column whose table box takes the rest and scrolls itself. */
@@ -286,6 +286,8 @@
 .tab-bar[data-left=true] { mask-image: linear-gradient(to left, #000 calc(100% - 28px), transparent); }
 .tab-bar[data-left=true][data-right=true] { mask-image: linear-gradient(to right, transparent, #000 28px, #000 calc(100% - 28px), transparent); }
 /* W2: the folded dock: the sentence row only (≈ 56 px), with a small check. */
+/* v21 U11: below 1024 the page scrolls; while the dock shows, the page gets room under its last line so "Start chapter N" can always scroll above it. */
+@media (max-width: 1023.98px) { body:has(#stage:not([hidden])) #shell { padding-bottom: 8rem; } }
 #stage[data-mini=true] #stage-art { display: none; }
 #stage[data-mini=true] .stage-row { border-top: 0; }
 #stage[data-mini=true] .stage-mini-icon { display: grid; }
@@ -298,6 +300,10 @@
 /* ---- CodeMirror DOM (third-party): plain CSS. ---- */
 .editor .cm-editor .cm-content { min-height: 160px; } /* the whole box takes the click, not only line 1 (v10 B1) */
 .editor .cm-editor { min-height: 160px; background: var(--panel); color: var(--text); }
+/* v21 U10: in the one-screen shell the editor starts at 4 lines and grows with its text, so the feedback under the buttons stays in view. */
+@media (min-width: 1024px) and (min-height: 700px) {
+  .editor .cm-editor, .editor .cm-editor .cm-content { min-height: 96px; }
+}
 .editor .cm-editor .cm-gutters { background: var(--code); color: var(--muted); border-color: var(--border); }
 .editor .cm-editor .cm-content { caret-color: var(--text); }
 /* Tooltips (lint message, autocomplete) follow the app theme: the CodeMirror default is light-only. */

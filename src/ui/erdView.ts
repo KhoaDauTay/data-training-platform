@@ -32,6 +32,13 @@ export function drawErd(host: HTMLElement, svg: string): void {
   figure.innerHTML = svg;
   // Name on the <svg> itself (not role=img on the wrapper), so the table names inside stay readable.
   figure.querySelector('svg')?.setAttribute('aria-label', t('erd.aria'));
+  // v21 U22: Mermaid copies an entity's `style` onto every attribute cell; the chapter colour stays on the outer border only.
+  for (const p of figure.querySelectorAll<SVGElement>('.row-rect-odd path, .row-rect-even path, .divider path')) p.setAttribute('style', 'stroke-width:1px;stroke:var(--border)');
+  // ...and the outer border is drawn last, so the thin cell lines never cover its sides.
+  for (const g of figure.querySelectorAll('.outer-path')) {
+    const edge = g.querySelector('path:last-of-type');
+    if (edge && g.parentNode) g.parentNode.append(edge);
+  }
   host.append(
     h('p', { class: 'muted' },
       `${t('erd.intro')} `, h('code', {}, '||'), ` ${t('erd.one')} · `, h('code', {}, '|o'), ` ${t('erd.zeroOne')} · `,
@@ -47,7 +54,8 @@ export function valuesLine(values: Promise<Record<string, string[]>> | undefined
   const el = h('span', { class: cx('block text-caption text-muted', cls), hidden: true });
   values?.then((v) => {
     if (!v[column]) return;
-    el.textContent = v[column].join(' · ');
+    // v21 U7: a value never breaks inside itself ("United / States"); the line wraps between values
+    el.replaceChildren(...v[column].flatMap((x, i) => [i ? ' · ' : '', h('span', { class: 'whitespace-nowrap' }, x)]));
     el.hidden = false;
   }, () => {});
   return el;

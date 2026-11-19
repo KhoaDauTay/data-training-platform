@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1820" height="1130" viewBox="0 0 1820 1130" role="img" aria-labelledby="t d">
+<title id="t">Thẻ Best Practice 1280 và 375 (tối)</title>
+<desc id="d">Trang một mục Best Practice: luật, vì sao, cặp Không nên / Nên cạnh nhau với số đo sau khi Chạy cả hai, câu kết luận; bản 375 xếp chồng.</desc>
+<!-- BoonData Best Practice UX mockup, theme dark. Hex values = tokens of src/style.css (:root[data-theme=dark]). Purple dashed = spec annotation, not UI. -->
+<defs><filter id="sh1" x="-5%" y="-5%" width="110%" height="120%"><feDropShadow dx="0" dy="1" stdDeviation="2" flood-color="#000000" flood-opacity="0.08"/></filter></defs>
+<rect x="0" y="0" width="1820" height="1130" fill="#0b0a09"/>
+<text x="40" y="40" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="22" font-weight="800" fill="#f8f3ed">01 · Thẻ Best Practice · 1280 và 375</text>
+<text x="40" y="64" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="14" fill="#d0c5b9">#/engine/lesson/e-bp-q02 · sau khi bấm "Chạy cả hai" · v25 (tab SQL và PostgreSQL)</text>
+<rect x="1380" y="26" width="16" height="12" rx="0" fill="none" stroke="#dcaeff" stroke-width="1.5" stroke-dasharray="4 3"/>
+<text x="1402" y="37" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="12" fill="#dcaeff">tím đứt = chú thích spec, không phải UI</text>
+<rect x="40" y="90" width="1280" height="900" rx="0" fill="#131110" stroke="#7d7166" stroke-width="1"/>
+<rect x="40" y="90" width="1280" height="53" rx="0" fill="#201c19"/>
+<line x1="40" y1="143" x2="1320" y2="143" stroke="#4d443c" stroke-width="1"/>
+<text x="60" y="123" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="18" font-weight="800" fill="#f8f3ed">BoonData</text>
+<text x="190" y="123" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="14" font-weight="600" fill="#f8f3ed">Trang chủ</text>
+<text x="292" y="123" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="14" font-weight="600" fill="#f8f3ed">Lộ trình</text>
+<text x="386" y="123" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="14" font-weight="800" fill="#62dccb">Engine</text>
+<rect x="386" y="136" width="48" height="3" rx="0" fill="#62dccb"/>
+<text x="464" y="123" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="14" font-weight="600" fill="#f8f3ed">Luyện</text>
+<text x="534" y="123" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="14" font-weight="600" fill="#f8f3ed">Tiến bộ</text>
+<rect x="40" y="144" width="256" height="846" rx="0" fill="#201c19"/>
+<line x1="296" y1="144" x2="296" y2="990" stroke="#4d443c" stroke-width="1"/>
+<text x="60" y="174" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="12" font-weight="800" fill="#d0c5b9">DATABASE ENGINE</text>
+<text x="60" y="206" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="14" font-weight="800" fill="#f8f3ed">PostgreSQL</text>
+<text x="276" y="206" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="12" fill="#d0c5b9" text-anchor="end">31/66</text>
+<line x1="56" y1="230" x2="280" y2="230" stroke="#4d443c" stroke-width="1"/>
+<text x="60" y="254" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="12" font-weight="800" fill="#d0c5b9">BEST PRACTICE</text>
+<rect x="48" y="264" width="240" height="40" rx="10" fill="#163a35"/>
+<rect x="48" y="264" width="3" height="40" rx="0" fill="#62dccb"/>
+<text x="64" y="289" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="14" font-weight="800" fill="#62dccb">SQL</text>
+<text x="272" y="289" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="12" fill="#d0c5b9" text-anchor="end">9/33</text>
+<text x="64" y="333" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="14" font-weight="600" fill="#f8f3ed">PostgreSQL</text>
+<text x="272" y="333" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="12" fill="#d0c5b9" text-anchor="end">2/35</text>
+<rect x="48" y="264" width="240" height="84" rx="6" fill="none" stroke="#dcaeff" stroke-width="1.5" stroke-dasharray="4 3"/>
+<circle cx="288" cy="264" r="10" fill="#dcaeff"/>
+<text x="288" y="268" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="12" font-weight="800" fill="#0b0a09" text-anchor="middle">1</text>
+<text x="328" y="178" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="12" fill="#d0c5b9">Database Engine › Best Practice › SQL</text>
+<text x="328" y="210" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="22" font-weight="800" fill="#f8f3ed">Dùng NOT EXISTS thay NOT IN (subquery)</text>
+<rect x="328" y="224" width="29" height="22" rx="11" fill="#163a35"/>
+<text x="342.5" y="239" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="12" font-weight="700" fill="#62dccb" text-anchor="middle">L2</text>
+<rect x="365" y="224" width="102" height="22" rx="11" fill="#2b2622"/>
+<text x="416" y="239" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="12" font-weight="700" fill="#f8f3ed" text-anchor="middle">Viết truy vấn</text>
+<rect x="475" y="224" width="254" height="22" rx="11" fill="#163420"/>
+<text x="602" y="239" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="12" font-weight="700" fill="#74de93" text-anchor="middle">Chạy thật · PostgreSQL 18.6 (PGlite)</text>
+<rect x="737" y="224" width="135" height="22" rx="11" fill="#43350f"/>
+<text x="804.5" y="239" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="12" font-weight="700" fill="#ffe6ad" text-anchor="middle">Boon nhắc luật này</text>
+<rect x="733" y="220" width="150" height="30" rx="6" fill="none" stroke="#dcaeff" stroke-width="1.5" stroke-dasharray="4 3"/>
+<circle cx="883" cy="220" r="10" fill="#dcaeff"/>
+<text x="883" y="224" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="12" font-weight="800" fill="#0b0a09" text-anchor="middle">2</text>
+<rect x="328" y="270" width="880" height="92" rx="20" fill="#201c19" filter="url(#sh1)"/>
+<rect x="328" y="270" width="4" height="92" rx="0" fill="#62dccb"/>
+<text x="352" y="300" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="12" font-weight="800" fill="#d0c5b9">LUẬT</text>
+<text x="352" y="324" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="16" fill="#f8f3ed">Lọc "không có trong tập kia" bằng NOT EXISTS. NOT IN chỉ dùng với danh sách hằng chắc</text>
+<text x="352" y="346" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="16" fill="#f8f3ed">chắn không có NULL.</text>
+<text x="328" y="382" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="18" font-weight="700" fill="#f8f3ed">Vì sao</text>
+<text x="328" y="408" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="14" fill="#f8f3ed">• Chỉ cần subquery trả về một NULL, x NOT IN (…) không bao giờ đúng: kết quả rỗng mà không báo lỗi.</text>
+<text x="328" y="430" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="14" fill="#f8f3ed">• Planner biến NOT EXISTS thành anti join, thường rẻ hơn.</text>
+<rect x="328" y="454" width="432" height="300" rx="20" fill="#201c19" stroke="#ff968a" stroke-width="1.5"/>
+<circle cx="354" cy="480" r="9" fill="#ff968a"/>
+<path d="M350.5,476.5 l7,7 M357.5,476.5 l-7,7" stroke="#201c19" stroke-width="2" stroke-linecap="round"/>
+<text x="372" y="485" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="14" font-weight="800" fill="#ff968a">Không nên</text>
+<rect x="344" y="502" width="400" height="116" rx="10" fill="#2b2622"/>
+<text x="358" y="526" font-family="ui-monospace, 'Cascadia Mono', Consolas, monospace" font-size="12.5" fill="#f8f3ed" xml:space="preserve"><tspan fill="#dcaeff" font-weight="700">SELECT</tspan> count(*) <tspan fill="#dcaeff" font-weight="700">FROM</tspan> customers c</text>
+<text x="358" y="546" font-family="ui-monospace, 'Cascadia Mono', Consolas, monospace" font-size="12.5" fill="#f8f3ed" xml:space="preserve"><tspan fill="#dcaeff" font-weight="700">WHERE</tspan> c.id <tspan fill="#dcaeff" font-weight="700">NOT IN</tspan> (</text>
+<text x="358" y="566" font-family="ui-monospace, 'Cascadia Mono', Consolas, monospace" font-size="12.5" fill="#f8f3ed" xml:space="preserve"><tspan fill="#dcaeff" font-weight="700">  SELECT</tspan> o.customer_id <tspan fill="#dcaeff" font-weight="700">FROM</tspan> orders o</text>
+<text x="358" y="586" font-family="ui-monospace, 'Cascadia Mono', Consolas, monospace" font-size="12.5" fill="#f8f3ed" xml:space="preserve"><tspan fill="#dcaeff" font-weight="700">  WHERE</tspan> o.order_date &gt;= <tspan fill="#dcaeff" font-weight="700">DATE</tspan><tspan fill="#ffab8a"> '2026-10-01'</tspan>)</text>
+<text x="344" y="646" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="12" font-weight="800" fill="#d0c5b9">ĐO LÚC CHẠY</text>
+<text x="344" y="676" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="20" font-weight="800" fill="#ff968a">0</text>
+<text x="362" y="676" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="14" fill="#d0c5b9">count</text>
+<text x="344" y="702" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="13" fill="#d0c5b9">1 dòng · có đơn vãng lai customer_id NULL</text>
+<rect x="344" y="714" width="400" height="26" rx="6" fill="#2b2622"/>
+<text x="354" y="732" font-family="ui-monospace, 'Cascadia Mono', Consolas, monospace" font-size="12" fill="#f8f3ed">count  0</text>
+<rect x="776" y="454" width="432" height="300" rx="20" fill="#201c19" stroke="#74de93" stroke-width="1.5"/>
+<circle cx="802" cy="480" r="9" fill="#74de93"/>
+<path d="M798,480 l3,3 l5,-6" fill="none" stroke="#201c19" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="820" y="485" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="14" font-weight="800" fill="#74de93">Nên</text>
+<rect x="792" y="502" width="400" height="116" rx="10" fill="#2b2622"/>
+<text x="806" y="526" font-family="ui-monospace, 'Cascadia Mono', Consolas, monospace" font-size="12.5" fill="#f8f3ed" xml:space="preserve"><tspan fill="#dcaeff" font-weight="700">SELECT</tspan> count(*) <tspan fill="#dcaeff" font-weight="700">FROM</tspan> customers c</text>
+<text x="806" y="546" font-family="ui-monospace, 'Cascadia Mono', Consolas, monospace" font-size="12.5" fill="#f8f3ed" xml:space="preserve"><tspan fill="#dcaeff" font-weight="700">WHERE</tspan> <tspan fill="#dcaeff" font-weight="700">NOT EXISTS</tspan> (</text>
+<text x="806" y="566" font-family="ui-monospace, 'Cascadia Mono', Consolas, monospace" font-size="12.5" fill="#f8f3ed" xml:space="preserve"><tspan fill="#dcaeff" font-weight="700">  SELECT</tspan> <tspan fill="#86e8bd">1</tspan> <tspan fill="#dcaeff" font-weight="700">FROM</tspan> orders o</text>
+<text x="806" y="586" font-family="ui-monospace, 'Cascadia Mono', Consolas, monospace" font-size="12.5" fill="#f8f3ed" xml:space="preserve"><tspan fill="#dcaeff" font-weight="700">  WHERE</tspan> o.customer_id = c.id</text>
+<text x="806" y="606" font-family="ui-monospace, 'Cascadia Mono', Consolas, monospace" font-size="12.5" fill="#f8f3ed" xml:space="preserve"><tspan fill="#dcaeff" font-weight="700">    AND</tspan> o.order_date &gt;= <tspan fill="#dcaeff" font-weight="700">DATE</tspan><tspan fill="#ffab8a"> '2026-10-01'</tspan>)</text>
+<text x="792" y="646" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="12" font-weight="800" fill="#d0c5b9">ĐO LÚC CHẠY</text>
+<text x="792" y="676" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="20" font-weight="800" fill="#f8f3ed">312</text>
+<text x="834" y="676" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="14" fill="#d0c5b9">count</text>
+<text x="792" y="702" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="13" fill="#d0c5b9">1 dòng · kế hoạch: Hash Right Anti Join</text>
+<rect x="792" y="714" width="400" height="26" rx="6" fill="#2b2622"/>
+<text x="802" y="732" font-family="ui-monospace, 'Cascadia Mono', Consolas, monospace" font-size="12" fill="#f8f3ed">count  312</text>
+<rect x="336" y="636" width="864" height="110" rx="6" fill="none" stroke="#dcaeff" stroke-width="1.5" stroke-dasharray="4 3"/>
+<circle cx="1200" cy="636" r="10" fill="#dcaeff"/>
+<text x="1200" y="640" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="12" font-weight="800" fill="#0b0a09" text-anchor="middle">3</text>
+<rect x="328" y="766" width="880" height="44" rx="14" fill="#3a2c10"/>
+<text x="344" y="794" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="14" font-weight="700" fill="#f8f3ed">Khác kết quả: bản "Không nên" trả 0, bản "Nên" trả 312. Một NULL là đủ làm NOT IN rỗng.</text>
+<rect x="328" y="822" width="150" height="36" rx="18" fill="#201c19" stroke="#7d7166" stroke-width="1"/>
+<text x="403" y="845" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="14" font-weight="700" fill="#f8f3ed" text-anchor="middle">Chạy cả hai</text>
+<text x="494" y="845" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="13" fill="#d0c5b9">Chạy trên dữ liệu cửa hàng (lab) · BEGIN … ROLLBACK</text>
+<text x="328" y="874" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="13" font-weight="700" fill="#d0c5b9">Câu kiểm (1/1) · đúng thì thẻ này xong</text>
+<text x="328" y="922" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="13" fill="#d0c5b9">…cuộn: câu hỏi, "Sau thẻ này bạn tránh được…", Nguồn, Nên biết trước (skill anti_join)</text>
+<line x1="40" y1="890" x2="1320" y2="890" stroke="#dcaeff" stroke-width="1" stroke-dasharray="6 4"/>
+<text x="1308" y="884" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="12" fill="#dcaeff" text-anchor="end">nếp gấp 800</text>
+<rect x="1370" y="90" width="375" height="900" rx="0" fill="#131110" stroke="#7d7166" stroke-width="1"/>
+<rect x="1370" y="90" width="375" height="48" rx="0" fill="#201c19"/>
+<line x1="1370" y1="138" x2="1745" y2="138" stroke="#4d443c" stroke-width="1"/>
+<text x="1386" y="120" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="16" font-weight="800" fill="#f8f3ed">BoonData</text>
+<text x="1729" y="120" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="18" fill="#f8f3ed" text-anchor="end">☰</text>
+<text x="1386" y="164" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="13" font-weight="700" fill="#62dccb">‹ Best Practice · SQL</text>
+<text x="1386" y="196" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="20" font-weight="800" fill="#f8f3ed">Dùng NOT EXISTS thay</text>
+<text x="1386" y="222" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="20" font-weight="800" fill="#f8f3ed">NOT IN (subquery)</text>
+<rect x="1386" y="236" width="29" height="22" rx="11" fill="#163a35"/>
+<text x="1400.5" y="251" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="12" font-weight="700" fill="#62dccb" text-anchor="middle">L2</text>
+<rect x="1423" y="236" width="141" height="22" rx="11" fill="#163420"/>
+<text x="1493.5" y="251" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="12" font-weight="700" fill="#74de93" text-anchor="middle">Chạy thật · PG 18.6</text>
+<rect x="1386" y="272" width="343" height="96" rx="16" fill="#201c19"/>
+<rect x="1386" y="272" width="4" height="96" rx="0" fill="#62dccb"/>
+<text x="1402" y="298" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="12" font-weight="800" fill="#d0c5b9">LUẬT</text>
+<text x="1402" y="322" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="15" fill="#f8f3ed">Lọc "không có trong tập kia"</text>
+<text x="1402" y="344" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="15" fill="#f8f3ed">bằng NOT EXISTS.</text>
+<rect x="1386" y="384" width="343" height="212" rx="16" fill="#201c19" stroke="#ff968a" stroke-width="1.5"/>
+<circle cx="1408" cy="408" r="9" fill="#ff968a"/>
+<path d="M1404.5,404.5 l7,7 M1411.5,404.5 l-7,7" stroke="#201c19" stroke-width="2" stroke-linecap="round"/>
+<text x="1426" y="413" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="14" font-weight="800" fill="#ff968a">Không nên</text>
+<rect x="1398" y="428" width="319" height="88" rx="8" fill="#2b2622"/>
+<text x="1408" y="448" font-family="ui-monospace, 'Cascadia Mono', Consolas, monospace" font-size="11" fill="#f8f3ed" xml:space="preserve"><tspan fill="#dcaeff" font-weight="700">SELECT</tspan> count(*) <tspan fill="#dcaeff" font-weight="700">FROM</tspan> customers c</text>
+<text x="1408" y="466" font-family="ui-monospace, 'Cascadia Mono', Consolas, monospace" font-size="11" fill="#f8f3ed" xml:space="preserve"><tspan fill="#dcaeff" font-weight="700">WHERE</tspan> c.id <tspan fill="#dcaeff" font-weight="700">NOT IN</tspan> (</text>
+<text x="1408" y="484" font-family="ui-monospace, 'Cascadia Mono', Consolas, monospace" font-size="11" fill="#f8f3ed" xml:space="preserve"><tspan fill="#dcaeff" font-weight="700">  SELECT</tspan> o.customer_id <tspan fill="#dcaeff" font-weight="700">FROM</tspan> orders o</text>
+<text x="1408" y="502" font-family="ui-monospace, 'Cascadia Mono', Consolas, monospace" font-size="11" fill="#f8f3ed" xml:space="preserve"><tspan fill="#dcaeff" font-weight="700">  WHERE</tspan> o.order_date &gt;= <tspan fill="#dcaeff" font-weight="700">DATE</tspan><tspan fill="#ffab8a"> '…'</tspan>)</text>
+<text x="1398" y="546" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="18" font-weight="800" fill="#ff968a">0</text>
+<text x="1415" y="546" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="13" fill="#d0c5b9">dòng · count 0</text>
+<rect x="1386" y="608" width="343" height="230" rx="16" fill="#201c19" stroke="#74de93" stroke-width="1.5"/>
+<circle cx="1408" cy="632" r="9" fill="#74de93"/>
+<path d="M1404,632 l3,3 l5,-6" fill="none" stroke="#201c19" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="1426" y="637" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="14" font-weight="800" fill="#74de93">Nên</text>
+<rect x="1398" y="652" width="319" height="106" rx="8" fill="#2b2622"/>
+<text x="1408" y="672" font-family="ui-monospace, 'Cascadia Mono', Consolas, monospace" font-size="11" fill="#f8f3ed" xml:space="preserve"><tspan fill="#dcaeff" font-weight="700">SELECT</tspan> count(*) <tspan fill="#dcaeff" font-weight="700">FROM</tspan> customers c</text>
+<text x="1408" y="690" font-family="ui-monospace, 'Cascadia Mono', Consolas, monospace" font-size="11" fill="#f8f3ed" xml:space="preserve"><tspan fill="#dcaeff" font-weight="700">WHERE</tspan> <tspan fill="#dcaeff" font-weight="700">NOT EXISTS</tspan> (</text>
+<text x="1408" y="708" font-family="ui-monospace, 'Cascadia Mono', Consolas, monospace" font-size="11" fill="#f8f3ed" xml:space="preserve"><tspan fill="#dcaeff" font-weight="700">  SELECT</tspan> <tspan fill="#86e8bd">1</tspan> <tspan fill="#dcaeff" font-weight="700">FROM</tspan> orders o</text>
+<text x="1408" y="726" font-family="ui-monospace, 'Cascadia Mono', Consolas, monospace" font-size="11" fill="#f8f3ed" xml:space="preserve"><tspan fill="#dcaeff" font-weight="700">  WHERE</tspan> o.customer_id = c.id</text>
+<text x="1408" y="744" font-family="ui-monospace, 'Cascadia Mono', Consolas, monospace" font-size="11" fill="#f8f3ed" xml:space="preserve"><tspan fill="#dcaeff" font-weight="700">    AND</tspan> o.order_date &gt;= <tspan fill="#dcaeff" font-weight="700">DATE</tspan><tspan fill="#ffab8a"> '…'</tspan>)</text>
+<text x="1398" y="788" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="18" font-weight="800" fill="#f8f3ed">312</text>
+<text x="1437" y="788" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="13" fill="#d0c5b9">count · Anti Join</text>
+<rect x="1380" y="520" width="355" height="316" rx="6" fill="none" stroke="#dcaeff" stroke-width="1.5" stroke-dasharray="4 3"/>
+<circle cx="1735" cy="520" r="10" fill="#dcaeff"/>
+<text x="1735" y="524" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="12" font-weight="800" fill="#0b0a09" text-anchor="middle">4</text>
+<rect x="1370" y="858" width="375" height="64" rx="0" fill="#201c19"/>
+<line x1="1370" y1="858" x2="1745" y2="858" stroke="#4d443c" stroke-width="1"/>
+<rect x="1386" y="872" width="343" height="44" rx="22" fill="#201c19" stroke="#7d7166" stroke-width="1"/>
+<text x="1557.5" y="900" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="15" font-weight="700" fill="#f8f3ed" text-anchor="middle">Chạy cả hai</text>
+<rect x="1370" y="926" width="375" height="64" rx="0" fill="#201c19"/>
+<line x1="1370" y1="926" x2="1745" y2="926" stroke="#4d443c" stroke-width="1"/>
+<text x="1407" y="964" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="12" font-weight="600" fill="#d0c5b9" text-anchor="middle">Trang chủ</text>
+<text x="1482" y="964" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="12" font-weight="800" fill="#62dccb" text-anchor="middle">Học</text>
+<text x="1557" y="964" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="12" font-weight="600" fill="#d0c5b9" text-anchor="middle">Luyện</text>
+<text x="1632" y="964" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="12" font-weight="600" fill="#d0c5b9" text-anchor="middle">Tiến bộ</text>
+<text x="1707" y="964" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="12" font-weight="600" fill="#d0c5b9" text-anchor="middle">Dữ liệu</text>
+<text x="40" y="1030" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="13" fill="#dcaeff">1 · Sidebar: tab Best Practice dưới engine. Chỉ track đã phát hành (v25: SQL, PostgreSQL), không dòng xám.</text>
+<text x="40" y="1052" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="13" fill="#dcaeff">2 · Chip "Boon nhắc luật này" chỉ có khi mục có lint:. Bấm = bật/tắt luật này trong pref cargo-query/bp-tips.</text>
+<text x="40" y="1074" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="13" fill="#dcaeff">3 · Số đo lấy từ lần chạy vừa rồi (dòng, count, nút kế hoạch, planner cost), không bao giờ mili giây.</text>
+<text x="40" y="1096" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="13" fill="#dcaeff">4 · 375: Sai/Đúng xếp chồng (Không nên trước), nút "Chạy cả hai" dính trên thanh dưới, mã thu gọn literal.</text>
+</svg>
