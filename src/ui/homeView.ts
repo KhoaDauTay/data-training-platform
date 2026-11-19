@@ -73,7 +73,7 @@ const openInbox = (): void => (byId('inbox-dialog') as HTMLDialogElement).showMo
 /** v6 §3.4 airy list: one bordered card, thin lines between rows. */
 export const LIST = cx(CARD, 'm-0 list-none divide-y divide-line overflow-hidden p-0');
 /** Small-caps group title in --muted (v6 §3.4). */
-export const GROUP_TITLE = 'mt-0 mb-3 text-xs font-bold tracking-wider text-muted uppercase';
+export const GROUP_TITLE = 'mt-0 mb-3 text-caption font-bold tracking-wider text-muted uppercase';
 
 /** One row = one thing (v6 §3.4): 40 px lead · bold title · at most one muted line · at most one action. */
 /** A row's one action covers the whole row (v12, L86): a click anywhere on it follows the action, not only on the button. */
@@ -90,7 +90,7 @@ export function listRow(r: { lead: Node; title: string; sub?: string | Node; act
     'aria-current': r.current ? 'step' : false,
   },
     h('span', { class: 'grid size-10 shrink-0 place-items-center', 'aria-hidden': 'true' }, r.lead),
-    h('span', { class: 'min-w-0 flex-1' }, h('b', { class: 'block' }, r.title), r.sub ? h('span', { class: 'block text-sm text-muted' }, r.sub) : null),
+    h('span', { class: 'min-w-0 flex-1' }, h('b', { class: 'block' }, r.title), r.sub ? h('span', { class: 'block text-body-sm text-muted' }, r.sub) : null),
     r.action ?? null);
 }
 
@@ -130,7 +130,7 @@ function continueCard(m: HomeModel): HTMLElement {
   const next = m.next;
   const x = next ? textOf(next, lang) : undefined;
   return h('section', { class: cx(CARD, 'flex h-full flex-col gap-4 p-6'), 'aria-labelledby': 'continue-title' },
-    h('p', { class: cx('m-0 flex items-center gap-2 text-sm font-semibold', chapterColor(m.chapter).text) },
+    h('p', { class: cx('m-0 flex items-center gap-2 text-body-sm font-semibold', chapterColor(m.chapter).text) },
       icon('inbox', 'size-4'), t('home.kicker', { n: m.chapter, title: chapterTitle(m.chapter, lang, chaptersOf()) })), // Overview only (v12.0 U5)
     h('h2', { id: 'continue-title', class: 'm-0 text-xl font-bold' }, x ? x.title : t('inbox.empty')),
     next && x
@@ -138,12 +138,12 @@ function continueCard(m: HomeModel): HTMLElement {
         avatar(next.from, 'lg'),
         h('div', { class: 'min-w-0 flex-1' },
           h('p', { class: 'm-0 text-[15px]' }, h('b', {}, next.from.name), ' · ', h('span', { class: 'text-muted' }, roleLine(next.from.name, lang) || next.from.dept)),
-          h('p', { class: 'mt-1 mb-0 rounded-2xl rounded-tl-sm bg-code px-4 py-3 text-[15px] leading-relaxed' },
+          h('p', { class: 'mt-1 mb-0 rounded-(--r-card) rounded-tl-sm bg-code px-4 py-3 text-[15px] leading-relaxed' },
             x.body.split(/\n\s*\n/)[0].replace(/\s*\n\s*/g, ' '))))
       : null,
     h('div', { class: 'flex items-center gap-3' },
       progress(percent(m.done, m.total), label, 'h-2.5 flex-1 bg-code', 'bg-accent'),
-      h('span', { class: 'text-sm tabular-nums text-muted' }, label)),
+      h('span', { class: 'text-body-sm tabular-nums text-muted' }, label)),
     h('div', { class: 'flex flex-wrap gap-2' },
       next ? h('button', { type: 'button', class: cx(BTN_GO, 'group flex items-center gap-2 px-4 py-2'), onclick: () => resume(next.id) },
         t('home.resume'), icon('arrowRight', 'size-4 transition group-hover:translate-x-0.5')) : null,
@@ -158,7 +158,7 @@ function careerCard(): HTMLElement {
   const reached = (at: number): boolean => at === 0 || rank.passed.includes(at);
   const now = rows.filter((r) => reached(r.at)).pop();
   return h('section', { class: cx(CARD, 'flex h-full flex-col gap-3 p-6'), 'aria-labelledby': 'career-title' },
-    h('h2', { id: 'career-title', class: 'm-0 flex items-center gap-2 text-sm font-semibold text-muted' }, icon('badge', 'size-4'), t('home.career')),
+    h('h2', { id: 'career-title', class: 'm-0 flex items-center gap-2 text-body-sm font-semibold text-muted' }, icon('badge', 'size-4'), t('home.career')),
     rank.career ? h('p', { class: 'm-0 text-lg font-semibold' }, rank.career[lang]) : null,
     h('ol', { class: 'm-0 list-none space-y-2 p-0' }, ...rows.map((r) => h('li', {
       class: cx('flex items-center gap-2 text-[15px]', !reached(r.at) && 'text-muted'),
@@ -168,7 +168,7 @@ function careerCard(): HTMLElement {
       r === now ? h('b', { class: 'whitespace-nowrap' }, r.title) : h('span', { class: 'whitespace-nowrap' }, r.title), // never wraps under its dot
       r === now
         ? h('span', { class: cx(PILL, 'ml-auto', DONE_PILL) }, t('home.careerNow'))
-        : reached(r.at) ? null : h('span', { class: 'ml-auto text-sm' }, t('home.careerAt', { n: r.at }))))));
+        : reached(r.at) ? null : h('span', { class: 'ml-auto text-body-sm' }, t('home.careerAt', { n: r.at }))))));
 }
 
 /** Small status badge: the only coloured text on the card (L23). */
@@ -212,7 +212,7 @@ function chaptersSection(m: HomeModel): HTMLElement {
   return h('section', { 'aria-labelledby': 'chapters-title' },
     h('div', { class: 'mb-3 flex flex-wrap items-end justify-between gap-2' },
       h('h2', { id: 'chapters-title', class: 'm-0 text-lg font-bold' }, t('home.chapters', { n: m.chapters.length })),
-      h('p', { class: 'm-0 text-sm text-muted' }, t('home.chaptersIntro'))),
+      h('p', { class: 'm-0 text-body-sm text-muted' }, t('home.chaptersIntro'))),
     h('ul', { class: LIST }, ...m.chapters.map(chapterRow)));
 }
 
@@ -236,7 +236,7 @@ function skillsSection(m: HomeModel): HTMLElement {
         action: onSkill && s.state === 'learned' ? h('button', { type: 'button', class: 'rounded-full px-4 whitespace-nowrap', onclick: () => onSkill(s.skill.id) }, t('prac.skillGo'))
           : h('a', { href: `${hashOf('learn')}/skill/${s.skill.id}`, class: OUTLINE_LINK }, t('prac.skillLearn')),
       }))))),
-    h('p', { class: 'm-0 text-sm text-muted' }, t('home.skillsHint')));
+    h('p', { class: 'm-0 text-body-sm text-muted' }, t('home.skillsHint')));
 }
 
 function modesSection(): HTMLElement | null {
@@ -246,18 +246,18 @@ function modesSection(): HTMLElement | null {
     h('div', { class: 'grid gap-3 sm:grid-cols-3' }, ...modes.map((md) => {
       const why = md.lock?.();
       if (why) {
-        return h('div', { class: cx(CARD, 'flex items-start gap-3 rounded-xl p-4'), 'aria-disabled': 'true' },
-          h('span', { class: 'grid size-10 shrink-0 place-items-center rounded-lg bg-code text-muted', 'aria-hidden': 'true' }, icon(md.icon)),
+        return h('div', { class: cx(CARD, 'flex items-start gap-3 rounded-(--r-ctl) p-4'), 'aria-disabled': 'true' },
+          h('span', { class: 'grid size-10 shrink-0 place-items-center rounded-(--r-inset) bg-code text-muted', 'aria-hidden': 'true' }, icon(md.icon)),
           h('span', { class: 'min-w-0 flex-1' }, h('b', { class: 'block text-muted' }, t(md.title)),
-            h('span', { class: 'flex items-center gap-1.5 text-sm text-muted' }, icon('lock', 'size-3.5 shrink-0'), t(why))));
+            h('span', { class: 'flex items-center gap-1.5 text-body-sm text-muted' }, icon('lock', 'size-3.5 shrink-0'), t(why))));
       }
       return h('button', {
         type: 'button',
-        class: cx(CARD_ACTION, 'group flex items-start gap-3 rounded-xl border-0 p-4 text-left'),
+        class: cx(CARD_ACTION, 'group flex items-start gap-3 rounded-(--r-ctl) border-0 p-4 text-left'),
         onclick: () => md.open(),
       },
-        h('span', { class: cx('grid size-10 shrink-0 place-items-center rounded-lg', md.tint), 'aria-hidden': 'true' }, icon(md.icon)),
-        h('span', { class: 'min-w-0 flex-1' }, h('b', { class: 'block' }, t(md.title)), h('span', { class: 'text-sm text-muted' }, t(md.desc))),
+        h('span', { class: cx('grid size-10 shrink-0 place-items-center rounded-(--r-inset)', md.tint), 'aria-hidden': 'true' }, icon(md.icon)),
+        h('span', { class: 'min-w-0 flex-1' }, h('b', { class: 'block' }, t(md.title)), h('span', { class: 'text-body-sm text-muted' }, t(md.desc))),
         icon('arrowRight', 'mt-0.5 size-4 text-muted transition group-hover:translate-x-0.5 group-hover:text-accent'));
     })));
 }
@@ -295,7 +295,7 @@ function harborSection(m: HomeModel): HTMLElement {
       stopScene = () => stops.forEach((f) => f());
       return p.svg;
     }),
-    h('div', { class: 'px-4 py-3 text-sm lg:hidden', 'aria-hidden': 'true' },
+    h('div', { class: 'px-4 py-3 text-body-sm lg:hidden', 'aria-hidden': 'true' },
       h('p', { class: 'm-0 font-bold' }, t('harbor.title')),
       ...callout(harbor, m.chapter).map((line) => h('p', { class: 'm-0 text-muted' }, line))));
 }
@@ -319,21 +319,21 @@ function routesSection(): HTMLElement {
       h('h2', { id: 'routes-title', class: 'm-0 mb-2 text-lg font-bold' }, t(words.mapTitle)), domainArt('map'));
   }
   const harbor = derive(app.tickets, done());
-  const list = h('ul', { class: 'mt-3 mb-0 grid list-none gap-1.5 p-0 text-sm sm:grid-cols-2' }, ...LANES.map((r) =>
+  const list = h('ul', { class: 'mt-3 mb-0 grid list-none gap-1.5 p-0 text-body-sm sm:grid-cols-2' }, ...LANES.map((r) =>
     h('li', {}, h('button', {
       type: 'button', id: `lane-btn-${r.port}`, 'aria-current': r.port === mapLane ? 'true' : false,
       class: cx('flex w-full items-center gap-2 px-3 py-1.5 text-left max-lg:min-h-11', r.port === mapLane && 'ring-2 ring-accent', !harbor.open.has(r.port) && 'text-muted'),
       onclick: () => pickLane(r.port),
     }, icon(harbor.open.has(r.port) ? 'route' : 'lock', 'size-4'), h('b', {}, r.name), h('span', { class: 'ml-auto text-muted' }, laneInfo(r, harbor))))));
   const brief = mapLane
-    ? h('div', { class: 'min-w-0 rounded-xl p-4 ring-1 ring-line' }, lanePanel(mapLane, harbor, (task) => homeHooks.startLane?.(task)))
-    : h('p', { class: 'm-0 self-start rounded-xl bg-code p-4 text-sm text-muted' }, t('lane.pick'));
+    ? h('div', { class: 'min-w-0 rounded-(--r-ctl) p-4 ring-1 ring-line' }, lanePanel(mapLane, harbor, (task) => homeHooks.startLane?.(task)))
+    : h('p', { class: 'm-0 self-start rounded-(--r-ctl) bg-code p-4 text-body-sm text-muted' }, t('lane.pick'));
   return h('section', { class: cx(CARD, 'p-5'), 'aria-labelledby': 'routes-title' },
     h('div', { class: 'mb-2 flex flex-wrap items-end justify-between gap-2' },
       h('h2', { id: 'routes-title', class: 'm-0 text-lg font-bold' }, t('routes.title')),
-      h('p', { class: 'm-0 text-sm text-muted' }, t('routes.subtitle'))),
+      h('p', { class: 'm-0 text-body-sm text-muted' }, t('routes.subtitle'))),
     // ui-ux-v6 S2: the map takes the card's full width (labels ≥ 11 px from lg); the lane list and the brief sit below it
-    artSlot('aspect-[5/2] rounded-xl', (a) => {
+    artSlot('aspect-[5/2] rounded-(--r-ctl)', (a) => {
       stopMap?.(); // one fleet per page: the previous drawing's loop ends here
       const p = a.routeMap(harbor);
       wirePins(p, harbor, pickLane);
@@ -347,7 +347,7 @@ function routesSection(): HTMLElement {
 function kpiSection(): HTMLElement {
   const tiles = kpiTiles(kpisOf(), app.tickets, done());
   return h('a', { href: hashOf('dashboard'), class: cx(CARD_ACTION, 'group flex items-center gap-3 p-4 text-ink no-underline') },
-    h('span', { class: 'grid size-9 shrink-0 place-items-center rounded-lg bg-code', 'aria-hidden': 'true' }, icon('chart')),
+    h('span', { class: 'grid size-9 shrink-0 place-items-center rounded-(--r-inset) bg-code', 'aria-hidden': 'true' }, icon('chart')),
     h('span', { class: 'min-w-0 flex-1' }, h('b', {}, t('dash.title')), ' · ',
       t('dash.teaser', { open: tiles.filter((x) => x.open).length, total: tiles.length, cards: domainSlot(app.save, activeDomain()).dashboard.cards.length })),
     icon('arrowRight', 'size-4 text-muted transition group-hover:translate-x-0.5 group-hover:text-accent'));
@@ -395,8 +395,8 @@ function helloSection(): HTMLElement {
   lily.dataset.lilyHello = '';
   return h('section', { class: 'grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-4 gap-y-2' }, lily, // phones: the card takes its own row
     h('div', { class: 'min-w-0' }, h('p', { class: 'm-0 text-2xl font-extrabold' }, t('app.name')), h('p', { class: 'm-0 text-muted' }, t('home.tagline')),
-      h('p', { class: 'mt-2 mb-0 text-sm font-semibold' }, pre, h('span', { class: flip && 'cq-flip' }, String(dayCount())), post,
-        grewPill ? h('span', { class: 'ml-2 rounded-full bg-sun px-2 py-0.5 text-xs font-bold text-sun-ink' }, t('lily.grewPill')) : null)),
+      h('p', { class: 'mt-2 mb-0 text-body-sm font-semibold' }, pre, h('span', { class: flip && 'cq-flip' }, String(dayCount())), post,
+        grewPill ? h('span', { class: 'ml-2 rounded-full bg-sun px-2 py-0.5 text-caption font-bold text-sun-ink' }, t('lily.grewPill')) : null)),
     lilyCard(stage, known, next));
 }
 
@@ -410,11 +410,11 @@ function lilyCard(stage: LilyStage, known: number, next: number | undefined): HT
   const line = up === undefined ? t('lily.max') : stage === 0 ? t('lily.newborn') : t('lily.next', { n: next! });
   return h('div', { class: 'col-span-2 flex max-w-md items-center gap-3 rounded-(--r-ctl) bg-panel p-3 ring-1 ring-line sm:col-span-1' },
     h('div', { class: 'min-w-0 flex-1' },
-      h('p', { class: 'm-0 text-sm font-bold' }, t('lily.card')),
-      h('p', { class: 'm-0 text-sm text-muted' }, line),
+      h('p', { class: 'm-0 text-body-sm font-bold' }, t('lily.card')),
+      h('p', { class: 'm-0 text-body-sm text-muted' }, line),
       up === undefined ? null : h('progress', { class: 'lily-bar mt-2 h-2 w-full', max: String(goal), value: String(known), 'aria-labelledby': 'lily-grow' }),
-      up === undefined ? null : h('p', { id: 'lily-grow', class: 'm-0 text-xs text-muted' }, t('lily.growBar', { k: known, next: goal }))),
-    up === undefined ? null : h('div', { class: 'flex w-20 shrink-0 flex-col items-center gap-1 text-center text-xs text-muted' },
+      up === undefined ? null : h('p', { id: 'lily-grow', class: 'm-0 text-caption text-muted' }, t('lily.growBar', { k: known, next: goal }))),
+    up === undefined ? null : h('div', { class: 'flex w-20 shrink-0 flex-col items-center gap-1 text-center text-caption text-muted' },
       mascot('lily', 'idle', 'size-10 lily-shadow-fig', undefined, up), t('lily.nextShadow', { stage: t(STAGE_NAME[up]) })));
 }
 

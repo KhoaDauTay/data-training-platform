@@ -30,19 +30,19 @@ export function renderInbox(): void {
           avatar(from, 'md'),
           h('span', { class: 'min-w-0' },
             h('span', { class: 'flex flex-wrap items-center gap-2 font-semibold' }, from.name, h('span', { class: cx(DEPT_CHIP, deptColor(from.dept)) }, from.dept)),
-            h('span', { class: 'block text-sm font-normal text-muted' }, roleLine(from.name, lang, unlockedTables())))),
+            h('span', { class: 'block text-body-sm font-normal text-muted' }, roleLine(from.name, lang, unlockedTables())))),
         h('div', { class: 'ml-13 space-y-1.5' }, ...list.map((tk) => {
           const isDone = d.has(tk.id);
           return h('button', {
             type: 'button',
             class: cx(
-              'block w-full rounded-2xl rounded-tl-sm border-0 bg-code px-3 py-2 text-left ring-1 ring-transparent hover:bg-code hover:ring-line aria-[current=true]:ring-2 aria-[current=true]:ring-accent',
+              'block w-full rounded-(--r-card) rounded-tl-sm border-0 bg-code px-3 py-2 text-left ring-1 ring-transparent hover:bg-code hover:ring-line aria-[current=true]:ring-2 aria-[current=true]:ring-accent',
               isDone && 'text-muted'),
             'aria-current': tk.id === app.selectedId ? 'true' : false,
             onclick: () => actions.selectTicket(tk.id),
           },
             h('span', { class: 'block font-semibold' }, textOf(tk, lang).title),
-            h('span', { class: 'block text-sm text-muted' },
+            h('span', { class: 'block text-body-sm text-muted' },
               isDone ? `✓ ${t('inbox.done')}` : `${t('brief.chapter', { n: tk.chapter })} · ${'★'.repeat(tk.difficulty)}`));
         })));
     }));

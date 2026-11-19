@@ -209,7 +209,7 @@ function sandboxPane(host: HTMLElement): void {
 function practicePane(host: HTMLElement, run: PracticeRun): void {
   const finished = run.index >= run.items.length;
   const status = finished ? t('prac.done', { ok: run.passed, n: run.items.length }) : t('prac.banner', { i: run.index + 1, n: run.items.length });
-  const banner = h('div', { class: 'mb-3 rounded-xl bg-accent-soft p-3 ring-1 ring-accent', role: 'status' },
+  const banner = h('div', { class: 'mb-3 rounded-(--r-ctl) bg-accent-soft p-3 ring-1 ring-accent', role: 'status' },
     finished ? h('h2', TITLE, status) : h('p', { class: 'm-0 font-semibold' }, status),
     run.result ? h('p', { class: 'mt-1 mb-0' }, t(run.result === 'ok' ? 'prac.ok' : 'prac.weak')) : null,
     h('div', { class: 'actions mb-0' },
@@ -290,7 +290,7 @@ function reviewCard(m: HomeModel): HTMLElement {
     h('div', { class: 'min-w-48 flex-1' }, // T9: a floor, so the button wraps below at 375 px instead of squeezing the text to one word per line
       h('h2', { id: 'review-title', class: 'm-0 text-lg font-bold' }, t('prac.section')),
       h('p', { class: 'mt-1 mb-0 text-[15px] text-muted' }, intro),
-      p.solved + p.weak ? h('p', { class: 'mt-1 mb-0 text-sm text-muted' }, t('prac.stats', { solved: p.solved, weak: p.weak })) : null),
+      p.solved + p.weak ? h('p', { class: 'mt-1 mb-0 text-body-sm text-muted' }, t('prac.stats', { solved: p.solved, weak: p.weak })) : null),
     due ? h('button', { type: 'button', class: cx(here ? BTN_GO : BTN_SECONDARY, 'px-4 py-2'), onclick: () => startToday() }, t('prac.today', { n: due })) : null,
     // v4 §B.3: nothing learned yet → one way forward.
     none ? h('button', { type: 'button', class: cx(here ? BTN_GO : BTN_SECONDARY, 'px-4 py-2'), onclick: () => { location.hash = '#/learn/sql/1'; } }, t('prac.toFirst')) : null,

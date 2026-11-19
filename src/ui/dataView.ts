@@ -33,7 +33,7 @@ const tableHash = (table: string): string => `${hashOf('data')}/${table}`;
 const go = (table: string): void => void (location.hash = tableHash(table));
 
 // One search box for the page's lifetime: redrawing the page never replaces it mid-typing (Vietnamese IME composition).
-const search = h('input', { type: 'search', id: 'data-search', class: 'mt-1 w-full rounded-lg border border-line bg-panel px-3 py-2 text-sm text-ink focus-visible:outline-2 focus-visible:outline-accent', autocomplete: 'off' });
+const search = h('input', { type: 'search', id: 'data-search', class: 'mt-1 w-full rounded-(--r-inset) border border-line bg-panel px-3 py-2 text-body-sm text-ink focus-visible:outline-2 focus-visible:outline-accent', autocomplete: 'off' });
 search.addEventListener('input', () => {
   view.query = search.value;
   redrawList();
@@ -63,7 +63,7 @@ export function renderData(host: HTMLElement): void {
   const side = sideExtra();
   // v12.0 U6: no sidebar list (rail, below 1280 px, phones): a native <select> grouped by chapter, filtered by the search box.
   const select = side ? undefined : h('select', {
-    id: 'data-select', class: 'mt-2 w-full rounded-lg border border-line bg-panel px-3 py-2 text-ink max-lg:min-h-11', 'aria-label': t('data.pick'),
+    id: 'data-select', class: 'mt-2 w-full rounded-(--r-inset) border border-line bg-panel px-3 py-2 text-ink max-lg:min-h-11', 'aria-label': t('data.pick'),
     onchange: () => go(select!.value),
   });
   const picker = h('div', { class: side ? 'min-w-0' : 'min-w-0 lg:sticky lg:top-4 lg:self-start' },
@@ -102,8 +102,8 @@ export function renderData(host: HTMLElement): void {
     count.textContent = needle ? t('data.matches', { n: hits.length }) : '';
     const groups = Object.entries(chapterTablesOf()).map(([c, ts]) => [Number(c), ts.filter((x) => hits.includes(x))] as const).filter(([, ts]) => ts.length);
     const locked2 = locked.length ? h('details', { class: 'mt-3 text-muted' },
-      h('summary', { class: 'cursor-pointer text-sm' }, t('data.lockedGroup', { n: locked.length })),
-      h('ul', { class: 'mt-1 list-none space-y-1 p-0 text-sm opacity-75' }, ...locked.map((x) =>
+      h('summary', { class: 'cursor-pointer text-body-sm' }, t('data.lockedGroup', { n: locked.length })),
+      h('ul', { class: 'mt-1 list-none space-y-1 p-0 text-body-sm opacity-75' }, ...locked.map((x) =>
         h('li', {}, h('code', {}, x), ` · ${t('data.lockedAt', { n: chapterOf(x) })}`)))) : null;
     const none = needle && hits.length === 0 ? h('p', { class: 'text-muted' }, t('data.none', { q: view.query.trim() })) : null;
     if (select) {
@@ -114,18 +114,18 @@ export function renderData(host: HTMLElement): void {
     } else {
       list.replaceChildren(...nodes(none,
         ...groups.map(([c, ts]) => h('div', { class: 'mt-3' },
-          h('h3', { class: 'm-0 text-sm font-semibold text-muted' }, t('nav.chapterOption', { n: c, title: chapterTitle(c, getLang()) })),
+          h('h3', { class: 'm-0 text-body-sm font-semibold text-muted' }, t('nav.chapterOption', { n: c, title: chapterTitle(c, getLang()) })),
           h('ul', { class: 'mt-1 grid list-none gap-1 p-0' }, ...ts.map((x) => {
             const cols = matchCols(x);
             return h('li', {}, h('a', {
               href: tableHash(x),
               // v12.0 U7: a list that breathes, no ring per row; the open table keeps its ring
-              class: 'block rounded-lg px-2 py-1 no-underline hover:bg-code max-lg:min-h-11 aria-[current=page]:bg-accent-soft aria-[current=page]:ring-2 aria-[current=page]:ring-accent',
+              class: 'block rounded-(--r-inset) px-2 py-1 no-underline hover:bg-code max-lg:min-h-11 aria-[current=page]:bg-accent-soft aria-[current=page]:ring-2 aria-[current=page]:ring-accent',
               'aria-current': x === sel ? 'page' : false,
             }, ...nodes(
               h('code', { class: 'font-semibold' }, x),
-              rowText(x) ? h('span', { class: 'block text-xs text-muted' }, rowText(x)) : null,
-              cols.length ? h('span', { class: 'block text-xs text-muted' }, `${t('data.matchCols')} `, cols.join(', ')) : null)));
+              rowText(x) ? h('span', { class: 'block text-caption text-muted' }, rowText(x)) : null,
+              cols.length ? h('span', { class: 'block text-caption text-muted' }, `${t('data.matchCols')} `, cols.join(', ')) : null)));
           })))),
         locked2));
     }
@@ -137,7 +137,7 @@ export function renderData(host: HTMLElement): void {
     const needle = q();
     const cell = 'border-b border-line px-2 py-1.5 text-left align-top';
     const values = textValues(sel);
-    columnsHost.replaceChildren(h('table', { class: 'w-full border-collapse text-sm max-sm:block' },
+    columnsHost.replaceChildren(h('table', { class: 'w-full border-collapse text-body-sm max-sm:block' },
       h('thead', { class: 'max-sm:hidden' }, h('tr', {}, ...['#', t('data.col.name'), t('data.col.type'), t('data.col.null'), t('data.col.key')].map((x) => h('th', { class: cell }, x)))),
       h('tbody', { class: 'max-sm:block' }, ...colsOf(sel).map((c, i) => h('tr', { class: 'max-sm:flex max-sm:flex-wrap max-sm:items-center max-sm:gap-x-2 max-sm:border-b max-sm:border-line max-sm:py-1.5' },
         h('td', { class: cx(cell, 'text-muted max-sm:hidden') }, String(i + 1)),
@@ -166,7 +166,7 @@ export function renderData(host: HTMLElement): void {
       columnsHost,
       refBy.length ? h('h3', {}, t('data.refBy')) : null,
       refBy.length ? h('ul', { class: 'flex list-none flex-wrap gap-1.5 p-0' }, ...refBy.map((c) =>
-        h('li', {}, h('button', { type: 'button', class: 'px-1.5 py-0 font-mono text-sm', onclick: () => go(c.table) }, `${c.table}.${c.column}`)))) : null,
+        h('li', {}, h('button', { type: 'button', class: 'px-1.5 py-0 font-mono text-body-sm', onclick: () => go(c.table) }, `${c.table}.${c.column}`)))) : null,
       h('button', {
         type: 'button',
         class: 'mt-3',
@@ -183,7 +183,7 @@ export function renderData(host: HTMLElement): void {
   function drawDiagram(): void {
     if (!meta) return diagram.replaceChildren();
     const btn = (v: 'near' | 'all', label: string) => h('button', {
-      type: 'button', class: 'px-2.5 py-1 text-sm aria-pressed:bg-accent aria-pressed:font-semibold aria-pressed:text-on-accent',
+      type: 'button', class: 'px-2.5 py-1 text-body-sm aria-pressed:bg-accent aria-pressed:font-semibold aria-pressed:text-on-accent',
       'aria-pressed': String(view.scope === v),
       onclick: () => {
         view.scope = v;

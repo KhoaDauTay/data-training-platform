@@ -24,8 +24,8 @@ const SIZES = {
   tab: { w: 720, labelW: 200, valueW: 90, chars: 28, rowH: 24, lineH: 260, padL: 64, svg: 'h-auto w-full' },
   card: { w: 260, labelW: 92, valueW: 64, chars: 13, rowH: 26, lineH: 170, padL: 48, svg: 'h-auto w-full max-w-[400px] min-w-[260px]' },
 } as const;
-const LABEL = 'fill-muted text-xs';
-const VALUE = 'fill-ink text-xs tabular-nums';
+const LABEL = 'fill-muted text-caption';
+const VALUE = 'fill-ink text-caption tabular-nums';
 const GRID = 'stroke-chart-grid';
 const AXIS_H = 18;
 
@@ -130,8 +130,8 @@ export function renderChart(host: HTMLElement, r: QueryResult): void {
     area.replaceChildren(spec.kind === 'bar' ? bars(r, spec, col, 'tab', w) : line(r, spec, col, 'tab', w));
   };
   const picker = spec.values.length > 1
-    ? h('label', { class: 'inline-flex items-center gap-2 text-sm' }, t('chart.valueCol'), (() => {
-        const sel = h('select', { class: 'rounded-md bg-panel px-2 py-1 ring-1 ring-line' }, ...spec.values.map((i) => h('option', { value: String(i) }, r.columns[i])));
+    ? h('label', { class: 'inline-flex items-center gap-2 text-body-sm' }, t('chart.valueCol'), (() => {
+        const sel = h('select', { class: 'rounded-(--r-inset) bg-panel px-2 py-1 ring-1 ring-line' }, ...spec.values.map((i) => h('option', { value: String(i) }, r.columns[i])));
         sel.addEventListener('change', () => {
           col = Number(sel.value);
           draw();

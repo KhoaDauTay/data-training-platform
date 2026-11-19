@@ -31,14 +31,14 @@ export function pinBar(editorSql: () => string): HTMLElement | null {
   const from = source();
   const lock = from ? customLock() : undefined;
   if (lock) { // D-DB1: shown locked with what opens it, never a dead button
-    return h('div', { class: 'mb-2 flex flex-wrap items-center justify-end gap-x-3 gap-y-1 text-sm' },
+    return h('div', { class: 'mb-2 flex flex-wrap items-center justify-end gap-x-3 gap-y-1 text-body-sm' },
       r.ms !== undefined ? h('span', { class: 'mr-auto tabular-nums text-muted' }, t('res.meta', { rows: r.rows.length, cols: r.columns.length, ms: r.ms })) : null,
       h('span', { class: 'flex items-center gap-1.5 rounded-full border border-dashed border-line px-3 py-1 text-muted', role: 'note' },
         icon('lock', 'size-4'), t('pin.locked', lock)));
   }
   const block = from ? pinBlock({ sql: run.sql, ms: r.ms }, editorSql(), domainSlot(app.save, activeDomain()).dashboard.cards.length) : undefined;
   const off = block === 'stale' || block === 'full'; // 'slow' and 'long': the dialog explains the rule
-  return h('div', { class: 'mb-2 flex flex-wrap items-center justify-end gap-x-3 gap-y-1 text-sm' },
+  return h('div', { class: 'mb-2 flex flex-wrap items-center justify-end gap-x-3 gap-y-1 text-body-sm' },
     r.ms !== undefined ? h('span', { class: 'mr-auto tabular-nums text-muted' }, t('res.meta', { rows: r.rows.length, cols: r.columns.length, ms: r.ms })) : null,
     off ? h('span', { class: 'text-muted' }, t(block === 'stale' ? 'pin.stale' : 'dash.full', { max: MAX_CARDS })) : null,
     from && r.columns.length
@@ -57,25 +57,25 @@ function openPinDialog(sql: string, r: QueryResult, from: string, editorSql: () 
   const block = pinBlock({ sql, ms: r.ms }, editorSql(), domainSlot(app.save, activeDomain()).dashboard.cards.length);
 
   const title = h('input', {
-    type: 'text', id: 'pin-title', maxlength: String(MAX_CARD_TITLE), class: 'mt-1 w-full rounded-lg border border-line bg-panel px-3 py-2 text-ink',
+    type: 'text', id: 'pin-title', maxlength: String(MAX_CARD_TITLE), class: 'mt-1 w-full rounded-(--r-inset) border border-line bg-panel px-3 py-2 text-ink',
     value: from === 'sandbox' ? '' : textOf(activeTicket()!, lang).title.slice(0, MAX_CARD_TITLE),
   });
   const colBox = h('div');
-  const preview = h('div', { class: 'rounded-xl p-3 ring-1 ring-line' });
-  const status = h('p', { role: 'status', class: 'mb-0 text-sm' });
+  const preview = h('div', { class: 'rounded-(--r-ctl) p-3 ring-1 ring-line' });
+  const status = h('p', { role: 'status', class: 'mb-0 text-body-sm' });
   const confirm = h('button', { type: 'button', class: cx(BTN_GO, 'px-4 py-2') }, t('pin.confirm'));
-  const dialog = h('dialog', { class: 'w-[min(640px,calc(100vw-2rem))] rounded-2xl p-0', 'aria-labelledby': 'pin-dialog-title' });
+  const dialog = h('dialog', { class: 'w-[min(640px,calc(100vw-2rem))] rounded-(--r-card) p-0', 'aria-labelledby': 'pin-dialog-title' });
 
   const card = (): Card => ({ id: '', title: title.value.trim(), sql: sql.trim(), kind: kind!, col, source: from });
   const draw = (): void => {
     const cols = kind ? valueCols(kind, r) : [];
     colBox.replaceChildren(kind && kind !== 'table'
-      ? h('label', { class: 'block text-sm font-semibold' }, t('pin.col'),
-        h('select', { class: 'mt-1 block rounded-lg border border-line bg-panel px-2 py-1 text-ink', onchange: (e: Event) => { col = Number((e.target as HTMLSelectElement).value); draw(); } },
+      ? h('label', { class: 'block text-body-sm font-semibold' }, t('pin.col'),
+        h('select', { class: 'mt-1 block rounded-(--r-inset) border border-line bg-panel px-2 py-1 text-ink', onchange: (e: Event) => { col = Number((e.target as HTMLSelectElement).value); draw(); } },
           ...cols.map((i) => h('option', { value: String(i), selected: i === col }, t('pin.colOption', { name: r.columns[i], i: i + 1 })))))
       : '');
-    preview.replaceChildren(h('p', { class: 'mt-0 mb-2 text-sm font-semibold text-muted' }, t('pin.preview')), kind ? cardBody(card(), r) : '');
-    status.className = cx('mb-0 text-sm', block ? 'bad' : 'text-muted');
+    preview.replaceChildren(h('p', { class: 'mt-0 mb-2 text-body-sm font-semibold text-muted' }, t('pin.preview')), kind ? cardBody(card(), r) : '');
+    status.className = cx('mb-0 text-body-sm', block ? 'bad' : 'text-muted');
     status.replaceChildren(...(block === 'slow'
       ? [h('b', {}, t('pin.slow', { s: Math.round((r.ms ?? 0) / 100) / 10 })), h('br'), t('pin.slowHelp')]
       : block ? [t(block === 'long' ? 'pin.long' : block === 'stale' ? 'pin.stale' : 'dash.full', { max: block === 'long' ? MAX_CARD_SQL : MAX_CARDS })]
@@ -86,9 +86,9 @@ function openPinDialog(sql: string, r: QueryResult, from: string, editorSql: () 
   const radios = CARD_KINDS.map((k) => {
     const skill = skillOf(KIND_SKILL[k]);
     const why = !learned.has(skill.id) ? t('pin.kindLocked', { skill: skill.label[lang], n: skill.chapter }) : valueCols(k, r).length ? '' : t('pin.kindNoFit');
-    return h('label', { class: cx('flex items-center gap-2 rounded-lg px-2 py-1 ring-1 ring-line', why && 'text-muted') },
+    return h('label', { class: cx('flex items-center gap-2 rounded-(--r-inset) px-2 py-1 ring-1 ring-line', why && 'text-muted') },
       h('input', { type: 'radio', name: 'pin-kind', value: k, checked: k === kind, disabled: !!why, onchange: () => { kind = k; col = valueCols(k, r)[0]; draw(); } }),
-      t(KIND_LABEL[k]), why ? h('span', { class: 'text-sm' }, ` · ${why}`) : '');
+      t(KIND_LABEL[k]), why ? h('span', { class: 'text-body-sm' }, ` · ${why}`) : '');
   });
 
   confirm.addEventListener('click', () => {
@@ -111,9 +111,9 @@ function openPinDialog(sql: string, r: QueryResult, from: string, editorSql: () 
   dialog.append(h('div', { class: 'space-y-4 p-5' },
     h('div', { class: 'flex items-center gap-2' },
       h('h2', { id: 'pin-dialog-title', class: 'm-0 flex-1 text-lg font-bold' }, t('pin.title')),
-      h('span', { class: 'text-sm text-muted' }, t('dash.count', { n: domainSlot(app.save, activeDomain()).dashboard.cards.length, max: MAX_CARDS }))),
-    h('fieldset', { class: 'm-0 border-0 p-0' }, h('legend', { class: 'mb-1 text-sm font-semibold' }, t('pin.kind')), h('div', { class: 'flex flex-wrap gap-2' }, ...radios)),
-    h('label', { class: 'block text-sm font-semibold', for: 'pin-title' }, t('pin.cardTitle'), title),
+      h('span', { class: 'text-body-sm text-muted' }, t('dash.count', { n: domainSlot(app.save, activeDomain()).dashboard.cards.length, max: MAX_CARDS }))),
+    h('fieldset', { class: 'm-0 border-0 p-0' }, h('legend', { class: 'mb-1 text-body-sm font-semibold' }, t('pin.kind')), h('div', { class: 'flex flex-wrap gap-2' }, ...radios)),
+    h('label', { class: 'block text-body-sm font-semibold', for: 'pin-title' }, t('pin.cardTitle'), title),
     colBox,
     preview,
     status,

@@ -347,8 +347,8 @@ export function build(c: Ctx): void {
   }
   if (boss) {
     d.map = deliveryMap(after, false);
-    d.card = h('div', { class: 'absolute top-3 left-1/2 w-72 max-w-[calc(100vw-4rem)] -translate-x-1/2 rounded-2xl bg-panel p-3 text-center shadow-xl ring-2 ring-amber-500' },
-      h('p', { class: 'm-0 text-sm font-semibold text-amber-800 dark:text-amber-200' }, t('anim.promoKicker', { n: c.tk.chapter })),
+    d.card = h('div', { class: 'absolute top-3 left-1/2 w-72 max-w-[calc(100vw-4rem)] -translate-x-1/2 rounded-(--r-card) bg-panel p-3 text-center shadow-xl ring-2 ring-amber-500' },
+      h('p', { class: 'm-0 text-body-sm font-semibold text-amber-800 dark:text-amber-200' }, t('anim.promoKicker', { n: c.tk.chapter })),
       h('p', { class: 'm-0 text-lg font-bold' }, (c.rankAfter.career ?? c.rankAfter.tier)?.[getLang()] ?? t('career.intern')));
     d.card.style.opacity = '0';
   } else {

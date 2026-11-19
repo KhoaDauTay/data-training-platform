@@ -78,7 +78,7 @@ export function createPanel(host: HTMLElement): Panel {
   if (typeof ResizeObserver !== 'undefined') new ResizeObserver(edges).observe(bar);
   // v12 audit: tabs a beginner has not reached are hidden (D-O4), so one muted line says more are coming, never silence.
   // Below md only a lock and "+N" (the sentence is its title and label).
-  const more = h('span', { class: 'mb-2.5 flex shrink-0 items-center gap-1 self-center text-xs text-muted', hidden: true }, icon('lock', 'size-3.5'), h('span', { class: 'max-md:hidden' }), h('span', { class: 'md:hidden', 'aria-hidden': 'true' }));
+  const more = h('span', { class: 'mb-2.5 flex shrink-0 items-center gap-1 self-center text-caption text-muted', hidden: true }, icon('lock', 'size-3.5'), h('span', { class: 'max-md:hidden' }), h('span', { class: 'md:hidden', 'aria-hidden': 'true' }));
   host.replaceChildren(h('div', { class: 'flex items-end gap-x-3' }, h('div', { class: 'min-w-0 flex-1' }, bar), more), tourSlot('panel'), body); // tour steps 3 and 5: above the tab body, never inside the result (v10 review)
   let active = tabs.some((x) => x.id === 'columns') ? 'columns' : tabs[0].id;
 

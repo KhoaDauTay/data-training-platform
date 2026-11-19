@@ -27,7 +27,7 @@ export function toggleNotebook(dialog: HTMLDialogElement): void {
     return;
   }
   opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-  const input = h('input', { type: 'search', class: 'w-full rounded-lg bg-panel px-2 py-1.5 ring-1 ring-line' });
+  const input = h('input', { type: 'search', class: 'w-full rounded-(--r-inset) bg-panel px-2 py-1.5 ring-1 ring-line' });
   const title = h('h2', { id: 'notebook-title', class: 'm-0' });
   const close = h('button', { type: 'button', onclick: () => dialog.close() });
   const list = h('div', {});
@@ -44,7 +44,7 @@ export function toggleNotebook(dialog: HTMLDialogElement): void {
     const q = input.value;
     const cards = SKILLS.filter((s) => matches(q, s.id, s.label.vi, s.label.en));
     // A skill's quick lesson can be read before the skill is learned (product-design-v4 §C.3).
-    const lesson = (id: string) => hasLesson(id) ? h('button', { type: 'button', class: 'mt-1 px-2 py-0.5 text-sm', onclick: () => openLesson(id) }, t('nb.lesson')) : null;
+    const lesson = (id: string) => hasLesson(id) ? h('button', { type: 'button', class: 'mt-1 px-2 py-0.5 text-body-sm', onclick: () => openLesson(id) }, t('nb.lesson')) : null;
     const terms = GLOSSARY.filter((g) => matches(q, g.term, g.vi, g.en, ...g.columns));
     list.replaceChildren(...nodes(
       h('h3', {}, t('nb.cards')),
@@ -53,21 +53,21 @@ export function toggleNotebook(dialog: HTMLDialogElement): void {
           ? h('article', { class: ITEM },
               h('h4', { class: 'm-0 flex items-center gap-2' }, skillIcon(s.id), s.label[lang]),
               h('pre', { class: 'sql my-1' }, s.syntax),
-              h('p', { class: 'my-0.5 text-sm' }, h('b', {}, t('nb.when')), ' ', s.when[lang]),
-              h('p', { class: 'my-0.5 text-sm' }, h('b', {}, t('nb.trap')), ' ', s.trap[lang]),
+              h('p', { class: 'my-0.5 text-body-sm' }, h('b', {}, t('nb.when')), ' ', s.when[lang]),
+              h('p', { class: 'my-0.5 text-body-sm' }, h('b', {}, t('nb.trap')), ' ', s.trap[lang]),
               lesson(s.id))
           : h('article', { class: ITEM },
               h('h4', { class: 'm-0 flex items-center gap-2 text-muted' }, skillIcon(s.id), s.label[lang]),
-              h('p', { class: 'my-0.5 text-sm text-muted' }, t('nb.unlockAt', { id: grantedBy(app.tickets, s.id)?.id ?? '—' })),
+              h('p', { class: 'my-0.5 text-body-sm text-muted' }, t('nb.unlockAt', { id: grantedBy(app.tickets, s.id)?.id ?? '—' })),
               lesson(s.id))),
       h('h3', {}, t('nb.terms')),
       ...terms.map((g) =>
         h('article', { class: ITEM },
           h('h4', { class: 'm-0' }, g.term),
-          h('p', { class: 'my-0.5 text-sm' }, g[lang]),
-          h('p', { class: 'my-0.5 text-sm text-muted' }, g[other]),
-          g.columns.length ? h('p', { class: 'my-0.5 text-sm text-muted' }, t('nb.columns', { list: g.columns.join(', ') })) : null)),
-      cards.length + terms.length === 0 ? h('p', { class: 'text-sm text-muted' }, t('nb.empty', { q })) : null,
+          h('p', { class: 'my-0.5 text-body-sm' }, g[lang]),
+          h('p', { class: 'my-0.5 text-body-sm text-muted' }, g[other]),
+          g.columns.length ? h('p', { class: 'my-0.5 text-body-sm text-muted' }, t('nb.columns', { list: g.columns.join(', ') })) : null)),
+      cards.length + terms.length === 0 ? h('p', { class: 'text-body-sm text-muted' }, t('nb.empty', { q })) : null,
     ));
   };
 

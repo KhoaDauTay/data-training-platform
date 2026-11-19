@@ -49,8 +49,8 @@ export function renderFlow(host: HTMLElement, plan: Plan): void {
     root.append(s('g', { transform: `translate(${x(n)},${y.get(n.id)})` },
       s('title', {}, `${n.label}: ${rows}`),
       s('rect', { width: BOX_W, height: BOX_H, rx: 6, class: 'fill-panel stroke-line' }),
-      s('text', { x: 8, y: 16, class: 'fill-ink text-xs font-semibold' }, label),
-      s('text', { x: 8, y: 32, class: 'fill-ink text-xs tabular-nums' }, rows)));
+      s('text', { x: 8, y: 16, class: 'fill-ink text-caption font-semibold' }, label),
+      s('text', { x: 8, y: 32, class: 'fill-ink text-caption tabular-nums' }, rows)));
   }
   host.append(
     h('p', { class: 'muted' }, t('flow.intro')),

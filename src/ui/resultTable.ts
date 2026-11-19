@@ -82,5 +82,5 @@ export function renderResult(r: QueryResult, mark?: unknown[], limit = MAX_ROWS,
           ...r.columns.map((c, i) => h('th', { scope: 'col', class: cx('sticky top-0 bg-surface-2 align-bottom font-semibold text-ink', num[i] && 'text-right') },
             c, types && typeName(r.types[i]) ? h('span', { class: 'block text-caption font-normal text-muted' }, typeName(r.types[i])) : null)))),
         h('tbody', {}, ...body)),
-      limit < MAX_ROWS && r.rows.length > limit ? h('p', { class: 'm-0 px-2 py-1 text-sm text-muted' }, t('res.more', { n: r.rows.length - limit })) : null));
+      limit < MAX_ROWS && r.rows.length > limit ? h('p', { class: 'm-0 px-2 py-1 text-body-sm text-muted' }, t('res.more', { n: r.rows.length - limit })) : null));
 }

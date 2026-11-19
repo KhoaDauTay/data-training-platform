@@ -150,7 +150,7 @@ function scoped(meta: ErMetadata): Scoped {
 
 /** Switch pressed by keyboard: the redraw replaces it, so the new button takes focus back. */
 let refocus: 'task' | 'all' | undefined;
-const SCOPE_BTN = 'px-2.5 py-1 text-sm aria-pressed:bg-accent aria-pressed:font-semibold aria-pressed:text-on-accent';
+const SCOPE_BTN = 'px-2.5 py-1 text-body-sm aria-pressed:bg-accent aria-pressed:font-semibold aria-pressed:text-on-accent';
 
 /** The "Related to this task | All unlocked tables" switch, and the hidden-tables line. */
 function scopeBar(s: Scoped, deps: VizDeps): (Node | string)[] {
@@ -172,7 +172,7 @@ function scopeBar(s: Scoped, deps: VizDeps): (Node | string)[] {
   };
   return [
     h('div', { class: 'mb-2 flex flex-wrap gap-1', role: 'group', 'aria-label': t('erd.scope') }, btn('task', t('erd.scopeTask')), btn('all', t(inDrill() ? 'erd.scopeLab' : 'erd.scopeAll'))),
-    ...nodes(s.dropped.length ? h('p', { class: 'text-sm text-muted' }, t('erd.dropped', { n: s.dropped.length, list: s.dropped.join(', ') })) : null),
+    ...nodes(s.dropped.length ? h('p', { class: 'text-body-sm text-muted' }, t('erd.dropped', { n: s.dropped.length, list: s.dropped.join(', ') })) : null),
   ];
 }
 
@@ -208,7 +208,7 @@ function registerSchemaTabs(deps: VizDeps): void {
         const values = game.has(table) ? textValues(table, drill ? 'lab' : domainSchemaId()) : undefined;
         return h('div', {},
           h('h3', { class: 'm-0' }, table),
-          h('ul', { class: 'mt-1 mb-2 list-none space-y-0.5 pl-2 text-sm' }, ...meta.cols.filter((c) => c.table === table).map((c) =>
+          h('ul', { class: 'mt-1 mb-2 list-none space-y-0.5 pl-2 text-body-sm' }, ...meta.cols.filter((c) => c.table === table).map((c) =>
             h('li', { class: 'flex flex-wrap items-center gap-1' }, h('code', {}, c.name), h('span', { class: 'muted' }, c.type), ...keyBadges(meta.cons, table, c.name, open),
               valuesLine(values, c.name, 'basis-full pl-2')))));
       })));

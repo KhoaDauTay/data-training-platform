@@ -22,7 +22,7 @@ export const parseSidePref = (v: unknown): SidePref => (v === 'open' ? 'open' : 
 
 /** The current page: a 4 px --accent bar + --accent-soft background, not colour alone (v6 §3.1). */
 const SIDE_LINK = 'flex max-lg:min-h-11 w-full items-center gap-3 rounded-(--r-ctl) border-0 border-l-4 border-transparent bg-transparent px-3 py-2 text-left font-bold text-ink no-underline hover:bg-code aria-[current=page]:border-accent aria-[current=page]:bg-accent-soft aria-disabled:text-muted';
-const GROUP = 'side-group mt-4 mb-1 px-3 text-xs font-bold tracking-wider text-muted uppercase';
+const GROUP = 'side-group mt-4 mb-1 px-3 text-caption font-bold tracking-wider text-muted uppercase';
 const WIDE = '(min-width: 1024px)';
 const XL = '(min-width: 1280px)';
 const mq = (q: string): boolean => typeof matchMedia === 'function' && matchMedia(q).matches;
@@ -61,7 +61,7 @@ function row(r: Row): HTMLElement {
       r.lock ? h('span', { class: 'absolute -right-1.5 -bottom-1 grid size-3.5 place-items-center rounded-full bg-panel ring-1 ring-line' }, icon('lock', 'size-2.5')) : null),
     h('span', { class: 'side-label min-w-0 flex-1' },
       h('span', { class: 'block line-clamp-2' }, r.label), // v12.0 U7: wraps to two lines; the rail's tip shows the full name
-      r.sub || r.lock ? h('span', { class: 'block truncate text-xs font-semibold text-muted' }, r.lock ?? r.sub) : null),
+      r.sub || r.lock ? h('span', { class: 'block truncate text-caption font-semibold text-muted' }, r.lock ?? r.sub) : null),
     r.lock ? icon('lock', 'side-label size-3.5 text-muted') : null);
 }
 
@@ -98,7 +98,7 @@ function domainHead(): HTMLElement {
     h('span', { class: 'grid size-6 shrink-0 place-items-center', 'aria-hidden': 'true' }, icon(live.icon)),
     h('span', { class: 'side-label min-w-0' },
       h('b', { class: 'block' }, t(live.name)),
-      h('span', { class: 'block truncate text-xs font-semibold text-muted', title: line }, line)));
+      h('span', { class: 'block truncate text-caption font-semibold text-muted', title: line }, line)));
 }
 
 /** Workspace (v6 §3.3): the open chapter's tasks, a second way beside the task bar; hidden in the rail. */
@@ -114,7 +114,7 @@ function tasks(): HTMLElement | null {
     ...own.map((x, i) => row({
       key: `t:${x.id}`,
       href: hashOf('play'),
-      lead: d.has(x.id) ? icon('check', 'size-4 text-good') : h('b', { class: 'text-sm' }, String(i + 1)),
+      lead: d.has(x.id) ? icon('check', 'size-4 text-good') : h('b', { class: 'text-body-sm' }, String(i + 1)),
       label: reached.has(x.id) ? textOf(x, lang).title : t('nav.taskLocked'),
       current: isStory() && x.id === app.selectedId,
       lock: reached.has(x.id) ? undefined : t('side.lockedTask'),
@@ -209,7 +209,7 @@ export function renderSidebar(route: Route): void {
  */
 function initRailTips(): void {
   const tip = h('div', { id: 'side-tip', role: 'tooltip', hidden: true,
-    class: 'pointer-events-none fixed z-50 max-w-64 rounded-(--r-ctl) bg-panel px-3 py-1.5 text-sm font-bold text-ink shadow-lg ring-1 ring-line' });
+    class: 'pointer-events-none fixed z-50 max-w-64 rounded-(--r-ctl) bg-panel px-3 py-1.5 text-body-sm font-bold text-ink shadow-lg ring-1 ring-line' });
   document.body.append(tip);
   const side = byId('side');
   const show = (e: Event): void => {

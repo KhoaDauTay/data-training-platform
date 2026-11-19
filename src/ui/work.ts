@@ -70,8 +70,8 @@ export function planFailText(f: PlanFail, lab: boolean): string {
 }
 
 const FEEDBACK: Record<'good' | 'bad', string> = {
-  good: 'mt-2 rounded-(--r-ctl) bg-good-soft px-3 py-1.5 text-sm font-semibold text-ink ring-1 ring-good/40',
-  bad: 'mt-2 rounded-(--r-ctl) bg-bad-soft p-3 text-sm text-ink ring-1 ring-bad/40',
+  good: 'mt-2 rounded-(--r-ctl) bg-good-soft px-3 py-1.5 text-body-sm font-semibold text-ink ring-1 ring-good/40',
+  bad: 'mt-2 rounded-(--r-ctl) bg-bad-soft p-3 text-body-sm text-ink ring-1 ring-bad/40',
 };
 
 /**
@@ -116,7 +116,7 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
   /** The message under the buttons is the scaffold note with its Undo button (v13 §3.1). */
   let fillNote = false;
 
-  const editorHost = h('div', { lang: 'en', class: 'editor overflow-hidden rounded-xl ring-1 ring-line' });
+  const editorHost = h('div', { lang: 'en', class: 'editor overflow-hidden rounded-(--r-ctl) ring-1 ring-line' });
   // ui-ux-v7 W1/M1: Run is the second level, Submit the main button (right); 44 px targets on phones.
   const runBtn = h('button', { type: 'button', class: cx(BTN_SECONDARY, 'px-4 max-md:min-h-11'), onclick: () => void run() });
   // EXPLAIN always describes what was just run: run the editor SQL, and open the tab only if that run succeeded for this editor.
@@ -148,7 +148,7 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
   /** A drill's wrong answer (L84): the rows that differ, outside the status line so a screen reader reads one sentence. */
   const detailBox = h('div');
   guideHooks.diff = () => !!message?.detail; // v13 G6: the diff of a wrong drill submit is showing
-  const historyBox = h('details', { class: 'mt-2 text-sm' });
+  const historyBox = h('details', { class: 'mt-2 text-body-sm' });
   // The tour's mark sits under the buttons, never over the editor (v4 §B.2); main.ts refreshTour() refills it.
   host.replaceChildren(editorHost, h('div', { class: '@container max-md:sticky max-md:bottom-14 max-md:z-10 max-md:bg-panel max-md:pt-2 max-md:shadow-[0_-8px_12px_-10px_rgb(0_0_0/0.3)]' }, resultChip, h('div', { class: 'actions' }, runBtn, explainBtn, formatBtn, tools, submitBtn)), tourSlot('work'), guideSlot('work'), feedback, detailBox, guideSlot('diff'), historyBox);
 
@@ -214,7 +214,7 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
     historyBox.replaceChildren(
       h('summary', { class: 'cursor-pointer text-muted' }, list.length ? t('hist.title', { n: list.length }) : t('hist.empty')),
       h('ul', { class: 'my-1 list-none p-0' }, ...list.map((e) => h('li', {},
-        h('button', { type: 'button', class: 'min-h-6 max-lg:min-h-11 w-full border-0 bg-transparent px-1 py-0.5 text-left font-mono text-xs hover:bg-code', onclick: () => { editor?.setValue(e.sql); editor?.focus(); } },
+        h('button', { type: 'button', class: 'min-h-6 max-lg:min-h-11 w-full border-0 bg-transparent px-1 py-0.5 text-left font-mono text-caption hover:bg-code', onclick: () => { editor?.setValue(e.sql); editor?.focus(); } },
           h('span', { class: e.ok ? 'good' : 'bad' }, e.ok ? '✓' : '✗'),
           ` ${e.sql.replace(/\s+/g, ' ').slice(0, 60)}`,
           e.rows === undefined ? '' : h('span', { class: 'muted' }, ` · ${t('hist.rows', { n: e.rows })}`))))));
@@ -418,7 +418,7 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
       // The sender answers in the chat under the grader's facts (re-translated on a language switch like every message).
       // A drill (Plan 8a) has no sender: no voice line.
       const voice = (): HTMLElement | null => (tk.from.name ? h('p', { class: 'mt-2 mb-0 flex items-start gap-2' },
-        avatar(tk.from), h('span', { class: 'rounded-2xl rounded-tl-sm bg-panel px-3 py-1.5 text-ink' }, t(voiceKey(fail)))) : null);
+        avatar(tk.from), h('span', { class: 'rounded-(--r-card) rounded-tl-sm bg-panel px-3 py-1.5 text-ink' }, t(voiceKey(fail)))) : null);
       if (fail.reason === 'error') {
         underline(err, 0);
         say('bad', () => h('div', {}, err !== undefined ? errorView(err, true, sql) : gradeMessage(fail), voice()), mascotOf(err));

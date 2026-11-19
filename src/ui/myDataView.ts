@@ -95,9 +95,9 @@ function tableItem(x: ImportedTable): HTMLElement {
   };
   return h('li', { class: 'flex items-start justify-between gap-2 border-b border-line py-1' },
     h('details', { class: 'min-w-0', open: openTables.has(x.table), ontoggle: toggle },
-      h('summary', { class: 'cursor-pointer' }, h('code', {}, x.table), ' ', h('span', { class: 'text-sm text-muted' }, t('mydata.rows', { n: x.rows }))),
+      h('summary', { class: 'cursor-pointer' }, h('code', {}, x.table), ' ', h('span', { class: 'text-body-sm text-muted' }, t('mydata.rows', { n: x.rows }))),
       h('ul', { class: 'mt-1 mb-0 list-none pl-4' },
-        ...x.columns.map((c) => h('li', {}, h('code', {}, c.name), ' ', h('span', { class: 'text-sm text-muted' }, c.type))))),
+        ...x.columns.map((c) => h('li', {}, h('code', {}, c.name), ' ', h('span', { class: 'text-body-sm text-muted' }, c.type))))),
     h('button', {
       type: 'button',
       'aria-label': t('mydata.deleteAria', { table: x.table }),
@@ -113,7 +113,7 @@ export function renderMyData(): HTMLElement {
   input.addEventListener('change', () => void addFiles(input.files));
   const drop = h('label', {
     for: 'mydata-file',
-    class: cx('block rounded-xl border-2 border-dashed border-line p-4 text-center',
+    class: cx('block rounded-(--r-ctl) border-2 border-dashed border-line p-4 text-center',
       busy ? 'cursor-wait opacity-60' : 'cursor-pointer hover:border-accent',
       'peer-focus-visible:border-accent peer-focus-visible:ring-2 peer-focus-visible:ring-accent'),
   }, t('mydata.drop'));
@@ -125,16 +125,16 @@ export function renderMyData(): HTMLElement {
   const tables = my?.tables ?? [];
   return h('section', { class: 'mt-4 border-t border-line pt-3', 'aria-labelledby': 'mydata-title' },
     h('h3', { id: 'mydata-title', class: 'mt-0' }, t('mydata.title')),
-    h('p', { class: 'mt-1 text-sm text-muted' }, t('mydata.intro', { mb: IMPORT_LIMITS.maxBytes / MB, rows: IMPORT_LIMITS.maxRows, cols: IMPORT_LIMITS.maxColumns, tables: IMPORT_LIMITS.maxTables })),
+    h('p', { class: 'mt-1 text-body-sm text-muted' }, t('mydata.intro', { mb: IMPORT_LIMITS.maxBytes / MB, rows: IMPORT_LIMITS.maxRows, cols: IMPORT_LIMITS.maxColumns, tables: IMPORT_LIMITS.maxTables })),
     importedCells(tables) >= MEMORY_WARN_CELLS
-      ? h('p', { class: 'rounded-lg bg-accent-soft p-2 text-sm ring-1 ring-accent', role: 'note' }, t('mydata.memoryWarn'))
+      ? h('p', { class: 'rounded-(--r-inset) bg-accent-soft p-2 text-body-sm ring-1 ring-accent', role: 'note' }, t('mydata.memoryWarn'))
       : null,
     input,
     drop,
-    h('p', { class: 'min-h-[1.5em] whitespace-pre-wrap text-sm', role: 'status' }, status),
+    h('p', { class: 'min-h-[1.5em] whitespace-pre-wrap text-body-sm', role: 'status' }, status),
     tables.length
       ? h('ul', { class: 'my-2 list-none p-0' }, ...tables.map(tableItem))
-      : h('p', { class: 'text-sm text-muted' }, t('mydata.none')),
+      : h('p', { class: 'text-body-sm text-muted' }, t('mydata.none')),
     tables.length
       ? clearButton()
       : null,
@@ -149,7 +149,7 @@ function clearButton(): HTMLElement {
   const draw = (): void => {
     if (!confirmingClear) return void box.replaceChildren(first);
     const yes = h('button', {
-      type: 'button', 'data-yes': '', class: 'rounded-lg bg-bad px-3 py-1 font-semibold text-on-accent',
+      type: 'button', 'data-yes': '', class: 'rounded-(--r-inset) bg-bad px-3 py-1 font-semibold text-on-accent',
       onclick: () => {
         yes.disabled = true; // no double clear
         confirmingClear = false;
@@ -157,7 +157,7 @@ function clearButton(): HTMLElement {
       },
     }, t('mydata.clearYes'));
     const no = h('button', { type: 'button', onclick: () => { confirmingClear = false; draw(); first.focus(); } }, t('mydata.clearNo'));
-    box.replaceChildren(h('p', { class: 'w-full text-sm', role: 'alert' }, t('mydata.clearConfirm')), yes, no);
+    box.replaceChildren(h('p', { class: 'w-full text-body-sm', role: 'alert' }, t('mydata.clearConfirm')), yes, no);
   };
   draw();
   return box;

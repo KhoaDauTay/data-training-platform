@@ -20,7 +20,7 @@ const STAGE_OFF = 'bg-code ring-1 ring-line';
 const STEP_BTN = 'flex min-w-24 flex-col items-start';
 
 export function renderSteps(host: HTMLElement, sql: string, result: StepsResult, goExplain: () => void): void {
-  const stages = h('div', { class: 'mb-2 flex flex-wrap gap-1.5 text-sm' }, ...STAGES.map((key, i) =>
+  const stages = h('div', { class: 'mb-2 flex flex-wrap gap-1.5 text-body-sm' }, ...STAGES.map((key, i) =>
     i === OPTIMIZE
       ? h('button', { type: 'button', class: PILL, onclick: goExplain, title: t('steps.toExplain') }, `${t(key)} → EXPLAIN`)
       : h('span', { class: cx(PILL, i === EXECUTE ? STAGE_ON : STAGE_OFF), 'aria-current': i === EXECUTE ? 'step' : false }, t(key))));
@@ -68,13 +68,13 @@ export function renderSteps(host: HTMLElement, sql: string, result: StepsResult,
       },
         h('b', {}, STEP_LABELS[s.key]),
         s.error ? h('span', {}, t('steps.error'))
-          : h('span', { class: 'text-base font-bold tabular-nums' }, unit(s.key, s.count!))),
+          : h('span', { class: 'text-body font-bold tabular-nums' }, unit(s.key, s.count!))),
     ].filter((x): x is HTMLElement => x !== null)));
 
     const s = steps[current];
     const before = prevCount(current);
     const bar = (label: Key, n: number, width: number) =>
-      h('div', { class: 'grid grid-cols-[48px_1fr_80px] items-center gap-2 text-sm' },
+      h('div', { class: 'grid grid-cols-[48px_1fr_80px] items-center gap-2 text-body-sm' },
         h('span', {}, t(label)), h('i', { class: 'block h-2.5 rounded bg-accent', style: `width:${width}%` }), h('span', { class: 'text-right tabular-nums' }, fmt(n)));
     detail.replaceChildren(
       h('h3', {}, t('steps.title', { i: current + 1, label: STEP_LABELS[s.key] })),
