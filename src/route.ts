@@ -31,11 +31,24 @@ export function canonicalHash(hash: string): string {
   return m ? `#/d/logistics/${m[1]}${m[2]}` : hash;
 }
 
+/** v15 Q1 (D-N2): a drill and a review of drills open the workspace here, outside every domain. */
+export const LEARN_PLAY = '#/learn/play';
+/**
+ * The workspace's hash for what it holds (`lab` = a drill or a review of drills). `#/d/<d>/play` holding one is an alias of
+ * LEARN_PLAY, kept forever like canonicalHash; LEARN_PLAY holding nothing General (a reload drops the session) → the
+ * Practise SQL hub. Any other hash is returned as it is.
+ */
+export function workspaceHash(hash: string, lab: boolean): string {
+  if (lab) return /^#\/?d\/[a-z]+\/play(?=$|[/?])/.test(hash) ? LEARN_PLAY : hash;
+  return /^#\/?learn\/play(?=$|[/?])/.test(hash) ? '#/practice' : hash;
+}
+
 /** '' (no hash) → undefined, so the remembered route can be used; any unknown path falls back to home. */
 export function parseRoute(hash: string): Route | undefined {
   if (hash === '') return undefined;
   const [a = '', b = '', c = ''] = canonicalHash(hash).replace(/^#\/?/, '').split('?')[0].split('/');
   if (a === '') return 'home';
+  if (a === 'learn' && b === 'play') return 'play'; // v15 Q1: the General workspace (a drill or a review of drills)
   if (a === 'learn' || a === 'practice') return a;
   if (a !== 'd') return 'home';
   return isLiveDomain(b) && Object.hasOwn(DOMAIN_PAGE, c) ? DOMAIN_PAGE[c] : 'home';

@@ -3,9 +3,9 @@ import { activeDomain, DOMAINS } from '../domains';
 import { knownSkills } from '../home';
 import { getLang, t, type Key } from '../i18n';
 import { CHAPTERS, chaptersOf, chapterTitle, currentChapter, moduleTitle, rankOf, SKILLS, visibleTickets } from '../progress';
-import { gated, navLock, readTour } from '../onboarding';
+import { gated, navLock, readTour, sqlOnly } from '../onboarding';
 import { domainHash, hashOf, inDomain, learnModuleOf, learnSkillOf, type Route } from '../route';
-import { activeSchema, isStory, reviewCount } from '../session';
+import { generalWork, isStory, reviewCount } from '../session';
 import { actions, app, done } from '../state';
 import { readJson, writeJson } from '../storage';
 import { cx } from '../theme';
@@ -128,13 +128,13 @@ function domainSwitch(): HTMLElement {
     h('p', { class: GROUP }, t('home.domains')),
     ...DOMAINS.map((d) => row({
       key: `d:${d.id}`, href: domainHash(d.id), lead: icon(d.icon), label: t(d.name),
-      sub: domainLine(d.id), current: d.id === activeDomain(),
+      sub: domainLine(d.id), current: !sqlOnly() && d.id === activeDomain(),
     })));
 }
 
 function content(route: Route, drawer: boolean): (Node | string)[] {
   const out: (Node | null | undefined)[] = [drawer ? domainSwitch() : null];
-  if (route === 'learn') {
+  if (route === 'learn' || (route === 'play' && generalWork())) { // v15 Q1: the General workspace shows the SQL track, never a domain's pages
     out.push(h('p', { class: GROUP }, t('side.sqlTrack')), ...modules());
   } else if (route === 'practice') {
     const lang = getLang();
@@ -148,7 +148,7 @@ function content(route: Route, drawer: boolean): (Node | string)[] {
     const order = app.tickets.map((x) => x.id);
     const isGated = gated(readTour());
     // The drawer's domain switch already shows this domain (current, chapter · rank): a rule, not a second "Logistics" (L93).
-    out.push(drawer ? h('hr', { class: 'my-2 border-0 border-t border-line' }) : route === 'play' && activeSchema() === 'lab' ? null : domainHead(), // a General drill: no chapter · rank (L93)
+    out.push(drawer ? h('hr', { class: 'my-2 border-0 border-t border-line' }) : domainHead(),
       ...navItems('domain').map((n) => {
       const lock = navLock(n.id, done(), order, isGated);
       return row({ key: n.id, href: n.href, lead: icon(n.icon), label: t(n.label), current: n.current(route), onclick: n.onclick, lock: lock && t(lock) });

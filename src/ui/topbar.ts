@@ -11,7 +11,8 @@ import { downloading } from '../db/loadProgress';
 import { celebrate, gainSince } from './celebrate';
 import { fillIcons, icon, NAV_ICON, type IconName } from './icons';
 import { currentRoute } from './router';
-import { activeSchema } from '../session';
+import { generalWork } from '../session';
+import { sqlOnly } from '../onboarding';
 
 const mb = (bytes: number): number => Math.round(bytes / 1e5) / 10;
 
@@ -57,6 +58,9 @@ export function domainLine(id: DomainId): string {
   return `${t('top.chapterShort', { n: currentChapter(tickets, done()), total: CHAPTERS.length })} · ${rank}`;
 }
 
+/** v15: nothing in the top bar names a domain for a "SQL only" player (§5) or in the General workspace (#/learn/play, Q1). */
+export const noDomain = (): boolean => sqlOnly() || (currentRoute() === 'play' && generalWork());
+
 /** A nav link (top bar, bottom bar, sidebar); an item with `onclick` does its own navigation. */
 export function navLink(n: NavItem, route: Route, cls: string, ...body: (Node | string)[]): HTMLAnchorElement {
   const click = n.onclick;
@@ -71,21 +75,23 @@ function renderNav(): void {
   const route = currentRoute();
   const top = navItems('top');
   const live = DOMAINS.find((d) => d.id === activeDomain())!;
+  const none = noDomain(); // v15: the item names no domain
   byId('nav').replaceChildren(...top.map((n) => navLink(n, route, NAV_LINK, t(n.label))));
   byId('bottom-nav').replaceChildren(
     ...top.map((n) => navLink(n, route, BOTTOM_LINK, icon(n.icon, 'size-5'), h('span', {}, t(n.label)))),
-    h('a', { href: hashOf('overview'), class: BOTTOM_LINK, 'aria-current': inDomain(route) ? 'page' : false },
-      icon(live.icon, 'size-5'), h('span', {}, t(live.name))));
+    h('a', { href: hashOf('overview'), class: BOTTOM_LINK, 'aria-current': inDomain(route) && !(route === 'play' && generalWork()) ? 'page' : false },
+      icon(none ? 'database' : live.icon, 'size-5'), h('span', {}, t(none ? 'home.domains' : live.name))));
 }
 
 /** Domain switch (v5 §B.2): every domain with its progress line (Logistics: chapter · rank; the others: tasks done). */
 function renderDomainMenu(): void {
   const menu = byId('domain-menu');
   const shown = DOMAINS.find((d) => d.id === activeDomain())!;
-  byId('domain-label').textContent = t(shown.name);
-  byId('domain-icon').replaceChildren(icon(shown.icon, 'size-4')); // U2: the chip shows the open domain's icon, not a fixed anchor
+  const none = noDomain(); // v15: the chip names no domain, the menu still lists all
+  byId('domain-label').textContent = t(none ? 'home.domains' : shown.name);
+  byId('domain-icon').replaceChildren(icon(none ? 'database' : shown.icon, 'size-4')); // U2: the chip shows the open domain's icon, not a fixed anchor
   menu.replaceChildren(h('div', { class: 'flex flex-col' }, ...DOMAINS.map((d) => h('a', {
-    href: domainHash(d.id), class: MENU_ITEM, onclick: () => menu.hidePopover?.(), 'aria-current': d.id === activeDomain() ? 'true' : false,
+    href: domainHash(d.id), class: MENU_ITEM, onclick: () => menu.hidePopover?.(), 'aria-current': !none && d.id === activeDomain() ? 'true' : false,
   },
     icon(d.icon, 'size-4'),
     h('span', { class: 'flex-1 font-bold' }, t(d.name)),
@@ -238,8 +244,8 @@ export function renderTopbar(): void {
   chapter.replaceChildren(
     icon('map', 'size-4'),
     h('span', { class: 'font-semibold' }, t('top.chapterShort', { n: ch, total })));
-  // Chapter and rank belong to the domain (v5 §B.2); a General drill opened in the workspace is not in it (L82, L93).
-  const domainChrome = inDomain(route) && !(route === 'play' && activeSchema() === 'lab');
+  // Chapter and rank belong to the domain (v5 §B.2); the General workspace (#/learn/play) is not in it (L82, L93, v15 Q1).
+  const domainChrome = inDomain(route) && !(route === 'play' && generalWork());
   byId('domain-status').hidden = !domainChrome;
   byId('domain-chapter').textContent = domainChrome ? t('top.chapterTiny', { n: ch }) : ''; // U1: "Ch.4" in the chip on phones
   const rank = byId('rank');

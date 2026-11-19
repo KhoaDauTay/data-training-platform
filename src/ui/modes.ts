@@ -8,7 +8,7 @@ import { applyResult, isSuccess, movedToday, nextCard, pickForSkill, retryItem, 
 import { CHAPTERS, chapterTitle, moduleTitle, nextTicket, SKILLS } from '../progress';
 import { hashOf, learnAdvOf, learnModuleOf, learnSkillOf, parseRoute } from '../route';
 import {
-  activeSchema, activeStep, activeTicket, hintsShown, isStory, markWarmupDone, practiceFinished, reviewCount, reviewedDrills, reviewToday, session, today, warmupToday, type Mode, type PracticeRun,
+  activeSchema, activeStep, activeTicket, generalWork, hintsShown, isStory, markWarmupDone, practiceFinished, reviewCount, reviewedDrills, reviewToday, session, today, warmupToday, type Mode, type PracticeRun,
 } from '../session';
 import { DRILL_ID } from '../save';
 import { actions, app, done, erMeta, persist, schemaHooks, selected, stepKey } from '../state';
@@ -85,13 +85,25 @@ export function startPractice(items: PracticeItem[], warmup = false): boolean {
 
 export const startSandbox = (): void => enter({ kind: 'sandbox' });
 export const backToStory = (): void => enter({ kind: 'story' });
+/**
+ * v15 Q1: leaving a drill or a review of drills goes back to the General area (the skill's or node's page, or Practise SQL),
+ * never into a domain's workspace, which would seed that domain and mark it visited.
+ */
+export function leaveGeneral(): void {
+  const m = session.mode;
+  const back = m.kind === 'drill' ? `${hashOf('learn')}/${m.drill.skill ? `skill/${m.drill.skill}` : `adv/${m.drill.node}`}` : hashOf('practice');
+  session.mode = { kind: 'story' };
+  location.hash = back; // before the redraw: the workspace is about to hide, so the story brief's previews stay idle (Q7)
+  ctx?.rerender();
+  ctx?.work.setTicket(activeTicket(), activeStep(), true); // the next visit to the workspace starts on the story's editor
+}
 /** Plan 8a: the drill workspace's left pane and credit live in a lazy chunk (src/ui/drillBrief.ts, budget `learnui`). */
 let drillUi: typeof import('./drillBrief') | undefined;
 /** Every main-bundle value the chunk uses is handed over here (Plan 6 U3: the chunk imports only types from main modules). */
 const loadDrillUi = () => import('./drillBrief').then((m) => {
   if (!drillUi) m.initDrill({
     db: ctx!.db, activeSchema, h, nodes, richText, byId, loader, getLang, locale, app, actions, persist, schemaHooks, erMeta, stepKey, session, hintsShown, today,
-    isSuccess, movedToday, nextCard, SKILLS, hashOf, textOf, hints, shapeCard, tryPreview, openLesson, backToStory, startDrillMode, loadGeneral, generalNow, loadLessons,
+    isSuccess, movedToday, nextCard, SKILLS, hashOf, textOf, hints, shapeCard, tryPreview, openLesson, leave: leaveGeneral, startDrillMode, loadGeneral, generalNow, loadLessons,
     lessonSeen: isSeen, knownSkills, learnSkillOf, learnAdvOf, learnModuleOf, moduleTitle, illustration, loadedGsap, loadGsap, reducedMotion, icon, skillIcon, loadTickets, CHAPTERS,
     announce, readJson, writeJson, readTour, boonMark, enterMark, escOwned, guideHooks, guideSlot, showPane, parseRoute, mod: keyLabels(isMac).mod,
   });
@@ -214,7 +226,8 @@ function practicePane(host: HTMLElement, run: PracticeRun): void {
     run.result ? h('p', { class: 'mt-1 mb-0' }, t(run.result === 'ok' ? 'prac.ok' : 'prac.weak')) : null,
     h('div', { class: 'actions mb-0' },
       run.result && !finished ? h('button', { type: 'button', class: 'primary', onclick: () => nextItem() }, t('prac.next')) : null,
-      h('button', { type: 'button', onclick: () => backToStory() }, t('prac.exit'))));
+      generalWork() ? h('button', { type: 'button', onclick: () => leaveGeneral() }, t('prac.exitReview'))
+        : h('button', { type: 'button', onclick: () => backToStory() }, t('prac.exit'))));
   const body = h('div');
   if (!finished) {
     const tk = run.tickets[run.index];

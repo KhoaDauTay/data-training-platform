@@ -40,7 +40,7 @@ export interface DrillDeps extends GuideDeps {
   isSuccess: typeof Practice.isSuccess; movedToday: typeof Practice.movedToday; nextCard: typeof Practice.nextCard;
   SKILLS: typeof Progress.SKILLS; hashOf: typeof Route.hashOf; textOf: typeof Tickets.textOf;
   hints: typeof Brief.hints; shapeCard: typeof Brief.shapeCard; tryPreview: typeof TryPreview.tryPreview; openLesson: typeof LessonCard.openLesson;
-  backToStory: typeof Modes.backToStory; startDrillMode: typeof Modes.startDrillMode;
+  leave: typeof Modes.leaveGeneral; startDrillMode: typeof Modes.startDrillMode;
   loadGeneral: typeof Content.loadGeneral; generalNow: typeof Content.generalNow; loadLessons: typeof Content.loadLessons;
   // Learning path (Task 9-10)
   lessonSeen: typeof LessonCard.isSeen; learnSkillOf: typeof Route.learnSkillOf; learnAdvOf: typeof Route.learnAdvOf;
@@ -122,7 +122,7 @@ export function drillPane(host: HTMLElement, m: DrillMode): void {
   host.replaceChildren(...nodes(
     ...drillParts(g, d, tk),
     passed ? recap(g, d, tk) : null,
-    h('div', { class: 'actions' }, h('button', { type: 'button', onclick: () => d$.backToStory() }, lt('drill.exit'))),
+    h('div', { class: 'actions' }, h('button', { type: 'button', onclick: () => d$.leave() }, lt('drill.exit'))),
   ));
 }
 
@@ -227,6 +227,12 @@ export function practiceHub(): HTMLElement | null {
   const wrap = (...kids: (Node | null)[]): HTMLElement =>
     h('div', {}, h('section', { class: 'space-y-3 rounded-(--r-card) bg-panel p-5 ring-1 ring-line', 'aria-labelledby': 'hub-title' }, head, ...d$.nodes(...kids)),
       d$.guideSlot('practice-hub')); // v13 G7
+  // v15 Q9: one drill passed is not "learned" yet (≥ 2, D8a-11), but it is not "nothing" either: one more drill finishes it.
+  const started = known.size === 0 ? ids.map((s) => g.bySkill.get(s) ?? []).find((ds) => ds.some(done)) : undefined;
+  const more = started?.find((d) => !done(d));
+  if (started && more) {
+    return wrap(h('p', { class: 'm-0 text-[15px]' }, lt('hub.almost', { skill: nameOf(g, more) })), go(more, lt('hub.resume')));
+  }
   if (known.size === 0) {
     return wrap(h('p', { class: 'm-0 text-[15px] text-muted' }, lt('hub.empty')),
       h('a', { href: `${d$.hashOf('learn')}/sql/1`, class: 'inline-block rounded-full bg-accent px-4 py-2 font-bold text-on-accent no-underline shadow-sm hover:shadow-md' }, lt('hub.start'))); // looks like the call to action it is (BTN_GO, by value: lazy chunk)

@@ -83,8 +83,26 @@ function tableBox(schema: SchemaId, table: string, meta: ErMetadata): HTMLElemen
 /** "Bảng dùng" (columns + 5 rows each, open/close) and "Kết quả mong đợi" (row count + 3 first rows, positional headers). */
 export function tryPreview(solution: string, schema: SchemaId): HTMLElement {
   const host = h('section', { class: 'my-2 space-y-3', 'aria-label': t('preview.expected') });
+  const key = `${schema}|${solution}`;
+  // L131 #1 / v15 Q7: nothing is read (so `lab` is not seeded) until the box is on screen: the hidden workspace draws
+  // ticket 1's quick lesson before the player picks anything. Already loaded (a redraw): drawn at once.
+  if (expected.has(key) || typeof IntersectionObserver === 'undefined') fillPreview(host, solution, schema, key);
+  else {
+    host.replaceChildren(loading());
+    const io = new IntersectionObserver((seen) => {
+      if (!host.isConnected) return io.disconnect(); // a redraw replaced it
+      if (!seen.some((x) => x.isIntersecting || x.boundingClientRect.height > 0)) return; // laid out = not inside a hidden view
+      io.disconnect();
+      fillPreview(host, solution, schema, key);
+    });
+    io.observe(host);
+  }
+  return host;
+}
+
+function fillPreview(host: HTMLElement, solution: string, schema: SchemaId, key: string): void {
   const meta = load(metas, schema, () => app.ensure(schema).then(() => erMeta(SCHEMAS[schema])));
-  const exp = load(expected, `${schema}|${solution}`, () => expectedResult(solution, schema));
+  const exp = load(expected, key, () => expectedResult(solution, schema));
   const pending = <T>(c: Cell<T>): boolean => c.value === undefined && c.error === undefined;
   const draw = (): void => {
     const m = meta.value;
@@ -99,7 +117,6 @@ export function tryPreview(solution: string, schema: SchemaId): HTMLElement {
   };
   draw();
   for (const c of [meta.p, exp.p]) void c.then(() => host.isConnected && draw());
-  return host;
 }
 
 type Fail = Exclude<GradeResult, { ok: true }>;

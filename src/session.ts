@@ -41,6 +41,13 @@ export const keepsWork = (): boolean => session.mode.kind === 'story' || session
 export const schemaOf = (tk: Ticket | undefined): SchemaId => (tk && DRILL_ID.test(tk.id) ? 'lab' : domainSchemaId());
 /** A review drill runs as a Practice item (Plan 8a Task 8), so the schema follows the open ticket, not the mode. */
 export const activeSchema = (): SchemaId => schemaOf(activeTicket());
+/** The workspace's data: the open ticket's schema; a finished practice run keeps its last item's (a review of drills stays on lab). */
+export function playSchema(): SchemaId {
+  const m = session.mode;
+  return m.kind === 'practice' ? schemaOf(m.run.tickets[Math.min(m.run.index, m.run.tickets.length - 1)]) : activeSchema();
+}
+/** v15 Q1: the workspace holds a drill or a review of drills; it lives on #/learn/play, outside every domain. */
+export const generalWork = (): boolean => playSchema() === 'lab';
 
 /** Real local day for the Leitner schedule (never the in-game date). */
 export const today = (): string => localDay(new Date());

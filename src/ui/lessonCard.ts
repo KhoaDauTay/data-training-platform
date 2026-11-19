@@ -15,6 +15,8 @@ import { renderResult } from './resultTable';
 import { boonRegion, guideHooks, guideSlot, markExampleRan, refreshGuides, tourSlot } from './coach';
 import { mascot } from './mascots';
 import { readTour } from '../onboarding';
+import { inDomain } from '../route';
+import { currentRoute } from './router';
 import { diffView, hasDiff, runOn, tryPreview, verdictText } from './tryPreview';
 
 // Session state by skill id. The brief is rebuilt on every rerender, so what the player typed or ran lives here.
@@ -231,7 +233,9 @@ function card(l: Lesson, titleId: string, actions: HTMLElement[], tour = false, 
       h('div', { class: 'flex gap-1.5' }, ...actions)),
     h('div', { class: cx('leading-relaxed', inDialog && 'px-5 pt-4 pb-6 max-sm:px-4') },
       section('book', t('lesson.concept'), richText(l.concept[lang]),
-        skill ? h('p', { class: 'mt-2 mb-0' }, h('b', {}, t('lesson.syntax')), ' ', h('code', {}, skill.syntax)) : null),
+        skill ? h('p', { class: 'mt-2 mb-0' }, h('b', {}, t('lesson.syntax')), ' ', h('code', {}, skill.syntax)) : null,
+        // v15 Q6: inside a domain the lesson's tables (lab) are not the company's
+        !guided && inDomain(currentRoute()) ? h('p', { class: 'mt-2 mb-0 text-sm text-muted', 'data-lab-note': '' }, t('lesson.labNote')) : null),
       section('code', t('lesson.example'), h('pre', { class: 'sql' }, l.example), h('div', { class: 'actions mb-0' }, runExample),
         tour ? tourSlot('lesson') : null, gslot('lesson-example'), exampleOut),
       section('info', t('lesson.explain'), richText(byMarker(l.explain[lang]))),

@@ -1,4 +1,4 @@
-import { isLiveDomain, type DomainId } from './domains';
+import { DOMAIN_KEY, isLiveDomain, type DomainId } from './domains';
 import type { Key } from './i18n';
 import { localStore, readJson, writeJson, type KV } from './storage';
 
@@ -42,6 +42,9 @@ export function bootPick(hashDomain: DomainId | undefined, pref: unknown, firstV
   if (isLiveDomain(pref) || pref === 'general') return pref;
   return firstVisit ? undefined : 'logistics';
 }
+
+/** v15 §5: picked "SQL only" and has opened no domain since (a domain page overwrites the pref): nothing names Logistics. */
+export const sqlOnly = (storage: KV | undefined = localStore()): boolean => readJson<unknown>(DOMAIN_KEY, storage) === 'general';
 
 /** Progressive disclosure (v4 §B.2 layer 3) only for players who started on the welcome screen as beginners (V9). */
 export const gated = (tour: TourPref | undefined): boolean => tour !== undefined && !tour.knows;

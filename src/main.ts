@@ -14,7 +14,7 @@ import { loadSave, parseSave, serializeSave, type Known } from './save';
 import { actions, app, done, editorSchema, persist, selected, type Column } from './state';
 import { resumeStep } from './overview';
 import { seedReview } from './practice';
-import { activeSchema, isStory, schemaOf, session, today } from './session';
+import { generalWork, isStory, playSchema, session, today } from './session';
 import { localStore, readJson, writeJson } from './storage';
 import { domainOfHash, type Route } from './route';
 import type { Ticket } from './tickets';
@@ -222,13 +222,6 @@ const syncMap = (): void => mapStrip.update({
   tickets: app.tickets, completed: done(), selectedId: app.selectedId, lane: session.mode.kind === 'lane' ? session.mode.ticket : undefined,
 });
 
-/** Language switch and progress changes: redraws text, never remounts the editor. */
-/** The workspace's data: the open ticket's schema; a finished practice run keeps its last item's (a review of drills stays on lab). */
-function playSchema(): SchemaId {
-  const m = session.mode;
-  return m.kind === 'practice' ? schemaOf(m.run.tickets[Math.min(m.run.index, m.run.tickets.length - 1)]) : activeSchema();
-}
-
 /**
  * The data a domain page needs (D10-3). A drill (also a review drill) in the workspace runs on `lab` only: it neither
  * seeds the domain nor counts as a domain visit for the pref (D10-7), so "SQL only" stays lab-only (Plan 10 review).
@@ -239,6 +232,7 @@ function openPage(r: Route, d: DomainId): void {
   openSchema(s);
 }
 
+/** Language switch and progress changes: redraws text, never remounts the editor. */
 function rerender(): void {
   // A mode change on the same hash (drill → story on #/d/x/play) fires no route: follow it here.
   const d = domainOfHash(location.hash);
@@ -539,9 +533,10 @@ if (pick && pick !== 'general' && pick !== activeDomain()) await enterDomain(pic
 startRouter((r, initial) => {
   const d = domainOfHash(location.hash);
   if (d) openPage(r, d); // a domain page needs its data (seeded once)
+  else if (r === 'play') openSchema('lab'); // v15 Q1: #/learn/play, a drill or a review of drills
   if (d && d !== activeDomain()) void enterDomain(d).then(() => showRoute(r, initial));
   else showRoute(r, initial);
-});
+}, generalWork);
 initWelcome(want === undefined); // nothing opened yet (no domain in the hash or the pref): the picker asks first
 
 // "My data" (Plan Import): imported CSVs stay in this browser (IndexedDB) and are replayed into the sandbox schema.
