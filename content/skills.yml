@@ -100,7 +100,7 @@
   label: { vi: "Giá trị trống (NULL)", en: "Missing values (NULL)" }
   syntax: "WHERE shipped_on IS NULL AND status <> 'CANCELLED'"
   when: { vi: "Tìm thứ chưa được ghi: ngày đến thực tế, ngày thông quan…", en: "Find what has not been recorded yet: actual arrival, clearance date…" }
-  trap: { vi: "= NULL không bao giờ đúng, phải viết IS NULL. Ô trống có thể vì nhiều lý do (đơn hủy cũng không có ngày giao).", en: "= NULL is never true; write IS NULL. A value can be empty for several reasons (a cancelled order is never delivered either)." }
+  trap: { vi: "= NULL không bao giờ đúng, phải viết IS NULL. Ô trống có thể vì nhiều lý do (lô hủy cũng không có ngày đến).", en: "= NULL is never true; write IS NULL. A value can be empty for several reasons (a cancelled shipment has no arrival either)." }
 
 - id: case_when
   chapter: 5
@@ -149,7 +149,7 @@
   label: { vi: "Giá trị khác nhau (DISTINCT)", en: "Distinct values" }
   syntax: "SELECT DISTINCT city FROM customers; count(DISTINCT customer_id)"
   when: { vi: "Hỏi \"bao nhiêu loại\" hay \"bao nhiêu nơi\", không phải bao nhiêu dòng.", en: "The question is \"how many kinds\" or \"how many places\", not how many rows." }
-  trap: { vi: "count(city) đếm cả lần lặp; count(DISTINCT city) mới đếm thành phố khác nhau.", en: "count(city) counts repeats too; count(DISTINCT city) counts different cities." }
+  trap: { vi: "count(pod) đếm cả lần lặp; count(DISTINCT pod) mới đếm cảng khác nhau.", en: "count(pod) counts repeats too; count(DISTINCT pod) counts different ports." }
 
 - id: cast
   chapter: 6
@@ -191,7 +191,7 @@
   label: { vi: "CTE (WITH)", en: "CTE (WITH)" }
   syntax: "WITH per_store AS (SELECT store_id, count(*) AS n FROM orders GROUP BY store_id) SELECT ... JOIN stores s ON s.id = per_store.store_id"
   when: { vi: "Cộng riêng một bảng trước khi nối, hoặc đặt tên cho một bước tính để đọc dễ.", en: "Total one table before joining it, or give a calculation step a name so it reads clearly." }
-  trap: { vi: "Nối thẳng đơn hàng với thanh toán rồi mới cộng thì đơn trả hai lần bị cộng hai lần. Cộng thanh toán theo đơn trước.", en: "Joining orders to payments and then summing counts an order paid twice twice. Total the payments per order first." }
+  trap: { vi: "Nối thẳng hóa đơn với thanh toán rồi mới cộng thì hóa đơn trả hai lần bị cộng hai lần. Cộng thanh toán theo hóa đơn trước.", en: "Joining invoices to payments and then summing counts an invoice paid twice twice. Total the payments per invoice first." }
 
 - id: multi_cte
   chapter: 8

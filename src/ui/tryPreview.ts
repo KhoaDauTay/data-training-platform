@@ -91,10 +91,10 @@ export function tryPreview(solution: string, schema: SchemaId): HTMLElement {
     host.replaceChildren(loading());
     const io = new IntersectionObserver((seen) => {
       if (!host.isConnected) return io.disconnect(); // a redraw replaced it
-      if (!seen.some((x) => x.isIntersecting)) return;
+      if (!seen.some((x) => x.isIntersecting || x.boundingClientRect.height > 0)) return; // laid out = not inside a hidden view
       io.disconnect();
       fillPreview(host, solution, schema, key);
-    }, { rootMargin: '50% 0px' });
+    });
     io.observe(host);
   }
   return host;

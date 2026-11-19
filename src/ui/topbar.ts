@@ -58,6 +58,9 @@ export function domainLine(id: DomainId): string {
   return `${t('top.chapterShort', { n: currentChapter(tickets, done()), total: CHAPTERS.length })} · ${rank}`;
 }
 
+/** v15: nothing in the top bar names a domain for a "SQL only" player (§5) or in the General workspace (#/learn/play, Q1). */
+export const noDomain = (): boolean => sqlOnly() || (currentRoute() === 'play' && generalWork());
+
 /** A nav link (top bar, bottom bar, sidebar); an item with `onclick` does its own navigation. */
 export function navLink(n: NavItem, route: Route, cls: string, ...body: (Node | string)[]): HTMLAnchorElement {
   const click = n.onclick;
@@ -72,7 +75,7 @@ function renderNav(): void {
   const route = currentRoute();
   const top = navItems('top');
   const live = DOMAINS.find((d) => d.id === activeDomain())!;
-  const none = sqlOnly(); // v15 §5: no domain opened yet, so the item names none
+  const none = noDomain(); // v15: the item names no domain
   byId('nav').replaceChildren(...top.map((n) => navLink(n, route, NAV_LINK, t(n.label))));
   byId('bottom-nav').replaceChildren(
     ...top.map((n) => navLink(n, route, BOTTOM_LINK, icon(n.icon, 'size-5'), h('span', {}, t(n.label)))),
@@ -84,7 +87,7 @@ function renderNav(): void {
 function renderDomainMenu(): void {
   const menu = byId('domain-menu');
   const shown = DOMAINS.find((d) => d.id === activeDomain())!;
-  const none = sqlOnly(); // v15 §5: a "SQL only" player has opened no domain: the chip names none, the menu still lists all
+  const none = noDomain(); // v15: the chip names no domain, the menu still lists all
   byId('domain-label').textContent = t(none ? 'home.domains' : shown.name);
   byId('domain-icon').replaceChildren(icon(none ? 'database' : shown.icon, 'size-4')); // U2: the chip shows the open domain's icon, not a fixed anchor
   menu.replaceChildren(h('div', { class: 'flex flex-col' }, ...DOMAINS.map((d) => h('a', {
