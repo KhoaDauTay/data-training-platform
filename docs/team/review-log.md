@@ -841,3 +841,9 @@ Cách đo: `npm run build`, `SMOKE_PERF=3 npm run smoke` (preview của chính c
 - Ngân sách (gzip -9): `ecom` 40,3 → 48,1 KB / 50; `fin` 43,0 → 44,0 / 50. Finance không có F7 (cổng: 7,0 KB trống < 8).
 - Kiểm: tsc, toàn bộ vitest (4057 qua), build, check-budget, smoke (5219) xanh. Edge headless (preview 5227): save xong 30 việc E-com → chơi `ecom-ch7-01..05` (đánh giá 3 bước + kết luận) → Lead DA, 35/35, ngôi sao trên biển hiệu ở Tổng quan và dock; save chỉ có 6 đánh giá → việc 1 chương 7 có lời mời thi vượt → đạt; 0 lỗi trang. Ảnh ở scratchpad `v20d\`.
 - Chờ user: chương F7 (cần chỗ trong chunk `fin`). Chờ chủ i18n: câu dock "thêm một thành phố" ở chương 6–7 E-com; "6 chương" trong `welcome.short.ecommerce` và `domain.ecommerceDesc` (VI/EN).
+
+## v20 V20-D2 (chương F7 Finance, tách chunk `fin`), 2026-11-20, L185–L186
+
+- Ngân sách (gzip -9): `fin` 44,0 → 30,1 KB / 50 (chương 1–4 + YAML), `finlate` mới 23,8 / 30 (chương 5–7); main 324,8 / 500.
+- Kiểm: tsc, toàn bộ vitest (4120 qua; `axe.test.ts` welcome lỗi một lần với kết quả `incomplete heading-order` khi build chạy song song, chạy lại 32/32 qua), build, check-budget, smoke (5233) xanh. Edge headless (5236): chơi `fin-ch7-01..05` → Trưởng nhóm phân tích rủi ro, 4 sao trên hũ, KPI `finLateByMethod`, dock "Lên bậc mới: …"; thi vượt từ save chỉ có 6 đánh giá → đạt; 0 lỗi trang. Ảnh ở scratchpad `v20d2\`.
+- Chờ user: không. Mốc bản đồ chương 7 là ngôi sao (không có chi nhánh thứ 9 trong seed).

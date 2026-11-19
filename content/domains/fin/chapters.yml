@@ -79,3 +79,17 @@
     - { vi: "Xếp hạng trong từng nhóm", en: "Rank within each group", skills: [window_rank] }
     - { vi: "Chia một báo cáo thành nhiều bước có tên", en: "Split one report into several named steps", skills: [multi_cte] }
     - { vi: "Tìm thứ không có: khoản quá hạn chưa ai gọi", en: "Find what is missing: overdue loans nobody called", skills: [anti_join] }
+
+# v20 (L186): no new skill, no new table (like E-com chapter 7); the review sticks a fourth star on the jar.
+- chapter: 7
+  title: { vi: "Chính sách duyệt vay 2027", en: "The 2027 lending policy" }
+  career: { vi: "Trưởng nhóm phân tích rủi ro", en: "Risk Analytics Lead" }
+  tier: true
+  tables: []
+  story:
+    vi: "Hội đồng tín dụng soạn luật duyệt vay cho năm 2027. Chương này không có kỹ năng mới: bạn dùng lại mọi thứ đã học để tìm loại hồ sơ nào rủi ro thật, kiểm tra chéo từng giả thuyết và đề xuất một luật duyệt mới."
+    en: "The credit committee is writing the approval rules for 2027. This chapter has no new skill: you use everything you have learned to find which applications are really risky, cross-check each hypothesis and propose a new approval rule."
+  outcomes:
+    - { vi: "So rủi ro theo nhóm điểm, từng khoản một", en: "Compare risk by score band, one loan at a time", skills: [cte, case_when, conditional_agg] }
+    - { vi: "Kiểm tra chéo giả thuyết mà không để ô trống rơi nhầm nhóm", en: "Cross-check a hypothesis without letting empty cells fall into the wrong group", skills: [case_when, multi_join] }
+    - { vi: "Theo dõi theo tháng và xếp hạng bằng hàm cửa sổ", en: "Follow month by month and rank with window functions", skills: [window_agg, window_rank] }

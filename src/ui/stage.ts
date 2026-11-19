@@ -49,7 +49,9 @@ function sentence(c: Ctx): string {
   const title = titleOf(c);
   const words = domainText();
   if (words) { // Plan 9, v9 §5.4: the domain's own sentences
-    return c.tk.beat === 'boss' ? t(words.promoted, { rank: (c.rankAfter.career ?? c.rankAfter.tier)?.[lang] ?? t('career.intern') }) : t(words.done, { title });
+    const rank = (c.rankAfter.career ?? c.rankAfter.tier)?.[lang] ?? t('career.intern');
+    if (c.tk.beat === 'boss') return t(c.tk.chapter > words.opensTo ? 'domain.promotedRank' : words.promoted, { rank });
+    return t(words.done, { title });
   }
   const { kind, to, lane } = c.scene;
   if (kind === 'ship') return to ? t('anim.doneShip', { title, port: portName(to) }) : t('anim.doneShipNoPort', { title });

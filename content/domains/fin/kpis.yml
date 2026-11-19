@@ -6,3 +6,4 @@
 - { id: finOverdueBranches, ticket: fin-ch3-03, kind: bar, label: { vi: "Chi nhánh có hơn 4 khoản quá hạn trên 30 ngày, cuối tháng 10/2026", en: "Branches with more than 4 loans over 30 days past due, end of October 2026" }, icon: alert }
 - { id: finMarketingQ3, ticket: fin-ch5-05, step: 1, kind: bar, label: { vi: "Thực chi Marketing quý 3/2026, chi nhánh trên mức trung bình", en: "Q3 2026 marketing spend, branches above the average" }, icon: trophy, unit: { vi: "đồng", en: "VND" } }
 - { id: finUncalled, ticket: fin-ch6-03, kind: rowcount, label: { vi: "Khoản quá hạn trên 30 ngày chưa được gọi trong tháng 10/2026", en: "Loans over 30 days past due with no call in October 2026" }, icon: clockOff }
+- { id: finLateByMethod, ticket: fin-ch7-02, kind: bar, label: { vi: "Tỷ lệ kỳ trả trễ theo cách trả, quý 3/2026 (%)", en: "Share of instalments paid late by payment method, Q3 2026 (%)" }, icon: clockAlert }

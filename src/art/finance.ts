@@ -56,8 +56,11 @@ const FONT = 'Nunito, system-ui, sans-serif';
 /** What the art shows: chapters whose promotion review is passed (derive().passed) and tasks completed in this domain. */
 export interface FinArtState { passed: ReadonlySet<number>; done: number }
 
-/** ★ chapters (content/domains/fin/chapters.yml `tier`): each promotion review there sticks a star on the jar. */
-export const TIER = [1, 4, 6] as const;
+/**
+ * ★ chapters (content/domains/fin/chapters.yml `tier`): each promotion review there sticks a star on the jar. v20 (L186):
+ * chapter 7 opens no branch (all 8 are open after chapter 6), so its milestone is the fourth star.
+ */
+export const TIER = [1, 4, 6, 7] as const;
 
 /**
  * Branches. `name` = branches.name in the finance seed (tests/finArt.test.ts). `opens`: the chapter whose promotion
@@ -189,7 +192,7 @@ const star = (x: number, y: number, r: number): string =>
     return `${k ? 'L' : 'M'}${(x + rr * Math.cos(a)).toFixed(1)} ${(y + rr * Math.sin(a)).toFixed(1)}`;
   }).join('')}Z`;
 /** The star sticker of ★ chapter `ch` on the jar's neck label. */
-const STAR_X = (k: number): number => JX - 30 + k * 30;
+const STAR_X = (k: number): number => JX + (k - (TIER.length - 1) / 2) * 26;
 function sticker(ch: number): SVGGElement {
   const x = STAR_X(TIER.indexOf(ch as (typeof TIER)[number]));
   return s('g', { 'data-star': String(ch) },

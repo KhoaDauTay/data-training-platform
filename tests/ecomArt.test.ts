@@ -1,6 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import type { Ctx } from '../src/art/logistics';
 import { CITIES, openCities } from '../src/art/ecommerce';
+import { DOMAIN_TEXT } from '../src/domains';
 import type { Harbor } from '../src/scene';
 import { chapterColor } from '../src/theme';
 import type { Ticket } from '../src/tickets';
@@ -16,6 +17,8 @@ describe('bản đồ giao hàng E-com (Plan 9 D9-13)', () => {
     expect([...openCities(new Set())].sort()).toEqual(['Da Nang', 'Hue']);
     for (let ch = 1; ch <= 5; ch++) expect(CITIES.filter((c) => c.opens === ch)).toHaveLength(1);
     expect(openCities(new Set([1, 2, 3, 4, 5, 6])).size).toBe(CITIES.length);
+    // v20 (L186): reviews after the last city say domain.promotedRank, not "one more delivery city" (ui/stage.ts)
+    expect(DOMAIN_TEXT.ecommerce.opensTo).toBe(Math.max(...CITIES.map((c) => c.opens)));
   });
 });
 
