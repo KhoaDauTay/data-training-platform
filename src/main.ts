@@ -43,6 +43,7 @@ import { clearMemos } from './viz/memo';
 import { createMapStrip } from './ui/mapStrip';
 import { renderData } from './ui/dataView';
 import { renderDashboard, resetCards } from './ui/dashboard';
+import { registerServiceWorker } from './pwa';
 
 initTheme(); // index.html already set data-theme before paint; this adds the OS listener for 'system'
 // The DB (PGlite download + seed, the slowest part of startup) boots in parallel with the ticket chunk below.
@@ -61,6 +62,7 @@ function syncDbStatus(): void {
 }
 function onDbStatus(s: DbStatus): void {
   engine = s;
+  if (s === 'ready' && !dbWasReady) setTimeout(() => registerServiceWorker(offerUpdate), 2000); // V16-OFFLINE: after the first boot
   if (s === 'ready') dbWasReady = true;
   if (s === 'failed') app.problem = { kind: dbWasReady ? 'worker-crash' : 'db-init-failed' }; // P10
   if (s !== 'loading') app.loadProgress = undefined;
@@ -509,6 +511,13 @@ byId('export-btn').addEventListener('click', () => {
     renderTopbar();
   }
 });
+
+/** V16-OFFLINE: a new version is installed and waiting; its reload button lets it take over (every tab reloads). */
+function offerUpdate(apply: () => void): void {
+  if (app.notice && app.notice.key !== 'app.newVersion') return; // never replaces another banner; the next visit offers it again
+  app.notice = { key: 'app.newVersion', reload: true, apply };
+  if (uiReady) renderTopbar();
+}
 
 // A lazy chunk (sql-formatter; Plan 1b: Mermaid, libpg-query) 404s after a deploy: offer a reload.
 window.addEventListener('vite:preloadError', () => {
