@@ -25,7 +25,7 @@ import { hashOf } from '../route';
 import { textOf, type Ticket } from '../tickets';
 import { avatar } from './avatar';
 import { advLine } from './brief';
-import { icon, skillIcon, type IconName } from './icons';
+import { domainBadge, icon, skillIcon, type IconName } from './icons';
 import { byId, h, nodes } from './dom';
 import { artSlot } from '../art/load';
 import { fleetOrder, takeNewRoutes } from '../routesSeen';
@@ -295,8 +295,17 @@ let stopScene: (() => void) | undefined;
 function harborSection(m: HomeModel): HTMLElement {
   const words = domainText();
   if (words) { // Plan 9 D9-13: the domain's own scene, never the harbour
-    return h('section', { class: cx(CARD, 'overflow-hidden'), 'aria-labelledby': 'harbor-title' },
-      h('h2', { id: 'harbor-title', class: 'm-0 px-4 pt-3 text-lg font-bold' }, t(words.sceneTitle)), domainArt('scene'));
+    // ui-ux-v7 I1 (L148): the same frame as Tien Sa: a full-bleed hero, the place name as a pill top left and the status
+    // as a pill bottom left (from lg; below lg the picture is too small for them and the same lines show as HTML under it).
+    const d = done();
+    const lines = [t('scene.done', { done: app.tickets.filter((x) => d.has(x.id)).length }), t('harbor.callB', { passed: rankOf(app.tickets, d).passed.length, n: m.chapter })];
+    return h('section', { class: cx(CARD, 'relative overflow-hidden'), 'aria-labelledby': 'harbor-title' },
+      h('h2', { id: 'harbor-title', class: 'absolute top-3 left-3 z-10 m-0 rounded-(--r-chip) bg-[#0f172a]/70 px-3 py-1 text-body-sm font-bold text-white max-lg:sr-only' }, t(words.sceneTitle)),
+      domainArt('scene'),
+      h('div', { class: 'absolute bottom-3 left-3 z-10 max-w-md rounded-(--r-inset) bg-[#0f172a]/70 px-3 py-2 text-body-sm text-white max-lg:sr-only' },
+        ...lines.map((x) => h('p', { class: 'm-0 font-semibold' }, x)), h('p', { class: 'm-0 mt-1 text-caption' }, t(words.callout))),
+      h('div', { class: 'px-4 py-3 text-body-sm lg:hidden', 'aria-hidden': 'true' },
+        h('p', { class: 'm-0 font-bold' }, t(words.sceneTitle)), ...[...lines, t(words.callout)].map((x) => h('p', { class: 'm-0 text-muted' }, x))));
   }
   const harbor = derive(app.tickets, done());
   const fresh = freshChapters();
@@ -519,7 +528,7 @@ function domainsSection(): HTMLElement {
   return h('section', { 'aria-labelledby': 'domains-title' },
     h('h2', { id: 'domains-title', class: GROUP_TITLE }, t('home.domains')),
     h('ul', { class: LIST }, ...DOMAINS.map((d) => listRow({
-      lead: icon(d.icon, 'size-6'),
+      lead: domainBadge(d.id, d.icon), // ui-ux-v7 I1: the domain's badge in its identity colour
       title: t(d.name),
       sub: domainLine(d.id),
       action: h('a', { href: domainHash(d.id), class: cx(BTN_SECONDARY, 'px-4 py-2 whitespace-nowrap no-underline') }, t('home.enter')),

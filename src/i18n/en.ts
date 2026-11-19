@@ -264,6 +264,7 @@ export const en: Record<Key, Msg> = {
   'harbor.new': 'New',
   'harbor.callA': (p) => `${count('task', 'tasks')({ n: p.done })} done · ${count('departure', 'departures')({ n: p.trips })} from Tien Sa`,
   'harbor.callB': (p) => `${count('chapter', 'chapters')({ n: p.passed })} passed · working on chapter ${p.n}`,
+  'scene.done': (p) => `${count('task', 'tasks')({ n: p.done })} done here`,
   'harbor.label': 'Tien Sa port, Da Nang. Container yard: {bays}.',
   'harbor.bay': (p) => `chapter ${p.n}: ${count('container', 'containers')({ n: p.k })}`,
   'harbor.empty': 'empty',

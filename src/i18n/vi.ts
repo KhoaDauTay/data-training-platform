@@ -263,6 +263,7 @@ export const vi = {
   'harbor.new': 'Mới',
   'harbor.callA': 'Đã xong {done} việc · {trips} chuyến tàu rời Tiên Sa',
   'harbor.callB': 'Đã qua {passed} chương · đang làm chương {n}',
+  'scene.done': 'Đã xong {done} việc ở đây',
   'harbor.label': 'Cảng Tiên Sa, Đà Nẵng. Bãi container: {bays}.',
   'harbor.bay': 'chương {n}: {k} container',
   'harbor.empty': 'trống',
