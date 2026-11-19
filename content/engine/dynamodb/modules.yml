@@ -1,11 +1,99 @@
-# DynamoDB modules L4–L5 in display order (merge after the L1–L3 entries). `id`/`vi`/`en` are read by parseModules
-# (src/engine/content.ts); `module`/`level`/`title`/`after` are ADD-1 (product-design-db-engine.md §2.4), `after` = "Học xong bạn làm được…".
+- id: keys
+  vi: Bảng, item và khóa
+  en: Tables, items and keys
+  module: keys
+  level: L1
+  title:
+    vi: Bảng, item và khóa
+    en: Tables, items and keys
+  after:
+    vi: thiết kế khóa chính cho mẫu truy cập "mọi đơn của một khách" và tạo bảng đó.
+    en: design the primary key for the access pattern "every order of one customer" and create that table.
+- id: crud
+  vi: Đọc và ghi một item
+  en: Read and write one item
+  module: crud
+  level: L1
+  title:
+    vi: Đọc và ghi một item
+    en: Read and write one item
+  after:
+    vi: đọc, thêm, sửa và xóa một item theo khóa, và lấy lại bản trước hoặc sau khi ghi.
+    en: read, insert, update and delete one item by its key, and get back the image before or after the write.
+- id: query-scan
+  vi: Query và Scan
+  en: Query and Scan
+  module: query-scan
+  level: L1
+  title:
+    vi: Query và Scan
+    en: Query and Scan
+  after:
+    vi: đọc một item collection bằng Query, phân trang nó, và chỉ ra Scan đọc nhiều hơn bao nhiêu item.
+    en: read an item collection with Query, page through it, and show how many more items a Scan reads.
+- id: expressions
+  vi: Biểu thức
+  en: Expressions
+  module: expressions
+  level: L2
+  title:
+    vi: Biểu thức
+    en: Expressions
+  after:
+    vi: viết Query đặt điều kiện vào khóa thay vì vào bộ lọc, và sửa item bằng UpdateExpression.
+    en: write a Query that puts its condition on the key instead of the filter, and change an item with an UpdateExpression.
+- id: safe-writes
+  vi: Ghi an toàn
+  en: Safe writes
+  module: safe-writes
+  level: L2
+  title:
+    vi: Ghi an toàn
+    en: Safe writes
+  after:
+    vi: chống ghi đè mất dữ liệu bằng điều kiện, dùng bộ đếm nguyên tử và ghi theo lô.
+    en: prevent lost updates with a condition, use an atomic counter and write in batches.
+- id: partiql-cost
+  vi: PartiQL và chi phí
+  en: PartiQL and cost
+  module: partiql-cost
+  level: L2
+  title:
+    vi: PartiQL và chi phí
+    en: PartiQL and cost
+  after:
+    vi: tính trước cỡ item và RCU/WCU của một request, rồi đối chiếu với ConsumedCapacity.
+    en: work out an item's size and the RCU/WCU of a request ahead of time, then compare with ConsumedCapacity.
+- id: secondary
+  vi: Chỉ mục phụ
+  en: Secondary indexes
+  module: secondary
+  level: L3
+  title:
+    vi: Chỉ mục phụ
+    en: Secondary indexes
+  after:
+    vi: thêm GSI hoặc LSI cho một mẫu truy cập mới mà không phải Scan, và chọn projection cho nó.
+    en: add a GSI or LSI for a new access pattern without a Scan, and choose its projection.
+- id: single-table
+  vi: Thiết kế một bảng
+  en: Single-table design
+  module: single-table
+  level: L3
+  title:
+    vi: Thiết kế một bảng
+    en: Single-table design
+  after:
+    vi: gom nhiều mẫu truy cập vào một bảng bằng tiền tố thực thể, sort key phân cấp và adjacency list.
+    en: fit several access patterns into one table with entity prefixes, hierarchical sort keys and adjacency lists.
 - id: scale
   vi: Quy mô và partition nóng
   en: Scale and hot partitions
   module: scale
   level: L4
-  title: { vi: "Quy mô và partition nóng", en: "Scale and hot partitions" }
+  title:
+    vi: Quy mô và partition nóng
+    en: Scale and hot partitions
   after:
     vi: rải một khóa nóng ra nhiều shard, đọc lại bằng một Query mỗi shard và tính trước số RCU/WCU mỗi partition phải chịu.
     en: spread a hot key over several shards, read it back with one Query per shard and work out the RCU/WCU each partition has to carry.
@@ -14,7 +102,9 @@
   en: Advanced design patterns
   module: patterns
   level: L4
-  title: { vi: "Mẫu thiết kế nâng cao", en: "Advanced design patterns" }
+  title:
+    vi: Mẫu thiết kế nâng cao
+    en: Advanced design patterns
   after:
     vi: dùng adjacency list, GSI thưa, GSI dùng chung và sort key phân cấp để trả lời một mẫu truy cập bằng đúng một Query.
     en: use an adjacency list, a sparse GSI, an overloaded GSI and hierarchical sort keys to answer an access pattern with exactly one Query.
@@ -23,16 +113,20 @@
   en: Transactions
   module: transactions
   level: L4
-  title: { vi: "Giao dịch", en: "Transactions" }
+  title:
+    vi: Giao dịch
+    en: Transactions
   after:
     vi: đọc hoặc ghi hai item cùng thành công hoặc cùng không, và tính giá gấp đôi của giao dịch.
     en: read or write two items so that both succeed or neither does, and price the double cost of a transaction.
 - id: design-case
-  vi: "Kiểm tra cấp L4: thiết kế theo mẫu truy cập"
-  en: "Level L4 check: access-pattern-first design"
+  vi: 'Kiểm tra cấp L4: thiết kế theo mẫu truy cập'
+  en: 'Level L4 check: access-pattern-first design'
   module: design-case
   level: L4
-  title: { vi: "Kiểm tra cấp L4: thiết kế theo mẫu truy cập", en: "Level L4 check: access-pattern-first design" }
+  title:
+    vi: 'Kiểm tra cấp L4: thiết kế theo mẫu truy cập'
+    en: 'Level L4 check: access-pattern-first design'
   after:
     vi: đi từ danh sách mẫu truy cập tới khóa, GSI, shard và ước lượng chi phí cho một ứng dụng thật.
     en: go from a list of access patterns to keys, GSIs, shards and a cost estimate for a real application.
@@ -41,7 +135,9 @@
   en: Streams and TTL
   module: streams-ttl
   level: L5
-  title: { vi: "Streams và TTL", en: "Streams and TTL" }
+  title:
+    vi: Streams và TTL
+    en: Streams and TTL
   after:
     vi: lọc item đã hết hạn TTL khỏi kết quả đọc và thiết kế một bộ xử lý Streams không phụ thuộc thứ tự giữa các item.
     en: filter TTL-expired items out of a read and design a Streams consumer that does not rely on ordering across items.
@@ -50,7 +146,9 @@
   en: Multi-Region and operations
   module: global-ops
   level: L5
-  title: { vi: "Đa vùng và vận hành", en: "Multi-Region and operations" }
+  title:
+    vi: Đa vùng và vận hành
+    en: Multi-Region and operations
   after:
     vi: chọn chế độ global table (MREC hay MRSC) và cách sao lưu (PITR hay backup theo yêu cầu) cho một ứng dụng hai vùng.
     en: choose a global table mode (MREC or MRSC) and a backup method (PITR or on-demand backup) for a two-Region application.
