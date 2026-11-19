@@ -699,7 +699,6 @@ export const en: Record<Key, Msg> = {
   'welcome.pickLabel': 'Where to start',
   'welcome.pickSql': 'Just learn SQL',
   'welcome.pickSqlDesc': "Short lessons and practice per skill, on a shop chain's data.",
-  'welcome.preparing': 'Preparing the data…',
   'welcome.knows': 'I know SQL, skip',
   'welcome.tourTitle': 'The 8 tour steps',
   'welcome.back': 'Back',

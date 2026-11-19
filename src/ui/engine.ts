@@ -1,4 +1,3 @@
-import { parse as parseYaml } from 'yaml';
 import { grade } from '../grader';
 import { getLang, locale, t } from '../i18n';
 import { engineHash, engineRouteOf, hashOf } from '../route';
@@ -25,8 +24,9 @@ let view: EngineView | undefined;
 let failed = false;
 
 function engineChunk(): Promise<EngineView> {
-  pending ??= Promise.all([import('./engineView'), import('../engineSources-pg'), import('../engineSources-mg'), import('../engineSources-dy')])
-    .then(([m, postgres, mongodb, dynamodb]) => {
+  pending ??= Promise.all([import('./engineView'), import('../engineSources-pg'), import('../engineSources-mg'), import('../engineSources-dy'),
+    import('yaml')]) // L247: lazy, so main stays without the yaml library (V22-E, L201)
+    .then(([m, postgres, mongodb, dynamodb, { parse: parseYaml }]) => {
       m.initEngine({
         h, icon, t, getLang, locale, app, persist, announce, loader, reducedMotion, isDark, parseYaml, renderResult, errorView, optionOrder,
         engineHash, engineRouteOf, hashOf, rerender: () => actions.rerender(), cls: { CARD, BTN_GO, BTN_SECONDARY, PILL, cx },

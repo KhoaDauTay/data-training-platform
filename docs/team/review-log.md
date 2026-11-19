@@ -872,3 +872,22 @@ Cách đo: `npm run build` của cây (trước = `main` 0a9e8e6 chỉ thêm ph�
 - JS tải trước render (lần đầu): `index`, `preload-helper`, `ticketSources`, `ticketLateSources`, `laneSources`, `lessonSources`, `logistics`.
 - Kiểm: tsc; vitest `--no-file-parallelism` 4132 qua (1 bỏ qua); build; check-budget xanh (thử trên build trước: `main has no yaml library` FAIL); `SMOKE_PORT=5275 npm run smoke` OK 66,9 s; dev server: `ch1-01.md?import&fm` và `people.yml?import` ra JSON.
 - Giữ nguyên, ghi cho luồng sau: `yaml` vẫn ở `dependencies` của `package.json` (chuyển sang `devDependencies` đụng lockfile, không `npm install` trong luồng này). Mỗi luồng thêm nhóm ngân sách của mình sau hai dòng `ticketLate`/`ecomLate`.
+
+## v22 BOOT (lần mở đầu: "Bắt đầu" không chờ seed), 2026-11-20, L247
+
+Cách đo: `npm run build` của cây, `SMOKE_BOOT=3` (mới, `scripts/smoke.mjs`; preview 5289), Edge headless, hồ sơ mới mỗi lượt, CPU 1×; mở `#/`, bot bấm qua màn chào nhanh nhất có thể (ngôn ngữ → Logistics → bước cuối); ms từ lúc điều hướng; trung vị 3 lượt. Trước = `v22-engine` c86ae84 chỉ thêm phần đo. Máy bận (các luồng v22 khác), seed dao động 5–10 s.
+
+| Mốc (ms) | trước | sau |
+|---|---|---|
+| main JS xong / nội dung xong | 926 / 1003 | 950 / 1013 |
+| màn chào hiện / chọn Logistics | 1188 / 1261 | 1201 / 1270 |
+| engine sẵn sàng (`db:ready`) | 3562 | 3213 |
+| **"Bắt đầu" bật** | **9310** (8373 / 9310 / 11809) | **1280** (859 / 1280 / 1405) |
+| đề việc 1 hiện sau khi bấm | – | 1425 |
+| DB sẵn sàng cho việc 1 (`db:ensure:game` xong) | 9304 | 9473 (nhiễu) |
+
+- Số 16 s của `review-v21.md` là site live (tải ~15 MB PGlite qua mạng); trên máy này lúc trước là 9,3 s. Đường găng lúc trước: chọn domain (1,3 s) → chờ engine (wasm 9 MB + data 6 MB + initdb, ~2,3 s sau spawn) → seed Logistics trong Edge 5–7 s (Node ~2 s) → "Bắt đầu". Nút chỉ chờ `app.dbStatus === 'ready'`; không có seed `lab` trước khi chọn (L131 đã sửa ở v15 Q7, đo xác nhận).
+- Sửa: "Bắt đầu" bật ngay khi domain đã vào (chỉ khóa khi `entering`), như "Tôi đã biết SQL" vốn đã làm. Đề việc 1 hiện trong lúc seed, có banner "Đang chuẩn bị dữ liệu Logistics…" và chấm vàng ở thanh trên; Run trong lúc đó xếp hàng (`work.queued`) và chạy khi dữ liệu vào. `SMOKE_BOOT` kiểm banner + chấm khi đề hiện, gõ `SELECT 1 AS one` + Ctrl+Enter trong lúc seed và đợi kết quả, không `db:restart`, không lỗi trang, không chunk Engine nào (`engineSources`/`engineView`/`pglab`/yaml) được tải lần đầu.
+- Main không chứa `pglab`/`dynoxide`/`mingo` (grep `index-*.js`: 0/0/0). `yaml` đã lọt lại vào main qua `src/ui/engine.ts` (ENG-CORE gộp sau V22-E): đổi thành `import('yaml')` trong chunk lười của Engine. Main 337,75 → 306,83 kB gz (số của Vite); `check-budget` "main has no yaml library" FAIL → ok.
+- Đo, không làm: preload wasm PGlite (worker spawn ~50 ms sau main, không còn gì để kéo lên ở máy local); seed Logistics trong Edge chậm hơn Node 3× là đòn bẩy còn lại cho "DB sẵn sàng", không đụng vì luật seed (md5 ghim).
+- Kiểm: tsc; build; vitest `--no-file-parallelism` 4735 qua, 2 FAIL có sẵn trên `v22-engine` (`tests/engineContent.test.ts`: `dynamodb/L5/07-capstone-ops.md` lab.steps[3].hint và `mongodb/L3/16-predict-sparse-hint.md` q0.options[2], code VI ≠ EN; nội dung không đụng); `check-budget`: 1 FAIL có sẵn `engine` 372 KB gz / 40 (nội dung Engine, quyết định của người điều phối, không nâng trần ở đây); `SMOKE_PORT=5289 npm run smoke` OK 81,3 s.

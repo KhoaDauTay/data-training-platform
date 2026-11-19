@@ -16,6 +16,7 @@
 //   SMOKE_PERF=3 npm run smoke      # V20-C (L178) instead of the scenario: per run and domain, a fresh profile opens #/d/<d>
 //                                   # (seed) and reloads it (snapshot); FCP, first <h1>, DB ready, long tasks -> smoke-out/perf-report.json
 //                                   # V22-E: at CPU 1x and 4x (page only), plus ScriptDuration (CDP Performance.getMetrics)
+//   SMOKE_BOOT=3 npm run smoke      # V22 BOOT (L247): first open from #/ through the welcome dialog -> smoke-out/boot-report.json
 import { spawn, spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -339,12 +340,71 @@ async function perf(base) {
   writeFileSync(join(OUT, 'perf-report.json'), JSON.stringify({ base, at: new Date().toISOString(), rows, summary }, null, 1));
 }
 
+// ---- V22 BOOT (SMOKE_BOOT=<runs>): a fresh profile opens `#/` and walks the welcome dialog as fast as a bot can
+// (language → Logistics → start). Times are ms from navigation: dialog shown, Logistics picked, "Begin" enabled, ticket 1
+// shown after Begin, engine ready (db:ready), each seed's start/end (db:ensure:<schema>), the DB ready for ticket 1
+// (db:ensure:game end). L247: Begin no longer waits for the seed, so it also checks that ticket 1 shows the "preparing"
+// banner and a loading dot, that a Run typed during the seed is answered once it is in, with no restart and no page error.
+const BOOT_RUNS = Number(process.env.SMOKE_BOOT) || 0;
+async function boot(base) {
+  const rows = [];
+  const vis = (w) => `!!document.querySelector('dialog[open] [data-w="${w}"]')`;
+  for (let run = 1; run <= BOOT_RUNS; run++) {
+    pageErrors.length = 0;
+    await startBrowser();
+    await size(1280, 800);
+    await go(base, '#/');
+    const welcome = await waitFor('the welcome dialog', `document.querySelector('dialog[open] [data-w]') && Math.round(performance.now())`, 60000);
+    let picked = 0;
+    for (let i = 0; i < 6 && !(await ev(vis('begin'))); i++) {
+      await waitFor('a welcome button', `${vis('begin')} || ${vis('pick-logistics')} || ${vis('next')}`, 60000);
+      if (await ev(vis('pick-logistics'))) {
+        picked = await ev(`(document.querySelector('dialog[open] [data-w="pick-logistics"]').click(), Math.round(performance.now()))`);
+      } else if (await ev(vis('next'))) await ev(`document.querySelector('dialog[open] [data-w="next"]').click()`);
+    }
+    const begin = await waitFor('Begin enabled', `(() => { const b = document.querySelector('dialog[open] [data-w="begin"]'); return b && !b.disabled && Math.round(performance.now()); })()`, 120000);
+    await ev(`document.querySelector('dialog[open] [data-w="begin"]').click()`);
+    const ticket = await waitFor('ticket 1 in the workspace', `!document.querySelector('dialog[open]') && document.querySelector('#shell:not([hidden]) #brief-title') && Math.round(performance.now())`, 60000);
+    const during = await ev(`({ notice: document.getElementById('notice').hidden ? '' : document.getElementById('notice').textContent, green: !!document.querySelector('#db-status .bg-good') })`);
+    if (!during.notice || during.green) fail(`ticket 1 during the seed shows no progress: ${S(during)}`);
+    await waitFor('the editor', `!!${EDITOR}`, 30000);
+    await ev(`${EDITOR}.focus()`);
+    await key('a', MOD, 'KeyA', 65);
+    await send('Input.insertText', { text: 'SELECT 1 AS one' });
+    await key('Enter', MOD, 'Enter', 13);
+    await waitFor('db:ensure:game', `performance.getEntriesByName('db:ensure:game').length > 0`, 120000);
+    await waitFor('the queued Run answered', `[...document.querySelectorAll('#panel th')].some((x) => x.textContent.trim().startsWith('one'))`, 60000);
+    const after = await ev(`({ notice: document.getElementById('notice').hidden, green: !!document.querySelector('#db-status .bg-good'), restarts: performance.getEntriesByName('db:restart').length })`);
+    if (!after.notice || !after.green || after.restarts) fail(`after the seed: ${S(after)}`);
+    if (pageErrors.length) fail(`page errors: ${S(pageErrors)}`);
+    // review-v21 BOOT: nothing of the Engine area (sources, view, its PGlite, `browser-*` = the yaml library it parses with) on first open
+    const engineJs = await ev(`performance.getEntriesByType('resource').map((e) => e.name.split('/').pop()).filter((n) => /^(engineSources|engineView|pglab|browser-)/.test(n))`);
+    if (engineJs.length) fail(`Engine chunks fetched on first open: ${engineJs.join(', ')}`);
+    const marks = await ev(`(() => { const r = (n) => Math.round(n), m = (n) => performance.getEntriesByName(n)[0];
+      const seeds = Object.fromEntries(performance.getEntriesByType('measure').filter((e) => e.name.startsWith('db:ensure:'))
+        .map((e) => [e.name.slice(10), [r(e.startTime), r(e.startTime + e.duration)]]));
+      const js = performance.getEntriesByType('resource').filter((e) => /\\.js$/.test(e.name));
+      const end = (re) => r(Math.max(0, ...js.filter((e) => re.test(e.name)).map((e) => e.responseEnd)));
+      return { fcp: r(m('first-contentful-paint')?.startTime ?? 0), spawn: r(m('db:spawn')?.startTime ?? 0), engine: r(m('db:ready')?.startTime ?? 0), seeds,
+        main: end(/\\/index-/), content: end(/(ticketSources|ticketLateSources|en-)/) }; })()`);
+    const row = { run, welcome, picked, begin, ticket, during: during.notice, ...marks, dbReady: marks.seeds.game?.[1] };
+    rows.push(row);
+    console.log(`boot run ${run}`, JSON.stringify(row));
+    await closeBrowser();
+  }
+  const med = (xs) => xs.sort((a, b) => a - b)[Math.floor(xs.length / 2)];
+  const summary = Object.fromEntries(['fcp', 'main', 'content', 'welcome', 'picked', 'engine', 'begin', 'ticket', 'dbReady'].map((k) => [k, med(rows.map((r) => r[k]))]));
+  console.log('boot medians', summary);
+  writeFileSync(join(OUT, 'boot-report.json'), JSON.stringify({ base, at: new Date().toISOString(), rows, summary }, null, 1));
+}
+
 // ---- the run
 let base = '';
-if (PERF_RUNS) {
+if (PERF_RUNS || BOOT_RUNS) {
   try {
     base = URL_ARG ? (URL_ARG.endsWith('/') ? URL_ARG : URL_ARG + '/') : await startPreview();
-    await perf(base);
+    if (BOOT_RUNS) await boot(base);
+    if (PERF_RUNS) await perf(base);
   } finally {
     await closeBrowser();
     for (const c of owned) stop(c);
