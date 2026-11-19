@@ -3,7 +3,9 @@ import { generalNow, loadLessons, loadTicketTemplates } from '../src/content';
 import labSql from '../src/db/lab.sql?raw';
 import { sqlErrorInfo } from '../src/db/run';
 import { compareResults } from '../src/grader';
-import { cueIn, lessonSchema, LESSONS_KEY, loadLessonPrefs, markLesson, parseLessons } from '../src/lessons';
+import { cueIn, lessonSchema, LESSONS_KEY, loadLessonPrefs, markLesson, parseLessons as lessonsOf } from '../src/lessons';
+import { parse as parseYaml } from 'yaml';
+const parseLessons = (src: string, origin?: string) => lessonsOf(parseYaml(src), origin); // V22-E: the parser takes parsed YAML
 import { CHAPTER_TABLES, SKILLS } from '../src/progress';
 import { textOf } from '../src/tickets';
 import { labRun } from './generalRules';

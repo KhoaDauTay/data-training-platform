@@ -853,3 +853,22 @@ Cách đo: `npm run build`, `SMOKE_PERF=3 npm run smoke` (preview của chính c
 - Ngân sách (gzip -9): `fin` 44,0 → 30,1 KB / 50 (chương 1–4 + YAML), `finlate` mới 23,8 / 30 (chương 5–7); main 324,8 / 500.
 - Kiểm: tsc, toàn bộ vitest (4120 qua trên commit cuối, chạy riêng; một lần trước đó `axe.test.ts` welcome báo `incomplete heading-order` khi build chạy song song), build, check-budget, smoke (5233) xanh. Edge headless (5236): chơi `fin-ch7-01..05` → Trưởng nhóm phân tích rủi ro, 4 sao trên hũ, KPI `finLateByMethod`, dock "Lên bậc mới: …"; thi vượt từ save chỉ có 6 đánh giá → đạt; 0 lỗi trang. Ảnh ở scratchpad `v20d2\`.
 - Chờ user: không. Mốc bản đồ chương 7 là ngôi sao (không có chi nhánh thứ 9 trong seed).
+
+## v22 V22-E (Nhẹ hơn: YAML → JSON lúc build, tách chunk vé), 2026-11-20, L201–L202
+
+Cách đo: `npm run build` của cây (trước = `main` 0a9e8e6 chỉ thêm phần đo của `smoke.mjs`; sau = nhánh này), `SMOKE_PERF=3` (preview 5277), Edge headless, hồ sơ mới mỗi lượt × domain × CPU; ms từ lúc điều hướng; trung vị 3 lượt. `script` = `ScriptDuration` (CDP) tới DB sẵn sàng. Máy bận (các luồng v22 khác), số lần đầu (seed) dao động; so lần hai và 4×.
+
+| Domain · lần | trước render / DB / script / long ms (1×) | sau (1×) | trước script / long ms (4×) | sau (4×) |
+|---|---|---|---|---|
+| Logistics lần đầu | 1439 / 18308 / 372 / 408 | 1173 / 10594 / 203 / 180 | 1373 / 2663 | 827 / 2294 |
+| Logistics lần hai | 477 / 2696 / 136 / 289 | 262 / 1770 / 77 / 116 | 485 / 2183 | 154 / 1887 |
+| E-com lần đầu | 1533 / 11636 / 121 / 463 | 1250 / 9409 / 51 / 221 | 559 / 2580 | 261 / 2059 |
+| E-com lần hai | 495 / 1822 / 80 / 332 | 239 / 1333 / 27 / 80 | 451 / 2929 | 130 / 2032 |
+| Finance lần đầu | 1461 / 10132 / 119 / 473 | 918 / 6545 / 48 / 189 | 601 / 3090 | 263 / 2093 |
+| Finance lần hai | 524 / 1839 / 79 / 339 | 262 / 1232 / 29 / 85 | 471 / 2122 | 117 / 1759 |
+
+- Render 4× lần hai: 2332 / 3154 / 3569 → 1675 / 2103 / 1968 ms. Không domain nào chậm hơn.
+- Ngân sách (gzip -9, KB): main 325,11 → 293,68 (−31,4; S4 cần ≥ 15); `tickets` 104,8 → 60,5 + `ticketLate` 44,0 / 50; `ecom` 48,1 → 27,2 + `ecomLate` 21,3 / 25; `lessons` 29,5 → 27,8; `general` 31,1 → 30,4; `generalAdv` 46,0 → 44,6; `interview` 17,7 → 17,3 (nhóm 24 / 25 không đổi); `lanes` 9,8 → 9,5. Không còn chuỗi của thư viện `yaml` trong bất kỳ `dist/assets/*.js` nào.
+- JS tải trước render (lần đầu): `index`, `preload-helper`, `ticketSources`, `ticketLateSources`, `laneSources`, `lessonSources`, `logistics`.
+- Kiểm: tsc; vitest `--no-file-parallelism` 4132 qua (1 bỏ qua); build; check-budget xanh (thử trên build trước: `main has no yaml library` FAIL); `SMOKE_PORT=5275 npm run smoke` OK 66,9 s; dev server: `ch1-01.md?import&fm` và `people.yml?import` ra JSON.
+- Giữ nguyên, ghi cho luồng sau: `yaml` vẫn ở `dependencies` của `package.json` (chuyển sang `devDependencies` đụng lockfile, không `npm install` trong luồng này). Mỗi luồng thêm nhóm ngân sách của mình sau hai dòng `ticketLate`/`ecomLate`.

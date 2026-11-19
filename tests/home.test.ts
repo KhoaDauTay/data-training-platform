@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { loadTickets } from '../src/content';
-import { chapterOfId, homeModel, KPIS, kpiNumber, kpiTiles, kpiValue, LEVELS, parseKpis, reliesOn, type Kpi } from '../src/home';
+import { chapterOfId, homeModel, KPIS, kpiNumber, kpiTiles, kpiValue, LEVELS, parseKpis as kpisOf, reliesOn, type Kpi } from '../src/home';
+import { parse as parseYaml } from 'yaml';
+const parseKpis = (src: string, origin?: string) => kpisOf(parseYaml(src), origin); // V22-E: the parser takes parsed YAML
 import { CHAPTERS, SKILLS } from '../src/progress';
 import { upsert } from '../src/registry';
 import type { Ticket } from '../src/tickets';

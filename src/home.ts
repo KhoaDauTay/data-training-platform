@@ -1,5 +1,4 @@
-import { parse as parseYaml } from 'yaml';
-import kpiSource from '../content/kpis.yml?raw';
+import kpiSource from '../content/kpis.yml';
 import type { QueryResult } from './db/run';
 import { currentChapter, nextTicket, passedChapters, passedSkills, type Bilingual, type Chapter, type Skill } from './progress';
 import { activeDomain, type DomainId } from './domains';
@@ -124,8 +123,7 @@ export type KpiKind = 'number' | 'rowcount' | 'bar';
 export interface Kpi { id: string; ticket: string; step: number; col: number; kind: KpiKind; label: Bilingual; unit?: Bilingual; icon?: string }
 const KPI_KINDS: KpiKind[] = ['number', 'rowcount', 'bar'];
 
-export function parseKpis(src: string, origin = 'kpis.yml'): Kpi[] {
-  const data = parseYaml(src) as unknown;
+export function parseKpis(data: unknown, origin = 'kpis.yml'): Kpi[] {
   if (!Array.isArray(data)) throw new Error(`${origin}: cần một danh sách`);
   return data.map((raw: unknown, i) => {
     const k = (raw ?? {}) as Record<string, unknown>;
