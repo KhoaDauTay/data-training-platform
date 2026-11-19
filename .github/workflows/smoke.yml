@@ -1,0 +1,85 @@
+name: smoke
+
+# product-design-v10 §5 (V10-D, L150): headless smoke (scripts/smoke.mjs, CDP, no dependency).
+# - every push to main and every PR: build at the default base, run the smoke against `vite preview` on 5219.
+#   First week non-blocking (continue-on-error until 2026-11-26), then remove that line so it gates merges (L150).
+# - nightly and after every successful `ci` run on main (= after each deploy): the live site; a failure opens an issue, never blocks.
+on:
+  pull_request:
+  push:
+    branches: [main]
+  schedule:
+    - cron: '30 19 * * *'   # 02:30 in Vietnam
+  workflow_run:
+    workflows: [ci]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: smoke-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  preview:
+    if: github.event_name == 'push' || github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    continue-on-error: true   # L150: first week only (remove on 2026-11-26)
+    env:
+      BROWSER: google-chrome  # preinstalled on ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npx vite build      # default base "/": the smoke serves dist/ itself (ci.yml's dist uses the Pages base)
+      - run: npm run smoke
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: smoke-out
+          path: smoke-out/
+          retention-days: 14
+
+  live:
+    if: >-
+      github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      issues: write
+    env:
+      BROWSER: google-chrome
+      SMOKE_URL: https://khoadautay.github.io/data-training-platform/
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci             # the smoke reads content/** with the `yaml` package
+      - run: npm run smoke
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: smoke-out-live
+          path: smoke-out/
+          retention-days: 14
+      - name: Open an issue (report, never block)
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          title="Smoke failed on the live site"
+          body="Trigger: ${{ github.event_name }}. Run and screenshots (artifact smoke-out-live): $RUN_URL"
+          open=$(gh issue list --state open --search "\"$title\" in:title" --json number --jq '.[0].number')
+          if [ -n "$open" ]; then gh issue comment "$open" --body "$body"; else gh issue create --title "$title" --body "$body"; fi

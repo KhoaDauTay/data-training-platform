@@ -756,3 +756,13 @@ Cổng: `npx tsc --noEmit` sạch, `npm test` 3364 xanh (1 bỏ qua, 82 file), `
 - W2, đo bằng CDP (`getBoundingClientRect`) sau khi chuyển động xong: 1280 và 1024: dock 480×46, giao với khung bảng kết quả 38 px (cổng ≤ 56); trước: 640×309, giao 168 px (1280) và 155 px (1024). 375/320: 343×46 / 288×46, không giao bảng. Giảm chuyển động: vào thẳng dạng một dòng (46 px).
 - Trình duyệt: preview 5203, Edge headless hồ sơ mới; workspace (1×1, lỗi `cnt`, bảng, Biểu đồ cột/đường/rỗng), dock giữa/cuối, Bảng điều hành ở 1280/1024/375/320 × sáng/tối; trang (Trang chủ, Lộ trình, Phần 1, Luyện SQL, Tổng quan ×3, Dữ liệu, Bản đồ, workspace, Sổ tay, bài học nhanh, ER) ở 1280/375 tối (trước) và tối + sáng (sau). 0 lỗi trang, không cuộn ngang.
 - Chưa kiểm trong trình duyệt: dock thăng tiến và dock E-com/Finance sau W2 (logic `dockEnd` có test).
+
+## v10 V10-D smoke headless (L150), 2026-11-19
+
+- `npm run smoke` (`scripts/smoke.mjs`), Edge headless hồ sơ mới, `vite preview` 5219 trên `dist/` của cây này (build base `/`). Hai lần liền nhau sau bản cuối: **OK 43,1 s** và **OK 39,4 s** (gồm khởi động preview + Edge).
+  - Từng bước (lần 1 / lần 2, ms): màn chào tới khi "Bắt đầu" bật (DB sẵn) 13 073 / 8 593; Thử ngay `select` 834 / 316; nộp ch1-01 460 / 284; ecom-ch1-01 4 717 / 5 742 (gồm seed `ecom`); fin-ch1-01 dưới giảm chuyển động 3 690 / 3 389 (gồm seed `finance`); dock khung cuối 434 / 454; drill `g-select-2` 6 569 / 6 527; 18 lượt tuyến (9 tuyến × 1280/375) 5 724 / 6 719.
+  - 375 px: `scrollWidth` lớn nhất 375 trên cả 9 tuyến. 0 exception, 0 `console.error`. `#notice` đóng ở mọi tuyến.
+- Với site thật (`SMOKE_URL=https://khoadautay.github.io/data-training-platform/`): **OK 57,0 s** (màn chào 20,0 s vì tải từ mạng).
+- Lần chạy đầu (trước khi sửa script) hỏng hai chỗ, đều do script: trang Dữ liệu tự đổi hash sang `#/d/logistics/data/ports` (giờ chấp nhận hash con); drill nộp khi editor còn bị thay sau tải lại (giờ chờ chấm xanh DB và gõ lại khi editor bị thay).
+- **Ghi nhận, không sửa (ngoài phạm vi V10-D):** mở drill bằng tải lại `#/learn/play/g-select-2`, editor đôi khi bị dựng lại **sau** khi DB đã xanh và người chơi đã gõ (2 trên 3 lượt chạy local có đo cần lần gõ thứ hai). Người chơi gõ ngay trong vài giây đầu có thể mất chữ vừa gõ, và lần Nộp đó chỉ vào lịch sử. Cần một luồng xem `main.ts` (`reopen` drill / `ensure('lab')` / chunk `learnui`).
+- Chưa kiểm: workflow trên runner GitHub (Chrome Linux, `--no-sandbox`) chưa chạy lần nào; theme tối; người chơi có tiến độ sẵn.
