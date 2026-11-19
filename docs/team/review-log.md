@@ -716,7 +716,7 @@ Bản build `vite preview --strictPort` 5199, Edge headless, mỗi lần chạy 
   - Từ lúc bấm tới lúc seed xong: 1,73 / 1,74 / 1,98 s.
 - Trang chủ, bấm thẻ Finance (hồ sơ đã chọn "Chỉ học SQL"):
   - `db:ensure:fin` 1,17 / 1,24 / 1,33 s.
-  - Từ lúc bấm tới khi Tổng quan có số "x/30 việc" và banner tắt: 1,29 / 1,29 / 1,46 s.
+  - Từ lúc bấm tới khi Tổng quan Finance đã vẽ (`#/d/finance`, có chữ "việc") và banner tắt: 1,29 / 1,29 / 1,46 s.
 - Không lần nào có `db:ensure:game` (Logistics không bị seed). 0 lỗi console.
 
 **(c) Đi trọn 30 việc bằng Solution** (biến thể 0, đúng như người chơi):
@@ -734,6 +734,7 @@ Bản build `vite preview --strictPort` 5199, Edge headless, mỗi lần chạy 
 | Ôn tập | Các thẻ do việc Finance tạo đến hạn ngày mai, nên hôm nay trang Luyện SQL ghi "chưa có kỹ năng nào đến hạn". Lùi ngày đến hạn trong save thì nút top bar hiện "Ôn tập, 5 mục đến hạn" (`QUEUE_MAX`). Không chạy một lượt ôn: lượt ôn dùng drill General trên `lab`. |
 | Luyện lại (F2-01) | "Luyện lại việc này (0 XP)" mở biến thể 2. Solution của biến thể 2 đạt; `practice.solved` 0 → 1. |
 | Chuyển domain Finance → E-com → Logistics → Finance (Sandbox) | Tab Cột, bảng `customers`: Finance có `full_name, birth_year, city, monthly_income`; E-com có `email` (UK), `signup_date`; Logistics có `name, industry`. Autocomplete gõ `loan`: Finance gợi ý `loan_snapshots`, `loans`; E-com và Logistics không. `SELECT * FROM shipments`: Finance/E-com báo 42P01 kèm lời giải thích; Logistics ra 1 dòng. |
+| Editor khi chuyển domain (lần chạy thứ hai, `editor.mjs`) | Vào mỗi domain thì editor của việc đang làm là của domain đó: Finance mở F6-05 với SQL đã đạt, E-com và Logistics mở ticket 1 của mình. Nháp Sandbox riêng từng domain: ghi `-- draft <domain>` ở cả ba, quay lại đủ vòng Finance → E-com → Logistics → Finance thì mỗi Sandbox hiện đúng nháp của mình. Save có `sandboxDraft`, `byDomain.ecommerce.sandboxDraft`, `byDomain.finance.sandboxDraft`. Gõ `c.` (bí danh của `customers`) thì danh sách cột theo domain: Finance có `full_name, birth_year, monthly_income, home_branch_id, joined_on`; E-com có `email, channel, signup_date`; Logistics có `name, industry, country, sales_rep_id`. |
 | Bảng điều hành | Ghim thẻ từ Sandbox Finance: thẻ chỉ hiện ở `#/d/finance/dashboard`, không ở E-com hay Logistics. Save có `byDomain.finance.dashboard.cards = ["T7 regions"]`. |
 | Ảnh | Tổng quan Finance sau 30 việc: hũ đầy, 3 nhãn sao, lộ trình sự nghiệp 4 bậc (`shots\overview-30.png`, cùng ảnh sau mỗi đánh giá). |
 
