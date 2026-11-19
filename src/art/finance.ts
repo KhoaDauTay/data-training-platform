@@ -355,6 +355,10 @@ function drawCounter(st: FinArtState, ambient: boolean, lit: boolean): Counter {
       s('path', { d: 'M886 300v18M950 300v18', stroke: '#334155', 'stroke-width': 4 })),
     // the jar on its plinth: light behind it, back glass, the coin pile, front glass with highlights, the lid with its slot
     s('g', { 'aria-hidden': 'true' },
+      // ui-ux-v7 I1 (L148): a dark display case behind the jar, so the glass never sinks into a pale sky
+      s('rect', { x: JX - 132, y: 84, width: 264, height: 222, rx: 22, fill: '#0f3d3a' }),
+      s('rect', { x: JX - 132, y: 84, width: 264, height: 222, rx: 22, fill: 'none', stroke: '#facc15', 'stroke-opacity': 0.55, 'stroke-width': 3 }),
+      s('path', { d: `M${JX - 116} 100H${JX + 116}`, stroke: '#ffffff', 'stroke-opacity': 0.12, 'stroke-width': 6, 'stroke-linecap': 'round' }),
       ...glows,
       s('ellipse', { cx: JX, cy: 320, rx: 120, ry: 7, fill: '#000000', opacity: 0.18 }),
       s('rect', { x: JX - 110, y: 298, width: 220, height: 20, rx: 3, fill: '#94a3b8' }),
@@ -362,7 +366,7 @@ function drawCounter(st: FinArtState, ambient: boolean, lit: boolean): Counter {
       s('path', { d: JAR, fill: '#bae6fd', opacity: 0.2 })),
     coinG,
     s('g', { 'aria-hidden': 'true' },
-      s('path', { d: JAR, fill: url('jar'), stroke: '#7fb4c9', 'stroke-width': 3, 'stroke-linejoin': 'round' }),
+      s('path', { d: JAR, fill: url('jar'), stroke: '#cfeaf5', 'stroke-width': 4, 'stroke-linejoin': 'round' }),
       s('g', { 'clip-path': url('clip') }, glint),
       s('path', { d: `M${JX - 80} 200V266`, stroke: '#ffffff', 'stroke-opacity': 0.75, 'stroke-width': 6, 'stroke-linecap': 'round' }),
       s('path', { d: `M${JX - 46} 140V154M${JX + 74} 214V250`, stroke: '#ffffff', 'stroke-opacity': 0.5, 'stroke-width': 3, 'stroke-linecap': 'round' }),

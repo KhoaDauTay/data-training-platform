@@ -162,6 +162,11 @@ const statusLine = (x: AdvNode, rest: string): HTMLElement =>
   d$.h('p', { class: 'm-0 flex items-start gap-1.5 text-body-sm text-muted' }, d$.icon(STATUS_ICON[x.status], 'mt-0.5 size-4 text-accent'),
     d$.h('span', {}, `${lt(`adv.status.${x.status}` as LearnKey)}${rest}`));
 
+const hideOnPhone = (el: HTMLElement): HTMLElement => {
+  el.classList.add('max-sm:hidden');
+  return el;
+};
+
 function overview(c: LearnCtx): HTMLElement {
   const { h } = d$;
   const lang = d$.getLang();
@@ -182,20 +187,26 @@ function overview(c: LearnCtx): HTMLElement {
           h('p', { class: 'm-0 text-body-sm text-muted' }, lt('learn.moduleLine', { k: ms.learned, m: ms.skills.length })),
           bar(ms.learned, ms.skills.length)));
     })));
+  const phone = typeof matchMedia === 'function' && matchMedia('(max-width: 639px)').matches;
   const groups = (['A', 'B', 'C', 'D'] as const).map((gr) => [gr, c.general.nodes.filter((x) => x.group === gr)] as const);
   const adv = h('section', { id: 'adv', class: 'min-w-0 space-y-3', 'aria-labelledby': 'track-adv' },
     h('h2', { id: 'track-adv', class: H2 }, lt('learn.trackAdv')),
     slot('learn-adv'),
-    ...groups.map(([gr, list]) => h('div', { class: 'space-y-2' },
-      h('div', { class: 'flex items-center gap-3' }, h('div', { class: 'w-14 shrink-0' }, d$.illustration('aspect-[3/2]', (il) => il.trackGlyph(gr))), // v5 B1
-        h('h3', { class: 'm-0 text-body-sm font-bold tracking-wide text-muted uppercase' }, lt(`adv.group.${gr}` as LearnKey))),
+    // ui-ux-v7 M2 (L148): each group folds; closed on phones (28 nodes made the page ~5,200 px at 375), open from sm.
+    ...groups.map(([gr, list]) => h('details', { class: 'space-y-2', open: !phone },
+      h('summary', { class: 'flex cursor-pointer items-center gap-3' }, h('div', { class: 'w-14 shrink-0' }, d$.illustration('aspect-[3/2]', (il) => il.trackGlyph(gr))), // v5 B1
+        h('h3', { class: 'm-0 flex-1 text-body-sm font-bold tracking-wide text-muted uppercase' }, lt(`adv.group.${gr}` as LearnKey)),
+        h('span', { class: 'text-caption text-muted tabular-nums' }, `${list.filter((x) => nodeState(c, x).done).length}/${list.length}`),
+        d$.icon('down', 'size-4 text-muted [details[open]>summary>&]:rotate-180')),
       h('ul', { class: LIST }, ...list.map((x) => {
         const st = nodeState(c, x);
         const needs = x.needs.filter((id) => !known.has(id) && !(c.general.nodes.find((y) => y.id === id) && nodeState(c, c.general.nodes.find((y) => y.id === id)!).done));
-        return h('li', { class: 'relative cursor-pointer space-y-1 rounded-(--r-card) bg-panel px-5 py-3 ring-1 ring-line hover:ring-accent' },
-          h('a', { href: `${d$.hashOf('learn')}/adv/${x.id}`, class: 'font-bold after:absolute after:inset-0' }, `${x.id.toUpperCase()} · ${x.title[lang]}`, tick(st.done)),
-          statusLine(x, (x.status === 'external' ? '' : ` · ${lt('learn.drills', { n: st.drills, total: st.total })}`)
-            + (needs.length ? ` · ${lt('adv.needsFirst', { list: needs.map((id) => nameOf(c, id)).join(', ') })}` : '')));
+        // M2: below sm one line per node (name + drills chip); the status and "learn first" line stay on its page
+        return h('li', { class: 'relative cursor-pointer space-y-1 rounded-(--r-card) bg-panel px-5 py-3 ring-1 ring-line hover:ring-accent max-sm:flex max-sm:items-center max-sm:gap-2 max-sm:space-y-0 max-sm:px-4 max-sm:py-2.5' },
+          h('a', { href: `${d$.hashOf('learn')}/adv/${x.id}`, class: 'font-bold after:absolute after:inset-0 max-sm:min-w-0 max-sm:flex-1 max-sm:truncate' }, `${x.id.toUpperCase()} · ${x.title[lang]}`, tick(st.done)),
+          x.status === 'external' ? null : h('span', { class: 'shrink-0 rounded-(--r-chip) bg-code px-2 text-caption text-muted tabular-nums sm:hidden', 'aria-hidden': 'true' }, `${st.drills}/${st.total}`),
+          hideOnPhone(statusLine(x, (x.status === 'external' ? '' : ` · ${lt('learn.drills', { n: st.drills, total: st.total })}`)
+            + (needs.length ? ` · ${lt('adv.needsFirst', { list: needs.map((id) => nameOf(c, id)).join(', ') })}` : ''))));
       })))));
   return h('div', { class: 'space-y-5' },
     // L87: the header picture is Boon teaching Lily, section 'teach' of src/ui/homeView.ts (main), drawn above this one

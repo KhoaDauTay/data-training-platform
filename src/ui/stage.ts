@@ -1,3 +1,4 @@
+import { cue } from './sound';
 import { activeDomain, domainText, type DomainId } from '../domains';
 import type { Ctx, Run } from '../art/logistics';
 import { loadArt, loadedGsap } from '../art/load';
@@ -237,6 +238,7 @@ export function playCompletion(tk: Ticket, before: Set<string>, after: Set<strin
   };
   const text = sentence(c);
   byId('announce').textContent = text; // read now, not after the animation (§6)
+  cue(tk.beat === 'boss' ? 'promo' : 'good'); // X2 (L148): only when the player turned sound on
   if (!load) return;
   finish(current);
   current = run;

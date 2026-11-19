@@ -1,6 +1,8 @@
 {
   "_note": "App icon name -> Phosphor duotone icon (@phosphor-icons/core 2.1.1, MIT), with the metaphor kept from the hand-drawn icon it replaces (ui-ux-v6 I1). Run `node scripts/icons.mjs` after editing; icons not in Phosphor live in icon-custom.json.",
   "icons": {
+    "soundOn": ["speaker-high", "sound on (v7 X2)"],
+    "soundOff": ["speaker-slash", "sound off (v7 X2)"],
     "anchor": ["anchor", "Logistics domain: harbour anchor"],
     "home": ["house", "Home"],
     "menu": ["list", "three-line menu"],
