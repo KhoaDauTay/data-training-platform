@@ -18,8 +18,9 @@ const SIZES = {
 const LABEL = 'fill-muted text-xs';
 const VALUE = 'fill-ink text-xs tabular-nums';
 
-/** Card bars print "1,2 Tr" / "1.2M" so the value fits its 64 units; the exact value is in the bar's tooltip. */
-const short = (n: number): string => n.toLocaleString(locale(), { notation: 'compact', maximumFractionDigits: 1 });
+/** Card bars print "1,2 triệu" / "1.2M" so the value fits its 64 units (VI long form: the short "N"/"Tr" is unclear, like kpiNumber); the exact value is in the bar's tooltip. */
+const short = (n: number): string =>
+  n.toLocaleString(locale(), { notation: 'compact', compactDisplay: locale().startsWith('vi') ? 'long' : 'short', maximumFractionDigits: 1 });
 
 /** Also drawn on dashboard cards (src/ui/dashboard.ts, size 'card'). */
 export function bars(r: QueryResult, spec: ChartSpec, col: number, color: ChapterColor, size: ChartSize = 'tab'): SVGSVGElement {

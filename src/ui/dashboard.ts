@@ -84,7 +84,7 @@ export function cardBody(c: Card, r: QueryResult): HTMLElement {
     return kpiView(v, '');
   }
   const cut = (n: number) => (r.rows.length > n ? h('p', { class: 'mt-1 mb-0 text-sm text-muted' }, t('card.rowsShown', { n, total: r.rows.length })) : null);
-  if (c.kind === 'table') return h('div', {}, renderResult({ ...r, rows: r.rows.slice(0, TABLE_ROWS) }), cut(TABLE_ROWS));
+  if (c.kind === 'table') return h('div', { class: 'min-w-0 overflow-x-auto' }, renderResult({ ...r, rows: r.rows.slice(0, TABLE_ROWS) }), cut(TABLE_ROWS));
   const spec = cardSpec(r);
   if (!spec || spec.kind !== c.kind) return h('p', { class: 'm-0 text-muted' }, t('chart.empty', { max: MAX_POINTS }));
   const n = c.kind === 'bar' ? BAR_ROWS : MAX_POINTS;
@@ -154,7 +154,8 @@ function playerCard(c: Card, i: number, n: number, redraw: () => void): HTMLElem
   };
   const btn = (act: string, name: IconName, label: string, onclick: () => void, disabled = false) =>
     h('button', { type: 'button', class: ICON_BTN, 'data-card': c.id, 'data-act': act, title: label, 'aria-label': label, disabled, onclick }, icon(name, 'size-4'));
-  return h('article', { class: cx(CARD, 'flex min-w-0 flex-col gap-3 p-4') },
+  // A table needs width more than the charts do: two columns from sm (no dense flow: visual order = Lên/Xuống order).
+  return h('article', { class: cx(CARD, 'flex min-w-0 flex-col gap-3 p-4', c.kind === 'table' && 'sm:col-span-2') },
     h('div', { class: 'flex items-start gap-2' },
       h('span', { class: 'grid size-9 shrink-0 place-items-center rounded-lg bg-code', 'aria-hidden': 'true' }, icon(KIND_ICONS[c.kind])),
       h('h3', { class: 'm-0 min-w-0 flex-1 self-center text-sm leading-snug font-semibold break-words' }, c.title)),

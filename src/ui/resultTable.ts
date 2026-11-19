@@ -8,12 +8,16 @@ const DATE_OID = 1082;
 /** int2/4/8, oid, float4/8, numeric: right-aligned with tabular figures so digits line up (Plan 8b 8.1). */
 const NUMERIC_OIDS = new Set([20, 21, 23, 26, 700, 701, 1700]);
 
-/** `type` omitted (e.g. grader samples): a Date at UTC midnight is shown as a plain date. */
+/**
+ * `type` omitted (e.g. grader samples): a Date at UTC midnight is shown as a plain date. Timestamps are shown in the
+ * session's time zone (UTC in PGlite), the way psql prints them, never the machine's: date_trunc('month', d) is
+ * "2026-07-01 00:00:00", not "07:00:00" in Vietnam.
+ */
 export function formatCell(v: unknown, type?: number): string {
   if (v === null || v === undefined) return 'NULL';
   if (v instanceof Date) {
     const midnight = v.getUTCHours() === 0 && v.getUTCMinutes() === 0 && v.getUTCSeconds() === 0;
-    return type === DATE_OID || (type === undefined && midnight) ? v.toISOString().slice(0, 10) : v.toLocaleString('sv-SE');
+    return type === DATE_OID || (type === undefined && midnight) ? v.toISOString().slice(0, 10) : v.toISOString().slice(0, 19).replace('T', ' ');
   }
   if (typeof v === 'object') return JSON.stringify(v);
   return String(v);
