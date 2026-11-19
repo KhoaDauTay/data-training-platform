@@ -69,7 +69,7 @@ Hash lạ rơi về `#/engine` (luật không ngõ cụt). `tests/noDeadEnds.tes
 
 - **Desktop (top bar `#nav`):** `registerNav` thêm mục `engine` (area `'top'`), ngay sau "Lộ trình", icon mới `database` trong `NAV_ICON` (Phosphor `Database`, duotone; test icon duy nhất). Nhãn "Database Engine" / "Database Engine" (giữ tiếng Anh ở cả hai, như tên riêng; thêm vào `SAME_OK`).
 - **Sidebar trái:** không có. Engine là trang đọc như `#/learn`, không phải domain. Trang engine/mô-đun dùng mục lục **trong trang**: ô `<select>` trên màn hẹp, danh sách bên trái nội dung ở ≥ 1280. Không dùng `#side` (sidebar là của domain).
-- **Điện thoại 375:** thanh dưới **đã rớt dòng ở 5 mục** (roadmap-v22 §1.4). Thêm mục thứ sáu là không được. Đề xuất (D-E1):
+- **Điện thoại 375:** thanh dưới **đã rớt dòng ở 5 mục** (roadmap-v22 §1.4; `v21-ux-review.md` U3: 5 mục trong `grid-cols-4`, cao 113 px). Bản sửa U3 (`grid-cols-5`) vừa khít 5 mục ở 320; mục thứ sáu không còn chỗ. Đề xuất (D-E1):
   - gộp "Lộ trình" + "Engine" thành **một mục "Học"** (`#/learn`);
   - đầu trang `#/learn` và `#/engine` có công tắc hai nút **SQL | Database Engine** (`role=tablist`, mỗi nút là link tới route kia);
   - desktop vẫn hai mục riêng.
@@ -103,6 +103,7 @@ Vì vậy Engine **không** dùng tiền tố `g-`.
 | Thứ | Mẫu | Ví dụ | Đi đâu |
 |---|---|---|---|
 | Bài, drill, capstone | `ENGINE_ID = /^e-(pg|my|mg|dy)-(c|l|p|q|d|x)-[a-z0-9-]+$/` | `e-pg-l-btree-2`, `e-mg-d-group-3`, `e-dy-x-shop-2` | `save.completed`, `drafts`, `graded`, `bossStep` (capstone) |
+| Câu phỏng vấn NoSQL | `e-mg-iv-…`, `e-dy-iv-…`: **cố ý không khớp** `ENGINE_ID`, nên không vào `completed`. Giống `INTERVIEW_ID` (L144): phòng phỏng vấn không lưu tiến độ | `e-mg-iv-j1-3` | không lưu |
 | Loại trong id | `c` khái niệm (đọc xong không lưu), `l` lab, `p` đoán kế hoạch, `q` câu hỏi, `d` drill lộ trình, `x` capstone | | XP tính **từ id**, không cần chunk |
 | Thẻ ôn | `ENGINE_SKILL = /^(mg|dy|pg)\.[a-z_]+$/` | `mg.lookup`, `dy.gsi`, `pg.mvcc` | `save.review` |
 
@@ -125,6 +126,8 @@ Sửa Save, **không bump `SAVE_VERSION`** (cùng kiểu `ECOM_ID`, `FIN_ID`):
 **Ôn Leitner:**
 
 - Chỉ kỹ năng **lộ trình NoSQL** (`mg.*`, `dy.*`) và một số khái niệm Postgres đáng nhớ (`pg.mvcc`, `pg.hot`, `pg.index_choice`, ~10 thẻ) có thẻ ôn.
+- Postgres không có drill. Thẻ `pg.*` khi tới hạn phát lại **một bài `q` hoặc `p`** của khái niệm đó (mỗi thẻ khai ≥ 2 bài, lần lượt). Đạt thì thẻ lên hộp.
+- **Thẻ chỉ bắt đầu được ghi từ E5 (v25)**, khi hàng ôn trộn có. Ở v24 (E4), drill Mongo đạt chỉ vào `completed`. E5 gieo thẻ cho kỹ năng đã "học" theo luật D8a-11 (≥ 2 drill đạt), như v1 → v2 đã làm với `review`.
 - Thẻ dùng cùng hộp `[1, 2, 4, 8, 16]` và `localDay`.
 - `reviewCount()` hiện là `min(kỹ năng tới hạn, QUEUE_MAX)` trên SQL. Đề xuất (D-E4): nút "Ôn: N" trên top bar **tính chung** SQL + Engine. Hàng ôn trộn lần lượt SQL → Mongo → Dynamo → Postgres, mỗi kỹ năng một drill (open → trap → review → faded).
 - Đếm được thẻ tới hạn mà không cần chunk, vì khóa nhận theo mẫu.
@@ -184,12 +187,12 @@ Chín mô-đun, chia hai chunk (I = 1–5, II = 6–9). Mỗi mô-đun: 2–4 kh
 | # | Mô-đun | Khái niệm chính | Lab chạy thật (PGlite) | Độ trung thực |
 |---|---|---|---|---|
 | 1 | Từ câu SQL tới đĩa | parser → rewriter → planner → executor; tiến trình, shared buffers; trang 8 KB | `pg_relation_size`, `pg_buffercache` xem trang nào đang trong bộ đệm (**cần spike E-S1**: extension trong worker) | cao (đúng Postgres 17/18 của PGlite) |
-| 2 | Heap và trang | trang = header + line pointer + tuple; `ctid`; TOAST; fillfactor | `SELECT ctid, xmin, xmax, *`; `pageinspect`: `heap_page_items(get_raw_page('t', 0))` | cao |
+| 2 | Heap và trang | trang = header + line pointer + tuple; `ctid`; TOAST; fillfactor | `SELECT ctid, xmin, xmax, *`; `pageinspect`: `heap_page_items(get_raw_page('t', 0))` | cao nếu E-S1 qua (cần `pageinspect`); không qua: chỉ `ctid/xmin/xmax` |
 | 3 | MVCC | `xmin/xmax`, snapshot, mức cô lập, dead tuple | Một phiên: `UPDATE` rồi thấy dòng cũ/mới qua `heap_page_items` (cùng transaction). **Hai phiên đồng thời: chỉ sơ đồ**, vì PGlite một kết nối; ghi rõ "mô phỏng" | lab một phiên cao; đồng thời = sơ đồ |
 | 4 | VACUUM, HOT, freeze | HOT chain, prune, visibility map, wraparound | `pg_visibility`; `VACUUM` **không chạy được trong `BEGIN…ROLLBACK`**, cần môi trường lab riêng (§4.1) | chờ spike E-S1 |
 | 5 | WAL và phục hồi | WAL record, LSN, checkpoint, full-page write, replay | `pg_walinspect` (`pg_get_wal_records_info`) sau một `INSERT` (chờ E-S1); replay = sơ đồ | cao nếu E-S1 qua |
-| 6 | B-tree sâu | trang lá/nội, split, dedup, index-only scan, `INCLUDE`, thứ tự cột | `bt_page_items`, `bt_metap` (pageinspect); đoán kế hoạch; index lab (`runLab` có sẵn) | cao |
-| 7 | Các loại index khác | Hash, GIN (posting list/tree, `jsonb_path_ops`), GiST, SP-GiST, BRIN (khoảng trang), bloom, partial, expression | `gin_page_opaque_info`, `brin_page_items`; so `EXPLAIN` các loại; `btree_gin`/`btree_gist`/`bloom` | cao |
+| 6 | B-tree sâu | trang lá/nội, split, dedup, index-only scan, `INCLUDE`, thứ tự cột | `bt_page_items`, `bt_metap` (pageinspect); đoán kế hoạch; index lab (`runLab` có sẵn) | cao nếu E-S1 qua; không qua: chỉ đoán kế hoạch + index lab |
+| 7 | Các loại index khác | Hash, GIN (posting list/tree, `jsonb_path_ops`), GiST, SP-GiST, BRIN (khoảng trang), bloom, partial, expression | `gin_page_opaque_info`, `brin_page_items`; so `EXPLAIN` các loại; `btree_gin`/`btree_gist`/`bloom` | cao nếu E-S1 qua; `EXPLAIN` các loại index có sẵn chạy được ngay |
 | 8 | Dữ liệu đặc biệt | **GEO:** kiểu hình học có sẵn (`point`, `box`, `polygon`, `circle`) + GiST/SP-GiST + KNN `<->`; `earthdistance` (`ll_to_earth`, `earth_box`); **full-text:** `tsvector`, `ts_rank`, GIN, `pg_trgm`; **jsonb:** toán tử, `jsonb_path_ops`; **vector:** `cube` + KNN làm bản thu nhỏ của tìm kiếm vector | chạy thật. **PostGIS và pgvector không có trong gói PGlite 0.5.16 (đo)**: chỉ là bài đọc + code chỉ đọc, trừ khi spike E-S2 thêm gói riêng (dependency mới, cần user) | có sẵn: cao; PostGIS/pgvector: đọc |
 | 9 | Phân vùng và thống kê | khai báo partition, pruning, `pg_stats`, histogram/MCV, ước lượng sai, `ANALYZE` | `EXPLAIN` thấy pruning; đọc `pg_stats`; đoán số dòng ước lượng | cao |
 
@@ -221,6 +224,37 @@ Dữ liệu là schema mới `engine` (§4.1), **không** dùng bảng domain ha
 ```
 
 Tab "Bên trong" vẽ từ **kết quả thật** của người học: cột `lp`, `lp_off`, `lp_len`, `t_ctid`. Không phải hình tĩnh.
+
+**Wireframe, đoán kế hoạch (mô-đun 6), trước và sau "Xem thật":**
+
+```
+┌ B-tree sâu · Đoán kế hoạch 2 ──────────────────────────────────────────┐
+│ SELECT id, created_at FROM events WHERE user_id = 42 ORDER BY created_at│
+│ Index có: events_user_created (user_id, created_at) INCLUDE (id)        │
+│ Postgres sẽ đọc thế nào?                                                │
+│  ( ) Seq Scan rồi Sort        ( ) Bitmap Heap Scan rồi Sort             │
+│  ( ) Index Scan, không Sort   (•) Index Only Scan, không Sort           │
+│                                            [Xem thật ▸]                 │
+├─────────────────────────────────────────────────────────────────────────┤
+│ ✓ Đúng. Kế hoạch thật (chi phí planner, không phải thời gian):          │
+│   Index Only Scan using events_user_created  cost 0.43..8.6  rows 12    │
+│ Vì sao: cột lọc đứng đầu index, cột sắp xếp đứng ngay sau, id nằm trong  │
+│ INCLUDE nên không phải về heap.                       [Bài tiếp ›]       │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+**Câu hỏi sắp thứ tự** (mô-đun 5) và **capstone** (khung bước) dùng chung trình xem:
+
+```
+┌ WAL · Câu hỏi 3 ─────────────────────┐ ┌ Capstone Postgres · bước 2/5 ───────┐
+│ Xếp đúng thứ tự khi COMMIT một UPDATE │ │ ● Đọc pg_stats  ◉ Đoán kế hoạch     │
+│  1. [Ghi bản ghi WAL vào bộ đệm ] ↑ ↓ │ │ ○ Tạo index  ○ BRIN/B-tree  ○ Kết   │
+│  2. [Sửa trang trong shared buf ] ↑ ↓ │ │─────────────────────────────────────│
+│  3. [Flush WAL tới LSN commit   ] ↑ ↓ │ │ (nội dung bước: một bài p/l/q bình  │
+│  4. [Trang ghi xuống đĩa sau    ] ↑ ↓ │ │  thường, chạy trong workspace)      │
+│                     [Kiểm tra]        │ │                    [Nộp bước ⌘⇧↵]   │
+└───────────────────────────────────────┘ └─────────────────────────────────────┘
+```
 
 ### 2.3 MySQL / InnoDB (so sánh, không chạy được trung thực)
 
@@ -271,6 +305,24 @@ Ba mô-đun:
 
 Lab chạy trên bộ mô phỏng (§4.4): người học Query một bảng và xem RCU tiêu thụ do mô phỏng tính theo công thức công khai của AWS.
 
+**Wireframe, lab DynamoDB** (editor là JSON request, đúng hình input của `QueryCommand`):
+
+```
+┌ Đề ──────────────────────────┐┌ Editor (JSON request) · Mô phỏng ───────────────┐
+│ Phần 2 · Query vs Scan        ││ { "TableName": "Shop",                          │
+│ Mọi đơn của khách C-0042 trong││   "KeyConditionExpression":                     │
+│ tháng 10/2026, mới nhất trước.││     "PK = :c AND begins_with(SK, :m)",          │
+│ Chỉ một lần đọc, không Scan.  ││   "ExpressionAttributeValues": {                │
+│                               ││     ":c": "CUST#C-0042", ":m": "ORDER#2026-10" },│
+│ Bảng Shop: PK, SK, GSI1       ││   "ScanIndexForward": false }                   │
+│                               ││                        [Chạy ⌘↵]  [Nộp ⌘⇧↵]      │
+│                               │├ Kết quả │ Partition │ Chi phí ──────────────────┤
+│ Boon: "FilterExpression vẫn   ││ 6 item · Query · 1 partition (P3 sáng)          │
+│ đọc hết rồi mới lọc…"         ││ Đọc 2,1 KB → 0,5 RCU (eventual) / 1 RCU (strong) │
+│                               ││ So với Scan cùng kết quả: 412 item, 48 RCU       │
+└───────────────────────────────┘└─────────────────────────────────────────────────┘
+```
+
 ### 2.6 Engine "sắp có"
 
 SQL Server, MariaDB, Redis, Cassandra, ClickHouse… là một hàng chữ trên `#/engine`, **không** là thẻ bấm được, không route. Luật không ngõ cụt cấm trang "sắp có" trên đường đi.
@@ -307,7 +359,7 @@ Dưới đây id kỹ năng là `mg.<id>`. Cột "SQL tương ứng" là kỹ n�
 
 | Phần | Chủ đề | Kỹ năng Mongo | SQL tương ứng |
 |---|---|---|---|
-| 1 | Đọc và lọc | `find`, `filter` (toán tử `$eq/$gt/$in/$and/$or`), `sort`, `limit` (+ `projection`) | select, where, order_by, limit |
+| 1 | Đọc và lọc | `find`, `projection`, `filter` (toán tử `$eq/$gt/$in/$and/$or`), `sort`, `limit` | select, where, order_by, limit |
 | 2 | Gộp | `group` (`$group` + `$sum/$avg/$count`), `group_keys` (khóa ghép `_id: {…}`), `match_after_group` | aggregate, group_by, having |
 | 3 | Nối | `lookup`, `unwind`, `lookup_keep` (`preserveNullAndEmptyArrays`), `lookup_none` (anti-join: `$match: { x: { $size: 0 } }`) | join, multi_join, left_join, anti_join |
 | 4 | Ngày và thiếu dữ liệu | `date_math` (`$dateDiff/$dateAdd`), `date_bucket` (`$dateTrunc`), `missing_null` (thiếu trường ≠ `null`, `$exists`, `$type`) | date_math, date_bucket, null_logic |
@@ -320,7 +372,14 @@ Dưới đây id kỹ năng là `mg.<id>`. Cột "SQL tương ứng" là kỹ n�
 | 11 | Hiệu năng | `explain_read`, `esr` (thứ tự index ghép), `covered` (truy vấn phủ, projection bỏ `_id`) | explain_read, index_design, sargable |
 | 12 | **Mô hình tài liệu** (Mongo riêng) | `embed_vs_ref`, `array_ops` (`$elemMatch`, `$filter`, `$size`), `schema_validation`, `bucket_pattern` | (không có; gần c2 "star schema và grain") |
 
-Tổng ~43 kỹ năng → ~172 drill, ~43 bài học nhanh. Chia hai chunk: Phần 1–6 / 7–12.
+Tổng 42 kỹ năng (tính `projection` là kỹ năng riêng của Phần 1) → 168 drill, 42 bài học nhanh. Chia hai chunk: Phần 1–6 / 7–12.
+
+**Capstone MongoDB "Báo cáo tuần cho cửa hàng"** (`e-mg-x-weekly-1..4`, 4 bước, `bossStep`):
+
+1. Viết pipeline doanh thu theo tuần và cửa hàng (`$match` → `$unwind lines` → `$group` → `$sort`).
+2. Thêm hạng mỗi tuần bằng `$setWindowFields`.
+3. Chọn index ghép cho bước 1 theo ESR (chấm theo luật).
+4. Kết luận nhiều lựa chọn: "nhúng `lines` trong `orders` hay tách collection".
 
 Phần 11 không chạy planner thật (§2.4). Drill Phần 11 là "đoán kế hoạch" chấm theo `explain` ghi sẵn, hoặc drill **viết định nghĩa index** chấm theo luật ESR. Ví dụ `{ status: 1, created: -1, total: 1 }` cho câu "status = …, sort created, total > …". Luật này là logic thuần, kiểm được, giống `planCheck`.
 
@@ -343,7 +402,7 @@ Phần 11 không chạy planner thật (§2.4). Drill Phần 11 là "đoán kế
 
 Ô "không có" là **nội dung dạy** ("vì sao DynamoDB bỏ JOIN"), không phải chỗ trống. Mỗi ô có một bài khái niệm + một câu hỏi "chọn thiết kế khóa cho 4 mẫu truy cập này".
 
-~24 kỹ năng, 96 drill. Capstone **"Thiết kế bảng cho cửa hàng"**: cho 6 mẫu truy cập; người học chọn PK/SK/GSI, rồi bộ mô phỏng chạy cả 6 Query và chấm: mỗi mẫu là **một Query, không Scan**, RCU ≤ ngưỡng.
+23 kỹ năng, 92 drill. Kiểm tra đầu vào DynamoDB: **có**, một drill `open` mỗi Phần như Mongo (`placementItems` dùng chung). Capstone **"Thiết kế bảng cho cửa hàng"**: cho 6 mẫu truy cập; người học chọn PK/SK/GSI, rồi bộ mô phỏng chạy cả 6 Query và chấm: mỗi mẫu là **một Query, không Scan**, RCU ≤ ngưỡng.
 
 ### 3.5 Chấm kết quả tài liệu (Mongo) và kết quả DynamoDB
 
@@ -437,7 +496,7 @@ Timeout 5 s và terminate giữ nguyên. Máy lab engine bị terminate cùng wo
 
 | Phương án | Trung thực | Kích thước | Ghi chú |
 |---|---|---|---|
-| **A. mingo** (JS, MIT, chạy `find` + aggregation pipeline gồm `$lookup`, `$group`, `$setWindowFields`, `$dateTrunc`…) trong **worker riêng** `mongoWorker` | Ngữ nghĩa toán tử cao; **không** có index, planner, `explain`, transaction. Một số toán tử hiếm có thể thiếu: E-S3 kiểm danh sách toán tử của 43 kỹ năng | chờ đo (chỉ đăng ký toán tử dùng) | **Khuyến nghị**, nếu E-S3 xác nhận đủ toán tử |
+| **A. mingo** (JS, MIT, chạy `find` + aggregation pipeline gồm `$lookup`, `$group`, `$setWindowFields`, `$dateTrunc`…) trong **worker riêng** `mongoWorker` | Ngữ nghĩa toán tử cao; **không** có index, planner, `explain`, transaction. Một số toán tử hiếm có thể thiếu: E-S3 kiểm danh sách toán tử của 42 kỹ năng | chờ đo (chỉ đăng ký toán tử dùng) | **Khuyến nghị**, nếu E-S3 xác nhận đủ toán tử |
 | B. FerretDB trên PGlite | Cao hơn ở giao thức, nhưng FerretDB viết bằng Go, cần wire protocol; chạy trong trình duyệt gần như không khả thi | rất lớn | loại, trừ khi spike chứng minh ngược lại |
 | C. MongoDB thật qua WASM | không có bản chính thức | — | loại |
 | D. Chỉ sơ đồ + câu hỏi | thấp (không viết truy vấn) | nhỏ | fallback nếu A thất bại; lộ trình mất phần "gần như tương đương" |
@@ -551,12 +610,12 @@ Giao thức luồng, worktree, cổng, deploy: `roadmap-v18-v20.md` §5, giữ n
 
 | Ver. | Luồng | Nội dung | File (tách nhau) | Cỡ | Chặn bởi |
 |---|---|---|---|---|---|
-| **v23** | **E0 Spike** | E-S1 (hai PGlite + extension + VACUUM trong worker), E-S2 (PostGIS/pgvector cho PGlite, tùy chọn), E-S3 (mingo: phủ toán tử 43 kỹ năng, kích thước, tốc độ `$lookup` trên 4k tài liệu). Kết quả: `docs/team/spike-engine.md` + nhánh spike, không gộp code | nhánh `spike/engine-*` | M | tag v22 |
+| **v23** | **E0 Spike** | E-S1 (hai PGlite + extension + VACUUM trong worker), E-S2 (PostGIS/pgvector cho PGlite, tùy chọn), E-S3 (mingo: phủ toán tử 42 kỹ năng Mongo, kích thước, tốc độ `$lookup` trên 4k tài liệu). Kết quả: `docs/team/spike-engine.md` + nhánh spike, không gộp code | nhánh `spike/engine-*` | M | tag v22 |
 | v23 | **E1 Nền Engine** | route `engine`, nav (desktop + công tắc "Học" trên 375), `ENGINE_ID`/`ENGINE_SKILL` trong Save (+ fixture), `engineXp`, chunk `engineui`, trang tổng quan/engine/mô-đun, trình xem bài khái niệm + câu hỏi, `diagram.ts` + chunk `enginemotion`, hook `#/me`, `tests/noDeadEnds` mở rộng | `src/route.ts`, `src/save.ts`, `src/ui/topbar.ts` (chỉ đăng ký), mới `src/engine/*`, `src/ui/engine*.ts`, `src/i18n/engine.ts`, `scripts/check-budget.mjs` (dòng nhóm) | L | V22-E (bộ nạp JSON); song song E0 |
 | v23 | **E2 Postgres I** | mô-đun 1–5: nội dung, schema `engine` + seed, request `engineLab` (nếu E-S1 qua; không qua thì bản fallback §4.5), 6 sơ đồ (heap/HOT, MVCC, WAL, VACUUM, trang, bộ đệm) | `content/engine/pg/**`, `src/db/engine/*`, `src/db/worker.ts` (một kind mới), `src/db/client.ts` (một hàm) | L | E1 (trình xem), E0 (E-S1) |
 | **v24** | **E3 Postgres II** | mô-đun 6–9 + capstone; sơ đồ B-tree, GIN, BRIN, GiST, partition; đoán kế hoạch dùng `planCheck` | `content/engine/pg2/**`, tests | L | E2 |
 | v24 | **E4 Mongo runtime + Phần 1–6** | `mongoWorker`, `mongoShell.ts`, `docGrade.ts`, lang-javascript, `mongo-lab` (script + JSON), skills/drills/bài học Phần 1–6, tab "Pipeline từng bước", session mode `engine` trong `work.ts` (hook chạy theo engine của bài) | `src/engine/mongo/*`, `content/engine/mongo/**`, `scripts/lab-to-docs.mjs`, `src/ui/work.ts` (**một** điểm rẽ "chạy bằng gì", commit riêng gộp sớm) | XL | E1, E0 (E-S3) |
-| **v25** | **E5 Mongo Phần 7–12** | nội dung + bên trong M1–M4 + `explain` ghi sẵn + kiểm tra đầu vào Mongo + ôn Leitner Engine trong `reviewQueue` | `content/engine/mongo2/**`, `src/practice.ts` (hàng ôn trộn) | L | E4 |
+| **v25** | **E5 Mongo Phần 7–12** | nội dung + bên trong M1–M4 + `explain` ghi sẵn + kiểm tra đầu vào Mongo + **capstone Mongo** (§3.3) + ôn Leitner Engine trong `reviewQueue` | `content/engine/mongo2/**`, `src/practice.ts` (hàng ôn trộn) | L | E4 |
 | v25 | **E6 DynamoDB** | `dynamoSim.ts`, `dynamo-lab`, 8 Phần + D1–D3 + capstone thiết kế bảng, sơ đồ partition/GSI | `src/engine/dynamo/*`, `content/engine/dynamo/**` | L | E1, E4 (điểm rẽ `work.ts` đã có) |
 | **v26** | **E7 MySQL** | 6 mô-đun, `EXPLAIN` ghi sẵn (script chụp ngoài app, ghi phiên bản), sơ đồ clustered vs heap | `content/engine/mysql/**`, `scripts/capture-mysql.md` (cách chụp, không chạy trong CI) | M | E1 |
 | v26 | **E8 Phỏng vấn + liên kết** | 2 bộ đề Mongo, 1 bộ thiết kế DynamoDB, chip "Đào sâu" từ ch11 Logistics/A10/`index_design` sang Engine, album Lily, smoke + axe cho mọi trang Engine | `content/engine/interview.yml`, chỗ chip trong `ui/brief.ts`/`learnView.ts` (một dòng mỗi chỗ) | M | E3, E5, E6 |
