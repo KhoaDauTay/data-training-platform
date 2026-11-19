@@ -284,8 +284,8 @@ function advPage(c: LearnCtx, x: AdvNode): HTMLElement {
           h('h4', { class: 'm-0 font-bold' }, r.title[lang]),
           h('div', { class: 'text-[15px] leading-relaxed' }, d$.richText(r.body[lang])),
           h('div', { class: 'grid gap-3 md:grid-cols-2' },
-            h('figure', { class: 'm-0 min-w-0' }, h('figcaption', { class: 'mb-1 text-body-sm text-muted' }, 'SQL'), h('pre', { class: 'sql overflow-x-auto whitespace-pre', lang: 'en' }, r.sql)), // v21 U29: scroll, never break an expression
-            h('figure', { class: 'm-0 min-w-0' }, h('figcaption', { class: 'mb-1 text-body-sm text-muted' }, 'pandas'), h('pre', { class: 'sql overflow-x-auto whitespace-pre', lang: 'en' }, r.pandas))))))
+            h('figure', { class: 'm-0 min-w-0' }, h('figcaption', { class: 'mb-1 text-body-sm text-muted' }, 'SQL'), h('pre', { class: 'sql overflow-x-auto whitespace-pre', lang: 'en', tabindex: '0' }, r.sql)), // v21 U29: scroll, never break an expression
+            h('figure', { class: 'm-0 min-w-0' }, h('figcaption', { class: 'mb-1 text-body-sm text-muted' }, 'pandas'), h('pre', { class: 'sql overflow-x-auto whitespace-pre', lang: 'en', tabindex: '0' }, r.pandas))))))
       : null,
     x.links.length
       ? h('section', { class: 'space-y-1' }, h('h3', { class: 'm-0 font-bold' }, lt('adv.links')),
