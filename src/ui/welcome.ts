@@ -90,7 +90,7 @@ function draw(): void {
     const scene = teachScene('lg');
     const body = h('div', { class: 'min-w-0 space-y-3' });
     const db = h('p', { class: 'm-0 truncate text-center text-caption text-muted' });
-    const foot = h('div', { class: 'flex items-center gap-2' });
+    const foot = h('div', { class: 'flex flex-wrap items-center gap-2' });
     frame = {
       // O1 (Q8): the body scrolls, the footer (Back · step n/N · main button, the download line) sticks to the dialog's bottom.
       root: h('div', {}, h('div', { class: 'space-y-4 p-5' }, h('div', { class: 'flex justify-center' }, scene), body),
@@ -122,13 +122,13 @@ function draw(): void {
   const main = (attrs: Record<string, unknown>, text: string) =>
     h('button', { type: 'button', class: cx(BTN_GO, 'px-4 py-2'), 'aria-describedby': 'welcome-step', ...attrs }, text);
   frame.foot.replaceChildren(
-    panel > 0 && !entering ? h('button', { type: 'button', 'data-w': 'back', onclick: () => go(panel - 1) }, t('welcome.back')) : '',
-    h('span', { id: 'welcome-step', class: 'flex-1 text-center text-body-sm text-muted' }, t('welcome.page', { i: panel + 1, n: steps.length })),
+    panel > 0 && !entering ? h('button', { type: 'button', 'data-w': 'back', class: 'whitespace-nowrap', onclick: () => go(panel - 1) }, t('welcome.back')) : '',
+    h('span', { id: 'welcome-step', class: 'flex-1 text-center text-body-sm whitespace-nowrap text-muted' }, t('welcome.page', { i: panel + 1, n: steps.length })),
     // the domain step has no Next: a card is the answer (Esc keeps D10-6, Logistics)
     step === 'domain' ? ''
       : !last ? main({ 'data-w': 'next', onclick: () => go(panel + 1) }, t('welcome.next'))
         : replay ? main({ 'data-w': 'close', onclick: () => d.close() }, t('app.close'))
-          : h('span', { class: 'flex flex-wrap justify-end gap-2' },
+          : h('span', { class: 'flex flex-wrap justify-end gap-2 max-sm:basis-full max-sm:flex-col-reverse' },
             h('button', { type: 'button', 'data-w': 'knows', class: 'rounded-full px-4 py-2', disabled: entering, onclick: () => choose(true) }, t('welcome.knows')),
             main({ 'data-w': 'begin', disabled: !ready || entering, onclick: () => choose(false) }, t(ready ? 'welcome.begin' : 'welcome.preparing'))));
   if (keep === 'title') byId('welcome-title').focus();

@@ -196,7 +196,8 @@ function overview(c: LearnCtx): HTMLElement {
     ...groups.map(([gr, list]) => h('details', { class: 'space-y-2', open: !phone },
       h('summary', { class: 'flex cursor-pointer items-center gap-3' }, h('div', { class: 'w-14 shrink-0' }, d$.illustration('aspect-[3/2]', (il) => il.trackGlyph(gr))), // v5 B1
         h('h3', { class: 'm-0 flex-1 text-body-sm font-bold tracking-wide text-muted uppercase' }, lt(`adv.group.${gr}` as LearnKey)),
-        h('span', { class: 'text-caption text-muted tabular-nums' }, `${list.filter((x) => nodeState(c, x).done).length}/${list.length}`)),
+        h('span', { class: 'text-caption text-muted tabular-nums' }, `${list.filter((x) => nodeState(c, x).done).length}/${list.length}`),
+        d$.icon('down', 'size-4 text-muted [details[open]>summary>&]:rotate-180')),
       h('ul', { class: LIST }, ...list.map((x) => {
         const st = nodeState(c, x);
         const needs = x.needs.filter((id) => !known.has(id) && !(c.general.nodes.find((y) => y.id === id) && nodeState(c, c.general.nodes.find((y) => y.id === id)!).done));
