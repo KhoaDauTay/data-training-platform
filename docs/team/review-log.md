@@ -791,3 +791,13 @@ Cách đo: `npx vite build --base=/data-training-platform/` (`MSYS_NO_PATHCONV=1
 - Tách `general`: `generalSources` 31 KB gz / 40, `generalAdvSources` 46 KB gz / 50 (roadmap đoán ≤ 15: sai chiều, xem L167). interview 24 / 25.
 - Nội dung: +38 drill ôn (152 drill kỹ năng), +2 bộ đề (`mid-3`, `senior-1`), +2 take-home (`g-iv-th-4`, `g-iv-th-5`). Mọi Solution chạy trên `lab`; khác các drill cùng kỹ năng, "Thử ngay" và (câu phỏng vấn) mọi drill General.
 - Ngoài danh sách file của luồng (sửa 1–2 dòng mỗi file): `src/practice.ts` (`KIND_ORDER`), `src/i18n/learn.ts` (nhãn + hướng dẫn kind `review`, số đếm trong 4 câu), `src/i18n/interview.ts` (`iv.level.senior`), `tests/practice.test.ts`, `tests/learn.test.ts`.
+
+## V19-D (portfolio, top bar), 2026-11-19, L170–L171
+
+Cách đo: `npm run build`, `vite preview --port 5217 --strictPort`, Edge headless qua CDP; localStorage đặt trước khi app chạy (trang `manifest.webmanifest` cùng origin). Fixture: save-v5 + Finance xong 30 việc (graded mỗi việc), 5 thẻ Finance (c1–c4 có trong `cards-ran`, c5 không), take-home `g-iv-th-1` đã nộp (live `phase: 'done'`), tên "Lily Tester". Ảnh ở scratchpad `v19d\`.
+
+- Portfolio Finance: sáng/VI 2,7 s, tối/EN 3,3 s (gồm seed Finance); zip mở được bằng `Expand-Archive`: `README.md` + `cards/c1..c4.png` (35–83 KB/ảnh, không trống, đúng theme); c5 (chưa chạy ở máy) chỉ có SQL. Take-home `.md`: đề, 3 bước SQL đã đạt, đoạn tự viết, rubric `[x]/[ ]` 2/5.
+- Nút "Tải ảnh PNG" trên Bảng điều hành (code vẽ đã chuyển sang `portfolioPng`) vẫn tải `boondata-finance-c2.png`.
+- Top bar: 53 px một hàng ở 1024–1600, EN tối, Tổng quan Logistics/Finance + workspace E-com (L171). ⋯ ở workspace 700 px có VI/EN + theme; 600/900 px và trang khác không đổi.
+- Ngân sách (gzip -9): main 321 927 B (314,4 KB; roadmap đo 315), `me` 11 346 B (11,1/12), `portfolioPng` 3 314 B (mới, đang tính vào `rest`; đề xuất nhóm 6 KB cho V19-C). `dist/sw.js` có chunk mới trong `FILES`.
+- Chưa làm: F11 (chờ V10-B). Chờ merge: FIX-1 đổi `importedNames` thành Promise và sửa cùng các hàm ở `meView.ts` (code mới đã `await`, sẽ có xung đột nhỏ khi merge).

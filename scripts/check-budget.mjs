@@ -34,6 +34,7 @@ const GROUPS = [
   ['frame', /^frame-/, 4], // v13 (product-design-v8 §4): src/frame.ts, the hint scaffold, lazy on the first "fill the scaffold" (brief.ts, lessonCard.ts): 2.9 KB gz; v14 T3 (ROLLUP, NULLS, JT clause, WHERE/CASE breaks; v9 R3 allows +1 KB): 3.2 KB gz
   ['me', /^meView-/, 12], // v16 (L142): src/ui/meView.ts + src/me.ts + src/i18n/me.ts (#/me page, certificates, portfolio, dashboard file/PNG exports), lazy on the first #/me visit or export click
   ['sqlmotion', /^sqlMotion-/, 8], // v10 Track A (L154): src/art/sqlMotion.ts, the Execution order film, GROUP BY fold, JOIN pairs and the guess, VI/EN text inside; lazy on the first draw of that tab
+  ['portfolioPng', /^portfolioPng-/, 6], // V19-D (L170): src/ui/portfolioPng.ts + src/portfolio.ts (card pictures, portfolio zip, take-home file), lazy on the first picture or portfolio click: 3.2 KB gz
   ['rest', /./, 1560],
 ];
 

@@ -1,9 +1,10 @@
-import { loadDomain, loadTickets } from '../content';
-import { MAX_CARDS, readDashboard } from '../dashboard';
-import { activeDomain, DOMAIN_ID, DOMAINS } from '../domains';
+import { loadDomain, loadInterview, loadTickets } from '../content';
+import { MAX_CARDS, ranHere, readDashboard } from '../dashboard';
+import { activeDomain, DOMAIN_ID, domainSchemaId, DOMAINS } from '../domains';
 import { knownSkills } from '../home';
 import { getLang, locale, t } from '../i18n';
 import { readAttempts, readErrors } from '../insights';
+import { INTERVIEW_KEY, parseInterviewPrefs, passedTakeHomes } from '../interviewPrefs';
 import { DAYS_KEY, parseDays } from '../lily';
 import { chaptersOf, rankOf, SKILLS } from '../progress';
 import { hashOf } from '../route';
@@ -13,6 +14,7 @@ import { readJson, writeJson } from '../storage';
 import { BTN_GO, BTN_SECONDARY, CARD, cx } from '../theme';
 import { textOf } from '../tickets';
 import { announce, h } from './dom';
+import { cardBody } from './dashboard';
 import { icon, skillIcon } from './icons';
 import { importedNames } from './myDataView';
 
@@ -30,6 +32,9 @@ export function meChunk(): Promise<MeView> {
       h, announce, icon, skillIcon, t, getLang, locale, app, persist, rerender: () => actions.rerender(), readJson, writeJson, readErrors, readAttempts,
       days: () => parseDays(readJson<unknown>(DAYS_KEY)), loadTickets, loadDomain, chaptersOf, rankOf, SKILLS, knownSkills, textOf, DOMAINS, DOMAIN_ID,
       activeDomain, domainSlot, readDashboard, MAX_CARDS, hashOf, importedNames, cls: { CARD, BTN_GO, BTN_SECONDARY, cx },
+      // V19-D (L170): portfolio card pictures (a card body as the dashboard draws it) and take-homes
+      run: (sql, dom) => app.run(sql, { schema: domainSchemaId(dom) }), cardBody, ranHere: (c) => ranHere(c),
+      loadInterview, interviewPrefs: () => parseInterviewPrefs(readJson<unknown>(INTERVIEW_KEY)), passedTakeHomes,
     });
     return (meView = m);
   }, (e: unknown) => {
