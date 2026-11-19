@@ -801,3 +801,10 @@ Cách đo: `npm run build`, `vite preview --port 5217 --strictPort`, Edge headle
 - Top bar: 53 px một hàng ở 1024–1600, EN tối, Tổng quan Logistics/Finance + workspace E-com (L171). ⋯ ở workspace 700 px có VI/EN + theme; 600/900 px và trang khác không đổi.
 - Ngân sách (gzip -9): main 321 927 B (314,4 KB; roadmap đo 315), `me` 11 346 B (11,1/12), `portfolioPng` 3 314 B (mới, đang tính vào `rest`; đề xuất nhóm 6 KB cho V19-C). `dist/sw.js` có chunk mới trong `FILES`.
 - Chưa làm: F11 (chờ V10-B). Chờ merge: FIX-1 đổi `importedNames` thành Promise và sửa cùng các hàm ở `meView.ts` (code mới đã `await`, sẽ có xung đột nhỏ khi merge).
+
+## V20-B (bộ dữ liệu công khai), 2026-11-19, L176
+
+- Cổng giấy phép: Palmer penguins, CC0 1.0, đọc trên nguồn gốc (README, `LICENSE.md`, `DESCRIPTION` ở commit `8957207b`); ghi ở `assets/THIRD_PARTY.md` với sha256 file gốc và file đã sửa (`NA` → ô rỗng). Không bộ nào bị bỏ.
+- Ngân sách (gzip -9): main 328 720 → 328 928 B (+0,2 KB; trần luồng +0,5). Chunk lười mới `datasetPanel` 3,65 KB gz (đang vào `rest`). File `public/datasets/penguins.csv` 15 203 B. **Gửi chủ `check-budget.mjs` (V20-C):** nhóm `dataset` trần 5 MB cho `dist/datasets/*` (ngoài `dist/assets`, cần quét thêm thư mục) và, nếu muốn tách khỏi `rest`, nhóm `datasetPanel` `/^datasetPanel-/` trần 5 KB.
+- Kiểm Edge headless (preview riêng 5221, hồ sơ mới): Sandbox → "Nạp bộ này" → "đã nạp bảng penguins (344 dòng, 8 cột)", câu 2 đúng → "Đúng rồi!", câu 3 sai → "Cột 2 chưa khớp, cột 1 đúng."; mọi request cùng origin (`/datasets/penguins.csv`), 0 lỗi trang. Lưu ý: `dist/sw.js` precache cả `datasets/penguins.csv` (15 KB), nên file tải lúc cài SW; bộ lớn sau này cần loại khỏi precache (chủ file sw). `npm run smoke` (5219) OK 40 s.
+- Chờ V20-C: bước smoke "bộ dữ liệu mẫu (nạp → 1 câu đạt)" của tiêu chí thoát §3.5 thuộc `scripts/smoke.mjs` (file của V20-C); kịch bản trên là mẫu (`#datasets-title`, nút "Nạp bộ này", `#datasets-title ~ article ol textarea`).

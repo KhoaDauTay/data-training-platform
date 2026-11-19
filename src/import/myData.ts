@@ -121,6 +121,11 @@ export class MyData {
     return { ok: true, table: imported, persisted };
   }
 
+  /** V20-B: a sample dataset's guided questions are graded on the same DB (sandbox is on every request's search_path). */
+  query(sql: string): Promise<QueryResult> {
+    return this.db.run(sql);
+  }
+
   /** Store first: the delete must survive a reload even if the worker is restarting right now. */
   async remove(table: string): Promise<void> {
     await this.settled();
