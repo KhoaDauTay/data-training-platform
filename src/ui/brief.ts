@@ -41,13 +41,13 @@ export function shapeCard(tk: Ticket, stepIndex: number): HTMLElement {
     const n = exp?.kinds.length ?? labels.length;
     const run = app.lastRun?.key === stepKey(tk.id, stepIndex) ? app.lastRun.result : undefined;
     const cmp = exp && run ? compareShape(exp, shapeOf(run)) : undefined;
-    card.replaceChildren(partHead('table', t('shape.title')), h('div', { class: 'rounded-xl bg-panel px-4 py-3 ring-1 ring-line' }, ...nodes(
+    card.replaceChildren(partHead('table', t('shape.title')), h('div', { class: 'rounded-(--r-ctl) bg-panel px-4 py-3 ring-1 ring-line' }, ...nodes(
       h('p', { class: 'mt-0 mb-2 font-semibold' }, [t('shape.cols', { n }), exp ? t('shape.rows', { n: exp.rows }) : '…', exp?.rows === 1 ? null : t(tk.ordered ? 'shape.ordered' : 'shape.unordered')].filter(Boolean).join(' · ')), // one row has no order (v10 C4)
       h('ol', { class: 'my-2 flex list-none flex-wrap gap-2 p-0' }, ...Array.from({ length: n }, (_, i) =>
-        h('li', { class: 'flex items-center gap-1.5 rounded-lg bg-code px-2 py-1 text-sm' }, // The label already says what the column holds; the kind (text/number/date) only stands in when there is no label.
-        h('span', { class: 'text-xs text-muted tabular-nums', 'aria-hidden': 'true' }, String(i + 1)),
+        h('li', { class: 'flex items-center gap-1.5 rounded-(--r-inset) bg-code px-2 py-1 text-body-sm' }, // The label already says what the column holds; the kind (text/number/date) only stands in when there is no label.
+        h('span', { class: 'text-caption text-muted tabular-nums', 'aria-hidden': 'true' }, String(i + 1)),
         labels[i] ? h('b', { class: 'font-semibold' }, labels[i][getLang()]) : exp ? t(KIND[exp.kinds[i]]) : null))),
-      h('p', { class: 'mt-2 mb-0 text-sm text-muted' }, t('shape.byPosition')),
+      h('p', { class: 'mt-2 mb-0 text-body-sm text-muted' }, t('shape.byPosition')),
       cmp && run
         ? h('p', { class: cmp.columns && cmp.kinds && cmp.rows ? 'good' : 'warn' },
           t('shape.yours', { cols: run.columns.length, colsOk: mark(cmp.columns && cmp.kinds), rows: run.rows.length, rowsOk: mark(cmp.rows) }))
@@ -61,10 +61,10 @@ export function shapeCard(tk: Ticket, stepIndex: number): HTMLElement {
 
 /** Index lab step (chapter 11): the slow query (the step's Solution) the player's CREATE INDEX must speed up. Replaces the shape card. */
 function labCard(sql: string): HTMLElement {
-  return h('section', { class: 'my-3 rounded-xl bg-panel p-3 ring-1 ring-line', 'aria-label': t('lab.title') },
+  return h('section', { class: 'my-3 rounded-(--r-ctl) bg-panel p-3 ring-1 ring-line', 'aria-label': t('lab.title') },
     h('h3', { class: 'mt-0' }, t('lab.title')),
     h('pre', { class: 'sql' }, sql),
-    h('p', { class: 'mt-1 mb-0 text-sm text-muted' }, t('lab.howto')));
+    h('p', { class: 'mt-1 mb-0 text-body-sm text-muted' }, t('lab.howto')));
 }
 
 /** v13 §3.1: steps waiting on "Replace with the scaffold?" / whose scaffold chunk failed to load (stepKey). Session only. */
@@ -79,7 +79,7 @@ const frameFailed = new Set<string>();
 function fillBox(tk: Ticket, i: number, shown: number): HTMLElement | null {
   const faded = tk.format === 'faded';
   if (shown < (faded ? 1 : Math.min(2, tk.hints.length))) return null;
-  if (tk.steps[i].lab) return h('p', { class: 'mt-2 mb-0 text-sm' }, t('frame.lab'));
+  if (tk.steps[i].lab) return h('p', { class: 'mt-2 mb-0 text-body-sm' }, t('frame.lab'));
   if (faded && !tk.starter) return null;
   const k = stepKey(tk.id, i);
   const box = h('div', { class: 'mt-2' });
@@ -121,9 +121,9 @@ function fillBox(tk: Ticket, i: number, shown: number): HTMLElement | null {
             h('button', { type: 'button', onclick: () => { asking.delete(k); draw('fill'); } }, t('frame.keep'))))
         : h('div', { class: 'flex flex-wrap items-center gap-2' },
           h('button', { type: 'button', 'data-f': 'fill', onclick: () => void fill(false) }, t(faded ? 'frame.reset' : 'frame.fill')),
-          price === undefined ? null : h('span', { class: 'text-sm' }, typeof price === 'object' ? t('frame.cost', { i: price.hint, cost: price.xp })
+          price === undefined ? null : h('span', { class: 'text-body-sm' }, typeof price === 'object' ? t('frame.cost', { i: price.hint, cost: price.xp })
             : price === 'free' ? t('frame.free') : t(DRILL_ID.test(tk.id) ? 'frame.weakPass' : 'frame.weakRun'))),
-      frameFailed.has(k) ? h('p', { role: 'status', class: 'mt-1 mb-0 text-sm' }, t('frame.failed')) : null));
+      frameFailed.has(k) ? h('p', { role: 'status', class: 'mt-1 mb-0 text-body-sm' }, t('frame.failed')) : null));
     if (focus) box.querySelector<HTMLElement>(`[data-f="${focus}"]`)?.focus();
   };
   draw();
@@ -156,10 +156,10 @@ export function hints(tk: Ticket, x: TicketText, isDone: boolean, stepIndex = 0)
   const tourHere = region === 'brief' || region === 'lesson'; // one Boon per pane: the tour's or a guide's mark is here
   const last = Math.min(shown, x.hints.length);
   return h('section', { class: 'hints my-3' },
-    last > 1 ? h('ol', { class: 'mt-0 mb-2 space-y-1 text-sm text-muted' }, ...x.hints.slice(0, last - 1).map((s) => h('li', {}, richText(s)))) : null,
+    last > 1 ? h('ol', { class: 'mt-0 mb-2 space-y-1 text-body-sm text-muted' }, ...x.hints.slice(0, last - 1).map((s) => h('li', {}, richText(s)))) : null,
     last ? h('div', { class: 'flex items-start gap-3' }, tourHere ? null : mascot('boon', 'point', 'size-12 shrink-0'),
-      h('div', { 'data-bubble': '', class: 'min-w-0 flex-1 rounded-2xl rounded-tl-sm bg-sun px-4 py-2 text-sun-ink [&_p]:my-1' },
-        h('p', { class: 'text-sm font-semibold' }, t('brief.hintFree', { i: last, n: x.hints.length })),
+      h('div', { 'data-bubble': '', class: 'min-w-0 flex-1 rounded-(--r-card) rounded-tl-sm bg-sun px-4 py-2 text-sun-ink [&_p]:my-1' },
+        h('p', { class: 'text-body-sm font-semibold' }, t('brief.hintFree', { i: last, n: x.hints.length })),
         richText(x.hints[last - 1]),
         isDone ? null : fillBox(tk, stepIndex, last))) : null,
     isDone || shown >= x.hints.length ? null : btn);
@@ -168,7 +168,7 @@ export function hints(tk: Ticket, x: TicketText, isDone: boolean, stepIndex = 0)
 function conclusion(tk: Ticket, x: TicketText): HTMLElement {
   const c = x.conclusion!;
   const msg = h('p', { role: 'status', class: 'bad' });
-  const form = h('form', { id: 'conclusion-form', class: 'my-3 scroll-mt-4 rounded-xl p-3 ring-2 ring-accent' },
+  const form = h('form', { id: 'conclusion-form', class: 'my-3 scroll-mt-4 rounded-(--r-ctl) p-3 ring-2 ring-accent' },
     h('h3', { class: 'mt-0' }, t('brief.conclusion')),
     h('fieldset', { class: 'mb-4' },
       h('legend', { class: 'mb-2' }, c.question),
@@ -191,8 +191,8 @@ function conclusion(tk: Ticket, x: TicketText): HTMLElement {
 function exampleCard(tk: Ticket, x: TicketText): HTMLElement | null {
   if (!tk.example || !x.example) return null;
   const sql = tk.example.sql;
-  const status = h('p', { role: 'status', class: 'mb-0 text-sm text-muted' });
-  return h('section', { class: 'my-3 rounded-xl bg-panel p-3 ring-1 ring-line', 'aria-labelledby': 'example-title' },
+  const status = h('p', { role: 'status', class: 'mb-0 text-body-sm text-muted' });
+  return h('section', { class: 'my-3 rounded-(--r-ctl) bg-panel p-3 ring-1 ring-line', 'aria-labelledby': 'example-title' },
     h('h3', { id: 'example-title', class: 'mt-0' }, t('brief.example')),
     h('pre', { class: 'sql' }, sql),
     richText(x.example),
@@ -226,7 +226,7 @@ function reflectCard(tk: Ticket): HTMLElement | null {
     const pick = reflected.get(tk.id);
     buttons.forEach((b, i) => {
       const right = pick !== undefined && i === r.answer;
-      b.className = cx('text-left', right && 'ring-2 ring-emerald-500');
+      b.className = cx('text-left', right && 'ring-2 ring-good');
       b.setAttribute('aria-pressed', pick === i ? 'true' : 'false');
       b.replaceChildren(...nodes(
         right ? `${mark(true)} ` : pick === i ? `${mark(false)} ` : null,
@@ -237,7 +237,7 @@ function reflectCard(tk: Ticket): HTMLElement | null {
     status.textContent = pick === undefined ? '' : `${t(pick === r.answer ? 'recap.reflectRight' : 'recap.reflectWrong')} ${r.why[lang]}`;
   };
   draw();
-  return h('section', { class: 'my-3 rounded-xl bg-panel p-3 ring-1 ring-line', 'aria-labelledby': 'reflect-title' },
+  return h('section', { class: 'my-3 rounded-(--r-ctl) bg-panel p-3 ring-1 ring-line', 'aria-labelledby': 'reflect-title' },
     h('h4', { id: 'reflect-title', class: 'mt-0' }, t('recap.reflect')),
     h('p', {}, r.q[lang]),
     h('div', { class: 'flex flex-col items-start gap-1.5' }, ...optionOrder(`${tk.id}#r`, buttons.length).map((i) => buttons[i])),
@@ -248,7 +248,7 @@ function reflectCard(tk: Ticket): HTMLElement | null {
 function story(tk: Ticket): HTMLElement | null {
   const c = chaptersOf().find((x) => x.chapter === tk.chapter);
   if (!c?.story.vi || app.tickets.find((x) => x.chapter === tk.chapter) !== tk) return null;
-  return h('section', { class: 'my-3 overflow-hidden rounded-xl bg-panel ring-1 ring-line' },
+  return h('section', { class: 'my-3 overflow-hidden rounded-(--r-ctl) bg-panel ring-1 ring-line' },
     h('div', { class: cx('h-1.5', chapterColor(tk.chapter).bar) }),
     h('div', { class: 'p-3' },
       h('h3', { class: 'mt-0' }, t(domainText()?.story ?? 'brief.story')),
@@ -258,10 +258,10 @@ function story(tk: Ticket): HTMLElement | null {
 /** After a correct answer: your reply, then the sender's thank-you (L18 ★1). */
 function sentBubbles(tk: Ticket): HTMLElement {
   return h('div', { class: 'my-3 flex flex-col gap-2' },
-    h('p', { class: 'm-0 max-w-[85%] self-end rounded-2xl rounded-tr-sm bg-accent-soft px-4 py-2' }, t('chat.sent')),
+    h('p', { class: 'm-0 max-w-[85%] self-end rounded-(--r-card) rounded-tr-sm bg-accent-soft px-4 py-2' }, t('chat.sent')),
     h('p', { class: 'm-0 flex max-w-[85%] items-start gap-2 self-start' },
       avatar(tk.from),
-      h('span', { class: 'rounded-2xl rounded-tl-sm bg-code px-4 py-2' }, t(thanksKey(tk.from.dept, tk.id)))));
+      h('span', { class: 'rounded-(--r-card) rounded-tl-sm bg-code px-4 py-2' }, t(thanksKey(tk.from.dept, tk.id)))));
 }
 
 /** The SQL that passed the grader; saves from before `graded` existed fall back to the draft. */
@@ -274,19 +274,19 @@ function recap(tk: Ticket, x: TicketText): HTMLElement {
   const skills = SKILLS.filter((s) => ids.includes(s.id));
   const next = nextTicket(app.tickets, done());
   const hintsUsed = app.save.hintsUsed[tk.id] ?? 0;
-  return h('section', { class: 'recap my-3 rounded-xl bg-emerald-50 p-4 ring-1 ring-emerald-300 dark:bg-emerald-950/40 dark:ring-emerald-800' },
-    h('h3', { tabindex: '-1', class: 'mt-0 text-emerald-900 dark:text-emerald-200' }, t('recap.title')),
+  return h('section', { class: 'recap my-3 rounded-(--r-ctl) bg-good-soft p-4 ring-1 ring-good/40' },
+    h('h3', { tabindex: '-1', class: 'mt-0 text-good' }, t('recap.title')),
     h('p', {}, tk.lane ? t('lane.xp', { n: LANE_XP }) : t('recap.xp', { n: xpFor(tk, hintsUsed), hints: hintsUsed })),
     h('h4', {}, t(tk.grants.length ? 'recap.learned' : 'recap.review')),
     h('ul', { class: 'space-y-1' }, ...skills.map((s) =>
       h('li', {},
-        h('span', { class: 'inline-flex items-center gap-1.5 align-middle' }, skillIcon(s.id, 'size-5 text-emerald-800 dark:text-emerald-300'), h('b', {}, s.label[lang])),
+        h('span', { class: 'inline-flex items-center gap-1.5 align-middle' }, skillIcon(s.id, 'size-5 text-good'), h('b', {}, s.label[lang])),
         ...(activeDomain() === 'logistics' ? [' ', h('code', {}, s.syntax)] : []), h('p', { class: 'muted' }, s.when[lang])))),
     reflectCard(tk),
     ...tk.steps.map((s, i) => h('div', { class: 'my-2 grid gap-2 sm:grid-cols-2' },
       tk.steps.length > 1 ? h('h4', {}, x.steps[i].title) : null,
-      h('figure', {}, h('figcaption', { class: 'mb-1 text-sm text-muted' }, t('recap.yours')), h('pre', { class: 'sql' }, gradedSql(tk, i))),
-      h('figure', {}, h('figcaption', { class: 'mb-1 text-sm text-muted' }, t('recap.reference')), h('pre', { class: 'sql' }, s.lab?.ddl ?? s.solution)))), // lab step: the reference index, not the slow query
+      h('figure', {}, h('figcaption', { class: 'mb-1 text-body-sm text-muted' }, t('recap.yours')), h('pre', { class: 'sql' }, gradedSql(tk, i))),
+      h('figure', {}, h('figcaption', { class: 'mb-1 text-body-sm text-muted' }, t('recap.reference')), h('pre', { class: 'sql' }, s.lab?.ddl ?? s.solution)))), // lab step: the reference index, not the slow query
     // One way on (v10 critic #3): the task bar's continue button for a story task, the wrap-up for a promotion review.
     tk.lane && next ? h('button', { type: 'button', class: 'primary', onclick: () => actions.selectTicket(next.id) }, t('nav.continueBack'))
       : next ? null : h('p', {}, t('recap.allDone')));
@@ -300,9 +300,9 @@ function relatedLine(tk: Ticket): HTMLElement | null {
   const open = unlockedTables();
   const core = tk.tables.filter((x) => open.includes(x));
   if (core.length === 0) return null;
-  const line = h('p', { class: 'my-3 flex flex-wrap items-center gap-1.5 text-sm' });
+  const line = h('p', { class: 'my-3 flex flex-wrap items-center gap-1.5 text-body-sm' });
   const fill = (tables: string[]) => line.replaceChildren(h('span', { class: 'text-muted' }, t('brief.related')), ...[...tables].sort().map((x) =>
-    h('button', { type: 'button', class: 'min-h-6 px-1.5 py-0 font-mono text-sm', onclick: () => actions.showTab('erd') }, x)));
+    h('button', { type: 'button', class: 'min-h-6 px-1.5 py-0 font-mono text-body-sm', onclick: () => actions.showTab('erd') }, x)));
   fill(core);
   erMeta(domainSchemaName()).then((m) => fill(relatedTables(tk.tables, open, m.cons, 10, showsParents(tk)).tables), () => {}); // DB not ready or failed: the task's own tables stay
   return line;
@@ -338,8 +338,8 @@ export function renderBrief(host: HTMLElement, tk: Ticket, stepIndex: number): v
         h('p', { class: 'm-0 min-w-0' },
           h('span', { class: 'flex flex-wrap items-center gap-2 font-semibold' },
             tk.from.name, h('span', { class: cx(DEPT_CHIP, deptColor(tk.from.dept)) }, tk.from.dept)),
-          h('span', { class: 'block text-sm text-muted' }, roleLine(tk.from.name, getLang(), unlockedTables())))),
-      h('p', { class: 'm-0 flex flex-wrap items-center gap-2 text-sm text-muted' },
+          h('span', { class: 'block text-body-sm text-muted' }, roleLine(tk.from.name, getLang(), unlockedTables())))),
+      h('p', { class: 'm-0 flex flex-wrap items-center gap-2 text-body-sm text-muted' },
         tk.lane ? t('lane.optional', { xp: LANE_XP }) : `${t('brief.chapter', { n: tk.chapter })} · ${'★'.repeat(tk.difficulty)}`,
         tk.lane || isStory() ? h('span', { class: cx(PILL, chapterColor(tk.chapter).chip) }, // Practice has its own banner: no "New skill" badge (v10 UX #6)
           tk.lane ? t('lane.badge', { name: ROUTES.find((r) => r.port === tk.lane)?.name ?? tk.lane }) : t(BEAT[tk.beat])) : null,
@@ -347,18 +347,18 @@ export function renderBrief(host: HTMLElement, tk: Ticket, stepIndex: number): v
       h('h2', { id: 'brief-title', tabindex: '-1', class: 'm-0 text-lg font-bold' }, x.title),
       x.fallback ? h('p', { class: 'tag' }, t('brief.untranslated')) : null),
     // v10 critic #1: the message, then the Task and the Expected result card, visible without scrolling; the rest below.
-    h('div', { class: 'mt-3 rounded-2xl rounded-tl-sm bg-code px-4 py-1 leading-relaxed [&_p]:my-2' }, richText(x.body)),
+    h('div', { class: 'mt-3 rounded-(--r-card) rounded-tl-sm bg-code px-4 py-1 leading-relaxed [&_p]:my-2' }, richText(x.body)),
     x.task ? h('section', { class: 'mt-5 mb-3', 'aria-label': t('brief.task') }, partHead('list', t('brief.task')),
-      h('div', { class: 'rounded-xl border-l-4 border-accent bg-accent-soft px-4 py-3 leading-relaxed [&_p]:my-1' }, richText(x.task))) : null,
+      h('div', { class: 'rounded-(--r-ctl) border-l-4 border-accent bg-accent-soft px-4 py-3 leading-relaxed [&_p]:my-1' }, richText(x.task))) : null,
     isStory() ? tourSlot('brief') : null, // tour step 1 right under the Task: both fit the 1267x740 pane (~350 px) together
     boss
-      ? h('section', { id: 'brief-step', class: 'my-3 scroll-mt-4 rounded-lg p-3 ring-1 ring-line' },
+      ? h('section', { id: 'brief-step', class: 'my-3 scroll-mt-4 rounded-(--r-inset) p-3 ring-1 ring-line' },
         h('h3', { class: 'mt-0' }, t('brief.step', { i: stepIndex + 1, n: tk.steps.length, title: x.steps[stepIndex].title })),
         richText(x.steps[stepIndex].prompt))
       : null,
     isDone ? null : tk.steps[stepIndex].lab ? labCard(tk.steps[stepIndex].solution) : shapeCard(tk, stepIndex),
     relatedLine(tk),
-    tk.adv ? h('p', { class: 'my-3 text-sm' }, advLine(tk.adv)) : null,
+    tk.adv ? h('p', { class: 'my-3 text-body-sm' }, advLine(tk.adv)) : null,
     h('div', { 'data-brief-extra': '' }), // modes.ts puts skill chips, chapter goals and the lane note here
     exampleCard(tk, x),
     isStory() && !isDone ? lessonSlot(tk.grants) : null, // seen lessons (or "I know SQL") are one line each

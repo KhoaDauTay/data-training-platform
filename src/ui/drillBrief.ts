@@ -140,22 +140,22 @@ function drillParts(g: General, d: Drill, tk: Ticket): (Node | null | false | un
   const what = nameOf(g, d);
   const title = d.kind === 'challenge' ? lt('drill.challenge', { what }) : lt('drill.title', { what, i: group.findIndex((x) => x.id === d.id) + 1, n: group.length });
   const node = d.node ? g.nodes.find((n) => n.id === d.node) : undefined;
-  const lessonBtn = (open: () => void) => h('button', { type: 'button', class: 'px-2 py-0.5 text-sm', onclick: open }, lt('drill.openLesson'));
+  const lessonBtn = (open: () => void) => h('button', { type: 'button', class: 'px-2 py-0.5 text-body-sm', onclick: open }, lt('drill.openLesson'));
   const lesson = d.skill
     ? d$.loadLessons().has(d.skill) && lessonBtn(() => d$.openLesson(d.skill!, undefined, { guide: true }))
     : node?.lesson && lessonBtn(() => d$.openLesson(node.id, { lesson: node.lesson!, name: () => node.title[d$.getLang()] }, { guide: true }));
   return [
     h('header', {},
       h('h2', TITLE, title),
-      h('p', { class: 'mt-1 mb-0 flex flex-wrap items-center gap-2 text-sm text-muted' }, lt(`drill.kind.${d.kind}` as LearnKey),
+      h('p', { class: 'mt-1 mb-0 flex flex-wrap items-center gap-2 text-body-sm text-muted' }, lt(`drill.kind.${d.kind}` as LearnKey),
         replayBtn(d$.session.mode.kind === 'drill' ? 'drill' : 'review'))),
     h('div', { class: 'mt-3 text-[15px] leading-relaxed' }, richText(d.task[lang])),
     d$.guideSlot('drill-brief'), // v13 G5/G7: under the task
-    h('p', { class: 'text-sm text-muted' }, lt('drill.data')),
+    h('p', { class: 'text-body-sm text-muted' }, lt('drill.data')),
     d$.shapeCard(tk, 0),
     d$.tryPreview(tk.steps[0].solution, 'lab'), // L84: the tables it reads and a sample of the expected result (practice, not story)
     d$.hints(tk, d$.textOf(tk, lang), false),
-    lesson ? h('p', { class: 'my-2 flex flex-wrap items-center gap-2 text-sm' }, h('span', {}, lt('drill.lesson', { name: what })), lesson) : null,
+    lesson ? h('p', { class: 'my-2 flex flex-wrap items-center gap-2 text-body-sm' }, h('span', {}, lt('drill.lesson', { name: what })), lesson) : null,
   ];
 }
 
@@ -170,9 +170,9 @@ function recap(g: General, d: Drill, tk: Ticket): HTMLElement {
   const nextSkill = skillAt < 0 ? undefined : d$.SKILLS.slice(skillAt + 1).find((s) => (g.bySkill.get(s.id) ?? []).some((x) => !app.save.completed.includes(x.id)));
   const nextSkillDrill = nextSkill && g.bySkill.get(nextSkill.id)!.find((x) => !app.save.completed.includes(x.id))!;
   const sql = app.save.graded[d$.stepKey(tk.id, 0)];
-  return h('section', { class: 'recap my-3 rounded-xl bg-panel p-3 ring-1 ring-accent', 'aria-labelledby': 'drill-recap' },
+  return h('section', { class: 'recap my-3 rounded-(--r-ctl) bg-panel p-3 ring-1 ring-accent', 'aria-labelledby': 'drill-recap' },
     h('h3', { id: 'drill-recap', tabindex: '-1', class: 'mt-0' }, xp === undefined ? lt('drill.done') : xp > 0 ? lt('drill.passed', { xp }) : lt('drill.passedAgain')),
-    sql ? h('div', {}, h('p', { class: 'mb-1 text-sm text-muted' }, lt('drill.recap')), h('pre', { class: 'sql' }, sql)) : null,
+    sql ? h('div', {}, h('p', { class: 'mb-1 text-body-sm text-muted' }, lt('drill.recap')), h('pre', { class: 'sql' }, sql)) : null,
     h('div', { class: 'actions mb-0' },
       next
         ? h('button', { type: 'button', class: 'primary', onclick: () => d$.startDrillMode(drillTicket(next), next) }, lt('drill.next'))

@@ -529,7 +529,7 @@ export function routeMap(h: Harbor): MapParts {
     s('rect', { x: 2, y: -9, width: 5, height: 7, fill: '#f8fafc', stroke: '#1e3a8a', 'stroke-width': 0.8 })));
   const [hx, hy] = xy(HUB);
   // L23/L34: labels hide below lg (the page and the dialog list routeItems() as HTML there); from lg the map is the card's full width
-  const svg = s('svg', { viewBox: `0 0 ${COAST.w} ${COAST.h}`, 'data-map': 'routes', class: 'block w-full rounded-xl max-lg:[&_text]:hidden', role: 'img' },
+  const svg = s('svg', { viewBox: `0 0 ${COAST.w} ${COAST.h}`, 'data-map': 'routes', class: 'block w-full rounded-(--r-ctl) max-lg:[&_text]:hidden', role: 'img' },
     s('defs', {},
       s('linearGradient', { id: `${id}-sea`, x1: 0, y1: 0, x2: 0, y2: 1 },
         s('stop', { offset: 0, style: 'stop-color:var(--map-sea-1)' }), s('stop', { offset: 1, style: 'stop-color:var(--map-sea-2)' }))),
@@ -734,8 +734,8 @@ function mapSail(c: Ctx, g: Gsap, tl: Timeline, port: string, at: number, dur: n
 }
 
 // ---- cards over the art ----
-const CARD_OV = 'w-64 max-w-[calc(100vw-4rem)] rounded-xl bg-panel p-3 text-sm shadow-lg ring-1 ring-line';
-const STAMP = 'absolute rounded-md border-[3px] px-2 py-0.5 text-[15px] font-extrabold tracking-wide uppercase';
+const CARD_OV = 'w-64 max-w-[calc(100vw-4rem)] rounded-(--r-ctl) bg-panel p-3 text-body-sm shadow-lg ring-1 ring-line';
+const STAMP = 'absolute rounded-(--r-inset) border-[3px] px-2 py-0.5 text-[15px] font-extrabold tracking-wide uppercase';
 /** Lane colour is never the only signal: the stamp spells the lane out (§6). */
 const LANE: Record<Lane, { key: Key; stamp: string }> = {
   green: { key: 'anim.laneGreen', stamp: 'border-emerald-700 bg-emerald-50 text-emerald-800 dark:border-emerald-400 dark:bg-emerald-950 dark:text-emerald-200' },
@@ -787,12 +787,12 @@ function promoCard(c: Ctx): HTMLElement {
   const to = c.rankAfter.tier?.[lang] ?? t('career.intern');
   const opened = openedNames(c);
   // Plan 8b D8b-6 (Plan 7 V18): Boon cheers beside the promotion card; Lily cheers in the dock (ui/stage.ts)
-  return h('div', { class: 'flex w-80 max-w-[calc(100vw-4rem)] items-center gap-3 rounded-2xl bg-panel p-4 shadow-xl ring-2 ring-amber-500' },
+  return h('div', { class: 'flex w-80 max-w-[calc(100vw-4rem)] items-center gap-3 rounded-(--r-card) bg-panel p-4 shadow-xl ring-2 ring-amber-500' },
     mascot('boon', 'cheer', 'size-14'),
     h('div', { class: 'min-w-0 flex-1 text-center' },
-      h('p', { class: 'm-0 text-sm font-semibold tracking-wide text-amber-800 uppercase dark:text-amber-200' }, t('anim.promoKicker', { n: c.tk.chapter })),
+      h('p', { class: 'm-0 text-body-sm font-semibold tracking-wide text-amber-800 uppercase dark:text-amber-200' }, t('anim.promoKicker', { n: c.tk.chapter })),
       h('p', { class: 'm-0 text-lg font-bold' }, from !== to ? `${from} → ${to}` : t('anim.promoStep', { career: c.rankAfter.career?.[lang] ?? to })),
-      opened.length ? h('p', { class: 'm-0 text-sm text-muted' }, t('anim.promoRoute', { port: opened.join(', ') })) : null));
+      opened.length ? h('p', { class: 'm-0 text-body-sm text-muted' }, t('anim.promoRoute', { port: opened.join(', ') })) : null));
 }
 
 // ---- promotion: schedule and confetti (v6 A2) ----
@@ -993,7 +993,7 @@ const SCENES: Record<Scene['kind'], Kind> = {
       h('p', { class: 'm-0 pr-20 font-bold' }, titleOf(c)),
       paid.el,
       ...coins,
-      h('p', { class: 'mt-10 mb-0 rounded-lg bg-ink px-3 py-1.5 text-panel' }, t('anim.ledgerBook'))));
+      h('p', { class: 'mt-10 mb-0 rounded-(--r-inset) bg-ink px-3 py-1.5 text-panel' }, t('anim.ledgerBook'))));
     return scene(c, g, () => { shown(card, ...coins); stampEnd(paid); }, (tl) => {
       const T = marks(STEPS.ledger);
       const each = 0.45;
@@ -1008,8 +1008,8 @@ const SCENES: Record<Scene['kind'], Kind> = {
   // show, typing (three dots bounce out of phase), bubble, wait
   chat: (c, g) => {
     const dots = [0, 1, 2].map(() => h('span', { class: 'size-1.5 rounded-full bg-muted' }));
-    const typing = h('span', { class: 'inline-flex gap-1 rounded-2xl rounded-tl-sm bg-code px-3 py-2' }, ...dots);
-    const bubble = h('p', { class: 'm-0 rounded-2xl rounded-tl-sm bg-code px-3 py-2', hidden: true }, t('anim.thanks'));
+    const typing = h('span', { class: 'inline-flex gap-1 rounded-(--r-card) rounded-tl-sm bg-code px-3 py-2' }, ...dots);
+    const bubble = h('p', { class: 'm-0 rounded-(--r-card) rounded-tl-sm bg-code px-3 py-2', hidden: true }, t('anim.thanks'));
     const happy = h('span', { class: cx(PILL, DONE_PILL) }, t('anim.happy'));
     happy.style.opacity = '0';
     const card = overlay(c, h('div', { class: cx(CARD_OV, 'space-y-2') },

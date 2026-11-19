@@ -37,7 +37,7 @@ export function renderFlow(host: HTMLElement, plan: Plan): void {
     const y2 = y.get(p.id)! + BOX_H / 2;
     const d = `M${x1},${y1} C${(x1 + x2) / 2},${y1} ${(x1 + x2) / 2},${y2} ${x2},${y2}`;
     const w = 1.5 + (8 * Math.log10(n.rows + 1)) / Math.log10(maxRows + 1);
-    root.append(s('path', { d, class: 'fill-none stroke-sky-300 dark:stroke-sky-800', 'stroke-width': w.toFixed(1) }));
+    root.append(s('path', { d, class: 'fill-none stroke-accent/30', 'stroke-width': w.toFixed(1) }));
     if (animate && n.rows > 0) {
       root.append(s('circle', { r: 4, class: 'fill-accent' },
         s('animateMotion', { dur: '1.6s', repeatCount: 'indefinite', path: d, begin: `${(n.id % 4) * 0.4}s` })));
@@ -49,8 +49,8 @@ export function renderFlow(host: HTMLElement, plan: Plan): void {
     root.append(s('g', { transform: `translate(${x(n)},${y.get(n.id)})` },
       s('title', {}, `${n.label}: ${rows}`),
       s('rect', { width: BOX_W, height: BOX_H, rx: 6, class: 'fill-panel stroke-line' }),
-      s('text', { x: 8, y: 16, class: 'fill-ink text-xs font-semibold' }, label),
-      s('text', { x: 8, y: 32, class: 'fill-ink text-xs tabular-nums' }, rows)));
+      s('text', { x: 8, y: 16, class: 'fill-ink text-caption font-semibold' }, label),
+      s('text', { x: 8, y: 32, class: 'fill-ink text-caption tabular-nums' }, rows)));
   }
   host.append(
     h('p', { class: 'muted' }, t('flow.intro')),

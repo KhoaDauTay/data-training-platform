@@ -123,7 +123,7 @@ function markOf(a: NonNullable<typeof active>, key: string): HTMLElement {
       s.action ? h('button', { type: 'button', class: 'primary', onclick: () => { finish(guide.id); s.action!.run(); } }, s.action.label()) : null,
       h('button', { type: 'button', class: s.action ? '' : 'primary', onclick: () => next() }, lt(last ? 'guide.done' : 'guide.next')),
       h('button', { type: 'button', onclick: () => finish(guide.id) }, lt('guide.skip')),
-      h('button', { type: 'button', class: 'min-h-6 border-0 bg-transparent px-1 text-sm text-sun-ink underline shadow-none', onclick: () => finish(guide.id, true) }, lt('guide.off')),
+      h('button', { type: 'button', class: 'min-h-6 border-0 bg-transparent px-1 text-body-sm text-sun-ink underline shadow-none', onclick: () => finish(guide.id, true) }, lt('guide.off')),
     ],
   });
 }

@@ -68,7 +68,7 @@ export function loadIllustrations(): Promise<IllustrationArt> {
 /** Like artSlot(): drawn at once when the chunk is in, else a same-aspect placeholder swapped in place (no layout shift). */
 export function illustration(aspect: string, draw: (il: IllustrationArt) => Element): Element {
   if (illReady) return draw(illReady);
-  const slot = h('div', { class: cx('block w-full rounded-2xl bg-accent-soft', aspect), 'aria-hidden': 'true' });
+  const slot = h('div', { class: cx('block w-full rounded-(--r-card) bg-accent-soft', aspect), 'aria-hidden': 'true' });
   loadIllustrations().then((m) => { if (slot.isConnected) slot.replaceWith(draw(m)); }, () => {});
   return slot;
 }

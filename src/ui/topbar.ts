@@ -44,7 +44,7 @@ registerNav({ id: 'dashboard', area: 'domain', order: 60, label: 'nav.dashboard'
 registerNav({ id: 'map', area: 'domain', order: 70, label: 'nav.map', icon: NAV_ICON.map, get href() { return hashOf('map'); }, current: (r) => r === 'map' });
 
 /** Mobile bottom bar (v6 §3.2): 56 px targets; the current one is --accent on --panel (5.5:1) and keeps its label. */
-const BOTTOM_LINK = 'flex min-h-14 flex-col items-center justify-center gap-0.5 text-xs font-bold text-muted no-underline aria-[current=page]:text-accent';
+const BOTTOM_LINK = 'flex min-h-14 flex-col items-center justify-center gap-0.5 text-caption font-bold text-muted no-underline aria-[current=page]:text-accent';
 const MENU_ITEM = 'flex w-full items-center gap-2 rounded-(--r-ctl) px-3 py-2 text-ink no-underline hover:bg-code';
 
 /**
@@ -95,14 +95,14 @@ function renderDomainMenu(): void {
   },
     icon(d.icon, 'size-4'),
     h('span', { class: 'flex-1 font-bold' }, t(d.name)),
-    h('span', { class: 'text-sm text-muted' }, domainLine(d.id))))));
+    h('span', { class: 'text-body-sm text-muted' }, domainLine(d.id))))));
 }
 
 /** Ready = a green dot (text for screen readers and on hover); loading and failure stay visible on the bar, never in the ⋯ menu. */
 function dbStatusView(): Node {
   if (app.dbStatus === 'ready') {
     return h('span', { class: 'flex items-center', title: t('db.ready') },
-      h('span', { class: 'size-2.5 rounded-full bg-emerald-600 ring-2 ring-emerald-600/25', 'aria-hidden': 'true' }),
+      h('span', { class: 'size-2.5 rounded-full bg-good ring-2 ring-good/25', 'aria-hidden': 'true' }),
       h('span', { class: 'sr-only' }, t('db.ready')));
   }
   if (app.dbStatus === 'failed') return h('button', { type: 'button', class: TOP_BTN, onclick: () => actions.retryDb() }, t('db.retry'));
@@ -114,8 +114,8 @@ function dbStatusView(): Node {
       : t('db.loadingMb', { loaded: mb(p.loaded) });
   // A dot and a short figure (full words on hover and for screen readers): an inline sentence wrapped the bar (v10 UX #4/#5).
   const short = downloaded ? '' : known ? `${Math.round((p.loaded / p.total!) * 100)}%` : `${mb(p.loaded)} MB`;
-  return h('span', { class: 'flex items-center gap-1.5 text-xs whitespace-nowrap text-muted', title: text },
-    h('span', { class: 'size-2.5 animate-pulse rounded-full bg-amber-500', 'aria-hidden': 'true' }),
+  return h('span', { class: 'flex items-center gap-1.5 text-caption whitespace-nowrap text-muted', title: text },
+    h('span', { class: 'size-2.5 animate-pulse rounded-full bg-warn', 'aria-hidden': 'true' }),
     short ? h('span', { 'aria-hidden': 'true' }, short) : null,
     h('span', { class: 'sr-only' }, text));
 }
@@ -228,7 +228,7 @@ function drawXp(): void {
   tick(t0);
   celebrate(pill);
   // aria-hidden: the feedback line already says "+N XP" (work.correctXp).
-  const chip = h('span', { 'aria-hidden': 'true', class: 'cq-rise absolute top-full right-0 mt-1 whitespace-nowrap rounded-full bg-sun px-1.5 text-xs font-bold text-sun-ink shadow-sm' }, `+${gain}`);
+  const chip = h('span', { 'aria-hidden': 'true', class: 'cq-rise absolute top-full right-0 mt-1 whitespace-nowrap rounded-full bg-sun px-1.5 text-caption font-bold text-sun-ink shadow-sm' }, `+${gain}`);
   chip.addEventListener('animationend', () => chip.remove(), { once: true });
   pill.append(chip);
 }

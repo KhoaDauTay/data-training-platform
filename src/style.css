@@ -28,7 +28,14 @@
   --code: #f4eee5; --sea: #e8f1f8; --land: #d9e2ea; --bar: #1f3b57; --disabled: #8a8a90;
   /* Boon's speech bubbles and the XP pill. */
   --sun: #ffe9bd; --sun-ink: #5c3d00;
-  --r-card: 20px; --r-ctl: 14px;
+  --r-card: 20px; --r-ctl: 14px; --r-chip: 999px; --r-inset: 10px;
+  /* ui-ux-v7 T1 (L136): surfaces (0 = --bg, 1 = --panel, 2 = inset: code frame, table head, card in card), shadows, semantic soft
+     backgrounds (text on them = --text/--muted or the matching --good/--bad/--warn), page widths, the one chart colour (C1, D-U2). */
+  --surface-2: #f6f0e7; --border-strong: #cfc2b2;
+  --shadow-1: 0 1px 2px rgb(42 35 32 / 0.06), 0 2px 8px rgb(42 35 32 / 0.06); --shadow-2: 0 12px 32px rgb(42 35 32 / 0.18);
+  --good-soft: #edf8f0; --bad-soft: #fdecea; --warn-soft: #fcf0dc; --info-soft: #e4f0f7;
+  --w-read: 880px; --w-wide: 1120px;
+  --chart-1: var(--accent); --chart-grid: var(--border);
   /* Mascot palette (v6 §1.2–1.3): SVG only, never text. */
   --lily-fur: #fdfbf7; --lily-cream: #ece6dc; --lily-ear: #2b2522; --lily-spot: #2b2522; --lily-line: #5a4f47; --lily-ink: #2b2522; --lily-scarf: #1f9e8f; --lily-badge: #ffd166; --lily-collar: #c8414f; --lily-harness: #b8641c;
   /* L134 P3: the accessory colours the player can pick (same in both themes: ≥ 3:1 on fur, --bg and --panel of each, tests/theme.test.ts). */
@@ -62,10 +69,15 @@
 }
 /* Set by src/theme.ts (and the inline script in index.html before first paint). */
 :root[data-theme=dark] {
-  --bg: #1a1714; --panel: #25201c; --text: #f3ece4; --muted: #b9ab9c; --border: #3e362f;
-  --accent: #5ed3c3; --accent-soft: #16332f; --on-accent: #0b2522; --good: #6bd58a; --bad: #ff8a7a; --warn: #ffc067;
-  --code: #2e2823; --sea: #14202b; --land: #2b3742; --bar: #0d1b29; --disabled: #7a7a82;
-  --sun: #4a3a17; --sun-ink: #ffe2a3;
+  /* ui-ux-v7 K1 (L136, user: "dark is hard to read"): body text >= 7:1 on every surface (>= 10 on bg/panel), muted >= 7:1,
+     controls' edge (--border-strong) >= 3:1 on --bg and --panel; checked in tests/theme.test.ts. */
+  --bg: #131110; --panel: #201c19; --text: #f8f3ed; --muted: #d0c5b9; --border: #4d443c;
+  --accent: #62dccb; --accent-soft: #163a35; --on-accent: #082320; --good: #74de93; --bad: #ff968a; --warn: #ffc874;
+  --code: #2b2622; --sea: #14202b; --land: #2b3742; --bar: #0d1b29; --disabled: #8f8f97;
+  --sun: #43350f; --sun-ink: #ffe6ad;
+  --surface-2: #2b2622; --border-strong: #7d7166;
+  --shadow-1: 0 0 0 1px var(--border-strong); --shadow-2: 0 0 0 1px var(--border-strong), 0 12px 32px rgb(0 0 0 / 0.5);
+  --good-soft: #163420; --bad-soft: #3d1f1b; --warn-soft: #3a2c10; --info-soft: #142c39;
   --lily-fur: #f3f0eb; --lily-cream: #dcd5ca; --lily-ear: #1f1a17; --lily-spot: #1f1a17; --lily-line: #8a7e75; --lily-ink: #1f1a17; --lily-scarf: #2bb3a3;
   --boon-body: #f2f2ef; --boon-plume: #d3d9dc; --boon-line: #858e95; --boon-wing: #3a8391; --boon-belly: #e1e6e7; --boon-bill: #e9ad3e; --boon-ink: #1d1916;
   --boon-shade: #b9c2c7; --boon-bill-dark: #b8741f;
@@ -79,9 +91,9 @@
   --es-road: #1c1d23; --es-wall: #c9a24f; --es-wall2: #9c7a35; --es-shed0: #6f7888; --es-shed1: #4f5766; --es-roof: #2f3542;
   --es-inside: #141720; --es-glass: #4a5a6e; --es-night: 1; --es-win: 0.85; --es-glow: 0.95;
   --fs-wall: #a89a80; --fs-wall2: #7d7260;
-  /* L13 syntax colours: >= 5.6:1 on --panel and --code */
-  --syn-keyword: #d19bff; --syn-string: #ff9e7a; --syn-number: #7ee0b5; --syn-comment: #9aa39a;
-  --syn-operator: #c8c8d0; --syn-type: #6cc0ff; --syn-property: #9cdcfe; --syn-atom: #ffcf6b;
+  /* L13 syntax colours; K1 (L136): >= 7:1 on --panel and --code */
+  --syn-keyword: #dcaeff; --syn-string: #ffab8a; --syn-number: #86e8bd; --syn-comment: #b3bab3;
+  --syn-operator: #d6d6dd; --syn-type: #86ccff; --syn-property: #a8e2ff; --syn-atom: #ffd57d;
   --cm-sel: #1e2f46; --cm-active: rgba(255, 255, 255, 0.04);
   color-scheme: dark;
 }
@@ -104,8 +116,23 @@
   --color-disabled: var(--disabled);
   --color-sun: var(--sun);
   --color-sun-ink: var(--sun-ink);
+  --color-surface-2: var(--surface-2);
+  --color-line-strong: var(--border-strong);
+  --color-good-soft: var(--good-soft);
+  --color-bad-soft: var(--bad-soft);
+  --color-warn-soft: var(--warn-soft);
+  --color-info-soft: var(--info-soft);
+  --color-chart: var(--chart-1);
+  --color-chart-grid: var(--chart-grid);
 }
 @theme {
+  /* ui-ux-v7 T1 (D-U1): six named type steps; use these, not text-xs…3xl. A step's weight is a default (font-bold etc. still wins). */
+  --text-caption: 0.75rem; --text-caption--line-height: 1rem;
+  --text-body-sm: 0.875rem; --text-body-sm--line-height: 1.25rem;
+  --text-body: 1rem; --text-body--line-height: 1.5rem;
+  --text-title: 1.125rem; --text-title--line-height: 1.625rem; --text-title--font-weight: 600;
+  --text-heading: 1.375rem; --text-heading--line-height: 1.75rem; --text-heading--font-weight: 700;
+  --text-display: 1.75rem; --text-display--line-height: 2.125rem; --text-display--font-weight: 800;
   --animate-pop: pop 450ms ease-out;
   @keyframes pop {
     0% { transform: scale(0.96); opacity: 0.5; }
@@ -128,6 +155,7 @@
   button, summary { min-height: 1.5rem; } /* v12.0 A4: WCAG 2.5.8 target size */
   button:hover { background: var(--code); }
   button:disabled { color: var(--disabled); border-style: dashed; cursor: default; }
+  :root[data-theme=dark] button { border-color: var(--border-strong); } /* K1: a control's edge >= 3:1 (WCAG 1.4.11); border utilities still win */
   code { background: var(--code); padding: 1px 4px; border-radius: 4px; font-family: ui-monospace, monospace; font-size: 0.92em; }
   table { border-collapse: collapse; font-size: 13px; width: 100%; }
   caption { text-align: left; color: var(--muted); padding: 4px 8px; }
@@ -158,6 +186,11 @@
   button.primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); font-weight: 700; border-radius: 999px; box-shadow: 0 3px 0 rgb(0 0 0 / 0.18); }
   button.primary:active:not(:disabled) { transform: translateY(2px); box-shadow: 0 1px 0 rgb(0 0 0 / 0.18); }
   button.primary:disabled { background: var(--code); border-color: var(--disabled); color: var(--disabled); }
+  /* ui-ux-v7 T1: one shortcut chip (kbd() in ui/dom.ts); touch screens have no keyboard to press it with (aria-keyshortcuts stays). */
+  .kbd { margin-left: 6px; padding: 0 5px; border-radius: 6px; background: var(--surface-2); color: var(--muted); font: 600 12px/16px 'Nunito Variable', system-ui, sans-serif; white-space: nowrap; }
+  @media (hover: none), (max-width: 639.98px) { .kbd { display: none; } }
+  /* Thin scrollbars in every inner scroll area (panes, panel, tables, dialogs). */
+  #ticket, #work, .panel, dialog, .overflow-auto, .overflow-x-auto, .overflow-y-auto { scrollbar-width: thin; scrollbar-color: var(--border-strong) transparent; }
   .tag { display: inline-block; margin-right: 6px; padding: 0 6px; border: 1px solid var(--warn); border-radius: 4px; color: var(--text); font-size: 12px; }
 }
 
@@ -215,9 +248,26 @@
   body { height: 100dvh; display: flex; flex-direction: column; overflow: hidden; }
   .shell { flex: 1; min-height: 0; display: grid; grid-template-rows: minmax(0, 1fr) 12px minmax(0, var(--row, 40%)); padding-bottom: 12px; }
   .workspace { min-height: 0; grid-template-columns: minmax(0, var(--col, 40%)) 12px minmax(0, 1fr); }
-  #ticket, #work, .panel { overflow: auto; min-height: 0; }
-  .panel { margin: 0; }
+  #ticket, #work { overflow: auto; min-height: 0; }
+  .panel { margin: 0; min-height: 0; display: flex; flex-direction: column; overflow: hidden; }
   .split { display: block; }
+  /* ui-ux-v7 W1: one scroll area. The tab body scrolls; the Result tab (.res-fill) is a column whose table box takes the rest and scrolls itself. */
+  .tab-body { flex: 1; min-height: 0; overflow: auto; display: flex; flex-direction: column; }
+  .tab-body > .res-fill { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+}
+/* W1: the tab bar never wraps; a fade on the side that has more tabs (data-left/right set by ui/tabs.ts). */
+.tab-bar { scrollbar-width: none; }
+.tab-bar[data-right=true] { mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent); }
+.tab-bar[data-left=true] { mask-image: linear-gradient(to left, #000 calc(100% - 28px), transparent); }
+.tab-bar[data-left=true][data-right=true] { mask-image: linear-gradient(to right, transparent, #000 28px, #000 calc(100% - 28px), transparent); }
+/* W2: the folded dock: the sentence row only (≈ 56 px), with a small check. */
+#stage[data-mini=true] #stage-art { display: none; }
+#stage[data-mini=true] .stage-row { border-top: 0; }
+#stage[data-mini=true] .stage-mini-icon { display: grid; }
+#stage[data-mini=true] #stage-text { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } /* one line; the full sentence is its title and was announced */
+/* M1: on a phone the editor grows with its text up to half the screen, then scrolls. */
+@media (max-width: 767.98px) {
+  .editor .cm-editor { max-height: 50vh; }
 }
 
 /* ---- CodeMirror DOM (third-party): plain CSS. ---- */

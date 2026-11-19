@@ -39,8 +39,8 @@ export function domainArt(kind: 'scene' | 'map'): HTMLElement {
   const dom = activeDomain() as ArtDomain;
   const d = done();
   const st = { passed: new Set(rankOf(app.tickets, d).passed), done: app.tickets.filter((x) => d.has(x.id)).length };
-  const frame = h('div', { class: cx('w-full bg-accent-soft', kind === 'scene' ? 'aspect-[1100/400] max-h-60' : 'aspect-[980/300] rounded-xl'), 'aria-hidden': 'true' });
-  const legend = h('div', { class: 'px-4 py-3 text-sm text-muted' }, h('p', { class: 'm-0' }, t(domainText(dom)?.callout ?? 'ecom.scene.callout')));
+  const frame = h('div', { class: cx('w-full bg-accent-soft', kind === 'scene' ? 'aspect-[1100/400] max-h-60' : 'aspect-[980/300] rounded-(--r-ctl)'), 'aria-hidden': 'true' });
+  const legend = h('div', { class: 'px-4 py-3 text-body-sm text-muted' }, h('p', { class: 'm-0' }, t(domainText(dom)?.callout ?? 'ecom.scene.callout')));
   void loadDomainArt(dom).then((a) => {
     if (!frame.isConnected) return; // redrawn meanwhile
     frame.replaceWith(kind === 'scene' ? a.scene(st) : a.map(st));

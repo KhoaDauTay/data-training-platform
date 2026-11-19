@@ -60,4 +60,4 @@ export function fillIcons(root: ParentNode = document): void {
 
 /** One label style for the parts of a brief or a quick lesson (Task, Expected result, Example…): icon + small caps above its body, so the parts read apart (e7dd585, L140). */
 export const partHead = (name: IconName, label: string, tag: 'h3' | 'h4' = 'h3'): HTMLElement =>
-  h(tag, { class: 'm-0 mb-2 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-muted' }, icon(name, 'size-4'), label);
+  h(tag, { class: 'm-0 mb-2 flex items-center gap-1.5 text-caption font-bold uppercase tracking-wide text-muted' }, icon(name, 'size-4'), label);

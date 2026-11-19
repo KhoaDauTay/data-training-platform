@@ -56,6 +56,9 @@ export function announce(text: string): void {
 export const loader = (): SVGSVGElement =>
   s('svg', { class: 'inline-block size-6 shrink-0 align-middle', 'aria-hidden': 'true', focusable: 'false' }, s('use', { href: '#cq-load' }));
 
+/** ui-ux-v7 T1: the one shortcut chip (Run, Submit, Format, Esc). Hidden on touch screens by CSS; buttons keep aria-keyshortcuts. */
+export const kbd = (keys: string): HTMLElement => h('kbd', { class: 'kbd', 'aria-hidden': 'true' }, keys);
+
 export function reducedMotion(): boolean {
   return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 }

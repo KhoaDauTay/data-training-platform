@@ -22,7 +22,7 @@ export function renderExplain(host: HTMLElement, plan: Plan): void {
     h('p', { class: 'muted' }, t('explain.intro', { ms: fmt(plan.executionMs, 1) })),
     h('div', { class: 'space-y-1' }, ...plan.nodes.map((n) =>
       // Indent is per node data, so it is an inline style, not a class.
-      h('details', { class: cx('rounded-md bg-code px-2 py-1 ring-1', isHeavyScan(n) ? 'ring-warn' : 'ring-line'), style: `margin-left:${n.depth * 20}px` },
+      h('details', { class: cx('rounded-(--r-inset) bg-code px-2 py-1 ring-1', isHeavyScan(n) ? 'ring-warn' : 'ring-line'), style: `margin-left:${n.depth * 20}px` },
         h('summary', { class: 'flex cursor-pointer flex-wrap items-center gap-2' },
           h('span', { class: 'min-w-[200px] font-semibold' }, n.label),
           h('span', { class: 'h-2 min-w-20 flex-1 overflow-hidden rounded bg-line', 'aria-hidden': 'true' },

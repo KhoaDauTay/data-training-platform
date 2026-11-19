@@ -42,7 +42,7 @@ function pickList(): HTMLElement {
   return h('div', { class: 'flex flex-col gap-2', role: 'group', 'aria-label': t('welcome.pickLabel') }, ...all.map((p) => h('button', {
     type: 'button', 'data-w': `pick-${p.id}`, disabled: entering, class: 'flex items-start gap-3 rounded-(--r-ctl) px-4 py-3 text-left',
     onclick: () => void pick(p.id),
-  }, icon(p.icon, 'mt-0.5 size-5 shrink-0'), h('span', { class: 'min-w-0' }, h('b', { class: 'block' }, p.name), h('span', { class: 'block text-sm text-muted' }, p.desc)))));
+  }, icon(p.icon, 'mt-0.5 size-5 shrink-0'), h('span', { class: 'min-w-0' }, h('b', { class: 'block' }, p.name), h('span', { class: 'block text-body-sm text-muted' }, p.desc)))));
 }
 
 async function pick(c: BootPick): Promise<void> {
@@ -80,7 +80,7 @@ function draw(): void {
   const p = app.loadProgress;
   if (!frame) {
     const scene = teachScene('lg');
-    const db = h('p', { class: 'm-0 text-center text-xs text-muted' });
+    const db = h('p', { class: 'm-0 text-center text-caption text-muted' });
     const rest = h('div', { class: 'min-w-0' });
     frame = { root: h('div', { class: 'grid gap-4' }, h('div', { class: 'flex flex-col items-center gap-1' }, scene, db), rest), scene, db, rest };
   }
@@ -96,7 +96,7 @@ function draw(): void {
     : panel === 1
       ? [title(t('welcome.loopTitle')), h('ol', { class: 'space-y-1' }, ...LOOP.map((k) => h('li', {}, t(k)))), h('p', { class: 'mb-0 text-muted' }, t('welcome.loopNote'))]
       : replay
-        ? [title(t('welcome.tourTitle')), h('ol', { class: 'space-y-1 text-sm' }, ...Array.from({ length: TOUR_STEPS }, (_, i) => h('li', {}, tourText(i + 1))))]
+        ? [title(t('welcome.tourTitle')), h('ol', { class: 'space-y-1 text-body-sm' }, ...Array.from({ length: TOUR_STEPS }, (_, i) => h('li', {}, tourText(i + 1))))]
         : [title(t('welcome.ask')), h('div', { class: 'flex flex-col gap-2' },
           h('button', { type: 'button', 'data-w': 'begin', class: cx(BTN_GO, 'px-4 py-2'), disabled: !ready, onclick: () => choose(false) }, t(ready ? 'welcome.begin' : 'welcome.preparing')),
           h('button', { type: 'button', 'data-w': 'knows', class: 'rounded-full px-4 py-2', disabled: entering, onclick: () => choose(true) }, t('welcome.knows')))];
@@ -106,7 +106,7 @@ function draw(): void {
   frame.rest.replaceChildren(...body,
       h('div', { class: 'mt-4 flex items-center gap-2' },
         panel > 0 ? h('button', { type: 'button', 'data-w': 'back', onclick: () => go(panel - 1) }, t('welcome.back')) : null,
-        h('span', { class: 'flex-1 text-center text-sm text-muted' }, t('welcome.page', { i: panel + 1, n: 3 })),
+        h('span', { class: 'flex-1 text-center text-body-sm text-muted' }, t('welcome.page', { i: panel + 1, n: 3 })),
         panel < 2 ? h('button', { type: 'button', 'data-w': 'next', class: 'primary', disabled: picking || entering, onclick: () => go(panel + 1) }, t('welcome.next'))
           : replay ? h('button', { type: 'button', 'data-w': 'close', class: 'primary', onclick: () => d.close() }, t('app.close')) : null));
   if (keep === 'title') byId('welcome-title').focus();

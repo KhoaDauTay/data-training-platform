@@ -77,13 +77,17 @@ export function thanksKey(dept: string, ticketId: string): Key {
 export const deptColor = (dept: string): string => deptOf(dept).chip;
 
 export const CARD = 'rounded-(--r-card) bg-panel ring-1 ring-line';
-export const PILL = 'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-sm font-semibold';
-export const DEPT_CHIP = 'rounded-md px-2 py-0.5 text-xs font-bold uppercase';
+export const PILL = 'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-body-sm font-semibold';
+export const DEPT_CHIP = 'rounded-(--r-inset) px-2 py-0.5 text-caption font-bold uppercase';
 /** Teal call to action, a pill (v6 §2.1): --on-accent on --accent = 5.5:1 light, 8.9:1 dark. Hover never uses filter/transform: they make the
  * pill the containing block of a stretched row's ::after (L88), so the cover shrank under the pointer and the click missed (L93). */
 export const BTN_GO = 'rounded-full border-0 bg-accent font-bold text-on-accent shadow-sm hover:bg-accent/90 hover:shadow-md';
-/** Green Submit (L17): white on emerald-700 = 5.5:1 (the mockup's emerald-600 is 3.8:1). */
-export const BTN_SUBMIT = 'ml-auto rounded-full border-0 bg-emerald-700 px-4 font-bold text-white shadow-sm hover:bg-emerald-800 disabled:bg-code disabled:text-disabled';
+/** ui-ux-v7 T1: the second level (bordered, accent text: 4.7:1 on --accent-soft hover). One BTN_GO per region or card, the rest are this or BTN_GHOST. */
+export const BTN_SECONDARY = 'rounded-full border border-accent bg-panel font-bold text-accent hover:bg-accent-soft';
+/** Third level: text only. */
+export const BTN_GHOST = 'rounded-full border-0 bg-transparent font-semibold text-accent hover:bg-accent-soft';
+/** Submit is the workspace's main button (ui-ux-v7 T1, was emerald-700): the same --accent pill in both themes. */
+export const BTN_SUBMIT = cx(BTN_GO, 'ml-auto px-4 disabled:bg-code disabled:text-disabled disabled:shadow-none');
 /** Controls on the top bar (V17: --panel, no gradient): --text on --code. */
 export const TOP_BTN = 'rounded-full border-0 bg-code text-ink hover:bg-accent-soft';
 /** Level-1 nav (v6 §3.1): --muted on --panel 6.2:1; the current page is a --accent-soft pill with --text, so not colour alone (bold too). */

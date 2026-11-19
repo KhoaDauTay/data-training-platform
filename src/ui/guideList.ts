@@ -73,7 +73,7 @@ function build(id: string, s: GuideState): Guide | undefined {
 
 /** "Boon chỉ mình" (v8 §2.1): a text button, no mascot (the mark brings Boon). */
 export const replayBtn = (id: string): HTMLElement =>
-  d$.h('button', { type: 'button', class: 'px-2 py-0.5 text-sm', onclick: () => replayGuide(id) }, lt('guide.replay'));
+  d$.h('button', { type: 'button', class: 'px-2 py-0.5 text-body-sm', onclick: () => replayGuide(id) }, lt('guide.replay'));
 
 /** Called once by drillBrief.ts initDrill, after initGuides. */
 export function initGuideList(deps: DrillDeps): void {

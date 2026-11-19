@@ -59,35 +59,35 @@ export function createMapStrip(host: HTMLElement): { update(view: StripView): vo
       dialog.replaceChildren(h('div', { class: 'p-5' },
         h('div', { class: 'mb-3 flex items-start gap-2' },
           h('h2', { id: 'map-dialog-title', class: 'm-0 flex-1 text-lg font-bold' }, t(words.mapTitle)),
-          h('form', { method: 'dialog' }, h('button', { class: 'flex items-center gap-1 px-2 py-1 text-sm' }, icon('x', 'size-4'), t('app.close')))),
+          h('form', { method: 'dialog' }, h('button', { class: 'flex items-center gap-1 px-2 py-1 text-body-sm' }, icon('x', 'size-4'), t('app.close')))),
         domainArt('map')));
       return;
     }
     const harbor = derive(tickets, completed);
-    const map = artSlot('aspect-[5/2] rounded-xl', (art) => {
+    const map = artSlot('aspect-[5/2] rounded-(--r-ctl)', (art) => {
       const parts = art.routeMap(harbor);
       wirePins(parts, harbor, pick);
       stopMap?.(); // the dialog is refilled on every rerender: one fleet at a time, and it only sails while the dialog is open (on screen)
       stopMap = art.liveMap(parts, harbor, takeNewRoutes(harbor.open), fleetOrder());
       return parts.svg;
     });
-    const list = h('ul', { class: 'mt-3 mb-0 grid list-none gap-1.5 p-0 text-sm sm:grid-cols-2' }, ...ROUTES.map((r) =>
+    const list = h('ul', { class: 'mt-3 mb-0 grid list-none gap-1.5 p-0 text-body-sm sm:grid-cols-2' }, ...ROUTES.map((r) =>
       h('li', {}, h('button', {
         type: 'button', 'data-lane': r.port, 'aria-current': r.port === lanePort ? 'true' : false,
         class: cx('flex w-full items-center gap-2 px-3 py-1.5 text-left', r.port === lanePort && 'ring-2 ring-accent', !harbor.open.has(r.port) && 'text-muted'),
         onclick: () => pick(r.port),
       }, icon(harbor.open.has(r.port) ? 'route' : 'lock', 'size-4'), h('b', {}, r.name), h('span', { class: 'ml-auto text-muted' }, laneInfo(r, harbor))))));
     const panel = lanePort
-      ? h('div', { class: 'rounded-xl p-4 ring-1 ring-line' },
-        h('button', { type: 'button', class: 'mb-2 flex items-center gap-1 px-2 py-1 text-sm lg:hidden', onclick: () => pick(undefined) }, icon('chevronLeft', 'size-4'), t('lane.all')),
+      ? h('div', { class: 'rounded-(--r-ctl) p-4 ring-1 ring-line' },
+        h('button', { type: 'button', class: 'mb-2 flex items-center gap-1 px-2 py-1 text-body-sm lg:hidden', onclick: () => pick(undefined) }, icon('chevronLeft', 'size-4'), t('lane.all')),
         lanePanel(lanePort, harbor, start))
-      : h('p', { class: 'm-0 self-start rounded-xl bg-code p-4 text-sm text-muted max-lg:hidden' }, t('lane.pick'));
+      : h('p', { class: 'm-0 self-start rounded-(--r-ctl) bg-code p-4 text-body-sm text-muted max-lg:hidden' }, t('lane.pick'));
     dialog.replaceChildren(h('div', { class: 'p-5' },
       h('div', { class: 'flex items-start gap-2' },
         h('div', { class: 'flex-1' },
           h('h2', { id: 'map-dialog-title', class: 'm-0 text-lg font-bold' }, t('routes.title')),
-          h('p', { class: 'mt-1 mb-3 text-sm text-muted' }, t('map.lanes', { n: harbor.open.size, total: ROUTES.length }), ' · ', t('lane.pickShort'))),
-        h('form', { method: 'dialog' }, h('button', { class: 'flex items-center gap-1 px-2 py-1 text-sm' }, icon('x', 'size-4'), t('app.close')))),
+          h('p', { class: 'mt-1 mb-3 text-body-sm text-muted' }, t('map.lanes', { n: harbor.open.size, total: ROUTES.length }), ' · ', t('lane.pickShort'))),
+        h('form', { method: 'dialog' }, h('button', { class: 'flex items-center gap-1 px-2 py-1 text-body-sm' }, icon('x', 'size-4'), t('app.close')))),
       // ui-ux-v6 S2: the map spans the dialog (labels ≥ 11 px from lg); the lane list and the brief sit below it
       h('div', { class: cx(lanePort && 'max-lg:hidden') }, map),
       h('div', { class: 'grid gap-4 lg:grid-cols-[minmax(0,1fr)_22rem]' },
@@ -105,15 +105,15 @@ export function createMapStrip(host: HTMLElement): { update(view: StripView): vo
       const here = x.id === lane.id;
       return h('button', {
         type: 'button', 'data-nav': `l:${x.id}`, title: label, 'aria-label': label, disabled: state === 'locked', 'aria-current': here ? 'page' : false,
-        class: cx('relative grid h-10 shrink-0 place-items-center px-2 text-sm font-semibold sm:h-8', state === 'done' && 'text-good', state === 'locked' && 'text-muted',
+        class: cx('relative grid h-10 shrink-0 place-items-center px-2 text-body-sm font-semibold sm:h-8', state === 'done' && 'text-good', state === 'locked' && 'text-muted',
           here && 'border-b-4 border-b-accent bg-accent-soft'),
         onclick: () => { if (!here) startLane(x); },
       }, state === 'locked' ? icon('lock', 'size-3.5') : laneLabel(x),
         state === 'done' ? h('span', { class: 'absolute -top-1 -right-1 grid size-3.5 place-items-center rounded-full bg-panel ring-1 ring-line', 'aria-hidden': 'true' }, icon('check', 'size-2.5')) : null);
     });
-    return h('nav', { class: 'flex flex-wrap items-center gap-x-3 gap-y-1.5 px-4 py-1.5 text-sm', 'aria-label': t('nav.tasks') },
+    return h('nav', { class: 'flex flex-wrap items-center gap-x-3 gap-y-1.5 px-4 py-1.5 text-body-sm', 'aria-label': t('nav.tasks') },
       h('button', { type: 'button', 'data-nav': 'back', class: 'flex shrink-0 items-center gap-1 px-3 py-1', onclick: () => toCurrentTask() }, icon('chevronLeft', 'size-4'), t('lane.back')),
-      h('span', { class: 'flex shrink-0 items-center gap-1.5 rounded-lg bg-accent-soft px-2 py-1 font-semibold' }, icon('route', 'size-4'), t('lane.badge', { name: r.name })),
+      h('span', { class: 'flex shrink-0 items-center gap-1.5 rounded-(--r-inset) bg-accent-soft px-2 py-1 font-semibold' }, icon('route', 'size-4'), t('lane.badge', { name: r.name })),
       h('div', { class: 'flex shrink-0 items-center gap-1' }, ...tasks),
       h('span', { class: 'text-muted max-sm:hidden' }, t('lane.optional', { xp: LANE_XP })),
       h('div', { class: 'ml-auto flex shrink-0 items-center gap-2 text-muted' },
@@ -150,7 +150,7 @@ export function createMapStrip(host: HTMLElement): { update(view: StripView): vo
 
       const select = h('select', {
         'data-nav': 'chapter',
-        class: 'min-w-0 max-w-[16rem] truncate rounded-lg border border-line bg-panel px-2 py-1 text-ink max-sm:max-w-none max-sm:flex-1',
+        class: 'min-w-0 max-w-[16rem] truncate rounded-(--r-inset) border border-line bg-panel px-2 py-1 text-ink max-sm:max-w-none max-sm:flex-1',
         'aria-label': t('nav.chapter'),
         onchange: () => {
           const c = Number(select.value);
@@ -183,7 +183,7 @@ export function createMapStrip(host: HTMLElement): { update(view: StripView): vo
         return h('button', {
           type: 'button', 'data-nav': `t:${x.id}`, title: label, 'aria-label': label, disabled: state === 'locked',
           'aria-current': here ? 'page' : false,
-          class: cx('relative grid size-10 shrink-0 place-items-center p-0 text-sm font-semibold tabular-nums sm:size-8',
+          class: cx('relative grid size-10 shrink-0 place-items-center p-0 text-body-sm font-semibold tabular-nums sm:size-8',
             state === 'done' && 'text-good', state === 'current' && 'ring-2 ring-accent', state === 'locked' && 'text-muted',
             here && 'border-b-4 border-b-accent bg-accent-soft'),
           onclick: () => go(x.id),
@@ -203,7 +203,7 @@ export function createMapStrip(host: HTMLElement): { update(view: StripView): vo
         : null;
 
       mapBtn.replaceChildren(icon('map', 'size-4'), h('span', { class: 'max-sm:sr-only' }, t('map.see')));
-      host.replaceChildren(h('nav', { class: 'flex flex-wrap items-center gap-x-3 gap-y-1.5 px-4 py-1.5 text-sm', 'aria-label': t('nav.tasks') },
+      host.replaceChildren(h('nav', { class: 'flex flex-wrap items-center gap-x-3 gap-y-1.5 px-4 py-1.5 text-body-sm', 'aria-label': t('nav.tasks') },
         select,
         h('div', { class: 'flex shrink-0 items-center gap-1 max-sm:order-3 max-sm:w-full max-sm:flex-wrap max-sm:justify-center' }, arrow('prev'), ...tasks, arrow('next')),
         cont ? h('div', { class: 'shrink-0 max-sm:order-4 max-sm:w-full' }, cont) : null,

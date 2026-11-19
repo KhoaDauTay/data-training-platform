@@ -106,19 +106,19 @@
       <a href="#/" class="flex shrink-0 items-center gap-2 text-ink no-underline max-[360px]:hidden" data-i18n-aria="app.homeLink" aria-label="BoonData, về Trang chủ"><svg class="size-9" viewBox="0 0 120 120" aria-hidden="true" focusable="false"><use href="#boon-idle"></use></svg><span class="text-lg font-extrabold tracking-tight max-sm:hidden">BoonData</span></a>
       <nav id="nav" class="flex shrink-0 gap-1 max-lg:hidden" data-i18n-aria="nav.label" aria-label="Điều hướng chính"></nav>
       <button id="domain-btn" type="button" popovertarget="domain-menu" class="flex shrink-0 items-center gap-1.5 rounded-full border-0 bg-code px-3 py-1.5 font-bold text-ink hover:bg-accent-soft max-sm:px-2.5" data-i18n-title="nav.domains" title="Chọn lĩnh vực"><span id="domain-icon" class="contents"><span data-icon="anchor" data-icon-class="size-4"></span></span><span id="domain-label" class="max-sm:sr-only">Logistics</span><span id="domain-chapter" class="whitespace-nowrap sm:hidden" aria-hidden="true"></span><span data-icon="chevronRight" data-icon-class="size-3.5 rotate-90 max-sm:hidden"></span></button>
-      <div id="status" class="ml-auto flex min-w-0 items-center gap-2 text-sm">
+      <div id="status" class="ml-auto flex min-w-0 items-center gap-2 text-body-sm">
         <span id="domain-status" class="flex min-w-0 items-center gap-2 max-md:hidden"><span id="chapter" class="flex shrink-0 items-center gap-1.5 whitespace-nowrap"></span><span class="flex min-w-0 items-center gap-1.5 whitespace-nowrap max-xl:hidden"><span data-icon="badge" data-icon-class="size-4"></span><span id="rank" class="truncate font-semibold"></span></span></span>
         <span id="xp" class="relative flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full tabular-nums bg-sun px-2.5 py-0.5 font-bold text-sun-ink"></span>
       </div>
       <div data-actions class="flex shrink-0 items-center gap-1.5 max-sm:hidden">
-        <button id="inbox-btn" type="button" data-i18n-title="top.inbox" class="relative flex shrink-0 items-center gap-1.5 rounded-full border-0 bg-code px-3 py-1.5 text-sm text-ink hover:bg-accent-soft"><span data-icon="inbox" data-icon-class="size-4"></span><span data-label class="max-xl:sr-only" data-i18n="top.inbox">Hộp thư</span><span data-badge class="absolute -top-1.5 -right-1.5 grid h-5 min-w-5 place-items-center rounded-full bg-rose-700 px-1 text-xs font-bold text-white ring-2 ring-panel" aria-hidden="true" hidden></span></button>
-        <button id="review-btn" type="button" class="relative flex shrink-0 items-center gap-1.5 rounded-full border-0 bg-code px-3 py-1.5 text-sm text-ink hover:bg-accent-soft" hidden><span data-icon="repeat" data-icon-class="size-4"></span><span data-label class="max-xl:sr-only" data-i18n="top.review">Ôn tập</span><span data-badge class="absolute -top-1.5 -right-1.5 grid h-5 min-w-5 place-items-center rounded-full bg-sun px-1 text-xs font-bold text-sun-ink ring-2 ring-panel" aria-hidden="true" hidden></span></button>
-        <button id="notebook-btn" type="button" data-i18n-title="nb.open" class="relative flex shrink-0 items-center gap-1.5 rounded-full border-0 bg-code px-3 py-1.5 text-sm text-ink hover:bg-accent-soft" aria-controls="notebook-dialog" aria-expanded="false"><span data-icon="book" data-icon-class="size-4"></span><span data-label class="max-xl:sr-only" data-i18n="nb.open">Sổ tay</span></button>
+        <button id="inbox-btn" type="button" data-i18n-title="top.inbox" class="relative flex shrink-0 items-center gap-1.5 rounded-full border-0 bg-code px-3 py-1.5 text-body-sm text-ink hover:bg-accent-soft"><span data-icon="inbox" data-icon-class="size-4"></span><span data-label class="max-xl:sr-only" data-i18n="top.inbox">Hộp thư</span><span data-badge class="absolute -top-1.5 -right-1.5 grid h-5 min-w-5 place-items-center rounded-full bg-rose-700 px-1 text-caption font-bold text-white ring-2 ring-panel" aria-hidden="true" hidden></span></button>
+        <button id="review-btn" type="button" class="relative flex shrink-0 items-center gap-1.5 rounded-full border-0 bg-code px-3 py-1.5 text-body-sm text-ink hover:bg-accent-soft" hidden><span data-icon="repeat" data-icon-class="size-4"></span><span data-label class="max-xl:sr-only" data-i18n="top.review">Ôn tập</span><span data-badge class="absolute -top-1.5 -right-1.5 grid h-5 min-w-5 place-items-center rounded-full bg-sun px-1 text-caption font-bold text-sun-ink ring-2 ring-panel" aria-hidden="true" hidden></span></button>
+        <button id="notebook-btn" type="button" data-i18n-title="nb.open" class="relative flex shrink-0 items-center gap-1.5 rounded-full border-0 bg-code px-3 py-1.5 text-body-sm text-ink hover:bg-accent-soft" aria-controls="notebook-dialog" aria-expanded="false"><span data-icon="book" data-icon-class="size-4"></span><span data-label class="max-xl:sr-only" data-i18n="nb.open">Sổ tay</span></button>
       </div>
       <div class="top-prefs flex shrink-0 items-center max-sm:hidden lg:max-[1440px]:hidden gap-1 rounded-full bg-code p-1">
         <div class="flex gap-0.5" role="group" data-i18n-aria="top.lang" aria-label="Ngôn ngữ">
-          <button type="button" data-lang="vi" aria-pressed="true" class="rounded-full border-0 bg-transparent px-2 py-0.5 text-sm text-ink hover:bg-panel aria-pressed:bg-panel aria-pressed:font-bold aria-pressed:shadow-sm">VI</button>
-          <button type="button" data-lang="en" aria-pressed="false" class="rounded-full border-0 bg-transparent px-2 py-0.5 text-sm text-ink hover:bg-panel aria-pressed:bg-panel aria-pressed:font-bold aria-pressed:shadow-sm">EN</button>
+          <button type="button" data-lang="vi" aria-pressed="true" class="rounded-full border-0 bg-transparent px-2 py-0.5 text-body-sm text-ink hover:bg-panel aria-pressed:bg-panel aria-pressed:font-bold aria-pressed:shadow-sm">VI</button>
+          <button type="button" data-lang="en" aria-pressed="false" class="rounded-full border-0 bg-transparent px-2 py-0.5 text-body-sm text-ink hover:bg-panel aria-pressed:bg-panel aria-pressed:font-bold aria-pressed:shadow-sm">EN</button>
         </div>
         <span class="mx-1 h-5 w-px bg-line" aria-hidden="true"></span>
         <div class="flex gap-0.5" role="group" data-i18n-aria="top.theme" aria-label="Giao diện">
@@ -128,7 +128,7 @@
         </div>
       </div>
       <div class="flex shrink-0 items-center gap-2">
-        <span id="db-status" role="status" class="flex items-center gap-2 text-sm"></span>
+        <span id="db-status" role="status" class="flex items-center gap-2 text-body-sm"></span>
         <button id="more-btn" type="button" popovertarget="more-menu" class="grid size-9 place-items-center rounded-full border-0 bg-code p-0 text-ink hover:bg-accent-soft" data-i18n-aria="top.more" aria-label="Thêm"><span data-icon="more"></span></button>
       </div>
     </header>
@@ -153,17 +153,17 @@
       </div>
       <!-- Below 768 px only (style.css): one pane at a time, src/ui/paneTabs.ts. -->
       <div id="pane-tabs" role="tablist" class="pane-tabs mb-3 grid grid-cols-3 gap-1 rounded-full bg-code p-1" data-i18n-aria="area.panes" aria-label="Khu làm việc">
-        <button type="button" role="tab" data-pane="ticket" aria-controls="ticket" class="rounded-full border-0 bg-transparent px-2 py-2 text-sm font-semibold text-ink aria-selected:bg-panel aria-selected:shadow-sm" data-i18n="pane.ticket">Đề bài</button>
-        <button type="button" role="tab" data-pane="work" aria-controls="work" class="rounded-full border-0 bg-transparent px-2 py-2 text-sm font-semibold text-ink aria-selected:bg-panel aria-selected:shadow-sm">SQL</button>
-        <button type="button" role="tab" data-pane="panel" aria-controls="panel" class="rounded-full border-0 bg-transparent px-2 py-2 text-sm font-semibold text-ink aria-selected:bg-panel aria-selected:shadow-sm" data-i18n="pane.result">Kết quả</button>
+        <button type="button" role="tab" data-pane="ticket" aria-controls="ticket" class="rounded-full border-0 bg-transparent px-2 py-2 text-body-sm font-semibold text-ink aria-selected:bg-panel aria-selected:shadow-sm" data-i18n="pane.ticket">Đề bài</button>
+        <button type="button" role="tab" data-pane="work" aria-controls="work" class="rounded-full border-0 bg-transparent px-2 py-2 text-body-sm font-semibold text-ink aria-selected:bg-panel aria-selected:shadow-sm">SQL</button>
+        <button type="button" role="tab" data-pane="panel" aria-controls="panel" class="rounded-full border-0 bg-transparent px-2 py-2 text-body-sm font-semibold text-ink aria-selected:bg-panel aria-selected:shadow-sm" data-i18n="pane.result">Kết quả</button>
       </div>
       <div class="workspace">
-        <section id="ticket" class="min-w-0 rounded-2xl bg-panel px-4 py-3 ring-1 ring-line" data-i18n-aria="area.ticket" aria-label="Đề bài"></section>
+        <section id="ticket" class="min-w-0 rounded-(--r-card) bg-panel px-4 py-3 ring-1 ring-line" data-i18n-aria="area.ticket" aria-label="Đề bài"></section>
         <div id="split-col" class="split split-col cursor-col-resize touch-none rounded hover:bg-accent-soft focus-visible:bg-accent-soft" data-i18n-aria="area.splitCol" aria-label="Độ rộng cột đề bài"></div>
-        <section id="work" class="min-w-0 rounded-2xl bg-panel p-4 ring-1 ring-line" data-i18n-aria="area.work" aria-label="SQL editor"></section>
+        <section id="work" class="min-w-0 rounded-(--r-card) bg-panel p-4 ring-1 ring-line" data-i18n-aria="area.work" aria-label="SQL editor"></section>
       </div>
       <div id="split-row" class="split split-row cursor-row-resize touch-none rounded hover:bg-accent-soft focus-visible:bg-accent-soft" data-i18n-aria="area.splitRow" aria-label="Chiều cao panel kết quả"></div>
-      <section id="panel" tabindex="-1" class="panel min-w-0 rounded-2xl bg-panel p-3 ring-1 ring-line" data-i18n-aria="area.panel" aria-label="Kết quả và trực quan hóa"></section>
+      <section id="panel" tabindex="-1" class="panel min-w-0 rounded-(--r-card) bg-panel p-3 ring-1 ring-line" data-i18n-aria="area.panel" aria-label="Kết quả và trực quan hóa"></section>
     </main>
       </div>
     </div>
@@ -177,34 +177,37 @@
       <div id="inbox-list" class="max-h-[60dvh] overflow-auto"></div>
       <form method="dialog" class="mt-3 flex justify-end"><button data-i18n="app.close">Đóng</button></form>
     </dialog>
-    <div id="stage" class="pointer-events-none fixed inset-x-4 bottom-4 z-40 max-lg:bottom-18 sm:left-auto sm:w-[560px] lg:w-[640px]" hidden>
-      <div class="overflow-hidden rounded-2xl bg-panel shadow-xl ring-1 ring-line">
+    <!-- ui-ux-v7 W2 (D-U3): 480 px from 1024 px so it covers less of the result; a task's dock folds to one line once its motion ends (data-mini, ui/stage.ts). -->
+    <div id="stage" class="pointer-events-none fixed inset-x-4 bottom-4 z-40 max-lg:bottom-18 sm:left-auto sm:w-[480px]" hidden>
+      <div class="overflow-hidden rounded-(--r-card) bg-panel shadow-(--shadow-2) ring-1 ring-line">
         <div id="stage-art" class="relative" aria-hidden="true"></div>
-        <div class="flex items-center gap-3 border-t border-line px-4 py-2">
-          <p id="stage-text" class="m-0 flex-1 text-sm"></p>
-          <button id="stage-skip" type="button" class="pointer-events-auto shrink-0 px-3 py-1 text-sm"></button>
+        <div class="stage-row flex items-center gap-3 border-t border-line px-4 py-2">
+          <span class="stage-mini-icon hidden size-6 shrink-0 place-items-center rounded-full bg-good-soft text-body-sm font-black text-good" aria-hidden="true">✓</span>
+          <p id="stage-text" class="m-0 flex-1 text-body-sm"></p>
+          <button id="stage-replay" type="button" class="pointer-events-auto shrink-0 px-3 py-1 text-body-sm" data-i18n="anim.replay" hidden>Xem lại</button>
+          <button id="stage-skip" type="button" class="pointer-events-auto shrink-0 px-3 py-1 text-body-sm"></button>
         </div>
       </div>
     </div>
     <!-- ui-ux-v4 §3: the route map without leaving the task; filled by src/ui/mapStrip.ts. Padding sits on the inner box so a click on the dialog itself is the backdrop. Below sm: bottom sheet. -->
-    <dialog id="map-dialog" class="max-h-[calc(100dvh-4rem)] w-[min(960px,calc(100vw-2rem))] overflow-auto rounded-2xl p-0 max-sm:mb-0 max-sm:max-h-[85dvh] max-sm:w-full max-sm:max-w-none max-sm:rounded-b-none" aria-labelledby="map-dialog-title"></dialog>
+    <dialog id="map-dialog" class="max-h-[calc(100dvh-4rem)] w-[min(960px,calc(100vw-2rem))] overflow-auto rounded-(--r-card) p-0 max-sm:mb-0 max-sm:max-h-[85dvh] max-sm:w-full max-sm:max-w-none max-sm:rounded-b-none" aria-labelledby="map-dialog-title"></dialog>
     <!-- product-design-v4 §C.3: a quick lesson opened from a skill chip or the handbook; filled by src/ui/lessonCard.ts. L140: tall and wide, p-0 so its header sticks while the body scrolls; below sm a near full-screen sheet. -->
     <dialog id="lesson-dialog" class="max-h-[min(92dvh,1100px)] w-[min(900px,calc(100vw-2rem))] max-w-none overflow-auto p-0 max-sm:mb-0 max-sm:max-h-[96dvh] max-sm:w-full max-sm:rounded-b-none" aria-labelledby="lesson-dialog-title"></dialog>
     <dialog id="notebook-dialog" class="fixed inset-auto top-16 right-4 z-30 m-0 max-h-[calc(100dvh-6rem)] w-[min(380px,calc(100vw-2rem))] overflow-auto max-sm:inset-x-4 max-sm:top-auto max-sm:bottom-4 max-sm:max-h-[60dvh] max-sm:w-auto" aria-labelledby="notebook-title"></dialog>
     <!-- L42: replaces part of L11; holds only Export / Import progress. Outside <header> so focus uses --accent. -->
-    <div id="more-menu" popover class="m-0 min-w-52 rounded-xl border-0 bg-panel p-1 text-ink shadow-lg ring-1 ring-line [inset:3.5rem_1rem_auto_auto]">
+    <div id="more-menu" popover class="m-0 min-w-52 rounded-(--r-ctl) border-0 bg-panel p-1 text-ink shadow-lg ring-1 ring-line [inset:3.5rem_1rem_auto_auto]">
       <div class="flex flex-col">
         <!-- v12.0 U1: below 640 px the bar keeps one line; these copy the bar's Inbox / Review / Notebook and settings. v6 F1 (D-V9): from 1024 to 1439 px the bar folds VI|EN and theme in here. -->
         <div data-menu-prefs class="mb-1 flex flex-col border-b border-line pb-1 sm:max-lg:hidden min-[1440px]:hidden">
           <div data-menu-proxies class="flex flex-col sm:hidden">
-          <button type="button" data-proxy="inbox-btn" popovertarget="more-menu" popovertargetaction="hide" class="flex w-full items-center gap-2 rounded-lg border-0 bg-transparent px-3 py-2 text-left hover:bg-code"><span data-icon="inbox" data-icon-class="size-4"></span><span data-label data-i18n="top.inbox">Hộp thư</span></button>
-          <button type="button" data-proxy="review-btn" popovertarget="more-menu" popovertargetaction="hide" class="flex w-full items-center gap-2 rounded-lg border-0 bg-transparent px-3 py-2 text-left hover:bg-code" hidden><span data-icon="repeat" data-icon-class="size-4"></span><span data-label data-i18n="top.review">Ôn tập</span></button>
-          <button type="button" data-proxy="notebook-btn" popovertarget="more-menu" popovertargetaction="hide" class="flex w-full items-center gap-2 rounded-lg border-0 bg-transparent px-3 py-2 text-left hover:bg-code"><span data-icon="book" data-icon-class="size-4"></span><span data-label data-i18n="nb.open">Sổ tay</span></button>
+          <button type="button" data-proxy="inbox-btn" popovertarget="more-menu" popovertargetaction="hide" class="flex w-full items-center gap-2 rounded-(--r-inset) border-0 bg-transparent px-3 py-2 text-left hover:bg-code"><span data-icon="inbox" data-icon-class="size-4"></span><span data-label data-i18n="top.inbox">Hộp thư</span></button>
+          <button type="button" data-proxy="review-btn" popovertarget="more-menu" popovertargetaction="hide" class="flex w-full items-center gap-2 rounded-(--r-inset) border-0 bg-transparent px-3 py-2 text-left hover:bg-code" hidden><span data-icon="repeat" data-icon-class="size-4"></span><span data-label data-i18n="top.review">Ôn tập</span></button>
+          <button type="button" data-proxy="notebook-btn" popovertarget="more-menu" popovertargetaction="hide" class="flex w-full items-center gap-2 rounded-(--r-inset) border-0 bg-transparent px-3 py-2 text-left hover:bg-code"><span data-icon="book" data-icon-class="size-4"></span><span data-label data-i18n="nb.open">Sổ tay</span></button>
           </div>
           <div class="flex items-center gap-1 px-3 py-2">
             <div class="flex gap-0.5" role="group" data-i18n-aria="top.lang" aria-label="Ngôn ngữ">
-              <button type="button" data-lang="vi" aria-pressed="true" class="rounded-full border-0 bg-transparent px-2 py-0.5 text-sm text-ink hover:bg-code aria-pressed:bg-code aria-pressed:font-bold">VI</button>
-              <button type="button" data-lang="en" aria-pressed="false" class="rounded-full border-0 bg-transparent px-2 py-0.5 text-sm text-ink hover:bg-code aria-pressed:bg-code aria-pressed:font-bold">EN</button>
+              <button type="button" data-lang="vi" aria-pressed="true" class="rounded-full border-0 bg-transparent px-2 py-0.5 text-body-sm text-ink hover:bg-code aria-pressed:bg-code aria-pressed:font-bold">VI</button>
+              <button type="button" data-lang="en" aria-pressed="false" class="rounded-full border-0 bg-transparent px-2 py-0.5 text-body-sm text-ink hover:bg-code aria-pressed:bg-code aria-pressed:font-bold">EN</button>
             </div>
             <span class="mx-1 h-5 w-px bg-line" aria-hidden="true"></span>
             <div class="flex gap-0.5" role="group" data-i18n-aria="top.theme" aria-label="Giao diện">
@@ -214,11 +217,11 @@
             </div>
           </div>
         </div>
-        <button id="replay-btn" type="button" popovertarget="more-menu" popovertargetaction="hide" class="flex w-full items-center gap-2 rounded-lg border-0 bg-transparent px-3 py-2 text-left hover:bg-code"><span data-icon="info" data-icon-class="size-4"></span><span data-i18n="tour.replay">Xem lại hướng dẫn</span></button>
-        <button id="guides-btn" type="button" popovertarget="more-menu" popovertargetaction="hide" class="flex w-full items-center gap-2 rounded-lg border-0 bg-transparent px-3 py-2 text-left hover:bg-code"><span data-icon="info" data-icon-class="size-4"></span><span data-i18n="guide.reset">Bật lại hướng dẫn của Boon</span></button>
-        <button id="diag-btn" type="button" popovertarget="more-menu" popovertargetaction="hide" class="flex w-full items-center gap-2 rounded-lg border-0 bg-transparent px-3 py-2 text-left hover:bg-code"><span data-icon="copy" data-icon-class="size-4"></span><span data-i18n="diag.copy">Sao chép thông tin chẩn đoán</span></button>
-        <button id="export-btn" type="button" popovertarget="more-menu" popovertargetaction="hide" class="flex w-full items-center gap-2 rounded-lg border-0 bg-transparent px-3 py-2 text-left hover:bg-code"><span data-icon="download" data-icon-class="size-4"></span><span data-i18n="top.export">Xuất tiến độ</span></button>
-        <button id="import-btn" type="button" popovertarget="more-menu" popovertargetaction="hide" class="flex w-full items-center gap-2 rounded-lg border-0 bg-transparent px-3 py-2 text-left hover:bg-code"><span data-icon="upload" data-icon-class="size-4"></span><span data-i18n="top.import">Nhập tiến độ</span></button>
+        <button id="replay-btn" type="button" popovertarget="more-menu" popovertargetaction="hide" class="flex w-full items-center gap-2 rounded-(--r-inset) border-0 bg-transparent px-3 py-2 text-left hover:bg-code"><span data-icon="info" data-icon-class="size-4"></span><span data-i18n="tour.replay">Xem lại hướng dẫn</span></button>
+        <button id="guides-btn" type="button" popovertarget="more-menu" popovertargetaction="hide" class="flex w-full items-center gap-2 rounded-(--r-inset) border-0 bg-transparent px-3 py-2 text-left hover:bg-code"><span data-icon="info" data-icon-class="size-4"></span><span data-i18n="guide.reset">Bật lại hướng dẫn của Boon</span></button>
+        <button id="diag-btn" type="button" popovertarget="more-menu" popovertargetaction="hide" class="flex w-full items-center gap-2 rounded-(--r-inset) border-0 bg-transparent px-3 py-2 text-left hover:bg-code"><span data-icon="copy" data-icon-class="size-4"></span><span data-i18n="diag.copy">Sao chép thông tin chẩn đoán</span></button>
+        <button id="export-btn" type="button" popovertarget="more-menu" popovertargetaction="hide" class="flex w-full items-center gap-2 rounded-(--r-inset) border-0 bg-transparent px-3 py-2 text-left hover:bg-code"><span data-icon="download" data-icon-class="size-4"></span><span data-i18n="top.export">Xuất tiến độ</span></button>
+        <button id="import-btn" type="button" popovertarget="more-menu" popovertargetaction="hide" class="flex w-full items-center gap-2 rounded-(--r-inset) border-0 bg-transparent px-3 py-2 text-left hover:bg-code"><span data-icon="upload" data-icon-class="size-4"></span><span data-i18n="top.import">Nhập tiến độ</span></button>
       </div>
     </div>
     <!-- v5 §B.2: domain switch; Finance and E-commerce open their "Coming soon" page (filled by src/ui/topbar.ts). -->

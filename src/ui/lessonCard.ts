@@ -71,7 +71,7 @@ function card(l: Lesson, titleId: string, actions: HTMLElement[], tour = false, 
     onclick: () => {
       runExample.disabled = true;
       // lab is seeded on first use (L84): say so while it runs
-      runOn(lessonSchema(l), l.example, () => exampleOut.replaceChildren(h('p', { class: 'my-1 text-sm text-muted' }, t('preview.loading'))))
+      runOn(lessonSchema(l), l.example, () => exampleOut.replaceChildren(h('p', { class: 'my-1 text-body-sm text-muted' }, t('preview.loading'))))
         .then((result) => examples.set(l.id, { result }), (error: unknown) => examples.set(l.id, { error }))
         .finally(() => {
           runExample.disabled = false;
@@ -84,7 +84,7 @@ function card(l: Lesson, titleId: string, actions: HTMLElement[], tour = false, 
   }, t('lesson.runExample'));
   drawExample();
 
-  const area = h('textarea', { class: 'w-full rounded-lg bg-code p-2 font-mono text-sm ring-1 ring-line', rows: l.node ? '8' : '3', spellcheck: 'false', 'aria-label': t('lesson.tryAria'), placeholder: t('lesson.tryPlaceholder') });
+  const area = h('textarea', { class: 'w-full rounded-(--r-inset) bg-code p-2 font-mono text-body-sm ring-1 ring-line', rows: l.node ? '8' : '3', spellcheck: 'false', 'aria-label': t('lesson.tryAria'), placeholder: t('lesson.tryPlaceholder') });
   area.value = drafts.get(l.id) ?? (l.node ? l.try.starter : ''); // skill lesson: empty, the player writes it (v10 critic #5); advanced: its long starter to change (v11 UX #1)
   area.addEventListener('input', () => {
     drafts.set(l.id, area.value);
@@ -102,7 +102,7 @@ function card(l: Lesson, titleId: string, actions: HTMLElement[], tour = false, 
   };
   const drawYours = (): void => {
     const r = tryRuns.get(l.id);
-    yours.replaceChildren(...nodes(r && h('div', { class: 'mt-2' }, h('h5', { class: 'mt-0 mb-1 text-sm' }, t('lesson.yours')),
+    yours.replaceChildren(...nodes(r && h('div', { class: 'mt-2' }, h('h5', { class: 'mt-0 mb-1 text-body-sm' }, t('lesson.yours')),
       r.result ? renderResult(r.result, undefined, 8) : errorView(r.error, true, r.sql))));
   };
   const busy = (on: boolean): void => {
@@ -192,7 +192,7 @@ function card(l: Lesson, titleId: string, actions: HTMLElement[], tour = false, 
   const drawBoon = (focus?: string): void => {
     const st = boon.get(l.id);
     const prev = undoTry.get(l.id);
-    boonBox.replaceChildren(...nodes(st && h('div', { class: 'mt-2 rounded-2xl bg-sun px-4 py-2 text-sm text-sun-ink [&_p]:my-1' },
+    boonBox.replaceChildren(...nodes(st && h('div', { class: 'mt-2 rounded-(--r-card) bg-sun px-4 py-2 text-body-sm text-sun-ink [&_p]:my-1' },
       h('p', {}, t('frame.try')),
       st === 'ask'
         ? h('div', {}, h('p', {}, t('frame.askTry')), h('div', { class: 'flex flex-wrap gap-2' },
@@ -222,7 +222,7 @@ function card(l: Lesson, titleId: string, actions: HTMLElement[], tour = false, 
   const skill = skillOf(l.id);
   // L140: in the dialog the header (title, Got it, Close) stays on top while the body scrolls; in the brief one frame holds the card.
   const inDialog = titleId === 'lesson-dialog-title';
-  return h('section', { class: cx(!inDialog && 'my-3 rounded-xl bg-panel p-4 ring-1 ring-accent', guided && 'group'), 'aria-labelledby': titleId },
+  return h('section', { class: cx(!inDialog && 'my-3 rounded-(--r-ctl) bg-panel p-4 ring-1 ring-accent', guided && 'group'), 'aria-labelledby': titleId },
     h('div', { class: cx('flex flex-wrap items-center justify-between gap-2', inDialog ? 'sticky top-0 z-10 border-b border-line bg-panel px-5 py-3 max-sm:px-4' : 'mb-4') },
       h('h3', { id: titleId, tabindex: '-1', class: 'm-0 flex items-center gap-2' },
         // v12 (L87): Boon teaches the lesson; left out while his tour mark is in the same pane (one mascot per region)
@@ -235,25 +235,25 @@ function card(l: Lesson, titleId: string, actions: HTMLElement[], tour = false, 
       section('book', t('lesson.concept'), richText(l.concept[lang]),
         skill ? h('p', { class: 'mt-2 mb-0' }, h('b', {}, t('lesson.syntax')), ' ', h('code', {}, skill.syntax)) : null,
         // v15 Q6: inside a domain the lesson's tables (lab) are not the company's
-        !guided && inDomain(currentRoute()) ? h('p', { class: 'mt-2 mb-0 text-sm text-muted', 'data-lab-note': '' }, t('lesson.labNote')) : null),
+        !guided && inDomain(currentRoute()) ? h('p', { class: 'mt-2 mb-0 text-body-sm text-muted', 'data-lab-note': '' }, t('lesson.labNote')) : null),
       section('code', t('lesson.example'), h('pre', { class: 'sql' }, l.example), h('div', { class: 'actions mb-0' }, runExample),
         tour ? tourSlot('lesson') : null, gslot('lesson-example'), exampleOut),
       section('info', t('lesson.explain'), richText(byMarker(l.explain[lang]))),
       section('alert', t('lesson.mistake'), h('pre', { class: 'sql' }, l.mistake.sql), richText(l.mistake.why[lang]), gslot('lesson-mistake')),
       l.cues[lang].length ? section('eye', t('lesson.cues'), h('ul', { class: 'm-0 flex list-none flex-wrap gap-2 p-0' },
-        ...l.cues[lang].map((c) => h('li', { class: 'rounded-lg bg-code px-2 py-1 text-sm' }, c)))) : null,
+        ...l.cues[lang].map((c) => h('li', { class: 'rounded-(--r-inset) bg-code px-2 py-1 text-body-sm' }, c)))) : null,
       section('flask', t('lesson.try'), richText(l.try.task[lang]), gslot('lesson-try'), tryPreview(l.try.solution, lessonSchema(l)), area,
         h('div', { class: 'actions mb-0' }, runMine, boonBtn, check), gslot('lesson-try-actions'), boonBox, verdict, detail, gslot('lesson-diff'), yours),
-      h('p', { class: 'mt-5 mb-0 border-t border-line pt-4 text-sm' },
+      h('p', { class: 'mt-5 mb-0 border-t border-line pt-4 text-body-sm' },
         h('a', { href: l.docs, target: '_blank', rel: 'noopener noreferrer', class: 'inline-flex items-center gap-1.5' }, icon('external', 'size-4'), t('lesson.docs')))));
 }
 
 /** One line for a lesson that is not open: "Quick lesson: X ✓ · Open again". */
 function collapsed(id: string, open: () => void): HTMLElement {
   const seen = isSeen(id);
-  return h('p', { class: 'my-2 flex flex-wrap items-center gap-2 text-sm', 'data-lesson': id },
+  return h('p', { class: 'my-2 flex flex-wrap items-center gap-2 text-body-sm', 'data-lesson': id },
     h('span', {}, `${t('lesson.collapsed', { skill: label(id) })}${seen ? ' ✓' : ''}`),
-    h('button', { type: 'button', class: 'px-2 py-0.5 text-sm', onclick: open }, t(seen ? 'lesson.reopen' : 'lesson.show')));
+    h('button', { type: 'button', class: 'px-2 py-0.5 text-body-sm', onclick: open }, t(seen ? 'lesson.reopen' : 'lesson.show')));
 }
 
 export const hasLesson = (id: string): boolean => loadLessons().has(id);
@@ -278,7 +278,7 @@ export function lessonSlot(grants: string[]): HTMLElement | null {
       const tour = id === ids[0];
       if (!(expanded.get(id) ?? id === first)) {
         return h('div', {}, collapsed(id, () => { expanded.set(id, true); draw(id); }),
-          drilled(id) ? h('p', { class: 'mt-1 mb-0 text-sm text-muted' }, t('lesson.drilled')) : null, tour ? tourSlot('lesson') : null);
+          drilled(id) ? h('p', { class: 'mt-1 mb-0 text-body-sm text-muted' }, t('lesson.drilled')) : null, tour ? tourSlot('lesson') : null);
       }
       const close = (seen: boolean) => () => {
         if (seen) markSeen(id, false);

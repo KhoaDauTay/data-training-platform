@@ -56,7 +56,7 @@ const announce = (text: string): void => {
  * L23: neutral text and bars, numbers in tabular figures; colour stays in small badges.
  */
 export function kpiView(v: KpiValue, unit: string): HTMLElement {
-  const unitEl = unit ? h('span', { class: 'text-base font-medium text-muted', 'aria-hidden': 'true' }, unit) : null;
+  const unitEl = unit ? h('span', { class: 'text-body font-medium text-muted', 'aria-hidden': 'true' }, unit) : null;
   if ('text' in v) {
     return h('p', { class: cx(BIG, 'flex flex-wrap items-baseline gap-x-1.5'), title: unit ? `${v.full} ${unit}` : v.full },
       h('span', { 'aria-hidden': 'true' }, v.text), unitEl,
@@ -64,16 +64,14 @@ export function kpiView(v: KpiValue, unit: string): HTMLElement {
   }
   const max = Math.max(1, ...v.bars.map((b) => b.value));
   return h('ul', { class: 'm-0 list-none space-y-1.5 p-0' }, ...v.bars.map((b) =>
-    h('li', { class: 'grid grid-cols-[minmax(0,8rem)_1fr_auto] items-center gap-2 text-sm', title: `${b.label}: ${b.full}${unit ? ` ${unit}` : ''}` },
+    h('li', { class: 'grid grid-cols-[minmax(0,8rem)_1fr_auto] items-center gap-2 text-body-sm', title: `${b.label}: ${b.full}${unit ? ` ${unit}` : ''}` },
       h('span', { class: 'truncate' }, b.label),
-      h('span', { class: 'h-2.5 rounded bg-slate-500 dark:bg-slate-400', style: `width:${Math.round((b.value / max) * 100)}%`, 'aria-hidden': 'true' }),
+      h('span', { class: 'h-2.5 rounded-r-[3px] bg-chart', style: `width:${Math.round((b.value / max) * 100)}%`, 'aria-hidden': 'true' }),
       h('span', { class: 'tabular-nums' }, b.text, unit ? h('span', { class: 'text-muted' }, ` ${unit}`) : null))));
 }
 
 export const KIND_LABEL: Record<CardKind, Key> = { table: 'card.kind.table', number: 'card.kind.number', bar: 'card.kind.bar', line: 'card.kind.line' };
 export const skillOf = (id: string) => SKILLS.find((s) => s.id === id)!;
-/** "Cột: mở khi học …" chapter colour of the skill that opens the kind (product-design-v3 §8). */
-const kindColor = (c: Card) => chapterColor(skillOf(KIND_SKILL[c.kind]).chapter);
 
 /** What a card shows for its result: a big number, the first rows, bars or a line (shared with the pin dialog's preview). */
 export function cardBody(c: Card, r: QueryResult): HTMLElement {
@@ -83,13 +81,13 @@ export function cardBody(c: Card, r: QueryResult): HTMLElement {
     const v = kpiNumber(Number(r.rows[0]?.[col] ?? NaN), getLang());
     return kpiView(v, '');
   }
-  const cut = (n: number) => (r.rows.length > n ? h('p', { class: 'mt-1 mb-0 text-sm text-muted' }, t('card.rowsShown', { n, total: r.rows.length })) : null);
+  const cut = (n: number) => (r.rows.length > n ? h('p', { class: 'mt-1 mb-0 text-body-sm text-muted' }, t('card.rowsShown', { n, total: r.rows.length })) : null);
   if (c.kind === 'table') return h('div', { class: 'min-w-0 overflow-x-auto' }, renderResult({ ...r, rows: r.rows.slice(0, TABLE_ROWS) }), cut(TABLE_ROWS));
   const spec = cardSpec(r);
   if (!spec || spec.kind !== c.kind) return h('p', { class: 'm-0 text-muted' }, t('chart.empty', { max: MAX_POINTS }));
   const n = c.kind === 'bar' ? BAR_ROWS : MAX_POINTS;
   const shown = { ...r, rows: r.rows.slice(0, n) };
-  return h('div', { class: 'overflow-x-auto' }, c.kind === 'bar' ? bars(shown, spec, col, kindColor(c), 'card') : line(shown, spec, col, kindColor(c), 'card'), cut(n));
+  return h('div', { class: 'overflow-x-auto' }, c.kind === 'bar' ? bars(shown, spec, col, 'card') : line(shown, spec, col, 'card'), cut(n));
 }
 
 /** Once per session, one card after another (src/dashboard.ts cardRunner); a card that timed out is saved as slow. */
@@ -124,12 +122,12 @@ function playerCard(c: Card, i: number, n: number, redraw: () => void): HTMLElem
     save();
   };
   if (c.slow) {
-    body.append(h('div', { class: 'rounded-lg bg-amber-50 p-3 text-sm text-amber-950 ring-1 ring-amber-300 dark:bg-amber-950/40 dark:text-amber-100 dark:ring-amber-800' },
+    body.append(h('div', { class: 'rounded-(--r-inset) bg-warn-soft p-3 text-body-sm text-ink ring-1 ring-warn/40' },
       h('p', { class: 'm-0 flex items-center gap-1.5 font-semibold' }, icon('alert', 'size-4'), t('dash.slowTitle')),
       h('p', { class: 'mt-1 mb-2' }, t('dash.slow')),
       h('button', { type: 'button', class: 'flex items-center gap-1.5 px-3 py-1', onclick: rerun }, icon('refresh', 'size-4'), t('dash.retrySlow'))));
   } else if (!cards.has(c) && !ranHere(c)) {
-    body.append(h('p', { class: 'mt-0 mb-2 text-sm text-muted' }, t('dash.notRun')),
+    body.append(h('p', { class: 'mt-0 mb-2 text-body-sm text-muted' }, t('dash.notRun')),
       h('button', { type: 'button', class: 'flex items-center gap-1.5 px-3 py-1', onclick: rerun }, icon('refresh', 'size-4'), t('dash.run')));
   } else {
     body.append(h('p', { class: 'm-0 text-muted' }, t('dash.waiting')));
@@ -157,13 +155,13 @@ function playerCard(c: Card, i: number, n: number, redraw: () => void): HTMLElem
   // A table needs width more than the charts do: two columns from sm (no dense flow: visual order = Lên/Xuống order).
   return h('article', { class: cx(CARD, 'flex min-w-0 flex-col gap-3 p-4', c.kind === 'table' && 'sm:col-span-2') },
     h('div', { class: 'flex items-start gap-2' },
-      h('span', { class: 'grid size-9 shrink-0 place-items-center rounded-lg bg-code', 'aria-hidden': 'true' }, icon(KIND_ICONS[c.kind])),
-      h('h3', { class: 'm-0 min-w-0 flex-1 self-center text-sm leading-snug font-semibold break-words' }, c.title)),
+      h('span', { class: 'grid size-9 shrink-0 place-items-center rounded-(--r-inset) bg-code', 'aria-hidden': 'true' }, icon(KIND_ICONS[c.kind])),
+      h('h3', { class: 'm-0 min-w-0 flex-1 self-center text-body-sm leading-snug font-semibold break-words' }, c.title)),
     body,
-    h('details', { class: 'text-sm' },
+    h('details', { class: 'text-body-sm' },
       h('summary', { class: 'cursor-pointer text-muted' }, t('dash.sql')),
       h('pre', { class: 'sql mt-2 mb-0 max-h-48 overflow-auto' }, c.sql)),
-    h('div', { class: 'mt-auto flex flex-wrap items-center gap-1 text-sm text-muted' },
+    h('div', { class: 'mt-auto flex flex-wrap items-center gap-1 text-body-sm text-muted' },
       h('span', { class: 'mr-auto' }, sourceLine(c), ' · ', ran),
       btn('up', 'up', t('dash.up', { title: c.title }), () => move(-1), i === 0),
       btn('down', 'down', t('dash.down', { title: c.title }), () => move(1), i === n - 1),
@@ -200,11 +198,11 @@ function starterCard(c: Card): HTMLElement {
   starters.result(c).then((r) => body.replaceChildren(cardBody(c, r)), (e: unknown) => body.replaceChildren(errorView(e)));
   return h('article', { class: cx(CARD, 'flex min-w-0 flex-col gap-3 p-4') },
     h('div', { class: 'flex items-start gap-2' },
-      h('span', { class: 'grid size-9 shrink-0 place-items-center rounded-lg bg-code', 'aria-hidden': 'true' }, icon(KIND_ICONS[c.kind])),
-      h('h3', { class: 'm-0 min-w-0 flex-1 self-center text-sm leading-snug font-semibold break-words' }, c.title),
-      h('span', { class: 'shrink-0 rounded-full bg-accent-soft px-2 py-0.5 text-xs font-semibold text-ink' }, t('dash.starterBadge'))),
+      h('span', { class: 'grid size-9 shrink-0 place-items-center rounded-(--r-inset) bg-code', 'aria-hidden': 'true' }, icon(KIND_ICONS[c.kind])),
+      h('h3', { class: 'm-0 min-w-0 flex-1 self-center text-body-sm leading-snug font-semibold break-words' }, c.title),
+      h('span', { class: 'shrink-0 rounded-full bg-accent-soft px-2 py-0.5 text-caption font-semibold text-ink' }, t('dash.starterBadge'))),
     body,
-    h('details', { class: 'mt-auto text-sm' },
+    h('details', { class: 'mt-auto text-body-sm' },
       h('summary', { class: 'cursor-pointer text-muted' }, t('dash.sql')),
       h('pre', { class: 'sql mt-2 mb-0 max-h-48 overflow-auto' }, c.sql)));
 }
@@ -214,8 +212,8 @@ function startersBlock(locked: boolean): HTMLElement | null {
   const list = starterCards(activeDomain(), unlockedTables(), (k) => t(k));
   if (!list.length) return null;
   return h('div', { class: 'mt-5' },
-    h('h3', { class: 'm-0 text-base font-bold' }, t('dash.starters')),
-    h('p', { class: 'mt-1 mb-3 text-sm text-muted' }, t('dash.startersIntro'), locked ? '' : ` ${t('dash.startersHide')}`),
+    h('h3', { class: 'm-0 text-body font-bold' }, t('dash.starters')),
+    h('p', { class: 'mt-1 mb-3 text-body-sm text-muted' }, t('dash.startersIntro'), locked ? '' : ` ${t('dash.startersHide')}`),
     h('div', { class: 'grid gap-4 sm:grid-cols-2' }, ...list.map(starterCard))); // 4 columns left a chart < 260 px: scrollbars (L93)
 }
 
@@ -225,17 +223,17 @@ function lockedMine(lock: { skill: string; n: number }): HTMLElement {
   return h('section', { 'aria-labelledby': 'dash-mine-title' },
     h('h2', { id: 'dash-mine-title', tabindex: '-1', class: 'm-0 text-lg font-bold' }, t('dash.mine')),
     h('div', { class: cx(CARD, 'mt-3 flex flex-wrap items-start gap-4 p-5') },
-      h('span', { class: 'grid size-10 shrink-0 place-items-center rounded-lg bg-code text-muted', 'aria-hidden': 'true' }, icon('lock')),
+      h('span', { class: 'grid size-10 shrink-0 place-items-center rounded-(--r-inset) bg-code text-muted', 'aria-hidden': 'true' }, icon('lock')),
       h('div', { class: 'min-w-0 flex-1' },
-        h('h3', { class: 'm-0 text-base font-bold' }, t('dash.lockedTitle')),
+        h('h3', { class: 'm-0 text-body font-bold' }, t('dash.lockedTitle')),
         h('p', { class: 'mt-1 mb-3 text-[15px] text-muted' }, t('dash.lockedWhy', lock)),
         h('div', { class: 'flex flex-wrap items-center gap-3' },
           h('span', {
             role: 'button', 'aria-disabled': 'true', tabindex: '0', title: hint, 'aria-label': `${t('dash.createLocked')}: ${hint}`,
-            class: 'inline-flex shrink-0 cursor-not-allowed items-center gap-1.5 rounded-full border border-dashed border-line px-4 py-2 text-sm font-semibold whitespace-nowrap text-muted',
+            class: 'inline-flex shrink-0 cursor-not-allowed items-center gap-1.5 rounded-full border border-dashed border-line px-4 py-2 text-body-sm font-semibold whitespace-nowrap text-muted',
           }, icon('lock', 'size-4'), t('dash.createLocked')),
           // The hint is its own line: inside the pill it squeezed "Tạo card" into a column at 375 px (L93).
-          h('span', { class: 'min-w-48 flex-1 text-sm text-muted', 'aria-hidden': 'true' }, hint),
+          h('span', { class: 'min-w-48 flex-1 text-body-sm text-muted', 'aria-hidden': 'true' }, hint),
           h('button', { type: 'button', class: cx(BTN_GO, 'px-4 py-2'), onclick: () => (isStory() ? go('play') : backToStory()) }, t('dash.toTask'))))),
     startersBlock(true));
 }
@@ -254,15 +252,15 @@ function mineSection(redraw: () => void): HTMLElement {
   return h('section', { 'aria-labelledby': 'dash-mine-title' },
     h('div', { class: 'flex flex-wrap items-center gap-x-3 gap-y-2' },
       h('h2', { id: 'dash-mine-title', tabindex: '-1', class: 'm-0 text-lg font-bold' }, t('dash.mine')),
-      h('span', { class: 'text-sm text-muted' }, t('dash.count', { n: cards.length, max: MAX_CARDS })),
-      cards.length ? h('button', { type: 'button', class: 'ml-auto flex items-center gap-1.5 px-3 py-1 text-sm', onclick: () => startSandbox() }, icon('flask', 'size-4'), t('dash.toSandbox')) : null), // empty: the empty state holds it
-    h('p', { class: 'mt-2 mb-3 text-sm' }, h('span', { class: 'text-muted' }, t('dash.kinds')), ' ', kinds),
-    cards.length >= MAX_CARDS ? h('p', { class: 'mb-3 text-sm', role: 'note' }, t('dash.full', { max: MAX_CARDS })) : null,
+      h('span', { class: 'text-body-sm text-muted' }, t('dash.count', { n: cards.length, max: MAX_CARDS })),
+      cards.length ? h('button', { type: 'button', class: 'ml-auto flex items-center gap-1.5 px-3 py-1 text-body-sm', onclick: () => startSandbox() }, icon('flask', 'size-4'), t('dash.toSandbox')) : null), // empty: the empty state holds it
+    h('p', { class: 'mt-2 mb-3 text-body-sm' }, h('span', { class: 'text-muted' }, t('dash.kinds')), ' ', kinds),
+    cards.length >= MAX_CARDS ? h('p', { class: 'mb-3 text-body-sm', role: 'note' }, t('dash.full', { max: MAX_CARDS })) : null,
     cards.length
       ? h('div', { class: 'grid gap-4 sm:grid-cols-2 lg:grid-cols-3' }, ...cards.map((c, i) => playerCard(c, i, cards.length, redraw)))
       : h('div', { class: cx(CARD, 'p-5') },
         mascot('lily', 'sleep', 'size-16 mb-2'), // v6 §2.4: an empty state
-        h('h3', { class: 'm-0 text-base font-bold' }, t('dash.emptyTitle')),
+        h('h3', { class: 'm-0 text-body font-bold' }, t('dash.emptyTitle')),
         h('p', { class: 'mt-1 mb-3 text-[15px] text-muted' }, t('dash.empty')),
         h('button', { type: 'button', class: cx(BTN_GO, 'px-4 py-2'), onclick: () => startSandbox() }, t('dash.toSandbox'))),
     cards.length ? null : startersBlock(false));
@@ -292,7 +290,7 @@ function kpiTile(tile: KpiTile, redraw: () => void): HTMLElement {
   } else {
     // A locked tile shows an empty bar, never "—" or "???" (they read as broken data; v12 audit).
     // The "locked" chip sits in that bar, not beside the title, so a 4-column tile keeps its title width (L93).
-    value.append(h('div', { class: 'flex h-9 items-center justify-center gap-1 rounded-lg border border-dashed border-line bg-code text-xs font-semibold text-muted' },
+    value.append(h('div', { class: 'flex h-9 items-center justify-center gap-1 rounded-(--r-inset) border border-dashed border-line bg-code text-caption font-semibold text-muted' },
       icon('lock', 'size-3.5'), t('dash.kpiLocked')));
   }
   const foot = open ? t('home.kpiFrom', { title: textOf(ticket, lang).title })
@@ -301,13 +299,13 @@ function kpiTile(tile: KpiTile, redraw: () => void): HTMLElement {
   const label = kpi.label[lang];
   return h('article', { class: cx(CARD, 'flex flex-col gap-3 p-4') },
     h('div', { class: 'flex items-start gap-3' },
-      h('span', { class: cx('grid size-9 shrink-0 place-items-center rounded-lg', open ? 'bg-code text-ink' : 'bg-code text-muted') }, icon(kpiIcon(kpi))),
-      h('h3', { class: 'm-0 flex-1 self-center text-sm leading-snug font-medium' }, label),
+      h('span', { class: cx('grid size-9 shrink-0 place-items-center rounded-(--r-inset)', open ? 'bg-code text-ink' : 'bg-code text-muted') }, icon(kpiIcon(kpi))),
+      h('h3', { class: 'm-0 flex-1 self-center text-body-sm leading-snug font-medium' }, label),
       open ? h('button', { type: 'button', class: ICON_BTN, title: t('dash.hide', { title: label }), 'aria-label': t('dash.hide', { title: label }), onclick: () => setHidden(kpi.id, true, label, redraw) },
         icon('eyeOff', 'size-4'))
         : null), // a locked tile has nothing to hide yet
     value,
-    h('p', { class: 'mt-auto mb-0 flex items-start gap-1.5 text-sm text-muted' }, icon(open ? 'link' : 'lock', 'mt-0.5 size-4'), h('span', {}, foot)));
+    h('p', { class: 'mt-auto mb-0 flex items-start gap-1.5 text-body-sm text-muted' }, icon(open ? 'link' : 'lock', 'mt-0.5 size-4'), h('span', {}, foot)));
 }
 
 function companySection(redraw: () => void): HTMLElement {
@@ -319,14 +317,14 @@ function companySection(redraw: () => void): HTMLElement {
   return h('section', { 'aria-labelledby': 'dash-company-title' },
     h('div', { class: 'flex flex-wrap items-baseline gap-x-3' },
       h('h2', { id: 'dash-company-title', tabindex: '-1', class: 'm-0 text-lg font-bold' }, t('dash.company')),
-      h('span', { class: 'text-sm text-muted' }, t('dash.companyOpen', { n: tiles.filter((x) => x.open).length, total: tiles.length }))),
+      h('span', { class: 'text-body-sm text-muted' }, t('dash.companyOpen', { n: tiles.filter((x) => x.open).length, total: tiles.length }))),
     h('p', { class: 'mt-1 mb-3 text-[15px] text-muted' }, t('dash.companyIntro')),
     h('div', { class: 'grid gap-4 sm:grid-cols-2 lg:grid-cols-4' }, ...shown.map((x) => kpiTile(x, redraw))),
     gone.length
       ? h('details', { class: 'mt-3' },
-        h('summary', { class: 'cursor-pointer text-sm text-muted' }, t('dash.hidden', { n: gone.length })),
+        h('summary', { class: 'cursor-pointer text-body-sm text-muted' }, t('dash.hidden', { n: gone.length })),
         h('ul', { class: 'mt-2 list-none space-y-1 p-0' }, ...gone.map((x) => h('li', {},
-          h('button', { type: 'button', class: 'flex items-center gap-2 px-2 py-1 text-sm', onclick: () => setHidden(x.kpi.id, false, x.kpi.label[lang], redraw) },
+          h('button', { type: 'button', class: 'flex items-center gap-2 px-2 py-1 text-body-sm', onclick: () => setHidden(x.kpi.id, false, x.kpi.label[lang], redraw) },
             icon('eye', 'size-4'), t('dash.show', { title: x.kpi.label[lang] }))))))
       : null);
 }
@@ -334,7 +332,7 @@ function companySection(redraw: () => void): HTMLElement {
 /** Redrawn by main.ts (route shown, language switch, progress); main.ts focuses the title after a route change. */
 export function renderDashboard(host: HTMLElement): void {
   const redraw = (): void => renderDashboard(host);
-  host.replaceChildren(h('div', { class: 'mx-auto max-w-6xl space-y-6 px-4 py-6' },
+  host.replaceChildren(h('div', { class: 'mx-auto max-w-(--w-wide) space-y-6 px-4 py-6' },
     h('header', {},
       h('h1', { id: 'dashboard-title', tabindex: '-1', class: 'm-0 text-2xl font-bold' }, t('dash.title')),
       h('p', { class: 'mt-1 mb-0 max-w-3xl text-[15px] text-muted' }, t(customLock() ? 'dash.introLocked' : 'dash.intro'))),

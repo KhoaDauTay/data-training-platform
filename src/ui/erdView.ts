@@ -11,7 +11,17 @@ const mermaid = once(() => import('mermaid').then((m) => m.default));
 /** Renders the Mermaid definition to SVG text in the app's current theme (initialize per render, so a theme switch is picked up). */
 export async function erdSvg(definition: string): Promise<string> {
   const m = await mermaid();
-  m.initialize({ startOnLoad: false, securityLevel: 'strict', theme: isDark() ? 'dark' : 'default' });
+  // ui-ux-v7 D2/K1: colours from the app tokens (read at draw time, so they follow the theme): readable in both themes, no Mermaid purple.
+  const css = getComputedStyle(document.documentElement);
+  const v = (name: string) => css.getPropertyValue(name).trim();
+  m.initialize({
+    startOnLoad: false, securityLevel: 'strict', theme: 'base', darkMode: isDark(),
+    themeVariables: {
+      background: v('--panel'), primaryColor: v('--panel'), mainBkg: v('--panel'), primaryTextColor: v('--text'), textColor: v('--text'),
+      primaryBorderColor: v('--border-strong'), lineColor: v('--muted'), secondaryColor: v('--surface-2'), tertiaryColor: v('--surface-2'),
+      attributeBackgroundColorOdd: v('--panel'), attributeBackgroundColorEven: v('--surface-2'), rowOdd: v('--panel'), rowEven: v('--surface-2'), nodeBorder: v('--border-strong'), fontFamily: "'Nunito Variable', system-ui, sans-serif",
+    },
+  });
   return (await m.render(`erd-${++seq}`, definition)).svg;
 }
 
@@ -30,11 +40,11 @@ export function drawErd(host: HTMLElement, svg: string): void {
   );
 }
 
-const BADGE = 'rounded bg-code px-1 text-xs font-semibold ring-1 ring-line';
+const BADGE = 'rounded bg-code px-1 text-caption font-semibold ring-1 ring-line';
 
 /** "AIRPORT · SEAPORT" under a column name: hidden until the values are in, and for columns with too many of them. */
 export function valuesLine(values: Promise<Record<string, string[]>> | undefined, column: string, cls = ''): HTMLElement {
-  const el = h('span', { class: cx('block text-xs text-muted', cls), hidden: true });
+  const el = h('span', { class: cx('block text-caption text-muted', cls), hidden: true });
   values?.then((v) => {
     if (!v[column]) return;
     el.textContent = v[column].join(' · ');
@@ -55,8 +65,8 @@ export function keyBadges(cons: ErConstraint[], table: string, column: string, u
   for (const c of mine.filter((x) => x.kind === 'FOREIGN KEY' && x.refTable)) {
     const ref = `${c.refTable}.${c.refColumn ?? ''}`;
     out.push(h('span', { class: 'inline-flex items-center gap-1' }, h('span', { class: BADGE }, 'FK →'), ...nodes(
-      !unlocked.has(c.refTable!) ? h('span', { class: 'text-sm text-muted' }, t('data.refLocked'))
-        : onRef ? h('button', { type: 'button', class: 'px-1.5 py-0 font-mono text-sm', onclick: () => onRef(c.refTable!) }, ref)
+      !unlocked.has(c.refTable!) ? h('span', { class: 'text-body-sm text-muted' }, t('data.refLocked'))
+        : onRef ? h('button', { type: 'button', class: 'px-1.5 py-0 font-mono text-body-sm', onclick: () => onRef(c.refTable!) }, ref)
           : h('code', {}, ref))));
   }
   return out;

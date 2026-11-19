@@ -109,7 +109,7 @@ function skillBlock(c: LearnCtx, s: Skill, heading: 'h2' | 'h3'): HTMLElement {
     h('div', { class: 'flex flex-wrap items-center justify-between gap-2' },
       h('div', { class: 'flex min-w-0 items-center gap-3' }, tile,
         h(heading, { class: H2 }, card ? h('a', { href: `${d$.hashOf('learn')}/skill/${s.id}`, class: 'after:absolute after:inset-0' }, label(s)) : label(s))),
-      h('span', { class: 'text-sm text-muted' }, `${skillStatus(c, s.id)} · ${lt('learn.drills', { n: st.drills, total: st.total })}`)),
+      h('span', { class: 'text-body-sm text-muted' }, `${skillStatus(c, s.id)} · ${lt('learn.drills', { n: st.drills, total: st.total })}`)),
     h('p', { class: 'm-0 text-[15px] text-muted' }, s.when[d$.getLang()]),
     d$.loadLessons().has(s.id)
       ? h('p', { class: 'm-0 flex flex-wrap items-center gap-2' }, h('span', {}, lt('learn.lesson')),
@@ -159,7 +159,7 @@ function bar(k: number, m: number): HTMLElement {
 /** ui-ux-v6 S4: an advanced node's status icon beside its words (the icon is decorative). */
 const STATUS_ICON = { in: 'inApp', partial: 'partial', external: 'external' } as const;
 const statusLine = (x: AdvNode, rest: string): HTMLElement =>
-  d$.h('p', { class: 'm-0 flex items-start gap-1.5 text-sm text-muted' }, d$.icon(STATUS_ICON[x.status], 'mt-0.5 size-4 text-accent'),
+  d$.h('p', { class: 'm-0 flex items-start gap-1.5 text-body-sm text-muted' }, d$.icon(STATUS_ICON[x.status], 'mt-0.5 size-4 text-accent'),
     d$.h('span', {}, `${lt(`adv.status.${x.status}` as LearnKey)}${rest}`));
 
 function overview(c: LearnCtx): HTMLElement {
@@ -179,7 +179,7 @@ function overview(c: LearnCtx): HTMLElement {
         moduleArt(c, n, 'w-14 sm:w-20', ms.done), // v5 B1: static glyph (L93); v6 S4: done badge
         h('div', { class: 'min-w-0 flex-1 space-y-2' },
           h('a', { href: `${d$.hashOf('learn')}/sql/${n}`, class: 'font-bold after:absolute after:inset-0' }, lt('learn.moduleTitle', { n, title: d$.moduleTitle(n, lang) }), tick(ms.done)),
-          h('p', { class: 'm-0 text-sm text-muted' }, lt('learn.moduleLine', { k: ms.learned, m: ms.skills.length })),
+          h('p', { class: 'm-0 text-body-sm text-muted' }, lt('learn.moduleLine', { k: ms.learned, m: ms.skills.length })),
           bar(ms.learned, ms.skills.length)));
     })));
   const groups = (['A', 'B', 'C', 'D'] as const).map((gr) => [gr, c.general.nodes.filter((x) => x.group === gr)] as const);
@@ -188,7 +188,7 @@ function overview(c: LearnCtx): HTMLElement {
     slot('learn-adv'),
     ...groups.map(([gr, list]) => h('div', { class: 'space-y-2' },
       h('div', { class: 'flex items-center gap-3' }, h('div', { class: 'w-14 shrink-0' }, d$.illustration('aspect-[3/2]', (il) => il.trackGlyph(gr))), // v5 B1
-        h('h3', { class: 'm-0 text-sm font-bold tracking-wide text-muted uppercase' }, lt(`adv.group.${gr}` as LearnKey))),
+        h('h3', { class: 'm-0 text-body-sm font-bold tracking-wide text-muted uppercase' }, lt(`adv.group.${gr}` as LearnKey))),
       h('ul', { class: LIST }, ...list.map((x) => {
         const st = nodeState(c, x);
         const needs = x.needs.filter((id) => !known.has(id) && !(c.general.nodes.find((y) => y.id === id) && nodeState(c, c.general.nodes.find((y) => y.id === id)!).done));

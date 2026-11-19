@@ -33,7 +33,7 @@ export function coach(spot: CoachSpot): HTMLElement | null {
     (e.currentTarget as HTMLElement).closest('.coach')?.remove();
     (document.querySelector<HTMLElement>('.hints button') ?? document.getElementById('brief-title'))?.focus();
   };
-  return h('aside', { class: 'coach my-3 rounded-xl bg-accent-soft p-3 ring-1 ring-accent', role: 'note' },
+  return h('aside', { class: 'coach my-3 rounded-(--r-ctl) bg-accent-soft p-3 ring-1 ring-accent', role: 'note' },
     h('p', { class: 'mt-0 mb-2' }, t('coach.hints')),
     h('button', { type: 'button', class: 'mr-1.5', onclick: (e) => { dismissed.add(spot); close(e); } }, t('coach.ok')),
     h('button', { type: 'button', onclick: (e) => { writeJson(COACH_KEY, true); close(e); } }, t('coach.skip')));
@@ -110,7 +110,7 @@ export function boonMark(o: { label: string; aria: string; text: string; buttons
   return h('aside', { class: 'tour my-3 flex items-start gap-3 rounded-(--r-card) bg-sun p-3 text-sun-ink', role: 'note', tabindex: '-1', 'aria-label': o.aria, ...o.data },
     o.mascot === false ? null : mascot('boon', 'point', 'size-12'),
     h('div', { class: 'min-w-0 flex-1' },
-      h('p', { class: 'm-0 text-xs font-bold tracking-wider uppercase' }, o.label),
+      h('p', { class: 'm-0 text-caption font-bold tracking-wider uppercase' }, o.label),
       h('p', { class: 'mt-1 mb-2' }, o.text),
       h('div', { class: 'flex flex-wrap gap-2' }, ...o.buttons)));
 }

@@ -66,6 +66,19 @@ function sentence(c: Ctx): string {
   return t(DONE_KEY[kind], { title });
 }
 
+/**
+ * ui-ux-v7 W2 (D-U3): what the dock shows once its motion has ended. A task folds to its sentence row (≈ 56 px, "Replay" and
+ * Close), so it covers only the bottom edge of the result; a promotion keeps the whole scene (the celebration, L32).
+ */
+export const dockEnd = (kind: string): 'mini' | 'full' => (kind === 'promotion' ? 'full' : 'mini');
+function fold(mini: boolean): void {
+  const stage = byId('stage');
+  stage.dataset.mini = String(mini);
+  byId('stage-replay').hidden = !mini;
+  const text = byId('stage-text');
+  text.title = mini ? text.textContent ?? '' : '';
+}
+
 function hide(): void {
   const stage = byId('stage');
   const had = stage.contains(document.activeElement);
@@ -138,6 +151,9 @@ async function drawAndPlay(c: Ctx, owner: Ctx = c): Promise<void> {
 export function relabelStage(): void {
   const c = shown;
   if (!c || byId('stage').hidden) return;
+  // W2: the folded line belongs to the task just solved; opening another task (no hash change) closes it, so it never sits
+  // over the next task or takes its first Esc.
+  if (current.done && app.selectedId !== c.tk.id) return hide();
   byId('stage-text').textContent = sentence(c);
   if (c.lang === getLang()) return;
   c.lang = getLang();
@@ -159,10 +175,38 @@ function skip(): void {
   else hide();
 }
 
+/** W2 "Replay": the folded task dock opens and plays its scene again (end frame only under reduced motion), then folds again. */
+function replay(): void {
+  const c = shown;
+  if (!c || !current.done) return;
+  const run: Run = { fast: reducedMotion(), done: false };
+  const again: Ctx = { ...c, run };
+  current = run;
+  window.clearTimeout(hideTimer);
+  queue = queue
+    .then(async () => {
+      if (current !== run) return;
+      shown = again;
+      fold(false);
+      setSkipLabel(run.fast ? 'app.close' : 'anim.skip');
+      again.art.replaceChildren();
+      try {
+        await drawAndPlay(again);
+      } finally {
+        run.done = true;
+      }
+      if (current !== run) return;
+      setSkipLabel('app.close');
+      fold(dockEnd(again.scene.kind) === 'mini');
+    })
+    .catch((e: unknown) => console.warn('Completion replay failed:', e));
+}
+
 /** Skip button and Esc (see stageEsc). */
 export function initStage(): void {
   const stage = byId('stage');
   byId('stage-skip').addEventListener('click', skip);
+  byId('stage-replay').addEventListener('click', replay);
   stage.addEventListener('focusin', (e) => {
     const from = e.relatedTarget;
     if (!(from instanceof Node && stage.contains(from))) returnFocus = from instanceof HTMLElement ? from : null; // never a stale target
@@ -206,6 +250,7 @@ export function playCompletion(tk: Ticket, before: Set<string>, after: Set<strin
       shown = c;
       byId('stage-text').textContent = text;
       setSkipLabel(run.fast ? 'app.close' : 'anim.skip');
+      fold(false);
       byId('stage').hidden = false;
       try {
         await drawAndPlay(c);
@@ -214,8 +259,11 @@ export function playCompletion(tk: Ticket, before: Set<string>, after: Set<strin
       }
       if (current !== run) return;
       setSkipLabel('app.close');
-      // A promotion carries the new title: it stays ≥ 8 s so it can be read (v10 critic #3); reduced motion stays until Close.
-      if (!reducedMotion()) hideTimer = window.setTimeout(hide, c.scene.kind === 'promotion' ? 8000 : 4000);
+      // W2: a task folds to one line (reduced motion: at once, no transition) and stays until Close, the next completion or a page change;
+      // a promotion keeps its scene and, with motion, still closes after ≥ 8 s so its new title can be read (v10 critic #3).
+      const end = dockEnd(c.scene.kind);
+      fold(end === 'mini');
+      if (end === 'full' && !reducedMotion()) hideTimer = window.setTimeout(hide, 8000);
     })
     .catch((e: unknown) => console.warn('Completion animation failed:', e));
 }

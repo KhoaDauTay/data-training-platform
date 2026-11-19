@@ -50,8 +50,8 @@ export function tablesIn(sql: string, known: Iterable<string>): string[] {
 const positional = (rows: unknown[][], width: number, types: number[] = []): QueryResult =>
   ({ columns: Array.from({ length: width }, (_, i) => t('preview.col', { n: i + 1 })), types, rows });
 
-const subhead = (text: string): HTMLElement => h('h4', { class: 'mt-0 mb-1 text-sm' }, text);
-const loading = (): HTMLElement => h('p', { class: 'my-1 flex items-center gap-2 text-sm text-muted' }, loader(), t('preview.loading'));
+const subhead = (text: string): HTMLElement => h('h4', { class: 'mt-0 mb-1 text-body-sm' }, text);
+const loading = (): HTMLElement => h('p', { class: 'my-1 flex items-center gap-2 text-body-sm text-muted' }, loader(), t('preview.loading'));
 
 function tableBox(schema: SchemaId, table: string, meta: ErMetadata): HTMLElement {
   const key = `${schema}|${table}`;
@@ -60,11 +60,11 @@ function tableBox(schema: SchemaId, table: string, meta: ErMetadata): HTMLElemen
   const fill = (): void => {
     const c = samples.get(key);
     body.replaceChildren(...nodes(
-      h('p', { class: 'my-1 text-sm text-muted' }, t('preview.columns', { list: cols.map((x) => `${x.name} (${x.type})`).join(', ') })),
+      h('p', { class: 'my-1 text-body-sm text-muted' }, t('preview.columns', { list: cols.map((x) => `${x.name} (${x.type})`).join(', ') })),
       !c || (c.value === undefined && c.error === undefined) ? loading() : c.value ? renderResult(c.value, undefined, 5, t('preview.sample', { table })) : errorView(c.error)));
   };
-  const box = h('details', { class: 'rounded-lg bg-canvas px-2 py-1 ring-1 ring-line', open: opened.has(key) },
-    h('summary', { class: 'cursor-pointer text-sm' }, h('code', {}, table), ` · ${t('preview.colCount', { n: cols.length })}`), body);
+  const box = h('details', { class: 'rounded-(--r-inset) bg-canvas px-2 py-1 ring-1 ring-line', open: opened.has(key) },
+    h('summary', { class: 'cursor-pointer text-body-sm' }, h('code', {}, table), ` · ${t('preview.colCount', { n: cols.length })}`), body);
   const open = (): void => {
     const c = load(samples, key, () => runOn(schema, `SELECT * FROM "${table.replace(/"/g, '""')}" LIMIT 5`));
     fill();
@@ -112,8 +112,8 @@ function fillPreview(host: HTMLElement, solution: string, schema: SchemaId, key:
       h('div', {}, subhead(t('preview.tables')),
         pending(meta) ? loading() : m ? h('div', { class: 'space-y-1.5' }, ...tables.map((x) => tableBox(schema, x, m))) : errorView(meta.error)),
       h('div', {}, subhead(t('preview.expected')),
-        h('p', { class: 'mt-0 mb-1 text-sm text-muted' }, t('preview.byPosition')),
-        pending(exp) ? loading() : e ? renderResult(positional(e.rows, e.columns.length, e.types), undefined, 3) : errorView(exp.error))));
+        h('p', { class: 'mt-0 mb-1 text-body-sm text-muted' }, t('preview.byPosition')),
+        pending(exp) ? loading() : e ? renderResult(positional(e.rows, e.columns.length, e.types), undefined, 3, undefined, { types: false }) : errorView(exp.error))));
   };
   draw();
   for (const c of [meta.p, exp.p]) void c.then(() => host.isConnected && draw());
@@ -156,7 +156,7 @@ export const hasDiff = (r: Fail): r is Extract<Fail, { reason: 'rows' }> => r.re
 export function diffView(r: Fail): HTMLElement | null {
   if (!hasDiff(r)) return null;
   const block = (title: string, rows: unknown[][], n: number): HTMLElement | null =>
-    rows.length ? h('div', {}, subhead(title), renderResult(positional(rows, rows[0].length), undefined, 3, t('diff.caption', { shown: rows.length, n }))) : null;
+    rows.length ? h('div', {}, subhead(title), renderResult(positional(rows, rows[0].length), undefined, 3, t('diff.caption', { shown: rows.length, n }), { types: false })) : null;
   return h('div', { class: 'mt-2 space-y-2' }, ...nodes(
     block(t('diff.extra'), r.extraRows, r.extra),
     block(t('diff.missing'), r.missingRows, r.missing)));

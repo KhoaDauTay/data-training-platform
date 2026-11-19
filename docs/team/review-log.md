@@ -748,3 +748,11 @@ Bản build `vite preview --strictPort` 5199, Edge headless, mỗi lần chạy 
 3. **R6 (người mới vào thẳng F1) chưa được đánh giá với người thật.** Lượt chơi ở đây dùng Solution có sẵn.
 
 Cổng: `npx tsc --noEmit` sạch, `npm test` 3364 xanh (1 bỏ qua, 82 file), `npm run build` xanh, `check-budget` xanh (main 302/500, fin 43/50, finseed 7/10, finart 7/10, frame 3/4, worker 135/160).
+
+## v7 P1 (ui-ux-v7 T1, W1, W2, C1, M1 + K1), 2026-11-19, L136
+
+- Cổng: `npx tsc --noEmit` sạch; `npm test` 3380 xanh (1 bỏ qua, 84 file); `npm run build`; `check-budget` ok.
+- Ngân sách (gzip -9, cây sạch 29ef458 → sau): main 303,5 → 306,3 KB (+2,7; cổng v7 ≤ +8), css 17,0 → 17,8 / 20, html 9,7 → 9,9 / 12.
+- W2, đo bằng CDP (`getBoundingClientRect`) sau khi chuyển động xong: 1280 và 1024: dock 480×46, giao với khung bảng kết quả 38 px (cổng ≤ 56); trước: 640×309, giao 168 px (1280) và 155 px (1024). 375/320: 343×46 / 288×46, không giao bảng. Giảm chuyển động: vào thẳng dạng một dòng (46 px).
+- Trình duyệt: preview 5203, Edge headless hồ sơ mới; workspace (1×1, lỗi `cnt`, bảng, Biểu đồ cột/đường/rỗng), dock giữa/cuối, Bảng điều hành ở 1280/1024/375/320 × sáng/tối; trang (Trang chủ, Lộ trình, Phần 1, Luyện SQL, Tổng quan ×3, Dữ liệu, Bản đồ, workspace, Sổ tay, bài học nhanh, ER) ở 1280/375 tối (trước) và tối + sáng (sau). 0 lỗi trang, không cuộn ngang.
+- Chưa kiểm trong trình duyệt: dock thăng tiến và dock E-com/Finance sau W2 (logic `dockEnd` có test).
