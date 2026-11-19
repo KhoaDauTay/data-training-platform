@@ -4,7 +4,7 @@ import { activeDomain, isLiveDomain, type DomainId } from './domains';
  * Hash routes without a framework (product-design-v5 §B.3, v6 §3.3). Practice runs and the Sandbox stay session modes
  * inside 'play' (Plan 7 V5); every reading page (home, learn, practice, overview, map) is drawn in <main id="home">.
  */
-export const ROUTES = ['home', 'learn', 'practice', 'overview', 'play', 'data', 'dashboard', 'map'] as const;
+export const ROUTES = ['home', 'learn', 'practice', 'overview', 'play', 'data', 'dashboard', 'map', 'me'] as const; // v16 (L142): 'me' = #/me, My progress
 // v14 T5 (v9 D-F8): 'soon' (the "Coming soon" page) is gone; a remembered 'soon' reads as home (isRoute). A fourth domain gets it back from git.
 export type Route = (typeof ROUTES)[number];
 
@@ -15,7 +15,7 @@ export const ROUTE_KEY = 'cargo-query/route';
 const D = (): string => `#/d/${activeDomain()}`;
 const hashTable = (): Record<Route, string> => ({
   home: '#/', learn: '#/learn', practice: '#/practice', overview: D(), play: `${D()}/play`, data: `${D()}/data`,
-  dashboard: `${D()}/dashboard`, map: `${D()}/map`,
+  dashboard: `${D()}/dashboard`, map: `${D()}/map`, me: '#/me',
 });
 const DOMAIN_PAGE: Record<string, Route> = { '': 'overview', play: 'play', data: 'data', dashboard: 'dashboard', map: 'map' };
 
@@ -56,7 +56,7 @@ export function parseRoute(hash: string): Route | undefined {
   const [a = '', b = '', c = ''] = canonicalHash(hash).replace(/^#\/?/, '').split('?')[0].split('/');
   if (a === '') return 'home';
   if (a === 'learn' && b === 'play') return 'play'; // v15 Q1: the General workspace (a drill or a review of drills)
-  if (a === 'learn' || a === 'practice') return a;
+  if (a === 'learn' || a === 'practice' || a === 'me') return a;
   if (a !== 'd') return 'home';
   return isLiveDomain(b) && Object.hasOwn(DOMAIN_PAGE, c) ? DOMAIN_PAGE[c] : 'home';
 }
@@ -81,6 +81,25 @@ export function learnModuleOf(hash: string): number | undefined {
 export const learnSkillOf = (hash: string): string | undefined => /^#\/?learn\/skill\/([a-z0-9_]+)(?=$|[/?])/.exec(hash)?.[1];
 /** `#/learn/adv/<node>` → the advanced node page (Plan 8a). */
 export const learnAdvOf = (hash: string): string | undefined => /^#\/?learn\/adv\/([a-z0-9_]+)(?=$|[/?])/i.exec(hash)?.[1].toLowerCase(); // #/learn/adv/A1 = a1 (L93): pages print ids in capitals
+
+/** v16 (v7 §5.3): a shared query is at most as long as a dashboard card's SQL. */
+export const SHARE_MAX = 4000;
+/** `#/share?d=<domain>&sql=<base64url of the UTF-8 text>`: opens that domain's Sandbox with the SQL in the editor, never run. */
+export const shareHash = (sql: string, d: DomainId): string =>
+  `#/share?d=${d}&sql=${btoa(String.fromCharCode(...new TextEncoder().encode(sql))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')}`;
+/** The shared query in a `#/share?…` hash; undefined for any other hash, an unknown domain, bad base64/UTF-8 or SQL over SHARE_MAX. */
+export function sharedOf(hash: string): { sql: string; d: DomainId } | undefined {
+  const q = /^#\/?share\?(.*)$/.exec(hash)?.[1];
+  if (q === undefined) return undefined;
+  const p = new URLSearchParams(q);
+  const d = p.get('d') ?? undefined;
+  try {
+    const sql = new TextDecoder('utf-8', { fatal: true }).decode(Uint8Array.from(atob((p.get('sql') ?? '').replace(/-/g, '+').replace(/_/g, '/')), (c) => c.charCodeAt(0)));
+    return isLiveDomain(d) && sql.trim() && sql.length <= SHARE_MAX ? { sql, d } : undefined;
+  } catch {
+    return undefined;
+  }
+}
 
 /** `#/d/<id>…` of a live domain (old hashes count as Logistics) → that domain; any other page → undefined (keeps the last domain). */
 export function domainOfHash(hash: string): DomainId | undefined {

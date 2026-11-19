@@ -87,6 +87,8 @@
     "sargable": ["lightning", "index-friendly condition: fast"],
     "inApp": ["monitor-play", "advanced node practised here in the app (replaces the text mark of ui-ux-v6 S4)"],
     "partial": ["circle-half", "advanced node partly practised in the app"],
-    "external": ["arrow-square-out", "advanced node: read external docs"]
+    "external": ["arrow-square-out", "advanced node: read external docs"],
+    "user": ["user-circle", "My progress page (#/me, v16 L142)"],
+    "image": ["image", "download a dashboard card as a PNG picture (v16 L142)"]
   }
 }

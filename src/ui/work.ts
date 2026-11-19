@@ -1,6 +1,7 @@
 import type { SQLNamespace } from '@codemirror/lang-sql';
 import type { DbClient } from '../db/client';
-import { sqlErrorInfo } from '../db/run';
+import { SqlError, sqlErrorInfo } from '../db/run';
+import { notePass, noteTry } from '../insights';
 import type { QueryResult } from '../db/run';
 import { compareResults, grade, type GradeResult } from '../grader';
 import { loadHistory, pushHistory, writeHistory } from '../history';
@@ -220,6 +221,8 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
           e.rows === undefined ? '' : h('span', { class: 'muted' }, ` · ${t('hist.rows', { n: e.rows })}`))))));
   }
 
+  const codeOf = (e: unknown): string | undefined => (e instanceof SqlError ? e.code : undefined);
+
   /** History belongs to the ticket the query was started for, even if the player has moved on since. */
   function record(ticketId: string | undefined, run: LastRun): void {
     if (!ticketId) return;
@@ -265,6 +268,7 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
     }
     if (schema !== 'game') r.schema = schema;
     record(historyId, r);
+    noteTry(historyId, 'runs', codeOf(r.error)); // v16 I2: device-only statistics (src/insights.ts)
     if (editor !== ed) return;
     app.lastRun = r;
     announce(runSummary(r, ed.getValue()));
@@ -403,6 +407,7 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
       setButtons();
     }
     if (played) record(story ? tk.id : undefined, played);
+    noteTry(story ? tk.id : undefined, 'submits', codeOf(played?.error));
     if (editor !== ed) return; // stale: never credit or message a ticket the player has left
     if (played) app.lastRun = played;
     chip(played);
@@ -453,6 +458,7 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
     if (story) {
       app.save.graded[k] = sql; // the Recap shows what was graded, not the draft edited afterwards
       persist();
+      if (i === tk.steps.length - 1) notePass(tk.id);
     }
     if (i < tk.steps.length - 1) {
       deps.onStepSolved(); // setTicket() for the next step clears the message, so say it afterwards

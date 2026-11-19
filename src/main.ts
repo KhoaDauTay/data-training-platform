@@ -16,9 +16,10 @@ import { resumeStep } from './overview';
 import { seedReview } from './practice';
 import { generalHash, isStory, parseSessionNote, playSchema, session, sessionNote, SESSION_KEY, today } from './session';
 import { localStore, readJson, writeJson } from './storage';
-import { domainOfHash, drillOfHash, type Route } from './route';
+import { domainHash, domainOfHash, drillOfHash, sharedOf, type Route } from './route';
 import type { Ticket } from './tickets';
-import { initModes, onPracticeWrong, onSolved, renderLeft, renderReviewButton, startDrill, startLane, startSandbox } from './ui/modes';
+import { initModes, onPracticeWrong, onSolved, openShared, renderLeft, renderReviewButton, startDrill, startLane, startSandbox } from './ui/modes';
+import './ui/me'; // v16 (L142): #/me nav item and page section; the page itself is the lazy meView chunk
 import { renderNotebook, toggleNotebook } from './ui/notebook';
 import { byId, h, initLightDismiss } from './ui/dom';
 import { errorText } from './ui/feedback';
@@ -127,6 +128,26 @@ const loaded = loadSave(localStore(), known);
 app.save = loaded.save;
 if (loaded.warning?.kind === 'newer') app.notice = { key: 'save.newerLoaded', params: { v: loaded.warning.version ?? 0 } };
 if (loaded.warning?.kind === 'corrupt') app.notice = { key: 'save.corrupt' };
+
+/** v16 (v7 §5.3): a #/share link becomes its domain's workspace hash at once; the query waits for that route (takeShare). */
+let pendingShare = sharedOf(location.hash);
+const toShare = (): void => {
+  if (pendingShare) history.replaceState(history.state, '', `${domainHash(pendingShare.d)}/play`);
+};
+toShare();
+window.addEventListener('hashchange', () => { // before the router's listener, so it already sees the workspace hash
+  const s = sharedOf(location.hash);
+  if (!s) return;
+  pendingShare = s;
+  toShare();
+});
+/** Never run, never saved as a route: the SQL goes into the Sandbox editor once the domain's workspace is shown. */
+const takeShare = (r: Route): void => {
+  const s = pendingShare;
+  if (!s || r !== 'play' || activeDomain() !== s.d) return;
+  pendingShare = undefined;
+  openShared(s.sql);
+};
 
 const firstOpen = (): string => (nextTicket(app.tickets, done()) ?? app.tickets[app.tickets.length - 1]).id;
 app.selectedId = firstOpen();
@@ -296,7 +317,7 @@ function nextStep(): void {
 
 let shownRoute: Route | undefined;
 /** Reading pages share <main id="home"> (src/ui/homeView.ts draws the one the route names). */
-const PAGE_ROUTES: ReadonlySet<Route> = new Set<Route>(['home', 'learn', 'practice', 'overview', 'map']);
+const PAGE_ROUTES: ReadonlySet<Route> = new Set<Route>(['home', 'learn', 'practice', 'overview', 'map', 'me']);
 const TITLE_OF: Partial<Record<Route, string>> = { data: 'data-title', dashboard: 'dashboard-title', play: 'brief-title' };
 /** Reading pages, #/d/logistics/play = workspace, …/data = Data page, …/dashboard. All stay mounted and only toggle `hidden`, so the editor is never recreated. */
 function showRoute(r: Route, initial: boolean): void {
@@ -534,8 +555,14 @@ startRouter((r, initial) => {
   const d = domainOfHash(location.hash);
   if (d) openPage(r, d); // a domain page needs its data (seeded once)
   else if (r === 'play') openSchema('lab'); // v15 Q1: #/learn/play, a drill or a review of drills
-  if (d && d !== activeDomain()) void enterDomain(d).then(() => showRoute(r, initial));
-  else showRoute(r, initial);
+  if (d && d !== activeDomain()) void enterDomain(d).then(() => {
+    showRoute(r, initial);
+    takeShare(r);
+  });
+  else {
+    showRoute(r, initial);
+    takeShare(r);
+  }
 }, generalHash);
 // A reload on a drill (#/learn/play/<id>) reopens that drill with its saved draft; the session itself is never saved.
 const reopen = drillOfHash(location.hash);

@@ -17,6 +17,7 @@ import { textOf, type Ticket } from '../tickets';
 import { MAX_POINTS } from '../viz/chart';
 import { bars, line } from './chartView';
 import { byId, h } from './dom';
+import { meChunk } from './meChunk';
 import { errorView } from './feedback';
 import { icon, isIconName, type IconName } from './icons';
 import { backToStory, startSandbox } from './modes';
@@ -109,7 +110,7 @@ function sourceLine(c: Card): string {
 }
 
 function playerCard(c: Card, i: number, n: number, redraw: () => void): HTMLElement {
-  const body = h('div', { class: 'min-h-9' });
+  const body = h('div', { class: 'min-h-9', 'data-card-body': '' });
   const ran = h('span', { class: 'tabular-nums' });
   const save = () => {
     persist(true);
@@ -134,6 +135,7 @@ function playerCard(c: Card, i: number, n: number, redraw: () => void): HTMLElem
     cards.result(c).then((r) => {
       markRan(c);
       body.replaceChildren(cardBody(c, r));
+      body.dataset.ready = ''; // v16: what the card's PNG captures
       if (r.ms !== undefined) ran.textContent = t('dash.ran', { ms: r.ms });
     }, (e: unknown) => {
       if (e instanceof QueryTimeoutError) redraw(); // now marked slow
@@ -153,7 +155,7 @@ function playerCard(c: Card, i: number, n: number, redraw: () => void): HTMLElem
   const btn = (act: string, name: IconName, label: string, onclick: () => void, disabled = false) =>
     h('button', { type: 'button', class: ICON_BTN, 'data-card': c.id, 'data-act': act, title: label, 'aria-label': label, disabled, onclick }, icon(name, 'size-4'));
   // A table needs width more than the charts do: two columns from sm (no dense flow: visual order = Lên/Xuống order).
-  return h('article', { class: cx(CARD, 'flex min-w-0 flex-col gap-3 p-4', c.kind === 'table' && 'sm:col-span-2') },
+  const article: HTMLElement = h('article',{ class: cx(CARD, 'flex min-w-0 flex-col gap-3 p-4', c.kind === 'table' && 'sm:col-span-2') },
     h('div', { class: 'flex items-start gap-2' },
       h('span', { class: 'grid size-9 shrink-0 place-items-center rounded-(--r-inset) bg-code', 'aria-hidden': 'true' }, icon(KIND_ICONS[c.kind])),
       h('h3', { class: 'm-0 min-w-0 flex-1 self-center text-body-sm leading-snug font-semibold break-words' }, c.title)),
@@ -166,6 +168,7 @@ function playerCard(c: Card, i: number, n: number, redraw: () => void): HTMLElem
       btn('up', 'up', t('dash.up', { title: c.title }), () => move(-1), i === 0),
       btn('down', 'down', t('dash.down', { title: c.title }), () => move(1), i === n - 1),
       btn('rerun', 'refresh', t('dash.rerun', { title: c.title }), rerun),
+      btn('png', 'image', t('dash.png', { title: c.title }), () => void meTools().then((m) => m.cardPng(article, c)).then(say, () => say(t('me.failed')))),
       btn('unpin', 'unpin', t('dash.unpin', { title: c.title }), () => {
         const d = domainSlot(app.save, activeDomain()).dashboard;
         d.cards = d.cards.filter((x) => x.id !== c.id);
@@ -174,6 +177,18 @@ function playerCard(c: Card, i: number, n: number, redraw: () => void): HTMLElem
         byId('dash-mine-title').focus();
         announce(t('dash.unpinned', { title: c.title }));
       })));
+  return article;
+}
+
+/** v16 (L142): the file and picture exports live in the lazy `meView` chunk (loaded through src/ui/me.ts on the first click). */
+const meTools = meChunk;
+/** The last export/import sentence: shown under "My cards" (role=status) and read once. */
+let dashMsg = '';
+let redrawDash: () => void = () => {};
+function say(msg: string): void {
+  dashMsg = msg;
+  redrawDash();
+  announce(msg);
 }
 
 /** Starter cards run once per session like player cards, but are never saved, never marked "ran" and never slow-flagged. */
@@ -253,7 +268,11 @@ function mineSection(redraw: () => void): HTMLElement {
     h('div', { class: 'flex flex-wrap items-center gap-x-3 gap-y-2' },
       h('h2', { id: 'dash-mine-title', tabindex: '-1', class: 'm-0 text-lg font-bold' }, t('dash.mine')),
       h('span', { class: 'text-body-sm text-muted' }, t('dash.count', { n: cards.length, max: MAX_CARDS })),
-      cards.length ? h('button', { type: 'button', class: 'ml-auto flex items-center gap-1.5 px-3 py-1 text-body-sm', onclick: () => startSandbox() }, icon('flask', 'size-4'), t('dash.toSandbox')) : null), // empty: the empty state holds it
+      h('span', { class: 'ml-auto flex flex-wrap gap-2' },
+        cards.length ? h('button', { type: 'button', class: 'flex items-center gap-1.5 px-3 py-1 text-body-sm', onclick: () => void meTools().then((m) => say(m.exportDash()), () => say(t('me.failed'))) }, icon('download', 'size-4'), t('dash.export')) : null,
+        h('button', { type: 'button', class: 'flex items-center gap-1.5 px-3 py-1 text-body-sm', onclick: () => void meTools().then((m) => m.importDashFile((msg) => say(msg)), () => say(t('me.failed'))) }, icon('upload', 'size-4'), t('dash.import')),
+        cards.length ? h('button', { type: 'button', class: 'flex items-center gap-1.5 px-3 py-1 text-body-sm', onclick: () => startSandbox() }, icon('flask', 'size-4'), t('dash.toSandbox')) : null)), // empty: the empty state holds it
+    dashMsg ? h('p', { class: 'mt-2 mb-0 text-body-sm', role: 'status' }, dashMsg) : null,
     h('p', { class: 'mt-2 mb-3 text-body-sm' }, h('span', { class: 'text-muted' }, t('dash.kinds')), ' ', kinds),
     cards.length >= MAX_CARDS ? h('p', { class: 'mb-3 text-body-sm', role: 'note' }, t('dash.full', { max: MAX_CARDS })) : null,
     cards.length
@@ -332,10 +351,12 @@ function companySection(redraw: () => void): HTMLElement {
 /** Redrawn by main.ts (route shown, language switch, progress); main.ts focuses the title after a route change. */
 export function renderDashboard(host: HTMLElement): void {
   const redraw = (): void => renderDashboard(host);
+  redrawDash = redraw;
   host.replaceChildren(h('div', { class: 'mx-auto max-w-(--w-wide) space-y-6 px-4 py-6' },
     h('header', {},
       h('h1', { id: 'dashboard-title', tabindex: '-1', class: 'm-0 text-2xl font-bold' }, t('dash.title')),
       h('p', { class: 'mt-1 mb-0 max-w-3xl text-[15px] text-muted' }, t(customLock() ? 'dash.introLocked' : 'dash.intro'))),
     mineSection(redraw), // L49: the player's own cards come before the company figures
     companySection(redraw)));
+  dashMsg = ''; // shown by this draw only: a later redraw (language, domain) never repeats an old sentence
 }

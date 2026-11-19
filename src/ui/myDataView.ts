@@ -19,6 +19,8 @@ let busy = false;
 /** Imported tables count only in Sandbox (spec §7b "Hiển thị", I4). */
 export const sandboxTables = (): ImportedTable[] => (session.mode.kind === 'sandbox' && my ? my.tables : []);
 
+/** v16 (L142): every imported table name, whatever the mode: exports leave out SQL that reads them. */
+export const importedNames = (): string[] => (my ? my.tables.map((x) => x.table) : []);
 /** Unlocked game tables, plus imported ones in Sandbox: what the ER tab draws. */
 export const visibleTables = (): string[] => [...unlockedTables(), ...sandboxTables().map((x) => x.table)];
 
