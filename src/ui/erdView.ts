@@ -11,7 +11,17 @@ const mermaid = once(() => import('mermaid').then((m) => m.default));
 /** Renders the Mermaid definition to SVG text in the app's current theme (initialize per render, so a theme switch is picked up). */
 export async function erdSvg(definition: string): Promise<string> {
   const m = await mermaid();
-  m.initialize({ startOnLoad: false, securityLevel: 'strict', theme: isDark() ? 'dark' : 'default' });
+  // ui-ux-v7 D2/K1: colours from the app tokens (read at draw time, so they follow the theme): readable in both themes, no Mermaid purple.
+  const css = getComputedStyle(document.documentElement);
+  const v = (name: string) => css.getPropertyValue(name).trim();
+  m.initialize({
+    startOnLoad: false, securityLevel: 'strict', theme: 'base', darkMode: isDark(),
+    themeVariables: {
+      background: v('--panel'), primaryColor: v('--panel'), mainBkg: v('--panel'), primaryTextColor: v('--text'), textColor: v('--text'),
+      primaryBorderColor: v('--border-strong'), lineColor: v('--muted'), secondaryColor: v('--surface-2'), tertiaryColor: v('--surface-2'),
+      attributeBackgroundColorOdd: v('--panel'), attributeBackgroundColorEven: v('--surface-2'), fontFamily: "'Nunito Variable', system-ui, sans-serif",
+    },
+  });
   return (await m.render(`erd-${++seq}`, definition)).svg;
 }
 

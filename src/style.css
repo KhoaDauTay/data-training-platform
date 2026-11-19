@@ -67,13 +67,15 @@
 }
 /* Set by src/theme.ts (and the inline script in index.html before first paint). */
 :root[data-theme=dark] {
-  --bg: #1a1714; --panel: #25201c; --text: #f3ece4; --muted: #b9ab9c; --border: #3e362f;
-  --accent: #5ed3c3; --accent-soft: #16332f; --on-accent: #0b2522; --good: #6bd58a; --bad: #ff8a7a; --warn: #ffc067;
-  --code: #2e2823; --sea: #14202b; --land: #2b3742; --bar: #0d1b29; --disabled: #7a7a82;
-  --sun: #4a3a17; --sun-ink: #ffe2a3;
-  --surface-2: #2f2925; --border-strong: #5a4f45;
+  /* ui-ux-v7 K1 (L136, user: "dark is hard to read"): body text >= 7:1 on every surface (>= 10 on bg/panel), muted >= 7:1,
+     controls' edge (--border-strong) >= 3:1 on --bg and --panel; checked in tests/theme.test.ts. */
+  --bg: #131110; --panel: #201c19; --text: #f8f3ed; --muted: #d0c5b9; --border: #4d443c;
+  --accent: #62dccb; --accent-soft: #163a35; --on-accent: #082320; --good: #74de93; --bad: #ff968a; --warn: #ffc874;
+  --code: #2b2622; --sea: #14202b; --land: #2b3742; --bar: #0d1b29; --disabled: #8f8f97;
+  --sun: #43350f; --sun-ink: #ffe6ad;
+  --surface-2: #2b2622; --border-strong: #7d7166;
   --shadow-1: 0 0 0 1px var(--border-strong); --shadow-2: 0 0 0 1px var(--border-strong), 0 12px 32px rgb(0 0 0 / 0.5);
-  --good-soft: #17301f; --bad-soft: #3a1f1b; --warn-soft: #382a12; --info-soft: #162a35;
+  --good-soft: #163420; --bad-soft: #3d1f1b; --warn-soft: #3a2c10; --info-soft: #142c39;
   --lily-fur: #f3f0eb; --lily-cream: #dcd5ca; --lily-ear: #1f1a17; --lily-spot: #1f1a17; --lily-line: #8a7e75; --lily-ink: #1f1a17; --lily-scarf: #2bb3a3;
   --boon-body: #f2f2ef; --boon-plume: #d3d9dc; --boon-line: #858e95; --boon-wing: #3a8391; --boon-belly: #e1e6e7; --boon-bill: #e9ad3e; --boon-ink: #1d1916;
   --boon-shade: #b9c2c7; --boon-bill-dark: #b8741f;
@@ -87,9 +89,9 @@
   --es-road: #1c1d23; --es-wall: #c9a24f; --es-wall2: #9c7a35; --es-shed0: #6f7888; --es-shed1: #4f5766; --es-roof: #2f3542;
   --es-inside: #141720; --es-glass: #4a5a6e; --es-night: 1; --es-win: 0.85; --es-glow: 0.95;
   --fs-wall: #a89a80; --fs-wall2: #7d7260;
-  /* L13 syntax colours: >= 5.6:1 on --panel and --code */
-  --syn-keyword: #d19bff; --syn-string: #ff9e7a; --syn-number: #7ee0b5; --syn-comment: #9aa39a;
-  --syn-operator: #c8c8d0; --syn-type: #6cc0ff; --syn-property: #9cdcfe; --syn-atom: #ffcf6b;
+  /* L13 syntax colours; K1 (L136): >= 7:1 on --panel and --code */
+  --syn-keyword: #dcaeff; --syn-string: #ffab8a; --syn-number: #86e8bd; --syn-comment: #b3bab3;
+  --syn-operator: #d6d6dd; --syn-type: #86ccff; --syn-property: #a8e2ff; --syn-atom: #ffd57d;
   --cm-sel: #1e2f46; --cm-active: rgba(255, 255, 255, 0.04);
   color-scheme: dark;
 }
@@ -151,6 +153,7 @@
   button, summary { min-height: 1.5rem; } /* v12.0 A4: WCAG 2.5.8 target size */
   button:hover { background: var(--code); }
   button:disabled { color: var(--disabled); border-style: dashed; cursor: default; }
+  :root[data-theme=dark] button { border-color: var(--border-strong); } /* K1: a control's edge >= 3:1 (WCAG 1.4.11); border utilities still win */
   code { background: var(--code); padding: 1px 4px; border-radius: 4px; font-family: ui-monospace, monospace; font-size: 0.92em; }
   table { border-collapse: collapse; font-size: 13px; width: 100%; }
   caption { text-align: left; color: var(--muted); padding: 4px 8px; }

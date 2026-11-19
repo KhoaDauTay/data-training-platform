@@ -115,9 +115,25 @@ describe('theme', () => {
     expect(ratio(mix(255, alpha(':root[data-theme=dark] .lily-shadow-fig'), dark.panel), dark.panel)).toBeGreaterThanOrEqual(3);
   });
 
+  it('ui-ux-v7 K1: theme tối dễ đọc: chữ thân ≥ 7:1 trên mọi bề mặt, chữ mờ ≥ 7:1, mã ≥ 7:1, viền điều khiển ≥ 3:1', () => {
+    const dark = { ...tokens(':root'), ...tokens(':root[data-theme=dark]') };
+    const SURFACES = ['bg', 'panel', 'code', 'surface-2', 'accent-soft', 'good-soft', 'bad-soft', 'warn-soft', 'info-soft', 'sea'];
+    const need: [string, string, number][] = [
+      ...SURFACES.flatMap((b): [string, string, number][] => [['text', b, 7], ['muted', b, 7]]),
+      ['text', 'bg', 10], ['text', 'panel', 10], ['sun-ink', 'sun', 7], ['muted', 'sun', 4.5],
+      ...['accent', 'good', 'bad', 'warn'].flatMap((f): [string, string, number][] => [[f, 'bg', 7], [f, 'panel', 7]]),
+      ...['keyword', 'string', 'number', 'comment', 'operator', 'type', 'property', 'atom']
+        .flatMap((k): [string, string, number][] => [[`syn-${k}`, 'panel', 7], [`syn-${k}`, 'code', 7]]),
+      ['border-strong', 'bg', 3], ['border-strong', 'panel', 3],
+    ];
+    const bad = need.filter(([f, b, min]) => !dark[f] || !dark[b] || ratio(dark[f], dark[b]) < min)
+      .map(([f, b, min]) => `${f}/${b} ${dark[f] && dark[b] ? ratio(dark[f], dark[b]).toFixed(2) : 'thiếu'} < ${min}`);
+    expect(bad).toEqual([]);
+  });
+
   it('token ấm của v6 (L57) và bo góc 20/14', () => {
     expect(tokens(':root')).toMatchObject({ bg: '#fbf7f0', accent: '#0f766e', sun: '#ffe9bd', 'sun-ink': '#5c3d00' });
-    expect(tokens(':root[data-theme=dark]')).toMatchObject({ bg: '#1a1714', accent: '#5ed3c3', sun: '#4a3a17' });
+    expect(tokens(':root[data-theme=dark]')).toMatchObject({ bg: '#131110', accent: '#62dccb', sun: '#43350f' }); // K1 (L136)
     expect(css).toMatch(/--r-card:\s*20px;\s*--r-ctl:\s*14px;/);
   });
   it('A4 (v12.0): mọi nút cao tối thiểu 24 px (WCAG 2.5.8)', () => {
