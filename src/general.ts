@@ -15,7 +15,7 @@ export const DRILL_ID = /^g-[a-z0-9-]+$/;
 const BLANK = '___';
 export type LessonBodyParser = (o: Record<string, unknown>, fail: (what: string) => never) => LessonBody;
 
-const bilingualOf = (v: unknown): Bilingual | undefined => {
+export const bilingualOf = (v: unknown): Bilingual | undefined => {
   const o = v as Partial<Record<keyof Bilingual, unknown>> | null;
   if (!o || typeof o !== 'object' || Array.isArray(o) || typeof o.vi !== 'string' || typeof o.en !== 'string') return undefined;
   const b = { vi: o.vi.trim(), en: o.en.trim() };
@@ -62,7 +62,7 @@ const list = (data: unknown, origin: string): Raw[] => {
   return data.map((x) => (x ?? {}) as Raw);
 };
 
-function parseDrill(o: Raw, origin: string, owner: { skill?: string; node?: string }): Drill {
+export function parseDrill(o: Raw, origin: string, owner: { skill?: string; node?: string }): Drill {
   const fail = (what: string): never => {
     throw new Error(`${origin}: drill ${String(o.id)} ${what}`);
   };

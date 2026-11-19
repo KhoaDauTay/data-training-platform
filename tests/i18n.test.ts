@@ -11,6 +11,7 @@ import finKpisYml from '../content/domains/fin/kpis.yml?raw';
 import finPeopleYml from '../content/domains/fin/people.yml?raw';
 import generalSqlYml from '../content/general/sql.yml?raw';
 import generalAdvYml from '../content/general/adv.yml?raw';
+import generalInterviewYml from '../content/general/interview.yml?raw';
 import html from '../index.html?raw';
 import { loadDomain, loadTicketTemplates, loadTickets } from '../src/content';
 import { isMacPlatform, keyLabels, t } from '../src/i18n';
@@ -84,7 +85,7 @@ describe('từ điển i18n', () => {
     await Promise.all([loadDomain('ecommerce'), loadDomain('finance')]);
     const texts = [
       ...[ecomChaptersYml, ecomKpisYml, ecomPeopleYml, finChaptersYml, finKpisYml, finPeopleYml].flatMap((y) => strings(parseYaml(y))),
-      ...[generalSqlYml, generalAdvYml].flatMap((y) => strings(parseYaml(y))),
+      ...[generalSqlYml, generalAdvYml, generalInterviewYml].flatMap((y) => strings(parseYaml(y))),
       ...[...loadTicketTemplates('ecommerce'), ...loadTicketTemplates('finance')].flatMap((tk) => (['vi', 'en'] as const).flatMap((lang) => strings(textOf(tk, lang)))),
     ];
     expect(texts.length).toBeGreaterThan(100);

@@ -1,0 +1,191 @@
+# Phòng phỏng vấn (v17 I5, docs/team/interview-room.md, L138). Dữ liệu: schema `lab` (src/db/lab.sql), "hôm nay" = 2026-10-31.
+# Bộ đề: đúng 5 câu, id g-iv-<bộ>-<n>, không starter (không khung), `skills` = mọi kỹ năng Solution dùng.
+# Take-home: 3–4 bước như đánh giá thăng tiến (mọi bước ordered), một đoạn tự viết + rubric tự chấm.
+
+sets:
+  - id: junior-1
+    level: junior
+    modules: [1, 2, 3, 4]
+    minutes: 20
+    title: { vi: "Junior DA: vòng SQL 20 phút", en: "Junior DA: 20-minute SQL round" }
+    questions:
+      - id: g-iv-junior-1-1
+        skills: [select, where, join, multi_join, aggregate, group_by, order_by, limit]
+        task: { vi: "Năm sản phẩm có doanh thu cao nhất trên các đơn đã thanh toán (`PAID`); doanh thu một dòng hàng = số lượng × đơn giá. Lấy tên sản phẩm và doanh thu, cao nhất lên đầu; bằng nhau thì theo tên A→Z.", en: "The five products with the highest revenue over paid orders (`PAID`); the revenue of an order line = quantity × unit price. Get the product name and the revenue, highest first; on a tie, by name A→Z." }
+        solution: "SELECT p.name, SUM(i.qty * i.unit_price_vnd) AS revenue FROM order_items i JOIN orders o ON o.id = i.order_id JOIN products p ON p.id = i.product_id WHERE o.status = 'PAID' GROUP BY p.name ORDER BY revenue DESC, p.name LIMIT 5"
+        ordered: true
+        hint: { vi: "Dòng hàng nằm ở `order_items`, trạng thái ở `orders`, tên ở `products`: nối cả ba rồi gom theo sản phẩm.", en: "Lines live in `order_items`, the status in `orders`, the name in `products`: join all three, then group by product." }
+      - id: g-iv-junior-1-2
+        skills: [where, date_bucket, aggregate, group_by]
+        task: { vi: "Quý 3/2026 (tháng 7 đến hết tháng 9): mỗi tháng và mỗi kênh bán có bao nhiêu đơn, mọi trạng thái? Lấy ngày đầu tháng, kênh và số đơn.", en: "Q3 2026 (July to the end of September): how many orders per month and per sales channel, any status? Get the first day of the month, the channel and the order count." }
+        solution: "SELECT date_trunc('month', order_date)::date AS month, channel, COUNT(*) AS orders FROM orders WHERE order_date >= '2026-07-01' AND order_date < '2026-10-01' GROUP BY date_trunc('month', order_date), channel"
+        hint: { vi: "Cắt `order_date` về đầu tháng rồi gom theo tháng và `channel`.", en: "Truncate `order_date` to the start of the month, then group by month and `channel`." }
+      - id: g-iv-junior-1-3
+        skills: [where, join, multi_join, left_join, anti_join, null_logic]
+        task: { vi: "Tháng 10/2026, cửa hàng `Thao Dien` (mã 4) chưa bán được sản phẩm nào trong một đơn đã thanh toán (`PAID`)? Lấy mã và tên sản phẩm.", en: "In October 2026, which products did store `Thao Dien` (id 4) not sell in any paid order (`PAID`)? Get the product id and name." }
+        solution: "SELECT p.id, p.name FROM products p LEFT JOIN (SELECT i.product_id FROM order_items i JOIN orders o ON o.id = i.order_id WHERE o.status = 'PAID' AND o.store_id = 4 AND o.order_date >= '2026-10-01' AND o.order_date < '2026-11-01') s ON s.product_id = p.id WHERE s.product_id IS NULL"
+        hint: { vi: "Lấy trước các sản phẩm đã bán ở cửa hàng 4 trong tháng, rồi giữ mọi sản phẩm và chỉ lấy những sản phẩm không có cặp.", en: "First get the products sold at store 4 in the month, then keep every product and take only those with no match." }
+      - id: g-iv-junior-1-4
+        skills: [where, join, date_math, null_logic, aggregate, group_by]
+        task: { vi: "Với các đơn bán qua kênh `ONLINE` đã giao xong, trung bình mỗi cửa hàng mất bao nhiêu ngày từ lúc gửi hàng tới lúc giao? Lấy tên cửa hàng và số ngày trung bình, làm tròn 1 chữ số thập phân.", en: "For orders sold through the `ONLINE` channel that have been delivered, how many days does each store take on average from shipping to delivery? Get the store name and the average days, rounded to 1 decimal." }
+        solution: "SELECT s.name, ROUND(AVG(o.delivered_on - o.shipped_on), 1) AS avg_days FROM orders o JOIN stores s ON s.id = o.store_id WHERE o.channel = 'ONLINE' AND o.delivered_on IS NOT NULL GROUP BY s.name"
+        hint: { vi: "Trừ hai ngày cho ra số ngày; đơn chưa giao có `delivered_on` trống.", en: "Subtracting two dates gives a number of days; undelivered orders have an empty `delivered_on`." }
+      - id: g-iv-junior-1-5
+        skills: [where, null_logic, aggregate, group_by, having]
+        task: { vi: "Thành phố nào có hơn 40 khách hàng? Khách không rõ thành phố không tính. Lấy thành phố và số khách.", en: "Which cities have more than 40 customers? Customers with an unknown city are left out. Get the city and the customer count." }
+        solution: "SELECT city, COUNT(*) AS customers FROM customers WHERE city IS NOT NULL GROUP BY city HAVING COUNT(*) > 40"
+        hint: { vi: "Điều kiện \"hơn 40\" là điều kiện trên nhóm, không trên từng dòng.", en: "\"More than 40\" is a condition on the group, not on each row." }
+
+  - id: mid-1
+    level: mid
+    modules: [1, 2, 3, 4, 5, 6, 7, 8]
+    minutes: 25
+    title: { vi: "DA trung cấp: vòng SQL 25 phút", en: "Mid-level DA: 25-minute SQL round" }
+    questions:
+      - id: g-iv-mid-1-1
+        skills: [where, join, aggregate, group_by, conditional_agg, cast]
+        task: { vi: "Trong các đơn đã thanh toán (`PAID`), mỗi cửa hàng có bao nhiêu phần trăm đơn bán qua kênh `ONLINE`? Lấy tên cửa hàng và tỉ lệ phần trăm, làm tròn 1 chữ số thập phân.", en: "Among paid orders (`PAID`), what percentage of each store's orders were sold through the `ONLINE` channel? Get the store name and the percentage, rounded to 1 decimal." }
+        solution: "SELECT s.name, ROUND(100.0 * COUNT(*) FILTER (WHERE o.channel = 'ONLINE') / COUNT(*), 1) AS online_pct FROM orders o JOIN stores s ON s.id = o.store_id WHERE o.status = 'PAID' GROUP BY s.name"
+        hint: { vi: "Đếm có điều kiện cho tử số, đếm tất cả cho mẫu số; nhân với một số thập phân để phép chia không bị làm tròn xuống số nguyên.", en: "A conditional count for the numerator, a plain count for the denominator; multiply by a decimal so the division is not cut to a whole number." }
+      - id: g-iv-mid-1-2
+        skills: [where, join, order_by, distinct_on]
+        task: { vi: "Mỗi khách hàng ở `Hanoi`: đơn gần nhất của họ (mọi trạng thái). Lấy mã khách, ngày đặt và mã cửa hàng; hai đơn cùng ngày thì lấy đơn có mã lớn hơn.", en: "Each customer in `Hanoi`: their most recent order (any status). Get the customer id, the order date and the store id; for two orders on the same day, take the one with the larger id." }
+        solution: "SELECT DISTINCT ON (o.customer_id) o.customer_id, o.order_date, o.store_id FROM orders o JOIN customers c ON c.id = o.customer_id WHERE c.city = 'Hanoi' ORDER BY o.customer_id, o.order_date DESC, o.id DESC"
+        hint: { vi: "Một dòng mỗi khách: dòng đầu tiên theo thứ tự ngày giảm dần, rồi mã đơn giảm dần.", en: "One row per customer: the first row by date descending, then order id descending." }
+      - id: g-iv-mid-1-3
+        skills: [join, left_join, self_join]
+        task: { vi: "Danh sách nhân viên kèm tên người quản lý trực tiếp. Người đứng đầu không có quản lý vẫn phải có mặt, với tên quản lý để trống. Lấy tên nhân viên và tên quản lý.", en: "List every staff member with the name of their direct manager. The person at the top has no manager and must still appear, with an empty manager name. Get the staff name and the manager name." }
+        solution: "SELECT s.name, m.name AS manager FROM staff s LEFT JOIN staff m ON m.id = s.manager_id"
+        hint: { vi: "Bảng `staff` vừa là nhân viên vừa là quản lý: dùng nó hai lần với hai bí danh, nối qua `manager_id`.", en: "`staff` holds both the staff and the managers: use it twice with two aliases, joined through `manager_id`." }
+      - id: g-iv-mid-1-4
+        skills: [where, join, aggregate, group_by, scalar_subquery, cte]
+        task: { vi: "Quý 3/2026 (tháng 7 đến hết tháng 9), cửa hàng nào có doanh thu đơn đã thanh toán (`PAID`) cao hơn mức trung bình của các cửa hàng trong quý đó? Doanh thu một dòng hàng = số lượng × đơn giá. Lấy mã cửa hàng và doanh thu.", en: "In Q3 2026 (July to the end of September), which stores had paid-order (`PAID`) revenue above the average store revenue of that quarter? The revenue of an order line = quantity × unit price. Get the store id and the revenue." }
+        solution: "WITH rev AS (SELECT o.store_id, SUM(i.qty * i.unit_price_vnd) AS revenue FROM orders o JOIN order_items i ON i.order_id = o.id WHERE o.status = 'PAID' AND o.order_date >= '2026-07-01' AND o.order_date < '2026-10-01' GROUP BY o.store_id) SELECT store_id, revenue FROM rev WHERE revenue > (SELECT AVG(revenue) FROM rev)"
+        hint: { vi: "Tính doanh thu từng cửa hàng một lần, đặt tên cho nó, rồi so mỗi dòng với trung bình của chính kết quả đó.", en: "Compute each store's revenue once, give it a name, then compare each row with the average of that same result." }
+      - id: g-iv-mid-1-5
+        skills: [where, aggregate, group_by, string_fn, pattern_match]
+        task: { vi: "Bảng `raw_signups` có email nhập tay. Với các email có dấu `@`, mỗi tên miền (phần sau `@`) có bao nhiêu lượt đăng ký? Bỏ các lượt có ngày đăng ký sau 31/10/2026 (nhập sai). Chữ hoa/thường và khoảng trắng thừa không làm hai tên miền khác nhau. Lấy tên miền (chữ thường) và số lượt.", en: "`raw_signups` holds hand-typed emails. For the emails that contain `@`, how many sign-ups does each domain (the part after `@`) have? Leave out sign-ups dated after 2026-10-31 (entry errors). Upper/lower case and extra spaces do not make two domains different. Get the domain (lower case) and the count." }
+        solution: "SELECT split_part(lower(trim(email)), '@', 2) AS domain, COUNT(*) AS signups FROM raw_signups WHERE email LIKE '%@%' AND signup_date <= '2026-10-31' GROUP BY split_part(lower(trim(email)), '@', 2)"
+        hint: { vi: "Làm sạch email trước (bỏ khoảng trắng hai đầu, đổi về chữ thường), rồi mới cắt lấy phần sau `@`.", en: "Clean the email first (strip spaces at both ends, lower-case it), then cut out the part after `@`." }
+        wrong:
+          - { sql: "SELECT split_part(email, '@', 2) AS domain, COUNT(*) FROM raw_signups WHERE email LIKE '%@%' AND signup_date <= '2026-10-31' GROUP BY split_part(email, '@', 2)", vi: "Không làm sạch thì `GMAIL.COM` và `gmail.com ` thành ba tên miền khác nhau.", en: "Without cleaning, `GMAIL.COM` and `gmail.com ` become three different domains." }
+
+  - id: mid-2
+    level: mid
+    modules: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+    minutes: 30
+    title: { vi: "DA trung cấp: vòng SQL nâng cao 30 phút", en: "Mid-level DA: 30-minute advanced SQL round" }
+    questions:
+      - id: g-iv-mid-2-1
+        skills: [where, join, aggregate, group_by, date_bucket, cte, window_lag, order_by]
+        task: { vi: "Doanh thu đơn đã thanh toán (`PAID`) của cả chuỗi theo tháng, từ tháng 1 đến tháng 10/2026, và mức tăng/giảm so với tháng trước (tháng 1 để trống). Doanh thu một dòng hàng = số lượng × đơn giá. Lấy ngày đầu tháng, doanh thu và mức thay đổi, theo tháng tăng dần.", en: "Chain-wide paid-order (`PAID`) revenue per month, January to October 2026, and the change from the previous month (empty for January). The revenue of an order line = quantity × unit price. Get the first day of the month, the revenue and the change, by month ascending." }
+        solution: "WITH m AS (SELECT date_trunc('month', o.order_date)::date AS month, SUM(i.qty * i.unit_price_vnd) AS revenue FROM orders o JOIN order_items i ON i.order_id = o.id WHERE o.status = 'PAID' AND o.order_date >= '2026-01-01' GROUP BY date_trunc('month', o.order_date)) SELECT month, revenue, revenue - LAG(revenue) OVER (ORDER BY month) AS change FROM m ORDER BY month"
+        ordered: true
+        hint: { vi: "Gom theo tháng trước, rồi lấy giá trị của dòng ngay trước theo thứ tự tháng.", en: "Group by month first, then read the value of the row just before, in month order." }
+      - id: g-iv-mid-2-2
+        skills: [where, join, multi_join, aggregate, group_by, cte, window_rank, order_by]
+        task: { vi: "Năm 2026, trong mỗi danh mục, hai sản phẩm có doanh thu đơn đã thanh toán (`PAID`) cao nhất. Doanh thu bằng nhau thì cùng hạng và hạng sau bị bỏ qua; giữ mọi sản phẩm có hạng 1 hoặc 2. Lấy danh mục, tên sản phẩm, doanh thu và hạng, theo danh mục A→Z, hạng, rồi tên A→Z.", en: "In 2026, within each category, the two products with the highest paid-order (`PAID`) revenue. Equal revenue shares a rank and the next rank is skipped; keep every product ranked 1 or 2. Get the category, the product name, the revenue and the rank, by category A→Z, rank, then name A→Z." }
+        solution: "WITH r AS (SELECT p.category, p.name, SUM(i.qty * i.unit_price_vnd) AS revenue, RANK() OVER (PARTITION BY p.category ORDER BY SUM(i.qty * i.unit_price_vnd) DESC) AS rnk FROM order_items i JOIN orders o ON o.id = i.order_id JOIN products p ON p.id = i.product_id WHERE o.status = 'PAID' AND o.order_date >= '2026-01-01' GROUP BY p.category, p.name) SELECT category, name, revenue, rnk FROM r WHERE rnk <= 2 ORDER BY category, rnk, name"
+        ordered: true
+        hint: { vi: "Xếp hạng trong từng danh mục ở một bước, lọc theo hạng ở bước sau: không lọc được hạng ngay trong bước tính nó.", en: "Rank within each category in one step and filter on the rank in the next: the rank cannot be filtered in the step that computes it." }
+      - id: g-iv-mid-2-3
+        skills: [where, join, aggregate, group_by, cte, window_agg, order_by]
+        task: { vi: "Tháng 9/2026, cửa hàng `Ben Thanh` (mã 3): doanh thu đơn đã thanh toán (`PAID`) từng ngày có bán và doanh thu cộng dồn từ đầu tháng. Doanh thu một dòng hàng = số lượng × đơn giá. Lấy ngày, doanh thu ngày và cộng dồn, theo ngày tăng dần.", en: "September 2026, store `Ben Thanh` (id 3): paid-order (`PAID`) revenue on each day with sales, and the running total since the start of the month. The revenue of an order line = quantity × unit price. Get the day, the day's revenue and the running total, by day ascending." }
+        solution: "WITH d AS (SELECT o.order_date AS day, SUM(i.qty * i.unit_price_vnd) AS revenue FROM orders o JOIN order_items i ON i.order_id = o.id WHERE o.status = 'PAID' AND o.store_id = 3 AND o.order_date >= '2026-09-01' AND o.order_date < '2026-10-01' GROUP BY o.order_date) SELECT day, revenue, SUM(revenue) OVER (ORDER BY day) AS running FROM d ORDER BY day"
+        ordered: true
+        hint: { vi: "Tổng theo ngày trước; cộng dồn là một tổng chạy theo thứ tự ngày trên kết quả đó.", en: "Daily totals first; the running total is a sum that runs in day order over that result." }
+      - id: g-iv-mid-2-4
+        skills: [where, join, multi_join, aggregate, group_by, date_bucket, cte, null_logic, coalesce, case_when, full_join]
+        task: { vi: "Năm 2026, đối soát `store_targets` với doanh thu đơn đã thanh toán (`PAID`) theo cửa hàng và tháng: lấy những cặp cửa hàng-tháng chỉ có ở một phía (có mục tiêu mà không có doanh thu, hoặc có doanh thu mà không có mục tiêu). Doanh thu một dòng hàng = số lượng × đơn giá. Lấy mã cửa hàng, ngày đầu tháng và phía có mặt: 1 = chỉ có mục tiêu, 2 = chỉ có doanh thu.", en: "For 2026, reconcile `store_targets` with paid-order (`PAID`) revenue per store and month: get the store-month pairs found on one side only (a target with no revenue, or revenue with no target). The revenue of an order line = quantity × unit price. Get the store id, the first day of the month and the side present: 1 = target only, 2 = revenue only." }
+        solution: "WITH a AS (SELECT o.store_id, date_trunc('month', o.order_date)::date AS month, SUM(i.qty * i.unit_price_vnd) AS actual FROM orders o JOIN order_items i ON i.order_id = o.id WHERE o.status = 'PAID' AND o.order_date >= '2026-01-01' GROUP BY o.store_id, date_trunc('month', o.order_date)) SELECT COALESCE(t.store_id, a.store_id) AS store_id, COALESCE(t.month, a.month) AS month, CASE WHEN a.store_id IS NULL THEN 1 ELSE 2 END AS side FROM store_targets t FULL JOIN a ON a.store_id = t.store_id AND a.month = t.month WHERE t.store_id IS NULL OR a.store_id IS NULL"
+        hint: { vi: "Cần giữ dòng không khớp của cả hai phía; mã cửa hàng và tháng lấy từ phía nào có giá trị.", en: "Unmatched rows from both sides must stay; take the store id and the month from whichever side has them." }
+      - id: g-iv-mid-2-5
+        skills: [where, except]
+        task: { vi: "Khách nào chuyển đổi trong thí nghiệm 1 nhưng không chuyển đổi trong thí nghiệm 2? Lấy mã khách (bảng `assignments`, cột `converted`).", en: "Which customers converted in experiment 1 but did not convert in experiment 2? Get the customer id (table `assignments`, column `converted`)." }
+        solution: "SELECT customer_id FROM assignments WHERE experiment_id = 1 AND converted EXCEPT SELECT customer_id FROM assignments WHERE experiment_id = 2 AND converted"
+        hint: { vi: "Hai danh sách mã khách; lấy những mã có ở danh sách đầu mà không có ở danh sách sau.", en: "Two lists of customer ids; take the ids in the first list that are not in the second." }
+
+takeHomes:
+  - id: g-iv-th-1
+    modules: [1, 2, 3, 4, 5]
+    title: { vi: "Cửa hàng nào hụt mục tiêu tháng?", en: "Which stores miss their monthly target?" }
+    brief: { vi: "Quản lý vùng cần biết năm 2026 (tới hết tháng 10) cửa hàng nào hay hụt mục tiêu doanh thu tháng trong `store_targets`, để chuẩn bị buổi họp quý. Doanh thu chỉ tính đơn đã thanh toán (`PAID`); doanh thu một dòng hàng = số lượng × đơn giá. Làm ba bước rồi viết một đoạn ngắn gửi chị ấy.", en: "The regional manager needs to know which stores often missed their monthly revenue target in `store_targets` in 2026 (up to the end of October), to prepare the quarterly meeting. Revenue counts paid orders only (`PAID`); the revenue of an order line = quantity × unit price. Do the three steps, then write a short paragraph for her." }
+    steps:
+      - title: { vi: "Doanh thu theo cửa hàng và tháng", en: "Revenue per store and month" }
+        task: { vi: "Từ tháng 1 đến tháng 10/2026: doanh thu mỗi cửa hàng mỗi tháng có bán. Lấy ngày đầu tháng, mã cửa hàng và doanh thu, theo tháng rồi mã cửa hàng tăng dần.", en: "January to October 2026: each store's revenue in each month with sales. Get the first day of the month, the store id and the revenue, by month then store id ascending." }
+        solution: "SELECT date_trunc('month', o.order_date)::date AS month, o.store_id, SUM(i.qty * i.unit_price_vnd) AS revenue FROM orders o JOIN order_items i ON i.order_id = o.id WHERE o.status = 'PAID' AND o.order_date >= '2026-01-01' GROUP BY date_trunc('month', o.order_date), o.store_id ORDER BY month, o.store_id"
+        ordered: true
+        hint: { vi: "Cắt ngày về đầu tháng, gom theo tháng và cửa hàng.", en: "Truncate the date to the start of the month, group by month and store." }
+      - title: { vi: "So với mục tiêu", en: "Against the target" }
+        task: { vi: "Mỗi mục tiêu từ tháng 1 đến tháng 10/2026: ngày đầu tháng, mã cửa hàng, mục tiêu, doanh thu (0 nếu tháng đó không bán được gì) và đạt hay không (đúng khi doanh thu ≥ mục tiêu). Theo tháng rồi mã cửa hàng tăng dần.", en: "Each target from January to October 2026: the first day of the month, the store id, the target, the revenue (0 when nothing was sold that month) and whether it was met (true when revenue ≥ target). By month then store id ascending." }
+        solution: "SELECT t.month, t.store_id, t.target_vnd, COALESCE(a.revenue, 0) AS revenue, COALESCE(a.revenue, 0) >= t.target_vnd AS met FROM store_targets t LEFT JOIN (SELECT o.store_id, date_trunc('month', o.order_date)::date AS month, SUM(i.qty * i.unit_price_vnd) AS revenue FROM orders o JOIN order_items i ON i.order_id = o.id WHERE o.status = 'PAID' GROUP BY o.store_id, date_trunc('month', o.order_date)) a ON a.store_id = t.store_id AND a.month = t.month WHERE t.month < '2026-11-01' ORDER BY t.month, t.store_id"
+        ordered: true
+        hint: { vi: "Đi từ bảng mục tiêu và giữ mọi mục tiêu, kể cả tháng không có doanh thu.", en: "Start from the targets and keep every one, months without revenue included." }
+      - title: { vi: "Tổng kết theo cửa hàng", en: "Summary per store" }
+        task: { vi: "Mỗi cửa hàng: tên, số tháng có mục tiêu, số tháng đạt và số tháng hụt (tới hết tháng 10/2026). Hụt nhiều nhất lên đầu; bằng nhau thì theo mã cửa hàng tăng dần.", en: "Each store: the name, the number of months with a target, months met and months missed (up to the end of October 2026). Most misses first; on a tie, by store id ascending." }
+        solution: "SELECT s.name, COUNT(*) AS months, SUM(CASE WHEN COALESCE(a.revenue, 0) >= t.target_vnd THEN 1 ELSE 0 END) AS met, SUM(CASE WHEN COALESCE(a.revenue, 0) < t.target_vnd THEN 1 ELSE 0 END) AS missed FROM store_targets t JOIN stores s ON s.id = t.store_id LEFT JOIN (SELECT o.store_id, date_trunc('month', o.order_date)::date AS month, SUM(i.qty * i.unit_price_vnd) AS revenue FROM orders o JOIN order_items i ON i.order_id = o.id WHERE o.status = 'PAID' GROUP BY o.store_id, date_trunc('month', o.order_date)) a ON a.store_id = t.store_id AND a.month = t.month WHERE t.month < '2026-11-01' GROUP BY s.id, s.name ORDER BY missed DESC, s.id"
+        ordered: true
+        hint: { vi: "Dùng lại bước 2, rồi đếm có điều kiện theo cửa hàng.", en: "Reuse step 2, then count conditionally per store." }
+    conclusion: { vi: "Viết 3–5 câu gửi quản lý vùng (người không đọc SQL): cửa hàng nào đáng lo, hụt vào lúc nào trong năm, và bạn đề xuất gì cho buổi họp.", en: "Write 3–5 sentences for the regional manager (who does not read SQL): which stores are a concern, when in the year they missed, and what you suggest for the meeting." }
+    rubric:
+      - { vi: "Nêu đúng cửa hàng hụt nhiều tháng nhất và số tháng hụt, khớp với bước 3.", en: "Names the stores with the most missed months and the number, matching step 3." }
+      - { vi: "Nhận ra xu hướng theo thời gian: các tháng hụt dồn vào nửa đầu năm, từ tháng 9 mọi cửa hàng đều đạt (dẫn ít nhất một con số).", en: "Spots the trend over time: the misses pile up in the first half of the year, and from September every store met its target (quotes at least one number)." }
+      - { vi: "Nói rõ phạm vi số liệu: chỉ đơn đã thanh toán, tới hết tháng 10/2026; có cửa hàng không có mục tiêu ở vài tháng nên số tháng khác nhau.", en: "States the scope: paid orders only, up to the end of October 2026; some stores have no target in some months, so their month counts differ." }
+      - { vi: "Có một đề xuất hành động cụ thể (ví dụ đặt mục tiêu theo mùa thay vì một mức cả năm).", en: "Makes one concrete suggestion (for example seasonal targets instead of one level for the whole year)." }
+      - { vi: "Viết cho người không biết SQL: không tên bảng, không tên cột, không quá 120 chữ.", en: "Written for someone who does not know SQL: no table names, no column names, at most 120 words." }
+
+  - id: g-iv-th-2
+    modules: [1, 2, 3, 4, 5, 6, 7, 8]
+    title: { vi: "Khách mới có quay lại trong 90 ngày?", en: "Do new customers come back within 90 days?" }
+    brief: { vi: "Nhóm marketing hỏi: khách có tài khoản, sau đơn đầu tiên, có quay lại mua trong 90 ngày không, và điều đó khác nhau thế nào theo thời gian và theo cửa hàng của đơn đầu. Bỏ qua đơn đã hủy (`CANCELLED`) và đơn khách vãng lai (không có mã khách). Chỉ xét khách có đơn đầu trước ngày 01/08/2026, để ai cũng đủ 90 ngày theo dõi tới 31/10/2026. \"Quay lại\" = có thêm ít nhất một đơn sau ngày đơn đầu và không quá 90 ngày sau đó.", en: "The marketing team asks: after their first order, do customers with an account come back within 90 days, and how does that change over time and by the store of the first order? Ignore cancelled orders (`CANCELLED`) and walk-in orders (no customer id). Only count customers whose first order was before 2026-08-01, so everyone has a full 90 days of follow-up up to 2026-10-31. \"Came back\" = at least one more order after the first order's day and no later than 90 days after it." }
+    steps:
+      - title: { vi: "Khách mới theo quý", en: "New customers per quarter" }
+        task: { vi: "Mỗi quý (theo ngày đơn đầu): ngày đầu quý và số khách mới, theo quý tăng dần.", en: "Each quarter (by the first order's date): the first day of the quarter and the number of new customers, by quarter ascending." }
+        solution: "WITH f AS (SELECT customer_id, MIN(order_date) AS first_order FROM orders WHERE customer_id IS NOT NULL AND status <> 'CANCELLED' GROUP BY customer_id) SELECT date_trunc('quarter', first_order)::date AS quarter, COUNT(*) AS customers FROM f WHERE first_order < '2026-08-01' GROUP BY date_trunc('quarter', first_order) ORDER BY quarter"
+        ordered: true
+        hint: { vi: "Đơn đầu của một khách là ngày nhỏ nhất của họ; đặt tên cho kết quả đó rồi gom theo quý.", en: "A customer's first order is their smallest date; name that result, then group by quarter." }
+      - title: { vi: "Tỉ lệ quay lại theo quý", en: "Return rate per quarter" }
+        task: { vi: "Như bước 1, thêm số khách quay lại trong 90 ngày và tỉ lệ phần trăm (làm tròn 1 chữ số thập phân), theo quý tăng dần.", en: "As step 1, plus the number of customers who came back within 90 days and the percentage (rounded to 1 decimal), by quarter ascending." }
+        solution: "WITH f AS (SELECT customer_id, MIN(order_date) AS first_order FROM orders WHERE customer_id IS NOT NULL AND status <> 'CANCELLED' GROUP BY customer_id), r AS (SELECT f.first_order, EXISTS (SELECT 1 FROM orders o WHERE o.customer_id = f.customer_id AND o.status <> 'CANCELLED' AND o.order_date > f.first_order AND o.order_date <= f.first_order + 90) AS came_back FROM f WHERE f.first_order < '2026-08-01') SELECT date_trunc('quarter', first_order)::date AS quarter, COUNT(*) AS customers, COUNT(*) FILTER (WHERE came_back) AS returned, ROUND(100.0 * COUNT(*) FILTER (WHERE came_back) / COUNT(*), 1) AS pct FROM r GROUP BY date_trunc('quarter', first_order) ORDER BY quarter"
+        ordered: true
+        hint: { vi: "Với mỗi khách, hỏi \"có đơn nào khác trong cửa sổ 90 ngày không\" (đúng/sai), rồi đếm có điều kiện theo quý.", en: "For each customer ask \"is there another order inside the 90-day window\" (true/false), then count conditionally per quarter." }
+      - title: { vi: "Theo cửa hàng của đơn đầu", en: "By the store of the first order" }
+        task: { vi: "Cùng câu hỏi, nhưng theo cửa hàng của đơn đầu (hai đơn cùng ngày thì đơn có mã nhỏ hơn là đơn đầu): mã cửa hàng, số khách, số khách quay lại, tỉ lệ phần trăm (1 chữ số thập phân), theo mã cửa hàng tăng dần.", en: "The same question, but by the store of the first order (for two orders on the same day the one with the smaller id is first): the store id, customers, customers who came back, the percentage (1 decimal), by store id ascending." }
+        solution: "WITH f AS (SELECT DISTINCT ON (customer_id) customer_id, order_date AS first_order, store_id FROM orders WHERE customer_id IS NOT NULL AND status <> 'CANCELLED' ORDER BY customer_id, order_date, id), r AS (SELECT f.store_id, EXISTS (SELECT 1 FROM orders o WHERE o.customer_id = f.customer_id AND o.status <> 'CANCELLED' AND o.order_date > f.first_order AND o.order_date <= f.first_order + 90) AS came_back FROM f WHERE f.first_order < '2026-08-01') SELECT store_id, COUNT(*) AS customers, COUNT(*) FILTER (WHERE came_back) AS returned, ROUND(100.0 * COUNT(*) FILTER (WHERE came_back) / COUNT(*), 1) AS pct FROM r GROUP BY store_id ORDER BY store_id"
+        ordered: true
+        hint: { vi: "Lấy một dòng mỗi khách là đơn đầu (kèm cửa hàng), rồi dùng lại cách đếm của bước 2.", en: "Take one row per customer for the first order (with its store), then reuse the counting of step 2." }
+    conclusion: { vi: "Viết 3–5 câu gửi nhóm marketing: tỉ lệ quay lại trong 90 ngày đang đi lên hay xuống, cửa hàng nào giữ khách tốt nhất/kém nhất, và bạn cần thận trọng điều gì khi đọc số.", en: "Write 3–5 sentences for the marketing team: is the 90-day return rate going up or down, which store keeps customers best and worst, and what should be read with care." }
+    rubric:
+      - { vi: "Nêu xu hướng theo quý bằng số: tỉ lệ thấp nhất khoảng 36% (quý 3/2025) và tăng lên trên 80% từ quý 2/2026.", en: "States the trend per quarter with numbers: lowest around 36% (Q3 2025), rising above 80% from Q2 2026." }
+      - { vi: "Nêu cửa hàng có tỉ lệ cao nhất và thấp nhất, khớp với bước 3.", en: "Names the stores with the highest and the lowest rate, matching step 3." }
+      - { vi: "Cảnh báo cỡ mẫu: quý đầu chỉ có vài khách và quý 3/2026 chỉ tính tháng 7, nên tỉ lệ ở hai đầu dễ lệch.", en: "Warns about sample size: the first quarter has only a few customers and Q3 2026 counts July only, so the rates at both ends swing easily." }
+      - { vi: "Nhắc lại định nghĩa \"quay lại\" và phạm vi (bỏ đơn hủy, bỏ khách vãng lai, đơn đầu trước tháng 8/2026) bằng lời thường.", en: "Restates the definition of \"came back\" and the scope (no cancelled orders, no walk-ins, first order before August 2026) in plain words." }
+      - { vi: "Viết cho người không biết SQL: không tên bảng, không tên cột, không quá 120 chữ.", en: "Written for someone who does not know SQL: no table names, no column names, at most 120 words." }
+
+  - id: g-iv-th-3
+    modules: [1, 2, 3, 4, 5, 6, 7, 8, 9]
+    title: { vi: "Đối soát thanh toán", en: "Payment reconciliation" }
+    brief: { vi: "Kế toán thấy tiền về không khớp với đơn hàng và nhờ bạn đối soát `payments` với `orders`. Số tiền phải thu của một đơn: đơn đã thanh toán (`PAID`) = tổng các dòng hàng (số lượng × đơn giá); đơn đã hoàn tiền (`REFUNDED`) = 0, vì khoản hoàn là một thanh toán âm. Làm ba bước rồi viết một đoạn ngắn cho kế toán trưởng.", en: "Accounting sees money coming in that does not match the orders and asks you to reconcile `payments` with `orders`. The amount due on an order: a paid order (`PAID`) = the sum of its lines (quantity × unit price); a refunded order (`REFUNDED`) = 0, since the refund is a negative payment. Do the three steps, then write a short paragraph for the chief accountant." }
+    steps:
+      - title: { vi: "Thanh toán không có đơn", en: "Payments without an order" }
+        task: { vi: "Những thanh toán trỏ tới một mã đơn không có trong bảng đơn: mã thanh toán, mã đơn, số tiền, theo mã thanh toán tăng dần.", en: "Payments pointing to an order id that does not exist in the orders table: the payment id, the order id, the amount, by payment id ascending." }
+        solution: "SELECT p.id, p.order_id, p.amount_vnd FROM payments p LEFT JOIN orders o ON o.id = p.order_id WHERE o.id IS NULL ORDER BY p.id"
+        ordered: true
+        hint: { vi: "Giữ mọi thanh toán và tìm những dòng không có đơn khớp.", en: "Keep every payment and look for the rows with no matching order." }
+      - title: { vi: "Đơn bị thu hai lần", en: "Orders charged twice" }
+        task: { vi: "Những đơn có hơn một khoản thanh toán dương: mã đơn, số khoản dương và tổng các khoản dương, theo mã đơn tăng dần.", en: "Orders with more than one positive payment: the order id, the number of positive payments and their total, by order id ascending." }
+        solution: "SELECT order_id, COUNT(*) AS payments, SUM(amount_vnd) AS paid FROM payments WHERE amount_vnd > 0 GROUP BY order_id HAVING COUNT(*) > 1 ORDER BY order_id"
+        ordered: true
+        hint: { vi: "Chỉ xét khoản dương, gom theo đơn, rồi lọc nhóm có hơn một khoản.", en: "Only positive payments, grouped by order, then keep the groups with more than one." }
+      - title: { vi: "Bảng đối soát", en: "Reconciliation table" }
+        task: { vi: "So số phải thu (mọi đơn `PAID` và `REFUNDED`) với tổng thanh toán ròng theo mã đơn, giữ cả đơn không có thanh toán lẫn thanh toán không có đơn. Phân loại mỗi mã đơn: 0 = khớp, 1 = lệch số tiền, 2 = có đơn mà không có thanh toán, 3 = có thanh toán mà không có đơn. Lấy loại, số mã đơn và tổng chênh lệch (thanh toán ròng trừ số phải thu, phía thiếu tính 0), theo loại tăng dần.", en: "Compare the amount due (every `PAID` and `REFUNDED` order) with the net payments per order id, keeping both orders with no payment and payments with no order. Classify each order id: 0 = matches, 1 = amount differs, 2 = order with no payment, 3 = payment with no order. Get the class, the number of order ids and the total gap (net payments minus amount due, a missing side counts as 0), by class ascending." }
+        solution: "WITH due AS (SELECT o.id AS order_id, CASE WHEN o.status = 'REFUNDED' THEN 0 ELSE SUM(i.qty * i.unit_price_vnd) END AS amount FROM orders o JOIN order_items i ON i.order_id = o.id WHERE o.status IN ('PAID', 'REFUNDED') GROUP BY o.id, o.status), paid AS (SELECT order_id, SUM(amount_vnd) AS amount FROM payments GROUP BY order_id) SELECT CASE WHEN d.order_id IS NULL THEN 3 WHEN p.order_id IS NULL THEN 2 WHEN p.amount <> d.amount THEN 1 ELSE 0 END AS kind, COUNT(*) AS orders, SUM(COALESCE(p.amount, 0) - COALESCE(d.amount, 0)) AS gap_vnd FROM due d FULL JOIN paid p ON p.order_id = d.order_id GROUP BY 1 ORDER BY 1"
+        ordered: true
+        hint: { vi: "Hai bảng tạm (phải thu, đã thu) theo mã đơn, nối sao cho giữ dòng lẻ của cả hai phía, rồi phân loại.", en: "Two named results (due, paid) per order id, joined so that unmatched rows of both sides stay, then classify." }
+    conclusion: { vi: "Viết 3–5 câu gửi kế toán trưởng: có bao nhiêu tiền đang lệch, lệch vì những lý do nào, và nên xử lý gì trước.", en: "Write 3–5 sentences for the chief accountant: how much money is off, for which reasons, and what to handle first." }
+    rubric:
+      - { vi: "Nêu đúng hai nguồn lệch và số tiền của từng nguồn: các đơn bị thu hai lần (khớp bước 2) và các khoản tiền về không có đơn (khớp bước 1).", en: "Names the two sources of the gap and the amount of each: orders charged twice (matching step 2) and money received with no order (matching step 1)." }
+      - { vi: "Nói rõ không có đơn nào thiếu thanh toán và phần còn lại đều khớp (dẫn số đơn khớp).", en: "Says clearly that no order lacks a payment and the rest all match (quotes the number of matching orders)." }
+      - { vi: "Đề xuất thứ tự xử lý có lý do: hoàn tiền thu trùng cho khách trước, truy nguồn các khoản không có đơn sau (hoặc ngược lại, có giải thích).", en: "Proposes an order of work with a reason: refund the double charges first, trace the payments with no order next (or the other way round, with a reason)." }
+      - { vi: "Giải thích vì sao đơn hoàn tiền được coi là khớp khi tổng ròng bằng 0.", en: "Explains why a refunded order counts as matching when its net total is 0." }
+      - { vi: "Viết cho người không biết SQL: không tên bảng, không tên cột, không quá 120 chữ.", en: "Written for someone who does not know SQL: no table names, no column names, at most 120 words." }
