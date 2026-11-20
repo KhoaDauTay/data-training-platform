@@ -53,21 +53,20 @@ export const matchesExpect = (t: PlanNode | undefined, x: PredictExpect): PlanNo
   nodesOf(t).find((n) => n.node === x.node && (x.table === undefined || n.relation === x.table)
     && (x.index === undefined || n.index === x.index) && (x.rows === undefined || n.rows === x.rows));
 
-/** The node a predict is about: the one `expect` names, else the first node that reads a table. */
-export const answerNode = (t: PlanNode | undefined, x?: PredictExpect): PlanNode | undefined =>
-  (x ? matchesExpect(t, x) : undefined) ?? nodesOf(t).find((n) => n.relation);
+/** The node that answers the question: only the one `expect` names (without `expect` nothing is outlined, never a guess). */
+export const answerNode = (t: PlanNode | undefined, x?: PredictExpect): PlanNode | undefined => (x ? matchesExpect(t, x) : undefined);
 
 /** One observation sentence as a code (`obs.<code>` in src/i18n/engine.ts) and its params. */
 export interface Observation { code: 'pick' | 'pickIndex' | 'top' | 'sort' | 'noSort' | 'differs'; params: Record<string, string> }
 /**
- * What the real plan shows, in words: the node that reads the table (with its index), and for a query with ORDER BY whether
+ * What the real plan shows, in words: the node `expect` names (else the root) with its index or table, and for a query with ORDER BY whether
  * a Sort node is there. `differs` when the plan has no node `expect` names (the page still draws the real plan).
  */
 export function observe(t: PlanNode | undefined, sql: string, x?: PredictExpect): Observation[] {
   const out: Observation[] = [];
   if (!t) return out;
   if (x && !matchesExpect(t, x)) out.push({ code: 'differs', params: { node: x.node } });
-  const n = answerNode(t, x) ?? t;
+  const n = answerNode(t, x) ?? t; // without `expect`: the root, the one node every plan's reading starts from
   out.push(n.index ? { code: 'pickIndex', params: { node: n.node, index: n.index } }
     : n.relation ? { code: 'pick', params: { node: n.node, table: n.relation } } : { code: 'top', params: { node: n.node } });
   if (/\border\s+by\b/i.test(sql)) out.push({ code: nodesOf(t).some((m) => /Sort$/.test(m.node)) ? 'sort' : 'noSort', params: {} });
@@ -125,6 +124,9 @@ export function capstonePivot(lab: Lab | undefined): Pivot | undefined {
   }
   return undefined;
 }
+
+/** The lab the "after" plan runs on: the learner's own statement in place of the pivot step's solution. */
+export const afterLab = (lab: Lab, gate: number, mine: string): Lab => ({ ...lab, steps: lab.steps.map((s, j) => (j === gate ? { ...s, solution: mine } : s)) });
 
 /** The bar's short name of a step: its `name`, else the task's first clause without a leading "Bước n," / "Step n,". */
 export function stepName(task: string, name?: string): string {

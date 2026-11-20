@@ -224,7 +224,13 @@ function complete(l: EngineLesson): void {
   d.announce(et('complete.xp', { xp }));
   d.rerender();
   // v23 CAP: Lily cheers at the event (after the redraw that drew the finish card), never while drawing.
-  if (l.kind === 'capstone') queueMicrotask(() => d.cheer.react(document.querySelector('[data-cap-done]')));
+  if (l.kind === 'capstone') {
+    queueMicrotask(() => {
+      const card = document.querySelector<HTMLElement>('[data-cap-done]');
+      card?.scrollIntoView?.({ block: 'nearest', behavior: d.reducedMotion() ? 'auto' : 'smooth' }); // the last part may sit at the top
+      d.cheer.react(card);
+    });
+  }
 }
 function passPart(l: EngineLesson, v: Visit, part: string): void {
   v.passed.add(part);

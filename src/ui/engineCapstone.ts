@@ -27,7 +27,7 @@ export interface CapCtx {
   mine: (i: number) => string | undefined;
   tree: typeof planTreeView;
   /** src/engine/predict.ts, passed in (a value import here would make it a shared chunk). */
-  pred: Pick<typeof Predict, 'answerNode' | 'capstonePivot' | 'planTree' | 'stepName'>;
+  pred: Pick<typeof Predict, 'afterLab' | 'capstonePivot' | 'planTree' | 'stepName'>;
   done: boolean;
   levelDone: boolean;
 }
@@ -81,7 +81,7 @@ export function capChecks(c: CapCtx): HTMLElement {
 export function capPlans(c: CapCtx): HTMLElement | null {
   const { d, et, st } = c;
   const { h, cls } = d;
-  const piv = c.pred.capstonePivot(c.l.lab);
+  const piv = c.l.engine === 'postgres' ? c.pred.capstonePivot(c.l.lab) : undefined; // EXPLAIN plans are Postgres only
   if (!piv) return null;
   const mine = c.mine(piv.gate) ?? (c.done ? steps(c)[piv.gate].solution : undefined);
   const open = c.passed.has(`s${piv.gate}`) && mine !== undefined;
@@ -90,7 +90,7 @@ export function capPlans(c: CapCtx): HTMLElement | null {
     d.rerender();
     try {
       const lab = c.l.lab!;
-      const after: Lab = { ...lab, steps: lab.steps.map((s, j) => (j === piv.gate ? { ...s, solution: mine! } : s)) };
+      const after = c.pred.afterLab(lab, piv.gate, mine!);
       const [b, a] = [c.pred.planTree(await c.explainAt(lab, piv.query, piv.before)), c.pred.planTree(await c.explainAt(after, piv.query, piv.after))];
       st.plans = b && a ? { before: b, after: a } : { error: new Error('EXPLAIN gave no plan') };
     } catch (error) {
@@ -101,21 +101,21 @@ export function capPlans(c: CapCtx): HTMLElement | null {
   const p = st.plans;
   const side = (title: string, t: PlanNode): HTMLElement => h('div', { class: 'min-w-0 space-y-2' },
     h('p', { class: 'm-0 text-body-sm font-bold' }, title),
-    h('div', { class: 'overflow-x-auto' }, c.tree(d.h, t, { label: `${et('plan.label')}: ${title}`, answer: et('plan.answer') }, c.pred.answerNode(t))),
+    h('div', { class: 'overflow-x-auto' }, c.tree(d.h, t, { label: `${et('plan.label')}: ${title}`, answer: et('plan.answer') })),
     h('p', { class: 'm-0 text-body-sm tabular-nums' }, et('cap.cost', { c: Math.round(t.cost * 100) / 100 })));
   const same = (a: PlanNode, b: PlanNode): boolean => JSON.stringify(a) === JSON.stringify(b);
   return h('section', { class: cls.cx(cls.CARD, 'space-y-3 p-4'), 'aria-labelledby': `${c.l.id}-plans` },
     h('h4', { id: `${c.l.id}-plans`, class: 'm-0 text-body font-bold' }, et('cap.plans')),
     h('div', { class: 'space-y-1' }, h('p', { class: 'm-0 text-body-sm text-muted' }, et('cap.query')), h('pre', { class: 'sql m-0 overflow-x-auto' }, piv.query)),
     !open ? h('p', { class: 'm-0 text-body-sm text-muted' }, et('cap.plansGate', { i: piv.gate + 1 }))
-      : p === undefined ? h('button', { type: 'button', class: cls.cx(cls.BTN_SECONDARY, 'px-4 py-1.5'), 'data-ek': `${c.l.id}-plans`, onclick: () => void load() }, et('cap.plansBtn'))
+      : p === undefined || (typeof p === 'object' && 'error' in p) ? h('button', { type: 'button', class: cls.cx(cls.BTN_SECONDARY, 'px-4 py-1.5'), 'data-ek': `${c.l.id}-plans`, onclick: () => void load() }, et('cap.plansBtn'))
         : p === 'busy' ? h('p', { class: 'm-0 flex items-center gap-2 text-body-sm text-muted' }, d.loader(), et('lab.preparing'))
-          : 'error' in p ? d.errorView(p.error)
             : h('div', { class: 'grid items-start gap-3 lg:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]', 'data-cap-plans': '' },
               side(et('cap.before'), p.before),
               h('span', { class: 'self-center text-center text-heading font-bold text-accent', 'aria-hidden': 'true' }, h('span', { class: 'max-lg:hidden' }, '→'), h('span', { class: 'lg:hidden' }, '↓')),
               side(et('cap.after'), p.after),
               same(p.before, p.after) ? h('p', { class: 'm-0 text-body-sm lg:col-span-3' }, et('cap.same')) : null),
+    p && typeof p === 'object' && 'error' in p ? d.errorView(p.error) : null,
     h('p', { class: 'm-0 rounded-(--r-ctl) bg-info-soft p-3 text-body-sm' }, et('cap.fresh')));
 }
 

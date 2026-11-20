@@ -6,7 +6,7 @@ import { parseEngineLesson, type EngineLesson, type LessonSource } from '../src/
 import { pgScriptRunner } from '../src/engine/pglab/runner';
 import { runLabScript } from '../src/engine/pglab/session';
 import {
-  answerNode, capstonePivot, explainSql, FIRST_MAX, hasRealPlan, matchesExpect, nodesOf, observe, parseEngineFirst, planTree,
+  afterLab, answerNode, capstonePivot, explainSql, FIRST_MAX, hasRealPlan, matchesExpect, nodesOf, observe, parseEngineFirst, planTree,
   shownSetup, stepName, withFirst,
 } from '../src/engine/predict';
 import { grade } from '../src/grader';
@@ -55,12 +55,33 @@ describe('predict: the real plan on PGlite', () => {
     const tree = await realPlan(l);
     expect(tree).toBeDefined();
     expect(observe(tree, l.predict!.sql).length).toBeGreaterThan(0);
+    expect(answerNode(tree)).toBeUndefined(); // no `expect`: no node is outlined as the answer
   }, 60_000);
 
   it('a predict on the catalog without setup gets no plan tree', () => {
     const l = predicts.find((x) => x.id === 'e-pg-l3-08');
     if (l && !l.predict!.expect) expect(hasRealPlan(l)).toBe(false);
   });
+});
+
+// v23 CAP (L257): the capstone's "Trước / Sau" through the same runner and helpers as the page, the solution standing in for
+// the learner's statement at the pivot step.
+describe('capstone plans before and after', () => {
+  const caps = lessons.filter((l) => l.kind === 'capstone' && capstonePivot(l.lab));
+  it('the capstones with a target query are found', () => {
+    expect(caps.map((l) => l.id)).toEqual(expect.arrayContaining(['e-pg-l1-12', 'e-pg-l2-17']));
+  });
+  it.each(caps.map((l) => [l.id, l] as const))('%s: both plans parse, and the change shows', async (_id, l) => {
+    const lab = l.lab!;
+    const piv = capstonePivot(lab)!;
+    const explainAt = async (x: typeof lab, step: number) => planTree((await runner.run(x, explainSql(piv.query), step)).rows[0]?.[0]);
+    const before = await explainAt(lab, piv.before);
+    const after = await explainAt(afterLab(lab, piv.gate, lab.steps[piv.gate].solution), piv.after);
+    expect(before).toBeDefined();
+    expect(after).toBeDefined();
+    expect(JSON.stringify(after)).not.toBe(JSON.stringify(before));
+    expect(nodesOf(after).some((n) => n.index)).toBe(true); // the index the step creates is read
+  }, 120_000);
 });
 
 describe('predict helpers', () => {
@@ -77,7 +98,7 @@ describe('predict helpers', () => {
   it('observe: the reading node, Sort or not under ORDER BY, and a mismatch', () => {
     const t = planTree(json);
     expect(observe(t, 'SELECT 1 FROM orders ORDER BY created_at DESC LIMIT 5', { node: 'Index Scan', table: 'orders' }).map((o) => o.code)).toEqual(['pickIndex', 'noSort']);
-    expect(observe(t, 'SELECT 1', { node: 'Seq Scan' }).map((o) => o.code)).toEqual(['differs', 'pickIndex']);
+    expect(observe(t, 'SELECT 1', { node: 'Seq Scan' }).map((o) => o.code)).toEqual(['differs', 'top']); // no node matches: the sentence names the root, nothing is outlined
   });
   it('shownSetup keeps only CREATE INDEX statements', () => {
     expect(shownSetup("CREATE TABLE t (a int);\n-- note\nCREATE INDEX t_a ON t (a);\nANALYZE t;\nCREATE UNIQUE INDEX u ON t (a)")).toEqual(['CREATE INDEX t_a ON t (a)', 'CREATE UNIQUE INDEX u ON t (a)']);

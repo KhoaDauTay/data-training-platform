@@ -6,7 +6,7 @@ import { planTreeView } from './enginePlanTree';
 
 // The engineView chunk reaches all of this through one lazy chunk (`enginePredict`, budget `enginePredict`): predict lessons,
 // capstones and plan diagrams load it before the page is drawn; the capstone chunk gets these through its context.
-export { answerNode, capstonePivot, explainSql, hasRealPlan, planTree, stepName } from '../engine/predict';
+export { afterLab, answerNode, capstonePivot, explainSql, hasRealPlan, planTree, stepName } from '../engine/predict';
 export { planTreeView };
 
 /**
@@ -75,7 +75,7 @@ export function predictView(l: EngineLesson, c: PredictCtx): HTMLElement {
       h('legend', { class: 'mb-3 p-0 text-body font-bold' }, ...c.inline(p.q[c.lang])),
       h('div', { class: 'grid gap-3 sm:grid-cols-2' }, ...d.optionOrder(`${id}#p`, p.options.length).map((i) => option(c, l, i))),
       h('div', { class: 'flex flex-wrap items-center gap-3' },
-        h('button', { type: 'button', class: cls.cx(cls.BTN_GO, 'px-5 py-2'), 'data-ek': `${id}-p-check`, disabled: !!st.viewed, onclick: () => void see() }, `${et('predict.see')} ›`),
+        h('button', { type: 'button', class: cls.cx(cls.BTN_GO, 'px-5 py-2'), 'data-ek': `${id}-p-check`, disabled: !!st.viewed && !(typeof st.plan === 'object' && 'error' in st.plan), onclick: () => void see() }, `${et('predict.see')} ›`),
         h('span', { class: 'text-body-sm text-muted' }, st.viewed ? et('predict.ran') : et('predict.seeNote')),
         status)),
     st.viewed ? resultCard(l, c) : null);
