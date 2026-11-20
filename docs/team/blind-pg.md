@@ -7,7 +7,7 @@ Người làm: agent BLIND · 2026-11-20 · nhánh `v22-engine`, bản build `di
 - Chỉ đọc trang người học thấy: Ý chính, Ví dụ, Thực hành, đề từng bước, lựa chọn của Đoán trước và Câu hỏi, chữ "Điều vừa thấy" sau khi chấm, và Gợi ý khi cần. Không mở `content/engine/**`, `src/` hay script e2e để tìm đáp án.
 - SQL tự viết từ chữ trên trang, gõ vào ô của từng bước rồi bấm Nộp. Khi đề không nêu tên bảng hay tên cột, tôi dùng Chạy thử (`SELECT *`, `information_schema`, `pg_views`) như một người học sẽ làm.
 - Khi làm, tôi không mở Gợi ý nào. Sau đó tôi đọc Gợi ý của mọi bước đã phải dùng kiến thức ngoài trang, để xét trang **cộng Gợi ý** có đủ cho người học không.
-- Thời gian là thời gian của agent (đọc trang, viết câu, nộp), không phải thời gian của người học: câu hỏi khoảng 1 phút, lab 2–4 phút, bài phải thử lại khoảng 6 phút. Người học thật sẽ chậm hơn nhiều ở L3–L5.
+- **Thời gian không được đo.** Không có log thời gian cho từng bài. Ước lượng thô, không phải số liệu: agent mất khoảng 1 phút cho một bài câu hỏi, vài phút cho một lab, lâu hơn cho bài phải thử lại. Người học thật sẽ chậm hơn nhiều ở L3–L5. Cần số thật thì phải chạy lại có ghi giờ.
 - Kết quả cuối: trang `#/engine/postgres` ghi **75/75 bài xong**.
 
 Ký hiệu cột "Kết quả":
@@ -46,7 +46,7 @@ Ký hiệu cột "Kết quả":
 | l2-07 SP-GiST | Đoán + Lab 1 | Đạt lần đầu | — | |
 | l2-08 BRIN | Đoán + Lab 1 | Đạt lần đầu | — | "Trả về số trang … sắp theo tên": không rõ có cần cột `relname` không. Tôi thêm vào và đạt. |
 | l2-09 Bloom | Lab 2 | Đạt lần đầu | — | |
-| l2-10 Range, GiST, EXCLUDE | Lab 3 | Cần ngoài trang | Có | Bước 3 cần đổi độ dài khoảng ra giờ (`extract(epoch …)/3600`). Ý chính không có, Gợi ý chỉ có `upper - lower`. |
+| l2-10 Range, GiST, EXCLUDE | Lab 3 | Cần ngoài trang | Một phần | Bước 3 cần đổi độ dài khoảng ra giờ (`extract(epoch …)/3600`). Ý chính không có, Gợi ý chỉ có `upper - lower`. |
 | l2-11 jsonb | Lab 3 | Cần ngoài trang | Có | Đề nói "tên, giá" nhưng không nêu khóa jsonb (`name`, `price`). Tôi phải Chạy thử `SELECT doc`; Gợi ý nêu `name`. |
 | l2-12 Toàn văn | Lab 4 | Đạt lần đầu | — | |
 | l2-13 pg_trgm | Đoán + Lab 1 | Đạt lần đầu | — | Không nói xếp theo similarity gốc hay đã làm tròn. Theo giá trị gốc thì đạt. |
@@ -108,7 +108,7 @@ Ký hiệu cột "Kết quả":
 | l5-06 GiST, SP-GiST | Câu hỏi 2 + Lab 3 | Đạt lần đầu | Có | Cách gọi `gist_page_items` hai tham số chỉ có ở Gợi ý. |
 | l5-07 Chọn loại index | Câu hỏi 6 | Đạt lần đầu | — | Ví dụ ghi `readings_brin` "20 ranges", nhưng ở l5-05 `readings_brin` chưa tóm tắt: 16 ranges. Bảng có 20 ranges là `readings2_brin`. |
 | l5-08 amcheck | Câu hỏi 2 + Lab 3 | Cần ngoài trang | Có | Đề chỉ nói "hàm kiểm GIN của amcheck"; tên `gin_index_check` chỉ có ở Gợi ý. |
-| l5-09 WAL, full-page write | Câu hỏi 2 + Lab 2 | Đạt lần đầu, **nội dung mâu thuẫn** | — | Ví dụ, gọi là "kết quả thật trên PGlite", ghi HOT_UPDATE thứ nhất `full_page = true` và thứ hai `false`. Lab chạy thật ra `false`, `false` (`pg_get_wal_records_info` cũng cho `fpi_length` 0), và grader nhận `false`, `false`. Câu Đoán trước "cái nào mang ảnh cả trang?" vì vậy không có đáp án trong lab. Cột mốc tên `step`, không được nêu. |
+| l5-09 WAL, full-page write | Câu hỏi 2 + Lab 2 | Đạt lần đầu, **nội dung mâu thuẫn** | — | Ví dụ, gọi là "kết quả thật trên PGlite", ghi HOT_UPDATE thứ nhất `full_page = true` và thứ hai `false`. Lab chạy thật ra `false`, `false` (chạy lại, LSN giống hệt), và grader nhận `false`, `false`. Lý do đọc được: `full_page_writes = on`, nhưng giữa mốc `start` và UPDATE đầu có một bản ghi `XLOG FPI_FOR_HINT` 3624 byte trên chính trang của `stock`. Phần dựng lab đọc bảng sau CHECKPOINT, việc đặt hint bit đã ghi ảnh trang, nên UPDATE đầu không còn FPI. Câu Đoán trước "cái nào mang ảnh cả trang?" vì vậy không có đáp án trong lab. (l3-13 thì đúng: UPDATE đầu có `block_fpi_length` 132, cái sau 0.) Cột mốc tên `step`, không được nêu. |
 | l5-10 RLS | Câu hỏi 3 + Lab 3 | Cần ngoài trang | Không | Trang và Gợi ý không nêu tên ba view (`tickets_as_tenant_1`, `tickets_as_tenant_2`, `tickets_as_support`). Tôi tìm qua `pg_views`. |
 | l5-11 pg_stat_statements | Câu hỏi 2 + Lab 2 | Đạt lần đầu | — | |
 | l5-12 work_mem | Câu hỏi 2 + Lab 2 | Đạt lần đầu | — | "10 giá trị v nhỏ nhất" không nêu luật hòa. |
@@ -131,14 +131,20 @@ Mọi bài đều qua grader ở lần nộp cuối (75/75). "Đạt lần đầ
 
 ## Bài không giải được chỉ từ trang (việc cho PG-C)
 
-Không bài nào hoàn toàn không giải được: cả 75 bài đều qua grader. Các bài dưới đây người học **chỉ đọc trang và Gợi ý thì không giải chắc được**, vì thiếu thông tin hoặc vì trang tự mâu thuẫn. Mỗi bài kèm một dòng cách sửa.
+Đối chiếu với ba loại của đề bài:
+
+- **Giải được sau Gợi ý**: cột "Cần ngoài trang, Gợi ý đủ" (14 bài).
+- **Không giải được chỉ từ trang và Gợi ý**: cột "Gợi ý không đủ" (5 bài) cộng l4-09, tức 6 bài. Tôi vẫn qua được nhờ tự dò catalog hoặc kiến thức riêng.
+- **Nội dung gây hiểu sai**: l5-09.
+
+Cả 75 bài đều qua grader. Các bài dưới đây người học **chỉ đọc trang và Gợi ý thì không giải chắc được**, vì thiếu thông tin hoặc vì trang tự mâu thuẫn. Mỗi bài kèm một dòng cách sửa.
 
 1. **l4-09 bước 1**: thiếu tên cột ("số dư" là `bal`). Sửa: ghi `bal` trong đề, hoặc in cấu trúc bảng `acct` trong Thực hành.
 2. **l4-09 bước 2**: CTE `FOR UPDATE` mà câu chính không đọc tới thì không chạy. Sửa: viết vào đề "câu chính phải đọc CTE (ví dụ `WHERE EXISTS (SELECT 1 FROM l)`)" hoặc đưa ý này vào Gợi ý.
 3. **l5-10 bước 1**: thiếu tên ba view. Sửa: nêu `tickets_as_tenant_1`, `tickets_as_tenant_2`, `tickets_as_support` trong đề.
 4. **l2-16 bước 4**: thiếu bảng `cities(name, lat, lon)`. Sửa: nêu bảng và cột trong Thực hành hoặc Gợi ý.
 5. **l4-04 bước 3**: thiếu cột `order_notes.note`. Sửa: nêu tên cột trong đề.
-6. **l5-09**: Ví dụ "kết quả thật" (FPI true/false) mâu thuẫn với lab (false/false). Sửa: dựng lại lab cho có `CHECKPOINT` ngay trước mốc `start`, để UPDATE đầu mang FPI, rồi kiểm cả hai giá trị trong e2e. Nếu không được thì sửa Ví dụ và câu Đoán trước theo số thật. Nêu luôn cột `step` của `wal_marks`.
+6. **l5-09**: Ví dụ "kết quả thật" (FPI true/false) mâu thuẫn với lab (false/false), vì một `FPI_FOR_HINT` trên trang `stock` chen vào giữa CHECKPOINT và UPDATE đầu. Sửa: trong phần dựng lab, đừng đọc `stock` giữa CHECKPOINT và UPDATE đầu (hoặc chạy CHECKPOINT sau lần đọc cuối), rồi cho grader kiểm đúng true/false. Nêu luôn cột `step` của `wal_marks`.
 7. **l3-11 câu 1–2**: đáp án (2 tỉ transaction; còn dưới 3 triệu thì ngừng cấp XID) không có trên trang, mà con số 200 triệu trên trang lại là lựa chọn sai. Sửa: thêm hai con số này vào Ý chính.
 8. **l4-13 câu 3**: đáp án `DEFERRABLE` không có trên trang. Sửa: thêm một câu về `SERIALIZABLE READ ONLY DEFERRABLE` vào Ý chính.
 
@@ -153,4 +159,4 @@ Sửa nhỏ nên làm cùng đợt (không chặn người học):
 - **Tên hàm chỉ có ở Gợi ý** (`pg_relation_size`, `heap_tuple_infomask_flags`, `bt_page_items`, `pg_visibility_map`, `gin_metapage_info`, `brin_page_items`, `gist_page_items`, `gin_index_check`, `pg_partition_tree`, cú pháp `WITH (pages_per_range = …)`, cách gọi `est(text)`): người học vẫn qua được nhờ Gợi ý. Sửa: thêm tên hàm vào Ý chính hoặc Ví dụ của chính bài đó.
 - **Luật hòa** (l2-01, l5-12) và **cột trả về mơ hồ** (l2-08 `relname`, l4-02 mảng hay `unnest`, l2-13 làm tròn trước hay sau khi xếp): grader đang dễ dãi nên không ai trượt. Sửa: viết rõ trong đề.
 - **Ví dụ lộ đáp án** (l1-12 bước 1, l4-05 và l4-15 Đoán trước, l5-02 và l5-15 các con số): Sửa: ở Ví dụ dùng bảng hoặc giá trị khác với bài lab.
-- **Trang lab không có danh sách bảng/cột** (`schema`/catalog). Người học phải tự chạy `SELECT *` hay `information_schema`. Sửa: thêm khối "Bảng trong lab" (tên bảng, cột, kiểu) như tab Columns của phần DA.
+- **Trang lab không có danh sách bảng/cột** (`schema`/catalog). Tôi đã kiểm: trang bài chỉ có nút sơ đồ, Kiểm tra, Chạy thử, Nộp và Gợi ý; route `#/engine/play/<id>` (có trong docs) không mở workspace mà rơi về trang chủ Engine. Người học phải tự chạy `SELECT *` hay `information_schema`. Sửa: thêm khối "Bảng trong lab" (tên bảng, cột, kiểu) như tab Columns của phần DA, hoặc cho `#/engine/play/<id>` chạy thật. Có khối này thì mục 1, 3, 4, 5 ở trên tự hết.
