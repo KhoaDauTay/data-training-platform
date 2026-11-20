@@ -501,7 +501,7 @@ registerNav({
 });
 // Plan 7 V5: "Practise SQL" is a hub page (#/practice); a run in the workspace still counts as being there.
 registerNav({
-  id: 'practice', area: 'top', order: 30, label: 'nav.practice', icon: NAV_ICON.practice, href: hashOf('practice'),
+  id: 'practice', area: 'top', order: 30, label: 'nav.practiceShort', icon: NAV_ICON.practice, href: hashOf('practice'),
   current: (r) => r === 'practice' || (r === 'play' && (session.mode.kind === 'practice' || session.mode.kind === 'drill')),
 });
 registerNav({

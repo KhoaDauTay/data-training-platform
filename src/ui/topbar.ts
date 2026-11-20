@@ -32,8 +32,6 @@ export interface NavItem {
   onclick?: () => void;
   /** ENG-CORE (L220, design D-E1): not in the 5-slot mobile bottom bar; there that item (by id) stands for it and is current for it too. */
   mergeInto?: string;
-  /** QA v22 (L272): a shorter top-bar label below 1920 px (one row with the badges, L189); the full label from 1920 px. */
-  short?: Key;
 }
 const NAV: NavItem[] = [];
 /** Same id replaces the old entry; kept sorted by order. */
@@ -80,9 +78,7 @@ function renderNav(): void {
   const top = navItems('top');
   const live = DOMAINS.find((d) => d.id === activeDomain())!;
   const none = noDomain(); // v15: the item names no domain
-  byId('nav').replaceChildren(...top.map((n) => navLink(n, route, NAV_LINK, ...(n.short
-    ? [h('span', { class: 'max-[1920px]:hidden' }, t(n.label)), h('span', { class: 'min-[1920px]:hidden' }, t(n.short))]
-    : [t(n.label)]))));
+  byId('nav').replaceChildren(...top.map((n) => navLink(n, route, NAV_LINK, t(n.label))));
   const bottom = top.filter((n) => !n.mergeInto).map((n) => {
     const merged = top.filter((m) => m.mergeInto === n.id);
     return merged.length ? { ...n, label: 'nav.learnBoth' as const, current: (r: Route) => n.current(r) || merged.some((m) => m.current(r)) } : n;
