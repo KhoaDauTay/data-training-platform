@@ -63,8 +63,8 @@ lab:
         vi: "Khoảng cách phải nằm trong `ORDER BY` và có `LIMIT`; một phía của `<->` là hằng."
         en: "The distance must be in `ORDER BY` with a `LIMIT`; one side of `<->` is a constant."
     - task:
-        vi: "Khoảng cách đường chim bay từ Da Nang tới Hue và Hoi An, tính bằng km (làm tròn số nguyên). Trả về `name` và `km`, sắp theo `name`, bỏ chính Da Nang."
-        en: "Straight-line distance from Da Nang to Hue and to Hoi An in km (rounded to whole numbers). Return `name` and `km`, ordered by `name`, leaving out Da Nang itself."
+        vi: "Bảng `cities(name, lat, lon)` giữ tọa độ ba thành phố (độ). Khoảng cách đường chim bay từ Da Nang tới Hue và Hoi An, tính bằng km (làm tròn số nguyên). Trả về `name` và `km`, sắp theo `name`, bỏ chính Da Nang."
+        en: "Table `cities(name, lat, lon)` holds the coordinates of three cities (degrees). Straight-line distance from Da Nang to Hue and to Hoi An in km (rounded to whole numbers). Return `name` and `km`, ordered by `name`, leaving out Da Nang itself."
       solution: SELECT c.name, round((earth_distance(ll_to_earth(d.lat, d.lon), ll_to_earth(c.lat, c.lon)) / 1000)::numeric) AS km FROM cities c, cities d WHERE d.name = 'Da Nang' AND c.name <> 'Da Nang' ORDER BY c.name
       check: rows
       ordered: true

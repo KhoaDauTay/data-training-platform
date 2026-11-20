@@ -72,7 +72,7 @@ recovery_target_action = 'pause'
 
 ## Thực hành
 
-Phần chạy thật cần máy chủ thật (nhiều phiên / replica set / AWS). Bài này dùng sơ đồ và kết quả ghi sẵn. PGlite không có lưu trữ WAL, standby hay tiến trình autovacuum nền (đo: chỉ một `standalone backend`), nên đây là câu hỏi tình huống dựa trên docs chính thức.
+Chạy thật cần server Postgres thật có standby và lưu trữ WAL. Bài này dùng sơ đồ và kết quả ghi sẵn. PGlite không có lưu trữ WAL, standby hay tiến trình autovacuum nền (đo: chỉ một `standalone backend`), nên đây là câu hỏi tình huống dựa trên docs chính thức.
 
 Bốn tình huống vận hành. Kỹ năng chuyên gia: chọn chiến lược backup theo RPO/RTO, giải thích vì sao nhân bản không thay backup, và chỉnh autovacuum cho bảng lớn.
 
@@ -99,6 +99,6 @@ recovery_target_action = 'pause'
 
 ## Practice
 
-The real run needs a real server (several sessions / replica set / AWS). This lesson uses diagrams and recorded output. PGlite has no WAL archiving, no standby and no background autovacuum process (measured: only one `standalone backend`), so these are scenario questions based on the official docs.
+A real run needs a real Postgres server with a standby and WAL archiving. This lesson uses diagrams and recorded output. PGlite has no WAL archiving, no standby and no background autovacuum process (measured: only one `standalone backend`), so these are scenario questions based on the official docs.
 
 Four operations scenarios. Expert skill: choose a backup strategy from RPO/RTO, explain why replication does not replace backups, and tune autovacuum for large tables.

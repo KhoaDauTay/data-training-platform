@@ -73,9 +73,9 @@ t3  A: UPDATE acct SET bal = bal - 10 WHERE id = 1;
 
 ## Thực hành
 
-Phần chạy thật cần máy chủ thật (nhiều phiên / replica set / AWS). Bài này dùng sơ đồ và kết quả ghi sẵn.
+Chạy thật cần nhiều phiên cùng lúc trên một server Postgres; PGlite chỉ có một phiên. Bài này dùng sơ đồ và kết quả ghi sẵn.
 
-Sơ đồ hai làn: bật/tắt mức cô lập và xem cùng một kịch bản cho kết quả khác nhau ra sao. Sau đó ba câu hỏi. Kỹ năng chuyên gia: với một nghiệp vụ cụ thể (báo cáo, chuyển tiền, đặt chỗ), chọn mức cô lập thấp nhất vẫn đúng và biết phải thử lại ở đâu.
+Sơ đồ là bảng mức cô lập × bất thường: mỗi bước là một kịch bản hai giao dịch (đọc bẩn, đọc không lặp lại, phantom, write skew) và các mức chặn được nó. Sau đó ba câu hỏi. Kỹ năng chuyên gia: với một nghiệp vụ cụ thể (báo cáo, chuyển tiền, đặt chỗ), chọn mức cô lập thấp nhất vẫn đúng và biết phải thử lại ở đâu.
 
 # EN
 
@@ -111,6 +111,6 @@ t3  A: UPDATE acct SET bal = bal - 10 WHERE id = 1;
 
 ## Practice
 
-The real run needs a real server (several sessions / replica set / AWS). This lesson uses diagrams and recorded output.
+A real run needs several concurrent sessions on one Postgres server; PGlite has only one session. This lesson uses diagrams and recorded output.
 
-A two-lane diagram: switch the isolation level and see how the same script ends differently. Then three questions. Expert skill: for a concrete business flow (a report, a transfer, a booking), choose the lowest isolation level that is still correct and know where to retry.
+The diagram is a table of isolation levels by anomaly: each step is a two-transaction script (dirty read, non-repeatable read, phantom, write skew) and the levels that stop it. Then three questions. Expert skill: for a concrete business flow (a report, a transfer, a booking), choose the lowest isolation level that is still correct and know where to retry.

@@ -62,21 +62,19 @@ quiz:
 
 ## Ví dụ
 
-Kết quả thật trên PGlite, 20.000 dòng, `prio` chỉ có 4 giá trị:
+Kết quả thật trên PGlite cho một bảng khác bài: `logins(id, user_id)`, 30.000 dòng, `user_id` có 500 giá trị (mỗi giá trị 60 dòng), một index thường và một index `deduplicate_items = off`:
 
 ```text
-relname               pages
-tickets_prio_dedup    19
-tickets_prio_incl     57
-tickets_prio_nodedup  57
+relname              pages
+logins_user_dedup    27
+logins_user_nodedup  84
 
 itemoffset  htid    n_tids
-2           (0,4)   132
-3           (2,80)  132
-4           (4,156) 132
+2           (2,48)  60
+3           (0,1)   60
 ```
 
-Dedup làm index nhỏ đi 3 lần. Index có `INCLUDE (id)` không dedup được nên to bằng bản tắt dedup.
+Dedup làm index nhỏ đi khoảng 3 lần: mỗi khóa được lưu một lần kèm một posting list 60 TID. Bài lab hỏi thêm điều ví dụ này không nói: index có `INCLUDE` thì sao.
 
 ## Thực hành
 
@@ -94,21 +92,19 @@ So kích thước, đọc posting list và cờ `allequalimage`. Kỹ năng chuy
 
 ## Example
 
-Real output from PGlite, 20,000 rows, `prio` has only 4 values:
+Real output from PGlite for a table other than the lesson's: `logins(id, user_id)`, 30,000 rows, `user_id` has 500 values (60 rows each), one plain index and one with `deduplicate_items = off`:
 
 ```text
-relname               pages
-tickets_prio_dedup    19
-tickets_prio_incl     57
-tickets_prio_nodedup  57
+relname              pages
+logins_user_dedup    27
+logins_user_nodedup  84
 
 itemoffset  htid    n_tids
-2           (0,4)   132
-3           (2,80)  132
-4           (4,156) 132
+2           (2,48)  60
+3           (0,1)   60
 ```
 
-Deduplication makes the index three times smaller. The index with `INCLUDE (id)` cannot deduplicate, so it is as large as the one with deduplication turned off.
+Deduplication makes the index about 3 times smaller: each key is stored once with a posting list of 60 TIDs. The lab asks what this example does not say: what happens to an index with `INCLUDE`.
 
 ## Practice
 

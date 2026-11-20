@@ -23,12 +23,12 @@ lab:
     CREATE TABLE acct (id int PRIMARY KEY, bal int NOT NULL);
     INSERT INTO acct SELECT g, 100 FROM generate_series(1, 10) g;
   steps:
-    - task: { vi: "Trong cùng một câu: cộng 1 vào số dư tài khoản 1 (dùng CTE có UPDATE … RETURNING), rồi liệt kê tên quan hệ và lock mode trong `pg_locks` cho mọi quan hệ có tên bắt đầu bằng `acct`. Sắp theo tên rồi chế độ.", en: "In one statement: add 1 to account 1's balance (a CTE with UPDATE … RETURNING), then list the relation name and lock mode in `pg_locks` for every relation whose name starts with `acct`. Order by name, then mode." }
+    - task: { vi: "Trong cùng một câu: cộng 1 vào số dư (cột `bal`) của tài khoản 1 (dùng CTE có UPDATE … RETURNING), rồi liệt kê tên quan hệ và lock mode trong `pg_locks` cho mọi quan hệ có tên bắt đầu bằng `acct`. Sắp theo tên rồi chế độ.", en: "In one statement: add 1 to the balance (column `bal`) of account 1 (a CTE with UPDATE … RETURNING), then list the relation name and lock mode in `pg_locks` for every relation whose name starts with `acct`. Order by name, then mode." }
       solution: "WITH u AS (UPDATE acct SET bal = bal + 1 WHERE id = 1 RETURNING id) SELECT c.relname, l.mode FROM u, pg_locks l JOIN pg_class c ON c.oid = l.relation WHERE c.relname LIKE 'acct%' ORDER BY 1, 2"
       check: rows
       ordered: true
       hint: { vi: "Nối `pg_locks.relation` với `pg_class.oid`. Bài chạy trong một transaction rồi ROLLBACK, nên không có gì bị đổi thật.", en: "Join `pg_locks.relation` to `pg_class.oid`. The lesson runs inside a transaction that is rolled back, so nothing really changes." }
-    - task: { vi: "Giống bước 1, nhưng thay UPDATE bằng việc giữ row lock trên dòng tài khoản 2 để sửa sau (`SELECT … FOR UPDATE` trong CTE).", en: "Like step 1, but instead of an UPDATE, lock account 2's row for a later change (`SELECT … FOR UPDATE` inside the CTE)." }
+    - task: { vi: "Giống bước 1, nhưng thay UPDATE bằng việc giữ row lock trên dòng tài khoản 2 để sửa sau (`SELECT … FOR UPDATE` trong CTE). Câu chính phải đọc CTE (ví dụ `FROM r, pg_locks l …`): một CTE `SELECT` mà câu chính không đọc tới thì không chạy, nên bạn chỉ thấy lock trên bảng mà bước phân tích câu đã lấy, thiếu dòng của `acct_pkey`.", en: "Like step 1, but instead of an UPDATE, lock account 2's row for a later change (`SELECT … FOR UPDATE` inside the CTE). The main query must read the CTE (for example `FROM r, pg_locks l …`): a `SELECT` CTE the main query never reads is not run, so you only see the table lock taken while the statement was parsed, and the `acct_pkey` row is missing." }
       solution: "WITH r AS (SELECT id FROM acct WHERE id = 2 FOR UPDATE) SELECT c.relname, l.mode FROM r, pg_locks l JOIN pg_class c ON c.oid = l.relation WHERE c.relname LIKE 'acct%' ORDER BY 1, 2"
       check: rows
       ordered: true
@@ -71,12 +71,13 @@ Tám lock mode trên bảng, từ yếu tới mạnh, và lệnh lấy nó:
 
 `pg_locks` cho thấy lock đang giữ và đang chờ (`granted = false`); `lock_timeout` giới hạn thời gian chờ. PGlite chỉ có một phiên, nên không thể thấy chờ lock thật: bài này cho bạn thấy lock mà câu của chính bạn đang giữ, còn phần "ai chờ ai" là sơ đồ.
 
-Kết quả thật trên PGlite:
+Kết quả thật trên PGlite cho một lệnh khác hai bước của bài, một `SELECT` thường trong truy vấn con mà câu chính đọc qua `FROM (SELECT bal …) a, pg_locks l …`:
 
 ```text
-UPDATE in a CTE:          acct ROW EXCLUSIVE, acct_pkey ROW EXCLUSIVE
-SELECT … FOR UPDATE:       acct ROW SHARE,     acct_pkey ROW SHARE
+SELECT bal … WHERE id = 3:  acct AccessShareLock, acct_pkey AccessShareLock
 ```
+
+Index cũng là một quan hệ, nên lệnh tìm dòng qua `acct_pkey` giữ lock trên cả index. Với UPDATE và `SELECT … FOR UPDATE`, bạn tự đo ở hai bước.
 
 Trong `pg_locks` các chế độ được viết dạng `RowExclusiveLock`, `RowShareLock`, `AccessShareLock`…
 
@@ -107,12 +108,13 @@ The eight table lock modes, from weakest to strongest, with a command that takes
 
 `pg_locks` shows held and waiting locks (`granted = false`); `lock_timeout` caps the wait. PGlite has only one session, so a real lock wait cannot be shown: this lesson shows the locks your own statement holds, and "who waits for whom" is a diagram.
 
-Real output from PGlite:
+Real output from PGlite for a command other than the lesson's two steps, a plain `SELECT` in a subquery the main query reads through `FROM (SELECT bal …) a, pg_locks l …`:
 
 ```text
-UPDATE in a CTE:          acct ROW EXCLUSIVE, acct_pkey ROW EXCLUSIVE
-SELECT … FOR UPDATE:       acct ROW SHARE,     acct_pkey ROW SHARE
+SELECT bal … WHERE id = 3:  acct AccessShareLock, acct_pkey AccessShareLock
 ```
+
+An index is a relation too, so a command that finds its row through `acct_pkey` also holds a lock on the index. You measure UPDATE and `SELECT … FOR UPDATE` yourself in the two steps.
 
 In `pg_locks` the modes are spelled `RowExclusiveLock`, `RowShareLock`, `AccessShareLock`…
 

@@ -57,8 +57,8 @@ lab:
         vi: "Chỉ cần `@>`, nên chọn opclass `jsonb_path_ops`."
         en: "Only `@>` is needed, so choose the `jsonb_path_ops` opclass."
     - task:
-        vi: "Báo cáo \"hàng mới thêm trong một tuần\" lọc theo `added_at`. Hàng được thêm theo đúng thứ tự thời gian. Tạo index BRIN tên `catalog_added_brin` trên `added_at`, với `pages_per_range = 8`."
-        en: "The \"added this week\" report filters on `added_at`. Items are added in time order. Create a BRIN index named `catalog_added_brin` on `added_at`, with `pages_per_range = 8`."
+        vi: "Báo cáo \"hàng mới thêm trong một tuần\" lọc theo `added_at`. Hàng được thêm theo đúng thứ tự thời gian. Tạo index BRIN tên `catalog_added_brin` trên `added_at`, với `pages_per_range = 8` (tham số lưu trữ của index viết trong `WITH (...)` sau danh sách cột)."
+        en: "The \"added this week\" report filters on `added_at`. Items are added in time order. Create a BRIN index named `catalog_added_brin` on `added_at`, with `pages_per_range = 8` (an index storage parameter goes in `WITH (...)` after the column list)."
       solution: CREATE INDEX catalog_added_brin ON catalog USING brin (added_at) WITH (pages_per_range = 8)
       target: SELECT count(*) FROM catalog WHERE added_at >= timestamptz '2025-06-01 00:00+00' AND added_at < timestamptz '2025-06-08 00:00+00'
       check: catalog

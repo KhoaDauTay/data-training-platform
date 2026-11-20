@@ -37,7 +37,7 @@ lab:
       END IF;
     END $$;
   steps:
-    - task: { vi: "Xem kế hoạch chung (generic) của câu lọc kiện theo trạng thái là tham số `$1`: gọi `plan_lines(..., true)` với câu đó.", en: "Look at the generic plan of the query that filters parcels by a status parameter `$1`: call `plan_lines(..., true)` with that query." }
+    - task: { vi: "Xem kế hoạch chung (generic) của câu lọc kiện theo trạng thái là tham số `$1`: gọi `plan_lines(sql, true)` với câu đó: tham số đầu là nguyên câu SQL dạng chuỗi, `true` nghĩa là xem kế hoạch chung.", en: "Look at the generic plan of the query that filters parcels by a status parameter `$1`: call `plan_lines(sql, true)` with that query: the first argument is the whole SQL query as a string, `true` asks for the generic plan." }
       solution: "SELECT * FROM plan_lines('SELECT * FROM parcels WHERE status = $1', true)"
       check: rows
       ordered: true

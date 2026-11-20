@@ -63,8 +63,8 @@ lab:
         probe: SELECT lp, t_ctid::text, t_xmax <> '0' FROM heap_page_items(get_raw_page('acct', 0))
         expect: [[1, "(0,1)", true], [2, "(0,4)", true], [3, "(0,3)", true], [4, "(0,4)", false], [5, "(0,5)", false]]
     - task:
-        vi: "Với mỗi tuple, lấy `lp` và trạng thái của transaction đã chèn nó (`txid_status`)."
-        en: "For each tuple return `lp` and the status of the transaction that inserted it (`txid_status`)."
+        vi: "Với mỗi tuple, lấy `lp` và trạng thái của transaction đã chèn nó (`txid_status`). Hàm này nhận `bigint`, còn `t_xmin` kiểu `xid`: ép qua `text` rồi sang `bigint`."
+        en: "For each tuple return `lp` and the status of the transaction that inserted it (`txid_status`). That function takes a `bigint` while `t_xmin` is an `xid`: cast it through `text` to `bigint`."
       solution: SELECT lp, txid_status(t_xmin::text::bigint) AS inserted_by FROM heap_page_items(get_raw_page('acct', 0))
       check: rows
       ordered: true
@@ -77,8 +77,8 @@ lab:
         probe: SELECT lp, txid_status(t_xmin::text::bigint) FROM heap_page_items(get_raw_page('acct', 0))
         expect: [[1, committed], [2, committed], [3, committed], [4, committed], [5, aborted]]
     - task:
-        vi: "Với các tuple có `t_xmax` khác 0, lấy `lp` và một cột đúng/sai: `raw_flags` có chứa `HEAP_XMAX_LOCK_ONLY` không."
-        en: "For the tuples with a non-zero `t_xmax`, return `lp` and a true/false column: does `raw_flags` contain `HEAP_XMAX_LOCK_ONLY`."
+        vi: "Với các tuple có `t_xmax` khác 0, lấy `lp` và một cột đúng/sai: `raw_flags` có chứa `HEAP_XMAX_LOCK_ONLY` không. Mảng `raw_flags` do hàm `heap_tuple_infomask_flags(t_infomask, t_infomask2)` trả, đổi các bit thành tên cờ."
+        en: "For the tuples with a non-zero `t_xmax`, return `lp` and a true/false column: does `raw_flags` contain `HEAP_XMAX_LOCK_ONLY`. The `raw_flags` array comes from the function `heap_tuple_infomask_flags(t_infomask, t_infomask2)`, which turns the bits into flag names."
       solution: |
         SELECT lp, 'HEAP_XMAX_LOCK_ONLY' = ANY(raw_flags) AS lock_only
         FROM heap_page_items(get_raw_page('acct', 0)), heap_tuple_infomask_flags(t_infomask, t_infomask2)

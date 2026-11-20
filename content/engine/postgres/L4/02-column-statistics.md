@@ -30,7 +30,7 @@ lab:
     CREATE INDEX parcels_status_idx ON parcels (status);
     ANALYZE parcels;
   steps:
-    - task: { vi: "Liệt kê các giá trị phổ biến nhất của cột `status` và tần suất của chúng (hai cột, ép sang text).", en: "List the most common values of column `status` and their frequencies (two columns, cast to text)." }
+    - task: { vi: "Liệt kê các giá trị phổ biến nhất của cột `status` và tần suất của chúng (một dòng, hai cột: hai mảng ép sang text).", en: "List the most common values of column `status` and their frequencies (one row, two columns: the two arrays cast to text)." }
       solution: "SELECT most_common_vals::text, most_common_freqs::text FROM pg_stats WHERE tablename = 'parcels' AND attname = 'status'"
       check: rows
       hint: { vi: "Hai mảng song song trong view `pg_stats`.", en: "Two parallel arrays in the `pg_stats` view." }

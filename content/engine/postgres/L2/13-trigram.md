@@ -37,8 +37,8 @@ lab:
     ANALYZE customers;
   steps:
     - task:
-        vi: "Khách gõ nhầm \"Nguyen Ngoc Uyn 12032\". Lấy `id` và độ giống (`similarity`, làm tròn 2 chữ số) của 3 tên giống nhất; bằng nhau thì `id` nhỏ trước."
-        en: "A user mistyped \"Nguyen Ngoc Uyn 12032\". Return the `id` and similarity (`similarity`, rounded to 2 decimals) of the 3 most similar names; on a tie, smaller `id` first."
+        vi: "Khách gõ nhầm \"Nguyen Ngoc Uyn 12032\". Lấy `id` và độ giống (`similarity`, làm tròn 2 chữ số) của 3 tên giống nhất, xếp theo độ giống gốc (chưa làm tròn); bằng nhau thì `id` nhỏ trước."
+        en: "A user mistyped \"Nguyen Ngoc Uyn 12032\". Return the `id` and similarity (`similarity`, rounded to 2 decimals) of the 3 most similar names, ordered by the raw similarity (before rounding); on a tie, smaller `id` first."
       solution: SELECT id, round(similarity(name, 'Nguyen Ngoc Uyn 12032')::numeric, 2) AS sim FROM customers ORDER BY similarity(name, 'Nguyen Ngoc Uyn 12032') DESC, id LIMIT 3
       check: rows
       ordered: true

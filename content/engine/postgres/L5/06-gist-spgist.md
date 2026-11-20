@@ -31,7 +31,7 @@ lab:
     CREATE INDEX stores_loc_spgist ON stores_sp USING spgist (loc);
     ANALYZE stores, stores_sp;
   steps:
-    - task: { vi: "Đọc 5 khóa đầu trên trang gốc (trang 0) của `stores_loc_gist`: `itemoffset` và `keys`.", en: "Read the first 5 keys on the root page (page 0) of `stores_loc_gist`: `itemoffset` and `keys`." }
+    - task: { vi: "Đọc 5 khóa đầu trên trang gốc (trang 0) của `stores_loc_gist`: `itemoffset` và `keys`. Hàm `gist_page_items(get_raw_page(index, 0), index)` nhận hai tham số: trang thô và tên index.", en: "Read the first 5 keys on the root page (page 0) of `stores_loc_gist`: `itemoffset` and `keys`. The function `gist_page_items(get_raw_page(index, 0), index)` takes two arguments: the raw page and the index name." }
       solution: "SELECT itemoffset, keys FROM gist_page_items(get_raw_page('stores_loc_gist', 0), 'stores_loc_gist') ORDER BY itemoffset LIMIT 5"
       check: rows
       ordered: true

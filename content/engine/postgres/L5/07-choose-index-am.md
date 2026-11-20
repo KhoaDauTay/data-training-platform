@@ -89,7 +89,7 @@ Cùng dữ liệu, các bài trước trong mô-đun đã cho thấy trên PGlit
 ```text
 B-tree      seq_keys_idx        2 levels, 55 leaves for 20000 int keys
 GIN         docs_tags_fast      Bitmap Index Scan for tags @> '{new}'
-BRIN        readings_brin       20 ranges summarize 153 heap pages
+BRIN        readings2_brin      20 ranges summarize 153 heap pages
 GiST        stores_loc_gist     Index Scan ... Order By: (loc <-> '(50,50)'::point)
 SP-GiST     stores_loc_spgist   Bitmap Index Scan for loc <@ box
 ```
@@ -121,7 +121,7 @@ On the same kind of data, the earlier lessons of this module showed on PGlite:
 ```text
 B-tree      seq_keys_idx        2 levels, 55 leaves for 20000 int keys
 GIN         docs_tags_fast      Bitmap Index Scan for tags @> '{new}'
-BRIN        readings_brin       20 ranges summarize 153 heap pages
+BRIN        readings2_brin      20 ranges summarize 153 heap pages
 GiST        stores_loc_gist     Index Scan ... Order By: (loc <-> '(50,50)'::point)
 SP-GiST     stores_loc_spgist   Bitmap Index Scan for loc <@ box
 ```

@@ -33,7 +33,7 @@ lab:
     SELECT brin_summarize_new_values('readings2_brin');
     ANALYZE readings, readings2;
   steps:
-    - task: { vi: "Index dùng 8 trang heap mỗi khoảng. Đếm số khoảng đã có tóm tắt trên trang 2 của `readings_brin` và số khối bắt đầu lớn nhất (`blknum`), rồi so với tổng số trang heap. Ba cột: ranges, last_blk, heap_pages.", en: "The index uses 8 heap pages per range. Count the summarized ranges on page 2 of `readings_brin` and the largest starting block (`blknum`), and compare with the heap's page count. Three columns: ranges, last_blk, heap_pages." }
+    - task: { vi: "Index dùng 8 trang heap mỗi khoảng. Đếm số khoảng đã có tóm tắt trên trang 2 của `readings_brin` (`brin_page_items(get_raw_page(index, 2), index)`, mỗi khoảng một dòng) và số khối bắt đầu lớn nhất (`blknum`), rồi so với tổng số trang heap. Ba cột: ranges, last_blk, heap_pages.", en: "The index uses 8 heap pages per range. Count the summarized ranges on page 2 of `readings_brin` (`brin_page_items(get_raw_page(index, 2), index)`, one row per range) and the largest starting block (`blknum`), and compare with the heap's page count. Three columns: ranges, last_blk, heap_pages." }
       solution: "SELECT count(*) AS ranges, max(blknum) AS last_blk, pg_relation_size('readings') / 8192 AS heap_pages FROM brin_page_items(get_raw_page('readings_brin', 2), 'readings_brin')"
       check: rows
       hint: { vi: "`brin_page_items(get_raw_page('readings_brin', 2), 'readings_brin')`; trang 0 là metapage, trang 1 là revmap.", en: "`brin_page_items(get_raw_page('readings_brin', 2), 'readings_brin')`; page 0 is the metapage, page 1 the revmap." }

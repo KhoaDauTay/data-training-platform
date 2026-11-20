@@ -64,6 +64,7 @@ Trừ tiền tài khoản A xong thì máy sập, trước khi kịp cộng cho 
 - `BEGIN` mở transaction; `COMMIT` ghi lại mọi thay đổi; `ROLLBACK` hủy hết.
 - Không có `BEGIN` thì mỗi câu là một transaction riêng, tự commit.
 - Thay đổi chưa commit chỉ phiên của bạn thấy. Các phiên khác vẫn thấy dữ liệu cũ, và không bị chặn khi đọc (MVCC, học kỹ ở L3).
+- Mức cô lập mặc định là Read Committed: mỗi câu lệnh lấy một ảnh chụp (snapshot) mới lúc nó bắt đầu, nên hai câu giống nhau trong cùng một transaction có thể thấy kết quả khác nhau nếu giữa chúng có phiên khác commit.
 - Khi một câu lỗi, cả transaction hỏng: các câu sau bị từ chối với lỗi "current transaction is aborted" cho tới khi bạn `ROLLBACK`.
 - `SAVEPOINT name` đánh dấu một điểm; `ROLLBACK TO SAVEPOINT name` chỉ hủy phần sau điểm đó, và đưa transaction hỏng về trạng thái dùng được.
 
@@ -98,6 +99,7 @@ You debit account A and the machine dies before B is credited: where did the mon
 - `BEGIN` opens a transaction; `COMMIT` keeps every change; `ROLLBACK` undoes them all.
 - Without `BEGIN`, each statement is its own transaction and commits by itself.
 - Uncommitted changes are visible only to your session. Other sessions still see the old data and are not blocked when reading (MVCC, covered in depth in L3).
+- The default isolation level is Read Committed: each statement takes a fresh snapshot when it starts, so the same statement run twice in one transaction can see different results if another session commits in between.
 - When a statement fails, the whole transaction is broken: later statements are refused with "current transaction is aborted" until you `ROLLBACK`.
 - `SAVEPOINT name` marks a point; `ROLLBACK TO SAVEPOINT name` undoes only what came after it and makes a broken transaction usable again.
 
