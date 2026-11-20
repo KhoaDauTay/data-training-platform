@@ -551,11 +551,11 @@ try {
     const at = (what) => `document.querySelector('[data-ek="${l.id}-s${i}-${what}"]')`;
     await ev(`(t => { t.value = ${S(l.lab.steps[i].solution)}; t.dispatchEvent(new Event('input', { bubbles: true })); })(${at('code')})`);
     await ev(`${at('submit')}.click()`);
-    await waitFor(`${l.id} step ${i + 1} passed`, `(${at('code')})?.closest('div').querySelector('[role=status]')?.classList.contains('good')`, 120000);
+    await waitFor(`${l.id} step ${i + 1} passed`, `(${at('code')})?.closest('[data-step]').querySelector('[role=status]')?.classList.contains('good')`, 120000);
   };
   const openLesson = async (l) => {
     await go(base, l.hash);
-    await waitFor(`${l.id} drawn`, `!!document.querySelector('#engine-page #engine-lesson-title')`, 60000);
+    await waitFor(`${l.id} drawn`, `!!document.querySelector('#engine-page[data-lesson]')`, 60000);
   };
   await step(`engine ${ENGINE.heap.id}: pageinspect step passes and the heap diagram draws the real rows`, async () => {
     await openLesson(ENGINE.heap);

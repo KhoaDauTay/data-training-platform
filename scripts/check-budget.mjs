@@ -47,6 +47,7 @@ const GROUPS = [
   ['engine', /^engineSources-/, 40], // ENG-CORE (L220), L248: the Database Engine lesson index (list fields of every lesson as JSON, src/engineSources.ts), fetched on the first #/engine or #/me visit: 23 KB gz for 195 lessons
   ['engineLesson', /^\d\d-[a-z0-9-]+-[\w-]{8}\.js$/, 8, 'each'], // L248: one lazy chunk per lesson (content/engine/<engine>/L<n>/<NN>-<slug>.md as JSON), fetched when it opens; per file, 5.9 KB gz max at integration
   ['engineui', /^engineView-/, 20], // ENG-CORE (L220): src/ui/engineView.ts + src/engine/{content,labs,vizRegistry,inside}.ts + src/i18n/engine.ts (pages, lesson viewer, graders, VI/EN text), lazy: 9.7 KB gz at T1
+  ['engineuiPath', /^enginePathView-/, 6], // L280: the NoSQL path pages (src/ui/enginePathView.ts), split out of engineView in the Engine redesign; lazy on the first #/engine/mongodb/path
   // ENG-PGLAB (L230): the engine lab's own worker (src/engine/pglab/pglabWorker.ts: a second PGlite JS bundle + session +
   // checkers; the .wasm/.data are shared with the game worker) and the contrib tarballs it fetches only when a lab names
   // them (already gzip). 133 / 136 / 1150 KB measured 2026-11-20. Required since ENG-CORE's LAB_RUNNERS.postgres loads it (L220).

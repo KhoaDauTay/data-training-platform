@@ -4,6 +4,6 @@
 // when the lesson opens (budget `engineLesson`, per file). src/ui/engine.ts imports this with import() (budget `engine`).
 import type { LessonSource } from './engine/content';
 
-export const meta = import.meta.glob<LessonSource>('../content/engine/*/L*/*.md', { query: '?fm&meta=id,engine,level,module,title,title_en,kind,minutes,requires,runtime', import: 'default', eager: true });
+export const meta = import.meta.glob<LessonSource>('../content/engine/*/L*/*.md', { query: '?fm&meta=id,engine,level,module,title,title_en,kind,minutes,requires,runtime,viz', import: 'default', eager: true });
 export const full = import.meta.glob<LessonSource>('../content/engine/*/L*/*.md', { query: '?fm', import: 'default' });
 export const modules = import.meta.glob<unknown>('../content/engine/*/modules.yml', { import: 'default', eager: true });

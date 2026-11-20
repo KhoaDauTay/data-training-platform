@@ -1,9 +1,9 @@
 import {
   blocksOf, ENGINES, engineXp, isRight, lessonPassed, parseEngineLesson, parseModules, partsOf, progressOf, SECTIONS, treeOf,
-  type EngineId, type EngineLesson, type LessonSource, type Level, type ModuleName, type Question, type Tree,
+  type EngineId, type EngineLesson, type Kind, type LessonSource, type Level, type ModuleName, type Question, type Tree,
 } from '../engine/content';
 import { heapView } from '../engine/inside';
-import { gradable, honestOf, LAB_RUNNERS, type Honest, type LabEnv, type LabOutput, type LabRunner, type LabVerdict, type PlanLine } from '../engine/labs';
+import { gradable, honestOf, honestRow, LAB_RUNNERS, type Honest, type LabEnv, type LabOutput, type LabRunner, type LabVerdict, type PlanLine } from '../engine/labs';
 import { vizMountFor, type VizDeps, type VizMounted } from '../engine/vizRegistry';
 import type * as I18n from '../i18n';
 import { ENGINE_DICT, engineText, type EngineKey } from '../i18n/engine';
@@ -11,15 +11,20 @@ import type * as Route from '../route';
 import type * as State from '../state';
 import type * as Tickets from '../tickets';
 import type * as Dom from './dom';
+import type * as Editor from './editor';
 import type * as Feedback from './feedback';
+import type * as HomeView from './homeView';
 import type * as Icons from './icons';
 import type * as ResultTable from './resultTable';
 import type { Row } from './sidebar';
+import type { PathCtx } from './enginePathView';
 
 /**
- * ENG-CORE (L220): the Database Engine pages (#/engine, #/engine/<engine>, #/engine/<engine>/<level>/<lesson>), the lesson
- * viewer (sections, viz slot, predict, quiz, lab), the #/me block and the sidebar rows. Lazy chunk `engineView` (budget
- * `engineui`): imports only types from main modules and gets every main value through EngineDeps (Plan 6 U3).
+ * ENG-CORE (L220), redesign L280: the Database Engine pages (#/engine, #/engine/<engine>, #/engine/<engine>/<level>,
+ * #/engine/<engine>/<level>/<lesson>), the lesson viewer (sections, viz slot, predict, quiz, lab), the #/me block and the
+ * sidebar rows. Lazy chunk `engineView` (budget `engineui`): imports only types from main modules and gets every main value
+ * through EngineDeps (Plan 6 U3). The page's h1 and trail are main's (`subOf()` → homeView `pageSubs.engine`); the NoSQL
+ * path pages are their own chunk (enginePathView.ts, L280).
  */
 export interface EngineDeps {
   h: typeof Dom.h; icon: typeof Icons.icon; t: typeof I18n.t; getLang: typeof I18n.getLang; locale: typeof I18n.locale;
@@ -28,7 +33,11 @@ export interface EngineDeps {
   renderResult: typeof ResultTable.renderResult; errorView: typeof Feedback.errorView; optionOrder: typeof Tickets.optionOrder;
   engineHash: typeof Route.engineHash; engineRouteOf: typeof Route.engineRouteOf;
   enginePathOf: typeof Route.enginePathOf; enginePathHash: typeof Route.enginePathHash; hashOf: typeof Route.hashOf; rerender: () => void;
-  cls: { CARD: string; BTN_GO: string; BTN_SECONDARY: string; PILL: string; cx: (...c: (string | false | null | undefined)[]) => string };
+  cls: { CARD: string; BTN_GO: string; BTN_SECONDARY: string; BTN_GHOST: string; PILL: string; DONE_PILL: string; cx: (...c: (string | false | null | undefined)[]) => string };
+  /** L280: main's list rows (the Overview's chapter rows), so Engine lists look and behave like the rest of the site. */
+  ui: { listRow: typeof HomeView.listRow; LIST: string; GROUP_TITLE: string; ABOVE: string };
+  /** L281: the app's CodeMirror editor (main bundle) for lab steps and path drills. */
+  createEditor: typeof Editor.createEditor;
   lab: LabEnv;
   /** ENG-VIZ's main values (svg helper, GSAP loader); the diagram chunk itself loads through src/engine/vizRegistry.ts. */
   viz: VizDeps;
@@ -40,7 +49,9 @@ let d: EngineDeps;
 let lessons: EngineLesson[] = [];
 const trees = {} as Record<EngineId, Tree>;
 const NAME: Record<EngineId, string> = { postgres: 'PostgreSQL', mongodb: 'MongoDB', dynamodb: 'DynamoDB' };
-const SHORT: Record<EngineId, string> = { postgres: 'PG', mongodb: 'MG', dynamodb: 'DY' };
+/** L280: one generic picture per engine (no logos): a table grid, a JSON document, a key and its values. */
+const ENGINE_ICON = { postgres: 'engRelational', mongodb: 'engDocument', dynamodb: 'engKeyValue' } as const satisfies Record<EngineId, Icons.IconName>;
+const KIND_ICON = { concept: 'kindConcept', lab: 'kindLab', predict: 'kindPredict', quiz: 'kindQuiz', capstone: 'kindCapstone' } as const satisfies Record<Kind, Icons.IconName>;
 const et = (key: EngineKey, params?: I18n.Params): string => engineText(d.getLang(), d.locale(), key, params);
 
 /** Parses every engine's content (throws on a broken file: the main part shows the load failure and Retry). */
@@ -73,6 +84,10 @@ const lang = (): 'vi' | 'en' => d.getLang();
 const flat = (e: EngineId): EngineLesson[] => trees[e].levels.flatMap((l) => l.modules.flatMap((m) => m.lessons));
 const lessonHash = (l: EngineLesson): string => d.engineHash(l.engine, l.level, l.id);
 const levelName = (lv: Level): string => `${lv} · ${et(`level.${lv}`)}`;
+const levelOf = (e: EngineId, lv: string | undefined) => trees[e].levels.find((x) => x.level === lv && x.modules.length);
+const levelLessons = (e: EngineId, lv: Level): EngineLesson[] => levelOf(e, lv)?.modules.flatMap((m) => m.lessons) ?? [];
+/** The first lesson not done, in engine order (undefined = all done). */
+const nextOf = (all: EngineLesson[], ok: Set<string>): EngineLesson | undefined => all.find((x) => !ok.has(x.id));
 
 /**
  * Paragraphs and list items: `code` spans, and **bold** outside code (558 spans in content/engine; review v22 RC: the
@@ -83,91 +98,212 @@ function inline(text: string): (Node | string)[] {
     : p.split(/(\*\*[^*\n]+\*\*)/).filter(Boolean).map((q) => (q.length > 4 && q.startsWith('**') && q.endsWith('**') ? d.h('strong', {}, q.slice(2, -2)) : q))));
 }
 function prose(text: string): HTMLElement {
-  return d.h('div', { class: 'space-y-3' }, ...blocksOf(text).map((b) => b.kind === 'p' ? d.h('p', { class: 'm-0' }, ...inline(b.text))
+  return d.h('div', { class: 'flex flex-col gap-3' }, ...blocksOf(text).map((b) => b.kind === 'p' ? d.h('p', { class: 'm-0' }, ...inline(b.text))
     : b.kind === 'ul' ? d.h('ul', { class: 'm-0 list-disc space-y-1 pl-5' }, ...b.items.map((x) => d.h('li', {}, ...inline(x))))
       : d.h('pre', { class: 'sql m-0 overflow-x-auto' }, b.code)));
 }
 
 /** A thin bar; its numbers are always in words beside it (never colour alone, L23). */
-function bar(k: number, n: number): HTMLElement {
+function bar(k: number, n: number, cls = 'h-2'): HTMLElement {
   const pct = n ? Math.round((k / n) * 100) : 0;
-  return d.h('div', { class: 'h-2 w-full overflow-hidden rounded-full bg-code', 'aria-hidden': 'true' },
-    d.h('div', { class: 'h-2 rounded-full bg-accent', style: `width:${pct}%` }));
+  return d.h('div', { class: d.cls.cx('w-full overflow-hidden rounded-full bg-code', cls), 'aria-hidden': 'true' },
+    d.h('div', { class: d.cls.cx('h-full rounded-full', k && k === n ? 'bg-good' : 'bg-accent'), style: `width:${pct}%` }));
 }
 const tick = (on: boolean): Node | null => (on ? d.h('span', { class: 'ml-1 text-good' }, d.icon('check', 'inline size-4 align-[-2px]'), d.h('span', { class: 'sr-only' }, et('done'))) : null);
+/** The engine's picture in a round tile, like a domain badge (decorative: the name is always beside it). */
+const engineBadge = (e: EngineId, big = false): HTMLElement =>
+  d.h('span', { class: d.cls.cx('grid shrink-0 place-items-center rounded-full bg-accent-soft text-accent ring-1 ring-line', big ? 'size-14' : 'size-10'), 'aria-hidden': 'true' },
+    d.icon(ENGINE_ICON[e], big ? 'size-8' : 'size-6'));
+/** A list row's round lead: ✓ when done, else a picture or short text on the accent (current) or code tint. */
+function leadDisc(state: 'done' | 'current' | 'todo', inner: Node | string): HTMLElement {
+  const { h, cls } = d;
+  return state === 'done' ? h('span', { class: 'grid size-10 place-items-center rounded-full bg-good text-on-accent' }, d.icon('check', 'size-5'))
+    : h('span', { class: cls.cx('grid size-10 place-items-center rounded-full font-bold', state === 'current' ? 'bg-accent text-on-accent' : 'bg-code text-ink') }, inner);
+}
+/** The action link of a row (listRow stretches it over the whole row, L86). */
+const rowLink = (href: string, text: string, main: boolean): HTMLElement =>
+  d.h('a', { href, class: d.cls.cx(main ? d.cls.BTN_SECONDARY : d.cls.BTN_GHOST, 'shrink-0 px-4 py-1.5 whitespace-nowrap no-underline') }, text);
+
+// ---- the page's h1 and trail (main draws them: homeView pageSubs.engine)
+
+/** L280: the h1 and the trail of the open Engine page; undefined on the overview (h1 = "Database Engine"). */
+export function subOf(): HomeView.PageSub | undefined {
+  const r = d.engineRouteOf(location.hash);
+  const e = ENGINES.find((x) => x === r.engine);
+  if (!e) return undefined;
+  const top = { href: d.hashOf('engine'), text: d.t('nav.engine') };
+  const eng = { href: d.engineHash(e), text: NAME[e] };
+  const path = e === 'mongodb' ? d.enginePathOf(location.hash) : undefined;
+  if (path !== undefined) {
+    const title = path && pathMod && pathMod !== 'loading' && pathMod !== 'failed' ? pathMod.skillTitle(path, lang()) : undefined;
+    return title ? { title, trail: [top, eng, { href: d.enginePathHash(), text: et('nosql.title') }] } : { title: et('nosql.title'), trail: [top, eng] };
+  }
+  const lesson = r.lesson ? lessons.find((x) => x.id === r.lesson && x.engine === e) : undefined;
+  if (lesson) return { title: lesson.title[lang()], trail: [top, eng, { href: d.engineHash(e, lesson.level), text: levelName(lesson.level) }] };
+  const lv = levelOf(e, r.level);
+  if (lv) return { title: levelName(lv.level), trail: [top, eng] };
+  return { title: NAME[e], trail: [top] };
+}
 
 // ---- pages
 
-/** The page the hash names; an unknown engine or lesson falls back to its engine or the overview (no dead end). */
+/** The page the hash names; an unknown level or lesson falls back to its engine, an unknown engine to the overview (no dead end). */
 export function enginePage(): HTMLElement {
   keepFocus();
+  queueMicrotask(sweepEditors);
   const r = d.engineRouteOf(location.hash);
   const engine = ENGINES.find((e) => e === r.engine);
   const lesson = engine && lessons.find((l) => l.id === r.lesson && l.engine === engine);
   const pathAt = engine === 'mongodb' ? d.enginePathOf(location.hash) : undefined;
   if (pathAt !== undefined) {
     const page = pathPage(pathAt);
-    page.id = 'engine-page';
+    if (page.dataset.drawn !== undefined) page.id = 'engine-page';
     return page;
   }
+  const lv = engine && !lesson ? levelOf(engine, r.level) : undefined;
   const f = lesson && fullLesson(lesson);
-  const page = !lesson ? (engine ? enginePg(engine) : overview())
-    : f === 'loading' ? d.h('p', { class: 'm-0 flex min-h-40 items-start gap-2 text-muted', 'aria-live': 'polite' }, d.loader(), d.t('engine.loading'))
-      : f === 'failed' ? d.h('div', { role: 'alert', class: 'space-y-2' }, d.h('p', { class: 'm-0' }, d.t('engine.failed')),
-        d.h('button', { type: 'button', onclick: () => { fulls.delete(lesson.id); d.rerender(); } }, d.t('data.retry')))
+  const page = !lesson ? (engine ? (lv ? levelPage(engine, lv.level) : enginePg(engine)) : overview())
+    : f === 'loading' ? loadingLine()
+      : f === 'failed' ? failedBox(() => { fulls.delete(lesson.id); d.rerender(); })
         : lessonPage(f!);
   if (f === 'loading' || f === 'failed') return page; // not #engine-page yet: smoke and the axe harness wait for the drawn lesson
   page.id = 'engine-page'; // drawn (not the loading line): tests/axeHarness.ts and scripts/smoke.mjs wait for it
   return page;
 }
+const loadingLine = (): HTMLElement => d.h('p', { class: 'm-0 flex min-h-40 items-start gap-2 text-muted', 'aria-live': 'polite' }, d.loader(), d.t('engine.loading'));
+const failedBox = (retry: () => void): HTMLElement => d.h('div', { role: 'alert', class: 'flex flex-col gap-2' }, d.h('p', { class: 'm-0' }, d.t('engine.failed')),
+  d.h('button', { type: 'button', onclick: retry }, d.t('data.retry')));
+
+/** "Start here" / "Pick up where you left off": the first engine with unfinished progress (else PostgreSQL), its next lesson. */
+function continueCard(ok: Set<string>): HTMLElement | null {
+  const { h, cls } = d;
+  const e = ENGINES.find((x) => { const p = progressOf(flat(x), ok); return p.done > 0 && p.done < p.total; }) ?? 'postgres';
+  const all = flat(e);
+  const next = nextOf(all, ok);
+  if (!next) return null;
+  const started = all.some((x) => ok.has(x.id));
+  return h('section', { class: cls.cx(cls.CARD, 'flex flex-col gap-3 p-6 max-sm:p-4'), 'aria-labelledby': 'engine-cont' },
+    h('p', { class: 'm-0 flex items-center gap-2 text-body-sm font-semibold text-accent' }, d.icon(ENGINE_ICON[e], 'size-4'),
+      `${et(started ? 'cont.resume' : 'cont.start')} · ${NAME[e]} · ${next.level}`),
+    h('h2', { id: 'engine-cont', class: 'm-0 text-heading font-bold' }, next.title[lang()]),
+    h('p', { class: 'm-0 flex flex-wrap items-center gap-2 text-body-sm text-muted' }, kindChip(next.kind), h('span', {}, et('minutes', { n: next.minutes }))),
+    h('div', {}, h('a', { href: lessonHash(next), class: cls.cx(cls.BTN_GO, 'inline-flex items-center gap-2 px-4 py-2 no-underline') },
+      et(started ? 'cont.btnResume' : 'cont.btnStart'), d.icon('arrowRight', 'size-4'))));
+}
+
+/** L280: one card per engine (like the learning path's module cards): picture, name, one line, the L1–L5 tiles, progress. */
+function engineCard(e: EngineId, ok: Set<string>): HTMLElement {
+  const { h, cls } = d;
+  const all = flat(e);
+  const p = progressOf(all, ok);
+  const next = nextOf(all, ok);
+  return h('li', { class: 'relative cursor-pointer flex flex-col gap-4 rounded-(--r-card) bg-panel p-5 ring-1 ring-line hover:ring-accent max-sm:p-4' },
+    h('div', { class: 'flex items-start gap-4' }, engineBadge(e, true),
+      h('div', { class: 'min-w-0 flex-1 flex flex-col gap-1' },
+        h('h3', { class: 'm-0 text-title font-bold' }, h('a', { href: d.engineHash(e), class: 'text-ink no-underline after:absolute after:inset-0' }, NAME[e])),
+        h('p', { class: 'm-0 text-body-sm text-muted' }, et(`desc.${e}`)))),
+    h('ol', { class: 'm-0 grid list-none grid-cols-5 gap-2 p-0', 'aria-label': et('levels') }, ...trees[e].levels.filter((lv) => lv.modules.length).map((lv) => {
+      const q = progressOf(lv.modules.flatMap((m) => m.lessons), ok);
+      const here = next?.level === lv.level;
+      return h('li', { class: 'min-w-0' }, h('a', {
+        href: d.engineHash(e, lv.level), title: `${levelName(lv.level)}: ${et(`ladder.${e}.${lv.level}`)}`,
+        class: cls.cx(d.ui.ABOVE, 'flex min-h-14 flex-col items-center justify-center gap-1 rounded-(--r-inset) px-1 py-2 text-ink no-underline hover:bg-accent-soft',
+          here ? 'bg-accent-soft ring-2 ring-accent' : 'bg-code ring-1 ring-line'),
+      }, h('span', { class: 'flex items-center gap-1 font-bold' }, lv.level, q.total && q.done === q.total ? d.icon('check', 'size-4 text-good') : null),
+        h('span', { class: 'sr-only' }, `${et(`level.${lv.level}`)}, ${et('progress', { k: q.done, n: q.total })}`),
+        h('span', { class: 'text-caption text-muted tabular-nums', 'aria-hidden': 'true' }, `${q.done}/${q.total}`),
+        bar(q.done, q.total, 'h-1')));
+    })),
+    h('div', { class: 'flex flex-wrap items-center gap-x-4 gap-y-2' },
+      h('div', { class: 'flex min-w-40 flex-1 items-center gap-3' }, bar(p.done, p.total), h('span', { class: 'shrink-0 text-body-sm tabular-nums text-muted' }, et('progress', { k: p.done, n: p.total }))),
+      next ? h('a', { href: lessonHash(next), class: cls.cx(cls.BTN_SECONDARY, d.ui.ABOVE, 'px-4 py-1.5 whitespace-nowrap no-underline') },
+        `${et(p.done ? 'cont.btnResume' : 'cont.btnStart')} · ${next.level}`) : null));
+}
+
+/** The NoSQL path as one list row (overview and the MongoDB page): its own picture, a short line, one link. */
+function pathRow(): HTMLElement {
+  return d.h('ul', { class: d.ui.LIST }, d.ui.listRow({
+    lead: d.h('span', { class: 'grid size-10 place-items-center rounded-full bg-accent-soft text-accent' }, d.icon('nosqlPath', 'size-6')),
+    title: et('nosql.title'), sub: et('nosql.short'), action: rowLink(d.enginePathHash(), et('nosql.go'), true),
+  }));
+}
 
 function overview(): HTMLElement {
-  const { h, cls } = d;
-  const ok = done();
-  return h('div', { class: 'space-y-5' },
-    h('p', { class: 'm-0 text-muted' }, et('intro')),
-    h('ul', { class: 'm-0 grid list-none gap-4 p-0' }, ...ENGINES.map((e) => {
-      const all = flat(e);
-      const p = progressOf(all, ok);
-      return h('li', { class: cls.cx(cls.CARD, 'relative space-y-3 px-5 py-4 hover:ring-accent') },
-        h('h2', { class: 'm-0 text-title font-bold' }, h('a', { href: d.engineHash(e), class: 'after:absolute after:inset-0' }, NAME[e])),
-        h('p', { class: 'm-0 text-body-sm text-muted' }, et(`desc.${e}`)),
-        h('ol', { class: 'm-0 list-none space-y-1 p-0 text-body-sm' }, ...trees[e].levels.map((lv) => {
-          const n = lv.modules.reduce((a, m) => a + m.lessons.length, 0);
-          return h('li', { class: 'flex flex-wrap gap-x-2' }, h('b', {}, levelName(lv.level)),
-            h('span', { class: 'min-w-0 grow basis-48 text-muted' }, et(`ladder.${e}.${lv.level}`)), h('span', { class: 'text-muted tabular-nums' }, et('count', { n })));
-        })),
-        h('p', { class: 'm-0 text-body-sm font-semibold' }, et('progress', { k: p.done, n: p.total })),
-        bar(p.done, p.total));
-    })));
-}
-
-function lessonRow(l: EngineLesson, ok: Set<string>): HTMLElement {
-  const { h, cls } = d;
-  return h('li', { class: 'flex flex-wrap items-center gap-2' },
-    h('a', { href: lessonHash(l), class: 'inline-flex min-h-6 items-center font-semibold max-sm:min-h-11' }, l.title[lang()]), tick(ok.has(l.id)),
-    h('span', { class: cls.cx(cls.PILL, 'bg-code text-muted') }, et(`kind.${l.kind}`)),
-    h('span', { class: 'text-body-sm text-muted' }, et('minutes', { n: l.minutes })));
-}
-
-function enginePg(e: EngineId): HTMLElement {
   const { h } = d;
   const ok = done();
-  const p = progressOf(flat(e), ok);
-  return h('div', { class: 'space-y-6' },
-    h('p', { class: 'm-0' }, h('a', { href: d.hashOf('engine') }, `‹ ${d.t('nav.engine')}`)),
-    h('div', { class: 'space-y-2' },
-      h('h2', { class: 'm-0 text-title font-bold', id: 'engine-title' }, NAME[e]),
-      h('p', { class: 'm-0 text-muted' }, et(`desc.${e}`)),
-      h('p', { class: 'm-0 text-body-sm font-semibold' }, et('progress', { k: p.done, n: p.total })), bar(p.done, p.total)),
-    e === 'mongodb' ? pathCard() : null,
-    ...trees[e].levels.map((lv) => h('section', { class: 'space-y-3', 'aria-labelledby': `lv-${lv.level}` },
-      h('h3', { id: `lv-${lv.level}`, class: 'm-0 text-title font-bold' }, levelName(lv.level)),
-      h('p', { class: 'm-0 text-body-sm text-muted' }, et(`ladder.${e}.${lv.level}`)),
-      ...(lv.modules.length ? lv.modules.map((m) => h('div', { class: 'space-y-2' },
-        h('h4', { class: 'm-0 text-body font-bold' }, m.name[lang()]),
-        h('ol', { class: 'm-0 list-none space-y-2 p-0' }, ...m.lessons.map((l) => lessonRow(l, ok)))))
-        : [h('p', { class: 'm-0 text-body-sm text-muted' }, et('noLessons'))]))));
+  return h('div', { class: 'flex flex-col gap-8' },
+    h('p', { class: 'm-0 text-muted' }, et('intro')),
+    continueCard(ok),
+    h('section', { 'aria-labelledby': 'engine-list' },
+      h('h2', { id: 'engine-list', class: d.ui.GROUP_TITLE }, et('engines')),
+      h('ul', { class: 'm-0 grid list-none gap-4 p-0' }, ...ENGINES.map((e) => engineCard(e, ok)))),
+    h('section', { 'aria-labelledby': 'engine-path' },
+      h('h2', { id: 'engine-path', class: d.ui.GROUP_TITLE }, et('nosql.title')),
+      pathRow()));
+}
+
+/** `#/engine/<engine>`: the engine's line and progress, the next lesson, then one row per level (like the Overview's chapters). */
+function enginePg(e: EngineId): HTMLElement {
+  const { h, cls } = d;
+  const ok = done();
+  const all = flat(e);
+  const p = progressOf(all, ok);
+  const next = nextOf(all, ok);
+  return h('div', { class: 'flex flex-col gap-8' },
+    h('section', { class: cls.cx(cls.CARD, 'flex flex-col gap-4 p-6 max-sm:p-4'), 'aria-label': NAME[e] },
+      h('div', { class: 'flex items-start gap-4' }, engineBadge(e, true), h('p', { class: 'm-0 min-w-0 flex-1 text-muted' }, et(`desc.${e}`))),
+      h('div', { class: 'flex items-center gap-3' }, bar(p.done, p.total), h('span', { class: 'shrink-0 text-body-sm tabular-nums text-muted' }, et('progress', { k: p.done, n: p.total }))),
+      next ? h('div', { class: 'flex flex-wrap items-center gap-3' },
+        h('a', { href: lessonHash(next), class: cls.cx(cls.BTN_GO, 'inline-flex items-center gap-2 px-4 py-2 no-underline') }, et(p.done ? 'cont.btnResume' : 'cont.btnStart'), d.icon('arrowRight', 'size-4')),
+        h('span', { class: 'min-w-0 text-body-sm text-muted' }, `${next.level} · ${next.title[lang()]}`))
+        : h('p', { class: 'm-0 font-bold good' }, et('cont.allDone', { name: NAME[e] }))),
+    e === 'mongodb' ? h('section', { 'aria-labelledby': 'engine-path' }, h('h2', { id: 'engine-path', class: d.ui.GROUP_TITLE }, et('nosql.title')), pathRow()) : null,
+    h('section', { 'aria-labelledby': 'engine-levels' },
+      h('h2', { id: 'engine-levels', class: d.ui.GROUP_TITLE }, et('levels')),
+      h('ul', { class: d.ui.LIST }, ...trees[e].levels.filter((lv) => lv.modules.length).map((lv) => {
+        const q = progressOf(levelLessons(e, lv.level), ok);
+        const here = next?.level === lv.level;
+        return d.ui.listRow({
+          lead: leadDisc(q.done === q.total ? 'done' : here ? 'current' : 'todo', lv.level),
+          title: levelName(lv.level), sub: `${et(`ladder.${e}.${lv.level}`)} · ${et('progress', { k: q.done, n: q.total })}`,
+          action: rowLink(d.engineHash(e, lv.level), here ? et('row.next') : et('row.levelOpen'), here), current: here,
+        });
+      }))));
+}
+
+/** `#/engine/<engine>/<level>` (L280): the level's modules, each a titled list of lesson rows. */
+function levelPage(e: EngineId, lv: Level): HTMLElement {
+  const { h } = d;
+  const ok = done();
+  const ls = levelLessons(e, lv);
+  const p = progressOf(ls, ok);
+  const next = nextOf(ls, ok);
+  return h('div', { class: 'flex flex-col gap-8' },
+    h('div', { class: 'flex flex-col gap-3' },
+      h('p', { class: 'm-0 text-muted' }, et(`ladder.${e}.${lv}`)),
+      h('div', { class: 'flex flex-wrap items-center gap-x-3 gap-y-1' }, h('div', { class: 'flex min-w-40 flex-1' }, bar(p.done, p.total)),
+        h('span', { class: 'text-body-sm tabular-nums text-muted' }, `${et('progress', { k: p.done, n: p.total })} · ${et('level.meta', { n: ls.length, m: ls.reduce((a, x) => a + x.minutes, 0) })}`))),
+    ...levelOf(e, lv)!.modules.map((m) => {
+      const q = progressOf(m.lessons, ok);
+      return h('section', { class: 'flex flex-col gap-3', 'aria-labelledby': `mod-${m.id}` },
+        h('div', { class: 'flex items-baseline justify-between gap-3' },
+          h('h2', { id: `mod-${m.id}`, class: 'm-0 text-title font-bold' }, m.name[lang()]),
+          h('span', { class: 'text-body-sm tabular-nums text-muted' }, `${q.done}/${q.total}`)),
+        h('ul', { class: d.ui.LIST }, ...m.lessons.map((l) => lessonRow(l, ok, l === next))));
+    }));
+}
+
+/** One lesson row (engine-ux-spec §4.3): kind picture (✓ when done), title, "kind · minutes · runtime", one link. */
+function lessonRow(l: EngineLesson, ok: Set<string>, isNext: boolean): HTMLElement {
+  const isDone = ok.has(l.id);
+  const k = honestRow(l);
+  return d.ui.listRow({
+    lead: leadDisc(isDone ? 'done' : isNext ? 'current' : 'todo', d.icon(KIND_ICON[l.kind], 'size-5')),
+    title: l.title[lang()],
+    sub: `${et(`kind.${l.kind}`)} · ${et('minutes', { n: l.minutes })} · ${et(k === 'diagram' ? 'short.diagram' : k === 'docs' ? 'short.docs' : 'short.run')}`,
+    action: rowLink(lessonHash(l), isDone ? et('row.again') : isNext ? et('row.next') : et('row.open'), isNext),
+    current: isNext,
+  });
 }
 
 // ---- lesson page
@@ -183,6 +319,9 @@ interface Visit {
   /** A Postgres predict's real plan (or why it could not run), after "See the real plan". */
   plan?: PlanLine[] | { error: unknown } | 'busy';
   runner?: Promise<LabRunner>;
+  /** "Tables used" (L280): the lab's tables and columns after its setup, read once when the panel first opens. */
+  tables?: { t: string; cols: string }[] | { error: unknown } | 'busy';
+  tablesOpen?: boolean;
 }
 /** Per lesson, for the session: a redraw (seed done, language switch) rebuilds the page from here, never from the DOM. */
 const visits = new Map<string, Visit>();
@@ -192,15 +331,41 @@ const visitOf = (id: string): Visit => {
   return v;
 };
 
-/** Focus survives a redraw: the element with the same data-ek gets it back. */
+/** Focus survives a redraw: the element with the same data-ek (or the editor inside it) gets it back. */
 let focusKey: string | null = null;
 function keepFocus(): void {
-  focusKey = document.activeElement?.getAttribute('data-ek') ?? focusKey;
+  focusKey = document.activeElement?.closest('[data-ek]')?.getAttribute('data-ek') ?? focusKey;
   queueMicrotask(() => {
     const el = focusKey ? document.querySelector<HTMLElement>(`[data-ek="${CSS.escape(focusKey)}"]`) : null;
-    if (el && document.activeElement !== el && (document.activeElement === document.body || !document.activeElement?.isConnected)) el.focus();
+    if (el && !el.contains(document.activeElement) && (document.activeElement === document.body || !document.activeElement?.isConnected)) {
+      const ed = editors.get(focusKey!);
+      if (ed) ed.ed.focus(); else el.focus(); // a moved editor lost its focus; it takes it back itself
+    }
     focusKey = null;
   });
+}
+
+/**
+ * L281: one CodeMirror editor per lab step or path drill, kept across redraws (the page is rebuilt on every rerender(): a new
+ * editor would lose the cursor and undo). The host carries `data-ek=<key>` and a `value` property, the hook smoke/e2e type
+ * through. Postgres gets the SQL language; MongoDB/DynamoDB the same editor without it.
+ */
+const editors = new Map<string, { host: HTMLElement; ed: Editor.Editor }>();
+function codeBox(key: string, value: string, label: string, sql: boolean, on: { change(v: string): void; run(): void; submit(): void }): HTMLElement {
+  const have = editors.get(key);
+  if (have) {
+    have.ed.setLabel(label);
+    return have.host;
+  }
+  const host = d.h('div', { class: 'editor overflow-hidden rounded-(--r-ctl) ring-1 ring-line', lang: 'en', 'data-ek': key });
+  const ed = d.createEditor(host, { doc: value, schema: {}, label, plain: !sql, onChange: on.change, onRun: on.run, onSubmit: on.submit, onSelection: () => {} });
+  Object.defineProperty(host, 'value', { get: () => ed.getValue(), set: (v: string) => ed.setValue(v) });
+  editors.set(key, { host, ed });
+  return host;
+}
+/** After a draw: editors no longer in the page (another lesson or skill) are destroyed. */
+function sweepEditors(): void {
+  for (const [k, x] of editors) if (!x.host.isConnected) { x.ed.destroy(); editors.delete(k); }
 }
 
 function complete(l: EngineLesson): void {
@@ -224,8 +389,11 @@ function question(l: EngineLesson, v: Visit, q: Question, part: string, label: s
   const status = h('p', { role: 'status', class: cls.cx('m-0 text-body-sm', say === 'right' ? 'good' : say ? 'bad' : '') },
     say === 'right' ? et('right') : say === 'wrong' ? et('wrong') : say === 'pick' ? et('pick') : '');
   return h('fieldset', { class: 'm-0 space-y-2 border-0 p-0' },
-    h('legend', { class: 'mb-2 p-0 font-bold' }, label ? h('span', { class: 'block text-caption text-muted' }, label) : null, ...inline(q.q[lang()])),
-    ...d.optionOrder(`${l.id}#${part}`, q.options.length).map((i) => h('label', { class: 'flex min-h-11 cursor-pointer items-center gap-2 rounded-(--r-ctl) px-2 hover:bg-code' },
+    h('legend', { class: 'mb-2 p-0 font-bold' }, label ? h('span', { class: 'block text-caption font-bold tracking-wider text-muted uppercase' }, label) : null, ...inline(q.q[lang()])),
+    ...d.optionOrder(`${l.id}#${part}`, q.options.length).map((i) => h('label', {
+      class: cls.cx('flex min-h-11 cursor-pointer items-center gap-2 rounded-(--r-ctl) px-3 py-1 hover:bg-accent-soft has-[:checked]:bg-accent-soft has-[:checked]:ring-2 has-[:checked]:ring-accent',
+        say === 'right' && v.picks[part] === i ? 'bg-good-soft ring-1 ring-good' : 'ring-1 ring-line'),
+    },
       h('input', {
         type: 'radio', name, value: String(i), 'data-ek': `${name}-${i}`, checked: v.picks[part] === i,
         onchange: () => { v.picks[part] = i; },
@@ -240,7 +408,7 @@ function question(l: EngineLesson, v: Visit, q: Question, part: string, label: s
           d.rerender();
         },
       }, et('check')), status),
-    say === 'right' ? h('p', { class: 'm-0 rounded-(--r-ctl) bg-code p-3 text-body-sm' }, ...inline(q.why[lang()])) : null);
+    say === 'right' ? h('p', { class: 'm-0 rounded-(--r-inset) bg-surface-2 p-3 text-body-sm' }, ...inline(q.why[lang()])) : null);
 }
 
 function runnerFor(l: EngineLesson, v: Visit): Promise<LabRunner> | undefined {
@@ -258,6 +426,7 @@ function runnerFor(l: EngineLesson, v: Visit): Promise<LabRunner> | undefined {
 }
 
 async function labAction(l: EngineLesson, v: Visit, i: number, submit: boolean): Promise<void> {
+  if (v.busy !== undefined) return; // Mod-Enter in the editor while a run is going
   const code = (v.code[i] ?? '').trim();
   if (!code) {
     v.msg[i] = { ok: false, text: et('lab.empty') };
@@ -312,44 +481,112 @@ function realPlan(l: EngineLesson, v: Visit): HTMLElement {
     }
     d.rerender();
   };
-  return h('div', { class: 'space-y-2' },
+  return h('div', { class: 'flex flex-col gap-2' },
     p === undefined ? h('button', { type: 'button', class: cls.cx(cls.BTN_SECONDARY, 'px-4 py-1.5'), 'data-ek': `${l.id}-plan`, onclick: () => void show() }, et('predict.realBtn'))
       : p === 'busy' ? h('p', { class: 'm-0 flex items-center gap-2 text-body-sm text-muted' }, d.loader(), et('lab.preparing'))
         : 'error' in p ? d.errorView(p.error)
-          : h('figure', { class: 'm-0 space-y-1' }, h('figcaption', { class: 'text-body-sm font-semibold' }, et('predict.real')),
+          : h('figure', { class: 'm-0 flex flex-col gap-1' }, h('figcaption', { class: 'text-body-sm font-semibold' }, et('predict.real')),
             h('pre', { class: 'sql m-0 overflow-x-auto', lang: 'en', 'data-plan': '' }, p.map((x) => `${'  '.repeat(x.depth)}${x.depth ? '-> ' : ''}${x.text}`).join('\n'))));
+}
+
+/** Tables and columns of the lab's own schema after its setup (a lab on the shop chain: only the tables its steps name). */
+const TABLES_SQL = `SELECT c.table_name::text AS t, string_agg(c.column_name || ' ' || c.data_type, ', ' ORDER BY c.ordinal_position) AS cols
+FROM information_schema.columns c WHERE c.table_schema = current_schema() GROUP BY 1 ORDER BY 1`;
+async function loadTables(l: EngineLesson, v: Visit): Promise<void> {
+  v.tables = 'busy';
+  d.rerender();
+  try {
+    const r = await runnerFor(l, v)!;
+    const out = await r.run(l.lab!, TABLES_SQL); // no step: the setup only, no earlier solution replayed
+    const named = l.lab!.steps.map((s) => s.solution).join('\n').toLowerCase();
+    v.tables = out.rows.map((x) => ({ t: String(x[0]), cols: String(x[1]) }))
+      .filter((x) => l.lab!.setup || new RegExp(`\\b${x.t}\\b`).test(named));
+  } catch (error) {
+    v.tables = { error };
+  }
+  d.rerender();
+}
+const tableBox = (name: string, line: string, body: Node): HTMLElement =>
+  d.h('details', { class: 'rounded-(--r-inset) bg-canvas px-2 py-1 ring-1 ring-line' },
+    d.h('summary', { class: 'cursor-pointer text-body-sm' }, d.h('code', {}, name), ` · ${line}`), body);
+/** NoSQL labs: the collections or tables in `lab.setup` (inline JSON), each with its first document or item. */
+function nosqlTables(l: EngineLesson): HTMLElement[] | null {
+  const { h } = d;
+  let j: { collections?: Record<string, unknown[]>; tables?: { TableName?: string; KeySchema?: { AttributeName: string; KeyType: string }[] }[]; items?: Record<string, unknown[]> };
+  try {
+    j = JSON.parse(l.lab?.setup ?? '') as typeof j;
+  } catch {
+    return null; // no inline data (the shared shop dataset) or not JSON: nothing to list
+  }
+  const json = (x: unknown): HTMLElement => h('pre', { class: 'sql my-1 overflow-x-auto', lang: 'en' }, JSON.stringify(x, null, 2));
+  if (j.collections) return Object.entries(j.collections).map(([n, docs]) => tableBox(n, et('tables.docs', { n: docs.length }),
+    h('div', {}, h('p', { class: 'my-1 text-body-sm text-muted' }, et('tables.sampleDoc')), json(docs[0]))));
+  return (j.tables ?? []).map((x) => {
+    const n = x.TableName ?? '?';
+    const items = j.items?.[n] ?? [];
+    return tableBox(n, et('tables.items', { n: items.length }), h('div', {},
+      h('p', { class: 'my-1 text-body-sm text-muted' }, et('tables.keys', { keys: (x.KeySchema ?? []).map((k) => `${k.AttributeName} (${k.KeyType})`).join(', ') })),
+      items[0] ? h('p', { class: 'my-1 text-body-sm text-muted' }, et('tables.sampleItem')) : null, items[0] ? json(items[0]) : null));
+  });
+}
+/** "Tables used" (L280, blind-pg.md: names the steps need were never shown). Postgres reads it from the lab itself on first open. */
+function tablesPanel(l: EngineLesson, v: Visit): HTMLElement | null {
+  const { h } = d;
+  if (l.engine !== 'postgres') {
+    const boxes = nosqlTables(l);
+    return boxes?.length ? h('div', { class: 'flex flex-col gap-1.5' }, h('h3', { class: 'm-0 text-body-sm font-bold' }, et(l.engine === 'mongodb' ? 'tables.colls' : 'tables.title')), ...boxes) : null;
+  }
+  const t = v.tables;
+  const body = t === undefined ? null : t === 'busy' ? h('p', { class: 'my-1 flex items-center gap-2 text-body-sm text-muted' }, d.loader(), et('tables.loading'))
+    : 'error' in t ? d.errorView(t.error, false)
+      : t.length ? h('div', { class: 'flex flex-col gap-1.5 pt-1' }, ...t.map((x) => tableBox(x.t, et('tables.cols', { n: x.cols.split(', ').length }),
+        h('p', { class: 'my-1 text-body-sm text-muted', lang: 'en' }, x.cols))))
+        : h('p', { class: 'my-1 text-body-sm text-muted' }, et('tables.none'));
+  const box = h('details', { class: 'space-y-1', open: !!v.tablesOpen }, h('summary', { class: 'cursor-pointer text-body-sm font-bold' }, et('tables.title')), body);
+  box.addEventListener('toggle', () => {
+    v.tablesOpen = box.open;
+    if (box.open && (v.tables === undefined || (typeof v.tables === 'object' && 'error' in v.tables))) void loadTables(l, v);
+  });
+  return box;
 }
 
 function labView(l: EngineLesson, v: Visit): HTMLElement {
   const { h, cls } = d;
   const steps = l.lab!.steps;
   const live = !!LAB_RUNNERS[l.engine];
-  return h('section', { class: 'space-y-4', 'aria-labelledby': `${l.id}-lab` },
-    h('h3', { id: `${l.id}-lab`, class: 'm-0 text-title font-bold' }, et('lab.title')),
-    h('p', { class: 'm-0 text-body-sm text-muted' }, !live ? et('lab.noRunner') : l.engine === 'mongodb' ? et('lab.dataMongo') : l.engine === 'dynamodb' ? et('lab.dataDynamo') : l.lab!.setup ? et('lab.dataPg') : et('lab.data')),
-    ...steps.map((s, i) => {
+  return h('section', { class: 'flex flex-col gap-4', 'aria-labelledby': `${l.id}-lab` },
+    cardHead(`${l.id}-lab`, 'kindLab', et('lab.title')),
+    h('div', { class: 'flex flex-col gap-3 rounded-(--r-ctl) bg-info-soft p-4 text-body-sm' },
+      h('p', { class: 'm-0' }, !live ? et('lab.noRunner') : l.engine === 'mongodb' ? et('lab.dataMongo') : l.engine === 'dynamodb' ? et('lab.dataDynamo') : l.lab!.setup ? et('lab.dataPg') : et('lab.data')),
+      live && l.runtime !== 'docs' ? tablesPanel(l, v) : null),
+    h('ol', { class: 'm-0 list-none space-y-4 p-0' }, ...steps.map((s, i) => {
       const out = v.out[i];
       const msg = v.msg[i];
       const key = `${l.id}-s${i}`;
-      return h('div', { class: cls.cx(cls.CARD, 'space-y-3 p-4') },
-        h('h4', { class: 'm-0 text-body font-bold' }, et('lab.step', { i: i + 1, n: steps.length }), tick(v.passed.has(`s${i}`))),
-        h('p', { class: 'm-0' }, ...inline(s.task[lang()])),
-        live ? h('textarea', {
-          class: 'w-full rounded-(--r-ctl) bg-code p-2 font-mono text-body-sm ring-1 ring-line', rows: '4', spellcheck: 'false', lang: 'en',
-          'aria-label': et('lab.code', { i: i + 1 }), 'data-ek': `${key}-code`,
-          oninput: (e: Event) => { v.code[i] = (e.target as HTMLTextAreaElement).value; },
-        }, v.code[i] ?? '') : null,
+      const passed = v.passed.has(`s${i}`);
+      const res = out && 'result' in out ? out.result : undefined;
+      // A passed step drops the "result too large, add a LIMIT" caption (blind-pg l4-01/l4-04): the step is already right.
+      const shown = res && passed && res.truncated ? { ...res, truncated: undefined } : res;
+      return h('li', { class: cls.cx(cls.CARD, 'flex flex-col gap-3 p-4 max-sm:p-3'), 'data-step': key },
+        h('div', { class: 'flex items-start gap-3' },
+          leadDisc(passed ? 'done' : 'todo', String(i + 1)),
+          h('div', { class: 'min-w-0 flex-1 flex flex-col gap-1' },
+            h('h3', { class: 'm-0 text-caption font-bold tracking-wider text-muted uppercase' }, et('lab.step', { i: i + 1, n: steps.length })),
+            h('p', { class: 'm-0' }, ...inline(s.task[lang()])))),
+        live ? codeBox(`${key}-code`, v.code[i] ?? '', et('lab.code', { i: i + 1 }), l.engine === 'postgres', {
+          change: (x) => { v.code[i] = x; }, run: () => void labAction(l, v, i, false), submit: () => void labAction(l, v, i, true),
+        }) : null,
         live ? h('div', { class: 'flex flex-wrap items-center gap-2' },
           h('button', { type: 'button', class: cls.cx(cls.BTN_SECONDARY, 'px-4 py-1.5'), 'data-ek': `${key}-run`, disabled: v.busy !== undefined, onclick: () => void labAction(l, v, i, false) }, et('lab.run')),
-          h('button', { type: 'button', class: cls.cx(cls.BTN_GO, 'px-4 py-1.5'), 'data-ek': `${key}-submit`, disabled: v.busy !== undefined, onclick: () => void labAction(l, v, i, true) }, et('lab.submit')),
+          h('button', { type: 'button', class: cls.cx(cls.BTN_GO, 'px-4 py-1.5 disabled:bg-code disabled:text-disabled disabled:shadow-none'), 'data-ek': `${key}-submit`, disabled: v.busy !== undefined, onclick: () => void labAction(l, v, i, true) }, et('lab.submit')),
           v.busy === i ? h('span', { class: 'flex items-center gap-2 text-body-sm text-muted' }, d.loader(), et('lab.preparing')) : null) : null,
-        h('details', {}, h('summary', { class: 'cursor-pointer text-body-sm font-semibold' }, et('lab.hint')), h('p', { class: 'mt-2 mb-0 text-body-sm' }, ...inline(s.hint[lang()]))),
-        h('p', { role: 'status', class: cls.cx('m-0 text-body-sm', msg ? (msg.ok ? 'good' : 'bad') : '') }, ...inline(msg?.text ?? '')),
-        s.fact && v.passed.has(`s${i}`) ? h('p', { class: 'm-0 rounded-(--r-ctl) bg-code p-3 text-body-sm' }, h('b', {}, `${et('lab.fact')}: `), ...inline(s.fact[lang()])) : null,
-        out ? h('div', { class: 'overflow-x-auto' }, 'result' in out ? d.renderResult(out.result) : d.errorView(out.error, false)) : null,
-        out && 'result' in out ? metaView(out.result) : null,
-        out && 'result' in out ? insideView(out.result, `${key}-inside`) : null);
-    }));
+        h('details', {}, h('summary', { class: 'cursor-pointer text-body-sm font-semibold text-accent' }, et('lab.hint')), h('p', { class: 'mt-2 mb-0 text-body-sm' }, ...inline(s.hint[lang()]))),
+        h('p', { role: 'status', 'data-ek': `${key}-status`, class: cls.cx('m-0 text-body-sm', msg ? (msg.ok ? 'good' : 'bad') : '') }, ...inline(msg?.text ?? '')),
+        s.fact && passed ? h('p', { class: 'm-0 rounded-(--r-inset) bg-good-soft p-3 text-body-sm' }, h('b', {}, `${et('lab.fact')}: `), ...inline(s.fact[lang()])) : null,
+        out ? h('div', { class: 'overflow-x-auto' }, shown ? d.renderResult(shown) : d.errorView((out as { error: unknown }).error, false)) : null,
+        shown ? metaView(shown) : null,
+        shown ? insideView(shown, `${key}-inside`) : null);
+    })));
 }
 
 /** Engine numbers beside the result (LabMeta); nothing when the runner gave none. */
@@ -365,8 +602,8 @@ function metaView(r: LabOutput): HTMLElement | null {
       ['meta.docsExamined', m.explain.docsExamined.toLocaleString(d.locale())]);
   }
   const plans = (['planBefore', 'planAfter'] as const).filter((k) => m[k]);
-  return h('section', { class: 'space-y-2', 'aria-label': et('meta.title') },
-    pairs.length ? h('dl', { class: 'm-0 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-body-sm' },
+  return h('section', { class: 'flex flex-col gap-2', 'aria-label': et('meta.title') },
+    pairs.length ? h('dl', { class: 'm-0 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 rounded-(--r-inset) bg-surface-2 p-3 text-body-sm' },
       ...pairs.flatMap(([k, v]) => [h('dt', { class: 'text-muted' }, et(k)), h('dd', { class: 'm-0 font-semibold tabular-nums' }, v)])) : null,
     ...plans.map((k) => h('div', {}, h('p', { class: 'm-0 text-body-sm text-muted' }, et(`meta.${k}`)), h('pre', { class: 'sql m-0 overflow-x-auto' }, m[k]!))),
     m.catalog?.length ? h('div', {}, h('p', { class: 'm-0 text-body-sm text-muted' }, et('meta.catalog')),
@@ -383,7 +620,7 @@ function insideView(r: LabOutput, slot: string): HTMLElement | null {
   const rows = r.rows.map((row) => Object.fromEntries(r.columns.map((c, i) => [c, row[i]])));
   const diagram = vizSlot(slot, 'pg-heap-page', 'postgres', { rows }, JSON.stringify(r.rows));
   const head = ['lp', 'lp_flags', 't_xmin', 't_xmax', 't_ctid', 'infomask'];
-  return h('figure', { class: 'm-0 space-y-2', 'data-inside': '' },
+  return h('figure', { class: 'm-0 flex flex-col gap-2', 'data-inside': '' },
     h('figcaption', { class: 'text-body-sm' }, h('b', {}, `${et('inside.title')}: `), et('inside.caption', { n: v.rows.length, dead: v.dead, hot: v.hot })),
     h('div', { class: 'overflow-x-auto' }, h('table', { class: 'text-body-sm', lang: 'en' },
       h('thead', {}, h('tr', {}, ...head.map((c) => h('th', { scope: 'col', class: 'px-2 text-left font-mono' }, c)))),
@@ -417,12 +654,15 @@ const SHORT_OF: Record<EngineId, 'pg' | 'mg' | 'dy'> = { postgres: 'pg', mongodb
 const HONEST_CLS: Record<Honest, string> = {
   pg: 'bg-good-soft text-ink', mingo: 'bg-good-soft text-ink', dynoxide: 'bg-good-soft text-ink', diagram: 'bg-surface-2 text-muted', docs: 'bg-info-soft text-ink',
 };
-/** The one honest runtime chip beside the title (§3.6, checklist L1). */
+/** The one honest runtime chip under the title (§3.6, checklist L1). */
 function honestChip(l: EngineLesson): HTMLElement {
   const k = honestOf(l);
   return d.h('span', { class: d.cls.cx(d.cls.PILL, HONEST_CLS[k]), 'data-honest': k },
-    d.h('span', { class: 'inline-block size-2 rounded-full bg-current', 'aria-hidden': 'true' }), et(`honest.${k}`));
+    k === 'docs' ? d.icon('docsOnly', 'size-4') : d.h('span', { class: 'inline-block size-2 rounded-full bg-current', 'aria-hidden': 'true' }), et(`honest.${k}`));
 }
+const kindChip = (k: Kind): HTMLElement => d.h('span', { class: d.cls.cx(d.cls.PILL, 'bg-code text-ink') }, d.icon(KIND_ICON[k], 'size-4'), et(`kind.${k}`));
+const cardHead = (id: string, icon: Icons.IconName, text: string): HTMLElement =>
+  d.h('h2', { id, class: 'm-0 flex items-center gap-2 text-title font-bold' }, d.icon(icon, 'size-5 text-accent'), text);
 
 function lessonPage(l: EngineLesson): HTMLElement {
   const { h, cls } = d;
@@ -430,43 +670,47 @@ function lessonPage(l: EngineLesson): HTMLElement {
   const ok = done();
   const parts = partsOf(l, gradable);
   const all = flat(l.engine);
-  const next = all[all.findIndex((x) => x.id === l.id) + 1];
-  const module = trees[l.engine].levels.find((x) => x.level === l.level)!.modules.find((m) => m.id === l.module)!;
+  const at = all.findIndex((x) => x.id === l.id);
+  const prev = all[at - 1];
+  const next = all[at + 1];
+  const module = levelOf(l.engine, l.level)!.modules.find((m) => m.id === l.module)!;
   const req = l.requires.map((id) => lessons.find((x) => x.id === id)).filter((x): x is EngineLesson => !!x);
   const isDone = ok.has(l.id);
-  return h('article', { class: 'space-y-6', 'aria-labelledby': 'engine-lesson-title' },
-    h('p', { class: 'm-0' }, h('a', { href: d.engineHash(l.engine) }, `‹ ${NAME[l.engine]} · ${levelName(l.level)}`)),
-    h('div', { class: 'space-y-2' },
-      h('div', { class: 'flex flex-wrap items-center gap-x-3 gap-y-1' },
-        h('h2', { id: 'engine-lesson-title', class: 'm-0 text-heading font-bold' }, l.title[lang()], tick(isDone)),
-        honestChip(l)),
+  return h('article', { class: 'flex flex-col gap-8', 'aria-labelledby': 'home-title', 'data-lesson': l.id },
+    h('div', { class: 'flex flex-col gap-2' },
       h('p', { class: 'm-0 flex flex-wrap items-center gap-2 text-body-sm text-muted' },
-        h('span', { class: cls.cx(cls.PILL, 'bg-code') }, et(`kind.${l.kind}`)), h('span', {}, et('minutes', { n: l.minutes })), h('span', { 'aria-hidden': 'true' }, '·'), h('span', {}, module.name[lang()]))),
-    l.runtime === 'docs' ? h('p', { class: 'm-0 rounded-(--r-ctl) bg-code p-3 text-body-sm', 'data-runtime': 'docs' }, et('runtime.docs')) : null,
-    req.length ? h('p', { class: 'm-0 flex flex-wrap gap-2 text-body-sm' }, h('span', { class: 'text-muted' }, `${et('requires')}:`),
-      ...req.map((x) => h('a', { href: lessonHash(x) }, x.title[lang()], tick(ok.has(x.id))))) : null,
-    h('section', { class: cls.cx(cls.CARD, 'space-y-2 p-4'), 'aria-labelledby': `${l.id}-obj` },
-      h('h3', { id: `${l.id}-obj`, class: 'm-0 text-body font-bold' }, et('objectives')),
+        honestChip(l), kindChip(l.kind), h('span', {}, et('minutes', { n: l.minutes })), h('span', { 'aria-hidden': 'true' }, '·'),
+        h('a', { href: d.engineHash(l.engine, l.level), class: 'text-muted' }, module.name[lang()]),
+        isDone ? h('span', { class: cls.cx(cls.PILL, cls.DONE_PILL) }, d.icon('check', 'size-4'), et('done')) : null),
+      l.runtime === 'docs' ? h('p', { class: 'm-0 text-body-sm text-muted', 'data-runtime': 'docs' }, et('runtime.docs')) : null,
+      req.length ? h('p', { class: 'm-0 flex flex-wrap items-center gap-2 text-body-sm' }, h('span', { class: 'text-muted' }, `${et('requires')}:`),
+        ...req.map((x) => h('a', { href: lessonHash(x), class: cls.cx(cls.PILL, 'min-h-6 bg-code text-ink no-underline hover:bg-accent-soft') }, x.title[lang()], tick(ok.has(x.id))))) : null),
+    h('section', { class: cls.cx(cls.CARD, 'flex flex-col gap-2 p-5 max-sm:p-4'), 'aria-labelledby': `${l.id}-obj` },
+      h('h2', { id: `${l.id}-obj`, class: 'm-0 text-caption font-bold tracking-wider text-muted uppercase' }, et('objectives')),
       h('ul', { class: 'm-0 list-disc space-y-1 pl-5' }, ...l.objectives.map((o) => h('li', {}, ...inline(o[lang()]))))),
-    ...l.sections.map((s) => h('section', { class: 'space-y-3' },
-      h('h3', { class: 'm-0 text-title font-bold' }, SECTIONS[s.id][lang() === 'vi' ? 0 : 1]), prose(s.text[lang()]))),
+    ...l.sections.map((s) => h('section', { class: 'flex flex-col gap-3' },
+      h('h2', { class: 'm-0 text-title font-bold' }, SECTIONS[s.id][lang() === 'vi' ? 0 : 1]), prose(s.text[lang()]))),
     vizSlot(l.id, l.viz, l.engine),
-    l.predict ? h('section', { class: cls.cx(cls.CARD, 'space-y-3 p-4'), 'aria-labelledby': `${l.id}-pred` },
-      h('h3', { id: `${l.id}-pred`, class: 'm-0 text-title font-bold' }, et('predict.title')),
-      h('pre', { class: 'sql m-0 overflow-x-auto' }, l.predict.sql),
+    l.predict ? h('section', { class: cls.cx(cls.CARD, 'flex flex-col gap-3 p-5 max-sm:p-4'), 'aria-labelledby': `${l.id}-pred` },
+      cardHead(`${l.id}-pred`, 'kindPredict', et('predict.title')),
+      h('pre', { class: 'sql m-0 overflow-x-auto', lang: 'en' }, l.predict.sql),
       question(l, v, l.predict, 'p', ''),
       l.engine === 'postgres' && l.runtime !== 'docs' && v.says.p === 'right' ? realPlan(l, v) : null) : null,
-    l.quiz?.length ? h('section', { class: 'space-y-4', 'aria-labelledby': `${l.id}-quiz` },
-      h('h3', { id: `${l.id}-quiz`, class: 'm-0 text-title font-bold' }, et('quiz.title')),
-      ...l.quiz.map((q, i) => h('div', { class: cls.cx(cls.CARD, 'p-4') }, question(l, v, q, `q${i}`, et('quiz.n', { i: i + 1, n: l.quiz!.length }))))) : null,
+    l.quiz?.length ? h('section', { class: cls.cx(cls.CARD, 'flex flex-col gap-4 p-5 max-sm:p-4'), 'aria-labelledby': `${l.id}-quiz` },
+      cardHead(`${l.id}-quiz`, 'kindQuiz', et('quiz.title')),
+      h('div', { class: 'divide-y divide-line [&>*]:py-4 [&>*:first-child]:pt-0 [&>*:last-child]:pb-0' },
+        ...l.quiz.map((q, i) => h('div', {}, question(l, v, q, `q${i}`, et('quiz.n', { i: i + 1, n: l.quiz!.length })))))) : null,
     l.lab ? labView(l, v) : null,
-    h('div', { class: cls.cx(cls.CARD, 'flex flex-wrap items-center gap-3 p-4') },
-      isDone ? h('p', { class: 'm-0 font-bold good' }, et('complete.done'))
+    h('section', { class: cls.cx(cls.CARD, 'flex flex-wrap items-center gap-3 p-5 max-sm:p-4'), 'aria-label': et('done') },
+      isDone ? h('p', { class: 'm-0 flex items-center gap-2 font-bold good' }, d.icon('check', 'size-5'), et('complete.done'))
         : parts.length ? h('p', { class: 'm-0 text-body-sm' }, et('complete.parts', { k: parts.filter((p) => v.passed.has(p)).length, n: parts.length }))
           : h('button', { type: 'button', class: cls.cx(cls.BTN_GO, 'px-5 py-2'), 'data-ek': `${l.id}-done`, onclick: () => complete(l) }, et('complete.btn')),
-      next ? h('a', { href: lessonHash(next), class: 'ml-auto font-bold' }, et('next', { title: next.title[lang()] })) : null),
-    l.sources.length ? h('section', { class: 'space-y-2', 'aria-labelledby': `${l.id}-src` },
-      h('h3', { id: `${l.id}-src`, class: 'm-0 text-body font-bold' }, et('sources')),
+      h('div', { class: 'ml-auto flex flex-wrap gap-2' },
+        prev ? h('a', { href: lessonHash(prev), class: cls.cx(cls.BTN_GHOST, 'inline-flex items-center gap-1 px-4 py-2 no-underline'), title: prev.title[lang()] }, d.icon('chevronLeft', 'size-4'), et('lesson.prev')) : null,
+        next ? h('a', { href: lessonHash(next), class: cls.cx(isDone ? cls.BTN_GO : cls.BTN_SECONDARY, 'inline-flex items-center gap-1 px-4 py-2 no-underline'), title: et('next', { title: next.title[lang()] }) },
+          et('lesson.next'), d.icon('chevronRight', 'size-4')) : null)),
+    l.sources.length ? h('section', { class: 'flex flex-col gap-2', 'aria-labelledby': `${l.id}-src` },
+      h('h2', { id: `${l.id}-src`, class: 'm-0 text-body font-bold' }, et('sources')),
       h('ul', { class: 'm-0 list-disc space-y-1 pl-5 text-body-sm' }, ...l.sources.map((u) =>
         h('li', { class: 'break-all' }, h('a', { href: u, target: '_blank', rel: 'noopener noreferrer' }, u))))) : null);
 }
@@ -476,13 +720,14 @@ function lessonPage(l: EngineLesson): HTMLElement {
 export function meBlock(): HTMLElement {
   const { h, cls } = d;
   const ok = done();
-  return h('section', { class: cls.cx(cls.CARD, 'space-y-3 p-5'), 'aria-labelledby': 'me-engine' },
+  return h('section', { class: cls.cx(cls.CARD, 'flex flex-col gap-3 p-5'), 'aria-labelledby': 'me-engine' },
     h('h2', { id: 'me-engine', class: 'm-0 text-title font-bold' }, d.t('nav.engine')),
     h('p', { class: 'm-0 text-body-sm text-muted' }, et('me.intro')),
     h('ul', { class: 'm-0 grid list-none gap-3 p-0 sm:grid-cols-3' }, ...ENGINES.map((e) => {
       const p = progressOf(flat(e), ok);
-      return h('li', { class: 'space-y-1' }, h('a', { href: d.engineHash(e), class: 'font-bold' }, NAME[e]),
-        h('p', { class: 'm-0 text-body-sm tabular-nums' }, et('me.line', { k: p.done, n: p.total })), bar(p.done, p.total));
+      return h('li', { class: 'flex items-start gap-3' }, engineBadge(e),
+        h('div', { class: 'min-w-0 flex-1 flex flex-col gap-1' }, h('a', { href: d.engineHash(e), class: 'font-bold' }, NAME[e]),
+          h('p', { class: 'm-0 text-body-sm tabular-nums' }, et('me.line', { k: p.done, n: p.total })), bar(p.done, p.total)));
     })));
 }
 
@@ -490,201 +735,40 @@ export function sideRows(ui: { row: (r: Row) => HTMLElement; group: (text: strin
   const r = d.engineRouteOf(location.hash);
   const ok = done();
   const open = ENGINES.find((e) => e === r.engine);
+  const path = open === 'mongodb' && d.enginePathOf(location.hash) !== undefined;
   const out: (Node | null)[] = [
     ui.row({ key: 'e:all', href: d.hashOf('engine'), lead: d.icon('engine'), label: d.t('nav.engine'), current: !open }),
     ui.group(et('side.engines')),
     ...ENGINES.map((e) => {
       const p = progressOf(flat(e), ok);
-      return ui.row({ key: `e:${e}`, href: d.engineHash(e), lead: d.h('b', { class: 'text-caption' }, SHORT[e]), label: NAME[e],
-        sub: et('me.line', { k: p.done, n: p.total }), current: open === e && !r.lesson });
+      return ui.row({ key: `e:${e}`, href: d.engineHash(e), lead: d.icon(ENGINE_ICON[e]), label: NAME[e],
+        sub: et('me.line', { k: p.done, n: p.total }), current: open === e && !r.level && !path });
     }),
   ];
   if (!open) return out;
-  // engine-ux-spec §3.1: one row per level, badge `L1` + its short name + done/total; the one current row is the smallest unit
-  // holding the page (the open lesson's level; on the engine page the engine row above).
-  for (const lv of trees[open].levels) {
-    const all = lv.modules.flatMap((m) => m.lessons);
-    const p = progressOf(all, ok);
-    out.push(ui.row({ key: `e:${open}:${lv.level}`, href: all[0] ? lessonHash(all[0]) : d.engineHash(open),
+  // engine-ux-spec §3.1 (L189): one row per level, the number only in its badge, its short name, done/total; the one current
+  // row is the smallest unit holding the page (the level page or the open lesson's level).
+  for (const lv of trees[open].levels.filter((x) => x.modules.length)) {
+    const p = progressOf(levelLessons(open, lv.level), ok);
+    out.push(ui.row({ key: `e:${open}:${lv.level}`, href: d.engineHash(open, lv.level),
       lead: p.total && p.done === p.total ? d.icon('check', 'size-5 text-good') : d.h('b', { class: 'text-caption' }, lv.level),
-      label: et(`level.${lv.level}`), sub: et('me.line', { k: p.done, n: p.total }), current: all.some((x) => x.id === r.lesson) }));
+      label: et(`level.${lv.level}`), full: levelName(lv.level), sub: et('me.line', { k: p.done, n: p.total }), current: r.level === lv.level }));
   }
+  if (open === 'mongodb') out.push(ui.row({ key: 'e:path', href: d.enginePathHash(), lead: d.icon('nosqlPath'), label: et('nosql.title'), current: path }));
   return out;
 }
 
+// ---- MongoDB path ("Lộ trình NoSQL", L248): its own lazy chunk since L280 (budget `engineuiPath`)
 
-// ---- MongoDB path ("Lộ trình NoSQL", L248): 12 parts of skills on one shared dataset, each a short lesson and 4 drills
-
-type PathChunk = typeof import('../engineMongoPath');
-type MongoRunnerMod = typeof import('../engine/mongo/runner');
-let pathMod: PathChunk | 'loading' | 'failed' | undefined;
-let mongo: Promise<ReturnType<MongoRunnerMod['mongoRunner']>> | undefined;
-const PATH_LAB = { setup: 'path', steps: [] };
-/** Drill XP on the first pass, like a General drill (L248). */
-const PATH_XP = 10;
-const slugOf = (skill: string): string => skill.replace(/^mg\./, '').replace(/_/g, '-');
-
-function pathChunk(): PathChunk | 'loading' | 'failed' {
+type PathView = typeof import('./enginePathView');
+let pathMod: PathView | 'loading' | 'failed' | undefined;
+function pathPage(slug: string): HTMLElement {
   if (pathMod === undefined) {
     pathMod = 'loading';
-    import('../engineMongoPath').then((m) => { pathMod = m; }, () => { pathMod = 'failed'; }).finally(() => d.rerender());
+    import('./enginePathView').then((m) => { pathMod = m; }, () => { pathMod = 'failed'; }).finally(() => d.rerender());
   }
-  return pathMod;
-}
-const mongoRunner = (): Promise<ReturnType<MongoRunnerMod['mongoRunner']>> =>
-  (mongo ??= import('../engine/mongo/runner').then((m) => m.mongoRunner(d.lab)).catch((e: unknown) => { mongo = undefined; throw e; }));
-
-function pathCard(): HTMLElement {
-  const { h, cls } = d;
-  return h('section', { class: cls.cx(cls.CARD, 'relative space-y-1 px-5 py-4 hover:ring-accent'), 'aria-labelledby': 'path-card' },
-    h('h3', { id: 'path-card', class: 'm-0 text-title font-bold' }, h('a', { href: d.enginePathHash(), class: 'after:absolute after:inset-0' }, et('path.title'))),
-    h('p', { class: 'm-0 text-body-sm text-muted' }, et('path.intro')));
-}
-
-function pathPage(slug: string): HTMLElement {
-  const { h, cls } = d;
-  const m = pathChunk();
-  if (m === 'loading') return h('p', { class: 'm-0 flex min-h-40 items-start gap-2 text-muted', 'aria-live': 'polite' }, d.loader(), d.t('engine.loading'));
-  if (m === 'failed') return h('div', { role: 'alert', class: 'space-y-2' }, h('p', { class: 'm-0' }, d.t('engine.failed')),
-    h('button', { type: 'button', onclick: () => { pathMod = undefined; d.rerender(); } }, d.t('data.retry')));
-  const { path } = m;
-  const ok = done();
-  const skill = path.skills.find((x) => slugOf(x.id) === slug);
-  if (skill) return skillPage(m, skill, ok);
-  return h('div', { class: 'space-y-6' },
-    h('p', { class: 'm-0' }, h('a', { href: d.engineHash('mongodb') }, `‹ MongoDB`)),
-    h('div', { class: 'space-y-2' }, h('h2', { class: 'm-0 text-title font-bold', id: 'engine-title' }, et('path.title')),
-      h('p', { class: 'm-0 text-muted' }, et('path.intro'))),
-    ...path.manifest.parts.map((p) => h('section', { class: 'space-y-2', 'aria-labelledby': `part-${p.n}` },
-      h('h3', { id: `part-${p.n}`, class: 'm-0 text-title font-bold' }, `${et('path.part', { n: p.n })} · ${p.title[lang()]}`),
-      h('ol', { class: 'm-0 list-none space-y-2 p-0' }, ...path.skills.filter((x) => x.part === p.n).map((x) => {
-        const drills = path.drills.filter((dr) => dr.skill === x.id);
-        const k = drills.filter((dr) => ok.has(dr.id)).length;
-        return h('li', { class: 'flex flex-wrap items-center gap-2' },
-          h('a', { href: d.enginePathHash(slugOf(x.id)), class: 'inline-flex min-h-6 items-center font-semibold max-sm:min-h-11' }, x.label[lang()]), tick(drills.length > 0 && k === drills.length),
-          h('span', { class: 'text-body-sm text-muted tabular-nums' }, et('path.skillDone', { k, n: drills.length })));
-      })))));
-}
-
-interface DrillVisit { code?: string; pick?: number; out?: { result: LabOutput } | { error: unknown }; msg?: { ok: boolean; text: string }; busy?: boolean }
-const drillVisits = new Map<string, DrillVisit>();
-const drillVisit = (id: string): DrillVisit => {
-  let v = drillVisits.get(id);
-  if (!v) drillVisits.set(id, (v = {}));
-  return v;
-};
-
-function skillPage(m: PathChunk, skill: PathChunk['path']['skills'][number], ok: Set<string>): HTMLElement {
-  const { h, cls } = d;
-  const lesson = m.path.lessons.find((x) => x.id === skill.id);
-  const drills = m.path.drills.filter((x) => x.skill === skill.id);
-  const code = (c: string | undefined): HTMLElement | null => (c ? h('pre', { class: 'sql m-0 overflow-x-auto', lang: 'en' }, c) : null);
-  return h('article', { class: 'space-y-6', 'aria-labelledby': 'engine-lesson-title' },
-    h('p', { class: 'm-0' }, h('a', { href: d.enginePathHash() }, `‹ ${et('path.back')} · ${et('path.part', { n: skill.part })}`)),
-    h('h2', { id: 'engine-lesson-title', class: 'm-0 text-title font-bold' }, skill.label[lang()]),
-    lesson?.concept ? h('section', { class: 'space-y-2' }, h('h3', { class: 'm-0 text-title font-bold' }, et('path.concept')), prose(lesson.concept[lang()])) : null,
-    lesson?.example ? h('section', { class: 'space-y-2' }, h('h3', { class: 'm-0 text-title font-bold' }, et('path.example')), code(lesson.example),
-      lesson.explain ? prose(lesson.explain[lang()]) : null) : null,
-    lesson?.mistake?.query ? h('section', { class: 'space-y-2' }, h('h3', { class: 'm-0 text-title font-bold' }, et('path.mistake')), code(lesson.mistake.query),
-      lesson.mistake[lang()] ? prose(lesson.mistake[lang()]!) : null) : null,
-    h('section', { class: 'space-y-4', 'aria-labelledby': 'path-drills' },
-      h('h3', { id: 'path-drills', class: 'm-0 text-title font-bold' }, et('path.drills')),
-      ...drills.map((dr, i) => drillCard(m, dr, i, ok))));
-}
-
-function drillCard(m: PathChunk, dr: PathChunk['path']['drills'][number], i: number, ok: Set<string>): HTMLElement {
-  const { h, cls } = d;
-  const v = drillVisit(dr.id);
-  const kind = (['faded', 'open', 'trap', 'review'] as const).find((k) => k === dr.kind);
-  v.code ??= dr.starter ?? '';
-  const status = h('p', { role: 'status', class: cls.cx('m-0 text-body-sm', v.msg ? (v.msg.ok ? 'good' : 'bad') : '') }, ...inline(v.msg?.text ?? ''));
-  const choice = dr.format === 'choice';
-  return h('div', { class: cls.cx(cls.CARD, 'space-y-3 p-4'), 'data-drill': dr.id },
-    h('h4', { class: 'm-0 text-body font-bold' }, et('path.drill', { i: i + 1, kind: kind ? et(`path.kind.${kind}`) : dr.kind }), tick(ok.has(dr.id))),
-    h('p', { class: 'm-0' }, ...inline(dr.task[lang()])),
-    dr.grade === 'esr' && dr.query ? h('div', { class: 'space-y-1' }, h('p', { class: 'm-0 text-body-sm text-muted' }, ...inline(et('path.esr'))), h('pre', { class: 'sql m-0 overflow-x-auto', lang: 'en' }, dr.query)) : null,
-    choice && dr.shown ? h('div', { class: 'space-y-1' }, h('p', { class: 'm-0 text-body-sm text-muted' }, et('path.shown')), h('pre', { class: 'sql m-0 overflow-x-auto', lang: 'en' }, dr.shown)) : null,
-    choice ? h('fieldset', { class: 'm-0 space-y-1 border-0 p-0' }, h('legend', { class: 'mb-1 p-0 text-body-sm font-semibold' }, et('path.choice')),
-      ...(dr.options ?? []).map((o, j) => h('label', { class: 'flex min-h-11 cursor-pointer items-center gap-2 rounded-(--r-ctl) px-2 hover:bg-code' },
-        h('input', { type: 'radio', name: dr.id, value: String(j), checked: v.pick === j, 'data-ek': `${dr.id}-${j}`, onchange: () => { v.pick = j; } }),
-        h('span', {}, ...inline(o[lang()])))))
-      : h('textarea', {
-        class: 'w-full rounded-(--r-ctl) bg-code p-2 font-mono text-body-sm ring-1 ring-line', rows: '4', spellcheck: 'false', lang: 'en',
-        'aria-label': et('lab.code', { i: i + 1 }), 'data-ek': `${dr.id}-code`, oninput: (e: Event) => { v.code = (e.target as HTMLTextAreaElement).value; },
-      }, v.code),
-    h('div', { class: 'flex flex-wrap items-center gap-2' },
-      choice || dr.grade === 'esr' ? null : h('button', { type: 'button', class: cls.cx(cls.BTN_SECONDARY, 'px-4 py-1.5'), 'data-ek': `${dr.id}-run`, disabled: !!v.busy, onclick: () => void drillAction(m, dr, false) }, et('lab.run')),
-      h('button', { type: 'button', class: cls.cx(cls.BTN_GO, 'px-4 py-1.5'), 'data-ek': `${dr.id}-submit`, disabled: !!v.busy, onclick: () => void drillAction(m, dr, true) }, choice ? et('check') : et('lab.submit')),
-      v.busy ? h('span', { class: 'flex items-center gap-2 text-body-sm text-muted' }, d.loader(), et('lab.preparing')) : null),
-    h('details', {}, h('summary', { class: 'cursor-pointer text-body-sm font-semibold' }, et('lab.hint')), h('p', { class: 'mt-2 mb-0 text-body-sm' }, ...inline(dr.hint[lang()]))),
-    status,
-    choice && v.msg?.ok && dr.why ? h('p', { class: 'm-0 rounded-(--r-ctl) bg-code p-3 text-body-sm' }, ...inline(dr.why[lang()])) : null,
-    v.out ? h('div', { class: 'overflow-x-auto' }, 'result' in v.out ? d.renderResult(v.out.result) : d.errorView(v.out.error)) : null);
-}
-
-/** Grades one path drill: a choice by its index, an ESR drill by the key order, the rest by result (+ the covered rule). */
-async function drillVerdict(m: PathChunk, dr: PathChunk['path']['drills'][number], code: string, v: DrillVisit): Promise<{ ok: boolean; text: string }> {
-  const tip = (w?: { vi: string; en: string }) => (w ? et('path.wrongTip', { tip: w[lang()] }) : undefined);
-  if (dr.format === 'choice') {
-    if (v.pick === undefined) return { ok: false, text: et('pick') };
-    if (v.pick === dr.answer) return { ok: true, text: et('right') };
-    return { ok: false, text: tip(dr.wrong?.find((w) => w.option === v.pick)) ?? et('wrong') };
-  }
-  if (dr.grade === 'esr') {
-    if (m.followsEsr(dr.query!, code)) return { ok: true, text: et('lab.passed') };
-    const flat = (x: string) => x.replace(/\s+/g, '');
-    return { ok: false, text: tip(dr.wrong?.find((w) => w.query && flat(w.query) === flat(code))) ?? et('path.notEsr') };
-  }
-  const r = await mongoRunner();
-  const step = { solution: dr.solution!, check: 'doc' as const, ordered: !!dr.ordered, task: dr.task, hint: dr.hint };
-  const g = await r.check(PATH_LAB, step, code, { strictId: dr.grade === 'covered' });
-  if (g.ok) {
-    if (dr.grade === 'covered' && dr.index && !m.isCovered(code, dr.index)) return { ok: false, text: et('path.notCovered') };
-    return { ok: true, text: verdictLine(g) };
-  }
-  if (g.reason === 'wrong') {
-    for (const w of dr.wrong ?? []) {
-      if (!w.query) continue;
-      const same = await r.check(PATH_LAB, { ...step, solution: w.query }, code, { strictId: true }).catch(() => ({ ok: false }));
-      if (same.ok) return { ok: false, text: tip(w)! };
-    }
-  }
-  return { ok: false, text: verdictLine(g) };
-}
-
-async function drillAction(m: PathChunk, dr: PathChunk['path']['drills'][number], submit: boolean): Promise<void> {
-  const v = drillVisit(dr.id);
-  const code = (v.code ?? '').trim();
-  if (dr.format !== 'choice' && !code) {
-    v.msg = { ok: false, text: et('lab.empty') };
-    d.rerender();
-    return;
-  }
-  v.busy = true;
-  v.msg = undefined;
-  d.rerender();
-  try {
-    if (dr.format !== 'choice' && dr.grade !== 'esr') {
-      try {
-        v.out = { result: await (await mongoRunner()).run(PATH_LAB, code) };
-      } catch (error) {
-        v.out = { error };
-      }
-    }
-    if (submit) {
-      v.msg = await drillVerdict(m, dr, code, v);
-      d.announce(v.msg.text);
-      if (v.msg.ok && !done().has(dr.id)) {
-        d.app.save.completed.push(dr.id);
-        d.app.save.xp += PATH_XP;
-        d.persist(true);
-        d.announce(et('complete.xp', { xp: PATH_XP }));
-      }
-    }
-  } catch (error) {
-    v.out = { error };
-  } finally {
-    v.busy = false;
-    d.rerender();
-  }
+  if (pathMod === 'loading') return loadingLine();
+  if (pathMod === 'failed') return failedBox(() => { pathMod = undefined; d.rerender(); });
+  const ctx: PathCtx = { d, et, inline, prose, tick, verdictLine, codeBox, done, leadDisc, rowLink };
+  return pathMod.pathPage(ctx, slug);
 }

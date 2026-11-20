@@ -986,7 +986,7 @@ SECTIONS.engine = async () => {
     counts.lessons++;
     const ok = await step(`engine ${l.id} (${l.kind}${l.lab ? `, ${l.lab.steps.length} steps` : ''})`, async () => {
       await go(l.hash);
-      await waitFor(`${l.id} drawn`, `!!document.querySelector('#engine-page #engine-lesson-title')`, 60000);
+      await waitFor(`${l.id} drawn`, `!!document.querySelector('#engine-page[data-lesson]')`, 60000);
       const id = l.id;
       const pick = async (part, q) => {
         await ev(`document.querySelector('[data-ek="${id}-${part}-${q.answer}"]').click()`);
@@ -1008,9 +1008,9 @@ SECTIONS.engine = async () => {
         const at = (what) => `document.querySelector('[data-ek="${id}-s${i}-${what}"]')`;
         await ev(`(t => { t.value = ${S(String(st.solution).trim())}; t.dispatchEvent(new Event('input', { bubbles: true })); })(${at('code')})`);
         await ev(`${at('submit')}.click()`);
-        const status = `(${at('code')})?.closest('div').querySelector('[role=status]')`;
+        const status = `(${at('code')})?.closest('[data-step]').querySelector('[role=status]')`;
         await waitFor(`step ${i + 1} graded`, `!!${status}?.textContent && !${at('submit')}.disabled`, 180000);
-        if (!(await ev(`${status}.classList.contains('good')`))) fail(`step ${i + 1}: ${await ev(`${status}.textContent`)} | ${await ev(`(${at('code')})?.closest('div').querySelector('.error, pre.error')?.textContent ?? ''`)}`);
+        if (!(await ev(`${status}.classList.contains('good')`))) fail(`step ${i + 1}: ${await ev(`${status}.textContent`)} | ${await ev(`(${at('code')})?.closest('[data-step]').querySelector('.error, pre.error')?.textContent ?? ''`)}`);
       }
       const btn = `document.querySelector('[data-ek="${id}-done"]')`;
       if (await ev(`!!${btn}`)) await ev(`${btn}.click()`);

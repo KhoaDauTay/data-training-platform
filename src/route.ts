@@ -101,11 +101,11 @@ export const learnSkillOf = (hash: string): string | undefined => /^#\/?learn\/s
 export const learnAdvOf = (hash: string): string | undefined => /^#\/?learn\/adv\/([a-z0-9_]+)(?=$|[/?])/i.exec(hash)?.[1].toLowerCase(); // #/learn/adv/A1 = a1 (L93): pages print ids in capitals
 
 /**
- * ENG-CORE (L220): `#/engine/<engine>[/<level>/<lesson id>]` → its parts; kept forever. Only known engine names, `L1`–`L5`
+ * ENG-CORE (L220): `#/engine/<engine>[/<level>[/<lesson id>]]` → its parts (a level alone = the level page, L280); kept forever. Only known engine names, `L1`–`L5`
  * (either case) and lesson ids `e-…` pass; anything else is dropped (the page falls back to the engine or the overview).
  */
 export function engineRouteOf(hash: string): { engine?: string; level?: string; lesson?: string } {
-  const m = /^#\/?engine(?:\/(postgres|mongodb|dynamodb)(?:\/([lL][1-5])\/(e-[a-z0-9-]+))?)?(?=$|[/?])/.exec(hash);
+  const m = /^#\/?engine(?:\/(postgres|mongodb|dynamodb)(?:\/([lL][1-5])(?:\/(e-[a-z0-9-]+))?)?)?(?=$|[/?])/.exec(hash);
   return m ? { engine: m[1], level: m[2]?.toUpperCase(), lesson: m[3] } : {};
 }
 /**
@@ -114,9 +114,15 @@ export function engineRouteOf(hash: string): { engine?: string; level?: string; 
  */
 export const enginePathOf = (hash: string): string | undefined => /^#\/?engine\/mongodb\/path(?:\/([a-z0-9-]+))?(?=$|[/?])/.exec(hash)?.[1] ?? (/^#\/?engine\/mongodb\/path(?=$|[/?])/.test(hash) ? '' : undefined);
 export const enginePathHash = (skill?: string): string => `#/engine/mongodb/path${skill ? `/${skill}` : ''}`;
-/** The lesson page's hash. */
-export const engineHash =(engine: string, level?: string, lesson?: string): string =>
-  `#/engine/${engine}${level && lesson ? `/${level}/${lesson}` : ''}`;
+/** The engine, level or lesson page's hash. */
+export const engineHash = (engine: string, level?: string, lesson?: string): string =>
+  `#/engine/${engine}${level ? `/${level}${lesson ? `/${lesson}` : ''}` : ''}`;
+const ENGINE_OF: Record<string, string> = { pg: 'postgres', mg: 'mongodb', dy: 'dynamodb' };
+/** L280: `#/engine/play/<lesson id>` (named by engine-ux-spec §5.1, never built) → that lesson's hash; undefined elsewhere. */
+export function enginePlayOf(hash: string): string | undefined {
+  const m = /^#\/?engine\/play\/(e-(pg|mg|dy)-l([1-5])-[a-z0-9-]+)(?=$|[/?])/.exec(hash);
+  return m ? engineHash(ENGINE_OF[m[2]], `L${m[3]}`, m[1]) : undefined;
+}
 
 /** v16 (v7 §5.3): a shared query is at most as long as a dashboard card's SQL. */
 export const SHARE_MAX = 4000;

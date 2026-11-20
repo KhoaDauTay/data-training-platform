@@ -6,7 +6,7 @@ import { boot, byId, EmptyWorker, problems, visit } from './axeHarness';
 import { app } from '../src/state';
 
 vi.mock('../src/engineSources', () => ({
-  meta: import.meta.glob('./fixtures/engine/*/L*/*.md', { query: '?fm&meta=id,engine,level,module,title,title_en,kind,minutes,requires,runtime', import: 'default', eager: true }),
+  meta: import.meta.glob('./fixtures/engine/*/L*/*.md', { query: '?fm&meta=id,engine,level,module,title,title_en,kind,minutes,requires,runtime,viz', import: 'default', eager: true }),
   full: import.meta.glob('./fixtures/engine/*/L*/*.md', { query: '?fm', import: 'default' }),
   modules: import.meta.glob('./fixtures/engine/*/modules.yml', { import: 'default', eager: true }),
 }));
@@ -18,7 +18,16 @@ const LESSONS = ['e-pg-l1-01', 'e-pg-l1-02', 'e-pg-l1-03'].map((id) => `#/engine
 describe('Database Engine lesson pages (fixtures)', () => {
   it.each(LESSONS)('axe: %s', async (hash) => {
     await visit(hash);
-    expect(byId('engine-lesson-title')).not.toBeNull();
+    expect(byId('engine-page')?.dataset.lesson).toBe(hash.split('/').pop());
+    // L280: the lesson title is the page's h1, under the trail Engine › PostgreSQL › L1
+    expect(byId('home-title')?.textContent).not.toBe('Database Engine');
+    expect([...document.querySelectorAll('#home nav[aria-label="Đường dẫn"] a')].map((a) => a.getAttribute('href'))).toEqual(['#/engine', '#/engine/postgres', '#/engine/postgres/L1']);
+    expect(await problems()).toEqual([]);
+  });
+
+  it.each(['#/engine', '#/engine/postgres', '#/engine/postgres/L1'])('L280 axe: %s', async (hash) => {
+    await visit(hash);
+    expect(byId('engine-page')).not.toBeNull();
     expect(await problems()).toEqual([]);
   });
 

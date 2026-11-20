@@ -40,6 +40,8 @@ export interface EditorOptions {
   onRun(): void;
   onSubmit(): void;
   onSelection(nonEmpty: boolean): void;
+  /** L281: no SQL language (Engine labs for MongoDB/DynamoDB): same look and keys, no SQL colours or completion. */
+  plain?: boolean;
 }
 
 const language = (schema: SQLNamespace) => sql({ dialect: PostgreSQL, schema, upperCaseKeywords: true });
@@ -97,7 +99,7 @@ export function createEditor(parent: HTMLElement, opts: EditorOptions): Editor {
       highlight, // non-fallback: replaces basicSetup's defaultHighlightStyle
       EditorView.lineWrapping, // long queries wrap instead of hiding the start of the line (end-user test v10)
       flashField,
-      schemaConf.of(language(opts.schema)),
+      schemaConf.of(opts.plain ? [] : language(opts.schema)),
       labelConf.of(ariaLabel(opts.label)),
       EditorView.updateListener.of((u) => {
         if (u.docChanged) opts.onChange(u.state.doc.toString());

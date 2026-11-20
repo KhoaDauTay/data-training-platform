@@ -71,7 +71,7 @@ type Yaml = (text: string) => unknown;
 /** A lesson file as the build gives it (V22-E `?fm`, scripts/contentJson.mjs): frontmatter already parsed, body as text. */
 export interface LessonSource { fm: unknown; body?: string }
 /** Frontmatter keys of the lesson index (`?fm&meta=…`): parseEngineLesson on a source without body gives a list-only lesson. */
-export const META_KEYS = 'id,engine,level,module,title,title_en,kind,minutes,requires,runtime';
+export const META_KEYS = 'id,engine,level,module,title,title_en,kind,minutes,requires,runtime,viz';
 
 /** `source`: the `?fm` object (the app), or the raw file text plus a YAML parser (tests, tools). */
 export function parseEngineLesson(source: string | LessonSource, path: string, yaml?: Yaml): EngineLesson {

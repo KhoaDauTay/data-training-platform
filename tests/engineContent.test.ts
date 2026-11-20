@@ -9,7 +9,7 @@ import {
 } from '../src/engine/content';
 import { compareResults } from '../src/grader';
 import { labRun } from './generalRules';
-import { gradable, honestOf } from '../src/engine/labs';
+import { gradable, honestOf, honestRow } from '../src/engine/labs';
 
 const files = import.meta.glob<string>(['../content/engine/*/L*/*.md', './fixtures/engine/*/L*/*.md'], { query: '?raw', import: 'default', eager: true });
 const moduleFiles = import.meta.glob<string>(['../content/engine/*/modules.yml', './fixtures/engine/*/modules.yml'], { query: '?raw', import: 'default', eager: true });
@@ -153,6 +153,7 @@ lab: { steps: [{ task: { vi: a, en: a }, solution: SELECT 1, check: rows, hint: 
 describe('honestOf: nhãn trung thực của mọi bài', () => {
   it.each(sets[0].map((l) => [l.id, l] as const))('%s', (_, l) => {
     const k = honestOf(l);
+    expect(honestRow(l)).toBe(k); // L280: the lesson rows' chip, from the index fields only
     if (k === 'pg' || k === 'mingo' || k === 'dynoxide') {
       // "runs" only when something executes here: a lab (its Run goes to the runner) or a Postgres predict's real plan.
       // Two DynamoDB labs (catalog steps, no setup): the runner grades them, but gradable() says no (review-v22-rc.md P3).

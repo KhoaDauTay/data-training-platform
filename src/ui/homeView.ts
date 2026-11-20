@@ -568,8 +568,17 @@ const PAGE_TITLE: Record<Page, Key> = {
 };
 const pageOf = (r: string): Page => (r === 'learn' || r === 'practice' || r === 'overview' || r === 'map' || r === 'me' || r === 'engine' ? r : 'home');
 
+/** A sub-page's own h1 and the trail above it (v21 U18; L280: Engine pages too). */
+export interface PageSub { title: string; trail: { href: string; text: string }[] }
+/** L280: a page's sub-title provider besides the learning path's (the Engine area fills `engine` once its chunk is in). */
+export const pageSubs: Partial<Record<Page, () => PageSub | undefined>> = {};
+
 /** v21 U18: the title of a learning-path sub-page (module, skill, advanced node, interview room) and the step above it; main text only. */
-function learnSub(): { title: string; up?: { href: string; text: string } } | undefined {
+function learnSub(): PageSub | undefined {
+  const s = learnStep();
+  return s && { title: s.title, trail: [{ href: hashOf('learn'), text: t('nav.learn') }, ...(s.up ? [s.up] : [])] };
+}
+function learnStep(): { title: string; up?: { href: string; text: string } } | undefined {
   const hash = location.hash;
   const lang = getLang();
   const mod = (n: number): string => t('learn.module', { n, title: moduleTitle(n, lang) });
@@ -596,12 +605,11 @@ export function renderHome(host: HTMLElement): void {
   const grid = page === 'overview'; // the harbour page keeps its 3-column grid; the others are one 880 px column (v6 §3.3)
   const enter = host.dataset.enter !== undefined; // ui-ux-v5 C1: set by showRoute(), used by this draw only
   delete host.dataset.enter;
-  const sub = page === 'learn' ? learnSub() : undefined;
+  const sub = page === 'learn' ? learnSub() : pageSubs[page]?.();
   host.replaceChildren(...nodes(
     // v21 U18: a learning-path sub-page is named by its own h1, under a small trail back up ("Lộ trình › Phần 2").
     sub ? h('nav', { class: 'mx-auto mt-6 max-w-(--w-read) px-4 text-body-sm text-muted', 'aria-label': t('nav.crumbs') },
-      h('a', { href: hashOf('learn') }, t('nav.learn')),
-      ...(sub.up ? [' › ', h('a', { href: sub.up.href }, sub.up.text)] : [])) : null,
+      ...sub.trail.flatMap((x, i) => [i ? ' › ' : '', h('a', { href: x.href }, x.text)])) : null,
     h('h1', {
       id: 'home-title', tabindex: '-1',
       class: page === 'home' || page === 'overview' ? 'sr-only' : cx('mx-auto mb-0 max-w-(--w-read) px-4 text-heading', sub ? 'mt-1' : 'mt-6'),

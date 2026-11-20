@@ -117,6 +117,13 @@ const RUNS: Record<EngineId, Honest> = { postgres: 'pg', mongodb: 'mingo', dynam
 export const honestOf = (l: Pick<EngineLesson, 'engine' | 'runtime' | 'viz' | 'lab' | 'predict'>): Honest =>
   l.runtime !== 'docs' && LAB_RUNNERS[l.engine] && (l.lab || (l.predict && l.engine === 'postgres')) ? RUNS[l.engine] : l.viz ? 'diagram' : 'docs';
 
+/**
+ * L280: the same label from the lesson index alone (no lab/predict in it), for lesson rows: a lesson runs here exactly when
+ * it is not `runtime: docs` (tests/engineContent.test.ts checks both agree on every lesson).
+ */
+export const honestRow = (l: Pick<EngineLesson, 'engine' | 'runtime' | 'viz'>): Honest =>
+  l.runtime !== 'docs' && LAB_RUNNERS[l.engine] ? RUNS[l.engine] : l.viz ? 'diagram' : 'docs';
+
 /** Engine → its runner, loaded on the first lab of that engine. An engine without one shows its labs read-only. */
 export const LAB_RUNNERS: Partial<Record<EngineId, (env: LabEnv) => Promise<LabRunner>>> = {
   postgres: async (env) => {

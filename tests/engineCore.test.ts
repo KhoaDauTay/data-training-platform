@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import v5 from './fixtures/save-v5.json?raw';
 import { loadTickets } from '../src/content';
 import { knownSkills } from '../src/home';
-import { engineHash, engineRouteOf, hashOf, parseRoute } from '../src/route';
+import { engineHash, enginePlayOf, engineRouteOf, hashOf, parseRoute } from '../src/route';
 import { ENGINE_ID, isWorkId, parseSave, type Known } from '../src/save';
 import { SKILLS } from '../src/progress';
 import { decodeInfomask, heapView } from '../src/engine/inside';
@@ -27,6 +27,15 @@ describe('route #/engine (kept forever)', () => {
     expect(engineRouteOf('#/engine/postgres/L9/e-pg-l9-01').lesson).toBeUndefined();
     expect(engineRouteOf('#/engine/postgres/L1/<script>').lesson).toBeUndefined();
     expect(engineRouteOf('#/learn')).toEqual({});
+    expect(engineRouteOf('#/engine/mongodb/l2')).toEqual({ engine: 'mongodb', level: 'L2', lesson: undefined }); // L280: the level page
+    expect(engineHash('mongodb', 'L2')).toBe('#/engine/mongodb/L2');
+    expect(engineHash('postgres', 'L1', 'e-pg-l1-02')).toBe('#/engine/postgres/L1/e-pg-l1-02');
+  });
+  it('L280: #/engine/play/<id> opens the lesson (its engine and level come from the id)', () => {
+    expect(enginePlayOf('#/engine/play/e-pg-l1-02')).toBe('#/engine/postgres/L1/e-pg-l1-02');
+    expect(enginePlayOf('#/engine/play/e-dy-l5-12')).toBe('#/engine/dynamodb/L5/e-dy-l5-12');
+    expect(enginePlayOf('#/engine/play/e-xx-l1-01')).toBeUndefined();
+    expect(enginePlayOf('#/engine/postgres')).toBeUndefined();
     expect(engineHash('postgres', 'L1', 'e-pg-l1-01')).toBe('#/engine/postgres/L1/e-pg-l1-01');
     expect(engineRouteOf(engineHash('postgres', 'L1', 'e-pg-l1-01')).lesson).toBe('e-pg-l1-01');
   });

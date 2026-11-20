@@ -1,14 +1,15 @@
 import { grade } from '../grader';
 import { getLang, locale, t } from '../i18n';
-import { engineHash, enginePathHash, enginePathOf, engineRouteOf, hashOf } from '../route';
+import { engineHash, enginePathHash, enginePathOf, enginePlayOf, engineRouteOf, hashOf } from '../route';
 import { actions, app, persist } from '../state';
-import { BTN_GO, BTN_SECONDARY, CARD, cx, isDark, PILL } from '../theme';
+import { BTN_GHOST, BTN_GO, BTN_SECONDARY, CARD, cx, DONE_PILL, isDark, PILL } from '../theme';
 import { optionOrder } from '../tickets';
 import { loadedGsap, loadGsap } from '../art/load';
 import { announce, h, loader, reducedMotion } from './dom';
 import { s } from './svg';
 import { errorView } from './feedback';
-import { registerHomeSection } from './homeView';
+import { createEditor } from './editor';
+import { ABOVE, GROUP_TITLE, LIST, listRow, pageSubs, registerHomeSection } from './homeView';
 import { icon, NAV_ICON } from './icons';
 import { renderResult } from './resultTable';
 import { registerSide } from './sidebar';
@@ -30,7 +31,8 @@ function engineChunk(): Promise<EngineView> {
     .then(([m, src]) => {
       m.initEngine({
         h, icon, t, getLang, locale, app, persist, announce, loader, reducedMotion, isDark, renderResult, errorView, optionOrder,
-        engineHash, engineRouteOf, enginePathOf, enginePathHash, hashOf, rerender: () => actions.rerender(), cls: { CARD, BTN_GO, BTN_SECONDARY, PILL, cx },
+        engineHash, engineRouteOf, enginePathOf, enginePathHash, hashOf, rerender: () => actions.rerender(), cls: { CARD, BTN_GO, BTN_SECONDARY, BTN_GHOST, PILL, DONE_PILL, cx },
+        ui: { listRow, LIST, GROUP_TITLE, ABOVE }, createEditor,
         lab: { sql: (text) => runOn('lab', text), grade: (run, solution, player, ordered) => grade(run, solution, player, ordered), verdict: verdictText, lang: getLang },
         viz: { h, s, reducedMotion, loadedGsap, loadGsap, getLang },
       }, src);
@@ -45,7 +47,9 @@ function engineChunk(): Promise<EngineView> {
 const load = (): void => void engineChunk().then(() => actions.rerender(), () => { failed = true; actions.rerender(); });
 
 function enginePage(): HTMLElement {
-  if (view) return view.enginePage();
+  const play = enginePlayOf(location.hash); // L280: the spec's lab route opens the lesson page
+  if (play) queueMicrotask(() => location.replace(play));
+  else if (view) return view.enginePage();
   if (!failed) load();
   return failed
     ? h('div', { role: 'alert', class: 'space-y-2' }, h('p', { class: 'm-0' }, t('engine.failed')),
@@ -55,7 +59,7 @@ function enginePage(): HTMLElement {
 
 /** Phones (design D-E1): "Lộ trình" stands for both areas in the 5-slot bottom bar, so both pages open with this switch. */
 function learnSwitch(): HTMLElement | null {
-  const engine = location.hash.startsWith('#/engine');
+  const engine = /^#\/?engine\/?$/.test(location.hash); // engine-ux-spec §3.2: only atop the two areas' first pages
   if (!engine && !/^#\/?learn\/?$/.test(location.hash)) return null;
   if (typeof matchMedia === 'function' && matchMedia('(min-width: 1024px)').matches) return null; // the top bar has both
   const link = (href: string, text: string, on: boolean): HTMLElement => h('a', {
@@ -74,3 +78,4 @@ registerHomeSection({ id: 'engineMe', order: 20, span: 'full', pages: ['me'], re
 } });
 registerNav({ id: 'engine', area: 'top', order: 25, label: 'nav.engineShort', icon: NAV_ICON.engine, href: hashOf('engine'), current: (r) => r === 'engine', mergeInto: 'learn' });
 registerSide('engine', (ui) => (view ? view.sideRows(ui) : []));
+pageSubs.engine = () => view?.subOf(); // L280: the h1 = engine / level / lesson title under a trail; "Database Engine" until the chunk is in
