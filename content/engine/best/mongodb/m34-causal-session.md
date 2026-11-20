@@ -4,12 +4,12 @@ engine: best
 track: mongodb
 level: L4
 module: m
-title: "Đọc ngay sau ghi trên secondary: causally consistent session với majority"
+title: "Đọc ngay sau ghi trên secondary: phiên causally consistent với majority"
 title_en: "Read your writes with a causal session"
 kind: quiz
 minutes: 4
 objectives:
-  - vi: "Khi một luồng ghi rồi đọc lại (có thể từ secondary), dùng một session `causalConsistency: true` với read concern và write concern đều `majority`."
+  - vi: "Khi một luồng ghi rồi đọc lại (có thể từ secondary), dùng một phiên `causalConsistency: true` với read concern và write concern đều `majority`."
     en: "When one flow writes and then reads back (maybe from a secondary), use a `causalConsistency: true` session with both read concern and write concern `majority`."
 avoid:
   vi: "Khách vừa đặt đơn, mở trang \"đơn của tôi\" lại không thấy đơn đó."
@@ -36,7 +36,7 @@ pair:
   expect: null
 quiz:
   - q:
-      vi: "Trong causally consistent session, tổ hợp read concern và write concern nào cho đủ bốn đảm bảo (đọc lại được lần ghi của mình, đọc đơn điệu, ghi đơn điệu, ghi theo sau đọc)?"
+      vi: "Trong phiên causally consistent, tổ hợp read concern và write concern nào cho đủ bốn đảm bảo (đọc lại được lần ghi của mình, đọc đơn điệu, ghi đơn điệu, ghi theo sau đọc)?"
       en: "In a causally consistent session, which read concern and write concern pair gives all four guarantees (read your own writes, monotonic reads, monotonic writes, writes follow reads)?"
     options:
       - { vi: "`local` và `{ w: 1 }`", en: "`local` and `{ w: 1 }`" }
@@ -50,13 +50,13 @@ quiz:
 
 ## Ý chính
 
-Một luồng ghi rồi đọc lại, có thể đọc từ secondary: dùng một session `causalConsistency: true`, đặt read concern và write concern đều là `majority`, và làm cả ghi lẫn đọc trong session đó.
+Một luồng ghi rồi đọc lại, có thể đọc từ secondary: dùng một phiên (session) `causalConsistency: true`, đặt read concern và write concern đều là `majority`, và làm cả ghi lẫn đọc trong session đó.
 
 ## Vì sao
 
-- Secondary có thể chưa nhận lần ghi vừa xong, nên đọc ngoài session có thể không thấy nó.
+- Secondary có thể chưa nhận lần ghi vừa xong, nên đọc ngoài phiên có thể không thấy nó.
 - Docs: muốn nhất quán nhân quả mà dữ liệu vẫn bền, chỉ tổ hợp read concern và write concern đều `majority` giữ đủ các đảm bảo.
-- Thẻ này chỉ cú pháp: mingo không có session hay replica set.
+- Thẻ này chỉ cú pháp: mingo không có phiên hay replica set.
 
 # EN
 

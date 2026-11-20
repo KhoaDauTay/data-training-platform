@@ -40,7 +40,7 @@ pair:
     {"op": "UpdateItem", "input": {"TableName": "Products", "Key": {"pk": {"S": "PRODUCT#A"}, "sk": {"S": "DETAIL"}}, "UpdateExpression": "ADD #v :one", "ExpressionAttributeNames": {"#v": "views"}, "ExpressionAttributeValues": {":one": {"N": "1"}}, "ReturnValues": "UPDATED_NEW", "ReturnConsumedCapacity": "TOTAL"}}
   good: |
     {"op": "UpdateItem", "input": {"TableName": "Products", "Key": {"pk": {"S": "PRODUCT#B"}, "sk": {"S": "COUNTERS"}}, "UpdateExpression": "ADD #v :one", "ExpressionAttributeNames": {"#v": "views"}, "ExpressionAttributeValues": {":one": {"N": "1"}}, "ReturnValues": "UPDATED_NEW", "ReturnConsumedCapacity": "TOTAL"}}
-  expect: { compare: rcu }
+  expect: { compare: wcu }
 quiz:
   - q:
       vi: "Item cỡ 6 KB. Một `UpdateItem` chỉ cộng 1 vào `views`. Request đó tốn bao nhiêu WCU?"

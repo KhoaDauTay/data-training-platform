@@ -74,5 +74,5 @@ Important collections get a `$jsonSchema` validator: required fields, BSON types
 
 - "No fixed schema" does not mean no schema: the schema just moves into code, and every writer may read it differently.
 - A validator stops bad data at the database, like `NOT NULL` and `CHECK` in Postgres.
-- `schemaVersion` lets both document shapes live side by side during a migration.
+- `schemaVersion` lets both document shapes live side by side while documents are being converted.
 - This card is syntax only: mingo has no `createCollection` and no validator.

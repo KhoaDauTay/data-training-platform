@@ -50,7 +50,7 @@ quiz:
 
 ## Ý chính
 
-Trước khi chạy migration, tra lock mode của từng lệnh (docs, hoặc thử trong transaction rồi đọc `pg_locks`). Lệnh lấy `ACCESS EXCLUSIVE` (phần lớn `ALTER TABLE`) phải ngắn, chạy sau `SET LOCAL lock_timeout` vài giây, và có thử lại.
+Trước khi chạy migration (script đổi schema theo từng bước), tra lock mode của từng lệnh (docs, hoặc thử trong transaction rồi đọc `pg_locks`). Lệnh lấy `ACCESS EXCLUSIVE` (phần lớn `ALTER TABLE`) phải ngắn, chạy sau `SET LOCAL lock_timeout` vài giây, và có thử lại.
 
 ## Vì sao
 
@@ -67,7 +67,7 @@ Chạy bản Nên trên PGlite (PostgreSQL 18.6), đọc `pg_locks` trước `CO
 
 ## Key idea
 
-Before running a migration, look up each statement's lock mode (the docs, or try it in a transaction and read `pg_locks`). Statements that take `ACCESS EXCLUSIVE` (most `ALTER TABLE` forms) must be short, run after a `SET LOCAL lock_timeout` of a few seconds, and be retried.
+Before running a migration (a script that changes the schema step by step), look up each statement's lock mode (the docs, or try it in a transaction and read `pg_locks`). Statements that take `ACCESS EXCLUSIVE` (most `ALTER TABLE` forms) must be short, run after a `SET LOCAL lock_timeout` of a few seconds, and be retried.
 
 ## Why
 

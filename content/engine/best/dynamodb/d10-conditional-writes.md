@@ -60,7 +60,7 @@ Tạo mới thì kèm `ConditionExpression: attribute_not_exists(pk)` để khô
 ## Vì sao
 
 - `PutItem` thay **cả** item: thuộc tính không gửi lên là mất.
-- Không có điều kiện thì retry hoặc hai request song song đè nhau âm thầm.
+- Không có điều kiện thì thử lại (retry) hoặc hai request song song đè nhau âm thầm.
 - Điều kiện sai thì request bị từ chối rõ ràng, không ghi gì.
 
 ## Ví dụ

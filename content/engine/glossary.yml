@@ -1931,3 +1931,547 @@
   vi: "Hơn 500 từ (`status`, `name`, `date`…) không được viết thẳng trong biểu thức; phải đi qua placeholder `#x` trong `ExpressionAttributeNames`, nếu không request bị `ValidationException`."
   en: "Over 500 words (`status`, `name`, `date`…) cannot appear directly in an expression; they must go through a `#x` placeholder in `ExpressionAttributeNames`, or the request fails with `ValidationException`."
   doc: "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/ReservedWords.html"
+
+# ───────────────────────── Best Practice (vòng 8: chú thích lần đầu, catalogue §17.1) ─────────────────────────
+# Từ các thẻ content/engine/best/** dùng mà glossary chưa có. Năm mục SQL đầu (NULL, subquery, CTE, alias, tiebreaker)
+# lấy đúng cách viết VI của glossary-vi.md. Mỗi `vi`/`en` chỉ nói điều đã thấy trên trang `doc` (tải ngày 2026-11-20).
+- term: "NULL"
+  engines: [postgres, mongodb]
+  level: L1
+  keep_en: true
+  vi_term: "NULL"
+  avoid: "số 0, chuỗi rỗng"
+  vi: "Giá trị trống: chưa biết hoặc không có. NULL không bằng NULL, nên `= NULL` không bao giờ đúng; kiểm bằng `IS NULL`."
+  en: "A missing value: unknown or not applicable. NULL is not equal to NULL, so `= NULL` is never true; test it with `IS NULL`."
+  doc: "https://www.postgresql.org/docs/18/functions-comparison.html"
+- term: subquery
+  engines: [postgres]
+  level: L1
+  keep_en: false
+  vi_term: "truy vấn con"
+  avoid: "câu hỏi phụ"
+  vi: "Một câu `SELECT` đặt bên trong câu khác, ví dụ trong `WHERE … IN (…)` hay `EXISTS (…)`."
+  en: "A `SELECT` nested inside another statement, for example in `WHERE … IN (…)` or `EXISTS (…)`."
+  doc: "https://www.postgresql.org/docs/18/functions-subquery.html"
+- term: CTE
+  engines: [postgres]
+  level: L2
+  keep_en: true
+  vi_term: "CTE"
+  avoid: "bảng tạm"
+  vi: "Bước tính có tên viết bằng `WITH` (common table expression): một kết quả tạm chỉ tồn tại trong câu đó. Không phải bảng tạm (temporary table)."
+  en: "A named step written with `WITH` (common table expression): a temporary result that exists only for that query. Not a temporary table."
+  doc: "https://www.postgresql.org/docs/18/queries-with.html"
+- term: alias
+  engines: [postgres]
+  level: L1
+  keep_en: true
+  vi_term: "alias"
+  avoid: "bí danh"
+  vi: "Tên tạm cho một bảng hay một cột trong câu, đặt bằng `AS`."
+  en: "A temporary name for a table or a column within a query, given with `AS`."
+  doc: "https://www.postgresql.org/docs/18/sql-select.html"
+- term: tiebreaker
+  engines: [postgres, mongodb]
+  level: L1
+  keep_en: true
+  vi_term: "tiebreaker"
+  avoid: "trọng tài"
+  vi: "Cột thêm vào cuối `ORDER BY` để mọi dòng có một thứ tự duy nhất. Thiếu nó, `LIMIT` có thể trả một tập dòng khác nhau giữa các lần chạy."
+  en: "A column added at the end of `ORDER BY` so every row has a unique order. Without it, `LIMIT` can return a different set of rows from run to run."
+  doc: "https://www.postgresql.org/docs/18/queries-limit.html"
+- term: view
+  engines: [postgres]
+  level: L2
+  keep_en: true
+  vi_term: "view"
+  avoid: "khung nhìn, góc nhìn"
+  vi: "Một câu truy vấn được đặt tên và đọc như bảng. View thường không lưu dữ liệu: câu chạy lại mỗi lần view được dùng."
+  en: "A query given a name and read like a table. A plain view stores no data: the query runs every time the view is used."
+  doc: "https://www.postgresql.org/docs/18/sql-createview.html"
+- term: sequence
+  engines: [postgres]
+  level: L2
+  keep_en: true
+  vi_term: "sequence"
+  avoid: "chuỗi, dãy"
+  vi: "Đối tượng sinh dãy số, đọc bằng `nextval`; cột identity và `serial` lấy số từ một sequence."
+  en: "An object that generates a series of numbers, read with `nextval`; identity and `serial` columns take their numbers from a sequence."
+  doc: "https://www.postgresql.org/docs/18/sql-createsequence.html"
+- term: identity column (serial)
+  engines: [postgres]
+  level: L2
+  keep_en: true
+  vi_term: "cột identity"
+  avoid: "cột định danh"
+  vi: "Cột tự sinh số từ một sequence ngầm, khai bằng `GENERATED … AS IDENTITY`; luôn `NOT NULL` nhưng không tự đảm bảo duy nhất. `serial` chỉ là cách viết tắt cũ để tạo cột id tự sinh, không phải kiểu thật."
+  en: "A column that generates numbers from an implicit sequence, declared with `GENERATED … AS IDENTITY`; it is always `NOT NULL` but does not guarantee uniqueness by itself. `serial` is only an older shorthand for an auto-generated id column, not a true type."
+  doc: "https://www.postgresql.org/docs/18/ddl-identity-columns.html"
+- term: superuser
+  engines: [postgres]
+  level: L5
+  keep_en: true
+  vi_term: "superuser"
+  avoid: "siêu người dùng"
+  vi: "Role bỏ qua mọi kiểm tra quyền, trừ quyền đăng nhập. Ứng dụng và người phân tích không chạy bằng role này."
+  en: "A role that bypasses every permission check except the right to log in. Applications and analysts do not run as it."
+  doc: "https://www.postgresql.org/docs/18/role-attributes.html"
+- term: owner
+  engines: [postgres]
+  level: L5
+  keep_en: true
+  vi_term: "owner"
+  avoid: "người chủ"
+  vi: "Role đã tạo một đối tượng (bảng, view…). Lúc đầu chỉ owner có quyền trên nó, và quyền sửa hay xóa đối tượng gắn liền với owner."
+  en: "The role that created an object (table, view…). At first only the owner has privileges on it, and the right to alter or drop the object comes with ownership."
+  doc: "https://www.postgresql.org/docs/18/ddl-priv.html"
+- term: prepared statement
+  engines: [postgres]
+  level: L2
+  keep_en: true
+  vi_term: "prepared statement"
+  avoid: "câu lệnh chuẩn bị"
+  vi: "Câu SQL được phân tích trước với tham số theo vị trí `$1`, `$2`; giá trị truyền vào lúc `EXECUTE`, tách khỏi chữ của câu."
+  en: "A SQL statement parsed ahead of time with positional parameters `$1`, `$2`; values are passed at `EXECUTE`, apart from the statement text."
+  doc: "https://www.postgresql.org/docs/18/sql-prepare.html"
+- term: time zone (UTC)
+  engines: [postgres, mongodb, dynamodb]
+  level: L1
+  keep_en: false
+  vi_term: "múi giờ"
+  avoid: "vùng thời gian"
+  vi: "Độ lệch giờ của một nơi so với UTC (giờ phối hợp quốc tế), ví dụ `+07`. Giá trị `timestamptz` nhập vào được đổi về UTC theo độ lệch đó."
+  en: "A place's offset from UTC (Coordinated Universal Time), for example `+07`. A `timestamptz` input is converted to UTC using that offset."
+  doc: "https://www.postgresql.org/docs/18/datatype-datetime.html"
+- term: timestamptz
+  engines: [postgres]
+  level: L1
+  keep_en: true
+  vi_term: "timestamptz"
+  avoid: "giờ địa phương"
+  vi: "Viết tắt của `timestamp with time zone`: một thời điểm thật, lưu theo UTC. `timestamp` không múi giờ chỉ là con số trên đồng hồ."
+  en: "Short for `timestamp with time zone`: a real instant, stored as UTC. `timestamp` without a time zone is only a wall-clock reading."
+  doc: "https://www.postgresql.org/docs/18/datatype-datetime.html"
+- term: numeric
+  engines: [postgres]
+  level: L1
+  keep_en: true
+  vi_term: "numeric"
+  avoid: "kiểu số học"
+  vi: "Kiểu số thập phân chính xác, chọn được độ chính xác; hợp với tiền. Tính trên `numeric` chậm hơn nhiều so với số nguyên và số thực."
+  en: "An exact decimal type with selectable precision; right for money. Arithmetic on `numeric` is much slower than on integer and floating-point types."
+  doc: "https://www.postgresql.org/docs/18/datatype-numeric.html"
+- term: float (real, double precision)
+  engines: [postgres]
+  level: L1
+  keep_en: true
+  vi_term: "float"
+  avoid: "số nổi"
+  vi: "Kiểu số thực nhị phân `real` và `double precision`: không chính xác (inexact), một số giá trị thập phân chỉ lưu được gần đúng. Không dùng cho tiền."
+  en: "The binary floating-point types `real` and `double precision`: inexact, so some decimal values are stored only approximately. Not for money."
+  doc: "https://www.postgresql.org/docs/18/datatype-numeric.html"
+- term: DDL
+  engines: [postgres]
+  level: L2
+  keep_en: true
+  vi_term: "DDL"
+  avoid: "ngôn ngữ dữ liệu"
+  vi: "Lệnh định nghĩa dữ liệu (data definition): `CREATE`, `ALTER`, `DROP` bảng, cột, ràng buộc, index."
+  en: "Data definition commands: `CREATE`, `ALTER`, `DROP` for tables, columns, constraints, indexes."
+  doc: "https://www.postgresql.org/docs/18/ddl.html"
+- term: system catalog
+  engines: [postgres]
+  level: L4
+  keep_en: true
+  vi_term: "catalog"
+  avoid: "danh mục sản phẩm"
+  vi: "Các bảng hệ thống (`pg_class`, `pg_index`…) nơi Postgres giữ metadata về bảng, cột, index. Chúng là bảng thường, đọc bằng `SELECT`."
+  en: "The system tables (`pg_class`, `pg_index`…) where Postgres keeps metadata about tables, columns, indexes. They are regular tables, read with `SELECT`."
+  doc: "https://www.postgresql.org/docs/18/catalogs.html"
+- term: idle in transaction
+  engines: [postgres]
+  level: L4
+  keep_en: true
+  vi_term: "idle in transaction"
+  avoid: "phiên rảnh"
+  vi: "Trạng thái của một phiên đang mở transaction nhưng không chạy câu nào, chờ client. Phiên như vậy giữ lock của nó; `idle_in_transaction_session_timeout` cắt phiên quá hạn."
+  en: "The state of a session with an open transaction that is not running a statement, waiting for the client. Such a session keeps its locks; `idle_in_transaction_session_timeout` ends it after a limit."
+  doc: "https://www.postgresql.org/docs/18/runtime-config-client.html"
+- term: NOT VALID / VALIDATE CONSTRAINT
+  engines: [postgres]
+  level: L4
+  keep_en: true
+  vi_term: "NOT VALID"
+  avoid: "không hợp lệ"
+  vi: "Thêm ràng buộc `CHECK` hay khóa ngoại mà không quét dòng cũ, commit ngay. Sau đó `VALIDATE CONSTRAINT` kiểm dòng cũ mà không chặn ghi đồng thời."
+  en: "Adds a `CHECK` or foreign key constraint without scanning existing rows, so it commits at once. `VALIDATE CONSTRAINT` then checks those rows without locking out concurrent updates."
+  doc: "https://www.postgresql.org/docs/18/sql-altertable.html"
+- term: lock_timeout
+  engines: [postgres]
+  level: L4
+  keep_en: true
+  vi_term: "lock_timeout"
+  avoid: "thời gian khóa"
+  vi: "Tham số: câu nào chờ lấy lock lâu hơn mức này thì bị hủy. Mặc định 0 là tắt, nghĩa là chờ mãi."
+  en: "A setting: a statement that waits longer than this to acquire a lock is aborted. The default 0 disables it, so a statement waits forever."
+  doc: "https://www.postgresql.org/docs/18/runtime-config-client.html"
+- term: least privilege
+  engines: [postgres, mongodb, dynamodb]
+  level: L3
+  keep_en: false
+  vi_term: "quyền tối thiểu"
+  avoid: "quyền ít nhất"
+  vi: "Mỗi người dùng hay ứng dụng chỉ có đúng các quyền việc của họ cần, không hơn, để một lỗi hay một credential bị lộ gây hại ít nhất."
+  en: "Each user or application gets exactly the permissions its job needs and no more, so a mistake or a leaked credential does the least harm."
+  doc: "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/best-practices-security-preventative.html"
+- term: dynamic SQL
+  engines: [postgres]
+  level: L3
+  keep_en: false
+  vi_term: "SQL động"
+  avoid: "SQL linh hoạt"
+  vi: "Câu SQL ghép lúc chạy, ví dụ `EXECUTE` trong PL/pgSQL. Tên bảng, tên cột đưa vào bằng `format('%I')`; giá trị truyền bằng `USING`."
+  en: "SQL assembled at run time, for example `EXECUTE` in PL/pgSQL. Table and column names go in through `format('%I')`; values are passed with `USING`."
+  doc: "https://www.postgresql.org/docs/18/plpgsql-statements.html"
+- term: unique index
+  engines: [postgres, mongodb]
+  level: L2
+  keep_en: true
+  vi_term: "unique index"
+  avoid: "index độc nhất"
+  vi: "Index không cho hai dòng (hay hai tài liệu) trùng giá trị khóa. Postgres tự tạo một unique index cho mỗi `PRIMARY KEY` và ràng buộc `UNIQUE`."
+  en: "An index that rejects two rows (or documents) with the same key value. Postgres creates one for every `PRIMARY KEY` and `UNIQUE` constraint."
+  doc: "https://www.postgresql.org/docs/18/indexes-unique.html"
+- term: session
+  engines: [postgres, mongodb]
+  level: L2
+  keep_en: false
+  vi_term: "phiên"
+  avoid: "buổi làm việc"
+  vi: "Một kết nối đang làm việc với database. Trong MongoDB, client session gom các thao tác của một ứng dụng để có causal consistency và retryable write."
+  en: "A connection working with the database. In MongoDB, a client session groups an application's operations to give causal consistency and retryable writes."
+  doc: "https://www.mongodb.com/docs/manual/reference/server-sessions/"
+- term: driver
+  engines: [postgres, mongodb]
+  level: L2
+  keep_en: true
+  vi_term: "driver"
+  avoid: "trình điều khiển"
+  vi: "Thư viện chính thức để code ứng dụng (Python, Java, Node.js…) kết nối và gửi lệnh tới database."
+  en: "The official library that application code (Python, Java, Node.js…) uses to connect and send commands to the database."
+  doc: "https://www.mongodb.com/docs/drivers/"
+- term: working set
+  engines: [mongodb]
+  level: L3
+  keep_en: true
+  vi_term: "working set"
+  avoid: "bộ làm việc"
+  vi: "Phần dữ liệu và index MongoDB dùng thường xuyên nhất. Vừa RAM thì truy vấn đọc từ bộ nhớ; không vừa thì phải đọc đĩa và chậm đi."
+  en: "The data and indexes MongoDB uses most often. When it fits in RAM, queries read from memory; when it does not, MongoDB reads from disk and slows down."
+  doc: "https://www.mongodb.com/docs/manual/data-modeling/design-antipatterns/bloated-documents/"
+- term: bucket pattern
+  engines: [mongodb]
+  level: L2
+  keep_en: true
+  vi_term: "bucket pattern"
+  avoid: "mẫu xô"
+  vi: "Pattern chia một chuỗi dữ liệu dài (số đo cảm biến theo thời gian) thành nhiều tài liệu nhỏ, mỗi tài liệu giữ một nhóm."
+  en: "A pattern that splits a long data series (sensor readings over time) into smaller documents, each holding one group."
+  doc: "https://www.mongodb.com/docs/manual/data-modeling/design-patterns/group-data/bucket-pattern/"
+- term: computed pattern
+  engines: [mongodb]
+  level: L2
+  keep_en: true
+  vi_term: "computed pattern"
+  avoid: "mẫu máy tính"
+  vi: "Pattern tính sẵn: chạy phép tính (tổng, đếm) trong database lúc ghi và lưu kết quả, để lần đọc khỏi tính lại."
+  en: "A pattern that runs a computation (a sum, a count) in the database at write time and stores the result, so reads do not recompute it."
+  doc: "https://www.mongodb.com/docs/manual/data-modeling/design-patterns/handle-computed-values/"
+- term: top-k sort ($sort + $limit)
+  engines: [mongodb]
+  level: L3
+  keep_en: true
+  vi_term: "top-k"
+  avoid: "sắp xếp đầu bảng"
+  vi: "Khi `$limit` đứng ngay sau `$sort`, MongoDB gộp hai stage: lúc sắp xếp chỉ giữ n tài liệu đứng đầu trong bộ nhớ, thay vì sắp cả tập."
+  en: "When `$limit` follows `$sort`, MongoDB merges the two stages: while sorting it keeps only the top n documents in memory instead of sorting the whole set."
+  doc: "https://www.mongodb.com/docs/manual/core/aggregation-pipeline-optimization/"
+- term: hashed sharding
+  engines: [mongodb]
+  level: L5
+  keep_en: true
+  vi_term: "hashed sharding"
+  avoid: "shard băm"
+  vi: "Dùng hash của shard key để chia dữ liệu, nên khóa tăng dần vẫn rải đều các shard. Đổi lại, truy vấn theo khoảng thường phải hỏi nhiều shard."
+  en: "Uses a hash of the shard key to spread data, so an increasing key still lands evenly across shards. In exchange, range queries usually have to ask many shards."
+  doc: "https://www.mongodb.com/docs/manual/core/hashed-sharding/"
+- term: profiler (database profiler)
+  engines: [mongodb]
+  level: L3
+  keep_en: true
+  vi_term: "profiler"
+  avoid: "trình hồ sơ"
+  vi: "Ghi chi tiết các lệnh chạy trên `mongod` vào collection `system.profile` (một capped collection). Mặc định tắt."
+  en: "Records details of the commands run on `mongod` into the `system.profile` collection (a capped collection). Off by default."
+  doc: "https://www.mongodb.com/docs/manual/tutorial/manage-the-database-profiler/"
+- term: capped collection
+  engines: [mongodb]
+  level: L3
+  keep_en: true
+  vi_term: "capped collection"
+  avoid: "collection bị chặn"
+  vi: "Collection có cỡ cố định, như bộ đệm vòng: đầy thì tài liệu cũ nhất bị ghi đè bằng tài liệu mới."
+  en: "A fixed-size collection that works like a circular buffer: when it is full, the oldest documents are overwritten by new ones."
+  doc: "https://www.mongodb.com/docs/manual/core/capped-collections/"
+- term: rolling index build
+  engines: [mongodb]
+  level: L4
+  keep_en: true
+  vi_term: "rolling index build"
+  avoid: "xây index cuốn chiếu"
+  vi: "Xây index lần lượt trên từng thành viên replica set, mỗi lúc tách tối đa một thành viên ra chạy riêng, bắt đầu từ các secondary."
+  en: "Builds an index on one replica set member at a time, taking at most one member out to run on its own, starting with the secondaries."
+  doc: "https://www.mongodb.com/docs/manual/core/rolling-index-builds/"
+- term: replication lag
+  engines: [mongodb, postgres]
+  level: L4
+  keep_en: true
+  vi_term: "replication lag"
+  avoid: "độ trễ mạng"
+  vi: "Khoảng trễ giữa lúc primary ghi một thao tác và lúc secondary áp dụng thao tác đó từ oplog."
+  en: "The delay between an operation on the primary and the moment a secondary applies that operation from the oplog."
+  doc: "https://www.mongodb.com/docs/manual/tutorial/troubleshoot-replica-sets/"
+- term: access control
+  engines: [mongodb]
+  level: L3
+  keep_en: true
+  vi_term: "access control"
+  avoid: "kiểm soát cửa ra vào"
+  vi: "Bắt mọi kết nối xác thực (authentication) và chỉ cho mỗi người dùng các role họ cần (authorization). Mục đầu tiên trong security checklist của MongoDB."
+  en: "Requires every connection to authenticate and gives each user only the roles it needs (authorization). The first item of MongoDB's security checklist."
+  doc: "https://www.mongodb.com/docs/manual/administration/security-checklist/"
+- term: TLS
+  engines: [mongodb]
+  level: L3
+  keep_en: true
+  vi_term: "TLS"
+  avoid: "mã hóa ổ đĩa"
+  vi: "Mã hóa đường truyền (TLS/SSL), để dữ liệu đi trên mạng chỉ client đúng đọc được."
+  en: "Transport encryption (TLS/SSL), so data on the network is readable only by the intended client."
+  doc: "https://www.mongodb.com/docs/manual/core/security-transport-encryption/"
+- term: collation
+  engines: [mongodb]
+  level: L3
+  keep_en: true
+  vi_term: "collation"
+  avoid: "sắp chữ"
+  vi: "Luật so sánh chuỗi theo ngôn ngữ (chữ hoa/thường, dấu). Muốn dùng index cho so sánh chuỗi, lệnh phải dùng cùng collation với index."
+  en: "Language rules for comparing strings (letter case, accents). To use an index for string comparisons, an operation must use the same collation as the index."
+  doc: "https://www.mongodb.com/docs/manual/reference/collation/"
+- term: hint
+  engines: [mongodb]
+  level: L3
+  keep_en: true
+  vi_term: "hint"
+  avoid: "gợi ý"
+  vi: "`hint()` bắt truy vấn dùng một index chỉ định, bỏ qua lựa chọn index mặc định của MongoDB."
+  en: "`hint()` forces a query to use a given index, overriding MongoDB's default index selection."
+  doc: "https://www.mongodb.com/docs/manual/reference/method/cursor.hint/"
+- term: resume token
+  engines: [mongodb]
+  level: L4
+  keep_en: true
+  vi_term: "resume token"
+  avoid: "vé tiếp tục"
+  vi: "Trường `_id` của mỗi sự kiện change stream. Lưu nó lại để mở stream tiếp từ đúng chỗ đã dừng."
+  en: "The `_id` field of each change stream event. Store it to reopen the stream exactly where it stopped."
+  doc: "https://www.mongodb.com/docs/manual/changestreams/"
+- term: WiredTiger cache / filesystem cache
+  engines: [mongodb]
+  level: L5
+  keep_en: true
+  vi_term: "cache WiredTiger"
+  avoid: "bộ nhớ đệm trình duyệt"
+  vi: "MongoDB dùng cả cache nội bộ của WiredTiger (mặc định lớn hơn giữa 50 % của (RAM − 1 GB) và 0,256 GB) lẫn cache hệ thống tệp (filesystem cache) của hệ điều hành, giữ dữ liệu dạng nén như trên đĩa."
+  en: "MongoDB uses both the WiredTiger internal cache (by default the larger of 50% of (RAM - 1 GB) and 0.256 GB) and the operating system's filesystem cache, which holds data compressed as on disk."
+  doc: "https://www.mongodb.com/docs/manual/core/wiredtiger/"
+- term: TransientTransactionError
+  engines: [mongodb]
+  level: L4
+  keep_en: true
+  vi_term: "TransientTransactionError"
+  avoid: "lỗi vĩnh viễn"
+  vi: "Nhãn lỗi của một transaction có thể thành công nếu chạy lại; cách xử lý là chạy lại cả transaction từ đầu."
+  en: "An error label on a transaction that may succeed if run again; the fix is to retry the whole transaction from the start."
+  doc: "https://www.mongodb.com/docs/manual/core/transactions-in-applications/"
+- term: callback API
+  engines: [mongodb]
+  level: L4
+  keep_en: true
+  vi_term: "callback API"
+  avoid: "hàm gọi lại"
+  vi: "Cách viết transaction của driver: tự bắt đầu, chạy thao tác, commit, và tự chạy lại khi gặp `TransientTransactionError` hay `UnknownTransactionCommitResult`. Core API bắt bạn tự viết phần chạy lại."
+  en: "The driver's transaction style that starts, runs the operations, commits, and retries on `TransientTransactionError` or `UnknownTransactionCommitResult` by itself. The core API leaves the retry logic to you."
+  doc: "https://www.mongodb.com/docs/manual/core/transactions-in-applications/"
+- term: reshard
+  engines: [mongodb]
+  level: L5
+  keep_en: true
+  vi_term: "reshard"
+  avoid: "chia lại ổ"
+  vi: "Đổi shard key của một collection đã shard bằng lệnh `reshardCollection`, chạy qua `mongos`."
+  en: "Changing the shard key of a sharded collection with the `reshardCollection` command, run through `mongos`."
+  doc: "https://www.mongodb.com/docs/manual/core/sharding-reshard-a-collection/"
+- term: request
+  engines: [dynamodb]
+  level: L1
+  keep_en: true
+  vi_term: "request"
+  avoid: "lời đề nghị"
+  vi: "Một lần gọi API của DynamoDB (`GetItem`, `Query`, `PutItem`…), kèm tham số của lệnh đó. Lab DynamoDB nhận mỗi lần đúng một request."
+  en: "One call to a DynamoDB API (`GetItem`, `Query`, `PutItem`…) with that operation's parameters. A DynamoDB lab takes exactly one request at a time."
+  doc: "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.API.html"
+- term: throughput
+  engines: [dynamodb]
+  level: L2
+  keep_en: true
+  vi_term: "throughput"
+  avoid: "thông lượng mạng"
+  vi: "Lượng đọc và ghi một bảng phục vụ, tính bằng RCU/WCU; chế độ on-demand hoặc provisioned quyết định cách cấp và tính tiền."
+  en: "The reads and writes a table serves, counted in RCU/WCU; the on-demand or provisioned mode decides how it is supplied and billed."
+  doc: "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/capacity-mode.html"
+- term: auto scaling
+  engines: [dynamodb]
+  level: L3
+  keep_en: true
+  vi_term: "auto scaling"
+  avoid: "tự phóng to"
+  vi: "Ở chế độ provisioned, tự nâng hay hạ capacity đã cấp để mức dùng bám theo một mức mục tiêu (target utilization) trong khoảng min–max bạn đặt."
+  en: "In provisioned mode, raises or lowers provisioned capacity so usage tracks a target utilization within the min–max range you set."
+  doc: "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/AutoScaling.html"
+- term: optimistic locking
+  engines: [dynamodb]
+  level: L3
+  keep_en: true
+  vi_term: "optimistic locking"
+  avoid: "khóa lạc quan"
+  vi: "Cho ghi đồng thời và phát hiện xung đột lúc ghi: item giữ một thuộc tính số phiên bản, lệnh ghi có điều kiện đúng phiên bản đã đọc."
+  en: "Allows concurrent writes and detects conflicts at write time: the item keeps a version attribute, and the write is conditional on the version that was read."
+  doc: "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/BestPractices_ImplementingVersionControl.html"
+- term: deletion protection
+  engines: [dynamodb]
+  level: L3
+  keep_en: true
+  vi_term: "deletion protection"
+  avoid: "chống xóa dữ liệu"
+  vi: "Thuộc tính của bảng: khi bật, không ai xóa được bảng cho tới khi tắt nó."
+  en: "A table property: while it is on, nobody can delete the table until it is turned off."
+  doc: "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/WorkingWithTables.Basics.html"
+- term: CloudWatch (metric, dimension, alarm)
+  engines: [dynamodb]
+  level: L3
+  keep_en: true
+  vi_term: "CloudWatch"
+  avoid: "đồng hồ mây"
+  vi: "Dịch vụ giám sát của AWS. DynamoDB gửi metric (số đo theo thời gian) theo dimension như `TableName`; alarm báo khi một metric vượt ngưỡng."
+  en: "The AWS monitoring service. DynamoDB publishes metrics (measurements over time) by dimensions such as `TableName`; an alarm fires when a metric crosses a threshold."
+  doc: "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/metrics-dimensions.html"
+- term: exponential backoff (jitter)
+  engines: [dynamodb]
+  level: L2
+  keep_en: true
+  vi_term: "exponential backoff"
+  avoid: "lùi theo cấp số"
+  vi: "Thử lại với thời gian chờ dài dần sau mỗi lần lỗi, thường cộng một khoảng ngẫu nhiên (jitter) để các client không thử lại cùng lúc. AWS SDK làm sẵn việc này."
+  en: "Retrying with progressively longer waits after each error, usually plus a random delay (jitter) so clients do not retry at the same moment. The AWS SDKs do this for you."
+  doc: "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Programming.Errors.html"
+- term: retry
+  engines: [dynamodb, mongodb, postgres]
+  level: L2
+  keep_en: false
+  vi_term: "thử lại"
+  avoid: "làm lại từ đầu dự án"
+  vi: "Gửi lại một request hay chạy lại một transaction đã lỗi. Chỉ an toàn khi thao tác idempotent hoặc có điều kiện; lỗi do request sai thì thử lại không giúp gì."
+  en: "Sending a failed request again or rerunning a failed transaction. Safe only when the operation is idempotent or conditional; retrying a malformed request does not help."
+  doc: "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Programming.Errors.html"
+- term: AWS SDK
+  engines: [dynamodb]
+  level: L2
+  keep_en: true
+  vi_term: "SDK"
+  avoid: "bộ công cụ phần cứng"
+  vi: "Thư viện của AWS cho từng ngôn ngữ lập trình, để code ứng dụng gọi DynamoDB."
+  en: "AWS's library for each programming language that application code uses to call DynamoDB."
+  doc: "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Programming.SDKOverview.html"
+- term: IAM (policy, action, ARN, credential)
+  engines: [dynamodb]
+  level: L4
+  keep_en: true
+  vi_term: "IAM"
+  avoid: "tôi là"
+  vi: "Dịch vụ quản lý quyền của AWS. Một IAM policy cho phép các action như `dynamodb:Query` trên tài nguyên ghi bằng ARN (tên đầy đủ của bảng); ai cầm credential thì có đúng các quyền đó."
+  en: "The AWS permissions service. An IAM policy allows actions such as `dynamodb:Query` on resources named by ARN (a table's full name); whoever holds the credentials gets exactly those permissions."
+  doc: "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/using-identity-based-policies.html"
+- term: Contributor Insights
+  engines: [dynamodb]
+  level: L4
+  keep_en: true
+  vi_term: "Contributor Insights"
+  avoid: "thông tin người đóng góp"
+  vi: "Tính năng CloudWatch cho DynamoDB: chỉ ra các item được truy cập và bị throttle nhiều nhất trong một bảng hay GSI, để tìm khóa nóng."
+  en: "A CloudWatch feature for DynamoDB that shows the most accessed and throttled items in a table or GSI, to find hot keys."
+  doc: "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/contributorinsights_HowItWorks.html"
+- term: Lambda (trigger)
+  engines: [dynamodb]
+  level: L5
+  keep_en: true
+  vi_term: "Lambda"
+  avoid: "lambda (hàm vô danh)"
+  vi: "Dịch vụ chạy hàm của AWS. Gắn vào DynamoDB Streams làm trigger: hàm tự chạy khi bảng có thay đổi."
+  en: "The AWS service that runs functions. Attached to DynamoDB Streams as a trigger, a function runs automatically when the table changes."
+  doc: "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Streams.Lambda.html"
+- term: last writer wins
+  engines: [dynamodb]
+  level: L5
+  keep_en: true
+  vi_term: "last writer wins"
+  avoid: "người viết sau cùng"
+  vi: "Cách global tables nhất quán cuối (MREC) giải xung đột: theo từng item, bản ghi có mốc thời gian nội bộ mới nhất thắng."
+  en: "How eventually consistent global tables (MREC) resolve conflicts: per item, the write with the latest internal timestamp wins."
+  doc: "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/V2globaltables_HowItWorks.html"
+- term: Amazon S3
+  engines: [dynamodb]
+  level: L2
+  keep_en: true
+  vi_term: "S3"
+  avoid: "ổ cứng S3"
+  vi: "Dịch vụ lưu file (object) của AWS. Thuộc tính quá lớn cho item 400 KB để ở S3, item chỉ giữ khóa đối tượng."
+  en: "The AWS file (object) storage service. Attributes too large for a 400 KB item go to S3, and the item keeps only the object key."
+  doc: "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-use-s3-too.html"
+- term: emulator
+  engines: [dynamodb]
+  level: L1
+  keep_en: true
+  vi_term: "emulator"
+  avoid: "máy ảo"
+  vi: "Chương trình chạy trên máy bạn, nhận cùng API như dịch vụ thật để thử code (AWS có DynamoDB local; lab dùng dynoxide). Phần nó không giả lập được, mỗi thẻ ghi rõ."
+  en: "A program that runs on your machine and accepts the same API as the real service, for trying code (AWS ships DynamoDB local; the lab uses dynoxide). Each card says what it cannot emulate."
+  doc: "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/DynamoDBLocal.html"
+- term: epoch time
+  engines: [dynamodb]
+  level: L2
+  keep_en: true
+  vi_term: "epoch"
+  avoid: "kỷ nguyên"
+  vi: "Số giây tính từ 00:00:00 UTC ngày 1970-01-01. Thuộc tính TTL của DynamoDB phải là số giây dạng này."
+  en: "The number of seconds since 00:00:00 UTC on 1970-01-01. A DynamoDB TTL attribute must be a number of seconds in this form."
+  doc: "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.NamingRulesDataTypes.html"
+- term: ISO 8601
+  engines: [dynamodb, postgres]
+  level: L1
+  keep_en: true
+  vi_term: "ISO 8601"
+  avoid: "chuẩn ISO chất lượng"
+  vi: "Chuẩn viết ngày giờ từ lớn tới nhỏ, như `2026-11-20T08:30:00Z`. DynamoDB lưu được dạng chuỗi này, hoặc dạng số epoch tốn ít chỗ hơn."
+  en: "The standard that writes dates from largest to smallest unit, like `2026-11-20T08:30:00Z`. DynamoDB can store this string form, or an epoch number that takes less space."
+  doc: "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.NamingRulesDataTypes.html"

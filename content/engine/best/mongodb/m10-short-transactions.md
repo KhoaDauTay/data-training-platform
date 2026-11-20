@@ -57,7 +57,7 @@ quiz:
 - Transaction tốn hơn thao tác đơn lẻ, giữ tài nguyên và dễ gây xung đột ghi.
 - Mặc định transaction phải xong trong dưới một phút, quá hạn thì bị hủy.
 - Cần transaction thường xuyên thường là dấu hiệu mô hình chưa khớp access pattern (xem thẻ embed).
-- Thẻ này chỉ cú pháp: mingo không có session hay transaction.
+- Thẻ này chỉ cú pháp: mingo không có phiên (session) hay transaction.
 
 # EN
 

@@ -50,23 +50,23 @@ quiz:
 
 ## Ý chính
 
-Tên bảng và cột viết chữ thường, `snake_case`, không cần nháy kép. Tên đẹp cho báo cáo thì đặt bằng alias: `revenue AS "Revenue"`.
+Tên bảng và cột viết chữ thường, `snake_case` (các từ nối bằng dấu gạch dưới), không cần nháy kép. Tên đẹp cho báo cáo thì đặt bằng alias: `revenue AS "Revenue"`.
 
 ## Vì sao
 
 - Postgres hạ chữ thường mọi tên không nháy.
 - Tạo bằng `"SalesDaily"` thì mọi truy vấn về sau phải nháy đúng hoa thường; quên là lỗi `42P01` (bảng) hoặc `42703` (cột).
-- Công cụ, ORM và đồng nghiệp đều phải nhớ quy tắc đó.
+- Công cụ, ORM (thư viện ánh xạ bảng sang đối tượng trong code) và đồng nghiệp đều phải nhớ quy tắc đó.
 
 # EN
 
 ## Key idea
 
-Name tables and columns in lower-case `snake_case` that never needs double quotes. For report-friendly names use an alias: `revenue AS "Revenue"`.
+Name tables and columns in lower-case `snake_case` (words joined by underscores) that never needs double quotes. For report-friendly names use an alias: `revenue AS "Revenue"`.
 
 ## Why
 
 - Postgres folds every unquoted name to lower case.
 - Create it as `"SalesDaily"` and every query after that must quote the exact case; forgetting gives error `42P01` (table) or `42703` (column).
-- Tools, ORMs and colleagues all have to remember that rule.
+- Tools, ORMs (libraries that map tables to objects in code) and colleagues all have to remember that rule.
 

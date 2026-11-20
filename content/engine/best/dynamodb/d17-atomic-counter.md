@@ -59,7 +59,7 @@ Tăng hoặc giảm số bằng một `UpdateItem` với `ADD` (hoặc `SET x = 
 
 - Đọc rồi ghi: hai client cùng đọc giá trị cũ, cùng ghi đè, mất một lần cập nhật.
 - `UpdateItem` áp mọi lần ghi theo thứ tự nhận, nên `ADD` không mất lượt nào.
-- Atomic counter không idempotent: retry có thể đếm hai lần.
+- Atomic counter không idempotent: thử lại (retry) có thể đếm hai lần.
 
 ## Ví dụ
 

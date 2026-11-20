@@ -71,7 +71,7 @@ Bản `CURRENT_DATE` cho một số phụ thuộc vào ngày bạn bấm chạy.
 
 ## Key idea
 
-A recurring report takes its as-of date as a literal or a parameter. Do not use `CURRENT_DATE` or `now()` to pick the period.
+A recurring report takes its as-of date (the day the figures are counted up to) as a literal or a parameter. Do not use `CURRENT_DATE` or `now()` to pick the period.
 
 ## Why
 

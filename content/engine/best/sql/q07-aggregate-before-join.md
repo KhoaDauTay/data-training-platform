@@ -57,7 +57,7 @@ quiz:
 
 ## Ý chính
 
-Không join một bảng cha với **hai** bảng con (cùng là 1-n) rồi mới `sum`. Gộp từng bảng con về đúng grain (mức chi tiết) của bảng cha trước, bằng subquery hoặc CTE, rồi mới join.
+Không join một bảng cha với **hai** bảng con (cùng là 1-n) rồi mới `sum`. Gộp từng bảng con về đúng grain (mức chi tiết) của bảng cha trước, bằng truy vấn con (subquery) hoặc CTE, rồi mới join.
 
 ## Vì sao
 

@@ -34,8 +34,8 @@ pair:
   expect: null
 quiz:
   - q:
-      vi: "Công cụ migration bọc mọi lệnh trong `BEGIN … COMMIT`. Bạn đặt `CREATE INDEX CONCURRENTLY` vào đó. Chuyện gì xảy ra?"
-      en: "Your migration tool wraps every statement in `BEGIN … COMMIT`. You put `CREATE INDEX CONCURRENTLY` inside. What happens?"
+      vi: "Công cụ migration (chạy script đổi schema theo từng bước) bọc mọi lệnh trong `BEGIN … COMMIT`. Bạn đặt `CREATE INDEX CONCURRENTLY` vào đó. Chuyện gì xảy ra?"
+      en: "Your migration tool (it runs scripts that change the schema step by step) wraps every statement in `BEGIN … COMMIT`. You put `CREATE INDEX CONCURRENTLY` inside. What happens?"
     options:
       - { vi: "Index được dựng bình thường", en: "The index is built as usual" }
       - { vi: "Báo lỗi `25001`: lệnh này không chạy được trong transaction block", en: "Error `25001`: this command cannot run inside a transaction block" }
