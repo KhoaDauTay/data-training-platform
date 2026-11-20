@@ -19,9 +19,26 @@ const serviceWorker = (): Plugin => {
   };
 };
 
+/**
+ * v22 (P2-1, L254): libpg-query's ESM entry starts loading its wasm on import, from `<chunk dir>/libpg-query.wasm`, a file
+ * the build never emits (404 HTML, "Aborted(CompileError…)" in the worker). src/viz/parser.ts hands it the hashed `?url`
+ * file through loadModule({ wasm }), which instantiates on demand, so the eager call is dropped. Vitest (Node) loads
+ * node_modules untransformed and keeps the library's own load; dev pre-bundles it (CJS inside), so the extra 404 stays
+ * there (dev only). Throws when an upgrade changes the line.
+ */
+const pgQueryNoEagerLoad = (): Plugin => ({
+  name: 'cq-libpg-query-lazy',
+  transform(code, id) {
+    if (!/libpg-query\/wasm\/index\.js$/.test(id.split('?')[0])) return;
+    const out = code.replace(/^instantiate\(\);$/m, '');
+    if (out === code) throw new Error('cq-libpg-query-lazy: top-level instantiate() not found; re-check libpg-query');
+    return out;
+  },
+});
+
 export default defineConfig({
   // V22-E (L201): content/**/*.yml and `.md?fm` frontmatter become JSON at build time (dev and Vitest too): no `yaml` in the browser.
-  plugins: [contentJson(), tailwindcss(), serviceWorker()],
+  plugins: [contentJson(), tailwindcss(), serviceWorker(), pgQueryNoEagerLoad()],
   // No `base` here: GitHub Pages passes `--base=/<repo>/` on the CLI; '/' keeps dev and Cloudflare Pages unchanged.
   define: {
     __BUILD__: JSON.stringify(sha ? sha.slice(0, 7) : 'dev'),
@@ -31,7 +48,7 @@ export default defineConfig({
   },
   // PGlite tự nạp file .wasm/.data qua import.meta.url; pre-bundle sẽ làm hỏng đường dẫn.
   optimizeDeps: { exclude: ['@electric-sql/pglite'] },
-  worker: { format: 'es' },
+  worker: { format: 'es', plugins: () => [pgQueryNoEagerLoad()] },
   // ui-ux-v6 §2.2: Vite 8 drops @license comments when it minifies; GSAP's licence forbids removing its notice (check-budget.mjs checks it).
   // ENG-VIZ (L236) was a second build entry until L248: src/engine/vizRegistry.ts now loads engineViz lazily.
   build: { rolldownOptions: { output: { comments: { legal: true } } } },

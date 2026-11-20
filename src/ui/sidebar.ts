@@ -58,9 +58,9 @@ function row(r: Row): HTMLElement {
     'aria-disabled': r.lock ? 'true' : false,
     onclick: r.lock ? (e: Event) => e.preventDefault() : click ? (e: Event) => { e.preventDefault(); click(); } : false,
   },
-    // v12 audit: in the rail the label and the trailing lock are hidden, so a locked row also gets a lock badge on its icon.
+    // v12 audit: in the rail the label and the trailing lock are hidden, so a locked row also gets a lock badge on its icon (rail only, `.side-badge`).
     h('span', { class: cx('relative grid size-6 shrink-0 place-items-center', r.lock && 'text-muted'), 'aria-hidden': 'true' }, r.lead,
-      r.lock ? h('span', { class: 'absolute -right-1.5 -bottom-1 grid size-3.5 place-items-center rounded-full bg-panel ring-1 ring-line' }, icon('lock', 'size-2.5')) : null),
+      r.lock ? h('span', { class: 'side-badge absolute -right-1.5 -bottom-1 size-3.5 place-items-center rounded-full bg-panel ring-1 ring-line' }, icon('lock', 'size-2.5')) : null),
     h('span', { class: 'side-label min-w-0 flex-1' },
       r.full ? h('span', { class: 'sr-only' }, r.full) : null,
       h('span', { class: 'block line-clamp-2', 'aria-hidden': r.full ? 'true' : false }, r.label), // v12.0 U7: wraps to two lines; the rail's tip shows the full name

@@ -305,7 +305,7 @@ function drawCounter(st: FinArtState, ambient: boolean, lit: boolean): Counter {
     s('g', { 'aria-hidden': 'true' },
       s('rect', { x: -420, y: -40, width: 1940, height: 380, fill: url('sky') }),
       s('path', { d: 'M70 40h0M200 24h0M330 60h0M460 30h0M640 20h0M760 54h0M880 28h0M990 50h0M1080 22h0M-110 36h0M-250 58h0M1210 42h0M1370 26h0', stroke: '#ffffff', 'stroke-width': 2.4, 'stroke-linecap': 'round', style: 'opacity:var(--es-night)' }),
-      s('circle', { cx: 940, cy: 64, r: 15, fill: '#fef3c7', style: 'opacity:var(--es-night)' }),
+      s('circle', { cx: 430, cy: 50, r: 15, fill: '#fef3c7', style: 'opacity:var(--es-night)' }), // v22 P3-5: above the shop, clear of the status pill (top right)
       s('path', { d: 'M-420 250Q-200 150 0 214Q190 128 420 206Q620 112 860 196Q1080 134 1300 204Q1420 170 1520 212V330H-420Z', style: 'fill:var(--es-far)' }),
       ...skyline('var(--es-mid)', 320, [64, 96, 78, 120, 86, 104, 70, 92], [58, 46, 70, 52, 64, 48, 56, 74]),
       s('rect', { x: -420, y: 318, width: 1940, height: 18, style: 'fill:var(--es-walk)' }),

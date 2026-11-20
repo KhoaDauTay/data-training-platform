@@ -212,18 +212,32 @@ async function startBrowser() {
       pending.get(m.id)(m);
       pending.delete(m.id);
     }
+    // v22 (P2-1, L254): workers (PGlite, parser) are attached too, and the Log domain is heard as well: a failed wasm
+    // fetch inside the worker reached neither the page's console nor Runtime.exceptionThrown.
+    const where = m.sessionId ? 'worker ' : '';
+    if (m.method === 'Target.attachedToTarget') {
+      const sid = m.params.sessionId;
+      for (const k of ['Runtime.enable', 'Log.enable', 'Runtime.runIfWaitingForDebugger']) send(k, {}, sid).catch(() => {});
+    }
     if (m.method === 'Runtime.exceptionThrown') {
       const d = m.params.exceptionDetails;
-      pageErrors.push({ at: Date.now() - T0, kind: 'exception', text: (d.exception?.description ?? d.text ?? '').slice(0, 500) });
+      pageErrors.push({ at: Date.now() - T0, kind: `${where}exception`, text: (d.exception?.description ?? d.text ?? '').slice(0, 500) });
     }
     if (m.method === 'Runtime.consoleAPICalled' && m.params.type === 'error') {
-      pageErrors.push({ at: Date.now() - T0, kind: 'console.error', text: m.params.args.map((a) => a.value ?? a.description).join(' ').slice(0, 500) });
+      pageErrors.push({ at: Date.now() - T0, kind: `${where}console.error`, text: m.params.args.map((a) => a.value ?? a.description).join(' ').slice(0, 500) });
+    }
+    // console.error is already counted through Runtime; Log adds network, wasm/abort and intervention errors.
+    if (m.method === 'Log.entryAdded' && m.params.entry.level === 'error' && m.params.entry.source !== 'console-api') {
+      const e = m.params.entry;
+      pageErrors.push({ at: Date.now() - T0, kind: `${where}log.${e.source}`, text: `${e.text} ${e.url ?? ''}`.trim().slice(0, 500) });
     }
   });
   await send('Page.enable');
   await send('Runtime.enable');
+  await send('Log.enable');
+  await send('Target.setAutoAttach', { autoAttach: true, waitForDebuggerOnStart: false, flatten: true });
 }
-const send = (method, params = {}) =>
+const send = (method, params = {}, sessionId) =>
   new Promise((resolve, reject) => {
     const i = ++cdpId;
     const timer = setTimeout(() => reject(new Error(`CDP ${method} timed out`)), 30000);
@@ -232,7 +246,7 @@ const send = (method, params = {}) =>
       if (m.error) reject(new Error(`${method}: ${m.error.message}`));
       else resolve(m.result);
     });
-    ws.send(JSON.stringify({ id: i, method, params }));
+    ws.send(JSON.stringify({ id: i, method, params, ...(sessionId && { sessionId }) }));
   });
 async function ev(expr) {
   const r = await send('Runtime.evaluate', { expression: expr, awaitPromise: true, returnByValue: true });

@@ -203,9 +203,10 @@ export function syncMenuCopies(): void {
 }
 
 let noticeSig: unknown[] = [];
-function renderNotice(): void {
+function renderNotice(domainChrome: boolean): void {
   const el = byId('notice');
-  const n = app.notice;
+  // v22 P3-6 (L254): "preparing <domain> data" only on that domain's pages; General pages do not wait for it.
+  const n = app.notice?.key === 'domain.loading' && !domainChrome ? undefined : app.notice;
   el.hidden = !n;
   if (!n) {
     noticeSig = [];
@@ -229,7 +230,7 @@ function renderNotice(): void {
     h('span', {}, t(n.key, n.params)),
     bar && h('progress', { class: 'h-1.5 w-40 accent-accent max-sm:order-last max-sm:w-full', 'aria-hidden': 'true', max: String(p!.total), value: String(p!.loaded) }),
     n.reload ? h('button', { type: 'button', onclick: () => (n.apply ? n.apply() : location.reload()) }, t('app.reload')) : null,
-    h('button', { type: 'button', class: 'ml-auto', 'aria-label': t('app.dismiss'), onclick: () => { app.notice = undefined; renderNotice(); } }, '×')));
+    h('button', { type: 'button', class: 'ml-auto', 'aria-label': t('app.dismiss'), onclick: () => { app.notice = undefined; renderNotice(domainChrome); } }, '×')));
 }
 
 let xpMark: { save: object; n: number } | undefined;
@@ -288,5 +289,5 @@ export function renderTopbar(): void {
     app.problem ? h('button', { type: 'button', class: TOP_BTN, onclick: () => actions.copyDiagnostics() }, t('diag.copy')) : null));
   renderNav();
   renderDomainMenu();
-  renderNotice();
+  renderNotice(domainChrome);
 }

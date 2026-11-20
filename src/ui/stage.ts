@@ -30,6 +30,8 @@ let queue: Promise<void> = Promise.resolve();
 let hideTimer = 0;
 /** The completion on screen, so relabelStage() can rebuild its sentence in the new language. */
 let shown: Ctx | undefined;
+/** v22 P3-4 (L254): the run that solved the task; a newer Run/Submit closes the folded line (it covered the chart's axis). */
+let solvedBy: unknown;
 /** Where focus came from when it entered the stage (the Skip button): hide() hands it back there. */
 let returnFocus: HTMLElement | null = null;
 
@@ -189,9 +191,9 @@ async function drawAndPlay(c: Ctx, owner: Ctx = c): Promise<void> {
 export function relabelStage(): void {
   const c = shown;
   if (!c || byId('stage').hidden) return;
-  // W2: the folded line belongs to the task just solved; opening another task (no hash change) closes it, so it never sits
-  // over the next task or takes its first Esc.
-  if (current.done && app.selectedId !== c.tk.id) return hide();
+  // W2: the folded line belongs to the task just solved; opening another task (no hash change) or running the next query
+  // (v22 P3-4) closes it, so it never sits over the next task, its result or chart, or takes its first Esc.
+  if (current.done && (app.selectedId !== c.tk.id || app.lastRun !== solvedBy)) return hide();
   fold(byId('stage').dataset.mini === 'true'); // the sentence (or its short form) in the new language
   if (c.lang === getLang()) return;
   c.lang = getLang();
@@ -283,6 +285,7 @@ export function playCompletion(tk: Ticket, before: Set<string>, after: Set<strin
     rankBefore: rankOf(app.tickets, before), rankAfter: rankOf(app.tickets, after),
   };
   const text = sentence(c);
+  solvedBy = app.lastRun;
   byId('announce').textContent = text; // read now, not after the animation (§6)
   cue(tk.beat === 'boss' ? 'promo' : 'good'); // X2 (L148): only when the player turned sound on
   if (!load) return;

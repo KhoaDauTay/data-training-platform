@@ -23,7 +23,8 @@ type TaskState = 'done' | 'current' | 'optional' | 'early' | 'locked';
 const STATE_KEY: Record<Exclude<TaskState, 'locked'>, Key> = {
   done: 'map.beat.done', current: 'map.beat.current', optional: 'map.beat.optional', early: 'map.beat.early',
 };
-const ARROW = 'grid size-10 shrink-0 place-items-center p-0 sm:size-8';
+// v22 P3-1 (L254): below 360 px the arrows and task buttons are 32 px, so ‹, up to 6 tasks and › stay on one row at 320.
+const ARROW = 'grid size-10 shrink-0 place-items-center p-0 sm:size-8 max-[360px]:size-8';
 
 /**
  * v10 A8 (L157): how far the chapter's progress line under the task buttons reaches: from the first button's centre to the
@@ -233,7 +234,7 @@ export function createMapStrip(host: HTMLElement): { update(view: StripView): vo
         return h('button', {
           type: 'button', 'data-nav': `t:${x.id}`, title: label, 'aria-label': label, disabled: state === 'locked',
           'aria-current': here ? 'page' : false,
-          class: cx('relative grid size-10 shrink-0 place-items-center p-0 text-body-sm font-semibold tabular-nums sm:size-8',
+          class: cx('relative grid size-10 shrink-0 place-items-center p-0 text-body-sm font-semibold tabular-nums sm:size-8 max-[360px]:size-8',
             state === 'done' && 'text-good', state === 'current' && 'ring-2 ring-accent', state === 'locked' && 'text-muted',
             here && 'border-b-4 border-b-accent bg-accent-soft'),
           onclick: () => go(x.id),
