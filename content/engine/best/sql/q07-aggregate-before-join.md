@@ -57,7 +57,7 @@ quiz:
 
 ## Ý chính
 
-Không join một bảng cha với **hai** bảng con (cùng là 1-n) rồi mới `sum`. Gộp từng bảng con về đúng grain (mức chi tiết) của bảng cha trước, bằng truy vấn con (subquery) hoặc CTE, rồi mới join.
+Không join một bảng cha với **hai** bảng con (cùng là quan hệ 1-n: một dòng cha, nhiều dòng con) rồi mới `sum`. Gộp từng bảng con về đúng grain (mức chi tiết) của bảng cha trước, bằng truy vấn con (subquery) hoặc CTE, rồi mới join.
 
 ## Vì sao
 
@@ -73,7 +73,7 @@ Trên `lab`, đơn từ 2026-10-01: bản join thẳng cho tổng đã trả 295
 
 ## Key idea
 
-Never join a parent table to **two** child tables (both 1-n) and then `sum`. Aggregate each child to the parent's grain (level of detail) first, in a subquery or CTE, and only then join.
+Never join a parent table to **two** child tables (both 1-n: one parent row, many child rows) and then `sum`. Aggregate each child to the parent's grain (level of detail) first, in a subquery or CTE, and only then join.
 
 ## Why
 

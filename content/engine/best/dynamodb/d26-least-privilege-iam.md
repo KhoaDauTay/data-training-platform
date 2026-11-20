@@ -31,8 +31,8 @@ pair:
   expect: null
 quiz:
   - q:
-      vi: "Ứng dụng di động cho người dùng đọc thẳng bảng `Orders` (partition key = id người dùng) qua Cognito. Điều gì giữ mỗi người chỉ đọc đơn của mình?"
-      en: "A mobile app lets users read table `Orders` (partition key = user id) directly through Cognito. What keeps each user to their own orders?"
+      vi: "Ứng dụng di động cho người dùng đọc thẳng bảng `Orders` (partition key = id người dùng) qua Cognito (dịch vụ đăng nhập người dùng của AWS). Điều gì giữ mỗi người chỉ đọc đơn của mình?"
+      en: "A mobile app lets users read table `Orders` (partition key = user id) directly through Cognito (the AWS user sign-in service). What keeps each user to their own orders?"
     options:
       - { vi: "Ứng dụng tự lọc kết quả", en: "The app filters the results itself" }
       - { vi: "Điều kiện IAM `dynamodb:LeadingKeys` bằng id của người dùng", en: "An IAM condition `dynamodb:LeadingKeys` equal to the user id" }

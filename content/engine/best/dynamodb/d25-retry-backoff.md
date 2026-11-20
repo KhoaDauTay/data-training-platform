@@ -48,7 +48,7 @@ quiz:
 
 ## Ý chính
 
-Lỗi throttle và lỗi 5xx được thử lại với thời gian chờ tăng theo cấp số nhân, có jitter và số lần tối đa. SDK của AWS làm sẵn việc này: đừng tắt nó. Lỗi 4xx khác (request sai, điều kiện sai) không thử lại.
+Lỗi throttle và lỗi 5xx (lỗi phía máy chủ) được thử lại với thời gian chờ tăng theo cấp số nhân, có jitter và số lần tối đa. SDK của AWS làm sẵn việc này: đừng tắt nó. Lỗi 4xx khác (request sai, điều kiện sai) không thử lại.
 
 ## Vì sao
 
@@ -64,7 +64,7 @@ Thẻ chỉ cú pháp: dynoxide không throttle, nên không có lỗi nào đ�
 
 ## Key idea
 
-Throttling and 5xx errors are retried with exponentially growing waits, jitter and a maximum count. The AWS SDKs do this already: do not turn it off. Other 4xx errors (bad request, false condition) are not retried.
+Throttling and 5xx errors (server-side errors) are retried with exponentially growing waits, jitter and a maximum count. The AWS SDKs do this already: do not turn it off. Other 4xx errors (bad request, false condition) are not retried.
 
 ## Why
 

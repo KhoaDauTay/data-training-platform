@@ -185,9 +185,11 @@ Best Practice **không nhắc domain nào** (như Engine, L82). Tên bảng tron
 | `diff` | Số dòng, 3 dòng đầu (bảng nhỏ, tiêu đề cột theo **tên thật**: đây không phải bài chấm, không có gì để lộ), giá trị đơn nếu 1×1 | "Khác kết quả: bản Không nên trả 0, bản Nên trả 312." Dùng `compareResults` có sẵn (`extraRows`/`missingRows`) |
 | `same` | Số dòng | "Cùng kết quả. Khác ở cách đọc và giữ code." |
 | `plan` | Nút quét chính của bảng đích (Seq / Index / Index Only / Bitmap) + **planner cost** tổng, từ `EXPLAIN (FORMAT JSON)` không ANALYZE (luật ch11) | "Cùng kết quả. Kế hoạch: Seq Scan cost 1 204 → Index Scan cost 8,4." |
-| `runs` | Số dòng, 3 dòng đầu của mỗi bản | "Cả hai chạy được. Khác ở …" (một câu `why` ngắn của mục). Mục I02/I03 so cost hoặc kích thước: `expect.compare: cost | size`; DynamoDB so capacity: `rcu` (hai request đọc) hoặc `wcu` (hai request ghi), catalogue §17.2 |
+| `runs` | Số dòng, 3 dòng đầu của mỗi bản | "Cả hai chạy được. Khác ở …" (một câu `why` ngắn của mục). Mục I02/I03 so cost hoặc kích thước: `expect.compare: cost | size` |
 | `error` | Bản Sai: SQLSTATE + câu dạy của `sqlErrors.ts`. Bản Đúng: kết quả | "Bản Không nên báo lỗi 22012 (chia cho 0)." |
 | `syntax` | Không chạy | Không có câu |
+
+Với `check: same` hoặc `runs` trên DynamoDB, `expect.compare: rcu` (cả hai bản là request đọc) hoặc `wcu` (cả hai bản là request ghi) so `ConsumedCapacity` của hai bản; bản Nên phải tốn ít hơn (catalogue §17.2).
 
 Không bao giờ hiện mili giây: số ms thay đổi theo máy, cost thì không (L-ch11).
 

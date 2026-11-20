@@ -55,7 +55,7 @@ quiz:
 
 ## Ý chính
 
-Báo cáo định kỳ nhận ngày chốt số (as-of) là literal hoặc tham số. Không dùng `CURRENT_DATE` hay `now()` trong logic chọn kỳ.
+Báo cáo định kỳ nhận ngày chốt số (as-of) là literal (giá trị viết thẳng trong câu) hoặc tham số. Không dùng `CURRENT_DATE` hay `now()` trong logic chọn kỳ.
 
 ## Vì sao
 
@@ -71,7 +71,7 @@ Bản `CURRENT_DATE` cho một số phụ thuộc vào ngày bạn bấm chạy.
 
 ## Key idea
 
-A recurring report takes its as-of date (the day the figures are counted up to) as a literal or a parameter. Do not use `CURRENT_DATE` or `now()` to pick the period.
+A recurring report takes its as-of date (the day the figures are counted up to) as a literal (a value written into the query) or a parameter. Do not use `CURRENT_DATE` or `now()` to pick the period.
 
 ## Why
 

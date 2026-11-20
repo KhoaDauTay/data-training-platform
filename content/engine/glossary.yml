@@ -1315,7 +1315,7 @@
   keep_en: true
   vi_term: "WiredTiger"
   avoid: "con hổ có dây"
-  vi: "Storage engine mặc định của MongoDB: concurrency theo tài liệu (xung đột thì retry), MVCC bằng snapshot, checkpoint khoảng 60 giây, journal, nén (snappy mặc định)."
+  vi: "Storage engine mặc định của MongoDB: concurrency theo tài liệu (xung đột thì thử lại), MVCC bằng snapshot, checkpoint khoảng 60 giây, journal, nén (snappy mặc định)."
   en: "MongoDB's default storage engine: document-level concurrency (retry on conflict), MVCC via snapshots, a checkpoint about every 60 seconds, a journal, compression (snappy by default)."
   doc: "https://www.mongodb.com/docs/manual/core/wiredtiger/"
 - term: storage engine
@@ -1753,7 +1753,7 @@
   keep_en: true
   vi_term: "throttle"
   avoid: "bóp ga, chặn vĩnh viễn"
-  vi: "AWS từ chối request vượt capacity (`ProvisionedThroughputExceededException`/`ThrottlingException`); SDK tự retry có backoff. dynoxide không mô phỏng: bài D."
+  vi: "AWS từ chối request vượt capacity (`ProvisionedThroughputExceededException`/`ThrottlingException`); SDK tự thử lại có backoff. dynoxide không mô phỏng: bài D."
   en: "AWS rejects requests above capacity (`ProvisionedThroughputExceededException`/`ThrottlingException`); SDKs retry with backoff. dynoxide does not simulate it: a D lesson."
   doc: "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/burst-adaptive-capacity.html"
 - term: adaptive capacity / burst capacity
@@ -1934,13 +1934,14 @@
 
 # ───────────────────────── Best Practice (vòng 8: chú thích lần đầu, catalogue §17.1) ─────────────────────────
 # Từ các thẻ content/engine/best/** dùng mà glossary chưa có. Năm mục SQL đầu (NULL, subquery, CTE, alias, tiebreaker)
-# lấy đúng cách viết VI của glossary-vi.md. Mỗi `vi`/`en` chỉ nói điều đã thấy trên trang `doc` (tải ngày 2026-11-20).
+# lấy đúng cách viết VI của glossary-vi.md. Mỗi ý trong `vi`/`en` đã đối chiếu trên trang `doc` (tải ngày 2026-11-20), trừ vài ý
+# lấy từ trang docs chính thức bên cạnh hoặc là sự thật của app; danh sách ở catalogue §17.1.
 - term: "NULL"
   engines: [postgres, mongodb]
   level: L1
   keep_en: true
   vi_term: "NULL"
-  avoid: "số 0, chuỗi rỗng"
+  avoid: "giá trị bằng 0, chuỗi rỗng"
   vi: "Giá trị trống: chưa biết hoặc không có. NULL không bằng NULL, nên `= NULL` không bao giờ đúng; kiểm bằng `IS NULL`."
   en: "A missing value: unknown or not applicable. NULL is not equal to NULL, so `= NULL` is never true; test it with `IS NULL`."
   doc: "https://www.postgresql.org/docs/18/functions-comparison.html"
@@ -1994,7 +1995,7 @@
   level: L2
   keep_en: true
   vi_term: "sequence"
-  avoid: "chuỗi, dãy"
+  avoid: "chuỗi tuần tự"
   vi: "Đối tượng sinh dãy số, đọc bằng `nextval`; cột identity và `serial` lấy số từ một sequence."
   en: "An object that generates a series of numbers, read with `nextval`; identity and `serial` columns take their numbers from a sequence."
   doc: "https://www.postgresql.org/docs/18/sql-createsequence.html"
@@ -2031,8 +2032,8 @@
   keep_en: true
   vi_term: "prepared statement"
   avoid: "câu lệnh chuẩn bị"
-  vi: "Câu SQL được phân tích trước với tham số theo vị trí `$1`, `$2`; giá trị truyền vào lúc `EXECUTE`, tách khỏi chữ của câu."
-  en: "A SQL statement parsed ahead of time with positional parameters `$1`, `$2`; values are passed at `EXECUTE`, apart from the statement text."
+  vi: "Câu SQL được phân tích trước với tham số theo vị trí (placeholder) `$1`, `$2`; giá trị truyền vào lúc `EXECUTE`, tách khỏi chữ của câu."
+  en: "A SQL statement parsed ahead of time with positional parameters (placeholders) `$1`, `$2`; values are passed at `EXECUTE`, apart from the statement text."
   doc: "https://www.postgresql.org/docs/18/sql-prepare.html"
 - term: time zone (UTC)
   engines: [postgres, mongodb, dynamodb]
@@ -2084,7 +2085,7 @@
   level: L4
   keep_en: true
   vi_term: "catalog"
-  avoid: "danh mục sản phẩm"
+  avoid: "catalô"
   vi: "Các bảng hệ thống (`pg_class`, `pg_index`…) nơi Postgres giữ metadata về bảng, cột, index. Chúng là bảng thường, đọc bằng `SELECT`."
   en: "The system tables (`pg_class`, `pg_index`…) where Postgres keeps metadata about tables, columns, indexes. They are regular tables, read with `SELECT`."
   doc: "https://www.postgresql.org/docs/18/catalogs.html"
@@ -2102,7 +2103,7 @@
   level: L4
   keep_en: true
   vi_term: "NOT VALID"
-  avoid: "không hợp lệ"
+  avoid: "ràng buộc vô hiệu"
   vi: "Thêm ràng buộc `CHECK` hay khóa ngoại mà không quét dòng cũ, commit ngay. Sau đó `VALIDATE CONSTRAINT` kiểm dòng cũ mà không chặn ghi đồng thời."
   en: "Adds a `CHECK` or foreign key constraint without scanning existing rows, so it commits at once. `VALIDATE CONSTRAINT` then checks those rows without locking out concurrent updates."
   doc: "https://www.postgresql.org/docs/18/sql-altertable.html"
@@ -2148,7 +2149,7 @@
   keep_en: false
   vi_term: "phiên"
   avoid: "buổi làm việc"
-  vi: "Một kết nối đang làm việc với database. Trong MongoDB, client session gom các thao tác của một ứng dụng để có causal consistency và retryable write."
+  vi: "Một kết nối đang làm việc với database. Trong MongoDB, phiên phía client (client session) gom các thao tác của một ứng dụng để có causal consistency và retryable write."
   en: "A connection working with the database. In MongoDB, a client session groups an application's operations to give causal consistency and retryable writes."
   doc: "https://www.mongodb.com/docs/manual/reference/server-sessions/"
 - term: driver
@@ -2168,6 +2169,15 @@
   avoid: "bộ làm việc"
   vi: "Phần dữ liệu và index MongoDB dùng thường xuyên nhất. Vừa RAM thì truy vấn đọc từ bộ nhớ; không vừa thì phải đọc đĩa và chậm đi."
   en: "The data and indexes MongoDB uses most often. When it fits in RAM, queries read from memory; when it does not, MongoDB reads from disk and slows down."
+  doc: "https://www.mongodb.com/docs/manual/data-modeling/design-antipatterns/bloated-documents/"
+- term: bloated documents
+  engines: [mongodb]
+  level: L2
+  keep_en: true
+  vi_term: "bloated documents"
+  avoid: "tài liệu béo phì"
+  vi: "Anti-pattern của MongoDB: tài liệu chứa các trường liên quan nhưng không được đọc cùng nhau, tốn RAM và băng thông và làm working set khó vừa RAM. Cách sửa: tài liệu nhỏ hơn, tách trường ít đọc ra và tham chiếu tới."
+  en: "A MongoDB anti-pattern: documents holding related fields that are not read together, costing RAM and bandwidth and making the working set hard to fit in RAM. The fix: smaller documents, with rarely read fields split out and referenced."
   doc: "https://www.mongodb.com/docs/manual/data-modeling/design-antipatterns/bloated-documents/"
 - term: bucket pattern
   engines: [mongodb]
@@ -2273,7 +2283,7 @@
   level: L3
   keep_en: true
   vi_term: "hint"
-  avoid: "gợi ý"
+  avoid: "lời gợi ý index"
   vi: "`hint()` bắt truy vấn dùng một index chỉ định, bỏ qua lựa chọn index mặc định của MongoDB."
   en: "`hint()` forces a query to use a given index, overriding MongoDB's default index selection."
   doc: "https://www.mongodb.com/docs/manual/reference/method/cursor.hint/"
@@ -2391,8 +2401,8 @@
   keep_en: false
   vi_term: "thử lại"
   avoid: "làm lại từ đầu dự án"
-  vi: "Gửi lại một request hay chạy lại một transaction đã lỗi. Chỉ an toàn khi thao tác idempotent hoặc có điều kiện; lỗi do request sai thì thử lại không giúp gì."
-  en: "Sending a failed request again or rerunning a failed transaction. Safe only when the operation is idempotent or conditional; retrying a malformed request does not help."
+  vi: "Gửi lại một request đã lỗi. Bảng lỗi trong docs DynamoDB ghi lỗi nào thử lại được; lỗi không thử lại được thì phải sửa phía client trước. Một lệnh ghi không idempotent có thể bị áp hai lần khi thử lại."
+  en: "Sending a failed request again. The DynamoDB error table says which errors are OK to retry; the others need a fix on the client side first. A write that is not idempotent may be applied twice when retried."
   doc: "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Programming.Errors.html"
 - term: AWS SDK
   engines: [dynamodb]

@@ -6241,7 +6241,7 @@ Track DynamoDB sau vòng này: 19 thẻ chạy bằng dynoxide (6 cũ + 13 mới
 
 ## 17. Vòng 8: chú thích lần đầu, `wcu`, kiểm tra đồng bộ 130 thẻ
 
-Theo L215.6. Vòng này chỉ sửa tài liệu và nội dung: thêm 60 mục vào `content/engine/glossary.yml`, sửa 13 thẻ ở `content/engine/best/`, thêm một dòng vào `product-design-best-practice.md` §3.3. Không đụng `src/`, test, build hay `decision-log.md`.
+Theo L215.6. Vòng này chỉ sửa tài liệu và nội dung: thêm 61 mục vào `content/engine/glossary.yml` (và sửa VI của 2 mục cũ), sửa 17 thẻ ở `content/engine/best/`, thêm một câu dưới bảng §3.3 của `product-design-best-practice.md`. Hai commit: lần đầu, rồi một commit sửa sau khi soát lại (closure, `avoid`, nguồn, §17.3, §17.5). Không đụng `src/`, test, build hay `decision-log.md`.
 
 ### 17.1 Chú thích lần đầu (style §2.1, §7)
 
@@ -6249,33 +6249,63 @@ Theo L215.6. Vòng này chỉ sửa tài liệu và nội dung: thêm 60 mục v
 
 **Máy kiểm:** script tạm `bp8/gloss.mjs` + `bp8/terms.mjs`, không commit. Ba luật của script:
 
-- **Ứng viên.** 184 thuật ngữ, lấy từ các chữ ASCII nằm trong văn VI (ngoài code), thêm tên EN của cùng khái niệm.
-  - Không kiểm: tên sản phẩm (PostgreSQL, MongoDB, DynamoDB, PGlite, mingo, dynoxide, AWS, BoonData); từ khóa SQL/mongosh viết như cú pháp (`SELECT`, `NULL` trong code, `$match`…); đơn vị; từ IT thường ngày (database, file, email, dashboard, server, client, script, API, CPU, RAM, log, test, code, docs, online, ID, metadata, backup, cluster, BI, notebook, read-only).
+- **Ứng viên.** 204 thuật ngữ, lấy từ các chữ ASCII nằm trong văn VI (ngoài code), thêm tên EN của cùng khái niệm.
+  - **Closure:** script tách mọi chữ ASCII trong văn VI của 130 thẻ. Chữ nào không khớp một thuật ngữ thì phải nằm trong danh sách miễn `EXEMPT`, chia theo nhóm. Còn sót thì script báo lỗi. Kết quả: 0 chữ sót. Vòng soát lại tìm thêm `placeholder`, `literal`, `batch`, `Cognito`, `5xx`, `1-n`, `subset pattern`, `bloated documents`, `projection`, `rollback`, `optimizer`…
+  - `EXEMPT` gồm:
+    - chữ Việt viết không dấu ("sao", "khi"…);
+    - tên sản phẩm (PostgreSQL, MongoDB, DynamoDB, PGlite, mingo, dynoxide, AWS, BoonData, BSON, JavaScript);
+    - cú pháp viết như nhập trên máy: từ khóa và kiểu SQL, hàm, toán tử mongosh, tên API và tham số DynamoDB, tên cột;
+    - đơn vị;
+    - giá trị dữ liệu mẫu (`PAID`, `SKU`…);
+    - từ IT thường ngày (database, script, dashboard, server, client, API, CPU, RAM, job, deployment, dump, cluster, backup, metadata, notebook…);
+    - chữ trong ba câu trích ngắn ở §17.4.
   - **Giới hạn:** thuật ngữ chỉ viết bằng tiếng Việt mà không có chữ Anh đi kèm thì script không thấy (trừ vài chữ đã thêm tay: "múi giờ", "khóa ngoại", "quyền tối thiểu", "SQL động"…). Reviewer vẫn đọc phần này bằng mắt.
 - **Có trong glossary.** Một phần của `term` hoặc `vi_term` (tách ở ` / `, `(`, `)`, `,`) trùng nguyên thuật ngữ, hoặc `term` trùng nguyên. Không chấp nhận khớp chuỗi con.
   - Ánh xạ tay (`g:`) chỉ được tính khi phần giải thích của mục đó có nêu thuật ngữ. Ví dụ: `Read Committed` → `isolation level`, `MREC` → `global tables`.
   - Thuật ngữ chỉ có trong `glossary-vi.md` (NULL, subquery, CTE, alias, tie-breaker) **không** được tính. Năm mục này đã được chép sang glossary Engine, giữ đúng cách viết VI.
 - **Đã giải thích.** Lần nhắc đầu (VI và EN kiểm riêng) phải nằm trong ngoặc sau một từ, hoặc có ngoặc đi ngay sau, cho phép một từ chính chen giữa ("migration tool (…)").
   - Tiêu đề, `objectives` và `avoid` là dòng tóm tắt hiện trên thẻ, như tiêu đề mục. Vì vậy "lần đầu" tính từ thân bài, rồi tới quiz và `lint.tip`. Thuật ngữ chỉ có ở dòng tóm tắt thì phải giải thích ngay ở đó.
-  - Còn lại phải có trong danh sách soát tay `ALLOW`, mỗi dòng ghi lý do. Có 4 dòng:
+  - Còn lại phải có trong danh sách soát tay `ALLOW`, mỗi dòng ghi lý do. Có 6 dòng:
     - D29 `IteratorAge`: thân bài giải thích ngay sau code span.
     - S07 `NULLS NOT DISTINCT`: cú pháp trong code span; `## Ý chính` giải thích.
     - S08 `snake_case`: như D29.
     - P03 "idle in transaction": tên trạng thái trong ngoặc kép; glossary vẫn có mục.
+    - M02 EN "a newest subset (the subset pattern)": tên pattern chú thích cho cụm đứng trước.
+    - Q07 "1-n": giải thích sau dấu hai chấm, trong cùng ngoặc.
 
 **Kết quả:** lần chạy đầu (bản nháp của script, chỉ đếm VI) có 142 lần nhắc đầu chưa đạt. Sau vòng này, với luật chặt ở trên và đếm cả VI lẫn EN: **0**.
 
-**60 mục glossary mới.** Đủ 9 trường. `doc` là trang docs chính thức đã tải về (200, đúng URL cuối sau chuyển hướng). Mỗi con số hay mặc định trong `vi`/`en` đều đã tìm thấy trên trang đó; ý nào không có trên trang thì bỏ.
+**61 mục glossary mới.** Đủ 9 trường. `doc` là trang docs chính thức đã tải về (200, đúng URL cuối sau chuyển hướng). Mỗi con số, mặc định và ý có tên trong `vi`/`en` đã grep trên trang tải về; ý nào không tìm thấy thì bỏ hoặc viết chung.
+
+**Ngoại lệ về nguồn** (ý đúng nhưng nằm ở trang khác trang `doc`, hoặc là sự thật của app):
+
+- identity column: câu về `serial` ở `datatype-numeric.html`.
+- idle in transaction: tên trạng thái ở `monitoring-stats.html`; phần giữ lock và `idle_in_transaction_session_timeout` ở trang `doc` (`runtime-config-client.html`).
+- sequence: câu "`serial` lấy số từ sequence" dựa vào `datatype-numeric.html`.
+- Sự thật của app, không phải của docs:
+  - request: "lab nhận mỗi lần đúng một request";
+  - emulator: "lab dùng dynoxide";
+  - time zone: ví dụ `+07`.
+- retry: viết lại sau lần soát. Bản đầu có ý "chỉ an toàn khi idempotent hoặc có điều kiện", chưa grep. Bản mới chỉ nói điều trang lỗi DynamoDB ghi: cột "OK to retry?", lỗi không thử lại được thì phải sửa phía client, ghi không idempotent có thể bị áp hai lần.
 
 - **SQL / PostgreSQL (23):** NULL, subquery, CTE, alias, tiebreaker, view, sequence, identity column (serial), superuser, owner, prepared statement, time zone (UTC), timestamptz, numeric, float, DDL, system catalog, idle in transaction, NOT VALID / VALIDATE CONSTRAINT, lock_timeout, least privilege, dynamic SQL, unique index.
-- **MongoDB (20):** session, driver, working set, bucket pattern, computed pattern, top-k sort ($sort + $limit), hashed sharding, profiler, capped collection, rolling index build, replication lag, access control, TLS, collation, hint, resume token, WiredTiger cache / filesystem cache, TransientTransactionError, callback API, reshard.
+- **MongoDB (21):** session, driver, working set, bloated documents, bucket pattern, computed pattern, top-k sort ($sort + $limit), hashed sharding, profiler, capped collection, rolling index build, replication lag, access control, TLS, collation, hint, resume token, WiredTiger cache / filesystem cache, TransientTransactionError, callback API, reshard.
 - **DynamoDB (17):** request, throughput, auto scaling, optimistic locking, deletion protection, CloudWatch (metric, dimension, alarm), exponential backoff (jitter), retry, AWS SDK, IAM (policy, action, ARN, credential), Contributor Insights, Lambda (trigger), last writer wins, Amazon S3, emulator, epoch time, ISO 8601.
 
 Ghi chú về các mục mới:
 
-- **`keep_en: false`:** subquery → "truy vấn con", time zone → "múi giờ", session → "phiên", retry → "thử lại", least privilege → "quyền tối thiểu", dynamic SQL → "SQL động". Các chữ này lấy theo cách các thẻ Postgres và `glossary-vi.md` đang viết.
+- **`keep_en: false`:** subquery → "truy vấn con", time zone → "múi giờ", session → "phiên", retry → "thử lại", least privilege → "quyền tối thiểu", dynamic SQL → "SQL động".
+  - Các chữ này lấy theo cách các thẻ Postgres, bài Postgres ("phiên" ở `0ede43d`) và `glossary-vi.md` đang viết.
+  - Hai mục cũ của glossary viết VI "retry" (WiredTiger, throttling), đã đổi thành "thử lại".
 - **Bốn va chạm chữ:** "optimistic locking" giữ tiếng Anh, `avoid: "khóa lạc quan"`. Không mục nào dùng "khóa" cho lock hay "giao dịch" cho transaction.
-- **Chọn `avoid`:** không trùng cách các thẻ đang viết đúng nghĩa. Lần đầu chọn "số thực", "số thập phân chính xác", "buổi" thì bị verifier báo ở S03 và A02 (S03 dùng hai chữ đầu đúng nghĩa). Đã đổi thành "kiểu số học", "số nổi", "buổi làm việc".
+- **Chọn `avoid`:** không trùng cách các thẻ và bài Engine đang viết đúng nghĩa. Mỗi mảnh của 61 `avoid` mới (tách ở `,` và `;`) đã grep trên văn VI của mọi file `content/engine/**` (script `bp8/avoidhits.mjs`); nay 0 chỗ trùng. Đã đổi:
+  - "số thực" → "kiểu số học" (numeric) và "số thập phân chính xác" → "số nổi" (float): S03 dùng hai chữ cũ đúng nghĩa;
+  - "buổi" → "buổi làm việc" (session): A02;
+  - "số 0" → "giá trị bằng 0" (NULL);
+  - "chuỗi, dãy" → "chuỗi tuần tự" (sequence): "chuỗi" là string ở nhiều thẻ;
+  - "danh mục sản phẩm" → "catalô" (system catalog): bài MongoDB dùng đúng nghĩa;
+  - "không hợp lệ" → "ràng buộc vô hiệu" (NOT VALID): M06;
+  - "gợi ý" → "lời gợi ý index" (hint): D09.
 
 **Giải thích ngay trong thẻ** (không có trang docs chính thức hợp lệ, hoặc chữ của riêng thẻ):
 
@@ -6283,6 +6313,10 @@ Ghi chú về các mục mới:
 - tenant: S10.
 - migration: P05, P13. M06 EN đổi "during a migration" thành "while documents are being converted", cho khớp bản VI.
 - as-of date: A05 EN.
+- literal: A05.
+- Cognito: D26 (quiz).
+- 5xx: D25.
+- 1-n: Q07.
 - RPO/RTO: M25 đã giải thích từ trước.
 
 **Đổi chữ VI theo `vi_term` mới:**
@@ -6290,6 +6324,7 @@ Ghi chú về các mục mới:
 - Q02, Q07: "truy vấn con (subquery)". Tiêu đề Q02 thành "(truy vấn con)".
 - M10, M34: "phiên (session)". Tiêu đề M34 thành "phiên causally consistent".
 - D10, D17: "thử lại (retry)".
+- Mục prepared statement thêm chữ "placeholder" (X01 dùng chữ này).
 
 Code span VI/EN của các thẻ này không đổi.
 
@@ -6302,7 +6337,7 @@ Code span VI/EN của các thẻ này không đổi.
   - cả hai so `ConsumedCapacity.CapacityUnits`, bản Nên phải nhỏ hơn.
 - **Sáu thẻ `rcu` còn lại** (D01, D05, D06, D07, D16, D20) đều là request đọc và đạt.
 - **`src/` trên main** chưa có chỗ nào đọc `expect.compare`, nên đổi tên không vỡ gì.
-- **Sửa thiết kế:** `product-design-best-practice.md` §3.3 (dòng `runs`) nay ghi `expect.compare: cost | size`, và với DynamoDB `rcu | wcu`.
+- **Sửa thiết kế:** `product-design-best-practice.md` §3.3 thêm một câu dưới bảng: với `check: same` hoặc `runs` trên DynamoDB, `expect.compare: rcu | wcu` (D01, D06, D07, D08, D20 là `same`; D05, D16 là `runs`). Commit đầu đã đặt câu này nhầm vào dòng `runs`.
 
 ### 17.3 Đề xuất: kiểu kiểm "bản Nên phải báo lỗi" (cho D21)
 
@@ -6327,9 +6362,9 @@ pair:
 
 **Pane:**
 
-- Không nên: kết quả + probe ("`ORDER#100` thành `PAID`, bản sao vẫn `PENDING`").
+- Không nên: kết quả + probe ("`ORDER#100` thành `PAID` một mình").
 - Nên: mã lỗi + câu dạy + probe ("không ghi gì").
-- Câu kết luận: "Bản Nên báo lỗi TransactionCanceledException và không ghi gì; bản Không nên ghi một nửa."
+- Câu kết luận: "Bản Nên báo lỗi TransactionCanceledException và không ghi gì; bản Không nên đổi đơn mà không kiểm bản sao."
 
 **Số đo đã có** (§16.3, dynoxide 1.5.0; vòng này không chạy lại):
 
@@ -6338,7 +6373,7 @@ pair:
 
 Khi BP-T có kiểu này, D21 đổi `runtime: dynoxide`, `check: error`, `expect` như trên, và bỏ câu "Thẻ chỉ cú pháp" ở `## Ví dụ`.
 
-**Thứ tự request:** `setup` của D21 phải đặt điều kiện cho item thứ hai sai (bản sao đã `PAID`). Cách chạy giống ghi chú ở `## Ví dụ` hiện tại.
+**`setup`:** phải làm điều kiện `status = 'PENDING'` của item thứ hai (bản sao `CUST#7`) sai, như lần chạy ghi ở `## Ví dụ` (lý do `[None, ConditionalCheckFailed]`). `## Ví dụ` không ghi trạng thái của bản sao; khi viết `setup` thì chọn một giá trị khác `PENDING` và ghi rõ.
 
 ### 17.4 Kiểm tra đồng bộ 130 thẻ
 
@@ -6361,15 +6396,22 @@ Hai script tạm:
 - A15 "likely to give unhelpful results for last_value": `functions-window.html`;
 - M15 "any combination of elements": `query-array-of-documents`.
 
-**Glossary:** 269 mục, đủ 9 trường đúng thứ tự, không trùng `term`, EN không dấu, `doc` thuộc ba host.
+**Glossary:** 270 mục, đủ 9 trường đúng thứ tự, không trùng `term`, EN không dấu, `doc` thuộc ba host.
 
 ### 17.5 Luật lặp giữa các thẻ: ghi chú gộp (không xóa thẻ)
+
+**Phạm vi:** đọc tiêu đề EN và câu đầu `## Key idea` của cả 130 thẻ (`bp8/titles.txt`), rồi đọc kỹ `## Key idea` của các cặp nghi ngờ.
 
 **Cùng luật, khác engine** (giữ cả hai, mỗi thẻ dạy cú pháp của engine mình). Khi BP-T làm chip "Xem thêm", nên nối:
 
 - **A18 ↔ M21** (không lấy trung bình của trung bình). M21 có thể dẫn A18 cho phần "giữ tổng và số đếm".
 - **I09 ↔ M12** (bỏ index thừa: trùng tiền tố, không dùng).
 - **X02 ↔ M27 ↔ D26** (quyền tối thiểu theo role / IAM).
+- **I02 ↔ M07** (cột bằng trước, khoảng sau / ESR).
+- **P05 ↔ M24** (dựng index trên bảng đang chạy).
+- **D22 ↔ M25** (khôi phục: PITR / sao lưu và thử khôi phục).
+- **D25 ↔ M37** (thử lại: backoff / chạy lại cả transaction).
+- **M08 ↔ Q09** (chỉ lấy cột / trường cần). I04 ↔ M08 chỉ gần nhau (covering index với projection), không phải cùng luật.
 
 **Lặp một phần trong cùng engine:**
 
@@ -6380,6 +6422,12 @@ Hai script tạm:
 - **X06 ⊂ X02.** X06 (role chỉ đọc cho người phân tích) là một trường hợp của X02.
   - X06 nhắc lại "không dùng tài khoản ứng dụng". Đề xuất giữ X06, vì phần riêng là `pg_read_all_data` và `default_transaction_read_only`.
   - Bỏ câu lặp khi sửa X06 lần tới.
+- **S01 ⊂ A02.** Câu đầu `## Key idea` của A02 nhắc lại luật S01 ("lưu thời điểm bằng `timestamptz`"). Đề xuất A02 mở bằng luật của chính nó (đổi về múi giờ nghiệp vụ rồi mới lấy ngày) và nối S01.
+- **Q22 ⊃ S08.** Q22 gồm cả "tên `snake_case` chữ thường" của S08. Đề xuất Q22 nói phần đó một vế và nối S08.
+- **D06 và D01/D05.** Cả ba dùng cùng số đo `Scan` → `Query` (1,5 → 0,5 RCU). Luật gốc "Query, không Scan" là D06. D01 (liệt kê access pattern) và D05 (item collection) giữ luật riêng; `## Ví dụ` của hai thẻ nên nói số đo minh họa luật D06.
+- **D03 ↔ D32 ↔ D27** (khóa nóng). D32 khuyên rải khóa bằng hậu tố, tức D03; D27 tìm khóa nóng. Ba việc khác nhau, nối qua chip.
+- **X01 ↔ X09.** Cùng ý "giá trị qua tham số"; X09 riêng phần tên (`%I`). Không gộp.
+- **A11 ↔ A12.** A12 lấy dòng mồ côi làm một ví dụ data test. Không gộp.
 - **Q02 / A11** cùng dùng `NOT EXISTS`, nhưng khác việc: Q02 bẫy NULL của `NOT IN`, A11 đếm dòng mồ côi. Không gộp.
 - **Không phải lặp:**
   - D13 / D31: đọc mạnh / DAX không giúp đọc mạnh;
@@ -6391,4 +6439,9 @@ Hai script tạm:
 - **Verifier tách cột `avoid` theo `;`.** Glossary dùng dấu phẩy, nên chỉ mục `avoid` một giá trị mới được máy bắt. Đề xuất BP-T tách theo `,` và `;`.
   - Trước khi bật, cần soát các `avoid` cũ có dấu phẩy nằm trong một cụm, ví dụ "mili giây" trong `cost`: "chi phí tiền, mili giây" là hai cụm.
 - **Luật "lần đầu" của style §2.1** (`vi_term (term)` khi `keep_en: false`) chưa có máy kiểm cho các mục đã có trong glossary. `gloss.mjs` chỉ kiểm "có trong glossary hoặc được giải thích". Nên làm thành luật test khi có parser Engine.
+- **Bài Engine dùng chữ khác `vi_term` mới** (không sửa vòng này; đếm ở `0ede43d`, `content/engine/{postgres,mongodb,dynamodb}`):
+  - **session:** bài MongoDB viết VI "session" (ví dụ "session nhất quán nhân quả" ở bài causal consistency L4); bài Postgres viết "phiên". `vi_term` chọn "phiên", nên bài MongoDB cần "phiên (session)" lần đầu.
+  - **retry:** vài câu VI ghi "retry" (ví dụ "SDK tự retry có backoff"); bài viết "thử lại" nhiều hơn. Trong glossary đã sửa 2 chỗ như vậy.
+  - **subquery:** mục tiêu bài DynamoDB L1-03 viết "subquery phía server"; nên là "truy vấn con (subquery)".
+  - Trên main (chỉ có `content/engine/mongodb/path` và `interview-bank.yml`), "subquery" còn ở văn VI: `lessons-p7-12.yml` dòng 8 ("subquery tương quan") và `interview-bank.yml` dòng 87 ("Khi subquery có thể chứa NULL"). Nên đổi thành "truy vấn con" khi sửa các file đó.
 - **Exponential backoff:** glossary không ghi số mili giây ví dụ của trang AWS (50, 100, 200), vì style §1.1 không dùng mili giây trong văn dạy.
