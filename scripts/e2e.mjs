@@ -997,7 +997,7 @@ function capstonePivot(lab) {
 /** v23 PG-C lessons (L268): VACUUM size, count(*) predict, Buffers line, unused indexes, REINDEX. */
 const NEW_V23 = ['e-pg-l3-16', 'e-pg-l3-17', 'e-pg-l3-18', 'e-pg-l5-16', 'e-pg-l5-17'];
 /** Same rule as src/engine/labs.ts gradable(). */
-const gradableStep = (l, st) => l.runtime !== 'docs' && (l.engine === 'postgres' ? st.check !== 'doc' && !(st.check === 'plan' && !l.lab?.setup) : st.check === 'doc');
+const gradableStep = (l, st) => l.runtime !== 'docs' && (l.engine === 'postgres' ? st.check !== 'doc' && !(st.check === 'plan' && !l.lab?.setup) : st.check === 'doc' || (l.engine === 'dynamodb' && st.check === 'catalog')); // L299
 SECTIONS.engine = async () => {
   await shared();
   const counts = { lessons: 0, passed: 0, steps: 0, predicts: 0, capstones: 0, capPlans: 0, failedLessons: [] };
@@ -1041,6 +1041,8 @@ SECTIONS.engine = async () => {
         counts.steps++;
         const at = (what) => `document.querySelector('[data-ek="${id}-s${i}-${what}"]')`;
         await ev(`(t => { t.value = ${S(String(st.solution).trim())}; t.dispatchEvent(new Event('input', { bubbles: true })); })(${at('code')})`);
+        // L299: one main Submit per lab, and it is this step's (the first gradable step not passed)
+        if (await ev(`[...document.querySelectorAll('#engine-page [data-ek$="-submit"].bg-accent')].map((b) => b.dataset.ek).join()`) !== `${id}-s${i}-submit`) fail(`step ${i + 1}: the main Submit is not this step's alone`);
         await ev(`${at('submit')}.click()`);
         const status = `(${at('code')})?.closest('[data-step]').querySelector('[role=status]')`;
         await waitFor(`step ${i + 1} graded`, `!!${status}?.textContent && !${at('submit')}.disabled`, 180000);
@@ -1050,8 +1052,7 @@ SECTIONS.engine = async () => {
           const bar = `document.querySelectorAll('#engine-page [data-cap-bar] li')`;
           await waitFor(`bar step ${i + 1} passed`, `!!${bar}[${i}]?.querySelector('.bg-good')`, 5000);
           // current = the first gradable step not passed (src/ui/engineCapstone.ts currentStep); passed = the gradable steps up to i.
-          // After the last gradable step the lesson is done and every gradable step counts as passed: none is current (e.g. a
-          // DynamoDB capstone whose `catalog` step cannot be graded in the browser).
+          // After the last gradable step the lesson is done and every gradable step counts as passed: none is current.
           const last = !l.lab.steps.some((x, j) => j > i && gradableStep(l, x));
           const next = last ? -1 : l.lab.steps.findIndex((x, j) => j > i && gradableStep(l, x));
           if (next >= 0 && !(await ev(`${bar}[${next}]?.getAttribute('aria-current') === 'step'`))) fail(`bar: step ${next + 1} is not current after step ${i + 1}`);
