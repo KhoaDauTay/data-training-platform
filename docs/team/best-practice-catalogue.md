@@ -17,8 +17,8 @@ Mục mới nằm ở §13.2, không chen vào §1–8. Mã cũ giữ nguyên.
 
 **Vòng 5** (agent Research, 2026-11-20): theo L220, không thêm mục hay thẻ. Thêm §14:
 
-- soát chất lượng cả 192 mục: tải lại mọi nguồn, sửa 4 URL chuyển hướng, rút 4 câu trích quá 15 chữ, thêm trang nguồn cho 11 mục, chạy lại cả 145 mục chạy được (dữ liệu DynamoDB dạng JSON thường), không bỏ mục nào;
-- ghi phiên bản: PostgreSQL 19 phát hành 2026-11-19, 14 mục có dòng **Phiên bản (vòng 5)**;
+- soát chất lượng cả 192 mục: tải lại mọi nguồn, sửa 4 URL chuyển hướng, rút 4 câu trích quá 15 chữ, thêm trang nguồn cho 16 mục, chạy lại cả 145 mục chạy được (dữ liệu DynamoDB dạng JSON thường), không bỏ mục nào;
+- ghi phiên bản: PostgreSQL 19 phát hành 2026-11-19, 16 mục có dòng **Phiên bản (vòng 5)**;
 - xếp hạng cả 192 mục, đề xuất 60 mục cho v25 (SQL + PostgreSQL), phần còn lại theo v27 và v29;
 - bản nháp hướng dẫn cho người học "8 thói quen".
 
@@ -35,7 +35,7 @@ Tài liệu này là nguyên liệu cho khu **Best Practice** sắp có. Nó đi
     - wiki "Don't Do This" và SQL Style Guide được đọc toàn bộ;
     - mọi câu trích nguyên văn và mọi con số (giới hạn, chi phí, thời gian) đã được tìm thấy trên đúng trang dẫn;
     - phần diễn giải còn lại dựa trên tài liệu nhưng chưa đối chiếu từng câu;
-    - vòng 5 (cùng ngày) tải lại mọi trang (199 sau khi sửa), kiểm anchor, câu trích, con số có đơn vị và tên hàm/tham số nêu trong Luật/Vì sao trên đúng trang dẫn (§14.1);
+    - vòng 5 (cùng ngày) tải lại mọi trang (201 sau khi sửa), kiểm anchor, câu trích, con số có đơn vị và tên hàm/tham số nêu trong Luật/Vì sao trên đúng trang dẫn (§14.1);
     - link PostgreSQL ghim `/docs/18/` cho khớp PGlite 0.5.16. Trang MongoDB (nay là manual 9.0) và AWS (`latest`) không gắn phiên bản: số liệu đúng tại ngày kiểm;
   - **Cấp** L1–L5, cùng thang với `db-engine-knowledge.md` §3–5: L1 người mới, L2 thực hành, L3 bên trong / hiệu năng, L4 đồng thời và quy mô, L5 chuyên gia;
   - **Nối với** skill có thật trong `content/skills.yml` (`null_logic`, `sargable`…) hoặc node nâng cao trong `content/general/adv.yml` (`a1`…`d8`). "Chưa có" nghĩa là app chưa có bài nào dạy ý đó.
@@ -520,7 +520,7 @@ ORDER BY order_date, id;
 - **Vì sao:**
   - window function tính **sau** `WHERE`/`GROUP BY`/`HAVING`, nên không được dùng trong `WHERE`;
   - Postgres báo lỗi `42P20`.
-- **Nguồn:** https://www.postgresql.org/docs/18/tutorial-window.html (muốn lọc hay gom dòng sau khi tính window thì "you can use a sub-select")
+- **Nguồn:** https://www.postgresql.org/docs/18/tutorial-window.html (muốn lọc hay gom dòng sau khi tính window thì "you can use a sub-select"); `row_number()`, `rank()`: https://www.postgresql.org/docs/18/functions-window.html#FUNCTIONS-WINDOW-TABLE
 - **Cấp:** L2 · **Nối với:** skill `window_rank`, `cte` · **Kiểm:** PGlite, Sai = lỗi `42P20`
 
 ```sql
@@ -700,7 +700,7 @@ SELECT (TIMESTAMPTZ '2026-10-31 20:00:00+00' AT TIME ZONE 'Asia/Ho_Chi_Minh')::d
 - **Vì sao:**
   - `SELECT DISTINCT *` không bỏ được bản ghi trùng có `id` hay thời điểm khác nhau;
   - thiếu tiebreaker thì dòng được giữ đổi giữa các lần chạy.
-- **Nguồn:** https://www.postgresql.org/docs/18/sql-select.html#SQL-DISTINCT (DISTINCT ON cần `ORDER BY` để kết quả xác định)
+- **Nguồn:** https://www.postgresql.org/docs/18/sql-select.html#SQL-DISTINCT (DISTINCT ON cần `ORDER BY` để kết quả xác định); `row_number()`: https://www.postgresql.org/docs/18/functions-window.html#FUNCTIONS-WINDOW-TABLE
 - **Cấp:** L2 · **Nối với:** skill `distinct_on`, `window_rank`; node `c1` · **Kiểm:** PGlite, Sai ≠ Đúng (`payments` có khoản trả trùng có chủ đích)
 
 ```sql
@@ -1776,6 +1776,7 @@ EXPLAIN (COSTS OFF) SELECT count(*) FROM orders WHERE status = 'REFUNDED' AND or
   - chiếm bộ nhớ đệm;
   - chặn HOT update khi cột của nó bị sửa (P02).
 - **Nguồn:** https://www.postgresql.org/docs/18/indexes-examine.html; https://www.postgresql.org/docs/18/monitoring-stats.html (`pg_stat_user_indexes`)
+- **Phiên bản (vòng 5):** PostgreSQL 19 thêm cột `stats_reset` vào `pg_stat_all_indexes` (và bản `user`), nên biết `idx_scan` được đếm từ lúc nào trước khi kết luận index không dùng.
 - **Cấp:** L3 · **Nối với:** skill `index_design` · **Kiểm:** PGlite, chạy được (truy vấn thống kê; số liệu thật cần tải thật)
 
 ```sql
@@ -2187,7 +2188,7 @@ SELECT before, (SELECT relfilenode FROM pg_class WHERE relname = 'notes') AS aft
 
 - **Luật:** điều kiện trên khóa partition viết dạng `key >= a AND key < b`, không bọc khóa trong hàm (`date_trunc`, `extract`, ép kiểu).
 - **Vì sao:** planner chỉ cắt partition khi so được điều kiện với biên partition. `date_trunc('month', at) = …` là một biểu thức khác, nên mọi partition đều bị quét. Đây là Q11 (sargable) áp cho partition.
-- **Nguồn:** https://www.postgresql.org/docs/18/ddl-partitioning.html#DDL-PARTITION-PRUNING
+- **Nguồn:** https://www.postgresql.org/docs/18/ddl-partitioning.html#DDL-PARTITION-PRUNING; `date_trunc`: https://www.postgresql.org/docs/18/functions-datetime.html#FUNCTIONS-DATETIME-TRUNC
 - **Cấp:** L4 · **Nối với:** skill `sargable`, `explain_read` · **Kiểm:** PGlite, kế hoạch: Sai `Append` quét `ev_2026_09` và `ev_2026_10`; Đúng chỉ `ev_2026_10`
 
 ```sql
@@ -2791,6 +2792,7 @@ db.orders.aggregate([
   - https://www.mongodb.com/docs/manual/data-modeling/design-antipatterns/unbounded-arrays/
   - https://www.mongodb.com/docs/manual/reference/limits/
   - https://www.mongodb.com/docs/manual/data-modeling/design-patterns/group-data/subset-pattern/
+  - https://www.mongodb.com/docs/manual/reference/operator/update/push/ (`$push`, `$slice`)
 - **Cấp:** L2 · **Nối với:** chưa có · **Kiểm:** cú pháp
 
 ```js
@@ -2851,7 +2853,7 @@ db.createCollection('readings', { timeseries: { timeField: 'at', metaField: 'sen
   - con số được đọc liên tục mà ít đổi (tổng đơn, số bình luận) thì lưu sẵn và cập nhật lúc ghi (`$inc`);
   - không `aggregate` lại toàn bộ ở mỗi lần đọc.
 - **Vì sao:** phép tính lặp ở mỗi lần đọc tốn CPU và độ trễ. Cập nhật một trường lúc ghi là atomic và rẻ.
-- **Nguồn:** https://www.mongodb.com/docs/manual/data-modeling/design-patterns/handle-computed-values/
+- **Nguồn:** https://www.mongodb.com/docs/manual/data-modeling/design-patterns/handle-computed-values/; `$inc`: https://www.mongodb.com/docs/manual/reference/operator/update/inc/
 - **Cấp:** L2 · **Nối với:** skill `aggregate` · **Kiểm:** mingo, Sai = Đúng (tổng tính lại = tổng lưu sẵn `total`)
 
 ```js
@@ -4855,6 +4857,7 @@ EXPLAIN (ANALYZE, COSTS OFF, TIMING OFF, SUMMARY OFF, FORMAT JSON) SELECT k, cou
   - tài liệu gọi các cờ này là "a crude method", chỉ là "a temporary solution";
   - chúng đúng cho câu hôm nay nhưng ép sai khi dữ liệu đổi.
 - **Nguồn:** https://www.postgresql.org/docs/18/runtime-config-query.html#RUNTIME-CONFIG-QUERY-ENABLE
+- **Phiên bản (vòng 5):** PostgreSQL 19 thêm module `pg_plan_advice` và extension `pg_stash_advice` để ghim quyết định của planner theo từng câu. Đó vẫn là công cụ chẩn đoán hay chữa cháy; luật "sửa thống kê trước" không đổi.
 - **Cấp:** L4 · **Nối với:** chưa có · **Kiểm:** PGlite, câu đọc cả bảng 20.000 dòng: Sai (`enable_seqscan = off`) Bitmap Heap Scan cost 620,3; Đúng (để planner chọn) Seq Scan cost 389,01. Cost Đúng < Sai
 
 ```sql
@@ -5700,7 +5703,7 @@ Theo L220: chỉ nghiên cứu và đề xuất. Vòng này không thêm mục, 
 
 - Tải lại cả 196 trang khác nhau mà tài liệu dẫn (238 URL kể cả anchor) bằng `curl -L`: cả 196 trả 200, đúng tiêu đề trang.
 - 42 anchor `#…`: có `id` tương ứng trên trang.
-- Sau khi sửa (dưới đây), tải lại lần nữa: 246 URL, 199 trang, đều 200, mọi anchor có thật; chạy lại kiểm câu trích và tên hàm.
+- Sau khi sửa (dưới đây), tải lại lần nữa: 251 URL, 201 trang, đều 200, mọi anchor có thật; chạy lại kiểm câu trích và tên hàm.
 - Năm URL đi qua chuyển hướng. Bốn đã sửa tại chỗ:
   - M01: trang "embedding vs references" của MongoDB nay chuyển về `data-modeling/best-practices/#link-related-data`. Đã đọc lại: trang mới vẫn nói embed khi dữ liệu được đọc và sửa cùng nhau, và ghi atomic ở mức một tài liệu. Luật M01 giữ nguyên.
   - M19: `dateFromString` → `datefromstring` (chỉ đổi chữ hoa thường).
@@ -5711,8 +5714,11 @@ Theo L220: chỉ nghiên cứu và đề xuất. Vòng này không thêm mục, 
 **Nguồn có nói đúng điều mục nêu không:**
 
 - Cách kiểm tự động: với mỗi mục, mọi tên hàm, tham số, view, toán tử (trong `…`) ở **Luật** và **Vì sao** phải có trên ít nhất một trang nguồn của mục đó.
-- 32 mục bị gắn cờ. Phần lớn là tên cột của ví dụ (`order_date`, `revenue_vnd`), không cần nguồn.
-- 11 mục thiếu thật: tên được nêu nhưng không có trên trang dẫn. Đã thêm trang chính thức có tên đó:
+- 32 mục bị gắn cờ:
+  - 16 là tên cột hay từ khóa của ví dụ (`order_date`, `revenue_vnd`, `WHERE`) hoặc tên viết ghép (`pg_stats.correlation`: cột `correlation` có trên trang `pg_stats`), không cần thêm nguồn;
+  - 15 thiếu thật: tên hàm hay toán tử được nêu nhưng không có trên trang dẫn;
+  - P07 để nguyên (xem dưới).
+- Cộng P16 (từ bước kiểm con số dưới đây): 16 mục được thêm trang chính thức có tên đó:
 
 | Mục | Tên còn thiếu | Trang thêm |
 |---|---|---|
@@ -5727,10 +5733,17 @@ Theo L220: chỉ nghiên cứu và đề xuất. Vòng này không thêm mục, 
 | P40 | `pg_drop_replication_slot` | functions-admin#FUNCTIONS-REPLICATION |
 | P41 | `pg_stat_user_tables` | monitoring-stats, view `pg_stat_all_tables` |
 | M06 | `$jsonSchema` | schema-validation/specify-json-schema |
+| A03, Q19 | `row_number()`, `rank()` | functions-window#FUNCTIONS-WINDOW-TABLE |
+| P17 | `date_trunc` | functions-datetime#FUNCTIONS-DATETIME-TRUNC |
+| M02 | `$push`, `$slice` | reference/operator/update/push |
+| M05 | `$inc` | reference/operator/update/inc |
+
+- Để nguyên một chỗ: P07 nêu `random()` chỉ làm ví dụ default volatile; trang dẫn đã nói đúng ý bằng ví dụ `clock_timestamp()`.
 
 - **Con số lấy từ tài liệu:** mọi số có đơn vị trong Luật/Vì sao (KB, MB, RCU, WCU, %, item, lần…) được tìm trên trang nguồn của mục. Có hết, trừ P16 (đã thêm trang như bảng trên). Các trang AWS và MongoDB không gắn phiên bản. Ngày kiểm, trang hiện hành vẫn ghi đúng các giới hạn: item 400 KB và 25 request mỗi lô (`BatchWriteItem`), 1 MB mỗi trang (`Query`), 3.000 RCU / 1.000 WCU mỗi partition.
 - **Câu trích nguyên văn:** 68 câu tiếng Anh trong ngoặc kép.
-  - 58 câu trích tài liệu: 57 có đúng từng chữ trên trang nguồn; P07 ghép chữ bằng "…" (đã sửa, xem dưới).
+  - 58 câu trích tài liệu: 57 có đúng từng chữ trên trang nguồn (M15 nằm trong dữ liệu trang MongoDB: "contains any combination of elements that satisfies the conditions"); P07 ghép chữ bằng "…" (đã sửa, xem dưới).
+  - Bốn câu trích ở bảng §13.4 (BigQuery, dbt) cũng có đúng trên trang, kể cả sau khi BigQuery đổi host.
   - 10 câu không phải trích tài liệu: thông báo lỗi do engine trả (P15, P18, D13, D14, D15, D28), chuỗi tấn công của X09, câu tiếng Việt của A14. Các thông báo lỗi khớp output chạy thật.
   - Bốn câu quá 15 chữ, đã rút ngắn và giữ nguyên văn: Q19, Q23, X04, P07. P07 cũ còn ghép chữ bằng dấu "…"; nay trích đúng câu trên trang ("will cause the entire table and its indexes to be rewritten").
 - **Bỏ mục:** không mục nào. Mọi nguồn còn sống và nói đúng điều mục nêu.
@@ -5764,9 +5777,9 @@ Theo L220: chỉ nghiên cứu và đề xuất. Vòng này không thêm mục, 
 
 **Phiên bản.** Ví dụ chạy trên PostgreSQL 18.6, và link `/docs/18/` cố ý giữ để khớp PGlite. Nhưng **PostgreSQL 19 đã phát hành ngày 2026-11-19**, và trang MongoDB không gắn phiên bản nay là manual **9.0**.
 
-- Đã đọc hết phần "Migration" và "Changes" của release notes 19, đối chiếu từng mục Q/A/S/I/P/X.
-- Không mục nào sai trên 19.
-- 14 mục có thêm một dòng **Phiên bản (vòng 5)** ngay trên dòng Cấp. Đó là chỗ 19 đổi hành vi, mặc định hoặc công cụ:
+- Đã đọc hết release notes 19 (phần "Migration" và mọi mục "Changes"), rồi tìm trong tài liệu mọi chỗ nhắc lệnh hay cấu hình bị đổi (`VACUUM FULL`, `CLUSTER`, JIT, `max_locks_per_transaction`, `btree_gist` cho `inet`…).
+- Không mục nào sai trên 19. S15 dùng `btree_gist` cho cột số, không phải `inet`, nên không bị đổi opclass mặc định.
+- 16 mục có thêm một dòng **Phiên bản (vòng 5)** ngay trên dòng Cấp. Đó là chỗ 19 đổi hành vi, mặc định hoặc công cụ:
   - Q02: `NOT IN` thành anti join khi không có NULL;
   - Q07: gộp trước khi join;
   - P10, P41: điểm ưu tiên autovacuum, VACUUM song song dùng chung cost limit;
@@ -5777,8 +5790,10 @@ Theo L220: chỉ nghiên cứu và đề xuất. Vòng này không thêm mục, 
   - P29: `wal_compression = on` chọn phương pháp tốt nhất;
   - X05: cảnh báo MD5, bỏ RADIUS;
   - I04: câu quét thường cũng đánh dấu all-visible;
-  - A15, A16: `IGNORE NULLS`.
-- Mục cần phiên bản tối thiểu (đã ghi trong thân mục, ghi lại đây để BP-C đặt nhãn):
+  - A15, A16: `IGNORE NULLS`;
+  - I09: `stats_reset` cho từng index;
+  - P31: `pg_plan_advice`.
+- Mục cần phiên bản tối thiểu (đã ghi trong thân mục, ghi lại đây để BP-C đặt nhãn). Đối chiếu ngày kiểm: release notes 17 (`pg_stat_checkpointer`), release notes 15 (`NULLS NOT DISTINCT`, bỏ quyền `CREATE` của `PUBLIC` trên `public`), trang `CREATE VIEW` bản 15 có `security_invoker` còn bản 14 không, release notes 19 ("Previously this always used pglz" cho P29):
 
 | Mục | Cần | Ghi chú |
 |---|---|---|
@@ -5806,6 +5821,8 @@ Theo L220: chỉ nghiên cứu và đề xuất. Vòng này không thêm mục, 
 | Boon nhắc bắt được | 0–1 | 10 luật §10 |
 | Đã có thẻ | 0–1 | `content/engine/best/` (28 thẻ SQL + PostgreSQL) |
 | Giữ đủ bậc thang | điều chỉnh | mỗi track phải có cả L1–L2 (data analyst) lẫn L3–L5 (kỹ sư); một mục L4–L5 có thể lên trước mục điểm cao hơn để bậc không trống |
+
+Thứ tự dưới đây là phán đoán theo thang này, không phải tổng điểm cộng máy móc.
 
 **Ràng buộc của danh sách:**
 
@@ -5883,12 +5900,13 @@ PostgreSQL (30):
 
 - Đếm: Q 17, A 13, S 8, I 8, P 10, X 4. Có 28 thẻ cũ, nên **32 thẻ mới** cho BP-C.
 - Chọn Q08, Q09, Q16 vì ba ô "Lỗi hay gặp" của §13.4 (dòng 4, 6, 7) chỉ chờ ba thẻ này.
-- Chọn P17, P30 trước P33, P34: cả hai chạy được trên `lab` (kế hoạch). P33, P34 cần hai phiên.
+- Chọn P17, P30 trước P33, P34: cả hai chạy được ở runtime `engine` (`setup` có DDL rồi câu đọc, so kế hoạch). P33, P34 cần hai phiên.
 - Chỉ ba mục chỉ cú pháp:
   - P35: báo cáo một snapshot, rất gần việc của data analyst;
   - P03: transaction ngắn;
   - P25: `pg_stat_statements`. Thẻ ghi rõ là cú pháp, hoặc chạy ở runtime `engine` có nạp extension.
-- Runtime: P05 phải chạy ngoài transaction (`notx`), nên thuộc `engine`/`engine-hb`. Các mục còn lại chạy được trên `lab` hoặc `engine` như dòng Kiểm.
+- Runtime (bảng §3.2 của `product-design-best-practice.md`): mục Q/A chạy trên `lab` (một câu đọc mỗi bên); mục S/I/P/X có DDL hay `setup` chạy ở `engine`; P05 phải chạy ngoài transaction (`notx`) nên cần `engine-hb`.
+- S10 nằm trong "Mười mục giá trị nhất" ở đầu tài liệu nhưng ở hạng 50 tại đây: danh sách đầu chọn theo độ nguy hiểm, còn thứ tự v25 đi theo bậc thang người học (S10 là L4, đặt sau các mục L1–L3 của PostgreSQL). Nó vẫn nằm trong v25.
 - **Ngân sách** (theo §13.1.4):
   - mỗi thẻ một chunk lười ≈ 1,5–2,2 KB gzip, nên số thẻ không đụng trần;
   - chỉ mục mỗi khu: Q 17 mục, khu lớn nhất ≈ 1,1 KB;
@@ -5916,7 +5934,7 @@ PostgreSQL (30):
 
 **Ghi chú cho người điều phối:**
 
-- Đẩy phần vận hành PostgreSQL L4–L5 sang v29 vì v25 nên chơi được hết trên `lab`.
+- Đẩy phần vận hành PostgreSQL L4–L5 sang v29 vì v25 nên chơi được gần hết trên `lab`/`engine`.
 - Nếu muốn track PostgreSQL ở v25 sâu hơn: đổi P35 (cú pháp) lấy P19 (kế hoạch chạy được, `notx`).
 
 ### 14.3 Bản nháp: "Học SQL và NoSQL cho đúng: 8 thói quen"
@@ -5974,7 +5992,7 @@ Thói quen học đi kèm: làm lại bài từng sai sau vài ngày (hàng "Ôn
 - [2] dbt, data tests: https://docs.getdbt.com/docs/build/data-tests
 - [3] PostgreSQL 18, Using EXPLAIN: https://www.postgresql.org/docs/18/using-explain.html
 - [4] MongoDB, Analyze Query Performance: https://www.mongodb.com/docs/manual/tutorial/analyze-query-plan/
-- [5] AWS, best practices for querying and scanning: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-query-scan.html
+- [5] AWS, Scanning tables in DynamoDB (`ScannedCount`, `ConsumedCapacity`): https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Scan.html
 - [6] SQL Style Guide (CC BY-SA 4.0, chỉ dẫn link): https://www.sqlstyle.guide/
 
 Đề xuất dùng (cho luồng sau L220): một trang ngắn `#/engine/best` đầu track SQL. Mỗi thói quen một dòng và các chip thẻ; chỉ chip của thẻ đã phát hành là link. Văn bản VI/EN đi theo quy tắc của `content/` (EN không dấu, mã giống nhau ở hai bản).
