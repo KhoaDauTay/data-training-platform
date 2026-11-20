@@ -100,12 +100,12 @@ export function pgLabRunner(env: LabEnv): LabRunner {
 
 /**
  * Whether a lab step can be graded in the browser (it then counts toward the lesson's completion). Postgres: `doc` never;
- * `plan` only with `setup` (ENG-PGLAB); rows/catalog always. MongoDB and DynamoDB grade `doc` (their only kind). A lesson
+ * `plan` only with `setup` (ENG-PGLAB); rows/catalog always. MongoDB grades `doc`; DynamoDB `doc` and `catalog` (its runner compares any step, L299). A lesson
  * marked `runtime: docs` never runs here. Update with each new runner.
  */
 export const gradable = (l: EngineLesson, step: LabStep): boolean =>
   !!LAB_RUNNERS[l.engine] && l.runtime !== 'docs'
-  && (l.engine === 'postgres' ? step.check !== 'doc' && !(step.check === 'plan' && !l.lab?.setup) : step.check === 'doc');
+  && (l.engine === 'postgres' ? step.check !== 'doc' && !(step.check === 'plan' && !l.lab?.setup) : step.check === 'doc' || (l.engine === 'dynamodb' && step.check === 'catalog'));
 
 /**
  * The one honest runtime label beside a lesson's title (product-design-db-engine §3.6, checklist L1), derived from what

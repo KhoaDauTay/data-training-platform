@@ -51,6 +51,16 @@ describe('Database Engine lesson pages (fixtures)', () => {
     expect(app.save.completed.filter((x) => x === 'e-pg-l1-03')).toHaveLength(1);
   });
 
+  // v23 (L299): further reading reads as titles (the URL stays the href); one main Submit per lab: the first step not passed.
+  it('sources are titled links; only the current lab step Submit is the main button', async () => {
+    await visit('#/engine/postgres/L1/e-pg-l1-02');
+    const links = [...document.querySelectorAll<HTMLAnchorElement>('#e-pg-l1-02-src ~ ul a')];
+    expect(links.map((a) => a.textContent)).toEqual(['PostgreSQL · Infoschema columns (mở trong tab mới)', 'PostgreSQL · Datatype numeric (mở trong tab mới)']);
+    for (const a of links) expect([a.target, a.rel, a.title === a.href, !!a.querySelector('svg')]).toEqual(['_blank', 'noopener noreferrer', true, true]);
+    const go = (i: number): boolean => document.querySelector(`[data-ek="e-pg-l1-02-s${i}-submit"]`)!.classList.contains('bg-accent');
+    expect([go(0), go(1)]).toEqual([true, false]);
+  });
+
   it('a concept lesson is completed by its button', async () => {
     await visit('#/engine/postgres/L1/e-pg-l1-01');
     document.querySelector<HTMLElement>('[data-ek="e-pg-l1-01-done"]')!.click();

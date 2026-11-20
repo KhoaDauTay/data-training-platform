@@ -601,6 +601,8 @@ function labView(l: EngineLesson, v: Visit): HTMLElement {
   const cap = l.kind === 'capstone' && live ? capChunk() : undefined;
   const cc = cap ? capCtx(l, v) : undefined;
   const cur = cap && cc ? cap.currentStep(cc) : -1;
+  // One BTN_GO per region (v23, L299): only the current step's Submit (the capstone's, else the first not passed) is the main button.
+  const main = cap && cc ? cur : steps.findIndex((_, i) => !v.passed.has(`s${i}`));
   return h('section', { class: 'flex flex-col gap-4', 'aria-labelledby': `${l.id}-lab` },
     cardHead(`${l.id}-lab`, 'kindLab', et('lab.title')),
     cap && cc ? cap.capBar(cc) : null,
@@ -629,7 +631,7 @@ function labView(l: EngineLesson, v: Visit): HTMLElement {
         }) : null,
         live ? h('div', { class: 'flex flex-wrap items-center gap-2' },
           h('button', { type: 'button', class: cls.cx(cls.BTN_SECONDARY, 'px-4 py-1.5'), 'data-ek': `${key}-run`, disabled: v.busy !== undefined, onclick: () => void labAction(l, v, i, false) }, et('lab.run')),
-          h('button', { type: 'button', class: cls.cx(cls.BTN_GO, 'px-4 py-1.5 disabled:bg-code disabled:text-disabled disabled:shadow-none'), 'data-ek': `${key}-submit`, disabled: v.busy !== undefined, onclick: () => void labAction(l, v, i, true) }, et('lab.submit')),
+          h('button', { type: 'button', class: cls.cx(i === main ? cls.BTN_GO : cls.BTN_SECONDARY, 'px-4 py-1.5 disabled:bg-code disabled:text-disabled disabled:shadow-none'), 'data-ek': `${key}-submit`, disabled: v.busy !== undefined, onclick: () => void labAction(l, v, i, true) }, et('lab.submit')),
           v.busy === i ? h('span', { class: 'flex items-center gap-2 text-body-sm text-muted' }, d.loader(), et('lab.preparing')) : null) : null,
         h('details', {}, h('summary', { class: 'cursor-pointer text-body-sm font-semibold text-accent' }, et('lab.hint')), h('p', { class: 'mt-2 mb-0 text-body-sm' }, ...inline(s.hint[lang()]))),
         h('p', { role: 'status', 'data-ek': `${key}-status`, class: cls.cx('m-0 text-body-sm', msg ? (msg.ok ? 'good' : 'bad') : '') }, ...inline(msg?.text ?? '')),
@@ -786,7 +788,23 @@ function lessonPage(l: EngineLesson): HTMLElement {
     l.sources.length ? h('section', { class: 'flex flex-col gap-2', 'aria-labelledby': `${l.id}-src` },
       h('h2', { id: `${l.id}-src`, class: 'm-0 text-body font-bold' }, et('sources')),
       h('ul', { class: 'm-0 list-disc space-y-1 pl-5 text-body-sm' }, ...l.sources.map((u) =>
-        h('li', { class: 'break-all' }, h('a', { href: u, target: '_blank', rel: 'noopener noreferrer' }, u))))) : null);
+        h('li', {}, h('a', { href: u, target: '_blank', rel: 'noopener noreferrer', title: u, class: 'inline-flex items-center gap-1.5' },
+          d.icon('external', 'size-4 shrink-0'), sourceTitle(u), h('span', { class: 'sr-only' }, ` (${et('newTab')})`)))))) : null);
+}
+
+const SITE: Record<string, string> = {
+  'www.postgresql.org': 'PostgreSQL', 'wiki.postgresql.org': 'PostgreSQL Wiki', 'www.mongodb.com': 'MongoDB',
+  'docs.aws.amazon.com': 'DynamoDB', 'use-the-index-luke.com': 'Use The Index, Luke', 'www.sqlstyle.guide': 'SQL Style Guide',
+};
+/** v23 (L299): a source's link text, from its URL (sources are bare https URLs): "PostgreSQL · Storage hot". */
+export function sourceTitle(u: string): string {
+  let url: URL;
+  try { url = new URL(u); } catch { return u; }
+  const words = (x: string): string => decodeURIComponent(x).replace(/\.html?$/, '').replace(/[-_.]+/g, ' ').trim();
+  const seg = url.pathname.split('/').filter(Boolean).at(-1);
+  const page = [seg && words(seg), url.hash.length > 1 && words(url.hash.slice(1))].filter(Boolean).join(' › ');
+  const site = SITE[url.hostname] ?? url.hostname.replace(/^www\./, '');
+  return page ? `${site} · ${page[0].toUpperCase()}${page.slice(1)}` : site;
 }
 
 // ---- #/me and sidebar
