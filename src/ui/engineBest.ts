@@ -405,7 +405,7 @@ function cardPage(c: BpCard): HTMLElement {
   return h('article', { class: 'flex flex-col gap-8', 'aria-labelledby': 'home-title', 'data-card': c.id },
     h('p', { class: 'm-0 flex flex-wrap items-center gap-2 text-body-sm text-muted' },
       pill('bg-code text-ink', c.level), h('span', { class: 'font-bold tabular-nums' }, c.code.toUpperCase()),
-      h('a', { href: rt.hash(c.track), class: 'text-muted' }, bt(`area.${c.module}` as BestKey)),
+      h('a', { href: rt.hash(c.track), class: cls.cx(cls.PILL, 'min-h-6 bg-code text-ink no-underline hover:bg-accent-soft') }, bt(`area.${c.module}` as BestKey)), // ≥ 24 px target (ux-audit)
       p.runtime === 'none' ? pill('bg-info-soft text-ink', d.icon('docsOnly', 'size-4'), bt('honest.none', { date: c.verified.date }))
         : pill('bg-good-soft text-ink', h('span', { class: 'inline-block size-2 rounded-full bg-current', 'aria-hidden': 'true' }), bt('honest.run', { version: c.verified.version })),
       c.lint ? h('button', {
