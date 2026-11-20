@@ -46,7 +46,8 @@ const CONFIGS = [
 ];
 const ALL_PAGES = ['#/', '#/learn', '#/learn/sql/1', '#/learn/skill/select', '#/learn/interview', '#/practice', '#/me',
   ...['logistics', 'ecommerce', 'finance'].flatMap((d) => ['', '/play', '/data', '/dashboard', '/map'].map((p) => `#/d/${d}${p}`)),
-  '#/engine', '#/engine/postgres', '#/engine/postgres/L1', '#/engine/mongodb/path', '#/engine/dynamodb/L1/e-dy-l1-09'];
+  '#/engine', '#/engine/postgres', '#/engine/postgres/L1', '#/engine/mongodb/path', '#/engine/dynamodb/L1/e-dy-l1-09',
+  '#/engine/best/sql', '#/engine/best/postgres', '#/engine/best/sql/e-bp-q02', '#/engine/best/postgres/e-bp-i04', '#/engine/best/habits']; // v24 BP-UI (L300)
 const PAGES = process.env.UX_PAGES ? process.env.UX_PAGES.split(',') : ALL_PAGES;
 const TOPBAR_PAGES = ['#/d/finance', '#/d/logistics/play', '#/learn'];
 const mainOf = (hash) => (/\/play$/.test(hash) ? 'shell' : /\/data$/.test(hash) ? 'data' : /\/dashboard$/.test(hash) ? 'dashboard' : 'home');
@@ -182,7 +183,7 @@ async function open(base, hash) {
   }
   await waitFor(`<main id="${main}"> with an h1`, `(m => m && !m.hidden && !!m.querySelector('h1'))(document.getElementById(${S(main)}))`, 45000);
   await waitFor('#notice closed', `document.getElementById('notice').hidden`, 90000);
-  if (/^#\/engine\/\w+\/(L\d|path\/)/.test(hash)) await waitFor('#engine-page (the drawn lesson)', `!!document.getElementById('engine-page')`, 60000);
+  if (/^#\/engine\/(\w+\/(L\d|path\/)|best\/)/.test(hash)) await waitFor('#engine-page (the drawn lesson)', `!!document.getElementById('engine-page')`, 60000);
   await settle().catch(() => {});
   await sleep(300);
   return 'ok';
