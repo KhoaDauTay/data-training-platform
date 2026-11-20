@@ -700,6 +700,55 @@ try {
     return { ...m, height: h2, ratio: Math.round((h2 / 1694) * 1000) / 1000 };
   });
 
+  // ---- v21 §3 (v21-ux-review U11, QA v22): at 375 the completion dock of the chapter 1 promotion review never covers
+  // "Bắt đầu chương 2" once it is scrolled as far into view as the page allows (the other two cheap checks: CHROME above).
+  await step('375: the promotion dock leaves "Bắt đầu chương 2" free', async () => {
+    await size(375, 740);
+    await send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-color-scheme', value: 'light' }] });
+    const fx = JSON.parse(readFileSync(join(ROOT, 'tests/fixtures/save-v5.json'), 'utf8'));
+    const state = {
+      'cargo-query-save': { ...fx, completed: ['ch1-01', 'ch1-02', 'ch1-03', 'ch1-04'], bossStep: {}, drafts: {}, graded: {} },
+      'cargo-query/tour': { step: 99, knows: true }, 'cargo-query/domain': 'logistics', 'cargo-query/coach-done': true,
+    };
+    const init = Object.entries(state).map(([k, v]) => `localStorage.setItem(${S(k)}, ${S(S(v))});`).join('');
+    const { identifier } = await send('Page.addScriptToEvaluateOnNewDocument', { source: `if (location.protocol.startsWith('http') && !sessionStorage.getItem('v21s3')) { sessionStorage.setItem('v21s3', '1'); ${init} }` });
+    await send('Page.navigate', { url: 'about:blank' });
+    await waitFor('about:blank', `location.href === 'about:blank'`, 10000);
+    await go(base, '#/d/logistics/play');
+    await waitFor('the editor and the DB ready', `!!${EDITOR} && !!document.querySelector('#db-status .bg-good')`, 90000);
+    await send('Page.removeScriptToEvaluateOnNewDocument', { identifier });
+    const src = readFileSync(join(ROOT, 'content/tickets/ch1/ch1-05.md'), 'utf8');
+    const answer = parseYaml(/^---\r?\n([\s\S]*?)\r?\n---/.exec(src)[1]).conclusion.answer;
+    const sqls = [...src.split('# EN')[0].matchAll(/## Step \d+:[^\n]*\n[\s\S]*?```sql\r?\n([\s\S]*?)```/g)].map((m) => m[1].trim());
+    for (const [i, sql] of sqls.entries()) {
+      await ev(`document.querySelector('#pane-tabs [data-pane=work]').click()`);
+      await waitFor(`step ${i + 1}'s editor`, `!!${EDITOR} && ${EDITOR}.offsetParent !== null`, 10000);
+      await ev(`${EDITOR}.focus()`);
+      await key('a', MOD, 'KeyA', 65);
+      await send('Input.insertText', { text: sql });
+      await key('Enter', MOD | SHIFT, 'Enter', 13);
+      if (i < sqls.length - 1) await waitFor(`step ${i + 2}`, `JSON.parse(localStorage.getItem('cargo-query-save')).bossStep['ch1-05'] === ${i + 1}`, 60000);
+      else await waitFor('the conclusion form', `!!document.getElementById('conclusion-form')`, 60000);
+    }
+    await ev(`(f => { f.querySelector('input[value="${answer}"]').click(); f.requestSubmit(); })(document.getElementById('conclusion-form'))`);
+    const NEXT = `[...document.querySelectorAll('#ticket button')].find((b) => /Bắt đầu chương 2/.test(b.textContent) && b.offsetParent)`;
+    await waitFor('the review in save.completed', `${completed}.includes('ch1-05')`, 30000);
+    await ev(`document.querySelector('#pane-tabs [data-pane=ticket]').click()`);
+    await waitFor('"Bắt đầu chương 2"', `!!${NEXT}`, 30000);
+    const covered = `(() => { const b = ${NEXT}; b.scrollIntoView({ block: 'center' }); const r = b.getBoundingClientRect();
+      const st = document.getElementById('stage'); const s = st.hidden ? null : st.getBoundingClientRect();
+      const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+      return { stage: !!s && s.width > 0 && s.left < r.right && s.right > r.left && s.top < r.bottom && s.bottom > r.top, hit: !!hit && !b.contains(hit), at: hit?.id || hit?.tagName }; })()`;
+    const first = await ev(covered);
+    await sleep(3500); // after the dock folds (L221) or keeps its scene
+    const later = await ev(covered);
+    for (const [when, m] of [['at once', first], ['after 3.5 s', later]]) {
+      if (m.stage) fail(`#stage covers "Bắt đầu chương 2" ${when}`);
+      if (m.hit) fail(`"Bắt đầu chương 2" is covered by ${m.at} ${when}`);
+    }
+    return { first, later };
+  });
+
   await step('no page errors', async () => {
     if (pageErrors.length) fail(`${pageErrors.length} error(s): ${pageErrors.map((e) => e.text.split('\n')[0]).join(' | ').slice(0, 800)}`);
   });
