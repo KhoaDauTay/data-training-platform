@@ -1,12 +1,14 @@
 import type { EngineLesson } from '../engine/content';
-import { answerNode, FIRST_KEY, observe, parseEngineFirst, planTree, shownSetup, withFirst, type PlanNode } from '../engine/predict';
+import { answerNode, FIRST_KEY, observe, parseEngineFirst, planTree, readsCounters, shownSetup, withFirst, type PlanNode } from '../engine/predict';
+import type { LabOutput } from '../engine/labs';
 import type { EngineKey } from '../i18n/engine';
+import { PRED_DICT, predText, type PredKey } from '../i18n/enginePredict';
 import type { EngineDeps } from './engineView';
 import { planTreeView } from './enginePlanTree';
 
 // The engineView chunk reaches all of this through one lazy chunk (`enginePredict`, budget `enginePredict`): predict lessons,
 // capstones and plan diagrams load it before the page is drawn; the capstone chunk gets these through its context.
-export { afterLab, answerNode, capstonePivot, explainSql, hasRealPlan, planTree, stepName } from '../engine/predict';
+export { afterLab, answerNode, capstonePivot, explainSql, hasRealPlan, hasRealRun, planTree, stepName } from '../engine/predict';
 export { planTreeView };
 
 /**
@@ -17,15 +19,22 @@ export { planTreeView };
  * The DOM keeps the hooks scripts/e2e.mjs and tests/engineAxe.test.ts use: `<id>-p-<i>` radios, `<id>-p-check` (this button),
  * a sibling `[role=status]` (`.good` when right), `<id>-plan` (the card's heading) and `[data-plan]` (the tree).
  */
-export interface PredictState { pick?: number; say?: 'right' | 'wrong' | 'pick'; viewed?: boolean; plan?: PlanNode | { error: unknown } | 'busy'; json?: unknown; diagram?: boolean }
+/** engineView's `et` plus this chunk's own text (src/i18n/enginePredict.ts, L296). */
+export type Et = (key: EngineKey | PredKey, params?: Record<string, string | number>) => string;
+export const withPred = (d: EngineDeps, et: (key: EngineKey, params?: Record<string, string | number>) => string): Et =>
+  (k, p) => (Object.hasOwn(PRED_DICT.vi, k) ? predText(d.getLang(), d.locale(), k as PredKey, p) : et(k as EngineKey, p));
+
+export interface PredictState { pick?: number; say?: 'right' | 'wrong' | 'pick'; viewed?: boolean; plan?: PlanNode | { error: unknown } | 'busy'; json?: unknown; diagram?: boolean; rows?: LabOutput }
 export interface PredictCtx {
   d: EngineDeps;
-  et: (key: EngineKey, params?: Record<string, string | number>) => string;
+  et: Et;
   inline: (text: string) => (Node | string)[];
   lang: 'vi' | 'en';
   st: PredictState;
   /** The raw EXPLAIN (FORMAT JSON) cell of the question's query on the lab's data. */
   explain: () => Promise<unknown>;
+  /** The question's query itself on the lab's data (a counters predict, readsCounters). */
+  run: () => Promise<LabOutput>;
   /** The predict part passed (the lesson may complete). */
   pass: () => void;
   next?: { href: string };
@@ -58,8 +67,13 @@ export function predictView(l: EngineLesson, c: PredictCtx): HTMLElement {
     d.announce(et(st.say === 'right' ? 'predict.right' : 'predict.wrong'));
     focusCard(id);
     try {
-      st.json = await c.explain();
-      st.plan = planTree(st.json) ?? { error: new Error('EXPLAIN gave no plan') };
+      if (readsCounters(l)) {
+        st.rows = await c.run();
+        st.plan = undefined;
+      } else {
+        st.json = await c.explain();
+        st.plan = planTree(st.json) ?? { error: new Error('EXPLAIN gave no plan') };
+      }
     } catch (error) {
       st.plan = { error };
     }
@@ -76,7 +90,7 @@ export function predictView(l: EngineLesson, c: PredictCtx): HTMLElement {
       h('div', { class: 'grid gap-3 sm:grid-cols-2' }, ...d.optionOrder(`${id}#p`, p.options.length).map((i) => option(c, l, i))),
       h('div', { class: 'flex flex-wrap items-center gap-3' },
         h('button', { type: 'button', class: cls.cx(cls.BTN_GO, 'px-5 py-2'), 'data-ek': `${id}-p-check`, disabled: !!st.viewed && !(typeof st.plan === 'object' && 'error' in st.plan), onclick: () => void see() }, `${et('predict.see')} ›`),
-        h('span', { class: 'text-body-sm text-muted' }, st.viewed ? et('predict.ran') : et('predict.seeNote')),
+        h('span', { class: 'text-body-sm text-muted' }, st.viewed ? et('predict.ran') : et(readsCounters(l) ? 'predict.seeNoteRows' : 'predict.seeNote')),
         status)),
     st.viewed ? resultCard(l, c) : null);
 }
@@ -117,9 +131,10 @@ function resultCard(l: EngineLesson, c: PredictCtx): HTMLElement {
   return h('section', { class: 'space-y-3 rounded-(--r-card) bg-surface-2 p-4', 'aria-labelledby': `${l.id}-plan` },
     h('div', { class: 'flex flex-wrap items-center gap-2' },
       h('span', { class: cls.cx(cls.PILL, right ? 'bg-good-soft text-good' : 'bg-bad-soft text-bad', 'font-bold') }, right ? `✓ ${et('predict.right')}` : `✗ ${et('predict.wrong')}`),
-      h('h3', { id: `${l.id}-plan`, class: 'm-0 text-body font-bold', tabindex: '-1', 'data-ek': `${l.id}-plan` }, et('predict.realTitle'))),
+      h('h3', { id: `${l.id}-plan`, class: 'm-0 text-body font-bold', tabindex: '-1', 'data-ek': `${l.id}-plan` }, et(readsCounters(l) ? 'predict.rowsTitle' : 'predict.realTitle'))),
     plan === 'busy' ? h('p', { class: 'm-0 flex items-center gap-2 text-body-sm text-muted' }, d.loader(), et('lab.preparing'))
       : plan && 'error' in plan ? d.errorView(plan.error) : null,
+    st.rows && plan !== 'busy' ? h('div', { class: 'overflow-x-auto', 'data-real-rows': '' }, d.renderResult(st.rows)) : null,
     tree ? h('div', { class: 'overflow-x-auto' }, planTreeView(h, tree, { label: et('plan.label'), answer: et('plan.answer') }, answerNode(tree, p.expect))) : null,
     tree && c.diagram ? diagramBox(c) : null,
     tree ? h('p', { class: 'm-0' }, observe(tree, p.sql, p.expect).map((o) => et(`obs.${o.code}`, o.params)).join(' ')) : null,

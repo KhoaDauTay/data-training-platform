@@ -158,8 +158,12 @@ describe('chữ UI phần Chung (src/i18n/learn.ts, Plan 8a D8a-13)', () => {
 describe('chữ UI khu Database Engine (src/i18n/engine.ts, ENG-CORE L220)', () => {
   it('placeholder khớp, EN khác VI, không giọng game, không "sắp có"', async () => {
     const { ENGINE_DICT } = await import('../src/i18n/engine');
-    for (const [k, v] of Object.entries(ENGINE_DICT.vi)) {
-      const e = ENGINE_DICT.en[k as keyof typeof ENGINE_DICT.en];
+    const { PRED_DICT } = await import('../src/i18n/enginePredict'); // v23 predict/capstone text, its own chunk (L296)
+    const vi: Record<string, string> = { ...ENGINE_DICT.vi, ...PRED_DICT.vi };
+    const en: Record<string, string> = { ...ENGINE_DICT.en, ...PRED_DICT.en };
+    expect(Object.keys(PRED_DICT.vi).filter((k) => k in ENGINE_DICT.vi)).toEqual([]);
+    for (const [k, v] of Object.entries(vi)) {
+      const e = en[k];
       expect([k, placeholders(e)]).toEqual([k, placeholders(v)]);
       expect([k, e]).not.toEqual([k, v]);
       expect(`${v} ${e}`).not.toMatch(GAME_TONE);

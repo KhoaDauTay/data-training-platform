@@ -84,7 +84,7 @@ describe('Database Engine lesson pages (fixtures)', () => {
     const bar = document.querySelector('[data-cap-bar]')!;
     expect(bar.querySelectorAll('li')).toHaveLength(2);
     expect(bar.querySelector('li[aria-current=step]')?.textContent).toContain('Đếm lượt xem');
-    expect(document.querySelector('[data-step="0"]')!.className).toContain('ring-accent');
+    expect(document.querySelector('[data-step$="-s0"]')!.className).toContain('ring-accent');
     expect(document.querySelector('[data-ek="e-pg-l1-05-plans"]')).toBeNull(); // gated until the index step passes
     expect(await problems()).toEqual([]);
     app.save.completed.push('e-pg-l1-05');

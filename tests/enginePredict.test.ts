@@ -6,8 +6,8 @@ import { parseEngineLesson, type EngineLesson, type LessonSource } from '../src/
 import { pgScriptRunner } from '../src/engine/pglab/runner';
 import { runLabScript } from '../src/engine/pglab/session';
 import {
-  afterLab, answerNode, capstonePivot, explainSql, FIRST_MAX, hasRealPlan, matchesExpect, nodesOf, observe, parseEngineFirst, planTree,
-  shownSetup, stepName, withFirst,
+  afterLab, answerNode, capstonePivot, explainSql, FIRST_MAX, hasRealPlan, hasRealRun, matchesExpect, nodesOf, observe, parseEngineFirst, planTree,
+  readsCounters, shownSetup, stepName, withFirst,
 } from '../src/engine/predict';
 import { grade } from '../src/grader';
 
@@ -21,7 +21,7 @@ const realPlan = async (l: EngineLesson) => planTree((await runner.run(l.lab ?? 
 /** Predicts without `expect`, each with the reason (roadmap v23 exit: "or a reason written in the test").
  * Measured on PGlite 2026-11-20; "PG-C can add" = an `expect` that already holds on the real plan. */
 const NO_EXPECT: Record<string, string> = {
-  'e-pg-l3-08': 'asks which UPDATE is HOT (pg_stat_user_tables counters), not a plan; no lab setup, so no plan tree is offered',
+  'e-pg-l3-08': 'asks which UPDATE is HOT (pg_stat_user_tables counters), not a plan: "Xem thật" shows the counters (readsCounters), no plan tree',
   'e-pg-l4-01': 'the answer is a total cost (Seq Scan on parcels, cost 398); expect has no cost field, the tree shows it',
   'e-pg-l4-02': 'answer = Seq Scan, 14,000 rows; PG-C can add { node: Seq Scan, table: parcels, rows: 14000 }',
   'e-pg-l4-05': 'the answer is the join order (customers at the first leaf); PG-C can add { node: Index Scan, table: customers }',
@@ -58,10 +58,16 @@ describe('predict: the real plan on PGlite', () => {
     expect(answerNode(tree)).toBeUndefined(); // no `expect`: no node is outlined as the answer
   }, 60_000);
 
-  it('a predict on the catalog without setup gets no plan tree', () => {
-    const l = predicts.find((x) => x.id === 'e-pg-l3-08');
-    if (l && !l.predict!.expect) expect(hasRealPlan(l)).toBe(false);
-  });
+  // blind-pg l3-08 (L296): a counters question gets no plan tree; "Xem thật" runs the query after the lab setup instead.
+  it('e-pg-l3-08: "Xem thật" shows the real counters, not a plan', async () => {
+    const l = predicts.find((x) => x.id === 'e-pg-l3-08')!;
+    expect(readsCounters(l)).toBe(true);
+    expect(hasRealPlan(l)).toBe(false);
+    expect(hasRealRun(l)).toBe(true);
+    const out = await runner.run(l.lab!, l.predict!.sql);
+    expect(out.rows.map((r) => r.map(String))).toEqual([['jobs_full', '1', '0'], ['jobs_room', '1', '1']]);
+    expect(predicts.filter(readsCounters).map((x) => x.id)).toEqual(['e-pg-l3-08']);
+  }, 60_000);
 });
 
 // v23 CAP (L257): the capstone's "Trước / Sau" through the same runner and helpers as the page, the solution standing in for

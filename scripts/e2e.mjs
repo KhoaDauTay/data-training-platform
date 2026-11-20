@@ -979,6 +979,8 @@ const PATH_FILES = yml('content/engine/mongodb/path/index.yml');
 const PATH_DRILLS = PATH_FILES.files.flatMap((f) => yml(`content/engine/mongodb/path/${f.drills}`));
 /** Same rule as src/engine/predict.ts hasRealPlan() (v23 PRED: the predict card with "Xem thật" and the plan tree). */
 const realPlan = (l) => l.engine === 'postgres' && l.runtime !== 'docs' && !!l.predict && (!!l.lab?.setup || !!l.predict.expect);
+/** Same rule as src/engine/predict.ts readsCounters() (L296, blind-pg l3-08): "Xem thật" shows the query's rows, not a plan. */
+const readsCounters = (l) => realPlan(l) && !l.predict.expect && !!l.lab?.setup && /\bpg_stat(io)?_/i.test(l.predict.sql);
 /** Same rule as src/engine/predict.ts capstonePivot() (v23 CAP): the step after which the before/after plans open. */
 const readsSql = (sql) => /^\s*(\(\s*)?(select|with|explain|table|values|show)\b/i.test(String(sql).replace(/^\s*(--[^\n]*\n\s*)*/, ''));
 function capstonePivot(lab) {
@@ -1020,9 +1022,10 @@ SECTIONS.engine = async () => {
         await ev(`document.querySelector('[data-ek="${id}-p-${wrong}"]').click()`);
         await ev(`document.querySelector('[data-ek="${id}-p-check"]').click()`);
         await waitFor('the wrong verdict', `!!${status}?.classList.contains('bad')`, 5000);
-        await waitFor('the real plan', `!!document.querySelector('[data-plan]') || !!document.querySelector('[aria-labelledby="${id}-plan"] .error')`, 120000);
-        const plan = await ev(`document.querySelector('[data-plan]')?.textContent ?? document.querySelector('[aria-labelledby="${id}-plan"]')?.textContent`);
-        if (!(await ev(`!!document.querySelector('[data-plan]')`))) fail(`no real plan: ${plan}`);
+        const real = readsCounters(l) ? '[data-real-rows]' : '[data-plan]';
+        await waitFor('the real plan', `!!document.querySelector('${real}') || !!document.querySelector('[aria-labelledby="${id}-plan"] .error')`, 120000);
+        const plan = await ev(`document.querySelector('${real}')?.textContent ?? document.querySelector('[aria-labelledby="${id}-plan"]')?.textContent`);
+        if (!(await ev(`!!document.querySelector('${real}')`))) fail(`no real ${real}: ${plan}`);
         if (await ev(`document.activeElement?.getAttribute('data-ek') !== ${S(`${id}-plan`)}`)) fail('focus did not move to the result card heading');
         const x = l.predict.expect;
         if (x && (!plan.includes(x.node) || (x.index && !plan.includes(x.index)) || (x.table && !plan.includes(x.table)))) fail(`predict.expect ${S(x)} not in the real plan: ${plan}`);
@@ -1046,13 +1049,15 @@ SECTIONS.engine = async () => {
           // v23 CAP (L278): the bar marks the step passed and moves on; at the pivot the before/after plans open
           const bar = `document.querySelectorAll('#engine-page [data-cap-bar] li')`;
           await waitFor(`bar step ${i + 1} passed`, `!!${bar}[${i}]?.querySelector('.bg-good')`, 5000);
-          // current = the first step not passed (src/ui/engineCapstone.ts currentStep); passed = the gradable steps up to i.
-          // After the last gradable step the lesson is done and every step counts as passed: none is current (e.g. a
+          // current = the first gradable step not passed (src/ui/engineCapstone.ts currentStep); passed = the gradable steps up to i.
+          // After the last gradable step the lesson is done and every gradable step counts as passed: none is current (e.g. a
           // DynamoDB capstone whose `catalog` step cannot be graded in the browser).
           const last = !l.lab.steps.some((x, j) => j > i && gradableStep(l, x));
-          const next = last ? -1 : l.lab.steps.findIndex((x, j) => !(j <= i && gradableStep(l, x)));
+          const next = last ? -1 : l.lab.steps.findIndex((x, j) => j > i && gradableStep(l, x));
           if (next >= 0 && !(await ev(`${bar}[${next}]?.getAttribute('aria-current') === 'step'`))) fail(`bar: step ${next + 1} is not current after step ${i + 1}`);
           if (last) await waitFor('no step current once the capstone is done', `![...${bar}].some((li) => li.getAttribute('aria-current') === 'step')`, 10000);
+          // L278: a step the browser cannot grade (DynamoDB `catalog`) is never drawn passed, not even once the capstone is done
+          if (await ev(`[...${bar}].some((li) => li.hasAttribute('data-ungraded') && !!li.querySelector('.bg-good'))`)) fail('an ungraded step shows as passed in the bar');
           if (pivot && pivot.gate === i) {
             await ev(`document.querySelector('[data-ek="${id}-plans"]').click()`);
             await waitFor('before/after plans', `!!document.querySelector('#engine-page [data-cap-plans]') || !!document.querySelector('[aria-labelledby="${id}-plans"] .error')`, 120000);

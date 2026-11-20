@@ -73,9 +73,17 @@ export function observe(t: PlanNode | undefined, sql: string, x?: PredictExpect)
   return out;
 }
 
+/**
+ * A Postgres predict whose question reads statistics counters (`pg_stat_*`, no `expect`), e.g. l3-08's HOT counts: "Xem thật"
+ * runs that query after the lab's setup and shows its rows, since its EXPLAIN would only show catalog views (blind-pg l3-08, L296).
+ */
+export const readsCounters = (l: EngineLesson): boolean =>
+  l.engine === 'postgres' && l.runtime !== 'docs' && !!l.predict && !l.predict.expect && !!l.lab?.setup && /\bpg_stat(io)?_/i.test(l.predict.sql);
 /** A Postgres predict gets the real plan only where a plan is the answer: its own lab data (`setup`) or an `expect`. */
 export const hasRealPlan = (l: EngineLesson): boolean =>
-  l.engine === 'postgres' && l.runtime !== 'docs' && !!l.predict && (!!l.lab?.setup || !!l.predict.expect);
+  l.engine === 'postgres' && l.runtime !== 'docs' && !!l.predict && (!!l.lab?.setup || !!l.predict.expect) && !readsCounters(l);
+/** The predict card with "Xem thật": a real plan or, for a counters question, the real rows. */
+export const hasRealRun = (l: EngineLesson): boolean => hasRealPlan(l) || readsCounters(l);
 
 /** The statements of `setup` the question rests on ("Đang có", engine-ux-spec §5.4): its CREATE INDEX lines. */
 export const shownSetup = (setup: string | undefined): string[] =>

@@ -524,9 +524,10 @@ const levelDone = (l: EngineLesson): boolean => {
   return trees[l.engine].levels.find((x) => x.level === l.level)!.modules.every((m) => m.lessons.every((x) => ok.has(x.id)));
 };
 function capCtx(l: EngineLesson, v: Visit): import('./engineCapstone').CapCtx {
-  const isDone = done().has(l.id); // completed in an earlier visit: every step counts as passed
+  const isDone = done().has(l.id); // completed in an earlier visit: every graded step counts as passed
+  const graded = (i: number): boolean => gradable(l, l.lab!.steps[i]);
   return {
-    d, et, inline, lang: lang(), l, passed: isDone ? new Set(l.lab!.steps.map((_, i) => `s${i}`)) : v.passed, st: v.cap, tree: P().planTreeView, pred: P(), done: isDone, levelDone: levelDone(l),
+    d, et: P().withPred(d, et), inline, lang: lang(), l, graded, passed: isDone ? new Set(l.lab!.steps.flatMap((_, i) => (graded(i) ? [`s${i}`] : []))) : v.passed, st: v.cap, tree: P().planTreeView, pred: P(), done: isDone, levelDone: levelDone(l),
     explainAt: async (lab, sql, step) => (await (await runnerFor(l, v)!).run(lab, P().explainSql(sql), step)).rows[0]?.[0],
     mine: (i) => v.good[i],
   };
@@ -760,10 +761,11 @@ function lessonPage(l: EngineLesson): HTMLElement {
     vizSlot(l.id, l.viz, l.engine),
     l.predict ? h('section', { class: cls.cx(cls.CARD, 'flex flex-col gap-3 p-5 max-sm:p-4'), 'aria-labelledby': `${l.id}-pred` },
       cardHead(`${l.id}-pred`, 'kindPredict', et('predict.title')),
-      ...(P().hasRealPlan(l)
+      ...(P().hasRealRun(l)
         ? [P().predictView(l, {
-          d, et, inline, lang: lang(), st: v.pred, next: next ? { href: lessonHash(next) } : undefined,
+          d, et: P().withPred(d, et), inline, lang: lang(), st: v.pred, next: next ? { href: lessonHash(next) } : undefined,
           explain: async () => (await (await runnerFor(l, v)!).run(l.lab ?? { steps: [] }, P().explainSql(l.predict!.sql))).rows[0]?.[0],
+          run: async () => (await runnerFor(l, v)!).run(l.lab ?? { steps: [] }, l.predict!.sql),
           pass: () => passPart(l, v, 'p'),
           diagram: (json) => vizSlot(`${l.id}-pred`, 'pg-plan-tree', 'postgres', json, JSON.stringify(json)),
         })]

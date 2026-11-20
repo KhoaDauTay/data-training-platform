@@ -1,0 +1,114 @@
+import type { Lang, Params } from './index';
+
+/**
+ * v23 PRED/CAP (L256/L257): UI text of the predict card ("Xem thật", the plan tree, observations) and of the capstone parts.
+ * It lives in the lazy `enginePredict` chunk, not in src/i18n/engine.ts, so `engineui` stays under its budget (L296); the
+ * capstone chunk gets it through its context. Same rules as ENGINE_DICT (tests/i18n.test.ts).
+ */
+const vi = {
+  'predict.have': 'Đang có',
+  'predict.asked': 'Câu được hỏi',
+  'predict.see': 'Xem thật',
+  'predict.seeNote': 'Chạy EXPLAIN thật trên PGlite. Không tính sai nếu đoán lệch.',
+  'predict.seeNoteRows': 'Chạy câu được hỏi trên PGlite, sau phần dựng của lab. Không tính sai nếu đoán lệch.',
+  'predict.ran': 'Đã chạy · đoán lại được',
+  'predict.realTitle': 'Kế hoạch thật · chi phí planner, không phải thời gian',
+  'predict.rowsTitle': 'Kết quả thật · câu được hỏi chạy trên dữ liệu của lab',
+  'predict.right': 'Đúng',
+  'predict.wrong': 'Chưa đúng',
+  'predict.yours': 'bạn chọn',
+  'predict.answer': 'đáp án',
+  'predict.next': 'Bài tiếp',
+  'predict.diagram': 'Xem từng bước bằng sơ đồ',
+  'plan.label': 'Cây kế hoạch, nút gốc trước',
+  'plan.answer': 'Nút trả lời câu hỏi',
+  'obs.pick': 'Planner đọc bảng {table} bằng {node}.',
+  'obs.pickIndex': 'Planner dùng {node} qua index {index}.',
+  'obs.top': 'Nút trên cùng của kế hoạch là {node}.',
+  'obs.sort': 'Có nút Sort: hàng được sắp lại sau khi đọc.',
+  'obs.noSort': 'Không có nút Sort: hàng đã ra đúng thứ tự cần.',
+  'obs.differs': 'Kế hoạch ở đây không có nút {node} mà bài nói tới; planner có thể chọn khác trên dữ liệu khác.',
+  'cap.bar': 'Các bước của bài tổng hợp',
+  'cap.now': 'Bước {i}/{n} · {name}',
+  'cap.allDone': 'Xong cả {n} bước',
+  'cap.gradedBy': 'Chấm bằng',
+  'cap.passed': 'đạt',
+  'cap.todo': 'chưa đạt',
+  'cap.ungraded': 'không chấm trên trình duyệt',
+  'cap.check.rows': 'Bước {i}: kết quả đúng từng dòng',
+  'cap.check.rowsOrdered': 'Bước {i}: kết quả đúng từng dòng, đúng thứ tự',
+  'cap.check.plan': 'Bước {i}: kế hoạch có cùng các nút như lời giải, và kết quả đúng',
+  'cap.check.catalog': 'Bước {i}: catalog có đúng đối tượng cần tạo, cùng tên, cột và kiểu',
+  'cap.check.doc': 'Bước {i}: tài liệu kết quả đúng',
+  'cap.plans': 'Kế hoạch trước và sau',
+  'cap.plansBtn': 'So kế hoạch trước và sau',
+  'cap.plansGate': 'Đạt bước {i} để so kế hoạch trước và sau.',
+  'cap.query': 'Câu đích',
+  'cap.before': 'Trước',
+  'cap.after': 'Sau (với câu lệnh của bạn)',
+  'cap.cost': 'Tổng chi phí planner: {c}',
+  'cap.same': 'Kế hoạch không đổi.',
+  'cap.fresh': 'Mỗi lần chạy là một cơ sở dữ liệu mới: index bạn tạo chỉ tồn tại trong lần chạy đó, rồi bị bỏ đi.',
+  'cap.done': 'Xong bài tổng hợp {level}',
+  'cap.doneLine': 'Bạn đã đi hết {n} bước.',
+  'cap.levelDone': 'Xong cả cấp {level}.',
+};
+export type PredKey = keyof typeof vi;
+
+const en: Record<PredKey, string> = {
+  'predict.have': 'Already in place',
+  'predict.asked': 'The query in question',
+  'predict.see': 'See it for real',
+  'predict.seeNote': 'Runs a real EXPLAIN on PGlite. A wrong guess does not count against you.',
+  'predict.seeNoteRows': 'Runs the query in question on PGlite, after the lab setup. A wrong guess does not count against you.',
+  'predict.ran': 'Ran · you can guess again',
+  'predict.realTitle': 'The real plan · planner cost, not time',
+  'predict.rowsTitle': 'The real result · the query in question, run on the lab data',
+  'predict.right': 'Right',
+  'predict.wrong': 'Not right',
+  'predict.yours': 'your pick',
+  'predict.answer': 'answer',
+  'predict.next': 'Next lesson',
+  'predict.diagram': 'Walk through it as a diagram',
+  'plan.label': 'Plan tree, root node first',
+  'plan.answer': 'The node that answers the question',
+  'obs.pick': 'The planner reads {table} with a {node}.',
+  'obs.pickIndex': 'The planner uses a {node} through the index {index}.',
+  'obs.top': 'The top node of the plan is {node}.',
+  'obs.sort': 'There is a Sort node: rows are sorted after they are read.',
+  'obs.noSort': 'No Sort node: rows already come out in the order asked for.',
+  'obs.differs': 'The plan here has no {node} node, which the lesson describes; the planner may choose differently on other data.',
+  'cap.bar': 'Capstone steps',
+  'cap.now': 'Step {i} of {n} · {name}',
+  'cap.allDone': 'All {n} steps done',
+  'cap.gradedBy': 'Graded by',
+  'cap.passed': 'passed',
+  'cap.todo': 'not passed yet',
+  'cap.ungraded': 'not graded in the browser',
+  'cap.check.rows': 'Step {i}: the result matches row by row',
+  'cap.check.rowsOrdered': 'Step {i}: the result matches row by row, in order',
+  'cap.check.plan': 'Step {i}: the plan has the same nodes as the answer, and the result is right',
+  'cap.check.catalog': 'Step {i}: the catalog holds exactly the object asked for, same name, columns and types',
+  'cap.check.doc': 'Step {i}: the result documents match',
+  'cap.plans': 'Plan before and after',
+  'cap.plansBtn': 'Compare the plans before and after',
+  'cap.plansGate': 'Pass step {i} to compare the plans before and after.',
+  'cap.query': 'Target query',
+  'cap.before': 'Before',
+  'cap.after': 'After (with your statement)',
+  'cap.cost': 'Total planner cost: {c}',
+  'cap.same': 'The plan did not change.',
+  'cap.fresh': 'Every run is a fresh database: the index you create exists only in that run, then it is thrown away.',
+  'cap.done': '{level} capstone done',
+  'cap.doneLine': 'You went through all {n} steps.',
+  'cap.levelDone': 'Level {level} complete.',
+};
+
+export const PRED_DICT = { vi: vi as Record<PredKey, string>, en };
+
+export function predText(lang: Lang, locale: string, key: PredKey, params: Params = {}): string {
+  return PRED_DICT[lang][key].replace(/\{(\w+)\}/g, (m, name: string) => {
+    const v = params[name];
+    return v === undefined ? m : typeof v === 'number' ? v.toLocaleString(locale) : v;
+  });
+}

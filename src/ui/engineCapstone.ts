@@ -1,7 +1,8 @@
 import type { EngineLesson, Lab } from '../engine/content';
 import type * as Predict from '../engine/predict';
 import type { PlanNode } from '../engine/predict';
-import type { EngineKey } from '../i18n/engine';
+import type { PredKey } from '../i18n/enginePredict';
+import type { Et } from './enginePredict';
 import type { planTreeView } from './enginePlanTree';
 import type { EngineDeps } from './engineView';
 
@@ -15,11 +16,13 @@ import type { EngineDeps } from './engineView';
 export interface CapState { plans?: { before: PlanNode; after: PlanNode } | { error: unknown } | 'busy' }
 export interface CapCtx {
   d: EngineDeps;
-  et: (key: EngineKey, params?: Record<string, string | number>) => string;
+  et: Et;
   inline: (text: string) => (Node | string)[];
   lang: 'vi' | 'en';
   l: EngineLesson;
   passed: ReadonlySet<string>;
+  /** Whether step `i` is graded in the browser (src/engine/labs.ts `gradable`); one that is not is never shown as passed (L278). */
+  graded: (i: number) => boolean;
   st: CapState;
   /** The raw EXPLAIN (FORMAT JSON) cell of `sql` on `lab`, after replaying its first `step` steps. */
   explainAt: (lab: Lab, sql: string, step: number) => Promise<unknown>;
@@ -33,9 +36,9 @@ export interface CapCtx {
 }
 
 const steps = (c: CapCtx) => c.l.lab!.steps;
-/** The step in progress: the first one not passed (= the number of steps when all are). */
-export const currentStep = (c: Pick<CapCtx, 'l' | 'passed'>): number => {
-  const i = c.l.lab!.steps.findIndex((_, j) => !c.passed.has(`s${j}`));
+/** The step in progress: the first graded one not passed (= the number of steps when all are). */
+export const currentStep = (c: Pick<CapCtx, 'l' | 'passed' | 'graded'>): number => {
+  const i = c.l.lab!.steps.findIndex((_, j) => c.graded(j) && !c.passed.has(`s${j}`));
   return i === -1 ? c.l.lab!.steps.length : i;
 };
 
@@ -49,10 +52,11 @@ export function capBar(c: CapCtx): HTMLElement {
   return h('nav', { class: 'sticky top-0 z-10 space-y-1 border-b border-line bg-panel px-3 py-2', 'aria-label': et('cap.bar'), 'data-cap-bar': '' },
     h('ol', { class: 'm-0 flex list-none gap-2 p-0' }, ...all.map((_, i) => {
       const ok = c.passed.has(`s${i}`);
-      return h('li', { class: 'min-w-0 flex-1 space-y-1', 'aria-current': i === cur ? 'step' : false },
-        h('span', { class: cls.cx('block h-1.5 rounded-full', ok ? 'bg-good' : i === cur ? 'bg-accent' : 'bg-surface-2 ring-1 ring-line'), 'aria-hidden': 'true' }),
+      const off = !c.graded(i); // L278: an ungradable step (e.g. DynamoDB `catalog`) is dashed and says so, never green
+      return h('li', { class: 'min-w-0 flex-1 space-y-1', 'aria-current': i === cur ? 'step' : false, 'data-ungraded': off ? '' : false },
+        h('span', { class: cls.cx('block h-1.5 rounded-full', off ? 'border border-dashed border-line-strong' : ok ? 'bg-good' : i === cur ? 'bg-accent' : 'bg-surface-2 ring-1 ring-line'), 'aria-hidden': 'true' }),
         h('span', { class: cls.cx('block truncate text-caption max-lg:sr-only', i === cur ? 'font-bold text-ink' : 'text-muted') },
-          `${i + 1}. ${name(i)}`, h('span', { class: 'sr-only' }, ` (${ok ? et('cap.passed') : i === cur ? et('cap.current') : et('cap.todo')})`)));
+          `${i + 1}. ${name(i)}`, h('span', { class: 'sr-only' }, ` (${off ? et('cap.ungraded') : ok ? et('cap.passed') : i === cur ? et('cap.current') : et('cap.todo')})`)));
     })),
     h('p', { class: 'm-0 text-caption font-semibold lg:hidden', 'aria-hidden': 'true' },
       cur < all.length ? et('cap.now', { i: cur + 1, n: all.length, name: name(cur) }) : et('cap.allDone', { n: all.length })));
@@ -64,16 +68,17 @@ export function capChecks(c: CapCtx): HTMLElement {
   const { h, cls } = d;
   const words = (i: number): string => {
     const s = steps(c)[i];
-    const key: EngineKey = s.check === 'rows' ? (s.ordered ? 'cap.check.rowsOrdered' : 'cap.check.rows') : `cap.check.${s.check}`;
+    const key: PredKey = s.check === 'rows' ? (s.ordered ? 'cap.check.rowsOrdered' : 'cap.check.rows') : `cap.check.${s.check}`;
     return et(key, { i: i + 1 });
   };
   return h('section', { class: cls.cx(cls.CARD, 'space-y-2 p-4'), 'aria-labelledby': `${c.l.id}-graded` },
     h('h3', { id: `${c.l.id}-graded`, class: 'm-0 text-body font-bold' }, et('cap.gradedBy')),
     h('ul', { class: 'm-0 list-none space-y-1 p-0 text-body-sm' }, ...steps(c).map((_, i) => {
       const ok = c.passed.has(`s${i}`);
+      const off = !c.graded(i);
       return h('li', { class: 'flex items-start gap-2' },
-        ok ? d.icon('check', 'mt-0.5 size-4 shrink-0 text-good') : h('span', { class: 'mt-0.5 inline-block size-4 shrink-0 rounded-full ring-2 ring-line-strong', 'aria-hidden': 'true' }),
-        h('span', {}, words(i), h('span', { class: 'sr-only' }, ` (${ok ? et('cap.passed') : et('cap.todo')})`)));
+        ok ? d.icon('check', 'mt-0.5 size-4 shrink-0 text-good') : h('span', { class: cls.cx('mt-0.5 inline-block size-4 shrink-0 rounded-full', off ? 'border-2 border-dashed border-line-strong' : 'ring-2 ring-line-strong'), 'aria-hidden': 'true' }),
+        h('span', {}, words(i), off ? h('span', { class: 'text-muted' }, ` (${et('cap.ungraded')})`) : h('span', { class: 'sr-only' }, ` (${ok ? et('cap.passed') : et('cap.todo')})`)));
     })));
 }
 
