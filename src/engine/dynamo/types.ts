@@ -8,7 +8,7 @@ export type Item = Record<string, AttributeValue>;
 /** Operations a player (or a lab's solution) may send. Anything else is refused before it reaches the engine. */
 export const DYNAMO_OPS = [
   'GetItem', 'PutItem', 'UpdateItem', 'DeleteItem', 'Query', 'Scan', 'BatchGetItem', 'BatchWriteItem', 'CreateTable',
-  'DescribeTable', 'ExecuteStatement', 'TransactGetItems', 'TransactWriteItems', 'ExecuteTransaction',
+  'DescribeTable', 'ExecuteStatement', 'TransactGetItems', 'ExecuteTransaction',
 ] as const;
 export type DynamoOp = (typeof DYNAMO_OPS)[number];
 
@@ -68,7 +68,9 @@ export class DynamoInputError extends Error {
     super(detail || code);
   }
 }
-export type InputCode = 'empty' | 'tooLong' | 'json' | 'shape' | 'op' | 'input' | 'untyped';
+export type InputCode = 'empty' | 'tooLong' | 'json' | 'shape' | 'op' | 'input' | 'untyped' | 'unsupported';
+/** Real DynamoDB operations dynoxide 1.5.0 answers with UnsupportedOperation (spike ES3, L254): refused with a clear line. */
+export const BROWSER_UNSUPPORTED = ['TransactWriteItems', 'UpdateTimeToLive', 'DescribeTimeToLive', 'ListStreams', 'DescribeStream', 'GetShardIterator', 'GetRecords'] as const;
 
 /**
  * DynamoDB refused the request. `type` is the short exception name (`ValidationException`,

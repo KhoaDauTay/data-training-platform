@@ -144,4 +144,21 @@ describe('Mongo lab engine (mingo) on the shop dataset', () => {
   it('dataset lạ bị từ chối', async () => {
     await expect(loadDataset('nope')).rejects.toThrow(MongoRunError);
   });
+
+  it('$out/$merge (ES2, L254): $out thay collection đích, $merge mặc định merge/insert, seed cache không đổi', async () => {
+    const setup = JSON.stringify({ collections: { users: [{ _id: 1, a: 1, b: 1 }, { _id: 2, a: 2 }], dst: [{ _id: 1, n: 1 }, { _id: 9, n: 9 }] } });
+    const once = async (src: string) => runMongo(await loadDataset(setup), src);
+    const self = await once(`db.users.aggregate([{ $match: { a: 1 } }, { $out: "users" }])`);
+    expect([self.kind, self.collection, self.docs]).toEqual(['write', 'users', [{ _id: 1, a: 1, b: 1 }]]);
+    expect((await once(`db.dst.aggregate([{ $match: { n: 1 } }, { $out: "fresh" }])`)).docs).toEqual([{ _id: 1, n: 1 }]);
+    const merged = await once(`db.users.aggregate([{ $project: { a: 1 } }, { $merge: { into: "dst" } }])`);
+    expect(merged.collection).toBe('dst');
+    expect(merged.docs).toEqual([{ _id: 1, n: 1, a: 1 }, { _id: 9, n: 9 }, { _id: 2, a: 2 }]);
+    const replaced = await once(`db.users.aggregate([{ $project: { a: 1 } }, { $merge: { into: "dst", whenMatched: "replace", whenNotMatched: "discard" } }])`);
+    expect(replaced.docs).toEqual([{ _id: 1, a: 1 }, { _id: 9, n: 9 }]);
+    // every later run starts from the pristine seed, even through the loadDataset cache
+    expect((await once(`db.users.find({})`)).docs).toEqual([{ _id: 1, a: 1, b: 1 }, { _id: 2, a: 2 }]);
+    expect((await once(`db.dst.find({})`)).docs).toEqual([{ _id: 1, n: 1 }, { _id: 9, n: 9 }]);
+    expect(() => run(`db.orders.aggregate([{ $out: "x" }, { $match: {} }])`)).toThrow(/final stage/);
+  });
 });

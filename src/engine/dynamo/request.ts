@@ -1,6 +1,6 @@
 // ENG-DYNAMO: editor text → DynamoRequest. Pure, no DOM. The text is data: JSON.parse or a PartiQL string handed to the
 // engine as `Statement`, never eval/new Function.
-import { DYNAMO_OPS, DynamoInputError, type DynamoOp, type DynamoRequest, type InputCode } from './types';
+import { BROWSER_UNSUPPORTED, DYNAMO_OPS, DynamoInputError, type DynamoOp, type DynamoRequest, type InputCode } from './types';
 
 /** Same ceiling as the Sandbox draft. */
 export const MAX_INPUT_CHARS = 20_000;
@@ -49,6 +49,8 @@ export function parseRequest(text: string): DynamoRequest {
     throw jsonError(src, e);
   }
   if (!isObj(v) || Object.keys(v).some((k) => k !== 'op' && k !== 'input')) throw new DynamoInputError('shape');
+  if ((BROWSER_UNSUPPORTED as readonly unknown[]).includes(v.op)) throw new DynamoInputError('unsupported', String(v.op));
+  if (isObj(v.input) && isObj(v.input.StreamSpecification)) throw new DynamoInputError('unsupported', 'StreamSpecification');
   if (!isOp(v.op)) throw new DynamoInputError('op', typeof v.op === 'string' ? v.op : '');
   const input = v.input ?? {};
   if (!isObj(input)) throw new DynamoInputError('input');
@@ -64,6 +66,10 @@ const TEXT: Record<InputCode, { vi: string; en: string }> = {
   shape: { vi: 'Request phải có dạng { "op": "...", "input": { ... } } và không có khóa nào khác.', en: 'A request is { "op": "...", "input": { ... } } with no other keys.' },
   op: { vi: `"op" phải là một trong: ${DYNAMO_OPS.join(', ')}.`, en: `"op" must be one of: ${DYNAMO_OPS.join(', ')}.` },
   input: { vi: '"input" phải là một object { ... }.', en: '"input" must be an object { ... }.' },
+  unsupported: {
+    vi: '{path} chưa chạy trong trình duyệt (dynoxide trả UnsupportedOperation). Giao dịch ghi: dùng ExecuteTransaction (PartiQL), cũng tất-cả-hoặc-không. Streams và TTL cần máy chủ thật (AWS).',
+    en: '{path} does not run in the browser yet (dynoxide answers UnsupportedOperation). For a write transaction use ExecuteTransaction (PartiQL), which is all-or-nothing too. Streams and TTL need a real server (AWS).',
+  },
   untyped: { vi: 'Giá trị ở {path} cần ghi kiểu DynamoDB, ví dụ { "S": "CUST#1" } hoặc { "N": "42" }.', en: 'The value at {path} needs its DynamoDB type, e.g. { "S": "CUST#1" } or { "N": "42" }.' },
 };
 

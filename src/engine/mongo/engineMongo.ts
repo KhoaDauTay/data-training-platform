@@ -115,12 +115,19 @@ export function runMongo(ds: Dataset, src: string): MongoResult {
   const cmd = parseShell(src);
   const name = cmd.collection;
   const known = Object.hasOwn(ds.collections, name);
-  // ponytail: a deep copy per run (structuredClone keeps Date/RegExp), so neither a write nor a stage can touch the
-  // seed; cheap at lab sizes (~100 docs, < 1 ms), copy-on-write if a lab ever holds 100k documents.
-  const docs = known ? structuredClone(ds.collections[name]) : [];
+  // This run's own collections: each is a deep copy of the seed (structuredClone keeps Date/RegExp), made on first use,
+  // so neither a write, a `$lookup` nor an `$out`/`$merge` can touch the cached dataset (ES2, L254).
+  // ponytail: cheap at lab sizes (~100 docs, < 1 ms); copy-on-write if a lab ever holds 100k documents.
+  const run = new Map<string, MongoDoc[]>();
+  const coll = (n: string): MongoDoc[] => {
+    let c = run.get(n);
+    if (!c) run.set(n, (c = Object.hasOwn(ds.collections, n) ? structuredClone(ds.collections[n]) : []));
+    return c;
+  };
+  const docs = coll(name);
   // scriptEnabled stays on: mingo's own $setWindowFields uses $function internally. Player text cannot reach script:
   // the parser refuses $where/$function/$accumulator and can only build literals, never a function.
-  const opts = { scriptEnabled: true, collectionResolver: (n: string) => (Object.hasOwn(ds.collections, n) ? ds.collections[n] : []) };
+  const opts = { scriptEnabled: true, collectionResolver: coll };
   const m = cmd.method;
   const out = (kind: MongoResult['kind'], list: MongoDoc[], extra: Partial<MongoResult> = {}): MongoResult => ({
     kind,
@@ -171,7 +178,20 @@ export function runMongo(ds: Dataset, src: string): MongoResult {
         argCount(m, 2);
         const pipeline = arg<MongoDoc[]>(m, 0, (v) => Array.isArray(v) && v.every(isDoc), 'an array of stages like [{ $match: … }]');
         options(m, 1, ['allowDiskUse']);
-        return out('docs', aggregate(docs, pipeline, opts) as MongoDoc[]);
+        const at = pipeline.findIndex((st) => Object.hasOwn(st, '$out') || Object.hasOwn(st, '$merge'));
+        if (at === -1) return out('docs', aggregate(docs, pipeline, opts) as MongoDoc[]);
+        const stage = Object.keys(pipeline[at])[0];
+        if (at !== pipeline.length - 1) throw new MongoRunError('bad_stage', `${stage} can only be the final stage in the pipeline`);
+        // The head runs to a finished array first: mingo's $out/$merge push into the target while reading the source,
+        // and the target may be the source itself.
+        const head = aggregate(docs, pipeline.slice(0, -1), opts) as MongoDoc[];
+        const spec = pipeline[at][stage];
+        const into = stage === '$out' ? spec : isDoc(spec) ? spec.into : undefined;
+        const target = typeof into === 'string' ? into : isDoc(into) && typeof into.coll === 'string' ? into.coll : '';
+        if (!target) throw new MongoRunError('bad_argument', `${stage} needs a target collection name`);
+        if (stage === '$out') run.set(target, structuredClone(head)); // MongoDB replaces the whole target collection
+        else aggregate(head, [{ $merge: { ...(spec as MongoDoc), into: target } }], opts); // defaults: merge / insert
+        return { ...out('write', run.get(target) ?? []), collection: target, unknownCollection: undefined };
       }
       case 'insertOne':
       case 'insertMany': {

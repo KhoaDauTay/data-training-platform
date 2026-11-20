@@ -62,7 +62,7 @@ export function labOf(setup: string): DynamoLab {
   return { tables: j.tables ?? [], items };
 }
 
-const WRITE = new Set(['PutItem', 'UpdateItem', 'DeleteItem', 'BatchWriteItem', 'TransactWriteItems', 'ExecuteTransaction']);
+const WRITE = new Set(['PutItem', 'UpdateItem', 'DeleteItem', 'BatchWriteItem', 'ExecuteTransaction']);
 const statementsOf = (req: DynamoRequest): string[] => req.op === 'ExecuteStatement' ? [String(req.input.Statement ?? '')]
   : req.op === 'ExecuteTransaction' ? ((req.input.TransactStatements ?? []) as { Statement?: string }[]).map((s) => String(s.Statement ?? '')) : [];
 export const isWrite = (req: DynamoRequest): boolean =>
@@ -74,9 +74,6 @@ export function tableOf(req: DynamoRequest, lab: DynamoLab): string | undefined 
   const i = req.input as Record<string, unknown>;
   if (typeof i.TableName === 'string') return i.TableName;
   if (isObj(i.RequestItems)) return Object.keys(i.RequestItems)[0];
-  if (Array.isArray(i.TransactItems)) {
-    for (const a of i.TransactItems as Record<string, { TableName?: string }>[]) for (const x of Object.values(a ?? {})) if (x?.TableName) return x.TableName;
-  }
   for (const s of statementsOf(req)) {
     const m = /\b(?:INTO|UPDATE|FROM)\s+"?([\w.-]+)"?/i.exec(s);
     if (m) return m[1];

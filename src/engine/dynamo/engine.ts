@@ -20,9 +20,9 @@ type Load = () => Promise<unknown>;
 type Scope = { postMessage: (m: unknown) => void; onmessage: unknown };
 
 /** Ops that change data: the next run re-seeds the lab first, so every run starts from pristine data. */
-const WRITES = new Set<DynamoOp>(['PutItem', 'UpdateItem', 'DeleteItem', 'BatchWriteItem', 'CreateTable', 'TransactWriteItems', 'ExecuteTransaction']);
+const WRITES = new Set<DynamoOp>(['PutItem', 'UpdateItem', 'DeleteItem', 'BatchWriteItem', 'CreateTable', 'ExecuteTransaction']);
 /** Ops that report ConsumedCapacity when asked; a request that does not say gets 'TOTAL' (the Query-vs-Scan lesson). */
-const CAPACITY = new Set<DynamoOp>(['GetItem', 'PutItem', 'UpdateItem', 'DeleteItem', 'Query', 'Scan', 'BatchGetItem', 'BatchWriteItem', 'ExecuteStatement', 'TransactGetItems', 'TransactWriteItems', 'ExecuteTransaction']);
+const CAPACITY = new Set<DynamoOp>(['GetItem', 'PutItem', 'UpdateItem', 'DeleteItem', 'Query', 'Scan', 'BatchGetItem', 'BatchWriteItem', 'ExecuteStatement', 'TransactGetItems', 'ExecuteTransaction']);
 
 async function hook(load: Load): Promise<Call> {
   const g = globalThis as unknown as Scope;
