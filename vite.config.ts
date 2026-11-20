@@ -20,7 +20,7 @@ const serviceWorker = (): Plugin => {
 };
 
 /**
- * v22 (P2-1, L254): libpg-query's ESM entry starts loading its wasm on import, from `<chunk dir>/libpg-query.wasm`, a file
+ * v22 (P2-1, L271): libpg-query's ESM entry starts loading its wasm on import, from `<chunk dir>/libpg-query.wasm`, a file
  * the build never emits (404 HTML, "Aborted(CompileError…)" in the worker). src/viz/parser.ts hands it the hashed `?url`
  * file through loadModule({ wasm }), which instantiates on demand, so the eager call is dropped. Vitest (Node) loads
  * node_modules untransformed and keeps the library's own load; dev pre-bundles it (CJS inside), so the extra 404 stays

@@ -30,7 +30,7 @@ let queue: Promise<void> = Promise.resolve();
 let hideTimer = 0;
 /** The completion on screen, so relabelStage() can rebuild its sentence in the new language. */
 let shown: Ctx | undefined;
-/** v22 P3-4 (L254): the run that solved the task; a newer Run/Submit closes the folded line (it covered the chart's axis). */
+/** v22 P3-4 (L271): the run that solved the task; a newer Run/Submit closes the folded line (it covered the chart's axis). */
 let solvedBy: unknown;
 /** Where focus came from when it entered the stage (the Skip button): hide() hands it back there. */
 let returnFocus: HTMLElement | null = null;

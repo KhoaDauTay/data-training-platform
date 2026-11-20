@@ -111,7 +111,7 @@ const CHROME = `(() => {
   for (let i = 1; i < row.length; i++) if (row[i][1].left < row[i - 1][1].right - 1 && row[i][1].top < row[i - 1][1].bottom - 1) cut.push(row[i - 1][0] + '|' + row[i][0]);
   const x = document.getElementById('xp').getBoundingClientRect(), c = document.getElementById('chapter').getBoundingClientRect();
   if (shown(document.getElementById('chapter')) && c.right > x.left + 1) cut.push('chapter|xp');
-  // QA v22 (L254): nothing past the right edge (the bar overflowed for a player with badges once "Database Engine" joined the nav)
+  // QA v22 (L272): nothing past the right edge (the bar overflowed for a player with badges once "Database Engine" joined the nav)
   const over = Math.round(Math.max(0, ...[...document.querySelector('header').querySelectorAll('*')].filter((e) => shown(e) && !e.closest('[popover], .sr-only')).map((e) => e.getBoundingClientRect().right)) - innerWidth);
   if (over > 1) cut.push('off screen by ' + over + ' px');
   return { cut, bottom: Math.round(document.getElementById('bottom-nav').getBoundingClientRect().height) };
@@ -215,7 +215,7 @@ async function startBrowser() {
       pending.get(m.id)(m);
       pending.delete(m.id);
     }
-    // v22 (P2-1, L254): workers (PGlite, parser) are attached too, and the Log domain is heard as well: a failed wasm
+    // v22 (P2-1, L271): workers (PGlite, parser) are attached too, and the Log domain is heard as well: a failed wasm
     // fetch inside the worker reached neither the page's console nor Runtime.exceptionThrown.
     const where = m.sessionId ? 'worker ' : '';
     if (m.method === 'Target.attachedToTarget') {
@@ -702,7 +702,7 @@ try {
   });
 
   // v21 U1/U2 (L189): the top bar at 1024–1920, VI and EN, on the domain with the longest titles (Finance) and the workspace.
-  // QA v22 (L254): late in the run (it replaces the scenario's save), as a returning player (save-v5: Inbox and Review badges shown), the widest bar.
+  // QA v22 (L272): late in the run (it replaces the scenario's save), as a returning player (save-v5: Inbox and Review badges shown), the widest bar.
   const badges = JSON.parse(readFileSync(join(ROOT, 'tests/fixtures/save-v5.json'), 'utf8'));
   const badgeInit = Object.entries({ 'cargo-query-save': badges, 'cargo-query/tour': { step: 99, knows: true }, 'cargo-query/coach-done': true, 'cargo-query/domain': 'logistics' })
     .map(([k, v]) => `localStorage.setItem(${S(k)}, ${S(S(v))});`).join('');

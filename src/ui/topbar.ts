@@ -32,7 +32,7 @@ export interface NavItem {
   onclick?: () => void;
   /** ENG-CORE (L220, design D-E1): not in the 5-slot mobile bottom bar; there that item (by id) stands for it and is current for it too. */
   mergeInto?: string;
-  /** QA v22 (L254): a shorter top-bar label below 1920 px (one row with the badges, L189); the full label from 1920 px. */
+  /** QA v22 (L272): a shorter top-bar label below 1920 px (one row with the badges, L189); the full label from 1920 px. */
   short?: Key;
 }
 const NAV: NavItem[] = [];
@@ -209,7 +209,7 @@ export function syncMenuCopies(): void {
 let noticeSig: unknown[] = [];
 function renderNotice(domainChrome: boolean): void {
   const el = byId('notice');
-  // v22 P3-6 (L254): "preparing <domain> data" only on that domain's pages; General pages do not wait for it.
+  // v22 P3-6 (L271): "preparing <domain> data" only on that domain's pages; General pages do not wait for it.
   const n = app.notice?.key === 'domain.loading' && !domainChrome ? undefined : app.notice;
   el.hidden = !n;
   if (!n) {

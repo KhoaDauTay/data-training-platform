@@ -23,7 +23,7 @@ type TaskState = 'done' | 'current' | 'optional' | 'early' | 'locked';
 const STATE_KEY: Record<Exclude<TaskState, 'locked'>, Key> = {
   done: 'map.beat.done', current: 'map.beat.current', optional: 'map.beat.optional', early: 'map.beat.early',
 };
-// v22 P3-1 (L254): below 360 px the arrows and task buttons are 32 px, so ‹, up to 6 tasks and › stay on one row at 320.
+// v22 P3-1 (L271): below 360 px the arrows and task buttons are 32 px, so ‹, up to 6 tasks and › stay on one row at 320.
 const ARROW = 'grid size-10 shrink-0 place-items-center p-0 sm:size-8 max-[360px]:size-8';
 
 /**

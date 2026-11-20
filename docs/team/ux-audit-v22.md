@@ -1,6 +1,6 @@
 # ux-audit v22: lần chạy đầu (local + live)
 
-Người viết: QA · 2026-11-20 · L254. Công cụ: `scripts/ux-audit.mjs` (`npm run ux-audit`, `UX_URL=<url>` cho site live). Checklist: `ux-deploy-checklist.md`.
+Người viết: QA · 2026-11-20 · L272. Công cụ: `scripts/ux-audit.mjs` (`npm run ux-audit`, `UX_URL=<url>` cho site live). Checklist: `ux-deploy-checklist.md`.
 
 ## Công cụ đo gì
 
@@ -38,7 +38,7 @@ Không bản nào có lỗi tương phản, chữ bị cắt, `#bottom-nav` ≥ 
 | I3 | P2 | `#/engine/postgres` (117 link), mọi cỡ | Link bài trong danh sách cao 23 px; ở điện thoại dòng danh sách cần 44 px | `py-2` / `min-h-11` trên link dòng | `src/ui/engineView.ts` |
 | I3 | P3 | `#/me` (6), breadcrumb `#/learn/sql/1` (2) | Link kỹ năng 20 px, link breadcrumb 19 px (live cũng có) | `py-0.5` | `src/ui/meView.ts`, `src/ui/homeView.ts` (`learnSub`) |
 
-## Đã sửa (cùng nhánh, L254)
+## Đã sửa (cùng nhánh, L272)
 
 - **E2/I2/A1:** top bar ghi "Engine" dưới 1920 px (đủ "Database Engine" từ 1920; tên truy cập = chữ đang hiện). Nhãn Hộp thư, Ôn tập và Sổ tay chỉ còn icon + badge dưới 1600 px (trước là 1280). Đo lại: không gì ra ngoài mép ở 1024–1920, VI + EN.
 - **Chặn tái phát:** `CHROME` của smoke bắt lỗi "off screen by N px". Bước top bar của smoke chạy với save-v5 (có badge Hộp thư/Ôn tập) ở 1024/1280/1440/1920.

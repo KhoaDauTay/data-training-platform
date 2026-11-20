@@ -237,7 +237,7 @@
 .side-label, .side-extra, .side-group { transition: opacity 140ms ease-out 80ms; }
 #side[data-closing] :is(.side-label, .side-extra, .side-group) { opacity: 0; transition: none; }
 .side-toggle { align-self: flex-start; }
-/* v22 P3-3 (L254): the lock badge on a locked row's icon is for the rail only; expanded, the trailing lock says it. */
+/* v22 P3-3 (L271): the lock badge on a locked row's icon is for the rail only; expanded, the trailing lock says it. */
 .side-badge { display: none; }
 /* Rail (64 px): icons only; labels stay for screen readers (plus a title tooltip), the lists below go. */
 @container (max-width: 120px) {
