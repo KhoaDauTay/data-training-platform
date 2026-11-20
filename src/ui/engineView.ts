@@ -602,7 +602,7 @@ function labView(l: EngineLesson, v: Visit): HTMLElement {
   const cc = cap ? capCtx(l, v) : undefined;
   const cur = cap && cc ? cap.currentStep(cc) : -1;
   // One BTN_GO per region (v23, L299): only the current step's Submit (the capstone's, else the first not passed) is the main button.
-  const main = cap && cc ? cur : steps.findIndex((_, i) => !v.passed.has(`s${i}`));
+  const main = cap && cc ? cur : steps.findIndex((s, i) => gradable(l, s) && !v.passed.has(`s${i}`));
   return h('section', { class: 'flex flex-col gap-4', 'aria-labelledby': `${l.id}-lab` },
     cardHead(`${l.id}-lab`, 'kindLab', et('lab.title')),
     cap && cc ? cap.capBar(cc) : null,
@@ -800,9 +800,12 @@ const SITE: Record<string, string> = {
 export function sourceTitle(u: string): string {
   let url: URL;
   try { url = new URL(u); } catch { return u; }
-  const words = (x: string): string => decodeURIComponent(x).replace(/\.html?$/, '').replace(/[-_.]+/g, ' ').trim();
+  const dec = (x: string): string => { try { return decodeURIComponent(x); } catch { return x; } };
+  // "HowItWorks.DataTypes" → "How It Works Data Types"; "bp-sort-keys" → "bp sort keys"
+  const words = (x: string): string => dec(x).replace(/\.html?$/, '').replace(/([a-z])([A-Z])/g, '$1 $2').replace(/[-_.]+/g, ' ').trim();
   const seg = url.pathname.split('/').filter(Boolean).at(-1);
-  const page = [seg && words(seg), url.hash.length > 1 && words(url.hash.slice(1))].filter(Boolean).join(' › ');
+  const anchor = url.hash.length > 1 && words(url.hash.slice(1).replace(/\.([0-9A-F]{2})/g, '%$1')); // MediaWiki writes ' as .27
+  const page = [seg && words(seg), anchor && (/[a-z]/.test(anchor) ? anchor : anchor.toLowerCase())].filter(Boolean).join(' › ');
   const site = SITE[url.hostname] ?? url.hostname.replace(/^www\./, '');
   return page ? `${site} · ${page[0].toUpperCase()}${page.slice(1)}` : site;
 }

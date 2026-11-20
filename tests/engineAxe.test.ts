@@ -61,6 +61,13 @@ describe('Database Engine lesson pages (fixtures)', () => {
     expect([go(0), go(1)]).toEqual([true, false]);
   });
 
+  it('sourceTitle: AWS camelCase, MediaWiki anchors, a bad escape never throws', async () => {
+    const { sourceTitle } = await import('../src/ui/engineView');
+    expect(sourceTitle('https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.Partitions.html')).toBe('DynamoDB · How It Works Partitions');
+    expect(sourceTitle('https://wiki.postgresql.org/wiki/Don%27t_Do_This#Don.27t_use_money')).toBe("PostgreSQL Wiki · Don't Do This › Don't use money");
+    expect(sourceTitle('https://example.org/a%E0%A4%A')).toBe('example.org · A%E0%A4%A');
+  });
+
   it('a concept lesson is completed by its button', async () => {
     await visit('#/engine/postgres/L1/e-pg-l1-01');
     document.querySelector<HTMLElement>('[data-ek="e-pg-l1-01-done"]')!.click();
