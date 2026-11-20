@@ -141,7 +141,7 @@ function overview(): HTMLElement {
 function lessonRow(l: EngineLesson, ok: Set<string>): HTMLElement {
   const { h, cls } = d;
   return h('li', { class: 'flex flex-wrap items-center gap-2' },
-    h('a', { href: lessonHash(l), class: 'font-semibold' }, l.title[lang()]), tick(ok.has(l.id)),
+    h('a', { href: lessonHash(l), class: 'inline-flex min-h-6 items-center font-semibold max-sm:min-h-11' }, l.title[lang()]), tick(ok.has(l.id)),
     h('span', { class: cls.cx(cls.PILL, 'bg-code text-muted') }, et(`kind.${l.kind}`)),
     h('span', { class: 'text-body-sm text-muted' }, et('minutes', { n: l.minutes })));
 }
@@ -153,7 +153,7 @@ function enginePg(e: EngineId): HTMLElement {
   return h('div', { class: 'space-y-6' },
     h('p', { class: 'm-0' }, h('a', { href: d.hashOf('engine') }, `‹ ${d.t('nav.engine')}`)),
     h('div', { class: 'space-y-2' },
-      h('h2', { class: 'm-0 text-heading font-bold', id: 'engine-title' }, NAME[e]),
+      h('h2', { class: 'm-0 text-title font-bold', id: 'engine-title' }, NAME[e]),
       h('p', { class: 'm-0 text-muted' }, et(`desc.${e}`)),
       h('p', { class: 'm-0 text-body-sm font-semibold' }, et('progress', { k: p.done, n: p.total })), bar(p.done, p.total)),
     e === 'mongodb' ? pathCard() : null,
@@ -423,7 +423,7 @@ function lessonPage(l: EngineLesson): HTMLElement {
   return h('article', { class: 'space-y-6', 'aria-labelledby': 'engine-lesson-title' },
     h('p', { class: 'm-0' }, h('a', { href: d.engineHash(l.engine) }, `‹ ${NAME[l.engine]} · ${levelName(l.level)}`)),
     h('div', { class: 'space-y-2' },
-      h('h2', { id: 'engine-lesson-title', class: 'm-0 text-heading font-bold' }, l.title[lang()], tick(isDone)),
+      h('h2', { id: 'engine-lesson-title', class: 'm-0 text-title font-bold' }, l.title[lang()], tick(isDone)),
       h('p', { class: 'm-0 flex flex-wrap items-center gap-2 text-body-sm text-muted' },
         h('span', { class: cls.cx(cls.PILL, 'bg-code') }, et(`kind.${l.kind}`)), h('span', {}, et('minutes', { n: l.minutes })), h('span', { 'aria-hidden': 'true' }, '·'), h('span', {}, module.name[lang()]))),
     l.runtime === 'docs' ? h('p', { class: 'm-0 rounded-(--r-ctl) bg-code p-3 text-body-sm', 'data-runtime': 'docs' }, et('runtime.docs')) : null,
@@ -537,7 +537,7 @@ function pathPage(slug: string): HTMLElement {
   if (skill) return skillPage(m, skill, ok);
   return h('div', { class: 'space-y-6' },
     h('p', { class: 'm-0' }, h('a', { href: d.engineHash('mongodb') }, `‹ MongoDB`)),
-    h('div', { class: 'space-y-2' }, h('h2', { class: 'm-0 text-heading font-bold', id: 'engine-title' }, et('path.title')),
+    h('div', { class: 'space-y-2' }, h('h2', { class: 'm-0 text-title font-bold', id: 'engine-title' }, et('path.title')),
       h('p', { class: 'm-0 text-muted' }, et('path.intro'))),
     ...path.manifest.parts.map((p) => h('section', { class: 'space-y-2', 'aria-labelledby': `part-${p.n}` },
       h('h3', { id: `part-${p.n}`, class: 'm-0 text-title font-bold' }, `${et('path.part', { n: p.n })} · ${p.title[lang()]}`),
@@ -545,7 +545,7 @@ function pathPage(slug: string): HTMLElement {
         const drills = path.drills.filter((dr) => dr.skill === x.id);
         const k = drills.filter((dr) => ok.has(dr.id)).length;
         return h('li', { class: 'flex flex-wrap items-center gap-2' },
-          h('a', { href: d.enginePathHash(slugOf(x.id)), class: 'font-semibold' }, x.label[lang()]), tick(drills.length > 0 && k === drills.length),
+          h('a', { href: d.enginePathHash(slugOf(x.id)), class: 'inline-flex min-h-6 items-center font-semibold max-sm:min-h-11' }, x.label[lang()]), tick(drills.length > 0 && k === drills.length),
           h('span', { class: 'text-body-sm text-muted tabular-nums' }, et('path.skillDone', { k, n: drills.length })));
       })))));
 }
@@ -565,7 +565,7 @@ function skillPage(m: PathChunk, skill: PathChunk['path']['skills'][number], ok:
   const code = (c: string | undefined): HTMLElement | null => (c ? h('pre', { class: 'sql m-0 overflow-x-auto', lang: 'en' }, c) : null);
   return h('article', { class: 'space-y-6', 'aria-labelledby': 'engine-lesson-title' },
     h('p', { class: 'm-0' }, h('a', { href: d.enginePathHash() }, `‹ ${et('path.back')} · ${et('path.part', { n: skill.part })}`)),
-    h('h2', { id: 'engine-lesson-title', class: 'm-0 text-heading font-bold' }, skill.label[lang()]),
+    h('h2', { id: 'engine-lesson-title', class: 'm-0 text-title font-bold' }, skill.label[lang()]),
     lesson?.concept ? h('section', { class: 'space-y-2' }, h('h3', { class: 'm-0 text-title font-bold' }, et('path.concept')), prose(lesson.concept[lang()])) : null,
     lesson?.example ? h('section', { class: 'space-y-2' }, h('h3', { class: 'm-0 text-title font-bold' }, et('path.example')), code(lesson.example),
       lesson.explain ? prose(lesson.explain[lang()]) : null) : null,

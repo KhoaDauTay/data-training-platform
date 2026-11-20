@@ -111,6 +111,9 @@ const CHROME = `(() => {
   for (let i = 1; i < row.length; i++) if (row[i][1].left < row[i - 1][1].right - 1 && row[i][1].top < row[i - 1][1].bottom - 1) cut.push(row[i - 1][0] + '|' + row[i][0]);
   const x = document.getElementById('xp').getBoundingClientRect(), c = document.getElementById('chapter').getBoundingClientRect();
   if (shown(document.getElementById('chapter')) && c.right > x.left + 1) cut.push('chapter|xp');
+  // QA v22 (L254): nothing past the right edge (the bar overflowed for a player with badges once "Database Engine" joined the nav)
+  const over = Math.round(Math.max(0, ...[...document.querySelector('header').querySelectorAll('*')].filter((e) => shown(e) && !e.closest('[popover], .sr-only')).map((e) => e.getBoundingClientRect().right)) - innerWidth);
+  if (over > 1) cut.push('off screen by ' + over + ' px');
   return { cut, bottom: Math.round(document.getElementById('bottom-nav').getBoundingClientRect().height) };
 })()`;
 
@@ -628,22 +631,6 @@ try {
     }
   }
   writeFileSync(join(OUT, 'axe-report.json'), JSON.stringify(axeFound, null, 1));
-  // v21 U1/U2 (L189): the top bar at 1024 and 1280, VI and EN, on the domain with the longest titles (Finance) and the workspace.
-  for (const lang of ['vi', 'en']) for (const [w, hgt] of [[1024, 700], [1280, 800]]) {
-    await size(w, hgt);
-    for (const hash of ['#/d/finance', '#/d/logistics/play']) {
-      await step(`top bar ${w}px ${lang} ${hash}`, async () => {
-        await go(base, hash);
-        await waitFor(`<main id="${mainOf(hash)}"> with an h1`, `(m => m && !m.hidden && !!m.querySelector('h1'))(document.getElementById(${S(mainOf(hash))}))`, 30000);
-        await ev(`document.querySelector('[data-lang=${lang}]').click()`);
-        await waitFor(`lang ${lang}`, `document.documentElement.lang === ${S(lang)}`, 10000);
-        const chrome = await ev(CHROME);
-        if (chrome.cut.length) fail(`top bar: cut or overlapping: ${chrome.cut.join(', ')}`);
-        return chrome;
-      });
-    }
-  }
-  await ev(`document.querySelector('[data-lang=vi]').click()`);
 
   // ---- V22-B (L206, roadmap-v22 S2): Run the first GROUP BY Solution in the workspace, "Vì sao?" on row 1 shows its source-row count.
   await step(`why: row 1 of ${GROUPED.id}`, async () => {
@@ -712,6 +699,81 @@ try {
     await ev(`(s => { s.closest('details').open = true; s.value = '5'; s.dispatchEvent(new Event('change', { bubbles: true })); })(document.querySelector('#home [data-session] details select'))`);
     await waitFor('the weekly goal on Lily\'s card', `/\\/5/.test(document.querySelector('#home [data-goal]')?.textContent ?? '')`, 5000);
     return { ...m, height: h2, ratio: Math.round((h2 / 1694) * 1000) / 1000 };
+  });
+
+  // v21 U1/U2 (L189): the top bar at 1024–1920, VI and EN, on the domain with the longest titles (Finance) and the workspace.
+  // QA v22 (L254): late in the run (it replaces the scenario's save), as a returning player (save-v5: Inbox and Review badges shown), the widest bar.
+  const badges = JSON.parse(readFileSync(join(ROOT, 'tests/fixtures/save-v5.json'), 'utf8'));
+  const badgeInit = Object.entries({ 'cargo-query-save': badges, 'cargo-query/tour': { step: 99, knows: true }, 'cargo-query/coach-done': true, 'cargo-query/domain': 'logistics' })
+    .map(([k, v]) => `localStorage.setItem(${S(k)}, ${S(S(v))});`).join('');
+  const { identifier: badgeScript } = await send('Page.addScriptToEvaluateOnNewDocument', { source: `if (location.protocol.startsWith('http') && !sessionStorage.getItem('qa22')) { sessionStorage.setItem('qa22', '1'); ${badgeInit} }` });
+  await send('Page.navigate', { url: 'about:blank' });
+  await waitFor('about:blank', `location.href === 'about:blank'`, 10000);
+  for (const lang of ['vi', 'en']) for (const [w, hgt] of [[1024, 700], [1280, 800], [1440, 900], [1920, 1000]]) {
+    await size(w, hgt);
+    for (const hash of ['#/d/finance', '#/d/logistics/play']) {
+      await step(`top bar ${w}px ${lang} ${hash}`, async () => {
+        await go(base, hash);
+        await waitFor(`<main id="${mainOf(hash)}"> with an h1`, `(m => m && !m.hidden && !!m.querySelector('h1'))(document.getElementById(${S(mainOf(hash))}))`, 30000);
+        await ev(`document.querySelector('[data-lang=${lang}]').click()`);
+        await waitFor(`lang ${lang}`, `document.documentElement.lang === ${S(lang)}`, 10000);
+        if (await ev(`document.getElementById('review-btn').hidden || document.getElementById('inbox-btn').hidden`)) fail('the badge buttons are not shown');
+        const chrome = await ev(CHROME);
+        if (chrome.cut.length) fail(`top bar: cut or overlapping: ${chrome.cut.join(', ')}`);
+        return chrome;
+      });
+    }
+  }
+  await send('Page.removeScriptToEvaluateOnNewDocument', { identifier: badgeScript });
+  await ev(`document.querySelector('[data-lang=vi]').click()`);
+
+  // ---- v21 §3 (v21-ux-review U11, QA v22): at 375 the completion dock of the chapter 1 promotion review never covers
+  // "Bắt đầu chương 2" once it is scrolled as far into view as the page allows (the other two cheap checks: CHROME above).
+  await step('375: the promotion dock leaves "Bắt đầu chương 2" free', async () => {
+    await size(375, 740);
+    await send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-color-scheme', value: 'light' }] });
+    const fx = JSON.parse(readFileSync(join(ROOT, 'tests/fixtures/save-v5.json'), 'utf8'));
+    const state = {
+      'cargo-query-save': { ...fx, completed: ['ch1-01', 'ch1-02', 'ch1-03', 'ch1-04'], bossStep: {}, drafts: {}, graded: {} },
+      'cargo-query/tour': { step: 99, knows: true }, 'cargo-query/domain': 'logistics', 'cargo-query/coach-done': true,
+    };
+    const init = Object.entries(state).map(([k, v]) => `localStorage.setItem(${S(k)}, ${S(S(v))});`).join('');
+    const { identifier } = await send('Page.addScriptToEvaluateOnNewDocument', { source: `if (location.protocol.startsWith('http') && !sessionStorage.getItem('v21s3')) { sessionStorage.setItem('v21s3', '1'); ${init} }` });
+    await send('Page.navigate', { url: 'about:blank' });
+    await waitFor('about:blank', `location.href === 'about:blank'`, 10000);
+    await go(base, '#/d/logistics/play');
+    await waitFor('the editor and the DB ready', `!!${EDITOR} && !!document.querySelector('#db-status .bg-good')`, 90000);
+    await send('Page.removeScriptToEvaluateOnNewDocument', { identifier });
+    const src = readFileSync(join(ROOT, 'content/tickets/ch1/ch1-05.md'), 'utf8');
+    const answer = parseYaml(/^---\r?\n([\s\S]*?)\r?\n---/.exec(src)[1]).conclusion.answer;
+    const sqls = [...src.split('# EN')[0].matchAll(/## Step \d+:[^\n]*\n[\s\S]*?```sql\r?\n([\s\S]*?)```/g)].map((m) => m[1].trim());
+    for (const [i, sql] of sqls.entries()) {
+      await ev(`document.querySelector('#pane-tabs [data-pane=work]').click()`);
+      await waitFor(`step ${i + 1}'s editor`, `!!${EDITOR} && ${EDITOR}.offsetParent !== null`, 10000);
+      await ev(`${EDITOR}.focus()`);
+      await key('a', MOD, 'KeyA', 65);
+      await send('Input.insertText', { text: sql });
+      await key('Enter', MOD | SHIFT, 'Enter', 13);
+      if (i < sqls.length - 1) await waitFor(`step ${i + 2}`, `JSON.parse(localStorage.getItem('cargo-query-save')).bossStep['ch1-05'] === ${i + 1}`, 60000);
+      else await waitFor('the conclusion form', `!!document.getElementById('conclusion-form')`, 60000);
+    }
+    await ev(`(f => { f.querySelector('input[value="${answer}"]').click(); f.requestSubmit(); })(document.getElementById('conclusion-form'))`);
+    const NEXT = `[...document.querySelectorAll('#ticket button')].find((b) => /Bắt đầu chương 2/.test(b.textContent) && b.offsetParent)`;
+    await waitFor('the review in save.completed', `${completed}.includes('ch1-05')`, 30000);
+    await ev(`document.querySelector('#pane-tabs [data-pane=ticket]').click()`);
+    await waitFor('"Bắt đầu chương 2"', `!!${NEXT}`, 30000);
+    const covered = `(() => { const b = ${NEXT}; b.scrollIntoView({ block: 'center' }); const r = b.getBoundingClientRect();
+      const st = document.getElementById('stage'); const s = st.hidden ? null : st.getBoundingClientRect();
+      const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+      return { stage: !!s && s.width > 0 && s.left < r.right && s.right > r.left && s.top < r.bottom && s.bottom > r.top, hit: !!hit && !b.contains(hit), at: hit?.id || hit?.tagName }; })()`;
+    const first = await ev(covered);
+    await sleep(3500); // after the dock folds (L221) or keeps its scene
+    const later = await ev(covered);
+    for (const [when, m] of [['at once', first], ['after 3.5 s', later]]) {
+      if (m.stage) fail(`#stage covers "Bắt đầu chương 2" ${when}`);
+      if (m.hit) fail(`"Bắt đầu chương 2" is covered by ${m.at} ${when}`);
+    }
+    return { first, later };
   });
 
   await step('no page errors', async () => {
