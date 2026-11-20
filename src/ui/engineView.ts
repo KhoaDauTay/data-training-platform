@@ -3,7 +3,7 @@ import {
   type EngineId, type EngineLesson, type LessonSource, type Level, type ModuleName, type Question, type Tree,
 } from '../engine/content';
 import { heapView } from '../engine/inside';
-import { gradable, LAB_RUNNERS, type LabEnv, type LabOutput, type LabRunner, type LabVerdict, type PlanLine } from '../engine/labs';
+import { gradable, LAB_RUNNERS, type LabEnv, type LabOutput, type LabRunner, type LabVerdict } from '../engine/labs';
 import { vizMountFor, type VizDeps, type VizMounted } from '../engine/vizRegistry';
 import type * as I18n from '../i18n';
 import { ENGINE_DICT, engineText, type EngineKey } from '../i18n/engine';
@@ -15,6 +15,11 @@ import type * as Feedback from './feedback';
 import type * as Icons from './icons';
 import type * as ResultTable from './resultTable';
 import type { Row } from './sidebar';
+import type * as Celebrate from './celebrate';
+import type * as Mascots from './mascots';
+import type * as Storage from '../storage';
+import type { CapState } from './engineCapstone';
+import type { PredictState } from './enginePredict';
 
 /**
  * ENG-CORE (L220): the Database Engine pages (#/engine, #/engine/<engine>, #/engine/<engine>/<level>/<lesson>), the lesson
@@ -32,6 +37,10 @@ export interface EngineDeps {
   lab: LabEnv;
   /** ENG-VIZ's main values (svg helper, GSAP loader); the diagram chunk itself loads through src/engine/vizRegistry.ts. */
   viz: VizDeps;
+  /** v23 PRED: device prefs (src/storage.ts), for `cargo-query/engine-first`. */
+  prefs: { read: typeof Storage.readJson; write: typeof Storage.writeJson };
+  /** v23 CAP: Lily's cheer at a capstone's finish and the level's done badge (src/art/illustrations.ts, lazy). */
+  cheer: { mascot: typeof Mascots.mascot; react: typeof Celebrate.react; badge: () => Element };
 }
 /** src/engineSources.ts: the lesson index (list fields only), one lazy chunk per lesson, and every engine's modules.yml. */
 export interface EngineSources { meta: Record<string, LessonSource>; full: Record<string, () => Promise<LessonSource>>; modules: Record<string, unknown> }
@@ -106,11 +115,14 @@ export function enginePage(): HTMLElement {
     page.id = 'engine-page';
     return page;
   }
-  const f = lesson && fullLesson(lesson);
+  const full = lesson && fullLesson(lesson);
+  // v23: a predict, a capstone or a plan diagram draws only once its lazy chunks are in (the page never changes shape later).
+  const extra = typeof full === 'object' ? chunksFor(full) : undefined;
+  const f = extra && extra !== 'ready' ? extra : full;
   const page = !lesson ? (engine ? enginePg(engine) : overview())
     : f === 'loading' ? d.h('p', { class: 'm-0 flex min-h-40 items-start gap-2 text-muted', 'aria-live': 'polite' }, d.loader(), d.t('engine.loading'))
       : f === 'failed' ? d.h('div', { role: 'alert', class: 'space-y-2' }, d.h('p', { class: 'm-0' }, d.t('engine.failed')),
-        d.h('button', { type: 'button', onclick: () => { fulls.delete(lesson.id); d.rerender(); } }, d.t('data.retry')))
+        d.h('button', { type: 'button', onclick: () => { fulls.delete(lesson.id); if (predMod === 'failed') predMod = undefined; if (capMod === 'failed') capMod = undefined; d.rerender(); } }, d.t('data.retry')))
         : lessonPage(f!);
   if (f === 'loading' || f === 'failed') return page; // not #engine-page yet: smoke and the axe harness wait for the drawn lesson
   page.id = 'engine-page'; // drawn (not the loading line): tests/axeHarness.ts and scripts/smoke.mjs wait for it
@@ -176,15 +188,19 @@ interface Visit {
   out: ({ result: LabOutput } | { error: unknown } | undefined)[];
   msg: ({ ok: boolean; text: string } | undefined)[];
   busy?: number;
-  /** A Postgres predict's real plan (or why it could not run), after "See the real plan". */
-  plan?: PlanLine[] | { error: unknown } | 'busy';
+  /** v23 PRED: the predict with a real plan (pick, verdict, the plan tree after "Xem thật"). */
+  pred: PredictState;
+  /** v23 CAP: the capstone's before/after plans. */
+  cap: CapState;
+  /** The statement that passed each lab step in this visit (the capstone's "after" plan replays it). */
+  good: string[];
   runner?: Promise<LabRunner>;
 }
 /** Per lesson, for the session: a redraw (seed done, language switch) rebuilds the page from here, never from the DOM. */
 const visits = new Map<string, Visit>();
 const visitOf = (id: string): Visit => {
   let v = visits.get(id);
-  if (!v) visits.set(id, (v = { picks: {}, says: {}, passed: new Set(), code: [], out: [], msg: [] }));
+  if (!v) visits.set(id, (v = { picks: {}, says: {}, passed: new Set(), code: [], out: [], msg: [], pred: {}, cap: {}, good: [] }));
   return v;
 };
 
@@ -207,6 +223,8 @@ function complete(l: EngineLesson): void {
   d.persist(true);
   d.announce(et('complete.xp', { xp }));
   d.rerender();
+  // v23 CAP: Lily cheers at the event (after the redraw that drew the finish card), never while drawing.
+  if (l.kind === 'capstone') queueMicrotask(() => d.cheer.react(document.querySelector('[data-cap-done]')));
 }
 function passPart(l: EngineLesson, v: Visit, part: string): void {
   v.passed.add(part);
@@ -232,6 +250,7 @@ function question(l: EngineLesson, v: Visit, q: Question, part: string, label: s
         onclick: () => {
           const pick = v.picks[part];
           v.says[part] = pick === undefined ? 'pick' : isRight(q, pick) ? 'right' : 'wrong';
+          if (part === 'p' && pick !== undefined && typeof predMod === 'object') predMod.recordFirst(d, l.id, pick);
           if (v.says[part] === 'right') passPart(l, v, part);
           d.rerender();
         },
@@ -273,7 +292,10 @@ async function labAction(l: EngineLesson, v: Visit, i: number, submit: boolean):
     if (submit) {
       const verdict = await r.check(l.lab!, l.lab!.steps[i], code);
       v.msg[i] = { ok: verdict.ok, text: verdictLine(verdict) };
-      if (verdict.ok) passPart(l, v, `s${i}`);
+      if (verdict.ok) {
+        v.good[i] = code;
+        passPart(l, v, `s${i}`);
+      }
       d.announce(v.msg[i]!.text);
     }
   } catch (error) {
@@ -293,42 +315,63 @@ function verdictLine(x: LabVerdict): string {
   return x.why && Object.hasOwn(ENGINE_DICT.vi, key) ? et(key as EngineKey, x.params) : et('wrong');
 }
 
-/** After a right predict (Postgres): EXPLAIN (FORMAT JSON) of the question's query on the lab's own data (L248). */
-function realPlan(l: EngineLesson, v: Visit): HTMLElement {
-  const { h, cls } = d;
-  const p = v.plan;
-  const show = async (): Promise<void> => {
-    v.plan = 'busy';
-    d.rerender();
-    try {
-      const r = await runnerFor(l, v)!;
-      v.plan = await r.explain!(l.lab ?? { steps: [] }, l.predict!.sql);
-    } catch (error) {
-      v.plan = { error };
-    }
-    d.rerender();
+// ---- v23 lazy parts: the predict + plan tree chunk (PRED, L256) and the capstone chunk (CAP, L257)
+
+type PredChunk = typeof import('./enginePredict');
+type CapChunk = typeof import('./engineCapstone');
+let predMod: PredChunk | 'loading' | 'failed' | undefined;
+let capMod: CapChunk | 'loading' | 'failed' | undefined;
+/** The predict chunk, once chunksFor() said 'ready' (callers run only on a drawn lesson that needed it). */
+const P = (): PredChunk => predMod as PredChunk;
+const PLAN_VIZ = /plan-tree|query-path|explain/;
+/** Starts the chunks a lesson needs; 'ready' when all are in, else 'loading' or 'failed' (Retry clears a failure). */
+function chunksFor(l: EngineLesson): 'ready' | 'loading' | 'failed' {
+  const wantPred = !!l.predict || l.kind === 'capstone' || (!!l.viz && PLAN_VIZ.test(l.viz));
+  const wantCap = l.kind === 'capstone' && !!LAB_RUNNERS[l.engine];
+  if (wantPred && predMod === undefined) {
+    predMod = 'loading';
+    import('./enginePredict').then((m) => { predMod = m; }, () => { predMod = 'failed'; }).finally(() => d.rerender());
+  }
+  if (wantCap && capMod === undefined) {
+    capMod = 'loading';
+    import('./engineCapstone').then((m) => { capMod = m; }, () => { capMod = 'failed'; }).finally(() => d.rerender());
+  }
+  const st = [wantPred ? predMod : 'ok', wantCap ? capMod : 'ok'];
+  return st.includes('failed') ? 'failed' : st.includes('loading') ? 'loading' : 'ready';
+}
+const capChunk = (): CapChunk | undefined => (typeof capMod === 'object' ? capMod : undefined);
+const levelDone = (l: EngineLesson): boolean => {
+  const ok = done();
+  return trees[l.engine].levels.find((x) => x.level === l.level)!.modules.every((m) => m.lessons.every((x) => ok.has(x.id)));
+};
+function capCtx(l: EngineLesson, v: Visit): import('./engineCapstone').CapCtx {
+  const isDone = done().has(l.id); // completed in an earlier visit: every step counts as passed
+  return {
+    d, et, inline, lang: lang(), l, passed: isDone ? new Set(l.lab!.steps.map((_, i) => `s${i}`)) : v.passed, st: v.cap, tree: P().planTreeView, pred: P(), done: isDone, levelDone: levelDone(l),
+    explainAt: async (lab, sql, step) => (await (await runnerFor(l, v)!).run(lab, P().explainSql(sql), step)).rows[0]?.[0],
+    mine: (i) => v.good[i],
   };
-  return h('div', { class: 'space-y-2' },
-    p === undefined ? h('button', { type: 'button', class: cls.cx(cls.BTN_SECONDARY, 'px-4 py-1.5'), 'data-ek': `${l.id}-plan`, onclick: () => void show() }, et('predict.realBtn'))
-      : p === 'busy' ? h('p', { class: 'm-0 flex items-center gap-2 text-body-sm text-muted' }, d.loader(), et('lab.preparing'))
-        : 'error' in p ? d.errorView(p.error)
-          : h('figure', { class: 'm-0 space-y-1' }, h('figcaption', { class: 'text-body-sm font-semibold' }, et('predict.real')),
-            h('pre', { class: 'sql m-0 overflow-x-auto', lang: 'en', 'data-plan': '' }, p.map((x) => `${'  '.repeat(x.depth)}${x.depth ? '-> ' : ''}${x.text}`).join('\n'))));
 }
 
 function labView(l: EngineLesson, v: Visit): HTMLElement {
   const { h, cls } = d;
   const steps = l.lab!.steps;
   const live = !!LAB_RUNNERS[l.engine];
+  const cap = l.kind === 'capstone' && live ? capChunk() : undefined;
+  const cc = cap ? capCtx(l, v) : undefined;
+  const cur = cap && cc ? cap.currentStep(cc) : -1;
   return h('section', { class: 'space-y-4', 'aria-labelledby': `${l.id}-lab` },
     h('h3', { id: `${l.id}-lab`, class: 'm-0 text-title font-bold' }, et('lab.title')),
+    cap && cc ? cap.capBar(cc) : null,
     h('p', { class: 'm-0 text-body-sm text-muted' }, !live ? et('lab.noRunner') : l.engine === 'mongodb' ? et('lab.dataMongo') : l.engine === 'dynamodb' ? et('lab.dataDynamo') : l.lab!.setup ? et('lab.dataPg') : et('lab.data')),
+    cap && cc ? cap.capChecks(cc) : null,
     ...steps.map((s, i) => {
       const out = v.out[i];
       const msg = v.msg[i];
       const key = `${l.id}-s${i}`;
-      return h('div', { class: cls.cx(cls.CARD, 'space-y-3 p-4') },
-        h('h4', { class: 'm-0 text-body font-bold' }, et('lab.step', { i: i + 1, n: steps.length }), tick(v.passed.has(`s${i}`))),
+      return h('div', { class: i === cur ? 'space-y-3 rounded-(--r-card) bg-panel p-4 ring-2 ring-accent' : cls.cx(cls.CARD, 'space-y-3 p-4'), 'data-step': String(i) },
+        h('h4', { class: 'm-0 text-body font-bold' }, et('lab.step', { i: i + 1, n: steps.length }), tick(v.passed.has(`s${i}`)),
+          i === cur ? h('span', { class: 'ml-2 text-caption font-bold text-accent' }, `· ${et('cap.current')}`) : null),
         h('p', { class: 'm-0' }, ...inline(s.task[lang()])),
         live ? h('textarea', {
           class: 'w-full rounded-(--r-ctl) bg-code p-2 font-mono text-body-sm ring-1 ring-line', rows: '4', spellcheck: 'false', lang: 'en',
@@ -344,8 +387,11 @@ function labView(l: EngineLesson, v: Visit): HTMLElement {
         s.fact && v.passed.has(`s${i}`) ? h('p', { class: 'm-0 rounded-(--r-ctl) bg-code p-3 text-body-sm' }, h('b', {}, `${et('lab.fact')}: `), ...inline(s.fact[lang()])) : null,
         out ? h('div', { class: 'overflow-x-auto' }, 'result' in out ? d.renderResult(out.result) : d.errorView(out.error)) : null,
         out && 'result' in out ? metaView(out.result) : null,
-        out && 'result' in out ? insideView(out.result, `${key}-inside`) : null);
-    }));
+        out && 'result' in out ? insideView(out.result, `${key}-inside`) : null,
+        out && 'result' in out ? planViz(l, out.result, v.code[i] ?? '', `${key}-plan`) : null);
+    }),
+    cap && cc ? cap.capPlans(cc) : null,
+    cap && cc ? cap.capDone(cc) : null);
 }
 
 /** Engine numbers beside the result (LabMeta); nothing when the runner gave none. */
@@ -386,6 +432,20 @@ function insideView(r: LabOutput, slot: string): HTMLElement | null {
       h('tbody', {}, ...v.rows.map((x) => h('tr', { class: x.flag === 'dead' ? 'bad' : x.flags.includes('HOT_UPDATED') || x.flag === 'redirect' ? 'warn' : '' },
         ...[x.lp, x.flag, x.xmin, x.xmax, x.ctid, x.flags.join(' ')].map((c) => h('td', { class: 'px-2 font-mono whitespace-nowrap' }, c)))))),
     diagram));
+}
+
+/**
+ * v23 (PG-VIZ live model, L258): a lab result that is EXPLAIN (FORMAT JSON) output, on a lesson whose `viz` is the plan tree
+ * or the query path, is drawn by that diagram from the learner's own plan (like pageinspect rows → pg-heap-page).
+ * `pg-partition-prune` needs the partition bounds too (PruneModel.parts), which a lab result does not carry: it keeps its sample.
+ */
+function planViz(l: EngineLesson, r: LabOutput, sql: string, slot: string): HTMLElement | null {
+  const json = r.columns.length === 1 ? r.rows[0]?.[0] : undefined;
+  if (!l.viz || l.engine !== 'postgres' || typeof predMod !== 'object' || !predMod.planTree(json)) return null;
+  const key = JSON.stringify(json);
+  if (/query-path/.test(l.viz)) return vizSlot(slot, 'pg-query-path', 'postgres', { sql: sql.replace(/^\s*EXPLAIN\s*(\([^)]*\))?\s*/i, ''), plan: json }, key);
+  if (/plan-tree|explain/.test(l.viz)) return vizSlot(slot, 'pg-plan-tree', 'postgres', json, key);
+  return null;
 }
 
 /**
@@ -437,9 +497,14 @@ function lessonPage(l: EngineLesson): HTMLElement {
     vizSlot(l.id, l.viz, l.engine),
     l.predict ? h('section', { class: cls.cx(cls.CARD, 'space-y-3 p-4'), 'aria-labelledby': `${l.id}-pred` },
       h('h3', { id: `${l.id}-pred`, class: 'm-0 text-title font-bold' }, et('predict.title')),
-      h('pre', { class: 'sql m-0 overflow-x-auto' }, l.predict.sql),
-      question(l, v, l.predict, 'p', ''),
-      l.engine === 'postgres' && l.runtime !== 'docs' && v.says.p === 'right' ? realPlan(l, v) : null) : null,
+      ...(P().hasRealPlan(l)
+        ? [P().predictView(l, {
+          d, et, inline, lang: lang(), st: v.pred, next: next ? { href: lessonHash(next) } : undefined,
+          explain: async () => (await (await runnerFor(l, v)!).run(l.lab ?? { steps: [] }, P().explainSql(l.predict!.sql))).rows[0]?.[0],
+          pass: () => passPart(l, v, 'p'),
+          diagram: (json) => vizSlot(`${l.id}-pred`, 'pg-plan-tree', 'postgres', json, JSON.stringify(json)),
+        })]
+        : [h('pre', { class: 'sql m-0 overflow-x-auto' }, l.predict.sql), question(l, v, l.predict, 'p', '')])) : null,
     l.quiz?.length ? h('section', { class: 'space-y-4', 'aria-labelledby': `${l.id}-quiz` },
       h('h3', { id: `${l.id}-quiz`, class: 'm-0 text-title font-bold' }, et('quiz.title')),
       ...l.quiz.map((q, i) => h('div', { class: cls.cx(cls.CARD, 'p-4') }, question(l, v, q, `q${i}`, et('quiz.n', { i: i + 1, n: l.quiz!.length }))))) : null,
