@@ -7,8 +7,8 @@ import { chaptersOf } from '../src/progress';
 import { LEARN_DICT } from '../src/i18n/learn';
 import { appliesIn } from '../src/learn';
 import { SKILLS } from '../src/progress';
-import { bestHash, bestRouteOf, learnAdvOf, learnModuleOf, learnSkillOf, parseRoute } from '../src/route';
-import { parseBestCard, parseTracks, RELEASED } from '../src/engine/best';
+import { learnAdvOf, learnModuleOf, learnSkillOf, parseRoute } from '../src/route';
+import { bestHash, bestRouteOf, parseBestCard, parseTracks, RELEASED } from '../src/engine/best';
 import * as bestSrc from '../src/bestSources';
 
 /** Plan 8a Task 12 (D8a-15): every General path leads to content, and nothing on it says "later". */
@@ -117,6 +117,9 @@ describe('Best Practice (v24 BP-UI, L300): mọi route parse, mọi track phát 
     expect(bestRouteOf('#/engine/best/sql/<x>')).toEqual({ track: 'sql', id: undefined });
     expect(bestRouteOf('#/engine/bestx')).toBeUndefined();
     expect(bestRouteOf('#/engine/postgres')).toBeUndefined();
+    // src/ui/engine.ts (main) tests the same hashes with one regex
+    const main = (h: string): boolean => /^#\/?engine\/best(?=$|[/?])/.test(h);
+    for (const h of ['#/engine/best', '#/engine/best/sql/e-bp-q02', '#/engine/bestx', '#/engine/postgres', '#/engine/best?x']) expect([h, main(h)]).toEqual([h, bestRouteOf(h) !== undefined]);
     const text = JSON.stringify([bestSrc.tracks, bestSrc.habits, bestSrc.meta]);
     expect(text).not.toMatch(/sắp có|coming soon|later/i);
   });

@@ -1,13 +1,12 @@
 import { BP_TIPS_KEY, parseBpTips, type BpPref } from '../bpPref';
 import {
-  BP_SECTIONS, explainOf, judge, needsPlan, parseBestCard, parseHabits, parseTracks, planScan, sideOf, sideScript,
+  bestHash, bestRouteOf, BP_SECTIONS, explainOf, judge, needsPlan, parseBestCard, parseHabits, parseTracks, planScan, sideOf, sideScript,
   type BpCard, type BpMeta, type CardSource, type Habits, type Pair, type Side, type Track, type TrackId, type Verdict,
 } from '../engine/best';
 import type { Question } from '../engine/content';
 import type { PgLabClient } from '../engine/pglab/client';
 import type * as I18n from '../i18n';
 import { bestText, type BestKey } from '../i18n/best';
-import type * as Route from '../route';
 import type { QueryResult } from '../db/run';
 import type { EngineDeps } from './engineView';
 import type { PageSub } from './homeView';
@@ -27,8 +26,9 @@ export interface BestSources {
 type LessonMeta = Record<string, { fm: unknown }>;
 
 let d: EngineDeps;
-/** Main values engineView does not take: the best routes, and a skill's label (content/skills.yml) for the skill chips. */
-let rt: { of: typeof Route.bestRouteOf; hash: typeof Route.bestHash; skill: (id: string) => { vi: string; en: string } | undefined };
+/** Main values engineView does not take: a skill's label (content/skills.yml) for the skill chips. */
+let main: { skill: (id: string) => { vi: string; en: string } | undefined };
+const rt = { of: bestRouteOf, hash: bestHash };
 let index: BpMeta[] = [];
 let tracks: Track[] = [];
 let habits: Habits;
@@ -36,12 +36,14 @@ let fullSrc: BestSources['full'] = {};
 let lessonsMeta: LessonMeta = {};
 const bt = (key: BestKey, params?: I18n.Params): string => bestText(d.getLang(), d.locale(), key, params);
 const lang = (): 'vi' | 'en' => d.getLang();
+/** No icon of its own: a new duotone path costs main ~0.3 KB gz, the whole v24 allowance (L300). A star = a good habit. */
+const BP_ICON = 'star';
 const TRACK_KEY = 'cargo-query/bp-track';
 const LEVEL_ORDER = (a: BpMeta, b: BpMeta): number => a.level.localeCompare(b.level) || a.code.localeCompare(b.code);
 
-export function initBest(deps: EngineDeps, src: BestSources, lessons: LessonMeta, route: typeof rt): void {
+export function initBest(deps: EngineDeps, src: BestSources, lessons: LessonMeta, m: typeof main): void {
   d = deps;
-  rt = route;
+  main = m;
   fullSrc = src.full;
   lessonsMeta = lessons;
   index = Object.entries(src.meta).map(([p, s]) => parseBestCard(s, p)).sort(LEVEL_ORDER);
@@ -103,7 +105,7 @@ function bar(k: number, n: number): HTMLElement {
     d.h('div', { class: d.cls.cx('h-full rounded-full', k && k === n ? 'bg-good' : 'bg-accent'), style: `width:${n ? Math.round((k / n) * 100) : 0}%` }));
 }
 const lead = (on: boolean): HTMLElement => d.h('span', { class: d.cls.cx('grid size-10 shrink-0 place-items-center rounded-full', on ? 'bg-good text-on-accent' : 'bg-accent-soft text-accent') },
-  d.icon(on ? 'check' : 'bestPractice', 'size-6'));
+  d.icon(on ? 'check' : BP_ICON, 'size-6'));
 
 /** Focus survives a redraw (the page is rebuilt on every rerender): the element with the same data-ek gets it back. */
 function keepFocus(): void {
@@ -160,7 +162,7 @@ function tipsBox(): HTMLElement {
     d.h('label', { class: 'flex min-h-11 cursor-pointer items-center gap-3 font-bold' },
       d.h('input', { type: 'checkbox', class: 'size-5', checked: !p.off, 'data-ek': 'bp-tips', onchange: (e: Event) => setTips(() => ({ off: !(e.target as HTMLInputElement).checked })) }),
       bt('tips.label')),
-    d.h('p', { class: 'm-0 min-w-0 flex-1 basis-60 text-body-sm text-muted' }, bt('tips.help')),
+    d.h('p', { class: 'm-0 min-w-0 flex-1 text-body-sm text-muted' }, bt('tips.help')),
     p.mute.length ? d.h('button', { type: 'button', class: d.cls.cx(d.cls.BTN_GHOST, 'px-3 py-1.5'), 'data-ek': 'bp-unmute', onclick: () => setTips(() => ({ mute: [] })) },
       bt('tips.unmute', { n: p.mute.length })) : null);
 }
@@ -170,7 +172,7 @@ const filters = new Map<TrackId, Filter>();
 function chip(text: string, on: boolean, key: string, flip: () => void): HTMLElement {
   return d.h('button', {
     type: 'button', 'aria-pressed': on ? 'true' : 'false', 'data-ek': key, onclick: () => { flip(); d.rerender(); },
-    class: d.cls.cx('min-h-11 rounded-full px-3 py-1 text-body-sm font-semibold sm:min-h-8', on ? 'border-accent bg-accent-soft text-ink ring-1 ring-accent' : 'bg-panel text-ink'),
+    class: d.cls.cx('min-h-11 rounded-full px-3 py-1 text-body-sm font-semibold', on ? 'border-accent bg-accent-soft text-ink ring-1 ring-accent' : 'bg-panel text-ink'),
   }, text);
 }
 const toggle = (s: Set<string>, v: string): void => void (s.has(v) ? s.delete(v) : s.add(v));
@@ -197,7 +199,7 @@ function gridPage(t: Track): HTMLElement {
     gallery.length ? h('section', { class: 'flex flex-col gap-3', 'aria-labelledby': 'bp-gallery' },
       h('h2', { id: 'bp-gallery', class: 'm-0 text-title font-bold' }, bt('gallery.title')),
       h('p', { class: 'm-0 text-body-sm text-muted' }, bt('gallery.lead')),
-      h('ol', { class: 'm-0 grid list-none grid-cols-1 gap-2 p-0 sm:grid-cols-2 lg:grid-cols-3' }, ...gallery.map((c, i) => h('li', { class: 'min-w-0' },
+      h('ol', { class: 'm-0 grid list-none gap-2 p-0 sm:grid-cols-2 lg:grid-cols-3' }, ...gallery.map((c, i) => h('li', { class: 'min-w-0' },
         h('a', { href: rt.hash(c.track, c.id), class: 'flex min-h-11 items-center gap-3 rounded-(--r-inset) bg-panel px-3 py-2 text-ink no-underline ring-1 ring-line hover:ring-accent' },
           h('span', { class: 'grid size-7 shrink-0 place-items-center rounded-full bg-code text-caption font-bold tabular-nums' }, String(i + 1)),
           h('span', { class: 'min-w-0 flex-1' }, c.title[lang()]), ok.has(c.id) ? d.icon('check', 'size-4 shrink-0 text-good') : null))))) : null,
@@ -210,7 +212,7 @@ function gridPage(t: Track): HTMLElement {
         ...levels.map((lv) => chip(lv, f.levels.has(lv), `bp-f-${lv}`, () => toggle(f.levels, lv))),
         chip(bt('filter.todo'), f.todo, 'bp-f-todo', () => { f.todo = !f.todo; })),
       h('p', { class: 'sr-only', role: 'status' }, bt('grid.count', { n: shown.length })),
-      shown.length ? h('ul', { class: 'm-0 grid list-none grid-cols-1 gap-4 p-0 md:grid-cols-2' }, ...shown.map((c) => gridCard(c, ok.has(c.id))))
+      shown.length ? h('ul', { class: 'm-0 grid list-none gap-4 p-0 md:grid-cols-2' }, ...shown.map((c) => gridCard(c, ok.has(c.id))))
         : h('p', { class: 'm-0 text-muted' }, bt('grid.none'))),
     quickBox(t, all.filter((c) => ok.has(c.id))));
 }
@@ -370,7 +372,7 @@ function measure(c: BpCard, s: Side, which: 'bad' | 'good', sql: string): HTMLEl
 function pane(c: BpCard, which: 'bad' | 'good', s: Side | undefined): HTMLElement {
   const { h, cls } = d;
   const sql = c.pair[which];
-  return h('section', { class: cls.cx('flex min-w-0 flex-col gap-3 rounded-(--r-card) bg-panel p-4 ring-[1.5px]', which === 'bad' ? 'ring-bad' : 'ring-good'), 'aria-labelledby': `bp-${which}` },
+  return h('section', { class: cls.cx('flex min-w-0 flex-col gap-3 rounded-(--r-card) bg-panel p-4 ring-2', which === 'bad' ? 'ring-bad' : 'ring-good'), 'aria-labelledby': `bp-${which}` },
     h('h3', { id: `bp-${which}`, class: cls.cx('m-0 flex items-center gap-2 text-body font-bold', which === 'bad' ? 'text-bad' : 'text-good') },
       d.icon(which === 'bad' ? 'x' : 'check', 'size-5'), bt(which)),
     h('pre', { class: 'sql m-0 overflow-x-auto', lang: 'en', tabindex: '0' }, sql),
@@ -396,7 +398,7 @@ function cardPage(c: BpCard): HTMLElement {
   };
   const chipLink = (href: string, text: string): HTMLElement => h('a', { href, class: cls.cx(cls.PILL, 'min-h-6 bg-code text-ink no-underline hover:bg-accent-soft') }, text);
   const links = [
-    c.skills.length ? [bt('skills'), ...c.skills.map((s) => chipLink(`#/learn/skill/${s}`, rt.skill(s)?.[lang()] ?? s))] : null,
+    c.skills.length ? [bt('skills'), ...c.skills.map((s) => chipLink(`#/learn/skill/${s}`, main.skill(s)?.[lang()] ?? s))] : null,
     c.adv.length ? [bt('adv'), ...c.adv.map((a) => chipLink(`#/learn/adv/${a}`, a.toUpperCase()))] : null,
     c.requires.length ? [bt('requires'), ...c.requires.map(lessonLink)] : null,
   ].filter((x): x is (string | HTMLElement | null)[] => !!x);
@@ -408,7 +410,7 @@ function cardPage(c: BpCard): HTMLElement {
         : pill('bg-good-soft text-ink', h('span', { class: 'inline-block size-2 rounded-full bg-current', 'aria-hidden': 'true' }), bt('honest.run', { version: c.verified.version })),
       c.lint ? h('button', {
         type: 'button', 'aria-pressed': muted ? 'false' : 'true', 'data-ek': 'bp-rule',
-        class: cls.cx(cls.PILL, 'min-h-6 border-0', muted ? 'bg-code text-muted line-through' : 'bg-sun text-sun-ink'),
+        class: cls.cx(cls.PILL, 'min-h-6 border-0', muted ? 'bg-code text-muted' : 'bg-sun text-sun-ink'),
         onclick: () => setTips((x) => ({ mute: muted ? x.mute.filter((r) => r !== c.lint) : [...new Set([...x.mute, c.lint!])] })),
       }, bt('tips.rule')) : null,
       isDone ? pill(cls.DONE_PILL, d.icon('check', 'size-4'), bt('done')) : null),
@@ -418,7 +420,7 @@ function cardPage(c: BpCard): HTMLElement {
     h('section', { class: 'flex flex-col gap-3', 'aria-labelledby': 'bp-why' },
       h('h2', { id: 'bp-why', class: 'm-0 text-title font-bold' }, bt('why')), prose(section('why', c) ?? '')),
     h('section', { class: 'flex flex-col gap-4', 'aria-label': `${bt('bad')} / ${bt('good')}` },
-      h('div', { class: 'grid grid-cols-1 gap-4 md:grid-cols-2' }, pane(c, 'bad', res?.bad), pane(c, 'good', res?.good)),
+      h('div', { class: 'grid gap-4 md:grid-cols-2' }, pane(c, 'bad', res?.bad), pane(c, 'good', res?.good)),
       p.runtime === 'none' ? h('p', { class: 'm-0 rounded-(--r-inset) bg-surface-2 p-3 text-body-sm text-muted', 'data-runtime': 'none' }, bt('run.none'))
         : h('div', { class: 'flex flex-wrap items-center gap-3' },
           h('button', { type: 'button', class: cls.cx(cls.BTN_SECONDARY, 'inline-flex items-center gap-2 px-5 py-2'), 'data-ek': 'bp-run', disabled: v.run === 'busy', onclick: () => void runBoth(c) },
@@ -437,7 +439,7 @@ function cardPage(c: BpCard): HTMLElement {
           if (c.quiz.every((_, j) => v.passed.has(j))) complete(c);
         }))))),
     h('section', { class: cls.cx('flex items-start gap-3 rounded-(--r-card) p-5 max-sm:p-4', isDone ? 'bg-good-soft' : 'bg-surface-2'), 'aria-labelledby': 'bp-avoid' },
-      isDone ? d.icon('check', 'size-5 shrink-0 text-good') : d.icon('bestPractice', 'size-5 shrink-0 text-accent'),
+      isDone ? d.icon('check', 'size-5 shrink-0 text-good') : d.icon(BP_ICON, 'size-5 shrink-0 text-accent'),
       h('div', { class: 'flex flex-col gap-1' }, h('h2', { id: 'bp-avoid', class: 'm-0 text-body font-bold' }, bt('avoid')), h('p', { class: 'm-0' }, ...inline(c.avoid[lang()])))),
     links.length ? h('section', { class: 'flex flex-col gap-2', 'aria-labelledby': 'bp-links' },
       h('h2', { id: 'bp-links', class: 'm-0 text-body font-bold' }, bt('links')),
@@ -472,7 +474,7 @@ function habitsPage(): HTMLElement {
     h('p', { class: 'm-0 rounded-(--r-inset) bg-info-soft px-4 py-3 text-body-sm text-ink' }, ...inline(habits.after[lang()])),
     h('section', { class: 'flex flex-col gap-2', 'aria-labelledby': 'bp-hsrc' },
       h('h2', { id: 'bp-hsrc', class: 'm-0 text-body font-bold' }, bt('habits.sources')),
-      h('ol', { class: 'm-0 list-decimal space-y-1 pl-5 text-body-sm' }, ...habits.sources.map((u) => h('li', { class: 'break-all' }, h('a', { href: u, target: '_blank', rel: 'noopener noreferrer' }, u))))));
+      h('ul', { class: 'm-0 list-none space-y-1 p-0 text-body-sm' }, ...habits.sources.map((u, i) => h('li', { class: 'break-all' }, `[${i + 1}] `, h('a', { href: u, target: '_blank', rel: 'noopener noreferrer' }, u))))));
 }
 
 // ---- main's seams: h1 + trail, sidebar rows, the entry on #/engine and #/engine/postgres
@@ -493,7 +495,7 @@ export function sideRows(ui: { row: (r: Row) => HTMLElement; group: (text: strin
   return [ui.group(bt('side.group')),
     ...tracks.map((t) => {
       const all = of(t.id);
-      return ui.row({ key: `bp:${t.id}`, href: rt.hash(t.id), lead: d.icon('bestPractice'), label: t.title[lang()],
+      return ui.row({ key: `bp:${t.id}`, href: rt.hash(t.id), lead: d.icon(BP_ICON), label: t.title[lang()],
         full: `Best Practice · ${t.title[lang()]}`, sub: bt('progress', { k: all.filter((c) => ok.has(c.id)).length, n: all.length }), current: r?.track === t.id });
     }),
     ui.row({ key: 'bp:habits', href: rt.hash('habits'), lead: d.icon('list'), label: bt('side.habits'), current: r?.track === 'habits' })];
@@ -505,7 +507,7 @@ export function entry(engine?: string): HTMLElement | null {
   if (engine) {
     const t = trackOf(engine);
     return t ? h('p', { class: 'm-0' }, h('a', { href: rt.hash(t.id), class: d.cls.cx(d.cls.BTN_GHOST, 'inline-flex items-center gap-1 px-3 py-1.5 no-underline') },
-      d.icon('bestPractice', 'size-4'), bt('entry.engine', { name: t.title[lang()] }), d.icon('chevronRight', 'size-4'))) : null;
+      d.icon(BP_ICON, 'size-4'), bt('entry.engine', { name: t.title[lang()] }), d.icon('chevronRight', 'size-4'))) : null;
   }
   const ok = done();
   return h('section', { 'aria-labelledby': 'engine-best' },

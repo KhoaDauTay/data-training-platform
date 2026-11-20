@@ -1,6 +1,6 @@
 import { grade } from '../grader';
 import { getLang, locale, t } from '../i18n';
-import { bestHash, bestRouteOf, engineHash, enginePathHash, enginePathOf, enginePlayOf, engineRouteOf, hashOf } from '../route';
+import { engineHash, enginePathHash, enginePathOf, enginePlayOf, engineRouteOf, hashOf } from '../route';
 import { SKILLS } from '../progress';
 import { actions, app, persist } from '../state';
 import { BTN_GHOST, BTN_GO, BTN_SECONDARY, CARD, cx, DONE_PILL, isDark, PILL } from '../theme';
@@ -33,7 +33,7 @@ let failed = false;
 type BestView = typeof import('./engineBest');
 let best: BestView | undefined;
 /** v24 BP-UI (L300): the Best Practice pages (#/engine/best…) come with the engine chunk: their own chunk + the card index. */
-const isBest = (): boolean => !!bestRouteOf(location.hash);
+const isBest = (): boolean => /^#\/?engine\/best(?=$|[/?])/.test(location.hash); // = src/engine/best.ts bestRouteOf(hash) !== undefined
 
 function engineChunk(): Promise<EngineView> {
   pending ??= Promise.all([import('./engineView'), import('../engineSources'), import('./engineBest'), import('../bestSources')])
@@ -49,7 +49,7 @@ function engineChunk(): Promise<EngineView> {
         best: (e) => b.entry(e),
       };
       m.initEngine(deps, src);
-      b.initBest(deps, bs, src.meta, { of: bestRouteOf, hash: bestHash, skill: (id) => SKILLS.find((x) => x.id === id)?.label });
+      b.initBest(deps, bs, src.meta, { skill: (id) => SKILLS.find((x) => x.id === id)?.label });
       best = b;
       failed = false;
       return (view = m);

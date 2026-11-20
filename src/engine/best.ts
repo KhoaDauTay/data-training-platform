@@ -11,6 +11,17 @@
 import type { Bi, Question } from './content';
 import type { LabScript, ScriptResult } from './pglab/script';
 
+/**
+ * v24 BP-UI (L300): `#/engine/best[/<track>[/<card id>]]` (and `#/engine/best/habits`) → its parts; undefined on any other
+ * hash. Words only from [a-z]; the page sends an unknown or unreleased track to SQL and an unknown card to its track.
+ */
+// Here, not in src/route.ts: only the lazy engineBest chunk parses these (main tests one regex, src/ui/engine.ts), so main stays ≤ +0.3 KB.
+export const bestRouteOf = (hash: string): { track?: string; id?: string } | undefined => {
+  const m = /^#\/?engine\/best(?:\/([a-z]+)(?:\/(e-bp-[a-z]\d\d))?)?(?=$|[/?])/.exec(hash);
+  return m ? { track: m[1], id: m[2] } : undefined;
+};
+export const bestHash = (track?: string, id?: string): string => `#/engine/best${track ? `/${track}${id ? `/${id}` : ''}` : ''}`;
+
 export const TRACKS = ['sql', 'postgres', 'mongodb', 'dynamodb'] as const;
 export type TrackId = (typeof TRACKS)[number];
 export const RELEASED: readonly TrackId[] = ['sql', 'postgres'];
