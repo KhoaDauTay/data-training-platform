@@ -64,20 +64,16 @@ quiz:
 
 ## Ví dụ
 
-Kế hoạch thật trên PGlite cho câu viết `order_notes` trước:
+Kế hoạch thật trên PGlite cho một câu khác bài: viết `customers` trước, không lọc gì. Planner vẫn đặt `orders` (20.000 dòng) ở phía ngoài để dò, và băm `customers` (500 dòng) ở phía trong: thứ tự viết không quyết định thứ tự nối.
 
 ```text
+EXPLAIN (COSTS OFF) SELECT count(*) FROM customers c JOIN orders o ON o.customer_id = c.id;
 Aggregate
-  ->  Nested Loop
-        ->  Nested Loop
-              ->  Index Scan using customers_pkey on customers c
-                    Index Cond: (id < 20)
-                    Filter: (region = 1)
-              ->  Bitmap Heap Scan on orders o
-                    Recheck Cond: (customer_id = c.id)
-                    ->  Bitmap Index Scan on orders_customer_idx
-        ->  Index Only Scan using order_notes_pkey on order_notes n
-              Index Cond: (order_id = o.id)
+  ->  Hash Join
+        Hash Cond: (o.customer_id = c.id)
+        ->  Seq Scan on orders o
+        ->  Hash
+              ->  Seq Scan on customers c
 ```
 
 ## Thực hành
@@ -96,20 +92,16 @@ Aggregate
 
 ## Example
 
-Real PGlite plan for the query that lists `order_notes` first:
+Real PGlite plan for a query other than the lesson's: it lists `customers` first, with no filter. The planner still puts `orders` (20,000 rows) on the outer, probing side and hashes `customers` (500 rows) on the inner side: the written order does not decide the join order.
 
 ```text
+EXPLAIN (COSTS OFF) SELECT count(*) FROM customers c JOIN orders o ON o.customer_id = c.id;
 Aggregate
-  ->  Nested Loop
-        ->  Nested Loop
-              ->  Index Scan using customers_pkey on customers c
-                    Index Cond: (id < 20)
-                    Filter: (region = 1)
-              ->  Bitmap Heap Scan on orders o
-                    Recheck Cond: (customer_id = c.id)
-                    ->  Bitmap Index Scan on orders_customer_idx
-        ->  Index Only Scan using order_notes_pkey on order_notes n
-              Index Cond: (order_id = o.id)
+  ->  Hash Join
+        Hash Cond: (o.customer_id = c.id)
+        ->  Seq Scan on orders o
+        ->  Hash
+              ->  Seq Scan on customers c
 ```
 
 ## Practice

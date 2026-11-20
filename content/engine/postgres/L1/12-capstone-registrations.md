@@ -112,12 +112,15 @@ Bài này gộp cả cấp L1: ràng buộc (`CHECK`, khóa ngoại), index B-tr
 ## Ví dụ
 
 ```sql
--- ERROR: violates check constraint "registrations_seats_check"
-ALTER TABLE registrations ADD CONSTRAINT registrations_seats_check CHECK (seats BETWEEN 1 AND 4);
-INSERT INTO registrations (event_id, email, seats) VALUES (1, 'big@example.com', 9);
+ALTER TABLE events ADD CONSTRAINT events_name_check CHECK (name <> '');
 ```
 
-Khi đã có ràng buộc, lượt đăng ký 9 chỗ bị từ chối ngay lúc ghi.
+```sql
+-- ERROR: violates check constraint "events_name_check"
+INSERT INTO events VALUES (301, '', timestamptz '2027-01-01 09:00+07');
+```
+
+Ví dụ trên bảng `events`, không phải bảng của bài: khi đã có ràng buộc, sự kiện không tên bị từ chối ngay lúc ghi.
 
 ## Thực hành
 
@@ -134,12 +137,15 @@ This lesson pulls level L1 together: constraints (`CHECK`, foreign key), a B-tre
 ## Example
 
 ```sql
--- ERROR: violates check constraint "registrations_seats_check"
-ALTER TABLE registrations ADD CONSTRAINT registrations_seats_check CHECK (seats BETWEEN 1 AND 4);
-INSERT INTO registrations (event_id, email, seats) VALUES (1, 'big@example.com', 9);
+ALTER TABLE events ADD CONSTRAINT events_name_check CHECK (name <> '');
 ```
 
-Once the constraint exists, a 9-seat sign-up is rejected at write time.
+```sql
+-- ERROR: violates check constraint "events_name_check"
+INSERT INTO events VALUES (301, '', timestamptz '2027-01-01 09:00+07');
+```
+
+An example on `events`, not the lesson's table: once the constraint exists, an event with no name is rejected at write time.
 
 ## Practice
 

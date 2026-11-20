@@ -57,6 +57,9 @@ quiz:
 
 Mỗi bảng có `relfrozenxid`, mỗi database có `datfrozenxid`: mốc mà mọi XID cũ hơn đã được freeze. Tuổi của mốc này (`age()`) là thước đo rủi ro wraparound. Autovacuum ép VACUUM chống wraparound khi tuổi vượt `autovacuum_freeze_max_age` (mặc định 200 triệu), kể cả khi autovacuum bị tắt.
 
+- XID là số 32 bit so theo modulo 2³²: với một XID bất kỳ, khoảng 2 tỉ XID là "quá khứ" và 2 tỉ là "tương lai". Vì vậy mỗi tuple phải được freeze trước khi già hơn 2 tỉ transaction, tức mỗi bảng phải được VACUUM (freeze) ít nhất một lần trong mỗi 2 tỉ transaction. Mốc 200 triệu ở trên chỉ là lúc autovacuum bắt đầu ép, sớm hơn nhiều.
+- Nếu không ai freeze: khi XID cũ nhất còn cách điểm quay vòng 40 triệu, log ghi `WARNING: database "…" must be vacuumed within N transactions`. Khi còn dưới 3 triệu, Postgres từ chối cấp XID mới (mọi lệnh ghi bị từ chối) cho tới khi VACUUM cả database.
+
 ## Ví dụ
 
 ```sql
@@ -72,6 +75,9 @@ Bài này là sơ đồ và câu hỏi: wraparound thật cần hàng tỉ trans
 ## Key idea
 
 Every table has a `relfrozenxid` and every database a `datfrozenxid`: the horizon below which all XIDs are frozen. Its age (`age()`) measures wraparound risk. Autovacuum forces an anti-wraparound VACUUM once the age passes `autovacuum_freeze_max_age` (200 million by default), even when autovacuum is turned off.
+
+- XIDs are 32-bit numbers compared modulo 2^32: for any XID, about 2 billion XIDs are "past" and 2 billion are "future". So every tuple must be frozen before it is 2 billion transactions old, which means every table must be vacuumed (frozen) at least once every 2 billion transactions. The 200 million mark above is only when autovacuum starts forcing it, much earlier.
+- If nobody freezes: once the oldest XID is 40 million transactions from the wraparound point, the log says `WARNING: database "…" must be vacuumed within N transactions`. Under 3 million left, Postgres refuses to assign new XIDs (every write is refused) until the whole database is vacuumed.
 
 ## Example
 

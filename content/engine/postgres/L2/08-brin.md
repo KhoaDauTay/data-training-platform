@@ -33,8 +33,8 @@ lab:
     ANALYZE readings;
   steps:
     - task:
-        vi: "So kích thước: trả về số trang (`relpages`) của bảng `readings` và của index `readings_taken_brin`, sắp theo tên (`relname`)."
-        en: "Compare sizes: return the page count (`relpages`) of table `readings` and of index `readings_taken_brin`, ordered by name (`relname`)."
+        vi: "So kích thước, hai cột `relname` và `relpages`: trả về số trang (`relpages`) của bảng `readings` và của index `readings_taken_brin`, sắp theo tên (`relname`)."
+        en: "Compare sizes, two columns `relname` and `relpages`: return the page count (`relpages`) of table `readings` and of index `readings_taken_brin`, ordered by name (`relname`)."
       solution: SELECT relname, relpages FROM pg_class WHERE relname IN ('readings', 'readings_taken_brin') ORDER BY relname
       check: rows
       ordered: true

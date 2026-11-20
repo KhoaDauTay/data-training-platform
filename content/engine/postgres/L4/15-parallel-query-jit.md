@@ -72,16 +72,6 @@ quiz:
 
 ## Ví dụ
 
-Giới hạn của PGlite (đo): một backend đơn, `max_parallel_workers_per_gather` = 0 và `max_worker_processes` = 0, đặt giá trị đầu lên 2 vẫn không ra `Gather`; `pg_jit_available()` = false dù `jit` = on. Hai chủ đề này cần server PostgreSQL thật để thực hành.
-
-Trên PGlite (đo):
-
-```text
-EXPLAIN (COSTS OFF) SELECT count(*) FROM big;
-Aggregate
-  ->  Seq Scan on big
-```
-
 Ví dụ trong docs chính thức của PostgreSQL, mục "Parallel Aggregation" (chưa chạy trong trình duyệt): hình dạng điển hình trên một server có worker, gộp hai tầng:
 
 ```text
@@ -94,7 +84,7 @@ Finalize Aggregate
 
 ## Thực hành
 
-Đọc thiết lập, kiểm JIT, rồi đoán kế hoạch trên PGlite. Kỹ năng chuyên gia: biết khi nào một câu được song song, vì sao không, và khi nào nên tắt JIT cho tải OLTP.
+PGlite chạy cùng mã PostgreSQL 18 nhưng là một backend đơn: đọc thiết lập, kiểm JIT, rồi đoán kế hoạch trên PGlite. Song song và JIT thật cần server PostgreSQL thật để thực hành. Kỹ năng chuyên gia: biết khi nào một câu được song song, vì sao không, và khi nào nên tắt JIT cho tải OLTP.
 
 # EN
 
@@ -106,16 +96,6 @@ Finalize Aggregate
 - JIT compiles expressions and tuple deforming with LLVM. It needs an LLVM build. The decision is by cost: `jit_above_cost` 100,000, `jit_inline_above_cost` and `jit_optimize_above_cost` 500,000.
 
 ## Example
-
-PGlite limits (measured): a single backend, `max_parallel_workers_per_gather` = 0 and `max_worker_processes` = 0, and setting the first to 2 still gives no `Gather`; `pg_jit_available()` = false even though `jit` = on. Both topics need a real PostgreSQL server for hands-on practice.
-
-On PGlite (measured):
-
-```text
-EXPLAIN (COSTS OFF) SELECT count(*) FROM big;
-Aggregate
-  ->  Seq Scan on big
-```
 
 Example from the official PostgreSQL docs, "Parallel Aggregation" section (not run in the browser): the typical shape on a server with workers, aggregating in two stages:
 
@@ -129,4 +109,4 @@ Finalize Aggregate
 
 ## Practice
 
-Read the settings, check JIT, then predict the plan on PGlite. Expert skill: know when a query goes parallel, why it does not, and when to turn JIT off for an OLTP workload.
+PGlite runs the same PostgreSQL 18 code but as a single backend: read the settings, check JIT, then predict the plan on PGlite. Real parallel query and JIT need a real PostgreSQL server to practise. Expert skill: know when a query goes parallel, why it does not, and when to turn JIT off for an OLTP workload.

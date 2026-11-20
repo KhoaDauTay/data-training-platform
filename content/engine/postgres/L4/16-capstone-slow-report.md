@@ -48,11 +48,11 @@ lab:
       solution: "SELECT most_common_vals::text, most_common_freqs::text FROM pg_stats WHERE tablename = 'orders' AND attname = 'status'"
       check: rows
       hint: { vi: "`pg_stats` của bảng `orders`, cột `status`.", en: "`pg_stats` of table `orders`, column `status`." }
-    - task: { vi: "Bước 2, ước lượng. Báo cáo lọc khách theo vùng 2 và quốc gia 20 (quốc gia do vùng quyết định). So ước lượng của planner trên `customers` với số dòng thật. Hai cột: estimated (dùng `est(text)`), actual.", en: "Step 2, estimates. The report filters customers on region 2 and country 20 (the country is fixed by the region). Compare the planner's estimate on `customers` with the real count. Two columns: estimated (use `est(text)`), actual." }
+    - task: { vi: "Bước 2, ước lượng. Báo cáo lọc khách theo vùng 2 và quốc gia 20 (cột `region`, `country` của `customers`) (quốc gia do vùng quyết định). So ước lượng của planner trên `customers` với số dòng thật. Hai cột: estimated (dùng `est(text)`), actual.", en: "Step 2, estimates. The report filters customers on region 2 and country 20 (columns `region`, `country` of `customers`) (the country is fixed by the region). Compare the planner's estimate on `customers` with the real count. Two columns: estimated (use `est(text)`), actual." }
       solution: "SELECT est('SELECT * FROM customers WHERE region = 2 AND country = 20') AS estimated, (SELECT count(*) FROM customers WHERE region = 2 AND country = 20) AS actual"
       check: rows
       hint: { vi: "Planner nhân hai độ chọn lọc như thể độc lập.", en: "The planner multiplies the two selectivities as if independent." }
-    - task: { vi: "Bước 3, câu tra một khách. Mã và số tiền các đơn của khách số 42 (nối `customers` với `orders`). Kế hoạch phải là Nested Loop, phía trong đi qua `orders_customer_idx`.", en: "Step 3, the one-customer lookup. Id and amount of customer 42's orders (join `customers` to `orders`). The plan must be a Nested Loop whose inner side goes through `orders_customer_idx`." }
+    - task: { vi: "Bước 3, câu tra một khách. Mã và số tiền (`amount`) các đơn của khách số 42 (nối `customers` với `orders`). Kế hoạch phải là Nested Loop, phía trong đi qua `orders_customer_idx`.", en: "Step 3, the one-customer lookup. Id and amount (`amount`) of customer 42's orders (join `customers` to `orders`). The plan must be a Nested Loop whose inner side goes through `orders_customer_idx`." }
       solution: "SELECT o.id, o.amount FROM customers c JOIN orders o ON o.customer_id = c.id WHERE c.id = 42"
       check: plan
       hint: { vi: "Lọc khách bằng khóa chính rồi JOIN.", en: "Filter the customer by primary key, then JOIN." }

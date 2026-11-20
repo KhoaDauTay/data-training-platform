@@ -111,20 +111,20 @@ Người dùng báo bảng điều khiển chậm và ước lượng số dòng
 
 ## Ví dụ
 
-Số liệu thật trên PGlite (phân vùng tháng 10: 5451 dòng):
+Số liệu thật trên PGlite cho phân vùng tháng 9 (6171 dòng), không phải tháng 10 mà bài hỏi. Cùng cách đọc, số của bạn sẽ khác:
 
 ```text
 attname     n_distinct  correlation
 created_at  -1          1
-plan_tier   3           0.33308864
-tenant_id   60          0.016817184
+plan_tier   3           0.3331172
+tenant_id   60          0.016897237
 
-estimated  actual
-30         91
+estimated  actual   (tenant_id = 8 AND plan_tier = 2)
+34         103
 
-events_2026_10                            41 pages
-events_2026_10_created_at_idx              3 pages   (BRIN)
-events_2026_10_tenant_id_created_at_idx   23 pages   (B-tree)
+events_2026_09                            46 pages
+events_2026_09_created_at_idx              3 pages   (BRIN)
+events_2026_09_tenant_id_created_at_idx   26 pages   (B-tree)
 ```
 
 ## Thực hành
@@ -144,20 +144,20 @@ Users report a slow dashboard and the row estimates look wrong. The task: diagno
 
 ## Example
 
-Real figures from PGlite (October partition: 5451 rows):
+Real figures from PGlite for the September partition (6171 rows), not the October one the lesson asks about. Same way of reading, your numbers will differ:
 
 ```text
 attname     n_distinct  correlation
 created_at  -1          1
-plan_tier   3           0.33308864
-tenant_id   60          0.016817184
+plan_tier   3           0.3331172
+tenant_id   60          0.016897237
 
-estimated  actual
-30         91
+estimated  actual   (tenant_id = 8 AND plan_tier = 2)
+34         103
 
-events_2026_10                            41 pages
-events_2026_10_created_at_idx              3 pages   (BRIN)
-events_2026_10_tenant_id_created_at_idx   23 pages   (B-tree)
+events_2026_09                            46 pages
+events_2026_09_created_at_idx              3 pages   (BRIN)
+events_2026_09_tenant_id_created_at_idx   26 pages   (B-tree)
 ```
 
 ## Practice

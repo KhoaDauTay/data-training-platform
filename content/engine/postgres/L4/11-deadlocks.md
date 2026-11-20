@@ -61,9 +61,9 @@ Sửa: cả hai job cập nhật `id = 1` trước `id = 2`. Khi đó B ở t2 p
 
 ## Thực hành
 
-Phần chạy thật cần máy chủ thật (nhiều phiên / replica set / AWS). Bài này dùng sơ đồ và kết quả ghi sẵn.
+Chạy thật cần nhiều phiên cùng lúc trên một server Postgres; PGlite chỉ có một phiên. Bài này dùng sơ đồ và kết quả ghi sẵn.
 
-Bấm qua từng bước trên sơ đồ hai làn thời gian, rồi trả lời hai câu hỏi. Kỹ năng chuyên gia: đọc log deadlock, tìm hai câu lệnh tạo chu trình và sửa thứ tự lock trong code.
+Bấm qua sơ đồ lock tới hai bước cuối: đồ thị chờ có vòng T1 → T2 → T1, rồi Postgres hủy một giao dịch (40P01). Sau đó trả lời hai câu hỏi. Kỹ năng chuyên gia: đọc log deadlock, tìm hai câu lệnh tạo chu trình và sửa thứ tự lock trong code.
 
 # EN
 
@@ -93,6 +93,6 @@ Fix: both jobs update `id = 1` before `id = 2`. Then B at t2 has to wait for A r
 
 ## Practice
 
-The real run needs a real server (several sessions / replica set / AWS). This lesson uses diagrams and recorded output.
+A real run needs several concurrent sessions on one Postgres server; PGlite has only one session. This lesson uses diagrams and recorded output.
 
-Step through the two-lane timeline diagram, then answer two questions. Expert skill: read a deadlock log, find the two statements that form the cycle and fix the lock order in the code.
+Step through the lock diagram to its last two steps: the waits-for graph has a cycle T1 -> T2 -> T1, then Postgres aborts one transaction (40P01). Then answer two questions. Expert skill: read a deadlock log, find the two statements that form the cycle and fix the lock order in the code.

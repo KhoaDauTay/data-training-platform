@@ -82,8 +82,8 @@ lab:
         probe: SELECT lp, lp_flags, CASE WHEN lp_flags = 2 THEN lp_off END FROM heap_page_items(get_raw_page('cart', 0))
         expect: [[1, 1, null], [2, 2, 4], [3, 0, null], [4, 1, null]]
     - task:
-        vi: "Đọc visibility map của cả hai bảng: một dòng mỗi bảng với tên bảng, `all_visible`, `all_frozen` của block 0, theo tên bảng."
-        en: "Read the visibility map of both tables: one row per table with the table name, `all_visible` and `all_frozen` of block 0, by table name."
+        vi: "Đọc visibility map của cả hai bảng: một dòng mỗi bảng với tên bảng, `all_visible`, `all_frozen` của block 0, theo tên bảng. `pg_visibility_map(table, block)` trả một dòng cho một block."
+        en: "Read the visibility map of both tables: one row per table with the table name, `all_visible` and `all_frozen` of block 0, by table name. `pg_visibility_map(table, block)` returns one row for one block."
       solution: |
         SELECT 'cart' AS t, all_visible, all_frozen FROM pg_visibility_map('cart', 0)
         UNION ALL

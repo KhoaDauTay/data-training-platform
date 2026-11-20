@@ -42,7 +42,7 @@ lab:
     CREATE VIEW tickets_as_support AS SELECT * FROM tickets;
     ALTER VIEW tickets_as_support OWNER TO support;
   steps:
-    - task: { vi: "Đếm số dòng mỗi bên thấy được, bốn cột: owner_sees (đọc thẳng `tickets` với vai trò hiện tại), t1, t2, support (đọc ba view tương ứng). Đoán trước: owner_sees bằng bao nhiêu, khi RLS đã bật?", en: "Count the rows each party can see, four columns: owner_sees (read `tickets` directly with the current role), t1, t2, support (read the three matching views). Guess first: what is owner_sees, now that RLS is on?" }
+    - task: { vi: "Đếm số dòng mỗi bên thấy được, bốn cột: owner_sees (đọc thẳng `tickets` với vai trò hiện tại), t1, t2, support (đếm ba view `tickets_as_tenant_1`, `tickets_as_tenant_2`, `tickets_as_support`; mỗi view thuộc vai trò cùng tên nên áp policy của vai trò đó). Đoán trước: owner_sees bằng bao nhiêu, khi RLS đã bật?", en: "Count the rows each party can see, four columns: owner_sees (read `tickets` directly with the current role), t1, t2, support (count the three views `tickets_as_tenant_1`, `tickets_as_tenant_2`, `tickets_as_support`; each view is owned by the role it names, so it applies that role's policies). Guess first: what is owner_sees, now that RLS is on?" }
       solution: "SELECT (SELECT count(*) FROM tickets) AS owner_sees, (SELECT count(*) FROM tickets_as_tenant_1) AS t1, (SELECT count(*) FROM tickets_as_tenant_2) AS t2, (SELECT count(*) FROM tickets_as_support) AS support"
       check: rows
       hint: { vi: "Bốn truy vấn con `count(*)` trong một SELECT.", en: "Four `count(*)` sub-queries in one SELECT." }

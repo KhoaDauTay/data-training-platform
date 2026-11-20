@@ -34,8 +34,8 @@ lab:
     ANALYZE events;
   steps:
     - task:
-        vi: "Lấy `id, day` của các sự kiện vùng 2 từ 2026-06-01 tới 2026-06-07, sắp theo `day`. Kế hoạch phải dùng `events_region_day_idx`."
-        en: "Return `id, day` of region 2 events from 2026-06-01 to 2026-06-07, ordered by `day`. The plan must use `events_region_day_idx`."
+        vi: "Lấy `id, day` của các sự kiện vùng 2 từ 2026-06-01 tới 2026-06-07, chỉ sắp theo `day` (trong cùng một ngày, thứ tự nào cũng được). Kế hoạch phải dùng `events_region_day_idx`."
+        en: "Return `id, day` of region 2 events from 2026-06-01 to 2026-06-07, ordered by `day` only (within one day, any order is fine). The plan must use `events_region_day_idx`."
       solution: SELECT id, day FROM events WHERE region = 2 AND day BETWEEN date '2026-06-01' AND date '2026-06-07' ORDER BY day
       check: plan
       ordered: true

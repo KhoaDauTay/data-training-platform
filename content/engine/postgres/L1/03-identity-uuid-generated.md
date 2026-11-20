@@ -27,8 +27,8 @@ lab:
     CREATE SEQUENCE invoice_no START 1000 INCREMENT 10;
   steps:
     - task:
-        vi: "Tạo bảng `tickets`: `id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY`, `public_id uuid NOT NULL DEFAULT uuidv7()`, `price numeric(10,2) NOT NULL`, `qty int NOT NULL`, và `total numeric(12,2)` là cột sinh bằng `price * qty`."
-        en: "Create table `tickets`: `id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY`, `public_id uuid NOT NULL DEFAULT uuidv7()`, `price numeric(10,2) NOT NULL`, `qty int NOT NULL`, and `total numeric(12,2)` generated as `price * qty`."
+        vi: "Tạo bảng `tickets`: `id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY`, `public_id uuid NOT NULL DEFAULT uuidv7()`, `price numeric(10,2) NOT NULL`, `qty int NOT NULL`, và `total numeric(12,2)` là cột sinh bằng `price * qty` (dạng mặc định, VIRTUAL)."
+        en: "Create table `tickets`: `id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY`, `public_id uuid NOT NULL DEFAULT uuidv7()`, `price numeric(10,2) NOT NULL`, `qty int NOT NULL`, and `total numeric(12,2)` generated as `price * qty` (the default kind, VIRTUAL)."
       solution: CREATE TABLE tickets (id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY, public_id uuid NOT NULL DEFAULT uuidv7(), price numeric(10,2) NOT NULL, qty int NOT NULL, total numeric(12,2) GENERATED ALWAYS AS (price * qty))
       check: catalog
       hint:

@@ -49,6 +49,7 @@ Hai bác sĩ cùng xin nghỉ, mỗi người thấy "còn người kia trực",
 - Repeatable Read của Postgres là snapshot isolation. Nó chặn lost update nhưng vẫn cho write skew: hai transaction đọc cùng dữ liệu, mỗi bên ghi một dòng khác, kết quả chung vi phạm quy tắc mà từng bên đã kiểm tra.
 - Serializable = SSI (Serializable Snapshot Isolation): vẫn là snapshot, cộng thêm theo dõi phụ thuộc đọc-ghi giữa các transaction. Khi thấy một mẫu có thể gây bất thường, Postgres hủy một transaction với `could not serialize access …` (SQLSTATE 40001).
 - Việc theo dõi dùng predicate lock, mode `SIReadLock`: không chặn ai, không gây deadlock. Mức chi tiết: tuple/trang khi đọc qua index, cả quan hệ khi Seq Scan, nên index tốt cũng giảm hủy giả.
+- Báo cáo dài chỉ đọc: `BEGIN ISOLATION LEVEL SERIALIZABLE READ ONLY DEFERRABLE`. Transaction `DEFERRABLE` có thể chờ lúc bắt đầu tới khi có một snapshot an toàn; sau đó nó chạy không cần predicate lock và không bao giờ bị hủy với 40001.
 
 ## Ví dụ
 
@@ -85,11 +86,11 @@ t4  B: UPDATE doctors SET on_call = false WHERE name = 'Binh'; COMMIT;
 
 Quy tắc cho ứng dụng: mọi transaction Serializable phải bọc trong vòng thử lại 40001; giữ transaction ngắn; khai `READ ONLY` khi đúng như vậy.
 
-Phần chạy thật cần máy chủ thật (nhiều phiên / replica set / AWS). Bài này dùng sơ đồ và kết quả ghi sẵn.
+Chạy thật cần nhiều phiên cùng lúc trên một server Postgres; PGlite chỉ có một phiên. Bài này dùng sơ đồ và kết quả ghi sẵn.
 
 Lựa chọn khác: lock tường minh (`SELECT … FOR UPDATE` trên dòng "đại diện" cho quy tắc) hoặc ràng buộc trong DB. SSI tiện vì không cần biết trước mọi chỗ xung đột.
 
-Chạy cùng kịch bản trên sơ đồ ở Repeatable Read và Serializable, rồi ba câu hỏi. Kỹ năng chuyên gia: nhận ra một quy tắc nghiệp vụ dễ bị write skew và chọn giữa SSI + thử lại, lock tường minh hoặc ràng buộc.
+Trên sơ đồ mức cô lập, xem bước write skew (hai bác sĩ trực): Repeatable Read để lọt, Serializable hủy một bên với 40001. Rồi ba câu hỏi. Kỹ năng chuyên gia: nhận ra một quy tắc nghiệp vụ dễ bị write skew và chọn giữa SSI + thử lại, lock tường minh hoặc ràng buộc.
 
 # EN
 
@@ -100,6 +101,7 @@ Two doctors ask for the night off at once, each sees "the other one is on call",
 - Postgres' Repeatable Read is snapshot isolation. It stops lost updates but still allows write skew: two transactions read the same data, each writes a different row, and together they break a rule each of them had checked.
 - Serializable = SSI (Serializable Snapshot Isolation): still snapshots, plus tracking of read-write dependencies between transactions. When it sees a pattern that could produce an anomaly, Postgres aborts one transaction with `could not serialize access …` (SQLSTATE 40001).
 - The tracking uses predicate locks, mode `SIReadLock`: they block nobody and cannot cause deadlocks. Granularity: tuple/page when reading through an index, the whole relation on a Seq Scan, so good indexes also reduce false aborts.
+- A long read-only report: `BEGIN ISOLATION LEVEL SERIALIZABLE READ ONLY DEFERRABLE`. A `DEFERRABLE` transaction may wait at its start until it gets a safe snapshot; after that it runs without predicate locks and is never aborted with 40001.
 
 ## Example
 
@@ -136,8 +138,8 @@ Under Repeatable Read, step t4 commits and nobody is on call.
 
 Rules for the application: wrap every Serializable transaction in a 40001 retry loop; keep transactions short; declare `READ ONLY` when it is true.
 
-The real run needs a real server (several sessions / replica set / AWS). This lesson uses diagrams and recorded output.
+A real run needs several concurrent sessions on one Postgres server; PGlite has only one session. This lesson uses diagrams and recorded output.
 
 Alternatives: explicit locking (`SELECT … FOR UPDATE` on a row that "stands for" the rule) or a constraint in the database. SSI is handy because you do not need to know every conflict point in advance.
 
-Run the same script on the diagram under Repeatable Read and Serializable, then three questions. Expert skill: spot a business rule that is open to write skew and choose between SSI + retry, explicit locking or a constraint.
+On the isolation diagram, read the write-skew step (two doctors on call): Repeatable Read lets it through, Serializable aborts one side with 40001. Then three questions. Expert skill: spot a business rule that is open to write skew and choose between SSI + retry, explicit locking or a constraint.

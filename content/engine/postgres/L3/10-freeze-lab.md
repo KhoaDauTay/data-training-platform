@@ -36,8 +36,8 @@ lab:
     VACUUM (FREEZE) ledger_frozen;
   steps:
     - task:
-        vi: "Ba bảng giống nhau: `ledger_plain` qua VACUUM thường, `ledger_frozen` qua `VACUUM (FREEZE)`, `ledger_touched` qua `VACUUM (FREEZE)` rồi bị sửa một dòng. Với mỗi tuple của trang 0 bảng `ledger_plain`, lấy `lp` và một cột đúng/sai: `combined_flags` có `HEAP_XMIN_FROZEN` không."
-        en: "Three identical tables: `ledger_plain` had a normal VACUUM, `ledger_frozen` had `VACUUM (FREEZE)`, `ledger_touched` had `VACUUM (FREEZE)` and then one row updated. For each tuple of page 0 of `ledger_plain` return `lp` and a true/false column: does `combined_flags` contain `HEAP_XMIN_FROZEN`."
+        vi: "Ba bảng giống nhau: `ledger_plain` qua VACUUM thường, `ledger_frozen` qua `VACUUM (FREEZE)`, `ledger_touched` qua `VACUUM (FREEZE)` rồi bị sửa một dòng. Với mỗi tuple của trang 0 bảng `ledger_plain`, lấy `lp` và một cột đúng/sai: `combined_flags` có `HEAP_XMIN_FROZEN` không. `heap_tuple_infomask_flags(t_infomask, t_infomask2)` trả hai mảng: `raw_flags` (từng bit) và `combined_flags` (cờ ghép từ nhiều bit, như `HEAP_XMIN_FROZEN` = hai bit COMMITTED và INVALID cùng bật)."
+        en: "Three identical tables: `ledger_plain` had a normal VACUUM, `ledger_frozen` had `VACUUM (FREEZE)`, `ledger_touched` had `VACUUM (FREEZE)` and then one row updated. For each tuple of page 0 of `ledger_plain` return `lp` and a true/false column: does `combined_flags` contain `HEAP_XMIN_FROZEN`. `heap_tuple_infomask_flags(t_infomask, t_infomask2)` returns two arrays: `raw_flags` (one name per bit) and `combined_flags` (flags made of several bits, such as `HEAP_XMIN_FROZEN` = the COMMITTED and INVALID bits both set)."
       solution: |
         SELECT lp, 'HEAP_XMIN_FROZEN' = ANY(combined_flags) AS frozen
         FROM heap_page_items(get_raw_page('ledger_plain', 0)), heap_tuple_infomask_flags(t_infomask, t_infomask2)

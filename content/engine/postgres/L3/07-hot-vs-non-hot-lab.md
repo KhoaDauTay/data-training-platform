@@ -48,8 +48,8 @@ lab:
           FROM heap_page_items(get_raw_page('wallet', 0)), heap_tuple_infomask_flags(t_infomask, t_infomask2) WHERE lp IN (1, 2, 6, 7)
         expect: [[1, "(0,6)", true, false], [2, "(0,7)", false, false], [6, "(0,6)", false, true], [7, "(0,7)", false, false]]
     - task:
-        vi: "Đọc trang lá của index khóa chính `wallet_pkey` (block 1): lấy `itemoffset` và `ctid`. Đoán trước khi chạy: khóa chính không đổi, vậy index này có mấy mục cho 5 dòng?"
-        en: "Read the leaf page of the primary key index `wallet_pkey` (block 1): return `itemoffset` and `ctid`. Guess before you run it: no primary key changed, so how many entries does this index hold for 5 rows?"
+        vi: "Đọc trang lá của index khóa chính `wallet_pkey` (block 1) bằng `bt_page_items(index_name, block_number)` của pageinspect: lấy `itemoffset` và `ctid`. Đoán trước khi chạy: khóa chính không đổi, vậy index này có mấy mục cho 5 dòng?"
+        en: "Read the leaf page of the primary key index `wallet_pkey` (block 1) with pageinspect's `bt_page_items(index_name, block_number)`: return `itemoffset` and `ctid`. Guess before you run it: no primary key changed, so how many entries does this index hold for 5 rows?"
       solution: SELECT itemoffset, ctid FROM bt_page_items('wallet_pkey', 1)
       check: rows
       ordered: true

@@ -51,8 +51,8 @@ lab:
         vi: "Câu phải chứa chính điều kiện của index (`status = 'open'`), nếu không planner không biết index phủ đủ dòng."
         en: "The query must contain the index's own condition (`status = 'open'`), otherwise the planner cannot tell the index covers the rows."
     - task:
-        vi: "So kích thước: trả về một cột boolean cho biết `tasks_open_due_idx` có nhỏ hơn `tasks_pkey` không."
-        en: "Compare sizes: return one boolean column telling whether `tasks_open_due_idx` is smaller than `tasks_pkey`."
+        vi: "So kích thước: trả về một cột boolean cho biết `tasks_open_due_idx` có nhỏ hơn `tasks_pkey` không (hàm `pg_relation_size(name)` trả kích thước một quan hệ theo byte)."
+        en: "Compare sizes: return one boolean column telling whether `tasks_open_due_idx` is smaller than `tasks_pkey` (the function `pg_relation_size(name)` returns a relation's size in bytes)."
       solution: SELECT pg_relation_size('tasks_open_due_idx') < pg_relation_size('tasks_pkey') AS smaller
       check: rows
       hint:

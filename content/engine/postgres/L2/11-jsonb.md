@@ -37,8 +37,8 @@ lab:
     ANALYZE products;
   steps:
     - task:
-        vi: "Lấy `id`, tên (dạng chữ) và giá (dạng `numeric`) của 3 sản phẩm có `id` nhỏ nhất, sắp theo `id`."
-        en: "Return the `id`, the name (as text) and the price (as `numeric`) of the 3 products with the smallest `id`, ordered by `id`."
+        vi: "Lấy `id`, tên (khóa `name` của cột jsonb `doc`, dạng chữ) và giá (khóa `price`, dạng `numeric`) của 3 sản phẩm có `id` nhỏ nhất, sắp theo `id`."
+        en: "Return the `id`, the name (key `name` of the jsonb column `doc`, as text) and the price (key `price`, as `numeric`) of the 3 products with the smallest `id`, ordered by `id`."
       solution: SELECT id, doc ->> 'name' AS name, (doc ->> 'price')::numeric AS price FROM products ORDER BY id LIMIT 3
       check: rows
       ordered: true
