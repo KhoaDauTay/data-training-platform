@@ -1599,15 +1599,6 @@
   vi: "Ghi kèm `ConditionExpression`; điều kiện sai thì `ConditionalCheckFailedException` và vẫn tốn WCU. Cách chống lost update; idempotent nếu điều kiện kiểm đúng thuộc tính đang sửa."
   en: "A write with a `ConditionExpression`; if the condition fails you get `ConditionalCheckFailedException` and still pay WCU. It prevents lost updates; it is idempotent when the condition checks the attribute being changed."
   doc: "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.ConditionExpressions.html"
-- term: optimistic locking
-  engines: [dynamodb]
-  level: L2
-  keep_en: true
-  vi_term: "optimistic locking"
-  avoid: "khóa lạc quan"
-  vi: "Cách chống lost update không giữ lock: item mang một thuộc tính số phiên bản, mỗi lần ghi kèm điều kiện phiên bản chưa đổi rồi tăng nó lên. Ai ghi sau với phiên bản cũ thì nhận `ConditionalCheckFailedException`."
-  en: "A way to prevent lost updates without holding a lock: the item carries a version-number attribute, and every write is conditional on that version being unchanged and then increments it. A writer holding an old version gets `ConditionalCheckFailedException`."
-  doc: "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.ConditionExpressions.html"
 - term: atomic counter
   engines: [dynamodb]
   level: L2
@@ -1877,15 +1868,6 @@
   doc: "https://www.mongodb.com/docs/manual/core/sharded-cluster-query-router/"
 
 # ───────────────────────── Bổ sung QA pass 2 (thuật ngữ bài đã dùng mà chưa có mục) ─────────────────────────
-- term: prepared statement
-  engines: [postgres]
-  level: L4
-  keep_en: false
-  vi_term: "câu đã chuẩn bị"
-  avoid: "câu lệnh soạn sẵn (nghe như văn mẫu)"
-  vi: "Câu được phân tích một lần bằng `PREPARE` (hoặc giao thức mở rộng của driver) rồi chạy nhiều lần với tham số `$1`, `$2`…; kế hoạch có thể là custom plan hoặc generic plan."
-  en: "A statement parsed once with `PREPARE` (or a driver's extended protocol) and run many times with parameters `$1`, `$2`…; its plan can be a custom plan or a generic plan."
-  doc: "https://www.postgresql.org/docs/18/sql-prepare.html"
 - term: predicate lock (SIReadLock)
   engines: [postgres]
   level: L4
@@ -1949,15 +1931,6 @@
   vi: "Mẫu thiết kế: giữ tham chiếu `_id` nhưng chép thêm vài trường hay đọc của tài liệu kia (ví dụ tên khách vào đơn), để khỏi `$lookup` ở câu đọc thường gặp."
   en: "A design pattern: keep the `_id` reference but also copy a few often-read fields of the other document (for example the customer name into the order), to avoid a `$lookup` on the common read."
   doc: "https://www.mongodb.com/docs/manual/data-modeling/design-patterns/"
-- term: computed pattern
-  engines: [mongodb]
-  level: L2
-  keep_en: true
-  vi_term: "computed pattern"
-  avoid: "mẫu máy tính"
-  vi: "Mẫu thiết kế: tính sẵn một giá trị (tổng, đếm) lúc ghi và lưu vào tài liệu, để câu đọc khỏi tính lại mỗi lần."
-  en: "A design pattern: compute a value (a total, a count) at write time and store it in the document, so reads do not recompute it every time."
-  doc: "https://www.mongodb.com/docs/manual/data-modeling/design-patterns/"
 - term: accumulator
   engines: [mongodb]
   level: L2
@@ -1976,15 +1949,6 @@
   vi: "Stage tính giá trị trên một \"cửa sổ\" tài liệu lân cận (xếp hạng, tổng lũy kế, giá trị trước/sau) mà không gộp các tài liệu lại như `$group`."
   en: "A stage that computes values over a \"window\" of neighbouring documents (ranks, running totals, previous/next values) without collapsing them as `$group` does."
   doc: "https://www.mongodb.com/docs/manual/reference/operator/aggregation/setwindowfields/"
-- term: collation
-  engines: [mongodb]
-  level: L3
-  keep_en: true
-  vi_term: "collation"
-  avoid: "đối chiếu (dịch lỏng)"
-  vi: "Luật so sánh chuỗi theo ngôn ngữ (hoa/thường, dấu). Câu chỉ dùng được index khi chỉ định đúng collation của index đó."
-  en: "Language rules for comparing strings (case, accents). A query can only use an index when it specifies that index's collation."
-  doc: "https://www.mongodb.com/docs/manual/reference/collation/"
 - term: query shape
   engines: [mongodb]
   level: L3
@@ -2021,15 +1985,6 @@
   vi: "Lock ở cấp database và collection báo rằng thao tác sẽ đọc/ghi ở cấp tài liệu bên dưới; việc chặn nhau thật sự do WiredTiger xử lý ở cấp tài liệu."
   en: "A lock at database and collection level announcing that the operation will read or write documents below; actual document-level conflicts are handled by WiredTiger."
   doc: "https://www.mongodb.com/docs/manual/core/wiredtiger/"
-- term: resume token
-  engines: [mongodb]
-  level: L4
-  keep_en: true
-  vi_term: "resume token"
-  avoid: "vé tiếp tục"
-  vi: "Trường `_id` của mỗi sự kiện change stream. Lưu nó lại để mở lại stream đúng chỗ sau khi ứng dụng khởi động lại, miễn là oplog còn giữ điểm đó."
-  en: "The `_id` field of each change stream event. Store it to reopen the stream at the right place after the application restarts, as long as the oplog still holds that point."
-  doc: "https://www.mongodb.com/docs/manual/changestreams/"
 - term: heartbeat
   engines: [mongodb]
   level: L5
@@ -2047,15 +2002,6 @@
   avoid: "thời gian tối ưu"
   vi: "Vị trí (thời điểm + nhiệm kỳ) của mục oplog cuối mà một thành viên đã áp dụng. Bầu cử ưu tiên thành viên có optime mới nhất."
   en: "The position (timestamp + term) of the last oplog entry a member has applied. Elections favour the member with the most recent optime."
-  doc: "https://www.mongodb.com/docs/manual/core/replica-set-oplog/"
-- term: capped collection
-  engines: [mongodb]
-  level: L5
-  keep_en: true
-  vi_term: "capped collection"
-  avoid: "collection bị khóa quyền"
-  vi: "Collection có kích thước cố định, ghi theo thứ tự chèn và tự đè mục cũ nhất khi đầy. Oplog là một capped collection đặc biệt."
-  en: "A fixed-size collection kept in insertion order that overwrites its oldest entries when full. The oplog is a special capped collection."
   doc: "https://www.mongodb.com/docs/manual/core/replica-set-oplog/"
 - term: shard key cardinality
   engines: [mongodb]
