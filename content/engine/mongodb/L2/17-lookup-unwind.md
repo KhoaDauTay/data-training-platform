@@ -1,0 +1,143 @@
+---
+id: e-mg-l2-17
+engine: mongodb
+level: L2
+module: modeling
+title: $lookup rồi $unwind làm mất khách không có đơn
+title_en: $lookup then $unwind drops customers with no orders
+kind: predict
+runtime: browser
+minutes: 12
+objectives:
+  - vi: Đoán đúng `$unwind` làm gì với tài liệu có mảng rỗng sau `$lookup`.
+    en: Predict what `$unwind` does to a document whose array is empty after `$lookup`.
+  - vi: Giữ đủ mọi khách bằng `preserveNullAndEmptyArrays`, hoặc bằng cách không `$unwind`.
+    en: Keep every customer with `preserveNullAndEmptyArrays`, or by leaving out `$unwind`.
+requires: [e-mg-l2-08, e-mg-l2-11]
+sources:
+  - https://www.mongodb.com/docs/manual/reference/operator/aggregation/lookup/
+  - https://www.mongodb.com/docs/manual/reference/operator/aggregation/unwind/
+predict:
+  sql: 'db.customers.aggregate([{ $lookup: { from: "orders", localField: "_id", foreignField: "customer", as: "orders" } }, { $unwind: "$orders" }])'
+  q:
+    vi: 'Có 4 khách. `"c1"` có 2 đơn, `"c2"` và `"c3"` mỗi khách 1 đơn, `"c4"` chưa có đơn nào. Pipeline này trả mấy tài liệu?'
+    en: 'There are 4 customers. `"c1"` has 2 orders, `"c2"` and `"c3"` have 1 each, `"c4"` has none. How many documents does this pipeline return?'
+  options:
+    - vi: 4, mỗi khách một tài liệu
+      en: 4, one document per customer
+    - vi: 4, `"c1"` tách thành 2 và `"c4"` biến mất
+      en: 4, `"c1"` split into 2 and `"c4"` gone
+    - vi: 5, `"c4"` có `orders` bằng `null`
+      en: 5, `"c4"` with `orders` equal to `null`
+    - vi: 5, `"c4"` có `orders` là mảng rỗng
+      en: 5, `"c4"` with `orders` an empty array
+  answer: 1
+  why:
+    vi: 'Riêng `$lookup` là left outer join: `"c4"` vẫn còn, với `orders: []`. Nhưng `$unwind` tạo một tài liệu cho mỗi phần tử của mảng, và mảng rỗng thì không tạo tài liệu nào. Kết quả là `"c1"` hai lần, `"c2"`, `"c3"`: 4 tài liệu, `"c4"` mất. Cặp `$lookup` + `$unwind` vì vậy chạy như INNER JOIN của SQL.'
+    en: '`$lookup` alone is a left outer join: `"c4"` is still there, with `orders: []`. But `$unwind` makes one document per array element, and an empty array makes none. The result is `"c1"` twice, `"c2"`, `"c3"`: 4 documents, `"c4"` gone. So `$lookup` + `$unwind` behaves like an SQL INNER JOIN.'
+quiz:
+  - q:
+      vi: 'Trang hồ sơ khách chạy `$lookup` từ `customers` sang `orders` (1 triệu tài liệu) khoảng 1000 lần mỗi giây. `orders` chưa có index nào trên `customer`. Nên sửa gì trước?'
+      en: 'The customer profile page runs a `$lookup` from `customers` to `orders` (1 million documents) about 1000 times per second. `orders` has no index on `customer`. What should you fix first?'
+    options:
+      - vi: Không cần gì, `$lookup` nhanh như JOIN của SQL
+        en: Nothing, `$lookup` is as fast as an SQL JOIN
+      - vi: Tạo index trên `orders.customer` (trường `foreignField`), hoặc nhúng các đơn gần đây vào tài liệu khách
+        en: Create an index on `orders.customer` (the `foreignField`), or embed recent orders in the customer document
+      - vi: Thêm `$unwind` để kết quả nhỏ hơn
+        en: Add `$unwind` to make the result smaller
+    answer: 1
+    why:
+      vi: 'Docs `$lookup` viết rằng stage này sẽ "perform better when the foreign collection contains an index on the foreignField", và "Unindexed or correlated-subquery $lookup operations on large collections can slow down query performance". Docs cũng gợi ý nhúng dữ liệu hay đọc cùng nhau. Câu này theo docs chính thức, chưa đo trong trình duyệt: mingo không có index.'
+      en: 'The `$lookup` docs say it will "perform better when the foreign collection contains an index on the foreignField", and "Unindexed or correlated-subquery $lookup operations on large collections can slow down query performance". The docs also suggest embedding data that is read together. This answer follows the official docs and is not measured in the browser: mingo has no indexes.'
+lab:
+  setup: |
+    {"collections": {
+      "customers": [
+        {"_id": "c1", "name": "An", "city": "Da Nang"},
+        {"_id": "c2", "name": "Binh", "city": "Hue"},
+        {"_id": "c3", "name": "Chi", "city": "Da Nang"},
+        {"_id": "c4", "name": "Dung", "city": "Hoi An"}
+      ],
+      "orders": [
+        {"_id": 1, "customer": "c1", "total": 95000},
+        {"_id": 2, "customer": "c1", "total": 450000},
+        {"_id": 3, "customer": "c2", "total": 120000},
+        {"_id": 4, "customer": "c3", "total": 210000}
+      ]
+    }}
+  steps:
+    - task:
+        vi: 'Chạy pipeline ở câu đoán, rồi sửa để `"c4"` vẫn có một dòng: mỗi cặp khách và đơn một tài liệu, khách chưa có đơn vẫn giữ lại. Trả `name` và `order` là `_id` của đơn.'
+        en: 'Run the pipeline from the prediction, then fix it so `"c4"` still gets a row: one document per customer and order pair, keeping customers with no order. Return `name` and `order`, the order''s `_id`.'
+      solution: 'db.customers.aggregate([{ $lookup: { from: "orders", localField: "_id", foreignField: "customer", as: "orders" } }, { $unwind: { path: "$orders", preserveNullAndEmptyArrays: true } }, { $project: { name: 1, order: "$orders._id" } }])'
+      check: doc
+      hint:
+        vi: 'Dạng dài của `$unwind`: `{ path: "$orders", preserveNullAndEmptyArrays: true }`. Với `"c4"`, `"$orders._id"` không có giá trị nên tài liệu không có trường `order`.'
+        en: 'The long form of `$unwind`: `{ path: "$orders", preserveNullAndEmptyArrays: true }`. For `"c4"`, `"$orders._id"` has no value, so that document has no `order` field.'
+    - task:
+        vi: 'Báo cáo số đơn của từng khách, kể cả khách 0 đơn: `name` và `n` là số đơn. Không cần `$unwind`.'
+        en: 'Report the number of orders per customer, including customers with 0: `name` and `n`, the number of orders. No `$unwind` needed.'
+      solution: 'db.customers.aggregate([{ $lookup: { from: "orders", localField: "_id", foreignField: "customer", as: "orders" } }, { $project: { name: 1, n: { $size: "$orders" } } }])'
+      check: doc
+      hint:
+        vi: '`$lookup` đã cho mỗi khách một mảng `orders`, kể cả mảng rỗng. `{ $size: "$orders" }` đếm nó.'
+        en: '`$lookup` already gives each customer an `orders` array, even an empty one. `{ $size: "$orders" }` counts it.'
+---
+## Ý chính
+
+Bạn ghép khách với đơn rồi `$unwind` để có "mỗi dòng một đơn". Một khách biến mất khỏi báo cáo. Vì sao?
+
+Hai stage, hai cách làm:
+
+- `$lookup` là left outer join: mọi tài liệu bên trái đều được giữ, và trường `as` luôn là một mảng. Không có cặp thì mảng rỗng.
+- `$unwind` tạo một tài liệu cho mỗi phần tử. Mảng rỗng, `null` hay thiếu trường thì không tạo tài liệu nào.
+
+Nhiều người nghĩ `$lookup` giống hệt JOIN của SQL, nên viết `$lookup` + `$unwind` mà không để ý. Kết quả là một INNER JOIN: khách không có đơn mất khỏi báo cáo, không có lỗi.
+
+Hai cách giữ đủ khách:
+
+- `{ $unwind: { path: "$orders", preserveNullAndEmptyArrays: true } }`, tương đương LEFT JOIN từng dòng;
+- không `$unwind`, đọc thẳng mảng (`$size`, `$sum` trên mảng).
+
+## Ví dụ
+
+```text
+$lookup                          -> 4 documents, c4 has orders: []   (LEFT JOIN, grouped into an array)
+$lookup + $unwind                -> 4 documents, c4 gone             (INNER JOIN)
+$lookup + $unwind, keep empty    -> 5 documents                      (LEFT JOIN)
+```
+
+## Thực hành
+
+`$lookup` còn có giá: mỗi tài liệu bên trái phải tìm trong collection kia. Trên server thật, hãy có index trên trường `foreignField`. Nếu hai thứ luôn đọc cùng nhau, cân nhắc nhúng (bài "Nhúng hay tham chiếu").
+
+# EN
+
+## Key idea
+
+You join customers to orders, then `$unwind` to get "one row per order". A customer disappears from the report. Why?
+
+Two stages, two behaviours:
+
+- `$lookup` is a left outer join: every document on the left is kept, and the `as` field is always an array. No match gives an empty array.
+- `$unwind` makes one document per element. An empty array, `null` or a missing field makes no document at all.
+
+Many people think `$lookup` is exactly an SQL JOIN, so they write `$lookup` + `$unwind` without a second look. The result is an INNER JOIN: customers with no order vanish from the report, with no error.
+
+Two ways to keep every customer:
+
+- `{ $unwind: { path: "$orders", preserveNullAndEmptyArrays: true } }`, the equivalent of a row-by-row LEFT JOIN;
+- no `$unwind`, read the array directly (`$size`, `$sum` over the array).
+
+## Example
+
+```text
+$lookup                          -> 4 documents, c4 has orders: []   (LEFT JOIN, grouped into an array)
+$lookup + $unwind                -> 4 documents, c4 gone             (INNER JOIN)
+$lookup + $unwind, keep empty    -> 5 documents                      (LEFT JOIN)
+```
+
+## Practice
+
+`$lookup` also has a cost: every document on the left searches the other collection. On a real server, have an index on the `foreignField`. If two things are always read together, consider embedding (lesson "Embed or reference").
