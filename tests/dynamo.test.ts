@@ -79,7 +79,8 @@ describe('gradeItems', () => {
 
 describe('labProblem', () => {
   it('refuses empty and oversized labs', () => {
-    expect(labProblem({ tables: [] })).toBeDefined();
+    expect(labProblem({ tables: [] })).toBeUndefined(); // L248: a CreateTable lab starts with no table
+    expect(labProblem({ tables: Array.from({ length: 11 }, () => ({})) })).toBeDefined();
     expect(labProblem({ tables: [{}], items: { T: Array.from({ length: MAX_LAB_ITEMS + 1 }, () => ({})) } })).toMatch(/items/);
     expect(labProblem({ tables: [{}], items: { T: [] } })).toBeUndefined();
   });

@@ -5,9 +5,10 @@ import type { EngineId, EngineLesson, Lab, LabStep } from './content';
 /**
  * ENG-CORE (L221): the seam every engine's lab runtime plugs into. The lesson page (src/ui/engineView.ts) calls `prepare`
  * once per lesson visit, then `run` (show the player's result, never graded) and `check` (grade one lab step).
- * Runners are loaded lazily through LAB_RUNNERS; ENG-PGLAB replaces `postgres` (setup, extensions, plan/catalog checks),
- * MONGO adds `mongodb` (src/engine/mongo/**), the DynamoDB track adds `dynamodb`. Same rule as every lazy chunk: a runner
- * imports only types from main modules and gets main values through `LabEnv`.
+ * Runners are loaded lazily through LAB_RUNNERS (integration L248): `postgres` = the shop chain on `lab` or ENG-PGLAB's
+ * script runner, `mongodb` = ENG-MONGO's MongoLabClient (src/engine/mongo/runner.ts), `dynamodb` = ENG-DYNAMO's client
+ * (src/engine/dynamo/runner.ts). Same rule as every lazy chunk: a runner imports only types from main modules and gets
+ * main values through `LabEnv`.
  */
 
 /**
@@ -27,16 +28,25 @@ export interface LabMeta {
 }
 /** A table for the Result view (QueryResult-compatible: `types` = Postgres type OIDs, empty for a document engine) + meta. */
 export type LabOutput = QueryResult & { meta?: LabMeta };
-/** `unsupported`: this runner cannot do the step's check kind or the lab's setup (the page says so; nothing is graded). */
-export type LabVerdict = { ok: true } | { ok: false; reason: 'wrong' | 'error' | 'unsupported'; message?: string };
+/**
+ * `unsupported`: this runner cannot do the step's check kind or the lab's setup (the page says so; nothing is graded).
+ * `why` (L248): a stable code the page translates (`why.<code>` in src/i18n/engine.ts) with `params`; `message` is ready text.
+ */
+export type LabVerdict = { ok: true; tip?: string } | { ok: false; reason: 'wrong' | 'error' | 'unsupported'; message?: string; why?: string; params?: Record<string, string | number> };
+
+/** A plan as nested lines (`Seq Scan on orders`), root first; what a predict's "see the real plan" shows. */
+export interface PlanLine { depth: number; text: string; node: string; relation?: string; index?: string }
 
 export interface LabRunner {
   /** Once per lesson visit, before the first run: e.g. apply `lab.setup`. Throws → the page shows the error and a retry. */
   prepare(lab: Lab): Promise<void>;
-  /** Runs the player's code and returns its output (throws on an engine error: the page shows it like a SQL error). */
-  run(lab: Lab, code: string): Promise<LabOutput>;
+  /** Runs the player's code and returns its output (throws on an engine error: the page shows it like a SQL error). `step` = the
+   * step the editor belongs to (Postgres replays the earlier steps' DDL first). */
+  run(lab: Lab, code: string, step?: number): Promise<LabOutput>;
   /** Grades one step: `check` says what is compared (rows, plan, catalog, doc). */
   check(lab: Lab, step: LabStep, code: string): Promise<LabVerdict>;
+  /** Postgres only: the real plan of `sql` on the lab's data (EXPLAIN (FORMAT JSON)), for a predict's answer. */
+  explain?(lab: Lab, sql: string): Promise<PlanLine[]>;
 }
 
 /** Main-bundle values a runner may use (passed by the engine UI chunk). */
@@ -47,7 +57,27 @@ export interface LabEnv {
   grade(run: (sql: string) => Promise<QueryResult>, solution: string, player: string, ordered: boolean): Promise<GradeResult>;
   /** One sentence for a failed grade (src/ui/tryPreview.ts verdictText). */
   verdict(r: Exclude<GradeResult, { ok: true }>): string;
+  /** The UI language, for the few sentences a runner writes itself (timeouts, input errors). */
+  lang(): 'vi' | 'en';
 }
+
+/** EXPLAIN (FORMAT JSON) output → plan lines (the JSON is the first cell; PGlite may give it as text). */
+export function planLines(json: unknown): PlanLine[] {
+  type N = { 'Node Type'?: string; 'Relation Name'?: string; 'Index Name'?: string; Plans?: N[] };
+  const v = typeof json === 'string' ? JSON.parse(json) as unknown : json;
+  const root = (Array.isArray(v) ? v[0] : undefined) as { Plan?: N } | undefined;
+  const out: PlanLine[] = [];
+  const walk = (n: N, depth: number) => {
+    const node = n['Node Type'] ?? '?';
+    const relation = n['Relation Name'];
+    const index = n['Index Name'];
+    out.push({ depth, node, relation, index, text: `${node}${index ? ` using ${index}` : ''}${relation ? ` on ${relation}` : ''}` });
+    n.Plans?.forEach((c) => walk(c, depth + 1));
+  };
+  if (root?.Plan) walk(root.Plan, 0);
+  return out;
+}
+const explainSql = (sql: string): string => `EXPLAIN (FORMAT JSON) ${sql.trim().replace(/;\s*$/, '')}`;
 
 /**
  * Postgres on the existing `lab` schema (the shop chain, seeded lazily): one statement, rolled back, so `setup` cannot run
@@ -64,16 +94,18 @@ export function pgLabRunner(env: LabEnv): LabRunner {
       const r = await env.grade(env.sql, step.solution, code, step.ordered);
       return r.ok ? r : { ok: false, reason: r.reason === 'error' ? 'error' : 'wrong', message: env.verdict(r) };
     },
+    explain: async (_lab, sql) => planLines((await env.sql(explainSql(sql))).rows[0]?.[0]),
   };
 }
 
 /**
  * Whether a lab step can be graded in the browser (it then counts toward the lesson's completion). Postgres: `doc` never;
- * `plan` only with `setup` (ENG-PGLAB); rows/catalog always. Other engines: whenever a runner is registered (it may still
- * answer `unsupported` for one step: then the step is passed by hand, see engineView). Update with each new runner.
+ * `plan` only with `setup` (ENG-PGLAB); rows/catalog always. MongoDB and DynamoDB grade `doc` (their only kind). A lesson
+ * marked `runtime: docs` never runs here. Update with each new runner.
  */
 export const gradable = (l: EngineLesson, step: LabStep): boolean =>
-  !!LAB_RUNNERS[l.engine] && step.check !== 'doc' && !(l.engine === 'postgres' && step.check === 'plan' && !l.lab?.setup);
+  !!LAB_RUNNERS[l.engine] && l.runtime !== 'docs'
+  && (l.engine === 'postgres' ? step.check !== 'doc' && !(step.check === 'plan' && !l.lab?.setup) : step.check === 'doc');
 
 /** Engine → its runner, loaded on the first lab of that engine. An engine without one shows its labs read-only. */
 export const LAB_RUNNERS: Partial<Record<EngineId, (env: LabEnv) => Promise<LabRunner>>> = {
@@ -86,8 +118,11 @@ export const LAB_RUNNERS: Partial<Record<EngineId, (env: LabEnv) => Promise<LabR
       lab.setup ? (script ??= import('./pglab/runner').then((m) => m.pgScriptRunner(env)).catch((e: unknown) => { script = undefined; throw e; })) : Promise.resolve(onLab);
     return {
       prepare: async (lab) => (await pick(lab)).prepare(lab),
-      run: async (lab, code) => (await pick(lab)).run(lab, code),
+      run: async (lab, code, step) => (await pick(lab)).run(lab, code, step),
       check: async (lab, step, code) => (await pick(lab)).check(lab, step, code),
+      explain: async (lab, sql) => (await pick(lab)).explain!(lab, sql),
     };
   },
+  mongodb: async (env) => (await import('./mongo/runner')).mongoRunner(env),
+  dynamodb: async (env) => (await import('./dynamo/runner')).dynamoRunner(env),
 };

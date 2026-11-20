@@ -14,6 +14,7 @@ import { runMongo, type Dataset } from '../src/engine/mongo/engineMongo';
 import { canon, gradeMongo } from '../src/engine/mongo/grade';
 import { parseShell } from '../src/engine/mongo/parse';
 import { isoDate, pathDataset } from '../src/engine/mongo/pathDataset';
+import { followsEsr } from '../src/engine/mongo/path';
 import type { MongoDoc, MongoResult } from '../src/engine/mongo/types';
 
 /** Files by name as index.yml lists them (a file the manifest names but this map lacks fails `read`). */
@@ -65,33 +66,6 @@ const sortedKey = (r: MongoResult) => (r.value !== undefined ? canon(r.value as 
 const runnable = (q?: string) => !!q && /^db\./.test(q.trim()) && !q.includes('.explain(');
 /** Drills graded by running the query and comparing documents. */
 const runs = (d: Drill) => d.format !== 'choice' && d.grade !== 'esr' && !!d.solution;
-
-/** Equality → Sort → Range order of a find's filter and sort (equality: plain value or $eq / $in with one value). */
-function esrOrder(query: string): { e: string[]; s: string[]; r: string[] } {
-  const c = parseShell(query);
-  const filter = (c.method.args[0] ?? {}) as MongoDoc;
-  const sort = (c.chain.find((x) => x.name === 'sort')?.args[0] ?? {}) as MongoDoc;
-  const e: string[] = [];
-  const r: string[] = [];
-  for (const [k, v] of Object.entries(filter)) {
-    const ops = v && typeof v === 'object' && !(v instanceof Date) && !Array.isArray(v) ? Object.keys(v as MongoDoc) : [];
-    (ops.some((o) => o.startsWith('$') && o !== '$eq') ? r : e).push(k);
-  }
-  return { e, s: Object.keys(sort), r: r.filter((k) => !Object.hasOwn(sort, k)) };
-}
-const indexKeys = (src: string) => Object.keys(parseShell(src).method.args[0] as MongoDoc);
-function followsEsr(query: string, createIndex: string): boolean {
-  const { e, s, r } = esrOrder(query);
-  const keys = indexKeys(createIndex);
-  const want = [e, s, r];
-  let i = 0;
-  for (const group of want) {
-    const part = keys.slice(i, i + group.length);
-    if (part.length !== group.length || !group.every((k) => part.includes(k))) return false;
-    i += group.length;
-  }
-  return i === keys.length;
-}
 
 describe('MongoDB path: manifest and ids', () => {
   it('index.yml lists parts 1–12 in order, each covered by one file set, with skills in that range', () => {

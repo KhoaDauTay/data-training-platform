@@ -8,7 +8,7 @@ export type Item = Record<string, AttributeValue>;
 /** Operations a player (or a lab's solution) may send. Anything else is refused before it reaches the engine. */
 export const DYNAMO_OPS = [
   'GetItem', 'PutItem', 'UpdateItem', 'DeleteItem', 'Query', 'Scan', 'BatchGetItem', 'BatchWriteItem', 'CreateTable',
-  'DescribeTable', 'ExecuteStatement',
+  'DescribeTable', 'ExecuteStatement', 'TransactGetItems', 'TransactWriteItems', 'ExecuteTransaction',
 ] as const;
 export type DynamoOp = (typeof DYNAMO_OPS)[number];
 

@@ -15,18 +15,32 @@ export interface Dataset {
 }
 
 /** Seed data per lab, one lazy JSON chunk each (`mongoSeed*`). Add a lab's data here. */
-const DATASETS: Record<string, () => Promise<{ default: unknown }>> = {
-  shop: () => import('./data/mongoSeedShop.json'),
+const DATASETS: Record<string, () => Promise<Dataset>> = {
+  shop: () => import('./data/mongoSeedShop.json').then((m) => datasetOf(m.default)),
+  // Integration (L248): the MongoDB path's shared dataset (content/engine/mongodb/path, dates as ISO strings + _meta).
+  path: () => Promise.all([import('../../../content/engine/mongodb/path/dataset.json'), import('./pathDataset')]).then(([m, p]) => p.pathDataset(m.default)),
 };
 export const DATASET_IDS = Object.keys(DATASETS);
 
 const loaded = new Map<string, Promise<Dataset>>();
+/** Inline lab data (a lesson's `setup`: `{"collections": {…}}`, dates as `{"$date": …}`), parsed once per text. */
+const INLINE_MAX = 32;
 
 export function loadDataset(id: string): Promise<Dataset> {
-  if (!Object.hasOwn(DATASETS, id)) return Promise.reject(new MongoRunError('unknown_dataset', `Unknown dataset "${id}"`));
+  const inline = id.trimStart().startsWith('{');
+  if (!inline && !Object.hasOwn(DATASETS, id)) return Promise.reject(new MongoRunError('unknown_dataset', `Unknown dataset "${id}"`));
   let p = loaded.get(id);
   if (!p) {
-    p = DATASETS[id]().then((m) => datasetOf(m.default));
+    if (inline && loaded.size > INLINE_MAX) loaded.clear();
+    p = inline ? Promise.resolve().then(() => {
+      let json: { collections?: unknown };
+      try {
+        json = JSON.parse(id) as { collections?: unknown };
+      } catch (e) {
+        throw new MongoRunError('bad_dataset', `Lab data is not JSON: ${(e as Error).message}`);
+      }
+      return datasetOf(json.collections ?? json);
+    }) : DATASETS[id]();
     p.catch(() => loaded.delete(id)); // a failed chunk load is retried next time
     loaded.set(id, p);
   }

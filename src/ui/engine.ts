@@ -1,10 +1,12 @@
 import { grade } from '../grader';
 import { getLang, locale, t } from '../i18n';
-import { engineHash, engineRouteOf, hashOf } from '../route';
+import { engineHash, enginePathHash, enginePathOf, engineRouteOf, hashOf } from '../route';
 import { actions, app, persist } from '../state';
 import { BTN_GO, BTN_SECONDARY, CARD, cx, isDark, PILL } from '../theme';
 import { optionOrder } from '../tickets';
+import { loadedGsap, loadGsap } from '../art/load';
 import { announce, h, loader, reducedMotion } from './dom';
+import { s } from './svg';
 import { errorView } from './feedback';
 import { registerHomeSection } from './homeView';
 import { icon, NAV_ICON } from './icons';
@@ -24,14 +26,14 @@ let view: EngineView | undefined;
 let failed = false;
 
 function engineChunk(): Promise<EngineView> {
-  pending ??= Promise.all([import('./engineView'), import('../engineSources-pg'), import('../engineSources-mg'), import('../engineSources-dy'),
-    import('yaml')]) // L247: lazy, so main stays without the yaml library (V22-E, L201)
-    .then(([m, postgres, mongodb, dynamodb, { parse: parseYaml }]) => {
+  pending ??= Promise.all([import('./engineView'), import('../engineSources')])
+    .then(([m, src]) => {
       m.initEngine({
-        h, icon, t, getLang, locale, app, persist, announce, loader, reducedMotion, isDark, parseYaml, renderResult, errorView, optionOrder,
-        engineHash, engineRouteOf, hashOf, rerender: () => actions.rerender(), cls: { CARD, BTN_GO, BTN_SECONDARY, PILL, cx },
-        lab: { sql: (text) => runOn('lab', text), grade: (run, solution, player, ordered) => grade(run, solution, player, ordered), verdict: verdictText },
-      }, { postgres, mongodb, dynamodb });
+        h, icon, t, getLang, locale, app, persist, announce, loader, reducedMotion, isDark, renderResult, errorView, optionOrder,
+        engineHash, engineRouteOf, enginePathOf, enginePathHash, hashOf, rerender: () => actions.rerender(), cls: { CARD, BTN_GO, BTN_SECONDARY, PILL, cx },
+        lab: { sql: (text) => runOn('lab', text), grade: (run, solution, player, ordered) => grade(run, solution, player, ordered), verdict: verdictText, lang: getLang },
+        viz: { h, s, reducedMotion, loadedGsap, loadGsap, getLang },
+      }, src);
       failed = false;
       return (view = m);
     }, (e: unknown) => {

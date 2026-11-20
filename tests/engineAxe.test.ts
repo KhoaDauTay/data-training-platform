@@ -5,9 +5,10 @@ import { beforeAll, describe, expect, it, vi } from 'vitest';
 import { boot, byId, EmptyWorker, problems, visit } from './axeHarness';
 import { app } from '../src/state';
 
-vi.mock('../src/engineSources-pg', () => ({
-  lessons: import.meta.glob<string>('./fixtures/engine/postgres/L*/*.md', { query: '?raw', import: 'default', eager: true }),
-  modules: import.meta.glob<string>('./fixtures/engine/postgres/modules.yml', { query: '?raw', import: 'default', eager: true }),
+vi.mock('../src/engineSources', () => ({
+  meta: import.meta.glob('./fixtures/engine/*/L*/*.md', { query: '?fm&meta=id,engine,level,module,title,title_en,kind,minutes,requires,runtime', import: 'default', eager: true }),
+  full: import.meta.glob('./fixtures/engine/*/L*/*.md', { query: '?fm', import: 'default' }),
+  modules: import.meta.glob('./fixtures/engine/*/modules.yml', { import: 'default', eager: true }),
 }));
 
 beforeAll(() => boot({ worker: EmptyWorker, storage: { 'cargo-query/coach-done': 'true', 'cargo-query/domain': '"logistics"' } }));
