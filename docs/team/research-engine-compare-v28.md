@@ -49,10 +49,15 @@
 
 ## 0. Tóm tắt
 
-1. **Khung chín trục chạy được trên cả ba runtime, nhưng chỉ bốn trục là T1 ở cả ba:** mô hình dữ liệu, mô hình truy vấn, chi phí (đọc theo khóa) và chỗ hỏng thường gặp.
-   - Các trục index, nhất quán, scale và transaction luôn có ít nhất một engine ở mức T1≠ hoặc T2.
+1. **Khung chín trục chạy được trên cả ba runtime, nhưng chỉ ba trục là T1 ở cả ba:** mô hình dữ liệu (A1), mô hình truy vấn (A2) và chỗ hỏng thường gặp (A9).
+   - Sáu trục còn lại (index, transaction, nhất quán, scale, chi phí, đổi schema) luôn có ít nhất một engine ở mức T1≠ hoặc T2.
    - Lý do: mingo không có index, replica hay transaction. dynoxide không có partition, độ trễ GSI, backfill hay `TransactWriteItems`. PGlite chỉ có một phiên.
    - Trang E-CMP vì thế phải có cột nhãn cho **từng ô**, không đặt một nhãn chung cho cả trang.
+   - **Mọi phép đo ở tầng thư viện** (mingo, dynoxide, PGlite gọi thẳng), chưa qua runner của app. Trên `v22-engine`:
+     - `DYNAMO_OPS` (`src/engine/dynamo/types.ts`) **không có `UpdateTable`**, nên A8 phải dùng `CreateTable` có sẵn GSI, hoặc thêm op;
+     - runner Mongo (`runMongo`) chạy **một lệnh mỗi lần**, trên bản sao mới của seed, nên kết quả "trừ nửa chừng" của A4 (hai `updateOne` nối nhau) **không thấy được** qua hai lần chạy;
+     - `ExecuteTransaction` và `ISODate(...)` thì runner đã nhận.
+   - E-CMP cần một runner Mongo chạy nhiều lệnh trong một lượt (giống `script` của pglab), hoặc phải dạy A4 Mongo bằng `predict` trên output ghi từ thư viện (§4).
 2. **Bằng chứng mạnh nhất cho người học, đều đo thật:**
    - Báo cáo doanh thu theo thành phố (A2) có cùng đáp số ở ba engine. Postgres và Mongo viết bằng một câu lệnh. DynamoDB phải Scan cả bảng (3.062 item, 43,5 RCU), rồi cộng ở phía ứng dụng.
    - "20 đơn PAID mới nhất" (A3):
@@ -66,9 +71,9 @@
      - Postgres `ADD COLUMN … DEFAULT` không viết lại bảng: filenode 16394 và size 204.800 giữ nguyên, `atthasmissing = true`.
      - Mongo `{channel: "store"}` đếm được 0.
      - GSI mới trên `channel` của DynamoDB đếm `store` được **0**, vì GSI là sparse.
-   - Một đơn có `total` lưu dạng chữ (A9):
-     - Postgres từ chối lúc ghi (`22P02`).
-     - Mongo và DynamoDB nhận vào, rồi **lặng lẽ bỏ qua** đơn đó khi đếm `> 5 triệu`.
+   - Một nguồn gửi `total` dạng chữ (A9):
+     - Postgres **không bao giờ lưu chữ** vào cột `numeric`: `'6500000'` được đổi thành số và được đếm (1.463), `'6,500,000'` bị từ chối (`22P02`), giá trị kiểu `text` bị từ chối (`42804`).
+     - Mongo và DynamoDB lưu nguyên chuỗi `"6500000"`, rồi **lặng lẽ bỏ qua** đơn đó khi đếm `> 5 triệu` (1.462).
 3. **Phát hiện mới về runtime** (bổ sung vào danh sách "runtime ≠ engine thật"):
    - dynoxide `UpdateTable` thêm GSI → trả về `ACTIVE` ngay. AWS thật đi qua `CREATING` và backfill.
    - `total` là từ khóa dành riêng của DynamoDB. dynoxide báo `ValidationException` đúng như AWS, nên đây là một bẫy dạy được thật (thẻ `e-bp-d14`).
@@ -252,7 +257,7 @@ db.orders.find({ status: "PAID" }).sort({ created: -1, _id: -1 }).limit(20)
 - Mongo T1≠: đúng kết quả, còn cơ chế là T2.
 - DynamoDB T1.
 
-**Chú ý cho người viết bài:** sort key của GSI chỉ là `created`. Hai đơn trùng giây sẽ xếp theo khóa của bảng chính, không theo `id DESC`. Vì vậy script so tập 20 id, không so thứ tự. Bài nào hỏi top N trên GSI phải đặt tiebreaker **vào sort key** (`created#id`), giống luật tiebreaker của ticket (BP `e-bp-q10`, `e-bp-d04`).
+**Chú ý cho người viết bài:** sort key của GSI chỉ là `created`. Thứ tự của hai đơn trùng giây **không được bảo đảm** theo `id DESC` (tôi không tìm thấy docs nói về thứ tự giữa các item trùng sort key trên GSI). Vì vậy script so tập 20 id, không so thứ tự. Bài nào hỏi top N trên GSI phải đặt tiebreaker **vào sort key** (`created#id`), giống luật tiebreaker của ticket (BP `e-bp-q10`, `e-bp-d04`).
 
 **Bài đã có:** `e-pg-l1-11`, `e-pg-l2-01`, `e-pg-l2-02`; `e-mg-l3-05`, `e-mg-l3-08`; `e-dy-l3-03`, `e-dy-l3-04`.
 
@@ -288,6 +293,8 @@ UPDATE "Shop" SET stock = stock - 2 WHERE PK = 'PROD#P2' AND SK = 'STOCK' AND st
 - Postgres T1.
 - Mongo T1 cho kết quả "nửa chừng". MongoDB thật cũng cho kết quả này với hai lệnh ngoài session. Cách sửa bằng transaction nhiều tài liệu là T2: mingo không có session (`e-mg-l4-09` là docs).
 - DynamoDB T1 qua PartiQL. Riêng `TransactWriteItems` là T2.
+  - Docs PartiQL UPDATE: điều kiện WHERE "must resolve to a single primary key value". Nếu WHERE "does not evaluate to true for any item in the DynamoDB table" thì trả `ConditionalCheckFailedException`. Vậy `AND stock >= 2` đóng vai điều kiện ghi, khớp dynoxide.
+  - Phép trừ `SET stock = stock - 2` **chưa đối chiếu docs**: trang chỉ có ví dụ gán hằng, `list_append`, `set_add`, và tôi mới thấy nó chạy trên dynoxide. Kiểm lại trước khi đưa vào bài. Nếu không xác nhận được thì dùng `UpdateItem` + `ConditionExpression` (`e-dy-l2-04`).
 
 **Ý dạy:**
 
@@ -411,8 +418,8 @@ db.orders.aggregate([{ $group: { _id: { $ifNull: ["$channel", "store"] }, n: { $
 
 | Engine | Ghi `total = "6,500,000"` / `"6500000"` | Đếm `total > 5.000.000` | Tìm ra dòng lệch |
 |---|---|---|---|
-| PostgreSQL | **từ chối:** `22P02 invalid input syntax for type numeric` | 1.462 | không cần: dòng lệch không vào được bảng |
-| MongoDB | nhận | 1.462 (**bỏ qua lặng lẽ** đơn chữ) | `{ total: { $type: "string" } }` → `O90002` |
+| PostgreSQL | `'6,500,000'` → **từ chối** `22P02`; `'6500000'` → **đổi thành số** (`pg_typeof` = `numeric`); giá trị kiểu `text` → từ chối `42804` (`pgtext.mjs`) | **1.463** (đếm cả đơn đã đổi thành số) | không cần: cột không bao giờ chứa chữ |
+| MongoDB | nhận nguyên chuỗi `"6500000"` | 1.462 (**bỏ qua lặng lẽ** đơn chữ) | `{ total: { $type: "string" } }` → `O90002` |
 | DynamoDB | nhận (thuộc tính kiểu `S`) | 1.462 (bỏ qua lặng lẽ: so `S` với `N` cho false) | `attribute_type(#t, :s)` → `O90002` |
 
 Thêm hai thử nghiệm phụ, đều T1:
@@ -426,7 +433,8 @@ Phụ: Postgres với điều kiện bọc cột, `created_at::date = '2026-10-3
 
 **Ý dạy:**
 
-- Schema-on-write (Postgres) đổi **lỗi lúc ghi** lấy **đáp số đúng lúc đọc**.
+- Với cùng chuỗi `"6500000"`, Postgres đếm 1.463, còn hai engine kia đếm 1.462 (có assert trong `cmp.mjs`).
+- Schema-on-write (Postgres) **đổi kiểu hoặc báo lỗi lúc ghi**, nên lúc đọc đáp số đúng.
 - Schema-on-read (Mongo, DynamoDB) nhận mọi thứ, nên DA phải tự kiểm. Mẫu kiểm là "truy vấn phải trả 0 dòng" (BP A12), viết bằng `$type` hoặc `attribute_type`.
 
 ### 1.11 Tổng hợp nhãn (cho cột nhãn của trang E-CMP)
@@ -436,11 +444,11 @@ Phụ: Postgres với điều kiện bọc cột, `created_at::date = '2026-10-3
 | A1 mô hình dữ liệu | T1 | T1 | T1 |
 | A2 truy vấn | T1 | T1 | T1 (Streams: T2) |
 | A3 index | T1 | T1≠ (không index) | T1 |
-| A4 transaction | T1 | T1 nửa chừng / T2 transaction | T1 PartiQL / T2 `TransactWriteItems` |
+| A4 transaction | T1 | T1 nửa chừng (chỉ ở thư viện; runner chạy một lệnh mỗi lượt) / T2 transaction | T1 PartiQL / T2 `TransactWriteItems` |
 | A5 nhất quán | T1 một phiên / T2 hai phiên | T2 | T1, GSI lag T1≠ |
 | A6 scale | T1 pruning | T1 đo khóa / T2 định tuyến | T1 đếm / T2 partition |
 | A7 chi phí | T1 (cost) | T2 | T1 (RCU) |
-| A8 đổi schema | T1 | T1 (`$count` rỗng T1≠) | T1 sparse / T1≠ backfill |
+| A8 đổi schema | T1 | T1 (`$count` rỗng T1≠) | T1 sparse / T1≠ backfill (runner thiếu `UpdateTable`) |
 | A9 chỗ hỏng | T1 | T1 | T1 |
 
 **Đề xuất cho capstone so sánh của E-CMP** (`e-pg-cmp-…` theo `ENGINE_ID`), 5 bước:
@@ -451,7 +459,7 @@ Phụ: Postgres với điều kiện bọc cột, `created_at::date = '2026-10-3
 4. A9: tìm dòng lệch bằng `$type`.
 5. Bước cuối là `quiz` chọn engine cho workload §2 S1, đúng luật "giải thích số đo" của pedagogy §1.2.
 
-Mọi bước đều T1, nên đạt điều kiện thoát của v28: "Capstone so sánh chạy trên ba runtime trong e2e".
+Bước 1, 2 và 4 là T1 qua runner hiện có. Bước 3 trên Mongo cần runner chạy nhiều lệnh trong một lượt. Chưa có runner đó thì bước 3 là `predict` trên output ghi từ thư viện. Điều kiện thoát "Capstone so sánh chạy trên ba runtime trong e2e" vẫn đạt nhờ bước 1.
 
 ---
 
@@ -517,7 +525,7 @@ Mỗi tình huống tuân theo pedagogy §1.2:
 | (a) | `{ status: 1 }` | Bẫy: cardinality 4 |
 | (b) | `{ created: 1 }` | Bẫy: tăng đơn điệu, mọi insert dồn vào chunk `maxKey` |
 | (c) | `{ customerId: 1 }` | Gần đúng: truy vấn đi đúng một shard, nhưng 32 % dồn vào một giá trị nên thành chunk không chia được |
-| (d) | `{ customerId: 1, _id: 1 }` | **Đáp án:** vẫn định tuyến theo khách, và chunk của khách lớn chia được |
+| (d) | `{ customerId: 1, _id: 1 }` | **Đáp án:** vẫn định tuyến theo khách, và chunk của khách lớn chia được. Docs: "consider using a compound index using a unique or low frequency value" *(qua fetch)*, không nêu tên `_id` |
 
 - Nguồn: Choose a Shard Key *(qua fetch)*.
 - Bài liên quan: `e-mg-l5-05`, `e-mg-l5-07`.
@@ -550,8 +558,8 @@ Câu nối tiếp hỏi về MongoDB: đọc với `readPreference: secondary` t
 **S11 (predict, chạy thật A9).** Ba nguồn dữ liệu, một nguồn ghi tiền dạng chữ. Đếm đơn trên 5 triệu ở mỗi engine thì sao?
 
 - Đáp án:
-  - Postgres **không nhận** dòng lệch (`22P02`);
-  - Mongo và DynamoDB nhận nhưng **không đếm** nó, và không báo gì.
+  - Postgres không bao giờ lưu chữ: `"6500000"` thành số và **được đếm**, `"6,500,000"` bị từ chối (`22P02`);
+  - Mongo và DynamoDB lưu nguyên chuỗi nhưng **không đếm** nó, và không báo gì.
 - Bẫy: "Mongo tự ép kiểu chuỗi số".
   - Nghe hợp lý vì JavaScript làm vậy (`"6500000" > 5000000` là true).
   - Thật ra MongoDB có type bracketing: `$gt` không khớp chuỗi (vòng 9 §4.1).
@@ -584,7 +592,12 @@ Câu nối tiếp hỏi về MongoDB: đọc với `readPreference: secondary` t
 
 ### 3.1 Cách đọc bảng
 
-- **Engine PG** và **DynamoDB**: id bài trên `v22-engine`, đã đối chiếu với frontmatter (`scratchpad/r10/lessons.tsv`, 195 bài).
+- **Engine PG** và **DynamoDB**: id bài trên `v22-engine`.
+  - Mọi id trong tài liệu này đã kiểm là có thật: frontmatter bài (`scratchpad/r10/lessons.tsv`, 195 bài), thẻ BP và kỹ năng `mg.*`.
+  - Độ liên quan: chọn theo tiêu đề, rồi grep cấu trúc trong bài cho các cặp yếu.
+    - Đã bỏ `having → e-mg-l2-05` (0 lần nhắc `$group`/HAVING) và `date_bucket → e-dy-l4-10` (1 lần nhắc ngày).
+    - Các cặp còn lại có ≥ 4 lần nhắc cấu trúc, trừ cặp có ghi chú trong ô.
+    - Agent LINK nên đọc bài trước khi gắn chip.
 - **Mongo path**:
   - kỹ năng `mg.*` trong `content/engine/mongodb/path/skills-*.yml`;
   - Phần 7–12 có trường `sql:`, đối chiếu chính xác;
@@ -603,13 +616,13 @@ Câu nối tiếp hỏi về MongoDB: đọc với `readPreference: secondary` t
 | `limit` | `e-pg-l1-11` | `mg.limit` / `e-mg-l1-10` | `e-dy-l1-10` (DY6) | `e-bp-q10` |
 | `aggregate` | `e-pg-l4-04` (HashAggregate), `e-pg-l1-08` (materialized view) | `mg.group` / `e-mg-l2-06` | `e-dy-l2-05` (đếm bằng `ADD`). **Lỗ:** chưa có bài materialized aggregation | `e-bp-a18`, `e-bp-q04` |
 | `group_by` | `e-pg-l4-03` (ước lượng nhóm), `e-pg-l4-04` | `mg.group_keys` / `e-mg-l2-06` | — (A2: không GROUP BY) | `e-bp-m09`, `e-bp-a18`, `e-bp-q15`, `e-bp-q22` |
-| `having` | — | `mg.match_after_group` / `e-mg-l2-05` | — | `e-bp-q15` |
+| `having` | — | `mg.match_after_group` (chưa có bài L1–L5 nào nhắc HAVING) | — | `e-bp-q15` |
 | `join` | `e-pg-l4-04`, `e-pg-l4-05` | `mg.lookup`, `mg.unwind` / `e-mg-l2-08`, `e-mg-l2-11` | `e-dy-l1-03`, `e-dy-l3-08` | `e-bp-m01`, `e-bp-i06` |
 | `multi_join` | `e-pg-l4-05` (thứ tự nối, GEQO) | `mg.lookup` | `e-dy-l3-07` | `e-bp-q07` |
 | `left_join` | `e-pg-l4-04` | `mg.lookup_keep` / `e-mg-l2-08` | `e-dy-l3-08` | `e-bp-m18`, `e-bp-a01`, `e-bp-a11`, `e-bp-q05`, `e-bp-q06` |
 | `anti_join` | — (lỗ: Hash Anti Join) | `mg.lookup_none`, `mg.except_like` | — | `e-bp-a11`, `e-bp-q02` |
 | `date_math` | `e-pg-l2-10` (khoảng thời gian) | `mg.date_math` | `e-dy-l3-09` (khóa ISO) | `e-bp-s01`, `e-bp-a05`, `e-bp-q12` |
-| `date_bucket` | `e-pg-l2-08` (BRIN), `e-pg-l4-07` (partition theo thời gian) | `mg.date_bucket` / `e-mg-l4-03`, `e-mg-l5-08` | `e-dy-l4-10` | `e-bp-a01` |
+| `date_bucket` | `e-pg-l2-08` (BRIN), `e-pg-l4-07` (partition theo thời gian) | `mg.date_bucket` / `e-mg-l4-03`, `e-mg-l5-08` | — | `e-bp-a01` |
 | `null_logic` | `e-pg-l1-05` (có `NOT IN`) | `mg.missing_null` / `e-mg-l1-09` | `e-dy-l3-06` (thiếu thuộc tính = không vào index) | `e-bp-m16`, `e-bp-m17`, `e-bp-q01`, `e-bp-q03` |
 | `case_when` | — | `mg.cond` | — | — |
 | `conditional_agg` | — | `mg.cond_sum` | — | `e-bp-q13` |
@@ -656,7 +669,7 @@ Câu nối tiếp hỏi về MongoDB: đọc với `readPreference: secondary` t
 2. **Postgres Engine thiếu bài về kế hoạch của các cấu trúc DA dùng nhiều:**
    - `WindowAgg` (window: 0 bài có `OVER (`);
    - `Hash Anti Join` (anti join, `NOT EXISTS`: 0 bài có "Anti");
-   - CTE được inline (từ PG 12) so với `MATERIALIZED`;
+   - CTE được inline (từ PG 12) so với `MATERIALIZED` (grep `CTE Scan|AS MATERIALIZED|NOT MATERIALIZED` trên `content/engine/`: 0 file);
    - `HashAggregate`/`Unique` cho `DISTINCT`/`UNION`.
    - 20/38 kỹ năng không có bài PG để link. Đề xuất một mô-đun nhỏ L2 "kế hoạch của truy vấn phân tích", 4 bài `predict` có `expect`, chạy được trên PGlite. Đây là lỗ có giá trị nhất cho người học DA.
 3. **DynamoDB thiếu bài materialized aggregation:** `ADD` + GSI sparse theo kỳ, theo trang AWS. A2/S5 là bằng chứng. Phần Streams là T2.
@@ -678,6 +691,7 @@ Câu nối tiếp hỏi về MongoDB: đọc với `readPreference: secondary` t
 | Luồng | Việc | Nhãn |
 |---|---|---|
 | E-CMP | Bộ dữ liệu §1 (60 khách, 3.000 đơn, tất định) làm seed chung cho ba runtime. Trang có chín trục: bảng §1.1, mỗi trục một ô "Chạy" trên mỗi runtime, cột nhãn §1.11. Capstone 5 bước như §1.11. Quiz chọn trong S1–S12 | T1 + nhãn từng ô |
+| E-CMP, runner | Runner Mongo nhận nhiều lệnh trong một lượt, trên cùng một bản sao (cho A4). Thêm `UpdateTable` vào `DYNAMO_OPS`, hoặc viết A8 bằng `CreateTable` có sẵn GSI | — |
 | E-CMP, nội dung | Mỗi ô T1≠ có một dòng "trình giả lập khác DynamoDB/MongoDB thật ở đâu": GSI cập nhật ngay, GSI mới `ACTIVE` ngay, `$count` rỗng, không index | — |
 | CMP-SQL | Bảng vòng 9 §4.2, thêm 3 dòng: `GROUP BY` → "không có, Scan + cộng phía ứng dụng, hoặc tính trước bằng `ADD`" (A2); `ALTER TABLE ADD COLUMN DEFAULT` → "item cũ thiếu thuộc tính, GSI mới bỏ qua" (A8); cột tên `total`/`status`/`name`… → `#alias` (A7) | T1 |
 | LINK | §3.2 thành `skill → lesson[]` cho `engineLink.ts`. Chip BP lấy từ `skills:` của thẻ (đã có, không cần bảng mới). Sửa phạm vi E-com/Finance theo §3.3 mục 1 | — |
@@ -697,6 +711,8 @@ Thư mục: `C:\Users\KHOA~1.HUY\AppData\Local\Temp\claude\…\scratchpad\r10\`,
 - nạp dynoxide 1.5.0 bằng cùng shim với `r9/dy.mjs` (vá `fetch` cho `file:`, định tuyến `postMessage`, `open { ephemeral: true }`);
 - sinh dữ liệu §0 và nạp vào ba runtime;
 - chạy A1–A9 với `assert` đáp số giống nhau, kết thúc bằng `ALL ASSERTIONS PASSED`. Output ở `cmp.out`.
+
+**`pgtext.mjs`:** Postgres với `'6500000'` (literal và tham số: đổi thành `numeric`), `'6,500,000'` (`22P02`), giá trị kiểu `text` (`42804`). Output ở `pgtext.out`.
 
 **`sum.mjs`:** mingo `$sum`/`$avg`/`$max` trên chuỗi số, `$gt` trên chuỗi, `$count` rỗng. Output ở `sum.out`.
 
@@ -718,7 +734,7 @@ A7 pg PK cost 8.3 | Seq Scan cost 62.5 | dynamo GetItem 0.5, Scan 43.5 | answer 
 A7 dynamo `total` unescaped: ValidationException … reserved keyword: total
 A8 pg filenode/size 16394/204800 → 16394/204800, atthasmissing true {store}
 A8 mingo {channel:"store"} [{"n":0}] | $ifNull app 1, store 3000 | dynamo byChannel:ACTIVE, store 0 / app 1
-A9 pg 22P02 | count>5M pg/mingo/dynamo 1462 | $type / attribute_type → O90002 | Limit 100 page Count 5 Scanned 100 LEK
+A9 pg '6,500,000' 22P02, '6500000' → numeric | count>5M pg 1463 / mingo 1462 / dynamo 1462 | $type / attribute_type → O90002 | Limit 100 page Count 5 Scanned 100 LEK
 A9 pg created_at::date cost 47.57 vs half-open 17.75 (both Bitmap Index Scan on orders_status_created)
 ```
 
@@ -736,6 +752,7 @@ A9 pg created_at::date cost 47.57 vs half-open 17.75 (both Bitmap Index Scan on 
 - AWS, Take advantage of sparse indexes: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-indexes-general-sparse-indexes.html
 - AWS, Managing Global Secondary Indexes: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/GSI.OnlineOps.html
 - AWS, materialized aggregation queries: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-gsi-aggregation.html
+- AWS, PartiQL update statements: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/ql-reference.update.html
 - AWS, Reserved words: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/ReservedWords.html
 
 **Dùng lại** (trích ở `engine-pedagogy.md` §5 và vòng 9 phụ lục B):
