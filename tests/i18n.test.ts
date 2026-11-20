@@ -26,7 +26,7 @@ const GAME_TONE = /boss|sự cố/i;
 
 /** Keys whose EN text is intentionally the same as VI (SQL keywords, product names). */
 // Plan 7: product, domain and module names read the same in both languages.
-const SAME_OK = new Set<string>(['work.runKeys', 'work.submitKeys', 'work.formatKeys', 'tab.explain', 'top.xp', 'nav.sandbox', 'top.chapterShort', 'top.chapterTiny', 'nav.task',
+const SAME_OK = new Set<string>(['nav.engine', 'nav.engineShort', 'work.runKeys', 'work.submitKeys', 'work.formatKeys', 'tab.explain', 'top.xp', 'nav.sandbox', 'top.chapterShort', 'top.chapterTiny', 'nav.task',
   'app.name', 'domain.logistics', 'domain.finance', 'domain.ecommerce']);
 const placeholders = (s: string): string => [...s.matchAll(/\{(\w+)\}/g)].map((m) => m[1]).sort().join();
 
@@ -151,6 +151,23 @@ describe('chữ UI phần Chung (src/i18n/learn.ts, Plan 8a D8a-13)', () => {
       expect([k, placeholders(e)]).toEqual([k, placeholders(v)]);
       if (!SAME.has(k)) expect([k, e]).not.toEqual([k, v]);
       expect(`${v} ${e}`).not.toMatch(GAME_TONE);
+    }
+  });
+});
+
+describe('chữ UI khu Database Engine (src/i18n/engine.ts, ENG-CORE L220)', () => {
+  it('placeholder khớp, EN khác VI, không giọng game, không "sắp có"', async () => {
+    const { ENGINE_DICT } = await import('../src/i18n/engine');
+    const { PRED_DICT } = await import('../src/i18n/enginePredict'); // v23 predict/capstone text, its own chunk (L296)
+    const vi: Record<string, string> = { ...ENGINE_DICT.vi, ...PRED_DICT.vi };
+    const en: Record<string, string> = { ...ENGINE_DICT.en, ...PRED_DICT.en };
+    expect(Object.keys(PRED_DICT.vi).filter((k) => k in ENGINE_DICT.vi)).toEqual([]);
+    for (const [k, v] of Object.entries(vi)) {
+      const e = en[k];
+      expect([k, placeholders(e)]).toEqual([k, placeholders(v)]);
+      expect([k, e]).not.toEqual([k, v]);
+      expect(`${v} ${e}`).not.toMatch(GAME_TONE);
+      expect(`${v} ${e}`).not.toMatch(/sắp có|coming soon/i);
     }
   });
 });

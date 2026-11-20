@@ -130,7 +130,9 @@ function draw(): void {
         : replay ? main({ 'data-w': 'close', onclick: () => d.close() }, t('app.close'))
           : h('span', { class: 'flex flex-wrap justify-end gap-2 max-sm:basis-full max-sm:flex-col-reverse' },
             h('button', { type: 'button', 'data-w': 'knows', class: 'rounded-full px-4 py-2', disabled: entering, onclick: () => choose(true) }, t('welcome.knows')),
-            main({ 'data-w': 'begin', disabled: !ready || entering, onclick: () => choose(false) }, t(ready ? 'welcome.begin' : 'welcome.preparing'))));
+            // V22 BOOT (L247): open as soon as the domain is entered; the seed goes on behind ticket 1 (its "preparing"
+            // banner, the top bar dot, Run queued with work.queued), so reading the task never waits for the data.
+            main({ 'data-w': 'begin', disabled: entering, onclick: () => choose(false) }, t('welcome.begin'))));
   if (keep === 'title') byId('welcome-title').focus();
   else if (keep) d.querySelector<HTMLElement>(`[data-w="${keep}"]`)?.focus();
 }
@@ -177,7 +179,7 @@ export function initWelcome(needPick: boolean): void {
   if (needPick || welcomeNeeded(done().size, readTour(), coachDone())) openWelcome(false);
 }
 
-/** rerender(), DB status and download progress: language, the download line and the "preparing" button follow. */
+/** rerender(), DB status and download progress: language and the download line follow. */
 export function relabelWelcome(): void {
   if (dialog().open) draw();
 }

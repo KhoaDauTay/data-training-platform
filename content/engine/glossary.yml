@@ -1933,10 +1933,10 @@
   term: access pattern
   engines: [dynamodb, mongodb]
   level: L3
-  keep_en: true
-  vi_term: "access pattern"
+  keep_en: false
+  vi_term: "mẫu truy cập"
   avoid: "mẫu truy cập mạng, quyền truy cập"
-  vi: "Một câu hỏi cụ thể ứng dụng sẽ đọc/ghi (\"đơn của khách X theo ngày\"). DynamoDB thiết kế khóa từ danh sách access pattern, không từ thực thể."
+  vi: "Một câu hỏi cụ thể ứng dụng sẽ đọc/ghi (\"đơn của khách X theo ngày\"). DynamoDB thiết kế khóa từ danh sách mẫu truy cập, không từ thực thể. Lần đầu viết \"mẫu truy cập (access pattern)\", như product design §4."
   en: "A concrete question the application reads or writes (\"orders of customer X by date\"). DynamoDB keys are designed from the list of access patterns, not from entities."
   doc: "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-general-nosql-design.html"
 - id: single-table-design
@@ -2131,6 +2131,151 @@
   en: "`mongos` sends the query to every shard and merges the results, because the query lacks the shard key."
   doc: "https://www.mongodb.com/docs/manual/core/sharded-cluster-query-router/"
 
+# ───────────────────────── Bổ sung QA pass 2 (thuật ngữ bài đã dùng mà chưa có mục) ─────────────────────────
+- term: predicate lock (SIReadLock)
+  engines: [postgres]
+  level: L4
+  keep_en: true
+  vi_term: "predicate lock"
+  avoid: "khóa vị từ"
+  vi: "Dấu vết Serializable ghi lại \"ai đã đọc gì\" (mode `SIReadLock` trong `pg_locks`) để phát hiện xung đột đọc-ghi. Nó không chặn ai và không gây deadlock."
+  en: "The trace Serializable keeps of \"who read what\" (mode `SIReadLock` in `pg_locks`) to detect read-write conflicts. It blocks nobody and cannot cause a deadlock."
+  doc: "https://www.postgresql.org/docs/18/transaction-iso.html"
+- term: exclusion constraint
+  engines: [postgres]
+  level: L2
+  keep_en: true
+  vi_term: "exclusion constraint"
+  avoid: "ràng buộc ngoại lệ"
+  vi: "Ràng buộc `EXCLUDE USING gist (…)`: không cho hai dòng mà mọi cặp \"cột WITH toán tử\" đều đúng, ví dụ hai lịch đặt cùng phòng có giờ chồng nhau."
+  en: "An `EXCLUDE USING gist (…)` constraint: no two rows may make every \"column WITH operator\" pair true, for example two bookings of the same room with overlapping times."
+  doc: "https://www.postgresql.org/docs/18/ddl-constraints.html"
+- term: metapage
+  engines: [postgres]
+  level: L5
+  keep_en: true
+  vi_term: "metapage"
+  avoid: "siêu trang"
+  vi: "Trang 0 của một index B-tree (và GIN, BRIN): ghi trang gốc, số tầng và các thông tin chung của index. `bt_metap` đọc nó."
+  en: "Page 0 of a B-tree index (and of GIN and BRIN): it records the root page, the number of levels and index-wide facts. `bt_metap` reads it."
+  doc: "https://www.postgresql.org/docs/18/btree.html"
+- term: version churn
+  engines: [postgres]
+  level: L5
+  keep_en: true
+  vi_term: "version churn"
+  avoid: "khuấy phiên bản"
+  vi: "Nhiều phiên bản của cùng một dòng logic dồn vào một lá index, do UPDATE không HOT thêm mục mới vào mọi index. Bottom-up deletion dọn nó trước khi lá phải tách."
+  en: "Many versions of the same logical row piling up in an index leaf, because non-HOT UPDATEs add a new entry to every index. Bottom-up deletion cleans it before the leaf has to split."
+  doc: "https://www.postgresql.org/docs/18/btree.html"
+- term: dot notation
+  engines: [mongodb]
+  level: L1
+  keep_en: true
+  vi_term: "dot notation"
+  avoid: "ký pháp chấm (khó hiểu)"
+  vi: "Cách gọi trường lồng hoặc phần tử mảng bằng dấu chấm, đặt trong nháy: `'address.city'`, `'items.0.sku'`."
+  en: "Addressing a nested field or an array element with dots, in quotes: `'address.city'`, `'items.0.sku'`."
+  doc: "https://www.mongodb.com/docs/manual/tutorial/query-embedded-documents/"
+- term: positional operator ($, $[], $[<identifier>])
+  engines: [mongodb]
+  level: L2
+  keep_en: true
+  vi_term: "positional operator"
+  avoid: "toán tử định vị"
+  vi: "Toán tử cập nhật nhắm vào phần tử mảng: `$` là phần tử đầu tiên khớp bộ lọc, `$[]` là mọi phần tử, `$[<identifier>]` là các phần tử khớp `arrayFilters`."
+  en: "Update operators that target array elements: `$` is the first element matching the filter, `$[]` is every element, `$[<identifier>]` is the elements matching `arrayFilters`."
+  doc: "https://www.mongodb.com/docs/manual/reference/operator/update/positional/"
+- term: extended reference pattern
+  engines: [mongodb]
+  level: L2
+  keep_en: true
+  vi_term: "extended reference"
+  avoid: "tham chiếu mở rộng (dịch mất tên mẫu)"
+  vi: "Mẫu thiết kế: giữ tham chiếu `_id` nhưng chép thêm vài trường hay đọc của tài liệu kia (ví dụ tên khách vào đơn), để khỏi `$lookup` ở câu đọc thường gặp."
+  en: "A design pattern: keep the `_id` reference but also copy a few often-read fields of the other document (for example the customer name into the order), to avoid a `$lookup` on the common read."
+  doc: "https://www.mongodb.com/docs/manual/data-modeling/design-patterns/"
+- term: accumulator
+  engines: [mongodb]
+  level: L2
+  keep_en: false
+  vi_term: "phép tổng hợp"
+  avoid: "bộ tích lũy (điện)"
+  vi: "Toán tử gộp nhiều tài liệu thành một giá trị trong `$group` (và `$setWindowFields`): `$sum`, `$avg`, `$min`, `$max`, `$push`…"
+  en: "An operator that folds many documents into one value inside `$group` (and `$setWindowFields`): `$sum`, `$avg`, `$min`, `$max`, `$push`…"
+  doc: "https://www.mongodb.com/docs/manual/reference/operator/aggregation/group/"
+- term: window function ($setWindowFields)
+  engines: [mongodb]
+  level: L2
+  keep_en: true
+  vi_term: "`$setWindowFields`"
+  avoid: "hàm cửa sổ Windows"
+  vi: "Stage tính giá trị trên một \"cửa sổ\" tài liệu lân cận (xếp hạng, tổng lũy kế, giá trị trước/sau) mà không gộp các tài liệu lại như `$group`."
+  en: "A stage that computes values over a \"window\" of neighbouring documents (ranks, running totals, previous/next values) without collapsing them as `$group` does."
+  doc: "https://www.mongodb.com/docs/manual/reference/operator/aggregation/setwindowfields/"
+- term: query shape
+  engines: [mongodb]
+  level: L3
+  keep_en: true
+  vi_term: "query shape"
+  avoid: "hình dạng câu (dịch sát)"
+  vi: "Bộ lọc, sắp xếp và projection của câu sau khi bỏ giá trị cụ thể. Plan cache lưu kế hoạch thắng theo query shape."
+  en: "A query's filter, sort and projection with the concrete values removed. The plan cache stores the winning plan per query shape."
+  doc: "https://www.mongodb.com/docs/manual/core/query-plans/"
+- term: multi-planner
+  engines: [mongodb]
+  level: L3
+  keep_en: true
+  vi_term: "multi-planner"
+  avoid: "nhiều người lập kế hoạch"
+  vi: "Khi có nhiều index ứng viên, MongoDB chạy thử các kế hoạch song song một lúc ngắn, chọn kế hoạch làm được nhiều việc nhất rồi lưu vào plan cache."
+  en: "When several candidate indexes exist, MongoDB runs the plans side by side for a short trial, picks the one that did the most work and caches it."
+  doc: "https://www.mongodb.com/docs/manual/core/query-plans/"
+- term: write conflict
+  engines: [mongodb]
+  level: L4
+  keep_en: true
+  vi_term: "write conflict"
+  avoid: "lỗi ghi đĩa"
+  vi: "Hai thao tác cùng sửa một tài liệu cùng lúc: WiredTiger cho một bên thắng, bên kia nhận write conflict và được thử lại (hoặc transaction bị hủy)."
+  en: "Two operations modify the same document at once: WiredTiger lets one win, and the other gets a write conflict and is retried (or its transaction aborts)."
+  doc: "https://www.mongodb.com/docs/manual/core/wiredtiger/"
+- term: intent lock
+  engines: [mongodb]
+  level: L5
+  keep_en: true
+  vi_term: "intent lock"
+  avoid: "khóa ý định"
+  vi: "Lock ở cấp database và collection báo rằng thao tác sẽ đọc/ghi ở cấp tài liệu bên dưới; việc chặn nhau thật sự do WiredTiger xử lý ở cấp tài liệu."
+  en: "A lock at database and collection level announcing that the operation will read or write documents below; actual document-level conflicts are handled by WiredTiger."
+  doc: "https://www.mongodb.com/docs/manual/core/wiredtiger/"
+- term: heartbeat
+  engines: [mongodb]
+  level: L5
+  keep_en: true
+  vi_term: "heartbeat"
+  avoid: "nhịp tim"
+  vi: "Tín hiệu các thành viên replica set gửi cho nhau định kỳ. Primary không trả lời heartbeat quá thời hạn bầu cử thì các secondary bầu primary mới."
+  en: "The periodic signal replica set members send each other. When the primary misses heartbeats past the election timeout, the secondaries elect a new primary."
+  doc: "https://www.mongodb.com/docs/manual/core/replica-set-elections/"
+- term: optime
+  engines: [mongodb]
+  level: L5
+  keep_en: true
+  vi_term: "optime"
+  avoid: "thời gian tối ưu"
+  vi: "Vị trí (thời điểm + nhiệm kỳ) của mục oplog cuối mà một thành viên đã áp dụng. Bầu cử ưu tiên thành viên có optime mới nhất."
+  en: "The position (timestamp + term) of the last oplog entry a member has applied. Elections favour the member with the most recent optime."
+  doc: "https://www.mongodb.com/docs/manual/core/replica-set-oplog/"
+- term: shard key cardinality
+  engines: [mongodb]
+  level: L5
+  keep_en: true
+  vi_term: "cardinality"
+  avoid: "lực lượng (toán học)"
+  vi: "Số giá trị khác nhau của shard key. Cardinality thấp giới hạn số chunk, nên dữ liệu không chia đều được dù thêm shard."
+  en: "The number of distinct shard key values. Low cardinality limits the number of chunks, so data cannot spread evenly however many shards you add."
+  doc: "https://www.mongodb.com/docs/manual/core/sharding-choose-a-shard-key/"
 # ───────────────────────── Best Practice (vòng 3, content/engine/best/**) ─────────────────────────
 - id: sargable
   term: sargable

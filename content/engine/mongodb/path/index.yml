@@ -1,0 +1,22 @@
+# Lộ trình MongoDB: danh mục các Phần theo thứ tự (product-design-db-engine §3.3).
+# Nội dung nằm ở hai bộ file (Phần 1–6 và Phần 7–12), cùng khuôn: skills / lessons / drills.
+# Mọi file dùng chung một bộ dữ liệu `dataset` (ngày lưu dạng chuỗi ISO, liệt kê ở `_meta.dateFields`;
+# loader: src/engine/mongo/pathDataset.ts đổi sang Date UTC).
+# Drill id: `e-mg-d-<kỹ năng bỏ "mg.", "_" thành "-">-<n>` (khớp ENGINE_ID). Kiểm bởi tests/mongoPath.test.ts.
+dataset: dataset.json
+files:
+  - { parts: [1, 6], skills: skills-p1-6.yml, lessons: lessons-p1-6.yml, drills: drills-p1-6.yml }
+  - { parts: [7, 12], skills: skills-p7-12.yml, lessons: lessons-p7-12.yml, drills: drills-p7-12.yml }
+parts:
+  - { n: 1, title: { vi: "Đọc và lọc", en: "Read and filter" } }
+  - { n: 2, title: { vi: "Gộp", en: "Aggregate" } }
+  - { n: 3, title: { vi: "Nối", en: "Join" } }
+  - { n: 4, title: { vi: "Ngày và thiếu dữ liệu", en: "Dates and missing data" } }
+  - { n: 5, title: { vi: "Điều kiện", en: "Conditions" } }
+  - { n: 6, title: { vi: "Chữ và kiểu", en: "Text and types" } }
+  - { n: 7, title: { vi: "Truy vấn lồng", en: "Nested queries" } }
+  - { n: 8, title: { vi: "Pipeline nhiều bước", en: "Multi-stage pipelines" } }
+  - { n: 9, title: { vi: "Gộp tập", en: "Set operations" } }
+  - { n: 10, title: { vi: "Cửa sổ", en: "Window functions" } }
+  - { n: 11, title: { vi: "Hiệu năng", en: "Performance" } }
+  - { n: 12, title: { vi: "Mô hình tài liệu", en: "Document modelling" } }

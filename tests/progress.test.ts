@@ -1,8 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import {
-  CHAPTER_TABLES, chapterTitle, CHAPTERS, contentProblems, currentChapter, nextTicket, parseChapters, parseSkills, rankOf, SKILLS,
+  CHAPTER_TABLES, chapterTitle, CHAPTERS, contentProblems, currentChapter, nextTicket, parseChapters as chaptersOf, parseSkills as skillsOf, rankOf, SKILLS,
   tablesUnlocked, twistUsed, visibleTickets, xpFor,
 } from '../src/progress';
+import { parse as parseYaml } from 'yaml';
+const parseSkills = (src: string, origin?: string) => skillsOf(parseYaml(src), origin); // V22-E: the parser takes parsed YAML
+const parseChapters = (src: string, origin?: string) => chaptersOf(parseYaml(src), origin); // V22-E: the parser takes parsed YAML
 import { loadTickets } from '../src/content';
 import type { Beat, Ticket } from '../src/tickets';
 

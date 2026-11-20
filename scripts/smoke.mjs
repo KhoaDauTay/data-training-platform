@@ -15,6 +15,8 @@
 //
 //   SMOKE_PERF=3 npm run smoke      # V20-C (L178) instead of the scenario: per run and domain, a fresh profile opens #/d/<d>
 //                                   # (seed) and reloads it (snapshot); FCP, first <h1>, DB ready, long tasks -> smoke-out/perf-report.json
+//                                   # V22-E: at CPU 1x and 4x (page only), plus ScriptDuration (CDP Performance.getMetrics)
+//   SMOKE_BOOT=3 npm run smoke      # V22 BOOT (L247): first open from #/ through the welcome dialog -> smoke-out/boot-report.json
 import { spawn, spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -50,17 +52,45 @@ const TICKETS = {
 };
 const drills = parseYaml(readFileSync(join(ROOT, 'content/general/sql.yml'), 'utf8'));
 const DRILL = drills.find((d) => d.kind === 'open'); // an open drill: no ___ starter to fill
+// V22-B (L206): the first Logistics Solution with GROUP BY, in story order (chapters by number, files by name).
+const GROUPED = readdirSync(join(ROOT, 'content/tickets')).sort((a, b) => Number(a.slice(2)) - Number(b.slice(2)))
+  .flatMap((ch) => readdirSync(join(ROOT, 'content/tickets', ch)).sort().map((f) => `content/tickets/${ch}/${f}`))
+  .filter((f) => /## Solution\s*```sql[^`]*GROUP BY/.test(readFileSync(join(ROOT, f), 'utf8'))).map(ticket)[0];
 const LESSON = parseYaml(readFileSync(join(ROOT, 'content/lessons.yml'), 'utf8')).find((l) => l.id === TICKETS.logistics.grants[0]);
+// ENG-CORE (L220): the first Postgres lab in content/engine with no setup and only `rows` steps (the shop chain on `lab`);
+// none yet → its step is skipped. Its step solutions are read from the file.
+const ENGINE_LAB = (() => {
+  const dir = join(ROOT, 'content/engine/postgres');
+  const files = existsSync(dir) ? readdirSync(dir).filter((l) => /^L[1-5]$/.test(l)).flatMap((l) => readdirSync(join(dir, l)).filter((f) => f.endsWith('.md')).map((f) => join(dir, l, f))) : [];
+  for (const f of files.sort()) {
+    const fm = parseYaml(/^---\r?\n([\s\S]*?)\r?\n---/.exec(readFileSync(f, 'utf8'))?.[1] ?? '') ?? {};
+    if (fm.lab && !fm.lab.setup && fm.lab.steps.every((x) => x.check === 'rows')) return { id: fm.id, hash: `#/engine/postgres/${fm.level}/${fm.id}`, steps: fm.lab.steps.map((x) => x.solution) };
+  }
+  return undefined;
+})();
+
+// L248: engine lessons the smoke plays (read from content, so a renamed file fails here, not silently).
+const engineLesson = (rel) => {
+  const fm = parseYaml(/^---\r?\n([\s\S]*?)\r?\n---/.exec(readFileSync(join(ROOT, 'content/engine', rel), 'utf8'))[1]);
+  return { ...fm, hash: `#/engine/${fm.engine}/${fm.level}/${fm.id}` };
+};
+const ENGINE = {
+  heap: engineLesson('postgres/L3/05-xmin-xmax-lab.md'),
+  mongo: engineLesson('mongodb/L1/04-insert-delete.md'),
+  dynamo: engineLesson('dynamodb/L1/09-query-vs-scan.md'),
+  quiz: engineLesson('postgres/L3/11-wraparound-quiz.md'),
+  predict: engineLesson('postgres/L1/10-explain-basics.md'),
+};
 
 // Every route of src/route.ts once; a new route fails here until the smoke knows its hash.
 const ROUTE_HASH = {
   home: '#/', learn: '#/learn', practice: '#/practice', me: '#/me', overview: '#/d/logistics', play: '#/d/logistics/play',
-  data: '#/d/logistics/data', dashboard: '#/d/logistics/dashboard', map: '#/d/logistics/map',
+  data: '#/d/logistics/data', dashboard: '#/d/logistics/dashboard', map: '#/d/logistics/map', engine: '#/engine',
 };
 const ROUTES = JSON.parse(/export const ROUTES = (\[[^\]]*\])/.exec(readFileSync(join(ROOT, 'src/route.ts'), 'utf8'))[1].replace(/'/g, '"'));
 // V20-C (L179): plus the General sub-pages and the other two domains' pages (the list of tests/axe.test.ts).
 const PAGES = [...ROUTES.filter((r) => ROUTE_HASH[r]).map((r) => ROUTE_HASH[r]), '#/learn/sql/1', '#/learn/skill/select', '#/learn/adv/a2', '#/learn/adv/d5',
-  '#/learn/interview', ...['ecommerce', 'finance'].flatMap((d) => ['', '/play', '/data', '/dashboard', '/map'].map((p) => `#/d/${d}${p}`))];
+  '#/learn/interview', '#/engine/postgres', '#/engine/postgres/L1', '#/engine/mongodb/path', '#/engine/mongodb/path/find', '#/engine/dynamodb/L1/e-dy-l1-09', ...(ENGINE_LAB ? [ENGINE_LAB.hash] : []), ...['ecommerce', 'finance'].flatMap((d) => ['', '/play', '/data', '/dashboard', '/map'].map((p) => `#/d/${d}${p}`))];
 const mainOf = (hash) => (/\/play$/.test(hash) ? 'shell' : /\/data$/.test(hash) ? 'data' : /\/dashboard$/.test(hash) ? 'dashboard' : 'home');
 // axe-core from node_modules (dev dependency, L141; never in dist/), injected into the page over CDP. target-size is off by default.
 const AXE = readFileSync(join(ROOT, 'node_modules/axe-core/axe.min.js'), 'utf8');
@@ -81,6 +111,9 @@ const CHROME = `(() => {
   for (let i = 1; i < row.length; i++) if (row[i][1].left < row[i - 1][1].right - 1 && row[i][1].top < row[i - 1][1].bottom - 1) cut.push(row[i - 1][0] + '|' + row[i][0]);
   const x = document.getElementById('xp').getBoundingClientRect(), c = document.getElementById('chapter').getBoundingClientRect();
   if (shown(document.getElementById('chapter')) && c.right > x.left + 1) cut.push('chapter|xp');
+  // QA v22 (L272): nothing past the right edge (the bar overflowed for a player with badges once "Database Engine" joined the nav)
+  const over = Math.round(Math.max(0, ...[...document.querySelector('header').querySelectorAll('*')].filter((e) => shown(e) && !e.closest('[popover], .sr-only')).map((e) => e.getBoundingClientRect().right)) - innerWidth);
+  if (over > 1) cut.push('off screen by ' + over + ' px');
   return { cut, bottom: Math.round(document.getElementById('bottom-nav').getBoundingClientRect().height) };
 })()`;
 
@@ -182,18 +215,32 @@ async function startBrowser() {
       pending.get(m.id)(m);
       pending.delete(m.id);
     }
+    // v22 (P2-1, L271): workers (PGlite, parser) are attached too, and the Log domain is heard as well: a failed wasm
+    // fetch inside the worker reached neither the page's console nor Runtime.exceptionThrown.
+    const where = m.sessionId ? 'worker ' : '';
+    if (m.method === 'Target.attachedToTarget') {
+      const sid = m.params.sessionId;
+      for (const k of ['Runtime.enable', 'Log.enable', 'Runtime.runIfWaitingForDebugger']) send(k, {}, sid).catch(() => {});
+    }
     if (m.method === 'Runtime.exceptionThrown') {
       const d = m.params.exceptionDetails;
-      pageErrors.push({ at: Date.now() - T0, kind: 'exception', text: (d.exception?.description ?? d.text ?? '').slice(0, 500) });
+      pageErrors.push({ at: Date.now() - T0, kind: `${where}exception`, text: (d.exception?.description ?? d.text ?? '').slice(0, 500) });
     }
     if (m.method === 'Runtime.consoleAPICalled' && m.params.type === 'error') {
-      pageErrors.push({ at: Date.now() - T0, kind: 'console.error', text: m.params.args.map((a) => a.value ?? a.description).join(' ').slice(0, 500) });
+      pageErrors.push({ at: Date.now() - T0, kind: `${where}console.error`, text: m.params.args.map((a) => a.value ?? a.description).join(' ').slice(0, 500) });
+    }
+    // console.error is already counted through Runtime; Log adds network, wasm/abort and intervention errors.
+    if (m.method === 'Log.entryAdded' && m.params.entry.level === 'error' && m.params.entry.source !== 'console-api') {
+      const e = m.params.entry;
+      pageErrors.push({ at: Date.now() - T0, kind: `${where}log.${e.source}`, text: `${e.text} ${e.url ?? ''}`.trim().slice(0, 500) });
     }
   });
   await send('Page.enable');
   await send('Runtime.enable');
+  await send('Log.enable');
+  await send('Target.setAutoAttach', { autoAttach: true, waitForDebuggerOnStart: false, flatten: true });
 }
-const send = (method, params = {}) =>
+const send = (method, params = {}, sessionId) =>
   new Promise((resolve, reject) => {
     const i = ++cdpId;
     const timer = setTimeout(() => reject(new Error(`CDP ${method} timed out`)), 30000);
@@ -202,7 +249,7 @@ const send = (method, params = {}) =>
       if (m.error) reject(new Error(`${method}: ${m.error.message}`));
       else resolve(m.result);
     });
-    ws.send(JSON.stringify({ id: i, method, params }));
+    ws.send(JSON.stringify({ id: i, method, params, ...(sessionId && { sessionId }) }));
   });
 async function ev(expr) {
   const r = await send('Runtime.evaluate', { expression: expr, awaitPromise: true, returnByValue: true });
@@ -273,7 +320,8 @@ async function closeBrowser() {
   ws?.close();
   ws = browserWs = undefined;
   stop(browserChild);
-  if (profile) rmSync(profile, { recursive: true, force: true, maxRetries: 10, retryDelay: 300 });
+  // V22-E: Edge can hold a profile file a little longer on Windows (EPERM); a leftover temp dir must not end the run.
+  try { if (profile) rmSync(profile, { recursive: true, force: true, maxRetries: 10, retryDelay: 300 }); } catch {}
   profile = undefined;
 }
 
@@ -295,40 +343,109 @@ async function perfLoad(schema) {
       long: before, longTasks: before.length, longMs: before.reduce((a, [, d]) => a + d, 0), longMax: Math.max(0, ...before.map(([, d]) => d)),
       bootJs: js.map((r) => r.name.split('/').pop().replace(/-[\\w-]{8}\\.js$/, '')) }; })()`);
 }
+// V22-E: each run is measured at CPU 1x and 4x (Emulation.setCPUThrottlingRate on the page target only; the DB worker is
+// not throttled, L187, so 4x measures render and main-thread work, not the seed). `script` = CDP Performance.getMetrics
+// ScriptDuration (ms of main-thread script) read at "DB ready"; the metric restarts with each document, so it covers one load.
+const RATES = [1, 4];
+const scriptMs = async () => Math.round(1000 * (await send('Performance.getMetrics')).metrics.find((m) => m.name === 'ScriptDuration').value);
 async function perf(base) {
   const rows = [];
   for (let run = 1; run <= PERF_RUNS; run++) {
-    for (const d of Object.keys(SCHEMA_OF)) {
+    for (const cpu of RATES) for (const d of Object.keys(SCHEMA_OF)) {
       await startBrowser();
       await size(1280, 800);
+      await send('Emulation.setCPUThrottlingRate', { rate: cpu });
+      await send('Performance.enable');
       await send('Page.addScriptToEvaluateOnNewDocument', { source: PERF_PROBE });
       await go(base, `#/d/${d}`);
       const first = await perfLoad(SCHEMA_OF[d]);
+      first.script = await scriptMs();
       await waitFor('db:snapshot', `performance.getEntriesByName('db:snapshot').length > 0`, 60000);
       await ev('window.__old = true');
       await send('Page.reload');
       await waitFor('the reloaded document', '!window.__old && !!window.__perf', 30000);
       const second = await perfLoad(SCHEMA_OF[d]);
-      rows.push({ run, domain: d, first, second });
-      console.log(`run ${run} ${d.padEnd(9)} first: fcp ${first.fcp} render ${first.render} db ${first.db} long ${first.longTasks}/${first.longMs}ms`
-        + ` | second: fcp ${second.fcp} render ${second.render} db ${second.db} long ${second.longTasks}/${second.longMs}ms`);
+      second.script = await scriptMs();
+      rows.push({ run, cpu, domain: d, first, second });
+      console.log(`run ${run} cpu ${cpu}x ${d.padEnd(9)} first: fcp ${first.fcp} render ${first.render} db ${first.db} script ${first.script} long ${first.longTasks}/${first.longMs}ms`
+        + ` | second: fcp ${second.fcp} render ${second.render} db ${second.db} script ${second.script} long ${second.longTasks}/${second.longMs}ms`);
       await closeBrowser();
     }
   }
   const med = (xs) => xs.sort((a, b) => a - b)[Math.floor(xs.length / 2)];
   const summary = {};
-  for (const d of Object.keys(SCHEMA_OF)) for (const k of ['first', 'second']) for (const f of ['fcp', 'render', 'db', 'longTasks', 'longMs', 'longMax'])
-    summary[`${d}.${k}.${f}`] = med(rows.filter((r) => r.domain === d).map((r) => r[k][f]));
+  for (const cpu of RATES) for (const d of Object.keys(SCHEMA_OF)) for (const k of ['first', 'second'])
+    for (const f of ['fcp', 'render', 'db', 'script', 'longTasks', 'longMs', 'longMax'])
+      summary[`${cpu}x.${d}.${k}.${f}`] = med(rows.filter((r) => r.domain === d && r.cpu === cpu).map((r) => r[k][f]));
   console.log('medians', summary, 'boot js (first visit):', rows[0].first.bootJs.join(', '));
   writeFileSync(join(OUT, 'perf-report.json'), JSON.stringify({ base, at: new Date().toISOString(), rows, summary }, null, 1));
 }
 
+// ---- V22 BOOT (SMOKE_BOOT=<runs>): a fresh profile opens `#/` and walks the welcome dialog as fast as a bot can
+// (language → Logistics → start). Times are ms from navigation: dialog shown, Logistics picked, "Begin" enabled, ticket 1
+// shown after Begin, engine ready (db:ready), each seed's start/end (db:ensure:<schema>), the DB ready for ticket 1
+// (db:ensure:game end). L247: Begin no longer waits for the seed, so it also checks that ticket 1 shows the "preparing"
+// banner and a loading dot, that a Run typed during the seed is answered once it is in, with no restart and no page error.
+const BOOT_RUNS = Number(process.env.SMOKE_BOOT) || 0;
+async function boot(base) {
+  const rows = [];
+  const vis = (w) => `!!document.querySelector('dialog[open] [data-w="${w}"]')`;
+  for (let run = 1; run <= BOOT_RUNS; run++) {
+    pageErrors.length = 0;
+    await startBrowser();
+    await size(1280, 800);
+    await go(base, '#/');
+    const welcome = await waitFor('the welcome dialog', `document.querySelector('dialog[open] [data-w]') && Math.round(performance.now())`, 60000);
+    let picked = 0;
+    for (let i = 0; i < 6 && !(await ev(vis('begin'))); i++) {
+      await waitFor('a welcome button', `${vis('begin')} || ${vis('pick-logistics')} || ${vis('next')}`, 60000);
+      if (await ev(vis('pick-logistics'))) {
+        picked = await ev(`(document.querySelector('dialog[open] [data-w="pick-logistics"]').click(), Math.round(performance.now()))`);
+      } else if (await ev(vis('next'))) await ev(`document.querySelector('dialog[open] [data-w="next"]').click()`);
+    }
+    const begin = await waitFor('Begin enabled', `(() => { const b = document.querySelector('dialog[open] [data-w="begin"]'); return b && !b.disabled && Math.round(performance.now()); })()`, 120000);
+    await ev(`document.querySelector('dialog[open] [data-w="begin"]').click()`);
+    const ticket = await waitFor('ticket 1 in the workspace', `!document.querySelector('dialog[open]') && document.querySelector('#shell:not([hidden]) #brief-title') && Math.round(performance.now())`, 60000);
+    const during = await ev(`({ notice: document.getElementById('notice').hidden ? '' : document.getElementById('notice').textContent, green: !!document.querySelector('#db-status .bg-good') })`);
+    if (!during.notice || during.green) fail(`ticket 1 during the seed shows no progress: ${S(during)}`);
+    await waitFor('the editor', `!!${EDITOR}`, 30000);
+    await ev(`${EDITOR}.focus()`);
+    await key('a', MOD, 'KeyA', 65);
+    await send('Input.insertText', { text: 'SELECT 1 AS one' });
+    await key('Enter', MOD, 'Enter', 13);
+    await waitFor('db:ensure:game', `performance.getEntriesByName('db:ensure:game').length > 0`, 120000);
+    await waitFor('the queued Run answered', `[...document.querySelectorAll('#panel th')].some((x) => x.textContent.trim().startsWith('one'))`, 60000);
+    const after = await ev(`({ notice: document.getElementById('notice').hidden, green: !!document.querySelector('#db-status .bg-good'), restarts: performance.getEntriesByName('db:restart').length })`);
+    if (!after.notice || !after.green || after.restarts) fail(`after the seed: ${S(after)}`);
+    if (pageErrors.length) fail(`page errors: ${S(pageErrors)}`);
+    // review-v21 BOOT: nothing of the Engine area (sources, view, its PGlite, `browser-*` = the yaml library it parses with) on first open
+    const engineJs = await ev(`performance.getEntriesByType('resource').map((e) => e.name.split('/').pop()).filter((n) => /^(engineSources|engineView|pglab|browser-)/.test(n))`);
+    if (engineJs.length) fail(`Engine chunks fetched on first open: ${engineJs.join(', ')}`);
+    const marks = await ev(`(() => { const r = (n) => Math.round(n), m = (n) => performance.getEntriesByName(n)[0];
+      const seeds = Object.fromEntries(performance.getEntriesByType('measure').filter((e) => e.name.startsWith('db:ensure:'))
+        .map((e) => [e.name.slice(10), [r(e.startTime), r(e.startTime + e.duration)]]));
+      const js = performance.getEntriesByType('resource').filter((e) => /\\.js$/.test(e.name));
+      const end = (re) => r(Math.max(0, ...js.filter((e) => re.test(e.name)).map((e) => e.responseEnd)));
+      return { fcp: r(m('first-contentful-paint')?.startTime ?? 0), spawn: r(m('db:spawn')?.startTime ?? 0), engine: r(m('db:ready')?.startTime ?? 0), seeds,
+        main: end(/\\/index-/), content: end(/(ticketSources|ticketLateSources|en-)/) }; })()`);
+    const row = { run, welcome, picked, begin, ticket, during: during.notice, ...marks, dbReady: marks.seeds.game?.[1] };
+    rows.push(row);
+    console.log(`boot run ${run}`, JSON.stringify(row));
+    await closeBrowser();
+  }
+  const med = (xs) => xs.sort((a, b) => a - b)[Math.floor(xs.length / 2)];
+  const summary = Object.fromEntries(['fcp', 'main', 'content', 'welcome', 'picked', 'engine', 'begin', 'ticket', 'dbReady'].map((k) => [k, med(rows.map((r) => r[k]))]));
+  console.log('boot medians', summary);
+  writeFileSync(join(OUT, 'boot-report.json'), JSON.stringify({ base, at: new Date().toISOString(), rows, summary }, null, 1));
+}
+
 // ---- the run
 let base = '';
-if (PERF_RUNS) {
+if (PERF_RUNS || BOOT_RUNS) {
   try {
     base = URL_ARG ? (URL_ARG.endsWith('/') ? URL_ARG : URL_ARG + '/') : await startPreview();
-    await perf(base);
+    if (BOOT_RUNS) await boot(base);
+    if (PERF_RUNS) await perf(base);
   } finally {
     await closeBrowser();
     for (const c of owned) stop(c);
@@ -416,6 +533,72 @@ try {
     return got;
   });
 
+  if (ENGINE_LAB) await step(`engine lab ${ENGINE_LAB.id}: every step submitted, lesson completed`, async () => {
+    await go(base, ENGINE_LAB.hash);
+    await waitFor('the lesson page with its lab', `!!document.querySelector('#engine-page [data-ek="${ENGINE_LAB.id}-s0-code"]')`, 60000);
+    for (const [i, sql] of ENGINE_LAB.steps.entries()) {
+      const at = (what) => `document.querySelector('[data-ek="${ENGINE_LAB.id}-s${i}-${what}"]')`;
+      await ev(`(t => { t.value = ${S(sql)}; t.dispatchEvent(new Event('input', { bubbles: true })); })(${at('code')})`);
+      await ev(`${at('submit')}.click()`);
+      await waitFor(`step ${i + 1} passed`, `[...document.querySelectorAll('#engine-page [role=status].good')].length > ${i}`, 90000);
+    }
+    await waitFor('the lesson in save.completed', `${completed}.includes(${S(ENGINE_LAB.id)})`, 10000);
+    await shot('engine-lab');
+  });
+
+  // L248: engine runtimes in the real app. `submit(l, i)` types step i's Solution and waits for its green status line.
+  const submitStep = async (l, i) => {
+    const at = (what) => `document.querySelector('[data-ek="${l.id}-s${i}-${what}"]')`;
+    await ev(`(t => { t.value = ${S(l.lab.steps[i].solution)}; t.dispatchEvent(new Event('input', { bubbles: true })); })(${at('code')})`);
+    await ev(`${at('submit')}.click()`);
+    await waitFor(`${l.id} step ${i + 1} passed`, `(${at('code')})?.closest('[data-step]').querySelector('[role=status]')?.classList.contains('good')`, 120000);
+  };
+  const openLesson = async (l) => {
+    await go(base, l.hash);
+    await waitFor(`${l.id} drawn`, `!!document.querySelector('#engine-page[data-lesson]')`, 60000);
+  };
+  await step(`engine ${ENGINE.heap.id}: pageinspect step passes and the heap diagram draws the real rows`, async () => {
+    await openLesson(ENGINE.heap);
+    await submitStep(ENGINE.heap, 1);
+    await waitFor('pg-heap-page diagram with one line pointer per row', `(f => f && f.querySelectorAll('tbody tr').length === 5 && !!f.querySelector('[data-viz="pg-heap-page"] svg'))(document.querySelector('[data-inside]'))`, 60000);
+    await shot('engine-heap');
+  });
+  await step(`engine ${ENGINE.mongo.id}: every MongoDB step passes, lesson completed`, async () => {
+    await openLesson(ENGINE.mongo);
+    for (const i of ENGINE.mongo.lab.steps.keys()) await submitStep(ENGINE.mongo, i);
+    await waitFor('the lesson in save.completed', `${completed}.includes(${S(ENGINE.mongo.id)})`, 10000);
+    await shot('engine-mongo');
+  });
+  await step(`engine ${ENGINE.dynamo.id}: DynamoDB Query passes and shows ScannedCount`, async () => {
+    await openLesson(ENGINE.dynamo);
+    await submitStep(ENGINE.dynamo, 0);
+    const meta = await ev(`[...document.querySelectorAll('#engine-page section[aria-label] dt')].map((x) => x.textContent + '=' + x.nextElementSibling.textContent)`);
+    if (!meta.some((x) => /^(Đã quét|Scanned)=\d/.test(x))) fail(`no ScannedCount line: ${S(meta)}`);
+    await shot('engine-dynamo');
+    return meta;
+  });
+  await step(`engine ${ENGINE.quiz.id}: quiz answered right, lesson completed`, async () => {
+    await openLesson(ENGINE.quiz);
+    for (const [i, q] of ENGINE.quiz.quiz.entries()) {
+      await ev(`document.querySelector('[data-ek="${ENGINE.quiz.id}-q${i}-${q.answer}"]').click()`);
+      await ev(`document.querySelector('[data-ek="${ENGINE.quiz.id}-q${i}-check"]').click()`);
+    }
+    await waitFor('the quiz lesson in save.completed', `${completed}.includes(${S(ENGINE.quiz.id)})`, 10000);
+  });
+  await step(`engine ${ENGINE.predict.id}: predict answered, the real plan shows ${ENGINE.predict.predict.expect?.node}`, async () => {
+    await openLesson(ENGINE.predict);
+    const id = ENGINE.predict.id;
+    await ev(`document.querySelector('[data-ek="${id}-p-${ENGINE.predict.predict.answer}"]').click()`);
+    await ev(`document.querySelector('[data-ek="${id}-p-check"]').click()`);
+    await waitFor('"see the real plan"', `!!document.querySelector('[data-ek="${id}-plan"]')`, 10000);
+    await ev(`document.querySelector('[data-ek="${id}-plan"]').click()`);
+    await waitFor('the plan', `!!document.querySelector('[data-plan]')`, 90000);
+    const plan = await ev(`document.querySelector('[data-plan]').textContent`);
+    if (!plan.includes(ENGINE.predict.predict.expect.node)) fail(`plan has no ${ENGINE.predict.predict.expect.node}: ${plan}`);
+    await shot('engine-predict');
+    return plan;
+  });
+
   for (const r of ROUTES) if (!ROUTE_HASH[r]) await step(`route ${r}`, () => fail(`route '${r}' has no hash in scripts/smoke.mjs`));
   // V20-C: axe at 1280 light and 375 dark (0 serious/critical), horizontal scroll at 375 and 320.
   const axeFound = [];
@@ -448,8 +631,85 @@ try {
     }
   }
   writeFileSync(join(OUT, 'axe-report.json'), JSON.stringify(axeFound, null, 1));
-  // v21 U1/U2 (L189): the top bar at 1024 and 1280, VI and EN, on the domain with the longest titles (Finance) and the workspace.
-  for (const lang of ['vi', 'en']) for (const [w, hgt] of [[1024, 700], [1280, 800]]) {
+
+  // ---- V22-B (L206, roadmap-v22 S2): Run the first GROUP BY Solution in the workspace, "Vì sao?" on row 1 shows its source-row count.
+  await step(`why: row 1 of ${GROUPED.id}`, async () => {
+    await size(1280, 800);
+    await send('Emulation.setEmulatedMedia', { features: [] });
+    await go(base, '#/d/logistics/play');
+    await waitFor('the editor and the DB ready', `!!${EDITOR} && !!document.querySelector('#db-status .bg-good')`, 90000);
+    await ev(`(${EDITOR}).focus()`);
+    await key('a', MOD, 'KeyA', 65);
+    await send('Input.insertText', { text: GROUPED.sql });
+    await key('Enter', MOD, 'Enter', 13);
+    const btn = `[...document.querySelectorAll('#shell td button[aria-expanded]')].find((b) => b.textContent === 'Vì sao?')`;
+    await waitFor('a "Vì sao?" button on the result', `!!${btn}`, 60000);
+    await ev(`${btn}.click()`);
+    const n = await waitFor('the source-row count', `(/gom (\\d+) dòng nguồn/.exec(document.querySelector('#shell tr[data-why]')?.textContent ?? '') ?? [])[1]`, 60000);
+    if (!(Number(n) > 0)) fail(`source rows: ${n}`);
+    return { id: GROUPED.id, n: Number(n) };
+  });
+  // ---- V22-A (L203): the result map. On each domain's Map page, run the picked point's sample SQL; the result is drawn on the map.
+  await size(1280, 800);
+  await send('Emulation.setEmulatedMedia', { features: [] });
+  for (const d of ['logistics', 'ecommerce', 'finance']) {
+    await step(`V22-A ${d}: map question runs and draws`, async () => {
+      await go(base, `#/d/${d}/map`);
+      await waitFor('the map question', `!!document.querySelector('#home [data-map-run]') && document.getElementById('notice').hidden`, 90000);
+      await ev(`document.querySelector('#home [data-map-run]').click(); true`);
+      await waitFor('the result on the map', `!!document.querySelector('#home [data-map-overlay] circle, #home [data-map-overlay] path') || !!document.querySelector('#home [data-map-error]')`, 60000);
+      if (await ev(`!!document.querySelector('#home [data-map-error]')`)) fail('the sample SQL failed');
+      return ev(`document.querySelectorAll('#home [data-map-overlay] [data-row]').length`);
+    });
+  }
+
+  // ---- V22-C (L208, roadmap-v22 S3): a returning player (save-v5 with chapter 2 not started, 15 days away) sees Boon's
+  // welcome-back line and exactly one "Buổi học hôm nay" card (no warm-up, review or drill card on Home, one primary button);
+  // Home at 375 is <= 70 % of the 1694 px measured before V22-C (review-log "V22-C"). Then a weekly goal shows on Lily's card.
+  await step('V22-C: returning player, one session card, Home height at 375', async () => {
+    await size(375, 740);
+    await send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-color-scheme', value: 'light' }] });
+    const pad = (n) => String(n).padStart(2, '0');
+    const day = (back) => { const d = new Date(); d.setDate(d.getDate() - back); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; };
+    const fx = JSON.parse(readFileSync(join(ROOT, 'tests/fixtures/save-v5.json'), 'utf8'));
+    const state = {
+      'cargo-query-save': { ...fx, completed: fx.completed.filter((id) => !id.startsWith('ch2-')), review: { select: { box: 3, due: day(1) }, where: { box: 2, due: day(2) } } },
+      'cargo-query/tour': { step: 8, knows: false }, 'cargo-query/domain': 'logistics', 'cargo-query/coach-done': true,
+      'cargo-query/days': [day(40), day(30), day(22), day(15)], 'cargo-query/goal': {},
+    };
+    const init = Object.entries(state).map(([k, v]) => `localStorage.setItem(${S(k)}, ${S(S(v))});`).join('');
+    const { identifier } = await send('Page.addScriptToEvaluateOnNewDocument', { source: `if (location.protocol.startsWith('http') && !sessionStorage.getItem('v22c')) { sessionStorage.setItem('v22c', '1'); ${init} }` });
+    await send('Page.navigate', { url: 'about:blank' });
+    await waitFor('about:blank', `location.href === 'about:blank'`, 10000);
+    await go(base, '#/');
+    await waitFor('Home with the session card', `!!document.querySelector('#home [data-session]') && document.getElementById('notice').hidden`, 60000);
+    await send('Page.removeScriptToEvaluateOnNewDocument', { identifier });
+    await sleep(1500); // fonts and the Lily sprite settle; the height is read twice below and must agree
+    const H = `(() => { let e = document.getElementById('home'); while (e && !/(auto|scroll)/.test(getComputedStyle(e).overflowY)) e = e.parentElement; return (e || document.scrollingElement).scrollHeight; })()`;
+    const h1 = await ev(H);
+    const h2 = await waitFor('a stable Home height', `(h => h === ${h1} && h)(${H})`, 5000).catch(() => ev(H));
+    const m = await ev(`({ sessions: document.querySelectorAll('#home [data-session]').length, back: !!document.querySelector('#home [data-welcome-back]'),
+      old: ['warmup-title', 'review-title', 'hub-title'].filter((id) => document.getElementById(id)),
+      primary: [...document.querySelectorAll('#home button, #home a')].filter((b) => b.offsetParent && /(^| )bg-accent( |$)/.test(b.className)).length })`);
+    if (m.sessions !== 1) fail(`${m.sessions} session cards, expected 1`);
+    if (!m.back) fail('no welcome-back line after 15 days away');
+    if (m.old.length) fail(`practice cards still on Home: ${m.old.join(', ')}`);
+    if (m.primary !== 1) fail(`${m.primary} primary buttons on Home, expected 1`);
+    if (h2 > 0.7 * 1694) fail(`Home is ${h2} px at 375, over 70 % of 1694`);
+    await ev(`(s => { s.closest('details').open = true; s.value = '5'; s.dispatchEvent(new Event('change', { bubbles: true })); })(document.querySelector('#home [data-session] details select'))`);
+    await waitFor('the weekly goal on Lily\'s card', `/\\/5/.test(document.querySelector('#home [data-goal]')?.textContent ?? '')`, 5000);
+    return { ...m, height: h2, ratio: Math.round((h2 / 1694) * 1000) / 1000 };
+  });
+
+  // v21 U1/U2 (L189): the top bar at 1024–1920, VI and EN, on the domain with the longest titles (Finance) and the workspace.
+  // QA v22 (L272): late in the run (it replaces the scenario's save), as a returning player (save-v5: Inbox and Review badges shown), the widest bar.
+  const badges = JSON.parse(readFileSync(join(ROOT, 'tests/fixtures/save-v5.json'), 'utf8'));
+  const badgeInit = Object.entries({ 'cargo-query-save': badges, 'cargo-query/tour': { step: 99, knows: true }, 'cargo-query/coach-done': true, 'cargo-query/domain': 'logistics' })
+    .map(([k, v]) => `localStorage.setItem(${S(k)}, ${S(S(v))});`).join('');
+  const { identifier: badgeScript } = await send('Page.addScriptToEvaluateOnNewDocument', { source: `if (location.protocol.startsWith('http') && !sessionStorage.getItem('qa22')) { sessionStorage.setItem('qa22', '1'); ${badgeInit} }` });
+  await send('Page.navigate', { url: 'about:blank' });
+  await waitFor('about:blank', `location.href === 'about:blank'`, 10000);
+  for (const lang of ['vi', 'en']) for (const [w, hgt] of [[1024, 700], [1280, 800], [1440, 900], [1920, 1000]]) {
     await size(w, hgt);
     for (const hash of ['#/d/finance', '#/d/logistics/play']) {
       await step(`top bar ${w}px ${lang} ${hash}`, async () => {
@@ -457,13 +717,64 @@ try {
         await waitFor(`<main id="${mainOf(hash)}"> with an h1`, `(m => m && !m.hidden && !!m.querySelector('h1'))(document.getElementById(${S(mainOf(hash))}))`, 30000);
         await ev(`document.querySelector('[data-lang=${lang}]').click()`);
         await waitFor(`lang ${lang}`, `document.documentElement.lang === ${S(lang)}`, 10000);
+        if (await ev(`document.getElementById('review-btn').hidden || document.getElementById('inbox-btn').hidden`)) fail('the badge buttons are not shown');
         const chrome = await ev(CHROME);
         if (chrome.cut.length) fail(`top bar: cut or overlapping: ${chrome.cut.join(', ')}`);
         return chrome;
       });
     }
   }
+  await send('Page.removeScriptToEvaluateOnNewDocument', { identifier: badgeScript });
   await ev(`document.querySelector('[data-lang=vi]').click()`);
+
+  // ---- v21 §3 (v21-ux-review U11, QA v22): at 375 the completion dock of the chapter 1 promotion review never covers
+  // "Bắt đầu chương 2" once it is scrolled as far into view as the page allows (the other two cheap checks: CHROME above).
+  await step('375: the promotion dock leaves "Bắt đầu chương 2" free', async () => {
+    await size(375, 740);
+    await send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-color-scheme', value: 'light' }] });
+    const fx = JSON.parse(readFileSync(join(ROOT, 'tests/fixtures/save-v5.json'), 'utf8'));
+    const state = {
+      'cargo-query-save': { ...fx, completed: ['ch1-01', 'ch1-02', 'ch1-03', 'ch1-04'], bossStep: {}, drafts: {}, graded: {} },
+      'cargo-query/tour': { step: 99, knows: true }, 'cargo-query/domain': 'logistics', 'cargo-query/coach-done': true,
+    };
+    const init = Object.entries(state).map(([k, v]) => `localStorage.setItem(${S(k)}, ${S(S(v))});`).join('');
+    const { identifier } = await send('Page.addScriptToEvaluateOnNewDocument', { source: `if (location.protocol.startsWith('http') && !sessionStorage.getItem('v21s3')) { sessionStorage.setItem('v21s3', '1'); ${init} }` });
+    await send('Page.navigate', { url: 'about:blank' });
+    await waitFor('about:blank', `location.href === 'about:blank'`, 10000);
+    await go(base, '#/d/logistics/play');
+    await waitFor('the editor and the DB ready', `!!${EDITOR} && !!document.querySelector('#db-status .bg-good')`, 90000);
+    await send('Page.removeScriptToEvaluateOnNewDocument', { identifier });
+    const src = readFileSync(join(ROOT, 'content/tickets/ch1/ch1-05.md'), 'utf8');
+    const answer = parseYaml(/^---\r?\n([\s\S]*?)\r?\n---/.exec(src)[1]).conclusion.answer;
+    const sqls = [...src.split('# EN')[0].matchAll(/## Step \d+:[^\n]*\n[\s\S]*?```sql\r?\n([\s\S]*?)```/g)].map((m) => m[1].trim());
+    for (const [i, sql] of sqls.entries()) {
+      await ev(`document.querySelector('#pane-tabs [data-pane=work]').click()`);
+      await waitFor(`step ${i + 1}'s editor`, `!!${EDITOR} && ${EDITOR}.offsetParent !== null`, 10000);
+      await ev(`${EDITOR}.focus()`);
+      await key('a', MOD, 'KeyA', 65);
+      await send('Input.insertText', { text: sql });
+      await key('Enter', MOD | SHIFT, 'Enter', 13);
+      if (i < sqls.length - 1) await waitFor(`step ${i + 2}`, `JSON.parse(localStorage.getItem('cargo-query-save')).bossStep['ch1-05'] === ${i + 1}`, 60000);
+      else await waitFor('the conclusion form', `!!document.getElementById('conclusion-form')`, 60000);
+    }
+    await ev(`(f => { f.querySelector('input[value="${answer}"]').click(); f.requestSubmit(); })(document.getElementById('conclusion-form'))`);
+    const NEXT = `[...document.querySelectorAll('#ticket button')].find((b) => /Bắt đầu chương 2/.test(b.textContent) && b.offsetParent)`;
+    await waitFor('the review in save.completed', `${completed}.includes('ch1-05')`, 30000);
+    await ev(`document.querySelector('#pane-tabs [data-pane=ticket]').click()`);
+    await waitFor('"Bắt đầu chương 2"', `!!${NEXT}`, 30000);
+    const covered = `(() => { const b = ${NEXT}; b.scrollIntoView({ block: 'center' }); const r = b.getBoundingClientRect();
+      const st = document.getElementById('stage'); const s = st.hidden ? null : st.getBoundingClientRect();
+      const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+      return { stage: !!s && s.width > 0 && s.left < r.right && s.right > r.left && s.top < r.bottom && s.bottom > r.top, hit: !!hit && !b.contains(hit), at: hit?.id || hit?.tagName }; })()`;
+    const first = await ev(covered);
+    await sleep(3500); // after the dock folds (L221) or keeps its scene
+    const later = await ev(covered);
+    for (const [when, m] of [['at once', first], ['after 3.5 s', later]]) {
+      if (m.stage) fail(`#stage covers "Bắt đầu chương 2" ${when}`);
+      if (m.hit) fail(`"Bắt đầu chương 2" is covered by ${m.at} ${when}`);
+    }
+    return { first, later };
+  });
 
   await step('no page errors', async () => {
     if (pageErrors.length) fail(`${pageErrors.length} error(s): ${pageErrors.map((e) => e.text.split('\n')[0]).join(' | ').slice(0, 800)}`);

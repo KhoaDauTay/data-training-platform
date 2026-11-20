@@ -1,8 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { loadTickets } from '../src/content';
-import { LANE_TABLES, laneLabel, laneProblems, laneTables, laneTaskState, parseLaneBriefs, shown } from '../src/lanes';
+import { LANE_TABLES, laneLabel, laneProblems, laneTables, laneTaskState, parseLaneBriefs as briefsOf, shown } from '../src/lanes';
+import { parse as parseYaml } from 'yaml';
+const parseLaneBriefs = (src: string, origin?: string) => briefsOf(parseYaml(src), origin); // V22-E: the parser takes parsed YAML
 import { nextTicket } from '../src/progress';
-import { parseTicket, type Ticket } from '../src/tickets';
+import { parseTicket as ticketOf, type Ticket } from '../src/tickets';
+import { mdData } from '../scripts/contentJson.mjs';
+// V22-E: parseTicket takes the build's { fm, body }; these tests keep writing markdown.
+const parseTicket = (src: string, origin: string) => ticketOf(mdData(src), origin);
 
 const story = loadTickets();
 const BRIEF = `

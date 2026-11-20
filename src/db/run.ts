@@ -57,8 +57,11 @@ export function sqlErrorInfo(e: unknown): SqlErrorInfo | undefined {
   };
 }
 
-/** Plan 8a D8a-4: the schema is chosen per request. Absent = the session path (game schema, then sandbox). */
-export interface RunOpts { schema?: SchemaId }
+/**
+ * Plan 8a D8a-4: the schema is chosen per request. Absent = the session path (game schema, then sandbox).
+ * `params` (V22-B, L206): bound values for `$1`…, never spliced into the SQL text.
+ */
+export interface RunOpts { schema?: SchemaId; params?: unknown[] }
 
 /**
  * search_path for one request, right after BEGIN (v6 §4.4). Absent or 'game' = the session path (logistics, sandbox). lab never
@@ -85,7 +88,7 @@ export async function runSandboxed(db: PGlite, sql: string, maxRows = MAX_ROWS_W
   await begin(db, opts);
   try {
     const t0 = performance.now();
-    const r = await db.query<unknown[]>(sql, [], { rowMode: 'array' });
+    const r = await db.query<unknown[]>(sql, opts.params ?? [], { rowMode: 'array' });
     const result: QueryResult = {
       columns: r.fields.map((f) => f.name),
       types: r.fields.map((f) => f.dataTypeID),

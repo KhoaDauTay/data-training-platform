@@ -1,6 +1,5 @@
-import { parse as parseYaml } from 'yaml';
-import chaptersSource from '../content/chapters.yml?raw';
-import skillsSource from '../content/skills.yml?raw';
+import chaptersSource from '../content/chapters.yml';
+import skillsSource from '../content/skills.yml';
 import { activeDomain, type DomainId } from './domains';
 import { codeOnly } from './planCheck';
 import type { Lang, Ticket } from './tickets';
@@ -28,8 +27,7 @@ const bilingual = (v: unknown): Bilingual => {
   const o = (v ?? {}) as Record<string, unknown>;
   return { vi: str(o.vi), en: str(o.en) };
 };
-const list = (source: string, origin: string): Record<string, unknown>[] => {
-  const data = parseYaml(source) as unknown;
+const list = (data: unknown, origin: string): Record<string, unknown>[] => {
   if (!Array.isArray(data) || data.some((x) => !x || typeof x !== 'object')) throw new Error(`${origin}: cần một danh sách`);
   return data as Record<string, unknown>[];
 };
@@ -100,7 +98,7 @@ export const REST_RULE_FROM = 4;
 export const twistUsed = (skill: string, sql: string): boolean | undefined => SKILL_SQL[skill]?.test(sql);
 
 /** Throws on a broken structure. Empty card fields are reported by contentProblems instead. */
-export function parseSkills(source: string, origin = 'skills.yml'): Skill[] {
+export function parseSkills(source: unknown, origin = 'skills.yml'): Skill[] {
   const seen = new Set<string>();
   return list(source, origin).map((s, i) => {
     if (typeof s.id !== 'string' || !s.id) throw new Error(`${origin}: mục ${i} thiếu id`);
@@ -111,7 +109,7 @@ export function parseSkills(source: string, origin = 'skills.yml'): Skill[] {
   });
 }
 
-export function parseChapters(source: string, origin = 'chapters.yml'): Chapter[] {
+export function parseChapters(source: unknown, origin = 'chapters.yml'): Chapter[] {
   return list(source, origin).map((c, i) => {
     if (typeof c.chapter !== 'number') throw new Error(`${origin}: mục ${i} thiếu chapter`);
     const outcomes = Array.isArray(c.outcomes) ? (c.outcomes as unknown[]) : [];

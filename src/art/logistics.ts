@@ -33,6 +33,7 @@ let CHAPTER_COLOR: typeof ChapterColors, chapterColor: typeof ChapterColorOf, cx
 let h: typeof H, s: typeof S, nodes: typeof Nodes, reducedMotion: typeof ReducedMotion;
 let avatar: typeof Avatar, mascot: typeof Mascot, callout: typeof Callout, routeItems: typeof RouteItems;
 export { parallax } from './mapMotion';
+export { lanePath, LANE_GEO, xy }; // V22-A: the result map (ui/mapTeach.ts) places ports and Tien Sa's lanes on this map
 
 /** Called once by loadArt() before anything else here runs. */
 export function init(d: ArtDeps): void {

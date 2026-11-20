@@ -20,13 +20,14 @@ import { hints, renderBrief, shapeCard } from './brief';
 import { earlyCard, goalCard, optionalNote, skillChips, wrapUp } from './chapterView';
 import { announce, byId, h, loader, nodes, reducedMotion, richText } from './dom';
 import { meChunk } from './meChunk';
-import { boonMark, enterMark, escOwned, guideHooks, guideSlot } from './coach';
+import { boonMark, coachDone, enterMark, escOwned, guideHooks, guideSlot } from './coach';
 import { showPane } from './paneTabs';
 import { readJson, writeJson } from '../storage';
 import { isSeen, openLesson } from './lessonCard';
 import { tryPreview } from './tryPreview';
 import { elapsed, INTERVIEW_KEY, parseInterviewPrefs, setPresence, TEXT_MAX } from '../interviewPrefs';
-import { homeHooks, registerHomeSection, registerMode } from './homeView';
+import { homeHooks, openResume, registerHomeSection, registerMode, resumeLine, resumeName, resumeNow } from './homeView';
+import { PER_WEEK, readGoal, sessionPlan, showsSession, writeGoal, type Goal, type SessionItem } from '../goal';
 import { laneNote } from './lanePanel';
 import { go } from './router';
 import { registerNav, setActionButton } from './topbar';
@@ -500,7 +501,7 @@ registerNav({
 });
 // Plan 7 V5: "Practise SQL" is a hub page (#/practice); a run in the workspace still counts as being there.
 registerNav({
-  id: 'practice', area: 'top', order: 30, label: 'nav.practice', icon: NAV_ICON.practice, href: hashOf('practice'),
+  id: 'practice', area: 'top', order: 30, label: 'nav.practiceShort', icon: NAV_ICON.practice, href: hashOf('practice'),
   current: (r) => r === 'practice' || (r === 'play' && (session.mode.kind === 'practice' || session.mode.kind === 'drill')),
 });
 registerNav({
@@ -508,7 +509,7 @@ registerNav({
   current: (r) => r === 'play' && session.mode.kind === 'sandbox',
   onclick: () => (session.mode.kind === 'sandbox' ? go('play') : startSandbox()),
 });
-registerHomeSection({ id: 'review', order: 22, span: 'full', pages: ['home', 'practice'], render: reviewCard });
+registerHomeSection({ id: 'review', order: 22, span: 'full', pages: ['practice'], render: reviewCard });
 /** Plan 8a Task 8: the drill part of the Practise SQL hub is drawn by the lazy General chunk; one load attempt per page load. */
 let hubTried = false;
 function drillHub(): HTMLElement | null {
@@ -553,7 +554,7 @@ function learnSection(): HTMLElement {
     : h('p', { class: 'm-0 flex min-h-40 items-start gap-2 text-muted', 'aria-live': 'polite' }, loader(), t('learn.loading'));
 }
 registerHomeSection({ id: 'module', order: 10, span: 'full', pages: ['learn'], render: learnSection });
-registerHomeSection({ id: 'drills', order: 23, span: 'full', pages: ['home', 'practice'], render: drillHub }); // Task 11: Home's "today" also suggests one drill
+registerHomeSection({ id: 'drills', order: 23, span: 'full', pages: ['practice'], render: drillHub }); // V22-C: on Home the session card holds the weakest skill instead
 /** v17 I5 (L144): Practise SQL links to the interview room (#/learn/interview); drawn from main text only, no chunk. */
 function interviewCard(): HTMLElement {
   return h('section', { class: cx(CARD, 'flex flex-wrap items-center gap-4 p-5'), 'aria-labelledby': 'iv-card-title' },
@@ -563,7 +564,7 @@ function interviewCard(): HTMLElement {
     h('a', { href: INTERVIEW_PAGE, class: cx(BTN_SECONDARY, 'px-4 py-2 no-underline') }, t('prac.interviewGo')));
 }
 registerHomeSection({ id: 'interview', order: 24, span: 'full', pages: ['practice'], render: interviewCard });
-registerHomeSection({ id: 'warmup', order: 21, span: 'full', pages: ['home', 'practice'], render: warmupCard });
+registerHomeSection({ id: 'warmup', order: 21, span: 'full', pages: ['practice'], render: warmupCard });
 /**
  * v10 N6 (L157): "Việc bạn từng vấp" on Practise SQL: finished story tasks of the open domain that passed only after 3+ wrong
  * Submits (device pref cargo-query/attempts, never the Save). Each opens as Practice (another variant, 0 XP) via startRetry.
@@ -586,6 +587,72 @@ export function stumbleCard(): HTMLElement | null {
     })));
 }
 registerHomeSection({ id: 'stumble', order: 25, span: 'full', pages: ['practice'], render: stumbleCard });
+
+/**
+ * V22-C (L208): Home's one "Today's session" card, in place of the warm-up, review and drill cards (still on #/practice) and of the
+ * resume line: 1–4 things that already exist, with minutes, and one Start button for the first. Before the tour ends, the resume line.
+ */
+function sessionCard(m: HomeModel): HTMLElement | null {
+  if (!showsSession(app.save.completed.length, readTour(), coachDone())) return resumeLine();
+  const r = resumeNow();
+  const weakest = m.skills.filter((s) => s.state === 'learned').sort((a, b) => a.level - b.level)[0]?.skill;
+  const plan = sessionPlan({ warmup: warmupToday(() => 0).length, due: reviewCount(), next: !!r, weakest: weakest?.id });
+  if (!plan.length) return null;
+  const label = (it: SessionItem): string =>
+    it.kind === 'next' ? t('session.next', { title: resumeName(r!) })
+    : it.kind === 'skill' ? t('session.skill', { skill: weakest!.label[getLang()] })
+    : t(it.kind === 'warmup' ? 'session.warmup' : 'session.review', { n: it.n });
+  const start = (it: SessionItem): void => {
+    if (it.kind === 'warmup') void startPractice(warmupToday(), true);
+    else if (it.kind === 'skill') void startSkill(it.skill);
+    else if (it.kind === 'next') openResume(r!);
+    else void startToday();
+  };
+  return h('section', { class: cx(CARD, 'p-5'), 'aria-labelledby': 'session-title', 'data-session': '' },
+    h('div', { class: 'flex flex-wrap items-baseline justify-between gap-x-3' },
+      h('h2', { id: 'session-title', class: 'm-0 text-title font-bold' }, t('session.title')),
+      h('span', { class: 'text-body-sm text-muted' }, t('session.total', { n: plan.reduce((s, it) => s + it.min, 0) }))),
+    h('ol', { class: 'mt-3 mb-0 grid gap-1 pl-5' }, ...plan.map((it) =>
+      h('li', {}, label(it), ' ', h('span', { class: 'text-body-sm text-muted' }, t('session.min', { n: it.min }))))),
+    h('div', { class: 'mt-4 flex flex-wrap items-center gap-x-4 gap-y-2' }, // the goal's summary sits beside Start; open, it takes the row below
+      h('button', { type: 'button', class: cx(BTN_GO, 'px-5 py-2'), onclick: () => start(plan[0]) }, t('session.start')),
+      goalBox()));
+}
+
+let goalOpen = false; // Home redraws on every rerender(): the <details> keeps its state across them
+/** V22-C (L209): the optional weekly goal (off by default) and a weekly reminder as an .ics file built here. */
+function goalBox(): HTMLElement {
+  const g = readGoal();
+  const set = (p: Goal): void => {
+    writeGoal({ ...g, ...p });
+    ctx?.rerender();
+  };
+  const field = 'rounded-(--r-inset) bg-panel px-2 py-1 ring-1 ring-line';
+  const lbl = (text: string, el: HTMLElement): HTMLElement => h('label', { class: 'grid gap-1 text-body-sm font-semibold' }, text, el);
+  const day = g.weekday ?? 1;
+  const time = g.remindAt ?? '19:00';
+  const box = h('details', { class: goalOpen ? 'w-full' : 'min-w-0', open: goalOpen, ontoggle: () => { goalOpen = box.open; box.className = goalOpen ? 'w-full' : 'min-w-0'; } },
+    h('summary', { class: 'cursor-pointer text-body-sm font-semibold text-accent' }, t('session.more')),
+    h('div', { class: 'mt-3 flex flex-wrap items-end gap-3' },
+      lbl(t('goal.label'), h('select', { class: field, onchange: (e: Event) => {
+        const n = Number((e.target as HTMLSelectElement).value);
+        set({ perWeek: PER_WEEK.find((x) => x === n) });
+      } }, h('option', { value: '0', selected: !g.perWeek }, t('goal.off')),
+      ...PER_WEEK.map((n) => h('option', { value: String(n), selected: g.perWeek === n }, t('goal.n', { n }))))),
+      lbl(t('remind.day'), h('select', { class: field, onchange: (e: Event) => set({ weekday: Number((e.target as HTMLSelectElement).value) }) },
+        ...[1, 2, 3, 4, 5, 6, 0].map((d) => h('option', { value: String(d), selected: d === day },
+          new Date(2026, 10, 15 + d).toLocaleDateString(locale(), { weekday: 'long' }))))), // 2026-11-15 is a Sunday
+      lbl(t('remind.time'), h('input', { type: 'time', class: field, value: time, onchange: (e: Event) => set({ remindAt: (e.target as HTMLInputElement).value }) })),
+      h('button', { type: 'button', class: cx(BTN_SECONDARY, 'px-4 py-2'), onclick: async () => {
+        const ics = (await import('../ics')).reminderIcs({ weekday: day, time, summary: t('remind.summary'), description: t('remind.desc'), url: location.origin + location.pathname, now: new Date() });
+        const url = URL.createObjectURL(new Blob([ics], { type: 'text/calendar' }));
+        h('a', { href: url, download: 'boondata-reminder.ics' }).click();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+      } }, t('remind.add'))),
+    h('p', { class: 'mt-2 mb-0 text-body-sm text-muted' }, t('remind.note')));
+  return box;
+}
+registerHomeSection({ id: 'resume', order: 10, span: 'full', pages: ['home'], render: sessionCard }); // same id replaces homeView's resume line
 registerMode({
   id: 'sandbox', order: 10, icon: 'flask', tint: 'bg-accent-soft text-ink',
   title: 'mode.sandbox', desc: 'mode.sandboxDesc', open: () => startSandbox(), lock: sandboxLock,

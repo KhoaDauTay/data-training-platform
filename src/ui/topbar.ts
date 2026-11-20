@@ -30,6 +30,8 @@ export interface NavItem {
   current(route: Route): boolean;
   /** Optional action instead of plain hash navigation (e.g. enter a mode, then go('play')). */
   onclick?: () => void;
+  /** ENG-CORE (L220, design D-E1): not in the 5-slot mobile bottom bar; there that item (by id) stands for it and is current for it too. */
+  mergeInto?: string;
 }
 const NAV: NavItem[] = [];
 /** Same id replaces the old entry; kept sorted by order. */
@@ -77,8 +79,12 @@ function renderNav(): void {
   const live = DOMAINS.find((d) => d.id === activeDomain())!;
   const none = noDomain(); // v15: the item names no domain
   byId('nav').replaceChildren(...top.map((n) => navLink(n, route, NAV_LINK, t(n.label))));
+  const bottom = top.filter((n) => !n.mergeInto).map((n) => {
+    const merged = top.filter((m) => m.mergeInto === n.id);
+    return merged.length ? { ...n, label: 'nav.learnBoth' as const, current: (r: Route) => n.current(r) || merged.some((m) => m.current(r)) } : n;
+  });
   byId('bottom-nav').replaceChildren(
-    ...top.map((n) => navLink(n, route, BOTTOM_LINK, icon(n.icon, 'size-5'), h('span', {}, t(n.label)))),
+    ...bottom.map((n) => navLink(n, route, BOTTOM_LINK, icon(n.icon, 'size-5'), h('span', {}, t(n.label)))),
     h('a', { href: hashOf('overview'), class: BOTTOM_LINK, 'aria-current': inDomain(route) && !(route === 'play' && generalWork()) ? 'page' : false },
       icon(none ? 'database' : live.icon, 'size-5'), h('span', {}, t(none ? 'home.domains' : live.name))));
 }
@@ -116,7 +122,7 @@ function dbStatusView(): Node {
   const short = downloaded ? '' : known ? `${Math.round((p.loaded / p.total!) * 100)}%` : `${mb(p.loaded)} MB`;
   return h('span', { class: 'flex items-center gap-1.5 text-caption whitespace-nowrap text-muted', title: text },
     h('span', { class: 'size-2.5 animate-pulse rounded-full bg-warn', 'aria-hidden': 'true' }),
-    short ? h('span', { 'aria-hidden': 'true' }, short) : null,
+    short ? h('span', { class: 'max-[1600px]:hidden', 'aria-hidden': 'true' }, short) : null, // L272: below 1600 px (where the action labels fold too) the banner's bar shows the download; the figure overflowed a badged bar (1024 EN)
     h('span', { class: 'sr-only' }, text));
 }
 
@@ -197,9 +203,10 @@ export function syncMenuCopies(): void {
 }
 
 let noticeSig: unknown[] = [];
-function renderNotice(): void {
+function renderNotice(domainChrome: boolean): void {
   const el = byId('notice');
-  const n = app.notice;
+  // v22 P3-6 (L271): "preparing <domain> data" only on that domain's pages; General pages do not wait for it.
+  const n = app.notice?.key === 'domain.loading' && !domainChrome ? undefined : app.notice;
   el.hidden = !n;
   if (!n) {
     noticeSig = [];
@@ -223,7 +230,7 @@ function renderNotice(): void {
     h('span', {}, t(n.key, n.params)),
     bar && h('progress', { class: 'h-1.5 w-40 accent-accent max-sm:order-last max-sm:w-full', 'aria-hidden': 'true', max: String(p!.total), value: String(p!.loaded) }),
     n.reload ? h('button', { type: 'button', onclick: () => (n.apply ? n.apply() : location.reload()) }, t('app.reload')) : null,
-    h('button', { type: 'button', class: 'ml-auto', 'aria-label': t('app.dismiss'), onclick: () => { app.notice = undefined; renderNotice(); } }, '×')));
+    h('button', { type: 'button', class: 'ml-auto', 'aria-label': t('app.dismiss'), onclick: () => { app.notice = undefined; renderNotice(domainChrome); } }, '×')));
 }
 
 let xpMark: { save: object; n: number } | undefined;
@@ -282,5 +289,5 @@ export function renderTopbar(): void {
     app.problem ? h('button', { type: 'button', class: TOP_BTN, onclick: () => actions.copyDiagnostics() }, t('diag.copy')) : null));
   renderNav();
   renderDomainMenu();
-  renderNotice();
+  renderNotice(domainChrome);
 }

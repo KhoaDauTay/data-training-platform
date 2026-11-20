@@ -12,8 +12,11 @@ import { s } from './svg';
  * functions (scene, map, items and the dock's build/play/ms), so one type and one loader cover both. One promise per
  * domain; a failed load is dropped so the next call retries.
  */
-type Art = Pick<typeof import('../art/ecommerce'), 'initArt' | 'scene' | 'map' | 'items' | 'build' | 'play' | 'ms'>;
-type ArtDomain = Exclude<DomainId, 'logistics'>;
+export type Art = Pick<typeof import('../art/ecommerce'), 'initArt' | 'scene' | 'map' | 'items' | 'build' | 'play' | 'ms'> & {
+  /** V22-A: cities / branches where `map` draws them (`opens` = the review that opens one). */
+  places: readonly { name: string; opens: number; x: number; y: number }[];
+};
+export type ArtDomain = Exclude<DomainId, 'logistics'>;
 const LOAD: Record<ArtDomain, () => Promise<Art>> = {
   ecommerce: () => import('../art/ecommerce'),
   finance: () => import('../art/finance'),
@@ -30,6 +33,12 @@ export function loadDomainArt(d: ArtDomain): Promise<Art> {
   return loaded[d];
 }
 
+/** What the open domain's pictures show: the reviews passed and the tasks done. */
+export function artState(): { passed: Set<number>; done: number } {
+  const d = done();
+  return { passed: new Set(rankOf(app.tickets, d).passed), done: app.tickets.filter((x) => d.has(x.id)).length };
+}
+
 /**
  * The open domain's art slots (Plan 9 D9-13): the Overview scene, the Map page and the task bar's map dialog. A frame of
  * the picture's size is drawn at once and replaced by the SVG when the chunk is in; the key lines show as HTML below lg
@@ -37,8 +46,7 @@ export function loadDomainArt(d: ArtDomain): Promise<Art> {
  */
 export function domainArt(kind: 'scene' | 'map'): HTMLElement {
   const dom = activeDomain() as ArtDomain;
-  const d = done();
-  const st = { passed: new Set(rankOf(app.tickets, d).passed), done: app.tickets.filter((x) => d.has(x.id)).length };
+  const st = artState();
   const frame = h('div', { class: cx('w-full bg-accent-soft', kind === 'scene' ? 'aspect-[1100/400] max-sm:aspect-auto max-sm:h-[190px]' : 'aspect-[980/300] rounded-(--r-ctl)'), 'aria-hidden': 'true' });
   // the scene's words are HTML around it (ui/homeView.ts harborSection, like Tien Sa); the map keeps its legend here
   const legend = kind === 'scene' ? null : h('div', { class: 'px-4 py-3 text-body-sm text-muted' }, h('p', { class: 'm-0' }, t(domainText(dom)?.callout ?? 'ecom.scene.callout')));

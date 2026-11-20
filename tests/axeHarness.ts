@@ -85,14 +85,17 @@ export async function boot(o: BootOptions): Promise<void> {
  * jsdom gaps (no elementsFromPoint) turned real violations into "incomplete" before, which an empty violation list hid.
  */
 export async function problems(): Promise<string[]> {
-  let r = await axe.run(modal ?? document, { elementRef: true, rules: { 'color-contrast': { enabled: false } } });
+  const run = () => axe.run(modal ?? document, { elementRef: true, rules: { 'color-contrast': { enabled: false } } });
+  let r = await run();
   // heading-order is computed from a cache axe fills while walking the page: a redraw that lands mid-run (a DB answer, a
-  // sidebar refresh) makes it flaky under load. Only when that is the sole finding, settle and check once more; a real
-  // heading problem is still there on the second run.
-  const only = [...r.violations, ...r.incomplete].every((x) => x.id === 'heading-order');
-  if (only && [...r.violations, ...r.incomplete].length > 0) {
+  // sidebar refresh) makes it flaky under load. While it is reported, settle and run again (at most twice), and take only
+  // heading-order from the new run: every other finding of the first run stays, and a real heading problem is still
+  // there on the last run (v23 QA, L278; the old re-check ran only when heading-order was the sole finding).
+  const ho = (x: { id: string }) => x.id === 'heading-order';
+  for (let i = 0; i < 2 && [...r.violations, ...r.incomplete].some(ho); i++) {
     await settle();
-    r = await axe.run(modal ?? document, { elementRef: true, rules: { 'color-contrast': { enabled: false } } });
+    const again = await run();
+    r = { ...r, violations: [...r.violations.filter((x) => !ho(x)), ...again.violations.filter(ho)], incomplete: [...r.incomplete.filter((x) => !ho(x)), ...again.incomplete.filter(ho)] };
   }
   const incomplete = r.incomplete
     .map((x) => ({ ...x, id: `incomplete ${x.id}`, nodes: x.nodes.filter((n) => !reviewed(x.id, n.element)) }))
@@ -120,6 +123,7 @@ export async function visit(hash: string, ready?: () => void): Promise<void> {
     if (domain) expect(activeDomain()).toBe(domain);
     expect(byId(main).querySelector('h1')).not.toBeNull();
     if (route === 'me') expect(document.getElementById('me-name')).not.toBeNull(); // v16: the lazy page drawn, not its loading line
+    if (route === 'engine') expect(document.getElementById('engine-page')).not.toBeNull(); // ENG-CORE (L220): the lazy page drawn
     if (hash === '#/learn/interview') expect(document.getElementById('iv-sets')).not.toBeNull(); // v17: the lazy list, not its loading line
     ready?.();
   }, { timeout: 10_000, interval: 50 });

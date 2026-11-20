@@ -1,18 +1,21 @@
 import { generalNow, loadTickets } from '../content';
 import { activeDomain, DOMAINS, domainText } from '../domains';
-import { homeModel, knownSkills, kpisOf, kpiTiles, LEVELS, reliesOn, resumeTarget, type ChapterCard, type HomeModel } from '../home';
+import { homeModel, knownSkills, kpisOf, kpiTiles, LEVELS, reliesOn, resumeTarget, type ChapterCard, type HomeModel, type Resume } from '../home';
+import { awayDays, readGoal, weekCount } from '../goal';
+import { loadHistory } from '../history';
+import { localStore, readJson } from '../storage';
 import { sqlOnly } from '../onboarding';
 import { getLang, t, type Key } from '../i18n';
 import { CHAPTERS, chaptersOf, chapterTitle, domainSkills, moduleTitle, nextTicket, rankOf, SKILLS } from '../progress';
 import { domainSlot } from '../save';
 import { domainArt } from './domainArt';
 import { domainLine } from './topbar';
-import { derive, ROUTES as LANES } from '../scene';
+import { derive } from '../scene';
 import { domainHash, isInterviewPage, learnAdvOf, learnModuleOf, learnSkillOf } from '../route';
 import { laneInfo, lanePanel, wirePins } from './lanePanel';
 import { mascot, MOVES, setLilyStage } from './mascots';
 import { gainSince, growing, markGrew, react, settle } from './celebrate';
-import { ACC_AT, accAt, dayCount, firstDay, LAST_STAGE, type LilyStage, lilyStage, markStages, reachedOn, readLily, setAcc, toNextStage } from '../lily';
+import { ACC_AT, accAt, dayCount, DAYS_KEY, firstDay, parseDays, LAST_STAGE, type LilyStage, lilyStage, markStages, reachedOn, readLily, setAcc, toNextStage } from '../lily';
 import { localDay } from '../practice';
 import { relabelScene, teachScene } from './teachScene';
 import { currentRoute } from './router';
@@ -30,13 +33,13 @@ import { byId, h, nodes } from './dom';
 import { artSlot } from '../art/load';
 import { fleetOrder, takeNewRoutes } from '../routesSeen';
 import { callout } from './routeText';
-import { isStory } from '../session';
+import { isStory, reviewCount } from '../session';
 import { go } from './router';
 
 /** Width on >= lg screens (3-column grid, Overview only); every section is full width below lg and on the other pages. */
 export type Span = 'full' | 'wide' | 'narrow';
 /** Reading pages drawn in <main id="home"> (v5 §B.4–B.6, v6 §3.3): one per route except play, data and dashboard. */
-export type Page = 'home' | 'learn' | 'practice' | 'overview' | 'map' | 'me';
+export type Page = 'home' | 'learn' | 'practice' | 'overview' | 'map' | 'me' | 'engine';
 export interface HomeSection {
   id: string;
   order: number;
@@ -108,17 +111,26 @@ function resume(id: string): void {
   else actions.selectTicket(id);
 }
 
+/** v15 Q2: what "Continue" opens (the last drill's skill, the learning path, or the open domain's next task). */
+export const resumeNow = (): Resume | undefined => resumeTarget(app.save.completed, nextTicket(app.tickets, done()), sqlOnly(), SKILLS.map((s) => s.id));
+/** Its name: the task title, the skill, or the learning path. */
+export const resumeName = (r: Resume): string =>
+  r.kind === 'ticket' ? textOf(r.ticket, getLang()).title : r.kind === 'skill' ? SKILLS.find((s) => s.id === r.skill)!.label[getLang()] : t('nav.learn');
+export function openResume(r: Resume): void {
+  if (r.kind === 'ticket') resume(r.ticket.id);
+  else location.hash = r.kind === 'skill' ? `${hashOf('learn')}/skill/${r.skill}` : hashOf('learn');
+}
+
 /** v12.0 U5: Home is across domains: one line to go on (task · domain), no colleague's message (that card is the Overview's). v15 Q2: or the General area's. */
-function resumeLine(): HTMLElement | null {
-  const r = resumeTarget(app.save.completed, nextTicket(app.tickets, done()), sqlOnly(), SKILLS.map((s) => s.id));
+export function resumeLine(): HTMLElement | null {
+  const r = resumeNow();
   if (!r) return null;
-  const lang = getLang();
   const go = h('span', { class: 'flex items-center gap-2' }, t(r.kind === 'ticket' ? 'home.resume' : 'home.resumeSkill'), icon('arrowRight', 'size-4 transition group-hover:translate-x-0.5'));
   const btn = cx(BTN_GO, 'group px-4 py-2');
   return h('section', { class: cx(CARD, 'flex flex-wrap items-center gap-3 p-4'), 'aria-labelledby': 'resume-title' },
     h('p', { id: 'resume-title', class: 'm-0 min-w-0 flex-1' },
       h('span', { class: 'text-muted' }, t('home.resumeLabel')), ' ',
-      h('b', {}, r.kind === 'ticket' ? textOf(r.ticket, lang).title : r.kind === 'skill' ? SKILLS.find((s) => s.id === r.skill)!.label[lang] : t('nav.learn')),
+      h('b', {}, resumeName(r)),
       r.kind === 'learn' ? null : h('span', { class: 'text-muted' }, ` · ${r.kind === 'ticket' ? t(DOMAINS.find((d) => d.id === activeDomain())!.name) : t('nav.learn')}`)),
     r.kind === 'ticket'
       ? h('button', { type: 'button', class: btn, onclick: () => resume(r.ticket.id) }, go)
@@ -327,51 +339,6 @@ function harborSection(m: HomeModel): HTMLElement {
       ...callout(harbor, m.chapter).map((line) => h('p', { class: 'm-0 text-muted' }, line))));
 }
 
-let stopMap: (() => void) | undefined;
-/** Lane whose brief is open on the Map page (session only). */
-let mapLane: string | undefined;
-
-/** v12.0 U4: a pin or a list row opens that lane's brief beside the map (under it below 1024 px); its name is announced. */
-function pickLane(port: string): void {
-  mapLane = port;
-  actions.rerender();
-  byId('announce').textContent = LANES.find((r) => r.port === port)?.name ?? '';
-  byId('home').querySelector<HTMLElement>('#lane-title')?.scrollIntoView({ block: 'nearest' });
-}
-
-function routesSection(): HTMLElement {
-  const words = domainText();
-  if (words) {
-    return h('section', { class: cx(CARD, 'p-5'), 'aria-labelledby': 'routes-title' },
-      h('h2', { id: 'routes-title', class: 'm-0 mb-2 text-title font-bold' }, t(words.mapTitle)), domainArt('map'));
-  }
-  const harbor = derive(app.tickets, done());
-  // v21 U21: one column, name left and its status right on one line (two 216 px columns broke "Laem / Chabang")
-  const list = h('ul', { class: 'mt-3 mb-0 grid list-none gap-1.5 p-0 text-body-sm' }, ...LANES.map((r) =>
-    h('li', {}, h('button', {
-      type: 'button', id: `lane-btn-${r.port}`, 'aria-current': r.port === mapLane ? 'true' : false,
-      class: cx('flex w-full items-center gap-2 px-3 py-1.5 text-left max-lg:min-h-11', r.port === mapLane && 'ring-2 ring-accent', !harbor.open.has(r.port) && 'text-muted'),
-      onclick: () => pickLane(r.port),
-    }, icon(harbor.open.has(r.port) ? 'route' : 'lock', 'size-4 shrink-0'), h('b', { class: 'min-w-0' }, r.name), h('span', { class: 'ml-auto shrink-0 text-right text-muted' }, laneInfo(r, harbor))))));
-  const brief = mapLane
-    ? h('div', { class: 'min-w-0 rounded-(--r-ctl) p-4 ring-1 ring-line' }, lanePanel(mapLane, harbor, (task) => homeHooks.startLane?.(task)))
-    : null; // no lane picked: the hint is a caption under the map, not a third of the width
-  return h('section', { class: cx(CARD, 'p-5'), 'aria-labelledby': 'routes-title' },
-    h('div', { class: 'mb-2 flex flex-wrap items-end justify-between gap-2' },
-      h('h2', { id: 'routes-title', class: 'm-0 text-title font-bold' }, t('routes.title')),
-      h('p', { class: 'm-0 text-body-sm text-muted' }, t('routes.subtitle'))),
-    // ui-ux-v6 S2: the map takes the card's full width (labels ≥ 11 px from lg); the lane list and the brief sit below it
-    artSlot('aspect-[5/2] rounded-(--r-ctl)', (a) => {
-      stopMap?.(); // one fleet per page: the previous drawing's loop ends here
-      const p = a.routeMap(harbor);
-      wirePins(p, harbor, pickLane);
-      stopMap = a.liveMap(p, harbor, takeNewRoutes(harbor.open), fleetOrder());
-      return p.svg;
-    }),
-    brief ? null : h('p', { class: 'mt-2 mb-0 text-body-sm text-muted' }, t('lane.pick')),
-    h('div', { class: brief ? 'grid gap-4 lg:grid-cols-[minmax(0,1fr)_22rem]' : 'grid' }, h('div', { class: 'min-w-0' }, list), brief ? h('div', { class: 'min-w-0 lg:mt-3' }, brief) : null));
-}
-
 /** L48 D-A1: the company tiles moved to #/dashboard (src/ui/dashboard.ts); Home keeps a one-line teaser that links there. */
 function kpiSection(): HTMLElement {
   const tiles = kpiTiles(kpisOf(), app.tickets, done());
@@ -445,12 +412,43 @@ function helloSection(): HTMLElement {
   const [pre, post] = t('lily.line', { stage: t(STAGE_NAME[stage]), n: '' }).split('');
   const flip = app.dayFlip;
   app.dayFlip = false;
+  const pet = petButton();
+  const week = weekNow();
+  const back = welcomeBack();
+  // V22-C: Lily cheers once, on the draw where this week's count reaches the goal (session memory, no stored flag, no reward).
+  if (week.goal && goalWas !== undefined && goalWas < week.goal && week.k >= week.goal) setTimeout(() => pet.click(), 0);
+  goalWas = week.k;
   // v21 U23: one card as wide as the cards below it: Lily left, the title, tagline and her progress right (one left edge).
-  return h('section', { class: cx(CARD, 'grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-4 gap-y-3 p-5') }, petButton(), // phones: the card takes its own row
-    h('div', { class: 'min-w-0' }, h('p', { class: 'm-0 text-display font-extrabold' }, t('app.name')), h('p', { class: 'm-0 text-muted' }, t('home.tagline')),
+  return h('section', { class: cx(CARD, 'grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-4 gap-y-3 p-5') }, pet, // phones: the card takes its own row
+    h('div', { class: 'min-w-0' }, h('p', { class: 'm-0 text-display font-extrabold' }, t('app.name')), back ? null : h('p', { class: 'm-0 text-muted' }, t('home.tagline')), // V22-C: Boon's line below replaces the tagline
       h('p', { class: 'mt-2 mb-0 text-body-sm font-semibold' }, pre, h('span', { class: flip && 'cq-flip' }, String(dayCount())), post,
         grewPill ? h('span', { class: 'ml-2 rounded-full bg-sun px-2 py-0.5 text-caption font-bold text-sun-ink' }, t('lily.grewPill')) : null)),
-    lilyCard(stage, known, next));
+    back,
+    lilyCard(stage, known, next, week));
+}
+
+let goalWas: number | undefined;
+/** V22-C: this week's tasks and reviews (derived, src/goal.ts) and the goal, 0 when none is set. */
+export const thisWeek = (): { tasks: number; reviews: number } =>
+  weekCount({ completed: app.save.completed, lanes: app.save.lanes, history: loadHistory(localStore()), review: app.save.review, today: localDay(new Date()) });
+function weekNow(): { k: number; goal: number } {
+  const w = thisWeek();
+  return { k: w.tasks + w.reviews, goal: readGoal().perWeek ?? 0 };
+}
+
+/**
+ * V22-C: after >= 7 days away, Boon (the guide, L87; a text bubble: Lily already holds this card) says where the player stopped
+ * and how many skills are due. No day count, no streak, nothing lost.
+ */
+function welcomeBack(): HTMLElement | null {
+  if (awayDays(parseDays(readJson<unknown>(DAYS_KEY)), localDay(new Date())) === undefined) return null;
+  const r = resumeNow();
+  const due = reviewCount();
+  const what = !r ? '' : r.kind === 'ticket'
+    ? t('back.ticket', { title: resumeName(r), domain: t(DOMAINS.find((d) => d.id === activeDomain())!.name), n: r.ticket.chapter })
+    : r.kind === 'skill' ? `${resumeName(r)} (${t('nav.learn')})` : '';
+  return h('p', { class: 'col-span-2 m-0 rounded-(--r-card) rounded-tl-sm bg-sun px-3 py-2 text-body-sm text-sun-ink', 'data-welcome-back': '' },
+    h('b', {}, 'Boon: '), [t('back.hi'), what && t('back.where', { what }), due ? t('back.due', { n: due }) : ''].filter(Boolean).join(' '));
 }
 
 /**
@@ -458,7 +456,7 @@ function helloSection(): HTMLElement {
  * stage as a silhouette (a Lily of her own data-stage, decorative: its name is the caption). Nothing to feed, nothing that drops:
  * only what she becomes next. Below: the growth album and the colour picker (L134 P2/P3).
  */
-function lilyCard(stage: LilyStage, known: number, next: number | undefined): HTMLElement {
+function lilyCard(stage: LilyStage, known: number, next: number | undefined, week: { k: number; goal: number }): HTMLElement {
   const up = next === undefined || stage === LAST_STAGE ? undefined : (stage + 1) as LilyStage;
   const goal = known + (next ?? 0);
   const line = up === undefined ? t('lily.max') : stage === 0 ? t('lily.newborn') : t('lily.growBar', { k: known, next: goal });
@@ -467,7 +465,9 @@ function lilyCard(stage: LilyStage, known: number, next: number | undefined): HT
       h('div', { class: 'min-w-0 flex-1' },
         h('p', { class: 'm-0 text-body-sm font-bold' }, t('lily.card')),
         up === undefined ? null : h('progress', { class: 'lily-bar mt-2 h-2 w-full', max: String(goal), value: String(known), 'aria-labelledby': 'lily-grow' }),
-        h('p', { id: 'lily-grow', class: 'm-0 text-body-sm text-muted' }, line)),
+        h('p', { id: 'lily-grow', class: 'm-0 text-body-sm text-muted' }, line),
+        week.goal ? h('p', { class: 'm-0 text-body-sm font-semibold', 'data-goal': '' },
+          t(week.k >= week.goal ? 'goal.reached' : 'goal.week', { k: week.k, n: week.goal })) : null),
       up === undefined ? null : h('div', { class: 'flex w-20 shrink-0 flex-col items-center gap-1 text-center text-caption text-muted' },
         mascot('lily', 'idle', 'size-10 lily-shadow-fig', undefined, up), t('lily.nextShadow', { stage: t(STAGE_NAME[up]) }))),
     lilyAlbum(stage));
@@ -556,7 +556,6 @@ registerHomeSection({ id: 'harbor', order: 5, span: 'full', pages: ['overview'],
 registerHomeSection({ id: 'continue', order: 10, span: 'wide', pages: ['overview'], render: continueCard });
 registerHomeSection({ id: 'resume', order: 10, span: 'full', pages: ['home'], render: resumeLine });
 registerHomeSection({ id: 'career', order: 20, span: 'narrow', pages: ['overview'], render: careerCard });
-registerHomeSection({ id: 'routes', order: 25, span: 'full', pages: ['map'], render: routesSection });
 registerHomeSection({ id: 'domains', order: 28, span: 'full', pages: ['home'], render: domainsSection });
 registerHomeSection({ id: 'chapters', order: 30, span: 'full', pages: ['overview'], render: chaptersSection });
 registerHomeSection({ id: 'kpi', order: 35, span: 'full', pages: ['overview'], render: kpiSection });
@@ -565,12 +564,21 @@ registerHomeSection({ id: 'skillsTeaser', order: 45, span: 'full', pages: ['home
 registerHomeSection({ id: 'modes', order: 50, span: 'full', pages: ['overview'], render: modesSection });
 
 const PAGE_TITLE: Record<Page, Key> = {
-  home: 'nav.home', learn: 'nav.learn', practice: 'nav.practice', overview: 'nav.overview', map: 'nav.map', me: 'me.title',
+  home: 'nav.home', learn: 'nav.learn', practice: 'nav.practice', overview: 'nav.overview', map: 'nav.map', me: 'me.title', engine: 'nav.engine',
 };
-const pageOf = (r: string): Page => (r === 'learn' || r === 'practice' || r === 'overview' || r === 'map' || r === 'me' ? r : 'home');
+const pageOf = (r: string): Page => (r === 'learn' || r === 'practice' || r === 'overview' || r === 'map' || r === 'me' || r === 'engine' ? r : 'home');
+
+/** A sub-page's own h1 and the trail above it (v21 U18; L280: Engine pages too). */
+export interface PageSub { title: string; trail: { href: string; text: string }[] }
+/** L280: a page's sub-title provider besides the learning path's (the Engine area fills `engine` once its chunk is in). */
+export const pageSubs: Partial<Record<Page, () => PageSub | undefined>> = {};
 
 /** v21 U18: the title of a learning-path sub-page (module, skill, advanced node, interview room) and the step above it; main text only. */
-function learnSub(): { title: string; up?: { href: string; text: string } } | undefined {
+function learnSub(): PageSub | undefined {
+  const s = learnStep();
+  return s && { title: s.title, trail: [{ href: hashOf('learn'), text: t('nav.learn') }, ...(s.up ? [s.up] : [])] };
+}
+function learnStep(): { title: string; up?: { href: string; text: string } } | undefined {
   const hash = location.hash;
   const lang = getLang();
   const mod = (n: number): string => t('learn.module', { n, title: moduleTitle(n, lang) });
@@ -590,24 +598,23 @@ function learnSub(): { title: string; up?: { href: string; text: string } } | un
 export function renderHome(host: HTMLElement): void {
   const page = pageOf(currentRoute());
   // General pages (Home, learning path, Practise SQL) follow Logistics; domain pages the open domain (Plan 9 D9-12).
-  const general = page === 'home' || page === 'learn' || page === 'practice' || page === 'me';
+  const general = page === 'home' || page === 'learn' || page === 'practice' || page === 'me' || page === 'engine';
   const m = general || activeDomain() === 'logistics'
     ? homeModel(general ? loadTickets('logistics') : app.tickets, done(), CHAPTERS, SKILLS, homeHooks.levelOf)
     : homeModel(app.tickets, done(), chaptersOf(), domainSkills(app.tickets), homeHooks.levelOf);
   const grid = page === 'overview'; // the harbour page keeps its 3-column grid; the others are one 880 px column (v6 §3.3)
   const enter = host.dataset.enter !== undefined; // ui-ux-v5 C1: set by showRoute(), used by this draw only
   delete host.dataset.enter;
-  const sub = page === 'learn' ? learnSub() : undefined;
+  const sub = page === 'learn' ? learnSub() : pageSubs[page]?.();
   host.replaceChildren(...nodes(
     // v21 U18: a learning-path sub-page is named by its own h1, under a small trail back up ("Lộ trình › Phần 2").
     sub ? h('nav', { class: 'mx-auto mt-6 max-w-(--w-read) px-4 text-body-sm text-muted', 'aria-label': t('nav.crumbs') },
-      h('a', { href: hashOf('learn') }, t('nav.learn')),
-      ...(sub.up ? [' › ', h('a', { href: sub.up.href }, sub.up.text)] : [])) : null,
+      ...sub.trail.flatMap((x, i) => [i ? ' › ' : '', h('a', { href: x.href, class: 'inline-flex min-h-6 items-center' }, x.text)])) : null, // L280: 24 px targets
     h('h1', {
       id: 'home-title', tabindex: '-1',
       class: page === 'home' || page === 'overview' ? 'sr-only' : cx('mx-auto mb-0 max-w-(--w-read) px-4 text-heading', sub ? 'mt-1' : 'mt-6'),
     }, sub?.title ?? t(PAGE_TITLE[page])),
-    h('div', { class: cx(grid ? 'mx-auto grid max-w-(--w-wide) gap-5 px-4 py-6 lg:grid-cols-3' : 'mx-auto grid max-w-(--w-read) gap-8 px-4 py-6', enter && 'cq-enter') },
+    h('div', { class: cx(grid ? 'mx-auto grid max-w-(--w-wide) gap-5 px-4 py-6 lg:grid-cols-3' : cx('mx-auto grid max-w-(--w-read) px-4 py-6', page === 'home' ? 'gap-6' : 'gap-8'), enter && 'cq-enter') },
       ...nodes(...sections.filter((s) => s.pages.includes(page)).map((s) => {
         const el = s.render(m);
         return el && h('div', { class: cx('min-w-0', grid && SPAN[s.span]) }, el);

@@ -19,7 +19,9 @@ import { localStore, readJson, writeJson } from './storage';
 import { domainHash, domainOfHash, drillOfHash, isInterviewId, sharedOf, type Route } from './route';
 import type { Ticket } from './tickets';
 import { bootGeneral, dropGeneral, initModes, interviewStep, ivPresence, onPracticeWrong, onSolved, openShared, renderLeft, renderReviewButton, reopenInterview, startDrill, startLane, startSandbox } from './ui/modes';
+import './ui/mapPage'; // V22-A: the Map page section (was routesSection in ui/homeView.ts)
 import './ui/me'; // v16 (L142): #/me nav item and page section; the page itself is the lazy meView chunk
+import './ui/engine'; // ENG-CORE (L220): #/engine nav item, page, sidebar rows and #/me block; the pages are the lazy engineView chunk
 import { earlyOffer } from './ui/chapterView';
 import { renderNotebook, toggleNotebook } from './ui/notebook';
 import { byId, h, initLightDismiss } from './ui/dom';
@@ -41,6 +43,7 @@ import { initSidebar, renderSidebar } from './ui/sidebar';
 import { initTopbar, renderTopbar, syncMenuCopies } from './ui/topbar';
 import { mountWork } from './ui/work';
 import { registerVizTabs } from './ui/vizTabs';
+import { initWhy } from './ui/whyButton';
 import { initMyData, setMyDataStatus } from './ui/myDataView';
 import { clearMemos } from './viz/memo';
 import { createMapStrip } from './ui/mapStrip';
@@ -72,7 +75,7 @@ function onDbStatus(s: DbStatus): void {
   syncDbStatus();
   if (!uiReady) return;
   renderTopbar();
-  relabelWelcome(); // the download line ends, "I am new" becomes clickable
+  relabelWelcome(); // the download line ends
 }
 const registerSw = initServiceWorker(offerUpdate); // V16-OFFLINE (src/pwa.ts)
 const db = new DbClient(onDbStatus);
@@ -243,6 +246,7 @@ function dataChanged(): void {
 }
 
 registerCoreTabs(() => work.currentSql(), () => pinBar(() => work.currentSql()));
+initWhy(db); // V22-B
 registerVizTabs({ db, show: (id) => panel.show(id), active: () => panel.active, editorSql: () => work.currentSql() });
 const panel = createPanel(byId('panel'));
 const work = mountWork(byId('work'), {
@@ -342,7 +346,7 @@ function nextStep(): void {
 
 let shownRoute: Route | undefined;
 /** Reading pages share <main id="home"> (src/ui/homeView.ts draws the one the route names). */
-const PAGE_ROUTES: ReadonlySet<Route> = new Set<Route>(['home', 'learn', 'practice', 'overview', 'map', 'me']);
+const PAGE_ROUTES: ReadonlySet<Route> = new Set<Route>(['home', 'learn', 'practice', 'overview', 'map', 'me', 'engine']);
 const TITLE_OF: Partial<Record<Route, string>> = { data: 'data-title', dashboard: 'dashboard-title', play: 'brief-title' };
 /** Reading pages, #/d/logistics/play = workspace, …/data = Data page, …/dashboard. All stay mounted and only toggle `hidden`, so the editor is never recreated. */
 function showRoute(r: Route, initial: boolean): void {
@@ -447,7 +451,7 @@ async function startWith(c: BootPick): Promise<boolean> {
   if (c === 'general') {
     writeJson(DOMAIN_KEY, c);
     openSchema('lab');
-    go('learn');
+    if (currentRoute() !== 'engine') go('learn'); // v23 (L299): a first visit that lands on #/engine stays there
     return true;
   }
   if (c !== activeDomain()) await enterDomain(c);

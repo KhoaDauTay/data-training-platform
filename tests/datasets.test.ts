@@ -26,7 +26,7 @@ const FILES = import.meta.glob<string>('../public/datasets/*', { query: '?raw', 
 const sha256 = async (s: string): Promise<string> =>
   [...new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s)))].map((b) => b.toString(16).padStart(2, '0')).join('');
 
-const { ui, datasets } = parseDatasets(yml, parseYaml);
+const { ui, datasets } = parseDatasets(parseYaml(yml));
 const GAME = new Set<string>([...LOGISTICS_TABLES, ...ECOM_TABLES, ...FIN_TABLES]);
 const fileOf = (name: string): string => FILES[`../public/datasets/${name}`];
 
