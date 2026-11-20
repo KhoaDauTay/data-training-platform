@@ -20,10 +20,10 @@ sources:
   - https://www.mongodb.com/docs/manual/data-modeling/
   - https://www.mongodb.com/docs/manual/core/schema-validation/
 predict:
-  sql: 'db.orders.aggregate([{ $group: { _id: "$city", revenue: { $sum: "$total" }, orders: { $sum: 1 } } }, { $sort: { _id: 1 } }])'
+  sql: "db.orders.aggregate([{ $group: { _id: '$city', revenue: { $sum: '$total' }, orders: { $sum: 1 } } }, { $sort: { _id: 1 } }])"
   q:
-    vi: 'Hue có đúng một đơn, `total` của nó được nhập là `"300000"` (chuỗi). Dòng `Hue` cho `revenue` bằng bao nhiêu?'
-    en: 'Hue has exactly one order, whose `total` was entered as `"300000"` (a string). What `revenue` does the `Hue` row show?'
+    vi: 'Hue có đúng một đơn, `total` của nó được nhập là `''300000''` (chuỗi). Dòng `Hue` cho `revenue` bằng bao nhiêu?'
+    en: 'Hue has exactly one order, whose `total` was entered as `''300000''` (a string). What `revenue` does the `Hue` row show?'
   options:
     - vi: "300000"
       en: "300000"
@@ -50,7 +50,7 @@ lab:
     - task:
         vi: 'Chạy báo cáo ở câu đoán: theo thành phố (`_id`), `revenue` là tổng `total`, `orders` là số đơn, xếp `_id` từ A tới Z. Tìm dòng có đơn mà không có doanh thu.'
         en: 'Run the report from the prediction: per city (`_id`), `revenue` is the sum of `total`, `orders` the number of orders, sorted by `_id` from A to Z. Find the row that has orders but no revenue.'
-      solution: 'db.orders.aggregate([{ $group: { _id: "$city", revenue: { $sum: "$total" }, orders: { $sum: 1 } } }, { $sort: { _id: 1 } }])'
+      solution: "db.orders.aggregate([{ $group: { _id: '$city', revenue: { $sum: '$total' }, orders: { $sum: 1 } } }, { $sort: { _id: 1 } }])"
       check: doc
       ordered: true
       hint:
@@ -59,31 +59,31 @@ lab:
     - task:
         vi: 'Tìm mọi đơn có `total` không phải số, kể cả đơn thiếu hẳn `total`. Trả cả tài liệu.'
         en: 'Find every order whose `total` is not a number, including orders with no `total` at all. Return the whole documents.'
-      solution: 'db.orders.find({ total: { $not: { $type: "number" } } })'
+      solution: "db.orders.find({ total: { $not: { $type: 'number' } } })"
       check: doc
       hint:
-        vi: '`{ $type: "number" }` khớp mọi kiểu số. Bọc trong `$not` để lấy phần còn lại; tài liệu thiếu trường cũng khớp `$not`.'
-        en: '`{ $type: "number" }` matches every numeric type. Wrap it in `$not` to get the rest; a document missing the field also matches `$not`.'
+        vi: '`{ $type: ''number'' }` khớp mọi kiểu số. Bọc trong `$not` để lấy phần còn lại; tài liệu thiếu trường cũng khớp `$not`.'
+        en: '`{ $type: ''number'' }` matches every numeric type. Wrap it in `$not` to get the rest; a document missing the field also matches `$not`.'
     - task:
-        vi: 'Sửa đơn `"o3"`: lưu `total` thành số `300000`.'
-        en: 'Fix order `"o3"`: store `total` as the number `300000`.'
-      solution: 'db.orders.updateOne({ _id: "o3" }, { $set: { total: 300000 } })'
+        vi: 'Sửa đơn `''o3''`: lưu `total` thành số `300000`.'
+        en: 'Fix order `''o3''`: store `total` as the number `300000`.'
+      solution: "db.orders.updateOne({ _id: 'o3' }, { $set: { total: 300000 } })"
       check: doc
       hint:
-        vi: '`$set` với giá trị không có dấu nháy: `300000`, không phải `"300000"`.'
-        en: '`$set` with a value without quotes: `300000`, not `"300000"`.'
+        vi: '`$set` với giá trị không có dấu nháy: `300000`, không phải `''300000''`.'
+        en: '`$set` with a value without quotes: `300000`, not `''300000''`.'
 ---
 ## Ý chính
 
 Báo cáo doanh thu ghi Hue 0 đồng, dù Hue có đơn. Không có lỗi nào. Chuyện gì đã xảy ra?
 
-MongoDB không bắt mọi tài liệu trong một collection có cùng kiểu cho một trường. Một form nhập `total` thành chuỗi `"300000"` vẫn được ghi. Sau đó:
+MongoDB không bắt mọi tài liệu trong một collection có cùng kiểu cho một trường. Một form nhập `total` là chuỗi `'300000'` vẫn được ghi. Sau đó:
 
 - `$sum` bỏ qua giá trị không phải số, nên doanh thu hụt mà không báo.
 - So sánh như `{ total: { $gt: 100000 } }` không khớp chuỗi, nên đơn đó biến khỏi bộ lọc.
 - `$sort` xếp chuỗi sau mọi số, theo thứ tự kiểu của BSON.
 
-"Schemaless" không có nghĩa là không cần thiết kế. Docs Data Modeling khuyên "plan your schema prior to using your database at a production scale". Thiết kế ở đây là quyết định trước mỗi trường có kiểu gì, rồi giữ đúng kiểu đó.
+Nhiều người nghĩ "schemaless" là không cần thiết kế. Docs Data Modeling khuyên ngược lại: "plan your schema prior to using your database at a production scale". Tức là chốt trước kiểu của mỗi trường.
 
 Làm được: tìm tài liệu lệch kiểu bằng `$type` trước khi tin một con số tổng.
 
@@ -92,12 +92,12 @@ Làm được: tìm tài liệu lệch kiểu bằng `$type` trước khi tin m�
 Kiểm tra nhanh trước khi chạy báo cáo:
 
 ```js
-db.orders.countDocuments({ total: { $not: { $type: "number" } } })
+db.orders.countDocuments({ total: { $not: { $type: 'number' } } })
 ```
 
 ## Thực hành
 
-Trên server MongoDB thật, bạn chặn lỗi này từ lúc ghi bằng `validator` với `$jsonSchema` (ví dụ `total` phải là `"number"`). Validator chưa chạy trong trình duyệt (mingo không kiểm `$jsonSchema`), nên bài này dùng `$type` để tìm và sửa sau khi đã ghi.
+Trên server MongoDB thật, bạn chặn lỗi này từ lúc ghi bằng `validator` với `$jsonSchema` (ví dụ `total` phải là `'number'`). Validator chưa chạy trong trình duyệt (mingo không kiểm `$jsonSchema`), nên bài này dùng `$type` để tìm và sửa sau khi đã ghi.
 
 # EN
 
@@ -105,13 +105,13 @@ Trên server MongoDB thật, bạn chặn lỗi này từ lúc ghi bằng `valid
 
 The revenue report shows 0 for Hue, even though Hue has an order. No error anywhere. What happened?
 
-MongoDB does not force every document in a collection to use the same type for a field. A form that enters `total` as the string `"300000"` is still written. Then:
+MongoDB does not force every document in a collection to use the same type for a field. A form that enters `total` as the string `'300000'` is still written. Then:
 
 - `$sum` skips non-numeric values, so revenue comes up short without a warning.
 - A comparison such as `{ total: { $gt: 100000 } }` does not match a string, so that order drops out of the filter.
 - `$sort` puts strings after every number, following BSON type order.
 
-"Schemaless" does not mean no design. The Data Modeling docs advise "plan your schema prior to using your database at a production scale". Design here means deciding up front what type each field has, then keeping it.
+Many people think "schemaless" means no design. The Data Modeling docs advise the opposite: "plan your schema prior to using your database at a production scale". That means settling each field's type up front.
 
 You can now: find documents of the wrong type with `$type` before you trust a total.
 
@@ -120,9 +120,9 @@ You can now: find documents of the wrong type with `$type` before you trust a to
 A quick check before running the report:
 
 ```js
-db.orders.countDocuments({ total: { $not: { $type: "number" } } })
+db.orders.countDocuments({ total: { $not: { $type: 'number' } } })
 ```
 
 ## Practice
 
-On a real MongoDB server you block this mistake at write time with a `validator` using `$jsonSchema` (for example, `total` must be `"number"`). Validators do not run in the browser (mingo does not check `$jsonSchema`), so this lesson uses `$type` to find and fix the documents after they were written.
+On a real MongoDB server you block this mistake at write time with a `validator` using `$jsonSchema` (for example, `total` must be `'number'`). Validators do not run in the browser (mingo does not check `$jsonSchema`), so this lesson uses `$type` to find and fix the documents after they were written.

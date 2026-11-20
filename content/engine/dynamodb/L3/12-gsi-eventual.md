@@ -9,8 +9,8 @@ kind: predict
 runtime: browser
 minutes: 12
 objectives:
-  - vi: Thấy DynamoDB từ chối `ConsistentRead` trên GSI bằng `ValidationException`.
-    en: See DynamoDB refuse `ConsistentRead` on a GSI with a `ValidationException`.
+  - vi: Thấy DynamoDB từ chối `ConsistentRead` trên GSI (global secondary index) bằng `ValidationException`.
+    en: See DynamoDB refuse `ConsistentRead` on a GSI (global secondary index) with a `ValidationException`.
   - vi: Lấy khóa từ GSI rồi đọc bản mới nhất ở bảng chính bằng `GetItem` nhất quán mạnh.
     en: Take the key from the GSI, then read the latest version from the base table with a strongly consistent `GetItem`.
   - vi: Đọc `ConsumedCapacity` của một lần ghi làm đổi khóa GSI.
@@ -39,8 +39,8 @@ predict:
       en: DynamoDB ignores the parameter and reads eventually consistent
   answer: 1
   why:
-    vi: 'Nhiều người nghĩ GSI chỉ là một bảng khác nên đọc mạnh được như bảng chính. Thật ra DynamoDB cập nhật GSI bất đồng bộ ("asynchronously, using an eventually consistent model", docs GSI), nên không có bản "chắc chắn mới nhất" để đọc mạnh. Request bị từ chối với lỗi `Consistent reads are not supported on global secondary indexes`. Bước 1 cho bạn thấy lỗi này thật.'
-    en: 'Many people think a GSI is just another table, so it allows strong reads like the base table. In fact DynamoDB updates a GSI asynchronously ("asynchronously, using an eventually consistent model", GSI docs), so there is no "surely latest" copy to read strongly. The request is refused with `Consistent reads are not supported on global secondary indexes`. Step 1 shows you this error for real.'
+    vi: 'Nhiều người nghĩ GSI chỉ là một bảng khác nên đọc mạnh được như bảng chính. Thật ra DynamoDB cập nhật GSI bất đồng bộ ("asynchronously, using an eventually consistent model", docs GSI), nên không có bản "chắc chắn mới nhất" để đọc mạnh. Request bị từ chối bằng một `ValidationException`, thông báo `Consistent reads are not supported on global secondary indexes`. Bước 1 cho bạn thấy thông báo này thật (trang chỉ hiện thông báo, không hiện tên loại lỗi).'
+    en: 'Many people think a GSI is just another table, so it allows strong reads like the base table. In fact DynamoDB updates a GSI asynchronously ("asynchronously, using an eventually consistent model", GSI docs), so there is no "surely latest" copy to read strongly. The request is refused with a `ValidationException`, message `Consistent reads are not supported on global secondary indexes`. Step 1 shows you this message for real (the page shows the message, not the error type name).'
 quiz:
   - q:
       vi: 'Ứng dụng vừa `PutItem` một đơn `NEW` thành công. Ngay sau đó nó Query `byStatus = NEW`. Đơn mới có chắc nằm trong kết quả không?'
@@ -54,7 +54,7 @@ quiz:
         en: Never, a GSI is only updated once a minute
     answer: 1
     why:
-      vi: 'Lần ghi thành công ở bảng chính, rồi DynamoDB mới chép sang GSI, thường dưới một giây nhưng không có gì bảo đảm. Ứng dụng phải chịu được việc GSI trả dữ liệu cũ ("your applications need to anticipate and handle situations", docs GSI). Lưu ý: dynoxide trong trình duyệt cập nhật GSI ngay trong lần ghi, nên ở đây bạn luôn thấy đơn mới. Đó là khác biệt của trình giả lập, không phải bằng chứng cho lựa chọn đầu.'
+      vi: 'Lần ghi thành công ở bảng chính, rồi DynamoDB mới chép sang GSI, thường dưới một giây nhưng không có gì bảo đảm. Ứng dụng phải chịu được việc GSI trả dữ liệu cũ ("your applications need to anticipate and handle situations", docs GSI). Lưu ý: dynoxide trong trình duyệt cập nhật GSI ngay trong lần ghi, nên ở đây bạn luôn thấy đơn mới. Đó là khác biệt của bộ mô phỏng, không phải bằng chứng cho lựa chọn đầu.'
       en: 'The write succeeds on the base table, and only then does DynamoDB copy it to the GSI, usually in under a second but with no guarantee. The app must cope with the GSI returning stale data ("your applications need to anticipate and handle situations", GSI docs). Note: dynoxide in the browser updates the GSI inside the write, so here you always see the new order. That is a difference of the emulator, not evidence for the first option.'
   - q:
       vi: 'GSI `byStatus` là `KEYS_ONLY`. Một `UpdateItem` chỉ đổi `total` (không phải khóa, không được project) của item nặng dưới 1 KB. Tổng WCU là bao nhiêu?'
@@ -108,8 +108,8 @@ lab:
         vi: '`GetItem` theo khóa bảng chính (`customerId`, `orderId`) lấy từ bước 1, thêm `"ConsistentRead": true`. Item dưới 4 KB nên tốn 1 RCU thay vì 0,5.'
         en: '`GetItem` by the base table key (`customerId`, `orderId`) taken from step 1, plus `"ConsistentRead": true`. The item is under 4 KB, so it costs 1 RCU instead of 0.5.'
     - task:
-        vi: 'Khách đã trả tiền: đổi `status` của đơn `2026-10-09#O-403` từ `NEW` sang `PAID`. Thêm `"ReturnConsumedCapacity": "INDEXES"` và đọc WCU của bảng và của `byStatus`.'
-        en: 'The customer has paid: change the `status` of order `2026-10-09#O-403` from `NEW` to `PAID`. Add `"ReturnConsumedCapacity": "INDEXES"` and read the WCU of the table and of `byStatus`.'
+        vi: 'Khách đã trả tiền: đổi `status` của đơn `2026-10-09#O-403` từ `NEW` sang `PAID`. Thêm `"ReturnConsumedCapacity": "INDEXES"` và đọc tổng WCU ở dòng `ConsumedCapacity`.'
+        en: 'The customer has paid: change the `status` of order `2026-10-09#O-403` from `NEW` to `PAID`. Add `"ReturnConsumedCapacity": "INDEXES"` and read the total WCU on the `ConsumedCapacity` line.'
       solution: |
         {"op": "UpdateItem", "input": {"TableName": "Orders",
           "Key": {"customerId": {"S": "C-02"}, "orderId": {"S": "2026-10-09#O-403"}},
@@ -119,8 +119,8 @@ lab:
           "ReturnConsumedCapacity": "INDEXES"}}
       check: doc
       hint:
-        vi: '`SET #s = :p`, với `#s` là `status` (từ dành riêng). Tổng là 3 WCU: 1 cho bảng, 2 cho GSI (xóa mục `NEW`, ghi mục `PAID`).'
-        en: '`SET #s = :p`, with `#s` for `status` (a reserved word). The total is 3 WCU: 1 for the table, 2 for the GSI (delete the `NEW` entry, write the `PAID` one).'
+        vi: '`SET #s = :p`, với `#s` là `status` (từ dành riêng). Tổng là 3 WCU: 1 cho bảng, 2 cho GSI (xóa mục `NEW`, ghi mục `PAID`). Trang chỉ hiện tổng; phản hồi của DynamoDB tách `Table` và `GlobalSecondaryIndexes`.'
+        en: '`SET #s = :p`, with `#s` for `status` (a reserved word). The total is 3 WCU: 1 for the table, 2 for the GSI (delete the `NEW` entry, write the `PAID` one). The page shows only the total; the DynamoDB response splits it into `Table` and `GlobalSecondaryIndexes`.'
 ---
 
 ## Ý chính
@@ -133,9 +133,7 @@ Không. GSI được DynamoDB cập nhật **sau** lần ghi vào bảng chính,
 - Ngay sau một lần ghi, GSI có thể chưa có item mới, hoặc vẫn giữ giá trị cũ.
 - Cần bản mới nhất thì lấy khóa từ GSI, rồi `GetItem` ở bảng chính với `ConsistentRead: true`.
 
-Lần ghi làm đổi khóa GSI còn tốn WCU cho index: đổi `status` là 2 lần ghi ở GSI (xóa mục cũ, ghi mục mới).
-
-**Khác biệt của trình giả lập:** dynoxide cập nhật GSI ngay trong lần ghi, nên trong trình duyệt bạn không bao giờ thấy GSI chậm. DynamoDB thật thì cập nhật bất đồng bộ, thường dưới một giây. Lỗi `ValidationException` và các số WCU ở đây thì giống DynamoDB thật.
+Đổi khóa GSI còn tốn WCU cho index: đổi `status` là 2 lần ghi ở GSI (xóa mục cũ, ghi mục mới).
 
 ## Ví dụ
 
@@ -148,7 +146,9 @@ GetItem Orders, ConsistentRead  -> latest version, 1 RCU
 
 ## Thực hành
 
-Danh sách "đơn đang chờ" đọc từ GSI là đủ: chậm một chút không sao. Chỉ bước quyết định (đóng gói, trừ kho) mới cần đọc lại bảng chính bằng đọc nhất quán mạnh.
+Danh sách "đơn đang chờ" đọc từ GSI là đủ: chậm một chút không sao. Chỉ bước quyết định (đóng gói, trừ kho) mới cần đọc lại bảng chính bằng đọc nhất quán mạnh (strongly consistent).
+
+**Khác biệt của bộ mô phỏng:** dynoxide cập nhật GSI ngay trong lần ghi, nên trong trình duyệt bạn không bao giờ thấy GSI chậm. DynamoDB thật cập nhật bất đồng bộ, thường dưới một giây. Thông báo lỗi `ValidationException` và các số WCU ở đây thì giống DynamoDB thật.
 
 # EN
 
@@ -162,9 +162,7 @@ No. DynamoDB updates a GSI **after** the write to the base table, asynchronously
 - Right after a write, the GSI may not have the new item yet, or may still hold the old value.
 - When you need the latest version, take the key from the GSI, then `GetItem` from the base table with `ConsistentRead: true`.
 
-A write that changes a GSI key also costs WCU for the index: changing `status` is 2 writes on the GSI (delete the old entry, write the new one).
-
-**Emulator difference:** dynoxide updates the GSI inside the write, so in the browser you never see a GSI lag. Real DynamoDB updates it asynchronously, usually in under a second. The `ValidationException` and the WCU numbers here match real DynamoDB.
+Changing a GSI key also costs WCU for the index: changing `status` is 2 writes on the GSI (delete the old entry, write the new one).
 
 ## Example
 
@@ -178,3 +176,5 @@ GetItem Orders, ConsistentRead  -> latest version, 1 RCU
 ## Practice
 
 A "waiting orders" list read from the GSI is fine: being a little late does not matter. Only the deciding step (packing, taking stock) needs to read the base table again with a strongly consistent read.
+
+**Emulator difference:** dynoxide updates the GSI inside the write, so in the browser you never see a GSI lag. Real DynamoDB updates it asynchronously, usually in under a second. The `ValidationException` message and the WCU numbers here match real DynamoDB.

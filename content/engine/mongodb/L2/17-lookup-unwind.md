@@ -18,23 +18,23 @@ sources:
   - https://www.mongodb.com/docs/manual/reference/operator/aggregation/lookup/
   - https://www.mongodb.com/docs/manual/reference/operator/aggregation/unwind/
 predict:
-  sql: 'db.customers.aggregate([{ $lookup: { from: "orders", localField: "_id", foreignField: "customer", as: "orders" } }, { $unwind: "$orders" }])'
+  sql: "db.customers.aggregate([{ $lookup: { from: 'orders', localField: '_id', foreignField: 'customer', as: 'orders' } }, { $unwind: '$orders' }])"
   q:
-    vi: 'Có 4 khách. `"c1"` có 2 đơn, `"c2"` và `"c3"` mỗi khách 1 đơn, `"c4"` chưa có đơn nào. Pipeline này trả mấy tài liệu?'
-    en: 'There are 4 customers. `"c1"` has 2 orders, `"c2"` and `"c3"` have 1 each, `"c4"` has none. How many documents does this pipeline return?'
+    vi: 'Có 4 khách. `''c1''` có 2 đơn, `''c2''` và `''c3''` mỗi khách 1 đơn, `''c4''` chưa có đơn nào. Pipeline này trả mấy tài liệu?'
+    en: 'There are 4 customers. `''c1''` has 2 orders, `''c2''` and `''c3''` have 1 each, `''c4''` has none. How many documents does this pipeline return?'
   options:
     - vi: 4, mỗi khách một tài liệu
       en: 4, one document per customer
-    - vi: 4, `"c1"` tách thành 2 và `"c4"` biến mất
-      en: 4, `"c1"` split into 2 and `"c4"` gone
-    - vi: 5, `"c4"` có `orders` bằng `null`
-      en: 5, `"c4"` with `orders` equal to `null`
-    - vi: 5, `"c4"` có `orders` là mảng rỗng
-      en: 5, `"c4"` with `orders` an empty array
+    - vi: '4, `''c1''` tách thành 2 và `''c4''` biến mất'
+      en: '4, `''c1''` split into 2 and `''c4''` gone'
+    - vi: '5, `''c4''` có `orders` bằng `null`'
+      en: '5, `''c4''` with `orders` equal to `null`'
+    - vi: '5, `''c4''` có `orders` là mảng rỗng'
+      en: '5, `''c4''` with `orders` an empty array'
   answer: 1
   why:
-    vi: 'Riêng `$lookup` là left outer join: `"c4"` vẫn còn, với `orders: []`. Nhưng `$unwind` tạo một tài liệu cho mỗi phần tử của mảng, và mảng rỗng thì không tạo tài liệu nào. Kết quả là `"c1"` hai lần, `"c2"`, `"c3"`: 4 tài liệu, `"c4"` mất. Cặp `$lookup` + `$unwind` vì vậy chạy như INNER JOIN của SQL.'
-    en: '`$lookup` alone is a left outer join: `"c4"` is still there, with `orders: []`. But `$unwind` makes one document per array element, and an empty array makes none. The result is `"c1"` twice, `"c2"`, `"c3"`: 4 documents, `"c4"` gone. So `$lookup` + `$unwind` behaves like an SQL INNER JOIN.'
+    vi: 'Riêng `$lookup` là left outer join: `''c4''` vẫn còn, với `orders: []`. Nhưng `$unwind` tạo một tài liệu cho mỗi phần tử của mảng, và mảng rỗng thì không tạo tài liệu nào. Kết quả là `''c1''` hai lần, `''c2''`, `''c3''`: 4 tài liệu, `''c4''` mất. Cặp `$lookup` + `$unwind` vì vậy chạy như INNER JOIN của SQL.'
+    en: '`$lookup` alone is a left outer join: `''c4''` is still there, with `orders: []`. But `$unwind` makes one document per array element, and an empty array makes none. The result is `''c1''` twice, `''c2''`, `''c3''`: 4 documents, `''c4''` gone. So `$lookup` + `$unwind` behaves like an SQL INNER JOIN.'
 quiz:
   - q:
       vi: 'Trang hồ sơ khách chạy `$lookup` từ `customers` sang `orders` (1 triệu tài liệu) khoảng 1000 lần mỗi giây. `orders` chưa có index nào trên `customer`. Nên sửa gì trước?'
@@ -68,21 +68,21 @@ lab:
     }}
   steps:
     - task:
-        vi: 'Chạy pipeline ở câu đoán, rồi sửa để `"c4"` vẫn có một dòng: mỗi cặp khách và đơn một tài liệu, khách chưa có đơn vẫn giữ lại. Trả `name` và `order` là `_id` của đơn.'
-        en: 'Run the pipeline from the prediction, then fix it so `"c4"` still gets a row: one document per customer and order pair, keeping customers with no order. Return `name` and `order`, the order''s `_id`.'
-      solution: 'db.customers.aggregate([{ $lookup: { from: "orders", localField: "_id", foreignField: "customer", as: "orders" } }, { $unwind: { path: "$orders", preserveNullAndEmptyArrays: true } }, { $project: { name: 1, order: "$orders._id" } }])'
+        vi: 'Chạy pipeline ở câu đoán, rồi sửa để `''c4''` vẫn có một dòng: mỗi cặp khách và đơn một tài liệu, khách chưa có đơn vẫn giữ lại. Trả `name` và `order` là `_id` của đơn.'
+        en: 'Run the pipeline from the prediction, then fix it so `''c4''` still gets a row: one document per customer and order pair, keeping customers with no order. Return `name` and `order`, the order''s `_id`.'
+      solution: "db.customers.aggregate([{ $lookup: { from: 'orders', localField: '_id', foreignField: 'customer', as: 'orders' } }, { $unwind: { path: '$orders', preserveNullAndEmptyArrays: true } }, { $project: { name: 1, order: '$orders._id' } }])"
       check: doc
       hint:
-        vi: 'Dạng dài của `$unwind`: `{ path: "$orders", preserveNullAndEmptyArrays: true }`. Với `"c4"`, `"$orders._id"` không có giá trị nên tài liệu không có trường `order`.'
-        en: 'The long form of `$unwind`: `{ path: "$orders", preserveNullAndEmptyArrays: true }`. For `"c4"`, `"$orders._id"` has no value, so that document has no `order` field.'
+        vi: 'Dạng dài của `$unwind`: `{ path: ''$orders'', preserveNullAndEmptyArrays: true }`. Với `''c4''`, `''$orders._id''` không có giá trị nên tài liệu không có trường `order`.'
+        en: 'The long form of `$unwind`: `{ path: ''$orders'', preserveNullAndEmptyArrays: true }`. For `''c4''`, `''$orders._id''` has no value, so that document has no `order` field.'
     - task:
         vi: 'Báo cáo số đơn của từng khách, kể cả khách 0 đơn: `name` và `n` là số đơn. Không cần `$unwind`.'
         en: 'Report the number of orders per customer, including customers with 0: `name` and `n`, the number of orders. No `$unwind` needed.'
-      solution: 'db.customers.aggregate([{ $lookup: { from: "orders", localField: "_id", foreignField: "customer", as: "orders" } }, { $project: { name: 1, n: { $size: "$orders" } } }])'
+      solution: "db.customers.aggregate([{ $lookup: { from: 'orders', localField: '_id', foreignField: 'customer', as: 'orders' } }, { $project: { name: 1, n: { $size: '$orders' } } }])"
       check: doc
       hint:
-        vi: '`$lookup` đã cho mỗi khách một mảng `orders`, kể cả mảng rỗng. `{ $size: "$orders" }` đếm nó.'
-        en: '`$lookup` already gives each customer an `orders` array, even an empty one. `{ $size: "$orders" }` counts it.'
+        vi: '`$lookup` đã cho mỗi khách một mảng `orders`, kể cả mảng rỗng. `{ $size: ''$orders'' }` đếm nó.'
+        en: '`$lookup` already gives each customer an `orders` array, even an empty one. `{ $size: ''$orders'' }` counts it.'
 ---
 ## Ý chính
 
@@ -97,7 +97,7 @@ Nhiều người nghĩ `$lookup` giống hệt JOIN của SQL, nên viết `$loo
 
 Hai cách giữ đủ khách:
 
-- `{ $unwind: { path: "$orders", preserveNullAndEmptyArrays: true } }`, tương đương LEFT JOIN từng dòng;
+- `{ $unwind: { path: '$orders', preserveNullAndEmptyArrays: true } }`, tương đương LEFT JOIN từng dòng;
 - không `$unwind`, đọc thẳng mảng (`$size`, `$sum` trên mảng).
 
 ## Ví dụ
@@ -127,7 +127,7 @@ Many people think `$lookup` is exactly an SQL JOIN, so they write `$lookup` + `$
 
 Two ways to keep every customer:
 
-- `{ $unwind: { path: "$orders", preserveNullAndEmptyArrays: true } }`, the equivalent of a row-by-row LEFT JOIN;
+- `{ $unwind: { path: '$orders', preserveNullAndEmptyArrays: true } }`, the equivalent of a row-by-row LEFT JOIN;
 - no `$unwind`, read the array directly (`$size`, `$sum` over the array).
 
 ## Example

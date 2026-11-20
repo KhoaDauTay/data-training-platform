@@ -40,8 +40,8 @@ predict:
       en: "0"
   answer: 2
   why:
-    vi: 'Nhiều người nghĩ `Limit` là số item trả về sau bộ lọc, nên chọn 3 hoặc 6. Thật ra DynamoDB đọc tối đa 6 item theo sort key **rồi mới** lọc. Trong 6 đơn đầu của `C-01` chỉ có 1 đơn `DELIVERED`, nên `Count` là 1, `ScannedCount` là 6, và phản hồi có `LastEvaluatedKey` vì còn item chưa đọc.'
-    en: 'Many people think `Limit` is the number of items returned after the filter, so they pick 3 or 6. In fact DynamoDB reads up to 6 items in sort key order **and then** filters them. Only 1 of the first 6 orders of `C-01` is `DELIVERED`, so `Count` is 1, `ScannedCount` is 6, and the response carries a `LastEvaluatedKey` because items are left unread.'
+    vi: 'Nhiều người nghĩ `Limit` là số item trả về sau bộ lọc, nên chọn 3 hoặc 6. Thật ra DynamoDB đọc tối đa 6 item theo sort key **rồi mới** lọc. Trong 6 đơn đầu của `C-01` chỉ có 1 đơn `DELIVERED`, nên `Count` là 1, `ScannedCount` là 6, và phản hồi có `LastEvaluatedKey` vì còn item chưa đọc. Đáp án 0 xảy ra khi trong các item đã đọc không có đơn nào `DELIVERED`, ví dụ với `Limit` 2.'
+    en: 'Many people think `Limit` is the number of items returned after the filter, so they pick 3 or 6. In fact DynamoDB reads up to 6 items in sort key order **and then** filters them. Only 1 of the first 6 orders of `C-01` is `DELIVERED`, so `Count` is 1, `ScannedCount` is 6, and the response carries a `LastEvaluatedKey` because items are left unread. The answer 0 happens when none of the items read is `DELIVERED`, for example with `Limit` 2.'
 lab:
   setup: |
     {"tables": [{"TableName":"Orders","KeySchema":[{"AttributeName":"customerId","KeyType":"HASH"},{"AttributeName":"orderId","KeyType":"RANGE"}],"AttributeDefinitions":[{"AttributeName":"customerId","AttributeType":"S"},{"AttributeName":"orderId","AttributeType":"S"}],"BillingMode":"PAY_PER_REQUEST"}],
@@ -63,8 +63,8 @@ lab:
     ]}}
   steps:
     - task:
-        vi: Chạy đúng request ở câu đoán. Đối chiếu `Count`, `ScannedCount` và `LastEvaluatedKey` với đáp án bạn chọn.
-        en: Run the exact request from the prediction. Compare `Count`, `ScannedCount` and `LastEvaluatedKey` with the answer you picked.
+        vi: Chạy đúng request ở câu đoán. Đối chiếu `Count` và `ScannedCount` với đáp án bạn chọn.
+        en: Run the exact request from the prediction. Compare `Count` and `ScannedCount` with the answer you picked.
       solution: |
         {"op": "Query", "input": {"TableName": "Orders",
           "KeyConditionExpression": "customerId = :c",
@@ -122,12 +122,12 @@ Một lần `Query` hoặc `Scan` làm theo thứ tự:
 - áp `FilterExpression` lên các item vừa đọc;
 - trả item còn lại.
 
-Nhiều người nghĩ `Limit` là số item **trả về**. Thật ra `Limit` là số item **đọc** ("The maximum number of items to evaluate", API Query). Phản hồi cho thấy cả hai số:
+Nhiều người nghĩ `Limit` là số item **trả về**. Thật ra `Limit` là số item **đọc** ("The maximum number of items to evaluate", API Scan; Query dùng cùng luật). Phản hồi cho thấy cả hai số:
 
 - `ScannedCount`: số item đã đọc (và đã tính phí);
 - `Count`: số item còn lại sau bộ lọc.
 
-Còn `LastEvaluatedKey` nghĩa là còn item chưa đọc. Một trang có thể trả 0 item mà vẫn còn trang sau.
+Còn `LastEvaluatedKey` nghĩa là còn item chưa đọc. Một trang có thể trả 0 item mà vẫn còn trang sau. Trang này chưa hiện `LastEvaluatedKey`, nên bước 2 ghi sẵn khóa đó.
 
 ## Ví dụ
 
@@ -141,7 +141,7 @@ no Limit         -> ScannedCount 12, Count 3
 
 ## Thực hành
 
-Muốn đủ N item khớp bộ lọc thì phải lặp theo `LastEvaluatedKey` cho tới khi gom đủ. Muốn rẻ hơn thì đưa điều kiện vào khóa: một GSI có partition key `status` chỉ đọc đúng các đơn `DELIVERED`, nên `ScannedCount` bằng `Count`.
+Muốn đủ N item khớp bộ lọc thì phải lặp theo `LastEvaluatedKey` cho tới khi gom đủ. Muốn rẻ hơn thì đưa điều kiện vào khóa: một GSI có partition key (khóa phân vùng) `status` chỉ đọc đúng các đơn `DELIVERED`, nên `ScannedCount` bằng `Count`.
 
 # EN
 
@@ -155,12 +155,12 @@ One `Query` or `Scan` call works in this order:
 - apply the `FilterExpression` to the items just read;
 - return what is left.
 
-Many people think `Limit` is the number of items **returned**. In fact `Limit` is the number of items **read** ("The maximum number of items to evaluate", API Query). The response shows both numbers:
+Many people think `Limit` is the number of items **returned**. In fact `Limit` is the number of items **read** ("The maximum number of items to evaluate", API Scan; Query follows the same rule). The response shows both numbers:
 
 - `ScannedCount`: the items read (and billed);
 - `Count`: the items left after the filter.
 
-A `LastEvaluatedKey` means items are left unread. A page can return 0 items and still have a next page.
+A `LastEvaluatedKey` means items are left unread. A page can return 0 items and still have a next page. This page does not show `LastEvaluatedKey` yet, so step 2 gives you that key.
 
 ## Example
 

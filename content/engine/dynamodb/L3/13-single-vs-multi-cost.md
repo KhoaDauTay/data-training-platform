@@ -11,8 +11,8 @@ minutes: 14
 objectives:
   - vi: So RCU của "khách và các đơn của khách" khi đọc từ một bảng và từ hai bảng, bằng `ConsumedCapacity`.
     en: Compare the RCU of "a customer and their orders" read from one table and from two tables, using `ConsumedCapacity`.
-  - vi: Tính RCU theo đọc nhất quán cuối/mạnh và theo luật làm tròn 4 KB.
-    en: Work out RCU for eventually and strongly consistent reads with the 4 KB rounding rule.
+  - vi: Tính RCU cho đọc nhất quán cuối (eventually consistent) và nhất quán mạnh (strongly consistent), theo luật làm tròn 4 KB.
+    en: Work out RCU for eventually consistent and strongly consistent reads, with the 4 KB rounding rule.
   - vi: Biết khi nào nhiều bảng là lựa chọn đúng.
     en: Know when several tables are the right choice.
 requires: [e-dy-l3-07, e-dy-l2-09]
@@ -172,7 +172,7 @@ Shop      Query, ConsistentRead true   -> 1 RCU
 
 ## Thực hành
 
-Các số RCU ở đây do dynoxide trả trong `ConsumedCapacity`, và khớp luật tính của AWS cho các lần đọc thành công. Bước nào cũng chấm theo item trả về; số RCU là để bạn đọc và so.
+Các số RCU ở đây do dynoxide trả trong `ConsumedCapacity`, và khớp luật tính của AWS cho các lần đọc thành công. Bước nào cũng chấm theo item trả về; số RCU là để bạn đọc và so. Mọi item ở đây đều nhỏ, nên phần làm tròn 4 KB với item lớn chỉ có trong câu hỏi cuối bài.
 
 # EN
 
@@ -200,4 +200,4 @@ Shop      Query, ConsistentRead true   -> 1 RCU
 
 ## Practice
 
-The RCU numbers here are what dynoxide returns in `ConsumedCapacity`, and they match the AWS rules for successful reads. Every step is graded on the items returned; the RCU numbers are for you to read and compare.
+The RCU numbers here are what dynoxide returns in `ConsumedCapacity`, and they match the AWS rules for successful reads. Every step is graded on the items returned; the RCU numbers are for you to read and compare. Every item here is small, so 4 KB rounding with large items is only in the questions at the end.
