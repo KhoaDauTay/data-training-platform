@@ -60,7 +60,7 @@ quiz:
 
 ## Ý chính
 
-Nhiều khách thuê chung bảng thì mỗi bảng có `tenant_id NOT NULL` đứng đầu khóa chính và index. Bật Row Level Security với policy đọc tenant từ thiết lập phiên, và thêm `FORCE ROW LEVEL SECURITY`. Ứng dụng không chạy bằng superuser hay role `BYPASSRLS`.
+Nhiều khách thuê (tenant: một khách hàng doanh nghiệp dùng chung database) chung bảng thì mỗi bảng có `tenant_id NOT NULL` đứng đầu khóa chính và index. Bật Row Level Security với policy đọc tenant từ thiết lập phiên, và thêm `FORCE ROW LEVEL SECURITY`. Ứng dụng không chạy bằng superuser hay role `BYPASSRLS`.
 
 ## Vì sao
 
@@ -76,7 +76,7 @@ Phiên đặt `app.tenant_id = '1'` rồi `SET ROLE app_owner`. Bảng chỉ `EN
 
 ## Key idea
 
-When tenants share tables, every table has `tenant_id NOT NULL` leading its primary key and indexes. Enable Row Level Security with a policy that reads the tenant from a session setting, and add `FORCE ROW LEVEL SECURITY`. The application never runs as a superuser or a `BYPASSRLS` role.
+When tenants (business customers sharing one database) share tables, every table has `tenant_id NOT NULL` leading its primary key and indexes. Enable Row Level Security with a policy that reads the tenant from a session setting, and add `FORCE ROW LEVEL SECURITY`. The application never runs as a superuser or a `BYPASSRLS` role.
 
 ## Why
 

@@ -4,7 +4,7 @@ engine: best
 track: sql
 level: L2
 module: q
-title: "Dùng NOT EXISTS thay NOT IN (subquery)"
+title: "Dùng NOT EXISTS thay NOT IN (truy vấn con)"
 title_en: "Use NOT EXISTS, not NOT IN"
 kind: quiz
 minutes: 3
@@ -42,7 +42,7 @@ pair:
 lint:
   rule: q02
   tip:
-    vi: "`NOT IN` với một subquery sẽ ra rỗng nếu subquery trả một NULL. Mình hay dùng `NOT EXISTS` cho chắc."
+    vi: "`NOT IN` với một truy vấn con (subquery) sẽ ra rỗng nếu truy vấn con trả một NULL. Mình hay dùng `NOT EXISTS` cho chắc."
     en: "`NOT IN` over a subquery returns nothing if the subquery yields a NULL. `NOT EXISTS` is the safe choice."
 quiz:
   - q:
@@ -54,7 +54,7 @@ quiz:
       - { vi: "Cả hai cho cùng một số", en: "Both give the same number" }
     answer: 1
     why:
-      vi: "Chỉ cần subquery có một NULL, `x NOT IN (…)` cho NULL chứ không phải true, nên `WHERE` bỏ mọi dòng. `NOT EXISTS` chỉ hỏi \"có dòng khớp không\", nên NULL không ảnh hưởng."
+      vi: "Chỉ cần truy vấn con (subquery) có một NULL, `x NOT IN (…)` cho NULL chứ không phải true, nên `WHERE` bỏ mọi dòng. `NOT EXISTS` chỉ hỏi \"có dòng khớp không\", nên NULL không ảnh hưởng."
       en: "One NULL in the subquery makes `x NOT IN (…)` NULL rather than true, so `WHERE` drops every row. `NOT EXISTS` only asks \"is there a matching row\", so a NULL changes nothing."
 ---
 

@@ -15,6 +15,17 @@ Người viết: agent Research · 2026-11-20 · theo L215 mục 6 ("luôn có A
 
 Mục mới nằm ở §13.2, không chen vào §1–8. Mã cũ giữ nguyên.
 
+**Vòng 5** (agent Research, 2026-11-20): theo L220, không thêm mục hay thẻ. Thêm §14:
+
+- soát chất lượng cả 192 mục: tải lại mọi nguồn, sửa 4 URL chuyển hướng, rút 4 câu trích quá 15 chữ, thêm trang nguồn cho 16 mục, chạy lại cả 145 mục chạy được (dữ liệu DynamoDB dạng JSON thường), không bỏ mục nào;
+- ghi phiên bản: PostgreSQL 19 phát hành 2026-11-19, 16 mục có dòng **Phiên bản (vòng 5)**;
+- xếp hạng cả 192 mục, đề xuất 60 mục cho v25 (SQL + PostgreSQL), phần còn lại theo v27 và v29;
+- bản nháp hướng dẫn cho người học "8 thói quen".
+
+**Vòng 6** (agent Research, 2026-11-20): theo L215.6, viết 32 thẻ còn thiếu của danh sách v25 (§14.2), nên cả 60 mục v25 đều có thẻ. Mọi cặp đã chạy trên PGlite 0.5.16 của repo. Sáu mục mà bản Đúng mới báo lỗi được dựng lại kịch bản; P13, P06, P30 thành thẻ chỉ cú pháp. Chi tiết và số đo ở §15; cột "Thẻ" của §12 và dấu ★ của §14.2 đã cập nhật.
+
+**Vòng 7** (agent Research, 2026-11-20): theo L215.6, viết 58 thẻ còn thiếu của MongoDB (v27, 32 thẻ) và DynamoDB (v29, 26 thẻ), nên cả 70 mục NoSQL đều có thẻ (tổng 130). Mọi cặp chạy được đã chạy trên `mingo` 7.2.6 và `@dynoxide/wasm-engine` 1.5.0 của repo; 36 thẻ mới là chỉ cú pháp vì runtime không có thứ thẻ dạy (index, replica set, transaction, TTL, Streams…). Chi tiết ở §16; cột "Thẻ" của §12.7–12.8 đã cập nhật và thêm dòng M28–M38, D28–D32.
+
 Tài liệu này là nguyên liệu cho khu **Best Practice** sắp có. Nó đi cùng `db-engine-knowledge.md` (bản đồ kiến thức theo engine, L1 → L5) và dùng lại các nguồn `[Sn]` đã mở ở đó. Đề xuất cách khu Best Practice hoạt động trong app nằm ở §9.
 
 ## 0. Quy ước
@@ -28,6 +39,8 @@ Tài liệu này là nguyên liệu cho khu **Best Practice** sắp có. Nó đi
     - wiki "Don't Do This" và SQL Style Guide được đọc toàn bộ;
     - mọi câu trích nguyên văn và mọi con số (giới hạn, chi phí, thời gian) đã được tìm thấy trên đúng trang dẫn;
     - phần diễn giải còn lại dựa trên tài liệu nhưng chưa đối chiếu từng câu;
+    - vòng 5 (cùng ngày) tải lại mọi trang (201 sau khi sửa), kiểm anchor, câu trích, con số có đơn vị và tên hàm/tham số nêu trong Luật/Vì sao trên đúng trang dẫn (§14.1);
+    - link PostgreSQL ghim `/docs/18/` cho khớp PGlite 0.5.16. Trang MongoDB (nay là manual 9.0) và AWS (`latest`) không gắn phiên bản: số liệu đúng tại ngày kiểm;
   - **Cấp** L1–L5, cùng thang với `db-engine-knowledge.md` §3–5: L1 người mới, L2 thực hành, L3 bên trong / hiệu năng, L4 đồng thời và quy mô, L5 chuyên gia;
   - **Nối với** skill có thật trong `content/skills.yml` (`null_logic`, `sargable`…) hoặc node nâng cao trong `content/general/adv.yml` (`a1`…`d8`). "Chưa có" nghĩa là app chưa có bài nào dạy ý đó.
 - **Kiểm** cho biết ví dụ đã được chạy thật hay chưa:
@@ -66,7 +79,7 @@ Tài liệu này là nguyên liệu cho khu **Best Practice** sắp có. Nó đi
 | 8. DynamoDB | D | 32 | 20 (dynoxide) |
 | **Tổng** | | **192** | **145** |
 
-Số đã gồm vòng 4. Mục vòng 4 nằm ở §13.2, chưa chen vào từng khu.
+Số đã gồm vòng 4. Mục vòng 4 nằm ở §13.2, chưa chen vào từng khu. Vòng 5 chạy lại cả 145 mục, đều khớp dòng Kiểm (§14.1).
 
 **Mười mục giá trị nhất** cho người học BoonData (lỗi thật hay gặp, sai âm thầm, có thể bắt bằng lint):
 
@@ -111,6 +124,7 @@ SELECT count(*) FROM customers WHERE email IS NULL;
 - **Nguồn:**
   - https://wiki.postgresql.org/wiki/Don%27t_Do_This#Don.27t_use_NOT_IN
   - https://www.postgresql.org/docs/18/functions-subquery.html
+- **Phiên bản (vòng 5):** PostgreSQL 19 tự đổi `NOT IN` thành anti join khi chứng minh được không có NULL. Đó chỉ là tối ưu tốc độ: khi cột có NULL, kết quả vẫn rỗng như trên, luật giữ nguyên.
 - **Cấp:** L2 · **Nối với:** skill `anti_join`, `in_subquery`, `exists` · **Kiểm:** PGlite, Sai ≠ Đúng (Sai = 0 vì đơn vãng lai có `customer_id` NULL)
 
 ```sql
@@ -223,6 +237,7 @@ GROUP BY s.id ORDER BY s.id;
   - join hai quan hệ 1-n nhân số dòng (fan-out);
   - mỗi payment lặp lại theo số dòng hàng, nên tổng tiền bị nhân lên mà không có lỗi nào.
 - **Nguồn:** https://www.postgresql.org/docs/18/queries-with.html (ví dụ gộp trong `WITH` trước khi dùng)
+- **Phiên bản (vòng 5):** PostgreSQL 19 có thể gộp một phần trước khi join (tối ưu của planner). Kết quả không đổi: join hai bảng con vẫn nhân dòng, luật giữ nguyên.
 - **Cấp:** L2 · **Nối với:** skill `multi_join`, `cte`; node `c2` (grain) · **Kiểm:** PGlite, Sai ≠ Đúng
 
 ```sql
@@ -509,7 +524,7 @@ ORDER BY order_date, id;
 - **Vì sao:**
   - window function tính **sau** `WHERE`/`GROUP BY`/`HAVING`, nên không được dùng trong `WHERE`;
   - Postgres báo lỗi `42P20`.
-- **Nguồn:** https://www.postgresql.org/docs/18/tutorial-window.html (đoạn "If there is a need to filter or group rows after the window calculations are performed, you can use a sub-select")
+- **Nguồn:** https://www.postgresql.org/docs/18/tutorial-window.html (muốn lọc hay gom dòng sau khi tính window thì "you can use a sub-select"); `row_number()`, `rank()`: https://www.postgresql.org/docs/18/functions-window.html#FUNCTIONS-WINDOW-TABLE
 - **Cấp:** L2 · **Nối với:** skill `window_rank`, `cte` · **Kiểm:** PGlite, Sai = lỗi `42P20`
 
 ```sql
@@ -609,7 +624,7 @@ ORDER BY orders DESC, s.city;
   - hai cột `count` trong một kết quả, hay một cột `sum` không nói tổng của gì, làm người đọc báo cáo và công cụ BI đoán sai;
   - tên cột kết quả là giao diện của truy vấn: đổi nó là đổi hợp đồng với dashboard.
 - **Nguồn:**
-  - https://www.postgresql.org/docs/18/queries-select-lists.html#QUERIES-COLUMN-LABELS ("If no output column name is specified using AS, the system assigns a default column name… For function calls, this is the name of the function.")
+  - https://www.postgresql.org/docs/18/queries-select-lists.html#QUERIES-COLUMN-LABELS (không có `AS` thì "the system assigns a default column name"; với lời gọi hàm, đó là tên hàm)
   - https://www.sqlstyle.guide/#naming-conventions (CC BY-SA 4.0, chỉ link)
 - **Cấp:** L1 · **Nối với:** skill `select`, `aggregate` · **Kiểm:** PGlite, Sai = Đúng về giá trị; tên cột Sai là `count`, `sum`, Đúng là `order_lines`, `revenue_vnd`
 
@@ -689,7 +704,7 @@ SELECT (TIMESTAMPTZ '2026-10-31 20:00:00+00' AT TIME ZONE 'Asia/Ho_Chi_Minh')::d
 - **Vì sao:**
   - `SELECT DISTINCT *` không bỏ được bản ghi trùng có `id` hay thời điểm khác nhau;
   - thiếu tiebreaker thì dòng được giữ đổi giữa các lần chạy.
-- **Nguồn:** https://www.postgresql.org/docs/18/sql-select.html#SQL-DISTINCT (DISTINCT ON cần `ORDER BY` để kết quả xác định)
+- **Nguồn:** https://www.postgresql.org/docs/18/sql-select.html#SQL-DISTINCT (DISTINCT ON cần `ORDER BY` để kết quả xác định); `row_number()`: https://www.postgresql.org/docs/18/functions-window.html#FUNCTIONS-WINDOW-TABLE
 - **Cấp:** L2 · **Nối với:** skill `distinct_on`, `window_rank`; node `c1` · **Kiểm:** PGlite, Sai ≠ Đúng (`payments` có khoản trả trùng có chủ đích)
 
 ```sql
@@ -935,7 +950,7 @@ SELECT obj_description('metric_net_revenue_daily'::regclass, 'pg_class') AS defi
   - lấy mẫu để kiểm tay hay chia nhóm thì dùng `TABLESAMPLE … REPEATABLE (seed)` hoặc `setseed()` trước `random()`, và ghi seed lại;
   - mọi truy vấn trong báo cáo phải cho cùng kết quả khi chạy lại trên cùng dữ liệu: ngày "hôm nay" cố định (A05), `ORDER BY` có tiebreaker (Q10).
 - **Vì sao:** `ORDER BY random()` cho mẫu khác nhau mỗi lần, nên người review không tái hiện được con số, và kết luận "mẫu cho thấy…" không kiểm được.
-- **Nguồn:** https://www.postgresql.org/docs/18/sql-select.html#SQL-FROM (`REPEATABLE`: "the same seed and argument values will select the same sample", khi bảng không đổi)
+- **Nguồn:** https://www.postgresql.org/docs/18/sql-select.html#SQL-FROM (`REPEATABLE`: "the same seed and argument values will select the same sample", khi bảng không đổi); `setseed()`: https://www.postgresql.org/docs/18/functions-math.html#FUNCTIONS-MATH-RANDOM-TABLE
 - **Cấp:** L2 · **Nối với:** node `b5` (A/B test) · **Kiểm:** PGlite: Sai `same_sample = false`, Đúng `true`
 
 ```sql
@@ -956,6 +971,7 @@ SELECT (SELECT array_agg(id ORDER BY id) FROM orders TABLESAMPLE BERNOULLI (2) R
   - hoặc đảo chiều: `first_value(…) OVER (… ORDER BY … DESC)`.
 - **Vì sao:** khung mặc định khi có `ORDER BY` chỉ chạy tới dòng hiện tại (và các dòng ngang hàng), nên `last_value` trả về chính dòng hiện tại. Tài liệu nói thẳng: "likely to give unhelpful results for last_value".
 - **Nguồn:** https://www.postgresql.org/docs/18/functions-window.html
+- **Phiên bản (vòng 5):** PostgreSQL 19 thêm `IGNORE NULLS` cho `first_value`, `last_value`, `nth_value`, `lag`, `lead`. Khung tới cuối partition vẫn bắt buộc với `last_value`.
 - **Cấp:** L3 · **Nối với:** skill `window_agg`; node `a1` · **Kiểm:** PGlite, Sai ≠ Đúng: "ngày đơn cuối của mỗi cửa hàng" ra 1.051 cặp (Sai) thay vì 5 (Đúng)
 
 ```sql
@@ -980,6 +996,7 @@ SELECT count(*) FROM (
 - **Luật:** "đơn trước của cùng khách", "tháng trước của cùng cửa hàng": `lag(...) OVER (PARTITION BY khách ORDER BY ngày, id)`.
 - **Vì sao:** thiếu `PARTITION BY`, đơn đầu tiên của mỗi khách nhận ngày đơn cuối của khách **trước đó** trong thứ tự sắp. Khoảng cách giữa hai lần mua bị tính sai mà không có NULL nào báo hiệu.
 - **Nguồn:** https://www.postgresql.org/docs/18/tutorial-window.html; https://www.postgresql.org/docs/18/functions-window.html (`lag`)
+- **Phiên bản (vòng 5):** PostgreSQL 19 thêm `lag(...) IGNORE NULLS`; `PARTITION BY` theo thực thể vẫn bắt buộc.
 - **Cấp:** L2 · **Nối với:** skill `window_lag`; node `b2` (cohort) · **Kiểm:** PGlite, Sai ≠ Đúng: 1.199 đơn "có đơn trước" (Sai) thay vì 900 (Đúng): 300 khách thành viên, đơn đầu của 299 khách sau người đầu tiên bị gán "đơn trước" của người khác
 
 ```sql
@@ -1653,6 +1670,7 @@ SELECT pg_relation_size('orders_cust_pending_ix') AS bytes;
   - `INCLUDE` không làm cột thành một phần thứ tự khóa và không áp ràng buộc `UNIQUE` lên nó;
   - đừng nhét cột rộng: index phình.
 - **Nguồn:** https://www.postgresql.org/docs/18/indexes-index-only-scans.html
+- **Phiên bản (vòng 5):** PostgreSQL 19 cho phép câu quét bảng thường cũng đánh dấu trang all-visible, nên index-only scan ít phụ thuộc VACUUM hơn. Trên 18 vẫn cần VACUUM như §0 ghi.
 - **Cấp:** L3 · **Nối với:** skill `index_design`; node `a10` · **Kiểm:** PGlite, kế hoạch (Đúng có `Index Only Scan`, Sai không)
 
 ```sql
@@ -1762,6 +1780,7 @@ EXPLAIN (COSTS OFF) SELECT count(*) FROM orders WHERE status = 'REFUNDED' AND or
   - chiếm bộ nhớ đệm;
   - chặn HOT update khi cột của nó bị sửa (P02).
 - **Nguồn:** https://www.postgresql.org/docs/18/indexes-examine.html; https://www.postgresql.org/docs/18/monitoring-stats.html (`pg_stat_user_indexes`)
+- **Phiên bản (vòng 5):** PostgreSQL 19 thêm cột `stats_reset` vào `pg_stat_all_indexes` (và bản `user`), nên biết `idx_scan` được đếm từ lúc nào trước khi kết luận index không dùng.
 - **Cấp:** L3 · **Nối với:** skill `index_design` · **Kiểm:** PGlite, chạy được (truy vấn thống kê; số liệu thật cần tải thật)
 
 ```sql
@@ -1907,6 +1926,7 @@ CREATE INDEX CONCURRENTLY orders_channel_ix ON orders (channel);
   - https://www.postgresql.org/docs/18/sql-altertable.html (đoạn về `NOT VALID` và `VALIDATE CONSTRAINT`)
   - https://www.postgresql.org/docs/18/runtime-config-client.html (`lock_timeout`)
   - https://www.postgresql.org/docs/18/explicit-locking.html
+- **Thẻ (vòng 6):** chỉ cú pháp (`runtime: none`): cặp cần nhiều câu trong một transaction, mà mỗi bản của thẻ chỉ được một câu. Số đo ở dòng Kiểm nay nằm trong `## Ví dụ` của thẻ; xem §15.3.
 - **Cấp:** L4 · **Nối với:** chưa có · **Kiểm:** PGlite, chạy được (cả hai; khác biệt là loại khóa, không đo được trong một phiên)
 
 ```sql
@@ -1926,7 +1946,7 @@ ALTER TABLE order_items VALIDATE CONSTRAINT qty_positive;
   - `ADD COLUMN … DEFAULT <hằng>` (kể cả `NOT NULL`) chỉ sửa catalog, chạy tức thì từ PostgreSQL 11;
   - default biến thiên (`clock_timestamp()`, `random()`), đổi kiểu cột không tương thích nhị phân, `SET NOT NULL` không có `CHECK` hỗ trợ đều quét hoặc viết lại bảng: tách thành nhiều bước (thêm cột NULL, backfill theo lô P08, rồi ràng buộc).
 - **Vì sao:** viết lại bảng lớn giữ `ACCESS EXCLUSIVE` lâu, nên ứng dụng đứng hình.
-- **Nguồn:** https://www.postgresql.org/docs/18/sql-altertable.html (mục Notes: "Adding a column with a volatile DEFAULT … will require the entire table … to be rewritten")
+- **Nguồn:** https://www.postgresql.org/docs/18/sql-altertable.html (mục Notes: thêm cột có `DEFAULT` volatile "will cause the entire table and its indexes to be rewritten")
 - **Cấp:** L4 · **Nối với:** chưa có · **Kiểm:** PGlite, chạy được (cả hai)
 
 ```sql
@@ -1997,6 +2017,7 @@ Các mục P10–P26 đi theo thang Engine của `db-engine-knowledge.md` §3.3�
   - https://www.postgresql.org/docs/18/routine-vacuuming.html#AUTOVACUUM (công thức ngưỡng)
   - https://www.postgresql.org/docs/18/runtime-config-vacuum.html#GUC-AUTOVACUUM-VACUUM-MAX-THRESHOLD
   - https://www.postgresql.org/docs/18/sql-createtable.html (storage parameter `autovacuum_*`)
+- **Phiên bản (vòng 5):** PostgreSQL 19 thêm thứ tự ưu tiên có điểm cho autovacuum (`pg_stat_autovacuum_scores`) và autovacuum song song cho index (`autovacuum_max_parallel_workers`). Ngưỡng theo bảng vẫn là cách chỉnh chính.
 - **Cấp:** L3 · **Nối với:** chưa có (L3 Postgres, `db-engine-knowledge.md` §3.3) · **Kiểm:** PGlite, chạy được: Sai tính ra 2.000.050 dead tuple cho bảng 10 triệu dòng và `max_threshold` = 100000000; Đúng ghi đủ bốn tham số vào `reloptions`. Autovacuum không chạy trong PGlite (không có worker nền), nên hiệu quả thật không đo được
 
 ```sql
@@ -2022,6 +2043,7 @@ SELECT reloptions FROM pg_class WHERE relname = 'app_events';
 - **Nguồn:**
   - https://www.postgresql.org/docs/18/storage-hot.html
   - https://www.postgresql.org/docs/18/monitoring-stats.html#MONITORING-PG-STAT-ALL-TABLES-VIEW (`n_tup_hot_upd`: "Number of rows HOT updated")
+- **Phiên bản (vòng 5):** PostgreSQL 19 thêm `REPACK`, thay `VACUUM FULL` và `CLUSTER` (hai lệnh cũ vẫn chạy), và `REPACK (CONCURRENTLY)` không chặn đọc ghi. Ví dụ ở đây giữ `VACUUM FULL` vì PGlite là 18.6.
 - **Cấp:** L3 · **Nối với:** chưa có · **Kiểm:** PGlite `(notx)`, cùng một `UPDATE` 1.153 dòng trên cột không index: Sai (trang đầy sau `VACUUM ANALYZE`) 56 HOT; Đúng (`fillfactor = 80` + `VACUUM FULL`) 128 HOT. Phần còn lại không HOT vì một trang 80% vẫn không đủ chỗ cho mọi phiên bản mới trong cùng một lệnh
 
 ```sql
@@ -2049,6 +2071,7 @@ SELECT n_tup_upd, n_tup_hot_upd FROM pg_stat_user_tables WHERE relname = 'orders
 - **Nguồn:**
   - https://www.postgresql.org/docs/18/routine-reindex.html
   - https://www.postgresql.org/docs/18/sql-reindex.html
+  - https://www.postgresql.org/docs/18/functions-admin.html#FUNCTIONS-ADMIN-DBOBJECT (`pg_relation_size`)
 - **Cấp:** L3 · **Nối với:** skill `index_design` · **Kiểm:** PGlite `(notx)`: sau ba lần `UPDATE` cả 1.928 dòng và `VACUUM`, index `ts` là 188.416 byte (Sai); sau `REINDEX INDEX CONCURRENTLY` còn 65.536 byte (Đúng)
 
 ```sql
@@ -2082,6 +2105,8 @@ SELECT pg_relation_size('app_events_ts_ix') AS index_bytes;
   - https://www.postgresql.org/docs/18/explicit-locking.html#LOCKING-TABLES (`SHARE`: "Acquired by CREATE INDEX (without CONCURRENTLY)")
   - https://www.postgresql.org/docs/18/sql-altertable.html ("An ACCESS EXCLUSIVE lock is acquired unless explicitly noted.")
   - https://www.postgresql.org/docs/18/runtime-config-client.html#GUC-LOCK-TIMEOUT
+- **Phiên bản (vòng 5):** PostgreSQL 19 bật sẵn `log_lock_waits`, nên chờ khóa lâu hơn `deadlock_timeout` được ghi log mà không cần cấu hình.
+- **Thẻ (vòng 6):** chỉ cú pháp (`runtime: none`): cặp cần nhiều câu trong một transaction, mà mỗi bản của thẻ chỉ được một câu. Số đo ở dòng Kiểm nay nằm trong `## Ví dụ` của thẻ; xem §15.3.
 - **Cấp:** L4 · **Nối với:** chưa có · **Kiểm:** PGlite, chạy được: `pg_locks` cùng transaction cho thấy Sai giữ `AccessExclusiveLock`, Đúng giữ `ShareLock` với `lock_timeout` = `2s`. Một phiên nên không tái hiện được cảnh chờ khóa
 
 ```sql
@@ -2148,7 +2173,7 @@ INSERT INTO orders (id, customer_id, store_id, order_date, channel, status) VALU
   - nới `varchar(n)` lên `varchar(m)` lớn hơn, hay `varchar` → `text`, chỉ sửa catalog;
   - kiểm bằng `relfilenode` trước/sau trên bản sao.
 - **Vì sao:** viết lại giữ `ACCESS EXCLUSIVE` suốt thời gian chép bảng. Chọn `bigint` từ đầu cho khóa có thể vượt 2,1 tỷ rẻ hơn nhiều so với đổi sau.
-- **Nguồn:** https://www.postgresql.org/docs/18/sql-altertable.html ("will normally cause the entire table and its indexes to be rewritten", trừ khi kiểu cũ binary coercible)
+- **Nguồn:** https://www.postgresql.org/docs/18/sql-altertable.html ("will normally cause the entire table and its indexes to be rewritten", trừ khi kiểu cũ binary coercible); khoảng của `integer`: https://www.postgresql.org/docs/18/datatype-numeric.html#DATATYPE-INT
 - **Cấp:** L4 · **Nối với:** skill `cast` · **Kiểm:** PGlite, chạy được: Sai `relfilenode` đổi (bảng bị viết lại), Đúng `relfilenode` giữ nguyên
 
 ```sql
@@ -2169,7 +2194,7 @@ SELECT before, (SELECT relfilenode FROM pg_class WHERE relname = 'notes') AS aft
 
 - **Luật:** điều kiện trên khóa partition viết dạng `key >= a AND key < b`, không bọc khóa trong hàm (`date_trunc`, `extract`, ép kiểu).
 - **Vì sao:** planner chỉ cắt partition khi so được điều kiện với biên partition. `date_trunc('month', at) = …` là một biểu thức khác, nên mọi partition đều bị quét. Đây là Q11 (sargable) áp cho partition.
-- **Nguồn:** https://www.postgresql.org/docs/18/ddl-partitioning.html#DDL-PARTITION-PRUNING
+- **Nguồn:** https://www.postgresql.org/docs/18/ddl-partitioning.html#DDL-PARTITION-PRUNING; `date_trunc`: https://www.postgresql.org/docs/18/functions-datetime.html#FUNCTIONS-DATETIME-TRUNC
 - **Cấp:** L4 · **Nối với:** skill `sargable`, `explain_read` · **Kiểm:** PGlite, kế hoạch: Sai `Append` quét `ev_2026_09` và `ev_2026_10`; Đúng chỉ `ev_2026_10`
 
 ```sql
@@ -2222,6 +2247,7 @@ SELECT tableoid::regclass AS partition FROM ev;
 - **Nguồn:**
   - https://www.postgresql.org/docs/18/sql-prepare.html ("the first five executions are done with custom plans")
   - https://www.postgresql.org/docs/18/runtime-config-query.html#GUC-PLAN-CACHE-MODE
+- **Phiên bản (vòng 5):** PostgreSQL 19: `pg_stat_statements` đếm riêng số lần dùng generic plan và custom plan, nên thấy được câu nào đang chạy generic plan.
 - **Cấp:** L4 · **Nối với:** skill `explain_read`; node `a10` · **Kiểm:** PGlite `(notx)`, kế hoạch: với `'PAID'` (1.298/1.428 dòng), generic plan (Sai) ước lượng `rows=476` và chọn `Index Only Scan` với `$1`; custom plan (Đúng) ước lượng `rows=1298`, chọn `Seq Scan`
 
 ```sql
@@ -2371,6 +2397,7 @@ SELECT rolconfig FROM pg_roles WHERE rolname = 'analyst_ro';
   - `pg_stat_statements_reset()` sau khi đã lưu ảnh chụp.
 - **Vì sao:** truy vấn 5 ms chạy một triệu lần tốn hơn truy vấn 5 s chạy một lần. Không có số cộng dồn thì tối ưu nhầm chỗ.
 - **Nguồn:** https://www.postgresql.org/docs/18/pgstatstatements.html
+- **Phiên bản (vòng 5):** PostgreSQL 19 thêm cột đếm generic/custom plan vào `pg_stat_statements`, và gộp các `FETCH` khác cỡ làm một dòng.
 - **Cấp:** L5 · **Nối với:** skill `explain_read`; node `a10` · **Kiểm:** cú pháp. Extension phải nạp lúc khởi tạo PGlite (`extensions`), script kiểm không làm. Đã đo riêng ở `db-engine-knowledge.md` §1.2
 
 ```sql
@@ -2395,7 +2422,8 @@ LIMIT 10;
   - nếu không freeze kịp, Postgres ngừng cấp transaction ID mới (dừng ghi) để bảo vệ dữ liệu, và cần `VACUUM` toàn database mới chạy lại được;
   - kích thước đĩa không báo trước điều này.
 - **Nguồn:** https://www.postgresql.org/docs/18/routine-vacuuming.html#VACUUM-FOR-WRAPAROUND
-- **Cấp:** L5 · **Nối với:** chưa có · **Kiểm:** PGlite, chạy được: Sai chỉ ra số byte; Đúng ra tuổi từng database (79–82) và phần trăm so với `autovacuum_freeze_max_age`
+- **Phiên bản (vòng 5):** PostgreSQL 19 cảnh báo sớm hơn: khi còn dưới 100 triệu transaction tới wraparound (bản 18: 40 triệu). Vẫn phải theo dõi `age(datfrozenxid)`, không chờ cảnh báo.
+- **Cấp:** L5 · **Nối với:** chưa có · **Kiểm:** PGlite, chạy được: Sai chỉ ra số byte; Đúng ra tuổi từng database (số tùy lượng transaction đã chạy trước: 79–82 ở vòng 2, 131–134 ở vòng 5) và phần trăm so với `autovacuum_freeze_max_age`
 
 ```sql
 -- P26 bad
@@ -2416,7 +2444,7 @@ FROM pg_database ORDER BY xid_age DESC;
   - giá trị từ người dùng đi vào SQL qua tham số (`$1`, prepared statement, placeholder của driver);
   - tên bảng/cột động thì chọn từ danh sách cho phép, hoặc `quote_ident`/`format('%I')`.
 - **Vì sao:** ghép chuỗi cho phép SQL injection: `x' OR '1'='1` biến điều kiện thành luôn đúng. Tham số luôn là **giá trị**, không bao giờ là cú pháp.
-- **Nguồn:** https://www.postgresql.org/docs/18/sql-prepare.html; OWASP SQL Injection Prevention Cheat Sheet: https://cheatsheetseries.owasp.org/cheatsheets/SQL_Injection_Prevention_Cheat_Sheet.html
+- **Nguồn:** https://www.postgresql.org/docs/18/sql-prepare.html; `quote_ident`/`format`: https://www.postgresql.org/docs/18/functions-string.html; OWASP SQL Injection Prevention Cheat Sheet: https://cheatsheetseries.owasp.org/cheatsheets/SQL_Injection_Prevention_Cheat_Sheet.html
 - **Cấp:** L1 · **Nối với:** chưa có (BoonData chỉ đưa `ident()` vào SQL: `src/db/import.ts`) · **Kiểm:** PGlite, Sai ≠ Đúng (cùng chuỗi độc, Sai trả mọi khách, Đúng trả 0)
 
 ```sql
@@ -2492,7 +2520,7 @@ SELECT store_revenue_good(1) > 0 AS ok;
   - bảng có RLS thì bật `FORCE ROW LEVEL SECURITY` nếu ứng dụng có thể chạy bằng owner.
   - Ví dụ chạy được nằm ở S10.
 - **Vì sao:** chạy thử bằng superuser luôn thấy đủ dòng. Bạn tưởng policy hoạt động, nhưng thật ra chưa thử lần nào.
-- **Nguồn:** https://www.postgresql.org/docs/18/ddl-rowsecurity.html ("Superusers and roles with the BYPASSRLS attribute always bypass the row security system… Table owners normally bypass row security as well")
+- **Nguồn:** https://www.postgresql.org/docs/18/ddl-rowsecurity.html ("Superusers and roles with the BYPASSRLS attribute always bypass the row security system"; chủ bảng thường cũng bỏ qua)
 - **Cấp:** L4 · **Nối với:** chưa có · **Kiểm:** PGlite, qua S10
 
 ### X05 · Xác thực: `scram-sha-256`, không `trust` qua mạng / scram-sha-256, never trust over TCP
@@ -2508,6 +2536,7 @@ SELECT store_revenue_good(1) > 0 AS ok;
 - **Nguồn:**
   - https://wiki.postgresql.org/wiki/Don%27t_Do_This#Don.27t_use_trust_authentication_over_TCP.2FIP_.28host.2C_hostssl.29
   - https://www.postgresql.org/docs/18/auth-password.html
+- **Phiên bản (vòng 5):** PostgreSQL 18 đánh dấu mật khẩu MD5 là lỗi thời; bản 19 cảnh báo sau mỗi lần đăng nhập MD5 thành công (tắt bằng `md5_password_warnings`) và bỏ hẳn RADIUS.
 - **Cấp:** L3 · **Nối với:** chưa có · **Kiểm:** cú pháp (cấu hình server)
 
 ```sql
@@ -2731,7 +2760,7 @@ const data = {
   - một lần đọc lấy đủ dữ liệu, không cần `$lookup`;
   - cập nhật trong một tài liệu là atomic nên không cần transaction (M10).
 - **Nguồn:**
-  - https://www.mongodb.com/docs/manual/data-modeling/concepts/embedding-vs-references/
+  - https://www.mongodb.com/docs/manual/data-modeling/best-practices/#link-related-data
   - https://www.mongodb.com/docs/manual/data-modeling/design-patterns/
 - **Cấp:** L1 · **Nối với:** skill `join` (đối chiếu với JOIN của SQL) · **Kiểm:** mingo, Sai = Đúng (cùng doanh thu theo SKU, Đúng không cần `$lookup`)
 
@@ -2769,6 +2798,7 @@ db.orders.aggregate([
   - https://www.mongodb.com/docs/manual/data-modeling/design-antipatterns/unbounded-arrays/
   - https://www.mongodb.com/docs/manual/reference/limits/
   - https://www.mongodb.com/docs/manual/data-modeling/design-patterns/group-data/subset-pattern/
+  - https://www.mongodb.com/docs/manual/reference/operator/update/push/ (`$push`, `$slice`)
 - **Cấp:** L2 · **Nối với:** chưa có · **Kiểm:** cú pháp
 
 ```js
@@ -2829,7 +2859,7 @@ db.createCollection('readings', { timeseries: { timeField: 'at', metaField: 'sen
   - con số được đọc liên tục mà ít đổi (tổng đơn, số bình luận) thì lưu sẵn và cập nhật lúc ghi (`$inc`);
   - không `aggregate` lại toàn bộ ở mỗi lần đọc.
 - **Vì sao:** phép tính lặp ở mỗi lần đọc tốn CPU và độ trễ. Cập nhật một trường lúc ghi là atomic và rẻ.
-- **Nguồn:** https://www.mongodb.com/docs/manual/data-modeling/design-patterns/handle-computed-values/
+- **Nguồn:** https://www.mongodb.com/docs/manual/data-modeling/design-patterns/handle-computed-values/; `$inc`: https://www.mongodb.com/docs/manual/reference/operator/update/inc/
 - **Cấp:** L2 · **Nối với:** skill `aggregate` · **Kiểm:** mingo, Sai = Đúng (tổng tính lại = tổng lưu sẵn `total`)
 
 ```js
@@ -2855,6 +2885,7 @@ db.orders.find({ _id: 1 }, { _id: 0, total: 1 })
   - `schemaVersion` cho phép đọc song song bản cũ và mới trong lúc migrate.
 - **Nguồn:**
   - https://www.mongodb.com/docs/manual/core/schema-validation/
+  - https://www.mongodb.com/docs/manual/core/schema-validation/specify-json-schema/ (`$jsonSchema`)
   - https://www.mongodb.com/docs/manual/data-modeling/design-patterns/data-versioning/schema-versioning/
 - **Cấp:** L2 · **Nối với:** chưa có (tương ứng `CHECK`/`NOT NULL` ở S06) · **Kiểm:** cú pháp
 
@@ -3162,7 +3193,7 @@ db.carts.aggregate([
   - toán tử so sánh chỉ so cùng kiểu BSON (type bracketing), nên trộn chuỗi và `Date` trong một trường làm khoảng thời gian thiếu dữ liệu âm thầm.
 - **Nguồn:**
   - https://www.mongodb.com/docs/manual/reference/bson-type-comparison-order/
-  - https://www.mongodb.com/docs/manual/reference/operator/aggregation/dateFromString/
+  - https://www.mongodb.com/docs/manual/reference/operator/aggregation/datefromstring/
 - **Cấp:** L1 · **Nối với:** skill `date_math`, `cast` · **Kiểm:** mingo, Sai ≠ Đúng: khoảng tháng 9, Sai `[]`, Đúng `[1]`
 
 ```js
@@ -3580,6 +3611,7 @@ await Query({ TableName: 'Shop', KeyConditionExpression: 'PK = :pk',
   - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-indexes-general.html
   - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/SecondaryIndexes.html
   - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-gsi-overloading.html
+  - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/GSI.html#GSI.Projections (`KEYS_ONLY`)
 - **Cấp:** L3 · **Nối với:** skill `index_design` (giống partial index I03) · **Kiểm:** dynoxide. GSI `ByStatus` chứa 800 item, GSI thưa `PendingByWarehouse` chỉ 80. Cùng câu hỏi "đơn chờ ở WH0": Sai đọc 80 item rồi lọc còn 28 (ScannedCount 80), Đúng đọc đúng 28
 
 ```js
@@ -4339,17 +4371,17 @@ Bài Engine đọc ở nhánh `v22-engine` (commit `0ede43d`): 195 id (`e-pg-…
 | Q05 | COALESCE outer-join sums | `e-pg-l1-05` | `e-bp-q05` |
 | Q06 | Right-table filters belong in ON | — | `e-bp-q06` |
 | Q07 | Aggregate before joining two child tables | — | `e-bp-q07` |
-| Q08 | Explicit JOIN syntax | — |  |
-| Q09 | Name your columns | `e-mg-l1-03` |  |
+| Q08 | Explicit JOIN syntax | — | `e-bp-q08` |
+| Q09 | Name your columns | `e-mg-l1-03` | `e-bp-q09` |
 | Q10 | ORDER BY with a tiebreaker | `e-pg-l1-11`, `e-mg-l1-10`, `e-dy-l1-10` | `e-bp-q10` |
 | Q11 | Keep predicates sargable | `e-pg-l2-04` | `e-bp-q11` |
 | Q12 | Half-open ranges, not BETWEEN | `e-pg-l1-01`, `e-pg-l2-10` | `e-bp-q12` |
 | Q13 | Cast before dividing integers | — | `e-bp-q13` |
 | Q14 | Conditional aggregation with FILTER | — |  |
 | Q15 | WHERE for rows, HAVING for groups | `e-mg-l3-12`, `e-mg-l2-06` | `e-bp-q15` |
-| Q16 | UNION ALL unless you mean DISTINCT | — |  |
+| Q16 | UNION ALL unless you mean DISTINCT | — | `e-bp-q16` |
 | Q17 | Name steps with CTEs | — |  |
-| Q18 | Spell out ROWS for running totals | `e-mg-l2-10` |  |
+| Q18 | Spell out ROWS for running totals | `e-mg-l2-10` | `e-bp-q18` |
 | Q19 | Filter window results in an outer query | `e-mg-l2-10` |  |
 | Q20 | EXISTS for "has any" | — |  |
 | Q21 | Keyset pagination instead of deep OFFSET | `e-pg-l1-11`, `e-mg-l1-10`, `e-dy-l1-10` |  |
@@ -4361,26 +4393,26 @@ Bài Engine đọc ở nhánh `v22-engine` (commit `0ede43d`): 195 id (`e-pg-…
 | Mã | Mục | Bài Engine liên quan | Thẻ |
 |---|---|---|---|
 | A01 | Use a date spine for empty periods | — | `e-bp-a01` |
-| A02 | Bucket days in the business time zone | `e-pg-l1-01` |  |
+| A02 | Bucket days in the business time zone | `e-pg-l1-01` | `e-bp-a02` |
 | A03 | Deduplicate on a business key, deterministically | — | `e-bp-a03` |
 | A04 | Test the grain before you join | — |  |
 | A05 | Pin the as-of date | — | `e-bp-a05` |
 | A06 | Reconcile control totals | — |  |
-| A07 | Ratios need an explicit denominator | — |  |
-| A08 | Round once, at the end | `e-pg-l1-01` |  |
+| A07 | Ratios need an explicit denominator | — | `e-bp-a07` |
+| A08 | Round once, at the end | `e-pg-l1-01` | `e-bp-a08` |
 | A09 | Median for skewed data | — |  |
 | A10 | Normalise text keys first | `e-pg-l2-04`, `e-pg-l2-13` |  |
 | A11 | Find orphans with an anti join | `e-pg-l1-04` | `e-bp-a11` |
-| A12 | Data tests are queries that must return zero rows | `e-pg-l1-04` |  |
+| A12 | Data tests are queries that must return zero rows | `e-pg-l1-04` | `e-bp-a12` |
 | A13 | One documented definition per metric | `e-pg-l1-08` |  |
 | A14 | Make random samples reproducible | — |  |
-| A15 | last_value needs a frame to the end of the partition | `e-mg-l2-10` |  |
-| A16 | lag and lead need PARTITION BY the entity | `e-mg-l2-10` |  |
-| A17 | Top N: choose the tie rule on purpose | `e-pg-l1-11` |  |
+| A15 | last_value needs a frame to the end of the partition | `e-mg-l2-10` | `e-bp-a15` |
+| A16 | lag and lead need PARTITION BY the entity | `e-mg-l2-10` | `e-bp-a16` |
+| A17 | Top N: choose the tie rule on purpose | `e-pg-l1-11` | `e-bp-a17` |
 | A18 | Don't average averages | `e-mg-l2-06` | `e-bp-a18` |
 | A19 | AT TIME ZONE works in opposite directions | — |  |
 | A20 | Add 1 day, not 24 hours, across DST | — |  |
-| A21 | Distinct counts are not additive | — |  |
+| A21 | Distinct counts are not additive | — | `e-bp-a21` |
 | A22 | Profile the columns before you analyse | `e-pg-l2-15` |  |
 | A23 | Check freshness before you send numbers | — |  |
 | A24 | Accepted values are a zero-row test | `e-pg-l1-04` |  |
@@ -4390,12 +4422,12 @@ Bài Engine đọc ở nhánh `v22-engine` (commit `0ede43d`): 195 id (`e-pg-…
 | Mã | Mục | Bài Engine liên quan | Thẻ |
 |---|---|---|---|
 | S01 | Store instants as timestamptz | `e-pg-l1-01`, `e-pg-l1-02` | `e-bp-s01` |
-| S02 | text with a CHECK, not char(n) | `e-pg-l1-01`, `e-pg-l1-04` |  |
+| S02 | text with a CHECK, not char(n) | `e-pg-l1-01`, `e-pg-l1-04` | `e-bp-s02` |
 | S03 | Money as numeric | `e-pg-l1-01` | `e-bp-s03` |
-| S04 | Identity columns, not serial | `e-pg-l1-03` |  |
+| S04 | Identity columns, not serial | `e-pg-l1-03` | `e-bp-s04` |
 | S05 | Prefer time-ordered UUIDv7 | `e-pg-l1-03` |  |
-| S06 | Let constraints enforce the rules | `e-pg-l1-04`, `e-pg-l1-12` |  |
-| S07 | NULLS NOT DISTINCT | `e-pg-l1-04`, `e-pg-l1-05` |  |
+| S06 | Let constraints enforce the rules | `e-pg-l1-04`, `e-pg-l1-12` | `e-bp-s06` |
+| S07 | NULLS NOT DISTINCT | `e-pg-l1-04`, `e-pg-l1-05` | `e-bp-s07` |
 | S08 | Lower-case snake_case names | — | `e-bp-s08` |
 | S09 | Normalise OLTP, denormalise on purpose | `e-pg-l1-08`, `e-mg-l2-11` |  |
 | S10 | tenant_id everywhere, RLS forced | `e-pg-l5-10`, `e-pg-l1-06` | `e-bp-s10` |
@@ -4408,37 +4440,37 @@ Bài Engine đọc ở nhánh `v22-engine` (commit `0ede43d`): 195 id (`e-pg-…
 
 | Mã | Mục | Bài Engine liên quan | Thẻ |
 |---|---|---|---|
-| I01 | Index for a query, check with EXPLAIN | `e-pg-l1-09`, `e-pg-l1-10`, `e-pg-l2-14` |  |
+| I01 | Index for a query, check with EXPLAIN | `e-pg-l1-09`, `e-pg-l1-10`, `e-pg-l2-14` | `e-bp-i01` |
 | I02 | Composite order: equality first, range last | `e-pg-l2-01`, `e-mg-l3-05`, `e-mg-l3-07` | `e-bp-i02` |
 | I03 | Partial indexes for the hot subset | `e-pg-l2-03`, `e-mg-l3-01`, `e-mg-l3-02` | `e-bp-i03` |
 | I04 | Covering indexes with INCLUDE | `e-pg-l2-02`, `e-pg-l3-09`, `e-mg-l3-09` | `e-bp-i04` |
 | I05 | Expression indexes | `e-pg-l2-04` | `e-bp-i05` |
 | I06 | Index your foreign keys | `e-pg-l1-09` | `e-bp-i06` |
 | I07 | Pick the index type for the operator | `e-pg-l2-05`, `e-pg-l2-06`, `e-pg-l2-07`, `e-pg-l2-08`, `e-pg-l2-09`, `e-pg-l2-12`, `e-pg-l2-13`, `e-pg-l2-16`, `e-pg-l2-17`, `e-pg-l5-07` |  |
-| I08 | Low-cardinality columns | `e-pg-l2-03`, `e-pg-l2-15`, `e-pg-l4-02` |  |
-| I09 | Remove unused and duplicate indexes | `e-mg-l3-14`, `e-pg-l5-11` |  |
+| I08 | Low-cardinality columns | `e-pg-l2-03`, `e-pg-l2-15`, `e-pg-l4-02` | `e-bp-i08` |
+| I09 | Remove unused and duplicate indexes | `e-mg-l3-14`, `e-pg-l5-11` | `e-bp-i09` |
 
 ### 12.5 5. Hiệu năng và vận hành (P)
 
 | Mã | Mục | Bài Engine liên quan | Thẻ |
 |---|---|---|---|
-| P01 | Compare estimated vs actual rows | `e-pg-l2-14`, `e-pg-l2-15`, `e-pg-l4-01` |  |
+| P01 | Compare estimated vs actual rows | `e-pg-l2-14`, `e-pg-l2-15`, `e-pg-l4-01` | `e-bp-p01` |
 | P02 | HOT updates and fillfactor | `e-pg-l3-06`, `e-pg-l3-07`, `e-pg-l3-08` |  |
-| P03 | Keep autovacuum on, transactions short | `e-pg-l3-04`, `e-pg-l3-05`, `e-pg-l3-06`, `e-pg-l3-15`, `e-pg-l5-14` |  |
+| P03 | Keep autovacuum on, transactions short | `e-pg-l3-04`, `e-pg-l3-05`, `e-pg-l3-06`, `e-pg-l3-15`, `e-pg-l5-14` | `e-bp-p03` |
 | P04 | Pool connections | — |  |
-| P05 | Build indexes CONCURRENTLY | `e-pg-l2-14`, `e-pg-l4-16` |  |
-| P06 | Add constraints NOT VALID, then VALIDATE | `e-pg-l1-04` |  |
+| P05 | Build indexes CONCURRENTLY | `e-pg-l2-14`, `e-pg-l4-16` | `e-bp-p05` |
+| P06 | Add constraints NOT VALID, then VALIDATE | `e-pg-l1-04` | `e-bp-p06` |
 | P07 | Cheap vs table-rewriting ALTERs | — |  |
-| P08 | Batch large UPDATE and DELETE | `e-pg-l3-15`, `e-pg-l4-16` |  |
+| P08 | Batch large UPDATE and DELETE | `e-pg-l3-15`, `e-pg-l4-16` | `e-bp-p08` |
 | P09 | Extended statistics for correlated columns | `e-pg-l2-15`, `e-pg-l4-03` |  |
 | P10 | Tune autovacuum thresholds per large table | `e-pg-l3-15`, `e-pg-l5-14` |  |
 | P11 | Measure the HOT ratio | `e-pg-l3-07` |  |
 | P12 | Watch index bloat, rebuild concurrently | `e-pg-l3-15`, `e-pg-l5-03` |  |
-| P13 | Know each DDL's lock, always set lock_timeout | `e-pg-l1-07`, `e-pg-l4-09` |  |
+| P13 | Know each DDL's lock, always set lock_timeout | `e-pg-l1-07`, `e-pg-l4-09` | `e-bp-p13` |
 | P14 | Find and drop invalid indexes after a failed concurrent build | `e-pg-l2-14` |  |
 | P15 | Add NOT NULL as NOT VALID first | `e-pg-l1-04` |  |
 | P16 | Know which type changes rewrite the table | `e-pg-l1-01` |  |
-| P17 | Prune partitions with plain ranges on the key | `e-pg-l4-07` |  |
+| P17 | Prune partitions with plain ranges on the key | `e-pg-l4-07` | `e-bp-p17` |
 | P18 | Create partitions ahead of the data | `e-pg-l4-08` |  |
 | P19 | Prepared statements on skewed data: watch the generic plan | `e-pg-l2-15`, `e-pg-l4-06` |  |
 | P20 | Raise the statistics target per column | `e-pg-l2-15`, `e-pg-l4-02` |  |
@@ -4446,7 +4478,7 @@ Bài Engine đọc ở nhánh `v22-engine` (commit `0ede43d`): 195 id (`e-pg-…
 | P22 | Expression B-tree for one hot jsonb key | `e-pg-l2-11`, `e-pg-l2-04` |  |
 | P23 | Behind a transaction pooler use SET LOCAL | `e-pg-l1-06`, `e-pg-l1-07` |  |
 | P24 | Set timeouts per role | — |  |
-| P25 | Find the costliest queries with pg_stat_statements | `e-pg-l5-11` |  |
+| P25 | Find the costliest queries with pg_stat_statements | `e-pg-l5-11` | `e-bp-p25` |
 | P26 | Monitor transaction ID age | `e-pg-l3-10`, `e-pg-l3-11`, `e-pg-l5-14` |  |
 
 ### 12.6 6. Bảo mật (X)
@@ -4454,14 +4486,14 @@ Bài Engine đọc ở nhánh `v22-engine` (commit `0ede43d`): 195 id (`e-pg-…
 | Mã | Mục | Bài Engine liên quan | Thẻ |
 |---|---|---|---|
 | X01 | Parameterise, never concatenate | — | `e-bp-x01` |
-| X02 | Least privilege roles | — |  |
+| X02 | Least privilege roles | — | `e-bp-x02` |
 | X03 | Pin search_path in SECURITY DEFINER functions | `e-pg-l1-06` |  |
 | X04 | RLS does not bind owners unless FORCED | `e-pg-l5-10` |  |
 | X05 | scram-sha-256, never trust over TCP | — |  |
-| X06 | Analysts work through a read-only role | — |  |
+| X06 | Analysts work through a read-only role | — | `e-bp-x06` |
 | X07 | Permissive policies are OR-ed: make must-hold rules RESTRICTIVE | `e-pg-l5-10` |  |
 | X08 | Views bypass RLS unless security_invoker | `e-pg-l1-08`, `e-pg-l5-10` |  |
-| X09 | Dynamic SQL: %I for names, %L or USING for values | — |  |
+| X09 | Dynamic SQL: %I for names, %L or USING for values | — | `e-bp-x09` |
 | X10 | Sensitive columns: column privileges or a view | — |  |
 
 ### 12.7 7. MongoDB (M)
@@ -4469,71 +4501,87 @@ Bài Engine đọc ở nhánh `v22-engine` (commit `0ede43d`): 195 id (`e-pg-…
 | Mã | Mục | Bài Engine liên quan | Thẻ |
 |---|---|---|---|
 | M01 | Data accessed together is stored together | `e-mg-l2-11`, `e-mg-l2-12`, `e-mg-l4-01` | `e-bp-m01` |
-| M02 | Avoid unbounded arrays | `e-mg-l4-05`, `e-mg-l1-06` |  |
-| M03 | Avoid bloated documents | `e-mg-l4-01`, `e-mg-l1-03` |  |
-| M04 | Time series and the bucket pattern | `e-mg-l4-03`, `e-mg-l5-08` |  |
-| M05 | Store computed values when reads dominate | `e-mg-l4-02`, `e-mg-l2-14` |  |
-| M06 | Validate and version your schema | `e-mg-l2-13`, `e-mg-l4-04` |  |
-| M07 | Compound indexes follow ESR | `e-mg-l3-05`, `e-mg-l3-07`, `e-mg-l3-08`, `e-mg-l3-06` |  |
-| M08 | Project only what you need | `e-mg-l1-03`, `e-mg-l3-09` |  |
+| M02 | Avoid unbounded arrays | `e-mg-l4-05`, `e-mg-l1-06` | `e-bp-m02` |
+| M03 | Avoid bloated documents | `e-mg-l4-01`, `e-mg-l1-03` | `e-bp-m03` |
+| M04 | Time series and the bucket pattern | `e-mg-l4-03`, `e-mg-l5-08` | `e-bp-m04` |
+| M05 | Store computed values when reads dominate | `e-mg-l4-02`, `e-mg-l2-14` | `e-bp-m05` |
+| M06 | Validate and version your schema | `e-mg-l2-13`, `e-mg-l4-04` | `e-bp-m06` |
+| M07 | Compound indexes follow ESR | `e-mg-l3-05`, `e-mg-l3-07`, `e-mg-l3-08`, `e-mg-l3-06` | `e-bp-m07` |
+| M08 | Project only what you need | `e-mg-l1-03`, `e-mg-l3-09` | `e-bp-m08` |
 | M09 | Filter early in pipelines | `e-mg-l3-12`, `e-mg-l2-04`, `e-mg-l2-05`, `e-mg-l2-08` | `e-bp-m09` |
-| M10 | Multi-document transactions: rare and short | `e-mg-l4-09` |  |
-| M11 | Choosing a shard key | `e-mg-l5-05`, `e-mg-l5-06`, `e-mg-l5-07` |  |
-| M12 | Remove unnecessary indexes | `e-mg-l3-14` |  |
-| M13 | Use majority write concern for data that matters | `e-mg-l4-07`, `e-mg-l4-11`, `e-mg-l5-04` |  |
-| M14 | Fewer collections, intentional polymorphism | `e-mg-l4-06` |  |
+| M10 | Multi-document transactions: rare and short | `e-mg-l4-09` | `e-bp-m10` |
+| M11 | Choosing a shard key | `e-mg-l5-05`, `e-mg-l5-06`, `e-mg-l5-07` | `e-bp-m11` |
+| M12 | Remove unnecessary indexes | `e-mg-l3-14` | `e-bp-m12` |
+| M13 | Use majority write concern for data that matters | `e-mg-l4-07`, `e-mg-l4-11`, `e-mg-l5-04` | `e-bp-m13` |
+| M14 | Fewer collections, intentional polymorphism | `e-mg-l4-06` | `e-bp-m14` |
 | M15 | One array element, many conditions: $elemMatch | `e-mg-l1-08` | `e-bp-m15` |
 | M16 | null also matches missing fields | `e-mg-l1-09` | `e-bp-m16` |
 | M17 | `$nin` trả cả tài liệu thiếu trường / $ne and $nin include missing fields | `e-mg-l1-07`, `e-mg-l1-09` | `e-bp-m17` |
 | M18 | $unwind drops empty and missing arrays | `e-mg-l2-07` | `e-bp-m18` |
-| M19 | Store dates as Date, not strings | `e-mg-l1-01` |  |
-| M20 | Update all matching elements with filtered positional | `e-mg-l2-01` |  |
-| M21 | An average of averages is not the average | `e-mg-l2-06` |  |
-| M22 | $in instead of $or on one field | `e-mg-l1-07` |  |
-| M23 | Use the profiler with a threshold | `e-mg-l3-11` |  |
-| M24 | Building indexes on live collections | — |  |
-| M25 | Back up for your size, and test the restore | — |  |
-| M26 | Watch replication lag and the oplog window | `e-mg-l5-03` |  |
-| M27 | Enable access control from day one | — |  |
+| M19 | Store dates as Date, not strings | `e-mg-l1-01` | `e-bp-m19` |
+| M20 | Update all matching elements with filtered positional | `e-mg-l2-01` | `e-bp-m20` |
+| M21 | An average of averages is not the average | `e-mg-l2-06` | `e-bp-m21` |
+| M22 | $in instead of $or on one field | `e-mg-l1-07` | `e-bp-m22` |
+| M23 | Use the profiler with a threshold | `e-mg-l3-11` | `e-bp-m23` |
+| M24 | Building indexes on live collections | — | `e-bp-m24` |
+| M25 | Back up for your size, and test the restore | — | `e-bp-m25` |
+| M26 | Watch replication lag and the oplog window | `e-mg-l5-03` | `e-bp-m26` |
+| M27 | Enable access control from day one | — | `e-bp-m27` |
+| M28 | Upserts need a unique index on the filter fields | `e-mg-l1-05` | `e-bp-m28` |
+| M29 | Wrap $-strings in $literal | `e-mg-l2-02`, `e-mg-l2-03` | `e-bp-m29` |
+| M30 | Always give $bucket a default | `e-mg-l2-09` | `e-bp-m30` |
+| M31 | Compare examined vs returned | `e-mg-l3-06` (vòng 7: bài có `totalDocsExamined`) | `e-bp-m31` |
+| M32 | Queries must use the index's collation | `e-mg-l3-15`, `e-mg-l3-17` | `e-bp-m32` |
+| M33 | Never hint a sparse index for complete results | `e-mg-l3-16` | `e-bp-m33` |
+| M34 | Read your writes with a causal session | `e-mg-l4-08` | `e-bp-m34` |
+| M35 | Persist the resume token | `e-mg-l4-10` | `e-bp-m35` |
+| M36 | Leave the WiredTiger cache at its default | `e-mg-l5-01` | `e-bp-m36` |
+| M37 | Retry the whole transaction on transient errors | `e-mg-l5-02` | `e-bp-m37` |
+| M38 | Measure a candidate shard key with analyzeShardKey | `e-mg-l5-07` (vòng 7: bài có `shard key`) | `e-bp-m38` |
 
 ### 12.8 8. DynamoDB (D)
 
 | Mã | Mục | Bài Engine liên quan | Thẻ |
 |---|---|---|---|
-| D01 | Access patterns first | `e-dy-l3-01`, `e-dy-l1-04` |  |
+| D01 | Access patterns first | `e-dy-l3-01`, `e-dy-l1-04` | `e-bp-d01` |
 | D02 | High-cardinality, evenly accessed partition keys | `e-dy-l1-02`, `e-dy-l4-01`, `e-dy-l4-03` | `e-bp-d02` |
-| D03 | Write sharding for hot keys | `e-dy-l4-04`, `e-dy-l4-05` |  |
+| D03 | Write sharding for hot keys | `e-dy-l4-04`, `e-dy-l4-05` | `e-bp-d03` |
 | D04 | Hierarchical sort keys | `e-dy-l3-09`, `e-dy-l4-10`, `e-dy-l3-05` | `e-bp-d04` |
-| D05 | Item collections for related data | `e-dy-l3-07`, `e-dy-l3-08`, `e-dy-l1-08`, `e-dy-l3-10`, `e-dy-l4-07` |  |
+| D05 | Item collections for related data | `e-dy-l3-07`, `e-dy-l3-08`, `e-dy-l1-08`, `e-dy-l3-10`, `e-dy-l4-07` | `e-bp-d05` |
 | D06 | Query, don't Scan | `e-dy-l1-09`, `e-dy-l1-05` | `e-bp-d06` |
-| D07 | Lean, sparse GSIs | `e-dy-l3-02`, `e-dy-l3-06`, `e-dy-l4-08`, `e-dy-l4-09`, `e-dy-l3-03`, `e-dy-l3-04` |  |
-| D08 | Keep items small | `e-dy-l2-08`, `e-dy-l2-10` |  |
-| D09 | Time series: TTL or per-period tables | `e-dy-l5-02` |  |
-| D10 | Conditional writes | `e-dy-l2-04`, `e-dy-l1-06`, `e-dy-l1-07` |  |
-| D11 | Pick the capacity mode for the traffic | `e-dy-l4-06`, `e-dy-l4-02` |  |
-| D12 | Paginate with LastEvaluatedKey | `e-dy-l1-10` |  |
-| D13 | Strong reads only when needed | `e-dy-l2-11` |  |
+| D07 | Lean, sparse GSIs | `e-dy-l3-02`, `e-dy-l3-06`, `e-dy-l4-08`, `e-dy-l4-09`, `e-dy-l3-03`, `e-dy-l3-04` | `e-bp-d07` |
+| D08 | Keep items small | `e-dy-l2-08`, `e-dy-l2-10` | `e-bp-d08` |
+| D09 | Time series: TTL or per-period tables | `e-dy-l5-02` | `e-bp-d09` |
+| D10 | Conditional writes | `e-dy-l2-04`, `e-dy-l1-06`, `e-dy-l1-07` | `e-bp-d10` |
+| D11 | Pick the capacity mode for the traffic | `e-dy-l4-06`, `e-dy-l4-02` | `e-bp-d11` |
+| D12 | Paginate with LastEvaluatedKey | `e-dy-l1-10` | `e-bp-d12` |
+| D13 | Strong reads only when needed | `e-dy-l2-11` | `e-bp-d13` |
 | D14 | Reserved words need name placeholders | `e-dy-l2-01` | `e-bp-d14` |
 | D15 | Sort-key conditions belong in the key condition | `e-dy-l2-02` | `e-bp-d15` |
-| D16 | Counting and projecting do not cut read cost | `e-dy-l2-09` |  |
-| D17 | Atomic counters, not read-modify-write | `e-dy-l2-05` |  |
+| D16 | Counting and projecting do not cut read cost | `e-dy-l2-09` | `e-bp-d16` |
+| D17 | Atomic counters, not read-modify-write | `e-dy-l2-05` | `e-bp-d17` |
 | D18 | Store numbers as N, especially in sort keys | `e-dy-l1-01`, `e-dy-l1-02` | `e-bp-d18` |
-| D19 | Batch in 25s and retry unprocessed items | `e-dy-l2-06` |  |
-| D20 | PartiQL SELECT needs the partition key | `e-dy-l2-07` |  |
-| D21 | Use a transaction when several items must change together | `e-dy-l4-11`, `e-dy-l4-12`, `e-dy-l4-13` |  |
-| D22 | Turn on point-in-time recovery | `e-dy-l5-04` |  |
-| D23 | Enable deletion protection | `e-dy-l5-04` |  |
-| D24 | Alarm on throttling | `e-dy-l4-02` |  |
-| D25 | Retry with exponential backoff, bounded | `e-dy-l2-06` |  |
-| D26 | Least-privilege IAM down to the user's own keys | — |  |
-| D27 | Find hot keys with Contributor Insights | `e-dy-l4-03` |  |
+| D19 | Batch in 25s and retry unprocessed items | `e-dy-l2-06` | `e-bp-d19` |
+| D20 | PartiQL SELECT needs the partition key | `e-dy-l2-07` | `e-bp-d20` |
+| D21 | Use a transaction when several items must change together | `e-dy-l4-11`, `e-dy-l4-12`, `e-dy-l4-13` | `e-bp-d21` |
+| D22 | Turn on point-in-time recovery | `e-dy-l5-04` | `e-bp-d22` |
+| D23 | Enable deletion protection | `e-dy-l5-04` | `e-bp-d23` |
+| D24 | Alarm on throttling | `e-dy-l4-02` | `e-bp-d24` |
+| D25 | Retry with exponential backoff, bounded | `e-dy-l2-06` | `e-bp-d25` |
+| D26 | Least-privilege IAM down to the user's own keys | — | `e-bp-d26` |
+| D27 | Find hot keys with Contributor Insights | `e-dy-l4-03` | `e-bp-d27` |
+| D28 | Initialise with if_not_exists | `e-dy-l2-03` | `e-bp-d28` |
+| D29 | Idempotent stream consumers, watch IteratorAge | `e-dy-l5-01`, `e-dy-l5-07` | `e-bp-d29` |
+| D30 | Avoid concurrent multi-Region writes to one item | `e-dy-l5-03` | `e-bp-d30` |
+| D31 | DAX does not cache strongly consistent reads | `e-dy-l5-06`, `e-dy-l5-07` | `e-bp-d31` |
+| D32 | Adaptive capacity cannot lift the per-partition ceiling | — | `e-bp-d32` |
 
 ### 12.9 Tổng kết
 
 - 122/160 mục có ít nhất một bài Engine liên quan; 38 mục chưa có (phần lớn là Q/A thuần SQL phân tích, bảo mật X, vận hành MongoDB/DynamoDB vòng 3).
 - 139/195 bài Engine được ít nhất một mục dùng tới.
 - **Sau vòng 4:**
-  - 149/192 mục có bài Engine: thêm 27 mục mới có dòng ở §13.3; P31, P41, M31, M38, D32 chưa có;
+  - 149/192 mục có bài Engine: thêm 27 mục mới có dòng ở §13.3; P31, P41, M31, M38, D32 chưa có (vòng 7: M31 nối `e-mg-l3-06`, M38 nối `e-mg-l5-07`, §12.7);
   - 187/195 bài Engine có mục.
   - Danh sách dưới là trạng thái trước vòng 4; tám bài còn lại liệt kê ở cuối §13.3.
 
@@ -4732,6 +4780,7 @@ SELECT pg_relation_size('ev_good') AS table_bytes
 - **Nguồn:**
   - https://www.postgresql.org/docs/18/wal-configuration.html
   - https://www.postgresql.org/docs/18/runtime-config-wal.html#GUC-CHECKPOINT-WARNING
+  - https://www.postgresql.org/docs/18/monitoring-stats.html#MONITORING-PG-STAT-CHECKPOINTER-VIEW (`num_timed`, `num_requested`; view có từ PostgreSQL 17)
 - **Cấp:** L4 · **Nối với:** chưa có · **Kiểm:** PGlite `(notx)` chỉ khối Đúng: câu đọc chạy được (`num_timed` 0, `num_requested` 0: PGlite chạy một tiến trình, không có checkpointer định kỳ). Đổi cấu hình là cú pháp
 
 ```sql
@@ -4756,7 +4805,8 @@ SELECT num_timed, num_requested FROM pg_stat_checkpointer
   - tài liệu: nén "without increasing the risk of unrecoverable data corruption", đổi lại tốn CPU;
   - mặc định `off`.
 - **Nguồn:** https://www.postgresql.org/docs/18/runtime-config-wal.html#GUC-WAL-COMPRESSION
-- **Cấp:** L5 · **Nối với:** chưa có · **Kiểm:** PGlite `(notx)`, cùng một `UPDATE` 400 dòng ngay sau `CHECKPOINT`: Sai 3.205.032 byte WAL, Đúng 691.464 byte (−78%). PGlite 0.5.16 chỉ có `pglz` (`lz4` báo 22023)
+- **Phiên bản (vòng 5):** PostgreSQL 19: `wal_compression = on` tự chọn phương pháp nén tốt nhất có sẵn (bản 18: `on` = `pglz`).
+- **Cấp:** L5 · **Nối với:** chưa có · **Kiểm:** PGlite `(notx)`, cùng một `UPDATE` 400 dòng ngay sau `CHECKPOINT`: Sai 3.205.032 byte WAL, Đúng 691.464 byte (−78%; vòng 5 đo 691.440, WAL lệch vài chục byte giữa các lần chạy). PGlite 0.5.16 chỉ có `pglz` (`lz4` báo 22023)
 
 ```sql
 -- P29 bad (notx)
@@ -4796,6 +4846,7 @@ SELECT pg_wal_lsn_diff(pg_current_wal_lsn(), at) AS wal_bytes FROM lsn
 - **Nguồn:**
   - https://www.postgresql.org/docs/18/runtime-config-resource.html#GUC-WORK-MEM
   - https://www.postgresql.org/docs/18/sql-set.html
+- **Thẻ (vòng 6):** chỉ cú pháp (`runtime: none`): cặp cần nhiều câu trong một transaction, mà mỗi bản của thẻ chỉ được một câu. Số đo ở dòng Kiểm nay nằm trong `## Ví dụ` của thẻ; xem §15.3.
 - **Cấp:** L3 · **Nối với:** chưa có · **Kiểm:** PGlite, cùng câu gom 200.000 khóa khác nhau:
   - Sai (4 MB): `Sort` + `GroupAggregate` (planner không dám hash);
   - Đúng: `HashAggregate`, 1 batch, `Disk Usage` 0;
@@ -4829,6 +4880,7 @@ EXPLAIN (ANALYZE, COSTS OFF, TIMING OFF, SUMMARY OFF, FORMAT JSON) SELECT k, cou
   - tài liệu gọi các cờ này là "a crude method", chỉ là "a temporary solution";
   - chúng đúng cho câu hôm nay nhưng ép sai khi dữ liệu đổi.
 - **Nguồn:** https://www.postgresql.org/docs/18/runtime-config-query.html#RUNTIME-CONFIG-QUERY-ENABLE
+- **Phiên bản (vòng 5):** PostgreSQL 19 thêm module `pg_plan_advice` và extension `pg_stash_advice` để ghim quyết định của planner theo từng câu. Đó vẫn là công cụ chẩn đoán hay chữa cháy; luật "sửa thống kê trước" không đổi.
 - **Cấp:** L4 · **Nối với:** chưa có · **Kiểm:** PGlite, câu đọc cả bảng 20.000 dòng: Sai (`enable_seqscan = off`) Bitmap Heap Scan cost 620,3; Đúng (để planner chọn) Seq Scan cost 389,01. Cost Đúng < Sai
 
 ```sql
@@ -4903,7 +4955,7 @@ SELECT id FROM jobs WHERE status = 'new' ORDER BY id LIMIT 10 FOR UPDATE SKIP LO
   - hai mức này hủy transaction thay vì để xảy ra bất thường (write skew, lost update);
   - tài liệu: ứng dụng "must be prepared to retry transactions";
   - transaction chỉ đọc thì không bao giờ gặp xung đột này.
-- **Nguồn:** https://www.postgresql.org/docs/18/transaction-iso.html
+- **Nguồn:** https://www.postgresql.org/docs/18/transaction-iso.html; `40001` = `serialization_failure`: https://www.postgresql.org/docs/18/errcodes-appendix.html#ERRCODES-TABLE
 - **Cấp:** L4 · **Nối với:** chưa có · **Kiểm:** cú pháp (cần hai phiên đồng thời)
 
 ```sql
@@ -4949,7 +5001,7 @@ BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY
   - sau pooler theo transaction (P23), khóa theo phiên gần như luôn sai;
   - đừng gọi hàm khóa trong câu có `LIMIT`: không chắc `LIMIT` áp trước khi hàm chạy.
 - **Vì sao:** tài liệu: khóa theo phiên "do not honor transaction semantics": `ROLLBACK` không nhả nó.
-- **Nguồn:** https://www.postgresql.org/docs/18/explicit-locking.html#ADVISORY-LOCKS
+- **Nguồn:** https://www.postgresql.org/docs/18/explicit-locking.html#ADVISORY-LOCKS; hàm `pg_advisory_*`: https://www.postgresql.org/docs/18/functions-admin.html#FUNCTIONS-ADVISORY-LOCKS
 - **Cấp:** L4 · **Nối với:** chưa có · **Kiểm:** PGlite `(notx)`, Sai ≠ Đúng: sau `ROLLBACK`, Sai còn 1 khóa trong `pg_locks`, Đúng còn 0
 
 ```sql
@@ -5074,6 +5126,7 @@ SELECT 'acct_pkey' AS index_checked, current_setting('data_checksums') AS data_c
 - **Nguồn:**
   - https://www.postgresql.org/docs/18/runtime-config-replication.html#GUC-MAX-SLOT-WAL-KEEP-SIZE
   - https://www.postgresql.org/docs/18/view-pg-replication-slots.html
+  - https://www.postgresql.org/docs/18/functions-admin.html#FUNCTIONS-REPLICATION (`pg_drop_replication_slot`)
 - **Cấp:** L5 · **Nối với:** chưa có · **Kiểm:** cú pháp (PGlite không có nhân bản)
 
 ```sql
@@ -5099,7 +5152,8 @@ WHERE wal_status <> 'reserved' OR inactive_since < now() - interval '1 hour'
   - autovacuum tự hãm: tích đủ "cost" thì ngủ;
   - giới hạn được **chia đều** cho các worker đang chạy, nên thêm worker không làm nhanh hơn;
   - nâng giới hạn là cách cho autovacuum làm nhiều việc hơn trước mỗi lần ngủ; đo bằng số dòng chết trong `pg_stat_user_tables` trước và sau (gần P10).
-- **Nguồn:** https://www.postgresql.org/docs/18/runtime-config-autovacuum.html#RUNTIME-CONFIG-RESOURCE-VACUUM-COST
+- **Nguồn:** https://www.postgresql.org/docs/18/runtime-config-vacuum.html#RUNTIME-CONFIG-RESOURCE-VACUUM-COST; `pg_stat_user_tables`: https://www.postgresql.org/docs/18/monitoring-stats.html#MONITORING-PG-STAT-ALL-TABLES-VIEW
+- **Phiên bản (vòng 5):** PostgreSQL 19: leader và worker của VACUUM song song dùng chung `vacuum_cost_limit` (trước đây mỗi worker tính riêng), nên VACUUM song song có thể chậm hơn bản 18 với cùng cấu hình.
 - **Cấp:** L4 · **Nối với:** chưa có · **Kiểm:** cú pháp (PGlite không có autovacuum chạy nền)
 
 ```sql
@@ -5600,6 +5654,8 @@ Cột cuối là từ đã tìm thấy. Lần grep đầu dùng mẫu `A|B|C` tr
 
 Bảng §12 không viết lại. Đọc §12 cùng bảng này.
 
+Vòng 7: §12.7 thêm M31 → `e-mg-l3-06` (bài có `totalDocsExamined`) và M38 → `e-mg-l5-07` (bài đo ứng viên shard key), nên hai mục này không còn "chưa có".
+
 ### 13.4 Đề xuất: phòng trưng bày lỗi (anti-pattern gallery)
 
 **Dữ liệu tần suất có thật, nhưng chỉ ở mức lớp lỗi.**
@@ -5632,7 +5688,7 @@ Vì vậy bảng dưới xếp theo hai bậc:
 Các nguồn hướng dẫn:
 
 - **W:** wiki PostgreSQL "Don't Do This";
-- **B:** BigQuery, "Optimize query computation": https://cloud.google.com/bigquery/docs/best-practices-performance-compute;
+- **B:** BigQuery, "Optimize query computation": https://docs.cloud.google.com/bigquery/docs/best-practices-performance-compute;
 - **T:** dbt, "How we style our SQL": https://docs.getdbt.com/best-practices/how-we-style/2-how-we-style-our-sql;
 - **F:** Snowflake, "Working with joins": https://docs.snowflake.com/en/user-guide/querying-joins;
 - **D:** tài liệu PostgreSQL, đúng trang mà mục tương ứng đã dẫn.
@@ -5661,3 +5717,731 @@ Mỗi dòng trỏ về mục đã có; phòng trưng bày **không thêm mục m
 - Một hàng "Lỗi hay gặp" đầu track SQL, theo đúng thứ tự trên, mỗi ô mở thẻ có sẵn.
 - Không cần trường mới trong thẻ: thứ tự là một danh sách id trong `tracks.yml` (`gallery: [e-bp-q07, e-bp-q02, …]`).
 - Câu dẫn của hàng nói thật nguồn của thứ tự: "theo nghiên cứu lỗi SQL của sinh viên và hướng dẫn của các nhà cung cấp". Không viết "lỗi phổ biến nhất của analyst".
+
+## 14. Vòng 5: soát chất lượng, danh sách v25, hướng dẫn học
+
+Theo L220: chỉ nghiên cứu và đề xuất. Vòng này không thêm mục, không thêm thẻ, không sửa `content/engine/best/`, `src/`, test hay `decision-log.md`. Mọi lần chạy nằm trong một thư mục tạm ngoài repo (`bp5/`, `package.json` riêng, `npm i --ignore-scripts`): PGlite 0.5.16 (PostgreSQL 18.6), mingo 7.2.6, `@dynoxide/wasm-engine` 1.5.0. Ngày kiểm: 2026-11-20.
+
+### 14.1 Soát chất lượng toàn bộ 192 mục
+
+**Nguồn (URL):**
+
+- Tải lại cả 196 trang khác nhau mà tài liệu dẫn (238 URL kể cả anchor) bằng `curl -L`: cả 196 trả 200, đúng tiêu đề trang.
+- 42 anchor `#…`: có `id` tương ứng trên trang.
+- Sau khi sửa (dưới đây), tải lại lần nữa: 251 URL, 201 trang, đều 200, mọi anchor có thật; chạy lại kiểm câu trích và tên hàm.
+- Năm URL đi qua chuyển hướng. Bốn đã sửa tại chỗ:
+  - M01: trang "embedding vs references" của MongoDB nay chuyển về `data-modeling/best-practices/#link-related-data`. Đã đọc lại: trang mới vẫn nói embed khi dữ liệu được đọc và sửa cùng nhau, và ghi atomic ở mức một tài liệu. Luật M01 giữ nguyên.
+  - M19: `dateFromString` → `datefromstring` (chỉ đổi chữ hoa thường).
+  - P41: `runtime-config-autovacuum.html` → `runtime-config-vacuum.html`. Ở bản 18, mục autovacuum đã gộp vào trang "Vacuuming"; anchor `RUNTIME-CONFIG-RESOURCE-VACUUM-COST` vẫn còn.
+  - §13.4: `cloud.google.com/bigquery/...` → `docs.cloud.google.com/bigquery/...`.
+- URL thứ năm là RFC 9562 (`/rfc/rfc9562` chuyển sang trang `info`). Đó là địa chỉ chuẩn RFC Editor đưa ra, nên giữ.
+
+**Nguồn có nói đúng điều mục nêu không:**
+
+- Cách kiểm tự động: với mỗi mục, mọi tên hàm, tham số, view, toán tử (trong `…`) ở **Luật** và **Vì sao** phải có trên ít nhất một trang nguồn của mục đó.
+- 32 mục bị gắn cờ:
+  - 16 là tên cột hay từ khóa của ví dụ (`order_date`, `revenue_vnd`, `WHERE`) hoặc tên viết ghép (`pg_stats.correlation`: cột `correlation` có trên trang `pg_stats`), không cần thêm nguồn;
+  - 15 thiếu thật: tên hàm hay toán tử được nêu nhưng không có trên trang dẫn;
+  - P07 để nguyên (xem dưới).
+- Cộng P16 (từ bước kiểm con số dưới đây): 16 mục được thêm trang chính thức có tên đó:
+
+| Mục | Tên còn thiếu | Trang thêm |
+|---|---|---|
+| A14 | `setseed()` | functions-math, bảng hàm ngẫu nhiên |
+| X01 | `quote_ident`, `format` | functions-string |
+| D07 | `KEYS_ONLY` | GSI.html#GSI.Projections |
+| P12 | `pg_relation_size` | functions-admin#FUNCTIONS-ADMIN-DBOBJECT |
+| P16 | "2,1 tỷ" (trần `integer`) | datatype-numeric#DATATYPE-INT |
+| P28 | `num_timed`, `num_requested` | monitoring-stats, view `pg_stat_checkpointer` (có từ bản 17) |
+| P34 | `serialization_failure` | errcodes-appendix |
+| P36 | `pg_advisory_unlock` | functions-admin#FUNCTIONS-ADVISORY-LOCKS |
+| P40 | `pg_drop_replication_slot` | functions-admin#FUNCTIONS-REPLICATION |
+| P41 | `pg_stat_user_tables` | monitoring-stats, view `pg_stat_all_tables` |
+| M06 | `$jsonSchema` | schema-validation/specify-json-schema |
+| A03, Q19 | `row_number()`, `rank()` | functions-window#FUNCTIONS-WINDOW-TABLE |
+| P17 | `date_trunc` | functions-datetime#FUNCTIONS-DATETIME-TRUNC |
+| M02 | `$push`, `$slice` | reference/operator/update/push |
+| M05 | `$inc` | reference/operator/update/inc |
+
+- Để nguyên một chỗ: P07 nêu `random()` chỉ làm ví dụ default volatile; trang dẫn đã nói đúng ý bằng ví dụ `clock_timestamp()`.
+
+- **Con số lấy từ tài liệu:** mọi số có đơn vị trong Luật/Vì sao (KB, MB, RCU, WCU, %, item, lần…) được tìm trên trang nguồn của mục. Có hết, trừ P16 (đã thêm trang như bảng trên). Các trang AWS và MongoDB không gắn phiên bản. Ngày kiểm, trang hiện hành vẫn ghi đúng các giới hạn: item 400 KB và 25 request mỗi lô (`BatchWriteItem`), 1 MB mỗi trang (`Query`), 3.000 RCU / 1.000 WCU mỗi partition.
+- **Câu trích nguyên văn:** 68 câu tiếng Anh trong ngoặc kép.
+  - 58 câu trích tài liệu: 57 có đúng từng chữ trên trang nguồn (M15 nằm trong dữ liệu trang MongoDB: "contains any combination of elements that satisfies the conditions"); P07 ghép chữ bằng "…" (đã sửa, xem dưới).
+  - Bốn câu trích ở bảng §13.4 (BigQuery, dbt) cũng có đúng trên trang, kể cả sau khi BigQuery đổi host.
+  - 10 câu không phải trích tài liệu: thông báo lỗi do engine trả (P15, P18, D13, D14, D15, D28), chuỗi tấn công của X09, câu tiếng Việt của A14. Các thông báo lỗi khớp output chạy thật.
+  - Bốn câu quá 15 chữ, đã rút ngắn và giữ nguyên văn: Q19, Q23, X04, P07. P07 cũ còn ghép chữ bằng dấu "…"; nay trích đúng câu trên trang ("will cause the entire table and its indexes to be rewritten").
+- **Bỏ mục:** không mục nào. Mọi nguồn còn sống và nói đúng điều mục nêu.
+
+**Ví dụ chạy được: chạy lại cả 145 mục.**
+
+- Script đọc chính tài liệu này: mọi khối `-- <mã> bad|good` (SQL), `// <mã> …` (Mongo, DynamoDB), bỏ khối `(syntax)`/`(ops)`. Điều kiện như §0:
+  - SQL trên schema `lab` sau `VACUUM ANALYZE`, `BEGIN … ROLLBACK`;
+  - `(notx)` trên PGlite mới có `amcheck`;
+  - Mongo trên `MDATA` + `MDATA2` (+ `products` của M29–M30);
+  - DynamoDB trên một engine mới mỗi khối.
+- **Dữ liệu DynamoDB là JSON thường (theo §13.1.3):**
+  - khối `DDATA` được đổi một lần ra `ddata.json` không kiểu: 1.237 item, chỉ có chuỗi và số;
+  - lúc seed thì `marshal` lại (chuỗi → `S`, số → `N`), như `labOf()`;
+  - bản dựng lại trùng từng byte với item có kiểu cũ, rồi mới chạy khối;
+  - kết quả trùng vòng 2–4.
+- **Cách so:** "Sai = Đúng" so **toàn bộ** mảng giá trị (md5 của mọi dòng, bỏ tên cột), không so chuỗi hiển thị đã cắt.
+- **Kết quả: 145/145 khớp dòng Kiểm**:
+  - 53 Sai ≠ Đúng;
+  - 15 Sai = Đúng (gồm D01, D03: cùng `Count`);
+  - 20 đúng lỗi đã ghi (mã SQLSTATE, kiểu lỗi DynamoDB hoặc thông báo mingo);
+  - 14 kế hoạch: đúng nút; I02 cost Đúng < Sai (35,32 → 16,34); P31 đúng 620,3 / 389,01;
+  - 43 "chạy được", gồm số đếm và RCU của DynamoDB (D01 54 → 0,5; D08 351 → 1 WCU; D20 20 item 54 RCU → 11 item 0,5 RCU…).
+- Ba điều phụ, chưa có output, đã chạy riêng:
+  - X10: role chỉ có quyền `(id, city)` gặp `42501` với cả `SELECT *` lẫn `SELECT phone`;
+  - S14: `CREATE TABLE t (user text)` báo `42601`;
+  - P29: `SET wal_compression = lz4` báo `22023`.
+- Hai số đổi giữa các lần chạy, đã sửa dòng Kiểm cho trung thực:
+  - P26: tuổi transaction ID là 131–134 (vòng 2 ghi 79–82). Số này tùy lượng transaction đã chạy trước đó trên cùng database.
+  - P29: WAL bản Đúng 691.440 byte (vòng 4: 691.464). Lệch vài chục byte, tỷ lệ −78% giữ nguyên.
+
+**Phiên bản.** Ví dụ chạy trên PostgreSQL 18.6, và link `/docs/18/` cố ý giữ để khớp PGlite. Nhưng **PostgreSQL 19 đã phát hành ngày 2026-11-19**, và trang MongoDB không gắn phiên bản nay là manual **9.0**.
+
+- Đã đọc hết release notes 19 (phần "Migration" và mọi mục "Changes"), rồi tìm trong tài liệu mọi chỗ nhắc lệnh hay cấu hình bị đổi (`VACUUM FULL`, `CLUSTER`, JIT, `max_locks_per_transaction`, `btree_gist` cho `inet`…).
+- Không mục nào sai trên 19. S15 dùng `btree_gist` cho cột số, không phải `inet`, nên không bị đổi opclass mặc định.
+- 16 mục có thêm một dòng **Phiên bản (vòng 5)** ngay trên dòng Cấp. Đó là chỗ 19 đổi hành vi, mặc định hoặc công cụ:
+  - Q02: `NOT IN` thành anti join khi không có NULL;
+  - Q07: gộp trước khi join;
+  - P10, P41: điểm ưu tiên autovacuum, VACUUM song song dùng chung cost limit;
+  - P11: `REPACK` thay `VACUUM FULL`/`CLUSTER`;
+  - P13: `log_lock_waits` bật sẵn;
+  - P19, P25: `pg_stat_statements` đếm generic/custom plan;
+  - P26: cảnh báo wraparound từ 100 triệu;
+  - P29: `wal_compression = on` chọn phương pháp tốt nhất;
+  - X05: cảnh báo MD5, bỏ RADIUS;
+  - I04: câu quét thường cũng đánh dấu all-visible;
+  - A15, A16: `IGNORE NULLS`;
+  - I09: `stats_reset` cho từng index;
+  - P31: `pg_plan_advice`.
+- Mục cần phiên bản tối thiểu (đã ghi trong thân mục, ghi lại đây để BP-C đặt nhãn). Đối chiếu ngày kiểm: release notes 17 (`pg_stat_checkpointer`), release notes 15 (`NULLS NOT DISTINCT`, bỏ quyền `CREATE` của `PUBLIC` trên `public`), trang `CREATE VIEW` bản 15 có `security_invoker` còn bản 14 không, release notes 19 ("Previously this always used pglz" cho P29):
+
+| Mục | Cần | Ghi chú |
+|---|---|---|
+| S05 `uuidv7()` | PostgreSQL 18 | |
+| P15 `NOT NULL … NOT VALID` | PostgreSQL 18 | |
+| I02 skip scan | PostgreSQL 18 | luật "so bằng trước, khoảng sau" không đổi |
+| P10 `autovacuum_vacuum_max_threshold`, P39 checksums bật sẵn, P40 `idle_replication_slot_timeout` | PostgreSQL 18 | |
+| P28 `pg_stat_checkpointer` | PostgreSQL 17 | |
+| S07 `NULLS NOT DISTINCT`, X08 `security_invoker`, X03 quyền `CREATE` trên `public` | PostgreSQL 15 | |
+| M38 `analyzeShardKey` | MongoDB 7.0 | |
+| M04 time series collection | MongoDB 5.0 | bản 9.0 đổi cách lưu (một namespace), lời khuyên không đổi |
+| M35 change stream | trang ghi "Changed in version 9.0" | `resumeAfter`/`startAfter` không đổi |
+
+- Trang AWS chỉ có bản `latest`. Các con số giới hạn ở D đã đối chiếu với bản ngày kiểm.
+
+### 14.2 Xếp hạng và danh sách v25
+
+**Thang điểm** (giá trị cho người học đi từ data analyst mới tới kỹ sư senior):
+
+| Tiêu chí | Điểm | Đọc từ |
+|---|---|---|
+| Sai **âm thầm** (chạy được, số sai) | 0–3 | dòng Kiểm: "Sai ≠ Đúng" = 3; lỗi rõ hoặc chỉ hiệu năng = 1 |
+| Hay gặp | 0–2 | §13.4: lớp lỗi của Taipalus & Perälä, số nguồn hướng dẫn độc lập; với data analyst: gặp trong việc hằng ngày |
+| Chạy được trong trình duyệt, khác biệt thấy được | 0–2 | `lab`/`engine` có số đo = 2; kế hoạch hay cost = 1; chỉ cú pháp = 0 |
+| Boon nhắc bắt được | 0–1 | 10 luật §10 |
+| Đã có thẻ | 0–1 | `content/engine/best/` (28 thẻ SQL + PostgreSQL) |
+| Giữ đủ bậc thang | điều chỉnh | mỗi track phải có cả L1–L2 (data analyst) lẫn L3–L5 (kỹ sư); một mục L4–L5 có thể lên trước mục điểm cao hơn để bậc không trống |
+
+Thứ tự dưới đây là phán đoán theo thang này, không phải tổng điểm cộng máy móc.
+
+**Ràng buộc của danh sách:**
+
+- chỉ lấy từ Q/A/S/I/P/X (MongoDB ở v27, DynamoDB ở v29 theo `product-design-best-practice.md`);
+- giữ đủ 28 thẻ đã viết và đủ 10 mục có luật Boon nhắc;
+- 30 SQL + 30 PostgreSQL. Số này thay cho "SQL 33 + PostgreSQL 35" của product design, vốn đếm từ vòng 1.
+
+**v25: 60 mục, theo thứ tự giá trị** (★ = đã có thẻ, ⚑ = có luật Boon nhắc, (cp) = chỉ cú pháp):
+
+SQL (30):
+
+1. Q02 ★⚑
+2. Q06 ★⚑
+3. Q07 ★
+4. Q01 ★⚑
+5. Q12 ★⚑
+6. A03 ★
+7. A01 ★
+8. Q11 ★⚑
+9. Q05 ★
+10. Q10 ★⚑
+11. Q13 ★⚑
+12. A18 ★
+13. A21 ★
+14. Q04 ★
+15. Q03 ★
+16. Q15 ★⚑
+17. A16 ★
+18. A11 ★
+19. A05 ★⚑
+20. Q16 ★
+21. A17 ★
+22. A07 ★
+23. A08 ★
+24. A15 ★
+25. Q18 ★
+26. A02 ★
+27. A12 ★
+28. Q09 ★
+29. Q08 ★
+30. Q22 ★⚑
+
+PostgreSQL (30):
+
+31. S01 ★
+32. S03 ★
+33. S06 ★
+34. X01 ★
+35. I01 ★
+36. P01 ★
+37. I06 ★
+38. I02 ★
+39. S04 ★
+40. S02 ★
+41. S08 ★
+42. X06 ★
+43. X02 ★
+44. I05 ★
+45. I03 ★
+46. I04 ★
+47. S07 ★
+48. I08 ★
+49. P17 ★
+50. S10 ★
+51. P35 ★ (cp)
+52. X09 ★
+53. P05 ★
+54. P13 ★ (cp, vòng 6)
+55. P08 ★
+56. P06 ★ (cp, vòng 6)
+57. P03 ★ (cp)
+58. I09 ★
+59. P30 ★ (cp, vòng 6)
+60. P25 ★ (cp)
+
+- Đếm: Q 17, A 13, S 8, I 8, P 10, X 4. Có 28 thẻ cũ, nên **32 thẻ mới** cho BP-C.
+- Chọn Q08, Q09, Q16 vì ba ô "Lỗi hay gặp" của §13.4 (dòng 4, 6, 7) chỉ chờ ba thẻ này.
+- Chọn P17, P30 trước P33, P34: cả hai chạy được ở runtime `engine` (`setup` có DDL rồi câu đọc, so kế hoạch). P33, P34 cần hai phiên. Vòng 6: P30 không vừa khuôn một câu mỗi bản, nên thành thẻ chỉ cú pháp (§15.3).
+- Chỉ ba mục chỉ cú pháp (vòng 6 thêm P13, P06, P30 thành thẻ chỉ cú pháp, nên nay là sáu; lý do ở §15.3):
+  - P35: báo cáo một snapshot, rất gần việc của data analyst;
+  - P03: transaction ngắn;
+  - P25: `pg_stat_statements`. Thẻ ghi rõ là cú pháp, hoặc chạy ở runtime `engine` có nạp extension.
+- Runtime (bảng §3.2 của `product-design-best-practice.md`): mục Q/A chạy trên `lab` (một câu đọc mỗi bên); mục S/I/P/X có DDL hay `setup` chạy ở `engine`; P05 phải chạy ngoài transaction (`notx`) nên cần `engine-hb`.
+- S10 nằm trong "Mười mục giá trị nhất" ở đầu tài liệu nhưng ở hạng 50 tại đây: danh sách đầu chọn theo độ nguy hiểm, còn thứ tự v25 đi theo bậc thang người học (S10 là L4, đặt sau các mục L1–L3 của PostgreSQL). Nó vẫn nằm trong v25.
+- **Ngân sách** (theo §13.1.4):
+  - mỗi thẻ một chunk lười ≈ 1,5–2,2 KB gzip, nên số thẻ không đụng trần;
+  - chỉ mục mỗi khu: Q 17 mục, khu lớn nhất ≈ 1,1 KB;
+  - phương án dự phòng chia theo khu và ngôn ngữ: Q-vi ≈ 9,5 KB, A-vi ≈ 9 KB, mỗi khu PostgreSQL ≤ 8 KB một ngôn ngữ (P 10 thẻ ≈ 7 KB), đều dưới 20 KB.
+
+**Chờ v27** (thêm track MongoDB):
+
+- Hạng 61–91, SQL + PostgreSQL bổ sung: Q20, Q14, A04, A10, A22, A24, A23, A06, A13, A09, Q23, Q19, Q17, A19, A20, Q21, A14, S05, S12, S09, S13, S14, I07, P02, P12, P07, P15, S15, S11, P34, P33.
+- MongoDB, 38 mục, theo thứ tự (chạy được và sai âm thầm trước; vòng 7: cả 38 mục có thẻ, §16):
+  - M16, M17, M15, M18, M01, M29, M30, M21, M19, M20;
+  - M08, M09, M22, M05, M02, M07, M31, M03, M06, M14;
+  - M12, M32, M33, M28, M04, M13, M10, M37, M34, M23;
+  - M24, M27, M35, M25, M26, M11, M38, M36.
+
+**Chờ v29** (thêm track DynamoDB):
+
+- Hạng 92–122, phần vận hành và bảo mật L4–L5 của PostgreSQL: X04, X08, X07, X10, X03, P19, P09, P20, P31, P24, P23, P04, P14, P16, P18, P10, P41, P11, P21, P22, P32, P36, P37, P26, P27, P38, P28, P29, P39, P40, X05.
+- DynamoDB, 32 mục (vòng 7: cả 32 mục có thẻ, §16):
+  - D06, D01, D02, D14, D15, D18, D04, D16, D12, D17;
+  - D10, D28, D13, D20, D19, D08, D05, D07, D21, D03;
+  - D25, D09, D11, D24, D23, D22, D26, D27, D32, D31;
+  - D29, D30.
+
+**Đối chiếu:** v25 60 + v27 (31 + 38) + v29 (31 + 32) = 192. Mọi mục có đúng một đợt, không mục nào bị bỏ. Khớp bảng Tóm tắt: Q 23, A 24, S 15, I 9, P 41, X 10, M 38, D 32.
+
+**Ghi chú cho người điều phối:**
+
+- Đẩy phần vận hành PostgreSQL L4–L5 sang v29 vì v25 nên chơi được gần hết trên `lab`/`engine`.
+- Nếu muốn track PostgreSQL ở v25 sâu hơn: đổi P35 (cú pháp) lấy P19 (kế hoạch chạy được, `notx`).
+
+### 14.3 Bản nháp: "Học SQL và NoSQL cho đúng: 8 thói quen"
+
+Dành cho người chơi. Đặt ở đầu khu Best Practice hoặc trong sổ tay. Mỗi thói quen dẫn tới thẻ. Nguồn ở cuối; không trích nguyên văn.
+
+1. **Nói ra hình dạng kết quả trước khi gõ.**
+   - Mỗi dòng là gì (một đơn? một khách một tháng?) và khoảng bao nhiêu dòng.
+   - Lệch so với dự đoán là dấu hiệu đầu tiên của lỗi.
+   - Thẻ: A04, A13.
+2. **Đi từng bước nhỏ, đếm dòng sau mỗi join.**
+   - Chạy phần `FROM … JOIN` trước và xem số dòng.
+   - Sau khi gộp, so tổng với bảng gốc (tổng kiểm).
+   - Lỗi logic (câu chạy được nhưng số sai) là loại lỗi bền nhất ở người học SQL [1]; cú pháp thì database tự báo.
+   - Thẻ: Q07, A06.
+3. **Hỏi "còn NULL thì sao?" ở mọi điều kiện.**
+   - `= NULL`, `NOT IN` gặp NULL, `LEFT JOIN` bị `WHERE` biến thành `INNER`.
+   - Bên NoSQL: trường thiếu khác trường null.
+   - Thẻ: Q01, Q02, Q06; MongoDB M16, M17.
+4. **Viết kiểm tra như một truy vấn phải trả 0 dòng.**
+   - Khóa không trùng, không có bản ghi mồ côi, giá trị nằm trong danh sách cho phép.
+   - Lưu lại, chạy lại mỗi lần dữ liệu đổi [2].
+   - Thẻ: A12, A24, A11.
+5. **Đọc kế hoạch, đừng đoán tốc độ.**
+   - PostgreSQL: `EXPLAIN`; so số dòng ước lượng với số thật, xem index có được dùng [3].
+   - MongoDB: `explain('executionStats')`; so số tài liệu đã xét với số trả về [4].
+   - DynamoDB: so `ScannedCount` với `Count`, và đọc `ConsumedCapacity` [5].
+   - Đo bằng số đọc và cost, không bằng mili giây trên máy mình.
+   - Thẻ: P01, I01, M31, D06.
+6. **Đặt tên để người sau đọc được.**
+   - Bảng và cột `snake_case` chữ thường, không trùng từ khóa.
+   - Mọi cột tính toán có tên nói nghĩa và đơn vị (`revenue_vnd`).
+   - Theo một bộ quy tắc có sẵn và giữ nhất quán [6].
+   - Thẻ: S08, S13, S14, Q23.
+7. **Ghim mọi thứ làm kết quả đổi theo ngày chạy.**
+   - "Hôm nay" là tham số.
+   - `ORDER BY` có tiebreaker trước `LIMIT`.
+   - Lấy mẫu có seed.
+   - Khoảng ngày nửa mở.
+   - Thẻ: A05, Q10, A14, Q12.
+8. **Tự review trước khi gửi, rồi nhờ người khác review.** Đọc lại câu của mình theo năm câu hỏi:
+   - grain là gì;
+   - NULL đi đâu;
+   - join có nhân dòng không;
+   - lọc ở `WHERE` hay `HAVING`;
+   - tên cột có nói nghĩa không.
+   - Với NoSQL hỏi thêm: câu này dùng khóa hay index nào?
+   - Thẻ: Q15, Q22; DynamoDB D01, MongoDB M01 (thiết kế theo access pattern).
+
+Thói quen học đi kèm: làm lại bài từng sai sau vài ngày (hàng "Ôn" của BoonData). Mỗi thẻ đọc theo thứ tự: tự đoán kết quả bản "Không nên" trước khi bấm "Chạy cả hai".
+
+**Nguồn của hướng dẫn** (đều đã tải và kiểm ở 14.1):
+
+- [1] Taipalus & Perälä 2019, SIGCSE: https://jyx.jyu.fi/jyx/Record/jyx_123456789_63057
+- [2] dbt, data tests: https://docs.getdbt.com/docs/build/data-tests
+- [3] PostgreSQL 18, Using EXPLAIN: https://www.postgresql.org/docs/18/using-explain.html
+- [4] MongoDB, Analyze Query Performance: https://www.mongodb.com/docs/manual/tutorial/analyze-query-plan/
+- [5] AWS, Scanning tables in DynamoDB (`ScannedCount`, `ConsumedCapacity`): https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Scan.html
+- [6] SQL Style Guide (CC BY-SA 4.0, chỉ dẫn link): https://www.sqlstyle.guide/
+
+Đề xuất dùng (cho luồng sau L220): một trang ngắn `#/engine/best` đầu track SQL. Mỗi thói quen một dòng và các chip thẻ; chỉ chip của thẻ đã phát hành là link. Văn bản VI/EN đi theo quy tắc của `content/` (EN không dấu, mã giống nhau ở hai bản).
+
+## 15. Vòng 6: 32 thẻ v25 còn thiếu
+
+Theo L215.6 (track nghiên cứu cho khu Best Practice). Vòng này chỉ viết nội dung: thêm 32 thẻ ở `content/engine/best/`, không sửa `src/`, test, build hay `decision-log.md`. Sau vòng này cả 60 mục v25 (§14.2) đều có thẻ: SQL 30, PostgreSQL 30.
+
+### 15.1 Cách kiểm
+
+- Script tạm ngoài repo (`bp6/verify.mjs`, chép từ `bp3/verify.mjs` của §11.2, không commit), dùng đúng `@electric-sql/pglite` 0.5.16, `libpg-query` 18.2.4 và `yaml` đã cài trong repo. Luật kiểm như §11.2; khác một chỗ: bản `engine-hb` không chạy lượt khởi động (lệnh DDL ngoài transaction không chạy lại được).
+- Kết quả ngày 2026-11-20: **60/60 thẻ SQL + PostgreSQL, 0 lỗi** (28 thẻ cũ chạy lại cùng lúc, vẫn qua).
+- Mọi câu < 300 ms trong Node; lâu nhất là bản Không nên của P08 (≈ 60 ms). `setup` lâu nhất ≈ 0,6 s (I01, lần chạy đầu).
+- Thẻ `none` (chỉ cú pháp): chạy riêng cả khối Không nên và Nên như một script trên PGlite mới (P25 có nạp `pg_stat_statements`). Cả 12 khối chạy không lỗi.
+- Câu kiểm có nêu sự thật thì đã chạy riêng:
+  - X06: `DELETE` bằng role chỉ đọc báo `42501`; `pg_read_all_data` đọc được bảng tạo sau khi cấp quyền;
+  - X09: chạy câu `%I` dựng ra thì báo `42P01`;
+  - S04: chèn id tay vào cột `ALWAYS` báo `428C9`;
+  - P06: dòng mới vi phạm sau `NOT VALID` báo `23514`;
+  - P35: lệnh ghi trong `READ ONLY` báo `25006`;
+  - A08: `round(1400, -3) * 3` = 3000, `round(1400 * 3, -3)` = 4000;
+  - P03: PGlite chỉ có một tiến trình `standalone backend` (không có autovacuum), đúng như thân thẻ nói.
+- Nguồn: tải lại cả 50 URL mà 32 thẻ dẫn, đều 200, mọi anchor có thật. Hai câu trích (A15, P30) và các ý chính (`char(n)` "usually the slowest", `CONCURRENTLY` "two scans", `pg_read_all_data` không bỏ qua RLS, `OVERRIDING SYSTEM VALUE`, `INHERIT`, lock `SHARE` của `CREATE INDEX`) đều có trên đúng trang. A12 bỏ nguồn dbt (ngoài danh sách nguồn cho phép của thiết kế §4.3), dẫn `functions-subquery` và `queries-union` thay.
+
+### 15.2 Thẻ mới
+
+| Mã | Track | Cấp | `runtime` | `check` | Kết quả đo (Không nên → Nên) | File |
+|---|---|---|---|---|---|---|
+| A21 | SQL | L2 | `lab` | `diff` | 266 → 200 người dùng tháng 10 | `sql/a21-distinct-not-additive.md` |
+| A16 | SQL | L2 | `lab` | `diff` | 1.199 → 900 đơn "có đơn trước" | `sql/a16-lag-partition-by.md` |
+| Q16 | SQL | L2 | `lab` | `diff` | 620.240.400 → 627.192.600 đồng | `sql/q16-union-all.md` |
+| A17 | SQL | L2 | `lab` | `diff` | 2 → 4 sản phẩm (ba sản phẩm cùng 158) | `sql/a17-top-n-ties.md` |
+| A07 | SQL | L2 | `lab` | `diff` | 1 → 0,8964 | `sql/a07-ratio-denominator.md` |
+| A08 | SQL | L1 | `lab` | `diff` | 203.991.000 → 203.923.000 đồng | `sql/a08-round-at-end.md` |
+| A15 | SQL | L3 | `lab` | `diff` | 1.051 → 5 cặp cửa hàng/ngày | `sql/a15-last-value-frame.md` |
+| Q18 | SQL | L3 | `lab` | `diff` | hai đơn ngày 2026-10-01: 2, 2 → 1, 2 | `sql/q18-rows-running-total.md` |
+| A02 | SQL | L2 | `engine` | `diff` | ngày 31/10: 600.000 → 300.000; ngày 01/11: 400.000 → 700.000 | `sql/a02-business-time-zone.md` |
+| A12 | SQL | L2 | `lab` | `runs` | 1.395 khoản trả → `orphan_payment` 8, hai test còn lại 0 | `sql/a12-zero-row-tests.md` |
+| Q09 | SQL | L1 | `lab` | `runs` | 6 cột → 3 cột, 1 dòng | `sql/q09-name-columns.md` |
+| Q08 | SQL | L1 | `lab` | `same` | 5 cửa hàng, cùng số đơn | `sql/q08-explicit-join.md` |
+| S06 | PostgreSQL | L1 | `engine` | `diff` | 6 dòng, 40.000 → 2 dòng, 130.000 | `postgres/s06-constraints.md` |
+| I01 | PostgreSQL | L2 | `engine` | `runs` + cost | `Seq Scan` 359,01 → `Index Scan` 8,34 | `postgres/i01-index-for-query.md` |
+| P01 | PostgreSQL | L2 | `engine` | `runs` | `rows=1` → `rows=1` kèm `actual rows=2000.00` | `postgres/p01-estimated-vs-actual.md` |
+| S04 | PostgreSQL | L1 | `engine` | `error` | `23505` → id 4 | `postgres/s04-identity-not-serial.md` |
+| S02 | PostgreSQL | L1 | `engine` | `diff` | 1 → 0 mã sai | `postgres/s02-text-check.md` |
+| X06 | PostgreSQL | L2 | `engine` | `diff` | xóa được: true → false | `postgres/x06-read-only-analyst.md` |
+| X02 | PostgreSQL | L2 | `engine` | `diff` | 5 quyền → 1 (`SELECT`) | `postgres/x02-least-privilege.md` |
+| S07 | PostgreSQL | L2 | `engine` | `diff` | 3 → 2 dòng `default` | `postgres/s07-nulls-not-distinct.md` |
+| I08 | PostgreSQL | L3 | `engine` | `plan` | `Seq Scan` (cost 404,01) → `Bitmap Heap Scan` trên partial index (121,68) | `postgres/i08-low-cardinality.md` |
+| P17 | PostgreSQL | L4 | `engine` | `runs` + cost | `Append` 3 partition, 221,36 → 1 partition, 74,26 | `postgres/p17-partition-pruning.md` |
+| P35 | PostgreSQL | L3 | `none` | `syntax` | (script: cùng snapshot; ghi trong `READ ONLY` báo `25006`) | `postgres/p35-report-snapshot.md` |
+| X09 | PostgreSQL | L2 | `lab` | `diff` | hai câu → một tên trong nháy kép | `postgres/x09-dynamic-sql-format.md` |
+| P05 | PostgreSQL | L3 | `engine-hb` | `runs` | cả hai dựng xong index | `postgres/p05-create-index-concurrently.md` |
+| P13 | PostgreSQL | L4 | `none` | `syntax` | (script: `AccessExclusiveLock`, `lock_timeout` 0 → `2s`) | `postgres/p13-lock-timeout.md` |
+| P08 | PostgreSQL | L3 | `engine` | `diff` | 10.000 → 250 dòng ghi lại | `postgres/p08-batch-updates.md` |
+| P06 | PostgreSQL | L4 | `none` | `syntax` | (script: `AccessExclusiveLock` → `ShareUpdateExclusiveLock`) | `postgres/p06-not-valid-validate.md` |
+| P03 | PostgreSQL | L3 | `none` | `syntax` | (script: cả hai lệnh chạy) | `postgres/p03-autovacuum-on.md` |
+| I09 | PostgreSQL | L3 | `engine` | `runs` | "3 index" → `orders_store_ix` thừa, 163.840 byte | `postgres/i09-redundant-indexes.md` |
+| P30 | PostgreSQL | L3 | `none` | `syntax` | (script: `GroupAggregate` + `Sort` → `HashAggregate`) | `postgres/p30-work-mem-set-local.md` |
+| P25 | PostgreSQL | L5 | `none` | `syntax` | (script có extension: 50 câu thành một dòng `WHERE id = $1`, `calls` = 50) | `postgres/p25-pg-stat-statements.md` |
+
+### 15.3 Chỗ thẻ khác dòng "Kiểm" của mục
+
+Thiết kế §3.2/§4.3 cho mỗi bản đúng một câu, `setup` riêng, và `check: error` nghĩa là bản Không nên báo lỗi. Nhiều ví dụ ở §1–§13 không vừa khuôn đó. Cách đã chọn:
+
+- **Bản Đúng mới là bản báo lỗi (S02, S04, S06, S07, X02, X06; §11.1 đã bỏ lại).** Dựng lại để cả hai bản chạy:
+  - S02, S06: `setup` ghi cùng dữ liệu sai vào hai bảng bằng một khối `DO` bắt lỗi từng dòng (`check_violation`, `integrity_constraint_violation`); hai bản đếm kết quả (`diff`). `splitSql` của `v22-engine` giữ nguyên khối `$$ … $$`.
+  - S07: `INSERT … ON CONFLICT DO NOTHING` chạy hai lần trên mỗi bảng; bảng `UNIQUE` thường nhận dòng NULL trùng.
+  - S04: `setup` chèn id tay vào bảng `serial`; bản Không nên là lần chèn bình thường kế tiếp, báo `23505` (`check: error` đúng nghĩa thiết kế). `428C9` chuyển vào câu kiểm.
+  - X02, X06: đọc quyền bằng `has_table_privilege` (một câu, không cần `SET ROLE`). `42501` khi xóa thật chuyển vào câu kiểm của X06.
+- **Nhiều câu hoặc DDL trên `lab` (I01, I08, I09, P01, P08, P17):** dữ liệu và DDL dời vào `setup` trên bảng riêng của thẻ, theo mẫu hai bảng của §11.3 (I01). P08 bọc `UPDATE` trong CTE `RETURNING` để đếm số dòng ghi lại. P01 làm thống kê cũ bằng một `UPDATE` sau `ANALYZE`, rồi so `EXPLAIN` với `EXPLAIN (ANALYZE, BUFFERS, TIMING OFF, SUMMARY OFF)`.
+- **Chỉ cú pháp thêm 3 mục (P13, P06, P30), ngoài P35, P03, P25 đã là (cp).** Phần dạy chính nằm ở chuỗi lệnh (`SET LOCAL` rồi DDL hay truy vấn; `NOT VALID` rồi `VALIDATE`), mà mỗi bản chỉ được một câu và không mang thiết lập phiên sang. Gói vào một hàm trợ giúp thì giấu đúng thứ cần dạy, nên giữ `runtime: none`, mã viết đủ chuỗi lệnh, và ghi số đo script vào `## Ví dụ`. Nếu BP-T thêm `probe` hoặc cho `pair` một kịch bản nhiều câu (§13.1), ba thẻ này đổi được sang `engine`.
+- **P05** chạy ở `engine-hb` (cả hai bản ngoài transaction); khác biệt là lock lúc dựng, một phiên không thấy được, thân thẻ nói rõ. `25001` khi đặt trong transaction chuyển vào câu kiểm.
+- **A02** chạy ở `engine` (không phải `lab`) vì cần `timestamptz` và `SET TIME ZONE 'UTC'` trong `setup`, như S01.
+- **X09** chạy ở `lab` (chỉ gọi `format`, không đụng bảng), như S03.
+- **A15** có đặc tả lint ở §10, nhưng không nằm trong 10 luật của thiết kế §5.4 và verifier, nên thẻ không có `lint`.
+- **Câu kiểm không lộ đáp án (cổng Product §11.3 mục 3 của thiết kế):** bỏ `## Ví dụ` ở S02, P17 vì khối đó nêu đúng kết quả câu kiểm hỏi; S06 chỉ tả dữ liệu đầu vào. Cổng "giải mù" vẫn cần agent riêng chạy trước khi phát hành.
+- **`requires`:** mỗi id đã grep ở `0ede43d` có đúng thuật ngữ của thẻ (ví dụ `e-pg-l4-09`: `ACCESS EXCLUSIVE`, `lock_timeout`; `e-pg-l1-03`: `IDENTITY`, `serial`). Bài MongoDB mà §12 gợi ý cho thẻ SQL (Q09, Q18, A15, A16, I09) không dùng; thẻ không có bài nào hợp thì `requires: []`.
+- **Cho BP-T (test `bestPractice`):**
+  - P05 (`engine-hb`) chỉ chạy được một lần trên mỗi database: lượt chạy thứ hai báo index đã tồn tại. Verifier vòng 6 bỏ lượt khởi động cho `engine-hb`; test phải dựng database mới cho mỗi lần chạy, như `runLabScript`.
+  - S04 cũng cần database mới: sequence không lùi khi rollback, nên trên cùng một database, lần chạy thứ tư của bản Không nên sẽ không còn báo `23505`.
+  - Verifier không kiểm luật chú thích lần đầu (style §2.1, ví dụ "thống kê (statistics)"); thẻ cũ cũng chưa đều ở điểm này, reviewer kiểm tay.
+  - P30: câu kiểm chỉ nhân cho nút sort, vì nút hash được gấp `hash_mem_multiplier` lần `work_mem` (mặc định 2, cùng trang nguồn).
+  - I08: chạy lại với `VACUUM ANALYZE` trong `setup`, bản Không nên vẫn là `Seq Scan` (bản Nên thành `Index Only Scan`), nên thẻ giữ `setup` không VACUUM và `expect.good` là `Bitmap Heap Scan`.
+
+### 15.4 Ngân sách
+
+- `sql` (30 thẻ): 102.397 byte thô, 27.406 byte gzip -9 cả file.
+- `postgres` (30 thẻ): 119.029 byte thô, 32.313 byte gzip -9 cả file.
+- Gộp một chunk mỗi track thì cả hai vượt trần 20 KB của thiết kế §10, như §11.4 và §14.2 đã báo. Phương án ở §13.1.4 (một chunk lười mỗi thẻ) vẫn đủ.
+
+## 16. Vòng 7: thẻ MongoDB (v27) và DynamoDB (v29)
+
+Theo L215.6. Vòng này chỉ viết nội dung: thêm 58 thẻ ở `content/engine/best/`, không sửa `src/`, test, build hay `decision-log.md`. Sau vòng này cả 38 mục MongoDB (v27, §14.2) và cả 32 mục DynamoDB (v29) đều có thẻ: tổng 130 thẻ (SQL 30, PostgreSQL 30, MongoDB 38, DynamoDB 32).
+
+### 16.1 Cách kiểm
+
+- Script tạm ngoài repo (`bp7/verify.mjs`, chép từ `bp3/verify.mjs`, không commit), dùng `mingo` 7.2.6 và `@dynoxide/wasm-engine` 1.5.0 (cùng phiên bản trong `node_modules` của repo), cùng `@electric-sql/pglite` 0.5.16 cho 60 thẻ cũ.
+- Engine Mongo và DynamoDB của script chép lại từ nhánh `v22-nosql-fix` (`src/engine/mongo/{engineMongo,parse,types}.ts`, `src/engine/dynamo/{engine,request,types}.ts`), vì bản chép ở vòng 3 đã cũ: bản mới có thêm `TransactGetItems` và `ExecuteTransaction`. Mỗi bản Không nên / Nên là **một** lệnh `mongosh` (một lệnh mỗi lần chạy, như lab) hoặc **một** request DynamoDB, trên `setup` riêng của thẻ.
+- Ba chỗ sửa script so với vòng 3 (không đổi luật):
+  - luật "không tất định" chỉ bắt `new Date()` không đối số; `ISODate('2026-09-01')` là hằng;
+  - thẻ mingo `check: error` giờ so cả `expect.code` (trước đây chỉ kiểm bản Không nên có lỗi);
+  - bỏ lượt khởi động cho `engine-hb` như `bp6` (P05 không chạy lại được trên cùng database).
+- Kết quả ngày 2026-11-20: **130/130 thẻ, 0 lỗi**. Mọi câu < 300 ms.
+- Nguồn:
+  - tải lại cả 60 URL MongoDB mà thẻ dẫn (58 từ §7 và §13.2, thêm `core/index-unique/` cho M28 và `tutorial/project-fields-from-query-results/` cho M08) và mọi URL AWS của thẻ DynamoDB (35 trang developer guide, 3 trang API reference, 1 trang Lambda), đều 200; bốn anchor AWS có trên trang;
+  - như §0: mọi con số và mọi sự thật có tên (giới hạn, mặc định, tên lệnh, mã lỗi) trong thẻ MongoDB đã tìm thấy trên đúng trang dẫn; phần diễn giải còn lại dựa trên trang nhưng không đối chiếu từng câu. Ví dụ đã kiểm: transaction mặc định dưới một phút, profiler mức 2 bỏ qua `slowms`, cache WiredTiger `50% of (RAM - 1GB)`, `analyzeShardKey` có từ 7.0, 21.349 / 3.809 tài liệu ở M31. Ý nào không tìm thấy thì đã bỏ hoặc viết lại (§16.4);
+  - trang MongoDB nay là manual **9.0** (Current); thẻ chỉ cú pháp ghi `verified: { version: "MongoDB manual 9.0" }`;
+  - thẻ không trích nguyên văn: câu trong ngoặc kép ở thân thẻ là diễn đạt lại.
+
+### 16.2 Thẻ MongoDB mới (32)
+
+| Mã | Cấp | `runtime` | `check` | Kết quả đo (Không nên → Nên) | File |
+|---|---|---|---|---|---|
+| M02 | L2 | `mingo` | `diff` | `recentEvents` 4 phần tử → 3 (`$slice: -3`) | `mongodb/m02-unbounded-arrays.md` |
+| M03 | L2 | `none` | `syntax` | — | `mongodb/m03-bloated-documents.md` |
+| M04 | L3 | `none` | `syntax` | — | `mongodb/m04-time-series.md` |
+| M05 | L2 | `mingo` | `same` | `total` 120 = 120 | `mongodb/m05-computed-values.md` |
+| M06 | L2 | `none` | `syntax` | — | `mongodb/m06-json-schema.md` |
+| M07 | L3 | `none` | `syntax` | — | `mongodb/m07-esr.md` |
+| M08 | L1 | `mingo` | `diff` | 2 tài liệu đủ trường (cả `items`) → 2 tài liệu chỉ `createdAt`, `total` | `mongodb/m08-project-fields.md` |
+| M10 | L4 | `none` | `syntax` | — | `mongodb/m10-short-transactions.md` |
+| M11 | L5 | `none` | `syntax` | — | `mongodb/m11-shard-key.md` |
+| M12 | L3 | `none` | `syntax` | — | `mongodb/m12-unnecessary-indexes.md` |
+| M13 | L4 | `none` | `syntax` | — | `mongodb/m13-majority-write-concern.md` |
+| M14 | L2 | `none` | `syntax` | — | `mongodb/m14-fewer-collections.md` |
+| M19 | L1 | `mingo` | `diff` | khoảng tháng 9: `[]` → `[1]` | `mongodb/m19-dates-as-date.md` |
+| M20 | L2 | `mingo` | `diff` | dòng B giữ 20 → 10 (dòng C 30 → 15 ở cả hai) | `mongodb/m20-array-filters.md` |
+| M21 | L2 | `mingo` | `diff` | 160,83 → 136,25 | `mongodb/m21-average-of-averages.md` |
+| M22 | L1 | `mingo` | `same` | 5 đơn | `mongodb/m22-in-not-or.md` |
+| M23 | L3 | `none` | `syntax` | — | `mongodb/m23-profiler-threshold.md` |
+| M24 | L4 | `none` | `syntax` | — | `mongodb/m24-live-index-builds.md` |
+| M25 | L4 | `none` | `syntax` | — | `mongodb/m25-backup-restore.md` |
+| M26 | L5 | `none` | `syntax` | — | `mongodb/m26-replication-lag.md` |
+| M27 | L3 | `none` | `syntax` | — | `mongodb/m27-access-control.md` |
+| M28 | L2 | `none` | `syntax` | — | `mongodb/m28-upsert-unique.md` |
+| M29 | L2 | `mingo` | `diff` | `{ name }` → `{ name, promo: '$5 off' }` | `mongodb/m29-literal-dollar.md` |
+| M30 | L2 | `mingo` | `error` | lỗi của mingo `$bucket require a default…` → 3 nhóm | `mongodb/m30-bucket-default.md` |
+| M31 | L3 | `none` | `syntax` | — | `mongodb/m31-explain-execution-stats.md` |
+| M32 | L3 | `none` | `syntax` | — | `mongodb/m32-collation-index.md` |
+| M33 | L3 | `none` | `syntax` | — | `mongodb/m33-sparse-hint.md` |
+| M34 | L4 | `none` | `syntax` | — | `mongodb/m34-causal-session.md` |
+| M35 | L4 | `none` | `syntax` | — | `mongodb/m35-resume-token.md` |
+| M36 | L5 | `none` | `syntax` | — | `mongodb/m36-wiredtiger-cache.md` |
+| M37 | L4 | `none` | `syntax` | — | `mongodb/m37-transient-retry.md` |
+| M38 | L5 | `none` | `syntax` | — | `mongodb/m38-analyze-shard-key.md` |
+
+Track MongoDB sau vòng này: 15 thẻ chạy bằng mingo (6 cũ + 9 mới), 23 thẻ chỉ cú pháp.
+
+### 16.3 Thẻ DynamoDB mới (26)
+
+| Mã | Cấp | `runtime` | `check` | Kết quả đo (Không nên → Nên) | File |
+|---|---|---|---|---|---|
+| D01 | L1 | `dynoxide` | `same` + `rcu` | 5 đơn: `Scan` ScannedCount 30, 1,5 RCU → `Query` 5, 0,5 RCU | `dynamodb/d01-access-patterns-first.md` |
+| D03 | L3 | `dynoxide` | `runs` | `Query` một khóa nóng, 40 item → PartiQL `IN` trên 4 khóa con, 40 item | `dynamodb/d03-write-sharding.md` |
+| D05 | L3 | `dynoxide` | `runs` + `rcu` | `Scan` 5 đơn, 1,5 RCU → `Query` item collection 6 item, 0,5 RCU | `dynamodb/d05-item-collection.md` |
+| D07 | L3 | `dynoxide` | `same` + `rcu` | Count 4: ScannedCount 12, 1 RCU → 4, 0,5 RCU | `dynamodb/d07-sparse-gsi.md` |
+| D08 | L2 | `dynoxide` | `same` + `rcu` | `ADD` một thuộc tính: 7 WCU (item ~6 KB) → 1 WCU | `dynamodb/d08-small-items.md` |
+| D09 | L3 | `none` | `syntax` | (dynoxide: `UnsupportedOperation`) | `dynamodb/d09-ttl-time-series.md` |
+| D10 | L3 | `dynoxide` | `diff` | `PutItem` `ALL_OLD` trả item bị thay → `UpdateItem` có điều kiện, `version` 2, giữ `total` | `dynamodb/d10-conditional-writes.md` |
+| D11 | L3 | `none` | `syntax` | — | `dynamodb/d11-capacity-mode.md` |
+| D12 | L2 | `dynoxide` | `diff` | `Limit: 3` Count 1 + `LastEvaluatedKey` → không `Limit`, Count 4 | `dynamodb/d12-last-evaluated-key.md` |
+| D13 | L2 | `dynoxide` | `error` | `ValidationException` → Count 4 | `dynamodb/d13-strong-reads.md` |
+| D16 | L2 | `dynoxide` | `runs` + `rcu` | `Scan` COUNT 40, 2 RCU → `GetItem` bộ đếm, 0,5 RCU | `dynamodb/d16-count-not-cheaper.md` |
+| D17 | L2 | `dynoxide` | `diff` | `SET views = 5` → 5; `ADD` 1 → 6 | `dynamodb/d17-atomic-counter.md` |
+| D19 | L2 | `dynoxide` | `error` | 26 yêu cầu: `ValidationException` → 25 ghi xong | `dynamodb/d19-batch-write-25.md` |
+| D20 | L2 | `dynoxide` | `same` + `rcu` | 6 đơn: 2 RCU → 0,5 RCU | `dynamodb/d20-partiql-partition-key.md` |
+| D21 | L3 | `none` | `syntax` | (dynoxide: `TransactionCanceledException` `[None, ConditionalCheckFailed]`, `META` vẫn `PENDING`) | `dynamodb/d21-transaction-together.md` |
+| D22 | L4 | `none` | `syntax` | (dynoxide: `UnsupportedOperation`) | `dynamodb/d22-pitr.md` |
+| D23 | L3 | `none` | `syntax` | — | `dynamodb/d23-deletion-protection.md` |
+| D24 | L3 | `none` | `syntax` | — | `dynamodb/d24-throttle-alarms.md` |
+| D25 | L2 | `none` | `syntax` | — | `dynamodb/d25-retry-backoff.md` |
+| D26 | L4 | `none` | `syntax` | — | `dynamodb/d26-least-privilege-iam.md` |
+| D27 | L4 | `none` | `syntax` | — | `dynamodb/d27-contributor-insights.md` |
+| D28 | L2 | `dynoxide` | `error` | `ValidationException` → `n` = 1 | `dynamodb/d28-if-not-exists.md` |
+| D29 | L5 | `none` | `syntax` | — | `dynamodb/d29-idempotent-streams.md` |
+| D30 | L5 | `none` | `syntax` | — | `dynamodb/d30-global-tables-one-writer.md` |
+| D31 | L5 | `none` | `syntax` | — | `dynamodb/d31-dax-strong-reads.md` |
+| D32 | L4 | `none` | `syntax` | — | `dynamodb/d32-partition-ceiling.md` |
+
+Track DynamoDB sau vòng này: 19 thẻ chạy bằng dynoxide (6 cũ + 13 mới), 13 thẻ chỉ cú pháp. Số trong bảng là của `setup` riêng mỗi thẻ (tối đa 61 item), không phải 1.135 item của §8.0.
+
+### 16.4 Chỗ thẻ khác dòng "Kiểm" của mục
+
+- **Chỉ cú pháp, 36 thẻ mới (23 MongoDB, 13 DynamoDB).** Luật chọn: chỉ cho chạy khi **một** lệnh đã cho thấy chính điều thẻ dạy (một kết quả khác, hoặc một lỗi). Không giả lập:
+  - mingo không có index, `explain()`, profiler, replica set, session, transaction, change stream, shard, validator hay `createCollection` (M03, M04, M06, M07, M10–M14, M23–M28, M31–M38). `createIndex` của engine chỉ ghi định nghĩa, nên M07, M12, M28, M32, M33 vẫn chỉ cú pháp dù lệnh chạy được;
+  - dynoxide trả `UnsupportedOperation` cho TTL và backup (D09, D22); lab không có `UpdateTable`/`DeleteTable` (D23); không có tính tiền, CloudWatch, throttle hay partition (D11, D24, D25, D27, D32); không có IAM, Streams, global tables, DAX (D26, D29, D30, D31).
+- **M02 lên chạy được** (catalogue ghi cú pháp): một `updateOne` với `$push` + `$each` + `$slice: -3` cho thấy mảng bị cắt còn 3, so với `$push` thường thành 4. Thân thẻ nói mingo chỉ cho thấy cơ chế cắt, không đo được giới hạn 16 MB.
+- **M20 rút về một lệnh:** catalogue chạy hai lệnh (`updateOne` rồi `find`). Engine trả cả collection sau lệnh ghi, nên một `updateOne` là đủ. `setup` chỉ giữ đơn 5; dòng B đổi giá 15 → 20 để bản Không nên lộ rõ dòng nào không đổi (15, 20, 100 thay vì 15, 15, 100), thêm một dòng giá 100 để thấy dòng không khớp được giữ nguyên.
+- **M30 là thẻ mingo `check: error` đầu tiên.** Lỗi là của mingo (`MongoRunError` mã `mingo`, câu `$bucket require a default for out of range values`), không phải mã lỗi máy chủ MongoDB; `expect: { code: "mingo" }`, và `## Ví dụ` nói rõ điều đó. Cho BP-T: với runtime `mingo`, khung "Chạy cả hai" nên hiện câu lỗi của mingo, không hiện mã `mingo`.
+- **M22** giữ `same`: mingo không có index nên chỉ đo được hai cách cho cùng 5 đơn; thân thẻ nói phần index không đo được.
+- **DynamoDB, một request mỗi bên:**
+  - D01, D05, D07 so một `Scan` (hay `Query` trên GSI rộng) với một `Query`;
+  - D03 bên Nên là một PartiQL `IN` trên 4 khóa con nên `check: runs`; thân thẻ nói lợi ích chia tải ghi không đo được trên emulator;
+  - D16, D17 bỏ lượt đọc thừa; D19 so 26 với 25 yêu cầu;
+  - D12 bên Nên không có `Limit`; vòng lặp `LastEvaluatedKey` nằm ở `## Ví dụ` (đo: `Limit: 3` cần 4 trang, mỗi trang 1 item).
+- **D10 và D21: bản Nên đúng khi báo lỗi.** Thiết kế §3.3 chỉ cho bản Không nên báo lỗi.
+  - D10 đổi thành `diff`: `PutItem` `ALL_OLD` lộ item bị ghi đè, so với `UpdateItem` có điều kiện `ALL_NEW`; `ConditionalCheckFailedException` chuyển vào câu kiểm.
+  - D21 giữ chỉ cú pháp; số đo dynoxide (`ExecuteTransaction`) ghi ở `## Ví dụ`.
+  - Cho BP-T: một `check` mới kiểu "bản Nên phải báo lỗi X" sẽ cho D21 chạy được.
+- **D08** so WCU nhưng khai `expect: { compare: rcu }`; verifier đọc `CapacityUnits` nên đúng, nhưng BP-T có thể muốn đặt tên `wcu`.
+- **Bỏ hoặc viết lại ý không có trên trang dẫn:** M12 (tốn RAM, đẩy working set), M19 (`$dateTrunc`/`$year`), M28 ("lỗi trùng khóa" khi upsert, nay là "không lưu giá trị trùng" của trang unique index), M35 (mở lại "từ bây giờ"), M25 (snapshot "khôi phục nhanh hơn"), M26 ("phải initial sync lại"), M29 (toán tử cập nhật thường không có bẫy), M32 (so chuỗi mặc định), M34 (session "chờ tới thời điểm ghi"), M38 (đổi shard key tốn kém), D32 (adaptive capacity cho on-demand), D24 (throttle GSI làm chậm ghi bảng gốc), D05 (single-table làm quyền và backup khó hơn).
+- **Câu kiểm không lộ đáp án:** M10 đổi câu kiểm từ "quá một phút thì sao" (Vì sao đã nói) sang "một tài liệu có cần transaction không"; D16 không ghi số đo `ProjectionExpression` (2 RCU cả hai bản) vì câu kiểm hỏi đúng điều đó.
+- **`requires`:** mỗi id đã grep ở `0ede43d` có thuật ngữ của thẻ.
+  - M03: `e-mg-l4-01` không nói tài liệu phình, nên `requires: []`.
+  - M31 nối `e-mg-l3-06` (bài có `totalDocsExamined`).
+  - D27 nối bài hot partition `e-dy-l4-03` (không bài nào nói Contributor Insights); D01 thêm `adv: [d7]`.
+  - Bảng §12.7 thêm dòng M28–M38, §12.8 thêm D28–D32.
+- **Sửa bảng §12:** vòng 6 để lại 30 dòng có ô trống thừa (`|| e-bp-…`), đã sửa về đúng bốn cột.
+- **Chưa kiểm, cho BP-T và reviewer** (như §15.3):
+  - luật chú thích lần đầu (style §2.1) chưa có máy kiểm; `glossary.yml` không thêm mục mới;
+  - verifier tách cột `avoid` của glossary theo `;`, nhưng glossary dùng dấu phẩy, nên phần lớn chữ cần tránh không được máy bắt. Vòng này grep tay phần VI của 58 thẻ mới (`cột`, `phân vùng`, `hash key`, `range key`, `văn bản`, `bộ sưu tập`, `giai đoạn`, `giao dịch`): chỉ còn "khóa phân vùng" / "phân vùng vật lý" lần đầu cho DynamoDB (style §2.2 cho phép), "cột" khi nói về SQL/Postgres, và "văn bản dài" theo nghĩa chữ (D08);
+  - thẻ DynamoDB do một agent con viết; agent cha kiểm lại: mọi URL nguồn có trang đã tải (hoặc trả 200), anchor có thật, đáp án của 26 câu kiểm khớp câu hỏi, và đọc D21. Sự thật trong thân 13 thẻ DynamoDB chỉ cú pháp dựa vào lần đối chiếu của agent con.
+- **Sửa thẻ cũ M01:** nguồn `data-modeling/concepts/embedding-vs-references/` chuyển hướng sang `data-modeling/best-practices/#link-related-data` (vòng 5 đã sửa trong catalogue, thẻ thì chưa); thẻ nay dẫn thẳng URL đích.
+
+### 16.5 Ngân sách
+
+- `mongodb` (38 thẻ): 145.395 byte thô, 39.689 byte gzip -9 cả file. Thẻ lớn nhất 2,3 KB gzip (M01).
+- `dynamodb` (32 thẻ): 330.984 byte thô, 45.667 byte gzip -9 cả file. `setup` chiếm phần lớn; thẻ lớn nhất là D01, 33,5 KB thô, 3,3 KB gzip.
+- Như §15.4: một chunk mỗi track vượt trần 20 KB; một chunk lười mỗi thẻ (§13.1.4) vẫn đủ, kể cả thẻ DynamoDB lớn nhất.
+
+## 17. Vòng 8: chú thích lần đầu, `wcu`, kiểm tra đồng bộ 130 thẻ
+
+Theo L215.6. Vòng này chỉ sửa tài liệu và nội dung: thêm 61 mục vào `content/engine/glossary.yml` (và sửa VI của 2 mục cũ), sửa 17 thẻ ở `content/engine/best/`, thêm một câu dưới bảng §3.3 của `product-design-best-practice.md`. Hai commit: lần đầu, rồi một commit sửa sau khi soát lại (closure, `avoid`, nguồn, §17.3, §17.5). Không đụng `src/`, test, build hay `decision-log.md`.
+
+### 17.1 Chú thích lần đầu (style §2.1, §7)
+
+**Luật:** mọi thuật ngữ kỹ thuật một thẻ dùng phải hoặc có trong `glossary.yml`, hoặc được giải thích ngay lần đầu xuất hiện trong thẻ đó.
+
+**Máy kiểm:** script tạm `bp8/gloss.mjs` + `bp8/terms.mjs`, không commit. Ba luật của script:
+
+- **Ứng viên.** 204 thuật ngữ, lấy từ các chữ ASCII nằm trong văn VI (ngoài code), thêm tên EN của cùng khái niệm.
+  - **Closure:** script tách mọi chữ ASCII trong văn VI của 130 thẻ. Chữ nào không khớp một thuật ngữ thì phải nằm trong danh sách miễn `EXEMPT`, chia theo nhóm. Còn sót thì script báo lỗi. Kết quả: 0 chữ sót. Vòng soát lại tìm thêm `placeholder`, `literal`, `batch`, `Cognito`, `5xx`, `1-n`, `subset pattern`, `bloated documents`, `projection`, `rollback`, `optimizer`…
+  - `EXEMPT` gồm:
+    - chữ Việt viết không dấu ("sao", "khi"…);
+    - tên sản phẩm (PostgreSQL, MongoDB, DynamoDB, PGlite, mingo, dynoxide, AWS, BoonData, BSON, JavaScript);
+    - cú pháp viết như nhập trên máy: từ khóa và kiểu SQL, hàm, toán tử mongosh, tên API và tham số DynamoDB, tên cột;
+    - đơn vị;
+    - giá trị dữ liệu mẫu (`PAID`, `SKU`…);
+    - từ IT thường ngày (database, script, dashboard, server, client, API, CPU, RAM, job, deployment, dump, cluster, backup, metadata, notebook…);
+    - chữ trong ba câu trích ngắn ở §17.4.
+  - **Giới hạn:** thuật ngữ chỉ viết bằng tiếng Việt mà không có chữ Anh đi kèm thì script không thấy (trừ vài chữ đã thêm tay: "múi giờ", "khóa ngoại", "quyền tối thiểu", "SQL động"…). Reviewer vẫn đọc phần này bằng mắt.
+- **Có trong glossary.** Một phần của `term` hoặc `vi_term` (tách ở ` / `, `(`, `)`, `,`) trùng nguyên thuật ngữ, hoặc `term` trùng nguyên. Không chấp nhận khớp chuỗi con.
+  - Ánh xạ tay (`g:`) chỉ được tính khi phần giải thích của mục đó có nêu thuật ngữ. Ví dụ: `Read Committed` → `isolation level`, `MREC` → `global tables`.
+  - Thuật ngữ chỉ có trong `glossary-vi.md` (NULL, subquery, CTE, alias, tie-breaker) **không** được tính. Năm mục này đã được chép sang glossary Engine, giữ đúng cách viết VI.
+- **Đã giải thích.** Lần nhắc đầu (VI và EN kiểm riêng) phải nằm trong ngoặc sau một từ, hoặc có ngoặc đi ngay sau, cho phép một từ chính chen giữa ("migration tool (…)").
+  - Tiêu đề, `objectives` và `avoid` là dòng tóm tắt hiện trên thẻ, như tiêu đề mục. Vì vậy "lần đầu" tính từ thân bài, rồi tới quiz và `lint.tip`. Thuật ngữ chỉ có ở dòng tóm tắt thì phải giải thích ngay ở đó.
+  - Còn lại phải có trong danh sách soát tay `ALLOW`, mỗi dòng ghi lý do. Có 6 dòng:
+    - D29 `IteratorAge`: thân bài giải thích ngay sau code span.
+    - S07 `NULLS NOT DISTINCT`: cú pháp trong code span; `## Ý chính` giải thích.
+    - S08 `snake_case`: như D29.
+    - P03 "idle in transaction": tên trạng thái trong ngoặc kép; glossary vẫn có mục.
+    - M02 EN "a newest subset (the subset pattern)": tên pattern chú thích cho cụm đứng trước.
+    - Q07 "1-n": giải thích sau dấu hai chấm, trong cùng ngoặc.
+
+**Kết quả:** lần chạy đầu (bản nháp của script, chỉ đếm VI) có 142 lần nhắc đầu chưa đạt. Sau vòng này, với luật chặt ở trên và đếm cả VI lẫn EN: **0**.
+
+**61 mục glossary mới.** Đủ 9 trường. `doc` là trang docs chính thức đã tải về (200, đúng URL cuối sau chuyển hướng). Mỗi con số, mặc định và ý có tên trong `vi`/`en` đã grep trên trang tải về; ý nào không tìm thấy thì bỏ hoặc viết chung.
+
+**Ngoại lệ về nguồn** (ý đúng nhưng nằm ở trang khác trang `doc`, hoặc là sự thật của app):
+
+- identity column: câu về `serial` ở `datatype-numeric.html`.
+- idle in transaction: tên trạng thái ở `monitoring-stats.html`; phần giữ lock và `idle_in_transaction_session_timeout` ở trang `doc` (`runtime-config-client.html`).
+- sequence: câu "`serial` lấy số từ sequence" dựa vào `datatype-numeric.html`.
+- Sự thật của app, không phải của docs:
+  - request: "lab nhận mỗi lần đúng một request";
+  - emulator: "lab dùng dynoxide";
+  - time zone: ví dụ `+07`.
+- retry: viết lại sau lần soát. Bản đầu có ý "chỉ an toàn khi idempotent hoặc có điều kiện", chưa grep. Bản mới chỉ nói điều trang lỗi DynamoDB ghi: cột "OK to retry?", lỗi không thử lại được thì phải sửa phía client, ghi không idempotent có thể bị áp hai lần.
+
+- **SQL / PostgreSQL (23):** NULL, subquery, CTE, alias, tiebreaker, view, sequence, identity column (serial), superuser, owner, prepared statement, time zone (UTC), timestamptz, numeric, float, DDL, system catalog, idle in transaction, NOT VALID / VALIDATE CONSTRAINT, lock_timeout, least privilege, dynamic SQL, unique index.
+- **MongoDB (21):** session, driver, working set, bloated documents, bucket pattern, computed pattern, top-k sort ($sort + $limit), hashed sharding, profiler, capped collection, rolling index build, replication lag, access control, TLS, collation, hint, resume token, WiredTiger cache / filesystem cache, TransientTransactionError, callback API, reshard.
+- **DynamoDB (17):** request, throughput, auto scaling, optimistic locking, deletion protection, CloudWatch (metric, dimension, alarm), exponential backoff (jitter), retry, AWS SDK, IAM (policy, action, ARN, credential), Contributor Insights, Lambda (trigger), last writer wins, Amazon S3, emulator, epoch time, ISO 8601.
+
+Ghi chú về các mục mới:
+
+- **`keep_en: false`:** subquery → "truy vấn con", time zone → "múi giờ", session → "phiên", retry → "thử lại", least privilege → "quyền tối thiểu", dynamic SQL → "SQL động".
+  - Các chữ này lấy theo cách các thẻ Postgres, bài Postgres ("phiên" ở `0ede43d`) và `glossary-vi.md` đang viết.
+  - Hai mục cũ của glossary viết VI "retry" (WiredTiger, throttling), đã đổi thành "thử lại".
+- **Bốn va chạm chữ:** "optimistic locking" giữ tiếng Anh, `avoid: "khóa lạc quan"`. Không mục nào dùng "khóa" cho lock hay "giao dịch" cho transaction.
+- **Chọn `avoid`:** không trùng cách các thẻ và bài Engine đang viết đúng nghĩa. Mỗi mảnh của 61 `avoid` mới (tách ở `,` và `;`) đã grep trên văn VI của mọi file `content/engine/**` (script `bp8/avoidhits.mjs`); nay 0 chỗ trùng. Đã đổi:
+  - "số thực" → "kiểu số học" (numeric) và "số thập phân chính xác" → "số nổi" (float): S03 dùng hai chữ cũ đúng nghĩa;
+  - "buổi" → "buổi làm việc" (session): A02;
+  - "số 0" → "giá trị bằng 0" (NULL);
+  - "chuỗi, dãy" → "chuỗi tuần tự" (sequence): "chuỗi" là string ở nhiều thẻ;
+  - "danh mục sản phẩm" → "catalô" (system catalog): bài MongoDB dùng đúng nghĩa;
+  - "không hợp lệ" → "ràng buộc vô hiệu" (NOT VALID): M06;
+  - "gợi ý" → "lời gợi ý index" (hint): D09.
+
+**Giải thích ngay trong thẻ** (không có trang docs chính thức hợp lệ, hoặc chữ của riêng thẻ):
+
+- ORM, snake_case: S08.
+- tenant: S10.
+- migration: P05, P13. M06 EN đổi "during a migration" thành "while documents are being converted", cho khớp bản VI.
+- as-of date: A05 EN.
+- literal: A05.
+- Cognito: D26 (quiz).
+- 5xx: D25.
+- 1-n: Q07.
+- RPO/RTO: M25 đã giải thích từ trước.
+
+**Đổi chữ VI theo `vi_term` mới:**
+
+- Q02, Q07: "truy vấn con (subquery)". Tiêu đề Q02 thành "(truy vấn con)".
+- M10, M34: "phiên (session)". Tiêu đề M34 thành "phiên causally consistent".
+- D10, D17: "thử lại (retry)".
+- Mục prepared statement thêm chữ "placeholder" (X01 dùng chữ này).
+
+Code span VI/EN của các thẻ này không đổi.
+
+### 17.2 D08: `compare: wcu`
+
+- **D08:** đổi `expect: { compare: rcu }` thành `{ compare: wcu }`. Cả hai bản là `UpdateItem`; số đo là WCU (Không nên 7 → Nên 1), như thân thẻ đã viết.
+- **Verifier tạm** (`bp7/verify8.mjs`) tách hai giá trị:
+  - `rcu` chỉ hợp lệ khi cả hai bản là request đọc (`GetItem`, `Query`, `Scan`, PartiQL `SELECT`…);
+  - `wcu` chỉ hợp lệ khi cả hai bản là request ghi (`PutItem`, `UpdateItem`, `DeleteItem`, `BatchWriteItem`, `TransactWriteItems`, PartiQL không phải `SELECT`);
+  - cả hai so `ConsumedCapacity.CapacityUnits`, bản Nên phải nhỏ hơn.
+- **Sáu thẻ `rcu` còn lại** (D01, D05, D06, D07, D16, D20) đều là request đọc và đạt.
+- **`src/` trên main** chưa có chỗ nào đọc `expect.compare`, nên đổi tên không vỡ gì.
+- **Sửa thiết kế:** `product-design-best-practice.md` §3.3 thêm một câu dưới bảng: với `check: same` hoặc `runs` trên DynamoDB, `expect.compare: rcu | wcu` (D01, D06, D07, D08, D20 là `same`; D05, D16 là `runs`). Commit đầu đã đặt câu này nhầm vào dòng `runs`.
+
+### 17.3 Đề xuất: kiểu kiểm "bản Nên phải báo lỗi" (cho D21)
+
+Hiện `check: error` hiểu ngầm là bản **Không nên** báo lỗi. D10 và D21 cần chiều ngược lại: bản Nên đúng chính vì nó từ chối ghi (§16.4). D10 đã đổi sang `diff`. D21 vẫn chỉ cú pháp. Đề xuất cho BP-T, chưa làm code:
+
+```yaml
+pair:
+  runtime: dynoxide
+  check: error
+  expect:
+    fails: good                              # mặc định bad (như hiện nay)
+    code: TransactionCanceledException
+    reasons: [None, ConditionalCheckFailed]  # tùy chọn, chỉ DynamoDB transaction
+    probe: '{"op": "GetItem", "input": {"TableName": "Shop", "Key": {"pk": {"S": "ORDER#100"}, "sk": {"S": "META"}}}}'
+```
+
+**Luật test (bổ sung bảng "Luật nội dung" §3.3 của thiết kế):**
+
+- `fails: good`: bản Nên phải báo đúng `expect.code` (và đúng `reasons` nếu có); bản Không nên chạy không lỗi.
+- `probe` là một request đọc, chạy sau **mỗi** bản trên `setup` mới. Kết quả probe của hai bản phải khác nhau. Sau bản Nên, probe phải bằng probe chạy ngay trên `setup` (lệnh bị từ chối không để lại gì).
+- `probe` chỉ cho `runtime` có trạng thái (`dynoxide`, `engine`, `mingo`). Với `lab`, `fails: good` không có nghĩa và bị cấm.
+
+**Pane:**
+
+- Không nên: kết quả + probe ("`ORDER#100` thành `PAID` một mình").
+- Nên: mã lỗi + câu dạy + probe ("không ghi gì").
+- Câu kết luận: "Bản Nên báo lỗi TransactionCanceledException và không ghi gì; bản Không nên đổi đơn mà không kiểm bản sao."
+
+**Số đo đã có** (§16.3, dynoxide 1.5.0; vòng này không chạy lại):
+
+- bản Nên trả `TransactionCanceledException` với `[None, ConditionalCheckFailed]`, `ORDER#100` vẫn `PENDING`;
+- bản Không nên đổi `ORDER#100` thành `PAID` một mình.
+
+Khi BP-T có kiểu này, D21 đổi `runtime: dynoxide`, `check: error`, `expect` như trên, và bỏ câu "Thẻ chỉ cú pháp" ở `## Ví dụ`.
+
+**`setup`:** phải làm điều kiện `status = 'PENDING'` của item thứ hai (bản sao `CUST#7`) sai, như lần chạy ghi ở `## Ví dụ` (lý do `[None, ConditionalCheckFailed]`). `## Ví dụ` không ghi trạng thái của bản sao; khi viết `setup` thì chọn một giá trị khác `PENDING` và ghi rõ.
+
+### 17.4 Kiểm tra đồng bộ 130 thẻ
+
+Hai script tạm:
+
+- `bp7/verify8.mjs`: verifier vòng 7 thêm luật `rcu | wcu`. Kết quả: **130/130 thẻ, 0 lỗi**.
+- `bp8/consist.mjs`: kiểm thêm ngoài verifier. Kết quả: **0 lỗi cấu trúc**.
+
+| Kiểm | Kết quả |
+|---|---|
+| Thứ tự khóa frontmatter (`id … quiz`, `lint` trước `quiz`) và thứ tự khóa `pair` | 130/130 đúng |
+| Mục thân bài: VI là dãy con theo thứ tự của `Ý chính, Vì sao, Ví dụ`; EN tương ứng `Key idea, Why, Example`, cùng số mục | 130/130 đúng |
+| Code span: thân bài, mọi cặp `{vi, en}` (verifier), và `title` so với `title_en` | 0 lệch |
+| EN không dấu tiếng Việt (thân bài, mọi trường `en`, `title_en`) | 0 lỗi |
+| Trích dẫn trong ngoặc kép ≥ 15 từ | 0 |
+
+**Ba câu trích nguyên văn tiếng Anh** (trong cả VI và EN) đã đối chiếu trên trang nguồn; mỗi câu ≤ 7 từ:
+
+- P30 "several sort and hash operations": `runtime-config-resource.html`;
+- A15 "likely to give unhelpful results for last_value": `functions-window.html`;
+- M15 "any combination of elements": `query-array-of-documents`.
+
+**Glossary:** 270 mục, đủ 9 trường đúng thứ tự, không trùng `term`, EN không dấu, `doc` thuộc ba host.
+
+### 17.5 Luật lặp giữa các thẻ: ghi chú gộp (không xóa thẻ)
+
+**Phạm vi:** đọc tiêu đề EN và câu đầu `## Key idea` của cả 130 thẻ (`bp8/titles.txt`), rồi đọc kỹ `## Key idea` của các cặp nghi ngờ.
+
+**Cùng luật, khác engine** (giữ cả hai, mỗi thẻ dạy cú pháp của engine mình). Khi BP-T làm chip "Xem thêm", nên nối:
+
+- **A18 ↔ M21** (không lấy trung bình của trung bình). M21 có thể dẫn A18 cho phần "giữ tổng và số đếm".
+- **I09 ↔ M12** (bỏ index thừa: trùng tiền tố, không dùng).
+- **X02 ↔ M27 ↔ D26** (quyền tối thiểu theo role / IAM).
+- **I02 ↔ M07** (cột bằng trước, khoảng sau / ESR).
+- **P05 ↔ M24** (dựng index trên bảng đang chạy).
+- **D22 ↔ M25** (khôi phục: PITR / sao lưu và thử khôi phục).
+- **D25 ↔ M37** (thử lại: backoff / chạy lại cả transaction).
+- **M08 ↔ Q09** (chỉ lấy cột / trường cần). I04 ↔ M08 chỉ gần nhau (covering index với projection), không phải cùng luật.
+
+**Lặp một phần trong cùng engine:**
+
+- **"`ORDER BY` phải có tiebreaker duy nhất"** được nói lại ở Q10, A17, Q18, A16, A03.
+  - Đề xuất: Q10 giữ luật gốc.
+  - Bốn thẻ còn lại chỉ giữ một vế và nối Q10 qua `requires` khi có id Engine tương ứng, hoặc chip "Xem thêm".
+  - Phần riêng của từng thẻ vẫn giữ: A17 chọn luật hòa, Q18 khung `ROWS`, A16 `PARTITION BY`, A03 khử trùng.
+- **X06 ⊂ X02.** X06 (role chỉ đọc cho người phân tích) là một trường hợp của X02.
+  - X06 nhắc lại "không dùng tài khoản ứng dụng". Đề xuất giữ X06, vì phần riêng là `pg_read_all_data` và `default_transaction_read_only`.
+  - Bỏ câu lặp khi sửa X06 lần tới.
+- **S01 ⊂ A02.** Câu đầu `## Key idea` của A02 nhắc lại luật S01 ("lưu thời điểm bằng `timestamptz`"). Đề xuất A02 mở bằng luật của chính nó (đổi về múi giờ nghiệp vụ rồi mới lấy ngày) và nối S01.
+- **Q22 ⊃ S08.** Q22 gồm cả "tên `snake_case` chữ thường" của S08. Đề xuất Q22 nói phần đó một vế và nối S08.
+- **D06 và D01/D05.** Cả ba dùng cùng số đo `Scan` → `Query` (1,5 → 0,5 RCU). Luật gốc "Query, không Scan" là D06. D01 (liệt kê access pattern) và D05 (item collection) giữ luật riêng; `## Ví dụ` của hai thẻ nên nói số đo minh họa luật D06.
+- **D03 ↔ D32 ↔ D27** (khóa nóng). D32 khuyên rải khóa bằng hậu tố, tức D03; D27 tìm khóa nóng. Ba việc khác nhau, nối qua chip.
+- **X01 ↔ X09.** Cùng ý "giá trị qua tham số"; X09 riêng phần tên (`%I`). Không gộp.
+- **A11 ↔ A12.** A12 lấy dòng mồ côi làm một ví dụ data test. Không gộp.
+- **Q02 / A11** cùng dùng `NOT EXISTS`, nhưng khác việc: Q02 bẫy NULL của `NOT IN`, A11 đếm dòng mồ côi. Không gộp.
+- **Không phải lặp:**
+  - D13 / D31: đọc mạnh / DAX không giúp đọc mạnh;
+  - D08 / D17: tách bộ đếm / `ADD` thay vì đọc rồi ghi;
+  - M16 / M17 và Q01 / Q03: hai mặt khác nhau của NULL / thiếu trường.
+
+### 17.6 Còn mở, cho BP-T và reviewer
+
+- **Verifier tách cột `avoid` theo `;`.** Glossary dùng dấu phẩy, nên chỉ mục `avoid` một giá trị mới được máy bắt. Đề xuất BP-T tách theo `,` và `;`.
+  - Trước khi bật, cần soát các `avoid` cũ có dấu phẩy nằm trong một cụm, ví dụ "mili giây" trong `cost`: "chi phí tiền, mili giây" là hai cụm.
+- **Luật "lần đầu" của style §2.1** (`vi_term (term)` khi `keep_en: false`) chưa có máy kiểm cho các mục đã có trong glossary. `gloss.mjs` chỉ kiểm "có trong glossary hoặc được giải thích". Nên làm thành luật test khi có parser Engine.
+- **Bài Engine dùng chữ khác `vi_term` mới** (không sửa vòng này; đếm ở `0ede43d`, `content/engine/{postgres,mongodb,dynamodb}`):
+  - **session:** bài MongoDB viết VI "session" (ví dụ "session nhất quán nhân quả" ở bài causal consistency L4); bài Postgres viết "phiên". `vi_term` chọn "phiên", nên bài MongoDB cần "phiên (session)" lần đầu.
+  - **retry:** vài câu VI ghi "retry" (ví dụ "SDK tự retry có backoff"); bài viết "thử lại" nhiều hơn. Trong glossary đã sửa 2 chỗ như vậy.
+  - **subquery:** mục tiêu bài DynamoDB L1-03 viết "subquery phía server"; nên là "truy vấn con (subquery)".
+  - Trên main (chỉ có `content/engine/mongodb/path` và `interview-bank.yml`), "subquery" còn ở văn VI: `lessons-p7-12.yml` dòng 8 ("subquery tương quan") và `interview-bank.yml` dòng 87 ("Khi subquery có thể chứa NULL"). Nên đổi thành "truy vấn con" khi sửa các file đó.
+- **Exponential backoff:** glossary không ghi số mili giây ví dụ của trang AWS (50, 100, 200), vì style §1.1 không dùng mili giây trong văn dạy.

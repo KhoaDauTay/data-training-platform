@@ -189,6 +189,8 @@ Best Practice **không nhắc domain nào** (như Engine, L82). Tên bảng tron
 | `error` | Bản Sai: SQLSTATE + câu dạy của `sqlErrors.ts`. Bản Đúng: kết quả | "Bản Không nên báo lỗi 22012 (chia cho 0)." |
 | `syntax` | Không chạy | Không có câu |
 
+Với `check: same` hoặc `runs` trên DynamoDB, `expect.compare: rcu` (cả hai bản là request đọc) hoặc `wcu` (cả hai bản là request ghi) so `ConsumedCapacity` của hai bản; bản Nên phải tốn ít hơn (catalogue §17.2).
+
 Không bao giờ hiện mili giây: số ms thay đổi theo máy, cost thì không (L-ch11).
 
 ### 3.4 Nhãn trung thực (một nhãn, suy ra, không phải trường mới)

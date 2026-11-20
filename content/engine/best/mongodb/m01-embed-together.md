@@ -18,7 +18,7 @@ requires: [e-mg-l2-11]
 skills: [join]
 adv: []
 sources:
-  - https://www.mongodb.com/docs/manual/data-modeling/concepts/embedding-vs-references/
+  - https://www.mongodb.com/docs/manual/data-modeling/best-practices/#link-related-data
   - https://www.mongodb.com/docs/manual/data-modeling/design-patterns/
 verified: { version: "mingo 7.2.6", date: "2026-11-20" }
 pair:
