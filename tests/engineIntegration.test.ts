@@ -108,7 +108,22 @@ describe('DynamoDB labs: every Solution passes its own check (dynoxide in Node)'
     const v = { s: 'x', n: 2.5, b: true, z: null, l: [1, 'a'], m: { k: [] } };
     expect(marshal(v)).toEqual({ M: { s: { S: 'x' }, n: { N: '2.5' }, b: { BOOL: true }, z: { NULL: true }, l: { L: [{ N: '1' }, { S: 'a' }] }, m: { M: { k: { L: [] } } } } });
     expect(unmarshal(marshal(v))).toEqual(v);
+    expect(marshal(marshal(v))).toEqual(marshal(v)); // idempotent
+    expect(marshal({ SS: ['a', 'b'] })).toEqual({ SS: ['a', 'b'] });
   });
+  it('setup items plain or already typed seed the same table', async () => {
+    const table = { TableName: 'Tbl', KeySchema: [{ AttributeName: 'id', KeyType: 'HASH' }], AttributeDefinitions: [{ AttributeName: 'id', AttributeType: 'S' }], BillingMode: 'PAY_PER_REQUEST' };
+    const plain = JSON.stringify({ tables: [table], items: { Tbl: [{ id: 'a', n: 2, tags: ['x'] }] } });
+    const typed = JSON.stringify({ tables: [table], items: { Tbl: [{ id: { S: 'a' }, n: { N: '2' }, tags: { L: [{ S: 'x' }] }, fmt: { SS: ['p', 'e'] } }] } });
+    expect(labOf(typed).items!.Tbl[0]).toEqual({ id: { S: 'a' }, n: { N: '2' }, tags: { L: [{ S: 'x' }] }, fmt: { SS: ['p', 'e'] } });
+    const r = dynamoRunner({ lang }, client as never);
+    const scan = '{"op": "Scan", "input": {"TableName": "Tbl"}}';
+    for (const setup of [plain, typed]) {
+      const out = await r.run({ setup, steps: [] }, scan);
+      expect(out.rows).toHaveLength(1);
+      expect(out.meta?.count).toBe(1);
+    }
+  }, 60_000);
   const labs = lessons.filter((l) => l.engine === 'dynamodb' && l.lab && l.runtime !== 'docs');
   it.each(labs.map((l) => [l.id, l] as const))('%s', async (_id, l) => {
     const r = dynamoRunner({ lang }, client as never);

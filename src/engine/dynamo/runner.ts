@@ -10,8 +10,25 @@ import { DynamoInputError, LabFailedError, LabTimeoutError, type AttributeValue,
 
 const isObj = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v);
 
-/** Plain JSON → DynamoDB JSON: string S, number N, boolean BOOL, null NULL, array L, object M (a set needs its own tag). */
+const TYPED: Record<string, (x: unknown) => boolean> = {
+  S: (x) => typeof x === 'string', N: (x) => typeof x === 'string', B: (x) => typeof x === 'string', BOOL: (x) => typeof x === 'boolean',
+  NULL: (x) => x === true, M: isObj, L: Array.isArray,
+  SS: (x) => Array.isArray(x) && x.every((e) => typeof e === 'string'), NS: (x) => Array.isArray(x) && x.every((e) => typeof e === 'string'),
+  BS: (x) => Array.isArray(x) && x.every((e) => typeof e === 'string'),
+};
+/** Already DynamoDB JSON: one type key with a value of that type's shape (`{ "N": "5" }`, `{ "SS": ["a"] }`). */
+export const isTyped = (v: unknown): v is AttributeValue => {
+  if (!isObj(v)) return false;
+  const keys = Object.keys(v);
+  return keys.length === 1 && Object.hasOwn(TYPED, keys[0]) && TYPED[keys[0]](v[keys[0]]);
+};
+
+/**
+ * Plain JSON → DynamoDB JSON: string S, number N, boolean BOOL, null NULL, array L, object M (a set needs its own tag).
+ * Idempotent: a value already typed (content may write `{ "SS": [...] }` or a whole typed item) is kept as it is.
+ */
 export function marshal(v: unknown): AttributeValue {
+  if (isTyped(v)) return v;
   if (v === null || v === undefined) return { NULL: true };
   if (typeof v === 'string') return { S: v };
   if (typeof v === 'number') return { N: String(v) };
