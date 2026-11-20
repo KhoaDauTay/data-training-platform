@@ -1,9 +1,26 @@
 import { describe, expect, it } from 'vitest';
 import {
   ackTour, gated, navLock, parseTour, readTour, startTour, tabOpen, TOUR_KEY, tourEscSkips, tourLeft, tourStep, welcomeNeeded, type TourFacts,
-  bootPick,
+  bootPick, TOUR_STEPS,
 } from '../src/onboarding';
+import { showsSession } from '../src/goal';
 import type { KV } from '../src/storage';
+
+// V22-C (L208, review-v21 ONB): a new player's Home has one call to action; the session card waits for the tour.
+describe('Home session card (V22-C)', () => {
+  it('a new player does not see it before the tour is finished', () => {
+    expect(showsSession(0, undefined, false)).toBe(false); // pre-welcome
+    expect(showsSession(0, { step: 0, knows: false }, false)).toBe(false);
+    expect(showsSession(1, { step: 4, knows: false }, false)).toBe(false); // ticket 1 done, tour still on
+  });
+  it('shows once the tour is finished or skipped, or the player knows SQL, and something is done', () => {
+    expect(showsSession(1, { step: TOUR_STEPS, knows: false }, false)).toBe(true);
+    expect(showsSession(1, { step: 2, knows: false }, true)).toBe(true);
+    expect(showsSession(3, { step: 0, knows: true }, false)).toBe(true);
+    expect(showsSession(5, undefined, false)).toBe(true); // a save from before the tour existed
+    expect(showsSession(0, { step: TOUR_STEPS, knows: true }, false)).toBe(false); // nothing done yet: the resume line
+  });
+});
 
 const mem = (): KV & { data: Map<string, string> } => {
   const data = new Map<string, string>();

@@ -1,6 +1,9 @@
 import { loadTickets } from '../content';
 import { activeDomain, DOMAINS, domainText } from '../domains';
-import { homeModel, knownSkills, kpisOf, kpiTiles, LEVELS, reliesOn, resumeTarget, type ChapterCard, type HomeModel } from '../home';
+import { homeModel, knownSkills, kpisOf, kpiTiles, LEVELS, reliesOn, resumeTarget, type ChapterCard, type HomeModel, type Resume } from '../home';
+import { awayDays, readGoal, weekCount } from '../goal';
+import { loadHistory } from '../history';
+import { localStore, readJson } from '../storage';
 import { sqlOnly } from '../onboarding';
 import { getLang, t, type Key } from '../i18n';
 import { CHAPTERS, chaptersOf, chapterTitle, domainSkills, moduleTitle, nextTicket, rankOf, SKILLS } from '../progress';
@@ -12,7 +15,7 @@ import { domainHash, isInterviewPage, learnAdvOf, learnModuleOf, learnSkillOf } 
 import { laneInfo, lanePanel, wirePins } from './lanePanel';
 import { mascot, MOVES, setLilyStage } from './mascots';
 import { gainSince, growing, markGrew, react, settle } from './celebrate';
-import { ACC_AT, accAt, dayCount, firstDay, LAST_STAGE, type LilyStage, lilyStage, markStages, reachedOn, readLily, setAcc, toNextStage } from '../lily';
+import { ACC_AT, accAt, dayCount, DAYS_KEY, firstDay, parseDays, LAST_STAGE, type LilyStage, lilyStage, markStages, reachedOn, readLily, setAcc, toNextStage } from '../lily';
 import { localDay } from '../practice';
 import { relabelScene, teachScene } from './teachScene';
 import { currentRoute } from './router';
@@ -30,7 +33,7 @@ import { byId, h, nodes } from './dom';
 import { artSlot } from '../art/load';
 import { fleetOrder, takeNewRoutes } from '../routesSeen';
 import { callout } from './routeText';
-import { isStory } from '../session';
+import { isStory, reviewCount } from '../session';
 import { go } from './router';
 
 /** Width on >= lg screens (3-column grid, Overview only); every section is full width below lg and on the other pages. */
@@ -108,17 +111,26 @@ function resume(id: string): void {
   else actions.selectTicket(id);
 }
 
+/** v15 Q2: what "Continue" opens (the last drill's skill, the learning path, or the open domain's next task). */
+export const resumeNow = (): Resume | undefined => resumeTarget(app.save.completed, nextTicket(app.tickets, done()), sqlOnly(), SKILLS.map((s) => s.id));
+/** Its name: the task title, the skill, or the learning path. */
+export const resumeName = (r: Resume): string =>
+  r.kind === 'ticket' ? textOf(r.ticket, getLang()).title : r.kind === 'skill' ? SKILLS.find((s) => s.id === r.skill)!.label[getLang()] : t('nav.learn');
+export function openResume(r: Resume): void {
+  if (r.kind === 'ticket') resume(r.ticket.id);
+  else location.hash = r.kind === 'skill' ? `${hashOf('learn')}/skill/${r.skill}` : hashOf('learn');
+}
+
 /** v12.0 U5: Home is across domains: one line to go on (task · domain), no colleague's message (that card is the Overview's). v15 Q2: or the General area's. */
-function resumeLine(): HTMLElement | null {
-  const r = resumeTarget(app.save.completed, nextTicket(app.tickets, done()), sqlOnly(), SKILLS.map((s) => s.id));
+export function resumeLine(): HTMLElement | null {
+  const r = resumeNow();
   if (!r) return null;
-  const lang = getLang();
   const go = h('span', { class: 'flex items-center gap-2' }, t(r.kind === 'ticket' ? 'home.resume' : 'home.resumeSkill'), icon('arrowRight', 'size-4 transition group-hover:translate-x-0.5'));
   const btn = cx(BTN_GO, 'group px-4 py-2');
   return h('section', { class: cx(CARD, 'flex flex-wrap items-center gap-3 p-4'), 'aria-labelledby': 'resume-title' },
     h('p', { id: 'resume-title', class: 'm-0 min-w-0 flex-1' },
       h('span', { class: 'text-muted' }, t('home.resumeLabel')), ' ',
-      h('b', {}, r.kind === 'ticket' ? textOf(r.ticket, lang).title : r.kind === 'skill' ? SKILLS.find((s) => s.id === r.skill)!.label[lang] : t('nav.learn')),
+      h('b', {}, resumeName(r)),
       r.kind === 'learn' ? null : h('span', { class: 'text-muted' }, ` · ${r.kind === 'ticket' ? t(DOMAINS.find((d) => d.id === activeDomain())!.name) : t('nav.learn')}`)),
     r.kind === 'ticket'
       ? h('button', { type: 'button', class: btn, onclick: () => resume(r.ticket.id) }, go)
@@ -400,12 +412,43 @@ function helloSection(): HTMLElement {
   const [pre, post] = t('lily.line', { stage: t(STAGE_NAME[stage]), n: '' }).split('');
   const flip = app.dayFlip;
   app.dayFlip = false;
+  const pet = petButton();
+  const week = weekNow();
+  const back = welcomeBack();
+  // V22-C: Lily cheers once, on the draw where this week's count reaches the goal (session memory, no stored flag, no reward).
+  if (week.goal && goalWas !== undefined && goalWas < week.goal && week.k >= week.goal) setTimeout(() => pet.click(), 0);
+  goalWas = week.k;
   // v21 U23: one card as wide as the cards below it: Lily left, the title, tagline and her progress right (one left edge).
-  return h('section', { class: cx(CARD, 'grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-4 gap-y-3 p-5') }, petButton(), // phones: the card takes its own row
-    h('div', { class: 'min-w-0' }, h('p', { class: 'm-0 text-display font-extrabold' }, t('app.name')), h('p', { class: 'm-0 text-muted' }, t('home.tagline')),
+  return h('section', { class: cx(CARD, 'grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-4 gap-y-3 p-5') }, pet, // phones: the card takes its own row
+    h('div', { class: 'min-w-0' }, h('p', { class: 'm-0 text-display font-extrabold' }, t('app.name')), back ? null : h('p', { class: 'm-0 text-muted' }, t('home.tagline')), // V22-C: Boon's line below replaces the tagline
       h('p', { class: 'mt-2 mb-0 text-body-sm font-semibold' }, pre, h('span', { class: flip && 'cq-flip' }, String(dayCount())), post,
         grewPill ? h('span', { class: 'ml-2 rounded-full bg-sun px-2 py-0.5 text-caption font-bold text-sun-ink' }, t('lily.grewPill')) : null)),
-    lilyCard(stage, known, next));
+    back,
+    lilyCard(stage, known, next, week));
+}
+
+let goalWas: number | undefined;
+/** V22-C: this week's tasks and reviews (derived, src/goal.ts) and the goal, 0 when none is set. */
+export const thisWeek = (): { tasks: number; reviews: number } =>
+  weekCount({ completed: app.save.completed, lanes: app.save.lanes, history: loadHistory(localStore()), review: app.save.review, today: localDay(new Date()) });
+function weekNow(): { k: number; goal: number } {
+  const w = thisWeek();
+  return { k: w.tasks + w.reviews, goal: readGoal().perWeek ?? 0 };
+}
+
+/**
+ * V22-C: after >= 7 days away, Boon (the guide, L87; a text bubble: Lily already holds this card) says where the player stopped
+ * and how many skills are due. No day count, no streak, nothing lost.
+ */
+function welcomeBack(): HTMLElement | null {
+  if (awayDays(parseDays(readJson<unknown>(DAYS_KEY)), localDay(new Date())) === undefined) return null;
+  const r = resumeNow();
+  const due = reviewCount();
+  const what = !r ? '' : r.kind === 'ticket'
+    ? t('back.ticket', { title: resumeName(r), domain: t(DOMAINS.find((d) => d.id === activeDomain())!.name), n: r.ticket.chapter })
+    : r.kind === 'skill' ? `${resumeName(r)} (${t('nav.learn')})` : '';
+  return h('p', { class: 'col-span-2 m-0 rounded-(--r-card) rounded-tl-sm bg-sun px-3 py-2 text-body-sm text-sun-ink', 'data-welcome-back': '' },
+    h('b', {}, 'Boon: '), [t('back.hi'), what && t('back.where', { what }), due ? t('back.due', { n: due }) : ''].filter(Boolean).join(' '));
 }
 
 /**
@@ -413,7 +456,7 @@ function helloSection(): HTMLElement {
  * stage as a silhouette (a Lily of her own data-stage, decorative: its name is the caption). Nothing to feed, nothing that drops:
  * only what she becomes next. Below: the growth album and the colour picker (L134 P2/P3).
  */
-function lilyCard(stage: LilyStage, known: number, next: number | undefined): HTMLElement {
+function lilyCard(stage: LilyStage, known: number, next: number | undefined, week: { k: number; goal: number }): HTMLElement {
   const up = next === undefined || stage === LAST_STAGE ? undefined : (stage + 1) as LilyStage;
   const goal = known + (next ?? 0);
   const line = up === undefined ? t('lily.max') : stage === 0 ? t('lily.newborn') : t('lily.growBar', { k: known, next: goal });
@@ -422,7 +465,9 @@ function lilyCard(stage: LilyStage, known: number, next: number | undefined): HT
       h('div', { class: 'min-w-0 flex-1' },
         h('p', { class: 'm-0 text-body-sm font-bold' }, t('lily.card')),
         up === undefined ? null : h('progress', { class: 'lily-bar mt-2 h-2 w-full', max: String(goal), value: String(known), 'aria-labelledby': 'lily-grow' }),
-        h('p', { id: 'lily-grow', class: 'm-0 text-body-sm text-muted' }, line)),
+        h('p', { id: 'lily-grow', class: 'm-0 text-body-sm text-muted' }, line),
+        week.goal ? h('p', { class: 'm-0 text-body-sm font-semibold', 'data-goal': '' },
+          t(week.k >= week.goal ? 'goal.reached' : 'goal.week', { k: week.k, n: week.goal })) : null),
       up === undefined ? null : h('div', { class: 'flex w-20 shrink-0 flex-col items-center gap-1 text-center text-caption text-muted' },
         mascot('lily', 'idle', 'size-10 lily-shadow-fig', undefined, up), t('lily.nextShadow', { stage: t(STAGE_NAME[up]) }))),
     lilyAlbum(stage));
@@ -539,7 +584,7 @@ export function renderHome(host: HTMLElement): void {
       id: 'home-title', tabindex: '-1',
       class: page === 'home' || page === 'overview' ? 'sr-only' : 'mx-auto mt-6 mb-0 max-w-(--w-read) px-4 text-heading',
     }, t(PAGE_TITLE[page])),
-    h('div', { class: cx(grid ? 'mx-auto grid max-w-(--w-wide) gap-5 px-4 py-6 lg:grid-cols-3' : 'mx-auto grid max-w-(--w-read) gap-8 px-4 py-6', enter && 'cq-enter') },
+    h('div', { class: cx(grid ? 'mx-auto grid max-w-(--w-wide) gap-5 px-4 py-6 lg:grid-cols-3' : cx('mx-auto grid max-w-(--w-read) px-4 py-6', page === 'home' ? 'gap-6' : 'gap-8'), enter && 'cq-enter') },
       ...nodes(...sections.filter((s) => s.pages.includes(page)).map((s) => {
         const el = s.render(m);
         return el && h('div', { class: cx('min-w-0', grid && SPAN[s.span]) }, el);

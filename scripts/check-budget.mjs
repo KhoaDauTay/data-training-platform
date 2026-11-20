@@ -56,6 +56,7 @@ const GROUPS = [
   ['mapteach', /^mapTeach-/, 8], // V22-A (L203): src/ui/mapTeach.ts + src/viz/geo.ts + src/mapQueries.ts (result map: Map tab and Map page questions, VI/EN inside), lazy on the first Map page or Map tab
   ['engineVizNosql', /^engineVizNosql-/, 15], // ENG-VIZ (L236): MongoDB + DynamoDB diagrams (src/engine/viz/engineVizNosql.ts), lazy from engineViz's loadViz()
   ['engineViz', /^engineViz(Core)?-/, 30], // ENG-VIZ (L235/L236): diagram engine (engineVizCore-*, shared with the NoSQL chunk) + Postgres diagrams (engineViz-*), lazy; built as a second entry until ENG-CORE imports it
+  ['ics', /^ics-/, 2], // V22-C (L209): src/ics.ts, the weekly reminder file, lazy on "Thêm nhắc vào lịch": 0.7 KB gz
   ['rest', /./, 1560],
 ];
 
