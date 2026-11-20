@@ -185,7 +185,7 @@ function continueCard(ok: Set<string>): HTMLElement | null {
   return h('section', { class: cls.cx(cls.CARD, 'flex flex-col gap-3 p-6 max-sm:p-4'), 'aria-labelledby': 'engine-cont' },
     h('p', { class: 'm-0 flex items-center gap-2 text-body-sm font-semibold text-accent' }, d.icon(ENGINE_ICON[e], 'size-4'),
       `${et(started ? 'cont.resume' : 'cont.start')} · ${NAME[e]} · ${next.level}`),
-    h('h2', { id: 'engine-cont', class: 'm-0 text-heading font-bold' }, next.title[lang()]),
+    h('h2', { id: 'engine-cont', class: 'm-0 text-title font-bold' }, next.title[lang()]),
     h('p', { class: 'm-0 flex flex-wrap items-center gap-2 text-body-sm text-muted' }, kindChip(next.kind), h('span', {}, et('minutes', { n: next.minutes }))),
     h('div', {}, h('a', { href: lessonHash(next), class: cls.cx(cls.BTN_GO, 'inline-flex items-center gap-2 px-4 py-2 no-underline') },
       et(started ? 'cont.btnResume' : 'cont.btnStart'), d.icon('arrowRight', 'size-4'))));

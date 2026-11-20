@@ -609,7 +609,7 @@ export function renderHome(host: HTMLElement): void {
   host.replaceChildren(...nodes(
     // v21 U18: a learning-path sub-page is named by its own h1, under a small trail back up ("Lộ trình › Phần 2").
     sub ? h('nav', { class: 'mx-auto mt-6 max-w-(--w-read) px-4 text-body-sm text-muted', 'aria-label': t('nav.crumbs') },
-      ...sub.trail.flatMap((x, i) => [i ? ' › ' : '', h('a', { href: x.href }, x.text)])) : null,
+      ...sub.trail.flatMap((x, i) => [i ? ' › ' : '', h('a', { href: x.href, class: 'inline-flex min-h-6 items-center' }, x.text)])) : null, // L280: 24 px targets
     h('h1', {
       id: 'home-title', tabindex: '-1',
       class: page === 'home' || page === 'overview' ? 'sr-only' : cx('mx-auto mb-0 max-w-(--w-read) px-4 text-heading', sub ? 'mt-1' : 'mt-6'),

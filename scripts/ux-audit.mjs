@@ -46,7 +46,7 @@ const CONFIGS = [
 ];
 const ALL_PAGES = ['#/', '#/learn', '#/learn/sql/1', '#/learn/skill/select', '#/learn/interview', '#/practice', '#/me',
   ...['logistics', 'ecommerce', 'finance'].flatMap((d) => ['', '/play', '/data', '/dashboard', '/map'].map((p) => `#/d/${d}${p}`)),
-  '#/engine', '#/engine/postgres', '#/engine/mongodb/path', '#/engine/dynamodb/L1/e-dy-l1-09'];
+  '#/engine', '#/engine/postgres', '#/engine/postgres/L1', '#/engine/mongodb/path', '#/engine/dynamodb/L1/e-dy-l1-09'];
 const PAGES = process.env.UX_PAGES ? process.env.UX_PAGES.split(',') : ALL_PAGES;
 const TOPBAR_PAGES = ['#/d/finance', '#/d/logistics/play', '#/learn'];
 const mainOf = (hash) => (/\/play$/.test(hash) ? 'shell' : /\/data$/.test(hash) ? 'data' : /\/dashboard$/.test(hash) ? 'dashboard' : 'home');
