@@ -39,6 +39,17 @@ lab:
       hint:
         vi: Một index B-tree trên một cột.
         en: One B-tree index on one column.
+quiz:
+  - q:
+      vi: Sau khi có index, câu đếm trang 7 đọc bảng thế nào?
+      en: Once the index exists, how does the page 7 count read the table?
+    options:
+      - { vi: Qua index, en: Through the index }
+      - { vi: Đọc cả bảng, en: The whole table }
+    answer: 0
+    why:
+      vi: Trang 7 chỉ có 10 trên 5000 dòng.
+      en: Page 7 has only 10 of 5000 rows.
 ---
 
 ## Ý chính

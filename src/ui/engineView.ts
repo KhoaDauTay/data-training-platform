@@ -772,11 +772,12 @@ function lessonPage(l: EngineLesson): HTMLElement {
           diagram: (json) => vizSlot(`${l.id}-pred`, 'pg-plan-tree', 'postgres', json, JSON.stringify(json)),
         })]
         : [h('pre', { class: 'sql m-0 overflow-x-auto', lang: 'en' }, l.predict.sql), question(l, v, l.predict, 'p', '')])) : null,
+    // review v23: the lab before the questions (capstone: "quiz = the closing questions", product-design-db-engine §capstone; the lessons' text says "then N questions")
+    l.lab ? labView(l, v) : null,
     l.quiz?.length ? h('section', { class: cls.cx(cls.CARD, 'flex flex-col gap-4 p-5 max-sm:p-4'), 'aria-labelledby': `${l.id}-quiz` },
       cardHead(`${l.id}-quiz`, 'kindQuiz', et('quiz.title')),
       h('div', { class: 'divide-y divide-line [&>*]:py-4 [&>*:first-child]:pt-0 [&>*:last-child]:pb-0' },
         ...l.quiz.map((q, i) => h('div', {}, question(l, v, q, `q${i}`, et('quiz.n', { i: i + 1, n: l.quiz!.length })))))) : null,
-    l.lab ? labView(l, v) : null,
     h('section', { class: cls.cx(cls.CARD, 'flex flex-wrap items-center gap-3 p-5 max-sm:p-4'), 'aria-label': et('done') },
       isDone ? h('p', { class: 'm-0 flex items-center gap-2 font-bold good' }, d.icon('check', 'size-5'), et('complete.done'))
         : parts.length ? h('p', { class: 'm-0 text-body-sm' }, et('complete.parts', { k: parts.filter((p) => v.passed.has(p)).length, n: parts.length }))

@@ -103,6 +103,9 @@ describe('Database Engine lesson pages (fixtures)', () => {
     expect(bar.querySelector('li[aria-current=step]')?.textContent).toContain('Đếm lượt xem');
     expect(document.querySelector('[data-step$="-s0"]')!.className).toContain('ring-accent');
     expect(document.querySelector('[data-ek="e-pg-l1-05-plans"]')).toBeNull(); // gated until the index step passes
+    // review v23: the closing questions come after the lab, as the capstone's text says ("… then N questions")
+    const lab = byId('e-pg-l1-05-lab')!.closest('section')!, quiz = byId('e-pg-l1-05-quiz')!.closest('section')!;
+    expect(lab.compareDocumentPosition(quiz) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(await problems()).toEqual([]);
     app.save.completed.push('e-pg-l1-05');
     location.hash = '#/engine/postgres/L1/e-pg-l1-01';
