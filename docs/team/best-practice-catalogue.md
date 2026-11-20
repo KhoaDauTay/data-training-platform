@@ -15,6 +15,13 @@ Người viết: agent Research · 2026-11-20 · theo L215 mục 6 ("luôn có A
 
 Mục mới nằm ở §13.2, không chen vào §1–8. Mã cũ giữ nguyên.
 
+**Vòng 5** (agent Research, 2026-11-20): theo L220, không thêm mục hay thẻ. Thêm §14:
+
+- soát chất lượng cả 192 mục: tải lại mọi nguồn, sửa 4 URL chuyển hướng, rút 4 câu trích quá 15 chữ, thêm trang nguồn cho 11 mục, chạy lại cả 145 mục chạy được (dữ liệu DynamoDB dạng JSON thường), không bỏ mục nào;
+- ghi phiên bản: PostgreSQL 19 phát hành 2026-11-19, 14 mục có dòng **Phiên bản (vòng 5)**;
+- xếp hạng cả 192 mục, đề xuất 60 mục cho v25 (SQL + PostgreSQL), phần còn lại theo v27 và v29;
+- bản nháp hướng dẫn cho người học "8 thói quen".
+
 Tài liệu này là nguyên liệu cho khu **Best Practice** sắp có. Nó đi cùng `db-engine-knowledge.md` (bản đồ kiến thức theo engine, L1 → L5) và dùng lại các nguồn `[Sn]` đã mở ở đó. Đề xuất cách khu Best Practice hoạt động trong app nằm ở §9.
 
 ## 0. Quy ước
@@ -28,6 +35,8 @@ Tài liệu này là nguyên liệu cho khu **Best Practice** sắp có. Nó đi
     - wiki "Don't Do This" và SQL Style Guide được đọc toàn bộ;
     - mọi câu trích nguyên văn và mọi con số (giới hạn, chi phí, thời gian) đã được tìm thấy trên đúng trang dẫn;
     - phần diễn giải còn lại dựa trên tài liệu nhưng chưa đối chiếu từng câu;
+    - vòng 5 (cùng ngày) tải lại mọi trang (199 sau khi sửa), kiểm anchor, câu trích, con số có đơn vị và tên hàm/tham số nêu trong Luật/Vì sao trên đúng trang dẫn (§14.1);
+    - link PostgreSQL ghim `/docs/18/` cho khớp PGlite 0.5.16. Trang MongoDB (nay là manual 9.0) và AWS (`latest`) không gắn phiên bản: số liệu đúng tại ngày kiểm;
   - **Cấp** L1–L5, cùng thang với `db-engine-knowledge.md` §3–5: L1 người mới, L2 thực hành, L3 bên trong / hiệu năng, L4 đồng thời và quy mô, L5 chuyên gia;
   - **Nối với** skill có thật trong `content/skills.yml` (`null_logic`, `sargable`…) hoặc node nâng cao trong `content/general/adv.yml` (`a1`…`d8`). "Chưa có" nghĩa là app chưa có bài nào dạy ý đó.
 - **Kiểm** cho biết ví dụ đã được chạy thật hay chưa:
@@ -66,7 +75,7 @@ Tài liệu này là nguyên liệu cho khu **Best Practice** sắp có. Nó đi
 | 8. DynamoDB | D | 32 | 20 (dynoxide) |
 | **Tổng** | | **192** | **145** |
 
-Số đã gồm vòng 4. Mục vòng 4 nằm ở §13.2, chưa chen vào từng khu.
+Số đã gồm vòng 4. Mục vòng 4 nằm ở §13.2, chưa chen vào từng khu. Vòng 5 chạy lại cả 145 mục, đều khớp dòng Kiểm (§14.1).
 
 **Mười mục giá trị nhất** cho người học BoonData (lỗi thật hay gặp, sai âm thầm, có thể bắt bằng lint):
 
@@ -111,6 +120,7 @@ SELECT count(*) FROM customers WHERE email IS NULL;
 - **Nguồn:**
   - https://wiki.postgresql.org/wiki/Don%27t_Do_This#Don.27t_use_NOT_IN
   - https://www.postgresql.org/docs/18/functions-subquery.html
+- **Phiên bản (vòng 5):** PostgreSQL 19 tự đổi `NOT IN` thành anti join khi chứng minh được không có NULL. Đó chỉ là tối ưu tốc độ: khi cột có NULL, kết quả vẫn rỗng như trên, luật giữ nguyên.
 - **Cấp:** L2 · **Nối với:** skill `anti_join`, `in_subquery`, `exists` · **Kiểm:** PGlite, Sai ≠ Đúng (Sai = 0 vì đơn vãng lai có `customer_id` NULL)
 
 ```sql
@@ -223,6 +233,7 @@ GROUP BY s.id ORDER BY s.id;
   - join hai quan hệ 1-n nhân số dòng (fan-out);
   - mỗi payment lặp lại theo số dòng hàng, nên tổng tiền bị nhân lên mà không có lỗi nào.
 - **Nguồn:** https://www.postgresql.org/docs/18/queries-with.html (ví dụ gộp trong `WITH` trước khi dùng)
+- **Phiên bản (vòng 5):** PostgreSQL 19 có thể gộp một phần trước khi join (tối ưu của planner). Kết quả không đổi: join hai bảng con vẫn nhân dòng, luật giữ nguyên.
 - **Cấp:** L2 · **Nối với:** skill `multi_join`, `cte`; node `c2` (grain) · **Kiểm:** PGlite, Sai ≠ Đúng
 
 ```sql
@@ -509,7 +520,7 @@ ORDER BY order_date, id;
 - **Vì sao:**
   - window function tính **sau** `WHERE`/`GROUP BY`/`HAVING`, nên không được dùng trong `WHERE`;
   - Postgres báo lỗi `42P20`.
-- **Nguồn:** https://www.postgresql.org/docs/18/tutorial-window.html (đoạn "If there is a need to filter or group rows after the window calculations are performed, you can use a sub-select")
+- **Nguồn:** https://www.postgresql.org/docs/18/tutorial-window.html (muốn lọc hay gom dòng sau khi tính window thì "you can use a sub-select")
 - **Cấp:** L2 · **Nối với:** skill `window_rank`, `cte` · **Kiểm:** PGlite, Sai = lỗi `42P20`
 
 ```sql
@@ -609,7 +620,7 @@ ORDER BY orders DESC, s.city;
   - hai cột `count` trong một kết quả, hay một cột `sum` không nói tổng của gì, làm người đọc báo cáo và công cụ BI đoán sai;
   - tên cột kết quả là giao diện của truy vấn: đổi nó là đổi hợp đồng với dashboard.
 - **Nguồn:**
-  - https://www.postgresql.org/docs/18/queries-select-lists.html#QUERIES-COLUMN-LABELS ("If no output column name is specified using AS, the system assigns a default column name… For function calls, this is the name of the function.")
+  - https://www.postgresql.org/docs/18/queries-select-lists.html#QUERIES-COLUMN-LABELS (không có `AS` thì "the system assigns a default column name"; với lời gọi hàm, đó là tên hàm)
   - https://www.sqlstyle.guide/#naming-conventions (CC BY-SA 4.0, chỉ link)
 - **Cấp:** L1 · **Nối với:** skill `select`, `aggregate` · **Kiểm:** PGlite, Sai = Đúng về giá trị; tên cột Sai là `count`, `sum`, Đúng là `order_lines`, `revenue_vnd`
 
@@ -935,7 +946,7 @@ SELECT obj_description('metric_net_revenue_daily'::regclass, 'pg_class') AS defi
   - lấy mẫu để kiểm tay hay chia nhóm thì dùng `TABLESAMPLE … REPEATABLE (seed)` hoặc `setseed()` trước `random()`, và ghi seed lại;
   - mọi truy vấn trong báo cáo phải cho cùng kết quả khi chạy lại trên cùng dữ liệu: ngày "hôm nay" cố định (A05), `ORDER BY` có tiebreaker (Q10).
 - **Vì sao:** `ORDER BY random()` cho mẫu khác nhau mỗi lần, nên người review không tái hiện được con số, và kết luận "mẫu cho thấy…" không kiểm được.
-- **Nguồn:** https://www.postgresql.org/docs/18/sql-select.html#SQL-FROM (`REPEATABLE`: "the same seed and argument values will select the same sample", khi bảng không đổi)
+- **Nguồn:** https://www.postgresql.org/docs/18/sql-select.html#SQL-FROM (`REPEATABLE`: "the same seed and argument values will select the same sample", khi bảng không đổi); `setseed()`: https://www.postgresql.org/docs/18/functions-math.html#FUNCTIONS-MATH-RANDOM-TABLE
 - **Cấp:** L2 · **Nối với:** node `b5` (A/B test) · **Kiểm:** PGlite: Sai `same_sample = false`, Đúng `true`
 
 ```sql
@@ -956,6 +967,7 @@ SELECT (SELECT array_agg(id ORDER BY id) FROM orders TABLESAMPLE BERNOULLI (2) R
   - hoặc đảo chiều: `first_value(…) OVER (… ORDER BY … DESC)`.
 - **Vì sao:** khung mặc định khi có `ORDER BY` chỉ chạy tới dòng hiện tại (và các dòng ngang hàng), nên `last_value` trả về chính dòng hiện tại. Tài liệu nói thẳng: "likely to give unhelpful results for last_value".
 - **Nguồn:** https://www.postgresql.org/docs/18/functions-window.html
+- **Phiên bản (vòng 5):** PostgreSQL 19 thêm `IGNORE NULLS` cho `first_value`, `last_value`, `nth_value`, `lag`, `lead`. Khung tới cuối partition vẫn bắt buộc với `last_value`.
 - **Cấp:** L3 · **Nối với:** skill `window_agg`; node `a1` · **Kiểm:** PGlite, Sai ≠ Đúng: "ngày đơn cuối của mỗi cửa hàng" ra 1.051 cặp (Sai) thay vì 5 (Đúng)
 
 ```sql
@@ -980,6 +992,7 @@ SELECT count(*) FROM (
 - **Luật:** "đơn trước của cùng khách", "tháng trước của cùng cửa hàng": `lag(...) OVER (PARTITION BY khách ORDER BY ngày, id)`.
 - **Vì sao:** thiếu `PARTITION BY`, đơn đầu tiên của mỗi khách nhận ngày đơn cuối của khách **trước đó** trong thứ tự sắp. Khoảng cách giữa hai lần mua bị tính sai mà không có NULL nào báo hiệu.
 - **Nguồn:** https://www.postgresql.org/docs/18/tutorial-window.html; https://www.postgresql.org/docs/18/functions-window.html (`lag`)
+- **Phiên bản (vòng 5):** PostgreSQL 19 thêm `lag(...) IGNORE NULLS`; `PARTITION BY` theo thực thể vẫn bắt buộc.
 - **Cấp:** L2 · **Nối với:** skill `window_lag`; node `b2` (cohort) · **Kiểm:** PGlite, Sai ≠ Đúng: 1.199 đơn "có đơn trước" (Sai) thay vì 900 (Đúng): 300 khách thành viên, đơn đầu của 299 khách sau người đầu tiên bị gán "đơn trước" của người khác
 
 ```sql
@@ -1653,6 +1666,7 @@ SELECT pg_relation_size('orders_cust_pending_ix') AS bytes;
   - `INCLUDE` không làm cột thành một phần thứ tự khóa và không áp ràng buộc `UNIQUE` lên nó;
   - đừng nhét cột rộng: index phình.
 - **Nguồn:** https://www.postgresql.org/docs/18/indexes-index-only-scans.html
+- **Phiên bản (vòng 5):** PostgreSQL 19 cho phép câu quét bảng thường cũng đánh dấu trang all-visible, nên index-only scan ít phụ thuộc VACUUM hơn. Trên 18 vẫn cần VACUUM như §0 ghi.
 - **Cấp:** L3 · **Nối với:** skill `index_design`; node `a10` · **Kiểm:** PGlite, kế hoạch (Đúng có `Index Only Scan`, Sai không)
 
 ```sql
@@ -1926,7 +1940,7 @@ ALTER TABLE order_items VALIDATE CONSTRAINT qty_positive;
   - `ADD COLUMN … DEFAULT <hằng>` (kể cả `NOT NULL`) chỉ sửa catalog, chạy tức thì từ PostgreSQL 11;
   - default biến thiên (`clock_timestamp()`, `random()`), đổi kiểu cột không tương thích nhị phân, `SET NOT NULL` không có `CHECK` hỗ trợ đều quét hoặc viết lại bảng: tách thành nhiều bước (thêm cột NULL, backfill theo lô P08, rồi ràng buộc).
 - **Vì sao:** viết lại bảng lớn giữ `ACCESS EXCLUSIVE` lâu, nên ứng dụng đứng hình.
-- **Nguồn:** https://www.postgresql.org/docs/18/sql-altertable.html (mục Notes: "Adding a column with a volatile DEFAULT … will require the entire table … to be rewritten")
+- **Nguồn:** https://www.postgresql.org/docs/18/sql-altertable.html (mục Notes: thêm cột có `DEFAULT` volatile "will cause the entire table and its indexes to be rewritten")
 - **Cấp:** L4 · **Nối với:** chưa có · **Kiểm:** PGlite, chạy được (cả hai)
 
 ```sql
@@ -1997,6 +2011,7 @@ Các mục P10–P26 đi theo thang Engine của `db-engine-knowledge.md` §3.3�
   - https://www.postgresql.org/docs/18/routine-vacuuming.html#AUTOVACUUM (công thức ngưỡng)
   - https://www.postgresql.org/docs/18/runtime-config-vacuum.html#GUC-AUTOVACUUM-VACUUM-MAX-THRESHOLD
   - https://www.postgresql.org/docs/18/sql-createtable.html (storage parameter `autovacuum_*`)
+- **Phiên bản (vòng 5):** PostgreSQL 19 thêm thứ tự ưu tiên có điểm cho autovacuum (`pg_stat_autovacuum_scores`) và autovacuum song song cho index (`autovacuum_max_parallel_workers`). Ngưỡng theo bảng vẫn là cách chỉnh chính.
 - **Cấp:** L3 · **Nối với:** chưa có (L3 Postgres, `db-engine-knowledge.md` §3.3) · **Kiểm:** PGlite, chạy được: Sai tính ra 2.000.050 dead tuple cho bảng 10 triệu dòng và `max_threshold` = 100000000; Đúng ghi đủ bốn tham số vào `reloptions`. Autovacuum không chạy trong PGlite (không có worker nền), nên hiệu quả thật không đo được
 
 ```sql
@@ -2022,6 +2037,7 @@ SELECT reloptions FROM pg_class WHERE relname = 'app_events';
 - **Nguồn:**
   - https://www.postgresql.org/docs/18/storage-hot.html
   - https://www.postgresql.org/docs/18/monitoring-stats.html#MONITORING-PG-STAT-ALL-TABLES-VIEW (`n_tup_hot_upd`: "Number of rows HOT updated")
+- **Phiên bản (vòng 5):** PostgreSQL 19 thêm `REPACK`, thay `VACUUM FULL` và `CLUSTER` (hai lệnh cũ vẫn chạy), và `REPACK (CONCURRENTLY)` không chặn đọc ghi. Ví dụ ở đây giữ `VACUUM FULL` vì PGlite là 18.6.
 - **Cấp:** L3 · **Nối với:** chưa có · **Kiểm:** PGlite `(notx)`, cùng một `UPDATE` 1.153 dòng trên cột không index: Sai (trang đầy sau `VACUUM ANALYZE`) 56 HOT; Đúng (`fillfactor = 80` + `VACUUM FULL`) 128 HOT. Phần còn lại không HOT vì một trang 80% vẫn không đủ chỗ cho mọi phiên bản mới trong cùng một lệnh
 
 ```sql
@@ -2049,6 +2065,7 @@ SELECT n_tup_upd, n_tup_hot_upd FROM pg_stat_user_tables WHERE relname = 'orders
 - **Nguồn:**
   - https://www.postgresql.org/docs/18/routine-reindex.html
   - https://www.postgresql.org/docs/18/sql-reindex.html
+  - https://www.postgresql.org/docs/18/functions-admin.html#FUNCTIONS-ADMIN-DBOBJECT (`pg_relation_size`)
 - **Cấp:** L3 · **Nối với:** skill `index_design` · **Kiểm:** PGlite `(notx)`: sau ba lần `UPDATE` cả 1.928 dòng và `VACUUM`, index `ts` là 188.416 byte (Sai); sau `REINDEX INDEX CONCURRENTLY` còn 65.536 byte (Đúng)
 
 ```sql
@@ -2082,6 +2099,7 @@ SELECT pg_relation_size('app_events_ts_ix') AS index_bytes;
   - https://www.postgresql.org/docs/18/explicit-locking.html#LOCKING-TABLES (`SHARE`: "Acquired by CREATE INDEX (without CONCURRENTLY)")
   - https://www.postgresql.org/docs/18/sql-altertable.html ("An ACCESS EXCLUSIVE lock is acquired unless explicitly noted.")
   - https://www.postgresql.org/docs/18/runtime-config-client.html#GUC-LOCK-TIMEOUT
+- **Phiên bản (vòng 5):** PostgreSQL 19 bật sẵn `log_lock_waits`, nên chờ khóa lâu hơn `deadlock_timeout` được ghi log mà không cần cấu hình.
 - **Cấp:** L4 · **Nối với:** chưa có · **Kiểm:** PGlite, chạy được: `pg_locks` cùng transaction cho thấy Sai giữ `AccessExclusiveLock`, Đúng giữ `ShareLock` với `lock_timeout` = `2s`. Một phiên nên không tái hiện được cảnh chờ khóa
 
 ```sql
@@ -2148,7 +2166,7 @@ INSERT INTO orders (id, customer_id, store_id, order_date, channel, status) VALU
   - nới `varchar(n)` lên `varchar(m)` lớn hơn, hay `varchar` → `text`, chỉ sửa catalog;
   - kiểm bằng `relfilenode` trước/sau trên bản sao.
 - **Vì sao:** viết lại giữ `ACCESS EXCLUSIVE` suốt thời gian chép bảng. Chọn `bigint` từ đầu cho khóa có thể vượt 2,1 tỷ rẻ hơn nhiều so với đổi sau.
-- **Nguồn:** https://www.postgresql.org/docs/18/sql-altertable.html ("will normally cause the entire table and its indexes to be rewritten", trừ khi kiểu cũ binary coercible)
+- **Nguồn:** https://www.postgresql.org/docs/18/sql-altertable.html ("will normally cause the entire table and its indexes to be rewritten", trừ khi kiểu cũ binary coercible); khoảng của `integer`: https://www.postgresql.org/docs/18/datatype-numeric.html#DATATYPE-INT
 - **Cấp:** L4 · **Nối với:** skill `cast` · **Kiểm:** PGlite, chạy được: Sai `relfilenode` đổi (bảng bị viết lại), Đúng `relfilenode` giữ nguyên
 
 ```sql
@@ -2222,6 +2240,7 @@ SELECT tableoid::regclass AS partition FROM ev;
 - **Nguồn:**
   - https://www.postgresql.org/docs/18/sql-prepare.html ("the first five executions are done with custom plans")
   - https://www.postgresql.org/docs/18/runtime-config-query.html#GUC-PLAN-CACHE-MODE
+- **Phiên bản (vòng 5):** PostgreSQL 19: `pg_stat_statements` đếm riêng số lần dùng generic plan và custom plan, nên thấy được câu nào đang chạy generic plan.
 - **Cấp:** L4 · **Nối với:** skill `explain_read`; node `a10` · **Kiểm:** PGlite `(notx)`, kế hoạch: với `'PAID'` (1.298/1.428 dòng), generic plan (Sai) ước lượng `rows=476` và chọn `Index Only Scan` với `$1`; custom plan (Đúng) ước lượng `rows=1298`, chọn `Seq Scan`
 
 ```sql
@@ -2371,6 +2390,7 @@ SELECT rolconfig FROM pg_roles WHERE rolname = 'analyst_ro';
   - `pg_stat_statements_reset()` sau khi đã lưu ảnh chụp.
 - **Vì sao:** truy vấn 5 ms chạy một triệu lần tốn hơn truy vấn 5 s chạy một lần. Không có số cộng dồn thì tối ưu nhầm chỗ.
 - **Nguồn:** https://www.postgresql.org/docs/18/pgstatstatements.html
+- **Phiên bản (vòng 5):** PostgreSQL 19 thêm cột đếm generic/custom plan vào `pg_stat_statements`, và gộp các `FETCH` khác cỡ làm một dòng.
 - **Cấp:** L5 · **Nối với:** skill `explain_read`; node `a10` · **Kiểm:** cú pháp. Extension phải nạp lúc khởi tạo PGlite (`extensions`), script kiểm không làm. Đã đo riêng ở `db-engine-knowledge.md` §1.2
 
 ```sql
@@ -2395,7 +2415,8 @@ LIMIT 10;
   - nếu không freeze kịp, Postgres ngừng cấp transaction ID mới (dừng ghi) để bảo vệ dữ liệu, và cần `VACUUM` toàn database mới chạy lại được;
   - kích thước đĩa không báo trước điều này.
 - **Nguồn:** https://www.postgresql.org/docs/18/routine-vacuuming.html#VACUUM-FOR-WRAPAROUND
-- **Cấp:** L5 · **Nối với:** chưa có · **Kiểm:** PGlite, chạy được: Sai chỉ ra số byte; Đúng ra tuổi từng database (79–82) và phần trăm so với `autovacuum_freeze_max_age`
+- **Phiên bản (vòng 5):** PostgreSQL 19 cảnh báo sớm hơn: khi còn dưới 100 triệu transaction tới wraparound (bản 18: 40 triệu). Vẫn phải theo dõi `age(datfrozenxid)`, không chờ cảnh báo.
+- **Cấp:** L5 · **Nối với:** chưa có · **Kiểm:** PGlite, chạy được: Sai chỉ ra số byte; Đúng ra tuổi từng database (số tùy lượng transaction đã chạy trước: 79–82 ở vòng 2, 131–134 ở vòng 5) và phần trăm so với `autovacuum_freeze_max_age`
 
 ```sql
 -- P26 bad
@@ -2416,7 +2437,7 @@ FROM pg_database ORDER BY xid_age DESC;
   - giá trị từ người dùng đi vào SQL qua tham số (`$1`, prepared statement, placeholder của driver);
   - tên bảng/cột động thì chọn từ danh sách cho phép, hoặc `quote_ident`/`format('%I')`.
 - **Vì sao:** ghép chuỗi cho phép SQL injection: `x' OR '1'='1` biến điều kiện thành luôn đúng. Tham số luôn là **giá trị**, không bao giờ là cú pháp.
-- **Nguồn:** https://www.postgresql.org/docs/18/sql-prepare.html; OWASP SQL Injection Prevention Cheat Sheet: https://cheatsheetseries.owasp.org/cheatsheets/SQL_Injection_Prevention_Cheat_Sheet.html
+- **Nguồn:** https://www.postgresql.org/docs/18/sql-prepare.html; `quote_ident`/`format`: https://www.postgresql.org/docs/18/functions-string.html; OWASP SQL Injection Prevention Cheat Sheet: https://cheatsheetseries.owasp.org/cheatsheets/SQL_Injection_Prevention_Cheat_Sheet.html
 - **Cấp:** L1 · **Nối với:** chưa có (BoonData chỉ đưa `ident()` vào SQL: `src/db/import.ts`) · **Kiểm:** PGlite, Sai ≠ Đúng (cùng chuỗi độc, Sai trả mọi khách, Đúng trả 0)
 
 ```sql
@@ -2492,7 +2513,7 @@ SELECT store_revenue_good(1) > 0 AS ok;
   - bảng có RLS thì bật `FORCE ROW LEVEL SECURITY` nếu ứng dụng có thể chạy bằng owner.
   - Ví dụ chạy được nằm ở S10.
 - **Vì sao:** chạy thử bằng superuser luôn thấy đủ dòng. Bạn tưởng policy hoạt động, nhưng thật ra chưa thử lần nào.
-- **Nguồn:** https://www.postgresql.org/docs/18/ddl-rowsecurity.html ("Superusers and roles with the BYPASSRLS attribute always bypass the row security system… Table owners normally bypass row security as well")
+- **Nguồn:** https://www.postgresql.org/docs/18/ddl-rowsecurity.html ("Superusers and roles with the BYPASSRLS attribute always bypass the row security system"; chủ bảng thường cũng bỏ qua)
 - **Cấp:** L4 · **Nối với:** chưa có · **Kiểm:** PGlite, qua S10
 
 ### X05 · Xác thực: `scram-sha-256`, không `trust` qua mạng / scram-sha-256, never trust over TCP
@@ -2508,6 +2529,7 @@ SELECT store_revenue_good(1) > 0 AS ok;
 - **Nguồn:**
   - https://wiki.postgresql.org/wiki/Don%27t_Do_This#Don.27t_use_trust_authentication_over_TCP.2FIP_.28host.2C_hostssl.29
   - https://www.postgresql.org/docs/18/auth-password.html
+- **Phiên bản (vòng 5):** PostgreSQL 18 đánh dấu mật khẩu MD5 là lỗi thời; bản 19 cảnh báo sau mỗi lần đăng nhập MD5 thành công (tắt bằng `md5_password_warnings`) và bỏ hẳn RADIUS.
 - **Cấp:** L3 · **Nối với:** chưa có · **Kiểm:** cú pháp (cấu hình server)
 
 ```sql
@@ -2731,7 +2753,7 @@ const data = {
   - một lần đọc lấy đủ dữ liệu, không cần `$lookup`;
   - cập nhật trong một tài liệu là atomic nên không cần transaction (M10).
 - **Nguồn:**
-  - https://www.mongodb.com/docs/manual/data-modeling/concepts/embedding-vs-references/
+  - https://www.mongodb.com/docs/manual/data-modeling/best-practices/#link-related-data
   - https://www.mongodb.com/docs/manual/data-modeling/design-patterns/
 - **Cấp:** L1 · **Nối với:** skill `join` (đối chiếu với JOIN của SQL) · **Kiểm:** mingo, Sai = Đúng (cùng doanh thu theo SKU, Đúng không cần `$lookup`)
 
@@ -2855,6 +2877,7 @@ db.orders.find({ _id: 1 }, { _id: 0, total: 1 })
   - `schemaVersion` cho phép đọc song song bản cũ và mới trong lúc migrate.
 - **Nguồn:**
   - https://www.mongodb.com/docs/manual/core/schema-validation/
+  - https://www.mongodb.com/docs/manual/core/schema-validation/specify-json-schema/ (`$jsonSchema`)
   - https://www.mongodb.com/docs/manual/data-modeling/design-patterns/data-versioning/schema-versioning/
 - **Cấp:** L2 · **Nối với:** chưa có (tương ứng `CHECK`/`NOT NULL` ở S06) · **Kiểm:** cú pháp
 
@@ -3162,7 +3185,7 @@ db.carts.aggregate([
   - toán tử so sánh chỉ so cùng kiểu BSON (type bracketing), nên trộn chuỗi và `Date` trong một trường làm khoảng thời gian thiếu dữ liệu âm thầm.
 - **Nguồn:**
   - https://www.mongodb.com/docs/manual/reference/bson-type-comparison-order/
-  - https://www.mongodb.com/docs/manual/reference/operator/aggregation/dateFromString/
+  - https://www.mongodb.com/docs/manual/reference/operator/aggregation/datefromstring/
 - **Cấp:** L1 · **Nối với:** skill `date_math`, `cast` · **Kiểm:** mingo, Sai ≠ Đúng: khoảng tháng 9, Sai `[]`, Đúng `[1]`
 
 ```js
@@ -3580,6 +3603,7 @@ await Query({ TableName: 'Shop', KeyConditionExpression: 'PK = :pk',
   - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-indexes-general.html
   - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/SecondaryIndexes.html
   - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-gsi-overloading.html
+  - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/GSI.html#GSI.Projections (`KEYS_ONLY`)
 - **Cấp:** L3 · **Nối với:** skill `index_design` (giống partial index I03) · **Kiểm:** dynoxide. GSI `ByStatus` chứa 800 item, GSI thưa `PendingByWarehouse` chỉ 80. Cùng câu hỏi "đơn chờ ở WH0": Sai đọc 80 item rồi lọc còn 28 (ScannedCount 80), Đúng đọc đúng 28
 
 ```js
@@ -4732,6 +4756,7 @@ SELECT pg_relation_size('ev_good') AS table_bytes
 - **Nguồn:**
   - https://www.postgresql.org/docs/18/wal-configuration.html
   - https://www.postgresql.org/docs/18/runtime-config-wal.html#GUC-CHECKPOINT-WARNING
+  - https://www.postgresql.org/docs/18/monitoring-stats.html#MONITORING-PG-STAT-CHECKPOINTER-VIEW (`num_timed`, `num_requested`; view có từ PostgreSQL 17)
 - **Cấp:** L4 · **Nối với:** chưa có · **Kiểm:** PGlite `(notx)` chỉ khối Đúng: câu đọc chạy được (`num_timed` 0, `num_requested` 0: PGlite chạy một tiến trình, không có checkpointer định kỳ). Đổi cấu hình là cú pháp
 
 ```sql
@@ -4756,7 +4781,8 @@ SELECT num_timed, num_requested FROM pg_stat_checkpointer
   - tài liệu: nén "without increasing the risk of unrecoverable data corruption", đổi lại tốn CPU;
   - mặc định `off`.
 - **Nguồn:** https://www.postgresql.org/docs/18/runtime-config-wal.html#GUC-WAL-COMPRESSION
-- **Cấp:** L5 · **Nối với:** chưa có · **Kiểm:** PGlite `(notx)`, cùng một `UPDATE` 400 dòng ngay sau `CHECKPOINT`: Sai 3.205.032 byte WAL, Đúng 691.464 byte (−78%). PGlite 0.5.16 chỉ có `pglz` (`lz4` báo 22023)
+- **Phiên bản (vòng 5):** PostgreSQL 19: `wal_compression = on` tự chọn phương pháp nén tốt nhất có sẵn (bản 18: `on` = `pglz`).
+- **Cấp:** L5 · **Nối với:** chưa có · **Kiểm:** PGlite `(notx)`, cùng một `UPDATE` 400 dòng ngay sau `CHECKPOINT`: Sai 3.205.032 byte WAL, Đúng 691.464 byte (−78%; vòng 5 đo 691.440, WAL lệch vài chục byte giữa các lần chạy). PGlite 0.5.16 chỉ có `pglz` (`lz4` báo 22023)
 
 ```sql
 -- P29 bad (notx)
@@ -4903,7 +4929,7 @@ SELECT id FROM jobs WHERE status = 'new' ORDER BY id LIMIT 10 FOR UPDATE SKIP LO
   - hai mức này hủy transaction thay vì để xảy ra bất thường (write skew, lost update);
   - tài liệu: ứng dụng "must be prepared to retry transactions";
   - transaction chỉ đọc thì không bao giờ gặp xung đột này.
-- **Nguồn:** https://www.postgresql.org/docs/18/transaction-iso.html
+- **Nguồn:** https://www.postgresql.org/docs/18/transaction-iso.html; `40001` = `serialization_failure`: https://www.postgresql.org/docs/18/errcodes-appendix.html#ERRCODES-TABLE
 - **Cấp:** L4 · **Nối với:** chưa có · **Kiểm:** cú pháp (cần hai phiên đồng thời)
 
 ```sql
@@ -4949,7 +4975,7 @@ BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY
   - sau pooler theo transaction (P23), khóa theo phiên gần như luôn sai;
   - đừng gọi hàm khóa trong câu có `LIMIT`: không chắc `LIMIT` áp trước khi hàm chạy.
 - **Vì sao:** tài liệu: khóa theo phiên "do not honor transaction semantics": `ROLLBACK` không nhả nó.
-- **Nguồn:** https://www.postgresql.org/docs/18/explicit-locking.html#ADVISORY-LOCKS
+- **Nguồn:** https://www.postgresql.org/docs/18/explicit-locking.html#ADVISORY-LOCKS; hàm `pg_advisory_*`: https://www.postgresql.org/docs/18/functions-admin.html#FUNCTIONS-ADVISORY-LOCKS
 - **Cấp:** L4 · **Nối với:** chưa có · **Kiểm:** PGlite `(notx)`, Sai ≠ Đúng: sau `ROLLBACK`, Sai còn 1 khóa trong `pg_locks`, Đúng còn 0
 
 ```sql
@@ -5074,6 +5100,7 @@ SELECT 'acct_pkey' AS index_checked, current_setting('data_checksums') AS data_c
 - **Nguồn:**
   - https://www.postgresql.org/docs/18/runtime-config-replication.html#GUC-MAX-SLOT-WAL-KEEP-SIZE
   - https://www.postgresql.org/docs/18/view-pg-replication-slots.html
+  - https://www.postgresql.org/docs/18/functions-admin.html#FUNCTIONS-REPLICATION (`pg_drop_replication_slot`)
 - **Cấp:** L5 · **Nối với:** chưa có · **Kiểm:** cú pháp (PGlite không có nhân bản)
 
 ```sql
@@ -5099,7 +5126,8 @@ WHERE wal_status <> 'reserved' OR inactive_since < now() - interval '1 hour'
   - autovacuum tự hãm: tích đủ "cost" thì ngủ;
   - giới hạn được **chia đều** cho các worker đang chạy, nên thêm worker không làm nhanh hơn;
   - nâng giới hạn là cách cho autovacuum làm nhiều việc hơn trước mỗi lần ngủ; đo bằng số dòng chết trong `pg_stat_user_tables` trước và sau (gần P10).
-- **Nguồn:** https://www.postgresql.org/docs/18/runtime-config-autovacuum.html#RUNTIME-CONFIG-RESOURCE-VACUUM-COST
+- **Nguồn:** https://www.postgresql.org/docs/18/runtime-config-vacuum.html#RUNTIME-CONFIG-RESOURCE-VACUUM-COST; `pg_stat_user_tables`: https://www.postgresql.org/docs/18/monitoring-stats.html#MONITORING-PG-STAT-ALL-TABLES-VIEW
+- **Phiên bản (vòng 5):** PostgreSQL 19: leader và worker của VACUUM song song dùng chung `vacuum_cost_limit` (trước đây mỗi worker tính riêng), nên VACUUM song song có thể chậm hơn bản 18 với cùng cấu hình.
 - **Cấp:** L4 · **Nối với:** chưa có · **Kiểm:** cú pháp (PGlite không có autovacuum chạy nền)
 
 ```sql
@@ -5632,7 +5660,7 @@ Vì vậy bảng dưới xếp theo hai bậc:
 Các nguồn hướng dẫn:
 
 - **W:** wiki PostgreSQL "Don't Do This";
-- **B:** BigQuery, "Optimize query computation": https://cloud.google.com/bigquery/docs/best-practices-performance-compute;
+- **B:** BigQuery, "Optimize query computation": https://docs.cloud.google.com/bigquery/docs/best-practices-performance-compute;
 - **T:** dbt, "How we style our SQL": https://docs.getdbt.com/best-practices/how-we-style/2-how-we-style-our-sql;
 - **F:** Snowflake, "Working with joins": https://docs.snowflake.com/en/user-guide/querying-joins;
 - **D:** tài liệu PostgreSQL, đúng trang mà mục tương ứng đã dẫn.
@@ -5661,3 +5689,292 @@ Mỗi dòng trỏ về mục đã có; phòng trưng bày **không thêm mục m
 - Một hàng "Lỗi hay gặp" đầu track SQL, theo đúng thứ tự trên, mỗi ô mở thẻ có sẵn.
 - Không cần trường mới trong thẻ: thứ tự là một danh sách id trong `tracks.yml` (`gallery: [e-bp-q07, e-bp-q02, …]`).
 - Câu dẫn của hàng nói thật nguồn của thứ tự: "theo nghiên cứu lỗi SQL của sinh viên và hướng dẫn của các nhà cung cấp". Không viết "lỗi phổ biến nhất của analyst".
+
+## 14. Vòng 5: soát chất lượng, danh sách v25, hướng dẫn học
+
+Theo L220: chỉ nghiên cứu và đề xuất. Vòng này không thêm mục, không thêm thẻ, không sửa `content/engine/best/`, `src/`, test hay `decision-log.md`. Mọi lần chạy nằm trong một thư mục tạm ngoài repo (`bp5/`, `package.json` riêng, `npm i --ignore-scripts`): PGlite 0.5.16 (PostgreSQL 18.6), mingo 7.2.6, `@dynoxide/wasm-engine` 1.5.0. Ngày kiểm: 2026-11-20.
+
+### 14.1 Soát chất lượng toàn bộ 192 mục
+
+**Nguồn (URL):**
+
+- Tải lại cả 196 trang khác nhau mà tài liệu dẫn (238 URL kể cả anchor) bằng `curl -L`: cả 196 trả 200, đúng tiêu đề trang.
+- 42 anchor `#…`: có `id` tương ứng trên trang.
+- Sau khi sửa (dưới đây), tải lại lần nữa: 246 URL, 199 trang, đều 200, mọi anchor có thật; chạy lại kiểm câu trích và tên hàm.
+- Năm URL đi qua chuyển hướng. Bốn đã sửa tại chỗ:
+  - M01: trang "embedding vs references" của MongoDB nay chuyển về `data-modeling/best-practices/#link-related-data`. Đã đọc lại: trang mới vẫn nói embed khi dữ liệu được đọc và sửa cùng nhau, và ghi atomic ở mức một tài liệu. Luật M01 giữ nguyên.
+  - M19: `dateFromString` → `datefromstring` (chỉ đổi chữ hoa thường).
+  - P41: `runtime-config-autovacuum.html` → `runtime-config-vacuum.html`. Ở bản 18, mục autovacuum đã gộp vào trang "Vacuuming"; anchor `RUNTIME-CONFIG-RESOURCE-VACUUM-COST` vẫn còn.
+  - §13.4: `cloud.google.com/bigquery/...` → `docs.cloud.google.com/bigquery/...`.
+- URL thứ năm là RFC 9562 (`/rfc/rfc9562` chuyển sang trang `info`). Đó là địa chỉ chuẩn RFC Editor đưa ra, nên giữ.
+
+**Nguồn có nói đúng điều mục nêu không:**
+
+- Cách kiểm tự động: với mỗi mục, mọi tên hàm, tham số, view, toán tử (trong `…`) ở **Luật** và **Vì sao** phải có trên ít nhất một trang nguồn của mục đó.
+- 32 mục bị gắn cờ. Phần lớn là tên cột của ví dụ (`order_date`, `revenue_vnd`), không cần nguồn.
+- 11 mục thiếu thật: tên được nêu nhưng không có trên trang dẫn. Đã thêm trang chính thức có tên đó:
+
+| Mục | Tên còn thiếu | Trang thêm |
+|---|---|---|
+| A14 | `setseed()` | functions-math, bảng hàm ngẫu nhiên |
+| X01 | `quote_ident`, `format` | functions-string |
+| D07 | `KEYS_ONLY` | GSI.html#GSI.Projections |
+| P12 | `pg_relation_size` | functions-admin#FUNCTIONS-ADMIN-DBOBJECT |
+| P16 | "2,1 tỷ" (trần `integer`) | datatype-numeric#DATATYPE-INT |
+| P28 | `num_timed`, `num_requested` | monitoring-stats, view `pg_stat_checkpointer` (có từ bản 17) |
+| P34 | `serialization_failure` | errcodes-appendix |
+| P36 | `pg_advisory_unlock` | functions-admin#FUNCTIONS-ADVISORY-LOCKS |
+| P40 | `pg_drop_replication_slot` | functions-admin#FUNCTIONS-REPLICATION |
+| P41 | `pg_stat_user_tables` | monitoring-stats, view `pg_stat_all_tables` |
+| M06 | `$jsonSchema` | schema-validation/specify-json-schema |
+
+- **Con số lấy từ tài liệu:** mọi số có đơn vị trong Luật/Vì sao (KB, MB, RCU, WCU, %, item, lần…) được tìm trên trang nguồn của mục. Có hết, trừ P16 (đã thêm trang như bảng trên). Các trang AWS và MongoDB không gắn phiên bản. Ngày kiểm, trang hiện hành vẫn ghi đúng các giới hạn: item 400 KB và 25 request mỗi lô (`BatchWriteItem`), 1 MB mỗi trang (`Query`), 3.000 RCU / 1.000 WCU mỗi partition.
+- **Câu trích nguyên văn:** 68 câu tiếng Anh trong ngoặc kép.
+  - 58 câu trích tài liệu: 57 có đúng từng chữ trên trang nguồn; P07 ghép chữ bằng "…" (đã sửa, xem dưới).
+  - 10 câu không phải trích tài liệu: thông báo lỗi do engine trả (P15, P18, D13, D14, D15, D28), chuỗi tấn công của X09, câu tiếng Việt của A14. Các thông báo lỗi khớp output chạy thật.
+  - Bốn câu quá 15 chữ, đã rút ngắn và giữ nguyên văn: Q19, Q23, X04, P07. P07 cũ còn ghép chữ bằng dấu "…"; nay trích đúng câu trên trang ("will cause the entire table and its indexes to be rewritten").
+- **Bỏ mục:** không mục nào. Mọi nguồn còn sống và nói đúng điều mục nêu.
+
+**Ví dụ chạy được: chạy lại cả 145 mục.**
+
+- Script đọc chính tài liệu này: mọi khối `-- <mã> bad|good` (SQL), `// <mã> …` (Mongo, DynamoDB), bỏ khối `(syntax)`/`(ops)`. Điều kiện như §0:
+  - SQL trên schema `lab` sau `VACUUM ANALYZE`, `BEGIN … ROLLBACK`;
+  - `(notx)` trên PGlite mới có `amcheck`;
+  - Mongo trên `MDATA` + `MDATA2` (+ `products` của M29–M30);
+  - DynamoDB trên một engine mới mỗi khối.
+- **Dữ liệu DynamoDB là JSON thường (theo §13.1.3):**
+  - khối `DDATA` được đổi một lần ra `ddata.json` không kiểu: 1.237 item, chỉ có chuỗi và số;
+  - lúc seed thì `marshal` lại (chuỗi → `S`, số → `N`), như `labOf()`;
+  - bản dựng lại trùng từng byte với item có kiểu cũ, rồi mới chạy khối;
+  - kết quả trùng vòng 2–4.
+- **Cách so:** "Sai = Đúng" so **toàn bộ** mảng giá trị (md5 của mọi dòng, bỏ tên cột), không so chuỗi hiển thị đã cắt.
+- **Kết quả: 145/145 khớp dòng Kiểm**:
+  - 53 Sai ≠ Đúng;
+  - 15 Sai = Đúng (gồm D01, D03: cùng `Count`);
+  - 20 đúng lỗi đã ghi (mã SQLSTATE, kiểu lỗi DynamoDB hoặc thông báo mingo);
+  - 14 kế hoạch: đúng nút; I02 cost Đúng < Sai (35,32 → 16,34); P31 đúng 620,3 / 389,01;
+  - 43 "chạy được", gồm số đếm và RCU của DynamoDB (D01 54 → 0,5; D08 351 → 1 WCU; D20 20 item 54 RCU → 11 item 0,5 RCU…).
+- Ba điều phụ, chưa có output, đã chạy riêng:
+  - X10: role chỉ có quyền `(id, city)` gặp `42501` với cả `SELECT *` lẫn `SELECT phone`;
+  - S14: `CREATE TABLE t (user text)` báo `42601`;
+  - P29: `SET wal_compression = lz4` báo `22023`.
+- Hai số đổi giữa các lần chạy, đã sửa dòng Kiểm cho trung thực:
+  - P26: tuổi transaction ID là 131–134 (vòng 2 ghi 79–82). Số này tùy lượng transaction đã chạy trước đó trên cùng database.
+  - P29: WAL bản Đúng 691.440 byte (vòng 4: 691.464). Lệch vài chục byte, tỷ lệ −78% giữ nguyên.
+
+**Phiên bản.** Ví dụ chạy trên PostgreSQL 18.6, và link `/docs/18/` cố ý giữ để khớp PGlite. Nhưng **PostgreSQL 19 đã phát hành ngày 2026-11-19**, và trang MongoDB không gắn phiên bản nay là manual **9.0**.
+
+- Đã đọc hết phần "Migration" và "Changes" của release notes 19, đối chiếu từng mục Q/A/S/I/P/X.
+- Không mục nào sai trên 19.
+- 14 mục có thêm một dòng **Phiên bản (vòng 5)** ngay trên dòng Cấp. Đó là chỗ 19 đổi hành vi, mặc định hoặc công cụ:
+  - Q02: `NOT IN` thành anti join khi không có NULL;
+  - Q07: gộp trước khi join;
+  - P10, P41: điểm ưu tiên autovacuum, VACUUM song song dùng chung cost limit;
+  - P11: `REPACK` thay `VACUUM FULL`/`CLUSTER`;
+  - P13: `log_lock_waits` bật sẵn;
+  - P19, P25: `pg_stat_statements` đếm generic/custom plan;
+  - P26: cảnh báo wraparound từ 100 triệu;
+  - P29: `wal_compression = on` chọn phương pháp tốt nhất;
+  - X05: cảnh báo MD5, bỏ RADIUS;
+  - I04: câu quét thường cũng đánh dấu all-visible;
+  - A15, A16: `IGNORE NULLS`.
+- Mục cần phiên bản tối thiểu (đã ghi trong thân mục, ghi lại đây để BP-C đặt nhãn):
+
+| Mục | Cần | Ghi chú |
+|---|---|---|
+| S05 `uuidv7()` | PostgreSQL 18 | |
+| P15 `NOT NULL … NOT VALID` | PostgreSQL 18 | |
+| I02 skip scan | PostgreSQL 18 | luật "so bằng trước, khoảng sau" không đổi |
+| P10 `autovacuum_vacuum_max_threshold`, P39 checksums bật sẵn, P40 `idle_replication_slot_timeout` | PostgreSQL 18 | |
+| P28 `pg_stat_checkpointer` | PostgreSQL 17 | |
+| S07 `NULLS NOT DISTINCT`, X08 `security_invoker`, X03 quyền `CREATE` trên `public` | PostgreSQL 15 | |
+| M38 `analyzeShardKey` | MongoDB 7.0 | |
+| M04 time series collection | MongoDB 5.0 | bản 9.0 đổi cách lưu (một namespace), lời khuyên không đổi |
+| M35 change stream | trang ghi "Changed in version 9.0" | `resumeAfter`/`startAfter` không đổi |
+
+- Trang AWS chỉ có bản `latest`. Các con số giới hạn ở D đã đối chiếu với bản ngày kiểm.
+
+### 14.2 Xếp hạng và danh sách v25
+
+**Thang điểm** (giá trị cho người học đi từ data analyst mới tới kỹ sư senior):
+
+| Tiêu chí | Điểm | Đọc từ |
+|---|---|---|
+| Sai **âm thầm** (chạy được, số sai) | 0–3 | dòng Kiểm: "Sai ≠ Đúng" = 3; lỗi rõ hoặc chỉ hiệu năng = 1 |
+| Hay gặp | 0–2 | §13.4: lớp lỗi của Taipalus & Perälä, số nguồn hướng dẫn độc lập; với data analyst: gặp trong việc hằng ngày |
+| Chạy được trong trình duyệt, khác biệt thấy được | 0–2 | `lab`/`engine` có số đo = 2; kế hoạch hay cost = 1; chỉ cú pháp = 0 |
+| Boon nhắc bắt được | 0–1 | 10 luật §10 |
+| Đã có thẻ | 0–1 | `content/engine/best/` (28 thẻ SQL + PostgreSQL) |
+| Giữ đủ bậc thang | điều chỉnh | mỗi track phải có cả L1–L2 (data analyst) lẫn L3–L5 (kỹ sư); một mục L4–L5 có thể lên trước mục điểm cao hơn để bậc không trống |
+
+**Ràng buộc của danh sách:**
+
+- chỉ lấy từ Q/A/S/I/P/X (MongoDB ở v27, DynamoDB ở v29 theo `product-design-best-practice.md`);
+- giữ đủ 28 thẻ đã viết và đủ 10 mục có luật Boon nhắc;
+- 30 SQL + 30 PostgreSQL. Số này thay cho "SQL 33 + PostgreSQL 35" của product design, vốn đếm từ vòng 1.
+
+**v25: 60 mục, theo thứ tự giá trị** (★ = đã có thẻ, ⚑ = có luật Boon nhắc, (cp) = chỉ cú pháp):
+
+SQL (30):
+
+1. Q02 ★⚑
+2. Q06 ★⚑
+3. Q07 ★
+4. Q01 ★⚑
+5. Q12 ★⚑
+6. A03 ★
+7. A01 ★
+8. Q11 ★⚑
+9. Q05 ★
+10. Q10 ★⚑
+11. Q13 ★⚑
+12. A18 ★
+13. A21
+14. Q04 ★
+15. Q03 ★
+16. Q15 ★⚑
+17. A16
+18. A11 ★
+19. A05 ★⚑
+20. Q16
+21. A17
+22. A07
+23. A08
+24. A15
+25. Q18
+26. A02
+27. A12
+28. Q09
+29. Q08
+30. Q22 ★⚑
+
+PostgreSQL (30):
+
+31. S01 ★
+32. S03 ★
+33. S06
+34. X01 ★
+35. I01
+36. P01
+37. I06 ★
+38. I02 ★
+39. S04
+40. S02
+41. S08 ★
+42. X06
+43. X02
+44. I05 ★
+45. I03 ★
+46. I04 ★
+47. S07
+48. I08
+49. P17
+50. S10 ★
+51. P35 (cp)
+52. X09
+53. P05
+54. P13
+55. P08
+56. P06
+57. P03 (cp)
+58. I09
+59. P30
+60. P25 (cp)
+
+- Đếm: Q 17, A 13, S 8, I 8, P 10, X 4. Có 28 thẻ cũ, nên **32 thẻ mới** cho BP-C.
+- Chọn Q08, Q09, Q16 vì ba ô "Lỗi hay gặp" của §13.4 (dòng 4, 6, 7) chỉ chờ ba thẻ này.
+- Chọn P17, P30 trước P33, P34: cả hai chạy được trên `lab` (kế hoạch). P33, P34 cần hai phiên.
+- Chỉ ba mục chỉ cú pháp:
+  - P35: báo cáo một snapshot, rất gần việc của data analyst;
+  - P03: transaction ngắn;
+  - P25: `pg_stat_statements`. Thẻ ghi rõ là cú pháp, hoặc chạy ở runtime `engine` có nạp extension.
+- Runtime: P05 phải chạy ngoài transaction (`notx`), nên thuộc `engine`/`engine-hb`. Các mục còn lại chạy được trên `lab` hoặc `engine` như dòng Kiểm.
+- **Ngân sách** (theo §13.1.4):
+  - mỗi thẻ một chunk lười ≈ 1,5–2,2 KB gzip, nên số thẻ không đụng trần;
+  - chỉ mục mỗi khu: Q 17 mục, khu lớn nhất ≈ 1,1 KB;
+  - phương án dự phòng chia theo khu và ngôn ngữ: Q-vi ≈ 9,5 KB, A-vi ≈ 9 KB, mỗi khu PostgreSQL ≤ 8 KB một ngôn ngữ (P 10 thẻ ≈ 7 KB), đều dưới 20 KB.
+
+**Chờ v27** (thêm track MongoDB):
+
+- Hạng 61–91, SQL + PostgreSQL bổ sung: Q20, Q14, A04, A10, A22, A24, A23, A06, A13, A09, Q23, Q19, Q17, A19, A20, Q21, A14, S05, S12, S09, S13, S14, I07, P02, P12, P07, P15, S15, S11, P34, P33.
+- MongoDB, 38 mục, theo thứ tự (chạy được và sai âm thầm trước):
+  - M16, M17, M15, M18, M01, M29, M30, M21, M19, M20;
+  - M08, M09, M22, M05, M02, M07, M31, M03, M06, M14;
+  - M12, M32, M33, M28, M04, M13, M10, M37, M34, M23;
+  - M24, M27, M35, M25, M26, M11, M38, M36.
+
+**Chờ v29** (thêm track DynamoDB):
+
+- Hạng 92–122, phần vận hành và bảo mật L4–L5 của PostgreSQL: X04, X08, X07, X10, X03, P19, P09, P20, P31, P24, P23, P04, P14, P16, P18, P10, P41, P11, P21, P22, P32, P36, P37, P26, P27, P38, P28, P29, P39, P40, X05.
+- DynamoDB, 32 mục:
+  - D06, D01, D02, D14, D15, D18, D04, D16, D12, D17;
+  - D10, D28, D13, D20, D19, D08, D05, D07, D21, D03;
+  - D25, D09, D11, D24, D23, D22, D26, D27, D32, D31;
+  - D29, D30.
+
+**Đối chiếu:** v25 60 + v27 (31 + 38) + v29 (31 + 32) = 192. Mọi mục có đúng một đợt, không mục nào bị bỏ. Khớp bảng Tóm tắt: Q 23, A 24, S 15, I 9, P 41, X 10, M 38, D 32.
+
+**Ghi chú cho người điều phối:**
+
+- Đẩy phần vận hành PostgreSQL L4–L5 sang v29 vì v25 nên chơi được hết trên `lab`.
+- Nếu muốn track PostgreSQL ở v25 sâu hơn: đổi P35 (cú pháp) lấy P19 (kế hoạch chạy được, `notx`).
+
+### 14.3 Bản nháp: "Học SQL và NoSQL cho đúng: 8 thói quen"
+
+Dành cho người chơi. Đặt ở đầu khu Best Practice hoặc trong sổ tay. Mỗi thói quen dẫn tới thẻ. Nguồn ở cuối; không trích nguyên văn.
+
+1. **Nói ra hình dạng kết quả trước khi gõ.**
+   - Mỗi dòng là gì (một đơn? một khách một tháng?) và khoảng bao nhiêu dòng.
+   - Lệch so với dự đoán là dấu hiệu đầu tiên của lỗi.
+   - Thẻ: A04, A13.
+2. **Đi từng bước nhỏ, đếm dòng sau mỗi join.**
+   - Chạy phần `FROM … JOIN` trước và xem số dòng.
+   - Sau khi gộp, so tổng với bảng gốc (tổng kiểm).
+   - Lỗi logic (câu chạy được nhưng số sai) là loại lỗi bền nhất ở người học SQL [1]; cú pháp thì database tự báo.
+   - Thẻ: Q07, A06.
+3. **Hỏi "còn NULL thì sao?" ở mọi điều kiện.**
+   - `= NULL`, `NOT IN` gặp NULL, `LEFT JOIN` bị `WHERE` biến thành `INNER`.
+   - Bên NoSQL: trường thiếu khác trường null.
+   - Thẻ: Q01, Q02, Q06; MongoDB M16, M17.
+4. **Viết kiểm tra như một truy vấn phải trả 0 dòng.**
+   - Khóa không trùng, không có bản ghi mồ côi, giá trị nằm trong danh sách cho phép.
+   - Lưu lại, chạy lại mỗi lần dữ liệu đổi [2].
+   - Thẻ: A12, A24, A11.
+5. **Đọc kế hoạch, đừng đoán tốc độ.**
+   - PostgreSQL: `EXPLAIN`; so số dòng ước lượng với số thật, xem index có được dùng [3].
+   - MongoDB: `explain('executionStats')`; so số tài liệu đã xét với số trả về [4].
+   - DynamoDB: so `ScannedCount` với `Count`, và đọc `ConsumedCapacity` [5].
+   - Đo bằng số đọc và cost, không bằng mili giây trên máy mình.
+   - Thẻ: P01, I01, M31, D06.
+6. **Đặt tên để người sau đọc được.**
+   - Bảng và cột `snake_case` chữ thường, không trùng từ khóa.
+   - Mọi cột tính toán có tên nói nghĩa và đơn vị (`revenue_vnd`).
+   - Theo một bộ quy tắc có sẵn và giữ nhất quán [6].
+   - Thẻ: S08, S13, S14, Q23.
+7. **Ghim mọi thứ làm kết quả đổi theo ngày chạy.**
+   - "Hôm nay" là tham số.
+   - `ORDER BY` có tiebreaker trước `LIMIT`.
+   - Lấy mẫu có seed.
+   - Khoảng ngày nửa mở.
+   - Thẻ: A05, Q10, A14, Q12.
+8. **Tự review trước khi gửi, rồi nhờ người khác review.** Đọc lại câu của mình theo năm câu hỏi:
+   - grain là gì;
+   - NULL đi đâu;
+   - join có nhân dòng không;
+   - lọc ở `WHERE` hay `HAVING`;
+   - tên cột có nói nghĩa không.
+   - Với NoSQL hỏi thêm: câu này dùng khóa hay index nào?
+   - Thẻ: Q15, Q22; DynamoDB D01, MongoDB M01 (thiết kế theo access pattern).
+
+Thói quen học đi kèm: làm lại bài từng sai sau vài ngày (hàng "Ôn" của BoonData). Mỗi thẻ đọc theo thứ tự: tự đoán kết quả bản "Không nên" trước khi bấm "Chạy cả hai".
+
+**Nguồn của hướng dẫn** (đều đã tải và kiểm ở 14.1):
+
+- [1] Taipalus & Perälä 2019, SIGCSE: https://jyx.jyu.fi/jyx/Record/jyx_123456789_63057
+- [2] dbt, data tests: https://docs.getdbt.com/docs/build/data-tests
+- [3] PostgreSQL 18, Using EXPLAIN: https://www.postgresql.org/docs/18/using-explain.html
+- [4] MongoDB, Analyze Query Performance: https://www.mongodb.com/docs/manual/tutorial/analyze-query-plan/
+- [5] AWS, best practices for querying and scanning: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-query-scan.html
+- [6] SQL Style Guide (CC BY-SA 4.0, chỉ dẫn link): https://www.sqlstyle.guide/
+
+Đề xuất dùng (cho luồng sau L220): một trang ngắn `#/engine/best` đầu track SQL. Mỗi thói quen một dòng và các chip thẻ; chỉ chip của thẻ đã phát hành là link. Văn bản VI/EN đi theo quy tắc của `content/` (EN không dấu, mã giống nhau ở hai bản).
