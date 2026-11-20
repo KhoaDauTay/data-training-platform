@@ -32,7 +32,7 @@ describe('parseRequest', () => {
   it('refuses what dynoxide answers UnsupportedOperation, pointing at ExecuteTransaction (ES3, L254)', () => {
     const tx = inputErr('{"op":"TransactWriteItems","input":{"TransactItems":[{"Put":{"TableName":"Shop","Item":{"PK":{"S":"a"}}}}]}}');
     expect([tx.code, tx.detail]).toEqual(['unsupported', 'TransactWriteItems']);
-    expect(inputText(tx, 'vi')).toMatch(/^TransactWriteItems chưa chạy được trong trình duyệt.*ExecuteTransaction/);
+    expect(inputText(tx, 'vi')).toMatch(/^TransactWriteItems chưa chạy trong trình duyệt.*ExecuteTransaction/);
     expect(inputText(tx, 'en')).toMatch(/^TransactWriteItems does not run in the browser.*ExecuteTransaction/);
     expect(inputErr('{"op":"UpdateTimeToLive","input":{"TableName":"Shop"}}').code).toBe('unsupported');
     expect(inputErr('{"op":"CreateTable","input":{"TableName":"T","StreamSpecification":{"StreamEnabled":true}}}').detail).toBe('StreamSpecification');
@@ -195,6 +195,10 @@ describe('DynamoEngine (dynoxide wasm in Node)', () => {
     const tx = parseRequest(`{ "op": "ExecuteTransaction", "input": { "TransactStatements": [
       { "Statement": "UPDATE \\"Shop\\" SET total = 777 WHERE PK = 'CUST#1' AND SK = 'ORDER#2026-02#001'" },
       { "Statement": "INSERT INTO \\"Shop\\" VALUE {'PK': 'CUST#1', 'SK': 'ORDER#2026-08#007'}" } ] } }`);
+    // control: with a non-conflicting INSERT the same UPDATE applies
+    const [upd] = tx.input.TransactStatements as unknown[];
+    const ok = await eng.run(q('ExecuteTransaction', { TransactStatements: [upd, { Statement: `INSERT INTO "Shop" VALUE {'PK': 'CUST#1', 'SK': 'ORDER#NEW'}` }] }), byCust('CUST#1'));
+    expect(ok.after!.find((it) => it.SK.S === 'ORDER#2026-02#001')!.total).toEqual({ N: '777' });
     await expect(eng.run(tx)).rejects.toMatchObject({ name: 'DynamoError', type: 'TransactionCanceledException' });
     const left = await eng.exec('GetItem', { TableName: 'Shop', Key: { PK: { S: 'CUST#1' }, SK: { S: 'ORDER#2026-02#001' } } });
     expect((left.Item as Item).total).not.toEqual({ N: '777' });

@@ -67,8 +67,8 @@ const TEXT: Record<InputCode, { vi: string; en: string }> = {
   op: { vi: `"op" phải là một trong: ${DYNAMO_OPS.join(', ')}.`, en: `"op" must be one of: ${DYNAMO_OPS.join(', ')}.` },
   input: { vi: '"input" phải là một object { ... }.', en: '"input" must be an object { ... }.' },
   unsupported: {
-    vi: '{path} chưa chạy được trong trình duyệt (bộ máy dynoxide trả UnsupportedOperation). Giao dịch ghi: dùng ExecuteTransaction (PartiQL), cũng tất-cả-hoặc-không. Streams và TTL chỉ có trên DynamoDB thật.',
-    en: '{path} does not run in the browser (the dynoxide engine answers UnsupportedOperation). For a write transaction use ExecuteTransaction (PartiQL), which is all-or-nothing too. Streams and TTL exist only on real DynamoDB.',
+    vi: '{path} chưa chạy trong trình duyệt (dynoxide trả UnsupportedOperation). Giao dịch ghi: dùng ExecuteTransaction (PartiQL), cũng tất-cả-hoặc-không. Streams và TTL cần máy chủ thật (AWS).',
+    en: '{path} does not run in the browser yet (dynoxide answers UnsupportedOperation). For a write transaction use ExecuteTransaction (PartiQL), which is all-or-nothing too. Streams and TTL need a real server (AWS).',
   },
   untyped: { vi: 'Giá trị ở {path} cần ghi kiểu DynamoDB, ví dụ { "S": "CUST#1" } hoặc { "N": "42" }.', en: 'The value at {path} needs its DynamoDB type, e.g. { "S": "CUST#1" } or { "N": "42" }.' },
 };
