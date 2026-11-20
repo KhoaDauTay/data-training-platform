@@ -22,6 +22,8 @@ Mục mới nằm ở §13.2, không chen vào §1–8. Mã cũ giữ nguyên.
 - xếp hạng cả 192 mục, đề xuất 60 mục cho v25 (SQL + PostgreSQL), phần còn lại theo v27 và v29;
 - bản nháp hướng dẫn cho người học "8 thói quen".
 
+**Vòng 6** (agent Research, 2026-11-20): theo L215.6, viết 32 thẻ còn thiếu của danh sách v25 (§14.2), nên cả 60 mục v25 đều có thẻ. Mọi cặp đã chạy trên PGlite 0.5.16 của repo. Sáu mục mà bản Đúng mới báo lỗi được dựng lại kịch bản; P13, P06, P30 thành thẻ chỉ cú pháp. Chi tiết và số đo ở §15; cột "Thẻ" của §12 và dấu ★ của §14.2 đã cập nhật.
+
 Tài liệu này là nguyên liệu cho khu **Best Practice** sắp có. Nó đi cùng `db-engine-knowledge.md` (bản đồ kiến thức theo engine, L1 → L5) và dùng lại các nguồn `[Sn]` đã mở ở đó. Đề xuất cách khu Best Practice hoạt động trong app nằm ở §9.
 
 ## 0. Quy ước
@@ -4365,17 +4367,17 @@ Bài Engine đọc ở nhánh `v22-engine` (commit `0ede43d`): 195 id (`e-pg-…
 | Q05 | COALESCE outer-join sums | `e-pg-l1-05` | `e-bp-q05` |
 | Q06 | Right-table filters belong in ON | — | `e-bp-q06` |
 | Q07 | Aggregate before joining two child tables | — | `e-bp-q07` |
-| Q08 | Explicit JOIN syntax | — |  |
-| Q09 | Name your columns | `e-mg-l1-03` |  |
+| Q08 | Explicit JOIN syntax | — || `e-bp-q08` |
+| Q09 | Name your columns | `e-mg-l1-03` || `e-bp-q09` |
 | Q10 | ORDER BY with a tiebreaker | `e-pg-l1-11`, `e-mg-l1-10`, `e-dy-l1-10` | `e-bp-q10` |
 | Q11 | Keep predicates sargable | `e-pg-l2-04` | `e-bp-q11` |
 | Q12 | Half-open ranges, not BETWEEN | `e-pg-l1-01`, `e-pg-l2-10` | `e-bp-q12` |
 | Q13 | Cast before dividing integers | — | `e-bp-q13` |
 | Q14 | Conditional aggregation with FILTER | — |  |
 | Q15 | WHERE for rows, HAVING for groups | `e-mg-l3-12`, `e-mg-l2-06` | `e-bp-q15` |
-| Q16 | UNION ALL unless you mean DISTINCT | — |  |
+| Q16 | UNION ALL unless you mean DISTINCT | — || `e-bp-q16` |
 | Q17 | Name steps with CTEs | — |  |
-| Q18 | Spell out ROWS for running totals | `e-mg-l2-10` |  |
+| Q18 | Spell out ROWS for running totals | `e-mg-l2-10` || `e-bp-q18` |
 | Q19 | Filter window results in an outer query | `e-mg-l2-10` |  |
 | Q20 | EXISTS for "has any" | — |  |
 | Q21 | Keyset pagination instead of deep OFFSET | `e-pg-l1-11`, `e-mg-l1-10`, `e-dy-l1-10` |  |
@@ -4387,26 +4389,26 @@ Bài Engine đọc ở nhánh `v22-engine` (commit `0ede43d`): 195 id (`e-pg-…
 | Mã | Mục | Bài Engine liên quan | Thẻ |
 |---|---|---|---|
 | A01 | Use a date spine for empty periods | — | `e-bp-a01` |
-| A02 | Bucket days in the business time zone | `e-pg-l1-01` |  |
+| A02 | Bucket days in the business time zone | `e-pg-l1-01` || `e-bp-a02` |
 | A03 | Deduplicate on a business key, deterministically | — | `e-bp-a03` |
 | A04 | Test the grain before you join | — |  |
 | A05 | Pin the as-of date | — | `e-bp-a05` |
 | A06 | Reconcile control totals | — |  |
-| A07 | Ratios need an explicit denominator | — |  |
-| A08 | Round once, at the end | `e-pg-l1-01` |  |
+| A07 | Ratios need an explicit denominator | — || `e-bp-a07` |
+| A08 | Round once, at the end | `e-pg-l1-01` || `e-bp-a08` |
 | A09 | Median for skewed data | — |  |
 | A10 | Normalise text keys first | `e-pg-l2-04`, `e-pg-l2-13` |  |
 | A11 | Find orphans with an anti join | `e-pg-l1-04` | `e-bp-a11` |
-| A12 | Data tests are queries that must return zero rows | `e-pg-l1-04` |  |
+| A12 | Data tests are queries that must return zero rows | `e-pg-l1-04` || `e-bp-a12` |
 | A13 | One documented definition per metric | `e-pg-l1-08` |  |
 | A14 | Make random samples reproducible | — |  |
-| A15 | last_value needs a frame to the end of the partition | `e-mg-l2-10` |  |
-| A16 | lag and lead need PARTITION BY the entity | `e-mg-l2-10` |  |
-| A17 | Top N: choose the tie rule on purpose | `e-pg-l1-11` |  |
+| A15 | last_value needs a frame to the end of the partition | `e-mg-l2-10` || `e-bp-a15` |
+| A16 | lag and lead need PARTITION BY the entity | `e-mg-l2-10` || `e-bp-a16` |
+| A17 | Top N: choose the tie rule on purpose | `e-pg-l1-11` || `e-bp-a17` |
 | A18 | Don't average averages | `e-mg-l2-06` | `e-bp-a18` |
 | A19 | AT TIME ZONE works in opposite directions | — |  |
 | A20 | Add 1 day, not 24 hours, across DST | — |  |
-| A21 | Distinct counts are not additive | — |  |
+| A21 | Distinct counts are not additive | — || `e-bp-a21` |
 | A22 | Profile the columns before you analyse | `e-pg-l2-15` |  |
 | A23 | Check freshness before you send numbers | — |  |
 | A24 | Accepted values are a zero-row test | `e-pg-l1-04` |  |
@@ -4416,12 +4418,12 @@ Bài Engine đọc ở nhánh `v22-engine` (commit `0ede43d`): 195 id (`e-pg-…
 | Mã | Mục | Bài Engine liên quan | Thẻ |
 |---|---|---|---|
 | S01 | Store instants as timestamptz | `e-pg-l1-01`, `e-pg-l1-02` | `e-bp-s01` |
-| S02 | text with a CHECK, not char(n) | `e-pg-l1-01`, `e-pg-l1-04` |  |
+| S02 | text with a CHECK, not char(n) | `e-pg-l1-01`, `e-pg-l1-04` || `e-bp-s02` |
 | S03 | Money as numeric | `e-pg-l1-01` | `e-bp-s03` |
-| S04 | Identity columns, not serial | `e-pg-l1-03` |  |
+| S04 | Identity columns, not serial | `e-pg-l1-03` || `e-bp-s04` |
 | S05 | Prefer time-ordered UUIDv7 | `e-pg-l1-03` |  |
-| S06 | Let constraints enforce the rules | `e-pg-l1-04`, `e-pg-l1-12` |  |
-| S07 | NULLS NOT DISTINCT | `e-pg-l1-04`, `e-pg-l1-05` |  |
+| S06 | Let constraints enforce the rules | `e-pg-l1-04`, `e-pg-l1-12` || `e-bp-s06` |
+| S07 | NULLS NOT DISTINCT | `e-pg-l1-04`, `e-pg-l1-05` || `e-bp-s07` |
 | S08 | Lower-case snake_case names | — | `e-bp-s08` |
 | S09 | Normalise OLTP, denormalise on purpose | `e-pg-l1-08`, `e-mg-l2-11` |  |
 | S10 | tenant_id everywhere, RLS forced | `e-pg-l5-10`, `e-pg-l1-06` | `e-bp-s10` |
@@ -4434,37 +4436,37 @@ Bài Engine đọc ở nhánh `v22-engine` (commit `0ede43d`): 195 id (`e-pg-…
 
 | Mã | Mục | Bài Engine liên quan | Thẻ |
 |---|---|---|---|
-| I01 | Index for a query, check with EXPLAIN | `e-pg-l1-09`, `e-pg-l1-10`, `e-pg-l2-14` |  |
+| I01 | Index for a query, check with EXPLAIN | `e-pg-l1-09`, `e-pg-l1-10`, `e-pg-l2-14` || `e-bp-i01` |
 | I02 | Composite order: equality first, range last | `e-pg-l2-01`, `e-mg-l3-05`, `e-mg-l3-07` | `e-bp-i02` |
 | I03 | Partial indexes for the hot subset | `e-pg-l2-03`, `e-mg-l3-01`, `e-mg-l3-02` | `e-bp-i03` |
 | I04 | Covering indexes with INCLUDE | `e-pg-l2-02`, `e-pg-l3-09`, `e-mg-l3-09` | `e-bp-i04` |
 | I05 | Expression indexes | `e-pg-l2-04` | `e-bp-i05` |
 | I06 | Index your foreign keys | `e-pg-l1-09` | `e-bp-i06` |
 | I07 | Pick the index type for the operator | `e-pg-l2-05`, `e-pg-l2-06`, `e-pg-l2-07`, `e-pg-l2-08`, `e-pg-l2-09`, `e-pg-l2-12`, `e-pg-l2-13`, `e-pg-l2-16`, `e-pg-l2-17`, `e-pg-l5-07` |  |
-| I08 | Low-cardinality columns | `e-pg-l2-03`, `e-pg-l2-15`, `e-pg-l4-02` |  |
-| I09 | Remove unused and duplicate indexes | `e-mg-l3-14`, `e-pg-l5-11` |  |
+| I08 | Low-cardinality columns | `e-pg-l2-03`, `e-pg-l2-15`, `e-pg-l4-02` || `e-bp-i08` |
+| I09 | Remove unused and duplicate indexes | `e-mg-l3-14`, `e-pg-l5-11` || `e-bp-i09` |
 
 ### 12.5 5. Hiệu năng và vận hành (P)
 
 | Mã | Mục | Bài Engine liên quan | Thẻ |
 |---|---|---|---|
-| P01 | Compare estimated vs actual rows | `e-pg-l2-14`, `e-pg-l2-15`, `e-pg-l4-01` |  |
+| P01 | Compare estimated vs actual rows | `e-pg-l2-14`, `e-pg-l2-15`, `e-pg-l4-01` || `e-bp-p01` |
 | P02 | HOT updates and fillfactor | `e-pg-l3-06`, `e-pg-l3-07`, `e-pg-l3-08` |  |
-| P03 | Keep autovacuum on, transactions short | `e-pg-l3-04`, `e-pg-l3-05`, `e-pg-l3-06`, `e-pg-l3-15`, `e-pg-l5-14` |  |
+| P03 | Keep autovacuum on, transactions short | `e-pg-l3-04`, `e-pg-l3-05`, `e-pg-l3-06`, `e-pg-l3-15`, `e-pg-l5-14` || `e-bp-p03` |
 | P04 | Pool connections | — |  |
-| P05 | Build indexes CONCURRENTLY | `e-pg-l2-14`, `e-pg-l4-16` |  |
-| P06 | Add constraints NOT VALID, then VALIDATE | `e-pg-l1-04` |  |
+| P05 | Build indexes CONCURRENTLY | `e-pg-l2-14`, `e-pg-l4-16` || `e-bp-p05` |
+| P06 | Add constraints NOT VALID, then VALIDATE | `e-pg-l1-04` || `e-bp-p06` |
 | P07 | Cheap vs table-rewriting ALTERs | — |  |
-| P08 | Batch large UPDATE and DELETE | `e-pg-l3-15`, `e-pg-l4-16` |  |
+| P08 | Batch large UPDATE and DELETE | `e-pg-l3-15`, `e-pg-l4-16` || `e-bp-p08` |
 | P09 | Extended statistics for correlated columns | `e-pg-l2-15`, `e-pg-l4-03` |  |
 | P10 | Tune autovacuum thresholds per large table | `e-pg-l3-15`, `e-pg-l5-14` |  |
 | P11 | Measure the HOT ratio | `e-pg-l3-07` |  |
 | P12 | Watch index bloat, rebuild concurrently | `e-pg-l3-15`, `e-pg-l5-03` |  |
-| P13 | Know each DDL's lock, always set lock_timeout | `e-pg-l1-07`, `e-pg-l4-09` |  |
+| P13 | Know each DDL's lock, always set lock_timeout | `e-pg-l1-07`, `e-pg-l4-09` || `e-bp-p13` |
 | P14 | Find and drop invalid indexes after a failed concurrent build | `e-pg-l2-14` |  |
 | P15 | Add NOT NULL as NOT VALID first | `e-pg-l1-04` |  |
 | P16 | Know which type changes rewrite the table | `e-pg-l1-01` |  |
-| P17 | Prune partitions with plain ranges on the key | `e-pg-l4-07` |  |
+| P17 | Prune partitions with plain ranges on the key | `e-pg-l4-07` || `e-bp-p17` |
 | P18 | Create partitions ahead of the data | `e-pg-l4-08` |  |
 | P19 | Prepared statements on skewed data: watch the generic plan | `e-pg-l2-15`, `e-pg-l4-06` |  |
 | P20 | Raise the statistics target per column | `e-pg-l2-15`, `e-pg-l4-02` |  |
@@ -4472,7 +4474,7 @@ Bài Engine đọc ở nhánh `v22-engine` (commit `0ede43d`): 195 id (`e-pg-…
 | P22 | Expression B-tree for one hot jsonb key | `e-pg-l2-11`, `e-pg-l2-04` |  |
 | P23 | Behind a transaction pooler use SET LOCAL | `e-pg-l1-06`, `e-pg-l1-07` |  |
 | P24 | Set timeouts per role | — |  |
-| P25 | Find the costliest queries with pg_stat_statements | `e-pg-l5-11` |  |
+| P25 | Find the costliest queries with pg_stat_statements | `e-pg-l5-11` || `e-bp-p25` |
 | P26 | Monitor transaction ID age | `e-pg-l3-10`, `e-pg-l3-11`, `e-pg-l5-14` |  |
 
 ### 12.6 6. Bảo mật (X)
@@ -4480,14 +4482,14 @@ Bài Engine đọc ở nhánh `v22-engine` (commit `0ede43d`): 195 id (`e-pg-…
 | Mã | Mục | Bài Engine liên quan | Thẻ |
 |---|---|---|---|
 | X01 | Parameterise, never concatenate | — | `e-bp-x01` |
-| X02 | Least privilege roles | — |  |
+| X02 | Least privilege roles | — || `e-bp-x02` |
 | X03 | Pin search_path in SECURITY DEFINER functions | `e-pg-l1-06` |  |
 | X04 | RLS does not bind owners unless FORCED | `e-pg-l5-10` |  |
 | X05 | scram-sha-256, never trust over TCP | — |  |
-| X06 | Analysts work through a read-only role | — |  |
+| X06 | Analysts work through a read-only role | — || `e-bp-x06` |
 | X07 | Permissive policies are OR-ed: make must-hold rules RESTRICTIVE | `e-pg-l5-10` |  |
 | X08 | Views bypass RLS unless security_invoker | `e-pg-l1-08`, `e-pg-l5-10` |  |
-| X09 | Dynamic SQL: %I for names, %L or USING for values | — |  |
+| X09 | Dynamic SQL: %I for names, %L or USING for values | — || `e-bp-x09` |
 | X10 | Sensitive columns: column privileges or a view | — |  |
 
 ### 12.7 7. MongoDB (M)
@@ -5846,57 +5848,57 @@ SQL (30):
 10. Q10 ★⚑
 11. Q13 ★⚑
 12. A18 ★
-13. A21
+13. A21 ★
 14. Q04 ★
 15. Q03 ★
 16. Q15 ★⚑
-17. A16
+17. A16 ★
 18. A11 ★
 19. A05 ★⚑
-20. Q16
-21. A17
-22. A07
-23. A08
-24. A15
-25. Q18
-26. A02
-27. A12
-28. Q09
-29. Q08
+20. Q16 ★
+21. A17 ★
+22. A07 ★
+23. A08 ★
+24. A15 ★
+25. Q18 ★
+26. A02 ★
+27. A12 ★
+28. Q09 ★
+29. Q08 ★
 30. Q22 ★⚑
 
 PostgreSQL (30):
 
 31. S01 ★
 32. S03 ★
-33. S06
+33. S06 ★
 34. X01 ★
-35. I01
-36. P01
+35. I01 ★
+36. P01 ★
 37. I06 ★
 38. I02 ★
-39. S04
-40. S02
+39. S04 ★
+40. S02 ★
 41. S08 ★
-42. X06
-43. X02
+42. X06 ★
+43. X02 ★
 44. I05 ★
 45. I03 ★
 46. I04 ★
-47. S07
-48. I08
-49. P17
+47. S07 ★
+48. I08 ★
+49. P17 ★
 50. S10 ★
-51. P35 (cp)
-52. X09
-53. P05
-54. P13
-55. P08
-56. P06
-57. P03 (cp)
-58. I09
-59. P30
-60. P25 (cp)
+51. P35 ★ (cp)
+52. X09 ★
+53. P05 ★
+54. P13 ★ (cp, vòng 6)
+55. P08 ★
+56. P06 ★ (cp, vòng 6)
+57. P03 ★ (cp)
+58. I09 ★
+59. P30 ★ (cp, vòng 6)
+60. P25 ★ (cp)
 
 - Đếm: Q 17, A 13, S 8, I 8, P 10, X 4. Có 28 thẻ cũ, nên **32 thẻ mới** cho BP-C.
 - Chọn Q08, Q09, Q16 vì ba ô "Lỗi hay gặp" của §13.4 (dòng 4, 6, 7) chỉ chờ ba thẻ này.
@@ -5996,3 +5998,84 @@ Thói quen học đi kèm: làm lại bài từng sai sau vài ngày (hàng "Ôn
 - [6] SQL Style Guide (CC BY-SA 4.0, chỉ dẫn link): https://www.sqlstyle.guide/
 
 Đề xuất dùng (cho luồng sau L220): một trang ngắn `#/engine/best` đầu track SQL. Mỗi thói quen một dòng và các chip thẻ; chỉ chip của thẻ đã phát hành là link. Văn bản VI/EN đi theo quy tắc của `content/` (EN không dấu, mã giống nhau ở hai bản).
+
+## 15. Vòng 6: 32 thẻ v25 còn thiếu
+
+Theo L215.6 (track nghiên cứu cho khu Best Practice). Vòng này chỉ viết nội dung: thêm 32 thẻ ở `content/engine/best/`, không sửa `src/`, test, build hay `decision-log.md`. Sau vòng này cả 60 mục v25 (§14.2) đều có thẻ: SQL 30, PostgreSQL 30.
+
+### 15.1 Cách kiểm
+
+- Script tạm ngoài repo (`bp6/verify.mjs`, chép từ `bp3/verify.mjs` của §11.2, không commit), dùng đúng `@electric-sql/pglite` 0.5.16, `libpg-query` 18.2.4 và `yaml` đã cài trong repo. Luật kiểm như §11.2; khác một chỗ: bản `engine-hb` không chạy lượt khởi động (lệnh DDL ngoài transaction không chạy lại được).
+- Kết quả ngày 2026-11-20: **60/60 thẻ SQL + PostgreSQL, 0 lỗi** (28 thẻ cũ chạy lại cùng lúc, vẫn qua).
+- Mọi câu < 300 ms trong Node; lâu nhất là bản Không nên của P08 (≈ 60 ms). `setup` lâu nhất ≈ 0,6 s (I01, lần chạy đầu).
+- Thẻ `none` (chỉ cú pháp): chạy riêng cả khối Không nên và Nên như một script trên PGlite mới (P25 có nạp `pg_stat_statements`). Cả 12 khối chạy không lỗi.
+- Câu kiểm có nêu sự thật thì đã chạy riêng:
+  - X06: `DELETE` bằng role chỉ đọc báo `42501`; `pg_read_all_data` đọc được bảng tạo sau khi cấp quyền;
+  - X09: chạy câu `%I` dựng ra thì báo `42P01`;
+  - S04: chèn id tay vào cột `ALWAYS` báo `428C9`;
+  - P06: dòng mới vi phạm sau `NOT VALID` báo `23514`;
+  - P35: lệnh ghi trong `READ ONLY` báo `25006`;
+  - A08: `round(1400, -3) * 3` = 3000, `round(1400 * 3, -3)` = 4000;
+  - P03: PGlite chỉ có một tiến trình `standalone backend` (không có autovacuum), đúng như thân thẻ nói.
+- Nguồn: tải lại cả 50 URL mà 32 thẻ dẫn, đều 200, mọi anchor có thật. Hai câu trích (A15, P30) và các ý chính (`char(n)` "usually the slowest", `CONCURRENTLY` "two scans", `pg_read_all_data` không bỏ qua RLS, `OVERRIDING SYSTEM VALUE`, `INHERIT`, lock `SHARE` của `CREATE INDEX`) đều có trên đúng trang. A12 bỏ nguồn dbt (ngoài danh sách nguồn cho phép của thiết kế §4.3), dẫn `functions-subquery` và `queries-union` thay.
+
+### 15.2 Thẻ mới
+
+| Mã | Track | Cấp | `runtime` | `check` | Kết quả đo (Không nên → Nên) | File |
+|---|---|---|---|---|---|---|
+| A21 | SQL | L2 | `lab` | `diff` | 266 → 200 người dùng tháng 10 | `sql/a21-distinct-not-additive.md` |
+| A16 | SQL | L2 | `lab` | `diff` | 1.199 → 900 đơn "có đơn trước" | `sql/a16-lag-partition-by.md` |
+| Q16 | SQL | L2 | `lab` | `diff` | 620.240.400 → 627.192.600 đồng | `sql/q16-union-all.md` |
+| A17 | SQL | L2 | `lab` | `diff` | 2 → 4 sản phẩm (ba sản phẩm cùng 158) | `sql/a17-top-n-ties.md` |
+| A07 | SQL | L2 | `lab` | `diff` | 1 → 0,8964 | `sql/a07-ratio-denominator.md` |
+| A08 | SQL | L1 | `lab` | `diff` | 203.991.000 → 203.923.000 đồng | `sql/a08-round-at-end.md` |
+| A15 | SQL | L3 | `lab` | `diff` | 1.051 → 5 cặp cửa hàng/ngày | `sql/a15-last-value-frame.md` |
+| Q18 | SQL | L3 | `lab` | `diff` | hai đơn ngày 2026-10-01: 2, 2 → 1, 2 | `sql/q18-rows-running-total.md` |
+| A02 | SQL | L2 | `engine` | `diff` | ngày 31/10: 600.000 → 300.000; ngày 01/11: 400.000 → 700.000 | `sql/a02-business-time-zone.md` |
+| A12 | SQL | L2 | `lab` | `runs` | 1.395 khoản trả → `orphan_payment` 8, hai test còn lại 0 | `sql/a12-zero-row-tests.md` |
+| Q09 | SQL | L1 | `lab` | `runs` | 6 cột → 3 cột, 1 dòng | `sql/q09-name-columns.md` |
+| Q08 | SQL | L1 | `lab` | `same` | 5 cửa hàng, cùng số đơn | `sql/q08-explicit-join.md` |
+| S06 | PostgreSQL | L1 | `engine` | `diff` | 6 dòng, 40.000 → 2 dòng, 130.000 | `postgres/s06-constraints.md` |
+| I01 | PostgreSQL | L2 | `engine` | `runs` + cost | `Seq Scan` 359,01 → `Index Scan` 8,34 | `postgres/i01-index-for-query.md` |
+| P01 | PostgreSQL | L2 | `engine` | `runs` | `rows=1` → `rows=1` kèm `actual rows=2000.00` | `postgres/p01-estimated-vs-actual.md` |
+| S04 | PostgreSQL | L1 | `engine` | `error` | `23505` → id 4 | `postgres/s04-identity-not-serial.md` |
+| S02 | PostgreSQL | L1 | `engine` | `diff` | 1 → 0 mã sai | `postgres/s02-text-check.md` |
+| X06 | PostgreSQL | L2 | `engine` | `diff` | xóa được: true → false | `postgres/x06-read-only-analyst.md` |
+| X02 | PostgreSQL | L2 | `engine` | `diff` | 5 quyền → 1 (`SELECT`) | `postgres/x02-least-privilege.md` |
+| S07 | PostgreSQL | L2 | `engine` | `diff` | 3 → 2 dòng `default` | `postgres/s07-nulls-not-distinct.md` |
+| I08 | PostgreSQL | L3 | `engine` | `plan` | `Seq Scan` (cost 404,01) → `Bitmap Heap Scan` trên partial index (121,68) | `postgres/i08-low-cardinality.md` |
+| P17 | PostgreSQL | L4 | `engine` | `runs` + cost | `Append` 3 partition, 221,36 → 1 partition, 74,26 | `postgres/p17-partition-pruning.md` |
+| P35 | PostgreSQL | L3 | `none` | `syntax` | (script: cùng snapshot; ghi trong `READ ONLY` báo `25006`) | `postgres/p35-report-snapshot.md` |
+| X09 | PostgreSQL | L2 | `lab` | `diff` | hai câu → một tên trong nháy kép | `postgres/x09-dynamic-sql-format.md` |
+| P05 | PostgreSQL | L3 | `engine-hb` | `runs` | cả hai dựng xong index | `postgres/p05-create-index-concurrently.md` |
+| P13 | PostgreSQL | L4 | `none` | `syntax` | (script: `AccessExclusiveLock`, `lock_timeout` 0 → `2s`) | `postgres/p13-lock-timeout.md` |
+| P08 | PostgreSQL | L3 | `engine` | `diff` | 10.000 → 250 dòng ghi lại | `postgres/p08-batch-updates.md` |
+| P06 | PostgreSQL | L4 | `none` | `syntax` | (script: `AccessExclusiveLock` → `ShareUpdateExclusiveLock`) | `postgres/p06-not-valid-validate.md` |
+| P03 | PostgreSQL | L3 | `none` | `syntax` | (script: cả hai lệnh chạy) | `postgres/p03-autovacuum-on.md` |
+| I09 | PostgreSQL | L3 | `engine` | `runs` | "3 index" → `orders_store_ix` thừa, 163.840 byte | `postgres/i09-redundant-indexes.md` |
+| P30 | PostgreSQL | L3 | `none` | `syntax` | (script: `GroupAggregate` + `Sort` → `HashAggregate`) | `postgres/p30-work-mem-set-local.md` |
+| P25 | PostgreSQL | L5 | `none` | `syntax` | (script có extension: 50 câu thành một dòng `WHERE id = $1`, `calls` = 50) | `postgres/p25-pg-stat-statements.md` |
+
+### 15.3 Chỗ thẻ khác dòng "Kiểm" của mục
+
+Thiết kế §3.2/§4.3 cho mỗi bản đúng một câu, `setup` riêng, và `check: error` nghĩa là bản Không nên báo lỗi. Nhiều ví dụ ở §1–§13 không vừa khuôn đó. Cách đã chọn:
+
+- **Bản Đúng mới là bản báo lỗi (S02, S04, S06, S07, X02, X06; §11.1 đã bỏ lại).** Dựng lại để cả hai bản chạy:
+  - S02, S06: `setup` ghi cùng dữ liệu sai vào hai bảng bằng một khối `DO` bắt lỗi từng dòng (`check_violation`, `integrity_constraint_violation`); hai bản đếm kết quả (`diff`). `splitSql` của `v22-engine` giữ nguyên khối `$$ … $$`.
+  - S07: `INSERT … ON CONFLICT DO NOTHING` chạy hai lần trên mỗi bảng; bảng `UNIQUE` thường nhận dòng NULL trùng.
+  - S04: `setup` chèn id tay vào bảng `serial`; bản Không nên là lần chèn bình thường kế tiếp, báo `23505` (`check: error` đúng nghĩa thiết kế). `428C9` chuyển vào câu kiểm.
+  - X02, X06: đọc quyền bằng `has_table_privilege` (một câu, không cần `SET ROLE`). `42501` khi xóa thật chuyển vào câu kiểm của X06.
+- **Nhiều câu hoặc DDL trên `lab` (I01, I08, I09, P01, P08, P17):** dữ liệu và DDL dời vào `setup` trên bảng riêng của thẻ, theo mẫu hai bảng của §11.3 (I01). P08 bọc `UPDATE` trong CTE `RETURNING` để đếm số dòng ghi lại. P01 làm thống kê cũ bằng một `UPDATE` sau `ANALYZE`, rồi so `EXPLAIN` với `EXPLAIN (ANALYZE, BUFFERS, TIMING OFF, SUMMARY OFF)`.
+- **Chỉ cú pháp thêm 3 mục (P13, P06, P30), ngoài P35, P03, P25 đã là (cp).** Phần dạy chính nằm ở chuỗi lệnh (`SET LOCAL` rồi DDL hay truy vấn; `NOT VALID` rồi `VALIDATE`), mà mỗi bản chỉ được một câu và không mang thiết lập phiên sang. Gói vào một hàm trợ giúp thì giấu đúng thứ cần dạy, nên giữ `runtime: none`, mã viết đủ chuỗi lệnh, và ghi số đo script vào `## Ví dụ`. Nếu BP-T thêm `probe` hoặc cho `pair` một kịch bản nhiều câu (§13.1), ba thẻ này đổi được sang `engine`.
+- **P05** chạy ở `engine-hb` (cả hai bản ngoài transaction); khác biệt là lock lúc dựng, một phiên không thấy được, thân thẻ nói rõ. `25001` khi đặt trong transaction chuyển vào câu kiểm.
+- **A02** chạy ở `engine` (không phải `lab`) vì cần `timestamptz` và `SET TIME ZONE 'UTC'` trong `setup`, như S01.
+- **X09** chạy ở `lab` (chỉ gọi `format`, không đụng bảng), như S03.
+- **A15** có đặc tả lint ở §10, nhưng không nằm trong 10 luật của thiết kế §5.4 và verifier, nên thẻ không có `lint`.
+- **Câu kiểm không lộ đáp án (cổng Product §11.3 mục 3 của thiết kế):** bỏ `## Ví dụ` ở S02, P17 vì khối đó nêu đúng kết quả câu kiểm hỏi; S06 chỉ tả dữ liệu đầu vào. Cổng "giải mù" vẫn cần agent riêng chạy trước khi phát hành.
+- **`requires`:** mỗi id đã grep ở `0ede43d` có đúng thuật ngữ của thẻ (ví dụ `e-pg-l4-09`: `ACCESS EXCLUSIVE`, `lock_timeout`; `e-pg-l1-03`: `IDENTITY`, `serial`). Bài MongoDB mà §12 gợi ý cho thẻ SQL (Q09, Q18, A15, A16, I09) không dùng; thẻ không có bài nào hợp thì `requires: []`.
+
+### 15.4 Ngân sách
+
+- `sql` (30 thẻ): 102.397 byte thô, 27.406 byte gzip -9 cả file.
+- `postgres` (30 thẻ): 119.029 byte thô, 32.313 byte gzip -9 cả file.
+- Gộp một chunk mỗi track thì cả hai vượt trần 20 KB của thiết kế §10, như §11.4 và §14.2 đã báo. Phương án ở §13.1.4 (một chunk lười mỗi thẻ) vẫn đủ.
