@@ -3,8 +3,8 @@ id: e-pg-l3-17
 engine: postgres
 level: L3
 module: vacuum-hot
-title: "Đoán trước: `count(*)` có đọc khóa chính cho nhanh không?"
-title_en: "Predict: does `count(*)` read the primary key to be fast?"
+title: "Đoán trước: count(*) có đọc khóa chính cho nhanh không?"
+title_en: "Predict: does count(*) read the primary key to be fast?"
 kind: predict
 runtime: browser
 minutes: 10

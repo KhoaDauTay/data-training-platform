@@ -25,6 +25,10 @@ describe('content/engine (ENGINE-CONTENT-V1)', () => {
     for (const k of ['concept', 'lab', 'quiz'] as const) expect(pg.some((l) => l.kind === k)).toBe(true);
   });
 
+  it('tiêu đề bài không có dấu `: h1, hàng bài và tab hiện chữ thô (review v23)', () => {
+    expect(sets[0].filter((l) => /`/.test(l.title.vi + l.title.en)).map((l) => l.id)).toEqual([]);
+  });
+
   it.each(sets.map((s, i) => [i ? 'mẫu' : 'content/engine', s] as const))('%s: id không trùng', (_, set) => {
     expect(new Set(set.map((l) => l.id)).size).toBe(set.length);
   });
