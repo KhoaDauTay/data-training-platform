@@ -36,12 +36,9 @@ describe('engine index and routes', () => {
 
 describe('viz names in content → ENG-VIZ diagrams', () => {
   const short = { postgres: 'pg', mongodb: 'mg', dynamodb: 'dy' } as const;
-  /** Known gap: no diagram draws a query's path through the server yet. */
-  const GAP = new Set(['pg-query-path']);
   it.each(lessons.filter((l) => l.viz).map((l) => [l.id, l.viz!, l.engine] as const))('%s: %s', (_id, name, engine) => {
     const real = resolveViz(name, short[engine]);
-    if (GAP.has(name)) expect(real).toBeUndefined();
-    else expect(real, name).toMatch(new RegExp(`^${short[engine]}-`));
+    expect(real, name).toMatch(new RegExp(`^${short[engine]}-`));
   });
 });
 
