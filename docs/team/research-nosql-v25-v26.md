@@ -45,9 +45,9 @@ Luồng research thường trực (L215.6), vòng 9. Đọc kèm:
    - Đây là bẫy SQL quan trọng (`COUNT(*)` luôn trả một dòng). Thêm vào bộ golden và sửa hoặc ghi chú trong runner (§4.1, §5).
 6. **Explain ghi sẵn:**
    - Không có `mongod` thì mọi output chỉ được mang nhãn **"trích tài liệu MongoDB 9.0"**. Không bài nào được mang nhãn "ghi từ `mongod`".
-   - Chỉ `L3/06` và `L3/07` có đủ số liệu chính thức (trang *Analyze Query Performance*: 21.349 / 3809 / 246 / 235).
-   - Sáu predict L3 khác và `L5/06` cần `mongod` thật (§2.4).
-   - Tên chiến lược join của `$lookup` (`IndexedLoopJoin`, `HashJoin`…) không có trong docs chính thức. Không được dựng output theo chúng.
+   - Chỉ `L3/06` và `L3/07` có **số explain** chính thức (trang *Analyze Query Performance* bản 9.0: 21.349 / 3809 / 246 / 235; bản 8.0 của cùng trang dùng ví dụ `inventory` khác hẳn).
+   - Mọi predict L3–L5 khác có **kết luận** nêu trong docs (dùng/không dùng index, mấy tài liệu, rollback…), nên đủ nhãn T2 nếu không kèm JSON explain. `mongod` chỉ cần để nâng lên T3 có số thật (§2.4).
+   - Tôi không thấy tên chiến lược join của `$lookup` (`IndexedLoopJoin`, `HashJoin`…) trong các trang docs đã đọc. Không dựng output theo chúng.
 
 ---
 
@@ -89,7 +89,7 @@ Luồng research thường trực (L215.6), vòng 9. Đọc kèm:
    - Không được để kết quả của dynoxide trông như bằng chứng cho đáp án sai.
 3. **Cách sửa đúng:** đọc lại bảng chính bằng `GetItem` với `ConsistentRead: true` (1 RCU thay vì 0,5) theo khóa lấy từ GSI. Bước này chấm bằng request, chạy thật.
 
-**Chi phí ghi GSI** cho DY-UI, đo bằng `ReturnConsumedCapacity: "INDEXES"`. Kết quả khớp đủ sáu trường hợp trong GSI.html §Write capacity units:
+**Chi phí ghi GSI** cho DY-UI, đo bằng `ReturnConsumedCapacity: "INDEXES"`. Kết quả khớp cả sáu trường hợp trong GSI.html §Write capacity units (`dy.mjs` và `dy5.mjs`):
 
 | Ghi vào bảng (GSI `byStatus`, projection ALL) | Table | GSI | AWS nói |
 |---|---|---|---|
@@ -97,6 +97,10 @@ Luồng research thường trực (L215.6), vòng 9. Đọc kèm:
 | Update đổi `status` NEW → PAID | 1 | **2** | "two writes are required" (xóa cũ + ghi mới) |
 | Update thuộc tính không phải khóa (projection ALL nên có trong index) | 1 | 1 | đổi thuộc tính được project → 1 lần ghi |
 | Put item **không có** `status` | 1 | — | "no additional write cost for the index" (GSI thưa) |
+| Update thêm `status` cho item chưa có | 1 | 1 | định nghĩa thuộc tính index → 1 lần ghi |
+| Update `REMOVE status` (item đang trong index) | 1 | 1 | xóa mục khỏi index → 1 lần ghi |
+| Update thuộc tính **không** project (GSI `KEYS_ONLY`) | 1 | — | "no write capacity is consumed for that index" |
+| Delete item đang có trong index | 1 | 1 | xóa mục index |
 
 ### 1.3 DY4: "Single-table luôn tốt hơn nhiều bảng"
 
@@ -191,12 +195,12 @@ Luồng research thường trực (L215.6), vòng 9. Đọc kèm:
 | `$lookup` + `$unwind: "$orders"` | 4 (c4 **mất**; c1 tách thành 2) | `INNER JOIN` |
 | `$lookup` + `$unwind` + `preserveNullAndEmptyArrays: true` | 5 | `LEFT JOIN` từng dòng |
 | `$lookup` + `$match: {orders: {$size: 0}}` | c4 | anti-join (`NOT EXISTS`) |
-| `$lookup` từ collection không tồn tại | `x: []`, không lỗi | SQL báo lỗi 42P01; MongoDB im lặng (gõ sai tên là thành mảng rỗng) |
+| `$lookup` từ collection không tồn tại | `x: []` | **Chưa kiểm**: kết quả này do resolver của script trả `[]`, không chứng minh gì về mingo hay MongoDB. Đưa vào golden M8 |
 
 **Đề xuất (bổ sung F7 trong `L2/08`):**
 
 - **Predict chạy thật:** "Thêm `$unwind: "$orders"` sau `$lookup`: còn mấy tài liệu, khách nào biến mất?" Đáp án: 4, mất `c4`.
-- **Predict chạy thật:** "Gõ nhầm `from: "order"`. Kết quả?" Đáp án: không lỗi, mọi mảng rỗng. Bẫy này người làm SQL không ngờ.
+- **Không** viết predict "gõ nhầm `from`" cho tới khi M8 hoặc docs xác nhận hành vi.
 - **Quiz bằng lời (docs):** "`$lookup` chạy 1000 lần/giây trên `orders` 1 triệu tài liệu, không có index ở `customerId`." Đáp án: tạo index `foreignField`, hoặc nhúng. Trích hai câu trên.
 - **Predict trên explain:** cần `mongod` (§2.4, mục M7). Trước khi có `mongod` thì không viết.
 
@@ -212,15 +216,18 @@ mingo không có session/transaction, nên chỉ có quiz. Sửa đủ ở F9: t
 
 | Bài | Câu hỏi | Trường explain cần | Có số trong docs chính thức? |
 |---|---|---|---|
-| L3/02 partial | index partial `year > 2000` có dùng cho `year > 1990` không | `winningPlan` stage (`COLLSCAN` hay `IXSCAN`), `indexName` | Không. Docs partial index chỉ có luật, không có output → **cần `mongod`** |
-| L3/03 multikey cover | multikey có phủ được không | có `FETCH` trên `IXSCAN` hay không, `isMultiKey`, `totalDocsExamined` | Không (luật: "Multikey indexes cannot cover queries over array fields") → **cần `mongod`** |
+| L3/02 partial | index partial `year > 2000` có dùng cho `year > 1990` không | `winningPlan` stage, `indexName` | **Kết luận có**: trang partial index dùng đúng ví dụ này; truy vấn `year > 1990` "matches documents that the partial index doesn't include". Không có output explain → T2 đủ |
+| L3/03 multikey cover | multikey có phủ được không | có `FETCH` trên `IXSCAN`, `isMultiKey`, `totalDocsExamined` | **Luật có**: "Multikey indexes cannot cover queries over array fields" (Query Optimization). Không có output → T2 đủ |
 | L3/06 collscan | không index thì sao | `stage: COLLSCAN`, `nReturned`, `totalKeysExamined`, `totalDocsExamined` | **Có**: *Analyze Query Performance*: 21.349 docs, 3809 trả về, 0 key, 21.349 docs đọc. Có index `{year:1}`: `FETCH` → `IXSCAN`, 3809/3809/3809 |
 | L3/07 key count | `{year, rated}` hay `{rated, year}` | `totalKeysExamined` với `hint` | **Có**: cùng trang: 246 so với 235 key, 235 docs, 235 trả về |
-| L3/08 ESR sort | range trước sort có `SORT` không | có stage `SORT` trong `winningPlan` | Một phần: trang ESR có luật và index đề xuất `{directors, year, runtime}`, **không có output** → cần `mongod` cho cặp có/không `SORT` |
-| L3/09 covered | `{rated, title}` + projection `{title:1}` | `IXSCAN` không nằm dưới `FETCH`; `totalDocsExamined: 0` | Ví dụ ở trang Query Optimization dùng `{ title: 1, _id: 0 }`. Bài đang dùng `{ title: 1 }` (giữ `_id`) → **không phủ**: đúng ý bài, nhưng output phải từ `mongod` |
+| L3/08 ESR sort | range trước sort có `SORT` không | có stage `SORT` trong `winningPlan` | **Luật có**: "place sort fields before range fields" để tránh sort trong bộ nhớ; index đề xuất `{directors, year, runtime}`. Không có output → T2 đủ |
+| L3/09 covered | `{rated, title}` + projection `{title:1}` | `IXSCAN` không dưới `FETCH`; `totalDocsExamined: 0` | **Luật và ví dụ có**: trang Query Optimization dùng `{ title: 1, _id: 0 }`; đáp án của bài ("phải ghi `_id: 0`") khớp. Không có output → T2 đủ |
 | L3/10 plan cache | plan cache | `planCacheKey`, `isActive` | Không → giữ concept, không predict |
-| L3/15 collation | index `strength: 2`, truy vấn `strength: 1` | `COLLSCAN` hay `IXSCAN`; số tài liệu | Docs collation có luật, không có output → **cần `mongod`** |
-| L3/16 sparse hint | `countDocuments` + `hint` sparse | chỉ kết quả đếm (700) | Luật có trong docs sparse; không cần explain. Nhãn "trích tài liệu" là đủ |
+| L3/15 collation | index `strength: 2`, truy vấn `strength: 1` | `COLLSCAN`/`IXSCAN`; số tài liệu | **Kết luận có**: trang Case-Insensitive Index có đúng ví dụ `fruit`, chú thích "does not use the index, finds three results". Đáp án của bài khớp. T2 đủ |
+| L3/16 sparse hint | `countDocuments` + `hint` sparse | chỉ kết quả đếm | **Kết luận có, không có số**: "returns only the documents that contain the `rated` field". Con số 700 là giả định của bài, phải ghi rõ. T2 đủ |
+| L4/11 payment flow | đọc secondary ngay sau `w: majority` | không cần explain | Kết luận theo trang write concern / read isolation (bài đã trích). T2; T3 cần replica set 3 nút |
+| L5/02 write conflict | hai lệnh trên cùng một tài liệu | không cần explain | Kết luận theo trang WiredTiger. T2 |
+| L5/04 failover | lệnh nào còn sau bầu cử | không cần explain | Kết luận theo write concern + elections. T2; T3 cần replica set và cắt mạng: không đáng làm |
 | L5/06 targeted | một shard hay mọi shard | `SINGLE_SHARD` / `SHARD_MERGE`, `shards[]` | Không. **Cần cụm shard** (mongos + 2 shard), lớn hơn một `mongod` |
 | MG2 (mới) | `$lookup` không index `foreignField` | `$lookup` stage: `totalDocsExamined`, `collectionScans`, `indexesUsed` | Docs explain có liệt kê các trường này, không có ví dụ số → **cần `mongod`** |
 
@@ -245,7 +252,7 @@ mingo không có session/transaction, nên chỉ có quiz. Sửa đủ ở F9: t
 2. Code đọc phải chuẩn hóa: lấy `winningPlan.queryPlan ?? winningPlan` rồi đi theo `inputStage`/`inputStages`. Tab vẽ cây không được hard-code một đường.
 3. Người học chỉ cần **4 trường**: stage gốc, `nReturned`, `totalKeysExamined`, `totalDocsExamined`. Thêm `SORT` có hay không cho L3/08. Hiển thị gọn 4 trường này cạnh JSON đầy đủ, như `pg-plan-tree` làm với Postgres.
 4. Tên chiến lược join (`EQ_LOOKUP` với `IndexedLoopJoin`, `HashJoin`, `NestedLoopJoin`):
-   - Chỉ thấy trong blog và Jira MongoDB, không thấy trong docs chính thức.
+   - Thấy trong blog và Jira MongoDB. Tôi không thấy trong các trang docs đã đọc (fetch có tóm tắt, nên chỉ là "không thấy").
    - Trang Explain Results nhắc `EQ_LOOKUP` nhưng không nêu tên chiến lược.
    - **Không** dạy các tên này. Chỉ dạy `collectionScans` / `indexesUsed`.
 
@@ -284,14 +291,16 @@ recorded:
 
 | # | Bài | Cần gì |
 |---|---|---|
-| M1 | L3/02 partial | 1 `mongod`, collection `movies` |
-| M2 | L3/03 multikey cover | 1 `mongod` |
-| M3 | L3/08 ESR sort | 1 `mongod`, hai index (ESR và "range trước sort") |
-| M4 | L3/09 covered | 1 `mongod` (cả hai projection, có và không `_id: 0`) |
-| M5 | L3/15 collation | 1 `mongod` |
+| M1 | L3/02 partial | tùy chọn (T2 đã đủ): 1 `mongod` để có số |
+| M2 | L3/03 multikey cover | tùy chọn: 1 `mongod` |
+| M3 | L3/08 ESR sort | **nên có**: cặp explain có/không `SORT` là chỗ người học cần thấy tận mắt; 1 `mongod`, hai index |
+| M4 | L3/09 covered | tùy chọn: 1 `mongod` (cả hai projection) |
+| M5 | L3/15 collation | tùy chọn: 1 `mongod` |
 | M6 | L5/06 targeted | cụm shard: mongos + config + 2 shard. Đắt nhất; có thể giữ T2 "minh họa theo docs sharding" |
 | M7 | MG2 `$lookup` | 1 `mongod`; `orders` ≥ 10⁴ tài liệu; có và không index `customerId` |
-| M8 | golden mingo ↔ `mongod` | các ca §4.1 (`$count` rỗng, null/missing, sort khác kiểu) |
+| M8 | golden mingo ↔ `mongod` | các dòng "chỉ mingo" ở §4.1 và §1.6 (`$count`/`$group` trên rỗng, null + thiếu chung nhóm, `{tags: "a"}`, `$lookup` `from` không tồn tại) |
+
+Vì vậy điều kiện thoát v25 ("mọi predict L3/L5 có `recorded` hoặc nhãn trích tài liệu") **đạt được không cần Docker**. Việc bắt buộc cần `mongod` chỉ còn M3, M7 và M8.
 
 **Ghi chú cho người viết `scripts/capture-mongo.md`:**
 
@@ -370,7 +379,7 @@ WCU_gsi    = Σ_index {0 | 1 | 2} × ceil(size_index_entry / 1024)
 | Ghi có điều kiện bị từ chối | tốn WCU | lỗi `ConditionalCheckFailedException`, **không có** `ConsumedCapacity` | ✗: tab tính bằng công thức |
 | Giao dịch bị hủy | tốn ×2 cho item đã thử | lỗi `TransactionCanceledException`, không có số | ✗: công thức |
 | Item > 400 KB | `ValidationException` | `ValidationException: Item size has exceeded…` | ✓ |
-| Bảng provisioned 1 WCU, 10 ghi liền | throttle (sau burst) | 0 lỗi | ✗: không mô phỏng throttle |
+| Bảng provisioned 1 WCU, 500 ghi trong 0,17 s | burst giữ tối đa 300 giây × 1 WCU = 300 đơn vị, nên **ước tính** AWS throttle phần vượt (chưa đo trên AWS) | 0 lỗi | ✗: không mô phỏng throttle |
 
 Kết luận cho DY-UI:
 
@@ -425,7 +434,7 @@ Chi phí đọc sau khi shard = N lần Query, mỗi lần làm tròn riêng
 **Ví dụ 4** (on-demand):
 
 - Đỉnh cũ 50.000 đọc/giây. Lên 100.000 thì ngay lập tức được.
-- Lên 150.000 trong vòng 30 phút sau đỉnh mới thì có thể bị throttle.
+- Nhảy từ đỉnh 50.000 lên quá 100.000 (ví dụ 150.000) trong vòng 30 phút thì có thể bị throttle. Nếu 100.000 đã thành đỉnh mới thì 150.000 vẫn trong mức gấp đôi, không bị throttle.
 - Đúng ví dụ trong docs (25.000–50.000). Dùng làm quiz "on-demand có cứu được khóa nóng không": không, trần 1000 WCU mỗi partition vẫn còn (`L4/06` đã nói).
 
 **Đối chiếu số trong bài hiện có:** đã soát `L4/01`, `L4/02`, `L4/03`, `L4/06`, `L4/11`, `L2/09`, `L2/10`. Mọi số khớp docs.
@@ -465,15 +474,15 @@ Bảng cho tab, có cột bẫy. Mọi dòng "mingo" đã chạy (`mg.mjs`):
 
 | Stage | SQL | Bẫy (đã kiểm) |
 |---|---|---|
-| `$match` (đầu) | `WHERE` | `{x: null}` khớp **cả** tài liệu thiếu `x` (mingo: 2/3). `$ne: "A"` khớp tài liệu thiếu trường (2/3). `{tags: "a"}` khớp mảng chứa `"a"` |
+| `$match` (đầu) | `WHERE` | **docs:** `{ item : null }` khớp cả tài liệu "do not contain the `item` field"; `$ne` "includes documents that do not contain the field"; `$gt`/`$lt` có type bracketing nên `$gt: 100000` không khớp chuỗi (trang `$ne`). **chỉ mingo → M8:** `{tags: "a"}` khớp mảng chứa `"a"` (chưa đọc trang mảng) |
 | `$match` (sau `$group`) | `HAVING` | Cùng một stage. Vị trí trong pipeline quyết định nghĩa, không có từ khóa riêng |
-| `$group` | `GROUP BY` + hàm gộp | `_id: null` gom **mọi** tài liệu. `null` và thiếu trường vào chung nhóm `_id: null` (mingo: `{_id: null, n: 2}`). `$sum` bỏ qua chuỗi im lặng (MG1) |
-| `$group` trên đầu vào rỗng | `SELECT count(*) …` (luôn 1 dòng) | **Không trả dòng nào** (mingo khớp) |
+| `$group` | `GROUP BY` + hàm gộp | **docs:** `_id: null` (hằng) gom mọi tài liệu; `$sum` bỏ qua giá trị không phải số (MG1). **chỉ mingo → M8:** `null` và thiếu trường vào chung một nhóm (mingo: `{_id: null, n: 2}`; trang `$group` không nêu luật này) |
+| `$group` trên đầu vào rỗng | `SELECT count(*) …` (luôn 1 dòng) | **chỉ mingo → M8:** không trả dòng nào (trang `$group` không nói) |
 | `$count` trên đầu vào rỗng | `SELECT count(*)` = 0 | MongoDB: "If the input dataset is empty, `$count` doesn't return a result." **mingo trả `[{n: 0}]`: lệch.** Golden M8; runner cần sửa hoặc bài không được dựa vào ca này |
 | `$project` | `SELECT` danh sách cột | `_id` luôn có trừ khi `_id: 0` (bẫy câu phủ L3/09) |
-| `$sort` | `ORDER BY` | Thứ tự kiểu BSON: null/thiếu < số < chuỗi (mingo: `null, 80000, …, "300000"`). Không có `NULLS LAST` |
+| `$sort` | `ORDER BY` | **docs** (BSON comparison order): Null < Numbers < String, và "treats a non-existent field as if it were null". mingo khớp (`null, 80000, …, "300000"`). Không có `NULLS LAST` |
 | `$limit` | `LIMIT` | Đặt trước `$sort` thì cắt trước rồi mới sắp (mingo: `[1,3]` so với `[1,2]`) |
-| `$lookup` | `LEFT JOIN` gom mảng | Không nhân dòng. `from` sai tên → mảng rỗng, không lỗi (§1.6) |
+| `$lookup` | `LEFT JOIN` gom mảng | Không nhân dòng. `from` không tồn tại: chưa kiểm (§1.6, M8) |
 | `$lookup` + `$unwind` | `INNER JOIN` | Mất tài liệu không có cặp, trừ khi `preserveNullAndEmptyArrays` |
 | `$lookup` (`let` + `pipeline`) | subquery tương quan | Docs: tương quan + không index thì chậm. Từ 6.0, dạng này **không** chạy trên SBE |
 | `$addToSet` + `$size` | `COUNT(DISTINCT …)` | Mảng nằm trong một tài liệu, nên bị giới hạn 16 MB *(giới hạn cỡ tài liệu, chưa kiểm câu nguyên văn)* |
@@ -516,7 +525,7 @@ Nguồn: *SQL to NoSQL / Querying a table* (AWS). Query cần điều kiện b�
 | REC | Trường `recorded` như §2.3; đọc được cả cây cổ điển lẫn SBE; test §2.3 | — |
 | MG-CAPTURE | Ngay: đổi L3/06, L3/07 sang `recorded.tier: docs` (số §2.1). Mục M1–M8 chờ user duyệt Docker; trong lúc chờ, các bài đó ghi T2 "theo luật trong tài liệu" và **không** có JSON explain | T2 → T3 |
 | MG-CAP | Capstone L3 chấm theo luật ESR (đã có trong `src/engine/mongo/path.ts`); một bước "nhúng hay `$lookup`" (§1.6) | T1 + T2 |
-| MG-ED (F7) | §1.6: predict `$unwind` mất `c4`, predict `from` gõ sai; quiz index `foreignField` | T1 |
+| MG-ED (F7) | §1.6: predict `$unwind` mất `c4`; quiz index `foreignField` | T1 |
 | F8 | Lab MG1 §1.5 (Hue doanh thu 0, tìm bằng `$type`) | T1 |
 | Runner Mongo | `$count` trên rỗng: trả `[]` cho giống MongoDB, hoặc ghi vào danh sách "mingo ≠ MongoDB" và cấm bài dựa vào ca này | — |
 | MG-UI | "Pipeline từng bước" = chạy tiền tố (§4.1); "So với SQL" = bảng §4.1 kèm cột bẫy | T1 |
@@ -537,6 +546,7 @@ Thư mục: `C:\Users\KHOA~1.HUY\AppData\Local\Temp\claude\…\scratchpad\r9\` (
   - DY6, DY2, các ca chi phí, chi phí ghi GSI;
   - output: `dy.out`.
 - `dy3.mjs`: bảng provisioned 1 WCU (không throttle); Query cộng rồi làm tròn; BatchGet làm tròn từng item; PartiQL có khóa và không khóa; item > 400 KB. Output: `dy3.out`.
+- `dy5.mjs`: bốn ca GSI còn lại (GSI `KEYS_ONLY`) và 500 ghi vào bảng 1 WCU. Output: `dy5.out`.
 - `dy4.mjs`: single-table so với hai bảng. Output: `dy4.out`. Dòng `Assertion failed … async.c` lúc thoát là Node trên Windows, không phải lỗi engine.
 - `mg.mjs`: `createRequire` trên `package.json` của repo → `mingo` 7.2.6 (`aggregate`, `find`, `collectionResolver`). Ca MG1, MG2, pipeline tiền tố, bẫy SQL. Output: `mg.out`.
 
@@ -577,6 +587,14 @@ after stage 4 $group: [{"_id":"Da Nang","revenue":500000,"orders":2},{"_id":"Hue
 - https://www.mongodb.com/docs/manual/reference/operator/aggregation/count/
 - https://www.mongodb.com/docs/manual/reference/operator/aggregation/sum/
 - https://www.mongodb.com/docs/manual/reference/sql-aggregation-comparison/
+- https://www.mongodb.com/docs/manual/core/index-partial/
+- https://www.mongodb.com/docs/manual/core/index-case-insensitive/
+- https://www.mongodb.com/docs/manual/core/index-sparse/
+- https://www.mongodb.com/docs/manual/reference/bson-type-comparison-order/
+- https://www.mongodb.com/docs/manual/tutorial/query-for-null-fields/
+- https://www.mongodb.com/docs/manual/reference/operator/query/ne/
+- https://www.mongodb.com/docs/manual/reference/operator/aggregation/group/
+- https://www.mongodb.com/docs/v8.0/tutorial/analyze-query-plan/ (để so: bản 8.0 dùng ví dụ `inventory`)
 
 **Không phải nguồn chính thức, chỉ dùng để biết rằng docs chưa có:**
 
