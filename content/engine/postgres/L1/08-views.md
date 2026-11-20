@@ -6,6 +6,7 @@ module: views
 title: View và materialized view
 title_en: Views and materialized views
 kind: lab
+runtime: browser
 minutes: 12
 verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-20" }
 objectives:
@@ -88,7 +89,7 @@ Trước khi làm mới, `paid_count` vẫn là 1800 dù vừa thêm một đơn
 
 ## Thực hành
 
-Bảng `orders` có 2 000 đơn, 10% bị hủy. Tạo một view và một materialized view, rồi đọc từ chúng như từ bảng.
+Bảng `orders` có 2.000 đơn, 10 % bị hủy. Tạo một view và một materialized view, rồi đọc từ chúng như từ bảng.
 
 # EN
 

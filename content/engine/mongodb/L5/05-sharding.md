@@ -54,9 +54,9 @@ Chọn shard key theo ba tiêu chí (không tiêu chí nào một mình đủ):
 - Tần suất: vài giá trị chiếm phần lớn tài liệu thì chunk của chúng thành nút cổ chai và có thể thành chunk không chia được (jumbo).
 - Đơn điệu: khóa luôn tăng (hay luôn giảm) dồn mọi lượt chèn vào chunk có `MaxKey` (hay `MinKey`). Dùng hashed sharding cho khóa như vậy.
 
-Balancer chạy trên primary của config server. Một collection coi là cân bằng khi chênh lệch dữ liệu giữa các shard dưới ba lần range size; với mặc định 128 MB, phải chênh ít nhất 384 MB mới di chuyển. Mỗi shard chỉ tham gia một lần di chuyển một lúc. Từ 5.0 đổi được shard key bằng `reshardCollection`; `refineCollectionShardKey` thêm trường vào cuối khóa. Từ 7.0, `analyzeShardKey` đo các chỉ số này từ truy vấn mẫu.
-
 ## Ví dụ
+
+Balancer chạy trên primary của config server. Một collection coi là cân bằng khi chênh lệch dữ liệu giữa các shard dưới ba lần range size; với mặc định 128 MB, phải chênh ít nhất 384 MB mới di chuyển. Mỗi shard chỉ tham gia một lần di chuyển một lúc. Từ 5.0 đổi được shard key bằng `reshardCollection`; `refineCollectionShardKey` thêm trường vào cuối khóa. Từ 7.0, `analyzeShardKey` đo các chỉ số này từ truy vấn mẫu.
 
 ```javascript
 sh.shardCollection("shop.orders", { customerId: 1 })
@@ -77,9 +77,9 @@ Choose a shard key on three criteria (none is enough on its own):
 - Frequency: if a few values hold most documents, their chunks become a bottleneck and can turn into indivisible (jumbo) chunks.
 - Monotonic growth: an always increasing (or decreasing) key sends every insert to the chunk with `MaxKey` (or `MinKey`). Use hashed sharding for such a key.
 
-The balancer runs on the primary of the config server replica set. A collection counts as balanced when the data difference between shards is under three times the range size; with the default 128 MB, the difference must reach 384 MB before a migration. Each shard takes part in only one migration at a time. From 5.0 you can change the shard key with `reshardCollection`; `refineCollectionShardKey` adds fields to the end of the key. From 7.0, `analyzeShardKey` measures these metrics from sampled queries.
-
 ## Example
+
+The balancer runs on the primary of the config server replica set. A collection counts as balanced when the data difference between shards is under three times the range size; with the default 128 MB, the difference must reach 384 MB before a migration. Each shard takes part in only one migration at a time. From 5.0 you can change the shard key with `reshardCollection`; `refineCollectionShardKey` adds fields to the end of the key. From 7.0, `analyzeShardKey` measures these metrics from sampled queries.
 
 ```javascript
 sh.shardCollection("shop.orders", { customerId: 1 })

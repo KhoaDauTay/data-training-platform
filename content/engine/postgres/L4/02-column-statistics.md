@@ -6,6 +6,7 @@ module: planner-stats
 title: "Thống kê cột: MCV, histogram, correlation"
 title_en: "Column statistics: MCV, histogram, correlation"
 kind: lab
+runtime: browser
 minutes: 15
 objectives:
   - { vi: "Đọc `most_common_vals`, `most_common_freqs`, `n_distinct` và `correlation` trong `pg_stats`", en: "Read `most_common_vals`, `most_common_freqs`, `n_distinct` and `correlation` in `pg_stats`" }
@@ -16,7 +17,7 @@ sources:
   - https://www.postgresql.org/docs/18/planner-stats.html
   - https://www.postgresql.org/docs/18/row-estimation-examples.html
   - https://www.postgresql.org/docs/18/view-pg-stats.html
-viz: plan-tree
+viz: pg-plan-tree
 lab:
   setup: |
     DROP TABLE IF EXISTS parcels CASCADE;
@@ -38,33 +39,32 @@ lab:
       check: rows
       ordered: true
       hint: { vi: "`n_distinct` âm nghĩa là tỉ lệ so với số dòng (-1 = mọi giá trị khác nhau).", en: "A negative `n_distinct` is a fraction of the row count (-1 = every value is distinct)." }
-    - task: { vi: "Đọc mọi cột của các kiện đã thất lạc (trạng thái 'lost', khoảng 1%). Planner nên dùng index trên trạng thái.", en: "Read every column of the lost parcels (status 'lost', about 1%). The planner should use the status index." }
+    - task: { vi: "Đọc mọi cột của các kiện đã thất lạc (trạng thái 'lost', khoảng 1 %). Planner nên dùng index trên trạng thái.", en: "Read every column of the lost parcels (status 'lost', about 1%). The planner should use the status index." }
       solution: "SELECT * FROM parcels WHERE status = 'lost'"
       check: plan
       hint: { vi: "Giá trị hiếm → ít trang → đáng đi qua index.", en: "A rare value means few pages, so the index pays off." }
 predict:
   sql: "SELECT * FROM parcels WHERE status = 'delivered'"
-  q: { vi: "'delivered' chiếm 70% bảng. Postgres sẽ đọc thế nào, và ước lượng bao nhiêu dòng?", en: "'delivered' is 70% of the table. How will Postgres read it, and how many rows will it estimate?" }
+  q: { vi: "'delivered' chiếm 70 % bảng. Postgres sẽ đọc thế nào, và ước lượng bao nhiêu dòng?", en: "'delivered' is 70% of the table. How will Postgres read it, and how many rows will it estimate?" }
   options:
     - { vi: "Bitmap Heap Scan qua `parcels_status_idx`, khoảng 200 dòng", en: "Bitmap Heap Scan through `parcels_status_idx`, about 200 rows" }
-    - { vi: "Seq Scan với Filter, 14000 dòng (0.7 × 20000)", en: "Seq Scan with a Filter, 14000 rows (0.7 × 20000)" }
-    - { vi: "Index Scan, 14000 dòng", en: "Index Scan, 14000 rows" }
+    - { vi: "Seq Scan với Filter, 14.000 dòng (0,7 × 20.000)", en: "Seq Scan with a Filter, 14,000 rows (0.7 × 20,000)" }
+    - { vi: "Index Scan, 14.000 dòng", en: "Index Scan, 14,000 rows" }
   answer: 1
-  why: { vi: "Ước lượng = tần suất MCV × reltuples = 0.7 × 20000 = 14000. Đọc 70% bảng qua index thì nhảy trang ngẫu nhiên nhiều hơn đọc tuần tự, nên Seq Scan rẻ hơn.", en: "Estimate = MCV frequency × reltuples = 0.7 × 20000 = 14000. Reading 70% of the table through an index means more random page jumps than a sequential read, so the Seq Scan is cheaper." }
+  why: { vi: "Ước lượng = tần suất MCV × reltuples = 0,7 × 20.000 = 14.000. Đọc 70 % bảng qua index thì nhảy trang ngẫu nhiên nhiều hơn đọc tuần tự, nên Seq Scan rẻ hơn.", en: "Estimate = MCV frequency × reltuples = 0.7 × 20,000 = 14,000. Reading 70% of the table through an index means more random page jumps than a sequential read, so the Seq Scan is cheaper." }
 ---
 
 ## Ý chính
 
-- ANALYZE lấy mẫu tối đa 300 × `default_statistics_target` (100) = 30000 dòng mỗi bảng, rồi ghi vào `pg_statistic`. View dễ đọc là `pg_stats`.
-- MCV (`most_common_vals` + `most_common_freqs`): các giá trị gặp nhiều nhất. Với điều kiện bằng một hằng số có trong MCV, số dòng ước lượng = tần suất × `reltuples`.
-- Histogram (`histogram_bounds`): các giá trị còn lại chia thành các ô có số dòng bằng nhau. Điều kiện khoảng (`<`, `BETWEEN`) được ước lượng bằng cách đếm phần ô bị cắt.
+- ANALYZE lấy mẫu tối đa 300 × `default_statistics_target` (100) = 30.000 dòng mỗi bảng, rồi ghi vào `pg_statistic`. View dễ đọc là `pg_stats`.
+- MCV (`most_common_vals` + `most_common_freqs`): các giá trị gặp nhiều nhất. Điều kiện bằng một hằng số có trong MCV: số dòng ước lượng = tần suất × `reltuples`.
+- Histogram (`histogram_bounds`): các giá trị còn lại chia thành các ô có số dòng bằng nhau. Điều kiện khoảng (`<`, `BETWEEN`) được ước lượng bằng phần ô bị cắt.
 - `n_distinct`: dương = số giá trị khác nhau; âm = tỉ lệ trên số dòng (-1 = duy nhất).
-- `correlation`: thứ tự vật lý trên đĩa khớp với thứ tự giá trị tới đâu (-1..1). Gần ±1: Index Scan theo khoảng đọc trang liền nhau, rẻ; gần 0: mỗi dòng có thể là một trang khác.
-- Cột lệch mạnh hoặc nhiều giá trị: tăng mục tiêu riêng cho cột bằng `ALTER TABLE … ALTER COLUMN … SET STATISTICS`, rồi ANALYZE lại.
+- `correlation`: thứ tự vật lý khớp thứ tự giá trị tới đâu (-1..1). Gần ±1: Index Scan theo khoảng đọc trang liền nhau, rẻ; gần 0: mỗi dòng có thể ở một trang khác.
 
 ## Ví dụ
 
-Kết quả thật trên PGlite sau `ANALYZE parcels` (20000 dòng, ANALYZE đọc hết nên kết quả cố định):
+Kết quả thật trên PGlite sau `ANALYZE parcels` (20.000 dòng, ANALYZE đọc hết nên kết quả cố định):
 
 ```text
 status: most_common_vals {delivered,in_transit,returned,lost}
@@ -78,9 +78,11 @@ Bitmap Heap Scan on parcels  (cost=5.84..164.18 rows=200 width=26)
   ->  Bitmap Index Scan on parcels_status_idx  (cost=0.00..5.79 rows=200 width=0)
 ```
 
-0.01 × 20000 = 200 dòng ước lượng. `day` được chèn theo thứ tự nên correlation = 1; `weight` bị xáo trộn nên gần 0.
+0,01 × 20.000 = 200 dòng ước lượng. `day` được chèn theo thứ tự nên correlation = 1; `weight` bị xáo trộn nên gần 0.
 
 ## Thực hành
+
+Cột lệch mạnh hoặc nhiều giá trị: tăng mục tiêu riêng cho cột bằng `ALTER TABLE … ALTER COLUMN … SET STATISTICS`, rồi ANALYZE lại.
 
 Đọc MCV, đọc `n_distinct`/`correlation`, rồi viết câu cho giá trị hiếm để thấy planner chọn index. Kỹ năng chuyên gia: từ `pg_stats` đoán được số `rows=` trong kế hoạch trước khi chạy, và nhận ra khi nào ước lượng sai vì thống kê cũ hay thiếu.
 
@@ -88,16 +90,15 @@ Bitmap Heap Scan on parcels  (cost=5.84..164.18 rows=200 width=26)
 
 ## Key idea
 
-- ANALYZE samples up to 300 × `default_statistics_target` (100) = 30000 rows per table and writes the result to `pg_statistic`. The readable view is `pg_stats`.
-- MCV (`most_common_vals` + `most_common_freqs`): the most frequent values. For an equality with a constant that is in the MCV list, the estimate is frequency × `reltuples`.
-- Histogram (`histogram_bounds`): the remaining values split into buckets with equal row counts. Range conditions (`<`, `BETWEEN`) are estimated by counting the part of the buckets they cover.
+- ANALYZE samples up to 300 × `default_statistics_target` (100) = 30,000 rows per table and writes the result to `pg_statistic`. The readable view is `pg_stats`.
+- MCV (`most_common_vals` + `most_common_freqs`): the most frequent values. For an equality with a constant in the MCV list, the estimate is frequency × `reltuples`.
+- Histogram (`histogram_bounds`): the remaining values split into buckets with equal row counts. Range conditions (`<`, `BETWEEN`) are estimated from the part of the buckets they cover.
 - `n_distinct`: positive = number of distinct values; negative = a fraction of the row count (-1 = unique).
-- `correlation`: how closely the physical order on disk follows the value order (-1..1). Near ±1, a range Index Scan reads neighbouring pages and is cheap; near 0, each row can be a different page.
-- For a skewed column or one with many values, raise its own target with `ALTER TABLE … ALTER COLUMN … SET STATISTICS` and ANALYZE again.
+- `correlation`: how closely the physical order follows the value order (-1..1). Near ±1, a range Index Scan reads neighbouring pages and is cheap; near 0, each row can be on a different page.
 
 ## Example
 
-Real output from PGlite after `ANALYZE parcels` (20000 rows, ANALYZE reads them all, so the result is fixed):
+Real output from PGlite after `ANALYZE parcels` (20,000 rows, ANALYZE reads them all, so the result is fixed):
 
 ```text
 status: most_common_vals {delivered,in_transit,returned,lost}
@@ -111,8 +112,10 @@ Bitmap Heap Scan on parcels  (cost=5.84..164.18 rows=200 width=26)
   ->  Bitmap Index Scan on parcels_status_idx  (cost=0.00..5.79 rows=200 width=0)
 ```
 
-0.01 × 20000 = 200 estimated rows. `day` was inserted in order, so its correlation is 1; `weight` is shuffled, so it is close to 0.
+0.01 × 20,000 = 200 estimated rows. `day` was inserted in order, so its correlation is 1; `weight` is shuffled, so it is close to 0.
 
 ## Practice
 
-Read the MCV list, read `n_distinct`/`correlation`, then query a rare value and watch the planner pick the index. Expert skill: predict the `rows=` figure of a plan from `pg_stats` before running it, and spot when an estimate is wrong because statistics are stale or missing.
+For a skewed column or one with many values, raise its own target with `ALTER TABLE … ALTER COLUMN … SET STATISTICS` and ANALYZE again.
+
+Read the MCV list, read `n_distinct`/`correlation`, then query a rare value and watch the planner pick the index. Expert skill: from `pg_stats`, predict the `rows=` figure of a plan before running it, and spot when an estimate is wrong because statistics are stale or missing.

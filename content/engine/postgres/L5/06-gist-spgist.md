@@ -6,6 +6,7 @@ module: index-internals
 title: "GiST và SP-GiST: hộp bao và chia không gian"
 title_en: "GiST and SP-GiST: bounding boxes vs space partitioning"
 kind: lab
+runtime: browser
 minutes: 20
 objectives:
   - { vi: "Đọc khóa hộp bao thật trong trang gốc của một GiST bằng `gist_page_items`", en: "Read real bounding-box keys on a GiST root page with `gist_page_items`" }
@@ -17,7 +18,7 @@ sources:
   - https://www.postgresql.org/docs/18/spgist.html
   - https://www.postgresql.org/docs/18/indexes-types.html
   - https://www.postgresql.org/docs/18/pageinspect.html
-viz: gist-boxes
+viz: pg-gist-boxes
 lab:
   setup: |
     CREATE EXTENSION IF NOT EXISTS pageinspect;
@@ -65,7 +66,6 @@ quiz:
 - GiST là khung cây cân bằng tổng quát: mỗi nút trong giữ một khóa "bao" mọi thứ bên dưới (với hình học: hộp bao nhỏ nhất). Hộp các nút anh em có thể chồng nhau, nên tìm kiếm có thể đi nhiều nhánh. Dùng cho hình học, range, full-text (chữ ký), `pg_trgm`, `btree_gist`, exclusion constraint.
 - KNN: với `ORDER BY col <-> … LIMIT k` (một phía là hằng), GiST duyệt theo khoảng cách nhỏ nhất có thể của từng hộp, trả dòng đúng thứ tự mà không cần Sort.
 - SP-GiST (space-partitioned) chia không gian thành các ô không chồng: quadtree, k-d tree cho điểm; radix tree cho chuỗi. Cây không cân bằng, có thể nhỏ và nhanh với dữ liệu phân bố lệch. Cũng hỗ trợ KNN với opclass phù hợp.
-- `pageinspect` có `gist_page_items`/`gist_page_opaque_info` để đọc trang GiST; không có hàm tương ứng cho SP-GiST, nên phần bên trong SP-GiST ở bài này là sơ đồ.
 
 ## Ví dụ
 
@@ -93,6 +93,8 @@ Mỗi khóa ở gốc là một hộp bao (góc trên phải, góc dưới trái
 
 ## Thực hành
 
+`pageinspect` có `gist_page_items`/`gist_page_opaque_info` để đọc trang GiST; không có hàm tương ứng cho SP-GiST, nên phần bên trong SP-GiST ở bài này là sơ đồ.
+
 Đọc hộp bao thật, viết KNN, rồi dùng SP-GiST cho truy vấn hộp. Sơ đồ cho thấy hộp chồng nhau (GiST) cạnh ô chia bốn (quadtree). Kỹ năng chuyên gia: chọn GiST hay SP-GiST theo kiểu dữ liệu, phân bố và toán tử cần dùng.
 
 # EN
@@ -102,7 +104,6 @@ Mỗi khóa ở gốc là một hộp bao (góc trên phải, góc dưới trái
 - GiST is a general balanced-tree framework: each internal node holds a key that "covers" everything below it (for geometry: the smallest bounding box). Sibling boxes may overlap, so a search can descend several branches. Used for geometry, ranges, full text (signatures), `pg_trgm`, `btree_gist` and exclusion constraints.
 - KNN: with `ORDER BY col <-> … LIMIT k` (one side a constant), GiST walks boxes by their smallest possible distance and returns rows in order with no Sort.
 - SP-GiST (space-partitioned) splits space into non-overlapping cells: quadtrees and k-d trees for points, radix trees for strings. The tree is unbalanced and can be small and fast on skewed data. It also supports KNN with a suitable opclass.
-- `pageinspect` has `gist_page_items`/`gist_page_opaque_info` to read GiST pages; there are no matching functions for SP-GiST, so SP-GiST internals in this lesson are a diagram.
 
 ## Example
 
@@ -129,5 +130,7 @@ Aggregate
 Each root key is the bounding box (upper right corner, lower left corner) of a whole child page.
 
 ## Practice
+
+`pageinspect` has `gist_page_items`/`gist_page_opaque_info` to read GiST pages; there are no matching functions for SP-GiST, so SP-GiST internals in this lesson are a diagram.
 
 Read real bounding boxes, write a KNN query, then use SP-GiST for a box query. The diagram shows overlapping boxes (GiST) next to quartered cells (quadtree). Expert skill: choose GiST or SP-GiST from the data type, its distribution and the operators you need.

@@ -6,6 +6,7 @@ module: search
 title: "pg_trgm: index cho LIKE '%...%'"
 title_en: "pg_trgm: an index for LIKE '%...%'"
 kind: predict
+runtime: browser
 minutes: 10
 verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-20" }
 objectives:

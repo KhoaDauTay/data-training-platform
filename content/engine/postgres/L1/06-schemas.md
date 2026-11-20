@@ -6,6 +6,7 @@ module: transactions
 title: Schema và search_path
 title_en: Schemas and search_path
 kind: lab
+runtime: browser
 minutes: 8
 verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-20" }
 objectives:

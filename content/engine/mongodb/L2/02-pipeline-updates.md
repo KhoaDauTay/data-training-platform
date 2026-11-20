@@ -63,9 +63,9 @@ lab:
 
 Lợi ích: không cần đọc tài liệu ra ứng dụng, tính rồi ghi lại. Một lệnh làm hết, nguyên tử (atomic) trên mỗi tài liệu.
 
-Làm được: sửa hàng loạt bằng biểu thức tính từ dữ liệu của chính tài liệu.
-
 ## Ví dụ
+
+Làm được: sửa hàng loạt bằng biểu thức tính từ dữ liệu của chính tài liệu.
 
 ```js
 db.orders.updateMany(
@@ -90,9 +90,9 @@ The second argument of `updateOne`/`updateMany` can be an array of stages instea
 
 The benefit: no need to read documents into the application, compute and write them back. One command does it all, atomic per document.
 
-You can now: update in bulk with expressions computed from each document's own data.
-
 ## Example
+
+You can now: update in bulk with expressions computed from each document's own data.
 
 ```js
 db.orders.updateMany(

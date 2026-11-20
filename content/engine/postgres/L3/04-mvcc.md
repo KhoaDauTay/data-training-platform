@@ -8,7 +8,7 @@ title_en: "MVCC: every UPDATE is a new version"
 kind: concept
 runtime: docs
 minutes: 10
-viz: pg-mvcc
+viz: pg-mvcc-timeline
 objectives:
   - vi: Giải thích UPDATE = tuple mới + `xmax` trên tuple cũ
     en: Explain UPDATE = new tuple + `xmax` on the old tuple

@@ -6,6 +6,7 @@ module: observe-tune
 title: "Tìm câu tốn nhất: pg_stat_statements và pg_stat_*"
 title_en: "Finding the costliest queries: pg_stat_statements and pg_stat_*"
 kind: lab
+runtime: browser
 minutes: 20
 objectives:
   - { vi: "Đọc `pg_stat_statements`: câu đã chuẩn hóa (hằng thành `$1`), số lần gọi, số dòng", en: "Read `pg_stat_statements`: normalised query text (constants become `$1`), calls, rows" }
@@ -42,7 +43,7 @@ quiz:
   - q: { vi: "Câu A chạy 2 giây mỗi lần, 10 lần một ngày. Câu B chạy 5 ms mỗi lần, 2 triệu lần một ngày. Tối ưu câu nào trước để giảm tải server?", en: "Query A takes 2 seconds per run, 10 runs a day. Query B takes 5 ms per run, 2 million runs a day. Which do you optimise first to cut server load?" }
     options:
       - { vi: "A, vì nó chậm nhất", en: "A, because it is the slowest" }
-      - { vi: "B: tổng 10 000 giây/ngày so với 20 giây; xếp theo `total_exec_time`, không theo `mean_exec_time`", en: "B: 10,000 seconds a day against 20; rank by `total_exec_time`, not by `mean_exec_time`" }
+      - { vi: "B: tổng 10.000 giây/ngày so với 20 giây; xếp theo `total_exec_time`, không theo `mean_exec_time`", en: "B: 10,000 seconds a day against 20; rank by `total_exec_time`, not by `mean_exec_time`" }
     answer: 1
     why: { vi: "`pg_stat_statements` có `total_exec_time`, `mean_exec_time`, `calls`, `shared_blks_hit/read`… Tải server là tổng; câu chậm lẻ tẻ thì quan trọng cho trải nghiệm người dùng, nhưng là câu hỏi khác.", en: "`pg_stat_statements` has `total_exec_time`, `mean_exec_time`, `calls`, `shared_blks_hit/read`… Server load is the total; an occasional slow query matters for user experience, but that is a different question." }
   - q: { vi: "`pg_stat_user_tables` cho thấy một bảng 50 triệu dòng có `seq_scan` tăng hàng nghìn mỗi giờ. Bước tiếp theo?", en: "`pg_stat_user_tables` shows a 50-million-row table whose `seq_scan` grows by thousands an hour. Next step?" }

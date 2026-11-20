@@ -49,9 +49,9 @@ Secondary chép oplog không đồng bộ, nên đọc từ secondary có thể 
 - Ghi đơn điệu: lần ghi phải đi trước thì chạy trước.
 - Ghi theo đọc: lần ghi sau một lần đọc chạy trên trạng thái đã gồm lần đọc đó.
 
-Các bảo đảm chỉ có cho đọc read concern `majority` và ghi write concern `majority`. Mỗi thao tác trả về operation time và cluster time; session giữ chúng, và driver tự đặt `afterClusterTime` cho lần đọc kế. Session không cô lập khỏi thao tác ngoài session, và chỉ nên dùng một luồng một lúc.
-
 ## Ví dụ
+
+Các bảo đảm chỉ có cho đọc read concern `majority` và ghi write concern `majority`. Mỗi thao tác trả về operation time và cluster time; session giữ chúng, và driver tự đặt `afterClusterTime` cho lần đọc kế. Session không cô lập khỏi thao tác ngoài session, và chỉ nên dùng một luồng một lúc.
 
 ```javascript
 session = db.getMongo().startSession({ causalConsistency: true })
@@ -72,9 +72,9 @@ Secondaries apply the oplog asynchronously, so a read from a secondary can be st
 - Monotonic writes: a write that must come first runs first.
 - Writes follow reads: a write after a read runs on a state that includes that read.
 
-The guarantees hold only for reads with read concern `majority` and writes with write concern `majority`. Each operation returns an operation time and a cluster time; the session keeps them and the driver sets `afterClusterTime` on the next read. A session is not isolated from operations outside it, and only one thread at a time should use it.
-
 ## Example
+
+The guarantees hold only for reads with read concern `majority` and writes with write concern `majority`. Each operation returns an operation time and a cluster time; the session keeps them and the driver sets `afterClusterTime` on the next read. A session is not isolated from operations outside it, and only one thread at a time should use it.
 
 ```javascript
 session = db.getMongo().startSession({ causalConsistency: true })

@@ -6,6 +6,7 @@ module: index-types
 title: SP-GiST chia không gian
 title_en: SP-GiST partitions space
 kind: predict
+runtime: browser
 minutes: 8
 verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-20" }
 objectives:
@@ -40,7 +41,7 @@ predict:
   sql: SELECT id FROM shops WHERE loc <@ box '(100,100),(120,120)'
   expect: { node: Bitmap Index Scan, index: shops_loc_spgist }
   q:
-    vi: "30 000 cửa hàng rải đều trên ô 1000 x 1000, có index SP-GiST trên `loc`. Câu hỏi các cửa hàng trong một ô vuông nhỏ 20 x 20 dùng kế hoạch nào?"
+    vi: "30.000 cửa hàng rải đều trên ô 1000 x 1000, có index SP-GiST trên `loc`. Câu hỏi các cửa hàng trong một ô vuông nhỏ 20 x 20 dùng kế hoạch nào?"
     en: "30,000 shops spread over a 1000 x 1000 square, with an SP-GiST index on `loc`. Which plan does a query for shops inside a small 20 x 20 box use?"
   options:
     - { vi: "Seq Scan: index chỉ dùng cho dấu bằng", en: "Seq Scan: indexes only serve equality" }
@@ -48,7 +49,7 @@ predict:
     - { vi: "Index Only Scan qua `shops_pkey`", en: "Index Only Scan through `shops_pkey`" }
   answer: 1
   why:
-    vi: "SP-GiST cho `point` là một quadtree: mỗi nút chia mặt phẳng thành 4 góc. Câu `<@ box` chỉ đi vào các góc giao với ô cần tìm, nên chỉ chạm vài chục dòng trên 30 000. Planner ước khoảng 30 dòng và chọn Bitmap Index Scan trên `shops_loc_spgist`."
+    vi: "SP-GiST cho `point` là một quadtree: mỗi nút chia mặt phẳng thành 4 góc. Câu `<@ box` chỉ đi vào các góc giao với ô cần tìm, nên chỉ chạm vài chục dòng trên 30.000. Planner ước khoảng 30 dòng và chọn Bitmap Index Scan trên `shops_loc_spgist`."
     en: "SP-GiST for `point` is a quadtree: each node splits the plane into 4 quadrants. A `<@ box` query only descends into quadrants that overlap the box, so it touches a few dozen of 30,000 rows. The planner estimates about 30 rows and picks a Bitmap Index Scan on `shops_loc_spgist`."
 ---
 ## Ý chính

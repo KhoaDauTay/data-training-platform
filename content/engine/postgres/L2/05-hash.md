@@ -6,6 +6,7 @@ module: index-types
 title: Index Hash chỉ biết dấu bằng
 title_en: A Hash index only knows equality
 kind: predict
+runtime: browser
 minutes: 7
 verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-20" }
 objectives:
@@ -50,7 +51,7 @@ predict:
 ---
 ## Ý chính
 
-Index Hash băm giá trị thành một mã 32 bit và lưu theo mã đó. Tài liệu nói rõ nó chỉ xử lý được phép so sánh `=`.
+Index Hash băm giá trị thành một mã 32 bit và lưu theo mã đó. Docs chính thức nói rõ nó chỉ xử lý được phép so sánh `=`.
 
 - Hợp: khóa dài chỉ bao giờ tra bằng (token, URL dài), vì index chỉ lưu mã băm 4 byte chứ không lưu cả giá trị.
 - Không hợp: khoảng (`<`, `BETWEEN`), `ORDER BY`, `LIKE 'abc%'`, unique, nhiều cột. B-tree làm được tất cả những việc đó.
@@ -73,7 +74,7 @@ Câu bằng: `Index Scan using sessions_token_hash`, với `Index Cond: (token =
 
 ## Key idea
 
-A Hash index hashes each value into a 32-bit code and stores entries by that code. The docs state it can only handle the `=` comparison.
+A Hash index hashes each value into a 32-bit code and stores entries by that code. The official docs state it can only handle the `=` comparison.
 
 - Good fit: long keys that are only ever looked up by equality (tokens, long URLs), since the index stores the 4-byte hash rather than the whole value.
 - Poor fit: ranges (`<`, `BETWEEN`), `ORDER BY`, `LIKE 'abc%'`, uniqueness, multiple columns. A B-tree does all of these.

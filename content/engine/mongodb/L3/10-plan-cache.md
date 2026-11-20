@@ -54,13 +54,13 @@ Với mỗi truy vấn, planner chọn một kế hoạch trong các kế hoạc
 
 Kế hoạch thắng được cất trong plan cache theo hình dạng truy vấn (query shape) và dùng lại cho truy vấn cùng hình dạng. Mỗi hình dạng có một trong ba trạng thái:
 
+## Ví dụ
+
 - Missing: chưa có mục. Planner chọn kế hoạch, rồi tạo mục Inactive kèm một giá trị đo lượng việc.
 - Inactive: chỉ là chỗ giữ, chưa dùng để sinh kế hoạch. Lần sau nếu kế hoạch chọn được tốn bằng hoặc ít việc hơn, mục thành Active; nếu tốn hơn, giá trị trong mục được tăng lên.
 - Active: kế hoạch được dùng lại. Nếu nó không còn đạt, mục trở về Inactive.
 
 Plan cache mất khi `mongod` khởi động lại, bị xóa khi có DDL trên collection, và mục ít dùng nhất bị đẩy ra (LRU). Explain bỏ qua plan cache. Từ 8.0, index filter bị deprecated, thay bằng `setQuerySettings`.
-
-## Ví dụ
 
 ```javascript
 db.orders.aggregate([ { $planCacheStats: {} } ])
@@ -76,13 +76,13 @@ For each query the planner picks one plan among the candidate plans for the avai
 
 The winning plan is stored in the plan cache by query shape and reused for queries of the same shape. Each shape is in one of three states:
 
+## Example
+
 - Missing: no entry yet. The planner picks a plan and creates an Inactive entry holding a measure of the work.
 - Inactive: a placeholder, not used to build plans. Next time, if the chosen plan needs the same or less work, the entry becomes Active; if it needs more, the value in the entry is increased.
 - Active: the plan is reused. If it stops meeting the criterion, the entry goes back to Inactive.
 
 The plan cache is lost when `mongod` restarts, cleared by DDL on the collection, and the least recently used entry is evicted (LRU). Explain ignores the plan cache. From 8.0 index filters are deprecated in favour of `setQuerySettings`.
-
-## Example
 
 ```javascript
 db.orders.aggregate([ { $planCacheStats: {} } ])

@@ -6,6 +6,7 @@ module: explain-analyze
 title: "pg_stats: planner đoán số dòng từ đâu"
 title_en: "pg_stats: where the planner's row guesses come from"
 kind: predict
+runtime: browser
 minutes: 10
 verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-20" }
 objectives:
@@ -52,16 +53,16 @@ predict:
   sql: SELECT * FROM tickets WHERE status = 'closed'
   expect: { node: Seq Scan, table: tickets, rows: 3000 }
   q:
-    vi: "Bảng có 30 000 phiếu, `ANALYZE` vừa chạy. `EXPLAIN` của câu này sẽ ước lượng bao nhiêu dòng (`rows=`)?"
-    en: "The table holds 30,000 tickets and `ANALYZE` has just run. How many rows (`rows=`) will `EXPLAIN` estimate for this query?"
+    vi: "Bảng có 30.000 phiếu, `ANALYZE` vừa chạy. `EXPLAIN` của câu này sẽ ước lượng bao nhiêu dòng (`rows=`)?"
+    en: "The table holds 30,000 tickets and `ANALYZE` has just run. What will `EXPLAIN` estimate for this query (`rows=`)?"
   options:
-    - { vi: "10000: chia đều cho 3 giá trị", en: "10000: split evenly over 3 values" }
+    - { vi: "10.000: chia đều cho 3 giá trị", en: "10,000: split evenly over 3 values" }
     - { vi: "3000: tần suất của 'closed' trong danh sách giá trị phổ biến nhân với số dòng", en: "3000: the frequency of 'closed' in the most-common-values list times the row count" }
-    - { vi: "150: mặc định 0,5% cho mọi điều kiện bằng", en: "150: a default 0.5% for any equality" }
+    - { vi: "150: mặc định 0,5 % cho mọi điều kiện bằng", en: "150: a default 0.5% for any equality" }
     - { vi: "Không biết được nếu chưa chạy câu", en: "Unknowable without running the query" }
   answer: 1
   why:
-    vi: "`ANALYZE` ghi `most_common_vals = {open,pending,closed}` và `most_common_freqs = {0.6,0.3,0.1}`. Với `status = 'closed'`, planner lấy 0.1 × 30 000 = 3000. Bảng chỉ 30 000 dòng nên `ANALYZE` đọc hết, thống kê đúng tuyệt đối; với bảng lớn nó lấy mẫu, nên ước lượng chỉ gần đúng."
+    vi: "`ANALYZE` ghi `most_common_vals = {open,pending,closed}` và `most_common_freqs = {0.6,0.3,0.1}`. Với `status = 'closed'`, planner lấy 0,1 × 30.000 = 3000. Bảng chỉ 30.000 dòng nên `ANALYZE` đọc hết, thống kê đúng tuyệt đối; với bảng lớn nó lấy mẫu, nên ước lượng chỉ gần đúng."
     en: "`ANALYZE` recorded `most_common_vals = {open,pending,closed}` and `most_common_freqs = {0.6,0.3,0.1}`. For `status = 'closed'` the planner takes 0.1 x 30,000 = 3000. The table has only 30,000 rows, so `ANALYZE` read all of them and the statistics are exact; on a large table it samples, so estimates are only approximate."
 ---
 ## Ý chính

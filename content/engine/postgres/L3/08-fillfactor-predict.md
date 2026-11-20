@@ -8,7 +8,7 @@ title_en: "Predict: can fillfactor save HOT?"
 kind: predict
 runtime: browser
 minutes: 8
-viz: pg-hot
+viz: pg-hot-chain
 objectives:
   - vi: Đoán một UPDATE có HOT không khi trang đầy và khi trang còn chỗ
     en: Predict whether an UPDATE is HOT on a full page and on a page with room

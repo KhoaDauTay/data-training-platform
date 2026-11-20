@@ -6,6 +6,7 @@ module: types
 title: Tạo bảng đầu tiên
 title_en: Creating your first table
 kind: lab
+runtime: browser
 minutes: 8
 verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-20" }
 objectives:
@@ -53,7 +54,7 @@ lab:
 
 `CREATE TABLE` khai báo tên bảng và danh sách cột. Mỗi cột có tên, kiểu và có thể thêm ràng buộc:
 
-- `PRIMARY KEY`: định danh duy nhất của dòng, tự kèm `NOT NULL` và một index unique.
+- `PRIMARY KEY`: định danh duy nhất của dòng, tự kèm `NOT NULL` và một index (chỉ mục) unique.
 - `NOT NULL`: cột phải có giá trị.
 - `DEFAULT ...`: giá trị dùng khi câu `INSERT` không nhắc tới cột đó.
 

@@ -8,7 +8,7 @@ title_en: "WAL: log first, pages later"
 kind: concept
 runtime: docs
 minutes: 10
-viz: pg-wal
+viz: pg-wal-flow
 objectives:
   - vi: Phát biểu luật WAL và vì sao COMMIT chỉ cần flush WAL
     en: State the WAL rule and why COMMIT only needs to flush the WAL

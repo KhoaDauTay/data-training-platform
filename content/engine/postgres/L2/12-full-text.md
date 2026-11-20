@@ -6,9 +6,10 @@ module: search
 title: Tìm kiếm toàn văn với tsvector và GIN
 title_en: Full-text search with tsvector and GIN
 kind: lab
+runtime: browser
 minutes: 14
 verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-20" }
-viz: pg-gin
+viz: pg-gin-postings
 objectives:
   - vi: Viết tìm kiếm theo từ bằng `to_tsvector`, `to_tsquery` và `@@`, xếp hạng bằng `ts_rank`.
     en: Write word search with `to_tsvector`, `to_tsquery` and `@@`, and rank with `ts_rank`.
@@ -80,7 +81,7 @@ lab:
 - `vector @@ query` đúng khi văn bản khớp câu hỏi.
 - `ts_rank` cho điểm theo tần suất từ, để xếp kết quả.
 
-Index được khuyên dùng cho tìm kiếm toàn văn là GIN: mỗi lexeme là một khóa, kèm danh sách bài chứa nó. Có thể index thẳng biểu thức `to_tsvector('english', body)` (khi đó câu phải viết đúng biểu thức đó) hoặc lưu sẵn một cột `tsvector` tính sẵn.
+Index được khuyên dùng cho tìm kiếm toàn văn là GIN: mỗi lexeme là một khóa, kèm danh sách bài chứa nó. Có thể index thẳng biểu thức `to_tsvector('english', body)` (khi đó câu phải viết đúng biểu thức đó) hoặc lưu sẵn một cột sinh (generated column) kiểu `tsvector`.
 
 ## Ví dụ
 
@@ -93,7 +94,7 @@ Kết quả: `'crane':3,4 'harbor':2` và `'harbor' & 'crane'`. "The" bị bỏ;
 
 ## Thực hành
 
-12 000 bài viết ngắn về hàng hóa. Tìm, xếp hạng, rồi làm câu tìm dùng index GIN.
+12.000 bài viết ngắn về hàng hóa. Tìm, xếp hạng, rồi làm câu tìm dùng index GIN.
 
 # EN
 

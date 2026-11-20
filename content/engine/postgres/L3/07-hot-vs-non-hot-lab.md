@@ -8,7 +8,7 @@ title_en: "Lab: a HOT update and a non-HOT update"
 kind: lab
 runtime: browser
 minutes: 20
-viz: pg-hot
+viz: pg-hot-chain
 objectives:
   - vi: Nhận ra một UPDATE là HOT qua cờ `HEAP_HOT_UPDATED` và `HEAP_ONLY_TUPLE`
     en: Recognise a HOT update by the flags `HEAP_HOT_UPDATED` and `HEAP_ONLY_TUPLE`

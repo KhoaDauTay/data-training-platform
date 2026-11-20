@@ -8,7 +8,7 @@ title_en: "Lab: read real WAL records"
 kind: lab
 runtime: browser
 minutes: 20
-viz: pg-wal
+viz: pg-wal-flow
 objectives:
   - vi: Đọc các bản ghi WAL mà một INSERT và một UPDATE sinh ra
     en: Read the WAL records produced by an INSERT and an UPDATE
