@@ -24,6 +24,8 @@ Mục mới nằm ở §13.2, không chen vào §1–8. Mã cũ giữ nguyên.
 
 **Vòng 6** (agent Research, 2026-11-20): theo L215.6, viết 32 thẻ còn thiếu của danh sách v25 (§14.2), nên cả 60 mục v25 đều có thẻ. Mọi cặp đã chạy trên PGlite 0.5.16 của repo. Sáu mục mà bản Đúng mới báo lỗi được dựng lại kịch bản; P13, P06, P30 thành thẻ chỉ cú pháp. Chi tiết và số đo ở §15; cột "Thẻ" của §12 và dấu ★ của §14.2 đã cập nhật.
 
+**Vòng 7** (agent Research, 2026-11-20): theo L215.6, viết 58 thẻ còn thiếu của MongoDB (v27, 32 thẻ) và DynamoDB (v29, 26 thẻ), nên cả 70 mục NoSQL đều có thẻ (tổng 130). Mọi cặp chạy được đã chạy trên `mingo` 7.2.6 và `@dynoxide/wasm-engine` 1.5.0 của repo; 36 thẻ mới là chỉ cú pháp vì runtime không có thứ thẻ dạy (index, replica set, transaction, TTL, Streams…). Chi tiết ở §16; cột "Thẻ" của §12.7–12.8 đã cập nhật và thêm dòng M28–M38, D28–D32.
+
 Tài liệu này là nguyên liệu cho khu **Best Practice** sắp có. Nó đi cùng `db-engine-knowledge.md` (bản đồ kiến thức theo engine, L1 → L5) và dùng lại các nguồn `[Sn]` đã mở ở đó. Đề xuất cách khu Best Practice hoạt động trong app nằm ở §9.
 
 ## 0. Quy ước
@@ -4369,17 +4371,17 @@ Bài Engine đọc ở nhánh `v22-engine` (commit `0ede43d`): 195 id (`e-pg-…
 | Q05 | COALESCE outer-join sums | `e-pg-l1-05` | `e-bp-q05` |
 | Q06 | Right-table filters belong in ON | — | `e-bp-q06` |
 | Q07 | Aggregate before joining two child tables | — | `e-bp-q07` |
-| Q08 | Explicit JOIN syntax | — || `e-bp-q08` |
-| Q09 | Name your columns | `e-mg-l1-03` || `e-bp-q09` |
+| Q08 | Explicit JOIN syntax | — | `e-bp-q08` |
+| Q09 | Name your columns | `e-mg-l1-03` | `e-bp-q09` |
 | Q10 | ORDER BY with a tiebreaker | `e-pg-l1-11`, `e-mg-l1-10`, `e-dy-l1-10` | `e-bp-q10` |
 | Q11 | Keep predicates sargable | `e-pg-l2-04` | `e-bp-q11` |
 | Q12 | Half-open ranges, not BETWEEN | `e-pg-l1-01`, `e-pg-l2-10` | `e-bp-q12` |
 | Q13 | Cast before dividing integers | — | `e-bp-q13` |
 | Q14 | Conditional aggregation with FILTER | — |  |
 | Q15 | WHERE for rows, HAVING for groups | `e-mg-l3-12`, `e-mg-l2-06` | `e-bp-q15` |
-| Q16 | UNION ALL unless you mean DISTINCT | — || `e-bp-q16` |
+| Q16 | UNION ALL unless you mean DISTINCT | — | `e-bp-q16` |
 | Q17 | Name steps with CTEs | — |  |
-| Q18 | Spell out ROWS for running totals | `e-mg-l2-10` || `e-bp-q18` |
+| Q18 | Spell out ROWS for running totals | `e-mg-l2-10` | `e-bp-q18` |
 | Q19 | Filter window results in an outer query | `e-mg-l2-10` |  |
 | Q20 | EXISTS for "has any" | — |  |
 | Q21 | Keyset pagination instead of deep OFFSET | `e-pg-l1-11`, `e-mg-l1-10`, `e-dy-l1-10` |  |
@@ -4391,26 +4393,26 @@ Bài Engine đọc ở nhánh `v22-engine` (commit `0ede43d`): 195 id (`e-pg-…
 | Mã | Mục | Bài Engine liên quan | Thẻ |
 |---|---|---|---|
 | A01 | Use a date spine for empty periods | — | `e-bp-a01` |
-| A02 | Bucket days in the business time zone | `e-pg-l1-01` || `e-bp-a02` |
+| A02 | Bucket days in the business time zone | `e-pg-l1-01` | `e-bp-a02` |
 | A03 | Deduplicate on a business key, deterministically | — | `e-bp-a03` |
 | A04 | Test the grain before you join | — |  |
 | A05 | Pin the as-of date | — | `e-bp-a05` |
 | A06 | Reconcile control totals | — |  |
-| A07 | Ratios need an explicit denominator | — || `e-bp-a07` |
-| A08 | Round once, at the end | `e-pg-l1-01` || `e-bp-a08` |
+| A07 | Ratios need an explicit denominator | — | `e-bp-a07` |
+| A08 | Round once, at the end | `e-pg-l1-01` | `e-bp-a08` |
 | A09 | Median for skewed data | — |  |
 | A10 | Normalise text keys first | `e-pg-l2-04`, `e-pg-l2-13` |  |
 | A11 | Find orphans with an anti join | `e-pg-l1-04` | `e-bp-a11` |
-| A12 | Data tests are queries that must return zero rows | `e-pg-l1-04` || `e-bp-a12` |
+| A12 | Data tests are queries that must return zero rows | `e-pg-l1-04` | `e-bp-a12` |
 | A13 | One documented definition per metric | `e-pg-l1-08` |  |
 | A14 | Make random samples reproducible | — |  |
-| A15 | last_value needs a frame to the end of the partition | `e-mg-l2-10` || `e-bp-a15` |
-| A16 | lag and lead need PARTITION BY the entity | `e-mg-l2-10` || `e-bp-a16` |
-| A17 | Top N: choose the tie rule on purpose | `e-pg-l1-11` || `e-bp-a17` |
+| A15 | last_value needs a frame to the end of the partition | `e-mg-l2-10` | `e-bp-a15` |
+| A16 | lag and lead need PARTITION BY the entity | `e-mg-l2-10` | `e-bp-a16` |
+| A17 | Top N: choose the tie rule on purpose | `e-pg-l1-11` | `e-bp-a17` |
 | A18 | Don't average averages | `e-mg-l2-06` | `e-bp-a18` |
 | A19 | AT TIME ZONE works in opposite directions | — |  |
 | A20 | Add 1 day, not 24 hours, across DST | — |  |
-| A21 | Distinct counts are not additive | — || `e-bp-a21` |
+| A21 | Distinct counts are not additive | — | `e-bp-a21` |
 | A22 | Profile the columns before you analyse | `e-pg-l2-15` |  |
 | A23 | Check freshness before you send numbers | — |  |
 | A24 | Accepted values are a zero-row test | `e-pg-l1-04` |  |
@@ -4420,12 +4422,12 @@ Bài Engine đọc ở nhánh `v22-engine` (commit `0ede43d`): 195 id (`e-pg-…
 | Mã | Mục | Bài Engine liên quan | Thẻ |
 |---|---|---|---|
 | S01 | Store instants as timestamptz | `e-pg-l1-01`, `e-pg-l1-02` | `e-bp-s01` |
-| S02 | text with a CHECK, not char(n) | `e-pg-l1-01`, `e-pg-l1-04` || `e-bp-s02` |
+| S02 | text with a CHECK, not char(n) | `e-pg-l1-01`, `e-pg-l1-04` | `e-bp-s02` |
 | S03 | Money as numeric | `e-pg-l1-01` | `e-bp-s03` |
-| S04 | Identity columns, not serial | `e-pg-l1-03` || `e-bp-s04` |
+| S04 | Identity columns, not serial | `e-pg-l1-03` | `e-bp-s04` |
 | S05 | Prefer time-ordered UUIDv7 | `e-pg-l1-03` |  |
-| S06 | Let constraints enforce the rules | `e-pg-l1-04`, `e-pg-l1-12` || `e-bp-s06` |
-| S07 | NULLS NOT DISTINCT | `e-pg-l1-04`, `e-pg-l1-05` || `e-bp-s07` |
+| S06 | Let constraints enforce the rules | `e-pg-l1-04`, `e-pg-l1-12` | `e-bp-s06` |
+| S07 | NULLS NOT DISTINCT | `e-pg-l1-04`, `e-pg-l1-05` | `e-bp-s07` |
 | S08 | Lower-case snake_case names | — | `e-bp-s08` |
 | S09 | Normalise OLTP, denormalise on purpose | `e-pg-l1-08`, `e-mg-l2-11` |  |
 | S10 | tenant_id everywhere, RLS forced | `e-pg-l5-10`, `e-pg-l1-06` | `e-bp-s10` |
@@ -4438,37 +4440,37 @@ Bài Engine đọc ở nhánh `v22-engine` (commit `0ede43d`): 195 id (`e-pg-…
 
 | Mã | Mục | Bài Engine liên quan | Thẻ |
 |---|---|---|---|
-| I01 | Index for a query, check with EXPLAIN | `e-pg-l1-09`, `e-pg-l1-10`, `e-pg-l2-14` || `e-bp-i01` |
+| I01 | Index for a query, check with EXPLAIN | `e-pg-l1-09`, `e-pg-l1-10`, `e-pg-l2-14` | `e-bp-i01` |
 | I02 | Composite order: equality first, range last | `e-pg-l2-01`, `e-mg-l3-05`, `e-mg-l3-07` | `e-bp-i02` |
 | I03 | Partial indexes for the hot subset | `e-pg-l2-03`, `e-mg-l3-01`, `e-mg-l3-02` | `e-bp-i03` |
 | I04 | Covering indexes with INCLUDE | `e-pg-l2-02`, `e-pg-l3-09`, `e-mg-l3-09` | `e-bp-i04` |
 | I05 | Expression indexes | `e-pg-l2-04` | `e-bp-i05` |
 | I06 | Index your foreign keys | `e-pg-l1-09` | `e-bp-i06` |
 | I07 | Pick the index type for the operator | `e-pg-l2-05`, `e-pg-l2-06`, `e-pg-l2-07`, `e-pg-l2-08`, `e-pg-l2-09`, `e-pg-l2-12`, `e-pg-l2-13`, `e-pg-l2-16`, `e-pg-l2-17`, `e-pg-l5-07` |  |
-| I08 | Low-cardinality columns | `e-pg-l2-03`, `e-pg-l2-15`, `e-pg-l4-02` || `e-bp-i08` |
-| I09 | Remove unused and duplicate indexes | `e-mg-l3-14`, `e-pg-l5-11` || `e-bp-i09` |
+| I08 | Low-cardinality columns | `e-pg-l2-03`, `e-pg-l2-15`, `e-pg-l4-02` | `e-bp-i08` |
+| I09 | Remove unused and duplicate indexes | `e-mg-l3-14`, `e-pg-l5-11` | `e-bp-i09` |
 
 ### 12.5 5. Hiệu năng và vận hành (P)
 
 | Mã | Mục | Bài Engine liên quan | Thẻ |
 |---|---|---|---|
-| P01 | Compare estimated vs actual rows | `e-pg-l2-14`, `e-pg-l2-15`, `e-pg-l4-01` || `e-bp-p01` |
+| P01 | Compare estimated vs actual rows | `e-pg-l2-14`, `e-pg-l2-15`, `e-pg-l4-01` | `e-bp-p01` |
 | P02 | HOT updates and fillfactor | `e-pg-l3-06`, `e-pg-l3-07`, `e-pg-l3-08` |  |
-| P03 | Keep autovacuum on, transactions short | `e-pg-l3-04`, `e-pg-l3-05`, `e-pg-l3-06`, `e-pg-l3-15`, `e-pg-l5-14` || `e-bp-p03` |
+| P03 | Keep autovacuum on, transactions short | `e-pg-l3-04`, `e-pg-l3-05`, `e-pg-l3-06`, `e-pg-l3-15`, `e-pg-l5-14` | `e-bp-p03` |
 | P04 | Pool connections | — |  |
-| P05 | Build indexes CONCURRENTLY | `e-pg-l2-14`, `e-pg-l4-16` || `e-bp-p05` |
-| P06 | Add constraints NOT VALID, then VALIDATE | `e-pg-l1-04` || `e-bp-p06` |
+| P05 | Build indexes CONCURRENTLY | `e-pg-l2-14`, `e-pg-l4-16` | `e-bp-p05` |
+| P06 | Add constraints NOT VALID, then VALIDATE | `e-pg-l1-04` | `e-bp-p06` |
 | P07 | Cheap vs table-rewriting ALTERs | — |  |
-| P08 | Batch large UPDATE and DELETE | `e-pg-l3-15`, `e-pg-l4-16` || `e-bp-p08` |
+| P08 | Batch large UPDATE and DELETE | `e-pg-l3-15`, `e-pg-l4-16` | `e-bp-p08` |
 | P09 | Extended statistics for correlated columns | `e-pg-l2-15`, `e-pg-l4-03` |  |
 | P10 | Tune autovacuum thresholds per large table | `e-pg-l3-15`, `e-pg-l5-14` |  |
 | P11 | Measure the HOT ratio | `e-pg-l3-07` |  |
 | P12 | Watch index bloat, rebuild concurrently | `e-pg-l3-15`, `e-pg-l5-03` |  |
-| P13 | Know each DDL's lock, always set lock_timeout | `e-pg-l1-07`, `e-pg-l4-09` || `e-bp-p13` |
+| P13 | Know each DDL's lock, always set lock_timeout | `e-pg-l1-07`, `e-pg-l4-09` | `e-bp-p13` |
 | P14 | Find and drop invalid indexes after a failed concurrent build | `e-pg-l2-14` |  |
 | P15 | Add NOT NULL as NOT VALID first | `e-pg-l1-04` |  |
 | P16 | Know which type changes rewrite the table | `e-pg-l1-01` |  |
-| P17 | Prune partitions with plain ranges on the key | `e-pg-l4-07` || `e-bp-p17` |
+| P17 | Prune partitions with plain ranges on the key | `e-pg-l4-07` | `e-bp-p17` |
 | P18 | Create partitions ahead of the data | `e-pg-l4-08` |  |
 | P19 | Prepared statements on skewed data: watch the generic plan | `e-pg-l2-15`, `e-pg-l4-06` |  |
 | P20 | Raise the statistics target per column | `e-pg-l2-15`, `e-pg-l4-02` |  |
@@ -4476,7 +4478,7 @@ Bài Engine đọc ở nhánh `v22-engine` (commit `0ede43d`): 195 id (`e-pg-…
 | P22 | Expression B-tree for one hot jsonb key | `e-pg-l2-11`, `e-pg-l2-04` |  |
 | P23 | Behind a transaction pooler use SET LOCAL | `e-pg-l1-06`, `e-pg-l1-07` |  |
 | P24 | Set timeouts per role | — |  |
-| P25 | Find the costliest queries with pg_stat_statements | `e-pg-l5-11` || `e-bp-p25` |
+| P25 | Find the costliest queries with pg_stat_statements | `e-pg-l5-11` | `e-bp-p25` |
 | P26 | Monitor transaction ID age | `e-pg-l3-10`, `e-pg-l3-11`, `e-pg-l5-14` |  |
 
 ### 12.6 6. Bảo mật (X)
@@ -4484,14 +4486,14 @@ Bài Engine đọc ở nhánh `v22-engine` (commit `0ede43d`): 195 id (`e-pg-…
 | Mã | Mục | Bài Engine liên quan | Thẻ |
 |---|---|---|---|
 | X01 | Parameterise, never concatenate | — | `e-bp-x01` |
-| X02 | Least privilege roles | — || `e-bp-x02` |
+| X02 | Least privilege roles | — | `e-bp-x02` |
 | X03 | Pin search_path in SECURITY DEFINER functions | `e-pg-l1-06` |  |
 | X04 | RLS does not bind owners unless FORCED | `e-pg-l5-10` |  |
 | X05 | scram-sha-256, never trust over TCP | — |  |
-| X06 | Analysts work through a read-only role | — || `e-bp-x06` |
+| X06 | Analysts work through a read-only role | — | `e-bp-x06` |
 | X07 | Permissive policies are OR-ed: make must-hold rules RESTRICTIVE | `e-pg-l5-10` |  |
 | X08 | Views bypass RLS unless security_invoker | `e-pg-l1-08`, `e-pg-l5-10` |  |
-| X09 | Dynamic SQL: %I for names, %L or USING for values | — || `e-bp-x09` |
+| X09 | Dynamic SQL: %I for names, %L or USING for values | — | `e-bp-x09` |
 | X10 | Sensitive columns: column privileges or a view | — |  |
 
 ### 12.7 7. MongoDB (M)
@@ -4499,64 +4501,80 @@ Bài Engine đọc ở nhánh `v22-engine` (commit `0ede43d`): 195 id (`e-pg-…
 | Mã | Mục | Bài Engine liên quan | Thẻ |
 |---|---|---|---|
 | M01 | Data accessed together is stored together | `e-mg-l2-11`, `e-mg-l2-12`, `e-mg-l4-01` | `e-bp-m01` |
-| M02 | Avoid unbounded arrays | `e-mg-l4-05`, `e-mg-l1-06` |  |
-| M03 | Avoid bloated documents | `e-mg-l4-01`, `e-mg-l1-03` |  |
-| M04 | Time series and the bucket pattern | `e-mg-l4-03`, `e-mg-l5-08` |  |
-| M05 | Store computed values when reads dominate | `e-mg-l4-02`, `e-mg-l2-14` |  |
-| M06 | Validate and version your schema | `e-mg-l2-13`, `e-mg-l4-04` |  |
-| M07 | Compound indexes follow ESR | `e-mg-l3-05`, `e-mg-l3-07`, `e-mg-l3-08`, `e-mg-l3-06` |  |
-| M08 | Project only what you need | `e-mg-l1-03`, `e-mg-l3-09` |  |
+| M02 | Avoid unbounded arrays | `e-mg-l4-05`, `e-mg-l1-06` | `e-bp-m02` |
+| M03 | Avoid bloated documents | `e-mg-l4-01`, `e-mg-l1-03` | `e-bp-m03` |
+| M04 | Time series and the bucket pattern | `e-mg-l4-03`, `e-mg-l5-08` | `e-bp-m04` |
+| M05 | Store computed values when reads dominate | `e-mg-l4-02`, `e-mg-l2-14` | `e-bp-m05` |
+| M06 | Validate and version your schema | `e-mg-l2-13`, `e-mg-l4-04` | `e-bp-m06` |
+| M07 | Compound indexes follow ESR | `e-mg-l3-05`, `e-mg-l3-07`, `e-mg-l3-08`, `e-mg-l3-06` | `e-bp-m07` |
+| M08 | Project only what you need | `e-mg-l1-03`, `e-mg-l3-09` | `e-bp-m08` |
 | M09 | Filter early in pipelines | `e-mg-l3-12`, `e-mg-l2-04`, `e-mg-l2-05`, `e-mg-l2-08` | `e-bp-m09` |
-| M10 | Multi-document transactions: rare and short | `e-mg-l4-09` |  |
-| M11 | Choosing a shard key | `e-mg-l5-05`, `e-mg-l5-06`, `e-mg-l5-07` |  |
-| M12 | Remove unnecessary indexes | `e-mg-l3-14` |  |
-| M13 | Use majority write concern for data that matters | `e-mg-l4-07`, `e-mg-l4-11`, `e-mg-l5-04` |  |
-| M14 | Fewer collections, intentional polymorphism | `e-mg-l4-06` |  |
+| M10 | Multi-document transactions: rare and short | `e-mg-l4-09` | `e-bp-m10` |
+| M11 | Choosing a shard key | `e-mg-l5-05`, `e-mg-l5-06`, `e-mg-l5-07` | `e-bp-m11` |
+| M12 | Remove unnecessary indexes | `e-mg-l3-14` | `e-bp-m12` |
+| M13 | Use majority write concern for data that matters | `e-mg-l4-07`, `e-mg-l4-11`, `e-mg-l5-04` | `e-bp-m13` |
+| M14 | Fewer collections, intentional polymorphism | `e-mg-l4-06` | `e-bp-m14` |
 | M15 | One array element, many conditions: $elemMatch | `e-mg-l1-08` | `e-bp-m15` |
 | M16 | null also matches missing fields | `e-mg-l1-09` | `e-bp-m16` |
 | M17 | `$nin` trả cả tài liệu thiếu trường / $ne and $nin include missing fields | `e-mg-l1-07`, `e-mg-l1-09` | `e-bp-m17` |
 | M18 | $unwind drops empty and missing arrays | `e-mg-l2-07` | `e-bp-m18` |
-| M19 | Store dates as Date, not strings | `e-mg-l1-01` |  |
-| M20 | Update all matching elements with filtered positional | `e-mg-l2-01` |  |
-| M21 | An average of averages is not the average | `e-mg-l2-06` |  |
-| M22 | $in instead of $or on one field | `e-mg-l1-07` |  |
-| M23 | Use the profiler with a threshold | `e-mg-l3-11` |  |
-| M24 | Building indexes on live collections | — |  |
-| M25 | Back up for your size, and test the restore | — |  |
-| M26 | Watch replication lag and the oplog window | `e-mg-l5-03` |  |
-| M27 | Enable access control from day one | — |  |
+| M19 | Store dates as Date, not strings | `e-mg-l1-01` | `e-bp-m19` |
+| M20 | Update all matching elements with filtered positional | `e-mg-l2-01` | `e-bp-m20` |
+| M21 | An average of averages is not the average | `e-mg-l2-06` | `e-bp-m21` |
+| M22 | $in instead of $or on one field | `e-mg-l1-07` | `e-bp-m22` |
+| M23 | Use the profiler with a threshold | `e-mg-l3-11` | `e-bp-m23` |
+| M24 | Building indexes on live collections | — | `e-bp-m24` |
+| M25 | Back up for your size, and test the restore | — | `e-bp-m25` |
+| M26 | Watch replication lag and the oplog window | `e-mg-l5-03` | `e-bp-m26` |
+| M27 | Enable access control from day one | — | `e-bp-m27` |
+| M28 | Upserts need a unique index on the filter fields | `e-mg-l1-05` | `e-bp-m28` |
+| M29 | Wrap $-strings in $literal | `e-mg-l2-02`, `e-mg-l2-03` | `e-bp-m29` |
+| M30 | Always give $bucket a default | `e-mg-l2-09` | `e-bp-m30` |
+| M31 | Compare examined vs returned | `e-mg-l3-06` (vòng 7: bài có `totalDocsExamined`) | `e-bp-m31` |
+| M32 | Queries must use the index's collation | `e-mg-l3-15`, `e-mg-l3-17` | `e-bp-m32` |
+| M33 | Never hint a sparse index for complete results | `e-mg-l3-16` | `e-bp-m33` |
+| M34 | Read your writes with a causal session | `e-mg-l4-08` | `e-bp-m34` |
+| M35 | Persist the resume token | `e-mg-l4-10` | `e-bp-m35` |
+| M36 | Leave the WiredTiger cache at its default | `e-mg-l5-01` | `e-bp-m36` |
+| M37 | Retry the whole transaction on transient errors | `e-mg-l5-02` | `e-bp-m37` |
+| M38 | Measure a candidate shard key with analyzeShardKey | `e-mg-l5-07` (vòng 7: bài có `shard key`) | `e-bp-m38` |
 
 ### 12.8 8. DynamoDB (D)
 
 | Mã | Mục | Bài Engine liên quan | Thẻ |
 |---|---|---|---|
-| D01 | Access patterns first | `e-dy-l3-01`, `e-dy-l1-04` |  |
+| D01 | Access patterns first | `e-dy-l3-01`, `e-dy-l1-04` | `e-bp-d01` |
 | D02 | High-cardinality, evenly accessed partition keys | `e-dy-l1-02`, `e-dy-l4-01`, `e-dy-l4-03` | `e-bp-d02` |
-| D03 | Write sharding for hot keys | `e-dy-l4-04`, `e-dy-l4-05` |  |
+| D03 | Write sharding for hot keys | `e-dy-l4-04`, `e-dy-l4-05` | `e-bp-d03` |
 | D04 | Hierarchical sort keys | `e-dy-l3-09`, `e-dy-l4-10`, `e-dy-l3-05` | `e-bp-d04` |
-| D05 | Item collections for related data | `e-dy-l3-07`, `e-dy-l3-08`, `e-dy-l1-08`, `e-dy-l3-10`, `e-dy-l4-07` |  |
+| D05 | Item collections for related data | `e-dy-l3-07`, `e-dy-l3-08`, `e-dy-l1-08`, `e-dy-l3-10`, `e-dy-l4-07` | `e-bp-d05` |
 | D06 | Query, don't Scan | `e-dy-l1-09`, `e-dy-l1-05` | `e-bp-d06` |
-| D07 | Lean, sparse GSIs | `e-dy-l3-02`, `e-dy-l3-06`, `e-dy-l4-08`, `e-dy-l4-09`, `e-dy-l3-03`, `e-dy-l3-04` |  |
-| D08 | Keep items small | `e-dy-l2-08`, `e-dy-l2-10` |  |
-| D09 | Time series: TTL or per-period tables | `e-dy-l5-02` |  |
-| D10 | Conditional writes | `e-dy-l2-04`, `e-dy-l1-06`, `e-dy-l1-07` |  |
-| D11 | Pick the capacity mode for the traffic | `e-dy-l4-06`, `e-dy-l4-02` |  |
-| D12 | Paginate with LastEvaluatedKey | `e-dy-l1-10` |  |
-| D13 | Strong reads only when needed | `e-dy-l2-11` |  |
+| D07 | Lean, sparse GSIs | `e-dy-l3-02`, `e-dy-l3-06`, `e-dy-l4-08`, `e-dy-l4-09`, `e-dy-l3-03`, `e-dy-l3-04` | `e-bp-d07` |
+| D08 | Keep items small | `e-dy-l2-08`, `e-dy-l2-10` | `e-bp-d08` |
+| D09 | Time series: TTL or per-period tables | `e-dy-l5-02` | `e-bp-d09` |
+| D10 | Conditional writes | `e-dy-l2-04`, `e-dy-l1-06`, `e-dy-l1-07` | `e-bp-d10` |
+| D11 | Pick the capacity mode for the traffic | `e-dy-l4-06`, `e-dy-l4-02` | `e-bp-d11` |
+| D12 | Paginate with LastEvaluatedKey | `e-dy-l1-10` | `e-bp-d12` |
+| D13 | Strong reads only when needed | `e-dy-l2-11` | `e-bp-d13` |
 | D14 | Reserved words need name placeholders | `e-dy-l2-01` | `e-bp-d14` |
 | D15 | Sort-key conditions belong in the key condition | `e-dy-l2-02` | `e-bp-d15` |
-| D16 | Counting and projecting do not cut read cost | `e-dy-l2-09` |  |
-| D17 | Atomic counters, not read-modify-write | `e-dy-l2-05` |  |
+| D16 | Counting and projecting do not cut read cost | `e-dy-l2-09` | `e-bp-d16` |
+| D17 | Atomic counters, not read-modify-write | `e-dy-l2-05` | `e-bp-d17` |
 | D18 | Store numbers as N, especially in sort keys | `e-dy-l1-01`, `e-dy-l1-02` | `e-bp-d18` |
-| D19 | Batch in 25s and retry unprocessed items | `e-dy-l2-06` |  |
-| D20 | PartiQL SELECT needs the partition key | `e-dy-l2-07` |  |
-| D21 | Use a transaction when several items must change together | `e-dy-l4-11`, `e-dy-l4-12`, `e-dy-l4-13` |  |
-| D22 | Turn on point-in-time recovery | `e-dy-l5-04` |  |
-| D23 | Enable deletion protection | `e-dy-l5-04` |  |
-| D24 | Alarm on throttling | `e-dy-l4-02` |  |
-| D25 | Retry with exponential backoff, bounded | `e-dy-l2-06` |  |
-| D26 | Least-privilege IAM down to the user's own keys | — |  |
-| D27 | Find hot keys with Contributor Insights | `e-dy-l4-03` |  |
+| D19 | Batch in 25s and retry unprocessed items | `e-dy-l2-06` | `e-bp-d19` |
+| D20 | PartiQL SELECT needs the partition key | `e-dy-l2-07` | `e-bp-d20` |
+| D21 | Use a transaction when several items must change together | `e-dy-l4-11`, `e-dy-l4-12`, `e-dy-l4-13` | `e-bp-d21` |
+| D22 | Turn on point-in-time recovery | `e-dy-l5-04` | `e-bp-d22` |
+| D23 | Enable deletion protection | `e-dy-l5-04` | `e-bp-d23` |
+| D24 | Alarm on throttling | `e-dy-l4-02` | `e-bp-d24` |
+| D25 | Retry with exponential backoff, bounded | `e-dy-l2-06` | `e-bp-d25` |
+| D26 | Least-privilege IAM down to the user's own keys | — | `e-bp-d26` |
+| D27 | Find hot keys with Contributor Insights | `e-dy-l4-03` | `e-bp-d27` |
+| D28 | Initialise with if_not_exists | `e-dy-l2-03` | `e-bp-d28` |
+| D29 | Idempotent stream consumers, watch IteratorAge | `e-dy-l5-01`, `e-dy-l5-07` | `e-bp-d29` |
+| D30 | Avoid concurrent multi-Region writes to one item | `e-dy-l5-03` | `e-bp-d30` |
+| D31 | DAX does not cache strongly consistent reads | `e-dy-l5-06`, `e-dy-l5-07` | `e-bp-d31` |
+| D32 | Adaptive capacity cannot lift the per-partition ceiling | — | `e-bp-d32` |
 
 ### 12.9 Tổng kết
 
@@ -5920,7 +5938,7 @@ PostgreSQL (30):
 **Chờ v27** (thêm track MongoDB):
 
 - Hạng 61–91, SQL + PostgreSQL bổ sung: Q20, Q14, A04, A10, A22, A24, A23, A06, A13, A09, Q23, Q19, Q17, A19, A20, Q21, A14, S05, S12, S09, S13, S14, I07, P02, P12, P07, P15, S15, S11, P34, P33.
-- MongoDB, 38 mục, theo thứ tự (chạy được và sai âm thầm trước):
+- MongoDB, 38 mục, theo thứ tự (chạy được và sai âm thầm trước; vòng 7: cả 38 mục có thẻ, §16):
   - M16, M17, M15, M18, M01, M29, M30, M21, M19, M20;
   - M08, M09, M22, M05, M02, M07, M31, M03, M06, M14;
   - M12, M32, M33, M28, M04, M13, M10, M37, M34, M23;
@@ -5929,7 +5947,7 @@ PostgreSQL (30):
 **Chờ v29** (thêm track DynamoDB):
 
 - Hạng 92–122, phần vận hành và bảo mật L4–L5 của PostgreSQL: X04, X08, X07, X10, X03, P19, P09, P20, P31, P24, P23, P04, P14, P16, P18, P10, P41, P11, P21, P22, P32, P36, P37, P26, P27, P38, P28, P29, P39, P40, X05.
-- DynamoDB, 32 mục:
+- DynamoDB, 32 mục (vòng 7: cả 32 mục có thẻ, §16):
   - D06, D01, D02, D14, D15, D18, D04, D16, D12, D17;
   - D10, D28, D13, D20, D19, D08, D05, D07, D21, D03;
   - D25, D09, D11, D24, D23, D22, D26, D27, D32, D31;
@@ -6088,3 +6106,129 @@ Thiết kế §3.2/§4.3 cho mỗi bản đúng một câu, `setup` riêng, và 
 - `sql` (30 thẻ): 102.397 byte thô, 27.406 byte gzip -9 cả file.
 - `postgres` (30 thẻ): 119.029 byte thô, 32.313 byte gzip -9 cả file.
 - Gộp một chunk mỗi track thì cả hai vượt trần 20 KB của thiết kế §10, như §11.4 và §14.2 đã báo. Phương án ở §13.1.4 (một chunk lười mỗi thẻ) vẫn đủ.
+
+## 16. Vòng 7: thẻ MongoDB (v27) và DynamoDB (v29)
+
+Theo L215.6. Vòng này chỉ viết nội dung: thêm 58 thẻ ở `content/engine/best/`, không sửa `src/`, test, build hay `decision-log.md`. Sau vòng này cả 38 mục MongoDB (v27, §14.2) và cả 32 mục DynamoDB (v29) đều có thẻ: tổng 130 thẻ (SQL 30, PostgreSQL 30, MongoDB 38, DynamoDB 32).
+
+### 16.1 Cách kiểm
+
+- Script tạm ngoài repo (`bp7/verify.mjs`, chép từ `bp3/verify.mjs`, không commit), dùng `mingo` 7.2.6 và `@dynoxide/wasm-engine` 1.5.0 (cùng phiên bản trong `node_modules` của repo), cùng `@electric-sql/pglite` 0.5.16 cho 60 thẻ cũ.
+- Engine Mongo và DynamoDB của script chép lại từ nhánh `v22-nosql-fix` (`src/engine/mongo/{engineMongo,parse,types}.ts`, `src/engine/dynamo/{engine,request,types}.ts`), vì bản chép ở vòng 3 đã cũ: bản mới có thêm `TransactGetItems` và `ExecuteTransaction`. Mỗi bản Không nên / Nên là **một** lệnh `mongosh` (một lệnh mỗi lần chạy, như lab) hoặc **một** request DynamoDB, trên `setup` riêng của thẻ.
+- Ba chỗ sửa script so với vòng 3 (không đổi luật):
+  - luật "không tất định" chỉ bắt `new Date()` không đối số; `ISODate('2026-09-01')` là hằng;
+  - thẻ mingo `check: error` giờ so cả `expect.code` (trước đây chỉ kiểm bản Không nên có lỗi);
+  - bỏ lượt khởi động cho `engine-hb` như `bp6` (P05 không chạy lại được trên cùng database).
+- Kết quả ngày 2026-11-20: **130/130 thẻ, 0 lỗi**. Mọi câu < 300 ms.
+- Nguồn:
+  - tải lại cả 59 URL MongoDB mà thẻ dẫn (58 từ §7 và §13.2, thêm `core/index-unique/` cho M28) và mọi URL AWS của thẻ DynamoDB (35 trang developer guide, 3 trang API reference, 1 trang Lambda), đều 200; bốn anchor AWS có trên trang;
+  - mỗi con số và mỗi ý trong Luật, Vì sao và câu kiểm của thẻ chỉ cú pháp đã tìm thấy trên đúng trang dẫn (ví dụ: transaction mặc định dưới một phút, profiler mức 2 bỏ qua `slowms`, cache WiredTiger `50% of (RAM - 1GB)`, `analyzeShardKey` có từ 7.0, 21.349 / 3.809 tài liệu ở M31);
+  - trang MongoDB nay là manual **9.0** (Current); thẻ chỉ cú pháp ghi `verified: { version: "MongoDB manual 9.0" }`;
+  - thẻ không trích nguyên văn: câu trong ngoặc kép ở thân thẻ là diễn đạt lại.
+
+### 16.2 Thẻ MongoDB mới (32)
+
+| Mã | Cấp | `runtime` | `check` | Kết quả đo (Không nên → Nên) | File |
+|---|---|---|---|---|---|
+| M02 | L2 | `mingo` | `diff` | `recentEvents` 4 phần tử → 3 (`$slice: -3`) | `mongodb/m02-unbounded-arrays.md` |
+| M03 | L2 | `none` | `syntax` | — | `mongodb/m03-bloated-documents.md` |
+| M04 | L3 | `none` | `syntax` | — | `mongodb/m04-time-series.md` |
+| M05 | L2 | `mingo` | `same` | `total` 120 = 120 | `mongodb/m05-computed-values.md` |
+| M06 | L2 | `none` | `syntax` | — | `mongodb/m06-json-schema.md` |
+| M07 | L3 | `none` | `syntax` | — | `mongodb/m07-esr.md` |
+| M08 | L1 | `mingo` | `diff` | 2 tài liệu đủ trường (cả `items`) → 2 tài liệu chỉ `createdAt`, `total` | `mongodb/m08-project-fields.md` |
+| M10 | L4 | `none` | `syntax` | — | `mongodb/m10-short-transactions.md` |
+| M11 | L5 | `none` | `syntax` | — | `mongodb/m11-shard-key.md` |
+| M12 | L3 | `none` | `syntax` | — | `mongodb/m12-unnecessary-indexes.md` |
+| M13 | L4 | `none` | `syntax` | — | `mongodb/m13-majority-write-concern.md` |
+| M14 | L2 | `none` | `syntax` | — | `mongodb/m14-fewer-collections.md` |
+| M19 | L1 | `mingo` | `diff` | khoảng tháng 9: `[]` → `[1]` | `mongodb/m19-dates-as-date.md` |
+| M20 | L2 | `mingo` | `diff` | dòng B giữ 15 → 7,5 (dòng C 30 → 15 ở cả hai) | `mongodb/m20-array-filters.md` |
+| M21 | L2 | `mingo` | `diff` | 160,83 → 136,25 | `mongodb/m21-average-of-averages.md` |
+| M22 | L1 | `mingo` | `same` | 5 đơn | `mongodb/m22-in-not-or.md` |
+| M23 | L3 | `none` | `syntax` | — | `mongodb/m23-profiler-threshold.md` |
+| M24 | L4 | `none` | `syntax` | — | `mongodb/m24-live-index-builds.md` |
+| M25 | L4 | `none` | `syntax` | — | `mongodb/m25-backup-restore.md` |
+| M26 | L5 | `none` | `syntax` | — | `mongodb/m26-replication-lag.md` |
+| M27 | L3 | `none` | `syntax` | — | `mongodb/m27-access-control.md` |
+| M28 | L2 | `none` | `syntax` | — | `mongodb/m28-upsert-unique.md` |
+| M29 | L2 | `mingo` | `diff` | `{ name }` → `{ name, promo: '$5 off' }` | `mongodb/m29-literal-dollar.md` |
+| M30 | L2 | `mingo` | `error` | lỗi của mingo `$bucket require a default…` → 3 nhóm | `mongodb/m30-bucket-default.md` |
+| M31 | L3 | `none` | `syntax` | — | `mongodb/m31-explain-execution-stats.md` |
+| M32 | L3 | `none` | `syntax` | — | `mongodb/m32-collation-index.md` |
+| M33 | L3 | `none` | `syntax` | — | `mongodb/m33-sparse-hint.md` |
+| M34 | L4 | `none` | `syntax` | — | `mongodb/m34-causal-session.md` |
+| M35 | L4 | `none` | `syntax` | — | `mongodb/m35-resume-token.md` |
+| M36 | L5 | `none` | `syntax` | — | `mongodb/m36-wiredtiger-cache.md` |
+| M37 | L4 | `none` | `syntax` | — | `mongodb/m37-transient-retry.md` |
+| M38 | L5 | `none` | `syntax` | — | `mongodb/m38-analyze-shard-key.md` |
+
+Track MongoDB sau vòng này: 15 thẻ chạy bằng mingo (6 cũ + 9 mới), 23 thẻ chỉ cú pháp.
+
+### 16.3 Thẻ DynamoDB mới (26)
+
+| Mã | Cấp | `runtime` | `check` | Kết quả đo (Không nên → Nên) | File |
+|---|---|---|---|---|---|
+| D01 | L1 | `dynoxide` | `same` + `rcu` | 5 đơn: `Scan` ScannedCount 30, 1,5 RCU → `Query` 5, 0,5 RCU | `dynamodb/d01-access-patterns-first.md` |
+| D03 | L3 | `dynoxide` | `runs` | `Query` một khóa nóng, 40 item → PartiQL `IN` trên 4 khóa con, 40 item | `dynamodb/d03-write-sharding.md` |
+| D05 | L3 | `dynoxide` | `runs` + `rcu` | `Scan` 5 đơn, 1,5 RCU → `Query` item collection 6 item, 0,5 RCU | `dynamodb/d05-item-collection.md` |
+| D07 | L3 | `dynoxide` | `same` + `rcu` | Count 4: ScannedCount 12, 1 RCU → 4, 0,5 RCU | `dynamodb/d07-sparse-gsi.md` |
+| D08 | L2 | `dynoxide` | `same` + `rcu` | `ADD` một thuộc tính: 7 WCU (item ~6 KB) → 1 WCU | `dynamodb/d08-small-items.md` |
+| D09 | L3 | `none` | `syntax` | (dynoxide: `UnsupportedOperation`) | `dynamodb/d09-ttl-time-series.md` |
+| D10 | L3 | `dynoxide` | `diff` | `PutItem` `ALL_OLD` trả item bị thay → `UpdateItem` có điều kiện, `version` 2, giữ `total` | `dynamodb/d10-conditional-writes.md` |
+| D11 | L3 | `none` | `syntax` | — | `dynamodb/d11-capacity-mode.md` |
+| D12 | L2 | `dynoxide` | `diff` | `Limit: 3` Count 1 + `LastEvaluatedKey` → không `Limit`, Count 4 | `dynamodb/d12-last-evaluated-key.md` |
+| D13 | L2 | `dynoxide` | `error` | `ValidationException` → Count 4 | `dynamodb/d13-strong-reads.md` |
+| D16 | L2 | `dynoxide` | `runs` + `rcu` | `Scan` COUNT 40, 2 RCU → `GetItem` bộ đếm, 0,5 RCU | `dynamodb/d16-count-not-cheaper.md` |
+| D17 | L2 | `dynoxide` | `diff` | `SET views = 5` → 5; `ADD` 1 → 6 | `dynamodb/d17-atomic-counter.md` |
+| D19 | L2 | `dynoxide` | `error` | 26 yêu cầu: `ValidationException` → 25 ghi xong | `dynamodb/d19-batch-write-25.md` |
+| D20 | L2 | `dynoxide` | `same` + `rcu` | 6 đơn: 2 RCU → 0,5 RCU | `dynamodb/d20-partiql-partition-key.md` |
+| D21 | L3 | `none` | `syntax` | (dynoxide: `TransactionCanceledException` `[None, ConditionalCheckFailed]`, `META` vẫn `PENDING`) | `dynamodb/d21-transaction-together.md` |
+| D22 | L4 | `none` | `syntax` | (dynoxide: `UnsupportedOperation`) | `dynamodb/d22-pitr.md` |
+| D23 | L3 | `none` | `syntax` | — | `dynamodb/d23-deletion-protection.md` |
+| D24 | L3 | `none` | `syntax` | — | `dynamodb/d24-throttle-alarms.md` |
+| D25 | L2 | `none` | `syntax` | — | `dynamodb/d25-retry-backoff.md` |
+| D26 | L4 | `none` | `syntax` | — | `dynamodb/d26-least-privilege-iam.md` |
+| D27 | L4 | `none` | `syntax` | — | `dynamodb/d27-contributor-insights.md` |
+| D28 | L2 | `dynoxide` | `error` | `ValidationException` → `n` = 1 | `dynamodb/d28-if-not-exists.md` |
+| D29 | L5 | `none` | `syntax` | — | `dynamodb/d29-idempotent-streams.md` |
+| D30 | L5 | `none` | `syntax` | — | `dynamodb/d30-global-tables-one-writer.md` |
+| D31 | L5 | `none` | `syntax` | — | `dynamodb/d31-dax-strong-reads.md` |
+| D32 | L4 | `none` | `syntax` | — | `dynamodb/d32-partition-ceiling.md` |
+
+Track DynamoDB sau vòng này: 19 thẻ chạy bằng dynoxide (6 cũ + 13 mới), 13 thẻ chỉ cú pháp. Số trong bảng là của `setup` riêng mỗi thẻ (tối đa 61 item), không phải 1.135 item của §8.0.
+
+### 16.4 Chỗ thẻ khác dòng "Kiểm" của mục
+
+- **Chỉ cú pháp, 36 thẻ mới (23 MongoDB, 13 DynamoDB).** Luật chọn: chỉ cho chạy khi **một** lệnh đã cho thấy chính điều thẻ dạy (một kết quả khác, hoặc một lỗi). Không giả lập:
+  - mingo không có index, `explain()`, profiler, replica set, session, transaction, change stream, shard, validator hay `createCollection` (M03, M04, M06, M07, M10–M14, M23–M28, M31–M38). `createIndex` của engine chỉ ghi định nghĩa, nên M07, M12, M28, M32, M33 vẫn chỉ cú pháp dù lệnh chạy được;
+  - dynoxide trả `UnsupportedOperation` cho TTL và backup (D09, D22); lab không có `UpdateTable`/`DeleteTable` (D23); không có tính tiền, CloudWatch, throttle hay partition (D11, D24, D25, D27, D32); không có IAM, Streams, global tables, DAX (D26, D29, D30, D31).
+- **M02 lên chạy được** (catalogue ghi cú pháp): một `updateOne` với `$push` + `$each` + `$slice: -3` cho thấy mảng bị cắt còn 3, so với `$push` thường thành 4. Thân thẻ nói mingo chỉ cho thấy cơ chế cắt, không đo được giới hạn 16 MB.
+- **M19, M20, M29 rút về một lệnh:** M20 ở catalogue chạy hai lệnh (`updateOne` rồi `find`). Engine trả cả collection sau lệnh ghi, nên một `updateOne` là đủ; `setup` chỉ giữ đơn 5, thêm một dòng giá 100 để thấy dòng không khớp được giữ nguyên.
+- **M30 là thẻ mingo `check: error` đầu tiên.** Lỗi là của mingo (`MongoRunError` mã `mingo`, câu `$bucket require a default for out of range values`), không phải mã lỗi máy chủ MongoDB; `expect: { code: "mingo" }`, và `## Ví dụ` nói rõ điều đó. Cho BP-T: với runtime `mingo`, khung "Chạy cả hai" nên hiện câu lỗi của mingo, không hiện mã `mingo`.
+- **M22** giữ `same`: mingo không có index nên chỉ đo được hai cách cho cùng 5 đơn; thân thẻ nói phần index không đo được.
+- **DynamoDB, một request mỗi bên:**
+  - D01, D05, D07 so một `Scan` (hay `Query` trên GSI rộng) với một `Query`;
+  - D03 bên Nên là một PartiQL `IN` trên 4 khóa con nên `check: runs`; thân thẻ nói lợi ích chia tải ghi không đo được trên emulator;
+  - D16, D17 bỏ lượt đọc thừa; D19 so 26 với 25 yêu cầu;
+  - D12 bên Nên không có `Limit`; vòng lặp `LastEvaluatedKey` nằm ở `## Ví dụ` (đo: `Limit: 3` cần 4 trang, mỗi trang 1 item).
+- **D10 và D21: bản Nên đúng khi báo lỗi.** Thiết kế §3.3 chỉ cho bản Không nên báo lỗi.
+  - D10 đổi thành `diff`: `PutItem` `ALL_OLD` lộ item bị ghi đè, so với `UpdateItem` có điều kiện `ALL_NEW`; `ConditionalCheckFailedException` chuyển vào câu kiểm.
+  - D21 giữ chỉ cú pháp; số đo dynoxide (`ExecuteTransaction`) ghi ở `## Ví dụ`.
+  - Cho BP-T: một `check` mới kiểu "bản Nên phải báo lỗi X" sẽ cho D21 chạy được.
+- **D08** so WCU nhưng khai `expect: { compare: rcu }`; verifier đọc `CapacityUnits` nên đúng, nhưng BP-T có thể muốn đặt tên `wcu`.
+- **Bỏ ý không có trên trang dẫn:** M25 (snapshot "khôi phục nhanh hơn"), M26 ("phải initial sync lại"), M29 (toán tử cập nhật thường không có bẫy), M32 (so chuỗi mặc định), M34 (session "chờ tới thời điểm ghi"), M38 (đổi shard key tốn kém), D32 (adaptive capacity cho on-demand), D24 (throttle GSI làm chậm ghi bảng gốc), D05 (single-table làm quyền và backup khó hơn).
+- **Câu kiểm không lộ đáp án:** M10 đổi câu kiểm từ "quá một phút thì sao" (Vì sao đã nói) sang "một tài liệu có cần transaction không"; D16 không ghi số đo `ProjectionExpression` (2 RCU cả hai bản) vì câu kiểm hỏi đúng điều đó.
+- **`requires`:** mỗi id đã grep ở `0ede43d` có thuật ngữ của thẻ.
+  - M03: `e-mg-l4-01` không nói tài liệu phình, nên `requires: []`.
+  - M31 nối `e-mg-l3-06` (bài có `totalDocsExamined`).
+  - D27 nối bài hot partition `e-dy-l4-03` (không bài nào nói Contributor Insights); D01 thêm `adv: [d7]`.
+  - Bảng §12.7 thêm dòng M28–M38, §12.8 thêm D28–D32.
+- **Sửa bảng §12:** vòng 6 để lại 30 dòng có ô trống thừa (`|| e-bp-…`), đã sửa về đúng bốn cột.
+- **Sửa thẻ cũ M01:** nguồn `data-modeling/concepts/embedding-vs-references/` chuyển hướng sang `data-modeling/best-practices/#link-related-data` (vòng 5 đã sửa trong catalogue, thẻ thì chưa); thẻ nay dẫn thẳng URL đích.
+
+### 16.5 Ngân sách
+
+- `mongodb` (38 thẻ): 145.395 byte thô, 39.689 byte gzip -9 cả file. Thẻ lớn nhất 2,3 KB gzip (M01).
+- `dynamodb` (32 thẻ): 330.984 byte thô, 45.667 byte gzip -9 cả file. `setup` chiếm phần lớn; thẻ lớn nhất là D01, 33,5 KB thô, 3,3 KB gzip.
+- Như §15.4: một chunk mỗi track vượt trần 20 KB; một chunk lười mỗi thẻ (§13.1.4) vẫn đủ, kể cả thẻ DynamoDB lớn nhất.
