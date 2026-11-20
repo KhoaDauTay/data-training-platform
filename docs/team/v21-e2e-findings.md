@@ -50,11 +50,13 @@ Mức độ: **Cao** = chặn người chơi hoặc mất dữ liệu; **Trung b
 
 | id | Mức | Khu | Tái hiện | Mong đợi / Thực tế | File nghi ngờ |
 |---|---|---|---|---|---|
-| E1 | Trung bình | a11y, top bar | Có thẻ ôn đến hạn (nút "Ôn tập" hiện kèm số). Chạy axe trên bất kỳ trang nào; gặp trên 69 màn hình. | **Mong đợi:** tên truy cập chứa chữ hiển thị. **Thực tế:** axe `label-content-name-mismatch` (serious) trên `#review-btn`. Nút hiện "Ôn tập" + badge "5", nhưng `aria-label` = "Ôn tập, 5 mục đến hạn": dấu phẩy chen giữa nhãn và số, nên chữ hiển thị "Ôn tập 5" không nằm trong tên (WCAG 2.5.3). Có thể `#inbox-btn` cũng vậy, vì dùng chung `setActionButton`. | `src/ui/topbar.ts` (`setActionButton`); khóa `top.reviewDue` trong `src/i18n/vi.ts`/`en.ts`; `src/ui/modes.ts` (`renderReviewButton`) |
+| E1 ✅ L189 | Trung bình | a11y, top bar | Có thẻ ôn đến hạn (nút "Ôn tập" hiện kèm số). Chạy axe trên bất kỳ trang nào; gặp trên 69 màn hình. | **Mong đợi:** tên truy cập chứa chữ hiển thị. **Thực tế:** axe `label-content-name-mismatch` (serious) trên `#review-btn`. Nút hiện "Ôn tập" + badge "5", nhưng `aria-label` = "Ôn tập, 5 mục đến hạn": dấu phẩy chen giữa nhãn và số, nên chữ hiển thị "Ôn tập 5" không nằm trong tên (WCAG 2.5.3). Có thể `#inbox-btn` cũng vậy, vì dùng chung `setActionButton`. | `src/ui/topbar.ts` (`setActionButton`); khóa `top.reviewDue` trong `src/i18n/vi.ts`/`en.ts`; `src/ui/modes.ts` (`renderReviewButton`) |
 | E2 ✅ L197 | Trung bình | Workspace, tab Kết quả / Ghim | Sandbox: chạy một truy vấn, sửa SQL trong editor mà không chạy lại. | **Mong đợi:** nút "Ghim lên" tắt kèm "Chạy lại trước khi ghim", và tab có dải "SQL đã thay đổi" (CLAUDE.md: mọi tab mô tả `app.lastRun` và báo khi editor khác). **Thực tế:** sau 1,5 s nút "Ghim lên" vẫn bật và không có dải nào, vì panel chỉ vẽ lại khi chạy hoặc rerender, không vẽ lại khi gõ. Bấm Ghim lúc này mở dialog với kết quả cũ (ở lần chạy trước, dialog xem trước biểu đồ của truy vấn trước và chỉ báo "Chạy lại trước khi ghim" ở trong dialog). | `src/ui/work.ts` (`onChange` không gọi `deps.panel.refresh()`); `src/ui/pin.ts` (`pinBar`); `src/ui/tabs.ts` (dải stale) |
 | E3 | Trung bình | a11y, Overview Finance ở 375 px | `#/d/finance` ở 375 px (cả sáng và tối), hàng chương có chip "Dựa vào". | **Mong đợi:** vùng chạm ≥ 24 px. **Thực tế:** axe `target-size` (serious) trên 3 link `#/learn/adv/a2`, `a3`, `b2`: cao 20 px, cách nhau dưới 24 px. | `src/ui/brief.ts` (`advLine`); `src/ui/homeView.ts:210` (truyền class `ABOVE`, không có padding) **Đã sửa (L195):** mỗi link `inline-flex min-h-6 items-center` (24 px). |
 | E4 ✅ L197 | Thấp | a11y, dock hoàn thành | Xong một việc (Recap) hoặc một đánh giá (tổng kết chương), rồi chạy axe trong lúc dock còn mở; gặp trên 6 màn hình. | **Mong đợi:** nội dung nằm trong landmark. **Thực tế:** axe `region` (moderate): `#stage-text` nằm ngoài mọi landmark. | `index.html` (`#stage`); `src/ui/stage.ts` |
 | E5 ✅ L197 | Thấp (cần xác nhận) | General, mở drill từ trang domain | Đang ở `#/d/logistics/play` (story), đổi hash sang `#/learn/play/<drill>` và gõ ngay. | **Mong đợi:** editor cũ khóa, hoặc drill mở trước khi nhận phím. **Thực tế (quan sát qua harness):** trong lúc chunk drill đang tải, editor story vẫn nhận phím. Chữ gõ vào đó thành nháp của việc story, còn drill mở ra với editor trống. Người thật hiếm khi gõ nhanh đến thế, nên cần thử tay trước khi sửa. | `src/main.ts` (hashchange → `generalNav` → mở drill); `src/ui/modes.ts` (`loadDrillUi`) |
+
+| E6 ✅ L222 | Trung bình | a11y, top bar | Lần chạy trên `main` @ `97425ab` (sau U11/R21-U1/U2/U4): có thẻ ôn đến hạn, axe trên 70+ màn hình. | **Mong đợi:** tên truy cập chứa chữ hiển thị. **Thực tế:** E1 (L189) đặt tên "Ôn tập 5", nhưng trong `index.html` nhãn và huy hiệu dính liền (`</span><span data-badge`), nên axe đọc chữ hiển thị là "Ôn tập5", không nằm trong "Ôn tập 5" (`label-content-name-mismatch`, serious). Đo bằng axe trong Edge headless: thêm một khoảng trắng giữa hai span là đạt (khoảng trắng trong flex không đổi bố cục). | `index.html` (`#inbox-btn`, `#review-btn`); test `tests/topbarName.test.ts` |
 
 Không tìm thấy lỗi chức năng nào trong các luồng chính:
 
@@ -71,3 +73,14 @@ Không tìm thấy lỗi chức năng nào trong các luồng chính:
   - Gõ trước khi drill kịp mở. Nay script chờ tiêu đề "Bài luyện".
   - Bấm "Ghim lên" trước khi kết quả mới về (dẫn tới E2). Nay script chờ kết quả mới, đóng dialog còn mở trước mỗi bước công cụ, và axe không còn làm dừng luồng: lỗi axe gom theo luật + phần tử, báo một dòng ở cuối.
 - `Emulation.setEmulatedMedia` chỉ giả lập `prefers-reduced-motion`/`prefers-color-scheme`. CPU và mạng chậm không được giả lập, trừ phần offline.
+
+## Lần chạy lại trên `main` @ `97425ab` (L222)
+
+7/293 bước đỏ cộng một phát hiện axe. Đã xem từng cái bằng ảnh chụp và DOM trong Edge headless:
+
+- **Phỏng vấn (bộ `junior-1`, tải lại giữa chừng): script lệch.** UX-A (L189/L190) đổi tiêu đề mỗi hàng từ `h4` sang `h3`, nên `li.querySelector('h4')` trả `undefined` và gây TypeError. U24 (L195) chỉ để một nút chính trên trang, nên hàng take-home không còn `button.primary`, và script chờ 60 s rồi hết giờ. Script nay tìm theo `h3` và bấm nút theo chữ ("Bắt đầu…"/"Làm tiếp").
+- **ch12-06 bước 2 "could not type into a stable editor": script lệch, không phải lỗi app.** Script dump DOM cho thấy chỉ có một editor, editor sửa được và đang có focus. Chữ đọc lại bắt đầu từ dòng 7. Lý do là CodeMirror chỉ vẽ các dòng gần vùng nhìn: SQL bước 2 dài 24 dòng, editor cuộn xuống cuối, nên `.cm-line` thiếu phần đầu. `editorText` nay đọc cả tài liệu từ state của CodeMirror (`.cm-content`.cmTile.root.view). Ba lỗi đi theo (save thiếu ch12-06, 15/16 ô KPI, #/me chỉ có 2 nút portfolio) hết khi ch12-06 và take-home qua.
+- **E6 (axe trên `#review-btn`): lỗi app thật.** Đã sửa, xem bảng trên.
+
+Kết quả: 296/296 bước đạt, 0 phát hiện.
+

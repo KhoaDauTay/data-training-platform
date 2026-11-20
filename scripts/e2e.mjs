@@ -239,7 +239,9 @@ const SHIFT = 8;
 const SAVE = `JSON.parse(localStorage.getItem('cargo-query-save') || '{}')`;
 const completed = `(${SAVE}.completed ?? [])`;
 const EDITOR = `document.querySelector('#shell:not([hidden]) #work .cm-content')`;
-const editorText = `[...(${EDITOR}?.querySelectorAll('.cm-line') ?? [])].map((l) => l.textContent).join('\\n')`;
+// The whole document from CodeMirror's state (`.cm-content`.cmTile.root.view, @codemirror/view 6.43): CodeMirror draws only the
+// lines near the viewport, so `.cm-line` misses the head of a long SQL (ch12-06 step 2) once the editor scrolled to its end.
+const editorText = `((c) => c?.cmTile?.root?.view?.state.doc.toString() ?? [...(c?.querySelectorAll('.cm-line') ?? [])].map((l) => l.textContent).join('\\n'))(${EDITOR})`;
 const DB_READY = `!!document.querySelector('#db-status .bg-good')`;
 /** Clicks the first visible, enabled element matching `sel` whose text matches `re` (a RegExp source); returns its text. */
 const clickText = (sel, re, root = 'document') => ev(`(() => { const re = new RegExp(${S(re)}, 'i');
@@ -265,7 +267,10 @@ async function typeAnd(sql, submit = true) {
     else await key('Enter', MOD, 'Enter', 13);
     return;
   }
-  fail('could not type into a stable editor');
+  const why = await ev(`(() => { const all = [...document.querySelectorAll('#work .cm-content')];
+    return all.length + ' editor(s); editable ' + all.map((c) => c.contentEditable).join(',') + '; focus in editor ' + !!document.activeElement?.closest('.cm-editor')
+      + '; text: ' + ${editorText}.slice(0, 120); })()`).catch((e) => e.message);
+  fail(`could not type into a stable editor (${why})`);
 }
 /** Submits until `done()` (an expression) is truthy; retypes when the editor got replaced meanwhile (render rule). */
 async function submitUntil(sql, doneExpr, ms = 90000) {
@@ -696,8 +701,9 @@ SECTIONS.general = async () => {
   const th = INTERVIEW.takeHomes[0];
   await step(`take-home ${th.id} to the rubric`, async () => {
     await go('#/learn/interview');
-    await waitFor('the take-home list', `!!document.querySelector('section[aria-labelledby="iv-th"] li button.primary')`, 60000);
-    await ev(`[...document.querySelectorAll('section[aria-labelledby="iv-th"] li')].find((li) => li.textContent.includes(${S(th.title.vi)})).querySelector('button.primary').click()`);
+    // v21 U24: one main button on the room page (a set's), so a take-home row's Start is a plain button
+    await waitFor('the take-home list', `!!document.querySelector('section[aria-labelledby="iv-th"] li button')`, 60000);
+    await ev(`[...[...document.querySelectorAll('section[aria-labelledby="iv-th"] li')].find((li) => li.textContent.includes(${S(th.title.vi)})).querySelectorAll('button')].find((b) => /^(Bắt đầu|Làm tiếp)/.test(b.textContent.trim())).click()`);
     for (const [i, st] of th.steps.entries()) {
       await waitFor(`step ${i + 1}`, `location.hash === ${S(`#/learn/play/${th.id}-${i + 1}`)} && !!${EDITOR}`, 60000);
       const nextDone = i === th.steps.length - 1 ? `!!document.getElementById('iv-text')` : `location.hash === ${S(`#/learn/play/${th.id}-${i + 2}`)}`;
@@ -739,12 +745,12 @@ SECTIONS.general = async () => {
 };
 async function startSet(set, timer) {
   await go('#/learn/interview');
-  await waitFor('the set list', `!!document.querySelector('section[aria-labelledby="iv-sets"] li button.primary')`, 60000);
+  await waitFor('the set list', `!!document.querySelector('section[aria-labelledby="iv-sets"] li button')`, 60000);
   await ev(`(() => { const c = document.getElementById('iv-timer'); if (c && c.checked !== ${timer}) c.click(); })()`);
-  const li = `[...document.querySelectorAll('section[aria-labelledby="iv-sets"] li')].find((li) => li.querySelector('h4')?.textContent.includes(${S(set.title.vi)}))`;
+  const li = `[...document.querySelectorAll('section[aria-labelledby="iv-sets"] li')].find((li) => li.querySelector('h3')?.textContent.includes(${S(set.title.vi)}))`; // v21 UX-A: h4 → h3
   // a run left from earlier: start over
   if (await ev(`[...${li}.querySelectorAll('button')].some((b) => /Làm lại từ đầu/.test(b.textContent))`)) await ev(`[...${li}.querySelectorAll('button')].find((b) => /Làm lại từ đầu/.test(b.textContent)).click()`);
-  else await ev(`${li}.querySelector('button.primary').click()`);
+  else await ev(`[...${li}.querySelectorAll('button')].find((b) => /^Bắt đầu/.test(b.textContent.trim())).click()`); // v21 U24: only one row's button is primary
   await waitFor('question 1', `location.hash === ${S('#/learn/play/' + set.questions[0].id)} && !!${EDITOR}`, 60000);
 }
 async function playSet(set) {

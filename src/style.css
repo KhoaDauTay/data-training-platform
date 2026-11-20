@@ -227,11 +227,22 @@
 @media (min-width: 1280px) {
   body[data-side=open]:not([data-route=play]) #side { width: 256px; }
 }
+/* User 2026-11-20 (L190): expand/collapse moves, 200 ms. Width and opacity only (an approved exception to L93's "no motion on
+   #shell": the page beside it reflows, nothing is transformed). The names fade in after the width; when it narrows they go at
+   once (#side[data-closing], ui/sidebar.ts). Reduced motion: the global rule at the end makes both instant. */
+@media (min-width: 1024px) {
+  #side { transition: width 200ms cubic-bezier(0.2, 0, 0, 1); }
+  .side-panel { overflow-x: hidden; }
+}
+.side-label, .side-extra, .side-group { transition: opacity 140ms ease-out 80ms; }
+#side[data-closing] :is(.side-label, .side-extra, .side-group) { opacity: 0; transition: none; }
+.side-toggle { align-self: flex-start; }
 /* Rail (64 px): icons only; labels stay for screen readers (plus a title tooltip), the lists below go. */
 @container (max-width: 120px) {
   .side-panel a, .side-panel button { position: relative; justify-content: center; padding-inline: 0; }
-  .side-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
-  .side-extra, .side-group { display: none; }
+  .side-label, .side-group { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; opacity: 0; transition: none; }
+  .side-extra { display: none; }
+  .side-toggle { align-self: stretch; }
 }
 @media (min-width: 1024px) and (min-height: 700px) {
   .frame { flex: 1; min-height: 0; }
@@ -281,6 +292,8 @@
 /* W2: the folded dock: the sentence row only (≈ 56 px), with a small check. */
 /* v21 U11: below 1024 the page scrolls; while the dock shows, the page gets room under its last line so "Start chapter N" can always scroll above it. */
 @media (max-width: 1023.98px) { body:has(#stage:not([hidden])) #shell { padding-bottom: 8rem; } }
+/* v21 R21-U4: below 1024 the dock sits 8 px above the bottom nav, whatever its height (--nav-h, measured by ui/stage.ts), never under the home indicator. */
+@media (max-width: 1023.98px) { #stage { bottom: calc(max(var(--nav-h, 4rem), env(safe-area-inset-bottom)) + 0.5rem); } }
 #stage[data-mini=true] #stage-art { display: none; }
 #stage[data-mini=true] .stage-row { border-top: 0; }
 #stage[data-mini=true] .stage-mini-icon { display: grid; }

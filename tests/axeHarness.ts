@@ -85,7 +85,15 @@ export async function boot(o: BootOptions): Promise<void> {
  * jsdom gaps (no elementsFromPoint) turned real violations into "incomplete" before, which an empty violation list hid.
  */
 export async function problems(): Promise<string[]> {
-  const r = await axe.run(modal ?? document, { elementRef: true, rules: { 'color-contrast': { enabled: false } } });
+  let r = await axe.run(modal ?? document, { elementRef: true, rules: { 'color-contrast': { enabled: false } } });
+  // heading-order is computed from a cache axe fills while walking the page: a redraw that lands mid-run (a DB answer, a
+  // sidebar refresh) makes it flaky under load. Only when that is the sole finding, settle and check once more; a real
+  // heading problem is still there on the second run.
+  const only = [...r.violations, ...r.incomplete].every((x) => x.id === 'heading-order');
+  if (only && [...r.violations, ...r.incomplete].length > 0) {
+    await settle();
+    r = await axe.run(modal ?? document, { elementRef: true, rules: { 'color-contrast': { enabled: false } } });
+  }
   const incomplete = r.incomplete
     .map((x) => ({ ...x, id: `incomplete ${x.id}`, nodes: x.nodes.filter((n) => !reviewed(x.id, n.element)) }))
     .filter((x) => x.nodes.length > 0);

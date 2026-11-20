@@ -102,6 +102,17 @@ const AXE_RUN = `(async () => {
   return r.violations.map((v) => ({ id: v.id, impact: v.impact, help: v.help, count: v.nodes.length,
     nodes: v.nodes.slice(0, 5).map((n) => ({ target: n.target.join(' '), why: (n.failureSummary ?? '').slice(0, 300) })) }));
 })()`;
+// v21 (L189): app chrome. `cut` = a shown element in the top bar whose text is wider than its box, or two neighbours that overlap;
+// `bottom` = the bottom bar's height (one row of five items).
+const CHROME = `(() => {
+  const shown = (e) => e.offsetParent !== null && e.getBoundingClientRect().width > 0;
+  const cut = [...document.querySelectorAll('#status *, #domain-btn *')].filter((e) => shown(e) && e.clientWidth > 2 && !e.matches('[data-badge]') && e.scrollWidth > e.clientWidth + 1).map((e) => e.id || e.textContent.trim().slice(0, 20));
+  const row = [...document.querySelector('header').children].filter(shown).map((e) => [e.id || e.className.toString().split(' ')[0], e.getBoundingClientRect()]);
+  for (let i = 1; i < row.length; i++) if (row[i][1].left < row[i - 1][1].right - 1 && row[i][1].top < row[i - 1][1].bottom - 1) cut.push(row[i - 1][0] + '|' + row[i][0]);
+  const x = document.getElementById('xp').getBoundingClientRect(), c = document.getElementById('chapter').getBoundingClientRect();
+  if (shown(document.getElementById('chapter')) && c.right > x.left + 1) cut.push('chapter|xp');
+  return { cut, bottom: Math.round(document.getElementById('bottom-nav').getBoundingClientRect().height) };
+})()`;
 
 // ---- report
 rmSync(OUT, { recursive: true, force: true });
@@ -588,6 +599,9 @@ try {
         // against the emulated width, not innerWidth: a mobile viewport may zoom out and grow innerWidth with the content
         if (w <= 375 && Math.max(m.sw, m.iw) > w) fail(`horizontal scroll: scrollWidth ${m.sw}, innerWidth ${m.iw} > ${w}`);
         if (m.theme !== theme) fail(`<html data-theme> is ${m.theme}, expected ${theme}`);
+        const chrome = await ev(CHROME);
+        if (chrome.cut.length) fail(`top bar: cut or overlapping: ${chrome.cut.join(', ')}`);
+        if (w < 1024 && chrome.bottom >= 72) fail(`#bottom-nav is ${chrome.bottom} px tall (one row is < 72)`);
         if (!withAxe) return m;
         if (!(await ev('!!window.axe'))) await send('Runtime.evaluate', { expression: AXE });
         if (!(await ev('!!window.axe'))) fail('axe-core did not load into the page');
@@ -600,6 +614,22 @@ try {
     }
   }
   writeFileSync(join(OUT, 'axe-report.json'), JSON.stringify(axeFound, null, 1));
+  // v21 U1/U2 (L189): the top bar at 1024 and 1280, VI and EN, on the domain with the longest titles (Finance) and the workspace.
+  for (const lang of ['vi', 'en']) for (const [w, hgt] of [[1024, 700], [1280, 800]]) {
+    await size(w, hgt);
+    for (const hash of ['#/d/finance', '#/d/logistics/play']) {
+      await step(`top bar ${w}px ${lang} ${hash}`, async () => {
+        await go(base, hash);
+        await waitFor(`<main id="${mainOf(hash)}"> with an h1`, `(m => m && !m.hidden && !!m.querySelector('h1'))(document.getElementById(${S(mainOf(hash))}))`, 30000);
+        await ev(`document.querySelector('[data-lang=${lang}]').click()`);
+        await waitFor(`lang ${lang}`, `document.documentElement.lang === ${S(lang)}`, 10000);
+        const chrome = await ev(CHROME);
+        if (chrome.cut.length) fail(`top bar: cut or overlapping: ${chrome.cut.join(', ')}`);
+        return chrome;
+      });
+    }
+  }
+  await ev(`document.querySelector('[data-lang=vi]').click()`);
 
   // ---- V22-B (L206, roadmap-v22 S2): Run the first GROUP BY Solution in the workspace, "Vì sao?" on row 1 shows its source-row count.
   await step(`why: row 1 of ${GROUPED.id}`, async () => {

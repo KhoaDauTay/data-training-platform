@@ -1,0 +1,26 @@
+# Khu Best Practice (product-design-best-practice.md §4.2, ADD-8). Thứ tự trong file là thứ tự tab.
+# areas = chữ đầu mã catalogue (docs/team/best-practice-catalogue.md) mà track nhận.
+- id: sql
+  areas: [q, a]
+  title: { vi: "SQL", en: "SQL" }
+  after:
+    vi: "Bạn tránh được những câu SQL sai âm thầm: NULL nuốt kết quả, join nhân đôi tổng, khoảng ngày cắt mất dòng."
+    en: "You avoid SQL that is silently wrong: NULLs that swallow rows, joins that double totals, date ranges that drop rows."
+- id: postgres
+  areas: [s, i, p, x]
+  title: { vi: "PostgreSQL", en: "PostgreSQL" }
+  after:
+    vi: "Bạn chọn kiểu dữ liệu, ràng buộc và index để database tự giữ dữ liệu đúng, và đọc kế hoạch để biết index có được dùng không."
+    en: "You choose types, constraints and indexes so the database keeps data correct, and read the plan to see whether an index is used."
+- id: mongodb
+  areas: [m]
+  title: { vi: "MongoDB", en: "MongoDB" }
+  after:
+    vi: "Bạn viết truy vấn MongoDB không âm thầm bỏ sót tài liệu: trường thiếu, null, mảng rỗng và điều kiện trên phần tử mảng."
+    en: "You write MongoDB queries that never silently miss documents: missing fields, nulls, empty arrays and conditions on array elements."
+- id: dynamodb
+  areas: [d]
+  title: { vi: "DynamoDB", en: "DynamoDB" }
+  after:
+    vi: "Bạn đọc DynamoDB bằng khóa thay vì quét cả bảng, và biết những lỗi request mà AWS sẽ từ chối trước khi chạy."
+    en: "You read DynamoDB through keys instead of scanning the table, and know which requests AWS rejects before they run."

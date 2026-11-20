@@ -72,7 +72,7 @@ function sentence(c: Ctx): string {
 /**
  * ui-ux-v7 W2 (D-U3): what the dock shows once its motion has ended. A task folds to its sentence row (≈ 56 px, "Replay" and
  * Close), so it covers only the bottom edge of the result; a promotion keeps the whole scene (the celebration, L32), but only on
- * a wide screen (v21 U11: below 1280 px the scene covered "Start chapter N" and Run; there it folds too, "Replay" shows it again).
+ * a wide screen (v21 U11: below 1280 px the scene covered "Start chapter N" and Run; there the dock opens folded, "Replay" shows it).
  */
 export const dockEnd = (kind: string, wide = true): 'mini' | 'full' => (kind === 'promotion' && wide ? 'full' : 'mini');
 const wide = (): boolean => matchMedia('(min-width: 1280px)').matches;
@@ -247,6 +247,11 @@ function replay(): void {
 /** Skip button and Esc (see stageEsc). */
 export function initStage(): void {
   const stage = byId('stage');
+  // v21 R21-U4: the folded line sits above the bottom nav (style.css reads --nav-h), which is taller when its labels wrap
+  const nav = byId('bottom-nav');
+  if (typeof ResizeObserver !== 'undefined') {
+    new ResizeObserver(() => document.documentElement.style.setProperty('--nav-h', `${nav.offsetHeight}px`)).observe(nav);
+  }
   byId('stage-skip').addEventListener('click', skip);
   byId('stage-replay').addEventListener('click', replay);
   stage.addEventListener('focusin', (e) => {
@@ -292,13 +297,18 @@ export function playCompletion(tk: Ticket, before: Set<string>, after: Set<strin
       c.art.replaceChildren();
       shown = c;
       byId('stage-text').textContent = text;
-      setSkipLabel(run.fast ? 'app.close' : 'anim.skip');
-      fold(false);
+      // v21 U11 + R21-U1: below 1280 px the scene (task or promotion) covered Run, "Correct!" and the task bar's next button for
+      // ≥ 3 s; there the dock opens folded and the scene plays only on "Replay".
+      const narrow = !wide();
+      setSkipLabel(run.fast || narrow ? 'app.close' : 'anim.skip');
+      fold(narrow);
       byId('stage').hidden = false;
       const start = performance.now();
       try {
-        await drawAndPlay(c);
-        if (!run.fast || c.scene.kind === 'promotion') await linger(SHOW_MS - (performance.now() - start)); // reduced motion: a promotion's still frame stays 3 s before it folds
+        if (!narrow) {
+          await drawAndPlay(c);
+          if (!run.fast || c.scene.kind === 'promotion') await linger(SHOW_MS - (performance.now() - start)); // reduced motion: a promotion's still frame stays 3 s before it folds
+        }
       } finally {
         run.done = true;
         wake = undefined;

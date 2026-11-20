@@ -85,3 +85,24 @@ Mức: **P1** = người dùng thấy ngay hoặc chặn/che việc chính, sử
 
 - Kiểm lại bằng cùng cách chụp (tên file giữ nguyên để so trước/sau). Ba kiểm nên đưa vào `scripts/smoke.mjs` vì rẻ và bắt được lớp lỗi này: `#status` không có phần tử con `scrollWidth > clientWidth` ở 1024/1280 (VI + EN); `#bottom-nav` cao < 72 px ở 320; `#stage` không giao nút "Bắt đầu chương N" sau thăng tiến ở 375.
 - Script chụp nằm ở scratchpad `v21tool\` (`lib.mjs` có hàm `AUDIT` đo tương phản/cắt chữ/vùng chạm). Khi reset trạng thái: bật `Network.setBypassServiceWorker` và xóa cả `sessionStorage`, nếu không ghi chú phiên (Sandbox, phỏng vấn) và service worker mang trạng thái cũ sang lượt sau.
+
+## 4. Trạng thái sửa: luồng UX-A (khung app)
+
+Commit `UXA_COMMIT` (nhánh `worktree-agent-a20a4d6f0d3b40530`), L189/L190. Ảnh trước/sau cùng tên ở scratchpad `v21fixA\before\` và `v21fixA\after\`; số đo `measure-*.jsonl`.
+
+| ID | Trạng thái | Trước → sau |
+|---|---|---|
+| U1 | Đã sửa | `#rank` 45/62 px "Junio…", EN 0/62 → chức danh chỉ hiện từ 1600 px, nguyên vẹn (111/111 "Thực tập sinh DA"); 0 chữ cắt trong top bar ở 1024/1280/1440/1600 VI+EN |
+| U2 | Đã sửa | `#domain-status` 46/76 px chồng chip XP ở 1024 → dưới 1280 chương nằm trong chip lĩnh vực ("Finance Ch.1"), không phần tử nào co; smoke kiểm 1024/1280 VI+EN |
+| U3 | Đã sửa | Thanh dưới 113 px, mục thứ 5 rớt hàng → 57 px, 5 mục một hàng (375, 320) |
+| U16 | Đã sửa | h2 mục #/me 22 px = h1 → 18 px (h1 22) |
+| U17 | Đã sửa (cùng UX-C, L195) | Dòng chỉ có icon khóa → icon + câu cùng dòng (thêm cho dòng "Mở cùng chứng nhận …") |
+| U18 | Đã sửa | h1 "Lộ trình" trên mọi trang con → h1 = "Phần 1 · …", "Gom nhóm (GROUP BY)", "D5 · Python và pandas", "Phòng phỏng vấn"; breadcrumb "Lộ trình › Phần N"; bỏ link "‹ …" lệch nhau |
+| U19 | Đã sửa | Rail tô Phần 2 ở D5/phòng phỏng vấn/tổng quan → không tô; drill tô phần của kỹ năng drill |
+| U20 | Đã sửa | Focus đầu vào `#inbox-list` (khung quanh cả danh sách) → vào việc đang mở |
+| U23 | Đã sửa (UX-C, L195) | Cả hai luồng sửa; khi gộp giữ bản của UX-C (`CARD`) |
+| U33 | Đã sửa (cùng UX-C, L195) | Kỹ năng chưa ôn có mẩu thanh 4 % → chỉ rãnh (không vẽ phần tô), nhãn cắt có `title` |
+| U37 | Đã sửa | Không có skip link trên trang đọc → nút "Tới nội dung" là điểm Tab đầu tiên, đưa focus vào h1 của trang đang hiện |
+| U24, U27–U29 | UX-C (L195) | Không thuộc UX-A; UX-A chỉ đổi cấp heading của danh sách bộ đề (h4 → h3 dưới h2) |
+
+Thêm (yêu cầu user 2026-11-20, L190): sidebar mở rộng không lặp số ("2" + "Tổng hợp và nhóm"), nút gập chỉ icon ở góc trên trái, mở/gập 200 ms (rộng) + chữ hiện dần, tức thì khi giảm chuyển động.

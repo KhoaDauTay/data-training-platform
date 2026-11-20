@@ -38,15 +38,21 @@ export function growPanel(row = PICTURE_ROW): void {
 export function initLayout(shell: HTMLElement, handles: Record<Part, HTMLElement>): void {
   const saved = readJson<unknown>(LAYOUT_KEY);
   const layout = parseLayout(saved);
-  // a height the player set (a stored row) is never overridden
-  const own = !!saved && typeof saved === 'object' && Number.isFinite((saved as Record<string, unknown>).row);
-  grow = (row) => { if (!own && layout.row < row) set('row', row, false); };
+  // v21 R21-U2: only the parts the player moved are stored (a column drag no longer stores a row), so a stored row = a height
+  // the player set, in this session or before, and growPanel never overrides it.
+  const stored: Partial<Layout> = {};
+  if (saved && typeof saved === 'object') for (const part of ['col', 'row'] as const) if (Number.isFinite((saved as Record<string, unknown>)[part])) stored[part] = layout[part];
+  grow = (row) => { if (stored.row === undefined && layout.row < row) set('row', row, false); };
+  const keep = (part: Part) => {
+    stored[part] = layout[part];
+    writeJson(LAYOUT_KEY, stored);
+  };
 
   const set = (part: Part, v: number, save = true) => {
     layout[part] = clamp(part, v);
     shell.style.setProperty(`--${part}`, `${layout[part]}%`);
     handles[part].setAttribute('aria-valuenow', String(layout[part]));
-    if (save) writeJson(LAYOUT_KEY, layout);
+    if (save) keep(part);
   };
 
   for (const part of ['col', 'row'] as const) {
@@ -74,7 +80,7 @@ export function initLayout(shell: HTMLElement, handles: Record<Part, HTMLElement
       el.addEventListener('pointermove', move);
       el.addEventListener('pointerup', () => {
         el.removeEventListener('pointermove', move);
-        writeJson(LAYOUT_KEY, layout);
+        keep(part);
       }, { once: true });
     });
     set(part, layout[part], false);

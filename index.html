@@ -107,18 +107,22 @@
       Plan 7 (v6 §3.1): level-1 nav only (Home · Learning path · Practise SQL) + the domain switch; a domain's pages live in the
       left sidebar (#side). Below 1024 px: ☰ opens the drawer, #bottom-nav holds level 1, and button labels hide first.
     -->
+    <!-- v21 U37: the first Tab stop; a button, not a #hash link (the router owns the hash). -->
+    <button id="skip-main" type="button" class="sr-only fixed top-2 left-2 z-50 rounded-full bg-panel ring-2 ring-accent focus:not-sr-only focus:px-4 focus:py-2" data-i18n="skip.main">Tới nội dung</button>
     <header class="topbar flex flex-wrap items-center gap-x-2 gap-y-2 max-sm:flex-nowrap lg:flex-nowrap max-sm:gap-x-1.5 border-b border-line bg-panel px-3 py-2 lg:px-4">
       <button id="side-btn" type="button" class="grid size-11 shrink-0 place-items-center border-0 bg-transparent p-0 lg:hidden" aria-controls="side-drawer" aria-expanded="false" data-i18n-aria="side.open" aria-label="Mở điều hướng"><span data-icon="menu"></span></button>
-      <a href="#/" class="flex shrink-0 items-center gap-2 text-ink no-underline max-[360px]:hidden" data-i18n-aria="app.homeLink" aria-label="BoonData, về Trang chủ"><svg class="size-9" viewBox="0 0 120 120" aria-hidden="true" focusable="false"><use href="#boon-mini"></use></svg><span class="text-title font-extrabold tracking-tight max-sm:hidden">BoonData</span></a>
+      <a href="#/" class="flex shrink-0 items-center gap-2 text-ink no-underline max-[360px]:hidden" data-i18n-aria="app.homeLink" aria-label="BoonData, về Trang chủ"><svg class="size-9" viewBox="0 0 120 120" aria-hidden="true" focusable="false"><use href="#boon-mini"></use></svg><span class="text-title font-extrabold tracking-tight max-sm:hidden lg:max-xl:hidden">BoonData</span></a>
       <nav id="nav" class="flex shrink-0 gap-1 max-lg:hidden" data-i18n-aria="nav.label" aria-label="Điều hướng chính"></nav>
-      <button id="domain-btn" type="button" popovertarget="domain-menu" class="flex shrink-0 items-center gap-1.5 rounded-full border-0 bg-code px-3 py-1.5 font-bold text-ink hover:bg-accent-soft max-sm:px-2.5" data-i18n-title="nav.domains" title="Chọn lĩnh vực"><span id="domain-icon" class="contents"><span data-icon="anchor" data-icon-class="size-4"></span></span><span id="domain-label" class="max-sm:sr-only">Logistics</span><span id="domain-chapter" class="whitespace-nowrap sm:hidden" aria-hidden="true"></span><span data-icon="chevronRight" data-icon-class="size-3.5 rotate-90 max-sm:hidden"></span></button>
-      <div id="status" class="ml-auto flex min-w-0 items-center gap-2 text-body-sm">
-        <span id="domain-status" class="flex min-w-0 items-center gap-2 max-md:hidden"><span id="chapter" class="flex shrink-0 items-center gap-1.5 whitespace-nowrap"></span><span class="flex min-w-0 items-center gap-1.5 whitespace-nowrap max-xl:hidden"><span data-icon="badge" data-icon-class="size-4"></span><span id="rank" class="truncate font-semibold"></span></span></span>
+      <button id="domain-btn" type="button" popovertarget="domain-menu" class="flex shrink-0 items-center gap-1.5 rounded-full border-0 bg-code px-3 py-1.5 font-bold text-ink hover:bg-accent-soft max-sm:px-2.5" data-i18n-title="nav.domains" title="Chọn lĩnh vực"><span id="domain-icon" class="contents"><span data-icon="anchor" data-icon-class="size-4"></span></span><span id="domain-label" class="max-sm:sr-only">Logistics</span><span id="domain-chapter" class="whitespace-nowrap xl:hidden" aria-hidden="true"></span><span data-icon="chevronRight" data-icon-class="size-3.5 rotate-90 max-sm:hidden"></span></button>
+      <!-- v21 U1/U2: nothing in #status shrinks below its text. Below 1280 px the chapter rides in the domain chip (#domain-chapter) and the
+           wordmark folds (from 1024 px the level-1 nav needs its room); the job title shows only from 1600 px, whole. -->
+      <div id="status" class="ml-auto flex shrink-0 items-center gap-2 text-body-sm">
+        <span id="domain-status" class="flex shrink-0 items-center gap-2 max-xl:hidden"><span id="chapter" class="flex shrink-0 items-center gap-1.5 whitespace-nowrap"></span><span class="flex shrink-0 items-center gap-1.5 whitespace-nowrap max-[1600px]:hidden"><span data-icon="badge" data-icon-class="size-4"></span><span id="rank" class="font-semibold"></span></span></span>
         <span id="xp" class="relative flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full tabular-nums bg-sun px-2.5 py-0.5 font-bold text-sun-ink"></span>
       </div>
       <div data-actions class="flex shrink-0 items-center gap-1.5 max-sm:hidden">
-        <button id="inbox-btn" type="button" data-i18n-title="top.inbox" class="relative flex shrink-0 items-center gap-1.5 rounded-full border-0 bg-code px-3 py-1.5 text-body-sm text-ink hover:bg-accent-soft"><span data-icon="inbox" data-icon-class="size-4"></span><span data-label class="max-xl:sr-only" data-i18n="top.inbox">Hộp thư</span><span data-badge class="absolute -top-1.5 -right-1.5 grid h-5 min-w-5 place-items-center rounded-full bg-rose-700 px-1 text-caption font-bold text-white ring-2 ring-panel" aria-hidden="true" hidden></span></button>
-        <button id="review-btn" type="button" class="relative flex shrink-0 items-center gap-1.5 rounded-full border-0 bg-code px-3 py-1.5 text-body-sm text-ink hover:bg-accent-soft" hidden><span data-icon="repeat" data-icon-class="size-4"></span><span data-label class="max-xl:sr-only" data-i18n="top.review">Ôn tập</span><span data-badge class="absolute -top-1.5 -right-1.5 grid h-5 min-w-5 place-items-center rounded-full bg-sun px-1 text-caption font-bold text-sun-ink ring-2 ring-panel" aria-hidden="true" hidden></span></button>
+        <button id="inbox-btn" type="button" data-i18n-title="top.inbox" class="relative flex shrink-0 items-center gap-1.5 rounded-full border-0 bg-code px-3 py-1.5 text-body-sm text-ink hover:bg-accent-soft"><span data-icon="inbox" data-icon-class="size-4"></span><span data-label class="max-xl:sr-only" data-i18n="top.inbox">Hộp thư</span> <span data-badge class="absolute -top-1.5 -right-1.5 grid h-5 min-w-5 place-items-center rounded-full bg-rose-700 px-1 text-caption font-bold text-white ring-2 ring-panel" aria-hidden="true" hidden></span></button>
+        <button id="review-btn" type="button" class="relative flex shrink-0 items-center gap-1.5 rounded-full border-0 bg-code px-3 py-1.5 text-body-sm text-ink hover:bg-accent-soft" hidden><span data-icon="repeat" data-icon-class="size-4"></span><span data-label class="max-xl:sr-only" data-i18n="top.review">Ôn tập</span> <span data-badge class="absolute -top-1.5 -right-1.5 grid h-5 min-w-5 place-items-center rounded-full bg-sun px-1 text-caption font-bold text-sun-ink ring-2 ring-panel" aria-hidden="true" hidden></span></button>
         <button id="notebook-btn" type="button" data-i18n-title="nb.open" class="relative flex shrink-0 items-center gap-1.5 rounded-full border-0 bg-code px-3 py-1.5 text-body-sm text-ink hover:bg-accent-soft" aria-controls="notebook-dialog" aria-expanded="false"><span data-icon="book" data-icon-class="size-4"></span><span data-label class="max-xl:sr-only" data-i18n="nb.open">Sổ tay</span></button>
       </div>
       <div class="top-prefs flex shrink-0 items-center max-sm:hidden lg:max-[1440px]:hidden gap-1 rounded-full bg-code p-1">
@@ -176,7 +180,7 @@
       </div>
     </div>
     <!-- v6 §3.2 below 1024 px: level 1 + the current domain (44 px+ targets); the drawer holds the domain's pages. -->
-    <nav id="bottom-nav" class="fixed inset-x-0 bottom-0 z-30 grid grid-cols-4 border-t border-line bg-panel lg:hidden" data-i18n-aria="nav.bottom" aria-label="Điều hướng nhanh"></nav>
+    <nav id="bottom-nav" class="fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 border-t border-line bg-panel lg:hidden" data-i18n-aria="nav.bottom" aria-label="Điều hướng nhanh"></nav>
     <dialog id="side-drawer" class="m-0 h-dvh max-h-none w-[290px] max-w-[85vw] rounded-none rounded-r-(--r-card) p-0" aria-labelledby="side-drawer-title"></dialog>
     <!-- v4 §B.2 layer 1 (Plan 7): welcome screen during the DB download, and the static tour replay; filled by src/ui/welcome.ts. -->
     <dialog id="welcome-dialog" class="w-[min(640px,calc(100vw-2rem))]" aria-labelledby="welcome-title"></dialog>
@@ -185,8 +189,8 @@
       <div id="inbox-list" class="max-h-[60dvh] overflow-auto"></div>
       <form method="dialog" class="mt-3 flex justify-end"><button data-i18n="app.close">Đóng</button></form>
     </dialog>
-    <!-- ui-ux-v7 W2 (D-U3): 480 px from 1024 px so it covers less of the result; a task's dock folds to one line once its motion ends (data-mini, ui/stage.ts). -->
-    <div id="stage" role="region" data-i18n-aria="anim.region" aria-label="Việc vừa xong" class="pointer-events-none fixed inset-x-4 bottom-4 z-40 max-lg:bottom-18 sm:left-auto sm:w-[480px]" hidden>
+    <!-- ui-ux-v7 W2 (D-U3): 480 px from 1024 px so it covers less of the result; a task's dock folds to one line once its motion ends (data-mini, ui/stage.ts); below 1024 its bottom follows the nav (style.css, R21-U4). -->
+    <div id="stage" role="region" data-i18n-aria="anim.region" aria-label="Việc vừa xong" class="pointer-events-none fixed inset-x-4 bottom-4 z-40 sm:left-auto sm:w-[480px]" hidden>
       <div class="overflow-hidden rounded-(--r-card) bg-panel shadow-(--shadow-2) ring-1 ring-line">
         <div id="stage-art" class="relative" aria-hidden="true"></div>
         <div class="stage-row flex items-center gap-3 border-t border-line px-4 py-2">
