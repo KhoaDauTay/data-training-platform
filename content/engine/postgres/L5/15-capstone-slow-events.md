@@ -74,7 +74,8 @@ predict:
     - { vi: "Chỉ phân vùng tháng 10, Bitmap Index Scan trên index (tenant_id, created_at) của nó", en: "Only the October partition, a Bitmap Index Scan on its (tenant_id, created_at) index" }
     - { vi: "Chỉ phân vùng tháng 10, Bitmap Index Scan trên BRIN", en: "Only the October partition, a Bitmap Index Scan on the BRIN" }
   answer: 1
-  why: { vi: "Khoảng ngày cho pruning còn một phân vùng. Trong phân vùng đó, index B-tree (khách, thời gian) chọn đúng 24 dòng; BRIN chỉ lọc theo thời gian, phải đọc lại mọi dòng của cả tuần rồi lọc khách.", en: "The date range prunes down to one partition. Inside it, the (tenant, time) B-tree picks exactly the 24 rows; the BRIN only filters by time, so it would re-read every row of the week and then filter the tenant." }
+  why: { vi: "BRIN nghe hợp lý vì `created_at` có correlation = 1, nhưng câu này còn lọc theo khách. Khoảng ngày cho pruning còn một phân vùng. Trong phân vùng đó, index B-tree (khách, thời gian) chọn đúng 24 dòng; BRIN chỉ lọc theo thời gian, phải đọc lại mọi dòng của cả tuần rồi lọc khách.", en: "The BRIN sounds right because `created_at` has correlation = 1, but this query also filters by customer. The date range prunes down to one partition. Inside it, the (tenant, time) B-tree picks exactly the 24 rows; the BRIN only filters by time, so it would re-read every row of the week and then filter the tenant." }
+  expect: { node: Bitmap Index Scan, index: events_2026_10_tenant_id_created_at_idx }
 quiz:
   - q: { vi: "Kết luận 1. Bước 2 cho ước lượng 30, thật 91. Nguyên nhân và cách sửa?", en: "Conclusion 1. Step 2 estimated 30 against 91 real rows. Cause and fix?" }
     options:
@@ -82,21 +83,21 @@ quiz:
       - { vi: "Gói phụ thuộc vào khách nhưng planner coi hai cột là độc lập (1/60 × 1/3); sửa bằng `CREATE STATISTICS … (dependencies) ON tenant_id, plan_tier` rồi ANALYZE", en: "The tier depends on the tenant but the planner treats the columns as independent (1/60 × 1/3); fix with `CREATE STATISTICS … (dependencies) ON tenant_id, plan_tier`, then ANALYZE" }
       - { vi: "Thiếu index trên `plan_tier`", en: "A missing index on `plan_tier`" }
     answer: 1
-    why: { vi: "ANALYZE vừa chạy, nên thống kê từng cột là mới. Lỗi là giả định độc lập; thống kê phụ thuộc hàm sửa đúng chỗ đó (bài e-pg-l4-03). Thêm index không đổi ước lượng.", en: "ANALYZE has just run, so per-column statistics are fresh. The error is the independence assumption, and dependency statistics fix exactly that (lesson e-pg-l4-03). An extra index does not change the estimate." }
+    why: { vi: "Thống kê cũ là nghi phạm quen thuộc khi ước lượng sai, nhưng ở đây không phải nó. ANALYZE vừa chạy, nên thống kê từng cột là mới. Lỗi là giả định độc lập; thống kê phụ thuộc hàm sửa đúng chỗ đó (bài e-pg-l4-03). Thêm index không đổi ước lượng.", en: "Stale statistics are the usual suspect for a bad estimate, but not here. ANALYZE has just run, so per-column statistics are fresh. The error is the independence assumption, and dependency statistics fix exactly that (lesson e-pg-l4-03). An extra index does not change the estimate." }
   - q: { vi: "Kết luận 2. Báo cáo toàn hệ thống chỉ lọc theo thời gian. Giữ BRIN hay thêm B-tree trên `created_at`?", en: "Conclusion 2. The system-wide report filters only by time. Keep the BRIN or add a B-tree on `created_at`?" }
     options:
       - { vi: "Giữ BRIN: `created_at` có correlation = 1 (chỉ chèn thêm), BRIN 3 trang so với 23 trang của B-tree (khách, thời gian), và planner đã dùng nó", en: "Keep the BRIN: `created_at` has correlation = 1 (append-only), the BRIN is 3 pages against 23 for the (tenant, time) B-tree, and the planner already uses it" }
       - { vi: "Thêm B-tree vì BRIN luôn chậm", en: "Add a B-tree, because BRIN is always slow" }
       - { vi: "Bỏ cả hai index", en: "Drop both indexes" }
     answer: 0
-    why: { vi: "BRIN hợp khi giá trị đi theo thứ tự vật lý. Nếu sau này dữ liệu được nạp lộn xộn (backfill), correlation giảm và cần xem lại.", en: "BRIN fits when values follow physical order. If data is later loaded out of order (a backfill), correlation drops and the choice must be revisited." }
+    why: { vi: "Thêm B-tree nghe chắc ăn vì B-tree là index quen thuộc nhất, nhưng BRIN chỉ 3 trang và planner đã dùng nó. BRIN hợp khi giá trị đi theo thứ tự vật lý. Nếu sau này dữ liệu được nạp lộn xộn (backfill), correlation giảm và cần xem lại.", en: "Adding a B-tree sounds safe because B-tree is the most familiar index, but the BRIN is only 3 pages and the planner already uses it. BRIN fits when values follow physical order. If data is later loaded out of order (a backfill), correlation drops and the choice must be revisited." }
   - q: { vi: "Kết luận 3. Vì sao index (tenant_id, created_at) đúng thứ tự cột này mà không phải (created_at, tenant_id)?", en: "Conclusion 3. Why is the index (tenant_id, created_at) in this column order and not (created_at, tenant_id)?" }
     options:
       - { vi: "Điều kiện bằng (khách) đứng trước, điều kiện khoảng (thời gian) đứng sau, nên các dòng cần đọc nằm liền nhau trong index", en: "The equality condition (tenant) comes first and the range condition (time) second, so the rows needed sit next to each other in the index" }
       - { vi: "Thứ tự cột không quan trọng", en: "Column order does not matter" }
       - { vi: "Vì `tenant_id` là số nguyên", en: "Because `tenant_id` is an integer" }
     answer: 0
-    why: { vi: "Luật cột đầu: bằng trên các cột đầu, khoảng trên cột tiếp theo. Với (created_at, tenant_id), câu phải quét cả tuần của mọi khách rồi mới lọc khách 7.", en: "The leading-column rule: equality on the leading columns, a range on the next one. With (created_at, tenant_id), the query would scan a whole week for every tenant before filtering tenant 7." }
+    why: { vi: "Thứ tự cột nghe như không quan trọng vì cả hai index chứa đúng hai cột, nhưng index sắp theo cột đầu trước. Luật cột đầu: bằng trên các cột đầu, khoảng trên cột tiếp theo. Với (created_at, tenant_id), câu phải quét cả tuần của mọi khách rồi mới lọc khách 7.", en: "Column order sounds irrelevant because both indexes hold the same two columns, but an index sorts by its first column first. The leading-column rule: equality on the leading columns, a range on the next one. With (created_at, tenant_id), the query would scan a whole week for every tenant before filtering tenant 7." }
 ---
 
 ## Ý chính
@@ -110,20 +111,20 @@ Người dùng báo bảng điều khiển chậm và ước lượng số dòng
 
 ## Ví dụ
 
-Số liệu thật trên PGlite (phân vùng tháng 10: 5451 dòng):
+Số liệu thật trên PGlite cho phân vùng tháng 9 (6171 dòng), không phải tháng 10 mà bài hỏi. Cùng cách đọc, số của bạn sẽ khác:
 
 ```text
 attname     n_distinct  correlation
 created_at  -1          1
-plan_tier   3           0.33308864
-tenant_id   60          0.016817184
+plan_tier   3           0.3331172
+tenant_id   60          0.016897237
 
-estimated  actual
-30         91
+estimated  actual   (tenant_id = 8 AND plan_tier = 2)
+34         103
 
-events_2026_10                            41 pages
-events_2026_10_created_at_idx              3 pages   (BRIN)
-events_2026_10_tenant_id_created_at_idx   23 pages   (B-tree)
+events_2026_09                            46 pages
+events_2026_09_created_at_idx              3 pages   (BRIN)
+events_2026_09_tenant_id_created_at_idx   26 pages   (B-tree)
 ```
 
 ## Thực hành
@@ -143,20 +144,20 @@ Users report a slow dashboard and the row estimates look wrong. The task: diagno
 
 ## Example
 
-Real figures from PGlite (October partition: 5451 rows):
+Real figures from PGlite for the September partition (6171 rows), not the October one the lesson asks about. Same way of reading, your numbers will differ:
 
 ```text
 attname     n_distinct  correlation
 created_at  -1          1
-plan_tier   3           0.33308864
-tenant_id   60          0.016817184
+plan_tier   3           0.3331172
+tenant_id   60          0.016897237
 
-estimated  actual
-30         91
+estimated  actual   (tenant_id = 8 AND plan_tier = 2)
+34         103
 
-events_2026_10                            41 pages
-events_2026_10_created_at_idx              3 pages   (BRIN)
-events_2026_10_tenant_id_created_at_idx   23 pages   (B-tree)
+events_2026_09                            46 pages
+events_2026_09_created_at_idx              3 pages   (BRIN)
+events_2026_09_tenant_id_created_at_idx   26 pages   (B-tree)
 ```
 
 ## Practice

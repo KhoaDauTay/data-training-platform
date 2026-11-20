@@ -47,8 +47,8 @@ lab:
         vi: "So `lower(email)` với chuỗi đã viết thường."
         en: "Compare `lower(email)` with the lower-cased string."
     - task:
-        vi: "Thay index thường bằng luật: tạo unique index tên `users_email_ci_key` trên `lower(email)`, để không ai đăng ký trùng email chỉ khác hoa thường."
-        en: "Turn it into a rule: create a unique index named `users_email_ci_key` on `lower(email)`, so nobody can sign up with the same email in different case."
+        vi: "Biến nó thành luật (giữ index ở bước 1): tạo unique index tên `users_email_ci_key` trên `lower(email)`, để không ai đăng ký trùng email chỉ khác hoa thường."
+        en: "Turn it into a rule (keep the step 1 index): create a unique index named `users_email_ci_key` on `lower(email)`, so nobody can sign up with the same email in different case."
       solution: CREATE UNIQUE INDEX users_email_ci_key ON users (lower(email))
       check: catalog
       hint:

@@ -451,7 +451,7 @@ async function startWith(c: BootPick): Promise<boolean> {
   if (c === 'general') {
     writeJson(DOMAIN_KEY, c);
     openSchema('lab');
-    go('learn');
+    if (currentRoute() !== 'engine') go('learn'); // v23 (L299): a first visit that lands on #/engine stays there
     return true;
   }
   if (c !== activeDomain()) await enterDomain(c);

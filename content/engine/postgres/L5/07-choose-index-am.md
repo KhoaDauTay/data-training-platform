@@ -27,7 +27,7 @@ quiz:
       - { vi: "GIN", en: "GIN" }
       - { vi: "GiST", en: "GiST" }
     answer: 0
-    why: { vi: "Thời gian chèn tăng dần nên correlation ≈ 1; BRIN nhỏ hơn B-tree hàng trăm lần và loại được gần hết khoảng khối. Nhớ giữ tóm tắt mới (VACUUM hoặc `autosummarize`).", en: "Insert time grows, so correlation ≈ 1; BRIN is hundreds of times smaller than a B-tree and rules out almost every block range. Remember to keep summaries fresh (VACUUM or `autosummarize`)." }
+    why: { vi: "GiST nghe hợp vì truy vấn luôn là một khoảng, nhưng nó vẫn giữ một mục cho mỗi dòng, quá tốn với 2 tỉ dòng khi ổ đĩa đắt. Thời gian chèn tăng dần nên correlation ≈ 1; BRIN nhỏ hơn B-tree hàng trăm lần và loại được gần hết khoảng khối. Nhớ giữ tóm tắt mới (VACUUM hoặc `autosummarize`).", en: "GiST sounds right because the query is always a range, but it still keeps one entry per row, too costly for 2 billion rows on expensive disks. Insert time grows, so correlation ≈ 1; BRIN is hundreds of times smaller than a B-tree and rules out almost every block range. Remember to keep summaries fresh (VACUUM or `autosummarize`)." }
   - q: { vi: "Tìm sản phẩm theo tên gõ sai hoặc một phần: `name ILIKE '%ao khoac%'`. Chọn gì?", en: "Search products by a misspelled or partial name: `name ILIKE '%ao khoac%'`. What do you choose?" }
     options:
       - { vi: "B-tree trên `name`", en: "A B-tree on `name`" }
@@ -35,7 +35,7 @@ quiz:
       - { vi: "Hash trên `name`", en: "A Hash on `name`" }
       - { vi: "BRIN trên `name`", en: "A BRIN on `name`" }
     answer: 1
-    why: { vi: "B-tree chỉ giúp `LIKE` khi mẫu có tiền tố cố định (và collation C hoặc opclass pattern). Trigram tách chuỗi thành bộ ba ký tự nên phục vụ `%…%`, `ILIKE` và độ tương tự.", en: "A B-tree only helps `LIKE` when the pattern has a fixed prefix (and a C collation or pattern opclass). Trigrams split strings into three-character pieces, so they serve `%…%`, `ILIKE` and similarity." }
+    why: { vi: "B-tree trên `name` hấp dẫn vì B-tree là loại index mặc định, nhưng mẫu `%…%` không có tiền tố cố định. B-tree chỉ giúp `LIKE` khi mẫu có tiền tố cố định (và collation C hoặc opclass pattern). Trigram tách chuỗi thành bộ ba ký tự nên phục vụ `%…%`, `ILIKE` và độ tương tự.", en: "A B-tree on `name` is tempting because B-tree is the default index type, but the pattern `%…%` has no fixed prefix. A B-tree only helps `LIKE` when the pattern has a fixed prefix (and a C collation or pattern opclass). Trigrams split strings into three-character pieces, so they serve `%…%`, `ILIKE` and similarity." }
   - q: { vi: "Cột `attrs jsonb`, truy vấn `attrs @> '{\"color\":\"red\"}'`. Chọn gì?", en: "Column `attrs jsonb`, query `attrs @> '{\"color\":\"red\"}'`. What do you choose?" }
     options:
       - { vi: "GIN `jsonb_path_ops`", en: "GIN `jsonb_path_ops`" }
@@ -43,7 +43,7 @@ quiz:
       - { vi: "SP-GiST", en: "SP-GiST" }
       - { vi: "BRIN", en: "BRIN" }
     answer: 0
-    why: { vi: "GIN là index đảo cho giá trị có nhiều thành phần. `jsonb_path_ops` nhỏ và nhanh cho `@>`; dùng `jsonb_ops` nếu cần thêm `?`, `?|`, `?&`.", en: "GIN is the inverted index for multi-part values. `jsonb_path_ops` is small and fast for `@>`; use `jsonb_ops` when you also need `?`, `?|`, `?&`." }
+    why: { vi: "B-tree trên `attrs` nghe hợp lý vì nó xử lý được phép so sánh bằng, nhưng `@>` hỏi về chứa đựng, không phải bằng nhau. GIN là index đảo cho giá trị có nhiều thành phần. `jsonb_path_ops` nhỏ và nhanh cho `@>`; dùng `jsonb_ops` nếu cần thêm `?`, `?|`, `?&`.", en: "A B-tree on `attrs` sounds right because it handles equality, but `@>` asks about containment, not equality. GIN is the inverted index for multi-part values. `jsonb_path_ops` is small and fast for `@>`; use `jsonb_ops` when you also need `?`, `?|`, `?&`." }
   - q: { vi: "\"10 cửa hàng gần tôi nhất\" trên cột `point`. Chọn gì?", en: "\"The 10 stores nearest to me\" on a `point` column. What do you choose?" }
     options:
       - { vi: "GiST (hoặc SP-GiST) với `ORDER BY loc <-> … LIMIT 10`", en: "GiST (or SP-GiST) with `ORDER BY loc <-> … LIMIT 10`" }
@@ -51,7 +51,7 @@ quiz:
       - { vi: "Hash", en: "Hash" }
       - { vi: "GIN", en: "GIN" }
     answer: 0
-    why: { vi: "Chỉ AM có toán tử khoảng cách (GiST, SP-GiST) trả về theo thứ tự gần nhất mà không đọc hết. B-tree hai cột không biết khoảng cách hai chiều.", en: "Only access methods with a distance operator (GiST, SP-GiST) return rows nearest-first without reading everything. A two-column B-tree knows nothing about 2-D distance." }
+    why: { vi: "B-tree trên hai tọa độ nghe hợp lý vì nó lọc được từng trục, nhưng gần nhất là chuyện khoảng cách, không phải thứ tự từng trục. Chỉ AM có toán tử khoảng cách (GiST, SP-GiST) trả về theo thứ tự gần nhất mà không đọc hết. B-tree hai cột không biết khoảng cách hai chiều.", en: "A B-tree on the two coordinates sounds right because it can filter each axis, but nearest is about distance, not the order of each axis. Only access methods with a distance operator (GiST, SP-GiST) return rows nearest-first without reading everything. A two-column B-tree knows nothing about 2-D distance." }
   - q: { vi: "Bảng 12 cột, người dùng lọc bằng bất kỳ tổ hợp nào của 8 cột, luôn bằng dấu bằng; không thể tạo 8! index. Chọn gì để thử?", en: "A 12-column table; users filter on any combination of 8 columns, always with equality; you cannot create 8! indexes. What do you try?" }
     options:
       - { vi: "Một index `bloom` trên 8 cột", en: "One `bloom` index on the 8 columns" }
@@ -67,7 +67,7 @@ quiz:
       - { vi: "BRIN", en: "BRIN" }
       - { vi: "Hash", en: "Hash" }
     answer: 0
-    why: { vi: "Chỉ B-tree hỗ trợ UNIQUE. `INCLUDE` có ở B-tree, GiST, SP-GiST. GIN không bao giờ index-only scan; BRIN là lossy.", en: "Only B-tree supports UNIQUE. `INCLUDE` exists for B-tree, GiST and SP-GiST. GIN never does index-only scans; BRIN is lossy." }
+    why: { vi: "Hash nghe hợp với UNIQUE vì nó vốn chỉ trả lời câu hỏi bằng nhau, nhưng Hash không hỗ trợ ràng buộc duy nhất. Chỉ B-tree hỗ trợ UNIQUE. `INCLUDE` có ở B-tree, GiST, SP-GiST. GIN không bao giờ index-only scan; BRIN là lossy.", en: "Hash sounds right for UNIQUE because it only answers equality questions anyway, but Hash does not support unique constraints. Only B-tree supports UNIQUE. `INCLUDE` exists for B-tree, GiST and SP-GiST. GIN never does index-only scans; BRIN is lossy." }
 ---
 
 ## Ý chính
@@ -89,7 +89,7 @@ Cùng dữ liệu, các bài trước trong mô-đun đã cho thấy trên PGlit
 ```text
 B-tree      seq_keys_idx        2 levels, 55 leaves for 20000 int keys
 GIN         docs_tags_fast      Bitmap Index Scan for tags @> '{new}'
-BRIN        readings_brin       20 ranges summarize 153 heap pages
+BRIN        readings2_brin      20 ranges summarize 153 heap pages
 GiST        stores_loc_gist     Index Scan ... Order By: (loc <-> '(50,50)'::point)
 SP-GiST     stores_loc_spgist   Bitmap Index Scan for loc <@ box
 ```
@@ -121,7 +121,7 @@ On the same kind of data, the earlier lessons of this module showed on PGlite:
 ```text
 B-tree      seq_keys_idx        2 levels, 55 leaves for 20000 int keys
 GIN         docs_tags_fast      Bitmap Index Scan for tags @> '{new}'
-BRIN        readings_brin       20 ranges summarize 153 heap pages
+BRIN        readings2_brin      20 ranges summarize 153 heap pages
 GiST        stores_loc_gist     Index Scan ... Order By: (loc <-> '(50,50)'::point)
 SP-GiST     stores_loc_spgist   Bitmap Index Scan for loc <@ box
 ```

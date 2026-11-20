@@ -54,8 +54,8 @@ lab:
         vi: "`room = 3 AND during && tstzrange(...)`."
         en: "`room = 3 AND during && tstzrange(...)`."
     - task:
-        vi: "Phòng 3 có bao nhiêu giờ đặt trong ngày 2026-02-01 (UTC)? Trả về một số: tổng độ dài phần giao của mỗi lượt với ngày đó, tính bằng giờ."
-        en: "How many booked hours does room 3 have on 2026-02-01 (UTC)? Return one number: the total length of each booking's overlap with that day, in hours."
+        vi: "Phòng 3 có bao nhiêu giờ đặt trong ngày 2026-02-01 (UTC)? Trả về một số: tổng độ dài phần giao của mỗi lượt với ngày đó, tính bằng giờ. `during * r` là phần giao của hai range; `extract(epoch FROM x)` đổi một `interval` ra số giây."
+        en: "How many booked hours does room 3 have on 2026-02-01 (UTC)? Return one number: the total length of each booking's overlap with that day, in hours. `during * r` is the intersection of two ranges; `extract(epoch FROM x)` turns an `interval` into seconds."
       solution: SELECT sum(extract(epoch FROM upper(during * r) - lower(during * r)) / 3600) AS hours FROM bookings, tstzrange(timestamptz '2026-02-01 00:00+00', timestamptz '2026-02-02 00:00+00') AS r WHERE room = 3 AND during && r
       check: rows
       hint:

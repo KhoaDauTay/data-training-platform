@@ -35,7 +35,7 @@ lab:
       solution: "SELECT count(*) AS problems FROM verify_heapam('invoices')"
       check: rows
       hint: { vi: "`verify_heapam` trả về một dòng cho mỗi vấn đề; không có dòng nào là tốt.", en: "`verify_heapam` returns one row per problem; no rows is good." }
-    - task: { vi: "Kiểm index GIN `invoices_tags_gin` bằng hàm kiểm GIN của amcheck (mới ở 18). Trả về tên index và status = 'ok'.", en: "Check the GIN index `invoices_tags_gin` with amcheck's GIN check function (new in 18). Return the index name and status = 'ok'." }
+    - task: { vi: "Kiểm index GIN `invoices_tags_gin` bằng hàm kiểm GIN của amcheck, `gin_index_check(index)` (mới ở 18). Trả về tên index và status = 'ok'.", en: "Check the GIN index `invoices_tags_gin` with amcheck's GIN check function, `gin_index_check(index)` (new in 18). Return the index name and status = 'ok'." }
       solution: "SELECT 'invoices_tags_gin' AS relname, 'ok' AS status FROM (SELECT gin_index_check('invoices_tags_gin')) chk"
       check: rows
       hint: { vi: "Hàm `gin_index_check(regclass)`.", en: "The `gin_index_check(regclass)` function." }
@@ -52,7 +52,7 @@ quiz:
       - { vi: "Bỏ qua, index sẽ tự sửa", en: "Ignore it, the index repairs itself" }
       - { vi: "Xóa bảng", en: "Drop the table" }
     answer: 0
-    why: { vi: "Index dựng lại được từ heap. Một nguyên nhân hay gặp là thư viện collation của hệ điều hành đổi thứ tự sắp chuỗi sau khi nâng cấp: index `text` cũ không còn khớp thứ tự mới.", en: "An index can be rebuilt from the heap. A frequent cause is an OS collation library that changed string order after an upgrade: old `text` indexes no longer match the new order." }
+    why: { vi: "Bỏ qua nghe hấp dẫn vì Postgres tự dọn được nhiều thứ (VACUUM, bottom-up deletion), nhưng không có gì tự sửa một index hỏng. Index dựng lại được từ heap. Một nguyên nhân hay gặp là thư viện collation của hệ điều hành đổi thứ tự sắp chuỗi sau khi nâng cấp: index `text` cũ không còn khớp thứ tự mới.", en: "Ignoring it is tempting because Postgres cleans up many things by itself (VACUUM, bottom-up deletion), but nothing repairs a corrupt index by itself. An index can be rebuilt from the heap. A frequent cause is an OS collation library that changed string order after an upgrade: old `text` indexes no longer match the new order." }
 ---
 
 ## Ý chính

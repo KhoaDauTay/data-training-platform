@@ -49,7 +49,8 @@ predict:
     - { vi: "398: thêm 20.000 × `cpu_operator_cost` (0,0025) cho phép so sánh", en: "398: plus 20,000 × `cpu_operator_cost` (0.0025) for the comparison" }
     - { vi: "Thấp hơn 348, vì ít dòng được trả về hơn", en: "Below 348, because fewer rows come back" }
   answer: 1
-  why: { vi: "Planner vẫn đọc mọi trang và mọi dòng, rồi tính thêm một toán tử trên mỗi dòng: 348 + 20.000 × 0,0025 = 398. Số dòng ước lượng giảm, nhưng công việc thì không.", en: "The planner still reads every page and every row, then charges one operator per row: 348 + 20,000 × 0.0025 = 398. The row estimate drops, the work does not." }
+  why: { vi: "Dễ nghĩ chi phí vẫn là 348 vì số trang đọc không đổi, nhưng phép so sánh trên mỗi dòng cũng có giá. Planner vẫn đọc mọi trang và mọi dòng, rồi tính thêm một toán tử trên mỗi dòng: 348 + 20.000 × 0,0025 = 398. Số dòng ước lượng giảm, nhưng công việc thì không.", en: "It is easy to think the cost stays at 348 because the pages read do not change, but the comparison on each row has a price too. The planner still reads every page and every row, then charges one operator per row: 348 + 20,000 × 0.0025 = 398. The row estimate drops, the work does not." }
+  expect: { node: Seq Scan, table: parcels }
 ---
 
 ## Ý chính

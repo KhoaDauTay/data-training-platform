@@ -28,8 +28,8 @@ quiz:
       - { vi: "Không biết được nếu không đọc tuple", en: "Cannot tell without reading the tuples" }
     answer: 0
     why:
-      vi: "Header chiếm 24 byte đầu, mỗi line pointer 4 byte, và `lower` là nơi mảng line pointer kết thúc: (36 − 24) / 4 = 3."
-      en: "The header takes the first 24 bytes, each line pointer is 4 bytes, and `lower` is where the line pointer array ends: (36 - 24) / 4 = 3."
+      vi: "Chia 36 cho 4 nghe hợp lý vì mỗi line pointer đúng là 4 byte, nhưng 24 byte đầu của `lower` là header trang. Header chiếm 24 byte đầu, mỗi line pointer 4 byte, và `lower` là nơi mảng line pointer kết thúc: (36 − 24) / 4 = 3."
+      en: "Dividing 36 by 4 sounds right because each line pointer really is 4 bytes, but the first 24 bytes counted by `lower` are the page header. The header takes the first 24 bytes, each line pointer is 4 bytes, and `lower` is where the line pointer array ends: (36 - 24) / 4 = 3."
   - q:
       vi: "Index lưu gì để tìm lại một dòng trong heap?"
       en: "What does an index store to find a row again in the heap?"
@@ -39,8 +39,8 @@ quiz:
       - { vi: "Giá trị khóa chính", en: "The primary key value" }
     answer: 1
     why:
-      vi: "Index trỏ tới line pointer, không trỏ thẳng tới byte. Nhờ vậy Postgres dời được tuple trong trang (khi dọn chỗ) mà không phải sửa index."
-      en: "Indexes point at the line pointer, not straight at bytes. That is why Postgres can move a tuple inside the page (when compacting) without touching any index."
+      vi: "Khóa chính nghe hợp lý vì ta hay tìm dòng bằng nó, nhưng index nào (kể cả index khóa chính) cũng phải dẫn tới chỗ dòng nằm trong heap. Index trỏ tới line pointer, không trỏ thẳng tới byte. Nhờ vậy Postgres dời được tuple trong trang (khi dọn chỗ) mà không phải sửa index."
+      en: "The primary key sounds plausible because we usually look rows up by it, but every index (the primary key index included) has to lead to where the row sits in the heap. Indexes point at the line pointer, not straight at bytes. That is why Postgres can move a tuple inside the page (when compacting) without touching any index."
 ---
 
 ## Ý chính

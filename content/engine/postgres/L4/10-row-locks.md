@@ -25,7 +25,7 @@ quiz:
       - { vi: "Không: kiểm tra khóa ngoại lấy `FOR KEY SHARE`, còn UPDATE không đổi cột khóa lấy `FOR NO KEY UPDATE`; hai mức này không xung đột", en: "No: the foreign-key check takes `FOR KEY SHARE`, the key-preserving UPDATE takes `FOR NO KEY UPDATE`, and those two do not conflict" }
       - { vi: "Không, vì khóa ngoại không lấy lock nào cả", en: "No, because foreign keys lock nothing at all" }
     answer: 1
-    why: { vi: "`FOR KEY SHARE` chỉ xung đột với `FOR UPDATE` (xóa dòng hoặc đổi cột khóa). Nhờ vậy chèn dòng con không làm nghẽn việc sửa các cột thường của dòng cha.", en: "`FOR KEY SHARE` only conflicts with `FOR UPDATE` (deleting the row or changing a key column). So inserting child rows does not jam updates to the parent's ordinary columns." }
+    why: { vi: "Nghe hợp lý vì A đúng là giữ một row lock trên dòng khách 42, nhưng đó là mức yếu nhất. `FOR KEY SHARE` chỉ xung đột với `FOR UPDATE` (xóa dòng hoặc đổi cột khóa). Nhờ vậy chèn dòng con không làm nghẽn việc sửa các cột thường của dòng cha.", en: "It sounds right because A does hold a row lock on customer 42, but it is the weakest level. `FOR KEY SHARE` only conflicts with `FOR UPDATE` (deleting the row or changing a key column). So inserting child rows does not jam updates to the parent's ordinary columns." }
   - q: { vi: "Một job giữ row lock trên 2 triệu dòng bằng `SELECT … FOR UPDATE`. Điều gì đúng?", en: "A job locks 2 million rows with `SELECT … FOR UPDATE`. What is true?" }
     options:
       - { vi: "Postgres hết bộ nhớ bảng lock và nâng lên lock trên bảng", en: "Postgres runs out of lock-table memory and escalates to a table lock" }
@@ -73,11 +73,11 @@ Lưu ý: sau ROLLBACK, `xmax` của dòng từng bị giữ lock vẫn còn trê
 
 ## Thực hành
 
-Phần chạy thật cần máy chủ thật (nhiều phiên / replica set / AWS). Bài này dùng sơ đồ và kết quả ghi sẵn.
+Chạy thật cần nhiều phiên cùng lúc trên một server Postgres; PGlite chỉ có một phiên. Bài này dùng sơ đồ và kết quả ghi sẵn.
 
 `NOWAIT` báo lỗi ngay thay vì chờ; `SKIP LOCKED` bỏ qua dòng đang bị giữ lock, hợp cho hàng đợi việc nhiều worker.
 
-Bấm từng cặp trong ma trận row lock để thấy ai chờ ai (sơ đồ: PGlite chỉ có một phiên, nên không có chờ thật), rồi trả lời hai câu hỏi. Kỹ năng chuyên gia: chọn mức row lock yếu nhất đủ đúng, và giải thích vì sao khóa ngoại không làm nghẽn bảng cha.
+Sơ đồ là ma trận lock bảng: row lock nằm trong tuple nên không có ô riêng, và bạn thấy vì sao `pg_locks` chỉ ghi ROW SHARE trên bảng. Hai bước cuối của sơ đồ là hai row lock chờ nhau (deadlock) và Postgres hủy một bên (40P01). Rồi trả lời hai câu hỏi. Kỹ năng chuyên gia: chọn mức row lock yếu nhất đủ đúng, và giải thích vì sao khóa ngoại không làm nghẽn bảng cha.
 
 # EN
 
@@ -119,8 +119,8 @@ Note: after the ROLLBACK, the locked rows still carry an `xmax` on the page (the
 
 ## Practice
 
-The real run needs a real server (several sessions / replica set / AWS). This lesson uses diagrams and recorded output.
+A real run needs several concurrent sessions on one Postgres server; PGlite has only one session. This lesson uses diagrams and recorded output.
 
 `NOWAIT` errors at once instead of waiting; `SKIP LOCKED` skips locked rows, which suits job queues with many workers.
 
-Click each pair in the row-lock matrix to see who waits for whom (a diagram: PGlite has one session, so there is no real wait), then answer two questions. Expert skill: pick the weakest row lock that is still correct, and explain why foreign keys do not jam the parent table.
+The diagram is the table-lock matrix: row locks live in the tuple, so they have no cell of their own, and you see why `pg_locks` only records ROW SHARE on the table. The diagram's last two steps are two row locks waiting for each other (a deadlock) and Postgres aborting one side (40P01). Then answer two questions. Expert skill: pick the weakest row lock that is still correct, and explain why foreign keys do not jam the parent table.

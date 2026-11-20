@@ -32,8 +32,8 @@ quiz:
       - { vi: "Postgres tự COMMIT phần đã chạy được", en: "Postgres commits the part that worked" }
     answer: 1
     why:
-      vi: "Sau lỗi, transaction ở trạng thái hỏng: mọi câu nhận lỗi \"current transaction is aborted\" cho tới `ROLLBACK` (hoặc `ROLLBACK TO SAVEPOINT`). Gõ `COMMIT` lúc này cũng chỉ là rollback."
-      en: "After an error the transaction is aborted: every statement gets \"current transaction is aborted\" until `ROLLBACK` (or `ROLLBACK TO SAVEPOINT`). Typing `COMMIT` at that point also just rolls back."
+      vi: "Nghe hợp lý vì `SELECT` chỉ đọc, chẳng liên quan gì tới câu bị lỗi; nhưng sau lỗi, transaction ở trạng thái hỏng: mọi câu nhận lỗi \"current transaction is aborted\" cho tới `ROLLBACK` (hoặc `ROLLBACK TO SAVEPOINT`). Gõ `COMMIT` lúc này cũng chỉ là rollback."
+      en: "It sounds right because a `SELECT` only reads and has nothing to do with the failed statement, but after an error the transaction is aborted: every statement gets \"current transaction is aborted\" until `ROLLBACK` (or `ROLLBACK TO SAVEPOINT`). Typing `COMMIT` at that point also just rolls back."
   - q:
       vi: "Phiên A đã `UPDATE` một dòng nhưng chưa `COMMIT`. Phiên B đọc dòng đó. B thấy gì?"
       en: "Session A has run `UPDATE` on a row but not `COMMIT`. Session B reads that row. What does B see?"
@@ -43,8 +43,8 @@ quiz:
       - { vi: "B phải chờ A commit xong mới đọc được", en: "B must wait for A to commit before it can read" }
     answer: 1
     why:
-      vi: "Thay đổi chưa commit không ai khác thấy. Nhờ MVCC, đọc không chờ ghi: B đọc phiên bản đã commit mà không bị chặn."
-      en: "Uncommitted changes are invisible to everyone else. Thanks to MVCC, readers do not wait for writers: B reads the committed version without blocking."
+      vi: "Phải chờ nghe hợp lý vì A đang giữ lock trên dòng đó; nhưng lock ấy chỉ chặn người ghi khác. Thay đổi chưa commit không ai khác thấy, và nhờ MVCC, đọc không chờ ghi: B đọc phiên bản đã commit mà không bị chặn."
+      en: "Waiting sounds right because A holds a lock on that row, but that lock only blocks other writers. Uncommitted changes are invisible to everyone else, and thanks to MVCC, readers do not wait for writers: B reads the committed version without blocking."
   - q:
       vi: "Mức cô lập mặc định là Read Committed. Trong một transaction, bạn chạy cùng một câu `SELECT count(*)` hai lần; giữa hai lần, phiên khác thêm một dòng và `COMMIT`. Lần thứ hai thấy gì?"
       en: "The default isolation level is Read Committed. Inside one transaction you run the same `SELECT count(*)` twice; in between, another session inserts a row and runs `COMMIT`. What does the second run see?"
@@ -54,8 +54,8 @@ quiz:
       - { vi: "Lỗi, vì dữ liệu đã đổi", en: "An error, because the data changed" }
     answer: 1
     why:
-      vi: "Ở Read Committed, mỗi câu lệnh lấy một ảnh chụp (snapshot) mới, nên câu sau thấy những gì đã commit trước nó. Muốn cả transaction thấy cùng một ảnh chụp thì dùng `REPEATABLE READ` (học kỹ ở L4)."
-      en: "Under Read Committed each statement takes a fresh snapshot, so a later statement sees whatever was committed before it. For one snapshot across the whole transaction use `REPEATABLE READ` (covered in depth in L4)."
+      vi: "Dữ liệu đứng yên nghe hợp lý vì ta hay hình dung transaction là một khối tách khỏi thế giới bên ngoài; nhưng ở Read Committed, mỗi câu lệnh lấy một ảnh chụp (snapshot) mới, nên câu sau thấy những gì đã commit trước nó. Muốn cả transaction thấy cùng một ảnh chụp thì dùng `REPEATABLE READ` (học kỹ ở L4)."
+      en: "Frozen data sounds right because a transaction is often pictured as sealed off from the outside world, but under Read Committed each statement takes a fresh snapshot, so a later statement sees whatever was committed before it. For one snapshot across the whole transaction use `REPEATABLE READ` (covered in depth in L4)."
 ---
 ## Ý chính
 
@@ -64,6 +64,7 @@ Trừ tiền tài khoản A xong thì máy sập, trước khi kịp cộng cho 
 - `BEGIN` mở transaction; `COMMIT` ghi lại mọi thay đổi; `ROLLBACK` hủy hết.
 - Không có `BEGIN` thì mỗi câu là một transaction riêng, tự commit.
 - Thay đổi chưa commit chỉ phiên của bạn thấy. Các phiên khác vẫn thấy dữ liệu cũ, và không bị chặn khi đọc (MVCC, học kỹ ở L3).
+- Mức cô lập mặc định là Read Committed: mỗi câu lệnh lấy một ảnh chụp (snapshot) mới lúc nó bắt đầu, nên hai câu giống nhau trong cùng một transaction có thể thấy kết quả khác nhau nếu giữa chúng có phiên khác commit.
 - Khi một câu lỗi, cả transaction hỏng: các câu sau bị từ chối với lỗi "current transaction is aborted" cho tới khi bạn `ROLLBACK`.
 - `SAVEPOINT name` đánh dấu một điểm; `ROLLBACK TO SAVEPOINT name` chỉ hủy phần sau điểm đó, và đưa transaction hỏng về trạng thái dùng được.
 
@@ -98,6 +99,7 @@ You debit account A and the machine dies before B is credited: where did the mon
 - `BEGIN` opens a transaction; `COMMIT` keeps every change; `ROLLBACK` undoes them all.
 - Without `BEGIN`, each statement is its own transaction and commits by itself.
 - Uncommitted changes are visible only to your session. Other sessions still see the old data and are not blocked when reading (MVCC, covered in depth in L3).
+- The default isolation level is Read Committed: each statement takes a fresh snapshot when it starts, so the same statement run twice in one transaction can see different results if another session commits in between.
 - When a statement fails, the whole transaction is broken: later statements are refused with "current transaction is aborted" until you `ROLLBACK`.
 - `SAVEPOINT name` marks a point; `ROLLBACK TO SAVEPOINT name` undoes only what came after it and makes a broken transaction usable again.
 

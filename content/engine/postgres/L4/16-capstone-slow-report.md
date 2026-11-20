@@ -48,11 +48,11 @@ lab:
       solution: "SELECT most_common_vals::text, most_common_freqs::text FROM pg_stats WHERE tablename = 'orders' AND attname = 'status'"
       check: rows
       hint: { vi: "`pg_stats` của bảng `orders`, cột `status`.", en: "`pg_stats` of table `orders`, column `status`." }
-    - task: { vi: "Bước 2, ước lượng. Báo cáo lọc khách theo vùng 2 và quốc gia 20 (quốc gia do vùng quyết định). So ước lượng của planner trên `customers` với số dòng thật. Hai cột: estimated (dùng `est(text)`), actual.", en: "Step 2, estimates. The report filters customers on region 2 and country 20 (the country is fixed by the region). Compare the planner's estimate on `customers` with the real count. Two columns: estimated (use `est(text)`), actual." }
+    - task: { vi: "Bước 2, ước lượng. Báo cáo lọc khách theo vùng 2 và quốc gia 20 (cột `region`, `country` của `customers`) (quốc gia do vùng quyết định). So ước lượng của planner trên `customers` với số dòng thật. Hai cột: estimated (dùng `est(text)`), actual.", en: "Step 2, estimates. The report filters customers on region 2 and country 20 (columns `region`, `country` of `customers`) (the country is fixed by the region). Compare the planner's estimate on `customers` with the real count. Two columns: estimated (use `est(text)`), actual." }
       solution: "SELECT est('SELECT * FROM customers WHERE region = 2 AND country = 20') AS estimated, (SELECT count(*) FROM customers WHERE region = 2 AND country = 20) AS actual"
       check: rows
       hint: { vi: "Planner nhân hai độ chọn lọc như thể độc lập.", en: "The planner multiplies the two selectivities as if independent." }
-    - task: { vi: "Bước 3, câu tra một khách. Mã và số tiền các đơn của khách số 42 (nối `customers` với `orders`). Kế hoạch phải là Nested Loop, phía trong đi qua `orders_customer_idx`.", en: "Step 3, the one-customer lookup. Id and amount of customer 42's orders (join `customers` to `orders`). The plan must be a Nested Loop whose inner side goes through `orders_customer_idx`." }
+    - task: { vi: "Bước 3, câu tra một khách. Mã và số tiền (`amount`) các đơn của khách số 42 (nối `customers` với `orders`). Kế hoạch phải là Nested Loop, phía trong đi qua `orders_customer_idx`.", en: "Step 3, the one-customer lookup. Id and amount (`amount`) of customer 42's orders (join `customers` to `orders`). The plan must be a Nested Loop whose inner side goes through `orders_customer_idx`." }
       solution: "SELECT o.id, o.amount FROM customers c JOIN orders o ON o.customer_id = c.id WHERE c.id = 42"
       check: plan
       hint: { vi: "Lọc khách bằng khóa chính rồi JOIN.", en: "Filter the customer by primary key, then JOIN." }
@@ -69,7 +69,8 @@ predict:
     - { vi: "Bitmap Heap Scan qua `orders_status_idx`", en: "A Bitmap Heap Scan through `orders_status_idx`" }
     - { vi: "Index Only Scan", en: "An Index Only Scan" }
   answer: 1
-  why: { vi: "Tần suất MCV 0,02 × 20.000 = 400 dòng: đủ hiếm để đi qua index, đủ nhiều để gom theo trang bằng bitmap. Câu cần mọi cột nên không thể Index Only Scan.", en: "MCV frequency 0.02 × 20,000 = 400 rows: rare enough for the index, enough rows to group by page with a bitmap. The query needs every column, so an Index Only Scan is impossible." }
+  why: { vi: "Seq Scan nghe hợp lý vì 400 dòng vẫn là khá nhiều, nhưng 2 % là đủ hiếm để index thắng. Tần suất MCV 0,02 × 20.000 = 400 dòng: đủ hiếm để đi qua index, đủ nhiều để gom theo trang bằng bitmap. Câu cần mọi cột nên không thể Index Only Scan.", en: "A Seq Scan sounds right because 400 rows is still quite a few, but 2% is rare enough for the index to win. MCV frequency 0.02 × 20,000 = 400 rows: rare enough for the index, enough rows to group by page with a bitmap. The query needs every column, so an Index Only Scan is impossible." }
+  expect: { node: Bitmap Index Scan, index: orders_status_idx }
 quiz:
   - q: { vi: "Kết luận 1. Bước 2 ước lượng 20, thật 100. Khi bảng này là phía ngoài của một phép nối lớn, hậu quả và cách sửa?", en: "Conclusion 1. Step 2 estimated 20 against 100 real rows. When this table is the outer side of a big join, what follows and what is the fix?" }
     options:
@@ -77,21 +78,21 @@ quiz:
       - { vi: "Không ảnh hưởng gì", en: "No effect at all" }
       - { vi: "Tắt `enable_nestloop` cho cả server", en: "Turn `enable_nestloop` off for the whole server" }
     answer: 0
-    why: { vi: "Ước lượng thấp ở phía ngoài nhân lên số lần lặp phía trong. Sửa ước lượng, không tắt tính năng của planner.", en: "A low estimate on the outer side multiplies the inner loops. Fix the estimate; do not switch planner features off." }
+    why: { vi: "Tắt `enable_nestloop` nghe nhanh gọn vì nó gỡ ngay kế hoạch chậm, nhưng nó tác động lên mọi câu khác trên server. Ước lượng thấp ở phía ngoài nhân lên số lần lặp phía trong. Sửa ước lượng, không tắt tính năng của planner.", en: "Turning off `enable_nestloop` sounds quick because it removes the slow plan at once, but it hits every other query on the server. A low estimate on the outer side multiplies the inner loops. Fix the estimate; do not switch planner features off." }
   - q: { vi: "Kết luận 2. Cần chạy `ALTER TABLE orders ADD COLUMN note text` giữa giờ làm việc, khi một báo cáo dài đang đọc `orders`. Cách an toàn?", en: "Conclusion 2. You must run `ALTER TABLE orders ADD COLUMN note text` during business hours while a long report is reading `orders`. The safe way?" }
     options:
       - { vi: "`SET lock_timeout = '2s'` rồi chạy ALTER, thất bại thì thử lại sau; vì ALTER cần ACCESS EXCLUSIVE và lệnh đang chờ sẽ chặn mọi lệnh đến sau", en: "`SET lock_timeout = '2s'`, then run the ALTER and retry on failure; the ALTER needs ACCESS EXCLUSIVE, and a waiting command blocks every command behind it" }
       - { vi: "Chạy thẳng, ALTER không lấy lock nào", en: "Just run it, ALTER locks nothing" }
       - { vi: "Đặt `deadlock_timeout = 0`", en: "Set `deadlock_timeout = 0`" }
     answer: 0
-    why: { vi: "Hàng đợi lock là FIFO: ALTER đang chờ báo cáo sẽ chặn cả các SELECT ngắn phía sau. `lock_timeout` để migration tự bỏ cuộc thay vì làm treo ứng dụng.", en: "The lock queue is FIFO: an ALTER waiting for the report blocks even short SELECTs behind it. `lock_timeout` makes the migration give up instead of freezing the app." }
+    why: { vi: "Chạy thẳng nghe ổn vì thêm một cột có thể chỉ sửa catalog, nhưng nó vẫn cần lock ACCESS EXCLUSIVE. Hàng đợi lock là FIFO: ALTER đang chờ báo cáo sẽ chặn cả các SELECT ngắn phía sau. `lock_timeout` để migration tự bỏ cuộc thay vì làm treo ứng dụng.", en: "Running it directly sounds fine because adding a column can be a catalog-only change, but it still needs an ACCESS EXCLUSIVE lock. The lock queue is FIFO: an ALTER waiting for the report blocks even short SELECTs behind it. `lock_timeout` makes the migration give up instead of freezing the app." }
   - q: { vi: "Kết luận 3. Báo cáo gồm ba câu (tổng đơn, tổng tiền, theo vùng) phải khớp nhau trong khi đơn mới vẫn được ghi. Mức cô lập nào?", en: "Conclusion 3. The report runs three statements (order count, total amount, by region) that must agree while new orders keep arriving. Which isolation level?" }
     options:
       - { vi: "Read Committed (mặc định)", en: "Read Committed (the default)" }
       - { vi: "Repeatable Read (khai báo `READ ONLY`): cả ba câu thấy cùng một snapshot", en: "Repeatable Read (as a `READ ONLY` transaction): all three statements see the same snapshot" }
       - { vi: "Read Uncommitted", en: "Read Uncommitted" }
     answer: 1
-    why: { vi: "Read Committed lấy snapshot mỗi câu, nên ba con số có thể lệch nhau. Transaction chỉ đọc không gặp lỗi xung đột ghi.", en: "Read Committed takes a snapshot per statement, so the three figures can disagree. A read-only transaction never hits a write conflict." }
+    why: { vi: "Read Committed hấp dẫn vì nó là mặc định và không bao giờ thấy dữ liệu chưa commit, nhưng nhất quán từng câu chưa đủ. Read Committed lấy snapshot mỗi câu, nên ba con số có thể lệch nhau. Transaction chỉ đọc không gặp lỗi xung đột ghi.", en: "Read Committed is tempting because it is the default and never sees uncommitted data, but per-query consistency is not enough. Read Committed takes a snapshot per statement, so the three figures can disagree. A read-only transaction never hits a write conflict." }
 ---
 
 ## Ý chính

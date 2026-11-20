@@ -38,7 +38,7 @@ lab:
       solution: "SELECT o.id, o.amount FROM customers c JOIN orders o ON o.customer_id = c.id WHERE c.id = 42"
       check: plan
       hint: { vi: "Lọc khách bằng khóa chính, JOIN sang `orders`.", en: "Filter the customer by primary key, JOIN to `orders`." }
-    - task: { vi: "Mã đơn và ghi chú của mọi đơn, sắp theo mã đơn. Cả hai bảng đã có index theo đúng khóa nối.", en: "Order id and note of every order, sorted by order id. Both tables already have an index on the join key." }
+    - task: { vi: "Mã đơn và ghi chú của mọi đơn (bảng `order_notes`, cột `order_id` và `note`), sắp theo mã đơn. Cả hai bảng đã có index theo đúng khóa nối.", en: "Order id and note of every order (table `order_notes`, columns `order_id` and `note`), sorted by order id. Both tables already have an index on the join key." }
       solution: "SELECT o.id, n.note FROM orders o JOIN order_notes n ON n.order_id = o.id ORDER BY o.id"
       check: plan
       hint: { vi: "Hai dòng chảy đã có thứ tự thì trộn như khóa kéo, khỏi băm, khỏi sắp.", en: "Two already-sorted streams are zipped together: no hashing, no sorting." }
@@ -49,7 +49,7 @@ quiz:
       - { vi: "Hash Join trên hai Seq Scan", en: "A Hash Join over two Seq Scans" }
       - { vi: "Nested Loop 20.000 lần", en: "A Nested Loop running 20,000 times" }
     answer: 1
-    why: { vi: "Không cần thứ tự nữa, hai lần đọc tuần tự + một bảng băm rẻ hơn hai lần đi index. Merge Join chỉ thắng khi thứ tự có sẵn hoặc được dùng lại.", en: "Once no order is needed, two sequential reads plus one hash table beat two index walks. A Merge Join only wins when the order is free or reused." }
+    why: { vi: "Dễ nghĩ kế hoạch vẫn là Merge Join vì phép nối không đổi, nhưng ở bước 3 nó thắng là nhờ `ORDER BY` dùng lại thứ tự của nó. Không cần thứ tự nữa, hai lần đọc tuần tự + một bảng băm rẻ hơn hai lần đi index. Merge Join chỉ thắng khi thứ tự có sẵn hoặc được dùng lại.", en: "It is easy to expect the Merge Join to stay because the join itself is unchanged, but it won in step 3 only because the `ORDER BY` reused its order. Once no order is needed, two sequential reads plus one hash table beat two index walks. A Merge Join only wins when the order is free or reused." }
 ---
 
 ## Ý chính

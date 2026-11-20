@@ -37,7 +37,7 @@ lab:
       END IF;
     END $$;
   steps:
-    - task: { vi: "Xem kế hoạch chung (generic) của câu lọc kiện theo trạng thái là tham số `$1`: gọi `plan_lines(..., true)` với câu đó.", en: "Look at the generic plan of the query that filters parcels by a status parameter `$1`: call `plan_lines(..., true)` with that query." }
+    - task: { vi: "Xem kế hoạch chung (generic) của câu lọc kiện theo trạng thái là tham số `$1`: gọi `plan_lines(sql, true)` với câu đó: tham số đầu là nguyên câu SQL dạng chuỗi, `true` nghĩa là xem kế hoạch chung.", en: "Look at the generic plan of the query that filters parcels by a status parameter `$1`: call `plan_lines(sql, true)` with that query: the first argument is the whole SQL query as a string, `true` asks for the generic plan." }
       solution: "SELECT * FROM plan_lines('SELECT * FROM parcels WHERE status = $1', true)"
       check: rows
       ordered: true
@@ -54,14 +54,14 @@ quiz:
       - { vi: "Lập một kế hoạch chung với `$1`, so chi phí của nó với chi phí trung bình của 5 kế hoạch riêng; nếu không đắt hơn nhiều thì dùng kế hoạch chung từ đó", en: "Builds one generic plan with `$1`, compares its cost with the average cost of the 5 custom plans, and uses the generic plan from then on if it is not much more expensive" }
       - { vi: "Báo lỗi vì kế hoạch hết hạn", en: "Raises an error because the plan expired" }
     answer: 1
-    why: { vi: "Đúng như docs chính thức của PREPARE: 5 lần đầu dùng kế hoạch riêng, rồi so chi phí kế hoạch chung với trung bình. Nếu sau đó tham số là 'delivered' (70 %), kế hoạch chung qua index có thể chậm hơn Seq Scan nhiều.", en: "This is the PREPARE documentation's rule: the first 5 runs use custom plans, then the generic plan's cost is compared with their average. If the parameter later becomes 'delivered' (70%), the generic index plan can be much slower than a Seq Scan." }
+    why: { vi: "Lập kế hoạch lại cho từng giá trị nghe an toàn, và đó đúng là việc Postgres làm ở 5 lần đầu; nhưng sau đó nó thử kế hoạch chung. Đúng như docs chính thức của PREPARE: 5 lần đầu dùng kế hoạch riêng, rồi so chi phí kế hoạch chung với trung bình. Nếu sau đó tham số là 'delivered' (70 %), kế hoạch chung qua index có thể chậm hơn Seq Scan nhiều.", en: "Replanning for every value sounds safe, and it is what Postgres does for the first 5 runs, but after that it tries a generic plan. This is the PREPARE documentation's rule: the first 5 runs use custom plans, then the generic plan's cost is compared with their average. If the parameter later becomes 'delivered' (70%), the generic index plan can be much slower than a Seq Scan." }
   - q: { vi: "Một câu đã chuẩn bị chạy chậm thất thường tùy giá trị tham số. Bước chẩn đoán đầu tiên tốt nhất?", en: "A prepared query is erratically slow depending on the parameter. Best first diagnostic step?" }
     options:
       - { vi: "So `EXPLAIN (GENERIC_PLAN)` với `EXPLAIN` có giá trị cụ thể, và xem `generic_plans`/`custom_plans` trong `pg_prepared_statements`", en: "Compare `EXPLAIN (GENERIC_PLAN)` with `EXPLAIN` on a concrete value, and check `generic_plans`/`custom_plans` in `pg_prepared_statements`" }
       - { vi: "Tăng `shared_buffers`", en: "Raise `shared_buffers`" }
       - { vi: "Xóa index trên cột trạng thái", en: "Drop the index on the status column" }
     answer: 0
-    why: { vi: "Phải thấy kế hoạch chung khác kế hoạch riêng thế nào trước khi sửa. Sửa phổ biến: `plan_cache_mode = force_custom_plan` cho phiên/hàm đó, hoặc tách câu cho giá trị phổ biến.", en: "You must see how the generic plan differs from the custom one before fixing anything. A common fix: `plan_cache_mode = force_custom_plan` for that session or function, or a separate query for the common values." }
+    why: { vi: "Tăng `shared_buffers` hấp dẫn vì nghe như thuốc chữa mọi chỗ chậm, nhưng nó không giải thích vì sao chỉ vài giá trị tham số mới chậm. Phải thấy kế hoạch chung khác kế hoạch riêng thế nào trước khi sửa. Sửa phổ biến: `plan_cache_mode = force_custom_plan` cho phiên/hàm đó, hoặc tách câu cho giá trị phổ biến.", en: "Raising `shared_buffers` is tempting because it sounds like a cure for any slowness, but it does not explain why only some parameter values are slow. You must see how the generic plan differs from the custom one before fixing anything. A common fix: `plan_cache_mode = force_custom_plan` for that session or function, or a separate query for the common values." }
 ---
 
 ## Ý chính

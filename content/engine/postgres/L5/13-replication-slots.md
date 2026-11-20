@@ -13,6 +13,7 @@ objectives:
   - { vi: "Đọc `pg_replication_slots` và giải thích vì sao slot bị bỏ quên làm đầy đĩa", en: "Read `pg_replication_slots` and explain why a forgotten slot fills the disk" }
   - { vi: "Biết logical decoding cần `wal_level = logical` và có thể gửi lặp thay đổi sau khi máy sập", en: "Know that logical decoding needs `wal_level = logical` and can resend changes after a crash" }
 requires: [e-pg-l5-09]
+viz: pg-replication
 sources:
   - https://www.postgresql.org/docs/18/warm-standby.html
   - https://www.postgresql.org/docs/18/logicaldecoding-explanation.html
@@ -41,20 +42,20 @@ quiz:
       - { vi: "Primary giữ mọi WAL từ `restart_lsn` của slot, thư mục WAL phình tới khi đầy đĩa", en: "The primary keeps all WAL from the slot's `restart_lsn`, and the WAL directory grows until the disk is full" }
       - { vi: "Slot tự bị xóa sau 1 giờ", en: "The slot is dropped automatically after 1 hour" }
     answer: 1
-    why: { vi: "Slot bảo đảm WAL không bị xóa trước khi người nhận đọc xong. Bị bỏ quên thì nó giữ WAL mãi; với slot logic còn giữ cả dòng catalog cho VACUUM, cực đoan có thể dẫn tới wraparound. Đặt `max_slot_wal_keep_size` và giám sát `wal_status`.", en: "A slot guarantees WAL is not removed before its consumer has read it. Forgotten, it keeps WAL forever; a logical slot also holds back catalog rows from VACUUM, which in extreme cases can lead to wraparound. Set `max_slot_wal_keep_size` and monitor `wal_status`." }
+    why: { vi: "Nghe hợp lý vì primary vốn tự xóa WAL cũ sau checkpoint, nhưng một slot giữ WAL lại cho người nhận. Slot bảo đảm WAL không bị xóa trước khi người nhận đọc xong. Bị bỏ quên thì nó giữ WAL mãi; với slot logic còn giữ cả dòng catalog cho VACUUM, cực đoan có thể dẫn tới wraparound. Đặt `max_slot_wal_keep_size` và giám sát `wal_status`.", en: "It sounds right because the primary normally removes old WAL after a checkpoint, but a slot holds WAL back for its consumer. A slot guarantees WAL is not removed before its consumer has read it. Forgotten, it keeps WAL forever; a logical slot also holds back catalog rows from VACUUM, which in extreme cases can lead to wraparound. Set `max_slot_wal_keep_size` and monitor `wal_status`." }
   - q: { vi: "`synchronous_commit = remote_apply` với một standby đồng bộ nghĩa là gì?", en: "What does `synchronous_commit = remote_apply` with a synchronous standby mean?" }
     options:
       - { vi: "COMMIT trả về khi WAL đã ghi xuống đĩa của primary", en: "COMMIT returns once WAL is flushed on the primary" }
       - { vi: "COMMIT chỉ trả về khi standby đã replay transaction, nên đọc trên standby ngay sau đó thấy được dữ liệu", en: "COMMIT only returns once the standby has replayed the transaction, so a read on the standby right after sees the data" }
       - { vi: "Standby nhận WAL theo lô mỗi giờ", en: "The standby receives WAL in hourly batches" }
     answer: 1
-    why: { vi: "Thang đo: `remote_write` (standby đã nhận, ghi vào OS), `on` (standby đã flush), `remote_apply` (standby đã replay). Mức càng cao thì commit càng chậm nhưng càng ít mất dữ liệu và đọc trên standby càng nhất quán.", en: "The scale: `remote_write` (the standby received it and wrote it to the OS), `on` (the standby flushed it), `remote_apply` (the standby replayed it). Higher levels make commits slower but lose less data and make standby reads more consistent." }
+    why: { vi: "Nghe hợp lý vì đó là điều COMMIT bảo đảm khi không có standby đồng bộ, nhưng `remote_apply` còn chờ standby replay. Thang đo: `remote_write` (standby đã nhận, ghi vào OS), `on` (standby đã flush), `remote_apply` (standby đã replay). Mức càng cao thì commit càng chậm nhưng càng ít mất dữ liệu và đọc trên standby càng nhất quán.", en: "It sounds right because that is what COMMIT promises without a synchronous standby, but `remote_apply` also waits for the standby to replay. The scale: `remote_write` (the standby received it and wrote it to the OS), `on` (the standby flushed it), `remote_apply` (the standby replayed it). Higher levels make commits slower but lose less data and make standby reads more consistent." }
   - q: { vi: "Một consumer logical decoding nhận lại vài thay đổi đã xử lý sau khi primary khởi động lại. Có phải lỗi không?", en: "A logical decoding consumer receives some already-processed changes again after the primary restarts. Is that a bug?" }
     options:
       - { vi: "Có, logical decoding bảo đảm đúng một lần", en: "Yes, logical decoding guarantees exactly once" }
       - { vi: "Không: vị trí slot chỉ được lưu bền lúc checkpoint, nên sau khi máy sập có thể gửi lại; consumer phải xử lý trùng an toàn (idempotent)", en: "No: the slot position is only persisted at checkpoint, so after a crash changes can be resent; the consumer must handle duplicates safely (idempotent)" }
     answer: 1
-    why: { vi: "Docs chính thức (logical decoding) nói đúng điều này. Mỗi slot chỉ có một người nhận tại một thời điểm.", en: "The logical decoding docs say exactly this. Each slot has only one receiver at a time." }
+    why: { vi: "Nghe hợp lý vì slot ghi nhớ vị trí của người nhận, nhưng vị trí đó không được lưu bền sau mỗi thay đổi. Docs chính thức (logical decoding) nói đúng điều này. Mỗi slot chỉ có một người nhận tại một thời điểm.", en: "It sounds right because the slot remembers the consumer position, but that position is not made durable after every change. The logical decoding docs say exactly this. Each slot has only one receiver at a time." }
 ---
 
 ## Ý chính

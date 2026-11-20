@@ -42,7 +42,7 @@ lab:
     CREATE VIEW tickets_as_support AS SELECT * FROM tickets;
     ALTER VIEW tickets_as_support OWNER TO support;
   steps:
-    - task: { vi: "Đếm số dòng mỗi bên thấy được, bốn cột: owner_sees (đọc thẳng `tickets` với vai trò hiện tại), t1, t2, support (đọc ba view tương ứng). Đoán trước: owner_sees bằng bao nhiêu, khi RLS đã bật?", en: "Count the rows each party can see, four columns: owner_sees (read `tickets` directly with the current role), t1, t2, support (read the three matching views). Guess first: what is owner_sees, now that RLS is on?" }
+    - task: { vi: "Đếm số dòng mỗi bên thấy được, bốn cột: owner_sees (đọc thẳng `tickets` với vai trò hiện tại), t1, t2, support (đếm ba view `tickets_as_tenant_1`, `tickets_as_tenant_2`, `tickets_as_support`; mỗi view thuộc vai trò cùng tên nên áp policy của vai trò đó). Đoán trước: owner_sees bằng bao nhiêu, khi RLS đã bật?", en: "Count the rows each party can see, four columns: owner_sees (read `tickets` directly with the current role), t1, t2, support (count the three views `tickets_as_tenant_1`, `tickets_as_tenant_2`, `tickets_as_support`; each view is owned by the role it names, so it applies that role's policies). Guess first: what is owner_sees, now that RLS is on?" }
       solution: "SELECT (SELECT count(*) FROM tickets) AS owner_sees, (SELECT count(*) FROM tickets_as_tenant_1) AS t1, (SELECT count(*) FROM tickets_as_tenant_2) AS t2, (SELECT count(*) FROM tickets_as_support) AS support"
       check: rows
       hint: { vi: "Bốn truy vấn con `count(*)` trong một SELECT.", en: "Four `count(*)` sub-queries in one SELECT." }
@@ -62,21 +62,21 @@ quiz:
       - { vi: "Không dòng nào: không có policy nghĩa là từ chối mặc định", en: "No rows: no policy means default deny" }
       - { vi: "Lỗi quyền", en: "A permission error" }
     answer: 1
-    why: { vi: "Docs chính thức: khi RLS bật mà không có policy áp dụng, bảng hành xử như từ chối mặc định: không dòng nào thấy hay sửa được. Lab cho `support` = 0.", en: "The docs: with RLS on and no applicable policy, the table is default-deny: no row can be seen or changed. The lab gives `support` = 0." }
+    why: { vi: "Dễ nghĩ không có policy là không có giới hạn, nhưng RLS hiểu ngược lại. Docs chính thức: khi RLS bật mà không có policy áp dụng, bảng hành xử như từ chối mặc định: không dòng nào thấy hay sửa được. Lab cho `support` = 0.", en: "It is easy to read no policy as no restriction, but RLS reads it the other way round. The docs: with RLS on and no applicable policy, the table is default-deny: no row can be seen or changed. The lab gives `support` = 0." }
   - q: { vi: "Policy `FOR UPDATE ... USING (tenant_id = 1)` không có `WITH CHECK`. Khách 1 chạy `UPDATE tickets SET tenant_id = 2 WHERE id = 3`. Chuyện gì xảy ra?", en: "A policy `FOR UPDATE ... USING (tenant_id = 1)` has no `WITH CHECK`. Tenant 1 runs `UPDATE tickets SET tenant_id = 2 WHERE id = 3`. What happens?" }
     options:
       - { vi: "Dòng được chuyển sang khách 2", en: "The row moves to tenant 2" }
       - { vi: "Bị từ chối: khi chỉ có `USING`, biểu thức đó cũng được dùng làm `WITH CHECK`, nên dòng mới phải vẫn có tenant_id = 1", en: "It is rejected: with only `USING`, that expression is also used as `WITH CHECK`, so the new row must still have tenant_id = 1" }
       - { vi: "Dòng biến mất", en: "The row disappears" }
     answer: 1
-    why: { vi: "`USING` lọc dòng cũ được nhắm tới; `WITH CHECK` kiểm dòng mới. Không ghi `WITH CHECK` thì Postgres dùng lại `USING`, chặn việc \"đẩy\" dòng sang khách khác.", en: "`USING` filters the existing rows you can target; `WITH CHECK` validates the new row. Without `WITH CHECK`, Postgres reuses `USING`, which stops a row being \"pushed\" to another tenant." }
+    why: { vi: "Nghe hợp lý vì thiếu `WITH CHECK` thì tưởng không có gì kiểm dòng mới, nhưng Postgres tự điền nó. `USING` lọc dòng cũ được nhắm tới; `WITH CHECK` kiểm dòng mới. Không ghi `WITH CHECK` thì Postgres dùng lại `USING`, chặn việc \"đẩy\" dòng sang khách khác.", en: "It sounds right because without `WITH CHECK` nothing seems to check the new row, but Postgres fills it in. `USING` filters the existing rows you can target; `WITH CHECK` validates the new row. Without `WITH CHECK`, Postgres reuses `USING`, which stops a row being \"pushed\" to another tenant." }
   - q: { vi: "Ứng dụng kết nối bằng chính vai trò sở hữu bảng. Policy không có tác dụng. Sửa thế nào?", en: "The application connects as the role that owns the table. The policies have no effect. How do you fix it?" }
     options:
       - { vi: "`ALTER TABLE tickets FORCE ROW LEVEL SECURITY`, hoặc tốt hơn: cho ứng dụng một vai trò riêng không sở hữu bảng", en: "`ALTER TABLE tickets FORCE ROW LEVEL SECURITY`, or better: give the application its own role that does not own the table" }
       - { vi: "Tạo lại policy", en: "Recreate the policies" }
       - { vi: "Đặt `row_security = off`", en: "Set `row_security = off`" }
     answer: 0
-    why: { vi: "Chủ bảng bỏ qua RLS trừ khi bật `FORCE`. Superuser và vai trò `BYPASSRLS` luôn bỏ qua. `row_security = off` không tắt được RLS: nó báo lỗi khi câu bị policy lọc.", en: "The table owner bypasses RLS unless `FORCE` is on. Superusers and `BYPASSRLS` roles always bypass it. `row_security = off` cannot switch RLS off: it raises an error when a query would be filtered by a policy." }
+    why: { vi: "Tạo lại policy nghe hợp lý vì có vẻ policy bị sai, nhưng policy không sai: chủ bảng không bị nó áp dụng. Chủ bảng bỏ qua RLS trừ khi bật `FORCE`. Superuser và vai trò `BYPASSRLS` luôn bỏ qua. `row_security = off` không tắt được RLS: nó báo lỗi khi câu bị policy lọc.", en: "Recreating the policy sounds right because the policy seems broken, but it is not: the owner is just not subject to it. The table owner bypasses RLS unless `FORCE` is on. Superusers and `BYPASSRLS` roles always bypass it. `row_security = off` cannot switch RLS off: it raises an error when a query would be filtered by a policy." }
 ---
 
 ## Ý chính

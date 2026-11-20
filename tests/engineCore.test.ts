@@ -81,6 +81,8 @@ describe('gradable: bước nào tính vào hoàn thành bài', () => {
     expect(gradable(lesson('postgres', 'CREATE TABLE t (a int)'), step('plan'))).toBe(true);
     expect(gradable(lesson('postgres'), step('doc'))).toBe(false);
     expect(gradable(lesson('dynamodb'), step('rows'))).toBe(false);
+    expect(gradable(lesson('dynamodb'), step('catalog'))).toBe(true); // L299: dynoxide compares any step
+    expect(gradable(lesson('mongodb'), step('catalog'))).toBe(false);
   });
 });
 

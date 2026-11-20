@@ -46,8 +46,8 @@ predict:
     - { vi: "Seq Scan trên `sessions`", en: "Seq Scan on `sessions`" }
   answer: 2
   why:
-    vi: "Index Hash lưu mã băm 32 bit của giá trị, không lưu thứ tự. Nó trả lời được \"bằng đúng giá trị này\" nhưng không trả lời được \"nằm giữa a00 và a01\". Dù câu rất chọn lọc, planner vẫn phải Seq Scan. Một B-tree thì dùng được cho cả hai."
-    en: "A Hash index stores a 32-bit hash of each value, not its order. It can answer \"equal to this value\" but not \"between a00 and a01\". However selective the query is, the planner must Seq Scan. A B-tree would serve both."
+    vi: "Đi qua index nghe hợp lý vì câu chỉ khớp vài dòng, mà câu chọn lọc thì thường dùng index; nhưng index Hash lưu mã băm 32 bit của giá trị, không lưu thứ tự. Nó trả lời được \"bằng đúng giá trị này\" nhưng không trả lời được \"nằm giữa a00 và a01\". Dù câu rất chọn lọc, planner vẫn phải Seq Scan. Một B-tree thì dùng được cho cả hai."
+    en: "Using the index is tempting because the query matches only a few rows, and selective queries usually go through an index, but a Hash index stores a 32-bit hash of each value, not its order. It can answer \"equal to this value\" but not \"between a00 and a01\". However selective the query is, the planner must Seq Scan. A B-tree would serve both."
 ---
 ## Ý chính
 

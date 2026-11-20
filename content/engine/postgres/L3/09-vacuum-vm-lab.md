@@ -82,8 +82,8 @@ lab:
         probe: SELECT lp, lp_flags, CASE WHEN lp_flags = 2 THEN lp_off END FROM heap_page_items(get_raw_page('cart', 0))
         expect: [[1, 1, null], [2, 2, 4], [3, 0, null], [4, 1, null]]
     - task:
-        vi: "Đọc visibility map của cả hai bảng: một dòng mỗi bảng với tên bảng, `all_visible`, `all_frozen` của block 0, theo tên bảng."
-        en: "Read the visibility map of both tables: one row per table with the table name, `all_visible` and `all_frozen` of block 0, by table name."
+        vi: "Đọc visibility map của cả hai bảng: một dòng mỗi bảng với tên bảng, `all_visible`, `all_frozen` của block 0, theo tên bảng. `pg_visibility_map(table, block)` trả một dòng cho một block."
+        en: "Read the visibility map of both tables: one row per table with the table name, `all_visible` and `all_frozen` of block 0, by table name. `pg_visibility_map(table, block)` returns one row for one block."
       solution: |
         SELECT 'cart' AS t, all_visible, all_frozen FROM pg_visibility_map('cart', 0)
         UNION ALL
@@ -126,10 +126,10 @@ lab:
         vi: Chỉ chọn cột `id` để index khóa chính đủ trả lời.
         en: Select only `id` so the primary key index alone can answer.
       fact:
-        vi: "Index Only Scan nhưng `Heap Fetches: 20`: không trang nào all-visible, nên dòng nào cũng phải về heap kiểm tra. Cùng câu trên `reading_touched` cũng cho `Heap Fetches: 20`: chỉ một UPDATE đã làm cả trang 0 mất bit, nên 20 dòng của nó lại phải về heap; sau một VACUUM sẽ là 0."
-        en: "Index Only Scan but `Heap Fetches: 20`: no page is all-visible, so every row goes back to the heap. The same query on `reading_touched` also gives `Heap Fetches: 20`: a single UPDATE cleared page 0's bit, so all 20 of its rows go back to the heap; after one VACUUM it would be 0."
+        vi: "Index Only Scan nhưng `Heap Fetches: 20`: không trang nào all-visible, nên dòng nào cũng phải về heap kiểm tra. Trên `reading_touched`, chỉ một UPDATE đã làm cả trang 0 mất bit, nên 20 dòng của nó cũng phải về heap: lần quét đầu ra `Heap Fetches: 21`, vì index còn một mục trỏ tới bản cũ (đã chết) của dòng 5; lần quét đó đánh dấu mục chết, các lần sau ra 20. Sau một VACUUM sẽ là 0."
+        en: "Index Only Scan but `Heap Fetches: 20`: no page is all-visible, so every row goes back to the heap. On `reading_touched` a single UPDATE cleared page 0's bit, so its 20 rows go back to the heap too: the first scan shows `Heap Fetches: 21`, because the index still has an entry for the old (dead) version of row 5; that scan marks the entry dead, and later scans show 20. After one VACUUM it would be 0."
         probe: SELECT heap_fetches('SELECT id FROM reading_fresh WHERE id <= 20'), heap_fetches('SELECT id FROM reading_touched WHERE id <= 20')
-        expect: [["Heap Fetches: 20", "Heap Fetches: 20"]]
+        expect: [["Heap Fetches: 20", "Heap Fetches: 21"]]
     - task:
         vi: "`space_vac` và `space_full` cùng có 1.000 dòng rồi bị xóa 900 dòng đầu. `space_vac` qua `VACUUM`, `space_full` qua `VACUUM FULL`. Lấy tên bảng, số trang (`pg_relation_size` chia 8192) và tổng byte trống theo FSM (`sum(avail)` của `pg_freespace`), theo tên bảng. Đoán trước khi chạy: sau `VACUUM`, `space_vac` còn bao nhiêu trang so với lúc có 1.000 dòng?"
         en: "`space_vac` and `space_full` both had 1,000 rows, then lost the first 900. `space_vac` got `VACUUM`, `space_full` got `VACUUM FULL`. Return the table name, the number of pages (`pg_relation_size` divided by 8192) and the total free bytes per the FSM (`sum(avail)` of `pg_freespace`), by table name. Guess before you run it: after `VACUUM`, how many pages does `space_vac` keep compared with when it held 1,000 rows?"

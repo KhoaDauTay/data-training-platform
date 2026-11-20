@@ -31,7 +31,7 @@ lab:
     CREATE INDEX stores_loc_spgist ON stores_sp USING spgist (loc);
     ANALYZE stores, stores_sp;
   steps:
-    - task: { vi: "Đọc 5 khóa đầu trên trang gốc (trang 0) của `stores_loc_gist`: `itemoffset` và `keys`.", en: "Read the first 5 keys on the root page (page 0) of `stores_loc_gist`: `itemoffset` and `keys`." }
+    - task: { vi: "Đọc 5 khóa đầu trên trang gốc (trang 0) của `stores_loc_gist`: `itemoffset` và `keys`. Hàm `gist_page_items(get_raw_page(index, 0), index)` nhận hai tham số: trang thô và tên index.", en: "Read the first 5 keys on the root page (page 0) of `stores_loc_gist`: `itemoffset` and `keys`. The function `gist_page_items(get_raw_page(index, 0), index)` takes two arguments: the raw page and the index name." }
       solution: "SELECT itemoffset, keys FROM gist_page_items(get_raw_page('stores_loc_gist', 0), 'stores_loc_gist') ORDER BY itemoffset LIMIT 5"
       check: rows
       ordered: true
@@ -51,14 +51,14 @@ quiz:
       - { vi: "SP-GiST luôn nằm trong RAM", en: "SP-GiST always lives in RAM" }
       - { vi: "GiST không hỗ trợ điểm", en: "GiST does not support points" }
     answer: 0
-    why: { vi: "Đổi lại, GiST luôn cân bằng và dùng được cho mọi kiểu có \"hộp bao\" (range, hình học, `tsvector` qua chữ ký). SP-GiST không cân bằng, hợp với dữ liệu phân bố không đều (điểm, chuỗi có tiền tố chung). Cả hai hỗ trợ KNN với opclass có toán tử khoảng cách.", en: "In exchange GiST is always balanced and works for any type with a \"bounding\" key (ranges, geometry, `tsvector` via signatures). SP-GiST is unbalanced and suits unevenly distributed data (points, strings with common prefixes). Both support KNN with an opclass that has a distance operator." }
+    why: { vi: "Nghe hợp lý vì index nhỏ thường nằm sẵn trong bộ đệm, nhưng số nhánh phải đi là chuyện cấu trúc, không phải bộ nhớ: hộp GiST có thể chồng nhau, ô SP-GiST thì không. Đổi lại, GiST luôn cân bằng và dùng được cho mọi kiểu có \"hộp bao\" (range, hình học, `tsvector` qua chữ ký). SP-GiST không cân bằng, hợp với dữ liệu phân bố không đều (điểm, chuỗi có tiền tố chung). Cả hai hỗ trợ KNN với opclass có toán tử khoảng cách.", en: "It sounds right because a small index often sits in cache, but the number of branches is about structure, not memory: GiST boxes can overlap, SP-GiST cells cannot. In exchange GiST is always balanced and works for any type with a \"bounding\" key (ranges, geometry, `tsvector` via signatures). SP-GiST is unbalanced and suits unevenly distributed data (points, strings with common prefixes). Both support KNN with an opclass that has a distance operator." }
   - q: { vi: "Ràng buộc \"không có hai lịch đặt phòng chồng giờ cho cùng một phòng\" dùng index nào?", en: "\"No two bookings of the same room may overlap in time\": which index enforces it?" }
     options:
       - { vi: "UNIQUE B-tree trên (room_id, during)", en: "A UNIQUE B-tree on (room_id, during)" }
       - { vi: "`EXCLUDE USING gist (room_id WITH =, during WITH &&)` (cần `btree_gist` cho cột `=`)", en: "`EXCLUDE USING gist (room_id WITH =, during WITH &&)` (needs `btree_gist` for the `=` column)" }
       - { vi: "BRIN trên during", en: "A BRIN on during" }
     answer: 1
-    why: { vi: "Exclusion constraint cần một AM trả lời được \"có chồng nhau không\", đó là GiST (hoặc SP-GiST). B-tree chỉ biết bằng/thứ tự nên chỉ làm UNIQUE.", en: "An exclusion constraint needs an access method that answers \"does it overlap?\", which is GiST (or SP-GiST). B-tree only knows equality and order, so it can only do UNIQUE." }
+    why: { vi: "UNIQUE B-tree nghe hợp lý vì đây là một luật cấm trùng, nhưng chồng giờ không phải là bằng nhau. Exclusion constraint cần một AM trả lời được \"có chồng nhau không\", đó là GiST (hoặc SP-GiST). B-tree chỉ biết bằng/thứ tự nên chỉ làm UNIQUE.", en: "A UNIQUE B-tree sounds right because this is a no-duplicates rule, but overlapping is not equality. An exclusion constraint needs an access method that answers \"does it overlap?\", which is GiST (or SP-GiST). B-tree only knows equality and order, so it can only do UNIQUE." }
 ---
 
 ## Ý chính

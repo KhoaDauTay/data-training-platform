@@ -156,9 +156,9 @@ describe('honestOf: nhãn trung thực của mọi bài', () => {
     expect(honestRow(l)).toBe(k); // L280: the lesson rows' chip, from the index fields only
     if (k === 'pg' || k === 'mingo' || k === 'dynoxide') {
       // "runs" only when something executes here: a lab (its Run goes to the runner) or a Postgres predict's real plan.
-      // Two DynamoDB labs (catalog steps, no setup): the runner grades them, but gradable() says no (review-v22-rc.md P3).
+      // L299: the two DynamoDB catalog labs (e-dy-l1-04, e-dy-l3-03) count as gradable now (dynoxide grades any check kind).
       expect(!!l.lab || (l.engine === 'postgres' && !!l.predict)).toBe(true);
-      if (!['e-dy-l1-04', 'e-dy-l3-03'].includes(l.id)) expect((l.lab?.steps ?? []).some((s) => gradable(l, s)) || (l.engine === 'postgres' && !!l.predict)).toBe(true);
+      expect((l.lab?.steps ?? []).some((s) => gradable(l, s)) || (l.engine === 'postgres' && !!l.predict)).toBe(true);
       expect(k).toBe({ postgres: 'pg', mongodb: 'mingo', dynamodb: 'dynoxide' }[l.engine]);
     } else {
       expect(l.runtime).toBe('docs');

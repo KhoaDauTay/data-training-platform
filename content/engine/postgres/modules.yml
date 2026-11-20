@@ -188,14 +188,25 @@
 - id: memory
   module: memory
   level: L3
-  vi: Bộ nhớ và kiểm tra cấp L3
-  en: Memory and the L3 check
+  vi: Bộ nhớ
+  en: Memory
   title:
-    vi: Bộ nhớ và kiểm tra cấp L3
-    en: Memory and the L3 check
+    vi: Bộ nhớ
+    en: Memory
   after:
-    vi: thấy `external merge Disk:` và sửa bằng `work_mem`, rồi chẩn đoán trọn một bảng phình vì HOT miss
-    en: spot `external merge Disk:` and fix it with `work_mem`, then diagnose a table bloated by HOT misses end to end
+    vi: thấy `external merge Disk:` và sửa bằng `work_mem`, và đọc một dòng `Buffers:` để biết câu chậm vì đọc nhiều trang hay vì tràn file tạm
+    en: spot `external merge Disk:` and fix it with `work_mem`, and read a `Buffers:` line to tell many pages read from a spill to temporary files
+- id: capstone-l3
+  module: capstone-l3
+  level: L3
+  vi: Kiểm tra cấp L3
+  en: Level L3 check
+  title:
+    vi: Kiểm tra cấp L3
+    en: Level L3 check
+  after:
+    vi: chẩn đoán trọn một bảng phình vì HOT miss trên bảng mới, và bác một cách chữa nghe hợp lý bằng số đo
+    en: diagnose a table bloated by HOT misses end to end on a new table, and reject a plausible fix with measurements
 - id: planner-stats
   module: planner-stats
   level: L4

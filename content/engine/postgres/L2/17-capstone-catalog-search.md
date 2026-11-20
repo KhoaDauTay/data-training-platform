@@ -57,8 +57,8 @@ lab:
         vi: "Chỉ cần `@>`, nên chọn opclass `jsonb_path_ops`."
         en: "Only `@>` is needed, so choose the `jsonb_path_ops` opclass."
     - task:
-        vi: "Báo cáo \"hàng mới thêm trong một tuần\" lọc theo `added_at`. Hàng được thêm theo đúng thứ tự thời gian. Tạo index BRIN tên `catalog_added_brin` trên `added_at`, với `pages_per_range = 8`."
-        en: "The \"added this week\" report filters on `added_at`. Items are added in time order. Create a BRIN index named `catalog_added_brin` on `added_at`, with `pages_per_range = 8`."
+        vi: "Báo cáo \"hàng mới thêm trong một tuần\" lọc theo `added_at`. Hàng được thêm theo đúng thứ tự thời gian. Tạo index BRIN tên `catalog_added_brin` trên `added_at`, với `pages_per_range = 8` (tham số lưu trữ của index viết trong `WITH (...)` sau danh sách cột)."
+        en: "The \"added this week\" report filters on `added_at`. Items are added in time order. Create a BRIN index named `catalog_added_brin` on `added_at`, with `pages_per_range = 8` (an index storage parameter goes in `WITH (...)` after the column list)."
       solution: CREATE INDEX catalog_added_brin ON catalog USING brin (added_at) WITH (pages_per_range = 8)
       target: SELECT count(*) FROM catalog WHERE added_at >= timestamptz '2025-06-01 00:00+00' AND added_at < timestamptz '2025-06-08 00:00+00'
       check: catalog
@@ -83,8 +83,8 @@ quiz:
       - { vi: "Nên dùng Hash thay B-tree", en: "Use Hash instead of B-tree" }
     answer: 1
     why:
-      vi: "Index chỉ có lợi khi câu lấy một phần nhỏ của bảng. Lấy 10.000 trên 30.000 dòng thì đọc tuần tự rẻ hơn; index thứ tư chỉ thêm một lần ghi index cho mỗi `INSERT`."
-      en: "An index only pays off when a query reads a small part of the table. Reading 10,000 of 30,000 rows is cheaper sequentially; a fourth index just adds one more index write to every `INSERT`."
+      vi: "Đồng ý nghe hợp lý vì index thường làm câu lọc nhanh hơn; nhưng index chỉ có lợi khi câu lấy một phần nhỏ của bảng. Lấy 10.000 trên 30.000 dòng thì đọc tuần tự rẻ hơn; index thứ tư chỉ thêm một lần ghi index cho mỗi `INSERT`."
+      en: "Agreeing sounds reasonable because indexes usually speed up filters, but an index only pays off when a query reads a small part of the table. Reading 10,000 of 30,000 rows is cheaper sequentially; a fourth index just adds one more index write to every `INSERT`."
   - q:
       vi: "\"`SELECT count(*) FROM catalog` sẽ đếm bằng khóa chính, nên rất nhanh.\" Trên bảng vừa nạp (chưa VACUUM), kế hoạch thật là gì?"
       en: "\"`SELECT count(*) FROM catalog` counts through the primary key, so it is instant.\" On this freshly loaded (never vacuumed) table, what is the real plan?"
@@ -94,8 +94,8 @@ quiz:
       - { vi: "Postgres đọc số dòng lưu sẵn trong catalog", en: "Postgres reads a stored row count from the catalog" }
     answer: 1
     why:
-      vi: "Postgres không lưu sẵn số dòng chính xác: do MVCC, mỗi transaction có thể thấy số dòng khác nhau. Khi visibility map còn trống, index không giúp được và kế hoạch là `Aggregate` trên `Seq Scan on catalog`. Sau VACUUM, planner có thể chọn Index Only Scan, nhưng vẫn phải đi qua mọi mục index."
-      en: "Postgres keeps no exact stored row count: with MVCC, each transaction may see a different number of rows. While the visibility map is empty the index cannot help, and the plan is an `Aggregate` over `Seq Scan on catalog`. After VACUUM the planner may pick an Index Only Scan, but it still walks every index entry."
+      vi: "Index Only Scan nghe hợp lý vì `catalog_pkey` nhỏ hơn bảng mà vẫn có mặt mọi dòng; nhưng Postgres không lưu sẵn số dòng chính xác: do MVCC, mỗi transaction có thể thấy số dòng khác nhau. Khi visibility map còn trống, index không giúp được và kế hoạch là `Aggregate` trên `Seq Scan on catalog`. Sau VACUUM, planner có thể chọn Index Only Scan, nhưng vẫn phải đi qua mọi mục index."
+      en: "An Index Only Scan sounds right because `catalog_pkey` is smaller than the table yet lists every row, but Postgres keeps no exact stored row count: with MVCC, each transaction may see a different number of rows. While the visibility map is empty the index cannot help, and the plan is an `Aggregate` over `Seq Scan on catalog`. After VACUUM the planner may pick an Index Only Scan, but it still walks every index entry."
 ---
 ## Ý chính
 

@@ -17,10 +17,10 @@ beforeAll(async () => {
   const g = await import('../src/art/gsap');
   V.init({ h, s, getLang, reducedMotion: () => reduced, loadedGsap: () => gsapMod, loadGsap: () => void (gsapMod = g) });
   gsapMod = g;
-  for (const n of V.NOSQL_VIZ) expect(await V.loadViz(n)).toBeTypeOf('function');
+  for (const n of [...V.NOSQL_VIZ, ...V.PG_FLOW_VIZ]) expect(await V.loadViz(n)).toBeTypeOf('function');
 });
 
-const POSTGRES = ['pg-heap-page', 'pg-mvcc-timeline', 'pg-hot-chain', 'pg-vacuum-flow', 'pg-btree', 'pg-wal-flow', 'pg-gin-postings', 'pg-brin-ranges', 'pg-gist-boxes', 'pg-plan-tree', 'pg-lock-matrix', 'pg-isolation-anomalies'];
+const POSTGRES = ['pg-heap-page', 'pg-mvcc-timeline', 'pg-hot-chain', 'pg-vacuum-flow', 'pg-btree', 'pg-wal-flow', 'pg-gin-postings', 'pg-brin-ranges', 'pg-gist-boxes', 'pg-plan-tree', 'pg-lock-matrix', 'pg-isolation-anomalies', 'pg-query-path', 'pg-partition-prune', 'pg-replication'];
 const NOSQL = V.NOSQL_VIZ;
 
 /** Checks one drawn frame: finite numbers, shapes and (estimated) labels inside the viewBox. */
@@ -140,6 +140,64 @@ describe('engineViz shell', () => {
       return out;
     };
     for (let i = 1; i < 4; i++) expect(draw(true, i)).toBe(draw(false, i));
+    // v23 PG-VIZ: the same for the three new diagrams, every step
+    for (const name of ['pg-query-path', 'pg-partition-prune', 'pg-replication']) {
+      const at = (motion: boolean, i: number): string => {
+        reduced = !motion;
+        const host = document.createElement('div');
+        document.body.append(host);
+        const v = V.vizFor(name)!(host, { lang: 'en', start: i - 1 });
+        v.go(i, true);
+        gsapMod!.gsap.globalTimeline.getChildren().forEach((c) => c.progress(1));
+        const out = host.querySelector('svg')!.outerHTML.replace(/ev\d+-/g, 'ev-');
+        v.destroy();
+        return out;
+      };
+      const n = (() => { const h0 = document.createElement('div'); const v = V.vizFor(name)!(h0, { lang: 'en' }); const c = v.count; v.destroy(); return c; })();
+      for (let i = 1; i < n; i++) expect(at(true, i), `${name}#${i}`).toBe(at(false, i));
+    }
+  });
+
+  it('v23 PG-VIZ: live models (EXPLAIN text, numeric strings, NULLs, 6 partitions, no slots) draw inside the box', () => {
+    reduced = true;
+    const plan = JSON.stringify([{ Plan: { 'Node Type': 'Hash Join', 'Total Cost': '96.2', 'Plan Rows': '480', Plans: [
+      { 'Node Type': 'Seq Scan', 'Relation Name': 'a_rather_long_relation_name_here', 'Total Cost': 41, 'Plan Rows': 2000 },
+      { 'Node Type': 'Hash', Plans: [{ 'Node Type': 'Index Only Scan', 'Index Name': 'customers_pkey_with_a_long_name', 'Plan Rows': null }] }] } }]);
+    const parts = Array.from({ length: 6 }, (_, i) => ({ name: `measurements_y2026_m0${i + 1}_long`, bound: i === 5 ? 'DEFAULT' : `FOR VALUES FROM ('2026-0${i + 1}-01 00:00:00') TO ('2026-0${i + 2}-01 00:00:00')` }));
+    const models: [string, unknown][] = [
+      ['pg-query-path', { sql: "SELECT c.name, sum(o.amount) FROM customers c JOIN orders o ON o.customer_id = c.id WHERE o.created_on > now() - interval '7 days' GROUP BY c.name ORDER BY 2 DESC LIMIT 10", plan }],
+      ['pg-query-path', plan],
+      ['pg-plan-tree', plan],
+      ['pg-partition-prune', { table: 'measurements', key: 'RANGE (logdate)', parts, cases: [{ sql: 'SELECT * FROM measurements', plan }, { sql: "SELECT 1 FROM measurements WHERE logdate = $1", plan: '[{"Plan":{"Node Type":"Append","Subplans Removed":"4","Plans":[]}}]' }] }],
+      ['pg-replication', { slots: [] }],
+      ['pg-replication', { slots: [{ slot_name: 'a_very_long_slot_name_for_testing', wal_status: 'lost', has_restart_lsn: 't' }, { slot_name: 'b' }, { slot_name: 'c' }] }],
+    ];
+    for (const [name, model] of models) {
+      const host = document.createElement('div');
+      const v = V.vizFor(name)!(host, { lang: 'vi', model });
+      const svg = host.querySelector('svg')!;
+      expect(v.count).toBeGreaterThanOrEqual(3);
+      for (let i = 0; i < v.count; i++) {
+        v.go(i);
+        expect(checkFrame(svg, `${name}(live)`, i)).toEqual([]);
+      }
+      v.destroy();
+    }
+  });
+
+  it('v23 PG-VIZ: replication says it is an illustration on every step', () => {
+    reduced = true;
+    for (const lang of ['vi', 'en'] as const) {
+      const host = document.createElement('div');
+      const v = V.vizFor('pg-replication')!(host, { lang });
+      expect(host.querySelector('figcaption')!.textContent).toMatch(lang === 'vi' ? /minh họa/ : /illustration/);
+      for (let i = 0; i < v.count; i++) {
+        v.go(i);
+        expect(host.querySelector('svg [data-k=note]')!.textContent).toMatch(lang === 'vi' ? /Minh họa/ : /Illustration/);
+      }
+      expect(v.texts[0]).toMatch(lang === 'vi' ? /không chạy thật/ : /does not really run/);
+      v.destroy();
+    }
   });
 
   it('a lab model with NULL pointer columns and numeric strings draws without NaN', () => {

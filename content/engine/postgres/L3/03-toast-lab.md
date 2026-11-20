@@ -55,8 +55,8 @@ lab:
         probe: SELECT lp, lp_len FROM heap_page_items(get_raw_page('doc', 0))
         expect: [[1, 129], [2, 46], [3, 1184]]
     - task:
-        vi: "View `doc_toast` đọc bảng TOAST của `doc`. Đếm số chunk và tổng số byte của chúng."
-        en: "The view `doc_toast` reads the TOAST table of `doc`. Count the chunks and the total bytes they hold."
+        vi: "View `doc_toast` đọc bảng TOAST của `doc`. Mỗi dòng của view là một chunk, cột `len` là số byte của nó. Đếm số chunk và tổng số byte của chúng."
+        en: "The view `doc_toast` reads the TOAST table of `doc`. Each row of the view is one chunk, and its `len` column is its size in bytes. Count the chunks and the total bytes they hold."
       solution: SELECT count(*) AS chunks, sum(len) AS bytes FROM doc_toast
       check: rows
       hint:
@@ -68,8 +68,8 @@ lab:
         probe: SELECT count(*) AS chunks, count(DISTINCT chunk_id) AS vals, string_agg(len::text, ',' ORDER BY chunk_seq) AS sizes FROM doc_toast
         expect: [[4, 1, "1996,1996,1996,412"]]
     - task:
-        vi: Lấy `id` và phương thức nén của `body` cho từng dòng, theo `id`.
-        en: Return `id` and the compression method of `body` for each row, by `id`.
+        vi: Lấy `id` và phương thức nén của `body` cho từng dòng, theo `id` (hàm `pg_column_compression()`).
+        en: Return `id` and the compression method of `body` for each row, by `id` (the function `pg_column_compression()`).
       solution: SELECT id, pg_column_compression(body) FROM doc ORDER BY id
       check: rows
       ordered: true

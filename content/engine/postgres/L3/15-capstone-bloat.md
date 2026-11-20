@@ -2,143 +2,180 @@
 id: e-pg-l3-15
 engine: postgres
 level: L3
-module: memory
-title: "Kiểm tra cấp L3: bảng việc phình to"
-title_en: "L3 check: the job table that keeps growing"
+module: capstone-l3
+title: "Kiểm tra cấp L3: bảng giỏ hàng phình to"
+title_en: "L3 check: the cart table that keeps growing"
 kind: capstone
 runtime: browser
 minutes: 30
 viz: pg-hot-chain
 objectives:
-  - vi: Chẩn đoán HOT miss do trang đầy từ trang heap, bộ đếm và index
-    en: Diagnose HOT misses caused by full pages from the heap page, the counters and the index
-  - vi: Chọn cách chữa đúng và giải thích cái giá của nó
-    en: Choose the right fix and explain its cost
-requires: [e-pg-l3-08, e-pg-l3-09, e-pg-l3-13, e-pg-l3-14]
+  - vi: Chẩn đoán vì sao UPDATE không HOT trên một bảng còn chỗ trống, từ bộ đếm, trang heap, index và WAL
+    en: Diagnose why UPDATEs are not HOT on a table that has free space, from the counters, the heap page, the indexes and the WAL
+  - vi: Bác một cách chữa nghe hợp lý bằng số đo, rồi chọn cách chữa đúng
+    en: Reject a plausible fix with measurements, then choose the right one
+requires: [e-pg-l3-08, e-pg-l3-13, e-pg-l3-16, e-pg-l3-18]
 sources:
   - https://www.postgresql.org/docs/18/storage-hot.html
-  - https://www.postgresql.org/docs/18/storage-page-layout.html
   - https://www.postgresql.org/docs/18/monitoring-stats.html
-  - https://www.postgresql.org/docs/18/pageinspect.html
+  - https://www.postgresql.org/docs/18/pgwalinspect.html
   - https://www.postgresql.org/docs/18/sql-createtable.html
 lab:
   setup: |
-    CREATE EXTENSION IF NOT EXISTS pageinspect;
-    CREATE TABLE jobs_full(id int PRIMARY KEY, tries int, pad char(100)) WITH (fillfactor = 100);
-    CREATE TABLE jobs_room(id int PRIMARY KEY, tries int, pad char(100)) WITH (fillfactor = 70);
-    INSERT INTO jobs_full SELECT g, 0, 'p' FROM generate_series(1, 200) g;
-    INSERT INTO jobs_room SELECT g, 0, 'p' FROM generate_series(1, 200) g;
-    UPDATE jobs_full SET tries = tries + 1 WHERE id <= 10;
-    UPDATE jobs_room SET tries = tries + 1 WHERE id <= 10;
+    CREATE EXTENSION IF NOT EXISTS pg_walinspect;
+    CREATE TABLE carts(id int PRIMARY KEY, user_id int NOT NULL, touched_at timestamp NOT NULL, items int NOT NULL) WITH (fillfactor = 70);
+    CREATE TABLE carts_lean(id int PRIMARY KEY, user_id int NOT NULL, touched_at timestamp NOT NULL, items int NOT NULL) WITH (fillfactor = 70);
+    INSERT INTO carts SELECT g, g, TIMESTAMP '2026-11-01' + g * INTERVAL '1 minute', 1 FROM generate_series(1, 400) g;
+    INSERT INTO carts_lean SELECT * FROM carts;
+    CREATE INDEX carts_touched_idx ON carts (touched_at);
+    VACUUM ANALYZE carts;
+    VACUUM ANALYZE carts_lean;
+    SELECT pg_stat_reset();
+    SELECT items FROM carts WHERE id = 7;
+    SELECT items FROM carts WHERE id = 8;
+    CREATE TABLE wal_marks(name text NOT NULL, lsn pg_lsn NOT NULL);
+    INSERT INTO wal_marks VALUES ('before', pg_current_wal_insert_lsn());
+    UPDATE carts SET touched_at = touched_at + INTERVAL '1 day', items = items + 1 WHERE id <= 50;
+    INSERT INTO wal_marks VALUES ('after', pg_current_wal_insert_lsn());
+    UPDATE carts_lean SET touched_at = touched_at + INTERVAL '1 day', items = items + 1 WHERE id <= 50;
     SELECT pg_stat_force_next_flush();
   steps:
     - task:
-        vi: "Đội vận hành báo: bảng `jobs_full` (200 việc, mỗi việc hay được tăng `tries`) cứ phình và UPDATE chậm dần. `jobs_room` là bản sao với `fillfactor = 70`. Cả hai vừa tăng `tries` cho việc 1–10. Đọc bộ đếm: tên bảng, `n_tup_upd`, `n_tup_hot_upd`, theo tên bảng."
-        en: "Ops report: table `jobs_full` (200 jobs, each one's `tries` bumped often) keeps growing and its UPDATEs get slower. `jobs_room` is a copy with `fillfactor = 70`. Both just bumped `tries` for jobs 1-10. Read the counters: table name, `n_tup_upd`, `n_tup_hot_upd`, by table name."
-      solution: SELECT relname, n_tup_upd, n_tup_hot_upd FROM pg_stat_user_tables WHERE relname IN ('jobs_full', 'jobs_room') ORDER BY relname
+        vi: "Đội ứng dụng báo: bảng `carts` (400 giỏ hàng, mỗi lần khách bấm thì `touched_at` và `items` đổi) phình nhanh dù đã đặt `fillfactor = 70`. Vừa có 50 giỏ được sửa. Đọc bộ đếm của `carts`: `n_tup_upd`, `n_tup_hot_upd`, `n_dead_tup`."
+        en: "The app team reports: table `carts` (400 carts; each customer click changes `touched_at` and `items`) grows fast even though `fillfactor = 70` is set. 50 carts were just updated. Read the counters of `carts`: `n_tup_upd`, `n_tup_hot_upd`, `n_dead_tup`."
+      solution: SELECT n_tup_upd, n_tup_hot_upd, n_dead_tup FROM pg_stat_user_tables WHERE relname = 'carts'
       check: rows
-      ordered: true
       hint:
-        vi: "`pg_stat_user_tables`, lọc hai tên bảng."
-        en: "`pg_stat_user_tables`, filter the two table names."
+        vi: "`pg_stat_user_tables`, lọc `relname`."
+        en: "`pg_stat_user_tables`, filter on `relname`."
       fact:
-        vi: "`jobs_full`: 10 UPDATE, 0 HOT. `jobs_room`: 10 UPDATE, 10 HOT. Cột `tries` không có index, nên lý do duy nhất còn lại là chỗ trống trên trang."
-        en: "`jobs_full`: 10 updates, 0 HOT. `jobs_room`: 10 updates, 10 HOT. Column `tries` has no index, so the only remaining reason is free space on the page."
-        probe: SELECT relname, n_tup_upd, n_tup_hot_upd FROM pg_stat_user_tables WHERE relname IN ('jobs_full', 'jobs_room') ORDER BY relname
-        expect: [[jobs_full, 10, 0], [jobs_room, 10, 10]]
+        vi: "50 UPDATE, 0 HOT, 50 dead tuple: mỗi lần sửa để lại một phiên bản chết (MVCC) và không lần nào HOT."
+        en: "50 updates, 0 HOT, 50 dead tuples: every change left a dead version behind (MVCC) and none was HOT."
+        probe: SELECT n_tup_upd, n_tup_hot_upd, n_dead_tup FROM pg_stat_user_tables WHERE relname = 'carts'
+        expect: [[50, 0, 50]]
     - task:
-        vi: "Xem kích thước hai bảng: một dòng mỗi bảng với tên bảng, số trang (`pg_relation_size` chia 8192) và số line pointer của trang 0, theo tên bảng."
-        en: "Look at the size of both tables: one row per table with the table name, the number of pages (`pg_relation_size` divided by 8192) and the number of line pointers on page 0, by table name."
+        vi: "Ở bài fillfactor, HOT hỏng vì trang đầy. Ở đây có phải vậy không? Bản mới của 50 giỏ nằm ở trang nào: lấy số trang (phần đầu của `ctid`, kiểu int, tên page) và số dòng, cho `id <= 50`, theo trang."
+        en: "In the fillfactor lesson HOT failed because the page was full. Is that the case here? Which pages hold the new versions of the 50 carts: return the page number (first part of `ctid`, as int, named page) and the row count for `id <= 50`, by page."
       solution: |
-        SELECT t, pg_relation_size(t) / 8192 AS pages, (SELECT count(*) FROM heap_page_items(get_raw_page(t, 0))) AS lps
-        FROM unnest(ARRAY['jobs_full', 'jobs_room']) AS t
-        ORDER BY t
+        SELECT (ctid::text::point)[0]::int AS page, count(*) AS n
+        FROM carts
+        WHERE id <= 50
+        GROUP BY 1
+        ORDER BY 1
       check: rows
       ordered: true
       hint:
-        vi: "`pg_relation_size(t)` tính byte; `heap_page_items(get_raw_page(t, 0))` cho line pointer."
-        en: "`pg_relation_size(t)` counts bytes; `heap_page_items(get_raw_page(t, 0))` gives the line pointers."
+        vi: "`(ctid::text::point)[0]` lấy số trang của `ctid`."
+        en: "`(ctid::text::point)[0]` takes the page number out of `ctid`."
       fact:
-        vi: "`jobs_full`: 4 trang, trang 0 xếp 58 dòng và chỉ còn 48 byte trống ngay sau khi nạp, nên mọi bản mới phải sang trang khác. `jobs_room`: 5 trang, trang 0 giữ 40 dòng gốc + 10 bản mới. Không chấm số byte trống: một câu đọc bất kỳ có thể prune trang và đổi con số đó."
-        en: "`jobs_full`: 4 pages, page 0 packs 58 rows and had only 48 bytes free right after loading, so every new version must go to another page. `jobs_room`: 5 pages, page 0 holds its 40 original rows + 10 new versions. Free bytes are not graded: any read may prune the page and change that number."
-        probe: SELECT t, pg_relation_size(t) / 8192, (SELECT count(*) FROM heap_page_items(get_raw_page(t, 0))) FROM unnest(ARRAY['jobs_full', 'jobs_room']) AS t ORDER BY t
-        expect: [[jobs_full, 4, 58], [jobs_room, 5, 50]]
+        vi: "48 trên 50 bản mới vẫn nằm ở trang 0, cùng trang với bản cũ: trang còn chỗ, nên giả thuyết \"trang đầy\" sai. Chỉ 2 bản cuối phải sang trang 3 khi trang 0 vừa đầy."
+        en: "48 of the 50 new versions are still on page 0, the same page as the old ones: the page had room, so the \"full page\" theory is wrong. Only the last 2 had to move to page 3 once page 0 filled up."
+        probe: SELECT (ctid::text::point)[0]::int, count(*) FROM carts WHERE id <= 50 GROUP BY 1 ORDER BY 1
+        expect: [[0, 48], [3, 2]]
     - task:
-        vi: "Đếm số mục trong trang lá (block 1) của hai index khóa chính `jobs_full_pkey` và `jobs_room_pkey`, trong một dòng hai cột."
-        en: "Count the entries on the leaf page (block 1) of the two primary key indexes `jobs_full_pkey` and `jobs_room_pkey`, as one row with two columns."
-      solution: SELECT (SELECT count(*) FROM bt_page_items('jobs_full_pkey', 1)) AS full_idx, (SELECT count(*) FROM bt_page_items('jobs_room_pkey', 1)) AS room_idx
+        vi: "Điều kiện còn lại của HOT là các index. Liệt kê index của `carts`: tên, `idx_scan` (số lần được dùng từ lúc reset), số trang (`pg_relation_size(indexrelid)` chia 8192), theo tên."
+        en: "The other HOT condition is about indexes. List the indexes of `carts`: name, `idx_scan` (times used since the reset), page count (`pg_relation_size(indexrelid)` divided by 8192), by name."
+      solution: SELECT indexrelname, idx_scan, pg_relation_size(indexrelid) / 8192 AS pages FROM pg_stat_user_indexes WHERE relname = 'carts' ORDER BY indexrelname
       check: rows
+      ordered: true
       hint:
-        vi: Hai truy vấn con `count(*)` trên `bt_page_items()`.
-        en: Two `count(*)` subqueries over `bt_page_items()`.
+        vi: "`pg_stat_user_indexes` có `indexrelname`, `idx_scan` và `indexrelid`."
+        en: "`pg_stat_user_indexes` has `indexrelname`, `idx_scan` and `indexrelid`."
       fact:
-        vi: "210 so với 200: mỗi UPDATE không HOT của `jobs_full` thêm một mục index (và một dead tuple cho VACUUM), còn `jobs_room` không thêm mục nào."
-        en: "210 versus 200: each non-HOT UPDATE on `jobs_full` added an index entry (and a dead tuple for VACUUM), while `jobs_room` added none."
-        probe: SELECT (SELECT count(*) FROM bt_page_items('jobs_full_pkey', 1)), (SELECT count(*) FROM bt_page_items('jobs_room_pkey', 1))
-        expect: [[210, 200]]
+        vi: "`carts_touched_idx` nằm trên đúng cột mà mỗi lần bấm đều đổi, nên không UPDATE nào HOT được. Và nó chưa được câu nào dùng (`idx_scan` = 0), trong khi khóa chính được dùng 2 lần."
+        en: "`carts_touched_idx` sits on exactly the column every click changes, so no UPDATE can be HOT. And no query has used it (`idx_scan` = 0), while the primary key was used twice."
+        probe: SELECT indexrelname, idx_scan, pg_relation_size(indexrelid) / 8192 FROM pg_stat_user_indexes WHERE relname = 'carts' ORDER BY indexrelname
+        expect: [[carts_pkey, 2, 4], [carts_touched_idx, 0, 4]]
     - task:
-        vi: "Bản mới của việc 1 nằm ở đâu? Lấy tên bảng và `ctid` của `id = 1` trong hai bảng, theo tên bảng."
-        en: "Where did job 1's new version go? Return the table name and the `ctid` of `id = 1` in both tables, by table name."
+        vi: "Cái giá ghi ra WAL: lab đã lưu LSN trước và sau đợt UPDATE vào bảng `wal_marks`. Đếm bản ghi WAL trong khoảng đó theo `resource_manager`, chỉ giữ các `record_type` ghi một phiên bản dòng hay một mục index: `UPDATE`, `HOT_UPDATE`, `INSERT_LEAF`, `SPLIT_L`, `SPLIT_R`."
+        en: "The cost in WAL: the lab saved the LSN before and after the UPDATE batch in table `wal_marks`. Count the WAL records in that range by `resource_manager`, keeping only the `record_type` values that write a row version or an index entry: `UPDATE`, `HOT_UPDATE`, `INSERT_LEAF`, `SPLIT_L`, `SPLIT_R`."
       solution: |
-        SELECT 'jobs_full' AS t, ctid FROM jobs_full WHERE id = 1
-        UNION ALL
-        SELECT 'jobs_room', ctid FROM jobs_room WHERE id = 1
-        ORDER BY t
+        SELECT resource_manager, count(*) AS n
+        FROM pg_get_wal_records_info(
+          (SELECT lsn FROM wal_marks WHERE name = 'before'),
+          (SELECT lsn FROM wal_marks WHERE name = 'after'))
+        WHERE record_type IN ('UPDATE', 'HOT_UPDATE', 'INSERT_LEAF', 'SPLIT_L', 'SPLIT_R')
+        GROUP BY 1
+        ORDER BY 1
       check: rows
       ordered: true
       hint:
-        vi: "Hai câu `SELECT ctid` nối bằng `UNION ALL`."
-        en: "Two `SELECT ctid` queries joined with `UNION ALL`."
+        vi: "`pg_get_wal_records_info(start_lsn, end_lsn)`; lấy hai LSN bằng truy vấn con trên `wal_marks`."
+        en: "`pg_get_wal_records_info(start_lsn, end_lsn)`; get the two LSNs with subqueries on `wal_marks`."
       fact:
-        vi: "Ở `jobs_full`, việc 1 đã rời trang 0 sang trang cuối; ở `jobs_room`, nó vẫn ở trang 0, ngay sau 40 dòng gốc."
-        en: "In `jobs_full`, job 1 left page 0 for the last page; in `jobs_room` it stays on page 0, right after the 40 original rows."
-        probe: SELECT 'jobs_full', ctid::text FROM jobs_full WHERE id = 1 UNION ALL SELECT 'jobs_room', ctid::text FROM jobs_room WHERE id = 1
-        expect: [[jobs_full, "(3,27)"], [jobs_room, "(0,41)"]]
+        vi: "50 bản ghi Heap (đều là `UPDATE`, không có `HOT_UPDATE` nào) và 100 bản ghi Btree: 99 `INSERT_LEAF` và 1 `SPLIT_L`, lần chèn làm tách một trang lá. Mỗi UPDATE không HOT thêm một mục vào **cả hai** index, kể cả khóa chính dù `id` không đổi."
+        en: "50 Heap records (all `UPDATE`, not a single `HOT_UPDATE`) and 100 Btree records: 99 `INSERT_LEAF` and 1 `SPLIT_L`, an insert that split a leaf page. Every non-HOT UPDATE adds an entry to **both** indexes, the primary key included even though `id` did not change."
+        probe: SELECT resource_manager, record_type, count(*) FROM pg_get_wal_records_info((SELECT lsn FROM wal_marks WHERE name = 'before'), (SELECT lsn FROM wal_marks WHERE name = 'after')) WHERE record_type IN ('UPDATE', 'HOT_UPDATE', 'INSERT_LEAF', 'SPLIT_L', 'SPLIT_R') GROUP BY 1, 2 ORDER BY 1, 2
+        expect: [[Btree, INSERT_LEAF, 99], [Btree, SPLIT_L, 1], [Heap, UPDATE, 50]]
+    - task:
+        vi: "`carts_lean` là bản sao của `carts`, cùng `fillfactor = 70` và cùng đợt UPDATE, chỉ không có index trên `touched_at`. Đọc `n_tup_upd`, `n_tup_hot_upd` của nó."
+        en: "`carts_lean` is a copy of `carts` with the same `fillfactor = 70` and the same UPDATE batch, only without the index on `touched_at`. Read its `n_tup_upd` and `n_tup_hot_upd`."
+      solution: SELECT n_tup_upd, n_tup_hot_upd FROM pg_stat_user_tables WHERE relname = 'carts_lean'
+      check: rows
+      hint:
+        vi: "Như bước 1, đổi tên bảng."
+        en: "Like step 1, with the other table name."
+      fact:
+        vi: "48 trên 50 UPDATE là HOT: đúng 48 bản mới vừa trang 0, còn 2 bản phải sang trang khác thì không HOT được. Cùng dữ liệu, cùng `fillfactor`; khác biệt duy nhất là index thừa."
+        en: "48 of the 50 updates are HOT: exactly the 48 new versions that fit on page 0, while the 2 that had to move to another page could not be. Same data, same `fillfactor`; the only difference is the extra index."
+        probe: SELECT n_tup_upd, n_tup_hot_upd FROM pg_stat_user_tables WHERE relname = 'carts_lean'
+        expect: [[50, 48]]
 quiz:
   - q:
-      vi: "Kết luận cho đội vận hành: sửa `jobs_full` thế nào?"
-      en: "Conclusion for ops: how should `jobs_full` be fixed?"
+      vi: "Một đồng nghiệp đề xuất hạ `fillfactor` của `carts` xuống 50 và chạy `VACUUM FULL` để chừa thêm chỗ cho HOT. Có nên làm không?"
+      en: "A colleague proposes lowering the `fillfactor` of `carts` to 50 and running `VACUUM FULL` to leave more room for HOT. Should you?"
     options:
-      - { vi: "Thêm index trên `tries` để UPDATE tìm dòng nhanh hơn", en: "Add an index on `tries` so UPDATEs find rows faster" }
-      - { vi: "`ALTER TABLE jobs_full SET (fillfactor = 70)` rồi viết lại bảng một lần (ví dụ `VACUUM FULL`, trong giờ thấp điểm) để trang cũ cũng có chỗ trống", en: "`ALTER TABLE jobs_full SET (fillfactor = 70)` then rewrite the table once (for example `VACUUM FULL`, off-peak) so the existing pages get free space too" }
-      - { vi: "Chạy `CHECKPOINT` thường xuyên hơn", en: "Run `CHECKPOINT` more often" }
-      - { vi: "Tăng `work_mem`", en: "Raise `work_mem`" }
+      - { vi: "Có: bài fillfactor đã chứng minh trang có chỗ thì UPDATE được HOT", en: "Yes: the fillfactor lesson proved that a page with room gives HOT updates" }
+      - { vi: "Không: 48 trên 50 bản mới đã nằm cùng trang mà vẫn 0 HOT, nên chỗ trống không phải vấn đề; `VACUUM FULL` còn giữ lock `ACCESS EXCLUSIVE` và bảng to thêm", en: "No: 48 of the 50 new versions already stayed on their page and still 0 were HOT, so free space is not the problem; `VACUUM FULL` also holds an `ACCESS EXCLUSIVE` lock and the table gets bigger" }
+      - { vi: "Có, nhưng chỉ cần `VACUUM` thường, không cần FULL", en: "Yes, but a plain `VACUUM` is enough, no FULL needed" }
     answer: 1
     why:
-      vi: "Cột được sửa không có index, nên HOT chỉ thiếu chỗ trống. `fillfactor` chỉ áp cho trang ghi sau này, nên trang hiện có cần viết lại một lần (`VACUUM FULL` giữ lock `ACCESS EXCLUSIVE` trên bảng trong lúc chạy). Thêm index trên `tries` còn làm tệ hơn: nó cấm HOT hẳn."
-      en: "The updated column has no index, so HOT only lacks free space. `fillfactor` applies to pages written later, so the existing pages need one rewrite (`VACUUM FULL` holds an `ACCESS EXCLUSIVE` lock on the table while it runs). An index on `tries` would make it worse: it rules HOT out entirely."
+      vi: "Đề xuất này hấp dẫn vì nó đúng ở bài trước, với bảng khác: ở đó trang đầy. Ở đây bước 2 cho thấy trang còn chỗ (48 bản mới ở trang 0) mà bước 1 vẫn 0 HOT. HOT cần **cả hai** điều kiện; cái hỏng là điều kiện về index, nên thêm chỗ trống không đổi được gì."
+      en: "The proposal is tempting because it was right in the earlier lesson, on a different table: there the pages were full. Here step 2 shows the page had room (48 new versions on page 0) and step 1 still has 0 HOT. HOT needs **both** conditions; the broken one is the index condition, so more free space changes nothing."
+  - q:
+      vi: "Kết luận cho đội ứng dụng: sửa `carts` thế nào?"
+      en: "Conclusion for the app team: how should `carts` be fixed?"
+    options:
+      - { vi: "Thêm index trên `items` để UPDATE tìm giỏ nhanh hơn", en: "Add an index on `items` so UPDATEs find carts faster" }
+      - { vi: "Bỏ `carts_touched_idx` (0 lần dùng; kiểm lại bộ đếm qua trọn một chu kỳ báo cáo trước khi xóa): UPDATE trở lại HOT như `carts_lean`, và WAL không còn 100 bản ghi index cho mỗi 50 lần sửa", en: "Drop `carts_touched_idx` (0 uses; check the counters over a full reporting cycle before dropping it): UPDATEs become HOT again as in `carts_lean`, and the WAL no longer gets 100 index records per 50 changes" }
+      - { vi: "Tăng `shared_buffers` để UPDATE ghi vào bộ nhớ", en: "Raise `shared_buffers` so UPDATEs write to memory" }
+      - { vi: "Chạy `CHECKPOINT` thường xuyên hơn để WAL nhỏ lại", en: "Run `CHECKPOINT` more often to shrink the WAL" }
+    answer: 1
+    why:
+      vi: "Thêm index nghe như cách tăng tốc quen thuộc, nhưng UPDATE tìm giỏ bằng khóa chính, và một index trên cột bị sửa chính là thứ đã chặn HOT. Bằng chứng là ba con số: 0 HOT ở `carts`, 100 bản ghi Btree cho 50 UPDATE, và 48 HOT ở `carts_lean` chỉ vì thiếu index đó. `CHECKPOINT` dày hơn còn làm WAL to thêm (full-page image)."
+      en: "Adding an index sounds like the usual speed-up, but the UPDATE finds a cart by its primary key, and an index on a changed column is exactly what blocked HOT. The evidence is three numbers: 0 HOT on `carts`, 100 Btree records for 50 UPDATEs, and 48 HOT on `carts_lean` just for lacking that index. A more frequent `CHECKPOINT` would make the WAL bigger (full-page images)."
 ---
 
 ## Ý chính
 
-Bài cuối cấp L3 ghép mọi thứ: bộ đếm cho biết **có** chuyện (HOT thấp), trang heap cho biết **vì sao** (trang đầy), index cho biết **cái giá** (mục thừa), và `ctid` cho thấy bản mới đã đi đâu.
+Bài cuối cấp L3 dùng một bảng mới và một nguyên nhân khác bài fillfactor. Bạn ghép cả cấp: bộ đếm cho biết **có** chuyện (0 HOT, dead tuple), trang heap loại một giả thuyết (trang còn chỗ), index chỉ ra **vì sao** (index trên cột bị sửa), WAL cho thấy **cái giá**, và một bảng đối chứng chứng minh kết luận.
 
 ## Ví dụ
 
 ```sql
-SELECT relname, n_tup_upd, n_tup_hot_upd
+SELECT n_tup_upd, n_tup_hot_upd, n_dead_tup
 FROM pg_stat_user_tables
-WHERE relname IN ('jobs_full', 'jobs_room');
+WHERE relname = 'carts';
 ```
 
 ## Thực hành
 
-Bốn bước chạy thật trên hai bảng lab dựng sẵn, rồi một câu kết luận. Xong bài này bạn chẩn đoán được một bảng phình vì HOT miss từ đầu tới cuối, và đề xuất cách chữa kèm cái giá của nó.
+Năm bước chạy thật trên bảng `carts` và bản đối chứng `carts_lean`, rồi hai câu hỏi: một câu "có nên làm không" và một câu kết luận. Xong bài này bạn chẩn đoán được một bảng phình vì HOT miss mà không đoán theo thói quen, và bác được cách chữa sai bằng số đo.
 
 # EN
 
 ## Key idea
 
-The L3 final lesson ties everything together: the counters say **that** something is wrong (low HOT), the heap page says **why** (full pages), the index shows **the cost** (extra entries), and `ctid` shows where the new version went.
+The L3 final lesson uses a new table and a different cause from the fillfactor lesson. You put the whole level together: the counters say **that** something is wrong (0 HOT, dead tuples), the heap page rules out one theory (the page has room), the indexes show **why** (an index on a changed column), the WAL shows **the cost**, and a control table proves the conclusion.
 
 ## Example
 
 ```sql
-SELECT relname, n_tup_upd, n_tup_hot_upd
+SELECT n_tup_upd, n_tup_hot_upd, n_dead_tup
 FROM pg_stat_user_tables
-WHERE relname IN ('jobs_full', 'jobs_room');
+WHERE relname = 'carts';
 ```
 
 ## Practice
 
-Four real steps on two tables the lab builds, then one conclusion question. After this lesson you can diagnose a table bloated by HOT misses end to end, and propose a fix with its cost.
+Five real steps on table `carts` and its control copy `carts_lean`, then two questions: one "should we do it" and one conclusion. After this lesson you can diagnose a table bloated by HOT misses without guessing from habit, and reject a wrong fix with measurements.

@@ -29,8 +29,8 @@ quiz:
       - { vi: "(1,1): bản mới luôn sang trang mới", en: "(1,1): the new version always goes to a new page" }
     answer: 1
     why:
-      vi: "Postgres không sửa tại chỗ. Lab kế tiếp đo đúng điều này: dòng 2 chuyển sang (0,4), còn (0,2) vẫn nằm trên trang với `t_ctid` trỏ sang (0,4). Trang còn chỗ nên bản mới ở cùng trang."
-      en: "Postgres never updates in place. The next lab measures exactly this: row 2 moves to (0,4), while (0,2) stays on the page with a `t_ctid` pointing to (0,4). The page has room, so the new version stays on the same page."
+      vi: "\"Sửa tại chỗ\" nghe tự nhiên vì câu lệnh tên là UPDATE và dòng vẫn ở cùng trang. Postgres không sửa tại chỗ. Lab kế tiếp đo đúng điều này: dòng 2 chuyển sang (0,4), còn (0,2) vẫn nằm trên trang với `t_ctid` trỏ sang (0,4). Trang còn chỗ nên bản mới ở cùng trang."
+      en: "\"In place\" sounds natural because the command is called UPDATE and the row stays on the same page. Postgres never updates in place. The next lab measures exactly this: row 2 moves to (0,4), while (0,2) stays on the page with a `t_ctid` pointing to (0,4). The page has room, so the new version stays on the same page."
   - q:
       vi: "Một bảng 1.000 dòng, mỗi dòng bị UPDATE đúng một lần, chưa VACUUM. Trên đĩa có khoảng bao nhiêu tuple?"
       en: "A 1,000-row table, every row updated exactly once, no VACUUM yet. About how many tuples are on disk?"
@@ -40,8 +40,8 @@ quiz:
       - { vi: "1.001", en: "1,001" }
     answer: 1
     why:
-      vi: "Mỗi UPDATE để lại bản cũ (có `xmax`) và thêm bản mới. Bản cũ chỉ biến mất khi VACUUM dọn, và chỉ khi không còn transaction nào cần nó."
-      en: "Each UPDATE leaves the old version (with `xmax`) and adds a new one. The old version disappears only when VACUUM removes it, and only once no transaction still needs it."
+      vi: "Con số 1.000 nghe đúng vì bảng vẫn chỉ có 1.000 dòng khi bạn `SELECT`, nhưng đó là số phiên bản thấy được, không phải số tuple trên đĩa. Mỗi UPDATE để lại bản cũ (có `xmax`) và thêm bản mới. Bản cũ chỉ biến mất khi VACUUM dọn, và chỉ khi không còn transaction nào cần nó."
+      en: "The 1,000 figure sounds right because a `SELECT` still returns 1,000 rows, but that is the number of visible versions, not the tuples on disk. Each UPDATE leaves the old version (with `xmax`) and adds a new one. The old version disappears only when VACUUM removes it, and only once no transaction still needs it."
   - q:
       vi: "Transaction A đang đọc bảng ở mức Repeatable Read. Transaction B sửa một dòng rồi COMMIT. A đọc lại dòng đó thấy gì?"
       en: "Transaction A is reading a table at Repeatable Read. Transaction B updates a row and commits. What does A see when it reads that row again?"
@@ -51,8 +51,8 @@ quiz:
       - { vi: "A bị chặn cho tới khi B xong", en: "A is blocked until B finishes" }
     answer: 1
     why:
-      vi: "Ở Repeatable Read, A dùng một snapshot cho cả transaction. Bản cũ vẫn còn trên trang nên A đọc nó mà không phải chờ ai. Ở Read Committed, mỗi câu lấy snapshot mới nên câu sau của A sẽ thấy bản của B."
-      en: "At Repeatable Read, A uses one snapshot for the whole transaction. The old version is still on the page, so A reads it without waiting for anyone. At Read Committed each statement takes a new snapshot, so A's next statement would see B's version."
+      vi: "Thấy bản mới của B nghe hợp lý vì B đã commit, và ở Read Committed đúng là vậy. Ở Repeatable Read, A dùng một snapshot cho cả transaction. Bản cũ vẫn còn trên trang nên A đọc nó mà không phải chờ ai. Ở Read Committed, mỗi câu lấy snapshot mới nên câu sau của A sẽ thấy bản của B."
+      en: "Seeing B's new version sounds right because B has committed, and at Read Committed that would be true. At Repeatable Read, A uses one snapshot for the whole transaction. The old version is still on the page, so A reads it without waiting for anyone. At Read Committed each statement takes a new snapshot, so A's next statement would see B's version."
 ---
 
 ## Ý chính

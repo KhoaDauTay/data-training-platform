@@ -16,7 +16,7 @@ requires: [e-pg-l4-02]
 sources:
   - https://www.postgresql.org/docs/18/ddl-partitioning.html
   - https://www.postgresql.org/docs/18/functions-admin.html
-viz: pg-plan-tree
+viz: pg-partition-prune
 lab:
   setup: |
     DROP TABLE IF EXISTS events CASCADE;
@@ -32,12 +32,12 @@ lab:
       solution: "SELECT count(*) FROM events WHERE created_on >= '2026-10-01' AND created_on < '2026-10-08'"
       check: plan
       hint: { vi: "Lọc trực tiếp trên khóa phân vùng bằng hằng số ngày.", en: "Filter directly on the partition key with literal dates." }
-    - task: { vi: "Liệt kê cây phân vùng của `events`: tên quan hệ, tên cha (đều ép text), có phải lá không, cấp. Sắp theo tên quan hệ.", en: "List the partition tree of `events`: relation name, parent name (both cast to text), whether it is a leaf, level. Order by relation name." }
+    - task: { vi: "Liệt kê cây phân vùng của `events` bằng hàm `pg_partition_tree('events')`: tên quan hệ, tên cha (đều ép text), có phải lá không, cấp. Sắp theo tên quan hệ.", en: "List the partition tree of `events` with the function `pg_partition_tree('events')`: relation name, parent name (both cast to text), whether it is a leaf, level. Order by relation name." }
       solution: "SELECT relid::text, parentrelid::text, isleaf, level FROM pg_partition_tree('events') ORDER BY relid::text"
       check: rows
       ordered: true
       hint: { vi: "Hàm `pg_partition_tree(regclass)`.", en: "The `pg_partition_tree(regclass)` function." }
-    - task: { vi: "Đếm sự kiện của tenant 7 trong cả tháng 9/2026. Kế hoạch chỉ được chạm `events_2026_09`.", en: "Count tenant 7's events in the whole of September 2026. The plan may only touch `events_2026_09`." }
+    - task: { vi: "Đếm sự kiện của tenant 7 (cột `tenant_id`) trong cả tháng 9/2026. Kế hoạch chỉ được chạm `events_2026_09`.", en: "Count tenant 7's events (column `tenant_id`) in the whole of September 2026. The plan may only touch `events_2026_09`." }
       solution: "SELECT count(*) FROM events WHERE tenant_id = 7 AND created_on >= '2026-09-01' AND created_on < '2026-10-01'"
       check: plan
       hint: { vi: "Điều kiện tenant không giúp pruning; điều kiện ngày thì có.", en: "The tenant condition does not prune; the date condition does." }
@@ -49,7 +49,8 @@ predict:
     - { vi: "Cả bốn; ba cái sẽ bị bỏ lúc chạy (`EXPLAIN ANALYZE` hiện chúng là `(never executed)`)", en: "All four; three will be skipped at run time (`EXPLAIN ANALYZE` shows them as `(never executed)`)" }
     - { vi: "Không phân vùng nào, vì truy vấn con chạy trước", en: "None, because the sub-query runs first" }
   answer: 1
-  why: { vi: "Lúc lập kế hoạch Postgres chưa biết ngày, nên giữ mọi phân vùng dưới Append. Lúc chạy, sau khi InitPlan cho ra ngày, nó bỏ qua các phân vùng không thể khớp.", en: "At plan time Postgres does not know the date, so it keeps every partition under the Append. At run time, once the InitPlan returns the date, it skips the partitions that cannot match." }
+  why: { vi: "Chỉ một phân vùng nghe hợp lý vì cuối cùng chỉ một phân vùng khớp, nhưng việc bỏ đó xảy ra lúc chạy, không phải lúc lập kế hoạch. Lúc lập kế hoạch Postgres chưa biết ngày, nên giữ mọi phân vùng dưới Append. Lúc chạy, sau khi InitPlan cho ra ngày, nó bỏ qua các phân vùng không thể khớp.", en: "One partition sounds right because only one partition matches in the end, but that pruning happens at run time, not at plan time. At plan time Postgres does not know the date, so it keeps every partition under the Append. At run time, once the InitPlan returns the date, it skips the partitions that cannot match." }
+  expect: { node: Seq Scan, table: events_default }
 ---
 
 ## Ý chính

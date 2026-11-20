@@ -43,6 +43,7 @@ const vi = {
   'objectives': 'Mục tiêu',
   'requires': 'Nên học trước',
   'sources': 'Đọc thêm',
+  'newTab': 'mở trong tab mới',
   'predict.title': 'Đoán trước',
   'quiz.title': 'Câu hỏi',
   'quiz.n': 'Câu {i}/{n}',
@@ -107,8 +108,6 @@ const vi = {
   'why.notWrite': 'Bước này cần một lệnh ghi.',
   'why.collection': 'Bước này đọc collection `{want}`.',
   'why.rule': 'Kết quả đúng, nhưng chưa đạt luật của bài.',
-  'predict.real': 'Kế hoạch thật trên dữ liệu của lab',
-  'predict.realBtn': 'Xem kế hoạch thật',
   'path.title': 'Lộ trình NoSQL',
   'path.intro': 'Các kỹ năng MongoDB theo đúng 12 Phần của lộ trình SQL, trên một bộ dữ liệu chung: cửa hàng, sản phẩm, khách, đơn, đánh giá. Mỗi kỹ năng có một bài ngắn và 4 bài tập.',
   'path.part': 'Phần {n}',
@@ -160,6 +159,7 @@ const vi = {
   'tables.keys': 'Khóa: {keys}',
   'tables.docs': '{n} tài liệu',
   'tables.items': '{n} item',
+  'cap.current': 'đang làm',
 };
 export type EngineKey = keyof typeof vi;
 
@@ -201,6 +201,7 @@ const en: Record<EngineKey, string> = {
   'objectives': 'Objectives',
   'requires': 'Learn first',
   'sources': 'Further reading',
+  'newTab': 'opens in a new tab',
   'predict.title': 'Predict first',
   'quiz.title': 'Questions',
   'quiz.n': 'Question {i} of {n}',
@@ -265,8 +266,6 @@ const en: Record<EngineKey, string> = {
   'why.notWrite': 'This step needs a write.',
   'why.collection': 'This step reads the `{want}` collection.',
   'why.rule': "The result is right, but it does not follow the lesson's rule yet.",
-  'predict.real': "The real plan on the lab's data",
-  'predict.realBtn': 'See the real plan',
   'path.title': 'NoSQL path',
   'path.intro': 'MongoDB skills in the same 12 parts as the SQL path, on one shared dataset: stores, products, customers, orders, reviews. Each skill has a short lesson and 4 exercises.',
   'path.part': 'Part {n}',
@@ -317,6 +316,7 @@ const en: Record<EngineKey, string> = {
   'tables.keys': 'Keys: {keys}',
   'tables.docs': '{n} documents',
   'tables.items': '{n} items',
+  'cap.current': 'current',
 };
 
 export const ENGINE_DICT = { vi: vi as Record<EngineKey, string>, en };

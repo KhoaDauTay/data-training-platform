@@ -40,7 +40,7 @@ quiz:
       - { vi: "Postgres có thể gọi hàm lock cho nhiều dòng hơn số dòng `LIMIT` trả về, để lại lock cấp phiên không ai biết để nhả", en: "Postgres may call the lock function on more rows than the `LIMIT` returns, leaving session-level locks that nobody knows to release" }
       - { vi: "`LIMIT` làm lock thành cấp transaction", en: "`LIMIT` turns the lock into a transaction-level lock" }
     answer: 1
-    why: { vi: "Docs chính thức nêu đúng ví dụ này: không bảo đảm hàm lock chỉ chạy cho dòng được trả về. Hãy chọn dòng trong truy vấn con có `LIMIT` trước, rồi mới lấy lock ở câu ngoài.", en: "The docs give exactly this example: nothing guarantees the lock function only runs for the returned rows. Pick the row in a sub-query with `LIMIT` first, then lock it in the outer query." }
+    why: { vi: "Câu này trông vô hại vì `LIMIT` chỉ trả một dòng, nhưng `LIMIT` không giới hạn số lần hàm được gọi. Docs chính thức nêu đúng ví dụ này: không bảo đảm hàm lock chỉ chạy cho dòng được trả về. Hãy chọn dòng trong truy vấn con có `LIMIT` trước, rồi mới lấy lock ở câu ngoài.", en: "The query looks harmless because `LIMIT` returns one row, but `LIMIT` does not limit how many times the function is called. The docs give exactly this example: nothing guarantees the lock function only runs for the returned rows. Pick the row in a sub-query with `LIMIT` first, then lock it in the outer query." }
 ---
 
 ## Ý chính

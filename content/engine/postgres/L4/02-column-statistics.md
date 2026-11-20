@@ -30,7 +30,7 @@ lab:
     CREATE INDEX parcels_status_idx ON parcels (status);
     ANALYZE parcels;
   steps:
-    - task: { vi: "Liệt kê các giá trị phổ biến nhất của cột `status` và tần suất của chúng (hai cột, ép sang text).", en: "List the most common values of column `status` and their frequencies (two columns, cast to text)." }
+    - task: { vi: "Liệt kê các giá trị phổ biến nhất của cột `status` và tần suất của chúng (một dòng, hai cột: hai mảng ép sang text).", en: "List the most common values of column `status` and their frequencies (one row, two columns: the two arrays cast to text)." }
       solution: "SELECT most_common_vals::text, most_common_freqs::text FROM pg_stats WHERE tablename = 'parcels' AND attname = 'status'"
       check: rows
       hint: { vi: "Hai mảng song song trong view `pg_stats`.", en: "Two parallel arrays in the `pg_stats` view." }
@@ -51,7 +51,8 @@ predict:
     - { vi: "Seq Scan với Filter, 14.000 dòng (0,7 × 20.000)", en: "Seq Scan with a Filter, 14,000 rows (0.7 × 20,000)" }
     - { vi: "Index Scan, 14.000 dòng", en: "Index Scan, 14,000 rows" }
   answer: 1
-  why: { vi: "Ước lượng = tần suất MCV × reltuples = 0,7 × 20.000 = 14.000. Đọc 70 % bảng qua index thì nhảy trang ngẫu nhiên nhiều hơn đọc tuần tự, nên Seq Scan rẻ hơn.", en: "Estimate = MCV frequency × reltuples = 0.7 × 20,000 = 14,000. Reading 70% of the table through an index means more random page jumps than a sequential read, so the Seq Scan is cheaper." }
+  why: { vi: "Có index trên trạng thái nên dễ đoán Postgres sẽ dùng nó, nhưng index chỉ đáng khi giá trị hiếm. Ước lượng = tần suất MCV × reltuples = 0,7 × 20.000 = 14.000. Đọc 70 % bảng qua index thì nhảy trang ngẫu nhiên nhiều hơn đọc tuần tự, nên Seq Scan rẻ hơn.", en: "There is an index on the status, so it is tempting to expect Postgres to use it, but an index only pays off for a rare value. Estimate = MCV frequency × reltuples = 0.7 × 20,000 = 14,000. Reading 70% of the table through an index means more random page jumps than a sequential read, so the Seq Scan is cheaper." }
+  expect: { node: Seq Scan, table: parcels }
 ---
 
 ## Ý chính
