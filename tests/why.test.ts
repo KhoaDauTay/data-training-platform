@@ -15,7 +15,7 @@ import { seededDb } from './helpers';
 await Promise.all([loadDomain('ecommerce'), loadDomain('finance')]);
 const general = await loadGeneral();
 const db = await seededDb();
-await Promise.all((['ecom', 'fin', 'lab'] as const).map((s) => ensureSchema(db, s)));
+for (const s of ['ecom', 'fin', 'lab'] as const) await ensureSchema(db, s); // one at a time: each ensure sets search_path on the shared connection
 
 /** What the client sends (whyRequest: the row through JSON, timestamps as local wall clock). */
 const why = (sql: string, row: unknown[], types: number[], schema?: SchemaId) => runWhy(db, whyRequest(sql, row, types).slice(WHY.length), { schema });
