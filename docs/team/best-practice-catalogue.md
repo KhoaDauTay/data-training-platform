@@ -1924,6 +1924,7 @@ CREATE INDEX CONCURRENTLY orders_channel_ix ON orders (channel);
   - https://www.postgresql.org/docs/18/sql-altertable.html (đoạn về `NOT VALID` và `VALIDATE CONSTRAINT`)
   - https://www.postgresql.org/docs/18/runtime-config-client.html (`lock_timeout`)
   - https://www.postgresql.org/docs/18/explicit-locking.html
+- **Thẻ (vòng 6):** chỉ cú pháp (`runtime: none`): cặp cần nhiều câu trong một transaction, mà mỗi bản của thẻ chỉ được một câu. Số đo ở dòng Kiểm nay nằm trong `## Ví dụ` của thẻ; xem §15.3.
 - **Cấp:** L4 · **Nối với:** chưa có · **Kiểm:** PGlite, chạy được (cả hai; khác biệt là loại khóa, không đo được trong một phiên)
 
 ```sql
@@ -2103,6 +2104,7 @@ SELECT pg_relation_size('app_events_ts_ix') AS index_bytes;
   - https://www.postgresql.org/docs/18/sql-altertable.html ("An ACCESS EXCLUSIVE lock is acquired unless explicitly noted.")
   - https://www.postgresql.org/docs/18/runtime-config-client.html#GUC-LOCK-TIMEOUT
 - **Phiên bản (vòng 5):** PostgreSQL 19 bật sẵn `log_lock_waits`, nên chờ khóa lâu hơn `deadlock_timeout` được ghi log mà không cần cấu hình.
+- **Thẻ (vòng 6):** chỉ cú pháp (`runtime: none`): cặp cần nhiều câu trong một transaction, mà mỗi bản của thẻ chỉ được một câu. Số đo ở dòng Kiểm nay nằm trong `## Ví dụ` của thẻ; xem §15.3.
 - **Cấp:** L4 · **Nối với:** chưa có · **Kiểm:** PGlite, chạy được: `pg_locks` cùng transaction cho thấy Sai giữ `AccessExclusiveLock`, Đúng giữ `ShareLock` với `lock_timeout` = `2s`. Một phiên nên không tái hiện được cảnh chờ khóa
 
 ```sql
@@ -4826,6 +4828,7 @@ SELECT pg_wal_lsn_diff(pg_current_wal_lsn(), at) AS wal_bytes FROM lsn
 - **Nguồn:**
   - https://www.postgresql.org/docs/18/runtime-config-resource.html#GUC-WORK-MEM
   - https://www.postgresql.org/docs/18/sql-set.html
+- **Thẻ (vòng 6):** chỉ cú pháp (`runtime: none`): cặp cần nhiều câu trong một transaction, mà mỗi bản của thẻ chỉ được một câu. Số đo ở dòng Kiểm nay nằm trong `## Ví dụ` của thẻ; xem §15.3.
 - **Cấp:** L3 · **Nối với:** chưa có · **Kiểm:** PGlite, cùng câu gom 200.000 khóa khác nhau:
   - Sai (4 MB): `Sort` + `GroupAggregate` (planner không dám hash);
   - Đúng: `HashAggregate`, 1 batch, `Disk Usage` 0;
@@ -5902,8 +5905,8 @@ PostgreSQL (30):
 
 - Đếm: Q 17, A 13, S 8, I 8, P 10, X 4. Có 28 thẻ cũ, nên **32 thẻ mới** cho BP-C.
 - Chọn Q08, Q09, Q16 vì ba ô "Lỗi hay gặp" của §13.4 (dòng 4, 6, 7) chỉ chờ ba thẻ này.
-- Chọn P17, P30 trước P33, P34: cả hai chạy được ở runtime `engine` (`setup` có DDL rồi câu đọc, so kế hoạch). P33, P34 cần hai phiên.
-- Chỉ ba mục chỉ cú pháp:
+- Chọn P17, P30 trước P33, P34: cả hai chạy được ở runtime `engine` (`setup` có DDL rồi câu đọc, so kế hoạch). P33, P34 cần hai phiên. Vòng 6: P30 không vừa khuôn một câu mỗi bản, nên thành thẻ chỉ cú pháp (§15.3).
+- Chỉ ba mục chỉ cú pháp (vòng 6 thêm P13, P06, P30 thành thẻ chỉ cú pháp, nên nay là sáu; lý do ở §15.3):
   - P35: báo cáo một snapshot, rất gần việc của data analyst;
   - P03: transaction ngắn;
   - P25: `pg_stat_statements`. Thẻ ghi rõ là cú pháp, hoặc chạy ở runtime `engine` có nạp extension.
@@ -6073,6 +6076,12 @@ Thiết kế §3.2/§4.3 cho mỗi bản đúng một câu, `setup` riêng, và 
 - **A15** có đặc tả lint ở §10, nhưng không nằm trong 10 luật của thiết kế §5.4 và verifier, nên thẻ không có `lint`.
 - **Câu kiểm không lộ đáp án (cổng Product §11.3 mục 3 của thiết kế):** bỏ `## Ví dụ` ở S02, P17 vì khối đó nêu đúng kết quả câu kiểm hỏi; S06 chỉ tả dữ liệu đầu vào. Cổng "giải mù" vẫn cần agent riêng chạy trước khi phát hành.
 - **`requires`:** mỗi id đã grep ở `0ede43d` có đúng thuật ngữ của thẻ (ví dụ `e-pg-l4-09`: `ACCESS EXCLUSIVE`, `lock_timeout`; `e-pg-l1-03`: `IDENTITY`, `serial`). Bài MongoDB mà §12 gợi ý cho thẻ SQL (Q09, Q18, A15, A16, I09) không dùng; thẻ không có bài nào hợp thì `requires: []`.
+- **Cho BP-T (test `bestPractice`):**
+  - P05 (`engine-hb`) chỉ chạy được một lần trên mỗi database: lượt chạy thứ hai báo index đã tồn tại. Verifier vòng 6 bỏ lượt khởi động cho `engine-hb`; test phải dựng database mới cho mỗi lần chạy, như `runLabScript`.
+  - S04 cũng cần database mới: sequence không lùi khi rollback, nên trên cùng một database, lần chạy thứ tư của bản Không nên sẽ không còn báo `23505`.
+  - Verifier không kiểm luật chú thích lần đầu (style §2.1, ví dụ "thống kê (statistics)"); thẻ cũ cũng chưa đều ở điểm này, reviewer kiểm tay.
+  - P30: câu kiểm chỉ nhân cho nút sort, vì nút hash được gấp `hash_mem_multiplier` lần `work_mem` (mặc định 2, cùng trang nguồn).
+  - I08: chạy lại với `VACUUM ANALYZE` trong `setup`, bản Không nên vẫn là `Seq Scan` (bản Nên thành `Index Only Scan`), nên thẻ giữ `setup` không VACUUM và `expect.good` là `Bitmap Heap Scan`.
 
 ### 15.4 Ngân sách
 

@@ -35,16 +35,16 @@ pair:
   expect: null
 quiz:
   - q:
-      vi: "`work_mem` = 64 MB. Một câu có 3 nút sort/hash, chạy cùng lúc ở 50 phiên. Trần bộ nhớ cho các nút đó vào khoảng bao nhiêu?"
-      en: "`work_mem` = 64 MB. A query has 3 sort/hash nodes and runs in 50 sessions at once. Roughly what is the memory ceiling for those nodes?"
+      vi: "`work_mem` = 64 MB. Một câu có 3 nút sort, chạy cùng lúc ở 50 phiên. Trần bộ nhớ cho các nút đó vào khoảng bao nhiêu?"
+      en: "`work_mem` = 64 MB. A query has 3 sort nodes and runs in 50 sessions at once. Roughly what is the memory ceiling for those nodes?"
     options:
       - { vi: "64 MB", en: "64 MB" }
       - { vi: "Khoảng 9,4 GB (64 MB × 3 × 50)", en: "About 9.4 GB (64 MB × 3 × 50)" }
       - { vi: "64 MB mỗi phiên", en: "64 MB per session" }
     answer: 1
     why:
-      vi: "`work_mem` là trần cho từng nút sort hay hash, không phải cho cả câu hay cả máy. Nâng toàn cục thì nhân lên theo số nút và số phiên. `SET LOCAL` chỉ nâng cho đúng transaction cần."
-      en: "`work_mem` caps each sort or hash node, not a whole query or the whole server. Raising it globally multiplies by nodes and sessions. `SET LOCAL` raises it only for the transaction that needs it."
+      vi: "`work_mem` là trần cho từng nút sort (nút hash được gấp `hash_mem_multiplier` lần), không phải cho cả câu hay cả máy. Nâng toàn cục thì nhân lên theo số nút và số phiên. `SET LOCAL` chỉ nâng cho đúng transaction cần."
+      en: "`work_mem` caps each sort node (a hash node gets `hash_mem_multiplier` times that), not a whole query or the whole server. Raising it globally multiplies by nodes and sessions. `SET LOCAL` raises it only for the transaction that needs it."
 ---
 
 ## Ý chính
@@ -53,7 +53,7 @@ Báo cáo nặng (gom nhóm, sort lớn) chạy `SET LOCAL work_mem = '64MB'` tr
 
 ## Vì sao
 
-- `work_mem` (mặc định 4 MB) là trần **cho từng** nút sort hay hash; docs chính thức nhắc một câu có thể có "several sort and hash operations" cùng lúc, nhân thêm với số phiên.
+- `work_mem` (mặc định 4 MB) là trần **cho từng** nút sort, và nút hash được gấp `hash_mem_multiplier` lần (mặc định 2); docs chính thức nhắc một câu có thể có "several sort and hash operations" cùng lúc, nhân thêm với số phiên.
 - Nâng toàn cục có thể làm hết RAM.
 - Nâng cho một câu thì đổi được kế hoạch thực thi: hash trong bộ nhớ thay vì sort.
 - Lệnh `SET LOCAL` và câu báo cáo là hai câu riêng, nên thẻ này chỉ có cú pháp.
@@ -70,7 +70,7 @@ A heavy report (grouping, a large sort) runs `SET LOCAL work_mem = '64MB'` insid
 
 ## Why
 
-- `work_mem` (4 MB by default) caps **each** sort or hash node; the official docs warn a query may run "several sort and hash operations" at once, multiplied again by the number of sessions.
+- `work_mem` (4 MB by default) caps **each** sort node, and a hash node gets `hash_mem_multiplier` times that (2 by default); the official docs warn a query may run "several sort and hash operations" at once, multiplied again by the number of sessions.
 - Raising it globally can exhaust RAM.
 - Raising it for one query can change the execution plan: an in-memory hash instead of a sort.
 - `SET LOCAL` and the report query are two separate statements, so this card is syntax only.
