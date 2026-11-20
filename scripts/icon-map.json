@@ -9,6 +9,7 @@
     "docsOnly": ["file-text", "Engine lesson read from the official docs (nothing runs here)"],
     "level": ["stairs", "Engine level ladder L1-L5"],
     "nosqlPath": ["signpost", "Engine: the NoSQL path (MongoDB skills, like the SQL learning path)"],
+    "bestPractice": ["seal-check", "Engine: Best Practice cards (a habit checked and approved; v24 BP-UI)"],
     "soundOn": ["speaker-high", "sound on (v7 X2)"],
     "soundOff": ["speaker-slash", "sound off (v7 X2)"],
     "anchor": ["anchor", "Logistics domain: harbour anchor"],

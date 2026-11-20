@@ -8,7 +8,7 @@
  * here (tests/bestContent.test.ts checks their structure) but are never bundled: src/bestSources.ts globs only the released
  * folders and tracks() drops the other tracks. v25/v26 add one folder to that glob and one id here.
  */
-import { codeOf, type Bi, type Question } from './content';
+import type { Bi, Question } from './content';
 import type { LabScript, ScriptResult } from './pglab/script';
 
 export const TRACKS = ['sql', 'postgres', 'mongodb', 'dynamodb'] as const;
@@ -162,6 +162,9 @@ export function parseHabits(v: unknown): Habits {
   };
 }
 
+/** ./content's codeOf, repeated: a value import of ./content would split it out of the engineui chunk into a shared one. */
+export const codeOf = (text: string): string[] =>
+  [...text.matchAll(/```[a-z]*\n([\s\S]*?)```|`([^`\n]+)`/g)].map((m) => (m[1] ?? m[2]).trim()).sort();
 const DIACRITIC = /[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ]/i;
 const HOSTS = /^https:\/\/(www\.postgresql\.org|wiki\.postgresql\.org|www\.mongodb\.com\/docs|docs\.aws\.amazon\.com|www\.sqlstyle\.guide|sqlstyle\.guide)\//;
 /** §4.3 content rules beyond parsing: EN without diacritics, code VI = EN, official https sources. */

@@ -12,6 +12,7 @@ beforeAll(() => boot({ worker: SilentWorker }));
 
 const PAGES = ['#/', '#/learn', '#/learn/sql/1', '#/learn/skill/select', '#/learn/adv/a2', '#/learn/adv/d5', '#/learn/interview', '#/practice', '#/me',
   '#/engine', '#/engine/postgres', '#/engine/mongodb', '#/engine/postgres/L1/e-pg-l1-01', // a lesson id with no file falls back to its engine page
+  '#/engine/best/sql', '#/engine/best/sql/e-bp-q02', '#/engine/best/postgres/e-bp-i04', '#/engine/best/habits', // v24 BP-UI (L300)
   '#/d/logistics', '#/d/logistics/play', '#/d/logistics/data/ports', '#/d/logistics/dashboard', '#/d/logistics/map',
   '#/d/ecommerce', '#/d/ecommerce/play', '#/d/ecommerce/data', '#/d/ecommerce/dashboard', '#/d/ecommerce/map',
   '#/d/finance', '#/d/finance/play', '#/d/finance/data', '#/d/finance/dashboard', '#/d/finance/map'];

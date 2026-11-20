@@ -171,3 +171,16 @@ describe('chữ UI khu Database Engine (src/i18n/engine.ts, ENG-CORE L220)', () 
     }
   });
 });
+
+describe('chữ UI khu Best Practice (src/i18n/best.ts, v24 BP-UI L300)', () => {
+  it('placeholder khớp, EN khác VI, không giọng game, không "sắp có"', async () => {
+    const { BEST_DICT } = await import('../src/i18n/best');
+    for (const [k, v] of Object.entries(BEST_DICT.vi)) {
+      const e = BEST_DICT.en[k as keyof typeof BEST_DICT.en];
+      expect([k, placeholders(e)]).toEqual([k, placeholders(v)]);
+      expect([k, e]).not.toEqual([k, v]);
+      expect(`${v} ${e}`).not.toMatch(GAME_TONE);
+      expect(`${v} ${e}`).not.toMatch(/sắp có|coming soon|boss/i);
+    }
+  });
+});

@@ -50,6 +50,8 @@ export interface EngineDeps {
   prefs: { read: typeof Storage.readJson; write: typeof Storage.writeJson };
   /** v23 CAP: Lily's cheer at a capstone's finish and the level's done badge (src/art/illustrations.ts, lazy). */
   cheer: { mascot: typeof Mascots.mascot; react: typeof Celebrate.react; badge: () => Element };
+  /** v24 BP-UI (L300): the Best Practice entry (src/ui/engineBest.ts): a row on #/engine, a link on an engine page with a track. */
+  best?: (engine?: EngineId) => HTMLElement | null;
 }
 /** src/engineSources.ts: the lesson index (list fields only), one lazy chunk per lesson, and every engine's modules.yml. */
 export interface EngineSources { meta: Record<string, LessonSource>; full: Record<string, () => Promise<LessonSource>>; modules: Record<string, unknown> }
@@ -251,7 +253,8 @@ function overview(): HTMLElement {
       h('ul', { class: 'm-0 grid list-none gap-4 p-0' }, ...ENGINES.map((e) => engineCard(e, ok)))),
     h('section', { 'aria-labelledby': 'engine-path' },
       h('h2', { id: 'engine-path', class: d.ui.GROUP_TITLE }, et('nosql.title')),
-      pathRow()));
+      pathRow()),
+    d.best?.());
 }
 
 /** `#/engine/<engine>`: the engine's line and progress, the next lesson, then one row per level (like the Overview's chapters). */
@@ -268,7 +271,7 @@ function enginePg(e: EngineId): HTMLElement {
       next ? h('div', { class: 'flex flex-wrap items-center gap-3' },
         h('a', { href: lessonHash(next), class: cls.cx(cls.BTN_GO, 'inline-flex items-center gap-2 px-4 py-2 no-underline') }, et(p.done ? 'cont.btnResume' : 'cont.btnStart'), d.icon('arrowRight', 'size-4')),
         h('span', { class: 'min-w-0 text-body-sm text-muted' }, `${next.level} · ${next.title[lang()]}`))
-        : h('p', { class: 'm-0 font-bold good' }, et('cont.allDone', { name: NAME[e] }))),
+        : h('p', { class: 'm-0 font-bold good' }, et('cont.allDone', { name: NAME[e] })), d.best?.(e)),
     e === 'mongodb' ? h('section', { 'aria-labelledby': 'engine-path' }, h('h2', { id: 'engine-path', class: d.ui.GROUP_TITLE }, et('nosql.title')), pathRow()) : null,
     h('section', { 'aria-labelledby': 'engine-levels' },
       h('h2', { id: 'engine-levels', class: d.ui.GROUP_TITLE }, et('levels')),

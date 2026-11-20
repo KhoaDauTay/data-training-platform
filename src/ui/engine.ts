@@ -1,6 +1,7 @@
 import { grade } from '../grader';
 import { getLang, locale, t } from '../i18n';
-import { engineHash, enginePathHash, enginePathOf, enginePlayOf, engineRouteOf, hashOf } from '../route';
+import { bestHash, bestRouteOf, engineHash, enginePathHash, enginePathOf, enginePlayOf, engineRouteOf, hashOf } from '../route';
+import { SKILLS } from '../progress';
 import { actions, app, persist } from '../state';
 import { BTN_GHOST, BTN_GO, BTN_SECONDARY, CARD, cx, DONE_PILL, isDark, PILL } from '../theme';
 import { optionOrder } from '../tickets';
@@ -29,10 +30,15 @@ let pending: Promise<EngineView> | undefined;
 let view: EngineView | undefined;
 let failed = false;
 
+type BestView = typeof import('./engineBest');
+let best: BestView | undefined;
+/** v24 BP-UI (L300): the Best Practice pages (#/engine/best…) come with the engine chunk: their own chunk + the card index. */
+const isBest = (): boolean => !!bestRouteOf(location.hash);
+
 function engineChunk(): Promise<EngineView> {
-  pending ??= Promise.all([import('./engineView'), import('../engineSources')])
-    .then(([m, src]) => {
-      m.initEngine({
+  pending ??= Promise.all([import('./engineView'), import('../engineSources'), import('./engineBest'), import('../bestSources')])
+    .then(([m, src, b, bs]) => {
+      const deps: Parameters<EngineView['initEngine']>[0] = {
         h, icon, t, getLang, locale, app, persist, announce, loader, reducedMotion, isDark, renderResult, errorView, optionOrder,
         engineHash, engineRouteOf, enginePathOf, enginePathHash, hashOf, rerender: () => actions.rerender(), cls: { CARD, BTN_GO, BTN_SECONDARY, BTN_GHOST, PILL, DONE_PILL, cx },
         ui: { listRow, LIST, GROUP_TITLE, ABOVE }, createEditor,
@@ -40,7 +46,11 @@ function engineChunk(): Promise<EngineView> {
         viz: { h, s, reducedMotion, loadedGsap, loadGsap, getLang },
         prefs: { read: readJson, write: writeJson },
         cheer: { mascot, react, badge: () => illustration('aspect-square', (il) => il.doneBadge()) },
-      }, src);
+        best: (e) => b.entry(e),
+      };
+      m.initEngine(deps, src);
+      b.initBest(deps, bs, src.meta, { of: bestRouteOf, hash: bestHash, skill: (id) => SKILLS.find((x) => x.id === id)?.label });
+      best = b;
       failed = false;
       return (view = m);
     }, (e: unknown) => {
@@ -54,7 +64,7 @@ const load = (): void => void engineChunk().then(() => actions.rerender(), () =>
 function enginePage(): HTMLElement {
   const play = enginePlayOf(location.hash); // L280: the spec's lab route opens the lesson page
   if (play) queueMicrotask(() => location.replace(play));
-  else if (view) return view.enginePage();
+  else if (view) return isBest() ? best!.bestPage() : view.enginePage();
   if (!failed) load();
   return failed
     ? h('div', { role: 'alert', class: 'space-y-2' }, h('p', { class: 'm-0' }, t('engine.failed')),
@@ -82,5 +92,6 @@ registerHomeSection({ id: 'engineMe', order: 20, span: 'full', pages: ['me'], re
   return view ? view.meBlock() : null; // #/me draws its own loading line; the block joins once the chunk is in
 } });
 registerNav({ id: 'engine', area: 'top', order: 25, label: 'nav.engineShort', icon: NAV_ICON.engine, href: hashOf('engine'), current: (r) => r === 'engine', mergeInto: 'learn' });
-registerSide('engine', (ui) => (view ? view.sideRows(ui) : []));
-pageSubs.engine = () => view?.subOf(); // L280: the h1 = engine / level / lesson title under a trail; "Database Engine" until the chunk is in
+// On a Best Practice page the engine rows are drawn with no current row: the Best Practice row is the one (H2).
+registerSide('engine', (ui) => (view ? [...view.sideRows(isBest() ? { ...ui, row: (r) => ui.row({ ...r, current: false }) } : ui), ...best!.sideRows(ui)] : []));
+pageSubs.engine = () => (isBest() ? best?.subOf() : view?.subOf()); // L280: the h1 = engine / level / lesson title under a trail; "Database Engine" until the chunk is in

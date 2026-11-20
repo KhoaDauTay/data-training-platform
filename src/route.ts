@@ -124,6 +124,16 @@ export function enginePlayOf(hash: string): string | undefined {
   return m ? engineHash(ENGINE_OF[m[2]], `L${m[3]}`, m[1]) : undefined;
 }
 
+/**
+ * v24 BP-UI (L300): `#/engine/best[/<track>[/<card id>]]` (and `#/engine/best/habits`) → its parts; undefined on any other
+ * hash. Words only from [a-z]; the page sends an unknown or unreleased track to SQL and an unknown card to its track.
+ */
+export const bestRouteOf = (hash: string): { track?: string; id?: string } | undefined => {
+  const m = /^#\/?engine\/best(?:\/([a-z]+)(?:\/(e-bp-[a-z]\d\d))?)?(?=$|[/?])/.exec(hash);
+  return m ? { track: m[1], id: m[2] } : undefined;
+};
+export const bestHash = (track?: string, id?: string): string => `#/engine/best${track ? `/${track}${id ? `/${id}` : ''}` : ''}`;
+
 /** v16 (v7 §5.3): a shared query is at most as long as a dashboard card's SQL. */
 export const SHARE_MAX = 4000;
 /** `#/share?d=<domain>&sql=<base64url of the UTF-8 text>`: opens that domain's Sandbox with the SQL in the editor, never run. */

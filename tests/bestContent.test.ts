@@ -11,6 +11,7 @@ import {
   type BpCard, type Pair, type Side,
 } from '../src/engine/best';
 import { codeOf } from '../src/engine/content';
+import { codeOf as bpCodeOf } from '../src/engine/best';
 import { runLabScript, splitSql } from '../src/engine/pglab/session';
 import { sqlErrorInfo } from '../src/db/run';
 import { labRun } from './generalRules';
@@ -106,9 +107,13 @@ async function labSide(p: Pair, sql: string): Promise<Side> {
 
 describe('thẻ Best Practice: cặp Không nên / Nên chạy thật (60 thẻ phát hành)', () => {
   const runnable = released.filter((c) => c.pair.runtime !== 'none');
-  it('mỗi thẻ "none" là check syntax; mọi thẻ lab là một câu mỗi bên', () => {
+  it('mỗi thẻ "none" là check syntax; mọi thẻ chạy được là một câu mỗi bên (trang không có splitSql, nó nằm cạnh PGlite)', () => {
     for (const c of released) if (c.pair.runtime === 'none') expect([c.id, c.pair.check]).toEqual([c.id, 'syntax']);
-    for (const c of runnable.filter((x) => x.pair.runtime === 'lab')) expect([c.id, splitSql(c.pair.bad).length, splitSql(c.pair.good).length]).toEqual([c.id, 1, 1]);
+    for (const c of released) {
+      const text = c.sections.map((x) => x.text.vi).join(' ');
+      expect(bpCodeOf(text)).toEqual(codeOf(text));
+    }
+    for (const c of runnable) expect([c.id, splitSql(c.pair.bad).length, splitSql(c.pair.good).length]).toEqual([c.id, 1, 1]);
   });
 
   it.each(runnable.map((c) => [c.id, c]))('%s: check của thẻ đúng trên PGlite, mỗi câu < 300 ms', async (_id, c) => {

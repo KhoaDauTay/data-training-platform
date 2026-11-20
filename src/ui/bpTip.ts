@@ -6,6 +6,7 @@ import type { WorkDeps } from './work';
 import type { Hit, Rule, ColFact } from '../viz/bpLint';
 import type { app as App } from '../state';
 import type * as Dom from './dom';
+import { BP_TIPS_KEY, parseBpTips, type BpPref } from '../bpPref';
 
 /**
  * BP-LINT (v24, L273–L276; product-design-best-practice §5): Boon's one-line best-practice tip under Run/Submit. Lazy chunk
@@ -16,30 +17,14 @@ import type * as Dom from './dom';
  * an interview question, an index lab, a Practice run, while Boon's tour/guide mark is in this pane, or for a beginner
  * beyond Q01/A05. Device pref `cargo-query/bp-tips`, never the Save.
  */
-export interface BpPref { off: boolean; mute: string[]; seen: string[]; fixed: number }
-const KEY = 'cargo-query/bp-tips';
+export { parseBpTips, type BpPref } from '../bpPref';
+const KEY = BP_TIPS_KEY;
 const SEEN_MAX = 500;
 
-/** Validated read (§5.6): broken data is dropped, never thrown; `seen` keeps the newest 500. */
-export function parseBpTips(raw: string | null | undefined): BpPref {
-  let v: Record<string, unknown> = {};
-  try {
-    const p: unknown = JSON.parse(raw ?? '{}');
-    if (p && typeof p === 'object' && !Array.isArray(p)) v = p as Record<string, unknown>;
-  } catch { /* empty pref */ }
-  const strs = (x: unknown, re: RegExp): string[] => (Array.isArray(x) ? x.filter((s): s is string => typeof s === 'string' && re.test(s)) : []);
-  return {
-    off: v.off === true,
-    mute: strs(v.mute, /^[qa]\d\d$/),
-    seen: strs(v.seen, /^[qa]\d\d@/).slice(-SEEN_MAX),
-    fixed: Number.isInteger(v.fixed) && (v.fixed as number) > 0 ? v.fixed as number : 0,
-  };
-}
-
-const TEXT: Record<Lang, Record<Rule, string> & { label: string; mute: string; hide: string; muted: (r: string) => string; undo: string }> = {
+const TEXT: Record<Lang, Record<Rule, string> & { label: string; why: (r: string) => string; mute: string; hide: string; muted: (r: string) => string; undo: string }> = {
   vi: {
     q01: 'Mình thấy so sánh `= NULL`: so với NULL luôn ra "không biết", nên điều kiện này không bao giờ đúng. Thử `IS NULL` nhé.',
-    q02: '`NOT IN` với một subquery sẽ ra rỗng nếu subquery trả một NULL. Mình hay dùng `NOT EXISTS` cho chắc.',
+    q02: '`NOT IN` với một truy vấn con (subquery) sẽ ra rỗng nếu truy vấn con trả một NULL. Mình hay dùng `NOT EXISTS` cho chắc.',
     q06: 'Điều kiện trên bảng bên phải của LEFT JOIN đặt ở `WHERE` sẽ bỏ các dòng không khớp, thành INNER JOIN. Bạn muốn đặt nó trong `ON` không?',
     q10: 'Câu này chạy đúng. Nhưng có `LIMIT` mà không có `ORDER BY`: mỗi lần chạy có thể ra những dòng khác nhau.',
     q11: 'Câu này chạy đúng. Nhưng cột bị bọc trong hàm ở `WHERE`, nên index trên cột đó không dùng được. Thử viết thành khoảng trên chính cột.',
@@ -48,7 +33,7 @@ const TEXT: Record<Lang, Record<Rule, string> & { label: string; mute: string; h
     q15: 'Điều kiện này không dùng hàm gộp, nên đặt ở `WHERE` sẽ lọc sớm hơn và dễ đọc hơn.',
     q22: '`GROUP BY` hay `ORDER BY` theo số thứ tự cột sẽ đổi nghĩa khi ai đó chèn một cột vào `SELECT`. Viết tên cột thì an toàn hơn.',
     a05: 'Ở đây "hôm nay" là 2026-10-31. Mình ghi thẳng ngày đó để báo cáo chạy lại vẫn ra cùng số.',
-    label: 'Boon nhắc', mute: 'Đừng nhắc luật này', hide: 'Ẩn lời nhắc', muted: (r) => `Đã tắt nhắc ${r}`, undo: 'Hoàn tác',
+    label: 'Boon nhắc', why: (r) => `Vì sao? (thẻ ${r})`, mute: 'Đừng nhắc luật này', hide: 'Ẩn lời nhắc', muted: (r) => `Đã tắt nhắc ${r}`, undo: 'Hoàn tác',
   },
   en: {
     q01: 'I see a comparison with `= NULL`: it is never true, so no row passes. Try `IS NULL`.',
@@ -61,7 +46,7 @@ const TEXT: Record<Lang, Record<Rule, string> & { label: string; mute: string; h
     q15: 'This condition has no aggregate, so it belongs in `WHERE`, where it filters earlier.',
     q22: '`GROUP BY` or `ORDER BY` by column position changes meaning when someone inserts a column into the `SELECT`. Column names are safer.',
     a05: 'Here "today" is 2026-10-31. Write that date so the report gives the same numbers when run again.',
-    label: 'Boon tip', mute: 'Stop this tip', hide: 'Hide tip', muted: (r) => `${r} tips are off`, undo: 'Undo',
+    label: 'Boon tip', why: (r) => `Why? (card ${r})`, mute: 'Stop this tip', hide: 'Hide tip', muted: (r) => `${r} tips are off`, undo: 'Undo',
   },
 };
 
@@ -164,6 +149,8 @@ export function mountBp(after: HTMLElement, wd: WorkDeps, here: () => [Ticket | 
           h('span', { class: 'text-caption font-extrabold uppercase tracking-wide text-muted' }, `${tx.label} · ${rule.toUpperCase()}`),
           d.richText(tx[rule])),
         h('button', { type: 'button', class: 'min-h-6 min-w-6 rounded-full border-0 bg-transparent text-muted hover:bg-surface-2', 'aria-label': tx.hide, onclick: hide }, '×')),
+      // v24 BP-UI (L300): the card behind the rule (every lint rule is a SQL-track card); Back returns to the task.
+      h('a', { href: `#/engine/best/sql/e-bp-${rule}`, class: btn }, tx.why(rule.toUpperCase())),
       h('button', { type: 'button', class: btn, onclick: () => mute(rule, true) }, tx.mute));
     el.hidden = false;
   }
