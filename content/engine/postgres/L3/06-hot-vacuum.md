@@ -30,8 +30,8 @@ quiz:
       - { vi: "Cả hai đều có thể HOT nếu trang còn chỗ", en: "Both can be HOT if the page has room" }
     answer: 1
     why:
-      vi: "HOT cần cả hai: không đổi cột nào mà index dùng (trừ BRIN), và trang còn chỗ. Câu thứ hai đổi `updated_at`, một cột có index, nên luôn phải chèn mục mới vào mọi index."
-      en: "HOT needs both: no column used by an index changes (BRIN aside), and the page has room. The second statement changes `updated_at`, an indexed column, so it always inserts new entries into every index."
+      vi: "\"Cả hai đều HOT nếu trang còn chỗ\" nghe hợp lý vì chỗ trống là điều kiện người ta hay nhớ nhất, nhưng đó mới là một nửa. HOT cần cả hai: không đổi cột nào mà index dùng (trừ BRIN), và trang còn chỗ. Câu thứ hai đổi `updated_at`, một cột có index, nên luôn phải chèn mục mới vào mọi index."
+      en: "\"Both can be HOT if the page has room\" sounds right because free space is the condition people remember best, but it is only half. HOT needs both: no column used by an index changes (BRIN aside), and the page has room. The second statement changes `updated_at`, an indexed column, so it always inserts new entries into every index."
   - q:
       vi: "Việc nào **không** phải là một trong bốn lý do chạy VACUUM theo docs chính thức?"
       en: "Which of these is **not** one of the four reasons to VACUUM listed in the docs?"
@@ -42,8 +42,19 @@ quiz:
       - { vi: "Chống mất dữ liệu do XID wraparound", en: "Protect against data loss from XID wraparound" }
     answer: 2
     why:
-      vi: "Bốn lý do là: thu hồi chỗ, cập nhật thống kê cho planner, cập nhật visibility map, chống wraparound. VACUUM không sắp xếp lại dòng (đó là `CLUSTER`)."
-      en: "The four reasons are: recover space, update planner statistics, update the visibility map, protect against wraparound. VACUUM never reorders rows (that is `CLUSTER`)."
+      vi: "Sắp lại dòng nghe hợp lý vì VACUUM có \"dọn dẹp\" trang, nhưng nó chỉ dọn chỗ của dead tuple tại chỗ. Bốn lý do là: thu hồi chỗ, cập nhật thống kê cho planner, cập nhật visibility map, chống wraparound. VACUUM không sắp xếp lại dòng (đó là `CLUSTER`)."
+      en: "Reordering rows sounds plausible because VACUUM does \"tidy up\" pages, but it only cleans out dead tuples where they are. The four reasons are: recover space, update planner statistics, update the visibility map, protect against wraparound. VACUUM never reorders rows (that is `CLUSTER`)."
+  - q:
+      vi: "Bảng `orders` (index trên `id` và `updated_at`) nhận rất nhiều câu `UPDATE orders SET note = 'x' WHERE id = 1`, và các UPDATE này đang HOT. Một đồng nghiệp đề xuất thêm index trên `note` cho nhanh. Điều gì xảy ra với các UPDATE đó?"
+      en: "Table `orders` (indexes on `id` and `updated_at`) takes a lot of `UPDATE orders SET note = 'x' WHERE id = 1` statements, and these UPDATEs are HOT. A colleague suggests an index on `note` to make things faster. What happens to those UPDATEs?"
+    options:
+      - { vi: "Nhanh hơn: index giúp Postgres tìm dòng cần sửa", en: "Faster: the index helps Postgres find the row to change" }
+      - { vi: "Không đổi: index chỉ ảnh hưởng câu đọc", en: "No change: an index only affects reads" }
+      - { vi: "Chậm hơn: `note` giờ có index nên không UPDATE nào còn HOT; mỗi lần sửa thêm một mục vào cả ba index", en: "Slower: `note` is now indexed, so no UPDATE stays HOT; every change adds an entry to all three indexes" }
+    answer: 2
+    why:
+      vi: "Nghe hợp lý vì index đúng là làm câu đọc nhanh hơn, nhưng UPDATE này tìm dòng bằng `id`, đã có khóa chính. Index trên cột bị sửa phá điều kiện đầu của HOT: bản mới cần một mục trong mọi index, nên bảng và index cùng phình nhanh hơn. Chỉ thêm index khi có câu đọc cần nó."
+      en: "It sounds right because an index does speed up reads, but this UPDATE finds its row by `id`, which already has the primary key. An index on the changed column breaks the first HOT condition: every new version needs an entry in every index, so table and indexes both grow faster. Only add an index when a read needs it."
 ---
 
 ## Ý chính

@@ -16,7 +16,7 @@ requires: [e-pg-l4-02]
 sources:
   - https://www.postgresql.org/docs/18/ddl-partitioning.html
   - https://www.postgresql.org/docs/18/functions-admin.html
-viz: pg-plan-tree
+viz: pg-partition-prune
 lab:
   setup: |
     DROP TABLE IF EXISTS events CASCADE;
@@ -49,7 +49,8 @@ predict:
     - { vi: "Cả bốn; ba cái sẽ bị bỏ lúc chạy (`EXPLAIN ANALYZE` hiện chúng là `(never executed)`)", en: "All four; three will be skipped at run time (`EXPLAIN ANALYZE` shows them as `(never executed)`)" }
     - { vi: "Không phân vùng nào, vì truy vấn con chạy trước", en: "None, because the sub-query runs first" }
   answer: 1
-  why: { vi: "Lúc lập kế hoạch Postgres chưa biết ngày, nên giữ mọi phân vùng dưới Append. Lúc chạy, sau khi InitPlan cho ra ngày, nó bỏ qua các phân vùng không thể khớp.", en: "At plan time Postgres does not know the date, so it keeps every partition under the Append. At run time, once the InitPlan returns the date, it skips the partitions that cannot match." }
+  why: { vi: "Chỉ một phân vùng nghe hợp lý vì cuối cùng chỉ một phân vùng khớp, nhưng việc bỏ đó xảy ra lúc chạy, không phải lúc lập kế hoạch. Lúc lập kế hoạch Postgres chưa biết ngày, nên giữ mọi phân vùng dưới Append. Lúc chạy, sau khi InitPlan cho ra ngày, nó bỏ qua các phân vùng không thể khớp.", en: "One partition sounds right because only one partition matches in the end, but that pruning happens at run time, not at plan time. At plan time Postgres does not know the date, so it keeps every partition under the Append. At run time, once the InitPlan returns the date, it skips the partitions that cannot match." }
+  expect: { node: Seq Scan, table: events_default }
 ---
 
 ## Ý chính

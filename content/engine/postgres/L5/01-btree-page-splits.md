@@ -50,7 +50,7 @@ quiz:
       - { vi: "Index khóa lộn xộn có dedup", en: "The scattered-key index uses deduplication" }
       - { vi: "VACUUM chưa chạy trên `seq_keys`", en: "VACUUM has not run on `seq_keys`" }
     answer: 0
-    why: { vi: "Trên dữ liệu thật: lá của `seq_keys_idx` trống trung bình 856 byte (~365 mục), lá của `mixed_keys_idx` trống 2649 byte (~275 mục). Index nhiều trang hơn thì nhiều I/O hơn cho cùng một lần quét; `REINDEX` xây lại từ dữ liệu đã sắp và nén lại.", en: "On the real data: `seq_keys_idx` leaves average 856 free bytes (~365 items), `mixed_keys_idx` leaves 2649 (~275 items). More pages means more I/O for the same scan; `REINDEX` rebuilds from sorted data and packs it again." }
+    why: { vi: "Dedup nghe hợp lý vì nó cũng đổi số mục trên lá, nhưng ở đây mọi khóa đều khác nhau nên không có gì để gộp. Trên dữ liệu thật: lá của `seq_keys_idx` trống trung bình 856 byte (~365 mục), lá của `mixed_keys_idx` trống 2649 byte (~275 mục). Quét toàn bộ index thì đọc thêm trang; `REINDEX` xây lại gọn, nhưng một câu chỉ tra vài khóa đọc thêm nhiều lắm một hai trang lá, và phần đắt thường là truy cập bảng (bài e-pg-l5-17).", en: "Deduplication sounds plausible because it also changes the number of items per leaf, but here every key is distinct, so there is nothing to merge. On the real data: `seq_keys_idx` leaves average 856 free bytes (~365 items), `mixed_keys_idx` leaves 2649 (~275 items). A full index scan reads more pages; a `REINDEX` packs it again, but a query that looks up a few keys reads at most a leaf page or two more, and the expensive part is usually the table access (lesson e-pg-l5-17)." }
 ---
 
 ## Ý chính

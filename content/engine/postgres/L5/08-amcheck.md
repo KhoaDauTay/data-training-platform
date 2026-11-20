@@ -52,7 +52,7 @@ quiz:
       - { vi: "Bỏ qua, index sẽ tự sửa", en: "Ignore it, the index repairs itself" }
       - { vi: "Xóa bảng", en: "Drop the table" }
     answer: 0
-    why: { vi: "Index dựng lại được từ heap. Một nguyên nhân hay gặp là thư viện collation của hệ điều hành đổi thứ tự sắp chuỗi sau khi nâng cấp: index `text` cũ không còn khớp thứ tự mới.", en: "An index can be rebuilt from the heap. A frequent cause is an OS collation library that changed string order after an upgrade: old `text` indexes no longer match the new order." }
+    why: { vi: "Bỏ qua nghe hấp dẫn vì Postgres tự dọn được nhiều thứ (VACUUM, bottom-up deletion), nhưng không có gì tự sửa một index hỏng. Index dựng lại được từ heap. Một nguyên nhân hay gặp là thư viện collation của hệ điều hành đổi thứ tự sắp chuỗi sau khi nâng cấp: index `text` cũ không còn khớp thứ tự mới.", en: "Ignoring it is tempting because Postgres cleans up many things by itself (VACUUM, bottom-up deletion), but nothing repairs a corrupt index by itself. An index can be rebuilt from the heap. A frequent cause is an OS collation library that changed string order after an upgrade: old `text` indexes no longer match the new order." }
 ---
 
 ## Ý chính

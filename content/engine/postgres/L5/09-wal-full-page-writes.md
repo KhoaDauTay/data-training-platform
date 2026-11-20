@@ -49,14 +49,14 @@ quiz:
       - { vi: "Nếu máy sập giữa lúc ghi trang 8 KB, trang trên đĩa có thể bị ghi dở; replay bắt đầu từ ảnh cả trang trong WAL nên sửa được", en: "If the machine crashes mid-write of an 8 KB page, the page on disk can be torn; replay starts from the full-page image in WAL, so it can be repaired" }
       - { vi: "Để standby nhận nhanh hơn", en: "So standbys receive it faster" }
     answer: 1
-    why: { vi: "Đó là `full_page_writes` (mặc định on). Replay bắt đầu từ checkpoint, nên chỉ lần sửa đầu sau mỗi checkpoint cần ảnh cả trang.", en: "That is `full_page_writes` (on by default). Replay starts from the checkpoint, so only the first change after each checkpoint needs the full image." }
+    why: { vi: "Nghe hợp lý vì WAL cũng được gửi sang standby, nhưng ảnh cả trang làm WAL lớn hơn chứ không nhanh hơn; mục đích là chống trang ghi dở. Đó là `full_page_writes` (mặc định on). Replay bắt đầu từ checkpoint, nên chỉ lần sửa đầu sau mỗi checkpoint cần ảnh cả trang.", en: "It sounds right because WAL is also shipped to the standby, but full-page images make WAL bigger, not faster; their purpose is to survive torn pages. That is `full_page_writes` (on by default). Replay starts from the checkpoint, so only the first change after each checkpoint needs the full image." }
   - q: { vi: "Một hệ thống đặt `checkpoint_timeout = 30s` để \"phục hồi nhanh\". Tác dụng phụ chính?", en: "A system sets `checkpoint_timeout = 30s` for \"fast recovery\". The main side effect?" }
     options:
       - { vi: "Không có", en: "None" }
       - { vi: "WAL phình vì nhiều trang hơn phải ghi ảnh cả trang sau mỗi checkpoint, cộng thêm I/O ghi trang bẩn thường xuyên", en: "WAL grows because more pages need a full-page image after each checkpoint, plus frequent I/O to flush dirty pages" }
       - { vi: "Mất dữ liệu đã commit", en: "Committed data is lost" }
     answer: 1
-    why: { vi: "Docs chính thức (WAL Configuration): checkpoint dày làm giảm thời gian phục hồi nhưng tăng chi phí I/O và lượng WAL do full-page write. Mặc định 5 phút / 1 GB là điểm cân bằng thường dùng.", en: "WAL Configuration docs: frequent checkpoints cut recovery time but raise I/O cost and WAL volume through full-page writes. The 5 min / 1 GB defaults are the usual balance." }
+    why: { vi: "Nghe như không có tác dụng phụ vì checkpoint dày chỉ làm phục hồi nhanh hơn, nhưng mỗi checkpoint đều có giá. Docs chính thức (WAL Configuration): checkpoint dày làm giảm thời gian phục hồi nhưng tăng chi phí I/O và lượng WAL do full-page write. Mặc định 5 phút / 1 GB là điểm cân bằng thường dùng.", en: "It sounds free because frequent checkpoints only make recovery faster, but every checkpoint has a price. WAL Configuration docs: frequent checkpoints cut recovery time but raise I/O cost and WAL volume through full-page writes. The 5 min / 1 GB defaults are the usual balance." }
 ---
 
 ## Ý chính

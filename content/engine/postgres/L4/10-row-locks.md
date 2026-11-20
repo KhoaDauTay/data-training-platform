@@ -25,7 +25,7 @@ quiz:
       - { vi: "Không: kiểm tra khóa ngoại lấy `FOR KEY SHARE`, còn UPDATE không đổi cột khóa lấy `FOR NO KEY UPDATE`; hai mức này không xung đột", en: "No: the foreign-key check takes `FOR KEY SHARE`, the key-preserving UPDATE takes `FOR NO KEY UPDATE`, and those two do not conflict" }
       - { vi: "Không, vì khóa ngoại không lấy lock nào cả", en: "No, because foreign keys lock nothing at all" }
     answer: 1
-    why: { vi: "`FOR KEY SHARE` chỉ xung đột với `FOR UPDATE` (xóa dòng hoặc đổi cột khóa). Nhờ vậy chèn dòng con không làm nghẽn việc sửa các cột thường của dòng cha.", en: "`FOR KEY SHARE` only conflicts with `FOR UPDATE` (deleting the row or changing a key column). So inserting child rows does not jam updates to the parent's ordinary columns." }
+    why: { vi: "Nghe hợp lý vì A đúng là giữ một row lock trên dòng khách 42, nhưng đó là mức yếu nhất. `FOR KEY SHARE` chỉ xung đột với `FOR UPDATE` (xóa dòng hoặc đổi cột khóa). Nhờ vậy chèn dòng con không làm nghẽn việc sửa các cột thường của dòng cha.", en: "It sounds right because A does hold a row lock on customer 42, but it is the weakest level. `FOR KEY SHARE` only conflicts with `FOR UPDATE` (deleting the row or changing a key column). So inserting child rows does not jam updates to the parent's ordinary columns." }
   - q: { vi: "Một job giữ row lock trên 2 triệu dòng bằng `SELECT … FOR UPDATE`. Điều gì đúng?", en: "A job locks 2 million rows with `SELECT … FOR UPDATE`. What is true?" }
     options:
       - { vi: "Postgres hết bộ nhớ bảng lock và nâng lên lock trên bảng", en: "Postgres runs out of lock-table memory and escalates to a table lock" }

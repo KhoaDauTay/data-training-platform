@@ -51,14 +51,14 @@ quiz:
       - { vi: "Tắt `enable_nestloop` cho cả server", en: "Turn `enable_nestloop` off for the whole server" }
       - { vi: "Tăng `random_page_cost`", en: "Raise `random_page_cost`" }
     answer: 0
-    why: { vi: "Lỗi nằm ở ước lượng: planner nhân hai độ chọn lọc như thể độc lập. Thống kê phụ thuộc hàm cho nó biết district quyết định city. Tắt một loại join chỉ che triệu chứng và làm hỏng câu khác.", en: "The error is in the estimate: the planner multiplies two selectivities as if independent. Functional-dependency statistics tell it that district determines city. Disabling a join type only hides the symptom and hurts other queries." }
+    why: { vi: "Tắt `enable_nestloop` hấp dẫn vì Nested Loop chậm là thứ bạn nhìn thấy, nhưng nó chỉ là hậu quả. Lỗi nằm ở ước lượng: planner nhân hai độ chọn lọc như thể độc lập. Thống kê phụ thuộc hàm cho nó biết district quyết định city. Tắt một loại join chỉ che triệu chứng và làm hỏng câu khác.", en: "Turning off `enable_nestloop` is tempting because the slow Nested Loop is what you see, but it is only the consequence. The error is in the estimate: the planner multiplies two selectivities as if independent. Functional-dependency statistics tell it that district determines city. Disabling a join type only hides the symptom and hurts other queries." }
   - q: { vi: "`GROUP BY city, district` bị ước lượng quá nhiều nhóm. Loại thống kê nào giúp?", en: "`GROUP BY city, district` is estimated with far too many groups. Which statistics kind helps?" }
     options:
       - { vi: "`mcv`", en: "`mcv`" }
       - { vi: "`ndistinct`", en: "`ndistinct`" }
       - { vi: "`dependencies`", en: "`dependencies`" }
     answer: 1
-    why: { vi: "`ndistinct` lưu số tổ hợp khác nhau của nhóm cột, đúng thứ GROUP BY cần để đoán số nhóm.", en: "`ndistinct` stores the number of distinct combinations of the columns, exactly what GROUP BY needs to guess the number of groups." }
+    why: { vi: "`dependencies` nghe hợp vì hai cột phụ thuộc nhau, nhưng nó chỉ sửa ước lượng của điều kiện lọc, không phải số nhóm. `ndistinct` lưu số tổ hợp khác nhau của nhóm cột, đúng thứ GROUP BY cần để đoán số nhóm.", en: "`dependencies` sounds right because the two columns depend on each other, but it only fixes the estimate of filter conditions, not the group count. `ndistinct` stores the number of distinct combinations of the columns, exactly what GROUP BY needs to guess the number of groups." }
 ---
 
 ## Ý chính

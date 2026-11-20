@@ -30,8 +30,8 @@ quiz:
       - { vi: "`text`", en: "`text`" }
     answer: 1
     why:
-      vi: "`numeric` lưu chính xác từng chữ số, nên tổng tiền không lệch. `double precision` có sai số nhị phân; `text` không cộng trừ được."
-      en: "`numeric` stores every digit exactly, so totals never drift. `double precision` has binary rounding error; `text` cannot be added up."
+      vi: "`double precision` nghe hợp lý vì nó là kiểu số có phần lẻ, nhưng nó có sai số nhị phân nên cộng nhiều lần thì tổng tiền lệch. `numeric` lưu chính xác từng chữ số, nên tổng tiền không lệch; `text` không cộng trừ được."
+      en: "`double precision` sounds right because it is a number type with a fraction, but it has binary rounding error, so totals drift once you add many amounts. `numeric` stores every digit exactly, so totals never drift; `text` cannot be added up."
   - q:
       vi: Một lần đăng nhập xảy ra lúc 09:00 giờ UTC. Kiểu nào giữ đúng thời điểm đó cho người xem ở mọi múi giờ?
       en: A login happens at 09:00 UTC. Which type keeps that exact instant for viewers in every time zone?
@@ -41,8 +41,8 @@ quiz:
       - { vi: "`date`", en: "`date`" }
     answer: 1
     why:
-      vi: "`timestamptz` lưu một thời điểm tuyệt đối và đổi sang múi giờ của phiên khi hiển thị. `timestamp` bỏ phần múi giờ, nên hai người ở hai nơi hiểu khác nhau."
-      en: "`timestamptz` stores an absolute instant and converts it to the session zone for display. `timestamp` drops the zone, so two people in two places read it differently."
+      vi: "`timestamp` dễ được chọn vì tên của nó nghe đúng là \"thời điểm\"; nhưng nó bỏ phần múi giờ, nên hai người ở hai nơi hiểu khác nhau. `timestamptz` lưu một thời điểm tuyệt đối và đổi sang múi giờ của phiên khi hiển thị."
+      en: "`timestamp` is tempting because its name sounds exactly like \"an instant\", but it drops the zone, so two people in two places read it differently. `timestamptz` stores an absolute instant and converts it to the session zone for display."
   - q:
       vi: Bạn muốn tên khách tối đa 100 ký tự. Cách nào đúng với Postgres?
       en: You want customer names to be at most 100 characters. Which is right for Postgres?
@@ -52,8 +52,8 @@ quiz:
       - { vi: Không giới hạn được, en: It cannot be limited }
     answer: 1
     why:
-      vi: "Ba kiểu chuỗi không khác nhau về hiệu năng; `char(n)` còn đệm khoảng trắng và thường chậm nhất. Giới hạn độ dài bằng `varchar(n)` hoặc `CHECK`."
-      en: "The three string types perform the same; `char(n)` also pads with blanks and is usually the slowest. Cap the length with `varchar(n)` or a `CHECK`."
+      vi: "Lời khuyên \"chuỗi độ dài cố định thì nhanh hơn\" đến từ vài hệ CSDL khác, nên nghe quen; nhưng ở Postgres ba kiểu chuỗi không khác nhau về hiệu năng, và `char(n)` còn đệm khoảng trắng nên thường chậm nhất. Giới hạn độ dài bằng `varchar(n)` hoặc `CHECK`."
+      en: "The advice \"fixed-length strings are faster\" comes from some other databases, so it sounds familiar, but in Postgres the three string types perform the same, and `char(n)` also pads with blanks and is usually the slowest. Cap the length with `varchar(n)` or a `CHECK`."
 ---
 ## Ý chính
 

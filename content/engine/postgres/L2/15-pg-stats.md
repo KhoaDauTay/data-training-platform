@@ -62,8 +62,8 @@ predict:
     - { vi: "Không biết được nếu chưa chạy câu", en: "Unknowable without running the query" }
   answer: 1
   why:
-    vi: "`ANALYZE` ghi `most_common_vals = {open,pending,closed}` và `most_common_freqs = {0.6,0.3,0.1}`. Với `status = 'closed'`, planner lấy 0,1 × 30.000 = 3000. Bảng chỉ 30.000 dòng nên `ANALYZE` đọc hết, thống kê đúng tuyệt đối; với bảng lớn nó lấy mẫu, nên ước lượng chỉ gần đúng."
-    en: "`ANALYZE` recorded `most_common_vals = {open,pending,closed}` and `most_common_freqs = {0.6,0.3,0.1}`. For `status = 'closed'` the planner takes 0.1 x 30,000 = 3000. The table has only 30,000 rows, so `ANALYZE` read all of them and the statistics are exact; on a large table it samples, so estimates are only approximate."
+    vi: "10.000 nghe hợp lý nếu bạn nghĩ planner chỉ biết có 3 giá trị rồi chia đều; nhưng `ANALYZE` ghi cả tần suất: `most_common_vals = {open,pending,closed}` và `most_common_freqs = {0.6,0.3,0.1}`. Với `status = 'closed'`, planner lấy 0,1 × 30.000 = 3000. Bảng chỉ 30.000 dòng nên `ANALYZE` đọc hết, thống kê đúng tuyệt đối; với bảng lớn nó lấy mẫu, nên ước lượng chỉ gần đúng."
+    en: "10,000 sounds right if you think the planner only knows there are 3 values and splits evenly, but `ANALYZE` also recorded frequencies: `most_common_vals = {open,pending,closed}` and `most_common_freqs = {0.6,0.3,0.1}`. For `status = 'closed'` the planner takes 0.1 x 30,000 = 3000. The table has only 30,000 rows, so `ANALYZE` read all of them and the statistics are exact; on a large table it samples, so estimates are only approximate."
 ---
 ## Ý chính
 

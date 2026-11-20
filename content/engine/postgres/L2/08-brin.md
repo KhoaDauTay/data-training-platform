@@ -53,8 +53,8 @@ predict:
     - { vi: "Index Scan trả đúng 144 dòng, không cần kiểm lại", en: "Index Scan returning exactly 144 rows, no recheck needed" }
   answer: 1
   why:
-    vi: "BRIN lưu min/max của `taken_at` cho mỗi khối 8 trang. Vì dữ liệu ghi theo thời gian, chỉ một hai khối có khoảng giao với ngày cần đếm. Bitmap Index Scan đánh dấu các khối đó (planner ước 1250 dòng, tức vài khối), Bitmap Heap Scan đọc chúng và `Recheck Cond` lọc lại từng dòng, còn 144. BRIN không bao giờ trỏ thẳng tới dòng, nên không có Index Scan."
-    en: "BRIN stores the min/max of `taken_at` for each 8-page block range. Because data was written in time order, only one or two ranges overlap the day. The Bitmap Index Scan marks those ranges (the planner estimates 1250 rows, a few ranges), the Bitmap Heap Scan reads them and `Recheck Cond` filters each row, leaving 144. BRIN never points at individual rows, so there is no plain Index Scan."
+    vi: "Seq Scan nghe hợp lý vì BRIN chỉ là bản tóm tắt, không biết từng dòng nằm đâu; nhưng bản tóm tắt đó đủ để bỏ qua các khối không liên quan: BRIN lưu min/max của `taken_at` cho mỗi khối 8 trang. Vì dữ liệu ghi theo thời gian, chỉ một hai khối có khoảng giao với ngày cần đếm. Bitmap Index Scan đánh dấu các khối đó (planner ước 1250 dòng, tức vài khối), Bitmap Heap Scan đọc chúng và `Recheck Cond` lọc lại từng dòng, còn 144. BRIN không bao giờ trỏ thẳng tới dòng, nên không có Index Scan."
+    en: "A Seq Scan sounds right because BRIN is only a summary and does not know where each row is, but that summary is enough to skip unrelated ranges: BRIN stores the min/max of `taken_at` for each 8-page block range. Because data was written in time order, only one or two ranges overlap the day. The Bitmap Index Scan marks those ranges (the planner estimates 1250 rows, a few ranges), the Bitmap Heap Scan reads them and `Recheck Cond` filters each row, leaving 144. BRIN never points at individual rows, so there is no plain Index Scan."
 ---
 ## Ý chính
 

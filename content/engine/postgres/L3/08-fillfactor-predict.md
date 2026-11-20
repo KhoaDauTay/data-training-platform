@@ -43,8 +43,8 @@ predict:
     - { vi: "Không cái nào", en: "Neither" }
   answer: 1
   why:
-    vi: "Cột không có index mới là một nửa điều kiện. `jobs_full` xếp 58 dòng vào trang 0 và chỉ còn 48 byte trống, nên bản mới phải sang trang khác: không HOT. `jobs_room` chỉ xếp 40 dòng/trang, chừa khoảng 30 % cho UPDATE, nên bản mới ở lại trang 0: HOT."
-    en: "An unindexed column is only half the condition. `jobs_full` packs 58 rows into page 0 and leaves just 48 bytes free, so the new version must move to another page: not HOT. `jobs_room` puts only 40 rows per page, keeping about 30% for UPDATEs, so the new version stays on page 0: HOT."
+    vi: "\"Cả hai\" nghe hợp lý vì `pad` không có index, điều kiện HOT người ta hay nhớ. Cột không có index mới là một nửa điều kiện. `jobs_full` xếp 58 dòng vào trang 0 và chỉ còn 48 byte trống, nên bản mới phải sang trang khác: không HOT. `jobs_room` chỉ xếp 40 dòng/trang, chừa khoảng 30 % cho UPDATE, nên bản mới ở lại trang 0: HOT."
+    en: "\"Both\" sounds right because `pad` has no index, the HOT condition people usually remember. An unindexed column is only half the condition. `jobs_full` packs 58 rows into page 0 and leaves just 48 bytes free, so the new version must move to another page: not HOT. `jobs_room` puts only 40 rows per page, keeping about 30% for UPDATEs, so the new version stays on page 0: HOT."
   fact:
     vi: "Kết quả thật: `jobs_full` 1 UPDATE, 0 HOT; `jobs_room` 1 UPDATE, 1 HOT."
     en: "Real outcome: `jobs_full` 1 update, 0 HOT; `jobs_room` 1 update, 1 HOT."

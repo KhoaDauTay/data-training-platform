@@ -49,7 +49,7 @@ quiz:
       - { vi: "Hash Join trên hai Seq Scan", en: "A Hash Join over two Seq Scans" }
       - { vi: "Nested Loop 20.000 lần", en: "A Nested Loop running 20,000 times" }
     answer: 1
-    why: { vi: "Không cần thứ tự nữa, hai lần đọc tuần tự + một bảng băm rẻ hơn hai lần đi index. Merge Join chỉ thắng khi thứ tự có sẵn hoặc được dùng lại.", en: "Once no order is needed, two sequential reads plus one hash table beat two index walks. A Merge Join only wins when the order is free or reused." }
+    why: { vi: "Dễ nghĩ kế hoạch vẫn là Merge Join vì phép nối không đổi, nhưng ở bước 3 nó thắng là nhờ `ORDER BY` dùng lại thứ tự của nó. Không cần thứ tự nữa, hai lần đọc tuần tự + một bảng băm rẻ hơn hai lần đi index. Merge Join chỉ thắng khi thứ tự có sẵn hoặc được dùng lại.", en: "It is easy to expect the Merge Join to stay because the join itself is unchanged, but it won in step 3 only because the `ORDER BY` reused its order. Once no order is needed, two sequential reads plus one hash table beat two index walks. A Merge Join only wins when the order is free or reused." }
 ---
 
 ## Ý chính

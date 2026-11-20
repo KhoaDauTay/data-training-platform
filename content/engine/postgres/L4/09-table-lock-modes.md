@@ -40,14 +40,14 @@ quiz:
       - { vi: "B chờ A (ACCESS EXCLUSIVE xung đột ACCESS SHARE), và C xếp hàng sau B, nên C cũng bị chặn dù C chỉ đọc", en: "B waits for A (ACCESS EXCLUSIVE conflicts with ACCESS SHARE), and C queues behind B, so C is blocked too even though it only reads" }
       - { vi: "B hủy A", en: "B cancels A" }
     answer: 1
-    why: { vi: "Đây là chuyện \"migration làm treo cả ứng dụng\". Phòng bằng `SET lock_timeout` trước DDL để B bỏ cuộc sớm thay vì chặn mọi người.", en: "This is the \"a migration froze the whole app\" incident. Prevent it with `SET lock_timeout` before DDL so B gives up early instead of blocking everyone." }
+    why: { vi: "Dễ nghĩ C chạy được vì một câu chỉ đọc không xung đột với báo cáo đang đọc, nhưng C phải xếp hàng sau lock ACCESS EXCLUSIVE mà B đang chờ. Đây là chuyện \"migration làm treo cả ứng dụng\". Phòng bằng `SET lock_timeout` trước DDL để B bỏ cuộc sớm thay vì chặn mọi người.", en: "It is easy to think C runs because a read-only query does not conflict with the report that is reading, but C must queue behind the ACCESS EXCLUSIVE lock B is waiting for. This is the \"a migration froze the whole app\" incident. Prevent it with `SET lock_timeout` before DDL so B gives up early instead of blocking everyone." }
   - q: { vi: "Lệnh nào KHÔNG chặn `INSERT`/`UPDATE` đồng thời trên bảng?", en: "Which command does NOT block concurrent `INSERT`/`UPDATE` on the table?" }
     options:
       - { vi: "`CREATE INDEX` (SHARE)", en: "`CREATE INDEX` (SHARE)" }
       - { vi: "`CREATE INDEX CONCURRENTLY` (SHARE UPDATE EXCLUSIVE)", en: "`CREATE INDEX CONCURRENTLY` (SHARE UPDATE EXCLUSIVE)" }
       - { vi: "`VACUUM FULL` (ACCESS EXCLUSIVE)", en: "`VACUUM FULL` (ACCESS EXCLUSIVE)" }
     answer: 1
-    why: { vi: "SHARE xung đột ROW EXCLUSIVE (chế độ của INSERT/UPDATE/DELETE), còn SHARE UPDATE EXCLUSIVE thì không, nên tạo index concurrently không chặn ghi.", en: "SHARE conflicts with ROW EXCLUSIVE (the mode of INSERT/UPDATE/DELETE), SHARE UPDATE EXCLUSIVE does not, so a concurrent index build does not block writes." }
+    why: { vi: "Chế độ SHARE nghe như chỉ chia sẻ, không chặn ai, nhưng nó chặn mọi lệnh ghi. SHARE xung đột ROW EXCLUSIVE (chế độ của INSERT/UPDATE/DELETE), còn SHARE UPDATE EXCLUSIVE thì không, nên tạo index concurrently không chặn ghi.", en: "The SHARE mode sounds like it only shares and blocks nobody, but it blocks every write. SHARE conflicts with ROW EXCLUSIVE (the mode of INSERT/UPDATE/DELETE), SHARE UPDATE EXCLUSIVE does not, so a concurrent index build does not block writes." }
 ---
 
 ## Ý chính
