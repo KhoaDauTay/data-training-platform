@@ -16,7 +16,7 @@ Tài liệu này viết **brief sẵn để viết bài**, chưa phải bài ho�
 - **Runtime đã chạy:** đúng bản repo ghim, trong Node:
   - PGlite 0.5.16 (`PostgreSQL 18.6 (PGlite 0.5.16) on wasm32-unknown-emscripten`);
   - `@dynoxide/wasm-engine` 1.5.0.
-- **Script:** `scratchpad/r11/` (ngoài repo): `pg.mjs`, `pg2.mjs`, `pg3.mjs`, `dy.mjs`. Mỗi file kết thúc bằng `ALL ASSERTIONS PASSED`, trừ `pg2.mjs` chỉ có một `assert`. Xem phụ lục A.
+- **Script:** `scratchpad/r11/` (ngoài repo): `pg.mjs`, `pg2.mjs`, `pg3.mjs`, `pg4.mjs`, `dy.mjs`, `dy2.mjs`. `pg.mjs`, `pg3.mjs`, `dy.mjs` kết thúc bằng `ALL ASSERTIONS PASSED`; `pg2.mjs` có một `assert`; `pg4.mjs`, `dy2.mjs` chỉ in số đo. Xem phụ lục A.
 - **Đo ở tầng thư viện**, như vòng 10. Trên `v22-engine`, runner DynamoDB đã nhận `ExecuteStatement` và `ExecuteTransaction` (`src/engine/dynamo/engine.ts`, tập `WRITES`/`CAPACITY`). Lab Postgres đổi được `work_mem` qua `set_config(…, true)` trong một hàm của `setup`, như `e-pg-l3-14`.
 
 **Quy ước trích dẫn** (giống vòng 9, 10):
@@ -60,9 +60,9 @@ ANALYZE customers, orders;
 
 **Phát hiện phụ** (chi tiết ở §5):
 
-1. `LEFT JOIN … WHERE o.id IS NULL` (dạng của thẻ `e-bp-a11`) **không** được đổi thành anti join trên PG 18.6: kế hoạch là `Hash Right Join` + `Filter`, ước **1** dòng, thật 100. Viết `WHERE o.customer_id IS NULL` (cột của điều kiện nối) thì thành `Hash Right Anti Join`, ước 100.
+1. `LEFT JOIN orders o ON o.customer_id = c.id WHERE o.id IS NULL` (IS NULL trên cột **không** nằm trong điều kiện nối) **không** được đổi thành anti join trên PG 18.6: kế hoạch là `Hash Right Join` + `Filter`, ước **1** dòng, thật 100. Viết `WHERE o.customer_id IS NULL` (cột của điều kiện nối) thì thành `Hash Right Anti Join`, ước 100. Thẻ `e-bp-a11` không bị ảnh hưởng: nó nối `ON o.id = p.order_id` và đếm `o.id IS NULL`, tức là đúng cột của điều kiện nối.
 2. Dòng `Window:` của EXPLAIN in `ORDER BY orders.amount`, **mất chữ `DESC`**, dù `Sort Key` có `DESC` và kết quả đúng thứ tự giảm. Bài phải trích `Sort Key`, không trích dòng `Window:`.
-3. dynoxide không trả `ConsumedCapacity` khi transaction bị hủy. AWS nói capacity vẫn bị tính ("This capacity is consumed even when a transaction does not succeed.").
+3. dynoxide không trả `ConsumedCapacity` khi request lỗi (transaction bị hủy, ghi có điều kiện thất bại), kể cả khi có `ReturnConsumedCapacity: TOTAL` (`dy2.mjs`). AWS nói capacity vẫn bị tính ("This capacity is consumed even when a transaction does not succeed.").
 
 ---
 
@@ -91,14 +91,14 @@ Setup = dữ liệu chung. Kế hoạch đo thật (`EXPLAIN`, chi phí của n�
 | W1 | như trên | `+ orders_cust_day (customer_id, created_on, id)` | `WindowAgg ← Index Scan using orders_cust_day` (**không Sort**) | `1452.29` |
 | W1 + `LIMIT 10` | như trên | `+ orders_cust_day` | `Limit ← WindowAgg ← Index Scan` | `1.09` |
 | W4 | như trên | `+ orders_cust_day` | `WindowAgg ← Sort ← Bitmap Heap Scan ← Bitmap Index Scan on orders_cust_day` (**vẫn Sort**) | `85.99` |
-| W4, `enable_bitmapscan = off` | như trên | `+ orders_cust_day` | `WindowAgg ← Index Scan using orders_cust_day` (không Sort) | `141.69` |
+| W4, `enable_bitmapscan = off` | như trên | `+ orders_cust_day` (đo lại khi chỉ có index này: `pg4.mjs`, cùng số) | `WindowAgg ← Index Scan using orders_cust_day` (không Sort) | `141.69` |
 | W3 | như trên | `+ orders_customer_idx (customer_id)` | `WindowAgg ← Incremental Sort (Presorted Key: orders.customer_id) ← Index Scan` | `2008.48` |
 
 Ghi chú:
 
 - Index `orders_cust_day` có `id` ở cuối để khớp đủ `ORDER BY created_on, id`. Thiếu `id` thì index chỉ có sẵn tiền tố và planner cần `Incremental Sort`.
 - W4 sau index là chỗ đáng dạy nhất: index có đúng thứ tự, nhưng chỉ 40 dòng nên Bitmap (đọc theo trang) + Sort 40 dòng rẻ hơn. Đây là PG1 ("có index thì luôn dùng") ở dạng mới.
-- `W3` với `orders_customer_idx` đo cùng lúc có cả hai index (`pg2.mjs`, `pg3.mjs`). Bài muốn trích kế hoạch này thì setup tạo **chỉ** `orders_customer_idx` rồi `ANALYZE`, và chạy lại test `expect`.
+- Dòng W3 + `orders_customer_idx` (`2008.48`) đo trong `pg3.mjs`, khi **chỉ** có index này. Bản `EXPLAIN ANALYZE` ở ghi chú dưới (`pg2.mjs`) chạy khi có cả `orders_customer_idx` và `orders_cust_day`; kế hoạch giống nhau, nhưng bài trích output ANALYZE thì phải dựng đúng trạng thái một index rồi đo lại.
 - `EXPLAIN ANALYZE` của W3 (index `(customer_id)`): `WindowAgg (actual rows=1500.00)`, `Incremental Sort … Full-sort Groups: 500 … Peak Memory: 18kB`, `Storage: Memory  Maximum Storage: 17kB`.
 
 ### 1.3 Nhiệm vụ cho người học
@@ -191,12 +191,12 @@ Ghi chú:
    - `expect`: JSON cho `Node Type: Hash Join`, `Join Type: Right Anti`. Text là `Hash Right Anti Join`. **Cần quyết định** ADD-4 so `node` với chữ nào (đề xuất: ghép `Join Type` vào như EXPLAIN text làm, để người học thấy đúng chữ trên màn hình).
 3. **Lab (`check: rows`):** "Khách chưa từng đặt đơn", có sẵn đơn NULL. Câu `NOT IN` cho 0 dòng, sai. Đạt khi dùng `NOT EXISTS`, `LEFT JOIN` hoặc `NOT IN` có lọc NULL.
 4. **Lab (`check: plan` + đọc số):** hàm `setup` kiểu `sort_plan(mem)` của `e-pg-l3-14`, chạy `EXPLAIN` của A3 và A1 với `work_mem` = `'64kB'`. Người học đọc cost `161415.75` so với `563.44`, và giải thích chữ `hashed` mất đi.
-5. **`quiz` kết bài:** "A2 (`o.id IS NULL`) và A1 cho cùng 100 dòng. Vì sao A2 ước 1 dòng?" Đáp án: planner không đổi nó thành anti join, nên ước lượng của `Filter (o.id IS NULL)` dựa trên `null_frac` của `o.id` (0, vì là khóa chính). Lựa chọn sai: "vì thống kê cũ, `ANALYZE` lại là hết" (đã `ANALYZE`). Ước lượng sai như vậy có hại khi kết quả này nối tiếp vào câu khác (L4 `joins`: ước lượng sai là nguyên nhân số một của chọn sai thuật toán nối).
+5. **`quiz` kết bài:** "A2 (`o.id IS NULL`) và A1 cho cùng 100 dòng. Vì sao A2 ước 1 dòng?" Đáp án: planner không đổi nó thành anti join, nên phải ước số dòng qua được `Filter (o.id IS NULL)` của một outer join. Điều này **khớp với** `pg_stats.null_frac` của `o.id` = 0 (khóa chính, `pg4.mjs`), nhưng cách planner ra đúng con số 1 là suy luận của tôi, chưa có nguồn; bài chỉ nên nói "planner không nhận ra đây là anti join, nên ước lượng sai". Lựa chọn sai: "vì thống kê cũ, `ANALYZE` lại là hết" (đã `ANALYZE`). Ước lượng sai như vậy có hại khi kết quả này nối tiếp vào câu khác (L4 `joins`: ước lượng sai là nguyên nhân số một của chọn sai thuật toán nối).
 
 **Hiểu lầm mới:**
 
 - **PG10:** "`NOT IN`, `NOT EXISTS`, `LEFT JOIN … IS NULL` là ba cách viết của cùng một câu, planner xử lý như nhau." Bằng chứng: 100/100/0; `Hash Right Anti Join` so với `hashed SubPlan` so với `Hash Right Join + Filter`; ước 100/300/1.
-- Nối với thẻ BP `e-bp-q02` (`NOT EXISTS` thay `NOT IN`) và `e-bp-a11` (orphans).
+- Nối với thẻ BP `e-bp-q02` (`NOT EXISTS` thay `NOT IN`) và `e-bp-a11` (orphans; thẻ này đã dùng đúng cột của điều kiện nối).
 
 **Nguồn:** functions-subquery 18 §9.24.1 và §9.24.3, using-explain 18, release notes 16 (phụ lục B).
 
@@ -207,7 +207,7 @@ Ghi chú:
 ### 3.1 Ý cần dạy
 
 - Từ PG 12: "CTEs are automatically inlined if they have no side-effects" và chỉ khi "referenced only once"; trước đó "CTEs were never inlined" *(qua fetch, release 12)*.
-- Docs 18: CTE không đệ quy, không tác dụng phụ "can be folded into the parent query", "but not if it references the `WITH` query more than once" *(qua fetch, queries-with 18 §7.8.4)*.
+- Docs 18: CTE không đệ quy, không tác dụng phụ "can be folded into the parent query", "but not if it references the `WITH` query more than once" *(qua fetch, queries-with 18 §7.8.3)*.
 - `MATERIALIZED` "to force separate calculation of the `WITH` query"; `NOT MATERIALIZED` "to force it to be merged into the parent query" *(qua fetch)*.
 - CTE bị tính riêng thì "the optimizer is not able to push restrictions from the parent query down" *(qua fetch)*: `WHERE` của câu ngoài thành `Filter` trên `CTE Scan`, không xuống được index.
 - Hàm volatile (ví dụ `random()`) trong CTE: CTE không inline được, kể cả khi chỉ dùng một lần.
@@ -244,7 +244,7 @@ Ghi chú:
      - (a) Không: CTE được gộp vào câu ngoài, `Bitmap Index Scan on orders_customer_idx`, cost `84.24` (**đúng**);
      - (b) Có: CTE luôn tính trước toàn bộ rồi mới lọc (**hiểu lầm PG11a**, đúng với PG ≤ 11);
      - (c) Không, nhưng `Seq Scan` (sai một chi tiết: đó là kế hoạch khi chưa có index, cost `359.11`).
-   - `expect: { node: Bitmap Index Scan, table: orders }`.
+   - `expect: { node: Bitmap Heap Scan, table: orders }` (nút `Bitmap Index Scan` trong JSON chỉ mang tên index, không mang tên bảng).
 2. **Lab bước (`check: plan`):** người học thêm `MATERIALIZED` vào C1 rồi đọc `CTE t` + `CTE Scan` + `Filter`, cost `759.11`. Câu hỏi đi kèm: "vì sao `Filter` nằm trên `CTE Scan` mà không xuống `orders`?"
 3. **`predict` hai:**
    - Câu hỏi: "D1 dùng `w` hai lần, `w2.customer_id = 42`. Thêm `NOT MATERIALIZED`, cost đổi thế nào?"
@@ -252,7 +252,7 @@ Ghi chú:
      - (a) giảm mạnh, `1409.9` → `352.43`, vì điều kiện xuống được index (**đúng**);
      - (b) không đổi, CTE là một view nên luôn được inline (**hiểu lầm PG11b**);
      - (c) tăng, vì phải đọc `orders` hai lần (sai ở đây; đúng ở C3/C4, dùng cho câu sau).
-   - `expect: { node: Bitmap Index Scan, table: orders }`.
+   - `expect: { node: Bitmap Heap Scan, table: orders }`. D2 đọc `orders` **hai lần** (`Bitmap Heap Scan on orders orders_1` cho `w2`, `Index Only Scan using orders_pkey on orders` cho `w1`), nên test phải nói rõ lần quét nào: so theo alias `orders_1`, hoặc kiểm "có một `Bitmap Heap Scan` trên `orders`".
 4. **`quiz` kết bài (chọn cách sửa):** cho C3 và hỏi "có nên thêm `NOT MATERIALIZED` không?" Đáp án: không, cost `437.77` → `500.77`, vì `GROUP BY` bị tính hai lần. Lời giải thích đúng là "inline = chép thân CTE vào mỗi chỗ dùng; chỉ có lợi khi điều kiện bên ngoài cắt được phần đọc lớn hơn phần phải làm lại".
 
 **Hiểu lầm mới:**
@@ -260,7 +260,7 @@ Ghi chú:
 - **PG11:** (a) "CTE là hàng rào tối ưu, luôn được tính trước" (đúng tới PG 11, sai từ PG 12) và (b) ngược lại "CTE chỉ là cách đặt tên, luôn được inline" (sai khi dùng hai lần, có hàm volatile, hay có `MATERIALIZED`). Bằng chứng: C1/C2, D1/D2, C3/C4.
 - Nối với thẻ BP `e-bp-q07` (gộp trước khi nối, đang viết bằng CTE).
 
-**Nguồn:** queries-with 18 §7.8.4, release notes 12 (phụ lục B).
+**Nguồn:** queries-with 18 §7.8.3, release notes 12 (phụ lục B).
 
 ---
 
@@ -302,22 +302,22 @@ Ghi chú:
 | R2 | `UpdateItem` `ADD orders :one, revenue :amt SET #m = :m` (bộ đếm tháng 9, mỗi đơn một lần) | tạo bộ đếm nếu chưa có | 700 lần = 2095 WCU: 3 WCU mỗi lần (bảng 1 + GSI 2, vì `revenue` là sort key của GSI); 5 lần tạo mới chỉ 2 WCU (bảng 1 + GSI 1) |
 | R2' | `UpdateItem` `ADD revenue :a` (`INDEXES`) | `revenue` đổi | `Table 1`, `byMonth 2` |
 | R2'' | `UpdateItem` `ADD orders :z, revenue :z` với `:z = 0` | không đổi gì | `Table 1`, GSI 0 |
-| R3 | `ExecuteStatement` `UPDATE "Shop" SET orders = orders + 1 WHERE PK = 'CAT#books' AND SK = 'MONTH#2026-10'` khi bộ đếm **chưa có** | `ConditionalCheckFailedException`, item vẫn không có | không trả |
-| R4 | `ExecuteTransaction` [INSERT đơn `ORDER#X`, UPDATE bộ đếm chưa có] | `TransactionCanceledException`, lý do `[None, ConditionalCheckFailed]`; `ORDER#X` **không** được ghi | không trả |
+| R3 | `ExecuteStatement` `UPDATE "Shop" SET orders = orders + 1 WHERE PK = 'CAT#books' AND SK = 'MONTH#2026-10'` khi bộ đếm **chưa có** | `ConditionalCheckFailedException`, item vẫn không có | không trả (có yêu cầu `TOTAL`) |
+| R4 | `ExecuteTransaction` [INSERT đơn `ORDER#X`, UPDATE bộ đếm chưa có] | `TransactionCanceledException`, lý do `[None, ConditionalCheckFailed]`; `ORDER#X` **không** được ghi | không trả (có yêu cầu `TOTAL`) |
 | R5 | `ExecuteTransaction` [`INSERT INTO "Shop" VALUE {…}` đơn, `UPDATE "Shop" SET orders = orders + 1 SET revenue = revenue + ? WHERE PK = ? AND SK = 'MONTH#2026-10'`] | `{"Responses":[]}` | 6 WCU (`INDEXES`: bảng 4, `byMonth` 2); 800 lần = 4800 WCU |
 | R5' | như R5 với `amount = 0` (`revenue` không đổi) | ok | 5 WCU (bảng 4, `byMonth` 1: `orders` là thuộc tính được chiếu) |
-| R6 | gửi lại R5 của cùng một đơn | `TransactionCanceledException`, `[DuplicateItem, None]`: bộ đếm không bị cộng lần hai | không trả |
-| R7 | gửi lại `UpdateItem ADD orders :one` (bộ đếm tháng 9 của `books`) | `orders` = 371, đúng là 370: **đếm trùng** | – |
+| R6 | gửi lại R5 của cùng một đơn | `TransactionCanceledException`, `[DuplicateItem, None]`: bộ đếm không bị cộng lần hai | không trả (có yêu cầu `TOTAL`) |
+| R7 | gửi lại `UpdateItem ADD orders :one` (bộ đếm tháng 9 của `books`; đơn retry là `O00701`, loại `books`) | `orders` = 371, đúng là 370: **đếm trùng** | – |
 | R8 | `Query` GSI `byMonth`, `month = 2026-10`, `ScanIndexForward: false`, `Limit: 3` | `books`, `toys`, `garden`; `ScannedCount` 3 | 0,5 RCU |
 | R9 | `Query` GSI `byMonth`, cả tháng 10 | 5 item | 0,5 RCU |
 | R10 | `Scan` GSI `byMonth` (`Select: COUNT`) | 10 item (5 loại × 2 tháng): không có item đơn nào | 0,5 RCU |
-| R11 | `UPDATE "Shop" SET stock = stock - 2 WHERE PK = 'PROD#P1' AND SK = 'STOCK' AND stock >= 2` khi `stock` = 1 | `ConditionalCheckFailedException` | không trả |
+| R11 | `UPDATE "Shop" SET stock = stock - 2 WHERE PK = 'PROD#P1' AND SK = 'STOCK' AND stock >= 2` khi `stock` = 1 | `ConditionalCheckFailedException` (bản `UpdateItem` `SET stock = stock - :n` + `ConditionExpression: stock >= :n` cũng vậy) | không trả (có yêu cầu `TOTAL`) |
 
 Đối chiếu với luật AWS:
 
 - Bảng chính trong transaction: 2 item × 2 = 4 WCU, khớp "two underlying reads or writes of every item in the transaction".
 - Phần GSI (1 hoặc 2 WCU) là **số của dynoxide**. AWS nói GSI tốn hai lần ghi khi đổi giá trị khóa ("two writes are required", vòng 9 §3.2, đã khớp dynoxide ở `UpdateItem`). Docs transaction không nói phần GSI có bị nhân đôi hay không. Bài chỉ hỏi phần bảng, hoặc ghi "dynoxide báo".
-- Transaction bị hủy: AWS nói "This capacity is consumed even when a transaction does not succeed." dynoxide không trả `ConsumedCapacity` lúc đó (giống vòng 9 với ghi có điều kiện bị từ chối). Bài không được nói "hủy thì miễn phí".
+- Transaction bị hủy: AWS nói "This capacity is consumed even when a transaction does not succeed." dynoxide không trả `ConsumedCapacity` lúc đó dù request có `ReturnConsumedCapacity` (`dy2.mjs`; giống vòng 9 với ghi có điều kiện bị từ chối). Docs không nói response lỗi của AWS có kèm `ConsumedCapacity` hay không, nên bài dạy bằng luật, không bằng số đọc được. Bài không được nói "hủy thì miễn phí".
 - R3: AWS nói WHERE không khớp item nào thì trả `ConditionalCheckFailedException`. Vậy PartiQL `UPDATE` **không tạo item mới**, khác `UpdateItem` (tạo nếu chưa có). Bộ đếm phải được tạo trước (đầu tháng), hoặc ghi bằng `UpdateItem` + `ADD`.
 - Thiết kế `revenue` làm sort key của GSI có giá: mỗi lần cộng tiền là 2 WCU cho GSI (R2'). AWS dùng đúng mẫu này (`DownloadCount` là sort key). Bài nói rõ đây là giá của "top N theo tháng".
 
@@ -339,23 +339,23 @@ Ghi chú:
      - (c) 6 (sai một chi tiết: 6 là tổng dynoxide báo, gồm 2 WCU của GSI).
    - Đọc `ReturnConsumedCapacity: "INDEXES"`. Runner đã có `ExecuteTransaction` trong `CAPACITY`.
 5. **Bước 3 (lab):** "Top 3 loại hàng tháng 10" bằng `Query` GSI `byMonth` (R8). So 0,5 RCU với 9,5 RCU của R1.
-6. **`quiz` (retry):** "Mạng lỗi, ứng dụng gửi lại đúng request vừa thành công. Cách nào giữ bộ đếm đúng?" Đáp án: transaction có `INSERT` đơn (R6: `DuplicateItem` hủy cả transaction). Lựa chọn sai: "`UpdateItem ADD` lần hai" (R7: 371 thay vì 370), "`ADD` vốn idempotent".
+6. **`quiz` (retry):** "Mạng lỗi, ứng dụng gửi lại đúng request vừa thành công. Cách nào giữ bộ đếm đúng?" Đáp án: transaction có `INSERT` đơn. AWS: INSERT trùng khóa chính thì "`DuplicateItemException` is returned" (PartiQL insert); trong transaction, một lệnh lỗi thì "the transactions are canceled" (PartiQL transactions). dynoxide cho đúng vậy: `[DuplicateItem, None]` (R6), bộ đếm giữ nguyên. Lựa chọn sai: "`UpdateItem ADD` lần hai" (R7: 371 thay vì 370), "`ADD` vốn idempotent".
 7. **`concept` cuối (sơ đồ, `runtime: docs`):** đường đi của AWS: ghi đơn → Streams → Lambda → `ADD` → GSI sparse. Hai giá phải trả: trễ vài giây ("typically seconds behind") và có thể đếm trùng khi retry. So với cách transaction: đúng ngay, nhưng mỗi đơn tốn gấp đôi WCU và mọi đơn cùng loại hàng ghi vào **một** item (khóa nóng: nối `e-dy-l4-03`, `e-dy-l4-04`).
 
 **Hiểu lầm mới cho `engine-pedagogy.md` §2.4:**
 
 - **DY7:** (a) "PartiQL `UPDATE` tạo item nếu chưa có, như `UpdateItem`" và (b) "DynamoDB không có `SUM` nên báo cáo nào cũng phải Scan". Bằng chứng: R3; R1 so với R8 (9,5 với 0,5 RCU).
 
-**Nguồn:** AWS materialized aggregation, PartiQL update, PartiQL operators, PartiQL transactions, Transactions (capacity), Update expressions (phụ lục B).
+**Nguồn:** AWS materialized aggregation, PartiQL update, PartiQL operators, PartiQL insert, PartiQL transactions, Transactions (capacity), Update expressions (phụ lục B).
 
 ---
 
 ## 5. Phát hiện phụ (cần sửa ở chỗ khác)
 
-1. **`e-bp-a11` (orphans):** thẻ dạy `LEFT JOIN … WHERE o.id IS NULL`. Đáp số đúng, nhưng trên PG 18.6 kế hoạch là `Hash Right Join` + `Filter` với **ước 1 dòng** (thật 100, `Rows Removed by Filter: 20000`). Cùng câu với `o.customer_id IS NULL` (cột trong điều kiện nối) thì thành `Hash Right Anti Join`, ước 100. Đề xuất: thẻ giữ nguyên ý chính, thêm một dòng "kiểm cột của điều kiện nối (`o.customer_id IS NULL`), hoặc dùng `NOT EXISTS`, để planner nhận ra anti join". Brief P2 bước 5 dạy chuyện này ở Engine.
+1. **`LEFT JOIN … IS NULL` trên cột ngoài điều kiện nối:** đáp số đúng, nhưng trên PG 18.6 kế hoạch là `Hash Right Join` + `Filter` với **ước 1 dòng** (thật 100, `Rows Removed by Filter: 20000`). Cùng câu với `o.customer_id IS NULL` (cột trong điều kiện nối) thì thành `Hash Right Anti Join`, ước 100. Luật chung cho người viết bài và thẻ: kiểm IS NULL trên cột của điều kiện nối, hoặc dùng `NOT EXISTS`. Thẻ `e-bp-a11` đã theo đúng luật này (`ON o.id = p.order_id`, đếm `o.id IS NULL`), không cần sửa. Brief P2 bước 5 dạy chuyện này ở Engine.
 2. **Dòng `Window:` của EXPLAIN mất `DESC`:** W2 in `Window: w1 AS (ORDER BY amount ROWS UNBOUNDED PRECEDING)`, W3 in `ORDER BY orders.amount, orders.id`. Nhưng `Sort Key` là `amount DESC` và W3 trả đúng thứ tự giảm (khách 42: 950, 947, 944). Bài nào trích kế hoạch cửa sổ có `DESC` thì trích dòng `Sort Key`. Test `expect` nên so nút, không so chữ của dòng `Window:`.
 3. **ADD-4 và join type:** JSON tách `Node Type` (`Hash Join`, `Nested Loop`) và `Join Type` (`Right Anti`, `Anti`, `Right`). EXPLAIN text ghép thành `Hash Right Anti Join`. `planCheck` hiện chỉ so nút quét theo bảng (`product-design-db-engine.md` §2.3). Brief P2 cần ADD-4 so được cả join type; nếu không, câu predict kế hoạch chấm bằng chữ của text.
-4. **dynoxide và transaction bị hủy:** không trả `ConsumedCapacity` (R4, R6), trong khi AWS vẫn tính capacity. Thêm dòng này vào danh sách "runtime ≠ engine thật" (vòng 10 §0 mục 3).
+4. **dynoxide và transaction bị hủy:** không trả `ConsumedCapacity` cho request lỗi (R3, R4, R6, R11, kể cả khi có `ReturnConsumedCapacity`), trong khi AWS vẫn tính capacity. Thêm dòng này vào danh sách "runtime ≠ engine thật" (vòng 10 §0 mục 3).
 
 ---
 
@@ -375,7 +375,7 @@ Ghi chú:
 
 **DynamoDB: `e-dy-l4-15` trong mô-đun `patterns` (L4)**, cần `e-dy-l2-05` (`ADD`), `e-dy-l2-07` (PartiQL), `e-dy-l4-08` (GSI sparse) và `e-dy-l4-11` (transaction). Nếu muốn mô-đun `transactions` gọn hơn thì đặt sau `e-dy-l4-13`. Nhãn: "Chạy bằng dynoxide" cho bước 1–6; bước 7 là "Sơ đồ".
 
-**Thứ tự viết đề xuất:** P2 trước (rủi ro dạy sai cao nhất, và có sửa kèm thẻ `e-bp-a11`), rồi P1, P3, D1.
+**Thứ tự viết đề xuất:** P2 trước (rủi ro dạy sai cao nhất), rồi P1, P3, D1.
 
 ---
 
@@ -386,6 +386,8 @@ Thư mục: `C:\Users\KHOA~1.HUY\AppData\Local\Temp\claude\…\scratchpad\r11\`,
 - **`pg.mjs` → `pg.out`:** setup chung; W1–W4 trước và sau `orders_cust_day`; A1–A4 trước/sau đơn NULL (assert 100/100/100/100 rồi 100/100/0/100) và với `work_mem` 64kB; C1–C6 (assert C1 = C2 = 26860).
 - **`pg2.mjs` → `pg2.out`:** `EXPLAIN ANALYZE` của A1/A2 (ước và thật), A2b, A1 có index, W4 tắt bitmap, W3 `EXPLAIN ANALYZE` với index `(customer_id)`.
 - **`pg3.mjs` → `pg3.out`:** `Node Type`/`Join Type` từ `FORMAT JSON` cho mọi kế hoạch dùng trong `predict`; cửa sổ dùng chung; D1/D2 có và không có index (assert cùng 40 dòng).
+- **`pg4.mjs` → `pg4.out`:** W4 khi chỉ có `orders_cust_day` (cùng `85.99` / `141.69`), `pg_stats.null_frac` của `orders.id` và `orders.customer_id` (cả hai 0).
+- **`dy2.mjs` → `dy2.out`:** R3, R4, R6, R11 và `UpdateItem` có điều kiện thất bại, đều gửi `ReturnConsumedCapacity: TOTAL` và in nguyên lỗi: không có `ConsumedCapacity` nào. R5 trên bảng không GSI tốn 4 WCU.
 - **`dy.mjs` → `dy.out`:** R1–R11, assert bộ đếm = đáp số sinh = tổng Scan cho cả 5 loại tháng 10, và đếm đơn tháng 9.
 
 **Dòng chính:**
@@ -414,7 +416,7 @@ R3 PartiQL UPDATE on missing item  ConditionalCheckFailedException, item absent
 **PostgreSQL 18** *(qua fetch)*:
 
 - Queries, Window Function Processing (§7.2.5): https://www.postgresql.org/docs/18/queries-table-expressions.html
-- WITH Queries, CTE materialization (§7.8.4): https://www.postgresql.org/docs/18/queries-with.html
+- WITH Queries, Common Table Expression Materialization (§7.8.3): https://www.postgresql.org/docs/18/queries-with.html
 - Subquery Expressions, EXISTS và NOT IN (§9.24): https://www.postgresql.org/docs/18/functions-subquery.html
 - Using EXPLAIN: https://www.postgresql.org/docs/18/using-explain.html *(dùng lại từ `e-pg-l4-04`)*
 - Release 12.0 (CTE inline): https://www.postgresql.org/docs/release/12.0/
@@ -426,6 +428,7 @@ R3 PartiQL UPDATE on missing item  ConditionalCheckFailedException, item absent
 - Materialized aggregation queries: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-gsi-aggregation.html
 - PartiQL update statements: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/ql-reference.update.html
 - PartiQL operators: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/ql-operators.html
+- PartiQL insert statements: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/ql-reference.insert.html
 - PartiQL transactions: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/ql-reference.multiplestatements.transactions.html
 - Transactions, capacity: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/transaction-apis.html
 - Update expressions (SET `+`/`-`, ADD): https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.UpdateExpressions.html
