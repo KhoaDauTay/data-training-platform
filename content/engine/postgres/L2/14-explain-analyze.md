@@ -31,8 +31,8 @@ quiz:
       - { vi: "Index bị hỏng", en: "The index is corrupt" }
     answer: 1
     why:
-      vi: "Planner chọn kế hoạch dựa trên số dòng ước lượng. Lệch gần 1000 lần thì lựa chọn nested loop, index hay thứ tự join có thể sai hết. Việc đầu tiên là kiểm thống kê."
-      en: "The planner chooses plans from estimated row counts. Off by nearly 1000x, its choice of nested loop, index or join order may all be wrong. Check the statistics first."
+      vi: "Bỏ qua nghe hợp lý vì câu vẫn chạy xong và kết quả vẫn đúng; nhưng planner chọn kế hoạch dựa trên số dòng ước lượng. Lệch gần 1000 lần thì lựa chọn nested loop, index hay thứ tự join có thể sai hết. Việc đầu tiên là kiểm thống kê."
+      en: "Ignoring it is tempting because the query still finished with a correct result, but the planner chooses plans from estimated row counts. Off by nearly 1000x, its choice of nested loop, index or join order may all be wrong. Check the statistics first."
   - q:
       vi: "Bạn cần thêm index cho bảng đơn hàng đang nhận ghi liên tục. Lệnh nào không chặn `INSERT` trong lúc tạo?"
       en: "You must add an index to an orders table that takes writes all the time. Which command does not block `INSERT` while it builds?"
@@ -42,8 +42,8 @@ quiz:
       - { vi: "`CREATE INDEX` trong một `BEGIN ... COMMIT`", en: "`CREATE INDEX` inside a `BEGIN ... COMMIT`" }
     answer: 1
     why:
-      vi: "`CREATE INDEX` giữ lock SHARE, chặn mọi ghi tới khi xong. `CONCURRENTLY` giữ lock SHARE UPDATE EXCLUSIVE, cho ghi tiếp, đổi lại phải quét bảng hai lần, chờ các transaction đang chạy, không chạy được trong `BEGIN`, và nếu lỗi thì để lại một index INVALID phải xóa."
-      en: "`CREATE INDEX` takes a SHARE lock and blocks all writes until it finishes. `CONCURRENTLY` takes SHARE UPDATE EXCLUSIVE and lets writes continue; in exchange it scans the table twice, waits for running transactions, cannot run inside `BEGIN`, and on failure leaves an INVALID index you must drop."
+      vi: "Bọc trong `BEGIN ... COMMIT` nghe hợp lý vì transaction có vẻ che chắn cho các phiên khác; nhưng nó không đổi loại lock: `CREATE INDEX` vẫn giữ lock SHARE, chặn mọi ghi tới khi xong. `CONCURRENTLY` giữ lock SHARE UPDATE EXCLUSIVE, cho ghi tiếp, đổi lại phải quét bảng hai lần, chờ các transaction đang chạy, không chạy được trong `BEGIN`, và nếu lỗi thì để lại một index INVALID phải xóa."
+      en: "Wrapping it in `BEGIN ... COMMIT` is tempting because a transaction seems to shield other sessions, but it does not change the lock: `CREATE INDEX` still takes a SHARE lock and blocks all writes until it finishes. `CONCURRENTLY` takes SHARE UPDATE EXCLUSIVE and lets writes continue; in exchange it scans the table twice, waits for running transactions, cannot run inside `BEGIN`, and on failure leaves an INVALID index you must drop."
   - q:
       vi: "\"Thêm index thì câu nào cũng nhanh hơn, nên cứ thêm nhiều index.\" Điều gì sai?"
       en: "\"An index makes every query faster, so add plenty of them.\" What is wrong?"
@@ -53,8 +53,8 @@ quiz:
       - { vi: "Postgres chỉ cho tối đa 3 index mỗi bảng", en: "Postgres allows at most 3 indexes per table" }
     answer: 1
     why:
-      vi: "Một `INSERT` vào bảng có 6 index là 1 lần ghi heap cộng 6 lần ghi index. Còn với câu lấy 90 % bảng, Seq Scan rẻ hơn mọi index (bài L1 \"Có index, sao vẫn Seq Scan?\")."
-      en: "One `INSERT` into a table with 6 indexes is 1 heap write plus 6 index writes. And for a query reading 90% of the table, a Seq Scan beats any index (L1 lesson \"There is an index, so why a Seq Scan?\")."
+      vi: "Câu này nghe đúng vì mỗi index đúng là làm vài câu đọc nhanh hơn; nhưng mỗi lần ghi phải trả giá: một `INSERT` vào bảng có 6 index là 1 lần ghi heap cộng 6 lần ghi index. Còn với câu lấy 90 % bảng, Seq Scan rẻ hơn mọi index (bài L1 \"Có index, sao vẫn Seq Scan?\")."
+      en: "The claim sounds right because each index does speed up some reads, but every write pays for it: one `INSERT` into a table with 6 indexes is 1 heap write plus 6 index writes. And for a query reading 90% of the table, a Seq Scan beats any index (L1 lesson \"There is an index, so why a Seq Scan?\")."
 ---
 ## Ý chính
 

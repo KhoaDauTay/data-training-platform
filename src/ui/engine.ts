@@ -4,7 +4,10 @@ import { engineHash, enginePathHash, enginePathOf, enginePlayOf, engineRouteOf, 
 import { actions, app, persist } from '../state';
 import { BTN_GHOST, BTN_GO, BTN_SECONDARY, CARD, cx, DONE_PILL, isDark, PILL } from '../theme';
 import { optionOrder } from '../tickets';
-import { loadedGsap, loadGsap } from '../art/load';
+import { illustration, loadedGsap, loadGsap } from '../art/load';
+import { readJson, writeJson } from '../storage';
+import { react } from './celebrate';
+import { mascot } from './mascots';
 import { announce, h, loader, reducedMotion } from './dom';
 import { s } from './svg';
 import { errorView } from './feedback';
@@ -35,6 +38,8 @@ function engineChunk(): Promise<EngineView> {
         ui: { listRow, LIST, GROUP_TITLE, ABOVE }, createEditor,
         lab: { sql: (text) => runOn('lab', text), grade: (run, solution, player, ordered) => grade(run, solution, player, ordered), verdict: verdictText, lang: getLang },
         viz: { h, s, reducedMotion, loadedGsap, loadGsap, getLang },
+        prefs: { read: readJson, write: writeJson },
+        cheer: { mascot, react, badge: () => illustration('aspect-square', (il) => il.doneBadge()) },
       }, src);
       failed = false;
       return (view = m);

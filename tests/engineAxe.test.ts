@@ -2,7 +2,7 @@
 // ENG-CORE (L220): the lesson viewer in the real app with the three sample lessons (tests/fixtures/engine) standing in for the
 // Postgres content chunk: axe on each lesson page, then a quiz lesson answered until its id is in save.completed.
 import { beforeAll, describe, expect, it, vi } from 'vitest';
-import { boot, byId, EmptyWorker, problems, visit } from './axeHarness';
+import { boot, byId, EmptyWorker, problems, settle, visit } from './axeHarness';
 import { app } from '../src/state';
 
 vi.mock('../src/engineSources', () => ({
@@ -13,7 +13,7 @@ vi.mock('../src/engineSources', () => ({
 
 beforeAll(() => boot({ worker: EmptyWorker, storage: { 'cargo-query/coach-done': 'true', 'cargo-query/domain': '"logistics"' } }));
 
-const LESSONS = ['e-pg-l1-01', 'e-pg-l1-02', 'e-pg-l1-03'].map((id) => `#/engine/postgres/L1/${id}`);
+const LESSONS = ['e-pg-l1-01', 'e-pg-l1-02', 'e-pg-l1-03', 'e-pg-l1-04', 'e-pg-l1-05'].map((id) => `#/engine/postgres/L1/${id}`);
 
 describe('Database Engine lesson pages (fixtures)', () => {
   it.each(LESSONS)('axe: %s', async (hash) => {
@@ -56,4 +56,43 @@ describe('Database Engine lesson pages (fixtures)', () => {
     document.querySelector<HTMLElement>('[data-ek="e-pg-l1-01-done"]')!.click();
     expect(app.save.completed).toContain('e-pg-l1-01');
   });
+
+  // v23 PRED (L256): "Xem thật" grades any pick, opens the result card, records only the first pick (device pref).
+  it('predict with a real plan: wrong guess → result card, first pick kept; a new pick re-grades', async () => {
+    await visit('#/engine/postgres/L1/e-pg-l1-04');
+    const ek = (k: string) => document.querySelector<HTMLElement>(`[data-ek="e-pg-l1-04-${k}"]`)!;
+    const status = () => ek('p-check').parentElement!.querySelector('[role=status]')!;
+    ek('p-check').click();
+    expect(status().textContent).not.toBe(''); // nothing picked yet: asks for a pick
+    expect(ek('plan')).toBeNull();
+    ek('p-0').click(); // wrong
+    ek('p-check').click();
+    await vi.waitFor(() => expect(ek('plan')).not.toBeNull());
+    expect(status().classList.contains('bad')).toBe(true);
+    expect((ek('p-check') as HTMLButtonElement).disabled).toBe(true);
+    expect(JSON.parse(localStorage.getItem('cargo-query/engine-first')!)).toMatchObject({ 'e-pg-l1-04': 0 });
+    ek('p-1').click(); // guess again: graded at once
+    await vi.waitFor(() => expect(status().classList.contains('good')).toBe(true));
+    expect(JSON.parse(localStorage.getItem('cargo-query/engine-first')!)['e-pg-l1-04']).toBe(0);
+    await settle();
+    expect(await problems()).toEqual([]);
+  });
+
+  // v23 CAP (L257): step bar, "Chấm bằng", the gated before/after plans, then the finish card.
+  it('capstone: step bar + checklist + plans gate, and the finish card once completed', async () => {
+    await visit('#/engine/postgres/L1/e-pg-l1-05', () => expect(document.querySelector('[data-cap-bar]')).not.toBeNull());
+    const bar = document.querySelector('[data-cap-bar]')!;
+    expect(bar.querySelectorAll('li')).toHaveLength(2);
+    expect(bar.querySelector('li[aria-current=step]')?.textContent).toContain('Đếm lượt xem');
+    expect(document.querySelector('[data-step="0"]')!.className).toContain('ring-accent');
+    expect(document.querySelector('[data-ek="e-pg-l1-05-plans"]')).toBeNull(); // gated until the index step passes
+    expect(await problems()).toEqual([]);
+    app.save.completed.push('e-pg-l1-05');
+    location.hash = '#/engine/postgres/L1/e-pg-l1-01';
+    await visit('#/engine/postgres/L1/e-pg-l1-05', () => expect(document.querySelector('[data-cap-done]')).not.toBeNull());
+    expect(document.querySelector('[data-cap-done] svg[data-mascot=lily]')).not.toBeNull();
+    expect(document.querySelector('[data-ek="e-pg-l1-05-plans"]')).not.toBeNull(); // done in an earlier visit: the plans open
+    expect(await problems()).toEqual([]);
+  });
 });
+

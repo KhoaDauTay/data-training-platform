@@ -42,7 +42,8 @@ predict:
     - { vi: "`customers`, vì bộ lọc làm nó chỉ còn vài dòng", en: "`customers`, because the filter leaves only a few rows" }
     - { vi: "`orders`, vì nó nằm giữa", en: "`orders`, because it sits in the middle" }
   answer: 1
-  why: { vi: "Với 3 bảng (dưới `join_collapse_limit` = 8), planner xét mọi thứ tự và bắt đầu từ phía nhỏ nhất sau lọc: Index Scan trên `customers`, rồi Nested Loop sang `orders` và `order_notes`.", en: "With 3 tables (below `join_collapse_limit` = 8) the planner tries every order and starts from the smallest side after filtering: an Index Scan on `customers`, then Nested Loops into `orders` and `order_notes`." }
+  why: { vi: "Nghe hợp lý vì `order_notes` đứng đầu câu, nhưng thứ tự viết không ràng buộc planner khi số bảng còn nhỏ. Với 3 bảng (dưới `join_collapse_limit` = 8), planner xét mọi thứ tự và bắt đầu từ phía nhỏ nhất sau lọc: Index Scan trên `customers`, rồi Nested Loop sang `orders` và `order_notes`.", en: "It sounds right because `order_notes` comes first in the query, but the written order does not bind the planner while the table count is small. With 3 tables (below `join_collapse_limit` = 8) the planner tries every order and starts from the smallest side after filtering: an Index Scan on `customers`, then Nested Loops into `orders` and `order_notes`." }
+  expect: { node: Index Scan, table: customers, index: customers_pkey }
 quiz:
   - q: { vi: "Một câu nối 14 bảng bằng JOIN tường minh, cấu hình mặc định. Điều gì đúng?", en: "A query joins 14 tables with explicit JOINs, default settings. What is true?" }
     options:
@@ -50,7 +51,7 @@ quiz:
       - { vi: "Vượt `join_collapse_limit` (8) nên một phần thứ tự viết được giữ; và từ 12 mục FROM trở lên, GEQO (tìm kiếm di truyền) thay tìm kiếm vét cạn", en: "It is over `join_collapse_limit` (8), so part of the written order is kept; and from 12 FROM items on, GEQO (a genetic search) replaces the exhaustive search" }
       - { vi: "Postgres báo lỗi quá nhiều bảng", en: "Postgres raises a too-many-tables error" }
     answer: 1
-    why: { vi: "Số thứ tự nối tăng theo giai thừa. Postgres giới hạn bằng `join_collapse_limit`/`from_collapse_limit` (8) và chuyển sang GEQO khi số mục FROM ≥ `geqo_threshold` (12). Kế hoạch khi đó có thể không tối ưu.", en: "The number of join orders grows factorially. Postgres caps it with `join_collapse_limit`/`from_collapse_limit` (8) and switches to GEQO when the FROM items reach `geqo_threshold` (12). The plan may then not be optimal." }
+    why: { vi: "Planner thử mọi thứ tự nghe hợp lý vì với ít bảng nó làm đúng như vậy, nhưng cách đó không mở rộng được. Số thứ tự nối tăng theo giai thừa. Postgres giới hạn bằng `join_collapse_limit`/`from_collapse_limit` (8) và chuyển sang GEQO khi số mục FROM ≥ `geqo_threshold` (12). Kế hoạch khi đó có thể không tối ưu.", en: "Trying every order sounds right because that is what the planner does for a few tables, but it does not scale. The number of join orders grows factorially. Postgres caps it with `join_collapse_limit`/`from_collapse_limit` (8) and switches to GEQO when the FROM items reach `geqo_threshold` (12). The plan may then not be optimal." }
 ---
 
 ## Ý chính

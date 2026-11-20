@@ -49,8 +49,8 @@ predict:
     - { vi: "Index Only Scan qua `shops_pkey`", en: "Index Only Scan through `shops_pkey`" }
   answer: 1
   why:
-    vi: "SP-GiST cho `point` là một quadtree: mỗi nút chia mặt phẳng thành 4 góc. Câu `<@ box` chỉ đi vào các góc giao với ô cần tìm, nên chỉ chạm vài chục dòng trên 30.000. Planner ước khoảng 30 dòng và chọn Bitmap Index Scan trên `shops_loc_spgist`."
-    en: "SP-GiST for `point` is a quadtree: each node splits the plane into 4 quadrants. A `<@ box` query only descends into quadrants that overlap the box, so it touches a few dozen of 30,000 rows. The planner estimates about 30 rows and picks a Bitmap Index Scan on `shops_loc_spgist`."
+    vi: "Seq Scan nghe hợp lý nếu bạn quen nghĩ index chỉ phục vụ dấu bằng; nhưng SP-GiST cho `point` là một quadtree: mỗi nút chia mặt phẳng thành 4 góc. Câu `<@ box` chỉ đi vào các góc giao với ô cần tìm, nên chỉ chạm vài chục dòng trên 30.000. Planner ước khoảng 30 dòng và chọn Bitmap Index Scan trên `shops_loc_spgist`."
+    en: "A Seq Scan sounds right if you think of indexes as serving only equality, but SP-GiST for `point` is a quadtree: each node splits the plane into 4 quadrants. A `<@ box` query only descends into quadrants that overlap the box, so it touches a few dozen of 30,000 rows. The planner estimates about 30 rows and picks a Bitmap Index Scan on `shops_loc_spgist`."
 ---
 ## Ý chính
 

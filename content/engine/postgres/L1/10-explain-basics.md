@@ -9,7 +9,7 @@ kind: predict
 runtime: browser
 minutes: 8
 verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-20" }
-viz: pg-plan-tree
+viz: pg-query-path
 objectives:
   - vi: "Đọc một dòng `EXPLAIN`: tên nút, `cost=A..B`, `rows=` ước lượng."
     en: "Read an `EXPLAIN` line: the node name, `cost=A..B`, the estimated `rows=`."
@@ -55,8 +55,8 @@ predict:
     - { vi: "Index Only Scan", en: "Index Only Scan" }
   answer: 2
   why:
-    vi: "Câu lấy khoảng 18.000 trên 20.000 dòng, tức gần như mọi trang của bảng. Đi qua index rồi nhảy tới từng dòng tốn hơn đọc thẳng cả bảng theo thứ tự, nên planner chọn Seq Scan với `Filter: (status = 'paid'::text)`. Index chỉ có lợi khi câu lấy một phần nhỏ của bảng."
-    en: "The query takes about 18,000 of 20,000 rows, which is nearly every page of the table. Going through the index and jumping to each row costs more than reading the whole table in order, so the planner picks a Seq Scan with `Filter: (status = 'paid'::text)`. An index only pays off when a query reads a small part of the table."
+    vi: "Index Scan nghe hợp lý vì `status` có index, mà có index thì tưởng nên dùng; nhưng câu lấy khoảng 18.000 trên 20.000 dòng, tức gần như mọi trang của bảng. Đi qua index rồi nhảy tới từng dòng tốn hơn đọc thẳng cả bảng theo thứ tự, nên planner chọn Seq Scan với `Filter: (status = 'paid'::text)`. Index chỉ có lợi khi câu lấy một phần nhỏ của bảng."
+    en: "An Index Scan is tempting because `status` has an index, and an index seems made to be used, but the query takes about 18,000 of 20,000 rows, which is nearly every page of the table. Going through the index and jumping to each row costs more than reading the whole table in order, so the planner picks a Seq Scan with `Filter: (status = 'paid'::text)`. An index only pays off when a query reads a small part of the table."
 ---
 ## Ý chính
 

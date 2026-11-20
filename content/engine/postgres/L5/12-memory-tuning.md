@@ -39,14 +39,14 @@ quiz:
       - { vi: "`external merge` trên đĩa", en: "`external merge` on disk" }
       - { vi: "`top-N heapsort`", en: "`top-N heapsort`" }
     answer: 0
-    why: { vi: "Dữ liệu cần sắp vừa trong 4 MB nên sắp trong bộ nhớ. Giảm `work_mem` xuống 64 KB (ghi lại bên dưới) thì cùng câu chuyển sang `external merge` và ghi đĩa. `top-N heapsort` chỉ xuất hiện khi có LIMIT.", en: "The data to sort fits in 4 MB, so it sorts in memory. Lowering `work_mem` to 64 KB (captured below) moves the same query to `external merge` on disk. `top-N heapsort` only appears with a LIMIT." }
+    why: { vi: "30.000 dòng nghe nhiều nên dễ đoán sắp trên đĩa, nhưng điều quyết định là dung lượng, không phải số dòng. Dữ liệu cần sắp vừa trong 4 MB nên sắp trong bộ nhớ. Giảm `work_mem` xuống 64 KB (ghi lại bên dưới) thì cùng câu chuyển sang `external merge` và ghi đĩa. `top-N heapsort` chỉ xuất hiện khi có LIMIT.", en: "30,000 rows sounds like a lot, so a disk sort is easy to guess, but size decides, not the row count. The data to sort fits in 4 MB, so it sorts in memory. Lowering `work_mem` to 64 KB (captured below) moves the same query to `external merge` on disk. `top-N heapsort` only appears with a LIMIT." }
   - q: { vi: "Server 64 GB RAM, 300 kết nối, câu báo cáo có 4 nút sort/hash. Đặt `work_mem = 256MB` toàn cục có rủi ro gì?", en: "A 64 GB server, 300 connections, a report query with 4 sort/hash nodes. What is the risk of a global `work_mem = 256MB`?" }
     options:
       - { vi: "Không rủi ro, Postgres tự giới hạn tổng", en: "No risk, Postgres caps the total" }
       - { vi: "Mỗi nút của mỗi câu được dùng tới 256 MB (hash còn nhân `hash_mem_multiplier`), nên lúc cao điểm tổng có thể vượt RAM và server bị hết bộ nhớ", en: "Every node of every query may use up to 256 MB (hashes times `hash_mem_multiplier`), so at peak the total can exceed RAM and the server runs out of memory" }
       - { vi: "Chỉ ảnh hưởng VACUUM", en: "It only affects VACUUM" }
     answer: 1
-    why: { vi: "Docs chính thức: một câu phức tạp có thể chạy nhiều sort/hash song song, mỗi cái dùng tới `work_mem`, và nhiều phiên làm cùng lúc. Cách đúng: giữ mặc định thấp, nâng cho phiên hoặc vai trò báo cáo (`SET work_mem`, `ALTER ROLE … SET work_mem`).", en: "The docs: a complex query can run several sorts/hashes at once, each up to `work_mem`, and many sessions do it at the same time. The right way: keep the default low, raise it for the reporting session or role (`SET work_mem`, `ALTER ROLE … SET work_mem`)." }
+    why: { vi: "Nghe hợp lý vì `work_mem` trông như một ngân sách chung, nhưng nó là giới hạn cho từng nút. Docs chính thức: một câu phức tạp có thể chạy nhiều sort/hash song song, mỗi cái dùng tới `work_mem`, và nhiều phiên làm cùng lúc. Cách đúng: giữ mặc định thấp, nâng cho phiên hoặc vai trò báo cáo (`SET work_mem`, `ALTER ROLE … SET work_mem`).", en: "It sounds right because `work_mem` looks like a shared budget, but it is a limit per node. The docs: a complex query can run several sorts/hashes at once, each up to `work_mem`, and many sessions do it at the same time. The right way: keep the default low, raise it for the reporting session or role (`SET work_mem`, `ALTER ROLE … SET work_mem`)." }
 ---
 
 ## Ý chính

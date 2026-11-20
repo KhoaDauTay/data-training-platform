@@ -52,8 +52,8 @@ predict:
     - { vi: "Bitmap Heap Scan, rồi Sort", en: "Bitmap Heap Scan, then Sort" }
   answer: 1
   why:
-    vi: "Lá của B-tree đã xếp theo `created_at` và nối với nhau theo cả hai chiều. Postgres đọc từ cuối index ngược lại, dừng sau 5 dòng (nút `Limit`), nên không cần đọc hay sắp xếp phần còn lại."
-    en: "The B-tree leaves are already ordered by `created_at` and linked in both directions. Postgres reads from the end of the index backwards and stops after 5 rows (the `Limit` node), so it never reads or sorts the rest."
+    vi: "Seq Scan rồi Sort nghe hợp lý vì index xếp tăng dần còn câu hỏi `DESC`, như thể index không phục vụ được chiều ngược; nhưng lá của B-tree đã xếp theo `created_at` và nối với nhau theo cả hai chiều. Postgres đọc từ cuối index ngược lại, dừng sau 5 dòng (nút `Limit`), nên không cần đọc hay sắp xếp phần còn lại."
+    en: "Seq Scan plus Sort is tempting because the index is ascending while the query asks for `DESC`, as if the index could not serve the reverse order, but the B-tree leaves are already ordered by `created_at` and linked in both directions. Postgres reads from the end of the index backwards and stops after 5 rows (the `Limit` node), so it never reads or sorts the rest."
 ---
 ## Ý chính
 

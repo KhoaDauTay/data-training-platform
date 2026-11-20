@@ -45,14 +45,14 @@ quiz:
       - { vi: "A, vì nó chậm nhất", en: "A, because it is the slowest" }
       - { vi: "B: tổng 10.000 giây/ngày so với 20 giây; xếp theo `total_exec_time`, không theo `mean_exec_time`", en: "B: 10,000 seconds a day against 20; rank by `total_exec_time`, not by `mean_exec_time`" }
     answer: 1
-    why: { vi: "`pg_stat_statements` có `total_exec_time`, `mean_exec_time`, `calls`, `shared_blks_hit/read`… Tải server là tổng; câu chậm lẻ tẻ thì quan trọng cho trải nghiệm người dùng, nhưng là câu hỏi khác.", en: "`pg_stat_statements` has `total_exec_time`, `mean_exec_time`, `calls`, `shared_blks_hit/read`… Server load is the total; an occasional slow query matters for user experience, but that is a different question." }
+    why: { vi: "A hấp dẫn vì 2 giây mỗi lần là thứ đập vào mắt, nhưng B chạy 2 triệu lần. `pg_stat_statements` có `total_exec_time`, `mean_exec_time`, `calls`, `shared_blks_hit/read`… Tải server là tổng; câu chậm lẻ tẻ thì quan trọng cho trải nghiệm người dùng, nhưng là câu hỏi khác.", en: "A is tempting because 2 seconds per run is what catches the eye, but B runs 2 million times. `pg_stat_statements` has `total_exec_time`, `mean_exec_time`, `calls`, `shared_blks_hit/read`… Server load is the total; an occasional slow query matters for user experience, but that is a different question." }
   - q: { vi: "`pg_stat_user_tables` cho thấy một bảng 50 triệu dòng có `seq_scan` tăng hàng nghìn mỗi giờ. Bước tiếp theo?", en: "`pg_stat_user_tables` shows a 50-million-row table whose `seq_scan` grows by thousands an hour. Next step?" }
     options:
       - { vi: "Tìm trong `pg_stat_statements` các câu chạm bảng đó, xem `EXPLAIN` của câu có tổng thời gian lớn nhất, rồi mới quyết định index", en: "Find the statements touching that table in `pg_stat_statements`, look at the `EXPLAIN` of the one with the largest total time, then decide on an index" }
       - { vi: "Tạo index trên mọi cột", en: "Index every column" }
       - { vi: "Tăng `shared_buffers`", en: "Raise `shared_buffers`" }
     answer: 0
-    why: { vi: "Số đếm cho biết có vấn đề; `pg_stat_statements` cho biết câu nào; `EXPLAIN` cho biết vì sao. Index mọi cột làm chậm ghi và phần lớn không được dùng.", en: "The counters say there is a problem; `pg_stat_statements` says which query; `EXPLAIN` says why. Indexing every column slows writes and most of those indexes go unused." }
+    why: { vi: "Tạo index trên mọi cột nghe như cách nhanh nhất để hết Seq Scan, nhưng bạn chưa biết câu nào đang quét. Số đếm cho biết có vấn đề; `pg_stat_statements` cho biết câu nào; `EXPLAIN` cho biết vì sao. Index mọi cột làm chậm ghi và phần lớn không được dùng.", en: "Indexing every column sounds like the fastest way to end the Seq Scans, but you do not yet know which query is scanning. The counters say there is a problem; `pg_stat_statements` says which query; `EXPLAIN` says why. Indexing every column slows writes and most of those indexes go unused." }
 ---
 
 ## Ý chính

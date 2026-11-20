@@ -12,18 +12,26 @@ export type { Deps } from './engineVizCore';
 export { aliasOf, registerViz, vizFor, vizNames } from './registry';
 export type { Lang, VizFactory, VizHandle, VizStep } from './registry';
 export type { HeapModel, HeapRow, HotModel, MvccModel, VacuumModel, WalModel } from './pgStorage';
+export type { PruneModel, QueryPathModel, ReplicationModel, ReplicationSlot } from './engineVizPgFlow';
 export type { BrinModel, BtreeModel, GinModel, GistModel } from './pgIndex';
 export { LOCK_CONFLICTS, LOCK_MODES } from './pgPlan';
-export type { LockModel, PlanVizNode } from './pgPlan';
+export type { LockModel } from './pgPlan';
+export { planNodesOf, rawPlanOf, slimPlan } from './engineVizPlanJson';
+export type { PlanVizNode, RawPlan } from './engineVizPlanJson';
 
 /** MongoDB and DynamoDB diagrams: their own lazy chunk (engineVizNosql), registered on first use. */
 export const NOSQL_VIZ = ['mg-bson-doc', 'mg-compound-index-esr', 'mg-aggregation-pipeline', 'mg-replica-set-oplog', 'mg-shard-chunks', 'dy-partitions-hash', 'dy-gsi-projection', 'dy-single-table-items'];
-let nosql: Promise<unknown> | undefined;
-/** vizFor() that also fetches the NoSQL chunk when the name (or old alias) is one of its diagrams; a failed load retries next call. */
+/** v23 PG-VIZ (L263): query path, partition pruning and replication, the lazy chunk engineVizPgFlow (budget engineVizPg). */
+export const PG_FLOW_VIZ = ['pg-query-path', 'pg-partition-prune', 'pg-replication'];
+const LAZY: [string[], () => Promise<unknown>][] = [[NOSQL_VIZ, () => import('./engineVizNosql')], [PG_FLOW_VIZ, () => import('./engineVizPgFlow')]];
+const lazy = new Map<string[], Promise<unknown>>();
+/** vizFor() that also fetches the chunk holding the name (or old alias) when it is a lazy diagram; a failed load retries next call. */
 export async function loadViz(name: string): Promise<VizFactory | undefined> {
-  if (!vizFor(name) && NOSQL_VIZ.some((n) => n === name || aliasOf(n) === name)) {
-    nosql ??= import('./engineVizNosql').catch((e: unknown) => { nosql = undefined; throw e; });
-    await nosql;
+  const hit = vizFor(name) ? undefined : LAZY.find(([names]) => names.some((n) => n === name || aliasOf(n) === name));
+  if (hit) {
+    const [names, load] = hit;
+    if (!lazy.has(names)) lazy.set(names, load().catch((e: unknown) => { lazy.delete(names); throw e; }));
+    await lazy.get(names);
   }
   return vizFor(name);
 }
@@ -44,7 +52,7 @@ export const VIZ_ALIAS: Record<string, string> = {
 };
 /** The registered diagram a lesson's `viz:` name means, or undefined (draw nothing). `engine` = `pg` | `mg` | `dy`. */
 export function resolveViz(name: string, engine: string): string | undefined {
-  const known = [...new Set([...vizNames(), ...NOSQL_VIZ])];
+  const known = [...new Set([...vizNames(), ...NOSQL_VIZ, ...PG_FLOW_VIZ])];
   const bare = /^(pg|mg|dy)-/.test(name) ? [name] : [name, `${engine}-${name}`];
   for (const c of bare.flatMap((x) => [x, VIZ_ALIAS[x]]).filter((x): x is string => !!x)) {
     if (known.includes(c)) return c;

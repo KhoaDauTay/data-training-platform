@@ -1,11 +1,11 @@
-import type { PlanNode } from '../../viz/plan';
+import { planNodesOf, type PlanVizNode } from './engineVizPlanJson';
 import { arc, box, cut, define, fill, line, num, type Shape, text, type Tone } from './engineVizCore';
 
 // ENG-VIZ Postgres planner and concurrency diagrams (knowledge map P12, C4): plan tree, locks, isolation anomalies.
+// The query path and partition pruning live in the lazy chunk engineVizPgFlow (v23, L263).
 
 // ── planTree ────────────────────────────────────────────────────────────────────────────────────────────────────
-/** A plan node: the fields of src/viz/plan.ts's PlanNode that a picture needs, plus the planner's total cost. */
-export type PlanVizNode = Pick<PlanNode, 'id' | 'parent' | 'type'> & Partial<Pick<PlanNode, 'relation' | 'estRows'>> & { cost?: unknown; rows?: unknown };
+const nodesOf = (m: unknown): PlanVizNode[] => (Array.isArray(m) && m.length && typeof m[0] === 'object' && m[0] && 'id' in m[0] ? m as PlanVizNode[] : planNodesOf(m));
 const PLAN_SAMPLE: PlanVizNode[] = [
   { id: 1, parent: null, type: 'Limit', estRows: 10, cost: 118.6 },
   { id: 2, parent: 1, type: 'Sort', estRows: 480, cost: 118.4 },
@@ -14,8 +14,9 @@ const PLAN_SAMPLE: PlanVizNode[] = [
   { id: 5, parent: 3, type: 'Hash', estRows: 120, cost: 3.2 },
   { id: 6, parent: 5, type: 'Index Scan', relation: 'customers', estRows: 120, cost: 3.2 },
 ];
-define<PlanVizNode[]>('pg-plan-tree', PLAN_SAMPLE, (nodes0, tr) => {
-  const nodes = nodes0.slice(0, 9);
+define<unknown>('pg-plan-tree', PLAN_SAMPLE, (m, tr) => {
+  const nodes = nodesOf(m).slice(0, 9);
+  if (!nodes.length) nodes.push(...PLAN_SAMPLE);
   const kids = (id: number) => nodes.filter((n) => n.parent === id);
   const root = nodes.find((n) => n.parent === null || !nodes.some((p) => p.id === n.parent)) ?? nodes[0];
   const depth = new Map<number, number>();

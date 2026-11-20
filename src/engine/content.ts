@@ -28,11 +28,16 @@ export interface Bi { vi: string; en: string }
  * re-run by scripts/e2e.mjs); `target` = the query a `CREATE INDEX` step is for.
  */
 export interface Fact extends Bi { probe?: string; expect?: unknown[][] }
-export interface LabStep { task: Bi; solution: string; check: Check; ordered: boolean; hint: Bi; expect?: Record<string, number>; fact?: Fact; target?: string }
+/** `name` (v23 CAP, L257): a short step name for the capstone step bar; without it the bar derives one from `task`. */
+export interface LabStep { task: Bi; solution: string; check: Check; ordered: boolean; hint: Bi; expect?: Record<string, number>; fact?: Fact; target?: string; name?: Bi }
 export interface Lab { setup?: string; steps: LabStep[] }
 export interface Question { q: Bi; options: Bi[]; answer: number; why: Bi }
-/** `expect` (Postgres): the plan node the real EXPLAIN (FORMAT JSON) shows, `{ node, table?, index? }`. */
-export interface Predict extends Question { sql: string; expect?: { node: string; table?: string; index?: string } }
+/**
+ * `expect` (Postgres): a plan node the real EXPLAIN (FORMAT JSON) shows, `{ node, table?, index?, rows? }` (`rows` = the
+ * planner's row estimate on that node); checked by tests/enginePredict.test.ts through src/engine/predict.ts.
+ */
+export interface PredictExpect { node: string; table?: string; index?: string; rows?: number }
+export interface Predict extends Question { sql: string; expect?: PredictExpect }
 /** `browser`: runs here; `docs`: numbers come from the official docs, nothing runs (the page says so). */
 export const RUNTIMES = ['browser', 'docs'] as const;
 export type Runtime = (typeof RUNTIMES)[number];
@@ -142,6 +147,7 @@ export function parseEngineLesson(source: string | LessonSource, path: string, y
         ...(s.expect !== undefined ? { expect: counts(s.expect, `lab.steps[${i}].expect`) } : {}),
         ...(s.fact !== undefined ? { fact: fact(s.fact, `lab.steps[${i}].fact`) } : {}),
         ...(typeof s.target === 'string' && s.target.trim() ? { target: s.target.trim() } : {}),
+        ...(s.name !== undefined ? { name: bi(s.name, `lab.steps[${i}].name`) } : {}),
       };
     });
     if (!steps.length) fail('lab cần ít nhất một bước');
@@ -154,7 +160,9 @@ export function parseEngineLesson(source: string | LessonSource, path: string, y
     const x = p.expect as Record<string, unknown> | undefined;
     if (x !== undefined) {
       if (typeof x?.node !== 'string') fail('predict.expect cần node');
-      lesson.predict.expect = { node: String(x.node), ...(x.table ? { table: String(x.table) } : {}), ...(x.index ? { index: String(x.index) } : {}) };
+      if (x.rows !== undefined && typeof x.rows !== 'number') fail('predict.expect.rows phải là số');
+      lesson.predict.expect = { node: String(x.node), ...(x.table ? { table: String(x.table) } : {}), ...(x.index ? { index: String(x.index) } : {}),
+        ...(typeof x.rows === 'number' ? { rows: x.rows } : {}) };
     }
   }
   if ((kind === 'lab' || kind === 'capstone') && !lesson.lab) fail(`kind ${kind} cần lab`);
@@ -227,6 +235,7 @@ export function lessonProblems(l: EngineLesson, ids: ReadonlySet<string>): strin
     ['title', l.title], ...l.objectives.map((b, i): [string, Bi] => [`objectives[${i}]`, b]),
     ...l.sections.map((s): [string, Bi] => [`## ${SECTIONS[s.id][1]}`, s.text]),
     ...(l.lab?.steps ?? []).flatMap((s, i): [string, Bi][] => [[`lab.steps[${i}].task`, s.task], [`lab.steps[${i}].hint`, s.hint],
+      ...(s.name ? [[`lab.steps[${i}].name`, s.name] as [string, Bi]] : []),
       ...(s.fact ? [[`lab.steps[${i}].fact`, { vi: s.fact.vi, en: s.fact.en }] as [string, Bi]] : [])]),
     ...[...(l.quiz ?? []), ...(l.predict ? [l.predict] : [])].flatMap((q, i): [string, Bi][] =>
       [[`q${i}`, q.q], [`why${i}`, q.why], ...q.options.map((o, j): [string, Bi] => [`q${i}.options[${j}]`, o])]),

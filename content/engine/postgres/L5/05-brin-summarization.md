@@ -52,7 +52,7 @@ quiz:
       - { vi: "`v` (correlation gần 0): giá trị lặp lại nên dễ tóm tắt", en: "`v` (correlation near 0): values repeat, so they are easy to summarize" }
       - { vi: "Cả hai như nhau", en: "Both are the same" }
     answer: 0
-    why: { vi: "`v` lặp 0..49 trong mọi khoảng, nên min/max của khoảng nào cũng là 0..49 và BRIN không loại được khoảng nào. `read_at` tăng dần theo lần chèn nên BRIN loại được gần hết.", en: "`v` cycles 0..49 in every range, so every range's min/max is 0..49 and BRIN can rule none out. `read_at` grows with insert order, so BRIN rules out almost all of them." }
+    why: { vi: "Giá trị lặp lại nghe như dễ tóm tắt, nhưng BRIN tóm tắt theo khoảng khối chứ không theo giá trị. `v` lặp 0..49 trong mọi khoảng, nên min/max của khoảng nào cũng là 0..49 và BRIN không loại được khoảng nào. `read_at` tăng dần theo lần chèn nên BRIN loại được gần hết.", en: "Repeated values sound easy to summarize, but BRIN summarizes per block range, not per value. `v` cycles 0..49 in every range, so every range's min/max is 0..49 and BRIN can rule none out. `read_at` grows with insert order, so BRIN rules out almost all of them." }
 ---
 
 ## Ý chính

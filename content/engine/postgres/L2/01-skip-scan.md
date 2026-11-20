@@ -54,8 +54,8 @@ predict:
     - { vi: "Index Only Scan", en: "Index Only Scan" }
   answer: 1
   why:
-    vi: "Từ Postgres 18, B-tree có skip scan: với mỗi giá trị của `region` (chỉ 4), nó tra `region = N AND day = ...` rồi nhảy sang giá trị kế. Kế hoạch là Bitmap Heap Scan với `Index Cond: (day = ...)` trên `events_region_day_idx`. Nếu `region` có hàng nghìn giá trị thì cách này không còn rẻ và planner quay về Seq Scan."
-    en: "Since Postgres 18, B-tree has skip scan: for each value of `region` (only 4) it looks up `region = N AND day = ...` and then jumps to the next value. The plan is a Bitmap Heap Scan with `Index Cond: (day = ...)` on `events_region_day_idx`. If `region` had thousands of values this would no longer be cheap and the planner would fall back to a Seq Scan."
+    vi: "Seq Scan nghe hợp lý vì quy tắc quen thuộc của B-tree là thiếu điều kiện trên cột đầu thì index gần như vô dụng; nhưng từ Postgres 18, B-tree có skip scan: với mỗi giá trị của `region` (chỉ 4), nó tra `region = N AND day = ...` rồi nhảy sang giá trị kế. Kế hoạch là Bitmap Heap Scan với `Index Cond: (day = ...)` trên `events_region_day_idx`. Nếu `region` có hàng nghìn giá trị thì cách này không còn rẻ và planner quay về Seq Scan."
+    en: "A Seq Scan sounds right because of the familiar B-tree rule that without a condition on the leading column the index is nearly useless, but since Postgres 18, B-tree has skip scan: for each value of `region` (only 4) it looks up `region = N AND day = ...` and then jumps to the next value. The plan is a Bitmap Heap Scan with `Index Cond: (day = ...)` on `events_region_day_idx`. If `region` had thousands of values this would no longer be cheap and the planner would fall back to a Seq Scan."
 ---
 ## Ý chính
 

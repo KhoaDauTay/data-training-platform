@@ -44,7 +44,8 @@ predict:
     - { vi: "`Aggregate` → `Seq Scan`, không có `Gather`", en: "`Aggregate` → `Seq Scan`, no `Gather`" }
     - { vi: "Lỗi vì không có worker", en: "An error because there are no workers" }
   answer: 1
-  why: { vi: "PGlite là một backend đơn (`max_parallel_workers_per_gather` = 0 và không có tiến trình nền). Docs chính thức: giá trị này bằng 0 hoặc chạy ở chế độ một người dùng thì không có kế hoạch song song.", en: "PGlite is a single backend (`max_parallel_workers_per_gather` = 0 and no background workers). The docs: with that setting at zero, or in single-user mode, no parallel plan is made." }
+  why: { vi: "Nghe hợp lý vì PGlite chạy cùng mã PostgreSQL 18, nhưng nó không có worker để song song. PGlite là một backend đơn (`max_parallel_workers_per_gather` = 0 và không có tiến trình nền). Docs chính thức: giá trị này bằng 0 hoặc chạy ở chế độ một người dùng thì không có kế hoạch song song.", en: "It sounds right because PGlite runs the same PostgreSQL 18 code, but it has no workers to run in parallel. PGlite is a single backend (`max_parallel_workers_per_gather` = 0 and no background workers). The docs: with that setting at zero, or in single-user mode, no parallel plan is made." }
+  expect: { node: Seq Scan, table: big }
 quiz:
   - q: { vi: "Câu nào KHÔNG bao giờ dùng kế hoạch song song?", en: "Which query never uses a parallel plan?" }
     options:
@@ -52,14 +53,14 @@ quiz:
       - { vi: "`UPDATE big SET v = v + 1 WHERE id < 100`", en: "`UPDATE big SET v = v + 1 WHERE id < 100`" }
       - { vi: "`SELECT v, count(*) FROM big GROUP BY v`", en: "`SELECT v, count(*) FROM big GROUP BY v`" }
     answer: 1
-    why: { vi: "Câu ghi dữ liệu hoặc row lock (ở mức trên cùng hay trong CTE) không được song song; ngoại lệ là phần SELECT của `CREATE TABLE … AS`, `SELECT INTO`, `CREATE/REFRESH MATERIALIZED VIEW`. Hàm do người dùng viết mặc định `PARALLEL UNSAFE` cũng chặn song song.", en: "A query that writes data or locks rows (at the top level or in a CTE) is never parallel; the exceptions are the SELECT part of `CREATE TABLE … AS`, `SELECT INTO`, `CREATE/REFRESH MATERIALIZED VIEW`. User-defined functions are `PARALLEL UNSAFE` by default, which also blocks it." }
+    why: { vi: "`GROUP BY` nghe khó chia cho nhiều worker, nhưng Postgres gom từng phần rồi gộp lại, nên nó vẫn song song được. Câu ghi dữ liệu hoặc row lock (ở mức trên cùng hay trong CTE) không được song song; ngoại lệ là phần SELECT của `CREATE TABLE … AS`, `SELECT INTO`, `CREATE/REFRESH MATERIALIZED VIEW`. Hàm do người dùng viết mặc định `PARALLEL UNSAFE` cũng chặn song song.", en: "`GROUP BY` sounds hard to split across workers, but Postgres aggregates in parts and combines them, so it can still run in parallel. A query that writes data or locks rows (at the top level or in a CTE) is never parallel; the exceptions are the SELECT part of `CREATE TABLE … AS`, `SELECT INTO`, `CREATE/REFRESH MATERIALIZED VIEW`. User-defined functions are `PARALLEL UNSAFE` by default, which also blocks it." }
   - q: { vi: "JIT được dùng cho một câu khi nào?", en: "When is JIT used for a query?" }
     options:
       - { vi: "Luôn luôn khi `jit = on`", en: "Always when `jit = on`" }
       - { vi: "Khi tổng chi phí ước lượng vượt `jit_above_cost` (mặc định 100.000); inline và tối ưu thêm từ 500.000", en: "When the estimated total cost exceeds `jit_above_cost` (default 100,000); inlining and extra optimisation from 500,000" }
       - { vi: "Khi câu chạy lâu hơn 1 giây", en: "When the query runs longer than 1 second" }
     answer: 1
-    why: { vi: "Quyết định JIT dựa trên chi phí planner, không dựa trên thời gian. Câu OLTP ngắn mà ước lượng sai có thể tốn thời gian biên dịch JIT nhiều hơn thời gian chạy; khi đó `EXPLAIN ANALYZE` hiện phần `JIT:` với thời gian biên dịch.", en: "The JIT decision is based on planner cost, not time. A short OLTP query with a bad estimate can spend more time compiling than running; `EXPLAIN ANALYZE` then shows a `JIT:` section with the compile time." }
+    why: { vi: "Nghe hợp lý vì `jit = on` là mặc định, nhưng bật chỉ cho phép dùng JIT, không bắt buộc. Quyết định JIT dựa trên chi phí planner, không dựa trên thời gian. Câu OLTP ngắn mà ước lượng sai có thể tốn thời gian biên dịch JIT nhiều hơn thời gian chạy; khi đó `EXPLAIN ANALYZE` hiện phần `JIT:` với thời gian biên dịch.", en: "It sounds right because `jit = on` is the default, but on only allows JIT, it does not force it. The JIT decision is based on planner cost, not time. A short OLTP query with a bad estimate can spend more time compiling than running; `EXPLAIN ANALYZE` then shows a `JIT:` section with the compile time." }
 ---
 
 ## Ý chính

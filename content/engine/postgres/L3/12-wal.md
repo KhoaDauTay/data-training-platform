@@ -31,8 +31,8 @@ quiz:
       - { vi: "Báo COMMIT → ghi WAL và trang cùng lúc ở checkpoint sau", en: "Report COMMIT -> write WAL and pages together at the next checkpoint" }
     answer: 0
     why:
-      vi: "Luật WAL: thay đổi trang chỉ được ghi xuống đĩa sau khi bản ghi WAL mô tả nó đã bền. COMMIT chỉ chờ flush WAL (ghi tuần tự, rẻ); trang dữ liệu bẩn có thể nằm trong bộ đệm rất lâu, vì sau khi máy sập Postgres phát lại WAL để dựng lại chúng."
-      en: "The WAL rule: a page change may reach disk only after the WAL record describing it is durable. COMMIT waits only for the WAL flush (sequential, cheap); dirty data pages may stay in the buffer for a long time, because after a crash Postgres replays the WAL to rebuild them."
+      vi: "Ghi trang xuống đĩa trước nghe an toàn vì dữ liệu \"nằm trên đĩa\" sớm nhất, nhưng ghi ngẫu nhiên từng trang mới là việc chậm, và WAL tồn tại để COMMIT khỏi phải chờ việc đó. Luật WAL: thay đổi trang chỉ được ghi xuống đĩa sau khi bản ghi WAL mô tả nó đã bền. COMMIT chỉ chờ flush WAL (ghi tuần tự, rẻ); trang dữ liệu bẩn có thể nằm trong bộ đệm rất lâu, vì sau khi máy sập Postgres phát lại WAL để dựng lại chúng."
+      en: "Writing the page to disk first sounds safe because the data \"is on disk\" as soon as possible, but random page writes are the slow part, and the WAL exists so COMMIT does not wait for them. The WAL rule: a page change may reach disk only after the WAL record describing it is durable. COMMIT waits only for the WAL flush (sequential, cheap); dirty data pages may stay in the buffer for a long time, because after a crash Postgres replays the WAL to rebuild them."
   - q:
       vi: "Vì sao lần sửa **đầu tiên** của một trang sau mỗi checkpoint làm WAL to hơn hẳn?"
       en: "Why does the **first** change to a page after each checkpoint make the WAL much bigger?"
@@ -42,8 +42,8 @@ quiz:
       - { vi: "Trang được nén lại sau checkpoint", en: "Pages are recompressed after a checkpoint" }
     answer: 0
     why:
-      vi: "Với `full_page_writes = on`, lần sửa đầu của mỗi trang sau checkpoint ghi nguyên nội dung trang vào WAL. Replay bắt đầu từ checkpoint, nên bản trang đầy đủ này là điểm khởi đầu an toàn dù trang trên đĩa bị ghi dở. Checkpoint dày thì WAL nhiều hơn."
-      en: "With `full_page_writes = on`, the first change of each page after a checkpoint logs the whole page into the WAL. Replay starts at the checkpoint, so this full copy is a safe starting point even if the on-disk page was torn. More frequent checkpoints mean more WAL."
+      vi: "Nghe như checkpoint xóa WAL nên phải ghi lại mọi trang, nhưng chỉ trang **được sửa** lần đầu sau checkpoint mới ghi cả trang, và lý do là trang bị ghi dở. Với `full_page_writes = on`, lần sửa đầu của mỗi trang sau checkpoint ghi nguyên nội dung trang vào WAL. Replay bắt đầu từ checkpoint, nên bản trang đầy đủ này là điểm khởi đầu an toàn dù trang trên đĩa bị ghi dở. Checkpoint dày thì WAL nhiều hơn."
+      en: "It sounds as if a checkpoint deletes WAL so every page must be written again, but only a page **changed** for the first time after a checkpoint is logged whole, and the reason is torn pages. With `full_page_writes = on`, the first change of each page after a checkpoint logs the whole page into the WAL. Replay starts at the checkpoint, so this full copy is a safe starting point even if the on-disk page was torn. More frequent checkpoints mean more WAL."
 ---
 
 ## Ý chính

@@ -25,14 +25,14 @@ quiz:
       - { vi: "Luôn cập nhật tài khoản có mã nhỏ hơn trước, bất kể chiều chuyển", en: "Always update the account with the smaller id first, whatever the direction" }
       - { vi: "Chuyển sang mức cô lập Serializable", en: "Switch to Serializable isolation" }
     answer: 1
-    why: { vi: "Deadlock cần một chu trình. Khi mọi transaction lấy lock theo cùng một thứ tự, chu trình không thể hình thành. Tăng thời gian chờ chỉ làm phát hiện chậm hơn.", en: "A deadlock needs a cycle. When every transaction takes its locks in the same order, no cycle can form. A longer timeout only makes detection slower." }
+    why: { vi: "Tăng `deadlock_timeout` hấp dẫn vì lỗi xuất hiện khi chờ lock, nhưng nó không gỡ được chu trình. Deadlock cần một chu trình. Khi mọi transaction lấy lock theo cùng một thứ tự, chu trình không thể hình thành. Tăng thời gian chờ chỉ làm phát hiện chậm hơn.", en: "Raising `deadlock_timeout` is tempting because the error shows up while waiting for a lock, but it cannot break the cycle. A deadlock needs a cycle. When every transaction takes its locks in the same order, no cycle can form. A longer timeout only makes detection slower." }
   - q: { vi: "Postgres giải quyết deadlock thế nào?", en: "How does Postgres resolve a deadlock?" }
     options:
       - { vi: "Cả hai transaction chờ mãi", en: "Both transactions wait forever" }
       - { vi: "Sau khi chờ một lock quá `deadlock_timeout` (mặc định 1s), phiên đó kiểm tra chu trình; nếu có, một transaction bị hủy với SQLSTATE 40P01 và bên kia đi tiếp", en: "After waiting on a lock longer than `deadlock_timeout` (default 1s), that session checks for a cycle; if there is one, one transaction is aborted with SQLSTATE 40P01 and the other proceeds" }
       - { vi: "Postgres hủy transaction bắt đầu sau", en: "Postgres always aborts the transaction that started later" }
     answer: 1
-    why: { vi: "Kiểm tra deadlock tốn kém nên chỉ chạy khi đã chờ đủ `deadlock_timeout`. Docs chính thức nói không đoán trước được transaction nào bị hủy, nên ứng dụng phải sẵn sàng thử lại.", en: "Deadlock checking is expensive, so it only runs after waiting `deadlock_timeout`. The docs say which transaction is aborted is hard to predict, so the application must be ready to retry." }
+    why: { vi: "Hủy transaction bắt đầu sau nghe công bằng, như quy tắc ai đến trước được phục vụ trước, nhưng Postgres không chọn theo thứ tự bắt đầu. Kiểm tra deadlock tốn kém nên chỉ chạy khi đã chờ đủ `deadlock_timeout`. Docs chính thức nói không đoán trước được transaction nào bị hủy, nên ứng dụng phải sẵn sàng thử lại.", en: "Cancelling the transaction that started later sounds fair, like first come first served, but Postgres does not choose by start order. Deadlock checking is expensive, so it only runs after waiting `deadlock_timeout`. The docs say which transaction is aborted is hard to predict, so the application must be ready to retry." }
 ---
 
 ## Ý chính

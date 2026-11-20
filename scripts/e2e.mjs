@@ -977,11 +977,28 @@ const ENGINE_LESSONS = ['postgres', 'mongodb', 'dynamodb'].flatMap((e) => walk(`
 }));
 const PATH_FILES = yml('content/engine/mongodb/path/index.yml');
 const PATH_DRILLS = PATH_FILES.files.flatMap((f) => yml(`content/engine/mongodb/path/${f.drills}`));
+/** Same rule as src/engine/predict.ts hasRealPlan() (v23 PRED: the predict card with "Xem thật" and the plan tree). */
+const realPlan = (l) => l.engine === 'postgres' && l.runtime !== 'docs' && !!l.predict && (!!l.lab?.setup || !!l.predict.expect);
+/** Same rule as src/engine/predict.ts capstonePivot() (v23 CAP): the step after which the before/after plans open. */
+const readsSql = (sql) => /^\s*(\(\s*)?(select|with|explain|table|values|show)\b/i.test(String(sql).replace(/^\s*(--[^\n]*\n\s*)*/, ''));
+function capstonePivot(lab) {
+  const steps = lab?.steps ?? [];
+  const t = steps.findIndex((s) => s.target);
+  if (t >= 0) return { gate: t };
+  for (let p = steps.length - 1; p >= 0; p--) {
+    if (steps[p].check !== 'plan') continue;
+    const change = steps.slice(0, p).map((s, i) => (readsSql(s.solution) ? -1 : i)).filter((i) => i >= 0).pop();
+    return change === undefined ? undefined : { gate: change };
+  }
+  return undefined;
+}
+/** v23 PG-C lessons (L268): VACUUM size, count(*) predict, Buffers line, unused indexes, REINDEX. */
+const NEW_V23 = ['e-pg-l3-16', 'e-pg-l3-17', 'e-pg-l3-18', 'e-pg-l5-16', 'e-pg-l5-17'];
 /** Same rule as src/engine/labs.ts gradable(). */
 const gradableStep = (l, st) => l.runtime !== 'docs' && (l.engine === 'postgres' ? st.check !== 'doc' && !(st.check === 'plan' && !l.lab?.setup) : st.check === 'doc');
 SECTIONS.engine = async () => {
   await shared();
-  const counts = { lessons: 0, passed: 0, steps: 0, failedLessons: [] };
+  const counts = { lessons: 0, passed: 0, steps: 0, predicts: 0, capstones: 0, capPlans: 0, failedLessons: [] };
   for (const l of ENGINE_LESSONS) {
     counts.lessons++;
     const ok = await step(`engine ${l.id} (${l.kind}${l.lab ? `, ${l.lab.steps.length} steps` : ''})`, async () => {
@@ -994,14 +1011,28 @@ SECTIONS.engine = async () => {
         await waitFor(`${part} right`, `!!document.querySelector('[data-ek="${id}-${part}-check"]')?.parentElement.querySelector('[role=status].good')`, 5000);
       };
       for (const [i, q] of (l.quiz ?? []).entries()) await pick(`q${i}`, q);
-      if (l.predict) await pick('p', l.predict);
-      if (l.predict?.expect && l.engine === 'postgres' && l.runtime !== 'docs') {
-        await ev(`document.querySelector('[data-ek="${id}-plan"]').click()`);
-        await waitFor('the real plan', `!!document.querySelector('[data-plan]') || !!document.querySelector('#engine-page pre.error, #engine-page .error')`, 120000);
-        const plan = await ev(`document.querySelector('[data-plan]')?.textContent ?? document.querySelector('#engine-page .error')?.textContent`);
+      // v23 PRED (L278): a predict with a real plan is answered wrong first, then "Xem thật": the verdict says wrong, the
+      // real plan draws (and holds `expect`), focus is on the card heading, and picking the right option then passes the part.
+      if (l.predict && realPlan(l)) {
+        const n = l.predict.options.length;
+        const wrong = (l.predict.answer + 1) % n;
+        const status = `document.querySelector('[data-ek="${id}-p-check"]')?.parentElement.querySelector('[role=status]')`;
+        await ev(`document.querySelector('[data-ek="${id}-p-${wrong}"]').click()`);
+        await ev(`document.querySelector('[data-ek="${id}-p-check"]').click()`);
+        await waitFor('the wrong verdict', `!!${status}?.classList.contains('bad')`, 5000);
+        await waitFor('the real plan', `!!document.querySelector('[data-plan]') || !!document.querySelector('[aria-labelledby="${id}-plan"] .error')`, 120000);
+        const plan = await ev(`document.querySelector('[data-plan]')?.textContent ?? document.querySelector('[aria-labelledby="${id}-plan"]')?.textContent`);
+        if (!(await ev(`!!document.querySelector('[data-plan]')`))) fail(`no real plan: ${plan}`);
+        if (await ev(`document.activeElement?.getAttribute('data-ek') !== ${S(`${id}-plan`)}`)) fail('focus did not move to the result card heading');
         const x = l.predict.expect;
-        if (!plan.includes(x.node) || (x.index && !plan.includes(x.index)) || (x.table && !plan.includes(x.table))) fail(`predict.expect ${S(x)} not in the real plan: ${plan}`);
-      }
+        if (x && (!plan.includes(x.node) || (x.index && !plan.includes(x.index)) || (x.table && !plan.includes(x.table)))) fail(`predict.expect ${S(x)} not in the real plan: ${plan}`);
+        counts.predicts++;
+        await ev(`document.querySelector('[data-ek="${id}-p-${l.predict.answer}"]').click()`);
+        await waitFor('right after the real plan', `!!${status}?.classList.contains('good')`, 5000);
+      } else if (l.predict) await pick('p', l.predict);
+      const cap = l.kind === 'capstone' && !!l.lab && l.runtime !== 'docs';
+      const pivot = cap && l.engine === 'postgres' ? capstonePivot(l.lab) : undefined;
+      if (cap && !(await ev(`!!document.querySelector('#engine-page [data-cap-bar]')`))) fail('no capstone step bar');
       for (const [i, st] of (l.lab?.steps ?? []).entries()) {
         if (!gradableStep(l, st)) continue;
         counts.steps++;
@@ -1011,17 +1042,46 @@ SECTIONS.engine = async () => {
         const status = `(${at('code')})?.closest('[data-step]').querySelector('[role=status]')`;
         await waitFor(`step ${i + 1} graded`, `!!${status}?.textContent && !${at('submit')}.disabled`, 180000);
         if (!(await ev(`${status}.classList.contains('good')`))) fail(`step ${i + 1}: ${await ev(`${status}.textContent`)} | ${await ev(`(${at('code')})?.closest('[data-step]').querySelector('.error, pre.error')?.textContent ?? ''`)}`);
+        if (cap) {
+          // v23 CAP (L278): the bar marks the step passed and moves on; at the pivot the before/after plans open
+          const bar = `document.querySelectorAll('#engine-page [data-cap-bar] li')`;
+          await waitFor(`bar step ${i + 1} passed`, `!!${bar}[${i}]?.querySelector('.bg-good')`, 5000);
+          // current = the first step not passed (src/ui/engineCapstone.ts currentStep); passed = the gradable steps up to i.
+          // After the last gradable step the lesson is done and every step counts as passed: none is current (e.g. a
+          // DynamoDB capstone whose `catalog` step cannot be graded in the browser).
+          const last = !l.lab.steps.some((x, j) => j > i && gradableStep(l, x));
+          const next = last ? -1 : l.lab.steps.findIndex((x, j) => !(j <= i && gradableStep(l, x)));
+          if (next >= 0 && !(await ev(`${bar}[${next}]?.getAttribute('aria-current') === 'step'`))) fail(`bar: step ${next + 1} is not current after step ${i + 1}`);
+          if (last) await waitFor('no step current once the capstone is done', `![...${bar}].some((li) => li.getAttribute('aria-current') === 'step')`, 10000);
+          if (pivot && pivot.gate === i) {
+            await ev(`document.querySelector('[data-ek="${id}-plans"]').click()`);
+            await waitFor('before/after plans', `!!document.querySelector('#engine-page [data-cap-plans]') || !!document.querySelector('[aria-labelledby="${id}-plans"] .error')`, 120000);
+            if (!(await ev(`!!document.querySelector('#engine-page [data-cap-plans]')`))) fail(`plans: ${await ev(`document.querySelector('[aria-labelledby="${id}-plans"]').textContent`)}`);
+            if (await ev(`document.querySelectorAll('#engine-page [data-cap-plans] [data-plan]').length`) !== 2) fail('the capstone plans are not two trees');
+            counts.capPlans++;
+          }
+        }
       }
       const btn = `document.querySelector('[data-ek="${id}-done"]')`;
       if (await ev(`!!${btn}`)) await ev(`${btn}.click()`);
       await waitFor('the lesson in save.completed', `${completed}.includes(${S(id)})`, 10000);
+      if (cap) {
+        await waitFor('the capstone finish', `!!document.querySelector('#engine-page [data-cap-done]')`, 10000);
+        counts.capstones++;
+      }
     });
     if (ok) counts.passed++;
     else counts.failedLessons.push(l.id);
   }
-  await step(`engine: ${counts.passed}/${counts.lessons} lessons passed (${counts.steps} lab steps)`, () => {
+  await step(`engine: ${counts.passed}/${counts.lessons} lessons passed (${counts.steps} lab steps, ${counts.predicts} real plans, ${counts.capstones} capstones, ${counts.capPlans} before/after)`, () => {
     if (counts.failedLessons.length) fail(`failed: ${counts.failedLessons.join(', ')}`);
     return counts;
+  });
+  // v23 PG-C (L268): the new lessons are walked like every other one; this line names them so a missing file shows.
+  await step(`engine: v23 lessons ${NEW_V23.join(', ')}`, () => {
+    const absent = NEW_V23.filter((x) => !ENGINE_LESSONS.some((l) => l.id === x));
+    const bad = NEW_V23.filter((x) => counts.failedLessons.includes(x));
+    if (absent.length || bad.length) fail(`absent: ${absent.join(', ') || '-'}; failed: ${bad.join(', ') || '-'}`);
   });
   // NoSQL path: every drill
   const slug = (sk) => sk.replace(/^mg\./, '').replace(/_/g, '-');
