@@ -5,9 +5,10 @@
 //   UX_URL=https://khoadautay.github.io/data-training-platform/ npm run ux-audit   # read-only on the live site
 //
 // BROWSER = path or command of Chrome/Edge (as smoke). UX_PORT overrides 5235. UX_SHOTS=0 skips screenshots.
+// UX_PAGES=#/,#/d/finance limits the page matrix (a quick re-check; the top bar pass always runs).
 // State: tests/fixtures/save-v5.json, tour done, guides off; storage cleared between configs; service worker bypassed.
 // Matrix: every page of PAGES at 1280×800 light, 1024×700 light, 375×740 dark, 320×640 light (VI); the top bar at
-// 1024/1280/1366/1440 in VI and EN. Checks (checklist item in brackets):
+// 1024/1280/1366/1440/1600/1920 in VI and EN. Checks (checklist item in brackets):
 //   contrast   text < 4.5:1 (big text < 3:1), colours resolved through a canvas, alpha composited [F1]
 //   clipped    text cut by overflow hidden/ellipsis/line-clamp without a title or aria-label [E1]
 //   target     a control < 24×24 px (inline links in text excepted) [I3]
@@ -43,9 +44,10 @@ const CONFIGS = [
   { w: 375, h: 740, theme: 'dark' },
   { w: 320, h: 640, theme: 'light' },
 ];
-const PAGES = ['#/', '#/learn', '#/learn/sql/1', '#/learn/skill/select', '#/learn/interview', '#/practice', '#/me',
+const ALL_PAGES = ['#/', '#/learn', '#/learn/sql/1', '#/learn/skill/select', '#/learn/interview', '#/practice', '#/me',
   ...['logistics', 'ecommerce', 'finance'].flatMap((d) => ['', '/play', '/data', '/dashboard', '/map'].map((p) => `#/d/${d}${p}`)),
   '#/engine', '#/engine/postgres', '#/engine/mongodb/path', '#/engine/dynamodb/L1/e-dy-l1-09'];
+const PAGES = process.env.UX_PAGES ? process.env.UX_PAGES.split(',') : ALL_PAGES;
 const TOPBAR_PAGES = ['#/d/finance', '#/d/logistics/play', '#/learn'];
 const mainOf = (hash) => (/\/play$/.test(hash) ? 'shell' : /\/data$/.test(hash) ? 'data' : /\/dashboard$/.test(hash) ? 'dashboard' : 'home');
 const routeOf = (hash) => {
@@ -280,7 +282,8 @@ const TOPBAR = `(() => {
   for (let i = 1; i < row.length; i++) if (row[i][1].left < row[i - 1][1].right - 1 && row[i][1].top < row[i - 1][1].bottom - 1) cut.push('overlap ' + row[i - 1][0] + '|' + row[i][0]);
   const tops = row.map(([, r]) => r.top + r.height / 2); const spread = Math.max(...tops) - Math.min(...tops);
   if (spread > 8) cut.push('two rows (centres ' + Math.round(spread) + ' px apart)');
-  for (const e of header.querySelectorAll('*')) if (shown(e) && e.getBoundingClientRect().right > innerWidth + 1 && !e.closest('[popover]')) { cut.push('off screen ' + (e.id || e.textContent.trim().slice(0, 20))); break; }
+  const over = Math.round(Math.max(0, ...[...header.querySelectorAll('*')].filter((e) => shown(e) && !e.closest('[popover], .sr-only')).map((e) => e.getBoundingClientRect().right)) - innerWidth);
+  if (over > 1) cut.push('off screen by ' + over + ' px');
   const h = Math.round(header.getBoundingClientRect().height); if (h > 60) cut.push('header ' + h + ' px tall');
   return { cut, height: h };
 })()`;
@@ -331,7 +334,7 @@ try {
   await media('light');
   for (const lang of ['vi', 'en']) {
     await reset(base, 'light', lang);
-    for (const w of [1024, 1280, 1366, 1440]) {
+    for (const w of [1024, 1280, 1366, 1440, 1600, 1920]) {
       await size(w, 800);
       for (const hash of TOPBAR_PAGES) {
         try { if ((await open(base, hash)) !== 'ok') continue; } catch (e) { add('load', hash, `${w} ${lang}`, { error: String(e.message ?? e) }); continue; }
@@ -359,7 +362,7 @@ for (const f of unique.values()) { const s = (summary[f.check] ??= { severity: S
 const serious = [...unique.values()].filter((f) => f.severity === 'serious');
 mkdirSync(OUT, { recursive: true });
 const report = { ok: !crashed && serious.length === 0, base, browser: BROWSER, at: new Date().toISOString(), ms: Date.now() - T0, crashed,
-  matrix: { configs: CONFIGS, pages: PAGES, topbar: { widths: [1024, 1280, 1366, 1440], langs: ['vi', 'en'], pages: TOPBAR_PAGES } },
+  matrix: { configs: CONFIGS, pages: PAGES, topbar: { widths: [1024, 1280, 1366, 1440, 1600, 1920], langs: ['vi', 'en'], pages: TOPBAR_PAGES } },
   summary, unique: [...unique.values()], findings, skipped, visits, pageErrors };
 writeFileSync(join(OUT, 'ux-audit.json'), JSON.stringify(report, null, 1));
 console.log(`ux-audit ${base} (${visits.length} visits, ${skipped.length} skipped, ${(report.ms / 1000).toFixed(0)} s)`);

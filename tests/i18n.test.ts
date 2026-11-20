@@ -26,7 +26,7 @@ const GAME_TONE = /boss|sự cố/i;
 
 /** Keys whose EN text is intentionally the same as VI (SQL keywords, product names). */
 // Plan 7: product, domain and module names read the same in both languages.
-const SAME_OK = new Set<string>(['nav.engine', 'work.runKeys', 'work.submitKeys', 'work.formatKeys', 'tab.explain', 'top.xp', 'nav.sandbox', 'top.chapterShort', 'top.chapterTiny', 'nav.task',
+const SAME_OK = new Set<string>(['nav.engine', 'nav.engineShort', 'work.runKeys', 'work.submitKeys', 'work.formatKeys', 'tab.explain', 'top.xp', 'nav.sandbox', 'top.chapterShort', 'top.chapterTiny', 'nav.task',
   'app.name', 'domain.logistics', 'domain.finance', 'domain.ecommerce']);
 const placeholders = (s: string): string => [...s.matchAll(/\{(\w+)\}/g)].map((m) => m[1]).sort().join();
 

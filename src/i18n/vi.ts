@@ -117,6 +117,7 @@ export const vi = {
   'voice.rowsAndValues': 'Số dòng và giá trị đều lệch, bạn xem lại điều kiện lọc nhé.',
   'nav.practice': 'Luyện SQL',
   'nav.engine': 'Database Engine', // ENG-CORE (L220): a proper name in both languages (SAME_OK)
+  'nav.engineShort': 'Engine', // QA v22 (L254): the top bar below 1920 px (SAME_OK)
   'engine.loading': 'Đang mở khu Database Engine…',
   'engine.failed': 'Không tải được khu Database Engine. Kiểm tra kết nối mạng rồi thử lại.',
   'engine.switch': 'Chọn phần học',

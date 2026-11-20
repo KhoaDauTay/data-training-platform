@@ -1,11 +1,11 @@
 # ux-audit v22: lần chạy đầu (local + live)
 
-Người viết: QA · 2026-11-20 · L253. Công cụ: `scripts/ux-audit.mjs` (`npm run ux-audit`, `UX_URL=<url>` cho site live). Checklist: `ux-deploy-checklist.md`.
+Người viết: QA · 2026-11-20 · L254. Công cụ: `scripts/ux-audit.mjs` (`npm run ux-audit`, `UX_URL=<url>` cho site live). Checklist: `ux-deploy-checklist.md`.
 
 ## Công cụ đo gì
 
 - **Matrix (§1):** 23 trang ở 1280×800 sáng, 1024×700 sáng, 375×740 tối và 320×640 sáng (VI): Home, Lộ trình, Phần 1, kỹ năng `select`, phỏng vấn, Luyện SQL, Tiến bộ; 5 trang × 3 domain; `#/engine`, `#/engine/postgres`, lộ trình Mongo, một bài DynamoDB.
-- **Top bar:** ở 1024/1280/1366/1440, VI + EN, trên `#/d/finance`, `#/d/logistics/play` và `#/learn`.
+- **Top bar:** ở 1024/1280/1366/1440/1600/1920, VI + EN, trên `#/d/finance`, `#/d/logistics/play` và `#/learn`.
 - **Trạng thái:** `tests/fixtures/save-v5.json` (người chơi quay lại, có badge Hộp thư/Ôn tập), tour xong, hướng dẫn tắt. Storage xóa giữa các cấu hình, service worker bị bỏ qua.
 - **Kiểm tự động:**
   - F1 tương phản (canvas, ghép alpha);
@@ -37,6 +37,16 @@ Không bản nào có lỗi tương phản, chữ bị cắt, `#bottom-nav` ≥ 
 | H1 | P2 | `#/engine/postgres`, `#/engine/mongodb/path`, bài DynamoDB, mọi cỡ | `h1` 22 px = `h2` 22 px | `h1` của trang Engine dùng `text-display`, hoặc `h2` xuống `text-title` | `src/ui/engineView.ts` |
 | I3 | P2 | `#/engine/postgres` (117 link), mọi cỡ | Link bài trong danh sách cao 23 px; ở điện thoại dòng danh sách cần 44 px | `py-2` / `min-h-11` trên link dòng | `src/ui/engineView.ts` |
 | I3 | P3 | `#/me` (6), breadcrumb `#/learn/sql/1` (2) | Link kỹ năng 20 px, link breadcrumb 19 px (live cũng có) | `py-0.5` | `src/ui/meView.ts`, `src/ui/homeView.ts` (`learnSub`) |
+
+## Đã sửa (cùng nhánh, L254)
+
+- **E2/I2/A1:** top bar ghi "Engine" dưới 1920 px (đủ "Database Engine" từ 1920; tên truy cập = chữ đang hiện). Nhãn Hộp thư, Ôn tập và Sổ tay chỉ còn icon + badge dưới 1600 px (trước là 1280). Đo lại: không gì ra ngoài mép ở 1024–1920, VI + EN.
+- **Chặn tái phát:** `CHROME` của smoke bắt lỗi "off screen by N px". Bước top bar của smoke chạy với save-v5 (có badge Hộp thư/Ôn tập) ở 1024/1280/1440/1920.
+- **H1:** `h2` của trang Engine (tiêu đề engine, lộ trình, bài) xuống `text-title`, `h1` giữ `text-heading`.
+- **I3:** link dòng bài và kỹ năng Engine cao ≥ 24 px (`min-h-6`), 44 px trên điện thoại (`max-sm:min-h-11`).
+- **Sau sửa:** ux-audit local 140 lượt, **0 serious**. Còn 10 vùng chạm moderate:
+  - link kỹ năng `#/me` 20 px và breadcrumb Lộ trình 19 px (live cũng có);
+  - breadcrumb và "Bài tiếp" của bài Engine 20–23 px.
 
 ## Ghi chú
 

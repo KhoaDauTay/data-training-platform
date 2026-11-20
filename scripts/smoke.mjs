@@ -111,6 +111,9 @@ const CHROME = `(() => {
   for (let i = 1; i < row.length; i++) if (row[i][1].left < row[i - 1][1].right - 1 && row[i][1].top < row[i - 1][1].bottom - 1) cut.push(row[i - 1][0] + '|' + row[i][0]);
   const x = document.getElementById('xp').getBoundingClientRect(), c = document.getElementById('chapter').getBoundingClientRect();
   if (shown(document.getElementById('chapter')) && c.right > x.left + 1) cut.push('chapter|xp');
+  // QA v22 (L254): nothing past the right edge (the bar overflowed for a player with badges once "Database Engine" joined the nav)
+  const over = Math.round(Math.max(0, ...[...document.querySelector('header').querySelectorAll('*')].filter((e) => shown(e) && !e.closest('[popover], .sr-only')).map((e) => e.getBoundingClientRect().right)) - innerWidth);
+  if (over > 1) cut.push('off screen by ' + over + ' px');
   return { cut, bottom: Math.round(document.getElementById('bottom-nav').getBoundingClientRect().height) };
 })()`;
 
@@ -614,22 +617,6 @@ try {
     }
   }
   writeFileSync(join(OUT, 'axe-report.json'), JSON.stringify(axeFound, null, 1));
-  // v21 U1/U2 (L189): the top bar at 1024 and 1280, VI and EN, on the domain with the longest titles (Finance) and the workspace.
-  for (const lang of ['vi', 'en']) for (const [w, hgt] of [[1024, 700], [1280, 800]]) {
-    await size(w, hgt);
-    for (const hash of ['#/d/finance', '#/d/logistics/play']) {
-      await step(`top bar ${w}px ${lang} ${hash}`, async () => {
-        await go(base, hash);
-        await waitFor(`<main id="${mainOf(hash)}"> with an h1`, `(m => m && !m.hidden && !!m.querySelector('h1'))(document.getElementById(${S(mainOf(hash))}))`, 30000);
-        await ev(`document.querySelector('[data-lang=${lang}]').click()`);
-        await waitFor(`lang ${lang}`, `document.documentElement.lang === ${S(lang)}`, 10000);
-        const chrome = await ev(CHROME);
-        if (chrome.cut.length) fail(`top bar: cut or overlapping: ${chrome.cut.join(', ')}`);
-        return chrome;
-      });
-    }
-  }
-  await ev(`document.querySelector('[data-lang=vi]').click()`);
 
   // ---- V22-B (L206, roadmap-v22 S2): Run the first GROUP BY Solution in the workspace, "Vì sao?" on row 1 shows its source-row count.
   await step(`why: row 1 of ${GROUPED.id}`, async () => {
@@ -699,6 +686,32 @@ try {
     await waitFor('the weekly goal on Lily\'s card', `/\\/5/.test(document.querySelector('#home [data-goal]')?.textContent ?? '')`, 5000);
     return { ...m, height: h2, ratio: Math.round((h2 / 1694) * 1000) / 1000 };
   });
+
+  // v21 U1/U2 (L189): the top bar at 1024–1920, VI and EN, on the domain with the longest titles (Finance) and the workspace.
+  // QA v22 (L254): late in the run (it replaces the scenario's save), as a returning player (save-v5: Inbox and Review badges shown), the widest bar.
+  const badges = JSON.parse(readFileSync(join(ROOT, 'tests/fixtures/save-v5.json'), 'utf8'));
+  const badgeInit = Object.entries({ 'cargo-query-save': badges, 'cargo-query/tour': { step: 99, knows: true }, 'cargo-query/coach-done': true, 'cargo-query/domain': 'logistics' })
+    .map(([k, v]) => `localStorage.setItem(${S(k)}, ${S(S(v))});`).join('');
+  const { identifier: badgeScript } = await send('Page.addScriptToEvaluateOnNewDocument', { source: `if (location.protocol.startsWith('http') && !sessionStorage.getItem('qa22')) { sessionStorage.setItem('qa22', '1'); ${badgeInit} }` });
+  await send('Page.navigate', { url: 'about:blank' });
+  await waitFor('about:blank', `location.href === 'about:blank'`, 10000);
+  for (const lang of ['vi', 'en']) for (const [w, hgt] of [[1024, 700], [1280, 800], [1440, 900], [1920, 1000]]) {
+    await size(w, hgt);
+    for (const hash of ['#/d/finance', '#/d/logistics/play']) {
+      await step(`top bar ${w}px ${lang} ${hash}`, async () => {
+        await go(base, hash);
+        await waitFor(`<main id="${mainOf(hash)}"> with an h1`, `(m => m && !m.hidden && !!m.querySelector('h1'))(document.getElementById(${S(mainOf(hash))}))`, 30000);
+        await ev(`document.querySelector('[data-lang=${lang}]').click()`);
+        await waitFor(`lang ${lang}`, `document.documentElement.lang === ${S(lang)}`, 10000);
+        if (await ev(`document.getElementById('review-btn').hidden || document.getElementById('inbox-btn').hidden`)) fail('the badge buttons are not shown');
+        const chrome = await ev(CHROME);
+        if (chrome.cut.length) fail(`top bar: cut or overlapping: ${chrome.cut.join(', ')}`);
+        return chrome;
+      });
+    }
+  }
+  await send('Page.removeScriptToEvaluateOnNewDocument', { identifier: badgeScript });
+  await ev(`document.querySelector('[data-lang=vi]').click()`);
 
   // ---- v21 §3 (v21-ux-review U11, QA v22): at 375 the completion dock of the chapter 1 promotion review never covers
   // "Bắt đầu chương 2" once it is scrolled as far into view as the page allows (the other two cheap checks: CHROME above).
