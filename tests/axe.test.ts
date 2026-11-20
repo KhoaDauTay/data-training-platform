@@ -3,7 +3,7 @@
 // never answers (the DB stays "loading"), so every page and dialog is checked as a new player sees it before the data is in.
 // A player with progress, the dark theme, a drill open and 375 px: tests/axeProgress.test.ts (FIX-1, L147). Shared setup:
 // tests/axeHarness.ts.
-import { beforeAll, describe, expect, it } from 'vitest';
+import { beforeAll, describe, expect, it, vi } from 'vitest';
 import { boot, byId, openModal, problems, settle, visit } from './axeHarness';
 
 class SilentWorker { onmessage = null; onerror = null; postMessage() {} terminate() {} }
@@ -43,6 +43,17 @@ describe('axe-core (v15 Q10)', () => {
   it.each(PAGES)('page %s', async (hash) => {
     await visit(hash);
     expect(openModal()).toBeUndefined();
+    // v22 P3-6 (L254): the domain's "preparing data" line only on its own pages (the DB never answers here, so it is pending)
+    const notice = byId('notice').hidden ? '' : byId('notice').textContent;
+    if (hash.startsWith('#/d/')) expect(notice).toMatch(/Đang chuẩn bị dữ liệu/);
+    else expect(notice).not.toMatch(/Đang chuẩn bị dữ liệu/);
+    // v22 P2-2: advanced node names are cut below sm, so each link carries its full name in `title`
+    if (hash === '#/learn') {
+      const links = (): HTMLAnchorElement[] => [...document.querySelectorAll<HTMLAnchorElement>('#home a[href*="/adv/"]')];
+      await vi.waitFor(() => expect(links().length).toBeGreaterThan(0), { timeout: 10_000 }); // the learn chunk draws it
+      const adv = links();
+      for (const a of adv) expect(a.textContent).toContain(a.title);
+    }
     expect(await problems()).toEqual([]);
   });
 

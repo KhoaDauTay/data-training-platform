@@ -237,12 +237,15 @@
 .side-label, .side-extra, .side-group { transition: opacity 140ms ease-out 80ms; }
 #side[data-closing] :is(.side-label, .side-extra, .side-group) { opacity: 0; transition: none; }
 .side-toggle { align-self: flex-start; }
+/* v22 P3-3 (L254): the lock badge on a locked row's icon is for the rail only; expanded, the trailing lock says it. */
+.side-badge { display: none; }
 /* Rail (64 px): icons only; labels stay for screen readers (plus a title tooltip), the lists below go. */
 @container (max-width: 120px) {
   .side-panel a, .side-panel button { position: relative; justify-content: center; padding-inline: 0; }
   .side-label, .side-group { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; opacity: 0; transition: none; }
   .side-extra { display: none; }
   .side-toggle { align-self: stretch; }
+  .side-badge { display: grid; }
 }
 @media (min-width: 1024px) and (min-height: 700px) {
   .frame { flex: 1; min-height: 0; }

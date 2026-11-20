@@ -202,7 +202,7 @@ function overview(c: LearnCtx): HTMLElement {
         const needs = x.needs.filter((id) => !known.has(id) && !(c.general.nodes.find((y) => y.id === id) && nodeState(c, c.general.nodes.find((y) => y.id === id)!).done));
         // M2: below sm one line per node (name + drills chip); the status and "learn first" line stay on its page
         return h('li', { class: 'relative cursor-pointer space-y-1 rounded-(--r-card) bg-panel px-5 py-3 ring-1 ring-line hover:ring-accent max-sm:flex max-sm:items-center max-sm:gap-2 max-sm:space-y-0 max-sm:px-4 max-sm:py-2.5' },
-          h('a', { href: `${d$.hashOf('learn')}/adv/${x.id}`, class: 'font-bold after:absolute after:inset-0 max-sm:min-w-0 max-sm:flex-1 max-sm:truncate' }, `${x.id.toUpperCase()} · ${x.title[lang]}`, tick(st.done)),
+          h('a', { href: `${d$.hashOf('learn')}/adv/${x.id}`, title: `${x.id.toUpperCase()} · ${x.title[lang]}`, class: 'font-bold after:absolute after:inset-0 max-sm:min-w-0 max-sm:flex-1 max-sm:truncate' }, `${x.id.toUpperCase()} · ${x.title[lang]}`, tick(st.done)), // v22 P2-2: truncated below sm
           x.status === 'external' ? null : h('span', { class: 'shrink-0 rounded-(--r-chip) bg-code px-2 text-caption text-muted tabular-nums sm:hidden', 'aria-hidden': 'true' }, `${st.drills}/${st.total}`),
           hideOnPhone(statusLine(x, (x.status === 'external' ? '' : ` · ${lt('learn.drills', { n: st.drills, total: st.total })}`)
             + (needs.length ? ` · ${lt('adv.needsFirst', { list: needs.map((id) => nameOf(c, id)).join(', ') })}` : ''))));
