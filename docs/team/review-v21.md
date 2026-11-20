@@ -217,3 +217,162 @@ Các mục này chưa được ghi là đã sửa, nên không tính là "còn l
   - popover vẫn nằm trong viewport sau `resize`;
   - `--row` không đổi khi mở tab hình sau khi kéo panel;
   - số trên `#review-btn` bằng nhau giữa các domain.
+
+## Post-release (live v21)
+
+Người viết: UI/UX + Product · 2026-11-20. Rà bản **live**, không sửa code. Phần này nối thêm; các phần trên (viết khi v21 chưa phát hành) giữ nguyên.
+
+### 0. Bản kiểm và cách chạy
+
+- **Site:** https://khoadautay.github.io/data-training-platform/. `sw.js` `VERSION 1c729dca256f7a1e`, `Last-Modified: Fri, 20 Nov 2026 02:42:19 GMT`. Tag `v21` = `4574f75` (chỉ thêm tài liệu sau `b5f5b35`); `origin/main` = `b5f5b35`.
+- **Cách chạy:** Edge headless, hồ sơ tạm mới cho mỗi lượt, CDP như `scripts/smoke.mjs`, `Network.setBypassServiceWorker`, có nghe cả domain `Log` (không chỉ `console`). Không dùng cổng 5173/5174, không dùng Chrome của user.
+  1. `node scripts/smoke.mjs <live>`: **SMOKE OK**, 90 bước, 84 s. Gồm việc 1 của 3 domain, một drill, "Thử ngay", 23 trang × (1280 sáng + 375 tối) có axe, cuộn ngang ở 320, top bar 1024/1280 VI + EN.
+  2. Script riêng (`scratchpad\rv21tool\live.mjs`, `ret.mjs`, `dock.mjs`, `side.mjs`, `clip.mjs`).
+     - Người mới: màn chào → Logistics → việc 1 Chạy/Nộp → Trang chủ → Lộ trình → drill `g-select-2` → Luyện SQL → Bảng điều hành → `#/me`, ở 1280 sáng, 375 tối và 320 sáng.
+     - Người quay lại: `tests/fixtures/save-v5.json`, **tải lại thật mỗi trang**. 9 trang × (1280 sáng, 1280 tối, 1024 tối, 375 tối, 320 sáng), thêm EN 1280/1024 và 375 tối có giảm chuyển động.
+- **Ảnh:** `C:\Users\KHOA~1.HUY\AppData\Local\Temp\claude\be8c95d1f89f2452\e927c5e6-22a4-40fa-bff6-3a9e8af9fcbc\scratchpad\rv21live\`. Ảnh smoke ở `rv21live\smoke\`. Số đo ở `live.jsonl` và `rv21tool\ret.log`.
+- **Nhiễu đã loại:**
+  - Lượt đầu của "người quay lại" chỉ đổi hash, không tải lại, nên app chưa đọc save. Các ảnh `ret-*` đã chụp lại bằng `ret.mjs`. Không phát hiện nào lấy từ lượt hỏng.
+  - `light-1280-sandbox-before/after-reload.png` (lượt người mới) là việc 2, không phải Sandbox, vì cú bấm trượt. Chúng chỉ cho thấy nháp story còn sau khi tải lại. Bằng chứng cho Sandbox là cặp `ret-light-1280-sandbox-*`.
+  - Vùng chữ bôi xanh trong vài ảnh 375: script nhấn Ctrl+A khi pane SQL đang ẩn.
+
+### 1. Các bản sửa v21: có giữ trên live không
+
+| Bản sửa | Live | Số đo | Ảnh |
+|---|---|---|---|
+| Sidebar **đẩy**, không đè (L188, C1) | ✅ | Workspace 1280: `<main>` x 64 → 256, dời 192 px. Tổng quan 1100: dời 192 px. Không có lớp phủ toàn màn, không cuộn ngang. | `light-1280-sidebar-rail/expanded`, `light-1100-sidebar-*` |
+| Hàng Phần không lặp số (L190) | ✅ | Mở rộng trên `#/learn`, chữ thấy được (đã bỏ `.sr-only`): "2 · Tổng hợp và nhóm · 2/3…". Không còn "Phần 2 ·". Rail chỉ có số. | `light-1280-learn-sidebar-expanded` |
+| Nút gập góc trên trái, có chuyển động (L190) | ✅ | Nút ở (8, 65), chỉ có icon. Bề rộng `#side` lấy mẫu mỗi 50 ms: 64 → 204 → 247 → 255 → 256. | như trên |
+| Rail chỉ tô "đang ở" đúng (U19) | ✅ | `adv/a2` và phòng phỏng vấn: không tô mục nào. `skill/group_by` tô Phần 2. `sql/3` tô Phần 3. | — |
+| Menu lĩnh vực dưới chip (A1), đổi cỡ khi đang mở (R21-U3) | ✅ | Lệch trái 0 px, cách đáy chip 6 px ở 1280/1024/375. Ở 320 lệch −6 px, do bị giữ trong màn. Mở ở 1280 rồi thu về 375: menu đi theo chip (x = 104), vẫn trong màn. | `light-*-domain-menu`, `light-375-domain-menu-after-resize` |
+| Khôi phục phiên khi tải lại | ✅ | Drill `#/learn/play/g-select-2`: tải lại vẫn cùng hash, cùng đề. Sandbox: tải lại vẫn ở "Sandbox: SQL tự do", editor giữ `SELECT 42 AS answer`. | `ret-light-1280-sandbox-before/after-reload` |
+| Dock 1024 (U11 phần 1024, R21-U1, L221) | ✅ việc thường | Nộp đạt: dock thu ngay (`mini=true`, 480×46 ở đáy). Không giao nút Chạy, "Việc tiếp theo →" hay `#work [role=status]`. | `light-1024-dock-task(-3s)` |
+| Dock 375 trên bottom nav (R21-U4) | ✅ | Dòng dock cách `#bottom-nav` 8 px. Nav cao 57 px. | `dark-375-dock-task` |
+| Dock 1280 | ✅ | Cả cảnh 480×246 hiện ≥ 3 s, rồi thu thành dòng 46 px. | `light-1280-play-submit-dock(-3s)` |
+| Splitter (R21-U2) | ✅ | Kéo panel 303 → 202 px (lưu `{"row":30}`). Mở tab Biểu đồ: vẫn 202 px, bản lưu không đổi. | `light-1280-split-drag-then-chart` |
+| Top bar một hàng (U1/U2, E2) | ✅ | 53 px ở 1024/1280, VI + EN, sáng + tối, cả 3 domain. 61 px ở 375/320. Smoke `CHROME`: 0 phần tử bị cắt hay chồng. | `ret-*-1280/1024-*`, `ret-en-*` |
+| Bottom nav một hàng (U3, I1) | ✅ | 57 px ở 375 và 320. | `ret-*-375/320-*` |
+| Số Ôn tập theo General (R21-U6, G1) | ✅ | Cùng save: "Ôn tập 5" ở Logistics, E-com và Finance. | — |
+| Tên truy cập chứa chữ hiển thị (E1/E6, G4) | ✅ | Nút đọc "Ôn tập 5" / "Hộp thư 1". axe: 0 vi phạm. | — |
+| `#/me`: h1 > h2 (U16) | ✅ | h1 22 px, h2 18 px. | `ret-*-me` |
+
+**Không bản sửa v21 nào hỏng trên live (0 regression).** Chưa kiểm lại trên live: dock **thăng tiến** ở 1024, vì phải chơi qua đánh giá chương 1. L221 đã đo phần này trên bản build.
+
+### 2. Checklist (`ux-deploy-checklist.md`), từng mục
+
+Ba trạng thái: **đo** (script của review này), **smoke** (smoke/axe trên live), **chưa kiểm**.
+
+| Mục | Trạng thái | Kết quả |
+|---|---|---|
+| A1, D1 | đo | ✅ (§1) |
+| A2, A3, A4 | ảnh | ✅ Không thấy lệch. Bảng kết quả ôm nội dung; tab Cột 2 cột. |
+| A5, L1–L5 | — | Không áp dụng: `#/engine` chưa có trên live. |
+| B1 | ảnh | ⚠ P3-4 (dòng dock đè trục biểu đồ). Ngoài ra không thấy chồng. |
+| B2 | đo | ✅ ở 1024 và 375 (việc thường). |
+| B3, B4 | ảnh | ✅ Pill pane 375 có nền đặc. Tour bước 8 không che kết quả. |
+| C1 | đo | ✅ |
+| C2 | đo | ✅ Hộp thư: bấm nền thì đóng, focus về `#inbox-btn`. |
+| C3 | ảnh | ✅ Màn chào lần đầu không đóng khi bấm nền. Sổ tay: chưa kiểm. |
+| D2 | chưa kiểm | Script không mở được hộp bài học từ chip. |
+| D3, D4 | chưa kiểm | — |
+| E1 | đo | ⚠ P2-2 (tên nút nâng cao bị cắt ở 375/320). Ở 1024/1280: 0. |
+| E2 | đo + smoke | ✅ |
+| E3 | ảnh | ✅ Tên tuyến, tiêu đề việc không gãy giữa chữ. |
+| E4, I2 | đo + smoke | ✅ Không cuộn ngang ở 375/320 trên mọi trang đo. |
+| E5 | chưa kiểm | — |
+| F1 | smoke (axe `color-contrast`) | ✅ 0 vi phạm ở 1280 sáng và 375 tối. Không chạy công cụ tương phản canvas riêng. |
+| F2 | ảnh | ✅ Theme tối của cảnh Finance, ER, biểu đồ đúng token. Có một chi tiết P3-5. |
+| F3, F4 | chưa kiểm | — |
+| G1 | đo | ✅ Số ôn chỉ hiện trên top bar. Thẻ Trang chủ nhắc lại "(5)" trong nội dung: chấp nhận. |
+| G2 | ảnh | ✅ |
+| G3 | ảnh | ⚠ P3-6 (banner "Đang chuẩn bị dữ liệu…" trên trang General). |
+| G4, K1 | smoke | ✅ axe: 0 vi phạm ở mọi mức, trên 46 lượt trang. |
+| H1 | đo | ✅ Lộ trình, Luyện SQL, `#/me`, phòng phỏng vấn: h1 22 > h2 18. Tổng quan và workspace có h1 `sr-only` (đúng thiết kế). h1 Bảng điều hành 28 px: chưa đối chiếu thang chữ. |
+| H2 | đo | ✅ |
+| H3, H6, H7, H8 | chưa kiểm hệ thống | Trang chủ người mới có đúng 1 nút chính ("Mở việc này"). |
+| H4 | ảnh | ✅ "Việc tiếp theo →" hiện ở thanh việc ngay sau khi nộp, ở 1280/1024/375. |
+| H5 | ảnh | ✅ Mở bản đồ hay sidebar không rời bài. |
+| I3 | smoke (axe `target-size`) | ✅ |
+| I4 | đo | ✅ Biểu đồ đủ trục ở 1280×800, panel 30 % và 45 %. |
+| J1 | smoke + ảnh | ✅ Finance (giảm chuyển động): dock ở khung cuối, không đổi trong 300 ms. Trang chủ 375 tối (giảm chuyển động): ảnh tĩnh. |
+| J2, J3, K2, K3 | chưa kiểm | — |
+
+**Lỗ trong matrix:** chưa chạy 375 sáng, EN ở 375, 1024 sáng cho người quay lại. 1024 sáng chỉ có ở lượt người mới (dock).
+
+**Lỗi console:** 0 `console.error`, 0 exception trên trang (smoke + script). Domain `Log` có lỗi wasm: xem P2-1.
+
+### 3. Phát hiện
+
+**P0: 0 · P1: 0.**
+
+| ID | Mức | Regression? | Trang / cỡ | Ảnh | Thấy gì | Sửa đề xuất |
+|---|---|---|---|---|---|---|
+| P2-1 | P2 | Chưa xác định. Smoke và các review trước chỉ nghe `console`, không nghe `Log`. | Lần đầu mở Thứ tự thực thi hoặc "SQL bằng lời", mọi cỡ | — | Mỗi lần nạp parser, bộ nạp `libpg-query` tự tải `assets/libpg-query.wasm` (tên không hash). GitHub Pages trả **404 HTML** (đã `curl`: `404 text/html`). Log ghi 4 lỗi: "wasm streaming compile failed", "expected magic word 00 61 73 6d, found 3c 21 44 4f", `Aborted(CompileError…)`. Chức năng vẫn đúng, vì `ensureParser` đưa buffer thật sau đó: Thứ tự thực thi vẽ đủ WHERE/GROUP BY, dòng "Truy vấn này: …" đúng. Hậu quả: một request 404 thừa, console ồn. Rủi ro: bản `libpg-query` sau có thể coi `Aborted` là lỗi thật. | Cho module biết URL thật trước khi nó tự khởi tạo (`locateFile` → URL `?url`), hoặc dùng entry không tự init. Smoke thêm `Log.entryAdded` và target worker. File: `src/viz/parser.ts`. |
+| P2-2 | P2. Checklist E1 xếp P1; hạ một mức vì đây là dòng danh sách, tên đầy đủ có ở trang của nút, chỉ cách một lần chạm. | Không. Có từ v7 (`5c0da28`). | `#/learn` 375 và 320, khối "DA nâng cao" | `dark-375-learn-adv-clip`, `ret-dark-375-learn` | Tên nút nâng cao bị cắt bởi `max-sm:truncate` và **không có `title`**: "A4 · Tổng phụ: ROLLUP, GROUPING SETS, CU…" (342 px chữ trong ô 269 px). Ở 320 có 8+ nút bị cắt. | Thêm `title` như `homeView.ts:98`, hoặc `line-clamp-2`. Một dòng ở `src/ui/learnView.ts:205`. |
+| P3-1 | P3 | Không rõ | Thanh việc, 320 | `light-320-d_logistics_play` | Nút "›" rơi xuống một hàng riêng, giữa hàng nút việc và "Việc tiếp theo". | Dưới 360 px: nút việc co `px`, hoặc đưa ‹ › về hai đầu `select`. `src/ui/mapStrip.ts` |
+| P3-2 | P3 | Không. U3 chọn một hàng 5 mục. | Bottom nav, 320 | `light-320-d_logistics_play` | "Luyện SQL" xuống 2 dòng, các mục khác 1 dòng. Nav vẫn 57 px. | Nhãn ngắn dưới 360 px ("Luyện"), hoặc `text-caption leading-tight` đều cho cả 5 mục. |
+| P3-3 | P3 | Không | Sidebar mở rộng, việc chưa mở | `light-1280-sidebar-expanded` | Mỗi hàng khóa có **hai** ổ khóa (trên huy hiệu số và ở mép phải), kèm "Chưa mở" và "Xong việc trước để mở". | Chỉ giữ ổ khóa ở mép phải; huy hiệu chỉ có số. `src/ui/sidebar.ts` |
+| P3-4 | P3 | Không. Theo L196/W2, dòng dock ở lại tới khi bấm Đóng. | Workspace 1280 sau khi nộp đạt, tab Biểu đồ | `light-1280-split-drag-then-chart` | Dòng dock thu gọn (46 px, góc phải dưới) đè nhãn trục x của biểu đồ ("15 nghìn") và mép phải bảng kết quả, cho tới khi bấm Đóng. | Khi panel đang ở tab hình, đặt dòng dock trên mép panel; hoặc tự đóng dòng ở lần Chạy kế tiếp. `src/ui/stage.ts` |
+| P3-5 | P3 | Không rõ | Tổng quan Finance, tối, 1024 | `ret-dark-1024-d_finance` | Mặt trăng của cảnh nằm sau pill trạng thái, đè lên chữ "đang làm chương 1". | Dời mặt trăng khỏi vùng pill, hoặc cho pill nền đặc. `src/art/finance.ts` |
+| P3-6 | P3 | Không rõ | `#/learn` sau khi tải lại, với người đã mở domain | `light-1280-learn-sidebar-expanded`, `dark-375-learn-adv-clip` | Trang General hiện banner "Đang chuẩn bị dữ liệu Logistics/Finance…", top bar hiện "15.6 MB", dù trang không cần dữ liệu domain. | Không hiện banner seed domain trên trang General; hoặc chỉ seed khi người chơi mở trang domain (luật v12.0 P1). `main.ts` (`openSchema`/banner) |
+| P3-7 | P3 | Không | Chip lĩnh vực trên trang General, 375 | `ret-dark-375-learn` | Chip chỉ còn icon "%" của Finance: không chữ, không chương. Người mới khó hiểu "%" là gì. | Dưới 640 px trên trang General: ghi tên ngắn ("Finance"), hoặc "Lĩnh vực" như `sqlOnly()`. `src/ui/topbar.ts` |
+
+**Đếm:** P0 0 · P1 0 · P2 2 · P3 7 · regression 0.
+
+### 4. Product nhìn lại (bản live)
+
+**Số đo lượt người mới:**
+
+| Đo | Số |
+|---|---|
+| Màn chào hiện | 2,5 s |
+| Nút "Mới bắt đầu" bật ở 1280 | **13,1 s** (smoke: 13,2 s) |
+| Nút "Mới bắt đầu" bật ở 375 | 9,4 s (hồ sơ mới khác, mạng lúc đo khác) |
+| Lần đo trước (Product §1, v20 live) | 16,1 s |
+
+Tốt hơn lần đo trước, nhưng ở 1280 vẫn trên cổng BOOT 10 s. Engine sẽ thêm một PGlite thứ hai.
+
+| Thứ đã phát hành (v21) | Giữ / Sửa / Bỏ | Vì sao (giá trị cho người học) | Việc cho v22 |
+|---|---|---|---|
+| Khung app (top bar một hàng, nav 5 mục một hàng, sidebar đẩy, menu neo chip) | **Giữ** | Các lỗi user báo (L188, L190, L215) đã hết trên live. Đây là nền cho mục "Học" và công tắc Engine. | Nav Engine phải giữ ≤ 5 mục ở 375/320. P3-2 cho thấy ở 320 gần hết chỗ. |
+| Dock theo bề rộng (L221) | **Giữ** | Không còn che nút đi tiếp ở 1024/375. | P3-4 (nhỏ). |
+| Splitter giữ chiều cao người chơi đặt | **Giữ** | Đúng như thiết kế. | — |
+| Khôi phục phiên (drill, Sandbox) | **Giữ** | Tải lại không mất việc. Bài Engine cần cùng luật (`ENGINE_ID` + hash). | E-FND: test tải lại trên bài Engine. |
+| Trang chủ người mới | **Sửa (ONB còn mở)** | Đã có một nút chính. Nhưng sau việc 1 vẫn còn 3 thẻ ngang nhau, trong đó "Ôn tập hôm nay" trống (`light-1280-home`): một thẻ to chỉ để nói "chưa có gì". | ONB: thu thẻ trống thành một dòng. Gộp với V22-C. |
+| Lộ trình trên điện thoại | **Sửa nhẹ** | Tên nút nâng cao bị cắt (P2-2): người mới không đọc được mình sắp học gì. | Sửa một dòng trong luồng R. |
+| Boot lần đầu | **Sửa** | 13 s vẫn là lúc người mới dễ bỏ đi nhất. P3-6 cho thấy app còn seed domain khi người chơi đang ở General. | V22-E và BOOT, làm trước khi Engine thêm runtime. |
+
+**Rút ra cho cổng:** smoke không bắt được P2-1, vì nó chỉ nghe `console`. Cổng mỗi version phải nghe cả `Log` và worker, nhất là khi Engine thêm wasm (PGlite thứ hai, pgvector, mingo, dynoxide).
+
+### 5. Đưa vào v22 (xếp hạng; RC = `#/engine` + V22-A/B/C/E trên `v22-engine`)
+
+1. **R: P2-1 (wasm 404) + smoke nghe `Log` và worker.** Cỡ S. Làm trước khi Engine thêm wasm, để lỗi tải của runtime mới không bị lẫn. Thoát: 0 dòng `Log` mức error trên live; smoke fail khi có.
+2. **V22-E + BOOT.** Cỡ M. Thoát:
+   - "Bắt đầu" ≤ 10 s ở 1280, hồ sơ mới, trung vị 3 lượt;
+   - không seed domain khi đang ở trang General (P3-6);
+   - main không chứa `pglab`/`dynoxide`/`mingo`;
+   - Engine chỉ boot khi mở `#/engine`.
+3. **E-FND trên khung đã vững.** Cỡ M. Thoát:
+   - mục "Học" + công tắc SQL/Engine ở 375/320: `#bottom-nav` < 72 px, một hàng, không nhãn nào 2 dòng (P3-2);
+   - sidebar Engine theo L190, một ổ khóa (P3-3), không lặp số;
+   - tải lại bài Engine mở lại đúng bài;
+   - dock của bài Engine theo L221.
+4. **V22-C + ONB.** Cỡ M. Thẻ trống trên Trang chủ thu thành một dòng; một lý do quay lại rõ ràng thay cho ba thẻ ngang nhau.
+5. **R: P2-2 + nhóm P3 nhỏ.** Cỡ S.
+   - `title` hoặc 2 dòng cho tên nút nâng cao (P2-2);
+   - ‹ › ở 320 (P3-1);
+   - mặt trăng Finance (P3-5);
+   - chip lĩnh vực trên trang General ở 375 (P3-7);
+   - dòng dock đè biểu đồ (P3-4).
+6. **V22-B "Vì sao ra dòng này" và V22-A Bản đồ A:** giữ thứ tự của RC. Cả hai thêm panel/hộp thoại mới, nên mỗi cái vào review v22 với ảnh 1280, 1024, 375 tối và 320 (các mục D2, B1, E4).
+7. **QA (`scripts/ux-audit.mjs`):** thêm đúng các kiểm review này đã viết tay:
+   - sidebar dời nội dung, lấy mẫu bề rộng khi animate;
+   - dock giao nút;
+   - splitter sau khi mở tab hình;
+   - số ôn bằng nhau giữa các domain;
+   - `title` cho chữ bị cắt ở 375/320;
+   - banner seed trên trang General.
+
+   Cách đo đã có trong `rv21tool\`.
+
+**Điều cần user:** không có.
