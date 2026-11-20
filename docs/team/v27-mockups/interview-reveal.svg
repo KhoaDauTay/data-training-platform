@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 640" width="960" height="640" font-family="Nunito, system-ui, sans-serif" role="img" aria-label="Mockup: câu chẩn đoán Postgres sau khi xem đáp án mẫu">
+  <rect width="960" height="640" fill="#fbf7f0"/>
+  <text x="120" y="36" font-size="11" fill="#6b5f57">Database Engine › Phỏng vấn › PostgreSQL · Junior · Bộ 2</text>
+  <g><circle cx="128" cy="58" r="6" fill="#0f766e"/><circle cx="148" cy="58" r="6" fill="#0f766e"/><circle cx="168" cy="58" r="6" fill="#ffffff" stroke="#0f766e" stroke-width="2"/><circle cx="188" cy="58" r="6" fill="#e8dfd3"/><circle cx="208" cy="58" r="6" fill="#e8dfd3"/></g>
+  <text x="224" y="62" font-size="12" fill="#6b5f57">Câu 3/5 · 06:12 trong phòng</text>
+  <rect x="120" y="76" width="720" height="168" rx="20" fill="#ffffff" stroke="#e8dfd3"/>
+  <rect x="140" y="92" width="78" height="22" rx="11" fill="#f6f0e7"/><text x="179" y="107" font-size="11" font-weight="600" text-anchor="middle" fill="#2a2320">Chẩn đoán</text>
+  <text x="140" y="136" font-size="15" font-weight="600" fill="#2a2320">Truy vấn đơn của một khách chậm dần khi bảng lớn lên. Đọc kế hoạch và sửa.</text>
+  <rect x="140" y="148" width="680" height="82" rx="10" fill="#f6f0e7"/>
+  <rect x="152" y="156" width="196" height="20" rx="10" fill="#dcf2ee"/><text x="250" y="170" font-size="11" font-weight="600" text-anchor="middle" fill="#0f766e">Chạy thật trên PGlite 0.5.16</text>
+  <rect x="716" y="154" width="94" height="24" rx="12" fill="#ffffff" stroke="#cfc2b2"/><text x="763" y="170" font-size="12" font-weight="600" text-anchor="middle" fill="#2a2320">▶ Chạy lại</text>
+  <g font-family="ui-monospace, monospace" font-size="12" fill="#2a2320"><text x="152" y="194">Seq Scan on orders (actual rows=10.00 loops=1)</text><text x="152" y="210">  Filter: (customer_id = 42)</text><text x="152" y="224">  Rows Removed by Filter: 19990</text></g>
+  <rect x="120" y="256" width="354" height="196" rx="20" fill="#ffffff" stroke="#e8dfd3"/>
+  <text x="140" y="282" font-size="11" font-weight="700" letter-spacing="1" fill="#6b5f57">CÂU CỦA BẠN</text>
+  <text x="140" y="308" font-size="13" fill="#2a2320">Quét cả bảng vì không có index trên</text>
+  <text x="140" y="326" font-size="13" fill="#2a2320">customer_id. Tạo index rồi chạy lại</text>
+  <text x="140" y="344" font-size="13" fill="#2a2320">EXPLAIN.</text>
+  <rect x="486" y="256" width="354" height="196" rx="20" fill="#f6f0e7" stroke="#e8dfd3"/>
+  <text x="506" y="282" font-size="11" font-weight="700" letter-spacing="1" fill="#6b5f57">ĐÁP ÁN MẪU</text>
+  <text x="506" y="308" font-size="13" fill="#2a2320">Seq Scan đọc 20.000 dòng để giữ 10</text>
+  <text x="506" y="326" font-size="13" fill="#2a2320">(Rows Removed by Filter). customer_id là</text>
+  <text x="506" y="344" font-size="13" fill="#2a2320">khóa ngoại nhưng không có index. Sửa:</text>
+  <text x="506" y="362" font-size="12" font-family="ui-monospace, monospace" fill="#2a2320">CREATE INDEX ON orders (customer_id)</text>
+  <text x="506" y="380" font-size="13" fill="#2a2320">(CONCURRENTLY trên hệ thống thật).</text>
+  <text x="506" y="428" font-size="12" font-weight="600" fill="#0f766e">Học lại: Index B-tree đầu tiên →   Docs ↗</text>
+  <rect x="120" y="464" width="720" height="150" rx="20" fill="#ffffff" stroke="#e8dfd3"/>
+  <text x="140" y="490" font-size="13" font-weight="600" fill="#2a2320">Câu trả lời của bạn có… (tự chấm)</text>
+  <g font-size="13" fill="#2a2320">
+    <rect x="140" y="502" width="18" height="18" rx="4" fill="#0f766e"/><text x="149" y="516" font-size="12" fill="#ffffff" text-anchor="middle">✓</text><text x="168" y="516">Đọc được tỉ lệ 10 giữ / 19.990 bỏ</text>
+    <rect x="140" y="530" width="18" height="18" rx="4" fill="#0f766e"/><text x="149" y="544" font-size="12" fill="#ffffff" text-anchor="middle">✓</text><text x="168" y="544">Đề xuất index trên customer_id</text>
+    <rect x="140" y="558" width="18" height="18" rx="4" fill="#ffffff" stroke="#cfc2b2" stroke-width="1.5"/><text x="168" y="572">Kiểm lại bằng EXPLAIN, nhắc CONCURRENTLY</text>
+  </g>
+  <text x="140" y="600" font-size="12" fill="#6b5f57">Tự chấm 2/3 · ☑ Xem lại sau (dưới 60% thì bật sẵn)</text>
+  <rect x="714" y="574" width="106" height="32" rx="16" fill="#0f766e"/><text x="767" y="595" font-size="13" font-weight="700" text-anchor="middle" fill="#ffffff">Câu tiếp ›</text>
+</svg>

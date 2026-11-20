@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 375 600" width="375" height="600" font-family="Nunito, system-ui, sans-serif" role="img" aria-label="Mockup: nút thuật ngữ và popover trong bài, 375 px">
+  <rect width="375" height="600" fill="#fbf7f0"/>
+  <text x="16" y="36" font-size="11" fill="#6b5f57">Database Engine › PostgreSQL › L1</text>
+  <text x="16" y="62" font-size="20" font-weight="700" fill="#2a2320">UPDATE thật ra làm gì</text>
+  <text x="16" y="100" font-size="17" font-weight="600" fill="#2a2320">Ý chính</text>
+  <text x="16" y="128" font-size="14" fill="#2a2320">Postgres không ghi đè dòng cũ. Nhờ</text>
+  <text x="16" y="150" font-size="14" fill="#2a2320"><tspan fill="#0f766e" font-weight="600">MVCC</tspan>, mỗi UPDATE tạo một phiên bản</text>
+  <line x1="16" y1="154" x2="56" y2="154" stroke="#0f766e" stroke-dasharray="2 2"/>
+  <text x="16" y="172" font-size="14" fill="#2a2320">dòng mới; bản cũ thành tuple chết và</text>
+  <text x="16" y="194" font-size="14" fill="#2a2320">chờ <tspan fill="#0f766e" font-weight="600">VACUUM</tspan> dọn.</text>
+  <line x1="44" y1="198" x2="102" y2="198" stroke="#0f766e" stroke-dasharray="2 2"/>
+  <text x="16" y="230" font-size="12" fill="#6b5f57">Gạch chấm = lần đầu một thuật ngữ có cấp ≥ cấp bài.</text>
+  <rect x="0" y="250" width="375" height="350" fill="#2a2320" opacity="0.08"/>
+  <rect x="16" y="372" width="343" height="212" rx="20" fill="#ffffff" stroke="#cfc2b2"/>
+  <text x="36" y="404" font-size="18" font-weight="600" fill="#2a2320">MVCC</text>
+  <rect x="92" y="390" width="30" height="20" rx="10" fill="#f6f0e7"/><text x="107" y="404" font-size="11" text-anchor="middle" fill="#2a2320">L3</text>
+  <rect x="323" y="386" width="24" height="24" rx="12" fill="#f6f0e7"/><text x="335" y="403" font-size="13" text-anchor="middle" fill="#2a2320">×</text>
+  <text x="36" y="434" font-size="14" fill="#2a2320">Mỗi lần sửa tạo một phiên bản dòng</text>
+  <text x="36" y="454" font-size="14" fill="#2a2320">mới; người đọc thấy snapshot của</text>
+  <text x="36" y="474" font-size="14" fill="#2a2320">riêng mình, nên đọc không chặn ghi.</text>
+  <text x="36" y="506" font-size="13" font-weight="600" fill="#0f766e">Xem trang thuật ngữ →</text>
+  <text x="36" y="534" font-size="13" font-weight="600" fill="#0f766e">Docs chính thức ↗</text>
+  <text x="36" y="566" font-size="11" fill="#6b5f57">Esc hoặc chạm ra ngoài để đóng · focus về nút</text>
+</svg>

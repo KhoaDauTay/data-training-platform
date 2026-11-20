@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 600" width="960" height="600" font-family="Nunito, system-ui, sans-serif" role="img" aria-label="Mockup: trang Thuật ngữ Engine ở 1280 px">
+  <rect width="960" height="600" fill="#fbf7f0"/>
+  <rect width="960" height="44" fill="#ffffff"/><line x1="0" y1="44" x2="960" y2="44" stroke="#e8dfd3"/>
+  <text x="20" y="28" font-size="15" font-weight="700" fill="#2a2320">BoonData</text>
+  <rect x="190" y="12" width="64" height="22" rx="11" fill="#dcf2ee"/><text x="222" y="27" font-size="12" font-weight="600" fill="#0f766e" text-anchor="middle">Engine</text>
+  <rect x="0" y="44" width="48" height="556" fill="#ffffff"/><line x1="48" y1="44" x2="48" y2="600" stroke="#e8dfd3"/>
+  <rect x="8" y="300" width="32" height="32" rx="10" fill="#dcf2ee"/><text x="24" y="321" font-size="11" fill="#0f766e" text-anchor="middle">Aa</text>
+  <text x="120" y="76" font-size="11" fill="#6b5f57">Database Engine › Thuật ngữ</text>
+  <text x="120" y="104" font-size="22" font-weight="700" fill="#2a2320">Thuật ngữ</text>
+  <rect x="120" y="120" width="720" height="88" rx="20" fill="#ffffff" stroke="#e8dfd3"/>
+  <rect x="140" y="136" width="300" height="32" rx="14" fill="#ffffff" stroke="#cfc2b2"/><text x="156" y="157" font-size="13" fill="#6b5f57">Tìm: vacuum, khóa phân vùng…</text>
+  <g font-size="12" font-weight="600">
+    <rect x="456" y="138" width="92" height="28" rx="14" fill="#dcf2ee" stroke="#0f766e"/><text x="502" y="157" fill="#0f766e" text-anchor="middle">✓ PostgreSQL</text>
+    <rect x="556" y="138" width="84" height="28" rx="14" fill="#ffffff" stroke="#cfc2b2"/><text x="598" y="157" fill="#2a2320" text-anchor="middle">MongoDB</text>
+    <rect x="648" y="138" width="88" height="28" rx="14" fill="#ffffff" stroke="#cfc2b2"/><text x="692" y="157" fill="#2a2320" text-anchor="middle">DynamoDB</text>
+  </g>
+  <g font-size="12" font-weight="600">
+    <rect x="140" y="176" width="36" height="24" rx="12" fill="#ffffff" stroke="#cfc2b2"/><text x="158" y="192" text-anchor="middle" fill="#2a2320">L1</text>
+    <rect x="182" y="176" width="36" height="24" rx="12" fill="#ffffff" stroke="#cfc2b2"/><text x="200" y="192" text-anchor="middle" fill="#2a2320">L2</text>
+    <rect x="224" y="176" width="44" height="24" rx="12" fill="#dcf2ee" stroke="#0f766e"/><text x="246" y="192" text-anchor="middle" fill="#0f766e">✓ L3</text>
+    <rect x="274" y="176" width="36" height="24" rx="12" fill="#ffffff" stroke="#cfc2b2"/><text x="292" y="192" text-anchor="middle" fill="#2a2320">L4</text>
+    <rect x="316" y="176" width="36" height="24" rx="12" fill="#ffffff" stroke="#cfc2b2"/><text x="334" y="192" text-anchor="middle" fill="#2a2320">L5</text>
+  </g>
+  <text x="824" y="193" font-size="12" fill="#6b5f57" text-anchor="end">31 thuật ngữ · ☐ Che giải thích</text>
+  <text x="120" y="240" font-size="11" font-weight="700" fill="#6b5f57" letter-spacing="1">L3 · TRUNG CẤP</text>
+  <rect x="120" y="252" width="720" height="150" rx="20" fill="#ffffff" stroke="#e8dfd3"/>
+  <text x="144" y="282" font-size="18" font-weight="600" fill="#2a2320">MVCC</text>
+  <rect x="200" y="268" width="76" height="20" rx="10" fill="#f6f0e7"/><text x="238" y="282" font-size="11" text-anchor="middle" fill="#2a2320">PostgreSQL</text>
+  <rect x="282" y="268" width="30" height="20" rx="10" fill="#f6f0e7"/><text x="297" y="282" font-size="11" text-anchor="middle" fill="#2a2320">L3</text>
+  <text x="144" y="308" font-size="13" fill="#2a2320">Mỗi lần sửa tạo một phiên bản dòng mới; người đọc thấy snapshot của riêng mình,</text>
+  <text x="144" y="326" font-size="13" fill="#2a2320">nên đọc không chặn ghi và ghi không chặn đọc.</text>
+  <text x="144" y="350" font-size="12" fill="#6b5f57">Tránh dịch: "đa phiên bản đồng thời"</text>
+  <line x1="144" y1="364" x2="816" y2="364" stroke="#e8dfd3"/>
+  <text x="144" y="388" font-size="12" font-weight="600" fill="#0f766e">Dạy ở: Snapshot và tuple chết →</text>
+  <text x="372" y="388" font-size="12" fill="#6b5f57">Gặp trong 9 bài ▸</text>
+  <text x="496" y="388" font-size="12" font-weight="600" fill="#0f766e">BP: VACUUM đúng lúc →</text>
+  <text x="690" y="388" font-size="12" font-weight="600" fill="#0f766e">Docs chính thức ↗</text>
+  <rect x="120" y="414" width="720" height="150" rx="20" fill="#ffffff" stroke="#e8dfd3"/>
+  <text x="144" y="444" font-size="18" font-weight="600" fill="#2a2320">VACUUM</text>
+  <rect x="222" y="430" width="76" height="20" rx="10" fill="#f6f0e7"/><text x="260" y="444" font-size="11" text-anchor="middle" fill="#2a2320">PostgreSQL</text>
+  <rect x="304" y="430" width="30" height="20" rx="10" fill="#f6f0e7"/><text x="319" y="444" font-size="11" text-anchor="middle" fill="#2a2320">L3</text>
+  <text x="144" y="470" font-size="13" fill="#2a2320">Dọn tuple chết để chỗ trống dùng lại được và cập nhật visibility map.</text>
+  <text x="144" y="494" font-size="12" fill="#6b5f57">Tránh dịch: "hút bụi"</text>
+  <line x1="144" y1="508" x2="816" y2="508" stroke="#e8dfd3"/>
+  <text x="144" y="532" font-size="12" font-weight="600" fill="#0f766e">Dạy ở: VACUUM và autovacuum →</text>
+  <text x="380" y="532" font-size="12" fill="#6b5f57">Gặp trong 14 bài ▸</text>
+  <text x="690" y="532" font-size="12" font-weight="600" fill="#0f766e">Docs chính thức ↗</text>
+</svg>
