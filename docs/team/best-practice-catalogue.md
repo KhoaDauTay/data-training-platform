@@ -6,6 +6,15 @@ Người viết: agent Research · 2026-11-20 · theo L215 mục 6 ("luôn có A
 
 **Vòng 3** (agent Research, 2026-11-20): thêm 22 mục (Q23, A22–A24, S13–S14, X06–X10, M23–M27, D22–D27) về đặt tên, kiểm chất lượng dữ liệu, bảo mật (quyền tối thiểu, bẫy RLS, SQL động) và vận hành MongoDB/DynamoDB; chuyển 40 mục thành thẻ nội dung chạy được ở `content/engine/best/` (§11); lập bản đồ mọi mục tới bài Engine (§12). Mã cũ giữ nguyên.
 
+**Vòng 4** (agent Research, 2026-11-20): theo L220, không thêm thẻ. Thêm §13:
+
+- đề xuất cho BP-T về `probe`, `compare: rcu`, dữ liệu DynamoDB và chia chunk (đã đo);
+- 32 mục mới nối bài Engine bên trong engine với vận hành: P27–P41, S15, M28–M38, D28–D32, 13 mục chạy được;
+- bảng nối thêm 54 bài Engine;
+- đề xuất phòng trưng bày lỗi.
+
+Mục mới nằm ở §13.2, không chen vào §1–8. Mã cũ giữ nguyên.
+
 Tài liệu này là nguyên liệu cho khu **Best Practice** sắp có. Nó đi cùng `db-engine-knowledge.md` (bản đồ kiến thức theo engine, L1 → L5) và dùng lại các nguồn `[Sn]` đã mở ở đó. Đề xuất cách khu Best Practice hoạt động trong app nằm ở §9.
 
 ## 0. Quy ước
@@ -49,13 +58,15 @@ Tài liệu này là nguyên liệu cho khu **Best Practice** sắp có. Nó đi
 |---|---|---|---|
 | 1. Viết truy vấn SQL | Q | 23 | 23 |
 | 2. SQL cho data analyst | A | 24 | 24 |
-| 3. Thiết kế schema PostgreSQL | S | 14 | 13 |
+| 3. Thiết kế schema PostgreSQL | S | 15 | 14 |
 | 4. Index | I | 9 | 9 |
-| 5. Hiệu năng và vận hành | P | 26 | 24 |
+| 5. Hiệu năng và vận hành | P | 41 | 33 |
 | 6. Bảo mật | X | 10 | 8 (+ X04 qua S10) |
-| 7. MongoDB | M | 27 | 12 |
-| 8. DynamoDB | D | 27 | 19 (dynoxide) |
-| **Tổng** | | **160** | **132** |
+| 7. MongoDB | M | 38 | 14 |
+| 8. DynamoDB | D | 32 | 20 (dynoxide) |
+| **Tổng** | | **192** | **145** |
+
+Số đã gồm vòng 4. Mục vòng 4 nằm ở §13.2, chưa chen vào từng khu.
 
 **Mười mục giá trị nhất** cho người học BoonData (lỗi thật hay gặp, sai âm thầm, có thể bắt bằng lint):
 
@@ -4521,6 +4532,7 @@ Bài Engine đọc ở nhánh `v22-engine` (commit `0ede43d`): 195 id (`e-pg-…
 
 - 122/160 mục có ít nhất một bài Engine liên quan; 38 mục chưa có (phần lớn là Q/A thuần SQL phân tích, bảo mật X, vận hành MongoDB/DynamoDB vòng 3).
 - 139/195 bài Engine được ít nhất một mục dùng tới.
+- **Sau vòng 4: 193/195** (§13.3). Danh sách dưới là trạng thái trước vòng 4; chỉ còn `e-mg-l1-04` và `e-mg-l3-13`.
 
 **Bài Engine chưa có mục Best Practice nào (56):**
 
@@ -4530,3 +4542,1068 @@ Bài Engine đọc ở nhánh `v22-engine` (commit `0ede43d`): 195 id (`e-pg-…
 
 Phần lớn là bài bên trong engine (trang heap, WAL, B-tree nội tại, WiredTiger, election, Streams, global tables) hoặc capstone: chúng là kiến thức nền, không phải một luật "nên / không nên" viết được thành thẻ. Ứng viên cho vòng sau: lock và isolation (`e-pg-l4-10`…`e-pg-l4-14`: luật "giữ transaction ngắn", "lấy lock theo một thứ tự cố định để tránh deadlock"), change streams (`e-mg-l4-10`), Streams/TTL của DynamoDB.
 
+## 13. Vòng 4: câu hỏi mở cho BP-T, nối bài Engine, phòng trưng bày lỗi
+
+Theo L220 (chưa thêm track nội dung khi Engine chưa chơi được), vòng này **không thêm thẻ** và không sửa `content/engine/best/`. Mọi đo đạc chạy trong một thư mục tạm ngoài repo (`bp4/`, `package.json` riêng, `npm i --ignore-scripts`): PGlite 0.5.16, mingo 7.2.6, `@dynoxide/wasm-engine` 1.5.0.
+
+Nguồn vòng 4 được tải bằng `curl` ngày 2026-11-20 (trang PostgreSQL 18, MongoDB manual, AWS developer guide), đổi sang chữ rồi tìm đúng câu. Câu trích nguyên văn ≤ 15 chữ; còn lại là diễn đạt lại.
+
+### 13.1 Đề xuất cho BP-T (đóng §11.3–11.4)
+
+#### 13.1.1 Trường `probe` cho thẻ index (thay "hai bảng cùng dữ liệu")
+
+Runtime `engine` đã có sẵn hình dạng cần: `PgLabClient.run({ setup, extensions, steps })` (`src/engine/pglab/script.ts`, `v22-engine` `0ede43d`) dựng **một database mới mỗi lần gọi**, chạy `setup` từng câu, rồi chạy `steps` theo thứ tự. Vậy `probe` không cần runtime mới, chỉ cần parser ghép:
+
+```yaml
+pair:
+  runtime: engine
+  check: runs
+  setup: |            # dữ liệu, một bảng; VACUUM/ANALYZE dùng chung đặt ở đây
+    CREATE TABLE orders (id int PRIMARY KEY, store_id int NOT NULL, order_date date NOT NULL);
+    INSERT INTO orders SELECT i, i % 20, DATE '2025-01-01' + (i * 7) % 670 FROM generate_series(1, 20000) AS i;
+    ANALYZE orders;
+  bad: |              # thiết kế "Không nên": một hoặc vài câu DDL (splitSql)
+    CREATE INDEX orders_ix ON orders (order_date, store_id)
+  good: |
+    CREATE INDEX orders_ix ON orders (store_id, order_date)
+  probe: |            # MỚI: một câu đọc, chạy sau bad và sau good
+    SELECT count(*) AS orders FROM orders WHERE store_id = 3 AND order_date >= DATE '2026-01-01'
+  expect: { compare: cost }
+```
+
+- **Luật chạy:** mỗi bên là một lần `run({ setup, steps: [...splitSql(side), probe] })` trên database mới, nên bản Đúng không bao giờ thấy index của bản Sai.
+  - `compare: cost` hoặc `plan`: bước cuối là `EXPLAIN (FORMAT JSON) <probe>`.
+  - `compare: size`: `probe` tự trả số byte.
+  - Kết quả hiện ra là kết quả của `probe`. Câu DDL chỉ hiện ở khung mã.
+- **Luật nội dung (test):**
+  - `probe` chỉ có khi `runtime: engine | engine-hb`;
+  - khi có `probe`, `bad`/`good` không được là câu đọc;
+  - `probe` là đúng một câu.
+- **Đã kiểm** (đổi I02–I06 sang một bảng + `probe`, chỉ trong `bp4/`, thẻ thật giữ nguyên):
+
+| Thẻ | Sai | Đúng | So với hai bảng |
+|---|---|---|---|
+| I02 | Bitmap Heap Scan, cost 252,64 | Bitmap Heap Scan, cost 125,95 | trùng số |
+| I03 | 163.840 byte | 16.384 byte (`probe` = `pg_relation_size('web_orders_ix')`, cùng tên index ở hai bên) | trùng số |
+| I04 | Bitmap Heap Scan, cost 220,84 | Index Only Scan, cost 15,29 | trùng nút |
+| I05 | Seq Scan, cost 428 | Index Scan, cost 8,3 | trùng nút, nhưng xem dưới |
+| I06 | Seq Scan, cost 538 (bản Sai không có DDL: `bad` rỗng là hợp lệ) | Bitmap Heap Scan, cost 173,69 | trùng nút |
+
+- **Ba điều phải ghi vào luật:**
+  - **I05:** index biểu thức cần `ANALYZE` **sau** `CREATE INDEX` (thống kê của biểu thức sinh lúc đó). Không có nó, bản Đúng là Bitmap Heap Scan cost 132,56 thay vì Index Scan cost 8,3. Nên `good` của I05 là `CREATE INDEX …; ANALYZE members`.
+  - **I04:** `VACUUM ANALYZE` chạy một lần trong `setup` (trước mọi DDL), rồi `CREATE INDEX … INCLUDE` chạy **trong transaction** vẫn cho `Index Only Scan` cost 15,29, vì visibility map đã có từ `setup`. Vậy với `probe`, I04 xuống được `runtime: engine`, không cần `engine-hb`.
+  - **Thời gian:** `setup` chạy hai lần (mỗi bên một lần) nhưng dữ liệu chỉ còn một nửa: lâu nhất 727 ms (I06, gồm cả boot), không vượt mức ≈ 1 s của §11.2.
+
+#### 13.1.2 `expect.compare: rcu` cho thẻ DynamoDB
+
+- **Nghĩa:** chạy hai request trên cùng lab đã seed, đọc `ConsumedCapacity.CapacityUnits` của mỗi bên. Thẻ qua khi bản Đúng **nhỏ hơn hẳn** bản Sai (`<`, không `≤`). Với `check: same`, `Items` hai bên còn phải bằng nhau (không xét thứ tự).
+- **Không cần ghi `ReturnConsumedCapacity` trong thẻ:** `DynamoEngine.run` tự thêm `'TOTAL'` cho mọi op đọc/ghi (`CAPACITY` trong `src/engine/dynamo/engine.ts`). Thiếu nó thì dynoxide không trả `ConsumedCapacity` (đã thử: chỉ có `Count`/`ScannedCount`). Test nội dung chạy qua `DynamoEngine`, không gọi engine trần.
+- **Chỉ một trang:** so một response, không theo `LastEvaluatedKey`. Thẻ phải giữ dữ liệu dưới 1 MB đọc mỗi request (D12), nếu không con số chỉ là trang đầu.
+- **Đã kiểm dynoxide đúng công thức AWS** (cộng cỡ item, làm tròn lên 4 KB, eventually consistent = một nửa):
+
+| Request | Eventually | Strongly |
+|---|---|---|
+| `Query` 10 item ≈ 1 KB | 1,5 | 3 |
+| `Query` 10 item ≈ 5 KB | 6,5 | 13 |
+| `Scan` cả bảng 20 item, `FilterExpression` giữ 10 | 7,5 | 15 |
+| `GetItem` 1 item ≈ 5 KB | 1 | 2 |
+| `Query` 10 item ≈ 5 KB, `Select: COUNT` | 6,5 | 13 |
+| `Query` 10 item ≈ 5 KB, `Limit: 3` | 2 | 4 |
+
+  Dòng `Select: COUNT` khớp D16 (đếm không làm đọc rẻ hơn); dòng `Limit` là cách duy nhất trong bảng làm giảm số đọc. `ReturnConsumedCapacity: 'INDEXES'` trả thêm khối `Table`, cùng tổng.
+- **Nhãn trung thực:** số RCU là do dynoxide tính theo công thức, không phải hóa đơn AWS. Câu kết luận nên viết "dynoxide tính …", như nhãn §3.4 của thiết kế.
+
+#### 13.1.3 Dữ liệu DynamoDB trong thẻ: đổi sang JSON thường
+
+§11.3 ghi thẻ dùng giá trị **có kiểu** (`{"S": …}`) vì `DynamoEngine.seed()` gửi item thẳng vào `BatchWriteItem`. Đọc lại đường đi của `lab.setup`:
+
+- Ở `v22-engine`, `seed()` không chuyển kiểu. Gửi item không kiểu thì dynoxide báo `EngineError: Unexpected value type in payload` (đã thử cả `PutItem` lẫn `BatchWriteItem`). Bài `L1/09-query-vs-scan.md` ghi item không kiểu nên **seed lỗi** trên nhánh đó.
+- Nhánh tích hợp `engine-integrate` (L248) đã sửa: `src/engine/dynamo/runner.ts` có `labOf(setup)` đổi **JSON thường → DynamoDB JSON** cho mọi item (`marshal`: chuỗi `S`, số `N`, boolean `BOOL`, null `NULL`, mảng `L`, object `M`). Đây là đường bài Engine sẽ chạy.
+- **Hệ quả:** nếu BP-T cho thẻ đi qua `labOf`, item có kiểu của thẻ sẽ bị bọc lần nữa: `{"S": "CUST#1"}` thành `{M: {S: {S: "CUST#1"}}}`. Partition key khi đó là kiểu `M`, nên seed lỗi.
+
+**Đề xuất:**
+
+1. `pair.setup` của `dynoxide` dùng **đúng định dạng bài Engine**: JSON thường, đi qua `labOf()`. Request `bad`/`good` giữ kiểu (`ExpressionAttributeValues` có kiểu), vì đó là thứ người chơi gõ và `parseRequest` đòi kiểu (`untyped`).
+2. Đã kiểm sáu thẻ D hiện có: mọi giá trị chỉ là `S` và `N`, và `marshal(unmarshal(item))` trả lại đúng item cũ ở 100% item. Đổi định dạng không làm đổi dữ liệu được seed.
+3. Cỡ: 33.926 → 27.544 byte thô cho `setup` của sáu thẻ. Gzip gần như không đổi (−2 đến −3%): kiểu lặp lại nén rất tốt.
+4. Kiểu mà JSON thường không nói được (set `SS`/`NS`, binary `B`) chưa thẻ nào cần. Khi cần, thêm vào `labOf` một lối thoát rõ ràng (ví dụ `{"$dy": {"SS": [...]}}`). Đừng đoán kiểu từ hình dạng, vì đoán thì mảng chuỗi không biết là `L` hay `SS`.
+5. Test nội dung: chạy `labOf(setup)` rồi seed thật. Đây cũng là test bắt được lỗi seed của bài `L1/09` trên `v22-engine`.
+
+#### 13.1.4 Chia chunk `bpsql`/`bppg` để giữ ≤ 20 KB
+
+Đo lại trên 40 thẻ (frontmatter đổi sang JSON cùng thân bài, gzip -9):
+
+| Khu | Thẻ | Gzip cả nhóm | Mỗi thẻ (trong nhóm) | Mỗi thẻ (đứng một mình) |
+|---|---|---|---|---|
+| q | 13 | 12,1 KB | 0,93 KB | 1,54 KB |
+| a | 5 | 5,7 KB | 1,14 KB | 1,59 KB |
+| s | 4 | 4,8 KB | 1,21 KB | 1,60 KB |
+| i | 5 | 5,7 KB | 1,14 KB | 1,70 KB |
+| x | 1 | 1,7 KB | 1,67 KB | 1,67 KB |
+| m | 6 | 7,0 KB | 1,16 KB | 1,70 KB |
+| d | 6 | 9,1 KB | 1,51 KB | 2,19 KB |
+
+- Trong một thẻ: câu kiểm chiếm ≈ 35%, thân bài ≈ 45%, `pair` 7–26% (DynamoDB nặng nhất vì dữ liệu `setup`). Tách theo ngôn ngữ cắt ≈ 40% (q: 12,1 → 7,1 KB chỉ VI).
+- Dự phóng nếu mọi mục thành thẻ, theo hệ số trong nhóm:
+  - Q 23 mục ≈ 21 KB, A 24 mục ≈ 27 KB: **mỗi khu đã quá 20**, gộp `bpsql` ≈ 41 KB;
+  - S/I/P/X, tính cả vòng 4: 15 S + 9 I + 41 P + 10 X = 75 mục ≈ 85 KB.
+  - Chia theo khu (`bpq`, `bpa`…) **không đủ**.
+
+**Đề xuất: mỗi thẻ một chunk lười, cộng một chỉ mục nhỏ mỗi track.**
+
+- `src/bestSources.ts` dùng `import.meta.glob('/content/engine/best/*/*.md', { query: '?raw', import: 'default' })` **không `eager`**. Vite/Rolldown tách mỗi file thành một chunk (≈ 1,5–2,2 KB gzip). Trang mục chỉ tải đúng thẻ đang mở.
+- Lưới và chip kỹ năng đọc `bpindex-<track>`, sinh lúc build, gồm `{ id, module, level, title, title_en, skills }`. Đo trên 40 thẻ: 2,5 KB gzip, ≈ 63 byte mỗi thẻ. Một track 50 thẻ ≈ 3,2 KB, dưới trần `bpindex` 4.
+- `check-budget.mjs`:
+  - nhóm `bp` đo **thẻ lớn nhất** (trần 3 KB), không đo tổng;
+  - nhóm `bpindex` đo từng track (trần 4);
+  - như vậy trần không phải nâng khi thêm mục.
+- Giá phải trả:
+  - mỗi lần mở thẻ là một request nhỏ;
+  - `dist` có thêm ≈ 1 file mỗi thẻ (precache của nhánh `v16-offline` cũng phải liệt kê chúng);
+  - khác cách ticket (một chunk cho cả nhóm, L41). Ghi L mới, nói rõ vì sao: thẻ được mở lẻ từ chip, ticket thì đi theo chuỗi.
+- **Phương án dự phòng**, nếu không muốn nhiều file: chunk theo khu **và** ngôn ngữ (`bpq-vi`, `bpq-en`…). Q-vi ≈ 13 KB, A-vi ≈ 18 KB: vừa trần nhưng sát. Khi đổi ngôn ngữ phải tải lại.
+
+### 13.2 Mục mới (vòng 4): nối bài Engine bên trong engine với việc vận hành
+
+Chọn theo một luật: mỗi cụm bài Engine chưa có mục (§12.9) được một mục **có nguồn chính thức nói đúng ý đó**, cộng các chủ đề vận hành được giao (checkpoint, `wal_compression`, vacuum cost, slot, WiredTiger cache, shard key, adaptive capacity). Mã tiếp nối, không đánh lại số cũ.
+
+Đã bỏ vì không đạt chuẩn nguồn của §0:
+
+- TOAST nén `lz4`: PGlite không có (`default_toast_compression = lz4` báo 22023). Bài TOAST được nối bằng Q09 (§13.3).
+- `synchronous_commit` theo transaction: tài liệu có, nhưng bài WAL không nói tới nó.
+- `insertMany` không thứ tự: trang tài liệu không nói nhanh hơn.
+- Multikey không phủ được truy vấn: tài liệu MongoDB nay nói multikey **có thể** phủ, có điều kiện.
+- Wildcard index không thay index theo tải: không tìm thấy câu đó trên trang.
+
+Khối có dòng `-- Pxx bad/good` đã chạy bằng script đọc chính file này: PGlite mới cho mỗi khối, `(notx)` = ngoài transaction, còn lại trong `BEGIN … ROLLBACK`.
+
+### P27 · Bảng rất lớn: xếp cột rộng cố định trước, cột hẹp sau / Order columns to avoid alignment padding
+
+*(vòng 4)*
+
+- **Luật:**
+  - với bảng hàng chục triệu dòng, đặt cột 8 byte (`bigint`, `timestamptz`, `float8`) trước, rồi 4, 2, 1 byte, cột độ dài thay đổi cuối;
+  - chỉ làm khi tạo bảng, không viết lại bảng đang chạy chỉ vì việc này.
+- **Vì sao:** mỗi giá trị bắt đầu ở bội số căn lề của kiểu (`attalign`). Một `boolean` đứng trước `bigint` để lại 7 byte đệm trong **mỗi** dòng.
+- **Nguồn:**
+  - https://www.postgresql.org/docs/18/storage-page-layout.html (bố cục dòng, `attlen` và `attalign`)
+  - https://www.postgresql.org/docs/18/catalog-pg-type.html (`typalign`)
+- **Cấp:** L3 · **Nối với:** chưa có · **Kiểm:** PGlite `(notx)`, cùng 50.000 dòng cùng giá trị: Sai 3.833.856 byte, Đúng 3.014.656 byte (−21%)
+
+```sql
+-- P27 bad (notx)
+CREATE TABLE ev_bad (flag_a boolean, id bigint, flag_b boolean, amount bigint, kind smallint, created_at timestamptz);
+INSERT INTO ev_bad SELECT true, i, false, i * 10, 1, TIMESTAMPTZ '2026-01-01' + i * interval '1 minute' FROM generate_series(1, 50000) AS i;
+SELECT pg_relation_size('ev_bad') AS table_bytes
+```
+```sql
+-- P27 good (notx)
+CREATE TABLE ev_good (id bigint, amount bigint, created_at timestamptz, kind smallint, flag_a boolean, flag_b boolean);
+INSERT INTO ev_good SELECT i, i * 10, TIMESTAMPTZ '2026-01-01' + i * interval '1 minute', 1, true, false FROM generate_series(1, 50000) AS i;
+SELECT pg_relation_size('ev_good') AS table_bytes
+```
+
+### P28 · Checkpoint theo giờ, không theo WAL đầy / Checkpoints should be timed, not forced by WAL volume
+
+*(vòng 4)*
+
+- **Luật:**
+  - theo dõi `pg_stat_checkpointer`: `num_requested` (checkpoint do WAL đầy) tăng nhanh hơn `num_timed` là dấu hiệu `max_wal_size` quá nhỏ;
+  - đọc log `checkpoint_warning`. Tài liệu nói cảnh báo này gợi ý `max_wal_size` "ought to be raised";
+  - giữ `checkpoint_completion_target` mặc định 0,9.
+- **Vì sao:**
+  - mặc định `checkpoint_timeout` 5 phút, `max_wal_size` 1 GB;
+  - checkpoint dồn dập ghi nhiều trang bẩn hơn;
+  - checkpoint dồn dập cũng ghi nhiều full-page image hơn, vì lần sửa đầu sau mỗi checkpoint ghi cả trang (P29);
+  - đổi lại: khoảng cách lớn làm khôi phục sau sự cố lâu hơn.
+- **Nguồn:**
+  - https://www.postgresql.org/docs/18/wal-configuration.html
+  - https://www.postgresql.org/docs/18/runtime-config-wal.html#GUC-CHECKPOINT-WARNING
+- **Cấp:** L4 · **Nối với:** chưa có · **Kiểm:** PGlite `(notx)` chỉ khối Đúng: câu đọc chạy được (`num_timed` 0, `num_requested` 0: PGlite chạy một tiến trình, không có checkpointer định kỳ). Đổi cấu hình là cú pháp
+
+```sql
+-- P28 bad (syntax)
+-- postgresql.conf trên máy ghi nhiều: max_wal_size = 256MB, nên checkpoint bị ép vài chục giây một lần
+ALTER SYSTEM SET max_wal_size = '256MB'
+```
+```sql
+-- P28 good (notx)
+CHECKPOINT;
+SELECT num_timed, num_requested FROM pg_stat_checkpointer
+```
+
+### P29 · Bật `wal_compression` khi WAL bị full-page image chiếm phần lớn / Compress full-page images in WAL
+
+*(vòng 4)*
+
+- **Luật:** trên máy ghi nhiều (nhân bản, sao lưu WAL), bật `wal_compression` (`pglz`, hoặc `lz4`/`zstd` nếu bản build có), đo lượng WAL trước và sau.
+- **Vì sao:**
+  - sau mỗi checkpoint, lần sửa đầu của một trang ghi cả trang vào WAL;
+  - `wal_compression` nén chính các ảnh trang đó, giảm WAL cần ghi, gửi và lưu;
+  - tài liệu: nén "without increasing the risk of unrecoverable data corruption", đổi lại tốn CPU;
+  - mặc định `off`.
+- **Nguồn:** https://www.postgresql.org/docs/18/runtime-config-wal.html#GUC-WAL-COMPRESSION
+- **Cấp:** L5 · **Nối với:** chưa có · **Kiểm:** PGlite `(notx)`, cùng một `UPDATE` 400 dòng ngay sau `CHECKPOINT`: Sai 3.205.032 byte WAL, Đúng 691.464 byte (−78%). PGlite 0.5.16 chỉ có `pglz` (`lz4` báo 22023)
+
+```sql
+-- P29 bad (notx)
+CREATE TABLE w (id int PRIMARY KEY, a int, pad text);
+INSERT INTO w SELECT i, i, repeat('abc', 30) FROM generate_series(1, 20000) AS i;
+SET wal_compression = off;
+CHECKPOINT;
+CREATE TABLE lsn (at pg_lsn);
+INSERT INTO lsn SELECT pg_current_wal_lsn();
+UPDATE w SET a = a + 1 WHERE id % 50 = 0;
+SELECT pg_wal_lsn_diff(pg_current_wal_lsn(), at) AS wal_bytes FROM lsn
+```
+```sql
+-- P29 good (notx)
+CREATE TABLE w (id int PRIMARY KEY, a int, pad text);
+INSERT INTO w SELECT i, i, repeat('abc', 30) FROM generate_series(1, 20000) AS i;
+SET wal_compression = pglz;
+CHECKPOINT;
+CREATE TABLE lsn (at pg_lsn);
+INSERT INTO lsn SELECT pg_current_wal_lsn();
+UPDATE w SET a = a + 1 WHERE id % 50 = 0;
+SELECT pg_wal_lsn_diff(pg_current_wal_lsn(), at) AS wal_bytes FROM lsn
+```
+
+### P30 · Nâng `work_mem` cho một câu nặng bằng `SET LOCAL`, không nâng toàn cục / Raise work_mem per query, not globally
+
+*(vòng 4)*
+
+- **Luật:**
+  - báo cáo nặng (gom nhóm, sort lớn): `SET LOCAL work_mem = '64MB'` trong transaction của câu đó;
+  - giữ mặc định toàn cục nhỏ.
+- **Vì sao:**
+  - `work_mem` (mặc định 4 MB) là trần **cho từng** node sort/hash;
+  - tài liệu: một câu có thể dùng "several sort and hash operations" cùng lúc, nhân với số phiên;
+  - nâng toàn cục có thể làm hết RAM;
+  - nâng cho một câu đổi được kế hoạch: hash trong bộ nhớ thay vì sort.
+- **Nguồn:**
+  - https://www.postgresql.org/docs/18/runtime-config-resource.html#GUC-WORK-MEM
+  - https://www.postgresql.org/docs/18/sql-set.html
+- **Cấp:** L3 · **Nối với:** chưa có · **Kiểm:** PGlite, cùng câu gom 200.000 khóa khác nhau:
+  - Sai (4 MB): `Sort` + `GroupAggregate` (planner không dám hash);
+  - Đúng: `HashAggregate`, 1 batch, `Disk Usage` 0;
+  - Kế hoạch, Sai ≠ Đúng.
+
+```sql
+-- P30 bad
+CREATE TABLE big (id int, k text);
+INSERT INTO big SELECT i, md5(i::text) || md5((-i)::text) FROM generate_series(1, 200000) AS i;
+ANALYZE big;
+EXPLAIN (ANALYZE, COSTS OFF, TIMING OFF, SUMMARY OFF, FORMAT JSON) SELECT k, count(*) AS n FROM big GROUP BY k
+```
+```sql
+-- P30 good
+CREATE TABLE big (id int, k text);
+INSERT INTO big SELECT i, md5(i::text) || md5((-i)::text) FROM generate_series(1, 200000) AS i;
+ANALYZE big;
+SET LOCAL work_mem = '64MB';
+EXPLAIN (ANALYZE, COSTS OFF, TIMING OFF, SUMMARY OFF, FORMAT JSON) SELECT k, count(*) AS n FROM big GROUP BY k
+```
+
+### P31 · `enable_*` chỉ để chẩn đoán, sửa thống kê mới là cách thật / enable_* is for diagnosis; fix the statistics
+
+*(vòng 4)*
+
+- **Luật:**
+  - `SET enable_seqscan = off` (hay `enable_nestloop`, `enable_hashjoin`…) chỉ dùng để thử "nếu planner chọn đường kia thì cost bao nhiêu";
+  - đừng để trong ứng dụng hay trong `postgresql.conf`;
+  - sửa gốc: `ANALYZE`, statistics target theo cột (P20), thống kê mở rộng (P09), cost constants.
+- **Vì sao:**
+  - tài liệu gọi các cờ này là "a crude method", chỉ là "a temporary solution";
+  - chúng đúng cho câu hôm nay nhưng ép sai khi dữ liệu đổi.
+- **Nguồn:** https://www.postgresql.org/docs/18/runtime-config-query.html#RUNTIME-CONFIG-QUERY-ENABLE
+- **Cấp:** L4 · **Nối với:** chưa có · **Kiểm:** PGlite, câu đọc cả bảng 20.000 dòng: Sai (`enable_seqscan = off`) Bitmap Heap Scan cost 620,3; Đúng (để planner chọn) Seq Scan cost 389,01. Cost Đúng < Sai
+
+```sql
+-- P31 bad
+CREATE TABLE t32 (id int PRIMARY KEY, grp int NOT NULL);
+INSERT INTO t32 SELECT i, i % 2 FROM generate_series(1, 20000) AS i;
+CREATE INDEX t32_grp_ix ON t32 (grp);
+ANALYZE t32;
+SET LOCAL enable_seqscan = off;
+EXPLAIN (FORMAT JSON) SELECT count(*) FROM t32 WHERE grp >= 0
+```
+```sql
+-- P31 good
+CREATE TABLE t32 (id int PRIMARY KEY, grp int NOT NULL);
+INSERT INTO t32 SELECT i, i % 2 FROM generate_series(1, 20000) AS i;
+CREATE INDEX t32_grp_ix ON t32 (grp);
+ANALYZE t32;
+EXPLAIN (FORMAT JSON) SELECT count(*) FROM t32 WHERE grp >= 0
+```
+
+### P32 · Khóa nhiều dòng theo một thứ tự cố định / Lock rows in one consistent order
+
+*(vòng 4)*
+
+- **Luật:**
+  - mọi đoạn code sửa nhiều dòng cùng lúc (chuyển tiền, giữ hàng) khóa theo cùng thứ tự: `SELECT … WHERE id IN (…) ORDER BY id FOR UPDATE`;
+  - lấy ngay mức khóa mạnh nhất sẽ cần;
+  - giữ transaction ngắn (P03).
+- **Vì sao:**
+  - hai transaction khóa A rồi B và B rồi A sẽ chờ nhau, tới khi Postgres phát hiện deadlock và hủy một bên (`40P01`);
+  - tài liệu: cách phòng tốt nhất là lấy khóa "in a consistent order".
+- **Nguồn:** https://www.postgresql.org/docs/18/explicit-locking.html#LOCKING-DEADLOCKS
+- **Cấp:** L4 · **Nối với:** chưa có · **Kiểm:** cú pháp (cần hai phiên; PGlite chỉ có một)
+
+```sql
+-- P32 bad (syntax)
+-- phiên 1: UPDATE accounts SET balance = balance - 100 WHERE id = 2; rồi id = 1
+-- phiên 2: UPDATE accounts SET balance = balance - 100 WHERE id = 1; rồi id = 2
+UPDATE accounts SET balance = balance - 100 WHERE id = 2
+```
+```sql
+-- P32 good (syntax)
+SELECT id FROM accounts WHERE id IN (1, 2) ORDER BY id FOR UPDATE
+```
+
+### P33 · Hàng đợi trong bảng: `FOR UPDATE SKIP LOCKED` / Queue tables: FOR UPDATE SKIP LOCKED
+
+*(vòng 4)*
+
+- **Luật:** nhiều worker lấy việc từ một bảng thì mỗi worker lấy `… ORDER BY id LIMIT 10 FOR UPDATE SKIP LOCKED`, không `FOR UPDATE` trần (mọi worker xếp hàng chờ cùng dòng) và không đọc rồi `UPDATE` (hai worker nhận cùng việc).
+- **Vì sao:** `SKIP LOCKED` bỏ qua dòng đang bị worker khác khóa nên các worker lấy việc khác nhau mà không chờ. Tài liệu nói rõ kết quả là một cái nhìn không nhất quán, hợp cho hàng đợi, không hợp cho báo cáo.
+- **Nguồn:** https://www.postgresql.org/docs/18/sql-select.html#SQL-FOR-UPDATE-SHARE
+- **Cấp:** L4 · **Nối với:** chưa có · **Kiểm:** cú pháp (cần hai phiên)
+
+```sql
+-- P33 bad (syntax)
+SELECT id FROM jobs WHERE status = 'new' ORDER BY id LIMIT 10 FOR UPDATE
+```
+```sql
+-- P33 good (syntax)
+SELECT id FROM jobs WHERE status = 'new' ORDER BY id LIMIT 10 FOR UPDATE SKIP LOCKED
+```
+
+### P34 · Dùng `REPEATABLE READ`/`SERIALIZABLE` thì phải thử lại khi gặp `40001` / Retry serialization failures
+
+*(vòng 4)*
+
+- **Luật:**
+  - code chạy ở `REPEATABLE READ` hoặc `SERIALIZABLE` phải bắt `40001` (`serialization_failure`) và chạy lại **cả transaction** từ đầu, có giới hạn số lần;
+  - không chỉ chạy lại câu lỗi.
+- **Vì sao:**
+  - hai mức này hủy transaction thay vì để xảy ra bất thường (write skew, lost update);
+  - tài liệu: ứng dụng "must be prepared to retry transactions";
+  - transaction chỉ đọc thì không bao giờ gặp xung đột này.
+- **Nguồn:** https://www.postgresql.org/docs/18/transaction-iso.html
+- **Cấp:** L4 · **Nối với:** chưa có · **Kiểm:** cú pháp (cần hai phiên đồng thời)
+
+```sql
+-- P34 bad (syntax)
+-- ứng dụng: gặp lỗi 40001 thì báo lỗi cho người dùng, hoặc chỉ chạy lại câu UPDATE cuối
+BEGIN ISOLATION LEVEL SERIALIZABLE
+```
+```sql
+-- P34 good (syntax)
+-- ứng dụng: vòng lặp tối đa N lần; gặp 40001 thì ROLLBACK rồi chạy lại từ BEGIN
+BEGIN ISOLATION LEVEL SERIALIZABLE
+```
+
+### P35 · Báo cáo nhiều câu: một snapshot `REPEATABLE READ READ ONLY` / One snapshot for a multi-query report
+
+*(vòng 4)*
+
+- **Luật:** báo cáo gồm nhiều câu (tổng, chi tiết, tỷ lệ) chạy trong một `BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY`, để mọi câu thấy cùng dữ liệu.
+- **Vì sao:**
+  - ở `READ COMMITTED` (mặc định), mỗi câu thấy dữ liệu mới nhất nên tổng và chi tiết có thể lệch nhau khi có người đang ghi;
+  - `REPEATABLE READ` thấy một snapshot từ câu đầu tiên;
+  - `READ ONLY` không bao giờ cần thử lại (P34).
+- **Nguồn:** https://www.postgresql.org/docs/18/transaction-iso.html#XACT-REPEATABLE-READ
+- **Cấp:** L3 · **Nối với:** skill `aggregate` (gần A06 đối chiếu tổng kiểm) · **Kiểm:** cú pháp (khác biệt chỉ thấy khi có phiên thứ hai ghi xen vào)
+
+```sql
+-- P35 bad (syntax)
+-- hai câu riêng, mỗi câu một snapshot
+SELECT sum(total) FROM orders WHERE order_date >= DATE '2026-10-01'
+```
+```sql
+-- P35 good (syntax)
+BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY
+```
+
+### P36 · Khóa tư vấn: dùng bản theo transaction / Prefer transaction-level advisory locks
+
+*(vòng 4)*
+
+- **Luật:**
+  - dùng `pg_advisory_xact_lock(key)` (tự nhả khi transaction kết thúc);
+  - chỉ dùng `pg_advisory_lock` (theo phiên) khi thật sự cần giữ qua nhiều transaction, và luôn `pg_advisory_unlock`;
+  - sau pooler theo transaction (P23), khóa theo phiên gần như luôn sai;
+  - đừng gọi hàm khóa trong câu có `LIMIT`: không chắc `LIMIT` áp trước khi hàm chạy.
+- **Vì sao:** tài liệu: khóa theo phiên "do not honor transaction semantics": `ROLLBACK` không nhả nó.
+- **Nguồn:** https://www.postgresql.org/docs/18/explicit-locking.html#ADVISORY-LOCKS
+- **Cấp:** L4 · **Nối với:** chưa có · **Kiểm:** PGlite `(notx)`, Sai ≠ Đúng: sau `ROLLBACK`, Sai còn 1 khóa trong `pg_locks`, Đúng còn 0
+
+```sql
+-- P36 bad (notx)
+BEGIN;
+SELECT pg_advisory_lock(42);
+ROLLBACK;
+SELECT count(*) AS advisory_locks_held FROM pg_locks WHERE locktype = 'advisory'
+```
+```sql
+-- P36 good (notx)
+BEGIN;
+SELECT pg_advisory_xact_lock(42);
+ROLLBACK;
+SELECT count(*) AS advisory_locks_held FROM pg_locks WHERE locktype = 'advisory'
+```
+
+### P37 · Hàm tự viết: khai `PARALLEL SAFE` khi đúng là an toàn / Label safe functions PARALLEL SAFE
+
+*(vòng 4)*
+
+- **Luật:**
+  - hàm chỉ tính toán (không ghi, không dùng sequence, không đổi cấu hình) thì khai `PARALLEL SAFE`;
+  - hàm đọc bảng tạm hay trạng thái phiên thì `PARALLEL RESTRICTED`;
+  - không khai bừa: khai sai có thể cho lỗi hoặc kết quả sai.
+- **Vì sao:**
+  - mặc định là `PARALLEL UNSAFE`;
+  - tài liệu: một hàm như vậy trong câu "forces a serial execution plan";
+  - một hàm định dạng tiền nhỏ có thể tắt truy vấn song song của cả báo cáo lớn.
+- **Nguồn:**
+  - https://www.postgresql.org/docs/18/parallel-safety.html
+  - https://www.postgresql.org/docs/18/sql-createfunction.html
+- **Cấp:** L4 · **Nối với:** chưa có · **Kiểm:** PGlite, Sai ≠ Đúng: `pg_proc.proparallel` Sai `u`, Đúng `s`. PGlite không có worker song song (`max_parallel_workers_per_gather` = 0) nên không đo được kế hoạch
+
+```sql
+-- P37 bad
+CREATE FUNCTION net_price(p numeric) RETURNS numeric LANGUAGE sql IMMUTABLE AS $$ SELECT round(p / 1.1, 2) $$;
+SELECT proparallel FROM pg_proc WHERE proname = 'net_price'
+```
+```sql
+-- P37 good
+CREATE FUNCTION net_price(p numeric) RETURNS numeric LANGUAGE sql IMMUTABLE PARALLEL SAFE AS $$ SELECT round(p / 1.1, 2) $$;
+SELECT proparallel FROM pg_proc WHERE proname = 'net_price'
+```
+
+### P38 · BRIN chỉ cho cột tương quan với thứ tự vật lý: kiểm `correlation` trước / Check correlation before choosing BRIN
+
+*(vòng 4)*
+
+- **Luật:**
+  - trước khi tạo BRIN, xem `pg_stats.correlation` của cột;
+  - gần ±1 (thời điểm ghi của bảng chỉ thêm vào cuối) thì BRIN hợp;
+  - gần 0 thì BRIN gần như vô ích, dùng B-tree.
+- **Vì sao:**
+  - BRIN chỉ lưu min/max mỗi khoảng khối;
+  - tài liệu: BRIN dành cho cột có "natural correlation with their physical location";
+  - cột rải ngẫu nhiên làm mọi khoảng khối đều "có thể khớp".
+- **Nguồn:**
+  - https://www.postgresql.org/docs/18/brin.html
+  - https://www.postgresql.org/docs/18/view-pg-stats.html (`correlation`)
+- **Cấp:** L5 · **Nối với:** chưa có · **Kiểm:** PGlite, Sai ≠ Đúng, cùng bảng 50.000 dòng: `correlation` của `device` (Sai) 0,00, của `read_at` (Đúng) 1,00
+
+```sql
+-- P38 bad
+CREATE TABLE readings (id int, read_at timestamptz, device int);
+INSERT INTO readings SELECT i, TIMESTAMPTZ '2026-01-01' + i * interval '1 minute', (i * 7919) % 1000 FROM generate_series(1, 50000) AS i;
+ANALYZE readings;
+SELECT round(correlation::numeric, 2) AS correlation FROM pg_stats WHERE tablename = 'readings' AND attname = 'device'
+```
+```sql
+-- P38 good
+CREATE TABLE readings (id int, read_at timestamptz, device int);
+INSERT INTO readings SELECT i, TIMESTAMPTZ '2026-01-01' + i * interval '1 minute', (i * 7919) % 1000 FROM generate_series(1, 50000) AS i;
+ANALYZE readings;
+SELECT round(correlation::numeric, 2) AS correlation FROM pg_stats WHERE tablename = 'readings' AND attname = 'read_at'
+```
+
+### P39 · Giữ data checksums bật và kiểm index định kỳ bằng `amcheck` / Keep checksums on, run amcheck
+
+*(vòng 4)*
+
+- **Luật:**
+  - đừng tắt data checksums: PostgreSQL 18 bật sẵn khi `initdb`, chỉ tắt bằng `--no-data-checksums`;
+  - chạy `bt_index_check` định kỳ (và trước/sau nâng cấp hệ điều hành hay đổi locale) trên index quan trọng;
+  - `heapallindexed => true` để kiểm cả việc mọi dòng có trong index.
+- **Vì sao:**
+  - checksum bắt hỏng do đĩa, cái mà nếu không thì "would otherwise be silent";
+  - `amcheck` bắt index hỏng logic (ví dụ thứ tự sort đổi sau khi đổi thư viện collation);
+  - `bt_index_check` chỉ lấy `AccessShareLock`, như một `SELECT`.
+- **Nguồn:**
+  - https://www.postgresql.org/docs/18/app-initdb.html (`--no-data-checksums`)
+  - https://www.postgresql.org/docs/18/amcheck.html
+- **Cấp:** L5 · **Nối với:** chưa có · **Kiểm:** PGlite, khối Đúng chạy được: `bt_index_check` không báo lỗi, `data_checksums` = `on`
+
+```sql
+-- P39 bad (syntax)
+-- initdb --no-data-checksums, và không bao giờ kiểm index
+SHOW data_checksums
+```
+```sql
+-- P39 good
+CREATE EXTENSION amcheck;
+CREATE TABLE acct (id int PRIMARY KEY, name text);
+INSERT INTO acct SELECT i, 'a' || i FROM generate_series(1, 5000) AS i;
+SELECT bt_index_check(index => 'acct_pkey'::regclass, heapallindexed => true);
+SELECT 'acct_pkey' AS index_checked, current_setting('data_checksums') AS data_checksums
+```
+
+### P40 · Vệ sinh replication slot: trần WAL, cảnh báo slot nằm im / Replication slot hygiene
+
+*(vòng 4)*
+
+- **Luật:**
+  - đặt `max_slot_wal_keep_size` (mặc định `-1` = giữ WAL không giới hạn) để một slot bỏ quên không làm đầy đĩa;
+  - cảnh báo theo `pg_replication_slots`: `wal_status` khác `reserved`, `inactive_since` quá lâu;
+  - PostgreSQL 18 có `idle_replication_slot_timeout` (mặc định 0 = tắt) để tự vô hiệu slot nằm im;
+  - xóa slot không còn ai dùng bằng `pg_drop_replication_slot`.
+- **Vì sao:**
+  - slot giữ WAL cho tới khi bên nhận đọc xong;
+  - bên nhận chết thì WAL dồn mãi tới khi máy chính hết đĩa và dừng;
+  - có trần thì slot thành `lost` thay vì làm sập máy chính.
+- **Nguồn:**
+  - https://www.postgresql.org/docs/18/runtime-config-replication.html#GUC-MAX-SLOT-WAL-KEEP-SIZE
+  - https://www.postgresql.org/docs/18/view-pg-replication-slots.html
+- **Cấp:** L5 · **Nối với:** chưa có · **Kiểm:** cú pháp (PGlite không có nhân bản)
+
+```sql
+-- P40 bad (syntax)
+SELECT slot_name, active FROM pg_replication_slots
+```
+```sql
+-- P40 good (syntax)
+SELECT slot_name, active, wal_status, safe_wal_size, inactive_since
+FROM pg_replication_slots
+WHERE wal_status <> 'reserved' OR inactive_since < now() - interval '1 hour'
+```
+
+### P41 · Autovacuum chậm hơn tốc độ rác: nâng giới hạn cost, đừng tắt / Let autovacuum keep up: tune its cost limit
+
+*(vòng 4)*
+
+- **Luật:**
+  - khi bảng lớn luôn có nhiều dòng chết dù autovacuum vẫn chạy, nâng `autovacuum_vacuum_cost_limit` (mặc định `-1` = dùng `vacuum_cost_limit` 200), toàn cục hoặc theo bảng;
+  - giữ `autovacuum_vacuum_cost_delay` nhỏ (mặc định 2 ms).
+  - Không tắt autovacuum (P03).
+- **Vì sao:**
+  - autovacuum tự hãm: tích đủ "cost" thì ngủ;
+  - giới hạn được **chia đều** cho các worker đang chạy, nên thêm worker không làm nhanh hơn;
+  - nâng giới hạn là cách cho autovacuum làm nhiều việc hơn trước mỗi lần ngủ; đo bằng số dòng chết trong `pg_stat_user_tables` trước và sau (gần P10).
+- **Nguồn:** https://www.postgresql.org/docs/18/runtime-config-autovacuum.html#RUNTIME-CONFIG-RESOURCE-VACUUM-COST
+- **Cấp:** L4 · **Nối với:** chưa có · **Kiểm:** cú pháp (PGlite không có autovacuum chạy nền)
+
+```sql
+-- P41 bad (syntax)
+ALTER TABLE events SET (autovacuum_enabled = false)
+```
+```sql
+-- P41 good (syntax)
+ALTER TABLE events SET (autovacuum_vacuum_cost_limit = 2000, autovacuum_vacuum_scale_factor = 0.01)
+```
+
+### S15 · Khoảng thời gian không được chồng nhau: exclusion constraint / Use an exclusion constraint for non-overlapping ranges
+
+*(vòng 4)*
+
+- **Luật:**
+  - lịch đặt phòng, ca trực, giá hiệu lực theo kỳ: lưu khoảng bằng kiểu range (`tstzrange`, `daterange`) và cấm chồng bằng `EXCLUDE USING gist (… WITH &&)`;
+  - có thêm cột bằng nhau (phòng, xe) thì cần `btree_gist`;
+  - đừng kiểm "chưa ai đặt" bằng `SELECT` trong ứng dụng.
+- **Vì sao:**
+  - `CHECK` chỉ xem một dòng, không so được với dòng khác;
+  - kiểm trong ứng dụng thì hai phiên cùng thấy "trống" rồi cùng ghi;
+  - exclusion constraint đặt luật vào index GiST, nên database chặn cả khi ghi đồng thời.
+- **Nguồn:**
+  - https://www.postgresql.org/docs/18/ddl-constraints.html#DDL-CONSTRAINTS-EXCLUSION
+  - https://www.postgresql.org/docs/18/rangetypes.html#RANGETYPES-CONSTRAINT
+- **Cấp:** L3 · **Nối với:** chưa có · **Kiểm:** PGlite: Sai nhận hai lần đặt chồng (2 dòng), Đúng báo lỗi `23P01` ở lần thứ hai
+
+```sql
+-- S15 bad
+CREATE TABLE bookings (room int NOT NULL, during tstzrange NOT NULL, CHECK (NOT isempty(during)));
+INSERT INTO bookings VALUES (1, '[2026-11-20 09:00+07, 2026-11-20 11:00+07)');
+INSERT INTO bookings VALUES (1, '[2026-11-20 10:00+07, 2026-11-20 12:00+07)');
+SELECT count(*) AS bookings FROM bookings
+```
+```sql
+-- S15 good
+CREATE TABLE bookings (room int NOT NULL, during tstzrange NOT NULL, EXCLUDE USING gist (during WITH &&));
+INSERT INTO bookings VALUES (1, '[2026-11-20 09:00+07, 2026-11-20 11:00+07)');
+INSERT INTO bookings VALUES (1, '[2026-11-20 10:00+07, 2026-11-20 12:00+07)');
+SELECT count(*) AS bookings FROM bookings
+```
+
+### M28 · Upsert phải có unique index trên trường lọc / Upserts need a unique index on the filter fields
+
+*(vòng 4)*
+
+- **Luật:** `updateOne(filter, update, { upsert: true })` thì các trường trong `filter` phải có unique index.
+- **Vì sao:**
+  - hai upsert đồng thời cùng không thấy tài liệu nào, nên cả hai cùng chèn: dữ liệu trùng;
+  - tài liệu: "To avoid multiple upserts, ensure that the filter field(s) are uniquely indexed";
+  - với unique index, bên thua nhận lỗi trùng khóa và thử lại được.
+- **Nguồn:** https://www.mongodb.com/docs/manual/reference/method/db.collection.updateone/
+- **Cấp:** L2 · **Nối với:** chưa có · **Kiểm:** cú pháp (cần hai client và index; mingo không có cả hai)
+
+```js
+// M28 bad (syntax)
+db.stock.updateOne({ sku: 'TEA-01', store: 'S1' }, { $inc: { qty: 5 } }, { upsert: true })
+```
+```js
+// M28 good (syntax)
+db.stock.createIndex({ sku: 1, store: 1 }, { unique: true })
+db.stock.updateOne({ sku: 'TEA-01', store: 'S1' }, { $inc: { qty: 5 } }, { upsert: true })
+```
+
+### M29 · Chuỗi bắt đầu bằng `$` trong pipeline: bọc `$literal` / Wrap $-strings in $literal
+
+*(vòng 4)*
+
+- **Luật:** trong aggregation pipeline (kể cả update bằng pipeline), giá trị chữ có thể bắt đầu bằng `$` (mã giảm giá, chữ người dùng nhập) phải bọc `{ $literal: … }`.
+- **Vì sao:**
+  - trong biểu thức, chuỗi bắt đầu bằng `$` là **đường dẫn trường**;
+  - `'$5 off'` được hiểu là trường `5 off`; trường đó không có nên giá trị biến mất, không báo lỗi.
+- **Nguồn:** https://www.mongodb.com/docs/manual/reference/operator/aggregation/literal/
+- **Cấp:** L2 · **Nối với:** chưa có · **Kiểm:** mingo, dữ liệu dưới; Sai ≠ Đúng:
+  - Sai `[{"name":"Tea"}]` (mất `promo`);
+  - Đúng `[{"name":"Tea","promo":"$5 off"}]`.
+
+```js
+// M29 bad
+db.products.aggregate([{ $match: { _id: 1 } }, { $set: { promo: '$5 off' } }, { $project: { _id: 0, name: 1, promo: 1 } }])
+```
+```js
+// M29 good
+db.products.aggregate([{ $match: { _id: 1 } }, { $set: { promo: { $literal: '$5 off' } } }, { $project: { _id: 0, name: 1, promo: 1 } }])
+```
+
+Dữ liệu cho M29–M30: `products` = `{ _id: 1, name: 'Tea', price: 30000 }`, `{ _id: 2, name: 'Cake', price: 45000 }`, `{ _id: 3, name: 'Gift box', price: 450000 }`.
+
+### M30 · `$bucket` luôn khai `default` / Always give $bucket a default
+
+*(vòng 4)*
+
+- **Luật:** `$bucket` trên dữ liệu thật luôn có `default: 'other'` (hoặc ranh giới chắc chắn phủ mọi giá trị, kể cả null và kiểu lạ).
+- **Vì sao:**
+  - thiếu `default`, mỗi tài liệu phải rơi vào một khoảng, không thì cả báo cáo lỗi;
+  - một đơn giá bất thường làm hỏng cả dashboard;
+  - `$bucket` cũng bỏ khoảng không có tài liệu: muốn đủ mọi khoảng thì ghép với danh sách khoảng (như trục ngày A01).
+- **Nguồn:** https://www.mongodb.com/docs/manual/reference/operator/aggregation/bucket/
+- **Cấp:** L2 · **Nối với:** skill `case_when` (cùng ý "nhánh còn lại") · **Kiểm:** mingo:
+  - Sai báo lỗi (`$bucket require a default for out of range values`);
+  - Đúng trả 3 nhóm: `0`, `40000`, `other`.
+
+```js
+// M30 bad
+db.products.aggregate([{ $bucket: { groupBy: '$price', boundaries: [0, 40000, 200000] } }])
+```
+```js
+// M30 good
+db.products.aggregate([{ $bucket: { groupBy: '$price', boundaries: [0, 40000, 200000], default: 'other' } }])
+```
+
+### M31 · Đọc `explain('executionStats')`: so tài liệu đã xét với tài liệu trả về / Compare examined vs returned
+
+*(vòng 4)*
+
+- **Luật:** với câu chậm, chạy `explain('executionStats')` và so `totalDocsExamined`, `totalKeysExamined` với `nReturned`:
+  - `COLLSCAN` hoặc docs xét gấp nhiều lần docs trả là thiếu index đúng (M07);
+  - `totalKeysExamined` = 0 là không dùng index.
+- **Vì sao:** tài liệu lấy ví dụ quét 21.349 tài liệu để trả 3.809, rồi sửa bằng index. Đây là con số không phụ thuộc máy, như cost của Postgres (P01).
+- **Nguồn:** https://www.mongodb.com/docs/manual/tutorial/analyze-query-plan/
+- **Cấp:** L3 · **Nối với:** chưa có · **Kiểm:** cú pháp (mingo không có index hay explain)
+
+```js
+// M31 bad (syntax)
+db.orders.find({ status: 'PAID', store: 'S1' })
+```
+```js
+// M31 good (syntax)
+db.orders.find({ status: 'PAID', store: 'S1' }).explain('executionStats')
+```
+
+### M32 · Index có collation chỉ phục vụ truy vấn cùng collation / Queries must use the index's collation
+
+*(vòng 4)*
+
+- **Luật:**
+  - so chuỗi không phân biệt hoa thường bằng collation thì tạo index **với cùng collation** và gửi truy vấn kèm đúng collation đó;
+  - hoặc đặt collation mặc định cho collection.
+- **Vì sao:** tài liệu: "an operation must also specify the same collation"; khác collation thì index không dùng được cho so chuỗi, truy vấn âm thầm quét cả collection.
+- **Nguồn:** https://www.mongodb.com/docs/manual/reference/collation/
+- **Cấp:** L3 · **Nối với:** chưa có · **Kiểm:** cú pháp (mingo không có index)
+
+```js
+// M32 bad (syntax)
+db.customers.createIndex({ city: 1 }, { collation: { locale: 'vi', strength: 2 } })
+db.customers.find({ city: 'da nang' })
+```
+```js
+// M32 good (syntax)
+db.customers.createIndex({ city: 1 }, { collation: { locale: 'vi', strength: 2 } })
+db.customers.find({ city: 'da nang' }).collation({ locale: 'vi', strength: 2 })
+```
+
+### M33 · Đừng `hint` index sparse khi cần đủ tài liệu / Never hint a sparse index for complete results
+
+*(vòng 4)*
+
+- **Luật:**
+  - không dùng `hint()` trỏ tới index sparse (hay partial) cho truy vấn hoặc `count()` cần mọi tài liệu;
+  - muốn đếm nhanh tập con thì viết điều kiện khớp đúng tập con đó.
+- **Vì sao:**
+  - MongoDB tự tránh index sparse khi nó cho kết quả thiếu;
+  - nhưng tài liệu nói `hint()` sparse với `count()` rỗng vẫn dùng index "even if the sparse index results in an incorrect count".
+- **Nguồn:** https://www.mongodb.com/docs/manual/core/index-sparse/
+- **Cấp:** L3 · **Nối với:** chưa có · **Kiểm:** cú pháp (mingo không có index)
+
+```js
+// M33 bad (syntax)
+db.movies.find().hint({ rated: 1 }).count()
+```
+```js
+// M33 good (syntax)
+db.movies.countDocuments({})
+```
+
+### M34 · Đọc ngay sau ghi trên secondary: causally consistent session với `majority` / Read your writes with a causal session
+
+*(vòng 4)*
+
+- **Luật:**
+  - khi một luồng ghi rồi đọc lại (có thể từ secondary), dùng một session `causalConsistency: true` với read concern và write concern đều `majority`;
+  - không trộn đọc/ghi ngoài session.
+- **Vì sao:**
+  - đọc từ secondary có thể chưa thấy lần ghi vừa xong (gần M26);
+  - bảng trong tài liệu: tổ hợp read concern `majority` + write concern `majority` có đủ bốn đảm bảo (đọc lại được lần ghi của mình, đọc đơn điệu, ghi đơn điệu, ghi theo sau đọc).
+- **Nguồn:** https://www.mongodb.com/docs/manual/core/causal-consistency-read-write-concerns/
+- **Cấp:** L4 · **Nối với:** chưa có · **Kiểm:** cú pháp (cần replica set)
+
+```js
+// M34 bad (syntax)
+db.orders.insertOne({ _id: 9, status: 'NEW' })
+db.getMongo().setReadPref('secondary'); db.orders.findOne({ _id: 9 })
+```
+```js
+// M34 good (syntax)
+const s = db.getMongo().startSession({ causalConsistency: true })
+const o = s.getDatabase('shop').orders.withOptions({ readConcern: { level: 'majority' }, writeConcern: { w: 'majority' }, readPreference: 'secondary' })
+o.insertOne({ _id: 9, status: 'NEW' }); o.findOne({ _id: 9 })
+```
+
+### M35 · Change stream: lưu resume token, tiếp tục bằng `resumeAfter`/`startAfter` / Persist the resume token
+
+*(vòng 4)*
+
+- **Luật:**
+  - sau khi xử lý mỗi sự kiện, lưu `_id` của nó (resume token) bền vững;
+  - khởi động lại bằng `resumeAfter` (hoặc `startAfter`);
+  - không sửa hay xóa `_id` trong pipeline của change stream;
+  - giữ thời gian dừng ngắn hơn cửa sổ oplog (M26).
+- **Vì sao:**
+  - không có token thì chạy lại sẽ mất sự kiện trong lúc dừng hoặc phải đọc lại từ đầu;
+  - token chỉ dùng được khi oplog còn giữ điểm đó.
+- **Nguồn:** https://www.mongodb.com/docs/manual/changestreams/
+- **Cấp:** L4 · **Nối với:** chưa có · **Kiểm:** cú pháp (cần replica set)
+
+```js
+// M35 bad (syntax)
+db.orders.watch([{ $project: { _id: 0, fullDocument: 1 } }])
+```
+```js
+// M35 good (syntax)
+db.orders.watch([], { resumeAfter: savedToken })
+```
+
+### M36 · WiredTiger cache: để mặc định, chừa RAM cho filesystem cache / Leave the WiredTiger cache at its default
+
+*(vòng 4)*
+
+- **Luật:**
+  - để cache WiredTiger mặc định: lớn hơn của 50% × (RAM − 1 GB) và 0,256 GB;
+  - chỉ giảm khi nhiều `mongod` hay tiến trình khác chung máy;
+  - đừng nâng gần hết RAM.
+- **Vì sao:**
+  - MongoDB dùng **hai** lớp cache: cache WiredTiger (dữ liệu đã giải nén) và filesystem cache của hệ điều hành (dữ liệu nén như trên đĩa), lớp sau tự dùng mọi RAM còn trống;
+  - nâng cache WiredTiger làm co filesystem cache.
+- **Nguồn:** https://www.mongodb.com/docs/manual/core/wiredtiger/
+- **Cấp:** L5 · **Nối với:** chưa có · **Kiểm:** cú pháp (cấu hình máy chủ)
+
+```js
+// M36 bad (syntax)
+// mongod.conf trên máy 16 GB chạy cùng một ứng dụng: storage.wiredTiger.engineConfig.cacheSizeGB: 14
+db.serverStatus().wiredTiger.cache
+```
+```js
+// M36 good (syntax)
+// để mặc định ≈ 7,5 GB, theo dõi "bytes currently in the cache" và số trang bị đẩy ra
+db.serverStatus().wiredTiger.cache
+```
+
+### M37 · Transaction gặp `TransientTransactionError`: chạy lại cả transaction / Retry the whole transaction on transient errors
+
+*(vòng 4)*
+
+- **Luật:**
+  - dùng callback API (`session.withTransaction`): nó tự chạy lại cả transaction khi gặp `TransientTransactionError` (ví dụ write conflict) và chạy lại riêng lệnh commit khi gặp `UnknownTransactionCommitResult`;
+  - với core API, tự viết đúng hai vòng lặp đó;
+  - giữ transaction ngắn (M10).
+- **Vì sao:** hai transaction cùng sửa một tài liệu thì một bên bị hủy (write conflict). Không thử lại là mất việc; thử lại sai chỗ (chỉ lệnh cuối) là nửa transaction.
+- **Nguồn:** https://www.mongodb.com/docs/manual/core/transactions-in-applications/
+- **Cấp:** L4 · **Nối với:** chưa có · **Kiểm:** cú pháp (cần replica set)
+
+```js
+// M37 bad (syntax)
+s.startTransaction(); orders.updateOne({ _id: 9 }, { $set: { status: 'PAID' } }); s.commitTransaction()
+```
+```js
+// M37 good (syntax)
+s.withTransaction(() => { orders.updateOne({ _id: 9 }, { $set: { status: 'PAID' } }) })
+```
+
+### M38 · Đo shard key bằng `analyzeShardKey` trước khi chọn / Measure a candidate shard key with analyzeShardKey
+
+*(vòng 4)*
+
+- **Luật:**
+  - trước khi shard (hoặc reshard), chạy `analyzeShardKey` trên khóa ứng viên;
+  - đọc `keyCharacteristics`: số giá trị riêng, tần suất giá trị phổ biến nhất, tính tăng đơn điệu;
+  - sau một thời gian bật `configureQueryAnalyzer`, đọc thêm phân bố đọc/ghi.
+- **Vì sao:**
+  - M11 nêu ba tiêu chí (nhiều giá trị, tần suất đều, không tăng đơn điệu);
+  - lệnh này (MongoDB 7.0+) đo cả ba trên dữ liệu thật thay vì đoán.
+- **Nguồn:** https://www.mongodb.com/docs/manual/reference/command/analyzeshardkey/
+- **Cấp:** L5 · **Nối với:** chưa có · **Kiểm:** cú pháp (cần cluster)
+
+```js
+// M38 bad (syntax)
+sh.shardCollection('shop.orders', { createdAt: 1 })
+```
+```js
+// M38 good (syntax)
+db.adminCommand({ analyzeShardKey: 'shop.orders', key: { customerId: 1, createdAt: 1 } })
+```
+
+### D28 · Khởi tạo trong `UpdateExpression`: `if_not_exists` / Initialise with if_not_exists
+
+*(vòng 4)*
+
+- **Luật:**
+  - cộng vào số hay nối vào list mà thuộc tính có thể chưa có thì dùng `SET n = if_not_exists(n, :zero) + :one` và `SET tags = list_append(if_not_exists(tags, :empty), :t)`;
+  - không đọc trước để kiểm.
+- **Vì sao:**
+  - `SET n = n + :one` trên item chưa có `n` báo lỗi "attribute that does not exist";
+  - đọc rồi ghi để khởi tạo thì mất cập nhật khi chạy đồng thời (D17).
+- **Nguồn:** https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.UpdateExpressions.html
+- **Cấp:** L2 · **Nối với:** chưa có · **Kiểm:** dynoxide, item `{pk: C, sk: 1}` chưa có `n`:
+  - Sai báo lỗi "The provided expression refers to an attribute that does not exist in the item";
+  - Đúng trả `n = 1`;
+  - `list_append` cho kết quả tương tự.
+
+```js
+// D28 bad
+await UpdateItem({ TableName: 'Counters', Key: { pk: { S: 'C' }, sk: { S: '1' } },
+  UpdateExpression: 'SET n = n + :one', ExpressionAttributeValues: { ':one': { N: '1' } }, ReturnValues: 'ALL_NEW' });
+```
+```js
+// D28 good
+await UpdateItem({ TableName: 'Counters', Key: { pk: { S: 'C' }, sk: { S: '1' } },
+  UpdateExpression: 'SET n = if_not_exists(n, :zero) + :one', ExpressionAttributeValues: { ':one': { N: '1' }, ':zero': { N: '0' } }, ReturnValues: 'ALL_NEW' });
+```
+
+### D29 · Bên đọc DynamoDB Streams: xử lý idempotent, theo dõi `IteratorAge` / Idempotent stream consumers, watch IteratorAge
+
+*(vòng 4)*
+
+- **Luật:**
+  - hàm xử lý bản ghi Streams (thường là Lambda) phải idempotent (ghi có điều kiện D10, khóa theo id sự kiện), vì một batch có thể được gọi lại;
+  - đặt báo động trên `IteratorAge`: tuổi bản ghi cũ nhất chưa xử lý.
+- **Vì sao:**
+  - mỗi bản ghi xuất hiện đúng một lần trong stream, nhưng Lambda thử lại batch lỗi nên hàm có thể chạy hai lần trên cùng bản ghi;
+  - bản ghi chỉ được giữ 24 giờ, nên tụt hơn mức đó là mất thay đổi.
+- **Nguồn:**
+  - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Streams.html
+  - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Streams.Lambda.BestPracticesWithDynamoDB.html
+  - https://docs.aws.amazon.com/lambda/latest/dg/with-ddb.html
+- **Cấp:** L5 · **Nối với:** chưa có · **Kiểm:** cú pháp (dynoxide không có Streams)
+
+```js
+// D29 bad (syntax)
+// handler: mỗi bản ghi INSERT cộng điểm thưởng bằng ADD, chạy lại batch là cộng hai lần
+UpdateItem({ TableName: 'Points', Key: { pk: { S: 'CUST#1' } }, UpdateExpression: 'ADD pts :p', ExpressionAttributeValues: { ':p': { N: '10' } } })
+```
+```js
+// D29 good (syntax)
+// ghi dấu đã xử lý theo eventID trong cùng transaction, có điều kiện attribute_not_exists
+TransactWriteItems({ TransactItems: [
+  { Put: { TableName: 'Points', Item: { pk: { S: 'EVT#' + eventID } }, ConditionExpression: 'attribute_not_exists(pk)' } },
+  { Update: { TableName: 'Points', Key: { pk: { S: 'CUST#1' } }, UpdateExpression: 'ADD pts :p', ExpressionAttributeValues: { ':p': { N: '10' } } } }] })
+```
+
+### D30 · Global tables: tránh hai Region cùng sửa một item / Avoid concurrent multi-Region writes to one item
+
+*(vòng 4)*
+
+- **Luật:**
+  - với global tables kiểu nhất quán sau cùng (MREC), cho mỗi item một Region ghi: chặn ghi bằng IAM, hoặc chia người dùng theo Region;
+  - thay cập nhật tương đối (`x = x + 1`) bằng cập nhật giá trị tuyệt đối khi có thể.
+- **Vì sao:**
+  - tài liệu: xung đột được giải bằng "last writer wins";
+  - hai lần cộng ở hai Region cùng lúc thì một lần biến mất, không báo lỗi;
+  - cập nhật tuyệt đối thì ghi lại lần nữa vẫn đúng.
+- **Nguồn:** https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/globaltables_HowItWorks.html
+- **Cấp:** L5 · **Nối với:** chưa có · **Kiểm:** cú pháp (dynoxide không có global tables)
+
+```js
+// D30 bad (syntax)
+// cả ap-southeast-1 và us-east-1 cùng chạy:
+UpdateItem({ TableName: 'Users', Key: { pk: { S: 'U#7' } }, UpdateExpression: 'SET bookmark = bookmark + :one', ExpressionAttributeValues: { ':one': { N: '1' } } })
+```
+```js
+// D30 good (syntax)
+// chỉ Region "nhà" của U#7 được ghi, và ghi giá trị tuyệt đối
+UpdateItem({ TableName: 'Users', Key: { pk: { S: 'U#7' } }, UpdateExpression: 'SET bookmark = :v', ExpressionAttributeValues: { ':v': { N: '25' } } })
+```
+
+### D31 · DAX không giúp đọc strongly consistent / DAX does not cache strongly consistent reads
+
+*(vòng 4)*
+
+- **Luật:**
+  - dùng DAX cho đọc lặp lại, eventually consistent (danh mục, hồ sơ);
+  - đường đọc cần `ConsistentRead: true` thì đi thẳng tới bảng hoặc chấp nhận DAX không giúp gì;
+  - đừng mong DAX giảm RCU cho các lần đọc đó.
+- **Vì sao:** tài liệu: DAX chuyển đọc strongly consistent sang DynamoDB và không cache kết quả. Trả tiền cluster DAX cho tải toàn đọc mạnh là trả cho một lớp chỉ chuyển tiếp.
+- **Nguồn:** https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/DAX.consistency.html
+- **Cấp:** L5 · **Nối với:** chưa có · **Kiểm:** cú pháp (dynoxide không có DAX)
+
+```js
+// D31 bad (syntax)
+dax.getItem({ TableName: 'Catalog', Key: { pk: { S: 'P#1' } }, ConsistentRead: true })
+```
+```js
+// D31 good (syntax)
+dax.getItem({ TableName: 'Catalog', Key: { pk: { S: 'P#1' } } })
+```
+
+### D32 · Adaptive capacity không vượt trần mỗi partition / Adaptive capacity cannot lift the per-partition ceiling
+
+*(vòng 4)*
+
+- **Luật:**
+  - một partition key đơn lẻ có nhu cầu gần 3.000 RCU hay 1.000 WCU mỗi giây thì phải đổi thiết kế: rải khóa D03, cache đọc D31;
+  - không trông vào adaptive capacity hay on-demand.
+- **Vì sao:**
+  - adaptive capacity dồn throughput cho partition nóng, và có thể tách item hay đọc vào partition riêng ("isolate frequently accessed items");
+  - nhưng mỗi partition tối đa 3.000 đơn vị đọc và 1.000 đơn vị ghi mỗi giây;
+  - tài liệu ghi adaptive capacity áp cho cả on-demand lẫn provisioned, nên trần mỗi partition cũng áp cho cả hai: một khóa nóng hơn mức đó vẫn bị throttle.
+- **Nguồn:**
+  - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/burst-adaptive-capacity.html
+  - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-partition-key-design.html
+- **Cấp:** L4 · **Nối với:** chưa có · **Kiểm:** cú pháp (dynoxide không mô phỏng partition hay throttle)
+
+```js
+// D32 bad (syntax)
+// mọi lượt bình chọn của một chương trình ghi vào một item: 5.000 ghi/giây trên PK = 'VOTE#show42'
+UpdateItem({ TableName: 'Votes', Key: { pk: { S: 'VOTE#show42' } }, UpdateExpression: 'ADD n :one', ExpressionAttributeValues: { ':one': { N: '1' } } })
+```
+```js
+// D32 good (syntax)
+// rải ra 10 khóa con (D03), cộng lại khi đọc
+UpdateItem({ TableName: 'Votes', Key: { pk: { S: 'VOTE#show42#' + (Math.floor(Math.random() * 10)) } }, UpdateExpression: 'ADD n :one', ExpressionAttributeValues: { ':one': { N: '1' } } })
+```
+
+### 13.3 Bài Engine được nối thêm
+
+Luật như §12: một bài chỉ được nối khi thân bài (`git show 0ede43d:<file>`) có đúng thuật ngữ của mục. Cột cuối là từ đã tìm thấy.
+
+| Bài | Mục | Từ khóa có trong bài |
+|---|---|---|
+| `e-pg-l3-01` | P02 | `fillfactor` / chỗ trống trên trang |
+| `e-pg-l3-02` | P27 | căn lề (`t_hoff`, padding) |
+| `e-pg-l3-03` | Q09 | `SELECT *` kéo cả giá trị TOAST |
+| `e-pg-l3-12` | P28 | `checkpoint` |
+| `e-pg-l3-13` | P29 | full-page image |
+| `e-pg-l3-14` | P30 | `work_mem` |
+| `e-pg-l4-04` | P31 | `enable_…`, Hash Join / Nested Loop |
+| `e-pg-l4-05` | P31 | `join_collapse_limit` / `geqo` |
+| `e-pg-l4-10` | P32, P33 | `FOR UPDATE`, `SKIP LOCKED` |
+| `e-pg-l4-11` | P32 | deadlock, thứ tự khóa |
+| `e-pg-l4-12` | P34, P35 | `40001` / thử lại, `REPEATABLE READ` |
+| `e-pg-l4-13` | P34, P35 | thử lại, `READ ONLY DEFERRABLE` |
+| `e-pg-l4-14` | P36 | advisory, `xact` |
+| `e-pg-l4-15` | P37 | `PARALLEL SAFE/UNSAFE` |
+| `e-pg-l5-01` | S05, P12 | UUID ngẫu nhiên làm tách trang, phình index |
+| `e-pg-l5-02` | I08 | dedup cho giá trị lặp |
+| `e-pg-l5-05` | P38 | `correlation` |
+| `e-pg-l5-06` | S15 | `EXCLUDE`, `&&` |
+| `e-pg-l5-08` | P39 | `amcheck`, `bt_index_check`, checksum |
+| `e-pg-l5-09` | P28, P29 | `checkpoint_timeout`/`max_wal_size`, full-page write |
+| `e-pg-l5-12` | P30 | `work_mem`, `hash_mem_multiplier` |
+| `e-pg-l5-13` | P40 | slot, `wal_status`, `max_slot_wal_keep_size` |
+| `e-pg-l5-15` | I07, S11, P38 | BRIN, partition, `correlation` |
+| `e-mg-l1-02` | M16 | `null` |
+| `e-mg-l1-05` | M28 | `upsert` |
+| `e-mg-l1-11` | M01 | nhúng (embed) |
+| `e-mg-l2-02` | M29 | chuỗi `"$…"` trong pipeline update |
+| `e-mg-l2-03` | M29 | `$literal` |
+| `e-mg-l2-09` | M30 | `default` của `$bucket` |
+| `e-mg-l2-15` | M09, M18 | `$match`, `$unwind` |
+| `e-mg-l3-03` | M08 | projection, covered query |
+| `e-mg-l3-04` | M07 | compound / ESR |
+| `e-mg-l3-10` | M31 | `explain` |
+| `e-mg-l3-15` | M32 | `collation` |
+| `e-mg-l3-16` | M33 | `sparse`, `hint` |
+| `e-mg-l3-17` | M32, M33 | `collation`, `sparse` |
+| `e-mg-l4-08` | M34 | causal, `majority` |
+| `e-mg-l4-10` | M35 | resume token, `resumeAfter`/`startAfter` |
+| `e-mg-l4-12` | M34 | causal, `majority` |
+| `e-mg-l5-01` | M36 | cache |
+| `e-mg-l5-02` | M37 | write conflict, thử lại |
+| `e-mg-l5-09` | M26 | oplog, lag |
+| `e-mg-l5-10` | M13, M26 | `majority`, oplog |
+| `e-dy-l1-03` | D08, D12 | 400 KB, 1 MB |
+| `e-dy-l1-11` | D06, D10 | `Scan`, `ConditionExpression` |
+| `e-dy-l2-03` | D28 | `if_not_exists`, `list_append` |
+| `e-dy-l2-12` | D10 | `ConditionExpression` |
+| `e-dy-l3-11` | D05, D07 | `begins_with` / item collection, GSI |
+| `e-dy-l4-14` | D03 | khóa rải (`#0`…`#9`) |
+| `e-dy-l5-01` | D29 | Lambda, idempotent, 24 giờ |
+| `e-dy-l5-03` | D30 | last writer wins |
+| `e-dy-l5-05` | D11, D24 | capacity / on-demand, throttle |
+| `e-dy-l5-06` | D31 | `ConsistentRead`, strongly consistent |
+| `e-dy-l5-07` | D22, D27, D29, D31 | PITR, khóa nóng, Stream, DAX |
+
+**Tổng sau vòng 4:** 54/56 bài của danh sách §12.9 đã có mục. Hai bài còn lại, có chủ đích:
+
+- `e-mg-l1-04` (thêm và xóa tài liệu): không mục nào nói đúng thuật ngữ của bài. Mục `insertMany` có thứ tự đã bị bỏ vì thiếu nguồn.
+- `e-mg-l3-13` (wildcard, text, 2dsphere, hashed): mục wildcard bị bỏ vì không tìm thấy câu trên trang. M12 ("bỏ index thừa") chỉ khớp chữ "index", không đủ.
+
+Bảng §12 không viết lại. Đọc §12 cùng bảng này.
+
+### 13.4 Đề xuất: phòng trưng bày lỗi (anti-pattern gallery)
+
+Không tìm thấy nguồn đáng tin nào **đếm tần suất** lỗi SQL của data analyst (khảo sát, log lỗi). Vì vậy bảng xếp theo **số nguồn độc lập nêu đúng lỗi đó như một điều nên tránh**. Bốn nguồn:
+
+- **W:** wiki PostgreSQL "Don't Do This";
+- **B:** BigQuery, "Optimize query computation": https://cloud.google.com/bigquery/docs/best-practices-performance-compute;
+- **T:** dbt, "How we style our SQL": https://docs.getdbt.com/best-practices/how-we-style/2-how-we-style-our-sql;
+- **F:** Snowflake, "Working with joins": https://docs.snowflake.com/en/user-guide/querying-joins.
+
+Tài liệu PostgreSQL (D) đứng riêng cho các lỗi về ngữ nghĩa NULL.
+
+Mỗi dòng trỏ về mục đã có; phòng trưng bày **không thêm mục mới**, chỉ là một cách xếp khác của cùng thẻ.
+
+| # | Lỗi | Nguồn nêu | Mục | Vì sao lên đầu |
+|---|---|---|---|---|
+| 1 | Join nhân dòng (fan-out, tích Đề-các) làm tổng phình | B ("joins that generate more outputs than inputs"), T (gom trước khi join), F (Cartesian product) | Q07, A04 | Sai âm thầm, số vẫn "trông hợp lý" |
+| 2 | `NOT IN` với danh sách có NULL | W, D | Q02 | Trả 0 dòng, không lỗi |
+| 3 | `BETWEEN` với timestamp | W | Q12 | Mất hoặc tính trùng ngày biên |
+| 4 | `timestamp` không múi giờ cho thời điểm | W | S01, A02 | Lệch ngày khi gom theo ngày |
+| 5 | `SELECT *` trong truy vấn lưu lại / báo cáo | B ("Avoid SELECT *") | Q09 | Tốn đọc; đổi schema là đổi kết quả |
+| 6 | `UNION` khi muốn `UNION ALL` | T | Q16 | Mất dòng trùng hợp lệ |
+| 7 | `ORDER BY` không giới hạn / thiếu tiebreaker khi lấy top N | B | Q10, A17 | Kết quả đổi giữa các lần chạy |
+| 8 | Không nói rõ kiểu join | T | Q08 | Người đọc không biết join có lọc dòng hay không |
+
+Đề xuất dùng trong app, cho luồng sau L220:
+
+- Một hàng "Lỗi hay gặp" đầu track SQL, xếp theo bảng trên.
+- Mỗi ô mở thẻ có sẵn. Dòng 1, 2, 3, 5, 7 đã có thẻ (Q07, Q02, Q12, Q10). Q09 và Q16 cần thẻ khi luồng nội dung mở lại.
+- Không cần dữ liệu mới, không cần trường mới: thứ tự là một danh sách id trong `tracks.yml` (`gallery: [e-bp-q07, e-bp-q02, …]`).
