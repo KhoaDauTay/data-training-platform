@@ -853,3 +853,53 @@ Cách đo: `npm run build`, `SMOKE_PERF=3 npm run smoke` (preview của chính c
 - Ngân sách (gzip -9): `fin` 44,0 → 30,1 KB / 50 (chương 1–4 + YAML), `finlate` mới 23,8 / 30 (chương 5–7); main 324,8 / 500.
 - Kiểm: tsc, toàn bộ vitest (4120 qua trên commit cuối, chạy riêng; một lần trước đó `axe.test.ts` welcome báo `incomplete heading-order` khi build chạy song song), build, check-budget, smoke (5233) xanh. Edge headless (5236): chơi `fin-ch7-01..05` → Trưởng nhóm phân tích rủi ro, 4 sao trên hũ, KPI `finLateByMethod`, dock "Lên bậc mới: …"; thi vượt từ save chỉ có 6 đánh giá → đạt; 0 lỗi trang. Ảnh ở scratchpad `v20d2\`.
 - Chờ user: không. Mốc bản đồ chương 7 là ngôi sao (không có chi nhánh thứ 9 trong seed).
+
+## v22 V22-E (Nhẹ hơn: YAML → JSON lúc build, tách chunk vé), 2026-11-20, L201–L202
+
+Cách đo: `npm run build` của cây (trước = `main` 0a9e8e6 chỉ thêm phần đo của `smoke.mjs`; sau = nhánh này), `SMOKE_PERF=3` (preview 5277), Edge headless, hồ sơ mới mỗi lượt × domain × CPU; ms từ lúc điều hướng; trung vị 3 lượt. `script` = `ScriptDuration` (CDP) tới DB sẵn sàng. Máy bận (các luồng v22 khác), số lần đầu (seed) dao động; so lần hai và 4×.
+
+| Domain · lần | trước render / DB / script / long ms (1×) | sau (1×) | trước script / long ms (4×) | sau (4×) |
+|---|---|---|---|---|
+| Logistics lần đầu | 1439 / 18308 / 372 / 408 | 1173 / 10594 / 203 / 180 | 1373 / 2663 | 827 / 2294 |
+| Logistics lần hai | 477 / 2696 / 136 / 289 | 262 / 1770 / 77 / 116 | 485 / 2183 | 154 / 1887 |
+| E-com lần đầu | 1533 / 11636 / 121 / 463 | 1250 / 9409 / 51 / 221 | 559 / 2580 | 261 / 2059 |
+| E-com lần hai | 495 / 1822 / 80 / 332 | 239 / 1333 / 27 / 80 | 451 / 2929 | 130 / 2032 |
+| Finance lần đầu | 1461 / 10132 / 119 / 473 | 918 / 6545 / 48 / 189 | 601 / 3090 | 263 / 2093 |
+| Finance lần hai | 524 / 1839 / 79 / 339 | 262 / 1232 / 29 / 85 | 471 / 2122 | 117 / 1759 |
+
+- Render 4× lần hai: 2332 / 3154 / 3569 → 1675 / 2103 / 1968 ms. Không domain nào chậm hơn.
+- Ngân sách (gzip -9, KB): main 325,11 → 293,68 (−31,4; S4 cần ≥ 15); `tickets` 104,8 → 60,5 + `ticketLate` 44,0 / 50; `ecom` 48,1 → 27,2 + `ecomLate` 21,3 / 25; `lessons` 29,5 → 27,8; `general` 31,1 → 30,4; `generalAdv` 46,0 → 44,6; `interview` 17,7 → 17,3 (nhóm 24 / 25 không đổi); `lanes` 9,8 → 9,5. Không còn chuỗi của thư viện `yaml` trong bất kỳ `dist/assets/*.js` nào.
+- JS tải trước render (lần đầu): `index`, `preload-helper`, `ticketSources`, `ticketLateSources`, `laneSources`, `lessonSources`, `logistics`.
+- Kiểm: tsc; vitest `--no-file-parallelism` 4132 qua (1 bỏ qua); build; check-budget xanh (thử trên build trước: `main has no yaml library` FAIL); `SMOKE_PORT=5275 npm run smoke` OK 66,9 s; dev server: `ch1-01.md?import&fm` và `people.yml?import` ra JSON.
+- Giữ nguyên, ghi cho luồng sau: `yaml` vẫn ở `dependencies` của `package.json` (chuyển sang `devDependencies` đụng lockfile, không `npm install` trong luồng này). Mỗi luồng thêm nhóm ngân sách của mình sau hai dòng `ticketLate`/`ecomLate`.
+
+## v22 BOOT (lần mở đầu: "Bắt đầu" không chờ seed), 2026-11-20, L247
+
+Cách đo: `npm run build` của cây, `SMOKE_BOOT=3` (mới, `scripts/smoke.mjs`; preview 5289), Edge headless, hồ sơ mới mỗi lượt, CPU 1×; mở `#/`, bot bấm qua màn chào nhanh nhất có thể (ngôn ngữ → Logistics → bước cuối); ms từ lúc điều hướng; trung vị 3 lượt. Trước = `v22-engine` c86ae84 chỉ thêm phần đo. Máy bận (các luồng v22 khác), seed dao động 5–10 s.
+
+| Mốc (ms) | trước | sau |
+|---|---|---|
+| main JS xong / nội dung xong | 926 / 1003 | 950 / 1013 |
+| màn chào hiện / chọn Logistics | 1188 / 1261 | 1201 / 1270 |
+| engine sẵn sàng (`db:ready`) | 3562 | 3213 |
+| **"Bắt đầu" bật** | **9310** (8373 / 9310 / 11809) | **1280** (859 / 1280 / 1405) |
+| đề việc 1 hiện sau khi bấm | – | 1425 |
+| DB sẵn sàng cho việc 1 (`db:ensure:game` xong) | 9304 | 9473 (nhiễu) |
+
+- Số 16 s của `review-v21.md` là site live (tải ~15 MB PGlite qua mạng); trên máy này lúc trước là 9,3 s. Đường găng lúc trước: chọn domain (1,3 s) → chờ engine (wasm 9 MB + data 6 MB + initdb, ~2,3 s sau spawn) → seed Logistics trong Edge 5–7 s (Node ~2 s) → "Bắt đầu". Nút chỉ chờ `app.dbStatus === 'ready'`; không có seed `lab` trước khi chọn (L131 đã sửa ở v15 Q7, đo xác nhận).
+- Sửa: "Bắt đầu" bật ngay khi domain đã vào (chỉ khóa khi `entering`), như "Tôi đã biết SQL" vốn đã làm. Đề việc 1 hiện trong lúc seed, có banner "Đang chuẩn bị dữ liệu Logistics…" và chấm vàng ở thanh trên; Run trong lúc đó xếp hàng (`work.queued`) và chạy khi dữ liệu vào. `SMOKE_BOOT` kiểm banner + chấm khi đề hiện, gõ `SELECT 1 AS one` + Ctrl+Enter trong lúc seed và đợi kết quả, không `db:restart`, không lỗi trang, không chunk Engine nào (`engineSources`/`engineView`/`pglab`/yaml) được tải lần đầu.
+- Main không chứa `pglab`/`dynoxide`/`mingo` (grep `index-*.js`: 0/0/0). `yaml` đã lọt lại vào main qua `src/ui/engine.ts` (ENG-CORE gộp sau V22-E): đổi thành `import('yaml')` trong chunk lười của Engine. Main 337,75 → 306,83 kB gz (số của Vite); `check-budget` "main has no yaml library" FAIL → ok.
+- Đo, không làm: preload wasm PGlite (worker spawn ~50 ms sau main, không còn gì để kéo lên ở máy local); seed Logistics trong Edge chậm hơn Node 3× là đòn bẩy còn lại cho "DB sẵn sàng", không đụng vì luật seed (md5 ghim).
+- Kiểm: tsc; build; vitest `--no-file-parallelism` 4735 qua, 2 FAIL có sẵn trên `v22-engine` (`tests/engineContent.test.ts`: `dynamodb/L5/07-capstone-ops.md` lab.steps[3].hint và `mongodb/L3/16-predict-sparse-hint.md` q0.options[2], code VI ≠ EN; nội dung không đụng); `check-budget`: 1 FAIL có sẵn `engine` 372 KB gz / 40 (nội dung Engine, quyết định của người điều phối, không nâng trần ở đây); `SMOKE_PORT=5289 npm run smoke` OK 81,3 s.
+# v22 V22-C (Quay lại có lý do: thẻ "Buổi học hôm nay", câu chào lại, mục tiêu tuần, nhắc .ics), 2026-11-20, L208–L210
+
+Mốc S3, đo **trước khi sửa** (cây `v22-engine` c86ae84, `npm run build` + `vite preview` 5288, Edge headless, hồ sơ mới, 375×740 `mobile`, `scrollHeight` của khung cuộn chứa `<main id="home">`). Người quay lại = `tests/fixtures/save-v5.json` bỏ `ch2-*` (chương 2 chưa làm việc nào, nên có thẻ Ôn đầu chương), thẻ ôn `select`/`where` tới hạn, tour xong, `cargo-query/days` ngày cuối cách 15 ngày; người mới = tour bước 0, chưa save.
+
+| Trang chủ | trước 375 / 1280 | sau 375 / 1280 | thẻ luyện trên Trang chủ | nút chính (pill teal) |
+|---|---|---|---|---|
+| Người quay lại | **1694** / 1257 px | **1184** / 964 px (−30,1 % / −23,3 %) | 3 → 1 ("Buổi học hôm nay") | 1 ("Mở việc này") → 1 ("Bắt đầu") |
+| Người mới | 1473 / 1100 px | 1016 / 781 px | 2 → 0 | 2 ("Mở việc này", "Bắt đầu từ Phần 1") → 1 |
+
+- Smoke bước V22-C dựng lại đúng trạng thái này và fail nếu Home 375 > 0,7 × 1694, thiếu câu chào lại, ≠ 1 thẻ buổi học hoặc ≠ 1 nút chính.
+- Ảnh (8 trước + 8 sau, 375/1280 sáng/tối, mới/quay lại): scratchpad `v22c/before-*.png`, `v22c/after-*.png`.
+- Ngân sách (gzip -9), đo trên `v22-engine` trước BOOT: main 334 331 → 336 474 B (+2,1 KB: chữ VI/EN, `goal.ts`, thẻ buổi học); sau khi rebase lên BOOT (L247, `yaml` ra khỏi main): main 305 894 B (299 KB / 500, dưới mốc 307 nên chữ ở main); `ics` 673 B (nhóm mới, trần 2); `me` 11 602 B / 12 KB (một dòng tuần này); css 20 080 B (không lớp mới). `engine` 379/40 FAIL có sẵn trên `v22-engine`, không thuộc luồng này. vitest `--no-file-parallelism` và `SMOKE_PORT=5287 npm run smoke` chạy lại sau rebase.

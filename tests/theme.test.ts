@@ -37,6 +37,7 @@ const TEXT_PAIRS: [string, string][] = [
   ['text', 'surface-2'], ['muted', 'surface-2'], ['accent', 'surface-2'], ['accent', 'accent-soft'],
   ...['good', 'bad', 'warn', 'info'].flatMap((k): [string, string][] => [['text', `${k}-soft`], ['muted', `${k}-soft`]]),
   ['good', 'good-soft'], ['bad', 'bad-soft'], ['warn', 'warn-soft'], ['accent', 'info-soft'], ['on-accent', 'bad'], ['on-accent', 'good'],
+  ['info', 'panel'], ['info', 'bg'], ['info', 'info-soft'], ['info', 'surface-2'], // L238: --info (engine diagrams, recorded-result chips)
   ...['keyword', 'string', 'number', 'comment', 'operator', 'type', 'property', 'atom']
     .flatMap((s): [string, string][] => [[`syn-${s}`, 'panel'], [`syn-${s}`, 'code']]),
 ];

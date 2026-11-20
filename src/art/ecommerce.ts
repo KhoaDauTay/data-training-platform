@@ -437,4 +437,4 @@ export async function play(c: Ctx): Promise<void> {
 export const ms = (c: Ctx): number => (c.tk.beat === 'boss' ? 3000 : 2200);
 
 /** The names every domain art chunk exports (ui/domainArt.ts). */
-export { storeScene as scene, deliveryMap as map, deliveryItems as items };
+export { storeScene as scene, deliveryMap as map, deliveryItems as items, CITIES as places };

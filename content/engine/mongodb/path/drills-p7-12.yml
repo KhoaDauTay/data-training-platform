@@ -1,6 +1,6 @@
-# Drill lộ trình MongoDB, Phần 7–12: 4 mỗi kỹ năng (faded, open, trap, review; L168), id `e-mgp-<kỹ năng>-<n>`
+# Drill lộ trình MongoDB, Phần 7–12: 4 mỗi kỹ năng (faded, open, trap, review; L168), id `e-mg-d-<kỹ năng>-<n>` (khớp ENGINE_ID)
 # (tên kỹ năng bỏ tiền tố `mg.`, `_` thành `-`). Dữ liệu: content/engine/mongodb/path/dataset.json.
-# Lời giải là tập con mongosh (product-design-db-engine §4.2): db.<coll>.find(...)[.sort/.limit/.skip/.count], .aggregate([...]),
+# Lời giải là tập con mongosh (product-design-db-engine §4.2): db.<coll>.find(...)[.sort/.limit/.skip], .countDocuments(...), .aggregate([...]),
 # .distinct(...), .createIndex(...). Ngày là ISODate('YYYY-MM-DD') (trường *_date, *_on là Date UTC nửa đêm).
 # Chấm theo §3.5: khớp theo tên trường, multiset trừ khi `ordered: true`; `wrong: [{ query, vi, en }]`.
 # Định dạng ngoài kết quả tài liệu (Phần 11–12, vì mingo không có index/explain):
@@ -11,7 +11,7 @@
 # Đề không nêu toán tử là đáp án (D8a-7); tên trường trong backtick được phép.
 
 # ---- mg.lookup_pipeline (Phần 7)
-- id: e-mgp-lookup-pipeline-1
+- id: e-mg-d-lookup-pipeline-1
   skill: mg.lookup_pipeline
   kind: faded
   task: { vi: "Mỗi cửa hàng: tên (`name`) và số đơn bán qua kênh `ONLINE` (`online_orders`), kể cả cửa hàng không có đơn nào như vậy.", en: "Each store: the name (`name`) and the number of orders sold through the `ONLINE` channel (`online_orders`), including stores with none." }
@@ -30,7 +30,7 @@
       { $project: { _id: 0, name: 1, online_orders: { $size: '$online' } } }
     ])
   hint: { vi: "Biến `sid` khai trong `let` được đọc là `'$$sid'`; kênh là chuỗi `'ONLINE'`.", en: "The `sid` variable declared in `let` is read as `'$$sid'`; the channel is the string `'ONLINE'`." }
-- id: e-mgp-lookup-pipeline-2
+- id: e-mg-d-lookup-pipeline-2
   skill: mg.lookup_pipeline
   kind: open
   task: { vi: "Mỗi sản phẩm: tên (`name`) và số đơn trong tháng 10/2026 có chứa sản phẩm đó (`orders_oct`), kể cả sản phẩm không có đơn nào.", en: "Each product: the name (`name`) and the number of October 2026 orders that contain it (`orders_oct`), including products with none." }
@@ -43,7 +43,7 @@
       { $project: { _id: 0, name: 1, orders_oct: { $size: '$o' } } }
     ])
   hint: { vi: "Trong pipeline của `$lookup`, lọc tháng bằng một `$match` thường, rồi kiểm `'$$pid'` có nằm trong `'$items.product_id'` bằng `$expr`.", en: "Inside the `$lookup` pipeline, filter the month with a plain `$match`, then check that `'$$pid'` is in `'$items.product_id'` with `$expr`." }
-- id: e-mgp-lookup-pipeline-3
+- id: e-mg-d-lookup-pipeline-3
   skill: mg.lookup_pipeline
   kind: trap
   task: { vi: "Mỗi cửa hàng: tên (`name`) và số đơn đã thanh toán (trạng thái `PAID`) (`paid_orders`), kể cả cửa hàng không có đơn nào như vậy.", en: "Each store: the name (`name`) and the number of paid orders (status `PAID`) (`paid_orders`), including stores with none." }
@@ -59,7 +59,7 @@
     - query: "db.stores.aggregate([{ $lookup: { from: 'orders', localField: '_id', foreignField: 'store_id', as: 'paid' } }, { $project: { _id: 0, name: 1, paid_orders: { $size: '$paid' } } }])"
       vi: "`localField`/`foreignField` gắn mọi đơn của cửa hàng, kể cả đơn hủy và hoàn tiền, nên con số là tổng số đơn."
       en: "`localField`/`foreignField` attaches every order of the store, cancelled and refunded ones included, so the number is the total order count."
-- id: e-mgp-lookup-pipeline-4
+- id: e-mg-d-lookup-pipeline-4
   skill: mg.lookup_pipeline
   kind: review
   task: { vi: "Mỗi khách ở `Hue`: tên (`name`) và ngày của đơn gần đây nhất (`last_order`).", en: "Each customer in `Hue`: the name (`name`) and the date of their most recent order (`last_order`)." }
@@ -76,7 +76,7 @@
   hint: { vi: "Trong pipeline của `$lookup`: lọc đơn của khách, sắp ngày giảm dần, giữ 1 đơn; rồi lấy phần tử đầu của mảng.", en: "Inside the `$lookup` pipeline: keep the customer's orders, sort by date descending, keep 1; then take the array's first element." }
 
 # ---- mg.in_other (Phần 7)
-- id: e-mgp-in-other-1
+- id: e-mg-d-in-other-1
   skill: mg.in_other
   kind: faded
   task: { vi: "Những sản phẩm đã từng được bán ở cửa hàng 4: chỉ tên (`name`).", en: "The products ever sold at store 4: the name (`name`) only." }
@@ -99,7 +99,7 @@
       { $project: { _id: 0, name: 1 } }
     ])
   hint: { vi: "Giữ sản phẩm mà mảng `hit` không rỗng: so `hit` với mảng rỗng bằng phép \"khác\".", en: "Keep products whose `hit` array is not empty: compare `hit` with the empty array using \"not equal\"." }
-- id: e-mgp-in-other-2
+- id: e-mg-d-in-other-2
   skill: mg.in_other
   kind: open
   task: { vi: "Những khách đã đặt ít nhất một đơn kênh `ONLINE` trong tháng 10/2026: chỉ tên (`name`), mỗi khách một lần.", en: "The customers who placed at least one `ONLINE` order in October 2026: the name (`name`) only, each customer once." }
@@ -113,7 +113,7 @@
       { $project: { _id: 0, name: 1 } }
     ])
   hint: { vi: "Đi từ `customers`; pipeline của `$lookup` lọc kênh, tháng và khách; giữ khách có `hit` không rỗng.", en: "Start from `customers`; the `$lookup` pipeline filters channel, month and customer; keep customers whose `hit` is not empty." }
-- id: e-mgp-in-other-3
+- id: e-mg-d-in-other-3
   skill: mg.in_other
   kind: trap
   task: { vi: "Những khách đã từng mua sản phẩm 21 (`Sunscreen`): mã khách (`_id`) và tên (`name`), mỗi khách đúng một lần.", en: "The customers who ever bought product 21 (`Sunscreen`): the customer id (`_id`) and the name (`name`), each customer exactly once." }
@@ -131,7 +131,7 @@
     - query: "db.customers.aggregate([{ $lookup: { from: 'orders', localField: '_id', foreignField: 'customer_id', as: 'o' } }, { $unwind: '$o' }, { $match: { 'o.items.product_id': 21 } }, { $project: { name: 1 } }])"
       vi: "`$unwind` tạo một tài liệu cho mỗi đơn khớp, nên khách mua `Sunscreen` hai lần hiện hai lần."
       en: "`$unwind` makes one document per matching order, so a customer who bought `Sunscreen` twice shows up twice."
-- id: e-mgp-in-other-4
+- id: e-mg-d-in-other-4
   skill: mg.in_other
   kind: review
   task: { vi: "Những cửa hàng có ít nhất một đơn hoàn tiền (trạng thái `REFUNDED`) từ 2026-01-01: chỉ tên (`name`).", en: "The stores with at least one refunded order (status `REFUNDED`) from 2026-01-01: the name (`name`) only." }
@@ -147,7 +147,7 @@
   hint: { vi: "Pipeline của `$lookup` lọc trạng thái, ngày và cửa hàng; giữ cửa hàng có `hit` không rỗng.", en: "The `$lookup` pipeline filters status, date and store; keep stores whose `hit` is not empty." }
 
 # ---- mg.facet (Phần 7)
-- id: e-mgp-facet-1
+- id: e-mg-d-facet-1
   skill: mg.facet
   kind: faded
   task: { vi: "Đơn tháng 10/2026, trả đúng một tài liệu có hai trường: `by_channel` (mỗi kênh `_id` và số đơn `n`, sắp theo kênh A→Z) và `total` (một phần tử `{ n }` là tổng số đơn).", en: "October 2026 orders, return exactly one document with two fields: `by_channel` (each channel `_id` with its order count `n`, sorted by channel A→Z) and `total` (one element `{ n }`, the overall order count)." }
@@ -168,7 +168,7 @@
       } }
     ])
   hint: { vi: "Stage chạy nhiều pipeline con trên cùng tập đã lọc tên là `$facet`; `$count` nhận tên trường kết quả `'n'`.", en: "The stage that runs several sub-pipelines on the same filtered set is `$facet`; `$count` takes the output field name `'n'`." }
-- id: e-mgp-facet-2
+- id: e-mg-d-facet-2
   skill: mg.facet
   kind: open
   task: { vi: "Sản phẩm, trả một tài liệu có `cheap` (một phần tử `{ n }`: số sản phẩm giá dưới 20.000 đồng) và `top3` (3 sản phẩm đắt nhất: `name`, `price_vnd`, không `_id`, đắt nhất trước; cùng giá thì tên A→Z).", en: "Products, return one document with `cheap` (one element `{ n }`: how many products cost under 20,000 VND) and `top3` (the 3 most expensive products: `name`, `price_vnd`, no `_id`, most expensive first; on the same price, name A→Z)." }
@@ -180,7 +180,7 @@
       } }
     ])
   hint: { vi: "Mỗi trường của kết quả là một pipeline con: một cái lọc rồi đếm, một cái sắp, cắt 3 và chọn trường.", en: "Each output field is a sub-pipeline: one filters then counts, one sorts, keeps 3 and picks fields." }
-- id: e-mgp-facet-3
+- id: e-mg-d-facet-3
   skill: mg.facet
   kind: trap
   task: { vi: "Đơn tháng 10/2026, trả một tài liệu có `by_status` (mỗi trạng thái `_id` và số đơn `n`, sắp theo trạng thái A→Z) và `total` (một phần tử `{ n }` là tổng số đơn).", en: "October 2026 orders, return one document with `by_status` (each status `_id` with its order count `n`, sorted by status A→Z) and `total` (one element `{ n }`, the overall order count)." }
@@ -197,7 +197,7 @@
     - query: "db.orders.aggregate([{ $match: { order_date: { $gte: ISODate('2026-10-01'), $lt: ISODate('2026-11-01') } } }, { $group: { _id: '$status', n: { $sum: 1 } } }, { $sort: { _id: 1 } }, { $group: { _id: null, by_status: { $push: '$$ROOT' }, total: { $sum: 1 } } }])"
       vi: "`$group` thứ hai chỉ thấy các nhóm trạng thái, nên `total` đếm số trạng thái chứ không phải số đơn."
       en: "The second `$group` only sees the status groups, so `total` counts statuses, not orders."
-- id: e-mgp-facet-4
+- id: e-mg-d-facet-4
   skill: mg.facet
   kind: review
   task: { vi: "Khách hàng, trả một tài liệu có `by_city` (mỗi thành phố `_id` và số khách `n`, sắp theo số khách giảm dần, cùng số thì tên thành phố A→Z; khách không rõ thành phố là một nhóm riêng) và `no_email` (một phần tử `{ n }`: số khách không có email).", en: "Customers, return one document with `by_city` (each city `_id` and its customer count `n`, sorted by count descending, then city A→Z; customers with no city form their own group) and `no_email` (one element `{ n }`: how many customers have no email)." }
@@ -211,7 +211,7 @@
   hint: { vi: "Hai pipeline con: một gộp theo `city` rồi sắp hai khóa, một lọc `email` trống rồi đếm.", en: "Two sub-pipelines: one groups by `city` then sorts on two keys, one keeps an empty `email` then counts." }
 
 # ---- mg.stages (Phần 8)
-- id: e-mgp-stages-1
+- id: e-mg-d-stages-1
   skill: mg.stages
   kind: faded
   task: { vi: "Tháng 10/2026, mỗi cửa hàng (`_id` là mã cửa hàng): số đơn trung bình mỗi ngày có đơn (`avg_per_day`).", en: "October 2026, each store (`_id` is the store id): the average number of orders per day that had orders (`avg_per_day`)." }
@@ -228,7 +228,7 @@
       { $group: { _id: '$_id.store', avg_per_day: { $avg: '$n' } } }
     ])
   hint: { vi: "Sau `$group` đầu, mã cửa hàng nằm ở `'$_id.store'` và số đơn mỗi ngày ở `'$n'`.", en: "After the first `$group`, the store id lives at `'$_id.store'` and the daily count at `'$n'`." }
-- id: e-mgp-stages-2
+- id: e-mg-d-stages-2
   skill: mg.stages
   kind: open
   task: { vi: "Có bao nhiêu khách (bỏ đơn vãng lai không có khách) đặt nhiều hơn 2 đơn `PAID` từ 2026-01-01? Trả một tài liệu `{ n }`.", en: "How many customers (skip walk-in orders with no customer) placed more than 2 `PAID` orders from 2026-01-01? Return one document `{ n }`." }
@@ -240,7 +240,7 @@
       { $count: 'n' }
     ])
   hint: { vi: "Bốn bước: lọc đơn, gộp theo khách, lọc trên con số vừa tính, đếm.", en: "Four steps: filter orders, group by customer, filter on the number you just computed, count." }
-- id: e-mgp-stages-3
+- id: e-mg-d-stages-3
   skill: mg.stages
   kind: trap
   task: { vi: "Tháng 10/2026, đơn `PAID`, mỗi cửa hàng (`_id` là mã cửa hàng): giá trị trung bình một đơn (`avg_order`), giá trị đơn là tổng số lượng × đơn giá của các dòng.", en: "October 2026, `PAID` orders, each store (`_id` is the store id): the average value of one order (`avg_order`), where an order's value is the sum of quantity × unit price over its lines." }
@@ -256,7 +256,7 @@
     - query: "db.orders.aggregate([{ $match: { status: 'PAID', order_date: { $gte: ISODate('2026-10-01'), $lt: ISODate('2026-11-01') } } }, { $unwind: '$items' }, { $group: { _id: '$store_id', avg_order: { $avg: { $multiply: ['$items.qty', '$items.unit_price_vnd'] } } } }])"
       vi: "Sau `$unwind` mỗi tài liệu là một dòng hàng, nên đây là trung bình một dòng, không phải một đơn."
       en: "After `$unwind` each document is one line, so this is the average of a line, not of an order."
-- id: e-mgp-stages-4
+- id: e-mg-d-stages-4
   skill: mg.stages
   kind: review
   task: { vi: "Tháng 9/2026, mỗi cửa hàng (`_id` là mã cửa hàng): số đơn của ngày đông nhất (`best_day`).", en: "September 2026, each store (`_id` is the store id): the order count of its busiest day (`best_day`)." }
@@ -269,7 +269,7 @@
   hint: { vi: "Đếm theo cửa hàng và ngày, rồi lấy số lớn nhất theo cửa hàng.", en: "Count per store and day, then take the largest number per store." }
 
 # ---- mg.first_per_group (Phần 8)
-- id: e-mgp-first-per-group-1
+- id: e-mg-d-first-per-group-1
   skill: mg.first_per_group
   kind: faded
   task: { vi: "Mỗi danh mục (`_id`): sản phẩm rẻ nhất, tên (`name`) và giá (`price_vnd`); cùng giá thì tên A→Z.", en: "Each category (`_id`): the cheapest product, its name (`name`) and price (`price_vnd`); on the same price, name A→Z." }
@@ -284,7 +284,7 @@
       { $group: { _id: '$category', name: { $first: '$name' }, price_vnd: { $first: '$price_vnd' } } }
     ])
   hint: { vi: "Sắp giá tăng dần (`1`), rồi trong mỗi nhóm lấy tài liệu đứng đầu bằng `$first`.", en: "Sort price ascending (`1`), then take each group's leading document with `$first`." }
-- id: e-mgp-first-per-group-2
+- id: e-mg-d-first-per-group-2
   skill: mg.first_per_group
   kind: open
   task: { vi: "Mỗi trạng thái đơn (`_id` là trạng thái): đơn đầu tiên của năm 2026, mã đơn (`order_id`) và ngày (`order_date`); cùng ngày thì mã đơn nhỏ hơn.", en: "Each order status (`_id` is the status): the first order of 2026, the order id (`order_id`) and date (`order_date`); on the same date, the smaller order id." }
@@ -295,7 +295,7 @@
       { $group: { _id: '$status', order_id: { $first: '$_id' }, order_date: { $first: '$order_date' } } }
     ])
   hint: { vi: "Lọc năm 2026, sắp ngày tăng dần rồi mã đơn tăng dần, sau đó lấy tài liệu đầu mỗi trạng thái.", en: "Keep 2026, sort by date ascending then order id ascending, then take the first document per status." }
-- id: e-mgp-first-per-group-3
+- id: e-mg-d-first-per-group-3
   skill: mg.first_per_group
   kind: trap
   task: { vi: "Mỗi cửa hàng (`_id` là mã cửa hàng): đơn gần đây nhất, ngày (`order_date`) và mã đơn (`order_id`) của chính đơn đó; cùng ngày thì mã đơn lớn hơn.", en: "Each store (`_id` is the store id): its most recent order, the date (`order_date`) and the order id (`order_id`) of that same order; on the same date, the larger order id." }
@@ -309,7 +309,7 @@
     - query: "db.orders.aggregate([{ $group: { _id: '$store_id', order_date: { $max: '$order_date' }, order_id: { $max: '$_id' } } }])"
       vi: "`$max` tính riêng từng trường: ngày lớn nhất và mã lớn nhất có thể thuộc hai đơn khác nhau."
       en: "`$max` works on each field separately: the latest date and the largest id can belong to two different orders."
-- id: e-mgp-first-per-group-4
+- id: e-mg-d-first-per-group-4
   skill: mg.first_per_group
   kind: review
   task: { vi: "Mỗi thành phố có cửa hàng (`_id` là thành phố): tên cửa hàng mở sớm nhất (`name`) và ngày mở (`opened_on`).", en: "Each city with stores (`_id` is the city): the name of the earliest-opened store (`name`) and its opening date (`opened_on`)." }
@@ -321,7 +321,7 @@
   hint: { vi: "Sắp theo ngày mở tăng dần, rồi lấy tài liệu đầu mỗi thành phố.", en: "Sort by opening date ascending, then take the first document per city." }
 
 # ---- mg.set_fields (Phần 8)
-- id: e-mgp-set-fields-1
+- id: e-mg-d-set-fields-1
   skill: mg.set_fields
   kind: faded
   task: { vi: "Mọi sản phẩm, giữ các trường khác nhưng bỏ `category` và thêm `price_k` = giá chia 1.000.", en: "Every product, keep the other fields but drop `category` and add `price_k` = the price divided by 1,000." }
@@ -336,7 +336,7 @@
       { $unset: 'category' }
     ])
   hint: { vi: "Đọc giá bằng `'$price_vnd'`; tên trường cần bỏ là chuỗi `'category'`.", en: "Read the price as `'$price_vnd'`; the field to drop is the string `'category'`." }
-- id: e-mgp-set-fields-2
+- id: e-mg-d-set-fields-2
   skill: mg.set_fields
   kind: open
   task: { vi: "Đơn của cửa hàng 2 từ 2026-10-25 đến 2026-10-31: giữ mọi trường, thay mảng `items` bằng số dòng hàng `lines`.", en: "Store 2 orders from 2026-10-25 to 2026-10-31: keep every field, replace the `items` array with the number of lines `lines`." }
@@ -347,7 +347,7 @@
       { $unset: 'items' }
     ])
   hint: { vi: "Thêm `lines` từ kích thước mảng trước, rồi mới bỏ `items`.", en: "Add `lines` from the array size first, then drop `items`." }
-- id: e-mgp-set-fields-3
+- id: e-mg-d-set-fields-3
   skill: mg.set_fields
   kind: trap
   task: { vi: "Khách ở `Hue`: giữ mọi trường trừ `email`, thêm `age_2026` = 2026 trừ năm sinh.", en: "Customers in `Hue`: keep every field except `email`, add `age_2026` = 2026 minus the birth year." }
@@ -362,7 +362,7 @@
     - query: "db.customers.aggregate([{ $match: { city: 'Hue' } }, { $project: { age_2026: { $subtract: [2026, '$birth_year'] } } }])"
       vi: "`$project` chỉ giữ những trường được nêu (cộng `_id`), nên tên, thành phố, ngày đăng ký đều mất."
       en: "`$project` keeps only the fields it names (plus `_id`), so the name, city and signup date are all lost."
-- id: e-mgp-set-fields-4
+- id: e-mg-d-set-fields-4
   skill: mg.set_fields
   kind: review
   task: { vi: "Mọi cửa hàng: giữ mọi trường, thay `opened_on` bằng năm mở cửa `opened_year`.", en: "Every store: keep every field, replace `opened_on` with the opening year `opened_year`." }
@@ -374,7 +374,7 @@
   hint: { vi: "Lấy năm của một ngày, thêm thành trường mới, rồi bỏ trường ngày.", en: "Take the year of a date, add it as a new field, then drop the date field." }
 
 # ---- mg.union_with (Phần 9)
-- id: e-mgp-union-with-1
+- id: e-mg-d-union-with-1
   skill: mg.union_with
   kind: faded
   task: { vi: "Một danh sách gồm tên mọi cửa hàng (`kind` là `'store'`) và tên sản phẩm danh mục `Stationery` (`kind` là `'product'`); mỗi tài liệu chỉ có `name` và `kind`.", en: "One list with the name of every store (`kind` is `'store'`) and the names of the `Stationery` products (`kind` is `'product'`); each document has only `name` and `kind`." }
@@ -395,7 +395,7 @@
       ] } }
     ])
   hint: { vi: "Stage ghép thêm tài liệu của collection khác là `$unionWith`; collection là `'products'`.", en: "The stage that appends another collection's documents is `$unionWith`; the collection is `'products'`." }
-- id: e-mgp-union-with-2
+- id: e-mg-d-union-with-2
   skill: mg.union_with
   kind: open
   task: { vi: "Một danh sách sự kiện ngày 2026-10-31: mỗi đơn của ngày đó (`kind` là `'order'`, `ref` là mã đơn) và mỗi cửa hàng (`kind` là `'store'`, `ref` là mã cửa hàng) để làm bảng điểm danh; mỗi tài liệu chỉ có `kind` và `ref`.", en: "An event list for 2026-10-31: each order of that day (`kind` is `'order'`, `ref` is the order id) and each store (`kind` is `'store'`, `ref` is the store id) for a roll-call sheet; each document has only `kind` and `ref`." }
@@ -406,7 +406,7 @@
       { $unionWith: { coll: 'stores', pipeline: [{ $project: { _id: 0, kind: 'store', ref: '$_id' } }] } }
     ])
   hint: { vi: "Đổi `_id` của mỗi bên thành `ref` bằng `$project`, rồi ghép collection `stores` vào.", en: "Turn each side's `_id` into `ref` with `$project`, then append the `stores` collection." }
-- id: e-mgp-union-with-3
+- id: e-mg-d-union-with-3
   skill: mg.union_with
   kind: trap
   task: { vi: "Những thành phố có cửa hàng hoặc có khách (bỏ khách không rõ thành phố), mỗi thành phố đúng một lần, `_id` là tên thành phố.", en: "The cities that have a store or a customer (skip customers with no city), each city exactly once, `_id` is the city name." }
@@ -421,7 +421,7 @@
     - query: "db.stores.aggregate([{ $project: { _id: '$city' } }, { $unionWith: { coll: 'customers', pipeline: [{ $match: { city: { $ne: null } } }, { $project: { _id: '$city' } }] } }])"
       vi: "Ghép thẳng giống UNION ALL: mỗi khách ở `Da Nang` thêm một tài liệu `Da Nang` nữa."
       en: "Stacking alone works like UNION ALL: every customer in `Da Nang` adds one more `Da Nang` document."
-- id: e-mgp-union-with-4
+- id: e-mg-d-union-with-4
   skill: mg.union_with
   kind: review
   task: { vi: "Một danh sách tên (`name`) của cửa hàng ở `Da Nang` và của khách ở `Da Nang` sinh từ năm 2000, kèm `kind` là `'store'` hoặc `'customer'`; không `_id`.", en: "One list of names (`name`) of the stores in `Da Nang` and of the customers in `Da Nang` born in 2000 or later, with `kind` set to `'store'` or `'customer'`; no `_id`." }
@@ -437,7 +437,7 @@
   hint: { vi: "Mỗi bên lọc và chọn trường giống nhau, rồi ghép bên khách vào bên cửa hàng.", en: "Each side filters and picks the same fields, then the customer side is appended to the store side." }
 
 # ---- mg.except_like (Phần 9)
-- id: e-mgp-except-like-1
+- id: e-mg-d-except-like-1
   skill: mg.except_like
   kind: faded
   task: { vi: "Những sản phẩm không bán được ở cửa hàng 4 trong tháng 10/2026: chỉ tên (`name`).", en: "The products not sold at store 4 in October 2026: the name (`name`) only." }
@@ -460,7 +460,7 @@
       { $project: { _id: 0, name: 1 } }
     ])
   hint: { vi: "\"Không bán được\" nghĩa là mảng `hit` có 0 phần tử.", en: "\"Not sold\" means the `hit` array has 0 elements." }
-- id: e-mgp-except-like-2
+- id: e-mg-d-except-like-2
   skill: mg.except_like
   kind: open
   task: { vi: "Những khách không có đơn nào từ 2026-01-01: mã khách (`_id`) và tên (`name`).", en: "The customers with no order from 2026-01-01: the customer id (`_id`) and the name (`name`)." }
@@ -474,7 +474,7 @@
       { $project: { name: 1 } }
     ])
   hint: { vi: "Điều kiện ngày nằm trong pipeline của `$lookup`; giữ khách có mảng kết quả rỗng.", en: "The date condition goes inside the `$lookup` pipeline; keep customers with an empty result array." }
-- id: e-mgp-except-like-3
+- id: e-mg-d-except-like-3
   skill: mg.except_like
   kind: trap
   task: { vi: "Những sản phẩm không bán được ở cửa hàng nào từ 2026-10-29 đến 2026-10-31: chỉ tên (`name`).", en: "The products not sold at any store from 2026-10-29 to 2026-10-31: the name (`name`) only." }
@@ -492,7 +492,7 @@
     - query: "db.products.aggregate([{ $lookup: { from: 'orders', localField: '_id', foreignField: 'items.product_id', as: 'hit' } }, { $match: { hit: { $size: 0 } } }, { $project: { _id: 0, name: 1 } }])"
       vi: "Không lọc ngày thì đây là \"chưa bán bao giờ\": sản phẩm bán trước đó nhưng không bán trong ba ngày này bị bỏ sót."
       en: "Without the date filter this means \"never sold\": a product sold earlier but not in these three days is missed."
-- id: e-mgp-except-like-4
+- id: e-mg-d-except-like-4
   skill: mg.except_like
   kind: review
   task: { vi: "Những thành phố có khách nhưng chưa có cửa hàng (bỏ khách không rõ thành phố), mỗi thành phố một lần, `_id` là tên thành phố.", en: "The cities that have customers but no store yet (skip customers with no city), each city once, `_id` is the city name." }
@@ -506,7 +506,7 @@
   hint: { vi: "Nối khách với cửa hàng theo `city`, giữ khách không khớp cửa hàng nào, rồi gộp theo thành phố.", en: "Join customers to stores on `city`, keep customers matching no store, then group by city." }
 
 # ---- mg.full_like (Phần 9)
-- id: e-mgp-full-like-1
+- id: e-mg-d-full-like-1
   skill: mg.full_like
   kind: faded
   task: { vi: "Tháng 10/2026, mỗi sản phẩm bán ở cửa hàng 1 hoặc cửa hàng 2 (`_id` là mã sản phẩm): số lượng bán ở cửa hàng 1 (`s1`) và ở cửa hàng 2 (`s2`), bên nào không bán thì 0.", en: "October 2026, each product sold at store 1 or store 2 (`_id` is the product id): the quantity sold at store 1 (`s1`) and at store 2 (`s2`), 0 on the side that did not sell it." }
@@ -535,7 +535,7 @@
       { $group: { _id: '$p', s1: { $sum: '$s1' }, s2: { $sum: '$s2' } } }
     ])
   hint: { vi: "Mỗi bên đã ghi 0 cho phía còn lại; gộp theo `'$p'` và cộng `'$s1'`, `'$s2'`.", en: "Each side already wrote 0 for the other one; group on `'$p'` and sum `'$s1'`, `'$s2'`." }
-- id: e-mgp-full-like-2
+- id: e-mg-d-full-like-2
   skill: mg.full_like
   kind: open
   task: { vi: "Mỗi cửa hàng (`_id` là mã cửa hàng): số đơn `CANCELLED` (`cancelled`) và số đơn `REFUNDED` (`refunded`) trong tháng 9 và 10/2026, cửa hàng có ít nhất một trong hai loại; thiếu thì 0.", en: "Each store (`_id` is the store id): the number of `CANCELLED` orders (`cancelled`) and of `REFUNDED` orders (`refunded`) in September and October 2026, for stores with at least one of either; 0 when missing." }
@@ -550,7 +550,7 @@
       { $group: { _id: '$s', cancelled: { $sum: '$c' }, refunded: { $sum: '$r' } } }
     ])
   hint: { vi: "Mỗi đơn của mỗi bên thành một tài liệu có 1 ở phía mình và 0 ở phía kia; ghép rồi gộp theo cửa hàng.", en: "Each order on each side becomes a document with 1 on its own side and 0 on the other; stack, then group by store." }
-- id: e-mgp-full-like-3
+- id: e-mg-d-full-like-3
   skill: mg.full_like
   kind: trap
   task: { vi: "Cửa hàng 4, mỗi sản phẩm bán trong tháng 9 hoặc tháng 10/2026 (`_id` là mã sản phẩm): số lượng tháng 9 (`sep`) và tháng 10 (`oct`), tháng không bán thì 0.", en: "Store 4, each product sold in September or October 2026 (`_id` is the product id): the September quantity (`sep`) and the October quantity (`oct`), 0 for a month with no sales." }
@@ -571,7 +571,7 @@
     - query: "db.orders.aggregate([{ $match: { store_id: 4, order_date: { $gte: ISODate('2026-09-01'), $lt: ISODate('2026-10-01') } } }, { $unwind: '$items' }, { $group: { _id: '$items.product_id', sep: { $sum: '$items.qty' } } }, { $lookup: { from: 'orders', let: { pid: '$_id' }, pipeline: [{ $match: { store_id: 4, order_date: { $gte: ISODate('2026-10-01'), $lt: ISODate('2026-11-01') } } }, { $unwind: '$items' }, { $match: { $expr: { $eq: ['$items.product_id', '$$pid'] } } }], as: 'o' } }, { $project: { sep: 1, oct: { $sum: '$o.items.qty' } } }])"
       vi: "Đi từ tháng 9 rồi `$lookup` sang tháng 10 là left join: sản phẩm chỉ bán trong tháng 10 biến mất."
       en: "Starting from September and `$lookup` into October is a left join: products sold only in October disappear."
-- id: e-mgp-full-like-4
+- id: e-mg-d-full-like-4
   skill: mg.full_like
   kind: review
   task: { vi: "Mỗi thành phố có cửa hàng hoặc có khách (bỏ khách không rõ thành phố), `_id` là thành phố: số cửa hàng (`stores`) và số khách (`customers`), thiếu thì 0.", en: "Each city with a store or a customer (skip customers with no city), `_id` is the city: the number of stores (`stores`) and of customers (`customers`), 0 when missing." }
@@ -584,10 +584,10 @@
       ] } },
       { $group: { _id: '$city', stores: { $sum: '$st' }, customers: { $sum: '$cu' } } }
     ])
-  hint: { vi: "Mỗi cửa hàng đóng góp 1 vào cột cửa hàng, mỗi khách 1 vào cột khách; ghép rồi gộp theo thành phố.", en: "Each store adds 1 to the store column, each customer 1 to the customer column; stack, then group by city." }
+  hint: { vi: "Mỗi cửa hàng đóng góp 1 vào trường cửa hàng, mỗi khách 1 vào trường khách; ghép rồi gộp theo thành phố.", en: "Each store adds 1 to the store field, each customer 1 to the customer field; stack, then group by city." }
 
 # ---- mg.win_rank (Phần 10)
-- id: e-mgp-win-rank-1
+- id: e-mg-d-win-rank-1
   skill: mg.win_rank
   kind: faded
   task: { vi: "Sản phẩm danh mục `Drinks`: tên (`name`), giá (`price_vnd`) và hạng theo giá (`rk`), đắt nhất hạng 1; cùng giá thì cùng hạng và hạng sau bị nhảy. Không `_id`.", en: "Products in `Drinks`: the name (`name`), price (`price_vnd`) and price rank (`rk`), the most expensive is rank 1; the same price shares a rank and the next rank is skipped. No `_id`." }
@@ -604,7 +604,7 @@
       { $project: { _id: 0, name: 1, price_vnd: 1, rk: 1 } }
     ])
   hint: { vi: "Đắt nhất trước là sắp `-1`; hạng có nhảy khi hòa là `$rank`.", en: "Most expensive first is sort `-1`; the rank that skips after ties is `$rank`." }
-- id: e-mgp-win-rank-2
+- id: e-mg-d-win-rank-2
   skill: mg.win_rank
   kind: open
   task: { vi: "Mọi sản phẩm: danh mục (`category`), tên (`name`), giá (`price_vnd`) và hạng giá trong danh mục (`rk`), đắt nhất hạng 1; cùng giá thì cùng hạng, hạng sau không bị nhảy. Không `_id`.", en: "Every product: the category (`category`), name (`name`), price (`price_vnd`) and price rank within its category (`rk`), the most expensive is rank 1; the same price shares a rank and the next rank is not skipped. No `_id`." }
@@ -614,7 +614,7 @@
       { $project: { _id: 0, category: 1, name: 1, price_vnd: 1, rk: 1 } }
     ])
   hint: { vi: "Chia nhóm theo `'$category'`; hạng không nhảy khi hòa là `$denseRank`.", en: "Partition by `'$category'`; the rank that does not skip after ties is `$denseRank`." }
-- id: e-mgp-win-rank-3
+- id: e-mg-d-win-rank-3
   skill: mg.win_rank
   kind: trap
   task: { vi: "Cửa hàng 1, tháng 10/2026: mỗi ngày có đơn (`_id` là ngày), số đơn (`n`) và hạng (`rk`), ngày đông nhất hạng 1; cùng số đơn thì cùng hạng và hạng sau bị nhảy.", en: "Store 1, October 2026: each day with orders (`_id` is the day), the order count (`n`) and the rank (`rk`), the busiest day is rank 1; the same count shares a rank and the next rank is skipped." }
@@ -629,7 +629,7 @@
     - query: "db.orders.aggregate([{ $match: { store_id: 1, order_date: { $gte: ISODate('2026-10-01'), $lt: ISODate('2026-11-01') } } }, { $group: { _id: '$order_date', n: { $sum: 1 } } }, { $setWindowFields: { sortBy: { n: -1 }, output: { rk: { $denseRank: {} } } } }])"
       vi: "`$denseRank` không nhảy hạng: ngày ngay sau nhóm cùng hạng 1 nhận hạng 2 thay vì bị nhảy."
       en: "`$denseRank` does not skip: the day right after the group tied at rank 1 gets rank 2 instead of skipping."
-- id: e-mgp-win-rank-4
+- id: e-mg-d-win-rank-4
   skill: mg.win_rank
   kind: review
   task: { vi: "Khách ở `Hue` có năm sinh: tên (`name`), năm sinh (`birth_year`) và hạng (`rk`), người trẻ nhất hạng 1; cùng năm thì cùng hạng và hạng sau bị nhảy. Không `_id`.", en: "Customers in `Hue` with a birth year: the name (`name`), birth year (`birth_year`) and rank (`rk`), the youngest is rank 1; the same year shares a rank and the next rank is skipped. No `_id`." }
@@ -642,7 +642,7 @@
   hint: { vi: "Trẻ nhất là năm sinh lớn nhất, nên sắp `-1`.", en: "The youngest has the largest birth year, so sort `-1`." }
 
 # ---- mg.win_shift (Phần 10)
-- id: e-mgp-win-shift-1
+- id: e-mg-d-win-shift-1
   skill: mg.win_shift
   kind: faded
   task: { vi: "Cửa hàng 3, từ 2026-10-01 đến 2026-10-07: mỗi ngày có đơn (`_id` là ngày), số đơn (`n`) và số đơn của ngày có đơn liền trước (`prev`, ngày đầu là `null`).", en: "Store 3, from 2026-10-01 to 2026-10-07: each day with orders (`_id` is the day), the order count (`n`) and the count of the previous day with orders (`prev`, `null` on the first day)." }
@@ -659,7 +659,7 @@
       { $setWindowFields: { sortBy: { _id: 1 }, output: { prev: { $shift: { output: '$n', by: -1 } } } } }
     ])
   hint: { vi: "Giá trị cần lấy là `'$n'`; tài liệu liền trước là `by: -1`.", en: "The value to take is `'$n'`; the document just before is `by: -1`." }
-- id: e-mgp-win-shift-2
+- id: e-mg-d-win-shift-2
   skill: mg.win_shift
   kind: open
   task: { vi: "Cửa hàng 5, năm 2026: mỗi tháng (`_id` là ngày đầu tháng), số đơn (`n`) và mức tăng giảm so với tháng liền trước (`change`, tháng đầu là `null`).", en: "Store 5, year 2026: each month (`_id` is the first day of the month), the order count (`n`) and the change from the previous month (`change`, `null` for the first month)." }
@@ -672,7 +672,7 @@
       { $unset: 'prev' }
     ])
   hint: { vi: "Gộp theo đầu tháng, lấy số của tháng liền trước, rồi trừ.", en: "Group by month start, take the previous month's count, then subtract." }
-- id: e-mgp-win-shift-3
+- id: e-mg-d-win-shift-3
   skill: mg.win_shift
   kind: trap
   task: { vi: "Từ 2026-10-29 đến 2026-10-31, mỗi cửa hàng và mỗi ngày có đơn (`_id` gồm `store` và `day`): số đơn (`n`) và số đơn của ngày có đơn liền trước của chính cửa hàng đó (`prev`, ngày đầu của mỗi cửa hàng là `null`).", en: "From 2026-10-29 to 2026-10-31, each store and each day with orders (`_id` holds `store` and `day`): the order count (`n`) and the count of that same store's previous day with orders (`prev`, `null` on each store's first day)." }
@@ -687,7 +687,7 @@
     - query: "db.orders.aggregate([{ $match: { order_date: { $gte: ISODate('2026-10-29'), $lt: ISODate('2026-11-01') } } }, { $group: { _id: { store: '$store_id', day: '$order_date' }, n: { $sum: 1 } } }, { $setWindowFields: { sortBy: { '_id.store': 1, '_id.day': 1 }, output: { prev: { $shift: { output: '$n', by: -1 } } } } }])"
       vi: "Thiếu `partitionBy`: ngày đầu của cửa hàng 2 lấy số đơn của ngày cuối cửa hàng 1 thay vì `null`."
       en: "Without `partitionBy`: store 2's first day takes store 1's last day count instead of `null`."
-- id: e-mgp-win-shift-4
+- id: e-mg-d-win-shift-4
   skill: mg.win_shift
   kind: review
   task: { vi: "Các đơn của khách 7: mã đơn (`_id`), ngày (`order_date`) và ngày của đơn kế tiếp (`next_date`, đơn cuối là `null`); cùng ngày thì mã đơn nhỏ trước.", en: "Customer 7's orders: the order id (`_id`), date (`order_date`) and the date of the next order (`next_date`, `null` for the last one); on the same date, the smaller order id first." }
@@ -700,7 +700,7 @@
   hint: { vi: "Tài liệu kế tiếp là `by: 1`.", en: "The next document is `by: 1`." }
 
 # ---- mg.win_agg (Phần 10)
-- id: e-mgp-win-agg-1
+- id: e-mg-d-win-agg-1
   skill: mg.win_agg
   kind: faded
   task: { vi: "Cửa hàng 1, tháng 10/2026: mỗi ngày có đơn (`_id` là ngày), doanh thu ngày (`rev`, tổng số lượng × đơn giá) và doanh thu lũy kế từ đầu tháng tới ngày đó (`running`).", en: "Store 1, October 2026: each day with orders (`_id` is the day), the day's revenue (`rev`, sum of quantity × unit price) and the running revenue from the start of the month up to that day (`running`)." }
@@ -719,7 +719,7 @@
       { $setWindowFields: { sortBy: { _id: 1 }, output: { running: { $sum: '$rev', window: { documents: ['unbounded', 'current'] } } } } }
     ])
   hint: { vi: "Từ đầu tới tài liệu hiện tại: `['unbounded', 'current']`.", en: "From the start up to the current document: `['unbounded', 'current']`." }
-- id: e-mgp-win-agg-2
+- id: e-mg-d-win-agg-2
   skill: mg.win_agg
   kind: open
   task: { vi: "Cửa hàng 3, tháng 10/2026: mỗi ngày có đơn (`_id` là ngày), số đơn (`n`) và trung bình số đơn của ngày đó cùng tối đa 2 ngày có đơn liền trước (`avg3`).", en: "Store 3, October 2026: each day with orders (`_id` is the day), the order count (`n`) and the average count over that day and up to 2 previous days with orders (`avg3`)." }
@@ -730,7 +730,7 @@
       { $setWindowFields: { sortBy: { _id: 1 }, output: { avg3: { $avg: '$n', window: { documents: [-2, 'current'] } } } } }
     ])
   hint: { vi: "Cửa sổ 3 tài liệu: từ 2 tài liệu trước tới tài liệu hiện tại.", en: "A 3-document window: from 2 documents before to the current one." }
-- id: e-mgp-win-agg-3
+- id: e-mg-d-win-agg-3
   skill: mg.win_agg
   kind: trap
   task: { vi: "Cửa hàng 2, tháng 10/2026: mỗi ngày có đơn (`_id` là ngày), số đơn (`n`) và số đơn lũy kế từ đầu tháng tới ngày đó (`running`).", en: "Store 2, October 2026: each day with orders (`_id` is the day), the order count (`n`) and the running count from the start of the month up to that day (`running`)." }
@@ -745,7 +745,7 @@
     - query: "db.orders.aggregate([{ $match: { store_id: 2, order_date: { $gte: ISODate('2026-10-01'), $lt: ISODate('2026-11-01') } } }, { $group: { _id: '$order_date', n: { $sum: 1 } } }, { $setWindowFields: { sortBy: { _id: 1 }, output: { running: { $sum: '$n' } } } }])"
       vi: "Không ghi `window` thì Mongo lấy cả nhóm, kể cả có `sortBy`: mọi ngày đều ra tổng cả tháng (SQL thì khác)."
       en: "Without `window` Mongo takes the whole partition, even with `sortBy`: every day shows the month total (SQL differs here)."
-- id: e-mgp-win-agg-4
+- id: e-mg-d-win-agg-4
   skill: mg.win_agg
   kind: review
   task: { vi: "Tháng 10/2026, mỗi cửa hàng (`_id` là mã cửa hàng): số đơn (`n`) và tỉ trọng trên tổng số đơn của cả chuỗi tính theo phần trăm (`pct`).", en: "October 2026, each store (`_id` is the store id): the order count (`n`) and its share of the whole chain's order count as a percentage (`pct`)." }
@@ -760,7 +760,7 @@
   hint: { vi: "Tổng cả chuỗi là tổng trên cả cửa sổ (không chia nhóm); rồi chia và nhân 100.", en: "The chain total is a sum over the whole window (no partition); then divide and multiply by 100." }
 
 # ---- mg.explain_read (Phần 11, chọn đáp án; explain là minh họa)
-- id: e-mgp-explain-read-1
+- id: e-mg-d-explain-read-1
   skill: mg.explain_read
   kind: faded
   format: choice
@@ -769,7 +769,7 @@
   shown: |-
     db.orders.find({ store_id: 4 }).explain('executionStats')
     { winningPlan: { stage: '___', filter: { store_id: { $eq: 4 } } },
-      executionStats: { nReturned: 164, totalKeysExamined: 0, totalDocsExamined: 1428 } }
+      executionStats: { nReturned: 106, totalKeysExamined: 0, totalDocsExamined: 811 } }
   options:
     - { vi: "`COLLSCAN`: đọc lần lượt mọi tài liệu", en: "`COLLSCAN`: reads every document in turn" }
     - { vi: "`IXSCAN`: dò index trên `store_id`", en: "`IXSCAN`: walks an index on `store_id`" }
@@ -777,7 +777,7 @@
   answer: 0
   hint: { vi: "Không có index để dò, và số khóa đã xét là 0.", en: "There is no index to walk, and zero keys were examined." }
   why: { vi: "Không có index trên `store_id` thì chỉ còn cách quét cả collection: `totalDocsExamined` bằng số tài liệu, `totalKeysExamined` bằng 0.", en: "With no index on `store_id` the only way is a full collection scan: `totalDocsExamined` equals the document count, `totalKeysExamined` is 0." }
-- id: e-mgp-explain-read-2
+- id: e-mg-d-explain-read-2
   skill: mg.explain_read
   kind: open
   format: choice
@@ -787,15 +787,15 @@
     db.orders.find({ status: 'PAID', store_id: 4, order_date: { $gte: ISODate('2026-10-01') } }).explain('executionStats')
     { winningPlan: { stage: 'FETCH', filter: { store_id: 4, order_date: { $gte: … } },
         inputStage: { stage: 'IXSCAN', keyPattern: { status: 1 } } },
-      executionStats: { nReturned: 25, totalKeysExamined: 1298, totalDocsExamined: 1298 } }
+      executionStats: { nReturned: 28, totalKeysExamined: 740, totalDocsExamined: 740 } }
   options:
     - { vi: "Ổn: đã dùng index nên không cần làm gì", en: "Fine: an index is used, nothing to do" }
-    - { vi: "Index kém chọn lọc: đọc khoảng 1.300 tài liệu để trả 25; nên có index ghép gồm `status`, `store_id`, `order_date`", en: "A poorly selective index: about 1,300 documents read to return 25; a compound index on `status`, `store_id`, `order_date` fits better" }
+    - { vi: "Index kém chọn lọc: đọc khoảng 740 tài liệu để trả 28; nên có index ghép gồm `status`, `store_id`, `order_date`", en: "A poorly selective index: about 740 documents read to return 28; a compound index on `status`, `store_id`, `order_date` fits better" }
     - { vi: "Truy vấn đang quét cả collection", en: "The query is scanning the whole collection" }
   answer: 1
   hint: { vi: "So `totalDocsExamined` với `nReturned`.", en: "Compare `totalDocsExamined` with `nReturned`." }
   why: { vi: "`status` chỉ có vài giá trị nên index này giữ lại gần hết đơn; `FETCH` phải đọc từng tài liệu rồi lọc `store_id` và ngày. Tỉ lệ đọc/trả càng gần 1 càng tốt.", en: "`status` has only a few values, so this index keeps almost every order; `FETCH` reads each document and then filters `store_id` and the date. The closer examined/returned is to 1, the better." }
-- id: e-mgp-explain-read-3
+- id: e-mg-d-explain-read-3
   skill: mg.explain_read
   kind: trap
   format: choice
@@ -805,7 +805,7 @@
     db.orders.find({ status: 'PAID', order_date: { $gte: ISODate('2026-01-01') } }).sort({ store_id: 1 }).explain('executionStats')
     { winningPlan: { stage: 'SORT', sortPattern: { store_id: 1 },
         inputStage: { stage: 'FETCH', inputStage: { stage: 'IXSCAN', keyPattern: { status: 1, order_date: 1 } } } },
-      executionStats: { nReturned: 640, totalKeysExamined: 640, totalDocsExamined: 640 } }
+      executionStats: { nReturned: 740, totalKeysExamined: 740, totalDocsExamined: 740 } }
   options:
     - { vi: "Tốt: có `IXSCAN` và số tài liệu đọc bằng số trả về", en: "Good: there is an `IXSCAN` and documents read equal documents returned" }
     - { vi: "Chưa: stage `SORT` là sắp trong bộ nhớ; index theo ESR `{ status: 1, store_id: 1, order_date: 1 }` bỏ được nó", en: "Not yet: the `SORT` stage is an in-memory sort; the ESR index `{ status: 1, store_id: 1, order_date: 1 }` removes it" }
@@ -815,7 +815,7 @@
   why: { vi: "Đọc vừa đủ tài liệu nhưng thứ tự `store_id` không có trong index, nên Mongo sắp lại trong bộ nhớ (giới hạn 100 MB). Đặt trường sắp trước trường khoảng thì index trả sẵn đúng thứ tự.", en: "It reads just enough documents, but the `store_id` order is not in the index, so Mongo sorts again in memory (100 MB limit). Put the sort field before the range field and the index returns the right order." }
   wrong:
     - { option: 0, vi: "`IXSCAN` chỉ nói index được dùng để lọc; stage `SORT` phía trên cho thấy vẫn còn một lần sắp trong bộ nhớ.", en: "`IXSCAN` only says an index filters; the `SORT` stage above it shows an in-memory sort is still there." }
-- id: e-mgp-explain-read-4
+- id: e-mg-d-explain-read-4
   skill: mg.explain_read
   kind: review
   format: choice
@@ -824,7 +824,7 @@
   shown: |-
     db.orders.find({ status: 'PAID' }, { _id: 0, status: 1, order_date: 1 }).explain('executionStats')
     { winningPlan: { stage: 'PROJECTION_COVERED', inputStage: { stage: 'IXSCAN', keyPattern: { status: 1, order_date: 1 } } },
-      executionStats: { nReturned: 1298, totalKeysExamined: 1298, totalDocsExamined: 0 } }
+      executionStats: { nReturned: 740, totalKeysExamined: 740, totalDocsExamined: 0 } }
   options:
     - { vi: "Truy vấn không trả gì", en: "The query returns nothing" }
     - { vi: "Truy vấn phủ: mọi trường cần đều có trong index, không phải đọc tài liệu", en: "A covered query: every needed field is in the index, no document is read" }
@@ -834,7 +834,7 @@
   why: { vi: "`PROJECTION_COVERED` và không có `FETCH`: lọc và trả về đều lấy từ khóa index, nhờ `_id: 0` và chỉ chiếu các trường của index.", en: "`PROJECTION_COVERED` and no `FETCH`: filtering and output both come from index keys, thanks to `_id: 0` and projecting only index fields." }
 
 # ---- mg.esr (Phần 11, chấm theo luật Equality → Sort → Range trên `query`)
-- id: e-mgp-esr-1
+- id: e-mg-d-esr-1
   skill: mg.esr
   kind: faded
   grade: esr
@@ -843,7 +843,7 @@
   starter: "db.orders.createIndex({ status: 1, ___: ___ })"
   solution: "db.orders.createIndex({ status: 1, order_date: -1 })"
   hint: { vi: "Trường bằng trước; trường ngày vừa sắp vừa lọc khoảng, theo chiều giảm của phép sắp.", en: "The equality field first; the date field is both sorted and range-filtered, in the sort's descending direction." }
-- id: e-mgp-esr-2
+- id: e-mg-d-esr-2
   skill: mg.esr
   kind: open
   grade: esr
@@ -851,7 +851,7 @@
   query: "db.orders.find({ store_id: 3, channel: 'ONLINE', order_date: { $gte: ISODate('2026-09-01') } }).sort({ customer_id: 1 })"
   solution: "db.orders.createIndex({ store_id: 1, channel: 1, customer_id: 1, order_date: 1 })"
   hint: { vi: "Hai trường bằng, rồi trường sắp, cuối cùng trường khoảng.", en: "Two equality fields, then the sort field, then the range field last." }
-- id: e-mgp-esr-3
+- id: e-mg-d-esr-3
   skill: mg.esr
   kind: trap
   grade: esr
@@ -863,7 +863,7 @@
     - query: "db.products.createIndex({ category: 1, price_vnd: 1, name: 1 })"
       vi: "Thứ tự viết trong truy vấn không phải thứ tự index: `price_vnd` là khoảng, đứng trước `name` thì kết quả phải sắp lại trong bộ nhớ."
       en: "The order in the query is not the index order: `price_vnd` is a range, and before `name` it forces an in-memory sort."
-- id: e-mgp-esr-4
+- id: e-mg-d-esr-4
   skill: mg.esr
   kind: review
   grade: esr
@@ -873,7 +873,7 @@
   hint: { vi: "Equality → Sort → Range.", en: "Equality → Sort → Range." }
 
 # ---- mg.covered (Phần 11, chạy và so kết quả kể cả `_id`, rồi kiểm luật phủ trên `index`)
-- id: e-mgp-covered-1
+- id: e-mg-d-covered-1
   skill: mg.covered
   kind: faded
   grade: covered
@@ -882,7 +882,7 @@
   starter: "db.orders.find({ status: 'PAID', order_date: { $gte: ISODate('2026-10-30') } }, { ___: 0, status: 1, order_date: 1 })"
   solution: "db.orders.find({ status: 'PAID', order_date: { $gte: ISODate('2026-10-30') } }, { _id: 0, status: 1, order_date: 1 })"
   hint: { vi: "Trường nào được trả mặc định mà không nằm trong index?", en: "Which field is returned by default but is not in the index?" }
-- id: e-mgp-covered-2
+- id: e-mg-d-covered-2
   skill: mg.covered
   kind: open
   grade: covered
@@ -890,7 +890,7 @@
   task: { vi: "Có index `{ store_id: 1, channel: 1 }`. Viết truy vấn phủ: kênh bán (`channel`) của mọi đơn ở cửa hàng 4, chỉ trường đó.", en: "There is an index `{ store_id: 1, channel: 1 }`. Write a covered query: the sales channel (`channel`) of every store 4 order, that field only." }
   solution: "db.orders.find({ store_id: 4 }, { _id: 0, channel: 1 })"
   hint: { vi: "Lọc bằng trường đầu của index, chỉ chiếu trường thứ hai, và bỏ `_id`.", en: "Filter on the index's first field, project only the second one, and drop `_id`." }
-- id: e-mgp-covered-3
+- id: e-mg-d-covered-3
   skill: mg.covered
   kind: trap
   grade: covered
@@ -902,7 +902,7 @@
     - query: "db.products.find({ category: 'Drinks' }, { price_vnd: 1 })"
       vi: "`_id` vẫn được trả mặc định và không nằm trong index, nên Mongo phải đọc tài liệu: truy vấn không còn phủ."
       en: "`_id` is still returned by default and is not in the index, so Mongo must read the documents: the query is no longer covered."
-- id: e-mgp-covered-4
+- id: e-mg-d-covered-4
   skill: mg.covered
   kind: review
   grade: covered
@@ -912,7 +912,7 @@
   hint: { vi: "Lọc và chiếu chỉ bằng trường của index, bỏ `_id`.", en: "Filter and project with index fields only, drop `_id`." }
 
 # ---- mg.embed_vs_ref (Phần 12, chọn đáp án)
-- id: e-mgp-embed-vs-ref-1
+- id: e-mg-d-embed-vs-ref-1
   skill: mg.embed_vs_ref
   kind: faded
   format: choice
@@ -926,7 +926,7 @@
   answer: 0
   hint: { vi: "Đọc cùng nhau, ít, không lớn dần.", en: "Read together, few, not growing." }
   why: { vi: "Dữ liệu luôn đọc cùng, có giới hạn và thuộc riêng một đơn thì nhúng: một lần đọc ra cả hóa đơn, không cần `$lookup`.", en: "Data that is always read together, bounded and owned by one order is embedded: one read returns the whole order, no `$lookup`." }
-- id: e-mgp-embed-vs-ref-2
+- id: e-mg-d-embed-vs-ref-2
   skill: mg.embed_vs_ref
   kind: open
   format: choice
@@ -938,7 +938,7 @@
   answer: 1
   hint: { vi: "Một phần lớn dần không giới hạn, một phần nhỏ đọc thường xuyên.", en: "One part grows without limit, a small part is read all the time." }
   why: { vi: "Phần không giới hạn đi sang collection riêng (tham chiếu); bản sao nhỏ của phần hay đọc nằm trong tài liệu chính, nên trang sản phẩm vẫn một lần đọc.", en: "The unbounded part moves to its own collection (reference); a small copy of the hot part stays in the main document, so the product page is still one read." }
-- id: e-mgp-embed-vs-ref-3
+- id: e-mg-d-embed-vs-ref-3
   skill: mg.embed_vs_ref
   kind: trap
   format: choice
@@ -951,8 +951,8 @@
   hint: { vi: "Mảng nào lớn mãi theo thời gian?", en: "Which array keeps growing over time?" }
   why: { vi: "Đơn của một khách tăng không giới hạn, nên tham chiếu; trang hồ sơ chỉ cần vài đơn mới nhất.", en: "A customer's orders grow without limit, so reference them; the profile page only needs a few recent ones." }
   wrong:
-    - { option: 0, vi: "\"Đọc cùng nhau\" chưa đủ: mảng đơn lớn mãi sẽ chạm giới hạn 16 MB mỗi tài liệu và làm mỗi lần đọc hồ sơ nặng thêm.", en: "\"Read together\" is not enough: an ever-growing order array hits the 16 MB document limit and makes every profile read heavier." }
-- id: e-mgp-embed-vs-ref-4
+    - { option: 0, vi: "\"Đọc cùng nhau\" chưa đủ: mảng đơn lớn mãi sẽ chạm giới hạn 16 MiB mỗi tài liệu và làm mỗi lần đọc hồ sơ nặng thêm.", en: "\"Read together\" is not enough: an ever-growing order array hits the 16 MiB document limit and makes every profile read heavier." }
+- id: e-mg-d-embed-vs-ref-4
   skill: mg.embed_vs_ref
   kind: review
   format: choice
@@ -966,14 +966,14 @@
   why: { vi: "Chép đúng những trường hay đọc và ít đổi bên cạnh khóa tham chiếu: không cần `$lookup`, tài liệu vẫn nhỏ, và hóa đơn cũ giữ tên cũ.", en: "Copy just the hot, rarely changing fields next to the reference key: no `$lookup`, the document stays small, and old orders keep the old name." }
 
 # ---- mg.array_ops (Phần 12)
-- id: e-mgp-array-ops-1
+- id: e-mg-d-array-ops-1
   skill: mg.array_ops
   kind: faded
   task: { vi: "Những đơn có một dòng hàng vừa là sản phẩm 21 vừa có số lượng từ 4 trở lên: chỉ mã đơn (`_id`).", en: "The orders with one line that is product 21 and has a quantity of 4 or more: the order id (`_id`) only." }
   starter: "db.orders.find({ items: { ___: { product_id: 21, qty: { $gte: 4 } } } }, { _id: 1 })"
   solution: "db.orders.find({ items: { $elemMatch: { product_id: 21, qty: { $gte: 4 } } } }, { _id: 1 })"
   hint: { vi: "Toán tử buộc mọi điều kiện khớp cùng một phần tử mảng là `$elemMatch`.", en: "The operator that makes every condition match the same array element is `$elemMatch`." }
-- id: e-mgp-array-ops-2
+- id: e-mg-d-array-ops-2
   skill: mg.array_ops
   kind: open
   task: { vi: "Các đơn ngày 2026-10-31: mã đơn (`_id`) và `big_lines`, chỉ gồm các dòng hàng có số lượng từ 3 trở lên (giữ nguyên thứ tự dòng).", en: "Orders of 2026-10-31: the order id (`_id`) and `big_lines`, holding only the lines with a quantity of 3 or more (keep the line order)." }
@@ -983,7 +983,7 @@
       { $project: { big_lines: { $filter: { input: '$items', as: 'i', cond: { $gte: ['$$i.qty', 3] } } } } }
     ])
   hint: { vi: "Lọc phần tử ngay trong mảng: `input` là `'$items'`, điều kiện đọc phần tử qua biến `as`.", en: "Filter elements inside the array: `input` is `'$items'`, the condition reads the element through the `as` variable." }
-- id: e-mgp-array-ops-3
+- id: e-mg-d-array-ops-3
   skill: mg.array_ops
   kind: trap
   task: { vi: "Những đơn có một dòng hàng là sản phẩm 9 với số lượng từ 5 trở lên trên chính dòng đó: chỉ mã đơn (`_id`).", en: "The orders with a line that is product 9 with a quantity of 5 or more on that same line: the order id (`_id`) only." }
@@ -993,7 +993,7 @@
     - query: "db.orders.find({ 'items.product_id': 9, 'items.qty': { $gte: 5 } }, { _id: 1 })"
       vi: "Hai điều kiện trên `items.product_id` và `items.qty` được khớp riêng: đơn có sản phẩm 9 số lượng 1 và một dòng khác số lượng 5 cũng lọt."
       en: "The conditions on `items.product_id` and `items.qty` match separately: an order with product 9 at quantity 1 and another line at quantity 5 slips in."
-- id: e-mgp-array-ops-4
+- id: e-mg-d-array-ops-4
   skill: mg.array_ops
   kind: review
   task: { vi: "Các đơn ngày 2026-10-31: mã đơn (`_id`), số dòng hàng (`n_lines`) và giá trị đơn (`total`, tổng số lượng × đơn giá của các dòng), không trải mảng ra.", en: "Orders of 2026-10-31: the order id (`_id`), the number of lines (`n_lines`) and the order value (`total`, sum of quantity × unit price over the lines), without spreading the array." }
@@ -1008,14 +1008,14 @@
   hint: { vi: "Đếm phần tử mảng; biến mỗi dòng thành số lượng × đơn giá rồi cộng mảng đó.", en: "Count the array's elements; turn each line into quantity × unit price, then sum that array." }
 
 # ---- mg.schema_validation (Phần 12)
-- id: e-mgp-schema-validation-1
+- id: e-mg-d-schema-validation-1
   skill: mg.schema_validation
   kind: faded
   task: { vi: "Sắp bật luật \"`email` phải là chuỗi\" cho `customers`. Những khách nào đang phạm luật? Mã khách (`_id`) và tên (`name`).", en: "A rule \"`email` must be a string\" is about to go on `customers`. Which customers break it today? The customer id (`_id`) and the name (`name`)." }
   starter: "db.customers.find({ email: { $not: { ___: 'string' } } }, { name: 1 })"
   solution: "db.customers.find({ email: { $not: { $type: 'string' } } }, { name: 1 })"
   hint: { vi: "Toán tử kiểm kiểu BSON của một trường là `$type`.", en: "The operator that checks a field's BSON type is `$type`." }
-- id: e-mgp-schema-validation-2
+- id: e-mg-d-schema-validation-2
   skill: mg.schema_validation
   kind: open
   task: { vi: "Luật mới: mỗi đơn phải có `customer_id` là số nguyên. Mỗi kênh (`_id` là kênh): số đơn đang phạm luật (`n`).", en: "New rule: every order must have an integer `customer_id`. Per channel (`_id` is the channel): the number of orders breaking it today (`n`)." }
@@ -1025,7 +1025,7 @@
       { $group: { _id: '$channel', n: { $sum: 1 } } }
     ])
   hint: { vi: "Lọc đơn có `customer_id` không phải kiểu `'int'`, rồi đếm theo kênh.", en: "Keep orders whose `customer_id` is not of type `'int'`, then count per channel." }
-- id: e-mgp-schema-validation-3
+- id: e-mg-d-schema-validation-3
   skill: mg.schema_validation
   kind: trap
   task: { vi: "Hai luật cho `customers`: `email` phải là chuỗi, và `city` phải là chuỗi. Những khách phạm ít nhất một luật: mã khách (`_id`) và tên (`name`).", en: "Two rules for `customers`: `email` must be a string, and `city` must be a string. The customers breaking at least one rule: the customer id (`_id`) and the name (`name`)." }
@@ -1035,7 +1035,7 @@
     - query: "db.customers.find({ email: { $not: { $type: 'string' } }, city: { $not: { $type: 'string' } } }, { name: 1 })"
       vi: "Hai điều kiện trong cùng một tài liệu lọc là AND: chỉ ra khách phạm cả hai luật cùng lúc."
       en: "Two conditions in one filter document are an AND: you only get customers breaking both rules at once."
-- id: e-mgp-schema-validation-4
+- id: e-mg-d-schema-validation-4
   skill: mg.schema_validation
   kind: review
   task: { vi: "Luật cho `customers`: `birth_year` phải là số nguyên. Có bao nhiêu khách đang phạm luật? Trả một tài liệu `{ n }`.", en: "A rule for `customers`: `birth_year` must be an integer. How many customers break it today? Return one document `{ n }`." }
@@ -1047,7 +1047,7 @@
   hint: { vi: "Phủ định của phép kiểm kiểu `'int'`, rồi đếm.", en: "The negation of the `'int'` type check, then count." }
 
 # ---- mg.bucket_pattern (Phần 12)
-- id: e-mgp-bucket-pattern-1
+- id: e-mg-d-bucket-pattern-1
   skill: mg.bucket_pattern
   kind: faded
   task: { vi: "Cửa hàng 1, tháng 10/2026: gom đơn thành một bucket mỗi ngày (`_id` là ngày), với số đơn tính sẵn (`count`) và mảng mã đơn tăng dần (`ids`).", en: "Store 1, October 2026: put the orders into one bucket per day (`_id` is the day), with a precomputed order count (`count`) and an ascending array of order ids (`ids`)." }
@@ -1064,7 +1064,7 @@
       { $group: { _id: '$order_date', count: { $sum: 1 }, ids: { $push: '$_id' } } }
     ])
   hint: { vi: "Đếm bằng cộng 1; gom mã đơn theo thứ tự đã sắp bằng `$push`.", en: "Count by adding 1; collect order ids in the sorted order with `$push`." }
-- id: e-mgp-bucket-pattern-2
+- id: e-mg-d-bucket-pattern-2
   skill: mg.bucket_pattern
   kind: open
   task: { vi: "Mẫu tính sẵn: mỗi sản phẩm (`_id` là mã sản phẩm) có tổng số lượng đã bán (`sold_qty`) và doanh thu (`revenue`, số lượng × đơn giá) của các đơn `PAID` năm 2026.", en: "Computed pattern: each product (`_id` is the product id) with the total quantity sold (`sold_qty`) and the revenue (`revenue`, quantity × unit price) of `PAID` orders in 2026." }
@@ -1075,7 +1075,7 @@
       { $group: { _id: '$items.product_id', sold_qty: { $sum: '$items.qty' }, revenue: { $sum: { $multiply: ['$items.qty', '$items.unit_price_vnd'] } } } }
     ])
   hint: { vi: "Trải dòng hàng ra, rồi gộp theo sản phẩm hai con số.", en: "Spread the lines, then group two numbers per product." }
-- id: e-mgp-bucket-pattern-3
+- id: e-mg-d-bucket-pattern-3
   skill: mg.bucket_pattern
   kind: trap
   task: { vi: "Đơn từ 2025-10-01 đến hết 2026-10-31: một bucket mỗi cửa hàng mỗi tháng (`_id` gồm `store` và `month`, `month` là ngày đầu tháng) với số đơn (`count`).", en: "Orders from 2025-10-01 through 2026-10-31: one bucket per store per month (`_id` holds `store` and `month`, `month` being the first day of the month) with the order count (`count`)." }
@@ -1089,7 +1089,7 @@
     - query: "db.orders.aggregate([{ $match: { order_date: { $gte: ISODate('2025-10-01'), $lt: ISODate('2026-11-01') } } }, { $group: { _id: { store: '$store_id', month: { $month: '$order_date' } }, count: { $sum: 1 } } }])"
       vi: "`$month` chỉ trả 1–12: tháng 10/2025 và tháng 10/2026 rơi vào cùng một bucket."
       en: "`$month` only returns 1–12: October 2025 and October 2026 land in the same bucket."
-- id: e-mgp-bucket-pattern-4
+- id: e-mg-d-bucket-pattern-4
   skill: mg.bucket_pattern
   kind: review
   task: { vi: "Năm 2026: một bucket mỗi cửa hàng mỗi tháng (`_id` gồm `store` và `month`, `month` là ngày đầu tháng) với số đơn (`count`) và doanh thu (`revenue`, tổng số lượng × đơn giá).", en: "Year 2026: one bucket per store per month (`_id` holds `store` and `month`, `month` being the first day of the month) with the order count (`count`) and the revenue (`revenue`, sum of quantity × unit price)." }

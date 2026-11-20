@@ -1,5 +1,4 @@
-import { parse as parseYaml } from 'yaml';
-import source from '../content/people.yml?raw';
+import source from '../content/people.yml';
 import type { DomainId } from './domains';
 import { bilingualOf, type Bilingual } from './progress';
 
@@ -25,8 +24,7 @@ function bilingual(v: unknown, where: string): Bilingual {
 }
 
 /** Throws on any structural problem: the content test runs this on the real file. */
-export function parsePeople(src: string, origin = 'people.yml'): Person[] {
-  const data = parseYaml(src) as unknown;
+export function parsePeople(data: unknown, origin = 'people.yml'): Person[] {
   if (!Array.isArray(data)) throw new Error(`${origin}: cần một danh sách`);
   const seen = new Set<string>();
   return data.map((raw: unknown, i) => {

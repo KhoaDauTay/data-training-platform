@@ -1,7 +1,7 @@
 // v21 end-to-end audit (L183). No dependency: Chrome DevTools Protocol over Node's WebSocket, like scripts/smoke.mjs.
 //
 //   npm run build && npm run e2e                      # own `vite preview` on E2E_PORT (default 5241; never 5173/5174)
-//   E2E_ONLY=general,logistics npm run e2e            # sections: see SECTIONS below
+//   E2E_ONLY=general,logistics npm run e2e            # sections: see SECTIONS below (L248: `engine` = every engine lesson + NoSQL path drill)
 //   E2E_OUT=<dir>                                     # screenshots + e2e-report.json (default: e2e-out/)
 //
 // Plays every ticket's Solution (variant 0) of every domain in order (promotion-review steps, index labs, conclusions),
@@ -968,8 +968,88 @@ SECTIONS.tools = async () => {
 let playedSave;
 
 
+// ---- engine (L248): every Database Engine lesson in the real app, in file order. A lab types each gradable step's Solution
+// and waits for its green line; a quiz/predict picks the answers; a concept (or a lesson with nothing gradable) uses its
+// button. Then the NoSQL path: every drill's Solution (or answer). Each lesson is one check, so the report lists the failures.
+const ENGINE_LESSONS = ['postgres', 'mongodb', 'dynamodb'].flatMap((e) => walk(`content/engine/${e}`).filter((f) => /\/L[1-5]\//.test(f)).sort().map((f) => {
+  const fm = parseYaml(/^---\r?\n([\s\S]*?)\r?\n---/.exec(readFileSync(join(ROOT, f), 'utf8'))[1]);
+  return { ...fm, hash: `#/engine/${fm.engine}/${fm.level}/${fm.id}` };
+}));
+const PATH_FILES = yml('content/engine/mongodb/path/index.yml');
+const PATH_DRILLS = PATH_FILES.files.flatMap((f) => yml(`content/engine/mongodb/path/${f.drills}`));
+/** Same rule as src/engine/labs.ts gradable(). */
+const gradableStep = (l, st) => l.runtime !== 'docs' && (l.engine === 'postgres' ? st.check !== 'doc' && !(st.check === 'plan' && !l.lab?.setup) : st.check === 'doc');
+SECTIONS.engine = async () => {
+  await shared();
+  const counts = { lessons: 0, passed: 0, steps: 0, failedLessons: [] };
+  for (const l of ENGINE_LESSONS) {
+    counts.lessons++;
+    const ok = await step(`engine ${l.id} (${l.kind}${l.lab ? `, ${l.lab.steps.length} steps` : ''})`, async () => {
+      await go(l.hash);
+      await waitFor(`${l.id} drawn`, `!!document.querySelector('#engine-page[data-lesson]')`, 60000);
+      const id = l.id;
+      const pick = async (part, q) => {
+        await ev(`document.querySelector('[data-ek="${id}-${part}-${q.answer}"]').click()`);
+        await ev(`document.querySelector('[data-ek="${id}-${part}-check"]').click()`);
+        await waitFor(`${part} right`, `!!document.querySelector('[data-ek="${id}-${part}-check"]')?.parentElement.querySelector('[role=status].good')`, 5000);
+      };
+      for (const [i, q] of (l.quiz ?? []).entries()) await pick(`q${i}`, q);
+      if (l.predict) await pick('p', l.predict);
+      if (l.predict?.expect && l.engine === 'postgres' && l.runtime !== 'docs') {
+        await ev(`document.querySelector('[data-ek="${id}-plan"]').click()`);
+        await waitFor('the real plan', `!!document.querySelector('[data-plan]') || !!document.querySelector('#engine-page pre.error, #engine-page .error')`, 120000);
+        const plan = await ev(`document.querySelector('[data-plan]')?.textContent ?? document.querySelector('#engine-page .error')?.textContent`);
+        const x = l.predict.expect;
+        if (!plan.includes(x.node) || (x.index && !plan.includes(x.index)) || (x.table && !plan.includes(x.table))) fail(`predict.expect ${S(x)} not in the real plan: ${plan}`);
+      }
+      for (const [i, st] of (l.lab?.steps ?? []).entries()) {
+        if (!gradableStep(l, st)) continue;
+        counts.steps++;
+        const at = (what) => `document.querySelector('[data-ek="${id}-s${i}-${what}"]')`;
+        await ev(`(t => { t.value = ${S(String(st.solution).trim())}; t.dispatchEvent(new Event('input', { bubbles: true })); })(${at('code')})`);
+        await ev(`${at('submit')}.click()`);
+        const status = `(${at('code')})?.closest('[data-step]').querySelector('[role=status]')`;
+        await waitFor(`step ${i + 1} graded`, `!!${status}?.textContent && !${at('submit')}.disabled`, 180000);
+        if (!(await ev(`${status}.classList.contains('good')`))) fail(`step ${i + 1}: ${await ev(`${status}.textContent`)} | ${await ev(`(${at('code')})?.closest('[data-step]').querySelector('.error, pre.error')?.textContent ?? ''`)}`);
+      }
+      const btn = `document.querySelector('[data-ek="${id}-done"]')`;
+      if (await ev(`!!${btn}`)) await ev(`${btn}.click()`);
+      await waitFor('the lesson in save.completed', `${completed}.includes(${S(id)})`, 10000);
+    });
+    if (ok) counts.passed++;
+    else counts.failedLessons.push(l.id);
+  }
+  await step(`engine: ${counts.passed}/${counts.lessons} lessons passed (${counts.steps} lab steps)`, () => {
+    if (counts.failedLessons.length) fail(`failed: ${counts.failedLessons.join(', ')}`);
+    return counts;
+  });
+  // NoSQL path: every drill
+  const slug = (sk) => sk.replace(/^mg\./, '').replace(/_/g, '-');
+  let open = '';
+  const failedDrills = [];
+  for (const dr of PATH_DRILLS) {
+    const ok = await step(`path ${dr.id}`, async () => {
+      if (open !== dr.skill) {
+        await go(`#/engine/mongodb/path/${slug(dr.skill)}`);
+        await waitFor('the skill page', `!!document.querySelector('#engine-page [data-drill="${dr.id}"]')`, 60000);
+        open = dr.skill;
+      }
+      if (dr.format === 'choice') await ev(`document.querySelector('[data-ek="${dr.id}-${dr.answer}"]').click()`);
+      else await ev(`(t => { t.value = ${S(String(dr.solution).trim())}; t.dispatchEvent(new Event('input', { bubbles: true })); })(document.querySelector('[data-ek="${dr.id}-code"]'))`);
+      await ev(`document.querySelector('[data-ek="${dr.id}-submit"]').click()`);
+      const status = `document.querySelector('[data-drill="${dr.id}"] [role=status]')`;
+      await waitFor('graded', `!!${status}?.textContent && !document.querySelector('[data-ek="${dr.id}-submit"]').disabled`, 60000);
+      if (!(await ev(`${status}.classList.contains('good')`))) fail(await ev(`${status}.textContent`));
+    });
+    if (!ok) failedDrills.push(dr.id);
+  }
+  await step(`engine path: ${PATH_DRILLS.length - failedDrills.length}/${PATH_DRILLS.length} drills passed`, () => {
+    if (failedDrills.length) fail(`failed: ${failedDrills.join(', ')}`);
+  });
+};
+
 // ---------------------------------------------------------------- the run
-const ORDER = ['general', 'logistics', 'ecommerce', 'finance', 'tools', 'screens', 'reload', 'history', 'offline'];
+const ORDER = ['general', 'logistics', 'ecommerce', 'finance', 'tools', 'engine', 'screens', 'reload', 'history', 'offline'];
 try {
   base = await startPreview();
   for (const name of ORDER) {

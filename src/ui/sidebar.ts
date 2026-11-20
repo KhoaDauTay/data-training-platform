@@ -47,7 +47,7 @@ export function sideExtra(): HTMLElement | undefined {
 }
 
 /** `full`: the whole name (rail tip, screen readers) when `label` drops what the lead already shows (user 2026-11-20: no "2 · …" beside a "2" badge). */
-interface Row { key: string; href: string; lead: Node; label: string; full?: string; sub?: string; current: boolean; lock?: string; onclick?: () => void }
+export interface Row { key: string; href: string; lead: Node; label: string; full?: string; sub?: string; current: boolean; lock?: string; onclick?: () => void }
 
 /** One sidebar line. `lock` (v4 D-O3): shown, with a lock and the reason, never followed. */
 function row(r: Row): HTMLElement {
@@ -58,9 +58,9 @@ function row(r: Row): HTMLElement {
     'aria-disabled': r.lock ? 'true' : false,
     onclick: r.lock ? (e: Event) => e.preventDefault() : click ? (e: Event) => { e.preventDefault(); click(); } : false,
   },
-    // v12 audit: in the rail the label and the trailing lock are hidden, so a locked row also gets a lock badge on its icon.
+    // v12 audit: in the rail the label and the trailing lock are hidden, so a locked row also gets a lock badge on its icon (rail only, `.side-badge`).
     h('span', { class: cx('relative grid size-6 shrink-0 place-items-center', r.lock && 'text-muted'), 'aria-hidden': 'true' }, r.lead,
-      r.lock ? h('span', { class: 'absolute -right-1.5 -bottom-1 grid size-3.5 place-items-center rounded-full bg-panel ring-1 ring-line' }, icon('lock', 'size-2.5')) : null),
+      r.lock ? h('span', { class: 'side-badge absolute -right-1.5 -bottom-1 size-3.5 place-items-center rounded-full bg-panel ring-1 ring-line' }, icon('lock', 'size-2.5')) : null),
     h('span', { class: 'side-label min-w-0 flex-1' },
       r.full ? h('span', { class: 'sr-only' }, r.full) : null,
       h('span', { class: 'block line-clamp-2', 'aria-hidden': r.full ? 'true' : false }, r.label), // v12.0 U7: wraps to two lines; the rail's tip shows the full name
@@ -139,6 +139,11 @@ function domainSwitch(): HTMLElement {
     })));
 }
 
+/** ENG-CORE (L220): a reading page outside the domains fills its own sidebar rows (the Database Engine area: levels, modules). */
+export type SideFill = (ui: { row: (r: Row) => HTMLElement; group: (text: string) => HTMLElement }) => (Node | null)[];
+const pageSide: Partial<Record<Route, SideFill>> = {};
+export const registerSide = (route: Route, fill: SideFill): void => void (pageSide[route] = fill);
+
 function content(route: Route, drawer: boolean): (Node | string)[] {
   const out: (Node | null | undefined)[] = [drawer ? domainSwitch() : null];
   if (route === 'learn' || (route === 'play' && generalWork())) { // v15 Q1: the General workspace shows the SQL track, never a domain's pages
@@ -151,6 +156,8 @@ function content(route: Route, drawer: boolean): (Node | string)[] {
         key: `p${c.chapter}`, href: hashOf('practice'), lead: h('b', {}, String(c.chapter)), label: moduleTitle(c.chapter, lang), full: t('learn.module', { n: c.chapter, title: moduleTitle(c.chapter, lang) }), current: false,
         onclick: () => document.getElementById(`skills-ch-${c.chapter}`)?.scrollIntoView({ block: 'start' }),
       })));
+  } else if (pageSide[route]) {
+    out.push(...pageSide[route]({ row, group: (text) => h('p', { class: GROUP }, text) }));
   } else if (inDomain(route)) {
     const order = app.tickets.map((x) => x.id);
     const isGated = gated(readTour());

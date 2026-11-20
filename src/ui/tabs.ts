@@ -9,6 +9,7 @@ import { h } from './dom';
 import { icon, type IconName } from './icons';
 import { errorText, errorView } from './feedback';
 import { renderResult } from './resultTable';
+import { whyCell, whyOpen } from './whyButton';
 import { growPanel } from './splitter';
 
 /** v21 U5: tabs that draw a picture; the first one opened in a session raises a short panel (growPanel). */
@@ -191,7 +192,9 @@ export function registerCoreTabs(editorSql: () => string, bar: () => Node | null
       if (editorSql().trim() !== run.sql.trim()) host.append(h('p', { class: 'stale', role: 'note' }, t('res.stale')));
       host.append(bar() ?? '', run.error !== undefined
         ? h('div', { class: 'rounded-(--r-inset) bg-bad-soft p-3 ring-1 ring-bad/40' }, errorView(run.error, false, run.sql))
-        : renderResult(run.result!, run.mark, undefined, undefined, { fill: true }));
+        : renderResult(run.result!, run.mark, undefined, undefined, {
+          fill: true, why: whyOpen(run.key, app.tickets, app.save) ? whyCell(run.sql, run.schema, run.result!.types) : undefined,
+        }));
     },
   });
 }

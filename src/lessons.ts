@@ -1,4 +1,3 @@
-import { parse as parseYaml } from 'yaml';
 import { bilingualOf, type Bilingual } from './progress';
 import { localStore, readJson, writeJson, type KV } from './storage';
 import type { SchemaId } from './domains';
@@ -53,8 +52,7 @@ export function parseLessonBody(o: Record<string, unknown>, fail: (what: string)
 }
 
 /** Throws on a broken entry, like parseSkills: the content tests load the real file. */
-export function parseLessons(source: string, origin = 'lessons.yml'): Lesson[] {
-  const data = parseYaml(source) as unknown;
+export function parseLessons(data: unknown, origin = 'lessons.yml'): Lesson[] {
   if (!Array.isArray(data)) throw new Error(`${origin}: cần một danh sách`);
   const seen = new Set<string>();
   return data.map((raw, i) => {

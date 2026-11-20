@@ -1,4 +1,3 @@
-import { parse as parseYaml } from 'yaml';
 import { bilingualOf, tablesUnlocked, type Bilingual } from './progress';
 import { ROUTES } from './scene';
 import type { Ticket } from './tickets';
@@ -48,8 +47,7 @@ const item = (v: unknown, origin: string): LaneItem => {
   };
 };
 
-export function parseLaneBriefs(src: string, origin = 'content/lanes/lanes.yml'): LaneBrief[] {
-  const data = parseYaml(src) as unknown;
+export function parseLaneBriefs(data: unknown, origin = 'content/lanes/lanes.yml'): LaneBrief[] {
   if (!Array.isArray(data)) throw new Error(`${origin}: cần một danh sách`);
   return data.map((raw: unknown, i) => {
     const b = (raw ?? {}) as Record<string, unknown>;

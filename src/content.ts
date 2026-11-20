@@ -3,7 +3,6 @@ import type { General } from './general';
 import type { InterviewContent } from './interview';
 import { parseKpis, setDomainKpis } from './home';
 import { parseLaneBriefs, type LaneBrief } from './lanes';
-import { parse as parseYaml } from 'yaml';
 import { parseLessonBody, parseLessons, type Lesson } from './lessons';
 import { parsePeople, setDomainPeople } from './people';
 import { parseChapters, setDomainChapters } from './progress';
@@ -17,14 +16,15 @@ let loading: Promise<void> | undefined;
 
 /**
  * Ticket markdown is a lazy chunk (Plan 3, L41: src/ticketSources.ts), so new chapters never grow the main bundle.
+ * V22-E (L201): two chunks (chapters 1–8, 9–12) fetched in parallel, frontmatter and YAML already JSON (no `yaml` at runtime).
  * Everything is fetched at once: progression, the inbox, Home and the review queue need every ticket.
  * main.ts and tests/setup.ts await this before anything reads tickets. A failed load can be retried.
  */
 export function loadContent(): Promise<void> {
   // Plan 5: lane briefs and side tasks are their own lazy chunk, fetched beside the tickets.
-  return (loading ??= Promise.all([import('./ticketSources'), import('./laneSources'), import('./lessonSources')])
-    .then(([{ sources }, { laneSources, briefSource }, { lessonSource }]) => {
-      templates = Object.entries(sources).map(([path, source]) => parseTicket(source, path)).sort(byOrder);
+  return (loading ??= Promise.all([import('./ticketSources'), import('./ticketLateSources'), import('./laneSources'), import('./lessonSources')])
+    .then(([{ sources }, late, { laneSources, briefSource }, { lessonSource }]) => {
+      templates = Object.entries({ ...sources, ...late.sources }).map(([path, source]) => parseTicket(source, path)).sort(byOrder);
       lessons = new Map(parseLessons(lessonSource).map((l) => [l.id, l]));
       lanes = {
         tasks: Object.entries(laneSources).map(([path, source]) => applyVariant(parseTicket(source, path), 0)).sort(byOrder),
@@ -41,7 +41,9 @@ const domainTemplates = new Map<DomainId, Ticket[]>();
 const domainLoading = new Map<DomainId, Promise<void>>();
 /** Lazy content chunk and folder of each non-Logistics domain (Plan 9, Plan 11). */
 const DOMAIN_SOURCES: Partial<Record<DomainId, [() => Promise<typeof import('./ecomSources')>, string]>> = {
-  ecommerce: [() => import('./ecomSources'), 'domains/ecom'],
+  // V22-E: E-com is two chunks too (ch1–4 + YAML, ch5+), fetched in parallel like Finance.
+  ecommerce: [() => Promise.all([import('./ecomSources'), import('./ecomLateSources')])
+    .then(([a, b]) => ({ ...a, ticketSources: { ...a.ticketSources, ...b.ticketSources } })), 'domains/ecom'],
   // v20 (L185): two chunks fetched in parallel, so loadDomain('finance') still resolves with every ticket.
   finance: [() => Promise.all([import('./finSources'), import('./finLateSources')])
     .then(([a, b]) => ({ ...a, ticketSources: { ...a.ticketSources, ...b.ticketSources } })), 'domains/fin'],
@@ -105,7 +107,7 @@ export function loadGeneral(): Promise<General> {
   // ponytail: both chunks are fetched together (in parallel), so a review or the practice hub also downloads adv.yml.
   // Fetching it only on adv pages needs callers that ask for drills alone (ui/modes.ts, ui/drillBrief.ts): add then (L167).
   return (generalLoading ??= Promise.all([import('./generalSources'), import('./generalAdvSources')])
-    .then(([{ sqlDrills, buildGeneral }, { advNodes }]) => (general = buildGeneral(parseYaml(sqlDrills), parseYaml(advNodes), parseLessonBody)))
+    .then(([{ sqlDrills, buildGeneral }, { advNodes }]) => (general = buildGeneral(sqlDrills, advNodes, parseLessonBody)))
     .catch((e: unknown) => {
       generalLoading = undefined;
       throw e;
@@ -119,7 +121,7 @@ let interviewLoading: Promise<InterviewContent> | undefined;
  */
 export function loadInterview(): Promise<InterviewContent> {
   return (interviewLoading ??= import('./interviewSources')
-    .then(({ interviewYml, buildInterview }) => buildInterview(parseYaml(interviewYml)))
+    .then(({ interviewYml, buildInterview }) => buildInterview(interviewYml))
     .catch((e: unknown) => {
       interviewLoading = undefined;
       throw e;

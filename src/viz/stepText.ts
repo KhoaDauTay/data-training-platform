@@ -4,6 +4,18 @@ export type StepKey = 'from' | 'join' | 'where' | 'group' | 'having' | 'select' 
  * line under the editor never runs the per-clause counts. A control character: no typed SQL starts with it.
  */
 export const WORDS_ONLY = '\u0001words\u0001';
+/** V22-B (L206): a `steps` request `WHY` + JSON `{ sql, row }` explains one result row (src/viz/why.ts), nothing else. */
+export const WHY = '\u0001why\u0001';
+const pad = (n: number, w = 2) => String(n).padStart(w, '0');
+/**
+ * The `steps` request text for row `row` of a result of `sql`. PGlite reads `timestamp` (OID 1114) as local time and
+ * `date`/`timestamptz` as UTC, so a timestamp goes back as its local wall clock, the rest as ISO text; bigints as text.
+ */
+export const whyRequest = (sql: string, row: unknown[], types: number[]): string => WHY + JSON.stringify({
+  sql,
+  row: row.map((v, i) => (!(v instanceof Date) ? (typeof v === 'bigint' ? String(v) : v) : types[i] !== 1114 ? v.toISOString()
+    : `${v.getFullYear()}-${pad(v.getMonth() + 1)}-${pad(v.getDate())} ${pad(v.getHours())}:${pad(v.getMinutes())}:${pad(v.getSeconds())}.${pad(v.getMilliseconds(), 3)}`)),
+});
 export type StepsFailure = 'syntax' | 'multi' | 'notSelect' | 'withUnion' | 'window';
 
 /** Clause names are SQL keywords, the same in both languages (the help text is in src/i18n: steps.help.*). */

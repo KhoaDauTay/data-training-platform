@@ -35,6 +35,8 @@ export interface MeDeps {
   readJson: typeof Storage.readJson; writeJson: typeof Storage.writeJson;
   readErrors: typeof Insights.readErrors; readAttempts: typeof Insights.readAttempts;
   days: () => string[];
+  /** V22-C (L210): this week's tasks and raised review cards, derived (src/goal.ts). */
+  week: () => { tasks: number; reviews: number };
   loadTickets: typeof Content.loadTickets; loadDomain: typeof Content.loadDomain;
   chaptersOf: typeof Progress.chaptersOf; rankOf: typeof Progress.rankOf; SKILLS: typeof Progress.SKILLS;
   knownSkills: typeof Home.knownSkills; textOf: typeof Tickets.textOf;
@@ -55,7 +57,7 @@ const readName = (): string => {
   const v = d.readJson<unknown>(NAME_KEY);
   return typeof v === 'string' ? v.slice(0, 60) : '';
 };
-const isDrill = (id: string): boolean => id.startsWith('g-');
+const isDrill = (id: string): boolean => id.startsWith('g-') || id.startsWith('e-'); // ENG-CORE (L220): Database Engine lessons are no tasks either
 /** V19-D (L170): card pictures, the zip and the take-home file, a lazy chunk of their own (`me` is near its budget). */
 const pngChunk = (): Promise<typeof import('./portfolioPng')> => import('./portfolioPng');
 
@@ -235,6 +237,7 @@ function daysCard(): HTMLElement {
     d.h('div', { class: 'grid w-fit grid-flow-col grid-rows-7 gap-1', role: 'img', 'aria-label': m('days.label', { n, w: weeks }) },
       ...cells.map((c) => d.h('span', { class: c.on ? 'block size-3.5 rounded-sm bg-accent' : c.future ? 'block size-3.5 rounded-sm' : 'block size-3.5 rounded-sm bg-code ring-1 ring-line', title: c.day }))),
     d.h('p', { class: 'm-0 text-body-sm' }, m('days.total', { n: days.length })),
+    d.h('p', { class: 'm-0 text-body-sm' }, m('days.week', { t: d.week().tasks, r: d.week().reviews })), // V22-C (L210)
     d.h('p', { class: 'm-0 text-caption text-muted' }, m('days.note')));
 }
 

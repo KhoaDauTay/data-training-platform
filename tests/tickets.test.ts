@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import templateRaw from '../content/TEMPLATE.md?raw';
-import { optionOrder, parseTicket, textOf } from '../src/tickets';
+import { optionOrder, parseTicket as ticketOf, textOf } from '../src/tickets';
+import { mdData } from '../scripts/contentJson.mjs';
+// V22-E: parseTicket takes the build's { fm, body }; these tests keep writing markdown.
+const parseTicket = (src: string, origin: string) => ticketOf(mdData(src), origin);
 import { applyVariant } from '../src/variants';
 
 const NORMAL = `---

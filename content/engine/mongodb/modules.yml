@@ -1,0 +1,136 @@
+# MongoDB modules in display order (ADD-1). `after` = "Học xong bạn làm được…" (each one is checked by a lab or capstone of the module).
+- id: documents
+  level: L1
+  vi: Tài liệu và kiểu BSON
+  en: Documents and BSON types
+  module: documents
+  title: { vi: "Tài liệu và kiểu BSON", en: "Documents and BSON types" }
+  after:
+    vi: đọc một tài liệu và biết trường nào lồng, trường nào là mảng, kiểu BSON nào hợp cho tiền và ngày
+    en: read a document and tell which fields are embedded, which are arrays, and which BSON type suits money and dates
+- id: crud
+  level: L1
+  vi: Thêm, tìm, sửa, xóa
+  en: Create, read, update, delete
+  module: crud
+  title: { vi: "Thêm, tìm, sửa, xóa", en: "Create, read, update, delete" }
+  after:
+    vi: thêm, tìm, sửa và xóa đúng tài liệu, kể cả sửa mảng và upsert
+    en: insert, find, update and delete exactly the right documents, including array updates and upserts
+- id: query-ops
+  level: L1
+  vi: Toán tử truy vấn
+  en: Query operators
+  module: query-ops
+  title: { vi: "Toán tử truy vấn", en: "Query operators" }
+  after:
+    vi: lọc trên trường lồng và trong mảng, rồi sắp xếp, phân trang và đếm kết quả
+    en: filter on embedded fields and inside arrays, then sort, page and count the results
+- id: update-pipeline
+  level: L2
+  vi: Sửa hàng loạt bằng biểu thức
+  en: Bulk updates with expressions
+  module: update-pipeline
+  title: { vi: "Sửa hàng loạt bằng biểu thức", en: "Bulk updates with expressions" }
+  after:
+    vi: sửa đúng phần tử trong mảng và tính lại trường từ chính tài liệu, không cần đọc ra rồi ghi lại
+    en: update the right array elements and recompute fields from the document itself, without reading it out and writing it back
+- id: aggregation
+  level: L2
+  vi: Aggregation pipeline
+  en: Aggregation pipeline
+  module: aggregation
+  title: { vi: "Aggregation pipeline", en: "Aggregation pipeline" }
+  after:
+    vi: viết báo cáo doanh thu theo tuần, theo nhóm và theo khách bằng một pipeline
+    en: write weekly, per-group and per-customer revenue reports with one pipeline
+- id: modeling
+  level: L2
+  vi: Mô hình hóa dữ liệu
+  en: Data modelling
+  module: modeling
+  title: { vi: "Mô hình hóa dữ liệu", en: "Data modelling" }
+  after:
+    vi: chọn nhúng hay tham chiếu cho một quan hệ, giải thích vì sao, và đặt luật kiểm tra cho collection
+    en: choose embedding or referencing for a relationship, explain why, and put validation rules on a collection
+- id: indexes
+  vi: Các loại index
+  en: Index kinds
+  module: indexes
+  level: L3
+  title: { vi: "Các loại index", en: "Index kinds" }
+  after:
+    vi: chọn đúng loại và thuộc tính index (multikey, partial, unique, TTL) cho một nhu cầu, và đoán index partial có được dùng cho một truy vấn không
+    en: pick the right index kind and property (multikey, partial, unique, TTL) for a need, and predict whether a partial index can serve a query
+- id: special-indexes
+  vi: Index đặc biệt
+  en: Special indexes
+  module: special-indexes
+  level: L3
+  title: { vi: "Index đặc biệt", en: "Special indexes" }
+  after:
+    vi: chọn index wildcard, text, 2dsphere hay hashed cho một nhu cầu, dùng sparse, hidden và collation đúng chỗ, và đoán index sparse hay index có collation có được dùng cho một truy vấn không
+    en: pick a wildcard, text, 2dsphere or hashed index for a need, use sparse, hidden and collation where they fit, and predict whether a sparse index or an index with a collation can serve a query
+- id: esr-explain
+  vi: ESR và explain
+  en: ESR and explain
+  module: esr-explain
+  level: L3
+  title: { vi: "ESR và explain", en: "ESR and explain" }
+  after:
+    vi: xếp trường của index kép theo ESR và đọc `explain("executionStats")` để chỉ ra truy vấn quét cả collection, sắp trong bộ nhớ hay không được phủ
+    en: order compound index fields by ESR and read `explain("executionStats")` to spot a query that scans the collection, sorts in memory or is not covered
+- id: planner-agg
+  vi: Planner và aggregation
+  en: Planner and aggregation
+  module: planner-agg
+  level: L3
+  title: { vi: "Planner và aggregation", en: "Planner and aggregation" }
+  after:
+    vi: tìm truy vấn cần index từ số liệu explain đã ghi, và viết đúng một pipeline báo cáo có lọc, tách mảng và gộp
+    en: find the queries that need an index from recorded explain numbers, and write a correct report pipeline that filters, unwinds and groups
+- id: patterns
+  vi: Mẫu thiết kế schema
+  en: Schema design patterns
+  module: patterns
+  level: L4
+  title: { vi: "Mẫu thiết kế schema", en: "Schema design patterns" }
+  after:
+    vi: áp các mẫu Computed Values, Bucket, Outlier, Polymorphic bằng pipeline, và đưa hai phiên bản schema về một dạng
+    en: apply the Computed Values, Bucket, Outlier and Polymorphic patterns with a pipeline, and bring two schema versions into one shape
+- id: consistency
+  vi: Nhất quán và transaction
+  en: Consistency and transactions
+  module: consistency
+  level: L4
+  title: { vi: "Nhất quán và transaction", en: "Consistency and transactions" }
+  after:
+    vi: chọn write concern, read concern và session đúng cho một luồng ghi tiền rồi đọc lại từ secondary
+    en: choose the right write concern, read concern and session for a money write that is read back from a secondary
+- id: wiredtiger
+  vi: WiredTiger
+  en: WiredTiger
+  module: wiredtiger
+  level: L5
+  title: { vi: "WiredTiger", en: "WiredTiger" }
+  after:
+    vi: giải thích vì sao ghi xung đột trên một tài liệu được chạy lại, và dữ liệu giữa hai checkpoint được phục hồi từ đâu
+    en: explain why a conflicting write on one document is retried, and where data between two checkpoints is recovered from
+- id: replication
+  vi: Replica set
+  en: Replica sets
+  module: replication
+  level: L5
+  title: { vi: "Replica set", en: "Replica sets" }
+  after:
+    vi: đọc một kịch bản failover và đoán lần ghi nào bị rollback
+    en: read a failover scenario and predict which write is rolled back
+- id: sharding-ts
+  vi: Sharding và time series
+  en: Sharding and time series
+  module: sharding-ts
+  level: L5
+  title: { vi: "Sharding và time series", en: "Sharding and time series" }
+  after:
+    vi: đo cardinality và tần suất của ứng viên shard key, và đoán truy vấn đi tới một shard hay mọi shard
+    en: measure the cardinality and frequency of shard key candidates, and predict whether a query goes to one shard or every shard

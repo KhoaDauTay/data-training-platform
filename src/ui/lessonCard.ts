@@ -12,6 +12,7 @@ import { byId, h, nodes, richText } from './dom';
 import { errorText, errorView } from './feedback';
 import { icon, partHead, skillIcon, type IconName } from './icons';
 import { renderResult } from './resultTable';
+import { whyCell } from './whyButton';
 import { boonRegion, guideHooks, guideSlot, markExampleRan, refreshGuides, tourSlot } from './coach';
 import { mascot } from './mascots';
 import { readTour } from '../onboarding';
@@ -103,7 +104,7 @@ function card(l: Lesson, titleId: string, actions: HTMLElement[], tour = false, 
   const drawYours = (): void => {
     const r = tryRuns.get(l.id);
     yours.replaceChildren(...nodes(r && h('div', { class: 'mt-2' }, h('h5', { class: 'mt-0 mb-1 text-body-sm' }, t('lesson.yours')),
-      r.result ? renderResult(r.result, undefined, 8) : errorView(r.error, true, r.sql))));
+      r.result ? renderResult(r.result, undefined, 8, undefined, { why: whyCell(r.sql ?? '', lessonSchema(l), r.result.types) }) : errorView(r.error, true, r.sql))));
   };
   const busy = (on: boolean): void => {
     check.disabled = on;
@@ -119,7 +120,7 @@ function card(l: Lesson, titleId: string, actions: HTMLElement[], tour = false, 
       }
       busy(true);
       const sql = area.value;
-      await runOn(lessonSchema(l), sql).then((result) => tryRuns.set(l.id, { result }), (error: unknown) => tryRuns.set(l.id, { error, sql }));
+      await runOn(lessonSchema(l), sql).then((result) => tryRuns.set(l.id, { result, sql }), (error: unknown) => tryRuns.set(l.id, { error, sql }));
       busy(false);
       drawYours();
       if (!yours.isConnected) appActions.rerender();

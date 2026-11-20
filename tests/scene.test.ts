@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { loadTickets } from '../src/content';
 import { derive, durationOf, parseScene, routeOpenedBy, ROUTES, sceneOf, STEPS, type Scene } from '../src/scene';
-import { parseTicket } from '../src/tickets';
+import { parseTicket as ticketOf } from '../src/tickets';
+import { mdData } from '../scripts/contentJson.mjs';
+// V22-E: parseTicket takes the build's { fm, body }; these tests keep writing markdown.
+const parseTicket = (src: string, origin: string) => ticketOf(mdData(src), origin);
 import { runner } from './helpers';
 
 const tickets = loadTickets();

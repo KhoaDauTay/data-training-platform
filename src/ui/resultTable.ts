@@ -49,6 +49,8 @@ export interface ResultOpts {
   fill?: boolean;
   /** Column types under the names (default on). Off where a type would hint at the answer (L25: "Expected result", the diff). */
   types?: boolean;
+  /** V22-B (L206): a control in each row's number cell (`whyCell`, src/ui/whyButton.ts); `span` = cells in a row. */
+  why?: (row: unknown[], span: number) => Node;
 }
 
 /**
@@ -75,7 +77,8 @@ export function renderResult(r: QueryResult, mark?: unknown[], limit = MAX_ROWS,
     const bad = row === mark;
     return h('tr', { class: bad ? 'bg-bad-soft' : 'even:bg-surface-2/60' },
       h('td', { class: cx('text-right text-caption tabular-nums text-muted select-none', bad && 'border-l-[3px] border-l-bad') },
-        bad ? h('span', { class: 'mr-1 rounded-(--r-chip) bg-bad px-1.5 font-bold text-on-accent' }, t('res.mismatch')) : null, String(n + 1)),
+        bad ? h('span', { class: 'mr-1 rounded-(--r-chip) bg-bad px-1.5 font-bold text-on-accent' }, t('res.mismatch')) : null,
+        opts.why?.(row, r.columns.length + 1) ?? null, String(n + 1)),
       ...row.map((v, i) => cell(v, i)));
   });
   const at = arrived.get(r);
