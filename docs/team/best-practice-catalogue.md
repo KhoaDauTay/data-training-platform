@@ -10,7 +10,7 @@ Người viết: agent Research · 2026-11-20 · theo L215 mục 6 ("luôn có A
 
 - đề xuất cho BP-T về `probe`, `compare: rcu`, dữ liệu DynamoDB và chia chunk (đã đo);
 - 32 mục mới nối bài Engine bên trong engine với vận hành: P27–P41, S15, M28–M38, D28–D32, 13 mục chạy được;
-- bảng nối thêm 54 bài Engine;
+- bảng nối thêm 48 bài Engine;
 - đề xuất phòng trưng bày lỗi.
 
 Mục mới nằm ở §13.2, không chen vào §1–8. Mã cũ giữ nguyên.
@@ -4532,7 +4532,10 @@ Bài Engine đọc ở nhánh `v22-engine` (commit `0ede43d`): 195 id (`e-pg-…
 
 - 122/160 mục có ít nhất một bài Engine liên quan; 38 mục chưa có (phần lớn là Q/A thuần SQL phân tích, bảo mật X, vận hành MongoDB/DynamoDB vòng 3).
 - 139/195 bài Engine được ít nhất một mục dùng tới.
-- **Sau vòng 4: 193/195** (§13.3). Danh sách dưới là trạng thái trước vòng 4; chỉ còn `e-mg-l1-04` và `e-mg-l3-13`.
+- **Sau vòng 4:**
+  - 149/192 mục có bài Engine: thêm 27 mục mới có dòng ở §13.3; P31, P41, M31, M38, D32 chưa có;
+  - 187/195 bài Engine có mục.
+  - Danh sách dưới là trạng thái trước vòng 4; tám bài còn lại liệt kê ở cuối §13.3.
 
 **Bài Engine chưa có mục Best Practice nào (56):**
 
@@ -4581,18 +4584,21 @@ pair:
   - `probe` là đúng một câu.
 - **Đã kiểm** (đổi I02–I06 sang một bảng + `probe`, chỉ trong `bp4/`, thẻ thật giữ nguyên):
 
-| Thẻ | Sai | Đúng | So với hai bảng |
+| Thẻ | Sai | Đúng | Thẻ hai bảng hiện có (chạy lại cùng ngày) |
 |---|---|---|---|
-| I02 | Bitmap Heap Scan, cost 252,64 | Bitmap Heap Scan, cost 125,95 | trùng số |
+| I02 | Bitmap Heap Scan, cost 252,64 | Bitmap Heap Scan, cost 125,95 | Sai 252,64, Đúng 144,95: bản Đúng khác số (bảng thứ hai dựng bằng `CREATE TABLE AS` nên thống kê khác), cùng chiều Đúng < Sai |
 | I03 | 163.840 byte | 16.384 byte (`probe` = `pg_relation_size('web_orders_ix')`, cùng tên index ở hai bên) | trùng số |
-| I04 | Bitmap Heap Scan, cost 220,84 | Index Only Scan, cost 15,29 | trùng nút |
-| I05 | Seq Scan, cost 428 | Index Scan, cost 8,3 | trùng nút, nhưng xem dưới |
-| I06 | Seq Scan, cost 538 (bản Sai không có DDL: `bad` rỗng là hợp lệ) | Bitmap Heap Scan, cost 173,69 | trùng nút |
+| I04 | Bitmap Heap Scan, cost 220,84 | Index Only Scan, cost 15,29 | trùng nút và cost |
+| I05 | Seq Scan, cost 428 | Index Scan, cost 8,3 | trùng nút và cost (khi có `ANALYZE` sau index, xem dưới) |
+| I06 | Seq Scan, cost 538 (bản Sai không có DDL: `bad` rỗng là hợp lệ) | Bitmap Heap Scan, cost 173,69 | trùng nút và cost |
 
 - **Ba điều phải ghi vào luật:**
   - **I05:** index biểu thức cần `ANALYZE` **sau** `CREATE INDEX` (thống kê của biểu thức sinh lúc đó). Không có nó, bản Đúng là Bitmap Heap Scan cost 132,56 thay vì Index Scan cost 8,3. Nên `good` của I05 là `CREATE INDEX …; ANALYZE members`.
   - **I04:** `VACUUM ANALYZE` chạy một lần trong `setup` (trước mọi DDL), rồi `CREATE INDEX … INCLUDE` chạy **trong transaction** vẫn cho `Index Only Scan` cost 15,29, vì visibility map đã có từ `setup`. Vậy với `probe`, I04 xuống được `runtime: engine`, không cần `engine-hb`.
-  - **Thời gian:** `setup` chạy hai lần (mỗi bên một lần) nhưng dữ liệu chỉ còn một nửa: lâu nhất 727 ms (I06, gồm cả boot), không vượt mức ≈ 1 s của §11.2.
+  - **Thời gian:**
+    - mỗi lần "Chạy cả hai" dựng **hai database mới**, mỗi cái ≈ 0,5 s từ template (theo chú thích của `src/engine/pglab/session.ts`), rồi chạy `setup` ở mỗi bên;
+    - dữ liệu chỉ còn một bảng; `setup` lâu nhất 727 ms (I06), không tính boot;
+    - với hai bảng thì chỉ một database, nhưng `setup` gấp đôi dữ liệu.
 
 #### 13.1.2 `expect.compare: rcu` cho thẻ DynamoDB
 
@@ -4619,7 +4625,7 @@ pair:
 
 - Ở `v22-engine`, `seed()` không chuyển kiểu. Gửi item không kiểu thì dynoxide báo `EngineError: Unexpected value type in payload` (đã thử cả `PutItem` lẫn `BatchWriteItem`). Bài `L1/09-query-vs-scan.md` ghi item không kiểu nên **seed lỗi** trên nhánh đó.
 - Nhánh tích hợp `engine-integrate` (L248) đã sửa: `src/engine/dynamo/runner.ts` có `labOf(setup)` đổi **JSON thường → DynamoDB JSON** cho mọi item (`marshal`: chuỗi `S`, số `N`, boolean `BOOL`, null `NULL`, mảng `L`, object `M`). Đây là đường bài Engine sẽ chạy.
-- **Hệ quả:** nếu BP-T cho thẻ đi qua `labOf`, item có kiểu của thẻ sẽ bị bọc lần nữa: `{"S": "CUST#1"}` thành `{M: {S: {S: "CUST#1"}}}`. Partition key khi đó là kiểu `M`, nên seed lỗi.
+- **Hệ quả:** nếu BP-T cho thẻ đi qua `labOf`, item có kiểu của thẻ sẽ bị bọc lần nữa: `{"S": "CUST#1"}` thành `{M: {S: {S: "CUST#1"}}}`. Đã thử ghi đúng item như vậy lên dynoxide: `BatchWriteItem` báo "The provided key element does not match the schema". Vậy seed sẽ lỗi.
 
 **Đề xuất:**
 
@@ -4651,8 +4657,15 @@ pair:
 
 **Đề xuất: mỗi thẻ một chunk lười, cộng một chỉ mục nhỏ mỗi track.**
 
-- `src/bestSources.ts` dùng `import.meta.glob('/content/engine/best/*/*.md', { query: '?raw', import: 'default' })` **không `eager`**. Vite/Rolldown tách mỗi file thành một chunk (≈ 1,5–2,2 KB gzip). Trang mục chỉ tải đúng thẻ đang mở.
-- Lưới và chip kỹ năng đọc `bpindex-<track>`, sinh lúc build, gồm `{ id, module, level, title, title_en, skills }`. Đo trên 40 thẻ: 2,5 KB gzip, ≈ 63 byte mỗi thẻ. Một track 50 thẻ ≈ 3,2 KB, dưới trần `bpindex` 4.
+- `src/bestSources.ts` dùng `import.meta.glob('../content/engine/best/*/*.md', { query: '?raw', import: 'default' })` **không `eager`**.
+  - Mỗi file thành một chunk lười, ≈ 1,5–2,2 KB gzip theo số đo dạng JSON ở trên; bản `?raw` (markdown thô) sẽ khác một chút.
+  - Trang mục chỉ tải đúng thẻ đang mở.
+- Loader Engine hiện có (`src/engineSources-pg.ts`, nhánh `content-qa2`) làm ngược lại: glob `eager: true` bên trong một module được `import()`, nên cả track là một chunk.
+  - Đề xuất này chỉ đổi một cờ, nhưng **chưa build kiểm**.
+  - BP-T phải build một lần và xem `dist` có đúng một chunk mỗi thẻ không, trước khi chốt L.
+- Lưới và chip kỹ năng đọc một chỉ mục nhỏ `{ id, module, level, title, title_en, skills }`, sinh lúc build. Đo trên 40 thẻ: 2,5 KB gzip, ≈ 63 byte mỗi thẻ.
+  - Một chỉ mục mỗi track **không đủ** cho PostgreSQL: 75 mục × 63 byte ≈ 4,7 KB, quá trần `bpindex` 4.
+  - Đề xuất: một chỉ mục mỗi khu (`bpindex-q`, `bpindex-p`…; khu lớn nhất là P, 41 mục ≈ 2,6 KB). Cách khác: giữ một chỉ mục mỗi track và nâng trần lên 6.
 - `check-budget.mjs`:
   - nhóm `bp` đo **thẻ lớn nhất** (trần 3 KB), không đo tổng;
   - nhóm `bpindex` đo từng track (trần 4);
@@ -5448,7 +5461,9 @@ TransactWriteItems({ TransactItems: [
   - tài liệu: xung đột được giải bằng "last writer wins";
   - hai lần cộng ở hai Region cùng lúc thì một lần biến mất, không báo lỗi;
   - cập nhật tuyệt đối thì ghi lại lần nữa vẫn đúng.
-- **Nguồn:** https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/globaltables_HowItWorks.html
+- **Nguồn:**
+  - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/globaltables_HowItWorks.html (last writer wins, cách tránh xung đột)
+  - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/GlobalTables.html (MREC là mặc định)
 - **Cấp:** L5 · **Nối với:** chưa có · **Kiểm:** cú pháp (dynoxide không có global tables)
 
 ```js
@@ -5512,67 +5527,74 @@ UpdateItem({ TableName: 'Votes', Key: { pk: { S: 'VOTE#show42#' + (Math.floor(Ma
 
 ### 13.3 Bài Engine được nối thêm
 
-Luật như §12: một bài chỉ được nối khi thân bài (`git show 0ede43d:<file>`) có đúng thuật ngữ của mục. Cột cuối là từ đã tìm thấy.
+Luật chặt hơn §12:
+
+- grep **một** thuật ngữ riêng của mục trong bài (`git show 0ede43d:<file>`);
+- tìm trong thân bài; với bài kiểm tra và capstone thì tìm cả câu kiểm / lab, vì nội dung của chúng nằm ở frontmatter;
+- không tính `id`, `requires`, nguồn hay dữ liệu mẫu.
+
+Cột cuối là từ đã tìm thấy. Lần grep đầu dùng mẫu `A|B|C` trên cả file nên đã bị bỏ; các dòng không qua lần thứ hai đã bị xóa.
 
 | Bài | Mục | Từ khóa có trong bài |
 |---|---|---|
-| `e-pg-l3-01` | P02 | `fillfactor` / chỗ trống trên trang |
-| `e-pg-l3-02` | P27 | căn lề (`t_hoff`, padding) |
+| `e-pg-l3-02` | P27 | `padding` (căn lề trong tuple) |
 | `e-pg-l3-03` | Q09 | `SELECT *` kéo cả giá trị TOAST |
 | `e-pg-l3-12` | P28 | `checkpoint` |
 | `e-pg-l3-13` | P29 | full-page image |
 | `e-pg-l3-14` | P30 | `work_mem` |
-| `e-pg-l4-04` | P31 | `enable_…`, Hash Join / Nested Loop |
-| `e-pg-l4-05` | P31 | `join_collapse_limit` / `geqo` |
 | `e-pg-l4-10` | P32, P33 | `FOR UPDATE`, `SKIP LOCKED` |
 | `e-pg-l4-11` | P32 | deadlock, thứ tự khóa |
-| `e-pg-l4-12` | P34, P35 | `40001` / thử lại, `REPEATABLE READ` |
-| `e-pg-l4-13` | P34, P35 | thử lại, `READ ONLY DEFERRABLE` |
-| `e-pg-l4-14` | P36 | advisory, `xact` |
+| `e-pg-l4-12` | P34, P35 | `40001`, `REPEATABLE READ` |
+| `e-pg-l4-13` | P34, P35 | `40001`, `READ ONLY` / `DEFERRABLE` |
+| `e-pg-l4-14` | P36 | `pg_advisory_xact_lock` |
 | `e-pg-l4-15` | P37 | `PARALLEL SAFE/UNSAFE` |
-| `e-pg-l5-01` | S05, P12 | UUID ngẫu nhiên làm tách trang, phình index |
-| `e-pg-l5-02` | I08 | dedup cho giá trị lặp |
+| `e-pg-l5-01` | S05, P12 | `uuid`, `REINDEX` / phình |
+| `e-pg-l5-02` | I08 | khóa "lặp lại" nhiều lần (dedup chính là cho cột ít giá trị) |
 | `e-pg-l5-05` | P38 | `correlation` |
-| `e-pg-l5-06` | S15 | `EXCLUDE`, `&&` |
+| `e-pg-l5-06` | S15 | `EXCLUDE USING gist (… WITH &&)` (trong câu kiểm của bài) |
 | `e-pg-l5-08` | P39 | `amcheck`, `bt_index_check`, checksum |
 | `e-pg-l5-09` | P28, P29 | `checkpoint_timeout`/`max_wal_size`, full-page write |
 | `e-pg-l5-12` | P30 | `work_mem`, `hash_mem_multiplier` |
 | `e-pg-l5-13` | P40 | slot, `wal_status`, `max_slot_wal_keep_size` |
 | `e-pg-l5-15` | I07, S11, P38 | BRIN, partition, `correlation` |
-| `e-mg-l1-02` | M16 | `null` |
 | `e-mg-l1-05` | M28 | `upsert` |
 | `e-mg-l1-11` | M01 | nhúng (embed) |
-| `e-mg-l2-02` | M29 | chuỗi `"$…"` trong pipeline update |
+| `e-mg-l2-02` | M29 | `$literal` |
 | `e-mg-l2-03` | M29 | `$literal` |
-| `e-mg-l2-09` | M30 | `default` của `$bucket` |
-| `e-mg-l2-15` | M09, M18 | `$match`, `$unwind` |
-| `e-mg-l3-03` | M08 | projection, covered query |
-| `e-mg-l3-04` | M07 | compound / ESR |
-| `e-mg-l3-10` | M31 | `explain` |
+| `e-mg-l2-09` | M30 | `default` (của `$bucket`) |
+| `e-mg-l2-15` | M18 | `$unwind` |
+| `e-mg-l3-03` | M08 | covered query, projection |
 | `e-mg-l3-15` | M32 | `collation` |
 | `e-mg-l3-16` | M33 | `sparse`, `hint` |
-| `e-mg-l3-17` | M32, M33 | `collation`, `sparse` |
-| `e-mg-l4-08` | M34 | causal, `majority` |
+| `e-mg-l3-17` | M32 | `collation` |
+| `e-mg-l4-08` | M34 | causal |
 | `e-mg-l4-10` | M35 | resume token, `resumeAfter`/`startAfter` |
-| `e-mg-l4-12` | M34 | causal, `majority` |
+| `e-mg-l4-12` | M13 | `w: "majority"` |
 | `e-mg-l5-01` | M36 | cache |
 | `e-mg-l5-02` | M37 | write conflict, thử lại |
-| `e-mg-l5-09` | M26 | oplog, lag |
-| `e-mg-l5-10` | M13, M26 | `majority`, oplog |
+| `e-mg-l5-09` | M26 | oplog |
+| `e-mg-l5-10` | M13 | `w: "majority"` |
 | `e-dy-l1-03` | D08, D12 | 400 KB, 1 MB |
-| `e-dy-l1-11` | D06, D10 | `Scan`, `ConditionExpression` |
+| `e-dy-l1-11` | D06 | `Scan` |
 | `e-dy-l2-03` | D28 | `if_not_exists`, `list_append` |
-| `e-dy-l2-12` | D10 | `ConditionExpression` |
+| `e-dy-l2-12` | D10 | `ConditionExpression` (`attribute_not_exists`) |
 | `e-dy-l3-11` | D05, D07 | `begins_with` / item collection, GSI |
-| `e-dy-l4-14` | D03 | khóa rải (`#0`…`#9`) |
-| `e-dy-l5-01` | D29 | Lambda, idempotent, 24 giờ |
+| `e-dy-l4-14` | D03 | shard (rải khóa) |
+| `e-dy-l5-01` | D29 | Lambda, 24 giờ |
 | `e-dy-l5-03` | D30 | last writer wins |
 | `e-dy-l5-05` | D11, D24 | capacity / on-demand, throttle |
 | `e-dy-l5-06` | D31 | `ConsistentRead`, strongly consistent |
-| `e-dy-l5-07` | D22, D27, D29, D31 | PITR, khóa nóng, Stream, DAX |
+| `e-dy-l5-07` | D22, D29, D31 | PITR, Stream, DAX |
 
-**Tổng sau vòng 4:** 54/56 bài của danh sách §12.9 đã có mục. Hai bài còn lại, có chủ đích:
+**Tổng sau vòng 4:** 48/56 bài của danh sách §12.9 đã có mục. Tám bài còn lại:
 
+- `e-pg-l3-01` (trang heap): bài chỉ nói "chỗ trống" là một phần của trang, không nói `fillfactor` (P02).
+- `e-pg-l4-04`, `e-pg-l4-05` (thuật toán nối, thứ tự nối, GEQO): không bài nào dùng `enable_…` (P31).
+  - Một mục về `join_collapse_limit`/`geqo_threshold` (mặc định 12, đã đọc trên trang `runtime-config-query`) sẽ nối được `e-pg-l4-05`;
+  - nhưng chưa có luật "nên / không nên" đủ rõ.
+- `e-mg-l1-02` (find): `null` chỉ có trong dữ liệu mẫu.
+- `e-mg-l3-04` (kiểm tra index): nói compound multikey, không nói ESR (M07).
+- `e-mg-l3-10` (plan cache): có `explain` nhưng không có `executionStats` (M31).
 - `e-mg-l1-04` (thêm và xóa tài liệu): không mục nào nói đúng thuật ngữ của bài. Mục `insertMany` có thứ tự đã bị bỏ vì thiếu nguồn.
 - `e-mg-l3-13` (wildcard, text, 2dsphere, hashed): mục wildcard bị bỏ vì không tìm thấy câu trên trang. M12 ("bỏ index thừa") chỉ khớp chữ "index", không đủ.
 
@@ -5580,30 +5602,62 @@ Bảng §12 không viết lại. Đọc §12 cùng bảng này.
 
 ### 13.4 Đề xuất: phòng trưng bày lỗi (anti-pattern gallery)
 
-Không tìm thấy nguồn đáng tin nào **đếm tần suất** lỗi SQL của data analyst (khảo sát, log lỗi). Vì vậy bảng xếp theo **số nguồn độc lập nêu đúng lỗi đó như một điều nên tránh**. Bốn nguồn:
+**Dữ liệu tần suất có thật, nhưng chỉ ở mức lớp lỗi.**
+
+- **Đã tìm:** WebSearch "empirical study frequency of semantic errors in SQL queries". Kết quả là các nghiên cứu của nhóm Taipalus (Đại học Jyväskylä) trên câu SQL của sinh viên:
+  - 2018: hơn 33.000 câu, lập bảng phân loại lỗi;
+  - 2019: 744 sinh viên, 2.765 câu trả lời cuối bị sai;
+  - 2020: 987 sinh viên.
+- **Đã đọc:** bản accepted của Taipalus & Perälä 2019, "What to Expect and What to Focus on in SQL Query Teaching" (SIGCSE '19): https://jyx.jyu.fi/jyx/Record/jyx_123456789_63057.
+  - Bảng 2 cho tần suất tương đối của từng lớp lỗi trong câu trả lời cuối bị sai, theo 15 bài tập.
+  - Lỗi **logic** (câu chạy được, kết quả sai) bền nhất. Lỗi cú pháp và ngữ nghĩa thường được sửa trước khi nộp.
+  - Số lớn nhất đọc được trên bảng:
+    - lỗi chiếu cột (LOG-5) tới 0,75;
+    - lỗi toán tử (LOG-1) tới 0,65;
+    - lỗi biểu thức (LOG-4) tới 0,47;
+    - lỗi join (LOG-2) tới 0,40;
+    - thiếu join (SEM-3) tới 0,34;
+    - dòng trùng (SEM-4) tới 0,20.
+  - Bản chuyển sang chữ bị cắt mất ba cột cuối của bảng, nên đây là mức "ít nhất".
+- **Giới hạn:**
+  - đây là sinh viên làm bài, không phải data analyst;
+  - lớp lỗi rộng hơn một luật (ví dụ "lỗi biểu thức" gồm cả `BETWEEN` lẫn điều kiện NULL).
+  - Không nghiên cứu nào đếm riêng từng lỗi như `NOT IN`.
+
+Vì vậy bảng dưới xếp theo hai bậc:
+
+1. lỗi khớp một lớp có tần suất cao trong nghiên cứu trên đứng trước;
+2. sau đó xếp theo số nguồn hướng dẫn độc lập nêu đúng lỗi đó như điều nên tránh.
+
+Các nguồn hướng dẫn:
 
 - **W:** wiki PostgreSQL "Don't Do This";
 - **B:** BigQuery, "Optimize query computation": https://cloud.google.com/bigquery/docs/best-practices-performance-compute;
 - **T:** dbt, "How we style our SQL": https://docs.getdbt.com/best-practices/how-we-style/2-how-we-style-our-sql;
-- **F:** Snowflake, "Working with joins": https://docs.snowflake.com/en/user-guide/querying-joins.
+- **F:** Snowflake, "Working with joins": https://docs.snowflake.com/en/user-guide/querying-joins;
+- **D:** tài liệu PostgreSQL, đúng trang mà mục tương ứng đã dẫn.
 
-Tài liệu PostgreSQL (D) đứng riêng cho các lỗi về ngữ nghĩa NULL.
+Mỗi dòng trỏ về mục đã có; phòng trưng bày **không thêm mục mới**.
 
-Mỗi dòng trỏ về mục đã có; phòng trưng bày **không thêm mục mới**, chỉ là một cách xếp khác của cùng thẻ.
+| # | Lỗi | Lớp lỗi (Taipalus & Perälä 2019) | Nguồn hướng dẫn | Mục | Thẻ |
+|---|---|---|---|---|---|
+| 1 | Join nhân dòng (fan-out, tích Đề-các) làm tổng phình, hoặc thiếu điều kiện join | LOG-2 join, SEM-3 thiếu join, SEM-4 dòng trùng | B ("joins that generate more outputs than inputs"), T (gom trước khi join), F (Cartesian product) | Q07, A04 | `e-bp-q07` |
+| 2 | Điều kiện lọc sai với NULL (`= NULL`, `NOT IN` gặp NULL) | thuộc LOG-1 / LOG-4 (không đếm riêng) | W, D | Q01, Q02 | `e-bp-q01`, `e-bp-q02` |
+| 3 | `BETWEEN` với timestamp | thuộc LOG-4 (không đếm riêng) | W | Q12 | `e-bp-q12` |
+| 4 | Chọn sai hoặc thừa cột; `SELECT *` trong truy vấn lưu lại | LOG-5 chiếu cột (một phần) | B ("Avoid SELECT *") | Q09, Q23 | chưa có |
+| 5 | `timestamp` không múi giờ cho thời điểm | — | W | S01, A02 | `e-bp-s01` |
+| 6 | `UNION` khi muốn `UNION ALL` | — | T | Q16 | chưa có |
+| 7 | Không nói rõ kiểu join | — | T ("Be explicit about your join type") | Q08 | chưa có |
+| 8 | `LIMIT` không `ORDER BY` đủ tiebreaker | — | D (trang LIMIT của Q10) | Q10, A17 | `e-bp-q10` |
 
-| # | Lỗi | Nguồn nêu | Mục | Vì sao lên đầu |
-|---|---|---|---|---|
-| 1 | Join nhân dòng (fan-out, tích Đề-các) làm tổng phình | B ("joins that generate more outputs than inputs"), T (gom trước khi join), F (Cartesian product) | Q07, A04 | Sai âm thầm, số vẫn "trông hợp lý" |
-| 2 | `NOT IN` với danh sách có NULL | W, D | Q02 | Trả 0 dòng, không lỗi |
-| 3 | `BETWEEN` với timestamp | W | Q12 | Mất hoặc tính trùng ngày biên |
-| 4 | `timestamp` không múi giờ cho thời điểm | W | S01, A02 | Lệch ngày khi gom theo ngày |
-| 5 | `SELECT *` trong truy vấn lưu lại / báo cáo | B ("Avoid SELECT *") | Q09 | Tốn đọc; đổi schema là đổi kết quả |
-| 6 | `UNION` khi muốn `UNION ALL` | T | Q16 | Mất dòng trùng hợp lệ |
-| 7 | `ORDER BY` không giới hạn / thiếu tiebreaker khi lấy top N | B | Q10, A17 | Kết quả đổi giữa các lần chạy |
-| 8 | Không nói rõ kiểu join | T | Q08 | Người đọc không biết join có lọc dòng hay không |
+**Đọc bảng:**
 
-Đề xuất dùng trong app, cho luồng sau L220:
+- BigQuery có nhắc `ORDER BY`, nhưng là lời khuyên hiệu năng ("in the outermost query"), không phải tiebreaker. Vì vậy dòng 8 chỉ dựa vào tài liệu PostgreSQL.
+- Năm dòng đã có thẻ: 1, 2, 3, 5, 8.
+- Dòng 4, 6, 7 cần thẻ Q09, Q16, Q08 khi luồng nội dung mở lại.
 
-- Một hàng "Lỗi hay gặp" đầu track SQL, xếp theo bảng trên.
-- Mỗi ô mở thẻ có sẵn. Dòng 1, 2, 3, 5, 7 đã có thẻ (Q07, Q02, Q12, Q10). Q09 và Q16 cần thẻ khi luồng nội dung mở lại.
-- Không cần dữ liệu mới, không cần trường mới: thứ tự là một danh sách id trong `tracks.yml` (`gallery: [e-bp-q07, e-bp-q02, …]`).
+**Đề xuất dùng trong app** (cho luồng sau L220):
+
+- Một hàng "Lỗi hay gặp" đầu track SQL, theo đúng thứ tự trên, mỗi ô mở thẻ có sẵn.
+- Không cần trường mới trong thẻ: thứ tự là một danh sách id trong `tracks.yml` (`gallery: [e-bp-q07, e-bp-q02, …]`).
+- Câu dẫn của hàng nói thật nguồn của thứ tự: "theo nghiên cứu lỗi SQL của sinh viên và hướng dẫn của các nhà cung cấp". Không viết "lỗi phổ biến nhất của analyst".
