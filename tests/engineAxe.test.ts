@@ -87,6 +87,7 @@ describe('Database Engine lesson pages (fixtures)', () => {
     await vi.waitFor(() => expect(ek('plan')).not.toBeNull());
     expect(status().classList.contains('bad')).toBe(true);
     expect((ek('p-check') as HTMLButtonElement).disabled).toBe(true);
+    expect(ek('p-check').className).toContain('disabled:bg-code'); // review v23: a spent "Xem thật" no longer looks like the main button
     expect(JSON.parse(localStorage.getItem('cargo-query/engine-first')!)).toMatchObject({ 'e-pg-l1-04': 0 });
     ek('p-1').click(); // guess again: graded at once
     await vi.waitFor(() => expect(status().classList.contains('good')).toBe(true));

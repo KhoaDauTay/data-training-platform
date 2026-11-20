@@ -89,7 +89,7 @@ export function predictView(l: EngineLesson, c: PredictCtx): HTMLElement {
       h('legend', { class: 'mb-3 p-0 text-body font-bold' }, ...c.inline(p.q[c.lang])),
       h('div', { class: 'grid gap-3 sm:grid-cols-2' }, ...d.optionOrder(`${id}#p`, p.options.length).map((i) => option(c, l, i))),
       h('div', { class: 'flex flex-wrap items-center gap-3' },
-        h('button', { type: 'button', class: cls.cx(cls.BTN_GO, 'px-5 py-2'), 'data-ek': `${id}-p-check`, disabled: !!st.viewed && !(typeof st.plan === 'object' && 'error' in st.plan), onclick: () => void see() }, `${et('predict.see')} ›`),
+        h('button', { type: 'button', class: cls.cx(cls.BTN_GO, 'px-5 py-2 disabled:bg-code disabled:text-disabled disabled:shadow-none'), 'data-ek': `${id}-p-check`, disabled: !!st.viewed && !(typeof st.plan === 'object' && 'error' in st.plan), onclick: () => void see() }, `${et('predict.see')} ›`),
         h('span', { class: 'text-body-sm text-muted' }, st.viewed ? et('predict.ran') : et(readsCounters(l) ? 'predict.seeNoteRows' : 'predict.seeNote')),
         status)),
     st.viewed ? resultCard(l, c) : null);
