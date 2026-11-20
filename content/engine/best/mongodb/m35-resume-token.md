@@ -49,7 +49,7 @@ Sau khi xử lý mỗi sự kiện change stream, lưu `_id` của nó (resume t
 
 ## Vì sao
 
-- Không có token, lần mở lại bắt đầu từ "bây giờ": sự kiện trong lúc dừng bị mất.
+- Change stream tiếp tục được nhờ resume token; không lưu token thì không có điểm để tiếp, và sự kiện trong lúc dừng có thể mất.
 - Token chỉ dùng được khi oplog còn giữ thời điểm đó.
 - Lưu token **sau** khi xử lý xong, để một lần hỏng giữa chừng làm sự kiện được đọc lại chứ không bị bỏ.
 - Thẻ này chỉ cú pháp: change stream cần replica set, mingo không có.
@@ -62,7 +62,7 @@ After processing each change stream event, save its `_id` (the resume token) som
 
 ## Why
 
-- Without a token, reopening starts from "now": events during the downtime are lost.
+- A change stream resumes from a resume token; without a saved token there is no point to resume from, and events during the downtime can be lost.
 - A token only works while the oplog still holds that point in time.
 - Save the token **after** processing, so a failure half-way makes the event be read again rather than skipped.
 - This card is syntax only: change streams need a replica set, which mingo does not have.

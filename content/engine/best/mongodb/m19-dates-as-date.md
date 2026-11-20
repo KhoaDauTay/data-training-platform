@@ -64,7 +64,6 @@ Thời điểm lưu kiểu `Date` (BSON date, UTC). Dữ liệu nguồn là chu�
 
 - Chuỗi được so theo byte, nên thứ tự chữ không trùng thứ tự ngày khi tháng hay ngày thiếu số 0 ở đầu.
 - Toán tử so sánh chỉ so giá trị cùng kiểu BSON. Một trường trộn chuỗi và `Date` làm khoảng thời gian thiếu tài liệu mà không báo lỗi.
-- `Date` cho phép dùng toán tử ngày trong pipeline, như `$dateTrunc` hay `$year`.
 
 # EN
 
@@ -76,4 +75,3 @@ Store instants as `Date` (BSON date, UTC). When the source data is a string, con
 
 - Strings compare byte by byte, so text order is not date order when a month or day lacks its leading zero.
 - Comparison operators only compare values of the same BSON type. A field that mixes strings and `Date` makes a time range miss documents without any error.
-- `Date` lets the pipeline use date operators such as `$dateTrunc` or `$year`.

@@ -26,7 +26,7 @@ pair:
   check: diff
   setup: |
     {"collections": {"orders": [
-      {"_id": 5, "customerId": 11, "status": "PAID", "items": [{"sku": "C", "qty": 2, "price": 30}, {"sku": "B", "qty": 1, "price": 15}, {"sku": "A", "qty": 1, "price": 100}]}
+      {"_id": 5, "customerId": 11, "status": "PAID", "items": [{"sku": "C", "qty": 2, "price": 30}, {"sku": "B", "qty": 1, "price": 20}, {"sku": "A", "qty": 1, "price": 100}]}
     ]}}
   bad: |
     db.orders.updateOne({ _id: 5, 'items.price': { $lt: 50 } }, { $mul: { 'items.$.price': 0.5 } })
@@ -35,16 +35,16 @@ pair:
   expect: null
 quiz:
   - q:
-      vi: "Đơn có ba dòng giá 30, 15 và 100. Lệnh `updateOne({ _id: 5, 'items.price': { $lt: 50 } }, { $mul: { 'items.$.price': 0.5 } })` đổi giá của mấy dòng?"
-      en: "An order has three lines priced 30, 15 and 100. How many lines does `updateOne({ _id: 5, 'items.price': { $lt: 50 } }, { $mul: { 'items.$.price': 0.5 } })` reprice?"
+      vi: "Đơn có ba dòng giá 30, 20 và 100. Lệnh `updateOne({ _id: 5, 'items.price': { $lt: 50 } }, { $mul: { 'items.$.price': 0.5 } })` đổi giá của mấy dòng?"
+      en: "An order has three lines priced 30, 20 and 100. How many lines does `updateOne({ _id: 5, 'items.price': { $lt: 50 } }, { $mul: { 'items.$.price': 0.5 } })` reprice?"
     options:
       - { vi: "1 dòng", en: "1 line" }
       - { vi: "2 dòng", en: "2 lines" }
       - { vi: "3 dòng", en: "3 lines" }
     answer: 0
     why:
-      vi: "`$` chỉ trỏ tới phần tử khớp **đầu tiên** (dòng giá 30). Dòng giá 15 cũng dưới 50 nhưng giữ nguyên. Muốn sửa cả hai thì dùng `$[cheap]` với `arrayFilters`."
-      en: "`$` points only at the **first** matching element (the line priced 30). The line priced 15 is also under 50 but stays as it was. To change both, use `$[cheap]` with `arrayFilters`."
+      vi: "`$` chỉ trỏ tới phần tử khớp **đầu tiên** (dòng giá 30). Dòng giá 20 cũng dưới 50 nhưng giữ nguyên. Muốn sửa cả hai thì dùng `$[cheap]` với `arrayFilters`."
+      en: "`$` points only at the **first** matching element (the line priced 30). The line priced 20 is also under 50 but stays as it was. To change both, use `$[cheap]` with `arrayFilters`."
 ---
 
 ## Ý chính

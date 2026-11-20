@@ -51,7 +51,7 @@ quiz:
 
 ## Vì sao
 
-- Mỗi index tốn RAM và đĩa, và mỗi lần ghi phải cập nhật mọi index của collection.
+- Index thừa làm collection phình và làm chậm lần ghi.
 - Docs xếp index hiếm dùng, thừa vì đã có compound index, hay không dùng vào cùng một anti-pattern.
 - Index thừa đẩy dữ liệu hay dùng ra khỏi working set.
 - Thẻ này chỉ cú pháp: mingo chỉ ghi lại định nghĩa index, không đếm lượt dùng.
@@ -64,7 +64,7 @@ Check `$indexStats` regularly. Drop indexes that are unused, or that are a prefi
 
 ## Why
 
-- Every index costs RAM and disk, and every write must update every index on the collection.
+- Unneeded indexes bloat the collection and slow down writes.
 - The docs file rarely used indexes, indexes made redundant by a compound index, and unused indexes under one anti-pattern.
 - Unneeded indexes push frequently used data out of the working set.
 - This card is syntax only: mingo only records index definitions and does not count their use.

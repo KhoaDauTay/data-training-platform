@@ -4581,7 +4581,7 @@ Bài Engine đọc ở nhánh `v22-engine` (commit `0ede43d`): 195 id (`e-pg-…
 - 122/160 mục có ít nhất một bài Engine liên quan; 38 mục chưa có (phần lớn là Q/A thuần SQL phân tích, bảo mật X, vận hành MongoDB/DynamoDB vòng 3).
 - 139/195 bài Engine được ít nhất một mục dùng tới.
 - **Sau vòng 4:**
-  - 149/192 mục có bài Engine: thêm 27 mục mới có dòng ở §13.3; P31, P41, M31, M38, D32 chưa có;
+  - 149/192 mục có bài Engine: thêm 27 mục mới có dòng ở §13.3; P31, P41, M31, M38, D32 chưa có (vòng 7: M31 nối `e-mg-l3-06`, M38 nối `e-mg-l5-07`, §12.7);
   - 187/195 bài Engine có mục.
   - Danh sách dưới là trạng thái trước vòng 4; tám bài còn lại liệt kê ở cuối §13.3.
 
@@ -5654,6 +5654,8 @@ Cột cuối là từ đã tìm thấy. Lần grep đầu dùng mẫu `A|B|C` tr
 
 Bảng §12 không viết lại. Đọc §12 cùng bảng này.
 
+Vòng 7: §12.7 thêm M31 → `e-mg-l3-06` (bài có `totalDocsExamined`) và M38 → `e-mg-l5-07` (bài đo ứng viên shard key), nên hai mục này không còn "chưa có".
+
 ### 13.4 Đề xuất: phòng trưng bày lỗi (anti-pattern gallery)
 
 **Dữ liệu tần suất có thật, nhưng chỉ ở mức lớp lỗi.**
@@ -6121,8 +6123,8 @@ Theo L215.6. Vòng này chỉ viết nội dung: thêm 58 thẻ ở `content/eng
   - bỏ lượt khởi động cho `engine-hb` như `bp6` (P05 không chạy lại được trên cùng database).
 - Kết quả ngày 2026-11-20: **130/130 thẻ, 0 lỗi**. Mọi câu < 300 ms.
 - Nguồn:
-  - tải lại cả 59 URL MongoDB mà thẻ dẫn (58 từ §7 và §13.2, thêm `core/index-unique/` cho M28) và mọi URL AWS của thẻ DynamoDB (35 trang developer guide, 3 trang API reference, 1 trang Lambda), đều 200; bốn anchor AWS có trên trang;
-  - mỗi con số và mỗi ý trong Luật, Vì sao và câu kiểm của thẻ chỉ cú pháp đã tìm thấy trên đúng trang dẫn (ví dụ: transaction mặc định dưới một phút, profiler mức 2 bỏ qua `slowms`, cache WiredTiger `50% of (RAM - 1GB)`, `analyzeShardKey` có từ 7.0, 21.349 / 3.809 tài liệu ở M31);
+  - tải lại cả 60 URL MongoDB mà thẻ dẫn (58 từ §7 và §13.2, thêm `core/index-unique/` cho M28 và `tutorial/project-fields-from-query-results/` cho M08) và mọi URL AWS của thẻ DynamoDB (35 trang developer guide, 3 trang API reference, 1 trang Lambda), đều 200; bốn anchor AWS có trên trang;
+  - như §0: mọi con số và mọi sự thật có tên (giới hạn, mặc định, tên lệnh, mã lỗi) trong thẻ MongoDB đã tìm thấy trên đúng trang dẫn; phần diễn giải còn lại dựa trên trang nhưng không đối chiếu từng câu. Ví dụ đã kiểm: transaction mặc định dưới một phút, profiler mức 2 bỏ qua `slowms`, cache WiredTiger `50% of (RAM - 1GB)`, `analyzeShardKey` có từ 7.0, 21.349 / 3.809 tài liệu ở M31. Ý nào không tìm thấy thì đã bỏ hoặc viết lại (§16.4);
   - trang MongoDB nay là manual **9.0** (Current); thẻ chỉ cú pháp ghi `verified: { version: "MongoDB manual 9.0" }`;
   - thẻ không trích nguyên văn: câu trong ngoặc kép ở thân thẻ là diễn đạt lại.
 
@@ -6143,7 +6145,7 @@ Theo L215.6. Vòng này chỉ viết nội dung: thêm 58 thẻ ở `content/eng
 | M13 | L4 | `none` | `syntax` | — | `mongodb/m13-majority-write-concern.md` |
 | M14 | L2 | `none` | `syntax` | — | `mongodb/m14-fewer-collections.md` |
 | M19 | L1 | `mingo` | `diff` | khoảng tháng 9: `[]` → `[1]` | `mongodb/m19-dates-as-date.md` |
-| M20 | L2 | `mingo` | `diff` | dòng B giữ 15 → 7,5 (dòng C 30 → 15 ở cả hai) | `mongodb/m20-array-filters.md` |
+| M20 | L2 | `mingo` | `diff` | dòng B giữ 20 → 10 (dòng C 30 → 15 ở cả hai) | `mongodb/m20-array-filters.md` |
 | M21 | L2 | `mingo` | `diff` | 160,83 → 136,25 | `mongodb/m21-average-of-averages.md` |
 | M22 | L1 | `mingo` | `same` | 5 đơn | `mongodb/m22-in-not-or.md` |
 | M23 | L3 | `none` | `syntax` | — | `mongodb/m23-profiler-threshold.md` |
@@ -6204,7 +6206,7 @@ Track DynamoDB sau vòng này: 19 thẻ chạy bằng dynoxide (6 cũ + 13 mới
   - mingo không có index, `explain()`, profiler, replica set, session, transaction, change stream, shard, validator hay `createCollection` (M03, M04, M06, M07, M10–M14, M23–M28, M31–M38). `createIndex` của engine chỉ ghi định nghĩa, nên M07, M12, M28, M32, M33 vẫn chỉ cú pháp dù lệnh chạy được;
   - dynoxide trả `UnsupportedOperation` cho TTL và backup (D09, D22); lab không có `UpdateTable`/`DeleteTable` (D23); không có tính tiền, CloudWatch, throttle hay partition (D11, D24, D25, D27, D32); không có IAM, Streams, global tables, DAX (D26, D29, D30, D31).
 - **M02 lên chạy được** (catalogue ghi cú pháp): một `updateOne` với `$push` + `$each` + `$slice: -3` cho thấy mảng bị cắt còn 3, so với `$push` thường thành 4. Thân thẻ nói mingo chỉ cho thấy cơ chế cắt, không đo được giới hạn 16 MB.
-- **M19, M20, M29 rút về một lệnh:** M20 ở catalogue chạy hai lệnh (`updateOne` rồi `find`). Engine trả cả collection sau lệnh ghi, nên một `updateOne` là đủ; `setup` chỉ giữ đơn 5, thêm một dòng giá 100 để thấy dòng không khớp được giữ nguyên.
+- **M20 rút về một lệnh:** catalogue chạy hai lệnh (`updateOne` rồi `find`). Engine trả cả collection sau lệnh ghi, nên một `updateOne` là đủ. `setup` chỉ giữ đơn 5; dòng B đổi giá 15 → 20 để bản Không nên lộ rõ dòng nào không đổi (15, 20, 100 thay vì 15, 15, 100), thêm một dòng giá 100 để thấy dòng không khớp được giữ nguyên.
 - **M30 là thẻ mingo `check: error` đầu tiên.** Lỗi là của mingo (`MongoRunError` mã `mingo`, câu `$bucket require a default for out of range values`), không phải mã lỗi máy chủ MongoDB; `expect: { code: "mingo" }`, và `## Ví dụ` nói rõ điều đó. Cho BP-T: với runtime `mingo`, khung "Chạy cả hai" nên hiện câu lỗi của mingo, không hiện mã `mingo`.
 - **M22** giữ `same`: mingo không có index nên chỉ đo được hai cách cho cùng 5 đơn; thân thẻ nói phần index không đo được.
 - **DynamoDB, một request mỗi bên:**
@@ -6217,7 +6219,7 @@ Track DynamoDB sau vòng này: 19 thẻ chạy bằng dynoxide (6 cũ + 13 mới
   - D21 giữ chỉ cú pháp; số đo dynoxide (`ExecuteTransaction`) ghi ở `## Ví dụ`.
   - Cho BP-T: một `check` mới kiểu "bản Nên phải báo lỗi X" sẽ cho D21 chạy được.
 - **D08** so WCU nhưng khai `expect: { compare: rcu }`; verifier đọc `CapacityUnits` nên đúng, nhưng BP-T có thể muốn đặt tên `wcu`.
-- **Bỏ ý không có trên trang dẫn:** M25 (snapshot "khôi phục nhanh hơn"), M26 ("phải initial sync lại"), M29 (toán tử cập nhật thường không có bẫy), M32 (so chuỗi mặc định), M34 (session "chờ tới thời điểm ghi"), M38 (đổi shard key tốn kém), D32 (adaptive capacity cho on-demand), D24 (throttle GSI làm chậm ghi bảng gốc), D05 (single-table làm quyền và backup khó hơn).
+- **Bỏ hoặc viết lại ý không có trên trang dẫn:** M12 (tốn RAM, đẩy working set), M19 (`$dateTrunc`/`$year`), M28 ("lỗi trùng khóa" khi upsert, nay là "không lưu giá trị trùng" của trang unique index), M35 (mở lại "từ bây giờ"), M25 (snapshot "khôi phục nhanh hơn"), M26 ("phải initial sync lại"), M29 (toán tử cập nhật thường không có bẫy), M32 (so chuỗi mặc định), M34 (session "chờ tới thời điểm ghi"), M38 (đổi shard key tốn kém), D32 (adaptive capacity cho on-demand), D24 (throttle GSI làm chậm ghi bảng gốc), D05 (single-table làm quyền và backup khó hơn).
 - **Câu kiểm không lộ đáp án:** M10 đổi câu kiểm từ "quá một phút thì sao" (Vì sao đã nói) sang "một tài liệu có cần transaction không"; D16 không ghi số đo `ProjectionExpression` (2 RCU cả hai bản) vì câu kiểm hỏi đúng điều đó.
 - **`requires`:** mỗi id đã grep ở `0ede43d` có thuật ngữ của thẻ.
   - M03: `e-mg-l4-01` không nói tài liệu phình, nên `requires: []`.
@@ -6225,6 +6227,10 @@ Track DynamoDB sau vòng này: 19 thẻ chạy bằng dynoxide (6 cũ + 13 mới
   - D27 nối bài hot partition `e-dy-l4-03` (không bài nào nói Contributor Insights); D01 thêm `adv: [d7]`.
   - Bảng §12.7 thêm dòng M28–M38, §12.8 thêm D28–D32.
 - **Sửa bảng §12:** vòng 6 để lại 30 dòng có ô trống thừa (`|| e-bp-…`), đã sửa về đúng bốn cột.
+- **Chưa kiểm, cho BP-T và reviewer** (như §15.3):
+  - luật chú thích lần đầu (style §2.1) chưa có máy kiểm; `glossary.yml` không thêm mục mới;
+  - verifier tách cột `avoid` của glossary theo `;`, nhưng glossary dùng dấu phẩy, nên phần lớn chữ cần tránh không được máy bắt. Vòng này grep tay phần VI của 58 thẻ mới (`cột`, `phân vùng`, `hash key`, `range key`, `văn bản`, `bộ sưu tập`, `giai đoạn`, `giao dịch`): chỉ còn "khóa phân vùng" / "phân vùng vật lý" lần đầu cho DynamoDB (style §2.2 cho phép), "cột" khi nói về SQL/Postgres, và "văn bản dài" theo nghĩa chữ (D08);
+  - thẻ DynamoDB do một agent con viết; agent cha kiểm lại: mọi URL nguồn có trang đã tải (hoặc trả 200), anchor có thật, đáp án của 26 câu kiểm khớp câu hỏi, và đọc D21. Sự thật trong thân 13 thẻ DynamoDB chỉ cú pháp dựa vào lần đối chiếu của agent con.
 - **Sửa thẻ cũ M01:** nguồn `data-modeling/concepts/embedding-vs-references/` chuyển hướng sang `data-modeling/best-practices/#link-related-data` (vòng 5 đã sửa trong catalogue, thẻ thì chưa); thẻ nay dẫn thẳng URL đích.
 
 ### 16.5 Ngân sách

@@ -51,7 +51,7 @@ Muốn so chữ không phân biệt hoa thường hay dấu bằng collation, t�
 
 ## Vì sao
 
-- Index lưu khóa theo thứ tự của collation đã khai; truy vấn với collation khác không dùng được thứ tự đó.
+- Index có collation chỉ phục vụ so chữ cho thao tác nêu cùng collation đó.
 - Khi ấy truy vấn vẫn chạy, nhưng phép so chữ không đi qua index: chậm mà không báo gì.
 - Thẻ này chỉ cú pháp: mingo không có index.
 
@@ -63,6 +63,6 @@ To compare text ignoring case or accents with a collation, create the index **wi
 
 ## Why
 
-- The index stores keys in the order of its declared collation; a query with another collation cannot use that order.
+- An index with a collation serves string comparisons only for operations that specify that same collation.
 - The query still runs, but the string comparison does not go through the index: slow, with no warning.
 - This card is syntax only: mingo has no indexes.

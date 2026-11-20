@@ -62,6 +62,7 @@ Không `$push` mãi vào một mảng trong tài liệu (lượt xem, bình lu�
 - Tài liệu BSON tối đa 16 MB; mảng không giới hạn sớm muộn chạm trần đó.
 - Trước khi chạm trần, mảng lớn đã làm mỗi lần đọc và ghi tốn băng thông, bộ nhớ, và làm index trên mảng chậm đi.
 - Subset pattern giữ phần hay đọc trong working set (dữ liệu hay dùng nằm trong RAM).
+- mingo chỉ cho thấy cơ chế cắt mảng; giới hạn 16 MB thì không đo được ở đây.
 
 # EN
 
@@ -74,3 +75,4 @@ Never `$push` into an array in a document forever (one customer's page views, co
 - A BSON document is at most 16 MB; an unbounded array eventually reaches that ceiling.
 - Before it does, a large array already makes every read and write cost bandwidth and memory, and slows indexes on the array.
 - The subset pattern keeps the part that is read often in the working set (frequently used data held in RAM).
+- mingo only shows how the array is trimmed; the 16 MB limit cannot be measured here.

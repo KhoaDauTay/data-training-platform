@@ -41,8 +41,8 @@ quiz:
       - { vi: "Lệnh thứ hai luôn báo lỗi", en: "The second command always fails" }
     answer: 1
     why:
-      vi: "Cả hai cùng không thấy tài liệu nào nên cùng chèn. Docs: muốn tránh upsert nhiều lần thì các trường lọc phải có unique index. Có index rồi, bên thua nhận lỗi trùng khóa và chạy lại thì thành `$inc` trên tài liệu đã có."
-      en: "Neither sees a document, so both insert. The docs: to avoid multiple upserts, the filter fields must be uniquely indexed. With the index, the losing side gets a duplicate key error and, on retry, becomes an `$inc` on the existing document."
+      vi: "Cả hai cùng không thấy tài liệu nào nên cùng chèn. Docs: muốn tránh upsert nhiều lần thì các trường lọc phải có unique index. Có unique index thì database không lưu giá trị trùng: bên thua bị từ chối, chạy lại thì thành `$inc` trên tài liệu đã có."
+      en: "Neither sees a document, so both insert. The docs: to avoid multiple upserts, the filter fields must be uniquely indexed. With a unique index the database stores no duplicate values: the losing side is refused and, on retry, becomes an `$inc` on the existing document."
 ---
 
 ## Ý chính
