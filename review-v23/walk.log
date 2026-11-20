@@ -1,0 +1,49 @@
+== light-1280-new
+  [welcome sql-only] hash=#/engine dialog=false h1=Database Engine
+  errors(0): 
+== light-1280-deep
+  [focus radio] solid 2px rgb(15, 118, 110) off 2px
+  [focus btn] solid 2px rgb(15, 118, 110)
+  [disabled see] true op=1 cur=default bg=rgb(15, 118, 110)
+  [focus after plan] e-pg-l1-10-plan
+  [axe predict wrong] ok
+  [axe predict diagram open] ok
+  [cap wrong s0] BAD syntax error at end of input | syntax error at end of input
+  [cap s0] GOOD Đạt bước này. |  bar=v>... main=e-pg-l1-12-s1-submit
+  [cap s1] GOOD Đạt bước này. |  bar=vv>.. main=e-pg-l1-12-s2-submit
+  [cap s2] GOOD Đạt bước này. |  bar=vvv>. main=e-pg-l1-12-s3-submit
+  [axe cap plans] ok
+  [cap s3] GOOD Đạt bước này. |  bar=vvvv main=
+  [cap done] true completed=true
+  [axe cap done] ok
+  [e-mg-l1-02 syntax] BAD Expected "," or "}" but the input ended (line 1, column 33) (dòng 1, cột 33) | Expected "," or "}" but the input ended (line 1, column 33) (dòng 1, cột 33)
+  [e-mg-l1-02 right] GOOD Đạt bước này. | 
+  [axe e-mg-l1-02] ok
+  [e-dy-l1-05 syntax] BAD JSON chưa đúng cú pháp (dòng 1, cột 49). | JSON chưa đúng cú pháp (dòng 1, cột 49).
+  [e-dy-l1-05 right] GOOD Đạt bước này. | 
+  [axe e-dy-l1-05] ok
+  [viz steps] false,1403,417 / false,1403,417 / false,1403,417 / false,1403,417 / false,1403,417 / false,1403,417 / false,1403,417 / false,1403,417 anims=0
+  errors(0): 
+== dark-375-deep
+  [focus radio] solid 2px rgb(98, 220, 203) off 2px
+  [focus btn] solid 2px rgb(98, 220, 203)
+  [disabled see] true op=1 cur=default bg=rgb(98, 220, 203)
+  [focus after plan] e-pg-l1-10-plan
+  [axe predict wrong] ok
+  [axe predict diagram open] ok
+  [cap wrong s0] BAD syntax error at end of input | syntax error at end of input
+  [cap s0] GOOD Đạt bước này. |  bar=v>... main=e-pg-l1-12-s1-submit
+  [cap s1] GOOD Đạt bước này. |  bar=vv>.. main=e-pg-l1-12-s2-submit
+  [cap s2] GOOD Đạt bước này. |  bar=vvv>. main=e-pg-l1-12-s3-submit
+  [axe cap plans] ok
+  [cap s3] GOOD Đạt bước này. |  bar=vvvv main=
+  [cap done] true completed=true
+  [axe cap done] ok
+  [e-mg-l1-02 syntax] BAD Expected "," or "}" but the input ended (line 1, column 33) (dòng 1, cột 33) | Expected "," or "}" but the input ended (line 1, column 33) (dòng 1, cột 33)
+  [e-mg-l1-02 right] GOOD Đạt bước này. | 
+  [axe e-mg-l1-02] ok
+  [e-dy-l1-05 syntax] BAD JSON chưa đúng cú pháp (dòng 1, cột 49). | JSON chưa đúng cú pháp (dòng 1, cột 49).
+  [e-dy-l1-05 right] GOOD Đạt bước này. | 
+  [axe e-dy-l1-05] ok
+  [viz steps] false,1560,193 / false,1560,193 / false,1542,193 / false,1560,193 / false,1560,193 / false,1560,193 / false,1560,193 / false,1560,193 anims=0
+  errors(0): 

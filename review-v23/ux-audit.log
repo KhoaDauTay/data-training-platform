@@ -1,0 +1,7 @@
+
+> ux-audit
+> node scripts/ux-audit.mjs
+
+ux-audit http://127.0.0.1:5272/ (144 visits, 0 skipped, 94 s)
+  target     moderate  13 unique, 52 on pages
+UX AUDIT OK: 0 serious unique, report: smoke-out/ux-audit.json

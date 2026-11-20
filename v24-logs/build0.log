@@ -1,0 +1,498 @@
+
+> build
+> tsc --noEmit && vite build
+
+[36mvite v8.3.8 [32mbuilding client environment for production...[36m[39m
+transforming...
+[33m[plugin rolldown:vite-resolve] Module "node:fs" has been externalized for browser compatibility, imported by "C:/Users/khoa.huynh/Documents/study/bd-wt/v24-best/node_modules/libpg-query/wasm/libpg-query.js". See https://vite.dev/guide/troubleshooting.html#module-externalized-for-browser-compatibility for more details.[39m
+[33m[plugin rolldown:vite-resolve] Module "node:crypto" has been externalized for browser compatibility, imported by "C:/Users/khoa.huynh/Documents/study/bd-wt/v24-best/node_modules/libpg-query/wasm/libpg-query.js". See https://vite.dev/guide/troubleshooting.html#module-externalized-for-browser-compatibility for more details.[39m
+[33m[plugin rolldown:vite-resolve] Module "node:fs" has been externalized for browser compatibility, imported by "C:/Users/khoa.huynh/Documents/study/bd-wt/v24-best/node_modules/libpg-query/wasm/libpg-query.js". See https://vite.dev/guide/troubleshooting.html#module-externalized-for-browser-compatibility for more details.[39m
+[33m[plugin rolldown:vite-resolve] Module "node:crypto" has been externalized for browser compatibility, imported by "C:/Users/khoa.huynh/Documents/study/bd-wt/v24-best/node_modules/libpg-query/wasm/libpg-query.js". See https://vite.dev/guide/troubleshooting.html#module-externalized-for-browser-compatibility for more details.[39m
+[33m[plugin rolldown:vite-resolve] Module "node:module" has been externalized for browser compatibility, imported by "C:/Users/khoa.huynh/Documents/study/bd-wt/v24-best/node_modules/@electric-sql/pglite/dist/chunk-N66TTF7B.js". See https://vite.dev/guide/troubleshooting.html#module-externalized-for-browser-compatibility for more details.[39m
+[33m[plugin rolldown:vite-resolve] Module "node:module" has been externalized for browser compatibility, imported by "C:/Users/khoa.huynh/Documents/study/bd-wt/v24-best/node_modules/@electric-sql/pglite/dist/chunk-XZUEO4BZ.js". See https://vite.dev/guide/troubleshooting.html#module-externalized-for-browser-compatibility for more details.[39m
+[33m[33m[PLUGIN_TIMINGS] [0mJavaScript callbacks ran for 145ms of this 6.6s build (2%).
+1 callback is listed without a time. Its calls overlapped, so the time inside one call includes work from other calls. To find its cost, profile the build with `node --cpu-prof`:
+  - plugin vite:asset load (3 calls)
+See https://rolldown.rs/reference/InputOptions.checks#bundlertimings for more details.
+[39m
+[33m[33m[EVAL] [0mUse of direct `eval` function is strongly discouraged as it poses security risks and may cause issues with minification.
+ - Use of direct `eval` here. in node_modules/@electric-sql/pglite/dist/chunk-N66TTF7B.js at 23116..23120
+ [38;5;240m │[0m 
+ [38;5;240m │[0m [38;5;115mHelp[0m: Consider using indirect eval. For more information, check the documentation: https://rolldown.rs/guide/troubleshooting#avoiding-direct-eval
+[39m
+[33m[33m[EVAL] [0mUse of direct `eval` function is strongly discouraged as it poses security risks and may cause issues with minification.
+ - Use of direct `eval` here. in node_modules/@electric-sql/pglite/dist/chunk-N66TTF7B.js at 23607..23611
+ [38;5;240m │[0m 
+ [38;5;240m │[0m [38;5;115mHelp[0m: Consider using indirect eval. For more information, check the documentation: https://rolldown.rs/guide/troubleshooting#avoiding-direct-eval
+[39m
+[33m[33m[EVAL] [0mUse of direct `eval` function is strongly discouraged as it poses security risks and may cause issues with minification.
+ - Use of direct `eval` here. in node_modules/@electric-sql/pglite/dist/chunk-XZUEO4BZ.js at 84943..84947
+ [38;5;240m │[0m 
+ [38;5;240m │[0m [38;5;115mHelp[0m: Consider using indirect eval. For more information, check the documentation: https://rolldown.rs/guide/troubleshooting#avoiding-direct-eval
+[39m
+[33m[33m[EVAL] [0mUse of direct `eval` function is strongly discouraged as it poses security risks and may cause issues with minification.
+ - Use of direct `eval` here. in node_modules/@electric-sql/pglite/dist/chunk-XZUEO4BZ.js at 85434..85438
+ [38;5;240m │[0m 
+ [38;5;240m │[0m [38;5;115mHelp[0m: Consider using indirect eval. For more information, check the documentation: https://rolldown.rs/guide/troubleshooting#avoiding-direct-eval
+[39m
+[33m[33m[PLUGIN_TIMINGS] [0mJavaScript callbacks ran for 490ms of this 23.3s build (2%).
+2 callbacks are listed without a time. Their calls overlapped, so the time inside one call includes work from other calls. To find their cost, profile the build with `node --cpu-prof`:
+  - plugin vite:asset load (8 calls)
+  - plugin vite:asset-import-meta-url transform (2 calls)
+See https://rolldown.rs/reference/InputOptions.checks#bundlertimings for more details.
+[39m
+[33m[plugin rolldown:vite-resolve] Module "node:module" has been externalized for browser compatibility, imported by "C:/Users/khoa.huynh/Documents/study/bd-wt/v24-best/node_modules/@electric-sql/pglite/dist/chunk-N66TTF7B.js". See https://vite.dev/guide/troubleshooting.html#module-externalized-for-browser-compatibility for more details.[39m
+[33m[plugin rolldown:vite-resolve] Module "node:module" has been externalized for browser compatibility, imported by "C:/Users/khoa.huynh/Documents/study/bd-wt/v24-best/node_modules/@electric-sql/pglite/dist/chunk-XZUEO4BZ.js". See https://vite.dev/guide/troubleshooting.html#module-externalized-for-browser-compatibility for more details.[39m
+[33m[33m[EVAL] [0mUse of direct `eval` function is strongly discouraged as it poses security risks and may cause issues with minification.
+ - Use of direct `eval` here. in node_modules/@electric-sql/pglite/dist/chunk-N66TTF7B.js at 23116..23120
+ [38;5;240m │[0m 
+ [38;5;240m │[0m [38;5;115mHelp[0m: Consider using indirect eval. For more information, check the documentation: https://rolldown.rs/guide/troubleshooting#avoiding-direct-eval
+[39m
+[33m[33m[EVAL] [0mUse of direct `eval` function is strongly discouraged as it poses security risks and may cause issues with minification.
+ - Use of direct `eval` here. in node_modules/@electric-sql/pglite/dist/chunk-N66TTF7B.js at 23607..23611
+ [38;5;240m │[0m 
+ [38;5;240m │[0m [38;5;115mHelp[0m: Consider using indirect eval. For more information, check the documentation: https://rolldown.rs/guide/troubleshooting#avoiding-direct-eval
+[39m
+[33m[33m[EVAL] [0mUse of direct `eval` function is strongly discouraged as it poses security risks and may cause issues with minification.
+ - Use of direct `eval` here. in node_modules/@electric-sql/pglite/dist/chunk-XZUEO4BZ.js at 84943..84947
+ [38;5;240m │[0m 
+ [38;5;240m │[0m [38;5;115mHelp[0m: Consider using indirect eval. For more information, check the documentation: https://rolldown.rs/guide/troubleshooting#avoiding-direct-eval
+[39m
+[33m[33m[EVAL] [0mUse of direct `eval` function is strongly discouraged as it poses security risks and may cause issues with minification.
+ - Use of direct `eval` here. in node_modules/@electric-sql/pglite/dist/chunk-XZUEO4BZ.js at 85434..85438
+ [38;5;240m │[0m 
+ [38;5;240m │[0m [38;5;115mHelp[0m: Consider using indirect eval. For more information, check the documentation: https://rolldown.rs/guide/troubleshooting#avoiding-direct-eval
+[39m
+[33m[33m[PLUGIN_TIMINGS] [0mJavaScript callbacks ran for 280ms of this 20.4s build (1%).
+1 callback is listed without a time. Its calls overlapped, so the time inside one call includes work from other calls. To find its cost, profile the build with `node --cpu-prof`:
+  - plugin vite:asset-import-meta-url transform (17 calls)
+See https://rolldown.rs/reference/InputOptions.checks#bundlertimings for more details.
+[39m
+✓ 2435 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/assets/__vite-browser-external-C4gylx02.js               0.11 kB
+dist/assets/__vite-browser-external-B8YGsjl0.js               0.12 kB
+dist/assets/nodefs-Bxl92kV7.js                                0.55 kB
+dist/assets/nodefs-Cc-lX-sA.js                                0.55 kB
+dist/assets/rolldown-runtime-WkwZ5CU-.js                      0.59 kB
+dist/assets/rolldown-runtime-XKyaHtl9.js                      0.72 kB
+dist/assets/worker-6VpAT6x4.js                                0.78 kB
+dist/assets/pathDataset-BQq3HAkw.js                           0.87 kB
+dist/assets/why-BDsiR22d.js                                   3.42 kB
+dist/assets/pg_visibility.tar-DPSpADpL.gz                     4.50 kB
+dist/assets/worker-DqChiqHj.js                                4.54 kB
+dist/assets/pg_buffercache.tar-DV7ECRMz.gz                    4.57 kB
+dist/assets/pg_walinspect.tar-CtMxKtBQ.gz                     4.70 kB
+dist/assets/bloom.tar-BuiHNb1A.gz                             5.47 kB
+dist/assets/btree_gin.tar-B42unpDn.gz                         5.48 kB
+dist/assets/memfs2opfs-CUoLAkLt.js                            8.26 kB
+dist/assets/memfs2opfs-OPiXVvby.js                            8.27 kB
+dist/assets/opfs-ahp-B-k18c6V.js                             10.16 kB
+dist/assets/opfs-ahp-C9zPMUIy.js                             10.17 kB
+dist/assets/pg_stat_statements.tar-DVgwgbyC.gz               11.54 kB
+dist/assets/nunito-vietnamese-wght-normal-U01xdrZh.woff2     13.09 kB
+dist/assets/cube.tar-CmYPjDWE.gz                             15.42 kB
+dist/assets/pg_trgm.tar-ColGje2J.gz                          15.72 kB
+dist/assets/mongoSeedShop-B1fwxW8C.js                        15.79 kB
+dist/assets/pageinspect.tar-C-0DY-UN.gz                      16.11 kB
+dist/assets/amcheck.tar-4VH4efQy.gz                          21.77 kB
+dist/assets/ltree.tar-BK8fCDwX.gz                            21.97 kB
+dist/assets/btree_gist.tar-eh06eJOV.gz                       22.24 kB
+dist/assets/finSeed-BbR4zro9.js                              23.69 kB
+dist/assets/ecomSeed-C-LXBVMP.js                             24.71 kB
+dist/assets/nunito-latin-wght-normal-BzFMHfZw.woff2          39.12 kB
+dist/assets/parser-BaBPKY1W.js                               42.36 kB
+dist/assets/gameSeed-C5Hg4tDC.js                             48.75 kB
+dist/index.html                                              49.70 kB │ gzip:    10.93 kB
+dist/assets/engineMongo-BKR6nee0.js                         108.14 kB
+dist/assets/steps-DcLEi1-B.js                               201.48 kB
+dist/assets/dynoxide-worker-CLpd9_fU.js                     230.30 kB
+dist/assets/dataset-BKluKifV.js                             260.06 kB
+dist/assets/initdb-BJaOLL_I.wasm                            298.78 kB │ gzip:   132.40 kB
+dist/assets/pglabWorker-C7wWuMWx.js                         492.47 kB
+dist/assets/worker-DIPeBAkJ.js                              501.17 kB
+dist/assets/sqlite3-BVKGSWc-.wasm                           864.75 kB │ gzip:   405.63 kB
+dist/assets/pgcrypto.tar-GTyNBmZP.gz                      1,150.01 kB
+dist/assets/libpg-query-DwCfCEfv.wasm                     1,717.87 kB │ gzip:   345.07 kB
+dist/assets/dynoxide_bg-C2dZWatd.wasm                     1,918.67 kB │ gzip:   733.97 kB
+dist/assets/pglite-BE2Di5Vw.data                          6,242.27 kB
+dist/assets/pglite-VfT9wtrq.wasm                          9,086.48 kB │ gzip: 3,313.14 kB
+dist/assets/index-C0WIJzNb.css                               97.82 kB │ gzip:    20.72 kB
+dist/assets/libpg-query-C2UcY3Nf.js                           0.06 kB │ gzip:     0.08 kB
+dist/assets/pie-XZMESJXO-CLZw5nWA.js                          0.10 kB │ gzip:     0.11 kB
+dist/assets/info-OHQRW6UA-CX5U2oYH.js                         0.10 kB │ gzip:     0.11 kB
+dist/assets/radar-ABXABTNO-Dv4qQMAM.js                        0.10 kB │ gzip:     0.11 kB
+dist/assets/packet-JDAUHWVQ-CdIH3N-s.js                       0.10 kB │ gzip:     0.11 kB
+dist/assets/cynefin-EF2NZ3EQ-CloXJGbu.js                      0.10 kB │ gzip:     0.11 kB
+dist/assets/treemap-SAJKECNS-BgYxrllW.js                      0.10 kB │ gzip:     0.11 kB
+dist/assets/wardley-7MLQ67FV-Duawt6HR.js                      0.10 kB │ gzip:     0.11 kB
+dist/assets/gitGraph-VSP46ZUC-BQF76v0s.js                     0.10 kB │ gzip:     0.11 kB
+dist/assets/railroad-I3PHUGI6-DbgxsnvR.js                     0.10 kB │ gzip:     0.11 kB
+dist/assets/treeView-D4JQ5SDB-DgutxWB1.js                     0.10 kB │ gzip:     0.11 kB
+dist/assets/railroad-peg-JR7BVNR7-KjecyoZ0.js                 0.11 kB │ gzip:     0.11 kB
+dist/assets/architecture-WOLXFQ4H-_rl7AhLT.js                 0.11 kB │ gzip:     0.11 kB
+dist/assets/railroad-abnf-LNEFI6M7-jqSfr1iQ.js                0.11 kB │ gzip:     0.11 kB
+dist/assets/railroad-ebnf-DWYD2UWJ-CY45PpoW.js                0.11 kB │ gzip:     0.11 kB
+dist/assets/eventmodeling-K75KTNOO-CllCPg_K.js                0.11 kB │ gzip:     0.12 kB
+dist/assets/chunk-Y2CYZVJY-DsF7k-Jl.js                        0.15 kB │ gzip:     0.14 kB
+dist/assets/chunk-2Q5K7J3B-C1jixKkw.js                        0.19 kB │ gzip:     0.16 kB
+dist/assets/chunk-JWPE2WC7-DVXcaiue.js                        0.22 kB │ gzip:     0.17 kB
+dist/assets/chunk-XXDRQBXY-CYzxhml0.js                        0.26 kB │ gzip:     0.22 kB
+dist/assets/chunk-OHR5NZHT-CHONtqN7.js                        0.33 kB │ gzip:     0.26 kB
+dist/assets/chunk-5VM5RSS4-ZNzvKenW.js                        0.36 kB │ gzip:     0.27 kB
+dist/assets/chunk-OD3NTWWA-CAVyH1Ca.js                        0.45 kB │ gzip:     0.31 kB
+dist/assets/chunk-VTWWFHGB-BYcesc7m.js                        0.45 kB │ gzip:     0.31 kB
+dist/assets/chunk-3M4EKCLJ-CZCHjIMV.js                        0.46 kB │ gzip:     0.31 kB
+dist/assets/chunk-VZTHESGH-BXvs__Wg.js                        0.46 kB │ gzip:     0.31 kB
+dist/assets/chunk-VPELOWWC-BcHS3JJZ.js                        0.46 kB │ gzip:     0.32 kB
+dist/assets/types-DuWKYteL.js                                 0.47 kB │ gzip:     0.22 kB
+dist/assets/chunk-53FOQ5SW-CpLZLKqk.js                        0.50 kB │ gzip:     0.35 kB
+dist/assets/flowDiagram-MALGAFMO-BWm02XuL.js                  0.57 kB │ gzip:     0.31 kB
+dist/assets/chunk-TU62E6Q5-DJoiQ1xE.js                        0.57 kB │ gzip:     0.40 kB
+dist/assets/chunk-QNH66VMT-ByH5tEVf.js                        0.60 kB │ gzip:     0.39 kB
+dist/assets/chunk-J5ZVWO5B-oDCd-gWO.js                        0.63 kB │ gzip:     0.43 kB
+dist/assets/infoDiagram-KBXO4MBG-Du9_VF4a.js                  0.66 kB │ gzip:     0.42 kB
+dist/assets/swimlanesDiagram-OMPLPG4O-Cu6Hj-wt.js             0.83 kB │ gzip:     0.48 kB
+dist/assets/chunk-YK26KJH5-DAC0RUcW.js                        0.83 kB │ gzip:     0.46 kB
+dist/assets/sizeCapture-INFHLROL-3uHXrFqA.js                  0.87 kB │ gzip:     0.51 kB
+dist/assets/chunk-DUW6YSOI-Dgx8z5s3.js                        0.89 kB │ gzip:     0.46 kB
+dist/assets/chunk-24IY7LWP-Dx1bH4hy.js                        0.90 kB │ gzip:     0.49 kB
+dist/assets/chunk-KPI5JJXK-qcA7W3O4.js                        0.92 kB │ gzip:     0.49 kB
+dist/assets/rolldown-runtime-pP25SEvz.js                      0.98 kB │ gzip:     0.56 kB
+dist/assets/engineVizPlanJson-C_nmRMqN.js                     1.00 kB │ gzip:     0.52 kB
+dist/assets/chunk-ZO67DCNQ-EFYGvQ3O.js                        1.04 kB │ gzip:     0.58 kB
+dist/assets/chunk-BP2KR52E-e4oUcnOc.js                        1.05 kB │ gzip:     0.59 kB
+dist/assets/ics-CnDWnysK.js                                   1.08 kB │ gzip:     0.67 kB
+dist/assets/chunk-F6S3BTY2-C2qAf54c.js                        1.12 kB │ gzip:     0.62 kB
+dist/assets/chunk-LEVMRMFU-D7jM17Ik.js                        1.42 kB │ gzip:     0.79 kB
+dist/assets/chunk-4S7OKTRW-BYLWFTeI.js                        1.46 kB │ gzip:     0.78 kB
+dist/assets/preload-helper-7y9sWmk5.js                        1.61 kB │ gzip:     0.82 kB
+dist/assets/chunk-TPMEZKFX-BCdevXsF.js                        1.67 kB │ gzip:     0.74 kB
+dist/assets/railroadDiagram-MRQ6NCDL-D7xm05cq.js              1.72 kB │ gzip:     0.79 kB
+dist/assets/abnfDiagram-S7VZAUFO-BbuMSFoc.js                  1.90 kB │ gzip:     0.92 kB
+dist/assets/chunk-X4PVCEUW-DCjLPGup.js                        1.95 kB │ gzip:     0.95 kB
+dist/assets/chunk-HFQBQIA3-CQjvodfw.js                        1.98 kB │ gzip:     0.90 kB
+dist/assets/pegDiagram-FD4XPPHP-C_bBUrS2.js                   2.06 kB │ gzip:     0.96 kB
+dist/assets/labs-BEI6fMXh.js                                  2.09 kB │ gzip:     1.07 kB
+dist/assets/ebnfDiagram-UZSYDL2S-hAiJwSFx.js                  2.12 kB │ gzip:     0.91 kB
+dist/assets/whyView-FCHc5Tvy.js                               3.11 kB │ gzip:     1.60 kB
+dist/assets/09-quiz-operations-oXmlzNww.js                    3.25 kB │ gzip:     1.59 kB
+dist/assets/chunk-CFHHFPVC-BnzyVqlC.js                        3.28 kB │ gzip:     1.44 kB
+dist/assets/09-predict-covered-tHSG0QS5.js                    3.56 kB │ gzip:     1.54 kB
+dist/assets/05-lab-outlier-CMFmr6Wz.js                        3.63 kB │ gzip:     1.71 kB
+dist/assets/06-lab-polymorphic-HVy5RwRz.js                    3.67 kB │ gzip:     1.69 kB
+dist/assets/08-predict-esr-sort-D9QgP2CF.js                   3.67 kB │ gzip:     1.73 kB
+dist/assets/bpLint-wHrHgDIs.js                                3.68 kB │ gzip:     1.82 kB
+dist/assets/02-lab-computed-2QYQsgig.js                       3.68 kB │ gzip:     1.79 kB
+dist/assets/12-quiz-consistency-Cltx2v8J.js                   3.74 kB │ gzip:     1.67 kB
+dist/assets/03-predict-multikey-cover-BuWx27jC.js             3.80 kB │ gzip:     1.51 kB
+dist/assets/general-BLnepcRq.js                               3.91 kB │ gzip:     1.73 kB
+dist/assets/02-predict-partial-BXTOvyM2.js                    3.95 kB │ gzip:     1.73 kB
+dist/assets/16-predict-sparse-hint-DT9Be9aE.js                4.01 kB │ gzip:     1.72 kB
+dist/assets/06-predict-targeted-BM4PmsDY.js                   4.02 kB │ gzip:     1.81 kB
+dist/assets/02-predict-write-conflict-Dh0gp0mh.js             4.11 kB │ gzip:     1.82 kB
+dist/assets/04-quiz-indexes-D01tDnMX.js                       4.13 kB │ gzip:     1.70 kB
+dist/assets/diagram-DNEMPZML-ZdS896fn.js                      4.35 kB │ gzip:     1.90 kB
+dist/assets/04-predict-failover-CcH8JZ_8.js                   4.42 kB │ gzip:     2.02 kB
+dist/assets/03-literal-trap-C0pZCqRh.js                       4.49 kB │ gzip:     2.03 kB
+dist/assets/07-predict-key-count-BW4ztsmw.js                  4.51 kB │ gzip:     1.88 kB
+dist/assets/03-create-gsi-5rzfzfJd.js                         4.56 kB │ gzip:     1.83 kB
+dist/assets/06-schemas-DI33kj5c.js                            4.58 kB │ gzip:     1.97 kB
+dist/assets/09-bloom-DnVvtC27.js                              4.60 kB │ gzip:     2.19 kB
+dist/assets/11-predict-payment-flow-DmRZAgne.js               4.60 kB │ gzip:     2.07 kB
+dist/assets/03-lab-bucket-94dUyzRB.js                         4.61 kB │ gzip:     2.12 kB
+dist/assets/illustrations-DWsKRQqT.js                         4.63 kB │ gzip:     2.24 kB
+dist/assets/04-create-table-RpAxOPfp.js                       4.66 kB │ gzip:     1.91 kB
+dist/assets/06-predict-collscan-BDwDAoNm.js                   4.66 kB │ gzip:     1.87 kB
+dist/assets/02-find-filter-Cp1YqkFS.js                        4.69 kB │ gzip:     1.92 kB
+dist/assets/12-transact-get-BbG3FtqX.js                       4.73 kB │ gzip:     2.08 kB
+dist/assets/05-hash-C5ADTJ7a.js                               4.77 kB │ gzip:     2.27 kB
+dist/assets/15-predict-collation-DRCWCpkS.js                  4.88 kB │ gzip:     1.82 kB
+dist/assets/08-time-series-D1rT4kMY.js                        4.90 kB │ gzip:     2.14 kB
+dist/assets/05-browser-vs-aws-Cgu6ANX9.js                     4.90 kB │ gzip:     2.17 kB
+dist/assets/04-lab-schema-versioning-BV7Qpl6Z.js              4.91 kB │ gzip:     2.13 kB
+dist/assets/03-projection-BahR1MUa.js                         4.91 kB │ gzip:     2.04 kB
+dist/assets/03-hot-partition-math-D8w99UYM.js                 4.91 kB │ gzip:     2.07 kB
+dist/assets/01-patterns-Cnk4nAMk.js                           4.93 kB │ gzip:     2.20 kB
+dist/assets/engineCapstone-CZ24sxJZ.js                        4.95 kB │ gzip:     1.99 kB
+dist/assets/11-lab-slow-log-CsdoVsnm.js                       4.98 kB │ gzip:     2.29 kB
+dist/assets/17-quiz-special-indexes-RonEDYis.js               4.99 kB │ gzip:     2.18 kB
+dist/assets/pieDiagram-J4AKIIQI-DlttGWnA.js                   5.00 kB │ gzip:     2.12 kB
+dist/assets/07-spgist-DoKlyIn7.js                             5.02 kB │ gzip:     2.38 kB
+dist/assets/04-expression-BQZvTG2M.js                         5.14 kB │ gzip:     2.17 kB
+dist/assets/04-backups-COOlIr7f.js                            5.15 kB │ gzip:     2.30 kB
+dist/assets/11-order-limit-CgHQ0QNb.js                        5.15 kB │ gzip:     2.41 kB
+dist/assets/07-comparison-logic-CmU1Lu-y.js                   5.17 kB │ gzip:     2.10 kB
+dist/assets/bpmnIcons-APHXDYXF-C0jbCElo.js                    5.21 kB │ gzip:     1.15 kB
+dist/assets/01-wiredtiger-CzB1U6tu.js                         5.21 kB │ gzip:     2.34 kB
+dist/assets/06-arrays-gin-BZvMK79Y.js                         5.25 kB │ gzip:     2.33 kB
+dist/assets/03-replica-set-Ekdb8ENx.js                        5.26 kB │ gzip:     2.38 kB
+dist/assets/10-change-streams-WFW8O37F.js                     5.26 kB │ gzip:     2.25 kB
+dist/assets/06-put-item-CQnhUPJn.js                           5.30 kB │ gzip:     2.32 kB
+dist/assets/12-lab-match-first-WOD7sFe9.js                    5.35 kB │ gzip:     2.26 kB
+dist/assets/runner-DKnRk8jz.js                                5.38 kB │ gzip:     2.37 kB
+dist/assets/02-create-table-rJeXpbvY.js                       5.39 kB │ gzip:     2.18 kB
+dist/assets/09-first-index-Dbp59JKh.js                        5.39 kB │ gzip:     2.53 kB
+dist/assets/03-global-tables-DlkAkEyT.js                      5.43 kB │ gzip:     2.37 kB
+dist/assets/chunk-KS47KZWR-D-4R7DfK.js                        5.43 kB │ gzip:     2.49 kB
+dist/assets/05-get-item-Na4pDttJ.js                           5.44 kB │ gzip:     2.37 kB
+dist/assets/11-consistency-CxWcRd1f.js                        5.44 kB │ gzip:     2.37 kB
+dist/assets/01-heap-page-CsJOuMJE.js                          5.44 kB │ gzip:     2.48 kB
+dist/assets/06-capacity-modes-D2EutFyb.js                     5.46 kB │ gzip:     2.34 kB
+dist/assets/08-fillfactor-predict-ejnmhM_O.js                 5.47 kB │ gzip:     2.41 kB
+dist/assets/09-transactions-BatvoEFy.js                       5.48 kB │ gzip:     2.31 kB
+dist/assets/04-insert-delete-JbP4-Ge5.js                      5.49 kB │ gzip:     2.20 kB
+dist/assets/runner-Oixb-_2C.js                                5.54 kB │ gzip:     2.41 kB
+dist/assets/09-exists-type-regex-ClnM-Y8k.js                  5.55 kB │ gzip:     2.09 kB
+dist/assets/06-array-updates-CrzSRBGy.js                      5.56 kB │ gzip:     2.21 kB
+dist/assets/02-page-anatomy-lab-1GUa_ylS.js                   5.57 kB │ gzip:     2.37 kB
+dist/assets/11-jsonb-ilh87s8t.js                              5.58 kB │ gzip:     2.53 kB
+dist/assets/10-explain-basics-BovE-aAh.js                     5.58 kB │ gzip:     2.62 kB
+dist/assets/10-plan-cache-C08wo3GM.js                         5.59 kB │ gzip:     2.46 kB
+dist/assets/05-esr-BNHh1W0S.js                                5.60 kB │ gzip:     2.47 kB
+dist/assets/01-access-patterns-uPprVem-.js                    5.61 kB │ gzip:     2.49 kB
+dist/assets/10-sort-limit-count-DvD54REK.js                   5.61 kB │ gzip:     2.33 kB
+dist/assets/10-write-cost-DFlnC7Bk.js                         5.64 kB │ gzip:     2.35 kB
+dist/assets/08-causal-consistency-CIIia_fe.js                 5.66 kB │ gzip:     2.35 kB
+dist/assets/01-tables-items-CXUSw02H.js                       5.67 kB │ gzip:     2.50 kB
+dist/assets/09-facet-bucket-BIeCY66D.js                       5.69 kB │ gzip:     2.25 kB
+dist/assets/05-sharding-x8c3wINT.js                           5.73 kB │ gzip:     2.52 kB
+dist/assets/04-pipeline-concept-CrWHPKQV.js                   5.86 kB │ gzip:     2.52 kB
+dist/assets/chunk-R3KSYZAL-CK2CabqR.js                        5.89 kB │ gzip:     2.71 kB
+dist/assets/02-pipeline-updates-OmyXLXk2.js                   5.91 kB │ gzip:     2.45 kB
+dist/assets/13-transaction-cancel-BcjjS5xo.js                 5.92 kB │ gzip:     2.45 kB
+dist/assets/08-views-DBPjSHGP.js                              5.93 kB │ gzip:     2.54 kB
+dist/assets/08-item-size-BDNvOMKb.js                          5.94 kB │ gzip:     2.45 kB
+dist/assets/01-index-kinds-CIbpY1DA.js                        5.97 kB │ gzip:     2.44 kB
+dist/assets/05-update-operators-CQCPT_U3.js                   5.98 kB │ gzip:     2.41 kB
+dist/assets/03-no-join-limits-HQ_m9ZA2.js                     6.04 kB │ gzip:     2.77 kB
+dist/assets/02-primary-key-DGCx9yEo.js                        6.06 kB │ gzip:     2.51 kB
+dist/assets/13-trigram-j8nqoXO-.js                            6.06 kB │ gzip:     2.95 kB
+dist/assets/diagram-L3MUGCDN-OM1zkcGw.js                      6.08 kB │ gzip:     2.58 kB
+dist/assets/07-concerns-povJMXIi.js                           6.09 kB │ gzip:     2.54 kB
+dist/assets/07-update-delete-B5zAqQH-.js                      6.11 kB │ gzip:     2.48 kB
+dist/assets/01-documents-C0Sq7h4_.js                          6.17 kB │ gzip:     2.75 kB
+dist/assets/09-read-cost-BFKkRzhD.js                          6.29 kB │ gzip:     2.68 kB
+dist/assets/02-lsi-gsi-fSYvk0Z7.js                            6.30 kB │ gzip:     2.73 kB
+dist/assets/03-identity-uuid-generated-CuAM6A5T.js            6.39 kB │ gzip:     2.72 kB
+dist/assets/05-match-project-Jxl1oMoQ.js                      6.40 kB │ gzip:     2.27 kB
+dist/assets/01-positional-updates-B4Arbc32.js                 6.43 kB │ gzip:     2.44 kB
+dist/assets/01-expression-kinds-DFYelhOx.js                   6.43 kB │ gzip:     2.53 kB
+dist/assets/04-constraints-DLXHy84v.js                        6.46 kB │ gzip:     2.62 kB
+dist/assets/01-skip-scan-4CTULk7P.js                          6.51 kB │ gzip:     2.80 kB
+dist/assets/15-pg-stats-ty3g68KC.js                           6.52 kB │ gzip:     2.91 kB
+dist/assets/10-ranges-exclusion-CrH4VzB_.js                   6.55 kB │ gzip:     2.60 kB
+dist/assets/portfolioPng-DzV7lhUL.js                          6.55 kB │ gzip:     3.32 kB
+dist/assets/mermaid-parser.core-Ocyog8Tx.js                   6.57 kB │ gzip:     1.84 kB
+dist/assets/03-partial-BpQ08owv.js                            6.62 kB │ gzip:     2.67 kB
+dist/assets/07-lab-shard-key-B5eRWoNx.js                      6.73 kB │ gzip:     2.44 kB
+dist/assets/07-unwind-D9ZYd_87.js                             6.75 kB │ gzip:     2.48 kB
+dist/assets/14-merge-out-DRuG0lUu.js                          6.77 kB │ gzip:     2.56 kB
+dist/assets/12-full-text-XMIn5sBY.js                          6.77 kB │ gzip:     2.71 kB
+dist/assets/01-streams-CEe7vQU4.js                            6.84 kB │ gzip:     2.87 kB
+dist/assets/08-brin-BLRovIT-.js                               6.84 kB │ gzip:     3.12 kB
+dist/assets/02-adaptive-capacity-DLoVWm_E.js                  6.89 kB │ gzip:     2.82 kB
+dist/assets/02-covering-order-Ce3wP9I7.js                     6.91 kB │ gzip:     2.84 kB
+dist/assets/16-geo-knn-ClO862Tj.js                            6.92 kB │ gzip:     2.96 kB
+dist/assets/03-update-expressions-DfHy8vmi.js                 6.92 kB │ gzip:     2.77 kB
+dist/assets/07-adjacency-list-Bxtfdfu4.js                     6.92 kB │ gzip:     2.47 kB
+dist/assets/frame-JANOKPdm.js                                 6.95 kB │ gzip:     3.31 kB
+dist/assets/03-toast-lab-CDrmAK3r.js                          6.95 kB │ gzip:     2.98 kB
+dist/assets/06-group-sort-cnNhTqxe.js                         6.95 kB │ gzip:     2.45 kB
+dist/assets/01-partitions-Ca_E5-XY.js                         6.96 kB │ gzip:     2.98 kB
+dist/assets/04-mvcc-BX1lFK3m.js                               7.00 kB │ gzip:     3.07 kB
+dist/assets/12-reshape-model-Cp56BvQw.js                      7.05 kB │ gzip:     2.83 kB
+dist/assets/10-window-fields-BqULOVWe.js                      7.06 kB │ gzip:     2.58 kB
+dist/assets/bpTip-D80LWc6s.js                                 7.11 kB │ gzip:     3.79 kB
+dist/assets/engineVizCore-DMrdP8S5.js                         7.12 kB │ gzip:     3.47 kB
+dist/assets/02-ttl-filter-DWOgwWFG.js                         7.14 kB │ gzip:     2.97 kB
+dist/assets/05-counters-sets-Bp9orttp.js                      7.22 kB │ gzip:     3.10 kB
+dist/assets/enginePathView-YeRNpljm.js                        7.23 kB │ gzip:     2.98 kB
+dist/assets/12-wal-yZxJX_VJ.js                                7.28 kB │ gzip:     3.07 kB
+dist/assets/14-advisory-locks-X8P83vtG.js                     7.38 kB │ gzip:     3.27 kB
+dist/assets/07-hot-vs-non-hot-lab-C6bJn7M4.js                 7.38 kB │ gzip:     2.97 kB
+dist/assets/08-array-queries-CoEBGORL.js                      7.41 kB │ gzip:     2.72 kB
+dist/assets/07-single-table-BYOvRhTk.js                       7.42 kB │ gzip:     3.04 kB
+dist/assets/01-types-Bp5TZE2w.js                              7.46 kB │ gzip:     3.19 kB
+dist/assets/06-dax-CLVPZqNj.js                                7.56 kB │ gzip:     2.95 kB
+dist/assets/02-btree-deduplication-ZLV4vqtm.js                7.59 kB │ gzip:     3.29 kB
+dist/assets/05-null-semantics-ChqphLXM.js                     7.59 kB │ gzip:     3.06 kB
+dist/assets/datasetPanel-CnvPqPQJ.js                          7.61 kB │ gzip:     3.54 kB
+dist/assets/05-calculated-suffix-B8ILF14b.js                  7.63 kB │ gzip:     2.63 kB
+dist/assets/10-capstone-store-ops-CoPG4vo-.js                 7.65 kB │ gzip:     3.08 kB
+dist/assets/12-capstone-bookshop-CV5qPeiI.js                  7.69 kB │ gzip:     3.39 kB
+dist/assets/06-hot-vacuum-DLZpeVu8.js                         7.69 kB │ gzip:     3.27 kB
+dist/assets/13-schema-validation-Dgav7D8D.js                  7.76 kB │ gzip:     2.83 kB
+dist/assets/11-embed-vs-reference-BQHEROuz.js                 7.76 kB │ gzip:     3.32 kB
+dist/assets/11-wraparound-quiz-CgybOvg7.js                    7.77 kB │ gzip:     3.16 kB
+dist/assets/08-lookup-DRxUAotD.js                             7.82 kB │ gzip:     2.97 kB
+dist/assets/03-btree-index-deletion-VX5DJG5H.js               7.84 kB │ gzip:     3.36 kB
+dist/assets/09-overloaded-gsi-C6CTBsaQ.js                     7.85 kB │ gzip:     2.79 kB
+dist/assets/14-buffers-workmem-lab-DDX_9XdL.js                7.95 kB │ gzip:     3.35 kB
+dist/assets/11-deadlocks-DckHZV-G.js                          8.01 kB │ gzip:     3.32 kB
+dist/assets/11-capstone-shop-day-kfVsGQKt.js                  8.10 kB │ gzip:     3.25 kB
+dist/assets/diagram-XPFHEONP-SmAnkeis.js                      8.12 kB │ gzip:     3.64 kB
+dist/assets/12-memory-tuning-DnYWETWn.js                      8.18 kB │ gzip:     3.45 kB
+dist/assets/04-join-algorithms-pAwpYzad.js                    8.19 kB │ gzip:     3.31 kB
+dist/assets/06-batch-DJtAyqJc.js                              8.24 kB │ gzip:     3.33 kB
+dist/assets/10-composite-sort-keys-DuFzsUTt.js                8.25 kB │ gzip:     2.98 kB
+dist/assets/14-explain-analyze-D6REw6Lr.js                    8.38 kB │ gzip:     3.71 kB
+dist/assets/09-hierarchical-sort-key-0TGvnOJK.js              8.46 kB │ gzip:     2.66 kB
+dist/assets/11-transactions-BA3qybBq.js                       8.50 kB │ gzip:     3.26 kB
+dist/assets/08-item-collection-DaScVz0Y.js                    8.54 kB │ gzip:     2.60 kB
+dist/assets/04-conditional-writes-DMx5eVv2.js                 8.57 kB │ gzip:     3.32 kB
+dist/assets/01-cost-model-DPSj_a-L.js                         8.60 kB │ gzip:     3.59 kB
+dist/assets/02-column-statistics-1njRjBV-.js                  8.64 kB │ gzip:     3.59 kB
+dist/assets/07-transactions-B2Xjnly6.js                       8.65 kB │ gzip:     3.51 kB
+dist/assets/11-pg-stat-statements-D16whuhL.js                 8.66 kB │ gzip:     3.36 kB
+dist/assets/05-join-order-Dw0Xf3v1.js                         8.67 kB │ gzip:     3.57 kB
+dist/assets/07-partition-pruning-DCm0LjHt.js                  8.69 kB │ gzip:     3.47 kB
+dist/assets/17-count-star-predict-1s-U61Xi.js                 8.80 kB │ gzip:     3.54 kB
+dist/assets/08-amcheck-v7T7_aL9.js                            8.88 kB │ gzip:     3.71 kB
+dist/assets/17-capstone-catalog-search-vlKiEiVa.js            8.89 kB │ gzip:     3.87 kB
+dist/assets/10-adjacency-list-BzGnxm8s.js                     8.97 kB │ gzip:     2.72 kB
+dist/assets/03-extended-statistics-yRdoYX03.js                9.12 kB │ gzip:     3.76 kB
+dist/assets/01-btree-page-splits-svme_wgB.js                  9.15 kB │ gzip:     3.95 kB
+dist/assets/10-freeze-lab-B6unnzH1.js                         9.24 kB │ gzip:     3.35 kB
+dist/assets/05-xmin-xmax-lab-BwY-hwDQ.js                      9.32 kB │ gzip:     3.48 kB
+dist/assets/08-partition-design-0pJrk_EG.js                   9.45 kB │ gzip:     3.64 kB
+dist/assets/13-special-indexes-DNlbwWKL.js                    9.51 kB │ gzip:     3.63 kB
+dist/assets/15-parallel-query-jit-D0FvE-oW.js                 9.62 kB │ gzip:     3.91 kB
+dist/assets/05-brin-summarization-BIIGCPcY.js                 9.73 kB │ gzip:     3.85 kB
+dist/assets/09-table-lock-modes-ldRFktkv.js                   9.76 kB │ gzip:     3.98 kB
+dist/assets/12-capstone-registrations-B02spMMP.js             9.94 kB │ gzip:     4.16 kB
+dist/assets/cynefinDiagram-L36ESFBY-BNLY6-Z0.js               9.94 kB │ gzip:     3.51 kB
+dist/assets/10-row-locks-6d-t0rCw.js                          9.95 kB │ gzip:     3.81 kB
+dist/assets/13-wal-records-lab-jaZlb-Hw.js                   10.02 kB │ gzip:     3.36 kB
+dist/assets/06-gist-spgist-cZ2BeKNN.js                       10.12 kB │ gzip:     4.16 kB
+dist/assets/14-sparse-hidden-collation-r5UH02CN.js           10.14 kB │ gzip:     3.73 kB
+dist/assets/12-isolation-levels-D1kjOFOy.js                  10.30 kB │ gzip:     3.81 kB
+dist/assets/chunk-KQLB2F66-MDcYKmLf.js                       10.40 kB │ gzip:     4.31 kB
+dist/assets/15-capstone-weekly-report-BYuKfN5K.js            10.42 kB │ gzip:     3.34 kB
+dist/assets/16-unused-indexes-C-ywCmC2.js                    10.67 kB │ gzip:     4.05 kB
+dist/assets/14-backup-pitr-ha-DRTekHH3.js                    10.74 kB │ gzip:     4.26 kB
+dist/assets/sqlMotion-DxsoDBGn.js                            10.78 kB │ gzip:     4.61 kB
+dist/assets/diagram-MHCOC4E2-DwM-57k5.js                     10.93 kB │ gzip:     4.25 kB
+dist/assets/09-wal-full-page-writes-BsV4sQsN.js              10.96 kB │ gzip:     4.32 kB
+dist/assets/04-write-sharding-CGl7H-v4.js                    11.06 kB │ gzip:     3.32 kB
+dist/assets/07-choose-index-am-D16fwk2C.js                   11.10 kB │ gzip:     4.56 kB
+dist/assets/06-plan-cache-_3EWBCLO.js                        11.22 kB │ gzip:     4.27 kB
+dist/assets/13-replication-slots-CjRQMe0r.js                 11.29 kB │ gzip:     4.32 kB
+dist/assets/18-buffers-line-lab-KEU0FeB2.js                  11.41 kB │ gzip:     4.40 kB
+dist/assets/runner-BxNRzCKF.js                               11.41 kB │ gzip:     4.69 kB
+dist/assets/16-vacuum-size-lab-D58uIuwm.js                   11.64 kB │ gzip:     4.41 kB
+dist/assets/13-serializable-ssi-tAZbn4yA.js                  11.71 kB │ gzip:     4.34 kB
+dist/assets/17-reindex-myth-CHK1yPBg.js                      12.01 kB │ gzip:     4.68 kB
+dist/assets/10-row-level-security-Da6K7NtJ.js                12.61 kB │ gzip:     4.80 kB
+dist/assets/16-capstone-slow-report-B2oeNJl3.js              12.64 kB │ gzip:     5.43 kB
+dist/assets/11-capstone-shop-design-C5pXBYs4.js              12.74 kB │ gzip:     4.08 kB
+dist/assets/04-gin-pending-list-C77XBNfs.js                  13.26 kB │ gzip:     4.96 kB
+dist/assets/enginePredict-CagTSaHb.js                        13.30 kB │ gzip:     5.46 kB
+dist/assets/09-vacuum-vm-lab-4zvgZlsm.js                     13.54 kB │ gzip:     4.80 kB
+dist/assets/15-capstone-bloat-BrMr-rec.js                    14.33 kB │ gzip:     5.58 kB
+dist/assets/chunk-M57EVK23-_wtr8EDH.js                       14.97 kB │ gzip:     4.53 kB
+dist/assets/15-capstone-slow-events-BFEshPY7.js              15.10 kB │ gzip:     5.76 kB
+dist/assets/chunk-6MUBBAK2-DdcNuPxv.js                       15.38 kB │ gzip:     6.10 kB
+dist/assets/chunk-OY52VR5R-DtRYX-dE.js                       15.65 kB │ gzip:     4.35 kB
+dist/assets/ecommerce-CcunoGpL.js                            15.72 kB │ gzip:     6.01 kB
+dist/assets/07-capstone-ops-BhyGCDve.js                      16.00 kB │ gzip:     5.90 kB
+dist/assets/diagram-LA4NIPWU-DZDuDl8K.js                     16.13 kB │ gzip:     5.65 kB
+dist/assets/14-capstone-design-DxVFMMA1.js                   16.24 kB │ gzip:     5.11 kB
+dist/assets/08-sparse-gsi-DtrGCy0U.js                        16.39 kB │ gzip:     3.69 kB
+dist/assets/10-paginate-DbgEYu4t.js                          17.22 kB │ gzip:     3.61 kB
+dist/assets/ishikawaDiagram-M35NCXHK-MylqimPj.js             17.31 kB │ gzip:     6.54 kB
+dist/assets/09-query-vs-scan-BXKPy2nh.js                     17.84 kB │ gzip:     3.99 kB
+dist/assets/finance-Bbr5upPi.js                              17.97 kB │ gzip:     6.86 kB
+dist/assets/06-sparse-index-BXq7U3AW.js                      18.16 kB │ gzip:     3.89 kB
+dist/assets/mapTeach-B-cKordU.js                             18.45 kB │ gzip:     8.12 kB
+dist/assets/05-query-lsi-BXKPDpc6.js                         18.63 kB │ gzip:     3.97 kB
+dist/assets/08-query-Cr43PVnp.js                             18.76 kB │ gzip:     4.01 kB
+dist/assets/07-partiql-BUrjgVgq.js                           18.92 kB │ gzip:     4.15 kB
+dist/assets/04-query-gsi-U-2S24Mq.js                         19.02 kB │ gzip:     4.15 kB
+dist/assets/11-capstone-order-desk-frygDpti.js               19.33 kB │ gzip:     4.50 kB
+dist/assets/02-key-vs-filter-IZBbGKM8.js                     19.44 kB │ gzip:     4.32 kB
+dist/assets/interviewView-Didyr-21.js                        20.15 kB │ gzip:     6.83 kB
+dist/assets/kanban-definition-BZKZHSQY-Dudp7b2H.js           20.31 kB │ gzip:     7.19 kB
+dist/assets/d3-selection-BD4snsQe.js                         20.94 kB │ gzip:     7.36 kB
+dist/assets/engineVizPgFlow-Bpdimnko.js                      21.58 kB │ gzip:     9.14 kB
+dist/assets/mindmap-definition-I2QAS2VK-aTGuOnC8.js          22.89 kB │ gzip:     7.68 kB
+dist/assets/journeyDiagram-OPLOXDXO-5JKSD3TL.js              23.16 kB │ gzip:     8.14 kB
+dist/assets/graphlib-DS17s2tU.js                             23.90 kB │ gzip:     8.31 kB
+dist/assets/engineVizNosql-dFwFH9ZU.js                       24.14 kB │ gzip:    10.25 kB
+dist/assets/wardleyDiagram-S7YFUSEH-CRofslo9.js              25.21 kB │ gzip:     6.56 kB
+dist/assets/dist-qy0yl2Mi.js                                 25.62 kB │ gzip:     6.43 kB
+dist/assets/rough.esm-Dy-Kn_BL.js                            27.10 kB │ gzip:     8.85 kB
+dist/assets/gitGraphDiagram-STJD7YCW-DrbWoRB7.js             29.00 kB │ gzip:     8.53 kB
+dist/assets/timeline-definition-SEUHKTQE-0cHTOrtn.js         30.47 kB │ gzip:    10.02 kB
+dist/assets/meView-ZzrOHHbH.js                               30.50 kB │ gzip:    11.65 kB
+dist/assets/erDiagram-EYBAPDEH-CR6osWxD.js                   30.62 kB │ gzip:    10.58 kB
+dist/assets/requirementDiagram-Y7LWUY3S-D4CG1Zjc.js          31.07 kB │ gzip:     9.84 kB
+dist/assets/laneSources-DJJZ8enn.js                          33.04 kB │ gzip:     9.76 kB
+dist/assets/quadrantDiagram-XTYBLID2-CQ8ETSsW.js             33.52 kB │ gzip:     9.74 kB
+dist/assets/mermaid.core-BH-avN9z.js                         37.06 kB │ gzip:    12.62 kB
+dist/assets/sankeyDiagram-WGJFYUXA-DSWShW8_.js               38.82 kB │ gzip:    14.66 kB
+dist/assets/d3-scale-CElPUUud.js                             40.67 kB │ gzip:    14.78 kB
+dist/assets/drillBrief-sjlLS9KG.js                           41.11 kB │ gzip:    14.46 kB
+dist/assets/vennDiagram-NNMJR3RB-DKQah3La.js                 41.19 kB │ gzip:    15.12 kB
+dist/assets/stateDiagram-v2-FJ4FJNEA-CaiP8UU_.js             41.55 kB │ gzip:    13.88 kB
+dist/assets/blockDiagram-APKKGZFW-B8Ix1w04.js                42.40 kB │ gzip:    13.87 kB
+dist/assets/xychartDiagram-GGNKY7IX-4Zh9IuLw.js              43.22 kB │ gzip:    11.87 kB
+dist/assets/wasm-Be9Lw-yW.js                                 45.89 kB │ gzip:    15.32 kB
+dist/assets/chunk-HPSUCWAI-CSLK7EXV.js                       46.48 kB │ gzip:    15.56 kB
+dist/assets/dagre-SPEB5RXH-DGF4uYXF.js                       47.85 kB │ gzip:    17.10 kB
+dist/assets/engineViz-B1YY7fJ3.js                            48.29 kB │ gzip:    19.61 kB
+dist/assets/chunk-DQASFODM-BodK2rXM.js                       48.65 kB │ gzip:    11.84 kB
+dist/assets/logistics-CtJF2Iwt.js                            48.88 kB │ gzip:    17.94 kB
+dist/assets/classDiagram-v2-L25IHNXF-Djx0CI5M.js             49.71 kB │ gzip:    16.16 kB
+dist/assets/chunk-STOXU5M4-bG7a5LkZ.js                       51.23 kB │ gzip:    16.63 kB
+dist/assets/ganttDiagram-23REXITY-CIxh7q5z.js                53.01 kB │ gzip:    17.63 kB
+dist/assets/engineView-pRIwIzUU.js                           54.48 kB │ gzip:    19.26 kB
+dist/assets/en-H2QoUNsP.js                                   55.13 kB │ gzip:    19.21 kB
+dist/assets/interviewSources-Gz9oJ8Wr.js                     63.61 kB │ gzip:    17.88 kB
+dist/assets/chunk-QB3YPZ4I-CJccrTQZ.js                       64.44 kB │ gzip:    20.92 kB
+dist/assets/c4Diagram-KJ2TOQU5-CdG3a4wM.js                   65.09 kB │ gzip:    18.63 kB
+dist/assets/esm-Bc0G0c-l.js                                  68.44 kB │ gzip:    19.58 kB
+dist/assets/diagram-3B7GL73J-CcW9YPym.js                     80.50 kB │ gzip:    25.19 kB
+dist/assets/cose-bilkent-JH36ORCC-B_xABS81.js                81.23 kB │ gzip:    21.53 kB
+dist/assets/ecomLateSources-CK9mX52q.js                      86.12 kB │ gzip:    21.99 kB
+dist/assets/finLateSources-CJ2_mXWq.js                       97.31 kB │ gzip:    23.60 kB
+dist/assets/ecomSources-wu_BS_A1.js                         102.19 kB │ gzip:    28.14 kB
+dist/assets/lessonSources-DMi3RPsx.js                       104.43 kB │ gzip:    28.63 kB
+dist/assets/engineSources-D9bCXwZn.js                       113.69 kB │ gzip:    24.76 kB
+dist/assets/finSources-DGI3Rcbl.js                          114.16 kB │ gzip:    30.10 kB
+dist/assets/gsap-BQXIZ419.js                                114.69 kB │ gzip:    45.85 kB
+dist/assets/sequenceDiagram-5NDRBG5M-DebDeKo8.js            117.69 kB │ gzip:    31.28 kB
+dist/assets/swimlanes-UMQ2AFYF-BYg7djsh.js                  117.84 kB │ gzip:    40.50 kB
+dist/assets/chunk-AXFCVDMN-B4HsIBKW.js                      122.76 kB │ gzip:    31.44 kB
+dist/assets/generalSources-Dh--3-zu.js                      127.08 kB │ gzip:    31.33 kB
+dist/assets/architectureDiagram-YGSQEFNW-eEcQa8mG.js        148.88 kB │ gzip:    41.12 kB
+dist/assets/ticketLateSources-7n8qkx20.js                   169.46 kB │ gzip:    45.38 kB
+dist/assets/generalAdvSources-BlmBGDd_.js                   175.39 kB │ gzip:    45.94 kB
+dist/assets/usecaseDiagram-AFA6YXN4-DJm_VGvJ.js             187.91 kB │ gzip:    49.27 kB
+dist/assets/ticketSources-CX-KN4jH.js                       240.54 kB │ gzip:    62.40 kB
+dist/assets/chunk-BG4553SI-CuJ_ZmFC.js                      241.25 kB │ gzip:    40.58 kB
+dist/assets/katex-MEuSR36T.js                               258.78 kB │ gzip:    77.66 kB
+dist/assets/engineMongoPath-B7CUMzv-.js                     288.14 kB │ gzip:    74.32 kB
+dist/assets/cytoscape.esm-DEqn5_up.js                       442.43 kB │ gzip:   140.17 kB
+dist/assets/chunk-NGNAAXSQ-DI_UYJZ4.js                      629.04 kB │ gzip:   127.32 kB
+dist/assets/index-Bq_mxOJo.js                               935.13 kB │ gzip:   313.35 kB
+dist/assets/elk-XV6XMXQE-CwO0sVMF.js                      1,498.94 kB │ gzip:   465.90 kB
+
+[33m[plugin builtin:vite-reporter] 
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rolldownOptions.output.codeSplitting to improve chunking: https://rolldown.rs/reference/OutputOptions.codeSplitting
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.[39m
+[32m✓ built in 36.84s[39m
+[33m[33m[PLUGIN_TIMINGS] [0mJavaScript callbacks ran for 32.0s of this 36.8s build (87%).
+The slowest callbacks, timed inside each callback (the wait before a callback starts is excluded, the time it awaits is included):
+  - plugin @tailwindcss/vite:generate:build transform (21%, 7.7s, 1 call)
+  - plugin cq-content-json transform (13%, 4.7s, 2435 calls)
+  - plugin vite:css transform (6%, 2.3s, 1 call)
+  - plugin vite:asset load (4%, 1.4s, 1 call)
+Additional callback time came from the callbacks below and from callbacks under 1s.
+1 callback is listed without a time. Its calls overlapped, so the time inside one call includes work from other calls. To find its cost, profile the build with `node --cpu-prof`:
+  - plugin vite:worker-import-meta-url transform (4 calls)
+See https://rolldown.rs/reference/InputOptions.checks#bundlertimings for more details.
+[39m

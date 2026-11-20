@@ -1,0 +1,11 @@
+tsc ok
+      Tests  5439 passed | 1 skipped (5440)
+build ok
+ok   html          11 KB gz / 12 KB
+ok   main         303 KB gz / 500 KB
+ok   css           20 KB gz / 20 KB
+ok   main has no GSAP
+ok   main has no DynamoDB engine
+ok   main has no yaml library
+SMOKE OK in 103.8 s, report: smoke-out/smoke-report.json
+GATE_OK

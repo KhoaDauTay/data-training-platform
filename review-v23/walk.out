@@ -1,0 +1,129 @@
+== light-1280
+  [home] h1=Trang chủ
+  [learn] h1=Lộ trình
+  [drill] h1=Làm việc
+  [play] h1=Làm việc
+  [engine] h1=Database Engine
+  [eng-pg] h1=PostgreSQL
+  [eng-mg] h1=MongoDB
+  [eng-dy] h1=DynamoDB
+  [eng-pg-L3] h1=L3 · Hiệu năng và mô hình
+  [pg-lab-l3-16] h1=Lab: VACUUM có làm file bảng nhỏ lại khô
+  [pg-lab-l5-16] h1=Index không ai dùng: idx_scan = 0 và cái
+  [pg-predict-l1-10] h1=Có index, sao vẫn Seq Scan?
+  [pg-predict-l3-17] h1=Đoán trước: `count(*)` có đọc khóa chính
+  [pg-cap-l1-12] h1=Kiểm tra cấp L1: bảng đăng ký sự kiện
+  [mg-lab-l1-02] h1=Tìm tài liệu với find ; keys? db.customers.find
+  [dy-lab-l1-05] h1=GetItem: đọc một item theo khóa
+  [mg-path] h1=Lộ trình NoSQL
+  [me] h1=Tiến bộ của tôi
+  [light-1280 predict] radios=4 picked=e-pg-l1-10-p-0 tabTo=e-pg-l1-10-p-check ring=solid 2px rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0 after={"focus":"e-pg-l1-10-plan","status":"Chưa đúng","btnDisabled":true}
+  [light-1280 predict] right=2
+  [light-1280 predict e-pg-l1-10] h1=Có index, sao vẫn Seq Scan?
+  [light-1280 predict] radios=3 picked=e-pg-l3-17-p-2 tabTo=e-pg-l3-17-p-check ring=solid 2px rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0 after={"focus":"e-pg-l3-17-plan","status":"Chưa đúng","btnDisabled":true}
+  [light-1280 predict] right=1
+  [light-1280 predict e-pg-l3-17] h1=Đoán trước: `count(*)` có đọc khóa chính
+  [light-1280 predict] radios=4 picked=e-pg-l3-08-p-1 tabTo=e-pg-l3-08-p-check ring=solid 2px rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0 after={"focus":"e-pg-l3-08-plan","status":"Đúng","btnDisabled":true}
+  [light-1280 predict] right=1
+  [light-1280 predict e-pg-l3-08] h1=Đoán trước: fillfactor có cứu được HOT k
+  [light-1280 capstone] {"bar":true,"steps":["step:1. Mỗi lượt đăng ký giữ từ 1 t","-:2. Mỗi lượt đăng ký phải thuộc","-:3. Trang của mỗi sự kiện liệt ","-:4. Đếm số lượt đăng ký và tổng"],"go":["e-pg-l1-12-s0-submit*","e-pg-l1-12-s1-submit*","e-pg-l1-12-s2-submit*","e-pg-l1-12-s3-submit*"],"barLinks":0}
+  errors(0): 
+== light-1024
+  [home] h1=Trang chủ
+  [learn] h1=Lộ trình
+  [drill] h1=Làm việc
+  [play] h1=Làm việc
+  [engine] h1=Database Engine
+  [eng-pg] h1=PostgreSQL
+  [eng-mg] h1=MongoDB
+  [eng-dy] h1=DynamoDB
+  [eng-pg-L3] h1=L3 · Hiệu năng và mô hình
+  [pg-lab-l3-16] h1=Lab: VACUUM có làm file bảng nhỏ lại khô
+  [pg-lab-l5-16] h1=Index không ai dùng: idx_scan = 0 và cái
+  [pg-predict-l1-10] h1=Có index, sao vẫn Seq Scan?
+  [pg-predict-l3-17] h1=Đoán trước: `count(*)` có đọc khóa chính
+  [pg-cap-l1-12] h1=Kiểm tra cấp L1: bảng đăng ký sự kiện
+  [mg-lab-l1-02] h1=Tìm tài liệu với find ; keys? db.customers.find
+  [dy-lab-l1-05] h1=GetItem: đọc một item theo khóa
+  [mg-path] h1=Lộ trình NoSQL
+  [me] h1=Tiến bộ của tôi
+  errors(0): 
+== dark-375
+  [home] header 61 ; h1=Trang chủ
+  [learn] header 61 ; h1=Lộ trình
+  [drill] header 61 ; h1=Làm việc
+  [play] header 61 ; h1=Làm việc
+  [engine] header 61 ; h1=Database Engine
+  [eng-pg] header 61 ; h1=PostgreSQL
+  [eng-mg] header 61 ; h1=MongoDB
+  [eng-dy] header 61 ; h1=DynamoDB
+  [eng-pg-L3] header 61 ; h1=L3 · Hiệu năng và mô hình
+  [pg-lab-l3-16] header 61 ; h1=Lab: VACUUM có làm file bảng nhỏ lại khô
+  [pg-lab-l5-16] header 61 ; h1=Index không ai dùng: idx_scan = 0 và cái
+  [pg-predict-l1-10] header 61 ; h1=Có index, sao vẫn Seq Scan?
+  [pg-predict-l3-17] header 61 ; h1=Đoán trước: `count(*)` có đọc khóa chính
+  [pg-cap-l1-12] header 61 ; h1=Kiểm tra cấp L1: bảng đăng ký sự kiện
+  [mg-lab-l1-02] header 61 ; h1=Tìm tài liệu với find ; keys? db.customers.find
+  [dy-lab-l1-05] header 61 ; h1=GetItem: đọc một item theo khóa
+  [mg-path] header 61 ; h1=Lộ trình NoSQL
+  [me] header 61 ; h1=Tiến bộ của tôi
+  [dark-375 predict] radios=4 picked=e-pg-l1-10-p-0 tabTo=e-pg-l1-10-p-check ring=solid 2px rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0 after={"focus":"e-pg-l1-10-plan","status":"Chưa đúng","btnDisabled":true}
+  [dark-375 predict] right=2
+  [dark-375 predict e-pg-l1-10] header 61 ; h1=Có index, sao vẫn Seq Scan?
+  [dark-375 predict] radios=3 picked=e-pg-l3-17-p-2 tabTo=e-pg-l3-17-p-check ring=solid 2px rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0 after={"focus":"e-pg-l3-17-plan","status":"Chưa đúng","btnDisabled":true}
+  [dark-375 predict] right=1
+  [dark-375 predict e-pg-l3-17] header 61 ; h1=Đoán trước: `count(*)` có đọc khóa chính
+  [dark-375 predict] radios=4 picked=e-pg-l3-08-p-1 tabTo=e-pg-l3-08-p-check ring=solid 2px rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0 after={"focus":"e-pg-l3-08-plan","status":"Đúng","btnDisabled":true}
+  [dark-375 predict] right=1
+  [dark-375 predict e-pg-l3-08] header 61 ; h1=Đoán trước: fillfactor có cứu được HOT k
+  [dark-375 capstone] {"bar":true,"steps":["step:1. Mỗi lượt đăng ký giữ từ 1 t","-:2. Mỗi lượt đăng ký phải thuộc","-:3. Trang của mỗi sự kiện liệt ","-:4. Đếm số lượt đăng ký và tổng"],"go":["e-pg-l1-12-s0-submit*","e-pg-l1-12-s1-submit*","e-pg-l1-12-s2-submit*","e-pg-l1-12-s3-submit*"],"barLinks":0}
+  [reduced] running anims=
+  errors(0): 
+== light-320
+  [home] header 61 ; h1=Trang chủ
+  [learn] header 61 ; h1=Lộ trình
+  [drill] header 61 ; h1=Làm việc
+  [play] header 61 ; h1=Làm việc
+  [engine] header 61 ; h1=Database Engine
+  [eng-pg] header 61 ; h1=PostgreSQL
+  [eng-mg] header 61 ; h1=MongoDB
+  [eng-dy] header 61 ; h1=DynamoDB
+  [eng-pg-L3] header 61 ; h1=L3 · Hiệu năng và mô hình
+  [pg-lab-l3-16] header 61 ; h1=Lab: VACUUM có làm file bảng nhỏ lại khô
+  [pg-lab-l5-16] header 61 ; h1=Index không ai dùng: idx_scan = 0 và cái
+  [pg-predict-l1-10] header 61 ; h1=Có index, sao vẫn Seq Scan?
+  [pg-predict-l3-17] header 61 ; h1=Đoán trước: `count(*)` có đọc khóa chính
+  [pg-cap-l1-12] header 61 ; h1=Kiểm tra cấp L1: bảng đăng ký sự kiện
+  [mg-lab-l1-02] header 61 ; h1=Tìm tài liệu với find ; keys? db.customers.find
+  [dy-lab-l1-05] header 61 ; h1=GetItem: đọc một item theo khóa
+  [mg-path] header 61 ; h1=Lộ trình NoSQL
+  [me] header 61 ; h1=Tiến bộ của tôi
+  errors(0): 
+== en-light-1280
+  [home] h1=Home
+  [engine] h1=Database Engine
+  [pg-predict-l1-10] h1=There is an index, so why a Seq Scan?
+  [pg-cap-l1-12] h1=Level L1 check: the event sign-up table
+  [play] h1=Workspace
+  [en-light-1280 predict] radios=4 picked=e-pg-l1-10-p-0 tabTo=e-pg-l1-10-p-check ring=solid 2px rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0 after={"focus":"e-pg-l1-10-plan","status":"Not right","btnDisabled":true}
+  [en-light-1280 predict] right=2
+  [en-light-1280 predict e-pg-l1-10] h1=There is an index, so why a Seq Scan?
+  [en-light-1280 predict] radios=3 picked=e-pg-l3-17-p-2 tabTo=e-pg-l3-17-p-check ring=solid 2px rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0 after={"focus":"e-pg-l3-17-plan","status":"Not right","btnDisabled":true}
+  [en-light-1280 predict] right=1
+  [en-light-1280 predict e-pg-l3-17] h1=Predict: does `count(*)` read the primar
+  [en-light-1280 predict] radios=4 picked=e-pg-l3-08-p-1 tabTo=e-pg-l3-08-p-check ring=solid 2px rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0 after={"focus":"e-pg-l3-08-plan","status":"Right","btnDisabled":true}
+  [en-light-1280 predict] right=1
+  [en-light-1280 predict e-pg-l3-08] h1=Predict: can fillfactor save HOT?
+  [en-light-1280 capstone] {"bar":true,"steps":["step:1. Each sign-up holds 1 to 4 s","-:2. Every sign-up must belong t","-:3. Each event's page lists its","-:4. Count the sign-ups and tota"],"go":["e-pg-l1-12-s0-submit*","e-pg-l1-12-s1-submit*","e-pg-l1-12-s2-submit*","e-pg-l1-12-s3-submit*"],"barLinks":0}
+  errors(0): 
+== en-light-1024
+  [home] h1=Home
+  [engine] h1=Database Engine
+  [play] h1=Workspace
+  errors(0): 
+== dark-1280
+  [engine] h1=Database Engine
+  [pg-predict-l1-10] h1=Có index, sao vẫn Seq Scan?
+  [pg-cap-l1-12] h1=Kiểm tra cấp L1: bảng đăng ký sự kiện
+  [pg-lab-l3-16] h1=Lab: VACUUM có làm file bảng nhỏ lại khô
+  errors(0): 

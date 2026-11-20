@@ -1,0 +1,19 @@
+warning: in the working copy of 'src/i18n/engine.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/main.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/ui/engineView.ts', LF will be replaced by CRLF the next time Git touches it
+ src/i18n/engine.ts   |  2 ++
+ src/main.ts          |  2 +-
+ src/ui/engineView.ts | 22 ++++++++++++++++++++--
+ 3 files changed, 23 insertions(+), 3 deletions(-)
+    if (!ok && still()) location.replace(generalHash() ?? '#/practice');
+  });
+}
+
+const firstOpen = (): string => (nextTicket(app.tickets, done()) ?? app.tickets[app.tickets.length - 1]).id;
+app.selectedId = firstOpen();
+app.stepIndex = resumeStep(app.save, selected()); // reloading mid-review keeps the step reached
+// v12.0 P1/P2: seed only what the player opens, queued before the first render's queries. undefined = first visit:
+// nothing is seeded until the welcome picker's choice (startWith); the engine still downloads meanwhile.
+const pick: BootPick | undefined = bootPick(domainOfHash(location.hash), readJson<unknown>(DOMAIN_KEY), welcomeNeeded(done().size, readTour(), coachDone()));
+if (pick) openSchema(pick === 'general' ? 'lab' : domainSchemaId(pick));
+initTopbar(); // icon slots first: applyStatic() then only touches the label spans

@@ -1,0 +1,57 @@
+ok   html          11 KB gz / 12 KB
+ok   main         303 KB gz / 500 KB
+ok   tickets       60 KB gz / 110 KB
+ok   ticketLate    44 KB gz / 50 KB
+ok   lanes          9 KB gz / 20 KB
+ok   en            19 KB gz / 20 KB
+ok   lessons       28 KB gz / 35 KB
+ok   art           17 KB gz / 20 KB
+ok   illustrations     2 KB gz / 15 KB
+ok   css           20 KB gz / 20 KB
+ok   dynamo      1170 KB gz / 1300 KB
+ok   worker       139 KB gz / 160 KB
+ok   pglite      5287 KB gz / 5560 KB
+ok   initdb       128 KB gz / 140 KB
+ok   parser       392 KB gz / 410 KB
+ok   fonts         51 KB gz / 60 KB
+ok   general       30 KB gz / 40 KB
+ok   generalAdv    45 KB gz / 50 KB
+ok   interview     24 KB gz / 25 KB
+ok   learnui       14 KB gz / 25 KB
+ok   ecom          27 KB gz / 50 KB
+ok   ecomLate      21 KB gz / 25 KB
+ok   ecomart        6 KB gz / 10 KB
+ok   ecomseed       8 KB gz / 10 KB
+ok   fin           29 KB gz / 50 KB
+ok   finlate       23 KB gz / 30 KB
+ok   finseed        7 KB gz / 10 KB
+ok   finart         7 KB gz / 10 KB
+ok   gameseed      14 KB gz / 16 KB
+ok   gsap          44 KB gz / 50 KB
+ok   frame          3 KB gz / 4 KB
+ok   me            11 KB gz / 12 KB
+ok   sqlmotion      4 KB gz / 8 KB
+ok   portfolioPng     3 KB gz / 6 KB
+ok   datasetPanel     3 KB gz / 5 KB
+ok   engine        24 KB gz / 40 KB
+ok   engineLesson     6 KB gz / 8 KB
+ok   engineui      19 KB gz / 20 KB
+ok   engineuiPath     3 KB gz / 6 KB
+ok   engineCapstone     2 KB gz / 6 KB
+ok   enginePredict     5 KB gz / 7 KB
+ok   pglab        136 KB gz / 150 KB
+ok   pgext        146 KB gz / 160 KB
+ok   pgcrypto    1118 KB gz / 1160 KB
+ok   why            3 KB gz / 6 KB
+ok   mapteach       8 KB gz / 8 KB
+ok   engineVizNosql    10 KB gz / 15 KB
+ok   engineVizPg     9 KB gz / 12 KB
+ok   engineViz     23 KB gz / 30 KB
+ok   ics            1 KB gz / 2 KB
+ok   engineLab     74 KB gz / 90 KB
+ok   enginePath    72 KB gz / 80 KB
+ok   rest        1494 KB gz / 1560 KB
+ok   main has no GSAP
+ok   main has no DynamoDB engine
+ok   main has no yaml library
+ok   gsap chunk keeps its @license notice
