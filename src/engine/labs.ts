@@ -107,6 +107,16 @@ export const gradable = (l: EngineLesson, step: LabStep): boolean =>
   !!LAB_RUNNERS[l.engine] && l.runtime !== 'docs'
   && (l.engine === 'postgres' ? step.check !== 'doc' && !(step.check === 'plan' && !l.lab?.setup) : step.check === 'doc');
 
+/**
+ * The one honest runtime label beside a lesson's title (product-design-db-engine §3.6, checklist L1), derived from what
+ * actually executes: a lesson that runs here (a lab, or a Postgres predict's real plan) names its runner; one that does
+ * not is a diagram when it has one, else it is read from the official docs.
+ */
+export type Honest = 'pg' | 'mingo' | 'dynoxide' | 'diagram' | 'docs';
+const RUNS: Record<EngineId, Honest> = { postgres: 'pg', mongodb: 'mingo', dynamodb: 'dynoxide' };
+export const honestOf = (l: Pick<EngineLesson, 'engine' | 'runtime' | 'viz' | 'lab' | 'predict'>): Honest =>
+  l.runtime !== 'docs' && LAB_RUNNERS[l.engine] && (l.lab || (l.predict && l.engine === 'postgres')) ? RUNS[l.engine] : l.viz ? 'diagram' : 'docs';
+
 /** Engine → its runner, loaded on the first lab of that engine. An engine without one shows its labs read-only. */
 export const LAB_RUNNERS: Partial<Record<EngineId, (env: LabEnv) => Promise<LabRunner>>> = {
   postgres: async (env) => {

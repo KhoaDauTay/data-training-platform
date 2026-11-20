@@ -9,6 +9,7 @@ import {
 } from '../src/engine/content';
 import { compareResults } from '../src/grader';
 import { labRun } from './generalRules';
+import { gradable, honestOf } from '../src/engine/labs';
 
 const files = import.meta.glob<string>(['../content/engine/*/L*/*.md', './fixtures/engine/*/L*/*.md'], { query: '?raw', import: 'default', eager: true });
 const moduleFiles = import.meta.glob<string>(['../content/engine/*/modules.yml', './fixtures/engine/*/modules.yml'], { query: '?raw', import: 'default', eager: true });
@@ -145,5 +146,22 @@ lab: { steps: [{ task: { vi: a, en: a }, solution: SELECT 1, check: rows, hint: 
     expect(blocksOf('Một\ndòng.\n\n- a\n- b\n\n```sql\nSELECT 1;\n```\n\nCuối.')).toEqual([
       { kind: 'p', text: 'Một dòng.' }, { kind: 'ul', items: ['a', 'b'] }, { kind: 'code', lang: 'sql', code: 'SELECT 1;' }, { kind: 'p', text: 'Cuối.' },
     ]);
+  });
+});
+
+// Review v22 RC (checklist L1, §3.6): every lesson carries exactly one honest runtime label, derived from what runs.
+describe('honestOf: nhãn trung thực của mọi bài', () => {
+  it.each(sets[0].map((l) => [l.id, l] as const))('%s', (_, l) => {
+    const k = honestOf(l);
+    if (k === 'pg' || k === 'mingo' || k === 'dynoxide') {
+      // "runs" only when something executes here: a lab (its Run goes to the runner) or a Postgres predict's real plan.
+      // Two DynamoDB labs (catalog steps, no setup): the runner grades them, but gradable() says no (review-v22-rc.md P3).
+      expect(!!l.lab || (l.engine === 'postgres' && !!l.predict)).toBe(true);
+      if (!['e-dy-l1-04', 'e-dy-l3-03'].includes(l.id)) expect((l.lab?.steps ?? []).some((s) => gradable(l, s)) || (l.engine === 'postgres' && !!l.predict)).toBe(true);
+      expect(k).toBe({ postgres: 'pg', mongodb: 'mingo', dynamodb: 'dynoxide' }[l.engine]);
+    } else {
+      expect(l.runtime).toBe('docs');
+      expect(k).toBe(l.viz ? 'diagram' : 'docs');
+    }
   });
 });

@@ -72,5 +72,5 @@ registerHomeSection({ id: 'engineMe', order: 20, span: 'full', pages: ['me'], re
   if (!view && !failed) load();
   return view ? view.meBlock() : null; // #/me draws its own loading line; the block joins once the chunk is in
 } });
-registerNav({ id: 'engine', area: 'top', order: 25, label: 'nav.engine', icon: NAV_ICON.engine, href: hashOf('engine'), current: (r) => r === 'engine', mergeInto: 'learn' });
+registerNav({ id: 'engine', area: 'top', order: 25, label: 'nav.engineShort', icon: NAV_ICON.engine, href: hashOf('engine'), current: (r) => r === 'engine', mergeInto: 'learn' });
 registerSide('engine', (ui) => (view ? view.sideRows(ui) : []));
