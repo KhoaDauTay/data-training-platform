@@ -6,9 +6,17 @@ Người viết: Product + UI/UX (người điều phối giao, L215) · 2026-11
 
 - 195 bài của ba engine;
 - ba runtime;
-- 27 sơ đồ;
+- 27 tên sơ đồ đã đăng ký (20 sơ đồ khác nhau, L236; phần còn lại là bí danh);
 - lộ trình NoSQL;
 - e2e 195/195 (commit gộp ENG-INTEGRATE).
+
+Ngoài nhánh này còn ba nhánh chưa gộp, bản này tính tới:
+
+- `v22-nosql-fix` (2 commit, L254): sửa lỗi `$out`/`$merge` của runner MongoDB; runner DynamoDB từ chối `TransactWriteItems`/TTL/Streams.
+- `v22-qa-audit` (1 commit): `scripts/ux-audit.mjs` và lần chạy đầu (`docs/team/ux-audit-v22.md`). Commit này ghi số **L253**, trùng với dòng spike L253.
+- `main` (4 commit sau `v22-engine`): review v21 live; Best Practice vòng 5–6. Catalogue §14 (danh sách v25) **chỉ có trên `main`**; đủ thẻ cho cả 60 mục v25, `main` có 72 thẻ.
+
+Trong worktree còn thay đổi chưa commit của agent khác: chip nhãn trung thực cạnh tiêu đề bài (`honestOf`, `src/engine/labs.ts`). Bản này coi nó là việc đang làm của v22.
 
 Vì vậy, nếu giữ roadmap cũ, v23–v29 sẽ "phát hành" thứ đã có, còn các khoảng trống thật thì không có chỗ. Bản này làm hai việc. Thứ nhất, nó đối chiếu kế hoạch với thực tế, có bằng chứng (§1). Thứ hai, nó liệt kê khoảng trống thật (§2) và xếp lại v23–v30 quanh các khoảng trống đó (§4).
 
@@ -24,9 +32,9 @@ Mọi cỡ việc là ước lượng: S ≤ 1 ngày, M 2–4 ngày, L 1–2 tu�
 
 ## 0. Tóm tắt
 
-1. **Nội dung đã đủ, nhưng chưa phát hành.** Không có tag `v22`, không có `review-v22.md`, không có `scripts/ux-audit.mjs`. Cả Engine chưa lên site live lần nào.
+1. **Nội dung đã đủ, nhưng chưa phát hành.** Không có tag `v22`, không có `review-v22.md`. `ux-audit.mjs` chỉ có trên nhánh `v22-qa-audit`. Lần chạy đầu của nó trên `v22-engine` (bản local) báo **25 lỗi serious**: top bar 9, tràn ngang 15, popover 1. Cả Engine chưa lên site live lần nào.
 2. **Nội dung đã viết nhưng không màn hình nào dùng:**
-   - 40 thẻ Best Practice (`content/engine/best/**`);
+   - Best Practice: 40 thẻ trên `v22-engine`, 72 thẻ trên `main` (`content/engine/best/**`);
    - ngân hàng phỏng vấn 180 câu + 6 take-home (`content/engine/interview-bank.yml`);
    - bảng thuật ngữ 231 mục (`content/engine/glossary.yml`).
 
@@ -67,7 +75,7 @@ Hiện không mục Engine nào ở mức **P**.
 **Thêm ngoài kế hoạch:**
 
 - Lộ trình NoSQL MongoDB: `content/engine/mongodb/path/`, 12 Phần, 42 kỹ năng, 168 drill; đã nối ở L250.
-- Best Practice: 40 thẻ (sql 18, postgres 10, mongodb 6, dynamodb 6) + `tracks.yml`.
+- Best Practice: 40 thẻ (sql 18, postgres 10, mongodb 6, dynamodb 6) + `tracks.yml`. `main` có thêm 32 thẻ (vòng 6, `48e88c3`), tổng 72.
 - `interview-bank.yml`: 15 câu × 4 bậc × 3 engine = 180 câu, cộng 6 take-home.
 - `glossary.yml`: 231 mục.
 
@@ -88,7 +96,7 @@ Hiện không mục Engine nào ở mức **P**.
 | v22 | E-VIZ | **E** | 27 tên đăng ký (`src/engine/viz/*`), nội dung dùng 20. `pg-query-path` chưa có sơ đồ (L252) |
 | v22 | C-PG1 | **E** | 12 bài |
 | v22 | SPIKE | ✅ | L253: ES1 GO (Node). Chưa đo RAM ở 375. ES2/ES3 xem §2 |
-| v22 | QA | **—** | Không có `scripts/ux-audit.mjs`. Smoke chưa nghe `Log`/worker (P2-1) |
+| v22 | QA | **T, chưa gộp** | `scripts/ux-audit.mjs` ở nhánh `v22-qa-audit`: 25 serious trên `v22-engine` local, 0 trên live v21. Smoke vẫn chưa nghe `Log`/worker (P2-1) |
 | v22 | V22-E, A, B, C | **E** | L201–L210 |
 | v23 | PG-EXT | **E** | Extension nạp theo lab trong pglab (L249). 6 contrib + walinspect/amcheck/pg_stat_statements |
 | v23 | E-PRED | **U, mỏng** | `realPlan()` chỉ hiện sau khi đoán đúng, in dạng `<pre>` thụt lề, không vẽ `pg-plan-tree`, không so với `expect` trên màn hình |
@@ -99,12 +107,12 @@ Hiện không mục Engine nào ở mức **P**.
 | v24 | C-PG3, C-PG5, C-MG12 | **E** | 15 / 15 / 11 + 15 bài |
 | v25 | C-PG4 | **E, thiếu `recorded`** | 16 bài. Bài D (L4/10–13) chỉ có văn xuôi. Không có `scripts/capture-pg.md` |
 | v25 | E-VIZ partition/locks/isolation | **một phần** | Có `pg-lock-matrix`, `pg-isolation-anomalies`. **Không có** `pg-partition-prune` |
-| v25 | E-BP | **N** | 40 thẻ, chưa parse, chưa có route `#/engine/best`. `ENGINE_ID` chưa nhận `e-bp-` |
+| v25 | E-BP | **N** | 40 thẻ (72 trên `main`), chưa parse, chưa có route `#/engine/best`. `ENGINE_ID` chưa nhận `e-bp-` |
 | v25 | MG-RT | **E** | L240–L242, L250 |
 | v26 | E-VIZ `pg-replication` | **—** | Không có trong registry |
 | v26 | E-LINK | **một phần** | Có khối `#/me`. Không có chip "Đào sâu" Domain/General → Engine (`brief.ts`, `learnView.ts` không nhắc `#/engine`). Lily không reo khi xong capstone |
 | v26 | QA-PG | **E, chưa giải mù** | e2e 195/195. Không có biên bản giải mù (thiết kế §8.4) cho cấp nào |
-| v26 | MG-UI | **một phần** | `src/engine/mongo/editor.ts` có, nhưng không tô màu (D-E6' chưa có dependency). Không có tab "Pipeline từng bước", không có "So với SQL" |
+| v26 | MG-UI | **một phần** | `src/engine/mongo/editor.ts` tô màu bằng `StreamLanguage` (không cần `lang-javascript`, nên D-E6' không còn cần). Không có tab "Pipeline từng bước", không có "So với SQL" |
 | v26 | V22-D | **—** | Không có L211–L212 |
 | v27 | C-MG12, MG-WIRE, `mg-pipeline`, DY-RT, C-DY | **E** | L245–L246, L250–L251 |
 | v28 | C-MG35 | **E, rỗng phần chạy** | L3 có 15/17 bài là docs. Thiếu capstone L3, L4. Không có explain ghi sẵn |
@@ -123,13 +131,13 @@ Hiện không mục Engine nào ở mức **P**.
 ### G1. Phát hành và cổng review chưa từng chạy cho Engine
 
 - Chưa có tag `v22`, chưa có `review-v22.md`.
-- Chưa có `scripts/ux-audit.mjs` (luồng QA v22).
+- `scripts/ux-audit.mjs` chưa gộp (nhánh `v22-qa-audit`). 25 lỗi serious của nó trên `v22-engine` chưa sửa.
 - Smoke chỉ nghe `console`, không nghe `Log` hay worker (P2-1 của review v21 live: `libpg-query.wasm` 404).
 - Chưa đo RAM và thời gian boot của hai PGlite ở 375 (điều kiện để ES1 thành GO trên trình duyệt).
 
 ### G2. Khu Best Practice chưa có giao diện
 
-- 40 thẻ đã viết.
+- 40 thẻ trên `v22-engine`. `main` có 72 thẻ, đủ cả 60 mục v25 (vòng 6).
 - Catalogue §14.2 (bản trên `main`, `4cb89fe`) đã chốt: đợt v25 có 60 mục (30 SQL + 30 PostgreSQL); đợt Mongo có 31 + 38; đợt Dynamo có 31 + 32. Tổng 192.
 - Chưa có:
   - parser ADD-8;
@@ -183,7 +191,7 @@ Chưa có gì:
 ### G8. MongoDB: output ghi sẵn và độ thật
 
 - Không có trường `recorded`. Parser (`src/engine/content.ts`) không đọc nó. 19 file chỉ nói "ghi sẵn" trong văn xuôi.
-- Lỗi ES2 §2.3 **vẫn mở**: `runMongo` chép collection chính, nhưng `collectionResolver` (`src/engine/mongo/engineMongo.ts:123`) vẫn trả mảng gốc, nên `$out`/`$merge`/`$lookup` có thể làm bẩn dữ liệu đã cache.
+- Lỗi ES2 §2.3 (`$out`/`$merge` làm bẩn dữ liệu đã cache, `src/engine/mongo/engineMongo.ts:123`) đã sửa ở nhánh `v22-nosql-fix` (L254), **chưa gộp** vào `v22-engine`.
 - Chưa có bộ golden mingo ↔ `mongod`.
 - Ghi sẵn thật cần một `mongod` chạy ngoài app, do người chạy theo script. Nếu không có `mongod`, chỉ được dùng nhãn "trích tài liệu" (như exhibit `mongodb-docs` của ngân hàng phỏng vấn), không ghi "chạy thật".
 
@@ -234,7 +242,7 @@ Chưa có gì:
 
 - **Q-C1:** lab ở trang bài hay ở workspace? Thực tế đang ở trang bài.
 - **Danh mục sơ đồ:** §5 thiết kế khác registry. Ví dụ `pg-mvcc` so với `pg-mvcc-timeline`, `pg-partition-prune` chưa có.
-- **Dải L cũ đã dùng lẫn:** L230, L235–L238, L240–L242, L245–L253 nằm trong dải v23–v26 cũ. Có trùng số: L220/L221 hai dòng, L196/L197 hai dòng.
+- **Dải L cũ đã dùng lẫn:** L230, L235–L238, L240–L242, L245–L254 nằm trong dải v23–v26 cũ. Có trùng số: L220/L221 hai dòng, L196/L197 hai dòng. L253 sẽ trùng khi gộp `v22-qa-audit`: đổi dòng QA sang số trống khi gộp.
 
 ---
 
@@ -242,7 +250,7 @@ Chưa có gì:
 
 Roadmap cũ không cần cờ ẩn vì "chưa phát hành thì chưa gộp". Giờ cả 195 bài đã gộp trên `v22-engine`, nên lối đó không còn.
 
-**Giả định của bản này:** v22 phát hành **toàn bộ** Engine đang có, kèm nhãn trung thực và nhãn đối tượng. Không dựng cờ ẩn theo cấp.
+**Giả định của bản này:** v22 phát hành **toàn bộ** Engine đang có, kèm nhãn trung thực. Không dựng cờ ẩn theo cấp.
 
 **Lý do:**
 
@@ -252,10 +260,11 @@ Roadmap cũ không cần cờ ẩn vì "chưa phát hành thì chưa gộp". Gi�
 
 **Điều kiện tag v22:**
 
-1. Đóng G1: có `ux-audit.mjs`; smoke nghe `Log` + worker; đo RAM 375.
-2. Đóng P2-1, P2-2.
-3. Thêm nhãn đối tượng.
-4. Sửa lỗi `$out`/`$merge` (G8). Sửa nhỏ, chặn dữ liệu bẩn trong lab đã phát hành.
+1. Gộp `v22-qa-audit` và `v22-nosql-fix`.
+2. `ux-audit.mjs` báo 0 serious trên bản build, tức đã sửa 25 lỗi.
+3. Smoke nghe `Log` + worker; đo RAM ở 375.
+4. Đóng P2-1, P2-2.
+5. Chip nhãn trung thực (đang làm) đã commit.
 
 **Phương án khác:** chỉ phát hành Postgres L1–L2 ở v22. Cách này cần một luồng thêm cờ ẩn theo cấp trong `engineSources.ts` và mục lục, và dời v23–v26 theo. Người điều phối chọn một trong hai, rồi ghi vào dòng L đầu tiên của v22.
 
@@ -295,9 +304,9 @@ v22 không thuộc phạm vi bản này: §4 bắt đầu từ v23 và giả s�
 
 | Luồng | Nội dung | File (tách nhau) | Cỡ |
 |---|---|---|---|
-| **R** | `review-v22.md` P1/P2; P3-1…P3-7 của review v21 nếu còn | theo phát hiện | M |
+| **R** | `review-v22.md` P1/P2; mục moderate của `ux-audit.mjs` (vùng chạm 127); P3-1…P3-7 của review v21 nếu còn | theo phát hiện | M |
 | **E-SHELL** | Chủ duy nhất của `engineView.ts`: gắn hook cho PRED và CAP; lối Q-C1 (giữ lab trên trang bài, ghi vào L) | `src/ui/engineView.ts`, `src/i18n/engine.ts` | S |
-| **PRED** | "Xem thật" cho cả đoán đúng lẫn sai; vẽ `pg-plan-tree` từ `EXPLAIN (FORMAT JSON)`; viền nút trả lời; câu quan sát; `why` sau khi xem; ghi lần chọn đầu vào device pref `cargo-query/engine-first` (không vào Save, chỉ cho Product đo) | mới `src/ui/enginePredict.ts`, `src/engine/predict.ts`, `tests/enginePredict.test.ts` | M |
+| **PRED** | Chủ `src/engine/content.ts` ở v23. "Xem thật" cho cả đoán đúng lẫn sai; vẽ `pg-plan-tree` từ `EXPLAIN (FORMAT JSON)`; viền nút trả lời; câu quan sát; `why` sau khi xem; ghi lần chọn đầu vào device pref `cargo-query/engine-first` (không vào Save, chỉ cho Product đo) | mới `src/ui/enginePredict.ts`, `src/engine/predict.ts`, `tests/enginePredict.test.ts`, `src/engine/content.ts` | M |
 | **CAP** | Giao diện capstone §5.6: thanh bước dính, "Chấm bằng", kế hoạch Trước/Sau, Lily reo + `doneBadge()` | mới `src/ui/engineCapstone.ts` | M |
 | **PG-C** | Nội dung: 8 predict thêm `expect` (hoặc ghi lý do, như L3/08); F1–F3, F5 (mô-đun `memory`); PG8; `why` nói vì sao lựa chọn sai nghe hợp lý; capstone L1/L3 theo luật chuyển giao | `content/engine/postgres/**` | L |
 | **PG-VIZ** | `pg-query-path` (đang trống, L252), `pg-partition-prune`, `pg-replication` | `src/engine/viz/pgPlan.ts`, `pgStorage.ts` | M |
@@ -309,7 +318,7 @@ v22 không thuộc phạm vi bản này: §4 bắt đầu từ v23 và giả s�
 
 - Cổng chung.
 - `npx vitest run tests/enginePredict.test.ts`: 16/16 predict Postgres có `expect` khớp PGlite, hoặc có lý do ghi trong test.
-- e2e: 75/75 bài Postgres, gồm 5 capstone đi theo thanh bước.
+- e2e: mọi bài Postgres (75 + bài mới của PG-C) đạt, gồm 5 capstone đi theo thanh bước.
 - `blind-pg.md`: 0 lab không giải được.
 - `review-v23.md` có câu "Postgres đủ" (hoặc danh sách việc còn thiếu).
 
@@ -319,7 +328,7 @@ v22 không thuộc phạm vi bản này: §4 bắt đầu từ v23 và giả s�
 |---|---|---|---|
 | **R** | `review-v23.md` | theo phát hiện | S–M |
 | **BP-T** | Parser ADD-8 (`engine: best`, `track`, `pair`, `avoid`, `lint`); `ENGINE_ID` thêm `bp` (không bump Save; test fixture); bộ nạp lười `bpsql`/`bppg`/`bpindex`; test chạy cặp trên PGlite | `src/engine/content.ts` (nhánh `best`), `src/save.ts` (một regex), mới `src/bestSources.ts`, `tests/bestContent.test.ts` | M |
-| **BP-C** (không build) | Từ 28 thẻ SQL + PG lên 60 mục, đúng danh sách catalogue §14.2; thêm "Phiên bản (vòng 5)" cho các mục PG 19 đổi hành vi | `content/engine/best/{sql,postgres}/**`, `tracks.yml` | L |
+| **BP-C** (không build) | Gộp 72 thẻ của `main` (đủ 60 mục v25, catalogue §14.2); soát lại cặp chạy trên PGlite; "Phiên bản (vòng 5)" cho các mục PG 19 đổi hành vi | `content/engine/best/{sql,postgres}/**`, `tracks.yml` | L |
 | **BP-UI** | Route `#/engine/best/<track>`, lưới thẻ, trang mục, "Chạy cả hai", Kiểm nhanh, hàng "Lỗi hay gặp" (`gallery:` trong `tracks.yml`), trang "8 thói quen" | `src/route.ts` (một nhánh), mới `src/ui/engineBest.ts`, `src/i18n/best.ts` | M |
 | **BP-LINT** | Boon nhắc: `bpLint.ts`, `bpTip.ts`, pref `cargo-query/bp-tips`; gắn một dòng trong `work.ts`; `EXEMPT` đo trên mọi Solution | mới `src/viz/bpLint.ts`, `src/ui/bpTip.ts`, `src/ui/work.ts` (một dòng) | M |
 | **QA** | e2e phần `best`; ảnh 1280/1024/375/320 sáng/tối của `#/engine/best/sql` | `scripts/e2e.mjs` | S |
@@ -336,12 +345,11 @@ v22 không thuộc phạm vi bản này: §4 bắt đầu từ v23 và giả s�
 | Luồng | Nội dung | File | Cỡ |
 |---|---|---|---|
 | **R** | `review-v24.md` (lint ồn: rút khỏi `LINT_ON`) | `src/viz/bpLint.ts`, … | S–M |
-| **MG-FIX** | Nếu v22 chưa sửa: resolver chép theo lượt chạy. Test: seed không đổi sau `$out`/`$merge`/`$lookup` | `src/engine/mongo/engineMongo.ts`, `tests/mongoEngine.test.ts` | S |
 | **REC** | ADD-3: trường `recorded` `{ server, version, date, output }` trong parser; chip "Kết quả ghi từ …"; "Xem thật" cho predict Mongo đọc `recorded` | `src/engine/content.ts` (nhánh `recorded`), mới `src/ui/engineRecorded.ts` | M |
-| **MG-CAP** (nội dung) | Capstone MongoDB L3 (index + ESR, chấm bằng luật ESR) và L4 (concern/transaction, quiz kết luận); MG1, MG2/F7, F8, F9 | `content/engine/mongodb/L3/**`, `L4/**` | L |
-| **MG-CAPTURE** (không build, cần người có `mongod`) | `scripts/capture-mongo.md`: chụp `explain('executionStats')` thật cho các predict L3/L5. Không có `mongod` thì ghi nhãn "trích tài liệu" | `scripts/capture-mongo.md`, `content/engine/mongodb/**` (chỉ khối `recorded`) | M |
-| **MG-UI** | Tab "Pipeline từng bước" (dùng `mg-pipeline`), "So với SQL"; tô màu editor nếu user duyệt D-E6' | mới `src/ui/engineMongo.ts` | M |
-| **MG-ED** (nội dung) | QA còn mở: "Ý chính" ≤ 150 từ, `why` của lựa chọn sai, nháy đơn mongosh (chạy lại mingo), giọng "bạn", thuật ngữ thiếu | `content/engine/mongodb/**` (khác thư mục của MG-CAP: chia theo file) | M |
+| **MG-CAP** (nội dung) | Capstone MongoDB L3 (index + ESR, chấm bằng luật ESR) và L4 (concern/transaction, quiz kết luận); MG1, MG2/F7, F8, F9 | chỉ file capstone mới + `L2/08-lookup.md`, `L2/11-embed-vs-reference.md`, `L2/13-schema-validation.md`, `L4/09-transactions.md` | L |
+| **MG-CAPTURE** (không build, cần người có `mongod`) | `scripts/capture-mongo.md`: chụp `explain('executionStats')` thật cho các predict L3/L5. Không có `mongod` thì ghi nhãn "trích tài liệu" | `scripts/capture-mongo.md`, mọi file `kind: predict` của MongoDB L3–L5 (cả việc sửa văn trong đó) | M |
+| **MG-UI** | Tab "Pipeline từng bước" (dùng `mg-pipeline`), "So với SQL" | mới `src/ui/engineMongo.ts` | M |
+| **MG-ED** (nội dung) | QA còn mở: "Ý chính" ≤ 150 từ, `why` của lựa chọn sai, nháy đơn mongosh (chạy lại mingo), giọng "bạn", thuật ngữ thiếu | `content/engine/mongodb/**` trừ các file của MG-CAP và MG-CAPTURE | M |
 | **BP-MG** | Track MongoDB: 38 mục M + 31 mục SQL/PG bổ sung (§14.2) | `content/engine/best/mongodb/**`, một dòng trong `src/bestSources.ts` | L |
 | **QA** | e2e Mongo L1–L5 gồm 2 capstone mới; giải mù Mongo | `scripts/e2e.mjs`, `docs/team/blind-mg.md` | M |
 
@@ -349,7 +357,6 @@ v22 không thuộc phạm vi bản này: §4 bắt đầu từ v23 và giả s�
 
 - MongoDB có 5/5 capstone.
 - Mọi predict L3/L5 có `recorded` hoặc nhãn "trích tài liệu", kiểm trong `tests/engineContent.test.ts`.
-- Test seed sạch sau `$out` xanh.
 - e2e 67/67 bài Mongo.
 
 ### v26: DynamoDB đủ
@@ -376,7 +383,7 @@ v22 không thuộc phạm vi bản này: §4 bắt đầu từ v23 và giả s�
 |---|---|---|---|
 | **R** | `review-v26.md` | | S–M |
 | **GLO** | Chunk lười đọc `glossary.yml` (YAML → JSON lúc build, L201); trang `#/engine/terms` có lọc theo engine và cấp; lần đầu một từ xuất hiện trong bài thì có nút giải thích (`<button>` + popover, không `title`); thuật ngữ thiếu theo content QA | mới `src/engine/glossary.ts`, `src/ui/engineTerms.ts`, `content/engine/glossary.yml` | M |
-| **IV** | Phòng phỏng vấn Engine: theo mẫu `#/learn/interview` (L144), 0 XP, kết quả ở pref `cargo-query/engine-interview` (không vào Save); exhibit `pglite-0.5.16` chạy lại trên pglab; take-home tự chấm bằng rubric; khối `#/me` | mới `src/engine/interviewBank.ts`, `src/ui/engineInterview.ts`, `src/i18n/engineInterview.ts` | L |
+| **IV** | Route `#/engine/interview` qua hook của GLO (chủ `src/route.ts` ở v27). Phòng phỏng vấn Engine: theo mẫu `#/learn/interview` (L144), 0 XP, kết quả ở pref `cargo-query/engine-interview` (không vào Save); exhibit `pglite-0.5.16` chạy lại trên pglab; take-home tự chấm bằng rubric; khối `#/me` | mới `src/engine/interviewBank.ts`, `src/ui/engineInterview.ts`, `src/i18n/engineInterview.ts` | L |
 | **IV-T** | Test: mọi exhibit `pglite` chạy lại ra đúng `shown`; id `e-iv-` bị `parseSave` bỏ | `tests/engineInterview.test.ts`, `src/save.ts` (một regex) | M |
 | **QA** | e2e: một bộ câu mỗi engine + một take-home; axe cho hai trang mới | `scripts/e2e.mjs`, `tests/engineAxe.test.ts` | S |
 
@@ -459,29 +466,28 @@ Luồng khác cần chạm một file trong bảng thì nhờ chủ của versio
 
 | # | Câu hỏi | Khuyến nghị | Nếu không trả lời |
 |---|---|---|---|
-| R1 | v22 phát hành toàn bộ Engine (§3) hay chỉ Postgres L1–L2? | Toàn bộ, nhãn trung thực + nhãn đối tượng | Toàn bộ |
+| R1 | v22 phát hành toàn bộ Engine (§3) hay chỉ Postgres L1–L2? | Toàn bộ, có nhãn trung thực (nhãn đối tượng ở v23) | Toàn bộ |
 | R2 | Thêm Ajv để `$jsonSchema` chạy thật? | Không: giữ docs + sơ đồ, đúng ES2 | Không |
-| R3 | `@codemirror/lang-javascript` cho editor Mongo (D-E6')? | Có (ghim chính xác, MIT) | Editor không tô màu |
-| R4 | pgvector (D-E11)? | Tùy chọn ở v29, bỏ nếu vượt trần | Bỏ |
+| R3 | pgvector (D-E11)? | Tùy chọn ở v29, bỏ nếu vượt trần | Bỏ |
 
 ---
 
 ## 7. Dải số L
 
-L254 là dòng ghi bản sửa này. Các dải L228–L271 cũ bỏ, vì các dòng Engine đã dùng lẫn chúng. Dòng nào đã có thì giữ số.
+L255 là dòng ghi bản sửa này (L254 đã dùng ở nhánh `v22-nosql-fix`). Các dải L228–L271 cũ bỏ, vì các dòng Engine đã dùng lẫn chúng. Dòng nào đã có thì giữ số.
 
 | Dải | Version |
 |---|---|
-| L254 | Roadmap sửa sau khi build Engine (tài liệu này) |
-| L255–L259 | v23 |
-| L260–L264 | v24 |
-| L265–L269 | v25 |
-| L270–L273 | v26 |
-| L274–L277 | v27 |
-| L278–L281 | v28 |
-| L282–L285 | v29 |
-| L286–L289 | v30 |
-| L290–L294 | Dự phòng |
+| L255 | Roadmap sửa sau khi build Engine (tài liệu này) |
+| L256–L260 | v23 |
+| L261–L265 | v24 |
+| L266–L270 | v25 |
+| L271–L274 | v26 |
+| L275–L278 | v27 |
+| L279–L282 | v28 |
+| L283–L286 | v29 |
+| L287–L290 | v30 |
+| L291–L295 | Dự phòng; cũng dùng cho số đổi khi gộp `v22-qa-audit` (L253 trùng) |
 
 Số trùng cũ (L196, L197, L220, L221 mỗi số hai dòng) giữ nguyên. Khi nhắc tới một trong các số đó, ghi kèm tiêu đề dòng.
 
