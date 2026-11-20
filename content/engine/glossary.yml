@@ -2833,7 +2833,8 @@
 
 # ───────────────────────── v27 (vòng 12): từ có trong phòng phỏng vấn mà chưa có mục ─────────────────────────
 # PgBouncer không có trang trên postgresql.org: `doc` trỏ `max_connections` (lý do cần pooler); ba chế độ pooling
-# đã kiểm trên pgbouncer.org/features.html (2026-11-20). Các mục khác kiểm trên đúng trang `doc`.
+# đã kiểm trên pgbouncer.org/features.html (2026-11-20). CDC: logical decoding kiểm trên postgresql.org/docs/18/logicaldecoding-explanation.html,
+# `doc` là trang DynamoDB có tên "Change data capture". Các mục khác kiểm trên đúng trang `doc`.
 - id: bloat
   term: bloat
   engines: [postgres]
@@ -2904,7 +2905,7 @@
   avoid: "chụp dữ liệu"
   vi: "Đọc các thay đổi đã commit của database thành một luồng để đẩy sang hệ thống khác. Postgres: logical decoding đọc WAL qua replication slot; MongoDB: change stream; DynamoDB: DynamoDB Streams."
   en: "Reading a database's committed changes as a stream to feed another system. Postgres: logical decoding of the WAL through a replication slot; MongoDB: change streams; DynamoDB: DynamoDB Streams."
-  doc: "https://www.postgresql.org/docs/18/logicaldecoding-explanation.html"
+  doc: "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Streams.html"
 - id: parallel-scan
   term: parallel scan
   engines: [dynamodb]
@@ -2926,3 +2927,14 @@
   vi: "Điều kiện trong IAM policy giới hạn quyền tới từng item hoặc thuộc tính. `dynamodb:LeadingKeys` so partition key của request với id người dùng, nên mỗi người chỉ chạm item của mình; `Scan` không mang partition key nên không được cấp."
   en: "Conditions in an IAM policy that narrow access to single items or attributes. `dynamodb:LeadingKeys` compares the request's partition key with the user's id, so each user touches only their own items; `Scan` carries no partition key, so it is not granted."
   doc: "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/specifying-conditions.html"
+- id: rpo-rto
+  term: RPO / RTO
+  engines: [postgres, mongodb, dynamodb]
+  level: L5
+  keep_en: true
+  vi_term: "RPO / RTO"
+  match: ["RPO"]
+  avoid: "thời gian sao lưu"
+  vi: "Hai mục tiêu khi có sự cố: RPO là lượng dữ liệu tối đa được phép mất (tính bằng thời gian), RTO là thời gian tối đa để phục vụ lại. Chúng quyết định cách sao lưu, PITR, nhân bản và global tables."
+  en: "Two disaster targets: RPO is the most data you may lose (measured in time), RTO is the longest time until service is back. They drive the choice of backups, PITR, replication and global tables."
+  doc: "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/GlobalTables.html"
