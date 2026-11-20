@@ -1,6 +1,18 @@
 {
   "_note": "BoonData, MIT. Icons Phosphor has no picture for, drawn in Phosphor duotone grammar (ui-ux-v6 I1): 256 grid, 16 stroke, round caps and joins, fill layer at opacity .2. A part is { d, s: 1 } (stroked) or { d, o } (filled at opacity o). The JOIN family and HAVING keep one SOLID (o: 1) region so they stay apart at 16 px (L43). Circles: two r64 at x96/x160 meet at (128, 72.57) and (128, 183.43); three r48 at x68/128/188 meet at x98/x158, y90.53/165.47.",
   "icons": {
+    "engRelational": [
+      { "d": "M32,56H224V104H32Z", "o": 0.2 },
+      { "d": "M40,56H216a8,8,0,0,1,8,8V192a8,8,0,0,1,-8,8H40a8,8,0,0,1,-8,-8V64A8,8,0,0,1,40,56ZM32,104H224M32,152H224M96,104V200", "s": 1 }
+    ],
+    "engDocument": [
+      { "d": "M56,32H160l48,48V216a8,8,0,0,1,-8,8H56a8,8,0,0,1,-8,-8V40A8,8,0,0,1,56,32Z", "o": 0.2 },
+      { "d": "M160,32H56a8,8,0,0,0,-8,8V216a8,8,0,0,0,8,8H200a8,8,0,0,0,8,-8V80ZM160,32V80h48M112,120c-12,0-16,6-16,14v10c0,8-4,12-12,12c8,0,12,4,12,12v10c0,8,4,14,16,14M144,120c12,0,16,6,16,14v10c0,8,4,12,12,12c-8,0-12,4-12,12v10c0,8-4,14-16,14", "s": 1 }
+    ],
+    "engKeyValue": [
+      { "d": "M144,48H224V104H144ZM144,152H224V208H144Z", "o": 0.2 },
+      { "d": "M64,128a32,32,0,1,0,-0.01,0M96,128H120M120,76V180M120,76h24M120,180h24M144,48H224V104H144ZM144,152H224V208H144Z", "s": 1 }
+    ],
     "check": [
       { "d": "M40,144l56,56L216,80", "s": 1 }
     ],

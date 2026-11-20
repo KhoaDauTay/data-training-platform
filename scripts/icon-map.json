@@ -1,6 +1,14 @@
 {
   "_note": "App icon name -> Phosphor duotone icon (@phosphor-icons/core 2.1.1, MIT), with the metaphor kept from the hand-drawn icon it replaces (ui-ux-v6 I1). Run `node scripts/icons.mjs` after editing; icons not in Phosphor live in icon-custom.json.",
   "icons": {
+    "kindConcept": ["lightbulb", "Engine lesson kind: concept (an idea)"],
+    "kindLab": ["test-tube", "Engine lesson kind: lab (run it for real)"],
+    "kindPredict": ["crosshair", "Engine lesson kind: predict (aim a guess, then see the real plan)"],
+    "kindQuiz": ["seal-question", "Engine lesson kind: quiz"],
+    "kindCapstone": ["flag-checkered", "Engine lesson kind: capstone (the level's finish line)"],
+    "docsOnly": ["file-text", "Engine lesson read from the official docs (nothing runs here)"],
+    "level": ["stairs", "Engine level ladder L1-L5"],
+    "nosqlPath": ["signpost", "Engine: the NoSQL path (MongoDB skills, like the SQL learning path)"],
     "soundOn": ["speaker-high", "sound on (v7 X2)"],
     "soundOff": ["speaker-slash", "sound off (v7 X2)"],
     "anchor": ["anchor", "Logistics domain: harbour anchor"],
