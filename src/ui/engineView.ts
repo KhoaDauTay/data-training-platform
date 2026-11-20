@@ -3,7 +3,7 @@ import {
   type EngineId, type EngineLesson, type LessonSource, type Level, type ModuleName, type Question, type Tree,
 } from '../engine/content';
 import { heapView } from '../engine/inside';
-import { gradable, LAB_RUNNERS, type LabEnv, type LabOutput, type LabRunner, type LabVerdict, type PlanLine } from '../engine/labs';
+import { gradable, honestOf, LAB_RUNNERS, type Honest, type LabEnv, type LabOutput, type LabRunner, type LabVerdict, type PlanLine } from '../engine/labs';
 import { vizMountFor, type VizDeps, type VizMounted } from '../engine/vizRegistry';
 import type * as I18n from '../i18n';
 import { ENGINE_DICT, engineText, type EngineKey } from '../i18n/engine';
@@ -74,9 +74,13 @@ const flat = (e: EngineId): EngineLesson[] => trees[e].levels.flatMap((l) => l.m
 const lessonHash = (l: EngineLesson): string => d.engineHash(l.engine, l.level, l.id);
 const levelName = (lv: Level): string => `${lv} · ${et(`level.${lv}`)}`;
 
-/** Paragraphs and list items: `code` spans only, nothing else interpreted (like richText). */
+/**
+ * Paragraphs and list items: `code` spans, and **bold** outside code (558 spans in content/engine; review v22 RC: the
+ * asterisks showed as text). Nothing else is interpreted.
+ */
 function inline(text: string): (Node | string)[] {
-  return text.split(/(`[^`\n]+`)/).filter(Boolean).map((p) => (p.length > 1 && p.startsWith('`') && p.endsWith('`') ? d.h('code', {}, p.slice(1, -1)) : p));
+  return text.split(/(`[^`\n]+`)/).filter(Boolean).flatMap((p) => (p.length > 1 && p.startsWith('`') && p.endsWith('`') ? [d.h('code', {}, p.slice(1, -1))]
+    : p.split(/(\*\*[^*\n]+\*\*)/).filter(Boolean).map((q) => (q.length > 4 && q.startsWith('**') && q.endsWith('**') ? d.h('strong', {}, q.slice(2, -2)) : q))));
 }
 function prose(text: string): HTMLElement {
   return d.h('div', { class: 'space-y-3' }, ...blocksOf(text).map((b) => b.kind === 'p' ? d.h('p', { class: 'm-0' }, ...inline(b.text))
@@ -131,7 +135,7 @@ function overview(): HTMLElement {
         h('ol', { class: 'm-0 list-none space-y-1 p-0 text-body-sm' }, ...trees[e].levels.map((lv) => {
           const n = lv.modules.reduce((a, m) => a + m.lessons.length, 0);
           return h('li', { class: 'flex flex-wrap gap-x-2' }, h('b', {}, levelName(lv.level)),
-            h('span', { class: 'min-w-0 flex-1 text-muted' }, et(`ladder.${e}.${lv.level}`)), h('span', { class: 'text-muted tabular-nums' }, et('count', { n })));
+            h('span', { class: 'min-w-0 grow basis-48 text-muted' }, et(`ladder.${e}.${lv.level}`)), h('span', { class: 'text-muted tabular-nums' }, et('count', { n })));
         })),
         h('p', { class: 'm-0 text-body-sm font-semibold' }, et('progress', { k: p.done, n: p.total })),
         bar(p.done, p.total));
@@ -342,7 +346,7 @@ function labView(l: EngineLesson, v: Visit): HTMLElement {
         h('details', {}, h('summary', { class: 'cursor-pointer text-body-sm font-semibold' }, et('lab.hint')), h('p', { class: 'mt-2 mb-0 text-body-sm' }, ...inline(s.hint[lang()]))),
         h('p', { role: 'status', class: cls.cx('m-0 text-body-sm', msg ? (msg.ok ? 'good' : 'bad') : '') }, ...inline(msg?.text ?? '')),
         s.fact && v.passed.has(`s${i}`) ? h('p', { class: 'm-0 rounded-(--r-ctl) bg-code p-3 text-body-sm' }, h('b', {}, `${et('lab.fact')}: `), ...inline(s.fact[lang()])) : null,
-        out ? h('div', { class: 'overflow-x-auto' }, 'result' in out ? d.renderResult(out.result) : d.errorView(out.error)) : null,
+        out ? h('div', { class: 'overflow-x-auto' }, 'result' in out ? d.renderResult(out.result) : d.errorView(out.error, false)) : null,
         out && 'result' in out ? metaView(out.result) : null,
         out && 'result' in out ? insideView(out.result, `${key}-inside`) : null);
     }));
@@ -410,6 +414,16 @@ function vizSlot(slot: string, name: string | undefined, engine: EngineId, model
 }
 const SHORT_OF: Record<EngineId, 'pg' | 'mg' | 'dy'> = { postgres: 'pg', mongodb: 'mg', dynamodb: 'dy' };
 
+const HONEST_CLS: Record<Honest, string> = {
+  pg: 'bg-good-soft text-ink', mingo: 'bg-good-soft text-ink', dynoxide: 'bg-good-soft text-ink', diagram: 'bg-surface-2 text-muted', docs: 'bg-info-soft text-ink',
+};
+/** The one honest runtime chip beside the title (§3.6, checklist L1). */
+function honestChip(l: EngineLesson): HTMLElement {
+  const k = honestOf(l);
+  return d.h('span', { class: d.cls.cx(d.cls.PILL, HONEST_CLS[k]), 'data-honest': k },
+    d.h('span', { class: 'inline-block size-2 rounded-full bg-current', 'aria-hidden': 'true' }), et(`honest.${k}`));
+}
+
 function lessonPage(l: EngineLesson): HTMLElement {
   const { h, cls } = d;
   const v = visitOf(l.id);
@@ -423,7 +437,9 @@ function lessonPage(l: EngineLesson): HTMLElement {
   return h('article', { class: 'space-y-6', 'aria-labelledby': 'engine-lesson-title' },
     h('p', { class: 'm-0' }, h('a', { href: d.engineHash(l.engine) }, `‹ ${NAME[l.engine]} · ${levelName(l.level)}`)),
     h('div', { class: 'space-y-2' },
-      h('h2', { id: 'engine-lesson-title', class: 'm-0 text-heading font-bold' }, l.title[lang()], tick(isDone)),
+      h('div', { class: 'flex flex-wrap items-center gap-x-3 gap-y-1' },
+        h('h2', { id: 'engine-lesson-title', class: 'm-0 text-heading font-bold' }, l.title[lang()], tick(isDone)),
+        honestChip(l)),
       h('p', { class: 'm-0 flex flex-wrap items-center gap-2 text-body-sm text-muted' },
         h('span', { class: cls.cx(cls.PILL, 'bg-code') }, et(`kind.${l.kind}`)), h('span', {}, et('minutes', { n: l.minutes })), h('span', { 'aria-hidden': 'true' }, '·'), h('span', {}, module.name[lang()]))),
     l.runtime === 'docs' ? h('p', { class: 'm-0 rounded-(--r-ctl) bg-code p-3 text-body-sm', 'data-runtime': 'docs' }, et('runtime.docs')) : null,

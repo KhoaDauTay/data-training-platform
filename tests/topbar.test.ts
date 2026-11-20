@@ -32,11 +32,11 @@ describe('F1 (ui-ux v6): thanh trên một dòng từ 1024 px', () => {
   it('v21 U3: thanh dưới có đủ 5 cột cho 4 mục cấp 1 + lĩnh vực (một hàng)', () => {
     expect(tag(/<nav id="bottom-nav"[^>]*>/)).toContain('grid-cols-5');
   });
-  it('từ lg tới dưới 1440 px, VI|EN và theme gộp vào ⋯ (D-V9)', () => {
-    expect(tag(/<div class="top-prefs[^"]*"/)).toContain('lg:max-[1440px]:hidden');
+  it('từ lg tới dưới 1600 px (review v22 RC: thêm mục Engine; trước là 1440), VI|EN và theme gộp vào ⋯ (D-V9)', () => {
+    expect(tag(/<div class="top-prefs[^"]*"/)).toContain('lg:max-[1600px]:hidden');
     const prefs = tag(/<div data-menu-prefs[^>]*>/);
     expect(prefs).toContain('sm:max-lg:hidden');
-    expect(prefs).toContain('min-[1440px]:hidden');
+    expect(prefs).toContain('min-[1600px]:hidden');
     expect(menu.indexOf('data-menu-prefs')).toBeLessThan(menu.indexOf('data-lang="vi"'));
     expect(tag(/<div[^>]*data-menu-proxies[^>]*>/)).toContain('sm:hidden');
   });
