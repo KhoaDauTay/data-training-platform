@@ -20,7 +20,8 @@ export interface Hit { rule: Rule; column?: string; tables?: string[] }
  * tests/bpLint.test.ts measures the set on every Solution and requires it to equal this list; each rule ≤ 5 %.
  */
 // Empty at L276: every Solution in the repo is clean once Q11/Q12 are filtered by real schema facts.
-export const EXEMPT: readonly (readonly [string, Rule])[] = [];
+// v24 integration (L356): e-pg-l1-05 runs in the browser since L305 and its step 2 is the NOT IN + NULL trap on purpose.
+export const EXEMPT: readonly (readonly [string, Rule])[] = [['e-pg-l1-05', 'q02']];
 
 const AGG = new Set(['count', 'sum', 'avg', 'min', 'max', 'bool_and', 'bool_or', 'every', 'array_agg', 'string_agg', 'json_agg', 'jsonb_agg',
   'json_object_agg', 'jsonb_object_agg', 'stddev', 'stddev_pop', 'stddev_samp', 'variance', 'var_pop', 'var_samp', 'percentile_cont',
