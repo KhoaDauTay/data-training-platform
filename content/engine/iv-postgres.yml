@@ -1,0 +1,1161 @@
+# Ngân hàng câu phỏng vấn Database Engine (L215, L219): PostgreSQL, MongoDB, DynamoDB × junior | mid | senior | staff.
+# Nội dung thuần, app nối sau. Chưa gì đọc file này; id `e-iv-…` không bao giờ vào Save (như `g-iv-…`, L144).
+# Câu hỏi (`questions`): id `e-iv-<pg|mg|dy>-<band>-<nn>`, `engine` (postgres | mongodb | dynamodb), `band`, `kind`:
+#   concept  -> `q`, `answer` (mẫu trả lời), `rubric` (3–5 tiêu chí tự chấm)
+#   diagnose -> `q`, `exhibits` (đoạn để đọc), `answer`, `rubric`. Mỗi exhibit có `label`, `shown` và `source`:
+#                 pglite-0.5.16  = chạy thật trên PGlite 0.5.16 (PostgreSQL 18.6) trong Node, từ `fixtures.<fixture>` + `setup` + `sql`
+#                                  (EXPLAIN ANALYZE với COSTS/BUFFERS/TIMING/SUMMARY tắt trừ khi `sql` ghi khác; số dòng không phụ thuộc máy;
+#                                  mỗi DB mới; `setup` tách theo `;` và chạy từng lệnh một, vì VACUUM không chạy được trong exec nhiều lệnh)
+#                 mongodb-docs   = trích từ tài liệu MongoDB tại `url` (đã rút gọn bằng '...'), chưa chạy trong trình duyệt (D-E13)
+#                 illustrative   = đoạn minh họa tự soạn theo cấu trúc explain trong tài liệu, không phải bản ghi mongod
+#                 aws-rules      = số tính từ luật dung lượng của AWS; `calc` giữ đầu vào để kiểm lại
+#   design   -> `q`, `answer` (thiết kế mẫu), `tradeoffs` (≥ 2), `rubric`
+# Mọi câu có `doc` (trang tài liệu chính thức). Câu trả lời mẫu là để tự chấm, không phải đáp án duy nhất.
+# Bộ đề (v27, design-v27 §2.2): mỗi câu có `set: <pg|mg|dy>-<band>-<1..3>`, 36 bộ × 5 câu cùng engine + band; mỗi bộ ≥ 1
+#   `diagnose`; ô nào có `design` thì ≥ 1 bộ có nó; bộ Postgres ≥ 1 câu có exhibit pglite. Concept ≤ 4 mỗi bộ (ô có 10–11
+#   concept không chia được ≤ 3). Bộ ghi tay trên từng câu, không suy từ số thứ tự.
+# Take-home (`takeHomes`): 4 mỗi engine, id `e-iv-<engine>-th-<n>`: th-1 mid, th-2 senior, th-3 junior, th-4 staff;
+#   `brief`, `deliverables`, `model`, `rubric`, `doc`. Take-home Postgres có thêm `fixture` + `queries` (chạy được trên PGlite,
+#   một phiên); MongoDB và DynamoDB không có fixture (không chạy được trên PGlite).
+# Chữ VI theo content/engine/glossary.yml: "index" (lần đầu mỗi câu "index (chỉ mục)", trừ khi mọi lần nhắc đều nằm trong ngoặc), "lock" (không bao giờ "khóa" cho lock),
+#   "transaction", "schema".
+# Viết lại hoàn toàn, không chép đề từ trang khác. EN không dấu; code span VI = EN.
+
+# v27 (L411): the bank is split per engine (content/engine/iv-postgres.yml, iv-mongodb.yml, iv-dynamodb.yml), one lazy
+# chunk each; this file keeps the header and the fixtures.
+
+fixtures:
+  pg-shop: |-
+    CREATE TABLE customers (id int PRIMARY KEY, email text NOT NULL, city text NOT NULL, region text NOT NULL);
+    INSERT INTO customers SELECT i, 'user' || i || '@example.com', (ARRAY['Da Nang','Hue','Hoi An','Ha Noi','Sai Gon'])[1 + i % 5], CASE WHEN i % 5 IN (0,1,2) THEN 'Central' WHEN i % 5 = 3 THEN 'North' ELSE 'South' END FROM generate_series(1, 2000) i;
+    CREATE TABLE orders (id int PRIMARY KEY, customer_id int NOT NULL REFERENCES customers, status text NOT NULL, created_at date NOT NULL, total numeric(10,2) NOT NULL, attrs jsonb NOT NULL);
+    INSERT INTO orders SELECT i, 1 + (i * 7) % 2000, CASE WHEN i % 100 = 0 THEN 'REFUNDED' WHEN i % 10 = 0 THEN 'CANCELLED' ELSE 'PAID' END, date '2026-01-01' + i / 70, 1 + i % 500, jsonb_build_object('channel', CASE WHEN i % 4 = 0 THEN 'app' ELSE 'web' END, 'gift', i % 50 = 0) FROM generate_series(1, 20000) i;
+    ANALYZE;
+
+  pg-wallet: |-
+    CREATE TABLE wallets (id int PRIMARY KEY, owner text NOT NULL, balance numeric(12,2) NOT NULL);
+    INSERT INTO wallets SELECT i, 'owner' || i, (i % 50) * 100 FROM generate_series(1, 500) i;
+    CREATE TABLE ledger (id int GENERATED ALWAYS AS IDENTITY PRIMARY KEY, wallet_id int NOT NULL REFERENCES wallets, amount numeric(12,2) NOT NULL, note text NOT NULL);
+    INSERT INTO ledger (wallet_id, amount, note) SELECT id, balance, 'opening' FROM wallets WHERE balance > 0;
+    UPDATE wallets SET balance = balance + 50 WHERE id = 7;
+    ANALYZE;
+
+questions:
+  # ---------------- PostgreSQL · junior
+  - id: e-iv-pg-junior-01
+    engine: postgres
+    band: junior
+    kind: concept
+    set: pg-junior-3
+    q: { vi: "Khóa chính và ràng buộc `UNIQUE` khác nhau thế nào? Một bảng có thể có mấy cái mỗi loại?", en: "How does a primary key differ from a `UNIQUE` constraint? How many of each can a table have?" }
+    answer: { vi: "Khóa chính = `UNIQUE` + `NOT NULL`, mỗi bảng tối đa một, và là đích mặc định của khóa ngoại. `UNIQUE` thì có bao nhiêu cũng được và cho phép NULL: mặc định nhiều dòng NULL không bị coi là trùng (muốn coi là trùng thì dùng `NULLS NOT DISTINCT`, từ PG15). Cả hai đều tự tạo một index (chỉ mục) B-tree duy nhất.", en: "A primary key = `UNIQUE` + `NOT NULL`, at most one per table, and it is the default target of foreign keys. A table can have any number of `UNIQUE` constraints and they allow NULL: by default several NULL rows do not count as duplicates (use `NULLS NOT DISTINCT`, PG15+, to make them clash). Both create a unique B-tree index automatically." }
+    rubric:
+      - { vi: "Nói PK = UNIQUE + NOT NULL, chỉ một mỗi bảng", en: "Says PK = UNIQUE + NOT NULL, only one per table" }
+      - { vi: "Biết UNIQUE cho nhiều NULL (và cách đổi)", en: "Knows UNIQUE allows several NULLs (and how to change it)" }
+      - { vi: "Biết cả hai tạo index duy nhất", en: "Knows both create a unique index" }
+    doc: https://www.postgresql.org/docs/18/ddl-constraints.html
+  - id: e-iv-pg-junior-02
+    engine: postgres
+    band: junior
+    kind: concept
+    set: pg-junior-1
+    q: { vi: "Transaction là gì? Giải thích ngắn bốn chữ ACID và cho một ví dụ cần transaction.", en: "What is a transaction? Explain the four letters of ACID briefly and give an example that needs one." }
+    answer: { vi: "Transaction gom nhiều câu thành một đơn vị: hoặc tất cả được ghi (`COMMIT`), hoặc không gì cả (`ROLLBACK`). A: nguyên khối; C: dữ liệu luôn thỏa ràng buộc; I: các transaction chạy song song không thấy trạng thái dở dang của nhau (mức độ tùy isolation level); D: đã commit thì còn sau khi sập máy, nhờ WAL. Ví dụ: chuyển tiền trừ tài khoản A và cộng tài khoản B phải cùng thành công.", en: "A transaction groups several statements into one unit: either all are written (`COMMIT`) or none (`ROLLBACK`). A: all or nothing; C: data always satisfies constraints; I: concurrent transactions do not see each other's half-done state (how much depends on the isolation level); D: once committed it survives a crash, thanks to the WAL. Example: a transfer that debits account A and credits account B must succeed as a whole." }
+    rubric:
+      - { vi: "Định nghĩa đúng COMMIT/ROLLBACK nguyên khối", en: "Defines all-or-nothing COMMIT/ROLLBACK correctly" }
+      - { vi: "Giải thích đủ bốn chữ, nhắc WAL cho D", en: "Explains all four letters, mentions WAL for D" }
+      - { vi: "Ví dụ thực tế đúng", en: "Gives a correct real example" }
+    doc: https://www.postgresql.org/docs/18/tutorial-transactions.html
+  - id: e-iv-pg-junior-03
+    engine: postgres
+    band: junior
+    kind: concept
+    set: pg-junior-2
+    q: { vi: "So sánh `DELETE FROM t`, `TRUNCATE t` và `DROP TABLE t`.", en: "Compare `DELETE FROM t`, `TRUNCATE t` and `DROP TABLE t`." }
+    answer: { vi: "`DELETE` xóa từng dòng, lọc được bằng WHERE, chạy trigger dòng, để lại tuple chết chờ VACUUM. `TRUNCATE` bỏ cả tệp dữ liệu một lần, rất nhanh, giải phóng chỗ ngay, cần lock ACCESS EXCLUSIVE, không lọc được, và vẫn rollback được trong transaction. `DROP TABLE` xóa luôn định nghĩa bảng, index (chỉ mục) và quyền.", en: "`DELETE` removes rows one by one, can filter with WHERE, fires row triggers and leaves dead tuples for VACUUM. `TRUNCATE` drops the data files in one go, is very fast, frees space at once, takes an ACCESS EXCLUSIVE lock, cannot filter, and can still be rolled back inside a transaction. `DROP TABLE` removes the table definition, its indexes and grants too." }
+    rubric:
+      - { vi: "DELETE: từng dòng, có WHERE, để tuple chết", en: "DELETE: row by row, WHERE, leaves dead tuples" }
+      - { vi: "TRUNCATE: nhanh, lock mạnh, vẫn rollback được", en: "TRUNCATE: fast, strong lock, still transactional" }
+      - { vi: "DROP: mất cả cấu trúc", en: "DROP: the structure is gone too" }
+    doc: https://www.postgresql.org/docs/18/sql-truncate.html
+  - id: e-iv-pg-junior-04
+    engine: postgres
+    band: junior
+    kind: concept
+    set: pg-junior-3
+    q: { vi: "Trong Postgres, `varchar(255)` có nhanh hơn `text` không? Khi nào nên giới hạn độ dài?", en: "In Postgres, is `varchar(255)` faster than `text`? When should you limit the length?" }
+    answer: { vi: "Không. `text`, `varchar` và `varchar(n)` dùng cùng cách lưu; `varchar(n)` chỉ thêm một phép kiểm độ dài. Giới hạn độ dài là luật nghiệp vụ, nên đặt khi có lý do thật (ví dụ mã quốc gia 2 ký tự), và có thể dùng `CHECK` để đổi luật sau mà không đổi kiểu cột. Không dùng `char(n)`: nó đệm khoảng trắng.", en: "No. `text`, `varchar` and `varchar(n)` share the same storage; `varchar(n)` only adds a length check. A length limit is a business rule, so set it when there is a real reason (for example a 2-letter country code), and a `CHECK` lets you change the rule later without changing the column type. Avoid `char(n)`: it pads with spaces." }
+    rubric:
+      - { vi: "Nói không có khác biệt hiệu năng", en: "Says there is no performance difference" }
+      - { vi: "Coi độ dài là luật nghiệp vụ, biết CHECK", en: "Treats length as a business rule, knows CHECK" }
+      - { vi: "Cảnh báo char(n)", en: "Warns about char(n)" }
+    doc: https://www.postgresql.org/docs/18/datatype-character.html
+  - id: e-iv-pg-junior-05
+    engine: postgres
+    band: junior
+    kind: concept
+    set: pg-junior-1
+    q: { vi: "Index (chỉ mục) là gì và nó tốn gì? Vì sao không tạo index cho mọi cột?", en: "What is an index and what does it cost? Why not index every column?" }
+    answer: { vi: "Index (mặc định B-tree) là cấu trúc riêng giữ khóa đã sắp xếp kèm vị trí dòng, giúp tìm theo bằng, theo khoảng và sắp xếp mà không đọc cả bảng. Cái giá: mỗi INSERT/UPDATE/DELETE phải cập nhật thêm mọi index, tốn chỗ đĩa và bộ nhớ đệm, và một UPDATE chạm cột có index không còn là HOT. Chỉ tạo index cho truy vấn thật, đo bằng EXPLAIN.", en: "An index (B-tree by default) is a separate structure holding sorted keys with row locations, so equality, range and ordering need not read the whole table. The cost: every INSERT/UPDATE/DELETE must also maintain every index, it uses disk and cache, and an UPDATE touching an indexed column can no longer be HOT. Index for real queries and check with EXPLAIN." }
+    rubric:
+      - { vi: "Mô tả đúng index là cấu trúc sắp xếp riêng", en: "Describes the index as a separate sorted structure" }
+      - { vi: "Nêu chi phí ghi và dung lượng", en: "Names the write and space cost" }
+      - { vi: "Gắn việc tạo index với truy vấn thật", en: "Ties indexing to real queries" }
+    doc: https://www.postgresql.org/docs/18/indexes-intro.html
+  - id: e-iv-pg-junior-06
+    engine: postgres
+    band: junior
+    kind: concept
+    set: pg-junior-2
+    q: { vi: "Vì sao `WHERE manager_id = NULL` không trả dòng nào? Và vì sao `NOT IN (subquery)` có thể ra rỗng bất ngờ?", en: "Why does `WHERE manager_id = NULL` return no rows? And why can `NOT IN (subquery)` return nothing unexpectedly?" }
+    answer: { vi: "NULL nghĩa là chưa biết, nên mọi so sánh với NULL cho ra NULL (không phải true): dùng `IS NULL`. Với `x NOT IN (a, b, NULL)`, Postgres tính `x <> a AND x <> b AND x <> NULL`, vế cuối là NULL nên cả biểu thức không bao giờ true. Khi subquery có thể chứa NULL, dùng `NOT EXISTS`.", en: "NULL means unknown, so any comparison with NULL yields NULL (not true): use `IS NULL`. For `x NOT IN (a, b, NULL)` Postgres evaluates `x <> a AND x <> b AND x <> NULL`; the last part is NULL, so the whole expression is never true. When the subquery can contain NULL, use `NOT EXISTS`." }
+    rubric:
+      - { vi: "Giải thích logic ba giá trị", en: "Explains three-valued logic" }
+      - { vi: "Chỉ đúng bẫy NOT IN có NULL", en: "Pinpoints the NOT IN with NULL trap" }
+      - { vi: "Đưa cách sửa IS NULL / NOT EXISTS", en: "Gives the IS NULL / NOT EXISTS fix" }
+    doc: https://www.postgresql.org/docs/18/functions-subquery.html
+  - id: e-iv-pg-junior-07
+    engine: postgres
+    band: junior
+    kind: concept
+    set: pg-junior-3
+    q: { vi: "Khóa ngoại làm gì, và các lựa chọn `ON DELETE` là gì? Postgres có tự tạo index (chỉ mục) cho cột khóa ngoại không?", en: "What does a foreign key do, and what are the `ON DELETE` options? Does Postgres index the foreign-key column for you?" }
+    answer: { vi: "Khóa ngoại bảo đảm giá trị ở bảng con có trong bảng cha. `ON DELETE`: `NO ACTION`/`RESTRICT` (chặn), `CASCADE` (xóa theo), `SET NULL`, `SET DEFAULT`. Postgres **không** tự tạo index trên cột khóa ngoại phía con: thiếu nó thì mỗi lần xóa/sửa dòng cha phải quét bảng con và JOIN cũng chậm. Thường nên tạo.", en: "A foreign key guarantees that a child value exists in the parent table. `ON DELETE`: `NO ACTION`/`RESTRICT` (block), `CASCADE` (delete along), `SET NULL`, `SET DEFAULT`. Postgres does **not** index the child-side foreign-key column: without one, every parent delete/update scans the child table and joins are slower too. Usually create it." }
+    rubric:
+      - { vi: "Định nghĩa toàn vẹn tham chiếu", en: "Defines referential integrity" }
+      - { vi: "Kể đúng các hành động ON DELETE", en: "Lists the ON DELETE actions correctly" }
+      - { vi: "Biết cột khóa ngoại không tự có index và hệ quả", en: "Knows the FK column is not indexed automatically and why it matters" }
+    doc: https://www.postgresql.org/docs/18/ddl-constraints.html
+  - id: e-iv-pg-junior-08
+    engine: postgres
+    band: junior
+    kind: concept
+    set: pg-junior-1
+    q: { vi: "`EXPLAIN` và `EXPLAIN ANALYZE` khác nhau thế nào? Dùng `EXPLAIN ANALYZE` cho một câu `DELETE` cần cẩn thận gì?", en: "How does `EXPLAIN` differ from `EXPLAIN ANALYZE`? What care do you need when using `EXPLAIN ANALYZE` on a `DELETE`?" }
+    answer: { vi: "`EXPLAIN` chỉ in kế hoạch với số dòng và chi phí **ước lượng**. `EXPLAIN ANALYZE` **chạy thật** câu lệnh và thêm số dòng, số vòng và thời gian thật, nên so được ước lượng với thực tế. Vì nó chạy thật, `DELETE`/`UPDATE` sẽ đổi dữ liệu: bọc trong `BEGIN; … ROLLBACK;`.", en: "`EXPLAIN` prints only the plan with **estimated** rows and cost. `EXPLAIN ANALYZE` **really runs** the statement and adds actual rows, loops and time, so estimates can be compared with reality. Because it runs, a `DELETE`/`UPDATE` will change data: wrap it in `BEGIN; … ROLLBACK;`." }
+    rubric:
+      - { vi: "Ước lượng vs chạy thật", en: "Estimate vs real execution" }
+      - { vi: "Biết so số dòng ước lượng với thật", en: "Knows to compare estimated and actual rows" }
+      - { vi: "Bọc DML trong transaction rồi rollback", en: "Wraps DML in a transaction and rolls back" }
+    doc: https://www.postgresql.org/docs/18/sql-explain.html
+  - id: e-iv-pg-junior-09
+    engine: postgres
+    band: junior
+    kind: concept
+    set: pg-junior-2
+    q: { vi: "`timestamp` và `timestamptz` khác nhau ra sao? Bạn chọn kiểu nào cho thời điểm một đơn hàng được tạo?", en: "How do `timestamp` and `timestamptz` differ? Which would you pick for when an order was created?" }
+    answer: { vi: "`timestamptz` lưu một thời điểm tuyệt đối (nội bộ là UTC) và hiển thị theo `TimeZone` của phiên; `timestamp` chỉ là ngày giờ \"trên đồng hồ treo tường\", không biết múi giờ. Cả hai đều 8 byte. Thời điểm xảy ra sự kiện như tạo đơn nên dùng `timestamptz`; `timestamp` hợp cho lịch lặp theo giờ địa phương (ví dụ mở cửa 08:00).", en: "`timestamptz` stores an absolute instant (UTC internally) and displays it in the session `TimeZone`; `timestamp` is just a wall-clock date and time with no zone. Both take 8 bytes. An event instant like order creation should be `timestamptz`; `timestamp` fits local recurring times (for example opening at 08:00)." }
+    rubric:
+      - { vi: "Thời điểm tuyệt đối vs giờ treo tường", en: "Absolute instant vs wall clock" }
+      - { vi: "Biết timestamptz không lưu múi giờ, chỉ đổi khi hiển thị", en: "Knows timestamptz does not store the zone, only converts on display" }
+      - { vi: "Chọn timestamptz cho sự kiện, có lý do", en: "Picks timestamptz for events, with a reason" }
+    doc: https://www.postgresql.org/docs/18/datatype-datetime.html
+  - id: e-iv-pg-junior-10
+    engine: postgres
+    band: junior
+    kind: concept
+    set: pg-junior-3
+    q: { vi: "Khóa chính kiểu số tự tăng (`GENERATED ALWAYS AS IDENTITY`) và `uuid`: ưu nhược điểm?", en: "An auto-increment numeric primary key (`GENERATED ALWAYS AS IDENTITY`) versus `uuid`: pros and cons?" }
+    answer: { vi: "Số tự tăng: 4–8 byte, chèn vào cuối B-tree nên index (chỉ mục) gọn, dễ đọc; nhưng lộ số lượng và phải có cơ sở dữ liệu cấp số. `uuid`: 16 byte, tạo được ở bất cứ đâu (ứng dụng, nhiều node), không đoán được; nhưng UUID v4 ngẫu nhiên chèn rải khắp B-tree (nhiều page split, cache kém). UUID theo thời gian (v7, có `uuidv7()` từ PG18) giảm vấn đề này. Ưu tiên IDENTITY hơn `serial` cũ.", en: "Auto-increment: 4–8 bytes, inserts go to the end of the B-tree so the index stays compact, easy to read; but it leaks counts and needs the database to hand out numbers. `uuid`: 16 bytes, can be generated anywhere (app, many nodes), not guessable; but random v4 UUIDs insert all over the B-tree (more page splits, worse cache). Time-ordered UUIDs (v7, `uuidv7()` since PG18) reduce this. Prefer IDENTITY over the old `serial`." }
+    rubric:
+      - { vi: "So kích thước và vị trí chèn trong B-tree", en: "Compares size and insert position in the B-tree" }
+      - { vi: "Nêu lợi ích tạo phân tán của uuid", en: "Names uuid's distributed generation benefit" }
+      - { vi: "Biết UUID v7 / IDENTITY hơn serial", en: "Knows UUID v7 / IDENTITY over serial" }
+    doc: https://www.postgresql.org/docs/18/datatype-uuid.html
+  - id: e-iv-pg-junior-11
+    engine: postgres
+    band: junior
+    kind: diagnose
+    set: pg-junior-1
+    q: { vi: "Trang \"Đơn của tôi\" chậm. Đọc kế hoạch dưới đây: vấn đề là gì và bạn sửa thế nào?", en: "The \"My orders\" page is slow. Read the plan below: what is the problem and how do you fix it?" }
+    exhibits:
+      - label: { vi: "Kế hoạch hiện tại", en: "Current plan" }
+        source: pglite-0.5.16
+        fixture: pg-shop
+        setup: ""
+        sql: "EXPLAIN (ANALYZE, COSTS OFF, BUFFERS OFF, TIMING OFF, SUMMARY OFF) SELECT * FROM orders WHERE customer_id = 42"
+        shown: |-
+          Seq Scan on orders (actual rows=10.00 loops=1)
+            Filter: (customer_id = 42)
+            Rows Removed by Filter: 19990
+    answer: { vi: "Postgres đọc cả bảng (`Seq Scan`) để lấy 10 dòng và bỏ 19.990 dòng (`Rows Removed by Filter`). Cột `customer_id` là khóa ngoại nhưng không có index (chỉ mục). Sửa: `CREATE INDEX ON orders (customer_id)` (trên hệ thống thật dùng `CONCURRENTLY`), rồi chạy lại EXPLAIN: kế hoạch thành Index Scan hoặc Bitmap Index Scan, đọc khoảng 10 dòng.", en: "Postgres reads the whole table (`Seq Scan`) to get 10 rows and throws away 19,990 (`Rows Removed by Filter`). `customer_id` is a foreign key but has no index. Fix: `CREATE INDEX ON orders (customer_id)` (on a live system use `CONCURRENTLY`), then rerun EXPLAIN: the plan becomes an Index Scan or Bitmap Index Scan reading about 10 rows." }
+    rubric:
+      - { vi: "Đọc được tỉ lệ 10 giữ / 19.990 bỏ", en: "Reads the 10 kept / 19,990 removed ratio" }
+      - { vi: "Đề xuất index trên customer_id", en: "Proposes an index on customer_id" }
+      - { vi: "Kiểm lại bằng EXPLAIN, nhắc CONCURRENTLY", en: "Re-checks with EXPLAIN, mentions CONCURRENTLY" }
+    doc: https://www.postgresql.org/docs/18/using-explain.html
+  - id: e-iv-pg-junior-12
+    engine: postgres
+    band: junior
+    kind: diagnose
+    set: pg-junior-2
+    q: { vi: "Bảng `customers` đã có index (chỉ mục) trên `email`, nhưng màn đăng nhập vẫn quét cả bảng. Vì sao?", en: "`customers` already has an index on `email`, but the login screen still scans the whole table. Why?" }
+    exhibits:
+      - label: { vi: "Kế hoạch (có index trên email)", en: "Plan (with an index on email)" }
+        source: pglite-0.5.16
+        fixture: pg-shop
+        setup: "CREATE INDEX ON customers (email); ANALYZE customers;"
+        sql: "EXPLAIN (ANALYZE, COSTS OFF, BUFFERS OFF, TIMING OFF, SUMMARY OFF) SELECT id FROM customers WHERE lower(email) = 'user42@example.com'"
+        shown: |-
+          Seq Scan on customers (actual rows=1.00 loops=1)
+            Filter: (lower(email) = 'user42@example.com'::text)
+            Rows Removed by Filter: 1999
+    answer: { vi: "Index lưu giá trị `email`, còn điều kiện so `lower(email)`: một biểu thức khác, nên index không dùng được. Sửa: tạo index biểu thức `CREATE INDEX ON customers (lower(email))` (và tốt hơn là `UNIQUE` để chặn trùng email khác hoa thường), hoặc chuẩn hóa email về chữ thường khi ghi rồi so trực tiếp. Kiểu `citext` cũng là một lựa chọn.", en: "The index stores `email`, but the filter compares `lower(email)`: a different expression, so the index cannot be used. Fix: an expression index `CREATE INDEX ON customers (lower(email))` (better `UNIQUE`, blocking duplicates that differ by case), or lower-case emails on write and compare directly. The `citext` type is another option." }
+    rubric:
+      - { vi: "Nhận ra hàm trên cột làm index vô dụng", en: "Sees that a function on the column defeats the index" }
+      - { vi: "Đề xuất index biểu thức", en: "Proposes an expression index" }
+      - { vi: "Nhắc UNIQUE / chuẩn hóa khi ghi", en: "Mentions UNIQUE / normalising on write" }
+    doc: https://www.postgresql.org/docs/18/indexes-expressional.html
+  - id: e-iv-pg-junior-13
+    engine: postgres
+    band: junior
+    kind: diagnose
+    set: pg-junior-3
+    q: { vi: "Đồng nghiệp tạo index (chỉ mục) trên `status` nhưng Postgres \"không chịu dùng\". Có phải lỗi không?", en: "A colleague created an index on `status` but Postgres \"refuses to use it\". Is that a bug?" }
+    exhibits:
+      - label: { vi: "Kế hoạch (có index trên status)", en: "Plan (with an index on status)" }
+        source: pglite-0.5.16
+        fixture: pg-shop
+        setup: "CREATE INDEX ON orders (status); ANALYZE orders;"
+        sql: "EXPLAIN (ANALYZE, COSTS OFF, BUFFERS OFF, TIMING OFF, SUMMARY OFF) SELECT count(*) FROM orders WHERE status = 'PAID'"
+        shown: |-
+          Aggregate (actual rows=1.00 loops=1)
+            ->  Seq Scan on orders (actual rows=18000.00 loops=1)
+                  Filter: (status = 'PAID'::text)
+                  Rows Removed by Filter: 2000
+    answer: { vi: "Không phải lỗi. 18.000 trên 20.000 dòng (90%) khớp, nên đọc tuần tự cả bảng rẻ hơn nhảy qua index rồi đọc gần hết các page. Planner chọn theo thống kê: index trên cột ít giá trị chỉ có ích cho giá trị hiếm (ví dụ `REFUNDED`, 1%). Nếu chỉ truy vấn giá trị hiếm, index một phần `WHERE status = 'REFUNDED'` nhỏ hơn nhiều.", en: "Not a bug. 18,000 of 20,000 rows (90%) match, so reading the table sequentially is cheaper than walking the index and then reading almost every page anyway. The planner decides from statistics: an index on a low-cardinality column only helps for rare values (for example `REFUNDED`, 1%). If only rare values are queried, a partial index `WHERE status = 'REFUNDED'` is much smaller." }
+    rubric:
+      - { vi: "Đọc được 90% dòng khớp", en: "Reads that 90% of rows match" }
+      - { vi: "Giải thích vì sao seq scan rẻ hơn", en: "Explains why the seq scan is cheaper" }
+      - { vi: "Đề xuất index một phần cho giá trị hiếm", en: "Suggests a partial index for rare values" }
+    doc: https://www.postgresql.org/docs/18/indexes-partial.html
+  - id: e-iv-pg-junior-14
+    engine: postgres
+    band: junior
+    kind: diagnose
+    set: pg-junior-1
+    q: { vi: "Widget \"10 đơn mới nhất\" đọc kế hoạch này. Postgres đang làm gì, và một index (chỉ mục) sẽ đổi gì?", en: "The \"10 latest orders\" widget runs this plan. What is Postgres doing, and what would an index change?" }
+    exhibits:
+      - label: { vi: "Kế hoạch hiện tại", en: "Current plan" }
+        source: pglite-0.5.16
+        fixture: pg-shop
+        setup: ""
+        sql: "EXPLAIN (ANALYZE, COSTS OFF, BUFFERS OFF, TIMING OFF, SUMMARY OFF) SELECT id, total FROM orders ORDER BY created_at DESC LIMIT 10"
+        shown: |-
+          Limit (actual rows=10.00 loops=1)
+            ->  Sort (actual rows=10.00 loops=1)
+                  Sort Key: created_at DESC
+                  Sort Method: top-N heapsort  Memory: 17kB
+                  ->  Seq Scan on orders (actual rows=20000.00 loops=1)
+    answer: { vi: "Đọc cả 20.000 dòng rồi giữ 10 dòng lớn nhất bằng heap (`top-N heapsort`, ít bộ nhớ). Chi phí vẫn tăng theo kích thước bảng. Với `CREATE INDEX ON orders (created_at)`, Postgres đọc index theo chiều ngược (`Index Scan Backward`) và dừng sau 10 dòng, không cần Sort. Nên thêm cột phá hòa (ví dụ `id`) vào cả ORDER BY và index để thứ tự ổn định.", en: "It reads all 20,000 rows and keeps the 10 largest with a heap (`top-N heapsort`, little memory). The cost still grows with the table. With `CREATE INDEX ON orders (created_at)`, Postgres reads the index backwards (`Index Scan Backward`) and stops after 10 rows, no Sort. Add a tiebreaker (for example `id`) to both the ORDER BY and the index for a stable order." }
+    rubric:
+      - { vi: "Đọc đúng Seq Scan + top-N heapsort", en: "Reads the Seq Scan + top-N heapsort correctly" }
+      - { vi: "Biết index cho thứ tự sẵn, dừng sớm với LIMIT", en: "Knows an index gives the order and LIMIT stops early" }
+      - { vi: "Nhắc cột phá hòa", en: "Mentions a tiebreaker" }
+    doc: https://www.postgresql.org/docs/18/indexes-ordering.html
+  - id: e-iv-pg-junior-15
+    engine: postgres
+    band: junior
+    kind: design
+    set: pg-junior-2
+    q: { vi: "Thiết kế bảng cho một cửa hàng nhỏ: khách hàng, đơn hàng, các món trong đơn. Một bạn đề xuất lưu danh sách món thành chuỗi `\"1,4,9\"` trong `orders`. Bạn phản hồi thế nào?", en: "Design tables for a small shop: customers, orders, the items in an order. Someone proposes storing the item list as a string `\"1,4,9\"` in `orders`. How do you respond?" }
+    answer: { vi: "`customers(id PK, email UNIQUE NOT NULL, …)`, `products(id PK, name, price)`, `orders(id PK, customer_id FK, created_at timestamptz, status)`, `order_items(order_id FK, product_id FK, qty CHECK > 0, unit_price, PRIMARY KEY (order_id, product_id))`. Giá lưu lại ở dòng hàng vì giá sản phẩm đổi theo thời gian. Chuỗi `\"1,4,9\"` mất khóa ngoại, không lưu được số lượng/giá, không có index (chỉ mục), và mọi báo cáo phải tách chuỗi.", en: "`customers(id PK, email UNIQUE NOT NULL, …)`, `products(id PK, name, price)`, `orders(id PK, customer_id FK, created_at timestamptz, status)`, `order_items(order_id FK, product_id FK, qty CHECK > 0, unit_price, PRIMARY KEY (order_id, product_id))`. The price is copied onto the line because product prices change over time. The `\"1,4,9\"` string loses foreign keys, cannot hold quantity/price, cannot be indexed, and every report must split strings." }
+    tradeoffs:
+      - { vi: "Bảng nối `order_items` thêm một JOIN nhưng giữ toàn vẹn và báo cáo dễ.", en: "The `order_items` join table adds a JOIN but keeps integrity and easy reporting." }
+      - { vi: "Chép giá vào dòng hàng là trùng lặp có chủ đích: đúng lịch sử, tốn thêm chỗ.", en: "Copying the price onto the line is deliberate duplication: correct history, a little more space." }
+    rubric:
+      - { vi: "Có bảng nối với khóa kép và khóa ngoại", en: "Has a join table with a composite key and foreign keys" }
+      - { vi: "Lưu giá tại thời điểm bán", en: "Stores the price at sale time" }
+      - { vi: "Nêu ít nhất hai lý do bác chuỗi phân cách", en: "Gives at least two reasons against the delimited string" }
+    doc: https://www.postgresql.org/docs/18/ddl-constraints.html
+
+  # ---------------- PostgreSQL · mid
+  - id: e-iv-pg-mid-01
+    engine: postgres
+    band: mid
+    kind: concept
+    set: pg-mid-3
+    q: { vi: "MVCC trong Postgres hoạt động thế nào ở mức một dòng? Vì sao \"người đọc không chặn người ghi\"?", en: "How does MVCC work in Postgres at the level of one row? Why do \"readers not block writers\"?" }
+    answer: { vi: "Mỗi phiên bản dòng (tuple) mang `xmin` (transaction tạo ra nó) và `xmax` (transaction xóa/thay nó). UPDATE không ghi đè: nó đánh dấu tuple cũ và chèn tuple mới. Mỗi câu lệnh đọc theo một snapshot và chỉ thấy tuple hợp lệ với snapshot đó, nên không cần lock để đọc. Cái giá là tuple chết tích lại, phải dọn bằng VACUUM.", en: "Each row version (tuple) carries `xmin` (the transaction that created it) and `xmax` (the one that deleted/replaced it). UPDATE does not overwrite: it marks the old tuple and inserts a new one. Each statement reads through a snapshot and sees only tuples visible to it, so reading needs no lock. The price is that dead tuples pile up and VACUUM must clean them." }
+    rubric:
+      - { vi: "Nêu xmin/xmax và UPDATE = tuple mới", en: "Mentions xmin/xmax and UPDATE = new tuple" }
+      - { vi: "Giải thích snapshot cho việc đọc", en: "Explains snapshots for reads" }
+      - { vi: "Nối tới tuple chết và VACUUM", en: "Connects to dead tuples and VACUUM" }
+    doc: https://www.postgresql.org/docs/18/mvcc-intro.html
+  - id: e-iv-pg-mid-02
+    engine: postgres
+    band: mid
+    kind: concept
+    set: pg-mid-1
+    q: { vi: "Kể các mức isolation Postgres thật sự có và mỗi mức chặn được hiện tượng gì.", en: "List the isolation levels Postgres actually provides and what each one prevents." }
+    answer: { vi: "Mặc định `READ COMMITTED`: mỗi câu lệnh lấy snapshot mới, nên hai lần đọc trong cùng transaction có thể khác nhau. `REPEATABLE READ`: một snapshot cho cả transaction; ở Postgres nó chặn cả phantom read, nhưng vẫn có write skew; ghi đụng dòng đã bị transaction khác sửa thì lỗi serialization. `SERIALIZABLE`: SSI phát hiện mọi bất thường và hủy một bên. `READ UNCOMMITTED` chạy như `READ COMMITTED`: Postgres không bao giờ cho đọc bẩn. Ở hai mức cao, ứng dụng phải sẵn sàng thử lại.", en: "Default `READ COMMITTED`: each statement takes a new snapshot, so two reads in one transaction can differ. `REPEATABLE READ`: one snapshot for the whole transaction; in Postgres it also prevents phantom reads but still allows write skew; writing a row another transaction changed raises a serialization error. `SERIALIZABLE`: SSI detects every anomaly and aborts one side. `READ UNCOMMITTED` behaves as `READ COMMITTED`: Postgres never allows dirty reads. At the two higher levels the application must be ready to retry." }
+    rubric:
+      - { vi: "Đúng mặc định và snapshot theo câu lệnh", en: "Correct default and per-statement snapshot" }
+      - { vi: "Biết RR của Postgres chặn phantom nhưng còn write skew", en: "Knows Postgres RR blocks phantoms but allows write skew" }
+      - { vi: "Biết SSI và nhu cầu retry", en: "Knows SSI and the need to retry" }
+      - { vi: "Biết không có dirty read", en: "Knows there are no dirty reads" }
+    doc: https://www.postgresql.org/docs/18/transaction-iso.html
+  - id: e-iv-pg-mid-03
+    engine: postgres
+    band: mid
+    kind: concept
+    set: pg-mid-2
+    q: { vi: "`VACUUM`, autovacuum và `VACUUM FULL` khác nhau thế nào? Khi nào dùng `VACUUM FULL`?", en: "How do `VACUUM`, autovacuum and `VACUUM FULL` differ? When would you use `VACUUM FULL`?" }
+    answer: { vi: "`VACUUM` đánh dấu chỗ của tuple chết là dùng lại được, cập nhật visibility map và freeze; chạy song song với đọc/ghi, thường không trả đĩa cho hệ điều hành. Autovacuum chạy nó tự động theo ngưỡng số dòng chết (và ANALYZE theo số dòng đổi). `VACUUM FULL` viết lại cả bảng thành tệp mới, trả lại đĩa, nhưng giữ lock ACCESS EXCLUSIVE suốt thời gian chạy: chỉ dùng khi bảng phình nặng và chấp nhận dừng; trên production thường dùng công cụ viết lại trực tuyến hoặc chia nhỏ.", en: "`VACUUM` marks dead-tuple space reusable, updates the visibility map and freezes; it runs alongside reads/writes and usually does not give disk back to the OS. Autovacuum runs it automatically by dead-row thresholds (and ANALYZE by changed rows). `VACUUM FULL` rewrites the whole table into a new file and returns disk, but holds an ACCESS EXCLUSIVE lock for the whole run: only for heavy bloat when downtime is acceptable; in production people usually use an online rewrite tool or split the work." }
+    rubric:
+      - { vi: "VACUUM dùng lại chỗ, không chặn đọc/ghi", en: "VACUUM makes space reusable without blocking" }
+      - { vi: "Autovacuum theo ngưỡng", en: "Autovacuum is threshold-driven" }
+      - { vi: "VACUUM FULL viết lại + lock độc quyền", en: "VACUUM FULL rewrites + exclusive lock" }
+    doc: https://www.postgresql.org/docs/18/routine-vacuuming.html
+  - id: e-iv-pg-mid-04
+    engine: postgres
+    band: mid
+    kind: concept
+    set: pg-mid-3
+    q: { vi: "Có index (chỉ mục) `(a, b)`. Những điều kiện nào dùng tốt index này: `a = 1`, `b = 2`, `a = 1 AND b > 5`, `a > 1 AND b = 2`, `ORDER BY a, b`?", en: "There is an index on `(a, b)`. Which of these use it well: `a = 1`, `b = 2`, `a = 1 AND b > 5`, `a > 1 AND b = 2`, `ORDER BY a, b`?" }
+    answer: { vi: "Tốt: `a = 1`, `a = 1 AND b > 5` (bằng ở cột đầu rồi khoảng ở cột sau), `ORDER BY a, b` (thứ tự sẵn). `a > 1 AND b = 2`: khoảng trên cột đầu, nên `b` chỉ được lọc trong đoạn index đã quét, kém hơn index `(b, a)`. `b = 2` một mình: trước PG18 thường không dùng được; PG18 có skip scan, dùng được khi `a` có ít giá trị. Luật chung: cột so bằng đứng trước, cột khoảng đứng sau.", en: "Good: `a = 1`, `a = 1 AND b > 5` (equality on the first column, range on the next), `ORDER BY a, b` (order for free). `a > 1 AND b = 2`: a range on the first column, so `b` is only filtered inside the scanned slice, worse than an index on `(b, a)`. `b = 2` alone: before PG18 usually unusable; PG18 skip scan can use it when `a` has few values. Rule: equality columns first, range columns after." }
+    rubric:
+      - { vi: "Phân loại đúng cả năm trường hợp", en: "Classifies all five cases correctly" }
+      - { vi: "Nêu luật bằng trước, khoảng sau", en: "States equality first, range after" }
+      - { vi: "Biết skip scan PG18 (điểm cộng)", en: "Knows PG18 skip scan (bonus)" }
+    doc: https://www.postgresql.org/docs/18/indexes-multicolumn.html
+  - id: e-iv-pg-mid-05
+    engine: postgres
+    band: mid
+    kind: concept
+    set: pg-mid-1
+    q: { vi: "Index (chỉ mục) một phần và index biểu thức là gì? Cho mỗi loại một ví dụ thực tế.", en: "What are partial and expression indexes? Give a real example of each." }
+    answer: { vi: "Index một phần chỉ chứa các dòng thỏa một `WHERE`: nhỏ hơn và rẻ hơn khi ghi; truy vấn phải có điều kiện suy ra được điều kiện đó. Ví dụ hàng đợi việc: `CREATE INDEX ON jobs (run_at) WHERE done = false`. Nó cũng tạo được luật duy nhất có điều kiện: `CREATE UNIQUE INDEX ON carts (user_id) WHERE status = 'OPEN'`. Index biểu thức lưu kết quả một biểu thức: `CREATE INDEX ON users (lower(email))`; truy vấn phải viết đúng biểu thức đó.", en: "A partial index holds only rows matching a `WHERE`: smaller and cheaper to write; the query's condition must imply the index predicate. Job queue example: `CREATE INDEX ON jobs (run_at) WHERE done = false`. It can also enforce conditional uniqueness: `CREATE UNIQUE INDEX ON carts (user_id) WHERE status = 'OPEN'`. An expression index stores the result of an expression: `CREATE INDEX ON users (lower(email))`; the query must use that same expression." }
+    rubric:
+      - { vi: "Định nghĩa đúng cả hai", en: "Defines both correctly" }
+      - { vi: "Biết điều kiện truy vấn phải khớp", en: "Knows the query condition must match" }
+      - { vi: "Ví dụ unique có điều kiện hoặc tương đương", en: "Gives conditional uniqueness or an equivalent example" }
+    doc: https://www.postgresql.org/docs/18/indexes-partial.html
+  - id: e-iv-pg-mid-06
+    engine: postgres
+    band: mid
+    kind: concept
+    set: pg-mid-2
+    q: { vi: "CTE (`WITH`) có làm một \"hàng rào tối ưu\" không?", en: "Is a CTE (`WITH`) an \"optimisation fence\"?" }
+    answer: { vi: "Từ PG12 thì thường không: một CTE không đệ quy, không có tác dụng phụ và chỉ được dùng một lần sẽ được gộp vào truy vấn ngoài, nên điều kiện được đẩy xuống. CTE được dùng từ hai lần trở lên thì mặc định được tính một lần (materialize). Có thể ép bằng `AS MATERIALIZED` (giữ hàng rào, ví dụ để tính một lần) hoặc `AS NOT MATERIALIZED`. CTE có INSERT/UPDATE/DELETE luôn chạy đúng một lần.", en: "Since PG12 usually not: a non-recursive, side-effect-free CTE referenced once is inlined into the outer query, so predicates get pushed down. A CTE referenced two or more times is computed once (materialised) by default. You can force `AS MATERIALIZED` (keep the fence, e.g. to compute once) or `AS NOT MATERIALIZED`. A CTE with INSERT/UPDATE/DELETE always runs exactly once." }
+    rubric:
+      - { vi: "Biết thay đổi từ PG12", en: "Knows the PG12 change" }
+      - { vi: "Biết luật dùng một lần / nhiều lần", en: "Knows the referenced-once / many rule" }
+      - { vi: "Biết MATERIALIZED / NOT MATERIALIZED", en: "Knows MATERIALIZED / NOT MATERIALIZED" }
+    doc: https://www.postgresql.org/docs/18/queries-with.html
+  - id: e-iv-pg-mid-07
+    engine: postgres
+    band: mid
+    kind: concept
+    set: pg-mid-3
+    q: { vi: "`json` và `jsonb` khác nhau thế nào? Khi nào đặt dữ liệu vào cột `jsonb` là hợp lý?", en: "How do `json` and `jsonb` differ? When is putting data in a `jsonb` column reasonable?" }
+    answer: { vi: "`json` lưu nguyên văn bản (giữ khoảng trắng, thứ tự khóa, khóa trùng) và phải parse lại mỗi lần đọc. `jsonb` lưu dạng nhị phân đã parse: bỏ khóa trùng, đọc nhanh hơn, có toán tử như `@>` và index (chỉ mục) GIN. Hợp lý cho thuộc tính thưa, thay đổi theo loại, hoặc payload từ bên ngoài. Không hợp lý cho trường được lọc, nối, ràng buộc thường xuyên: những trường đó nên là cột thật có kiểu và khóa ngoại.", en: "`json` stores the raw text (whitespace, key order, duplicate keys) and is reparsed on every read. `jsonb` stores a parsed binary form: drops duplicate keys, faster to read, supports operators like `@>` and GIN indexes. Reasonable for sparse attributes that vary by type, or external payloads. Not for fields that are filtered, joined or constrained all the time: those should be real typed columns with foreign keys." }
+    rubric:
+      - { vi: "Nêu khác biệt lưu trữ", en: "States the storage difference" }
+      - { vi: "Biết jsonb có GIN và @>", en: "Knows jsonb has GIN and @>" }
+      - { vi: "Ranh giới rõ khi nào nên dùng cột thật", en: "Draws a clear line for when to use real columns" }
+    doc: https://www.postgresql.org/docs/18/datatype-json.html
+  - id: e-iv-pg-mid-08
+    engine: postgres
+    band: mid
+    kind: concept
+    set: pg-mid-1
+    q: { vi: "Vì sao ứng dụng mở 2.000 kết nối thẳng tới Postgres là ý tồi? Pooler ở chế độ transaction có giới hạn gì?", en: "Why is an app opening 2,000 direct connections to Postgres a bad idea? What does a pooler in transaction mode limit?" }
+    answer: { vi: "Mỗi kết nối là một tiến trình backend với bộ nhớ riêng; nhiều kết nối nhàn rỗi vẫn tốn RAM, và nhiều kết nối hoạt động cùng lúc làm tranh chấp CPU/lock, thông lượng giảm. Dùng pooler (ví dụ PgBouncer) để vài chục kết nối thật phục vụ hàng nghìn client. Ở chế độ transaction, mỗi transaction có thể sang backend khác, nên trạng thái phiên không giữ được giữa các transaction: `SET` ngoài transaction, advisory lock cấp phiên, `LISTEN`, bảng tạm; prepared statement chỉ ổn khi pooler hỗ trợ.", en: "Every connection is a backend process with its own memory; idle ones still use RAM, and many active ones contend for CPU/locks so throughput drops. Use a pooler (for example PgBouncer) so a few dozen real connections serve thousands of clients. In transaction mode each transaction may land on a different backend, so session state does not survive between transactions: `SET` outside a transaction, session advisory locks, `LISTEN`, temp tables; prepared statements only work if the pooler supports them." }
+    rubric:
+      - { vi: "Tiến trình mỗi kết nối và chi phí", en: "Process per connection and its cost" }
+      - { vi: "Pooler giải quyết thế nào", en: "How a pooler solves it" }
+      - { vi: "Kể ít nhất hai trạng thái phiên bị mất ở chế độ transaction", en: "Names at least two kinds of session state lost in transaction mode" }
+    doc: https://www.postgresql.org/docs/18/runtime-config-connection.html
+  - id: e-iv-pg-mid-09
+    engine: postgres
+    band: mid
+    kind: concept
+    set: pg-mid-2
+    q: { vi: "Viết \"chèn hoặc cập nhật\" một dòng tồn kho an toàn khi nhiều request song song. Vì sao không dùng SELECT rồi INSERT?", en: "Write an \"insert or update\" for a stock row that is safe under parallel requests. Why not SELECT then INSERT?" }
+    answer: { vi: "`INSERT INTO stock (sku, qty) VALUES ('A1', 5) ON CONFLICT (sku) DO UPDATE SET qty = stock.qty + EXCLUDED.qty`. Cần một ràng buộc duy nhất trên `sku`. SELECT rồi INSERT có cửa sổ tranh chấp: hai request cùng không thấy dòng và cùng chèn, một cái lỗi trùng khóa (hoặc trùng dữ liệu nếu không có ràng buộc). `ON CONFLICT` xử lý nguyên tử nhờ index (chỉ mục) duy nhất. `MERGE` cũng có, nhưng không thay được `ON CONFLICT` khi chèn đồng thời.", en: "`INSERT INTO stock (sku, qty) VALUES ('A1', 5) ON CONFLICT (sku) DO UPDATE SET qty = stock.qty + EXCLUDED.qty`. It needs a unique constraint on `sku`. SELECT then INSERT has a race window: two requests both see no row and both insert, one fails with a duplicate key (or duplicates data without a constraint). `ON CONFLICT` resolves it atomically through the unique index. `MERGE` exists too, but does not replace `ON CONFLICT` for concurrent inserts." }
+    rubric:
+      - { vi: "Câu ON CONFLICT đúng, dùng EXCLUDED", en: "Correct ON CONFLICT using EXCLUDED" }
+      - { vi: "Biết cần ràng buộc duy nhất", en: "Knows a unique constraint is required" }
+      - { vi: "Giải thích cửa sổ tranh chấp", en: "Explains the race window" }
+    doc: https://www.postgresql.org/docs/18/sql-insert.html
+  - id: e-iv-pg-mid-10
+    engine: postgres
+    band: mid
+    kind: diagnose
+    set: pg-mid-1
+    q: { vi: "Màn hỗ trợ tìm \"đơn của khách 42 hoặc mọi đơn hoàn tiền\". Có index (chỉ mục) trên `customer_id` nhưng vẫn quét cả bảng. Sau khi thêm một index nữa thì kế hoạch đổi. Giải thích cả hai.", en: "A support screen finds \"orders of customer 42 or any refunded order\". There is an index on `customer_id` but the table is still fully scanned. After one more index the plan changes. Explain both." }
+    exhibits:
+      - label: { vi: "Chỉ có index customer_id", en: "Only the customer_id index" }
+        source: pglite-0.5.16
+        fixture: pg-shop
+        setup: "CREATE INDEX ON orders (customer_id); ANALYZE orders;"
+        sql: "EXPLAIN (ANALYZE, COSTS OFF, BUFFERS OFF, TIMING OFF, SUMMARY OFF) SELECT * FROM orders WHERE customer_id = 42 OR status = 'REFUNDED'"
+        shown: |-
+          Seq Scan on orders (actual rows=210.00 loops=1)
+            Filter: ((customer_id = 42) OR (status = 'REFUNDED'::text))
+            Rows Removed by Filter: 19790
+      - label: { vi: "Thêm index status", en: "With a status index too" }
+        source: pglite-0.5.16
+        fixture: pg-shop
+        setup: "CREATE INDEX ON orders (customer_id); CREATE INDEX ON orders (status); ANALYZE orders;"
+        sql: "EXPLAIN (ANALYZE, COSTS OFF, BUFFERS OFF, TIMING OFF, SUMMARY OFF) SELECT * FROM orders WHERE customer_id = 42 OR status = 'REFUNDED'"
+        shown: |-
+          Bitmap Heap Scan on orders (actual rows=210.00 loops=1)
+            Recheck Cond: ((customer_id = 42) OR (status = 'REFUNDED'::text))
+            Heap Blocks: exact=202
+            ->  BitmapOr (actual rows=0.00 loops=1)
+                  ->  Bitmap Index Scan on orders_customer_id_idx (actual rows=10.00 loops=1)
+                        Index Cond: (customer_id = 42)
+                        Index Searches: 1
+                  ->  Bitmap Index Scan on orders_status_idx (actual rows=200.00 loops=1)
+                        Index Cond: (status = 'REFUNDED'::text)
+                        Index Searches: 1
+    answer: { vi: "Với OR, mỗi vế phải có đường đi bằng index; vế `status` không có, nên cách duy nhất là quét cả bảng. Khi cả hai vế có index, Postgres quét từng index thành bitmap, gộp bằng `BitmapOr` (10 + 200 vị trí), rồi đọc 202 page một lần theo thứ tự vật lý. `actual rows=0` ở BitmapOr là bình thường: nút bitmap không đếm dòng. Cách khác: viết lại thành `UNION` của hai truy vấn.", en: "With OR, each branch needs an index path; the `status` branch has none, so the only option is a full scan. Once both branches have indexes, Postgres scans each into a bitmap, combines them with `BitmapOr` (10 + 200 locations), then reads 202 pages once in physical order. `actual rows=0` on BitmapOr is normal: bitmap nodes do not count rows. Alternative: rewrite as a `UNION` of two queries." }
+    rubric:
+      - { vi: "Giải thích OR cần index cho mọi vế", en: "Explains OR needs an index for every branch" }
+      - { vi: "Đọc được BitmapOr và Heap Blocks", en: "Reads BitmapOr and Heap Blocks" }
+      - { vi: "Biết rows=0 của nút bitmap không phải lỗi", en: "Knows rows=0 on a bitmap node is not a bug" }
+    doc: https://www.postgresql.org/docs/18/indexes-bitmap-scans.html
+  - id: e-iv-pg-mid-11
+    engine: postgres
+    band: mid
+    kind: diagnose
+    set: pg-mid-2
+    q: { vi: "Bản xuất CSV toàn bộ đơn theo giá trị chậm bất thường trên một máy chủ cấu hình nhỏ. Kế hoạch nói gì?", en: "A CSV export of all orders by value is unusually slow on a small server. What does the plan say?" }
+    exhibits:
+      - label: { vi: "Kế hoạch với work_mem = 64kB", en: "Plan with work_mem = 64kB" }
+        source: pglite-0.5.16
+        fixture: pg-shop
+        setup: "SET work_mem = '64kB';"
+        sql: "EXPLAIN (ANALYZE, COSTS OFF, BUFFERS OFF, TIMING OFF, SUMMARY OFF) SELECT * FROM orders ORDER BY total, id"
+        shown: |-
+          Sort (actual rows=20000.00 loops=1)
+            Sort Key: total, id
+            Sort Method: external merge  Disk: 1408kB
+            ->  Seq Scan on orders (actual rows=20000.00 loops=1)
+    answer: { vi: "`external merge  Disk: 1408kB`: dữ liệu cần sắp xếp không vừa `work_mem` (64kB), nên Postgres ghi các đoạn ra tệp tạm rồi trộn. Cách sửa: tăng `work_mem` cho riêng phiên/câu này (`SET LOCAL work_mem = '8MB'`), không tăng toàn cục bừa vì mỗi nút sort/hash của mỗi kết nối đều có thể dùng tới mức đó; hoặc tạo index (chỉ mục) `(total, id)` để lấy thứ tự sẵn, nhất là khi chỉ cần một phần đầu.", en: "`external merge  Disk: 1408kB`: the data to sort does not fit in `work_mem` (64kB), so Postgres writes runs to temp files and merges them. Fix: raise `work_mem` for that session/statement only (`SET LOCAL work_mem = '8MB'`), not globally on a whim, since every sort/hash node of every connection may use that much; or add an index on `(total, id)` to get the order for free, especially when only the first part is needed." }
+    rubric:
+      - { vi: "Đọc được sort tràn đĩa", en: "Reads the on-disk sort" }
+      - { vi: "Nối với work_mem và rủi ro tăng toàn cục", en: "Connects it to work_mem and the risk of raising it globally" }
+      - { vi: "Đề xuất SET LOCAL hoặc index", en: "Suggests SET LOCAL or an index" }
+    doc: https://www.postgresql.org/docs/18/runtime-config-resource.html
+  - id: e-iv-pg-mid-12
+    engine: postgres
+    band: mid
+    kind: diagnose
+    set: pg-mid-3
+    q: { vi: "Đã tạo index (chỉ mục) `(customer_id, total)` để có index-only scan, nhưng kế hoạch đầu tiên không phải vậy. Sau một lệnh bảo trì thì có. Lệnh nào, và vì sao?", en: "An index on `(customer_id, total)` was created to get an index-only scan, but the first plan is not one. After one maintenance command it is. Which command, and why?" }
+    exhibits:
+      - label: { vi: "Ngay sau khi nạp dữ liệu", en: "Right after loading" }
+        source: pglite-0.5.16
+        fixture: pg-shop
+        setup: "CREATE INDEX ON orders (customer_id, total);"
+        sql: "EXPLAIN (ANALYZE, COSTS OFF, BUFFERS OFF, TIMING OFF, SUMMARY OFF) SELECT customer_id, total FROM orders WHERE customer_id BETWEEN 100 AND 120"
+        shown: |-
+          Bitmap Heap Scan on orders (actual rows=210.00 loops=1)
+            Recheck Cond: ((customer_id >= 100) AND (customer_id <= 120))
+            Heap Blocks: exact=72
+            ->  Bitmap Index Scan on orders_customer_id_total_idx (actual rows=210.00 loops=1)
+                  Index Cond: ((customer_id >= 100) AND (customer_id <= 120))
+                  Index Searches: 1
+      - label: { vi: "Sau lệnh bảo trì", en: "After the maintenance command" }
+        source: pglite-0.5.16
+        fixture: pg-shop
+        setup: "CREATE INDEX ON orders (customer_id, total); VACUUM orders;"
+        sql: "EXPLAIN (ANALYZE, COSTS OFF, BUFFERS OFF, TIMING OFF, SUMMARY OFF) SELECT customer_id, total FROM orders WHERE customer_id BETWEEN 100 AND 120"
+        shown: |-
+          Index Only Scan using orders_customer_id_total_idx on orders (actual rows=210.00 loops=1)
+            Index Cond: ((customer_id >= 100) AND (customer_id <= 120))
+            Heap Fetches: 0
+            Index Searches: 1
+    answer: { vi: "`VACUUM orders`. Index không lưu thông tin hiển thị theo MVCC, nên index-only scan chỉ bỏ qua bảng khi visibility map đánh dấu page là all-visible. Ngay sau khi nạp, chưa page nào được đánh dấu, nên planner đoán đằng nào cũng phải đọc heap và chọn bitmap (72 page). Sau VACUUM, `Heap Fetches: 0`: không chạm bảng. Bảng ghi nhiều thì Heap Fetches tăng lại cho tới lần vacuum kế.", en: "`VACUUM orders`. Indexes hold no MVCC visibility, so an index-only scan can skip the table only for pages the visibility map marks all-visible. Right after loading none are marked, so the planner expects heap reads anyway and picks a bitmap scan (72 pages). After VACUUM, `Heap Fetches: 0`: the table is not touched. On a write-heavy table Heap Fetches grows again until the next vacuum." }
+    rubric:
+      - { vi: "Gọi đúng VACUUM", en: "Names VACUUM" }
+      - { vi: "Giải thích visibility map", en: "Explains the visibility map" }
+      - { vi: "Đọc được Heap Fetches: 0 và ý nghĩa với bảng ghi nhiều", en: "Reads Heap Fetches: 0 and what it means for write-heavy tables" }
+    doc: https://www.postgresql.org/docs/18/indexes-index-only-scans.html
+  - id: e-iv-pg-mid-13
+    engine: postgres
+    band: mid
+    kind: diagnose
+    set: pg-mid-1
+    q: { vi: "Hai cách viết \"khách chưa từng có đơn hoàn tiền\" cho cùng kết quả hôm nay. So hai kế hoạch, và nói vì sao bạn chọn cách thứ hai cho code lâu dài.", en: "Two ways to write \"customers with no refunded order\" give the same result today. Compare the plans and say why you pick the second for long-lived code." }
+    exhibits:
+      - label: { vi: "Cách 1: NOT IN", en: "Option 1: NOT IN" }
+        source: pglite-0.5.16
+        fixture: pg-shop
+        setup: ""
+        sql: "EXPLAIN (ANALYZE, COSTS OFF, BUFFERS OFF, TIMING OFF, SUMMARY OFF) SELECT c.id FROM customers c WHERE c.id NOT IN (SELECT o.customer_id FROM orders o WHERE o.status = 'REFUNDED')"
+        shown: |-
+          Seq Scan on customers c (actual rows=1980.00 loops=1)
+            Filter: (NOT (ANY (id = (hashed SubPlan 1).col1)))
+            Rows Removed by Filter: 20
+            SubPlan 1
+              ->  Seq Scan on orders o (actual rows=200.00 loops=1)
+                    Filter: (status = 'REFUNDED'::text)
+                    Rows Removed by Filter: 19800
+      - label: { vi: "Cách 2: NOT EXISTS", en: "Option 2: NOT EXISTS" }
+        source: pglite-0.5.16
+        fixture: pg-shop
+        setup: ""
+        sql: "EXPLAIN (ANALYZE, COSTS OFF, BUFFERS OFF, TIMING OFF, SUMMARY OFF) SELECT c.id FROM customers c WHERE NOT EXISTS (SELECT 1 FROM orders o WHERE o.customer_id = c.id AND o.status = 'REFUNDED')"
+        shown: |-
+          Hash Right Anti Join (actual rows=1980.00 loops=1)
+            Hash Cond: (o.customer_id = c.id)
+            ->  Seq Scan on orders o (actual rows=200.00 loops=1)
+                  Filter: (status = 'REFUNDED'::text)
+                  Rows Removed by Filter: 19800
+            ->  Hash (actual rows=2000.00 loops=1)
+                  Buckets: 2048  Batches: 1  Memory Usage: 63kB
+                  ->  Seq Scan on customers c (actual rows=2000.00 loops=1)
+    answer: { vi: "NOT IN thành một `hashed SubPlan`: tốt khi tập con nhỏ, nhưng nếu nó không vừa bộ nhớ thì Postgres phải tìm lại cho từng dòng (rất chậm), và planner không thể biến nó thành anti join vì ngữ nghĩa NULL. NOT EXISTS thành `Hash Right Anti Join`: một phép nối thật, planner được tự chọn chiều và thuật toán khi dữ liệu lớn lên. Quan trọng hơn: nếu `customer_id` một ngày cho phép NULL, NOT IN sẽ trả về rỗng; NOT EXISTS vẫn đúng.", en: "NOT IN becomes a `hashed SubPlan`: fine while the subquery is small, but if it does not fit in memory Postgres must search it per row (very slow), and the planner cannot turn it into an anti join because of NULL semantics. NOT EXISTS becomes a `Hash Right Anti Join`: a real join whose side and algorithm the planner can choose as data grows. More important: if `customer_id` ever allows NULL, NOT IN returns nothing; NOT EXISTS stays correct." }
+    rubric:
+      - { vi: "Đọc được hashed SubPlan vs Anti Join", en: "Reads hashed SubPlan vs Anti Join" }
+      - { vi: "Nêu rủi ro hiệu năng khi tập con lớn", en: "States the performance risk when the subquery grows" }
+      - { vi: "Nêu bẫy NULL", en: "States the NULL trap" }
+    doc: https://www.postgresql.org/docs/18/functions-subquery.html
+  - id: e-iv-pg-mid-14
+    engine: postgres
+    band: mid
+    kind: concept
+    set: pg-mid-3
+    q: { vi: "`ANALYZE` (lệnh) làm gì, và điều gì xảy ra nếu bảng vừa được nạp 10 triệu dòng mà chưa ai chạy nó?", en: "What does the `ANALYZE` command do, and what happens if a table just got 10 million rows and nobody ran it?" }
+    answer: { vi: "`ANALYZE` lấy mẫu bảng và ghi thống kê vào `pg_statistic` (xem qua `pg_stats`): tỉ lệ NULL, số giá trị khác nhau, giá trị phổ biến, histogram. Planner dựa vào đó để ước lượng số dòng và chọn kế hoạch. Thiếu thống kê mới, ước lượng có thể lệch hàng nghìn lần, dẫn tới nested loop sai, hash quá nhỏ… Autovacuum sẽ chạy ANALYZE sau một ngưỡng, nhưng sau một lần nạp lớn nên chạy tay ngay.", en: "`ANALYZE` samples the table and writes statistics into `pg_statistic` (visible through `pg_stats`): null fraction, distinct count, most common values, histogram. The planner estimates row counts and picks plans from these. Without fresh statistics, estimates can be off by thousands of times, leading to a wrong nested loop, an undersized hash… Autovacuum runs ANALYZE after a threshold, but after a big load run it by hand right away." }
+    rubric:
+      - { vi: "Biết ANALYZE lấy mẫu và lưu thống kê", en: "Knows ANALYZE samples and stores statistics" }
+      - { vi: "Nối thống kê với ước lượng và kế hoạch", en: "Ties statistics to estimates and plans" }
+      - { vi: "Khuyên chạy sau lần nạp lớn", en: "Advises running it after a big load" }
+    doc: https://www.postgresql.org/docs/18/planner-stats.html
+  - id: e-iv-pg-mid-15
+    engine: postgres
+    band: mid
+    kind: design
+    set: pg-mid-2
+    q: { vi: "Thiết kế giỏ hàng: mỗi người dùng có tối đa một giỏ đang mở, giỏ cũ được giữ lại để phân tích. Luật này đặt ở đâu?", en: "Design a shopping cart: each user has at most one open cart, old carts are kept for analytics. Where does this rule live?" }
+    answer: { vi: "`carts(id PK, user_id FK NOT NULL, status text CHECK (status IN ('OPEN','ORDERED','ABANDONED')), created_at timestamptz)` và `CREATE UNIQUE INDEX one_open_cart ON carts (user_id) WHERE status = 'OPEN'`. Luật nằm trong cơ sở dữ liệu nên hai request song song không thể tạo hai giỏ mở; ứng dụng dùng `INSERT … ON CONFLICT DO NOTHING` rồi đọc giỏ mở. Index (chỉ mục) một phần còn giúp tra nhanh giỏ mở của một người.", en: "`carts(id PK, user_id FK NOT NULL, status text CHECK (status IN ('OPEN','ORDERED','ABANDONED')), created_at timestamptz)` and `CREATE UNIQUE INDEX one_open_cart ON carts (user_id) WHERE status = 'OPEN'`. The rule lives in the database, so two parallel requests cannot create two open carts; the app uses `INSERT … ON CONFLICT DO NOTHING` then reads the open cart. The partial index also makes looking up a user's open cart fast." }
+    tradeoffs:
+      - { vi: "Luật trong DB an toàn với tranh chấp nhưng cần xử lý lỗi trùng ở ứng dụng.", en: "A DB rule is race-safe but the app must handle the duplicate error." }
+      - { vi: "Giữ giỏ cũ chung bảng làm bảng lớn dần; có thể chuyển giỏ cũ sang bảng lưu trữ theo lịch.", en: "Keeping old carts in the same table grows it; old carts can be moved to an archive table on a schedule." }
+    rubric:
+      - { vi: "Dùng unique index một phần", en: "Uses a partial unique index" }
+      - { vi: "Giải thích vì sao luật ở ứng dụng không đủ", en: "Explains why an app-only rule is not enough" }
+      - { vi: "Nêu cách ứng dụng xử lý xung đột", en: "Says how the app handles the conflict" }
+    doc: https://www.postgresql.org/docs/18/indexes-partial.html
+
+  # ---------------- PostgreSQL · senior
+  - id: e-iv-pg-senior-01
+    engine: postgres
+    band: senior
+    kind: concept
+    set: pg-senior-1
+    q: { vi: "HOT update là gì, điều kiện để có nó, và `fillfactor` liên quan thế nào?", en: "What is a HOT update, when does it happen, and how does `fillfactor` relate?" }
+    answer: { vi: "HOT (heap-only tuple): khi UPDATE không đổi cột nào có trong index (chỉ mục) và page hiện tại còn chỗ, tuple mới nằm cùng page và nối chuỗi từ tuple cũ, nên không phải thêm mục vào index nào. Tiết kiệm ghi index và WAL, và tuple chết được dọn ngay trong page (pruning). Hạ `fillfactor` (ví dụ 80–90) chừa chỗ trống trong page để UPDATE dễ thành HOT hơn. Theo dõi bằng `n_tup_hot_upd` so với `n_tup_upd` trong `pg_stat_user_tables`.", en: "HOT (heap-only tuple): when an UPDATE changes no indexed column and the current page has room, the new tuple stays on the same page chained from the old one, so no index gets a new entry. That saves index writes and WAL, and dead tuples are pruned within the page. Lowering `fillfactor` (for example 80–90) leaves free space on pages so more UPDATEs can be HOT. Track `n_tup_hot_upd` against `n_tup_upd` in `pg_stat_user_tables`." }
+    rubric:
+      - { vi: "Hai điều kiện: không đổi cột có index, còn chỗ cùng page", en: "Both conditions: no indexed column changed, room on the same page" }
+      - { vi: "Lợi ích: không ghi index, pruning", en: "Benefit: no index writes, pruning" }
+      - { vi: "Biết fillfactor và cách đo", en: "Knows fillfactor and how to measure" }
+    doc: https://www.postgresql.org/docs/18/storage-hot.html
+  - id: e-iv-pg-senior-02
+    engine: postgres
+    band: senior
+    kind: concept
+    set: pg-senior-2
+    q: { vi: "Một migration chạy `ALTER TABLE orders ADD COLUMN note text` trên bảng nóng và cả trang web treo vài phút, dù lệnh này vốn rất nhanh. Chuyện gì đã xảy ra và phòng thế nào?", en: "A migration ran `ALTER TABLE orders ADD COLUMN note text` on a hot table and the whole site hung for minutes, although the command itself is fast. What happened and how do you prevent it?" }
+    answer: { vi: "Lệnh cần lock ACCESS EXCLUSIVE. Nó phải chờ một transaction dài đang giữ lock nhẹ trên bảng (ví dụ một báo cáo đang chạy); trong lúc chờ, nó đứng đầu hàng đợi lock và mọi SELECT/INSERT mới xếp sau nó, nên trang treo. Phòng: đặt `SET lock_timeout = '2s'` cho migration và thử lại khi hết giờ; giết hoặc tránh transaction dài trước; tách DDL nặng (index dùng `CREATE INDEX CONCURRENTLY`, ràng buộc dùng `NOT VALID` rồi `VALIDATE`).", en: "The command needs an ACCESS EXCLUSIVE lock. It waited behind a long transaction holding a weak lock on the table (say a running report); while waiting it sat at the head of the lock queue and every new SELECT/INSERT queued behind it, so the site hung. Prevention: `SET lock_timeout = '2s'` in migrations and retry on timeout; kill or avoid long transactions first; split heavy DDL (indexes via `CREATE INDEX CONCURRENTLY`, constraints via `NOT VALID` then `VALIDATE`)." }
+    rubric:
+      - { vi: "Giải thích hàng đợi lock phía sau ACCESS EXCLUSIVE", en: "Explains the lock queue behind ACCESS EXCLUSIVE" }
+      - { vi: "Đề xuất lock_timeout + retry", en: "Proposes lock_timeout + retry" }
+      - { vi: "Biết CONCURRENTLY / NOT VALID", en: "Knows CONCURRENTLY / NOT VALID" }
+    doc: https://www.postgresql.org/docs/18/explicit-locking.html
+  - id: e-iv-pg-senior-03
+    engine: postgres
+    band: senior
+    kind: concept
+    set: pg-senior-3
+    q: { vi: "Transaction ID wraparound là gì và vì sao một hệ thống có thể ngừng nhận ghi vì nó?", en: "What is transaction ID wraparound and why can a system stop accepting writes because of it?" }
+    answer: { vi: "XID là số 32 bit quay vòng; so sánh \"cũ hơn/mới hơn\" chỉ đúng trong cửa sổ khoảng 2 tỉ transaction. VACUUM \"freeze\" tuple cũ để chúng luôn được coi là trong quá khứ. Nếu freeze không theo kịp (autovacuum bị chặn bởi transaction dài, slot nhân bản bỏ quên, bảng quá lớn), `age(datfrozenxid)` tăng dần; gần giới hạn, Postgres cảnh báo rồi từ chối cấp XID mới để tránh mất dữ liệu. Theo dõi `age(datfrozenxid)` và `relfrozenxid`, xử lý thứ chặn vacuum.", en: "XIDs are 32-bit and wrap around; \"older/newer\" comparisons only hold within a window of about 2 billion transactions. VACUUM freezes old tuples so they always count as in the past. If freezing falls behind (autovacuum blocked by long transactions, a forgotten replication slot, a huge table), `age(datfrozenxid)` keeps rising; near the limit Postgres warns and then refuses new XIDs to avoid data loss. Monitor `age(datfrozenxid)` and `relfrozenxid`, and fix whatever blocks vacuum." }
+    rubric:
+      - { vi: "XID 32 bit và cửa sổ so sánh", en: "32-bit XID and the comparison window" }
+      - { vi: "Freeze là lời giải", en: "Freezing is the cure" }
+      - { vi: "Nêu nguyên nhân chặn freeze và chỉ số theo dõi", en: "Names what blocks freezing and the metric to watch" }
+    doc: https://www.postgresql.org/docs/18/routine-vacuuming.html
+  - id: e-iv-pg-senior-04
+    engine: postgres
+    band: senior
+    kind: concept
+    set: pg-senior-1
+    q: { vi: "Thiết kế hàng đợi việc trên Postgres để nhiều worker lấy việc song song mà không chặn nhau.", en: "Build a job queue on Postgres so many workers can take jobs in parallel without blocking each other." }
+    answer: { vi: "Mỗi worker chạy trong một transaction: `SELECT id FROM jobs WHERE done = false ORDER BY run_at LIMIT 10 FOR UPDATE SKIP LOCKED`, xử lý, rồi đánh dấu xong và COMMIT. `SKIP LOCKED` bỏ qua dòng worker khác đang giữ thay vì chờ. Thêm index (chỉ mục) một phần `(run_at) WHERE done = false`. Lưu ý: transaction giữ lock trong lúc xử lý, nên việc dài cần cột `locked_until` thay cho giữ transaction mở; và bảng đổi nhiều cần autovacuum mạnh tay.", en: "Each worker runs in one transaction: `SELECT id FROM jobs WHERE done = false ORDER BY run_at LIMIT 10 FOR UPDATE SKIP LOCKED`, processes, marks done and COMMITs. `SKIP LOCKED` skips rows another worker holds instead of waiting. Add a partial index on `(run_at) WHERE done = false`. Caveats: the transaction holds locks while processing, so long jobs need a `locked_until` column instead of an open transaction; and the churn needs aggressive autovacuum." }
+    rubric:
+      - { vi: "Dùng FOR UPDATE SKIP LOCKED", en: "Uses FOR UPDATE SKIP LOCKED" }
+      - { vi: "Index một phần cho việc chưa xong", en: "Partial index for pending jobs" }
+      - { vi: "Nêu rủi ro transaction dài / bloat", en: "Names the long-transaction / bloat risk" }
+    doc: https://www.postgresql.org/docs/18/sql-select.html
+  - id: e-iv-pg-senior-05
+    engine: postgres
+    band: senior
+    kind: concept
+    set: pg-senior-2
+    q: { vi: "Deadlock xảy ra thế nào trong Postgres, nó bị phát hiện ra sao, và bạn tránh nó trong code chuyển tiền thế nào?", en: "How does a deadlock happen in Postgres, how is it detected, and how do you avoid it in money-transfer code?" }
+    answer: { vi: "T1 lock dòng A rồi chờ B, T2 lock B rồi chờ A. Sau `deadlock_timeout` (mặc định 1 s) Postgres kiểm đồ thị chờ và hủy một transaction với lỗi `40P01`. Tránh: luôn lock theo cùng một thứ tự (ví dụ `SELECT … WHERE id IN (a, b) ORDER BY id FOR UPDATE`), giữ transaction ngắn, và retry khi gặp `40P01`.", en: "T1 locks row A then waits for B, T2 locks B then waits for A. After `deadlock_timeout` (1 s by default) Postgres checks the wait graph and aborts one transaction with error `40P01`. Avoid it: always lock in one order (for example `SELECT … WHERE id IN (a, b) ORDER BY id FOR UPDATE`), keep transactions short, and retry on `40P01`." }
+    rubric:
+      - { vi: "Mô tả đúng vòng chờ", en: "Describes the wait cycle correctly" }
+      - { vi: "Biết deadlock_timeout và một bên bị hủy", en: "Knows deadlock_timeout and that one side is aborted" }
+      - { vi: "Thứ tự lock nhất quán + retry", en: "Consistent lock order + retry" }
+    doc: https://www.postgresql.org/docs/18/explicit-locking.html
+  - id: e-iv-pg-senior-06
+    engine: postgres
+    band: senior
+    kind: concept
+    set: pg-senior-3
+    q: { vi: "Đội bạn chuyển sang `SERIALIZABLE` để chặn lỗi trùng lịch trực. Ứng dụng cần đổi gì?", en: "Your team switches to `SERIALIZABLE` to stop double-booking on-call shifts. What must the application change?" }
+    answer: { vi: "SSI không chờ lock mà phát hiện xung đột đọc-ghi và hủy một transaction với `40001` (serialization_failure), có khi lúc COMMIT. Ứng dụng phải bọc cả transaction trong vòng thử lại (có giới hạn và backoff), không làm việc ngoài DB không hoàn tác được bên trong transaction, giữ transaction ngắn, và đánh dấu transaction chỉ đọc là `READ ONLY`. Index (chỉ mục) tốt giúp predicate lock giữ ở mức page, ít hủy oan hơn.", en: "SSI does not wait on locks; it detects read-write conflicts and aborts one transaction with `40001` (serialization_failure), sometimes at COMMIT. The app must wrap the whole transaction in a retry loop (bounded, with backoff), avoid irreversible side effects inside it, keep it short, and mark read-only work `READ ONLY`. Good indexes keep predicate locks fine-grained, so fewer false aborts." }
+    rubric:
+      - { vi: "Biết lỗi 40001 và có thể ở COMMIT", en: "Knows error 40001, possibly at COMMIT" }
+      - { vi: "Vòng thử lại toàn transaction", en: "Retry loop around the whole transaction" }
+      - { vi: "Không tác dụng phụ bên ngoài trong transaction", en: "No external side effects inside it" }
+    doc: https://www.postgresql.org/docs/18/transaction-iso.html
+  - id: e-iv-pg-senior-07
+    engine: postgres
+    band: senior
+    kind: concept
+    set: pg-senior-1
+    q: { vi: "WAL và checkpoint quan hệ thế nào? Vì sao biểu đồ I/O có \"răng cưa\" theo chu kỳ, và chỉnh gì?", en: "How do WAL and checkpoints relate? Why does the I/O graph show a periodic \"sawtooth\", and what do you tune?" }
+    answer: { vi: "Mọi thay đổi ghi vào WAL trước; page dữ liệu bẩn được ghi xuống sau. Checkpoint xả mọi page bẩn để có điểm khôi phục, sau đó lần sửa đầu tiên của mỗi page ghi cả page vào WAL (`full_page_writes`), nên WAL và I/O vọt lên ngay sau checkpoint. Chỉnh: `checkpoint_timeout` và `max_wal_size` lớn hơn (checkpoint thưa hơn, khôi phục lâu hơn), `checkpoint_completion_target` để rải việc ghi. Theo dõi checkpoint do vượt `max_wal_size` so với do hết giờ.", en: "Every change goes to the WAL first; dirty data pages are written later. A checkpoint flushes all dirty pages to set a recovery point; afterwards the first change to each page writes the whole page into the WAL (`full_page_writes`), so WAL and I/O spike right after a checkpoint. Tune: larger `checkpoint_timeout` and `max_wal_size` (rarer checkpoints, longer recovery), and `checkpoint_completion_target` to spread writes. Watch checkpoints forced by `max_wal_size` versus timed ones." }
+    rubric:
+      - { vi: "Ghi WAL trước, page sau", en: "WAL first, pages later" }
+      - { vi: "Full page writes sau checkpoint", en: "Full page writes after a checkpoint" }
+      - { vi: "Tham số đúng và đánh đổi thời gian khôi phục", en: "Right parameters and the recovery-time trade-off" }
+    doc: https://www.postgresql.org/docs/18/wal-configuration.html
+  - id: e-iv-pg-senior-08
+    engine: postgres
+    band: senior
+    kind: diagnose
+    set: pg-senior-1
+    q: { vi: "Lọc khách theo thành phố và vùng thì planner đoán 240 dòng, thực tế 400. Sau một lệnh, ước lượng đúng. Vì sao lệch, lệnh gì, và khi nào chuyện này đáng kể?", en: "Filtering customers by city and region, the planner guesses 240 rows, actually 400. After one command the estimate is right. Why the gap, what command, and when does it matter?" }
+    exhibits:
+      - label: { vi: "Trước", en: "Before" }
+        source: pglite-0.5.16
+        fixture: pg-shop
+        setup: ""
+        sql: "EXPLAIN (ANALYZE, BUFFERS OFF, TIMING OFF, SUMMARY OFF) SELECT * FROM customers WHERE city = 'Hue' AND region = 'Central'"
+        shown: |-
+          Seq Scan on customers  (cost=0.00..47.00 rows=240 width=37) (actual rows=400.00 loops=1)
+            Filter: ((city = 'Hue'::text) AND (region = 'Central'::text))
+            Rows Removed by Filter: 1600
+      - label: { vi: "Sau", en: "After" }
+        source: pglite-0.5.16
+        fixture: pg-shop
+        setup: "CREATE STATISTICS cust_city_region (dependencies) ON city, region FROM customers; ANALYZE customers;"
+        sql: "EXPLAIN (ANALYZE, BUFFERS OFF, TIMING OFF, SUMMARY OFF) SELECT * FROM customers WHERE city = 'Hue' AND region = 'Central'"
+        shown: |-
+          Seq Scan on customers  (cost=0.00..47.00 rows=400 width=37) (actual rows=400.00 loops=1)
+            Filter: ((city = 'Hue'::text) AND (region = 'Central'::text))
+            Rows Removed by Filter: 1600
+    answer: { vi: "Planner coi hai điều kiện độc lập: 20% (Hue) × 60% (Central) = 12% của 2.000 = 240. Nhưng thành phố quyết định vùng (Hue luôn ở Central), nên thực tế 20% = 400. `CREATE STATISTICS … (dependencies) ON city, region` rồi `ANALYZE` cho planner biết sự phụ thuộc này. Ở đây kế hoạch không đổi, nhưng khi bảng này là một vế của JOIN, ước lượng thấp có thể làm planner chọn nested loop hoặc hash quá nhỏ, chậm hàng chục lần.", en: "The planner treats the conditions as independent: 20% (Hue) × 60% (Central) = 12% of 2,000 = 240. But city determines region (Hue is always Central), so the truth is 20% = 400. `CREATE STATISTICS … (dependencies) ON city, region` then `ANALYZE` teaches the planner this dependency. Here the plan does not change, but when the table feeds a JOIN, an underestimate can make the planner pick a nested loop or an undersized hash, tens of times slower." }
+    rubric:
+      - { vi: "Tính lại 0,2 × 0,6 × 2000 = 240", en: "Recomputes 0.2 × 0.6 × 2000 = 240" }
+      - { vi: "Gọi tên giả định độc lập và cột tương quan", en: "Names the independence assumption and correlated columns" }
+      - { vi: "Đề xuất CREATE STATISTICS + ANALYZE", en: "Proposes CREATE STATISTICS + ANALYZE" }
+      - { vi: "Nói khi nào sai lệch làm hỏng kế hoạch", en: "Says when the error breaks plans" }
+    doc: https://www.postgresql.org/docs/18/planner-stats.html
+  - id: e-iv-pg-senior-09
+    engine: postgres
+    band: senior
+    kind: diagnose
+    set: pg-senior-2
+    q: { vi: "Báo cáo \"số đơn mỗi khách\" chạy trên máy chủ có `work_mem` rất nhỏ. Đọc dòng `Batches` và kết luận.", en: "The \"orders per customer\" report runs on a server with a very small `work_mem`. Read the `Batches` line and conclude." }
+    exhibits:
+      - label: { vi: "Kế hoạch với work_mem = 64kB", en: "Plan with work_mem = 64kB" }
+        source: pglite-0.5.16
+        fixture: pg-shop
+        setup: "SET work_mem = '64kB';"
+        sql: "EXPLAIN (ANALYZE, COSTS OFF, BUFFERS OFF, TIMING OFF, SUMMARY OFF) SELECT customer_id, count(*) FROM orders GROUP BY customer_id"
+        shown: |-
+          HashAggregate (actual rows=2000.00 loops=1)
+            Group Key: customer_id
+            Batches: 5  Memory Usage: 129kB  Disk Usage: 256kB
+            ->  Seq Scan on orders (actual rows=20000.00 loops=1)
+    answer: { vi: "Bảng băm của 2.000 nhóm vượt giới hạn bộ nhớ của hash (`work_mem` × `hash_mem_multiplier`, ở đây 64kB × 2 = 128kB), nên HashAggregate chia 5 đợt và ghi 256kB ra đĩa. Với dữ liệu thật lớn, việc tràn đĩa này làm truy vấn chậm hẳn. Sửa: tăng `work_mem` (hoặc `hash_mem_multiplier`) cho phiên báo cáo; hoặc có index (chỉ mục) trên `customer_id` để planner dùng GroupAggregate trên dữ liệu đã sắp xếp.", en: "The hash table for 2,000 groups exceeds the hash memory limit (`work_mem` × `hash_mem_multiplier`, here 64kB × 2 = 128kB), so HashAggregate splits into 5 batches and writes 256kB to disk. On really large data this spilling makes the query much slower. Fix: raise `work_mem` (or `hash_mem_multiplier`) for the reporting session; or an index on `customer_id` lets the planner use GroupAggregate over sorted input." }
+    rubric:
+      - { vi: "Đọc Batches > 1 = tràn đĩa", en: "Reads Batches > 1 = spilled" }
+      - { vi: "Biết hash_mem_multiplier nhân work_mem", en: "Knows hash_mem_multiplier scales work_mem" }
+      - { vi: "Đề xuất chỉnh theo phiên hoặc đường sắp xếp", en: "Proposes per-session tuning or a sorted path" }
+    doc: https://www.postgresql.org/docs/18/runtime-config-resource.html
+  - id: e-iv-pg-senior-10
+    engine: postgres
+    band: senior
+    kind: diagnose
+    set: pg-senior-3
+    q: { vi: "Bảng `events` chia partition theo tháng. Hai cách viết \"đếm sự kiện tháng 10\" cho cùng kết quả. Vì sao một cách đọc cả ba partition?", en: "`events` is partitioned by month. Two ways to write \"count October events\" give the same result. Why does one read all three partitions?" }
+    exhibits:
+      - label: { vi: "Lọc bằng date_trunc", en: "Filter with date_trunc" }
+        source: pglite-0.5.16
+        fixture: pg-shop
+        setup: "CREATE TABLE events (id int, ts date NOT NULL, kind text) PARTITION BY RANGE (ts); CREATE TABLE events_2026_09 PARTITION OF events FOR VALUES FROM ('2026-09-01') TO ('2026-10-01'); CREATE TABLE events_2026_10 PARTITION OF events FOR VALUES FROM ('2026-10-01') TO ('2026-11-01'); CREATE TABLE events_2026_11 PARTITION OF events FOR VALUES FROM ('2026-11-01') TO ('2026-12-01'); INSERT INTO events SELECT i, date '2026-09-01' + i % 91, 'view' FROM generate_series(1, 9100) i; ANALYZE events;"
+        sql: "EXPLAIN (ANALYZE, COSTS OFF, BUFFERS OFF, TIMING OFF, SUMMARY OFF) SELECT count(*) FROM events WHERE date_trunc('month', ts) = '2026-10-01'"
+        shown: |-
+          Aggregate (actual rows=1.00 loops=1)
+            ->  Append (actual rows=3100.00 loops=1)
+                  ->  Seq Scan on events_2026_09 events_1 (actual rows=0.00 loops=1)
+                        Filter: (date_trunc('month'::text, (ts)::timestamp with time zone) = '2026-10-01 00:00:00+00'::timestamp with time zone)
+                        Rows Removed by Filter: 3000
+                  ->  Seq Scan on events_2026_10 events_2 (actual rows=3100.00 loops=1)
+                        Filter: (date_trunc('month'::text, (ts)::timestamp with time zone) = '2026-10-01 00:00:00+00'::timestamp with time zone)
+                  ->  Seq Scan on events_2026_11 events_3 (actual rows=0.00 loops=1)
+                        Filter: (date_trunc('month'::text, (ts)::timestamp with time zone) = '2026-10-01 00:00:00+00'::timestamp with time zone)
+                        Rows Removed by Filter: 3000
+      - label: { vi: "Lọc bằng khoảng trên cột khóa", en: "Range filter on the key column" }
+        source: pglite-0.5.16
+        fixture: pg-shop
+        setup: "CREATE TABLE events (id int, ts date NOT NULL, kind text) PARTITION BY RANGE (ts); CREATE TABLE events_2026_09 PARTITION OF events FOR VALUES FROM ('2026-09-01') TO ('2026-10-01'); CREATE TABLE events_2026_10 PARTITION OF events FOR VALUES FROM ('2026-10-01') TO ('2026-11-01'); CREATE TABLE events_2026_11 PARTITION OF events FOR VALUES FROM ('2026-11-01') TO ('2026-12-01'); INSERT INTO events SELECT i, date '2026-09-01' + i % 91, 'view' FROM generate_series(1, 9100) i; ANALYZE events;"
+        sql: "EXPLAIN (ANALYZE, COSTS OFF, BUFFERS OFF, TIMING OFF, SUMMARY OFF) SELECT count(*) FROM events WHERE ts >= '2026-10-01' AND ts < '2026-11-01'"
+        shown: |-
+          Aggregate (actual rows=1.00 loops=1)
+            ->  Seq Scan on events_2026_10 events (actual rows=3100.00 loops=1)
+                  Filter: ((ts >= '2026-10-01'::date) AND (ts < '2026-11-01'::date))
+    answer: { vi: "Partition pruning chỉ hiểu điều kiện trực tiếp trên khóa partition (`ts`) so với hằng/tham số. `date_trunc('month', ts)` là một biểu thức (lại còn ép sang `timestamptz`), planner không suy ra được nó chỉ khớp một partition, nên `Append` quét cả ba. Viết lại thành khoảng nửa mở `ts >= … AND ts < …` thì chỉ còn `events_2026_10`. Đây là lỗi hay gặp nhất khi bảng partition \"không nhanh hơn\".", en: "Partition pruning only understands conditions directly on the partition key (`ts`) against constants/parameters. `date_trunc('month', ts)` is an expression (also cast to `timestamptz`), so the planner cannot infer it matches one partition, and `Append` scans all three. Rewriting as a half-open range `ts >= … AND ts < …` leaves only `events_2026_10`. This is the most common reason a partitioned table is \"not faster\"." }
+    rubric:
+      - { vi: "Đọc được Append quét ba partition", en: "Reads that Append scans three partitions" }
+      - { vi: "Giải thích pruning cần điều kiện trên cột khóa", en: "Explains pruning needs conditions on the key column" }
+      - { vi: "Viết lại thành khoảng nửa mở", en: "Rewrites as a half-open range" }
+    doc: https://www.postgresql.org/docs/18/ddl-partitioning.html
+  - id: e-iv-pg-senior-11
+    engine: postgres
+    band: senior
+    kind: diagnose
+    set: pg-senior-1
+    q: { vi: "API danh sách đơn phân trang bằng OFFSET. Trang cuối chậm hơn trang đầu rất nhiều. So hai kế hoạch và đề xuất.", en: "The orders list API paginates with OFFSET. The last pages are much slower than the first. Compare the plans and propose a fix." }
+    exhibits:
+      - label: { vi: "Phân trang OFFSET 15000", en: "Paging with OFFSET 15000" }
+        source: pglite-0.5.16
+        fixture: pg-shop
+        setup: "CREATE INDEX ON orders (created_at, id);"
+        sql: "EXPLAIN (ANALYZE, COSTS OFF, BUFFERS OFF, TIMING OFF, SUMMARY OFF) SELECT id, total FROM orders ORDER BY created_at, id OFFSET 15000 LIMIT 20"
+        shown: |-
+          Limit (actual rows=20.00 loops=1)
+            ->  Index Scan using orders_created_at_id_idx on orders (actual rows=15020.00 loops=1)
+                  Index Searches: 1
+      - label: { vi: "Keyset (sau dòng cuối của trang trước)", en: "Keyset (after the previous page's last row)" }
+        source: pglite-0.5.16
+        fixture: pg-shop
+        setup: "CREATE INDEX ON orders (created_at, id);"
+        sql: "EXPLAIN (ANALYZE, COSTS OFF, BUFFERS OFF, TIMING OFF, SUMMARY OFF) SELECT id, total FROM orders WHERE (created_at, id) > ('2026-08-03', 15000) ORDER BY created_at, id LIMIT 20"
+        shown: |-
+          Limit (actual rows=20.00 loops=1)
+            ->  Index Scan using orders_created_at_id_idx on orders (actual rows=20.00 loops=1)
+                  Index Cond: (ROW(created_at, id) > ROW('2026-08-03'::date, 15000))
+                  Index Searches: 1
+    answer: { vi: "Với OFFSET, Postgres vẫn phải đọc và bỏ 15.000 dòng (`actual rows=15020`) trước khi trả 20: chi phí tăng theo số trang. Keyset pagination nhớ khóa của dòng cuối trang trước và nhảy thẳng tới đó qua index (chỉ mục) bằng so sánh dòng `(created_at, id) > (…)`: chỉ đọc 20 dòng, trang nào cũng nhanh như nhau. Đổi lại không nhảy được tới \"trang 750\" tùy ý, và cần khóa sắp xếp duy nhất (thêm `id`).", en: "With OFFSET, Postgres still reads and discards 15,000 rows (`actual rows=15020`) before returning 20: cost grows with the page number. Keyset pagination remembers the previous page's last key and jumps there through the index with a row comparison `(created_at, id) > (…)`: it reads 20 rows, every page equally fast. The cost: no jumping to an arbitrary \"page 750\", and the sort key must be unique (add `id`)." }
+    rubric:
+      - { vi: "Đọc actual rows=15020 dưới Limit", en: "Reads actual rows=15020 under Limit" }
+      - { vi: "Đề xuất keyset pagination với so sánh dòng", en: "Proposes keyset pagination with a row comparison" }
+      - { vi: "Nêu đánh đổi và khóa duy nhất", en: "States the trade-off and the unique key" }
+    doc: https://www.postgresql.org/docs/18/queries-limit.html
+  - id: e-iv-pg-senior-12
+    engine: postgres
+    band: senior
+    kind: concept
+    set: pg-senior-2
+    q: { vi: "Index (chỉ mục) phình to theo thời gian. Bạn phát hiện và xử lý thế nào trên hệ thống đang chạy?", en: "An index has bloated over time. How do you detect and fix it on a live system?" }
+    answer: { vi: "Phát hiện: so kích thước `pg_relation_size` của index với ước lượng từ số dòng, theo dõi tăng trưởng, hoặc dùng `pgstattuple`/`pgstatindex` để xem mật độ lá. Nguyên nhân thường là xóa/cập nhật hàng loạt hoặc vacuum chậm. Xử lý: `REINDEX INDEX CONCURRENTLY` (không chặn ghi, cần thêm chỗ đĩa, có thể để lại index INVALID nếu thất bại: phải dọn). Sau đó sửa gốc: autovacuum cho bảng đó mạnh hơn, tránh transaction dài.", en: "Detect: compare the index's `pg_relation_size` against what the row count suggests, track growth, or use `pgstattuple`/`pgstatindex` for leaf density. Causes are usually mass deletes/updates or vacuum lagging. Fix: `REINDEX INDEX CONCURRENTLY` (does not block writes, needs extra disk, may leave an INVALID index on failure that must be cleaned up). Then fix the root cause: more aggressive autovacuum for that table, avoid long transactions." }
+    rubric:
+      - { vi: "Có cách đo cụ thể", en: "Has a concrete way to measure" }
+      - { vi: "REINDEX CONCURRENTLY và rủi ro INVALID", en: "REINDEX CONCURRENTLY and the INVALID risk" }
+      - { vi: "Sửa nguyên nhân gốc", en: "Fixes the root cause" }
+    doc: https://www.postgresql.org/docs/18/sql-reindex.html
+  - id: e-iv-pg-senior-13
+    engine: postgres
+    band: senior
+    kind: design
+    set: pg-senior-2
+    q: { vi: "SaaS nhiều khách hàng (tenant) trên một Postgres: so sánh \"cột tenant_id + RLS\", \"schema riêng mỗi tenant\" và \"database riêng\". Bạn chọn gì cho 5.000 tenant nhỏ?", en: "A multi-tenant SaaS on one Postgres: compare \"tenant_id column + RLS\", \"schema per tenant\" and \"database per tenant\". What do you pick for 5,000 small tenants?" }
+    answer: { vi: "5.000 tenant nhỏ: cột `tenant_id` trên mọi bảng, nằm đầu mọi khóa chính/index (chỉ mục), cộng Row Level Security: `CREATE POLICY p ON orders USING (tenant_id = current_setting('app.tenant')::int)`, ứng dụng đặt `app.tenant` mỗi transaction và kết nối bằng role không phải chủ bảng (chủ bảng bỏ qua RLS trừ khi `FORCE ROW LEVEL SECURITY`). Schema riêng: 5.000 × số bảng làm catalog phình, migration phải chạy 5.000 lần. Database riêng: cách ly tốt nhất nhưng tốn kết nối, khó báo cáo chung; hợp cho vài tenant lớn hoặc có yêu cầu pháp lý.", en: "5,000 small tenants: a `tenant_id` column on every table, leading every primary key/index, plus Row Level Security: `CREATE POLICY p ON orders USING (tenant_id = current_setting('app.tenant')::int)`; the app sets `app.tenant` per transaction and connects with a role that does not own the tables (owners bypass RLS unless `FORCE ROW LEVEL SECURITY`). Schema per tenant: 5,000 × tables bloats the catalog and migrations run 5,000 times. Database per tenant: best isolation but costly in connections and hard to report across; fits a few large or regulated tenants." }
+    tradeoffs:
+      - { vi: "RLS: rẻ, một lần migration, nhưng một bug quên đặt tenant là rò dữ liệu nếu không có RLS chặn; tenant ồn ảnh hưởng nhau.", en: "RLS: cheap, one migration, but a bug that forgets the tenant leaks data unless RLS blocks it; noisy tenants affect each other." }
+      - { vi: "Mô hình lai: tenant lớn tách DB riêng, phần còn lại dùng chung.", en: "Hybrid: big tenants get their own DB, the rest share." }
+    rubric:
+      - { vi: "Chọn cột + RLS có lý do cho quy mô này", en: "Picks column + RLS with a reason for this scale" }
+      - { vi: "Biết bẫy chủ bảng bỏ qua RLS", en: "Knows the owner-bypasses-RLS trap" }
+      - { vi: "So được chi phí catalog/migration/kết nối", en: "Compares catalog/migration/connection costs" }
+    doc: https://www.postgresql.org/docs/18/ddl-rowsecurity.html
+  - id: e-iv-pg-senior-14
+    engine: postgres
+    band: senior
+    kind: design
+    set: pg-senior-3
+    q: { vi: "Bảng sự kiện nhận 50 triệu dòng mỗi ngày, chỉ giữ 90 ngày, truy vấn gần như luôn lọc theo thời gian. Thiết kế lưu trữ và dọn dữ liệu.", en: "An events table gets 50 million rows a day, keeps only 90 days, and queries almost always filter by time. Design storage and cleanup." }
+    answer: { vi: "Partition theo khoảng ngày (`PARTITION BY RANGE (ts)`, một partition mỗi ngày), tạo trước vài ngày tới bằng job định kỳ. Dọn: `DETACH PARTITION … CONCURRENTLY` rồi `DROP TABLE` partition cũ: tức thì, không tạo tuple chết như `DELETE`. Index (chỉ mục) khai báo ở bảng cha được tạo trên mọi partition; BRIN trên `ts` rất nhỏ nếu dữ liệu vào theo thứ tự thời gian. Truy vấn phải lọc trực tiếp trên `ts` để pruning. Khóa chính phải chứa cột partition.", en: "Partition by day (`PARTITION BY RANGE (ts)`, one partition per day), created a few days ahead by a scheduled job. Cleanup: `DETACH PARTITION … CONCURRENTLY` then `DROP TABLE` the old partition: instant, no dead tuples unlike `DELETE`. Indexes declared on the parent are created on every partition; a BRIN on `ts` is tiny when data arrives in time order. Queries must filter directly on `ts` for pruning. The primary key must include the partition column." }
+    tradeoffs:
+      - { vi: "Partition theo ngày: dọn rẻ, nhưng 90+ partition tăng thời gian lập kế hoạch nếu truy vấn không pruning.", en: "Daily partitions: cheap cleanup, but 90+ partitions add planning time when queries do not prune." }
+      - { vi: "Khóa chính phải chứa `ts`, nên không có ràng buộc duy nhất toàn cục chỉ trên `id`.", en: "The primary key must include `ts`, so no global uniqueness on `id` alone." }
+    rubric:
+      - { vi: "Partition theo thời gian + tạo trước", en: "Time partitions + pre-creation" }
+      - { vi: "Dọn bằng DETACH/DROP thay DELETE", en: "Cleanup via DETACH/DROP instead of DELETE" }
+      - { vi: "Nêu giới hạn khóa chính và pruning", en: "States the primary-key and pruning limits" }
+    doc: https://www.postgresql.org/docs/18/ddl-partitioning.html
+  - id: e-iv-pg-senior-15
+    engine: postgres
+    band: senior
+    kind: concept
+    set: pg-senior-3
+    q: { vi: "Truy vấn nhanh trong psql nhưng chậm khi gọi qua ORM dùng prepared statement. Một nguyên nhân phổ biến là gì?", en: "A query is fast in psql but slow through an ORM that uses prepared statements. What is a common cause?" }
+    answer: { vi: "Prepared statement: 5 lần đầu Postgres lập kế hoạch riêng theo giá trị tham số (custom plan); sau đó nếu kế hoạch chung (generic plan, không biết giá trị) không đắt hơn đáng kể theo ước lượng, nó dùng kế hoạch chung mãi. Với dữ liệu lệch (một giá trị chiếm 90%), kế hoạch chung có thể rất tệ cho một số giá trị. Kiểm bằng `EXPLAIN EXECUTE` sau vài lần chạy; xử lý bằng `plan_cache_mode = force_custom_plan` cho phiên/role đó, hoặc tách truy vấn theo trường hợp.", en: "Prepared statements: for the first 5 executions Postgres plans with the actual parameter values (custom plans); after that, if the generic plan (values unknown) is not estimated much costlier, it keeps the generic plan. With skewed data (one value is 90%), the generic plan can be very bad for some values. Check with `EXPLAIN EXECUTE` after a few runs; fix with `plan_cache_mode = force_custom_plan` for that session/role, or split the query by case." }
+    rubric:
+      - { vi: "Custom vs generic plan, mốc 5 lần", en: "Custom vs generic plan, the 5-execution mark" }
+      - { vi: "Nối với dữ liệu lệch", en: "Connects it to skewed data" }
+      - { vi: "Biết plan_cache_mode", en: "Knows plan_cache_mode" }
+    doc: https://www.postgresql.org/docs/18/sql-prepare.html
+
+  # ---------------- PostgreSQL · staff
+  - id: e-iv-pg-staff-01
+    engine: postgres
+    band: staff
+    kind: concept
+    set: pg-staff-1
+    q: { vi: "Nhân bản streaming đồng bộ và bất đồng bộ: mỗi giá trị `synchronous_commit` hứa gì về mất dữ liệu (RPO) và độ trễ?", en: "Synchronous vs asynchronous streaming replication: what does each `synchronous_commit` value promise about data loss (RPO) and latency?" }
+    answer: { vi: "Bất đồng bộ: primary trả COMMIT khi WAL đã xuống đĩa của nó; mất primary có thể mất vài giây transaction cuối. Với `synchronous_standby_names` đặt: `remote_write` chờ standby nhận và ghi vào OS; `on` chờ standby flush WAL (không mất khi một máy sập); `remote_apply` chờ standby áp dụng xong, nên đọc ngay trên standby thấy dữ liệu. `local`/`off` không chờ standby (`off` còn không chờ đĩa cục bộ: có thể mất transaction mới nhất nhưng không hỏng dữ liệu). Mức càng chặt, độ trễ COMMIT càng cộng thêm một vòng mạng; nên dùng quorum (`ANY 1 (a, b)`) để một standby chết không làm treo ghi.", en: "Async: the primary acknowledges COMMIT when WAL is on its own disk; losing the primary can lose the last seconds of transactions. With `synchronous_standby_names` set: `remote_write` waits for the standby to receive and hand it to the OS; `on` waits for the standby to flush WAL (no loss on a single machine failure); `remote_apply` waits until the standby has applied it, so reads on the standby see it. `local`/`off` do not wait for standbys (`off` does not even wait for the local disk: the newest transactions can be lost but data is not corrupted). Stricter levels add a network round trip to every COMMIT; use a quorum (`ANY 1 (a, b)`) so one dead standby does not stall writes." }
+    rubric:
+      - { vi: "Phân biệt đúng các mức theo điểm chờ", en: "Distinguishes the levels by what they wait for" }
+      - { vi: "Nối với RPO và độ trễ", en: "Ties them to RPO and latency" }
+      - { vi: "Biết quorum để tránh treo ghi", en: "Knows quorum to avoid stalled writes" }
+    doc: https://www.postgresql.org/docs/18/warm-standby.html
+  - id: e-iv-pg-staff-02
+    engine: postgres
+    band: staff
+    kind: concept
+    set: pg-staff-2
+    q: { vi: "Nhân bản logic khác nhân bản vật lý thế nào, và bạn dùng nó cho việc gì? Có bẫy gì?", en: "How does logical replication differ from physical, and what do you use it for? What are the traps?" }
+    answer: { vi: "Vật lý gửi WAL từng byte: bản sao giống hệt cả cụm, cùng phiên bản lớn, chỉ đọc. Logical giải mã WAL thành thay đổi dòng theo publication/subscription: chọn bảng, khác phiên bản lớn, bên nhận ghi được. Dùng cho nâng cấp phiên bản ít dừng, tách dữ liệu, đẩy sang hệ thống khác (CDC). Bẫy: không nhân bản DDL và giá trị sequence; bảng cần replica identity (thường là khóa chính) để UPDATE/DELETE; slot không ai đọc giữ WAL mãi làm đầy đĩa; cần `wal_level = logical`.", en: "Physical ships WAL byte for byte: an identical read-only copy of the whole cluster, same major version. Logical decodes WAL into row changes through publications/subscriptions: per table, across major versions, the target stays writable. Used for low-downtime major upgrades, splitting data, feeding other systems (CDC). Traps: DDL and sequence values are not replicated; tables need a replica identity (usually the primary key) for UPDATE/DELETE; an unread slot retains WAL forever and fills the disk; needs `wal_level = logical`." }
+    rubric:
+      - { vi: "So đúng phạm vi và tính ghi được", en: "Compares scope and writability correctly" }
+      - { vi: "Ít nhất hai trường hợp dùng", en: "At least two use cases" }
+      - { vi: "Ít nhất hai bẫy (DDL, sequence, slot, replica identity)", en: "At least two traps (DDL, sequences, slots, replica identity)" }
+    doc: https://www.postgresql.org/docs/18/logicaldecoding-explanation.html
+  - id: e-iv-pg-staff-03
+    engine: postgres
+    band: staff
+    kind: design
+    set: pg-staff-2
+    q: { vi: "Cần thêm ràng buộc `NOT NULL` và một khóa ngoại mới cho bảng 2 tỉ dòng đang nhận ghi liên tục, không được dừng. Lên kế hoạch.", en: "You must add a `NOT NULL` and a new foreign key to a 2-billion-row table under constant writes, with no downtime. Plan it." }
+    answer: { vi: "Kiểu expand/contract. (1) Thêm cột cho phép NULL (chỉ sửa catalog). (2) Ứng dụng ghi cả cột mới; backfill theo lô nhỏ có nghỉ, theo dõi độ trễ nhân bản. (3) `ADD CONSTRAINT … CHECK (col IS NOT NULL) NOT VALID` (lock rất ngắn), rồi `VALIDATE CONSTRAINT` (quét bảng nhưng chỉ giữ lock SHARE UPDATE EXCLUSIVE, không chặn ghi). (4) `SET NOT NULL`: từ PG12 dùng CHECK đã validate để bỏ qua việc quét. (5) Khóa ngoại tương tự: `NOT VALID` rồi `VALIDATE`, nhớ tạo index (chỉ mục) `CONCURRENTLY` trên cột trước. Mọi bước có `lock_timeout` và retry.", en: "Expand/contract. (1) Add the column as nullable (catalog only). (2) The app writes the new column; backfill in small throttled batches, watching replication lag. (3) `ADD CONSTRAINT … CHECK (col IS NOT NULL) NOT VALID` (very short lock), then `VALIDATE CONSTRAINT` (scans but takes only SHARE UPDATE EXCLUSIVE, writes continue). (4) `SET NOT NULL`: since PG12 a validated CHECK lets it skip the scan. (5) Same for the foreign key: `NOT VALID` then `VALIDATE`, after creating the column's index `CONCURRENTLY`. Every step uses `lock_timeout` and retries." }
+    tradeoffs:
+      - { vi: "Nhiều bước và nhiều lần deploy hơn, đổi lại không có lock dài.", en: "More steps and deploys, in exchange for no long locks." }
+      - { vi: "Backfill tạo nhiều WAL và tuple chết: cần nhịp chậm và vacuum theo sau.", en: "Backfill generates lots of WAL and dead tuples: needs throttling and vacuum behind it." }
+    rubric:
+      - { vi: "Dùng NOT VALID + VALIDATE", en: "Uses NOT VALID + VALIDATE" }
+      - { vi: "Backfill theo lô có kiểm soát", en: "Controlled batched backfill" }
+      - { vi: "Biết SET NOT NULL dùng được CHECK đã validate", en: "Knows SET NOT NULL can use a validated CHECK" }
+      - { vi: "lock_timeout và index CONCURRENTLY", en: "lock_timeout and a CONCURRENTLY index" }
+    doc: https://www.postgresql.org/docs/18/sql-altertable.html
+  - id: e-iv-pg-staff-04
+    engine: postgres
+    band: staff
+    kind: concept
+    set: pg-staff-3
+    q: { vi: "Khi nào parallel query và JIT giúp, khi nào hại? (Lưu ý: PGlite trong trình duyệt không có cả hai, nên câu này chỉ trả lời bằng lý thuyết.)", en: "When do parallel query and JIT help, and when do they hurt? (Note: PGlite in the browser has neither, so answer from theory.)" }
+    answer: { vi: "Parallel: tốt cho quét/gom lớn chạy lâu trên máy nhiều lõi (nút `Gather` với worker); vô ích hoặc hại cho truy vấn OLTP ngắn (chi phí khởi động worker), và lấy CPU của truy vấn khác; giới hạn bởi `max_parallel_workers_per_gather` và tổng worker. JIT: biên dịch biểu thức cho truy vấn phân tích rất tốn CPU; với truy vấn ước lượng đắt nhưng thực tế ngắn, thời gian biên dịch có thể lớn hơn thời gian chạy: đó là lý do nhiều hệ OLTP tắt `jit` hoặc nâng `jit_above_cost`.", en: "Parallel: good for big long scans/aggregations on many-core machines (a `Gather` node with workers); useless or harmful for short OLTP queries (worker startup cost), and it takes CPU from other queries; bounded by `max_parallel_workers_per_gather` and the total worker pool. JIT: compiles expressions for CPU-heavy analytic queries; for queries that are estimated expensive but actually short, compile time can exceed run time: that is why many OLTP systems turn `jit` off or raise `jit_above_cost`." }
+    rubric:
+      - { vi: "Khi parallel có lợi / có hại", en: "When parallel helps / hurts" }
+      - { vi: "Chi phí biên dịch JIT so với thời gian chạy", en: "JIT compile cost vs run time" }
+      - { vi: "Kể tham số điều khiển", en: "Names the controlling settings" }
+    doc: https://www.postgresql.org/docs/18/jit-decision.html
+  - id: e-iv-pg-staff-05
+    engine: postgres
+    band: staff
+    kind: design
+    set: pg-staff-3
+    q: { vi: "Đặt chiến lược sao lưu cho cụm Postgres với yêu cầu RPO ≤ 1 phút, RTO ≤ 1 giờ, và khôi phục được về thời điểm trước một lệnh xóa nhầm.", en: "Set a backup strategy for a Postgres cluster with RPO ≤ 1 minute, RTO ≤ 1 hour, and the ability to restore to just before an accidental delete." }
+    answer: { vi: "Base backup vật lý định kỳ (ví dụ hằng đêm) + lưu trữ WAL liên tục (`archive_command`/`archive_library`, hoặc nhận WAL streaming) sang kho khác vùng: cho PITR tới bất kỳ thời điểm nào bằng `recovery_target_time`. `archive_timeout` ≤ 60 s để RPO ≤ 1 phút khi tải thấp. Standby nóng cho hỏng máy (RTO vài phút), nhưng standby nhân bản cả lệnh xóa nhầm, nên PITR mới là lưới an toàn cho lỗi người. Đo RTO bằng diễn tập khôi phục định kỳ: thời gian phát lại WAL từ base backup gần nhất phải < 1 giờ. `pg_dump` chỉ là bản logic bổ sung, không cho PITR.", en: "Periodic physical base backups (say nightly) + continuous WAL archiving (`archive_command`/`archive_library`, or streaming WAL receipt) to storage in another region: this allows PITR to any moment with `recovery_target_time`. `archive_timeout` ≤ 60 s keeps RPO ≤ 1 minute under low load. A hot standby covers machine failure (RTO minutes), but it replays the accidental delete too, so PITR is the safety net for human error. Prove RTO with regular restore drills: replaying WAL from the latest base backup must take < 1 hour. `pg_dump` is only a logical extra, it gives no PITR." }
+    tradeoffs:
+      - { vi: "Base backup thưa thì rẻ kho nhưng phát lại WAL lâu hơn (RTO tăng).", en: "Rare base backups save storage but WAL replay takes longer (higher RTO)." }
+      - { vi: "Standby trễ có chủ đích (`recovery_min_apply_delay`) cho lối thoát nhanh khi xóa nhầm, đổi lại một máy nữa.", en: "A deliberately delayed standby (`recovery_min_apply_delay`) gives a fast escape from accidental deletes, at the cost of another machine." }
+    rubric:
+      - { vi: "Base backup + lưu trữ WAL = PITR", en: "Base backup + WAL archive = PITR" }
+      - { vi: "Phân biệt standby (phần cứng) và PITR (lỗi người)", en: "Separates standby (hardware) from PITR (human error)" }
+      - { vi: "Nối thông số với RPO/RTO và diễn tập", en: "Ties settings to RPO/RTO and drills" }
+    doc: https://www.postgresql.org/docs/18/continuous-archiving.html
+  - id: e-iv-pg-staff-06
+    engine: postgres
+    band: staff
+    kind: concept
+    set: pg-staff-1
+    q: { vi: "Một phiên `idle in transaction` mở từ 6 giờ trước. Liệt kê các hậu quả trên toàn cụm.", en: "A session has been `idle in transaction` for 6 hours. List the cluster-wide consequences." }
+    answer: { vi: "Snapshot của nó giữ \"xmin horizon\": VACUUM ở mọi bảng không dọn được tuple chết mới hơn nó, nên bảng và index (chỉ mục) phình, index-only scan mất hiệu quả (visibility map không được đặt), freeze bị chặn (nguy cơ wraparound về lâu dài). Nếu nó giữ lock, DDL bị treo và kéo theo hàng đợi lock. Với `hot_standby_feedback`, truy vấn dài trên standby gây hiệu ứng tương tự trên primary. Phòng: `idle_in_transaction_session_timeout`, theo dõi `pg_stat_activity.xact_start`.", en: "Its snapshot pins the \"xmin horizon\": VACUUM on every table cannot remove dead tuples newer than it, so tables and indexes bloat, index-only scans degrade (visibility map not set), and freezing is blocked (wraparound risk in the long run). If it holds locks, DDL hangs and builds a lock queue. With `hot_standby_feedback`, long queries on a standby have the same effect on the primary. Prevent: `idle_in_transaction_session_timeout`, monitor `pg_stat_activity.xact_start`." }
+    rubric:
+      - { vi: "Giải thích xmin horizon chặn vacuum toàn cụm", en: "Explains the xmin horizon blocking vacuum cluster-wide" }
+      - { vi: "Ít nhất ba hậu quả", en: "At least three consequences" }
+      - { vi: "Nêu timeout và cách giám sát", en: "Names the timeout and how to monitor" }
+    doc: https://www.postgresql.org/docs/18/routine-vacuuming.html
+  - id: e-iv-pg-staff-07
+    engine: postgres
+    band: staff
+    kind: concept
+    set: pg-staff-2
+    q: { vi: "Chọn loại index (chỉ mục) cho từng nhu cầu: khoảng thời gian trên bảng log chỉ chèn thêm; tìm `jsonb` chứa cặp khóa-giá trị; tìm điểm gần nhất; tìm chuỗi con bất kỳ; tra bằng đúng một giá trị băm dài.", en: "Pick an index type for each need: a time range on an append-only log; `jsonb` containing a key-value pair; nearest point; arbitrary substring search; exact lookup of a long hash value." }
+    answer: { vi: "Log chỉ chèn: BRIN (tóm tắt min/max mỗi khối page, cực nhỏ, cần dữ liệu tương quan với vị trí vật lý). `jsonb` chứa: GIN (`jsonb_path_ops` nếu chỉ cần `@>`). Gần nhất: GiST với toán tử `<->` (KNN). Chuỗi con: GIN hoặc GiST với `pg_trgm`. Tra bằng giá trị dài: Hash (chỉ hỗ trợ `=`, nhỏ hơn B-tree với khóa dài) hoặc B-tree trên giá trị đó; B-tree vẫn là mặc định an toàn vì hỗ trợ sắp xếp và duy nhất.", en: "Append-only log: BRIN (min/max per block range, tiny, needs data correlated with physical order). `jsonb` containment: GIN (`jsonb_path_ops` if only `@>` is needed). Nearest: GiST with the `<->` operator (KNN). Substring: GIN or GiST with `pg_trgm`. Lookup of a long value: Hash (only `=`, smaller than a B-tree for long keys) or a B-tree on it; B-tree stays the safe default since it supports ordering and uniqueness." }
+    rubric:
+      - { vi: "Đúng ít nhất 4/5 lựa chọn", en: "At least 4 of 5 choices right" }
+      - { vi: "Nêu điều kiện của BRIN (tương quan)", en: "States BRIN's correlation requirement" }
+      - { vi: "Biết pg_trgm cho chuỗi con", en: "Knows pg_trgm for substrings" }
+    doc: https://www.postgresql.org/docs/18/indexes-types.html
+  - id: e-iv-pg-staff-08
+    engine: postgres
+    band: staff
+    kind: diagnose
+    set: pg-staff-1
+    q: { vi: "Cùng một prepared statement đếm đơn theo trạng thái, chạy với `'PAID'`, nhưng hai chế độ `plan_cache_mode` cho hai kế hoạch khác nhau. Giải thích từng kế hoạch, và nói kế hoạch nào nguy hiểm khi bảng lớn lên.", en: "The same prepared statement counting orders by status, run with `'PAID'`, gives two plans under two `plan_cache_mode` settings. Explain each, and say which is dangerous as the table grows." }
+    exhibits:
+      - label: { vi: "Chế độ force_generic_plan", en: "Mode force_generic_plan" }
+        source: pglite-0.5.16
+        fixture: pg-shop
+        setup: "CREATE INDEX ON orders (status); ANALYZE orders; SET plan_cache_mode = force_generic_plan; PREPARE by_status(text) AS SELECT count(*) FROM orders WHERE status = $1;"
+        sql: "EXPLAIN (ANALYZE, COSTS OFF, BUFFERS OFF, TIMING OFF, SUMMARY OFF) EXECUTE by_status('PAID')"
+        shown: |-
+          Aggregate (actual rows=1.00 loops=1)
+            ->  Bitmap Heap Scan on orders (actual rows=18000.00 loops=1)
+                  Recheck Cond: (status = $1)
+                  Heap Blocks: exact=228
+                  ->  Bitmap Index Scan on orders_status_idx (actual rows=18000.00 loops=1)
+                        Index Cond: (status = $1)
+                        Index Searches: 1
+      - label: { vi: "Chế độ force_custom_plan", en: "Mode force_custom_plan" }
+        source: pglite-0.5.16
+        fixture: pg-shop
+        setup: "CREATE INDEX ON orders (status); ANALYZE orders; SET plan_cache_mode = force_custom_plan; PREPARE by_status(text) AS SELECT count(*) FROM orders WHERE status = $1;"
+        sql: "EXPLAIN (ANALYZE, COSTS OFF, BUFFERS OFF, TIMING OFF, SUMMARY OFF) EXECUTE by_status('PAID')"
+        shown: |-
+          Aggregate (actual rows=1.00 loops=1)
+            ->  Seq Scan on orders (actual rows=18000.00 loops=1)
+                  Filter: (status = 'PAID'::text)
+                  Rows Removed by Filter: 2000
+    answer: { vi: "Generic plan thấy `$1`, không biết giá trị, nên ước lượng theo trung bình (khoảng 1/3 bảng với 3 giá trị) và chọn bitmap qua index (chỉ mục), rồi thực tế phải đọc 18.000 dòng trên mọi 228 page: thêm việc đọc index mà không bỏ được page nào. Custom plan thấy `'PAID'` = 90% nên chọn Seq Scan, đúng. Generic plan nguy hiểm vì một kế hoạch phục vụ mọi giá trị: với dữ liệu lệch nặng nó tốt cho giá trị hiếm và tệ cho giá trị phổ biến (hoặc ngược lại), và khi bảng lớn, sai lệch thành chênh hàng chục lần. Mặc định `auto` chuyển sang generic sau 5 lần chạy nếu ước lượng chi phí trung bình không tệ hơn.", en: "The generic plan sees `$1`, not the value, so it estimates an average (about 1/3 of the table with 3 values) and picks a bitmap through the index; in reality it reads 18,000 rows across all 228 pages: extra index work that skips no page. The custom plan sees `'PAID'` = 90% and scans sequentially, correctly. The generic plan is the dangerous one because one plan serves every value: with heavy skew it suits rare values and hurts common ones (or the reverse), and as the table grows the error becomes tens of times. The default `auto` switches to generic after 5 runs if its estimated cost is not worse than the custom average." }
+    rubric:
+      - { vi: "Đọc $1 trong generic vs hằng trong custom", en: "Reads $1 in generic vs the constant in custom" }
+      - { vi: "Giải thích ước lượng trung bình vs giá trị thật", en: "Explains average estimate vs the real value" }
+      - { vi: "Biết luật 5 lần của auto", en: "Knows auto's 5-run rule" }
+    doc: https://www.postgresql.org/docs/18/runtime-config-query.html
+  - id: e-iv-pg-staff-09
+    engine: postgres
+    band: staff
+    kind: diagnose
+    set: pg-staff-2
+    q: { vi: "Index (chỉ mục) BRIN trên `created_at` (4 page mỗi khoảng) trả lời truy vấn một ngày. Đọc `lossy` và `Rows Removed by Index Recheck`: index này tốt hay xấu, và khi nào nó hỏng?", en: "A BRIN index on `created_at` (4 pages per range) answers a one-day query. Read `lossy` and `Rows Removed by Index Recheck`: is this index good or bad, and when does it break?" }
+    exhibits:
+      - label: { vi: "Kế hoạch với BRIN (seq scan bị tắt để xem index)", en: "Plan with BRIN (seq scan disabled to show the index)" }
+        source: pglite-0.5.16
+        fixture: pg-shop
+        setup: "CREATE INDEX orders_created_brin ON orders USING brin (created_at) WITH (pages_per_range = 4); ANALYZE orders; SET enable_seqscan = off;"
+        sql: "EXPLAIN (ANALYZE, COSTS OFF, BUFFERS OFF, TIMING OFF, SUMMARY OFF) SELECT count(*) FROM orders WHERE created_at = '2026-05-01'"
+        shown: |-
+          Aggregate (actual rows=1.00 loops=1)
+            ->  Bitmap Heap Scan on orders (actual rows=70.00 loops=1)
+                  Recheck Cond: (created_at = '2026-05-01'::date)
+                  Rows Removed by Index Recheck: 634
+                  Heap Blocks: lossy=8
+                  ->  Bitmap Index Scan on orders_created_brin (actual rows=80.00 loops=1)
+                        Index Cond: (created_at = '2026-05-01'::date)
+                        Index Searches: 1
+    answer: { vi: "BRIN chỉ biết min/max của mỗi khoảng 4 page, nên trả về cả khối page (`lossy=8`: 2 khoảng) và Postgres kiểm lại từng dòng: giữ 70, bỏ 634. Đọc 8 page thay vì 228 là tốt, và index chỉ vài page. Nó tốt vì `created_at` tăng cùng thứ tự chèn (tương quan vật lý gần 1). Nó hỏng khi tương quan mất: cập nhật/xóa rồi chèn lấp chỗ trống, nạp dữ liệu lộn xộn, `CLUSTER` theo cột khác; khi đó mỗi khoảng phủ gần như mọi ngày và BRIN đọc cả bảng. Kiểm bằng `pg_stats.correlation`. Lưu ý `enable_seqscan = off` chỉ để minh họa.", en: "BRIN only knows min/max per 4-page range, so it returns whole page blocks (`lossy=8`: 2 ranges) and Postgres rechecks every row: keeps 70, drops 634. Reading 8 pages instead of 228 is good, and the index is a few pages. It works because `created_at` grows with insert order (physical correlation near 1). It breaks when correlation is lost: updates/deletes then inserts filling the holes, out-of-order loads, `CLUSTER` on another column; then every range covers almost every day and BRIN reads the whole table. Check `pg_stats.correlation`. Note `enable_seqscan = off` is only for illustration." }
+    rubric:
+      - { vi: "Hiểu lossy và recheck", en: "Understands lossy and recheck" }
+      - { vi: "Tính được 8 page / 228", en: "Gets 8 pages out of 228" }
+      - { vi: "Nêu điều kiện tương quan và cách kiểm", en: "States the correlation condition and how to check" }
+    doc: https://www.postgresql.org/docs/18/brin.html
+  - id: e-iv-pg-staff-10
+    engine: postgres
+    band: staff
+    kind: diagnose
+    set: pg-staff-3
+    q: { vi: "Truy vấn \"đơn có quà tặng\" trên cột `jsonb` dùng index (chỉ mục) GIN `jsonb_path_ops`. Đọc kế hoạch: index có thật sự giúp không? Bạn sẽ hỏi thêm gì trước khi giữ nó?", en: "A \"gift orders\" query on a `jsonb` column uses a GIN `jsonb_path_ops` index. Read the plan: does the index really help? What would you ask before keeping it?" }
+    exhibits:
+      - label: { vi: "Kế hoạch với GIN", en: "Plan with GIN" }
+        source: pglite-0.5.16
+        fixture: pg-shop
+        setup: "CREATE INDEX ON orders USING gin (attrs jsonb_path_ops); ANALYZE orders;"
+        sql: "EXPLAIN (ANALYZE, COSTS OFF, BUFFERS OFF, TIMING OFF, SUMMARY OFF) SELECT count(*) FROM orders WHERE attrs @> '{\"gift\": true}'"
+        shown: |-
+          Aggregate (actual rows=1.00 loops=1)
+            ->  Bitmap Heap Scan on orders (actual rows=400.00 loops=1)
+                  Recheck Cond: (attrs @> '{"gift": true}'::jsonb)
+                  Heap Blocks: exact=228
+                  ->  Bitmap Index Scan on orders_attrs_idx (actual rows=400.00 loops=1)
+                        Index Cond: (attrs @> '{"gift": true}'::jsonb)
+                        Index Searches: 1
+    answer: { vi: "Index tìm đúng 400 dòng (2%), nhưng `Heap Blocks: exact=228` = mọi page của bảng: 400 dòng rải đều (mỗi đơn thứ 50), nên vẫn phải đọc cả bảng, cộng thêm việc đọc index. Ở đây nó gần như không giúp. Trước khi giữ: dữ liệu thật có gom cụm không, tỉ lệ khớp bao nhiêu, truy vấn có chỉ đếm không (nếu chỉ cần một cờ, cột boolean thật + index một phần `WHERE gift` nhỏ và rẻ hơn), và chi phí ghi của GIN (danh sách chờ `fastupdate`, `gin_pending_list_limit`) trên bảng ghi nhiều.", en: "The index finds exactly 400 rows (2%), but `Heap Blocks: exact=228` is every page of the table: the 400 rows are spread evenly (every 50th order), so the whole table is read anyway, plus the index. Here it barely helps. Before keeping it: is real data clustered, what is the match rate, is the query only counting (if one flag is all you need, a real boolean column + a partial index `WHERE gift` is smaller and cheaper), and what does GIN cost on writes (the `fastupdate` pending list, `gin_pending_list_limit`) on a write-heavy table." }
+    rubric:
+      - { vi: "Nhận ra Heap Blocks = toàn bảng", en: "Spots Heap Blocks = the whole table" }
+      - { vi: "Phân biệt độ chọn lọc dòng và độ chọn lọc page", en: "Separates row selectivity from page selectivity" }
+      - { vi: "Đề xuất cột thật + index một phần hoặc hỏi về chi phí ghi GIN", en: "Proposes a real column + partial index or asks about GIN write cost" }
+    doc: https://www.postgresql.org/docs/18/gin.html
+  - id: e-iv-pg-staff-11
+    engine: postgres
+    band: staff
+    kind: diagnose
+    set: pg-staff-1
+    q: { vi: "Chỉ có index (chỉ mục) `(status, created_at)`, truy vấn chỉ lọc `created_at`. Trên PG18 kế hoạch vẫn dùng index. Dòng nào cho thấy cơ chế, và vì sao bạn vẫn có thể muốn một index khác?", en: "Only an index on `(status, created_at)` exists, and the query filters only `created_at`. On PG18 the plan still uses the index. Which line shows the mechanism, and why might you still want another index?" }
+    exhibits:
+      - label: { vi: "Kế hoạch trên PostgreSQL 18.6", en: "Plan on PostgreSQL 18.6" }
+        source: pglite-0.5.16
+        fixture: pg-shop
+        setup: "CREATE INDEX ON orders (status, created_at); ANALYZE orders;"
+        sql: "EXPLAIN (ANALYZE, COSTS OFF, BUFFERS OFF, TIMING OFF, SUMMARY OFF) SELECT id FROM orders WHERE created_at = '2026-03-01'"
+        shown: |-
+          Bitmap Heap Scan on orders (actual rows=70.00 loops=1)
+            Recheck Cond: (created_at = '2026-03-01'::date)
+            Heap Blocks: exact=2
+            ->  Bitmap Index Scan on orders_status_created_at_idx (actual rows=70.00 loops=1)
+                  Index Cond: (created_at = '2026-03-01'::date)
+                  Index Searches: 5
+    answer: { vi: "`Index Searches: 5`: B-tree skip scan (mới ở PG18) đi xuống index nhiều lần, một lần cho mỗi giá trị của cột đầu `status` (3 giá trị) cộng vài lần dò, thay vì quét cả index. Rẻ vì `status` ít giá trị. Vẫn có thể cần index `(created_at)` riêng khi cột đầu có nhiều giá trị (mỗi giá trị là một lần đi xuống), khi truy vấn là khoảng dài hay cần thứ tự theo `created_at`, hoặc khi phải chạy trên phiên bản cũ hơn 18. Chỉ số này cũng là cách theo dõi skip scan trên production.", en: "`Index Searches: 5`: B-tree skip scan (new in PG18) descends the index several times, once per value of the leading `status` column (3 values) plus a few probes, instead of scanning the whole index. Cheap because `status` has few values. A separate `(created_at)` index may still be needed when the leading column has many values (each is a descent), when the query is a long range or needs `created_at` order, or when you must run on versions before 18. This counter is also how you watch skip scan in production." }
+    rubric:
+      - { vi: "Gọi tên skip scan PG18 từ Index Searches > 1", en: "Names PG18 skip scan from Index Searches > 1" }
+      - { vi: "Nối chi phí với số giá trị cột đầu", en: "Ties cost to leading-column cardinality" }
+      - { vi: "Nêu khi nào vẫn cần index riêng", en: "Says when a dedicated index is still needed" }
+    doc: https://www.postgresql.org/docs/18/indexes-multicolumn.html
+  - id: e-iv-pg-staff-12
+    engine: postgres
+    band: staff
+    kind: design
+    set: pg-staff-1
+    q: { vi: "Ghi vào một Postgres primary đã chạm trần (CPU, WAL) dù đã tối ưu truy vấn. Bạn cân nhắc những hướng mở rộng nào, theo thứ tự nào?", en: "Writes to a single Postgres primary have hit the ceiling (CPU, WAL) even after query tuning. Which scaling paths do you consider, in what order?" }
+    answer: { vi: "(1) Giảm việc ghi: bỏ index (chỉ mục) thừa, gom ghi theo lô, HOT bằng fillfactor, chuyển dữ liệu nóng tạm (phiên, bộ đếm) sang chỗ khác, `synchronous_commit = off` cho dữ liệu chấp nhận mất vài trăm ms. (2) Nâng máy (dọc): rẻ nhất về độ phức tạp. (3) Tách theo chức năng: các miền ít JOIN với nhau sang cụm riêng. (4) Shard theo khóa (ví dụ `tenant_id`): ở tầng ứng dụng hoặc bằng extension phân tán; giá phải trả là truy vấn và transaction xuyên shard, đổi khóa shard, vận hành nhiều cụm. Chỉ đi bước sau khi bước trước không đủ, có số đo.", en: "(1) Reduce writes: drop unused indexes, batch writes, HOT via fillfactor, move hot ephemeral data (sessions, counters) elsewhere, `synchronous_commit = off` where losing a few hundred ms is acceptable. (2) Scale up: the cheapest in complexity. (3) Split by function: domains that rarely join move to separate clusters. (4) Shard by key (for example `tenant_id`): in the app or with a distributed extension; the price is cross-shard queries and transactions, resharding, running many clusters. Move to the next step only when the previous one is measured to be insufficient." }
+    tradeoffs:
+      - { vi: "Mỗi bước sau tăng độ phức tạp vận hành nhiều hơn bước trước.", en: "Each later step adds more operational complexity than the one before." }
+      - { vi: "Shard sai khóa thì mọi truy vấn quan trọng thành scatter-gather.", en: "Sharding on the wrong key turns every important query into scatter-gather." }
+    rubric:
+      - { vi: "Bắt đầu bằng giảm việc ghi, có ví dụ", en: "Starts by reducing writes, with examples" }
+      - { vi: "Thứ tự tăng dần độ phức tạp", en: "Ordered by rising complexity" }
+      - { vi: "Nêu cái giá của shard", en: "States the cost of sharding" }
+    doc: https://www.postgresql.org/docs/18/wal-configuration.html
+  - id: e-iv-pg-staff-13
+    engine: postgres
+    band: staff
+    kind: design
+    set: pg-staff-2
+    q: { vi: "Dịch vụ đơn hàng phải ghi đơn vào Postgres và phát sự kiện \"đơn đã tạo\" cho hệ khác, không bao giờ mất hoặc phát sự kiện cho đơn không tồn tại. Thiết kế.", en: "The order service must write an order to Postgres and publish an \"order created\" event to other systems, never losing an event or publishing one for an order that does not exist. Design it." }
+    answer: { vi: "Transactional outbox: trong cùng transaction với INSERT đơn, chèn một dòng vào bảng `outbox(id, aggregate_id, type, payload jsonb, created_at)`. Một relay đọc outbox (polling với `FOR UPDATE SKIP LOCKED`, hoặc logical decoding/CDC) và đẩy lên broker, rồi đánh dấu/xóa dòng. Kết quả: giao hàng ít nhất một lần, nên người nhận phải idempotent theo `id` sự kiện. Thứ tự theo `aggregate_id` giữ được nếu relay gửi tuần tự theo khóa đó. Tránh \"dual write\" (ghi DB rồi gọi broker) vì có thể thành công một nửa.", en: "Transactional outbox: in the same transaction as the order INSERT, insert a row into `outbox(id, aggregate_id, type, payload jsonb, created_at)`. A relay reads the outbox (polling with `FOR UPDATE SKIP LOCKED`, or logical decoding/CDC), pushes to the broker, then marks/deletes the row. Result: at-least-once delivery, so consumers must be idempotent on the event `id`. Per-`aggregate_id` order holds if the relay sends sequentially per key. Avoid \"dual write\" (write the DB then call the broker) since it can half-succeed." }
+    tradeoffs:
+      - { vi: "Polling đơn giản nhưng thêm độ trễ và tải; CDC nhanh hơn nhưng cần `wal_level = logical` và quản lý slot.", en: "Polling is simple but adds latency and load; CDC is faster but needs `wal_level = logical` and slot management." }
+      - { vi: "Bảng outbox đổi liên tục: cần dọn và vacuum.", en: "The outbox churns: it needs cleanup and vacuum." }
+    rubric:
+      - { vi: "Outbox trong cùng transaction", en: "Outbox in the same transaction" }
+      - { vi: "Ít nhất một lần + người nhận idempotent", en: "At-least-once + idempotent consumers" }
+      - { vi: "Giải thích vì sao dual write hỏng", en: "Explains why dual write fails" }
+    doc: https://www.postgresql.org/docs/18/logicaldecoding-explanation.html
+  - id: e-iv-pg-staff-14
+    engine: postgres
+    band: staff
+    kind: concept
+    set: pg-staff-3
+    q: { vi: "Đặt `work_mem = 256MB` toàn cụm có an toàn với 400 kết nối không? Tính trường hợp xấu và đề xuất.", en: "Is `work_mem = 256MB` cluster-wide safe with 400 connections? Work out the bad case and propose something." }
+    answer: { vi: "`work_mem` là giới hạn cho **mỗi** nút sort/hash, không phải mỗi kết nối; hash còn được nhân `hash_mem_multiplier` (mặc định 2). Một truy vấn có 3 nút hash = tới 3 × 512MB; 400 kết nối như vậy là hàng trăm GB, máy bị OOM killer giết tiến trình và cả cụm khởi động lại. Đề xuất: mặc định nhỏ (vài MB), tăng theo role hoặc phiên cho báo cáo (`ALTER ROLE reporting SET work_mem = '256MB'`), giới hạn kết nối bằng pooler, theo dõi `temp_files`/`log_temp_files`.", en: "`work_mem` limits **each** sort/hash node, not each connection; hashes are also multiplied by `hash_mem_multiplier` (2 by default). One query with 3 hash nodes = up to 3 × 512MB; 400 such connections is hundreds of GB, the OOM killer kills a backend and the whole cluster restarts. Proposal: a small default (a few MB), raised per role or session for reporting (`ALTER ROLE reporting SET work_mem = '256MB'`), cap connections with a pooler, watch `temp_files`/`log_temp_files`." }
+    rubric:
+      - { vi: "Biết work_mem là mỗi nút, có hash_mem_multiplier", en: "Knows work_mem is per node, with hash_mem_multiplier" }
+      - { vi: "Tính được bậc độ lớn trường hợp xấu", en: "Works out the order of magnitude of the bad case" }
+      - { vi: "Đề xuất theo role/phiên + giám sát", en: "Proposes per role/session + monitoring" }
+    doc: https://www.postgresql.org/docs/18/runtime-config-resource.html
+  - id: e-iv-pg-staff-15
+    engine: postgres
+    band: staff
+    kind: design
+    set: pg-staff-3
+    q: { vi: "Sau một lần deploy, p99 của API tăng gấp 5 nhưng không có lỗi. Mô tả cách bạn điều tra phía Postgres và cách ngăn tái diễn.", en: "After a deploy, API p99 rose 5× with no errors. Describe how you investigate the Postgres side and prevent a repeat." }
+    answer: { vi: "(1) `pg_stat_statements`: so `total_exec_time`, `mean`, `calls`, `shared_blks_read` trước/sau deploy để tìm truy vấn mới hoặc đổi. (2) Lấy kế hoạch thật: `auto_explain` với `log_min_duration` và `log_analyze` cho truy vấn chậm, hoặc chạy `EXPLAIN (ANALYZE, BUFFERS)` với tham số thật; so ước lượng vs thực tế. (3) Loại các nguyên nhân khác: chờ lock (`pg_stat_activity.wait_event`, `pg_locks`), autovacuum/checkpoint trùng giờ, số kết nối. (4) Sửa (index, viết lại, thống kê) và đo lại. Ngăn tái diễn: chạy EXPLAIN trên dữ liệu giống production trong CI cho truy vấn quan trọng, dashboard pg_stat_statements theo deploy, rollback nhanh.", en: "(1) `pg_stat_statements`: compare `total_exec_time`, `mean`, `calls`, `shared_blks_read` before/after the deploy to find new or changed queries. (2) Get real plans: `auto_explain` with `log_min_duration` and `log_analyze` for slow queries, or `EXPLAIN (ANALYZE, BUFFERS)` with real parameters; compare estimates vs actuals. (3) Rule out other causes: lock waits (`pg_stat_activity.wait_event`, `pg_locks`), autovacuum/checkpoints at the same time, connection counts. (4) Fix (index, rewrite, statistics) and measure again. Prevent: EXPLAIN key queries on production-like data in CI, a pg_stat_statements dashboard annotated with deploys, fast rollback." }
+    tradeoffs:
+      - { vi: "auto_explain với log_analyze tốn chi phí đo trên mọi truy vấn; dùng ngưỡng và lấy mẫu.", en: "auto_explain with log_analyze adds timing overhead to every query; use a threshold and sampling." }
+      - { vi: "Kiểm kế hoạch trong CI cần dữ liệu giống production, khó với dữ liệu nhạy cảm.", en: "Plan checks in CI need production-like data, which is hard with sensitive data." }
+    rubric:
+      - { vi: "Dùng pg_stat_statements so trước/sau", en: "Uses pg_stat_statements before/after" }
+      - { vi: "Lấy kế hoạch thật với tham số thật", en: "Gets real plans with real parameters" }
+      - { vi: "Loại trừ lock và bảo trì nền", en: "Rules out locks and background maintenance" }
+      - { vi: "Có biện pháp phòng ngừa cụ thể", en: "Has concrete prevention" }
+    doc: https://www.postgresql.org/docs/18/pgstatstatements.html
+
+takeHomes:
+  - id: e-iv-pg-th-1
+    engine: postgres
+    band: mid
+    title: { vi: "Ba truy vấn chậm của trang quản trị", en: "Three slow admin-page queries" }
+    brief: { vi: "Trang quản trị cửa hàng chạy ba truy vấn dưới đây trên dữ liệu `pg-shop` (bảng `customers`, `orders`, chưa có index phụ). Người quản lý sản phẩm hỏi: \"Làm sao cho trang này nhanh mà không làm chậm việc đặt hàng?\" Hãy đo, đề xuất và chứng minh.", en: "The shop admin page runs the three queries below on the `pg-shop` data (tables `customers`, `orders`, no secondary indexes yet). The product manager asks: \"How do we make this page fast without slowing down ordering?\" Measure, propose and prove it." }
+    fixture: pg-shop
+    queries:
+      - "SELECT id, total FROM orders WHERE customer_id = 42 ORDER BY created_at DESC LIMIT 20"
+      - "SELECT count(*) FROM orders WHERE status = 'REFUNDED' AND created_at >= '2026-06-01'"
+      - "SELECT c.city, count(*) FROM orders o JOIN customers c ON c.id = o.customer_id WHERE o.created_at >= '2026-09-01' AND o.created_at < '2026-10-01' GROUP BY c.city"
+    deliverables:
+      - { vi: "Kế hoạch `EXPLAIN (ANALYZE, BUFFERS)` trước và sau cho cả ba truy vấn.", en: "Before and after `EXPLAIN (ANALYZE, BUFFERS)` plans for all three queries." }
+      - { vi: "Danh sách index (chỉ mục) đề xuất (tối đa 3), mỗi cái một câu lý do.", en: "A list of proposed indexes (at most 3), one sentence of reasoning each." }
+      - { vi: "Một đoạn ≤ 120 chữ cho người quản lý sản phẩm về cái giá phía ghi.", en: "A paragraph ≤ 120 words for the product manager about the write-side cost." }
+    model: { vi: "Q1: `(customer_id, created_at DESC)` cho Index Scan dừng sau 20 dòng, không Sort. Q2: index một phần `(created_at) WHERE status = 'REFUNDED'`: rất nhỏ (1% dòng), phục vụ đúng truy vấn này. Q3: `(created_at)` (hoặc BRIN nếu bảng chỉ chèn theo thời gian) cho Bitmap/Index Scan một tháng rồi Hash Join với `customers`; có thể dùng `(created_at) INCLUDE (customer_id)` để thành index-only scan sau VACUUM. Phía ghi: mỗi index thêm việc cho mỗi INSERT; index một phần chỉ tốn khi đơn hoàn tiền. Tổng 3 index là chấp nhận được; đo lại thời gian chèn trước/sau.", en: "Q1: `(customer_id, created_at DESC)` gives an Index Scan that stops after 20 rows, no Sort. Q2: a partial index `(created_at) WHERE status = 'REFUNDED'`: tiny (1% of rows), serving exactly this query. Q3: `(created_at)` (or BRIN if the table is append-only by time) gives a one-month Bitmap/Index Scan then a Hash Join with `customers`; `(created_at) INCLUDE (customer_id)` can make it index-only after VACUUM. Write side: each index adds work to every INSERT; the partial one only costs on refunds. Three indexes are acceptable; re-measure insert time before/after." }
+    rubric:
+      - { vi: "Có số đo trước/sau thật, không chỉ lý thuyết", en: "Real before/after measurements, not just theory" }
+      - { vi: "Index khớp từng truy vấn (thứ tự cột, một phần, INCLUDE)", en: "Indexes fit each query (column order, partial, INCLUDE)" }
+      - { vi: "Nói rõ cái giá phía ghi và cách đo", en: "States the write-side cost and how to measure it" }
+      - { vi: "Viết cho người không biết SQL, ≤ 120 chữ", en: "Written for someone who does not know SQL, ≤ 120 words" }
+    doc: https://www.postgresql.org/docs/18/using-explain.html
+  - id: e-iv-pg-th-2
+    engine: postgres
+    band: senior
+    title: { vi: "Sổ cái ví điện tử chịu tải song song", en: "A wallet ledger under concurrency" }
+    brief: { vi: "Thiết kế schema và các transaction cho ví điện tử: nạp, rút, chuyển giữa hai ví. Yêu cầu: số dư không bao giờ âm, không mất hay nhân đôi tiền khi client gửi lại request, và đối soát được mọi biến động. Viết SQL tạo bảng, hàm hoặc chuỗi lệnh cho \"chuyển tiền\", và một kịch bản kiểm tra với hai phiên chạy xen kẽ. Bản đang chạy (`pg-wallet`) chưa có ràng buộc nào: ba truy vấn kèm theo là đối soát, trừ tiền và lock hai ví trên dữ liệu đó, và truy vấn đối soát đã tìm ra một ví bị lệch. Hai phiên xen kẽ thì chạy trong hai cửa sổ `psql` thật; lab chỉ có một phiên.", en: "Design the schema and transactions for an e-wallet: top-up, withdrawal, transfer between two wallets. Requirements: balances never go negative, no money lost or duplicated when a client resends a request, and every movement can be reconciled. Write the CREATE TABLE SQL, a function or statement sequence for \"transfer\", and a test script with two interleaved sessions. The running version (`pg-wallet`) has no constraints yet: the three attached queries are its reconciliation, debit and two-wallet lock on that data, and the reconciliation query already finds one wallet that is off. Run the two interleaved sessions in two real `psql` windows; the lab has only one session." }
+    fixture: pg-wallet
+    queries:
+      - "SELECT w.id, w.balance, coalesce(sum(l.amount), 0) AS ledger_sum FROM wallets w LEFT JOIN ledger l ON l.wallet_id = w.id GROUP BY w.id, w.balance HAVING w.balance <> coalesce(sum(l.amount), 0) ORDER BY w.id"
+      - "UPDATE wallets SET balance = balance - 300 WHERE id = 1 RETURNING id, balance"
+      - "SELECT id, balance FROM wallets WHERE id IN (1, 2) ORDER BY id FOR UPDATE"
+    deliverables:
+      - { vi: "DDL với ràng buộc (`CHECK`, khóa ngoại, duy nhất cho khóa idempotency).", en: "DDL with constraints (`CHECK`, foreign keys, uniqueness for the idempotency key)." }
+      - { vi: "SQL chuyển tiền và giải thích mức isolation/lock đã chọn.", en: "Transfer SQL and an explanation of the chosen isolation/locking." }
+      - { vi: "Kịch bản hai phiên chứng minh không có số dư âm và không deadlock.", en: "A two-session script proving no negative balance and no deadlock." }
+    model: { vi: "`wallets(id, balance numeric CHECK (balance >= 0), version)`, `ledger(id, wallet_id, amount, transfer_id, created_at)`, `transfers(id, idem_key UNIQUE, from_id, to_id, amount CHECK (amount > 0), status)`. Chuyển tiền trong một transaction ở `READ COMMITTED`: `INSERT INTO transfers … ON CONFLICT (idem_key) DO NOTHING RETURNING id` (không có dòng = đã xử lý, trả kết quả cũ); `SELECT … FROM wallets WHERE id IN (a, b) ORDER BY id FOR UPDATE` (thứ tự lock cố định chống deadlock); trừ và cộng (`CHECK` chặn số âm, ứng dụng kiểm trước để báo lỗi rõ); chèn hai dòng ledger có tổng bằng 0. Đối soát: `SUM(amount)` theo ví trong ledger = `balance`.", en: "`wallets(id, balance numeric CHECK (balance >= 0), version)`, `ledger(id, wallet_id, amount, transfer_id, created_at)`, `transfers(id, idem_key UNIQUE, from_id, to_id, amount CHECK (amount > 0), status)`. Transfer in one `READ COMMITTED` transaction: `INSERT INTO transfers … ON CONFLICT (idem_key) DO NOTHING RETURNING id` (no row = already processed, return the old result); `SELECT … FROM wallets WHERE id IN (a, b) ORDER BY id FOR UPDATE` (fixed lock order prevents deadlocks); debit and credit (the `CHECK` blocks negatives, the app checks first for a clear error); insert two ledger rows summing to zero. Reconcile: ledger `SUM(amount)` per wallet = `balance`." }
+    rubric:
+      - { vi: "Ràng buộc trong DB chặn số âm", en: "DB constraints block negatives" }
+      - { vi: "Khóa idempotency duy nhất cho request gửi lại", en: "A unique idempotency key for resent requests" }
+      - { vi: "Thứ tự lock cố định / retry, chứng minh bằng hai phiên", en: "Fixed lock order / retry, proven with two sessions" }
+      - { vi: "Sổ cái kép đối soát được", en: "A double-entry ledger that reconciles" }
+    doc: https://www.postgresql.org/docs/18/explicit-locking.html
+  - id: e-iv-pg-th-3
+    engine: postgres
+    band: junior
+    title: { vi: "Sửa ba báo cáo của chủ cửa hàng", en: "Fix the shop owner's three reports" }
+    brief: { vi: "Chủ cửa hàng tự viết ba truy vấn dưới đây trên dữ liệu `pg-shop` (bảng `customers`, `orders`) và thấy số \"có gì đó sai\": doanh thu theo tháng cao hơn tiền thực thu, số khách theo thành phố cộng lại lớn hơn tổng số khách, và top 5 đơn lớn nhất có nhiều đơn bằng tiền nhau mà không rõ chọn đơn nào. Tìm lỗi của từng truy vấn, sửa và giải thích.", en: "The shop owner wrote the three queries below on the `pg-shop` data (tables `customers`, `orders`) and feels the numbers are \"somehow wrong\": monthly revenue is higher than the money actually collected, customers per city add up to more than all customers, and the top 5 largest orders include ties with no rule for which ones are shown. Find each query's bug, fix it and explain." }
+    fixture: pg-shop
+    queries:
+      - "SELECT date_trunc('month', created_at) AS month, sum(total) AS revenue FROM orders GROUP BY 1 ORDER BY 1"
+      - "SELECT c.city, count(*) AS customers FROM customers c JOIN orders o ON o.customer_id = c.id GROUP BY c.city ORDER BY c.city"
+      - "SELECT id, total FROM orders WHERE status = 'PAID' ORDER BY total DESC LIMIT 5"
+    deliverables:
+      - { vi: "Với mỗi truy vấn: lỗi là gì; chạy câu gốc và câu đã sửa rồi so hai kết quả.", en: "For each query: what the bug is; run the original and the fixed query and compare the two results." }
+      - { vi: "SQL đã sửa cho cả ba truy vấn.", en: "Fixed SQL for all three queries." }
+      - { vi: "Ba câu ngắn cho chủ cửa hàng, không dùng từ SQL.", en: "Three short sentences for the owner, with no SQL words." }
+    model: { vi: "(1) Doanh thu cộng cả đơn `CANCELLED` và `REFUNDED`: thêm `WHERE status = 'PAID'` (hoặc trừ đơn hoàn tiền, nếu đó là định nghĩa doanh thu đã thống nhất). (2) JOIN với `orders` lặp mỗi khách theo số đơn của họ (fan-out), nên `count(*)` đếm đơn chứ không đếm khách: dùng `count(DISTINCT c.id)`, hoặc bỏ JOIN và đếm thẳng trên `customers`; tổng các thành phố phải bằng 2.000. (3) Nhiều đơn có cùng `total`, nên `LIMIT 5` cắt ngang một nhóm bằng tiền nhau mà không có luật: thêm tiebreaker `ORDER BY total DESC, id`. Kiểm lại: doanh thu đã sửa nhỏ hơn bản gốc đúng bằng tổng tiền của đơn hủy và đơn hoàn tiền.", en: "(1) Revenue includes `CANCELLED` and `REFUNDED` orders: add `WHERE status = 'PAID'` (or subtract refunds, if that is the agreed definition of revenue). (2) The JOIN with `orders` repeats each customer once per order (fan-out), so `count(*)` counts orders, not customers: use `count(DISTINCT c.id)`, or drop the JOIN and count `customers` directly; the cities must add up to 2,000. (3) Many orders share the same `total`, so `LIMIT 5` cuts through a group of ties with no rule: add a tiebreaker `ORDER BY total DESC, id`. Check: the fixed revenue is lower than the original by exactly the total of the cancelled and refunded orders." }
+    rubric:
+      - { vi: "Tìm ra đơn hủy và hoàn tiền bị cộng vào doanh thu", en: "Spots cancelled and refunded orders counted as revenue" }
+      - { vi: "Giải thích fan-out và dùng count(DISTINCT)", en: "Explains the fan-out and uses count(DISTINCT)" }
+      - { vi: "Thêm tiebreaker cho top 5", en: "Adds a tiebreaker to the top 5" }
+      - { vi: "Kiểm bằng số: chạy cả câu gốc và câu đã sửa", en: "Checks with numbers: runs both the original and the fixed query" }
+    doc: https://www.postgresql.org/docs/18/tutorial-agg.html
+  - id: e-iv-pg-th-4
+    engine: postgres
+    band: staff
+    title: { vi: "Chia bảng `orders` khi lên hàng tỷ dòng", en: "Partitioning `orders` at billions of rows" }
+    brief: { vi: "Bảng `orders` (mô phỏng bằng `pg-shop`) sẽ lên khoảng 2 tỷ dòng sau ba năm. Báo cáo luôn lọc theo tháng của `created_at`; chính sách giữ dữ liệu là 24 tháng, và job `DELETE` dữ liệu cũ hằng đêm giờ chạy nhiều giờ, để lại bloat và làm replica bị trễ. Viết đề xuất kỹ thuật cho cả nhóm: thiết kế bảng phân vùng (partitioned table), cách chuyển bảng đang chạy sang bảng phân vùng mà không dừng dịch vụ, và cách vận hành sau đó. Ba truy vấn kèm theo đo cỡ dữ liệu theo tháng, chạy báo cáo một tháng và liệt kê ràng buộc hiện có.", en: "The `orders` table (simulated by `pg-shop`) will reach about 2 billion rows in three years. Reports always filter by month of `created_at`; the retention policy is 24 months, and the nightly `DELETE` of old data now runs for hours, leaves bloat and makes replicas lag. Write a technical proposal for the team: the partitioned table design, how to move the live table to a partitioned one without downtime, and how to run it afterwards. The three attached queries measure data size per month, run a one-month report and list the existing constraints." }
+    fixture: pg-shop
+    queries:
+      - "SELECT date_trunc('month', created_at) AS month, count(*) AS orders, sum(pg_column_size(o.*)) AS row_bytes FROM orders o GROUP BY 1 ORDER BY 1"
+      - "SELECT count(*), sum(total) FROM orders WHERE created_at >= '2026-09-01' AND created_at < '2026-10-01'"
+      - "SELECT conname, contype, pg_get_constraintdef(oid) AS def FROM pg_constraint WHERE conrelid = 'orders'::regclass ORDER BY conname"
+    deliverables:
+      - { vi: "DDL bảng phân vùng: khóa phân vùng, cỡ mỗi phân vùng con (partition) dựa trên số đo của truy vấn 1, khóa chính và index.", en: "DDL for the partitioned table: partition key, the size of each partition based on query 1's numbers, primary key and indexes." }
+      - { vi: "Kế hoạch chuyển đổi từng bước, mỗi bước ghi lock cần giữ và cách quay lui.", en: "A step-by-step migration plan, each step with the lock it needs and how to roll back." }
+      - { vi: "Vận hành: tạo trước phân vùng con, bỏ dữ liệu cũ, theo dõi, và rủi ro còn lại.", en: "Operations: creating partitions ahead, removing old data, monitoring, and remaining risks." }
+    model: { vi: "Phân vùng theo khoảng `created_at`, mỗi tháng một phân vùng con (~55 triệu dòng mỗi tháng; truy vấn 1 cho cỡ mỗi dòng để ước tính GB mỗi tháng), nên báo cáo một tháng (truy vấn 2) chỉ đọc một phân vùng con nhờ partition pruning. Khóa chính phải chứa khóa phân vùng: `PRIMARY KEY (id, created_at)`; `id` vẫn lấy từ identity/sequence nên không trùng, nhưng không còn ràng buộc nào giữ điều đó. Truy vấn 3 cho thấy khóa ngoại tới `customers` vẫn giữ được; bảng nào tham chiếu tới `orders` phải mang thêm `created_at`. Chuyển đổi: trên bảng cũ tạo `CREATE UNIQUE INDEX CONCURRENTLY` trên `(id, created_at)` và một `CHECK` khớp ranh giới với `NOT VALID` rồi `VALIDATE CONSTRAINT`, rồi đổi khóa chính sang index đó bằng `ADD CONSTRAINT … PRIMARY KEY USING INDEX` (phân vùng con phải có đúng khóa chính `(id, created_at)` như bảng cha; lock ngắn); tạo bảng phân vùng mới, đổi tên hai bảng trong một transaction ngắn, rồi `ATTACH PARTITION` bảng cũ làm phân vùng con \"quá khứ\" (nhờ `CHECK`, lệnh không phải quét bảng dưới lock `ACCESS EXCLUSIVE`). Mọi bước DDL đặt `lock_timeout` và retry; quay lui = đổi tên lại. Dữ liệu cũ: `DETACH PARTITION … CONCURRENTLY` rồi `DROP TABLE` thay cho `DELETE` (không bloat, không VACUUM); phân vùng con \"quá khứ\" bị bỏ cả khối khi mọi dòng của nó quá 24 tháng. Vận hành: job tạo trước 3 tháng phân vùng con, cảnh báo khi có dòng rơi vào phân vùng `DEFAULT`, theo dõi số phân vùng con mỗi truy vấn chạm tới. Rủi ro: truy vấn không lọc theo `created_at` phải đọc mọi phân vùng con; quá nhiều phân vùng con làm lập kế hoạch chậm hơn.", en: "Range-partition on `created_at`, one partition per month (~55 million rows a month; query 1 gives the row size to estimate GB per month), so a one-month report (query 2) reads one partition thanks to partition pruning. The primary key must include the partition key: `PRIMARY KEY (id, created_at)`; `id` still comes from an identity/sequence so it does not repeat, but no constraint enforces that any more. Query 3 shows the foreign key to `customers` can stay; tables that reference `orders` must carry `created_at` too. Migration: on the old table run `CREATE UNIQUE INDEX CONCURRENTLY` on `(id, created_at)` and add a `CHECK` matching the boundary with `NOT VALID` then `VALIDATE CONSTRAINT`, then switch the primary key to that index with `ADD CONSTRAINT … PRIMARY KEY USING INDEX` (the partition must have the same `(id, created_at)` primary key as the parent; a short lock); create the new partitioned table, rename both tables in one short transaction, then `ATTACH PARTITION` the old table as the \"past\" partition (thanks to the `CHECK`, the command does not scan the table under an `ACCESS EXCLUSIVE` lock). Every DDL step sets `lock_timeout` and retries; rollback = rename back. Old data: `DETACH PARTITION … CONCURRENTLY` then `DROP TABLE` instead of `DELETE` (no bloat, no VACUUM); the \"past\" partition is dropped in one go once all its rows are over 24 months old. Operations: a job creates partitions 3 months ahead, alerts when rows land in the `DEFAULT` partition, and tracks how many partitions each query touches. Risks: queries that do not filter on `created_at` must read every partition; too many partitions slow planning down." }
+    rubric:
+      - { vi: "Khóa phân vùng và cỡ phân vùng con dựa trên số đo", en: "Partition key and partition size based on measurements" }
+      - { vi: "Biết khóa chính và ràng buộc duy nhất phải chứa khóa phân vùng", en: "Knows primary and unique keys must include the partition key" }
+      - { vi: "Chuyển đổi không dừng: CHECK trước ATTACH, lock_timeout, cách quay lui", en: "No-downtime migration: CHECK before ATTACH, lock_timeout, a rollback path" }
+      - { vi: "DETACH/DROP thay DELETE, tạo trước phân vùng con, có theo dõi", en: "DETACH/DROP instead of DELETE, partitions created ahead, monitoring" }
+      - { vi: "Nêu rủi ro: truy vấn không pruning được, số phân vùng con", en: "States risks: queries without pruning, partition count" }
+    doc: https://www.postgresql.org/docs/18/ddl-partitioning.html

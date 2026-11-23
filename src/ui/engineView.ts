@@ -38,6 +38,9 @@ export interface EngineDeps {
   renderResult: typeof ResultTable.renderResult; errorView: typeof Feedback.errorView; optionOrder: typeof Tickets.optionOrder;
   engineHash: typeof Route.engineHash; engineRouteOf: typeof Route.engineRouteOf;
   enginePathOf: typeof Route.enginePathOf; enginePathHash: typeof Route.enginePathHash; hashOf: typeof Route.hashOf; rerender: () => void;
+  /** v27 (L410–L411): the glossary and interview room routes. */
+  engineTermsOf: typeof Route.engineTermsOf; engineTermsHash: typeof Route.engineTermsHash;
+  engineInterviewOf: typeof Route.engineInterviewOf; engineInterviewHash: typeof Route.engineInterviewHash;
   cls: { CARD: string; BTN_GO: string; BTN_SECONDARY: string; BTN_GHOST: string; PILL: string; DONE_PILL: string; cx: (...c: (string | false | null | undefined)[]) => string };
   /** L280: main's list rows (the Overview's chapter rows), so Engine lists look and behave like the rest of the site. */
   ui: { listRow: typeof HomeView.listRow; LIST: string; GROUP_TITLE: string; ABOVE: string };
@@ -104,13 +107,14 @@ const nextOf = (all: EngineLesson[], ok: Set<string>): EngineLesson | undefined 
  * Paragraphs and list items: `code` spans, and **bold** outside code (558 spans in content/engine; review v22 RC: the
  * asterisks showed as text). Nothing else is interpreted.
  */
-function inline(text: string): (Node | string)[] {
+function inline(text: string, marked = false): (Node | string)[] {
+  const plain = (q: string): (Node | string)[] => (marked && mark ? mark.inline(q) : [q]); // v27: term buttons, never in code spans
   return text.split(/(`[^`\n]+`)/).filter(Boolean).flatMap((p) => (p.length > 1 && p.startsWith('`') && p.endsWith('`') ? [d.h('code', {}, p.slice(1, -1))]
-    : p.split(/(\*\*[^*\n]+\*\*)/).filter(Boolean).map((q) => (q.length > 4 && q.startsWith('**') && q.endsWith('**') ? d.h('strong', {}, q.slice(2, -2)) : q))));
+    : p.split(/(\*\*[^*\n]+\*\*)/).filter(Boolean).flatMap((q) => (q.length > 4 && q.startsWith('**') && q.endsWith('**') ? [d.h('strong', {}, ...plain(q.slice(2, -2)))] : plain(q)))));
 }
-function prose(text: string): HTMLElement {
-  return d.h('div', { class: 'flex flex-col gap-3' }, ...blocksOf(text).map((b) => b.kind === 'p' ? d.h('p', { class: 'm-0' }, ...inline(b.text))
-    : b.kind === 'ul' ? d.h('ul', { class: 'm-0 list-disc space-y-1 pl-5' }, ...b.items.map((x) => d.h('li', {}, ...inline(x))))
+function prose(text: string, marked = false): HTMLElement {
+  return d.h('div', { class: 'flex flex-col gap-3' }, ...blocksOf(text).map((b) => b.kind === 'p' ? d.h('p', { class: 'm-0' }, ...inline(b.text, marked))
+    : b.kind === 'ul' ? d.h('ul', { class: 'm-0 list-disc space-y-1 pl-5' }, ...b.items.map((x) => d.h('li', {}, ...inline(x, marked))))
       : d.h('pre', { class: 'sql m-0 overflow-x-auto' }, b.code)));
 }
 
@@ -139,6 +143,8 @@ const rowLink = (href: string, text: string, main: boolean): HTMLElement =>
 
 /** L280: the h1 and the trail of the open Engine page; undefined on the overview (h1 = "Database Engine"). */
 export function subOf(): HomeView.PageSub | undefined {
+  const extra = v27Sub();
+  if (extra) return extra;
   const r = d.engineRouteOf(location.hash);
   const e = ENGINES.find((x) => x === r.engine);
   if (!e) return undefined;
@@ -162,6 +168,8 @@ export function subOf(): HomeView.PageSub | undefined {
 export function enginePage(): HTMLElement {
   keepFocus();
   queueMicrotask(sweepEditors);
+  const extraPage = v27Page();
+  if (extraPage) return extraPage;
   const r = d.engineRouteOf(location.hash);
   const engine = ENGINES.find((e) => e === r.engine);
   const lesson = engine && lessons.find((l) => l.id === r.lesson && l.engine === engine);
@@ -175,7 +183,8 @@ export function enginePage(): HTMLElement {
   const full = lesson && fullLesson(lesson);
   // v23: a predict, a capstone or a plan diagram draws only once its lazy chunks are in (the page never changes shape later).
   const extra = typeof full === 'object' ? chunksFor(full) : undefined;
-  const f = extra && extra !== 'ready' ? extra : full;
+  const terms = lesson ? termsView() : undefined; // v27: the glossary chunk loads beside the lesson's; a failed one = no term buttons
+  const f = extra && extra !== 'ready' ? extra : terms === 'loading' && typeof full === 'object' ? 'loading' : full;
   const page = !lesson ? (engine ? (lv ? levelPage(engine, lv.level) : enginePg(engine)) : overview())
     : f === 'loading' ? loadingLine()
       : f === 'failed' ? failedBox(() => { fulls.delete(lesson.id); if (predMod === 'failed') predMod = undefined; if (capMod === 'failed') capMod = undefined; if (nosqlMod === 'failed') nosqlMod = undefined; d.rerender(); })
@@ -254,7 +263,8 @@ function overview(): HTMLElement {
     h('section', { 'aria-labelledby': 'engine-path' },
       h('h2', { id: 'engine-path', class: d.ui.GROUP_TITLE }, et('nosql.title')),
       pathRow()),
-    d.best?.());
+    d.best?.(),
+    v27Rows());
 }
 
 /** `#/engine/<engine>`: the engine's line and progress, the next lesson, then one row per level (like the Overview's chapters). */
@@ -730,9 +740,20 @@ const cardHead = (id: string, icon: Icons.IconName, text: string): HTMLElement =
 
 /** v27 R3: the body sections a filter keeps, in file order (Opening above the objectives, Recap after the questions). */
 const secs = (l: EngineLesson, keep: (id: SectionId) => boolean): HTMLElement[] => l.sections.filter((s) => keep(s.id)).map((s) => d.h('section', { class: 'flex flex-col gap-3' },
-  d.h('h2', { class: 'm-0 text-title font-bold' }, SECTIONS[s.id][lang() === 'vi' ? 0 : 1]), prose(s.text[lang()])));
+  d.h('h2', { class: 'm-0 text-title font-bold' }, SECTIONS[s.id][lang() === 'vi' ? 0 : 1]), prose(s.text[lang()], true)));
 
+/** v27: the open lesson's term marker (first mentions in objectives and sections), set only while lessonBody draws. */
+let mark: ReturnType<TermsView['lessonMarker']> | undefined;
 function lessonPage(l: EngineLesson): HTMLElement {
+  const tv = termsView();
+  mark = typeof tv === 'object' ? tv.lessonMarker(l.engine, l.level) : undefined;
+  try {
+    return lessonBody(l);
+  } finally {
+    mark = undefined;
+  }
+}
+function lessonBody(l: EngineLesson): HTMLElement {
   const { h, cls } = d;
   const v = visitOf(l.id);
   const ok = done();
@@ -756,7 +777,7 @@ function lessonPage(l: EngineLesson): HTMLElement {
     ...secs(l, (id) => id === 'open'),
     h('section', { class: cls.cx(cls.CARD, 'flex flex-col gap-2 p-5 max-sm:p-4'), 'aria-labelledby': `${l.id}-obj` },
       h('h2', { id: `${l.id}-obj`, class: 'm-0 text-caption font-bold tracking-wider text-muted uppercase' }, et('objectives')),
-      h('ul', { class: 'm-0 list-disc space-y-1 pl-5' }, ...l.objectives.map((o) => h('li', {}, ...inline(o[lang()]))))),
+      h('ul', { class: 'm-0 list-disc space-y-1 pl-5' }, ...l.objectives.map((o) => h('li', {}, ...inline(o[lang()], true))))),
     ...secs(l, (id) => id !== 'open' && id !== 'recap'),
     vizSlot(l.id, l.viz, l.engine),
     l.predict ? h('section', { class: cls.cx(cls.CARD, 'flex flex-col gap-3 p-5 max-sm:p-4'), 'aria-labelledby': `${l.id}-pred` },
@@ -785,6 +806,7 @@ function lessonPage(l: EngineLesson): HTMLElement {
         prev ? h('a', { href: lessonHash(prev), class: cls.cx(cls.BTN_GHOST, 'inline-flex items-center gap-1 px-4 py-2 no-underline'), title: prev.title[lang()] }, d.icon('chevronLeft', 'size-4'), et('lesson.prev')) : null,
         next ? h('a', { href: lessonHash(next), class: cls.cx(isDone ? cls.BTN_GO : cls.BTN_SECONDARY, 'inline-flex items-center gap-1 px-4 py-2 no-underline'), title: et('next', { title: next.title[lang()] }) },
           et('lesson.next'), d.icon('chevronRight', 'size-4')) : null)),
+    mark?.list() ?? null,
     l.sources.length ? h('section', { class: 'flex flex-col gap-2', 'aria-labelledby': `${l.id}-src` },
       h('h2', { id: `${l.id}-src`, class: 'm-0 text-body font-bold' }, et('sources')),
       h('ul', { class: 'm-0 list-disc space-y-1 pl-5 text-body-sm' }, ...l.sources.map((u) =>
@@ -821,7 +843,7 @@ export function sideRows(ui: { row: (r: Row) => HTMLElement; group: (text: strin
   const open = ENGINES.find((e) => e === r.engine);
   const path = open === 'mongodb' && d.enginePathOf(location.hash) !== undefined;
   const out: (Node | null)[] = [
-    ui.row({ key: 'e:all', href: d.hashOf('engine'), lead: d.icon('engine'), label: d.t('nav.engine'), current: !open }),
+    ui.row({ key: 'e:all', href: d.hashOf('engine'), lead: d.icon('engine'), label: d.t('nav.engine'), current: !open && !v27Here() }),
     ui.group(et('side.engines')),
     ...ENGINES.map((e) => {
       const p = progressOf(flat(e), ok);
@@ -829,7 +851,7 @@ export function sideRows(ui: { row: (r: Row) => HTMLElement; group: (text: strin
         sub: et('me.line', { k: p.done, n: p.total }), current: open === e && !r.level && !path });
     }),
   ];
-  if (!open) return out;
+  if (!open) return [...out, ...v27Side(ui)];
   // engine-ux-spec §3.1 (L189): one row per level, the number only in its badge, its short name, done/total; the one current
   // row is the smallest unit holding the page (the level page or the open lesson's level).
   for (const lv of trees[open].levels.filter((x) => x.modules.length)) {
@@ -855,4 +877,61 @@ function pathPage(slug: string): HTMLElement {
   if (pathMod === 'failed') return failedBox(() => { pathMod = undefined; d.rerender(); });
   const ctx: PathCtx = { d, et, inline, prose, tick, verdictLine, codeBox, done, leadDisc, rowLink };
   return pathMod.pathPage(ctx, slug);
+}
+
+// ---- v27 (L410–L411): the glossary (#/engine/terms) and the interview room (#/engine/interview), each its own lazy chunk
+
+type TermsView = typeof import('./engineTerms');
+type IvView = typeof import('./engineInterview');
+let termsMod: TermsView | 'loading' | 'failed' | undefined;
+let ivMod: IvView | 'loading' | 'failed' | undefined;
+function termsView(): TermsView | 'loading' | 'failed' {
+  if (termsMod === undefined) {
+    termsMod = 'loading';
+    Promise.all([import('./engineTerms'), import('../engineTermsSources')])
+      .then(([m, src]) => { m.initTerms(d, src.glossary); termsMod = m; }).catch(() => { termsMod = 'failed'; }).finally(() => d.rerender()); // a parse throw too
+  }
+  return termsMod;
+}
+function ivView(): IvView | 'loading' | 'failed' {
+  if (ivMod === undefined) {
+    ivMod = 'loading';
+    import('./engineInterview').then((m) => { m.initIv(d); ivMod = m; }).catch(() => { ivMod = 'failed'; }).finally(() => d.rerender());
+  }
+  return ivMod;
+}
+const v27Here = (): boolean => d.engineTermsOf(location.hash) !== undefined || !!d.engineInterviewOf(location.hash);
+function v27Page(): HTMLElement | undefined {
+  const terms = d.engineTermsOf(location.hash);
+  const iv = d.engineInterviewOf(location.hash);
+  if (terms === undefined && !iv) return undefined;
+  const m = terms !== undefined ? termsView() : ivView();
+  if (m === 'loading') return loadingLine();
+  if (m === 'failed') return failedBox(() => { if (terms !== undefined) termsMod = undefined; else ivMod = undefined; d.rerender(); });
+  const page = terms !== undefined ? (m as TermsView).termsPage(terms) : (m as IvView).ivPage(iv!);
+  page.id = 'engine-page';
+  return page;
+}
+function v27Sub(): HomeView.PageSub | undefined {
+  const top = [{ href: d.hashOf('engine'), text: d.t('nav.engine') }];
+  if (d.engineTermsOf(location.hash) !== undefined) return typeof termsMod === 'object' ? termsMod.subOf() : { title: et('v27.terms'), trail: top };
+  const iv = d.engineInterviewOf(location.hash);
+  if (iv) return typeof ivMod === 'object' ? ivMod.subOf(iv) : { title: et('v27.interview'), trail: top };
+  return undefined;
+}
+/** The overview's "Reference and practice" rows: the glossary and the interview room. */
+function v27Rows(): HTMLElement {
+  const row = (href: string, icon: Icons.IconName, title: string, sub: string): HTMLElement => d.ui.listRow({
+    lead: d.h('span', { class: 'grid size-10 place-items-center rounded-full bg-accent-soft text-accent' }, d.icon(icon, 'size-6')),
+    title, sub, action: rowLink(href, et('v27.open'), false),
+  });
+  return d.h('section', { 'aria-labelledby': 'engine-more' },
+    d.h('h2', { id: 'engine-more', class: d.ui.GROUP_TITLE }, et('v27.more')),
+    d.h('ul', { class: d.ui.LIST }, row(d.engineTermsHash(), 'bookIndex', et('v27.terms'), et('v27.termsLine')),
+      row(d.engineInterviewHash(), 'secPractice', et('v27.interview'), et('v27.interviewLine'))));
+}
+function v27Side(ui: { row: (r: Row) => HTMLElement; group: (text: string) => HTMLElement }): HTMLElement[] {
+  return [ui.group(et('v27.more')),
+    ui.row({ key: 'e:terms', href: d.engineTermsHash(), lead: d.icon('bookIndex'), label: et('v27.terms'), current: d.engineTermsOf(location.hash) !== undefined }),
+    ui.row({ key: 'e:iv', href: d.engineInterviewHash(), lead: d.icon('secPractice'), label: et('v27.interview'), current: !!d.engineInterviewOf(location.hash) })];
 }

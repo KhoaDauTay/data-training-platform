@@ -1,0 +1,976 @@
+# MongoDB part of the Database Engine interview bank (v27, L411). Field rules, sets and take-homes: the header of
+# content/engine/iv-postgres.yml.
+
+questions:
+  # ---------------- MongoDB · junior
+  - id: e-iv-mg-junior-01
+    engine: mongodb
+    band: junior
+    kind: concept
+    set: mg-junior-2
+    q: { vi: "Một tài liệu MongoDB khác một dòng SQL ở điểm nào? `_id` có gì đặc biệt?", en: "How does a MongoDB document differ from an SQL row? What is special about `_id`?" }
+    answer: { vi: "Tài liệu là BSON (JSON nhị phân có thêm kiểu như Date, ObjectId, Decimal128), có thể lồng object và mảng, và hai tài liệu trong một collection không bắt buộc cùng trường. Mọi tài liệu có `_id` duy nhất trong collection, có index (chỉ mục) duy nhất tự động không xóa được; không đưa thì driver tạo một ObjectId. `_id` không đổi được sau khi chèn.", en: "A document is BSON (binary JSON with extra types such as Date, ObjectId, Decimal128), can nest objects and arrays, and two documents in one collection need not share fields. Every document has an `_id` unique within the collection, backed by an automatic unique index that cannot be dropped; if omitted, the driver generates an ObjectId. `_id` cannot be changed after insert." }
+    rubric:
+      - { vi: "BSON, lồng nhau, schema linh hoạt", en: "BSON, nesting, flexible schema" }
+      - { vi: "_id duy nhất, có index, tự sinh ObjectId", en: "_id unique, indexed, ObjectId generated" }
+      - { vi: "Biết _id bất biến", en: "Knows _id is immutable" }
+    doc: https://www.mongodb.com/docs/manual/core/document/
+  - id: e-iv-mg-junior-02
+    engine: mongodb
+    band: junior
+    kind: concept
+    set: mg-junior-3
+    q: { vi: "Giới hạn kích thước một tài liệu là bao nhiêu và nó ảnh hưởng thiết kế thế nào?", en: "What is the size limit of one document and how does it affect design?" }
+    answer: { vi: "16 MiB mỗi tài liệu BSON, tối đa 100 tầng lồng. Hệ quả: không nhúng mảng tăng không giới hạn (bình luận, log) vào một tài liệu; dữ liệu lớn như tệp thì dùng GridFS hoặc kho đối tượng. Nhưng thường vấn đề hiệu năng đến trước giới hạn: tài liệu lớn tốn băng thông và bộ nhớ mỗi lần đọc/ghi.", en: "16 MiB per BSON document, at most 100 levels of nesting. Consequence: never embed arrays that grow without bound (comments, logs) in one document; large blobs such as files go to GridFS or object storage. Performance problems usually come before the limit: big documents cost bandwidth and memory on every read/write." }
+    rubric:
+      - { vi: "Đúng 16 MiB", en: "Correct 16 MiB" }
+      - { vi: "Cảnh báo mảng không giới hạn", en: "Warns about unbounded arrays" }
+      - { vi: "Nêu GridFS / kho ngoài và chi phí tài liệu lớn", en: "Mentions GridFS / external storage and the cost of big documents" }
+    doc: https://www.mongodb.com/docs/manual/reference/limits/
+  - id: e-iv-mg-junior-03
+    engine: mongodb
+    band: junior
+    kind: concept
+    set: mg-junior-1
+    q: { vi: "`{ phone: null }`, `{ phone: { $exists: false } }` và `{ phone: { $type: 'null' } }` khớp những tài liệu nào?", en: "Which documents do `{ phone: null }`, `{ phone: { $exists: false } }` and `{ phone: { $type: 'null' } }` match?" }
+    answer: { vi: "`{ phone: null }` khớp cả tài liệu có `phone` bằng null **và** tài liệu không có trường `phone`. `$exists: false` chỉ khớp tài liệu thiếu trường. `$type: 'null'` chỉ khớp tài liệu có trường mang giá trị null. Bẫy hay gặp: đếm \"chưa có số điện thoại\" bằng `null` gộp hai trường hợp mà người hỏi có thể muốn tách.", en: "`{ phone: null }` matches documents where `phone` is null **and** documents without a `phone` field. `$exists: false` matches only missing fields. `$type: 'null'` matches only fields holding null. Common trap: counting \"no phone yet\" with `null` merges two cases the asker may want separately." }
+    rubric:
+      - { vi: "Đúng cả ba", en: "All three right" }
+      - { vi: "Nêu bẫy gộp hai trường hợp", en: "States the merged-cases trap" }
+      - { vi: "Ví dụ cụ thể", en: "Gives a concrete example" }
+    doc: https://www.mongodb.com/docs/manual/tutorial/query-for-null-fields/
+  - id: e-iv-mg-junior-04
+    engine: mongodb
+    band: junior
+    kind: concept
+    set: mg-junior-2
+    q: { vi: "Đồng nghiệp viết `db.users.replaceOne({ _id: id }, { email: 'a@b.vn' })` để đổi email, và mọi trường khác biến mất. Vì sao, và nên viết gì?", en: "A colleague wrote `db.users.replaceOne({ _id: id }, { email: 'a@b.vn' })` to change an email and every other field vanished. Why, and what should it be?" }
+    answer: { vi: "`replaceOne` thay **cả** tài liệu bằng tài liệu mới (chỉ giữ `_id`). Muốn sửa một trường thì dùng toán tử cập nhật: `db.users.updateOne({ _id: id }, { $set: { email: 'a@b.vn' } })`. `updateOne` với tài liệu không có toán tử sẽ báo lỗi, nên an toàn hơn. Các toán tử khác: `$inc`, `$unset`, `$push`, `$addToSet`, `$pull`.", en: "`replaceOne` replaces the **whole** document with the new one (keeping only `_id`). To change one field use an update operator: `db.users.updateOne({ _id: id }, { $set: { email: 'a@b.vn' } })`. `updateOne` with an operator-free document raises an error, so it is safer. Other operators: `$inc`, `$unset`, `$push`, `$addToSet`, `$pull`." }
+    rubric:
+      - { vi: "Giải thích replace thay cả tài liệu", en: "Explains replace swaps the whole document" }
+      - { vi: "Đưa câu $set đúng", en: "Gives the correct $set" }
+      - { vi: "Kể thêm toán tử cập nhật", en: "Names more update operators" }
+    doc: https://www.mongodb.com/docs/manual/reference/method/db.collection.updateone/
+  - id: e-iv-mg-junior-05
+    engine: mongodb
+    band: junior
+    kind: concept
+    set: mg-junior-3
+    q: { vi: "Tài liệu có `items: [{ sku: 'A', qty: 1 }, { sku: 'B', qty: 5 }]`. Vì sao `{ 'items.sku': 'A', 'items.qty': { $gte: 5 } }` khớp nó, và viết sao cho đúng ý \"có món A với số lượng ≥ 5\"?", en: "A document has `items: [{ sku: 'A', qty: 1 }, { sku: 'B', qty: 5 }]`. Why does `{ 'items.sku': 'A', 'items.qty': { $gte: 5 } }` match it, and how do you express \"has item A with quantity ≥ 5\"?" }
+    answer: { vi: "Mỗi điều kiện trên đường dẫn mảng được thỏa bởi **bất kỳ** phần tử nào, không nhất thiết cùng một phần tử: `sku: 'A'` ở phần tử đầu, `qty ≥ 5` ở phần tử thứ hai. Muốn mọi điều kiện trên cùng một phần tử thì dùng `$elemMatch`: `{ items: { $elemMatch: { sku: 'A', qty: { $gte: 5 } } } }`.", en: "Each condition on an array path is satisfied by **any** element, not necessarily the same one: `sku: 'A'` by the first, `qty ≥ 5` by the second. To require every condition on one element use `$elemMatch`: `{ items: { $elemMatch: { sku: 'A', qty: { $gte: 5 } } } }`." }
+    rubric:
+      - { vi: "Giải thích \"bất kỳ phần tử\"", en: "Explains \"any element\"" }
+      - { vi: "Viết đúng $elemMatch", en: "Writes $elemMatch correctly" }
+      - { vi: "Biết đây là bẫy dữ liệu sai lặng lẽ", en: "Knows this is a silent wrong-data trap" }
+    doc: https://www.mongodb.com/docs/manual/reference/operator/query/elemmatch/
+  - id: e-iv-mg-junior-06
+    engine: mongodb
+    band: junior
+    kind: concept
+    set: mg-junior-1
+    q: { vi: "Upsert là gì? Khi upsert theo email từ hai request song song, làm sao không tạo hai tài liệu?", en: "What is an upsert? When upserting by email from two parallel requests, how do you avoid two documents?" }
+    answer: { vi: "`updateOne(filter, update, { upsert: true })` cập nhật tài liệu khớp, hoặc chèn mới nếu không có (tài liệu mới lấy các trường bằng từ filter cộng `$set`/`$setOnInsert`). Hai upsert song song có thể cùng không thấy gì và cùng chèn; chỉ một index (chỉ mục) duy nhất trên `email` chặn được: một bên lỗi trùng khóa và có thể thử lại thành cập nhật.", en: "`updateOne(filter, update, { upsert: true })` updates the matching document, or inserts one if none exists (the new document takes equality fields from the filter plus `$set`/`$setOnInsert`). Two parallel upserts can both find nothing and both insert; only a unique index on `email` prevents it: one side gets a duplicate key error and can retry as an update." }
+    rubric:
+      - { vi: "Định nghĩa upsert và $setOnInsert", en: "Defines upsert and $setOnInsert" }
+      - { vi: "Thấy được tranh chấp", en: "Sees the race" }
+      - { vi: "Index duy nhất + retry", en: "Unique index + retry" }
+    doc: https://www.mongodb.com/docs/manual/reference/method/db.collection.updateone/
+  - id: e-iv-mg-junior-07
+    engine: mongodb
+    band: junior
+    kind: concept
+    set: mg-junior-2
+    q: { vi: "Thao tác nào trong MongoDB là nguyên tử mà không cần transaction?", en: "Which MongoDB operations are atomic without a transaction?" }
+    answer: { vi: "Mọi thao tác ghi trên **một** tài liệu là nguyên tử, kể cả khi sửa nhiều trường và mảng lồng bên trong. Một `updateMany` thì nguyên tử theo từng tài liệu, không nguyên tử cho cả tập. Vì vậy dữ liệu cần đổi cùng nhau nên nằm trong một tài liệu khi hợp lý; còn lại mới cần transaction nhiều tài liệu.", en: "Every write to a **single** document is atomic, even when it changes several fields and nested arrays. An `updateMany` is atomic per document, not for the whole set. So data that must change together should live in one document when sensible; only the rest needs a multi-document transaction." }
+    rubric:
+      - { vi: "Nguyên tử ở mức một tài liệu", en: "Atomic at the single-document level" }
+      - { vi: "updateMany không nguyên tử cho cả tập", en: "updateMany is not atomic as a whole" }
+      - { vi: "Hệ quả cho thiết kế", en: "The design consequence" }
+    doc: https://www.mongodb.com/docs/manual/core/write-operations-atomicity/
+  - id: e-iv-mg-junior-08
+    engine: mongodb
+    band: junior
+    kind: concept
+    set: mg-junior-3
+    q: { vi: "`countDocuments()` và `estimatedDocumentCount()` khác nhau thế nào?", en: "How do `countDocuments()` and `estimatedDocumentCount()` differ?" }
+    answer: { vi: "`countDocuments(filter)` đếm thật theo bộ lọc (chạy như một aggregation), đúng nhưng tốn công với tập lớn; nên có index (chỉ mục) hỗ trợ bộ lọc. `estimatedDocumentCount()` đọc số đếm trong metadata của collection: rất nhanh, không nhận bộ lọc, và có thể lệch sau tắt máy không sạch hoặc với tài liệu mồ côi trong cụm shard.", en: "`countDocuments(filter)` really counts with a filter (runs as an aggregation): correct but costly on large sets; give the filter an index. `estimatedDocumentCount()` reads the collection metadata count: very fast, takes no filter, and can be off after an unclean shutdown or with orphaned documents in a sharded cluster." }
+    rubric:
+      - { vi: "Đếm thật vs metadata", en: "Real count vs metadata" }
+      - { vi: "Biết estimated không nhận filter", en: "Knows estimated takes no filter" }
+      - { vi: "Nêu khi nào có thể lệch", en: "States when it can be wrong" }
+    doc: https://www.mongodb.com/docs/manual/reference/method/db.collection.countdocuments/
+  - id: e-iv-mg-junior-09
+    engine: mongodb
+    band: junior
+    kind: concept
+    set: mg-junior-1
+    q: { vi: "Nhúng (embed) hay tham chiếu (reference)? Cho luật ngón tay cái và một ví dụ mỗi bên.", en: "Embed or reference? Give a rule of thumb and one example of each." }
+    answer: { vi: "Nhúng khi dữ liệu được đọc cùng nhau, thuộc về cha, và số lượng có giới hạn: địa chỉ giao hàng trong đơn, các dòng hàng trong một đơn. Tham chiếu khi dữ liệu dùng chung bởi nhiều cha, đổi độc lập, hoặc tăng không giới hạn: sản phẩm (đơn chỉ giữ `product_id` và bản chụp giá/tên), bình luận của một bài viết nổi tiếng. Thiết kế theo cách ứng dụng đọc, không theo bảng chuẩn hóa.", en: "Embed when data is read together, belongs to the parent, and is bounded: the shipping address in an order, the lines of an order. Reference when data is shared by many parents, changes independently, or grows without bound: products (the order keeps `product_id` plus a snapshot of price/name), comments on a popular post. Design for how the app reads, not for normalised tables." }
+    rubric:
+      - { vi: "Luật: đọc cùng + có giới hạn → nhúng", en: "Rule: read together + bounded → embed" }
+      - { vi: "Ví dụ đúng mỗi bên", en: "A correct example each way" }
+      - { vi: "Nhắc bản chụp dữ liệu hoặc thiết kế theo truy cập", en: "Mentions snapshots or access-driven design" }
+    doc: https://www.mongodb.com/docs/manual/data-modeling/
+  - id: e-iv-mg-junior-10
+    engine: mongodb
+    band: junior
+    kind: concept
+    set: mg-junior-2
+    q: { vi: "Phân trang bằng `.skip(n).limit(20)` có vấn đề gì khi `n` lớn? Cách khác?", en: "What goes wrong with `.skip(n).limit(20)` pagination when `n` is large? Alternative?" }
+    answer: { vi: "Server vẫn phải đi qua `n` tài liệu (hoặc khóa của index) rồi bỏ đi, nên trang càng sâu càng chậm; và khi có chèn/xóa giữa hai lần gọi, trang có thể lặp hoặc sót. Cách khác: phân trang theo khóa, nhớ giá trị cuối của trang trước và lọc `{ created: { $lt: last } }` với sort trên trường có index (chỉ mục) (thêm `_id` để phá hòa).", en: "The server still walks `n` documents (or index keys) and discards them, so deeper pages get slower; and inserts/deletes between calls can repeat or skip items. Alternative: range-based paging, remember the last value of the previous page and filter `{ created: { $lt: last } }` with a sort on an indexed field (add `_id` as a tiebreaker)." }
+    rubric:
+      - { vi: "Skip vẫn duyệt n mục", en: "Skip still walks n items" }
+      - { vi: "Nêu lặp/sót khi dữ liệu đổi", en: "Mentions repeats/gaps when data changes" }
+      - { vi: "Phân trang theo khóa có phá hòa", en: "Range paging with a tiebreaker" }
+    doc: https://www.mongodb.com/docs/manual/reference/method/cursor.skip/
+  - id: e-iv-mg-junior-11
+    engine: mongodb
+    band: junior
+    kind: diagnose
+    set: mg-junior-1
+    q: { vi: "Đọc kết quả explain của truy vấn phim từ năm 2000 đến 2005. Vấn đề là gì và bạn làm gì?", en: "Read the explain output for a query on films from 2000 to 2005. What is the problem and what do you do?" }
+    exhibits:
+      - label: { vi: "db.movies.find({ year: { $gte: 2000, $lte: 2005 } }).explain('executionStats')", en: "db.movies.find({ year: { $gte: 2000, $lte: 2005 } }).explain('executionStats')" }
+        source: mongodb-docs
+        url: https://www.mongodb.com/docs/manual/tutorial/analyze-query-plan/
+        shown: |-
+          {
+            queryPlanner: {
+              namespace: 'sample_mflix.movies',
+              winningPlan: { stage: 'COLLSCAN', '...': '...' },
+              '...': '...'
+            },
+            executionStats: {
+              executionSuccess: true,
+              nReturned: 3809,
+              totalKeysExamined: 0,
+              totalDocsExamined: 21349,
+              executionStages: { stage: 'COLLSCAN', '...': '...' },
+              '...': '...'
+            },
+            '...': '...'
+          }
+    answer: { vi: "`COLLSCAN` và `totalKeysExamined: 0`: không dùng index (chỉ mục) nào, đọc cả 21.349 tài liệu để trả 3.809 (khoảng 5,6 tài liệu đọc cho mỗi tài liệu trả về). Tạo `db.movies.createIndex({ year: 1 })` rồi chạy lại explain: kỳ vọng `IXSCAN` dưới `FETCH` và cả ba số `nReturned`, `totalKeysExamined`, `totalDocsExamined` gần bằng nhau (3.809).", en: "`COLLSCAN` and `totalKeysExamined: 0`: no index used, all 21,349 documents read to return 3,809 (about 5.6 documents read per document returned). Create `db.movies.createIndex({ year: 1 })` and rerun explain: expect `IXSCAN` under `FETCH` with `nReturned`, `totalKeysExamined` and `totalDocsExamined` all close (3,809)." }
+    rubric:
+      - { vi: "Đọc COLLSCAN và tỉ lệ docs đọc/trả", en: "Reads COLLSCAN and the examined/returned ratio" }
+      - { vi: "Đề xuất index year", en: "Proposes an index on year" }
+      - { vi: "Nói kết quả mong đợi sau khi sửa", en: "States the expected result after the fix" }
+    doc: https://www.mongodb.com/docs/manual/reference/explain-results/
+  - id: e-iv-mg-junior-12
+    engine: mongodb
+    band: junior
+    kind: diagnose
+    set: mg-junior-2
+    q: { vi: "Sau khi tạo index (chỉ mục) `{ year: 1 }`, explain cho ra kết quả dưới đây. Đây có phải truy vấn \"phủ\" (covered) không? Vì sao vẫn có `FETCH`?", en: "After creating the `{ year: 1 }` index, explain gives the output below. Is this a covered query? Why is there still a `FETCH`?" }
+    exhibits:
+      - label: { vi: "Cùng truy vấn, có index year", en: "Same query, with the year index" }
+        source: mongodb-docs
+        url: https://www.mongodb.com/docs/manual/tutorial/analyze-query-plan/
+        shown: |-
+          {
+            queryPlanner: {
+              namespace: 'sample_mflix.movies',
+              winningPlan: {
+                stage: 'FETCH',
+                inputStage: { stage: 'IXSCAN', keyPattern: { year: 1 }, '...': '...' },
+                '...': '...'
+              },
+              '...': '...'
+            },
+            executionStats: {
+              executionSuccess: true,
+              nReturned: 3809,
+              totalKeysExamined: 3809,
+              totalDocsExamined: 3809,
+              '...': '...'
+            },
+            '...': '...'
+          }
+    answer: { vi: "Không phủ: `IXSCAN` nằm dưới `FETCH`, và `totalDocsExamined: 3809` nghĩa là mỗi khóa tìm được dẫn tới một lần đọc tài liệu. Có `FETCH` vì truy vấn trả cả tài liệu (không projection). Truy vấn này vẫn hiệu quả: khóa đọc = tài liệu đọc = tài liệu trả. Muốn phủ thì projection chỉ lấy trường trong index và bỏ `_id`: `find({ year: … }, { _id: 0, year: 1 })`.", en: "Not covered: `IXSCAN` sits under `FETCH`, and `totalDocsExamined: 3809` means every key found leads to a document read. The `FETCH` is there because the query returns whole documents (no projection). The query is still efficient: keys examined = documents examined = documents returned. To cover it, project only indexed fields and drop `_id`: `find({ year: … }, { _id: 0, year: 1 })`." }
+    rubric:
+      - { vi: "Biết covered = IXSCAN không dưới FETCH", en: "Knows covered = IXSCAN not under FETCH" }
+      - { vi: "Đọc ba số bằng nhau là hiệu quả", en: "Reads the three equal counts as efficient" }
+      - { vi: "Biết bỏ _id trong projection để phủ", en: "Knows to exclude _id in the projection to cover" }
+    doc: https://www.mongodb.com/docs/manual/reference/explain-results/
+  - id: e-iv-mg-junior-13
+    engine: mongodb
+    band: junior
+    kind: diagnose
+    set: mg-junior-3
+    q: { vi: "Có index (chỉ mục) `{ city: 1 }` nhưng truy vấn khách theo thành phố vẫn quét cả collection. Đọc đoạn minh họa và tìm lỗi.", en: "There is an index on `{ city: 1 }` but the customers-by-city query still scans the collection. Read the illustration and find the bug." }
+    exhibits:
+      - label: { vi: "db.customers.find({ 'address.city': 'Hue' }).explain('executionStats')", en: "db.customers.find({ 'address.city': 'Hue' }).explain('executionStats')" }
+        source: illustrative
+        shown: |-
+          {
+            queryPlanner: {
+              winningPlan: { stage: 'COLLSCAN', filter: { 'address.city': { '$eq': 'Hue' } } },
+              rejectedPlans: []
+            },
+            executionStats: { nReturned: 412, totalKeysExamined: 0, totalDocsExamined: 50000 }
+          }
+    answer: { vi: "Index nằm trên trường `city` ở gốc, còn dữ liệu (và truy vấn) dùng trường lồng `address.city`: hai đường dẫn khác nhau, nên không có kế hoạch nào dùng index (`rejectedPlans: []`). Sửa: `createIndex({ 'address.city': 1 })` và xóa index vô dụng (nó vẫn tốn công khi ghi). Kiểm bằng `getIndexes()` trước khi đoán.", en: "The index is on a top-level `city` field, while the data (and the query) use the nested `address.city`: different paths, so no plan can use the index (`rejectedPlans: []`). Fix: `createIndex({ 'address.city': 1 })` and drop the useless index (it still costs on writes). Check `getIndexes()` before guessing." }
+    rubric:
+      - { vi: "Nhận ra sai đường dẫn trường", en: "Spots the field-path mismatch" }
+      - { vi: "Đọc rejectedPlans rỗng", en: "Reads the empty rejectedPlans" }
+      - { vi: "Tạo đúng index, bỏ index thừa", en: "Creates the right index, drops the useless one" }
+    doc: https://www.mongodb.com/docs/manual/reference/explain-results/
+  - id: e-iv-mg-junior-14
+    engine: mongodb
+    band: junior
+    kind: concept
+    set: mg-junior-3
+    q: { vi: "ObjectId chứa gì? Có thể sắp xếp theo `_id` để có thứ tự tạo chính xác không?", en: "What does an ObjectId contain? Can sorting by `_id` give the exact creation order?" }
+    answer: { vi: "12 byte: 4 byte thời gian (giây, Unix), 5 byte ngẫu nhiên theo tiến trình, 3 byte bộ đếm. Sắp theo `_id` cho thứ tự gần đúng theo giây, nhưng trong cùng một giây giữa nhiều máy/tiến trình thì không bảo đảm, và đồng hồ máy khách có thể lệch. Cần thứ tự chính xác thì lưu trường thời gian riêng (và một tiebreaker).", en: "12 bytes: a 4-byte timestamp (Unix seconds), 5 random bytes per process, a 3-byte counter. Sorting by `_id` gives roughly second-level order, but within the same second across machines/processes it is not guaranteed, and client clocks can drift. For exact ordering store a separate time field (and a tiebreaker)." }
+    rubric:
+      - { vi: "Cấu trúc 4 + 5 + 3 byte", en: "The 4 + 5 + 3 byte layout" }
+      - { vi: "Chỉ đơn điệu gần đúng", en: "Only roughly monotonic" }
+      - { vi: "Đề xuất trường thời gian riêng", en: "Suggests a separate time field" }
+    doc: https://www.mongodb.com/docs/manual/reference/bson-types/
+  - id: e-iv-mg-junior-15
+    engine: mongodb
+    band: junior
+    kind: design
+    set: mg-junior-1
+    q: { vi: "Thiết kế collection cho blog: bài viết, tác giả, bình luận. Một số bài có hàng chục nghìn bình luận.", en: "Design collections for a blog: posts, authors, comments. Some posts get tens of thousands of comments." }
+    answer: { vi: "`authors` riêng (dùng chung cho nhiều bài). `posts` giữ `author_id` cùng bản chụp `author_name` để hiện danh sách không cần `$lookup`, cộng `comment_count` và vài bình luận mới nhất nhúng sẵn (`recent_comments`, giới hạn 3–5 bằng `$push` với `$slice`). `comments` là collection riêng `{ post_id, created_at, author_id, text }` với index (chỉ mục) `{ post_id: 1, created_at: -1 }` để phân trang. Không nhúng toàn bộ bình luận: mảng không giới hạn, tiến tới 16 MiB và làm mọi lần đọc bài nặng.", en: "Separate `authors` (shared by many posts). `posts` keeps `author_id` plus an `author_name` snapshot so lists need no `$lookup`, plus `comment_count` and a few newest comments embedded (`recent_comments`, capped at 3–5 with `$push` and `$slice`). `comments` is its own collection `{ post_id, created_at, author_id, text }` with an index on `{ post_id: 1, created_at: -1 }` for paging. Do not embed all comments: unbounded array, heading to 16 MiB and making every post read heavy." }
+    tradeoffs:
+      - { vi: "Bản chụp tên tác giả nhanh khi đọc nhưng phải cập nhật lan khi tác giả đổi tên (hoặc chấp nhận cũ).", en: "The author-name snapshot is fast to read but must be propagated on rename (or accepted as stale)." }
+      - { vi: "Bình luận gần nhất nhúng là dữ liệu trùng: mỗi bình luận mới ghi hai chỗ.", en: "Embedded recent comments duplicate data: every new comment writes two places." }
+    rubric:
+      - { vi: "Bình luận tách collection có index phân trang", en: "Comments in their own collection with a paging index" }
+      - { vi: "Dùng mẫu subset (vài bình luận mới nhúng)", en: "Uses the subset pattern (a few recent comments embedded)" }
+      - { vi: "Nêu chi phí của dữ liệu trùng", en: "States the cost of duplication" }
+    doc: https://www.mongodb.com/docs/manual/data-modeling/design-patterns/
+
+  # ---------------- MongoDB · mid
+  - id: e-iv-mg-mid-01
+    engine: mongodb
+    band: mid
+    kind: concept
+    set: mg-mid-2
+    q: { vi: "Trong aggregation pipeline, vì sao đặt `$match` sớm quan trọng? Những stage đầu nào dùng được index (chỉ mục)?", en: "In an aggregation pipeline, why does putting `$match` early matter? Which leading stages can use an index?" }
+    answer: { vi: "`$match` (và `$sort`) ở **đầu** pipeline được đẩy xuống tầng truy vấn nên dùng được index, và giảm số tài liệu mọi stage sau phải xử lý. Sau `$group`, `$unwind` hay `$project` tạo trường mới thì không còn index. Bộ tối ưu tự dời một số `$match` lên trước khi an toàn (ví dụ qua `$sort`, hoặc phần lọc không dựa vào trường vừa tạo), nhưng đừng trông vào đó: viết `$match` ngay đầu và kiểm bằng `explain`.", en: "A `$match` (and `$sort`) at the **start** of the pipeline is pushed into the query layer so it can use an index, and it shrinks the documents every later stage handles. After `$group`, `$unwind` or a `$project` creating new fields, indexes are no longer usable. The optimizer moves some `$match` stages earlier when safe (for example past a `$sort`, or the parts not depending on computed fields), but do not rely on it: put `$match` first and check with `explain`." }
+    rubric:
+      - { vi: "Chỉ stage đầu dùng được index", en: "Only leading stages can use indexes" }
+      - { vi: "Giảm khối lượng cho stage sau", en: "Reduces work for later stages" }
+      - { vi: "Biết bộ tối ưu tự dời nhưng vẫn kiểm explain", en: "Knows the optimizer reorders but still checks explain" }
+    doc: https://www.mongodb.com/docs/manual/core/aggregation-pipeline-optimization/
+  - id: e-iv-mg-mid-02
+    engine: mongodb
+    band: mid
+    kind: concept
+    set: mg-mid-3
+    q: { vi: "`$lookup` từ `orders` sang `customers` chậm khi `orders` lớn. Kiểm tra gì trước?", en: "A `$lookup` from `orders` to `customers` is slow when `orders` is large. What do you check first?" }
+    answer: { vi: "(1) Trường `foreignField` ở collection đích có index (chỉ mục) chưa (với `customers` là `_id` thì có sẵn; nếu là trường khác thì phải tạo). (2) `$match` lọc `orders` trước `$lookup` để ít lần tra hơn. (3) Chỉ lấy trường cần thiết ở bên đích (pipeline con với `$project`). (4) Nếu luôn cần tên khách khi đọc đơn, cân nhắc nhúng bản chụp tên vào đơn để bỏ `$lookup`.", en: "(1) Whether the target's `foreignField` is indexed (for `customers` on `_id` it is; any other field needs an index). (2) A `$match` filtering `orders` before the `$lookup` so there are fewer lookups. (3) Fetch only needed fields from the target (a sub-pipeline with `$project`). (4) If orders always need the customer name, consider embedding a name snapshot in the order and dropping the `$lookup`." }
+    rubric:
+      - { vi: "Index trên foreignField", en: "Index on foreignField" }
+      - { vi: "Lọc trước lookup", en: "Filter before the lookup" }
+      - { vi: "Giảm trường hoặc cân nhắc nhúng", en: "Trim fields or consider embedding" }
+    doc: https://www.mongodb.com/docs/manual/reference/operator/aggregation/lookup/
+  - id: e-iv-mg-mid-03
+    engine: mongodb
+    band: mid
+    kind: concept
+    set: mg-mid-1
+    q: { vi: "Phát biểu luật ESR và áp dụng cho `find({ status: 'A', qty: { $gt: 10 } }).sort({ created: -1 })`.", en: "State the ESR rule and apply it to `find({ status: 'A', qty: { $gt: 10 } }).sort({ created: -1 })`." }
+    answer: { vi: "Equality → Sort → Range: trường so bằng trước, rồi trường sắp xếp, cuối cùng trường khoảng. Index (chỉ mục): `{ status: 1, created: -1, qty: 1 }`. Với `status` cố định, khóa đã theo thứ tự `created`, nên không cần `SORT` trong bộ nhớ; `qty` được lọc trong lúc quét khóa. Nếu đặt `qty` trước `created`, khoảng trên `qty` làm mất thứ tự sắp xếp và phải sort trong bộ nhớ. Lưu ý `$ne`, `$nin`, `$regex` cũng tính là khoảng.", en: "Equality → Sort → Range: equality fields first, then sort fields, then range fields. Index: `{ status: 1, created: -1, qty: 1 }`. With `status` fixed the keys are already in `created` order, so no in-memory `SORT`; `qty` is filtered while scanning keys. Putting `qty` before `created` means the range on `qty` breaks the sort order and forces an in-memory sort. Note `$ne`, `$nin`, `$regex` count as ranges too." }
+    rubric:
+      - { vi: "Phát biểu đúng ESR", en: "States ESR correctly" }
+      - { vi: "Đưa đúng index", en: "Gives the right index" }
+      - { vi: "Giải thích vì sao khoảng trước sort gây SORT", en: "Explains why range-before-sort causes SORT" }
+    doc: https://www.mongodb.com/docs/manual/tutorial/equality-sort-range-guideline/
+  - id: e-iv-mg-mid-04
+    engine: mongodb
+    band: mid
+    kind: concept
+    set: mg-mid-2
+    q: { vi: "Index (chỉ mục) multikey là gì? Vì sao không tạo được index ghép `{ tags: 1, sizes: 1 }` khi cả hai là mảng?", en: "What is a multikey index? Why can you not build a compound `{ tags: 1, sizes: 1 }` index when both are arrays?" }
+    answer: { vi: "Khi trường được đánh index là mảng, MongoDB tạo một khóa cho mỗi phần tử: đó là multikey, tự động. Một index ghép chỉ cho phép tối đa **một** trường mảng trong mỗi tài liệu, vì hai mảng sẽ cho tích Descartes số khóa (m × n mỗi tài liệu). Chèn tài liệu có cả hai trường là mảng vào collection có index đó sẽ bị từ chối. Multikey cũng hạn chế truy vấn phủ.", en: "When an indexed field is an array, MongoDB creates one key per element: that is a multikey index, automatically. A compound index allows at most **one** array field per document, because two arrays would produce a Cartesian product of keys (m × n per document). Inserting a document where both fields are arrays into a collection with that index is rejected. Multikey also limits covered queries." }
+    rubric:
+      - { vi: "Một khóa mỗi phần tử", en: "One key per element" }
+      - { vi: "Luật một mảng mỗi tài liệu và lý do tích Descartes", en: "One-array-per-document rule and the Cartesian reason" }
+      - { vi: "Biết ảnh hưởng tới truy vấn phủ", en: "Knows the effect on covered queries" }
+    doc: https://www.mongodb.com/docs/manual/core/indexes/index-types/index-multikey/
+  - id: e-iv-mg-mid-05
+    engine: mongodb
+    band: mid
+    kind: concept
+    set: mg-mid-3
+    q: { vi: "Index (chỉ mục) một phần (partial) và index thưa (sparse) khác nhau thế nào? Làm sao để email duy nhất nhưng cho phép nhiều tài liệu không có email?", en: "How do partial and sparse indexes differ? How do you make email unique while allowing many documents without one?" }
+    answer: { vi: "Sparse bỏ qua tài liệu thiếu trường được đánh index. Partial dùng `partialFilterExpression` bất kỳ (tập con toán tử như `$exists`, `$gt`, `$eq`, `$type`), linh hoạt hơn và được khuyên dùng thay sparse. Truy vấn phải chứa điều kiện bao hàm bộ lọc thì planner mới dùng. Email duy nhất có thể vắng: `createIndex({ email: 1 }, { unique: true, partialFilterExpression: { email: { $exists: true } } })`; ràng buộc duy nhất chỉ áp lên tài liệu nằm trong index.", en: "Sparse skips documents missing the indexed field. Partial uses any `partialFilterExpression` (a subset of operators such as `$exists`, `$gt`, `$eq`, `$type`), is more flexible and recommended over sparse. The query's condition must imply the filter (be a subset of it) for the planner to use the index. Unique optional email: `createIndex({ email: 1 }, { unique: true, partialFilterExpression: { email: { $exists: true } } })`; uniqueness applies only to documents in the index." }
+    rubric:
+      - { vi: "Phân biệt sparse/partial", en: "Distinguishes sparse/partial" }
+      - { vi: "Truy vấn phải khớp bộ lọc", en: "Query must match the filter" }
+      - { vi: "Câu unique + partial đúng", en: "Correct unique + partial index" }
+    doc: https://www.mongodb.com/docs/manual/core/index-partial/
+  - id: e-iv-mg-mid-06
+    engine: mongodb
+    band: mid
+    kind: concept
+    set: mg-mid-1
+    q: { vi: "Dùng TTL index để xóa phiên đăng nhập sau 30 phút. Viết lệnh và nêu các giới hạn.", en: "Use a TTL index to delete login sessions after 30 minutes. Write the command and state the limits." }
+    answer: { vi: "`db.sessions.createIndex({ lastSeen: 1 }, { expireAfterSeconds: 1800 })`. Trường phải là Date (hoặc mảng Date: dùng giá trị sớm nhất); tài liệu không có trường đó không bao giờ bị xóa. Luồng nền chạy khoảng 60 giây một lần, nên tài liệu có thể sống quá hạn một lúc: ứng dụng vẫn phải kiểm hạn khi đọc. TTL chỉ cho index (chỉ mục) một trường, không dùng trên `_id`.", en: "`db.sessions.createIndex({ lastSeen: 1 }, { expireAfterSeconds: 1800 })`. The field must be a Date (or an array of Dates: the earliest counts); documents without it never expire. The background task runs about every 60 seconds, so documents can outlive their expiry a while: the app must still check expiry on read. TTL works only on single-field indexes, not on `_id`." }
+    rubric:
+      - { vi: "Lệnh đúng với expireAfterSeconds", en: "Correct command with expireAfterSeconds" }
+      - { vi: "Biết luồng 60 s và xóa trễ", en: "Knows the 60 s task and late deletion" }
+      - { vi: "Kể giới hạn kiểu Date / một trường", en: "Names the Date / single-field limits" }
+    doc: https://www.mongodb.com/docs/manual/core/index-ttl/
+  - id: e-iv-mg-mid-07
+    engine: mongodb
+    band: mid
+    kind: concept
+    set: mg-mid-2
+    q: { vi: "Collection đã có dữ liệu bẩn. Bạn thêm `$jsonSchema` validation thế nào mà không làm hỏng ghi hiện có?", en: "A collection already holds dirty data. How do you add `$jsonSchema` validation without breaking existing writes?" }
+    answer: { vi: "Dùng `collMod` với `validator: { $jsonSchema: … }`. Bắt đầu bằng `validationAction: 'warn'` (ghi log, không chặn) và `validationLevel: 'moderate'` (chỉ kiểm khi chèn mới và khi sửa tài liệu vốn đã hợp lệ). Tìm tài liệu sai bằng `find({ $nor: [ { $jsonSchema: … } ] })`, sửa dần, rồi chuyển sang `error` và `strict`. Mặc định là `error` + `strict`.", en: "Use `collMod` with `validator: { $jsonSchema: … }`. Start with `validationAction: 'warn'` (log, do not block) and `validationLevel: 'moderate'` (check inserts and updates to documents that were already valid). Find bad documents with `find({ $nor: [ { $jsonSchema: … } ] })`, fix them gradually, then switch to `error` and `strict`. The defaults are `error` + `strict`." }
+    rubric:
+      - { vi: "Dùng collMod + $jsonSchema", en: "collMod + $jsonSchema" }
+      - { vi: "warn/moderate trước, rồi error/strict", en: "warn/moderate first, then error/strict" }
+      - { vi: "Cách tìm tài liệu không hợp lệ", en: "How to find invalid documents" }
+    doc: https://www.mongodb.com/docs/manual/core/schema-validation/
+  - id: e-iv-mg-mid-08
+    engine: mongodb
+    band: mid
+    kind: concept
+    set: mg-mid-3
+    q: { vi: "Ứng dụng ghi với `w: 1` và đọc từ secondary. Người dùng lưu hồ sơ rồi tải lại trang và thấy dữ liệu cũ. Giải thích và sửa.", en: "The app writes with `w: 1` and reads from secondaries. A user saves a profile, reloads, and sees old data. Explain and fix." }
+    answer: { vi: "Đọc từ secondary có độ trễ nhân bản: lần đọc tới trước khi thay đổi đến nơi. Thêm nữa, `w: 1` chỉ chờ primary, nên nếu primary sập trước khi nhân bản, thay đổi có thể bị rollback. Sửa: đọc ngay sau khi ghi từ primary (read preference `primary` cho luồng đó), hoặc dùng causal consistency session với `readConcern: 'majority'` + `writeConcern: { w: 'majority' }`; mặc định ngầm từ 5.0 là `w: 'majority'` trong đa số cấu hình.", en: "Secondary reads lag replication: the read arrived before the change did. Also `w: 1` only waits for the primary, so if it crashes before replicating, the change can be rolled back. Fix: read-your-writes from the primary (read preference `primary` for that flow), or a causally consistent session with `readConcern: 'majority'` + `writeConcern: { w: 'majority' }`; since 5.0 the implicit default is `w: 'majority'` in most deployments." }
+    rubric:
+      - { vi: "Độ trễ nhân bản của secondary", en: "Secondary replication lag" }
+      - { vi: "Rủi ro rollback với w:1", en: "Rollback risk with w:1" }
+      - { vi: "Sửa bằng primary hoặc causal session + majority", en: "Fix via primary or causal session + majority" }
+    doc: https://www.mongodb.com/docs/manual/core/causal-consistency-read-write-concerns/
+  - id: e-iv-mg-mid-09
+    engine: mongodb
+    band: mid
+    kind: diagnose
+    set: mg-mid-1
+    q: { vi: "Hai index (chỉ mục) ghép được thử bằng `hint` cho truy vấn phim năm 2000–2005, xếp hạng `PG` (235 kết quả). Index nào tốt hơn, vì sao, và luật nào giải thích?", en: "Two compound indexes are tried with `hint` for films from 2000–2005 rated `PG` (235 results). Which is better, why, and which rule explains it?" }
+    exhibits:
+      - label: { vi: "hint({ year: 1, rated: 1 })", en: "hint({ year: 1, rated: 1 })" }
+        source: mongodb-docs
+        url: https://www.mongodb.com/docs/manual/tutorial/analyze-query-plan/
+        shown: |-
+          winningPlan: { stage: 'FETCH', inputStage: { stage: 'IXSCAN', keyPattern: { year: 1, rated: 1 }, '...': '...' } }
+          executionStats: { executionSuccess: true, nReturned: 235, totalKeysExamined: 246, totalDocsExamined: 235, '...': '...' }
+      - label: { vi: "hint({ rated: 1, year: 1 })", en: "hint({ rated: 1, year: 1 })" }
+        source: mongodb-docs
+        url: https://www.mongodb.com/docs/manual/tutorial/analyze-query-plan/
+        shown: |-
+          winningPlan: { stage: 'FETCH', inputStage: { stage: 'IXSCAN', keyPattern: { rated: 1, year: 1 }, '...': '...' } }
+          executionStats: { executionSuccess: true, nReturned: 235, totalKeysExamined: 235, totalDocsExamined: 235, '...': '...' }
+    answer: { vi: "`{ rated: 1, year: 1 }` tốt hơn: 235 khóa cho 235 kết quả, không khóa thừa. Với `{ year: 1, rated: 1 }`, khoảng trên `year` đứng trước nên trong mỗi năm phải bước qua cả các xếp hạng khác: 246 khóa (11 thừa). Đó là ESR: trường so bằng (`rated`) trước trường khoảng (`year`). Ở đây chênh nhỏ, nhưng với dữ liệu lệch có thể là gấp hàng trăm lần.", en: "`{ rated: 1, year: 1 }` is better: 235 keys for 235 results, none wasted. With `{ year: 1, rated: 1 }`, the range on `year` comes first, so within each year the scan steps over other ratings: 246 keys (11 wasted). That is ESR: the equality field (`rated`) before the range field (`year`). The gap is small here, but with skewed data it can be hundreds of times." }
+    rubric:
+      - { vi: "So totalKeysExamined với nReturned", en: "Compares totalKeysExamined with nReturned" }
+      - { vi: "Chọn đúng index", en: "Picks the right index" }
+      - { vi: "Gọi tên luật bằng trước khoảng", en: "Names the equality-before-range rule" }
+    doc: https://www.mongodb.com/docs/manual/tutorial/equality-sort-range-guideline/
+  - id: e-iv-mg-mid-10
+    engine: mongodb
+    band: mid
+    kind: diagnose
+    set: mg-mid-2
+    q: { vi: "Danh sách \"đơn đang xử lý mới nhất\" thỉnh thoảng lỗi khi dữ liệu lớn. Đọc đoạn minh họa và đề xuất index (chỉ mục).", en: "The \"newest processing orders\" list sometimes fails on large data. Read the illustration and propose an index." }
+    exhibits:
+      - label: { vi: "db.orders.find({ status: 'PROCESSING' }).sort({ created: -1 }).limit(50), index { status: 1 }", en: "db.orders.find({ status: 'PROCESSING' }).sort({ created: -1 }).limit(50), index { status: 1 }" }
+        source: illustrative
+        shown: |-
+          winningPlan: {
+            stage: 'SORT', sortPattern: { created: -1 }, memLimit: 104857600, limitAmount: 50, type: 'simple',
+            inputStage: { stage: 'FETCH', inputStage: { stage: 'IXSCAN', keyPattern: { status: 1 } } }
+          }
+          executionStats: { nReturned: 50, totalKeysExamined: 180000, totalDocsExamined: 180000 }
+    answer: { vi: "Có stage `SORT` nghĩa là sắp xếp trong bộ nhớ: index `{ status: 1 }` tìm được 180.000 đơn đang xử lý nhưng không cho thứ tự `created`, nên phải đọc hết rồi sắp, để lấy 50. Khi tập lớn, sort có thể vượt giới hạn bộ nhớ (cần tràn đĩa hoặc lỗi). Index `{ status: 1, created: -1 }` (E rồi S) cho thứ tự sẵn: không `SORT`, đọc khoảng 50 khóa.", en: "A `SORT` stage means an in-memory sort: the `{ status: 1 }` index finds 180,000 processing orders but not in `created` order, so all are read and sorted to get 50. On large sets the sort can exceed the memory limit (spill to disk or fail). An index on `{ status: 1, created: -1 }` (E then S) gives the order: no `SORT`, about 50 keys read." }
+    rubric:
+      - { vi: "Đọc SORT = sắp trong bộ nhớ", en: "Reads SORT = in-memory sort" }
+      - { vi: "So 180.000 khóa với 50 kết quả", en: "Compares 180,000 keys with 50 results" }
+      - { vi: "Đề xuất index status + created", en: "Proposes the status + created index" }
+    doc: https://www.mongodb.com/docs/manual/reference/explain-results/
+  - id: e-iv-mg-mid-11
+    engine: mongodb
+    band: mid
+    kind: diagnose
+    set: mg-mid-3
+    q: { vi: "Màn \"tra SKU\" được kỳ vọng là truy vấn phủ nhưng explain vẫn có FETCH. Tìm nguyên nhân.", en: "The \"SKU lookup\" screen was meant to be a covered query but explain still shows FETCH. Find the cause." }
+    exhibits:
+      - label: { vi: "db.products.find({ sku: 'X-1' }, { sku: 1, price: 1 }), index (chỉ mục) { sku: 1, price: 1 }", en: "db.products.find({ sku: 'X-1' }, { sku: 1, price: 1 }), index { sku: 1, price: 1 }" }
+        source: illustrative
+        shown: |-
+          winningPlan: {
+            stage: 'PROJECTION_SIMPLE', transformBy: { sku: 1, price: 1 },
+            inputStage: { stage: 'FETCH', inputStage: { stage: 'IXSCAN', keyPattern: { sku: 1, price: 1 } } }
+          }
+          executionStats: { nReturned: 1, totalKeysExamined: 1, totalDocsExamined: 1 }
+    answer: { vi: "Projection không loại `_id`, nên kết quả cần `_id` mà index không có, MongoDB phải đọc tài liệu (`FETCH`, `totalDocsExamined: 1`). Sửa projection thành `{ _id: 0, sku: 1, price: 1 }` thì `IXSCAN` không còn dưới `FETCH` và `totalDocsExamined: 0`. Nếu `price` là mảng (multikey) thì vẫn không phủ được.", en: "The projection does not exclude `_id`, so the result needs `_id`, which the index lacks, and MongoDB must read the document (`FETCH`, `totalDocsExamined: 1`). Change the projection to `{ _id: 0, sku: 1, price: 1 }`: `IXSCAN` is no longer under `FETCH` and `totalDocsExamined: 0`. If `price` were an array (multikey) it still could not be covered." }
+    rubric:
+      - { vi: "Nhận ra _id mặc định trong projection", en: "Spots the default _id in the projection" }
+      - { vi: "Nói kết quả explain mong đợi sau sửa", en: "States the expected explain after the fix" }
+      - { vi: "Biết giới hạn multikey", en: "Knows the multikey limit" }
+    doc: https://www.mongodb.com/docs/manual/reference/explain-results/
+  - id: e-iv-mg-mid-12
+    engine: mongodb
+    band: mid
+    kind: concept
+    set: mg-mid-1
+    q: { vi: "Write concern `{ w: 'majority', j: true }` hứa gì? Đổi lại tốn gì?", en: "What does write concern `{ w: 'majority', j: true }` promise? What does it cost?" }
+    answer: { vi: "Lệnh ghi chỉ được xác nhận khi đa số thành viên có phiếu đã ghi nó (và vào journal trên đĩa). Khi primary sập, thay đổi đó không bị rollback vì primary mới chắc chắn có nó. Cái giá là độ trễ thêm ít nhất một vòng mạng tới secondary, và nếu mất đa số thì ghi treo tới `wtimeout`. `w: 1` nhanh hơn nhưng có thể mất dữ liệu đã xác nhận khi failover.", en: "The write is acknowledged only once a majority of voting members have it (and in the on-disk journal). If the primary fails, the change is not rolled back because the new primary surely has it. The price is at least one extra network round trip to secondaries, and if a majority is unavailable the write waits until `wtimeout`. `w: 1` is faster but can lose acknowledged writes on failover." }
+    rubric:
+      - { vi: "Đa số + journal", en: "Majority + journal" }
+      - { vi: "Không rollback khi failover", en: "No rollback on failover" }
+      - { vi: "Độ trễ và wtimeout", en: "Latency and wtimeout" }
+    doc: https://www.mongodb.com/docs/manual/reference/write-concern/
+  - id: e-iv-mg-mid-13
+    engine: mongodb
+    band: mid
+    kind: concept
+    set: mg-mid-2
+    q: { vi: "Các mức read concern `local`, `majority`, `snapshot` khác nhau thế nào?", en: "How do read concerns `local`, `majority` and `snapshot` differ?" }
+    answer: { vi: "`local` (mặc định): dữ liệu mới nhất của nút được đọc, có thể bị rollback sau đó. `majority`: chỉ dữ liệu đã được đa số ghi nhận, nên không bao giờ bị rollback, có thể hơi cũ hơn. `snapshot`: dùng trong transaction đa tài liệu (và một số lệnh đọc), mọi lần đọc thấy cùng một thời điểm đã majority-commit. `linearizable` mạnh nhất, chỉ trên primary, chậm.", en: "`local` (default): the node's newest data, which may later be rolled back. `majority`: only data acknowledged by a majority, so never rolled back, possibly slightly older. `snapshot`: used in multi-document transactions (and some reads), every read sees one majority-committed point in time. `linearizable` is the strongest, primary only, slow." }
+    rubric:
+      - { vi: "Đúng local và rủi ro rollback", en: "Right about local and rollback risk" }
+      - { vi: "Đúng majority", en: "Right about majority" }
+      - { vi: "Đúng snapshot trong transaction", en: "Right about snapshot in transactions" }
+    doc: https://www.mongodb.com/docs/manual/reference/read-concern/
+  - id: e-iv-mg-mid-14
+    engine: mongodb
+    band: mid
+    kind: concept
+    set: mg-mid-3
+    q: { vi: "Một aggregation báo lỗi vượt giới hạn bộ nhớ ở `$group`. Có những cách nào?", en: "An aggregation fails with a memory limit error at `$group`. What are the options?" }
+    answer: { vi: "Mỗi stage chặn (như `$group`, `$sort`) có giới hạn 100 MB bộ nhớ. Cách: (1) `$match`/`$project` sớm để giảm tài liệu và trường đi vào `$group`; (2) cho phép tràn đĩa với `allowDiskUse: true` (từ 6.0 tham số `allowDiskUseByDefault` mặc định là true, nên lỗi này thường là do nó bị tắt hoặc server cũ hơn), chấp nhận chậm hơn; (3) tính trước: mẫu Computed hoặc collection tổng hợp cập nhật dần bằng `$merge`; (4) chia nhỏ theo khoảng thời gian.", en: "Each blocking stage (like `$group`, `$sort`) has a 100 MB memory limit. Options: (1) an early `$match`/`$project` to shrink documents and fields entering `$group`; (2) allow spilling with `allowDiskUse: true` (since 6.0 the `allowDiskUseByDefault` parameter defaults to true, so this error usually means it was turned off or the server is older), accepting slower runs; (3) precompute: the Computed pattern or a summary collection updated incrementally with `$merge`; (4) split by time range." }
+    rubric:
+      - { vi: "Biết giới hạn 100 MB mỗi stage", en: "Knows the 100 MB per-stage limit" }
+      - { vi: "allowDiskUse và cái giá", en: "allowDiskUse and its price" }
+      - { vi: "Giảm dữ liệu sớm hoặc tính trước", en: "Shrink early or precompute" }
+    doc: https://www.mongodb.com/docs/manual/core/aggregation-pipeline-limits/
+  - id: e-iv-mg-mid-15
+    engine: mongodb
+    band: mid
+    kind: design
+    set: mg-mid-1
+    q: { vi: "Danh mục sản phẩm: áo có size/màu, điện thoại có RAM/dung lượng, sách có ISBN. Người dùng lọc theo bất kỳ thuộc tính nào. Thiết kế tài liệu và index (chỉ mục).", en: "A product catalog: shirts have size/colour, phones have RAM/storage, books have ISBN. Users filter by any attribute. Design documents and indexes." }
+    answer: { vi: "Mẫu Attribute: trường chung ở gốc (`name`, `category`, `price`), thuộc tính riêng thành mảng cặp `attrs: [{ k: 'ram_gb', v: 8 }, { k: 'color', v: 'blue' }]`, một index `{ 'attrs.k': 1, 'attrs.v': 1 }` phục vụ mọi thuộc tính; truy vấn dùng `$elemMatch` để k và v cùng một phần tử. Thêm `{ category: 1, price: 1 }` cho duyệt danh mục. Lựa chọn khác: wildcard index `{ 'specs.$**': 1 }` trên object thuộc tính, viết truy vấn tự nhiên hơn nhưng mỗi truy vấn chỉ dùng được một trường của nó.", en: "Attribute pattern: common fields at the top (`name`, `category`, `price`), specific attributes as an array of pairs `attrs: [{ k: 'ram_gb', v: 8 }, { k: 'color', v: 'blue' }]`, one index `{ 'attrs.k': 1, 'attrs.v': 1 }` serves every attribute; queries use `$elemMatch` so k and v match one element. Add `{ category: 1, price: 1 }` for browsing. Alternative: a wildcard index `{ 'specs.$**': 1 }` on an attributes object, more natural queries but each query can use it for only one field." }
+    tradeoffs:
+      - { vi: "Mẫu Attribute: một index cho tất cả, nhưng giá trị khác kiểu trong `v` và truy vấn dài hơn.", en: "Attribute pattern: one index for everything, but mixed types in `v` and longer queries." }
+      - { vi: "Wildcard: dễ viết, nhưng index lớn và không ghép được với trường khác như index ghép thường.", en: "Wildcard: easy to write, but a large index that does not combine with other fields like a normal compound index." }
+    rubric:
+      - { vi: "Đưa mẫu Attribute với index k/v", en: "Gives the Attribute pattern with a k/v index" }
+      - { vi: "Dùng $elemMatch đúng chỗ", en: "Uses $elemMatch where needed" }
+      - { vi: "So với wildcard index", en: "Compares with a wildcard index" }
+    doc: https://www.mongodb.com/docs/manual/core/indexes/index-types/index-wildcard/
+
+  # ---------------- MongoDB · senior
+  - id: e-iv-mg-senior-01
+    engine: mongodb
+    band: senior
+    kind: concept
+    set: mg-senior-1
+    q: { vi: "Khi nào bạn dùng transaction đa tài liệu trong MongoDB, và cái giá của nó là gì?", en: "When do you use multi-document transactions in MongoDB, and what do they cost?" }
+    answer: { vi: "Khi một thay đổi nghiệp vụ buộc phải chạm nhiều tài liệu/collection cùng lúc mà không thiết kế lại được thành một tài liệu (ví dụ chuyển tiền giữa hai ví). Cần replica set (hoặc cụm shard). Cái giá: giữ snapshot và lock trên tài liệu đến khi commit, xung đột ghi làm transaction bị hủy và phải thử lại (lỗi có nhãn `TransientTransactionError`), giới hạn thời gian mặc định 60 s, và chậm hơn ghi một tài liệu. Ưu tiên thiết kế để ghi một tài liệu là đủ; transaction là ngoại lệ.", en: "When one business change must touch several documents/collections together and cannot be redesigned into one document (for example a transfer between two wallets). Requires a replica set (or sharded cluster). Cost: the snapshot and document locks are held until commit, write conflicts abort and need retries (errors labelled `TransientTransactionError`), a 60 s default lifetime, and slower than a single-document write. Prefer designs where one document write suffices; transactions are the exception." }
+    rubric:
+      - { vi: "Ví dụ đúng khi nào cần", en: "A correct example of when needed" }
+      - { vi: "Biết cần replica set và retry theo nhãn lỗi", en: "Knows replica set requirement and label-based retry" }
+      - { vi: "Nêu giới hạn 60 s và ưu tiên mô hình một tài liệu", en: "States the 60 s limit and prefers single-document modelling" }
+    doc: https://www.mongodb.com/docs/manual/core/transactions/
+  - id: e-iv-mg-senior-02
+    engine: mongodb
+    band: senior
+    kind: concept
+    set: mg-senior-2
+    q: { vi: "Dùng change stream để đồng bộ sang hệ tìm kiếm. Làm sao để dịch vụ khởi động lại mà không mất sự kiện?", en: "You use a change stream to sync into a search system. How does the service restart without losing events?" }
+    answer: { vi: "Mỗi sự kiện có `_id` là resume token. Lưu token sau khi xử lý xong (bền, cùng nơi với trạng thái đích nếu được), khi khởi động lại mở stream với `resumeAfter` (hoặc `startAfter` nếu stream trước bị invalidate). Điều kiện: token vẫn còn trong oplog; dịch vụ dừng lâu hơn cửa sổ oplog thì phải đồng bộ lại toàn bộ. Change stream chỉ phát thay đổi đã majority-commit và cần replica set. Xử lý phải idempotent vì có thể nhận lại sự kiện sau token cuối đã lưu.", en: "Every event's `_id` is a resume token. Store the token after processing (durably, alongside the target state if possible), and on restart open the stream with `resumeAfter` (or `startAfter` if the previous stream was invalidated). Condition: the token must still be in the oplog; downtime longer than the oplog window forces a full resync. Change streams only emit majority-committed changes and need a replica set. Processing must be idempotent since events after the last stored token may be redelivered." }
+    rubric:
+      - { vi: "Lưu resume token + resumeAfter/startAfter", en: "Resume token + resumeAfter/startAfter" }
+      - { vi: "Giới hạn cửa sổ oplog", en: "The oplog window limit" }
+      - { vi: "Xử lý idempotent", en: "Idempotent processing" }
+    doc: https://www.mongodb.com/docs/manual/changestreams/
+  - id: e-iv-mg-senior-03
+    engine: mongodb
+    band: senior
+    kind: concept
+    set: mg-senior-3
+    q: { vi: "Kể và giải thích ngắn ba mẫu thiết kế schema MongoDB chính thức bạn đã dùng, mỗi mẫu một tình huống.", en: "Name and briefly explain three official MongoDB schema design patterns you have used, one situation each." }
+    answer: { vi: "Ví dụ: Computed: lưu sẵn giá trị tính (tổng doanh thu, số đánh giá) cập nhật khi ghi, để đọc không phải gom. Group Data (bucket): gom nhiều điểm đo vào một tài liệu theo khoảng thời gian, giảm số tài liệu và index (chỉ mục). Schema Versioning: thêm `schema_version`, ứng dụng đọc được cả bản cũ và mới, nâng cấp dần thay vì migration một lần. Còn có Polymorphic (nhiều hình dạng trong một collection), Archive (chuyển dữ liệu cũ ra chỗ khác), Single Collection (nhiều loại thực thể chung collection để đọc một lần).", en: "For example: Computed: store precomputed values (revenue totals, rating counts) updated on write, so reads need no aggregation. Group Data (bucket): group many measurements into one document per time span, fewer documents and index entries. Schema Versioning: add `schema_version`, the app reads old and new shapes, upgrade gradually instead of a one-shot migration. Others: Polymorphic (several shapes in one collection), Archive (move old data elsewhere), Single Collection (several entity types together, read in one go)." }
+    rubric:
+      - { vi: "Ba mẫu đúng tên và nội dung", en: "Three patterns with correct names and meaning" }
+      - { vi: "Mỗi mẫu một tình huống hợp lý", en: "A sensible situation for each" }
+      - { vi: "Nêu cái giá của ít nhất một mẫu", en: "States the cost of at least one" }
+    doc: https://www.mongodb.com/docs/manual/data-modeling/design-patterns/
+  - id: e-iv-mg-senior-04
+    engine: mongodb
+    band: senior
+    kind: concept
+    set: mg-senior-1
+    q: { vi: "Query planner của MongoDB chọn kế hoạch thế nào, và vì sao một truy vấn có thể đột ngột chậm dù không ai đổi code?", en: "How does MongoDB's query planner pick a plan, and why can a query suddenly slow down with no code change?" }
+    answer: { vi: "Với một \"hình dạng\" truy vấn có nhiều index (chỉ mục) ứng viên, planner cho các kế hoạch ứng viên chạy thử song song một lượng việc nhỏ và chọn cái trả kết quả hiệu quả nhất, rồi lưu vào plan cache theo hình dạng đó. Các lần sau dùng lại kế hoạch đã lưu và chỉ lập lại khi hiệu năng của nó tệ đi rõ, khi index đổi hoặc server khởi động lại. Chậm đột ngột: kế hoạch được chọn với giá trị tham số \"dễ\" nhưng tệ với giá trị khác, hoặc dữ liệu đổi phân bố. Xử lý: index tốt hơn để chỉ có một lựa chọn rõ ràng; `hint`; hoặc `setQuerySettings` để ghim index cho một hình dạng truy vấn.", en: "For a query shape with several candidate indexes, the planner runs the candidate plans side by side for a small amount of work and picks the most efficient, then stores it in the plan cache for that shape. Later runs reuse it and only replan when its performance clearly degrades, indexes change or the server restarts. Sudden slowness: the plan was chosen with \"easy\" parameter values but is bad for others, or the data distribution shifted. Fixes: a better index so there is one clear choice; `hint`; or `setQuerySettings` to pin an index for a query shape." }
+    rubric:
+      - { vi: "Chạy thử cạnh tranh + plan cache theo hình dạng", en: "Trial race + plan cache per shape" }
+      - { vi: "Giải thích vì sao kế hoạch cache có thể sai", en: "Explains why a cached plan can be wrong" }
+      - { vi: "Ít nhất hai cách xử lý", en: "At least two remedies" }
+    doc: https://www.mongodb.com/docs/manual/core/query-plans/
+  - id: e-iv-mg-senior-05
+    engine: mongodb
+    band: senior
+    kind: concept
+    set: mg-senior-2
+    q: { vi: "Replica set ba nút: primary mất mạng. Mô tả chuyện gì xảy ra trong khoảng 15 giây tiếp theo với ghi và đọc của ứng dụng.", en: "A three-node replica set: the primary loses its network. Describe what happens to app writes and reads in the next 15 seconds." }
+    answer: { vi: "Secondary không nhận heartbeat (2 s một lần) trong `electionTimeoutMillis` (mặc định 10 s) thì tổ chức bầu cử; nút có dữ liệu mới nhất và đủ phiếu đa số (2/3) thành primary mới, thường trong khoảng 12 giây. Primary cũ thấy mình mất đa số thì tự xuống secondary. Trong lúc đó ghi lỗi hoặc chờ; driver hiện đại có retryable writes nên tự thử lại một lần khi thấy primary mới. Đọc với read preference `primary` cũng gián đoạn; `primaryPreferred`/`secondary` vẫn đọc được. Ghi `w: 1` chưa nhân bản trên primary cũ sẽ bị rollback khi nó quay lại.", en: "Secondaries miss heartbeats (every 2 s) for `electionTimeoutMillis` (10 s by default) and call an election; the most up-to-date node with a majority of votes (2 of 3) becomes primary, typically within about 12 seconds. The old primary, seeing it lost the majority, steps down. Meanwhile writes fail or wait; modern drivers use retryable writes and retry once when they find the new primary. Reads with `primary` preference also pause; `primaryPreferred`/`secondary` keep reading. `w: 1` writes not yet replicated from the old primary are rolled back when it rejoins." }
+    rubric:
+      - { vi: "Heartbeat, timeout 10 s, bầu theo đa số", en: "Heartbeats, 10 s timeout, majority election" }
+      - { vi: "Primary cũ tự xuống", en: "The old primary steps down" }
+      - { vi: "Retryable writes và hành vi đọc", en: "Retryable writes and read behaviour" }
+      - { vi: "Rollback của ghi w:1", en: "Rollback of w:1 writes" }
+    doc: https://www.mongodb.com/docs/manual/core/replica-set-elections/
+  - id: e-iv-mg-senior-06
+    engine: mongodb
+    band: senior
+    kind: concept
+    set: mg-senior-3
+    q: { vi: "Retryable writes giải quyết vấn đề gì, và thao tác nào **không** an toàn để tự thử lại?", en: "What problem do retryable writes solve, and which operations are **not** safe to retry blindly?" }
+    answer: { vi: "Khi mạng hoặc failover làm mất phản hồi, client không biết lệnh ghi đã chạy chưa. Retryable writes gắn id phiên + số thứ tự, nên server nhận diện lần thử lại của cùng một lệnh và không chạy hai lần (cho insert, update/delete một tài liệu, findAndModify, bulk có thứ tự…). `updateMany`/`deleteMany` (multi: true) không thuộc diện retryable. Thao tác không idempotent ở tầng ứng dụng (ví dụ gọi API thanh toán rồi ghi) cần khóa idempotency riêng.", en: "When the network or a failover loses the reply, the client cannot know whether the write ran. Retryable writes attach a session id + sequence number, so the server recognises a retry of the same operation and does not run it twice (for inserts, single-document updates/deletes, findAndModify, ordered bulk…). `updateMany`/`deleteMany` (multi: true) are not retryable. Non-idempotent app-level steps (for example calling a payment API then writing) need their own idempotency key." }
+    rubric:
+      - { vi: "Mô tả vấn đề phản hồi bị mất", en: "Describes the lost-reply problem" }
+      - { vi: "Cơ chế id phiên + số thứ tự", en: "Session id + sequence mechanism" }
+      - { vi: "Biết updateMany/deleteMany không retryable", en: "Knows updateMany/deleteMany are not retryable" }
+    doc: https://www.mongodb.com/docs/manual/core/retryable-writes/
+  - id: e-iv-mg-senior-07
+    engine: mongodb
+    band: senior
+    kind: concept
+    set: mg-senior-1
+    q: { vi: "Xóa một index (chỉ mục) \"có vẻ không dùng\" trên production an toàn thế nào?", en: "How do you safely drop an index that \"looks unused\" in production?" }
+    answer: { vi: "(1) Xem `$indexStats` trên **mọi** nút (thống kê theo từng nút và reset khi khởi động lại), qua một chu kỳ nghiệp vụ đủ dài (cả báo cáo cuối tháng). (2) Ẩn index: `db.coll.hideIndex(name)`: planner bỏ qua nó nhưng nó vẫn được duy trì, nên bật lại tức thì nếu có truy vấn chậm. (3) Theo dõi slow log một thời gian rồi mới `dropIndex`. Index `_id` không xóa/ẩn được.", en: "(1) Check `$indexStats` on **every** node (stats are per node and reset on restart), across a long enough business cycle (including month-end reports). (2) Hide it: `db.coll.hideIndex(name)`: the planner ignores it but it is still maintained, so unhiding is instant if something slows down. (3) Watch the slow log for a while, then `dropIndex`. The `_id` index cannot be dropped or hidden." }
+    rubric:
+      - { vi: "$indexStats trên mọi nút, chu kỳ đủ dài", en: "$indexStats on all nodes, a long enough cycle" }
+      - { vi: "Ẩn trước khi xóa", en: "Hide before drop" }
+      - { vi: "Theo dõi rồi mới xóa", en: "Monitor, then drop" }
+    doc: https://www.mongodb.com/docs/manual/core/index-hidden/
+  - id: e-iv-mg-senior-08
+    engine: mongodb
+    band: senior
+    kind: diagnose
+    set: mg-senior-1
+    q: { vi: "Ô tìm kiếm sản phẩm dùng regex. Đọc đoạn minh họa: vì sao có index (chỉ mục) mà vẫn chậm, và bạn đề xuất gì?", en: "The product search box uses a regex. Read the illustration: why is it slow despite an index, and what do you propose?" }
+    exhibits:
+      - label: { vi: "db.products.find({ name: /phone/i }), index { name: 1 }", en: "db.products.find({ name: /phone/i }), index { name: 1 }" }
+        source: illustrative
+        shown: |-
+          winningPlan: {
+            stage: 'FETCH',
+            inputStage: { stage: 'IXSCAN', keyPattern: { name: 1 }, filter: { name: { '$regex': 'phone', '$options': 'i' } },
+                          indexBounds: { name: [ '["", {})', '[/phone/i, /phone/i]' ] } }
+          }
+          executionStats: { nReturned: 120, totalKeysExamined: 100000, totalDocsExamined: 120 }
+    answer: { vi: "Regex không neo đầu chuỗi (và không phân biệt hoa thường) không thu hẹp được khoảng index: `indexBounds` là toàn bộ chuỗi, nên phải duyệt 100.000 khóa để lấy 120. Index chỉ đỡ việc đọc tài liệu. Regex neo đầu và phân biệt hoa thường (`/^phone/`) mới thành khoảng hẹp. Cho tìm kiếm thật (chuỗi con, không dấu, xếp hạng) nên dùng công cụ tìm kiếm toàn văn (MongoDB Search hoặc text index) thay vì regex.", en: "An unanchored (and case-insensitive) regex cannot narrow the index range: `indexBounds` cover every string, so 100,000 keys are walked to get 120. The index only saves document reads. Only an anchored, case-sensitive regex (`/^phone/`) becomes a tight range. For real search (substrings, accents, ranking) use a full-text engine (MongoDB Search or a text index) instead of regex." }
+    rubric:
+      - { vi: "Đọc indexBounds toàn bộ và 100.000/120", en: "Reads full indexBounds and 100,000/120" }
+      - { vi: "Biết điều kiện regex neo + phân biệt hoa thường", en: "Knows the anchored + case-sensitive condition" }
+      - { vi: "Đề xuất tìm kiếm toàn văn", en: "Proposes full-text search" }
+    doc: https://www.mongodb.com/docs/manual/reference/operator/query/regex/
+  - id: e-iv-mg-senior-09
+    engine: mongodb
+    band: senior
+    kind: diagnose
+    set: mg-senior-2
+    q: { vi: "Báo cáo doanh thu theo khách chạy ngày càng lâu. Đọc phần explain của aggregation (minh họa) và đề xuất.", en: "The revenue-per-customer report runs longer every day. Read the aggregation explain excerpt (illustrative) and propose a fix." }
+    exhibits:
+      - label: { vi: "db.orders.aggregate([{ $group: { _id: '$customer_id', total: { $sum: '$amount' } } }, { $sort: { total: -1 } }]).explain('executionStats')", en: "db.orders.aggregate([{ $group: { _id: '$customer_id', total: { $sum: '$amount' } } }, { $sort: { total: -1 } }]).explain('executionStats')" }
+        source: illustrative
+        shown: |-
+          stages: [
+            { '$cursor': { queryPlanner: { winningPlan: { stage: 'PROJECTION_SIMPLE', inputStage: { stage: 'COLLSCAN' } } },
+                           executionStats: { nReturned: 8000000, totalDocsExamined: 8000000 } } },
+            { '$group': { _id: '$customer_id', total: { '$sum': '$amount' } }, nReturned: 950000, usedDisk: true, spills: 14 },
+            { '$sort': { sortKey: { total: -1 } }, nReturned: 950000, usedDisk: true }
+          ]
+    answer: { vi: "Không có `$match`: quét cả 8 triệu đơn mỗi lần, `$group` 950.000 nhóm tràn đĩa (`usedDisk: true`, 14 lần), rồi `$sort` cũng tràn. Thời gian tăng theo toàn bộ lịch sử. Sửa: (1) giới hạn khoảng thời gian bằng `$match` đầu pipeline có index (chỉ mục); (2) nếu cần tổng toàn thời gian, tính dần: collection tổng hợp theo ngày/khách cập nhật bằng `$merge` mỗi đêm (hoặc mẫu Computed khi ghi đơn), báo cáo chỉ đọc bảng tổng; (3) nếu chỉ cần top N, thêm `$limit` sau `$sort` để sort chỉ giữ N phần tử.", en: "No `$match`: every run scans all 8 million orders, `$group` with 950,000 groups spills to disk (`usedDisk: true`, 14 spills), and `$sort` spills too. Runtime grows with all history. Fix: (1) bound the time range with a leading indexed `$match`; (2) if all-time totals are needed, compute incrementally: a per-day/per-customer summary collection updated by a nightly `$merge` (or the Computed pattern at order write), and the report reads the summary; (3) if only the top N matter, add `$limit` after `$sort` so the sort keeps just N items." }
+    rubric:
+      - { vi: "Đọc COLLSCAN toàn bộ và usedDisk", en: "Reads the full COLLSCAN and usedDisk" }
+      - { vi: "Đề xuất $match có index", en: "Proposes an indexed $match" }
+      - { vi: "Đề xuất tính dần ($merge / Computed)", en: "Proposes incremental computation ($merge / Computed)" }
+      - { vi: "Biết $sort + $limit gộp lại", en: "Knows $sort + $limit coalesce" }
+    doc: https://www.mongodb.com/docs/manual/core/aggregation-pipeline-optimization/
+  - id: e-iv-mg-senior-10
+    engine: mongodb
+    band: senior
+    kind: diagnose
+    set: mg-senior-3
+    q: { vi: "Truy vấn đơn theo cửa hàng và khoảng ngày trả về đúng nhưng chậm. Explain (minh họa) cho thấy kế hoạch được lấy từ cache. Chẩn đoán.", en: "An orders-by-store-and-date-range query is correct but slow. The explain (illustrative) shows a cached plan. Diagnose." }
+    exhibits:
+      - label: { vi: "find({ store: 7, created: { $gte: d1, $lt: d2 } }), index (chỉ mục) { created: 1 } và { store: 1 }", en: "find({ store: 7, created: { $gte: d1, $lt: d2 } }), indexes { created: 1 } and { store: 1 }" }
+        source: illustrative
+        shown: |-
+          queryPlanner: {
+            winningPlan: { isCached: true, stage: 'FETCH', filter: { store: { '$eq': 7 } },
+                           inputStage: { stage: 'IXSCAN', keyPattern: { created: 1 } } },
+            rejectedPlans: [ { stage: 'FETCH', inputStage: { stage: 'IXSCAN', keyPattern: { store: 1 } } } ]
+          }
+          executionStats: { nReturned: 300, totalKeysExamined: 240000, totalDocsExamined: 240000 }
+    answer: { vi: "Kế hoạch trong cache chọn index `created` (có lẽ được chọn khi khoảng ngày rất hẹp), giờ khoảng dài nên đọc 240.000 tài liệu rồi lọc `store` để giữ 300. Hai index một trường đều không khớp hình dạng truy vấn. Sửa gốc: index ghép `{ store: 1, created: 1 }` (E rồi R) cho khoảng chính xác ~300 khóa và loại bỏ sự lưỡng lự của planner. Tạm thời: `PlanCache.clear()` hoặc `hint`.", en: "The cached plan uses the `created` index (probably chosen when the date range was narrow); now the range is wide, so 240,000 documents are read and filtered on `store` to keep 300. Neither single-field index fits the query shape. Root fix: a compound `{ store: 1, created: 1 }` index (E then R) gives an exact ~300-key range and removes the planner's indecision. Short term: `PlanCache.clear()` or `hint`." }
+    rubric:
+      - { vi: "Đọc isCached và tỉ lệ 240.000/300", en: "Reads isCached and the 240,000/300 ratio" }
+      - { vi: "Giải thích kế hoạch cache theo tham số cũ", en: "Explains a plan cached for old parameters" }
+      - { vi: "Đề xuất index ghép theo ESR", en: "Proposes an ESR compound index" }
+    doc: https://www.mongodb.com/docs/manual/core/query-plans/
+  - id: e-iv-mg-senior-11
+    engine: mongodb
+    band: senior
+    kind: design
+    set: mg-senior-1
+    q: { vi: "Lưu số đo nhiệt độ mỗi 10 giây từ 20.000 cảm biến, giữ 1 năm, truy vấn theo cảm biến và khoảng thời gian. Thiết kế.", en: "Store temperature readings every 10 seconds from 20,000 sensors, keep 1 year, query by sensor and time range. Design it." }
+    answer: { vi: "Time series collection: `createCollection('readings', { timeseries: { timeField: 'ts', metaField: 'sensor', granularity: 'seconds' }, expireAfterSeconds: 31536000 })`. MongoDB tự gom các điểm cùng `sensor` thành bucket dạng cột nén, giảm mạnh dung lượng và index (chỉ mục); `expireAfterSeconds` xóa dữ liệu cũ. Thêm index `{ sensor: 1, ts: 1 }` nếu chưa có (bản mới tự tạo trên meta + time). `metaField` chỉ chứa thứ ít đổi (id, vị trí), không chứa số đo. Truy vấn thô dài hạn nên đi qua collection tổng hợp theo giờ.", en: "A time series collection: `createCollection('readings', { timeseries: { timeField: 'ts', metaField: 'sensor', granularity: 'seconds' }, expireAfterSeconds: 31536000 })`. MongoDB groups points with the same `sensor` into compressed columnar buckets, sharply cutting storage and index size; `expireAfterSeconds` drops old data. Add a `{ sensor: 1, ts: 1 }` index if missing (newer versions create one on meta + time). `metaField` holds only slow-changing data (id, location), never measurements. Long-range raw queries should go through an hourly rollup collection." }
+    tradeoffs:
+      - { vi: "Time series: nén và đọc theo khoảng rất tốt, nhưng cập nhật/xóa từng điểm bị giới hạn.", en: "Time series: great compression and range reads, but per-point updates/deletes are limited." }
+      - { vi: "Bucket pattern tự làm cho toàn quyền kiểm soát nhưng phải tự viết logic gom và TTL.", en: "A hand-made bucket pattern gives full control but you write the grouping and TTL logic yourself." }
+    rubric:
+      - { vi: "Chọn time series với timeField/metaField đúng", en: "Chooses time series with the right timeField/metaField" }
+      - { vi: "Giữ dữ liệu 1 năm bằng expireAfterSeconds", en: "1-year retention via expireAfterSeconds" }
+      - { vi: "Nêu giới hạn cập nhật hoặc bảng tổng hợp", en: "Mentions update limits or rollups" }
+    doc: https://www.mongodb.com/docs/manual/core/timeseries-collections/
+  - id: e-iv-mg-senior-12
+    engine: mongodb
+    band: senior
+    kind: design
+    set: mg-senior-2
+    q: { vi: "Bán vé sự kiện: nhiều người cùng mua chỗ cuối cùng. Thiết kế để không bán quá số vé, ưu tiên không dùng transaction.", en: "Event ticketing: many people buy the last seats at once. Design it to never oversell, preferably without transactions." }
+    answer: { vi: "Một tài liệu sự kiện giữ `remaining`. Mua bằng một lệnh nguyên tử có điều kiện: `updateOne({ _id: ev, remaining: { $gte: n } }, { $inc: { remaining: -n }, $push: { holds: { order: o, n, at: now } } })`. `modifiedCount = 0` nghĩa là hết vé. Vì thao tác trên một tài liệu là nguyên tử, không thể bán quá. Giữ chỗ hết hạn được trả lại bằng job dọn (`$inc` dương + `$pull`). Nếu mảng `holds` lớn, tách giữ chỗ ra collection riêng và khi đó việc giữ chỗ + trừ số cần transaction hoặc chấp nhận dọn bù.", en: "One event document holds `remaining`. Buy with one atomic conditional update: `updateOne({ _id: ev, remaining: { $gte: n } }, { $inc: { remaining: -n }, $push: { holds: { order: o, n, at: now } } })`. `modifiedCount = 0` means sold out. Since a single-document operation is atomic, overselling is impossible. Expired holds are returned by a cleanup job (positive `$inc` + `$pull`). If `holds` grows large, move holds to their own collection, and then hold + decrement needs a transaction or compensating cleanup." }
+    tradeoffs:
+      - { vi: "Một tài liệu nóng: mọi lần mua tranh chấp cùng tài liệu, giới hạn thông lượng cho sự kiện rất hot.", en: "One hot document: every purchase contends on it, capping throughput for very hot events." }
+      - { vi: "Chia vé thành nhiều tài liệu theo khu (bucket) tăng thông lượng nhưng phải chọn khu còn vé.", en: "Splitting seats into per-section documents raises throughput but buyers must pick a section with stock." }
+    rubric:
+      - { vi: "Cập nhật có điều kiện + $inc nguyên tử", en: "Conditional update + atomic $inc" }
+      - { vi: "Đọc modifiedCount để biết thất bại", en: "Reads modifiedCount to detect failure" }
+      - { vi: "Xử lý giữ chỗ hết hạn và tài liệu nóng", en: "Handles expired holds and the hot document" }
+    doc: https://www.mongodb.com/docs/manual/core/write-operations-atomicity/
+  - id: e-iv-mg-senior-13
+    engine: mongodb
+    band: senior
+    kind: concept
+    set: mg-senior-2
+    q: { vi: "Tạo index (chỉ mục) mới trên collection 500 GB đang phục vụ production: ảnh hưởng gì và làm thế nào cho an toàn?", en: "Building a new index on a 500 GB collection serving production: what is the impact and how do you do it safely?" }
+    answer: { vi: "Từ 4.2, việc tạo index chỉ giữ lock độc quyền ngắn ở đầu và cuối, đọc/ghi vẫn chạy, nhưng nó tốn CPU, I/O và bộ nhớ (giới hạn `maxIndexBuildMemoryUsageMegabytes`), và chạy đồng thời trên mọi thành viên replica set; mặc định (`commitQuorum: 'votingMembers'`) chỉ commit khi mọi thành viên có phiếu mang dữ liệu đã xong, nên một nút chậm làm cả việc tạo index chờ. Làm an toàn: giờ thấp điểm, kiểm dung lượng đĩa, theo dõi độ trễ nhân bản; với tải rất nặng, dùng rolling build: tách từng nút khỏi replica set, tạo index, đưa lại, cuối cùng stepDown primary.", en: "Since 4.2 an index build holds an exclusive lock only briefly at start and end, reads/writes continue, but it consumes CPU, I/O and memory (bounded by `maxIndexBuildMemoryUsageMegabytes`), and runs simultaneously on all replica set members; by default (`commitQuorum: 'votingMembers'`) it commits only when every data-bearing voting member has finished, so one slow member holds the whole build. Safely: off-peak, check disk space, watch replication lag; for very heavy load, a rolling build: take each member out, build, rejoin, finally step down the primary." }
+    rubric:
+      - { vi: "Biết lock ngắn từ 4.2 nhưng tốn tài nguyên", en: "Knows the brief locks since 4.2 but resource cost" }
+      - { vi: "Chạy đồng thời trên replica set, commitQuorum mặc định là mọi nút có phiếu", en: "Runs on all members, default commitQuorum is all voting members" }
+      - { vi: "Biện pháp an toàn / rolling build", en: "Safety measures / rolling build" }
+    doc: https://www.mongodb.com/docs/manual/core/index-creation/
+  - id: e-iv-mg-senior-14
+    engine: mongodb
+    band: senior
+    kind: concept
+    set: mg-senior-3
+    q: { vi: "\"Working set phải vừa RAM\": nghĩa là gì với WiredTiger, và bạn đo thế nào?", en: "\"The working set must fit in RAM\": what does it mean for WiredTiger, and how do you measure it?" }
+    answer: { vi: "Working set = dữ liệu và index (chỉ mục) được truy cập thường xuyên. WiredTiger cache mặc định là phần lớn hơn giữa 50% (RAM − 1 GB) và 256 MB; phần còn lại cho cache hệ điều hành (dữ liệu nén). Nếu working set (nhất là index) vượt cache, các page bị đẩy ra rồi đọc lại liên tục: độ trễ tăng vọt. Đo: `db.serverStatus().wiredTiger.cache` (bytes in cache, pages read into cache, tỉ lệ dirty), kích thước index `totalIndexSize()`, và độ trễ đọc đĩa.", en: "Working set = data and indexes accessed frequently. The WiredTiger cache defaults to the larger of 50% of (RAM − 1 GB) and 256 MB; the rest serves the OS file cache (compressed data). If the working set (indexes above all) exceeds the cache, pages get evicted and re-read constantly: latency jumps. Measure: `db.serverStatus().wiredTiger.cache` (bytes in cache, pages read into cache, dirty ratio), index sizes via `totalIndexSize()`, and disk read latency." }
+    rubric:
+      - { vi: "Định nghĩa working set", en: "Defines the working set" }
+      - { vi: "Đúng công thức cache mặc định", en: "Correct default cache formula" }
+      - { vi: "Chỉ số đo cụ thể", en: "Concrete metrics" }
+    doc: https://www.mongodb.com/docs/manual/core/wiredtiger/
+  - id: e-iv-mg-senior-15
+    engine: mongodb
+    band: senior
+    kind: design
+    set: mg-senior-3
+    q: { vi: "Ứng dụng đã chạy 3 năm, collection `users` có ba \"đời\" hình dạng tài liệu khác nhau. Lên kế hoạch thống nhất mà không dừng dịch vụ.", en: "An app has run for 3 years and `users` holds three \"generations\" of document shapes. Plan to unify them without downtime." }
+    answer: { vi: "Mẫu Schema Versioning: thêm `schema_version` (tài liệu thiếu = đời 1). Bước 1: code đọc được cả ba đời và ghi luôn đời mới nhất (nâng cấp khi chạm vào). Bước 2: job nền nâng cấp theo lô nhỏ các tài liệu đời cũ, bằng update pipeline có điều kiện `schema_version` để idempotent, giới hạn tốc độ theo độ trễ nhân bản. Bước 3: khi còn 0 tài liệu cũ, bỏ code đọc đời cũ và bật `$jsonSchema` validation cho đời mới.", en: "Schema Versioning pattern: add `schema_version` (missing = generation 1). Step 1: code reads all three generations and always writes the newest (upgrade on touch). Step 2: a background job upgrades old documents in small batches with a pipeline update conditioned on `schema_version` so it is idempotent, throttled by replication lag. Step 3: once zero old documents remain, remove the old read paths and enable `$jsonSchema` validation for the new shape." }
+    tradeoffs:
+      - { vi: "Nâng cấp khi chạm: không dừng, nhưng code phải sống với nhiều đời trong một thời gian.", en: "Upgrade on touch: no downtime, but code carries several generations for a while." }
+      - { vi: "Backfill nền tạo tải ghi và oplog: phải giới hạn tốc độ.", en: "Background backfill adds write and oplog load: it must be throttled." }
+    rubric:
+      - { vi: "Dùng trường phiên bản + đọc nhiều đời", en: "Version field + multi-generation reads" }
+      - { vi: "Backfill idempotent, có giới hạn tốc độ", en: "Idempotent, throttled backfill" }
+      - { vi: "Kết thúc bằng validation và bỏ code cũ", en: "Ends with validation and removing old code" }
+    doc: https://www.mongodb.com/docs/manual/data-modeling/design-patterns/
+
+  # ---------------- MongoDB · staff
+  - id: e-iv-mg-staff-01
+    engine: mongodb
+    band: staff
+    kind: concept
+    set: mg-staff-2
+    q: { vi: "Tiêu chí chọn shard key là gì? Đánh giá ba ứng viên cho collection `orders`: `_id` (ObjectId), `customer_id`, `{ customer_id, created }`.", en: "What are the criteria for a shard key? Evaluate three candidates for `orders`: `_id` (ObjectId), `customer_id`, `{ customer_id, created }`." }
+    answer: { vi: "Tiêu chí: cardinality cao, tần suất đều (không có giá trị chiếm phần lớn), không tăng đơn điệu (nếu dùng range), và khớp truy vấn chính để truy vấn đi đúng một shard. `_id` ObjectId tăng theo thời gian: mọi lần chèn dồn vào chunk cuối (một shard nóng); hashed `_id` chia đều ghi nhưng mọi truy vấn theo khách thành scatter-gather. `customer_id`: truy vấn theo khách đi một shard, nhưng khách lớn tạo chunk không chia được (jumbo). `{ customer_id, created }`: giữ tính định tuyến theo khách mà vẫn chia được dữ liệu của khách lớn theo thời gian: thường là lựa chọn tốt nhất ở đây.", en: "Criteria: high cardinality, even frequency (no value dominating), not monotonically increasing (for ranged keys), and matching the main queries so they target one shard. ObjectId `_id` grows with time: all inserts hit the last chunk (one hot shard); hashed `_id` spreads writes but every per-customer query becomes scatter-gather. `customer_id`: per-customer queries hit one shard, but a huge customer creates an unsplittable (jumbo) chunk. `{ customer_id, created }`: keeps per-customer targeting while still splitting a big customer's data by time: usually the best choice here." }
+    rubric:
+      - { vi: "Kể đủ bốn tiêu chí", en: "Names all four criteria" }
+      - { vi: "Đánh giá đúng từng ứng viên", en: "Evaluates each candidate correctly" }
+      - { vi: "Chọn khóa ghép có lý do", en: "Picks the compound key with a reason" }
+    doc: https://www.mongodb.com/docs/manual/core/sharding-choose-a-shard-key/
+  - id: e-iv-mg-staff-02
+    engine: mongodb
+    band: staff
+    kind: concept
+    set: mg-staff-3
+    q: { vi: "Hashed sharding và ranged sharding: mỗi loại tốt cho gì và hại gì?", en: "Hashed vs ranged sharding: what is each good and bad for?" }
+    answer: { vi: "Hashed: băm giá trị khóa nên ghi phân bố đều kể cả khi khóa tăng đơn điệu; nhưng truy vấn theo khoảng trên khóa không định tuyến được (đi mọi shard), và index (chỉ mục) hashed không hỗ trợ mảng, không unique. Ranged: các giá trị gần nhau nằm cùng chunk nên truy vấn khoảng đi ít shard, cho phép zone theo khoảng (ví dụ theo vùng địa lý); nhưng khóa đơn điệu tạo điểm nóng ghi ở chunk cuối.", en: "Hashed: hashes the key so writes spread evenly even for monotonic keys; but range queries on the key cannot be targeted (go to every shard), and hashed indexes do not support arrays or uniqueness. Ranged: nearby values share chunks so range queries hit few shards, and zones by range are possible (for example by region); but a monotonic key creates a write hot spot on the last chunk." }
+    rubric:
+      - { vi: "Ưu/nhược hashed", en: "Hashed pros/cons" }
+      - { vi: "Ưu/nhược ranged, nhắc khóa đơn điệu", en: "Ranged pros/cons, mentions monotonic keys" }
+      - { vi: "Ví dụ khi nào chọn mỗi loại", en: "An example of when to pick each" }
+    doc: https://www.mongodb.com/docs/manual/core/indexes/index-types/index-hashed/
+  - id: e-iv-mg-staff-03
+    engine: mongodb
+    band: staff
+    kind: concept
+    set: mg-staff-1
+    q: { vi: "Shard key đã chọn sai hai năm trước. Bạn có những lựa chọn nào bây giờ, và mỗi lựa chọn tốn gì?", en: "The shard key was chosen badly two years ago. What options do you have now, and what does each cost?" }
+    answer: { vi: "(1) `refineCollectionShardKey` (4.4+): thêm trường hậu tố vào khóa hiện có để tăng cardinality và chia được chunk lớn; rẻ, không di chuyển dữ liệu ngay, nhưng không đổi được tiền tố. (2) `reshardCollection` (5.0+): đổi hẳn khóa; MongoDB sao chép dữ liệu sang phân bố mới trong khi vẫn phục vụ ghi, chỉ chặn ghi ngắn ở cuối; cần dư dung lượng đĩa đáng kể, tải I/O cao trong nhiều giờ, ứng dụng phải chịu được ghi bị chặn ngắn. (3) Trước khi làm: `analyzeShardKey` (7.0+) để đo khóa mới trên tải thật. (4) Cách cũ: dump/restore sang collection mới, thường cần dừng.", en: "(1) `refineCollectionShardKey` (4.4+): append suffix fields to the existing key to raise cardinality and split big chunks; cheap, no immediate data movement, but the prefix cannot change. (2) `reshardCollection` (5.0+): change the key entirely; MongoDB copies data into the new distribution while serving writes, blocking writes only briefly at the end; needs substantial spare disk, heavy I/O for hours, and the app must tolerate a short write block. (3) Before either: `analyzeShardKey` (7.0+) to measure a candidate on real traffic. (4) The old way: dump/restore into a new collection, usually with downtime." }
+    rubric:
+      - { vi: "Biết refine (chỉ thêm hậu tố)", en: "Knows refine (suffix only)" }
+      - { vi: "Biết reshard và chi phí đĩa/I/O/chặn ghi ngắn", en: "Knows reshard and its disk/I/O/brief-block cost" }
+      - { vi: "Đo trước bằng analyzeShardKey", en: "Measures first with analyzeShardKey" }
+    doc: https://www.mongodb.com/docs/manual/core/sharding-reshard-a-collection/
+  - id: e-iv-mg-staff-04
+    engine: mongodb
+    band: staff
+    kind: design
+    set: mg-staff-1
+    q: { vi: "Dịch vụ hồ sơ người dùng toàn cầu, luật yêu cầu dữ liệu người dùng châu Âu nằm ở châu Âu, người dùng châu Á ở châu Á, nhưng ứng dụng muốn một collection logic duy nhất. Thiết kế.", en: "A global user-profile service; regulation requires EU users' data to stay in the EU and Asian users' in Asia, but the app wants one logical collection. Design it." }
+    answer: { vi: "Zone sharding: shard key bắt đầu bằng `region` (ví dụ `{ region: 1, user_id: 1 }`), gán shard đặt ở EU vào zone `EU`, shard ở châu Á vào zone `ASIA`, rồi `updateZoneKeyRange` cho khoảng `region: 'EU'` → zone `EU`. Balancer giữ chunk trong đúng zone. Truy vấn luôn kèm `region` để định tuyến một shard; mongos đặt gần người dùng. Mỗi shard là replica set mà mọi nút nằm trong vùng đó (secondary khác vùng sẽ phá luật cư trú). Đổi vùng của một người = cập nhật giá trị shard key (được từ 4.2) và dữ liệu chuyển zone.", en: "Zone sharding: a shard key starting with `region` (for example `{ region: 1, user_id: 1 }`), assign EU-located shards to zone `EU` and Asian ones to `ASIA`, then `updateZoneKeyRange` mapping `region: 'EU'` → zone `EU`. The balancer keeps chunks in their zone. Queries always include `region` to target one shard; mongos runs near users. Each shard is a replica set with every member inside that region (an out-of-region secondary breaks residency). Moving a user = updating the shard key value (allowed since 4.2) and the data changes zone." }
+    tradeoffs:
+      - { vi: "Truy vấn toàn cầu (báo cáo) thành scatter-gather qua nhiều vùng, chậm.", en: "Global queries (reports) become cross-region scatter-gather, slow." }
+      - { vi: "Mỗi vùng cần đủ nút cho tính sẵn sàng riêng, tăng chi phí.", en: "Each region needs enough members for its own availability, raising cost." }
+    rubric:
+      - { vi: "Zone sharding với region đứng đầu shard key", en: "Zone sharding with region leading the shard key" }
+      - { vi: "Mọi thành viên replica set trong vùng", en: "All replica set members in-region" }
+      - { vi: "Nêu chi phí truy vấn toàn cầu", en: "States the global-query cost" }
+    doc: https://www.mongodb.com/docs/manual/core/zone-sharding/
+  - id: e-iv-mg-staff-05
+    engine: mongodb
+    band: staff
+    kind: concept
+    set: mg-staff-2
+    q: { vi: "Replica set trải ba vùng (2 nút vùng A, 2 nút vùng B, 1 nút vùng C). Với `w: 'majority'`, độ trễ ghi và khả năng chịu mất một vùng thế nào?", en: "A replica set spans three regions (2 members in A, 2 in B, 1 in C). With `w: 'majority'`, what about write latency and surviving a region loss?" }
+    answer: { vi: "5 nút có phiếu, đa số = 3. Primary ở A cần thêm 2 xác nhận: nút còn lại ở A (nhanh) và ít nhất một nút ở B hoặc C, nên mỗi lần ghi cộng một vòng mạng liên vùng tới vùng gần nhất. Mất cả vùng A còn 3/5: vẫn bầu được primary và ghi majority tiếp. Mất A hoặc B đều sống; mất hai vùng thì không. Đặt priority để primary ưu tiên vùng gần ứng dụng; vùng C chỉ cần một nút (có thể là nút dữ liệu ưu tiên thấp) để phá hòa.", en: "5 voting members, majority = 3. A primary in A needs 2 more acks: the other A member (fast) and at least one in B or C, so every write adds an inter-region round trip to the nearest region. Losing all of A leaves 3/5: a primary can still be elected and majority writes continue. Losing A or B is survivable; losing two regions is not. Set priorities so the primary prefers the region near the app; region C needs just one member (possibly a low-priority data node) as a tiebreaker." }
+    rubric:
+      - { vi: "Tính đúng đa số 3/5", en: "Computes the 3/5 majority" }
+      - { vi: "Độ trễ = một vòng liên vùng", en: "Latency = one inter-region round trip" }
+      - { vi: "Phân tích mất một / hai vùng", en: "Analyses losing one / two regions" }
+    doc: https://www.mongodb.com/docs/manual/core/replica-set-elections/
+  - id: e-iv-mg-staff-06
+    engine: mongodb
+    band: staff
+    kind: concept
+    set: mg-staff-3
+    q: { vi: "Rollback trong replica set là gì, khi nào xảy ra, và dữ liệu bị rollback đi đâu?", en: "What is a replica set rollback, when does it happen, and where does rolled-back data go?" }
+    answer: { vi: "Khi primary cũ đã nhận những ghi chưa được đa số nhân bản rồi mất vai trò, primary mới không có các ghi đó. Khi nút cũ quay lại, nó phải hoàn tác các ghi ấy để khớp lịch sử mới: đó là rollback. Dữ liệu bị hoàn tác được ghi ra tệp BSON trong thư mục `rollback` để người vận hành xem và áp lại bằng tay nếu cần. Tránh bằng `w: 'majority'`: ghi đã được xác nhận theo đa số không bị rollback.", en: "When an old primary accepted writes not yet replicated to a majority and then lost its role, the new primary lacks them. When the old node returns, it must undo those writes to match the new history: that is a rollback. Undone data is written as BSON files into a `rollback` directory for operators to inspect and reapply by hand if needed. Avoid it with `w: 'majority'`: majority-acknowledged writes are never rolled back." }
+    rubric:
+      - { vi: "Điều kiện xảy ra rollback", en: "When rollback happens" }
+      - { vi: "Dữ liệu ra tệp rollback", en: "Data goes to rollback files" }
+      - { vi: "w: majority để tránh", en: "w: majority to avoid it" }
+    doc: https://www.mongodb.com/docs/manual/core/replica-set-rollbacks/
+  - id: e-iv-mg-staff-07
+    engine: mongodb
+    band: staff
+    kind: concept
+    set: mg-staff-1
+    q: { vi: "WiredTiger xử lý hai thao tác ghi đồng thời vào cùng một tài liệu thế nào? Ảnh hưởng gì tới thiết kế bộ đếm nóng?", en: "How does WiredTiger handle two concurrent writes to the same document? What does that mean for a hot counter design?" }
+    answer: { vi: "WiredTiger dùng kiểm soát đồng thời mức tài liệu với cơ chế lạc quan: khi hai thao tác cùng sửa một tài liệu, một bên gặp write conflict và MongoDB tự thử lại nó trong nội bộ. Ghi trên nhiều tài liệu khác nhau chạy song song tốt. Một bộ đếm dùng chung (ví dụ lượt xem toàn trang) bị mọi request sửa cùng tài liệu, nên conflict và retry tăng, thông lượng bị giới hạn. Thiết kế: chia thành N tài liệu con (`counter_shard: rand(0..N-1)`) và cộng khi đọc, hoặc gom ở ứng dụng rồi `$inc` theo lô.", en: "WiredTiger uses document-level concurrency with an optimistic approach: when two operations modify one document, one hits a write conflict and MongoDB retries it internally. Writes to different documents run in parallel well. A shared counter (say site-wide page views) has every request modifying the same document, so conflicts and retries grow and throughput is capped. Design: split into N sub-documents (`counter_shard: rand(0..N-1)`) and sum on read, or aggregate in the app and `$inc` in batches." }
+    rubric:
+      - { vi: "Mức tài liệu, write conflict + retry nội bộ", en: "Document level, write conflict + internal retry" }
+      - { vi: "Hệ quả với tài liệu nóng", en: "The hot-document consequence" }
+      - { vi: "Bộ đếm chia nhỏ hoặc gom lô", en: "Sharded counter or batching" }
+    doc: https://www.mongodb.com/docs/manual/core/wiredtiger/
+  - id: e-iv-mg-staff-08
+    engine: mongodb
+    band: staff
+    kind: diagnose
+    set: mg-staff-1
+    q: { vi: "Trên cụm 6 shard, truy vấn đơn của một khách chậm hơn hẳn so với khi chưa shard. Đọc đoạn explain minh họa và chẩn đoán.", en: "On a 6-shard cluster, one customer's orders query is much slower than before sharding. Read the illustrative explain and diagnose." }
+    exhibits:
+      - label: { vi: "db.orders.find({ customer_id: 42 }), shard key { _id: 'hashed' }", en: "db.orders.find({ customer_id: 42 }), shard key { _id: 'hashed' }" }
+        source: illustrative
+        shown: |-
+          queryPlanner: {
+            winningPlan: {
+              stage: 'SHARD_MERGE',
+              shards: [
+                { shardName: 'sh0', winningPlan: { stage: 'FETCH', inputStage: { stage: 'SHARDING_FILTER', inputStage: { stage: 'IXSCAN', keyPattern: { customer_id: 1 } } } } },
+                { shardName: 'sh1', '...': '...' }, { shardName: 'sh2', '...': '...' },
+                { shardName: 'sh3', '...': '...' }, { shardName: 'sh4', '...': '...' }, { shardName: 'sh5', '...': '...' }
+              ]
+            }
+          }
+    answer: { vi: "`SHARD_MERGE` trên cả 6 shard: truy vấn không chứa shard key (`_id` hashed) nên mongos phải gửi tới mọi shard (scatter-gather) rồi trộn kết quả; độ trễ = shard chậm nhất, và tải nhân 6. `SHARDING_FILTER` loại tài liệu mồ côi đang di chuyển chunk. Mỗi shard vẫn dùng index (chỉ mục) `customer_id`, nên không phải lỗi index mà lỗi chọn shard key. Sửa: shard key bắt đầu bằng `customer_id` (ví dụ `{ customer_id: 1, created: 1 }` qua `reshardCollection`), hoặc nếu truy vấn này hiếm thì chấp nhận.", en: "`SHARD_MERGE` across all 6 shards: the query lacks the shard key (hashed `_id`), so mongos sends it to every shard (scatter-gather) and merges; latency = the slowest shard, and load ×6. `SHARDING_FILTER` drops orphan documents from chunk migrations. Each shard still uses the `customer_id` index, so it is not an index problem but a shard-key choice. Fix: a shard key led by `customer_id` (for example `{ customer_id: 1, created: 1 }` via `reshardCollection`), or accept it if this query is rare." }
+    rubric:
+      - { vi: "Đọc SHARD_MERGE = scatter-gather", en: "Reads SHARD_MERGE = scatter-gather" }
+      - { vi: "Biết SHARDING_FILTER làm gì", en: "Knows what SHARDING_FILTER does" }
+      - { vi: "Kết luận đúng là vấn đề shard key", en: "Concludes it is a shard-key problem" }
+    doc: https://www.mongodb.com/docs/manual/reference/explain-results/
+  - id: e-iv-mg-staff-09
+    engine: mongodb
+    band: staff
+    kind: diagnose
+    set: mg-staff-2
+    q: { vi: "Explain của tra cứu theo `_id` trên MongoDB 8.0 cho stage `EXPRESS_IXSCAN`. Nó nghĩa là gì, và có cần làm gì không?", en: "Explain for a lookup by `_id` on MongoDB 8.0 shows an `EXPRESS_IXSCAN` stage. What does it mean, and is any action needed?" }
+    exhibits:
+      - label: { vi: "db.users.find({ _id: id }).explain() trên 8.0", en: "db.users.find({ _id: id }).explain() on 8.0" }
+        source: illustrative
+        shown: |-
+          queryPlanner: {
+            winningPlan: { isCached: false, stage: 'EXPRESS_IXSCAN', keyPattern: '{ _id: 1 }', indexName: '_id_' },
+            rejectedPlans: []
+          }
+    answer: { vi: "Các stage `EXPRESS_*` (mới ở 8.0, theo trang Explain Results) là đường đi tắt cho truy vấn bằng đơn giản trên một index (chỉ mục) `_id` hoặc index duy nhất: bỏ qua bước lập kế hoạch thông thường. Đây là trạng thái tốt nhất có thể, không cần làm gì. Nếu một truy vấn tưởng là \"tra một tài liệu\" lại không ra stage express, kiểm xem có điều kiện thêm, projection phức tạp, hoặc collation khác index không.", en: "The `EXPRESS_*` stages (new in 8.0 per the Explain Results page) are a fast path for simple equality queries on the `_id` index or a unique index: they skip normal planning. It is the best possible state, no action needed. If a supposed \"single-document lookup\" does not show an express stage, check for extra predicates, a complex projection, or a collation different from the index." }
+    rubric:
+      - { vi: "Biết EXPRESS là đường tắt 8.0", en: "Knows EXPRESS is the 8.0 fast path" }
+      - { vi: "Kết luận không cần làm gì", en: "Concludes no action is needed" }
+      - { vi: "Biết cách điều tra khi không có express", en: "Knows how to investigate when express is absent" }
+    doc: https://www.mongodb.com/docs/manual/reference/explain-results/
+  - id: e-iv-mg-staff-10
+    engine: mongodb
+    band: staff
+    kind: diagnose
+    set: mg-staff-3
+    q: { vi: "Nhật ký truy vấn chậm cho thấy một hình dạng truy vấn lúc nhanh lúc chậm, chu kỳ vài giờ. Hai trích đoạn (minh họa) dưới đây. Chẩn đoán và cách ghim kế hoạch.", en: "The slow query log shows one query shape alternating fast and slow every few hours. Two (illustrative) excerpts below. Diagnose and pin the plan." }
+    exhibits:
+      - label: { vi: "Lúc nhanh", en: "Fast period" }
+        source: illustrative
+        shown: |-
+          planSummary: 'IXSCAN { tenant: 1, status: 1, created: -1 }', keysExamined: 52, docsExamined: 50, nreturned: 50, planCacheKey: '7A1C...'
+      - label: { vi: "Lúc chậm", en: "Slow period" }
+        source: illustrative
+        shown: |-
+          planSummary: 'IXSCAN { created: -1 }', keysExamined: 410233, docsExamined: 410233, nreturned: 50, planCacheKey: '7A1C...', replanned: true
+    answer: { vi: "Cùng `planCacheKey` (cùng hình dạng) nhưng hai kế hoạch: khi được lập lại với một tenant nhỏ, index (chỉ mục) `created` thắng trong vòng chạy thử (tìm đủ 50 nhanh), rồi được cache và áp lên tenant lớn: đọc 410.000 tài liệu. `replanned: true` là dấu hiệu. Sửa: ghim index cho hình dạng này bằng `setQuerySettings` (8.0+, thay index filter cũ) hoặc `hint` trong code; tốt hơn là xóa index `{ created: -1 }` nếu không truy vấn nào khác cần, để planner không còn lựa chọn tồi.", en: "Same `planCacheKey` (same shape) but two plans: when replanned with a small tenant, the `created` index wins the trial (finds 50 quickly), gets cached and is applied to a big tenant: 410,000 documents read. `replanned: true` is the tell. Fix: pin the index for this shape with `setQuerySettings` (8.0+, replacing old index filters) or a `hint` in code; better, drop the `{ created: -1 }` index if nothing else needs it, so the planner has no bad option." }
+    rubric:
+      - { vi: "Nhận ra cùng planCacheKey, khác kế hoạch", en: "Spots same planCacheKey, different plans" }
+      - { vi: "Giải thích vòng chạy thử với tham số không đại diện", en: "Explains the trial with unrepresentative parameters" }
+      - { vi: "setQuerySettings / hint / bỏ index gây nhiễu", en: "setQuerySettings / hint / drop the distracting index" }
+    doc: https://www.mongodb.com/docs/manual/core/query-plans/
+  - id: e-iv-mg-staff-11
+    engine: mongodb
+    band: staff
+    kind: design
+    set: mg-staff-2
+    q: { vi: "Chuyển một hệ đặt phòng từ Postgres (15 bảng, nhiều JOIN) sang MongoDB. Bạn bắt đầu thế nào và quyết định nhúng/tham chiếu theo gì?", en: "Migrate a booking system from Postgres (15 tables, many JOINs) to MongoDB. How do you start and decide embed vs reference?" }
+    answer: { vi: "Không dịch bảng thành collection. (1) Lập danh sách truy cập: mỗi màn/API đọc gì, tần suất, độ trễ yêu cầu, ghi gì cùng nhau. (2) Gom theo \"aggregate\": đặt phòng nhúng khách lưu trú, các đêm, giá đã chốt (đọc cùng nhau, có giới hạn, đổi cùng nhau); khách sạn và phòng tham chiếu vì dùng chung và đổi độc lập, kèm bản chụp tên/giá trong đặt phòng. (3) Mỗi truy vấn chính cần một index (chỉ mục) ESR. (4) Phần cần ràng buộc chéo (không đặt trùng phòng) dùng tài liệu tồn phòng theo ngày + cập nhật có điều kiện. (5) Di chuyển bằng dual-read hoặc CDC, đối soát số liệu, rồi cắt.", en: "Do not translate tables into collections. (1) List access patterns: what each screen/API reads, how often, latency needs, what is written together. (2) Group by aggregate: a booking embeds guests, nights and locked prices (read together, bounded, change together); hotels and rooms are referenced since they are shared and change independently, with name/price snapshots in the booking. (3) Each main query gets an ESR index. (4) Cross-document rules (no double-booking) use per-day room inventory documents + conditional updates. (5) Migrate via dual-read or CDC, reconcile numbers, then cut over." }
+    tradeoffs:
+      - { vi: "Mô hình theo truy cập: đọc nhanh, nhưng truy vấn mới không lường trước có thể khó/đắt.", en: "Access-driven model: fast reads, but unforeseen new queries can be hard or costly." }
+      - { vi: "Bản chụp dữ liệu tránh JOIN nhưng cần chính sách khi nguồn đổi.", en: "Snapshots avoid joins but need a policy when the source changes." }
+    rubric:
+      - { vi: "Bắt đầu từ danh sách truy cập", en: "Starts from access patterns" }
+      - { vi: "Luật nhúng/tham chiếu có lý do", en: "Reasoned embed/reference rules" }
+      - { vi: "Xử lý ràng buộc chéo tài liệu", en: "Handles cross-document constraints" }
+      - { vi: "Kế hoạch di chuyển có đối soát", en: "Migration plan with reconciliation" }
+    doc: https://www.mongodb.com/docs/manual/data-modeling/
+  - id: e-iv-mg-staff-12
+    engine: mongodb
+    band: staff
+    kind: design
+    set: mg-staff-3
+    q: { vi: "Thiết kế luồng đồng bộ MongoDB → kho dữ liệu phân tích với độ trễ dưới 1 phút, chịu được dịch vụ đồng bộ chết vài giờ.", en: "Design a MongoDB → analytics warehouse sync with under 1 minute lag that survives the sync service being down for hours." }
+    answer: { vi: "Change stream ở mức deployment/db, lấy `fullDocument: 'updateLookup'` (hoặc pre/post image từ 6.0) để có trạng thái sau thay đổi. Ghi sự kiện vào log bền (ví dụ hàng đợi có lưu trữ), lưu resume token sau khi log nhận xong. Kho dữ liệu nạp theo lô nhỏ, idempotent theo `_id` + thời điểm cluster. Để chịu vài giờ chết: oplog phải giữ lâu hơn thời gian chết tối đa (đặt `oplogMinRetentionHours` hoặc tăng kích thước oplog) và cảnh báo khi cửa sổ oplog thu hẹp. Nếu token rơi khỏi oplog: chụp lại toàn bộ rồi tiếp từ thời điểm chụp.", en: "A change stream at deployment/db level with `fullDocument: 'updateLookup'` (or pre/post images since 6.0) to get post-change state. Write events to a durable log (for example a retained queue), store the resume token once the log has them. The warehouse loads in small batches, idempotent on `_id` + cluster time. To survive hours of downtime: the oplog must retain longer than the maximum outage (set `oplogMinRetentionHours` or grow the oplog) with alerts when the oplog window shrinks. If the token falls off the oplog: take a full snapshot and continue from the snapshot time." }
+    tradeoffs:
+      - { vi: "updateLookup đọc lại tài liệu hiện tại, có thể mới hơn thay đổi đang xử lý; pre/post image chính xác hơn nhưng tốn chỗ.", en: "updateLookup rereads the current document, possibly newer than the change being processed; pre/post images are exact but cost storage." }
+      - { vi: "Oplog lớn tốn đĩa trên mọi thành viên.", en: "A big oplog costs disk on every member." }
+    rubric:
+      - { vi: "Change stream + resume token bền", en: "Change stream + durable resume token" }
+      - { vi: "Kích thước oplog theo thời gian chết", en: "Oplog sized to the outage" }
+      - { vi: "Nạp idempotent và phương án snapshot", en: "Idempotent loads and a snapshot fallback" }
+    doc: https://www.mongodb.com/docs/manual/changestreams/
+  - id: e-iv-mg-staff-13
+    engine: mongodb
+    band: staff
+    kind: concept
+    set: mg-staff-2
+    q: { vi: "\"Cửa sổ oplog\" là gì và vì sao nó là chỉ số sống còn?", en: "What is the \"oplog window\" and why is it a critical metric?" }
+    answer: { vi: "Oplog là collection giới hạn kích thước chứa các thao tác đã áp dụng; secondary và change stream đọc từ đó. Cửa sổ = khoảng thời gian giữa mục cũ nhất và mới nhất. Khi ghi tăng đột biến (backfill, nạp lớn), cửa sổ co lại. Nếu secondary tụt lại lâu hơn cửa sổ, nó phải đồng bộ lại từ đầu (initial sync); change stream có token cũ hơn cửa sổ không resume được. Theo dõi `rs.printReplicationInfo()` và độ trễ nhân bản; cấu hình kích thước/thời gian giữ tối thiểu.", en: "The oplog is a capped collection of applied operations; secondaries and change streams read from it. The window = time between its oldest and newest entries. Write bursts (backfills, bulk loads) shrink it. A secondary lagging longer than the window must resync from scratch (initial sync); a change stream with a token older than the window cannot resume. Watch `rs.printReplicationInfo()` and replication lag; configure size / minimum retention." }
+    rubric:
+      - { vi: "Định nghĩa oplog và cửa sổ", en: "Defines the oplog and the window" }
+      - { vi: "Hai hậu quả: initial sync, change stream", en: "Two consequences: initial sync, change streams" }
+      - { vi: "Cách theo dõi và cấu hình", en: "How to monitor and configure" }
+    doc: https://www.mongodb.com/docs/manual/core/replica-set-oplog/
+  - id: e-iv-mg-staff-14
+    engine: mongodb
+    band: staff
+    kind: concept
+    set: mg-staff-3
+    q: { vi: "Khi nào bạn khuyên **không** dùng MongoDB cho một hệ mới? Trả lời công bằng.", en: "When would you advise **against** MongoDB for a new system? Answer fairly." }
+    answer: { vi: "Khi phần lớn giá trị nằm ở truy vấn ad hoc nối nhiều thực thể không lường trước (phân tích, báo cáo tự do), khi nghiệp vụ cần ràng buộc chéo nhiều thực thể ở mọi thao tác (sổ cái kế toán nhiều bảng), hoặc khi đội đã giỏi SQL và dữ liệu vốn quan hệ, ổn định. MongoDB mạnh khi tài liệu tự nhiên là đơn vị đọc/ghi, schema thay đổi nhanh, cần scale ngang theo khóa. Câu trả lời tốt nêu tiêu chí, không phải sở thích; và nhắc Postgres `jsonb` hay MongoDB transaction làm khoảng cách hẹp lại.", en: "When most value lies in ad hoc queries joining many entities in unforeseen ways (analytics, free-form reporting), when every operation needs cross-entity constraints (a multi-table accounting ledger), or when the team is strong in SQL and the data is relational and stable. MongoDB shines when the document is the natural read/write unit, the schema evolves fast, and horizontal scaling by key is needed. A good answer states criteria, not taste; and notes that Postgres `jsonb` and MongoDB transactions narrow the gap." }
+    rubric:
+      - { vi: "Ít nhất hai tình huống không hợp có lý do", en: "At least two reasoned unsuitable cases" }
+      - { vi: "Nêu cả điểm mạnh để cân bằng", en: "States strengths too, for balance" }
+      - { vi: "Dựa trên tiêu chí, không cảm tính", en: "Criteria-based, not taste" }
+    doc: https://www.mongodb.com/docs/manual/data-modeling/
+  - id: e-iv-mg-staff-15
+    engine: mongodb
+    band: staff
+    kind: design
+    set: mg-staff-1
+    q: { vi: "Thiết kế hộp thư chat: 50 triệu người dùng, cuộc trò chuyện 1-1 và nhóm tới 500 người, tải tin nhắn mới nhất nhanh, cuộn lịch sử.", en: "Design chat storage: 50 million users, 1-1 and group conversations up to 500 people, fast latest messages, history scrolling." }
+    answer: { vi: "`messages`: `{ conv_id, ts, sender, body }`, index (chỉ mục) `{ conv_id: 1, ts: -1 }`, có thể gom bucket theo khoảng thời gian (mẫu Group Data, ví dụ 100 tin mỗi tài liệu) để giảm số tài liệu. Shard key `{ conv_id: 1, ts: 1 }` (hoặc hashed `conv_id` nếu không cần chia cuộc trò chuyện lớn): mọi đọc một cuộc trò chuyện đi một shard. `conversations`: thành viên, tin cuối (bản chụp để hiện danh sách). `inbox` theo người: `{ user_id, conv_id, last_ts, unread }`, shard theo `user_id`, index `{ user_id: 1, last_ts: -1 }` cho danh sách hộp thư. Gửi tin = chèn tin + cập nhật `inbox` của các thành viên (fan-out khi ghi, chấp nhận cho nhóm ≤ 500).", en: "`messages`: `{ conv_id, ts, sender, body }`, index `{ conv_id: 1, ts: -1 }`, optionally bucketed by time (Group Data pattern, say 100 messages per document) to cut document count. Shard key `{ conv_id: 1, ts: 1 }` (or hashed `conv_id` if big conversations need no splitting): reading one conversation hits one shard. `conversations`: members, last message (snapshot for listing). Per-user `inbox`: `{ user_id, conv_id, last_ts, unread }`, sharded by `user_id`, index `{ user_id: 1, last_ts: -1 }` for the inbox list. Sending = insert the message + update members' `inbox` rows (fan-out on write, acceptable for groups ≤ 500)." }
+    tradeoffs:
+      - { vi: "Fan-out khi ghi: đọc hộp thư rẻ, ghi nhóm 500 người tốn 500 cập nhật.", en: "Fan-out on write: cheap inbox reads, a 500-person group costs 500 updates per message." }
+      - { vi: "Bucket tin nhắn giảm tài liệu nhưng sửa/xóa một tin phức tạp hơn.", en: "Message buckets cut documents but editing/deleting one message is more complex." }
+    rubric:
+      - { vi: "Shard key theo cuộc trò chuyện cho tin nhắn", en: "Conversation-based shard key for messages" }
+      - { vi: "Hộp thư theo người với index sắp xếp", en: "Per-user inbox with a sort index" }
+      - { vi: "Nêu fan-out và giới hạn nhóm", en: "States fan-out and the group-size limit" }
+    doc: https://www.mongodb.com/docs/manual/core/sharding-choose-a-shard-key/
+
+takeHomes:
+  - id: e-iv-mg-th-1
+    engine: mongodb
+    band: mid
+    title: { vi: "Mô hình dữ liệu cho ứng dụng đặt lịch phòng khám", en: "Data model for a clinic booking app" }
+    brief: { vi: "Ứng dụng đặt lịch cho 300 phòng khám: bác sĩ, khung giờ trống, lịch hẹn, bệnh nhân, đánh giá sau khám. Màn chính: \"khung trống của một bác sĩ trong 7 ngày tới\", \"lịch hẹn sắp tới của một bệnh nhân\", \"điểm trung bình của bác sĩ\". Hai người không được đặt cùng một khung giờ. Thiết kế collection, tài liệu mẫu, index (chỉ mục) và lệnh đặt lịch.", en: "A booking app for 300 clinics: doctors, free slots, appointments, patients, post-visit reviews. Main screens: \"a doctor's free slots for the next 7 days\", \"a patient's upcoming appointments\", \"a doctor's average rating\". Two people must never book the same slot. Design collections, sample documents, indexes and the booking command." }
+    deliverables:
+      - { vi: "Danh sách access pattern và collection phục vụ mỗi cái.", en: "The access pattern list and which collection serves each." }
+      - { vi: "Tài liệu mẫu JSON và index (kèm lý do ESR).", en: "Sample JSON documents and indexes (with ESR reasoning)." }
+      - { vi: "Lệnh đặt lịch không thể đặt trùng, và cách cập nhật điểm trung bình.", en: "A booking command that cannot double-book, and how the average rating is kept." }
+    model: { vi: "`slots { _id, doctor_id, start, status: 'FREE'|'BOOKED', patient_id? }`, index `{ doctor_id: 1, status: 1, start: 1 }` (E, E, R). Đặt: `updateOne({ _id: slot, status: 'FREE' }, { $set: { status: 'BOOKED', patient_id: p } })`: `modifiedCount = 0` là đã có người đặt; một tài liệu nên nguyên tử, không cần transaction. `appointments` có thể chính là slot đã đặt, thêm index `{ patient_id: 1, start: 1 }` (partial theo `status: 'BOOKED'`). `doctors` dùng mẫu Computed: `rating_sum`, `rating_count` cập nhật bằng `$inc` khi có đánh giá; `reviews` là collection riêng (không giới hạn).", en: "`slots { _id, doctor_id, start, status: 'FREE'|'BOOKED', patient_id? }`, index `{ doctor_id: 1, status: 1, start: 1 }` (E, E, R). Booking: `updateOne({ _id: slot, status: 'FREE' }, { $set: { status: 'BOOKED', patient_id: p } })`: `modifiedCount = 0` means someone already booked; one document, so atomic, no transaction needed. `appointments` can simply be booked slots, plus an index `{ patient_id: 1, start: 1 }` (partial on `status: 'BOOKED'`). `doctors` use the Computed pattern: `rating_sum`, `rating_count` updated with `$inc` per review; `reviews` is its own (unbounded) collection." }
+    rubric:
+      - { vi: "Bắt đầu từ access pattern", en: "Starts from access patterns" }
+      - { vi: "Chống đặt trùng bằng cập nhật có điều kiện một tài liệu", en: "Prevents double booking with a single-document conditional update" }
+      - { vi: "Index theo ESR cho từng màn", en: "ESR indexes for each screen" }
+      - { vi: "Mẫu Computed cho điểm trung bình, review không nhúng", en: "Computed pattern for ratings, reviews not embedded" }
+    doc: https://www.mongodb.com/docs/manual/data-modeling/design-patterns/
+  - id: e-iv-mg-th-2
+    engine: mongodb
+    band: senior
+    title: { vi: "Kiểm toán index (chỉ mục) từ nhật ký truy vấn chậm", en: "Index audit from the slow query log" }
+    brief: { vi: "Bạn nhận một collection `orders` (40 triệu tài liệu) có 11 index và trích đoạn nhật ký truy vấn chậm của một tuần (tự tạo dữ liệu giả lập hoặc dùng bộ dữ liệu mẫu công khai). Viết báo cáo: index nào thừa, index nào thiếu, thay đổi nào làm trước, và cách triển khai an toàn.", en: "You receive an `orders` collection (40 million documents) with 11 indexes and a week of slow query log excerpts (generate synthetic data or use a public sample dataset). Write a report: which indexes are redundant, which are missing, what to change first, and how to roll out safely." }
+    deliverables:
+      - { vi: "Bảng: hình dạng truy vấn, tần suất, keysExamined/nReturned, index đang dùng.", en: "A table: query shape, frequency, keysExamined/nReturned, index used." }
+      - { vi: "Danh sách xóa/thêm index với bằng chứng (`$indexStats`, explain).", en: "Index drops/additions with evidence (`$indexStats`, explain)." }
+      - { vi: "Kế hoạch triển khai: ẩn trước khi xóa, tạo index giờ thấp điểm, theo dõi.", en: "A rollout plan: hide before drop, build off-peak, monitor." }
+    model: { vi: "Gom nhật ký theo `queryHash`/hình dạng, xếp theo tổng thời gian. Dấu hiệu thiếu index: `keysExamined` hoặc `docsExamined` ≫ `nreturned`, `SORT` trong bộ nhớ, `COLLSCAN`. Dấu hiệu thừa: index là tiền tố của index khác (`{ a: 1 }` khi đã có `{ a: 1, b: 1 }`), `$indexStats.accesses.ops` gần 0 trên mọi nút qua cả chu kỳ. Ưu tiên thay đổi có lợi lớn nhất trên mỗi đơn vị rủi ro: thêm index ESR cho hình dạng nặng nhất trước, rồi ẩn các index thừa, xóa sau 1–2 tuần không có hồi quy.", en: "Group the log by `queryHash`/shape, rank by total time. Missing-index signs: `keysExamined` or `docsExamined` ≫ `nreturned`, in-memory `SORT`, `COLLSCAN`. Redundancy signs: an index that is a prefix of another (`{ a: 1 }` beside `{ a: 1, b: 1 }`), `$indexStats.accesses.ops` near 0 on every node over a full cycle. Prioritise by benefit per unit of risk: add an ESR index for the heaviest shape first, then hide redundant indexes, drop them after 1–2 weeks without regressions." }
+    rubric:
+      - { vi: "Phân tích theo hình dạng truy vấn có số liệu", en: "Shape-based analysis with numbers" }
+      - { vi: "Nhận diện đúng index tiền tố thừa", en: "Correctly spots redundant prefix indexes" }
+      - { vi: "Đề xuất thiếu theo ESR có bằng chứng explain", en: "ESR-based additions with explain evidence" }
+      - { vi: "Triển khai an toàn: ẩn, theo dõi, rồi xóa", en: "Safe rollout: hide, monitor, then drop" }
+    doc: https://www.mongodb.com/docs/manual/core/index-hidden/
+  - id: e-iv-mg-th-3
+    engine: mongodb
+    band: junior
+    title: { vi: "Danh mục sản phẩm cho một cửa hàng nhỏ", en: "A product catalogue for a small shop" }
+    brief: { vi: "Một cửa hàng bán khoảng 2.000 sản phẩm cần: liệt kê sản phẩm của một danh mục theo giá tăng dần, xem một sản phẩm cùng vài thông số tùy loại (cỡ áo, dung lượng pin...), cập nhật tồn kho mỗi lần bán, và hiện 5 sản phẩm bán chạy nhất. Thiết kế một collection `products`, viết các lệnh mongosh và kiểm bằng explain.", en: "A shop selling about 2,000 products needs to: list a category's products by ascending price, show a product with a few type-specific specs (shirt size, battery capacity...), update stock on each sale, and show the 5 best sellers. Design one `products` collection, write the mongosh commands and check them with explain." }
+    deliverables:
+      - { vi: "Một tài liệu mẫu và lý do nhúng hay tách.", en: "One sample document and why you embed or split." }
+      - { vi: "Bốn lệnh: `find` có projection và `sort`, `updateOne` với `$inc`, top 5 bán chạy, và lệnh tạo index.", en: "Four commands: a `find` with a projection and `sort`, an `updateOne` with `$inc`, the top 5 best sellers, and the index creation." }
+      - { vi: "Kết quả `explain(\"executionStats\")` trước và sau khi có index cho lệnh liệt kê.", en: "`explain(\"executionStats\")` output before and after the index for the listing command." }
+    model: { vi: "`{ _id, sku, name, category, price, stock, sold, specs: { size: 'M' } }`: thông số tùy loại nhúng trong `specs` (mỗi sản phẩm một ít, luôn đọc cùng nhau). Liệt kê: `db.products.find({ category: 'shirt' }, { name: 1, price: 1 }).sort({ price: 1 })` với index `{ category: 1, price: 1 }` (so bằng rồi sắp xếp, theo ESR): explain đổi từ `COLLSCAN` + `SORT` sang `IXSCAN`, và `totalDocsExamined` gần bằng `nReturned`. Bán hàng: `updateOne({ _id: id, stock: { $gte: 1 } }, { $inc: { stock: -1, sold: 1 } })`: điều kiện trong filter chặn tồn kho âm, `modifiedCount` bằng 0 nghĩa là hết hàng; chỉ một tài liệu nên nguyên tử, không cần transaction. Top 5: `find().sort({ sold: -1, _id: 1 }).limit(5)` (có tiebreaker), thêm index `{ sold: -1 }` nếu màn này mở thường xuyên.", en: "`{ _id, sku, name, category, price, stock, sold, specs: { size: 'M' } }`: type-specific specs embedded in `specs` (few per product, always read together). Listing: `db.products.find({ category: 'shirt' }, { name: 1, price: 1 }).sort({ price: 1 })` with index `{ category: 1, price: 1 }` (equality then sort, per ESR): explain changes from `COLLSCAN` + `SORT` to `IXSCAN`, and `totalDocsExamined` is close to `nReturned`. Sale: `updateOne({ _id: id, stock: { $gte: 1 } }, { $inc: { stock: -1, sold: 1 } })`: the filter condition blocks negative stock, `modifiedCount` of 0 means sold out; a single document, so atomic, no transaction needed. Top 5: `find().sort({ sold: -1, _id: 1 }).limit(5)` (with a tiebreaker), plus index `{ sold: -1 }` if the screen is opened often." }
+    rubric:
+      - { vi: "Tài liệu mẫu hợp lý, nhúng thông số tùy loại", en: "A sensible sample document, type-specific specs embedded" }
+      - { vi: "Index `{ category: 1, price: 1 }` và explain trước/sau", en: "Index `{ category: 1, price: 1 }` with before/after explain" }
+      - { vi: "Bán hàng bằng `$inc` có điều kiện, không đọc rồi mới ghi", en: "Sale with a conditional `$inc`, not read-then-write" }
+      - { vi: "Top 5 có tiebreaker", en: "Top 5 with a tiebreaker" }
+    doc: https://www.mongodb.com/docs/manual/crud/
+  - id: e-iv-mg-th-4
+    engine: mongodb
+    band: staff
+    title: { vi: "Shard theo zone cho dịch vụ đơn hàng hai châu lục", en: "Zone sharding for a two-continent order service" }
+    brief: { vi: "Dịch vụ đơn hàng chạy trên một replica set ở châu Á: 3 TB, 8.000 tài liệu ghi mỗi giây lúc cao điểm. Công ty mở thị trường EU: dữ liệu của khách EU phải nằm ở EU, độ trễ ghi ở mỗi châu lục phải thấp, và báo cáo toàn cầu vẫn chạy được. Viết đề xuất kiến trúc: shard key, zone, write concern và read preference, cách chuyển từ replica set hiện tại, và runbook khi mất cả một trung tâm dữ liệu.", en: "An order service runs on one replica set in Asia: 3 TB, 8,000 document writes per second at peak. The company opens an EU market: EU customers' data must stay in the EU, write latency must be low on each continent, and global reports must still work. Write an architecture proposal: shard key, zones, write concern and read preference, how to move from the current replica set, and a runbook for losing a whole data centre." }
+    deliverables:
+      - { vi: "Shard key và định nghĩa zone, có lý do theo access pattern.", en: "Shard key and zone definitions, justified by access patterns." }
+      - { vi: "Write concern và read preference cho ghi đơn và cho báo cáo, kèm cái giá về độ trễ.", en: "Write concern and read preference for order writes and for reports, with their latency cost." }
+      - { vi: "Kế hoạch chuyển đổi và runbook mất một trung tâm dữ liệu.", en: "A migration plan and a runbook for losing a data centre." }
+    model: { vi: "Shard key `{ region: 1, customer_id: 1, _id: 1 }`: `region` đứng đầu vì range của zone phải dùng tiền tố của shard key. Zone `EU` phủ `{ region: 'EU', customer_id: MinKey, _id: MinKey }` → `{ region: 'EU', customer_id: MaxKey, _id: MaxKey }` và gắn với các shard đặt ở EU; tương tự zone `ASIA`. Truy vấn đơn của một khách có `region` + `customer_id` nên chỉ tới một shard; báo cáo toàn cầu là scatter-gather, chạy với `readPreference: 'secondaryPreferred'` để không tranh tài nguyên với ghi. Ghi `w: 'majority'`, mọi thành viên của một shard ở cùng châu lục, nên độ trễ thấp mà vẫn bền khi mất một nút. Config server đặt sao cho mất một trung tâm dữ liệu vẫn còn đa số (ví dụ thêm một nút ở nơi thứ ba). Chuyển đổi: biến replica set hiện tại thành shard đầu tiên, backfill `region` theo lô, tạo index cho shard key, `shardCollection`, thêm shard EU, định nghĩa zone, để balancer dời dữ liệu EU, kiểm bằng `sh.status()` và số tài liệu mỗi shard. Mất trung tâm dữ liệu EU: shard EU không ghi được, theo đúng thiết kế (dữ liệu không được rời EU); khách châu Á vẫn được phục vụ; runbook ghi rõ chuyển ứng dụng EU sang chế độ chỉ đọc hoặc báo lỗi, và đối soát sau khi phục hồi.", en: "Shard key `{ region: 1, customer_id: 1, _id: 1 }`: `region` comes first because a zone range must use a prefix of the shard key. Zone `EU` covers `{ region: 'EU', customer_id: MinKey, _id: MinKey }` → `{ region: 'EU', customer_id: MaxKey, _id: MaxKey }` and is tied to the shards placed in the EU; zone `ASIA` likewise. A customer's order queries carry `region` + `customer_id`, so they reach one shard; global reports are scatter-gather and run with `readPreference: 'secondaryPreferred'` so they do not compete with writes. Writes use `w: 'majority'` with every member of a shard on the same continent, so latency stays low and writes still survive losing a node. Config servers are placed so that losing one data centre still leaves a majority (for example one extra node at a third site). Migration: turn the current replica set into the first shard, backfill `region` in batches, build the shard key index, `shardCollection`, add the EU shards, define the zones, let the balancer move EU data, check with `sh.status()` and documents per shard. Losing the EU data centre: the EU shard cannot take writes, by design (the data may not leave the EU); Asian customers are still served; the runbook says how to switch the EU app to read-only or an error page, and how to reconcile after recovery." }
+    rubric:
+      - { vi: "Shard key bắt đầu bằng trường vùng để zone dùng được tiền tố", en: "The shard key starts with the region field so zones can use the prefix" }
+      - { vi: "Zone gắn với shard đặt đúng nơi, giữ dữ liệu EU ở EU", en: "Zones tied to shards in the right place, keeping EU data in the EU" }
+      - { vi: "Concern hợp lý cho ghi và cho báo cáo, có nêu độ trễ", en: "Sensible concerns for writes and reports, with latency stated" }
+      - { vi: "Chuyển đổi từng bước có kiểm, config server còn đa số khi mất một nơi", en: "Stepwise migration with checks, config servers keep a majority when one site is lost" }
+      - { vi: "Runbook nói rõ cái giá: nơi bị mất không ghi được", en: "The runbook states the cost: the lost site cannot take writes" }
+    doc: https://www.mongodb.com/docs/manual/core/zone-sharding/

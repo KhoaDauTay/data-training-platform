@@ -119,6 +119,26 @@ export function engineRouteOf(hash: string): { engine?: string; level?: string; 
  */
 export const enginePathOf = (hash: string): string | undefined => /^#\/?engine\/mongodb\/path(?:\/([a-z0-9-]+))?(?=$|[/?])/.exec(hash)?.[1] ?? (/^#\/?engine\/mongodb\/path(?=$|[/?])/.test(hash) ? '' : undefined);
 export const enginePathHash = (skill?: string): string => `#/engine/mongodb/path${skill ? `/${skill}` : ''}`;
+/**
+ * v27 (L410): `#/engine/terms[/<term id>]` → '' (the glossary page) or the term's id (a slug: the page scrolls to it, or shows
+ * the list when no term has that id); undefined elsewhere. Checked before engineRouteOf, which drops `terms`.
+ */
+export function engineTermsOf(hash: string): string | undefined {
+  const m = /^#\/?engine\/terms(?:\/([a-z0-9-]+))?(?=$|[/?])/.exec(hash);
+  return m ? (m[1] ?? '') : undefined;
+}
+export const engineTermsHash = (id?: string): string => `#/engine/terms${id ? `/${id}` : ''}`;
+/**
+ * v27 (L410): `#/engine/interview[/<set>|/<take-home id>]` → `{}` (the room), `{ set }` (`pg-mid-2`, or `again` for the
+ * questions due for review) or `{ th }` (`e-iv-pg-th-1`); undefined elsewhere. An unknown tail opens the room.
+ */
+export function engineInterviewOf(hash: string): { set?: string; th?: string } | undefined {
+  const m = /^#\/?engine\/interview(?:\/([a-z0-9-]+))?(?=$|[/?])/.exec(hash);
+  if (!m) return undefined;
+  const x = m[1] ?? '';
+  return /^(pg|mg|dy)-(junior|mid|senior|staff)-[1-3]$|^again$/.test(x) ? { set: x } : /^e-iv-(pg|mg|dy)-th-[1-9]$/.test(x) ? { th: x } : {};
+}
+export const engineInterviewHash = (x?: string): string => `#/engine/interview${x ? `/${x}` : ''}`;
 /** The engine, level or lesson page's hash. */
 export const engineHash = (engine: string, level?: string, lesson?: string): string =>
   `#/engine/${engine}${level ? `/${level}${lesson ? `/${lesson}` : ''}` : ''}`;
