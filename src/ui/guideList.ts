@@ -21,7 +21,7 @@ function state(): GuideState {
   const learn = route !== 'learn' ? undefined
     : d$.isInterviewPage(hash) ? 'interview'
     : d$.SKILLS.some((s) => s.id === d$.learnSkillOf(hash)) ? 'skill'
-      : node ? (node.status === 'external' ? 'adv-ext' : 'adv') : d$.learnModuleOf(hash) ?? 'path';
+      : node ? (node.status === 'external' ? 'adv-ext' : 'adv') : (d$.ROUTE_PARTS.find((p) => p.n === d$.learnModuleOf(hash))?.n ?? 'path');
   const m = d$.session.mode;
   const tk = m.kind === 'drill' ? m.ticket : m.kind === 'practice' ? m.run.tickets[m.run.index] : undefined;
   const lesson = d$.guideHooks.lesson;

@@ -6,7 +6,7 @@ import type { Skill } from '../progress';
 import type { DrillDeps } from './drillBrief';
 import { parseFullLesson, type FullLesson } from '../fullLesson';
 import { fullLessons, lessonIdOf } from '../generalLessonSources';
-import { lessonPage } from './lessonPage';
+import { keepFocus, lessonPage } from './lessonPage';
 import { replayBtn } from './guideList';
 
 /**
@@ -149,7 +149,7 @@ function modulePage(c: LearnCtx, n: number): HTMLElement {
   const list = (xs: Skill[]): HTMLElement => h('ul', { class: 'm-0 list-none divide-y divide-line overflow-hidden rounded-(--r-card) bg-panel p-0 ring-1 ring-line' }, ...xs.map(row));
   const chip = (f: PartFilter, count: number): HTMLElement => h('button', {
     type: 'button', 'aria-pressed': String(partFilter === f), class: cx('min-h-6 rounded-full px-3 py-1 text-body-sm font-semibold ring-1', partFilter === f ? 'bg-accent-soft text-accent ring-accent' : 'bg-panel text-ink ring-line hover:ring-accent'),
-    onclick: () => { partFilter = f; d$.actions.rerender(); d$.announce(lt('part.shown', { n: f === 'all' ? skills.length : todo.length })); },
+    'data-fk': `part-${f}`, onclick: () => { partFilter = f; keepFocus(`part-${f}`); d$.actions.rerender(); d$.announce(lt('part.shown', { n: f === 'all' ? skills.length : todo.length })); },
   }, lt(f === 'all' ? 'part.filter.all' : 'part.filter.todo', { n: count }));
   return h('div', { class: 'space-y-4' },
     backLine('module-intro'),

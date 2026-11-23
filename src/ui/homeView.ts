@@ -586,7 +586,7 @@ function learnStep(): { title: string; up?: { href: string; text: string } } | u
   const lang = getLang();
   const mod = (n: number): string => t('learn.module', { n, title: moduleTitle(n, lang) });
   const n = learnModuleOf(hash);
-  if (n !== undefined) return { title: mod(n) };
+  if (n !== undefined && PARTS.some((p) => p.n === n)) return { title: mod(n) }; // a hidden Part (9 until R2) draws the overview
   const skill = ROUTE_SKILLS.find((s) => s.id === learnSkillOf(hash));
   if (skill) {
     const part = partOf(skill.id); // v24 (L335): the skill's Part in content/general/route.yml, not its Logistics chapter

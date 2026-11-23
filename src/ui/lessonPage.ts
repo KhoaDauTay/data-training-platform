@@ -26,7 +26,9 @@ const BTN_GO = 'rounded-full border-0 bg-accent px-4 py-1.5 font-bold text-on-ac
 const BTN_SECONDARY = 'rounded-full border border-accent bg-panel px-3 py-1 font-bold text-accent hover:bg-accent-soft';
 const BTN_GHOST = 'inline-flex min-h-6 items-center gap-1.5 rounded-full border-0 bg-transparent px-2.5 py-1 font-semibold text-accent hover:bg-accent-soft';
 const CARD = 'rounded-(--r-card) bg-panel ring-1 ring-line';
-const TOC_ROW = 'flex min-h-11 w-full items-center gap-2 border-0 border-l-4 border-transparent bg-transparent px-3 py-1.5 text-left text-body-sm text-ink hover:bg-accent-soft';
+const TOC_ROW = 'flex min-h-11 w-full items-center gap-2 border-0 border-l-4 px-3 py-1.5 text-left text-body-sm hover:bg-accent-soft';
+/** A section not being read; either this set or TOC_NOW, never both (stylesheet order would pick the winner). */
+const TOC_IDLE = 'border-transparent bg-transparent text-ink';
 /** The section being read (set at draw and by the observer; classes, not aria variants, to keep the CSS small). */
 const TOC_NOW = 'border-accent bg-accent-soft font-bold text-accent';
 const CHIP = 'inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-body-sm';
@@ -110,6 +112,20 @@ function drawOut(key: string, out: HTMLElement, read?: string): void {
     : [h('div', { role: 'status' }, d$.errorView(o.error, true, o.sql))]).filter((x): x is HTMLElement => !!x));
 }
 
+/**
+ * Focus across rerender() (#home is rebuilt): the control that asked for the redraw is focused again by its `data-fk`
+ * once the new page is in (like engineView's focusKey). Exported: learnView's filter chips use it too.
+ */
+let focusKey: string | null = null;
+export function keepFocus(key: string): void {
+  focusKey = key;
+  requestAnimationFrame(() => {
+    if (focusKey !== key) return;
+    focusKey = null;
+    document.querySelector<HTMLElement>(`#home [data-fk="${key}"]`)?.focus();
+  });
+}
+
 /** One live editor per key, reused across redraws (a redraw must never drop what the player typed). */
 function editorFor(key: string, doc: string, onRun: () => void, onSubmit: () => void): HTMLElement {
   const had = editors.get(key);
@@ -137,7 +153,8 @@ function exampleBlock(l: FullLesson, i: number, folded: boolean): HTMLElement {
       void runInto(key, sqlOf(key, e.sql), out, run, (r) => lt('fl.announce', { i: i + 1, n: r.rows.length }));
     } }, d$.icon('run', 'size-4'), lt('fl.run'));
   const editing = editors.has(key);
-  const edit = h('button', { type: 'button', class: BTN_GHOST, onclick: () => {
+  const edit = h('button', { type: 'button', class: BTN_GHOST, 'data-fk': `${key}#edit`, onclick: () => {
+    keepFocus(`${key}#edit`);
     if (editors.has(key)) {
       if (sqlOf(key, e.sql) !== e.sql && !confirm(lt('fl.resetAsk'))) return;
       editors.get(key)!.ed.destroy();
@@ -262,7 +279,7 @@ function quiz(l: FullLesson): HTMLElement {
     return h('fieldset', { class: cx(CARD, 'm-0 flex flex-col gap-2 p-4') },
       h('legend', { class: 'mb-1 text-body font-bold' }, `${lt('fl.quizQ', { i: i + 1, n: l.quiz.length })} · `, ...inline(q.q[lang])),
       ...q.options.map((o, j) => h('label', { class: cx('flex min-h-11 cursor-pointer items-center gap-2.5 rounded-(--r-ctl) px-3 py-2 ring-1', pick === j ? 'bg-accent-soft ring-2 ring-accent' : 'ring-line hover:ring-accent') },
-        h('input', { type: 'radio', name, checked: pick === j, onchange: () => { picks.set(key, j); d$.actions.rerender(); } }),
+        h('input', { type: 'radio', name, checked: pick === j, 'data-fk': `${key}#${j}`, onchange: () => { picks.set(key, j); keepFocus(`${key}#${j}`); d$.actions.rerender(); } }),
         h('span', {}, ...inline(o[lang])))),
       pick === undefined ? null : h('div', { role: 'status', class: 'flex flex-col gap-1' },
         h('p', { class: cx('m-0 font-bold', pick === q.answer ? 'text-good' : 'text-bad') }, lt(pick === q.answer ? 'fl.quizRight' : 'fl.quizWrong')),
@@ -275,7 +292,7 @@ function tocList(l: FullLesson, current: LessonSection, onPick?: () => void): HT
   const { h } = d$;
   return h('ul', { class: 'm-0 flex list-none flex-col p-0' }, ...LESSON_SECTIONS.map((s) => h('li', {},
     h('button', { type: 'button', 'data-toc': s, 'aria-current': s === current ? 'location' : false,
-      class: cx(TOC_ROW, s === current && TOC_NOW),
+      class: cx(TOC_ROW, s === current ? TOC_NOW : TOC_IDLE),
       onclick: () => {
         onPick?.();
         const el = document.getElementById(secId(s));
@@ -329,6 +346,7 @@ export function lessonPage(deps: DrillDeps, l: FullLesson, c: LessonCtx): HTMLEl
       if (on) b.setAttribute('aria-current', 'location');
       else b.removeAttribute('aria-current');
       for (const c of TOC_NOW.split(' ')) b.classList.toggle(c, on);
+      for (const c of TOC_IDLE.split(' ')) b.classList.toggle(c, !on);
     }
     const label = document.querySelector('[data-fl-bar-sec]');
     if (label) label.textContent = lt('fl.barSec', { k: LESSON_SECTIONS.indexOf(s) + 1, n: LESSON_SECTIONS.length, name: secName(s) });
