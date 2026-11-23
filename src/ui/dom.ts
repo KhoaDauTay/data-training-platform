@@ -43,13 +43,21 @@ export const byId = (id: string): HTMLElement => document.getElementById(id)!;
 
 /** `<animateMotion>` and JS tweens ignore the CSS reduced-motion rule in style.css, so they check this (flowView, stage). */
 /** v12.0 A1: one polite sentence for screen readers (#announce is aria-live). Cleared first so the same sentence twice is read twice. */
+let pending: ReturnType<typeof setTimeout> | undefined;
 export function announce(text: string): void {
   const el = typeof document === 'undefined' ? null : document.getElementById('announce');
   if (!el) return; // test harnesses without the page (tests/workRace.test.ts)
   el.textContent = '';
-  setTimeout(() => {
+  clearTimeout(pending);
+  pending = setTimeout(() => {
     el.textContent = text;
   }, 50);
+}
+/** L314: a page change or a language switch empties #announce (a stale sentence, or one in the other language, never lingers). */
+export function clearAnnounce(): void {
+  clearTimeout(pending);
+  const el = typeof document === 'undefined' ? null : document.getElementById('announce');
+  if (el) el.textContent = '';
 }
 
 /** ui-ux-v5 A4: the shared loader (sprite symbol #cq-load), put before an existing waiting text. Decorative. */

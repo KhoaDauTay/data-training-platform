@@ -24,7 +24,7 @@ import './ui/me'; // v16 (L142): #/me nav item and page section; the page itself
 import './ui/engine'; // ENG-CORE (L220): #/engine nav item, page, sidebar rows and #/me block; the pages are the lazy engineView chunk
 import { earlyOffer } from './ui/chapterView';
 import { renderNotebook, toggleNotebook } from './ui/notebook';
-import { byId, h, initLightDismiss } from './ui/dom';
+import { byId, clearAnnounce, h, initLightDismiss } from './ui/dom';
 import { errorText } from './ui/feedback';
 import { leftHello, leftHome, renderHome, syncLily } from './ui/homeView';
 import { initStage, playCompletion, relabelStage } from './ui/stage';
@@ -351,6 +351,7 @@ const TITLE_OF: Partial<Record<Route, string>> = { data: 'data-title', dashboard
 /** Reading pages, #/d/logistics/play = workspace, …/data = Data page, …/dashboard. All stay mounted and only toggle `hidden`, so the editor is never recreated. */
 function showRoute(r: Route, initial: boolean): void {
   const tableSwitch = r === 'data' && shownRoute === 'data'; // #/data/a → #/data/b: only the Data page changes
+  if (!initial) clearAnnounce(); // L314: the last page's sentence is not this page's
   if (shownRoute === 'home' && r !== 'home') leftHello(); // ui-ux-v5 A1: the "Just grew" pill goes once Home was left
   shownRoute = r;
   if (tableSwitch) {
@@ -505,6 +506,7 @@ Object.assign(actions, {
     }
   }, startWith, startDrill: (id: string) => void startDrill(id), openLane: (port: string) => mapStrip.openLane(port), copyDiagnostics: () => void copyDiagnostics(), useSql: (sql: string) => work.setDoc(sql), fillFrame: (sql: string, faded: boolean, force: boolean) => work.fill(sql, faded, force), showTab: (id: string) => panel.show(id),
   switchLang: (l: Lang) => void setLang(l).then(() => {
+    clearAnnounce(); // L314
     rerender();
     panel.refresh();
   }),
@@ -540,6 +542,7 @@ for (const b of document.querySelectorAll<HTMLButtonElement>('[data-skip]')) {
 
 for (const b of document.querySelectorAll<HTMLButtonElement>('[data-lang]')) {
   b.addEventListener('click', () => void setLang(b.dataset.lang as Lang).then(() => { // EN may need its chunk first
+    clearAnnounce(); // L314
     rerender();
     panel.refresh();
   }));
