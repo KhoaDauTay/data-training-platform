@@ -54,7 +54,7 @@ export interface MeDeps {
   /** v24 (L323, L330–L334): skill map and badges (src/mastery.ts, main). */
   mastery: Pick<typeof Mastery, 'masteryOf' | 'badges' | 'engineLevels' | 'perfDrills' | 'FAST_PART'>; today: () => string;
   /** v24 integration (L330): the skill map's Parts and skills come from content/general/route.yml; perf drills from the General chunk. */
-  ROUTE_PARTS: typeof Progress.PARTS; ROUTE_SKILLS: typeof Progress.ROUTE_SKILLS;
+  ROUTE_PARTS: typeof Progress.PARTS; ALL_PARTS: typeof Progress.ALL_PARTS; ROUTE_SKILLS: typeof Progress.ROUTE_SKILLS;
   generalNow: typeof Content.generalNow; loadGeneral: typeof Content.loadGeneral;
   moduleTitle: typeof Progress.moduleTitle; startToday: () => void;
   engineTrees: () => Readonly<Record<string, Parameters<typeof Mastery.engineLevels>[0]>> | undefined;
@@ -248,8 +248,11 @@ function measure(list: Scope[]): Measured {
   const levels = d.mastery.masteryOf(d.app.save, d.loadTickets('logistics'), ids, d.today(), d.mastery.perfDrills(drills)); // L332: the learning path's tickets
   const fast = d.mastery.perfDrills(drills, parts.find((p) => p.n === d.mastery.FAST_PART)?.skills ?? []);
   const engines = trees && Object.fromEntries(Object.entries(trees).map(([e, t]) => [e, d.mastery.engineLevels(t, completed)]));
+  // Every Part of route.yml has its badge (37 in all, ux-route-v24 §6.3); a Part whose skills have not shipped yet (Part 9 until
+  // R2) has an empty set and is never held (L333), while the skill map draws only the Parts with skills (L336).
+  const badgeParts = d.ALL_PARTS.map((p) => ({ n: p.n, skills: p.skills.filter((id) => ids.includes(id)) }));
   const badges = d.mastery.badges({
-    parts, levels, foundation: d.SKILLS.map((s) => s.id), perf: fast, completed, engines: engines ?? {}, path: pathDrills(),
+    parts: badgeParts, levels, foundation: d.SKILLS.map((s) => s.id), perf: fast, completed, engines: engines ?? {}, path: pathDrills(),
     domains: list.filter((s) => s.scope !== 'general').map((s) => ({ id: s.scope, done: s.final })),
   });
   return { levels, parts, engines, badges };

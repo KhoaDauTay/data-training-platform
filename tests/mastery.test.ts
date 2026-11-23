@@ -5,7 +5,7 @@ import sqlYml from '../content/general/sql.yml?raw';
 import { generalNow, loadTickets } from '../src/content';
 import { knownSkills } from '../src/home';
 import { badges, BADGE_ENGINES, DRILL_KINDS, engineLevels, FAST_PART, masteryOf, overdue, perfDrills, skillParts, type BadgeInput } from '../src/mastery';
-import { PARTS, SKILLS } from '../src/progress';
+import { ALL_PARTS, PARTS, SKILLS } from '../src/progress';
 import type { Save } from '../src/save';
 
 /** v24 R0 (product-route-v24 §1.7, L323, L330–L334): skill levels and badges, derived from the Save on every draw. */
@@ -110,8 +110,11 @@ describe('route.yml wiring (v24 integration, L330)', () => {
     const fast = perfDrills(generalNow()!.drills, part.skills);
     expect(fast.length).toBeGreaterThan(0);
     for (const id of fast) expect(part.skills.some((s) => id.startsWith(`g-${s.replace(/_/g, '-')}-`))).toBe(true);
-    const out = badges({ parts: PARTS, levels: masteryOf(save, tickets(), ids, '2026-11-20'), foundation: ids, perf: fast, completed: new Set(save.completed), engines: {}, domains: [] });
-    expect(out.filter((b) => b.kind === 'part').map((b) => b.id)).toEqual(PARTS.map((p) => `part-${p.n}`));
+    const all = ALL_PARTS.map((p) => ({ n: p.n, skills: p.skills.filter((id) => PARTS.some((q) => q.skills.includes(id))) }));
+    const out = badges({ parts: all, levels: masteryOf(save, tickets(), ids, '2026-11-20'), foundation: ids, perf: fast, completed: new Set(save.completed), engines: {}, domains: [] });
+    expect(out.filter((b) => b.kind === 'part').map((b) => b.id)).toEqual(ALL_PARTS.map((p) => `part-${p.n}`));
+    expect(out.filter((b) => b.kind === 'part')).toHaveLength(11); // ux-route-v24 §6.3: 11 Parts of 37 badges
+    for (const p of all.filter((x) => !x.skills.length)) expect(out.find((b) => b.id === `part-${p.n}`)!.have).toBe(false); // L333
     expect(out.find((b) => b.id === 'fast')!.have).toBe(false);
   });
 });
