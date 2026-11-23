@@ -33,7 +33,7 @@ pair:
     SELECT count(*) AS orders
     FROM orders
     WHERE order_date >= DATE '2026-10-01' AND order_date < DATE '2026-11-01'
-  expect: { table: orders, bad: "Seq Scan", good: "Index Only Scan" }
+  expect: { table: orders, bad: "Seq Scan", good: "Bitmap Heap Scan" }
 lint:
   rule: q11
   tip:

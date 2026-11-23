@@ -1,6 +1,7 @@
 // ENG-CORE (L220): routes of the Database Engine area and its lesson ids in the Save (no SAVE_VERSION bump).
 import { describe, expect, it } from 'vitest';
 import v5 from './fixtures/save-v5.json?raw';
+import bp from './fixtures/save-v5-bp.json?raw';
 import { loadTickets } from '../src/content';
 import { knownSkills } from '../src/home';
 import { engineHash, enginePlayOf, engineRouteOf, hashOf, parseRoute } from '../src/route';
@@ -52,6 +53,15 @@ describe('id e-… trong Save', () => {
     const s = parseSave(raw, known);
     expect(s.completed).toEqual(['ch1-01', 'e-pg-l1-01', 'e-mg-l2-03']);
     expect(parseSave(JSON.stringify(s), known)).toEqual(s);
+  });
+
+  it('v24 BP-T (L345): thẻ Best Practice e-bp-<mã> qua đọc → ghi → đọc, không bump Save (fixture save-v5-bp.json)', () => {
+    const s = parseSave(bp, known);
+    expect(s.version).toBe(JSON.parse(v5).version);
+    expect(s.completed.filter((id) => id.startsWith('e-'))).toEqual(['e-pg-l1-01', 'e-bp-q02', 'e-bp-s04']);
+    expect(parseSave(JSON.stringify(s), known)).toEqual(s);
+    for (const id of ['e-bp-q02', 'e-bp-a05', 'e-bp-m07']) expect([id, ENGINE_ID.test(id)]).toEqual([id, true]);
+    expect(ENGINE_ID.test('e-bx-q02')).toBe(false);
   });
 
   it('không đổi kỹ năng đã học (Lily, lộ trình)', () => {

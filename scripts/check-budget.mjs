@@ -70,6 +70,20 @@ const GROUPS = [
   // L248: the MongoDB path ("Lộ trình NoSQL"): 12 parts of skills, lessons and 168 drills (content/engine/mongodb/path/*.yml as
   // JSON) + the shell parser for its ESR/covered rules, lazy on the first path page: 72 KB gz at integration.
   ['enginePath', /^engineMongoPath-/, 80],
+  // BP-LINT (L273): Boon's best-practice tip (src/ui/bpTip.ts, 3.6 KB, lazy when the workspace mounts), the rules
+  // (src/viz/bpLint.ts, 1.8) and libpg-query's JS on the main thread (named after its wasm/index.js, 14.8; the .wasm is the
+  // worker's file, already in `parser`), both lazy on the first lintable run: 20.2 KB gz at integration. Main +0.1 KB.
+  ['bplint', /^(bpTip|bpLint|wasm)-[\w-]{8}\.js$/, 22],
+  // v24 BP-T/BP-UI (L345/L346): Best Practice, lazy with the engine chunk. bpindex = list fields of the 60 released cards +
+  // tracks.yml + habits.yml (src/bestSources.ts); bpsql/bppg = one chunk per track with the full cards (src/bestSql.ts,
+  // src/bestPg.ts), fetched when a card of that track opens; bpui = src/ui/engineBest.ts + src/engine/best.ts +
+  // src/i18n/best.ts (+ the bp-tips pref shared with bptip, src/bpPref.ts). Measured at v24: 12.8 / 27.5 / 32.4 / 13.2 KB gz.
+  // The design's 4/20/20 assumed per-card chunks (catalogue §13.1.4); the task asked for per-track loaders, so the ceilings
+  // are the measurement plus a little room. MongoDB/DynamoDB cards are not in the build (src/engine/best.ts RELEASED).
+  ['bpindex', /^bestSources-/, 14],
+  ['bpsql', /^bestSql-/, 30],
+  ['bppg', /^bestPg-/, 35],
+  ['bpui', /^(engineBest|bpPref)-/, 15],
   ['rest', /./, 1560],
 ];
 
