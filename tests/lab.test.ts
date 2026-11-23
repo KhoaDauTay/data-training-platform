@@ -13,6 +13,7 @@ describe('schema lab', () => {
     await ensureSchema(db, 'lab');
     const ms = performance.now() - t0;
     // Alone: 202 ms on the build machine (scratch 190–250 ms). The full parallel suite measured 1.2 s, so the bound is loose.
+    // v24 R0b (events_big, 25k rows): ×1.33 the v23 seed on the same machine (mean of 5 alone), budget ×1.5.
     expect(ms).toBeLessThan(2500);
     await ensureSchema(db, 'lab'); // lần hai: không làm gì
     expect(await count(db, 'customers')).toBe(300);
@@ -27,6 +28,26 @@ describe('schema lab', () => {
     expect(await count(db, 'payments p WHERE NOT EXISTS (SELECT 1 FROM orders o WHERE o.id = p.order_id)')).toBe(8);
     // móc: mọi khách đều có ít nhất một đơn (drill anti-join dựa vào khoảng thời gian, không "chưa từng mua")
     expect(await count(db, 'customers c WHERE NOT EXISTS (SELECT 1 FROM orders o WHERE o.customer_id = c.id)')).toBe(0);
+    // v24 R0b: events_big stays under ANALYZE's 30,000-row sample (deterministic statistics), 'refund' is selective,
+    // no event before its customer's signup, and kind has no index (a Part 11 drill adds it)
+    expect(await count(db, 'events_big')).toBe(25000);
+    expect(await count(db, "events_big WHERE kind = 'refund'")).toBe(257);
+    expect(await count(db, 'events_big e JOIN customers c ON c.id = e.customer_id WHERE e.ts < c.signup_date')).toBe(0);
+    expect((await db.query("SELECT 1 FROM pg_indexes WHERE schemaname = 'lab' AND tablename = 'events_big' AND indexdef LIKE '%(kind%'")).rows).toHaveLength(0);
+  });
+
+  it('v24 R0b: id là identity đã setval (INSERT không cần id), CHECK chặn giá trị lạ', async () => {
+    const db = await seededDb();
+    await ensureSchema(db, 'lab');
+    const one = async (sql: string) => (await runSandboxed(db, sql, undefined, { schema: 'lab' })).rows[0];
+    // runSandboxed rolls the row back; the sequence still moves (sequences are not transactional), so each table once
+    expect(await one("INSERT INTO orders (customer_id, store_id, order_date, channel, status) VALUES (1, 1, '2026-10-31', 'STORE', 'PAID') RETURNING id = (SELECT max(id) + 1 FROM orders)")).toEqual([true]);
+    expect(await one("INSERT INTO payments (order_id, amount_vnd, paid_at) VALUES (1, 1000, '2026-10-31 09:00') RETURNING id = (SELECT max(id) + 1 FROM payments)")).toEqual([true]);
+    expect(await one("INSERT INTO events_big (customer_id, store_id, kind, ts) VALUES (1, 1, 'view', '2026-10-31 09:00') RETURNING id = 25001")).toEqual([true]);
+    await expect(runSandboxed(db, "UPDATE orders SET status = 'paid' WHERE id = 1", undefined, { schema: 'lab' })).rejects.toMatchObject({ code: '23514' });
+    await expect(runSandboxed(db, "INSERT INTO events_big (customer_id, store_id, kind, ts) VALUES (1, 1, 'paid', '2026-10-31 09:00')", undefined, { schema: 'lab' })).rejects.toMatchObject({ code: '23514' });
+    const n = await db.query<{ n: number }>("SELECT count(*)::int AS n FROM information_schema.columns WHERE table_schema = 'lab' AND is_identity = 'YES'");
+    expect(n.rows[0].n).toBe(10);
   });
 
   it('md5 mỗi bảng lab cố định (đổi seed = đổi nội dung drill)', async () => {
@@ -43,6 +64,7 @@ describe('schema lab', () => {
         "dim_customer": "2b61ff8a6b0d9425afd1074ad2b2ed60",
         "dim_date": "dfbf6e5c562c5f287093c07f5b6f2dec",
         "dim_product": "00037ae4a59db0226ee7f179f74de81f",
+        "events_big": "86b4c8d6ab23816b5c7d8b2e79d23e31",
         "experiments": "f4c7a114c84abb6d8f00dd73debc8649",
         "fact_sales": "33510f2c77b460c9bc181982c2324639",
         "order_items": "4fd8f411bfd982fe2af92855a978fded",

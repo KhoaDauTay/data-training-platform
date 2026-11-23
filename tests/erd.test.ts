@@ -139,12 +139,12 @@ describe('relatedTables (ui-ux-v4 §4)', () => {
     expect(relatedTables(['c', 'y'], all, cons, 1).tables).toEqual(['c', 'y', 'b', 'x']);
   });
 
-  it('dữ liệu thật: ch10-04 có 8 bảng; chỉ ch12-06 phải ẩn bớt', async () => {
+  it('dữ liệu thật: ch10-04 có 9 bảng (incoterms là bảng cha từ FK v24 R0b); chỉ ch12-06 phải ẩn bớt', async () => {
     const { cons: real } = await loadErMetadata(await runner(), GAME_SCHEMA);
     const tickets = loadTickets();
     const ch10 = tickets.find((x) => x.id === 'ch10-04')!;
     expect(new Set(relatedTables(ch10.tables, tablesUnlocked(10), real).tables)).toEqual(
-      new Set(['container_events', 'containers', 'shipments', 'customers', 'free_time_terms', 'ports', 'carriers', 'employees']));
+      new Set(['container_events', 'containers', 'shipments', 'customers', 'free_time_terms', 'ports', 'carriers', 'employees', 'incoterms']));
     const over = tickets.filter((x) => relatedTables(x.tables, tablesUnlocked(x.chapter), real).dropped.length > 0).map((x) => x.id);
     expect(over).toEqual(['ch12-06']);
     expect(real.find((c) => c.table === 'shipments' && c.column === 'customer_id')).toMatchObject({ refTable: 'customers', refColumn: 'id' });

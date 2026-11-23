@@ -630,3 +630,10 @@ INSERT INTO bunker_prices (month, usd_per_tonne) VALUES
   ('2026-05-01', 561.00), ('2026-06-01', 579.00), ('2026-07-01', 603.00), ('2026-08-01', 622.00),
   ('2026-09-01', 618.00), ('2026-10-01', 605.00);
 ANALYZE lane_profiles, bunker_prices;
+
+-- v24 R0b (schema-perf-v24 S1, S5; L350): no data change. Planner statistics for the 14 tables the blocks above never
+-- analysed (each is under ANALYZE's 30,000-row sample, so it reads every row and costs are the same on every boot),
+-- and the incoterm foreign key the shipments table always honoured.
+ANALYZE employees, customers, ports, carriers, shipment_events, trucking_orders, cfs_receipts, hs_codes, duties_taxes,
+  customs_declarations, incoterms, payments, vendor_bills, house_bills;
+ALTER TABLE shipments ADD FOREIGN KEY (incoterm) REFERENCES incoterms (code);
