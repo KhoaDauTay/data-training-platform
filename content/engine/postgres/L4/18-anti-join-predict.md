@@ -79,6 +79,7 @@ predict:
     - { vi: "`Seq Scan` trên `customers`, và câu con chạy lại cho từng khách", en: "A `Seq Scan` on `customers`, with the subquery run again for each customer" }
     - { vi: "Một `Nested Loop`: với mỗi khách, tra `orders` một lần", en: "A `Nested Loop`: for each customer, one lookup into `orders`" }
   answer: 0
+  trap: 1
   why:
     vi: "\"Câu con tương quan chạy lại cho từng dòng\" nghe hợp lý vì nó nhắc tới `c.id` của câu ngoài. Nhưng planner đổi `NOT EXISTS` thành một phép nối anti: băm bảng nhỏ, quét bảng lớn một lần, chỉ giữ dòng bên trái không có cặp. Không có index trên `orders.customer_id`, mỗi lần tra trong `Nested Loop` sẽ là một lần quét cả bảng, nên planner chọn băm."
     en: "\"A correlated subquery runs again for every row\" sounds right because it mentions the outer `c.id`. But the planner turns `NOT EXISTS` into an anti join: hash the small table, scan the big one once, keep only left rows with no match. With no index on `orders.customer_id`, each lookup in a `Nested Loop` would scan the whole table, so the planner hashes."
@@ -96,6 +97,10 @@ quiz:
       vi: "\"Thống kê cũ\" nghe hợp lý vì một dòng mới vừa được thêm, nhưng đây là đáp số chứ không phải kế hoạch, và thống kê không bao giờ đổi đáp số. `x NOT IN (a, b, NULL)` nghĩa là `x <> a AND x <> b AND x <> NULL`; vế cuối là NULL, nên cả biểu thức không bao giờ là true. Viết `NOT EXISTS`, hoặc lọc `customer_id IS NOT NULL` trong câu con."
       en: "\"Stale statistics\" sounds right because a row was just added, but this is a result, not a plan, and statistics never change a result. `x NOT IN (a, b, NULL)` means `x <> a AND x <> b AND x <> NULL`; the last part is NULL, so the whole expression is never true. Write `NOT EXISTS`, or filter `customer_id IS NOT NULL` in the subquery."
 ---
+
+## Mở bài
+
+"Khách chưa có đơn" là câu hỏi rất hay gặp. Ba cách viết quen thuộc cho ra kế hoạch khác nhau, và một cách còn trả sai khi có NULL. Bài này cho bạn đoán kế hoạch của từng cách.
 
 ## Ý chính
 
@@ -118,7 +123,17 @@ Chọn đáp án trước, rồi bấm "Xem thật" để thấy kế hoạch th
 
 Sau bài này bạn chọn được cách viết "không có" đúng cả khi có NULL, và đọc được trong kế hoạch là planner có nhận ra anti join hay không.
 
+## Tóm tắt
+
+- `NOT EXISTS` thành anti join: giữ dòng bên trái không có cặp.
+- `LEFT JOIN … IS NULL` chỉ thành anti join khi kiểm NULL trên cột của điều kiện nối.
+- `NOT IN (...)` không thành anti join và trả rỗng khi câu con có một NULL: dùng `NOT EXISTS`.
+
 # EN
+
+## Opening
+
+"Customers with no orders" is a very common question. Three familiar ways to write it produce different plans, and one of them even goes wrong when a NULL appears. This lesson has you guess the plan of each.
 
 ## Key idea
 
@@ -140,3 +155,9 @@ WHERE NOT EXISTS (SELECT 1 FROM orders o WHERE o.customer_id = c.id);
 Pick an answer first, then press "See the real plan" to see the real plan. The three steps then compare the results and plans of the forms, on data that already holds one order with a NULL `customer_id`.
 
 After this lesson you can pick a "has none" form that stays right with NULLs, and read in a plan whether the planner recognised an anti join.
+
+## Recap
+
+- `NOT EXISTS` becomes an anti join: it keeps the left rows with no match.
+- `LEFT JOIN … IS NULL` becomes an anti join only when the NULL test is on the join column.
+- `NOT IN (...)` never becomes an anti join and returns nothing when the subquery holds a NULL: use `NOT EXISTS`.

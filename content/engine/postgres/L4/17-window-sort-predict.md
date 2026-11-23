@@ -92,6 +92,7 @@ predict:
     - { vi: "Không có gì: `WindowAgg` tự sắp trong bộ nhớ", en: "Nothing: `WindowAgg` sorts in memory by itself" }
     - { vi: "`Index Scan using orders_pkey`, vì khóa chính có `id`", en: "`Index Scan using orders_pkey`, because the primary key holds `id`" }
   answer: 0
+  trap: 1
   why:
     vi: "\"Hàm cửa sổ tự lo thứ tự\" nghe hợp lý vì `ORDER BY` nằm ngay trong `OVER (...)`. Nhưng tài liệu nói hàm cửa sổ luôn cần dữ liệu đã sắp sẵn: `WindowAgg` chỉ đọc dòng theo thứ tự nút con đưa lên. `orders_pkey` sắp theo `id`, không theo khách, nên planner phải thêm một nút `Sort` trên `Seq Scan`."
     en: "\"The window function handles the order itself\" sounds right because the `ORDER BY` sits inside `OVER (...)`. But the docs say window functions always need presorted input: `WindowAgg` only reads rows in the order its child hands them up. `orders_pkey` is ordered by `id`, not by customer, so the planner adds a `Sort` node over a `Seq Scan`."
@@ -109,6 +110,10 @@ quiz:
       vi: "\"Chỉ cần 3 dòng mỗi nhóm thì chỉ đọc 3 dòng\" nghe hợp lý. Nhưng muốn biết đơn nào lớn nhất thì phải xem hết đơn của khách đó: kế hoạch vẫn là `WindowAgg` trên `Sort` trên `Seq Scan` cả bảng. Postgres đẩy điều kiện vào `WindowAgg` (dòng `Run Condition`) để thôi tính thêm số thứ tự trong nhóm, không để đọc ít hơn."
       en: "\"Only 3 rows per group are needed, so only 3 rows are read\" sounds right. But to know which orders are largest, every order of that customer must be seen: the plan is still `WindowAgg` over `Sort` over a full `Seq Scan`. Postgres pushes the condition into `WindowAgg` (the `Run Condition` line) to stop numbering inside a group, not to read less."
 ---
+
+## Mở bài
+
+Một báo cáo xếp hạng chạy chậm dù bảng có index. Thủ phạm thường là một lần sắp ẩn ngay dưới hàm cửa sổ. Bài này cho bạn đoán nút đó trước khi xem kế hoạch thật.
 
 ## Ý chính
 
@@ -134,7 +139,17 @@ Chọn đáp án trước, rồi bấm "Xem thật" để thấy kế hoạch th
 
 Sau bài này bạn đọc được kế hoạch của một câu có hàm cửa sổ, chỉ ra nút sắp đến từ đâu, và biết khi nào một index bỏ được nó.
 
+## Tóm tắt
+
+- `WindowAgg` không tự sắp: nó cần dòng đến đúng thứ tự `PARTITION BY` rồi `ORDER BY`.
+- Thứ tự đến từ một `Sort`, một index đúng thứ tự, hoặc một `Incremental Sort`.
+- Các hàm dùng chung một cửa sổ dùng chung một lần sắp; hai cửa sổ khác thứ tự cần hai lần sắp.
+
 # EN
+
+## Opening
+
+A ranking report runs slowly even though the table has indexes. The usual culprit is a hidden sort right under the window function. This lesson has you guess that node before you see the real plan.
 
 ## Key idea
 
@@ -159,3 +174,9 @@ FROM orders;
 Pick an answer first, then press "See the real plan" to see the real plan. The four steps then go from a window query with a Sort, to an index that removes the Sort, to a case where the planner still sorts although the index holds the order. The function `nodes_of(q)` returns one row per node in the plan of query `q`, and `top_cost(q)` returns the cost of the top node.
 
 After this lesson you can read the plan of a query with a window function, say where its sort comes from, and know when an index removes it.
+
+## Recap
+
+- `WindowAgg` does not sort: it needs rows in `PARTITION BY` then `ORDER BY` order.
+- That order comes from a `Sort`, an index in that order, or an `Incremental Sort`.
+- Functions sharing one window share one sort; two windows in different orders need two sorts.

@@ -78,6 +78,7 @@ predict:
     - { vi: "Có: CTE luôn được tính hết trước, rồi mới lọc", en: "Yes: a CTE is always computed in full first, then filtered" }
     - { vi: "Không, nhưng vẫn `Seq Scan` cả bảng `orders`", en: "No, but it still runs a `Seq Scan` over the whole of `orders`" }
   answer: 0
+  trap: 1
   why:
     vi: "\"CTE là hàng rào, luôn được tính trước\" nghe hợp lý vì nó đúng tới PostgreSQL 11. Từ bản 12, CTE không đệ quy, không có tác dụng phụ và chỉ được dùng một lần sẽ được gộp vào câu ngoài, nên điều kiện đi xuống tới index. Không có index thì câu gộp vào sẽ là `Seq Scan`; ở đây index có sẵn."
     en: "\"A CTE is a fence, always computed first\" sounds right because it was true up to PostgreSQL 11. Since version 12, a CTE that is not recursive, has no side effects and is used once is folded into the outer query, so the condition reaches the index. Without the index the folded query would be a `Seq Scan`; here the index exists."
@@ -95,6 +96,10 @@ quiz:
       vi: "\"Dùng hai lần thì thêm `NOT MATERIALIZED`\" nghe hợp lý sau bước 3, nơi nó giúp nhiều. Nhưng ở bước 3, gộp vào cho điều kiện cắt bớt phần phải đọc. Ở đây thân CTE là một phép gom trên cả bảng: gộp vào thì một chỗ dùng vẫn phải gom cả bảng, chỗ kia gom lại lần nữa, và kế hoạch đắt hơn. Gộp chỉ có lợi khi điều kiện bên ngoài cắt được nhiều hơn phần phải làm lại."
       en: "\"Used twice, so add `NOT MATERIALIZED`\" sounds right after step 3, where it helped a lot. But in step 3 folding let the condition cut what had to be read. Here the CTE body groups the whole table: folded in, one use still groups the whole table and the other groups again, so the plan costs more. Folding pays only when the outer condition cuts more than the work that is repeated."
 ---
+
+## Mở bài
+
+Viết `WITH` cho dễ đọc là thói quen tốt, nhưng nó có thể đổi kế hoạch. Có lúc CTE được gộp vào câu ngoài, có lúc nó được tính riêng một lần. Bài này cho bạn đoán trường hợp nào xảy ra.
 
 ## Ý chính
 
@@ -116,7 +121,17 @@ Chọn đáp án trước, rồi bấm "Xem thật" để thấy kế hoạch th
 
 Sau bài này bạn đọc được `CTE Scan` trong kế hoạch, và chọn `MATERIALIZED` hay `NOT MATERIALIZED` bằng cost đo được.
 
+## Tóm tắt
+
+- CTE không đệ quy, không tác dụng phụ, dùng một lần thì được gộp vào câu ngoài (từ PostgreSQL 12).
+- Dùng từ hai lần, có hàm volatile hoặc viết `MATERIALIZED` thì được tính riêng và đọc lại qua `CTE Scan`.
+- `MATERIALIZED` / `NOT MATERIALIZED` cho bạn chọn; gộp vào có lợi khi điều kiện ngoài cắt được nhiều.
+
 # EN
+
+## Opening
+
+Writing `WITH` for readability is a good habit, but it can change the plan. Sometimes the CTE is folded into the outer query, sometimes it is computed apart once. This lesson has you guess which one happens.
 
 ## Key idea
 
@@ -137,3 +152,9 @@ SELECT sum(amount) FROM t WHERE customer_id = 42;
 Pick an answer first, then press "See the real plan" to see the real plan. The three steps then compare a CTE forced apart, a CTE used twice, and that same CTE folded in. The function `nodes_of(q)` returns one row per node in the plan of query `q`, and `top_cost(q)` returns the cost of the top node.
 
 After this lesson you can read a `CTE Scan` in a plan, and choose `MATERIALIZED` or `NOT MATERIALIZED` by measured cost.
+
+## Recap
+
+- A non-recursive CTE with no side effects used once is folded into the outer query (since PostgreSQL 12).
+- Used twice or more, holding a volatile function or written `MATERIALIZED`, it is computed apart and read back through `CTE Scan`.
+- `MATERIALIZED` / `NOT MATERIALIZED` let you choose; folding in helps when the outer condition cuts a lot.
