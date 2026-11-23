@@ -48,7 +48,50 @@ lab:
       hint:
         vi: '`$facet: { a: [ ... ], b: [ ... ] }`, mỗi tên một pipeline con. `$sortByCount` là `$group` đếm + `$sort` giảm dần.'
         en: '`$facet: { a: [ ... ], b: [ ... ] }`, one sub-pipeline per name. `$sortByCount` is a counting `$group` plus a descending `$sort`.'
+    - task:
+        vi: 'Đếm số đơn theo hai khoảng `total`: dưới `100000` và từ `100000` tới dưới `300000`. Đơn từ `300000` trở lên vào nhóm `"big"`. Mỗi nhóm một kết quả: `_id` là cận dưới hoặc `"big"`, `orders` là số đơn.'
+        en: 'Count orders in two `total` ranges: under `100000` and `100000` up to `300000`. Orders of `300000` or more go to the group `"big"`. One result per group: `_id` is the lower bound or `"big"`, `orders` the number of orders.'
+      solution: 'db.orders.aggregate([{ $bucket: { groupBy: "$total", boundaries: [0, 100000, 300000], default: "big", output: { orders: { $sum: 1 } } } }])'
+      check: doc
+      hint:
+        vi: '`default` đặt tên nhóm cho giá trị nằm ngoài mọi khoảng.'
+        en: '`default` names the group for values outside every range.'
+quiz:
+  - q:
+      vi: 'Với `boundaries: [0, 100000, 300000]`, một đơn có `total` đúng `100000` vào nhóm nào?'
+      en: 'With `boundaries: [0, 100000, 300000]`, which group does an order with a `total` of exactly `100000` fall into?'
+    options:
+      - vi: 'Nhóm `_id` `0`, vì `100000` là cận trên của nó'
+        en: 'Group `_id` `0`, because `100000` is its upper bound'
+      - vi: 'Nhóm `_id` `100000`'
+        en: 'Group `_id` `100000`'
+      - vi: Không nhóm nào, nên lệnh báo lỗi
+        en: No group, so the command fails
+    answer: 1
+    trap: 0
+    why:
+      vi: 'Nghe hợp lý nếu coi mỗi khoảng là "từ … đến …" gồm cả hai đầu, nhưng mỗi khoảng của `$bucket` gồm cận dưới và không gồm cận trên. `100000` là cận dưới của nhóm thứ hai.'
+      en: 'It sounds right if each range is "from … to …" with both ends included, but each `$bucket` range includes its lower bound and excludes its upper bound. `100000` is the lower bound of the second group.'
+  - q:
+      vi: '`$facet` có hai pipeline con. Nó trả ra bao nhiêu tài liệu?'
+      en: 'A `$facet` has two sub-pipelines. How many documents does it return?'
+    options:
+      - vi: Hai, mỗi pipeline con một tài liệu
+        en: Two, one per sub-pipeline
+      - vi: Một, mỗi pipeline con là một trường mảng của nó
+        en: One, with each sub-pipeline as an array field of it
+      - vi: Bằng số tài liệu đầu vào
+        en: As many as the input documents
+    answer: 1
+    trap: 0
+    why:
+      vi: 'Nghe hợp lý vì có hai báo cáo, nhưng `$facet` luôn trả đúng một tài liệu; mỗi tên trong `$facet` là một trường chứa mảng kết quả của pipeline con đó.'
+      en: 'It sounds right because there are two reports, but `$facet` always returns exactly one document; each name in `$facet` is a field holding the array result of that sub-pipeline.'
 ---
+## Mở bài
+
+Trang tổng quan cần biểu đồ đơn theo khoảng giá trị, số đơn theo trạng thái và đơn lớn nhất. Ba lệnh `aggregate` là ba lần đọc cùng dữ liệu. Có cách nào chia khoảng và trả nhiều báo cáo trong một lần?
+
 ## Ý chính
 
 `$bucket` gom tài liệu theo khoảng của một giá trị:
@@ -64,7 +107,20 @@ lab:
 
 Làm được: dựng biểu đồ phân bố theo khoảng và trả nhiều chỉ số cho một trang tổng quan trong một lệnh.
 
+## Cú pháp
+
+```text
+{ $bucket: { groupBy: "$<field>", boundaries: [a, b, c], default: "<other>", output: { <name>: { <accumulator> } } } }
+{ $facet: { <name>: [ <stages> ], <name>: [ <stages> ] } }
+{ $sortByCount: "$<field>" }
+```
+
+- Mỗi khoảng `[a, b)` gồm cận dưới, không gồm cận trên.
+- `$facet` trả một tài liệu, mỗi tên là một mảng kết quả.
+
 ## Ví dụ
+
+Số đơn và cửa hàng của các đơn đã thanh toán, trong một lệnh:
 
 ```js
 db.orders.aggregate([
@@ -76,11 +132,51 @@ db.orders.aggregate([
 ])
 ```
 
+Số đơn theo cửa hàng, nhiều nhất trước:
+
+```js
+db.orders.aggregate([{ $sortByCount: "$store" }])
+```
+
+## Lỗi hay gặp
+
+Có giá trị nằm ngoài mọi khoảng mà không có `default`:
+
+```js
+// ERROR mingo
+db.orders.aggregate([{ $bucket: { groupBy: "$total", boundaries: [0, 100000, 300000] } }])
+```
+
+Đơn 3 có `total` là 450000, không thuộc khoảng nào.
+
+Quên dấu `$` ở `$sortByCount`:
+
+```js
+// WRONG: "status" is a constant, so all 8 orders form one group
+db.orders.aggregate([{ $sortByCount: "status" }])
+```
+
+```js
+// FIX: "$status" counts per status value
+db.orders.aggregate([{ $sortByCount: "$status" }])
+```
+
 ## Thực hành
 
-Hai bước trên `orders` (8 đơn, `total` từ 25.000 tới 450.000).
+Ba bước trên `orders` (8 đơn, `total` từ 25.000 tới 450.000).
+
+## Tóm tắt
+
+- `$bucket` chia tài liệu theo khoảng `[a, b)` của một giá trị.
+- Giá trị ngoài mọi khoảng cần `default`, nếu không lệnh báo lỗi.
+- `$facet` chạy nhiều pipeline con và trả đúng một tài liệu.
+- `$sortByCount` là đếm theo nhóm rồi sắp giảm dần.
 
 # EN
+
+## Opening
+
+The dashboard needs a histogram of orders by value range, the number of orders per status and the largest order. Three `aggregate` commands read the same data three times. Is there a way to bucket and return several reports in one pass?
 
 ## Key idea
 
@@ -97,7 +193,20 @@ Hai bước trên `orders` (8 đơn, `total` từ 25.000 tới 450.000).
 
 You can now: build a range histogram and return several dashboard numbers in one command.
 
+## Syntax
+
+```text
+{ $bucket: { groupBy: "$<field>", boundaries: [a, b, c], default: "<other>", output: { <name>: { <accumulator> } } } }
+{ $facet: { <name>: [ <stages> ], <name>: [ <stages> ] } }
+{ $sortByCount: "$<field>" }
+```
+
+- Each range `[a, b)` includes its lower bound and excludes its upper bound.
+- `$facet` returns one document, each name holding an array of results.
+
 ## Example
+
+The count and the stores of the paid orders, in one command:
 
 ```js
 db.orders.aggregate([
@@ -109,6 +218,42 @@ db.orders.aggregate([
 ])
 ```
 
+The number of orders per store, most first:
+
+```js
+db.orders.aggregate([{ $sortByCount: "$store" }])
+```
+
+## Common mistakes
+
+A value outside every range and no `default`:
+
+```js
+// ERROR mingo
+db.orders.aggregate([{ $bucket: { groupBy: "$total", boundaries: [0, 100000, 300000] } }])
+```
+
+Order 3 has a `total` of 450000, which fits no range.
+
+Forgetting the `$` in `$sortByCount`:
+
+```js
+// WRONG: "status" is a constant, so all 8 orders form one group
+db.orders.aggregate([{ $sortByCount: "status" }])
+```
+
+```js
+// FIX: "$status" counts per status value
+db.orders.aggregate([{ $sortByCount: "$status" }])
+```
+
 ## Practice
 
-Two steps on `orders` (8 orders, `total` from 25,000 to 450,000).
+Three steps on `orders` (8 orders, `total` from 25,000 to 450,000).
+
+## Recap
+
+- `$bucket` splits documents by `[a, b)` ranges of a value.
+- Values outside every range need `default`, or the command fails.
+- `$facet` runs several sub-pipelines and returns exactly one document.
+- `$sortByCount` counts per group and sorts descending.

@@ -62,7 +62,38 @@ lab:
       hint:
         vi: "Điều kiện trong `arrayFilters` dùng được toán tử như `$gte`."
         en: "A condition in `arrayFilters` can use operators such as `$gte`."
+quiz:
+  - q:
+      vi: 'Đơn 5 có hai dòng hàng cùng `qty` bằng 2. Lệnh `db.orders.updateOne({ _id: 5, "lines.qty": 2 }, { $set: { "lines.$.qty": 3 } })` sửa mấy dòng?'
+      en: 'Order 5 has two lines with `qty` equal to 2. How many lines does `db.orders.updateOne({ _id: 5, "lines.qty": 2 }, { $set: { "lines.$.qty": 3 } })` change?'
+    options:
+      - vi: Cả hai dòng, vì cả hai khớp điều kiện
+        en: Both lines, because both match the condition
+      - vi: Chỉ dòng đầu tiên khớp
+        en: Only the first line that matches
+      - vi: Không dòng nào, vì có nhiều hơn một dòng khớp
+        en: None, because more than one line matches
+    answer: 1
+    trap: 0
+    why:
+      vi: 'Nghe hợp lý vì cả hai dòng đều khớp filter, nhưng `$` chỉ trỏ tới phần tử đầu tiên khớp điều kiện trên mảng. Muốn sửa mọi dòng khớp thì dùng `$[<id>]` với `arrayFilters`.'
+      en: 'It sounds right because both lines match the filter, but `$` points only at the first element that matched the array condition. To change every matching line, use `$[<id>]` with `arrayFilters`.'
+  - q:
+      vi: 'Bạn muốn giảm giá mọi dòng của đơn 1, không cần điều kiện trên dòng. Đường dẫn nào đúng?'
+      en: 'You want a discount on every line of order 1, with no condition on the lines. Which path is right?'
+    options:
+      - { vi: '`"lines.$.price"`', en: '`"lines.$.price"`' }
+      - { vi: '`"lines.$[].price"`', en: '`"lines.$[].price"`' }
+      - { vi: '`"lines.price"`', en: '`"lines.price"`' }
+    answer: 1
+    why:
+      vi: '`$[]` là mọi phần tử của mảng. `$` cần một điều kiện trên mảng trong filter và chỉ sửa một phần tử; `"lines.price"` không trỏ vào từng phần tử của mảng.'
+      en: '`$[]` is every element of the array. `$` needs an array condition in the filter and changes one element; `"lines.price"` does not point into each element of the array.'
 ---
+## Mở bài
+
+Khách của đơn 7 đổi số lượng một dòng hàng. Đọc cả mảng `lines` về ứng dụng, sửa, rồi ghi đè lại thì chậm và dễ mất thay đổi của người khác. Có cách nào sửa đúng một dòng ngay trong MongoDB?
+
 ## Ý chính
 
 Ba cách trỏ vào phần tử của mảng trong update:
@@ -77,7 +108,26 @@ Sửa tại chỗ như vậy tốt hơn đọc cả mảng về ứng dụng r�
 
 Làm được: sửa đúng dòng hàng trong đơn mà không ghi lại cả mảng.
 
+## Cú pháp
+
+```text
+{ $set: { "lines.$.qty": 4 } }            // first element matched by the filter
+{ $set: { "lines.$[].qty": 4 } }          // every element
+{ $set: { "lines.$[l].qty": 4 } }, { arrayFilters: [{ "l.sku": "p1" }] }
+```
+
+- `$` cần một điều kiện trên `lines` trong filter.
+- `arrayFilters` là đối số thứ ba; mỗi `<id>` trong đường dẫn có đúng một điều kiện.
+
 ## Ví dụ
+
+Đơn 1 thêm một gói `"p4"`, qua `$`:
+
+```js
+db.orders.updateOne({ _id: 1, "lines.sku": "p4" }, { $inc: { "lines.$.qty": 1 } })
+```
+
+Mọi đơn đã thanh toán được tặng thêm một đơn vị cho dòng rẻ hơn 30000:
 
 ```js
 db.orders.updateMany(
@@ -87,11 +137,50 @@ db.orders.updateMany(
 )
 ```
 
+## Lỗi hay gặp
+
+Dùng `$` khi muốn sửa mọi dòng khớp:
+
+```js
+// WRONG: only the first line with qty 2 or more gets the flag
+db.orders.updateMany({ "lines.qty": { $gte: 2 } }, { $set: { "lines.$.bulk": true } })
+```
+
+```js
+// FIX: arrayFilters marks every matching line
+db.orders.updateMany({ "lines.qty": { $gte: 2 } }, { $set: { "lines.$[l].bulk": true } }, { arrayFilters: [{ "l.qty": { $gte: 2 } }] })
+```
+
+Đơn 5 có hai dòng `qty` bằng 2: bản sai chỉ đánh dấu dòng đầu.
+
+Ghi thẳng vào tên mảng thay vì vào từng phần tử:
+
+```js
+// WRONG: replaces the whole array with one number
+db.orders.updateOne({ _id: 7 }, { $set: { lines: 4 } })
+```
+
+```js
+// FIX: point at the element, keep the rest of the array
+db.orders.updateOne({ _id: 7, "lines.sku": "p3" }, { $set: { "lines.$.qty": 4 } })
+```
+
 ## Thực hành
 
 Bốn bước trên `orders`, mỗi bước bắt đầu lại từ dữ liệu gốc.
 
+## Tóm tắt
+
+- `$` sửa phần tử đầu tiên khớp điều kiện trên mảng trong filter.
+- `$[]` sửa mọi phần tử của mảng.
+- `$[<id>]` cùng `arrayFilters` sửa mọi phần tử thỏa điều kiện.
+- Sửa tại chỗ là nguyên tử trên tài liệu và không ghi đè cả mảng.
+
 # EN
+
+## Opening
+
+The customer of order 7 changes the quantity of one line. Reading the whole `lines` array into the application, editing it and writing it back is slow and can lose other people's changes. Can MongoDB change exactly one line in place?
 
 ## Key idea
 
@@ -107,7 +196,26 @@ Updating in place beats reading the whole array into the application and writing
 
 You can now: change exactly the right order lines without rewriting the whole array.
 
+## Syntax
+
+```text
+{ $set: { "lines.$.qty": 4 } }            // first element matched by the filter
+{ $set: { "lines.$[].qty": 4 } }          // every element
+{ $set: { "lines.$[l].qty": 4 } }, { arrayFilters: [{ "l.sku": "p1" }] }
+```
+
+- `$` needs a condition on `lines` in the filter.
+- `arrayFilters` is the third argument; each `<id>` in the path has exactly one condition.
+
 ## Example
+
+Order 1 adds one more `"p4"`, through `$`:
+
+```js
+db.orders.updateOne({ _id: 1, "lines.sku": "p4" }, { $inc: { "lines.$.qty": 1 } })
+```
+
+Every paid order gets one extra unit on lines cheaper than 30000:
 
 ```js
 db.orders.updateMany(
@@ -117,6 +225,41 @@ db.orders.updateMany(
 )
 ```
 
+## Common mistakes
+
+Using `$` when you meant every matching line:
+
+```js
+// WRONG: only the first line with qty 2 or more gets the flag
+db.orders.updateMany({ "lines.qty": { $gte: 2 } }, { $set: { "lines.$.bulk": true } })
+```
+
+```js
+// FIX: arrayFilters marks every matching line
+db.orders.updateMany({ "lines.qty": { $gte: 2 } }, { $set: { "lines.$[l].bulk": true } }, { arrayFilters: [{ "l.qty": { $gte: 2 } }] })
+```
+
+Order 5 has two lines with `qty` equal to 2: the wrong version flags only the first.
+
+Writing to the array name instead of its elements:
+
+```js
+// WRONG: replaces the whole array with one number
+db.orders.updateOne({ _id: 7 }, { $set: { lines: 4 } })
+```
+
+```js
+// FIX: point at the element, keep the rest of the array
+db.orders.updateOne({ _id: 7, "lines.sku": "p3" }, { $set: { "lines.$.qty": 4 } })
+```
+
 ## Practice
 
 Four steps on `orders`; each step starts again from the original data.
+
+## Recap
+
+- `$` changes the first element that matched the array condition in the filter.
+- `$[]` changes every element of the array.
+- `$[<id>]` with `arrayFilters` changes every element meeting the condition.
+- An in-place update is atomic on the document and does not rewrite the whole array.

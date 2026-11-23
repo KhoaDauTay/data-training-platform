@@ -56,7 +56,40 @@ lab:
       hint:
         vi: "Mặc định `$unwind` bỏ tài liệu có mảng rỗng. Dùng dạng tài liệu với `preserveNullAndEmptyArrays: true`."
         en: "By default `$unwind` drops documents with an empty array. Use the document form with `preserveNullAndEmptyArrays: true`."
+quiz:
+  - q:
+      vi: '9 đơn có tổng cộng 12 dòng hàng; đơn 9 có `lines` rỗng. `$unwind: "$lines"` (mặc định) trả ra bao nhiêu tài liệu?'
+      en: '9 orders hold 12 lines in total; order 9 has an empty `lines`. How many documents does a default `$unwind: "$lines"` return?'
+    options:
+      - vi: "9, vì `$unwind` chỉ đổi hình chứ không đổi số tài liệu"
+        en: "9, because `$unwind` only reshapes and keeps the number of documents"
+      - vi: "12"
+        en: "12"
+      - vi: "13, vì đơn rỗng vẫn ra một tài liệu"
+        en: "13, because the empty order still gives one document"
+    answer: 1
+    trap: 0
+    why:
+      vi: 'Nghe hợp lý nếu xem `$unwind` như một phép đổi hình, nhưng nó ra một tài liệu cho mỗi phần tử: 12 dòng thành 12 tài liệu. Đơn 9 có mảng rỗng nên bị bỏ, trừ khi bật `preserveNullAndEmptyArrays`.'
+      en: 'It sounds right if `$unwind` is just a reshape, but it outputs one document per element: 12 lines become 12 documents. Order 9 has an empty array, so it is dropped unless `preserveNullAndEmptyArrays` is on.'
+  - q:
+      vi: 'Muốn tính tổng tiền của từng đơn (cộng `qty` × `price` trong chính đơn đó). Có cần `$unwind` không?'
+      en: 'You want each order''s own total (the sum of `qty` × `price` inside that order). Do you need `$unwind`?'
+    options:
+      - vi: 'Không: `$sum` trên mảng tính ngay trong tài liệu'
+        en: 'No: `$sum` over the array works inside the document'
+      - vi: 'Có, mảng không tổng hợp được nếu chưa tách'
+        en: 'Yes, an array cannot be aggregated before it is split'
+    answer: 0
+    trap: 1
+    why:
+      vi: 'Nghe hợp lý vì gom nhóm theo phần tử thì cần tách, nhưng tổng của một đơn nằm trọn trong tài liệu: `$sum` với `$map` tính được mà không nhân số tài liệu lên.'
+      en: 'It sounds right because grouping by element needs a split, but one order''s total lives inside the document: `$sum` with `$map` computes it without multiplying the documents.'
 ---
+## Mở bài
+
+Kho hỏi: mỗi sản phẩm đã bán được bao nhiêu đơn vị? Sản phẩm nằm trong mảng `lines` của từng đơn, nên `$group` theo đơn không trả lời được. Bạn tách mảng thế nào?
+
 ## Ý chính
 
 `$unwind: "$lines"` biến một đơn có 3 dòng hàng thành 3 tài liệu, mỗi tài liệu giữ mọi trường của đơn và một dòng trong `lines`. Đây là cách gom nhóm theo thứ nằm trong mảng: theo sản phẩm, theo nhãn, theo từng dòng.
@@ -70,7 +103,19 @@ Không phải lúc nào cũng cần `$unwind`: tổng của một đơn tính ng
 
 Làm được: báo cáo theo sản phẩm từ các đơn có dòng hàng nhúng.
 
+## Cú pháp
+
+```text
+{ $unwind: "$<array field>" }
+{ $unwind: { path: "$<array field>", preserveNullAndEmptyArrays: true } }
+```
+
+- Dạng chuỗi bỏ tài liệu có mảng rỗng hoặc thiếu.
+- Dạng tài liệu giữ chúng lại, không có phần tử nào.
+
 ## Ví dụ
+
+Các dòng có số lượng từ 4:
 
 ```js
 db.orders.aggregate([
@@ -80,11 +125,54 @@ db.orders.aggregate([
 ])
 ```
 
+Đếm tổng số dòng hàng của mọi đơn:
+
+```js
+db.orders.aggregate([{ $unwind: "$lines" }, { $count: "lineCount" }])
+```
+
+## Lỗi hay gặp
+
+Gom theo trường trong mảng mà chưa tách:
+
+```js
+// WRONG: without $unwind, the key is the whole array of skus
+db.orders.aggregate([{ $group: { _id: "$lines.sku", orders: { $sum: 1 } } }])
+```
+
+```js
+// FIX: split first, then group by one sku
+db.orders.aggregate([{ $unwind: "$lines" }, { $group: { _id: "$lines.sku", orders: { $sum: 1 } } }])
+```
+
+Quên rằng `$unwind` mặc định bỏ mảng rỗng:
+
+```js
+// WRONG: the draft order 9 disappears
+db.orders.aggregate([{ $match: { _id: 9 } }, { $unwind: "$lines" }])
+```
+
+```js
+// FIX: keep documents with an empty array
+db.orders.aggregate([{ $match: { _id: 9 } }, { $unwind: { path: "$lines", preserveNullAndEmptyArrays: true } }])
+```
+
 ## Thực hành
 
 Ba bước trên `orders`. Đơn 9 là đơn nháp chưa có dòng hàng nào. Trước bước 3, đoán trước: với `$unwind` mặc định, đơn 9 có hiện trong kết quả không?
 
+## Tóm tắt
+
+- `$unwind` ra một tài liệu cho mỗi phần tử của mảng.
+- Mảng rỗng, `null` hay thiếu bị bỏ, trừ khi có `preserveNullAndEmptyArrays`.
+- Gom theo phần tử mảng: `$unwind` trước, `$group` sau.
+- Lọc trước `$unwind` để bớt tài liệu; tổng trong một đơn không cần tách.
+
 # EN
+
+## Opening
+
+The warehouse asks: how many units of each product were sold? Products sit inside the `lines` array of each order, so a `$group` per order cannot answer. How do you split the array?
 
 ## Key idea
 
@@ -99,7 +187,19 @@ You do not always need `$unwind`: an order's own total is computed inside the do
 
 You can now: report per product from orders with embedded lines.
 
+## Syntax
+
+```text
+{ $unwind: "$<array field>" }
+{ $unwind: { path: "$<array field>", preserveNullAndEmptyArrays: true } }
+```
+
+- The string form drops documents whose array is empty or missing.
+- The document form keeps them, with no element.
+
 ## Example
+
+The lines with a quantity of 4 or more:
 
 ```js
 db.orders.aggregate([
@@ -109,6 +209,45 @@ db.orders.aggregate([
 ])
 ```
 
+Count all the lines of every order:
+
+```js
+db.orders.aggregate([{ $unwind: "$lines" }, { $count: "lineCount" }])
+```
+
+## Common mistakes
+
+Grouping by a field inside the array without splitting it:
+
+```js
+// WRONG: without $unwind, the key is the whole array of skus
+db.orders.aggregate([{ $group: { _id: "$lines.sku", orders: { $sum: 1 } } }])
+```
+
+```js
+// FIX: split first, then group by one sku
+db.orders.aggregate([{ $unwind: "$lines" }, { $group: { _id: "$lines.sku", orders: { $sum: 1 } } }])
+```
+
+Forgetting that a default `$unwind` drops empty arrays:
+
+```js
+// WRONG: the draft order 9 disappears
+db.orders.aggregate([{ $match: { _id: 9 } }, { $unwind: "$lines" }])
+```
+
+```js
+// FIX: keep documents with an empty array
+db.orders.aggregate([{ $match: { _id: 9 } }, { $unwind: { path: "$lines", preserveNullAndEmptyArrays: true } }])
+```
+
 ## Practice
 
 Three steps on `orders`. Order 9 is a draft with no line yet. Before step 3, predict: with a default `$unwind`, does order 9 show up in the result?
+
+## Recap
+
+- `$unwind` outputs one document per array element.
+- Empty, `null` or missing arrays are dropped unless `preserveNullAndEmptyArrays` is set.
+- To group by array elements: `$unwind` first, `$group` second.
+- Filter before `$unwind` to cut documents; a total inside one order needs no split.

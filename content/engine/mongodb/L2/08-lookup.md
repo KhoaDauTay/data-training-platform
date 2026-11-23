@@ -76,17 +76,33 @@ quiz:
       - vi: Vẫn có mặt, với `orders` bằng `null`
         en: It is still there, with `orders` equal to `null`
     answer: 1
+    trap: 0
     why:
       vi: 'Lựa chọn đầu nghe hợp lý nếu bạn nghĩ `$lookup` giống hệt JOIN mặc định (INNER) của SQL. Thật ra `$lookup` là left outer join: tài liệu bên trái luôn được giữ, và trường `as` luôn là một mảng, không có cặp thì mảng rỗng chứ không phải `null`. Bước 3 dùng đúng điều này để tìm khách chưa đặt đơn.'
       en: 'The first option sounds right if you think `$lookup` works exactly like SQL''s default (INNER) JOIN. In fact `$lookup` is a left outer join: the left document is always kept, and the `as` field is always an array, empty rather than `null` when nothing matches. Step 3 relies on exactly this to find customers with no order.'
+  - q:
+      vi: 'Mỗi đơn có đúng một khách. Sau `$lookup` với `as: "buyer"`, trường `buyer` là gì?'
+      en: 'Each order has exactly one customer. After a `$lookup` with `as: "buyer"`, what is the field `buyer`?'
+    options:
+      - vi: Một tài liệu khách, vì chỉ có một cặp
+        en: One customer document, because there is only one match
+      - vi: Một mảng có một tài liệu khách
+        en: An array holding one customer document
+      - vi: Tên khách
+        en: The customer's name
+    answer: 1
+    trap: 0
+    why:
+      vi: 'Nghe hợp lý vì quan hệ là một-một, nhưng `$lookup` luôn trả một mảng trong trường `as`, dù có một cặp hay không có cặp nào. Muốn một tài liệu thì thêm `$unwind: "$buyer"`.'
+      en: 'It sounds right because the relationship is one-to-one, but `$lookup` always returns an array in the `as` field, whether it finds one match or none. To get one document, add `$unwind: "$buyer"`.'
 ---
+## Mở bài
+
+Màn hình đơn của cửa hàng `"S2"` cần tên khách, nhưng đơn chỉ lưu mã khách. Tên nằm ở collection `customers`. Làm sao ghép hai collection trong một lệnh?
+
 ## Ý chính
 
 `$lookup` ghép mỗi tài liệu với các tài liệu khớp ở collection khác, như LEFT OUTER JOIN:
-
-```js
-{ $lookup: { from: "customers", localField: "customer", foreignField: "_id", as: "buyer" } }
-```
 
 - Kết quả luôn là một mảng trong trường `as`, kể cả khi chỉ có một cặp. Không có cặp thì mảng rỗng, tài liệu vẫn giữ lại.
 - Thường theo sau là `$unwind` để lấy một tài liệu, hoặc `$size` để đếm.
@@ -96,7 +112,19 @@ quiz:
 
 Làm được: ghép hai collection để trả lời câu hỏi cần dữ liệu từ cả hai, và tìm tài liệu "mồ côi".
 
+## Cú pháp
+
+```text
+{ $lookup: { from: "customers", localField: "customer", foreignField: "_id", as: "buyer" } }
+```
+
+- `localField`: trường của tài liệu đang chảy trong pipeline.
+- `foreignField`: trường của collection ở `from`.
+- `as`: tên trường mảng nhận các tài liệu khớp.
+
 ## Ví dụ
+
+Số đơn của mỗi khách, kể cả khách chưa có đơn:
 
 ```js
 db.customers.aggregate([
@@ -105,19 +133,63 @@ db.customers.aggregate([
 ])
 ```
 
+Đơn của cửa hàng `"S2"` kèm thành phố của khách:
+
+```js
+db.orders.aggregate([
+  { $match: { store: "S2" } },
+  { $lookup: { from: "customers", localField: "customer", foreignField: "_id", as: "buyer" } },
+  { $unwind: "$buyer" },
+  { $project: { total: 1, city: "$buyer.city" } }
+])
+```
+
+## Lỗi hay gặp
+
+Đọc trường của mảng `as` mà không `$unwind`:
+
+```js
+// WRONG: name comes out as an array, ["Binh"]
+db.orders.aggregate([{ $match: { _id: 2 } }, { $lookup: { from: "customers", localField: "customer", foreignField: "_id", as: "buyer" } }, { $project: { name: "$buyer.name" } }])
+```
+
+```js
+// FIX: $unwind turns the one-element array into a document
+db.orders.aggregate([{ $match: { _id: 2 } }, { $lookup: { from: "customers", localField: "customer", foreignField: "_id", as: "buyer" } }, { $unwind: "$buyer" }, { $project: { name: "$buyer.name" } }])
+```
+
+Đảo `localField` và `foreignField`:
+
+```js
+// WRONG: compares the order _id with customers.customer, so buyer is always empty
+db.orders.aggregate([{ $match: { _id: 2 } }, { $lookup: { from: "customers", localField: "_id", foreignField: "customer", as: "buyer" } }])
+```
+
+```js
+// FIX: local is the order's field, foreign is the customer's field
+db.orders.aggregate([{ $match: { _id: 2 } }, { $lookup: { from: "customers", localField: "customer", foreignField: "_id", as: "buyer" } }])
+```
+
 ## Thực hành
 
 Ba bước trên `orders` và `customers`. Khách `"c6"` chưa có đơn.
 
+## Tóm tắt
+
+- `$lookup` là left outer join: tài liệu bên trái luôn được giữ.
+- Trường `as` luôn là mảng; không có cặp thì rỗng.
+- `$unwind` biến mảng một phần tử thành tài liệu; `$size` đếm cặp.
+- `localField` thuộc tài liệu đang chảy, `foreignField` thuộc collection `from`.
+
 # EN
+
+## Opening
+
+The order screen of store `"S2"` needs the customer's name, but an order only stores the customer code. The name lives in the `customers` collection. How do you join two collections in one command?
 
 ## Key idea
 
 `$lookup` joins each document with the matching documents of another collection, like a LEFT OUTER JOIN:
-
-```js
-{ $lookup: { from: "customers", localField: "customer", foreignField: "_id", as: "buyer" } }
-```
 
 - The result is always an array in the `as` field, even with a single match. With no match the array is empty and the document is kept.
 - It is usually followed by `$unwind` to get one document, or `$size` to count.
@@ -127,7 +199,19 @@ Ba bước trên `orders` và `customers`. Khách `"c6"` chưa có đơn.
 
 You can now: join two collections to answer a question that needs data from both, and find "orphan" documents.
 
+## Syntax
+
+```text
+{ $lookup: { from: "customers", localField: "customer", foreignField: "_id", as: "buyer" } }
+```
+
+- `localField`: the field of the document flowing through the pipeline.
+- `foreignField`: the field of the `from` collection.
+- `as`: the name of the array field that receives the matches.
+
 ## Example
+
+The number of orders per customer, including customers with none:
 
 ```js
 db.customers.aggregate([
@@ -136,6 +220,50 @@ db.customers.aggregate([
 ])
 ```
 
+The orders of store `"S2"` with the customer's city:
+
+```js
+db.orders.aggregate([
+  { $match: { store: "S2" } },
+  { $lookup: { from: "customers", localField: "customer", foreignField: "_id", as: "buyer" } },
+  { $unwind: "$buyer" },
+  { $project: { total: 1, city: "$buyer.city" } }
+])
+```
+
+## Common mistakes
+
+Reading a field of the `as` array without `$unwind`:
+
+```js
+// WRONG: name comes out as an array, ["Binh"]
+db.orders.aggregate([{ $match: { _id: 2 } }, { $lookup: { from: "customers", localField: "customer", foreignField: "_id", as: "buyer" } }, { $project: { name: "$buyer.name" } }])
+```
+
+```js
+// FIX: $unwind turns the one-element array into a document
+db.orders.aggregate([{ $match: { _id: 2 } }, { $lookup: { from: "customers", localField: "customer", foreignField: "_id", as: "buyer" } }, { $unwind: "$buyer" }, { $project: { name: "$buyer.name" } }])
+```
+
+Swapping `localField` and `foreignField`:
+
+```js
+// WRONG: compares the order _id with customers.customer, so buyer is always empty
+db.orders.aggregate([{ $match: { _id: 2 } }, { $lookup: { from: "customers", localField: "_id", foreignField: "customer", as: "buyer" } }])
+```
+
+```js
+// FIX: local is the order's field, foreign is the customer's field
+db.orders.aggregate([{ $match: { _id: 2 } }, { $lookup: { from: "customers", localField: "customer", foreignField: "_id", as: "buyer" } }])
+```
+
 ## Practice
 
 Three steps on `orders` and `customers`. Customer `"c6"` has no order yet.
+
+## Recap
+
+- `$lookup` is a left outer join: the left document is always kept.
+- The `as` field is always an array, empty when nothing matches.
+- `$unwind` turns a one-element array into a document; `$size` counts the matches.
+- `localField` belongs to the flowing document, `foreignField` to the `from` collection.

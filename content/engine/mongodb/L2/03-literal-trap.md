@@ -30,9 +30,10 @@ predict:
     - vi: Lệnh báo lỗi cú pháp
       en: The command fails with a syntax error
   answer: 1
+  trap: 0
   why:
-    vi: 'Trong pipeline, `"$sale"` nghĩa là giá trị của trường `sale`. Trường đó không có nên biểu thức cho ra "thiếu", và `$set` không tạo trường. Ở update kiểu toán tử `{ $set: { label: "$sale" } }` thì chuỗi được ghi nguyên văn.'
-    en: 'In a pipeline, `"$sale"` means the value of field `sale`. That field is missing, so the expression yields "missing" and `$set` creates no field. In an operator-style update `{ $set: { label: "$sale" } }` the string is stored as written.'
+    vi: 'Nghe hợp lý vì chuỗi trông như dữ liệu thường, nhưng trong pipeline, `"$sale"` nghĩa là giá trị của trường `sale`. Trường đó không có nên biểu thức cho ra "thiếu", và `$set` không tạo trường. Ở update kiểu toán tử `{ $set: { label: "$sale" } }` thì chuỗi được ghi nguyên văn.'
+    en: 'It sounds right because the string looks like plain data, but in a pipeline, `"$sale"` means the value of field `sale`. That field is missing, so the expression yields "missing" and `$set` creates no field. In an operator-style update `{ $set: { label: "$sale" } }` the string is stored as written.'
 lab:
   setup: |
     {"collections": {"products": [
@@ -49,7 +50,27 @@ lab:
       hint:
         vi: "`{ $literal: ... }` trả về giá trị đúng như viết, không đọc nó như đường dẫn trường."
         en: "`{ $literal: ... }` returns the value exactly as written, without reading it as a field path."
+quiz:
+  - q:
+      vi: 'Không có dấu `[ ]`: `db.products.updateOne({ _id: "p2" }, { $set: { promo: "$5 off" } })`. Sau lệnh, `promo` của `"p2"` là gì?'
+      en: 'No `[ ]` this time: `db.products.updateOne({ _id: "p2" }, { $set: { promo: "$5 off" } })`. After the command, what is `promo` on `"p2"`?'
+    options:
+      - vi: 'Chuỗi `"$5 off"`'
+        en: 'The string `"$5 off"`'
+      - vi: Không có trường `promo`, vì chuỗi bắt đầu bằng `$` luôn là đường dẫn trường
+        en: No `promo` field, because a string starting with `$` is always a field path
+      - vi: Lệnh báo lỗi vì giá trị bắt đầu bằng `$`
+        en: The command fails because the value starts with `$`
+    answer: 0
+    trap: 1
+    why:
+      vi: 'Nghe hợp lý sau câu dự đoán, nhưng luật đường dẫn trường chỉ áp cho biểu thức aggregation. Update kiểu toán tử (không có `[ ]`) coi giá trị là dữ liệu, nên chuỗi được ghi nguyên văn.'
+      en: 'It sounds right after the prediction, but the field-path rule only applies to aggregation expressions. An operator-style update (no `[ ]`) treats the value as data, so the string is stored as written.'
 ---
+## Mở bài
+
+Bạn gắn nhãn khuyến mãi cho một sản phẩm bằng update dạng pipeline, và nhãn bắt đầu bằng ký hiệu `$`. Lệnh chạy không báo lỗi. Nhưng trong tài liệu thật sự có gì?
+
 ## Ý chính
 
 Trong biểu thức aggregation (kể cả update dạng pipeline), chuỗi bắt đầu bằng `$` là đường dẫn trường, và `$$` là biến. Vì vậy `"$sale"` không phải chữ "$sale" mà là "giá trị của trường `sale`".
@@ -70,7 +91,18 @@ db.products.updateOne({ _id: "p2" }, [{ $set: { promo: { $literal: "$5 off" } } 
 
 Chọn đáp án cho câu dự đoán, bấm xem thật, rồi viết lại lệnh cho đúng.
 
+## Tóm tắt
+
+- Trong pipeline, chuỗi bắt đầu bằng `$` là đường dẫn trường, `$$` là biến.
+- Đường dẫn tới trường không có cho ra "thiếu", và `$set` không tạo trường.
+- `$literal` giữ nguyên giá trị như viết.
+- Update kiểu toán tử coi giá trị là dữ liệu, không có bẫy này.
+
 # EN
+
+## Opening
+
+You tag a product with a promo label through a pipeline-style update, and the label starts with the `$` sign. The command runs without an error. But what is really in the document?
 
 ## Key idea
 
@@ -91,3 +123,10 @@ db.products.updateOne({ _id: "p2" }, [{ $set: { promo: { $literal: "$5 off" } } 
 ## Practice
 
 Pick an answer to the prediction, reveal the real result, then rewrite the command correctly.
+
+## Recap
+
+- In a pipeline, a string starting with `$` is a field path, and `$$` is a variable.
+- A path to a missing field yields "missing", and `$set` creates no field.
+- `$literal` keeps the value exactly as written.
+- An operator-style update treats values as data and has no such trap.

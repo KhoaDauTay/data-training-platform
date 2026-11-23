@@ -65,7 +65,41 @@ lab:
       hint:
         vi: '`{ $count: "bigOrders" }` trả một tài liệu với số tài liệu đi vào nó.'
         en: '`{ $count: "bigOrders" }` returns one document with the number of documents that reached it.'
+quiz:
+  - q:
+      vi: 'Pipeline chỉ có `{ $group: { _id: "$store", revenue: { $sum: "$total" } } }`. Kết quả ra theo thứ tự nào?'
+      en: 'A pipeline holds only `{ $group: { _id: "$store", revenue: { $sum: "$total" } } }`. In what order do the results come out?'
+    options:
+      - vi: Theo `_id` tăng dần, vì `$group` sắp theo khóa
+        en: By `_id` ascending, because `$group` sorts by its key
+      - vi: Không có thứ tự cố định; cần `$sort` nếu muốn thứ tự
+        en: No fixed order; add `$sort` when you need one
+      - vi: Theo `revenue` giảm dần
+        en: By `revenue` descending
+    answer: 1
+    trap: 0
+    why:
+      vi: 'Nghe hợp lý vì với ít nhóm, kết quả thường trông như đã sắp theo khóa, nhưng docs của `$group` nói rõ thứ tự ra không được bảo đảm. Báo cáo cần thứ tự thì thêm `$sort`, và sắp theo khóa không trùng.'
+      en: 'It sounds right because with few groups the output often looks sorted by key, but the `$group` docs state that its output order is not guaranteed. A report that needs an order adds `$sort`, on a unique key.'
+  - q:
+      vi: 'Trong `$group`, `{ $sum: 1 }` và `{ $sum: "$total" }` khác nhau thế nào?'
+      en: 'In `$group`, how do `{ $sum: 1 }` and `{ $sum: "$total" }` differ?'
+    options:
+      - vi: 'Cái đầu đếm tài liệu trong nhóm, cái sau cộng trường `total`'
+        en: 'The first counts the documents in the group, the second adds up the field `total`'
+      - vi: Giống nhau
+        en: They are the same
+      - vi: 'Cái đầu cộng trường đầu tiên của tài liệu'
+        en: 'The first adds up the first field of each document'
+    answer: 0
+    why:
+      vi: '`$sum` cộng giá trị biểu thức của từng tài liệu: hằng `1` cho mỗi tài liệu thành phép đếm, `"$total"` cộng giá trị trường.'
+      en: '`$sum` adds up the expression for each document: the constant `1` per document becomes a count, `"$total"` adds the field values.'
 ---
+## Mở bài
+
+Cuối tháng, mỗi cửa hàng muốn biết doanh thu và số đơn của mình. Bạn có 8 đơn rời rạc. Làm sao gộp chúng thành một dòng cho mỗi cửa hàng?
+
 ## Ý chính
 
 `$group` gom mọi tài liệu có cùng giá trị khóa `_id` thành một tài liệu kết quả:
@@ -80,7 +114,19 @@ Kết quả của `$group` không có thứ tự cố định. Cần thứ tự 
 
 Làm được: viết báo cáo "tổng, trung bình, lớn nhất theo nhóm" và top N.
 
+## Cú pháp
+
+```text
+{ $group: { _id: "$<key field>", <name>: { <accumulator>: <expression> } } }
+{ $count: "<field name>" }
+```
+
+- `_id` là khóa nhóm; `null` là một nhóm duy nhất.
+- Mọi trường khác phải là một phép tổng hợp.
+
 ## Ví dụ
+
+Doanh thu và số đơn của cả tháng:
 
 ```js
 db.orders.aggregate([
@@ -88,11 +134,59 @@ db.orders.aggregate([
 ])
 ```
 
+Đơn lớn nhất của mỗi cửa hàng, xếp theo mã cửa hàng:
+
+```js
+db.orders.aggregate([
+  { $group: { _id: "$store", biggest: { $max: "$total" } } },
+  { $sort: { _id: 1 } }
+])
+```
+
+## Lỗi hay gặp
+
+Quên dấu `$` ở khóa nhóm:
+
+```js
+// WRONG: "store" is a constant, so every order lands in one group
+db.orders.aggregate([{ $group: { _id: "store", orders: { $sum: 1 } } }])
+```
+
+```js
+// FIX: "$store" groups by the field's value
+db.orders.aggregate([{ $group: { _id: "$store", orders: { $sum: 1 } } }])
+```
+
+Gõ sai tên trường trong phép tổng hợp:
+
+```js
+// WRONG: there is no field "totals", so every revenue is 0
+db.orders.aggregate([{ $group: { _id: "$store", revenue: { $sum: "$totals" } } }])
+```
+
+```js
+// FIX: the real field name
+db.orders.aggregate([{ $group: { _id: "$store", revenue: { $sum: "$total" } } }])
+```
+
+`$sum` bỏ qua giá trị thiếu, nên tên sai không báo lỗi.
+
 ## Thực hành
 
 Bốn bước trên `orders`. Hai bước giữa chấm cả thứ tự.
 
+## Tóm tắt
+
+- `$group` gộp tài liệu cùng `_id` thành một kết quả.
+- Mỗi trường khác là một phép tổng hợp; `{ $sum: 1 }` đếm.
+- Kết quả không có thứ tự; thêm `$sort` khi cần.
+- Khóa nhóm và trường trong biểu thức cần dấu `$`.
+
 # EN
+
+## Opening
+
+At the end of the month, each store wants its revenue and its number of orders. You have 8 separate orders. How do you merge them into one row per store?
 
 ## Key idea
 
@@ -108,7 +202,19 @@ Bốn bước trên `orders`. Hai bước giữa chấm cả thứ tự.
 
 You can now: write "total, average, maximum per group" reports and top-N lists.
 
+## Syntax
+
+```text
+{ $group: { _id: "$<key field>", <name>: { <accumulator>: <expression> } } }
+{ $count: "<field name>" }
+```
+
+- `_id` is the group key; `null` is a single group.
+- Every other field must be an accumulator.
+
 ## Example
+
+Revenue and order count for the whole month:
 
 ```js
 db.orders.aggregate([
@@ -116,6 +222,50 @@ db.orders.aggregate([
 ])
 ```
 
+The largest order of each store, sorted by store code:
+
+```js
+db.orders.aggregate([
+  { $group: { _id: "$store", biggest: { $max: "$total" } } },
+  { $sort: { _id: 1 } }
+])
+```
+
+## Common mistakes
+
+Forgetting the `$` on the group key:
+
+```js
+// WRONG: "store" is a constant, so every order lands in one group
+db.orders.aggregate([{ $group: { _id: "store", orders: { $sum: 1 } } }])
+```
+
+```js
+// FIX: "$store" groups by the field's value
+db.orders.aggregate([{ $group: { _id: "$store", orders: { $sum: 1 } } }])
+```
+
+Mistyping the field name in an accumulator:
+
+```js
+// WRONG: there is no field "totals", so every revenue is 0
+db.orders.aggregate([{ $group: { _id: "$store", revenue: { $sum: "$totals" } } }])
+```
+
+```js
+// FIX: the real field name
+db.orders.aggregate([{ $group: { _id: "$store", revenue: { $sum: "$total" } } }])
+```
+
+`$sum` ignores missing values, so the wrong name raises no error.
+
 ## Practice
 
 Four steps on `orders`. The two middle steps are graded in order.
+
+## Recap
+
+- `$group` merges the documents with the same `_id` into one result.
+- Every other field is an accumulator; `{ $sum: 1 }` counts.
+- The output has no order; add `$sort` when you need one.
+- The group key and fields inside expressions need the `$` sign.
