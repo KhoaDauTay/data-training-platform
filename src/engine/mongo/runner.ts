@@ -98,7 +98,8 @@ export function mongoRunner(env: Pick<LabEnv, 'lang'>, client: Pick<MongoLabClie
       }
       if (want.kind === 'write' && got.kind !== 'write') return { ok: false, reason: 'wrong', why: 'notWrite' };
       if (want.collection !== got.collection) return { ok: false, reason: 'wrong', why: 'collection', params: { want: want.collection } };
-      const g = gradeMongo(want, got, { ordered: step.ordered, strictId: opts.strictId || step.rule === 'covered' });
+      // covered: an extra `_id` is the usual miss; the rule (not a doc mismatch) refuses it, so the learner reads why.
+      const g = gradeMongo(want, got, { ordered: step.ordered, strictId: opts.strictId });
       if (!g.ok) return why(g);
       if (step.rule && !followsRule(step, code)) return ruleFail;
       return g.tip ? { ok: true, tip: g.tip } : { ok: true };

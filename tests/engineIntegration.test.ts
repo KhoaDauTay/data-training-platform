@@ -92,7 +92,7 @@ describe('MongoDB labs: every Solution passes its own check', () => {
       expect([l.id, followsRule(s, s.solution), followsRule(s, s.slow!)]).toEqual([l.id, true, false]);
       const v = await r.check(l.lab!, s, s.slow!);
       expect([l.id, v.ok]).toEqual([l.id, false]);
-      if (s.rule !== 'covered') expect([l.id, (v as { message?: string }).message]).toEqual([l.id, expect.stringContaining('not measured on a real MongoDB')]);
+      expect([l.id, (v as { message?: string }).message]).toEqual([l.id, expect.stringContaining('not measured on a real MongoDB')]);
       if (s.rule === 'match-first') expect([l.id, gradeMongo(await r.exec(l.lab!, s.solution), await r.exec(l.lab!, s.slow!), { ordered: s.ordered }).ok]).toEqual([l.id, true]);
     }
   });

@@ -110,8 +110,8 @@ function upsertBase(filter: MongoDoc): MongoDoc {
 
 /** Runs one shell command against a dataset. Writes and createIndex touch copies only: the dataset stays pristine. */
 /**
- * mingo's `$count` on an empty input gives `[{ n: 0 }]`; MongoDB gives no document ("If the input dataset is empty, `$count`
- * doesn't return a result", research-nosql-v25-v26 §4.1). Rewritten as `$group` + `$project`, which mingo answers like MongoDB.
+ * mingo's `$count` on an empty input gives `[{ n: 0 }]`; MongoDB gives no document at all (its `$count` page;
+ * research-nosql-v25-v26 §4.1). Rewritten as `$group` + `$project`, which mingo answers like MongoDB.
  */
 export function countLikeMongo(pipeline: MongoDoc[]): MongoDoc[] {
   return pipeline.flatMap((st): MongoDoc[] => {
