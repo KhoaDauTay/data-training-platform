@@ -41,7 +41,7 @@ function build(id: string, s: GuideState): Guide | undefined {
   }
   if (typeof s.learn === 'number' && id.startsWith('module')) {
     const n = s.learn;
-    const skills = d$.SKILLS.filter((x) => x.chapter === n);
+    const skills = (d$.ROUTE_PARTS.find((x) => x.n === n)?.skills ?? []).map((id) => d$.SKILLS.find((x) => x.id === id)!).filter(Boolean); // v24: Part n of route.yml
     const p = { n, k: skills.length, list: skills.map((x) => x.label[lang]).join(', ') };
     if (id !== 'module-intro') return { id, steps: [step('module-head', 'g.module.short', p)] };
     const first = skills.find((x) => d$.loadLessons().has(x.id));

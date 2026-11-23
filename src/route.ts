@@ -89,7 +89,7 @@ export function dataTableOf(hash: string): string | undefined {
   return m && /^[a-z_][a-z0-9_]*$/.test(m[1]) ? m[1] : undefined;
 }
 
-/** `#/learn/sql/<n>` → module n (1–12, one per chapter, L27); else undefined (the page opens the current chapter's module). */
+/** `#/learn/sql/<n>` → Part n of content/general/route.yml (v24, L335; was one per chapter, L27); else undefined (the page opens the current chapter's module). */
 export function learnModuleOf(hash: string): number | undefined {
   const n = Number(/^#\/?learn\/sql\/(\d{1,2})(?=$|[/?])/.exec(hash)?.[1]);
   return n >= 1 && n <= 12 ? n : undefined;

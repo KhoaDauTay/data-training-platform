@@ -1,0 +1,40 @@
+# Lộ trình SQL (v24 R0, product-route-v24 §1.1, L321): thứ tự Phần của khu General, đọc trước, ghi sau.
+# Nguồn duy nhất cho Phần trên #/learn, #/learn/sql/<n>, kiểm tra đầu vào, sidebar và Luyện SQL.
+# `skills.yml` `chapter:` giữ nghĩa domain (chương Logistics grant kỹ năng), không còn là Phần.
+# Một id chưa có trong skills.yml hay skills-general.yml (kỹ năng của lát sau) được giữ ở đây để thẻ ôn của nó sống qua
+# parseSave (Known.skills lúc boot), nhưng không vẽ; Phần không có kỹ năng nào đã có thì không vẽ (L336).
+# Không đổi tên, không xóa id (L327).
+
+- n: 1
+  title: { vi: "Đọc bảng", en: "Reading tables" }
+  skills: [select, where, order_by, limit]
+- n: 2
+  title: { vi: "Gộp và nhóm", en: "Aggregating and grouping" }
+  skills: [aggregate, group_by, having, distinct]
+- n: 3
+  title: { vi: "Chữ, ngày và kiểu", en: "Text, dates and types" }
+  skills: [pattern_match, string_fn, cast, date_math, date_bucket]
+- n: 4
+  title: { vi: "Điều kiện và NULL", en: "Conditions and NULL" }
+  skills: [null_logic, coalesce, case_when, conditional_agg]
+- n: 5
+  title: { vi: "Nối bảng", en: "Joining tables" }
+  skills: [join, multi_join, left_join, cross_join, self_join, anti_join]
+- n: 6
+  title: { vi: "Truy vấn con", en: "Subqueries" }
+  skills: [scalar_subquery, in_subquery, any_all, exists, correlated_value]
+- n: 7
+  title: { vi: "CTE và dòng mới nhất", en: "CTEs and latest rows" }
+  skills: [cte, multi_cte, distinct_on]
+- n: 8
+  title: { vi: "Gộp tập hợp", en: "Set operations" }
+  skills: [union, except, full_join]
+- n: 9
+  title: { vi: "Ghi dữ liệu", en: "Writing data" }
+  skills: [insert_select, update_join, upsert]
+- n: 10
+  title: { vi: "Hàm cửa sổ", en: "Window functions" }
+  skills: [window_rank, window_lag, window_agg]
+- n: 11
+  title: { vi: "Index và hiệu năng", en: "Indexes and performance" }
+  skills: [explain_read, sargable, index_design]

@@ -6,7 +6,7 @@ import { loadHistory } from '../history';
 import { localStore, readJson } from '../storage';
 import { sqlOnly } from '../onboarding';
 import { getLang, t, type Key } from '../i18n';
-import { CHAPTERS, chaptersOf, chapterTitle, domainSkills, moduleTitle, nextTicket, rankOf, SKILLS } from '../progress';
+import { CHAPTERS, chaptersOf, chapterTitle, domainSkills, moduleTitle, nextTicket, PARTS, partOf, rankOf, ROUTE_SKILLS, SKILLS, type Bilingual } from '../progress';
 import { domainSlot } from '../save';
 import { domainArt } from './domainArt';
 import { domainLine } from './topbar';
@@ -218,7 +218,7 @@ function chapterRow(c: ChapterCard): HTMLLIElement {
   const skillLink = (id: string, i: number): (Node | string)[] => [i ? ', ' : '',
     h('a', { href: `${hashOf('learn')}/skill/${id}`, class: cx(ABOVE, known.has(id) ? 'text-good' : 'text-muted') }, SKILLS.find((s) => s.id === id)?.label[lang] ?? id, known.has(id) ? ' ✓' : '')];
   const short = h('span', {}, t('home.reliesOn', { skills: '' }), ...ids.slice(0, 2).flatMap(skillLink),
-    ids.length > 2 ? h('a', { href: `${hashOf('learn')}/sql/${c.chapter}`, class: cx(ABOVE, 'inline-block min-h-6 min-w-6 text-center text-muted') }, ` +${ids.length - 2}`) : null);
+    ids.length > 2 ? h('a', { href: `${hashOf('learn')}/skill/${ids[2]}`, class: cx(ABOVE, 'inline-block min-h-6 min-w-6 text-center text-muted') }, ` +${ids.length - 2}`) : null); // v24 (product §3.1.1): Part n is no longer chapter n
   // Plan 11 §1.4: the advanced nodes the chapter's tasks apply (Finance only: other domains have no adv:, so no General fetch).
   const adv = closed ? null : advLine([...new Set(app.tickets.filter((x) => x.chapter === c.chapter).flatMap((x) => x.adv ?? []))], ABOVE);
   return listRow({
@@ -230,7 +230,7 @@ function chapterRow(c: ChapterCard): HTMLLIElement {
     title: `${c.chapter} · ${chapterTitle(c.chapter, lang)}`,
     sub: closed ? (c.status === 'soon' ? t('home.soonHint') : t('home.lockedAfter', { n: c.chapter - 1 })) : adv ? h('span', { class: 'flex flex-wrap gap-x-3' }, short, adv) : short,
     // v21 U25: below sm a locked row is its one caption line ("To open: …"); the grey "Locked" bar would repeat it.
-    action: closed ? h('span', { class: 'max-sm:hidden' }, statusPill(c)) : h('a', { href: `${hashOf('learn')}/sql/${c.chapter}`, class: 'no-underline', title: t('learn.module', { n: c.chapter, title: moduleTitle(c.chapter, lang) }) }, statusPill(c)),
+    action: closed ? h('span', { class: 'max-sm:hidden' }, statusPill(c)) : (ids[0] ? h('a', { href: `${hashOf('learn')}/skill/${ids[0]}`, class: 'no-underline', title: SKILLS.find((x) => x.id === ids[0])?.label[lang] ?? ids[0] }, statusPill(c)) : statusPill(c)),
     current: c.status === 'current',
     stack: true,
   });
@@ -248,7 +248,8 @@ function chaptersSection(m: HomeModel): HTMLElement {
 function skillsSection(m: HomeModel): HTMLElement {
   const lang = getLang();
   const onSkill = homeHooks.onSkill;
-  const groups = CHAPTERS.map((c) => [c.chapter, m.skills.filter((s) => s.skill.chapter === c.chapter)] as const).filter(([, list]) => list.length > 0);
+  // v24 (L335): grouped by the General route's Parts (content/general/route.yml), in route order
+  const groups = PARTS.map((p) => [p.n, p.skills.map((id) => m.skills.find((s) => s.skill.id === id)).filter((s): s is (typeof m.skills)[number] => !!s)] as const).filter(([, list]) => list.length > 0);
   // v11 B6: a skill learned through its General drills (the Learning path's rule) says so, not just "Chapter N".
   const known = knownSkills(app.save, loadTickets('logistics'), SKILLS.map((x) => x.id)); // same source as learnView's ctx()
   return h('section', { class: 'space-y-10', 'aria-labelledby': 'skills-title' },
@@ -578,14 +579,19 @@ function learnSub(): PageSub | undefined {
   const s = learnStep();
   return s && { title: s.title, trail: [{ href: hashOf('learn'), text: t('nav.learn') }, ...(s.up ? [s.up] : [])] };
 }
+/** v24 R0: a full lesson's own title (filled by the learnui chunk once the lesson's chunk is in), else the skill's label. */
+export const learnTitles = new Map<string, Bilingual>();
 function learnStep(): { title: string; up?: { href: string; text: string } } | undefined {
   const hash = location.hash;
   const lang = getLang();
   const mod = (n: number): string => t('learn.module', { n, title: moduleTitle(n, lang) });
   const n = learnModuleOf(hash);
   if (n !== undefined) return { title: mod(n) };
-  const skill = SKILLS.find((s) => s.id === learnSkillOf(hash));
-  if (skill) return { title: skill.label[lang], up: { href: `${hashOf('learn')}/sql/${skill.chapter}`, text: mod(skill.chapter) } };
+  const skill = ROUTE_SKILLS.find((s) => s.id === learnSkillOf(hash));
+  if (skill) {
+    const part = partOf(skill.id); // v24 (L335): the skill's Part in content/general/route.yml, not its Logistics chapter
+    return { title: learnTitles.get(skill.id)?.[lang] ?? skill.label[lang], up: part ? { href: `${hashOf('learn')}/sql/${part}`, text: mod(part) } : undefined };
+  }
   const adv = learnAdvOf(hash);
   if (adv) {
     const node = generalNow()?.nodes.find((x) => x.id === adv); // the General chunk draws the page; until it is in, the id alone

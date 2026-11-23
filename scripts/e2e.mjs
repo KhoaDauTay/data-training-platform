@@ -57,6 +57,10 @@ const LANE_TASKS = walk('content/lanes').map(ticket);
 const SQL_DRILLS = yml('content/general/sql.yml');
 const SKILLS = yml('content/skills.yml');
 const LESSONS = yml('content/lessons.yml');
+// v24 R0 (L335): the learning path's Parts (content/general/route.yml); a Part with no skill yet is not drawn (L336)
+const PARTS = yml('content/general/route.yml').map((p) => ({ ...p, skills: p.skills.filter((id) => SKILLS.some((s) => s.id === id)) })).filter((p) => p.skills.length);
+/** Skills with a full lesson page (content/general/lessons/<id>.md): its practice is on the page, not in the lesson dialog. */
+const FULL_LESSONS = readdirSync(join(ROOT, 'content/general/lessons')).filter((f) => f.endsWith('.md')).map((f) => f.slice(0, -3));
 const INTERVIEW = yml('content/general/interview.yml');
 
 // ---------------------------------------------------------------- report
@@ -632,7 +636,7 @@ async function practiceRun(endRe, max = 20) {
 }
 SECTIONS.general = async () => {
   await shared();
-  const modules = [...new Set(SKILLS.map((s) => s.chapter))].sort((a, b) => a - b);
+  const modules = PARTS.map((p) => p.n);
   await step('entry check (one drill per module)', async () => {
     await go('#/learn');
     await waitFor('the entry-check card', `!!document.querySelector('section[aria-labelledby="place-title"] button')`, 60000);
@@ -654,7 +658,7 @@ SECTIONS.general = async () => {
     if (await ev(`!!document.querySelector('section[aria-labelledby="place-title"]')`)) fail('the entry-check card is still offered');
   });
   for (const m of modules) {
-    const skills = SKILLS.filter((s) => s.chapter === m);
+    const skills = PARTS.find((p) => p.n === m).skills.map((id) => SKILLS.find((s) => s.id === id));
     await step(`module ${m}: one drill per skill (${skills.length})`, async () => {
       await go(`#/learn/sql/${m}`);
       await waitFor('the module page', `!!document.querySelector('#home a[href^="#/learn/skill/"]')`, 60000);
@@ -727,6 +731,15 @@ SECTIONS.general = async () => {
     for (const s of SKILLS) {
       const l = LESSONS.find((x) => x.id === s.id);
       await go(`#/learn/skill/${s.id}`);
+      if (FULL_LESSONS.includes(s.id)) { // v24 R0: the full lesson page holds "Thử ngay" itself (one editor, Submit)
+        const host = `document.querySelector('[data-fl-editor$="#try"]')`;
+        await waitFor('the lesson page editor', `!!${host}`, 60000);
+        if (s === SKILLS[0]) await axe('full lesson page');
+        await ev(`(() => { ${host}.value = ${S(l.try.solution)}; [...document.querySelectorAll('#home [data-lesson-page] button')].find((b) => b.textContent.trim() === 'Nộp').click(); })()`);
+        const ok = await waitFor('the verdict', `(p => p && /text-(good|bad)/.test(p.className) ? p.className + '|' + p.textContent.trim() : null)(document.querySelector('[data-fl-verdict]'))`, 60000).catch((e) => `timeout ${e.message}`);
+        if (!/text-good/.test(ok)) bad.push(`${s.id}: ${String(ok).slice(0, 120)}`);
+        continue;
+      }
       await waitFor('the lesson button', `!!document.querySelector('#home button[aria-haspopup="dialog"]')`, 30000);
       await ev(`document.querySelector('#home button[aria-haspopup="dialog"]').click()`);
       await waitFor('the lesson dialog', `document.getElementById('lesson-dialog')?.open && !!document.querySelector('#lesson-dialog textarea')`, 15000);
@@ -738,7 +751,7 @@ SECTIONS.general = async () => {
       await ev(`document.getElementById('lesson-dialog').close()`);
     }
     const tried = await ev(`JSON.parse(localStorage.getItem('cargo-query/lessons') || '{}').tried ?? []`);
-    const missing = SKILLS.filter((s) => !tried.includes(s.id)).map((s) => s.id);
+    const missing = SKILLS.filter((s) => !tried.includes(s.id) && !FULL_LESSONS.includes(s.id)).map((s) => s.id); // the page's "Thử ngay" writes no pref
     if (bad.length || missing.length) fail(`not passed: ${bad.join('; ')}; not in tried: ${missing.join(', ')}`);
     return SKILLS.length;
   });

@@ -9,7 +9,7 @@ import { activeDomain, DOMAIN_KEY, DOMAIN_SCHEMA, DOMAINS, domainSchemaId, owner
 import { applyStatic, loadLang, setLang, t, type Lang } from './i18n';
 import { MyData } from './import/myData';
 import { idbStore } from './import/store';
-import { contentProblems, nextTicket, SKILLS, xpFor } from './progress';
+import { BOOT_SKILL_IDS, contentProblems, nextTicket, xpFor } from './progress';
 import { INTERVIEW_ID, loadSave, parseSave, serializeSave, type Known } from './save';
 import { actions, app, done, editorSchema, persist, selected, type Column } from './state';
 import { resumeStep } from './overview';
@@ -137,7 +137,7 @@ if (problems.length) console.warn('Content problems:', problems);
 // Lane side tasks are known ids too, so their drafts, graded SQL and hints survive a reload (they never enter `completed`).
 const laneIds = new Set(loadLanes().tasks.map((x) => x.id));
 // Logistics ids are listed; e-commerce and finance ids are kept by pattern (DOMAIN_ID), so their lazy content is not needed here (Plan 9, v14).
-const known: Known = { ticketIds: new Set([...loadTickets('logistics').map((x) => x.id), ...laneIds]), laneIds, skills: new Set(SKILLS.map((s) => s.id)) };
+const known: Known = { ticketIds: new Set([...loadTickets('logistics').map((x) => x.id), ...laneIds]), laneIds, skills: new Set(BOOT_SKILL_IDS) }; // v24 (L327): skills.yml + the General route's ids
 
 const loaded = loadSave(localStore(), known);
 app.save = loaded.save;
