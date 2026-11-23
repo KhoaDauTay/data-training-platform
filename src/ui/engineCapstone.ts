@@ -62,7 +62,7 @@ export function capBar(c: CapCtx): HTMLElement {
       cur < all.length ? et('cap.now', { i: cur + 1, n: all.length, name: name(cur) }) : et('cap.allDone', { n: all.length })));
 }
 
-/** "Chấm bằng": ✓ / ○ and the words of each step's check (rows, plan, catalog, doc), redrawn after every Submit. */
+/** "Chấm bằng": ✓ / • (a bullet, not a radio-like ring: review v23 P3) and the words of each step's check (rows, plan, catalog, doc), redrawn after every Submit. */
 export function capChecks(c: CapCtx): HTMLElement {
   const { d, et } = c;
   const { h, cls } = d;
@@ -77,7 +77,8 @@ export function capChecks(c: CapCtx): HTMLElement {
       const ok = c.passed.has(`s${i}`);
       const off = !c.graded(i);
       return h('li', { class: 'flex items-start gap-2' },
-        ok ? d.icon('check', 'mt-0.5 size-4 shrink-0 text-good') : h('span', { class: cls.cx('mt-0.5 inline-block size-4 shrink-0 rounded-full', off ? 'border-2 border-dashed border-line-strong' : 'ring-2 ring-line-strong'), 'aria-hidden': 'true' }),
+        ok ? d.icon('check', 'mt-0.5 size-4 shrink-0 text-good') : off ? h('span', { class: 'mt-0.5 inline-block size-4 shrink-0 rounded-full border-2 border-dashed border-line-strong', 'aria-hidden': 'true' })
+          : h('span', { class: 'mt-0.5 flex size-4 shrink-0 items-center justify-center', 'aria-hidden': 'true', 'data-todo': '' }, h('span', { class: 'block size-1.5 rounded-full bg-muted' })),
         h('span', {}, words(i), off ? h('span', { class: 'text-muted' }, ` (${et('cap.ungraded')})`) : h('span', { class: 'sr-only' }, ` (${ok ? et('cap.passed') : et('cap.todo')})`)));
     })));
 }

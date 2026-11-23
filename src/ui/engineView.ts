@@ -655,8 +655,13 @@ function labView(l: EngineLesson, v: Visit): HTMLElement {
         shown ? insideView(shown, `${key}-inside`) : null,
         shown ? planViz(l, shown, v.code[i] ?? '', `${key}-plan`) : null);
     })),
-    cap && cc ? cap.capPlans(cc) : null,
-    cap && cc ? cap.capDone(cc) : null);
+    cap && cc ? cap.capPlans(cc) : null);
+}
+
+/** The capstone's finish card (nothing until it is done, or for another kind / a lab with no runner). */
+function capDoneView(l: EngineLesson, v: Visit): HTMLElement | null {
+  const cap = l.kind === 'capstone' && l.lab && LAB_RUNNERS[l.engine] ? capChunk() : undefined;
+  return cap ? cap.capDone(capCtx(l, v)) : null;
 }
 
 /** Engine numbers beside the result (LabMeta); nothing when the runner gave none. */
@@ -808,6 +813,7 @@ function lessonBody(l: EngineLesson): HTMLElement {
       cardHead(`${l.id}-quiz`, 'kindQuiz', et('quiz.title')),
       h('div', { class: 'divide-y divide-line [&>*]:py-4 [&>*:first-child]:pt-0 [&>*:last-child]:pb-0' },
         ...l.quiz.map((q, i) => h('div', {}, question(l, v, q, `q${i}`, et('quiz.n', { i: i + 1, n: l.quiz!.length })))))) : null,
+    capDoneView(l, v), // review v23 P3: the finish card after the closing questions, the capstone's last part
     ...secs(l, (id) => id === 'recap'),
     h('section', { class: cls.cx(cls.CARD, 'flex flex-wrap items-center gap-3 p-5 max-sm:p-4'), 'aria-label': et('done') },
       isDone ? h('p', { class: 'm-0 flex items-center gap-2 font-bold good' }, d.icon('check', 'size-5'), et('complete.done'))
@@ -834,11 +840,11 @@ export function sourceTitle(u: string): string {
   let url: URL;
   try { url = new URL(u); } catch { return u; }
   const dec = (x: string): string => { try { return decodeURIComponent(x); } catch { return x; } };
-  // "HowItWorks.DataTypes" → "How It Works Data Types"; "bp-sort-keys" → "bp sort keys"
+  // "HowItWorks.DataTypes" → "How It Works Data Types"; "bp-sort-keys" → "best practices: sort keys" (AWS's bp- pages, review v23 P3)
   const words = (x: string): string => dec(x).replace(/\.html?$/, '').replace(/([a-z])([A-Z])/g, '$1 $2').replace(/[-_.]+/g, ' ').trim();
   const seg = url.pathname.split('/').filter(Boolean).at(-1);
   const anchor = url.hash.length > 1 && words(url.hash.slice(1).replace(/\.([0-9A-F]{2})/g, '%$1')); // MediaWiki writes ' as .27
-  const page = [seg && words(seg), anchor && (/[a-z]/.test(anchor) ? anchor : anchor.toLowerCase())].filter(Boolean).join(' › ');
+  const page = [seg && words(seg.replace(/^bp-/, 'best-practices: ')), anchor && (/[a-z]/.test(anchor) ? anchor : anchor.toLowerCase())].filter(Boolean).join(' › ');
   const site = SITE[url.hostname] ?? url.hostname.replace(/^www\./, '');
   return page ? `${site} · ${page[0].toUpperCase()}${page.slice(1)}` : site;
 }

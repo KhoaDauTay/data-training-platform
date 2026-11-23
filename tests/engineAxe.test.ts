@@ -66,6 +66,7 @@ describe('Database Engine lesson pages (fixtures)', () => {
     expect(sourceTitle('https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.Partitions.html')).toBe('DynamoDB · How It Works Partitions');
     expect(sourceTitle('https://wiki.postgresql.org/wiki/Don%27t_Do_This#Don.27t_use_money')).toBe("PostgreSQL Wiki · Don't Do This › Don't use money");
     expect(sourceTitle('https://example.org/a%E0%A4%A')).toBe('example.org · A%E0%A4%A');
+    expect(sourceTitle('https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-query-scan.html')).toBe('DynamoDB · Best practices: query scan');
   });
 
   it('a concept lesson is completed by its button', async () => {
@@ -107,11 +108,17 @@ describe('Database Engine lesson pages (fixtures)', () => {
     // review v23: the closing questions come after the lab, as the capstone's text says ("… then N questions")
     const lab = byId('e-pg-l1-05-lab')!.closest('section')!, quiz = byId('e-pg-l1-05-quiz')!.closest('section')!;
     expect(lab.compareDocumentPosition(quiz) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    // review v23 P3: a step not passed yet is a bullet in "Chấm bằng", not a radio-like ring
+    expect(document.querySelectorAll('[aria-labelledby="e-pg-l1-05-graded"] [data-todo]')).toHaveLength(2);
+    expect(document.querySelector('[aria-labelledby="e-pg-l1-05-graded"] .ring-2')).toBeNull();
     expect(await problems()).toEqual([]);
     app.save.completed.push('e-pg-l1-05');
     location.hash = '#/engine/postgres/L1/e-pg-l1-01';
     await visit('#/engine/postgres/L1/e-pg-l1-05', () => expect(document.querySelector('[data-cap-done]')).not.toBeNull());
     expect(document.querySelector('[data-cap-done] svg[data-mascot=lily]')).not.toBeNull();
+    // review v23 P3: the finish card comes after the closing questions (the capstone's last part)
+    const done = document.querySelector('[data-cap-done]')!, closing = byId('e-pg-l1-05-quiz')!.closest('section')!;
+    expect(closing.compareDocumentPosition(done) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(document.querySelector('[data-ek="e-pg-l1-05-plans"]')).not.toBeNull(); // done in an earlier visit: the plans open
     expect(await problems()).toEqual([]);
   });
