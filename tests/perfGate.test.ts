@@ -116,4 +116,18 @@ describe('perf gate: mỗi thanh perf: có câu slow: trượt, lời giải qua
     expect(slowVerdict(want, want, perf)).toBeUndefined();
     expect(slowVerdict(want, await explain(slow), perf)).toMatchObject({ block: true });
   });
+
+  // v25 R1 (L360, reverted to L324): Parts 2–7 keep `slow:` as lesson material with no `perf:` bar, so nothing blocks; where
+  // the weak-pass rule (> 3× and > 1,000) can fire, the slow answer gets the note.
+  const NOTE = ['g-exists-3', 'g-distinct-on-1'];
+  const lessonSlow = g.drills.filter((d) => d.slow && !d.perf);
+  it('v25 R1: drill có slow: mà không perf: (Phần 2–7) đúng như danh sách', () => {
+    expect(lessonSlow.map((d) => d.id).sort()).toEqual(['g-coalesce-2', 'g-date-math-4', 'g-distinct-4', 'g-distinct-on-1', 'g-exists-3', 'g-join-4']);
+  });
+  it.each(lessonSlow)('$id: slow: cùng kết quả, không bao giờ chặn; ghi chú khi luật yếu bắt được', async (d) => {
+    expect(compareResults(await run(d.solution), await run(d.slow!), d.ordered).ok).toBe(true);
+    const v = slowVerdict(await explain(d.solution), await explain(d.slow!));
+    if (NOTE.includes(d.id)) expect(v).toMatchObject({ block: false });
+    else expect(v).toBeUndefined();
+  });
 });
