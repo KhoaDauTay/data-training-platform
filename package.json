@@ -10,7 +10,9 @@
     "typecheck": "tsc --noEmit",
     "smoke": "node scripts/smoke.mjs",
     "ux-audit": "node scripts/ux-audit.mjs",
-    "e2e": "node scripts/e2e.mjs"
+    "e2e": "node scripts/e2e.mjs",
+    "kb:crawl": "node scripts/kb/crawl-tutorials.mjs",
+    "kb:gen": "node scripts/kb/gen-routes.mjs && node scripts/kb/gen-gap-map.mjs"
   },
   "dependencies": {
     "@codemirror/autocomplete": "6.20.4",
