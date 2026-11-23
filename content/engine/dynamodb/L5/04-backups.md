@@ -22,6 +22,7 @@ quiz:
       - { vi: "Backup theo yêu cầu tạo lúc nửa đêm", en: "The on-demand backup taken at midnight" }
       - { vi: "Đọc lại DynamoDB Streams của tuần trước", en: "Replay last week's DynamoDB Streams" }
     answer: 0
+    trap: 1
     why: { vi: "PITR cho điểm khôi phục theo giây trong tối đa 35 ngày. Backup lúc nửa đêm mất mọi thay đổi sau đó; Streams chỉ giữ 24 giờ.", en: "PITR gives per-second recovery points over up to 35 days. The midnight backup loses every change after it; Streams keeps only 24 hours." }
   - q: { vi: "Sau khi khôi phục, cái gì phải cài lại bằng tay?", en: "After a restore, what must be set up again by hand?" }
     options:
@@ -32,19 +33,34 @@ quiz:
     why: { vi: "Khôi phục mang theo dữ liệu, LSI/GSI và capacity, nhưng các cài đặt vận hành kể trên phải làm lại trên bảng mới. Khôi phục không bao giờ ghi đè bảng đang có.", en: "A restore brings back data, LSIs/GSIs and capacity, but the operational settings above must be redone on the new table. A restore never overwrites an existing table." }
 ---
 
+## Mở bài
+
+Một lần deploy lỗi ghi đè giá của 3.000 sản phẩm lúc 14:03:20, và 20 phút sau mới có người phát hiện. Bản backup gần nhất chụp lúc nửa đêm. Bạn lấy lại dữ liệu đúng tới giây trước lỗi bằng cách nào?
+
 ## Ý chính
 
-DynamoDB có hai cách sao lưu, đều **không tiêu throughput** của bảng:
+DynamoDB có hai cách sao lưu, đều **không tiêu throughput** của bảng. **PITR** (point-in-time recovery) sao lưu liên tục và khôi phục về **bất kỳ giây nào** trong tối đa **35 ngày** (`RecoveryPeriodInDays` từ 1 tới 35, mặc định 35). Tắt rồi bật lại thì mốc bắt đầu bị đặt lại. **Backup theo yêu cầu** chụp toàn bộ bảng khi bạn gọi, giữ tới khi bạn xóa, không giới hạn số lượng; dùng cho lưu trữ dài hạn hoặc trước một thay đổi lớn.
 
-- **PITR** (point-in-time recovery): sao lưu liên tục, khôi phục về **bất kỳ giây nào** trong tối đa **35 ngày** (`RecoveryPeriodInDays` từ 1 tới 35, mặc định 35). Tắt rồi bật lại thì mốc bắt đầu bị đặt lại.
-- **Backup theo yêu cầu**: chụp toàn bộ bảng khi bạn gọi, **không giới hạn số lượng**. Dùng cho lưu trữ dài hạn hoặc trước một thay đổi lớn.
-- Khôi phục luôn tạo **bảng mới**, không ghi đè bảng cũ. Có thể khôi phục sang Region khác.
-- Phải tự cài lại trên bảng mới: auto scaling, IAM, metric và alarm CloudWatch, tag, Streams, TTL, deletion protection, PITR.
-- Backup không bảo đảm nhất quán nhân quả giữa các item, dù độ lệch thường dưới một giây.
+Nhiều người nghĩ khôi phục là "tua bảng đang chạy về quá khứ". Thật ra khôi phục luôn tạo **bảng mới**, không ghi đè bảng cũ, và có thể sang Region khác. Bảng mới mang dữ liệu, LSI, GSI và capacity, nhưng phải tự cài lại: auto scaling, IAM, metric và alarm CloudWatch, tag, Streams, TTL, deletion protection, PITR. Sau đó hoặc trỏ ứng dụng sang bảng mới, hoặc chép các item bị hỏng từ bảng mới về bảng cũ.
+
+Backup không bảo đảm nhất quán nhân quả giữa các item, dù độ lệch thường dưới một giây. Sao lưu và khôi phục chỉ có trên AWS thật, nên bài này chưa chạy được trong trình duyệt.
+
+## Cú pháp
+
+```text
+UpdateContinuousBackups { TableName, PointInTimeRecoverySpecification: { PointInTimeRecoveryEnabled: true, RecoveryPeriodInDays: 35 } }
+RestoreTableToPointInTime { SourceTableName, TargetTableName, RestoreDateTime | UseLatestRestorableTime: true }
+CreateBackup { TableName, BackupName }
+RestoreTableFromBackup { TargetTableName, BackupArn }
+```
+
+- `RecoveryPeriodInDays`: cửa sổ PITR, 1 tới 35 ngày.
+- `TargetTableName`: tên bảng mới; phải chưa tồn tại.
+- `RestoreDateTime`: mốc theo giây trong cửa sổ PITR.
 
 ## Ví dụ
 
-Sao lưu và khôi phục chỉ có trên AWS thật, nên bài này **chưa chạy được trong trình duyệt**.
+Chọn cách theo tình huống:
 
 ```text
 need                                    choose
@@ -52,22 +68,78 @@ undo a mistake from 20 minutes ago      PITR restore to the second before it
 keep a copy for one year                on-demand backup (or AWS Backup plan)
 before a risky migration                on-demand backup, then migrate
 ```
+
+Sửa lần deploy lỗi lúc 14:03:20:
+
+```text
+1. RestoreTableToPointInTime  Products -> Products_restore  at 14:03:19
+2. set up Streams, TTL, alarms, PITR on Products_restore if it will stay
+3. copy the 3,000 damaged items back to Products (or switch the app to the new table)
+```
+
+## Lỗi hay gặp
+
+Khôi phục về bảng đang dùng:
+
+```text
+// WRONG: expecting the restore to overwrite the live table
+RestoreTableToPointInTime { SourceTableName: Products, TargetTableName: Products }   -> refused: table exists
+```
+
+```text
+// FIX: restore to a new name, then copy back or switch
+RestoreTableToPointInTime { SourceTableName: Products, TargetTableName: Products_restore }
+```
+
+Dùng Streams làm bản sao lưu:
+
+```text
+// WRONG: "we can rebuild from Streams" for a mistake found after 2 days
+replay stream records older than 24 hours                     -> already trimmed
+```
+
+```text
+// FIX: PITR covers up to 35 days, to the second
+RestoreTableToPointInTime { ..., RestoreDateTime: <the second before the mistake> }
+```
+
+## Tóm tắt
+
+- PITR: liên tục, tới 35 ngày, khôi phục theo giây.
+- Backup theo yêu cầu: chụp khi gọi, giữ tới khi xóa, cho lưu dài hạn.
+- Khôi phục luôn tạo bảng mới; cài lại Streams, TTL, IAM, alarm, PITR.
+- Streams giữ 24 giờ, không phải bản sao lưu.
 
 # EN
 
+## Opening
+
+A bad deploy overwrote the prices of 3,000 products at 14:03:20, and nobody noticed for 20 minutes. The latest backup was taken at midnight. How do you get the data back exactly as it was the second before the mistake?
+
 ## Key idea
 
-DynamoDB has two backup methods, neither **consumes the table's throughput**:
+DynamoDB has two backup methods, neither **consumes the table's throughput**. **PITR** (point-in-time recovery) backs up continuously and restores to **any second** within up to **35 days** (`RecoveryPeriodInDays` from 1 to 35, default 35). Disabling and re-enabling resets the start point. An **on-demand backup** takes a full copy of the table when you call it, kept until you delete it, with no limit on how many; use it for long-term retention or before a big change.
 
-- **PITR** (point-in-time recovery): continuous backups, restore to **any second** within up to **35 days** (`RecoveryPeriodInDays` from 1 to 35, default 35). Disabling and re-enabling resets the start point.
-- **On-demand backup**: a full copy of the table when you call it, with **no limit on how many**. Use it for long-term retention or before a big change.
-- A restore always creates a **new table**, never overwriting the old one. It can restore into another Region.
-- On the new table you must set up again: auto scaling, IAM, CloudWatch metrics and alarms, tags, Streams, TTL, deletion protection, PITR.
-- A backup does not guarantee causal consistency across items, though the skew is usually under a second.
+Many people think a restore "rewinds the live table". In fact a restore always creates a **new table**, never overwriting the old one, and it can go to another Region. The new table brings back data, LSIs, GSIs and capacity, but you must set up again: auto scaling, IAM, CloudWatch metrics and alarms, tags, Streams, TTL, deletion protection, PITR. Then either point the app at the new table, or copy the damaged items from the new table back to the old one.
+
+A backup does not guarantee causal consistency across items, though the skew is usually under a second. Backup and restore exist only on real AWS, so this lesson does not run in the browser yet.
+
+## Syntax
+
+```text
+UpdateContinuousBackups { TableName, PointInTimeRecoverySpecification: { PointInTimeRecoveryEnabled: true, RecoveryPeriodInDays: 35 } }
+RestoreTableToPointInTime { SourceTableName, TargetTableName, RestoreDateTime | UseLatestRestorableTime: true }
+CreateBackup { TableName, BackupName }
+RestoreTableFromBackup { TargetTableName, BackupArn }
+```
+
+- `RecoveryPeriodInDays`: the PITR window, 1 to 35 days.
+- `TargetTableName`: the new table's name; it must not exist yet.
+- `RestoreDateTime`: a point to the second inside the PITR window.
 
 ## Example
 
-Backup and restore exist only on real AWS, so this lesson does not run in the browser yet.
+Choosing the method from the situation:
 
 ```text
 need                                    choose
@@ -75,3 +147,44 @@ undo a mistake from 20 minutes ago      PITR restore to the second before it
 keep a copy for one year                on-demand backup (or AWS Backup plan)
 before a risky migration                on-demand backup, then migrate
 ```
+
+Repairing the bad deploy at 14:03:20:
+
+```text
+1. RestoreTableToPointInTime  Products -> Products_restore  at 14:03:19
+2. set up Streams, TTL, alarms, PITR on Products_restore if it will stay
+3. copy the 3,000 damaged items back to Products (or switch the app to the new table)
+```
+
+## Common mistakes
+
+Restoring onto the live table:
+
+```text
+// WRONG: expecting the restore to overwrite the live table
+RestoreTableToPointInTime { SourceTableName: Products, TargetTableName: Products }   -> refused: table exists
+```
+
+```text
+// FIX: restore to a new name, then copy back or switch
+RestoreTableToPointInTime { SourceTableName: Products, TargetTableName: Products_restore }
+```
+
+Using Streams as a backup:
+
+```text
+// WRONG: "we can rebuild from Streams" for a mistake found after 2 days
+replay stream records older than 24 hours                     -> already trimmed
+```
+
+```text
+// FIX: PITR covers up to 35 days, to the second
+RestoreTableToPointInTime { ..., RestoreDateTime: <the second before the mistake> }
+```
+
+## Recap
+
+- PITR: continuous, up to 35 days, restore to the second.
+- On-demand backup: taken when you call it, kept until deleted, for long retention.
+- A restore always creates a new table; set up Streams, TTL, IAM, alarms, PITR again.
+- Streams keep 24 hours and are not a backup.

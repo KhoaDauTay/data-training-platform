@@ -22,6 +22,7 @@ quiz:
       - { vi: "Không kết luận được: bộ máy một nút không mô phỏng partition hay throttle; trên AWS khóa này vượt 1000 WCU", en: "No conclusion: a single-node engine simulates neither partitions nor throttling; on AWS this key exceeds 1000 WCU" }
       - { vi: "Adaptive capacity đã cứu", en: "Adaptive capacity saved it" }
     answer: 1
+    trap: 0
     why: { vi: "Throttle, burst và adaptive capacity chỉ có trên DynamoDB thật. Trong trình duyệt hãy tính bằng tay (bài 3) thay vì đo.", en: "Throttling, burst and adaptive capacity exist only on real DynamoDB. In the browser, compute by hand (lesson 3) instead of measuring." }
   - q: { vi: "Trong bài TTL, item đã hết hạn không bao giờ tự biến mất. Vì sao, và điều đó có sai với AWS không?", en: "In the TTL lesson, expired items never vanish by themselves. Why, and is that wrong compared with AWS?" }
     options:
@@ -39,24 +40,66 @@ quiz:
     why: { vi: "dynoxide 1.5.0 có `TransactGetItems` và `ExecuteTransaction`; `TransactWriteItems`, TTL và Streams trả `UnsupportedOperation`, nên các bài đó là bài đọc.", en: "dynoxide 1.5.0 has `TransactGetItems` and `ExecuteTransaction`; `TransactWriteItems`, TTL and Streams return `UnsupportedOperation`, so those lessons are reading lessons." }
 ---
 
+## Mở bài
+
+Bạn đã chạy hàng chục lab DynamoDB ngay trong trình duyệt, không cần tài khoản AWS. Nhưng một bảng thật có partition, throttle và tiến trình nền. Kết luận nào từ trình duyệt mang sang AWS được, kết luận nào không?
+
 ## Ý chính
 
-Bộ máy DynamoDB trong trình duyệt (dynoxide 1.5.0) chạy đúng ngữ nghĩa của request: khóa, Query, GSI, biểu thức, `ConsumedCapacity`, `TransactGetItems`, PartiQL. Nó là một nút đơn trên SQLite, nên **không** có:
+Bộ máy DynamoDB trong trình duyệt (dynoxide 1.5.0) chạy đúng ngữ nghĩa của request: khóa, Query, GSI, LSI, biểu thức, ghi có điều kiện, `ConsumedCapacity`, `TransactGetItems`, PartiQL và `ExecuteTransaction`. Số `Count`, `ScannedCount` và capacity theo luật là số đo thật của bộ máy này.
 
-- partition thật, throttle, burst, adaptive capacity;
-- `TransactWriteItems` (dùng `ExecuteTransaction` thay);
-- Streams, tiến trình TTL, global table, backup.
+Nó là một nút đơn chạy trên SQLite, nên không có partition thật, throttle, burst hay adaptive capacity; không có `TransactWriteItems` (dùng `ExecuteTransaction` thay); không có Streams, tiến trình TTL, global table hay backup.
 
-Vì vậy: dùng nó để kiểm thiết kế khóa và số item đã đọc, dùng phép tính để ước lượng tải, và đừng lấy tốc độ đo trong trình duyệt làm bằng chứng hiệu năng.
+Nhiều người nghĩ chạy nhanh trong trình duyệt nghĩa là chạy nhanh trên AWS. Thật ra tốc độ ở đây chỉ nói về máy của bạn. Hãy dùng bộ máy để kiểm thiết kế khóa và số item đã đọc, dùng phép tính (WCU, RCU, trần mỗi partition) để ước lượng tải.
+
+## Ví dụ
+
+Cái gì kiểm được ở đâu:
+
+```text
+question                                   browser engine         real AWS / arithmetic
+does this Query read only the collection?  yes: ScannedCount      same
+how many RCU does this read cost?          yes: ConsumedCapacity  same rule
+will 5000 writes/s on one key throttle?    no                     1000 WCU per partition -> yes
+are expired items deleted?                 never                  within a few days
+```
+
+## Tóm tắt
+
+- Bộ máy trình duyệt đúng ngữ nghĩa request: khóa, index, biểu thức, capacity theo luật.
+- Không có partition, throttle, Streams, TTL, global table, backup, `TransactWriteItems`.
+- Kiểm thiết kế bằng `ScannedCount`; ước lượng tải bằng phép tính.
+- Tốc độ đo trong trình duyệt không phải bằng chứng hiệu năng trên AWS.
 
 # EN
 
+## Opening
+
+You have run dozens of DynamoDB labs right in the browser, with no AWS account. But a real table has partitions, throttling and background processes. Which conclusions from the browser carry over to AWS, and which do not?
+
 ## Key idea
 
-The in-browser DynamoDB engine (dynoxide 1.5.0) runs request semantics faithfully: keys, Query, GSIs, expressions, `ConsumedCapacity`, `TransactGetItems`, PartiQL. It is a single node on SQLite, so it does **not** have:
+The in-browser DynamoDB engine (dynoxide 1.5.0) runs request semantics faithfully: keys, Query, GSIs, LSIs, expressions, conditional writes, `ConsumedCapacity`, `TransactGetItems`, PartiQL and `ExecuteTransaction`. The `Count`, `ScannedCount` and rule-based capacity figures are real measurements of this engine.
 
-- real partitions, throttling, burst, adaptive capacity;
-- `TransactWriteItems` (use `ExecuteTransaction` instead);
-- Streams, the TTL process, global tables, backups.
+It is a single node running on SQLite, so it has no real partitions, throttling, burst or adaptive capacity; no `TransactWriteItems` (use `ExecuteTransaction` instead); no Streams, TTL process, global tables or backups.
 
-So: use it to check key design and how many items are read, use arithmetic to estimate load, and never take speed measured in the browser as performance evidence.
+Many people think fast in the browser means fast on AWS. In fact speed here only says something about your machine. Use the engine to check key design and how many items are read, and use arithmetic (WCU, RCU, the per-partition ceiling) to estimate load.
+
+## Example
+
+What can be checked where:
+
+```text
+question                                   browser engine         real AWS / arithmetic
+does this Query read only the collection?  yes: ScannedCount      same
+how many RCU does this read cost?          yes: ConsumedCapacity  same rule
+will 5000 writes/s on one key throttle?    no                     1000 WCU per partition -> yes
+are expired items deleted?                 never                  within a few days
+```
+
+## Recap
+
+- The browser engine is faithful to request semantics: keys, indexes, expressions, rule-based capacity.
+- It has no partitions, throttling, Streams, TTL, global tables, backups or `TransactWriteItems`.
+- Check design with `ScannedCount`; estimate load with arithmetic.
+- Speed measured in the browser is not performance evidence for AWS.

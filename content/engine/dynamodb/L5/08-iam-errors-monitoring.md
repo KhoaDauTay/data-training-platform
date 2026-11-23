@@ -28,6 +28,7 @@ quiz:
       - { vi: "Chính sách IAM có điều kiện `dynamodb:LeadingKeys` bằng mã người dùng của người gọi", en: "An IAM policy with the condition `dynamodb:LeadingKeys` equal to the caller's user id" }
       - { vi: "Thêm một GSI theo mã người dùng", en: "Add a GSI on the user id" }
     answer: 1
+    trap: 0
     why: { vi: "Kiểm trong ứng dụng nghe đủ, nhưng ai có thông tin đăng nhập cũng gửi được request khác. `dynamodb:LeadingKeys` để chính DynamoDB từ chối mọi item có partition key khác giá trị gắn với người gọi. GSI không giới hạn quyền.", en: "Checking in the app sounds enough, but anyone holding the credentials can send a different request. `dynamodb:LeadingKeys` makes DynamoDB itself refuse every item whose partition key differs from the value tied to the caller. A GSI does not limit access." }
   - q: { vi: "Lỗi nào nên tự động thử lại với backoff tăng dần?", en: "Which error should be retried automatically with growing backoff?" }
     options:
@@ -45,40 +46,116 @@ quiz:
     why: { vi: "Deletion protection chặn chính lệnh xóa: phải tắt nó bằng `UpdateTable` trước, nên một lệnh xóa nhầm không đi qua được. Backup là lớp bảo vệ thứ hai, cho dữ liệu chứ không cho bảng đang chạy.", en: "Deletion protection blocks the delete call itself: it must be turned off with `UpdateTable` first, so a mistaken delete cannot get through. Backups are a second layer, for the data rather than the live table." }
 ---
 
+## Mở bài
+
+Ứng dụng di động gọi thẳng DynamoDB, và một tối mọi lần ghi bắt đầu báo lỗi. Bạn cần biết ai được đọc gì, lỗi nào nên thử lại, và khóa nào đang nóng. Cũng tuần đó, một lệnh xóa bảng suýt chạy trên bảng thật.
+
 ## Ý chính
 
-Bốn việc vận hành mà bộ máy trong trình duyệt không chạy được, vì chúng cần tài khoản AWS thật:
+**Quyền (IAM)**: chính sách IAM cho phép hay cấm từng thao tác (`dynamodb:GetItem`, `dynamodb:Query`…) trên từng bảng và index. Điều kiện `dynamodb:LeadingKeys` giới hạn người gọi vào các item có partition key bằng một giá trị gắn với danh tính của họ; `dynamodb:Attributes` giới hạn thuộc tính được đọc hay ghi. Cho quyền ít nhất đủ dùng (thẻ Best Practice d26).
 
-- **Quyền (IAM)**: chính sách IAM cho phép hay cấm từng thao tác (`dynamodb:GetItem`, `dynamodb:Query`…) trên từng bảng và index. Điều kiện `dynamodb:LeadingKeys` giới hạn người gọi vào các item có partition key bằng một giá trị gắn với danh tính của họ; `dynamodb:Attributes` giới hạn thuộc tính được đọc hay ghi. Cho quyền ít nhất đủ dùng (thẻ Best Practice d26).
-- **Lỗi**: lỗi 4xx thường do request (`ValidationException`, `ConditionalCheckFailedException`, `ResourceNotFoundException`) thì sửa request, đừng gửi lại y nguyên. Throttle (`ProvisionedThroughputExceededException`, `ThrottlingException`) và lỗi 5xx là tạm thời: thử lại với backoff tăng dần và một chút ngẫu nhiên. SDK của AWS đã tự thử lại; `UnprocessedItems` của lệnh theo lô cũng phải gửi lại theo cách đó.
-- **Giám sát**: CloudWatch có số liệu theo bảng và index như capacity đã tiêu (`ConsumedReadCapacityUnits`, `ConsumedWriteCapacityUnits`), số lần throttle (`ReadThrottleEvents`, `WriteThrottleEvents`, `ThrottledRequests`) và `SystemErrors`. Đặt alarm trên throttle. **Contributor Insights** liệt kê các khóa được truy cập và bị throttle nhiều nhất: cách tìm khóa nóng. CloudTrail ghi lại ai đã gọi API nào.
-- **Xóa bảng**: `DeleteTable` xóa bảng cùng mọi item và index, không hoàn tác. Bật **deletion protection** (`DeletionProtectionEnabled`) để lệnh xóa bị từ chối cho tới khi có người tắt nó. Backup theo yêu cầu vẫn còn sau khi xóa bảng, nên tạo một bản trước khi xóa.
+**Lỗi**: lỗi 4xx do request (`ValidationException`, `ConditionalCheckFailedException`, `ResourceNotFoundException`) thì sửa request hoặc đọc lại dữ liệu. Throttle (`ProvisionedThroughputExceededException`, `ThrottlingException`) và lỗi 5xx là tạm thời: thử lại với backoff tăng dần cộng một chút ngẫu nhiên. SDK của AWS đã tự thử lại; `UnprocessedItems` của lệnh theo lô cũng phải gửi lại theo cách đó. Nhiều người nghĩ cứ thử lại mọi lỗi là an toàn. Thật ra gửi lại một request sai chỉ lặp lại cùng lỗi và tốn thêm.
+
+**Giám sát**: CloudWatch có số liệu theo bảng và index: `ConsumedReadCapacityUnits`, `ConsumedWriteCapacityUnits`, `ReadThrottleEvents`, `WriteThrottleEvents`, `ThrottledRequests`, `SystemErrors`. Đặt alarm trên throttle. **Contributor Insights** liệt kê các khóa được truy cập và bị throttle nhiều nhất: cách tìm khóa nóng. CloudTrail ghi lại ai đã gọi API nào.
+
+**Xóa bảng**: `DeleteTable` xóa bảng cùng mọi item và index, không hoàn tác. Bật **deletion protection** (`DeletionProtectionEnabled`) để lệnh xóa bị từ chối cho tới khi có người tắt nó. Backup theo yêu cầu còn lại sau khi xóa bảng, nên tạo một bản trước khi xóa.
+
+Bốn việc này cần tài khoản AWS thật, nên bài này chưa chạy được trong trình duyệt.
+
+## Cú pháp
+
+```text
+"Action": ["dynamodb:GetItem", "dynamodb:Query"],
+"Resource": "arn:aws:dynamodb:<region>:<account>:table/Orders",
+"Condition": {"ForAllValues:StringEquals": {"dynamodb:LeadingKeys": ["<caller id>"]}}
+UpdateTable { TableName, DeletionProtectionEnabled: true }
+```
+
+- `dynamodb:LeadingKeys`: giá trị partition key được phép.
+- `dynamodb:Attributes`: thuộc tính được phép đọc hay ghi.
+- `DeletionProtectionEnabled`: chặn `DeleteTable` tới khi tắt.
 
 ## Ví dụ
 
-Một chính sách chỉ cho người gọi đọc item mang mã người dùng của chính họ (rút gọn):
+Chính sách chỉ cho người gọi đọc item mang mã người dùng của chính họ (rút gọn):
 
 ```text
 "Action": ["dynamodb:GetItem", "dynamodb:Query"],
 "Condition": {"ForAllValues:StringEquals": {"dynamodb:LeadingKeys": ["${www.amazon.com:user_id}"]}}
 ```
 
-Thử lại có backoff: chờ 50 ms, rồi 100, 200, 400… (cộng một khoảng ngẫu nhiên), dừng sau vài lần và báo lỗi lên trên.
+Thử lại có backoff:
 
-## Thực hành
+```text
+attempt 1  ProvisionedThroughputExceededException  wait ~50 ms  + random
+attempt 2  ProvisionedThroughputExceededException  wait ~100 ms + random
+attempt 3  ok
+ValidationException on attempt 1  -> no retry, fix the request
+```
 
-Không có lab: IAM, CloudWatch, Contributor Insights và deletion protection chỉ có trên AWS. Hai bài liên quan chạy được ở đây: bài ghi có điều kiện (L2/04) cho thấy `ConditionalCheckFailedException`, và bảng "Partition / Chi phí" dưới mỗi lab ghi rõ throttle là thứ không đo được trong trình duyệt.
+## Lỗi hay gặp
+
+Kiểm quyền trong ứng dụng thay vì IAM:
+
+```text
+// WRONG: the app checks "user == owner" before Query; the credentials allow any key
+Query Orders PK = "USER#b" with user A's credentials   -> returns B's orders
+```
+
+```text
+// FIX: IAM condition dynamodb:LeadingKeys = caller's id
+Query Orders PK = "USER#b" with user A's credentials   -> AccessDeniedException
+```
+
+Thử lại lỗi không tạm thời:
+
+```text
+// WRONG: retry every error the same way
+ConditionalCheckFailedException -> retry x5 -> same error x5
+```
+
+```text
+// FIX: retry only throttling and 5xx; re-read the item before a new conditional write
+ConditionalCheckFailedException -> GetItem -> decide -> new write
+```
+
+## Tóm tắt
+
+- `dynamodb:LeadingKeys` để chính DynamoDB giới hạn người gọi vào item của họ.
+- Thử lại throttle và 5xx với backoff có ngẫu nhiên; lỗi 4xx thì sửa request.
+- Alarm trên throttle; Contributor Insights tìm khóa nóng.
+- Bật deletion protection và tạo backup trước khi xóa bảng.
 
 # EN
 
+## Opening
+
+A mobile app calls DynamoDB directly, and one evening every write starts failing. You need to know who may read what, which errors to retry, and which key is hot. The same week, a delete-table command nearly ran against the real table.
+
 ## Key idea
 
-Four operations jobs that the in-browser engine cannot run, because they need a real AWS account:
+**Permissions (IAM)**: an IAM policy allows or denies each action (`dynamodb:GetItem`, `dynamodb:Query`…) on each table and index. The condition `dynamodb:LeadingKeys` limits callers to items whose partition key equals a value tied to their identity; `dynamodb:Attributes` limits which attributes may be read or written. Grant the least that works (Best Practice card d26).
 
-- **Permissions (IAM)**: an IAM policy allows or denies each action (`dynamodb:GetItem`, `dynamodb:Query`…) on each table and index. The condition `dynamodb:LeadingKeys` limits callers to items whose partition key equals a value tied to their identity; `dynamodb:Attributes` limits which attributes may be read or written. Grant the least that works (Best Practice card d26).
-- **Errors**: 4xx errors usually come from the request (`ValidationException`, `ConditionalCheckFailedException`, `ResourceNotFoundException`): fix the request, do not resend it unchanged. Throttling (`ProvisionedThroughputExceededException`, `ThrottlingException`) and 5xx errors are temporary: retry with growing backoff plus a little randomness. The AWS SDKs already retry; the `UnprocessedItems` of a batch call must be resent the same way.
-- **Monitoring**: CloudWatch has per-table and per-index metrics such as capacity consumed (`ConsumedReadCapacityUnits`, `ConsumedWriteCapacityUnits`), throttles (`ReadThrottleEvents`, `WriteThrottleEvents`, `ThrottledRequests`) and `SystemErrors`. Set alarms on throttling. **Contributor Insights** lists the most accessed and most throttled keys: the way to find a hot key. CloudTrail records who called which API.
-- **Deleting a table**: `DeleteTable` removes the table with every item and index, with no undo. Turn on **deletion protection** (`DeletionProtectionEnabled`) so the delete call is refused until someone turns it off. On-demand backups survive the table's deletion, so take one before you delete.
+**Errors**: 4xx errors from the request (`ValidationException`, `ConditionalCheckFailedException`, `ResourceNotFoundException`) mean fix the request or read the data again. Throttling (`ProvisionedThroughputExceededException`, `ThrottlingException`) and 5xx errors are temporary: retry with growing backoff plus a little randomness. The AWS SDKs already retry; the `UnprocessedItems` of a batch call must be resent the same way. Many people think retrying every error is safe. In fact resending a wrong request only repeats the same error and costs more.
+
+**Monitoring**: CloudWatch has per-table and per-index metrics: `ConsumedReadCapacityUnits`, `ConsumedWriteCapacityUnits`, `ReadThrottleEvents`, `WriteThrottleEvents`, `ThrottledRequests`, `SystemErrors`. Set alarms on throttling. **Contributor Insights** lists the most accessed and most throttled keys: the way to find a hot key. CloudTrail records who called which API.
+
+**Deleting a table**: `DeleteTable` removes the table with every item and index, with no undo. Turn on **deletion protection** (`DeletionProtectionEnabled`) so the delete call is refused until someone turns it off. On-demand backups survive the table's deletion, so take one before you delete.
+
+These four jobs need a real AWS account, so this lesson does not run in the browser yet.
+
+## Syntax
+
+```text
+"Action": ["dynamodb:GetItem", "dynamodb:Query"],
+"Resource": "arn:aws:dynamodb:<region>:<account>:table/Orders",
+"Condition": {"ForAllValues:StringEquals": {"dynamodb:LeadingKeys": ["<caller id>"]}}
+UpdateTable { TableName, DeletionProtectionEnabled: true }
+```
+
+- `dynamodb:LeadingKeys`: the allowed partition key values.
+- `dynamodb:Attributes`: the attributes allowed to be read or written.
+- `DeletionProtectionEnabled`: blocks `DeleteTable` until turned off.
 
 ## Example
 
@@ -89,8 +166,44 @@ A policy that lets callers read only the items carrying their own user id (short
 "Condition": {"ForAllValues:StringEquals": {"dynamodb:LeadingKeys": ["${www.amazon.com:user_id}"]}}
 ```
 
-Retry with backoff: wait 50 ms, then 100, 200, 400… (plus a random amount), stop after a few tries and report the error upward.
+Retry with backoff:
 
-## Practice
+```text
+attempt 1  ProvisionedThroughputExceededException  wait ~50 ms  + random
+attempt 2  ProvisionedThroughputExceededException  wait ~100 ms + random
+attempt 3  ok
+ValidationException on attempt 1  -> no retry, fix the request
+```
 
-There is no lab: IAM, CloudWatch, Contributor Insights and deletion protection exist only on AWS. Two related lessons run here: the conditional write lesson (L2/04) shows `ConditionalCheckFailedException`, and the "Partition / Cost" panel under every lab says plainly that throttling cannot be measured in the browser.
+## Common mistakes
+
+Checking permissions in the app instead of IAM:
+
+```text
+// WRONG: the app checks "user == owner" before Query; the credentials allow any key
+Query Orders PK = "USER#b" with user A's credentials   -> returns B's orders
+```
+
+```text
+// FIX: IAM condition dynamodb:LeadingKeys = caller's id
+Query Orders PK = "USER#b" with user A's credentials   -> AccessDeniedException
+```
+
+Retrying errors that are not temporary:
+
+```text
+// WRONG: retry every error the same way
+ConditionalCheckFailedException -> retry x5 -> same error x5
+```
+
+```text
+// FIX: retry only throttling and 5xx; re-read the item before a new conditional write
+ConditionalCheckFailedException -> GetItem -> decide -> new write
+```
+
+## Recap
+
+- `dynamodb:LeadingKeys` makes DynamoDB itself limit callers to their own items.
+- Retry throttling and 5xx with jittered backoff; fix the request on a 4xx.
+- Alarm on throttling; Contributor Insights finds hot keys.
+- Turn on deletion protection and take a backup before deleting a table.

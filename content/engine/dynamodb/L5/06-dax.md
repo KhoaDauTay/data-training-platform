@@ -24,6 +24,7 @@ quiz:
       - { vi: "Kết quả cũ trong query cache, tới khi TTL của kết quả đó hết hoặc nó bị LRU loại", en: "The old result from the query cache, until that result's TTL expires or LRU evicts it" }
       - { vi: "Lỗi, vì query cache bị giữ lock khi có lần ghi", en: "An error, because the query cache is locked during a write" }
     answer: 1
+    trap: 0
     why: { vi: "Đáp án \"kết quả mới\" nghe hợp lý vì DAX là write-through. Nhưng write-through chỉ cập nhật item cache. Item cache và query cache độc lập: lần ghi không làm mất hiệu lực hay sửa kết quả `Query`/`Scan` đã lưu.", en: "\"The new result\" sounds right because DAX is write-through. But write-through only updates the item cache. The item cache and the query cache are independent: a write neither invalidates nor changes a stored `Query`/`Scan` result." }
   - q: { vi: "Request nào DAX **không** lưu vào bộ đệm, mà chuyển thẳng sang DynamoDB?", en: "Which request does DAX **not** cache, passing it straight to DynamoDB?" }
     options:
@@ -41,22 +42,36 @@ quiz:
     why: { vi: "DAX hợp với đọc lặp lại trên ít khóa (khóa nóng) khi chấp nhận đọc cuối cùng; AWS nói nó tốt nhất khi tỉ lệ trúng bộ đệm trên 90 %. Ứng dụng ghi nhiều hoặc cần đọc mạnh không hợp.", en: "DAX suits repeated reads of a few keys (hot keys) when eventual reads are fine; AWS says it performs best above a 90% cache hit rate. Write-heavy apps and apps needing strong reads do not fit." }
 ---
 
+## Mở bài
+
+Trang khuyến mãi một ngày đọc cùng một sản phẩm 5.000 lần mỗi giây, và hóa đơn RCU tăng vọt. Bạn nghĩ tới một bộ đệm trước bảng. Bộ đệm đó trả gì khi dữ liệu vừa đổi?
+
 ## Ý chính
 
-**DAX** (DynamoDB Accelerator) là một cụm bộ đệm trong bộ nhớ đặt trước bảng, API tương thích DynamoDB. Đọc trúng bộ đệm giảm từ vài mili giây xuống **micro giây**, và bớt RCU phải mua cho đọc lặp lại.
+**DAX** (DynamoDB Accelerator) là một cụm bộ đệm trong bộ nhớ đặt trước bảng, API tương thích DynamoDB. Đọc trúng bộ đệm giảm từ vài mili giây xuống **micro giây**, và bớt RCU phải mua cho đọc lặp lại. Cụm chạy trong VPC và cần client DAX.
 
-- **Item cache**: kết quả `GetItem`, `BatchGetItem`, lưu theo khóa chính.
-- **Query cache**: kết quả `Query`, `Scan`, lưu theo tham số request. Hai bộ đệm **độc lập**.
-- Mỗi bộ đệm có TTL (item cache mặc định **5 phút**) và LRU.
-- **Write-through**: `PutItem`, `UpdateItem`, `DeleteItem`, `BatchWriteItem` ghi vào DynamoDB trước, rồi cập nhật item cache. Lần ghi **không** làm mất hiệu lực query cache.
-- Đọc mạnh (`ConsistentRead: true`) và `TransactGetItems` đi thẳng sang DynamoDB, không được lưu.
-- Ghi thẳng vào bảng (bỏ qua DAX) thì item cache giữ bản cũ tới khi hết TTL.
-- Cụm chạy trong VPC, cần client DAX. Không hợp với ứng dụng cần đọc mạnh, ghi nhiều, hoặc ít đọc lặp lại.
+DAX có hai bộ đệm **độc lập**. **Item cache** giữ kết quả `GetItem`, `BatchGetItem` theo khóa chính. **Query cache** giữ kết quả `Query`, `Scan` theo tham số request. Mỗi bộ đệm có TTL (item cache mặc định **5 phút**) và loại bớt theo LRU. Đọc mạnh (`ConsistentRead: true`) và `TransactGetItems` đi thẳng sang DynamoDB, không được lưu.
 
-DAX chỉ có trên AWS thật, nên bài này **chưa chạy được trong trình duyệt**.
+Nhiều người nghĩ write-through nghĩa là mọi kết quả đã lưu đều mới. Thật ra `PutItem`, `UpdateItem`, `DeleteItem`, `BatchWriteItem` qua DAX ghi vào DynamoDB rồi chỉ cập nhật **item cache**: query cache giữ kết quả cũ tới khi hết TTL. Ghi thẳng vào bảng (bỏ qua DAX) thì cả item cache cũng giữ bản cũ tới khi hết TTL.
+
+DAX hợp với đọc lặp lại trên ít khóa khi chấp nhận đọc cuối cùng; không hợp với ứng dụng cần đọc mạnh, ghi nhiều, hoặc ít đọc lặp lại. DAX chỉ có trên AWS thật, nên bài này chưa chạy được trong trình duyệt.
+
+## Cú pháp
+
+```text
+CreateCluster { ClusterName, NodeType, ReplicationFactor, IamRoleArn, SubnetGroupName,
+  ParameterGroupName }      (parameters: record-ttl-millis, query-ttl-millis)
+client = DAX client (same calls as DynamoDB: GetItem, Query, PutItem, ...)  -> cluster endpoint
+```
+
+- `record-ttl-millis`: TTL của item cache (mặc định 5 phút).
+- `query-ttl-millis`: TTL của query cache.
+- `ReplicationFactor`: số node; nhiều node cho đọc nhiều hơn và chịu lỗi.
 
 ## Ví dụ
 
+Request nào được phục vụ từ đâu:
+
 ```text
 request (through DAX)                    served from
 GetItem, eventual                        item cache (miss: DynamoDB, then cached)
@@ -65,24 +80,80 @@ GetItem, ConsistentRead: true            DynamoDB, not cached
 TransactGetItems                         DynamoDB, not cached
 UpdateItem                               DynamoDB, then item cache; query cache unchanged
 ```
+
+Một lần ghi qua DAX, rồi đọc lại:
+
+```text
+12:00:00  Query  category = tea        -> 12 items, stored in query cache
+12:00:30  UpdateItem P-01 price=50000  -> DynamoDB + item cache
+12:00:40  GetItem P-01                 -> price 50000 (item cache)
+12:00:45  Query  category = tea        -> P-01 still at the old price (query cache)
+```
+
+## Lỗi hay gặp
+
+Mong lần ghi làm mới kết quả Query:
+
+```text
+// WRONG: "DAX is write-through, so the listing shows the new price at once"
+UpdateItem via DAX, then the same Query   -> old result until query-ttl-millis
+```
+
+```text
+// FIX: read the changed item by key, or keep a short query TTL for pages that must be fresh
+GetItem via DAX   -> new price from the item cache
+```
+
+Đưa đọc mạnh qua DAX để "nhanh hơn":
+
+```text
+// WRONG: every balance read uses ConsistentRead: true through DAX
+GetItem WALLET#w1, ConsistentRead: true   -> straight to DynamoDB, no cache gain
+```
+
+```text
+// FIX: send only eventual reads of hot keys through DAX
+GetItem PRODUCT#P-01 (eventual) via DAX   -> microseconds from the item cache
+```
+
+## Tóm tắt
+
+- DAX = bộ đệm trong bộ nhớ trước DynamoDB, đọc trúng tính bằng micro giây.
+- Item cache (`GetItem`, `BatchGetItem`) và query cache (`Query`, `Scan`) độc lập.
+- Ghi qua DAX chỉ cập nhật item cache; query cache giữ kết quả cũ tới hết TTL.
+- Đọc mạnh và `TransactGetItems` đi thẳng sang DynamoDB, không được lưu.
 
 # EN
 
+## Opening
+
+A one-day sale page reads the same product 5,000 times per second, and the RCU bill shoots up. You think of a cache in front of the table. What does that cache return when the data has just changed?
+
 ## Key idea
 
-**DAX** (DynamoDB Accelerator) is an in-memory cache cluster in front of a table, API-compatible with DynamoDB. A cache hit drops a read from a few milliseconds to **microseconds**, and cuts the RCU you buy for repeated reads.
+**DAX** (DynamoDB Accelerator) is an in-memory cache cluster in front of a table, API-compatible with DynamoDB. A cache hit drops a read from a few milliseconds to **microseconds**, and cuts the RCU you buy for repeated reads. The cluster runs in a VPC and needs the DAX client.
 
-- **Item cache**: results of `GetItem`, `BatchGetItem`, stored by primary key.
-- **Query cache**: results of `Query`, `Scan`, stored by request parameters. The two caches are **independent**.
-- Each cache has a TTL (the item cache defaults to **5 minutes**) and LRU.
-- **Write-through**: `PutItem`, `UpdateItem`, `DeleteItem`, `BatchWriteItem` write to DynamoDB first, then update the item cache. A write does **not** invalidate the query cache.
-- Strong reads (`ConsistentRead: true`) and `TransactGetItems` go straight to DynamoDB and are not cached.
-- Writing to the table directly (bypassing DAX) leaves the old version in the item cache until its TTL runs out.
-- The cluster runs in a VPC and needs the DAX client. It does not fit apps that need strong reads, write a lot, or rarely repeat reads.
+DAX has two **independent** caches. The **item cache** holds `GetItem` and `BatchGetItem` results by primary key. The **query cache** holds `Query` and `Scan` results by request parameters. Each has a TTL (the item cache defaults to **5 minutes**) and LRU eviction. Strong reads (`ConsistentRead: true`) and `TransactGetItems` go straight to DynamoDB and are not cached.
 
-DAX exists only on real AWS, so this lesson does not run in the browser yet.
+Many people think write-through means every cached result is fresh. In fact `PutItem`, `UpdateItem`, `DeleteItem` and `BatchWriteItem` through DAX write to DynamoDB and then update only the **item cache**: the query cache keeps its old result until its TTL runs out. Writing to the table directly (bypassing DAX) leaves even the item cache stale until its TTL runs out.
+
+DAX suits repeated reads of a few keys when eventual reads are fine; it does not fit apps that need strong reads, write a lot, or rarely repeat reads. DAX exists only on real AWS, so this lesson does not run in the browser yet.
+
+## Syntax
+
+```text
+CreateCluster { ClusterName, NodeType, ReplicationFactor, IamRoleArn, SubnetGroupName,
+  ParameterGroupName }      (parameters: record-ttl-millis, query-ttl-millis)
+client = DAX client (same calls as DynamoDB: GetItem, Query, PutItem, ...)  -> cluster endpoint
+```
+
+- `record-ttl-millis`: the item cache TTL (default 5 minutes).
+- `query-ttl-millis`: the query cache TTL.
+- `ReplicationFactor`: the number of nodes; more nodes give more reads and fault tolerance.
 
 ## Example
+
+Which request is served from where:
 
 ```text
 request (through DAX)                    served from
@@ -92,3 +163,45 @@ GetItem, ConsistentRead: true            DynamoDB, not cached
 TransactGetItems                         DynamoDB, not cached
 UpdateItem                               DynamoDB, then item cache; query cache unchanged
 ```
+
+One write through DAX, then reading again:
+
+```text
+12:00:00  Query  category = tea        -> 12 items, stored in query cache
+12:00:30  UpdateItem P-01 price=50000  -> DynamoDB + item cache
+12:00:40  GetItem P-01                 -> price 50000 (item cache)
+12:00:45  Query  category = tea        -> P-01 still at the old price (query cache)
+```
+
+## Common mistakes
+
+Expecting a write to refresh a Query result:
+
+```text
+// WRONG: "DAX is write-through, so the listing shows the new price at once"
+UpdateItem via DAX, then the same Query   -> old result until query-ttl-millis
+```
+
+```text
+// FIX: read the changed item by key, or keep a short query TTL for pages that must be fresh
+GetItem via DAX   -> new price from the item cache
+```
+
+Sending strong reads through DAX to "go faster":
+
+```text
+// WRONG: every balance read uses ConsistentRead: true through DAX
+GetItem WALLET#w1, ConsistentRead: true   -> straight to DynamoDB, no cache gain
+```
+
+```text
+// FIX: send only eventual reads of hot keys through DAX
+GetItem PRODUCT#P-01 (eventual) via DAX   -> microseconds from the item cache
+```
+
+## Recap
+
+- DAX = an in-memory cache in front of DynamoDB, hits in microseconds.
+- The item cache (`GetItem`, `BatchGetItem`) and the query cache (`Query`, `Scan`) are independent.
+- A write through DAX updates only the item cache; the query cache stays stale until its TTL.
+- Strong reads and `TransactGetItems` go straight to DynamoDB and are not cached.
