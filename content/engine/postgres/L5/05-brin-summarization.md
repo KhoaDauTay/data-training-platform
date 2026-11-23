@@ -8,6 +8,7 @@ title_en: "BRIN internals: block ranges and summarization"
 kind: lab
 runtime: browser
 minutes: 20
+verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-24" }
 objectives:
   - { vi: "Đọc tóm tắt min/max của từng khoảng khối bằng `brin_page_items`", en: "Read the min/max summary of each block range with `brin_page_items`" }
   - { vi: "Thấy khoảng khối mới chưa được tóm tắt, và so với index đã được `brin_summarize_new_values` tóm tắt", en: "See a new block range left unsummarized, and compare with an index summarized by `brin_summarize_new_values`" }
@@ -52,65 +53,266 @@ quiz:
       - { vi: "`v` (correlation gần 0): giá trị lặp lại nên dễ tóm tắt", en: "`v` (correlation near 0): values repeat, so they are easy to summarize" }
       - { vi: "Cả hai như nhau", en: "Both are the same" }
     answer: 0
-    why: { vi: "Giá trị lặp lại nghe như dễ tóm tắt, nhưng BRIN tóm tắt theo khoảng khối chứ không theo giá trị. `v` lặp 0..49 trong mọi khoảng, nên min/max của khoảng nào cũng là 0..49 và BRIN không loại được khoảng nào. `read_at` tăng dần theo lần chèn nên BRIN loại được gần hết.", en: "Repeated values sound easy to summarize, but BRIN summarizes per block range, not per value. `v` cycles 0..49 in every range, so every range's min/max is 0..49 and BRIN can rule none out. `read_at` grows with insert order, so BRIN rules out almost all of them." }
+    trap: 1
+    why: { vi: "Nghe hợp lý vì giá trị lặp lại có vẻ dễ tóm tắt, nhưng BRIN tóm tắt theo khoảng khối chứ không theo giá trị. `v` lặp 0..49 trong mọi khoảng, nên khoảng nào cũng ghi `{0 .. 49}` và BRIN không loại được khoảng nào. `read_at` tăng theo thứ tự chèn nên BRIN loại được gần hết.", en: "It sounds right because repeated values look easy to summarize, but BRIN summarizes per block range, not per value. `v` cycles 0..49 in every range, so every range records `{0 .. 49}` and BRIN can rule none out. `read_at` grows with insert order, so BRIN rules out almost all of them." }
+  - q: { vi: "Một bảng log nhận dòng mới mỗi ngày; index BRIN tạo từ tháng trước, `autosummarize` tắt và VACUUM chưa chạy. Câu đếm dòng của hôm nay dùng BRIN sẽ ra sao?", en: "A log table gets new rows every day; its BRIN index was built last month, `autosummarize` is off and VACUUM has not run. What happens to a count of today's rows that uses the BRIN index?" }
+    options:
+      - { vi: "Thiếu dòng: BRIN bỏ qua các trang chưa tóm tắt", en: "Rows are missing: BRIN skips unsummarized pages" }
+      - { vi: "Vẫn đúng nhưng chậm hơn: khoảng chưa tóm tắt luôn được coi là có thể khớp nên mọi trang của nó đều bị đọc", en: "Still correct but slower: an unsummarized range always counts as a possible match, so all its pages are read" }
+      - { vi: "Planner báo lỗi vì index chưa đầy đủ", en: "The planner raises an error because the index is incomplete" }
+    answer: 1
+    trap: 0
+    why: { vi: "Nghe hợp lý vì index thiếu tóm tắt thì có vẻ thiếu dữ liệu, nhưng BRIN chỉ dùng tóm tắt để loại khoảng; khoảng không có tóm tắt thì không loại được và luôn được đọc. Đo trên `readings`: câu đếm ngày 2026-10-16 ra đủ 1440 dòng, và Bitmap Heap Scan đọc cả 25 trang chưa tóm tắt.", en: "It sounds right because an index missing summaries looks like it misses data, but BRIN only uses summaries to rule ranges out; a range without a summary cannot be ruled out and is always read. Measured on `readings`: the count for 2026-10-16 returns all 1440 rows, and the Bitmap Heap Scan reads all 25 unsummarized pages." }
 ---
+
+## Mở bài
+
+Một bảng log tăng vài triệu dòng mỗi ngày, và mọi truy vấn đều hỏi "từ giờ này tới giờ kia". Một B-tree trên cột thời gian sẽ to gần bằng chính dữ liệu. Có cách nào lọc theo thời gian với một index chỉ vài trang?
 
 ## Ý chính
 
-- BRIN (Block Range INdex) lưu một tóm tắt cho mỗi khoảng `pages_per_range` trang heap (mặc định 128). Opclass minmax lưu min và max.
-- Truy vấn khoảng: BRIN trả về mọi khoảng có thể chứa dòng khớp, rồi Bitmap Heap Scan đọc và kiểm lại các trang đó. Index cực nhỏ, nhưng lossy.
-- Chỉ hiệu quả khi giá trị tương quan với vị trí vật lý (`correlation` gần ±1), như log hay thời gian chèn. Dữ liệu xáo trộn làm mọi khoảng có min/max rộng, và BRIN không loại được gì.
-- Tóm tắt khoảng mới: trang mới thuộc một khoảng đã tóm tắt thì tóm tắt được cập nhật; trang mở ra khoảng mới thì khoảng đó chưa có tóm tắt cho tới khi VACUUM chạy, khi gọi `brin_summarize_new_values` / `brin_summarize_range`, hoặc khi autovacuum xử lý yêu cầu nếu index đặt `autosummarize = on` (mặc định off).
+BRIN (Block Range INdex) không lưu một mục cho mỗi dòng. Nó chia heap thành các khoảng `pages_per_range` trang liền nhau (mặc định 128) và lưu một tóm tắt cho mỗi khoảng; với opclass minmax mặc định, tóm tắt là giá trị nhỏ nhất và lớn nhất. Truy vấn khoảng lấy mọi khoảng có thể chứa dòng khớp, rồi Bitmap Heap Scan đọc và kiểm lại các trang đó. Index cực nhỏ nhưng lossy.
+
+Nhiều người nghĩ BRIN hợp với cột chỉ có vài giá trị lặp đi lặp lại. Thật ra BRIN chỉ cần một điều: giá trị tương quan với vị trí vật lý (`correlation` gần ±1), như thời gian chèn của log. Dữ liệu xáo trộn làm khoảng nào cũng có min/max rộng, và BRIN không loại được gì.
+
+Tóm tắt không tự theo kịp dữ liệu. Dòng mới rơi vào một khoảng đã tóm tắt thì tóm tắt được mở rộng ngay. Dòng mới mở ra một khoảng mới thì khoảng đó chưa có tóm tắt cho tới khi VACUUM chạy, khi gọi `brin_summarize_new_values` hay `brin_summarize_range`, hoặc khi index đặt `autosummarize = on` (mặc định tắt). Khoảng chưa tóm tắt luôn bị đọc, nên kết quả vẫn đúng, chỉ chậm hơn.
+
+Ngoài minmax còn có minmax-multi (nhiều khoảng con mỗi tóm tắt, chịu được ngoại lệ), bloom và inclusion (hộp bao cho hình học).
+
+## Cú pháp
+
+```sql
+CREATE INDEX index_name ON table_name USING brin (column [ opclass ]) [ WITH ( pages_per_range = n [, autosummarize = on | off ] ) ];
+SELECT brin_summarize_new_values('index_name');
+SELECT brin_summarize_range('index_name', block_number);
+SELECT * FROM brin_page_items(get_raw_page('index_name', block_number), 'index_name');
+```
+
+- `pages_per_range`: số trang heap mỗi khoảng, từ 1, mặc định 128.
+- `autosummarize`: khi dòng đầu tiên vào khoảng kế tiếp, xếp cho autovacuum tóm tắt khoảng vừa đầy.
+- `brin_summarize_new_values`: trả về số khoảng vừa được tóm tắt.
+- Trang 0 là metapage, trang 1 là revmap; tóm tắt bắt đầu ở trang 2.
 
 ## Ví dụ
 
-Kết quả thật trên PGlite (20.000 dòng lúc tạo index, thêm 4000 dòng sau):
+Ba khoảng đầu của `readings_brin`, mỗi khoảng 8 trang heap:
 
-```text
-readings_brin   (not summarized)  ranges 16  last_blk 120  heap_pages 153
-readings2_brin  (summarized)      ranges 20  last_blk 152  heap_pages 153
-
-Aggregate
-  ->  Bitmap Heap Scan on readings
-        Recheck Cond: ((read_at >= '2026-10-05 00:00:00'::timestamp without time zone) AND ...)
-        ->  Bitmap Index Scan on readings_brin
+```sql
+SELECT blknum, value
+FROM brin_page_items(get_raw_page('readings_brin', 2), 'readings_brin')
+ORDER BY blknum LIMIT 3;
 ```
 
-16 khoảng × 8 trang = trang 0–127 đã tóm tắt; trang 128–152 (4 khoảng) chưa có tóm tắt. `brin_summarize_new_values` trả về 4 và index thứ hai có đủ 20 khoảng. Đo thêm: việc tóm tắt không bị ROLLBACK hoàn tác, vì nó chỉ sửa index, không sửa dữ liệu.
+Mỗi khoảng phủ chừng 20 giờ đo, và các khoảng nối tiếp nhau, không chồng.
+
+Cùng kiểu index trên cột `v`, cột lặp 0..49:
+
+```sql
+CREATE INDEX readings_v_brin ON readings USING brin (v) WITH (pages_per_range = 8);
+SELECT blknum, value
+FROM brin_page_items(get_raw_page('readings_v_brin', 2), 'readings_v_brin')
+ORDER BY blknum LIMIT 2;
+```
+
+Khoảng nào cũng ghi `{0 .. 49}`, nên index này không loại được khoảng nào.
+
+Planner nhìn thấy điều đó qua `correlation`:
+
+```sql
+SELECT attname, round(correlation::numeric, 2) AS correlation
+FROM pg_stats
+WHERE tablename = 'readings' AND attname IN ('read_at', 'v')
+ORDER BY attname;
+```
+
+`read_at` có 1.00, `v` chỉ 0.02.
+
+So kích thước với một B-tree trên cùng cột:
+
+```sql
+CREATE INDEX readings_read_at_btree ON readings (read_at);
+SELECT relname, pg_relation_size(oid) / 8192 AS pages
+FROM pg_class WHERE relname IN ('readings_brin', 'readings_read_at_btree')
+ORDER BY relname;
+```
+
+BRIN 3 trang, B-tree 68 trang cho 24.000 dòng; trên bảng tỉ dòng, khoảng cách là gigabyte.
+
+## Lỗi hay gặp
+
+Gọi hàm tóm tắt trên index khác loại:
+
+```sql
+-- ERROR 42809: "readings_read_at_btree" is not a BRIN index
+SELECT brin_summarize_new_values('readings_read_at_btree');
+```
+
+Các hàm `brin_*` chỉ nhận index BRIN. Xem loại index trong `pg_indexes` trước.
+
+Đặt khoảng bằng 0 trang:
+
+```sql
+-- ERROR 22023: value 0 out of bounds for option "pages_per_range"
+CREATE INDEX readings_v_brin0 ON readings USING brin (v) WITH (pages_per_range = 0);
+```
+
+`pages_per_range` nhỏ nhất là 1. Khoảng nhỏ thì loại chính xác hơn nhưng index to hơn.
+
+Tạo BRIN trên bảng rỗng rồi nạp dữ liệu và tin rằng index đã đủ:
+
+```sql
+-- WRONG: ranges filled after CREATE INDEX have no summary yet
+CREATE TABLE events (id int PRIMARY KEY, at timestamp NOT NULL);
+CREATE INDEX events_at_brin ON events USING brin (at) WITH (pages_per_range = 4);
+INSERT INTO events SELECT g, TIMESTAMP '2026-11-01' + g * INTERVAL '1 second' FROM generate_series(1, 3000) AS g;
+SELECT count(*) AS summarized_ranges
+FROM brin_page_items(get_raw_page('events_at_brin', 2), 'events_at_brin');
+```
+
+```sql
+-- FIX: summarize the new ranges after a bulk load
+SELECT brin_summarize_new_values('events_at_brin');
+SELECT count(*) AS summarized_ranges
+FROM brin_page_items(get_raw_page('events_at_brin', 2), 'events_at_brin');
+```
+
+Bảng có 17 trang, tức 5 khoảng, nhưng chỉ khoảng đầu có tóm tắt. Sau `brin_summarize_new_values` đủ 5 khoảng. Sau một lần nạp lớn, gọi hàm này (hoặc VACUUM).
 
 ## Thực hành
 
-Các opclass khác: minmax-multi (nhiều khoảng mỗi tóm tắt, chịu được ngoại lệ), bloom, inclusion (hộp bao cho hình học).
+Hai bảng giống hệt nhau, mỗi bảng nhận 4000 dòng sau khi có BRIN, nhưng chỉ index của `readings2` được tóm tắt lại. Đếm khoảng của hai index, rồi viết câu lọc theo ngày mà planner dùng BRIN; sau đó hai câu hỏi.
 
-Đọc khoảng khối của index chưa và đã tóm tắt, xem planner dùng BRIN, rồi chọn cột nào hợp BRIN. Kỹ năng chuyên gia: chọn BRIN thay B-tree cho bảng append-only rất lớn, và biết giữ tóm tắt luôn mới.
+## Tóm tắt
+
+- BRIN lưu một tóm tắt (min/max) cho mỗi `pages_per_range` trang heap: rất nhỏ, nhưng lossy.
+- Nó chỉ hiệu quả khi `correlation` gần ±1, như thời gian chèn của log.
+- Khoảng mới chưa có tóm tắt cho tới VACUUM, `brin_summarize_new_values` hoặc `autosummarize`.
+- Khoảng chưa tóm tắt luôn bị đọc: kết quả đúng nhưng chậm hơn.
+- Đọc tóm tắt bằng `brin_page_items` từ trang 2.
 
 # EN
 
+## Opening
+
+A log table grows by millions of rows a day, and every query asks "from this time to that time". A B-tree on the timestamp would be almost as big as the data itself. Is there a way to filter by time with an index of a few pages?
+
 ## Key idea
 
-- BRIN (Block Range INdex) stores one summary per range of `pages_per_range` heap pages (128 by default). The minmax opclass stores the min and max.
-- Range query: BRIN returns every range that might hold matching rows, then a Bitmap Heap Scan reads and re-checks those pages. The index is tiny but lossy.
-- It only works when values correlate with physical position (`correlation` near ±1), such as logs or insert time. Shuffled data gives every range a wide min/max and BRIN rules nothing out.
-- Summarizing new ranges: a new page inside an already summarized range updates that summary; a new page that opens a new range leaves that range unsummarized until VACUUM runs, `brin_summarize_new_values` / `brin_summarize_range` is called, or autovacuum serves the request when the index has `autosummarize = on` (off by default).
+BRIN (Block Range INdex) does not store one entry per row. It splits the heap into ranges of `pages_per_range` adjacent pages (128 by default) and stores one summary per range; with the default minmax opclass, the summary is the smallest and largest value. A range query takes every range that might hold a matching row, then a Bitmap Heap Scan reads and re-checks those pages. The index is tiny but lossy.
+
+Many people think BRIN suits a column with only a few values that repeat. In fact BRIN needs only one thing: values that correlate with physical position (`correlation` near ±1), such as the insert time of a log. Shuffled data gives every range a wide min/max, and BRIN rules nothing out.
+
+Summaries do not keep up with the data by themselves. A new row in an already summarized range widens that summary at once. A new row that opens a new range leaves that range unsummarized until VACUUM runs, `brin_summarize_new_values` or `brin_summarize_range` is called, or the index has `autosummarize = on` (off by default). An unsummarized range is always read, so results stay correct, only slower.
+
+Besides minmax there are minmax-multi (several sub-intervals per summary, tolerates outliers), bloom and inclusion (bounding boxes for geometry).
+
+## Syntax
+
+```sql
+CREATE INDEX index_name ON table_name USING brin (column [ opclass ]) [ WITH ( pages_per_range = n [, autosummarize = on | off ] ) ];
+SELECT brin_summarize_new_values('index_name');
+SELECT brin_summarize_range('index_name', block_number);
+SELECT * FROM brin_page_items(get_raw_page('index_name', block_number), 'index_name');
+```
+
+- `pages_per_range`: heap pages per range, at least 1, 128 by default.
+- `autosummarize`: when the first row lands in the next range, queues an autovacuum summary of the range that just filled.
+- `brin_summarize_new_values`: returns the number of ranges it summarized.
+- Page 0 is the metapage, page 1 the revmap; summaries start on page 2.
 
 ## Example
 
-Real output from PGlite (20,000 rows when the index was built, 4000 more afterwards):
+The first three ranges of `readings_brin`, 8 heap pages each:
 
-```text
-readings_brin   (not summarized)  ranges 16  last_blk 120  heap_pages 153
-readings2_brin  (summarized)      ranges 20  last_blk 152  heap_pages 153
-
-Aggregate
-  ->  Bitmap Heap Scan on readings
-        Recheck Cond: ((read_at >= '2026-10-05 00:00:00'::timestamp without time zone) AND ...)
-        ->  Bitmap Index Scan on readings_brin
+```sql
+SELECT blknum, value
+FROM brin_page_items(get_raw_page('readings_brin', 2), 'readings_brin')
+ORDER BY blknum LIMIT 3;
 ```
 
-16 ranges × 8 pages = pages 0–127 are summarized; pages 128–152 (4 ranges) have no summary. `brin_summarize_new_values` returns 4 and the second index has all 20 ranges. Also measured: summarization is not undone by ROLLBACK, because it only changes the index, not the data.
+Each range covers about 20 hours of readings, and the ranges follow each other without overlapping.
+
+The same kind of index on column `v`, which cycles 0..49:
+
+```sql
+CREATE INDEX readings_v_brin ON readings USING brin (v) WITH (pages_per_range = 8);
+SELECT blknum, value
+FROM brin_page_items(get_raw_page('readings_v_brin', 2), 'readings_v_brin')
+ORDER BY blknum LIMIT 2;
+```
+
+Every range records `{0 .. 49}`, so this index can rule out no range.
+
+The planner sees that through `correlation`:
+
+```sql
+SELECT attname, round(correlation::numeric, 2) AS correlation
+FROM pg_stats
+WHERE tablename = 'readings' AND attname IN ('read_at', 'v')
+ORDER BY attname;
+```
+
+`read_at` has 1.00, `v` only 0.02.
+
+Compare the size with a B-tree on the same column:
+
+```sql
+CREATE INDEX readings_read_at_btree ON readings (read_at);
+SELECT relname, pg_relation_size(oid) / 8192 AS pages
+FROM pg_class WHERE relname IN ('readings_brin', 'readings_read_at_btree')
+ORDER BY relname;
+```
+
+BRIN 3 pages, B-tree 68 pages for 24,000 rows; on a billion-row table the gap is gigabytes.
+
+## Common mistakes
+
+Calling the summarize function on another kind of index:
+
+```sql
+-- ERROR 42809: "readings_read_at_btree" is not a BRIN index
+SELECT brin_summarize_new_values('readings_read_at_btree');
+```
+
+The `brin_*` functions only take BRIN indexes. Check the index type in `pg_indexes` first.
+
+Making a range of 0 pages:
+
+```sql
+-- ERROR 22023: value 0 out of bounds for option "pages_per_range"
+CREATE INDEX readings_v_brin0 ON readings USING brin (v) WITH (pages_per_range = 0);
+```
+
+`pages_per_range` is at least 1. Smaller ranges rule out more precisely but make the index larger.
+
+Building BRIN on an empty table, loading data, and trusting the index is complete:
+
+```sql
+-- WRONG: ranges filled after CREATE INDEX have no summary yet
+CREATE TABLE events (id int PRIMARY KEY, at timestamp NOT NULL);
+CREATE INDEX events_at_brin ON events USING brin (at) WITH (pages_per_range = 4);
+INSERT INTO events SELECT g, TIMESTAMP '2026-11-01' + g * INTERVAL '1 second' FROM generate_series(1, 3000) AS g;
+SELECT count(*) AS summarized_ranges
+FROM brin_page_items(get_raw_page('events_at_brin', 2), 'events_at_brin');
+```
+
+```sql
+-- FIX: summarize the new ranges after a bulk load
+SELECT brin_summarize_new_values('events_at_brin');
+SELECT count(*) AS summarized_ranges
+FROM brin_page_items(get_raw_page('events_at_brin', 2), 'events_at_brin');
+```
+
+The table has 17 pages, so 5 ranges, but only the first range has a summary. After `brin_summarize_new_values` all 5 do. After a bulk load, call this function (or VACUUM).
 
 ## Practice
 
-Other opclasses: minmax-multi (several intervals per summary, tolerates outliers), bloom, inclusion (bounding boxes for geometry).
+Two identical tables, each given 4000 rows after its BRIN index was built, but only the index of `readings2` was summarized again. Count the ranges of both indexes, then write a filter on one day that the planner runs through BRIN; then two questions.
 
-Read the block ranges of an unsummarized and a summarized index, watch the planner use BRIN, then choose which column suits BRIN. Expert skill: choose BRIN over B-tree for a very large append-only table, and keep its summaries up to date.
+## Recap
+
+- BRIN stores one summary (min/max) per `pages_per_range` heap pages: very small, but lossy.
+- It only works well when `correlation` is near ±1, such as the insert time of a log.
+- A new range has no summary until VACUUM, `brin_summarize_new_values` or `autosummarize`.
+- An unsummarized range is always read: results are correct but slower.
+- Read the summaries with `brin_page_items` from page 2.

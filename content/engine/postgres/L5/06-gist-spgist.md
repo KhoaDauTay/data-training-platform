@@ -8,6 +8,7 @@ title_en: "GiST and SP-GiST: bounding boxes vs space partitioning"
 kind: lab
 runtime: browser
 minutes: 20
+verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-24" }
 objectives:
   - { vi: "Đọc khóa hộp bao thật trong trang gốc của một GiST bằng `gist_page_items`", en: "Read real bounding-box keys on a GiST root page with `gist_page_items`" }
   - { vi: "Viết truy vấn KNN (`ORDER BY … <-> … LIMIT`) mà index trả về theo thứ tự khoảng cách", en: "Write a KNN query (`ORDER BY … <-> … LIMIT`) that the index returns in distance order" }
@@ -51,86 +52,238 @@ quiz:
       - { vi: "SP-GiST luôn nằm trong RAM", en: "SP-GiST always lives in RAM" }
       - { vi: "GiST không hỗ trợ điểm", en: "GiST does not support points" }
     answer: 0
-    why: { vi: "Nghe hợp lý vì index nhỏ thường nằm sẵn trong bộ đệm, nhưng số nhánh phải đi là chuyện cấu trúc, không phải bộ nhớ: hộp GiST có thể chồng nhau, ô SP-GiST thì không. Đổi lại, GiST luôn cân bằng và dùng được cho mọi kiểu có \"hộp bao\" (range, hình học, `tsvector` qua chữ ký). SP-GiST không cân bằng, hợp với dữ liệu phân bố không đều (điểm, chuỗi có tiền tố chung). Cả hai hỗ trợ KNN với opclass có toán tử khoảng cách.", en: "It sounds right because a small index often sits in cache, but the number of branches is about structure, not memory: GiST boxes can overlap, SP-GiST cells cannot. In exchange GiST is always balanced and works for any type with a \"bounding\" key (ranges, geometry, `tsvector` via signatures). SP-GiST is unbalanced and suits unevenly distributed data (points, strings with common prefixes). Both support KNN with an opclass that has a distance operator." }
+    trap: 1
+    why: { vi: "Nghe hợp lý vì index nhỏ thường nằm sẵn trong bộ đệm, nhưng số nhánh phải đi là chuyện cấu trúc, không phải bộ nhớ: hộp GiST có thể chồng nhau, ô SP-GiST thì không. Đổi lại, GiST luôn cân bằng và dùng được cho mọi kiểu có khóa \"bao\" (range, hình học, `tsvector`). SP-GiST không cân bằng, hợp với dữ liệu phân bố lệch (điểm, chuỗi có tiền tố chung).", en: "It sounds right because a small index often sits in cache, but the number of branches is about structure, not memory: GiST boxes can overlap, SP-GiST cells cannot. In exchange GiST is always balanced and works for any type with a \"covering\" key (ranges, geometry, `tsvector`). SP-GiST is unbalanced and suits skewed data (points, strings with common prefixes)." }
   - q: { vi: "Ràng buộc \"không có hai lịch đặt phòng chồng giờ cho cùng một phòng\" dùng index nào?", en: "\"No two bookings of the same room may overlap in time\": which index enforces it?" }
     options:
       - { vi: "UNIQUE B-tree trên (room_id, during)", en: "A UNIQUE B-tree on (room_id, during)" }
       - { vi: "`EXCLUDE USING gist (room_id WITH =, during WITH &&)` (cần `btree_gist` cho cột `=`)", en: "`EXCLUDE USING gist (room_id WITH =, during WITH &&)` (needs `btree_gist` for the `=` column)" }
       - { vi: "BRIN trên during", en: "A BRIN on during" }
     answer: 1
-    why: { vi: "UNIQUE B-tree nghe hợp lý vì đây là một luật cấm trùng, nhưng chồng giờ không phải là bằng nhau. Exclusion constraint cần một AM trả lời được \"có chồng nhau không\", đó là GiST (hoặc SP-GiST). B-tree chỉ biết bằng/thứ tự nên chỉ làm UNIQUE.", en: "A UNIQUE B-tree sounds right because this is a no-duplicates rule, but overlapping is not equality. An exclusion constraint needs an access method that answers \"does it overlap?\", which is GiST (or SP-GiST). B-tree only knows equality and order, so it can only do UNIQUE." }
+    trap: 0
+    why: { vi: "Nghe hợp lý vì đây là một luật cấm trùng, nhưng chồng giờ không phải là bằng nhau. Exclusion constraint cần một AM trả lời được \"có chồng nhau không\", đó là GiST (hoặc SP-GiST). B-tree chỉ biết bằng và thứ tự nên chỉ làm được UNIQUE.", en: "It sounds right because this is a no-duplicates rule, but overlapping is not equality. An exclusion constraint needs an access method that answers \"does it overlap?\", which is GiST (or SP-GiST). B-tree only knows equality and order, so it can only do UNIQUE." }
 ---
+
+## Mở bài
+
+Ứng dụng giao hàng cần năm cửa hàng gần khách nhất, và phòng họp không được đặt chồng giờ. B-tree không trả lời được cả hai câu này. Bài này mở hai loại index làm được việc đó và đọc khóa thật bên trong.
 
 ## Ý chính
 
-- GiST là khung cây cân bằng tổng quát: mỗi nút trong giữ một khóa "bao" mọi thứ bên dưới (với hình học: hộp bao nhỏ nhất). Hộp các nút anh em có thể chồng nhau, nên tìm kiếm có thể đi nhiều nhánh. Dùng cho hình học, range, full-text (chữ ký), `pg_trgm`, `btree_gist`, exclusion constraint.
-- KNN: với `ORDER BY col <-> … LIMIT k` (một phía là hằng), GiST duyệt theo khoảng cách nhỏ nhất có thể của từng hộp, trả dòng đúng thứ tự mà không cần Sort.
-- SP-GiST (space-partitioned) chia không gian thành các ô không chồng: quadtree, k-d tree cho điểm; radix tree cho chuỗi. Cây không cân bằng, có thể nhỏ và nhanh với dữ liệu phân bố lệch. Cũng hỗ trợ KNN với opclass phù hợp.
+GiST là một khung cây cân bằng tổng quát. Mỗi mục ở nút trong giữ một khóa "bao" mọi thứ bên dưới nó; với hình học, đó là hộp bao nhỏ nhất. Opclass quyết định khóa bao là gì, nên cùng một khung phục vụ được hình học, range, full-text, `pg_trgm`, `btree_gist` và exclusion constraint.
+
+Nhiều người nghĩ tìm một điểm trong GiST chỉ đi một đường từ gốc xuống lá như B-tree. Thật ra hộp bao của các nút anh em có thể chồng nhau, nên một truy vấn có thể phải đi xuống nhiều nhánh. SP-GiST (space-partitioned) thì chia không gian thành các ô không chồng: quadtree hay k-d tree cho điểm, radix tree cho chuỗi. Cây SP-GiST không cân bằng, nhưng có thể nhỏ và nhanh với dữ liệu phân bố lệch.
+
+KNN: với `ORDER BY col <-> point(x, y) LIMIT k`, GiST và SP-GiST duyệt các nút theo khoảng cách nhỏ nhất có thể, nên trả dòng đúng thứ tự gần nhất mà không cần Sort và không đọc hết bảng.
+
+Exclusion constraint tổng quát hóa UNIQUE: "không có hai dòng mà mọi cặp cột đều thỏa toán tử". Với `room WITH =, during WITH &&`, hai lịch cùng phòng không được chồng giờ. Cột `int` cần extension `btree_gist` để có opclass GiST.
+
+## Cú pháp
+
+```sql
+CREATE INDEX index_name ON table_name USING { gist | spgist } (column [ opclass ]);
+SELECT ... FROM table_name ORDER BY column <-> constant LIMIT k;
+CREATE TABLE table_name ( ..., EXCLUDE USING gist (column WITH operator [, ...]) );
+SELECT * FROM gist_page_items(get_raw_page('index_name', block_number), 'index_name');
+```
+
+- `<->`: khoảng cách; trong ORDER BY kèm LIMIT thì index trả theo thứ tự gần nhất.
+- `&&`: chồng nhau; `<@`: nằm trong; `@>`: chứa.
+- `EXCLUDE`: từ chối dòng mới nếu có dòng cũ thỏa mọi toán tử đã nêu.
+- Gốc GiST luôn ở trang 0; `pageinspect` không có hàm đọc trang SP-GiST.
 
 ## Ví dụ
 
-Kết quả thật trên PGlite (5000 điểm trên lưới 100 × 100):
+Gốc của `stores_loc_gist` có bao nhiêu khóa, và index có bao nhiêu trang:
 
-```text
-itemoffset  keys
-1           (loc)=("(3,11),(0,0)")
-2           (loc)=("(22,14),(11,3)")
-3           (loc)=("(6,37),(1,22)")
-4           (loc)=("(25,29),(14,18)")
-5           (loc)=("(46,10),(30,2)")
-
-Limit
-  ->  Index Scan using stores_loc_gist on stores
-        Order By: (loc <-> '(50,50)'::point)
-
-Aggregate
-  ->  Bitmap Heap Scan on stores_sp
-        Recheck Cond: (loc <@ '(20,20),(10,10)'::box)
-        ->  Bitmap Index Scan on stores_loc_spgist
+```sql
+SELECT count(*) AS root_keys,
+  (SELECT pg_relation_size('stores_loc_gist') / 8192) AS index_pages
+FROM gist_page_items(get_raw_page('stores_loc_gist', 0), 'stores_loc_gist');
 ```
 
-Mỗi khóa ở gốc là một hộp bao (góc trên phải, góc dưới trái) của cả một trang con.
+43 khóa ở gốc cho 44 trang: mỗi khóa là hộp bao của một trang lá.
+
+KNN trên SP-GiST, kèm khoảng cách:
+
+```sql
+SELECT id, loc, loc <-> point(10, 10) AS dist
+FROM stores_sp ORDER BY loc <-> point(10, 10) LIMIT 3;
+```
+
+Ba cửa hàng cùng ở (11,7), cách khoảng 3,16. `EXPLAIN` cho thấy `Index Scan using stores_loc_spgist` với `Order By`, không có Sort.
+
+So kích thước hai index trên cùng 5000 điểm:
+
+```sql
+SELECT relname, pg_relation_size(oid) / 8192 AS pages
+FROM pg_class WHERE relname IN ('stores_loc_gist', 'stores_loc_spgist')
+ORDER BY relname;
+```
+
+GiST 44 trang, SP-GiST 32 trang.
+
+## Lỗi hay gặp
+
+Dùng B-tree cho kiểu hình học:
+
+```sql
+-- ERROR 42704: data type point has no default operator class for access method "btree"
+CREATE INDEX stores_loc_btree ON stores (loc);
+```
+
+`point` không có thứ tự tuyến tính, nên không có opclass B-tree. Dùng GiST hoặc SP-GiST.
+
+Tạo index unique bằng GiST:
+
+```sql
+-- ERROR 0A000: access method "gist" does not support unique indexes
+CREATE UNIQUE INDEX stores_loc_uq ON stores USING gist (loc);
+```
+
+Chỉ B-tree làm UNIQUE. Luật kiểu "không chồng nhau" thì viết thành exclusion constraint.
+
+Exclusion constraint có cột `int` cần extension `btree_gist`; thiếu nó, `CREATE TABLE` báo lỗi 42704 vì kiểu `integer` không có opclass GiST:
+
+```sql
+CREATE EXTENSION IF NOT EXISTS btree_gist;
+CREATE TABLE bookings (id int PRIMARY KEY, room int NOT NULL, during tsrange NOT NULL,
+  EXCLUDE USING gist (room WITH =, during WITH &&));
+INSERT INTO bookings VALUES
+  (1, 101, tsrange('2026-11-24 09:00', '2026-11-24 11:00')),
+  (2, 102, tsrange('2026-11-24 10:00', '2026-11-24 12:00'));
+SELECT conname FROM pg_constraint WHERE conrelid = 'bookings'::regclass AND contype = 'x';
+```
+
+`btree_gist` thêm opclass GiST cho `=` trên kiểu thường. Giờ ràng buộc `bookings_room_during_excl` chặn lịch chồng giờ:
+
+```sql
+-- ERROR 23P01: conflicting key value violates exclusion constraint "bookings_room_during_excl"
+INSERT INTO bookings VALUES (3, 101, tsrange('2026-11-24 10:30', '2026-11-24 12:00'));
+```
+
+Phòng 101 đã bận tới 11:00. `tsrange` mặc định mở ở đầu phải, nên một lịch bắt đầu đúng 11:00 vẫn hợp lệ.
 
 ## Thực hành
 
-`pageinspect` có `gist_page_items`/`gist_page_opaque_info` để đọc trang GiST; không có hàm tương ứng cho SP-GiST, nên phần bên trong SP-GiST ở bài này là sơ đồ.
+Đọc hộp bao thật trên gốc GiST, viết KNN mà index trả đúng thứ tự, rồi dùng SP-GiST cho truy vấn trong hộp; sau đó hai câu hỏi. Sơ đồ đặt hộp chồng nhau của GiST cạnh ô chia bốn của quadtree.
 
-Đọc hộp bao thật, viết KNN, rồi dùng SP-GiST cho truy vấn hộp. Sơ đồ cho thấy hộp chồng nhau (GiST) cạnh ô chia bốn (quadtree). Kỹ năng chuyên gia: chọn GiST hay SP-GiST theo kiểu dữ liệu, phân bố và toán tử cần dùng.
+## Tóm tắt
+
+- GiST là khung cây cân bằng; nút trong giữ khóa bao, và hộp anh em có thể chồng nhau.
+- SP-GiST chia không gian thành ô không chồng; cây không cân bằng, hợp dữ liệu lệch.
+- `ORDER BY col <-> point(x, y) LIMIT k` cho KNN không cần Sort trên cả hai.
+- GiST không làm UNIQUE; luật "không chồng" là exclusion constraint, cột `int` cần `btree_gist`.
 
 # EN
 
+## Opening
+
+A delivery app needs the five stores nearest to a customer, and meeting rooms must not be double-booked. A B-tree can answer neither. This lesson opens the two index types that can, and reads the real keys inside.
+
 ## Key idea
 
-- GiST is a general balanced-tree framework: each internal node holds a key that "covers" everything below it (for geometry: the smallest bounding box). Sibling boxes may overlap, so a search can descend several branches. Used for geometry, ranges, full text (signatures), `pg_trgm`, `btree_gist` and exclusion constraints.
-- KNN: with `ORDER BY col <-> … LIMIT k` (one side a constant), GiST walks boxes by their smallest possible distance and returns rows in order with no Sort.
-- SP-GiST (space-partitioned) splits space into non-overlapping cells: quadtrees and k-d trees for points, radix trees for strings. The tree is unbalanced and can be small and fast on skewed data. It also supports KNN with a suitable opclass.
+GiST is a general framework for balanced trees. Each entry on an internal node holds a key that "covers" everything below it; for geometry, that is the smallest bounding box. The opclass decides what a covering key is, so the same framework serves geometry, ranges, full text, `pg_trgm`, `btree_gist` and exclusion constraints.
+
+Many people think a point lookup in GiST follows one path from the root to a leaf, as in a B-tree. In fact the bounding boxes of sibling nodes can overlap, so a query may have to descend several branches. SP-GiST (space-partitioned) instead splits space into cells that do not overlap: quadtrees or k-d trees for points, radix trees for strings. An SP-GiST tree is unbalanced, but it can be small and fast on skewed data.
+
+KNN: with `ORDER BY col <-> point(x, y) LIMIT k`, GiST and SP-GiST visit nodes by their smallest possible distance, so they return rows nearest-first with no Sort and without reading the whole table.
+
+An exclusion constraint generalizes UNIQUE: "no two rows where every column pair satisfies its operator". With `room WITH =, during WITH &&`, two bookings of the same room may not overlap. An `int` column needs the `btree_gist` extension to get a GiST opclass.
+
+## Syntax
+
+```sql
+CREATE INDEX index_name ON table_name USING { gist | spgist } (column [ opclass ]);
+SELECT ... FROM table_name ORDER BY column <-> constant LIMIT k;
+CREATE TABLE table_name ( ..., EXCLUDE USING gist (column WITH operator [, ...]) );
+SELECT * FROM gist_page_items(get_raw_page('index_name', block_number), 'index_name');
+```
+
+- `<->`: distance; in ORDER BY with LIMIT the index returns rows nearest-first.
+- `&&`: overlaps; `<@`: is contained in; `@>`: contains.
+- `EXCLUDE`: refuses a new row if an existing row satisfies every listed operator.
+- A GiST root is always page 0; `pageinspect` has no function to read SP-GiST pages.
 
 ## Example
 
-Real output from PGlite (5000 points on a 100 × 100 grid):
+How many keys the root of `stores_loc_gist` holds, and how many pages the index has:
 
-```text
-itemoffset  keys
-1           (loc)=("(3,11),(0,0)")
-2           (loc)=("(22,14),(11,3)")
-3           (loc)=("(6,37),(1,22)")
-4           (loc)=("(25,29),(14,18)")
-5           (loc)=("(46,10),(30,2)")
-
-Limit
-  ->  Index Scan using stores_loc_gist on stores
-        Order By: (loc <-> '(50,50)'::point)
-
-Aggregate
-  ->  Bitmap Heap Scan on stores_sp
-        Recheck Cond: (loc <@ '(20,20),(10,10)'::box)
-        ->  Bitmap Index Scan on stores_loc_spgist
+```sql
+SELECT count(*) AS root_keys,
+  (SELECT pg_relation_size('stores_loc_gist') / 8192) AS index_pages
+FROM gist_page_items(get_raw_page('stores_loc_gist', 0), 'stores_loc_gist');
 ```
 
-Each root key is the bounding box (upper right corner, lower left corner) of a whole child page.
+43 keys on the root for 44 pages: each key is the bounding box of one leaf page.
+
+KNN on SP-GiST, with the distance:
+
+```sql
+SELECT id, loc, loc <-> point(10, 10) AS dist
+FROM stores_sp ORDER BY loc <-> point(10, 10) LIMIT 3;
+```
+
+Three stores share (11,7), about 3.16 away. `EXPLAIN` shows `Index Scan using stores_loc_spgist` with `Order By`, and no Sort.
+
+Compare the size of the two indexes on the same 5000 points:
+
+```sql
+SELECT relname, pg_relation_size(oid) / 8192 AS pages
+FROM pg_class WHERE relname IN ('stores_loc_gist', 'stores_loc_spgist')
+ORDER BY relname;
+```
+
+GiST 44 pages, SP-GiST 32 pages.
+
+## Common mistakes
+
+Using a B-tree for a geometric type:
+
+```sql
+-- ERROR 42704: data type point has no default operator class for access method "btree"
+CREATE INDEX stores_loc_btree ON stores (loc);
+```
+
+`point` has no linear order, so it has no B-tree opclass. Use GiST or SP-GiST.
+
+Creating a unique index with GiST:
+
+```sql
+-- ERROR 0A000: access method "gist" does not support unique indexes
+CREATE UNIQUE INDEX stores_loc_uq ON stores USING gist (loc);
+```
+
+Only B-tree does UNIQUE. A "no overlap" rule is written as an exclusion constraint.
+
+An exclusion constraint with an `int` column needs the `btree_gist` extension; without it, `CREATE TABLE` fails with 42704 because type `integer` has no GiST opclass:
+
+```sql
+CREATE EXTENSION IF NOT EXISTS btree_gist;
+CREATE TABLE bookings (id int PRIMARY KEY, room int NOT NULL, during tsrange NOT NULL,
+  EXCLUDE USING gist (room WITH =, during WITH &&));
+INSERT INTO bookings VALUES
+  (1, 101, tsrange('2026-11-24 09:00', '2026-11-24 11:00')),
+  (2, 102, tsrange('2026-11-24 10:00', '2026-11-24 12:00'));
+SELECT conname FROM pg_constraint WHERE conrelid = 'bookings'::regclass AND contype = 'x';
+```
+
+`btree_gist` adds GiST opclasses for `=` on ordinary types. Now the constraint `bookings_room_during_excl` blocks overlapping bookings:
+
+```sql
+-- ERROR 23P01: conflicting key value violates exclusion constraint "bookings_room_during_excl"
+INSERT INTO bookings VALUES (3, 101, tsrange('2026-11-24 10:30', '2026-11-24 12:00'));
+```
+
+Room 101 is busy until 11:00. A `tsrange` is open at its upper end by default, so a booking that starts exactly at 11:00 is still valid.
 
 ## Practice
 
-`pageinspect` has `gist_page_items`/`gist_page_opaque_info` to read GiST pages; there are no matching functions for SP-GiST, so SP-GiST internals in this lesson are a diagram.
+Read real bounding boxes on the GiST root, write a KNN query the index returns in order, then use SP-GiST for a box query; then two questions. The diagram puts GiST's overlapping boxes next to a quadtree's quartered cells.
 
-Read real bounding boxes, write a KNN query, then use SP-GiST for a box query. The diagram shows overlapping boxes (GiST) next to quartered cells (quadtree). Expert skill: choose GiST or SP-GiST from the data type, its distribution and the operators you need.
+## Recap
+
+- GiST is a balanced-tree framework; internal nodes hold covering keys, and sibling boxes may overlap.
+- SP-GiST splits space into non-overlapping cells; the tree is unbalanced and suits skewed data.
+- `ORDER BY col <-> point(x, y) LIMIT k` gives KNN with no Sort on both.
+- GiST does not do UNIQUE; a "no overlap" rule is an exclusion constraint, and an `int` column needs `btree_gist`.
