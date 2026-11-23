@@ -752,7 +752,7 @@ function lessonPage(l: EngineLesson): HTMLElement {
         honestChip(l), kindChip(l.kind), h('span', {}, et('minutes', { n: l.minutes })), h('span', { 'aria-hidden': 'true' }, '·'),
         h('a', { href: d.engineHash(l.engine, l.level), class: 'text-muted' }, module.name[lang()]),
         isDone ? h('span', { class: cls.cx(cls.PILL, cls.DONE_PILL) }, d.icon('check', 'size-4'), et('done')) : null),
-      l.runtime === 'docs' ? h('p', { class: 'm-0 text-body-sm text-muted', 'data-runtime': 'docs' }, et('runtime.docs')) : null,
+      l.runtime === 'docs' ? h('p', { class: 'm-0 text-body-sm text-muted', 'data-runtime': 'docs' }, et(l.docsWhy ? `runtime.docs.${l.docsWhy}` : 'runtime.docs')) : null,
       req.length ? h('p', { class: 'm-0 flex flex-wrap items-center gap-2 text-body-sm' }, h('span', { class: 'text-muted' }, `${et('requires')}:`),
         ...req.map((x) => h('a', { href: lessonHash(x), class: cls.cx(cls.PILL, 'min-h-6 bg-code text-ink no-underline hover:bg-accent-soft') }, x.title[lang()], tick(ok.has(x.id))))) : null),
     h('section', { class: cls.cx(cls.CARD, 'flex flex-col gap-2 p-5 max-sm:p-4'), 'aria-labelledby': `${l.id}-obj` },

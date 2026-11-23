@@ -6,7 +6,7 @@ module: index-internals
 title: "Chọn loại index (access method)"
 title_en: "Choosing an index access method"
 kind: quiz
-runtime: docs
+runtime: browser
 minutes: 15
 objectives:
   - { vi: "Chọn B-tree, Hash, GIN, GiST, SP-GiST, BRIN hay bloom từ kiểu dữ liệu, toán tử và mẫu ghi", en: "Choose B-tree, Hash, GIN, GiST, SP-GiST, BRIN or bloom from the data type, operators and write pattern" }
@@ -19,6 +19,29 @@ sources:
   - https://www.postgresql.org/docs/18/bloom.html
   - https://www.postgresql.org/docs/18/textsearch-indexes.html
 viz: pg-plan-tree
+lab:
+  setup: |
+    CREATE EXTENSION IF NOT EXISTS pg_trgm;
+    CREATE TABLE docs (id int PRIMARY KEY, title text NOT NULL);
+    INSERT INTO docs SELECT g, md5(g::text) FROM generate_series(1, 20000) AS g;
+    ANALYZE docs;
+  steps:
+    - task:
+        vi: "Người dùng tìm tiêu đề chứa một chuỗi ở bất kỳ đâu (`title LIKE '%abc1%'`); B-tree không giúp được. Tạo index tên `docs_title_trgm` hợp với truy vấn này: GIN với opclass trigram."
+        en: "Users search for titles that contain a string anywhere (`title LIKE '%abc1%'`); a B-tree cannot help. Create an index named `docs_title_trgm` that fits this query: GIN with the trigram opclass."
+      solution: CREATE INDEX docs_title_trgm ON docs USING gin (title gin_trgm_ops)
+      check: catalog
+      hint:
+        vi: "`CREATE INDEX docs_title_trgm ON docs USING gin (title gin_trgm_ops)`."
+        en: "`CREATE INDEX docs_title_trgm ON docs USING gin (title gin_trgm_ops)`."
+    - task:
+        vi: "Chạy truy vấn tìm kiếm: `id` của các tiêu đề chứa `abc1`. Kế hoạch phải đọc index vừa tạo."
+        en: "Run the search: the `id` of titles that contain `abc1`. The plan must read the index you just created."
+      solution: SELECT id FROM docs WHERE title LIKE '%abc1%'
+      check: plan
+      hint:
+        vi: "`SELECT id FROM docs WHERE title LIKE '%abc1%'`."
+        en: "`SELECT id FROM docs WHERE title LIKE '%abc1%'`."
 quiz:
   - q: { vi: "Bảng log 2 tỉ dòng, chỉ chèn thêm, truy vấn luôn là \"khoảng thời gian X đến Y\". Ổ đĩa đắt. Chọn gì cho cột thời gian?", en: "A 2-billion-row append-only log table; queries are always \"time range X to Y\". Disk is expensive. What goes on the timestamp column?" }
     options:
@@ -98,7 +121,7 @@ SP-GiST     stores_loc_spgist   Bitmap Index Scan for loc <@ box
 
 Quy trình chuyên gia: (1) liệt kê truy vấn và toán tử thật; (2) xem kiểu dữ liệu và phân bố (`pg_stats`, correlation); (3) xem mẫu ghi (append-only, update nhiều); (4) chọn AM rồi kiểm bằng EXPLAIN trên dữ liệu thật; (5) đo kích thước và chi phí ghi.
 
-Sáu tình huống. Kỹ năng chuyên gia: từ một yêu cầu truy vấn và mẫu dữ liệu, chọn đúng AM, opclass và giải thích vì sao các lựa chọn khác kém hơn.
+Lab hai bước (chọn AM cho tìm chuỗi ở giữa, rồi kiểm kế hoạch), rồi sáu tình huống. Kỹ năng chuyên gia: từ một yêu cầu truy vấn và mẫu dữ liệu, chọn đúng AM, opclass và giải thích vì sao các lựa chọn khác kém hơn.
 
 # EN
 
@@ -130,4 +153,4 @@ SP-GiST     stores_loc_spgist   Bitmap Index Scan for loc <@ box
 
 The expert routine: (1) list the real queries and operators; (2) look at the data type and distribution (`pg_stats`, correlation); (3) look at the write pattern (append-only, update-heavy); (4) pick the access method and check it with EXPLAIN on real data; (5) measure size and write cost.
 
-Six scenarios. Expert skill: from a query requirement and a data pattern, choose the right access method and opclass, and explain why the alternatives are worse.
+A two-step lab (pick the access method for a search inside strings, then check the plan), then six scenarios. Expert skill: from a query requirement and a data pattern, choose the right access method and opclass, and explain why the alternatives are worse.

@@ -7,6 +7,7 @@ title: "Mức cô lập và các hiện tượng chúng cho phép"
 title_en: "Isolation levels and the anomalies they allow"
 kind: concept
 runtime: docs
+docs_why: sessions
 minutes: 20
 objectives:
   - { vi: "Định nghĩa dirty read, non-repeatable read, phantom read, serialization anomaly", en: "Define dirty read, non-repeatable read, phantom read and serialization anomaly" }

@@ -7,6 +7,7 @@ title: Transaction và savepoint
 title_en: Transactions and savepoints
 kind: concept
 runtime: docs
+docs_why: multi
 minutes: 10
 verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-20" }
 viz: pg-mvcc-timeline

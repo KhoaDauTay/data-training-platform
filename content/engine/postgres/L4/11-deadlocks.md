@@ -7,6 +7,7 @@ title: "Deadlock: Postgres phát hiện thế nào và cách phòng"
 title_en: "Deadlocks: how Postgres detects them and how to prevent them"
 kind: concept
 runtime: docs
+docs_why: sessions
 minutes: 12
 objectives:
   - { vi: "Đi từng bước một deadlock hai phiên và chỉ ra chu trình chờ", en: "Walk through a two-session deadlock step by step and point to the wait cycle" }

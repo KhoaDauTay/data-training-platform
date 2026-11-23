@@ -7,6 +7,7 @@ title: "MVCC: mỗi UPDATE là một phiên bản mới"
 title_en: "MVCC: every UPDATE is a new version"
 kind: concept
 runtime: docs
+docs_why: next
 minutes: 10
 viz: pg-mvcc-timeline
 objectives:

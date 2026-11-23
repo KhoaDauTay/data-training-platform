@@ -7,6 +7,7 @@ title: "Serializable: SSI, write skew và SIReadLock"
 title_en: "Serializable: SSI, write skew and SIReadLock"
 kind: concept
 runtime: docs
+docs_why: sessions
 minutes: 20
 objectives:
   - { vi: "Nhận ra write skew: hai transaction đọc chung, ghi riêng, cùng làm hỏng một quy tắc", en: "Recognise write skew: two transactions read the same data, write different rows, and together break a rule" }
