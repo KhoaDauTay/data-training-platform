@@ -128,7 +128,7 @@ describe('Engine PostgreSQL L1–L5: bước chấm bằng catalog hoặc `after
 });
 
 // ---------------------------------------------------------------------------------------------------------------------
-// v29 R6 (product-route-v24 §2.2, §4 R6): MongoDB and DynamoDB L3–L5 on the same section model, subset by kind (NEED above).
+// v29 R6 (product-route-v24 §2.2, §4 R6): MongoDB and DynamoDB L1–L5 (v30 adds L1–L2) on the same section model, subset by kind (NEED above).
 // Runnable blocks in "Ví dụ" and "Lỗi hay gặp": MongoDB ```javascript or ```js (one mongosh command) on mingo, DynamoDB ```json (one
 // `{ op, input }` request) or ```partiql (one statement) on dynoxide; ```text blocks are shown, never run (server output,
 // commands a browser cannot run, numbers quoted from the docs). Leading `//` / `--` comment lines are markers, stripped
@@ -143,7 +143,7 @@ import type { DynamoRequest as DynamoRequestNs } from '../src/engine/dynamo/type
 import { loadDataset as loadDatasetNs, runMongo as runMongoNs } from '../src/engine/mongo/engineMongo';
 import { mongoRunner as mongoRunnerNs } from '../src/engine/mongo/runner';
 
-const nsFiles = import.meta.glob<string>('../content/engine/{mongodb,dynamodb}/L[345]/*.md', { query: '?raw', import: 'default', eager: true });
+const nsFiles = import.meta.glob<string>('../content/engine/{mongodb,dynamodb}/L[1-5]/*.md', { query: '?raw', import: 'default', eager: true });
 const nsAll = Object.entries(nsFiles).map(([p, raw]) => {
   const fm = parse(/^---\n([\s\S]*?)\n---\n/.exec(raw.replace(/\r\n/g, '\n'))![1]) as Record<string, unknown>;
   return { l: parseEngineLesson(raw, p, parse), fm };
@@ -165,8 +165,11 @@ const markOf = (b: NsBlock, m: 'ERROR' | 'WRONG' | 'FIX'): string | undefined =>
   b.marks.map((x) => new RegExp(`^${m}\\b\\s*:?\\s*([A-Za-z_0-9]*)`).exec(x)).find(Boolean)?.[1];
 const isTrap = (b: NsBlock): boolean => markOf(b, 'ERROR') !== undefined || markOf(b, 'WRONG') !== undefined;
 
-describe('Engine MongoDB/DynamoDB L3–L5: giải phẫu theo loại bài (R6)', () => {
-  it('đủ 79 bài (Mongo 43, Dynamo 36)', () => expect(nsAll.length).toBe(79));
+describe('Engine MongoDB/DynamoDB L1–L5: giải phẫu theo loại bài (R6, v30 thêm L1–L2)', () => {
+  it('đủ 132 bài (Mongo 71, Dynamo 61)', () => {
+    expect(nsAll.filter((x) => x.l.engine === 'mongodb').length).toBe(71);
+    expect(nsAll.filter((x) => x.l.engine === 'dynamodb').length).toBe(61);
+  });
 
   it.each(nsAll.map((x) => [x.l.id, x] as const))('%s: mục theo loại bài, thứ tự, độ dài, câu hỏi, nguồn', (_, { l, fm }) => {
     const ids = l.sections.map((s) => s.id);
