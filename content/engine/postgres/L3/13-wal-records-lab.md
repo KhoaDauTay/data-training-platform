@@ -8,6 +8,7 @@ title_en: "Lab: read real WAL records"
 kind: lab
 runtime: browser
 minutes: 20
+verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-24" }
 viz: pg-wal-flow
 objectives:
   - vi: Đọc các bản ghi WAL mà một INSERT và một UPDATE sinh ra
@@ -110,44 +111,240 @@ lab:
         en: "True: the page's `pd_lsn` is the end of the last WAL record that changed it. The WAL rule uses exactly this number: the page may reach disk only once WAL is flushed up to it."
         probe: SELECT h.lsn = (SELECT max(end_lsn) FROM pg_get_wal_block_info((SELECT lsn FROM mark WHERE name = 'a'), pg_current_wal_lsn()) WHERE relfilenode = pg_relation_filenode('w')) FROM page_header(get_raw_page('w', 0)) h
         expect: [[true]]
+quiz:
+  - q:
+      vi: "Ngay sau một CHECKPOINT, hai UPDATE giống hệt nhau chạy trên cùng một trang. Bản ghi WAL của UPDATE đầu lớn hơn hẳn. Vì sao?"
+      en: "Right after a CHECKPOINT, two identical UPDATEs run on the same page. The first UPDATE's WAL record is much bigger. Why?"
+    options:
+      - { vi: "UPDATE đầu phải đọc trang từ đĩa vào bộ đệm, và việc đọc đó được ghi vào WAL", en: "The first UPDATE had to read the page from disk into the buffer, and that read is logged in the WAL" }
+      - { vi: "Đó là lần sửa đầu của trang sau checkpoint, nên bản ghi mang theo cả trang (full-page image)", en: "It is the page's first change after the checkpoint, so its record carries the whole page (a full-page image)" }
+      - { vi: "UPDATE thứ hai được nén lại vì giống UPDATE đầu", en: "The second UPDATE is compressed because it repeats the first" }
+    answer: 1
+    trap: 0
+    why:
+      vi: "Nghe hợp lý vì lần đầu thường là lần chậm, nhưng WAL chỉ ghi thay đổi, không ghi việc đọc. Cái làm bản ghi to là full-page image: lần sửa đầu của một trang sau mỗi checkpoint ghi cả trang, để phát lại được cả khi trang trên đĩa bị ghi dở. Lần sửa thứ hai của cùng trang chỉ ghi phần thay đổi."
+      en: "It sounds right because the first run is usually the slow one, but the WAL logs changes, not reads. What makes the record big is the full-page image: the first change of a page after each checkpoint logs the whole page, so replay works even if the on-disk page was torn. The second change of the same page logs only the change."
+  - q:
+      vi: "Bạn chụp LSN trước và sau một INSERT rồi gọi `pg_get_wal_records_info` cho khoảng đó. Mọi dòng trả về là của INSERT đó?"
+      en: "You capture the LSN before and after an INSERT, then call `pg_get_wal_records_info` on that range. Does every row belong to that INSERT?"
+    options:
+      - { vi: "Đúng: khoảng LSN chỉ chứa lệnh bạn chạy", en: "Yes: the LSN range only holds the command you ran" }
+      - { vi: "Không: khoảng đó còn có COMMIT, bản ghi của bảng khác (như chính bảng lưu mốc) và của catalog; lọc theo `relfilenode` để chỉ giữ bảng của mình", en: "No: the range also holds COMMIT records, records of other tables (such as the table that stores the marks) and of the catalog; filter on `relfilenode` to keep only your table" }
+      - { vi: "Không: WAL chỉ ghi COMMIT, không ghi dòng", en: "No: the WAL only logs COMMITs, not rows" }
+    answer: 1
+    trap: 0
+    why:
+      vi: "Nghe hợp lý vì bạn chỉ gõ một lệnh, nhưng WAL là một luồng chung: COMMIT có bản ghi riêng, lệnh lưu mốc cũng ghi WAL, và đọc một trang có thể sinh bản ghi dọn trang. Trong lab, khoảng `a` → `b` có 9 bản ghi, chỉ 3 thuộc `w` và `w_pkey`."
+      en: "It sounds right because you typed one command, but the WAL is one shared stream: COMMIT has its own record, the statement saving the mark writes WAL too, and reading a page can produce a page-pruning record. In the lab the range `a` -> `b` holds 9 records, only 3 of them belong to `w` and `w_pkey`."
 ---
+## Mở bài
+
+Ổ đĩa chứa WAL của máy chủ đầy nhanh nhất vào đúng mấy phút sau mỗi checkpoint, dù lượng ghi của ứng dụng không đổi. Muốn biết vì sao, bạn cần đọc chính các bản ghi WAL.
 
 ## Ý chính
 
-Mỗi thay đổi sinh một hoặc vài bản ghi WAL, ghi theo "resource manager" (Heap, Btree, Transaction…). `pg_walinspect` đọc chúng theo khoảng LSN. Lab chụp sẵn LSN vào bảng `mark` giữa các lệnh, nên bạn đọc được đúng bản ghi của từng lệnh.
+Mỗi thay đổi sinh một hoặc vài bản ghi WAL. Mỗi bản ghi thuộc một resource manager, tức phần của Postgres biết cách phát lại nó: `Heap` cho dòng của bảng, `Btree` cho index B-tree, `Transaction` cho COMMIT và ABORT. Bản ghi có `record_type` (`INSERT`, `HOT_UPDATE`, `INSERT_LEAF`…), độ dài, và danh sách trang mà nó chạm tới.
+
+Extension `pg_walinspect` đọc WAL theo khoảng LSN. `pg_get_wal_records_info` trả một dòng cho mỗi bản ghi; `pg_get_wal_block_info` trả một dòng cho mỗi trang mà bản ghi chạm, kèm `relfilenode` (số hiệu file của bảng) và `block_fpi_length`, độ dài full-page image nếu có. Lab đã chụp sẵn LSN vào bảng `mark` giữa các lệnh, nên bạn đọc được đúng phần WAL của từng lệnh.
+
+Nhiều người nghĩ một khoảng LSN chỉ chứa lệnh mình vừa chạy. Thật ra WAL là một luồng chung: COMMIT có bản ghi riêng, lệnh lưu mốc cũng ghi WAL, catalog cũng vậy. Phải lọc theo `relfilenode` mới thấy riêng bảng của mình.
+
+Hai điều đáng để ý khi đọc. Trang heap mới tạo mang hậu tố `+INIT`, và không cần full-page image. Lần sửa đầu của một trang sau checkpoint thì mang full-page image: nội dung trang (trừ phần trống ở giữa), vài trăm byte với trang gần trống của lab và tới 8 KB với một trang đầy, trong khi lần sửa sau chỉ vài chục byte. Đó là lý do WAL tăng vọt ngay sau checkpoint.
+
+## Cú pháp
+
+```sql
+SELECT * FROM pg_get_wal_records_info(start_lsn, end_lsn);
+SELECT * FROM pg_get_wal_block_info(start_lsn, end_lsn [, show_data ]);
+SELECT * FROM pg_get_wal_stats(start_lsn, end_lsn [, per_record ]);
+SELECT pg_relation_filenode('table_name');
+SELECT lsn FROM page_header(get_raw_page('table_name', block_number));
+```
+
+- `start_lsn` phải nhỏ hơn `end_lsn`.
+- `pg_get_wal_stats`: số bản ghi và số byte theo resource manager; `per_record` = true thì theo từng `record_type`.
+- `pg_relation_filenode`: số hiệu file để so với cột `relfilenode`; nó đổi khi bảng được viết lại (`VACUUM FULL`, `TRUNCATE`).
+- `page_header(...).lsn`: `pd_lsn` của trang.
 
 ## Ví dụ
 
+Mỗi đoạn giữa hai mốc dài bao nhiêu byte WAL:
+
 ```sql
-SELECT resource_manager, record_type, block_fpi_length
-FROM pg_get_wal_block_info((SELECT lsn FROM mark WHERE name = 'a'),
-                           (SELECT lsn FROM mark WHERE name = 'b'))
-WHERE relfilenode = pg_relation_filenode('w');
+SELECT name, pg_wal_lsn_diff(lead(lsn) OVER (ORDER BY lsn), lsn) AS bytes_to_next
+FROM mark
+ORDER BY lsn;
 ```
 
-Lọc theo `relfilenode` vì cùng khoảng LSN còn có bản ghi của catalog và của chính bảng `mark`.
+Số byte đổi theo máy, nhưng đoạn `d` (UPDATE đầu tiên sau CHECKPOINT) luôn dài nhất.
+
+Gộp bản ghi của hai UPDATE theo resource manager:
+
+```sql
+SELECT resource_manager, count(*) AS records, sum(record_length) AS bytes
+FROM pg_get_wal_records_info((SELECT lsn FROM mark WHERE name = 'd'),
+                             (SELECT lsn FROM mark WHERE name = 'f'))
+GROUP BY resource_manager
+ORDER BY resource_manager;
+```
+
+`Heap` chiếm nhiều byte nhất vì một bản ghi của nó mang ảnh của cả trang.
+
+Header của trang 0 bảng `w`:
+
+```sql
+SELECT lsn, lower, upper FROM page_header(get_raw_page('w', 0));
+```
+
+Cột `lsn` là `pd_lsn`: điểm kết thúc bản ghi WAL cuối cùng đã sửa trang.
+
+## Lỗi hay gặp
+
+Đếm mọi bản ghi trong khoảng và coi đó là WAL của lệnh:
+
+```sql
+-- WRONG: the range also holds the pages of mark and a pruning record
+SELECT count(*) AS records
+FROM pg_get_wal_block_info((SELECT lsn FROM mark WHERE name = 'a'),
+                           (SELECT lsn FROM mark WHERE name = 'b'));
+```
+
+```sql
+-- FIX: keep the pages of w and its index
+SELECT count(*) AS records
+FROM pg_get_wal_block_info((SELECT lsn FROM mark WHERE name = 'a'),
+                           (SELECT lsn FROM mark WHERE name = 'b'))
+WHERE relfilenode IN (pg_relation_filenode('w'), pg_relation_filenode('w_pkey'));
+```
+
+Câu sai đếm 9 trang, câu đúng 4: phần còn lại là trang của `mark`, của index `mark_pkey` và một bản ghi dọn trang.
+
+Đặt mốc mới trước mốc cũ:
+
+```sql
+-- ERROR 22023: WAL start LSN must be less than end LSN
+SELECT count(*)
+FROM pg_get_wal_records_info((SELECT lsn FROM mark WHERE name = 'f'),
+                             (SELECT lsn FROM mark WHERE name = 'a'));
+```
+
+Đối số đầu là mốc cũ (`a`), đối số sau là mốc mới.
 
 ## Thực hành
 
-Bốn bước. Số LSN thật đổi theo máy nên lab chỉ chấm loại bản ghi và các so sánh. Sau lab này bạn đo được một lệnh sinh bao nhiêu WAL, và giải thích được vì sao ngay sau checkpoint WAL tăng vọt (full-page image), một nguyên nhân hay gặp của độ trễ nhân bản (replication lag) và đầy ổ WAL.
+Bốn bước đọc WAL của hai INSERT và hai UPDATE, rồi nối `pd_lsn` của trang với WAL; sau đó là hai câu hỏi. Số LSN thật đổi theo máy, nên lab chỉ chấm loại bản ghi và các phép so sánh.
+
+## Tóm tắt
+
+- Mỗi thay đổi sinh bản ghi WAL thuộc một resource manager (`Heap`, `Btree`, `Transaction`…).
+- `pg_get_wal_records_info` và `pg_get_wal_block_info` đọc WAL theo khoảng LSN, mốc cũ trước.
+- Một khoảng LSN chứa cả COMMIT và bản ghi của bảng khác; lọc theo `relfilenode`.
+- Lần sửa đầu của trang sau checkpoint mang full-page image; lần sau chỉ ghi phần thay đổi.
+- `pd_lsn` của trang bằng điểm kết thúc bản ghi WAL cuối cùng đã sửa nó.
 
 # EN
 
+## Opening
+
+The disk holding the server's WAL fills fastest in the few minutes right after each checkpoint, even though the application writes the same amount. To find out why, you need to read the WAL records themselves.
+
 ## Key idea
 
-Every change produces one or a few WAL records, filed by "resource manager" (Heap, Btree, Transaction…). `pg_walinspect` reads them by LSN range. The lab captured LSNs into the `mark` table between commands, so you can read exactly the records of each command.
+Every change produces one or a few WAL records. Each record belongs to a resource manager, the part of Postgres that knows how to replay it: `Heap` for table rows, `Btree` for B-tree indexes, `Transaction` for COMMIT and ABORT. A record has a `record_type` (`INSERT`, `HOT_UPDATE`, `INSERT_LEAF`…), a length, and the list of pages it touches.
+
+The `pg_walinspect` extension reads the WAL by LSN range. `pg_get_wal_records_info` returns one row per record; `pg_get_wal_block_info` returns one row per page a record touches, with `relfilenode` (the table's file number) and `block_fpi_length`, the length of the full-page image if there is one. The lab captured LSNs into the `mark` table between commands, so you can read exactly the WAL of each command.
+
+Many people think an LSN range holds only the command they just ran. In fact the WAL is one shared stream: COMMIT has its own record, the statement saving a mark writes WAL, and so does the catalog. Only a filter on `relfilenode` shows your own table alone.
+
+Two things are worth noticing as you read. A freshly created heap page carries the `+INIT` suffix and needs no full-page image. The first change of a page after a checkpoint does carry a full-page image: the page content (minus the empty hole in the middle), a few hundred bytes for the lab's nearly empty page and up to 8 KB for a full one, while later changes take a few dozen bytes. That is why the WAL spikes right after a checkpoint.
+
+## Syntax
+
+```sql
+SELECT * FROM pg_get_wal_records_info(start_lsn, end_lsn);
+SELECT * FROM pg_get_wal_block_info(start_lsn, end_lsn [, show_data ]);
+SELECT * FROM pg_get_wal_stats(start_lsn, end_lsn [, per_record ]);
+SELECT pg_relation_filenode('table_name');
+SELECT lsn FROM page_header(get_raw_page('table_name', block_number));
+```
+
+- `start_lsn` must be smaller than `end_lsn`.
+- `pg_get_wal_stats`: record count and bytes per resource manager; with `per_record` = true, per `record_type`.
+- `pg_relation_filenode`: the file number to compare with the `relfilenode` column; it changes when the table is rewritten (`VACUUM FULL`, `TRUNCATE`).
+- `page_header(...).lsn`: the page's `pd_lsn`.
 
 ## Example
 
+How many WAL bytes lie between each pair of marks:
+
 ```sql
-SELECT resource_manager, record_type, block_fpi_length
-FROM pg_get_wal_block_info((SELECT lsn FROM mark WHERE name = 'a'),
-                           (SELECT lsn FROM mark WHERE name = 'b'))
-WHERE relfilenode = pg_relation_filenode('w');
+SELECT name, pg_wal_lsn_diff(lead(lsn) OVER (ORDER BY lsn), lsn) AS bytes_to_next
+FROM mark
+ORDER BY lsn;
 ```
 
-Filter on `relfilenode` because the same LSN range also holds catalog records and those of the `mark` table itself.
+The byte counts differ per machine, but range `d` (the first UPDATE after the CHECKPOINT) is always the longest.
+
+The two UPDATEs' records grouped by resource manager:
+
+```sql
+SELECT resource_manager, count(*) AS records, sum(record_length) AS bytes
+FROM pg_get_wal_records_info((SELECT lsn FROM mark WHERE name = 'd'),
+                             (SELECT lsn FROM mark WHERE name = 'f'))
+GROUP BY resource_manager
+ORDER BY resource_manager;
+```
+
+`Heap` takes the most bytes because one of its records carries an image of the whole page.
+
+The header of page 0 of table `w`:
+
+```sql
+SELECT lsn, lower, upper FROM page_header(get_raw_page('w', 0));
+```
+
+Column `lsn` is `pd_lsn`: the end of the last WAL record that changed the page.
+
+## Common mistakes
+
+Counting every record in the range and calling it the command's WAL:
+
+```sql
+-- WRONG: the range also holds the pages of mark and a pruning record
+SELECT count(*) AS records
+FROM pg_get_wal_block_info((SELECT lsn FROM mark WHERE name = 'a'),
+                           (SELECT lsn FROM mark WHERE name = 'b'));
+```
+
+```sql
+-- FIX: keep the pages of w and its index
+SELECT count(*) AS records
+FROM pg_get_wal_block_info((SELECT lsn FROM mark WHERE name = 'a'),
+                           (SELECT lsn FROM mark WHERE name = 'b'))
+WHERE relfilenode IN (pg_relation_filenode('w'), pg_relation_filenode('w_pkey'));
+```
+
+The wrong query counts 9 pages, the right one 4: the rest are pages of `mark`, of its index `mark_pkey` and a page-pruning record.
+
+Putting the newer mark before the older one:
+
+```sql
+-- ERROR 22023: WAL start LSN must be less than end LSN
+SELECT count(*)
+FROM pg_get_wal_records_info((SELECT lsn FROM mark WHERE name = 'f'),
+                             (SELECT lsn FROM mark WHERE name = 'a'));
+```
+
+The first argument is the older mark (`a`), the second the newer one.
 
 ## Practice
 
-Four steps. Real LSN numbers differ per machine, so the lab grades record types and comparisons only. After this lab you can measure how much WAL a command produces, and explain why WAL spikes right after a checkpoint (full-page images), a common cause of replication lag and full WAL disks.
+Four steps read the WAL of two INSERTs and two UPDATEs, then link the page's `pd_lsn` to the WAL; then two questions. Real LSN numbers differ per machine, so the lab grades record types and comparisons only.
+
+## Recap
+
+- Every change produces WAL records belonging to a resource manager (`Heap`, `Btree`, `Transaction`…).
+- `pg_get_wal_records_info` and `pg_get_wal_block_info` read the WAL by LSN range, older mark first.
+- An LSN range also holds COMMITs and other tables' records; filter on `relfilenode`.
+- The first change of a page after a checkpoint carries a full-page image; later changes log only the change.
+- A page's `pd_lsn` equals the end of the last WAL record that changed it.

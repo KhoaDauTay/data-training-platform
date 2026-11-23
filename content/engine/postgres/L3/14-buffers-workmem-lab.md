@@ -8,6 +8,7 @@ title_en: "Lab: shared buffers, dirty pages and sorts that spill to disk"
 kind: lab
 runtime: browser
 minutes: 20
+verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-24" }
 objectives:
   - vi: Đếm trang của một bảng đang nằm trong shared buffers và trang nào bẩn
     en: Count a table's pages in shared buffers and which of them are dirty
@@ -84,35 +85,187 @@ lab:
         en: "With 8 MB: an in-memory `quicksort`, no temporary files. `work_mem` applies to **each** sort/hash node of each query, so raising it server-wide must account for the number of connections."
         probe: "SELECT trim(l) LIKE 'Sort Method: quicksort  Memory:%' FROM sort_plan('8MB') AS l WHERE l LIKE '%Sort Method%'"
         expect: [[true]]
+quiz:
+  - q:
+      vi: "Một báo cáo đêm có `Sort Method: external merge  Disk: 900kB`. Máy chủ có 100 kết nối. Cách sửa nào hợp lý nhất?"
+      en: "A nightly report shows `Sort Method: external merge  Disk: 900kB`. The server has 100 connections. Which fix is the most sensible?"
+    options:
+      - { vi: "Tăng `shared_buffers`, vì sort đang tràn ra đĩa", en: "Raise `shared_buffers`, because the sort spills to disk" }
+      - { vi: "Tăng `work_mem` cho riêng câu báo cáo, ví dụ `SET LOCAL work_mem` trong transaction của nó", en: "Raise `work_mem` for the report query only, for example `SET LOCAL work_mem` inside its transaction" }
+      - { vi: "Đặt `work_mem` của cả máy chủ lên 1 GB", en: "Set the server-wide `work_mem` to 1 GB" }
+    answer: 1
+    trap: 0
+    why:
+      vi: "Nghe hợp lý vì cả hai đều là \"bộ nhớ\", nhưng shared buffers là bộ đệm trang dùng chung, còn sort dùng bộ nhớ riêng của câu, giới hạn bởi `work_mem`. Đặt 1 GB cho cả máy chủ thì nguy hiểm: `work_mem` áp cho mỗi nút sort hay hash của mỗi câu, nên 100 kết nối có thể đòi nhiều lần 100 GB."
+      en: "It sounds right because both are \"memory\", but shared buffers are the shared page cache, while a sort uses the query's private memory, limited by `work_mem`. Setting 1 GB server-wide is dangerous: `work_mem` applies to every sort or hash node of every query, so 100 connections could ask for many times 100 GB."
+  - q:
+      vi: "Ngay sau `CHECKPOINT`, bạn sửa một dòng của bảng 120 trang. `pg_buffercache` báo bao nhiêu trang bẩn của bảng?"
+      en: "Right after a `CHECKPOINT` you update one row of a 120-page table. How many of the table's pages does `pg_buffercache` show as dirty?"
+    options:
+      - { vi: "120: sửa bảng thì cả bảng phải ghi lại", en: "120: changing the table means rewriting the whole table" }
+      - { vi: "1: chỉ trang chứa dòng đó bẩn, vì checkpoint vừa ghi mọi trang xuống đĩa", en: "1: only the page holding the row is dirty, because the checkpoint just wrote every page to disk" }
+      - { vi: "0: COMMIT đã ghi trang xuống đĩa", en: "0: COMMIT already wrote the page to disk" }
+    answer: 1
+    why:
+      vi: "Trang bẩn là trang đã đổi trong bộ nhớ mà chưa ghi xuống đĩa. CHECKPOINT làm sạch mọi trang; UPDATE chỉ làm bẩn trang nó sửa (ở lab, bản mới nằm cùng trang nhờ HOT). COMMIT không ghi trang: nó chỉ chờ WAL bền."
+      en: "A dirty page is a page changed in memory but not yet written to disk. The CHECKPOINT cleaned every page; the UPDATE only dirties the page it changes (in the lab the new version stays on the same page thanks to HOT). COMMIT does not write pages: it only waits for the WAL to be durable."
 ---
+## Mở bài
+
+Một báo cáo chạy 2 giây trên máy của bạn nhưng 40 giây trên máy chủ, và ai đó đề nghị "tăng RAM cho Postgres". Tăng chỗ nào: bộ đệm chung hay bộ nhớ của từng câu?
 
 ## Ý chính
 
-Postgres đọc và ghi trang qua **shared buffers**, một mảng trang 8 KB dùng chung (`shared_buffers`, mặc định 128 MB). Trang bị sửa thành **trang bẩn (dirty page)**: đã đổi trong bộ nhớ, chưa ghi xuống đĩa; checkpoint (hoặc background writer) mới ghi nó xuống đĩa, sau khi WAL đã bền.
+Postgres có hai loại bộ nhớ rất khác nhau. Shared buffers là một mảng trang 8 KB dùng chung cho mọi kết nối, kích thước cố định bằng `shared_buffers` (mặc định 128 MB), chỉ đổi được khi khởi động lại. Mọi lần đọc hay ghi bảng và index đều đi qua đây.
 
-Bộ nhớ riêng của một câu thì khác: mỗi nút sort hay hash được tối đa `work_mem` (mặc định 4 MB). Vượt quá thì nó tràn ra file tạm trên đĩa và chậm hẳn.
+Một trang bị sửa trong shared buffers thành trang bẩn (dirty page): đã đổi trong bộ nhớ, chưa ghi xuống đĩa. COMMIT không ghi nó; checkpoint hoặc background writer ghi nó sau, khi WAL đã bền. Extension `pg_buffercache` cho xem từng buffer: của bảng nào, fork nào, có bẩn không.
+
+Bộ nhớ riêng của một câu thì khác: mỗi nút sort hay hash được dùng tới `work_mem` (mặc định 4 MB). Vượt quá thì nó tràn ra file tạm trên đĩa: kế hoạch ghi `Sort Method: external merge  Disk: …` thay vì `quicksort  Memory: …`, và chạy chậm hẳn.
+
+Nhiều người nghĩ sort tràn đĩa là do shared buffers nhỏ. Thật ra sort không dùng shared buffers; chỉ `work_mem` quyết định. Và `work_mem` nhân lên theo mỗi nút sort/hash của mỗi câu ở mỗi kết nối, nên hãy tăng nó cho đúng câu cần, bằng `SET LOCAL` trong transaction của câu đó, không tăng bừa cho cả máy chủ.
+
+## Cú pháp
+
+```sql
+SELECT * FROM pg_buffercache WHERE relfilenode = pg_relation_filenode('table_name') [ AND relforknumber = 0 ];
+SET [ LOCAL ] work_mem = 'size';
+RESET work_mem;
+EXPLAIN (ANALYZE [, COSTS OFF ] [, TIMING OFF ]) query;
+```
+
+- `relforknumber`: 0 = dữ liệu chính, 1 = free space map, 2 = visibility map.
+- `isdirty`: buffer đã đổi mà chưa ghi xuống đĩa.
+- `SET LOCAL`: chỉ có hiệu lực tới hết transaction hiện tại; ngoài transaction thì không có tác dụng.
+- `work_mem` nhỏ nhất là `64kB`.
 
 ## Ví dụ
 
+Trang của `big` trong bộ đệm, và bao nhiêu trang bẩn:
+
 ```sql
 SELECT count(*) AS buffers, count(*) FILTER (WHERE isdirty) AS dirty
 FROM pg_buffercache
 WHERE relfilenode = pg_relation_filenode('big') AND relforknumber = 0;
 ```
+
+Hai cài đặt bộ nhớ đang dùng:
+
+```sql
+SELECT current_setting('shared_buffers') AS shared_buffers, current_setting('work_mem') AS work_mem;
+```
+
+Một CHECKPOINT ghi mọi trang bẩn xuống đĩa:
+
+```sql
+CHECKPOINT;
+SELECT count(*) FILTER (WHERE isdirty) AS dirty
+FROM pg_buffercache
+WHERE relfilenode = pg_relation_filenode('big');
+```
+
+Kết quả 0: trang vẫn trong bộ đệm nhưng đã sạch.
+
+Cả kế hoạch của câu sắp xếp với `work_mem` = `64kB`:
+
+```sql
+SELECT l FROM sort_plan('64kB') AS l;
+```
+
+Dòng `Sort Method: external merge  Disk: …` là dấu hiệu sort tràn đĩa.
+
+## Lỗi hay gặp
+
+Đếm buffer mà quên lọc fork:
+
+```sql
+-- WRONG: counts the free space map and visibility map buffers too
+SELECT count(*) AS buffers
+FROM pg_buffercache
+WHERE relfilenode = pg_relation_filenode('big');
+```
+
+```sql
+-- FIX: main fork only
+SELECT count(*) AS buffers
+FROM pg_buffercache
+WHERE relfilenode = pg_relation_filenode('big') AND relforknumber = 0;
+```
+
+Câu sai ra nhiều hơn số trang của bảng vì cộng cả trang của free space map và visibility map.
+
+Dùng `SET LOCAL` ngoài transaction:
+
+```sql
+-- WRONG: SET LOCAL outside a transaction does nothing
+SET work_mem = '64kB';
+SET LOCAL work_mem = '8MB';
+EXPLAIN (ANALYZE, COSTS OFF, TIMING OFF, SUMMARY OFF) SELECT * FROM big ORDER BY val, id;
+```
+
+```sql
+-- FIX: SET LOCAL inside the query's transaction
+BEGIN;
+SET LOCAL work_mem = '8MB';
+EXPLAIN (ANALYZE, COSTS OFF, TIMING OFF, SUMMARY OFF) SELECT * FROM big ORDER BY val, id;
+COMMIT;
+RESET work_mem;
+```
+
+Ngoài transaction, `SET LOCAL` chỉ để lại một cảnh báo, nên sort vẫn `external merge`. Trong transaction, sort thành `quicksort` trong bộ nhớ và `work_mem` tự trở lại khi COMMIT.
+
+Đổi `shared_buffers` cho phiên đang chạy:
+
+```sql
+-- ERROR 55P02: parameter "shared_buffers" cannot be changed without restarting the server
+SET shared_buffers = '256MB';
+```
+
+Bộ đệm chung được cấp một lần lúc khởi động; đổi nó trong file cấu hình rồi khởi động lại máy chủ.
 
 ## Thực hành
 
-Bốn bước. Sau lab này bạn thấy được `external merge Disk:` trong kế hoạch thực thi (execution plan) của một câu chậm và sửa bằng `work_mem` (đặt cho phiên hoặc cho đúng câu đó, không tăng bừa cho cả server).
+Bốn bước: đếm trang của `big` trong bộ đệm và trang bẩn, đọc kích thước bộ đệm chung, rồi so kế hoạch sắp xếp với `work_mem` nhỏ và đủ lớn. Sau đó là hai câu hỏi.
+
+## Tóm tắt
+
+- Shared buffers là bộ đệm trang dùng chung, cố định từ lúc khởi động; mọi trang bảng và index đi qua đó.
+- Trang bẩn đã đổi trong bộ nhớ, chưa ghi xuống đĩa; checkpoint hay background writer ghi nó, không phải COMMIT.
+- Sort và hash dùng `work_mem` riêng của câu; vượt quá thì tràn file tạm (`external merge Disk:`).
+- Tăng `work_mem` cho đúng câu bằng `SET LOCAL` trong transaction, không tăng bừa cho cả máy chủ.
 
 # EN
 
+## Opening
+
+A report runs in 2 seconds on your machine but 40 seconds on the server, and someone suggests "give Postgres more RAM". More of which: the shared buffer pool, or each query's own memory?
+
 ## Key idea
 
-Postgres reads and writes pages through **shared buffers**, a shared array of 8 KB pages (`shared_buffers`, 128 MB by default). A changed page becomes **dirty**: changed in memory, not yet written to disk; a checkpoint (or the background writer) writes it to disk later, once the WAL is durable.
+Postgres has two very different kinds of memory. Shared buffers are an array of 8 KB pages shared by every connection, a fixed size set by `shared_buffers` (128 MB by default) that changes only on restart. Every read or write of a table or index goes through it.
 
-A query's private memory is different: each sort or hash node gets up to `work_mem` (4 MB by default). Beyond that it spills to temporary files on disk and gets much slower.
+A page changed in shared buffers becomes a dirty page: changed in memory, not yet written to disk. COMMIT does not write it; a checkpoint or the background writer writes it later, once the WAL is durable. The `pg_buffercache` extension shows each buffer: which table, which fork, dirty or not.
+
+A query's private memory is different: each sort or hash node may use up to `work_mem` (4 MB by default). Beyond that it spills to temporary files on disk: the plan says `Sort Method: external merge  Disk: …` instead of `quicksort  Memory: …`, and it gets much slower.
+
+Many people think a sort spills to disk because shared buffers are too small. In fact a sort does not use shared buffers; `work_mem` alone decides. And `work_mem` multiplies by every sort/hash node of every query on every connection, so raise it for the query that needs it, with `SET LOCAL` inside that query's transaction, not blindly for the whole server.
+
+## Syntax
+
+```sql
+SELECT * FROM pg_buffercache WHERE relfilenode = pg_relation_filenode('table_name') [ AND relforknumber = 0 ];
+SET [ LOCAL ] work_mem = 'size';
+RESET work_mem;
+EXPLAIN (ANALYZE [, COSTS OFF ] [, TIMING OFF ]) query;
+```
+
+- `relforknumber`: 0 = main data, 1 = free space map, 2 = visibility map.
+- `isdirty`: the buffer changed and is not yet written to disk.
+- `SET LOCAL`: lasts until the end of the current transaction; outside a transaction it has no effect.
+- The smallest `work_mem` is `64kB`.
 
 ## Example
+
+The pages of `big` in the buffer pool, and how many are dirty:
 
 ```sql
 SELECT count(*) AS buffers, count(*) FILTER (WHERE isdirty) AS dirty
@@ -120,6 +273,87 @@ FROM pg_buffercache
 WHERE relfilenode = pg_relation_filenode('big') AND relforknumber = 0;
 ```
 
+The two memory settings in use:
+
+```sql
+SELECT current_setting('shared_buffers') AS shared_buffers, current_setting('work_mem') AS work_mem;
+```
+
+A CHECKPOINT writes every dirty page to disk:
+
+```sql
+CHECKPOINT;
+SELECT count(*) FILTER (WHERE isdirty) AS dirty
+FROM pg_buffercache
+WHERE relfilenode = pg_relation_filenode('big');
+```
+
+The result is 0: the pages are still in the buffer pool, but clean.
+
+The whole plan of the sort query with `work_mem` = `64kB`:
+
+```sql
+SELECT l FROM sort_plan('64kB') AS l;
+```
+
+The line `Sort Method: external merge  Disk: …` is the sign of a sort spilling to disk.
+
+## Common mistakes
+
+Counting buffers without filtering the fork:
+
+```sql
+-- WRONG: counts the free space map and visibility map buffers too
+SELECT count(*) AS buffers
+FROM pg_buffercache
+WHERE relfilenode = pg_relation_filenode('big');
+```
+
+```sql
+-- FIX: main fork only
+SELECT count(*) AS buffers
+FROM pg_buffercache
+WHERE relfilenode = pg_relation_filenode('big') AND relforknumber = 0;
+```
+
+The wrong query returns more than the table's page count because it adds the pages of the free space map and the visibility map.
+
+Using `SET LOCAL` outside a transaction:
+
+```sql
+-- WRONG: SET LOCAL outside a transaction does nothing
+SET work_mem = '64kB';
+SET LOCAL work_mem = '8MB';
+EXPLAIN (ANALYZE, COSTS OFF, TIMING OFF, SUMMARY OFF) SELECT * FROM big ORDER BY val, id;
+```
+
+```sql
+-- FIX: SET LOCAL inside the query's transaction
+BEGIN;
+SET LOCAL work_mem = '8MB';
+EXPLAIN (ANALYZE, COSTS OFF, TIMING OFF, SUMMARY OFF) SELECT * FROM big ORDER BY val, id;
+COMMIT;
+RESET work_mem;
+```
+
+Outside a transaction `SET LOCAL` only leaves a warning, so the sort is still an `external merge`. Inside a transaction the sort becomes an in-memory `quicksort`, and `work_mem` goes back by itself at COMMIT.
+
+Changing `shared_buffers` for the running session:
+
+```sql
+-- ERROR 55P02: parameter "shared_buffers" cannot be changed without restarting the server
+SET shared_buffers = '256MB';
+```
+
+The shared buffer pool is allocated once at startup; change it in the configuration file and restart the server.
+
 ## Practice
 
-Four steps. After this lab you can spot `external merge Disk:` in the plan of a slow query and fix it with `work_mem` (set for the session or for that one query, not raised blindly for the whole server).
+Four steps: count the pages of `big` in the buffer pool and the dirty ones, read the size of the shared pool, then compare the sort plan with a small and a large enough `work_mem`. Then two questions.
+
+## Recap
+
+- Shared buffers are the shared page cache, fixed at startup; every table and index page goes through it.
+- A dirty page changed in memory and is not yet on disk; a checkpoint or the background writer writes it, not COMMIT.
+- Sorts and hashes use the query's own `work_mem`; beyond it they spill to temporary files (`external merge Disk:`).
+- Raise `work_mem` for the one query with `SET LOCAL` inside a transaction, not blindly for the whole server.

@@ -8,6 +8,7 @@ title_en: "Lab: does VACUUM make the table file smaller?"
 kind: lab
 runtime: browser
 minutes: 15
+verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-24" }
 viz: pg-vacuum-flow
 objectives:
   - vi: Đo kích thước bảng sau khi xóa dòng ở đầu và ở đuôi bảng rồi VACUUM
@@ -93,6 +94,7 @@ quiz:
       - { vi: "`log_tail` được VACUUM FULL ngầm vì xóa nhiều hơn 50 %", en: "`log_tail` got an implicit VACUUM FULL because more than 50% was deleted" }
       - { vi: "Xóa dòng cuối bảng thì Postgres xóa luôn trang, không cần VACUUM", en: "Deleting rows at the end makes Postgres drop the pages at once, without VACUUM" }
     answer: 1
+    trap: 0
     why:
       vi: "Phương án đầu nghe hợp lý vì `log_tail` vừa co lại thật, nhưng đó là ngoại lệ trong docs chính thức: chỉ các trang trống liền nhau ở **cuối** bảng mới bị cắt. Hai bảng cùng xóa 1800 dòng, chỉ khác vị trí: 35 trang so với 4. Không có VACUUM FULL ngầm nào; muốn `log_head` nhỏ lại thật phải viết lại bảng (`VACUUM FULL`, giữ lock `ACCESS EXCLUSIVE` suốt lúc chạy)."
       en: "The first option sounds right because `log_tail` really did shrink, but that is the exception in the docs: only the run of empty pages at the **end** of the table gets cut. Both tables lost 1800 rows, only the position differs: 35 pages against 4. There is no implicit VACUUM FULL; to really shrink `log_head` you must rewrite the table (`VACUUM FULL`, which holds an `ACCESS EXCLUSIVE` lock while it runs)."
@@ -104,34 +106,141 @@ quiz:
       - { vi: "Không: VACUUM (autovacuum) thường đủ, vì chỗ trống được dòng mới dùng lại như `log_reuse`; `VACUUM FULL` khóa cả bảng mỗi tuần mà file sẽ phình lại tới cùng kích thước", en: "No: regular VACUUM (autovacuum) is enough, because new rows reuse the space as in `log_reuse`; `VACUUM FULL` locks the whole table every week and the file would grow back to the same size" }
       - { vi: "Có, nhưng chỉ khi bảng có index", en: "Yes, but only when the table has indexes" }
     answer: 1
+    trap: 0
     why:
       vi: "Dễ nghĩ phải viết lại vì `log_head` không nhỏ lại, nhưng `log_reuse` cho thấy chỗ trống được dùng lại: 1800 dòng mới vào trang 0–31, bảng vẫn 35 trang. Khi lượng xóa và lượng chèn cân nhau, kích thước giữ ổn định. `VACUUM FULL` chỉ đáng khi bảng đã co hẳn và sẽ không lớn lại."
       en: "It is tempting to rewrite because `log_head` did not shrink, but `log_reuse` shows the space being reused: 1800 new rows went into pages 0–31 and the table stayed at 35 pages. When deletes and inserts balance, the size stays flat. `VACUUM FULL` is only worth it when the table has shrunk for good and will not grow back."
 ---
+## Mở bài
+
+Bạn xóa 90 % dòng của một bảng log, chạy VACUUM, rồi mở bảng theo dõi ổ đĩa: con số không nhúc nhích. VACUUM có làm sai không?
 
 ## Ý chính
 
-Nhiều người nghĩ VACUUM trả dung lượng cho hệ điều hành. Thật ra VACUUM dọn dead tuple để chỗ trống được dùng lại; file thường không nhỏ đi. Ngoại lệ duy nhất: các trang trống hẳn nằm liền nhau ở **cuối** bảng thì VACUUM cắt được, khi nó lấy được lock độc quyền trong chốc lát. Muốn file nhỏ lại thật thì phải viết lại bảng bằng `VACUUM FULL`, và trả giá bằng lock `ACCESS EXCLUSIVE`.
+Nhiều người nghĩ VACUUM trả dung lượng cho hệ điều hành. Thật ra VACUUM dọn dead tuple và ghi chỗ trống vào free space map (FSM), để các INSERT và UPDATE sau dùng lại. File của bảng thường không nhỏ đi.
+
+Ngoại lệ duy nhất: các trang trống hẳn nằm liền nhau ở cuối file. VACUUM cắt được đoạn đuôi đó, khi nó lấy được lock độc quyền trong chốc lát. Trang trống ở đầu hay ở giữa bảng thì vẫn nằm trong file, dù bên trong gần như không còn gì.
+
+Chỗ trống đó không mất: dòng mới được ghi vào chính các trang VACUUM đã dọn, nên một bảng xóa và chèn với lượng tương đương sẽ giữ kích thước ổn định. Với bảng như vậy, VACUUM thường (hay autovacuum) là đủ.
+
+Muốn file nhỏ lại thật thì phải viết lại bảng: `VACUUM FULL` chép các dòng còn sống sang file mới rồi bỏ file cũ. Cái giá là lock `ACCESS EXCLUSIVE` suốt lúc chạy, nên không ai đọc hay ghi được bảng, và cần thêm chỗ trống trên đĩa cho bản sao. Chỉ làm khi bảng đã co hẳn và sẽ không lớn lại.
+
+## Cú pháp
+
+```sql
+VACUUM [ ( VERBOSE ) ] [ table_name ];
+VACUUM FULL [ table_name ];
+SELECT pg_relation_size('table_name') / 8192 AS pages;
+SELECT * FROM pg_freespace('table_name');
+```
+
+- `pg_relation_size`: byte của file bảng chính, không gồm index; `pg_total_relation_size` gồm cả index và TOAST.
+- `pg_freespace`: chỗ trống FSM ghi cho từng trang (extension `pg_freespacemap`).
+- `VACUUM FULL`: viết lại bảng, giữ lock `ACCESS EXCLUSIVE`, không chạy trong transaction.
 
 ## Ví dụ
 
+Số trang của hai bảng đã xóa cùng 1800 dòng ở hai đầu ngược nhau:
+
 ```sql
 SELECT t, pg_relation_size(t) / 8192 AS pages
 FROM unnest(ARRAY['log_head', 'log_tail']) AS t
 ORDER BY t;
 ```
+
+Chỗ trống mà VACUUM ghi vào FSM của `log_head`:
+
+```sql
+CREATE EXTENSION IF NOT EXISTS pg_freespacemap;
+SELECT count(*) AS pages, count(*) FILTER (WHERE avail > 7000) AS nearly_empty
+FROM pg_freespace('log_head');
+```
+
+31 trên 35 trang còn hơn 7000 byte trống: đó là chỗ để dòng mới vào.
+
+Bảng chính và tổng có cả index:
+
+```sql
+SELECT relname, pg_relation_size(oid) / 8192 AS heap_pages, pg_total_relation_size(oid) / 8192 AS with_indexes
+FROM pg_class
+WHERE relname IN ('log_head', 'log_tail')
+ORDER BY relname;
+```
+
+Index khóa chính cũng không co lại sau khi xóa dòng.
+
+## Lỗi hay gặp
+
+Chạy `VACUUM FULL` trong một transaction:
+
+```sql
+BEGIN;
+-- ERROR 25001: VACUUM cannot run inside a transaction block
+VACUUM FULL log_head;
+```
+
+Như mọi VACUUM, nó phải chạy ngoài transaction. Gõ `ROLLBACK` để thoát transaction đã hỏng.
+
+Chờ VACUUM thường làm bảng nhỏ lại:
+
+```sql
+-- WRONG: a plain VACUUM keeps the free pages at the head
+ROLLBACK;
+VACUUM log_head;
+SELECT pg_relation_size('log_head') / 8192 AS pages;
+```
+
+```sql
+-- FIX: rewrite the table (takes an ACCESS EXCLUSIVE lock)
+VACUUM FULL log_head;
+SELECT pg_relation_size('log_head') / 8192 AS pages;
+```
+
+VACUUM thường giữ nguyên 35 trang; `VACUUM FULL` viết lại 200 dòng còn sống vào 4 trang. Chỉ đáng làm khi bảng sẽ không lớn lại, vì trên bảng log xóa và chèn đều đặn, file sẽ phình về kích thước cũ.
 
 ## Thực hành
 
-Ba bước trên ba bảng lab dựng sẵn, rồi hai câu hỏi. Đoán số trang trước khi chạy bước 1. Sau bài này bạn trả lời được câu "đã VACUUM sao ổ đĩa không bớt?" bằng số trang thật, và biết khi nào `VACUUM FULL` đáng làm, khi nào không.
+Ba bước trên ba bảng lab dựng sẵn: so số trang của `log_head` và `log_tail`, đọc bộ đếm dead tuple, rồi xem 1800 dòng mới của `log_reuse` nằm ở đâu. Đoán số trang trước khi chạy bước 1. Sau đó là hai câu hỏi.
+
+## Tóm tắt
+
+- VACUUM dọn dead tuple để chỗ trống được dùng lại; nó thường không làm file nhỏ đi.
+- Chỉ các trang trống hẳn liền nhau ở cuối file mới bị VACUUM cắt.
+- Dòng mới dùng lại chỗ trống trong FSM, nên bảng xóa và chèn cân nhau giữ kích thước ổn định.
+- `VACUUM FULL` làm file nhỏ lại thật nhưng giữ lock `ACCESS EXCLUSIVE`; chỉ dùng khi bảng đã co hẳn.
 
 # EN
 
+## Opening
+
+You delete 90% of the rows of a log table, run VACUUM, then open the disk monitoring dashboard: the number does not move. Did VACUUM do something wrong?
+
 ## Key idea
 
-Many people think VACUUM gives space back to the operating system. In fact VACUUM removes dead tuples so the free space can be reused; the file usually does not get smaller. The one exception: fully empty pages in a run at the **end** of the table can be cut off by VACUUM, when it briefly gets an exclusive lock. To really shrink the file you must rewrite the table with `VACUUM FULL`, and pay with an `ACCESS EXCLUSIVE` lock.
+Many people think VACUUM gives space back to the operating system. In fact VACUUM removes dead tuples and records the free space in the free space map (FSM), so later INSERTs and UPDATEs can reuse it. The table's file usually does not get smaller.
+
+The one exception: fully empty pages in a run at the end of the file. VACUUM can cut off that tail, when it briefly gets an exclusive lock. Empty pages at the head or in the middle stay inside the file, even though almost nothing is left in them.
+
+That space is not lost: new rows are written into the very pages VACUUM cleaned, so a table that deletes and inserts about the same amount keeps a steady size. For such a table a plain VACUUM (or autovacuum) is enough.
+
+To really shrink the file you must rewrite the table: `VACUUM FULL` copies the live rows into a new file and drops the old one. The price is an `ACCESS EXCLUSIVE` lock while it runs, so nobody can read or write the table, plus extra disk space for the copy. Only do it when the table has shrunk for good and will not grow back.
+
+## Syntax
+
+```sql
+VACUUM [ ( VERBOSE ) ] [ table_name ];
+VACUUM FULL [ table_name ];
+SELECT pg_relation_size('table_name') / 8192 AS pages;
+SELECT * FROM pg_freespace('table_name');
+```
+
+- `pg_relation_size`: bytes of the main table file, indexes excluded; `pg_total_relation_size` includes indexes and TOAST.
+- `pg_freespace`: the free space the FSM records for each page (extension `pg_freespacemap`).
+- `VACUUM FULL`: rewrites the table, holds an `ACCESS EXCLUSIVE` lock, cannot run inside a transaction.
 
 ## Example
+
+The page counts of two tables that each lost 1800 rows, at opposite ends:
 
 ```sql
 SELECT t, pg_relation_size(t) / 8192 AS pages
@@ -139,6 +248,63 @@ FROM unnest(ARRAY['log_head', 'log_tail']) AS t
 ORDER BY t;
 ```
 
+The free space VACUUM recorded in the FSM of `log_head`:
+
+```sql
+CREATE EXTENSION IF NOT EXISTS pg_freespacemap;
+SELECT count(*) AS pages, count(*) FILTER (WHERE avail > 7000) AS nearly_empty
+FROM pg_freespace('log_head');
+```
+
+31 of the 35 pages still have more than 7000 free bytes: that is where new rows will go.
+
+The main table and the total with its indexes:
+
+```sql
+SELECT relname, pg_relation_size(oid) / 8192 AS heap_pages, pg_total_relation_size(oid) / 8192 AS with_indexes
+FROM pg_class
+WHERE relname IN ('log_head', 'log_tail')
+ORDER BY relname;
+```
+
+The primary key index does not shrink after the deletes either.
+
+## Common mistakes
+
+Running `VACUUM FULL` inside a transaction:
+
+```sql
+BEGIN;
+-- ERROR 25001: VACUUM cannot run inside a transaction block
+VACUUM FULL log_head;
+```
+
+Like every VACUUM, it must run outside a transaction. Type `ROLLBACK` to leave the failed transaction.
+
+Expecting a plain VACUUM to shrink the table:
+
+```sql
+-- WRONG: a plain VACUUM keeps the free pages at the head
+ROLLBACK;
+VACUUM log_head;
+SELECT pg_relation_size('log_head') / 8192 AS pages;
+```
+
+```sql
+-- FIX: rewrite the table (takes an ACCESS EXCLUSIVE lock)
+VACUUM FULL log_head;
+SELECT pg_relation_size('log_head') / 8192 AS pages;
+```
+
+A plain VACUUM keeps all 35 pages; `VACUUM FULL` rewrites the 200 live rows into 4 pages. It is only worth it when the table will not grow back, because on a log table that deletes and inserts steadily the file swells back to its old size.
+
 ## Practice
 
-Three steps on three tables the lab builds, then two questions. Guess the page counts before you run step 1. After this lesson you can answer "we vacuumed, why is the disk not freer?" with real page counts, and you know when `VACUUM FULL` is worth it and when it is not.
+Three steps on three tables the lab builds: compare the page counts of `log_head` and `log_tail`, read the dead tuple counters, then see where the 1800 new rows of `log_reuse` landed. Guess the page counts before you run step 1. Then two questions.
+
+## Recap
+
+- VACUUM removes dead tuples so the space can be reused; it usually does not make the file smaller.
+- Only a run of fully empty pages at the end of the file gets cut by VACUUM.
+- New rows reuse the free space in the FSM, so a table with balanced deletes and inserts keeps a steady size.
+- `VACUUM FULL` really shrinks the file but holds an `ACCESS EXCLUSIVE` lock; use it only when the table has shrunk for good.
