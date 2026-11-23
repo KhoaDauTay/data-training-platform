@@ -9,6 +9,7 @@ kind: quiz
 runtime: docs
 docs_why: server
 minutes: 15
+verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-24" }
 objectives:
   - { vi: "Phân biệt backup logic (`pg_dump`) và backup vật lý + lưu trữ WAL (PITR)", en: "Tell logical backups (`pg_dump`) from physical backups + WAL archiving (PITR)" }
   - { vi: "Biết vì sao failover cần chống \"hai primary\" (split-brain)", en: "Know why failover must prevent \"two primaries\" (split-brain)" }
@@ -28,6 +29,7 @@ quiz:
       - { vi: "Chỉ khôi phục base backup đêm qua", en: "Just restore last night's base backup" }
       - { vi: "Failover sang standby", en: "Fail over to the standby" }
     answer: 0
+    trap: 2
     why: { vi: "Failover hấp dẫn vì standby có dữ liệu mới nhất, nhưng chính vì vậy nó cũng đã có câu DELETE. PITR = base backup + replay WAL tới một thời điểm. Base backup một mình mất cả buổi sáng. Standby đã replay luôn câu DELETE, nên failover không cứu được (nhân bản không phải backup).", en: "Failover is tempting because the standby has the newest data, but that is exactly why it has the DELETE too. PITR = base backup + WAL replay up to a point in time. The base backup alone loses the whole morning. The standby has already replayed the DELETE, so failing over does not help (replication is not a backup)." }
   - q: { vi: "`pg_dump` khác backup vật lý ở điểm nào quan trọng nhất?", en: "What is the most important difference between `pg_dump` and a physical backup?" }
     options:
@@ -35,6 +37,7 @@ quiz:
       - { vi: "`pg_dump` nhanh hơn với mọi kích thước", en: "`pg_dump` is faster at every size" }
       - { vi: "Không khác gì", en: "No difference" }
     answer: 0
+    trap: 1
     why: { vi: "`pg_dump` nghe nhanh hơn vì nó chỉ là một lệnh và một file, nhưng tốc độ tùy kích thước và không phải điểm khác chính. Backup logic hợp cho chuyển phiên bản, sao một database; backup vật lý + lưu trữ WAL cho phục hồi tới từng giây và dùng cho cụm lớn.", en: "`pg_dump` sounds faster because it is one command and one file, but speed depends on size and is not the main difference. Logical backups suit version upgrades and copying one database; physical backups + WAL archiving give recovery to the second and suit large clusters." }
   - q: { vi: "Primary mất kết nối mạng nhưng vẫn chạy. Công cụ HA nâng standby lên làm primary. Rủi ro lớn nhất?", en: "The primary loses its network link but keeps running. The HA tool promotes the standby. The biggest risk?" }
     options:
@@ -42,6 +45,7 @@ quiz:
       - { vi: "Standby chạy chậm hơn", en: "The standby runs slower" }
       - { vi: "Không rủi ro", en: "No risk" }
     answer: 0
+    trap: 2
     why: { vi: "Nghe như không rủi ro vì công cụ HA đã thay primary hỏng, nhưng primary cũ chưa hỏng: nó vẫn chạy. Postgres không tự làm failover; công cụ bên ngoài phải bảo đảm primary cũ không còn nhận ghi trước khi nâng standby. Sau đó primary cũ thường phải dựng lại (ví dụ bằng `pg_rewind`).", en: "It sounds risk-free because the HA tool has replaced the broken primary, but the old primary is not broken: it is still running. Postgres does not fail over on its own; the external tool must make sure the old primary can no longer accept writes before promoting the standby. Afterwards the old primary usually has to be rebuilt (for example with `pg_rewind`)." }
   - q: { vi: "Bảng 500 triệu dòng, mặc định `autovacuum_vacuum_scale_factor` = 0,2 và ngưỡng 50. Autovacuum chạy khi nào, và nên chỉnh gì?", en: "A 500-million-row table, default `autovacuum_vacuum_scale_factor` = 0.2 and threshold 50. When does autovacuum run, and what should you tune?" }
     options:
@@ -49,20 +53,58 @@ quiz:
       - { vi: "Mỗi phút; tắt autovacuum", en: "Every minute; turn autovacuum off" }
       - { vi: "Không bao giờ; chạy VACUUM FULL hằng ngày", en: "Never; run VACUUM FULL daily" }
     answer: 0
+    trap: 2
     why: { vi: "VACUUM FULL hằng ngày nghe triệt để vì nó thu hồi hết chỗ trống, nhưng ngưỡng mặc định mới là vấn đề. Ngưỡng = threshold + scale_factor × số dòng = 50 + 0,2 × 500 triệu ≈ 100 triệu, và từ 18 còn bị chặn trên bởi `autovacuum_vacuum_max_threshold` (mặc định 100 triệu). Quá trễ cho bảng lớn. Chỉnh theo từng bảng; không tắt autovacuum (nó còn chống wraparound); `VACUUM FULL` giữ lock ACCESS EXCLUSIVE trên cả bảng.", en: "A daily VACUUM FULL sounds thorough because it reclaims all free space, but the default threshold is the real problem. Threshold = threshold + scale_factor × rows = 50 + 0.2 × 500 million ≈ 100 million, and since 18 it is also capped by `autovacuum_vacuum_max_threshold` (default 100 million). Far too late for a big table. Tune per table; never turn autovacuum off (it also prevents wraparound); `VACUUM FULL` takes ACCESS EXCLUSIVE on the whole table." }
 ---
+## Mở bài
+
+Hệ thống có một standby đồng bộ và một bản `pg_dump` mỗi đêm, nên ai cũng nghĩ dữ liệu đã an toàn. Rồi lúc 14:05 một câu `DELETE` thiếu `WHERE` chạy trên primary. Trong hai thứ đang có, thứ nào cứu được buổi sáng hôm đó?
 
 ## Ý chính
 
-- Backup logic: `pg_dump`/`pg_dumpall` nhất quán tại một thời điểm, khôi phục được sang phiên bản khác; chậm với dữ liệu lớn.
-- Backup vật lý: sao thư mục dữ liệu (`pg_basebackup`) + lưu trữ WAL liên tục (`archive_command` hoặc `archive_library`). Khôi phục = base backup + replay WAL tới đích: thời điểm, LSN, tên điểm khôi phục. Đó là PITR.
-- Nhân bản không phải backup: lỗi logic (xóa nhầm) được nhân bản ngay.
-- Failover: `pg_promote()` nâng standby, nhưng quyết định khi nào nâng và cô lập primary cũ là việc của công cụ HA bên ngoài.
-- Autovacuum sản xuất: ngưỡng = `autovacuum_vacuum_threshold` + `autovacuum_vacuum_scale_factor` × số dòng (mặc định 50 + 0,2 × số dòng), từ 18 không vượt `autovacuum_vacuum_max_threshold` (100 triệu, đo trên PGlite). Bảng lớn cần tham số riêng; không bao giờ tắt autovacuum vì nó còn freeze tuple chống wraparound.
+Backup logic (`pg_dump`, `pg_dumpall`) là ảnh chụp nhất quán của database tại một thời điểm, khôi phục được sang phiên bản Postgres khác, nhưng chậm với dữ liệu lớn và không tiến thêm được sau thời điểm chụp. Backup vật lý sao cả thư mục dữ liệu (`pg_basebackup`) và lưu trữ WAL liên tục (`archive_command` hoặc `archive_library`). Khôi phục = base backup + replay WAL tới một đích: thời điểm, LSN hoặc tên điểm khôi phục. Đó là PITR.
+
+Nhiều người nghĩ có standby là có backup. Thật ra standby replay mọi thứ primary làm, kể cả câu xóa nhầm, chỉ chậm hơn vài phần giây. Nhân bản bảo vệ khỏi hỏng máy; chỉ backup cộng lưu trữ WAL bảo vệ khỏi lỗi của con người.
+
+Failover: `pg_promote()` nâng standby lên làm primary, nhưng Postgres không tự quyết định khi nào nâng. Công cụ HA bên ngoài phải chắc rằng primary cũ đã thôi nhận ghi (fencing) trước khi nâng, nếu không sẽ có hai primary cùng ghi (split-brain). Primary cũ thường phải dựng lại, ví dụ bằng `pg_rewind`.
+
+Autovacuum ở sản xuất: một bảng được vacuum khi số dòng chết vượt `autovacuum_vacuum_threshold` + `autovacuum_vacuum_scale_factor` × số dòng (mặc định 50 + 0,2 × số dòng), và từ PostgreSQL 18 không vượt quá `autovacuum_vacuum_max_threshold` (100 triệu). Bảng lớn cần tham số riêng. Đừng tắt autovacuum: nó còn freeze tuple để chống wraparound.
 
 ## Ví dụ
 
-Ví dụ theo docs chính thức của PostgreSQL, mục Continuous Archiving (chưa chạy trong trình duyệt): cấu hình khôi phục PITR điển hình.
+Các thiết lập liên quan, đọc thật trên PGlite:
+
+```sql
+SELECT name, setting
+FROM pg_settings
+WHERE name IN ('archive_mode', 'autovacuum', 'autovacuum_vacuum_max_threshold',
+               'autovacuum_vacuum_scale_factor', 'autovacuum_vacuum_threshold', 'wal_level')
+ORDER BY name;
+```
+
+`archive_mode` là off và PGlite không có tiến trình autovacuum nền dù `autovacuum` ghi on, nên phần còn lại của bài là tình huống.
+
+Ngưỡng mặc định cho một bảng 500 triệu dòng, rồi hạ nó cho riêng một bảng:
+
+```sql
+SELECT least(50 + 0.2 * 500000000, 100000000) AS dead_rows_before_autovacuum;
+```
+
+```sql
+CREATE TABLE events (id bigint PRIMARY KEY, payload text);
+ALTER TABLE events SET (autovacuum_vacuum_scale_factor = 0.01, autovacuum_vacuum_threshold = 1000);
+SELECT relname, reloptions FROM pg_class WHERE relname = 'events';
+```
+
+Mặc định phải chờ 100 triệu dòng chết. Với tham số riêng, bảng 500 triệu dòng được vacuum sau khoảng 5 triệu.
+
+Đặt một điểm khôi phục có tên trước một việc rủi ro, để PITR dừng đúng chỗ (`recovery_target_name`):
+
+```sql
+SELECT pg_create_restore_point('before_cleanup') IS NOT NULL AS created, pg_is_in_recovery() AS in_recovery;
+```
+
+Cấu hình khôi phục PITR điển hình, theo mục Continuous Archiving của docs (cần server thật, không chạy ở đây):
 
 ```text
 restore_command = 'cp /mnt/server/archivedir/%f %p'
@@ -70,26 +112,91 @@ recovery_target_time = '2026-10-31 14:04:59'
 recovery_target_action = 'pause'
 # then create recovery.signal in the data directory and start the server
 ```
+
+## Lỗi hay gặp
+
+Chạy VACUUM trong một transaction:
+
+```sql
+BEGIN;
+-- ERROR 25001: VACUUM cannot run inside a transaction block
+VACUUM events;
+```
+
+`VACUUM` tự quản lý transaction của nó. Nhiều công cụ tự mở `BEGIN`; hãy chạy `VACUUM` ở chế độ autocommit.
+
+Nâng một máy không phải standby:
+
+```sql
+ROLLBACK;
+-- ERROR 55000: recovery is not in progress
+SELECT pg_promote();
+```
+
+`pg_promote()` chỉ có nghĩa trên standby đang replay. Trước khi nâng, kiểm `pg_is_in_recovery()` và chắc rằng primary cũ đã bị cô lập.
 
 ## Thực hành
 
-Chạy thật cần server Postgres thật có standby và lưu trữ WAL. Bài này dùng sơ đồ và kết quả ghi sẵn. PGlite không có lưu trữ WAL, standby hay tiến trình autovacuum nền (đo: chỉ một `standalone backend`), nên đây là câu hỏi tình huống dựa trên docs chính thức.
+PGlite không có lưu trữ WAL, standby hay autovacuum nền (chỉ một backend), nên bài này là bốn tình huống vận hành dựa trên docs chính thức.
 
-Bốn tình huống vận hành. Kỹ năng chuyên gia: chọn chiến lược backup theo RPO/RTO, giải thích vì sao nhân bản không thay backup, và chỉnh autovacuum cho bảng lớn.
+## Tóm tắt
+
+- `pg_dump` là ảnh chụp logic tại một thời điểm; backup vật lý + lưu trữ WAL cho phép PITR tới từng giây.
+- Nhân bản không phải backup: câu xóa nhầm được nhân bản ngay.
+- Failover cần công cụ HA và fencing để tránh hai primary.
+- Bảng lớn cần tham số autovacuum riêng; không bao giờ tắt autovacuum.
 
 # EN
 
+## Opening
+
+The system has a synchronous standby and a nightly `pg_dump`, so everyone thinks the data is safe. Then at 14:05 a `DELETE` with no `WHERE` runs on the primary. Of the two things you have, which one saves that morning's work?
+
 ## Key idea
 
-- Logical backup: `pg_dump`/`pg_dumpall` consistent at one moment, restorable into another version; slow for very large data.
-- Physical backup: copy the data directory (`pg_basebackup`) + continuous WAL archiving (`archive_command` or `archive_library`). Restore = base backup + WAL replay up to a target: a time, an LSN, a named restore point. That is PITR.
-- Replication is not a backup: a logical mistake (an accidental delete) is replicated at once.
-- Failover: `pg_promote()` promotes a standby, but deciding when to promote and fencing the old primary is the job of an external HA tool.
-- Production autovacuum: threshold = `autovacuum_vacuum_threshold` + `autovacuum_vacuum_scale_factor` × rows (default 50 + 0.2 × rows), and since 18 never above `autovacuum_vacuum_max_threshold` (100 million, measured on PGlite). Large tables need their own parameters; never turn autovacuum off, because it also freezes tuples against wraparound.
+A logical backup (`pg_dump`, `pg_dumpall`) is a consistent snapshot of a database at one moment, restorable into another Postgres version, but slow for large data and unable to move forward past the moment it was taken. A physical backup copies the whole data directory (`pg_basebackup`) and archives WAL continuously (`archive_command` or `archive_library`). Restore = base backup + WAL replay up to a target: a time, an LSN or a named restore point. That is PITR.
+
+Many people think a standby is a backup. In fact a standby replays everything the primary does, the accidental delete included, only a fraction of a second later. Replication protects against a failed machine; only backups plus WAL archiving protect against human mistakes.
+
+Failover: `pg_promote()` promotes a standby to primary, but Postgres never decides by itself when to promote. An external HA tool must make sure the old primary has stopped accepting writes (fencing) before promoting, or two primaries write at once (split-brain). The old primary usually has to be rebuilt, for example with `pg_rewind`.
+
+Autovacuum in production: a table is vacuumed once its dead rows exceed `autovacuum_vacuum_threshold` + `autovacuum_vacuum_scale_factor` × rows (by default 50 + 0.2 × rows), and since PostgreSQL 18 never above `autovacuum_vacuum_max_threshold` (100 million). Large tables need their own parameters. Never turn autovacuum off: it also freezes tuples to prevent wraparound.
 
 ## Example
 
-Example from the official PostgreSQL docs, Continuous Archiving section (not run in the browser): a typical PITR restore configuration.
+The related settings, read for real on PGlite:
+
+```sql
+SELECT name, setting
+FROM pg_settings
+WHERE name IN ('archive_mode', 'autovacuum', 'autovacuum_vacuum_max_threshold',
+               'autovacuum_vacuum_scale_factor', 'autovacuum_vacuum_threshold', 'wal_level')
+ORDER BY name;
+```
+
+`archive_mode` is off and PGlite has no background autovacuum process even though `autovacuum` says on, so the rest of the lesson is scenarios.
+
+The default threshold for a 500-million-row table, then a lower one for a single table:
+
+```sql
+SELECT least(50 + 0.2 * 500000000, 100000000) AS dead_rows_before_autovacuum;
+```
+
+```sql
+CREATE TABLE events (id bigint PRIMARY KEY, payload text);
+ALTER TABLE events SET (autovacuum_vacuum_scale_factor = 0.01, autovacuum_vacuum_threshold = 1000);
+SELECT relname, reloptions FROM pg_class WHERE relname = 'events';
+```
+
+By default it waits for 100 million dead rows. With its own parameters, the 500-million-row table is vacuumed after about 5 million.
+
+Set a named restore point before a risky job, so PITR can stop right there (`recovery_target_name`):
+
+```sql
+SELECT pg_create_restore_point('before_cleanup') IS NOT NULL AS created, pg_is_in_recovery() AS in_recovery;
+```
+
+A typical PITR restore configuration, from the Continuous Archiving section of the docs (needs a real server, not run here):
 
 ```text
 restore_command = 'cp /mnt/server/archivedir/%f %p'
@@ -98,8 +205,35 @@ recovery_target_action = 'pause'
 # then create recovery.signal in the data directory and start the server
 ```
 
+## Common mistakes
+
+Running VACUUM inside a transaction:
+
+```sql
+BEGIN;
+-- ERROR 25001: VACUUM cannot run inside a transaction block
+VACUUM events;
+```
+
+`VACUUM` manages its own transactions. Many tools open a `BEGIN` for you; run `VACUUM` in autocommit mode.
+
+Promoting a server that is not a standby:
+
+```sql
+ROLLBACK;
+-- ERROR 55000: recovery is not in progress
+SELECT pg_promote();
+```
+
+`pg_promote()` only means something on a standby that is replaying. Before promoting, check `pg_is_in_recovery()` and make sure the old primary is fenced off.
+
 ## Practice
 
-A real run needs a real Postgres server with a standby and WAL archiving. This lesson uses diagrams and recorded output. PGlite has no WAL archiving, no standby and no background autovacuum process (measured: only one `standalone backend`), so these are scenario questions based on the official docs.
+PGlite has no WAL archiving, no standby and no background autovacuum (a single backend), so this lesson is four operations scenarios based on the official docs.
 
-Four operations scenarios. Expert skill: choose a backup strategy from RPO/RTO, explain why replication does not replace backups, and tune autovacuum for large tables.
+## Recap
+
+- `pg_dump` is a logical snapshot at one moment; a physical backup + WAL archiving allows PITR to the second.
+- Replication is not a backup: an accidental delete is replicated at once.
+- Failover needs an HA tool and fencing to avoid two primaries.
+- Large tables need their own autovacuum parameters; never turn autovacuum off.
