@@ -6,16 +6,19 @@ module: consistency
 title: "Nhất quán nhân quả và session"
 title_en: "Causal consistency and sessions"
 kind: concept
-minutes: 10
+minutes: 12
 runtime: docs
 objectives:
   - vi: "Kể bốn bảo đảm của session nhất quán nhân quả"
     en: "Name the four guarantees of a causally consistent session"
   - vi: "Biết bảo đảm chỉ có khi đọc `majority` và ghi `majority`"
     en: "Know the guarantees hold only with `majority` reads and `majority` writes"
+  - vi: "Nhận ra lần đọc secondary cũ ngoài session và cách sửa"
+    en: "Spot a stale secondary read outside a session and how to fix it"
 requires: [e-mg-l4-07]
 sources:
   - https://www.mongodb.com/docs/manual/core/read-isolation-consistency-recency/
+  - https://www.mongodb.com/docs/manual/core/causal-consistency-read-write-concerns/
   - https://www.mongodb.com/docs/manual/reference/write-concern/
 quiz:
   - q:
@@ -23,11 +26,12 @@ quiz:
       en: "In a causally consistent session you write with `w: \"majority\"` and then read from a secondary with read concern `majority`. What does the read see?"
     options:
       - { vi: "Có thể chưa thấy lần ghi, vì secondary chép không đồng bộ", en: "It may not see the write yet, because secondaries replicate asynchronously" }
-      - { vi: "Thấy trạng thái sau lần ghi: secondary chờ tới khi oplog của nó đạt thời điểm đó", en: "It sees the state after the write: the secondary waits until its oplog reaches that time" }
+      - { vi: "Thấy trạng thái sau lần ghi: secondary chờ tới khi dữ liệu của nó đạt thời điểm đó", en: "It sees the state after the write: the secondary waits until its data reaches that time" }
     answer: 1
+    trap: 0
     why:
-      vi: "Driver gắn `afterClusterTime` cho lần đọc; node chỉ phục vụ khi oplog của nó đã tới thời điểm đó. Bảo đảm \"đọc được điều mình ghi\" giữ trên mọi thành viên."
-      en: "The driver attaches `afterClusterTime` to the read; a node serves it only once its oplog has reached that time. The read-your-writes guarantee holds on every member."
+      vi: "Nghe hợp lý vì secondary đúng là chép chậm, nhưng trong session driver gắn `afterClusterTime` cho lần đọc; node chỉ trả lời khi dữ liệu của nó đã tới thời điểm đó. Lần đọc có thể chờ, nhưng không trả trạng thái cũ."
+      en: "It sounds right because secondaries do replicate late, but inside the session the driver attaches `afterClusterTime` to the read; a node answers only once its data has reached that time. The read may wait, but it never returns the old state."
   - q:
       vi: "Session nhất quán nhân quả nhưng ghi bằng `w: 1` và đọc `local`. Bốn bảo đảm có còn chắc chắn không?"
       en: "A causally consistent session, but writes use `w: 1` and reads use `local`. Are the four guarantees still certain?"
@@ -35,51 +39,177 @@ quiz:
       - { vi: "Có, session là đủ", en: "Yes, the session is enough" }
       - { vi: "Không, chỉ đọc `majority` và ghi `majority` mới được bảo đảm", en: "No, only `majority` reads and `majority` writes are guaranteed" }
     answer: 1
+    trap: 0
     why:
-      vi: "Docs chính thức: session chỉ bảo đảm nhất quán nhân quả cho lần đọc read concern `majority` và lần ghi write concern `majority`."
-      en: "The docs: sessions guarantee causal consistency only for reads with read concern `majority` and writes with write concern `majority`."
+      vi: "Nghe hợp lý vì session là thứ mang thời điểm, nhưng một lần ghi `w: 1` có thể bị rollback và kéo theo cả chuỗi nhân quả. Docs chính thức: session chỉ bảo đảm nhân quả cho đọc read concern `majority` và ghi write concern `majority`."
+      en: "It sounds right because the session carries the timestamps, but a `w: 1` write can be rolled back and take the causal chain with it. The docs: sessions guarantee causality only for reads with read concern `majority` and writes with write concern `majority`."
 ---
+## Mở bài
+
+Khách đổi địa chỉ giao hàng, bấm lưu, rồi trang tải lại vẫn hiện địa chỉ cũ. Lần ghi đã vào primary, nhưng lần đọc đi tới một secondary chưa chép kịp. Session nhất quán nhân quả là cách MongoDB giữ thứ tự "ghi rồi mới đọc".
 
 ## Ý chính
 
-Secondary chép oplog không đồng bộ, nên đọc từ secondary có thể cũ (nhưng không bao giờ sai thứ tự). Session nhất quán nhân quả giữ thứ tự giữa các thao tác có quan hệ nhân quả, kể cả khi chúng chạy trên các thành viên khác nhau. Bốn bảo đảm:
+Secondary áp oplog không đồng bộ, nên đọc từ secondary có thể cũ (nhưng không bao giờ sai thứ tự). Session nhất quán nhân quả giữ thứ tự giữa các thao tác có quan hệ nhân quả, kể cả khi chúng chạy trên các thành viên khác nhau. Bốn bảo đảm: đọc được điều mình ghi; đọc đơn điệu (lần đọc sau không cũ hơn lần đọc trước); ghi đơn điệu (lần ghi phải đi trước thì chạy trước); ghi theo đọc (lần ghi sau một lần đọc chạy trên trạng thái đã gồm lần đọc đó).
 
-- Đọc được điều mình ghi: lần đọc phản ánh lần ghi trước nó.
-- Đọc đơn điệu: lần đọc sau không trả trạng thái cũ hơn lần đọc trước.
-- Ghi đơn điệu: lần ghi phải đi trước thì chạy trước.
-- Ghi theo đọc: lần ghi sau một lần đọc chạy trên trạng thái đã gồm lần đọc đó.
+Cơ chế: mỗi thao tác trả về operation time và cluster time; session giữ chúng, và driver đặt `afterClusterTime` cho lần đọc kế. Node chỉ trả lời khi dữ liệu của nó đã tới thời điểm đó, nên lần đọc có thể phải chờ.
+
+Nhiều người nghĩ mở session là đủ. Thật ra bảo đảm chỉ có cho đọc read concern `majority` và ghi write concern `majority`; với `w: 1` hay đọc `local`, một rollback có thể xóa mất mắt xích. Session cũng không cô lập khỏi thao tác ngoài session, và mỗi lúc chỉ một luồng nên dùng nó. Từ 8.0, `w: "majority"` xác nhận khi đa số đã ghi bền mục oplog, trước khi áp vào dữ liệu, nên đọc secondary ngay sau đó ngoài session càng dễ chưa thấy lần ghi.
+
+Bài này cần replica set thật; các lệnh dưới đây lấy theo docs, không chạy trong trình duyệt.
+
+## Cú pháp
+
+```text
+session = db.getMongo().startSession({ causalConsistency: true })
+coll = session.getDatabase("<db>").<coll>
+coll.updateOne(<filter>, <update>, { writeConcern: { w: "majority" } })
+coll.find(<filter>).readConcern("majority").readPref("secondary")
+```
+
+- `causalConsistency: true`: session mang thời điểm từ thao tác này sang thao tác kế.
+- Ghi `w: "majority"` và đọc `readConcern("majority")`: điều kiện để có bốn bảo đảm.
+- `readPref("secondary")` vẫn đọc được điều mình vừa ghi, vì node chờ tới thời điểm của session.
 
 ## Ví dụ
 
-Các bảo đảm chỉ có cho đọc read concern `majority` và ghi write concern `majority`. Mỗi thao tác trả về operation time và cluster time; session giữ chúng, và driver tự đặt `afterClusterTime` cho lần đọc kế. Session không cô lập khỏi thao tác ngoài session, và chỉ nên dùng một luồng một lúc.
+Đổi địa chỉ, rồi đọc lại từ secondary trong cùng session:
 
-```javascript
-session = db.getMongo().startSession({ causalConsistency: true })
+```text
+s = db.getMongo().startSession({ causalConsistency: true })
+users = s.getDatabase("shop").users
+users.updateOne({ _id: 1 }, { $set: { city: "Hue" } }, { writeConcern: { w: "majority" } })
+users.find({ _id: 1 }).readConcern("majority").readPref("secondary")
 ```
 
-Từ 8.0, `w: "majority"` xác nhận khi đa số đã ghi bền mục oplog, trước khi áp vào dữ liệu. Đọc từ secondary ngay sau đó ngoài session có thể chưa thấy lần ghi; trong session nhân quả thì thấy.
+Lần đọc mang `afterClusterTime`; nó trả `city: "Hue"`, có thể sau một chút chờ.
 
-Đúng với docs chính thức của MongoDB hiện hành, kiểm ngày 2026-11-20. Phần chạy thật cần máy chủ thật (nhiều phiên / replica set / AWS). Bài này dùng sơ đồ và kết quả ghi sẵn.
+Hai lần đọc nối tiếp trong session không đi lùi:
+
+```text
+users.find({ _id: 1 }).readConcern("majority").readPref("secondary")   // node A
+users.find({ _id: 1 }).readConcern("majority").readPref("secondary")   // node B, never older than A
+```
+
+Đó là đọc đơn điệu: node B chờ nếu nó chậm hơn node A.
+
+## Lỗi hay gặp
+
+Ghi rồi đọc secondary ngoài session:
+
+```text
+// WRONG: no session, the secondary may not have the write yet
+db.users.updateOne({ _id: 1 }, { $set: { city: "Hue" } })
+db.users.find({ _id: 1 }).readPref("secondary")
+```
+
+```text
+// FIX: one causally consistent session, majority on both sides
+users.updateOne({ _id: 1 }, { $set: { city: "Hue" } }, { writeConcern: { w: "majority" } })
+users.find({ _id: 1 }).readConcern("majority").readPref("secondary")
+```
+
+Có session nhưng đòi quá ít:
+
+```text
+// WRONG: session with w: 1 and local reads, the guarantees are not certain
+users.updateOne({ _id: 1 }, { $set: { city: "Hue" } }, { writeConcern: { w: 1 } })
+```
+
+```text
+// FIX: majority write, majority read
+users.updateOne({ _id: 1 }, { $set: { city: "Hue" } }, { writeConcern: { w: "majority" } })
+```
+
+## Tóm tắt
+
+- Đọc secondary có thể cũ; session nhân quả giữ thứ tự ghi rồi đọc.
+- Bốn bảo đảm: đọc điều mình ghi, đọc đơn điệu, ghi đơn điệu, ghi theo đọc.
+- Chỉ chắc chắn khi ghi `w: "majority"` và đọc `majority`.
+- Driver gắn `afterClusterTime`; node chậm sẽ chờ thay vì trả dữ liệu cũ.
 
 # EN
 
+## Opening
+
+A customer changes their delivery address, clicks save, and the reloaded page still shows the old one. The write reached the primary, but the read went to a secondary that had not caught up. A causally consistent session is how MongoDB keeps "write, then read" in order.
+
 ## Key idea
 
-Secondaries apply the oplog asynchronously, so a read from a secondary can be stale (but never out of order). A causally consistent session keeps the order between causally related operations, even when they run on different members. The four guarantees:
+Secondaries apply the oplog asynchronously, so a read from a secondary can be stale (but never out of order). A causally consistent session keeps the order between causally related operations, even when they run on different members. The four guarantees: read your writes; monotonic reads (a later read is not older than an earlier one); monotonic writes (a write that must come first runs first); writes follow reads (a write after a read runs on a state that includes that read).
 
-- Read your writes: a read reflects the writes before it.
-- Monotonic reads: a later read does not return an older state than an earlier read.
-- Monotonic writes: a write that must come first runs first.
-- Writes follow reads: a write after a read runs on a state that includes that read.
+The mechanism: each operation returns an operation time and a cluster time; the session keeps them, and the driver sets `afterClusterTime` on the next read. A node answers only once its data has reached that time, so the read may have to wait.
+
+Many people think opening a session is enough. In fact the guarantees hold only for reads with read concern `majority` and writes with write concern `majority`; with `w: 1` or `local` reads, a rollback can remove a link of the chain. A session is also not isolated from operations outside it, and only one thread at a time should use it. From 8.0, `w: "majority"` acknowledges once a majority has durably written the oplog entry, before applying it to the data, so a secondary read right after, outside a session, is even more likely to miss the write.
+
+This lesson needs a real replica set; the commands below follow the docs and do not run in the browser.
+
+## Syntax
+
+```text
+session = db.getMongo().startSession({ causalConsistency: true })
+coll = session.getDatabase("<db>").<coll>
+coll.updateOne(<filter>, <update>, { writeConcern: { w: "majority" } })
+coll.find(<filter>).readConcern("majority").readPref("secondary")
+```
+
+- `causalConsistency: true`: the session carries timestamps from one operation to the next.
+- A `w: "majority"` write and a `readConcern("majority")` read: the condition for the four guarantees.
+- `readPref("secondary")` still reads your own write, because the node waits for the session's time.
 
 ## Example
 
-The guarantees hold only for reads with read concern `majority` and writes with write concern `majority`. Each operation returns an operation time and a cluster time; the session keeps them and the driver sets `afterClusterTime` on the next read. A session is not isolated from operations outside it, and only one thread at a time should use it.
+Change the address, then read it back from a secondary in the same session:
 
-```javascript
-session = db.getMongo().startSession({ causalConsistency: true })
+```text
+s = db.getMongo().startSession({ causalConsistency: true })
+users = s.getDatabase("shop").users
+users.updateOne({ _id: 1 }, { $set: { city: "Hue" } }, { writeConcern: { w: "majority" } })
+users.find({ _id: 1 }).readConcern("majority").readPref("secondary")
 ```
 
-From 8.0, `w: "majority"` acknowledges once a majority has durably written the oplog entry, before applying it to the data. A read from a secondary right after, outside a session, may not see the write yet; inside a causal session it does.
+The read carries `afterClusterTime`; it returns `city: "Hue"`, possibly after a short wait.
 
-Matches the current MongoDB manual, checked 2026-11-20. The real run needs a real server (several sessions / replica set / AWS). This lesson uses diagrams and recorded results.
+Two reads in a row in the session never go backwards:
+
+```text
+users.find({ _id: 1 }).readConcern("majority").readPref("secondary")   // node A
+users.find({ _id: 1 }).readConcern("majority").readPref("secondary")   // node B, never older than A
+```
+
+That is monotonic reads: node B waits if it is behind node A.
+
+## Common mistakes
+
+Writing, then reading a secondary outside a session:
+
+```text
+// WRONG: no session, the secondary may not have the write yet
+db.users.updateOne({ _id: 1 }, { $set: { city: "Hue" } })
+db.users.find({ _id: 1 }).readPref("secondary")
+```
+
+```text
+// FIX: one causally consistent session, majority on both sides
+users.updateOne({ _id: 1 }, { $set: { city: "Hue" } }, { writeConcern: { w: "majority" } })
+users.find({ _id: 1 }).readConcern("majority").readPref("secondary")
+```
+
+A session that asks for too little:
+
+```text
+// WRONG: session with w: 1 and local reads, the guarantees are not certain
+users.updateOne({ _id: 1 }, { $set: { city: "Hue" } }, { writeConcern: { w: 1 } })
+```
+
+```text
+// FIX: majority write, majority read
+users.updateOne({ _id: 1 }, { $set: { city: "Hue" } }, { writeConcern: { w: "majority" } })
+```
+
+## Recap
+
+- A secondary read can be stale; a causal session keeps write-then-read in order.
+- Four guarantees: read your writes, monotonic reads, monotonic writes, writes follow reads.
+- They are certain only with `w: "majority"` writes and `majority` reads.
+- The driver attaches `afterClusterTime`; a lagging node waits instead of returning old data.

@@ -14,6 +14,8 @@ objectives:
     en: "Precompute order totals with a pipeline, sum them per store, and hand out payment numbers from a counter"
   - vi: "Chọn transaction, write concern và session cho luồng thanh toán, theo docs chính thức"
     en: "Choose the transaction, write concern and session for the payment flow, following the official docs"
+  - vi: "Đặt `$match` trước các stage nặng trong một pipeline báo cáo"
+    en: "Put `$match` before the heavy stages of a reporting pipeline"
 requires: [e-mg-l4-02, e-mg-l4-09, e-mg-l4-11, e-mg-l4-13]
 sources:
   - https://www.mongodb.com/docs/manual/data-modeling/design-patterns/handle-computed-values/
@@ -21,6 +23,7 @@ sources:
   - https://www.mongodb.com/docs/manual/core/transactions/
   - https://www.mongodb.com/docs/manual/reference/write-concern/
   - https://www.mongodb.com/docs/manual/core/causal-consistency-read-write-concerns/
+  - https://www.mongodb.com/docs/manual/core/aggregation-pipeline-optimization/
 lab:
   setup: |
     {"collections": {
@@ -65,6 +68,22 @@ lab:
       hint:
         vi: "`findOneAndUpdate` với `$inc` và `returnDocument: \"after\"`, như bài bộ đếm."
         en: "`findOneAndUpdate` with `$inc` and `returnDocument: \"after\"`, as in the counters lesson."
+    - name: { vi: "Số lượng bán của S1", en: "Units sold at S1" }
+      task:
+        vi: "Kho của cửa hàng `S1` cần số lượng bán theo mã hàng để đặt hàng lại. Trả `_id` là `sku` và `qty` là tổng số lượng, chỉ tính đơn của `S1`, xếp `_id` tăng dần. Bài chấm cả thứ tự stage: lọc trước khi tách mảng."
+        en: "The `S1` store's warehouse needs units sold per item code to reorder. Return `_id` as the `sku` and `qty` as the total quantity, counting `S1` orders only, ordered by `_id` ascending. Stage order is graded too: filter before you unwind."
+      solution: 'db.orders.aggregate([{ $match: { store: "S1" } }, { $unwind: "$lines" }, { $group: { _id: "$lines.sku", qty: { $sum: "$lines.qty" } } }, { $sort: { _id: 1 } }])'
+      check: doc
+      ordered: true
+      rule: match-first
+      slow: 'db.orders.aggregate([{ $unwind: "$lines" }, { $match: { store: "S1" } }, { $group: { _id: "$lines.sku", qty: { $sum: "$lines.qty" } } }, { $sort: { _id: 1 } }])'
+      sql: "SELECT l.sku AS _id, SUM(l.qty) AS qty FROM orders o JOIN order_lines l ON l.order_id = o.id WHERE o.store = 'S1' GROUP BY l.sku ORDER BY l.sku;"
+      hint:
+        vi: "`$match` trên `store` đứng đầu, rồi `$unwind` mảng `lines`, rồi `$group` theo `$lines.sku`."
+        en: "`$match` on `store` comes first, then `$unwind` the `lines` array, then `$group` by `$lines.sku`."
+      fact:
+        vi: "Bước này chấm theo quy tắc trong docs chính thức (lọc sớm để các stage sau đọc ít tài liệu hơn), không đo trên `mongod`: mingo không có kế hoạch thực thi để đo."
+        en: "This step is graded by the rule in the official docs (filter early so later stages read fewer documents), not measured on `mongod`: mingo has no execution plan to measure."
 quiz:
   - q:
       vi: "Kết luận: thanh toán phải trừ tồn kho trong collection `stock` và đánh dấu đơn `paid` trong `orders`, cả hai hoặc không gì cả. Cần gì?"
@@ -97,27 +116,42 @@ quiz:
       vi: "Nghe hợp lý vì đọc `local` nhanh và thường thấy dữ liệu mới. Nhưng secondary có thể chậm hơn primary. Docs chính thức nói session nhất quán nhân quả với read concern và write concern `majority` bảo đảm đọc được chính lần ghi của mình."
       en: "It sounds right because a `local` read is fast and often sees new data. But a secondary can lag behind the primary. The docs say a causally consistent session with `majority` read and write concerns guarantees you read your own write."
 ---
+## Mở bài
+
+Một chuỗi cửa hàng cần bốn thứ cho luồng thanh toán: tổng mỗi đơn, doanh thu mỗi cửa hàng, số thanh toán không trùng, và số liệu cho kho đặt hàng lại. Sau đó là ba quyết định về độ an toàn khi tiền thật đi qua hệ thống. Đây là bài cuối của L4.
 
 ## Ý chính
 
-Bài cuối cấp L4, gồm hai phần với hai nhãn khác nhau:
-
-- Ba bước lab chạy thật bằng mingo trong trình duyệt: tính sẵn tổng đơn (mẫu Computed Values), gộp theo cửa hàng, và cấp số thanh toán bằng bộ đếm.
-- Ba câu kết luận về transaction, write concern và session dựa trên docs chính thức của MongoDB. mingo không có replica set hay transaction, nên phần này không chạy thật.
+Bài gồm hai phần với hai nhãn khác nhau. Bốn bước lab chạy thật bằng mingo trong trình duyệt: tính sẵn tổng đơn (mẫu Computed Values), gộp theo cửa hàng, cấp số thanh toán bằng bộ đếm, và một báo cáo kho có thanh quy tắc: `$match` phải đứng trước `$unwind`. Ba câu kết luận về transaction, write concern và session dựa trên docs chính thức của MongoDB; mingo không có replica set hay transaction, nên phần này không chạy thật.
 
 ## Thực hành
 
-Làm ba bước lab theo thứ tự, rồi trả lời ba câu kết luận cho luồng thanh toán.
+Làm bốn bước lab theo thứ tự. Bước 4 chấm theo quy tắc: một pipeline tách mảng rồi mới lọc cho cùng kết quả vẫn không đạt. Rồi trả lời ba câu kết luận cho luồng thanh toán.
+
+## Tóm tắt
+
+- Tổng đơn: `$map` nhân từng dòng, `$sum` cộng; gộp theo cửa hàng bằng `$group`.
+- Số thanh toán: một `findOneAndUpdate` với `$inc` và `returnDocument: "after"`.
+- Báo cáo: `$match` trước `$unwind` và `$group` để các stage nặng đọc ít hơn.
+- Hai collection cùng đổi cần transaction; tiền cần `w: "majority"`; đọc lại từ secondary cần session nhân quả.
 
 # EN
 
+## Opening
+
+A store chain needs four things for its checkout flow: each order's total, each store's revenue, payment numbers that never repeat, and figures for the warehouse to reorder. Then come three decisions about safety when real money passes through the system. This is the last lesson of L4.
+
 ## Key idea
 
-The final lesson of level L4, in two parts with two different labels:
-
-- Three lab steps that really run on mingo in the browser: precompute order totals (the Computed Values pattern), sum them per store, and hand out payment numbers from a counter.
-- Three conclusion questions about transactions, write concern and sessions, resting on the official MongoDB docs. mingo has no replica set and no transactions, so this part does not run for real.
+The lesson has two parts with two different labels. Four lab steps really run on mingo in the browser: precompute order totals (the Computed Values pattern), sum them per store, hand out payment numbers from a counter, and a warehouse report with a rule bar: `$match` must come before `$unwind`. Three conclusion questions about transactions, write concern and sessions rest on the official MongoDB docs; mingo has no replica set and no transactions, so this part does not run for real.
 
 ## Practice
 
-Do the three lab steps in order, then answer the three conclusion questions for the payment flow.
+Do the four lab steps in order. Step 4 is graded by rule: a pipeline that unwinds first and filters later gives the same result and still does not pass. Then answer the three conclusion questions for the payment flow.
+
+## Recap
+
+- Order totals: `$map` multiplies each line, `$sum` adds; per store with `$group`.
+- Payment numbers: one `findOneAndUpdate` with `$inc` and `returnDocument: "after"`.
+- Reports: `$match` before `$unwind` and `$group` so the heavy stages read less.
+- Two collections changing together need a transaction; money needs `w: "majority"`; reading back from a secondary needs a causal session.

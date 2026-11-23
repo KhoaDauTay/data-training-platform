@@ -6,15 +6,20 @@ module: patterns
 title: "Lab: dữ liệu đa hình trong một collection"
 title_en: "Lab: polymorphic data in one collection"
 kind: lab
-minutes: 12
+minutes: 14
 runtime: browser
 viz: mg-pipeline
 objectives:
   - vi: "Đọc nhiều dạng tài liệu trong một collection bằng `$switch` theo trường loại"
     en: "Read several document shapes in one collection with `$switch` on a type field"
+  - vi: "Chạy một truy vấn chung trên phần mọi loại cùng có"
+    en: "Run one common query over the part every kind shares"
+  - vi: "Thêm một loại mới mà không phải đổi tài liệu cũ"
+    en: "Add a new kind without touching the old documents"
 requires: [e-mg-l4-01]
 sources:
   - https://www.mongodb.com/docs/manual/data-modeling/design-patterns/polymorphic-data/
+  - https://www.mongodb.com/docs/manual/reference/operator/aggregation/switch/
 lab:
   setup: |
     {"collections": {"policies": [
@@ -48,34 +53,239 @@ lab:
       hint:
         vi: "`$sort` theo `_id` trước `$group` để `labels` đúng thứ tự. Trong `$push`, dùng `$switch` với ba `case` theo `kind`."
         en: "`$sort` by `_id` before `$group` so `labels` comes out in order. Inside `$push`, use `$switch` with three `case` branches on `kind`."
+    - task:
+        vi: "Phòng tài chính chỉ cần một con số: tổng `insured` của mọi hợp đồng, mọi loại. Trả một tài liệu `{ _id: null, total }`."
+        en: "Finance needs one figure: the total `insured` of every policy, every kind. Return one document `{ _id: null, total }`."
+      solution: 'db.policies.aggregate([ { $group: { _id: null, total: { $sum: "$insured" } } } ])'
+      check: doc
+      hint:
+        vi: "`insured` là phần chung của mọi loại, nên không cần `$switch`; `_id: null` gom tất cả vào một nhóm."
+        en: "`insured` is the part every kind shares, so no `$switch` is needed; `_id: null` puts everything in one group."
+    - task:
+        vi: "Công ty mở thêm bảo hiểm thú cưng. Thêm hợp đồng `_id: 6`, `kind: \"pet\"`, `petName: \"Lu\"`, `insured: 50` mà không đổi tài liệu nào khác."
+        en: "The company starts selling pet insurance. Add policy `_id: 6`, `kind: \"pet\"`, `petName: \"Lu\"`, `insured: 50` without changing any other document."
+      solution: 'db.policies.insertOne({ _id: 6, kind: "pet", petName: "Lu", insured: 50 })'
+      check: doc
+      hint:
+        vi: "Một `insertOne`: collection không bắt mọi tài liệu cùng trường, nên loại mới chỉ cần phần chung và phần riêng của nó."
+        en: "One `insertOne`: the collection does not force every document to share fields, so the new kind needs only the common part and its own part."
+quiz:
+  - q:
+      vi: "Ba loại hợp đồng có trường riêng khác nhau. Vì sao để chúng chung một collection?"
+      en: "Three kinds of policy have different specific fields. Why keep them in one collection?"
+    options:
+      - { vi: "Vì MongoDB bắt mọi tài liệu trong collection có cùng trường", en: "Because MongoDB forces every document in a collection to have the same fields" }
+      - { vi: "Truy vấn chung trên phần giống nhau (`insured`) chỉ cần một lần đọc, và `kind` cho biết đọc phần riêng nào", en: "A common query over the shared part (`insured`) needs one read, and `kind` tells which specific part to read" }
+      - { vi: "Để mỗi loại có index riêng", en: "So each kind gets its own index" }
+    answer: 1
+    trap: 0
+    why:
+      vi: "Nghe hợp lý nếu quen bảng SQL, nhưng collection MongoDB không bắt tài liệu cùng trường (trừ khi bạn thêm validator). Lý do của mẫu là truy vấn chung: tổng tiền bảo hiểm hay danh sách hợp đồng của một khách chỉ đọc một collection."
+      en: "It sounds right if you are used to SQL tables, but a MongoDB collection does not force documents to share fields (unless you add a validator). The pattern's reason is the common queries: the insured total or a customer's policy list reads one collection."
+  - q:
+      vi: "Trên `mongod`, `$switch` không có `default` gặp một `kind` mới (`pet`) chưa có nhánh. Chuyện gì xảy ra?"
+      en: "On `mongod`, a `$switch` with no `default` meets a new `kind` (`pet`) that has no branch. What happens?"
+    options:
+      - { vi: "Nhãn của hợp đồng đó là `null`", en: "That policy's label is `null`" }
+      - { vi: "Aggregation báo lỗi vì không nhánh nào khớp và không có `default`", en: "The aggregation fails because no branch matches and there is no `default`" }
+      - { vi: "Hợp đồng đó bị bỏ qua", en: "That policy is skipped" }
+    answer: 1
+    why:
+      vi: "Docs của `$switch` nói rõ: không nhánh nào khớp mà thiếu `default` thì báo lỗi. Khi thêm loại mới, hoặc thêm nhánh, hoặc đặt `default`. Mingo trong trình duyệt bỏ qua trường hợp này, nên đây là chỗ hai bên khác nhau."
+      en: "The `$switch` docs are clear: if no branch matches and there is no `default`, it raises an error. When you add a kind, add a branch or set a `default`. Mingo in the browser lets this case through, so this is where the two differ."
 ---
+## Mở bài
+
+Công ty bảo hiểm bán ba loại hợp đồng: xe, nhà và du lịch. Phần lớn câu hỏi của phòng tài chính là "tổng tiền bảo hiểm", nhưng mỗi loại lại có thông tin riêng. Một bảng cho mỗi loại, hay một chỗ cho tất cả?
 
 ## Ý chính
 
-Lab chạy bằng mingo trong trình duyệt. Mẫu Polymorphic Data: các tài liệu giống nhau ở phần chung (`insured`) nhưng khác nhau ở phần riêng của từng loại. Đặt chúng trong một collection giúp truy vấn chung (tổng tiền bảo hiểm) chỉ cần một lần đọc; một trường loại như `kind` cho biết phải đọc phần riêng nào.
+Mẫu Polymorphic Data: các tài liệu giống nhau ở phần chung (`insured`) nhưng khác nhau ở phần riêng của từng loại (`plate`, `address`, `destination`). Đặt chúng trong một collection giúp truy vấn chung chỉ cần một lần đọc; một trường loại như `kind` cho biết phải đọc phần riêng nào. Thêm loại mới không cần đổi tài liệu cũ hay "thêm cột".
+
+Đọc phần riêng thường dùng `$switch` theo `kind`. Trên `mongod`, `$switch` mà không nhánh nào khớp và thiếu `default` thì báo lỗi, nên khi thêm loại mới phải thêm nhánh hoặc đặt `default`.
+
+Nhiều người nghĩ collection MongoDB bắt mọi tài liệu có cùng trường như bảng SQL. Thật ra không có ràng buộc đó trừ khi bạn thêm validator. Cái giá là mã đọc phải xử lý mọi dạng, và một phép tính trên trường không có ở mọi loại có thể ra số sai mà không báo lỗi.
+
+Lab chạy bằng mingo trong trình duyệt; mỗi lần chạy bắt đầu lại từ dữ liệu gốc.
+
+## Cú pháp
+
+```text
+{ $switch: {
+    branches: [ { case: <condition>, then: <value> }, ... ],
+    default: <value>                 // needed when no branch may match
+} }
+db.<coll>.find({ <specific field>: { $exists: true } })
+db.<coll>.aggregate([ { $group: { _id: "$kind", ... } } ])
+```
+
+- `branches`: thử lần lượt, nhánh đầu tiên khớp thắng.
+- `default`: giá trị khi không nhánh nào khớp; thiếu nó thì `mongod` báo lỗi.
+- `$exists` trên trường riêng tìm một loại mà không cần `kind`.
 
 ## Ví dụ
 
+Nhãn riêng của từng hợp đồng, có `default` cho loại chưa biết:
+
 ```javascript
-{ $switch: { branches: [ { case: { $eq: [ "$kind", "car" ] }, then: "$plate" } ] } }
+db.policies.aggregate([{ $project: { label: { $switch: { branches: [{ case: { $eq: ["$kind", "car"] }, then: "$plate" }], default: "?" } } } }])
 ```
+
+Hai hợp đồng xe ra biển số, ba hợp đồng còn lại ra `"?"`.
+
+Tìm theo phần riêng của một loại:
+
+```javascript
+db.policies.find({ kind: "travel", days: { $gte: 5 } })
+```
+
+Chỉ hợp đồng Tokyo 6 ngày; trường `days` chỉ có ở loại du lịch.
+
+Truy vấn chung trên phần mọi loại cùng có:
+
+```javascript
+db.policies.aggregate([{ $group: { _id: null, total: { $sum: "$insured" } } }])
+```
+
+Tổng 4240, một lần đọc cho cả ba loại.
+
+## Lỗi hay gặp
+
+Cộng nhầm một trường riêng không phải số:
+
+```javascript
+// WRONG: plate is a string, $sum skips it and gives 0
+db.policies.aggregate([{ $group: { _id: null, total: { $sum: "$plate" } } }])
+```
+
+```javascript
+// FIX: sum the shared numeric field
+db.policies.aggregate([{ $group: { _id: null, total: { $sum: "$insured" } } }])
+```
+
+`$sum` bỏ qua giá trị không phải số, nên câu sai ra 0 thay vì báo lỗi.
+
+Thêm loại mới mà quên nhánh trong `$switch`:
+
+```text
+// WRONG: a "pet" policy exists, no branch and no default
+{ $switch: { branches: [ { case: { $eq: [ "$kind", "car" ] }, then: "$plate" }, ... ] } }
+mongod: $switch could not find a matching branch for an input, and no default was specified.
+```
+
+```text
+// FIX: a branch for the new kind, or a default
+{ $switch: { branches: [ ..., { case: { $eq: [ "$kind", "pet" ] }, then: "$petName" } ], default: null } }
+```
+
+Mingo trong trình duyệt không báo lỗi này (nó bỏ trống nhãn), nên phần này lấy từ docs của `$switch`.
 
 ## Thực hành
 
-Viết pipeline tổng hợp theo `kind` với nhãn riêng của từng loại.
+Ba bước: tổng hợp theo `kind` với nhãn riêng, tính tổng tiền chung, rồi thêm một loại hợp đồng mới.
+
+## Tóm tắt
+
+- Polymorphic Data: nhiều dạng tài liệu trong một collection, chung một phần, khác phần riêng.
+- Trường `kind` cho biết đọc phần riêng nào; `$switch` đọc theo `kind`.
+- Trên `mongod`, `$switch` không khớp và thiếu `default` thì báo lỗi.
+- Phép tính trên trường không có ở mọi loại có thể sai lặng lẽ; tính trên phần chung.
 
 # EN
 
+## Opening
+
+An insurer sells three kinds of policy: car, home and travel. Most of the finance team's questions are about "total insured", yet each kind has its own details. One table per kind, or one place for all of them?
+
 ## Key idea
 
-This lab runs on mingo in the browser. The Polymorphic Data pattern: documents share a common part (`insured`) but differ in the part specific to each kind. Keeping them in one collection lets a common query (total insured amount) run in a single read; a type field such as `kind` says which specific part to read.
+The Polymorphic Data pattern: documents share a common part (`insured`) but differ in the part specific to each kind (`plate`, `address`, `destination`). Keeping them in one collection lets a common query run in a single read; a type field such as `kind` says which specific part to read. Adding a new kind needs no change to old documents and no "new column".
+
+Reading the specific part usually uses a `$switch` on `kind`. On `mongod`, a `$switch` where no branch matches and there is no `default` raises an error, so a new kind needs a new branch or a `default`.
+
+Many people think a MongoDB collection forces every document to have the same fields, like a SQL table. In fact there is no such rule unless you add a validator. The price is that the reading code must handle every shape, and math on a field that not every kind has can give a wrong number without any error.
+
+The lab runs on mingo in the browser; every run starts again from the original data.
+
+## Syntax
+
+```text
+{ $switch: {
+    branches: [ { case: <condition>, then: <value> }, ... ],
+    default: <value>                 // needed when no branch may match
+} }
+db.<coll>.find({ <specific field>: { $exists: true } })
+db.<coll>.aggregate([ { $group: { _id: "$kind", ... } } ])
+```
+
+- `branches`: tried in order, the first matching branch wins.
+- `default`: the value when no branch matches; without it `mongod` raises an error.
+- `$exists` on a specific field finds one kind without using `kind`.
 
 ## Example
 
+Each policy's own label, with a `default` for unknown kinds:
+
 ```javascript
-{ $switch: { branches: [ { case: { $eq: [ "$kind", "car" ] }, then: "$plate" } ] } }
+db.policies.aggregate([{ $project: { label: { $switch: { branches: [{ case: { $eq: ["$kind", "car"] }, then: "$plate" }], default: "?" } } } }])
 ```
+
+The two car policies give their plates, the other three give `"?"`.
+
+Searching on the specific part of one kind:
+
+```javascript
+db.policies.find({ kind: "travel", days: { $gte: 5 } })
+```
+
+Only the 6-day Tokyo policy; the `days` field exists only on travel policies.
+
+A common query over the part every kind shares:
+
+```javascript
+db.policies.aggregate([{ $group: { _id: null, total: { $sum: "$insured" } } }])
+```
+
+A total of 4240, one read for all three kinds.
+
+## Common mistakes
+
+Summing a specific field that is not a number:
+
+```javascript
+// WRONG: plate is a string, $sum skips it and gives 0
+db.policies.aggregate([{ $group: { _id: null, total: { $sum: "$plate" } } }])
+```
+
+```javascript
+// FIX: sum the shared numeric field
+db.policies.aggregate([{ $group: { _id: null, total: { $sum: "$insured" } } }])
+```
+
+`$sum` skips non-numeric values, so the wrong query gives 0 instead of raising an error.
+
+Adding a new kind and forgetting its `$switch` branch:
+
+```text
+// WRONG: a "pet" policy exists, no branch and no default
+{ $switch: { branches: [ { case: { $eq: [ "$kind", "car" ] }, then: "$plate" }, ... ] } }
+mongod: $switch could not find a matching branch for an input, and no default was specified.
+```
+
+```text
+// FIX: a branch for the new kind, or a default
+{ $switch: { branches: [ ..., { case: { $eq: [ "$kind", "pet" ] }, then: "$petName" } ], default: null } }
+```
+
+Mingo in the browser does not raise this error (it leaves the label empty), so this part comes from the `$switch` docs.
 
 ## Practice
 
-Write the pipeline that summarises by `kind` with each kind's own label.
+Three steps: summarise by `kind` with each kind's own label, compute the shared total, then add a new kind of policy.
+
+## Recap
+
+- Polymorphic Data: several document shapes in one collection, a shared part and a specific part.
+- A `kind` field says which specific part to read; `$switch` reads by `kind`.
+- On `mongod`, a `$switch` with no match and no `default` raises an error.
+- Math on a field not every kind has can be silently wrong; compute on the shared part.
