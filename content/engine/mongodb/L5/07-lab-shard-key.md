@@ -79,7 +79,7 @@ lab:
 quiz:
   - q:
       vi: "`country` có 4 giá trị, `VN` chiếm 70 %. Thêm `customerId` vào sau thành khóa `{ country: 1, customerId: 1 }` thì sao?"
-      en: "`country` has 4 values and `VN` holds 70%. What changes with the key `{ country: 1, customerId: 1 }`?"
+      en: "`country` has 4 values and `VN` holds 70%. What changes when `customerId` is added after it, giving the key `{ country: 1, customerId: 1 }`?"
     options:
       - { vi: "Cardinality vẫn là 4, vì trường đầu quyết định chunk", en: "Cardinality stays 4, because the first field decides the chunk" }
       - { vi: "Cardinality tăng lên số cặp khác nhau, nên các đơn `VN` chia được ra nhiều chunk", en: "Cardinality rises to the number of distinct pairs, so the `VN` orders can split into many chunks" }

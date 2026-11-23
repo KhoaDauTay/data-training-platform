@@ -76,7 +76,7 @@ lab:
         vi: "`$merge` là stage cuối; với mặc định, bucket mới được thêm, bucket cũ của `s3` vẫn ở đó."
         en: "`$merge` is the last stage; with its defaults new buckets are inserted and the old `s3` bucket stays."
     - task:
-        vi: "Cảm biến mới `s4` đo 17.0 độ lúc 10:15. Thêm phép đo vào bucket `{ sensor: \"s4\", hour: 10:00 ngày 2026-10-01 UTC }` bằng một `updateOne`: đẩy giá trị vào `temps`, tăng `count`, và tạo bucket nếu nó chưa có."
+        vi: "Cảm biến mới `s4` đo 17.0 độ lúc 10:15. Thêm phép đo vào bucket `{ sensor: \"s4\", hour: 10:00 on 2026-10-01 UTC }` (10:00 ngày 2026-10-01 UTC) bằng một `updateOne`: đẩy giá trị vào `temps`, tăng `count`, và tạo bucket nếu nó chưa có."
         en: "New sensor `s4` reads 17.0 degrees at 10:15. Add the reading to the bucket `{ sensor: \"s4\", hour: 10:00 on 2026-10-01 UTC }` with one `updateOne`: push the value into `temps`, raise `count`, and create the bucket if it does not exist."
       solution: 'db.buckets.updateOne({ _id: { sensor: "s4", hour: ISODate("2026-10-01T10:00:00Z") } }, { $push: { temps: 17.0 }, $inc: { count: 1 } }, { upsert: true })'
       check: doc

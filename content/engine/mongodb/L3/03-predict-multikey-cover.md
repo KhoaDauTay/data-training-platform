@@ -56,7 +56,7 @@ quiz:
     answer: 0
     why:
       vi: "Câu đầu chỉ trả `title` và bỏ `_id`. Câu hai vẫn trả `_id` mặc định, mà `_id` không có trong index. Câu ba dùng `$elemMatch`, thứ làm index multikey không phủ được."
-      en: "The first returns only `title` and drops `_id`. The second still returns `_id` by default, which is not in the index. The third uses `$elemMatch`, which stops a multikey index from covering."
+      en: "The first returns only `title` and drops `_id`. The second still returns `_id` by default, and `_id` is not in the index. The third uses `$elemMatch`, which stops a multikey index from covering."
 ---
 ## Mở bài
 

@@ -108,7 +108,7 @@ Trang cửa hàng cần lọc theo thành phố, rồi theo quận; trang chính
 
 ## Ý chính
 
-Sort key tốt gom dữ liệu liên quan vào một chỗ và cho phép đọc theo khoảng (`begins_with`, `BETWEEN`, `>`, `<`). Sort key phân cấp ghép các cấp từ to tới nhỏ, ví dụ `[thành phố]#[quận]#[cửa hàng]`. Một Query với tiền tố dài ngắn khác nhau trả về đúng một cấp; giữ dấu `#` cuối tiền tố để không khớp nhầm cấp khác.
+Sort key tốt gom dữ liệu liên quan vào một chỗ và cho phép đọc theo khoảng (`begins_with`, `BETWEEN`, `>`, `<`). Sort key phân cấp ghép các cấp từ to tới nhỏ, ví dụ `[city]#[district]#[store]` (thành phố, quận, cửa hàng). Một Query với tiền tố dài ngắn khác nhau trả về đúng một cấp; giữ dấu `#` cuối tiền tố để không khớp nhầm cấp khác.
 
 Item phiên bản: mỗi lần sửa, ghi một item mới với số phiên bản kế tiếp (`v001`, `v002`…) và chép nội dung mới vào item `v000`. Bản mới nhất là một GetItem; lịch sử là một Query `sk > v000`. Ghi phiên bản mới là hai lần ghi; muốn cả hai cùng thành công hoặc cùng không thì dùng transaction (bài 11).
 

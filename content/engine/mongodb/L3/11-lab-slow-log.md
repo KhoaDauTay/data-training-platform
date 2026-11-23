@@ -61,8 +61,8 @@ lab:
         vi: "Một `find` với hai điều kiện, chiếu `shape` (`_id` có sẵn)."
         en: "One `find` with two conditions, projecting `shape` (`_id` comes by default)."
     - task:
-        vi: "Các truy vấn quét cả collection đọc tổng cộng bao nhiêu tài liệu? Trả một tài liệu `{ _id: null, docs: <tổng docsExamined của các truy vấn có keysExamined bằng 0> }`."
-        en: "How many documents do the full-scan queries read in total? Return one document `{ _id: null, docs: <sum of docsExamined of queries with keysExamined equal to 0> }`."
+        vi: "Các truy vấn quét cả collection đọc tổng cộng bao nhiêu tài liệu? Trả một tài liệu `{ _id: null, docs: <sum of docsExamined of queries with keysExamined equal to 0> }` (tổng `docsExamined` của các truy vấn có `keysExamined` bằng 0)."
+        en: "How many documents do the full-scan queries read in total? Return one document `{ _id: null, docs: <sum of docsExamined of queries with keysExamined equal to 0> }` (the sum of `docsExamined` over queries whose `keysExamined` is 0)."
       solution: 'db.slowlog.aggregate([{ $match: { keysExamined: 0 } }, { $group: { _id: null, docs: { $sum: "$docsExamined" } } }])'
       check: doc
       hint:

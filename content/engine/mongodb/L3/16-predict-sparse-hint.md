@@ -12,7 +12,7 @@ objectives:
   - vi: "Đoán kết quả khi `hint()` ép một index sparse cho một câu đếm cả collection"
     en: "Predict the result when `hint()` forces a sparse index on a count of the whole collection"
   - vi: "Phân biệt `hint()` đổi đường đọc với `hint()` đổi tập tài liệu thấy được"
-    en: "Tell a `hint()` that changes the read path from one that changes which documents are visible"
+    en: "Tell a `hint()` that changes the read path from a `hint()` that changes which documents are visible"
 requires: [e-mg-l3-14]
 sources:
   - https://www.mongodb.com/docs/manual/core/index-sparse/

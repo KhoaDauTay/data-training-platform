@@ -191,7 +191,7 @@ Tìm chiều ngược bằng Scan bảng:
 {"op": "Query", "input": {"TableName": "Shop", "IndexName": "GSI1", "KeyConditionExpression": "GSI1PK = :p", "ExpressionAttributeValues": {":p": {"S": "PRODUCT#P-02"}}}}
 ```
 
-Cùng ba đơn (câu sai còn kèm item sản phẩm `P-02` vì `PK = SK` trên item đó), nhưng câu sai đọc 38 item, câu sửa 3.
+Cùng ba đơn (câu sai còn kèm item sản phẩm `P-02` vì item đó có `PK` bằng `SK`), nhưng câu sai đọc 38 item, câu sửa 3.
 
 Dùng khóa của bảng khi Query GSI:
 
