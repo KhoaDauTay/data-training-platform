@@ -74,3 +74,7 @@ Scripts live outside the repo in `C:/Users/khoa.huynh/Documents/study/bd-wt/rese
 ## Mapping to tutorialspoint's list
 
 Seven tutorials are mapped chapter by chapter in [boondata-gap-map.md](boondata-gap-map.md): SQL (122 chapters), PostgreSQL (90), MySQL (186), SQLite (54), MongoDB (61), DynamoDB (38), DBMS (91). Each knowledge file says which of their sections it covers; the gap map links every chapter to a knowledge-file anchor.
+
+## Global SQL skill
+
+The Claude Code skill `sql` (user-level, `~/.claude/skills/sql/`, works in any project) is built from this folder: `SKILL.md` = review checklist, `references/` = copies of the area files and `tutorial-routes.md`, `scripts/run.mjs` = the block runner (PGlite from the current project, or `PGLITE_DIST`). This folder stays the source of truth: after editing a file here, copy it to `~/.claude/skills/sql/references/`.
