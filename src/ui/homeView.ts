@@ -546,7 +546,7 @@ function domainsSection(): HTMLElement {
 function skillsTeaser(m: HomeModel): HTMLElement {
   return h('a', { href: hashOf('learn'), class: cx(CARD_ACTION, 'group flex items-center gap-3 p-4 text-ink no-underline') },
     h('span', { class: 'grid size-9 shrink-0 place-items-center rounded-full bg-code', 'aria-hidden': 'true' }, icon('route')),
-    h('span', { class: 'min-w-0 flex-1 font-semibold' }, t('home.skillsTeaser', { n: m.learned, total: m.skills.length })),
+    h('span', { class: 'min-w-0 flex-1 font-semibold' }, t('home.skillsTeaser', { n: m.learned, total: m.skills.length }), h('span', { class: 'sr-only' }, t('home.skillsTeaserGo'))),
     icon('arrowRight', 'size-4 text-muted transition group-hover:translate-x-0.5 group-hover:text-accent'));
 }
 

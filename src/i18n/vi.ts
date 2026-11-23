@@ -798,7 +798,8 @@ export const vi = {
   'fin.promoted': 'Lên bậc mới: {rank}. Thêm một chi nhánh trên bản đồ.',
   'home.domains': 'Lĩnh vực',
   'home.enter': 'Vào làm',
-  'home.skillsTeaser': 'Kỹ năng SQL: đã học {n}/{total}. Xem lộ trình',
+  'home.skillsTeaser': 'Kỹ năng SQL: đã học {n}/{total}',
+  'home.skillsTeaserGo': '. Xem lộ trình', // sr-only: the card is the link (one line at 375, smoke V22-C)
   'learn.module': 'Phần {n} · {title}',
   'lesson.drilled': 'Bạn đã luyện kỹ năng này ở Luyện SQL.',
   'learn.loading': 'Đang chuẩn bị lộ trình và dữ liệu luyện tập…',
