@@ -14,6 +14,22 @@ import { go } from './router';
 export const COACH_KEY = 'cargo-query/coach-done';
 /** Only a stored `true` means "skipped"; anything else (missing, corrupt, other JSON) shows the coach. */
 export const coachDone = (storage: KV | undefined = localStore()): boolean => readJson<unknown>(COACH_KEY, storage) === true;
+/** src/guides.ts GUIDES_KEY, spelled out so main never imports the guide modules (v13). */
+export const GUIDES_PREF = 'cargo-query/guides';
+/**
+ * L318 (feedback #11): "Skip all guides" on a tour or guide mark: the tour is skipped and Boon's guides are off everywhere
+ * (the seen list is kept). ⋯ "Bật lại hướng dẫn của Boon" undoes both.
+ */
+export function skipAllGuides(storage?: KV): void {
+  const g = readJson<{ seen?: unknown }>(GUIDES_PREF, storage);
+  writeJson(COACH_KEY, true, storage);
+  writeJson(GUIDES_PREF, { seen: Array.isArray(g?.seen) ? g.seen : [], off: true }, storage);
+}
+/** ⋯ "Bật lại hướng dẫn của Boon": every guide shows again once, and a tour skipped before its end comes back. */
+export function restoreGuides(storage?: KV): void {
+  writeJson(GUIDES_PREF, { seen: [], off: false }, storage);
+  writeJson(COACH_KEY, false, storage);
+}
 
 // ---- Ticket 2's hint mark (v4 §B.5). The marks of ticket 1 became the tour below. ----
 
@@ -155,6 +171,7 @@ function mark(step: number): HTMLElement {
     step === 8 ? h('button', { type: 'button', class: 'primary', onclick: after(8) }, t('tour.done')) : null,
     step === 8 ? h('button', { type: 'button', onclick: after(8, true) }, t('tour.seePath')) : null,
     h('button', { type: 'button', onclick: () => skip() }, t('tour.skip')),
+    h('button', { type: 'button', 'data-skip-all': '', class: 'min-h-6 border-0 bg-transparent px-1 text-body-sm text-sun-ink underline shadow-none', onclick: () => { skipAllGuides(); skip(); } }, t('guide.skipAll')),
   ] });
   reveal(el, step);
   return el;

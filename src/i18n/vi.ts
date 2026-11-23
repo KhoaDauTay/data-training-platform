@@ -673,6 +673,7 @@ export const vi = {
   'prac.toFirst': 'Bắt đầu Phần 1',
   'hist.empty': 'Lịch sử: các lần chạy của bạn sẽ hiện ở đây (tối đa 15)',
   'tour.replay': 'Xem lại hướng dẫn',
+  'guide.skipAll': 'Bỏ qua tất cả hướng dẫn',
   'guide.reset': 'Bật lại hướng dẫn của Boon',
   'lock.afterTask1': 'Mở sau khi xong việc đầu tiên',
   'tour.label': 'Hướng dẫn {i}/{n}',

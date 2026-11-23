@@ -87,6 +87,7 @@ function finish(id: string, off = false): void {
   const dialog = inDialog();
   active = undefined;
   const seen = [id, ...also].reduce<GuidesPref | undefined>((p, x) => withSeen(p, x), pref());
+  if (off) d$.writeJson('cargo-query/coach-done', true); // L318: "skip all" also skips the tour (coach.ts COACH_KEY)
   d$.writeJson(GUIDES_KEY, { ...seen, ...(off ? { off } : {}) });
   redraw(!!document.activeElement?.closest('[data-guide-mark]'), dialog); // focus was in the mark: the next mark, or the page title, takes it
 }

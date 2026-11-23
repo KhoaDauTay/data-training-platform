@@ -133,10 +133,10 @@ describe('guide engine (ui/guide.ts)', () => {
     expect(s.mark()!.o.text).toBe('one');
   });
 
-  it('"Turn off guides" stops them; "Boon chỉ mình" replays even then, and for "I know SQL"', async () => {
+  it('"Skip all guides" (L318, was "Turn off guides") stops them; "Boon chỉ mình" replays even then, and for "I know SQL"', async () => {
     const s = await setup();
     s.hooks.refresh!();
-    s.click('Turn off guides');
+    s.click('Skip all guides');
     expect(s.stored()).toEqual({ seen: ['drill'], off: true });
     expect(s.mark()).toBeNull();
     s.g.replayGuide('drill');
@@ -229,9 +229,10 @@ describe('guide slots (v8 §3.9: every slot a guide names is drawn by a page)', 
     for (const s of named) expect(SLOTS, s).toContain(s);
     for (const x of ['example', 'mistake', 'try', 'try-actions']) expect(SLOTS).toContain(`lesson-${x}`); // built as `lesson-${x}`
   });
-  it("main's ⋯ reset writes the same pref key (main never imports src/guides.ts)", async () => {
+  it("main's ⋯ reset writes the same pref key (main never imports src/guides.ts; L318: the key lives in ui/coach.ts)", async () => {
     const main = (await import('../src/main.ts?raw')).default as string;
-    expect(main).toContain(`'${GUIDES_KEY}'`);
+    expect((await import('../src/ui/coach')).GUIDES_PREF).toBe(GUIDES_KEY);
+    expect(main).toContain('restoreGuides()');
     expect(main).not.toMatch(/from '\.\/guides'/);
   });
 });

@@ -75,7 +75,7 @@ const vi = {
   'guide.next': 'Tiếp',
   'guide.done': 'Xong',
   'guide.skip': 'Bỏ qua (Esc)',
-  'guide.off': 'Tắt hướng dẫn',
+  'guide.off': 'Bỏ qua tất cả hướng dẫn',
   'guide.replay': 'Boon chỉ mình',
   // v13 (product-design-v8 §2.3): the guides G1–G8, in the words of the buttons they name
   'g.path.1': 'Chào bạn, mình là Boon. Đây là Lộ trình: bên trái là SQL nền tảng, bên phải là phân tích nâng cao.',
@@ -180,7 +180,7 @@ const en: Record<LearnKey, string> = {
   'guide.next': 'Next',
   'guide.done': 'Done',
   'guide.skip': 'Skip (Esc)',
-  'guide.off': 'Turn off guides',
+  'guide.off': 'Skip all guides',
   'guide.replay': 'Boon, show me',
   'g.path.1': "Hi, I'm Boon. This is your learning path: SQL basics on the left, advanced analysis on the right.",
   'g.path.2': 'Each module is a group of skills. The bar under its name shows how many you have learned.',

@@ -31,7 +31,7 @@ import { initStage, playCompletion, relabelStage } from './ui/stage';
 import { prefetchArt } from './art/load';
 import { markInboxSeen, renderInbox } from './ui/inbox';
 import { createPanel, registerCoreTabs } from './ui/tabs';
-import { coachDone, initTour, refreshGuides, refreshTour } from './ui/coach';
+import { coachDone, initTour, refreshGuides, refreshTour, restoreGuides } from './ui/coach';
 import { initSound, relabelSound } from './ui/sound';
 import { initWelcome, openWelcome, relabelWelcome } from './ui/welcome';
 import { bootPick, readTour, welcomeNeeded, type BootPick } from './onboarding';
@@ -520,10 +520,8 @@ byId('inbox-dialog').addEventListener('close', () => { // L313: what the Inbox s
 byId('notebook-btn').addEventListener('click', () => toggleNotebook(byId('notebook-dialog') as HTMLDialogElement));
 initSound(); // ui-ux-v7 X2 (L148): the ⋯ menu's sound switch, off by default
 byId('replay-btn').addEventListener('click', () => openWelcome(true)); // v4 D-O2: the static version (V10)
-/** v13 (v8 §2.1): src/guides.ts GUIDES_KEY, spelled out here so main never imports the lazy guide module (tests/guides.test.ts checks it). */
-const GUIDES_PREF = 'cargo-query/guides';
 byId('guides-btn').addEventListener('click', () => {
-  writeJson(GUIDES_PREF, { seen: [], off: false }); // every guide shows again, once
+  restoreGuides(); // every guide shows again, once; L318: a skipped tour too
   rerender();
 });
 byId('diag-btn').addEventListener('click', () => void copyDiagnostics());
