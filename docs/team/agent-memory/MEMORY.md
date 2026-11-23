@@ -1,3 +1,4 @@
 - [Push wip backups](feedback-push-wip-backup.md) — commit + push work branches to origin wip/*; worktrees in Documents\study\bd-wt, not Temp
 - [Freeze at v23](project-freeze-v23.md) — 2026-11-20 user paused the loop at v23 for review; no v24+ until told
 - [Handoff](project-handoff.md) — v23 live and frozen; read docs/team/handoff-2026-11-20.md first
+- [SQL knowledge + skill](reference-sql-knowledge.md) — docs/knowledge/database is source of truth; ~/.claude/skills/sql copies it
