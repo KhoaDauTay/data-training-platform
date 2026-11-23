@@ -3,7 +3,7 @@ import { activeDomain, DOMAINS } from '../domains';
 import { knownSkills } from '../home';
 import { getLang, t, type Key } from '../i18n';
 import { earlyOffer } from './chapterView';
-import { CHAPTERS, chaptersOf, chapterTitle, currentChapter, moduleTitle, PARTS, partOf, rankOf, SKILLS, visibleTickets } from '../progress';
+import { CHAPTERS, chaptersOf, chapterTitle, currentChapter, moduleTitle, PARTS, partOf, rankOf, ROUTE_SKILLS, visibleTickets } from '../progress';
 import { gated, navLock, readTour, sqlOnly } from '../onboarding';
 import { domainHash, hashOf, inDomain, learnModuleOf, learnSkillOf, type Route } from '../route';
 import { generalWork, isStory, reviewCount } from '../session';
@@ -74,9 +74,9 @@ function row(r: Row): HTMLElement {
  */
 function modules(): HTMLElement[] {
   const lang = getLang();
-  const known = knownSkills(app.save, loadTickets('logistics'), SKILLS.map((s) => s.id));
+  const known = knownSkills(app.save, loadTickets('logistics'), ROUTE_SKILLS.map((s) => s.id)); // v25 R1: General-only skills (cross_join, any_all) count toward their Part
   // U19 (v21): only the module that holds the open page or drill is current; the overview, advanced nodes and the interview room mark none.
-  const skill = learnSkillOf(location.hash) ?? (generalWork() ? SKILLS.find((s) => app.selectedId?.startsWith(`g-${s.id}-`))?.id : undefined);
+  const skill = learnSkillOf(location.hash) ?? (generalWork() ? ROUTE_SKILLS.find((s) => app.selectedId?.startsWith(`g-${s.id}-`))?.id : undefined);
   const open = learnModuleOf(location.hash) ?? (skill ? partOf(skill) : undefined);
   // v24 (L335): the General route's Parts (content/general/route.yml), not the Logistics chapters
   return PARTS.map((p) => {

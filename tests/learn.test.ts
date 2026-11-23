@@ -5,7 +5,7 @@ import {
   appliesIn, dependsOn, drillState, drillXp, moduleState, nodeState, skillState, type LearnCtx,
 } from '../src/learn';
 import { chapterSummary } from '../src/overview';
-import { nextTicket, PARTS, rankOf, SKILLS } from '../src/progress';
+import { nextTicket, PARTS, rankOf, ROUTE_SKILLS, SKILLS } from '../src/progress';
 import { emptySave, parseSave, SAVE_VERSION, type Known, type Save } from '../src/save';
 import { derive } from '../src/scene';
 
@@ -37,7 +37,7 @@ describe('src/learn.ts', () => {
   it('skillOfDrill: bỏ g- và -<số>, - thành _, chỉ nhận kỹ năng có thật; mọi drill của sql.yml suy đúng', () => {
     expect(skillOfDrill('g-conditional-agg-3', SKILL_IDS)).toBe('conditional_agg');
     expect(skillOfDrill('g-a1-2', SKILL_IDS)).toBeUndefined();
-    for (const d of g.drills.filter((x) => x.skill)) expect([d.id, skillOfDrill(d.id, SKILL_IDS)]).toEqual([d.id, d.skill]);
+    for (const d of g.drills.filter((x) => x.skill)) expect([d.id, skillOfDrill(d.id, ROUTE_SKILLS.map((s) => s.id))]).toEqual([d.id, d.skill]); // v25 R1: + General-only skills
   });
 
   it('knownSkills: ticket grants xong, ≥ 2 drill, hoặc thẻ review; 1 drill chưa đủ', () => {

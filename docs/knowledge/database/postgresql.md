@@ -192,6 +192,8 @@ Status: verified, in [sql-core.md §7 and §10](sql-core.md#7-subqueries). Postg
 SELECT count(*) FROM unnest(ARRAY[1,2,3]) id WHERE id = ANY(ARRAY[2,3]);
 ```
 
+`x op ALL (list)` is true over an empty list and never true when the list holds a NULL (that comparison is unknown); `x op ANY (empty)` is false. Verified on PGlite 0.5.16 against `lab` while writing the v25 R1 lesson `content/general/lessons/any_all.md` (https://www.postgresql.org/docs/18/functions-subquery.html#FUNCTIONS-SUBQUERY-ALL).
+
 ## 8. Client interfaces
 
 Status: not covered on purpose. The tutorial's C/Java/PHP/Perl/Python chapters are driver tutorials. Rule that matters for any driver: send values as bind parameters (`$1`), never by string concatenation (see [security.md](security.md#1-sql-injection)). BoonData has no backend; the browser talks to PGlite through `src/db/worker.ts`.

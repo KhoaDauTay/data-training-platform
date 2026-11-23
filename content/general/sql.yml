@@ -834,11 +834,11 @@
 - id: g-any-all-3
   skill: any_all
   kind: trap
-  task: { vi: "Khách ở `Can Tho` nào sinh cùng năm hoặc muộn hơn mọi khách ở `Hanoi` đã biết năm sinh? Lấy mã, tên và năm sinh.", en: "Which customers in `Can Tho` were born in the same year as, or later than, every `Hanoi` customer whose birth year is known? Get the id, the name and the birth year." }
-  solution: "SELECT id, name, birth_year FROM customers WHERE city = 'Can Tho' AND birth_year >= ALL (SELECT birth_year FROM customers WHERE city = 'Hanoi' AND birth_year IS NOT NULL)"
+  task: { vi: "Trong các khách có mã từ 1 đến 60 ở `Can Tho`, ai sinh cùng năm hoặc muộn hơn mọi khách ở `Hanoi` đã biết năm sinh? Lấy mã, tên và năm sinh.", en: "Among the customers with an id from 1 to 60 in `Can Tho`, who was born in the same year as, or later than, every `Hanoi` customer whose birth year is known? Get the id, the name and the birth year." }
+  solution: "SELECT id, name, birth_year FROM customers WHERE id <= 60 AND city = 'Can Tho' AND birth_year >= ALL (SELECT birth_year FROM customers WHERE city = 'Hanoi' AND birth_year IS NOT NULL)"
   hint: { vi: "Danh sách năm sinh ở Hà Nội có ô trống; một ô trống làm phép so với mọi giá trị không bao giờ đúng.", en: "The list of Hanoi birth years has empty cells; one empty cell keeps a comparison with every value from ever being true." }
   wrong:
-    - sql: "SELECT id, name, birth_year FROM customers WHERE city = 'Can Tho' AND birth_year >= ALL (SELECT birth_year FROM customers WHERE city = 'Hanoi')"
+    - sql: "SELECT id, name, birth_year FROM customers WHERE id <= 60 AND city = 'Can Tho' AND birth_year >= ALL (SELECT birth_year FROM customers WHERE city = 'Hanoi')"
       vi: "4 khách Hà Nội không có năm sinh, và so với ô trống là \"không biết\", nên `>= ALL` không đúng với ai: 0 dòng. Lọc `birth_year IS NOT NULL` trong truy vấn con."
       en: "4 Hanoi customers have no birth year, and comparing with an empty cell is \"unknown\", so `>= ALL` is true for nobody: 0 rows. Filter `birth_year IS NOT NULL` in the subquery."
 - id: g-any-all-4
