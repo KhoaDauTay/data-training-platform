@@ -1,4 +1,4 @@
-import type { Bi, EngineId } from './content';
+import type { Bi, ProductEngine as EngineId } from './content';
 
 /**
  * v27 (L411, design-v27 §2): the Database Engine interview bank (content/engine/iv-<engine>.yml, one lazy chunk per engine),

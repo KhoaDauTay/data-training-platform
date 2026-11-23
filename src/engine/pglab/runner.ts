@@ -45,15 +45,26 @@ export const replayOf = (lab: Lab, step: number | undefined): string[] =>
   (step === undefined ? [] : lab.steps.slice(0, step)).map((s) => s.solution).filter((s) => !reads(s));
 
 /**
- * What a DDL step left behind, one row per object: index definitions, columns, constraints, views. A `catalog` step
+ * What a DDL step left behind, one row per object: index definitions, columns, constraints, views, statistics, and (v27
+ * R3) schemas with their ACL, functions and procedures (definition + ACL), triggers, table and column ACLs, roles, memberships and
+ * default privileges, in every non-system schema. A `catalog` step
  * whose statement is not a read is graded on this (the statement itself returns no rows).
  */
 export const CATALOG_PROBE = `SELECT * FROM (
-  SELECT 'index' AS kind, indexname::text AS name, indexdef AS def FROM pg_indexes WHERE schemaname = 'public'
-  UNION ALL SELECT 'column', table_name || '.' || column_name, data_type || ' ' || is_nullable || ' ' || coalesce(column_default, '') FROM information_schema.columns WHERE table_schema = 'public'
-  UNION ALL SELECT 'constraint', conrelid::regclass::text || '.' || conname, pg_get_constraintdef(oid) FROM pg_constraint WHERE connamespace = 'public'::regnamespace
-  UNION ALL SELECT 'view', viewname::text, definition FROM pg_views WHERE schemaname = 'public'
+  SELECT 'index' AS kind, schemaname || '.' || indexname AS name, indexdef AS def FROM pg_indexes WHERE schemaname NOT IN ('pg_catalog', 'information_schema')
+  UNION ALL SELECT 'column', table_schema || '.' || table_name || '.' || column_name, data_type || ' ' || is_nullable || ' ' || coalesce(column_default, '') FROM information_schema.columns WHERE table_schema NOT IN ('pg_catalog', 'information_schema')
+  UNION ALL SELECT 'constraint', conrelid::regclass::text || '.' || conname, pg_get_constraintdef(oid) FROM pg_constraint WHERE connamespace::regnamespace::text NOT IN ('pg_catalog', 'information_schema')
+  UNION ALL SELECT 'view', schemaname || '.' || viewname, definition FROM pg_views WHERE schemaname NOT IN ('pg_catalog', 'information_schema')
+  UNION ALL SELECT 'matview', schemaname || '.' || matviewname, definition FROM pg_matviews
   UNION ALL SELECT 'statistics', stxname::text, pg_get_statisticsobjdef(oid) FROM pg_statistic_ext
+  UNION ALL SELECT 'schema', nspname::text, coalesce(nspacl::text, '') FROM pg_namespace WHERE nspname !~ '^pg_' AND nspname <> 'information_schema'
+  UNION ALL SELECT 'function', p.oid::regprocedure::text, pg_get_functiondef(p.oid) || coalesce(p.proacl::text, '') FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace WHERE n.nspname !~ '^pg_' AND n.nspname <> 'information_schema' AND p.prokind IN ('f', 'p')
+  UNION ALL SELECT 'trigger', tgrelid::regclass::text || '.' || tgname, pg_get_triggerdef(oid) FROM pg_trigger WHERE NOT tgisinternal
+  UNION ALL SELECT 'acl', c.oid::regclass::text, c.relacl::text FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace WHERE c.relacl IS NOT NULL AND n.nspname !~ '^pg_' AND n.nspname <> 'information_schema'
+  UNION ALL SELECT 'column acl', attrelid::regclass::text || '.' || attname, attacl::text FROM pg_attribute WHERE attacl IS NOT NULL
+  UNION ALL SELECT 'role', rolname::text, rolcanlogin::text || rolinherit::text || rolcreaterole::text || rolcreatedb::text FROM pg_roles WHERE rolname !~ '^pg_' AND NOT rolsuper
+  UNION ALL SELECT 'member', roleid::regrole::text || ' > ' || member::regrole::text, admin_option::text || inherit_option::text FROM pg_auth_members WHERE roleid::regrole::text !~ '^pg_'
+  UNION ALL SELECT 'default acl', defaclrole::regrole::text || ' ' || defaclobjtype::text, defaclacl::text FROM pg_default_acl
 ) c ORDER BY 1, 2, 3`;
 
 const stepIndex = (lab: Lab, step: LabStep): number => lab.steps.indexOf(step);
@@ -92,6 +103,11 @@ export function pgScriptRunner(env: Env, client: Pick<PgLabClient, 'run' | 'rese
         const want = await plan(lab, step.solution, i);
         if (want.join('|') !== mine.join('|')) return { ok: false, reason: 'wrong', why: 'plan', params: { got: mine.join(' → '), want: want.join(' → ') } };
         // the plan is right: the rows must be too (an index-friendly query that answers something else is still wrong)
+      }
+      if (step.after) {
+        // v27 R3: GRANT, CALL, TRUNCATE, a write… are graded on the read that follows them, not on their (empty) result
+        const g = await env.grade((sql) => exec(lab, sql, i, step.after), step.solution, code, step.ordered);
+        return g.ok ? { ok: true } : { ok: false, reason: g.reason === 'error' ? 'error' : 'wrong', message: env.verdict(g) };
       }
       if (step.check === 'catalog' && !reads(step.solution)) {
         // DDL returns no rows: compare what it left in the catalog, then (with `target`) the plan of the query it is for.

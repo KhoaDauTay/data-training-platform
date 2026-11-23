@@ -4,7 +4,7 @@
 import { describe, expect, it } from 'vitest';
 import { parse } from 'yaml';
 import {
-  blocksOf, ENGINE_XP, engineXp, isRight, lessonPassed, lessonProblems, parseEngineLesson, parseModules, partsOf, progressOf, treeOf,
+  blocksOf, ENGINE_XP, engineXp, isRight, lessonPassed, lessonProblems, onPg, parseEngineLesson, parseModules, partsOf, progressOf, treeOf,
   type EngineLesson,
 } from '../src/engine/content';
 import { compareResults } from '../src/grader';
@@ -60,7 +60,7 @@ describe('content/engine (ENGINE-CONTENT-V1)', () => {
     for (const l of set) visit(l.id, []);
   });
 
-  const pgRows = parsed.map((x) => x.l).filter((l) => l.engine === 'postgres' && !l.lab?.setup)
+  const pgRows = parsed.map((x) => x.l).filter((l) => onPg(l.engine) && !l.lab?.setup)
     .flatMap((l) => (l.lab?.steps ?? []).filter((s) => s.check === 'rows').map((s, i) => [`${l.id} bước ${i + 1}`, s] as const));
   it.each(pgRows)('%s: Solution chạy trên lab; ordered ⇒ ORDER BY', async (_, s) => {
     const run = await labRun();
@@ -166,9 +166,9 @@ describe('honestOf: nhãn trung thực của mọi bài', () => {
     if (k === 'pg' || k === 'mingo' || k === 'dynoxide') {
       // "runs" only when something executes here: a lab (its Run goes to the runner) or a Postgres predict's real plan.
       // L299: the two DynamoDB catalog labs (e-dy-l1-04, e-dy-l3-03) count as gradable now (dynoxide grades any check kind).
-      expect(!!l.lab || (l.engine === 'postgres' && !!l.predict)).toBe(true);
-      expect((l.lab?.steps ?? []).some((s) => gradable(l, s)) || (l.engine === 'postgres' && !!l.predict)).toBe(true);
-      expect(k).toBe({ postgres: 'pg', mongodb: 'mingo', dynamodb: 'dynoxide' }[l.engine]);
+      expect(!!l.lab || (onPg(l.engine) && !!l.predict)).toBe(true);
+      expect((l.lab?.steps ?? []).some((s) => gradable(l, s)) || (onPg(l.engine) && !!l.predict)).toBe(true);
+      expect(k).toBe({ postgres: 'pg', mongodb: 'mingo', dynamodb: 'dynoxide', design: 'pg' }[l.engine]);
     } else {
       expect(l.runtime).toBe('docs');
       expect(k).toBe(l.viz ? 'diagram' : 'docs');

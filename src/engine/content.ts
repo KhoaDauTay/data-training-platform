@@ -3,7 +3,7 @@
  * engine UI chunk imports this; a value import of a main module would split main, Plan 6 U3). The YAML parser comes in as an
  * argument for the same reason (`yaml` lives in main).
  *
- * File: `content/engine/<engine>/<level>/<NN>-<slug>.md`, engine ∈ postgres|mongodb|dynamodb, level ∈ L1..L5.
+ * File: `content/engine/<engine>/<level>/<NN>-<slug>.md`, engine ∈ postgres|mongodb|dynamodb|design, level ∈ L1..L5.
  * Frontmatter: id, engine, level, module, title (VI), title_en, kind, minutes, objectives [{vi,en}], requires [ids],
  * sources [https urls], viz?, lab? {setup?, steps:[{task:{vi,en}, solution, check, ordered?, hint:{vi,en}}]},
  * quiz? [{q:{vi,en}, options:[{vi,en}], answer, why:{vi,en}}], predict? {sql, q, options, answer, why}.
@@ -12,9 +12,14 @@
  */
 import type { PerfSpec } from '../planCheck';
 
-export const ENGINES = ['postgres', 'mongodb', 'dynamodb'] as const;
+/** v28 R4 (L322, L420): `design` = database design and DBMS theory, the fourth card; its labs run on PostgreSQL (`onPg`). */
+export const ENGINES = ['postgres', 'mongodb', 'dynamodb', 'design'] as const;
 export type EngineId = (typeof ENGINES)[number];
-export const ENGINE_SHORT: Record<EngineId, 'pg' | 'mg' | 'dy'> = { postgres: 'pg', mongodb: 'mg', dynamodb: 'dy' };
+/** The three database products (the interview room and the glossary): every engine but the design track. */
+export type ProductEngine = Exclude<EngineId, 'design'>;
+export const ENGINE_SHORT: Record<EngineId, 'pg' | 'mg' | 'dy' | 'ds'> = { postgres: 'pg', mongodb: 'mg', dynamodb: 'dy', design: 'ds' };
+/** The engines whose labs, predicts and plans run on PostgreSQL (PGlite): Postgres itself and the design track (L420). */
+export const onPg = (e: EngineId): boolean => e === 'postgres' || e === 'design';
 export const LEVELS = ['L1', 'L2', 'L3', 'L4', 'L5'] as const;
 export type Level = (typeof LEVELS)[number];
 export const KINDS = ['concept', 'lab', 'predict', 'quiz', 'capstone'] as const;
@@ -39,6 +44,8 @@ export interface Fact extends Bi { probe?: string; expect?: unknown[][] }
 export interface LabStep {
   task: Bi; solution: string; check: Check; ordered: boolean; hint: Bi; expect?: Record<string, number>; fact?: Fact; target?: string; name?: Bi; perf?: PerfSpec; slow?: string;
   rule?: 'esr' | 'covered' | 'match-first'; index?: string; error?: string; sql?: string;
+  /** v27 R3: a read run right after the statement on a Postgres setup lab; the step is graded on its rows (GRANT, CALL, TRUNCATE, a write). */
+  after?: string;
 }
 export interface Lab { setup?: string; steps: LabStep[] }
 export interface Question { q: Bi; options: Bi[]; answer: number; why: Bi }
@@ -60,7 +67,14 @@ export type Runtime = (typeof RUNTIMES)[number];
 /** Why a `runtime: docs` lesson does not run here (L305), shown on its page: two sessions at once, a real server, billions of transactions, or a concept whose run is the next lab. */
 export const DOCS_WHY = ['sessions', 'server', 'scale', 'next'] as const;
 export type DocsWhy = (typeof DOCS_WHY)[number];
-export const SECTIONS = { idea: ['Ý chính', 'Key idea'], example: ['Ví dụ', 'Example'], practice: ['Thực hành', 'Practice'] } as const;
+/**
+ * v27 R3 (product-route-v24 §2.2): the eight-section anatomy adds `open` (drawn above the objectives), `syntax`, `pitfalls`
+ * and `recap` (drawn after the questions). Which sections a kind needs: tests/engineAnatomy.test.ts.
+ */
+export const SECTIONS = {
+  open: ['Mở bài', 'Opening'], idea: ['Ý chính', 'Key idea'], syntax: ['Cú pháp', 'Syntax'], example: ['Ví dụ', 'Example'],
+  pitfalls: ['Lỗi hay gặp', 'Common mistakes'], practice: ['Thực hành', 'Practice'], recap: ['Tóm tắt', 'Recap'],
+} as const;
 export type SectionId = keyof typeof SECTIONS;
 export interface Section { id: SectionId; text: Bi }
 
@@ -88,7 +102,7 @@ export interface EngineLesson {
 
 /** `e-pg-l1-01`: engine short name, level, the file's NN. */
 export const lessonIdFor = (engine: EngineId, level: Level, nn: string): string => `e-${ENGINE_SHORT[engine]}-${level.toLowerCase()}-${nn}`;
-const PATH_RE = /engine\/(postgres|mongodb|dynamodb)\/(L[1-5])\/(\d{2})-[a-z0-9-]+\.md$/;
+const PATH_RE = /engine\/(postgres|mongodb|dynamodb|design)\/(L[1-5])\/(\d{2})-[a-z0-9-]+\.md$/;
 const FM_RE = /^---\n([\s\S]*?)\n---\n([\s\S]*)$/;
 const EN_RE = /^# EN[ \t]*$/m;
 
@@ -178,7 +192,7 @@ export function parseEngineLesson(source: string | LessonSource, path: string, y
         ...(s.fact !== undefined ? { fact: fact(s.fact, `lab.steps[${i}].fact`) } : {}),
         ...(s.name !== undefined ? { name: bi(s.name, `lab.steps[${i}].name`) } : {}),
         ...(s.perf !== undefined ? { perf: perfOf(s.perf, s.slow, `lab.steps[${i}]`) } : {}),
-        ...Object.fromEntries(['target', 'slow', 'rule', 'index', 'error', 'sql'].flatMap((k) => (typeof s[k] === 'string' && s[k] ? [[k, s[k].trim()]] : []))),
+        ...Object.fromEntries(['target', 'slow', 'rule', 'index', 'error', 'sql', 'after'].flatMap((k) => (typeof s[k] === 'string' && s[k] ? [[k, s[k].trim()]] : []))),
       };
     });
     if (!steps.length) fail('lab cần ít nhất một bước');

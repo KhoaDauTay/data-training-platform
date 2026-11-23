@@ -1,6 +1,6 @@
 import {
-  blocksOf, ENGINES, engineXp, isRight, lessonPassed, parseEngineLesson, parseModules, partsOf, progressOf, SECTIONS, treeOf,
-  type EngineId, type EngineLesson, type Kind, type LessonSource, type Level, type ModuleName, type Question, type Tree,
+  blocksOf, ENGINES, engineXp, isRight, onPg, lessonPassed, parseEngineLesson, parseModules, partsOf, progressOf, SECTIONS, treeOf,
+  type EngineId, type EngineLesson, type Kind, type LessonSource, type Level, type ModuleName, type Question, type SectionId, type Tree,
 } from '../engine/content';
 import { heapView } from '../engine/inside';
 import { gradable, honestOf, honestRow, LAB_RUNNERS, type Honest, type LabEnv, type LabOutput, type LabRunner, type LabVerdict } from '../engine/labs';
@@ -62,9 +62,11 @@ export interface EngineSources { meta: Record<string, LessonSource>; full: Recor
 let d: EngineDeps;
 let lessons: EngineLesson[] = [];
 const trees = {} as Record<EngineId, Tree>;
-const NAME: Record<EngineId, string> = { postgres: 'PostgreSQL', mongodb: 'MongoDB', dynamodb: 'DynamoDB' };
+const NAME: Record<Exclude<EngineId, 'design'>, string> = { postgres: 'PostgreSQL', mongodb: 'MongoDB', dynamodb: 'DynamoDB' };
+/** v28 R4 (L420): product names stay as they are; the design track's name is translated. */
+const nameOf = (e: EngineId): string => (e === 'design' ? et('name.design') : NAME[e]);
 /** L280: one generic picture per engine (no logos): a table grid, a JSON document, a key and its values. */
-const ENGINE_ICON = { postgres: 'engRelational', mongodb: 'engDocument', dynamodb: 'engKeyValue' } as const satisfies Record<EngineId, Icons.IconName>;
+const ENGINE_ICON = { postgres: 'engRelational', mongodb: 'engDocument', dynamodb: 'engKeyValue', design: 'engDesign' } as const satisfies Record<EngineId, Icons.IconName>;
 const KIND_ICON = { concept: 'kindConcept', lab: 'kindLab', predict: 'kindPredict', quiz: 'kindQuiz', capstone: 'kindCapstone' } as const satisfies Record<Kind, Icons.IconName>;
 const et = (key: EngineKey, params?: I18n.Params): string => engineText(d.getLang(), d.locale(), key, params);
 
@@ -109,8 +111,13 @@ const nextOf = (all: EngineLesson[], ok: Set<string>): EngineLesson | undefined 
  */
 function inline(text: string, marked = false): (Node | string)[] {
   const plain = (q: string): (Node | string)[] => (marked && mark ? mark.inline(q) : [q]); // v27: term buttons, never in code spans
-  return text.split(/(`[^`\n]+`)/).filter(Boolean).flatMap((p) => (p.length > 1 && p.startsWith('`') && p.endsWith('`') ? [d.h('code', {}, p.slice(1, -1))]
+  return text.split(/(`[^`\n]+`)/).filter(Boolean).flatMap((p) => (p.length > 1 && p.startsWith('`') && p.endsWith('`') ? [codeOrLink(p.slice(1, -1))]
     : p.split(/(\*\*[^*\n]+\*\*)/).filter(Boolean).flatMap((q) => (q.length > 4 && q.startsWith('**') && q.endsWith('**') ? [d.h('strong', {}, ...plain(q.slice(2, -2)))] : plain(q)))));
+}
+/** v28 R4 (L421): a code span holding a lesson id (`e-pg-l4-12`) is a link to that lesson, named by its title (the design track's "go deeper" links). */
+function codeOrLink(c: string): Node {
+  const to = /^e-(pg|mg|dy|ds)-l[1-5]-\d\d$/.test(c) ? lessons.find((x) => x.id === c) : undefined;
+  return to ? d.h('a', { href: lessonHash(to) }, `${nameOf(to.engine)} ${to.level} · ${to.title[lang()]}`) : d.h('code', {}, c);
 }
 function prose(text: string, marked = false): HTMLElement {
   return d.h('div', { class: 'flex flex-col gap-3' }, ...blocksOf(text).map((b) => b.kind === 'p' ? d.h('p', { class: 'm-0' }, ...inline(b.text, marked))
@@ -149,7 +156,7 @@ export function subOf(): HomeView.PageSub | undefined {
   const e = ENGINES.find((x) => x === r.engine);
   if (!e) return undefined;
   const top = { href: d.hashOf('engine'), text: d.t('nav.engine') };
-  const eng = { href: d.engineHash(e), text: NAME[e] };
+  const eng = { href: d.engineHash(e), text: nameOf(e) };
   const path = e === 'mongodb' ? d.enginePathOf(location.hash) : undefined;
   if (path !== undefined) {
     const title = path && pathMod && pathMod !== 'loading' && pathMod !== 'failed' ? pathMod.skillTitle(path, lang()) : undefined;
@@ -159,7 +166,7 @@ export function subOf(): HomeView.PageSub | undefined {
   if (lesson) return { title: lesson.title[lang()], trail: [top, eng, { href: d.engineHash(e, lesson.level), text: levelName(lesson.level) }] };
   const lv = levelOf(e, r.level);
   if (lv) return { title: levelName(lv.level), trail: [top, eng] };
-  return { title: NAME[e], trail: [top] };
+  return { title: nameOf(e), trail: [top] };
 }
 
 // ---- pages
@@ -207,7 +214,7 @@ function continueCard(ok: Set<string>): HTMLElement | null {
   const started = all.some((x) => ok.has(x.id));
   return h('section', { class: cls.cx(cls.CARD, 'flex flex-col gap-3 p-6 max-sm:p-4'), 'aria-labelledby': 'engine-cont' },
     h('p', { class: 'm-0 flex items-center gap-2 text-body-sm font-semibold text-accent' }, d.icon(ENGINE_ICON[e], 'size-4'),
-      `${et(started ? 'cont.resume' : 'cont.start')} · ${NAME[e]} · ${next.level}`),
+      `${et(started ? 'cont.resume' : 'cont.start')} · ${nameOf(e)} · ${next.level}`),
     h('h2', { id: 'engine-cont', class: 'm-0 text-title font-bold' }, next.title[lang()]),
     h('p', { class: 'm-0 flex flex-wrap items-center gap-2 text-body-sm text-muted' }, kindChip(next.kind), h('span', {}, et('minutes', { n: next.minutes }))),
     h('div', {}, h('a', { href: lessonHash(next), class: cls.cx(cls.BTN_GO, 'inline-flex items-center gap-2 px-4 py-2 no-underline') },
@@ -223,8 +230,9 @@ function engineCard(e: EngineId, ok: Set<string>): HTMLElement {
   return h('li', { class: 'relative cursor-pointer flex flex-col gap-4 rounded-(--r-card) bg-panel p-5 ring-1 ring-line hover:ring-accent max-sm:p-4' },
     h('div', { class: 'flex items-start gap-4' }, engineBadge(e, true),
       h('div', { class: 'min-w-0 flex-1 flex flex-col gap-1' },
-        h('h3', { class: 'm-0 text-title font-bold' }, h('a', { href: d.engineHash(e), class: 'text-ink no-underline after:absolute after:inset-0' }, NAME[e])),
-        h('p', { class: 'm-0 text-body-sm text-muted' }, et(`desc.${e}`)))),
+        h('h3', { class: 'm-0 text-title font-bold' }, h('a', { href: d.engineHash(e), class: 'text-ink no-underline after:absolute after:inset-0' }, nameOf(e))),
+        h('p', { class: 'm-0 text-body-sm text-muted' }, et(`desc.${e}`)),
+        e === 'design' ? h('p', { class: d.cls.cx(d.ui.ABOVE, 'm-0 text-caption text-muted') }, h('a', { href: d.engineHash('postgres', 'L3'), class: 'text-muted' }, et('design.deep'))) : null)),
     h('ol', { class: 'm-0 grid list-none grid-cols-5 gap-2 p-0', 'aria-label': et('levels') }, ...trees[e].levels.filter((lv) => lv.modules.length).map((lv) => {
       const q = progressOf(lv.modules.flatMap((m) => m.lessons), ok);
       const here = next?.level === lv.level;
@@ -259,7 +267,7 @@ function overview(): HTMLElement {
     continueCard(ok),
     h('section', { 'aria-labelledby': 'engine-list' },
       h('h2', { id: 'engine-list', class: d.ui.GROUP_TITLE }, et('engines')),
-      h('ul', { class: 'm-0 grid list-none gap-4 p-0' }, ...ENGINES.map((e) => engineCard(e, ok)))),
+      h('ul', { class: 'm-0 grid list-none gap-4 p-0 xl:grid-cols-2' }, ...ENGINES.map((e) => engineCard(e, ok)))), // v28 R4: four cards, 2 × 2 (ux-route-v24 §193)
     h('section', { 'aria-labelledby': 'engine-path' },
       h('h2', { id: 'engine-path', class: d.ui.GROUP_TITLE }, et('nosql.title')),
       pathRow()),
@@ -275,13 +283,13 @@ function enginePg(e: EngineId): HTMLElement {
   const p = progressOf(all, ok);
   const next = nextOf(all, ok);
   return h('div', { class: 'flex flex-col gap-8' },
-    h('section', { class: cls.cx(cls.CARD, 'flex flex-col gap-4 p-6 max-sm:p-4'), 'aria-label': NAME[e] },
+    h('section', { class: cls.cx(cls.CARD, 'flex flex-col gap-4 p-6 max-sm:p-4'), 'aria-label': nameOf(e) },
       h('div', { class: 'flex items-start gap-4' }, engineBadge(e, true), h('p', { class: 'm-0 min-w-0 flex-1 text-muted' }, et(`desc.${e}`))),
       h('div', { class: 'flex items-center gap-3' }, bar(p.done, p.total), h('span', { class: 'shrink-0 text-body-sm tabular-nums text-muted' }, et('progress', { k: p.done, n: p.total }))),
       next ? h('div', { class: 'flex flex-wrap items-center gap-3' },
         h('a', { href: lessonHash(next), class: cls.cx(cls.BTN_GO, 'inline-flex items-center gap-2 px-4 py-2 no-underline') }, et(p.done ? 'cont.btnResume' : 'cont.btnStart'), d.icon('arrowRight', 'size-4')),
         h('span', { class: 'min-w-0 text-body-sm text-muted' }, `${next.level} · ${next.title[lang()]}`))
-        : h('p', { class: 'm-0 font-bold good' }, et('cont.allDone', { name: NAME[e] })), d.best?.(e)),
+        : h('p', { class: 'm-0 font-bold good' }, et('cont.allDone', { name: nameOf(e) })), d.best?.(e)),
     e === 'mongodb' ? h('section', { 'aria-labelledby': 'engine-path' }, h('h2', { id: 'engine-path', class: d.ui.GROUP_TITLE }, et('nosql.title')), pathRow()) : null,
     h('section', { 'aria-labelledby': 'engine-levels' },
       h('h2', { id: 'engine-levels', class: d.ui.GROUP_TITLE }, et('levels')),
@@ -528,7 +536,7 @@ const PLAN_VIZ = /plan-tree|query-path|explain/;
 function chunksFor(l: EngineLesson): 'ready' | 'loading' | 'failed' {
   const wantPred = !!l.predict || l.kind === 'capstone' || (!!l.viz && PLAN_VIZ.test(l.viz));
   const wantCap = l.kind === 'capstone' && !!LAB_RUNNERS[l.engine];
-  const wantNosql = l.engine !== 'postgres' && !!l.lab;
+  const wantNosql = !onPg(l.engine) && !!l.lab;
   if (wantNosql && nosqlMod === undefined) {
     nosqlMod = 'loading';
     import('./engineNosql').then((m) => { nosqlMod = m; }, () => { nosqlMod = 'failed'; }).finally(() => d.rerender());
@@ -582,7 +590,7 @@ const tableBox = (name: string, line: string, body: Node): HTMLElement =>
 /** "Tables used" (L280, blind-pg.md: names the steps need were never shown). Postgres reads it from the lab itself on first open. */
 function tablesPanel(l: EngineLesson, v: Visit): HTMLElement | null {
   const { h } = d;
-  if (l.engine !== 'postgres') return N()?.tablesPanel(d, l) ?? null; // v25: the NoSQL panel lives in the engineNosql chunk
+  if (!onPg(l.engine)) return N()?.tablesPanel(d, l) ?? null; // v25: the NoSQL panel lives in the engineNosql chunk
   const t = v.tables;
   const body = t === undefined ? null : t === 'busy' ? h('p', { class: 'my-1 flex items-center gap-2 text-body-sm text-muted' }, d.loader(), et('tables.loading'))
     : 'error' in t ? d.errorView(t.error, false)
@@ -629,7 +637,7 @@ function labView(l: EngineLesson, v: Visit): HTMLElement {
             h('h3', { class: 'm-0 text-caption font-bold tracking-wider text-muted uppercase' }, et('lab.step', { i: i + 1, n: steps.length }),
               i === cur ? h('span', { class: 'ml-2 text-accent' }, `· ${et('cap.current')}`) : null),
             h('p', { class: 'm-0' }, ...inline(s.task[lang()])), N()?.stepTop(d, s))),
-        live ? codeBox(`${key}-code`, v.code[i] ?? '', et('lab.code', { i: i + 1 }), l.engine === 'postgres', {
+        live ? codeBox(`${key}-code`, v.code[i] ?? '', et('lab.code', { i: i + 1 }), onPg(l.engine), {
           change: (x) => { v.code[i] = x; }, run: () => void labAction(l, v, i, false), submit: () => void labAction(l, v, i, true),
         }) : null,
         live ? h('div', { class: 'flex flex-wrap items-center gap-2' },
@@ -696,7 +704,7 @@ function insideView(r: LabOutput, slot: string): HTMLElement | null {
  */
 function planViz(l: EngineLesson, r: LabOutput, sql: string, slot: string): HTMLElement | null {
   const json = r.columns.length === 1 ? r.rows[0]?.[0] : undefined;
-  if (!l.viz || l.engine !== 'postgres' || typeof predMod !== 'object' || !predMod.planTree(json)) return null;
+  if (!l.viz || !onPg(l.engine) || typeof predMod !== 'object' || !predMod.planTree(json)) return null;
   const key = JSON.stringify(json);
   if (/query-path/.test(l.viz)) return vizSlot(slot, 'pg-query-path', 'postgres', { sql: sql.replace(/^\s*EXPLAIN\s*(\([^)]*\))?\s*/i, ''), plan: json }, key);
   if (/plan-tree|explain/.test(l.viz)) return vizSlot(slot, 'pg-plan-tree', 'postgres', json, key);
@@ -723,7 +731,7 @@ function vizSlot(slot: string, name: string | undefined, engine: EngineId, model
   }, () => { vizHosts.delete(slot); }); // a failed chunk leaves the slot empty; the next visit tries again
   return entry.host;
 }
-const SHORT_OF: Record<EngineId, 'pg' | 'mg' | 'dy'> = { postgres: 'pg', mongodb: 'mg', dynamodb: 'dy' };
+const SHORT_OF: Record<EngineId, 'pg' | 'mg' | 'dy'> = { postgres: 'pg', mongodb: 'mg', dynamodb: 'dy', design: 'pg' }; // design diagrams are Postgres ones
 
 const HONEST_CLS: Record<Honest, string> = {
   pg: 'bg-good-soft text-ink', mingo: 'bg-good-soft text-ink', dynoxide: 'bg-good-soft text-ink', diagram: 'bg-surface-2 text-muted', docs: 'bg-info-soft text-ink',
@@ -740,6 +748,10 @@ const cardHead = (id: string, icon: Icons.IconName, text: string): HTMLElement =
 
 /** v27: the open lesson's term marker (first mentions in objectives and sections), set only while lessonBody draws. */
 let mark: ReturnType<TermsView['lessonMarker']> | undefined;
+/** v27 R3: the body sections a filter keeps, in file order (Opening above the objectives, Recap after the questions). */
+const secs = (l: EngineLesson, keep: (id: SectionId) => boolean): HTMLElement[] => l.sections.filter((s) => keep(s.id)).map((s) => d.h('section', { class: 'flex flex-col gap-3' },
+  d.h('h2', { class: 'm-0 text-title font-bold' }, SECTIONS[s.id][lang() === 'vi' ? 0 : 1]), prose(s.text[lang()], true)));
+
 function lessonPage(l: EngineLesson): HTMLElement {
   const tv = termsView();
   mark = typeof tv === 'object' ? tv.lessonMarker(l.engine, l.level) : undefined;
@@ -770,11 +782,11 @@ function lessonBody(l: EngineLesson): HTMLElement {
       l.runtime === 'docs' ? h('p', { class: 'm-0 text-body-sm text-muted', 'data-runtime': 'docs' }, et(l.docsWhy ? `runtime.docs.${l.docsWhy}` : 'runtime.docs')) : null,
       req.length ? h('p', { class: 'm-0 flex flex-wrap items-center gap-2 text-body-sm' }, h('span', { class: 'text-muted' }, `${et('requires')}:`),
         ...req.map((x) => h('a', { href: lessonHash(x), class: cls.cx(cls.PILL, 'min-h-6 bg-code text-ink no-underline hover:bg-accent-soft') }, x.title[lang()], tick(ok.has(x.id))))) : null),
+    ...secs(l, (id) => id === 'open'),
     h('section', { class: cls.cx(cls.CARD, 'flex flex-col gap-2 p-5 max-sm:p-4'), 'aria-labelledby': `${l.id}-obj` },
       h('h2', { id: `${l.id}-obj`, class: 'm-0 text-caption font-bold tracking-wider text-muted uppercase' }, et('objectives')),
       h('ul', { class: 'm-0 list-disc space-y-1 pl-5' }, ...l.objectives.map((o) => h('li', {}, ...inline(o[lang()], true))))),
-    ...l.sections.map((s) => h('section', { class: 'flex flex-col gap-3' },
-      h('h2', { class: 'm-0 text-title font-bold' }, SECTIONS[s.id][lang() === 'vi' ? 0 : 1]), prose(s.text[lang()], true))),
+    ...secs(l, (id) => id !== 'open' && id !== 'recap'),
     vizSlot(l.id, l.viz, l.engine),
     l.predict ? h('section', { class: cls.cx(cls.CARD, 'flex flex-col gap-3 p-5 max-sm:p-4'), 'aria-labelledby': `${l.id}-pred` },
       cardHead(`${l.id}-pred`, 'kindPredict', et('predict.title')),
@@ -793,6 +805,7 @@ function lessonBody(l: EngineLesson): HTMLElement {
       cardHead(`${l.id}-quiz`, 'kindQuiz', et('quiz.title')),
       h('div', { class: 'divide-y divide-line [&>*]:py-4 [&>*:first-child]:pt-0 [&>*:last-child]:pb-0' },
         ...l.quiz.map((q, i) => h('div', {}, question(l, v, q, `q${i}`, et('quiz.n', { i: i + 1, n: l.quiz!.length })))))) : null,
+    ...secs(l, (id) => id === 'recap'),
     h('section', { class: cls.cx(cls.CARD, 'flex flex-wrap items-center gap-3 p-5 max-sm:p-4'), 'aria-label': et('done') },
       isDone ? h('p', { class: 'm-0 flex items-center gap-2 font-bold good' }, d.icon('check', 'size-5'), et('complete.done'))
         : parts.length ? h('p', { class: 'm-0 text-body-sm' }, et('complete.parts', { k: parts.filter((p) => v.passed.has(p)).length, n: parts.length }))
@@ -842,7 +855,7 @@ export function sideRows(ui: { row: (r: Row) => HTMLElement; group: (text: strin
     ui.group(et('side.engines')),
     ...ENGINES.map((e) => {
       const p = progressOf(flat(e), ok);
-      return ui.row({ key: `e:${e}`, href: d.engineHash(e), lead: d.icon(ENGINE_ICON[e]), label: NAME[e],
+      return ui.row({ key: `e:${e}`, href: d.engineHash(e), lead: d.icon(ENGINE_ICON[e]), label: nameOf(e),
         sub: et('me.line', { k: p.done, n: p.total }), current: open === e && !r.level && !path });
     }),
   ];

@@ -1,4 +1,4 @@
-import type { EngineId } from '../engine/content';
+import type { ProductEngine as EngineId } from '../engine/content';
 import { ANSWER_MAX, DRAFT_MAX, dayPlus, dueAgain, IV_KEY, parseIvPrefs, shareOf, type IvLive, type IvPrefs } from '../engine/engineInterviewPrefs';
 import {
   BANDS, engineOfId, exhibitScript, parseBank, PASS, SET_MINUTES, setOf, setQuestions, setsOf, type Band, type Bank, type Exhibit, type IvQuestion, type TakeHome,
