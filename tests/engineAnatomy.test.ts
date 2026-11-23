@@ -126,3 +126,151 @@ describe('Engine PostgreSQL L1–L2: bước chấm bằng catalog hoặc `after
     expect(await runner.check(l.lab!, s, 'SELECT 1')).toMatchObject({ ok: false });
   }, 120_000);
 });
+
+// ---------------------------------------------------------------------------------------------------------------------
+// v29 R6 (product-route-v24 §2.2, §4 R6): MongoDB and DynamoDB L3–L5 on the same section model, subset by kind (NEED above).
+// Runnable blocks in "Ví dụ" and "Lỗi hay gặp": MongoDB ```javascript (one mongosh command) on mingo, DynamoDB ```json (one
+// `{ op, input }` request) or ```partiql (one statement) on dynoxide; ```text blocks are shown, never run (server output,
+// commands a browser cannot run, numbers quoted from the docs). Leading `//` / `--` comment lines are markers, stripped
+// before the run: `// ERROR <code>` (MongoDB error code, DynamoDB exception name) must be refused with it, `// WRONG` needs
+// a `// FIX` block right after that gives another result (documents, items or ScannedCount), any other block succeeds and
+// returns something. Data: the lab's `setup`, else frontmatter `demo_setup` (read here only), else MongoDB's `shop` dataset.
+// A `runtime: browser` concept/lab shows ≥ 2 runnable examples; a `runtime: docs` one may show its examples as text.
+import { beforeAll as beforeAllNs, vi as viNs } from 'vitest';
+import { DynamoEngine as DynamoEngineNs } from '../src/engine/dynamo/engine';
+import { dynamoRunner as dynamoRunnerNs, labOf as labOfNs } from '../src/engine/dynamo/runner';
+import type { DynamoRequest as DynamoRequestNs } from '../src/engine/dynamo/types';
+import { loadDataset as loadDatasetNs, runMongo as runMongoNs } from '../src/engine/mongo/engineMongo';
+import { mongoRunner as mongoRunnerNs } from '../src/engine/mongo/runner';
+
+const nsFiles = import.meta.glob<string>('../content/engine/{mongodb,dynamodb}/L[345]/*.md', { query: '?raw', import: 'default', eager: true });
+const nsAll = Object.entries(nsFiles).map(([p, raw]) => {
+  const fm = parse(/^---\n([\s\S]*?)\n---\n/.exec(raw.replace(/\r\n/g, '\n'))![1]) as Record<string, unknown>;
+  return { l: parseEngineLesson(raw, p, parse), fm };
+}).sort((a, b) => a.l.id.localeCompare(b.l.id));
+const RUN_LANG: Record<string, readonly string[]> = { mongodb: ['javascript'], dynamodb: ['json', 'partiql'] };
+type NsBlock = { code: string; run: boolean; marks: string[] };
+const nsBlocks = (l: EngineLesson, id: SectionId): NsBlock[] => {
+  const t = text(l, id);
+  return t ? blocksOf(t.vi).flatMap((b) => {
+    if (b.kind !== 'code') return [];
+    const lines = b.code.split('\n');
+    let n = 0;
+    while (n < lines.length && /^\s*(\/\/|--)/.test(lines[n])) n++;
+    const marks = lines.slice(0, n).map((x) => x.replace(/^\s*(\/\/|--)\s*/, ''));
+    return [{ code: lines.slice(n).join('\n').trim(), run: RUN_LANG[l.engine].includes(b.lang), marks }];
+  }) : [];
+};
+const markOf = (b: NsBlock, m: 'ERROR' | 'WRONG' | 'FIX'): string | undefined =>
+  b.marks.map((x) => new RegExp(`^${m}\\b\\s*:?\\s*([A-Za-z_0-9]*)`).exec(x)).find(Boolean)?.[1];
+const isTrap = (b: NsBlock): boolean => markOf(b, 'ERROR') !== undefined || markOf(b, 'WRONG') !== undefined;
+
+describe('Engine MongoDB/DynamoDB L3–L5: giải phẫu theo loại bài (R6)', () => {
+  it('đủ 79 bài (Mongo 43, Dynamo 36)', () => expect(nsAll.length).toBe(79));
+
+  it.each(nsAll.map((x) => [x.l.id, x] as const))('%s: mục theo loại bài, thứ tự, độ dài, câu hỏi, nguồn', (_, { l, fm }) => {
+    const ids = l.sections.map((s) => s.id);
+    expect(ids, 'thứ tự mục').toEqual([...ids].sort((a, b) => ORDER.indexOf(a) - ORDER.indexOf(b)));
+    expect(NEED[l.kind].filter((k) => !ids.includes(k)), 'thiếu mục').toEqual([]);
+    expect(l.objectives.length).toBeGreaterThanOrEqual(2);
+    expect(l.objectives.length).toBeLessThanOrEqual(4);
+    expect(text(l, 'open')!.vi.split(/(?<=[.!?])\s+/).filter(Boolean).length, 'Mở bài ≤ 3 câu').toBeLessThanOrEqual(3);
+    for (const p of (text(l, 'idea')?.vi ?? '').split(/\n\s*\n/)) expect(wordCount(p), `Ý chính: đoạn > 150 từ: ${p.slice(0, 40)}`).toBeLessThanOrEqual(150);
+    const syntax = text(l, 'syntax');
+    if (syntax) expect(blocksOf(syntax.vi)[0]?.kind, 'Cú pháp mở bằng khối code').toBe('code');
+    for (const lang of ['vi', 'en'] as const) {
+      const recap = blocksOf(text(l, 'recap')![lang]);
+      expect(recap.map((b) => b.kind), 'Tóm tắt = một danh sách').toEqual(['ul']);
+      const n = (recap[0] as { items: string[] }).items.length;
+      expect(n >= 3 && n <= 5, `Tóm tắt 3–5 dòng (${n})`).toBe(true);
+    }
+    const home = l.engine === 'mongodb' ? 'https://www.mongodb.com/docs/' : 'https://docs.aws.amazon.com/';
+    expect(l.sources.some((u) => u.startsWith(home)), `nguồn chính thức ${home}`).toBe(true);
+    if (l.kind === 'concept' || l.kind === 'lab') {
+      const ex = nsBlocks(l, 'example').filter((b) => !isTrap(b));
+      expect(ex.length >= 2 && ex.length <= 6, `Ví dụ 2–6 khối (${ex.length})`).toBe(true);
+      if (l.runtime !== 'docs') expect(ex.filter((b) => b.run).length, 'bài chạy trong trình duyệt: ≥ 2 ví dụ chạy được').toBeGreaterThanOrEqual(2);
+      const pit = nsBlocks(l, 'pitfalls').filter(isTrap);
+      expect(pit.length >= 2 && pit.length <= 4, `Lỗi hay gặp 2–4 bẫy (${pit.length})`).toBe(true);
+    }
+    if (l.kind === 'lab') expect(l.lab!.steps.length, 'lab 3–6 bước').toBeGreaterThanOrEqual(3);
+    const qs = [...((fm.quiz as Record<string, unknown>[] | undefined) ?? []), ...(fm.predict ? [fm.predict as Record<string, unknown>] : [])];
+    expect(qs.length, 'số câu hỏi').toBeGreaterThanOrEqual(l.kind === 'capstone' ? 1 : 2);
+    for (const q of qs) if (q.trap !== undefined) {
+      const n = (q.options as unknown[]).length;
+      expect(typeof q.trap === 'number' && q.trap !== q.answer && q.trap >= 0 && q.trap < n, 'trap = một lựa chọn sai').toBe(true);
+    }
+    if (l.kind !== 'capstone') expect(qs.some((q) => q.trap !== undefined), '≥ 1 câu có trap (hiểu lầm)').toBe(true);
+  });
+
+  it('độ dài chữ VI (đích §2.2; không chặn, in ra để báo cáo)', () => {
+    const short = nsAll.map(({ l }) => [l.id, l.kind, words(l)] as const).filter(([, k, n]) => (k === 'concept' ? n < 500 : k === 'lab' ? n < 350 : false));
+    if (short.length) console.log('dưới đích §2.2:', short.map((x) => x.join(' ')).join('; '));
+    expect(nsAll.every(({ l }) => words(l) > 0)).toBe(true);
+  });
+
+  const lang = () => 'en' as const;
+  const mongo = mongoRunnerNs({ lang }, { exec: async (src: string, ds: string, stages?: boolean) => runMongoNs(await loadDatasetNs(ds), src, { stages }) });
+  let eng: DynamoEngineNs;
+  beforeAllNs(async () => {
+    viNs.spyOn(console, 'warn').mockImplementation(() => {});
+    (globalThis as Record<string, unknown>).self ??= globalThis;
+    const node = (globalThis as unknown as { process: { getBuiltinModule(id: string): unknown } }).process;
+    const { readFile } = node.getBuiltinModule('fs/promises') as { readFile(p: string): Promise<Uint8Array<ArrayBuffer>> };
+    const { fileURLToPath } = node.getBuiltinModule('url') as { fileURLToPath(u: string): string };
+    const realFetch = globalThis.fetch;
+    globalThis.fetch = async (input, init) => {
+      const url = input instanceof Request ? input.url : String(input);
+      if (!url.startsWith('file:')) return realFetch(input, init);
+      return new Response(await readFile(fileURLToPath(url)), { headers: { 'content-type': 'application/wasm' } });
+    };
+    eng = await DynamoEngineNs.open(() => import('@dynoxide/wasm-engine/worker'));
+  }, 60_000);
+  const dynamo = dynamoRunnerNs({ lang }, {
+    request: async (req: DynamoRequestNs, o: { dataset: string; after?: DynamoRequestNs }) => {
+      await eng.setup(o.dataset, labOfNs(o.dataset));
+      return eng.run(req, o.after);
+    },
+  } as never);
+  /** What a block gives, as text: refused → `err` (MongoDB code, DynamoDB exception); else documents/value or items + ScannedCount. */
+  const runBlock = async (l: EngineLesson, setup: string, code: string): Promise<{ err?: string; out: string; empty: boolean }> => {
+    const lab = { setup, steps: [] };
+    try {
+      if (l.engine === 'mongodb') {
+        const r = await mongo.exec(lab, code);
+        return { out: JSON.stringify([r.kind, r.docs, r.value]), empty: r.kind === 'docs' && !r.docs.length && r.value === undefined };
+      }
+      const r = await dynamo.run(lab, code);
+      return { out: JSON.stringify([r.rows, r.meta?.dynamo?.scanned]), empty: !r.meta?.dynamo?.write && !r.rows.length };
+    } catch (e) {
+      const x = e as { code?: string; type?: string; message?: string };
+      return { err: x.code ?? x.type ?? `? ${x.message}`, out: '', empty: true };
+    }
+  };
+
+  it.each(nsAll.map((x) => [x.l.id, x] as const))('%s: Ví dụ và Lỗi hay gặp chạy thật (mingo / dynoxide)', async (_, { l, fm }) => {
+    const blocks = [...nsBlocks(l, 'example'), ...nsBlocks(l, 'pitfalls')];
+    const setup = l.lab?.setup ?? (typeof fm.demo_setup === 'string' ? fm.demo_setup.trim() : l.engine === 'mongodb' ? 'shop' : '');
+    for (const [i, b] of blocks.entries()) {
+      if (!b.run) continue;
+      expect(setup, 'khối chạy được cần lab.setup hoặc demo_setup').not.toBe('');
+      const r = await runBlock(l, setup, b.code);
+      const want = markOf(b, 'ERROR');
+      if (want !== undefined) {
+        expect(want, `// ERROR cần mã: ${b.code.slice(0, 60)}`).not.toBe('');
+        expect([b.code.slice(0, 80), r.err]).toEqual([b.code.slice(0, 80), want]);
+        continue;
+      }
+      expect([b.code.slice(0, 80), r.err]).toEqual([b.code.slice(0, 80), undefined]);
+      if (markOf(b, 'WRONG') !== undefined) {
+        const fix = blocks[i + 1];
+        expect(fix !== undefined && markOf(fix, 'FIX') !== undefined && fix.run, `// WRONG cần // FIX chạy được ngay sau: ${b.code.slice(0, 60)}`).toBe(true);
+        const f = await runBlock(l, setup, fix.code);
+        expect(f.err, `FIX lỗi: ${fix.code.slice(0, 60)}`).toBeUndefined();
+        expect(f.out === r.out, `WRONG ra cùng kết quả với FIX: ${b.code.slice(0, 60)}`).toBe(false);
+        continue;
+      }
+      expect(r.empty, `khối không ra gì: ${b.code.slice(0, 80)}`).toBe(false);
+    }
+  }, 120_000);
+});
