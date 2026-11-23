@@ -1,0 +1,146 @@
+// v27 (L410): the Database Engine glossary (content/engine/glossary.yml), its routes and the lesson term marker.
+import { describe, expect, it } from 'vitest';
+import glossary from '../content/engine/glossary.yml';
+import { aliasesOf, fold, marker, MAX_BUTTONS, parseGlossary, searchTerms, termSlug, type Term } from '../src/engine/glossary';
+import { ENGINES, LEVELS, parseEngineLesson, type LessonSource } from '../src/engine/content';
+import { engineInterviewHash, engineInterviewOf, engineRouteOf, engineTermsHash, engineTermsOf, parseRoute } from '../src/route';
+import { parseUse } from '../src/ui/engineTerms';
+import { TERMS_DICT } from '../src/i18n/engineTerms';
+
+const terms = parseGlossary(glossary);
+const DIACRITIC = /[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ]/i;
+const spans = (s: string): string[] => [...s.matchAll(/`([^`]+)`/g)].map((m) => m[1]);
+
+describe('glossary.yml', () => {
+  it('every entry parses, has an id = slug of its term, ids unique', () => {
+    expect(terms.length).toBeGreaterThanOrEqual(296);
+    for (const t of terms) expect([t.term, t.id]).toEqual([t.term, termSlug(t.term)]);
+    expect(new Set(terms.map((t) => t.id)).size).toBe(terms.length);
+    for (const t of terms) expect(t.id).toMatch(/^[a-z0-9]+(-[a-z0-9]+)*$/);
+  });
+  it('EN without diacritics, code spans VI = EN, docs on the three official sites', () => {
+    for (const t of terms) {
+      expect([t.id, DIACRITIC.test(t.en) || DIACRITIC.test(t.term)]).toEqual([t.id, false]);
+      expect([t.id, spans(t.vi)]).toEqual([t.id, spans(t.en)]);
+      expect([t.id, t.doc]).toEqual([t.id, expect.stringMatching(/^https:\/\/(www\.postgresql\.org\/docs\/|www\.mongodb\.com\/docs\/|docs\.aws\.amazon\.com\/amazondynamodb\/)/)]);
+    }
+  });
+  it('a broken entry throws (the page shows Retry, a lesson draws without buttons)', () => {
+    expect(() => parseGlossary([{ id: 'x' }])).toThrow();
+    expect(() => parseGlossary('nope')).toThrow();
+  });
+});
+
+describe('routes #/engine/terms and #/engine/interview (route.ts)', () => {
+  it('engineTermsOf: the page, a term, nothing else', () => {
+    expect(engineTermsOf('#/engine/terms')).toBe('');
+    expect(engineTermsOf('#/engine/terms/mvcc')).toBe('mvcc');
+    expect(engineTermsOf('#/engine/terms/join-strategy-nested-loop-hash-join-merge-join')).toBe('join-strategy-nested-loop-hash-join-merge-join');
+    expect(engineTermsOf('#/engine/terms/<b>')).toBe('');
+    expect(engineTermsOf('#/engine/termsx')).toBeUndefined();
+    expect(engineTermsOf('#/engine/postgres')).toBeUndefined();
+    expect(engineTermsHash('mvcc')).toBe('#/engine/terms/mvcc');
+    for (const t of terms) expect(engineTermsOf(engineTermsHash(t.id))).toBe(t.id);
+  });
+  it('engineInterviewOf: the room, a set, the review run, a take-home; an unknown tail opens the room', () => {
+    expect(engineInterviewOf('#/engine/interview')).toEqual({});
+    expect(engineInterviewOf('#/engine/interview/pg-mid-2')).toEqual({ set: 'pg-mid-2' });
+    expect(engineInterviewOf('#/engine/interview/again')).toEqual({ set: 'again' });
+    expect(engineInterviewOf('#/engine/interview/e-iv-dy-th-4')).toEqual({ th: 'e-iv-dy-th-4' });
+    expect(engineInterviewOf('#/engine/interview/xx-mid-2')).toEqual({});
+    expect(engineInterviewOf('#/engine/interviews')).toBeUndefined();
+    expect(engineInterviewOf('#/learn/interview')).toBeUndefined();
+    expect(engineInterviewHash('mg-staff-3')).toBe('#/engine/interview/mg-staff-3');
+  });
+  it('both are engine pages, never an engine/level/lesson', () => {
+    for (const h of ['#/engine/terms', '#/engine/terms/acid', '#/engine/interview', '#/engine/interview/pg-junior-1']) {
+      expect(parseRoute(h)).toBe('engine');
+      expect(engineRouteOf(h)).toEqual({ engine: undefined, level: undefined, lesson: undefined });
+    }
+  });
+});
+
+const T = (id: string, term: string, level: Term['level'], engines: Term['engines'] = ['postgres'], extra: Partial<Term> = {}): Term =>
+  ({ id, term, level, engines, keepEn: true, viTerm: term, avoid: '', vi: 'x', en: 'x', doc: 'https://www.postgresql.org/docs/18/', ...extra });
+
+describe('first-mention marker (design-v27 Q2)', () => {
+  const g = [T('mvcc', 'MVCC', 'L3'), T('heap', 'heap', 'L1'), T('covering-index', 'covering index', 'L3'), T('index', 'index', 'L3'),
+    T('scan', 'Scan', 'L1', ['dynamodb']), T('wal', 'WAL', 'L2', ['postgres'], { match: ['WAL', 'write-ahead log'] })];
+  const buttons = (p: ReturnType<ReturnType<typeof marker>['mark']>): string[] => p.flatMap((x) => (typeof x === 'string' || !x.button ? [] : [x.text]));
+  it('only the first mention, only at or above the lesson level, only the lesson engine', () => {
+    const m = marker(g, 'postgres', 'L2');
+    expect(buttons(m.mark('MVCC keeps old rows in the heap; MVCC again. Scan is DynamoDB.'))).toEqual(['MVCC']);
+    expect(buttons(m.mark('MVCC once more, then the write-ahead log and WAL.'))).toEqual(['write-ahead log']);
+    expect(m.seen.map((t) => t.id)).toEqual(['mvcc', 'heap', 'wal']); // heap (L1 < L2) is listed, never a button
+  });
+  it('the longer term wins; a shorter one inside it is no mention', () => {
+    const m = marker(g, 'postgres', 'L1');
+    expect(buttons(m.mark('A covering index is an index.'))).toEqual(['covering index', 'index']);
+    expect(buttons(marker(g, 'postgres', 'L1').mark('covering index only'))).toEqual(['covering index']);
+  });
+  it('a capital alias matches its case; a lower-case one any case; word edges', () => {
+    expect(buttons(marker(g, 'postgres', 'L1').mark('mvcc, Heap'))).toEqual(['Heap']);
+    expect(buttons(marker(g, 'dynamodb', 'L1').mark('a scan, then a Scan'))).toEqual(['Scan']);
+    expect(buttons(marker(g, 'postgres', 'L1').mark('heaps and reindexing'))).toEqual([]);
+  });
+  it('text round-trips; at most MAX_BUTTONS per lesson', () => {
+    const many = Array.from({ length: 20 }, (_, i) => T(`t${i}`, `term${String.fromCharCode(97 + i)}`, 'L1'));
+    const m = marker(many, 'postgres', 'L1');
+    const text = many.map((t) => t.term).join(' ');
+    const out = m.mark(text);
+    expect(out.map((x) => (typeof x === 'string' ? x : x.text)).join('')).toBe(text);
+    expect(buttons(out)).toHaveLength(MAX_BUTTONS);
+  });
+  it('aliases: match, else term and VI word without a "(…)" note, split on " / "', () => {
+    expect(aliasesOf(T('a', 'simple / composite primary key', 'L1', ['dynamodb'], { viTerm: 'khóa đơn / khóa kép' }))).toEqual(['simple', 'composite primary key', 'khóa đơn', 'khóa kép']);
+    expect(aliasesOf(T('b', 'window function ($setWindowFields)', 'L1', ['mongodb'], { viTerm: '`$setWindowFields`' }))).toEqual(['window function', '$setWindowFields']);
+  });
+  it('search: no diacritics, any case, every word; engine and level filters', () => {
+    expect(fold('Tính Nguyên Tử đ')).toBe('tinh nguyen tu d');
+    const all = new Set(ENGINES), lv = new Set(LEVELS);
+    expect(searchTerms(terms, 'tinh nguyen tu', all, lv).map((t) => t.id)).toContain('atomicity');
+    expect(searchTerms(terms, 'MVCC', new Set(['dynamodb'] as const), lv)).toEqual([]);
+    expect(searchTerms(terms, '', all, new Set(['L1'] as const)).every((t) => t.level === 'L1')).toBe(true);
+  });
+});
+
+describe('the marker on the real Engine lessons (objectives + sections, code spans left out)', () => {
+  const files = import.meta.glob<LessonSource>('../content/engine/*/L*/*.md', { query: '?fm', import: 'default', eager: true });
+  const lessons = Object.entries(files).map(([p, s]) => parseEngineLesson(s, p));
+  it('≤ 15 buttons per lesson, most lessons get at least one, no term in a code span', () => {
+    let some = 0;
+    for (const l of lessons) {
+      for (const lang of ['vi', 'en'] as const) {
+        const m = marker(terms, l.engine, l.level);
+        const texts = [...l.objectives.map((o) => o[lang]), ...l.sections.map((s) => s.text[lang])];
+        const pieces = texts.flatMap((x) => x.split(/(`[^`\n]+`)/).filter((p) => !p.startsWith('`')).flatMap((p) => m.mark(p)));
+        const n = pieces.filter((p) => typeof p !== 'string' && p.button).length;
+        expect([l.id, n <= MAX_BUTTONS]).toEqual([l.id, true]);
+        if (lang === 'vi' && n) some++;
+      }
+    }
+    expect(some / lessons.length).toBeGreaterThan(0.6);
+  });
+});
+
+describe('pref cargo-query/engine-terms and the chunk rule', () => {
+  it('parseUse never throws and keeps only glossary ids and positive counts', () => {
+    const ids = new Set(['mvcc']);
+    for (const bad of [null, 'x', 3, [], { opened: 'x', page: -1 }]) expect(parseUse(bad, ids)).toEqual({ opened: {}, page: 0 });
+    expect(parseUse({ opened: { mvcc: 2, nope: 4, heap: 0 }, page: 3 }, ids)).toEqual({ opened: { mvcc: 2 }, page: 3 });
+  });
+  it('VI/EN text: placeholders, EN differs, EN without diacritics, code spans equal', () => {
+    for (const [k, v] of Object.entries(TERMS_DICT.vi)) {
+      const e = TERMS_DICT.en[k as keyof typeof TERMS_DICT.en];
+      expect([k, [...e.matchAll(/\{(\w+)\}/g)].map((m) => m[1]).sort()]).toEqual([k, [...v.matchAll(/\{(\w+)\}/g)].map((m) => m[1]).sort()]);
+      expect([k, e]).not.toEqual([k, v]);
+      expect([k, DIACRITIC.test(e)]).toEqual([k, false]);
+      expect([k, spans(v)]).toEqual([k, spans(e)]);
+    }
+  });
+  const files = import.meta.glob<string>(['../src/ui/engineTerms.ts', '../src/ui/engineInterview.ts', '../src/i18n/engineTerms.ts', '../src/i18n/engineInterview.ts', '../src/engineTermsSources.ts'], { query: '?raw', import: 'default', eager: true });
+  it.each(Object.keys(files))('lazy chunk %s imports no value from a main module (Plan 6 U3)', (f) => {
+    const values = [...files[f].matchAll(/^import (?!type )[^;]*? from '([^']+)';/gm)].map((m) => m[1]);
+    for (const v of values) expect([f, v]).toEqual([f, expect.stringMatching(/^(\.\.\/engine\/\w+|\.\.\/i18n\/engine\w*)$/)]);
+  });
+});
