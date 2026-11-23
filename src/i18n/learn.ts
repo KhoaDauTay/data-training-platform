@@ -107,6 +107,24 @@ const vi = {
   'g.adv.1': 'Bài nâng cao dựa trên vài kỹ năng nền. Có ✓ là bạn đã học; chưa có thì bấm để xem trước, không bắt buộc.',
   'g.adv.2': 'Mỗi bài có bài học riêng, vài bài luyện và một Thử thách cuối, +{xp} XP lần đầu đạt.',
   'g.adv.ext': 'Bài này học ngoài ứng dụng: đọc phần trên trang (nếu có) rồi theo các link đọc thêm; link mở ở tab mới.',
+  // v24 (L323): the skill's level line (skill page) and dots (Part page), src/mastery.ts
+  'lv.0': 'Chưa học',
+  'lv.1': 'Đã gặp',
+  'lv.2': 'Làm được',
+  'lv.3': 'Vững',
+  'lv.4': 'Thành thạo',
+  'lv.line': 'Mức của bạn: {level}',
+  'lv.dueOn': 'ôn tiếp ngày {date}',
+  'lv.due': 'Cần ôn',
+  'lv.aria': '{level}, mức {n} trên 4',
+  'lv.self': 'tự đo, không xác minh',
+  'lv.next.overdue': 'Ôn kỹ năng này để lấy lại mức',
+  'lv.next.drill': 'Qua một bài luyện để lên Đã gặp',
+  'lv.next.second': 'Qua thêm 1 bài luyện để lên Làm được',
+  'lv.next.trap': 'Qua bài luyện bẫy để lên Vững',
+  'lv.next.review': 'Ôn đúng ở lần tới hạn sau để lên mức kế',
+  'lv.next.allDrills': 'Qua cả 4 bài luyện để lên Thành thạo',
+  'lv.next.perf': 'Qua bài luyện có thanh hiệu năng để lên Thành thạo',
 } as const;
 
 export type LearnKey = keyof typeof vi;
@@ -211,6 +229,23 @@ const en: Record<LearnKey, string> = {
   'g.adv.1': "An advanced topic builds on a few basic skills. A ✓ means you know it; if not, click to look first. It's optional.",
   'g.adv.2': 'Each topic has its own lesson, a few drills and a final challenge: +{xp} XP the first time you pass it.',
   'g.adv.ext': 'This one is learned outside the app: read what is on this page (if any), then follow the reading links; they open in a new tab.',
+  'lv.0': 'Not started',
+  'lv.1': 'Met',
+  'lv.2': 'Can do',
+  'lv.3': 'Solid',
+  'lv.4': 'Fluent',
+  'lv.line': 'Your level: {level}',
+  'lv.dueOn': 'next review {date}',
+  'lv.due': 'Needs review',
+  'lv.aria': '{level}, level {n} of 4',
+  'lv.self': 'self-measured, not verified',
+  'lv.next.overdue': 'Review this skill to get the level back',
+  'lv.next.drill': 'Pass one drill to reach Met',
+  'lv.next.second': 'Pass one more drill to reach Can do',
+  'lv.next.trap': 'Pass the trap drill to reach Solid',
+  'lv.next.review': 'Get the next review right to go up a level',
+  'lv.next.allDrills': 'Pass all 4 drills to reach Fluent',
+  'lv.next.perf': 'Pass the drill with a performance bar to reach Fluent',
 };
 
 export const LEARN_DICT = { vi: vi as Record<LearnKey, string>, en };

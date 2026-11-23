@@ -9,6 +9,7 @@ import { learnPage as drawLearn } from './learnView';
 import { initGuides, type GuideDeps } from './guide';
 import { initGuideList, replayBtn } from './guideList';
 import { drillXp } from '../learn';
+import type * as Mastery from '../mastery';
 import type * as Practice from '../practice';
 import type * as Progress from '../progress';
 import type * as Route from '../route';
@@ -51,6 +52,8 @@ export interface DrillDeps extends GuideDeps {
   loadTickets: typeof Content.loadTickets; CHAPTERS: typeof Progress.CHAPTERS;
   // v13 guides (ui/guideList.ts)
   parseRoute: typeof Route.parseRoute; mod: string; isInterviewPage: typeof Route.isInterviewPage;
+  /** v24 (L323): skill levels for the skill page's level line and the Part page's dots (src/mastery.ts, main). */
+  masteryOf: typeof Mastery.masteryOf;
 }
 
 let d$: DrillDeps;
