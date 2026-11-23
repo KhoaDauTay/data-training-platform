@@ -31,9 +31,10 @@ quiz:
       - vi: Được ghi, `total` tự đổi thành số
         en: It is written and `total` is converted to a number
     answer: 0
+    trap: 1
     why:
-      vi: 'Mặc định `validationAction` là `"error"`: thao tác vi phạm bị từ chối. Chỉ với `"warn"` thì tài liệu sai mới được ghi và vi phạm được ghi vào log. MongoDB không tự đổi kiểu.'
-      en: 'By default `validationAction` is `"error"`: a violating write is rejected. Only with `"warn"` is the invalid document written and the violation logged. MongoDB never converts types for you.'
+      vi: 'Nghe hợp lý vì MongoDB vốn không bắt mọi tài liệu cùng hình, nhưng khi đã có validator thì mặc định `validationAction` là `"error"`: thao tác vi phạm bị từ chối. Chỉ với `"warn"` thì tài liệu sai mới được ghi và vi phạm được ghi vào log. MongoDB không tự đổi kiểu.'
+      en: 'It sounds right because MongoDB does not force one shape on every document, but once a validator exists the default `validationAction` is `"error"`: a violating write is rejected. Only with `"warn"` is the invalid document written and the violation logged. MongoDB never converts types for you.'
   - q:
       vi: 'Bạn thêm validator cho một collection cũ có sẵn vài tài liệu sai. Muốn tài liệu mới phải đúng, nhưng sửa một tài liệu cũ vốn đã sai thì không bị chặn. Chọn mức nào?'
       en: 'You add a validator to an old collection that already holds some invalid documents. New documents must be valid, but updating an already invalid old document should not be blocked. Which level?'
@@ -63,6 +64,10 @@ quiz:
       vi: '`$jsonSchema` cũng là một toán tử truy vấn. `find({ $jsonSchema: schema })` trả tài liệu hợp lệ; bọc trong `$nor` để lấy tài liệu không hợp lệ.'
       en: '`$jsonSchema` is also a query operator. `find({ $jsonSchema: schema })` returns the valid documents; wrap it in `$nor` to get the invalid ones.'
 ---
+## Mở bài
+
+Một form cũ ghi `status` là `"Paid"` thay vì `"paid"`, và báo cáo bỏ sót các đơn đó. MongoDB không bắt mọi tài liệu cùng hình, vậy làm sao chặn tài liệu sai ngay lúc ghi?
+
 ## Ý chính
 
 MongoDB không bắt mọi tài liệu cùng hình, nhưng bạn có thể đặt luật cho một collection bằng `$jsonSchema`:
@@ -80,15 +85,27 @@ Hai núm chỉnh:
 
 Bản mới còn thêm hành động `"errorAndLog"` (MongoDB 8.1) và mức `"constraint"` (MongoDB 9.0), mức này bảo đảm mọi tài liệu trong collection đều hợp lệ.
 
+Validator chỉ kiểm lúc ghi, không sửa dữ liệu cũ. Dùng `$jsonSchema` trong `find` để tìm tài liệu hợp lệ, và bọc trong `$nor` để tìm tài liệu sai. Bài này là bài đọc: thư viện chạy truy vấn trong trình duyệt không có validator của collection, nên các khối dưới đây không chạy ở đây.
+
+## Cú pháp
+
+```text
+db.createCollection("<name>", {
+  validator: { $jsonSchema: { bsonType: "object", required: [<fields>], properties: { <field>: { <rules> } } } },
+  validationLevel: "strict" | "moderate",
+  validationAction: "error" | "warn"
+})
+db.runCommand({ collMod: "<name>", validator: { ... }, validationLevel: "moderate" })
+```
+
+- `createCollection` cho collection mới, `collMod` cho collection đã có.
+- Không ghi hai núm thì là `"strict"` và `"error"`.
+
 ## Ví dụ
 
-Validator chỉ kiểm lúc ghi, không sửa dữ liệu cũ. Dùng `$jsonSchema` trong `find` để tìm tài liệu hợp lệ, và bọc trong `$nor` để tìm tài liệu sai.
+Đơn phải có khách, trạng thái hợp lệ và ít nhất một dòng hàng:
 
-Bài này là bài đọc: thư viện chạy truy vấn trong trình duyệt không có validator của collection, nên ở đây không chạy thử.
-
-Làm được: viết luật kiểm tra cho một collection và chọn mức áp dụng hợp với dữ liệu cũ.
-
-```js
+```text
 db.createCollection("orders", {
   validator: { $jsonSchema: {
     bsonType: "object",
@@ -103,18 +120,51 @@ db.createCollection("orders", {
 })
 ```
 
-## Thực hành
+Tìm các tài liệu cũ đang vi phạm:
 
-Ba câu hỏi về cách validator xử lý tài liệu sai.
+```text
+db.orders.find({ $nor: [ { $jsonSchema: schema } ] })
+```
+
+## Lỗi hay gặp
+
+Đặt `"warn"` rồi tưởng tài liệu sai đã bị chặn:
+
+```text
+// WRONG: invalid documents are still written, only the log knows
+db.runCommand({ collMod: "orders", validator: { ... }, validationAction: "warn" })
+// FIX: reject invalid writes
+db.runCommand({ collMod: "orders", validator: { ... }, validationAction: "error" })
+```
+
+Bật `"strict"` trên collection cũ còn tài liệu sai, rồi mọi lần sửa mà chưa làm chúng hợp lệ đều bị từ chối:
+
+```text
+// WRONG: an update that leaves an old invalid document invalid now fails
+db.runCommand({ collMod: "orders", validator: { ... }, validationLevel: "strict" })
+// FIX: new and valid documents are checked, old invalid ones can still be fixed
+db.runCommand({ collMod: "orders", validator: { ... }, validationLevel: "moderate" })
+```
+
+## Tóm tắt
+
+- `$jsonSchema` đặt trường bắt buộc, kiểu BSON và luật cho từng trường.
+- Mặc định `validationAction` là `"error"` và `validationLevel` là `"strict"`.
+- `"moderate"` cho phép sửa tài liệu vốn đã sai; `"warn"` chỉ ghi log.
+- Validator không sửa dữ liệu cũ; tìm chúng bằng `$nor` quanh `$jsonSchema`.
 
 # EN
 
+## Opening
+
+An old form writes `status` as `"Paid"` instead of `"paid"`, and the report misses those orders. MongoDB does not force one shape on every document, so how do you stop bad documents at write time?
+
 ## Key idea
 
-MongoDB does not force documents to share a shape, but you can put rules on a collection with `$jsonSchema`:
+MongoDB does not force every document into the same shape, but you can set rules for a collection with `$jsonSchema`:
 
 - `bsonType`: the type of the document or of a field (`"object"`, `"string"`, `"int"`, `"date"`, `"array"`…);
-- `required`: the mandatory fields;
+- `required`: the required fields;
 - `properties`: rules per field, such as `minimum`, `enum`, `pattern`.
 
 Set it at creation with `db.createCollection(name, { validator })`, or add it to an existing collection with the `collMod` command.
@@ -122,19 +172,31 @@ Set it at creation with `db.createCollection(name, { validator })`, or add it to
 Two knobs:
 
 - `validationLevel`: `"strict"` (the default) checks every insert and update; `"moderate"` skips updates to documents that were already invalid;
-- `validationAction`: `"error"` (the default) rejects the bad write; `"warn"` still writes it and only logs the violation.
+- `validationAction`: `"error"` (the default) rejects the invalid write; `"warn"` still writes and only logs the violation.
 
-Newer releases add the action `"errorAndLog"` (MongoDB 8.1) and the level `"constraint"` (MongoDB 9.0), which guarantees every document in the collection is valid.
+Newer versions also add the `"errorAndLog"` action (MongoDB 8.1) and the `"constraint"` level (MongoDB 9.0), which guarantees every document in the collection is valid.
+
+A validator checks only at write time; it never fixes old data. Use `$jsonSchema` in `find` to find valid documents, and wrap it in `$nor` to find invalid ones. This is a reading lesson: the in-browser query library has no collection validators, so the blocks below do not run here.
+
+## Syntax
+
+```text
+db.createCollection("<name>", {
+  validator: { $jsonSchema: { bsonType: "object", required: [<fields>], properties: { <field>: { <rules> } } } },
+  validationLevel: "strict" | "moderate",
+  validationAction: "error" | "warn"
+})
+db.runCommand({ collMod: "<name>", validator: { ... }, validationLevel: "moderate" })
+```
+
+- `createCollection` for a new collection, `collMod` for an existing one.
+- Without the two knobs you get `"strict"` and `"error"`.
 
 ## Example
 
-A validator only checks writes; it does not fix old data. Use `$jsonSchema` in `find` to find valid documents, and wrap it in `$nor` to find invalid ones.
+An order must have a customer, a valid status and at least one line:
 
-This is a reading lesson: the library that runs queries in the browser has no collection validators, so nothing runs here.
-
-You can now: write validation rules for a collection and choose how strictly they apply to old data.
-
-```js
+```text
 db.createCollection("orders", {
   validator: { $jsonSchema: {
     bsonType: "object",
@@ -149,6 +211,35 @@ db.createCollection("orders", {
 })
 ```
 
-## Practice
+Find the old documents that break the rules:
 
-Three questions about how a validator treats invalid documents.
+```text
+db.orders.find({ $nor: [ { $jsonSchema: schema } ] })
+```
+
+## Common mistakes
+
+Setting `"warn"` and believing invalid documents are blocked:
+
+```text
+// WRONG: invalid documents are still written, only the log knows
+db.runCommand({ collMod: "orders", validator: { ... }, validationAction: "warn" })
+// FIX: reject invalid writes
+db.runCommand({ collMod: "orders", validator: { ... }, validationAction: "error" })
+```
+
+Turning on `"strict"` for an old collection that still holds invalid documents, so every update that does not make them valid is rejected:
+
+```text
+// WRONG: an update that leaves an old invalid document invalid now fails
+db.runCommand({ collMod: "orders", validator: { ... }, validationLevel: "strict" })
+// FIX: new and valid documents are checked, old invalid ones can still be fixed
+db.runCommand({ collMod: "orders", validator: { ... }, validationLevel: "moderate" })
+```
+
+## Recap
+
+- `$jsonSchema` sets required fields, BSON types and per-field rules.
+- By default `validationAction` is `"error"` and `validationLevel` is `"strict"`.
+- `"moderate"` lets you update documents that were already invalid; `"warn"` only logs.
+- A validator never fixes old data; find it with `$nor` around `$jsonSchema`.

@@ -96,6 +96,10 @@ quiz:
       vi: 'Tuần 2026-10-19 có 310.000, giảm 350.000 so với 660.000 của tuần 2026-10-12. Tuần 2026-10-26 giảm 250.000 (từ 310.000 xuống 60.000). Tuần 2026-10-12 tăng.'
       en: 'The week of 2026-10-19 has 310,000, down 350,000 from 660,000 in the week of 2026-10-12. The week of 2026-10-26 drops 250,000 (310,000 to 60,000). The week of 2026-10-12 went up.'
 ---
+## Mở bài
+
+Cuối tháng 10, quản lý cần báo cáo tuần: doanh thu mỗi tuần, so với tuần trước, cộng dồn và theo nhóm sản phẩm. Bạn dựng nó bằng một pipeline cho mỗi phần.
+
 ## Ý chính
 
 Bài cuối của L2 là một báo cáo tuần thật: gom theo tuần, so với tuần trước, cộng dồn, rồi chia theo nhóm sản phẩm.
@@ -103,6 +107,8 @@ Bài cuối của L2 là một báo cáo tuần thật: gom theo tuần, so vớ
 - `$dateTrunc` đưa một ngày về đầu đơn vị thời gian (ngày, tuần, tháng). Với tuần, `startOfWeek` chọn ngày bắt đầu.
 - `$setWindowFields` chạy sau `$group`, trên các tài liệu tuần, để thêm trường "tuần trước" và "cộng dồn" mà không mất tài liệu nào.
 - Doanh thu theo nhóm sản phẩm cần cả mảng nhúng (`lines`) lẫn collection tham chiếu (`products`): `$unwind` rồi `$lookup`.
+
+Lọc càng sớm càng tốt: `$match` đứng trước `$unwind` và `$lookup` để các stage nặng đọc ít tài liệu hơn.
 
 Làm được: tự viết báo cáo doanh thu theo tuần, theo nhóm và theo xu hướng bằng một pipeline.
 
@@ -119,7 +125,18 @@ db.orders.aggregate([
 
 Bốn bước, mỗi bước là một phần của báo cáo, rồi một câu hỏi kết luận đọc từ kết quả. Đơn hàng nằm trong tháng 10/2026; ngày 5, 12, 19 và 26 là thứ Hai.
 
+## Tóm tắt
+
+- `$dateTrunc` với `unit: "week"` và `startOfWeek` gom đơn theo tuần.
+- `$setWindowFields` sau `$group` thêm "tuần trước" và "cộng dồn".
+- Mảng nhúng cần `$unwind`, collection tham chiếu cần `$lookup`.
+- `$match` đứng trước các stage nặng.
+
 # EN
+
+## Opening
+
+At the end of October the manager needs a weekly report: revenue per week, compared with the week before, to date and per product category. You build it with one pipeline per part.
 
 ## Key idea
 
@@ -128,6 +145,8 @@ The L2 capstone is a real weekly report: group by week, compare with the previou
 - `$dateTrunc` maps a date to the start of a time unit (day, week, month). For weeks, `startOfWeek` picks the first day.
 - `$setWindowFields` runs after `$group`, over the weekly documents, to add "previous week" and "to date" fields without losing any document.
 - Revenue per category needs both the embedded array (`lines`) and the referenced collection (`products`): `$unwind`, then `$lookup`.
+
+Filter as early as you can: `$match` goes before `$unwind` and `$lookup` so the heavy stages read fewer documents.
 
 You can now: write weekly, per-category and trend revenue reports with one pipeline on your own.
 
@@ -143,3 +162,10 @@ db.orders.aggregate([
 ## Practice
 
 Four steps, each one part of the report, then a closing question read from the results. The orders are in October 2026; the 5th, 12th, 19th and 26th are Mondays.
+
+## Recap
+
+- `$dateTrunc` with `unit: "week"` and `startOfWeek` groups orders by week.
+- `$setWindowFields` after `$group` adds "previous week" and "to date".
+- An embedded array needs `$unwind`, a referenced collection needs `$lookup`.
+- `$match` goes before the heavy stages.

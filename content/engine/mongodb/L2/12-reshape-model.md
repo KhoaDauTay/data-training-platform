@@ -60,7 +60,39 @@ lab:
       hint:
         vi: '`"$c.name"` là mảng tên của các khách khớp; `$arrayElemAt` với chỉ số 0 lấy phần tử đầu.'
         en: '`"$c.name"` is the array of names of the matching customers; `$arrayElemAt` with index 0 takes the first one.'
+quiz:
+  - q:
+      vi: 'Sau bước 1, mỗi đơn có `total` tính sẵn. Một lệnh sau đó `$push` thêm một dòng vào `lines` của đơn 2. `total` của đơn 2 thế nào?'
+      en: 'After step 1, every order has a precomputed `total`. A later command uses `$push` to add a line to the `lines` of order 2. What happens to the `total` of order 2?'
+    options:
+      - vi: MongoDB tự tính lại vì `total` được dựng từ `lines`
+        en: MongoDB recomputes it because `total` was built from `lines`
+      - vi: Giữ giá trị cũ; lệnh ghi dòng mới phải tự cập nhật `total`
+        en: It keeps the old value; the write that adds the line must update `total` too
+      - vi: Bị xóa vì không còn khớp với `lines`
+        en: It is removed because it no longer matches `lines`
+    answer: 1
+    trap: 0
+    why:
+      vi: 'Nghe hợp lý vì `total` được tính từ `lines`, nhưng giá trị tính sẵn chỉ là một trường bình thường, không phải công thức. Ai ghi `lines` thì phải cập nhật `total` trong cùng lệnh (một lệnh trên một tài liệu là nguyên tử).'
+      en: 'It sounds right because `total` was computed from `lines`, but a precomputed value is a plain field, not a formula. Whoever writes `lines` must update `total` in the same command (one command on one document is atomic).'
+  - q:
+      vi: 'Bước 3 chép `name` và `city` của khách vào đơn dưới `buyer`. Sau đó khách `"c1"` chuyển tới Hue. `buyer.city` trong các đơn cũ của `"c1"` là gì?'
+      en: 'Step 3 copies the customer''s `name` and `city` into the order under `buyer`. Later customer `"c1"` moves to Hue. What is `buyer.city` in the old orders of `"c1"`?'
+    options:
+      - { vi: '`"Da Nang"`', en: '`"Da Nang"`' }
+      - { vi: '`"Hue"`', en: '`"Hue"`' }
+      - { vi: '`null`', en: '`null`' }
+    answer: 0
+    trap: 1
+    why:
+      vi: 'Nghe hợp lý nếu coi bản chép như một tham chiếu, nhưng extended reference là bản chép thật: nó giữ giá trị lúc ghi. Với địa chỉ giao của một đơn cũ, đó thường là điều bạn muốn; nếu cần luôn mới thì phải tự cập nhật các bản chép.'
+      en: 'It sounds right if the copy is treated like a reference, but an extended reference is a real copy: it keeps the value at write time. For an old order''s shipping city that is usually what you want; if it must stay current, you update the copies yourself.'
 ---
+## Mở bài
+
+Màn hình danh sách đơn tính lại tổng tiền ở mỗi lần đọc, và trang đơn gọi `$lookup` sang khách mỗi lần mở. Khi câu hỏi của ứng dụng đổi, có nên đổi luôn hình dữ liệu?
+
 ## Ý chính
 
 Mô hình không cố định mãi: khi câu hỏi của ứng dụng đổi, bạn đổi hình dữ liệu. Pipeline cho thấy trước hình mới trông thế nào, trước khi ghi lại.
@@ -75,21 +107,73 @@ Mỗi bản chép là một chỗ phải giữ cho khớp. Chỉ chép trường
 
 Làm được: chuyển dữ liệu giữa hình tham chiếu và hình nhúng bằng pipeline, và tính sẵn giá trị cần đọc nhiều.
 
+## Cú pháp
+
+```text
+db.<coll>.updateMany({}, [{ $set: { <field>: <expression> } }])          // computed pattern
+db.<coll>.aggregate([{ $lookup: { ... } }, { $project: { ... } }])       // preview a new shape
+{ $arrayElemAt: ["$<array>.<field>", 0] }                                 // first match as a value
+```
+
+- Update dạng pipeline (mảng stage) mới đọc được trường của chính tài liệu.
+- `$lookup` luôn cho mảng; lấy một giá trị thì dùng `$arrayElemAt`.
+
 ## Ví dụ
 
+Mỗi khách kèm `_id` của đơn mới nhất, rồi bỏ mảng tạm:
+
 ```js
-db.customers.aggregate([
-  { $lookup: { from: "orders", localField: "_id", foreignField: "customer", as: "orders" } },
-  { $set: { lastOrder: { $max: "$orders._id" } } },
-  { $unset: "orders" }
-])
+db.customers.aggregate([{ $lookup: { from: "orders", localField: "_id", foreignField: "customer", as: "orders" } }, { $set: { lastOrder: { $max: "$orders._id" } } }, { $unset: "orders" }])
+```
+
+Xem trước số dòng hàng của mỗi đơn trước khi lưu nó:
+
+```js
+db.orders.aggregate([{ $project: { lineCount: { $size: "$lines" } } }])
+```
+
+## Lỗi hay gặp
+
+Tính tổng tiền mà quên số lượng:
+
+```js
+// WRONG: adds the prices and ignores qty
+db.orders.updateMany({}, [{ $set: { total: { $sum: "$lines.price" } } }])
+```
+
+```js
+// FIX: qty × price for each line, then the sum
+db.orders.updateMany({}, [{ $set: { total: { $sum: { $map: { input: "$lines", as: "l", in: { $multiply: ["$$l.qty", "$$l.price"] } } } } } }])
+```
+
+Chép thẳng trường của mảng `$lookup`:
+
+```js
+// WRONG: buyer.name is an array such as ["An"], not a name
+db.orders.aggregate([{ $lookup: { from: "customers", localField: "customer", foreignField: "_id", as: "c" } }, { $project: { buyer: { name: "$c.name" } } }])
+```
+
+```js
+// FIX: take the first element
+db.orders.aggregate([{ $lookup: { from: "customers", localField: "customer", foreignField: "_id", as: "c" } }, { $project: { buyer: { name: { $arrayElemAt: ["$c.name", 0] } } } }])
 ```
 
 ## Thực hành
 
 Ba bước trên `customers` và `orders`. Khách `"c6"` chưa có đơn.
 
+## Tóm tắt
+
+- Đổi hình dữ liệu khi câu hỏi của ứng dụng đổi; xem trước bằng pipeline.
+- Computed pattern lưu sẵn giá trị hay đọc; lệnh ghi phải tự giữ nó đúng.
+- Extended reference chép vài trường ít đổi để bỏ `$lookup` khi đọc.
+- Trường lấy từ mảng `$lookup` là mảng; dùng `$arrayElemAt` để lấy một giá trị.
+
 # EN
+
+## Opening
+
+The order list recomputes each total on every read, and the order page runs a `$lookup` to the customer every time it opens. When your application's questions change, should the data's shape change too?
 
 ## Key idea
 
@@ -105,16 +189,64 @@ Every copy is one more place to keep consistent. Copy only fields that rarely ch
 
 You can now: move data between referenced and embedded shapes with a pipeline, and precompute values that are read often.
 
+## Syntax
+
+```text
+db.<coll>.updateMany({}, [{ $set: { <field>: <expression> } }])          // computed pattern
+db.<coll>.aggregate([{ $lookup: { ... } }, { $project: { ... } }])       // preview a new shape
+{ $arrayElemAt: ["$<array>.<field>", 0] }                                 // first match as a value
+```
+
+- Only a pipeline update (an array of stages) can read the document's own fields.
+- `$lookup` always gives an array; use `$arrayElemAt` to take one value.
+
 ## Example
 
+Each customer with the `_id` of their latest order, then drop the temporary array:
+
 ```js
-db.customers.aggregate([
-  { $lookup: { from: "orders", localField: "_id", foreignField: "customer", as: "orders" } },
-  { $set: { lastOrder: { $max: "$orders._id" } } },
-  { $unset: "orders" }
-])
+db.customers.aggregate([{ $lookup: { from: "orders", localField: "_id", foreignField: "customer", as: "orders" } }, { $set: { lastOrder: { $max: "$orders._id" } } }, { $unset: "orders" }])
+```
+
+Preview each order's line count before storing it:
+
+```js
+db.orders.aggregate([{ $project: { lineCount: { $size: "$lines" } } }])
+```
+
+## Common mistakes
+
+Computing a total and forgetting the quantity:
+
+```js
+// WRONG: adds the prices and ignores qty
+db.orders.updateMany({}, [{ $set: { total: { $sum: "$lines.price" } } }])
+```
+
+```js
+// FIX: qty × price for each line, then the sum
+db.orders.updateMany({}, [{ $set: { total: { $sum: { $map: { input: "$lines", as: "l", in: { $multiply: ["$$l.qty", "$$l.price"] } } } } } }])
+```
+
+Copying a field of the `$lookup` array as it is:
+
+```js
+// WRONG: buyer.name is an array such as ["An"], not a name
+db.orders.aggregate([{ $lookup: { from: "customers", localField: "customer", foreignField: "_id", as: "c" } }, { $project: { buyer: { name: "$c.name" } } }])
+```
+
+```js
+// FIX: take the first element
+db.orders.aggregate([{ $lookup: { from: "customers", localField: "customer", foreignField: "_id", as: "c" } }, { $project: { buyer: { name: { $arrayElemAt: ["$c.name", 0] } } } }])
 ```
 
 ## Practice
 
 Three steps on `customers` and `orders`. Customer `"c6"` has no order yet.
+
+## Recap
+
+- Change the data's shape when the application's questions change; preview it with a pipeline.
+- The computed pattern stores a value that is read often; writes must keep it right.
+- An extended reference copies a few rarely changing fields to drop the `$lookup` on reads.
+- A field taken from a `$lookup` array is an array; use `$arrayElemAt` to get one value.

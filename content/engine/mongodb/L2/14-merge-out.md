@@ -14,6 +14,7 @@ objectives:
   - vi: Đặt `whenMatched` và `whenNotMatched` của `$merge` cho một báo cáo cập nhật dần.
     en: Set `whenMatched` and `whenNotMatched` of `$merge` for an incrementally updated report.
 requires: [e-mg-l2-06]
+demo_setup: '{"collections": {"orders": [{"_id": 1, "store": "S1", "status": "paid", "total": 95000}, {"_id": 2, "store": "S2", "status": "shipped", "total": 120000}, {"_id": 3, "store": "S1", "status": "cancelled", "total": 150000}, {"_id": 4, "store": "S2", "status": "paid", "total": 210000}], "store_revenue": [{"_id": "S1", "revenue": 1, "manager": "Lan"}, {"_id": "S3", "revenue": 50000, "manager": "Hoa"}]}}'
 sources:
   - https://www.mongodb.com/docs/manual/reference/operator/aggregation/merge/
   - https://www.mongodb.com/docs/manual/reference/operator/aggregation/out/
@@ -29,9 +30,10 @@ quiz:
       - vi: Lệnh báo lỗi vì collection đã tồn tại
         en: The command fails because the collection exists
     answer: 0
+    trap: 1
     why:
-      vi: '`$out` thay hoàn toàn collection đích nếu nó đã có. Muốn thêm hoặc cập nhật mà giữ dữ liệu cũ thì dùng `$merge`.'
-      en: '`$out` completely replaces the target collection if it exists. To add or update while keeping old data, use `$merge`.'
+      vi: 'Nghe hợp lý vì pipeline chỉ tính một ngày nên có vẻ chỉ thêm một ngày, nhưng `$out` thay hoàn toàn collection đích nếu nó đã có. Muốn thêm hoặc cập nhật mà giữ dữ liệu cũ thì dùng `$merge`.'
+      en: 'It sounds right because the pipeline computes only one day, so it seems to add one day, but `$out` completely replaces the target collection if it exists. To add or update while keeping old data, use `$merge`.'
   - q:
       vi: 'Báo cáo theo ngày, `_id` là ngày. Chạy lại cho hôm nay: ngày đã có thì ghi đè cả tài liệu, ngày chưa có thì thêm. Chọn `$merge` nào?'
       en: 'A per-day report with the day as `_id`. Re-running it for today: an existing day is overwritten as a whole, a missing day is inserted. Which `$merge`?'
@@ -61,6 +63,10 @@ quiz:
       vi: 'Mặc định là `whenMatched: "merge"` (giống `$mergeObjects`: trường mới ghi đè, trường cũ khác vẫn giữ) và `whenNotMatched: "insert"`. `$merge` và `$out` đều phải là stage cuối của pipeline.'
       en: 'The defaults are `whenMatched: "merge"` (like `$mergeObjects`: new fields overwrite, other old fields stay) and `whenNotMatched: "insert"`. Both `$merge` and `$out` must be the last stage of the pipeline.'
 ---
+## Mở bài
+
+Báo cáo doanh thu theo cửa hàng chạy mỗi đêm, và sáng ra màn hình chỉ đọc kết quả đã lưu. Pipeline phải ghi kết quả vào đâu, và chạy lại thì dữ liệu cũ ra sao?
+
 ## Ý chính
 
 `aggregate` thường chỉ trả kết quả về. Hai stage ghi kết quả vào một collection, và cả hai phải đứng cuối pipeline:
@@ -72,51 +78,77 @@ quiz:
 
 `$merge` hợp với báo cáo cập nhật dần (mỗi đêm chỉ tính ngày mới) hay một "materialized view" tự làm. `$out` hợp khi luôn dựng lại toàn bộ.
 
-Bài này là bài đọc: bản chạy trong trình duyệt bỏ mọi thay đổi sau mỗi lần chạy, nên `$out`/`$merge` không được chạy ở đây.
-
-Làm được: lưu kết quả một báo cáo thành collection và chọn cách gộp đúng khi chạy lại.
+Trong trình duyệt, mỗi lần chạy bắt đầu lại từ dữ liệu gốc, và kết quả hiện ra là collection đích sau khi ghi. Collection `store_revenue` có sẵn hai tài liệu: `S1` với số cũ và trường `manager`, `S3` không có trong `orders`.
 
 ## Ví dụ
 
+`$out` thay cả `store_revenue`: `S3` và trường `manager` mất:
+
 ```js
-db.orders.aggregate([
-  { $match: { status: { $ne: "cancelled" } } },
-  { $group: { _id: "$store", revenue: { $sum: "$total" } } },
-  { $merge: { into: "store_revenue", on: "_id", whenMatched: "replace", whenNotMatched: "insert" } }
-])
+db.orders.aggregate([{ $match: { status: { $ne: "cancelled" } } }, { $group: { _id: "$store", revenue: { $sum: "$total" } } }, { $out: "store_revenue" }])
 ```
 
-## Thực hành
+`$merge` mặc định: `S1` được cập nhật `revenue` và giữ `manager`, `S2` được thêm, `S3` vẫn còn:
 
-Ba câu hỏi về cách `$out` và `$merge` ghi kết quả.
+```js
+db.orders.aggregate([{ $match: { status: { $ne: "cancelled" } } }, { $group: { _id: "$store", revenue: { $sum: "$total" } } }, { $merge: { into: "store_revenue" } }])
+```
+
+`whenMatched: "replace"` thay cả tài liệu `S1`, nên `manager` mất:
+
+```js
+db.orders.aggregate([{ $match: { status: { $ne: "cancelled" } } }, { $group: { _id: "$store", revenue: { $sum: "$total" } } }, { $merge: { into: "store_revenue", on: "_id", whenMatched: "replace", whenNotMatched: "insert" } }])
+```
+
+## Tóm tắt
+
+- `$out` và `$merge` ghi kết quả pipeline và phải là stage cuối.
+- `$out` thay hoàn toàn collection đích.
+- `$merge` gộp theo `on` (mặc định `_id`); mặc định `"merge"` và `"insert"`.
+- `"replace"` thay cả tài liệu khớp, `"keepExisting"` giữ bản cũ.
 
 # EN
 
+## Opening
+
+The per-store revenue report runs every night, and in the morning the screen only reads the saved result. Where does the pipeline write its result, and what happens to the old data on a re-run?
+
 ## Key idea
 
-`aggregate` usually just returns its result. Two stages write the result into a collection, and both must be the last stage of the pipeline:
+`aggregate` usually just returns results. Two stages write the result into a collection, and both must be the last stage of the pipeline:
 
 - `$out`: writes the result as the target collection. An existing collection is replaced completely;
-- `$merge`: merges the result into the target collection, matching on the `on` field (`_id` by default):
+- `$merge`: merges the result into the target collection, by the `on` field (`_id` by default):
   - `whenMatched`: `"merge"` (default), `"replace"`, `"keepExisting"`, `"fail"`, or an update pipeline;
   - `whenNotMatched`: `"insert"` (default), `"discard"`, `"fail"`.
 
-`$merge` suits reports updated incrementally (each night computes only the new day) or a hand-made "materialized view". `$out` suits rebuilding everything every time.
+`$merge` suits incrementally updated reports (each night computes only the new day) or a home-made "materialized view". `$out` suits rebuilding everything every time.
 
-This is a reading lesson: the in-browser runtime discards every write after it runs, so `$out`/`$merge` are not run here.
-
-You can now: save a report's result as a collection and choose the right merge behaviour when it runs again.
+In the browser, every run starts again from the original data, and the result shown is the target collection after the write. Collection `store_revenue` already holds two documents: `S1` with an old figure and a `manager` field, and `S3`, which is not in `orders`.
 
 ## Example
 
+`$out` replaces all of `store_revenue`: `S3` and the `manager` field are gone:
+
 ```js
-db.orders.aggregate([
-  { $match: { status: { $ne: "cancelled" } } },
-  { $group: { _id: "$store", revenue: { $sum: "$total" } } },
-  { $merge: { into: "store_revenue", on: "_id", whenMatched: "replace", whenNotMatched: "insert" } }
-])
+db.orders.aggregate([{ $match: { status: { $ne: "cancelled" } } }, { $group: { _id: "$store", revenue: { $sum: "$total" } } }, { $out: "store_revenue" }])
 ```
 
-## Practice
+`$merge` with defaults: `S1` gets the new `revenue` and keeps `manager`, `S2` is inserted, `S3` stays:
 
-Three questions about how `$out` and `$merge` write results.
+```js
+db.orders.aggregate([{ $match: { status: { $ne: "cancelled" } } }, { $group: { _id: "$store", revenue: { $sum: "$total" } } }, { $merge: { into: "store_revenue" } }])
+```
+
+`whenMatched: "replace"` swaps the whole `S1` document, so `manager` is gone:
+
+```js
+db.orders.aggregate([{ $match: { status: { $ne: "cancelled" } } }, { $group: { _id: "$store", revenue: { $sum: "$total" } } }, { $merge: { into: "store_revenue", on: "_id", whenMatched: "replace", whenNotMatched: "insert" } }])
+```
+
+## Recap
+
+- `$out` and `$merge` write a pipeline's result and must be the last stage.
+- `$out` replaces the target collection completely.
+- `$merge` merges by `on` (`_id` by default); the defaults are `"merge"` and `"insert"`.
+- `"replace"` swaps the whole matching document, `"keepExisting"` keeps the old one.

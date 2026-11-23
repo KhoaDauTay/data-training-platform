@@ -32,9 +32,10 @@ predict:
     - vi: '5, `''c4''` có `orders` là mảng rỗng'
       en: '5, `''c4''` with `orders` an empty array'
   answer: 1
+  trap: 3
   why:
-    vi: 'Riêng `$lookup` là left outer join: `''c4''` vẫn còn, với `orders: []`. Nhưng `$unwind` tạo một tài liệu cho mỗi phần tử của mảng, và mảng rỗng thì không tạo tài liệu nào. Kết quả là `''c1''` hai lần, `''c2''`, `''c3''`: 4 tài liệu, `''c4''` mất. Cặp `$lookup` + `$unwind` vì vậy chạy như INNER JOIN của SQL.'
-    en: '`$lookup` alone is a left outer join: `''c4''` is still there, with `orders: []`. But `$unwind` makes one document per array element, and an empty array makes none. The result is `''c1''` twice, `''c2''`, `''c3''`: 4 documents, `''c4''` gone. So `$lookup` + `$unwind` behaves like an SQL INNER JOIN.'
+    vi: 'Nghe hợp lý vì `$lookup` giữ mọi khách như LEFT JOIN, nhưng điều đó chỉ đúng trước `$unwind`. Riêng `$lookup` là left outer join: `''c4''` vẫn còn, với `orders: []`. Nhưng `$unwind` tạo một tài liệu cho mỗi phần tử của mảng, và mảng rỗng thì không tạo tài liệu nào. Kết quả là `''c1''` hai lần, `''c2''`, `''c3''`: 4 tài liệu, `''c4''` mất. Cặp `$lookup` + `$unwind` vì vậy chạy như INNER JOIN của SQL.'
+    en: 'It sounds right because `$lookup` keeps every customer like a LEFT JOIN, but only until `$unwind`. `$lookup` alone is a left outer join: `''c4''` is still there, with `orders: []`. But `$unwind` makes one document per array element, and an empty array makes none. The result is `''c1''` twice, `''c2''`, `''c3''`: 4 documents, `''c4''` gone. So `$lookup` + `$unwind` behaves like an SQL INNER JOIN.'
 quiz:
   - q:
       vi: 'Trang hồ sơ khách chạy `$lookup` từ `customers` sang `orders` (1 triệu tài liệu) khoảng 1000 lần mỗi giây. `orders` chưa có index nào trên `customer`. Nên sửa gì trước?'
@@ -84,9 +85,11 @@ lab:
         vi: '`$lookup` đã cho mỗi khách một mảng `orders`, kể cả mảng rỗng. `{ $size: ''$orders'' }` đếm nó.'
         en: '`$lookup` already gives each customer an `orders` array, even an empty one. `{ $size: ''$orders'' }` counts it.'
 ---
-## Ý chính
+## Mở bài
 
 Bạn ghép khách với đơn rồi `$unwind` để có "mỗi dòng một đơn". Một khách biến mất khỏi báo cáo. Vì sao?
+
+## Ý chính
 
 Hai stage, hai cách làm:
 
@@ -100,6 +103,8 @@ Hai cách giữ đủ khách:
 - `{ $unwind: { path: '$orders', preserveNullAndEmptyArrays: true } }`, tương đương LEFT JOIN từng dòng;
 - không `$unwind`, đọc thẳng mảng (`$size`, `$sum` trên mảng).
 
+`$lookup` còn có giá: mỗi tài liệu bên trái phải tìm trong collection kia. Trên server thật, hãy có index trên trường `foreignField`. Nếu hai thứ luôn đọc cùng nhau, cân nhắc nhúng (bài "Nhúng hay tham chiếu").
+
 ## Ví dụ
 
 ```text
@@ -108,27 +113,70 @@ $lookup + $unwind                -> 4 documents, c4 gone             (INNER JOIN
 $lookup + $unwind, keep empty    -> 5 documents                      (LEFT JOIN)
 ```
 
+Riêng `$lookup`: `'c4'` còn đó với mảng rỗng:
+
+```js
+db.customers.aggregate([{ $lookup: { from: 'orders', localField: '_id', foreignField: 'customer', as: 'orders' } }])
+```
+
+## Lỗi hay gặp
+
+`$unwind` dạng ngắn sau `$lookup` khi cần đủ mọi khách:
+
+```js
+// WRONG: c4 has an empty array, so $unwind drops it
+db.customers.aggregate([{ $lookup: { from: 'orders', localField: '_id', foreignField: 'customer', as: 'orders' } }, { $unwind: '$orders' }])
+```
+
+```js
+// FIX: keep documents whose array is empty
+db.customers.aggregate([{ $lookup: { from: 'orders', localField: '_id', foreignField: 'customer', as: 'orders' } }, { $unwind: { path: '$orders', preserveNullAndEmptyArrays: true } }])
+```
+
+Đếm đơn bằng `$unwind` rồi `$group`:
+
+```js
+// WRONG: customers with 0 orders never reach $group
+db.customers.aggregate([{ $lookup: { from: 'orders', localField: '_id', foreignField: 'customer', as: 'orders' } }, { $unwind: '$orders' }, { $group: { _id: '$name', n: { $sum: 1 } } }])
+```
+
+```js
+// FIX: count the array, no $unwind
+db.customers.aggregate([{ $lookup: { from: 'orders', localField: '_id', foreignField: 'customer', as: 'orders' } }, { $project: { _id: '$name', n: { $size: '$orders' } } }])
+```
+
 ## Thực hành
 
-`$lookup` còn có giá: mỗi tài liệu bên trái phải tìm trong collection kia. Trên server thật, hãy có index trên trường `foreignField`. Nếu hai thứ luôn đọc cùng nhau, cân nhắc nhúng (bài "Nhúng hay tham chiếu").
+Hai bước trên `customers` và `orders`. Khách `'c4'` chưa có đơn nào.
+
+## Tóm tắt
+
+- `$lookup` giữ mọi tài liệu bên trái; không có cặp thì mảng rỗng.
+- `$unwind` bỏ tài liệu có mảng rỗng, nên `$lookup` + `$unwind` là INNER JOIN.
+- `preserveNullAndEmptyArrays: true` giữ lại chúng, như LEFT JOIN.
+- Đếm hay cộng trên mảng thì không cần `$unwind`.
 
 # EN
 
-## Key idea
+## Opening
 
-You join customers to orders, then `$unwind` to get "one row per order". A customer disappears from the report. Why?
+You join customers to orders and `$unwind` to get "one row per order". One customer disappears from the report. Why?
+
+## Key idea
 
 Two stages, two behaviours:
 
-- `$lookup` is a left outer join: every document on the left is kept, and the `as` field is always an array. No match gives an empty array.
+- `$lookup` is a left outer join: every document on the left is kept, and the `as` field is always an array. No match means an empty array.
 - `$unwind` makes one document per element. An empty array, `null` or a missing field makes no document at all.
 
-Many people think `$lookup` is exactly an SQL JOIN, so they write `$lookup` + `$unwind` without a second look. The result is an INNER JOIN: customers with no order vanish from the report, with no error.
+Many people think `$lookup` is exactly an SQL JOIN, so they write `$lookup` + `$unwind` without a second thought. The result is an INNER JOIN: customers with no orders drop out of the report, with no error.
 
 Two ways to keep every customer:
 
-- `{ $unwind: { path: '$orders', preserveNullAndEmptyArrays: true } }`, the equivalent of a row-by-row LEFT JOIN;
+- `{ $unwind: { path: '$orders', preserveNullAndEmptyArrays: true } }`, the row-by-row LEFT JOIN;
 - no `$unwind`, read the array directly (`$size`, `$sum` over the array).
+
+`$lookup` also has a cost: every document on the left searches the other collection. On a real server, have an index on the `foreignField`. If the two are always read together, consider embedding (the "Embed or reference" lesson).
 
 ## Example
 
@@ -138,6 +186,45 @@ $lookup + $unwind                -> 4 documents, c4 gone             (INNER JOIN
 $lookup + $unwind, keep empty    -> 5 documents                      (LEFT JOIN)
 ```
 
+`$lookup` alone: `'c4'` is still there with an empty array:
+
+```js
+db.customers.aggregate([{ $lookup: { from: 'orders', localField: '_id', foreignField: 'customer', as: 'orders' } }])
+```
+
+## Common mistakes
+
+The short form of `$unwind` after `$lookup` when you need every customer:
+
+```js
+// WRONG: c4 has an empty array, so $unwind drops it
+db.customers.aggregate([{ $lookup: { from: 'orders', localField: '_id', foreignField: 'customer', as: 'orders' } }, { $unwind: '$orders' }])
+```
+
+```js
+// FIX: keep documents whose array is empty
+db.customers.aggregate([{ $lookup: { from: 'orders', localField: '_id', foreignField: 'customer', as: 'orders' } }, { $unwind: { path: '$orders', preserveNullAndEmptyArrays: true } }])
+```
+
+Counting orders with `$unwind` and then `$group`:
+
+```js
+// WRONG: customers with 0 orders never reach $group
+db.customers.aggregate([{ $lookup: { from: 'orders', localField: '_id', foreignField: 'customer', as: 'orders' } }, { $unwind: '$orders' }, { $group: { _id: '$name', n: { $sum: 1 } } }])
+```
+
+```js
+// FIX: count the array, no $unwind
+db.customers.aggregate([{ $lookup: { from: 'orders', localField: '_id', foreignField: 'customer', as: 'orders' } }, { $project: { _id: '$name', n: { $size: '$orders' } } }])
+```
+
 ## Practice
 
-`$lookup` also has a cost: every document on the left searches the other collection. On a real server, have an index on the `foreignField`. If two things are always read together, consider embedding (lesson "Embed or reference").
+Two steps on `customers` and `orders`. Customer `'c4'` has no order yet.
+
+## Recap
+
+- `$lookup` keeps every document on the left; no match means an empty array.
+- `$unwind` drops documents with an empty array, so `$lookup` + `$unwind` is an INNER JOIN.
+- `preserveNullAndEmptyArrays: true` keeps them, like a LEFT JOIN.
+- Counting or summing over the array needs no `$unwind`.

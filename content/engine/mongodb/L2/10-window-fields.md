@@ -57,7 +57,37 @@ lab:
       hint:
         vi: '`$shift` với `by: -1` lấy giá trị của tài liệu đứng trước; `default` dùng khi không có.'
         en: '`$shift` with `by: -1` takes the value of the document before; `default` applies when there is none.'
+quiz:
+  - q:
+      vi: 'Collection `orders` có 8 đơn ở 2 cửa hàng. Pipeline chỉ có một stage `$setWindowFields` với `partitionBy: "$store"` trả về bao nhiêu tài liệu?'
+      en: 'Collection `orders` holds 8 orders in 2 stores. How many documents does a pipeline with a single `$setWindowFields` stage and `partitionBy: "$store"` return?'
+    options:
+      - { vi: "8", en: "8" }
+      - vi: "2, mỗi cửa hàng một tài liệu"
+        en: "2, one document per store"
+      - { vi: "1", en: "1" }
+    answer: 0
+    trap: 1
+    why:
+      vi: 'Nghe hợp lý vì `partitionBy` giống `_id` của `$group`, nhưng `$setWindowFields` không gộp tài liệu. Nó giữ cả 8 đơn và chỉ thêm trường mới vào từng đơn.'
+      en: 'It sounds right because `partitionBy` looks like the `_id` of `$group`, but `$setWindowFields` merges nothing. It keeps all 8 orders and only adds new fields to each one.'
+  - q:
+      vi: 'Ba đơn trong một cửa hàng có `total` 300, 300 và 200, sắp giảm dần. `$rank` cho hạng nào?'
+      en: 'Three orders in one store have `total` 300, 300 and 200, sorted descending. Which ranks does `$rank` give?'
+    options:
+      - { vi: "1, 1, 3", en: "1, 1, 3" }
+      - { vi: "1, 1, 2", en: "1, 1, 2" }
+      - { vi: "1, 2, 3", en: "1, 2, 3" }
+    answer: 0
+    trap: 1
+    why:
+      vi: 'Nghe hợp lý vì hạng kế tiếp sau hai đơn đồng hạng có vẻ là 2, nhưng đó là `$denseRank`. `$rank` cho giá trị bằng nhau cùng hạng rồi bỏ qua số hạng đã dùng, nên đơn 200 hạng 3.'
+      en: 'It sounds right because the next rank after a tie seems to be 2, but that is `$denseRank`. `$rank` gives equal values the same rank and then skips the ranks they used, so the 200 order is rank 3.'
 ---
+## Mở bài
+
+Kế toán muốn xem doanh thu cộng dồn theo ngày, nhưng vẫn thấy từng đơn. `$group` gộp mất các đơn, vậy làm sao vừa giữ từng đơn vừa tính trên các đơn quanh nó?
+
 ## Ý chính
 
 `$group` gộp nhiều tài liệu thành một. `$setWindowFields` thì giữ nguyên mọi tài liệu và thêm trường tính trên một "cửa sổ" các tài liệu quanh nó, như hàm cửa sổ của SQL (`OVER (PARTITION BY ... ORDER BY ...)`).
@@ -67,27 +97,82 @@ lab:
 - `output`: các trường mới. Phép tổng hợp (`$sum`, `$avg`…) nhận `window: { documents: [lower, upper] }` (cận đầu, cận cuối) với `"unbounded"`, `"current"` hoặc số tương đối;
 - toán tử riêng: `$rank`, `$denseRank`, `$documentNumber`, `$shift`.
 
-`$rank` cho các giá trị bằng nhau cùng hạng và bỏ qua hạng kế tiếp (1, 1, 3).
+`$rank` cho các giá trị bằng nhau cùng hạng và bỏ qua hạng kế tiếp (1, 1, 3). Phép tổng hợp không ghi `window` thì tính trên cả nhóm, không phải cộng dồn.
 
 Làm được: tính tổng cộng dồn, xếp hạng trong nhóm và so sánh với kỳ trước.
 
+## Cú pháp
+
+```text
+{ $setWindowFields: {
+    partitionBy: <expression>,
+    sortBy: { <field>: 1 | -1 },
+    output: {
+      <newField>: { <accumulator>: <expression>, window: { documents: [<lower>, <upper>] } },
+      <rankField>: { $rank: {} }
+    }
+} }
+```
+
+- `partitionBy` tùy chọn; `sortBy` bắt buộc với `$rank`, `$shift` và cửa sổ `documents`.
+- `"unbounded"`, `"current"` hoặc số âm/dương tính từ tài liệu hiện tại.
+
 ## Ví dụ
 
+Trung bình của đơn hiện tại và đơn liền trước trong từng cửa hàng:
+
 ```js
-db.orders.aggregate([
-  { $setWindowFields: {
-      partitionBy: "$store",
-      sortBy: { createdAt: 1 },
-      output: { avgLast2: { $avg: "$total", window: { documents: [-1, "current"] } } }
-  } }
-])
+db.orders.aggregate([{ $setWindowFields: { partitionBy: "$store", sortBy: { createdAt: 1 }, output: { avgLast2: { $avg: "$total", window: { documents: [-1, "current"] } } } } }])
+```
+
+Số thứ tự của từng đơn trong cửa hàng, theo thời gian:
+
+```js
+db.orders.aggregate([{ $setWindowFields: { partitionBy: "$store", sortBy: { createdAt: 1 }, output: { n: { $documentNumber: {} } } } }, { $project: { store: 1, n: 1 } }])
+```
+
+## Lỗi hay gặp
+
+Quên `window` khi muốn cộng dồn:
+
+```js
+// WRONG: no window, so every order gets the total of the whole partition
+db.orders.aggregate([{ $setWindowFields: { sortBy: { createdAt: 1 }, output: { runningTotal: { $sum: "$total" } } } }, { $project: { runningTotal: 1 } }])
+```
+
+```js
+// FIX: from the first document up to the current one
+db.orders.aggregate([{ $setWindowFields: { sortBy: { createdAt: 1 }, output: { runningTotal: { $sum: "$total", window: { documents: ["unbounded", "current"] } } } } }, { $project: { runningTotal: 1 } }])
+```
+
+Đảo dấu `by` của `$shift`:
+
+```js
+// WRONG: by: 1 is the NEXT document, not the previous one
+db.orders.aggregate([{ $setWindowFields: { sortBy: { createdAt: 1 }, output: { prevTotal: { $shift: { output: "$total", by: 1, default: null } } } } }, { $project: { prevTotal: 1 } }])
+```
+
+```js
+// FIX: by: -1 looks one document back
+db.orders.aggregate([{ $setWindowFields: { sortBy: { createdAt: 1 }, output: { prevTotal: { $shift: { output: "$total", by: -1, default: null } } } } }, { $project: { prevTotal: 1 } }])
 ```
 
 ## Thực hành
 
 Ba bước trên `orders`. Bước 1 và 3 chấm cả thứ tự.
 
+## Tóm tắt
+
+- `$setWindowFields` giữ mọi tài liệu và thêm trường tính trên cửa sổ.
+- `partitionBy` chia nhóm, `sortBy` cho thứ tự trong nhóm.
+- Cộng dồn cần `window: { documents: ["unbounded", "current"] }`; không có `window` là cả nhóm.
+- `$rank` đồng hạng rồi nhảy hạng (1, 1, 3); `$shift` với `by: -1` lấy tài liệu liền trước.
+
 # EN
+
+## Opening
+
+Accounting wants cumulative revenue by day, while still seeing each order. `$group` merges the orders away, so how do you keep every order and still compute over the orders around it?
 
 ## Key idea
 
@@ -98,22 +183,73 @@ Ba bước trên `orders`. Bước 1 và 3 chấm cả thứ tự.
 - `output`: the new fields. Accumulators (`$sum`, `$avg`…) take `window: { documents: [lower, upper] }` with `"unbounded"`, `"current"` or a relative number;
 - dedicated operators: `$rank`, `$denseRank`, `$documentNumber`, `$shift`.
 
-`$rank` gives equal values the same rank and skips the next one (1, 1, 3).
+`$rank` gives equal values the same rank and skips the next one (1, 1, 3). An accumulator without `window` is computed over the whole group, not as a running total.
 
 You can now: compute running totals, ranks within a group and comparisons with the previous period.
 
+## Syntax
+
+```text
+{ $setWindowFields: {
+    partitionBy: <expression>,
+    sortBy: { <field>: 1 | -1 },
+    output: {
+      <newField>: { <accumulator>: <expression>, window: { documents: [<lower>, <upper>] } },
+      <rankField>: { $rank: {} }
+    }
+} }
+```
+
+- `partitionBy` is optional; `sortBy` is required for `$rank`, `$shift` and `documents` windows.
+- `"unbounded"`, `"current"` or a negative/positive number counted from the current document.
+
 ## Example
 
+The average of the current order and the one before it, per store:
+
 ```js
-db.orders.aggregate([
-  { $setWindowFields: {
-      partitionBy: "$store",
-      sortBy: { createdAt: 1 },
-      output: { avgLast2: { $avg: "$total", window: { documents: [-1, "current"] } } }
-  } }
-])
+db.orders.aggregate([{ $setWindowFields: { partitionBy: "$store", sortBy: { createdAt: 1 }, output: { avgLast2: { $avg: "$total", window: { documents: [-1, "current"] } } } } }])
+```
+
+Each order's sequence number within its store, by time:
+
+```js
+db.orders.aggregate([{ $setWindowFields: { partitionBy: "$store", sortBy: { createdAt: 1 }, output: { n: { $documentNumber: {} } } } }, { $project: { store: 1, n: 1 } }])
+```
+
+## Common mistakes
+
+Forgetting `window` when you want a running total:
+
+```js
+// WRONG: no window, so every order gets the total of the whole partition
+db.orders.aggregate([{ $setWindowFields: { sortBy: { createdAt: 1 }, output: { runningTotal: { $sum: "$total" } } } }, { $project: { runningTotal: 1 } }])
+```
+
+```js
+// FIX: from the first document up to the current one
+db.orders.aggregate([{ $setWindowFields: { sortBy: { createdAt: 1 }, output: { runningTotal: { $sum: "$total", window: { documents: ["unbounded", "current"] } } } } }, { $project: { runningTotal: 1 } }])
+```
+
+Flipping the sign of `by` in `$shift`:
+
+```js
+// WRONG: by: 1 is the NEXT document, not the previous one
+db.orders.aggregate([{ $setWindowFields: { sortBy: { createdAt: 1 }, output: { prevTotal: { $shift: { output: "$total", by: 1, default: null } } } } }, { $project: { prevTotal: 1 } }])
+```
+
+```js
+// FIX: by: -1 looks one document back
+db.orders.aggregate([{ $setWindowFields: { sortBy: { createdAt: 1 }, output: { prevTotal: { $shift: { output: "$total", by: -1, default: null } } } } }, { $project: { prevTotal: 1 } }])
 ```
 
 ## Practice
 
 Three steps on `orders`. Steps 1 and 3 are graded in order.
+
+## Recap
+
+- `$setWindowFields` keeps every document and adds fields computed over a window.
+- `partitionBy` splits the groups, `sortBy` sets the order inside each group.
+- A running total needs `window: { documents: ["unbounded", "current"] }`; no `window` means the whole group.
+- `$rank` ties and then skips (1, 1, 3); `$shift` with `by: -1` takes the document before.

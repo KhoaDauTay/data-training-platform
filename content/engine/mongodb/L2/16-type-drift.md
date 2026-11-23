@@ -34,9 +34,26 @@ predict:
     - vi: Pipeline báo lỗi kiểu dữ liệu
       en: The pipeline fails with a type error
   answer: 1
+  trap: 3
   why:
-    vi: 'Nhiều người nghĩ "schemaless" nghĩa là không cần thiết kế, và nếu sai thì sẽ có lỗi. Thật ra `$sum` bỏ qua im lặng mọi giá trị không phải số ("$sum ignores the non-numeric values", docs `$sum`). Hue vẫn có `orders` 1 nhưng `revenue` 0, và không có lỗi nào báo cho bạn.'
-    en: 'Many people think "schemaless" means no design is needed, and that a mistake would raise an error. In fact `$sum` silently skips every non-numeric value ("$sum ignores the non-numeric values", `$sum` docs). Hue still has `orders` 1 but `revenue` 0, and nothing warns you.'
+    vi: 'Nghe hợp lý vì một kiểu sai thường gây lỗi, và nhiều người nghĩ "schemaless" nghĩa là không cần thiết kế, nhưng `$sum` bỏ qua im lặng mọi giá trị không phải số ("$sum ignores the non-numeric values", docs `$sum`). Hue vẫn có `orders` 1 nhưng `revenue` 0, và không có lỗi nào báo cho bạn.'
+    en: 'It sounds right because a wrong type usually raises an error, and many people think "schemaless" means no design is needed, but `$sum` silently skips every non-numeric value ("$sum ignores the non-numeric values", `$sum` docs). Hue still has `orders` 1 but `revenue` 0, and nothing warns you.'
+quiz:
+  - q:
+      vi: 'Đơn `''o3''` có `total` là chuỗi `''300000''`. Bộ lọc `{ total: { $gt: 100000 } }` có trả về `''o3''` không?'
+      en: 'Order `''o3''` has `total` as the string `''300000''`. Does the filter `{ total: { $gt: 100000 } }` return `''o3''`?'
+    options:
+      - vi: Có, vì 300000 lớn hơn 100000
+        en: Yes, because 300000 is greater than 100000
+      - vi: Không, vì so sánh chỉ khớp giá trị cùng nhóm kiểu, và chuỗi không phải số
+        en: No, because comparisons only match values of the same type group, and a string is not a number
+      - vi: Lệnh báo lỗi vì so chuỗi với số
+        en: The command fails because it compares a string with a number
+    answer: 1
+    trap: 0
+    why:
+      vi: 'Nghe hợp lý vì con số trong chuỗi đúng là lớn hơn, nhưng toán tử so sánh của MongoDB chỉ khớp khi kiểu BSON cùng nhóm (type bracketing). Chuỗi `''300000''` không bao giờ khớp `$gt` với một số, và không có lỗi nào.'
+      en: 'It sounds right because the number inside the string is larger, but MongoDB comparison operators only match when the BSON types are in the same group (type bracketing). The string `''300000''` never matches `$gt` against a number, and no error is raised.'
 lab:
   setup: |
     {"collections": {"orders": [
@@ -73,9 +90,11 @@ lab:
         vi: '`$set` với giá trị không có dấu nháy: `300000`, không phải `''300000''`.'
         en: '`$set` with a value without quotes: `300000`, not `''300000''`.'
 ---
-## Ý chính
+## Mở bài
 
 Báo cáo doanh thu ghi Hue 0 đồng, dù Hue có đơn. Không có lỗi nào. Chuyện gì đã xảy ra?
+
+## Ý chính
 
 MongoDB không bắt mọi tài liệu trong một collection có cùng kiểu cho một trường. Một form nhập `total` là chuỗi `'300000'` vẫn được ghi. Sau đó:
 
@@ -95,34 +114,106 @@ Kiểm tra nhanh trước khi chạy báo cáo:
 db.orders.countDocuments({ total: { $not: { $type: 'number' } } })
 ```
 
+## Lỗi hay gặp
+
+Lọc theo số trên một trường có giá trị chuỗi:
+
+```js
+// WRONG: the string '300000' never matches a numeric comparison
+db.orders.find({ total: { $gt: 100000 } })
+```
+
+```js
+// FIX (a stopgap): convert inside the query, then fix the data
+db.orders.find({ $expr: { $gt: [{ $toDouble: '$total' }, 100000] } })
+```
+
+Tin con số tổng khi một giá trị là chuỗi:
+
+```js
+// WRONG: Hue shows revenue 0
+db.orders.aggregate([{ $group: { _id: '$city', revenue: { $sum: '$total' } } }, { $sort: { _id: 1 } }])
+```
+
+```js
+// FIX (a stopgap): convert each value before summing
+db.orders.aggregate([{ $group: { _id: '$city', revenue: { $sum: { $toDouble: '$total' } } } }, { $sort: { _id: 1 } }])
+```
+
+Đổi kiểu trong truy vấn chỉ là chữa tạm; cách đúng là sửa dữ liệu (bước 3).
+
 ## Thực hành
 
 Trên server MongoDB thật, bạn chặn lỗi này từ lúc ghi bằng `validator` với `$jsonSchema` (ví dụ `total` phải là `'number'`). Validator chưa chạy trong trình duyệt (mingo không kiểm `$jsonSchema`), nên bài này dùng `$type` để tìm và sửa sau khi đã ghi.
 
+## Tóm tắt
+
+- MongoDB ghi được một trường với nhiều kiểu khác nhau.
+- `$sum` bỏ qua giá trị không phải số mà không báo lỗi.
+- So sánh số không khớp chuỗi; `$sort` xếp chuỗi sau số.
+- Tìm tài liệu lệch kiểu bằng `$not` và `$type`, rồi sửa dữ liệu.
+
 # EN
+
+## Opening
+
+The revenue report shows 0 for Hue, even though Hue has an order. There is no error. What happened?
 
 ## Key idea
 
-The revenue report shows 0 for Hue, even though Hue has an order. No error anywhere. What happened?
-
 MongoDB does not force every document in a collection to use the same type for a field. A form that enters `total` as the string `'300000'` is still written. Then:
 
-- `$sum` skips non-numeric values, so revenue comes up short without a warning.
-- A comparison such as `{ total: { $gt: 100000 } }` does not match a string, so that order drops out of the filter.
+- `$sum` skips non-numeric values, so revenue is short and nothing warns you.
+- A comparison such as `{ total: { $gt: 100000 } }` does not match the string, so that order drops out of the filter.
 - `$sort` puts strings after every number, following BSON type order.
 
-Many people think "schemaless" means no design. The Data Modeling docs advise the opposite: "plan your schema prior to using your database at a production scale". That means settling each field's type up front.
+Many people think "schemaless" means no design. The Data Modeling docs advise the opposite: "plan your schema prior to using your database at a production scale". That means fixing each field's type up front.
 
-You can now: find documents of the wrong type with `$type` before you trust a total.
+You can now: find documents of the wrong type with `$type` before trusting a total.
 
 ## Example
 
-A quick check before running the report:
+A quick check before running a report:
 
 ```js
 db.orders.countDocuments({ total: { $not: { $type: 'number' } } })
 ```
 
+## Common mistakes
+
+Filtering by number on a field that holds a string:
+
+```js
+// WRONG: the string '300000' never matches a numeric comparison
+db.orders.find({ total: { $gt: 100000 } })
+```
+
+```js
+// FIX (a stopgap): convert inside the query, then fix the data
+db.orders.find({ $expr: { $gt: [{ $toDouble: '$total' }, 100000] } })
+```
+
+Trusting a total when one value is a string:
+
+```js
+// WRONG: Hue shows revenue 0
+db.orders.aggregate([{ $group: { _id: '$city', revenue: { $sum: '$total' } } }, { $sort: { _id: 1 } }])
+```
+
+```js
+// FIX (a stopgap): convert each value before summing
+db.orders.aggregate([{ $group: { _id: '$city', revenue: { $sum: { $toDouble: '$total' } } } }, { $sort: { _id: 1 } }])
+```
+
+Converting inside a query is only a stopgap; the real fix is to fix the data (step 3).
+
 ## Practice
 
-On a real MongoDB server you block this mistake at write time with a `validator` using `$jsonSchema` (for example, `total` must be `'number'`). Validators do not run in the browser (mingo does not check `$jsonSchema`), so this lesson uses `$type` to find and fix the documents after they were written.
+On a real MongoDB server you stop this at write time with a `validator` using `$jsonSchema` (for example, `total` must be `'number'`). Validators do not run in the browser yet (mingo does not check `$jsonSchema`), so this lesson uses `$type` to find and fix the data after it was written.
+
+## Recap
+
+- MongoDB can store one field with several different types.
+- `$sum` skips non-numeric values without any error.
+- Numeric comparisons do not match strings; `$sort` puts strings after numbers.
+- Find documents of the wrong type with `$not` and `$type`, then fix the data.

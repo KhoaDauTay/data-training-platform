@@ -14,6 +14,7 @@ objectives:
   - vi: Biết khi nào chép một ít dữ liệu (extended reference) là đáng, và cái giá của nó.
     en: Know when copying a little data (extended reference) pays off, and what it costs.
 requires: [e-mg-l2-08]
+demo_setup: '{"collections": {"orders": [{"_id": 3, "customer": "c1", "customerName": "An", "lines": [{"sku": "p5", "qty": 1}, {"sku": "p1", "qty": 4}]}, {"_id": 4, "customer": "c3", "customerName": "Chi", "lines": [{"sku": "p3", "qty": 10}]}], "reviews": [{"_id": "r980", "productId": "p1", "stars": 4}, {"_id": "r981", "productId": "p1", "stars": 5}, {"_id": "r982", "productId": "p3", "stars": 3}]}}'
 sources:
   - https://www.mongodb.com/docs/manual/data-modeling/best-practices/
   - https://www.mongodb.com/docs/manual/core/write-operations-atomicity/
@@ -30,9 +31,10 @@ quiz:
       - vi: Lưu thành chuỗi JSON trong một trường
         en: Store them as a JSON string in one field
     answer: 0
+    trap: 1
     why:
-      vi: 'Collection riêng nghe quen vì giống bảng chi tiết đơn của SQL, nhưng khi đó mỗi lần xem đơn phải `$lookup`. Quan hệ "chứa", số lượng nhỏ, đọc và sửa cùng nhau: nhúng cho một lần đọc và một lần ghi nguyên tử (atomic).'
-      en: 'A separate collection feels familiar because it mirrors an SQL order-lines table, but then every order view needs a `$lookup`. A "contains" relationship, few items, read and changed together: embedding gives one read and one atomic write.'
+      vi: 'Nghe hợp lý vì collection riêng giống bảng chi tiết đơn của SQL, nhưng khi đó mỗi lần xem đơn phải `$lookup`. Quan hệ "chứa", số lượng nhỏ, đọc và sửa cùng nhau: nhúng cho một lần đọc và một lần ghi nguyên tử (atomic).'
+      en: 'It sounds right because a separate collection mirrors an SQL order-lines table, but then every order view needs a `$lookup`. A "contains" relationship, few items, read and changed together: embedding gives one read and one atomic write.'
   - q:
       vi: Mỗi sản phẩm nhận đánh giá của khách, có sản phẩm hàng chục nghìn đánh giá và con số còn tăng mãi. Nên lưu đánh giá thế nào?
       en: Each product collects customer reviews; some products have tens of thousands and the number keeps growing. How should you store reviews?
@@ -62,6 +64,10 @@ quiz:
       vi: Dữ liệu "theo thời điểm" như địa chỉ giao của một đơn nên được chép để giữ lịch sử. MongoDB không tự đồng bộ bản chép; dữ liệu hay đổi mà cần luôn mới thì nên tham chiếu.
       en: Point-in-time data such as an order's shipping address should be copied to keep history. MongoDB does not sync copies for you; data that changes often and must stay current is better referenced.
 ---
+## Mở bài
+
+Bạn chuyển một bảng đơn hàng và một bảng chi tiết đơn từ SQL sang MongoDB. Có nên giữ hai collection như hai bảng, hay để các dòng hàng nằm ngay trong đơn?
+
 ## Ý chính
 
 Không có JOIN mặc định trong mỗi lần đọc, nên câu hỏi chính khi thiết kế là: dữ liệu liên quan nằm cùng tài liệu (nhúng) hay ở tài liệu khác (tham chiếu bằng `_id`)?
@@ -79,26 +85,68 @@ Nên tham chiếu khi:
 - hai phần được ghi vào lúc khác nhau, hoặc phần con tồn tại độc lập;
 - chép dữ liệu ra nhiều nơi thì quá khó giữ cho khớp.
 
-## Ví dụ
-
 Ở giữa là chép một ít trường (extended reference), ví dụ tên khách trong đơn: đọc nhanh, không cần `$lookup`, nhưng phải tự cập nhật bản chép nếu cần. Hợp với dữ liệu không đổi hoặc dữ liệu "theo thời điểm".
 
 Nhiều người nghĩ MongoDB không bắt schema nên không cần thiết kế. Thật ra vẫn phải thiết kế, theo câu hỏi mà ứng dụng hỏi nhiều nhất, không theo hình bảng của SQL.
 
-Làm được: chọn nhúng hay tham chiếu cho một quan hệ và giải thích bằng cách dữ liệu được dùng.
+## Cú pháp
 
-```js
+```text
 // embedded: one read returns the whole order
 { _id: 3, customer: "c1", lines: [{ sku: "p5", qty: 1 }, { sku: "p1", qty: 4 }] }
 // referenced: reviews live in their own collection
 { _id: "r981", productId: "p1", stars: 5 }
 ```
 
-## Thực hành
+- Nhúng: mảng hoặc tài liệu con nằm trong tài liệu cha.
+- Tham chiếu: tài liệu con giữ `_id` của tài liệu cha (ở đây `productId`).
 
-Ba câu hỏi, mỗi câu một tình huống thiết kế.
+## Ví dụ
+
+Đơn nhúng dòng hàng: một lần đọc ra cả đơn, kèm `customerName` chép sẵn:
+
+```js
+db.orders.find({ _id: 3 })
+```
+
+Đánh giá tham chiếu sản phẩm: đọc theo `productId` trong collection riêng:
+
+```js
+db.reviews.find({ productId: "p1" })
+```
+
+## Lỗi hay gặp
+
+Nhúng một mảng lớn lên mãi:
+
+```text
+// WRONG: every review ever written, inside the product
+{ _id: "p1", name: "Green tea", reviews: [ /* 40000 reviews and growing */ ] }
+// FIX: reviews in their own collection, the product keeps a few latest ones
+{ _id: "p1", name: "Green tea", latestReviews: [ /* 3 reviews */ ] }
+```
+
+Tách mọi quan hệ thành collection như bảng SQL:
+
+```text
+// WRONG: lines that are always read with the order, in another collection
+db.order_lines.find({ orderId: 3 })   // plus a $lookup on every order view
+// FIX: embed them, one read and one atomic write
+db.orders.find({ _id: 3 })
+```
+
+## Tóm tắt
+
+- Nhúng khi dữ liệu được đọc và sửa cùng nhau, và phía "nhiều" nhỏ.
+- Tham chiếu khi phía "nhiều" lớn lên không giới hạn hoặc tồn tại độc lập.
+- Một tài liệu tối đa 16 MiB; một lần ghi trên một tài liệu là nguyên tử.
+- Chép vài trường (extended reference) đọc nhanh, nhưng bạn tự giữ bản chép cho khớp.
 
 # EN
+
+## Opening
+
+You are moving an orders table and an order-lines table from SQL to MongoDB. Should you keep two collections like the two tables, or put the lines right inside the order?
 
 ## Key idea
 
@@ -117,21 +165,59 @@ Reference when:
 - the parts are written at different times, or the child exists on its own;
 - copying the data to many places would be too hard to keep consistent.
 
-## Example
-
 In between is copying a few fields (extended reference), such as the customer's name in an order: fast reads with no `$lookup`, but you must update the copies yourself if needed. It suits data that never changes or point-in-time data.
 
 Many people think that since MongoDB enforces no schema, there is nothing to design. In fact you still design, for the questions your application asks most, not for the table shapes of SQL.
 
-You can now: choose embedding or referencing for a relationship and explain it by how the data is used.
+## Syntax
 
-```js
+```text
 // embedded: one read returns the whole order
 { _id: 3, customer: "c1", lines: [{ sku: "p5", qty: 1 }, { sku: "p1", qty: 4 }] }
 // referenced: reviews live in their own collection
 { _id: "r981", productId: "p1", stars: 5 }
 ```
 
-## Practice
+- Embed: an array or sub-document inside the parent document.
+- Reference: the child document holds the parent's `_id` (here `productId`).
 
-Three questions, each one a design situation.
+## Example
+
+An order that embeds its lines: one read returns the whole order, with a copied `customerName`:
+
+```js
+db.orders.find({ _id: 3 })
+```
+
+Reviews that reference a product: read by `productId` in their own collection:
+
+```js
+db.reviews.find({ productId: "p1" })
+```
+
+## Common mistakes
+
+Embedding an array that keeps growing:
+
+```text
+// WRONG: every review ever written, inside the product
+{ _id: "p1", name: "Green tea", reviews: [ /* 40000 reviews and growing */ ] }
+// FIX: reviews in their own collection, the product keeps a few latest ones
+{ _id: "p1", name: "Green tea", latestReviews: [ /* 3 reviews */ ] }
+```
+
+Splitting every relationship into a collection like SQL tables:
+
+```text
+// WRONG: lines that are always read with the order, in another collection
+db.order_lines.find({ orderId: 3 })   // plus a $lookup on every order view
+// FIX: embed them, one read and one atomic write
+db.orders.find({ _id: 3 })
+```
+
+## Recap
+
+- Embed when the data is read and changed together and the "many" side is small.
+- Reference when the "many" side grows without bound or lives on its own.
+- A document is at most 16 MiB; one write on one document is atomic.
+- Copying a few fields (extended reference) reads fast, but you keep the copies in sync yourself.
