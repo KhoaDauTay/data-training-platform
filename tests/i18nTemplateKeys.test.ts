@@ -41,6 +41,9 @@ describe('i18n: template-literal keys behind a cast', () => {
   it('the scan finds the casts this test was written for', () => {
     expect(sites.map((s) => s.key)).toEqual(expect.arrayContaining(Object.keys(VALUES)));
     expect(bestAreas.length).toBeGreaterThan(100);
+    // a cast the CAST pattern cannot read (two interpolations, a line break) would pass unseen: every `` ` as XKey `` must be a site
+    const casts = Object.values(SRC).reduce((n, text) => n + (text.match(/` as [A-Z]\w*Key\b/g)?.length ?? 0), 0);
+    expect(casts).toBe(sites.length);
   });
 
   it.each(sites.map((s) => [`${s.file.replace('../', '')}: ${s.key}`, s] as const))('%s: every value it can take is a key in VI and EN', (_, s) => {
