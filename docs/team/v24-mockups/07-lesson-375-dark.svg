@@ -25,7 +25,7 @@
 <rect x="0" y="56" width="375" height="48" rx="0" fill="#201c19"/>
 <line x1="0" y1="104" x2="375" y2="104" stroke="#4d443c" stroke-width="1"/>
 <g transform="translate(12,70) scale(0.07031)" aria-hidden="true"><path fill="#62dccb" d="M160,48V208L80,128Z" opacity="0.2"/><path fill="#62dccb" d="M163.06,40.61a8,8,0,0,0-8.72,1.73l-80,80a8,8,0,0,0,0,11.32l80,80A8,8,0,0,0,168,208V48A8,8,0,0,0,163.06,40.61ZM152,188.69,91.31,128,152,67.31Z"/></g>
-<text x="32" y="85" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="15" font-weight="800" fill="#62dccb" text-anchor="start" xml:space="preserve">Phần 3</text>
+<text x="32" y="85" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="15" font-weight="800" fill="#62dccb" text-anchor="start" xml:space="preserve">Phần 5</text>
 <rect x="118" y="62" width="190" height="36" rx="18" fill="#2b2622"/>
 <g transform="translate(130,71) scale(0.07031)" aria-hidden="true"><path fill="#f8f3ed" d="M216,64V192H96V64Z" opacity="0.2"/><path fill="#f8f3ed" d="M88,64a8,8,0,0,1,8-8H216a8,8,0,0,1,0,16H96A8,8,0,0,1,88,64Zm128,56H96a8,8,0,1,0,0,16H216a8,8,0,0,0,0-16Zm0,64H96a8,8,0,1,0,0,16H216a8,8,0,0,0,0-16ZM56,56H40a8,8,0,0,0,0,16H56a8,8,0,0,0,0-16Zm0,64H40a8,8,0,1,0,0,16H56a8,8,0,0,0,0-16Zm0,64H40a8,8,0,1,0,0,16H56a8,8,0,0,0,0-16Z"/></g>
 <text x="154" y="85" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="14" font-weight="700" fill="#f8f3ed" text-anchor="start" xml:space="preserve">4/9 · Ví dụ chạy được</text>
