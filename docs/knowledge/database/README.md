@@ -57,7 +57,7 @@ Not verified, and marked so where it appears: two-session behaviour (locks, isol
 
 Where a page that was read did not state a version (MySQL `CHECK` enforcement, `EXPLAIN ANALYZE`), the text avoids the version or says to-verify.
 
-Scripts live outside the repo in `C:/Users/khoa.huynh/Documents/study/bd-wt/research-db/`: `run.mjs` (the block runner; `node run.mjs <file.md>…`), `mingo-check.mjs`, `crawl.mjs` (route crawl), `gen.py` (the first route/gap-map generator, now replaced by `scripts/kb/` in the repo, see below). Two runner limits worth knowing: `EXPLAIN` cannot be a subquery, so examples read plans through a `plan_text()` helper function; `VACUUM` and `CREATE INDEX CONCURRENTLY` must be blocks of their own.
+Scripts live outside the repo in `C:/Users/khoa.huynh/Documents/study/bd-wt/research-db/`: `run.mjs` (the block runner; `node run.mjs <file.md>…`), `mingo-check.mjs`, `crawl.mjs` and `gen.py` (the first one-off route crawl and generator, replaced by `scripts/kb/` in the repo, see [Keeping the tutorial inventory current](#keeping-the-tutorial-inventory-current)). Two runner limits worth knowing: `EXPLAIN` cannot be a subquery, so examples read plans through a `plan_text()` helper function; `VACUUM` and `CREATE INDEX CONCURRENTLY` must be blocks of their own.
 
 ## Keeping the tutorial inventory current
 

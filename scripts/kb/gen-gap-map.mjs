@@ -30,7 +30,7 @@ for (const t of tuts) {
 const head = readFileSync(new URL('gap-head.md', import.meta.url), 'utf8');
 const tail = readFileSync(new URL('gap-tail.md', import.meta.url), 'utf8');
 writeFileSync(new URL('boondata-gap-map.md', OUT),
-  head.replaceAll('{{COUNTS}}', () => tbl).replaceAll('{{OTHER}}', () => other).replaceAll('{{TABLES}}', () => tables) + tail);
+  head.replaceAll('{{TOTAL}}', () => `${tuts.reduce((n, t) => n + t.chapters, 0).toLocaleString('en-US')} chapters in ${tuts.length} tutorials`).replaceAll('{{COUNTS}}', () => tbl).replaceAll('{{OTHER}}', () => other).replaceAll('{{TABLES}}', () => tables) + tail);
 const unmapped = tuts.filter((t) => CORE.includes(t.slug)).flatMap((t) => t.sections.flatMap((s) => s.chapters
   .filter((ch) => classify(t.slug, ch.title)[0] === 'unmapped').map((ch) => `${t.slug}: ${ch.title}`)));
 console.log('gap map:', JSON.stringify(counts));

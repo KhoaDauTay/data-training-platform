@@ -2,7 +2,7 @@
 
 Plan only: no content or app change. Scope (user, 2026-11-23): the **Engine area** (`content/engine/**`, including the MongoDB NoSQL path and the Best Practice cards in `content/engine/best/`) and the **learning path / General area** (`content/skills.yml`, `content/lessons.yml`, `content/general/sql.yml`, `content/general/adv.yml`, `content/general/interview.yml`). The domains (Logistics, E-commerce, Finance tickets) are left out of both the mapping and the proposal.
 
-Inputs: [tutorial-routes.md](tutorial-routes.md) (1,430 chapters in 36 tutorials, structure only) and the repo on `main` at the time of writing. Generator: `bd-wt/research-db/gen.py` (outside the repo; keyword rules per tutorial, each rule reviewed by hand against the chapter titles, no unmapped rows). Re-run it after content changes and review the diff.
+Inputs: [tutorial-routes.md](tutorial-routes.md) ({{TOTAL}}, structure only) and the repo on `main` at the time of writing. Generator: `npm run kb:gen` (`scripts/kb/gen-gap-map.mjs`; keyword rules per tutorial in `scripts/kb/rules.mjs`, each rule reviewed by hand against the chapter titles; the script prints any unmapped title). Re-run it after a crawl or content changes and review the diff.
 
 ## How to read the status column
 
