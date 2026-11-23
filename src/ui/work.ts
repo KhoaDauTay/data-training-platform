@@ -334,7 +334,7 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
     deps.onRun();
   }
 
-  const wrongTip = wrongTipper((sql, tk) => deps.db.run(sql, { schema: schemaOf(tk) }));
+  const wrongTip = wrongTipper((sql, tk) => deps.db.run(sql, { schema: schemaOf(tk), check: tk.steps[0]?.check })); // v26 R2: a write drill (one step) compares its read
 
   /**
    * Index lab (chapter 11): the editor holds one CREATE INDEX; the step's Solution is the slow query. Shows its plan before
@@ -416,9 +416,10 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
     // The player's run becomes lastRun, so the tabs and the shape card show what was graded,
     // and a timeout/restart keeps its error class (grade() itself only keeps Postgres errors).
     let played: LastRun | undefined;
+    const check = tk.steps[i].check; // v26 R2: a write drill is graded on this read, after the write, in the same transaction
     const playerRun = async (s: string) => {
       try {
-        const result = await deps.db.run(s, { schema });
+        const result = await deps.db.run(s, { schema, check });
         played = { key: k, sql: s, offset: 0, result, ...(schema !== 'game' ? { schema } : {}) };
         return result;
       } catch (e) {
@@ -434,7 +435,7 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
     let slow: SlowVerdict | undefined; // v24 (L340): right but slow; blocks only on a `perf:` step
     let plans: [unknown, unknown] | undefined;
     try {
-      r = await grade((s) => (s === sql ? playerRun(s) : deps.db.run(s, { schema })), tk.steps[i].solution, sql, tk.ordered, tk.steps[i].precision);
+      r = await grade((s) => (s === sql ? playerRun(s) : deps.db.run(s, { schema, check })), tk.steps[i].solution, sql, tk.ordered, tk.steps[i].precision);
       // Still busy: no newer Run/Submit can start before the tip is ready, so this result can never overwrite a newer one.
       if (!r.ok && r.reason !== 'error') tip = await wrongTip(tk, played?.result, r);
       // Chapter 11: a right result must also read the table through an index. EXPLAIN without ANALYZE: costs, no run.
@@ -448,7 +449,7 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
       }
       // v24: right but slow. Two planner-only EXPLAINs (Solution, answer) on the same DB; never milliseconds.
       const perf = tk.steps[i].perf;
-      if (r.ok && !planFail && planError === undefined) {
+      if (r.ok && !planFail && planError === undefined && !check) { // a write's cost is not what Part 9 grades
         try {
           const explain = async (s: string) => (await deps.db.run(`EXPLAIN (FORMAT JSON) ${s.trim().replace(/;\s*$/, '')}`, { schema })).rows[0]?.[0];
           plans = [await explain(tk.steps[i].solution), await explain(sql)];

@@ -160,19 +160,19 @@ export function editorSchema(): SQLNamespace {
 // Keyed by Solution SQL, not ticket id: Plan 1c variants reuse ids with different SQL.
 const expected = new Map<string, Promise<QueryResult>>();
 /** The Solution's result, run once per session (shape card, and the L84 expected-result preview of lessons and drills). */
-export function expectedResult(solution: string, schema: SchemaId = domainSchemaId()): Promise<QueryResult> {
-  const k = `${schema}|${solution}`;
+export function expectedResult(solution: string, schema: SchemaId = domainSchemaId(), check?: string): Promise<QueryResult> {
+  const k = `${schema}|${solution}|${check ?? ''}`; // v26 R2: a write drill's expected result is its read after the write
   let p = expected.get(k);
   if (!p) {
     // A named run seeds its schema (v12.0 D10-3) and respects a failed seed; an explicit ensure() would clear that and
     // start another seed on every brief redraw. Only `lab` keeps it: lessons and drills have no Retry button of their own.
-    p = schema === 'lab' ? app.ensure(schema).then(() => app.run(solution, { schema })) : app.run(solution, { schema });
+    p = schema === 'lab' ? app.ensure(schema).then(() => app.run(solution, { schema, check })) : app.run(solution, { schema, check });
     expected.set(k, p);
     p.catch(() => expected.delete(k)); // timeout/restart: try again on the next render
   }
   return p;
 }
-export const expectedShape = (solution: string, schema: SchemaId = domainSchemaId()): Promise<Shape> => expectedResult(solution, schema).then(shapeOf);
+export const expectedShape = (solution: string, schema: SchemaId = domainSchemaId(), check?: string): Promise<Shape> => expectedResult(solution, schema, check).then(shapeOf);
 
 /** L2 (v12.0): FK parent tables join the related tables only from the chapter that teaches JOIN in the open domain. */
 export function showsParents(tk: Ticket): boolean {

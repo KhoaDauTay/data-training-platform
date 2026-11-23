@@ -41,13 +41,13 @@ describe('route.yml: 11 Phần theo thứ tự mới (L335)', () => {
     const ids = ALL_PARTS.flatMap((p) => p.skills);
     expect(new Set(ids).size).toBe(ids.length);
     for (const s of ROUTE_SKILLS) expect([s.id, partOf(s.id) !== undefined]).toEqual([s.id, true]);
-    expect(ids.filter((id) => !ROUTE_SKILLS.some((s) => s.id === id)).sort()).toEqual(['insert_select', 'update_join', 'upsert']);
-    expect(GENERAL_SKILLS.map((s) => s.id)).toEqual(['cross_join', 'any_all']); // v25 R1 (R2 adds Part 9)
+    expect(ids.filter((id) => !ROUTE_SKILLS.some((s) => s.id === id))).toEqual([]); // v26 R2: every route skill has content
+    expect(GENERAL_SKILLS.map((s) => s.id)).toEqual(['cross_join', 'any_all', 'insert_select', 'update_join', 'upsert']); // v25 R1 + v26 R2 (Part 9)
   });
 
-  it('Phần vẽ ra: chỉ kỹ năng đã có; Phần 9 ẩn tới R2 (L336); tên Phần từ route.yml, không từ chapters.yml', () => {
-    expect(PARTS.map((p) => p.n)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 10, 11]);
-    expect(PARTS.flatMap((p) => p.skills)).toHaveLength(40); // v25 R1: + cross_join, any_all
+  it('Phần vẽ ra: chỉ kỹ năng đã có; Phần 9 hiện từ R2 (L336, L390); tên Phần từ route.yml, không từ chapters.yml', () => {
+    expect(PARTS.map((p) => p.n)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]);
+    expect(PARTS.flatMap((p) => p.skills)).toHaveLength(43); // v25 R1: + cross_join, any_all; v26 R2: + Part 9
     expect(moduleTitle(3, 'vi')).toBe('Chữ, ngày và kiểu');
     expect(moduleTitle(9, 'en')).toBe('Writing data');
     expect(partOf('cast')).toBe(3);
@@ -78,7 +78,7 @@ describe('thứ tự tiên quyết (product §1.1 thành test, L336)', () => {
   it('bảy drill viết lại giữ id và loại', () => {
     const want = { 'g-date-math-4': 'review', 'g-coalesce-1': 'faded', 'g-string-fn-2': 'open', 'g-distinct-3': 'trap', 'g-cast-1': 'faded', 'g-cast-2': 'open', 'g-cast-3': 'trap' };
     for (const [id, kind] of Object.entries(want)) expect([id, g.byId.get(id)?.kind]).toEqual([id, kind]);
-    expect(sqlYml.match(/^- id: g-/gm)).toHaveLength(160); // v25 R1: + 4 drills each for cross_join, any_all
+    expect(sqlYml.match(/^- id: g-/gm)).toHaveLength(172); // v25 R1: + 4 drills each for cross_join, any_all; v26 R2: + 12 write drills (Part 9)
   });
 
   it('bài nhanh: lời giải "Thử ngay" chỉ dùng Phần của nó, trừ khung starter đưa sẵn', () => {

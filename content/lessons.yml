@@ -1598,3 +1598,117 @@
         AND price_vnd < ANY (SELECT price_vnd FROM products WHERE category = 'Drinks')
     solution: "SELECT name, price_vnd FROM products WHERE category = ANY (ARRAY['Household', 'Stationery']) AND price_vnd < 30000"
   docs: https://www.postgresql.org/docs/current/functions-subquery.html#FUNCTIONS-SUBQUERY-ANY-SOME
+
+# v26 R2 (L390): Part 9, writing data (General-only skills). Every SQL here runs inside BEGIN … ROLLBACK, so nothing persists;
+# RETURNING makes the written rows the result, which is what "Thử ngay" grades.
+- id: insert_select
+  cues:
+    vi: ["thêm … vào …", "ghi thành các dòng mới …", "tạo một bảng mới …"]
+    en: ["add … to …", "write it as new rows …", "create a new table …"]
+  concept:
+    vi: "INSERT thêm dòng vào một bảng: hoặc từ VALUES gõ tay, hoặc từ kết quả của một câu SELECT. Luôn ghi danh sách cột; cột tự sinh như `id` để Postgres điền. RETURNING trả lại chính các dòng vừa ghi."
+    en: "INSERT adds rows to a table: either from typed VALUES or from the result of a SELECT. Always write the column list; let Postgres fill generated columns such as `id`. RETURNING gives back the rows just written."
+  example: |-
+    INSERT INTO products (name, category, price_vnd)
+    VALUES ('Jasmine tea 500ml', 'Drinks', 13000),
+           ('Sesame cookies', 'Snacks', 21000)
+    RETURNING name, category, price_vnd
+  explain:
+    vi: "① `INSERT INTO products (name, category, price_vnd)`: ba cột sẽ nhận giá trị; `id` không có trong danh sách nên tự sinh. ② `VALUES (…), (…)`: hai dòng, mỗi dòng ba giá trị theo đúng thứ tự cột. ③ `RETURNING`: trả hai dòng vừa thêm để bạn xem ngay. Ở đây mọi câu ghi chạy trong một giao dịch rồi được hoàn tác, nên bảng không đổi thật."
+    en: "① `INSERT INTO products (name, category, price_vnd)`: the three columns that get values; `id` is not listed, so it is generated. ② `VALUES (…), (…)`: two rows, each with three values in column order. ③ `RETURNING`: returns the two new rows so you see them at once. Here every write runs in a transaction that is then rolled back, so the table does not really change."
+  mistake:
+    sql: |-
+      INSERT INTO products
+      VALUES ('Jasmine tea 500ml', 'Drinks', 13000)
+      RETURNING name, price_vnd
+    vi: "Bỏ danh sách cột thì giá trị đầu đi vào cột đầu của bảng, là `id`: Postgres báo lỗi 22P02 vì chữ không thành số. Ghi rõ ba cột cần điền."
+    en: "Without a column list the first value goes into the table's first column, `id`: Postgres fails with 22P02 because the text is not a number. Name the three columns you fill."
+  try:
+    task:
+      vi: "Thêm hai món vào `products`: `Ginger tea` nhóm `Drinks` giá 14000 và `Rice paper` nhóm `Snacks` giá 11000; trả về `name` rồi `price_vnd` của các dòng vừa thêm."
+      en: "Add two items to `products`: `Ginger tea` in `Drinks` at 14000 and `Rice paper` in `Snacks` at 11000; return the `name` then the `price_vnd` of the new rows."
+    starter: |-
+      INSERT INTO products (name, category, price_vnd)
+      VALUES ('Jasmine tea 500ml', 'Drinks', 13000),
+             ('Sesame cookies', 'Snacks', 21000)
+      RETURNING name, category, price_vnd
+    solution: "INSERT INTO products (name, category, price_vnd) VALUES ('Ginger tea', 'Drinks', 14000), ('Rice paper', 'Snacks', 11000) RETURNING name, price_vnd"
+  docs: https://www.postgresql.org/docs/current/sql-insert.html
+
+- id: update_join
+  cues:
+    vi: ["tăng thêm …", "xóa bản thừa …", "bỏ mọi … của …"]
+    en: ["goes up by …", "delete the extra copy …", "drop every … for …"]
+  concept:
+    vi: "UPDATE đổi giá trị của những dòng đã có, DELETE xóa chúng; WHERE chọn dòng nào bị đụng. Khi điều kiện nằm ở bảng khác, UPDATE thêm FROM, DELETE thêm USING, rồi nối hai bảng trong WHERE."
+    en: "UPDATE changes values in existing rows, DELETE removes them; WHERE picks which rows are touched. When the condition lives in another table, UPDATE adds FROM, DELETE adds USING, and both tables are linked in WHERE."
+  example: |-
+    UPDATE store_targets t
+    SET target_vnd = t.target_vnd + 1000000
+    FROM stores s
+    WHERE s.id = t.store_id
+      AND s.city = 'Hanoi'
+      AND t.month = '2026-12-01'
+    RETURNING t.store_id, t.month, t.target_vnd
+  explain:
+    vi: "① `UPDATE store_targets t SET …`: bảng bị sửa và giá trị mới, tính từ giá trị cũ của chính dòng đó. ② `FROM stores s WHERE s.id = t.store_id AND s.city = 'Hanoi'`: thành phố nằm ở `stores`, nên nối vào để chọn cửa hàng. ③ `RETURNING`: một dòng, cửa hàng Hoan Kiem, chỉ tiêu tháng 12 từ 9 triệu lên 10 triệu."
+    en: "① `UPDATE store_targets t SET …`: the table being changed and the new value, computed from the row's own old value. ② `FROM stores s WHERE s.id = t.store_id AND s.city = 'Hanoi'`: the city is in `stores`, so it is linked in to pick the stores. ③ `RETURNING`: one row, the Hoan Kiem store, its December target going from 9 million to 10 million."
+  mistake:
+    sql: |-
+      UPDATE products
+      SET price_vnd = price_vnd - 1000
+      RETURNING name, price_vnd
+    vi: "Muốn giảm giá một nhóm mà quên WHERE: cả 30 món đều giảm, không lỗi nào báo. Trước khi sửa, chạy câu đọc với cùng WHERE để đếm số dòng sẽ đổi."
+    en: "Meaning to cut one category's prices but forgetting WHERE: all 30 items get cheaper and no error says so. Before changing anything, run a read with the same WHERE to count the rows that will change."
+  try:
+    task:
+      vi: "Xóa chỉ tiêu tháng 12/2026 trong `store_targets` của các cửa hàng ở `Ho Chi Minh City` (thành phố nằm trong bảng `stores`); trả về `store_id` rồi `target_vnd` của các dòng bị xóa."
+      en: "Delete the December 2026 targets in `store_targets` of the stores in `Ho Chi Minh City` (the city is in the `stores` table); return the `store_id` then the `target_vnd` of the deleted rows."
+    starter: |-
+      UPDATE store_targets t
+      SET target_vnd = t.target_vnd + 1000000
+      FROM stores s
+      WHERE s.id = t.store_id
+        AND s.city = 'Hanoi'
+        AND t.month = '2026-12-01'
+      RETURNING t.store_id, t.month, t.target_vnd
+    solution: "DELETE FROM store_targets t USING stores s WHERE s.id = t.store_id AND s.city = 'Ho Chi Minh City' AND t.month = '2026-12-01' RETURNING t.store_id, t.target_vnd"
+  docs: https://www.postgresql.org/docs/current/sql-update.html
+
+- id: upsert
+  cues:
+    vi: ["đã có thì …", "chưa có thì thêm …", "giữ nguyên số cũ …"]
+    en: ["already has … gets …", "without one gets a new row …", "keeps its old number …"]
+  concept:
+    vi: "Upsert là thêm hoặc sửa trong một câu. `INSERT … ON CONFLICT` kèm các cột khóa bắt dòng đụng một ràng buộc duy nhất: `DO NOTHING` bỏ qua nó, `DO UPDATE` sửa dòng cũ, giá trị đề nghị nằm ở `EXCLUDED`. Không có khóa duy nhất thì dùng MERGE với điều kiện tự viết."
+    en: "An upsert adds or updates in one statement. `INSERT … ON CONFLICT` with the key columns catches a row that hits a unique constraint: `DO NOTHING` skips it, `DO UPDATE` changes the old row, and the proposed value sits in `EXCLUDED`. With no unique key, use MERGE with a condition you write."
+  example: |-
+    INSERT INTO store_targets (store_id, month, target_vnd)
+    VALUES (5, '2026-06-01', 8000000), (5, '2026-12-01', 9500000)
+    ON CONFLICT (store_id, month)
+    DO UPDATE SET target_vnd = EXCLUDED.target_vnd
+    RETURNING store_id, month, target_vnd
+  explain:
+    vi: "① Hai dòng đề nghị cho cửa hàng số 5. ② `ON CONFLICT (store_id, month)`: đúng khóa chính của bảng; tháng 12 đã có nên đụng khóa, tháng 6 chưa có nên được thêm. ③ `DO UPDATE SET target_vnd = EXCLUDED.target_vnd`: dòng tháng 12 nhận giá trị đề nghị. `RETURNING` trả cả hai dòng, dòng thêm lẫn dòng sửa."
+    en: "① Two proposed rows for store 5. ② `ON CONFLICT (store_id, month)`: exactly the table's primary key; December already exists, so it clashes, June does not, so it is added. ③ `DO UPDATE SET target_vnd = EXCLUDED.target_vnd`: the December row takes the proposed value. `RETURNING` gives both rows, the added one and the updated one."
+  mistake:
+    sql: |-
+      INSERT INTO store_targets (store_id, month, target_vnd)
+      VALUES (5, '2026-06-01', 8000000)
+      ON CONFLICT (month)
+      DO UPDATE SET target_vnd = EXCLUDED.target_vnd
+      RETURNING store_id, month, target_vnd
+    vi: "`ON CONFLICT (month)` không khớp ràng buộc duy nhất nào (khóa là hai cột), nên Postgres báo lỗi 42P10 ngay khi lập kế hoạch. Nêu đúng các cột của khóa."
+    en: "`ON CONFLICT (month)` matches no unique constraint (the key has two columns), so Postgres fails with 42P10 while planning. Name exactly the key's columns."
+  try:
+    task:
+      vi: "Thêm chỉ tiêu 5000000 cho cửa hàng số 4 vào tháng 01/2026 và 03/2026 trong `store_targets`; tháng đã có chỉ tiêu thì bỏ qua. Trả về `store_id`, `month` rồi `target_vnd` của các dòng thật sự được thêm."
+      en: "Add a 5000000 target for store 4 in January 2026 and March 2026 in `store_targets`; skip a month that already has one. Return the `store_id`, `month` then `target_vnd` of the rows really added."
+    starter: |-
+      INSERT INTO store_targets (store_id, month, target_vnd)
+      VALUES (5, '2026-06-01', 8000000), (5, '2026-12-01', 9500000)
+      ON CONFLICT (store_id, month)
+      DO UPDATE SET target_vnd = EXCLUDED.target_vnd
+      RETURNING store_id, month, target_vnd
+    solution: "INSERT INTO store_targets (store_id, month, target_vnd) VALUES (4, '2026-01-01', 5000000), (4, '2026-03-01', 5000000) ON CONFLICT (store_id, month) DO NOTHING RETURNING store_id, month, target_vnd"
+  docs: https://www.postgresql.org/docs/current/sql-insert.html#SQL-ON-CONFLICT

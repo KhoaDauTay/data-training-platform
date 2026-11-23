@@ -61,7 +61,15 @@ export function sqlErrorInfo(e: unknown): SqlErrorInfo | undefined {
  * Plan 8a D8a-4: the schema is chosen per request. Absent = the session path (game schema, then sandbox).
  * `params` (V22-B, L206): bound values for `$1`…, never spliced into the SQL text.
  */
-export interface RunOpts { schema?: SchemaId; params?: unknown[] }
+export interface RunOpts {
+  schema?: SchemaId;
+  params?: unknown[];
+  /**
+   * v26 R2 (Part 9, write drills): a read run right after `sql` in the same transaction; its rows are the result. The write
+   * never outlives the request (ROLLBACK as always). Content SQL only (a drill's `check:`), never player text.
+   */
+  check?: string;
+}
 
 /**
  * search_path for one request, right after BEGIN (v6 §4.4). Absent or 'game' = the session path (logistics, sandbox). lab never
@@ -79,6 +87,9 @@ async function begin(db: PGlite, opts: RunOpts): Promise<void> {
   await setRequestPath(db, opts.schema);
 }
 
+/** The open transaction's id (assigning one writes nothing); a different id later = the transaction ended in between. */
+const currentXact = async (db: PGlite): Promise<string> => String((await db.query<{ x: string }>('SELECT pg_current_xact_id()::text AS x')).rows[0].x);
+
 /**
  * Runs exactly one statement inside BEGIN … ROLLBACK so players can never change data.
  * PGlite rejects multi-statement input, so a player cannot smuggle a COMMIT + DML pair.
@@ -87,8 +98,20 @@ async function begin(db: PGlite, opts: RunOpts): Promise<void> {
 export async function runSandboxed(db: PGlite, sql: string, maxRows = MAX_ROWS_WORKER, opts: RunOpts = {}): Promise<QueryResult> {
   await begin(db, opts);
   try {
+    // A write drill's check must read inside the transaction the write ran in: a statement that ended it (COMMIT, ROLLBACK,
+    // END, ABORT) is refused before the check runs, so the check can never read a world the write left behind.
+    const xact = opts.check ? await currentXact(db) : undefined;
     const t0 = performance.now();
-    const r = await db.query<unknown[]>(sql, opts.params ?? [], { rowMode: 'array' });
+    let r = await db.query<unknown[]>(sql, opts.params ?? [], { rowMode: 'array' });
+    if (opts.check) {
+      if ((await currentXact(db)) !== xact) throw new SqlError({ message: 'this statement ends the transaction; write one statement that changes data', code: 'WRT01' });
+      try {
+        r = await db.query<unknown[]>(opts.check, [], { rowMode: 'array' });
+      } catch (e) {
+        const info = sqlErrorInfo(e);
+        throw info ? new SqlError({ ...info, position: undefined }) : e; // a position would point into the check, not the player's SQL
+      }
+    }
     const result: QueryResult = {
       columns: r.fields.map((f) => f.name),
       types: r.fields.map((f) => f.dataTypeID),

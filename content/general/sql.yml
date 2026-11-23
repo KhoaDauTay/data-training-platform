@@ -1165,6 +1165,121 @@
   solution: "WITH a AS (SELECT i.product_id, SUM(i.qty) AS q FROM order_items i JOIN orders o ON o.id = i.order_id WHERE o.order_date = '2026-10-30' GROUP BY i.product_id), b AS (SELECT i.product_id, SUM(i.qty) AS q FROM order_items i JOIN orders o ON o.id = i.order_id WHERE o.order_date = '2026-10-31' GROUP BY i.product_id) SELECT COALESCE(a.product_id, b.product_id), a.q, b.q FROM a FULL JOIN b ON b.product_id = a.product_id"
   hint: { vi: "Tính riêng từng ngày, rồi ghép hai bên mà giữ dòng không có cặp ở cả hai phía; mã sản phẩm lấy từ phía nào có.", en: "Compute each day on its own, then join the two keeping unmatched rows on both sides; take the product id from whichever side has it." }
 
+# ---- insert_select (v26 R2, Part 9, General only: content/general/skills-general.yml)
+# Write drills (L390): `check:` is the read that grades them, run after the write in the same BEGIN … ROLLBACK. They write
+# only to tables with no performance bar (never `orders`, `app_events`, `events_big`) and never read a generated id.
+- id: g-insert-select-1
+  skill: insert_select
+  kind: faded
+  task: { vi: "Chuỗi cửa hàng nhận một món mới: `Lotus tea 330ml`, nhóm `Drinks`, giá 15000 đồng. Thêm nó vào bảng `products` (để cột `id` tự sinh).", en: "The chain gets a new item: `Lotus tea 330ml`, category `Drinks`, price 15000 VND. Add it to the `products` table (let the `id` column generate itself)." }
+  starter: |-
+    INSERT INTO products (name, category, price_vnd)
+    VALUES (___, ___, ___)
+  solution: "INSERT INTO products (name, category, price_vnd) VALUES ('Lotus tea 330ml', 'Drinks', 15000)"
+  check: "SELECT name, category, price_vnd FROM products WHERE category = 'Drinks'"
+  hint: { vi: "Ba giá trị theo đúng thứ tự của danh sách cột: tên, nhóm, giá.", en: "Three values in the order of the column list: name, category, price." }
+- id: g-insert-select-2
+  skill: insert_select
+  kind: open
+  task: { vi: "Lập chỉ tiêu tháng 01/2027 cho mọi cửa hàng: lấy chỉ tiêu tháng 12/2026 của chính cửa hàng đó trong `store_targets`, tăng 10% (nhân 11 rồi chia 10), ghi thành các dòng mới với `month` là ngày 2027-01-01.", en: "Set the January 2027 target of every store: take that store's December 2026 target in `store_targets`, raise it by 10% (multiply by 11, then divide by 10), and write it as new rows whose `month` is 2027-01-01." }
+  solution: "INSERT INTO store_targets (store_id, month, target_vnd) SELECT store_id, DATE '2027-01-01', target_vnd * 11 / 10 FROM store_targets WHERE month = '2026-12-01'"
+  check: "SELECT store_id, month, target_vnd FROM store_targets WHERE month >= '2026-12-01'"
+  hint: { vi: "Dòng mới lấy từ một câu đọc chính bảng đó, không gõ tay từng giá trị.", en: "The new rows come from a query that reads that same table, not from values typed one by one." }
+- id: g-insert-select-3
+  skill: insert_select
+  kind: trap
+  task: { vi: "Nhân viên mới: `Kim Ha`, vai trò `Cashier`, làm ở cửa hàng số 2, báo cáo cho quản lý số 5, vào làm ngày 2026-11-02. Thêm cô ấy vào bảng `staff` (cột `id` tự sinh).", en: "A new employee: `Kim Ha`, role `Cashier`, works at store 2, reports to manager 5, hired on 2026-11-02. Add her to the `staff` table (the `id` column generates itself)." }
+  solution: "INSERT INTO staff (name, role, store_id, manager_id, hired_on) VALUES ('Kim Ha', 'Cashier', 2, 5, '2026-11-02')"
+  check: "SELECT name, role, store_id, manager_id, hired_on FROM staff WHERE store_id IN (2, 5) OR manager_id IN (2, 5)"
+  hint: { vi: "Giá trị đi theo vị trí trong danh sách cột bạn viết, không theo tên.", en: "Values go by position in the column list you write, not by name." }
+  wrong:
+    - sql: "INSERT INTO staff (name, role, manager_id, store_id, hired_on) VALUES ('Kim Ha', 'Cashier', 2, 5, '2026-11-02')"
+      vi: "Danh sách cột đặt `manager_id` trước `store_id` nhưng giá trị vẫn theo thứ tự đề bài: Kim Ha thành nhân viên cửa hàng 5 báo cáo cho người số 2. Hai cột cùng kiểu số nên Postgres không báo lỗi. Viết giá trị đúng thứ tự cột bạn liệt kê."
+      en: "The column list puts `manager_id` before `store_id` but the values keep the task's order: Kim Ha becomes a store 5 employee reporting to person 2. Both columns are numbers, so Postgres raises no error. Write the values in the order of the columns you list."
+- id: g-insert-select-4
+  skill: insert_select
+  kind: review
+  task: { vi: "Phòng mua hàng muốn chụp lại bảng giá ăn vặt hôm nay: tạo một bảng mới tên `price_list_snacks` chứa tên và giá của mọi món nhóm `Snacks` trong `products`, đúng hai cột đó.", en: "Purchasing wants a snapshot of today's snack prices: create a new table named `price_list_snacks` holding the name and price of every item in the `Snacks` category of `products`, exactly those two columns." }
+  solution: "CREATE TABLE price_list_snacks AS SELECT name, price_vnd FROM products WHERE category = 'Snacks'"
+  check: "SELECT * FROM price_list_snacks"
+  hint: { vi: "Một câu vừa tạo bảng vừa đổ dữ liệu vào từ một câu đọc.", en: "One statement that both creates the table and fills it from a query." }
+
+# ---- update_join (v26 R2, Part 9, General only)
+- id: g-update-join-1
+  skill: update_join
+  kind: faded
+  task: { vi: "Giá mọi món nhóm `Snacks` trong `products` tăng thêm 2000 đồng. Các nhóm khác giữ nguyên.", en: "The price of every item in the `Snacks` category of `products` goes up by 2000 VND. Other categories stay as they are." }
+  starter: |-
+    UPDATE products
+    SET price_vnd = ___
+    WHERE ___
+  solution: "UPDATE products SET price_vnd = price_vnd + 2000 WHERE category = 'Snacks'"
+  check: "SELECT id, name, price_vnd FROM products"
+  hint: { vi: "Giá mới tính từ giá cũ của chính dòng đó; điều kiện chọn đúng một nhóm.", en: "The new price is computed from the row's own old price; the condition picks one category." }
+- id: g-update-join-2
+  skill: update_join
+  kind: open
+  task: { vi: "Chỉ tiêu tháng 11 và 12/2026 (`store_targets`) của mọi cửa hàng ở thành phố `Da Nang` (thành phố nằm trong bảng `stores`) tăng thêm 2000000 đồng. Cửa hàng ở thành phố khác giữ nguyên.", en: "The November and December 2026 targets (`store_targets`) of every store in the city `Da Nang` (the city is in the `stores` table) go up by 2000000 VND. Stores in other cities stay as they are." }
+  solution: "UPDATE store_targets t SET target_vnd = t.target_vnd + 2000000 FROM stores s WHERE s.id = t.store_id AND s.city = 'Da Nang' AND t.month >= '2026-11-01'"
+  check: "SELECT store_id, month, target_vnd FROM store_targets WHERE month >= '2026-11-01'"
+  hint: { vi: "Bảng được sửa lấy điều kiện từ một bảng thứ hai, nối bằng mã cửa hàng.", en: "The table being changed takes its condition from a second table, linked by the store id." }
+- id: g-update-join-3
+  skill: update_join
+  kind: trap
+  task: { vi: "Bảng `payments` có những lần thu bị ghi hai lần: cùng `order_id`, cùng `amount_vnd`. Xóa bản thừa, giữ lại đúng một bản mỗi cặp (bản có `id` nhỏ hơn). Một lần thu và một lần hoàn tiền (số âm) của cùng đơn không phải bản trùng.", en: "The `payments` table has payments recorded twice: same `order_id`, same `amount_vnd`. Delete the extra copy and keep exactly one of each pair (the one with the smaller `id`). A payment and a refund (a negative amount) of the same order are not duplicates." }
+  solution: "DELETE FROM payments p USING payments q WHERE p.order_id = q.order_id AND p.amount_vnd = q.amount_vnd AND p.id > q.id"
+  check: "SELECT order_id, count(*), sum(amount_vnd) FROM payments WHERE order_id % 97 = 0 GROUP BY order_id"
+  hint: { vi: "Ghép bảng với chính nó để mỗi dòng thấy bản sao của mình; chỉ xóa bản đứng sau.", en: "Pair the table with itself so each row sees its copy; delete only the later one." }
+  wrong:
+    - sql: "DELETE FROM payments p USING payments q WHERE p.order_id = q.order_id AND p.amount_vnd = q.amount_vnd AND p.id <> q.id"
+      vi: "`p.id <> q.id` đúng cho cả hai bản của một cặp (mỗi bản thấy bản kia), nên cả hai bị xóa: đơn mất luôn lần thu. Chỉ xóa bản có `id` lớn hơn: `p.id > q.id`."
+      en: "`p.id <> q.id` holds for both copies of a pair (each one sees the other), so both are deleted: the order loses its payment entirely. Delete only the copy with the larger `id`: `p.id > q.id`."
+- id: g-update-join-4
+  skill: update_join
+  kind: review
+  task: { vi: "Kế hoạch đổi: cửa hàng ở thành phố `Hanoi` (bảng `stores`) bỏ mọi chỉ tiêu (`store_targets`) của các tháng sau tháng 10/2026. Chỉ tiêu tháng 10 trở về trước và của cửa hàng khác giữ nguyên.", en: "The plan changed: the stores in the city `Hanoi` (table `stores`) drop every target (`store_targets`) for the months after October 2026. Targets for October and earlier, and those of other stores, stay." }
+  solution: "DELETE FROM store_targets t USING stores s WHERE s.id = t.store_id AND s.city = 'Hanoi' AND t.month > '2026-10-01'"
+  check: "SELECT store_id, count(*), max(month) FROM store_targets GROUP BY store_id"
+  hint: { vi: "Điều kiện thành phố nằm ở bảng khác: đưa bảng đó vào câu xóa và nối bằng mã cửa hàng.", en: "The city condition lives in another table: bring that table into the deleting statement and link it by the store id." }
+
+# ---- upsert (v26 R2, Part 9, General only)
+- id: g-upsert-1
+  skill: upsert
+  kind: faded
+  task: { vi: "Đặt chỉ tiêu của cửa hàng số 5 cho tháng 06/2026 là 9000000 và tháng 07/2026 là 9500000 trong `store_targets`. Tháng nào đã có chỉ tiêu thì ghi đè giá trị mới; tháng chưa có thì thêm dòng. Khóa chính của bảng là (`store_id`, `month`).", en: "Set store 5's target for June 2026 to 9000000 and for July 2026 to 9500000 in `store_targets`. A month that already has a target gets the new value; a month without one gets a new row. The table's primary key is (`store_id`, `month`)." }
+  starter: |-
+    INSERT INTO store_targets (store_id, month, target_vnd)
+    VALUES (5, '2026-06-01', 9000000), (5, '2026-07-01', 9500000)
+    ON CONFLICT (___) DO UPDATE SET target_vnd = ___
+  solution: "INSERT INTO store_targets (store_id, month, target_vnd) VALUES (5, '2026-06-01', 9000000), (5, '2026-07-01', 9500000) ON CONFLICT (store_id, month) DO UPDATE SET target_vnd = EXCLUDED.target_vnd"
+  check: "SELECT month, target_vnd FROM store_targets WHERE store_id = 5"
+  hint: { vi: "Xung đột tính trên hai cột của khóa chính; giá trị mới nằm ở dòng bị từ chối, tên đặc biệt `EXCLUDED`.", en: "The conflict is on the two primary key columns; the new value sits in the rejected row, under the special name `EXCLUDED`." }
+- id: g-upsert-2
+  skill: upsert
+  kind: open
+  task: { vi: "Cửa hàng số 4 cần chỉ tiêu 7000000 cho mỗi tháng từ 01/2026 tới 04/2026 trong `store_targets`. Tháng nào đã có chỉ tiêu thì giữ nguyên số cũ, chỉ thêm các tháng còn thiếu.", en: "Store 4 needs a target of 7000000 for each month from January to April 2026 in `store_targets`. A month that already has a target keeps its old number; only the missing months are added." }
+  solution: "INSERT INTO store_targets (store_id, month, target_vnd) VALUES (4, '2026-01-01', 7000000), (4, '2026-02-01', 7000000), (4, '2026-03-01', 7000000), (4, '2026-04-01', 7000000) ON CONFLICT (store_id, month) DO NOTHING"
+  check: "SELECT month, target_vnd FROM store_targets WHERE store_id = 4 AND month < '2026-06-01'"
+  hint: { vi: "Thêm cả bốn tháng; dòng nào đụng khóa chính thì bỏ qua lặng lẽ.", en: "Add all four months; any row that hits the primary key is quietly skipped." }
+- id: g-upsert-3
+  skill: upsert
+  kind: trap
+  task: { vi: "Bảng giá văn phòng phẩm: `Gel pen` giá mới 9000, và món mới `Glue stick` (nhóm `Stationery`) giá 12000. Món đã có tên trong `products` thì đổi giá, món chưa có thì thêm. Cột `name` không có ràng buộc duy nhất.", en: "Stationery prices: `Gel pen` gets a new price of 9000, and a new item `Glue stick` (category `Stationery`) costs 12000. An item whose name is already in `products` gets the new price; one that is not gets added. The `name` column has no unique constraint." }
+  solution: "MERGE INTO products p USING (VALUES ('Gel pen', 'Stationery', 9000), ('Glue stick', 'Stationery', 12000)) AS v (name, category, price_vnd) ON p.name = v.name WHEN MATCHED THEN UPDATE SET price_vnd = v.price_vnd WHEN NOT MATCHED THEN INSERT (name, category, price_vnd) VALUES (v.name, v.category, v.price_vnd)"
+  check: "SELECT name, category, price_vnd FROM products WHERE category = 'Stationery'"
+  hint: { vi: "Không có khóa duy nhất trên tên thì cần một lệnh tự so khớp theo điều kiện bạn viết, rồi rẽ hai nhánh: khớp và không khớp.", en: "With no unique key on the name you need a statement that matches on a condition you write, then branches two ways: matched and not matched." }
+  wrong:
+    - sql: "INSERT INTO products (name, category, price_vnd) VALUES ('Gel pen', 'Stationery', 9000), ('Glue stick', 'Stationery', 12000) ON CONFLICT DO NOTHING"
+      vi: "Không có đích, `ON CONFLICT` chỉ canh các ràng buộc duy nhất có thật, ở đây là khóa chính `id` vừa tự sinh, nên không bao giờ đụng: `Gel pen` bị thêm lần hai, giá cũ vẫn còn. `ON CONFLICT (name)` thì báo lỗi 42P10. Dùng `MERGE … ON p.name = v.name`."
+      en: "Without a target, `ON CONFLICT` only watches the unique constraints that exist, here the freshly generated primary key `id`, so it never fires: `Gel pen` is added a second time and the old price stays. `ON CONFLICT (name)` fails with 42P10. Use `MERGE … ON p.name = v.name`."
+- id: g-upsert-4
+  skill: upsert
+  kind: review
+  task: { vi: "Mỗi cửa hàng số 3, 4 và 5 được cộng thêm 1000000 vào chỉ tiêu tháng 02/2026 trong `store_targets`. Cửa hàng chưa có chỉ tiêu tháng đó thì nhận đúng 1000000.", en: "Stores 3, 4 and 5 each get 1000000 added to their February 2026 target in `store_targets`. A store with no target that month gets exactly 1000000." }
+  solution: "INSERT INTO store_targets (store_id, month, target_vnd) VALUES (3, '2026-02-01', 1000000), (4, '2026-02-01', 1000000), (5, '2026-02-01', 1000000) ON CONFLICT (store_id, month) DO UPDATE SET target_vnd = store_targets.target_vnd + EXCLUDED.target_vnd"
+  check: "SELECT store_id, target_vnd FROM store_targets WHERE month = '2026-02-01'"
+  hint: { vi: "Khi đụng khóa, giá trị mới = giá trị cũ trong bảng cộng giá trị đề nghị; ghi rõ tên bảng trước cột cũ.", en: "On a key clash, the new value = the old value in the table plus the proposed one; put the table name in front of the old column." }
+
 # ---- window_rank (ch10)
 - id: g-window-rank-1
   skill: window_rank
@@ -1291,6 +1406,8 @@
   starter: "SELECT id, order_date FROM orders WHERE ___ = 42"
   solution: "SELECT id, order_date FROM orders WHERE customer_id = 42"
   plan: { index: orders }
+  perf: { table: orders }
+  slow: "SELECT id, order_date FROM orders WHERE customer_id + 0 = 42"
   hint: { vi: "Lọc theo cột có chỉ mục `orders(customer_id)`; trong kế hoạch tìm nút Index Scan hoặc Bitmap Index Scan.", en: "Filter on the column of the `orders(customer_id)` index; in the plan look for an Index Scan or Bitmap Index Scan node." }
 - id: g-explain-read-2
   skill: explain_read
@@ -1298,6 +1415,8 @@
   task: { vi: "Mỗi ngày từ 01/10/2026 đến hết 07/10/2026 có bao nhiêu đơn (mọi trạng thái)? Lấy ngày và số đơn. Bài chấm cả kế hoạch: `orders` phải được đọc qua chỉ mục `orders(order_date)`, nên so sánh thẳng cột `order_date` với các mốc ngày, không bọc cột trong hàm hay phép đổi kiểu.", en: "How many orders (every status) were placed on each day from 2026-10-01 through 2026-10-07? Get the date and the count. The plan is graded too: `orders` must be read through the `orders(order_date)` index, so compare the `order_date` column directly with the date bounds, without wrapping it in a function or a type conversion." }
   solution: "SELECT order_date, COUNT(*) FROM orders WHERE order_date >= '2026-10-01' AND order_date < '2026-10-08' GROUP BY order_date"
   plan: { index: orders }
+  perf: { table: orders }
+  slow: "SELECT order_date, COUNT(*) FROM orders WHERE order_date::text BETWEEN '2026-10-01' AND '2026-10-07' GROUP BY order_date"
   hint: { vi: "So sánh trực tiếp cột ngày với hai mốc; đọc kế hoạch từ nút trong cùng ra ngoài.", en: "Compare the date column directly with two bounds; read the plan from the innermost node outwards." }
 - id: g-explain-read-3
   skill: explain_read
@@ -1305,6 +1424,8 @@
   task: { vi: "Khách số 42 có bao nhiêu đơn đã thanh toán (`PAID`)? Lấy một con số. Bài chấm cả kế hoạch: `orders` vẫn phải được đọc qua chỉ mục `orders(customer_id)`.", en: "How many paid (`PAID`) orders does customer 42 have? Get one number. The plan is graded too: `orders` must still be read through the `orders(customer_id)` index." }
   solution: "SELECT COUNT(*) FROM orders WHERE customer_id = 42 AND status = 'PAID'"
   plan: { index: orders }
+  perf: { table: orders }
+  slow: "SELECT COUNT(*) FROM orders WHERE customer_id::text = '42' AND status = 'PAID'"
   hint: { vi: "Hai điều kiện phải cùng đúng.", en: "Both conditions must hold." }
   wrong:
     - sql: "SELECT COUNT(*) FROM orders WHERE customer_id = 42 OR status = 'PAID'"
@@ -1316,6 +1437,8 @@
   task: { vi: "Các đơn bán qua kênh `ONLINE` của khách số 11: mã đơn, ngày đặt và trạng thái. Bài chấm cả kế hoạch: `orders` phải được đọc qua chỉ mục `orders(customer_id)`.", en: "Customer 11's orders sold through the `ONLINE` channel: the order id, the order date and the status. The plan is graded too: `orders` must be read through the `orders(customer_id)` index." }
   solution: "SELECT id, order_date, status FROM orders WHERE customer_id = 11 AND channel = 'ONLINE'"
   plan: { index: orders }
+  perf: { table: orders }
+  slow: "SELECT id, order_date, status FROM orders WHERE coalesce(customer_id, 0) = 11 AND channel = 'ONLINE'"
   hint: { vi: "So bằng trên cột có chỉ mục; điều kiện kênh chỉ lọc thêm. Trong tab EXPLAIN, tìm nút đọc chỉ mục.", en: "Equality on the indexed column; the channel condition only filters further. In the EXPLAIN tab, find the node that reads the index." }
 
 # ---- sargable (ch11)
@@ -1338,6 +1461,8 @@
   task: { vi: "Tháng 10/2026, mỗi kênh bán (`channel`) có bao nhiêu đơn (mọi trạng thái)? Lấy kênh và số đơn. Bài chấm cả kế hoạch: `orders` phải được đọc qua chỉ mục `orders(order_date)`, nên không bọc cột `order_date` trong hàm nào (như lấy tháng hay cắt ngày).", en: "In October 2026, how many orders (every status) did each sales channel (`channel`) get? Get the channel and the count. The plan is graded too: `orders` must be read through the `orders(order_date)` index, so do not wrap the `order_date` column in any function (such as taking the month or truncating the date)." }
   solution: "SELECT channel, COUNT(*) FROM orders WHERE order_date >= '2026-10-01' AND order_date < '2026-11-01' GROUP BY channel"
   plan: { index: orders }
+  perf: { table: orders }
+  slow: "SELECT channel, COUNT(*) FROM orders WHERE date_trunc('month', order_date) = '2026-10-01' GROUP BY channel"
   hint: { vi: "Không bọc cột ngày trong hàm; so nó với hai mốc ngày.", en: "Do not wrap the date column in a function; compare it with two dates." }
 - id: g-sargable-3
   skill: sargable
@@ -1345,6 +1470,8 @@
   task: { vi: "Lấy mã và ngày đặt của các đơn online (`ONLINE`, mọi trạng thái) tháng 10/2026. Bài chấm cả kế hoạch: `orders` phải được đọc qua chỉ mục `orders(order_date)`.", en: "Get the id and order date of the online (`ONLINE`, every status) orders of October 2026. The plan is graded too: `orders` must be read through the `orders(order_date)` index." }
   solution: "SELECT id, order_date FROM orders WHERE channel = 'ONLINE' AND order_date >= '2026-10-01' AND order_date < '2026-11-01'"
   plan: { index: orders }
+  perf: { table: orders }
+  slow: "SELECT id, order_date FROM orders WHERE channel = 'ONLINE' AND to_char(order_date, 'YYYY-MM') = '2026-10'"
   hint: { vi: "Lấy tháng ra khỏi cột vừa chậm vừa dễ sai: tháng 10 có ở cả hai năm.", en: "Pulling the month out of the column is both slow and easy to get wrong: October exists in two years." }
   wrong:
     - sql: "SELECT id, order_date FROM orders WHERE channel = 'ONLINE' AND extract(month FROM order_date) = 10"
@@ -1356,6 +1483,8 @@
   task: { vi: "Tuần 24/09–30/09/2026: mỗi trạng thái có bao nhiêu đơn? Lấy trạng thái và số đơn. Bài chấm cả kế hoạch: `orders` phải được đọc qua chỉ mục `orders(order_date)`, nên so thẳng cột ngày với hai mốc.", en: "The week of 2026-09-24 to 2026-09-30: how many orders per status? Get the status and the count. The plan is graded too: `orders` must be read through the `orders(order_date)` index, so compare the date column directly with two bounds." }
   solution: "SELECT status, COUNT(*) FROM orders WHERE order_date >= '2026-09-24' AND order_date < '2026-10-01' GROUP BY status"
   plan: { index: orders }
+  perf: { table: orders }
+  slow: "SELECT status, COUNT(*) FROM orders WHERE order_date::text >= '2026-09-24' AND order_date::text < '2026-10-01' GROUP BY status"
   hint: { vi: "Khoảng nửa mở: từ ngày đầu, tới trước ngày ngay sau ngày cuối.", en: "A half-open range: from the first day, up to before the day after the last one." }
 
 # ---- index_design (ch11)
@@ -1371,6 +1500,8 @@
   solution: "SELECT event, ts FROM app_events WHERE user_id = 77 AND ts >= '2026-09-01' AND ts < '2026-10-01' ORDER BY ts"
   ordered: true
   plan: { index: app_events }
+  perf: { table: app_events }
+  slow: "SELECT event, ts FROM app_events WHERE user_id + 0 = 77 AND ts >= '2026-09-01' AND ts < '2026-10-01' ORDER BY ts"
   hint: { vi: "Cột đầu của chỉ mục là `user_id` (so bằng), cột sau là `ts` (một khoảng).", en: "The index's first column is `user_id` (equality), the next is `ts` (a range)." }
 - id: g-index-design-2
   skill: index_design
@@ -1378,6 +1509,8 @@
   task: { vi: "Sự kiện gần đây nhất (`ts` lớn nhất) của người dùng số 120 là gì? Một dòng: tên sự kiện, thời điểm và thiết bị (khóa `device` trong cột `props`). Bài chấm cả kế hoạch: `app_events` phải được đọc qua chỉ mục `app_events(user_id, ts)`.", en: "What is user 120's most recent event (largest `ts`)? One row: the event name, the time and the device (the `device` key in the `props` column). The plan is graded too: `app_events` must be read through the `app_events(user_id, ts)` index." }
   solution: "SELECT event, ts, props->>'device' FROM app_events WHERE user_id = 120 ORDER BY ts DESC LIMIT 1"
   plan: { index: app_events }
+  perf: { table: app_events }
+  slow: "SELECT event, ts, props->>'device' FROM app_events WHERE user_id::text = '120' ORDER BY ts DESC LIMIT 1"
   hint: { vi: "Lọc theo cột đầu của chỉ mục, sắp theo cột thứ hai giảm dần, lấy một dòng.", en: "Filter on the index's first column, sort by its second column descending, take one row." }
 - id: g-index-design-3
   skill: index_design
@@ -1385,6 +1518,8 @@
   task: { vi: "Người dùng số 77 có những sự kiện nào trong ngày 05/09/2026, từ 00:00 tới trước 00:00 ngày hôm sau (`ts` kiểu `timestamp` không múi giờ)? Lấy tên sự kiện và thời điểm. Bài chấm cả kế hoạch: `app_events` phải được đọc qua chỉ mục `app_events(user_id, ts)`, chỉ mục này chỉ giúp khi cột đầu của nó được lọc.", en: "Which events did user 77 have on 2026-09-05, from 00:00 until before 00:00 the next day (`ts` is a `timestamp` without time zone)? Get the event name and the time. The plan is graded too: `app_events` must be read through the `app_events(user_id, ts)` index, which only helps when its first column is filtered." }
   solution: "SELECT event, ts FROM app_events WHERE user_id = 77 AND ts >= '2026-09-05' AND ts < '2026-09-06'"
   plan: { index: app_events }
+  perf: { table: app_events }
+  slow: "SELECT event, ts FROM app_events WHERE ts >= '2026-09-05' AND ts < '2026-09-06' AND user_id + 0 = 77"
   hint: { vi: "Lọc theo cả người dùng lẫn thời gian.", en: "Filter on both the user and the time." }
   wrong:
     - sql: "SELECT event, ts FROM app_events WHERE ts >= '2026-09-05' AND ts < '2026-09-06'"
@@ -1396,4 +1531,6 @@
   task: { vi: "Lần xem (`view`) đầu tiên của người dùng số 54 diễn ra lúc nào? Một dòng, một thời điểm. Bài chấm cả kế hoạch: `app_events` phải được đọc qua chỉ mục `app_events(user_id, ts)`.", en: "When did user 54's first view (`view`) happen? One row, one time. The plan is graded too: `app_events` must be read through the `app_events(user_id, ts)` index." }
   solution: "SELECT ts FROM app_events WHERE user_id = 54 AND event = 'view' ORDER BY ts LIMIT 1"
   plan: { index: app_events }
+  perf: { table: app_events }
+  slow: "SELECT ts FROM app_events WHERE user_id::text = '54' AND event = 'view' ORDER BY ts LIMIT 1"
   hint: { vi: "So bằng trên cột đầu của chỉ mục, sắp theo cột thứ hai tăng dần, lấy một dòng.", en: "Equality on the index's first column, sort by its second column ascending, take one row." }

@@ -42,6 +42,11 @@ export interface Drill {
   perf?: PerfSpec;
   /** v24: a right-but-slow answer the bar must refuse (tests/perfGate.test.ts proves it); never shown. */
   slow?: string;
+  /**
+   * v26 R2 (Part 9, writing data): the read that grades a write drill. The player's statement and the Solution each run in
+   * their own BEGIN … ROLLBACK, followed there by this read; its rows are compared. Never reads a generated id.
+   */
+  check?: string;
 }
 export type NodeStatus = 'in' | 'partial' | 'external';
 const STATUSES: NodeStatus[] = ['in', 'partial', 'external'];
@@ -99,6 +104,7 @@ export function parseDrill(o: Raw, origin: string, owner: { skill?: string; node
     ...(plan ? { plan: { index: text(plan.index, 'plan.index') } } : {}),
     ...(perf ? { perf: { table: text(perf.table, 'perf.table'), ...(typeof perf.max_ratio === 'number' ? { max_ratio: perf.max_ratio } : {}) } } : {}),
     ...(o.slow !== undefined ? { slow: text(o.slow, 'slow') } : {}),
+    ...(o.check !== undefined ? { check: text(o.check, 'check') } : {}),
   };
 }
 
@@ -188,7 +194,7 @@ export function drillTicket(d: Drill): Ticket {
     body: '',
     task: d.task.vi,
     hints: [d.hint.vi],
-    steps: [{ title: '', prompt: '', solution: d.solution, ...(d.plan ? { plan: d.plan } : {}), ...(d.perf ? { perf: d.perf } : {}) }],
+    steps: [{ title: '', prompt: '', solution: d.solution, ...(d.plan ? { plan: d.plan } : {}), ...(d.perf ? { perf: d.perf } : {}), ...(d.check ? { check: d.check } : {}) }],
     ...(d.starter !== undefined ? { starter: d.starter } : {}),
     format: d.kind === 'faded' ? 'faded' : 'open',
     wrong: d.wrong,

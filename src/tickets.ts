@@ -44,6 +44,8 @@ export interface Step {
   lab?: LabSpec;
   /** v24 (L340): performance bar (drills only so far): see slowVerdict in src/planCheck.ts. */
   perf?: PerfSpec;
+  /** v26 R2: a write drill's read; the step is graded on its rows after the write, in the same rolled-back transaction. */
+  check?: string;
   /** L4 (v12.0): `precision:`. Numbers must already be at this many decimals (src/grader.ts); absent = lenient 2-decimal compare. */
   precision?: number;
 }

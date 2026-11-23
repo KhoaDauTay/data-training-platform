@@ -1,6 +1,6 @@
 # Kỹ năng chỉ có ở khu General (v24, product-route-v24 §3.1.2, L327): cùng khuôn với content/skills.yml
 # (id, label, syntax, when, trap; `chapter:` không dùng). Không vào skills.yml: Lily, domain và luật một-ticket-mỗi-kỹ-năng
-# không đổi. Id của chúng phải nằm trong content/general/route.yml. Rỗng cho tới R1 (cross_join, any_all) và R2 (Phần 9).
+# không đổi. Id của chúng phải nằm trong content/general/route.yml. R1: cross_join, any_all; R2: Phần 9 (ghi dữ liệu).
 
 - id: cross_join
   label: { vi: "Ghép mọi cặp (CROSS JOIN)", en: "Cross join" }
@@ -13,3 +13,22 @@
   syntax: "WHERE price_vnd > ALL (SELECT price_vnd FROM products WHERE category = 'Drinks')"
   when: { vi: "So một giá trị với cả một danh sách: lớn hơn ít nhất một (ANY) hay lớn hơn tất cả (ALL).", en: "Compare one value with a whole list: greater than at least one (ANY) or greater than all of them (ALL)." }
   trap: { vi: "ALL trên danh sách rỗng luôn đúng, và một NULL trong danh sách làm ALL không bao giờ đúng. Lọc NULL trong truy vấn con.", en: "ALL over an empty list is always true, and one NULL in the list keeps ALL from ever being true. Filter NULLs inside the subquery." }
+
+# v26 R2 (L390): Part 9, writing data. Drills are graded write-then-read (`check:` in sql.yml).
+- id: insert_select
+  label: { vi: "Thêm dòng (INSERT … SELECT)", en: "Insert rows (INSERT … SELECT)" }
+  syntax: "INSERT INTO products (name, category, price_vnd) SELECT … RETURNING id"
+  when: { vi: "Cần thêm dòng mới: gõ tay vài giá trị, chép từ một câu đọc, hoặc tạo hẳn một bảng mới từ kết quả.", en: "You need new rows: a few typed values, rows copied from a query, or a whole new table made from a result." }
+  trap: { vi: "Giá trị đi theo vị trí của danh sách cột, không theo tên: luôn viết danh sách cột, và đừng gõ tay cột tự sinh.", en: "Values go by the position of the column list, not by name: always write the column list, and never type the generated column yourself." }
+
+- id: update_join
+  label: { vi: "Sửa và xóa dòng (UPDATE / DELETE)", en: "Update and delete rows" }
+  syntax: "UPDATE t SET col = … FROM other o WHERE o.id = t.other_id"
+  when: { vi: "Cần đổi hay xóa những dòng đã có, kể cả khi điều kiện nằm ở một bảng khác.", en: "You need to change or remove existing rows, even when the condition lives in another table." }
+  trap: { vi: "Quên WHERE là sửa hay xóa cả bảng. Chạy phần WHERE bằng một câu đọc trước để đếm dòng sẽ bị đụng.", en: "Forgetting WHERE changes or deletes the whole table. Run the WHERE part as a read first to count the rows it will touch." }
+
+- id: upsert
+  label: { vi: "Thêm hoặc sửa (ON CONFLICT / MERGE)", en: "Upsert (ON CONFLICT / MERGE)" }
+  syntax: "INSERT … ON CONFLICT (store_id, month) DO UPDATE SET target_vnd = EXCLUDED.target_vnd"
+  when: { vi: "Dòng có thể đã có hoặc chưa: có thì sửa (hoặc bỏ qua), chưa thì thêm, trong một câu.", en: "A row may or may not exist yet: update it (or skip it) if it does, add it if it does not, in one statement." }
+  trap: { vi: "ON CONFLICT cần một ràng buộc duy nhất đúng trên các cột bạn nêu; không có thì báo lỗi 42P10, còn bỏ trống đích thì không bao giờ đụng. Khi không có khóa đó, dùng MERGE.", en: "ON CONFLICT needs a unique constraint on exactly the columns you name; without one it fails with 42P10, and with no target it never fires. When there is no such key, use MERGE." }

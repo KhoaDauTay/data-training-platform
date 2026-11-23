@@ -40,7 +40,7 @@ async function handle(db: PGlite, body: WorkerBody): Promise<unknown> {
     const { runSteps } = await import('../viz/steps'); // loads the parser only when this tab is used
     return runSteps(db, body.sql, opts);
   }
-  return runSandboxed(db, body.sql, undefined, opts);
+  return runSandboxed(db, body.sql, undefined, { ...opts, check: body.check });
 }
 
 // One query at a time: BEGIN … ROLLBACK pairs from two runs must never interleave.

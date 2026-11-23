@@ -14,17 +14,18 @@ export const ANSWER_WORDS = /\b(SELECT|FROM|WHERE|JOIN|GROUP BY|HAVING|ORDER BY|
 export const prose = (s: string): string => s.replace(/`[^`]+`/g, '');
 export const codeSpans = (s: string): string[] => [...s.matchAll(/`([^`]+)`/g)].map((m) => m[1]).sort();
 
-export async function labRun(): Promise<(sql: string) => Promise<QueryResult>> {
+/** `check` (v26 R2, write drills): the read run after `sql` in the same rolled-back transaction; its rows are the result. */
+export async function labRun(): Promise<(sql: string, check?: string) => Promise<QueryResult>> {
   const db = await seededDb();
   await ensureSchema(db, 'lab');
-  return (sql) => runSandboxed(db, sql, undefined, { schema: 'lab' });
+  return (sql, check) => runSandboxed(db, sql, undefined, { schema: 'lab', check });
 }
 
 export function drillRules(drills: Drill[]): void {
   it.each(drills)('$id: Solution chạy, 1–500 dòng, < 1 s; ordered ⇒ ORDER BY; không ngày "hôm nay" động', async (d) => {
     const run = await labRun();
     const t0 = performance.now();
-    const r = await run(d.solution);
+    const r = await run(d.solution, d.check);
     expect(performance.now() - t0).toBeLessThan(1000);
     expect(r.rows.length).toBeGreaterThanOrEqual(1);
     expect(r.rows.length).toBeLessThanOrEqual(500);
@@ -34,13 +35,13 @@ export function drillRules(drills: Drill[]): void {
 
   it.each(drills)('$id: starter có ___ thì không chạy; starter không có ___ thì chưa đạt; mỗi câu sai báo lỗi hoặc khác Solution', async (d) => {
     const run = await labRun();
-    const expected = await run(d.solution);
+    const expected = await run(d.solution, d.check);
     if (d.starter && !d.starter.includes(BLANK)) {
-      const s = await run(d.starter).catch(() => undefined);
+      const s = await run(d.starter, d.check).catch(() => undefined);
       if (s) expect(compareResults(expected, s, d.ordered).ok).toBe(false);
     }
     for (const w of d.wrong) {
-      const r = await run(w.sql).catch(() => undefined);
+      const r = await run(w.sql, d.check).catch(() => undefined);
       if (!r) continue;
       // a plan drill's wrong answer may give the same rows: then its plan must fail instead
       if (d.plan && compareResults(expected, r, d.ordered).ok) {
@@ -60,8 +61,8 @@ export function drillRules(drills: Drill[]): void {
   // result or a 42703). The rule that matters: the Solution never gives its lab result without the lab search_path.
   it.each(drills)('$id: Solution trên schema game báo lỗi hoặc ra kết quả khác (không dùng nhầm bảng Logistics)', async (d) => {
     const db = await seededDb();
-    const game = await runSandboxed(db, d.solution).catch(() => undefined);
-    if (game) expect(compareResults(await (await labRun())(d.solution), game, d.ordered).ok).toBe(false);
+    const game = await runSandboxed(db, d.solution, undefined, { check: d.check }).catch(() => undefined);
+    if (game) expect(compareResults(await (await labRun())(d.solution, d.check), game, d.ordered).ok).toBe(false);
   });
 
   it.each(drills.filter((d) => d.plan))('$id: plan đạt planCheck với Solution', async (d) => {
@@ -76,8 +77,8 @@ export async function distinctResults(drills: Drill[]): Promise<string[]> {
   const clash: string[] = [];
   for (let i = 0; i < drills.length; i++) {
     for (let j = i + 1; j < drills.length; j++) {
-      const a = await run(drills[i].solution);
-      const b = await run(drills[j].solution);
+      const a = await run(drills[i].solution, drills[i].check);
+      const b = await run(drills[j].solution, drills[j].check);
       if (compareResults(a, b, false).ok) clash.push(`${drills[i].id} = ${drills[j].id}`);
     }
   }

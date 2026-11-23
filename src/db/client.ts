@@ -47,7 +47,7 @@ export const ENSURE_TIMEOUT_MS = 120_000;
 /** Everything the worker accepts, minus the request id. */
 export type WorkerBody =
   /** `schema` absent = the game schema (Plan 8a D8a-4). */
-  | { kind: RequestKind; sql: string; schema?: SchemaId }
+  | { kind: RequestKind; sql: string; schema?: SchemaId; check?: string }
   /** Seeds a lazily seeded schema (`game`, `lab`, `ecom`) once; a no-op when it is already there. */
   | { kind: 'ensure'; schema: SchemaId }
   | { kind: 'import'; req: ImportRequest; file: Blob }
@@ -119,7 +119,9 @@ export class DbClient {
   request<T>(kind: RequestKind, sql: string, timeoutMs = this.timeoutMs, opts: RunOpts = {}): Promise<T> {
     this.seedNamed(opts.schema);
     const schema = opts.schema ?? this.defaultSchema;
-    return this.enqueue<T>(schema !== 'game' ? { kind, sql, schema } : { kind, sql }, timeoutMs);
+    const body: WorkerBody = schema !== 'game' ? { kind, sql, schema } : { kind, sql };
+    if (opts.check && kind === 'run') body.check = opts.check; // v26 R2: write drills read their effect in the same transaction
+    return this.enqueue<T>(body, timeoutMs);
   }
 
   /** v12.0: true once the worker is up and `schema` is seeded on it. */

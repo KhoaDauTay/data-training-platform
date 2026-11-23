@@ -168,8 +168,9 @@ function drillParts(g: General, d: Drill, tk: Ticket): (Node | null | false | un
     h('div', { class: 'mt-3 text-[15px] leading-relaxed' }, richText(d.task[lang])),
     d$.guideSlot('drill-brief'), // v13 G5/G7: under the task
     h('p', { class: 'text-body-sm text-muted' }, lt('drill.data')),
+    tk.steps[0].check ? h('p', { class: 'text-body-sm text-muted' }, richText(lt('drill.write'))) : null, // v26 R2: write-then-read grading
     d$.shapeCard(tk, 0),
-    d$.tryPreview(tk.steps[0].solution, 'lab'), // L84: the tables it reads and a sample of the expected result (practice, not story)
+    d$.tryPreview(tk.steps[0].solution, 'lab', tk.steps[0].check), // L84: the tables it reads and a sample of the expected result (practice, not story)
     d$.hints(tk, d$.textOf(tk, lang), false),
     lesson ? h('p', { class: 'my-2 flex flex-wrap items-center gap-2 text-body-sm' }, h('span', {}, lt('drill.lesson', { name: what })), lesson) : null,
   ];

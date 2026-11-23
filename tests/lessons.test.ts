@@ -124,7 +124,7 @@ describe('bài học nhanh (content/lessons.yml)', () => {
     const drills = generalNow()!.bySkill.get(l.id) ?? [];
     expect(drills).toHaveLength(4);
     const mine = await run(l.try.solution);
-    for (const d of drills) expect(compareResults(await run(d.solution), mine, false).ok, d.id).toBe(false);
+    for (const d of drills) expect(compareResults(await run(d.solution, d.check), mine, false).ok, d.id).toBe(false);
   });
 
   it.each(lessons)('$id: câu mở đầu Thử ngay chưa đạt; câu sai báo lỗi hoặc ra kết quả khác ví dụ', async (l) => {
