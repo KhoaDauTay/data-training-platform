@@ -18,7 +18,10 @@ import { mascot } from './mascots';
 import { readTour } from '../onboarding';
 import { inDomain } from '../route';
 import { currentRoute } from './router';
-import { diffView, hasDiff, runOn, tryPreview, verdictText } from './tryPreview';
+import { diffView, hasDiff, runOn, tablesIn, tryPreview, verdictText } from './tryPreview';
+import { activeDomain, ECOM_TABLES, FIN_TABLES, LOGISTICS_TABLES, type DomainId } from '../domains';
+
+const DOMAIN_TABLES: Record<DomainId, readonly string[]> = { logistics: LOGISTICS_TABLES, ecommerce: ECOM_TABLES, finance: FIN_TABLES };
 
 // Session state by skill id. The brief is rebuilt on every rerender, so what the player typed or ran lives here.
 const drafts = new Map<string, string>();
@@ -233,10 +236,10 @@ function card(l: Lesson, titleId: string, actions: HTMLElement[], tour = false, 
         t('lesson.title', { skill: label(l.id) })),
       h('div', { class: 'flex gap-1.5' }, ...actions)),
     h('div', { class: cx('leading-relaxed', inDialog && 'px-5 pt-4 pb-6 max-sm:px-4') },
+      // v15 Q6, L303: inside a domain the lesson's tables (lab) are not the company's; said first, and same-named tables by name
+      !guided && inDomain(currentRoute()) ? labNote(l) : null,
       section('book', t('lesson.concept'), richText(l.concept[lang]),
-        skill ? h('p', { class: 'mt-2 mb-0' }, h('b', {}, t('lesson.syntax')), ' ', h('code', {}, skill.syntax)) : null,
-        // v15 Q6: inside a domain the lesson's tables (lab) are not the company's
-        !guided && inDomain(currentRoute()) ? h('p', { class: 'mt-2 mb-0 text-body-sm text-muted', 'data-lab-note': '' }, t('lesson.labNote')) : null),
+        skill ? h('p', { class: 'mt-2 mb-0' }, h('b', {}, t('lesson.syntax')), ' ', h('code', {}, skill.syntax)) : null),
       section('code', t('lesson.example'), h('pre', { class: 'sql' }, l.example), h('div', { class: 'actions mb-0' }, runExample),
         tour ? tourSlot('lesson') : null, gslot('lesson-example'), exampleOut),
       section('info', t('lesson.explain'), richText(byMarker(l.explain[lang]))),
@@ -247,6 +250,13 @@ function card(l: Lesson, titleId: string, actions: HTMLElement[], tour = false, 
         h('div', { class: 'actions mb-0' }, runMine, boonBtn, check), gslot('lesson-try-actions'), boonBox, verdict, detail, gslot('lesson-diff'), yours),
       h('p', { class: 'mt-5 mb-0 border-t border-line pt-4 text-body-sm' },
         h('a', { href: l.docs, target: '_blank', rel: 'noopener noreferrer', class: 'inline-flex items-center gap-1.5' }, icon('external', 'size-4'), t('lesson.docs')))));
+}
+
+/** Where the lesson's data comes from (L303): the shop chain on `lab`, and which of its tables share a name with the open domain's. */
+function labNote(l: Lesson): HTMLElement {
+  const same = tablesIn([l.example, l.mistake.sql, l.try.solution].join('\n'), DOMAIN_TABLES[activeDomain()]);
+  return h('p', { class: 'mt-0 mb-4 flex gap-2 rounded-(--r-ctl) bg-info-soft p-3 text-body-sm', 'data-lab-note': '' }, icon('info', 'size-5 shrink-0'),
+    h('span', {}, t('lesson.labNote'), same.length ? ` ${t('lesson.labSame', { tables: same.join(', ') })}` : ''));
 }
 
 /** One line for a lesson that is not open: "Quick lesson: X ✓ · Open again". */
