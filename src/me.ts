@@ -15,11 +15,17 @@ import type { Ticket, TicketText } from './tickets';
 
 // ---------- insights (v7 §7) ----------
 
-export interface TrySummary { passed: number; first: number; runs: number }
-/** Tasks passed (with a recorded submit), share passed on the first Submit, mean runs + submits before passing. */
+export interface TrySummary { passed: number; first: number; runs: number; wrong: number }
+/**
+ * Tasks passed (with a recorded submit), share passed on the first Submit, mean runs + submits before passing, and (L312)
+ * Submits whose result was not the answer: before the first pass, or every Submit of a task not passed yet. A wrong result
+ * is no Postgres error, so it never shows among the error codes: the errors card names it apart.
+ */
 export function trySummary(attempts: Record<string, Attempt>): TrySummary {
-  const passed = Object.values(attempts).filter((a) => a.passedOn !== undefined);
+  const all = Object.values(attempts);
+  const passed = all.filter((a) => a.passedOn !== undefined);
   return {
+    wrong: all.reduce((n, a) => n + (a.passedOn !== undefined ? a.passedOn - 1 : a.submits), 0),
     passed: passed.length,
     first: passed.length ? passed.filter((a) => a.passedOn === 1).length / passed.length : 0,
     runs: passed.length ? passed.reduce((n, a) => n + a.runs, 0) / passed.length : 0,

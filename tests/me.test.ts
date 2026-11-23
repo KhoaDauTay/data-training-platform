@@ -71,8 +71,10 @@ describe('device-only statistics (src/insights.ts)', () => {
   });
   it('summaries for the page', () => {
     expect(trySummary({ a: { runs: 4, submits: 1, passedOn: 1 }, b: { runs: 2, submits: 3, passedOn: 3 }, c: { runs: 9, submits: 2 } }))
-      .toEqual({ passed: 2, first: 0.5, runs: 3 });
-    expect(trySummary({})).toEqual({ passed: 0, first: 0, runs: 0 });
+      .toEqual({ passed: 2, first: 0.5, runs: 3, wrong: 4 }); // b: 2 wrong before passing, c: 2 wrong, not passed
+    expect(trySummary({})).toEqual({ passed: 0, first: 0, runs: 0, wrong: 0 });
+    // L312: one wrong Submit (no Postgres error), then a pass: 0 % first time AND one wrong submit, never "no mistakes"
+    expect(trySummary({ a: { runs: 1, submits: 2, passedOn: 2 } })).toMatchObject({ first: 0, wrong: 1 });
     expect(strengths(['select', 'where', 'join'], { select: { box: 5, due: '2026-12-01' }, join: { box: 1, due: '2026-11-20' } }).map((s) => [s.id, s.box]))
       .toEqual([['join', 1], ['select', 5], ['where', 0]]);
     expect(topErrors({ a: 1, b: 5, c: 5 }, 2)).toEqual([['b', 5], ['c', 5]]);

@@ -219,13 +219,15 @@ const ERR: Record<string, true> = Object.fromEntries(['42703', '42P01', '42601',
 
 function errorsCard(): HTMLElement {
   const top = topErrors(d.readErrors());
+  const wrong = trySummary(d.readAttempts()).wrong;
   return card(title(m('err.title'), 'alert'),
     top.length
       ? d.h('ol', { class: 'm-0 list-none space-y-1.5 p-0' }, ...top.map(([code, n]) => d.h('li', { class: 'flex flex-wrap items-baseline gap-x-2 text-body-sm' },
         d.h('span', { class: 'font-semibold' }, errLabel(code)),
         d.h('code', { class: 'rounded-(--r-chip) bg-code px-1.5 text-caption' }, code),
         d.h('span', { class: 'ml-auto text-muted tabular-nums' }, m('err.times', { n })))))
-      : d.h('p', { class: 'm-0 text-body-sm text-muted' }, m('err.none')));
+      : d.h('p', { class: 'm-0 text-body-sm text-muted' }, m('err.none')),
+    d.h('p', { class: 'm-0 text-body-sm' }, m('err.wrong', { n: wrong }))); // L312: a wrong result is no Postgres error
 }
 
 function daysCard(): HTMLElement {
