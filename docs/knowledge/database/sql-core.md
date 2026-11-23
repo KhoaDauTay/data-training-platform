@@ -36,7 +36,7 @@ Status: verified on PGlite 0.5.16.
 | DML | `INSERT`, `UPDATE`, `DELETE`, `MERGE` | `RETURNING` gives back the changed rows (https://www.postgresql.org/docs/18/dml-returning.html). |
 | Query | `SELECT`, `VALUES`, `TABLE t` | `TABLE t` = `SELECT * FROM t`. |
 | DCL | `GRANT`, `REVOKE` | See [security.md](security.md). |
-| TCL | `BEGIN`, `COMMIT`, `ROLLBACK`, `SAVEPOINT` | See §10. |
+| TCL | `BEGIN`, `COMMIT`, `ROLLBACK`, `SAVEPOINT` | See §14. |
 
 `TRUNCATE` empties a table without scanning it and does not fire `ON DELETE` triggers; `DELETE` without `WHERE` removes rows one by one (https://www.postgresql.org/docs/18/sql-truncate.html).
 
@@ -49,6 +49,10 @@ SELECT id, (SELECT count(*) FROM ins) FROM ins;
 ```sql
 DELETE FROM customers WHERE name = 'Em';
 ```
+
+Values pair with the column list by position, not by name: swapping two columns of the same type in the list writes the data into the wrong columns with no error. Always write the column list; leave generated columns (`id`) out. `INSERT … SELECT` takes its rows from a query; `CREATE TABLE t AS SELECT …` makes a new table from a result (columns and data only: no keys, constraints or indexes; https://www.postgresql.org/docs/18/sql-createtableas.html). Postgres also accepts `SELECT … INTO t FROM …`, but its manual recommends `CREATE TABLE AS`.
+
+A condition from another table: `UPDATE t SET … FROM other o WHERE o.id = t.other_id` and `DELETE FROM t USING other o WHERE …` (Postgres syntax; a subquery in `WHERE` is the standard form). Without the join condition every target row pairs with every `other` row and the whole table is hit (https://www.postgresql.org/docs/18/sql-update.html). Delete duplicates by pairing the table with itself and deleting one side only: `DELETE FROM p USING p q WHERE … AND p.id > q.id` (`<>` deletes both copies). Verified on PGlite 0.5.16 against `lab` for the v26 R2 lessons `content/general/lessons/insert_select.md`, `update_join.md`.
 
 Upsert is `INSERT … ON CONFLICT (key) DO UPDATE SET col = EXCLUDED.col` (https://www.postgresql.org/docs/18/sql-insert.html#SQL-ON-CONFLICT). `MERGE` is the standard form and since PostgreSQL 17 also supports `RETURNING` (https://www.postgresql.org/docs/18/sql-merge.html).
 

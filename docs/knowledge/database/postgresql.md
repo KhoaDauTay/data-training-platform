@@ -93,6 +93,7 @@ Status: verified.
 - `ALTER TABLE … ADD COLUMN c type DEFAULT v` is instant for a constant default (no table rewrite); changing a column type usually rewrites the table (https://www.postgresql.org/docs/18/sql-altertable.html).
 - `ADD CONSTRAINT … NOT VALID` then `VALIDATE CONSTRAINT` checks old rows without blocking writes for long (catalogue P06).
 - `DROP TABLE t CASCADE` also drops dependent views and foreign keys; read what it will drop first.
+- `ON CONFLICT DO NOTHING` with no target skips a row that violates any unique constraint; on a table whose only key is a generated `id` it therefore never fires and duplicates get in. Two source rows with the same key in one `INSERT … ON CONFLICT DO UPDATE` fail with 21000 (the statement would update the same row twice); reduce the source to one row per key first. `DO UPDATE … WHERE cond` updates only when `cond` holds; in `SET`, the table name (or alias) is the existing row, `EXCLUDED` the proposed one. With no suitable unique key, `MERGE … ON <condition>` is the way. Verified on PGlite 0.5.16 against `lab` for the v26 R2 lesson `content/general/lessons/upsert.md`.
 - Upsert: `INSERT … ON CONFLICT (cols) DO UPDATE SET c = EXCLUDED.c` or `DO NOTHING`. The conflict target needs a unique index or constraint on exactly those columns (https://www.postgresql.org/docs/18/sql-insert.html#SQL-ON-CONFLICT).
 
 ```sql

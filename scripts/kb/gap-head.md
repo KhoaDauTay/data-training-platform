@@ -31,11 +31,11 @@ The route keeps BoonData's two tracks and adds only what the gap rows say is mis
 
 ### Track A: learning path / General (SQL as analysts and developers write it)
 
-The General path today is read-only SQL (38 skills, `select` → `index_design`). The SQL tutorial's order puts data definition and modification before querying; BoonData deliberately starts with SELECT, so the proposal adds a **write-side module after the joins module** rather than reordering.
+The General path was read-only SQL (38 skills, `select` → `index_design`) until v26 R2 added Part 9, writing data (A1 below). The SQL tutorial's order puts data definition and modification before querying; BoonData deliberately starts with SELECT, so the proposal adds a **write-side module after the joins module** rather than reordering.
 
 | Order | Proposal | Tutorial route points it closes | Area | Priority |
 |---|---|---|---|---|
-| A1 | Module "Changing data": new General skills `insert_select` (INSERT … SELECT, RETURNING), `update_join` (UPDATE … FROM / DELETE … USING), `upsert` (ON CONFLICT, MERGE), each with a lesson + 4 drills on `lab`, graded by reading the table after the statement inside the rollback | SQL "Insert/Update/Delete Query", "Insert Into Select", "Update Join", "Delete Join"; MySQL "Upsert", "Replace Query", "Insert Ignore"; PostgreSQL "Upsert" | General (`skills.yml`, `lessons.yml`, `sql.yml`); needs a write-then-read grader for drills (the Engine's replay/catalog pattern in `src/engine/pglab/runner.ts` is the model) | P1 |
+| A1 | Module "Changing data": new General skills `insert_select` (INSERT … SELECT, RETURNING), `update_join` (UPDATE … FROM / DELETE … USING), `upsert` (ON CONFLICT, MERGE), each with a lesson + 4 drills on `lab`, graded by reading the table after the statement inside the rollback (**done, v26 R2**: `check:` on the drill, `runSandboxed` runs it after the write in the same `BEGIN … ROLLBACK`) | SQL "Insert/Update/Delete Query", "Insert Into Select", "Update Join", "Delete Join"; MySQL "Upsert", "Replace Query", "Insert Ignore"; PostgreSQL "Upsert" | General (`skills.yml`, `lessons.yml`, `sql.yml`); needs a write-then-read grader for drills (the Engine's replay/catalog pattern in `src/engine/pglab/runner.ts` is the model) | P1 |
 | A2 | Skill `any_all`: `= ANY(array)`, `> ALL (subquery)` | SQL "ANY, ALL Operators"; PostgreSQL "ANY/ALL Operator" | General | P2 |
 | A3 | Skill `cross_join` (calendar × store grids; ties into adv a3 date spine) and a RIGHT JOIN note in `left_join`'s lesson | SQL "Cross Join", "Right Join", "Left Join vs Right Join" | General | P2 |
 | A4 | Skill or adv node `sampling`: `ORDER BY random() LIMIT`, `TABLESAMPLE`, why it is non-deterministic (grade the shape, not the rows) | MySQL "Select Random Records" | General (adv node if grading is awkward) | P3 |
@@ -84,7 +84,7 @@ The proposals make lessons longer and denser than today's Engine and General pag
 - **Diagrams**: ER diagrams (D1), precedence graphs (D2), role graphs (B3) need a diagram slot like `viz:` with a text alternative; the Mermaid ER renderer (`src/ui/erdView.ts`) could be reused.
 - **Quizzes with longer stems**: theory quizzes (closure, normal-form identification) need multi-line stems and code or tables inside options.
 - **Docs-only lessons** (B6, C3, C5) are reading pages with no runnable step; the "chưa chạy trong trình duyệt" notice and the completion rule need a design that does not look broken.
-- **General drills that write** (A1): the drill brief, the expected-result preview (`tryPreview`) and the diff view assume a SELECT result; they need a "table after your statement" mode.
+- **General drills that write** (A1): the drill brief, the expected-result preview (`tryPreview`) and the diff view assume a SELECT result; they need a "table after your statement" mode. Done in v26 R2: the expected result, shape card and grade read the drill's `check:` after the write.
 - **Dialect reading** (A5): side-by-side PostgreSQL/MySQL/SQLite columns, like D5's SQL-vs-pandas readings (`advPage`), wider than `--w-read`.
 - **Budgets**: every Engine lesson is its own lazy chunk (`engineLesson` 8 KB each); longer theory lessons may exceed it and need a split or a higher per-file budget.
 

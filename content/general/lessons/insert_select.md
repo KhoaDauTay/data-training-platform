@@ -146,6 +146,8 @@ Nhiều người nghĩ **giá trị được ghép với cột theo tên**. Th�
 
 Ở BoonData mọi câu ghi chạy trong một giao dịch rồi được hoàn tác, nên bạn thử thoải mái: bảng không đổi thật.
 
+Postgres cũng nhận `SELECT … INTO new_table FROM …` (cách viết của SQL Server) để tạo bảng từ kết quả, nhưng tài liệu Postgres khuyên dùng `CREATE TABLE … AS`, vì `INTO` còn có nghĩa khác bên trong hàm PL/pgSQL.
+
 # EN
 
 ## Opening
@@ -161,3 +163,5 @@ Many people think **values are matched to columns by name**. In fact they are ma
 ## Syntax
 
 In BoonData every write runs inside a transaction that is then rolled back, so experiment freely: the table does not really change.
+
+Postgres also accepts `SELECT … INTO new_table FROM …` (the SQL Server way of writing it) to make a table from a result, but the Postgres manual recommends `CREATE TABLE … AS`, because `INTO` means something else inside PL/pgSQL functions.
