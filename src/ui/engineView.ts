@@ -818,19 +818,8 @@ export function sourceTitle(u: string): string {
 
 // ---- #/me and sidebar
 
-export function meBlock(): HTMLElement {
-  const { h, cls } = d;
-  const ok = done();
-  return h('section', { class: cls.cx(cls.CARD, 'flex flex-col gap-3 p-5'), 'aria-labelledby': 'me-engine' },
-    h('h2', { id: 'me-engine', class: 'm-0 text-title font-bold' }, d.t('nav.engine')),
-    h('p', { class: 'm-0 text-body-sm text-muted' }, et('me.intro')),
-    h('ul', { class: 'm-0 grid list-none gap-3 p-0 sm:grid-cols-3' }, ...ENGINES.map((e) => {
-      const p = progressOf(flat(e), ok);
-      return h('li', { class: 'flex items-start gap-3' }, engineBadge(e),
-        h('div', { class: 'min-w-0 flex-1 flex flex-col gap-1' }, h('a', { href: d.engineHash(e), class: 'font-bold' }, NAME[e]),
-          h('p', { class: 'm-0 text-body-sm tabular-nums' }, et('me.line', { k: p.done, n: p.total })), bar(p.done, p.total)));
-    })));
-}
+/** v24 (L334): the #/me skill map reads each engine's modules from here (src/mastery.ts engineLevels). */
+export const engineTrees = (): Readonly<Record<EngineId, Tree>> => trees;
 
 export function sideRows(ui: { row: (r: Row) => HTMLElement; group: (text: string) => HTMLElement }): (Node | null)[] {
   const r = d.engineRouteOf(location.hash);

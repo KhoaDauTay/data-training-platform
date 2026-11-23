@@ -9,7 +9,7 @@ import type { Ticket, TicketText } from './tickets';
 
 /**
  * v16 "Của tôi" (I2 + I6, product-design-v7 §5/§7, L142): the pure part of the #/me page and of every export (dashboard
- * file, certificate, portfolio). Lazy only (chunk `meView`): it imports only types from main modules. Nothing here reads
+ * file, portfolio; the certificates were removed in v24, L323). Lazy only (chunk `meView`): it imports only types from main modules. Nothing here reads
  * the DOM, storage or the clock; nothing it builds contains player-imported data (`sandbox` schema, `touchesSandbox`).
  */
 
@@ -99,57 +99,6 @@ export function importDash(text: string, domain: DomainId, existing: readonly Ca
   return { cards, added, skipped: fresh.length - added };
 }
 
-// ---------- certificate (v7 §5.2) ----------
-
-export type CertScope = DomainId | 'general';
-export interface CertData {
-  scope: CertScope;
-  lang: Lang;
-  name: string;
-  /** Domain name (t(domain.name)) or the General title. */
-  what: string;
-  tasks: number;
-  skills: number;
-  rank?: string;
-  date: string;
-  /** Inner markup of a self-contained mascot (no <use> into the page, no CSS variables), drawn in a 120×120 box. */
-  mascot?: string;
-}
-
-const esc = (s: string): string => s.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
-const W = 1123;
-const H = 794;
-/** Fixed paper colours: the file looks the same whatever the page theme (checked for contrast in tests/me.test.ts). */
-export const PAPER = { bg: '#fbf6ee', ink: '#2b2622', muted: '#5f554c', accent: '#0f766e', line: '#d9cfc2' } as const;
-
-/** A4 landscape SVG, self-contained (inline colours, no external reference). Says "not verified" on the picture itself. */
-export function certificateSvg(c: CertData): string {
-  const m = (k: MeKey, p?: Record<string, string | number>): string => esc(meText(c.lang, k, p));
-  const company = c.scope === 'general' ? '' : meText(c.lang, `co.${c.scope}` as MeKey);
-  const line = c.scope === 'general' ? m('cert.doneGeneral', { n: c.skills }) : m('cert.done', { n: c.tasks, company });
-  const text = (y: number, size: number, body: string, fill: string = PAPER.ink, weight = 400): string =>
-    `<text x="${W / 2}" y="${y}" font-size="${size}" font-weight="${weight}" fill="${fill}" text-anchor="middle">${body}</text>`;
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="${m('cert.alt', { what: c.what })}">`
-    + `<title>${m('cert.alt', { what: c.what })}</title>`
-    + `<rect width="${W}" height="${H}" fill="${PAPER.bg}"/>`
-    + `<rect x="28" y="28" width="${W - 56}" height="${H - 56}" rx="20" fill="none" stroke="${PAPER.accent}" stroke-width="4"/>`
-    + `<rect x="44" y="44" width="${W - 88}" height="${H - 88}" rx="14" fill="none" stroke="${PAPER.line}" stroke-width="2"/>`
-    + `<g font-family="Nunito, 'Segoe UI', system-ui, sans-serif">`
-    + text(128, 22, `BOONDATA · ${esc(c.what.toUpperCase())}`, PAPER.accent, 800)
-    + text(178, 40, m('cert.head'), PAPER.ink, 800)
-    + `<line x1="${W / 2 - 120}" y1="204" x2="${W / 2 + 120}" y2="204" stroke="${PAPER.line}" stroke-width="2"/>`
-    + text(288, 56, esc(c.name.trim() || meText(c.lang, 'cert.anon')), PAPER.ink, 800)
-    + text(346, 26, line)
-    + (c.rank ? text(392, 24, m('cert.rank', { rank: c.rank })) : '')
-    + (c.scope === 'general' ? '' : text(c.rank ? 432 : 392, 22, m('cert.skills', { n: c.skills }), PAPER.muted))
-    + text(520, 22, m('cert.date', { date: c.date }), PAPER.muted)
-    + text(676, 20, m('cert.verify'), PAPER.ink, 700)
-    + text(708, 18, m('cert.fiction'), PAPER.muted)
-    + `</g>`
-    + (c.mascot ? `<g transform="translate(84 590) scale(1)">${c.mascot}</g>` : '')
-    + `</svg>`;
-}
-
 // ---------- portfolio (I6) ----------
 
 export interface PortfolioEntry { title: string; question: string; steps: { title?: string; sql: string }[]; conclusion?: string }
@@ -180,6 +129,9 @@ export function portfolioEntries(tickets: readonly Ticket[], save: Pick<Save, 'c
 export const pictureCards = (cards: readonly Card[], imported: readonly string[], ranHere: (c: Card) => boolean): Card[] =>
   cards.filter((c) => !c.slow && ranHere(c) && !touchesSandbox(c.sql, imported));
 
+/** v24 (L323): the portfolio's "current skill levels" section, already worded (skills at level ≥ 2, badges held). */
+export interface PortfolioLevels { skills: { label: string; level: string }[]; badges: string[] }
+
 /** A fence longer than any backtick run inside the SQL. */
 const fence = (sql: string): string => '`'.repeat(Math.max(3, ...[...sql.matchAll(/`+/g)].map((r) => r[0].length + 1)));
 
@@ -187,13 +139,19 @@ const fence = (sql: string): string => '`'.repeat(Math.max(3, ...[...sql.matchAl
  * The portfolio file. cards: the domain's dashboard cards; those reading imported data (imported names) are left out.
  * pics: ids of cards with a picture beside the file (V19-D, L170: the zip's cards/<id>.png).
  */
-export function portfolioMd(p: { lang: Lang; scope: DomainId; what: string; name: string; date: string; entries: PortfolioEntry[]; cards: readonly { id?: string; title: string; sql: string }[]; imported: readonly string[]; pics?: ReadonlySet<string> }): string {
+export function portfolioMd(p: { lang: Lang; scope: DomainId; what: string; name: string; date: string; entries: PortfolioEntry[]; cards: readonly { id?: string; title: string; sql: string }[]; imported: readonly string[]; pics?: ReadonlySet<string>; levels?: PortfolioLevels }): string {
   const m = (k: MeKey, q?: Record<string, string | number>): string => meText(p.lang, k, q);
   const out = [
     `# ${m('pf.h1', { domain: p.what })}`, '',
-    m('pf.by', { name: p.name.trim() || m('cert.anon'), date: p.date, company: m(`co.${p.scope}` as MeKey) }), '',
+    m('pf.by', { name: p.name.trim() || m('pf.anon'), date: p.date, company: m(`co.${p.scope}` as MeKey) }), '',
     `> ${m('pf.note')}`, '',
   ];
+  // v24 (L323): the current skill levels (Can do and above) and the badges held, self-measured
+  if (p.levels && (p.levels.skills.length || p.levels.badges.length)) {
+    out.push(`## ${m('pf.levels')}`, '');
+    if (p.levels.skills.length) out.push(`| ${m('pf.skill')} | ${m('pf.level')} |`, '|---|---|', ...p.levels.skills.map((s) => `| ${s.label.replace(/\|/g, '\\|')} | ${s.level} |`), '');
+    if (p.levels.badges.length) out.push(`**${m('pf.badges')}:** ${p.levels.badges.join(' · ')}`, '');
+  }
   for (const e of p.entries) {
     out.push(`## ${e.title}`, '', `**${m('pf.question')}:** ${e.question.replace(/\n+/g, ' ')}`, '');
     e.steps.forEach((s, i) => {

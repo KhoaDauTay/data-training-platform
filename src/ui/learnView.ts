@@ -3,6 +3,7 @@ import type { Params } from '../i18n';
 import { learnText, type LearnKey } from '../i18n/learn';
 import { CHALLENGE_XP, moduleState, nodeState, placementItems, skillState, stamper, type LearnCtx } from '../learn';
 import type { Skill } from '../progress';
+import type { SkillLevel } from '../mastery';
 import type { DrillDeps } from './drillBrief';
 import { parseFullLesson, type FullLesson } from '../fullLesson';
 import { fullLessons, lessonIdOf } from '../generalLessonSources';
@@ -46,11 +47,38 @@ export function learnPage(deps: DrillDeps, g: General): HTMLElement {
   const node = g.nodes.find((x) => x.id === d$.learnAdvOf(hash));
   const n = d$.learnModuleOf(hash);
   const c = ctx(g);
+  levels = d$.masteryOf(c.save, c.tickets, d$.SKILLS.map((s) => s.id), d$.today()); // v24 (L323): same tickets as `known`
   stamps.base(c.save, c.known); // a new save object (import) resets the baseline
   if (skill) return skillPage(c, skill);
   if (node) return advPage(c, node);
   if (n && c.parts.some((p) => p.n === n)) return modulePage(c, n);
   return overview(c);
+}
+
+// ---- v24 (L323): skill levels (src/mastery.ts), recomputed on every draw
+
+let levels = new Map<string, SkillLevel>();
+/** Four dots, filled vs ring (shape, not colour alone), with the level in words for screen readers. */
+function levelDots(id: string): HTMLElement {
+  const l = levels.get(id)?.level ?? 0;
+  return d$.h('span', { class: 'inline-flex shrink-0 gap-1', role: 'img', 'aria-label': lt('lv.aria', { level: lt(`lv.${l}` as LearnKey), n: l }), 'data-level': String(l) },
+    ...[1, 2, 3, 4].map((i) => d$.h('span', { class: i <= l ? 'block size-2.5 rounded-full bg-accent' : 'block size-2.5 rounded-full ring-1 ring-line-strong' })));
+}
+const dueChip = (): HTMLElement => d$.h('span', { class: 'inline-flex shrink-0 items-center gap-1 rounded-(--r-chip) bg-warn-soft px-2 text-caption font-semibold text-ink' },
+  d$.icon('clockAlert', 'size-3.5'), lt('lv.due'));
+
+/** The skill page's level line: dots, the level, the next review day, the one thing that raises it, "self-measured". */
+function levelLine(id: string): HTMLElement {
+  const { h } = d$;
+  const s = levels.get(id);
+  const l = s?.level ?? 0;
+  const due = s?.card && !s.review ? lt('lv.dueOn', { date: new Date(`${s.card.due}T00:00:00`).toLocaleDateString(d$.locale()) }) : '';
+  return h('p', { class: 'm-0 flex min-h-9 flex-wrap items-center gap-x-3 gap-y-1 rounded-(--r-inset) bg-surface-2 px-3 py-1.5 text-body-sm', 'data-level-line': id },
+    levelDots(id),
+    h('b', {}, [lt('lv.line', { level: lt(`lv.${l}` as LearnKey) }), due].filter(Boolean).join(' · ')),
+    s?.review ? dueChip() : null,
+    s?.next ? h('span', {}, lt(`lv.next.${s.next}` as LearnKey)) : null,
+    h('span', { class: 'ml-auto text-caption text-muted' }, lt('lv.self')));
 }
 
 const kindLabel = (d: Drill): string => lt(`drill.kind.${d.kind}` as LearnKey);
@@ -61,36 +89,6 @@ const skillHref = (id: string): string => `${d$.hashOf('learn')}/skill/${id}`;
 /** One drill button: "Fill in the frame ✓" (D8a: done drills stay playable, 0 XP). */
 export const drillButton = (d: Drill, done: boolean): HTMLElement =>
   d$.h('button', { type: 'button', class: cx(BTN, ABOVE), onclick: () => d$.actions.startDrill(d.id) }, kindLabel(d), tick(done));
-
-/**
- * v24 (product §1.7, ux §6.3): a skill's level 0–4 and "review due". src/mastery.ts (branch v24-mastery) fills
- * `d$.mastery.level`; until then a stand-in from what learn.ts already knows: 2 = learned (knownSkills), 1 = a drill passed.
- */
-function levelOf(c: LearnCtx, id: string): { level: number; due: boolean } {
-  const m = d$.mastery.level?.(c.save, id);
-  if (m) return m;
-  const st = skillState(c, id);
-  const card = c.save.review[id];
-  return { level: st.learned ? 2 : st.drills > 0 ? 1 : 0, due: !!card && card.due < d$.today() };
-}
-/** Four dots, filled up to the level (filled vs ring: never colour alone); the level name is in the label. */
-function dots(c: LearnCtx, s: Skill): HTMLElement {
-  const { h } = d$;
-  const { level } = levelOf(c, s.id);
-  return h('span', { class: 'inline-flex shrink-0 items-center gap-1', role: 'img', 'aria-label': lt('lvl.aria', { skill: label(s), level: lt(`lvl.${level}` as LearnKey), n: level }) },
-    ...[1, 2, 3, 4].map((i) => h('span', { class: cx('size-2.5 rounded-full', i <= level ? 'bg-accent' : 'ring-1 ring-line-strong') })));
-}
-const dueChip = (): HTMLElement => d$.h('a', { href: d$.hashOf('practice'), class: 'relative z-10 inline-flex min-h-6 items-center gap-1 rounded-full bg-warn-soft px-2 py-0.5 text-caption font-semibold text-ink no-underline' },
-  d$.icon('repeat', 'size-3.5'), lt('lvl.due'));
-/** The skill page's level line (ux §5.2): dots, level name, the one step to the next level, "self-measured". */
-function levelLine(c: LearnCtx, s: Skill): HTMLElement {
-  const { h } = d$;
-  const { level, due } = levelOf(c, s.id);
-  return h('div', { class: 'flex min-h-11 flex-wrap items-center gap-x-3 gap-y-1 rounded-(--r-inset) bg-surface-2 px-3 py-2 text-body-sm', 'data-level': String(level) },
-    dots(c, s), h('b', {}, lt('lvl.line', { level: lt(`lvl.${level}` as LearnKey) })),
-    h('span', { class: 'text-muted' }, lt(`lvl.next.${level}` as LearnKey)), due ? dueChip() : null,
-    h('span', { class: 'ml-auto text-caption text-muted' }, lt('lvl.self')));
-}
 
 function skillStatus(c: LearnCtx, id: string): string {
   const st = skillState(c, id);
@@ -135,7 +133,7 @@ function modulePage(c: LearnCtx, n: number): HTMLElement {
   const order = c.parts.flatMap((p) => p.skills);
   const row = (s: Skill): HTMLElement => {
     const st = skillState(c, s.id);
-    const { due } = levelOf(c, s.id);
+    const due = levels.get(s.id)?.review;
     const isNext = s === next;
     return h('li', { class: cx('relative flex min-h-11 items-center gap-2 border-l-4 px-3 py-2', isNext ? 'border-l-accent bg-accent-soft' : 'border-l-transparent hover:bg-code'), 'data-skill': s.id },
       h('span', { class: 'grid size-8 shrink-0 place-items-center rounded-full bg-accent-soft text-accent', 'aria-hidden': 'true' }, d$.skillIcon(s.id, 'size-5')),
@@ -143,7 +141,7 @@ function modulePage(c: LearnCtx, n: number): HTMLElement {
       h('a', { href: skillHref(s.id), class: cx('min-w-0 flex-1 text-ink no-underline after:absolute after:inset-0', isNext ? 'font-bold' : 'font-semibold'), title: label(s) }, label(s)),
       due ? dueChip() : null,
       h('span', { class: 'shrink-0 text-body-sm text-muted max-sm:hidden' }, `${lt(hasFull(s.id) ? 'part.full' : 'part.quick')} · ${lt('learn.drills', { n: st.drills, total: st.total })}`),
-      dots(c, s),
+      levelDots(s.id),
       isNext ? h('a', { href: skillHref(s.id), class: 'relative z-10 shrink-0 max-sm:hidden rounded-full bg-accent px-3 py-1 text-body-sm font-bold text-on-accent no-underline shadow-(--shadow-1) hover:bg-accent/90' }, lt('part.continue')) : null);
   };
   const list = (xs: Skill[]): HTMLElement => h('ul', { class: 'm-0 list-none divide-y divide-line overflow-hidden rounded-(--r-card) bg-panel p-0 ring-1 ring-line' }, ...xs.map(row));
@@ -195,7 +193,7 @@ function skillPage(c: LearnCtx, s: Skill): HTMLElement {
     const n = d$.partOf(s.id);
     return h('div', { class: 'space-y-4' }, slot('skill-head'),
       lessonPage(d$, full, { skill: s, drills: c.general.bySkill.get(s.id) ?? [], part: n ? { n, title: d$.moduleTitle(n, d$.getLang()) } : undefined,
-        prev: order[i - 1], next: order[i + 1], level: levelLine(c, s), done: c.known.has(s.id) }),
+        prev: order[i - 1], next: order[i + 1], level: levelLine(s.id), done: c.known.has(s.id) }),
       slot('skill-card'));
   }
   if (full === 'loading') return h('p', { class: 'm-0 flex min-h-40 items-start gap-2 text-muted', 'aria-live': 'polite' }, d$.loader(), lt('fl.loading'));
@@ -205,7 +203,7 @@ function skillPage(c: LearnCtx, s: Skill): HTMLElement {
     backLine('skill'),
     full === 'failed' ? h('p', { role: 'alert', class: 'm-0 flex flex-wrap items-center gap-2' }, lt('fl.failed'),
       h('button', { type: 'button', class: BTN, onclick: () => { lessons.delete(s.id); d$.actions.rerender(); } }, lt('fl.retry'))) : null,
-    levelLine(c, s),
+    levelLine(s.id),
     slot('skill-head'),
     skillBlock(c, s),
     slot('skill-card'),

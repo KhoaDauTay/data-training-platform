@@ -62,13 +62,6 @@ export function skillOfDrill(id: string, skillIds: readonly string[]): string | 
  * "Learned" (D8a-11): a completed ticket grants it, or ≥ 2 of its drills passed, or it has a review card.
  * One definition for the learning path, the "Relies on" line and Home.
  */
-/**
- * v24 (product-route-v24 §1.7, L338): a skill's level 0–4 and "review due", drawn as four dots on the learning path (Part rows,
- * the skill page's level line). src/mastery.ts (branch v24-mastery) sets `level`; until it does, the learnui chunk draws a
- * stand-in (2 = learned, 1 = a drill passed, 0 = nothing yet). TODO(v24-mastery): `mastery.level = (save, id) => levelOf(...)`.
- */
-export const mastery: { level?: (save: Save, skill: string) => { level: 0 | 1 | 2 | 3 | 4; due: boolean } } = {};
-
 export function knownSkills(save: Save, tickets: Ticket[], skillIds: readonly string[]): Set<string> {
   const done = new Set(save.completed);
   const out = learnedSkills(tickets, done);

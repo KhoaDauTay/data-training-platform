@@ -128,17 +128,20 @@ describe('nhãn phím tắt theo hệ điều hành', () => {
 });
 
 describe('chữ trang Tiến bộ của tôi (src/i18n/me.ts, v16 L142)', () => {
-  it('placeholder khớp, EN khác VI, không giọng game; chứng nhận nói "không xác minh"', async () => {
+  it('placeholder khớp, EN khác VI, không giọng game; bản đồ kỹ năng và huy hiệu nói "không xác minh" (v24 L323)', async () => {
     const { ME_DICT } = await import('../src/i18n/me');
+    const SAME = new Set(['badge.sql', 'badge.engine', 'badge.eng', 'badge.dom', 'eng.cell']); // names and placeholders only
     for (const [k, v] of Object.entries(ME_DICT.vi)) {
       const e = ME_DICT.en[k as keyof typeof ME_DICT.en];
       expect([k, placeholders(e)]).toEqual([k, placeholders(v)]);
-      expect([k, e]).not.toEqual([k, v]);
+      if (!SAME.has(k)) expect([k, e]).not.toEqual([k, v]);
       expect(`${v} ${e}`).not.toMatch(GAME_TONE);
       expect(`${k}: ${e}`).not.toMatch(/[ăâđêôơưạảấầẩẫậắằẳẵặẹẻẽếềểễệỉịọỏốồổỗộớờởỡợụủứừửữựỳỵỷỹ]/i);
     }
-    expect(ME_DICT.vi['cert.verify']).toContain('không xác minh');
-    expect(ME_DICT.en['cert.verify']).toContain('not verified');
+    expect(ME_DICT.vi['map.intro']).toContain('Không xác minh');
+    expect(ME_DICT.en['map.intro']).toContain('Not verified');
+    expect(ME_DICT.vi['badge.note']).toContain('không xác minh');
+    expect(ME_DICT.en['badge.note']).toContain('not verified');
   });
 });
 

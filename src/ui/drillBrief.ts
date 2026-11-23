@@ -9,6 +9,7 @@ import { learnPage as drawLearn } from './learnView';
 import { initGuides, type GuideDeps } from './guide';
 import { initGuideList, replayBtn } from './guideList';
 import { drillXp } from '../learn';
+import type * as Mastery from '../mastery';
 import type * as Practice from '../practice';
 import type * as Progress from '../progress';
 import type * as Route from '../route';
@@ -58,10 +59,12 @@ export interface DrillDeps extends GuideDeps {
   parseRoute: typeof Route.parseRoute; mod: string; isInterviewPage: typeof Route.isInterviewPage;
   // v24 R0 (L335–L338): the General route's Parts, the full lesson page (ui/lessonPage.ts) and the level hook (src/mastery.ts)
   ROUTE_PARTS: typeof Progress.PARTS; partOf: typeof Progress.partOf;
-  learnTitles: typeof HomeView.learnTitles; mastery: typeof Home.mastery;
+  learnTitles: typeof HomeView.learnTitles;
   runOn: typeof TryPreview.runOn; verdictText: typeof TryPreview.verdictText; grade: typeof Grader.grade;
   renderResult: typeof ResultTable.renderResult; errorView: typeof Feedback.errorView; errorText: typeof Feedback.errorText;
   createEditor: typeof EditorMod.createEditor; announce: typeof Dom.announce;
+  /** v24 (L323): skill levels for the skill page's level line and the Part page's dots (src/mastery.ts, main). */
+  masteryOf: typeof Mastery.masteryOf;
 }
 
 let d$: DrillDeps;

@@ -41,6 +41,20 @@ describe('axe-core: a returning player, dark theme, 375 px (FIX-1)', () => {
     expect(await problems()).toEqual([]);
   });
 
+  it('#/me (v24, L323): skill map with level words, 37 badges, no certificate; the skill and Part pages show levels', async () => {
+    await visit('#/me');
+    const home = document.getElementById('home')!;
+    expect(home.querySelector('[data-me=skill-map]')).not.toBeNull();
+    expect(home.querySelectorAll('[data-me=badges] details [data-badge]')).toHaveLength(37);
+    expect(home.textContent).not.toMatch(/Tải (PNG|SVG)/);
+    expect(home.querySelector('[data-skill=select] a')?.getAttribute('aria-label')).toMatch(/^Chọn cột \(SELECT\): (Làm được, mức 2 trên 4|Đã gặp, mức 1 trên 4, cần ôn)$/); // save-v5: taught by ch1; the real clock decides overdue
+    for (const hash of ['#/learn/sql/1', '#/learn/skill/select']) {
+      await visit(hash);
+      expect(document.querySelector('#home [data-level]')).not.toBeNull();
+      expect(await problems()).toEqual([]);
+    }
+  });
+
   it('#/learn/play with a drill open', async () => {
     const id = (await loadGeneral()).bySkill.get('where')![0].id;
     await visit(drillHash(id), () => {

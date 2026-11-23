@@ -77,10 +77,11 @@ function learnSwitch(): HTMLElement | null {
 
 registerHomeSection({ id: 'learnSwitch', order: 0, span: 'full', pages: ['learn', 'engine'], render: learnSwitch });
 registerHomeSection({ id: 'engine', order: 10, span: 'full', pages: ['engine'], render: enginePage });
-registerHomeSection({ id: 'engineMe', order: 20, span: 'full', pages: ['me'], render: () => {
+/** v24 (L334): the engines' module trees for the #/me skill map; loads the chunk on first ask (undefined until it is in). */
+export function engineTrees(): ReturnType<EngineView['engineTrees']> | undefined {
   if (!view && !failed) load();
-  return view ? view.meBlock() : null; // #/me draws its own loading line; the block joins once the chunk is in
-} });
+  return view?.engineTrees();
+}
 registerNav({ id: 'engine', area: 'top', order: 25, label: 'nav.engineShort', icon: NAV_ICON.engine, href: hashOf('engine'), current: (r) => r === 'engine', mergeInto: 'learn' });
 registerSide('engine', (ui) => (view ? view.sideRows(ui) : []));
 pageSubs.engine = () => view?.subOf(); // L280: the h1 = engine / level / lesson title under a trail; "Database Engine" until the chunk is in

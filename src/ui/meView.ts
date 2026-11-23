@@ -17,14 +17,17 @@ import type * as Dom from './dom';
 import type * as Icons from './icons';
 import type { QueryResult } from '../db/run';
 import type * as IvPrefs from '../interviewPrefs';
+import type * as Mastery from '../mastery';
+import type { Badge, SkillLevel } from '../mastery';
 import { meText, type MeKey } from '../i18n/me';
 import {
-  calendar, certificateSvg, dashFile, importDash as readDashFile, portfolioEntries, portfolioMd, strengths, topErrors, touchesSandbox,
-  trySummary, pictureCards, type CertScope, type PortfolioEntry,
+  calendar, dashFile, importDash as readDashFile, portfolioEntries, portfolioMd, strengths, topErrors, touchesSandbox,
+  trySummary, pictureCards, type PortfolioEntry, type PortfolioLevels,
 } from '../me';
 
 /**
- * v16 "Của tôi" (I2 + I6, L142): the #/me page, certificates, portfolio and the dashboard's file/picture exports. A lazy chunk
+ * v16 "Của tôi" (I2 + I6, L142): the #/me page, skill map and badges (v24, L323: they replaced the certificates), portfolio
+ * and the dashboard's file/picture exports. A lazy chunk
  * (budget `me`): it imports only types from main modules and gets every main value through `initMe` (Plan 6 U3).
  * The page reads the Save and device prefs only: no query, no seed, no domain switch.
  */
@@ -47,6 +50,10 @@ export interface MeDeps {
   run: (sql: string, dom: DomainId) => Promise<QueryResult>; cardBody: (c: Card, r: QueryResult) => HTMLElement; ranHere: (c: Card) => boolean;
   loadInterview: typeof Content.loadInterview; interviewPrefs: () => IvPrefs.InterviewPrefs; passedTakeHomes: typeof IvPrefs.passedTakeHomes;
   cls: { CARD: string; BTN_GO: string; BTN_SECONDARY: string; cx: (...p: (string | false | null | undefined)[]) => string };
+  /** v24 (L323, L330–L334): skill map and badges (src/mastery.ts, main). */
+  mastery: Pick<typeof Mastery, 'masteryOf' | 'badges' | 'engineLevels' | 'skillParts'>; today: () => string;
+  moduleTitle: typeof Progress.moduleTitle; startToday: () => void;
+  engineTrees: () => Readonly<Record<string, Parameters<typeof Mastery.engineLevels>[0]>> | undefined;
 }
 let d: MeDeps;
 export const initMe = (deps: MeDeps): void => void (d = deps);
@@ -77,27 +84,18 @@ function ticketsOf(id: DomainId): Ticket[] | undefined {
   return s === 'failed' ? [] : undefined;
 }
 
-interface Scope { scope: CertScope; what: string; open: boolean; lock: string; tasks: number; skills: number; rank?: string; tickets: Ticket[] }
+type ScopeId = DomainId | 'general';
+/** `final`: the domain's last promotion review is passed (its badge, the old certificate's rule); `rank`: that review's step. */
+interface Scope { scope: ScopeId; what: string; final: boolean; rank?: string; tickets: Ticket[] }
 function scopes(): Scope[] {
   const lang = d.getLang();
   const done = new Set(d.app.save.completed);
   const out: Scope[] = d.DOMAINS.map((x) => {
     const ts = ticketsOf(x.id) ?? [];
     const last = ts.filter((t) => t.beat === 'boss').sort((a, b) => b.chapter - a.chapter)[0];
-    const mine = ts.filter((t) => done.has(t.id));
-    const rank = d.rankOf(ts, done, d.chaptersOf(x.id));
-    return {
-      scope: x.id, what: d.t(x.name), open: !!last && done.has(last.id), tickets: ts,
-      lock: m('cert.locked', { what: last ? `${d.t(x.name)} · ${d.textOf(last, lang).title}` : d.t(x.name) }),
-      tasks: mine.length, skills: new Set(mine.flatMap((t) => t.grants)).size, rank: (rank.career ?? rank.tier)?.[lang],
-    };
+    return { scope: x.id, what: d.t(x.name), final: !!last && done.has(last.id), tickets: ts, rank: d.chaptersOf(x.id).at(-1)?.career[lang] };
   });
-  const ids = d.SKILLS.map((s) => s.id);
-  const known = d.knownSkills(d.app.save, d.loadTickets('logistics'), ids).size;
-  out.push({
-    scope: 'general', what: m('cert.general'), open: known === ids.length, tickets: [],
-    lock: m('cert.lockedGeneral', { total: ids.length, n: known }), tasks: 0, skills: known,
-  });
+  out.push({ scope: 'general', what: '', final: false, tickets: [] });
   return out;
 }
 
@@ -108,66 +106,6 @@ function download(name: string, blob: Blob): void {
   d.h('a', { href: url, download: name }).click();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
-const svgUrl = (svg: string): string => `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
-function png(svg: string, w: number, hgt: number, scale: number): Promise<Blob> {
-  return new Promise((ok, fail) => {
-    const img = new Image();
-    img.onload = () => {
-      const c = document.createElement('canvas');
-      c.width = Math.round(w * scale);
-      c.height = Math.round(hgt * scale);
-      const g = c.getContext('2d');
-      if (!g) return fail(new Error('no canvas'));
-      g.scale(scale, scale);
-      g.drawImage(img, 0, 0, w, hgt);
-      c.toBlob((b) => (b ? ok(b) : fail(new Error('toBlob'))), 'image/png');
-    };
-    img.onerror = () => fail(new Error('image'));
-    img.src = svgUrl(svg);
-  });
-}
-
-/**
- * A sprite pose (index.html #mascot-sprite) as self-contained markup: every <use> replaced by a copy of what it points
- * to, gradients copied in, CSS variables resolved to the page's current values and classes dropped (no animation).
- */
-function inlineSprite(id: string): string | undefined {
-  const sym = document.getElementById(id);
-  if (!sym) return undefined;
-  const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-  for (const n of sym.childNodes) g.append(n.cloneNode(true));
-  for (let guard = 0; guard < 8; guard++) {
-    const uses = g.querySelectorAll('use');
-    if (!uses.length) break;
-    for (const u of uses) {
-      const ref = document.getElementById((u.getAttribute('href') ?? '').slice(1));
-      const box = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-      if (ref) {
-        for (const a of ref.attributes) if (a.name !== 'id') box.setAttribute(a.name, a.value);
-        for (const n of ref.childNodes) box.append(n.cloneNode(true));
-      }
-      u.replaceWith(box);
-    }
-  }
-  for (const el of g.querySelectorAll('[class]')) el.removeAttribute('class');
-  let body = new XMLSerializer().serializeToString(g).replace(/ id="[^"]*"/g, '');
-  const defs = [...new Set([...body.matchAll(/url\(#([\w-]+)\)/g)].map((x) => x[1]))]
-    .map((ref) => document.getElementById(ref)).filter((x): x is HTMLElement => !!x).map((x) => new XMLSerializer().serializeToString(x)).join('');
-  body = `<defs>${defs}</defs>${body}`;
-  const root = getComputedStyle(document.documentElement);
-  for (let guard = 0; guard < 6 && body.includes('var(--'); guard++) {
-    body = body.replace(/var\(--([\w-]+)(?:,\s*([^()]*))?\)/g, (_, name: string, fb?: string) => root.getPropertyValue(`--${name}`).trim() || fb?.trim() || 'none');
-  }
-  return `<svg x="0" y="0" width="120" height="120" viewBox="0 0 120 120">${body}</svg>`;
-}
-
-function certSvg(s: Scope): string {
-  return certificateSvg({
-    scope: s.scope, lang: d.getLang(), name: readName(), what: s.what, tasks: s.tasks, skills: s.skills, rank: s.rank,
-    date: new Date().toLocaleDateString(d.locale()), mascot: inlineSprite('boon-idle'),
-  });
-}
-
 // ---------- the page ----------
 
 const card = (...kids: (Node | string | null)[]): HTMLElement => d.h('section', { class: d.cls.cx(d.cls.CARD, 'space-y-3 p-5') }, ...kids);
@@ -256,49 +194,156 @@ function nextCard(all: Ticket[]): HTMLElement {
       : d.h('div', { class: 'space-y-2' }, d.h('p', { class: 'm-0 text-body-sm' }, m('next.none')), link(d.hashOf('learn'), m('next.start'))));
 }
 
-function certCard(list: Scope[], waiting: boolean): HTMLElement {
-  const imgs: [HTMLImageElement, Scope][] = [];
-  const name = d.h('input', {
-    id: 'me-name', type: 'text', maxlength: '60', autocomplete: 'name', value: readName(),
-    class: 'w-full max-w-sm rounded-(--r-ctl) border border-line bg-panel px-3 py-2 text-body text-ink',
-    oninput: (e: Event) => {
-      d.writeJson(NAME_KEY, (e.target as HTMLInputElement).value.slice(0, 60));
-      for (const [img, s] of imgs) img.src = svgUrl(certSvg(s));
-    },
+// ---------- v24 (L323): skill map and badges, derived on every draw ----------
+
+const ENGINES = ['postgres', 'mongodb', 'dynamodb', 'design'];
+const LEVELS = ['L1', 'L2', 'L3', 'L4', 'L5'];
+const ENGINE_ICON: Record<string, Icons.IconName> = { postgres: 'engRelational', mongodb: 'engDocument', dynamodb: 'engKeyValue', design: 'engDesign' };
+const DOMAIN_ICON: Record<string, Icons.IconName> = { logistics: 'anchor', ecommerce: 'box', finance: 'percent' };
+const ENGINE_NAME: Record<string, string> = { postgres: 'PostgreSQL', mongodb: 'MongoDB', dynamodb: 'DynamoDB' };
+const engineName = (e: string): string => ENGINE_NAME[e] ?? m('eng.design');
+const phone = (): boolean => typeof matchMedia === 'function' && !matchMedia('(min-width: 640px)').matches;
+
+/** Four dots, filled vs ring (shape, not colour alone); the words are in the row's label. */
+const dots = (level: number): HTMLElement => d.h('span', { class: 'flex shrink-0 gap-1', 'aria-hidden': 'true' },
+  ...[1, 2, 3, 4].map((i) => d.h('span', { class: i <= level ? 'block size-2.5 rounded-full bg-accent' : 'block size-2.5 rounded-full ring-1 ring-line-strong' })));
+const dueChip = (): HTMLElement => d.h('span', { class: 'inline-flex shrink-0 items-center gap-1 rounded-(--r-chip) bg-warn-soft px-2 text-caption font-semibold text-ink' },
+  d.icon('clockAlert', 'size-3.5'), m('map.due'));
+
+interface Measured { levels: Map<string, SkillLevel>; parts: { n: number; skills: string[] }[]; engines?: Record<string, Mastery.EngineLevel[]>; badges: Badge[] }
+
+/** NoSQL path drill ids: its chunk loads only once the player passed a path drill (else the badge is plainly not held). */
+let pathIds: string[] | 'loading' | undefined;
+function pathDrills(): string[] | undefined {
+  if (Array.isArray(pathIds)) return pathIds;
+  if (pathIds === undefined && d.app.save.completed.some((id) => id.startsWith('e-mg-d-'))) {
+    pathIds = 'loading';
+    import('../engineMongoPath').then((p) => { pathIds = p.path.drills.map((x) => x.id); }, () => { pathIds = undefined; }).finally(() => d.rerender());
+  }
+  return undefined;
+}
+
+function measure(list: Scope[]): Measured {
+  const ids = d.SKILLS.map((s) => s.id);
+  const trees = d.engineTrees();
+  const completed = new Set(d.app.save.completed);
+  const levels = d.mastery.masteryOf(d.app.save, d.loadTickets('logistics'), ids, d.today()); // L332: the learning path's tickets
+  const parts = d.mastery.skillParts(d.SKILLS); // L330: route.yml's Parts replace this at integration
+  const engines = trees && Object.fromEntries(Object.entries(trees).map(([e, t]) => [e, d.mastery.engineLevels(t, completed)]));
+  const badges = d.mastery.badges({
+    parts, levels, foundation: ids, perf: [], completed, engines: engines ?? {}, path: pathDrills(),
+    domains: list.filter((s) => s.scope !== 'general').map((s) => ({ id: s.scope, done: s.final })),
   });
-  const item = (s: Scope): HTMLElement => {
-    if (!s.open) {
-      return d.h('li', { class: 'flex items-start gap-3 rounded-(--r-inset) bg-code p-3 text-body-sm' },
-        d.icon('lock', 'mt-0.5 size-4 shrink-0 text-muted'),
-        d.h('span', {}, d.h('b', {}, s.what), d.h('br'), d.h('span', { class: 'text-muted' }, s.lock)));
-    }
-    const img = d.h('img', { src: svgUrl(certSvg(s)), alt: m('cert.alt', { what: s.what }), class: 'block w-full', width: '1123', height: '794' });
-    imgs.push([img, s]);
-    const file = `boondata-${s.scope}-certificate`;
-    return d.h('li', { class: 'overflow-hidden rounded-(--r-inset) ring-1 ring-line' },
-      d.h('figure', { class: 'm-0' }, img,
-        d.h('figcaption', { class: 'flex flex-wrap items-center gap-2 border-t border-line p-3' },
-          d.h('b', { class: 'mr-auto text-body-sm' }, s.what),
-          d.h('button', {
-            type: 'button', class: d.cls.cx(d.cls.BTN_SECONDARY, 'flex items-center gap-1.5 px-3 py-1 text-body-sm'),
-            onclick: () => void png(certSvg(s), 1123, 794, 1.5).then((b) => download(`${file}.png`, b), () => download(`${file}.svg`, new Blob([certSvg(s)], { type: 'image/svg+xml' }))),
-          }, d.icon('download', 'size-4'), m('cert.png')),
-          d.h('button', {
-            type: 'button', class: d.cls.cx(d.cls.BTN_SECONDARY, 'flex items-center gap-1.5 px-3 py-1 text-body-sm'),
-            onclick: () => download(`${file}.svg`, new Blob([certSvg(s)], { type: 'image/svg+xml' })),
-          }, d.icon('download', 'size-4'), m('cert.svg')))));
+  return { levels, parts, engines, badges };
+}
+
+function skillMapCard(x: Measured): HTMLElement {
+  const lang = d.getLang();
+  const due = [...x.levels.values()].filter((s) => s.review).length;
+  const row = (id: string): HTMLElement => {
+    const s = x.levels.get(id)!;
+    const label = d.SKILLS.find((k) => k.id === id)?.label[lang] ?? id;
+    const words = m(s.review ? 'map.dueAria' : 'map.aria', { skill: label, level: m(`lv.${s.level}` as MeKey), n: s.level });
+    return d.h('li', { class: 'flex min-h-9 items-center gap-2', 'data-skill': id, 'data-level': String(s.level) },
+      d.skillIcon(id, 'size-4 shrink-0 text-accent'),
+      d.h('a', { href: `${d.hashOf('learn')}/skill/${id}`, class: d.cls.cx('min-w-0 flex-1 truncate text-body-sm', s.level ? 'font-semibold' : 'text-muted'), 'aria-label': words, title: words }, label),
+      s.review ? dueChip() : null, dots(s.level));
   };
-  return card(title(m('cert.title'), 'badge'),
-    d.h('p', { class: 'm-0 text-body-sm text-muted' }, m('cert.intro')),
-    d.h('div', { class: 'space-y-1' },
-      d.h('label', { for: 'me-name', class: 'block text-body-sm font-semibold' }, m('cert.name')), name,
-      d.h('p', { class: 'm-0 text-caption text-muted' }, m('cert.nameNote'))),
-    waiting ? d.h('p', { class: 'm-0 text-body-sm text-muted', 'aria-live': 'polite' }, m('loadingDomains')) : null,
-    d.h('ul', { class: 'm-0 grid list-none gap-3 p-0' }, ...list.map(item)));
+  const part = (p: { n: number; skills: string[] }): HTMLElement => {
+    const k = p.skills.filter((id) => (x.levels.get(id)?.level ?? 0) >= 2).length;
+    return d.h('details', { class: 'mb-3', open: !phone() },
+      d.h('summary', { class: 'flex min-h-9 cursor-pointer items-center gap-2 text-caption font-bold text-muted' },
+        d.h('span', { class: 'flex-1' }, m('map.part', { n: p.n, title: d.moduleTitle(p.n, lang) })),
+        p.skills.some((id) => x.levels.get(id)?.review) ? dueChip() : d.h('span', { class: 'font-normal tabular-nums' }, m('map.partSum', { k, n: p.skills.length }))),
+      d.h('ul', { class: 'm-0 list-none p-0' }, ...p.skills.map(row)));
+  };
+  const cell = (e: string, lv: string): HTMLElement => {
+    const l = x.engines?.[e]?.find((y) => y.level === lv);
+    const state = !l?.n ? m('eng.empty') : l.done ? m('eng.done') : l.started ? m('eng.doing', { k: l.k, n: l.n }) : m('eng.none');
+    const words = m('eng.cell', { engine: engineName(e), level: lv, state });
+    return d.h('li', {
+      class: d.cls.cx('flex min-w-0 items-center gap-1 rounded-(--r-inset) px-2 py-1 text-caption max-sm:justify-center',
+        l?.done ? 'bg-good-soft ring-1 ring-good' : l?.started ? 'bg-accent-soft' : 'bg-surface-2'),
+      'aria-label': words, title: words,
+    }, d.h('b', { 'aria-hidden': 'true' }, d.h('span', { class: 'max-sm:hidden' }, 'L'), lv.slice(1)),
+    d.h('span', { class: 'truncate text-muted max-sm:hidden', 'aria-hidden': 'true' }, state));
+  };
+  return d.h('section', { class: d.cls.cx(d.cls.CARD, 'space-y-3 p-5'), 'aria-labelledby': 'me-map', 'data-me': 'skill-map' },
+    d.h('div', { class: 'flex flex-wrap items-center gap-3' },
+      d.h('h2', { id: 'me-map', class: 'm-0 flex flex-1 items-center gap-2 text-title' }, d.icon('skillMap', 'size-4 text-accent'), m('map.title')),
+      due ? d.h('button', { type: 'button', class: d.cls.cx(d.cls.BTN_GO, 'px-4 py-1.5 text-body-sm'), onclick: () => d.startToday() }, m('map.review', { n: due })) : null),
+    d.h('p', { class: 'm-0 text-body-sm text-muted' }, m('map.intro')),
+    d.h('ul', { class: 'm-0 flex list-none flex-wrap items-center gap-x-4 gap-y-1 p-0 text-caption text-muted', 'aria-hidden': 'true' },
+      ...[0, 1, 2, 3, 4].map((lv) => d.h('li', { class: 'flex items-center gap-1.5' }, dots(lv), m(`lv.${lv}` as MeKey))),
+      d.h('li', { class: 'flex items-center gap-1.5' }, dueChip(), m('map.dueNote'))),
+    d.h('div', { class: 'grid gap-x-6 lg:grid-cols-2' }, ...x.parts.map(part)), // ponytail: 2 columns from 1024; xl 3 columns would add CSS past the 20 KB budget
+    d.h('div', { class: 'space-y-2 border-t border-line pt-3' },
+      d.h('h3', { class: 'm-0 text-caption font-bold tracking-wide text-muted uppercase' }, m('map.engines')),
+      x.engines
+        ? d.h('ul', { class: 'm-0 list-none space-y-2 p-0' }, ...ENGINES.map((e) => d.h('li', { class: 'flex flex-wrap items-center gap-2' },
+          d.h('span', { class: 'flex w-40 items-center gap-2 text-body-sm font-semibold' }, d.icon(ENGINE_ICON[e], 'size-4 shrink-0 text-accent'), engineName(e)),
+          d.h('ol', { class: 'm-0 grid min-w-0 flex-1 list-none grid-cols-5 gap-1 p-0' }, ...LEVELS.map((lv) => cell(e, lv))))))
+        : d.h('p', { class: 'm-0 text-body-sm text-muted', 'aria-live': 'polite' }, m('map.engineLoading'))));
+}
+
+function badgeName(b: Badge, list: Scope[]): { name: string; cond: string; icon: Icons.IconName } {
+  switch (b.kind) {
+    case 'part': return { name: m('badge.part', { n: b.n }), cond: m('badge.partIf', { n: b.n }), icon: 'badgePart' };
+    case 'fast': return { name: m('badge.fast'), cond: m('badge.fastIf'), icon: 'badgeFast' };
+    case 'foundation': return { name: m('badge.foundation'), cond: m('badge.foundationIf', { n: d.SKILLS.length }), icon: 'badgeFoundation' };
+    case 'path': return { name: m('badge.path'), cond: m('badge.pathIf'), icon: 'nosqlPath' };
+    case 'engine': return { name: m('badge.eng', { engine: engineName(b.engine), level: b.level }), cond: m('badge.engIf', { engine: engineName(b.engine), level: b.level }), icon: ENGINE_ICON[b.engine] };
+    case 'domain': {
+      const s = list.find((x) => x.scope === b.domain);
+      const what = s?.what ?? b.domain;
+      return { name: s?.rank ? m('badge.dom', { domain: what, rank: s.rank }) : what, cond: m('badge.domIf', { domain: what }), icon: DOMAIN_ICON[b.domain] ?? 'trophy' };
+    }
+  }
+}
+
+/** The sentence of the last badge pressed (role=status): its condition, held or not. */
+let badgeSay = '';
+function badgesCard(x: Measured, list: Scope[]): HTMLElement {
+  const held = x.badges.filter((b) => b.have);
+  const tile = (b: Badge, pre = ''): HTMLElement => { // pre: the phone's "held" row repeats a tile, ids stay unique
+    const t = badgeName(b, list);
+    const state = b.have ? m('badge.have') : m('badge.not');
+    return d.h('li', {}, d.h('button', {
+      type: 'button', 'aria-describedby': `badge-${pre}${b.id}`, title: `${t.cond} (${state})`, 'data-badge': b.id, 'data-have': String(b.have),
+      class: d.cls.cx('flex h-full w-full flex-col items-center gap-1 rounded-(--r-inset) p-2 text-center text-caption', b.have ? 'bg-accent-soft font-semibold text-ink' : 'text-muted ring-1 ring-line'),
+      onclick: () => { badgeSay = `${t.name}: ${t.cond} (${state})`; d.rerender(); },
+    }, d.icon(t.icon, d.cls.cx('size-6', b.have ? 'text-accent' : 'text-muted')), d.h('span', {}, t.name),
+    d.h('span', { id: `badge-${pre}${b.id}`, class: 'sr-only' }, `${t.cond} (${state})`)));
+  };
+  const grid = (bs: Badge[], pre = ''): HTMLElement => d.h('ul', { class: 'm-0 grid list-none grid-cols-3 gap-2 p-0 sm:grid-cols-6' }, ...bs.map((b) => tile(b, pre)));
+  const group = (key: MeKey, kinds: Badge['kind'][]): HTMLElement => d.h('div', { class: 'space-y-2' },
+    d.h('h3', { class: 'm-0 text-caption font-bold tracking-wide text-muted uppercase' }, m(key)), grid(x.badges.filter((b) => kinds.includes(b.kind))));
+  const groups = [group('badge.sql', ['part', 'fast', 'foundation']), group('badge.engine', ['engine', 'path']), group('badge.domain', ['domain'])];
+  return d.h('section', { class: d.cls.cx(d.cls.CARD, 'space-y-3 p-5'), 'aria-labelledby': 'me-badges', 'data-me': 'badges' },
+    d.h('h2', { id: 'me-badges', class: 'm-0 flex items-center gap-2 text-title' }, d.icon('badgePart', 'size-4 text-accent'), m('badge.title', { k: held.length, n: x.badges.length })),
+    d.h('p', { class: 'm-0 text-body-sm text-muted' }, m('badge.note')),
+    ...(phone() // ux-route-v24 §6.3: on a phone the held ones first, the full list in place behind one button
+      ? [held.length ? grid(held.slice(0, 8), 'held-') : d.h('p', { class: 'm-0 text-body-sm text-muted' }, m('badge.none')),
+        d.h('details', { class: 'space-y-3' }, d.h('summary', { class: d.cls.cx(d.cls.BTN_SECONDARY, 'inline-flex min-h-11 cursor-pointer items-center px-4 text-body-sm') }, m('badge.all', { n: x.badges.length })), ...groups)]
+      : groups),
+    d.h('p', { class: 'm-0 text-body-sm', role: 'status' }, badgeSay),
+    d.h('p', { class: 'm-0 text-caption text-muted' }, m('badge.replaced')));
+}
+
+/** The portfolio's "current skill levels" section: skills at Can do or above, badges held (already worded). */
+function levelsForPortfolio(x: Measured, list: Scope[]): PortfolioLevels {
+  const lang = d.getLang();
+  return {
+    skills: d.SKILLS.flatMap((s) => {
+      const l = x.levels.get(s.id);
+      return l && l.level >= 2 ? [{ label: s.label[lang], level: m(`lv.${l.level}` as MeKey) }] : [];
+    }),
+    badges: x.badges.filter((b) => b.have).map((b) => badgeName(b, list).name),
+  };
 }
 
 /** The portfolio line being built (one at a time) and the last sentence about it (role=status). */
-let pfBusy: CertScope | undefined;
+let pfBusy: ScopeId | undefined;
 let pfMsg = '';
 function pfSay(msg: string): void {
   pfMsg = msg;
@@ -311,7 +356,7 @@ function pfSay(msg: string): void {
  * cards that ran on this device, are not marked slow and read no imported data are run again for a picture (imported SQL
  * never runs by itself, review-log Plan 5); the others keep their SQL only.
  */
-async function savePortfolio(s: Scope & { scope: DomainId }, entries: PortfolioEntry[]): Promise<void> {
+async function savePortfolio(s: Scope & { scope: DomainId }, entries: PortfolioEntry[], levels: PortfolioLevels): Promise<void> {
   const dom = s.scope;
   const lang = d.getLang();
   pfBusy = dom;
@@ -326,7 +371,7 @@ async function savePortfolio(s: Scope & { scope: DomainId }, entries: PortfolioE
     });
     const at = new Date();
     const md = portfolioMd({
-      lang, scope: dom, what: s.what, name: readName(), date: at.toLocaleDateString(d.locale()), entries, cards, imported, pics: new Set(pics.keys()),
+      lang, scope: dom, what: s.what, name: readName(), date: at.toLocaleDateString(d.locale()), entries, cards, imported, pics: new Set(pics.keys()), levels,
     });
     download(`boondata-${dom}-portfolio.zip`, pp.portfolioZip(md, pics, at));
     pfBusy = undefined;
@@ -367,7 +412,7 @@ async function saveTakeHomes(): Promise<void> {
   }
 }
 
-function portfolioCard(list: Scope[]): HTMLElement {
+function portfolioCard(list: Scope[], x: Measured, waiting: boolean): HTMLElement {
   const lang = d.getLang();
   const go = (label: string, onclick: () => void, busy: boolean): HTMLElement =>
     d.h('button', { type: 'button', class: d.cls.cx(d.cls.BTN_GO, 'flex items-center gap-1.5 px-4 py-1.5 text-body-sm'), onclick, disabled: !!pfBusy, 'aria-busy': busy ? 'true' : false },
@@ -381,15 +426,25 @@ function portfolioCard(list: Scope[]): HTMLElement {
         : d.h('li', { class: 'flex items-start gap-2 text-body-sm text-muted' }, d.icon('lock', 'mt-0.5 size-4 shrink-0'), // v21 U17: the icon stays beside its sentence
           d.h('span', {}, m('pf.th.none'), ' ', d.h('a', { href: `${d.hashOf('learn')}/interview` }, m('pf.th.go'))));
     }
-    if (!s.open) return d.h('li', { class: 'flex items-start gap-2 text-body-sm text-muted' }, d.icon('lock', 'mt-0.5 size-4 shrink-0'), d.h('span', {}, m('pf.locked', { domain: s.what })));
+    // v24 (L323): opens with one graded task of the domain, no final review needed
     const entries = portfolioEntries(s.tickets, d.app.save, (tk) => d.textOf(tk, lang));
+    if (!entries.length) return d.h('li', { class: 'flex items-start gap-2 text-body-sm text-muted' }, d.icon('lock', 'mt-0.5 size-4 shrink-0'), d.h('span', {}, m('pf.locked', { domain: s.what })));
     const dom = { ...s, scope: s.scope };
     return d.h('li', { class: 'flex flex-wrap items-center gap-3' },
-      go(m('pf.download', { domain: s.what }), () => void savePortfolio(dom, entries), pfBusy === s.scope),
+      go(m('pf.download', { domain: s.what }), () => void savePortfolio(dom, entries, levelsForPortfolio(x, list)), pfBusy === s.scope),
       d.h('span', { class: 'text-body-sm text-muted' }, m('pf.count', { n: entries.length })));
   };
+  const name = d.h('input', {
+    id: 'me-name', type: 'text', maxlength: '60', autocomplete: 'name', value: readName(),
+    class: 'w-full max-w-sm rounded-(--r-ctl) border border-line bg-panel px-3 py-2 text-body text-ink',
+    oninput: (e: Event) => d.writeJson(NAME_KEY, (e.target as HTMLInputElement).value.slice(0, 60)),
+  });
   return card(title(m('pf.title'), 'book'),
     d.h('p', { class: 'm-0 text-body-sm text-muted' }, m('pf.intro')),
+    d.h('div', { class: 'space-y-1' },
+      d.h('label', { for: 'me-name', class: 'block text-body-sm font-semibold' }, m('pf.name')), name,
+      d.h('p', { class: 'm-0 text-caption text-muted' }, m('pf.nameNote'))),
+    waiting ? d.h('p', { class: 'm-0 text-body-sm text-muted', 'aria-live': 'polite' }, m('loadingDomains')) : null,
     d.h('ul', { class: 'm-0 list-none space-y-2 p-0' }, ...list.map(item).filter((x): x is HTMLElement => !!x)),
     d.h('p', { class: 'm-0 text-body-sm', role: 'status' }, pfMsg));
 }
@@ -399,13 +454,15 @@ export function mePage(): HTMLElement {
   const list = scopes();
   const waiting = d.DOMAINS.some((x) => ticketsOf(x.id) === undefined);
   const all = list.flatMap((s) => s.tickets);
+  const x = measure(list);
   return d.h('div', { class: 'space-y-6' },
     statsCard(),
     nextCard(all),
     skillsCard(all),
     d.h('div', { class: 'grid gap-6 md:grid-cols-2' }, errorsCard(), daysCard()),
-    certCard(list, waiting),
-    portfolioCard(list),
+    skillMapCard(x),
+    badgesCard(x, list),
+    portfolioCard(list, x, waiting),
     d.h('p', { class: 'm-0 text-caption text-muted' }, m('data.note')));
 }
 
