@@ -204,8 +204,8 @@ const phone = (): boolean => typeof matchMedia === 'function' && !matchMedia('(m
 
 /** Four dots, filled vs ring (shape, not colour alone); the words are in the row's label. */
 const dots = (level: number): HTMLElement => d.h('span', { class: 'flex shrink-0 gap-1', 'aria-hidden': 'true' },
-  ...[1, 2, 3, 4].map((i) => d.h('span', { class: i <= level ? 'block size-2.5 rounded-full bg-accent' : 'block size-2.5 rounded-full ring-1 ring-line-strong ring-inset' })));
-const dueChip = (): HTMLElement => d.h('span', { class: 'inline-flex shrink-0 items-center gap-1 rounded-(--r-chip) bg-warn-soft px-2 text-caption font-semibold text-ink normal-case tracking-normal' },
+  ...[1, 2, 3, 4].map((i) => d.h('span', { class: i <= level ? 'block size-2.5 rounded-full bg-accent' : 'block size-2.5 rounded-full ring-1 ring-line-strong' })));
+const dueChip = (): HTMLElement => d.h('span', { class: 'inline-flex shrink-0 items-center gap-1 rounded-(--r-chip) bg-warn-soft px-2 text-caption font-semibold text-ink' },
   d.icon('clockAlert', 'size-3.5'), m('map.due'));
 
 interface Measured { levels: Map<string, SkillLevel>; parts: { n: number; skills: string[] }[]; engines?: Record<string, Mastery.EngineLevel[]>; badges: Badge[] }
@@ -242,17 +242,17 @@ function skillMapCard(x: Measured): HTMLElement {
     const s = x.levels.get(id)!;
     const label = d.SKILLS.find((k) => k.id === id)?.label[lang] ?? id;
     const words = m(s.review ? 'map.dueAria' : 'map.aria', { skill: label, level: m(`lv.${s.level}` as MeKey), n: s.level });
-    return d.h('li', { class: 'flex min-h-8 items-center gap-2 max-sm:min-h-11', 'data-skill': id, 'data-level': String(s.level) },
-      d.skillIcon(id, 'size-[18px] shrink-0 text-accent'),
+    return d.h('li', { class: 'flex min-h-9 items-center gap-2', 'data-skill': id, 'data-level': String(s.level) },
+      d.skillIcon(id, 'size-4 shrink-0 text-accent'),
       d.h('a', { href: `${d.hashOf('learn')}/skill/${id}`, class: d.cls.cx('min-w-0 flex-1 truncate text-body-sm', s.level ? 'font-semibold' : 'text-muted'), 'aria-label': words, title: words }, label),
       s.review ? dueChip() : null, dots(s.level));
   };
   const part = (p: { n: number; skills: string[] }): HTMLElement => {
     const k = p.skills.filter((id) => (x.levels.get(id)?.level ?? 0) >= 2).length;
-    return d.h('details', { class: 'mb-3 break-inside-avoid', open: !phone() },
-      d.h('summary', { class: 'flex min-h-8 cursor-pointer items-center gap-2 text-caption font-bold tracking-wide text-muted uppercase max-sm:min-h-11' },
+    return d.h('details', { class: 'mb-3', open: !phone() },
+      d.h('summary', { class: 'flex min-h-9 cursor-pointer items-center gap-2 text-caption font-bold text-muted' },
         d.h('span', { class: 'flex-1' }, m('map.part', { n: p.n, title: d.moduleTitle(p.n, lang) })),
-        p.skills.some((id) => x.levels.get(id)?.review) ? dueChip() : d.h('span', { class: 'font-normal tracking-normal normal-case tabular-nums' }, m('map.partSum', { k, n: p.skills.length }))),
+        p.skills.some((id) => x.levels.get(id)?.review) ? dueChip() : d.h('span', { class: 'font-normal tabular-nums' }, m('map.partSum', { k, n: p.skills.length }))),
       d.h('ul', { class: 'm-0 list-none p-0' }, ...p.skills.map(row)));
   };
   const cell = (e: string, lv: string): HTMLElement => {
@@ -260,8 +260,8 @@ function skillMapCard(x: Measured): HTMLElement {
     const state = !l?.n ? m('eng.empty') : l.done ? m('eng.done') : l.started ? m('eng.doing', { k: l.k, n: l.n }) : m('eng.none');
     const words = m('eng.cell', { engine: engineName(e), level: lv, state });
     return d.h('li', {
-      class: d.cls.cx('flex min-w-0 items-center gap-1 rounded-(--r-inset) px-2 py-1 text-caption max-sm:size-[22px] max-sm:justify-center max-sm:p-0',
-        l?.done ? 'bg-good-soft ring-1 ring-good ring-inset' : l?.started ? 'bg-accent-soft' : 'bg-surface-2'),
+      class: d.cls.cx('flex min-w-0 items-center gap-1 rounded-(--r-inset) px-2 py-1 text-caption max-sm:justify-center',
+        l?.done ? 'bg-good-soft ring-1 ring-good' : l?.started ? 'bg-accent-soft' : 'bg-surface-2'),
       'aria-label': words, title: words,
     }, d.h('b', { 'aria-hidden': 'true' }, d.h('span', { class: 'max-sm:hidden' }, 'L'), lv.slice(1)),
     d.h('span', { class: 'truncate text-muted max-sm:hidden', 'aria-hidden': 'true' }, state));
@@ -274,13 +274,13 @@ function skillMapCard(x: Measured): HTMLElement {
     d.h('ul', { class: 'm-0 flex list-none flex-wrap items-center gap-x-4 gap-y-1 p-0 text-caption text-muted', 'aria-hidden': 'true' },
       ...[0, 1, 2, 3, 4].map((lv) => d.h('li', { class: 'flex items-center gap-1.5' }, dots(lv), m(`lv.${lv}` as MeKey))),
       d.h('li', { class: 'flex items-center gap-1.5' }, dueChip(), m('map.dueNote'))),
-    d.h('div', { class: 'lg:columns-2 lg:gap-6 xl:columns-3' }, ...x.parts.map(part)),
+    d.h('div', { class: 'grid gap-x-6 lg:grid-cols-2' }, ...x.parts.map(part)), // ponytail: 2 columns from 1024; xl 3 columns would add CSS past the 20 KB budget
     d.h('div', { class: 'space-y-2 border-t border-line pt-3' },
       d.h('h3', { class: 'm-0 text-caption font-bold tracking-wide text-muted uppercase' }, m('map.engines')),
       x.engines
         ? d.h('ul', { class: 'm-0 list-none space-y-2 p-0' }, ...ENGINES.map((e) => d.h('li', { class: 'flex flex-wrap items-center gap-2' },
           d.h('span', { class: 'flex w-40 items-center gap-2 text-body-sm font-semibold' }, d.icon(ENGINE_ICON[e], 'size-4 shrink-0 text-accent'), engineName(e)),
-          d.h('ol', { class: 'm-0 grid min-w-0 flex-1 list-none grid-cols-5 gap-1 p-0 max-sm:flex max-sm:flex-none' }, ...LEVELS.map((lv) => cell(e, lv))))))
+          d.h('ol', { class: 'm-0 grid min-w-0 flex-1 list-none grid-cols-5 gap-1 p-0' }, ...LEVELS.map((lv) => cell(e, lv))))))
         : d.h('p', { class: 'm-0 text-body-sm text-muted', 'aria-live': 'polite' }, m('map.engineLoading'))));
 }
 
@@ -308,12 +308,12 @@ function badgesCard(x: Measured, list: Scope[]): HTMLElement {
     const state = b.have ? m('badge.have') : m('badge.not');
     return d.h('li', {}, d.h('button', {
       type: 'button', 'aria-describedby': `badge-${pre}${b.id}`, title: `${t.cond} (${state})`, 'data-badge': b.id, 'data-have': String(b.have),
-      class: d.cls.cx('flex h-full min-h-20 w-full flex-col items-center gap-1 rounded-(--r-inset) p-2 text-center text-caption', b.have ? 'bg-accent-soft font-semibold text-ink' : 'text-muted ring-1 ring-line ring-inset'),
+      class: d.cls.cx('flex h-full w-full flex-col items-center gap-1 rounded-(--r-inset) p-2 text-center text-caption', b.have ? 'bg-accent-soft font-semibold text-ink' : 'text-muted ring-1 ring-line'),
       onclick: () => { badgeSay = `${t.name}: ${t.cond} (${state})`; d.rerender(); },
     }, d.icon(t.icon, d.cls.cx('size-6', b.have ? 'text-accent' : 'text-muted')), d.h('span', {}, t.name),
     d.h('span', { id: `badge-${pre}${b.id}`, class: 'sr-only' }, `${t.cond} (${state})`)));
   };
-  const grid = (bs: Badge[], pre = ''): HTMLElement => d.h('ul', { class: 'm-0 grid list-none grid-cols-4 gap-2 p-0 sm:grid-cols-[repeat(auto-fill,minmax(5rem,1fr))]' }, ...bs.map((b) => tile(b, pre)));
+  const grid = (bs: Badge[], pre = ''): HTMLElement => d.h('ul', { class: 'm-0 grid list-none grid-cols-3 gap-2 p-0 sm:grid-cols-6' }, ...bs.map((b) => tile(b, pre)));
   const group = (key: MeKey, kinds: Badge['kind'][]): HTMLElement => d.h('div', { class: 'space-y-2' },
     d.h('h3', { class: 'm-0 text-caption font-bold tracking-wide text-muted uppercase' }, m(key)), grid(x.badges.filter((b) => kinds.includes(b.kind))));
   const groups = [group('badge.sql', ['part', 'fast', 'foundation']), group('badge.engine', ['engine', 'path']), group('badge.domain', ['domain'])];

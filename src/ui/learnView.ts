@@ -92,7 +92,7 @@ let levels = new Map<string, SkillLevel>();
 function levelDots(id: string): HTMLElement {
   const l = levels.get(id)?.level ?? 0;
   return d$.h('span', { class: 'inline-flex shrink-0 gap-1', role: 'img', 'aria-label': lt('lv.aria', { level: lt(`lv.${l}` as LearnKey), n: l }), 'data-level': String(l) },
-    ...[1, 2, 3, 4].map((i) => d$.h('span', { class: i <= l ? 'block size-2.5 rounded-full bg-accent' : 'block size-2.5 rounded-full ring-1 ring-line-strong ring-inset' })));
+    ...[1, 2, 3, 4].map((i) => d$.h('span', { class: i <= l ? 'block size-2.5 rounded-full bg-accent' : 'block size-2.5 rounded-full ring-1 ring-line-strong' })));
 }
 const dueChip = (): HTMLElement => d$.h('span', { class: 'inline-flex shrink-0 items-center gap-1 rounded-(--r-chip) bg-warn-soft px-2 text-caption font-semibold text-ink' },
   d$.icon('clockAlert', 'size-3.5'), lt('lv.due'));
@@ -103,7 +103,7 @@ function levelLine(id: string): HTMLElement {
   const s = levels.get(id);
   const l = s?.level ?? 0;
   const due = s?.card && !s.review ? lt('lv.dueOn', { date: new Date(`${s.card.due}T00:00:00`).toLocaleDateString(d$.locale()) }) : '';
-  return h('p', { class: 'm-0 flex min-h-10 flex-wrap items-center gap-x-3 gap-y-1 rounded-(--r-inset) bg-surface-2 px-3 py-1.5 text-body-sm', 'data-level-line': id },
+  return h('p', { class: 'm-0 flex min-h-9 flex-wrap items-center gap-x-3 gap-y-1 rounded-(--r-inset) bg-surface-2 px-3 py-1.5 text-body-sm', 'data-level-line': id },
     levelDots(id),
     h('b', {}, [lt('lv.line', { level: lt(`lv.${l}` as LearnKey) }), due].filter(Boolean).join(' · ')),
     s?.review ? dueChip() : null,
