@@ -1,7 +1,7 @@
 import { grade } from '../grader';
 import { slowVerdict } from '../planCheck';
 import { getLang, locale, t } from '../i18n';
-import { engineHash, enginePathHash, enginePathOf, enginePlayOf, engineRouteOf, hashOf } from '../route';
+import { engineHash, engineInterviewHash, engineInterviewOf, enginePathHash, enginePathOf, enginePlayOf, engineRouteOf, engineTermsHash, engineTermsOf, hashOf } from '../route';
 import { SKILLS } from '../progress';
 import { actions, app, persist } from '../state';
 import { BTN_GHOST, BTN_GO, BTN_SECONDARY, CARD, cx, DONE_PILL, isDark, PILL } from '../theme';
@@ -41,7 +41,7 @@ function engineChunk(): Promise<EngineView> {
     .then(([m, src, b, bs, bm, bd]) => {
       const deps: Parameters<EngineView['initEngine']>[0] = {
         h, icon, t, getLang, locale, app, persist, announce, loader, reducedMotion, isDark, renderResult, errorView, optionOrder,
-        engineHash, engineRouteOf, enginePathOf, enginePathHash, hashOf, rerender: () => actions.rerender(), cls: { CARD, BTN_GO, BTN_SECONDARY, BTN_GHOST, PILL, DONE_PILL, cx },
+        engineHash, engineRouteOf, enginePathOf, enginePathHash, hashOf, engineTermsOf, engineTermsHash, engineInterviewOf, engineInterviewHash, rerender: () => actions.rerender(), cls: { CARD, BTN_GO, BTN_SECONDARY, BTN_GHOST, PILL, DONE_PILL, cx },
         ui: { listRow, LIST, GROUP_TITLE, ABOVE }, createEditor,
         lab: { sql: (text) => runOn('lab', text), grade: (run, solution, player, ordered) => grade(run, solution, player, ordered), verdict: verdictText, lang: getLang, slow: slowVerdict },
         viz: { h, s, reducedMotion, loadedGsap, loadGsap, getLang },
