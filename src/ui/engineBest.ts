@@ -1,6 +1,6 @@
 import { BP_TIPS_KEY, parseBpTips, type BpPref } from '../bpPref';
 import {
-  bestHash, bestRouteOf, BP_SECTIONS, explainOf, judge, needsPlan, parseBestCard, parseHabits, parseTracks, planScan, sideOf, sideScript,
+  bestHash, bestRouteOf, BP_SECTIONS, byName, explainOf, judge, needsPlan, parseBestCard, parseHabits, parseTracks, planScan, sideOf, sideScript,
   type BpCard, type BpMeta, type CardSource, type Habits, type Pair, type Side, type Track, type TrackId, type Verdict,
 } from '../engine/best';
 import type { Question } from '../engine/content';
@@ -309,7 +309,9 @@ const lab = (): Promise<PgLabClient> => (client ??= import('../engine/pglab/clie
 const one = (s: string): string[] => [s.trim().replace(/;\s*$/, '')];
 const failSide = (e: unknown): Side => {
   const x = e as { name?: string; code?: unknown; message?: string };
-  return { columns: [], rows: [], error: /Timeout/.test(x?.name ?? '') ? { message: bt('run.slow') } : { code: typeof x?.code === 'string' ? x.code : undefined, message: x?.message || String(e) } };
+  // A DynamoDB error names its exception in `type` (v26): that is the card's `expect.code`.
+  const code = typeof x?.code === 'string' ? x.code : typeof (x as { type?: unknown })?.type === 'string' ? (x as { type: string }).type : undefined;
+  return { columns: [], rows: [], error: /Timeout/.test(x?.name ?? '') ? { message: bt('run.slow') } : { code, message: x?.message || String(e) } };
 };
 async function labSide(p: Pair, sql: string): Promise<Side> {
   try {
@@ -337,13 +339,24 @@ async function mingoSide(p: Pair, code: string): Promise<Side> {
     return failSide(e);
   }
 }
+let dynamo: Promise<import('../engine/labs').LabRunner> | undefined;
+/** v26 (L383): a `dynoxide` card side runs on the DynamoDB lab runner (its own worker, the card's `setup`); `cap` = the measured capacity. */
+async function dynamoSide(p: Pair, code: string): Promise<Side> {
+  try {
+    const r = await (dynamo ??= import('../engine/dynamo/runner').then((m) => m.dynamoRunner(d.lab)).catch((e: unknown) => { dynamo = undefined; throw e; }));
+    const out = await r.run({ setup: p.setup, steps: [] }, code.trim());
+    return { ...byName(out.columns, out.rows), ...(out.meta?.consumedCapacity !== undefined ? { cap: out.meta.consumedCapacity } : {}) };
+  } catch (e) {
+    return failSide(e);
+  }
+}
 async function runBoth(c: BpCard): Promise<void> {
   const v = visitOf(c.id);
   if (v.run === 'busy') return;
   v.run = 'busy';
   d.rerender();
   try {
-    const side = c.pair.runtime === 'lab' ? labSide : c.pair.runtime === 'mingo' ? mingoSide : engineSide;
+    const side = c.pair.runtime === 'lab' ? labSide : c.pair.runtime === 'mingo' ? mingoSide : c.pair.runtime === 'dynoxide' ? dynamoSide : engineSide;
     const bad = await side(c.pair, c.pair.bad); // one after the other, in the existing queue (§3.2)
     const good = await side(c.pair, c.pair.good);
     v.run = { bad, good, v: judge(c.pair, bad, good) };
@@ -364,6 +377,7 @@ function conclusion(c: BpCard, bad: Side, good: Side, v: Verdict): string {
     case 'plan': return bt('v.plan', { table: c.pair.expect?.table ?? '', bad: String(v.bad), good: String(v.good) });
     case 'cost': return bt('v.cost', { bad: num(v.bad), good: num(v.good) });
     case 'size': return bt('v.size', { bad: num(v.bad), good: num(v.good) });
+    case 'cap': return bt('v.cap', { bad: num(v.bad), good: num(v.good), unit: c.pair.expect?.compare === 'wcu' ? 'WCU' : 'RCU' });
     case 'error': return bt(v.side === 'bad' ? 'v.errorBad' : 'v.errorGood', { code: v.code ?? '' });
     default: return bt('v.runs');
   }
@@ -380,7 +394,8 @@ function measure(c: BpCard, s: Side, which: 'bad' | 'good', sql: string): HTMLEl
     h('p', { class: 'm-0 flex flex-wrap items-baseline gap-x-3 text-body-sm' },
       one1 ? h('span', { class: 'text-heading font-bold tabular-nums' }, size ? bt('bytes', { n: Number(s.rows[0][0]) }) : num(typeof s.rows[0][0] === 'number' ? s.rows[0][0] : String(s.rows[0][0]))) : null,
       h('span', { class: 'text-muted' }, bt('rows', { n: s.rows.length })),
-      s.node ? h('span', { class: 'font-semibold', lang: 'en' }, bt('scan', { node: s.node, cost: num(s.cost) })) : null),
+      s.node ? h('span', { class: 'font-semibold', lang: 'en' }, bt('scan', { node: s.node, cost: num(s.cost) })) : null,
+      s.cap !== undefined ? h('span', { class: 'font-semibold' }, bt('cap', { n: num(s.cap) })) : null),
     !one1 && s.rows.length ? h('div', { class: 'overflow-x-auto', tabindex: '0' },
       d.renderResult({ columns: s.columns, rows: s.rows.slice(0, 3), types: [] } as unknown as QueryResult, undefined, 3, bt('firstRows', { side: bt(which) }), { types: false })) : null);
 }
@@ -441,7 +456,7 @@ function cardPage(c: BpCard): HTMLElement {
         : h('div', { class: 'flex flex-wrap items-center gap-3' },
           h('button', { type: 'button', class: cls.cx(cls.BTN_SECONDARY, 'inline-flex items-center gap-2 px-5 py-2'), 'data-ek': 'bp-run', disabled: v.run === 'busy', onclick: () => void runBoth(c) },
             v.run === 'busy' ? d.loader() : d.icon('kindLab', 'size-4'), bt(v.run === 'busy' ? 'running' : 'runBoth')),
-          h('span', { class: 'text-caption text-muted' }, bt(p.runtime === 'lab' ? 'run.lab' : p.runtime === 'mingo' ? 'run.mingo' : 'run.engine'), v.run === 'busy' ? ` · ${bt('run.first')}` : '')),
+          h('span', { class: 'text-caption text-muted' }, bt(p.runtime === 'lab' ? 'run.lab' : p.runtime === 'mingo' ? 'run.mingo' : p.runtime === 'dynoxide' ? 'run.dynoxide' : 'run.engine'), v.run === 'busy' ? ` · ${bt('run.first')}` : '')),
       h('p', {
         role: 'status', 'data-verdict': res ? (res.v.ok ? res.v.kind : 'odd') : false,
         class: cls.cx('m-0 rounded-(--r-inset) text-body-sm text-ink', res && 'px-4 py-3 font-semibold', res && (!res.v.ok || res.v.kind === 'diff' || res.v.kind === 'error' ? 'bg-warn-soft' : 'bg-good-soft')),

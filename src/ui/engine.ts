@@ -37,8 +37,8 @@ let best: BestView | undefined;
 const isBest = (): boolean => /^#\/?engine\/best(?=$|[/?])/.test(location.hash); // = src/engine/best.ts bestRouteOf(hash) !== undefined
 
 function engineChunk(): Promise<EngineView> {
-  pending ??= Promise.all([import('./engineView'), import('../engineSources'), import('./engineBest'), import('../bestSources'), import('../bestMongoIndex')])
-    .then(([m, src, b, bs, bm]) => {
+  pending ??= Promise.all([import('./engineView'), import('../engineSources'), import('./engineBest'), import('../bestSources'), import('../bestMongoIndex'), import('../bestDynamoIndex')])
+    .then(([m, src, b, bs, bm, bd]) => {
       const deps: Parameters<EngineView['initEngine']>[0] = {
         h, icon, t, getLang, locale, app, persist, announce, loader, reducedMotion, isDark, renderResult, errorView, optionOrder,
         engineHash, engineRouteOf, enginePathOf, enginePathHash, hashOf, rerender: () => actions.rerender(), cls: { CARD, BTN_GO, BTN_SECONDARY, BTN_GHOST, PILL, DONE_PILL, cx },
@@ -50,7 +50,7 @@ function engineChunk(): Promise<EngineView> {
         best: (e) => b.entry(e),
       };
       m.initEngine(deps, src);
-      b.initBest(deps, { ...bs, meta: { ...bs.meta, ...bm.meta } }, src.meta, { skill: (id) => SKILLS.find((x) => x.id === id)?.label, sourceTitle: m.sourceTitle });
+      b.initBest(deps, { ...bs, meta: { ...bs.meta, ...bm.meta, ...bd.meta } }, src.meta, { skill: (id) => SKILLS.find((x) => x.id === id)?.label, sourceTitle: m.sourceTitle });
       best = b;
       failed = false;
       return (view = m);

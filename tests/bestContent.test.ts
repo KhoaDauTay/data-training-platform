@@ -2,12 +2,12 @@
 // DynamoDB tracks too); every released card's pair runs on real PGlite and shows what its `check` claims, through the same
 // judge() the page uses. `lab` pairs run on the seeded `lab` schema in BEGIN … ROLLBACK; `engine`/`engine-hb` pairs run each
 // side as its own script on a fresh database (runLabScript), so P05 (CREATE INDEX CONCURRENTLY) and S04 (inserts) start clean.
-import { describe, expect, it } from 'vitest';
+import { beforeAll, describe, expect, it, vi } from 'vitest';
 import { parse as yaml } from 'yaml';
 import { generalNow } from '../src/content';
 import { SKILLS } from '../src/progress';
 import {
-  cardProblems, explainOf, judge, needsPlan, parseBestCard, parseHabits, parseTracks, planScan, RELEASED, sideOf, sideScript,
+  byName, cardProblems, explainOf, judge, needsPlan, parseBestCard, parseHabits, parseTracks, planScan, RELEASED, sideOf, sideScript,
   type BpCard, type Pair, type Side,
 } from '../src/engine/best';
 import { codeOf } from '../src/engine/content';
@@ -17,8 +17,12 @@ import { sqlErrorInfo } from '../src/db/run';
 import { labRun } from './generalRules';
 import * as sources from '../src/bestSources';
 import * as mongoIndex from '../src/bestMongoIndex';
+import * as dynamoIndex from '../src/bestDynamoIndex';
 import { loadDataset, runMongo } from '../src/engine/mongo/engineMongo';
 import { mongoRunner } from '../src/engine/mongo/runner';
+import { DynamoEngine } from '../src/engine/dynamo/engine';
+import { dynamoRunner, labOf } from '../src/engine/dynamo/runner';
+import type { DynamoRequest } from '../src/engine/dynamo/types';
 
 const raw = import.meta.glob<string>('../content/engine/best/*/*.md', { query: '?raw', import: 'default', eager: true });
 const lessonIds = new Set(Object.values(import.meta.glob<string>('../content/engine/*/L*/*.md', { query: '?raw', import: 'default', eager: true }))
@@ -32,12 +36,13 @@ const released = cards.filter((c) => RELEASED.includes(c.track));
 const DIACRITIC = /[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ]/i;
 
 describe('thẻ Best Practice: cấu trúc (130 thẻ, cả track chưa phát hành)', () => {
-  it('130 thẻ, id duy nhất; phát hành đúng 98 (SQL 30 + PostgreSQL 30 + MongoDB 38, v25 L374)', () => {
+  it('130 thẻ, id duy nhất; phát hành cả 130 (SQL 30 + PostgreSQL 30 + MongoDB 38 + DynamoDB 32, v26 L383)', () => {
     expect(cards).toHaveLength(130);
     expect(new Set(cards.map((c) => c.id)).size).toBe(130);
     expect(released.filter((c) => c.track === 'sql')).toHaveLength(30);
     expect(released.filter((c) => c.track === 'postgres')).toHaveLength(30);
     expect(released.filter((c) => c.track === 'mongodb')).toHaveLength(38);
+    expect(released.filter((c) => c.track === 'dynamodb')).toHaveLength(32);
   });
 
   it.each(cards.map((c) => [c.id, c]))('%s: luật nội dung §4.3', (_id, c) => {
@@ -53,13 +58,13 @@ describe('thẻ Best Practice: cấu trúc (130 thẻ, cả track chưa phát h�
     const all = parseTracks(yaml(sourcesTracks()), true);
     for (const c of cards) expect([c.id, all.find((t) => t.id === c.track)?.areas.includes(c.module)]).toEqual([c.id, true]);
     const shown = parseTracks(sources.tracks);
-    expect(shown.map((t) => t.id)).toEqual(['sql', 'postgres', 'mongodb']);
+    expect(shown.map((t) => t.id)).toEqual(['sql', 'postgres', 'mongodb', 'dynamodb']);
     const ids = new Set(released.map((c) => c.id));
     for (const t of shown) for (const g of t.gallery) expect([t.id, g, ids.has(g)]).toEqual([t.id, g, true]);
     expect(shown[0].gallery.length).toBeGreaterThanOrEqual(8);
   });
 
-  it('index (bpindex + bpindexMg) chỉ chứa thẻ đã phát hành; thẻ DynamoDB không vào bundle', () => {
+  it('index (bpindex + bpindexMg + bpindexDy) chỉ chứa thẻ đã phát hành, mỗi track một chunk', () => {
     const paths = Object.keys(sources.meta);
     expect(paths).toHaveLength(60);
     expect(paths.every((p) => /\/best\/(sql|postgres)\//.test(p))).toBe(true);
@@ -67,8 +72,11 @@ describe('thẻ Best Practice: cấu trúc (130 thẻ, cả track chưa phát h�
     expect(mg).toHaveLength(38);
     expect(mg.every((p) => /\/best\/mongodb\//.test(p))).toBe(true);
     expect(typeof sources.full.mongodb).toBe('function');
-    expect(sources.full.dynamodb).toBeUndefined();
-    for (const [p, s] of Object.entries({ ...sources.meta, ...mongoIndex.meta })) expect(parseBestCard(s, p)).toEqual(expect.objectContaining({ id: expect.stringMatching(/^e-bp-[qasipxm]\d\d$/) }));
+    const dy = Object.keys(dynamoIndex.meta);
+    expect(dy).toHaveLength(32);
+    expect(dy.every((p) => /\/best\/dynamodb\//.test(p))).toBe(true);
+    expect(typeof sources.full.dynamodb).toBe('function');
+    for (const [p, s] of Object.entries({ ...sources.meta, ...mongoIndex.meta, ...dynamoIndex.meta })) expect(parseBestCard(s, p)).toEqual(expect.objectContaining({ id: expect.stringMatching(/^e-bp-[qasipxmd]\d\d$/) }));
   });
 
   it('habits.yml: 8 thói quen, mã VI = EN, EN không dấu, mỗi thói quen có ≥ 1 thẻ đã phát hành', () => {
@@ -112,8 +120,8 @@ async function labSide(p: Pair, sql: string): Promise<Side> {
   }
 }
 
-describe('thẻ Best Practice: cặp Không nên / Nên chạy thật (98 thẻ phát hành)', () => {
-  const runnable = released.filter((c) => c.pair.runtime !== 'none' && c.pair.runtime !== 'mingo');
+describe('thẻ Best Practice: cặp Không nên / Nên chạy thật (130 thẻ phát hành)', () => {
+  const runnable = released.filter((c) => c.pair.runtime !== 'none' && c.pair.runtime !== 'mingo' && c.pair.runtime !== 'dynoxide');
   it('mỗi thẻ "none" là check syntax; mọi thẻ chạy được là một câu mỗi bên (trang không có splitSql, nó nằm cạnh PGlite)', () => {
     for (const c of released) if (c.pair.runtime === 'none') expect([c.id, c.pair.check]).toEqual([c.id, 'syntax']);
     for (const c of released) {
@@ -195,4 +203,44 @@ describe('thẻ Best Practice MongoDB: cặp chạy thật trên mingo', () => {
     const [bad, good] = [await side(p, p.bad), await side(p, p.good)];
     expect([c.id, judge(p, bad, good)]).toEqual([c.id, expect.objectContaining({ ok: true })]);
   });
+});
+
+// v26 BP-DY (L383): the DynamoDB track's `dynoxide` pairs run through the runner the card page uses (dynamoRunner.run on the
+// card's `setup`), on the real dynoxide wasm in Node; capacity is the engine's ConsumedCapacity, errors carry the exception name.
+const node = (globalThis as unknown as { process: { getBuiltinModule(id: string): unknown } }).process;
+const { readFile } = node.getBuiltinModule('fs/promises') as { readFile(p: string): Promise<Uint8Array<ArrayBuffer>> };
+const { fileURLToPath } = node.getBuiltinModule('url') as { fileURLToPath(u: string): string };
+describe('thẻ Best Practice DynamoDB: cặp chạy thật trên dynoxide', () => {
+  let eng: DynamoEngine;
+  beforeAll(async () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    (globalThis as Record<string, unknown>).self ??= globalThis;
+    const realFetch = globalThis.fetch;
+    globalThis.fetch = async (input, init) => {
+      const url = input instanceof Request ? input.url : String(input);
+      if (!url.startsWith('file:')) return realFetch(input, init);
+      return new Response(await readFile(fileURLToPath(url)), { headers: { 'content-type': 'application/wasm' } });
+    };
+    eng = await DynamoEngine.open(() => import('@dynoxide/wasm-engine/worker'));
+  }, 60_000);
+  const client = { request: async (req: DynamoRequest, o: { dataset: string; after?: DynamoRequest }) => { await eng.setup(o.dataset, labOf(o.dataset)); return eng.run(req, o.after); } };
+  const side = async (p: Pair, code: string): Promise<Side> => {
+    try {
+      const out = await dynamoRunner({ lang: () => 'en' }, client as never).run({ setup: p.setup, steps: [] }, code.trim());
+      return { ...byName(out.columns, out.rows), ...(out.meta?.consumedCapacity !== undefined ? { cap: out.meta.consumedCapacity } : {}) };
+    } catch (e) {
+      const x = e as { type?: unknown; message?: string };
+      return { columns: [], rows: [], error: { code: typeof x.type === 'string' ? x.type : undefined, message: x.message ?? String(e) } };
+    }
+  };
+  const dy = released.filter((c) => c.pair.runtime === 'dynoxide');
+  it('19 thẻ dynoxide, mọi thẻ DynamoDB khác là cú pháp', () => {
+    expect(dy).toHaveLength(19);
+    for (const c of released.filter((x) => x.track === 'dynamodb' && x.pair.runtime !== 'dynoxide')) expect([c.id, c.pair.runtime, c.pair.check]).toEqual([c.id, 'none', 'syntax']);
+  });
+  it.each(dy.map((c) => [c.id, c]))('%s: check của thẻ đúng trên dynoxide', async (_id, c) => {
+    const p = c.pair;
+    const [bad, good] = [await side(p, p.bad), await side(p, p.good)];
+    expect([c.id, judge(p, bad, good)]).toEqual([c.id, expect.objectContaining({ ok: true })]);
+  }, 60_000);
 });
