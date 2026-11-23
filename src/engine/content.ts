@@ -39,6 +39,8 @@ export interface Fact extends Bi { probe?: string; expect?: unknown[][] }
 export interface LabStep {
   task: Bi; solution: string; check: Check; ordered: boolean; hint: Bi; expect?: Record<string, number>; fact?: Fact; target?: string; name?: Bi; perf?: PerfSpec; slow?: string;
   rule?: 'esr' | 'covered' | 'match-first'; index?: string; error?: string; sql?: string;
+  /** v27 R3: a read run right after the statement on a Postgres setup lab; the step is graded on its rows (GRANT, CALL, TRUNCATE, a write). */
+  after?: string;
 }
 export interface Lab { setup?: string; steps: LabStep[] }
 export interface Question { q: Bi; options: Bi[]; answer: number; why: Bi }
@@ -60,7 +62,14 @@ export type Runtime = (typeof RUNTIMES)[number];
 /** Why a `runtime: docs` lesson does not run here (L305), shown on its page: two sessions at once, a real server, billions of transactions, or a concept whose run is the next lab. */
 export const DOCS_WHY = ['sessions', 'server', 'scale', 'next'] as const;
 export type DocsWhy = (typeof DOCS_WHY)[number];
-export const SECTIONS = { idea: ['Ý chính', 'Key idea'], example: ['Ví dụ', 'Example'], practice: ['Thực hành', 'Practice'] } as const;
+/**
+ * v27 R3 (product-route-v24 §2.2): the eight-section anatomy adds `open` (drawn above the objectives), `syntax`, `pitfalls`
+ * and `recap` (drawn after the questions). Which sections a kind needs: tests/engineAnatomy.test.ts.
+ */
+export const SECTIONS = {
+  open: ['Mở bài', 'Opening'], idea: ['Ý chính', 'Key idea'], syntax: ['Cú pháp', 'Syntax'], example: ['Ví dụ', 'Example'],
+  pitfalls: ['Lỗi hay gặp', 'Common mistakes'], practice: ['Thực hành', 'Practice'], recap: ['Tóm tắt', 'Recap'],
+} as const;
 export type SectionId = keyof typeof SECTIONS;
 export interface Section { id: SectionId; text: Bi }
 
@@ -178,7 +187,7 @@ export function parseEngineLesson(source: string | LessonSource, path: string, y
         ...(s.fact !== undefined ? { fact: fact(s.fact, `lab.steps[${i}].fact`) } : {}),
         ...(s.name !== undefined ? { name: bi(s.name, `lab.steps[${i}].name`) } : {}),
         ...(s.perf !== undefined ? { perf: perfOf(s.perf, s.slow, `lab.steps[${i}]`) } : {}),
-        ...Object.fromEntries(['target', 'slow', 'rule', 'index', 'error', 'sql'].flatMap((k) => (typeof s[k] === 'string' && s[k] ? [[k, s[k].trim()]] : []))),
+        ...Object.fromEntries(['target', 'slow', 'rule', 'index', 'error', 'sql', 'after'].flatMap((k) => (typeof s[k] === 'string' && s[k] ? [[k, s[k].trim()]] : []))),
       };
     });
     if (!steps.length) fail('lab cần ít nhất một bước');

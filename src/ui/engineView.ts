@@ -1,6 +1,6 @@
 import {
   blocksOf, ENGINES, engineXp, isRight, lessonPassed, parseEngineLesson, parseModules, partsOf, progressOf, SECTIONS, treeOf,
-  type EngineId, type EngineLesson, type Kind, type LessonSource, type Level, type ModuleName, type Question, type Tree,
+  type EngineId, type EngineLesson, type Kind, type LessonSource, type Level, type ModuleName, type Question, type SectionId, type Tree,
 } from '../engine/content';
 import { heapView } from '../engine/inside';
 import { gradable, honestOf, honestRow, LAB_RUNNERS, type Honest, type LabEnv, type LabOutput, type LabRunner, type LabVerdict } from '../engine/labs';
@@ -728,6 +728,10 @@ const kindChip = (k: Kind): HTMLElement => d.h('span', { class: d.cls.cx(d.cls.P
 const cardHead = (id: string, icon: Icons.IconName, text: string): HTMLElement =>
   d.h('h2', { id, class: 'm-0 flex items-center gap-2 text-title font-bold' }, d.icon(icon, 'size-5 text-accent'), text);
 
+/** v27 R3: the body sections a filter keeps, in file order (Opening above the objectives, Recap after the questions). */
+const secs = (l: EngineLesson, keep: (id: SectionId) => boolean): HTMLElement[] => l.sections.filter((s) => keep(s.id)).map((s) => d.h('section', { class: 'flex flex-col gap-3' },
+  d.h('h2', { class: 'm-0 text-title font-bold' }, SECTIONS[s.id][lang() === 'vi' ? 0 : 1]), prose(s.text[lang()])));
+
 function lessonPage(l: EngineLesson): HTMLElement {
   const { h, cls } = d;
   const v = visitOf(l.id);
@@ -749,11 +753,11 @@ function lessonPage(l: EngineLesson): HTMLElement {
       l.runtime === 'docs' ? h('p', { class: 'm-0 text-body-sm text-muted', 'data-runtime': 'docs' }, et(l.docsWhy ? `runtime.docs.${l.docsWhy}` : 'runtime.docs')) : null,
       req.length ? h('p', { class: 'm-0 flex flex-wrap items-center gap-2 text-body-sm' }, h('span', { class: 'text-muted' }, `${et('requires')}:`),
         ...req.map((x) => h('a', { href: lessonHash(x), class: cls.cx(cls.PILL, 'min-h-6 bg-code text-ink no-underline hover:bg-accent-soft') }, x.title[lang()], tick(ok.has(x.id))))) : null),
+    ...secs(l, (id) => id === 'open'),
     h('section', { class: cls.cx(cls.CARD, 'flex flex-col gap-2 p-5 max-sm:p-4'), 'aria-labelledby': `${l.id}-obj` },
       h('h2', { id: `${l.id}-obj`, class: 'm-0 text-caption font-bold tracking-wider text-muted uppercase' }, et('objectives')),
       h('ul', { class: 'm-0 list-disc space-y-1 pl-5' }, ...l.objectives.map((o) => h('li', {}, ...inline(o[lang()]))))),
-    ...l.sections.map((s) => h('section', { class: 'flex flex-col gap-3' },
-      h('h2', { class: 'm-0 text-title font-bold' }, SECTIONS[s.id][lang() === 'vi' ? 0 : 1]), prose(s.text[lang()]))),
+    ...secs(l, (id) => id !== 'open' && id !== 'recap'),
     vizSlot(l.id, l.viz, l.engine),
     l.predict ? h('section', { class: cls.cx(cls.CARD, 'flex flex-col gap-3 p-5 max-sm:p-4'), 'aria-labelledby': `${l.id}-pred` },
       cardHead(`${l.id}-pred`, 'kindPredict', et('predict.title')),
@@ -772,6 +776,7 @@ function lessonPage(l: EngineLesson): HTMLElement {
       cardHead(`${l.id}-quiz`, 'kindQuiz', et('quiz.title')),
       h('div', { class: 'divide-y divide-line [&>*]:py-4 [&>*:first-child]:pt-0 [&>*:last-child]:pb-0' },
         ...l.quiz.map((q, i) => h('div', {}, question(l, v, q, `q${i}`, et('quiz.n', { i: i + 1, n: l.quiz!.length })))))) : null,
+    ...secs(l, (id) => id === 'recap'),
     h('section', { class: cls.cx(cls.CARD, 'flex flex-wrap items-center gap-3 p-5 max-sm:p-4'), 'aria-label': et('done') },
       isDone ? h('p', { class: 'm-0 flex items-center gap-2 font-bold good' }, d.icon('check', 'size-5'), et('complete.done'))
         : parts.length ? h('p', { class: 'm-0 text-body-sm' }, et('complete.parts', { k: parts.filter((p) => v.passed.has(p)).length, n: parts.length }))

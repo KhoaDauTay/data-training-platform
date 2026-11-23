@@ -7,19 +7,22 @@ title: Transaction và savepoint
 title_en: Transactions and savepoints
 kind: concept
 runtime: browser
-minutes: 10
-verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-20" }
+minutes: 12
+verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-24" }
 viz: pg-mvcc-timeline
 objectives:
   - vi: Gói nhiều câu ghi trong `BEGIN ... COMMIT` để chúng cùng thành công hoặc cùng bị hủy.
     en: Wrap several writes in `BEGIN ... COMMIT` so they all succeed or are all undone.
-  - vi: Dùng `SAVEPOINT` để hủy một phần, và nhận ra lỗi "current transaction is aborted".
-    en: Use `SAVEPOINT` to undo part of the work, and recognise the "current transaction is aborted" error.
+  - vi: Dùng `SAVEPOINT` và `ROLLBACK TO SAVEPOINT` để hủy một phần mà giữ phần còn lại.
+    en: Use `SAVEPOINT` and `ROLLBACK TO SAVEPOINT` to undo part of the work and keep the rest.
+  - vi: Nhận ra lỗi "current transaction is aborted" và biết cách thoát khỏi nó.
+    en: Recognise the "current transaction is aborted" error and know how to get out of it.
 requires: [e-pg-l1-06]
 sources:
   - https://www.postgresql.org/docs/18/tutorial-transactions.html
   - https://www.postgresql.org/docs/18/sql-begin.html
   - https://www.postgresql.org/docs/18/sql-savepoint.html
+  - https://www.postgresql.org/docs/18/sql-rollback-to.html
   - https://www.postgresql.org/docs/18/mvcc-intro.html
   - https://www.postgresql.org/docs/18/transaction-iso.html
 lab:
@@ -65,9 +68,10 @@ quiz:
       - { vi: "Postgres từ chối mọi câu cho tới khi transaction kết thúc", en: "Postgres refuses every statement until the transaction ends" }
       - { vi: "Postgres tự COMMIT phần đã chạy được", en: "Postgres commits the part that worked" }
     answer: 1
+    trap: 0
     why:
-      vi: "Nghe hợp lý vì `SELECT` chỉ đọc, chẳng liên quan gì tới câu bị lỗi; nhưng sau lỗi, transaction ở trạng thái hỏng: mọi câu nhận lỗi \"current transaction is aborted\" cho tới `ROLLBACK` (hoặc `ROLLBACK TO SAVEPOINT`). Gõ `COMMIT` lúc này cũng chỉ là rollback."
-      en: "It sounds right because a `SELECT` only reads and has nothing to do with the failed statement, but after an error the transaction is aborted: every statement gets \"current transaction is aborted\" until `ROLLBACK` (or `ROLLBACK TO SAVEPOINT`). Typing `COMMIT` at that point also just rolls back."
+      vi: "Nghe hợp lý vì `SELECT` chỉ đọc, chẳng liên quan gì tới câu bị lỗi; nhưng sau lỗi, transaction ở trạng thái hỏng: mọi câu nhận lỗi 25P02 \"current transaction is aborted\" cho tới `ROLLBACK` (hoặc `ROLLBACK TO SAVEPOINT`). Gõ `COMMIT` lúc này cũng chỉ là rollback."
+      en: "It sounds right because a `SELECT` only reads and has nothing to do with the failed statement, but after an error the transaction is aborted: every statement gets 25P02 \"current transaction is aborted\" until `ROLLBACK` (or `ROLLBACK TO SAVEPOINT`). Typing `COMMIT` at that point also just rolls back."
   - q:
       vi: "Phiên A đã `UPDATE` một dòng nhưng chưa `COMMIT`. Phiên B đọc dòng đó. B thấy gì?"
       en: "Session A has run `UPDATE` on a row but not `COMMIT`. Session B reads that row. What does B see?"
@@ -76,9 +80,10 @@ quiz:
       - { vi: "Giá trị cũ, đã commit trước đó", en: "The old, previously committed value" }
       - { vi: "B phải chờ A commit xong mới đọc được", en: "B must wait for A to commit before it can read" }
     answer: 1
+    trap: 2
     why:
-      vi: "Phải chờ nghe hợp lý vì A đang giữ lock trên dòng đó; nhưng lock ấy chỉ chặn người ghi khác. Thay đổi chưa commit không ai khác thấy, và nhờ MVCC, đọc không chờ ghi: B đọc phiên bản đã commit mà không bị chặn."
-      en: "Waiting sounds right because A holds a lock on that row, but that lock only blocks other writers. Uncommitted changes are invisible to everyone else, and thanks to MVCC, readers do not wait for writers: B reads the committed version without blocking."
+      vi: "Nghe hợp lý vì A đang giữ lock trên dòng đó, nhưng lock ấy chỉ chặn người ghi khác. Thay đổi chưa commit không ai khác thấy, và nhờ MVCC, đọc không chờ ghi: B đọc phiên bản đã commit mà không bị chặn."
+      en: "It sounds right because A holds a lock on that row, but that lock only blocks other writers. Uncommitted changes are invisible to everyone else, and thanks to MVCC, readers do not wait for writers: B reads the committed version without blocking."
   - q:
       vi: "Mức cô lập mặc định là Read Committed. Trong một transaction, bạn chạy cùng một câu `SELECT count(*)` hai lần; giữa hai lần, phiên khác thêm một dòng và `COMMIT`. Lần thứ hai thấy gì?"
       en: "The default isolation level is Read Committed. Inside one transaction you run the same `SELECT count(*)` twice; in between, another session inserts a row and runs `COMMIT`. What does the second run see?"
@@ -87,74 +92,273 @@ quiz:
       - { vi: "Con số mới, có cả dòng vừa commit", en: "The new number, including the row just committed" }
       - { vi: "Lỗi, vì dữ liệu đã đổi", en: "An error, because the data changed" }
     answer: 1
+    trap: 0
     why:
-      vi: "Dữ liệu đứng yên nghe hợp lý vì ta hay hình dung transaction là một khối tách khỏi thế giới bên ngoài; nhưng ở Read Committed, mỗi câu lệnh lấy một ảnh chụp (snapshot) mới, nên câu sau thấy những gì đã commit trước nó. Muốn cả transaction thấy cùng một ảnh chụp thì dùng `REPEATABLE READ` (học kỹ ở L4)."
-      en: "Frozen data sounds right because a transaction is often pictured as sealed off from the outside world, but under Read Committed each statement takes a fresh snapshot, so a later statement sees whatever was committed before it. For one snapshot across the whole transaction use `REPEATABLE READ` (covered in depth in L4)."
+      vi: "Nghe hợp lý vì ta hay hình dung transaction là một khối tách khỏi thế giới bên ngoài, nhưng ở Read Committed mỗi câu lệnh lấy một ảnh chụp (snapshot) mới, nên câu sau thấy những gì đã commit trước nó. Muốn cả transaction thấy cùng một ảnh chụp thì dùng `REPEATABLE READ` (học kỹ ở L4)."
+      en: "It sounds right because a transaction is often pictured as sealed off from the outside world, but under Read Committed each statement takes a fresh snapshot, so a later statement sees whatever was committed before it. For one snapshot across the whole transaction use `REPEATABLE READ` (covered in depth in L4)."
 ---
+## Mở bài
+
+Bạn trừ 30 ở tài khoản 1, và máy sập ngay trước khi kịp cộng 30 cho tài khoản 2. Khi máy chạy lại, 30 đồng đó đã đi đâu? Bài này cho bạn cách để hai câu ghi đó cùng xảy ra hoặc cùng không xảy ra.
+
 ## Ý chính
 
-Trừ tiền tài khoản A xong thì máy sập, trước khi kịp cộng cho B: tiền đi đâu? Transaction gói nhiều câu thành một đơn vị "tất cả hoặc không gì cả".
+Transaction gói nhiều câu lệnh thành một đơn vị "tất cả hoặc không gì cả". `BEGIN` mở transaction, `COMMIT` giữ lại mọi thay đổi, `ROLLBACK` hủy hết như chưa từng chạy. Nếu máy sập giữa chừng, Postgres khởi động lại và coi như transaction chưa commit chưa bao giờ xảy ra, nên tiền không thể bị trừ một nửa.
 
-- `BEGIN` mở transaction; `COMMIT` ghi lại mọi thay đổi; `ROLLBACK` hủy hết.
-- Không có `BEGIN` thì mỗi câu là một transaction riêng, tự commit.
-- Thay đổi chưa commit chỉ phiên của bạn thấy. Các phiên khác vẫn thấy dữ liệu cũ, và không bị chặn khi đọc (MVCC, học kỹ ở L3).
-- Mức cô lập mặc định là Read Committed: mỗi câu lệnh lấy một ảnh chụp (snapshot) mới lúc nó bắt đầu, nên hai câu giống nhau trong cùng một transaction có thể thấy kết quả khác nhau nếu giữa chúng có phiên khác commit.
-- Khi một câu lỗi, cả transaction hỏng: các câu sau bị từ chối với lỗi "current transaction is aborted" cho tới khi bạn `ROLLBACK`.
-- `SAVEPOINT name` đánh dấu một điểm; `ROLLBACK TO SAVEPOINT name` chỉ hủy phần sau điểm đó, và đưa transaction hỏng về trạng thái dùng được.
+Nhiều người nghĩ không gõ `BEGIN` thì các câu không nằm trong transaction nào. Thật ra mỗi câu đứng một mình là một transaction riêng và tự commit ngay khi chạy xong (autocommit). Vì vậy `ROLLBACK` gõ sau một câu `UPDATE` đứng một mình không hủy được gì: câu đó đã commit rồi, Postgres chỉ cảnh báo "there is no transaction in progress".
+
+Trong transaction của mình, bạn thấy ngay thay đổi chưa commit. Phiên khác thì chưa thấy: họ vẫn đọc bản đã commit trước đó, và không phải chờ bạn. Postgres làm được vậy nhờ MVCC, giữ nhiều phiên bản của một dòng cùng lúc (học kỹ ở L3).
+
+Mức cô lập mặc định là Read Committed: mỗi câu lệnh lấy một ảnh chụp (snapshot) dữ liệu mới lúc nó bắt đầu. Hai câu giống hệt nhau trong cùng một transaction có thể ra kết quả khác nhau nếu giữa chúng có phiên khác commit.
+
+Khi một câu trong `BEGIN` bị lỗi, cả transaction hỏng. Mọi câu sau, kể cả `SELECT`, bị từ chối với mã 25P02 cho tới khi transaction kết thúc. Gõ `COMMIT` lúc này không lưu gì: Postgres kết thúc transaction như một `ROLLBACK`.
+
+`SAVEPOINT` đặt một mốc bên trong transaction. `ROLLBACK TO SAVEPOINT` chỉ hủy phần sau mốc đó, giữ phần trước, và đưa một transaction đang hỏng về trạng thái dùng được. Nhờ vậy một bước phụ thất bại (thu phí, ghi log) không kéo theo cả việc chính.
+
+## Cú pháp
+
+```sql
+BEGIN [ ISOLATION LEVEL { READ COMMITTED | REPEATABLE READ | SERIALIZABLE } ];
+SAVEPOINT savepoint_name;
+ROLLBACK TO [ SAVEPOINT ] savepoint_name;
+RELEASE [ SAVEPOINT ] savepoint_name;
+{ COMMIT | ROLLBACK };
+```
+
+- `BEGIN`: mở transaction; không có nó, mỗi câu tự commit.
+- `ISOLATION LEVEL`: mặc định là `READ COMMITTED`.
+- `ROLLBACK TO`: hủy phần sau mốc, mốc vẫn còn để dùng lại.
+- `RELEASE`: bỏ mốc, giữ thay đổi; sau đó không quay về mốc đó được nữa.
+- `COMMIT` / `ROLLBACK`: kết thúc transaction, giữ hoặc hủy mọi thay đổi.
 
 ## Ví dụ
 
+Setup của bài đã mở sẵn một transaction: chuyển 30 từ tài khoản 1 sang 2 rồi đặt `SAVEPOINT before_fee`. Các khối dưới chạy nối tiếp nhau. Đọc ngay bên trong transaction đó:
+
 ```sql
-CREATE TABLE accounts (id int PRIMARY KEY, balance numeric NOT NULL CHECK (balance >= 0));
-INSERT INTO accounts VALUES (1, 100), (2, 50);
+SELECT id, balance FROM accounts ORDER BY id;
+```
+
+Ra 70 và 80: bạn thấy thay đổi của chính mình dù chưa commit.
+
+```sql
+ROLLBACK;
+SELECT id, balance FROM accounts ORDER BY id;
+```
+
+`ROLLBACK` hủy cả lần chuyển, nên số dư về lại 100 và 50.
+
+Làm lại lần chuyển, đặt mốc, thu thử một khoản phí rồi quay về mốc:
+
+```sql
 BEGIN;
 UPDATE accounts SET balance = balance - 30 WHERE id = 1;
 UPDATE accounts SET balance = balance + 30 WHERE id = 2;
 SAVEPOINT before_fee;
--- ERROR: new row violates check constraint "accounts_balance_check"
-UPDATE accounts SET balance = balance - 500 WHERE id = 2;
+UPDATE accounts SET balance = balance - 20 WHERE id = 2;
 ROLLBACK TO SAVEPOINT before_fee;
 COMMIT;
 SELECT id, balance FROM accounts ORDER BY id;
 ```
 
-Câu trừ 500 vi phạm `CHECK`. `ROLLBACK TO SAVEPOINT` bỏ riêng phần đó, nên `COMMIT` vẫn giữ lần chuyển 30: kết quả 70 và 80.
+Kết quả 70 và 80: khoản phí 20 bị hủy, lần chuyển 30 trước mốc được commit.
 
-## Thực hành
+```sql
+SHOW transaction_isolation;
+```
 
-Lab bên dưới mở sẵn một transaction như ví dụ: bạn đọc và ghi bên trong nó. Sơ đồ cho thấy hai phiên trên cùng một dòng theo thời gian (phần này cần hai phiên, nên chỉ là sơ đồ). Làm lab, bấm qua sơ đồ, rồi trả lời ba câu hỏi.
+Ra `read committed`, mức cô lập mặc định.
+
+## Lỗi hay gặp
+
+Đặt mốc khi chưa mở transaction:
+
+```sql
+-- ERROR 25P01: SAVEPOINT can only be used in transaction blocks
+SAVEPOINT x;
+```
+
+Câu đứng một mình đã tự commit, nên không có transaction nào để đặt mốc. Gõ `BEGIN` trước.
+
+Một câu lỗi làm hỏng cả transaction:
+
+```sql
+BEGIN;
+UPDATE accounts SET balance = balance + 10 WHERE id = 1;
+-- ERROR 23514: new row for relation "accounts" violates check constraint "accounts_balance_check"
+UPDATE accounts SET balance = balance - 500 WHERE id = 2;
+```
+
+```sql
+-- ERROR 25P02: current transaction is aborted, commands ignored until end of transaction block
+SELECT id, balance FROM accounts ORDER BY id;
+```
+
+```sql
+COMMIT;
+SELECT id, balance FROM accounts ORDER BY id;
+```
+
+Ngay cả `SELECT` cũng bị từ chối. `COMMIT` chỉ đóng transaction như `ROLLBACK`: số dư vẫn 70 và 80, khoản cộng 10 không được giữ. Muốn giữ phần trước lỗi, đặt `SAVEPOINT` trước câu dễ lỗi và `ROLLBACK TO SAVEPOINT` khi nó lỗi.
+
+Tưởng `ROLLBACK` hủy được một câu đã chạy không có `BEGIN`:
+
+```sql
+-- WRONG: without BEGIN the UPDATE committed by itself
+UPDATE accounts SET balance = balance + 1000 WHERE id = 1;
+ROLLBACK;
+SELECT id, balance FROM accounts ORDER BY id;
+```
+
+```sql
+-- FIX: undo it by hand, then put BEGIN first so ROLLBACK can undo
+UPDATE accounts SET balance = balance - 1000 WHERE id = 1;
+BEGIN;
+UPDATE accounts SET balance = balance + 1000 WHERE id = 1;
+ROLLBACK;
+SELECT id, balance FROM accounts ORDER BY id;
+```
+
+Bản sai để lại 1070: `ROLLBACK` chỉ cảnh báo vì không có transaction nào đang mở. Bản sửa mở `BEGIN` trước, nên `ROLLBACK` đưa số dư về 70.
+
+## Tóm tắt
+
+- `BEGIN ... COMMIT` gói nhiều câu thành một đơn vị: cùng được giữ hoặc cùng bị hủy.
+- Không có `BEGIN`, mỗi câu tự commit; `ROLLBACK` sau đó không hủy được gì.
+- Sau một lỗi trong transaction, mọi câu bị từ chối (25P02) và `COMMIT` chỉ là rollback.
+- `SAVEPOINT` và `ROLLBACK TO SAVEPOINT` hủy riêng phần sau mốc và cứu transaction đang hỏng.
+- Read Committed là mặc định: mỗi câu thấy những gì đã commit trước khi nó bắt đầu.
 
 # EN
 
+## Opening
+
+You take 30 out of account 1, and the machine dies just before 30 is added to account 2. When it comes back, where did that 30 go? This lesson gives you a way to make both writes happen together or not at all.
+
 ## Key idea
 
-You debit account A and the machine dies before B is credited: where did the money go? A transaction groups several statements into one "all or nothing" unit.
+A transaction groups several statements into one "all or nothing" unit. `BEGIN` opens a transaction, `COMMIT` keeps every change, `ROLLBACK` undoes them all as if they never ran. If the machine crashes halfway, Postgres restarts and treats an uncommitted transaction as if it never happened, so money can never be half moved.
 
-- `BEGIN` opens a transaction; `COMMIT` keeps every change; `ROLLBACK` undoes them all.
-- Without `BEGIN`, each statement is its own transaction and commits by itself.
-- Uncommitted changes are visible only to your session. Other sessions still see the old data and are not blocked when reading (MVCC, covered in depth in L3).
-- The default isolation level is Read Committed: each statement takes a fresh snapshot when it starts, so the same statement run twice in one transaction can see different results if another session commits in between.
-- When a statement fails, the whole transaction is broken: later statements are refused with "current transaction is aborted" until you `ROLLBACK`.
-- `SAVEPOINT name` marks a point; `ROLLBACK TO SAVEPOINT name` undoes only what came after it and makes a broken transaction usable again.
+Many people think statements outside a `BEGIN` are in no transaction at all. In fact each statement on its own is its own transaction and commits as soon as it finishes (autocommit). That is why a `ROLLBACK` typed after a lone `UPDATE` undoes nothing: the statement has already committed, and Postgres only warns "there is no transaction in progress".
+
+Inside your own transaction you see your uncommitted changes at once. Other sessions do not see them yet: they keep reading the previously committed version and do not wait for you. Postgres does this with MVCC, keeping several versions of a row at the same time (covered in depth in L3).
+
+The default isolation level is Read Committed: each statement takes a fresh snapshot of the data when it starts. Two identical statements in one transaction can return different results if another session commits between them.
+
+When a statement inside `BEGIN` fails, the whole transaction is broken. Every later statement, even a `SELECT`, is refused with code 25P02 until the transaction ends. Typing `COMMIT` at that point saves nothing: Postgres ends the transaction like a `ROLLBACK`.
+
+`SAVEPOINT` sets a marker inside a transaction. `ROLLBACK TO SAVEPOINT` undoes only what came after the marker, keeps what came before, and makes a broken transaction usable again. So a failed side step (a fee, a log line) does not drag the main work down with it.
+
+## Syntax
+
+```sql
+BEGIN [ ISOLATION LEVEL { READ COMMITTED | REPEATABLE READ | SERIALIZABLE } ];
+SAVEPOINT savepoint_name;
+ROLLBACK TO [ SAVEPOINT ] savepoint_name;
+RELEASE [ SAVEPOINT ] savepoint_name;
+{ COMMIT | ROLLBACK };
+```
+
+- `BEGIN`: opens a transaction; without it each statement commits by itself.
+- `ISOLATION LEVEL`: the default is `READ COMMITTED`.
+- `ROLLBACK TO`: undoes what came after the marker; the marker stays and can be reused.
+- `RELEASE`: drops the marker and keeps the changes; you can no longer go back to it.
+- `COMMIT` / `ROLLBACK`: end the transaction, keeping or undoing every change.
 
 ## Example
 
+The lesson's setup has already opened a transaction: it moved 30 from account 1 to 2 and set `SAVEPOINT before_fee`. The blocks below run one after another. Read right inside that transaction:
+
 ```sql
-CREATE TABLE accounts (id int PRIMARY KEY, balance numeric NOT NULL CHECK (balance >= 0));
-INSERT INTO accounts VALUES (1, 100), (2, 50);
+SELECT id, balance FROM accounts ORDER BY id;
+```
+
+It shows 70 and 80: you see your own changes even though they are not committed.
+
+```sql
+ROLLBACK;
+SELECT id, balance FROM accounts ORDER BY id;
+```
+
+`ROLLBACK` undoes the whole transfer, so the balances go back to 100 and 50.
+
+Redo the transfer, set a marker, try charging a fee, then go back to the marker:
+
+```sql
 BEGIN;
 UPDATE accounts SET balance = balance - 30 WHERE id = 1;
 UPDATE accounts SET balance = balance + 30 WHERE id = 2;
 SAVEPOINT before_fee;
--- ERROR: new row violates check constraint "accounts_balance_check"
-UPDATE accounts SET balance = balance - 500 WHERE id = 2;
+UPDATE accounts SET balance = balance - 20 WHERE id = 2;
 ROLLBACK TO SAVEPOINT before_fee;
 COMMIT;
 SELECT id, balance FROM accounts ORDER BY id;
 ```
 
-The 500 debit breaks the `CHECK`. `ROLLBACK TO SAVEPOINT` drops just that part, so `COMMIT` still keeps the 30 transfer: the result is 70 and 80.
+The result is 70 and 80: the fee of 20 is undone, and the transfer of 30 before the marker is committed.
 
-## Practice
+```sql
+SHOW transaction_isolation;
+```
 
-The lab below opens a transaction like the example: you read and write inside it. The diagram shows two sessions working on one row over time (that part needs two sessions, so it is a diagram only). Do the lab, step through the diagram, then answer the three questions.
+It shows `read committed`, the default isolation level.
+
+## Common mistakes
+
+Setting a marker with no transaction open:
+
+```sql
+-- ERROR 25P01: SAVEPOINT can only be used in transaction blocks
+SAVEPOINT x;
+```
+
+A lone statement has already committed by itself, so there is no transaction to put a marker in. Type `BEGIN` first.
+
+One failed statement breaks the whole transaction:
+
+```sql
+BEGIN;
+UPDATE accounts SET balance = balance + 10 WHERE id = 1;
+-- ERROR 23514: new row for relation "accounts" violates check constraint "accounts_balance_check"
+UPDATE accounts SET balance = balance - 500 WHERE id = 2;
+```
+
+```sql
+-- ERROR 25P02: current transaction is aborted, commands ignored until end of transaction block
+SELECT id, balance FROM accounts ORDER BY id;
+```
+
+```sql
+COMMIT;
+SELECT id, balance FROM accounts ORDER BY id;
+```
+
+Even the `SELECT` is refused. `COMMIT` only closes the transaction like a `ROLLBACK`: the balances are still 70 and 80, and the extra 10 is not kept. To keep the work before an error, set a `SAVEPOINT` before the risky statement and run `ROLLBACK TO SAVEPOINT` when it fails.
+
+Believing `ROLLBACK` can undo a statement that ran without `BEGIN`:
+
+```sql
+-- WRONG: without BEGIN the UPDATE committed by itself
+UPDATE accounts SET balance = balance + 1000 WHERE id = 1;
+ROLLBACK;
+SELECT id, balance FROM accounts ORDER BY id;
+```
+
+```sql
+-- FIX: undo it by hand, then put BEGIN first so ROLLBACK can undo
+UPDATE accounts SET balance = balance - 1000 WHERE id = 1;
+BEGIN;
+UPDATE accounts SET balance = balance + 1000 WHERE id = 1;
+ROLLBACK;
+SELECT id, balance FROM accounts ORDER BY id;
+```
+
+The wrong version leaves 1070: `ROLLBACK` only warns because no transaction is open. The fix opens `BEGIN` first, so `ROLLBACK` brings the balance back to 70.
+
+## Recap
+
+- `BEGIN ... COMMIT` turns several statements into one unit: all kept or all undone.
+- Without `BEGIN` each statement commits by itself; a `ROLLBACK` afterwards undoes nothing.
+- After an error inside a transaction every statement is refused (25P02) and `COMMIT` is only a rollback.
+- `SAVEPOINT` and `ROLLBACK TO SAVEPOINT` undo just the part after the marker and rescue a broken transaction.
+- Read Committed is the default: each statement sees what was committed before it started.

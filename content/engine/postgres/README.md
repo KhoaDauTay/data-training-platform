@@ -10,3 +10,12 @@ L1 and L2 follow ENGINE-CONTENT-V1 as parsed by `src/engine/content.ts` (commit 
 - A code block with a `-- ERROR` comment contains one statement that is meant to fail.
 - `viz` names come from the product-design §5 catalog (`pg-btree-split`, `pg-gin`...).
 - Lesson ids follow the task (`e-pg-l1-01`), not the older `e-pg-l-…` pattern of product design §1.4.
+
+## v27 R3: the eight-section anatomy (product-route-v24 §2.2)
+
+L1–L2 lessons follow it and `tests/engineAnatomy.test.ts` checks them (R6 extends the scope to L3–L5):
+
+- Body sections, in this order (VI / EN headings): `Mở bài` / `Opening` (≤ 3 sentences, drawn above the objectives), `Ý chính` / `Key idea` (paragraphs ≤ 150 words), `Cú pháp` / `Syntax` (starts with a ```sql template, never run), `Ví dụ` / `Example`, `Lỗi hay gặp` / `Common mistakes`, `Thực hành` / `Practice`, `Tóm tắt` / `Recap` (only a 3–5 line list, drawn after the questions).
+- Required per kind: concept and lab all but Thực hành (lab needs it, and ≥ 3 steps); quiz = Mở bài, Ý chính, Ví dụ, Tóm tắt; predict = Mở bài, Ý chính, Tóm tắt; capstone = Mở bài, Thực hành, Tóm tắt. Questions (quiz items + the predict) ≥ 2, capstone ≥ 1; outside capstones ≥ 1 carries `trap: <option index>` (the misconception's pick; frontmatter only, the page does not read it).
+- Runs: one fresh lab database per lesson: setup, then every ```sql block of Ví dụ and Lỗi hay gặp in page order, one statement at a time. A normal block's result (its last statement with a result set) has rows. `-- ERROR <SQLSTATE>: …` = the block's last statement fails with that code. `-- WRONG: …` = runs and returns other rows than the next block, which says `-- FIX: …`.
+- Grading: a step with `after: <read>` is graded on that read (Solution vs player), for statements whose own result says nothing (GRANT, CALL, DO, TRUNCATE, a write without RETURNING). The catalog probe (`CATALOG_PROBE`, src/engine/pglab/runner.ts) covers every non-system schema and also schemas and their ACL, functions and procedures (full definition + ACL), triggers, table and column ACLs, roles, memberships and default privileges. Every catalog/`after` step must fail when the player does nothing (`SELECT 1`). Never `SET ROLE` in a step: it would be replayed into every later step.

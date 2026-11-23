@@ -65,11 +65,11 @@ SELECT ARRAY[1,2,3] @> ARRAY[2], 'Da Nang' ~* '^da', daterange('2026-10-01','202
 
 ## 3. Databases and schemas
 
-Status: verified (schemas); `CREATE DATABASE` not run (PGlite is a single database).
+Status: verified. `CREATE DATABASE` runs on PGlite 0.5.16 (a new row in `pg_database`; the connection stays in `postgres`); opening a second database was not tested.
 
 - A cluster holds databases; a database holds schemas; a schema holds tables, views, functions. Queries cannot join across databases without an extension such as `postgres_fdw`; they can join across schemas (https://www.postgresql.org/docs/18/ddl-schemas.html).
 - `search_path` decides where an unqualified name is looked up and where `CREATE` puts new objects. Since PostgreSQL 15 ordinary users cannot create objects in `public` by default.
-- `CREATE DATABASE` cannot run inside a transaction block.
+- `CREATE DATABASE` cannot run inside a transaction block (25001), and so not inside a multi-statement string sent as one query either (an implicit transaction). A three-part name `db.schema.table` that names another database fails with 0A000.
 
 ```sql
 -- expect: [["shop","42"]]
@@ -521,8 +521,8 @@ Status: verified (policy with a non-superuser role). Full rules in [security.md 
 Status: verified.
 
 - `CREATE FUNCTION … LANGUAGE sql` for one expression or query; `LANGUAGE plpgsql` for control flow (https://www.postgresql.org/docs/18/plpgsql.html).
-- Volatility (`IMMUTABLE`, `STABLE`, `VOLATILE`) tells the planner what it may cache or inline; only `IMMUTABLE` functions may appear in index expressions.
-- `CREATE PROCEDURE` + `CALL` can `COMMIT` inside its body; functions cannot.
+- Volatility (`IMMUTABLE`, `STABLE`, `VOLATILE`) tells the planner what it may cache or inline. Index expressions must be immutable: a PL/pgSQL function not marked `IMMUTABLE` is refused (42P17), but a simple `LANGUAGE sql` function is inlined first, so its body is checked instead of its label (a `VOLATILE` `SELECT i + 1` is accepted). Mark functions honestly anyway.
+- `CREATE PROCEDURE` + `CALL` can `COMMIT` inside its body only when the `CALL` itself is not inside a transaction block (else 2D000); functions never can (2D000).
 - `SECURITY DEFINER` functions run with the owner's rights; set `search_path` on them (security.md).
 
 ```sql

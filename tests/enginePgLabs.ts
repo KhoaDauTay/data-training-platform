@@ -35,10 +35,11 @@ export function pgLabSuite(level: string, shard: number, of = SHARDS): void {
       // the Solution runs after setup and the earlier steps that change something (the runtime's replay), with rows for `rows`
       const replay = replayOf(lab, i);
       const probe = s.fact?.probe;
-      const r = await runLabScript({ setup: lab.setup, extensions: extensionsOf(lab.setup, ...lab.steps.map((x) => x.solution), probe), steps: [...replay, s.solution, ...(probe ? [probe] : [])] });
+      const r = await runLabScript({ setup: lab.setup, extensions: extensionsOf(lab.setup, ...lab.steps.map((x) => x.solution), probe), steps: [...replay, s.solution, ...(s.after ? [s.after] : []), ...(probe ? [probe] : [])] });
       expect(r.setupError).toBeUndefined();
       expect(r.steps.filter((x) => x.status !== 'ok').map((x) => [x.sql.slice(0, 80), x.error?.code, x.error?.message])).toEqual([]);
-      if (s.check === 'rows') expect(r.steps[replay.length].rows.length, 'Solution trả 0 dòng').toBeGreaterThan(0);
+      // v27 R3: a step with `after` is graded on that read, which must return rows
+      if (s.check === 'rows' || s.after) expect(r.steps[replay.length + (s.after ? 1 : 0)].rows.length, 'Solution trả 0 dòng').toBeGreaterThan(0);
       if (s.fact?.expect) {
         expect(probe, 'fact.expect cần probe').toBeDefined();
         const got = r.steps[r.steps.length - 1];

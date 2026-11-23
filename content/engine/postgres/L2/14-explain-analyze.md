@@ -7,12 +7,14 @@ title: "Đọc EXPLAIN ANALYZE, và tạo index trên bảng đang chạy"
 title_en: "Reading EXPLAIN ANALYZE, and indexing a live table"
 kind: concept
 runtime: browser
-minutes: 12
-verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-20" }
+minutes: 14
+verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-24" }
 viz: pg-lock-matrix
 objectives:
   - vi: So số dòng ước lượng với số dòng thật, đọc `Buffers:` và `Rows Removed by Filter` để tìm nút đắt.
     en: Compare estimated and actual rows, and read `Buffers:` and `Rows Removed by Filter` to find the expensive node.
+  - vi: Chạy `EXPLAIN ANALYZE` an toàn trên câu ghi, bằng `BEGIN ... ROLLBACK`.
+    en: Run `EXPLAIN ANALYZE` safely on a write, with `BEGIN ... ROLLBACK`.
   - vi: Biết `CREATE INDEX` thường chặn ghi, còn `CONCURRENTLY` thì không nhưng chậm hơn và có bẫy.
     en: Know that a plain `CREATE INDEX` blocks writes while `CONCURRENTLY` does not, but is slower and has traps.
 requires: [e-pg-l2-13]
@@ -65,21 +67,23 @@ predict:
     - { vi: "1: thống kê chưa biết `new`, nên planner đoán gần như không có dòng nào", en: "1: the statistics do not know `new`, so the planner guesses almost no rows" }
     - { vi: "13.000: cả bảng", en: "13,000: the whole table" }
   answer: 1
+  trap: 0
   why:
-    vi: "3000 nghe hợp lý vì đó là số thật, nhưng planner không đếm: nó đọc `pg_stats`, nơi `status` chỉ có `{done}` với tần suất 1. Giá trị ngoài danh sách được ước lượng gần 0, làm tròn lên 1 dòng. `EXPLAIN ANALYZE` sẽ in `rows=1` cạnh `actual rows=3000`: lệch như vậy là dấu hiệu chạy `ANALYZE`."
-    en: "3000 sounds right because it is the real count, but the planner does not count: it reads `pg_stats`, where `status` has only `{done}` with frequency 1. A value outside that list is estimated near 0, rounded up to 1 row. `EXPLAIN ANALYZE` would print `rows=1` next to `actual rows=3000`: a gap like that says run `ANALYZE`."
+    vi: "Nghe hợp lý vì 3000 là số thật, nhưng planner không đếm: nó đọc `pg_stats`, nơi `status` chỉ có `{done}` với tần suất 1. Giá trị ngoài danh sách được ước lượng gần 0, làm tròn lên 1 dòng. `EXPLAIN ANALYZE` in `rows=1` cạnh `actual rows=3000.00`: lệch như vậy là dấu hiệu chạy `ANALYZE`."
+    en: "It sounds right because 3000 is the real count, but the planner does not count: it reads `pg_stats`, where `status` has only `{done}` with frequency 1. A value outside that list is estimated near 0, rounded up to 1 row. `EXPLAIN ANALYZE` prints `rows=1` next to `actual rows=3000.00`: a gap like that says run `ANALYZE`."
 quiz:
   - q:
-      vi: "Một nút ghi `rows=5` (ước lượng) nhưng `actual rows=4800`. Điều đó cho biết gì?"
-      en: "A node says `rows=5` (estimate) but `actual rows=4800`. What does that tell you?"
+      vi: "Một nút ghi `rows=5` (ước lượng) nhưng `actual rows=4800.00`. Điều đó cho biết gì?"
+      en: "A node says `rows=5` (estimate) but `actual rows=4800.00`. What does that tell you?"
     options:
-      - { vi: "Câu chạy nhanh hơn dự kiến, không cần làm gì", en: "The query ran faster than expected, nothing to do" }
+      - { vi: "Câu vẫn ra đúng kết quả, nên không cần làm gì", en: "The query still returns the right result, so there is nothing to do" }
       - { vi: "Thống kê sai hoặc cũ; planner có thể đã chọn sai kế hoạch, nên chạy `ANALYZE` hoặc xem `pg_stats`", en: "Statistics are wrong or stale; the planner may have picked the wrong plan, so run `ANALYZE` or check `pg_stats`" }
       - { vi: "Index bị hỏng", en: "The index is corrupt" }
     answer: 1
+    trap: 0
     why:
-      vi: "Bỏ qua nghe hợp lý vì câu vẫn chạy xong và kết quả vẫn đúng; nhưng planner chọn kế hoạch dựa trên số dòng ước lượng. Lệch gần 1000 lần thì lựa chọn nested loop, index hay thứ tự join có thể sai hết. Việc đầu tiên là kiểm thống kê."
-      en: "Ignoring it is tempting because the query still finished with a correct result, but the planner chooses plans from estimated row counts. Off by nearly 1000x, its choice of nested loop, index or join order may all be wrong. Check the statistics first."
+      vi: "Nghe hợp lý vì kết quả vẫn đúng, nhưng planner chọn kế hoạch theo số dòng ước lượng. Lệch gần 1000 lần thì lựa chọn nested loop, index hay thứ tự join đều có thể sai. Việc đầu tiên là kiểm thống kê."
+      en: "It sounds right because the result is still correct, but the planner chooses plans from estimated row counts. Off by nearly 1000x, its choice of nested loop, index or join order may all be wrong. Check the statistics first."
   - q:
       vi: "Bạn cần thêm index cho bảng đơn hàng đang nhận ghi liên tục. Lệnh nào không chặn `INSERT` trong lúc tạo?"
       en: "You must add an index to an orders table that takes writes all the time. Which command does not block `INSERT` while it builds?"
@@ -88,9 +92,10 @@ quiz:
       - { vi: "`CREATE INDEX CONCURRENTLY`", en: "`CREATE INDEX CONCURRENTLY`" }
       - { vi: "`CREATE INDEX` trong một `BEGIN ... COMMIT`", en: "`CREATE INDEX` inside a `BEGIN ... COMMIT`" }
     answer: 1
+    trap: 2
     why:
-      vi: "Bọc trong `BEGIN ... COMMIT` nghe hợp lý vì transaction có vẻ che chắn cho các phiên khác; nhưng nó không đổi loại lock: `CREATE INDEX` vẫn giữ lock SHARE, chặn mọi ghi tới khi xong. `CONCURRENTLY` giữ lock SHARE UPDATE EXCLUSIVE, cho ghi tiếp, đổi lại phải quét bảng hai lần, chờ các transaction đang chạy, không chạy được trong `BEGIN`, và nếu lỗi thì để lại một index INVALID phải xóa."
-      en: "Wrapping it in `BEGIN ... COMMIT` is tempting because a transaction seems to shield other sessions, but it does not change the lock: `CREATE INDEX` still takes a SHARE lock and blocks all writes until it finishes. `CONCURRENTLY` takes SHARE UPDATE EXCLUSIVE and lets writes continue; in exchange it scans the table twice, waits for running transactions, cannot run inside `BEGIN`, and on failure leaves an INVALID index you must drop."
+      vi: "Nghe hợp lý vì transaction có vẻ che chắn cho các phiên khác, nhưng nó không đổi loại lock: `CREATE INDEX` vẫn giữ lock SHARE, chặn mọi ghi tới khi xong. `CONCURRENTLY` giữ SHARE UPDATE EXCLUSIVE, cho ghi tiếp; đổi lại nó quét bảng hai lần, chờ các transaction đang chạy, không chạy được trong `BEGIN`, và nếu lỗi thì để lại một index INVALID phải xóa."
+      en: "It sounds right because a transaction seems to shield other sessions, but it does not change the lock: `CREATE INDEX` still takes a SHARE lock and blocks all writes until it finishes. `CONCURRENTLY` takes SHARE UPDATE EXCLUSIVE and lets writes continue; in exchange it scans the table twice, waits for running transactions, cannot run inside `BEGIN`, and on failure leaves an INVALID index you must drop."
   - q:
       vi: "\"Thêm index thì câu nào cũng nhanh hơn, nên cứ thêm nhiều index.\" Điều gì sai?"
       en: "\"An index makes every query faster, so add plenty of them.\" What is wrong?"
@@ -99,51 +104,178 @@ quiz:
       - { vi: "Mỗi index phải được sửa ở mỗi lần ghi, và planner vẫn bỏ qua index khi câu lấy phần lớn bảng", en: "Every index must be updated on every write, and the planner still skips an index when a query reads most of the table" }
       - { vi: "Postgres chỉ cho tối đa 3 index mỗi bảng", en: "Postgres allows at most 3 indexes per table" }
     answer: 1
+    trap: 0
     why:
-      vi: "Câu này nghe đúng vì mỗi index đúng là làm vài câu đọc nhanh hơn; nhưng mỗi lần ghi phải trả giá: một `INSERT` vào bảng có 6 index là 1 lần ghi heap cộng 6 lần ghi index. Còn với câu lấy 90 % bảng, Seq Scan rẻ hơn mọi index (bài L1 \"Có index, sao vẫn Seq Scan?\")."
-      en: "The claim sounds right because each index does speed up some reads, but every write pays for it: one `INSERT` into a table with 6 indexes is 1 heap write plus 6 index writes. And for a query reading 90% of the table, a Seq Scan beats any index (L1 lesson \"There is an index, so why a Seq Scan?\")."
+      vi: "Nghe hợp lý vì mỗi index đúng là làm vài câu đọc nhanh hơn, nhưng mỗi lần ghi phải trả giá: một `INSERT` vào bảng có 6 index là 1 lần ghi heap cộng 6 lần ghi index."
+      en: "It sounds right because each index does speed up some reads, but every write pays for it: one `INSERT` into a table with 6 indexes is 1 heap write plus 6 index writes."
 ---
+## Mở bài
+
+Trang báo cáo đơn mới chạy chậm, và `EXPLAIN` nói planner chỉ chờ 1 dòng. Con số đó là đoán hay là thật? Bài này cho bạn đặt cái đoán cạnh cái thật để tìm ra chỗ sai.
+
 ## Ý chính
 
-Planner đoán 5 dòng nhưng câu trả về 4800: thấy ở đâu? `EXPLAIN` chỉ in kế hoạch. `EXPLAIN ANALYZE` chạy thật câu đó và in thêm số liệu thật cho mỗi nút:
+`EXPLAIN` chỉ in kế hoạch planner định làm, kèm chi phí và số dòng ước lượng. `EXPLAIN ANALYZE` chạy thật câu đó rồi in thêm số liệu đo được cho từng nút. Đọc từ nút trong cùng ra ngoài: nút lá đọc bảng, các nút cha lọc, nối, gom, sắp xếp kết quả của nút con.
 
-- `actual rows=... loops=...`: số dòng thật (trung bình mỗi lần lặp) và số lần lặp. So với `rows=` ước lượng: lệch nhiều lần là dấu hiệu thống kê sai.
-- `Rows Removed by Filter`: số dòng đọc lên rồi bỏ. Lớn nghĩa là đọc thừa, thường là thiếu index phù hợp.
-- `Buffers: shared hit=... read=...`: số trang 8 KB lấy từ bộ đệm (hit) hay phải đọc (read). Từ Postgres 18, `EXPLAIN ANALYZE` tự kèm `BUFFERS`. Số trang ổn định hơn thời gian.
-- `Heap Fetches`, `Index Searches` (mới ở 18): số lần về bảng và số lần tra index.
+Những dòng đáng đọc nhất:
 
-Cẩn thận: `EXPLAIN ANALYZE` thực sự chạy câu. Với `UPDATE`/`DELETE`, bọc trong `BEGIN ... ROLLBACK`.
+- `actual rows=... loops=...`: số dòng thật trung bình mỗi lần lặp và số lần lặp. Từ bản 18 con số này in hai chữ số thập phân, ví dụ `actual rows=3000.00`. Đặt cạnh `rows=` ước lượng: lệch nhiều lần là dấu hiệu thống kê sai hoặc cũ.
+- `Rows Removed by Filter`: số dòng đọc lên rồi bỏ. Lớn nghĩa là đọc thừa, thường là thiếu index hợp với điều kiện.
+- `Buffers: shared hit=... read=...`: số trang 8 KB lấy từ bộ đệm (`hit`) hay phải đọc (`read`). Từ bản 18, `EXPLAIN ANALYZE` tự kèm phần này. Số trang ổn định giữa các lần chạy hơn thời gian.
+- `Index Searches` (mới ở 18): số lần tra index của một nút quét index.
+
+Thời gian (`actual time`) thay đổi theo máy, bộ đệm, tải lúc chạy. Hãy dùng nó để biết nút nào chiếm phần lớn, đừng so mili giây giữa hai máy. Tùy chọn `TIMING OFF` bỏ phần đo giờ khi bạn chỉ cần số dòng.
+
+Nhiều người nghĩ `EXPLAIN ANALYZE` chỉ "giả lập" câu lệnh. Thật ra nó chạy thật: một `DELETE` dưới `EXPLAIN ANALYZE` xóa dòng thật. Với `INSERT`, `UPDATE`, `DELETE`, hãy bọc trong `BEGIN ... ROLLBACK`.
+
+Phần thứ hai là tạo index trên bảng đang nhận ghi. `CREATE INDEX` thường giữ lock SHARE: mọi `INSERT`, `UPDATE`, `DELETE` phải chờ tới khi index xong, trên bảng lớn có thể là nhiều phút. `CREATE INDEX CONCURRENTLY` giữ lock nhẹ hơn nên ghi vẫn chạy, đổi lại nó quét bảng hai lần, phải chờ các transaction cũ kết thúc, không chạy được trong một khối `BEGIN`, và nếu thất bại thì để lại một index đánh dấu INVALID mà bạn phải tự xóa. PGlite trong trình duyệt chỉ có một phiên, nên phần chờ lock chỉ xem được qua sơ đồ.
+
+## Cú pháp
+
+```sql
+EXPLAIN [ ( ANALYZE [, BUFFERS { ON | OFF } ] [, TIMING { ON | OFF } ] [, COSTS { ON | OFF } ]
+          [, SUMMARY { ON | OFF } ] [, FORMAT { TEXT | JSON } ] ) ] statement;
+CREATE INDEX [ CONCURRENTLY ] index_name ON table_name ( column [, ...] );
+```
+
+- `ANALYZE`: chạy thật câu lệnh và in số liệu đo được.
+- `BUFFERS`: số trang đọc; bật sẵn cùng `ANALYZE` từ bản 18.
+- `TIMING OFF`, `COSTS OFF`, `SUMMARY OFF`: bỏ phần đo giờ, chi phí, dòng tổng kết.
+- `CONCURRENTLY`: tạo index mà không chặn ghi, ngoài mọi transaction.
 
 ## Ví dụ
 
+Đặt ước lượng cạnh số thật:
+
+```sql
+EXPLAIN (ANALYZE, TIMING OFF, SUMMARY OFF) SELECT * FROM orders WHERE status = 'new';
+```
+
+Nút `Seq Scan` ghi `rows=1` nhưng `actual rows=3000.00`, và `Rows Removed by Filter: 10000`. Thống kê cũ là thủ phạm.
+
+Cập nhật thống kê rồi hỏi lại:
+
+```sql
+ANALYZE orders;
+EXPLAIN SELECT * FROM orders WHERE status = 'new';
+```
+
+Giờ planner ước lượng `rows=3000`, đúng bằng số thật.
+
+Một bảng không có index trên cột lọc:
+
 ```sql
 CREATE TABLE t AS SELECT g AS id, g % 100 AS k FROM generate_series(1, 20000) AS g;
 ANALYZE t;
 EXPLAIN (ANALYZE, COSTS OFF, TIMING OFF) SELECT count(*) FROM t WHERE k = 7;
 ```
 
-Kế hoạch có `Seq Scan on t`, `Rows Removed by Filter: 19800`, và dòng `Buffers:`. Thêm index trên `k` sẽ xóa con số 19.800 đó.
+Kế hoạch có `Seq Scan on t`, `Rows Removed by Filter: 19800` và dòng `Buffers:`: đọc 20.000 dòng để giữ 200.
 
-## Thực hành
+Thêm index rồi đo lại:
 
-Tạo index trên bảng đang chạy: `CREATE INDEX` thường chặn mọi lệnh ghi tới khi xong. `CREATE INDEX CONCURRENTLY` không chặn ghi nhưng cần nhiều phiên đồng thời để quan sát, nên phần đó chỉ có sơ đồ: PGlite trong trình duyệt chỉ có một phiên. Phần ước lượng và thực tế thì chạy được: lab bên dưới đọc thống kê cũ và đếm số dòng thật.
+```sql
+CREATE INDEX t_k_idx ON t (k);
+EXPLAIN (ANALYZE, COSTS OFF, TIMING OFF) SELECT count(*) FROM t WHERE k = 7;
+```
 
-Bấm qua sơ đồ lock (ai chặn ai khi tạo index), làm lab, rồi trả lời ba câu hỏi.
+Giờ là `Bitmap Index Scan on t_k_idx` với `Index Searches: 1`; con số 19.800 dòng bỏ đi đã biến mất.
+
+## Lỗi hay gặp
+
+Chạy `CONCURRENTLY` trong một transaction:
+
+```sql
+BEGIN;
+-- ERROR 25001: CREATE INDEX CONCURRENTLY cannot run inside a transaction block
+CREATE INDEX CONCURRENTLY t_id_idx ON t (id);
+```
+
+Lệnh này tự quản lý nhiều transaction bên trong, nên phải chạy một mình. Kết thúc khối hỏng bằng `ROLLBACK` rồi chạy lại ngoài `BEGIN`.
+
+Đo một câu `DELETE` mà quên nó chạy thật:
+
+```sql
+-- WRONG: EXPLAIN ANALYZE really deletes the rows
+ROLLBACK;
+EXPLAIN (ANALYZE, COSTS OFF, TIMING OFF) DELETE FROM t WHERE k = 7;
+SELECT count(*) AS left_after FROM t WHERE k = 7;
+```
+
+```sql
+-- FIX: measure inside a transaction and roll it back
+BEGIN;
+EXPLAIN (ANALYZE, COSTS OFF, TIMING OFF) DELETE FROM t WHERE k = 8;
+ROLLBACK;
+SELECT count(*) AS left_after FROM t WHERE k = 8;
+```
+
+Câu sai để lại 0 dòng `k = 7`; câu đúng vẫn còn đủ 200 dòng `k = 8`.
+
+## Tóm tắt
+
+- `EXPLAIN` đoán, `EXPLAIN ANALYZE` chạy thật và đặt `actual rows` cạnh `rows=`.
+- Lệch lớn giữa ước lượng và thực tế thì kiểm `pg_stats` và chạy `ANALYZE`.
+- `Rows Removed by Filter` lớn và `Buffers:` cao chỉ ra nút đọc thừa; đừng so mili giây giữa các máy.
+- Đo câu ghi trong `BEGIN ... ROLLBACK`.
+- `CREATE INDEX` chặn ghi; `CONCURRENTLY` không chặn nhưng chạy ngoài transaction và có thể để lại index INVALID.
 
 # EN
 
+## Opening
+
+The new-orders report runs slowly, and `EXPLAIN` says the planner expects 1 row. Is that number a guess or the truth? This lesson puts the guess next to the truth so you can find what is wrong.
+
 ## Key idea
 
-The planner guessed 5 rows but the query returned 4800: where do you see that? `EXPLAIN` only prints the plan. `EXPLAIN ANALYZE` actually runs the query and adds real figures to each node:
+`EXPLAIN` only prints the plan the planner intends to run, with its costs and estimated rows. `EXPLAIN ANALYZE` actually runs the query and adds the measured figures to each node. Read from the innermost node outwards: leaf nodes read tables, and parent nodes filter, join, aggregate and sort what their children return.
 
-- `actual rows=... loops=...`: the real row count (average per loop) and how many times the node ran. Compare with the estimated `rows=`: a large gap signals wrong statistics.
-- `Rows Removed by Filter`: rows read and then thrown away. A large number means wasted reading, usually a missing index.
-- `Buffers: shared hit=... read=...`: how many 8 KB pages came from cache (hit) or had to be read (read). Since Postgres 18, `EXPLAIN ANALYZE` includes `BUFFERS` by default. Page counts are steadier than time.
-- `Heap Fetches`, `Index Searches` (new in 18): trips to the table and index lookups.
+The lines most worth reading:
 
-Careful: `EXPLAIN ANALYZE` really runs the query. For `UPDATE`/`DELETE`, wrap it in `BEGIN ... ROLLBACK`.
+- `actual rows=... loops=...`: the real rows on average per loop and how many loops ran. Since version 18 this prints two decimals, for example `actual rows=3000.00`. Put it next to the estimated `rows=`: a gap of many times signals wrong or stale statistics.
+- `Rows Removed by Filter`: rows read and then thrown away. A large number means wasted reading, usually a missing index for the condition.
+- `Buffers: shared hit=... read=...`: how many 8 KB pages came from cache (`hit`) or had to be read (`read`). Since version 18, `EXPLAIN ANALYZE` includes it by default. Page counts are steadier between runs than time.
+- `Index Searches` (new in 18): how many times an index scan node searched the index.
+
+Time (`actual time`) varies with the machine, the cache and the load at that moment. Use it to see which node takes most of the work, never to compare milliseconds between two machines. The `TIMING OFF` option drops the clock when you only need row counts.
+
+Many people think `EXPLAIN ANALYZE` only "simulates" the statement. In fact it really runs it: a `DELETE` under `EXPLAIN ANALYZE` deletes real rows. For `INSERT`, `UPDATE` and `DELETE`, wrap it in `BEGIN ... ROLLBACK`.
+
+The second part is indexing a table that takes writes. A plain `CREATE INDEX` takes a SHARE lock: every `INSERT`, `UPDATE` and `DELETE` waits until the index is done, which on a big table can be minutes. `CREATE INDEX CONCURRENTLY` takes a lighter lock so writes keep flowing; in exchange it scans the table twice, must wait for older transactions to finish, cannot run inside a `BEGIN` block, and if it fails it leaves an index marked INVALID that you must drop yourself. PGlite in the browser has a single session, so the lock waits are shown only in the diagram.
+
+## Syntax
+
+```sql
+EXPLAIN [ ( ANALYZE [, BUFFERS { ON | OFF } ] [, TIMING { ON | OFF } ] [, COSTS { ON | OFF } ]
+          [, SUMMARY { ON | OFF } ] [, FORMAT { TEXT | JSON } ] ) ] statement;
+CREATE INDEX [ CONCURRENTLY ] index_name ON table_name ( column [, ...] );
+```
+
+- `ANALYZE`: really run the statement and print measured figures.
+- `BUFFERS`: pages read; on by default with `ANALYZE` since version 18.
+- `TIMING OFF`, `COSTS OFF`, `SUMMARY OFF`: drop timing, costs, the summary lines.
+- `CONCURRENTLY`: build the index without blocking writes, outside any transaction.
 
 ## Example
+
+Put the estimate next to the real count:
+
+```sql
+EXPLAIN (ANALYZE, TIMING OFF, SUMMARY OFF) SELECT * FROM orders WHERE status = 'new';
+```
+
+The `Seq Scan` node says `rows=1` but `actual rows=3000.00`, and `Rows Removed by Filter: 10000`. Stale statistics are to blame.
+
+Refresh the statistics and ask again:
+
+```sql
+ANALYZE orders;
+EXPLAIN SELECT * FROM orders WHERE status = 'new';
+```
+
+Now the planner estimates `rows=3000`, exactly the real count.
+
+A table with no index on the filtered column:
 
 ```sql
 CREATE TABLE t AS SELECT g AS id, g % 100 AS k FROM generate_series(1, 20000) AS g;
@@ -151,10 +283,52 @@ ANALYZE t;
 EXPLAIN (ANALYZE, COSTS OFF, TIMING OFF) SELECT count(*) FROM t WHERE k = 7;
 ```
 
-The plan shows `Seq Scan on t`, `Rows Removed by Filter: 19800`, and a `Buffers:` line. An index on `k` would remove that 19,800.
+The plan shows `Seq Scan on t`, `Rows Removed by Filter: 19800` and a `Buffers:` line: 20,000 rows read to keep 200.
 
-## Practice
+Add an index and measure again:
 
-Indexing a live table: a plain `CREATE INDEX` blocks every write until it finishes. `CREATE INDEX CONCURRENTLY` does not block writes, but observing it needs several concurrent sessions, so that part is a diagram only: PGlite in the browser has a single session. Estimates against reality do run: the lab below reads stale statistics and counts the real rows.
+```sql
+CREATE INDEX t_k_idx ON t (k);
+EXPLAIN (ANALYZE, COSTS OFF, TIMING OFF) SELECT count(*) FROM t WHERE k = 7;
+```
 
-Step through the lock diagram (who blocks whom while an index builds), do the lab, then answer the three questions.
+Now it is a `Bitmap Index Scan on t_k_idx` with `Index Searches: 1`; the 19,800 thrown-away rows are gone.
+
+## Common mistakes
+
+Running `CONCURRENTLY` inside a transaction:
+
+```sql
+BEGIN;
+-- ERROR 25001: CREATE INDEX CONCURRENTLY cannot run inside a transaction block
+CREATE INDEX CONCURRENTLY t_id_idx ON t (id);
+```
+
+The command manages several transactions of its own, so it must run alone. End the broken block with `ROLLBACK` and run it again outside `BEGIN`.
+
+Measuring a `DELETE` and forgetting that it really runs:
+
+```sql
+-- WRONG: EXPLAIN ANALYZE really deletes the rows
+ROLLBACK;
+EXPLAIN (ANALYZE, COSTS OFF, TIMING OFF) DELETE FROM t WHERE k = 7;
+SELECT count(*) AS left_after FROM t WHERE k = 7;
+```
+
+```sql
+-- FIX: measure inside a transaction and roll it back
+BEGIN;
+EXPLAIN (ANALYZE, COSTS OFF, TIMING OFF) DELETE FROM t WHERE k = 8;
+ROLLBACK;
+SELECT count(*) AS left_after FROM t WHERE k = 8;
+```
+
+The wrong version leaves 0 rows with `k = 7`; the right one still has all 200 rows with `k = 8`.
+
+## Recap
+
+- `EXPLAIN` guesses, `EXPLAIN ANALYZE` really runs and puts `actual rows` next to `rows=`.
+- A big gap between estimate and reality: check `pg_stats` and run `ANALYZE`.
+- A large `Rows Removed by Filter` and high `Buffers:` point at the node that reads too much; never compare milliseconds across machines.
+- Measure writes inside `BEGIN ... ROLLBACK`.
+- `CREATE INDEX` blocks writes; `CONCURRENTLY` does not, but runs outside a transaction and can leave an INVALID index.
