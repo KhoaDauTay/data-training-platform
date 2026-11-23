@@ -498,6 +498,7 @@ export const en: Record<Key, Msg> = {
   'sqlerr.labTable': 'Put the index on the table that the query in the card on the left needs to read faster.',
   'sqlerr.labOnly': 'The lab runs exactly one CREATE INDEX statement.',
   'sqlerr.labNone': 'No new index was created: the name already exists or nothing changed.',
+  'sqlerr.writeTx': 'This statement ends the transaction (COMMIT, ROLLBACK…), so there is nothing to grade. Write one statement that adds, changes or deletes data.',
   'sqlerr.aggWindow': 'An aggregate cannot contain a window function. Compute the window function first in a subquery or CTE, then aggregate in the outer query.',
   'recap.reflect': 'Think it over',
   'recap.reflectRight': 'Correct.',

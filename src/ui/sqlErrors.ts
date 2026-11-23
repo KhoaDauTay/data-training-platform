@@ -50,6 +50,7 @@ const BY_CODE: Record<string, Key> = {
   LAB01: 'sqlerr.labOnly', // runLab (src/db/run.ts): the worker refused anything but one CREATE INDEX
   LAB02: 'sqlerr.labTable', // runLab: the index was on another table than the lab's
   LAB03: 'sqlerr.labNone', // runLab: nothing was created (IF NOT EXISTS with a name that exists)
+  WRT01: 'sqlerr.writeTx', // v26 R2 runSandboxed with check: the write drill's statement ended the transaction
 };
 
 /**

@@ -1221,19 +1221,26 @@
   kind: open
   task: { vi: "Chỉ tiêu tháng 11 và 12/2026 (`store_targets`) của mọi cửa hàng ở thành phố `Da Nang` (thành phố nằm trong bảng `stores`) tăng thêm 2000000 đồng. Cửa hàng ở thành phố khác giữ nguyên.", en: "The November and December 2026 targets (`store_targets`) of every store in the city `Da Nang` (the city is in the `stores` table) go up by 2000000 VND. Stores in other cities stay as they are." }
   solution: "UPDATE store_targets t SET target_vnd = t.target_vnd + 2000000 FROM stores s WHERE s.id = t.store_id AND s.city = 'Da Nang' AND t.month >= '2026-11-01'"
-  check: "SELECT store_id, month, target_vnd FROM store_targets WHERE month >= '2026-11-01'"
+  check: "SELECT store_id, month, target_vnd FROM store_targets"
   hint: { vi: "Bảng được sửa lấy điều kiện từ một bảng thứ hai, nối bằng mã cửa hàng.", en: "The table being changed takes its condition from a second table, linked by the store id." }
+  wrong:
+    - sql: "UPDATE store_targets t SET target_vnd = t.target_vnd + 2000000 FROM stores s WHERE s.id = t.store_id AND s.city = 'Da Nang'"
+      vi: "Thiếu điều kiện tháng: chỉ tiêu cả năm của hai cửa hàng Đà Nẵng đều tăng, không riêng tháng 11 và 12. Thêm `t.month >= '2026-11-01'`."
+      en: "The month condition is missing: the whole year's targets of both Da Nang stores go up, not just November and December. Add `t.month >= '2026-11-01'`."
 - id: g-update-join-3
   skill: update_join
   kind: trap
   task: { vi: "Bảng `payments` có những lần thu bị ghi hai lần: cùng `order_id`, cùng `amount_vnd`. Xóa bản thừa, giữ lại đúng một bản mỗi cặp (bản có `id` nhỏ hơn). Một lần thu và một lần hoàn tiền (số âm) của cùng đơn không phải bản trùng.", en: "The `payments` table has payments recorded twice: same `order_id`, same `amount_vnd`. Delete the extra copy and keep exactly one of each pair (the one with the smaller `id`). A payment and a refund (a negative amount) of the same order are not duplicates." }
   solution: "DELETE FROM payments p USING payments q WHERE p.order_id = q.order_id AND p.amount_vnd = q.amount_vnd AND p.id > q.id"
-  check: "SELECT order_id, count(*), sum(amount_vnd) FROM payments WHERE order_id % 97 = 0 GROUP BY order_id"
+  check: "SELECT order_id, count(*), sum(amount_vnd) FROM payments GROUP BY order_id HAVING count(*) > 1 OR order_id % 97 = 0"
   hint: { vi: "Ghép bảng với chính nó để mỗi dòng thấy bản sao của mình; chỉ xóa bản đứng sau.", en: "Pair the table with itself so each row sees its copy; delete only the later one." }
   wrong:
     - sql: "DELETE FROM payments p USING payments q WHERE p.order_id = q.order_id AND p.amount_vnd = q.amount_vnd AND p.id <> q.id"
       vi: "`p.id <> q.id` đúng cho cả hai bản của một cặp (mỗi bản thấy bản kia), nên cả hai bị xóa: đơn mất luôn lần thu. Chỉ xóa bản có `id` lớn hơn: `p.id > q.id`."
       en: "`p.id <> q.id` holds for both copies of a pair (each one sees the other), so both are deleted: the order loses its payment entirely. Delete only the copy with the larger `id`: `p.id > q.id`."
+    - sql: "DELETE FROM payments p USING payments q WHERE p.order_id = q.order_id AND p.id > q.id"
+      vi: "Thiếu `p.amount_vnd = q.amount_vnd`: lần hoàn tiền (số âm) đi sau lần thu của cùng đơn cũng bị xóa, như thể nó là bản trùng. Bản trùng phải cùng đơn **và** cùng số tiền."
+      en: "`p.amount_vnd = q.amount_vnd` is missing: the refund (a negative amount) recorded after the payment of the same order is deleted too, as if it were a duplicate. A duplicate needs the same order **and** the same amount."
 - id: g-update-join-4
   skill: update_join
   kind: review

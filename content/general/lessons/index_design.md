@@ -127,7 +127,7 @@ Nhiều người nghĩ **chỉ mục `(user_id, ts)` giúp mọi câu có `ts`**
 
 ## Cú pháp
 
-Ở BoonData bạn đọc kế hoạch của các chỉ mục có sẵn; câu `CREATE INDEX` được thử ở lab chỉ mục (chương 11 Logistics) và ở khu Engine.
+Ở bài này bạn đọc kế hoạch của các chỉ mục có sẵn; tự tạo chỉ mục bằng `CREATE INDEX` rồi so kế hoạch trước và sau thì có ở khu Engine, phần PostgreSQL.
 
 # EN
 
@@ -143,4 +143,4 @@ Many people think **an `(user_id, ts)` index helps every query on `ts`**. In fac
 
 ## Syntax
 
-In BoonData you read the plans of the existing indexes; `CREATE INDEX` is tried in the index lab (Logistics chapter 11) and in the Engine area.
+In this lesson you read the plans of the existing indexes; creating your own with `CREATE INDEX` and comparing the plan before and after is in the Engine area, under PostgreSQL.

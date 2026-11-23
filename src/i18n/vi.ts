@@ -498,6 +498,7 @@ export const vi = {
   'sqlerr.labTable': 'Chỉ mục phải đặt trên bảng mà truy vấn ở thẻ bên trái cần đọc nhanh hơn.',
   'sqlerr.labOnly': 'Bài thử chỉ mục chỉ chạy đúng một câu CREATE INDEX.',
   'sqlerr.labNone': 'Không có chỉ mục mới nào được tạo: tên này đã có rồi hoặc không có gì thay đổi.',
+  'sqlerr.writeTx': 'Câu này kết thúc giao dịch (COMMIT, ROLLBACK…), nên không có gì để chấm. Viết một câu thêm, sửa hoặc xóa dữ liệu.',
   'sqlerr.aggWindow': 'Hàm gộp không chứa được hàm cửa sổ. Tính hàm cửa sổ trước trong một truy vấn con hoặc CTE, rồi gộp ở câu ngoài.',
   'recap.reflect': 'Ngẫm lại',
   'recap.reflectRight': 'Chính xác.',
