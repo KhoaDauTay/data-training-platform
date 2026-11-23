@@ -129,7 +129,7 @@ describe('Engine PostgreSQL L1–L2: bước chấm bằng catalog hoặc `after
 
 // ---------------------------------------------------------------------------------------------------------------------
 // v29 R6 (product-route-v24 §2.2, §4 R6): MongoDB and DynamoDB L3–L5 on the same section model, subset by kind (NEED above).
-// Runnable blocks in "Ví dụ" and "Lỗi hay gặp": MongoDB ```javascript (one mongosh command) on mingo, DynamoDB ```json (one
+// Runnable blocks in "Ví dụ" and "Lỗi hay gặp": MongoDB ```javascript or ```js (one mongosh command) on mingo, DynamoDB ```json (one
 // `{ op, input }` request) or ```partiql (one statement) on dynoxide; ```text blocks are shown, never run (server output,
 // commands a browser cannot run, numbers quoted from the docs). Leading `//` / `--` comment lines are markers, stripped
 // before the run: `// ERROR <code>` (MongoDB error code, DynamoDB exception name) must be refused with it, `// WRONG` needs
@@ -148,7 +148,7 @@ const nsAll = Object.entries(nsFiles).map(([p, raw]) => {
   const fm = parse(/^---\n([\s\S]*?)\n---\n/.exec(raw.replace(/\r\n/g, '\n'))![1]) as Record<string, unknown>;
   return { l: parseEngineLesson(raw, p, parse), fm };
 }).sort((a, b) => a.l.id.localeCompare(b.l.id));
-const RUN_LANG: Record<string, readonly string[]> = { mongodb: ['javascript'], dynamodb: ['json', 'partiql'] };
+const RUN_LANG: Record<string, readonly string[]> = { mongodb: ['javascript', 'js'], dynamodb: ['json', 'partiql'] };
 type NsBlock = { code: string; run: boolean; marks: string[] };
 const nsBlocks = (l: EngineLesson, id: SectionId): NsBlock[] => {
   const t = text(l, id);
