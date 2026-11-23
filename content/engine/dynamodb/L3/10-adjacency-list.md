@@ -69,6 +69,9 @@ lab:
           "KeyConditionExpression": "PK = :pk AND begins_with(SK, :p)",
           "ExpressionAttributeValues": {":pk": {"S": "ORDER#O-502"}, ":p": {"S": "PRODUCT#"}}}}
       check: doc
+      perf: { table: Shop }
+      slow: |
+        {"op":"Scan","input":{"TableName":"Shop","ExpressionAttributeValues":{":pk":{"S":"ORDER#O-502"},":p":{"S":"PRODUCT#"}},"FilterExpression":"(PK = :pk AND begins_with(SK, :p))"}}
       ordered: true
       hint:
         vi: Chiều xuôi - partition key là đơn.
@@ -81,6 +84,9 @@ lab:
           "KeyConditionExpression": "GSI1PK = :p",
           "ExpressionAttributeValues": {":p": {"S": "PRODUCT#P-04"}}}}
       check: doc
+      perf: { table: Shop }
+      slow: |
+        {"op":"Scan","input":{"TableName":"Shop","IndexName":"GSI1","ExpressionAttributeValues":{":p":{"S":"PRODUCT#P-04"}},"FilterExpression":"(GSI1PK = :p)"}}
       ordered: true
       expect: { Count: 4 }
       hint:

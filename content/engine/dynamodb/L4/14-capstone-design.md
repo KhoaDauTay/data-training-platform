@@ -104,6 +104,9 @@ lab:
       solution: |
         {"op": "GetItem", "input": {"TableName": "QuizApp", "Key": {"pk": {"S": "PLAYER#p3"}, "sk": {"S": "PROFILE"}}}}
       check: doc
+      perf: { table: QuizApp }
+      slow: |
+        {"op":"Scan","input":{"TableName":"QuizApp","FilterExpression":"#k0 = :k0 AND #k1 = :k1","ExpressionAttributeNames":{"#k0":"pk","#k1":"sk"},"ExpressionAttributeValues":{":k0":{"S":"PLAYER#p3"},":k1":{"S":"PROFILE"}}}}
       expect: { Count: 1 }
       hint: { vi: "Biết đủ khóa chính thì dùng GetItem.", en: "When you know the full primary key, use GetItem." }
     - task: { vi: "Mẫu 2, lịch sử thi đấu: đọc 3 trận gần nhất của người chơi `p1`, mới nhất trước. Sort key của trận là `MATCH#<time>#<match>`.", en: "Pattern 2, match history: read the 3 most recent matches of player `p1`, newest first. A match's sort key is `MATCH#<time>#<match>`." }
@@ -117,6 +120,9 @@ lab:
       solution: |
         {"op": "Query", "input": {"TableName": "QuizApp", "IndexName": "LiveNow", "KeyConditionExpression": "live_region = :r", "ExpressionAttributeValues": {":r": {"S": "VN"}}}}
       check: doc
+      perf: { table: QuizApp }
+      slow: |
+        {"op":"Scan","input":{"TableName":"QuizApp","IndexName":"LiveNow","ExpressionAttributeValues":{":r":{"S":"VN"}},"FilterExpression":"(live_region = :r)"}}
       expect: { Count: 2, ScannedCount: 2 }
       hint: { vi: "Đây là sparse GSI: Query trên nó, không Scan bảng.", en: "This is a sparse GSI: Query it, do not Scan the table." }
     - task: { vi: "Mẫu 4, bảng xếp hạng trong ngày: điểm của ngày 2026-11-20 được rải ra 4 shard `BOARD#2026-11-20#<shard>`, sort key `S#<score>#<player>`. Đọc 3 điểm cao nhất của shard 2 (ứng dụng sẽ gộp 4 shard).", en: "Pattern 4, today's leaderboard: the scores of 2026-11-20 are spread over 4 shards `BOARD#2026-11-20#<shard>`, sort key `S#<score>#<player>`. Read the top 3 scores of shard 2 (the application merges the 4 shards)." }

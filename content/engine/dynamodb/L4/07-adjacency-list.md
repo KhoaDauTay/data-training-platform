@@ -51,12 +51,18 @@ lab:
       solution: |
         {"op": "Query", "input": {"TableName": "School", "KeyConditionExpression": "pk = :s AND begins_with(sk, :c)", "ExpressionAttributeValues": {":s": {"S": "STU#s02"}, ":c": {"S": "CRS#"}}}}
       check: doc
+      perf: { table: School }
+      slow: |
+        {"op":"Scan","input":{"TableName":"School","ExpressionAttributeValues":{":s":{"S":"STU#s02"},":c":{"S":"CRS#"}},"FilterExpression":"(pk = :s AND begins_with(sk, :c))"}}
       expect: { Count: 3, ScannedCount: 3 }
       hint: { vi: "Hồ sơ có sort key `STU#s02`, lượt ghi danh có sort key bắt đầu bằng `CRS#`.", en: "The profile's sort key is `STU#s02`; enrolments have a sort key starting with `CRS#`." }
     - task: { vi: "Đi chiều ngược lại: đọc mọi học viên của khóa `CRS#c3` qua GSI `ByTarget` (partition key của GSI là `sk` của bảng, sort key là `pk`), không lấy item mô tả khóa học.", en: "Walk the other way: read every student of course `CRS#c3` through the GSI `ByTarget` (its partition key is the table's `sk`, its sort key is `pk`), without the course's own item." }
       solution: |
         {"op": "Query", "input": {"TableName": "School", "IndexName": "ByTarget", "KeyConditionExpression": "sk = :c AND begins_with(pk, :s)", "ExpressionAttributeValues": {":c": {"S": "CRS#c3"}, ":s": {"S": "STU#"}}}}
       check: doc
+      perf: { table: School }
+      slow: |
+        {"op":"Scan","input":{"TableName":"School","IndexName":"ByTarget","ExpressionAttributeValues":{":c":{"S":"CRS#c3"},":s":{"S":"STU#"}},"FilterExpression":"(sk = :c AND begins_with(pk, :s))"}}
       expect: { Count: 4, ScannedCount: 4 }
       hint: { vi: "Trên GSI, `sk` là partition key: điều kiện bằng đặt lên `sk`, `begins_with` đặt lên `pk`.", en: "On the GSI, `sk` is the partition key: put the equality on `sk` and `begins_with` on `pk`." }
 ---

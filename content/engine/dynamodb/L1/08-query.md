@@ -154,6 +154,9 @@ lab:
           "KeyConditionExpression": "customerId = :c",
           "ExpressionAttributeValues": {":c": {"S": "C-07"}}}}
       check: doc
+      perf: { table: Orders }
+      slow: |
+        {"op":"Scan","input":{"TableName":"Orders","ExpressionAttributeValues":{":c":{"S":"C-07"}},"FilterExpression":"(customerId = :c)"}}
       ordered: true
       hint:
         vi: 'Partition key luôn so bằng `=` với một chỗ giữ chỗ, ví dụ `customerId = :c`.'
@@ -166,6 +169,9 @@ lab:
           "KeyConditionExpression": "customerId = :c AND begins_with(orderId, :m)",
           "ExpressionAttributeValues": {":c": {"S": "C-07"}, ":m": {"S": "2026-09"}}}}
       check: doc
+      perf: { table: Orders }
+      slow: |
+        {"op":"Scan","input":{"TableName":"Orders","ExpressionAttributeValues":{":c":{"S":"C-07"},":m":{"S":"2026-09"}},"FilterExpression":"(customerId = :c AND begins_with(orderId, :m))"}}
       ordered: true
       hint:
         vi: 'Một tiền tố của sort key - `begins_with(orderId, :m)`.'

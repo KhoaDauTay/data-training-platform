@@ -90,6 +90,9 @@ lab:
           "ExpressionAttributeNames": {"#s": "status"},
           "ExpressionAttributeValues": {":s": {"S": "NEW"}}}}
       check: doc
+      perf: { table: Orders }
+      slow: |
+        {"op":"Scan","input":{"TableName":"Orders","IndexName":"byStatus","ExpressionAttributeNames":{"#s":"status"},"ExpressionAttributeValues":{":s":{"S":"NEW"}},"FilterExpression":"(#s = :s)"}}
       ordered: true
       expect: { Count: 3 }
       hint:
@@ -104,6 +107,9 @@ lab:
           "ConsistentRead": true,
           "ReturnConsumedCapacity": "TOTAL"}}
       check: doc
+      perf: { table: Orders }
+      slow: |
+        {"op":"Scan","input":{"TableName":"Orders","FilterExpression":"#k0 = :k0 AND #k1 = :k1","ExpressionAttributeNames":{"#k0":"customerId","#k1":"orderId"},"ExpressionAttributeValues":{":k0":{"S":"C-02"},":k1":{"S":"2026-10-09#O-403"}}}}
       hint:
         vi: '`GetItem` theo khóa bảng chính (`customerId`, `orderId`) lấy từ bước 1, thêm `"ConsistentRead": true`. Item dưới 4 KB nên tốn 1 RCU thay vì 0,5.'
         en: '`GetItem` by the base table key (`customerId`, `orderId`) taken from step 1, plus `"ConsistentRead": true`. The item is under 4 KB, so it costs 1 RCU instead of 0.5.'

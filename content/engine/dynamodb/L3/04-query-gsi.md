@@ -152,6 +152,9 @@ lab:
           "ExpressionAttributeNames": {"#s": "status"},
           "ExpressionAttributeValues": {":s": {"S": "NEW"}}}}
       check: doc
+      perf: { table: Orders }
+      slow: |
+        {"op":"Scan","input":{"TableName":"Orders","IndexName":"byStatus","ExpressionAttributeNames":{"#s":"status"},"ExpressionAttributeValues":{":s":{"S":"NEW"}},"FilterExpression":"(#s = :s)"}}
       ordered: true
       hint:
         vi: 'Thêm `"IndexName": "byStatus"`; partition key của index là `status`, từ dành riêng.'

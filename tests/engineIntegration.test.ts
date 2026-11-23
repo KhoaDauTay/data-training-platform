@@ -170,6 +170,23 @@ describe('DynamoDB labs: every Solution passes its own check (dynoxide in Node)'
       expect(out.meta?.count, `step ${i + 1} count`).toBeTypeOf('number');
     }
   }, 60_000);
+  // v26 route R5 (L381): a `perf:` step blocks the Scan answer. Its `slow:` gives the same items (it passes with the bar and
+  // `expect` stripped), and the bar alone refuses it, with the measured counts in the sentence.
+  const bars = labs.flatMap((l) => l.lab!.steps.flatMap((s, i) => (s.perf ? [[`${l.id}.s${i + 1}`, l, i] as const] : [])));
+  it('R5: thanh chi phí trên mọi bước có câu Scan thay thế (sàn của route)', () => {
+    expect(bars.length).toBeGreaterThanOrEqual(45);
+    for (const id of ['e-dy-l1-08', 'e-dy-l1-09', 'e-dy-l2-02', 'e-dy-l3-04', 'e-dy-l3-05', 'e-dy-l3-06', 'e-dy-l1-11', 'e-dy-l3-11', 'e-dy-l4-14', 'e-dy-l5-07'])
+      expect([id, bars.some(([, l]) => l.id === id)]).toEqual([id, true]);
+  });
+  it.each(bars)('%s: lời giải qua, slow: trượt vì thanh chi phí', async (_n, l, i) => {
+    const r = dynamoRunner({ lang }, client as never);
+    const s = l.lab!.steps[i];
+    expect(s.slow).toBeTruthy();
+    expect(await r.check(l.lab!, { ...s, perf: undefined, expect: undefined }, s.slow!)).toMatchObject({ ok: true });
+    const v = await r.check(l.lab!, s, s.slow!);
+    expect(v).toMatchObject({ ok: false, reason: 'wrong', why: 'slow' });
+    expect(v.ok ? '' : v.message).toMatch(/ScannedCount|RCU|Scan/);
+  }, 60_000);
   it('a Scan where the step expects a Query fails on ScannedCount (L1/09)', async () => {
     const l = lessons.find((x) => x.id === 'e-dy-l1-09')!;
     const r = dynamoRunner({ lang }, client as never);

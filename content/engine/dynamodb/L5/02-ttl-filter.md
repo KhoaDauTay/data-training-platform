@@ -39,6 +39,9 @@ lab:
       solution: |
         {"op": "Query", "input": {"TableName": "Sessions", "KeyConditionExpression": "pk = :u", "FilterExpression": "expires_at > :now", "ExpressionAttributeValues": {":u": {"S": "USER#u1"}, ":now": {"N": "1795132800"}}}}
       check: doc
+      perf: { table: Sessions }
+      slow: |
+        {"op":"Scan","input":{"TableName":"Sessions","ExpressionAttributeValues":{":u":{"S":"USER#u1"},":now":{"N":"1795132800"}},"FilterExpression":"(pk = :u) AND (expires_at > :now)"}}
       expect: { Count: 2, ScannedCount: 6 }
       hint: { vi: "`expires_at` không phải khóa, nên điều kiện thời gian nằm trong `FilterExpression`.", en: "`expires_at` is not a key, so the time condition goes in `FilterExpression`." }
 quiz:

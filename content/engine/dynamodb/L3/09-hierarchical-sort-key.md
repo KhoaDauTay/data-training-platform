@@ -66,6 +66,9 @@ lab:
           "KeyConditionExpression": "PK = :pk AND begins_with(SK, :loc)",
           "ExpressionAttributeValues": {":pk": {"S": "STORE"}, ":loc": {"S": "VN#DA-NANG#"}}}}
       check: doc
+      perf: { table: Shop }
+      slow: |
+        {"op":"Scan","input":{"TableName":"Shop","ExpressionAttributeValues":{":pk":{"S":"STORE"},":loc":{"S":"VN#DA-NANG#"}},"FilterExpression":"(PK = :pk AND begins_with(SK, :loc))"}}
       ordered: true
       expect: { Count: 4, ScannedCount: 4 }
       hint:
@@ -79,6 +82,9 @@ lab:
           "KeyConditionExpression": "PK = :pk AND begins_with(SK, :loc)",
           "ExpressionAttributeValues": {":pk": {"S": "STORE"}, ":loc": {"S": "VN#DA-NANG#HAI-CHAU#"}}}}
       check: doc
+      perf: { table: Shop }
+      slow: |
+        {"op":"Scan","input":{"TableName":"Shop","ExpressionAttributeValues":{":pk":{"S":"STORE"},":loc":{"S":"VN#DA-NANG#HAI-CHAU#"}},"FilterExpression":"(PK = :pk AND begins_with(SK, :loc))"}}
       ordered: true
       expect: { Count: 2 }
       hint:

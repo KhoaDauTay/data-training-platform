@@ -149,6 +149,9 @@ lab:
       solution: |
         {"op": "Query", "input": {"TableName": "Tickets", "IndexName": "OpenByQueue", "KeyConditionExpression": "open_queue = :q", "ExpressionAttributeValues": {":q": {"S": "SHIPPING"}}}}
       check: doc
+      perf: { table: Tickets }
+      slow: |
+        {"op":"Scan","input":{"TableName":"Tickets","IndexName":"OpenByQueue","ExpressionAttributeValues":{":q":{"S":"SHIPPING"}},"FilterExpression":"(open_queue = :q)"}}
       expect: { Count: 5, ScannedCount: 5 }
       hint: { vi: "Query trên GSI cần `IndexName`; điều kiện đặt lên partition key của GSI.", en: "A Query on a GSI needs `IndexName`; the condition goes on the GSI's partition key." }
     - task: { vi: "Lấy đúng một phiếu: phiếu đang mở lâu nhất của hàng đợi `ACCOUNT`.", en: "Get exactly one ticket: the longest-open ticket of the `ACCOUNT` queue." }

@@ -154,6 +154,9 @@ lab:
           "ExpressionAttributeNames": {"#t": "total"},
           "ExpressionAttributeValues": {":c": {"S": "C-02"}, ":x": {"N": "500000"}}}}
       check: doc
+      perf: { table: Orders }
+      slow: |
+        {"op":"Scan","input":{"TableName":"Orders","ExpressionAttributeNames":{"#t":"total"},"ExpressionAttributeValues":{":c":{"S":"C-02"},":x":{"N":"500000"}},"FilterExpression":"(customerId = :c) AND (#t > :x)"}}
       ordered: true
       expect: { Count: 3, ScannedCount: 4 }
       hint:
@@ -167,6 +170,9 @@ lab:
           "KeyConditionExpression": "customerId = :c AND begins_with(orderId, :m)",
           "ExpressionAttributeValues": {":c": {"S": "C-21"}, ":m": {"S": "2026-10"}}}}
       check: doc
+      perf: { table: Orders }
+      slow: |
+        {"op":"Scan","input":{"TableName":"Orders","ExpressionAttributeValues":{":c":{"S":"C-21"},":m":{"S":"2026-10"}},"FilterExpression":"(customerId = :c AND begins_with(orderId, :m))"}}
       ordered: true
       expect: { Count: 1, ScannedCount: 1 }
       hint:
@@ -182,6 +188,9 @@ lab:
           "ExpressionAttributeNames": {"#s": "status", "#t": "total"},
           "ExpressionAttributeValues": {":c": {"S": "C-02"}}}}
       check: doc
+      perf: { table: Orders }
+      slow: |
+        {"op":"Scan","input":{"TableName":"Orders","ExpressionAttributeNames":{"#s":"status","#t":"total"},"ExpressionAttributeValues":{":c":{"S":"C-02"}},"ProjectionExpression":"orderId, #s, #t","FilterExpression":"(customerId = :c)"}}
       ordered: true
       hint:
         vi: '`ProjectionExpression` cũng phải dùng `#s`, `#t` cho từ dành riêng.'

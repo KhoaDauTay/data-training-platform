@@ -69,6 +69,9 @@ lab:
           "KeyConditionExpression": "PK = :pk",
           "ExpressionAttributeValues": {":pk": {"S": "CUST#C-02"}}}}
       check: doc
+      perf: { table: Shop }
+      slow: |
+        {"op":"Scan","input":{"TableName":"Shop","ExpressionAttributeValues":{":pk":{"S":"CUST#C-02"}},"FilterExpression":"(PK = :pk)"}}
       ordered: true
       expect: { Count: 3, ScannedCount: 3 }
       hint:
@@ -95,6 +98,9 @@ lab:
           "KeyConditionExpression": "PK = :pk",
           "ExpressionAttributeValues": {":pk": {"S": "ORDER#O-503"}}}}
       check: doc
+      perf: { table: Shop }
+      slow: |
+        {"op":"Scan","input":{"TableName":"Shop","ExpressionAttributeValues":{":pk":{"S":"ORDER#O-503"}},"FilterExpression":"(PK = :pk)"}}
       ordered: true
       expect: { Count: 3 }
       hint:

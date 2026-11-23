@@ -101,6 +101,9 @@ lab:
           "ExpressionAttributeValues": {":p": {"S": "CUST#C-02"}},
           "ReturnConsumedCapacity": "TOTAL"}}
       check: doc
+      perf: { table: Shop }
+      slow: |
+        {"op":"Scan","input":{"TableName":"Shop","ExpressionAttributeValues":{":p":{"S":"CUST#C-02"}},"FilterExpression":"(PK = :p)"}}
       ordered: true
       expect: { Count: 4 }
       hint:
@@ -114,6 +117,9 @@ lab:
           "Key": {"customerId": {"S": "C-02"}},
           "ReturnConsumedCapacity": "TOTAL"}}
       check: doc
+      perf: { table: Customers }
+      slow: |
+        {"op":"Scan","input":{"TableName":"Customers","FilterExpression":"#k0 = :k0","ExpressionAttributeNames":{"#k0":"customerId"},"ExpressionAttributeValues":{":k0":{"S":"C-02"}}}}
       hint:
         vi: '`GetItem` theo `customerId`. Một item nhỏ, đọc nhất quán cuối: 0,5 RCU.'
         en: '`GetItem` by `customerId`. One small item, eventually consistent: 0.5 RCU.'
@@ -126,6 +132,9 @@ lab:
           "ExpressionAttributeValues": {":c": {"S": "C-02"}},
           "ReturnConsumedCapacity": "TOTAL"}}
       check: doc
+      perf: { table: Orders }
+      slow: |
+        {"op":"Scan","input":{"TableName":"Orders","ExpressionAttributeValues":{":c":{"S":"C-02"}},"FilterExpression":"(customerId = :c)"}}
       ordered: true
       expect: { Count: 3 }
       hint:
@@ -141,6 +150,9 @@ lab:
           "ConsistentRead": true,
           "ReturnConsumedCapacity": "TOTAL"}}
       check: doc
+      perf: { table: Shop }
+      slow: |
+        {"op":"Scan","input":{"TableName":"Shop","ExpressionAttributeValues":{":p":{"S":"CUST#C-02"}},"ConsistentRead":true,"FilterExpression":"(PK = :p)"}}
       ordered: true
       expect: { Count: 4 }
       hint:

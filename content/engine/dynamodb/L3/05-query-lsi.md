@@ -153,6 +153,9 @@ lab:
           "ExpressionAttributeValues": {":c": {"S": "C-07"}, ":x": {"N": "500000"}},
           "ConsistentRead": true}}
       check: doc
+      perf: { table: Orders }
+      slow: |
+        {"op":"Scan","input":{"TableName":"Orders","IndexName":"byTotal","ExpressionAttributeNames":{"#t":"total"},"ExpressionAttributeValues":{":c":{"S":"C-07"},":x":{"N":"500000"}},"ConsistentRead":true,"FilterExpression":"(customerId = :c AND #t > :x)"}}
       ordered: true
       expect: { ScannedCount: 3 }
       hint:
