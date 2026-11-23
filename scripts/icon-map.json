@@ -95,6 +95,8 @@
     "minus": ["minus-square", "EXCEPT"],
     "inList": ["brackets-round", "IN (...): a list in brackets"],
     "correlated": ["arrow-square-in", "correlated subquery: the outer row goes in"],
+    "crossJoin": ["grid-nine", "CROSS JOIN: every row paired with every row, a grid (v25 R1)"],
+    "anyAll": ["greater-than-or-equal", "ANY / ALL: compare one value with every value of a list (v25 R1)"],
     "stepsMerge": ["git-merge", "several CTEs merge into one query"],
     "firstPerGroup": ["number-circle-one", "DISTINCT ON: the first row per group"],
     "plan": ["tree-structure", "EXPLAIN: the plan tree"],

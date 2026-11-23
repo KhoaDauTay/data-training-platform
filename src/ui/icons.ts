@@ -32,6 +32,7 @@ export const SKILL_ICON: Record<string, IconName> = {
   date_math: 'dateMath', date_bucket: 'dateBucket', null_logic: 'emptySet', case_when: 'branch', conditional_agg: 'sigmaCheck',
   coalesce: 'fallback', string_fn: 'text', pattern_match: 'pattern', distinct: 'distinct', cast: 'cast',
   // Planned (curriculum.md): mapped now so a new skill gets its picture the day it is added.
+  cross_join: 'crossJoin', any_all: 'anyAll', // v25 R1: General-only skills (skills-general.yml)
   in_subquery: 'inList', scalar_subquery: 'nested', correlated_value: 'correlated', exists: 'nestedCheck',
   cte: 'steps', multi_cte: 'stepsMerge', window_agg: 'window', window_lag: 'windowLag', window_rank: 'windowRank',
   union: 'stack', except: 'minus', full_join: 'fullJoin', distinct_on: 'firstPerGroup', explain_read: 'plan', index_design: 'bookIndex', sargable: 'sargable',

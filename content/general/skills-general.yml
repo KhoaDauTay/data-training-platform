@@ -1,4 +1,15 @@
 # Kỹ năng chỉ có ở khu General (v24, product-route-v24 §3.1.2, L327): cùng khuôn với content/skills.yml
 # (id, label, syntax, when, trap; `chapter:` không dùng). Không vào skills.yml: Lily, domain và luật một-ticket-mỗi-kỹ-năng
 # không đổi. Id của chúng phải nằm trong content/general/route.yml. Rỗng cho tới R1 (cross_join, any_all) và R2 (Phần 9).
-[]
+
+- id: cross_join
+  label: { vi: "Ghép mọi cặp (CROSS JOIN)", en: "Cross join" }
+  syntax: "FROM stores s CROSS JOIN dim_date d"
+  when: { vi: "Cần một lưới đủ mọi tổ hợp (mọi cửa hàng × mọi ngày) để ô trống cũng hiện ra.", en: "You need a full grid of every combination (every store × every day) so the empty cells show too." }
+  trap: { vi: "Số dòng là tích hai bảng: lọc bảng trước khi ghép, và đừng quên điều kiện nối khi bạn thật ra muốn JOIN.", en: "The row count is the product of both tables: filter each table before pairing, and do not drop the join condition when you really meant a JOIN." }
+
+- id: any_all
+  label: { vi: "So với mọi giá trị (ANY / ALL)", en: "ANY / ALL" }
+  syntax: "WHERE price_vnd > ALL (SELECT price_vnd FROM products WHERE category = 'Drinks')"
+  when: { vi: "So một giá trị với cả một danh sách: lớn hơn ít nhất một (ANY) hay lớn hơn tất cả (ALL).", en: "Compare one value with a whole list: greater than at least one (ANY) or greater than all of them (ALL)." }
+  trap: { vi: "ALL trên danh sách rỗng luôn đúng, và một NULL trong danh sách làm ALL không bao giờ đúng. Lọc NULL trong truy vấn con.", en: "ALL over an empty list is always true, and one NULL in the list keeps ALL from ever being true. Filter NULLs inside the subquery." }

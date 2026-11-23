@@ -36,18 +36,18 @@ const later = (sql: string, part: number, given = ''): number[] =>
   RULES.filter(([q, re]) => q > part && re.test(code(sql)) && !(given && re.test(code(given)))).map(([q]) => q);
 
 describe('route.yml: 11 Phần theo thứ tự mới (L335)', () => {
-  it('11 Phần, n = 1..11, mỗi kỹ năng đúng một Phần; 38 kỹ năng đã có + 5 kỹ năng của lát sau', () => {
+  it('11 Phần, n = 1..11, mỗi kỹ năng đúng một Phần; 38 kỹ năng đã có + 2 kỹ năng chỉ General (R1) + 3 của R2', () => {
     expect(ALL_PARTS.map((p) => p.n)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]);
     const ids = ALL_PARTS.flatMap((p) => p.skills);
     expect(new Set(ids).size).toBe(ids.length);
     for (const s of ROUTE_SKILLS) expect([s.id, partOf(s.id) !== undefined]).toEqual([s.id, true]);
-    expect(ids.filter((id) => !ROUTE_SKILLS.some((s) => s.id === id)).sort()).toEqual(['any_all', 'cross_join', 'insert_select', 'update_join', 'upsert']);
-    expect(GENERAL_SKILLS).toEqual([]); // R0: empty (R1 adds cross_join, any_all)
+    expect(ids.filter((id) => !ROUTE_SKILLS.some((s) => s.id === id)).sort()).toEqual(['insert_select', 'update_join', 'upsert']);
+    expect(GENERAL_SKILLS.map((s) => s.id)).toEqual(['cross_join', 'any_all']); // v25 R1 (R2 adds Part 9)
   });
 
   it('Phần vẽ ra: chỉ kỹ năng đã có; Phần 9 ẩn tới R2 (L336); tên Phần từ route.yml, không từ chapters.yml', () => {
     expect(PARTS.map((p) => p.n)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 10, 11]);
-    expect(PARTS.flatMap((p) => p.skills)).toHaveLength(38);
+    expect(PARTS.flatMap((p) => p.skills)).toHaveLength(40); // v25 R1: + cross_join, any_all
     expect(moduleTitle(3, 'vi')).toBe('Chữ, ngày và kiểu');
     expect(moduleTitle(9, 'en')).toBe('Writing data');
     expect(partOf('cast')).toBe(3);
