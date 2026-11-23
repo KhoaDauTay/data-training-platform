@@ -112,6 +112,21 @@ describe('MongoDB labs: every Solution passes its own check', () => {
     }
   });
 
+  // v30 R6 L1–L2: the L2 capstone has a match-first bar whose `slow:` fails. The L1 capstone (find, projection, CRUD) has
+  // none on purpose: the three rules (match-first, esr, covered) need an aggregate or an index, which L1 does not teach yet.
+  it('R6 L1–L2: capstone MongoDB L2 có bước thanh quy tắc mà `slow:` trượt; L1 không có dạng chậm tự nhiên', async () => {
+    const caps = labs.filter((l) => l.kind === 'capstone' && l.level <= 'L2');
+    expect(caps.map((l) => l.id).sort()).toEqual(['e-mg-l1-11', 'e-mg-l2-15']);
+    expect(caps.find((l) => l.id === 'e-mg-l1-11')!.lab!.steps.some((s) => s.rule)).toBe(false);
+    const l2 = caps.find((l) => l.id === 'e-mg-l2-15')!;
+    const bars = l2.lab!.steps.filter((s) => s.rule && s.slow);
+    expect(bars.length).toBeGreaterThan(0);
+    for (const s of bars) {
+      expect(await r.check(l2.lab!, s, s.solution)).toMatchObject({ ok: true });
+      expect(await r.check(l2.lab!, s, s.slow!)).toMatchObject({ ok: false });
+    }
+  });
+
   it('"mong lỗi": bước có `error` chỉ đạt khi MongoDB từ chối đúng mã đó', async () => {
     const steps = labs.flatMap((l) => l.lab!.steps.filter((s) => s.error).map((s) => [l, s] as const));
     expect(steps.length).toBeGreaterThan(0);
@@ -216,6 +231,20 @@ describe('DynamoDB labs: every Solution passes its own check (dynoxide in Node)'
       const bars = l.lab!.steps.filter((s) => s.perf && s.slow);
       expect([l.id, bars.length > 0]).toEqual([l.id, true]);
       for (const s of bars) expect([l.id, await r.check(l.lab!, s, s.slow!)]).toEqual([l.id, expect.objectContaining({ ok: false, why: 'slow' })]);
+    }
+  }, 120_000);
+  // v30 R6 L1–L2: both DynamoDB capstones L1–L2 have a cost-bar step whose `slow:` (a filtered Scan) fails on the bar.
+  it('R6 L1–L2: mỗi capstone DynamoDB L1–L2 có bước thanh chi phí mà `slow:` trượt', async () => {
+    const caps = labs.filter((l) => l.kind === 'capstone' && l.level <= 'L2');
+    expect(caps.map((l) => l.id).sort()).toEqual(['e-dy-l1-11', 'e-dy-l2-12']);
+    const r = dynamoRunner({ lang }, client as never);
+    for (const l of caps) {
+      const bars = l.lab!.steps.filter((s) => s.perf && s.slow);
+      expect([l.id, bars.length > 0]).toEqual([l.id, true]);
+      for (const s of bars) {
+        expect([l.id, await r.check(l.lab!, s, s.solution)]).toEqual([l.id, expect.objectContaining({ ok: true })]);
+        expect([l.id, await r.check(l.lab!, s, s.slow!)]).toEqual([l.id, expect.objectContaining({ ok: false, why: 'slow' })]);
+      }
     }
   }, 120_000);
   it('thanh không phạt đọc nhất quán mạnh; ReturnConsumedCapacity NONE không né được thanh', async () => {

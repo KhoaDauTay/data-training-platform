@@ -89,6 +89,18 @@ lab:
       hint:
         vi: Điều kiện bằng trên partition key, nên chỉ đọc một item.
         en: An equality on the partition key, so only one item is read.
+    - task:
+        vi: 'Quầy hỏi lại cuốn `978-0-03` đã hết hàng chưa. Đọc đúng cuốn đó mà không đọc cuốn nào khác.'
+        en: 'The counter asks again whether book `978-0-03` is sold out. Read exactly that book without reading any other.'
+      solution: |
+        {"op": "GetItem", "input": {"TableName": "Books", "Key": {"isbn": {"S": "978-0-03"}}}}
+      check: doc
+      perf: { table: Books }
+      slow: |
+        {"op":"Scan","input":{"TableName":"Books","FilterExpression":"#k0 = :k0","ExpressionAttributeNames":{"#k0":"isbn"},"ExpressionAttributeValues":{":k0":{"S":"978-0-03"}}}}
+      hint:
+        vi: 'Bạn có `isbn`, là cả khóa chính. Một `Scan` có lọc cũng ra cuốn đó, nhưng đọc cả 8 cuốn.'
+        en: 'You have the `isbn`, which is the whole primary key. A filtered `Scan` finds that book too, but reads all 8.'
 quiz:
   - q:
       vi: 'Ở bước 3, DynamoDB trả `ConditionalCheckFailedException`. Điều đó nói gì, và bạn làm gì tiếp?'
