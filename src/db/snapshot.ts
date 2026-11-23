@@ -12,7 +12,9 @@ import { ensureSchema, markSeeded, seededSchemas } from './lab';
  */
 
 /** Bump when anything besides the seed files changes what a seeded schema holds (ensureSchema, SANDBOX_SETUP_SQL). */
-export const SNAPSHOT_FORMAT = 1;
+// 2 = v24 R0b (L350): lab identity/CHECK/index + events_big, Logistics ANALYZE + incoterm FK. __SEED_HASH__ alone already
+// drops older records (the seed files changed); the bump is belt and braces, asked for in the R0b brief.
+export const SNAPSHOT_FORMAT = 2;
 
 export interface SnapshotKey { pglite: string; hashes: Readonly<Record<string, string>> }
 export const CURRENT_KEY: SnapshotKey = { pglite: __PGLITE__, hashes: __SEED_HASH__ };
