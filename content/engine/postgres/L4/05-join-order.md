@@ -8,6 +8,7 @@ title_en: "Join order, collapse limits and GEQO"
 kind: predict
 runtime: browser
 minutes: 12
+verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-24" }
 objectives:
   - { vi: "Biết planner tự sắp lại thứ tự JOIN, không theo thứ tự bạn viết", en: "Know that the planner reorders JOINs instead of following the written order" }
   - { vi: "Giải thích `join_collapse_limit`, `from_collapse_limit` và `geqo_threshold`", en: "Explain `join_collapse_limit`, `from_collapse_limit` and `geqo_threshold`" }
@@ -42,6 +43,7 @@ predict:
     - { vi: "`customers`, vì bộ lọc làm nó chỉ còn vài dòng", en: "`customers`, because the filter leaves only a few rows" }
     - { vi: "`orders`, vì nó nằm giữa", en: "`orders`, because it sits in the middle" }
   answer: 1
+  trap: 0
   why: { vi: "Nghe hợp lý vì `order_notes` đứng đầu câu, nhưng thứ tự viết không ràng buộc planner khi số bảng còn nhỏ. Với 3 bảng (dưới `join_collapse_limit` = 8), planner xét mọi thứ tự và bắt đầu từ phía nhỏ nhất sau lọc: Index Scan trên `customers`, rồi Nested Loop sang `orders` và `order_notes`.", en: "It sounds right because `order_notes` comes first in the query, but the written order does not bind the planner while the table count is small. With 3 tables (below `join_collapse_limit` = 8) the planner tries every order and starts from the smallest side after filtering: an Index Scan on `customers`, then Nested Loops into `orders` and `order_notes`." }
   expect: { node: Index Scan, table: customers, index: customers_pkey }
 quiz:
@@ -51,59 +53,171 @@ quiz:
       - { vi: "Vượt `join_collapse_limit` (8) nên một phần thứ tự viết được giữ; và từ 12 mục FROM trở lên, GEQO (tìm kiếm di truyền) thay tìm kiếm vét cạn", en: "It is over `join_collapse_limit` (8), so part of the written order is kept; and from 12 FROM items on, GEQO (a genetic search) replaces the exhaustive search" }
       - { vi: "Postgres báo lỗi quá nhiều bảng", en: "Postgres raises a too-many-tables error" }
     answer: 1
-    why: { vi: "Planner thử mọi thứ tự nghe hợp lý vì với ít bảng nó làm đúng như vậy, nhưng cách đó không mở rộng được. Số thứ tự nối tăng theo giai thừa. Postgres giới hạn bằng `join_collapse_limit`/`from_collapse_limit` (8) và chuyển sang GEQO khi số mục FROM ≥ `geqo_threshold` (12). Kế hoạch khi đó có thể không tối ưu.", en: "Trying every order sounds right because that is what the planner does for a few tables, but it does not scale. The number of join orders grows factorially. Postgres caps it with `join_collapse_limit`/`from_collapse_limit` (8) and switches to GEQO when the FROM items reach `geqo_threshold` (12). The plan may then not be optimal." }
+    trap: 0
+    why: { vi: "Nghe hợp lý vì với ít bảng planner làm đúng như vậy, nhưng cách đó không mở rộng được. Số thứ tự nối tăng theo giai thừa. Postgres giới hạn bằng `join_collapse_limit`/`from_collapse_limit` (8) và chuyển sang GEQO khi số mục FROM ≥ `geqo_threshold` (12). Kế hoạch khi đó có thể không tối ưu.", en: "It sounds right because that is what the planner does for a few tables, but it does not scale. The number of join orders grows factorially. Postgres caps it with `join_collapse_limit`/`from_collapse_limit` (8) and switches to GEQO when the FROM items reach `geqo_threshold` (12). The plan may then not be optimal." }
 ---
+## Mở bài
+
+Bạn viết câu nối ba bảng, bắt đầu bằng bảng lớn nhất. Postgres có đọc theo đúng thứ tự đó không? Đoán trước, rồi xem kế hoạch thật.
 
 ## Ý chính
 
-- Với JOIN trong (`INNER JOIN` hoặc dấu phẩy), kết quả không phụ thuộc thứ tự viết, nên planner được phép sắp lại và chọn thứ tự rẻ nhất.
-- Planner làm phẳng các JOIN tường minh thành danh sách để sắp lại, nhưng chỉ tới `join_collapse_limit` (mặc định 8) mục. Truy vấn con trong FROM được kéo lên tới `from_collapse_limit` (8).
-- Đặt `join_collapse_limit = 1` buộc planner theo đúng thứ tự viết. Đây là công cụ cuối cùng khi bạn biết rõ hơn planner, không phải mặc định.
-- Từ `geqo_threshold` (12) mục FROM trở lên, planner dùng GEQO, một thuật toán di truyền: nhanh hơn nhưng không bảo đảm tìm ra thứ tự tốt nhất.
-- OUTER JOIN bị ràng buộc hơn: không phải mọi cặp đều đổi chỗ được.
+Với JOIN trong (`INNER JOIN` hoặc dấu phẩy trong FROM), kết quả không phụ thuộc thứ tự viết, nên planner được phép sắp lại và chọn thứ tự rẻ nhất. Nó thường bắt đầu từ phía còn ít dòng nhất sau khi lọc, rồi nối dần sang các bảng lớn qua index.
+
+Nhiều người nghĩ thứ tự viết trong FROM là thứ tự Postgres đọc bảng. Thật ra với vài bảng, planner thử mọi thứ tự và bỏ qua cách bạn viết.
+
+Việc thử mọi thứ tự có giới hạn, vì số cách sắp tăng theo giai thừa. Planner chỉ làm phẳng các JOIN tường minh thành một danh sách để sắp lại khi danh sách đó không quá `join_collapse_limit` (mặc định 8) mục; truy vấn con trong FROM được kéo lên tới `from_collapse_limit` (8). Vượt giới hạn, một phần thứ tự viết được giữ nguyên. Từ `geqo_threshold` (12) mục FROM trở lên, planner chuyển sang GEQO, một tìm kiếm di truyền: nhanh hơn nhưng không bảo đảm tìm ra thứ tự tốt nhất.
+
+`OUTER JOIN` bị ràng buộc hơn: không phải cặp nào cũng đổi chỗ được mà giữ đúng kết quả. Đặt `join_collapse_limit = 1` buộc planner theo đúng thứ tự viết; đó là công cụ cuối cùng khi bạn chắc chắn hiểu dữ liệu hơn planner, không phải mặc định.
+
+## Cú pháp
+
+```sql
+SET join_collapse_limit = n;
+SET from_collapse_limit = n;
+SET geqo_threshold = n;
+EXPLAIN [ ( COSTS OFF ) ] SELECT ... FROM a JOIN b ON ... JOIN c ON ...;
+```
+
+- `join_collapse_limit`: số mục tối đa mà các JOIN tường minh được gộp lại để sắp xếp; 1 = giữ thứ tự viết.
+- `from_collapse_limit`: như trên, cho truy vấn con trong FROM.
+- `geqo_threshold`: từ số mục FROM này trở lên thì dùng GEQO.
 
 ## Ví dụ
 
-Kế hoạch thật trên PGlite cho một câu khác bài: viết `customers` trước, không lọc gì. Planner vẫn đặt `orders` (20.000 dòng) ở phía ngoài để dò, và băm `customers` (500 dòng) ở phía trong: thứ tự viết không quyết định thứ tự nối.
+Cùng một phép nối, viết theo hai thứ tự:
 
-```text
-EXPLAIN (COSTS OFF) SELECT count(*) FROM customers c JOIN orders o ON o.customer_id = c.id;
-Aggregate
-  ->  Hash Join
-        Hash Cond: (o.customer_id = c.id)
-        ->  Seq Scan on orders o
-        ->  Hash
-              ->  Seq Scan on customers c
+```sql
+EXPLAIN (COSTS OFF)
+SELECT count(*) FROM customers c JOIN orders o ON o.customer_id = c.id;
 ```
+
+```sql
+EXPLAIN (COSTS OFF)
+SELECT count(*) FROM orders o JOIN customers c ON o.customer_id = c.id;
+```
+
+Hai kế hoạch giống hệt: `orders` (20.000 dòng) ở phía ngoài để dò, `customers` (500 dòng) được băm. Các giới hạn đang dùng:
+
+```sql
+SELECT name, setting FROM pg_settings
+WHERE name IN ('join_collapse_limit', 'from_collapse_limit', 'geqo', 'geqo_threshold')
+ORDER BY name;
+```
+
+## Lỗi hay gặp
+
+Ép thứ tự viết khi thứ tự đó tệ:
+
+```sql
+-- WRONG: join_collapse_limit = 1 keeps the written order, largest table first
+SET join_collapse_limit = 1;
+EXPLAIN SELECT count(*) FROM order_notes n
+JOIN orders o ON o.id = n.order_id JOIN customers c ON c.id = o.customer_id
+WHERE c.region = 2 AND c.id < 30;
+```
+
+```sql
+-- FIX: let the planner reorder the joins
+RESET join_collapse_limit;
+EXPLAIN SELECT count(*) FROM order_notes n
+JOIN orders o ON o.id = n.order_id JOIN customers c ON c.id = o.customer_id
+WHERE c.region = 2 AND c.id < 30;
+```
+
+Câu bị ép phải nối 20.000 ghi chú với 20.000 đơn trước, rồi mới lọc theo khách, nên chi phí ước lượng hơn gấp đôi câu để planner tự chọn (khoảng 982 so với 437). Chỉ dùng `join_collapse_limit = 1` cho một câu cụ thể đã đo, và đặt lại ngay sau đó.
 
 ## Thực hành
 
-Đoán bảng nằm ở lá đầu tiên, xem kế hoạch thật, rồi tự viết câu đó. Kỹ năng chuyên gia: biết khi nào thứ tự viết có ý nghĩa (quá giới hạn, OUTER JOIN, GEQO) và khi nào không.
+Đoán bảng nằm ở lá đầu tiên, xem kế hoạch thật, rồi tự viết câu đó theo đúng thứ tự đề nêu. Sau đó là một câu hỏi về câu nối nhiều bảng.
+
+## Tóm tắt
+
+- Với JOIN trong, thứ tự viết không quyết định thứ tự nối; planner chọn thứ tự rẻ nhất.
+- Planner sắp lại tới `join_collapse_limit` và `from_collapse_limit` (8) mục; vượt đó, một phần thứ tự viết được giữ.
+- Từ `geqo_threshold` (12) mục FROM, GEQO thay tìm kiếm vét cạn và có thể bỏ lỡ kế hoạch tốt nhất.
+- `join_collapse_limit = 1` ép thứ tự viết: công cụ cuối cùng, không phải mặc định.
 
 # EN
 
+## Opening
+
+You write a three-table join that starts with the largest table. Does Postgres read the tables in that order? Guess first, then look at the real plan.
+
 ## Key idea
 
-- For inner JOINs (`INNER JOIN` or commas) the result does not depend on the written order, so the planner may reorder them and pick the cheapest order.
-- The planner flattens explicit JOINs into a list it can reorder, but only up to `join_collapse_limit` (default 8) items. Sub-queries in FROM are pulled up to `from_collapse_limit` (8).
-- Setting `join_collapse_limit = 1` forces the written order. It is a last resort for when you know better than the planner, not a default.
-- From `geqo_threshold` (12) FROM items on, the planner uses GEQO, a genetic algorithm: faster, but with no guarantee of the best order.
-- OUTER JOINs are more constrained: not every pair can swap.
+For inner joins (`INNER JOIN` or commas in FROM) the result does not depend on the written order, so the planner may reorder them and pick the cheapest order. It usually starts from the side with the fewest rows left after filtering, then joins its way into the large tables through indexes.
+
+Many people think the written order in FROM is the order Postgres reads the tables. In fact, with a few tables, the planner tries every order and ignores how you wrote it.
+
+Trying every order has a limit, because the number of orders grows factorially. The planner only flattens explicit JOINs into one list it can reorder while that list stays within `join_collapse_limit` (8 by default) items; sub-queries in FROM are pulled up within `from_collapse_limit` (8). Past the limit, part of the written order is kept. From `geqo_threshold` (12) FROM items on, the planner switches to GEQO, a genetic search: faster, but with no guarantee of finding the best order.
+
+`OUTER JOIN` is more constrained: not every pair can swap places and keep the result right. Setting `join_collapse_limit = 1` forces the written order; it is a last resort for when you are sure you know the data better than the planner, not a default.
+
+## Syntax
+
+```sql
+SET join_collapse_limit = n;
+SET from_collapse_limit = n;
+SET geqo_threshold = n;
+EXPLAIN [ ( COSTS OFF ) ] SELECT ... FROM a JOIN b ON ... JOIN c ON ...;
+```
+
+- `join_collapse_limit`: the maximum number of items explicit JOINs are merged into for reordering; 1 = keep the written order.
+- `from_collapse_limit`: the same, for sub-queries in FROM.
+- `geqo_threshold`: from this many FROM items on, GEQO is used.
 
 ## Example
 
-Real PGlite plan for a query other than the lesson's: it lists `customers` first, with no filter. The planner still puts `orders` (20,000 rows) on the outer, probing side and hashes `customers` (500 rows) on the inner side: the written order does not decide the join order.
+The same join, written in two orders:
 
-```text
-EXPLAIN (COSTS OFF) SELECT count(*) FROM customers c JOIN orders o ON o.customer_id = c.id;
-Aggregate
-  ->  Hash Join
-        Hash Cond: (o.customer_id = c.id)
-        ->  Seq Scan on orders o
-        ->  Hash
-              ->  Seq Scan on customers c
+```sql
+EXPLAIN (COSTS OFF)
+SELECT count(*) FROM customers c JOIN orders o ON o.customer_id = c.id;
 ```
+
+```sql
+EXPLAIN (COSTS OFF)
+SELECT count(*) FROM orders o JOIN customers c ON o.customer_id = c.id;
+```
+
+Both plans are identical: `orders` (20,000 rows) on the outer, probing side, `customers` (500 rows) hashed. The limits in use:
+
+```sql
+SELECT name, setting FROM pg_settings
+WHERE name IN ('join_collapse_limit', 'from_collapse_limit', 'geqo', 'geqo_threshold')
+ORDER BY name;
+```
+
+## Common mistakes
+
+Forcing the written order when that order is bad:
+
+```sql
+-- WRONG: join_collapse_limit = 1 keeps the written order, largest table first
+SET join_collapse_limit = 1;
+EXPLAIN SELECT count(*) FROM order_notes n
+JOIN orders o ON o.id = n.order_id JOIN customers c ON c.id = o.customer_id
+WHERE c.region = 2 AND c.id < 30;
+```
+
+```sql
+-- FIX: let the planner reorder the joins
+RESET join_collapse_limit;
+EXPLAIN SELECT count(*) FROM order_notes n
+JOIN orders o ON o.id = n.order_id JOIN customers c ON c.id = o.customer_id
+WHERE c.region = 2 AND c.id < 30;
+```
+
+The forced query must join 20,000 notes with 20,000 orders first and only then filter by customer, so its estimated cost is more than double that of the query the planner orders itself (about 982 against 437). Use `join_collapse_limit = 1` only for one specific, measured query, and reset it right after.
 
 ## Practice
 
-Guess which table sits at the first leaf, see the real plan, then write the query yourself. Expert skill: know when the written order matters (over the limits, OUTER JOINs, GEQO) and when it does not.
+Guess which table sits at the first leaf, see the real plan, then write the query yourself in the order given. Then one question about a many-table join.
+
+## Recap
+
+- With inner joins, the written order does not decide the join order; the planner picks the cheapest.
+- The planner reorders up to `join_collapse_limit` and `from_collapse_limit` (8) items; past that, part of the written order is kept.
+- From `geqo_threshold` (12) FROM items, GEQO replaces the exhaustive search and may miss the best plan.
+- `join_collapse_limit = 1` forces the written order: a last resort, not a default.
