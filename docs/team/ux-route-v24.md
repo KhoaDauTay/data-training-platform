@@ -2,18 +2,20 @@
 
 Người viết: UI/UX. Ngày 2026-11-23. Nhánh `design-v24`. **Chỉ là thiết kế**: không có code, không đổi nội dung.
 
-**Căn cứ:** `product-route-v24.md` §2 (giải phẫu 9 mục, độ sâu điều hướng) và §1 (12 Phần mới, Engine 200 → ~240 bài); `boondata-gap-map.md` ("Lesson pages will need a UI/UX redesign"); `engine-redesign-v22.md`, `engine-ux-spec.md`, `ui-ux-v7.md` (token T1, M1/M2), `review-v23.md`; CLAUDE.md (token, pipeline icon, a11y, chuyển động).
+**Căn cứ:** `product-route-v24.md` ở `ef14ad8`/`9abcdec`: §2 (giải phẫu **8 mục**, độ sâu điều hướng), §1 (**11 Phần** mới, Engine 200 → 241 bài gồm thẻ thứ tư **Thiết kế CSDL**), §1.7 (bản đồ kỹ năng + huy hiệu thay chứng nhận); `decision-log.md` L320–L327 (L322 engine thứ tư, L323 bỏ chứng nhận, L326 bỏ MySQL/SQLite); `boondata-gap-map.md` ("Lesson pages will need a UI/UX redesign"); `engine-redesign-v22.md`, `engine-ux-spec.md`, `ui-ux-v7.md` (token T1, M1/M2), `review-v23.md`; CLAUDE.md (token, pipeline icon, a11y, chuyển động).
 
 **Mockup:** `docs/team/v24-mockups/` (mở `index.html`: mọi hình trong một file, không script ngoài). Màu là hex thật của token trong `src/style.css` (`:root` cho bản sáng, `:root[data-theme=dark]` cho bản tối). Icon là path thật của Phosphor duotone 2.1.1 (`@phosphor-icons/core`) và của `scripts/icon-custom.json`. Nét tím đứt và số khoanh tím là chú thích, không phải UI. Mỗi hình đã được mở bằng Edge headless để kiểm chữ có tràn không. Số liệu trong hình là minh họa, trừ những chỗ ghi "đo".
 
 | File | Nội dung |
 |---|---|
-| `01-track-1280-light.svg` | `#/learn`: ô tìm, thẻ Học tiếp, track dạng tab, 12 Phần mới (Product §1.1) là thẻ gọn |
+| `01-track-1280-light.svg` | `#/learn`: ô tìm, thẻ Học tiếp, track dạng tab, 11 Phần mới (Product §1.1) là thẻ gọn |
 | `02-level-1280-light.svg` | `#/engine/postgres/L3` (18 bài thật), sidebar ở trạng thái **đang mở** (mặc định ở 1280 là rail): cây, chip lọc, nhóm xong gập, hàng bài 48 px |
-| `03-lesson-1280-light.svg` | Bài kỹ năng LEFT JOIN đủ 9 mục: mục lục dính, ví dụ chạy tại chỗ, bẫy chạy thật, Ở hệ khác, Thực hành, Câu hỏi, Tóm tắt |
+| `03-lesson-1280-light.svg` | Bài kỹ năng LEFT JOIN đủ 8 mục + dòng mức kỹ năng: mục lục dính, ví dụ chạy tại chỗ, bẫy chạy thật, Thực hành, Câu hỏi, Tóm tắt |
 | `04-search-1280-light.svg` | Hộp thoại tìm (Ctrl K) |
 | `05-track-375-dark.svg` … `08-search-375-dark.svg` | Bốn trang trên ở 375 tối (07 có thêm bảng mục lục mở) |
-| `09-icons-light.svg`, `09-icons-dark.svg` | Bảng icon (§12) |
+| `09-engine-1280-light.svg`, `10-engine-375-dark.svg` | `#/engine` với 4 thẻ: PostgreSQL, MongoDB, DynamoDB, **Thiết kế CSDL** |
+| `11-me-1280-light.svg`, `12-me-375-dark.svg` | `#/me`: **Bản đồ kỹ năng** (mức 0–4, Cần ôn, Engine theo mô-đun) và **37 huy hiệu** (§6.3) |
+| `13-icons-light.svg`, `13-icons-dark.svg` | Bảng icon (§12) |
 
 Ảnh hiện trạng (site live, Edge headless, hồ sơ mới, save `save-v5.json`): `C:\Users\khoa.huynh\Documents\study\bd-wt\design-v24-shots\` (`light-1280-*.png`, `dark-375-*.png`; ảnh tham chiếu `ref-*-1280/375.png`). Script `shots.mjs`, `refs.mjs` ở cùng thư mục, ngoài repo. Bộ vẽ mockup ở `design-v24-shots\gen\` (`python -I mock.py`), cũng ngoài repo.
 
@@ -25,16 +27,16 @@ Người viết: UI/UX. Ngày 2026-11-23. Nhánh `design-v24`. **Chỉ là thi�
 |---|---|
 | Bài lab `e-pg-l1-04` ở 1280 dài **2,728 px** chỉ với 4 bước: mỗi bước dựng sẵn một editor CodeMirror cao 70 px, kể cả bước chưa tới (`light-1280-engine-lesson-lab.png`) | Bài đích có 3–6 ví dụ + 2–4 bẫy + 3–6 bước: 6,000–9,000 px, hàng chục editor sống cùng lúc |
 | Không có điều hướng trong bài: không mục lục, không biết mình đang ở mục nào | Người học lạc giữa bài; quay lại "Cú pháp" phải cuộn tay |
-| Trang kỹ năng General (`#/learn/skill/group_by`) là một thẻ nút ("Mở bài học", 4 nút drill) + thẻ kỹ năng (`dark-375-learn-skill.png`) | Không có chỗ cho 9 mục; bài nhanh nằm trong hộp thoại |
+| Trang kỹ năng General (`#/learn/skill/group_by`) là một thẻ nút ("Mở bài học", 4 nút drill) + thẻ kỹ năng (`dark-375-learn-skill.png`) | Không có chỗ cho 8 mục; bài nhanh nằm trong hộp thoại |
 | Hàng bài ở trang cấp cao 76 px (`light-1280-engine-pg-L1.png`): 12 bài L1 cần hơn một màn; L3 có 18 bài | 20–25 bài một cấp cần 2,5–3 màn; bài đã xong chiếm chỗ ngang bài chưa làm |
-| Không có tìm kiếm ở đâu | ~290 bài (47 kỹ năng + 28 nút + ~240 bài Engine) chỉ tìm được bằng cách nhớ vị trí |
+| Không có tìm kiếm ở đâu | ~305 bài (43 kỹ năng + 21 nút có bài + 241 bài Engine) chỉ tìm được bằng cách nhớ vị trí |
 | Sidebar chỉ có số Phần/cấp (rail) | Không thấy cấu trúc bên trong một cấp |
 
 ## 1. Nguyên tắc
 
 1. **Dài = nhiều mục ngắn, không phải một khối dài** (Product §2.2). Mỗi mục có tiêu đề `h2` có icon, đọc được độc lập; mục lục chỉ ra mục đang đọc.
 2. **Đọc trước, chạy tại chỗ.** Ví dụ là code đọc sẵn có nút Chạy; kết quả hiện ngay dưới code. Editor chỉ dựng khi người học muốn sửa ("Sửa thử") hoặc ở Thực hành.
-3. **Một tầng mở mỗi lần** (NN/g: progressive disclosure tốt nhất ở hai tầng). Cây sidebar chỉ mở nhánh đang ở; danh sách gập nhóm đã xong; thân bài không dùng accordion trên máy tính (NN/g: đọc liền mạch thì đừng gập), chỉ gập mục 4–6 trên điện thoại (Product §2.4).
+3. **Một tầng mở mỗi lần** (NN/g: progressive disclosure tốt nhất ở hai tầng). Cây sidebar chỉ mở nhánh đang ở; danh sách gập nhóm đã xong; thân bài không dùng accordion trên máy tính (NN/g: đọc liền mạch thì đừng gập), chỉ gập ví dụ phụ và Lỗi hay gặp trên điện thoại (Product §2.4).
 4. **Gọn bằng mật độ, không bằng chữ nhỏ.** Hàng 48 px (máy tính) / 64 px (điện thoại), chữ vẫn `text-body`/`text-body-sm`; bớt chrome chứ không bớt cỡ chữ.
 5. **Không thêm phong cách mới.** Mọi thứ dựng từ token và lớp đã có (`CARD`, `LIST`/`listRow`, `PILL`, `BTN_GO/SECONDARY/GHOST`, `kbd()`, `emptyState`, `renderResult`, `createEditor`, `--r-*`, `--shadow-*`, `text-caption…display`). Một `BTN_GO` mỗi vùng; không transform trên thẻ/nút/link (L93).
 6. **Nhãn trung thực ở mọi chỗ chạy được** ("Chạy thật · PostgreSQL 18.6 (PGlite)", "Chạy bằng mingo", "Không chạy trong trình duyệt · theo tài liệu MySQL 8.4"). Không "sắp có", không khóa ở General.
@@ -47,7 +49,7 @@ Chỉ ghi những gì đã đọc hoặc chụp được hôm nay (2026-11-23).
 | Nguồn | Mẫu | Lấy gì cho BoonData |
 |---|---|---|
 | NN/g, [Table of Contents](https://www.nngroup.com/articles/table-of-contents/) | Mục lục ở rail thì **dính** và **tô mục hiện tại**; mục lục trong thân bài thì **không dính**; trên điện thoại đặt trong thân bài, "sticky collapsible TOC… many users failed to notice" | Mục lục rail phải dính ≥ 1280; điện thoại: mục lục trong thân (đóng sẵn) + nút mở ở thanh bài, không dựa vào một thanh dính duy nhất |
-| NN/g, [Progressive Disclosure](https://www.nngroup.com/articles/progressive-disclosure/) | "Initially, show users only a few of the most important options"; quá hai tầng thì lạc | Cây sidebar chỉ mở một nhánh; nhóm đã xong gập; mục 6 "Ở hệ khác" và bẫy thứ hai gập |
+| NN/g, [Progressive Disclosure](https://www.nngroup.com/articles/progressive-disclosure/) | "Initially, show users only a few of the most important options"; quá hai tầng thì lạc | Cây sidebar chỉ mở một nhánh; nhóm đã xong gập; ví dụ phụ và bẫy thứ hai gập |
 | NN/g, [Accordions on Desktop](https://www.nngroup.com/articles/accordions-on-desktop/) | Đừng gập khi người dùng cần hầu hết nội dung hoặc đọc liền mạch | Thân bài máy tính không là accordion; chỉ gập phần phụ (ví dụ chưa chạy, bẫy phụ) |
 | PostgreSQL docs, [2.6 Joins Between Tables](https://www.postgresql.org/docs/current/tutorial-join.html) | Số mục phân cấp (2.5 → 2.6 → 2.7), thanh Prev / Up / Home / Next ở **cả đầu và cuối** trang | Số thứ tự bài trong cấp ("06"), Bài trước / Bài tiếp có tên bài ở cuối; "Up" = link Phần/cấp trong thanh bài |
 | MDN, [position](https://developer.mozilla.org/en-US/docs/Web/CSS/position) (ảnh `ref-mdn-1280.png`, `ref-mdn-375.png`) | Ba cột: cây trái có ô Filter, nội dung, "In this article" dính phải với mục hiện tại tô nền; khối "Try it" chạy được ngay đầu bài; ở 375 đường dẫn rút còn hai cấp cuối, cây vào nút sidebar | Bố cục ba cột ở ≥ 1280; ô lọc đầu sidebar; đường dẫn rút gọn trên điện thoại |
@@ -67,11 +69,11 @@ Product §2.4: tối đa 4 tầng trang + 1 tầng mục. Bản đồ lên route
 | Tầng | General (SQL) | Database Engine | Hiện ở đâu |
 |---|---|---|---|
 | 1 Khu | `#/learn` | `#/engine` | nav top bar; điện thoại: mục "Học" + công tắc SQL \| Engine |
-| 2 Track | SQL · Phần 1–12, Nâng cao (dạng tab trên `#/learn`) | engine `#/engine/<engine>` | tab / thẻ engine; sidebar: gốc cây |
+| 2 Track | SQL · Phần 1–11, Nâng cao (dạng tab trên `#/learn`) | engine `#/engine/<engine>`: PostgreSQL, MongoDB, DynamoDB, Thiết kế CSDL (`e-ds-…`, L322) | tab / thẻ engine; sidebar: gốc cây |
 | 3 Phần / cấp | `#/learn/sql/<n>` | `#/engine/<engine>/<L>` | trang danh sách (§6) |
 | (3b) Mô-đun | — (Phần là mô-đun) | nhóm trên trang cấp (không có trang riêng) | tiêu đề nhóm; trong cây là lá, bấm = cuộn tới nhóm |
 | 4 Bài | `#/learn/skill/<id>`, `#/learn/adv/<node>` | `#/engine/<engine>/<L>/<id>` | trang bài (§5) |
-| 5 Mục | 9 mục | 9 mục | mục lục trong bài; không phải route |
+| 5 Mục | 8 mục | 8 mục | mục lục trong bài; không phải route |
 
 **Gấp tầng:** Engine có 5 tầng danh nghĩa (khu › engine › cấp › mô-đun › bài). Mô-đun không thành trang: nó là nhóm trên trang cấp và là lá trong cây. Vì vậy người học không bao giờ qua quá 3 trang danh sách để tới một bài.
 
@@ -84,8 +86,8 @@ Product §2.4: tối đa 4 tầng trang + 1 tầng mục. Bản đồ lên route
 ### 4.1 Sidebar: cây gọn
 
 - **Rộng 256 px** (khi người học mở, hoặc mặc định trên trang danh sách rộng theo luật hiện có của `#side`): ô tìm ở đầu, rồi cây (`02`):
-  - Engine: `Database Engine` › 3 engine (icon `engRelational/engDocument/engKeyValue`) › L1–L5 (huy hiệu `L3` + tên ngắn + k/n) › mô-đun của **cấp đang mở** (icon trạng thái + tên + k/n).
-  - General: Phần 1–12 (số + tên + k/n) › các bài của **Phần đang mở**; Nâng cao là nhóm thứ hai, gập.
+  - Engine: `Database Engine` › 4 engine (icon `engRelational/engDocument/engKeyValue/engDesign`) › L1–L5 (huy hiệu `L3` + tên ngắn + k/n) › mô-đun của **cấp đang mở** (icon trạng thái + tên + k/n).
+  - General: Phần 1–11 (số + tên + k/n) › các bài của **Phần đang mở**; Nâng cao là nhóm thứ hai, gập.
 - **Chỉ một nhánh mở** (kiểu `navigation.prune`): bài không vào cây ở Engine (cấp có tới 25 bài, cây sẽ dài hơn trang); ở General, Phần có 3–6 bài nên bài vào cây.
 - Dòng hiện tại: nền `bg-accent-soft` + vạch trái 3 px `--accent` + `aria-current="page"` (một dòng duy nhất, như L189).
 - **Rail 64 px** (mặc định ở play và 1024–1279, và ở trang bài ≥ 1280 vì chỗ dành cho mục lục, §5.1): nút mở sidebar, **nút tìm** (icon `search`, mới), rồi số Phần / huy hiệu cấp như hôm nay.
@@ -96,7 +98,7 @@ Product §2.4: tối đa 4 tầng trang + 1 tầng mục. Bản đồ lên route
 - ≥ 1280: cột phải 232 px, dính (`position: sticky; top` dưới top bar), chú thích chữ hoa `text-caption` + icon `toc`. Mỗi mục: icon mục 16 px `text-muted`, tên, cột phải ghi tiến độ của mục **chấm được** (Ví dụ "1/4" đã chạy trong phiên, Thực hành "1/4", Câu hỏi "0/3"). Mục đang đọc: nền `accent-soft`, vạch 3 px `--accent`, chữ đậm `--accent`, `aria-current="location"`. Mục lục dài hơn màn thì tự cuộn để mục hiện tại luôn thấy (`toc.follow`).
 - Mục đang đọc = tiêu đề `h2` cuối cùng đã qua mép trên vùng đọc (IntersectionObserver, không lắng nghe scroll).
 - Dưới mục lục: ô tìm thu nhỏ ("Tìm bài, mục…" + `kbd('Ctrl')` `kbd('K')`).
-- 1024–1279: không có cột phải. Mục lục nằm trong thân bài dưới hàng chip (thẻ `<details>` đóng sẵn, như điện thoại) và thanh bài dính 48 px có nút "n/9 · tên mục" mở mục lục dạng popover (§7).
+- 1024–1279: không có cột phải. Mục lục nằm trong thân bài dưới hàng chip (thẻ `<details>` đóng sẵn, như điện thoại) và thanh bài dính 48 px có nút "n/8 · tên mục" mở mục lục dạng popover (§7).
 
 ### 4.3 Bài trước / bài tiếp
 
@@ -120,13 +122,13 @@ Cuối bài: thẻ hai link có **tên bài** ("Bài trước · Nối nhiều b
 | 1024–1279 | rail 64 + cột đọc 720, mục lục trong thân + thanh bài dính 48 px |
 | < 1024 | một cột 16 px lề, thanh bài dính 48 px, mục lục trong thân + bảng dưới (§7) |
 
-Cột đọc 720 px (chữ `text-body` 16, ~75 ký tự một dòng); bảng và khối code được rộng hết cột. Khối "Ở hệ khác" có ba cột hệ thì được tràn tới `--w-read` 880 khi không có mục lục bên phải.
+Cột đọc 720 px (chữ `text-body` 16, ~75 ký tự một dòng); bảng và khối code được rộng hết cột. 
 
 ### 5.2 Đầu bài
 
-Đường dẫn (§3) → `h1` → hàng chip: nhãn trung thực (`bg-good-soft`, icon `inApp`), loại bài (icon kỹ năng ở General, icon `kind*` ở Engine), thời lượng (icon `time`), "Nên học trước:" + chip link (không khóa). Bài `docs` thay hàng chip đầu bằng chip `docsOnly` + một dòng mờ (giữ v22).
+Đường dẫn (§3) → `h1` → hàng chip → (trang kỹ năng General) **dòng mức** (§6.3): 4 chấm + "Mức của bạn: Đã gặp" + **một** việc để lên mức kế ("qua thêm 1 bài luyện") + chữ mờ "tự đo, không xác minh", ô `bg-surface-2` cao 40 px. Hàng chip: nhãn trung thực (`bg-good-soft`, icon `inApp`), loại bài (icon kỹ năng ở General, icon `kind*` ở Engine), thời lượng (icon `time`), "Nên học trước:" + chip link (không khóa). Bài `docs` thay hàng chip đầu bằng chip `docsOnly` + một dòng mờ (giữ v22).
 
-### 5.3 Chín mục (Product §2.2) và cách vẽ từng mục
+### 5.3 Tám mục (Product §2.2) và cách vẽ từng mục
 
 Mỗi mục: `<section aria-labelledby>` + `h2` = huy hiệu tròn 30 px `bg-accent-soft` + icon `--accent` + tên `text-title`. Khoảng cách giữa mục bằng `flex flex-col gap-*` (không `space-y-*`, xem v22).
 
@@ -136,11 +138,10 @@ Mỗi mục: `<section aria-labelledby>` + `h2` = huy hiệu tròn 30 px `bg-acc
 | 2 | Ý chính (`kindConcept`) | đoạn ≤ 150 từ; câu "Nhiều người nghĩ X. Thật ra Y" in đậm phần X |
 | 3 | Cú pháp (`secSyntax`) | khối code `--code`, không số dòng, phần tùy chọn trong `[ ]`; bảng 2 cột "tùy chọn → ý nghĩa" ≤ 8 dòng (`CARD`, đầu bảng `bg-surface-2`) |
 | 4 | Ví dụ chạy được (`secRun`) | khối ví dụ (§5.4); cột phải tiêu đề ghi "k/n đã chạy trong phiên này" |
-| 5 | Lỗi hay gặp (`secPitfall`) | thẻ `bg-warn-soft`: icon `warn` + tên bẫy; chip "Sai" (`bad-soft`) + câu sai (một dòng mono), câu vì sao, chip "Sửa" (`good-soft`) + câu sửa; hai nút ghost "Chạy câu sai" / "Chạy câu sửa" (kết quả hoặc `errorView` có SQLSTATE hiện ngay dưới). Bẫy thứ hai trở đi là một hàng 52 px gập (`<details>`) |
-| 6 | Ở hệ khác (`secOther`) | chip `bg-info-soft` `text-info` + icon `docsOnly`: "Không chạy trong trình duyệt · theo tài liệu"; bảng Hệ / Khác gì (≤ 4 dòng). Dưới 640 px mỗi hệ là một khối hai dòng thay vì bảng |
-| 7 | Thực hành (`secPractice`) | General: thẻ "Thử ngay" có **editor dựng sẵn** (chỗ duy nhất trong bài), Chạy thử (`BTN_SECONDARY`), Gợi ý (ghost), **Nộp (`BTN_GO`, một mỗi vùng)**; dưới đó hàng 4 bài luyện (icon trạng thái + tên, mỗi cái là link sang drill workspace). Engine lab: các bước như v22/v23 nhưng **chỉ bước hiện tại** dựng editor; bước đã đạt hiện SQL đã nộp (đọc), bước sau hiện đề + "Làm sau bước n" (không editor). Bước có thanh hiệu năng: §5.6 |
-| 8 | Câu hỏi kiểm tra (`kindQuiz`) | như thẻ quiz v22: câu `text-title`, lựa chọn là hàng 44 px có viền, chọn = `accent-soft` + viền 2 px; `why` sau khi trả lời |
-| 9 | Tóm tắt và đọc thêm (`secRecap`) | 3–5 gạch đầu dòng; link (icon `external`) tới nguồn chính thức và thẻ Best Practice; rồi Bài trước / Bài tiếp (§4.3) |
+| 5 | Lỗi hay gặp (`secPitfall`) | thẻ `bg-warn-soft`: icon `warn` + tên bẫy; chip "Sai" (`bad-soft`) + câu sai (một dòng mono), câu vì sao, chip "Sửa" (`good-soft`) + câu sửa; hai nút ghost "Chạy câu sai" / "Chạy câu sửa" (kết quả hoặc `errorView` có SQLSTATE hiện ngay dưới). Bẫy thứ hai trở đi là một hàng 52 px gập (`<details>`). Khác biệt phương ngữ (L326: không dạy MySQL/SQLite) chỉ xuất hiện ở đây khi là bẫy thật của người viết Postgres: một dòng, chip `bg-info-soft` "theo tài liệu <hệ>, không chạy" |
+| 6 | Thực hành (`secPractice`) | General: thẻ "Thử ngay" có **editor dựng sẵn** (chỗ duy nhất trong bài), Chạy thử (`BTN_SECONDARY`), Gợi ý (ghost), **Nộp (`BTN_GO`, một mỗi vùng)**; dưới đó hàng 4 bài luyện (icon trạng thái + tên, mỗi cái là link sang drill workspace). Engine lab: các bước như v22/v23 nhưng **chỉ bước hiện tại** dựng editor; bước đã đạt hiện SQL đã nộp (đọc), bước sau hiện đề + "Làm sau bước n" (không editor). Bước có thanh hiệu năng: §5.6 |
+| 7 | Câu hỏi kiểm tra (`kindQuiz`) | như thẻ quiz v22: câu `text-title`, lựa chọn là hàng 44 px có viền, chọn = `accent-soft` + viền 2 px; `why` sau khi trả lời |
+| 8 | Tóm tắt và đọc thêm (`secRecap`) | 3–5 gạch đầu dòng; link (icon `external`) tới nguồn chính thức và thẻ Best Practice; rồi Bài trước / Bài tiếp (§4.3) |
 
 Bài `predict`, `quiz`, `capstone` dùng tập con của Product §2.2; mục lục chỉ liệt kê các mục bài đó có.
 
@@ -186,10 +187,10 @@ Bước/drill có thanh: dưới dòng trạng thái thêm một hàng hai con s
 ### 6.1 Tổng quan khu (`01`, `05`)
 
 - `h1` + ô tìm cùng hàng (máy tính) / dưới `h1` (điện thoại).
-- **Một** thẻ Học tiếp (`CARD`, một `BTN_GO`): icon kỹ năng, "Phần 5 › <bài>", dòng phụ "Đang ở mục … (4/9) · còn ~20 phút".
-- Track là link trông như tab (`SQL · Phần 1–12`, `Nâng cao`, ô thứ ba sang `#/engine`); không dùng `role=tablist` vì mỗi ô đổi route.
+- **Một** thẻ Học tiếp (`CARD`, một `BTN_GO`): icon kỹ năng, "Phần 5 › <bài>", dòng phụ "Đang ở mục … (4/8) · còn ~20 phút".
+- Track là link trông như tab (`SQL · Phần 1–11` 43 bài, `Nâng cao` 29, ô thứ ba sang `#/engine` 4 engine · 241 bài); không dùng `role=tablist` vì mỗi ô đổi route.
 - Phần là **thẻ 76 px** hai cột (điện thoại: hàng 64 px): huy hiệu 48 px icon kỹ năng đầu Phần, "Phần n · tên", "k/n bài · ~thời gian", thanh 6 px (`--accent`, xong = `--good` + icon `check`), Phần đang học viền accent 2 px + chip "Đang học". **Không liệt kê bài** trên trang tổng quan. Không khóa, không "dùng ở đâu" (L82).
-- Engine `#/engine` giữ bố cục v22 (thẻ engine + ô L1–L5), chỉ thêm ô tìm và đổi số bài.
+- Engine `#/engine` (`09`, `10`) giữ khuôn thẻ v22, nay **bốn thẻ** 2 × 2 (điện thoại: xếp dọc): huy hiệu tròn icon engine, tên, "k/n bài", một dòng mô tả, chip nhãn trung thực (PostgreSQL 18.6 · mingo · dynoxide · "Lab chạy trên PostgreSQL (PGlite)" cho Thiết kế CSDL), năm ô L1–L5 (k/n, thanh 4 px, ô có bài kế tiếp viền accent 2 px, ✓ khi xong), link "Tiếp tục bài · Ln" / "Bắt đầu từ L1". Thẻ Thiết kế CSDL thêm một dòng mờ "Phần lưu trữ và index: đào sâu ở PostgreSQL L3–L5" (Product §1.5). Dòng Lộ trình NoSQL dưới bốn thẻ. Ô tìm và thẻ Học tiếp như `#/learn`.
 
 ### 6.2 Trang Phần / cấp (`02`, `06`)
 
@@ -200,11 +201,22 @@ Bước/drill có thanh: dưới dòng trạng thái thêm một hàng hai con s
 - Kết quả đo trên mockup: 18 bài L3 + 2 nhóm gập vừa ~1,5 màn ở 1280 (hôm nay: ~2,5 màn, ước theo hàng 76 px + thẻ).
 - Danh sách không cần ảo hóa: cấp lớn nhất ~25 bài; nếu có trang "mọi bài" (không đề xuất) mới cần.
 
+### 6.3 Bản đồ kỹ năng và huy hiệu (`11`, `12`; Product §1.7, L323)
+
+Chứng nhận bị bỏ. Thay bằng hai thứ **suy ra** từ Save + pref (không trường mới), hiện ở ba chỗ:
+
+- **`#/me` thẻ "Bản đồ kỹ năng"** (thay thẻ Chứng nhận): tiêu đề có icon `skillMap`; câu đầu "Đo trên máy này từ bài bạn đã làm và lần ôn gần nhất. Không xác minh, không phải chứng chỉ."; **một** `BTN_GO` "Ôn n kỹ năng cần ôn" (= `startToday`, ẩn khi n = 0); chú giải mức ngay dưới (4 chấm × 5 mức + chip "Cần ôn = quá hạn ôn, mức tạm trừ 1"). Thân: 11 Phần theo `route.yml`, 3 cột từ 1280, 2 cột ở 1024–1279 (U7; cột cân số dòng), mỗi kỹ năng một hàng 32 px: icon kỹ năng 18 px (kỹ năng mới chưa có icon dùng `puzzle`, fallback có sẵn), tên (đậm khi mức ≥ 1, mờ khi 0), chip "Cần ôn" nếu có, 4 chấm bên phải. Dưới đường kẻ: **Engine theo mô-đun**, mỗi engine một hàng, 5 ô cấp "Chưa mở / Đang học k/n / Xong" (nền `surface-2` / `accent-soft` / `good-soft`), chú thích "không tụt: Engine không có lịch ôn".
+- **`#/me` thẻ "Huy hiệu · k/37"**: chữ mờ "tự đo, không xác minh · mất khi mức tụt, lấy lại được"; ba nhóm SQL (13) · Database Engine (21) · Domain (3, "công ty hư cấu"); lưới ô 80 px (13 cột ở 1120 px; điện thoại 4 cột, 8 ô đầu là huy hiệu đang có rồi nút phụ "Xem cả 37 huy hiệu" mở tại chỗ). Mỗi ô là nút: rê/bấm hiện câu điều kiện (popover, `aria-describedby`). Không ngày đạt, không điểm, không xếp hạng. Dòng cuối `text-caption`: "Chứng nhận đã được thay bằng huy hiệu đo mức hiện tại."
+- **Trang kỹ năng** (`03`): dòng mức trong đầu bài (§5.2). **Trang Phần** `#/learn/sql/<n>`: mỗi hàng kỹ năng có 4 chấm thay cho ✓ (✓ cũ = mức ≥ 2) và chip "Cần ôn" khi có.
+- **Mức không chỉ bằng màu:** chấm đầy/rỗng khác hình (đầy vs vòng), tên mức luôn có chữ (bên cạnh hoặc trong `aria-label`: "LEFT JOIN: Đã gặp, mức 1 trên 4"). Chip "Cần ôn" có icon + chữ.
+- **Điện thoại:** mỗi Phần là hàng 46 px gập (`<details>`) với "k/n ≥ Làm được" hoặc chip Cần ôn; mở ra là hàng kỹ năng 44 px. Engine thành 5 ô vuông 22 px đánh số 1–5 (viền xanh = xong, accent = đang học), có `aria-label` đầy đủ.
+- Không thêm gì lên Trang chủ hay top bar (nút Ôn đã có). Không animation khi mức đổi; huy hiệu mới đạt không có lễ (một dòng `announce()` khi vẽ lại `#/me` nếu có huy hiệu mới so với lần vẽ trước trong phiên là đủ, tùy chọn).
+
 ## 7. Điện thoại 375 / 320
 
-- **Thanh bài** 48 px dính ngay dưới top bar, chỉ trên trang bài: "‹ <Phần/cấp>" (thay đường dẫn), nút "n/9 · <tên mục>" (icon `toc`) mở **bảng mục lục** (`<dialog>` modal từ dưới, danh sách hàng 44 px, mục hiện tại tô, Esc / nút đóng, focus về nút mở; bấm mục = cuộn tới + đóng), nút tìm 44 px. Không có thanh nào dính trên `#bottom-nav`.
-- **Mục lục trong thân** dưới hàng chip: `<details>` đóng, tóm tắt "Trong bài này · 9 mục" + dòng tiến độ (NN/g: trên điện thoại đặt trong thân).
-- Mục 4–6 gập (`<details>`, hàng 56 px có icon + số lượng "2 bẫy", "3 hệ"); ví dụ đầu mở sẵn; Thực hành, Câu hỏi, Tóm tắt luôn mở (Product §2.4).
+- **Thanh bài** 48 px dính ngay dưới top bar, chỉ trên trang bài: "‹ <Phần/cấp>" (thay đường dẫn), nút "n/8 · <tên mục>" (icon `toc`) mở **bảng mục lục** (`<dialog>` modal từ dưới, danh sách hàng 44 px, mục hiện tại tô, Esc / nút đóng, focus về nút mở; bấm mục = cuộn tới + đóng), nút tìm 44 px. Không có thanh nào dính trên `#bottom-nav`.
+- **Mục lục trong thân** dưới hàng chip: `<details>` đóng, tóm tắt "Trong bài này · 8 mục" + dòng tiến độ (NN/g: trên điện thoại đặt trong thân).
+- Ví dụ phụ và Lỗi hay gặp gập (`<details>`, hàng 48–56 px có icon + số lượng "2 bẫy"); ví dụ đầu mở sẵn; Thực hành, Câu hỏi, Tóm tắt luôn mở (Product §2.4).
 - Code ví dụ **cuộn ngang trong khung** (`overflow-x: auto`, vệt mờ mép phải, thanh cuộn hiện), không xuống dòng (SQL xuống dòng khó đọc); trang không bao giờ cuộn ngang. Nút dưới code (Chạy, Sửa thử, sao chép) cao 44 px.
 - Bảng kết quả: cột đầu dính khi cuộn ngang trong bảng; ≤ 5 dòng.
 - 320: chip trên đầu bài xuống dòng; tên mục trong nút mục lục cắt "…" (nút co, không đẩy nút tìm ra ngoài); thanh bài giữ ba vùng. Kiểm bằng `npm run ux-audit` (đã có 320).
@@ -245,7 +257,6 @@ Chỉ token, không hex mới. Code ví dụ `--code` + `--syn-*` (đã ≥ 7:1 
 | `LessonBar` (thanh bài điện thoại / 1024) | lớp top bar, `BTN_GHOST`, `iconbtn` | sticky, 48 px |
 | `RunBlock` (ví dụ) | `pre.sql` + `HighlightStyle`, `createEditor` khi Sửa thử, `runOn()`, `renderResult`, `errorView` | không đụng `app.lastRun` |
 | `PitfallCard` | `bg-warn-soft`, `PILL` bad/good, `BTN_GHOST`, `RunBlock` cho hai câu | |
-| `OtherSystems` | bảng `CARD` + chip `bg-info-soft` | khối hai dòng < 640 px |
 | `PracticeCard` | thẻ "Thử ngay" (`tryPreview`, `grade()`), `BTN_SUBMIT` | editor duy nhất dựng sẵn |
 | `QuizCard` | thẻ quiz v22 | giữ |
 | `LessonPager` | `CARD`, `BTN_GO`/`BTN_GHOST` | |
@@ -254,6 +265,11 @@ Chỉ token, không hex mới. Code ví dụ `--code` + `--syn-*` (đã ≥ 7:1 
 | `FilterChips` | `PILL` + `aria-pressed` | |
 | `SideTree` | `registerSide()` + hàng sidebar hiện có | chỉ nhánh mở |
 | `SearchDialog` | `<dialog>` modal, `kbd()`, `PILL`, icon | chunk `searchIndex` |
+| `LevelDots` (mức 0–4) | 4 `<span>` tròn 8–9 px: đầy `--accent`, rỗng viền `--border-strong` 1.5 px; tên mức trong `aria-label`/chữ bên cạnh | không phải icon; dùng ở `#/me`, trang kỹ năng, hàng Phần |
+| `ReviewChip` ("Cần ôn") | `PILL` `bg-warn-soft` `text-warn` + icon `repeat` | link vào hàng ôn hôm nay |
+| `SkillMapCard` | `CARD`, `GROUP_TITLE`, hàng 32 px (máy tính) / `<details>` mỗi Phần (điện thoại), `BTN_GO` "Ôn n kỹ năng cần ôn" (= `startToday`) | thay thẻ Chứng nhận trong chunk `meView` |
+| `BadgeTile` | vòng 48 px: có = `bg-accent-soft` + viền `--accent` 2 px + icon `--accent` + `check`; chưa = viền đứt `--border-strong` + icon `--muted`; nhãn 12 px | nút có `aria-describedby` câu điều kiện (popover khi rê/bấm) |
+| `EngineCard` (4) | thẻ engine v22 + ô cấp | thẻ thứ tư cùng khuôn |
 | `ModuleCard` | `CARD_ACTION` (hover chỉ viền, không transform: L93 thay `hover:-translate-y-0.5` của `CARD_ACTION` bằng biến thể không dời) | lưu ý: `CARD_ACTION` hiện có `hover:-translate-y-0.5`, trái L93 cho thẻ có link phủ; dùng biến thể của thẻ engine v22 |
 
 i18n: chữ của trang bài vào chunk lazy cùng view (như `src/i18n/engine.ts`, `learn.ts`), không vào `vi.ts`/`en.ts` của main.
@@ -269,7 +285,6 @@ Phosphor duotone 2.1.1 (MIT), thêm qua `scripts/icon-map.json` → `node script
 | `secSyntax` | `code-block` | khung lệnh | mục 3 | mới |
 | `secRun` | `play-circle` | bấm là chạy | mục 4, khối ví dụ, kết quả tìm | mới |
 | `secPitfall` | `warning-diamond` | biển báo nguy hiểm (khác `alert` = `warning` của banner) | mục 5 | mới |
-| `secOther` | `git-diff` | so hai bản | mục 6; Phần 12 "SQL ở hệ khác" | mới |
 | `secPractice` | `pencil-simple-line` | tự viết | mục 7 | mới |
 | `kindQuiz` | `seal-question` | câu hỏi | mục 8 | có |
 | `secRecap` | `bookmark-simple` | đánh dấu để nhớ | mục 9 | mới |
@@ -290,6 +305,13 @@ Phosphor duotone 2.1.1 (MIT), thêm qua `scripts/icon-map.json` → `node script
 | `check`, `partial` | custom `check`, `circle-half` | xong / làm dở | trạng thái | có |
 | `notStarted` | `circle-dashed` | vòng chưa khép | trạng thái chưa làm | mới |
 | `perfBar` | `gauge` | đồng hồ đo | thanh hiệu năng | mới |
+| `engDesign` | `compass-tool` | thước compa: vẽ thiết kế (không logo) | thẻ, cây, huy hiệu Thiết kế CSDL | mới |
+| `skillMap` | `grid-four` | lưới ô kỹ năng | thẻ Bản đồ kỹ năng | mới |
+| `badgePart` | `seal-check` | con dấu đã kiểm | huy hiệu "Phần n vững", thẻ Huy hiệu | mới |
+| `badgeFast` | `timer` | đồng hồ bấm giờ | huy hiệu "Đúng và nhanh" | mới |
+| `badgeFoundation` | `star-four` | ngôi sao bốn cánh | huy hiệu "SQL nền tảng" | mới |
+| `repeat` | `repeat` | ôn lại | chip "Cần ôn", nút ôn | có |
+| huy hiệu cấp engine / Lộ trình NoSQL / domain | `engRelational/Document/KeyValue`, `engDesign`, `nosqlPath`, `anchor`/`box`/`percent` | dùng lại icon của chính nơi đó | 20 + 1 + 3 huy hiệu | có |
 | `run` | `play` | bấm chạy | nút Chạy của ví dụ, Chạy câu sai/sửa | mới |
 | `enterKey` | `arrow-elbow-down-left` | phím Enter | dòng đang chọn trong kết quả tìm | mới |
 | `moduleWrite` | `file-plus` | thêm vào tệp | Phần 9 Ghi dữ liệu (cho tới khi có icon kỹ năng) | mới |
@@ -324,3 +346,5 @@ Quy tắc "một icon = một đích" (`NAV_ICON`) chỉ áp cho mục nav; `sea
 | U3 | Link sâu tới mục (`…/<id>/<mục>`) làm ngay lát đầu hay sau (Product nói chưa cần)? | Sau; tìm kiếm cuộn tới mục bằng tham số trong bộ nhớ |
 | U4 | `CARD_ACTION` có `hover:-translate-y-0.5` (trái L93 cho thẻ có link phủ): sửa luôn khi làm thẻ Phần? | Có, dùng biến thể chỉ đổi viền của thẻ engine v22 |
 | U5 | Tìm kiếm cũng nằm trên trang domain (ticket)? | Không: chỉ Lộ trình + Engine (phạm vi v24) |
+| U6 | Huy hiệu mới đạt có thông báo (dòng `announce`/toast) hay chỉ hiện khi mở `#/me`? | Chỉ khi mở `#/me`; không toast |
+| U7 | Bản đồ kỹ năng ở 1024–1279: 3 cột hay 2? | 2 cột dưới 1280, 3 cột từ 1280 |

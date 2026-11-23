@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" width="815" height="1596" viewBox="0 0 815 1596" role="img" aria-labelledby="t d">
+<svg xmlns="http://www.w3.org/2000/svg" width="815" height="1526" viewBox="0 0 815 1526" role="img" aria-labelledby="t d">
 <title id="t">Tổng quan lộ trình, 375 tối</title>
-<desc id="d">Trang #/learn ở 375: công tắc SQL | Engine, ô tìm, thẻ Học tiếp, track cuộn ngang, 12 Phần là hàng 64 px.</desc>
+<desc id="d">Trang #/learn ở 375: công tắc SQL | Engine, ô tìm, thẻ Học tiếp, track cuộn ngang, 11 Phần là hàng 64 px.</desc>
 <!-- BoonData v24 UX mockup. Hex = tokens of src/style.css. Purple dashed + numbered circles = annotation, not UI. Icons = Phosphor duotone 2.1.1 (MIT) path data. -->
-<rect x="0" y="0" width="815" height="1596" rx="0" fill="#0a0908"/>
+<rect x="0" y="0" width="815" height="1526" rx="0" fill="#0a0908"/>
 <text x="40" y="44" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="22" font-weight="800" fill="#f8f3ed" text-anchor="start" xml:space="preserve">05 · Tổng quan lộ trình · 375 tối</text>
-<defs><clipPath id="f5"><rect x="0" y="0" width="375" height="1460" rx="12"/></clipPath></defs>
-<rect x="39" y="95" width="377" height="1462" rx="13" fill="none" stroke="#7d7166" stroke-width="1"/>
+<defs><clipPath id="f5"><rect x="0" y="0" width="375" height="1390" rx="12"/></clipPath></defs>
+<rect x="39" y="95" width="377" height="1392" rx="13" fill="none" stroke="#7d7166" stroke-width="1"/>
 <g transform="translate(40,96)" clip-path="url(#f5)">
-<rect x="0" y="0" width="375" height="1460" rx="0" fill="#131110"/>
+<rect x="0" y="0" width="375" height="1390" rx="0" fill="#131110"/>
 <rect x="0" y="0" width="375" height="56" rx="0" fill="#131110"/>
 <line x1="0" y1="56" x2="375" y2="56" stroke="#4d443c" stroke-width="1"/>
 <g transform="translate(16,18) scale(0.07812)" aria-hidden="true"><path fill="#f8f3ed" d="M216,64V192H40V64Z" opacity="0.2"/><path fill="#f8f3ed" d="M224,128a8,8,0,0,1-8,8H40a8,8,0,0,1,0-16H216A8,8,0,0,1,224,128ZM40,72H216a8,8,0,0,0,0-16H40a8,8,0,0,0,0,16ZM216,184H40a8,8,0,0,0,0,16H216a8,8,0,0,0,0-16Z"/></g>
@@ -40,11 +40,11 @@
 <g transform="translate(48,324.0) scale(0.06250)" aria-hidden="true"><path fill="#082320" d="M216,128l-72,72V56Z" opacity="0.2"/><path fill="#082320" d="M221.66,122.34l-72-72A8,8,0,0,0,136,56v64H40a8,8,0,0,0,0,16h96v64a8,8,0,0,0,13.66,5.66l72-72A8,8,0,0,0,221.66,122.34ZM152,180.69V75.31L204.69,128Z"/></g>
 <text x="70" y="337.04" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="14" font-weight="800" fill="#082320" text-anchor="start" xml:space="preserve">Học tiếp</text>
 <rect x="16" y="384" width="167.60000000000002" height="40" rx="20" fill="#163a35" stroke="#62dccb" stroke-width="1.5"/>
-<text x="30" y="409" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="14" font-weight="800" fill="#62dccb" text-anchor="start" xml:space="preserve">SQL · Phần 1–12</text>
-<text x="169.60000000000002" y="409" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="12.5" font-weight="700" fill="#d0c5b9" text-anchor="end" xml:space="preserve">47</text>
+<text x="30" y="409" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="14" font-weight="800" fill="#62dccb" text-anchor="start" xml:space="preserve">SQL · Phần 1–11</text>
+<text x="169.60000000000002" y="409" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="12.5" font-weight="700" fill="#d0c5b9" text-anchor="end" xml:space="preserve">43</text>
 <rect x="191.60000000000002" y="384" width="112.72" height="40" rx="20" fill="#2b2622"/>
 <text x="205.60000000000002" y="409" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="14" font-weight="800" fill="#f8f3ed" text-anchor="start" xml:space="preserve">Nâng cao</text>
-<text x="290.32000000000005" y="409" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="12.5" font-weight="700" fill="#d0c5b9" text-anchor="end" xml:space="preserve">28</text>
+<text x="290.32000000000005" y="409" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="12.5" font-weight="700" fill="#d0c5b9" text-anchor="end" xml:space="preserve">29</text>
 <circle cx="363" cy="388" r="11" fill="#201c19" stroke="#dcaeff" stroke-width="2"/>
 <text x="363" y="393" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="13" font-weight="800" fill="#dcaeff" text-anchor="middle" xml:space="preserve">2</text>
 <rect x="16" y="444" width="343" height="64" rx="16" fill="#201c19" stroke="#4d443c" stroke-width="1"/>
@@ -127,13 +127,6 @@
 <text x="80" y="1212" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="12.5" font-weight="400" fill="#d0c5b9" text-anchor="start" xml:space="preserve">0/3 bài</text>
 <rect x="136" y="1207" width="140" height="5" rx="2.5" fill="#2b2622"/>
 <g transform="translate(325,1186) scale(0.07812)" aria-hidden="true"><path fill="#d0c5b9" d="M176,128,96,208V48Z" opacity="0.2"/><path fill="#d0c5b9" d="M181.66,122.34l-80-80A8,8,0,0,0,88,48V208a8,8,0,0,0,13.66,5.66l80-80A8,8,0,0,0,181.66,122.34ZM104,188.69V67.31L164.69,128Z"/></g>
-<rect x="16" y="1236" width="343" height="64" rx="16" fill="#201c19" stroke="#4d443c" stroke-width="1"/>
-<rect x="28" y="1248" width="40" height="40" rx="12" fill="#163a35"/>
-<g transform="translate(36,1256) scale(0.09375)" aria-hidden="true"><path fill="#62dccb" d="M80,64A24,24,0,1,1,56,40,24,24,0,0,1,80,64ZM200,168a24,24,0,1,0,24,24A24,24,0,0,0,200,168Z" opacity="0.2"/><path fill="#62dccb" d="M112,152a8,8,0,0,0-8,8v28.69L66.34,151A8,8,0,0,1,64,145.37V95a32,32,0,1,0-16,0v50.38a23.85,23.85,0,0,0,7,17L92.69,200H64a8,8,0,0,0,0,16h48a8,8,0,0,0,8-8V160A8,8,0,0,0,112,152ZM40,64A16,16,0,1,1,56,80,16,16,0,0,1,40,64Zm168,97V110.63a23.85,23.85,0,0,0-7-17L163.31,56H192a8,8,0,0,0,0-16H144a8,8,0,0,0-8,8V96a8,8,0,0,0,16,0V67.31L189.66,105a8,8,0,0,1,2.34,5.66V161a32,32,0,1,0,16,0Zm-8,47a16,16,0,1,1,16-16A16,16,0,0,1,200,208Z"/></g>
-<text x="80" y="1264" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="14.5" font-weight="800" fill="#f8f3ed" text-anchor="start" xml:space="preserve">Phần 12 · SQL ở hệ khác</text>
-<text x="80" y="1284" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="12.5" font-weight="400" fill="#d0c5b9" text-anchor="start" xml:space="preserve">0/4 bài</text>
-<rect x="136" y="1279" width="140" height="5" rx="2.5" fill="#2b2622"/>
-<g transform="translate(325,1258) scale(0.07812)" aria-hidden="true"><path fill="#d0c5b9" d="M176,128,96,208V48Z" opacity="0.2"/><path fill="#d0c5b9" d="M181.66,122.34l-80-80A8,8,0,0,0,88,48V208a8,8,0,0,0,13.66,5.66l80-80A8,8,0,0,0,181.66,122.34ZM104,188.69V67.31L164.69,128Z"/></g>
 <circle cx="363" cy="594" r="11" fill="#201c19" stroke="#dcaeff" stroke-width="2"/>
 <text x="363" y="599" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="13" font-weight="800" fill="#dcaeff" text-anchor="middle" xml:space="preserve">3</text>
 <rect x="0" y="682" width="375" height="58" rx="0" fill="#201c19"/>
@@ -150,18 +143,18 @@
 <text x="337.5" y="728" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="12" font-weight="800" fill="#f8f3ed" text-anchor="middle" xml:space="preserve">Logistics</text>
 <line x1="0" y1="740" x2="375" y2="740" stroke="#dcaeff" stroke-width="1.5" stroke-dasharray="8 6"/>
 <text x="367" y="756" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="11" font-weight="700" fill="#dcaeff" text-anchor="end" xml:space="preserve">màn hình 740px</text>
-<rect x="0" y="1402" width="375" height="58" rx="0" fill="#201c19"/>
-<line x1="0" y1="1402" x2="375" y2="1402" stroke="#4d443c" stroke-width="1"/>
-<g transform="translate(27.5,1411) scale(0.07812)" aria-hidden="true"><path fill="#f8f3ed" d="M216,120v96H152V152H104v64H40V120a8,8,0,0,1,2.34-5.66l80-80a8,8,0,0,1,11.32,0l80,80A8,8,0,0,1,216,120Z" opacity="0.2"/><path fill="#f8f3ed" d="M219.31,108.68l-80-80a16,16,0,0,0-22.62,0l-80,80A15.87,15.87,0,0,0,32,120v96a8,8,0,0,0,8,8h64a8,8,0,0,0,8-8V160h32v56a8,8,0,0,0,8,8h64a8,8,0,0,0,8-8V120A15.87,15.87,0,0,0,219.31,108.68ZM208,208H160V152a8,8,0,0,0-8-8H104a8,8,0,0,0-8,8v56H48V120l80-80,80,80Z"/></g>
-<text x="37.5" y="1448" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="12" font-weight="800" fill="#f8f3ed" text-anchor="middle" xml:space="preserve">Trang chủ</text>
-<g transform="translate(102.5,1411) scale(0.07812)" aria-hidden="true"><path fill="#62dccb" d="M224,200a24,24,0,1,1-24-24A24,24,0,0,1,224,200Z" opacity="0.2"/><path fill="#62dccb" d="M200,168a32.06,32.06,0,0,0-31,24H72a32,32,0,0,1,0-64h96a40,40,0,0,0,0-80H72a8,8,0,0,0,0,16h96a24,24,0,0,1,0,48H72a48,48,0,0,0,0,96h97a32,32,0,1,0,31-40Zm0,48a16,16,0,1,1,16-16A16,16,0,0,1,200,216Z"/></g>
-<text x="112.5" y="1448" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="12" font-weight="800" fill="#62dccb" text-anchor="middle" xml:space="preserve">Học</text>
-<g transform="translate(177.5,1411) scale(0.07812)" aria-hidden="true"><path fill="#f8f3ed" d="M224,64v64a64,64,0,0,1-64,64H32V128A64,64,0,0,1,96,64Z" opacity="0.2"/><path fill="#f8f3ed" d="M24,128A72.08,72.08,0,0,1,96,56H204.69L194.34,45.66a8,8,0,0,1,11.32-11.32l24,24a8,8,0,0,1,0,11.32l-24,24a8,8,0,0,1-11.32-11.32L204.69,72H96a56.06,56.06,0,0,0-56,56,8,8,0,0,1-16,0Zm200-8a8,8,0,0,0-8,8,56.06,56.06,0,0,1-56,56H51.31l10.35-10.34a8,8,0,0,0-11.32-11.32l-24,24a8,8,0,0,0,0,11.32l24,24a8,8,0,0,0,11.32-11.32L51.31,200H160a72.08,72.08,0,0,0,72-72A8,8,0,0,0,224,120Z"/></g>
-<text x="187.5" y="1448" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="12" font-weight="800" fill="#f8f3ed" text-anchor="middle" xml:space="preserve">Luyện SQL</text>
-<g transform="translate(252.5,1411) scale(0.07812)" aria-hidden="true"><path fill="#f8f3ed" d="M224,128a95.76,95.76,0,0,1-31.8,71.37A72,72,0,0,0,128,160a40,40,0,1,0-40-40,40,40,0,0,0,40,40,72,72,0,0,0-64.2,39.37h0A96,96,0,1,1,224,128Z" opacity="0.2"/><path fill="#f8f3ed" d="M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24ZM74.08,197.5a64,64,0,0,1,107.84,0,87.83,87.83,0,0,1-107.84,0ZM96,120a32,32,0,1,1,32,32A32,32,0,0,1,96,120Zm97.76,66.41a79.66,79.66,0,0,0-36.06-28.75,48,48,0,1,0-59.4,0,79.66,79.66,0,0,0-36.06,28.75,88,88,0,1,1,131.52,0Z"/></g>
-<text x="262.5" y="1448" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="12" font-weight="800" fill="#f8f3ed" text-anchor="middle" xml:space="preserve">Tiến bộ</text>
-<g transform="translate(327.5,1411) scale(0.07812)" aria-hidden="true"><path fill="#f8f3ed" d="M152,56a24,24,0,1,1-24-24A24,24,0,0,1,152,56Z" opacity="0.2"/><path fill="#f8f3ed" d="M216,136a8,8,0,0,0-8,8c0,24.69-13.77,29.64-38.1,36.28-11.36,3.1-24.12,6.6-33.9,14.34V128h32a8,8,0,0,0,0-16H136V87a32,32,0,1,0-16,0v25H88a8,8,0,0,0,0,16h32v66.62c-9.78-7.74-22.54-11.24-33.9-14.34C61.77,173.64,48,168.69,48,144a8,8,0,0,0-16,0c0,38.11,27.67,45.66,49.9,51.72C106.23,202.36,120,207.31,120,232a8,8,0,0,0,16,0c0-24.69,13.77-29.64,38.1-36.28C196.33,189.66,224,182.11,224,144A8,8,0,0,0,216,136ZM112,56a16,16,0,1,1,16,16A16,16,0,0,1,112,56Z"/></g>
-<text x="337.5" y="1448" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="12" font-weight="800" fill="#f8f3ed" text-anchor="middle" xml:space="preserve">Logistics</text>
+<rect x="0" y="1332" width="375" height="58" rx="0" fill="#201c19"/>
+<line x1="0" y1="1332" x2="375" y2="1332" stroke="#4d443c" stroke-width="1"/>
+<g transform="translate(27.5,1341) scale(0.07812)" aria-hidden="true"><path fill="#f8f3ed" d="M216,120v96H152V152H104v64H40V120a8,8,0,0,1,2.34-5.66l80-80a8,8,0,0,1,11.32,0l80,80A8,8,0,0,1,216,120Z" opacity="0.2"/><path fill="#f8f3ed" d="M219.31,108.68l-80-80a16,16,0,0,0-22.62,0l-80,80A15.87,15.87,0,0,0,32,120v96a8,8,0,0,0,8,8h64a8,8,0,0,0,8-8V160h32v56a8,8,0,0,0,8,8h64a8,8,0,0,0,8-8V120A15.87,15.87,0,0,0,219.31,108.68ZM208,208H160V152a8,8,0,0,0-8-8H104a8,8,0,0,0-8,8v56H48V120l80-80,80,80Z"/></g>
+<text x="37.5" y="1378" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="12" font-weight="800" fill="#f8f3ed" text-anchor="middle" xml:space="preserve">Trang chủ</text>
+<g transform="translate(102.5,1341) scale(0.07812)" aria-hidden="true"><path fill="#62dccb" d="M224,200a24,24,0,1,1-24-24A24,24,0,0,1,224,200Z" opacity="0.2"/><path fill="#62dccb" d="M200,168a32.06,32.06,0,0,0-31,24H72a32,32,0,0,1,0-64h96a40,40,0,0,0,0-80H72a8,8,0,0,0,0,16h96a24,24,0,0,1,0,48H72a48,48,0,0,0,0,96h97a32,32,0,1,0,31-40Zm0,48a16,16,0,1,1,16-16A16,16,0,0,1,200,216Z"/></g>
+<text x="112.5" y="1378" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="12" font-weight="800" fill="#62dccb" text-anchor="middle" xml:space="preserve">Học</text>
+<g transform="translate(177.5,1341) scale(0.07812)" aria-hidden="true"><path fill="#f8f3ed" d="M224,64v64a64,64,0,0,1-64,64H32V128A64,64,0,0,1,96,64Z" opacity="0.2"/><path fill="#f8f3ed" d="M24,128A72.08,72.08,0,0,1,96,56H204.69L194.34,45.66a8,8,0,0,1,11.32-11.32l24,24a8,8,0,0,1,0,11.32l-24,24a8,8,0,0,1-11.32-11.32L204.69,72H96a56.06,56.06,0,0,0-56,56,8,8,0,0,1-16,0Zm200-8a8,8,0,0,0-8,8,56.06,56.06,0,0,1-56,56H51.31l10.35-10.34a8,8,0,0,0-11.32-11.32l-24,24a8,8,0,0,0,0,11.32l24,24a8,8,0,0,0,11.32-11.32L51.31,200H160a72.08,72.08,0,0,0,72-72A8,8,0,0,0,224,120Z"/></g>
+<text x="187.5" y="1378" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="12" font-weight="800" fill="#f8f3ed" text-anchor="middle" xml:space="preserve">Luyện SQL</text>
+<g transform="translate(252.5,1341) scale(0.07812)" aria-hidden="true"><path fill="#f8f3ed" d="M224,128a95.76,95.76,0,0,1-31.8,71.37A72,72,0,0,0,128,160a40,40,0,1,0-40-40,40,40,0,0,0,40,40,72,72,0,0,0-64.2,39.37h0A96,96,0,1,1,224,128Z" opacity="0.2"/><path fill="#f8f3ed" d="M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24ZM74.08,197.5a64,64,0,0,1,107.84,0,87.83,87.83,0,0,1-107.84,0ZM96,120a32,32,0,1,1,32,32A32,32,0,0,1,96,120Zm97.76,66.41a79.66,79.66,0,0,0-36.06-28.75,48,48,0,1,0-59.4,0,79.66,79.66,0,0,0-36.06,28.75,88,88,0,1,1,131.52,0Z"/></g>
+<text x="262.5" y="1378" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="12" font-weight="800" fill="#f8f3ed" text-anchor="middle" xml:space="preserve">Tiến bộ</text>
+<g transform="translate(327.5,1341) scale(0.07812)" aria-hidden="true"><path fill="#f8f3ed" d="M152,56a24,24,0,1,1-24-24A24,24,0,0,1,152,56Z" opacity="0.2"/><path fill="#f8f3ed" d="M216,136a8,8,0,0,0-8,8c0,24.69-13.77,29.64-38.1,36.28-11.36,3.1-24.12,6.6-33.9,14.34V128h32a8,8,0,0,0,0-16H136V87a32,32,0,1,0-16,0v25H88a8,8,0,0,0,0,16h32v66.62c-9.78-7.74-22.54-11.24-33.9-14.34C61.77,173.64,48,168.69,48,144a8,8,0,0,0-16,0c0,38.11,27.67,45.66,49.9,51.72C106.23,202.36,120,207.31,120,232a8,8,0,0,0,16,0c0-24.69,13.77-29.64,38.1-36.28C196.33,189.66,224,182.11,224,144A8,8,0,0,0,216,136ZM112,56a16,16,0,1,1,16,16A16,16,0,0,1,112,56Z"/></g>
+<text x="337.5" y="1378" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="12" font-weight="800" fill="#f8f3ed" text-anchor="middle" xml:space="preserve">Logistics</text>
 </g>
 <text x="455" y="116" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="16" font-weight="800" fill="#f8f3ed" text-anchor="start" xml:space="preserve">Chú thích</text>
 <circle cx="466" cy="138" r="11" fill="#201c19" stroke="#dcaeff" stroke-width="2"/>
