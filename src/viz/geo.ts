@@ -93,10 +93,13 @@ export const step5 = (v: number, lo: number, hi: number): number => (hi === lo ?
 export interface Box { x: number; y: number; w: number; h: number }
 const hits = (a: Box, b: Box): boolean => a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
 export type Anchor = 'start' | 'middle' | 'end';
-/** The box of one line of SVG text at (x, baseline y). ponytail: 0.6 em per character, no font metrics; widen if a font change makes labels touch. */
+/**
+ * The box of one line of SVG text at (x, baseline y), halo included (measured with getBBox on the Map page: ~0.6 em per
+ * digit, 1.4 em tall from 1.05 em above the baseline). ponytail: no font metrics; widen if a font change makes labels touch.
+ */
 export function textBox(x: number, y: number, anchor: Anchor, text: string, size: number): Box {
-  const w = text.length * size * 0.6;
-  return { x: anchor === 'end' ? x - w : anchor === 'middle' ? x - w / 2 : x, y: y - size * 0.8, w, h: size };
+  const w = text.length * size * 0.62 + 2;
+  return { x: anchor === 'end' ? x - w : anchor === 'middle' ? x - w / 2 : x, y: y - size * 1.05, w, h: size * 1.4 };
 }
 /**
  * L311: a value label beside each symbol (centre x/y, radius r) that covers neither the map's own labels (`taken`), another
@@ -108,7 +111,7 @@ export function placeLabels(items: { x: number; y: number; r: number; text: stri
   return items.map(({ x, y, r, text }) => {
     const spots: { x: number; y: number; anchor: Anchor }[] = [
       { x: x + r + 3, y: y + size * 0.3, anchor: 'start' }, { x: x - r - 3, y: y + size * 0.3, anchor: 'end' },
-      { x, y: y - r - 3, anchor: 'middle' }, { x, y: y + r + size, anchor: 'middle' },
+      { x, y: y - r - size * 0.4, anchor: 'middle' }, { x, y: y + r + size * 1.1, anchor: 'middle' },
     ];
     const spot = spots.find((s) => !busy.some((b) => hits(textBox(s.x, s.y, s.anchor, text, size), b)));
     if (spot) busy.push(textBox(spot.x, spot.y, spot.anchor, text, size));
