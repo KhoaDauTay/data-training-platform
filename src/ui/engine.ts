@@ -49,7 +49,7 @@ function engineChunk(): Promise<EngineView> {
         best: (e) => b.entry(e),
       };
       m.initEngine(deps, src);
-      b.initBest(deps, bs, src.meta, { skill: (id) => SKILLS.find((x) => x.id === id)?.label });
+      b.initBest(deps, bs, src.meta, { skill: (id) => SKILLS.find((x) => x.id === id)?.label, sourceTitle: m.sourceTitle });
       best = b;
       failed = false;
       return (view = m);

@@ -27,7 +27,7 @@ type LessonMeta = Record<string, { fm: unknown }>;
 
 let d: EngineDeps;
 /** Main values engineView does not take: a skill's label (content/skills.yml) for the skill chips. */
-let main: { skill: (id: string) => { vi: string; en: string } | undefined };
+let main: { skill: (id: string) => { vi: string; en: string } | undefined; sourceTitle: (u: string) => string };
 const rt = { of: bestRouteOf, hash: bestHash };
 let index: BpMeta[] = [];
 let tracks: Track[] = [];
@@ -113,6 +113,10 @@ function keepFocus(): void {
   if (key) queueMicrotask(() => document.querySelector<HTMLElement>(`[data-ek="${CSS.escape(key)}"]`)?.focus());
 }
 
+/** v23 (L299) on Best Practice: a source reads as its title (engineView's sourceTitle, passed in), the URL stays the href. */
+const srcLink = (u: string): HTMLElement => d.h('a', { href: u, target: '_blank', rel: 'noopener noreferrer', title: u, class: 'inline-flex items-center gap-1.5' },
+  d.icon('external', 'size-4 shrink-0'), main.sourceTitle(u));
+
 // ---- pages
 
 /** The page the hash names; a bare #/engine/best opens the remembered track, an unknown track SQL, an unknown card its track. */
@@ -169,11 +173,12 @@ function tipsBox(): HTMLElement {
 
 interface Filter { areas: Set<string>; levels: Set<string>; todo: boolean }
 const filters = new Map<TrackId, Filter>();
-function chip(text: string, on: boolean, key: string, flip: () => void): HTMLElement {
+/** ux-route-v24 §6.2: every filter chip carries its count. */
+function chip(text: string, n: number, on: boolean, key: string, flip: () => void): HTMLElement {
   return d.h('button', {
     type: 'button', 'aria-pressed': on ? 'true' : 'false', 'data-ek': key, onclick: () => { flip(); d.rerender(); },
     class: d.cls.cx('min-h-11 rounded-full px-3 py-1 text-body-sm font-semibold', on ? 'border-accent bg-accent-soft text-ink ring-1 ring-accent' : 'bg-panel text-ink'),
-  }, text);
+  }, text, d.h('span', { class: 'ml-1.5 tabular-nums text-muted' }, String(n)));
 }
 const toggle = (s: Set<string>, v: string): void => void (s.has(v) ? s.delete(v) : s.add(v));
 
@@ -208,9 +213,9 @@ function gridPage(t: Track): HTMLElement {
         h('h2', { id: 'bp-grid', class: 'm-0 text-title font-bold' }, bt('grid.title')),
         h('span', { class: 'text-body-sm tabular-nums text-muted' }, bt('progress', { k: all.filter((c) => ok.has(c.id)).length, n: all.length }))),
       h('div', { role: 'group', 'aria-label': bt('filter.title'), class: 'flex flex-wrap gap-2' },
-        ...t.areas.filter((a) => all.some((c) => c.module === a)).map((a) => chip(bt(`area.${a}` as BestKey), f.areas.has(a), `bp-f-${a}`, () => toggle(f.areas, a))),
-        ...levels.map((lv) => chip(lv, f.levels.has(lv), `bp-f-${lv}`, () => toggle(f.levels, lv))),
-        chip(bt('filter.todo'), f.todo, 'bp-f-todo', () => { f.todo = !f.todo; })),
+        ...t.areas.filter((a) => all.some((c) => c.module === a)).map((a) => chip(bt(`area.${a}` as BestKey), all.filter((c) => c.module === a).length, f.areas.has(a), `bp-f-${a}`, () => toggle(f.areas, a))),
+        ...levels.map((lv) => chip(lv, all.filter((c) => c.level === lv).length, f.levels.has(lv), `bp-f-${lv}`, () => toggle(f.levels, lv))),
+        chip(bt('filter.todo'), all.filter((c) => !ok.has(c.id)).length, f.todo, 'bp-f-todo', () => { f.todo = !f.todo; })),
       h('p', { class: 'sr-only', role: 'status' }, bt('grid.count', { n: shown.length })),
       shown.length ? h('ul', { class: 'm-0 grid list-none gap-4 p-0 md:grid-cols-2' }, ...shown.map((c) => gridCard(c, ok.has(c.id))))
         : h('p', { class: 'm-0 text-muted' }, bt('grid.none'))),
@@ -446,7 +451,7 @@ function cardPage(c: BpCard): HTMLElement {
       ...links.map(([label, ...kids]) => h('p', { class: 'm-0 flex flex-wrap items-center gap-2 text-body-sm' }, h('span', { class: 'text-muted' }, `${label}:`), ...kids))) : null,
     h('section', { class: 'flex flex-col gap-2', 'aria-labelledby': 'bp-src' },
       h('h2', { id: 'bp-src', class: 'm-0 text-body font-bold' }, bt('sources')),
-      h('ul', { class: 'm-0 list-disc space-y-1 pl-5 text-body-sm' }, ...c.sources.map((u) => h('li', { class: 'break-all' }, h('a', { href: u, target: '_blank', rel: 'noopener noreferrer' }, u)))),
+      h('ul', { class: 'm-0 list-disc space-y-1 pl-5 text-body-sm' }, ...c.sources.map((u) => h('li', {}, srcLink(u)))),
       h('p', { class: 'm-0 text-caption text-muted' }, bt('verified', { version: c.verified.version, date: c.verified.date }))),
     h('nav', { class: cls.cx(cls.CARD, 'flex flex-wrap items-center justify-end gap-2 p-4'), 'aria-label': t.title[lang()] },
       prev ? h('a', { href: rt.hash(c.track, prev.id), class: cls.cx(cls.BTN_GHOST, 'inline-flex items-center gap-1 px-4 py-2 no-underline'), title: prev.title[lang()] }, d.icon('chevronLeft', 'size-4'), bt('prev')) : null,
@@ -474,7 +479,7 @@ function habitsPage(): HTMLElement {
     h('p', { class: 'm-0 rounded-(--r-inset) bg-info-soft px-4 py-3 text-body-sm text-ink' }, ...inline(habits.after[lang()])),
     h('section', { class: 'flex flex-col gap-2', 'aria-labelledby': 'bp-hsrc' },
       h('h2', { id: 'bp-hsrc', class: 'm-0 text-body font-bold' }, bt('habits.sources')),
-      h('ul', { class: 'm-0 list-none space-y-1 p-0 text-body-sm' }, ...habits.sources.map((u, i) => h('li', { class: 'break-all' }, `[${i + 1}] `, h('a', { href: u, target: '_blank', rel: 'noopener noreferrer' }, u))))));
+      h('ul', { class: 'm-0 list-none space-y-1 p-0 text-body-sm' }, ...habits.sources.map((u, i) => h('li', {}, `[${i + 1}] `, srcLink(u))))));
 }
 
 // ---- main's seams: h1 + trail, sidebar rows, the entry on #/engine and #/engine/postgres
