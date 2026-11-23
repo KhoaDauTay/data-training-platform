@@ -109,13 +109,15 @@ export function overBudget(json: unknown, facts: TableFacts): { cost: number; bu
 
 /**
  * A Seq Scan of a table ≥ 5,000 rows whose Filter names a column some index leads with, estimated to keep ≤ 5 % of it:
- * the predicate is not sargable (a function or cast on the column). Returns the table, or undefined.
+ * the predicate is not sargable (a function or cast on the column). Returns the table, or undefined. String.raw keeps `\b` a
+ * word boundary (v29, L441: in a plain template it was a backspace and never matched); the column is escaped, since an
+ * expression index leads with e.g. `lower(email`, an unterminated group as a raw pattern.
  */
 export function nonSargable(json: unknown, facts: TableFacts): string | undefined {
   return planNodes(json).find((n) => {
     const f = facts[n['Relation Name'] ?? ''];
     return n['Node Type'] === 'Seq Scan' && f && f.rows >= GATE.bigTable && (n['Plan Rows'] ?? 0) <= GATE.selective * f.rows
-      && f.lead.some((c) => new RegExp(`\b${c}\b`).test(n.Filter ?? ''));
+      && f.lead.some((c) => new RegExp(String.raw`\b${c.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\b`).test(n.Filter ?? ''));
   })?.['Relation Name'];
 }
 

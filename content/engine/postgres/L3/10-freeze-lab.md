@@ -8,6 +8,7 @@ title_en: "Lab: freeze a page"
 kind: lab
 runtime: browser
 minutes: 15
+verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-24" }
 viz: pg-vacuum-flow
 objectives:
   - vi: Thấy cờ `HEAP_XMIN_FROZEN` sau `VACUUM (FREEZE)` trong khi `xmin` vẫn giữ nguyên
@@ -98,38 +99,280 @@ lab:
         en: "`ledger_frozen` has age 0 (just frozen, the last command). `ledger_touched` has age 1, `ledger_plain` age 4: its tuples are not frozen, so `relfrozenxid` cannot move past their `xmin` (the INSERT transaction). Autovacuum compares this number with `autovacuum_freeze_max_age` (200 million by default)."
         probe: SELECT relname, age(relfrozenxid), relfrozenxid::text = (SELECT t_xmin::text FROM heap_page_items(get_raw_page('ledger_plain', 0)) WHERE lp = 1) FROM pg_class WHERE relname LIKE 'ledger%' ORDER BY relname
         expect: [[ledger_frozen, 0, false], [ledger_plain, 4, true], [ledger_touched, 1, false]]
+quiz:
+  - q:
+      vi: "Sau `VACUUM (FREEZE)`, cột `t_xmin` của một tuple đã freeze chứa gì?"
+      en: "After `VACUUM (FREEZE)`, what does the `t_xmin` of a frozen tuple hold?"
+    options:
+      - { vi: "Số 2 (`FrozenTransactionId`), thay cho số transaction cũ", en: "The number 2 (`FrozenTransactionId`), replacing the old transaction number" }
+      - { vi: "Vẫn là số transaction cũ; tuple chỉ được bật cờ `HEAP_XMIN_FROZEN`", en: "Still the old transaction number; the tuple only gets the `HEAP_XMIN_FROZEN` flag" }
+      - { vi: "NULL, vì tuple đã thấy được với mọi transaction", en: "NULL, because the tuple is now visible to every transaction" }
+    answer: 1
+    trap: 0
+    why:
+      vi: "Nghe hợp lý vì bản cũ của Postgres (trước 9.4) đúng là ghi đè `xmin` bằng 2, nhưng từ 9.4 freeze chỉ bật hai bit COMMITTED và INVALID cùng lúc, tức cờ `HEAP_XMIN_FROZEN`. `xmin` giữ nguyên để còn tra cứu tuple do transaction nào tạo. Vì vậy kiểm tra freeze bằng `t_xmin = '2'` luôn ra 0 dòng."
+      en: "It sounds right because old Postgres versions (before 9.4) did overwrite `xmin` with 2, but since 9.4 freezing only sets the COMMITTED and INVALID bits together, the `HEAP_XMIN_FROZEN` flag. `xmin` is kept so you can still tell which transaction created the tuple. That is why checking for frozen tuples with `t_xmin = '2'` always finds 0 rows."
+  - q:
+      vi: "Một bảng lưu trữ 500 GB gần như chỉ đọc, vậy mà log ghi autovacuum chạy trên nó \"to prevent wraparound\". Vì sao?"
+      en: "A 500 GB archive table is almost read only, yet the log shows autovacuum running on it \"to prevent wraparound\". Why?"
+    options:
+      - { vi: "Autovacuum chỉ chạy khi có dead tuple, nên chắc có ai đang sửa bảng", en: "Autovacuum only runs when there are dead tuples, so someone must be changing the table" }
+      - { vi: "`age(relfrozenxid)` của bảng đã vượt `autovacuum_freeze_max_age`; tuple chưa freeze vẫn phải freeze dù bảng không đổi", en: "The table's `age(relfrozenxid)` passed `autovacuum_freeze_max_age`; unfrozen tuples must still be frozen even though the table does not change" }
+      - { vi: "Bảng bị hỏng và autovacuum đang sửa trang", en: "The table is corrupted and autovacuum is repairing pages" }
+    answer: 1
+    trap: 0
+    why:
+      vi: "Nghe hợp lý vì autovacuum thường được kích bởi số dead tuple, nhưng còn lý do thứ hai: tuổi của `relfrozenxid`. Transaction ở các bảng khác vẫn làm XID tăng, nên tuổi của bảng lưu trữ cũng tăng. Một lần `VACUUM (FREEZE)` lúc vắng tải đánh dấu các trang all-frozen, và những lần chống wraparound sau bỏ qua chúng."
+      en: "It sounds right because autovacuum is usually triggered by dead tuples, but there is a second reason: the age of `relfrozenxid`. Transactions on other tables keep the XID moving, so the archive table ages too. One `VACUUM (FREEZE)` at a quiet time marks its pages all-frozen, and later anti-wraparound runs skip them."
 ---
+## Mở bài
+
+Một bảng sổ cái được ghi từ năm ngoái và không ai sửa nữa, vậy mà autovacuum vẫn quay lại đọc từng trang của nó. Nó đang làm gì ở đó, và làm sao để lần sau nó bỏ qua?
 
 ## Ý chính
 
-XID (số hiệu transaction) chỉ 32 bit nên nó quay vòng: đó là wraparound. Để tuple cũ không bỗng "ở tương lai", VACUUM **freeze** chúng: bật cờ nói "tuple này thấy được với mọi transaction, bất kể `xmin`". Trang có mọi tuple đã freeze được đánh dấu **all-frozen** trong visibility map, nên các lần VACUUM chống wraparound sau có thể bỏ qua nó.
+XID (số hiệu transaction) chỉ có 32 bit nên quay vòng: đó là wraparound. Để một tuple cũ không bỗng trông như "ở tương lai", VACUUM freeze nó: bật cờ nói "tuple này thấy được với mọi transaction, bất kể `xmin`". Cờ đó là `HEAP_XMIN_FROZEN`, ghép từ hai bit COMMITTED và INVALID cùng bật.
+
+Nhiều người nghĩ freeze là ghi đè `xmin` bằng một số đặc biệt. Thật ra từ PostgreSQL 9.4 freeze chỉ bật cờ; `t_xmin` vẫn giữ số transaction đã tạo tuple, để còn tra cứu.
+
+VACUUM thường chỉ freeze tuple già hơn `vacuum_freeze_min_age` (mặc định 50 triệu transaction). `VACUUM (FREEZE)` đặt ngưỡng đó về 0 và freeze mọi tuple nó thấy được. Trang có mọi tuple đã freeze được đánh dấu all-frozen trong visibility map, nên lần VACUUM chống wraparound sau bỏ qua trang đó. Bất kỳ INSERT, UPDATE hay DELETE nào trên trang cũng xóa cả bit all-visible lẫn all-frozen.
+
+Mỗi bảng có `relfrozenxid`: mốc mà mọi XID cũ hơn trong bảng đã được freeze. `age(relfrozenxid)` là số transaction đã trôi qua kể từ mốc đó. Khi nó vượt `autovacuum_freeze_max_age` (200 triệu), autovacuum ép một lần VACUUM chống wraparound, dù bảng không đổi gì.
+
+## Cú pháp
+
+```sql
+VACUUM [ ( FREEZE [, VERBOSE ] [, DISABLE_PAGE_SKIPPING ] ) ] [ table_name [, ...] ];
+SELECT relname, age(relfrozenxid) FROM pg_class WHERE relname = 'table_name';
+SELECT * FROM heap_tuple_infomask_flags(t_infomask, t_infomask2);
+SELECT * FROM pg_visibility_map('table_name' [, block_number ]);
+SELECT * FROM pg_visibility_map_summary('table_name');
+```
+
+- `FREEZE`: freeze mọi tuple thấy được, như thể `vacuum_freeze_min_age` = 0.
+- `DISABLE_PAGE_SKIPPING`: đọc cả trang đã all-visible hay all-frozen; chỉ dùng khi nghi visibility map sai.
+- `heap_tuple_infomask_flags`: đổi hai cột bit của `heap_page_items` thành tên cờ (pageinspect).
+- `pg_visibility_map`: hai bit all-visible và all-frozen của từng trang (pg_visibility).
 
 ## Ví dụ
 
+Tuổi `relfrozenxid` của ba bảng lab:
+
 ```sql
-SELECT relname, age(relfrozenxid) FROM pg_class WHERE relname LIKE 'ledger%' ORDER BY relname;
+SELECT relname, age(relfrozenxid) AS xid_age FROM pg_class WHERE relname LIKE 'ledger%' ORDER BY relname;
 ```
 
-`age(relfrozenxid)` là số transaction đã trôi qua kể từ mốc freeze của bảng. Đây là con số phải theo dõi trên máy chủ thật.
+`ledger_frozen` có tuổi 0 vì nó vừa được freeze; hai bảng còn lại già hơn.
+
+Một bảng riêng để xem cờ trước khi freeze:
+
+```sql
+CREATE TABLE ledger_demo(id int PRIMARY KEY, amount int);
+INSERT INTO ledger_demo VALUES (1, 10), (2, 20);
+SELECT lp, raw_flags, combined_flags
+FROM heap_page_items(get_raw_page('ledger_demo', 0)), heap_tuple_infomask_flags(t_infomask, t_infomask2)
+ORDER BY lp;
+```
+
+Và sau khi freeze:
+
+```sql
+VACUUM (FREEZE) ledger_demo;
+SELECT lp, t_xmin, raw_flags, combined_flags
+FROM heap_page_items(get_raw_page('ledger_demo', 0)), heap_tuple_infomask_flags(t_infomask, t_infomask2)
+ORDER BY lp;
+```
+
+`combined_flags` giờ có `HEAP_XMIN_FROZEN`, còn `t_xmin` của hai dòng vẫn là số transaction của lệnh INSERT.
+
+Visibility map của cả bảng gộp lại:
+
+```sql
+SELECT all_visible, all_frozen FROM pg_visibility_map_summary('ledger_demo');
+```
+
+Bảng một trang nên cả hai cột bằng 1: trang đó vừa all-visible vừa all-frozen.
+
+## Lỗi hay gặp
+
+Chạy VACUUM trong một transaction, ví dụ khi công cụ migration bọc mọi lệnh trong `BEGIN`:
+
+```sql
+BEGIN;
+-- ERROR 25001: VACUUM cannot run inside a transaction block
+VACUUM (FREEZE) ledger_plain;
+```
+
+VACUUM tự quản lý transaction của nó, nên phải chạy ở ngoài. Gõ `ROLLBACK` để thoát transaction đã hỏng, rồi chạy lại riêng lệnh VACUUM.
+
+Tìm tuple đã freeze bằng `xmin = 2`:
+
+```sql
+-- WRONG: since 9.4 freezing keeps xmin
+ROLLBACK;
+SELECT count(*) AS frozen FROM heap_page_items(get_raw_page('ledger_frozen', 0)) WHERE t_xmin = '2';
+```
+
+```sql
+-- FIX: read the HEAP_XMIN_FROZEN flag
+SELECT count(*) FILTER (WHERE 'HEAP_XMIN_FROZEN' = ANY(combined_flags)) AS frozen
+FROM heap_page_items(get_raw_page('ledger_frozen', 0)), heap_tuple_infomask_flags(t_infomask, t_infomask2);
+```
+
+Câu sai ra 0 dù cả 3 tuple đã freeze. Hãy đọc cờ, không đọc `xmin`.
+
+Tin rằng VACUUM thường đã freeze bảng:
+
+```sql
+-- WRONG: a plain VACUUM skips young tuples
+VACUUM ledger_plain;
+SELECT count(*) FILTER (WHERE 'HEAP_XMIN_FROZEN' = ANY(combined_flags)) AS frozen
+FROM heap_page_items(get_raw_page('ledger_plain', 0)), heap_tuple_infomask_flags(t_infomask, t_infomask2);
+```
+
+```sql
+-- FIX: ask for FREEZE
+VACUUM (FREEZE) ledger_plain;
+SELECT count(*) FILTER (WHERE 'HEAP_XMIN_FROZEN' = ANY(combined_flags)) AS frozen
+FROM heap_page_items(get_raw_page('ledger_plain', 0)), heap_tuple_infomask_flags(t_infomask, t_infomask2);
+```
+
+VACUUM thường bỏ qua tuple trẻ hơn `vacuum_freeze_min_age`, nên vẫn 0. Muốn freeze ngay, ví dụ một bảng lưu trữ sắp không đổi nữa, hãy ghi rõ `FREEZE`.
 
 ## Thực hành
 
-Bốn bước trên ba bảng ở ba trạng thái. Sau lab này bạn đọc được tuổi `relfrozenxid` của bảng và hiểu vì sao một bảng lớn ít đổi vẫn bị autovacuum "aggressive" ghé thăm.
+Bốn bước trên ba bảng giống nhau ở ba trạng thái: `ledger_plain` qua VACUUM thường, `ledger_frozen` qua `VACUUM (FREEZE)`, `ledger_touched` bị sửa một dòng sau khi freeze. Bạn đọc cờ của tuple, visibility map và tuổi `relfrozenxid`; sau đó là hai câu hỏi.
+
+## Tóm tắt
+
+- Freeze bật cờ `HEAP_XMIN_FROZEN` và giữ nguyên `t_xmin`; đừng tìm tuple đã freeze bằng `xmin = 2`.
+- VACUUM thường chỉ freeze tuple già hơn `vacuum_freeze_min_age`; `VACUUM (FREEZE)` freeze mọi tuple thấy được.
+- Trang mà mọi tuple đã freeze là all-frozen trong visibility map; một UPDATE xóa bit đó.
+- `age(relfrozenxid)` vượt `autovacuum_freeze_max_age` thì autovacuum ép VACUUM chống wraparound, kể cả trên bảng chỉ đọc.
 
 # EN
 
+## Opening
+
+A ledger table was written last year and nobody changes it any more, yet autovacuum keeps coming back to read every page of it. What is it doing there, and how do you make it skip the table next time?
+
 ## Key idea
 
-XIDs are only 32 bits, so they wrap around. To keep old tuples from suddenly looking "in the future", VACUUM **freezes** them: it sets a flag that says "this tuple is visible to every transaction, whatever its `xmin`". A page whose tuples are all frozen is marked **all-frozen** in the visibility map, so later anti-wraparound vacuums can skip it.
+An XID (transaction ID) is only 32 bits, so it wraps around. To keep an old tuple from suddenly looking "in the future", VACUUM freezes it: it sets a flag that says "this tuple is visible to every transaction, whatever its `xmin`". That flag is `HEAP_XMIN_FROZEN`, made of the COMMITTED and INVALID bits set together.
+
+Many people think freezing overwrites `xmin` with a special number. In fact since PostgreSQL 9.4 freezing only sets the flag; `t_xmin` keeps the number of the transaction that created the tuple, for forensics.
+
+A normal VACUUM only freezes tuples older than `vacuum_freeze_min_age` (50 million transactions by default). `VACUUM (FREEZE)` sets that threshold to 0 and freezes every tuple it can see. A page whose tuples are all frozen is marked all-frozen in the visibility map, so the next anti-wraparound VACUUM skips it. Any INSERT, UPDATE or DELETE on the page clears both the all-visible and the all-frozen bit.
+
+Every table has a `relfrozenxid`: the horizon below which every XID in the table is frozen. `age(relfrozenxid)` is the number of transactions since that horizon. When it passes `autovacuum_freeze_max_age` (200 million), autovacuum forces an anti-wraparound VACUUM, even if the table never changes.
+
+## Syntax
+
+```sql
+VACUUM [ ( FREEZE [, VERBOSE ] [, DISABLE_PAGE_SKIPPING ] ) ] [ table_name [, ...] ];
+SELECT relname, age(relfrozenxid) FROM pg_class WHERE relname = 'table_name';
+SELECT * FROM heap_tuple_infomask_flags(t_infomask, t_infomask2);
+SELECT * FROM pg_visibility_map('table_name' [, block_number ]);
+SELECT * FROM pg_visibility_map_summary('table_name');
+```
+
+- `FREEZE`: freezes every visible tuple, as if `vacuum_freeze_min_age` = 0.
+- `DISABLE_PAGE_SKIPPING`: also reads pages already all-visible or all-frozen; only when you suspect the visibility map is wrong.
+- `heap_tuple_infomask_flags`: turns the two bit columns of `heap_page_items` into flag names (pageinspect).
+- `pg_visibility_map`: the all-visible and all-frozen bits of each page (pg_visibility).
 
 ## Example
 
+The `relfrozenxid` age of the three lab tables:
+
 ```sql
-SELECT relname, age(relfrozenxid) FROM pg_class WHERE relname LIKE 'ledger%' ORDER BY relname;
+SELECT relname, age(relfrozenxid) AS xid_age FROM pg_class WHERE relname LIKE 'ledger%' ORDER BY relname;
 ```
 
-`age(relfrozenxid)` is the number of transactions since the table's freeze horizon. This is the number to watch on a real server.
+`ledger_frozen` has age 0 because it was just frozen; the other two are older.
+
+A separate table to see the flags before freezing:
+
+```sql
+CREATE TABLE ledger_demo(id int PRIMARY KEY, amount int);
+INSERT INTO ledger_demo VALUES (1, 10), (2, 20);
+SELECT lp, raw_flags, combined_flags
+FROM heap_page_items(get_raw_page('ledger_demo', 0)), heap_tuple_infomask_flags(t_infomask, t_infomask2)
+ORDER BY lp;
+```
+
+And after freezing:
+
+```sql
+VACUUM (FREEZE) ledger_demo;
+SELECT lp, t_xmin, raw_flags, combined_flags
+FROM heap_page_items(get_raw_page('ledger_demo', 0)), heap_tuple_infomask_flags(t_infomask, t_infomask2)
+ORDER BY lp;
+```
+
+`combined_flags` now holds `HEAP_XMIN_FROZEN`, while the `t_xmin` of both rows is still the INSERT's transaction number.
+
+The visibility map of the whole table, summed up:
+
+```sql
+SELECT all_visible, all_frozen FROM pg_visibility_map_summary('ledger_demo');
+```
+
+A one-page table, so both columns are 1: that page is both all-visible and all-frozen.
+
+## Common mistakes
+
+Running VACUUM inside a transaction, for example when a migration tool wraps every command in `BEGIN`:
+
+```sql
+BEGIN;
+-- ERROR 25001: VACUUM cannot run inside a transaction block
+VACUUM (FREEZE) ledger_plain;
+```
+
+VACUUM manages its own transactions, so it must run outside one. Type `ROLLBACK` to leave the failed transaction, then run the VACUUM on its own.
+
+Looking for frozen tuples with `xmin = 2`:
+
+```sql
+-- WRONG: since 9.4 freezing keeps xmin
+ROLLBACK;
+SELECT count(*) AS frozen FROM heap_page_items(get_raw_page('ledger_frozen', 0)) WHERE t_xmin = '2';
+```
+
+```sql
+-- FIX: read the HEAP_XMIN_FROZEN flag
+SELECT count(*) FILTER (WHERE 'HEAP_XMIN_FROZEN' = ANY(combined_flags)) AS frozen
+FROM heap_page_items(get_raw_page('ledger_frozen', 0)), heap_tuple_infomask_flags(t_infomask, t_infomask2);
+```
+
+The wrong query returns 0 although all 3 tuples are frozen. Read the flag, not `xmin`.
+
+Believing a plain VACUUM has frozen the table:
+
+```sql
+-- WRONG: a plain VACUUM skips young tuples
+VACUUM ledger_plain;
+SELECT count(*) FILTER (WHERE 'HEAP_XMIN_FROZEN' = ANY(combined_flags)) AS frozen
+FROM heap_page_items(get_raw_page('ledger_plain', 0)), heap_tuple_infomask_flags(t_infomask, t_infomask2);
+```
+
+```sql
+-- FIX: ask for FREEZE
+VACUUM (FREEZE) ledger_plain;
+SELECT count(*) FILTER (WHERE 'HEAP_XMIN_FROZEN' = ANY(combined_flags)) AS frozen
+FROM heap_page_items(get_raw_page('ledger_plain', 0)), heap_tuple_infomask_flags(t_infomask, t_infomask2);
+```
+
+A plain VACUUM skips tuples younger than `vacuum_freeze_min_age`, so it is still 0. To freeze now, for example an archive table that will not change any more, say `FREEZE` explicitly.
 
 ## Practice
 
-Four steps on three tables in three states. After this lab you can read a table's `relfrozenxid` age and understand why a large, rarely changed table still gets an "aggressive" autovacuum visit.
+Four steps on three identical tables in three states: `ledger_plain` had a normal VACUUM, `ledger_frozen` had `VACUUM (FREEZE)`, `ledger_touched` had one row updated after freezing. You read the tuple flags, the visibility map and the `relfrozenxid` age; then two questions.
+
+## Recap
+
+- Freezing sets the `HEAP_XMIN_FROZEN` flag and keeps `t_xmin`; do not look for frozen tuples with `xmin = 2`.
+- A normal VACUUM only freezes tuples older than `vacuum_freeze_min_age`; `VACUUM (FREEZE)` freezes every visible tuple.
+- A page whose tuples are all frozen is all-frozen in the visibility map; one UPDATE clears that bit.
+- When `age(relfrozenxid)` passes `autovacuum_freeze_max_age`, autovacuum forces an anti-wraparound VACUUM, even on a read-only table.

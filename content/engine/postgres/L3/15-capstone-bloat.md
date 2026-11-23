@@ -8,6 +8,7 @@ title_en: "L3 check: the cart table that keeps growing"
 kind: capstone
 runtime: browser
 minutes: 30
+verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-24" }
 viz: pg-hot-chain
 objectives:
   - vi: Chẩn đoán vì sao UPDATE không HOT trên một bảng còn chỗ trống, từ bộ đếm, trang heap, index và WAL
@@ -120,6 +121,21 @@ lab:
         en: "48 of the 50 updates are HOT: exactly the 48 new versions that fit on page 0, while the 2 that had to move to another page could not be. Same data, same `fillfactor`; the only difference is the extra index."
         probe: SELECT n_tup_upd, n_tup_hot_upd FROM pg_stat_user_tables WHERE relname = 'carts_lean'
         expect: [[50, 48]]
+    - task:
+        vi: "Khóa chính thì phải giữ: trang giỏ hàng đọc giỏ của khách qua nó mỗi lần bấm. Lấy `id`, `items`, `touched_at` của giỏ `id = 42`. Bước này có thanh hiệu năng: câu trả đúng dòng mà không đi qua index vẫn chưa qua."
+        en: "The primary key must stay: the cart page reads the customer's cart through it on every click. Return `id`, `items`, `touched_at` of cart `id = 42`. This step has a performance bar: a query that returns the right rows without going through an index does not pass."
+      solution: SELECT id, items, touched_at FROM carts WHERE id = 42
+      check: rows
+      perf: { table: carts }
+      slow: SELECT id, items, touched_at FROM carts WHERE id::text = '42'
+      hint:
+        vi: "So cột `id` trực tiếp với số 42; ép kiểu cột (`id::text`) làm planner bỏ `carts_pkey`."
+        en: "Compare column `id` directly with the number 42; casting the column (`id::text`) makes the planner drop `carts_pkey`."
+      fact:
+        vi: "Giỏ 42 có `items` = 2 sau đợt sửa. Index Scan trên `carts_pkey` chỉ chạm vài trang; `id::text = '42'` phải Seq Scan cả bảng, và bảng phình vì HOT miss thì càng đắt."
+        en: "Cart 42 has `items` = 2 after the batch. An Index Scan on `carts_pkey` touches a few pages; `id::text = '42'` has to Seq Scan the whole table, which costs more the more it bloats from HOT misses."
+        probe: SELECT id, items FROM carts WHERE id = 42
+        expect: [[42, 2]]
 quiz:
   - q:
       vi: "Một đồng nghiệp đề xuất hạ `fillfactor` của `carts` xuống 50 và chạy `VACUUM FULL` để chừa thêm chỗ cho HOT. Có nên làm không?"
@@ -145,37 +161,44 @@ quiz:
       vi: "Thêm index nghe như cách tăng tốc quen thuộc, nhưng UPDATE tìm giỏ bằng khóa chính, và một index trên cột bị sửa chính là thứ đã chặn HOT. Bằng chứng là ba con số: 0 HOT ở `carts`, 100 bản ghi Btree cho 50 UPDATE, và 48 HOT ở `carts_lean` chỉ vì thiếu index đó. `CHECKPOINT` dày hơn còn làm WAL to thêm (full-page image)."
       en: "Adding an index sounds like the usual speed-up, but the UPDATE finds a cart by its primary key, and an index on a changed column is exactly what blocked HOT. The evidence is three numbers: 0 HOT on `carts`, 100 Btree records for 50 UPDATEs, and 48 HOT on `carts_lean` just for lacking that index. A more frequent `CHECKPOINT` would make the WAL bigger (full-page images)."
 ---
+## Mở bài
+
+Đội ứng dụng báo bảng giỏ hàng `carts` phình nhanh dù đã đặt `fillfactor = 70` theo đúng bài trước. Có người đề nghị hạ fillfactor thêm nữa. Trước khi làm, bạn cần số đo.
 
 ## Ý chính
 
-Bài cuối cấp L3 dùng một bảng mới và một nguyên nhân khác bài fillfactor. Bạn ghép cả cấp: bộ đếm cho biết **có** chuyện (0 HOT, dead tuple), trang heap loại một giả thuyết (trang còn chỗ), index chỉ ra **vì sao** (index trên cột bị sửa), WAL cho thấy **cái giá**, và một bảng đối chứng chứng minh kết luận.
-
-## Ví dụ
-
-```sql
-SELECT n_tup_upd, n_tup_hot_upd, n_dead_tup
-FROM pg_stat_user_tables
-WHERE relname = 'carts';
-```
+Bài cuối cấp L3 dùng một bảng mới và một nguyên nhân khác bài fillfactor. Bạn ghép cả cấp: bộ đếm cho biết có chuyện (0 HOT, dead tuple), trang heap loại một giả thuyết (trang còn chỗ), index chỉ ra vì sao (index trên cột bị sửa), WAL cho thấy cái giá, và một bảng đối chứng chứng minh kết luận. Bước cuối có thanh hiệu năng: đọc giỏ hàng phải đi qua khóa chính.
 
 ## Thực hành
 
-Năm bước chạy thật trên bảng `carts` và bản đối chứng `carts_lean`, rồi hai câu hỏi: một câu "có nên làm không" và một câu kết luận. Xong bài này bạn chẩn đoán được một bảng phình vì HOT miss mà không đoán theo thói quen, và bác được cách chữa sai bằng số đo.
+Sáu bước chạy thật trên bảng `carts` và bản đối chứng `carts_lean`, rồi hai câu hỏi: một câu "có nên làm không" và một câu kết luận.
+
+## Tóm tắt
+
+- HOT cần hai điều kiện: trang còn chỗ, và không index nào chứa cột bị sửa.
+- `pg_stat_user_tables` (`n_tup_hot_upd`) báo HOT miss; `ctid` cho biết bản mới nằm ở trang nào.
+- Mỗi UPDATE không HOT thêm một mục vào mọi index và nhiều bản ghi WAL hơn.
+- Index không ai dùng (`idx_scan` = 0) trên cột hay đổi là ứng viên để bỏ; khóa chính dùng để tra thì giữ.
+- So cột trực tiếp với giá trị; ép kiểu cột làm planner bỏ index.
 
 # EN
 
+## Opening
+
+The app team reports that the cart table `carts` grows fast even though `fillfactor = 70` is set, exactly as the earlier lesson taught. Someone proposes lowering the fillfactor further. Before doing anything, you need measurements.
+
 ## Key idea
 
-The L3 final lesson uses a new table and a different cause from the fillfactor lesson. You put the whole level together: the counters say **that** something is wrong (0 HOT, dead tuples), the heap page rules out one theory (the page has room), the indexes show **why** (an index on a changed column), the WAL shows **the cost**, and a control table proves the conclusion.
-
-## Example
-
-```sql
-SELECT n_tup_upd, n_tup_hot_upd, n_dead_tup
-FROM pg_stat_user_tables
-WHERE relname = 'carts';
-```
+The L3 final lesson uses a new table and a different cause from the fillfactor lesson. You put the whole level together: the counters say that something is wrong (0 HOT, dead tuples), the heap page rules out one theory (the page has room), the indexes show why (an index on a changed column), the WAL shows the cost, and a control table proves the conclusion. The last step has a performance bar: reading a cart must go through the primary key.
 
 ## Practice
 
-Five real steps on table `carts` and its control copy `carts_lean`, then two questions: one "should we do it" and one conclusion. After this lesson you can diagnose a table bloated by HOT misses without guessing from habit, and reject a wrong fix with measurements.
+Six real steps on table `carts` and its control copy `carts_lean`, then two questions: one "should we do it" and one conclusion.
+
+## Recap
+
+- HOT needs two conditions: room on the page, and no index containing a changed column.
+- `pg_stat_user_tables` (`n_tup_hot_upd`) reveals HOT misses; `ctid` tells which page holds the new version.
+- Every non-HOT UPDATE adds an entry to every index and more WAL records.
+- An unused index (`idx_scan` = 0) on a frequently changed column is a candidate to drop; the primary key used for lookups stays.
+- Compare the column directly with the value; casting the column makes the planner drop the index.

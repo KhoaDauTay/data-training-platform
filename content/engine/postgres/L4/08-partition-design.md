@@ -4,10 +4,11 @@ engine: postgres
 level: L4
 module: partitioning
 title: "Thiết kế phân vùng: khóa, ràng buộc và giới hạn"
-title_en: "Designing partitions: key, keys and limits"
+title_en: "Designing partitions: key, constraints and limits"
 kind: quiz
 runtime: browser
 minutes: 12
+verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-24" }
 objectives:
   - { vi: "Chọn khóa phân vùng theo câu hỏi hay gặp nhất và cách xóa dữ liệu cũ", en: "Choose the partition key from the most frequent queries and the way old data is removed" }
   - { vi: "Biết ràng buộc UNIQUE/PRIMARY KEY phải chứa mọi cột khóa phân vùng", en: "Know that UNIQUE/PRIMARY KEY constraints must contain every partition key column" }
@@ -54,70 +55,203 @@ quiz:
       - { vi: "Lỗi 0A000: ràng buộc unique trên bảng phân vùng phải chứa mọi cột phân vùng. Dùng `PRIMARY KEY (id, created_on)`", en: "Error 0A000: a unique constraint on a partitioned table must include all partitioning columns. Use `PRIMARY KEY (id, created_on)`" }
       - { vi: "Thành công nhưng chỉ unique trong từng phân vùng", en: "It succeeds, but is only unique within each partition" }
     answer: 1
-    why: { vi: "Dễ nghĩ Postgres sẽ tự kiểm tra trùng trên mọi phân vùng như với bảng thường, nhưng nó không có index chung cho cả bảng. Mỗi phân vùng có index riêng; Postgres chỉ bảo đảm duy nhất toàn bảng khi khóa phân vùng nằm trong khóa, để hai dòng trùng khóa luôn rơi vào cùng phân vùng.", en: "It is easy to assume Postgres checks duplicates across every partition as it does for a plain table, but it has no index spanning the whole table. Each partition has its own index; Postgres can only guarantee table-wide uniqueness when the partition key is part of the key, so two equal keys always land in the same partition." }
+    trap: 0
+    why: { vi: "Nghe hợp lý vì với bảng thường Postgres kiểm tra trùng trên cả bảng, nhưng bảng phân vùng không có index chung cho cả bảng. Mỗi phân vùng có index riêng; Postgres chỉ bảo đảm duy nhất toàn bảng khi khóa phân vùng nằm trong khóa, để hai dòng trùng khóa luôn rơi vào cùng phân vùng.", en: "It sounds right because Postgres checks duplicates across the whole table for a plain table, but a partitioned table has no index spanning all of it. Each partition has its own index; Postgres can only guarantee table-wide uniqueness when the partition key is part of the key, so two equal keys always land in the same partition." }
   - q: { vi: "Hệ thống nhiều khách hàng (tenant), 90 % câu hỏi là \"tenant X trong 30 ngày qua\", và dữ liệu quá 13 tháng phải xóa. Khóa phân vùng nào hợp lý nhất?", en: "A multi-tenant system: 90% of queries are \"tenant X over the last 30 days\", and data older than 13 months must be deleted. Which partition key fits best?" }
     options:
       - { vi: "RANGE theo thời gian (tháng), index `(tenant_id, created_at)` trên bảng cha", en: "RANGE by time (month), with an index `(tenant_id, created_at)` on the parent" }
       - { vi: "HASH theo `tenant_id` với 1000 phân vùng", en: "HASH on `tenant_id` with 1000 partitions" }
       - { vi: "LIST theo từng tenant, một phân vùng mỗi tenant", en: "LIST by tenant, one partition per tenant" }
     answer: 0
-    why: { vi: "Phân vùng theo tenant hấp dẫn vì 90 % câu hỏi lọc theo tenant, nhưng điều kiện thời gian và việc xóa mới là thứ cần phân vùng. Phân vùng tháng cho pruning trên điều kiện 30 ngày và xóa dữ liệu cũ bằng `DROP` một phân vùng. Index tenant + thời gian xử lý phần lọc tenant. Phân vùng theo tenant không giúp xóa theo thời gian, và số phân vùng tăng theo số khách.", en: "Partitioning by tenant is tempting because 90% of the questions filter by tenant, but the time condition and the deletions are what need partitions. Monthly partitions prune the 30-day condition and turn retention into `DROP` of one partition. The tenant + time index handles the tenant filter. Partitioning by tenant does not help time-based retention, and the partition count grows with the number of customers." }
+    trap: 2
+    why: { vi: "Nghe hợp lý vì 90 % câu hỏi lọc theo tenant, nhưng điều kiện thời gian và việc xóa mới là thứ cần phân vùng. Phân vùng tháng cho pruning trên điều kiện 30 ngày và biến việc xóa dữ liệu cũ thành `DROP` một phân vùng. Index tenant + thời gian xử lý phần lọc tenant. Phân vùng theo tenant không giúp xóa theo thời gian, và số phân vùng tăng theo số khách.", en: "It sounds right because 90% of the questions filter by tenant, but the time condition and the deletions are what need partitions. Monthly partitions prune the 30-day condition and turn retention into a `DROP` of one partition. The tenant + time index handles the tenant filter. Partitioning by tenant does not help time-based retention, and the partition count grows with the number of customers." }
   - q: { vi: "`CREATE INDEX ON events (tenant_id)` trên bảng cha phân vùng làm gì?", en: "What does `CREATE INDEX ON events (tenant_id)` on a partitioned parent do?" }
     options:
       - { vi: "Tạo một index toàn cục duy nhất trên mọi phân vùng", en: "Creates one global index over every partition" }
       - { vi: "Tạo index \"ảo\" ở bảng cha và một index thật trên mỗi phân vùng; phân vùng tạo sau cũng tự có index", en: "Creates a \"virtual\" index on the parent and a real index on each partition; partitions created later get one too" }
       - { vi: "Không được phép, phải tạo trên từng phân vùng", en: "It is not allowed; you must create it on each partition" }
     answer: 1
-    why: { vi: "Một index toàn cục nghe hợp lý vì lệnh chỉ chạy một lần trên bảng cha, nhưng bảng cha không chứa dữ liệu. Postgres không có index toàn cục; index trên bảng cha là khuôn mẫu, mỗi phân vùng giữ index thật của mình. `CONCURRENTLY` không dùng được trên bảng cha: tạo trên từng phân vùng rồi `ATTACH`.", en: "A single global index sounds right because the command runs once on the parent, but the parent holds no data. Postgres has no global index; the parent's index is a template and each partition holds its own real index. `CONCURRENTLY` does not work on the parent: build it per partition, then `ATTACH`." }
+    trap: 0
+    why: { vi: "Nghe hợp lý vì lệnh chỉ chạy một lần trên bảng cha, nhưng bảng cha không chứa dữ liệu. Postgres không có index toàn cục; index trên bảng cha là khuôn mẫu, mỗi phân vùng giữ index thật của mình. `CONCURRENTLY` không dùng được trên bảng cha: tạo trên từng phân vùng rồi `ATTACH`.", en: "It sounds right because the command runs once on the parent, but the parent holds no data. Postgres has no global index; the parent's index is a template and each partition holds its own real index. `CONCURRENTLY` does not work on the parent: build it per partition, then `ATTACH`." }
   - q: { vi: "Một phân vùng `DEFAULT` đang chứa nhiều dòng. Bạn thêm phân vùng mới cho tháng 11. Rủi ro là gì?", en: "A `DEFAULT` partition holds many rows. You add a new partition for November. What is the risk?" }
     options:
       - { vi: "Không có rủi ro", en: "There is none" }
       - { vi: "Postgres phải quét phân vùng mặc định để chắc không có dòng nào thuộc tháng 11; nếu có thì lệnh thất bại", en: "Postgres must scan the default partition to make sure no row belongs to November; if one does, the command fails" }
       - { vi: "Các dòng tháng 11 trong phân vùng mặc định tự chuyển sang", en: "November rows in the default partition move over automatically" }
     answer: 1
-    why: { vi: "Dễ mong các dòng tháng 11 tự chuyển sang phân vùng mới, nhưng Postgres không di chuyển dòng khi thêm phân vùng. Thêm phân vùng phải chứng minh phân vùng mặc định không chứa dòng thuộc khoảng mới. Giữ phân vùng mặc định gần rỗng và tạo trước các phân vùng tương lai.", en: "It is tempting to expect the November rows to move to the new partition by themselves, but Postgres does not move rows when you add a partition. Adding a partition must prove the default partition holds no row of the new range. Keep the default partition nearly empty and create future partitions ahead of time." }
+    trap: 2
+    why: { vi: "Nghe hợp lý vì Postgres tự chuyển dòng tới đúng phân vùng khi ghi, nhưng nó không di chuyển dòng cũ khi bạn thêm phân vùng. Thêm phân vùng phải chứng minh phân vùng mặc định không chứa dòng thuộc khoảng mới, nếu không lệnh thất bại với mã 23514. Giữ phân vùng mặc định gần rỗng và tạo trước các phân vùng tương lai.", en: "It sounds right because Postgres routes rows to the right partition on write, but it does not move existing rows when you add a partition. Adding a partition must prove the default partition holds no row of the new range, otherwise the command fails with code 23514. Keep the default partition nearly empty and create future partitions ahead of time." }
 ---
+## Mở bài
+
+Bạn đã biết pruning bỏ được phân vùng thừa. Câu hỏi khó hơn là chia theo cột nào, khóa chính đặt thế nào, và cái gì sẽ hỏng khi bảng chạy được một năm.
 
 ## Ý chính
 
-- Chọn khóa phân vùng theo hai câu hỏi: câu truy vấn hay gặp nhất lọc theo cột nào (để pruning), và dữ liệu cũ bị xóa theo cột nào (để `DROP` phân vùng).
-- PRIMARY KEY/UNIQUE trên bảng phân vùng phải chứa mọi cột khóa phân vùng, và không được là biểu thức.
-- Index trên bảng cha được lan xuống mọi phân vùng (kể cả phân vùng tạo sau). Không có index toàn cục.
-- Số phân vùng: docs chính thức nói planner xử lý khá tốt tới vài nghìn phân vùng nếu câu hay gặp pruning còn ít phân vùng; không pruning được thì thời gian lập kế hoạch và bộ nhớ tăng theo số phân vùng.
-- Phân vùng `DEFAULT` tiện nhưng làm việc thêm phân vùng mới phải quét nó.
+Chọn khóa phân vùng theo hai câu hỏi. Câu truy vấn hay gặp nhất lọc theo cột nào, để pruning bỏ được phần lớn phân vùng? Dữ liệu cũ bị xóa theo cột nào, để việc xóa là `DROP` một phân vùng thay vì `DELETE` hàng triệu dòng? Với dữ liệu sự kiện, câu trả lời thường là thời gian.
+
+Nhiều người nghĩ bảng phân vùng có index chung cho cả bảng, như bảng thường. Thật ra mỗi phân vùng có index riêng; index tạo trên bảng cha chỉ là khuôn mẫu, được tạo xuống mọi phân vùng, kể cả phân vùng tạo sau. Vì không có index toàn cục, `PRIMARY KEY` và `UNIQUE` trên bảng phân vùng phải chứa mọi cột của khóa phân vùng: chỉ khi đó hai dòng trùng khóa chắc chắn rơi vào cùng một phân vùng và bị index của nó bắt.
+
+Số phân vùng có giá. Tài liệu chính thức cho biết planner xử lý khá tốt tới vài nghìn phân vùng nếu câu hay gặp được pruning còn ít phân vùng. Không pruning được thì thời gian lập kế hoạch và bộ nhớ tăng theo số phân vùng.
+
+Phân vùng `DEFAULT` tiện vì không dòng nào bị từ chối, nhưng mỗi lần thêm phân vùng mới, Postgres phải quét nó để chắc không có dòng nào thuộc khoảng mới. Tạo trước phân vùng cho các tháng sắp tới và giữ phân vùng mặc định gần rỗng.
 
 ## Ví dụ
 
-Lỗi thật trên PGlite khi thêm khóa chính chỉ có `id` vào bảng `events` phân vùng theo `created_on`:
+Index trên bảng cha được tạo xuống từng phân vùng:
 
-```text
-ALTER TABLE events ADD PRIMARY KEY (id);
-ERROR:  unique constraint on partitioned table must include all partitioning columns  (SQLSTATE 0A000)
+```sql
+CREATE INDEX events_kind_idx ON events (kind);
+SELECT tablename, indexname FROM pg_indexes WHERE tablename LIKE 'events%' ORDER BY tablename, indexname;
 ```
+
+Phân vùng tạo sau cũng tự có index:
+
+```sql
+CREATE TABLE events_2026_11 PARTITION OF events FOR VALUES FROM ('2026-11-01') TO ('2026-12-01');
+SELECT tablename, indexname FROM pg_indexes WHERE tablename = 'events_2026_11';
+```
+
+Bảng cha và index của nó không chứa dữ liệu:
+
+```sql
+SELECT relname, relkind FROM pg_class
+WHERE relname IN ('events', 'events_2026_09', 'events_kind_idx') ORDER BY relname;
+```
+
+`relkind` = `p` là bảng phân vùng, `I` là index phân vùng: cả hai chỉ là khung. `events_2026_09` có `relkind` = `r`, một bảng thật. Xóa cả một tháng dữ liệu:
+
+```sql
+ALTER TABLE events DETACH PARTITION events_2026_09;
+SELECT count(*) AS rows_left FROM events;
+```
+
+Còn 310 dòng của tháng 10. Bảng `events_2026_09` vẫn còn, đứng riêng: lưu trữ hay `DROP TABLE` tùy bạn, đều nhanh như nhau dù tháng đó có bao nhiêu dòng.
+
+## Lỗi hay gặp
+
+Khóa chính thiếu khóa phân vùng:
+
+```sql
+-- ERROR 0A000: unique constraint on partitioned table must include all partitioning columns
+ALTER TABLE events ADD PRIMARY KEY (id);
+```
+
+Tạo index không khóa bảng ghi trên bảng cha:
+
+```sql
+-- ERROR 0A000: cannot create index on partitioned table "events" concurrently
+CREATE INDEX CONCURRENTLY events_day_idx ON events (created_on);
+```
+
+Tạo index `ON ONLY events` (chưa hợp lệ), tạo `CONCURRENTLY` trên từng phân vùng, rồi `ALTER INDEX … ATTACH PARTITION` từng cái.
+
+Thêm phân vùng khi phân vùng mặc định đang giữ dòng của khoảng mới:
+
+```sql
+CREATE TABLE events_default PARTITION OF events DEFAULT;
+INSERT INTO events VALUES (9999, '2026-12-05', 'view');
+-- ERROR 23514: updated partition constraint for default partition "events_default" would be violated by some row
+CREATE TABLE events_2026_12 PARTITION OF events FOR VALUES FROM ('2026-12-01') TO ('2027-01-01');
+```
+
+Dòng ngày 2026-12-05 đã nằm trong `events_default`, và Postgres không tự chuyển nó. Chuyển các dòng đó ra trước (hoặc `DETACH` phân vùng mặc định), hoặc tạo phân vùng tháng 12 trước khi dữ liệu tới.
 
 ## Thực hành
 
-Lab hai bước trên một bảng phân vùng theo tháng (khóa chính, dòng nằm ở phân vùng nào), rồi bốn tình huống thiết kế. Kỹ năng chuyên gia: thiết kế phân vùng từ mẫu truy vấn và quy tắc giữ dữ liệu, biết trước các giới hạn sẽ gặp.
+Lab hai bước trên bảng phân vùng theo tháng: thêm khóa chính đúng luật, rồi xem mỗi dòng nằm ở phân vùng nào. Sau đó là bốn tình huống thiết kế.
+
+## Tóm tắt
+
+- Chọn khóa phân vùng theo câu truy vấn hay gặp nhất và theo cách xóa dữ liệu cũ; thường là thời gian.
+- Không có index toàn cục: `PRIMARY KEY`/`UNIQUE` phải chứa mọi cột khóa phân vùng.
+- Index trên bảng cha là khuôn mẫu, được tạo xuống mọi phân vùng; `CONCURRENTLY` phải làm từng phân vùng.
+- Xóa dữ liệu cũ bằng `DETACH`/`DROP`; giữ phân vùng `DEFAULT` gần rỗng và tạo trước các phân vùng tương lai.
 
 # EN
 
+## Opening
+
+You already know pruning can skip the extra partitions. The harder questions are which column to split on, how to define the primary key, and what will break once the table has run for a year.
+
 ## Key idea
 
-- Choose the partition key from two questions: which column the most frequent queries filter on (for pruning), and which column old data is deleted by (to `DROP` partitions).
-- A PRIMARY KEY/UNIQUE constraint on a partitioned table must contain every partition key column, and the key cannot be an expression.
-- An index on the parent is propagated to every partition (including ones created later). There is no global index.
-- Number of partitions: the docs say the planner handles up to a few thousand partitions fairly well if typical queries prune all but a few; without pruning, planning time and memory grow with the partition count.
-- A `DEFAULT` partition is handy but makes adding a new partition scan it.
+Choose the partition key from two questions. Which column do the most frequent queries filter on, so that pruning skips most partitions? Which column is old data deleted by, so that deleting is a `DROP` of one partition instead of a `DELETE` of millions of rows? For event data the answer is usually time.
+
+Many people think a partitioned table has one index over the whole table, like a plain table. In fact each partition has its own index; an index created on the parent is only a template, created on every partition, including partitions created later. Because there is no global index, a `PRIMARY KEY` or `UNIQUE` constraint on a partitioned table must contain every column of the partition key: only then do two rows with the same key surely land in the same partition, where its index catches them.
+
+The number of partitions has a price. The official documentation says the planner handles up to a few thousand partitions fairly well if typical queries prune all but a few. Without pruning, planning time and memory grow with the partition count.
+
+A `DEFAULT` partition is handy because no row is ever refused, but each time you add a partition, Postgres must scan it to make sure no row belongs to the new range. Create partitions for the coming months ahead of time and keep the default partition nearly empty.
 
 ## Example
 
-Real error from PGlite when adding a primary key on `id` only to `events`, partitioned by `created_on`:
+An index on the parent is created on each partition:
 
-```text
-ALTER TABLE events ADD PRIMARY KEY (id);
-ERROR:  unique constraint on partitioned table must include all partitioning columns  (SQLSTATE 0A000)
+```sql
+CREATE INDEX events_kind_idx ON events (kind);
+SELECT tablename, indexname FROM pg_indexes WHERE tablename LIKE 'events%' ORDER BY tablename, indexname;
 ```
+
+A partition created later gets the index too:
+
+```sql
+CREATE TABLE events_2026_11 PARTITION OF events FOR VALUES FROM ('2026-11-01') TO ('2026-12-01');
+SELECT tablename, indexname FROM pg_indexes WHERE tablename = 'events_2026_11';
+```
+
+The parent and its index hold no data:
+
+```sql
+SELECT relname, relkind FROM pg_class
+WHERE relname IN ('events', 'events_2026_09', 'events_kind_idx') ORDER BY relname;
+```
+
+`relkind` = `p` is a partitioned table, `I` a partitioned index: both are only frames. `events_2026_09` has `relkind` = `r`, a real table. Removing a whole month of data:
+
+```sql
+ALTER TABLE events DETACH PARTITION events_2026_09;
+SELECT count(*) AS rows_left FROM events;
+```
+
+October's 310 rows are left. Table `events_2026_09` still exists on its own: archive it or `DROP TABLE` it as you like, equally fast however many rows that month held.
+
+## Common mistakes
+
+A primary key without the partition key:
+
+```sql
+-- ERROR 0A000: unique constraint on partitioned table must include all partitioning columns
+ALTER TABLE events ADD PRIMARY KEY (id);
+```
+
+Building an index on the parent without blocking writes:
+
+```sql
+-- ERROR 0A000: cannot create index on partitioned table "events" concurrently
+CREATE INDEX CONCURRENTLY events_day_idx ON events (created_on);
+```
+
+Create the index `ON ONLY events` (not valid yet), build it `CONCURRENTLY` on each partition, then `ALTER INDEX … ATTACH PARTITION` each one.
+
+Adding a partition while the default partition holds rows of the new range:
+
+```sql
+CREATE TABLE events_default PARTITION OF events DEFAULT;
+INSERT INTO events VALUES (9999, '2026-12-05', 'view');
+-- ERROR 23514: updated partition constraint for default partition "events_default" would be violated by some row
+CREATE TABLE events_2026_12 PARTITION OF events FOR VALUES FROM ('2026-12-01') TO ('2027-01-01');
+```
+
+The row dated 2026-12-05 already sits in `events_default`, and Postgres does not move it. Move those rows out first (or `DETACH` the default partition), or create the December partition before the data arrives.
 
 ## Practice
 
-A two-step lab on a table partitioned by month (the primary key, which partition holds each row), then four design scenarios. Expert skill: design partitions from the query pattern and the retention rule, knowing the limits ahead of time.
+A two-step lab on a table partitioned by month: add a primary key that follows the rule, then see which partition holds each row. Then four design scenarios.
+
+## Recap
+
+- Choose the partition key from the most frequent queries and from how old data is removed; usually time.
+- There is no global index: `PRIMARY KEY`/`UNIQUE` must contain every partition key column.
+- An index on the parent is a template created on every partition; `CONCURRENTLY` must be done partition by partition.
+- Remove old data with `DETACH`/`DROP`; keep the `DEFAULT` partition nearly empty and create future partitions ahead of time.

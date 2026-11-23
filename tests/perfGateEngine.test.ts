@@ -58,6 +58,11 @@ describe('perf gate: thanh perf: của bài Engine có setup', () => {
   const bars = lessons.flatMap((l) => l.lab!.steps.map((s, i) => [`${l.id}.s${i + 1}`, l, i] as const).filter(([, , i]) => l.lab!.steps[i].perf));
 
   it('R0: có ít nhất một bước Engine có thanh', () => expect(bars.length).toBeGreaterThan(0));
+  it('R6: mọi capstone Postgres (L1–L5) có ≥ 1 bước thanh', () => {
+    const caps = lessons.filter((l) => l.kind === 'capstone');
+    expect(caps.length).toBe(5);
+    expect(caps.filter((l) => !l.lab!.steps.some((s) => s.perf)).map((l) => l.id)).toEqual([]);
+  });
 
   it.each(bars)('%s: lời giải qua, slow: trượt vì chậm', async (_, l, i) => {
     const s = l.lab!.steps[i];

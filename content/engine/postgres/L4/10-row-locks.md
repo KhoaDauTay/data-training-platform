@@ -8,6 +8,7 @@ title_en: "Row locks: four strengths, stored in the tuple"
 kind: concept
 runtime: browser
 minutes: 15
+verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-24" }
 objectives:
   - { vi: "Phân biệt `FOR UPDATE`, `FOR NO KEY UPDATE`, `FOR SHARE`, `FOR KEY SHARE` và bảng xung đột của chúng", en: "Tell apart `FOR UPDATE`, `FOR NO KEY UPDATE`, `FOR SHARE`, `FOR KEY SHARE` and their conflict table" }
   - { vi: "Giải thích vì sao row lock không nằm trong `pg_locks` mà nằm trong header của tuple", en: "Explain why row locks are not in `pg_locks` but in the tuple header" }
@@ -63,6 +64,7 @@ quiz:
       - { vi: "Không: kiểm tra khóa ngoại lấy `FOR KEY SHARE`, còn UPDATE không đổi cột khóa lấy `FOR NO KEY UPDATE`; hai mức này không xung đột", en: "No: the foreign-key check takes `FOR KEY SHARE`, the key-preserving UPDATE takes `FOR NO KEY UPDATE`, and those two do not conflict" }
       - { vi: "Không, vì khóa ngoại không lấy lock nào cả", en: "No, because foreign keys lock nothing at all" }
     answer: 1
+    trap: 0
     why: { vi: "Nghe hợp lý vì A đúng là giữ một row lock trên dòng khách 42, nhưng đó là mức yếu nhất. `FOR KEY SHARE` chỉ xung đột với `FOR UPDATE` (xóa dòng hoặc đổi cột khóa). Nhờ vậy chèn dòng con không làm nghẽn việc sửa các cột thường của dòng cha.", en: "It sounds right because A does hold a row lock on customer 42, but it is the weakest level. `FOR KEY SHARE` only conflicts with `FOR UPDATE` (deleting the row or changing a key column). So inserting child rows does not jam updates to the parent's ordinary columns." }
   - q: { vi: "Một job giữ row lock trên 2 triệu dòng bằng `SELECT … FOR UPDATE`. Điều gì đúng?", en: "A job locks 2 million rows with `SELECT … FOR UPDATE`. What is true?" }
     options:
@@ -70,95 +72,260 @@ quiz:
       - { vi: "Không có giới hạn số dòng bị giữ lock vì lock được ghi vào từng tuple; cái giá là ghi xuống trang (và WAL) cho mỗi dòng", en: "There is no limit on locked rows because each lock is written into its tuple; the price is a page write (and WAL) per row" }
       - { vi: "Chỉ 1000 dòng đầu bị giữ lock", en: "Only the first 1000 rows get locked" }
     answer: 1
-    why: { vi: "Nhiều người nghĩ như các database khác: giữ nhiều row lock thì lock bị nâng lên cả bảng. Docs chính thức: Postgres không nhớ trong bộ nhớ dòng nào bị sửa hay giữ lock, nên không giới hạn số dòng bị giữ lock, nhưng lấy lock một dòng có thể gây ghi đĩa. Postgres không có lock escalation.", en: "Many people expect what other databases do: enough row locks get escalated to a table lock. The docs: Postgres keeps no in-memory record of modified/locked rows, so there is no limit on how many rows are locked, but locking a row may cause a disk write. Postgres has no lock escalation." }
+    trap: 0
+    why: { vi: "Nghe hợp lý vì vài database khác nâng nhiều row lock thành một lock trên bảng, nhưng Postgres không có lock escalation. Docs chính thức: Postgres không nhớ trong bộ nhớ dòng nào bị sửa hay giữ lock, nên không giới hạn số dòng bị giữ lock, nhưng lấy lock một dòng có thể gây ghi đĩa.", en: "It sounds right because some other databases escalate many row locks into one table lock, but Postgres has no lock escalation. The docs: Postgres keeps no in-memory record of modified or locked rows, so there is no limit on how many rows are locked, but locking a row may cause a disk write." }
 ---
+
+## Mở bài
+
+Một job giữ row lock trên 2 triệu dòng bằng `SELECT … FOR UPDATE`. Nếu mỗi lock là một mục trong bộ nhớ chung, máy đã cạn bộ nhớ từ lâu. Vậy Postgres nhớ chúng ở đâu?
 
 ## Ý chính
 
-Một job giữ row lock trên 2 triệu dòng: Postgres nhớ chúng ở đâu? Bốn mức row lock, từ yếu tới mạnh, và mức nào chặn mức nào:
+Row lock có bốn mức, từ yếu tới mạnh: `FOR KEY SHARE`, `FOR SHARE`, `FOR NO KEY UPDATE`, `FOR UPDATE`. `FOR KEY SHARE` chỉ chặn `FOR UPDATE`. `FOR SHARE` chặn hai mức sửa (`FOR NO KEY UPDATE`, `FOR UPDATE`). `FOR NO KEY UPDATE` chặn mọi mức trừ `FOR KEY SHARE`. `FOR UPDATE` chặn tất cả. Hai mức share không chặn nhau, nên nhiều người đọc giữ dòng cùng lúc được.
 
-- FOR KEY SHARE chặn: FOR UPDATE
-- FOR SHARE chặn: FOR NO KEY UPDATE, FOR UPDATE
-- FOR NO KEY UPDATE chặn: FOR SHARE, FOR NO KEY UPDATE, FOR UPDATE
-- FOR UPDATE chặn: FOR KEY SHARE, FOR SHARE, FOR NO KEY UPDATE, FOR UPDATE
+Lệnh ghi tự lấy row lock: `UPDATE` không đổi cột nào của unique index lấy `FOR NO KEY UPDATE`; `DELETE` hoặc `UPDATE` đổi cột khóa lấy `FOR UPDATE`. Kiểm tra khóa ngoại lấy `FOR KEY SHARE` trên dòng cha, nên chèn dòng con không chặn việc sửa cột thường của dòng cha.
 
-- `UPDATE` không đổi cột thuộc unique index lấy `FOR NO KEY UPDATE`; `DELETE` hoặc `UPDATE` đổi cột khóa lấy `FOR UPDATE`. Kiểm tra khóa ngoại lấy `FOR KEY SHARE` trên dòng cha.
-- Row lock không nằm trong bảng lock ở bộ nhớ chung mà được ghi vào tuple: `xmax` = transaction giữ lock, các bit trong `t_infomask` cho biết loại lock và rằng đây chỉ là lock (`HEAP_XMAX_LOCK_ONLY`), không phải xóa.
+Nhiều người nghĩ row lock nằm trong `pg_locks` như lock trên bảng, và giữ quá nhiều thì bị nâng thành lock cả bảng. Thật ra Postgres ghi row lock vào chính tuple: `xmax` là transaction giữ lock, các bit trong `t_infomask` cho biết mức lock, và cờ `HEAP_XMAX_LOCK_ONLY` nói đây chỉ là lock, không phải xóa. Không giới hạn số dòng và không có lock escalation; cái giá là mỗi dòng bị ghi lại trên trang.
+
+`pg_locks` chỉ thấy lock ROW SHARE trên bảng đi kèm. Người chờ một dòng thì chờ trên ID transaction của người giữ (loại `transactionid`). `NOWAIT` báo lỗi ngay thay vì chờ; `SKIP LOCKED` bỏ qua dòng người khác đang giữ, hợp cho hàng đợi việc nhiều worker. Lock của chính bạn không bao giờ chặn bạn.
+
+## Cú pháp
+
+```sql
+SELECT columns FROM table_name [ WHERE condition ]
+  FOR { UPDATE | NO KEY UPDATE | SHARE | KEY SHARE }
+  [ OF table_name [, ...] ] [ NOWAIT | SKIP LOCKED ];
+```
+
+- `FOR UPDATE`: sắp xóa dòng hoặc đổi cột khóa.
+- `FOR NO KEY UPDATE`: sắp sửa cột thường; mức của `UPDATE` thường.
+- `FOR SHARE`: không ai được sửa dòng trong lúc mình dùng nó.
+- `FOR KEY SHARE`: chỉ giữ khóa; mức của kiểm tra khóa ngoại.
+- `OF`: chỉ khóa dòng của các bảng được nêu.
+- `NOWAIT`: lỗi ngay thay vì chờ; `SKIP LOCKED`: bỏ qua dòng đang bị giữ.
 
 ## Ví dụ
 
-Row lock nằm trong tuple, nên `pg_locks` chỉ cho thấy lock ROW SHARE trên bảng. Người chờ một dòng thì chờ trên ID transaction của người giữ (loại `transactionid`).
+Database của bài đang mở một transaction giữ row lock trên dòng 3, 4, 5, 6. Lock nào hiện trong `pg_locks`?
 
-Chạy trên PGlite trong một transaction, đọc header tuple bằng `pageinspect` (lab bên dưới mở đúng transaction này để bạn tự đọc):
-
-```text
-BEGIN;
-SELECT id FROM acct WHERE id = 3 FOR UPDATE;
-SELECT id FROM acct WHERE id = 4 FOR SHARE;
-SELECT id FROM acct WHERE id = 5 FOR KEY SHARE;
-SELECT id FROM acct WHERE id = 6 FOR NO KEY UPDATE;
-SELECT lp, t_infomask, t_infomask2 FROM heap_page_items(get_raw_page('acct', 0)) WHERE lp BETWEEN 3 AND 7;
- lp | t_infomask | t_infomask2
-  3 |        448 |        8194   -- EXCL_LOCK + LOCK_ONLY, KEYS_UPDATED (FOR UPDATE)
-  4 |        464 |           2   -- SHR_LOCK + LOCK_ONLY (FOR SHARE)
-  5 |        400 |           2   -- KEYSHR_LOCK + LOCK_ONLY (FOR KEY SHARE)
-  6 |        448 |           2   -- EXCL_LOCK + LOCK_ONLY (FOR NO KEY UPDATE)
-  7 |       2048 |           2   -- not locked (XMAX_INVALID)
-ROLLBACK;
+```sql
+SELECT c.relname, l.mode
+FROM pg_locks l JOIN pg_class c ON c.oid = l.relation
+WHERE c.relname LIKE 'acct%'
+ORDER BY 1, 2;
 ```
 
-Lưu ý: sau ROLLBACK, `xmax` của dòng từng bị giữ lock vẫn còn trên trang (ID của transaction đã hủy). Vì vậy "`xmax` khác 0" không có nghĩa dòng đang bị giữ lock hay đã bị xóa; phải xem các bit cờ và trạng thái transaction.
+Chỉ hai dòng `RowShareLock`, trên `acct` và `acct_pkey`: bốn row lock không có dòng riêng.
+
+Dấu vết nằm trong tuple, ở cột hệ thống `xmax`:
+
+```sql
+SELECT id, xmax = pg_current_xact_id()::xid AS locked_by_me
+FROM acct WHERE id BETWEEN 2 AND 7
+ORDER BY id;
+```
+
+Dòng 3 tới 6 có `xmax` bằng ID transaction hiện tại; dòng 2 và 7 không.
+
+Kết thúc transaction rồi đọc lại:
+
+```sql
+ROLLBACK;
+SELECT id, xmax <> '0' AS xmax_set
+FROM acct WHERE id BETWEEN 2 AND 7
+ORDER BY id;
+```
+
+Sau ROLLBACK không còn lock nào, nhưng dòng 3 tới 6 vẫn có `xmax` khác 0 (ID của transaction đã hủy). Vì vậy `xmax` khác 0 không có nghĩa dòng đang bị giữ lock hay đã bị xóa; phải đọc các bit cờ và trạng thái transaction.
+
+## Lỗi hay gặp
+
+Giữ lock trên một con số tổng:
+
+```sql
+-- ERROR 0A000: FOR UPDATE is not allowed with aggregate functions
+SELECT count(*) FROM acct WHERE bal > 0 FOR UPDATE;
+```
+
+Một dòng tổng không phải dòng của bảng nên không có gì để khóa. Khóa các dòng trong truy vấn con rồi đếm bên ngoài.
+
+Quên `OF` khi câu có JOIN:
+
+```sql
+CREATE TABLE branch (id int PRIMARY KEY, name text NOT NULL);
+INSERT INTO branch VALUES (1, 'Da Nang');
+-- WRONG: FOR UPDATE without OF also locks the branch row
+WITH r AS (
+  SELECT a.id FROM acct a JOIN branch b ON b.id = 1
+  WHERE a.id = 1 FOR UPDATE
+)
+SELECT c.relname, l.mode
+FROM r, pg_locks l JOIN pg_class c ON c.oid = l.relation
+WHERE c.relname IN ('acct', 'branch')
+ORDER BY 1, 2;
+```
+
+```sql
+-- FIX: FOR UPDATE OF a locks only the account row
+WITH r AS (
+  SELECT a.id FROM acct a JOIN branch b ON b.id = 1
+  WHERE a.id = 1 FOR UPDATE OF a
+)
+SELECT c.relname, l.mode
+FROM r, pg_locks l JOIN pg_class c ON c.oid = l.relation
+WHERE c.relname IN ('acct', 'branch')
+ORDER BY 1, 2;
+```
+
+Không có `OF`, dòng chi nhánh cũng bị khóa (`RowShareLock` trên `branch`), nên mọi giao dịch của chi nhánh đó phải chờ nhau. Với `OF a`, `branch` chỉ còn `AccessShareLock` của việc đọc.
+
+Giữ row lock trong transaction chỉ đọc:
+
+```sql
+BEGIN READ ONLY;
+-- ERROR 25006: cannot execute SELECT FOR SHARE in a read-only transaction
+SELECT id FROM acct WHERE id = 1 FOR SHARE;
+```
+
+Row lock được ghi vào tuple, tức là một lệnh ghi, nên transaction `READ ONLY` (ví dụ trên bản sao chỉ đọc) không lấy được. Bỏ mệnh đề `FOR` hoặc dùng transaction đọc ghi.
 
 ## Thực hành
 
-Lab bên dưới chạy thật trong một phiên: lock được giữ và đọc ngay trên trang. Còn cảnh một phiên chờ phiên kia cần hai phiên cùng lúc, PGlite chỉ có một, nên phần đó là sơ đồ.
+Lab chạy trên chính transaction đang mở của bài: đếm lock loại `tuple` trong `pg_locks`, rồi đọc header tuple bằng `pageinspect`. Cảnh một phiên chờ phiên kia cần hai phiên, PGlite chỉ có một, nên phần đó là sơ đồ. Sau đó là hai câu hỏi.
 
-`NOWAIT` báo lỗi ngay thay vì chờ; `SKIP LOCKED` bỏ qua dòng đang bị giữ lock, hợp cho hàng đợi việc nhiều worker.
+## Tóm tắt
 
-Sơ đồ là ma trận lock bảng: row lock nằm trong tuple nên không có ô riêng, và bạn thấy vì sao `pg_locks` chỉ ghi ROW SHARE trên bảng. Hai bước cuối của sơ đồ là hai row lock chờ nhau (deadlock) và Postgres hủy một bên (40P01). Rồi làm lab và trả lời hai câu hỏi. Kỹ năng chuyên gia: chọn mức row lock yếu nhất đủ đúng, và giải thích vì sao khóa ngoại không làm nghẽn bảng cha.
+- Bốn mức row lock: `FOR KEY SHARE`, `FOR SHARE`, `FOR NO KEY UPDATE`, `FOR UPDATE`; chọn mức yếu nhất đủ đúng.
+- `UPDATE` thường lấy `FOR NO KEY UPDATE`, khóa ngoại lấy `FOR KEY SHARE`, nên hai việc này không chặn nhau.
+- Row lock nằm trong tuple (`xmax` + bit cờ), không trong `pg_locks`; không giới hạn số dòng, không lock escalation.
+- `xmax` khác 0 không chứng minh dòng đang bị khóa; sau ROLLBACK nó vẫn còn.
+- Dùng `OF` khi câu có JOIN để không khóa thừa dòng của bảng khác.
 
 # EN
 
+## Opening
+
+A job holds row locks on 2 million rows with `SELECT … FOR UPDATE`. If every lock were an entry in shared memory, the server would have run out of memory long ago. So where does Postgres keep them?
+
 ## Key idea
 
-A job holds row locks on 2 million rows: where does Postgres keep them? The four row-lock strengths, weakest first, and which blocks which:
+Row locks come in four strengths, weakest first: `FOR KEY SHARE`, `FOR SHARE`, `FOR NO KEY UPDATE`, `FOR UPDATE`. `FOR KEY SHARE` only blocks `FOR UPDATE`. `FOR SHARE` blocks the two changing strengths (`FOR NO KEY UPDATE`, `FOR UPDATE`). `FOR NO KEY UPDATE` blocks everything except `FOR KEY SHARE`. `FOR UPDATE` blocks them all. The two share strengths do not block each other, so many readers can hold a row together.
 
-- FOR KEY SHARE blocks: FOR UPDATE
-- FOR SHARE blocks: FOR NO KEY UPDATE, FOR UPDATE
-- FOR NO KEY UPDATE blocks: FOR SHARE, FOR NO KEY UPDATE, FOR UPDATE
-- FOR UPDATE blocks: FOR KEY SHARE, FOR SHARE, FOR NO KEY UPDATE, FOR UPDATE
+Writes take row locks on their own: an `UPDATE` that changes no column of a unique index takes `FOR NO KEY UPDATE`; a `DELETE` or an `UPDATE` of a key column takes `FOR UPDATE`. A foreign-key check takes `FOR KEY SHARE` on the parent row, so inserting a child row does not block changes to the parent's ordinary columns.
 
-- An `UPDATE` that changes no column of a unique index takes `FOR NO KEY UPDATE`; a `DELETE` or an `UPDATE` of a key column takes `FOR UPDATE`. A foreign-key check takes `FOR KEY SHARE` on the parent row.
-- Row locks are not in the shared-memory lock table; they are written into the tuple: `xmax` = the locking transaction, and bits in `t_infomask` give the lock kind and say it is only a lock (`HEAP_XMAX_LOCK_ONLY`), not a delete.
+Many people think row locks sit in `pg_locks` like table locks, and that holding too many escalates to a lock on the whole table. In fact Postgres writes a row lock into the tuple itself: `xmax` is the locking transaction, bits in `t_infomask` give the strength, and the `HEAP_XMAX_LOCK_ONLY` flag says it is only a lock, not a delete. There is no limit on the number of rows and no lock escalation; the price is that each row is written again on its page.
+
+`pg_locks` only shows the ROW SHARE lock on the table that comes with them. A session waiting for a row waits on the holder's transaction ID (type `transactionid`). `NOWAIT` errors at once instead of waiting; `SKIP LOCKED` skips rows someone else holds, which suits job queues with many workers. Your own locks never block you.
+
+## Syntax
+
+```sql
+SELECT columns FROM table_name [ WHERE condition ]
+  FOR { UPDATE | NO KEY UPDATE | SHARE | KEY SHARE }
+  [ OF table_name [, ...] ] [ NOWAIT | SKIP LOCKED ];
+```
+
+- `FOR UPDATE`: about to delete the row or change a key column.
+- `FOR NO KEY UPDATE`: about to change ordinary columns; the strength of a plain `UPDATE`.
+- `FOR SHARE`: nobody may change the row while you use it.
+- `FOR KEY SHARE`: holds only the key; the strength of a foreign-key check.
+- `OF`: lock only the rows of the tables named.
+- `NOWAIT`: error at once instead of waiting; `SKIP LOCKED`: skip rows that are held.
 
 ## Example
 
-Because row locks live in the tuple, `pg_locks` only shows the ROW SHARE lock on the table. A session waiting for a row waits on the holder's transaction ID (type `transactionid`).
+The lesson's database has an open transaction holding row locks on rows 3, 4, 5, 6. Which locks show in `pg_locks`?
 
-Run on PGlite inside one transaction, reading tuple headers with `pageinspect` (the lab below opens this very transaction for you to read):
-
-```text
-BEGIN;
-SELECT id FROM acct WHERE id = 3 FOR UPDATE;
-SELECT id FROM acct WHERE id = 4 FOR SHARE;
-SELECT id FROM acct WHERE id = 5 FOR KEY SHARE;
-SELECT id FROM acct WHERE id = 6 FOR NO KEY UPDATE;
-SELECT lp, t_infomask, t_infomask2 FROM heap_page_items(get_raw_page('acct', 0)) WHERE lp BETWEEN 3 AND 7;
- lp | t_infomask | t_infomask2
-  3 |        448 |        8194   -- EXCL_LOCK + LOCK_ONLY, KEYS_UPDATED (FOR UPDATE)
-  4 |        464 |           2   -- SHR_LOCK + LOCK_ONLY (FOR SHARE)
-  5 |        400 |           2   -- KEYSHR_LOCK + LOCK_ONLY (FOR KEY SHARE)
-  6 |        448 |           2   -- EXCL_LOCK + LOCK_ONLY (FOR NO KEY UPDATE)
-  7 |       2048 |           2   -- not locked (XMAX_INVALID)
-ROLLBACK;
+```sql
+SELECT c.relname, l.mode
+FROM pg_locks l JOIN pg_class c ON c.oid = l.relation
+WHERE c.relname LIKE 'acct%'
+ORDER BY 1, 2;
 ```
 
-Note: after the ROLLBACK, the locked rows still carry an `xmax` on the page (the ID of the aborted transaction). So "`xmax` is not 0" does not mean the row is locked or deleted; you have to read the flag bits and the transaction's status.
+Only two `RowShareLock` rows, on `acct` and `acct_pkey`: the four row locks have no row of their own.
+
+The trace is in the tuple, in the system column `xmax`:
+
+```sql
+SELECT id, xmax = pg_current_xact_id()::xid AS locked_by_me
+FROM acct WHERE id BETWEEN 2 AND 7
+ORDER BY id;
+```
+
+Rows 3 to 6 have `xmax` equal to the current transaction ID; rows 2 and 7 do not.
+
+End the transaction and read again:
+
+```sql
+ROLLBACK;
+SELECT id, xmax <> '0' AS xmax_set
+FROM acct WHERE id BETWEEN 2 AND 7
+ORDER BY id;
+```
+
+After the ROLLBACK no lock is left, yet rows 3 to 6 still have a non-zero `xmax` (the ID of the aborted transaction). So a non-zero `xmax` does not mean the row is locked or deleted; you have to read the flag bits and the transaction's status.
+
+## Common mistakes
+
+Locking an aggregate:
+
+```sql
+-- ERROR 0A000: FOR UPDATE is not allowed with aggregate functions
+SELECT count(*) FROM acct WHERE bal > 0 FOR UPDATE;
+```
+
+A total row is not a table row, so there is nothing to lock. Lock the rows in a sub-query and count outside it.
+
+Forgetting `OF` in a query with a JOIN:
+
+```sql
+CREATE TABLE branch (id int PRIMARY KEY, name text NOT NULL);
+INSERT INTO branch VALUES (1, 'Da Nang');
+-- WRONG: FOR UPDATE without OF also locks the branch row
+WITH r AS (
+  SELECT a.id FROM acct a JOIN branch b ON b.id = 1
+  WHERE a.id = 1 FOR UPDATE
+)
+SELECT c.relname, l.mode
+FROM r, pg_locks l JOIN pg_class c ON c.oid = l.relation
+WHERE c.relname IN ('acct', 'branch')
+ORDER BY 1, 2;
+```
+
+```sql
+-- FIX: FOR UPDATE OF a locks only the account row
+WITH r AS (
+  SELECT a.id FROM acct a JOIN branch b ON b.id = 1
+  WHERE a.id = 1 FOR UPDATE OF a
+)
+SELECT c.relname, l.mode
+FROM r, pg_locks l JOIN pg_class c ON c.oid = l.relation
+WHERE c.relname IN ('acct', 'branch')
+ORDER BY 1, 2;
+```
+
+Without `OF`, the branch row is locked too (`RowShareLock` on `branch`), so every transaction of that branch waits for the others. With `OF a`, `branch` only keeps the `AccessShareLock` of the read.
+
+Taking a row lock in a read-only transaction:
+
+```sql
+BEGIN READ ONLY;
+-- ERROR 25006: cannot execute SELECT FOR SHARE in a read-only transaction
+SELECT id FROM acct WHERE id = 1 FOR SHARE;
+```
+
+A row lock is written into the tuple, which is a write, so a `READ ONLY` transaction (for example on a read-only replica) cannot take one. Drop the `FOR` clause or use a read-write transaction.
 
 ## Practice
 
-The lab below runs for real in one session: the locks are held and read right on the page. One session waiting for another needs two sessions at once, and PGlite has only one, so that part is a diagram.
+The lab runs inside the lesson's open transaction: count the `tuple` locks in `pg_locks`, then read the tuple headers with `pageinspect`. One session waiting for another needs two sessions and PGlite has only one, so that part is a diagram. Then two questions.
 
-`NOWAIT` errors at once instead of waiting; `SKIP LOCKED` skips locked rows, which suits job queues with many workers.
+## Recap
 
-The diagram is the table-lock matrix: row locks live in the tuple, so they have no cell of their own, and you see why `pg_locks` only records ROW SHARE on the table. The diagram's last two steps are two row locks waiting for each other (a deadlock) and Postgres aborting one side (40P01). Then answer two questions. Expert skill: pick the weakest row lock that is still correct, and explain why foreign keys do not jam the parent table.
+- Four row-lock strengths: `FOR KEY SHARE`, `FOR SHARE`, `FOR NO KEY UPDATE`, `FOR UPDATE`; pick the weakest that is still correct.
+- A plain `UPDATE` takes `FOR NO KEY UPDATE` and a foreign key takes `FOR KEY SHARE`, so the two do not block each other.
+- Row locks live in the tuple (`xmax` + flag bits), not in `pg_locks`; no row limit, no lock escalation.
+- A non-zero `xmax` does not prove the row is locked; it stays after a ROLLBACK.
+- Use `OF` in a query with a JOIN so you do not lock other tables' rows by accident.

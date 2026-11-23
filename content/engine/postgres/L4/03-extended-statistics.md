@@ -8,6 +8,7 @@ title_en: "Extended statistics for correlated columns"
 kind: lab
 runtime: browser
 minutes: 15
+verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-24" }
 objectives:
   - { vi: "Nhận ra ước lượng thấp do planner coi hai cột là độc lập", en: "Spot an underestimate caused by the planner treating two columns as independent" }
   - { vi: "Chọn loại `CREATE STATISTICS` phù hợp: dependencies, ndistinct, mcv", en: "Pick the right `CREATE STATISTICS` kind: dependencies, ndistinct, mcv" }
@@ -44,6 +45,10 @@ lab:
       solution: "SELECT statistics_name, attnames::text, dependencies FROM pg_stats_ext WHERE tablename = 'addr_stats'"
       check: rows
       hint: { vi: "View `pg_stats_ext` giống `pg_stats` nhưng cho thống kê nhiều cột.", en: "The `pg_stats_ext` view is like `pg_stats`, for multi-column statistics." }
+    - task: { vi: "Sửa gốc cho `addr_plain`: tạo đối tượng thống kê tên `addr_plain_dep`, loại phụ thuộc hàm (dependencies), trên hai cột city và district.", en: "Fix the root cause for `addr_plain`: create a statistics object named `addr_plain_dep`, of the functional-dependency kind (dependencies), on the two columns city and district." }
+      solution: "CREATE STATISTICS addr_plain_dep (dependencies) ON city, district FROM addr_plain"
+      check: catalog
+      hint: { vi: "`CREATE STATISTICS name (kind) ON col1, col2 FROM table`. Ngoài đời, nhớ ANALYZE sau đó.", en: "`CREATE STATISTICS name (kind) ON col1, col2 FROM table`. In real life, remember to ANALYZE afterwards." }
 quiz:
   - q: { vi: "Báo cáo lọc `WHERE city = … AND district = …` luôn ước lượng thấp 10 lần và chọn Nested Loop chậm. Sửa thế nào là đúng gốc?", en: "A report filtering `WHERE city = … AND district = …` is always underestimated tenfold and picks a slow Nested Loop. What is the root-cause fix?" }
     options:
@@ -51,62 +56,241 @@ quiz:
       - { vi: "Tắt `enable_nestloop` cho cả server", en: "Turn `enable_nestloop` off for the whole server" }
       - { vi: "Tăng `random_page_cost`", en: "Raise `random_page_cost`" }
     answer: 0
-    why: { vi: "Tắt `enable_nestloop` hấp dẫn vì Nested Loop chậm là thứ bạn nhìn thấy, nhưng nó chỉ là hậu quả. Lỗi nằm ở ước lượng: planner nhân hai độ chọn lọc như thể độc lập. Thống kê phụ thuộc hàm cho nó biết district quyết định city. Tắt một loại join chỉ che triệu chứng và làm hỏng câu khác.", en: "Turning off `enable_nestloop` is tempting because the slow Nested Loop is what you see, but it is only the consequence. The error is in the estimate: the planner multiplies two selectivities as if independent. Functional-dependency statistics tell it that district determines city. Disabling a join type only hides the symptom and hurts other queries." }
+    trap: 1
+    why: { vi: "Nghe hợp lý vì Nested Loop chậm là thứ bạn nhìn thấy, nhưng nó chỉ là hậu quả. Lỗi nằm ở ước lượng: planner nhân hai độ chọn lọc như thể độc lập. Thống kê phụ thuộc hàm cho nó biết district quyết định city. Tắt một loại join chỉ che triệu chứng và làm hỏng câu khác.", en: "It sounds right because the slow Nested Loop is what you see, but it is only the consequence. The error is in the estimate: the planner multiplies two selectivities as if independent. Functional-dependency statistics tell it that district determines city. Disabling a join type only hides the symptom and hurts other queries." }
   - q: { vi: "`GROUP BY city, district` bị ước lượng quá nhiều nhóm. Loại thống kê nào giúp?", en: "`GROUP BY city, district` is estimated with far too many groups. Which statistics kind helps?" }
     options:
       - { vi: "`mcv`", en: "`mcv`" }
       - { vi: "`ndistinct`", en: "`ndistinct`" }
       - { vi: "`dependencies`", en: "`dependencies`" }
     answer: 1
-    why: { vi: "`dependencies` nghe hợp vì hai cột phụ thuộc nhau, nhưng nó chỉ sửa ước lượng của điều kiện lọc, không phải số nhóm. `ndistinct` lưu số tổ hợp khác nhau của nhóm cột, đúng thứ GROUP BY cần để đoán số nhóm.", en: "`dependencies` sounds right because the two columns depend on each other, but it only fixes the estimate of filter conditions, not the group count. `ndistinct` stores the number of distinct combinations of the columns, exactly what GROUP BY needs to guess the number of groups." }
+    trap: 2
+    why: { vi: "Nghe hợp lý vì hai cột phụ thuộc nhau, nhưng `dependencies` chỉ sửa ước lượng của điều kiện lọc, không phải số nhóm. `ndistinct` lưu số tổ hợp khác nhau của nhóm cột, đúng thứ GROUP BY cần để đoán số nhóm.", en: "It sounds right because the two columns depend on each other, but `dependencies` only fixes the estimate of filter conditions, not the group count. `ndistinct` stores the number of distinct combinations of the columns, exactly what GROUP BY needs to guess the number of groups." }
 ---
+## Mở bài
+
+Bảng địa chỉ lọc theo thành phố và quận, và planner đoán 10 dòng trong khi thật là 100. Mỗi cột có thống kê đúng, vậy sai ở đâu?
 
 ## Ý chính
 
-- Mặc định planner coi các điều kiện trên các cột khác nhau là độc lập: độ chọn lọc của `a = x AND b = y` = sel(a) × sel(b). Với cột tương quan (quận → thành phố, mã bưu điện → tỉnh) kết quả thấp hơn thật nhiều lần.
-- `CREATE STATISTICS` có ba loại: `dependencies` (phụ thuộc hàm, cho điều kiện bằng), `ndistinct` (số tổ hợp khác nhau, cho GROUP BY), `mcv` (danh sách tổ hợp phổ biến, chính xác nhất cho điều kiện bằng và khoảng). Chỉ có dữ liệu sau ANALYZE.
-- Ước lượng sai ở tầng dưới lan lên trên: số dòng thấp giả tạo làm planner chọn Nested Loop, rồi vòng lặp chạy hàng nghìn lần.
-- Kiểm tra: so `rows=` (ước lượng) với `actual rows` trong `EXPLAIN ANALYZE`. Lệch hơn 10 lần ở một nút lọc là dấu hiệu.
+Thống kê thường (`pg_stats`) nói về từng cột riêng. Khi câu có hai điều kiện trên hai cột, mặc định planner coi chúng độc lập và nhân độ chọn lọc: sel(`city = 3`) × sel(`district = 33`) = 1/10 × 1/100. Với 10.000 dòng, nó đoán 10.
+
+Nhiều người nghĩ planner biết các cột liên quan với nhau. Thật ra nó không biết, trừ khi bạn khai báo. Ở đây quận 33 luôn thuộc thành phố 3, nên điều kiện thành phố không lọc thêm dòng nào: số thật là 100, gấp 10 lần ước lượng. Cột tương quan kiểu này rất hay gặp: quận và thành phố, mã bưu điện và tỉnh, mẫu xe và hãng.
+
+Ước lượng sai ở tầng dưới lan lên trên. Số dòng thấp giả tạo làm planner chọn Nested Loop vì tưởng vòng lặp chỉ chạy vài lần, rồi nó chạy hàng nghìn lần. Dấu hiệu: `rows=` của `EXPLAIN` lệch hơn 10 lần so với `actual rows` của `EXPLAIN ANALYZE` ngay ở một nút lọc.
+
+`CREATE STATISTICS` khai báo thống kê trên nhiều cột, có ba loại. `dependencies` (phụ thuộc hàm) sửa ước lượng của các điều kiện bằng. `ndistinct` lưu số tổ hợp khác nhau, dùng cho `GROUP BY` và `DISTINCT`. `mcv` lưu danh sách tổ hợp phổ biến, chính xác nhất: nó biết cả tổ hợp không tồn tại. Đối tượng thống kê chỉ có dữ liệu sau `ANALYZE`; xem kết quả trong `pg_stats_ext`.
+
+## Cú pháp
+
+```sql
+CREATE STATISTICS [ IF NOT EXISTS ] stat_name [ ( kind [, ...] ) ]
+  ON column_name, column_name [, ...] FROM table_name;
+ANALYZE table_name;
+SELECT statistics_name, attnames, n_distinct, dependencies FROM pg_stats_ext WHERE tablename = 'table_name';
+DROP STATISTICS [ IF EXISTS ] stat_name;
+```
+
+- `dependencies`: cột này quyết định cột kia tới mức nào; cho điều kiện bằng.
+- `ndistinct`: số tổ hợp khác nhau; cho `GROUP BY`, `DISTINCT`.
+- `mcv`: các tổ hợp phổ biến và tần suất; cho điều kiện bằng và khoảng.
+- Không ghi `kind`: tạo cả ba loại.
 
 ## Ví dụ
 
-Kết quả thật trên PGlite: `district` từ 0 đến 99, `city = district % 10`.
+Đoán thấp 10 lần khi không có thống kê mở rộng:
 
-```text
-plain = 10    with_stats = 100    actual = 100
-
-statistics_name  attnames         dependencies
-addr_stats_dep   {city,district}  {"3 => 2": 1.000000}
+```sql
+SELECT est('SELECT * FROM addr_plain WHERE city = 7 AND district = 77') AS estimate, count(*) AS actual
+FROM addr_plain WHERE city = 7 AND district = 77;
 ```
 
-Không có thống kê mở rộng: 10.000 × 1/10 × 1/100 = 10. Có `dependencies`: Postgres biết cột 3 (district) quyết định cột 2 (city) với độ chắc 1,0, nên chỉ tính sel(district) = 1/100 → 100 dòng, đúng bằng thật.
+Số nhóm của `GROUP BY` cũng bị đoán sai, theo chiều ngược lại:
+
+```sql
+SELECT est('SELECT city, district FROM addr_plain GROUP BY city, district') AS groups_guess,
+       (SELECT count(*) FROM (SELECT DISTINCT city, district FROM addr_plain) AS d) AS groups_real;
+```
+
+Planner nhân 10 × 100 = 1.000 nhóm, thật chỉ có 100. Thêm `ndistinct` rồi ANALYZE:
+
+```sql
+CREATE STATISTICS addr_plain_nd (ndistinct) ON city, district FROM addr_plain;
+ANALYZE addr_plain;
+SELECT est('SELECT city, district FROM addr_plain GROUP BY city, district') AS groups_guess;
+```
+
+```sql
+SELECT statistics_name, n_distinct FROM pg_stats_ext WHERE tablename = 'addr_plain';
+```
+
+Ước lượng về đúng 100; `n_distinct` ghi `{"2, 3": 100}`: cột số 2 và 3 có 100 tổ hợp.
+
+`dependencies` không biết một tổ hợp không tồn tại. Quận 34 thuộc thành phố 4, không phải 3:
+
+```sql
+SELECT est('SELECT * FROM addr_stats WHERE city = 3 AND district = 34') AS dep_guess;
+```
+
+```sql
+CREATE STATISTICS addr_stats_mcv (mcv) ON city, district FROM addr_stats;
+ANALYZE addr_stats;
+SELECT est('SELECT * FROM addr_stats WHERE city = 3 AND district = 34') AS mcv_guess;
+```
+
+Chỉ có `dependencies`, planner vẫn đoán 100 cho một tổ hợp rỗng. Có `mcv`, nó thấy tổ hợp này không nằm trong danh sách và đoán 1, mức thấp nhất.
+
+## Lỗi hay gặp
+
+Khai báo thống kê mở rộng trên một cột:
+
+```sql
+-- ERROR 42P17: extended statistics require at least 2 columns
+CREATE STATISTICS addr_one (dependencies) ON city FROM addr_plain;
+```
+
+Thống kê một cột đã có sẵn trong `pg_stats`; muốn chi tiết hơn thì dùng `SET STATISTICS` cho cột đó.
+
+Tạo đối tượng thống kê rồi quên ANALYZE:
+
+```sql
+-- WRONG: the statistics object is still empty
+CREATE TABLE addr_copy AS SELECT * FROM addr_plain;
+ANALYZE addr_copy;
+CREATE STATISTICS addr_copy_dep (dependencies) ON city, district FROM addr_copy;
+SELECT est('SELECT * FROM addr_copy WHERE city = 3 AND district = 33') AS estimate;
+```
+
+```sql
+-- FIX: ANALYZE fills it
+ANALYZE addr_copy;
+SELECT est('SELECT * FROM addr_copy WHERE city = 3 AND district = 33') AS estimate;
+```
+
+`CREATE STATISTICS` chỉ ghi định nghĩa; ước lượng vẫn là 10 cho tới khi ANALYZE tính phụ thuộc, sau đó là 100.
 
 ## Thực hành
 
-So ước lượng trước và sau, rồi đọc đối tượng thống kê. Kỹ năng chuyên gia: chẩn đoán ước lượng sai do cột tương quan và sửa bằng thống kê, không bằng cách tắt planner.
+Ba bước: so ước lượng với số thật trên hai bảng, đọc đối tượng thống kê của `addr_stats`, rồi tự tạo thống kê phụ thuộc cho `addr_plain`. Sau đó là hai câu hỏi.
+
+## Tóm tắt
+
+- Mặc định planner nhân độ chọn lọc của các cột như thể độc lập, nên cột tương quan bị đoán thấp.
+- `dependencies` cho điều kiện bằng, `ndistinct` cho `GROUP BY`, `mcv` chính xác nhất và biết tổ hợp không tồn tại.
+- Thống kê mở rộng cần ít nhất hai cột và chỉ có dữ liệu sau `ANALYZE`.
+- Sửa ước lượng tận gốc, đừng tắt một loại join để che triệu chứng.
 
 # EN
 
+## Opening
+
+An address table is filtered by city and district, and the planner guesses 10 rows while the truth is 100. Each column has correct statistics, so what went wrong?
+
 ## Key idea
 
-- By default the planner treats conditions on different columns as independent: the selectivity of `a = x AND b = y` is sel(a) × sel(b). For correlated columns (district → city, postcode → province) the result is many times too low.
-- `CREATE STATISTICS` has three kinds: `dependencies` (functional dependency, for equality conditions), `ndistinct` (number of distinct combinations, for GROUP BY), `mcv` (list of common combinations, the most precise for equality and range conditions). It only holds data after ANALYZE.
-- A wrong estimate at the bottom spreads upward: an artificially low row count makes the planner choose a Nested Loop, and the loop then runs thousands of times.
-- Check: compare `rows=` (estimate) with `actual rows` in `EXPLAIN ANALYZE`. More than 10× off at a filter node is the sign.
+Plain statistics (`pg_stats`) describe each column on its own. When a query has two conditions on two columns, the planner by default treats them as independent and multiplies the selectivities: sel(`city = 3`) × sel(`district = 33`) = 1/10 × 1/100. With 10,000 rows it guesses 10.
+
+Many people think the planner knows which columns are related. In fact it does not, unless you declare it. Here district 33 always belongs to city 3, so the city condition removes no extra row: the real count is 100, ten times the estimate. Correlated columns like these are common: district and city, postcode and province, car model and maker.
+
+A wrong estimate at the bottom spreads upward. An artificially low row count makes the planner pick a Nested Loop because it expects the loop to run a few times, and then it runs thousands of times. The sign: the `rows=` of `EXPLAIN` is more than 10 times off from the `actual rows` of `EXPLAIN ANALYZE` right at a filter node.
+
+`CREATE STATISTICS` declares statistics over several columns, in three kinds. `dependencies` (functional dependencies) fixes the estimate of equality conditions. `ndistinct` stores the number of distinct combinations, for `GROUP BY` and `DISTINCT`. `mcv` stores a list of common combinations and is the most precise: it even knows which combinations do not exist. A statistics object only holds data after `ANALYZE`; read the result in `pg_stats_ext`.
+
+## Syntax
+
+```sql
+CREATE STATISTICS [ IF NOT EXISTS ] stat_name [ ( kind [, ...] ) ]
+  ON column_name, column_name [, ...] FROM table_name;
+ANALYZE table_name;
+SELECT statistics_name, attnames, n_distinct, dependencies FROM pg_stats_ext WHERE tablename = 'table_name';
+DROP STATISTICS [ IF EXISTS ] stat_name;
+```
+
+- `dependencies`: how far one column determines the other; for equality conditions.
+- `ndistinct`: the number of distinct combinations; for `GROUP BY`, `DISTINCT`.
+- `mcv`: the common combinations and their frequencies; for equality and range conditions.
+- No `kind` given: all three are built.
 
 ## Example
 
-Real output from PGlite: `district` runs from 0 to 99, `city = district % 10`.
+A tenfold underestimate without extended statistics:
 
-```text
-plain = 10    with_stats = 100    actual = 100
-
-statistics_name  attnames         dependencies
-addr_stats_dep   {city,district}  {"3 => 2": 1.000000}
+```sql
+SELECT est('SELECT * FROM addr_plain WHERE city = 7 AND district = 77') AS estimate, count(*) AS actual
+FROM addr_plain WHERE city = 7 AND district = 77;
 ```
 
-Without extended statistics: 10,000 × 1/10 × 1/100 = 10. With `dependencies`, Postgres knows column 3 (district) determines column 2 (city) with degree 1.0, so it only uses sel(district) = 1/100, giving 100 rows, exactly the real count.
+The group count of a `GROUP BY` is wrong too, the other way round:
+
+```sql
+SELECT est('SELECT city, district FROM addr_plain GROUP BY city, district') AS groups_guess,
+       (SELECT count(*) FROM (SELECT DISTINCT city, district FROM addr_plain) AS d) AS groups_real;
+```
+
+The planner multiplies 10 × 100 = 1,000 groups; there are only 100. Add `ndistinct`, then ANALYZE:
+
+```sql
+CREATE STATISTICS addr_plain_nd (ndistinct) ON city, district FROM addr_plain;
+ANALYZE addr_plain;
+SELECT est('SELECT city, district FROM addr_plain GROUP BY city, district') AS groups_guess;
+```
+
+```sql
+SELECT statistics_name, n_distinct FROM pg_stats_ext WHERE tablename = 'addr_plain';
+```
+
+The estimate becomes exactly 100; `n_distinct` reads `{"2, 3": 100}`: columns 2 and 3 have 100 combinations.
+
+`dependencies` does not know that a combination does not exist. District 34 belongs to city 4, not 3:
+
+```sql
+SELECT est('SELECT * FROM addr_stats WHERE city = 3 AND district = 34') AS dep_guess;
+```
+
+```sql
+CREATE STATISTICS addr_stats_mcv (mcv) ON city, district FROM addr_stats;
+ANALYZE addr_stats;
+SELECT est('SELECT * FROM addr_stats WHERE city = 3 AND district = 34') AS mcv_guess;
+```
+
+With `dependencies` only, the planner still guesses 100 for an empty combination. With `mcv` it sees the combination is not in the list and guesses 1, the lowest it ever goes.
+
+## Common mistakes
+
+Declaring extended statistics on one column:
+
+```sql
+-- ERROR 42P17: extended statistics require at least 2 columns
+CREATE STATISTICS addr_one (dependencies) ON city FROM addr_plain;
+```
+
+Single-column statistics already exist in `pg_stats`; for more detail, use `SET STATISTICS` on that column.
+
+Creating a statistics object and forgetting ANALYZE:
+
+```sql
+-- WRONG: the statistics object is still empty
+CREATE TABLE addr_copy AS SELECT * FROM addr_plain;
+ANALYZE addr_copy;
+CREATE STATISTICS addr_copy_dep (dependencies) ON city, district FROM addr_copy;
+SELECT est('SELECT * FROM addr_copy WHERE city = 3 AND district = 33') AS estimate;
+```
+
+```sql
+-- FIX: ANALYZE fills it
+ANALYZE addr_copy;
+SELECT est('SELECT * FROM addr_copy WHERE city = 3 AND district = 33') AS estimate;
+```
+
+`CREATE STATISTICS` only records the definition; the estimate stays at 10 until ANALYZE computes the dependency, then it is 100.
 
 ## Practice
 
-Compare the estimate before and after, then read the statistics object. Expert skill: diagnose a bad estimate caused by correlated columns and fix it with statistics, not by switching planner features off.
+Three steps: compare the estimates with the real count on both tables, read the statistics object of `addr_stats`, then create dependency statistics for `addr_plain` yourself. Then two questions.
+
+## Recap
+
+- By default the planner multiplies column selectivities as if they were independent, so correlated columns are underestimated.
+- `dependencies` for equality conditions, `ndistinct` for `GROUP BY`, `mcv` the most precise and aware of combinations that do not exist.
+- Extended statistics need at least two columns and only hold data after `ANALYZE`.
+- Fix the estimate at the root; do not switch off a join type to hide the symptom.

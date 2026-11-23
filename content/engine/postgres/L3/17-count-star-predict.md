@@ -8,6 +8,7 @@ title_en: "Predict: does count(*) read the primary key to be fast?"
 kind: predict
 runtime: browser
 minutes: 10
+verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-24" }
 objectives:
   - vi: Đoán kế hoạch của `count(*)` trên bảng vừa nạp và trên bảng đã VACUUM
     en: Predict the plan of `count(*)` on a freshly loaded table and on a vacuumed one
@@ -79,17 +80,52 @@ predict:
     - { vi: "Seq Scan đọc cả 304 trang heap", en: "Seq Scan reading all 304 heap pages" }
     - { vi: "Không quét gì: Postgres lưu sẵn số dòng của bảng", en: "No scan at all: Postgres keeps the row count ready" }
   answer: 1
+  trap: 0
   why:
     vi: "Phương án Index Only Scan nghe hợp lý vì index nhỏ hơn heap 10 lần và có đủ mọi khóa. Nhưng do MVCC, index không biết dòng nào còn thấy được; chỉ visibility map mới cho bỏ qua heap, và ở đây nó trống (`relallvisible` = 0). Ép dùng index thì ra `Heap Fetches: 10000`, nên planner chọn Seq Scan. Số dòng trong `pg_class` chỉ là ước lượng cho planner, không phải kết quả của `count(*)`."
     en: "The Index Only Scan option sounds right because the index is 10 times smaller than the heap and holds every key. But because of MVCC the index does not know which rows are still visible; only the visibility map lets a scan skip the heap, and here it is empty (`relallvisible` = 0). Forcing the index gives `Heap Fetches: 10000`, so the planner picks a Seq Scan. The row count in `pg_class` is only an estimate for the planner, never the result of `count(*)`."
   expect: { node: Seq Scan, table: visits }
+quiz:
+  - q:
+      vi: "`visits_vac` vừa VACUUM xong và `count(*)` chạy bằng Index Only Scan với `Heap Fetches: 0`. Rồi một UPDATE sửa đúng một dòng. Lần đếm sau có `Heap Fetches` bằng bao nhiêu?"
+      en: "`visits_vac` was just vacuumed and `count(*)` runs as an Index Only Scan with `Heap Fetches: 0`. Then one UPDATE changes a single row. How many `Heap Fetches` does the next count show?"
+    options:
+      - { vi: "0: bảng đã VACUUM thì Index Only Scan không cần về heap nữa", en: "0: once the table is vacuumed, the Index Only Scan never needs the heap again" }
+      - { vi: "Vài chục (35 trong lab): mọi mục index trỏ vào hai trang mà UPDATE vừa xóa bit all-visible", en: "A few dozen (35 in the lab): every index entry pointing into the two pages whose all-visible bit the UPDATE just cleared" }
+      - { vi: "10.000: một UPDATE làm mất cả visibility map", en: "10,000: one UPDATE wipes out the whole visibility map" }
+    answer: 1
+    trap: 0
+    why:
+      vi: "Nghe hợp lý vì VACUUM vừa bật bit cho mọi trang, nhưng bit all-visible bị xóa ngay khi trang đổi. UPDATE đổi hai trang: trang của bản cũ và trang nhận bản mới. Mỗi mục index trỏ vào hai trang đó phải về heap hỏi, còn các trang khác vẫn được bỏ qua. Lần VACUUM sau bật lại bit."
+      en: "It sounds right because VACUUM just set the bit on every page, but the all-visible bit is cleared as soon as a page changes. The UPDATE changed two pages: the old version's page and the page that took the new version. Every index entry pointing into those two pages must ask the heap, while the other pages are still skipped. The next VACUUM sets the bits again."
+  - q:
+      vi: "Sau khi xóa 1.000 trong 10.000 dòng của `visits` (chưa VACUUM, chưa ANALYZE), `reltuples` trong `pg_class` là bao nhiêu?"
+      en: "After deleting 1,000 of the 10,000 rows of `visits` (no VACUUM, no ANALYZE yet), what is `reltuples` in `pg_class`?"
+    options:
+      - { vi: "9000: `pg_class` luôn giữ số dòng chính xác", en: "9000: `pg_class` always holds the exact row count" }
+      - { vi: "Vẫn 10000: đó là ước lượng, cập nhật bởi VACUUM, ANALYZE và vài lệnh DDL như CREATE INDEX", en: "Still 10000: it is an estimate, updated by VACUUM, ANALYZE and a few DDL commands such as CREATE INDEX" }
+      - { vi: "0: DELETE xóa thống kê của bảng", en: "0: DELETE clears the table's statistics" }
+    answer: 1
+    trap: 0
+    why:
+      vi: "Nghe hợp lý vì con số nằm ngay trong catalog, nhưng `reltuples` chỉ là ước lượng cho planner. Do MVCC, không có một số dòng chung cho mọi transaction, nên Postgres không giữ số đếm chính xác. Muốn con số đúng cho transaction của bạn thì phải `count(*)`."
+      en: "It sounds right because the number sits right in the catalog, but `reltuples` is only an estimate for the planner. Because of MVCC there is no single row count valid for every transaction, so Postgres keeps no exact count. For the right number in your transaction you must `count(*)`."
 ---
+## Mở bài
+
+Trang quản trị hiện "Tổng số lượt truy cập" bằng `SELECT count(*)`, và trên bảng lớn nó chạy vài giây. Có người bảo: bảng có khóa chính, Postgres chỉ cần đếm index là xong. Đúng không?
 
 ## Ý chính
 
-Nhiều người nghĩ `count(*)` chỉ cần đọc khóa chính nên gần như tức thì. Thật ra do MVCC, mỗi dòng có thể thấy được với transaction này mà không với transaction khác, và index không ghi điều đó. Index Only Scan chỉ bỏ qua heap ở trang có bit all-visible trong visibility map, bit mà VACUUM bật và mọi thay đổi trên trang tắt đi.
+Nhiều người nghĩ `count(*)` chỉ cần đọc khóa chính nên gần như tức thì. Thật ra do MVCC, một dòng có thể thấy được với transaction này mà không với transaction khác, và index không ghi điều đó. Mục index chỉ trỏ tới tuple; muốn biết tuple còn thấy được không thì phải đọc `xmin`, `xmax` trên trang heap.
+
+Index Only Scan bỏ qua heap được ở một trang duy nhất khi trang đó có bit all-visible trong visibility map: mọi tuple trên trang thấy được với mọi transaction. VACUUM bật bit này; bất kỳ INSERT, UPDATE hay DELETE nào trên trang cũng xóa nó. Trang không có bit thì mỗi mục index phải về heap hỏi, và kế hoạch ghi số lần đó ở `Heap Fetches`.
+
+Vì vậy trên bảng vừa nạp mà chưa VACUUM, Index Only Scan đọc index rồi vẫn đọc gần hết heap: tệ hơn Seq Scan. Planner biết điều này qua `relallvisible` trong `pg_class` và chọn Seq Scan. Cách chữa `count(*)` chậm là để autovacuum theo kịp (hay chạy VACUUM sau một lần nạp lớn), không phải thêm index. Nếu chỉ cần con số gần đúng, `reltuples` trong `pg_class` là ước lượng miễn phí.
 
 ## Ví dụ
+
+Ép dùng index trên bảng chưa VACUUM và chỉ giữ dòng `Heap Fetches`:
 
 ```sql
 SELECT l FROM count_plan('visits', false) AS l WHERE l LIKE '%Heap Fetches%';
@@ -97,15 +133,32 @@ SELECT l FROM count_plan('visits', false) AS l WHERE l LIKE '%Heap Fetches%';
 
 ## Thực hành
 
-Chọn đáp án trước, rồi bấm "Xem thật" để thấy kế hoạch thật. Sau đó ba bước so `visits` (chưa VACUUM) với `visits_vac` (đã VACUUM). Sau bài này bạn giải thích được vì sao `count(*)` trên bảng lớn vẫn chậm, và vì sao cách chữa là autovacuum theo kịp, không phải thêm index.
+Chọn đáp án trước, rồi bấm "Xem thật" để thấy kế hoạch thật. Sau đó ba bước so `visits` (chưa VACUUM) với `visits_vac` (đã VACUUM), rồi hai câu hỏi.
+
+## Tóm tắt
+
+- Index không biết dòng nào còn thấy được; chỉ heap (`xmin`, `xmax`) biết.
+- Index Only Scan bỏ qua heap ở trang all-visible; trang khác cần một heap fetch cho mỗi mục.
+- VACUUM bật bit all-visible; mọi thay đổi trên trang xóa nó.
+- `count(*)` chậm thì để autovacuum theo kịp; `reltuples` chỉ là ước lượng.
 
 # EN
 
+## Opening
+
+The admin page shows "Total visits" with `SELECT count(*)`, and on a big table it takes several seconds. Someone says: the table has a primary key, Postgres only needs to count the index. Is that right?
+
 ## Key idea
 
-Many people think `count(*)` only has to read the primary key and is nearly instant. In fact, because of MVCC, a row can be visible to one transaction and not to another, and the index does not record that. An Index Only Scan skips the heap only on pages whose all-visible bit is set in the visibility map, a bit that VACUUM sets and any change on the page clears.
+Many people think `count(*)` only has to read the primary key and is nearly instant. In fact, because of MVCC, a row can be visible to one transaction and not to another, and the index does not record that. An index entry only points to a tuple; to know whether the tuple is still visible you must read `xmin` and `xmax` on the heap page.
+
+An Index Only Scan can skip the heap for a page only when that page has the all-visible bit in the visibility map: every tuple on it is visible to every transaction. VACUUM sets this bit; any INSERT, UPDATE or DELETE on the page clears it. On a page without the bit, every index entry must go back to the heap to ask, and the plan counts those trips as `Heap Fetches`.
+
+So on a freshly loaded table that was never vacuumed, an Index Only Scan reads the index and then still reads almost the whole heap: worse than a Seq Scan. The planner knows this through `relallvisible` in `pg_class` and picks a Seq Scan. The fix for a slow `count(*)` is autovacuum keeping up (or a VACUUM after a big load), not another index. If an approximate number is enough, `reltuples` in `pg_class` is a free estimate.
 
 ## Example
+
+Force the index on the never-vacuumed table and keep only the `Heap Fetches` line:
 
 ```sql
 SELECT l FROM count_plan('visits', false) AS l WHERE l LIKE '%Heap Fetches%';
@@ -113,4 +166,11 @@ SELECT l FROM count_plan('visits', false) AS l WHERE l LIKE '%Heap Fetches%';
 
 ## Practice
 
-Pick an answer first, then press "See the real plan" to see the real plan. Then three steps compare `visits` (never vacuumed) with `visits_vac` (vacuumed). After this lesson you can explain why `count(*)` on a big table is still slow, and why the fix is autovacuum keeping up, not another index.
+Pick an answer first, then press "See the real plan" to see the real plan. Then three steps compare `visits` (never vacuumed) with `visits_vac` (vacuumed), then two questions.
+
+## Recap
+
+- The index does not know which rows are still visible; only the heap (`xmin`, `xmax`) does.
+- An Index Only Scan skips the heap on all-visible pages; other pages cost one heap fetch per entry.
+- VACUUM sets the all-visible bit; any change on the page clears it.
+- For a slow `count(*)`, let autovacuum keep up; `reltuples` is only an estimate.

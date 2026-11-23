@@ -8,6 +8,7 @@ title_en: "Prepared statements: generic vs custom plans"
 kind: lab
 runtime: browser
 minutes: 15
+verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-24" }
 objectives:
   - { vi: "Giải thích luật 5 lần đầu dùng kế hoạch riêng (custom) rồi mới cân nhắc kế hoạch chung (generic)", en: "Explain the rule: the first five executions use custom plans before a generic plan is considered" }
   - { vi: "Nhận ra lỗi hiệu năng kinh điển: kế hoạch chung tốt cho giá trị hiếm nhưng tệ cho giá trị phổ biến", en: "Recognise the classic problem: a generic plan good for rare values but bad for common ones" }
@@ -47,6 +48,11 @@ lab:
       check: rows
       ordered: true
       hint: { vi: "Trong chuỗi SQL, dấu nháy đơn được viết đôi: `''delivered''`.", en: "Inside an SQL string, single quotes are doubled: `''delivered''`." }
+    - task: { vi: "Cuối cùng xem kế hoạch riêng cho giá trị hiếm 'lost' (1 % bảng), cũng bằng `plan_lines` không có tham số thứ hai. So với kế hoạch chung ở bước 1: nó giống kế hoạch của giá trị nào?", en: "Finally look at the custom plan for the rare value 'lost' (1% of the table), again with `plan_lines` and no second argument. Compare it with the generic plan of step 1: which value's plan does the generic one look like?" }
+      solution: "SELECT * FROM plan_lines('SELECT * FROM parcels WHERE status = ''lost''')"
+      check: rows
+      ordered: true
+      hint: { vi: "Như bước 2, chỉ đổi giá trị: `''lost''`.", en: "Like step 2, only the value changes: `''lost''`." }
 quiz:
   - q: { vi: "Ứng dụng gọi `PREPARE` một câu lọc theo trạng thái. 5 lần đầu tham số là 'lost' (1 %). Lần thứ 6 trở đi, Postgres làm gì?", en: "An application runs `PREPARE` on a query that filters by status. The first 5 calls pass 'lost' (1%). What does Postgres do from the 6th call on?" }
     options:
@@ -54,94 +60,215 @@ quiz:
       - { vi: "Lập một kế hoạch chung với `$1`, so chi phí của nó với chi phí trung bình của 5 kế hoạch riêng; nếu không đắt hơn nhiều thì dùng kế hoạch chung từ đó", en: "Builds one generic plan with `$1`, compares its cost with the average cost of the 5 custom plans, and uses the generic plan from then on if it is not much more expensive" }
       - { vi: "Báo lỗi vì kế hoạch hết hạn", en: "Raises an error because the plan expired" }
     answer: 1
-    why: { vi: "Lập kế hoạch lại cho từng giá trị nghe an toàn, và đó đúng là việc Postgres làm ở 5 lần đầu; nhưng sau đó nó thử kế hoạch chung. Đúng như docs chính thức của PREPARE: 5 lần đầu dùng kế hoạch riêng, rồi so chi phí kế hoạch chung với trung bình. Nếu sau đó tham số là 'delivered' (70 %), kế hoạch chung qua index có thể chậm hơn Seq Scan nhiều.", en: "Replanning for every value sounds safe, and it is what Postgres does for the first 5 runs, but after that it tries a generic plan. This is the PREPARE documentation's rule: the first 5 runs use custom plans, then the generic plan's cost is compared with their average. If the parameter later becomes 'delivered' (70%), the generic index plan can be much slower than a Seq Scan." }
+    trap: 0
+    why: { vi: "Nghe hợp lý vì đó đúng là việc Postgres làm ở 5 lần đầu, nhưng sau đó nó thử kế hoạch chung. Theo trang PREPARE của tài liệu: 5 lần đầu dùng kế hoạch riêng, rồi so chi phí kế hoạch chung với trung bình của chúng. Kế hoạch riêng cho 'lost' rất rẻ nên kế hoạch chung thường bị loại; nhưng nếu 5 lần đầu là giá trị đắt, kế hoạch chung thắng và được dùng cho mọi giá trị về sau.", en: "It sounds right because that is what Postgres does for the first 5 runs, but after that it tries a generic plan. Per the PREPARE page of the documentation: the first 5 runs use custom plans, then the generic plan's cost is compared with their average. A custom plan for 'lost' is very cheap, so the generic plan usually loses here; but if the first 5 runs use an expensive value, the generic plan wins and is used for every later value." }
   - q: { vi: "Một câu đã chuẩn bị chạy chậm thất thường tùy giá trị tham số. Bước chẩn đoán đầu tiên tốt nhất?", en: "A prepared query is erratically slow depending on the parameter. Best first diagnostic step?" }
     options:
       - { vi: "So `EXPLAIN (GENERIC_PLAN)` với `EXPLAIN` có giá trị cụ thể, và xem `generic_plans`/`custom_plans` trong `pg_prepared_statements`", en: "Compare `EXPLAIN (GENERIC_PLAN)` with `EXPLAIN` on a concrete value, and check `generic_plans`/`custom_plans` in `pg_prepared_statements`" }
       - { vi: "Tăng `shared_buffers`", en: "Raise `shared_buffers`" }
       - { vi: "Xóa index trên cột trạng thái", en: "Drop the index on the status column" }
     answer: 0
-    why: { vi: "Tăng `shared_buffers` hấp dẫn vì nghe như thuốc chữa mọi chỗ chậm, nhưng nó không giải thích vì sao chỉ vài giá trị tham số mới chậm. Phải thấy kế hoạch chung khác kế hoạch riêng thế nào trước khi sửa. Sửa phổ biến: `plan_cache_mode = force_custom_plan` cho phiên/hàm đó, hoặc tách câu cho giá trị phổ biến.", en: "Raising `shared_buffers` is tempting because it sounds like a cure for any slowness, but it does not explain why only some parameter values are slow. You must see how the generic plan differs from the custom one before fixing anything. A common fix: `plan_cache_mode = force_custom_plan` for that session or function, or a separate query for the common values." }
+    trap: 1
+    why: { vi: "Nghe hợp lý vì thêm bộ nhớ đệm có vẻ chữa được mọi chỗ chậm, nhưng nó không giải thích vì sao chỉ vài giá trị tham số mới chậm. Phải thấy kế hoạch chung khác kế hoạch riêng thế nào trước khi sửa. Sửa phổ biến: `plan_cache_mode = force_custom_plan` cho phiên hoặc hàm đó, hoặc tách câu cho giá trị phổ biến.", en: "It sounds right because more cache memory seems to cure any slowness, but it does not explain why only some parameter values are slow. You must see how the generic plan differs from the custom one before fixing anything. A common fix: `plan_cache_mode = force_custom_plan` for that session or function, or a separate query for the common values." }
 ---
+## Mở bài
+
+Một câu đã chuẩn bị chạy nhanh suốt buổi sáng, rồi buổi chiều cùng câu đó chậm hẳn dù dữ liệu không đổi. Thủ phạm thường không phải dữ liệu mà là kế hoạch mà Postgres đã quyết định dùng lại.
 
 ## Ý chính
 
-- `PREPARE` (và driver dùng giao thức mở rộng) cho phép lập kế hoạch một lần, chạy nhiều lần. Có hai loại kế hoạch:
-  - custom: lập lại cho giá trị tham số cụ thể, dùng MCV/histogram của đúng giá trị đó;
-  - generic: một kế hoạch cho mọi giá trị, tham số là `$1`, ước lượng theo độ chọn lọc trung bình.
-- Luật mặc định (`plan_cache_mode = auto`): 5 lần đầu dùng custom; sau đó lập generic, và dùng generic nếu chi phí của nó không cao hơn nhiều so với trung bình 5 lần custom.
-- Bẫy: dữ liệu lệch. Generic plan chọn theo "giá trị trung bình" có thể rất tệ cho giá trị phổ biến (70 % bảng).
+`PREPARE` (và driver dùng giao thức mở rộng) tách việc lập kế hoạch khỏi việc chạy, để một câu chạy nhiều lần với tham số khác nhau. Có hai loại kế hoạch. Kế hoạch riêng (custom) được lập lại cho đúng giá trị tham số, dùng MCV và histogram của giá trị đó. Kế hoạch chung (generic) dùng cho mọi giá trị, tham số giữ nguyên là `$1`, ước lượng theo độ chọn lọc trung bình của cột.
+
+Luật mặc định, `plan_cache_mode = auto`: 5 lần chạy đầu luôn dùng kế hoạch riêng. Từ lần thứ 6, Postgres lập kế hoạch chung và so chi phí của nó với chi phí trung bình của các kế hoạch riêng (cộng thêm giá lập kế hoạch). Nếu kế hoạch chung không đắt hơn đáng kể, nó được dùng từ đó, khỏi lập lại.
+
+Nhiều người nghĩ câu đã chuẩn bị luôn được lập kế hoạch theo giá trị truyền vào. Thật ra sau 5 lần, Postgres có thể chuyển hẳn sang một kế hoạch chung và không nhìn giá trị nữa.
+
+Bẫy nằm ở dữ liệu lệch. Năm lần đầu toàn giá trị đắt ('delivered', 70 % bảng) thì trung bình cao, kế hoạch chung qua index trông rẻ hơn và thắng. Từ đó mọi lần gọi, kể cả 'delivered', đều đi qua index, chậm hơn đọc tuần tự.
+
+Công cụ chẩn đoán: `pg_prepared_statements` đếm `generic_plans` và `custom_plans`; `EXPLAIN (GENERIC_PLAN)` (từ PostgreSQL 16) cho xem kế hoạch chung của một câu có `$1` mà không cần `PREPARE`; `plan_cache_mode` buộc một loại kế hoạch.
+
+## Cú pháp
+
+```sql
+PREPARE name [ ( data_type [, ...] ) ] AS statement;
+EXECUTE name [ ( value [, ...] ) ];
+EXPLAIN [ ( GENERIC_PLAN ) ] statement_with_parameters;
+SET plan_cache_mode = { auto | force_custom_plan | force_generic_plan };
+DEALLOCATE { name | ALL };
+```
+
+- `auto`: 5 lần kế hoạch riêng, rồi so với kế hoạch chung (mặc định).
+- `force_custom_plan`: luôn lập lại theo giá trị; tốn giá lập kế hoạch mỗi lần.
+- `force_generic_plan`: luôn dùng kế hoạch chung.
+- Câu đã chuẩn bị sống tới hết phiên, hoặc tới `DEALLOCATE`.
 
 ## Ví dụ
 
-Ghi lại trên PGlite bằng kịch bản nhiều lệnh (người học không chạy được ở đây vì mỗi bài chỉ một câu trong một transaction). Bảng `parcels` 20.000 dòng, 'lost' = 1 %:
+Chuẩn bị câu và xem kế hoạch riêng cho một giá trị hiếm:
 
-```text
+```sql
 PREPARE by_status(text) AS SELECT * FROM parcels WHERE status = $1;
-
-EXPLAIN (COSTS OFF) EXECUTE by_status('lost');      -- custom
-Bitmap Heap Scan on parcels
-  Recheck Cond: (status = 'lost'::text)
-  ->  Bitmap Index Scan on parcels_status_idx
-        Index Cond: (status = 'lost'::text)
-
-SET plan_cache_mode = force_generic_plan;
-EXPLAIN (COSTS OFF) EXECUTE by_status('lost');      -- generic
-Bitmap Heap Scan on parcels
-  Recheck Cond: (status = $1)
-  ->  Bitmap Index Scan on parcels_status_idx
-        Index Cond: (status = $1)
-
-SELECT name, generic_plans, custom_plans FROM pg_prepared_statements;
-by_status | 1 | 1
+EXPLAIN (COSTS OFF) EXECUTE by_status('lost');
 ```
 
-Kế hoạch chung vẫn dùng index cho mọi giá trị, kể cả 'delivered', trong khi custom plan cho 'delivered' là Seq Scan (bài e-pg-l4-02).
+Cùng câu, giá trị phổ biến:
+
+```sql
+EXPLAIN (COSTS OFF) EXECUTE by_status('delivered');
+```
+
+```sql
+SELECT name, generic_plans, custom_plans FROM pg_prepared_statements;
+```
+
+'lost' đi qua `parcels_status_idx`, 'delivered' đọc tuần tự: hai kế hoạch riêng khác nhau, ghi hằng số thật trong điều kiện. Bộ đếm cho thấy 0 kế hoạch chung và 2 kế hoạch riêng: mỗi lần `EXPLAIN EXECUTE` cũng tính là một lần lập kế hoạch.
+
+## Lỗi hay gặp
+
+Chuẩn bị lại một tên đã có:
+
+```sql
+-- ERROR 42P05: prepared statement "by_status" already exists
+PREPARE by_status(text) AS SELECT id FROM parcels WHERE status = $1;
+```
+
+Tên câu đã chuẩn bị là duy nhất trong phiên: `DEALLOCATE by_status` trước, hoặc chọn tên khác.
+
+Gọi thiếu tham số:
+
+```sql
+-- ERROR 42601: wrong number of parameters for prepared statement "by_status"
+EXECUTE by_status;
+```
+
+Tin rằng giá trị phổ biến luôn được lập kế hoạch riêng. Ba lần 'delivered' nữa, rồi lần thứ 6:
+
+```sql
+-- WRONG: after 5 custom plans the generic index plan wins, even for 'delivered'
+EXECUTE by_status('delivered');
+EXECUTE by_status('delivered');
+EXECUTE by_status('delivered');
+EXPLAIN (COSTS OFF) EXECUTE by_status('delivered');
+```
+
+```sql
+-- FIX: force custom plans for this session
+SET plan_cache_mode = force_custom_plan;
+EXPLAIN (COSTS OFF) EXECUTE by_status('delivered');
+RESET plan_cache_mode;
+```
+
+Lần thứ 6 ra kế hoạch chung: điều kiện ghi `$1` và đi qua index, cho một giá trị chiếm 70 % bảng. Trung bình 5 kế hoạch riêng đắt (4 lần đọc cả bảng) làm kế hoạch chung trông rẻ hơn. Với `force_custom_plan`, 'delivered' trở lại Seq Scan.
 
 ## Thực hành
 
-Công cụ: `EXPLAIN (GENERIC_PLAN)` (từ PostgreSQL 16) cho xem kế hoạch chung của một câu có `$1` mà không cần `PREPARE`; `pg_prepared_statements` đếm `generic_plans`/`custom_plans`; `plan_cache_mode` = `force_custom_plan` hoặc `force_generic_plan`.
+Ba bước đọc kế hoạch thật bằng hàm `plan_lines`: kế hoạch chung với `$1`, kế hoạch riêng cho 'delivered', rồi kế hoạch riêng cho 'lost'. Sau đó là hai câu hỏi tình huống.
 
-Hai bước đọc kế hoạch thật bằng hàm `plan_lines` (chung với `$1`, riêng với 'delivered'), rồi hai câu hỏi tình huống. Kỹ năng chuyên gia: chẩn đoán "câu chạy lúc nhanh lúc chậm" do kế hoạch chung của câu đã chuẩn bị, và chọn cách sửa đúng chỗ.
+## Tóm tắt
+
+- Kế hoạch riêng được lập theo giá trị; kế hoạch chung dùng `$1` và độ chọn lọc trung bình.
+- Chế độ `auto`: 5 lần riêng, rồi dùng kế hoạch chung nếu nó không đắt hơn trung bình đáng kể.
+- Dữ liệu lệch có thể làm kế hoạch chung thắng rồi chạy chậm cho giá trị phổ biến.
+- Chẩn đoán bằng `pg_prepared_statements` và `EXPLAIN (GENERIC_PLAN)`; sửa bằng `plan_cache_mode` đúng chỗ.
 
 # EN
 
+## Opening
+
+A prepared query runs fast all morning, then in the afternoon the same query is much slower although the data has not changed. The culprit is usually not the data but the plan Postgres decided to reuse.
+
 ## Key idea
 
-- `PREPARE` (and drivers using the extended protocol) lets you plan once and run many times. There are two kinds of plan:
-  - custom: re-planned for the concrete parameter value, using the MCV/histogram for that value;
-  - generic: one plan for every value, with `$1` as the parameter, estimated from an average selectivity.
-- Default rule (`plan_cache_mode = auto`): the first 5 runs use custom plans; then a generic plan is built and used if its cost is not much higher than the average of the 5 custom plans.
-- The trap: skewed data. A generic plan chosen for the "average value" can be very bad for a common value (70% of the table).
+`PREPARE` (and drivers using the extended protocol) separates planning from running, so one query can run many times with different parameters. There are two kinds of plan. A custom plan is rebuilt for the exact parameter value, using the MCV list and histogram for that value. A generic plan serves every value, keeps the parameter as `$1`, and is estimated from the column's average selectivity.
+
+The default rule, `plan_cache_mode = auto`: the first 5 runs always use custom plans. From the 6th run, Postgres builds a generic plan and compares its cost with the average cost of the custom plans (plus the price of planning). If the generic plan is not clearly more expensive, it is used from then on, with no more planning.
+
+Many people think a prepared query is always planned for the value passed in. In fact after 5 runs Postgres can switch for good to a generic plan and stop looking at the value.
+
+The trap is skewed data. If the first five runs all use an expensive value ('delivered', 70% of the table), the average is high, the generic index plan looks cheaper and wins. From then on every call, 'delivered' included, goes through the index, slower than a sequential read.
+
+Diagnostic tools: `pg_prepared_statements` counts `generic_plans` and `custom_plans`; `EXPLAIN (GENERIC_PLAN)` (since PostgreSQL 16) shows the generic plan of a query with `$1` without any `PREPARE`; `plan_cache_mode` forces one kind of plan.
+
+## Syntax
+
+```sql
+PREPARE name [ ( data_type [, ...] ) ] AS statement;
+EXECUTE name [ ( value [, ...] ) ];
+EXPLAIN [ ( GENERIC_PLAN ) ] statement_with_parameters;
+SET plan_cache_mode = { auto | force_custom_plan | force_generic_plan };
+DEALLOCATE { name | ALL };
+```
+
+- `auto`: 5 custom plans, then a comparison with the generic plan (the default).
+- `force_custom_plan`: always re-plan for the value; pays the planning price every time.
+- `force_generic_plan`: always use the generic plan.
+- A prepared statement lives until the session ends, or until `DEALLOCATE`.
 
 ## Example
 
-Captured on PGlite with a multi-statement script (a learner cannot run it here, because each lesson runs one statement inside one transaction). Table `parcels`, 20,000 rows, 'lost' = 1%:
+Prepare the query and look at the custom plan for a rare value:
 
-```text
+```sql
 PREPARE by_status(text) AS SELECT * FROM parcels WHERE status = $1;
-
-EXPLAIN (COSTS OFF) EXECUTE by_status('lost');      -- custom
-Bitmap Heap Scan on parcels
-  Recheck Cond: (status = 'lost'::text)
-  ->  Bitmap Index Scan on parcels_status_idx
-        Index Cond: (status = 'lost'::text)
-
-SET plan_cache_mode = force_generic_plan;
-EXPLAIN (COSTS OFF) EXECUTE by_status('lost');      -- generic
-Bitmap Heap Scan on parcels
-  Recheck Cond: (status = $1)
-  ->  Bitmap Index Scan on parcels_status_idx
-        Index Cond: (status = $1)
-
-SELECT name, generic_plans, custom_plans FROM pg_prepared_statements;
-by_status | 1 | 1
+EXPLAIN (COSTS OFF) EXECUTE by_status('lost');
 ```
 
-The generic plan uses the index for every value, 'delivered' included, while the custom plan for 'delivered' is a Seq Scan (lesson e-pg-l4-02).
+Same query, a common value:
+
+```sql
+EXPLAIN (COSTS OFF) EXECUTE by_status('delivered');
+```
+
+```sql
+SELECT name, generic_plans, custom_plans FROM pg_prepared_statements;
+```
+
+'lost' goes through `parcels_status_idx`, 'delivered' reads sequentially: two different custom plans, each showing the real constant in its condition. The counters show 0 generic and 2 custom plans: each `EXPLAIN EXECUTE` also counts as one planning.
+
+## Common mistakes
+
+Preparing a name that already exists:
+
+```sql
+-- ERROR 42P05: prepared statement "by_status" already exists
+PREPARE by_status(text) AS SELECT id FROM parcels WHERE status = $1;
+```
+
+A prepared statement name is unique within the session: `DEALLOCATE by_status` first, or pick another name.
+
+Calling it without its parameter:
+
+```sql
+-- ERROR 42601: wrong number of parameters for prepared statement "by_status"
+EXECUTE by_status;
+```
+
+Trusting that a common value always gets a custom plan. Three more 'delivered' calls, then the 6th:
+
+```sql
+-- WRONG: after 5 custom plans the generic index plan wins, even for 'delivered'
+EXECUTE by_status('delivered');
+EXECUTE by_status('delivered');
+EXECUTE by_status('delivered');
+EXPLAIN (COSTS OFF) EXECUTE by_status('delivered');
+```
+
+```sql
+-- FIX: force custom plans for this session
+SET plan_cache_mode = force_custom_plan;
+EXPLAIN (COSTS OFF) EXECUTE by_status('delivered');
+RESET plan_cache_mode;
+```
+
+The 6th call gets the generic plan: its condition reads `$1` and it goes through the index, for a value that is 70% of the table. The expensive average of the 5 custom plans (4 full-table reads) made the generic plan look cheaper. With `force_custom_plan`, 'delivered' goes back to a Seq Scan.
 
 ## Practice
 
-Tools: `EXPLAIN (GENERIC_PLAN)` (since PostgreSQL 16) shows the generic plan of a query with `$1` without `PREPARE`; `pg_prepared_statements` counts `generic_plans`/`custom_plans`; `plan_cache_mode` = `force_custom_plan` or `force_generic_plan`.
+Three steps that read real plans with the `plan_lines` function: the generic plan with `$1`, the custom plan for 'delivered', then the custom plan for 'lost'. Then two scenario questions.
 
-Two steps that read real plans with the `plan_lines` function (generic with `$1`, custom with 'delivered'), then two scenario questions. Expert skill: diagnose "the query is sometimes fast, sometimes slow" as a prepared statement's generic plan, and fix it in the right place.
+## Recap
+
+- A custom plan is built for the value; a generic plan uses `$1` and an average selectivity.
+- `auto` mode: 5 custom plans, then the generic plan if it is not clearly more expensive than their average.
+- Skewed data can make the generic plan win and then run slowly for a common value.
+- Diagnose with `pg_prepared_statements` and `EXPLAIN (GENERIC_PLAN)`; fix with `plan_cache_mode` in the right place.

@@ -8,6 +8,7 @@ title_en: "Parallel query and JIT (and why PGlite shows neither)"
 kind: predict
 runtime: browser
 minutes: 15
+verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-24" }
 objectives:
   - { vi: "Đọc `Gather`/`Gather Merge` và nhận ra phần nào của kế hoạch được chạy song song", en: "Read `Gather`/`Gather Merge` and spot which part of a plan runs in parallel" }
   - { vi: "Kể các điều kiện làm Postgres không lập kế hoạch song song", en: "List the conditions under which Postgres does not build a parallel plan" }
@@ -44,6 +45,7 @@ predict:
     - { vi: "`Aggregate` → `Seq Scan`, không có `Gather`", en: "`Aggregate` → `Seq Scan`, no `Gather`" }
     - { vi: "Lỗi vì không có worker", en: "An error because there are no workers" }
   answer: 1
+  trap: 0
   why: { vi: "Nghe hợp lý vì PGlite chạy cùng mã PostgreSQL 18, nhưng nó không có worker để song song. PGlite là một backend đơn (`max_parallel_workers_per_gather` = 0 và không có tiến trình nền). Docs chính thức: giá trị này bằng 0 hoặc chạy ở chế độ một người dùng thì không có kế hoạch song song.", en: "It sounds right because PGlite runs the same PostgreSQL 18 code, but it has no workers to run in parallel. PGlite is a single backend (`max_parallel_workers_per_gather` = 0 and no background workers). The docs: with that setting at zero, or in single-user mode, no parallel plan is made." }
   expect: { node: Seq Scan, table: big }
 quiz:
@@ -53,26 +55,35 @@ quiz:
       - { vi: "`UPDATE big SET v = v + 1 WHERE id < 100`", en: "`UPDATE big SET v = v + 1 WHERE id < 100`" }
       - { vi: "`SELECT v, count(*) FROM big GROUP BY v`", en: "`SELECT v, count(*) FROM big GROUP BY v`" }
     answer: 1
-    why: { vi: "`GROUP BY` nghe khó chia cho nhiều worker, nhưng Postgres gom từng phần rồi gộp lại, nên nó vẫn song song được. Câu ghi dữ liệu hoặc row lock (ở mức trên cùng hay trong CTE) không được song song; ngoại lệ là phần SELECT của `CREATE TABLE … AS`, `SELECT INTO`, `CREATE/REFRESH MATERIALIZED VIEW`. Hàm do người dùng viết mặc định `PARALLEL UNSAFE` cũng chặn song song.", en: "`GROUP BY` sounds hard to split across workers, but Postgres aggregates in parts and combines them, so it can still run in parallel. A query that writes data or locks rows (at the top level or in a CTE) is never parallel; the exceptions are the SELECT part of `CREATE TABLE … AS`, `SELECT INTO`, `CREATE/REFRESH MATERIALIZED VIEW`. User-defined functions are `PARALLEL UNSAFE` by default, which also blocks it." }
+    trap: 2
+    why: { vi: "Nghe hợp lý vì `GROUP BY` có vẻ khó chia cho nhiều worker, nhưng Postgres gom từng phần rồi gộp lại, nên nó vẫn song song được. Câu ghi dữ liệu hoặc row lock (ở mức trên cùng hay trong CTE) không được song song; ngoại lệ là phần SELECT của `CREATE TABLE … AS`, `SELECT INTO`, `CREATE/REFRESH MATERIALIZED VIEW`. Hàm do người dùng viết mặc định `PARALLEL UNSAFE` cũng chặn song song.", en: "It sounds right because `GROUP BY` seems hard to split across workers, but Postgres aggregates in parts and combines them, so it can still run in parallel. A query that writes data or locks rows (at the top level or in a CTE) is never parallel; the exceptions are the SELECT part of `CREATE TABLE … AS`, `SELECT INTO`, `CREATE/REFRESH MATERIALIZED VIEW`. User-defined functions are `PARALLEL UNSAFE` by default, which also blocks it." }
   - q: { vi: "JIT được dùng cho một câu khi nào?", en: "When is JIT used for a query?" }
     options:
       - { vi: "Luôn luôn khi `jit = on`", en: "Always when `jit = on`" }
       - { vi: "Khi tổng chi phí ước lượng vượt `jit_above_cost` (mặc định 100.000); inline và tối ưu thêm từ 500.000", en: "When the estimated total cost exceeds `jit_above_cost` (default 100,000); inlining and extra optimisation from 500,000" }
       - { vi: "Khi câu chạy lâu hơn 1 giây", en: "When the query runs longer than 1 second" }
     answer: 1
+    trap: 0
     why: { vi: "Nghe hợp lý vì `jit = on` là mặc định, nhưng bật chỉ cho phép dùng JIT, không bắt buộc. Quyết định JIT dựa trên chi phí planner, không dựa trên thời gian. Câu OLTP ngắn mà ước lượng sai có thể tốn thời gian biên dịch JIT nhiều hơn thời gian chạy; khi đó `EXPLAIN ANALYZE` hiện phần `JIT:` với thời gian biên dịch.", en: "It sounds right because `jit = on` is the default, but on only allows JIT, it does not force it. The JIT decision is based on planner cost, not time. A short OLTP query with a bad estimate can spend more time compiling than running; `EXPLAIN ANALYZE` then shows a `JIT:` section with the compile time." }
 ---
 
+## Mở bài
+
+Cùng một câu `SELECT count(*)` trên bảng lớn: trên server của công ty, `EXPLAIN` có `Gather` và hai worker; trong trình duyệt thì không. Cùng mã PostgreSQL 18, vì sao kế hoạch khác nhau?
+
 ## Ý chính
 
-- Song song: planner thêm nút `Gather` (hoặc `Gather Merge` để giữ thứ tự). Mọi thứ dưới nó chạy trong nhiều tiến trình worker và cả tiến trình chính (leader). Nút "Parallel" (ví dụ `Parallel Seq Scan`) chia trang cho các worker; `Partial Aggregate` + `Finalize Aggregate` gộp hai tầng.
-- Mặc định: `max_parallel_workers_per_gather` 2, `max_parallel_workers` 8, `max_worker_processes` 8.
-- Không có kế hoạch song song khi: `max_parallel_workers_per_gather` = 0; chế độ một người dùng; câu ghi hoặc row lock; câu có thể bị tạm dừng giữa chừng (cursor, vòng `FOR` trong PL/pgSQL); dùng hàm `PARALLEL UNSAFE`; câu chạy bên trong một câu song song khác. Kể cả có kế hoạch, lúc chạy có thể không còn worker rảnh.
-- JIT biên dịch biểu thức và việc tách tuple bằng LLVM. Cần bản build có LLVM. Quyết định theo chi phí: `jit_above_cost` 100.000, `jit_inline_above_cost` và `jit_optimize_above_cost` 500.000.
+Truy vấn song song: planner thêm một nút `Gather` (hoặc `Gather Merge` khi cần giữ thứ tự). Mọi thứ bên dưới nút đó chạy trong nhiều tiến trình worker và cả tiến trình chính (leader). Nút "Parallel" như `Parallel Seq Scan` chia các trang cho các worker; `Partial Aggregate` ở mỗi worker cộng với `Finalize Aggregate` ở trên gộp kết quả theo hai tầng. Mặc định trên server: `max_parallel_workers_per_gather` 2, `max_parallel_workers` 8, `max_worker_processes` 8.
+
+Planner không lập kế hoạch song song khi `max_parallel_workers_per_gather` bằng 0, khi chạy ở chế độ một người dùng, khi câu ghi dữ liệu hoặc khóa dòng, khi câu có thể bị tạm dừng giữa chừng (cursor, vòng `FOR` trong PL/pgSQL), khi câu gọi hàm `PARALLEL UNSAFE`, hoặc khi nó đã chạy bên trong một câu song song khác. Kể cả có kế hoạch song song, lúc chạy có thể không còn worker rảnh.
+
+Nhiều người nghĩ `jit = on` nghĩa là mọi câu đều được biên dịch. Thật ra JIT (biên dịch biểu thức và việc tách tuple bằng LLVM) chỉ dùng khi tổng chi phí ước lượng vượt `jit_above_cost` (100.000); inline và tối ưu thêm từ 500.000. Nó còn cần một bản build có LLVM: `pg_jit_available()` cho biết điều đó.
+
+PGlite chạy cùng mã PostgreSQL 18 nhưng là một backend đơn, không có tiến trình nền, và bản build không có LLVM.
 
 ## Ví dụ
 
-Ví dụ trong docs chính thức của PostgreSQL, mục "Parallel Aggregation" (chưa chạy trong trình duyệt): hình dạng điển hình trên một server có worker, gộp hai tầng:
+Hình dạng mà mục "Parallel Aggregation" của tài liệu chính thức mô tả, áp vào bảng `big` trên một server có worker (không chạy được trong trình duyệt): gộp hai tầng.
 
 ```text
 Finalize Aggregate
@@ -84,20 +95,34 @@ Finalize Aggregate
 
 ## Thực hành
 
-PGlite chạy cùng mã PostgreSQL 18 nhưng là một backend đơn: đọc thiết lập, kiểm JIT, rồi đoán kế hoạch trên PGlite. Song song và JIT thật cần server PostgreSQL thật để thực hành. Kỹ năng chuyên gia: biết khi nào một câu được song song, vì sao không, và khi nào nên tắt JIT cho tải OLTP.
+Đọc ba thiết lập, kiểm tra JIT, rồi đoán kế hoạch của câu đếm trên PGlite. Sau đó là hai câu hỏi về khi nào song song và khi nào JIT bật. Song song và JIT thật cần một server PostgreSQL thật.
+
+## Tóm tắt
+
+- `Gather` đánh dấu chỗ bắt đầu phần song song; các nút Parallel bên dưới chia trang cho worker.
+- Không song song khi số worker cho phép bằng 0, khi câu ghi hoặc khóa dòng, hoặc khi gọi hàm `PARALLEL UNSAFE`.
+- JIT bật theo chi phí (`jit_above_cost`), không theo thời gian, và cần bản build có LLVM.
+- PGlite là backend đơn: không có kế hoạch song song, `pg_jit_available()` trả `false`.
 
 # EN
 
+## Opening
+
+The same `SELECT count(*)` on a big table: on the company server, `EXPLAIN` shows `Gather` and two workers; in the browser it does not. Same PostgreSQL 18 code, so why do the plans differ?
+
 ## Key idea
 
-- Parallel: the planner adds a `Gather` node (or `Gather Merge` to keep order). Everything below it runs in several worker processes and in the main (leader) process too. "Parallel" nodes (for example `Parallel Seq Scan`) split the pages among workers; `Partial Aggregate` + `Finalize Aggregate` combine in two stages.
-- Defaults: `max_parallel_workers_per_gather` 2, `max_parallel_workers` 8, `max_worker_processes` 8.
-- No parallel plan when: `max_parallel_workers_per_gather` = 0; single-user mode; the query writes or locks rows; the query can be suspended halfway (a cursor, a PL/pgSQL `FOR` loop); it uses a `PARALLEL UNSAFE` function; it runs inside another parallel query. Even with a parallel plan, no worker may be free at run time.
-- JIT compiles expressions and tuple deforming with LLVM. It needs an LLVM build. The decision is by cost: `jit_above_cost` 100,000, `jit_inline_above_cost` and `jit_optimize_above_cost` 500,000.
+Parallel query: the planner adds a `Gather` node (or `Gather Merge` when order must be kept). Everything below that node runs in several worker processes and in the main (leader) process too. "Parallel" nodes such as `Parallel Seq Scan` split the pages among the workers; a `Partial Aggregate` in each worker plus a `Finalize Aggregate` on top combine the result in two stages. Server defaults: `max_parallel_workers_per_gather` 2, `max_parallel_workers` 8, `max_worker_processes` 8.
+
+The planner makes no parallel plan when `max_parallel_workers_per_gather` is 0, in single-user mode, when the query writes data or locks rows, when the query can be suspended halfway (a cursor, a PL/pgSQL `FOR` loop), when it calls a `PARALLEL UNSAFE` function, or when it already runs inside another parallel query. Even with a parallel plan, no worker may be free at run time.
+
+Many people think `jit = on` means every query gets compiled. In fact JIT (compiling expressions and tuple deforming with LLVM) is only used when the estimated total cost exceeds `jit_above_cost` (100,000); inlining and extra optimisation start at 500,000. It also needs a build with LLVM: `pg_jit_available()` tells you.
+
+PGlite runs the same PostgreSQL 18 code but as a single backend, with no background processes, and its build has no LLVM.
 
 ## Example
 
-Example from the official PostgreSQL docs, "Parallel Aggregation" section (not run in the browser): the typical shape on a server with workers, aggregating in two stages:
+The shape the "Parallel Aggregation" section of the official docs describes, applied to table `big` on a server with workers (not runnable in the browser): two-stage aggregation.
 
 ```text
 Finalize Aggregate
@@ -109,4 +134,11 @@ Finalize Aggregate
 
 ## Practice
 
-PGlite runs the same PostgreSQL 18 code but as a single backend: read the settings, check JIT, then predict the plan on PGlite. Real parallel query and JIT need a real PostgreSQL server to practise. Expert skill: know when a query goes parallel, why it does not, and when to turn JIT off for an OLTP workload.
+Read three settings, check JIT, then predict the plan of the count on PGlite. Then two questions on when a query goes parallel and when JIT kicks in. Real parallel query and JIT need a real PostgreSQL server.
+
+## Recap
+
+- `Gather` marks where the parallel part starts; the Parallel nodes below it split pages among workers.
+- No parallel plan when the allowed workers are 0, when the query writes or locks rows, or when it calls a `PARALLEL UNSAFE` function.
+- JIT switches on by cost (`jit_above_cost`), not by time, and needs a build with LLVM.
+- PGlite is a single backend: no parallel plan, and `pg_jit_available()` returns `false`.

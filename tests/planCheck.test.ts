@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { loadTicketTemplates } from '../src/content';
 import { runLab, runSandboxed } from '../src/db/run';
 import { compareResults } from '../src/grader';
-import { checkLab, checkPlan, isCreateIndex, planLine, planNodes, slowVerdict } from '../src/planCheck';
+import { checkLab, checkPlan, isCreateIndex, nonSargable, planLine, planNodes, slowVerdict } from '../src/planCheck';
 import { explainError } from '../src/ui/sqlErrors';
 import { applyVariant, variantsOf } from '../src/variants';
 import { freshDb, seededDb } from './helpers';
@@ -180,6 +180,14 @@ describe('slowVerdict (v24, L340): đúng mà chậm', () => {
     expect(slowVerdict(plan(400), plan(1300))).toMatchObject({ block: false });
     expect(slowVerdict(plan(100), plan(900))).toBeUndefined(); // ×9 but tiny
     expect(slowVerdict(plan(1000), plan(2900))).toBeUndefined();
+  });
+  it('nonSargable (v29, L441): \\b là ranh giới từ, cột chỉ mục biểu thức không làm vỡ regex', () => {
+    const seq = (filter: string) => [{ Plan: { 'Node Type': 'Seq Scan', 'Relation Name': 'orders', 'Plan Rows': 10, Filter: filter } }];
+    const facts = { orders: { rows: 10_000, seqCost: 200, lead: ['order_date', 'lower(email'] } };
+    expect(nonSargable(seq("(EXTRACT(month FROM order_date) = '10'::numeric)"), facts)).toBe('orders');
+    expect(nonSargable(seq('(order_dates = 1)'), facts)).toBeUndefined();
+    expect(nonSargable(seq("(lower(email) = 'a'::text)"), facts)).toBe('orders');
+    expect(nonSargable(seq('(qty = 1)'), facts)).toBeUndefined();
   });
   it('kế hoạch rỗng hoặc chi phí 0 (DB giả): không bao giờ chậm; JSON dạng chuỗi đọc được', () => {
     expect(slowVerdict(undefined, plan(5000), { table: 'orders' })).toBeUndefined();

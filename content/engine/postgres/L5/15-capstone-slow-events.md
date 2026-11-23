@@ -8,6 +8,7 @@ title_en: "L5 capstone: the slow events table"
 kind: capstone
 runtime: browser
 minutes: 35
+verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-24" }
 objectives:
   - { vi: "Chẩn đoán một bảng sự kiện nhiều khách hàng từ `pg_stats`, ước lượng và kế hoạch thật", en: "Diagnose a multi-tenant events table from `pg_stats`, estimates and real plans" }
   - { vi: "Chứng minh pruning và index đúng cho câu bảng điều khiển của một khách", en: "Prove pruning and the right index for one tenant's dashboard query" }
@@ -66,6 +67,13 @@ lab:
       check: rows
       ordered: true
       hint: { vi: "`pg_class` + `pg_relation_size`.", en: "`pg_class` + `pg_relation_size`." }
+    - task: { vi: "Bước 6, trang chi tiết. Liệt kê `id, kind, created_at` các sự kiện của khách 7 từ 2026-10-01 tới trước 2026-10-08, sắp theo `created_at`. Câu chỉ được đọc phân vùng tháng 10, qua index.", en: "Step 6, the detail page. List `id, kind, created_at` of tenant 7's events from 2026-10-01 up to, not including, 2026-10-08, ordered by `created_at`. The query may only read the October partition, through an index." }
+      solution: "SELECT id, kind, created_at FROM events WHERE tenant_id = 7 AND created_at >= '2026-10-01' AND created_at < '2026-10-08' ORDER BY created_at"
+      check: rows
+      ordered: true
+      perf: { table: events_2026_10 }
+      slow: "SELECT id, kind, created_at FROM events WHERE tenant_id = 7 AND created_at::date BETWEEN '2026-10-01' AND '2026-10-07' ORDER BY created_at"
+      hint: { vi: "So sánh `created_at` trực tiếp với hai mốc; ép kiểu khóa phân vùng (`created_at::date`) làm mất pruning, nên câu đọc cả ba phân vùng.", en: "Compare `created_at` directly with two bounds; casting the partition key (`created_at::date`) loses pruning, so the query reads all three partitions." }
 predict:
   sql: "SELECT count(*) FROM events WHERE tenant_id = 7 AND created_at >= '2026-10-01' AND created_at < '2026-10-08'"
   q: { vi: "Trước bước 3: câu bảng điều khiển sẽ được đọc thế nào?", en: "Before step 3: how will the dashboard query be read?" }
@@ -99,6 +107,9 @@ quiz:
     answer: 0
     why: { vi: "Thứ tự cột nghe như không quan trọng vì cả hai index chứa đúng hai cột, nhưng index sắp theo cột đầu trước. Luật cột đầu: bằng trên các cột đầu, khoảng trên cột tiếp theo. Với (created_at, tenant_id), câu phải quét cả tuần của mọi khách rồi mới lọc khách 7.", en: "Column order sounds irrelevant because both indexes hold the same two columns, but an index sorts by its first column first. The leading-column rule: equality on the leading columns, a range on the next one. With (created_at, tenant_id), the query would scan a whole week for every tenant before filtering tenant 7." }
 ---
+## Mở bài
+
+Người dùng báo bảng điều khiển của từng khách chậm, và ước lượng số dòng trong kế hoạch lệch xa số thật. Việc của bạn là chẩn đoán từ số liệu thật của bảng `events`, chứng minh bằng kế hoạch, rồi đề xuất có lý do.
 
 ## Ý chính
 
@@ -107,7 +118,7 @@ Một hệ thống nhiều khách hàng (60 khách, mỗi khách một gói cố
 - bảng điều khiển của một khách: "khách X trong 7 ngày qua";
 - báo cáo toàn hệ thống: "mọi sự kiện trong một ngày".
 
-Người dùng báo bảng điều khiển chậm và ước lượng số dòng sai. Nhiệm vụ: chẩn đoán từ số liệu thật, không đoán mò. Năm bước dùng lại cả L4 và L5: thống kê cột, thống kê mở rộng, pruning, luật cột đầu của B-tree, BRIN và chi phí index.
+Sáu bước dùng lại cả L4 và L5: thống kê cột, thống kê mở rộng, pruning, luật cột đầu của B-tree, BRIN, chi phí index. Bước 6 có thanh hiệu năng: câu trả đúng dòng mà làm mất pruning hay bỏ index vẫn chưa qua.
 
 ## Ví dụ
 
@@ -129,9 +140,20 @@ events_2026_09_tenant_id_created_at_idx   26 pages   (B-tree)
 
 ## Thực hành
 
-Năm bước có chấm, một câu đoán kế hoạch trước bước 3, và ba câu kết luận. Kỹ năng chuyên gia: đi từ triệu chứng ("bảng điều khiển chậm") tới bằng chứng (thống kê, ước lượng, kế hoạch, kích thước) và một đề xuất có lý do: thống kê phụ thuộc cho cặp khách/gói, giữ index (khách, thời gian) cho bảng điều khiển, BRIN cho báo cáo theo thời gian, phân vùng tháng để pruning và xóa dữ liệu cũ.
+Sáu bước có chấm, một câu đoán kế hoạch trước bước 3, và ba câu kết luận. Đi từ triệu chứng tới bằng chứng (thống kê, ước lượng, kế hoạch, kích thước) và một đề xuất: thống kê phụ thuộc cho cặp khách/gói, index (khách, thời gian) cho bảng điều khiển, BRIN cho báo cáo theo thời gian, phân vùng tháng để pruning và xóa dữ liệu cũ.
+
+## Tóm tắt
+
+- Ước lượng sai khi hai cột phụ thuộc nhau: thống kê mở rộng `dependencies` sửa được, ANALYZE thường thì không.
+- Điều kiện khoảng trên khóa phân vùng cho pruning; ép kiểu khóa đó làm câu đọc mọi phân vùng.
+- Index nhiều cột: điều kiện bằng ở cột đầu, điều kiện khoảng ở cột sau.
+- BRIN rất nhỏ và hợp cột tăng dần theo thứ tự ghi (correlation gần 1).
 
 # EN
+
+## Opening
+
+Users report that each tenant's dashboard is slow, and the row estimates in the plan are far from the real counts. Your job is to diagnose from the real numbers of table `events`, prove it with plans, then make a reasoned proposal.
 
 ## Key idea
 
@@ -140,7 +162,7 @@ A multi-tenant system (60 tenants, each on a fixed plan tier) writes events into
 - one tenant's dashboard: "tenant X over the last 7 days";
 - the system-wide report: "every event on one day".
 
-Users report a slow dashboard and the row estimates look wrong. The task: diagnose from real numbers, not guesses. The five steps reuse both L4 and L5: column statistics, extended statistics, pruning, the B-tree leading-column rule, BRIN and index cost.
+The six steps reuse both L4 and L5: column statistics, extended statistics, pruning, the B-tree leading-column rule, BRIN, index cost. Step 6 has a performance bar: a query that returns the right rows but loses pruning or drops the index does not pass yet.
 
 ## Example
 
@@ -162,4 +184,11 @@ events_2026_09_tenant_id_created_at_idx   26 pages   (B-tree)
 
 ## Practice
 
-Five graded steps, one plan prediction before step 3, and three conclusion questions. Expert skill: go from a symptom ("the dashboard is slow") to evidence (statistics, estimates, plans, sizes) and a reasoned proposal: dependency statistics for the tenant/tier pair, keep the (tenant, time) index for the dashboard, BRIN for time-based reports, monthly partitions for pruning and dropping old data.
+Six graded steps, one plan prediction before step 3, and three conclusion questions. Go from the symptom to evidence (statistics, estimates, plans, sizes) and a proposal: dependency statistics for the tenant/tier pair, the (tenant, time) index for the dashboard, BRIN for time-based reports, monthly partitions for pruning and dropping old data.
+
+## Recap
+
+- Estimates go wrong when two columns depend on each other: `dependencies` extended statistics fix that, a plain ANALYZE does not.
+- A range on the partition key gives pruning; casting that key makes the query read every partition.
+- A multi-column index: equality on the leading column, the range on the next one.
+- BRIN is tiny and suits a column that grows in write order (correlation near 1).
