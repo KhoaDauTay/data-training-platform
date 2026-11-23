@@ -11,6 +11,8 @@ minutes: 25
 objectives:
   - vi: Tạo bảng một-bảng có GSI đảo, rồi phục vụ năm mẫu truy cập, mỗi mẫu đúng một request và không Scan.
     en: Create a single table with an inverted GSI, then serve five access patterns, each with exactly one request and no Scan.
+  - vi: Giải thích vì sao một câu trả đúng item mà đọc bằng Scan vẫn chưa đạt.
+    en: Explain why a request that returns the right items through a Scan still does not pass.
 requires: [e-dy-l3-06, e-dy-l3-09, e-dy-l3-10]
 sources:
   - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-general-nosql-design.html
@@ -188,15 +190,30 @@ quiz:
       en: It sounds right if a GSI seems to be the only way to add an access pattern. A pattern the table's own keys already serve (here the hierarchical sort key) needs no index; every GSI has its own projection and costs extra WCU whenever its items change.
 ---
 
+## Mở bài
+
+Tiệm trà mở bán online với năm trang: hồ sơ khách, lịch sử đơn, chi tiết đơn, đơn theo sản phẩm, cửa hàng theo khu vực. Đội của bạn chỉ có một bảng. Hãy chứng minh mỗi trang là đúng một request đọc theo khóa.
+
 ## Ý chính
 
 Bài kiểm tra cấp L3 đi trọn vòng thiết kế: tạo bảng một-bảng có GSI đảo, rồi chứng minh mỗi mẫu truy cập là đúng **một** `GetItem` hoặc `Query`, không có Scan nào.
 
 ## Thực hành
 
-Bước 1 được chấm bằng `DescribeTable` trên bảng mới `ShopV2`. Các bước sau chạy trên bảng `Shop` đã có dữ liệu: 5 sản phẩm, 4 khách, 8 đơn và dòng hàng, 6 cửa hàng.
+Bước 1 được chấm bằng `DescribeTable` trên bảng mới `ShopV2`. Các bước sau chạy trên bảng `Shop` đã có dữ liệu: 5 sản phẩm, 4 khách, 8 đơn và dòng hàng, 6 cửa hàng. Các bước đọc có thanh chi phí: một Scan cho cùng item vẫn không đạt.
+
+## Tóm tắt
+
+- Liệt kê mẫu truy cập trước, rồi chọn khóa và index cho từng mẫu.
+- Item collection thay cho JOIN; tiền tố sort key chọn loại item.
+- GSI khóa đảo đọc chiều ngược của quan hệ nhiều-nhiều.
+- Sort key phân cấp đọc từng cấp bằng `begins_with`.
 
 # EN
+
+## Opening
+
+The tea shop opens online with five pages: customer profile, order history, order details, orders by product, stores by area. Your team has a single table. Show that each page is exactly one read request by key.
 
 ## Key idea
 
@@ -204,4 +221,11 @@ The level L3 check runs the full design loop: create a single table with an inve
 
 ## Practice
 
-Step 1 is graded with `DescribeTable` on the new table `ShopV2`. The other steps run on table `Shop`, which already holds data: 5 products, 4 customers, 8 orders with their lines, and 6 stores.
+Step 1 is graded with `DescribeTable` on the new table `ShopV2`. The other steps run on table `Shop`, which already holds data: 5 products, 4 customers, 8 orders with their lines, and 6 stores. The read steps have a cost bar: a Scan that gives the same items still does not pass.
+
+## Recap
+
+- List the access patterns first, then choose the keys and indexes for each.
+- An item collection replaces a JOIN; a sort key prefix picks the item type.
+- A GSI with swapped keys reads the reverse side of a many-to-many relation.
+- A hierarchical sort key reads each level with `begins_with`.

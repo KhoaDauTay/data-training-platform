@@ -11,6 +11,8 @@ minutes: 10
 objectives:
   - vi: Ghép nhiều cấp vào sort key (`VN#DA-NANG#HAI-CHAU#S-01`) để đọc ở bất kỳ cấp nào bằng `begins_with`.
     en: Join several levels into a sort key (`VN#DA-NANG#HAI-CHAU#S-01`) to read at any level with `begins_with`.
+  - vi: Xếp cấp từ rộng tới hẹp và kết thúc tiền tố bằng dấu phân cách.
+    en: Order the levels from broad to narrow and end each prefix with the separator.
 requires: [e-dy-l3-08]
 sources:
   - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-sort-keys.html
@@ -90,54 +92,208 @@ lab:
       hint:
         vi: Thêm một cấp vào tiền tố, kết thúc bằng `#` để không khớp nhầm một mã dài hơn.
         en: Add one more level to the prefix, ending with `#` so it never matches a longer code by mistake.
+    - task:
+        vi: Liệt kê mọi cửa hàng ở Huế (mã tỉnh `HUE`). Bước này có thanh chi phí.
+        en: List every store in Hue (city code `HUE`). This step has a cost bar.
+      solution: |
+        {"op": "Query", "input": {"TableName": "Shop",
+          "KeyConditionExpression": "PK = :pk AND begins_with(SK, :loc)",
+          "ExpressionAttributeValues": {":pk": {"S": "STORE"}, ":loc": {"S": "VN#HUE#"}}}}
+      check: doc
+      perf: { table: Shop }
+      slow: |
+        {"op":"Scan","input":{"TableName":"Shop","ExpressionAttributeValues":{":pk":{"S":"STORE"},":loc":{"S":"VN#HUE#"}},"FilterExpression":"(PK = :pk AND begins_with(SK, :loc))"}}
+      ordered: true
+      expect: { Count: 1, ScannedCount: 1 }
+      hint:
+        vi: Cùng mẫu với bước 1, đổi mã tỉnh.
+        en: The same pattern as step 1 with another city code.
+quiz:
+  - q:
+      vi: Sort key là `VN#DA-NANG#HAI-CHAU#S-01`. Một ngày ứng dụng cần "mọi cửa hàng ở quận Hải Châu, bất kể tỉnh". Query `begins_with` có làm được không?
+      en: The sort key is `VN#DA-NANG#HAI-CHAU#S-01`. One day the app needs "every store in Hai Chau district, whatever the city". Can a `begins_with` Query do it?
+    options:
+      - { vi: "Có, dùng `contains(SK, :d)` trong `KeyConditionExpression`", en: "Yes, with `contains(SK, :d)` in the `KeyConditionExpression`" }
+      - { vi: "Không: tiền tố chỉ đọc được từ cấp đầu trở xuống; cần một GSI có khóa khác", en: "No: a prefix only reads from the first level down; it needs a GSI keyed differently" }
+      - { vi: "Có, `begins_with(SK, \"HAI-CHAU\")`", en: "Yes, `begins_with(SK, \"HAI-CHAU\")`" }
+    answer: 1
+    trap: 0
+    why:
+      vi: Nghe hợp lý vì `contains` có trong DynamoDB, nhưng nó chỉ dùng được trong bộ lọc, không trong điều kiện khóa. Sort key phân cấp chỉ trả lời câu hỏi theo đúng thứ tự cấp đã ghép, từ trái sang.
+      en: It sounds right because `contains` exists in DynamoDB, but it only works in a filter, never in a key condition. A hierarchical sort key only answers questions in the order its levels were joined, from the left.
+  - q:
+      vi: Vì sao nên kết thúc tiền tố bằng `#`, như `VN#HUE#`?
+      en: Why should a prefix end with `#`, as in `VN#HUE#`?
+    options:
+      - { vi: "Để `VN#HUE` không khớp nhầm một mã dài hơn như `VN#HUE-SOUTH`", en: "So that `VN#HUE` never matches a longer code such as `VN#HUE-SOUTH`" }
+      - { vi: "DynamoDB bắt buộc", en: "DynamoDB requires it" }
+      - { vi: "Để Query nhanh hơn", en: "To make the Query faster" }
+    answer: 0
+    why:
+      vi: "`begins_with` so chuỗi theo byte. Dấu phân cách cuối đánh dấu hết một cấp, nên chỉ đúng cấp đó khớp."
+      en: "`begins_with` compares strings by bytes. The closing separator marks the end of a level, so only that level matches."
 ---
+
+## Mở bài
+
+Chuỗi trà có cửa hàng ở nhiều tỉnh, mỗi tỉnh nhiều quận. Có trang xem cả nước, trang xem một tỉnh, trang xem một quận. Ba trang, mà bạn muốn mỗi trang chỉ là một Query trên cùng một khóa.
 
 ## Ý chính
 
-AWS gợi ý ghép các cấp vào sort key theo thứ tự từ rộng tới hẹp: `[country]#[region]#[city]#[store]`. Khi đó mỗi cấp là một tiền tố, và `begins_with` đọc được đúng cấp đó bằng một Query.
+AWS gợi ý ghép các cấp vào sort key theo thứ tự từ rộng tới hẹp: `[country]#[region]#[city]#[store]`. Khi đó mỗi cấp là một tiền tố, và `begins_with` đọc được đúng cấp đó bằng một Query: `VN#` là cả nước, `VN#DA-NANG#` là một tỉnh, `VN#DA-NANG#HAI-CHAU#` là một quận. Sort key sắp theo byte, nên các cửa hàng cùng tỉnh, cùng quận nằm liền nhau.
 
-- `VN#` - cả nước;
-- `VN#DA-NANG#` - một tỉnh;
-- `VN#DA-NANG#HAI-CHAU#` - một quận.
+Kết thúc tiền tố bằng `#` để `VN#HUE` không khớp nhầm `VN#HUE-SOUTH`. Cùng mẫu này dùng cho phiên bản: bản hiện tại ở `v0_…`, bản cũ ở `v1_…`, `v2_…`; `begins_with(SK, "v0_")` lấy bản mới nhất của mọi phần.
 
-Kết thúc tiền tố bằng `#` để `VN#HUE` không khớp nhầm `VN#HUE-SOUTH`.
+Nhiều người nghĩ sort key phân cấp trả lời được mọi câu hỏi về vị trí. Thật ra nó chỉ đọc từ cấp đầu trở xuống: "mọi quận Hải Châu bất kể tỉnh" không phải một tiền tố, và `contains` không dùng được trong điều kiện khóa. Câu hỏi theo thứ tự khác cần một GSI khác.
+
+Ở đây mọi cửa hàng dùng chung `PK = STORE`. Với vài chục cửa hàng thì ổn; với hàng triệu item, một giá trị partition key sẽ thành điểm nóng, nên ta tách theo quốc gia hoặc tỉnh (`PK = STORE#VN`).
+
+## Cú pháp
+
+```text
+SK = <level1>#<level2>#<level3>#<id>
+Query  PK = :pk AND begins_with(SK, "<level1>#")
+Query  PK = :pk AND begins_with(SK, "<level1>#<level2>#")
+Query  PK = :pk AND SK BETWEEN :from AND :to
+```
+
+- Cấp rộng đứng trước, cấp hẹp đứng sau.
+- Mỗi tiền tố kết thúc bằng dấu phân cách.
+- `begins_with` chỉ dùng trên sort key, không trên partition key.
 
 ## Ví dụ
 
-Cùng mẫu này dùng cho phiên bản: lưu bản hiện tại ở `v0_…` và bản cũ ở `v1_…`, `v2_…`. Query `begins_with(SK, "v0_")` lấy bản mới nhất của mọi phần.
+Mọi cửa hàng trong cả nước:
 
-```text
-SK = v0_PROFILE   current
-SK = v1_PROFILE   older
-SK = v2_PROFILE   older
+```json
+{"op": "Query", "input": {"TableName": "Shop", "KeyConditionExpression": "PK = :pk AND begins_with(SK, :loc)", "ExpressionAttributeValues": {":pk": {"S": "STORE"}, ":loc": {"S": "VN#"}}}}
 ```
+
+Sáu cửa hàng, đã xếp theo tỉnh rồi quận: Đà Nẵng trước, Huế, rồi Quảng Nam.
+
+Chỉ quận Sơn Trà của Đà Nẵng:
+
+```json
+{"op": "Query", "input": {"TableName": "Shop", "KeyConditionExpression": "PK = :pk AND begins_with(SK, :loc)", "ExpressionAttributeValues": {":pk": {"S": "STORE"}, ":loc": {"S": "VN#DA-NANG#SON-TRA#"}}}}
+```
+
+Một cửa hàng, `S-03`, `ScannedCount` 1.
+
+## Lỗi hay gặp
+
+Tìm quận bằng bộ lọc trên cả bảng:
+
+```json
+// WRONG: reads the whole table to find one district
+{"op": "Scan", "input": {"TableName": "Shop", "FilterExpression": "contains(SK, :d)", "ExpressionAttributeValues": {":d": {"S": "#HAI-CHAU#"}}}}
+```
+
+```json
+// FIX: the district is a prefix of the sort key
+{"op": "Query", "input": {"TableName": "Shop", "KeyConditionExpression": "PK = :pk AND begins_with(SK, :loc)", "ExpressionAttributeValues": {":pk": {"S": "STORE"}, ":loc": {"S": "VN#DA-NANG#HAI-CHAU#"}}}}
+```
+
+Cùng hai cửa hàng, nhưng câu sai đọc cả bảng (38 item), câu sửa đọc 2.
+
+Đặt `begins_with` lên partition key:
+
+```json
+// ERROR ValidationException
+{"op": "Query", "input": {"TableName": "Shop", "KeyConditionExpression": "begins_with(PK, :p)", "ExpressionAttributeValues": {":p": {"S": "STORE"}}}}
+```
+
+Partition key chỉ nhận phép bằng; mọi điều kiện tiền tố hay khoảng nằm trên sort key.
 
 ## Thực hành
 
-Ở đây mọi cửa hàng dùng chung một `PK = STORE`. Với vài chục cửa hàng thì ổn; với hàng triệu item, một partition key duy nhất sẽ thành điểm nóng, nên ta tách theo quốc gia hoặc tỉnh (`PK = STORE#VN`).
+Ba bước trên `PK = STORE`: mọi cửa hàng ở một tỉnh, chỉ một quận, rồi một tỉnh khác. Mọi bước có thanh chi phí.
+
+## Tóm tắt
+
+- Ghép cấp vào sort key từ rộng tới hẹp, mỗi cấp là một tiền tố.
+- `begins_with` đọc đúng một cấp bằng một Query.
+- Kết thúc tiền tố bằng dấu phân cách để không khớp nhầm.
+- Câu hỏi không bắt đầu từ cấp đầu cần một GSI khác.
 
 # EN
 
+## Opening
+
+The tea chain has stores in several cities, each with several districts. There is a page for the whole country, one for a city, one for a district. Three pages, and you want each to be one Query on the same key.
+
 ## Key idea
 
-AWS suggests joining the levels into the sort key from broad to narrow: `[country]#[region]#[city]#[store]`. Each level is then a prefix, and `begins_with` reads exactly that level with one Query.
+AWS suggests joining the levels into the sort key from broad to narrow: `[country]#[region]#[city]#[store]`. Each level is then a prefix, and `begins_with` reads exactly that level with one Query: `VN#` is the whole country, `VN#DA-NANG#` one city, `VN#DA-NANG#HAI-CHAU#` one district. The sort key sorts by bytes, so stores of the same city and district sit next to each other.
 
-- `VN#` - the whole country;
-- `VN#DA-NANG#` - one city;
-- `VN#DA-NANG#HAI-CHAU#` - one district.
+End a prefix with `#` so that `VN#HUE` never matches `VN#HUE-SOUTH`. The same pattern works for versions: the current version at `v0_…`, older ones at `v1_…`, `v2_…`; `begins_with(SK, "v0_")` gets the latest version of every part.
 
-End a prefix with `#` so that `VN#HUE` never matches `VN#HUE-SOUTH` by mistake.
+Many people think a hierarchical sort key answers every location question. In fact it reads only from the first level down: "every Hai Chau district whatever the city" is not a prefix, and `contains` cannot be used in a key condition. A question in another order needs another GSI.
+
+Here every store shares `PK = STORE`. For a few dozen stores that is fine; with millions of items one partition key value becomes a hot spot, so you split by country or city (`PK = STORE#VN`).
+
+## Syntax
+
+```text
+SK = <level1>#<level2>#<level3>#<id>
+Query  PK = :pk AND begins_with(SK, "<level1>#")
+Query  PK = :pk AND begins_with(SK, "<level1>#<level2>#")
+Query  PK = :pk AND SK BETWEEN :from AND :to
+```
+
+- Broad levels first, narrow levels after.
+- Each prefix ends with the separator.
+- `begins_with` works only on the sort key, never on the partition key.
 
 ## Example
 
-The same pattern works for versions: keep the current version at `v0_…` and older ones at `v1_…`, `v2_…`. A Query with `begins_with(SK, "v0_")` gets the latest version of every part.
+Every store in the country:
 
-```text
-SK = v0_PROFILE   current
-SK = v1_PROFILE   older
-SK = v2_PROFILE   older
+```json
+{"op": "Query", "input": {"TableName": "Shop", "KeyConditionExpression": "PK = :pk AND begins_with(SK, :loc)", "ExpressionAttributeValues": {":pk": {"S": "STORE"}, ":loc": {"S": "VN#"}}}}
 ```
+
+Six stores, already ordered by city and then district: Da Nang first, then Hue, then Quang Nam.
+
+Only the Son Tra district of Da Nang:
+
+```json
+{"op": "Query", "input": {"TableName": "Shop", "KeyConditionExpression": "PK = :pk AND begins_with(SK, :loc)", "ExpressionAttributeValues": {":pk": {"S": "STORE"}, ":loc": {"S": "VN#DA-NANG#SON-TRA#"}}}}
+```
+
+One store, `S-03`, `ScannedCount` 1.
+
+## Common mistakes
+
+Finding a district with a filter over the whole table:
+
+```json
+// WRONG: reads the whole table to find one district
+{"op": "Scan", "input": {"TableName": "Shop", "FilterExpression": "contains(SK, :d)", "ExpressionAttributeValues": {":d": {"S": "#HAI-CHAU#"}}}}
+```
+
+```json
+// FIX: the district is a prefix of the sort key
+{"op": "Query", "input": {"TableName": "Shop", "KeyConditionExpression": "PK = :pk AND begins_with(SK, :loc)", "ExpressionAttributeValues": {":pk": {"S": "STORE"}, ":loc": {"S": "VN#DA-NANG#HAI-CHAU#"}}}}
+```
+
+The same two stores, but the wrong one reads the whole table (38 items), the fix reads 2.
+
+Putting `begins_with` on the partition key:
+
+```json
+// ERROR ValidationException
+{"op": "Query", "input": {"TableName": "Shop", "KeyConditionExpression": "begins_with(PK, :p)", "ExpressionAttributeValues": {":p": {"S": "STORE"}}}}
+```
+
+The partition key takes only equality; every prefix or range condition goes on the sort key.
 
 ## Practice
 
-Here every store shares one `PK = STORE`. For a few dozen stores that is fine; with millions of items one partition key value becomes a hot spot, so you split by country or city (`PK = STORE#VN`).
+Three steps on `PK = STORE`: every store in one city, only one district, then another city. Every step has a cost bar.
+
+## Recap
+
+- Join the levels into the sort key from broad to narrow; each level is a prefix.
+- `begins_with` reads exactly one level with one Query.
+- End each prefix with the separator so it never matches by mistake.
+- A question that does not start at the first level needs another GSI.

@@ -21,6 +21,14 @@ sources:
   - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/LSI.html
   - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/ServiceQuotas.html
   - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Constraints.html
+demo_setup: |
+  {"tables": [{"TableName": "Orders", "BillingMode": "PAY_PER_REQUEST", "KeySchema": [{"AttributeName": "customerId", "KeyType": "HASH"}, {"AttributeName": "orderId", "KeyType": "RANGE"}], "AttributeDefinitions": [{"AttributeName": "customerId", "AttributeType": "S"}, {"AttributeName": "orderId", "AttributeType": "S"}, {"AttributeName": "status", "AttributeType": "S"}, {"AttributeName": "total", "AttributeType": "N"}], "LocalSecondaryIndexes": [{"IndexName": "byTotal", "KeySchema": [{"AttributeName": "customerId", "KeyType": "HASH"}, {"AttributeName": "total", "KeyType": "RANGE"}], "Projection": {"ProjectionType": "ALL"}}], "GlobalSecondaryIndexes": [{"IndexName": "byStatus", "KeySchema": [{"AttributeName": "status", "KeyType": "HASH"}, {"AttributeName": "orderId", "KeyType": "RANGE"}], "Projection": {"ProjectionType": "KEYS_ONLY"}}]}],
+   "items": {"Orders": [
+    {"customerId": "C-01", "orderId": "2026-09-17#O-103", "status": "SHIPPED", "total": 800000, "city": "Hue"},
+    {"customerId": "C-01", "orderId": "2026-10-19#O-104", "status": "NEW", "total": 120000, "city": "Hue"},
+    {"customerId": "C-02", "orderId": "2026-10-03#O-108", "status": "NEW", "total": 820000, "city": "Da Nang"},
+    {"customerId": "C-02", "orderId": "2026-08-26#O-106", "status": "PAID", "total": 910000, "city": "Da Nang"}
+  ]}}
 quiz:
   - q:
       vi: Bảng đã chạy một năm. Bạn cần tìm đơn theo `status`. Thêm loại index nào được?
@@ -33,9 +41,10 @@ quiz:
       - vi: Không thêm được index nào sau khi tạo bảng.
         en: No index can be added after the table is created.
     answer: 1
+    trap: 0
     why:
-      vi: GSI thêm hoặc xóa lúc nào cũng được và có partition key tùy ý (ở đây `status`). LSI chỉ tạo khi tạo bảng và dùng cùng partition key.
-      en: A GSI can be added or removed at any time and can use any partition key (here `status`). An LSI is created only with the table and keeps the same partition key.
+      vi: Nghe hợp lý vì LSI dùng chung throughput với bảng, nhưng điều đó không cứu được ở đây. GSI thêm hoặc xóa lúc nào cũng được và có partition key tùy ý (ở đây `status`). LSI chỉ tạo khi tạo bảng và dùng cùng partition key.
+      en: It sounds right because an LSI shares the table's throughput, but that does not help here. A GSI can be added or removed at any time and can use any partition key (here `status`). An LSI is created only with the table and keeps the same partition key.
   - q:
       vi: Một GSI có projection `KEYS_ONLY`. Query trên GSI đó xin thêm thuộc tính `city`. Được gì?
       en: A GSI has a `KEYS_ONLY` projection. A Query on it asks for the attribute `city`. What comes back?
@@ -51,75 +60,152 @@ quiz:
       vi: GSI không tự đọc ngược về bảng gốc. LSI thì có thể lấy thuộc tính chưa project từ bảng (tốn thêm lượt đọc).
       en: A GSI never reads back from the base table. An LSI can fetch unprojected attributes from the table (at an extra read cost).
 ---
+## Mở bài
+
+Bảng `Orders` trả lời tốt "đơn của một khách theo thời gian". Giờ kho hỏi "mọi đơn đang `NEW`", còn kế toán hỏi "đơn lớn nhất của khách này". Bạn cần thêm cách đọc mà không Scan cả bảng.
 
 ## Ý chính
 
-Một index (chỉ mục) phụ là một bản sao có khóa khác của một phần dữ liệu, để thêm mẫu truy cập mà không Scan.
+Index phụ là một bản sao có khóa khác của một phần dữ liệu, để thêm mẫu truy cập mà không Scan. DynamoDB có hai loại, khác nhau ở partition key và ở lúc tạo.
 
-**GSI (global secondary index)**:
+GSI (global secondary index): partition key và sort key tùy ý, không cần duy nhất; thêm hoặc xóa bất cứ lúc nào; cập nhật bất đồng bộ nên chỉ đọc eventually consistent; có throughput riêng, và mỗi lần ghi bảng làm đổi index thì tốn thêm WCU cho index; chỉ trả thuộc tính đã project.
 
-- partition key và sort key tùy ý, không cần duy nhất;
-- thêm hoặc xóa **bất cứ lúc nào**;
-- cập nhật **bất đồng bộ**, chỉ đọc **eventually consistent**;
-- throughput riêng; mỗi lần ghi làm đổi index tốn thêm WCU;
-- chỉ trả thuộc tính đã project.
+LSI (local secondary index): cùng partition key với bảng, chỉ khác sort key; chỉ tạo cùng lúc tạo bảng; đọc strongly consistent được; dùng chung throughput với bảng; khi bảng có LSI, mỗi item collection tối đa 10 GB. Hạn mức: 5 LSI mỗi bảng, 20 GSI mỗi bảng (mặc định, xin tăng được), tổng 100 thuộc tính `INCLUDE` trên mọi index của bảng.
 
-**LSI (local secondary index)**:
+Nhiều người nghĩ GSI tự đọc ngược về bảng khi thiếu thuộc tính. Thật ra GSI chỉ có những gì đã project; muốn thêm thì project thêm hoặc `GetItem` bảng gốc. Chỉ LSI mới lấy được thuộc tính chưa project từ bảng (tốn thêm lượt đọc).
 
-- **cùng partition key** với bảng, chỉ khác sort key;
-- chỉ tạo **cùng lúc tạo bảng**;
-- đọc strongly consistent được; dùng chung throughput với bảng;
-- mỗi giá trị partition key (item collection) tối đa **10 GB** khi bảng có LSI.
+## Cú pháp
 
-Hạn mức: 5 LSI mỗi bảng; 20 GSI mỗi bảng (mặc định, xin tăng được); tổng 100 thuộc tính `INCLUDE` trên mọi index của bảng.
+```text
+"LocalSecondaryIndexes":  [{"IndexName": "<name>", "KeySchema": [<table HASH>, <other RANGE>], "Projection": {...}}]
+"GlobalSecondaryIndexes": [{"IndexName": "<name>", "KeySchema": [<any HASH>, [<any RANGE>]], "Projection": {...}}]
+"Projection": {"ProjectionType": "KEYS_ONLY" | "ALL" | "INCLUDE", ["NonKeyAttributes": ["<attr>", ...]]}
+```
+
+- `KEYS_ONLY`: khóa bảng và khóa index; nhỏ nhất, rẻ nhất khi ghi.
+- `INCLUDE`: thêm vài thuộc tính trong `NonKeyAttributes`.
+- `ALL`: cả item; đọc gì cũng có, nhưng mỗi item được lưu và ghi thêm một bản đầy đủ.
+- Query một index: thêm `"IndexName"`, điều kiện dùng khóa của index.
 
 ## Ví dụ
 
-Projection quyết định index mang theo gì:
+Bảng nhỏ có LSI `byTotal` và GSI `byStatus` (`KEYS_ONLY`), chạy bằng dynoxide. Mọi đơn `NEW` qua GSI:
 
-- `KEYS_ONLY`: khóa của bảng và khóa của index. Nhỏ nhất, rẻ nhất khi ghi.
-- `INCLUDE`: thêm vài thuộc tính bạn chỉ định trong `NonKeyAttributes`.
-- `ALL`: cả item. Đọc được mọi thuộc tính, nhưng mỗi item được lưu và ghi thêm một bản đầy đủ trong index.
+```json
+{"op": "Query", "input": {"TableName": "Orders", "IndexName": "byStatus", "KeyConditionExpression": "#s = :s", "ExpressionAttributeNames": {"#s": "status"}, "ExpressionAttributeValues": {":s": {"S": "NEW"}}}}
+```
 
-Bấm "Tiếp" trên sơ đồ: một lần ghi vào bảng `Orders`, rồi bản chiếu sang GSI `byStatus` tới sau một chút.
+Hai đơn, mỗi item chỉ có `customerId`, `orderId`, `status`: không có `total` hay `city` vì projection là `KEYS_ONLY`.
 
-## Thực hành
+Đơn lớn nhất của `C-01` qua LSI, đọc strong:
 
-Chọn projection từ câu hỏi: nếu trang danh sách chỉ cần `orderId` và `total`, dùng `INCLUDE ["total"]` thay vì `ALL`.
+```json
+{"op": "Query", "input": {"TableName": "Orders", "IndexName": "byTotal", "KeyConditionExpression": "customerId = :c", "ExpressionAttributeValues": {":c": {"S": "C-01"}}, "ScanIndexForward": false, "Limit": 1, "ConsistentRead": true}}
+```
+
+LSI cho phép `ConsistentRead`; item trả về có đủ thuộc tính vì `byTotal` project `ALL`.
+
+## Lỗi hay gặp
+
+Xin đọc strong trên GSI:
+
+```json
+// ERROR ValidationException
+{"op": "Query", "input": {"TableName": "Orders", "IndexName": "byStatus", "KeyConditionExpression": "#s = :s", "ExpressionAttributeNames": {"#s": "status"}, "ExpressionAttributeValues": {":s": {"S": "NEW"}}, "ConsistentRead": true}}
+```
+
+GSI cập nhật bất đồng bộ nên DynamoDB từ chối. Cần đọc strong thì đọc bảng (hoặc LSI).
+
+Chọn `ALL` cho mọi index "cho chắc":
+
+```text
+// WRONG: the list page needs orderId and total, the index copies whole items
+"Projection": {"ProjectionType": "ALL"}
+// FIX: carry only what the question reads
+"Projection": {"ProjectionType": "INCLUDE", "NonKeyAttributes": ["total"]}
+```
+
+Với `ALL`, mỗi lần ghi đổi item phải ghi lại cả item vào index: lưu trữ và WCU của index tăng theo cỡ item, không theo câu hỏi.
+
+## Tóm tắt
+
+- GSI: khóa tùy ý, thêm lúc nào cũng được, chỉ đọc eventually consistent, throughput riêng.
+- LSI: cùng partition key, chỉ tạo cùng bảng, đọc strong được, item collection tối đa 10 GB.
+- GSI chỉ trả thuộc tính đã project; chọn projection theo câu hỏi sẽ đọc index.
+- Mỗi lần ghi làm đổi index tốn thêm capacity cho index đó.
 
 # EN
 
+## Opening
+
+Table `Orders` answers "a customer's orders over time" well. Now the warehouse asks for "every `NEW` order", and accounting asks for "this customer's largest order". You need more ways to read without scanning the whole table.
+
 ## Key idea
 
-A secondary index is a copy of part of the data under a different key, so you can add an access pattern without a Scan.
+A secondary index is a copy of part of the data under a different key, so you can add an access pattern without a Scan. DynamoDB has two kinds, which differ in partition key and in when they are created.
 
-**GSI (global secondary index)**:
+GSI (global secondary index): any partition key and sort key, not required to be unique; added or removed at any time; updated asynchronously, so only eventually consistent reads; its own throughput, and every table write that changes the index costs extra WCU for the index; returns only projected attributes.
 
-- any partition key and sort key, not required to be unique;
-- added or removed **at any time**;
-- updated **asynchronously**, so only **eventually consistent** reads;
-- its own throughput; every table write that changes the index costs extra WCU for the index;
-- returns only projected attributes.
+LSI (local secondary index): same partition key as the table, only the sort key differs; created only together with the table; supports strongly consistent reads; shares the table's throughput; when a table has an LSI, each item collection is capped at 10 GB. Quotas: 5 LSIs per table, 20 GSIs per table (default, can be raised), 100 `INCLUDE` attributes in total across all indexes of a table.
 
-**LSI (local secondary index)**:
+Many people think a GSI reads back from the table when an attribute is missing. In fact a GSI has only what was projected; to get more, project it or `GetItem` the base table. Only an LSI can fetch unprojected attributes from the table (at an extra read cost).
 
-- **same partition key** as the table, only the sort key differs;
-- created **only together with the table**;
-- supports strongly consistent reads; shares the table's throughput;
-- each partition key value (item collection) is limited to **10 GB** when the table has an LSI.
+## Syntax
 
-Quotas: 5 LSIs per table; 20 GSIs per table (default, can be raised); 100 `INCLUDE` attributes in total across all indexes of a table.
+```text
+"LocalSecondaryIndexes":  [{"IndexName": "<name>", "KeySchema": [<table HASH>, <other RANGE>], "Projection": {...}}]
+"GlobalSecondaryIndexes": [{"IndexName": "<name>", "KeySchema": [<any HASH>, [<any RANGE>]], "Projection": {...}}]
+"Projection": {"ProjectionType": "KEYS_ONLY" | "ALL" | "INCLUDE", ["NonKeyAttributes": ["<attr>", ...]]}
+```
+
+- `KEYS_ONLY`: the table key and the index key; smallest and cheapest to write.
+- `INCLUDE`: plus a few attributes listed in `NonKeyAttributes`.
+- `ALL`: the whole item; everything is readable, but each item is stored and written again in full.
+- Querying an index: add `"IndexName"`, the condition uses the index's keys.
 
 ## Example
 
-The projection decides what the index carries:
+A small table with LSI `byTotal` and GSI `byStatus` (`KEYS_ONLY`), run on dynoxide. Every `NEW` order through the GSI:
 
-- `KEYS_ONLY`: the table's key and the index's key. Smallest and cheapest to write.
-- `INCLUDE`: plus a few attributes you list in `NonKeyAttributes`.
-- `ALL`: the whole item. Every attribute is readable, but each item is stored and written again in full in the index.
+```json
+{"op": "Query", "input": {"TableName": "Orders", "IndexName": "byStatus", "KeyConditionExpression": "#s = :s", "ExpressionAttributeNames": {"#s": "status"}, "ExpressionAttributeValues": {":s": {"S": "NEW"}}}}
+```
 
-Press "Next" on the diagram: one write to table `Orders`, then the copy reaches GSI `byStatus` a moment later.
+Two orders, each item holding only `customerId`, `orderId`, `status`: no `total` or `city`, because the projection is `KEYS_ONLY`.
 
-## Practice
+The largest order of `C-01` through the LSI, with a strong read:
 
-Choose the projection from the question: if the list page needs only `orderId` and `total`, use `INCLUDE ["total"]` rather than `ALL`.
+```json
+{"op": "Query", "input": {"TableName": "Orders", "IndexName": "byTotal", "KeyConditionExpression": "customerId = :c", "ExpressionAttributeValues": {":c": {"S": "C-01"}}, "ScanIndexForward": false, "Limit": 1, "ConsistentRead": true}}
+```
+
+The LSI allows `ConsistentRead`; the item comes back whole because `byTotal` projects `ALL`.
+
+## Common mistakes
+
+Asking for a strong read on a GSI:
+
+```json
+// ERROR ValidationException
+{"op": "Query", "input": {"TableName": "Orders", "IndexName": "byStatus", "KeyConditionExpression": "#s = :s", "ExpressionAttributeNames": {"#s": "status"}, "ExpressionAttributeValues": {":s": {"S": "NEW"}}, "ConsistentRead": true}}
+```
+
+A GSI is updated asynchronously, so DynamoDB refuses. If you need a strong read, read the table (or an LSI).
+
+Choosing `ALL` for every index "to be safe":
+
+```text
+// WRONG: the list page needs orderId and total, the index copies whole items
+"Projection": {"ProjectionType": "ALL"}
+// FIX: carry only what the question reads
+"Projection": {"ProjectionType": "INCLUDE", "NonKeyAttributes": ["total"]}
+```
+
+With `ALL`, every write that changes the item writes the whole item into the index again: index storage and WCU grow with the item's size, not with the question.
+
+## Recap
+
+- GSI: any keys, added at any time, eventually consistent reads only, its own throughput.
+- LSI: same partition key, created only with the table, strong reads allowed, item collection capped at 10 GB.
+- A GSI returns only projected attributes; choose the projection from the questions that read it.
+- Every write that changes an index costs extra capacity for that index.
