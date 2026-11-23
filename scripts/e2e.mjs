@@ -1,7 +1,7 @@
 // v21 end-to-end audit (L183). No dependency: Chrome DevTools Protocol over Node's WebSocket, like scripts/smoke.mjs.
 //
 //   npm run build && npm run e2e                      # own `vite preview` on E2E_PORT (default 5241; never 5173/5174)
-//   E2E_ONLY=general,logistics npm run e2e            # sections: see SECTIONS below (L248: `engine` = every engine lesson + NoSQL path drill; v24 `best` = every Best Practice card)
+//   E2E_ONLY=general,logistics npm run e2e            # sections: see SECTIONS below (L248: `engine` = every engine lesson + NoSQL path drill; v24 `best` = every Best Practice card, v29 all four tracks)
 //   E2E_OUT=<dir>                                     # screenshots + e2e-report.json (default: e2e-out/)
 //
 // Plays every ticket's Solution (variant 0) of every domain in order (promotion-review steps, index labs, conclusions),
@@ -679,6 +679,25 @@ SECTIONS.general = async () => {
       return passed.length;
     });
   }
+  // v26 R2 (L390) write drills (Part 9): Submit runs the write, then the drill's `check:` read in the same BEGIN … ROLLBACK,
+  // and grades that read. A decoy (the drill's `wrong:` write, else the check read alone, which writes nothing) is refused;
+  // the Solution passes. Open drills were passed in the module loop above, so the other kinds are walked here.
+  const writeDrills = SQL_DRILLS.filter((d) => d.check && d.kind !== 'open');
+  await step(`write drills: Submit grades the check read (${writeDrills.length})`, async () => {
+    const bad = [];
+    for (const d of writeDrills) {
+      await go(`#/learn/play/${d.id}`);
+      await waitFor(`the drill ${d.id}`, `location.hash === ${S('#/learn/play/' + d.id)} && !!${EDITOR}`, 60000);
+      const decoy = d.wrong?.[0]?.sql ?? d.check;
+      const prev = await ev(`document.querySelector('#work [role=status]')?.textContent?.trim() ?? ''`);
+      await typeAnd(decoy, true);
+      await waitFor(`the verdict on the decoy of ${d.id}`, `(t => !!t && t !== ${S(prev)} && !/Đang chạy/.test(t))(document.querySelector('#work [role=status]')?.textContent?.trim())`, 60000);
+      if (await ev(`${completed}.includes(${S(d.id)})`)) bad.push(`${d.id}: the decoy passed`);
+      await submitUntil(d.solution, `${completed}.includes(${S(d.id)})`);
+    }
+    if (bad.length) fail(bad.join('; '));
+    return writeDrills.length;
+  });
   await step('drill workspace: Thoát bài luyện goes back to the skill page', async () => {
     const d = SQL_DRILLS.find((x) => x.kind === 'trap');
     await go(`#/learn/play/${d.id}`);
@@ -997,6 +1016,10 @@ const PATH_DRILLS = PATH_FILES.files.flatMap((f) => yml(`content/engine/mongodb/
 const realPlan = (l) => l.engine === 'postgres' && l.runtime !== 'docs' && !!l.predict && (!!l.lab?.setup || !!l.predict.expect);
 /** Same rule as src/engine/predict.ts readsCounters() (L296, blind-pg l3-08): "Xem thật" shows the query's rows, not a plan. */
 const readsCounters = (l) => realPlan(l) && !l.predict.expect && !!l.lab?.setup && /\bpg_stat(io)?_/i.test(l.predict.sql);
+/** Same rule as src/engine/predict.ts mongoRows() (v25): a MongoDB predict on a lab without `recorded` gets "Xem thật" with the real documents. */
+const mongoRows = (l) => l.engine === 'mongodb' && l.runtime !== 'docs' && !!l.lab && !!l.predict && !l.predict.recorded;
+/** Same rule as hasRealRun(): the predict card with "Xem thật" (a real plan, a counters question, or MongoDB's real documents). */
+const realRun = (l) => realPlan(l) || mongoRows(l);
 /** Same rule as src/engine/predict.ts capstonePivot() (v23 CAP): the step after which the before/after plans open. */
 const readsSql = (sql) => /^\s*(\(\s*)?(select|with|explain|table|values|show)\b/i.test(String(sql).replace(/^\s*(--[^\n]*\n\s*)*/, ''));
 function capstonePivot(lab) {
@@ -1016,7 +1039,7 @@ const NEW_V23 = ['e-pg-l3-16', 'e-pg-l3-17', 'e-pg-l3-18', 'e-pg-l5-16', 'e-pg-l
 const gradableStep = (l, st) => l.runtime !== 'docs' && (l.engine === 'postgres' ? st.check !== 'doc' && !(st.check === 'plan' && !l.lab?.setup) : st.check === 'doc' || (l.engine === 'dynamodb' && st.check === 'catalog')); // L299
 SECTIONS.engine = async () => {
   await shared();
-  const counts = { lessons: 0, passed: 0, steps: 0, predicts: 0, capstones: 0, capPlans: 0, failedLessons: [] };
+  const counts = { lessons: 0, passed: 0, steps: 0, predicts: 0, capstones: 0, capPlans: 0, refused: 0, failedLessons: [] };
   for (const l of ENGINE_LESSONS) {
     counts.lessons++;
     const ok = await step(`engine ${l.id} (${l.kind}${l.lab ? `, ${l.lab.steps.length} steps` : ''})`, async () => {
@@ -1031,14 +1054,14 @@ SECTIONS.engine = async () => {
       for (const [i, q] of (l.quiz ?? []).entries()) await pick(`q${i}`, q);
       // v23 PRED (L278): a predict with a real plan is answered wrong first, then "Xem thật": the verdict says wrong, the
       // real plan draws (and holds `expect`), focus is on the card heading, and picking the right option then passes the part.
-      if (l.predict && realPlan(l)) {
+      if (l.predict && realRun(l)) {
         const n = l.predict.options.length;
         const wrong = (l.predict.answer + 1) % n;
         const status = `document.querySelector('[data-ek="${id}-p-check"]')?.parentElement.querySelector('[role=status]')`;
         await ev(`document.querySelector('[data-ek="${id}-p-${wrong}"]').click()`);
         await ev(`document.querySelector('[data-ek="${id}-p-check"]').click()`);
         await waitFor('the wrong verdict', `!!${status}?.classList.contains('bad')`, 5000);
-        const real = readsCounters(l) ? '[data-real-rows]' : '[data-plan]';
+        const real = readsCounters(l) || mongoRows(l) ? '[data-real-rows]' : '[data-plan]'; // v25: MongoDB's "Xem thật" = the real documents
         await waitFor('the real plan', `!!document.querySelector('${real}') || !!document.querySelector('[aria-labelledby="${id}-plan"] .error')`, 120000);
         const plan = await ev(`document.querySelector('${real}')?.textContent ?? document.querySelector('[aria-labelledby="${id}-plan"]')?.textContent`);
         if (!(await ev(`!!document.querySelector('${real}')`))) fail(`no real ${real}: ${plan}`);
@@ -1056,13 +1079,27 @@ SECTIONS.engine = async () => {
         if (!gradableStep(l, st)) continue;
         counts.steps++;
         const at = (what) => `document.querySelector('[data-ek="${id}-s${i}-${what}"]')`;
-        await ev(`(t => { t.value = ${S(String(st.solution).trim())}; t.dispatchEvent(new Event('input', { bubbles: true })); })(${at('code')})`);
+        const status = `(${at('code')})?.closest('[data-step]').querySelector('[role=status]')`;
+        /** Types `code` into this step's editor, presses its Submit and waits for a new verdict; true when it passed. */
+        const submit = async (code, what) => {
+          const prev = await ev(`${status}?.textContent ?? ''`);
+          await ev(`(t => { t.value = ${S(String(code).trim())}; t.dispatchEvent(new Event('input', { bubbles: true })); })(${at('code')})`);
+          await ev(`${at('submit')}.click()`);
+          await waitFor(`step ${i + 1} graded (${what})`, `!!${status}?.textContent && !${at('submit')}.disabled && (${status}.textContent !== ${S(prev)} || ${status}.classList.contains('good'))`, 180000);
+          return ev(`${status}.classList.contains('good')`);
+        };
         // L299: one main Submit per lab, and it is this step's (the first gradable step not passed)
         if (await ev(`[...document.querySelectorAll('#engine-page [data-ek$="-submit"].bg-accent')].map((b) => b.dataset.ek).join()`) !== `${id}-s${i}-submit`) fail(`step ${i + 1}: the main Submit is not this step's alone`);
-        await ev(`${at('submit')}.click()`);
-        const status = `(${at('code')})?.closest('[data-step]').querySelector('[role=status]')`;
-        await waitFor(`step ${i + 1} graded`, `!!${status}?.textContent && !${at('submit')}.disabled`, 180000);
-        if (!(await ev(`${status}.classList.contains('good')`))) fail(`step ${i + 1}: ${await ev(`${status}.textContent`)} | ${await ev(`(${at('code')})?.closest('[data-step]').querySelector('.error, pre.error')?.textContent ?? ''`)}`);
+        // v25–v27 step kinds: a bar (MongoDB `rule:`, DynamoDB/Postgres `perf:`) names itself above the editor and refuses its
+        // `slow:` answer; a "mong lỗi" step (`error:`) refuses a command that runs; a Postgres `after:` step refuses doing nothing.
+        if ((st.rule || st.error || (st.perf && l.engine !== 'postgres')) && !(await ev(`!!(${at('code')})?.closest('[data-step]').querySelector('[data-rule]')`))) fail(`step ${i + 1}: no rule/cost/error line above the editor`);
+        const other = l.lab.steps.find((x) => !x.error && x !== st)?.solution;
+        const decoy = st.slow ? ['slow', st.slow] : st.error && other ? ['a command that runs', other] : st.after ? ['doing nothing', 'SELECT 1'] : undefined;
+        if (decoy) {
+          if (await submit(decoy[1], decoy[0])) fail(`step ${i + 1}: ${decoy[0]} was accepted`);
+          counts.refused++;
+        }
+        if (!(await submit(st.solution, 'Solution'))) fail(`step ${i + 1}: ${await ev(`${status}.textContent`)} | ${await ev(`(${at('code')})?.closest('[data-step]').querySelector('.error, pre.error')?.textContent ?? ''`)}`);
         if (cap) {
           // v23 CAP (L278): the bar marks the step passed and moves on; at the pivot the before/after plans open
           const bar = `document.querySelectorAll('#engine-page [data-cap-bar] li')`;
@@ -1095,7 +1132,7 @@ SECTIONS.engine = async () => {
     if (ok) counts.passed++;
     else counts.failedLessons.push(l.id);
   }
-  await step(`engine: ${counts.passed}/${counts.lessons} lessons passed (${counts.steps} lab steps, ${counts.predicts} real plans, ${counts.capstones} capstones, ${counts.capPlans} before/after)`, () => {
+  await step(`engine: ${counts.passed}/${counts.lessons} lessons passed (${counts.steps} lab steps, ${counts.predicts} real plans, ${counts.capstones} capstones, ${counts.capPlans} before/after, ${counts.refused} slow/decoy answers refused)`, () => {
     if (counts.failedLessons.length) fail(`failed: ${counts.failedLessons.join(', ')}`);
     return counts;
   });
@@ -1133,7 +1170,7 @@ SECTIONS.engine = async () => {
 // ---- best (v24 BP-UI, L346): the Best Practice area. Every released card: "Run both" gives the card's verdict (never the
 // "odd" line) and the check's right answers complete it (+5 XP each); the gallery, filters, the quick check, Boon's tip switch,
 // and Boon's tip in the Sandbox → "Vì sao?" → the card. BEST_SHOTS=<dir>: 1280 light / 1024 light / 375 dark / 320 light pictures.
-const BEST_CARDS = ['sql', 'postgres'].flatMap((t) => walk(`content/engine/best/${t}`).sort().map((f) =>
+const BEST_CARDS = ['sql', 'postgres', 'mongodb', 'dynamodb'].flatMap((t) => walk(`content/engine/best/${t}`).sort().map((f) =>
   parseYaml(/^---\r?\n([\s\S]*?)\r?\n---/.exec(readFileSync(join(ROOT, f), 'utf8'))[1])));
 SECTIONS.best = async () => {
   await shared();
@@ -1151,8 +1188,19 @@ SECTIONS.best = async () => {
     await ev(`document.querySelector('[data-ek="bp-f-a"]').click()`);
     if (a !== BEST_CARDS.filter((c) => c.module === 'a').length) fail(`filter A shows ${a}`);
   });
+  // v29: the MongoDB and DynamoDB tracks (cards run their pairs on mingo / dynoxide): each tab opens its own grid with every card
+  for (const t of ['mongodb', 'dynamodb']) {
+    await step(`best: #/engine/best/${t} lists its ${BEST_CARDS.filter((c) => c.track === t).length} cards`, async () => {
+      await go(`#/engine/best/${t}`);
+      await waitFor(`the ${t} grid`, `!!document.querySelector('#engine-page[data-track="${t}"]')`, 60000);
+      const n = await ev(`document.querySelectorAll('#engine-page [data-card]').length`);
+      const want = BEST_CARDS.filter((c) => c.track === t).length;
+      if (n !== want) fail(`${n} cards, want ${want}`);
+    });
+  }
   const xp0 = (await saveNow()).xp ?? 0;
   const failed = [];
+  const verdicts = {};
   for (const c of BEST_CARDS) {
     const ok = await step(`best ${c.id} (${c.pair.runtime}/${c.pair.check})`, async () => {
       await go(`#/engine/best/${c.track}/${c.id}`);
@@ -1170,12 +1218,14 @@ SECTIONS.best = async () => {
         await sleep(100);
       }
       await waitFor('completed', `${completed}.includes(${S(c.id)})`, 10000);
+      verdicts[c.pair.runtime] = (verdicts[c.pair.runtime] ?? 0) + 1;
       return verdict;
     });
     if (!ok) failed.push(c.id);
   }
   await step(`best: ${BEST_CARDS.length - failed.length}/${BEST_CARDS.length} cards passed, +5 XP each`, async () => {
     if (failed.length) fail(`failed: ${failed.join(', ')}`);
+    if (!verdicts.mingo || !verdicts.dynoxide) fail(`no MongoDB or DynamoDB pair ran: ${S(verdicts)}`);
     const xp = (await saveNow()).xp - xp0;
     if (xp !== 5 * BEST_CARDS.length) fail(`XP +${xp}, want +${5 * BEST_CARDS.length}`);
   });
