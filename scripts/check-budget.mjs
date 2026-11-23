@@ -51,6 +51,7 @@ const GROUPS = [
   ['engineuiPath', /^enginePathView-/, 6], // L280: the NoSQL path pages (src/ui/enginePathView.ts), split out of engineView in the Engine redesign; lazy on the first #/engine/mongodb/path
   ['engineCapstone', /^engineCapstone-/, 6], // v23 CAP (L257): src/ui/engineCapstone.ts (step bar, "Chấm bằng", before/after plans), lazy from engineView on a capstone; its own group since the v22 redesign left engineui no room for it (L296): 1.9 KB gz; engineui 18.7 KB after the move
   ['engineNosql', /^engineNosql-/, 6], // v25 (L370): src/ui/engineNosql.ts + src/i18n/engineNosql.ts (NoSQL lab tables panel moved out of engineView, MongoDB rule bar, "Pipeline từng bước", "So với SQL"), lazy from engineView on a MongoDB/DynamoDB lab
+  ['engineDynamo', /^engineDynamo-/, 5], // v26 (L380): src/ui/engineDynamo.ts + src/i18n/engineDynamo.ts + src/engine/dynamo/cost.ts ("Partition / Chi phí" under a DynamoDB run), lazy from engineNosql on the first DynamoDB result
   ['enginePredict', /^enginePredict-/, 7], // v23 PRED (L256): src/ui/{enginePredict,enginePlanTree}.ts + src/engine/predict.ts ("Xem thật", the plan tree, first-pick pref), lazy from engineView on a predict, capstone or plan-diagram lesson: 3.3 KB gz; L296: + src/i18n/enginePredict.ts (the predict and capstone text, moved out of engineui): 5.3 KB gz
   // ENG-PGLAB (L230): the engine lab's own worker (src/engine/pglab/pglabWorker.ts: a second PGlite JS bundle + session +
   // checkers; the .wasm/.data are shared with the game worker) and the contrib tarballs it fetches only when a lab names

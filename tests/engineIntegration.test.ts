@@ -166,6 +166,11 @@ describe('DynamoDB labs: every Solution passes its own check (dynoxide in Node)'
     await r.prepare(l.lab!);
     for (const [i, s] of l.lab!.steps.entries()) {
       expect(await r.check(l.lab!, s, s.solution), `step ${i + 1}`).toMatchObject({ ok: true });
+      if (s.error) { // v26 "mong lỗi": the Solution is refused with that exception, and a request that runs is not a pass
+        await expect(r.run(l.lab!, s.solution)).rejects.toMatchObject({ type: s.error });
+        expect(await r.check(l.lab!, s, l.lab!.steps[0].solution)).toMatchObject({ ok: false });
+        continue;
+      }
       const out = await r.run(l.lab!, s.solution);
       expect(out.meta?.count, `step ${i + 1} count`).toBeTypeOf('number');
     }

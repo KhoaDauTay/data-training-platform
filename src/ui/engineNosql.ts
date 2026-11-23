@@ -49,11 +49,17 @@ export function tablesPanel(deps: EngineDeps, l: EngineLesson): HTMLElement | nu
 export function stepTop(deps: EngineDeps, s: LabStep): HTMLElement | null {
   d = deps;
   const { h, cls } = d;
-  if (!s.rule && !s.error) return null;
-  return h('p', { class: 'm-0 flex flex-wrap items-center gap-2 text-body-sm', 'data-rule': s.rule ?? 'error' },
-    h('span', { class: cls.cx(cls.PILL, 'bg-sun text-sun-ink font-bold') }, ...inline(s.rule ? nt(`rule.${s.rule}`) : nt('error.note', { code: s.error! }))),
-    s.rule ? h('span', { class: 'text-muted' }, nt('rule.note')) : null);
+  // v26: a DynamoDB step's `perf` is the measured cost bar (route R5); its `error` names an exception (`…Exception`).
+  const cost = !s.rule && !!s.perf;
+  if (!s.rule && !s.error && !cost) return null;
+  return h('p', { class: 'm-0 flex flex-wrap items-center gap-2 text-body-sm', 'data-rule': s.rule ?? (cost ? 'cost' : 'error') },
+    h('span', { class: cls.cx(cls.PILL, 'bg-sun text-sun-ink font-bold') }, ...inline(s.rule ? nt(`rule.${s.rule}`) : cost ? nt('rule.cost')
+      : nt(/Exception$/.test(s.error!) ? 'error.noteDy' : 'error.note', { code: s.error! }))),
+    s.rule || cost ? h('span', { class: 'text-muted' }, nt(cost ? 'rule.costNote' : 'rule.note')) : null);
 }
+
+/** v26 (L380): the "Partition / Chi phí" panel lives in its own lazy chunk (engineDynamo), fetched on the first DynamoDB run. */
+let dy: typeof import('./engineDynamo') | 'loading' | 'failed' | undefined;
 
 /** The SQL clause a stage plays: `$match` after a `$group` is HAVING (position decides the meaning, research §4.1). */
 const SQL_OF: Record<string, string> = {
@@ -70,6 +76,13 @@ const TRAPS = ['$match', '$group', '$count', '$lookup', '$unwind', '$sort', '$li
 export function stepEnd(deps: EngineDeps, s: LabStep, r: LabOutput | undefined, passed: boolean, key: string): HTMLElement | null {
   d = deps;
   const { h } = d;
+  if (r?.meta?.dynamo) {
+    if (dy === undefined) {
+      dy = 'loading';
+      import('./engineDynamo').then((m) => { dy = m; }, () => { dy = 'failed'; }).finally(() => d.rerender());
+    }
+    return typeof dy === 'object' ? dy.costPanel(d, r, key) : null; // the panel is extra: a failed chunk only leaves it out
+  }
   const pipe = r?.meta?.pipeline;
   if (!pipe?.length && !s.sql) return null;
   const names = (pipe ?? []).map((x) => x.stage);

@@ -248,7 +248,8 @@ function output({ req, r }: { req: DynamoRequest; r: DynamoResult }, lab: Dynamo
   const table = typeof req.input.TableName === 'string' ? req.input.TableName : undefined;
   const pk = pkOf(req, lab);
   const dynamo: NonNullable<LabOutput['meta']>['dynamo'] = {
-    op: req.op, write: isWrite(req), bytes: r.Items.map(itemBytes),
+    // bytes only when the items returned are whole (a projection or `Select` would make the rule's sum look cheaper than the read)
+    op: req.op, write: isWrite(req), bytes: req.input.ProjectionExpression || req.input.Select || /^\s*select\s+(?!\*)/i.test(String(req.input.Statement ?? '')) ? [] : r.Items.map(itemBytes),
     mode: req.op === 'TransactGetItems' || req.op === 'ExecuteTransaction' ? 'tx' : req.input.ConsistentRead === true ? 'strong' : 'eventual',
     ...(capacity ? { capacity } : {}), ...(r.ScannedCount !== undefined ? { scanned: r.ScannedCount } : {}), ...(pk ? { pk } : {}),
     ...(typeof req.input.IndexName === 'string' ? { index: req.input.IndexName } : {}),
