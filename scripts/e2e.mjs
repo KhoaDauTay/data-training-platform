@@ -943,16 +943,19 @@ SECTIONS.tools = async () => {
     if (after.completed.length !== before.completed.length || after.xp !== before.xp) fail(`after import: ${after.completed.length} done / ${after.xp} xp, before ${before.completed.length} / ${before.xp}`);
     return name;
   });
-  await step('#/me: certificates (PNG, SVG), portfolios (zip per domain, take-home md)', async () => {
+  await step('#/me: skill map, badges (v24 L323, no certificate), portfolios (zip per domain, take-home md)', async () => {
     await go('#/me');
-    await waitFor('the me page', `!document.getElementById('home').hidden && [...document.querySelectorAll('#home button')].some((b) => /Tải PNG/.test(b.textContent))`, 60000);
-    await axe('#/me with every certificate');
+    await waitFor('the skill map with the engines', `!document.getElementById('home').hidden && !!document.querySelector('#home [data-me=skill-map] ol')`, 60000);
+    await axe('#/me with the skill map and badges');
     const got = [];
-    const certs = await ev(`[...document.querySelectorAll('#home button')].filter((b) => /^Tải (PNG|SVG)$/.test(b.textContent.trim())).length`);
-    if (certs < 6) fail(`${certs} certificate buttons, expected ≥ 6 (PNG+SVG for 3 domains${''})`);
-    for (let i = 0; i < certs; i++) {
-      got.push(await download(`certificate ${i + 1}`, '-certificate\\.(png|svg)$', () => ev(`[...document.querySelectorAll('#home button')].filter((b) => /^Tải (PNG|SVG)$/.test(b.textContent.trim()))[${i}].click()`)));
-    }
+    const me = await ev(`({ badges: document.querySelectorAll('#home [data-me=badges] [data-badge]').length, held: [...document.querySelectorAll('#home [data-me=badges] [data-badge][data-have=true]')].map((b) => b.dataset.badge),
+      rows: document.querySelectorAll('#home [data-me=skill-map] [data-skill]').length, cert: [...document.querySelectorAll('#home button')].some((b) => /^Tải (PNG|SVG)$/.test(b.textContent.trim())) })`);
+    if (me.badges !== 37) fail(`${me.badges} badges, expected 37`);
+    if (me.cert) fail('a certificate button is still on #/me');
+    if (!me.rows) fail('the skill map has no skill rows');
+    // every promotion review of the 3 domains was passed above: their badges are held (the old certificates' rule)
+    for (const dom of ['logistics', 'ecommerce', 'finance']) if (!me.held.includes(`domain-${dom}`)) fail(`badge domain-${dom} not held (${me.held.join(', ')})`);
+    got.push(me);
     const pfs = await ev(`[...document.querySelectorAll('#home button')].filter((b) => /^Tải portfolio/.test(b.textContent.trim())).map((b) => b.textContent.trim())`);
     for (const label of pfs) {
       got.push(await download(label, label.includes('.md') ? 'take-home-portfolio\\.md$' : 'portfolio\\.zip$', async () => {

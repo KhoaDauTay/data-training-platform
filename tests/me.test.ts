@@ -5,7 +5,7 @@ import { DOMAINS } from '../src/domains';
 import { ATTEMPTS_KEY, ERRORS_KEY, notePass, noteTry, readAttempts, readErrors } from '../src/insights';
 import { ME_DICT } from '../src/i18n/me';
 import {
-  calendar, certificateSvg, dashFile, importDash, PAPER, portfolioEntries, portfolioMd, strengths, topErrors, touchesSandbox, trySummary, type CertScope,
+  calendar, dashFile, importDash, portfolioEntries, portfolioMd, strengths, topErrors, touchesSandbox, trySummary,
 } from '../src/me';
 import { hashOf, parseRoute, SHARE_MAX, shareHash, sharedOf } from '../src/route';
 import type { KV } from '../src/storage';
@@ -127,34 +127,6 @@ describe('dashboard export / import (v7 §5.1)', () => {
   });
 });
 
-describe('certificates (v7 §5.2)', () => {
-  const scopes: CertScope[] = [...domains, 'general'];
-  it.each(scopes)('%s: says "not verified" on the picture, in VI and EN', (scope) => {
-    const vi = certificateSvg({ scope, lang: 'vi', name: 'An', what: 'X', tasks: 30, skills: 20, rank: 'Trưởng nhóm', date: '19/11/2026' });
-    const en = certificateSvg({ scope, lang: 'en', name: 'An', what: 'X', tasks: 30, skills: 20, rank: 'Lead', date: '11/19/2026' });
-    expect(vi).toContain('không xác minh');
-    expect(en).toContain('not verified');
-    for (const s of [vi, en]) {
-      expect(s).not.toMatch(/<use|var\(--|class=|href=/); // self-contained: no sprite reference, no page CSS
-      expect(s).toMatch(/hư cấu|fictional/);
-    }
-  });
-  it('escapes the name; no name reads as the anonymous learner', () => {
-    const s = certificateSvg({ scope: 'logistics', lang: 'vi', name: '<script>&"', what: 'Logistics', tasks: 1, skills: 1, date: 'x' });
-    expect(s).not.toContain('<script>');
-    expect(s).toContain('&#60;script&#62;&#38;&#34;');
-    expect(certificateSvg({ scope: 'logistics', lang: 'en', name: ' ', what: 'L', tasks: 1, skills: 1, date: 'x' })).toContain(ME_DICT.en['cert.anon']);
-  });
-  it('paper colours keep text contrast ≥ 4.5:1', () => {
-    const lum = (hex: string): number => {
-      const [r, g, b] = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255).map((c) => (c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4));
-      return 0.2126 * r + 0.7152 * g + 0.0722 * b;
-    };
-    const ratio = (a: string, b: string): number => (Math.max(lum(a), lum(b)) + 0.05) / (Math.min(lum(a), lum(b)) + 0.05);
-    for (const fg of [PAPER.ink, PAPER.muted, PAPER.accent]) expect(ratio(fg, PAPER.bg)).toBeGreaterThanOrEqual(4.5);
-  });
-});
-
 describe('portfolio (I6)', () => {
   const tickets = loadTickets('logistics');
   const [a, b, c] = tickets;
@@ -189,5 +161,14 @@ describe('portfolio (I6)', () => {
     expect(md).not.toMatch(/my_sales|sandbox/);
     expect(md).toMatch(/fictional/);
     expect(md).toMatch(/not verified/);
+    expect(md).toContain(ME_DICT.en['pf.anon']);
+  });
+  it('v24 (L323): a "current skill levels" section, self-measured, only when there is something to show', () => {
+    const base = { lang: 'vi' as const, scope: 'logistics' as const, what: 'L', name: 'An', date: 'x', entries: [], cards: [], imported: [] };
+    const md = portfolioMd({ ...base, levels: { skills: [{ label: 'A | B', level: 'Vững' }], badges: ['Phần 1 vững'] } });
+    expect(md).toContain(ME_DICT.vi['pf.levels']);
+    expect(md).toContain(String.raw`| A \| B | Vững |`);
+    expect(md).toContain('Phần 1 vững');
+    expect(portfolioMd({ ...base, levels: { skills: [], badges: [] } })).not.toContain(ME_DICT.vi['pf.levels']);
   });
 });

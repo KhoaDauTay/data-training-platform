@@ -1,7 +1,7 @@
-import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { parse } from 'yaml';
 import v5 from './fixtures/save-v5.json?raw';
+import sqlYml from '../content/general/sql.yml?raw';
 import { loadTickets } from '../src/content';
 import { knownSkills } from '../src/home';
 import { badges, BADGE_ENGINES, DRILL_KINDS, engineLevels, masteryOf, overdue, skillParts, type BadgeInput } from '../src/mastery';
@@ -16,7 +16,7 @@ const parts = skillParts(SKILLS);
 
 describe('skill levels (src/mastery.ts)', () => {
   it('drill kinds follow the id suffix in sql.yml (-1 faded, -2 open, -3 trap, -4 review)', () => {
-    const drills = parse(readFileSync('content/general/sql.yml', 'utf8')) as { id: string; skill?: string; kind: string }[];
+    const drills = parse(sqlYml) as { id: string; skill?: string; kind: string }[];
     for (const d of drills.filter((x) => x.skill)) expect(d.kind, d.id).toBe(DRILL_KINDS[Number(d.id.split('-').pop()) - 1]);
   });
 

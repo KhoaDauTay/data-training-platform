@@ -6,9 +6,11 @@ import { getLang, locale, t } from '../i18n';
 import { readAttempts, readErrors } from '../insights';
 import { INTERVIEW_KEY, parseInterviewPrefs, passedTakeHomes } from '../interviewPrefs';
 import { DAYS_KEY, parseDays } from '../lily';
-import { chaptersOf, rankOf, SKILLS } from '../progress';
+import { badges, engineLevels, masteryOf, skillParts } from '../mastery';
+import { chaptersOf, moduleTitle, rankOf, SKILLS } from '../progress';
 import { hashOf } from '../route';
 import { domainSlot } from '../save';
+import { today } from '../session';
 import { actions, app, persist } from '../state';
 import { readJson, writeJson } from '../storage';
 import { BTN_GO, BTN_SECONDARY, CARD, cx } from '../theme';
@@ -16,11 +18,13 @@ import { textOf } from '../tickets';
 import { announce, h } from './dom';
 import { cardBody } from './dashboard';
 import { icon, skillIcon } from './icons';
+import { engineTrees } from './engine';
 import { importedNames } from './myDataView';
+import { startToday } from './modes';
 import { thisWeek } from './homeView';
 
 /**
- * v16 (L142): loads the lazy `meView` chunk (#/me page, certificates, portfolio, dashboard file and picture exports) and hands
+ * v16 (L142): loads the lazy `meView` chunk (#/me page, skill map and badges, portfolio, dashboard file and picture exports) and hands
  * it every main value it uses (Plan 6 U3). Statically imported by ui/me.ts and ui/dashboard.ts: a dynamic import of a main
  * module makes Rolldown move most of main into a shared chunk.
  */
@@ -36,6 +40,8 @@ export function meChunk(): Promise<MeView> {
       // V19-D (L170): portfolio card pictures (a card body as the dashboard draws it) and take-homes
       run: (sql, dom) => app.run(sql, { schema: domainSchemaId(dom) }), cardBody, ranHere: (c) => ranHere(c),
       loadInterview, interviewPrefs: () => parseInterviewPrefs(readJson<unknown>(INTERVIEW_KEY)), passedTakeHomes,
+      // v24 (L323): skill map and badges
+      mastery: { masteryOf, badges, engineLevels, skillParts }, today, moduleTitle, startToday: () => void startToday(), engineTrees,
     });
     return (meView = m);
   }, (e: unknown) => {
