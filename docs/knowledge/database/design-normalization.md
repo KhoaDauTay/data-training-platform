@@ -1,6 +1,6 @@
 # Database design: ER modelling, keys, functional dependencies, normal forms
 
-Status: concepts checked against the sources below; ```` ```sql ```` blocks verified on PGlite 0.5.16 (PostgreSQL 18.6) with asserted results.
+Status: concepts written from the sources below (link-checked, not re-read during this work; see [README.md](README.md#verification-levels)); ```` ```sql ```` blocks verified on PGlite 0.5.16 (PostgreSQL 18.6) with asserted results.
 
 Route points: tutorialspoint DBMS "Entity Relationship Model", "Relational Database Design" (both groups) and "Normalization in Database Designing" sections; SQL/MySQL "Keys" sections ([tutorial-routes.md](tutorial-routes.md#dbms)). The textbook-level sources here are the PostgreSQL manual for SQL behaviour and E. F. Codd's and W. Kent's papers for theory; no tutorial text was used.
 

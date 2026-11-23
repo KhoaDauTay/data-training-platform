@@ -1,12 +1,12 @@
 # Dialect differences: PostgreSQL vs MySQL vs SQLite (and a few SQL Server terms)
 
-Status: to-verify by execution. Nothing in this file was run: the repo has no MySQL or SQLite runtime. Each claim was checked against the primary page cited next to it (MySQL 8.4 Reference Manual, sqlite.org, PostgreSQL 18 manual) on 2026-11-23. PostgreSQL columns are the behaviour verified elsewhere in this folder.
+Status: to-verify by execution. Nothing in this file was run (the repo has no MySQL, SQLite or SQL Server runtime). Verification levels as defined in [README.md](README.md#verification-levels): claims backed by a page **read** during this work are listed there; the remaining citations were **link-checked** only (HTTP 200, or the site blocks scripted checks) and rest on the author's knowledge. The T-SQL column is the least checked: only `TOP` and `REGEXP_LIKE` pages. PostgreSQL behaviour in the table is verified elsewhere in this folder.
 
 Why this file exists: BoonData teaches PostgreSQL only, but tutorialspoint's SQL tutorial mixes dialects (TOP, SHOW TABLES, clustered indexes, BIT) and learners arrive with MySQL or SQLite habits. When writing content or reviewing player SQL, these are the differences that make "valid SQL" fail or behave differently in PGlite. Route points: SQL, MySQL and SQLite tutorials ([tutorial-routes.md](tutorial-routes.md)).
 
 ## 1. Syntax and catalogue commands
 
-Status: to-verify (docs checked).
+Status: to-verify (level per file header).
 
 | Task | PostgreSQL | MySQL 8.4 | SQLite | SQL Server (T-SQL) |
 |---|---|---|---|---|
@@ -17,7 +17,7 @@ Status: to-verify (docs checked).
 | Identifier quote | `"name"` | `` `name` `` (or `"` with `ANSI_QUOTES`) | `"name"` (also accepts `` ` `` and `[ ]`) | `[name]` |
 | String concat | `a \|\| b` | `CONCAT(a, b)`; `\|\|` means `OR` unless `PIPES_AS_CONCAT` | `a \|\| b` | `a + b` / `CONCAT` |
 | Case-insensitive LIKE | `ILIKE` | `LIKE` is case-insensitive under the default collations | `LIKE` is case-insensitive for ASCII only; `GLOB` is case-sensitive | depends on collation |
-| Regex | `~`, `regexp_replace` | `REGEXP`, `RLIKE`, `REGEXP_LIKE` | `REGEXP` only if a function is registered | none built in |
+| Regex | `~`, `regexp_replace` | `REGEXP`, `RLIKE`, `REGEXP_LIKE` | `REGEXP` only if a function is registered | `REGEXP_LIKE` and other `REGEXP_*` functions from SQL Server 2025 (none in 2022 or earlier) |
 | Upsert | `ON CONFLICT … DO UPDATE`, `MERGE` | `ON DUPLICATE KEY UPDATE`, `REPLACE`, `INSERT IGNORE` | `ON CONFLICT … DO UPDATE` | `MERGE` |
 | Auto id | `GENERATED … AS IDENTITY` | `AUTO_INCREMENT` | `INTEGER PRIMARY KEY` (rowid alias), optional `AUTOINCREMENT` | `IDENTITY(1,1)` |
 | Copy a table | `CREATE TABLE b AS SELECT …` / `(LIKE a INCLUDING ALL)` | `CREATE TABLE b LIKE a` / `AS SELECT` | `CREATE TABLE b AS SELECT …` | `SELECT … INTO b` |
@@ -25,11 +25,11 @@ Status: to-verify (docs checked).
 | Full outer join | yes | no: emulate with `LEFT JOIN … UNION … RIGHT JOIN` | yes since 3.39.0 | yes |
 | Update with join | `UPDATE t SET … FROM s WHERE …` | `UPDATE t JOIN s ON … SET …` | `UPDATE … FROM` | `UPDATE t SET … FROM t JOIN s …` |
 
-Sources: MySQL SQL modes https://dev.mysql.com/doc/refman/8.4/en/sql-mode.html · MySQL JOIN https://dev.mysql.com/doc/refman/8.4/en/join.html · MySQL INTERSECT https://dev.mysql.com/doc/refman/8.4/en/intersect.html · MySQL INSERT … ON DUPLICATE KEY https://dev.mysql.com/doc/refman/8.4/en/insert-on-duplicate.html · SQLite SELECT https://www.sqlite.org/lang_select.html · SQLite 3.39.0 release https://www.sqlite.org/releaselog/3_39_0.html · SQLite UPSERT https://www.sqlite.org/lang_upsert.html · SQLite UPDATE FROM https://www.sqlite.org/lang_update.html · T-SQL TOP https://learn.microsoft.com/en-us/sql/t-sql/queries/top-transact-sql.
+Sources: MySQL SQL modes https://dev.mysql.com/doc/refman/8.4/en/sql-mode.html · MySQL JOIN https://dev.mysql.com/doc/refman/8.4/en/join.html · MySQL INTERSECT https://dev.mysql.com/doc/refman/8.4/en/intersect.html · MySQL INSERT … ON DUPLICATE KEY https://dev.mysql.com/doc/refman/8.4/en/insert-on-duplicate.html · SQLite SELECT https://www.sqlite.org/lang_select.html · SQLite 3.39.0 release https://www.sqlite.org/releaselog/3_39_0.html · SQLite UPSERT https://www.sqlite.org/lang_upsert.html · SQLite UPDATE FROM https://www.sqlite.org/lang_update.html · T-SQL TOP https://learn.microsoft.com/en-us/sql/t-sql/queries/top-transact-sql · T-SQL REGEXP_LIKE https://learn.microsoft.com/en-us/sql/t-sql/functions/regexp-like-transact-sql.
 
 ## 2. Types
 
-Status: to-verify (docs checked).
+Status: to-verify (level per file header).
 
 - **SQLite is dynamically typed.** A column's declared type only gives it an *affinity* (INTEGER, TEXT, BLOB, REAL, NUMERIC, chosen by substring rules: a type containing "INT" gets INTEGER, so `VARCHAR(10)` gets TEXT and `BOOLEAN`/`DATE`/`DECIMAL` get NUMERIC). Any column except `INTEGER PRIMARY KEY` can hold any value; `STRICT` tables (3.37.0+) enforce types (https://www.sqlite.org/datatype3.html, https://www.sqlite.org/stricttables.html).
 - SQLite has no boolean or date type: booleans are 0/1, dates are ISO text, Julian-day reals or Unix-time integers handled by `date()`, `strftime()` (https://www.sqlite.org/lang_datefunc.html).
@@ -38,7 +38,7 @@ Status: to-verify (docs checked).
 
 ## 3. Grouping, NULLs and comparisons
 
-Status: to-verify (docs checked).
+Status: to-verify (level per file header).
 
 - MySQL's default `sql_mode` includes `ONLY_FULL_GROUP_BY`, which rejects selecting non-aggregated columns that are not grouped or functionally dependent; with it turned off MySQL returns an arbitrary value. PostgreSQL always rejects the query, except for columns of a table whose primary key is grouped. SQLite accepts it and picks a value from an arbitrary row (with `min()`/`max()` it takes the row holding the extreme) (https://dev.mysql.com/doc/refman/8.4/en/group-by-handling.html, https://www.sqlite.org/lang_select.html#bare_columns_in_an_aggregate_query).
 - Integer division: `7 / 2` is `3` in PostgreSQL and SQLite, `3.5000` in MySQL (`/` always returns a decimal; `DIV` is integer division) (https://dev.mysql.com/doc/refman/8.4/en/arithmetic-functions.html).
@@ -49,7 +49,7 @@ Status: to-verify (docs checked).
 
 ## 4. DDL and constraints
 
-Status: to-verify (docs checked).
+Status: to-verify (level per file header).
 
 - PostgreSQL DDL is transactional; MySQL commits implicitly before and after most DDL statements (https://dev.mysql.com/doc/refman/8.4/en/implicit-commit.html); SQLite DDL is transactional.
 - MySQL 8.4 enforces `CHECK` constraints; older versions parsed and ignored them (the 8.4 page does not name the version; to-verify) (https://dev.mysql.com/doc/refman/8.4/en/create-table-check-constraints.html).
@@ -60,7 +60,7 @@ Status: to-verify (docs checked).
 
 ## 5. Transactions and concurrency
 
-Status: to-verify (docs checked).
+Status: to-verify (level per file header).
 
 - Default isolation: PostgreSQL Read Committed, MySQL InnoDB Repeatable Read (https://dev.mysql.com/doc/refman/8.4/en/innodb-transaction-isolation-levels.html), SQLite serializable (one writer at a time per database file; WAL mode lets readers continue during a write, https://www.sqlite.org/wal.html).
 - InnoDB Repeatable Read uses next-key (gap) locks for locking reads to block phantoms; PostgreSQL Repeatable Read is snapshot isolation without gap locks.

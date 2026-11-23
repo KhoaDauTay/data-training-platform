@@ -1,8 +1,8 @@
 # PostgreSQL 18 specifics
 
-Status: verified. Every ```` ```sql ```` block below ran in order on one fresh PGlite 0.5.16 (PostgreSQL 18.6) database with `pg_trgm`, `pgcrypto` and `citext` loaded, and its `-- expect:` lines were asserted (see [README.md](README.md#verification)). Blocks marked `norun` were not run, and the reason is given next to each.
+Status: verified. Every ```` ```sql ```` block below ran in order on one fresh PGlite 0.5.16 (PostgreSQL 18.6) database with `pg_trgm`, `pgcrypto` and `citext` loaded, and its `-- expect:` lines were asserted (see [README.md](README.md#verification)). A section's `Status: verified` means its examples ran with asserted results; prose statements are sourced from the linked manual page (see [README.md](README.md#verification-levels) for which pages were read during this work and which were only link-checked).
 
-Sections follow the order of tutorialspoint's PostgreSQL table of contents ([tutorial-routes.md](tutorial-routes.md#postgresql)), then add the topics that the tutorial leaves out but the app needs (§13 onwards). Generic SQL (SELECT, joins, grouping, CTE, windows) is in [sql-core.md](sql-core.md) and is not repeated here.
+Sections follow the order of tutorialspoint's PostgreSQL table of contents ([tutorial-routes.md](tutorial-routes.md#postgresql)), then add the topics that the tutorial leaves out but the app needs (§16 onwards). Generic SQL (SELECT, joins, grouping, CTE, windows) is in [sql-core.md](sql-core.md) and is not repeated here.
 
 ## 1. Data types
 
@@ -41,6 +41,14 @@ Generated columns (`GENERATED ALWAYS AS (expr) STORED`, and since 18 also `VIRTU
 CREATE TABLE lines (qty int, price int, total int GENERATED ALWAYS AS (qty * price) STORED);
 INSERT INTO lines (qty, price) VALUES (10, 3);
 SELECT * FROM lines;
+```
+
+```sql
+-- expect: [["v","s"]]
+-- without STORED/VIRTUAL, PostgreSQL 18 makes a virtual generated column ('v'); 's' = stored
+CREATE TABLE lines2 (qty int, price int, total int GENERATED ALWAYS AS (qty * price));
+SELECT (SELECT attgenerated::text FROM pg_attribute WHERE attrelid = 'lines2'::regclass AND attname = 'total'),
+       (SELECT attgenerated::text FROM pg_attribute WHERE attrelid = 'lines'::regclass AND attname = 'total');
 ```
 
 ## 2. Operators and expressions
@@ -96,7 +104,7 @@ SELECT * FROM stock ORDER BY sku;
 ```
 
 ```sql
--- expect: error
+-- expect: error 42P10
 -- no unique constraint on qty, so it cannot be a conflict target
 INSERT INTO stock VALUES ('C', 1) ON CONFLICT (qty) DO NOTHING;
 ```
@@ -108,6 +116,19 @@ USING (VALUES ('A', 0), ('C', 4)) AS v(sku, qty) ON s.sku = v.sku
 WHEN MATCHED AND v.qty = 0 THEN DO NOTHING
 WHEN NOT MATCHED THEN INSERT VALUES (v.sku, v.qty);
 SELECT sku, qty, CASE WHEN sku = 'C' THEN 'new' ELSE 'kept' END FROM stock ORDER BY sku;
+```
+
+```sql
+-- expect: [["INSERT","E"]]
+-- MERGE … RETURNING (PostgreSQL 17+) with merge_action()
+MERGE INTO stock s
+USING (VALUES ('E', 7)) AS v(sku, qty) ON s.sku = v.sku
+WHEN NOT MATCHED THEN INSERT VALUES (v.sku, v.qty)
+RETURNING merge_action(), s.sku;
+```
+
+```sql
+DELETE FROM stock WHERE sku = 'E';
 ```
 
 ## 5. Constraints, transactions, views
@@ -149,7 +170,7 @@ FROM unnest(ARRAY[1,2,3,4]) x;
 ```
 
 ```sql
--- expect: error
+-- expect: error 42883
 -- round(double precision, integer) does not exist
 SELECT round(2.345::float8, 2);
 ```
@@ -203,7 +224,7 @@ SELECT count(*) FROM audit;
 
 ## 11. Indexes
 
-Status: verified (creation, plan choice); `CONCURRENTLY` not run (cannot run in a transaction block, and the runner sends blocks as one implicit transaction).
+Status: verified (creation, plan choice, skip scan, `CONCURRENTLY` as a single statement).
 
 | Type | Answers | Source |
 |---|---|---|
@@ -261,6 +282,26 @@ SELECT plan_text($q$SELECT * FROM names WHERE n LIKE '%omer 1234%'$q$) LIKE '%na
 
 ```sql
 RESET enable_seqscan;
+```
+
+`CREATE INDEX CONCURRENTLY` runs only as a statement of its own, outside a transaction block:
+
+```sql
+CREATE INDEX CONCURRENTLY events_kind_at ON events (kind, at);
+```
+
+```sql
+-- expect: error 25001
+BEGIN;
+CREATE INDEX CONCURRENTLY events_at_c ON events (at);
+```
+
+Skip scan (PostgreSQL 18): the `(kind, at)` index answers a filter on `at` alone, because `kind` has only two values:
+
+```sql
+-- expect: [["true"]]
+ANALYZE events;
+SELECT plan_text($q$SELECT * FROM events WHERE at = '2026-05-01'$q$) LIKE '%events_kind_at%';
 ```
 
 BoonData: Logistics chapter 11 is the index lab (`isCreateIndex`, `runLab`; `container_events` deliberately has no index on `container_id`); skills `explain_read`, `sargable`, `index_design`; Engine L2 "indexes" lessons (`content/engine/postgres/L2/`).
@@ -336,7 +377,7 @@ SELECT msg FROM r;
 ```
 
 ```sql
--- expect: error
+-- expect: error P0004
 DO $$ BEGIN ASSERT (SELECT count(*) FROM stock) > 100, 'stock too small'; END $$;
 ```
 
@@ -356,11 +397,17 @@ Status: verified.
 SELECT plan_json('SELECT * FROM events WHERE id = 5') -> 0 -> 'Plan' ->> 'Node Type';
 ```
 
+```sql
+-- expect: [["true"]]
+-- PostgreSQL 18: EXPLAIN ANALYZE prints Buffers without asking for BUFFERS
+SELECT plan_text('(ANALYZE) SELECT count(*) FROM events') LIKE '%Buffers:%';
+```
+
 BoonData: the EXPLAIN tab uses `EXPLAIN (ANALYZE, FORMAT JSON)` inside `BEGIN … ROLLBACK`; chapter 11 grades plans on node types and planner cost, never milliseconds (`src/planCheck.ts`).
 
 ## 17. MVCC, VACUUM and ANALYZE
 
-Status: concept from docs; `VACUUM` not run in the runner (cannot run inside a transaction block). The Engine L3 labs run it on PGlite (`content/engine/postgres/L3/`).
+Status: verified (new row version on UPDATE; VACUUM sets the visibility map). Page-level internals are taught by the Engine L3 labs (`content/engine/postgres/L3/`).
 
 - An `UPDATE` writes a new row version and marks the old one dead (`xmax`); a `DELETE` only marks it. Each transaction sees the versions committed before its snapshot (https://www.postgresql.org/docs/18/mvcc-intro.html).
 - `VACUUM` makes dead space reusable and updates the visibility map; it does not shrink the file (`VACUUM FULL` rewrites the table under an `ACCESS EXCLUSIVE` lock). Autovacuum does both `VACUUM` and `ANALYZE` in the background; keep it on (catalogue P03) (https://www.postgresql.org/docs/18/routine-vacuuming.html).
@@ -375,6 +422,18 @@ INSERT INTO v VALUES (1, 1);
 CREATE TEMP TABLE before AS SELECT ctid AS c FROM v;
 UPDATE v SET x = 2;
 SELECT (SELECT ctid FROM v) <> (SELECT c FROM before);
+```
+
+`VACUUM` cannot run inside a transaction block, so it is a block of its own:
+
+```sql
+VACUUM v;
+```
+
+```sql
+-- expect: [["1"]]
+-- the table's only page is now marked all-visible (index-only scans can skip it)
+SELECT relallvisible FROM pg_class WHERE relname = 'v';
 ```
 
 ## 18. JSONB
@@ -464,9 +523,9 @@ Status: verified.
 - `SECURITY DEFINER` functions run with the owner's rights; set `search_path` on them (security.md).
 
 ```sql
--- expect: [["15"]]
-CREATE FUNCTION add_vat(x numeric) RETURNS numeric LANGUAGE sql IMMUTABLE RETURN round(x * 1.5, 0);
-SELECT add_vat(10);
+-- expect: [["165"]]
+CREATE FUNCTION add_vat(x numeric) RETURNS numeric LANGUAGE sql IMMUTABLE RETURN round(x * 1.10, 0);  -- 10 % VAT
+SELECT add_vat(150);
 ```
 
 ## Sources

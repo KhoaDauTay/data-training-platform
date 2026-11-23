@@ -1,6 +1,6 @@
 # DBMS theory: architecture, relational model, algebra, transactions, storage, query processing, recovery
 
-Status: concepts checked against the sources listed per section; ```` ```sql ```` blocks verified on PGlite 0.5.16 (PostgreSQL 18.6). Two-session behaviour (locking, anomalies) is not verified here because PGlite has one connection; the Engine L4 lessons cover it.
+Status: concepts written from the sources listed per section (link-checked; the papers and manual pages were not re-read during this work, see [README.md](README.md#verification-levels)); ```` ```sql ```` blocks verified on PGlite 0.5.16 (PostgreSQL 18.6). Two-session behaviour (locking, anomalies) is not verified here because PGlite has one connection; the Engine L4 lessons cover it.
 
 Route points: tutorialspoint DBMS tutorial, sections in its order ([tutorial-routes.md](tutorial-routes.md#dbms)). PostgreSQL's own documentation is used as the concrete reference implementation.
 

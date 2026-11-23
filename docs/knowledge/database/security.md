@@ -1,6 +1,6 @@
 # Database security: injection, roles, privileges, row-level security
 
-Status: verified. ```` ```sql ```` blocks ran in order on PGlite 0.5.16 (PostgreSQL 18.6) with asserted `-- expect:` lines. Driver code (JavaScript) is not run and is marked so.
+Status: verified (examples; prose link-checked, see [README.md](README.md#verification-levels)). ```` ```sql ```` blocks ran in order on PGlite 0.5.16 (PostgreSQL 18.6) with asserted `-- expect:` lines. Driver code (JavaScript) is not run and is marked so.
 
 Route points: tutorialspoint SQL "Injection", MySQL "Users" section and "SQL Injection", PostgreSQL "Role & Permission" and "Privileges", SQLite "Injection" ([tutorial-routes.md](tutorial-routes.md)). Related catalogue items: X01 (parameterise), X02 (least privilege), X06 (read-only analyst), X09 (dynamic SQL with `format`), S10 (tenant RLS with `FORCE`).
 
@@ -59,7 +59,7 @@ SELECT count(*) FROM app.orders;
 ```
 
 ```sql
--- expect: error
+-- expect: error 42501
 -- analyst has SELECT only
 DELETE FROM app.orders;
 ```

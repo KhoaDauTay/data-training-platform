@@ -1,6 +1,6 @@
 # SQL core: statements, queries and their semantics
 
-Status: verified. Route points: tutorialspoint SQL tutorial sections "SQL Queries", "SQL Views", "SQL Operators and Clauses", "SQL Joins", "SQL Keys", "Advanced SQL" and the matching PostgreSQL, MySQL and SQLite chapters ([tutorial-routes.md](tutorial-routes.md#sql); per-chapter links in [boondata-gap-map.md](boondata-gap-map.md)). New route points get a new `## N.` section with its own Status line; existing headings stay stable because the gap map links to them.
+Status: verified (examples ran on PGlite with asserted results; prose is sourced from the linked PostgreSQL 18 pages, link-checked, see [README.md](README.md#verification-levels)). Sections are ordered by query semantics, not by the tutorial's order; [boondata-gap-map.md](boondata-gap-map.md) gives the tutorial order and links each route point to its section here. Route points: tutorialspoint SQL tutorial sections "SQL Queries", "SQL Views", "SQL Operators and Clauses", "SQL Joins", "SQL Keys", "Advanced SQL" and the matching PostgreSQL, MySQL and SQLite chapters ([tutorial-routes.md](tutorial-routes.md#sql); per-chapter links in [boondata-gap-map.md](boondata-gap-map.md)). New route points get a new `## N.` section with its own Status line; existing headings stay stable because the gap map links to them.
 
 Standard SQL as PostgreSQL 18 runs it. Dialect differences (TOP, `SHOW TABLES`, `||` in MySQL, clustered indexes…) live in [mysql-sqlite-differences.md](mysql-sqlite-differences.md). Every ```` ```sql ```` block in this file runs in order on one fresh PGlite 0.5.16 database (PostgreSQL 18.6) and `-- expect:` lines are asserted; see [README.md](README.md#verification).
 
@@ -67,7 +67,7 @@ Consequences:
 - Window functions cannot appear in `WHERE` or `HAVING`; filter their result in an outer query.
 
 ```sql
--- expect: error
+-- expect: error 42703
 SELECT amount * 2 AS doubled FROM orders WHERE doubled > 200;
 ```
 
@@ -243,7 +243,7 @@ ORDER BY c.name;
 ```
 
 ```sql
--- expect: error
+-- expect: error 21000
 -- a scalar subquery that returns more than one row is an error
 SELECT (SELECT amount FROM orders);
 ```
@@ -371,12 +371,12 @@ Status: verified on PGlite 0.5.16.
 - `DEFERRABLE INITIALLY DEFERRED` checks a constraint at commit instead of per statement.
 
 ```sql
--- expect: error
+-- expect: error 23503
 INSERT INTO orders (customer_id, placed_on, amount) VALUES (99, '2026-10-22', 5);
 ```
 
 ```sql
--- expect: error
+-- expect: error 23514
 INSERT INTO orders (customer_id, placed_on, amount) VALUES (1, '2026-10-22', -5);
 ```
 
@@ -388,7 +388,7 @@ SELECT count(*) FROM tags;
 ```
 
 ```sql
--- expect: error
+-- expect: error 23505
 CREATE TABLE tags2 (code text UNIQUE NULLS NOT DISTINCT);
 INSERT INTO tags2 VALUES (NULL), (NULL);
 ```
@@ -411,7 +411,7 @@ SELECT count(*) FROM city_sales;
 ```
 
 ```sql
--- expect: error
+-- expect: error 44000
 INSERT INTO danang (name, city) VALUES ('Giang', 'Hue');
 ```
 

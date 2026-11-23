@@ -1,12 +1,12 @@
 # Amazon DynamoDB
 
-Status: to-verify by execution in this folder. Facts were checked against the AWS Developer Guide pages cited (fetched 2026-11-23). The request shapes match the ones the Engine lessons run on `@dynoxide/wasm-engine` 1.5.0 (`tests/engineIntegration.test.ts`), but the snippets below were not executed here.
+Status: to-verify by execution in this folder. Limits and quotas (§1, §2, §6) come from the Constraints and Service Quotas pages, read in full on 2026-11-23; the Data Pipeline status from its page, read the same day. Other citations were link-checked (HTTP 200) and rest on the author's knowledge and on `docs/team/best-practice-catalogue.md`, whose DynamoDB examples were run (round 2). The request shapes match the ones the Engine lessons run on `@dynoxide/wasm-engine` 1.5.0 (`tests/engineIntegration.test.ts`), but the snippets below were not executed here.
 
 Route points: tutorialspoint DynamoDB tutorial, in its order ([tutorial-routes.md](tutorial-routes.md#dynamodb)). Deeper material: `docs/team/db-engine-knowledge.md` §5, `docs/team/best-practice-catalogue.md` (D01–D32), `content/engine/dynamodb/**`.
 
 ## 1. Data model
 
-Status: to-verify (docs checked).
+Status: to-verify (level per file header).
 
 - A table holds items; an item is a set of attributes; only the primary key is declared up front (https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.CoreComponents.html).
 - Primary key: a **partition key** alone, or partition key + **sort key**. Items with the same partition key form an item collection, stored together and sorted by sort key.
@@ -16,7 +16,7 @@ Status: to-verify (docs checked).
 
 ## 2. Item operations
 
-Status: to-verify (docs checked).
+Status: to-verify (level per file header).
 
 - `PutItem` (insert or replace the whole item), `GetItem` (by full key), `UpdateItem` (`SET`, `REMOVE`, `ADD`, `DELETE` actions; `if_not_exists`, `list_append`), `DeleteItem` (https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/WorkingWithItems.html).
 - **Condition expressions** make writes safe: `attribute_not_exists(pk)` for "create only", a version check for optimistic locking (https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.ConditionExpressions.html).
@@ -39,7 +39,7 @@ Status: to-verify (docs checked).
 
 ## 3. Query and Scan
 
-Status: to-verify (docs checked).
+Status: to-verify (level per file header).
 
 - `Query` reads one item collection: `KeyConditionExpression` must name the partition key with `=` and may restrict the sort key (`=`, `<`, `BETWEEN`, `begins_with`) (https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Query.html).
 - `FilterExpression` runs after the read: it shrinks the response, not the capacity consumed (https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Query.FilterExpression.html).
@@ -50,7 +50,7 @@ Status: to-verify (docs checked).
 
 ## 4. Secondary indexes
 
-Status: to-verify (docs checked).
+Status: to-verify (level per file header).
 
 - **GSI**: any partition/sort key, own capacity, eventually consistent only, up to 20 per table by default; created any time (https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/GSI.html).
 - **LSI**: same partition key, different sort key; created only with the table; up to 5; strongly consistent reads possible; with an LSI an item collection is limited to 10 GB (https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/LSI.html; quotas: ServiceQuotas.html).
@@ -59,7 +59,7 @@ Status: to-verify (docs checked).
 
 ## 5. Modelling
 
-Status: to-verify (docs checked).
+Status: to-verify (level per file header).
 
 - List access patterns first, then design keys so each is one `GetItem`/`Query` (https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-general-nosql-design.html).
 - Single-table design stores several entity types in one table with prefixed keys (`CUST#7`, `ORDER#…`) so related items share an item collection.
@@ -69,7 +69,7 @@ Status: to-verify (docs checked).
 
 ## 6. Capacity and consistency
 
-Status: to-verify (docs checked).
+Status: to-verify (level per file header).
 
 - 1 RCU = one strongly consistent read per second of an item up to 4 KB (or two eventually consistent reads); 1 WCU = one write per second up to 1 KB; transactional operations cost double (Constraints page).
 - On-demand vs provisioned capacity; default per-table quota 40,000 read and 40,000 write units (https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/ServiceQuotas.html).
@@ -77,7 +77,7 @@ Status: to-verify (docs checked).
 
 ## 7. Operations
 
-Status: to-verify (docs checked).
+Status: to-verify (level per file header).
 
 - Access control is IAM: policies on tables and indexes, fine-grained conditions such as `dynamodb:LeadingKeys` to restrict a user to their own partition (https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/specifying-conditions.html; catalogue D26). Web identity federation is now usually done through Cognito.
 - Backups: on-demand backups and point-in-time recovery (35 days) (https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Point-in-time-recovery.html); deletion protection on the table.

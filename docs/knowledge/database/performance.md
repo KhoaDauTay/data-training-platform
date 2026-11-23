@@ -1,6 +1,6 @@
 # Query and database performance (PostgreSQL first)
 
-Status: verified. ```` ```sql ```` blocks ran in order on PGlite 0.5.16 (PostgreSQL 18.6) with asserted results. PGlite has no parallel query, JIT or real disk I/O, so timing claims are not verified here; plan shapes and row estimates are.
+Status: verified (examples; prose link-checked, see [README.md](README.md#verification-levels)). ```` ```sql ```` blocks ran in order on PGlite 0.5.16 (PostgreSQL 18.6) with asserted results. PGlite has no parallel query, JIT or real disk I/O, so timing claims are not verified here; plan shapes and row estimates are.
 
 Route points: tutorialspoint SQL "Database Tuning", "Indexes" section; MySQL "Explain", "Indexes"; SQLite "EXPLAIN", "VACUUM", "INDEXED BY"; DBMS "Query Processing" ([tutorial-routes.md](tutorial-routes.md)). The full best-practice list is `docs/team/best-practice-catalogue.md` (Q, I, P items); this file keeps the rules a developer checks first.
 
