@@ -192,6 +192,21 @@ describe('chữ UI bảng Partition / Chi phí (src/i18n/engineDynamo.ts, v26 L3
   });
 });
 
+describe('chữ UI trang "Chọn engine nào?" (src/i18n/engineCompare.ts, v28 L430)', () => {
+  it('placeholder khớp, EN khác VI, EN không dấu, code VI = EN, không giọng game, không "sắp có"', async () => {
+    const { CMP_DICT } = await import('../src/i18n/engineCompare');
+    for (const [k, v] of Object.entries(CMP_DICT.vi)) {
+      const e = CMP_DICT.en[k as keyof typeof CMP_DICT.en];
+      expect([k, placeholders(e)]).toEqual([k, placeholders(v)]);
+      expect([k, e]).not.toEqual([k, v]);
+      expect([k, /[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ]/i.test(e)]).toEqual([k, false]);
+      expect([k, [...v.matchAll(/`([^`]+)`/g)].map((m) => m[1])]).toEqual([k, [...e.matchAll(/`([^`]+)`/g)].map((m) => m[1])]);
+      expect(`${v} ${e}`).not.toMatch(GAME_TONE);
+      expect(`${v} ${e}`).not.toMatch(/sắp có|coming soon/i);
+    }
+  });
+});
+
 describe('chữ UI khu Best Practice (src/i18n/best.ts, v24 BP-UI L346)', () => {
   it('placeholder khớp, EN khác VI, không giọng game, không "sắp có"', async () => {
     const { BEST_DICT } = await import('../src/i18n/best');

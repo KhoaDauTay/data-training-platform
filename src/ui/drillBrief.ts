@@ -65,6 +65,8 @@ export interface DrillDeps extends GuideDeps {
   createEditor: typeof EditorMod.createEditor; announce: typeof Dom.announce;
   /** v24 (L323): skill levels for the skill page's level line and the Part page's dots (src/mastery.ts, main). */
   masteryOf: typeof Mastery.masteryOf;
+  /** v28 LINK (L432): the "Đào sâu" chips to Engine lessons (src/ui/deepDive.ts, main; its table is a lazy chunk). */
+  deepDive: (id: string) => HTMLElement | null;
 }
 
 let d$: DrillDeps;
@@ -172,6 +174,7 @@ function drillParts(g: General, d: Drill, tk: Ticket): (Node | null | false | un
     d$.tryPreview(tk.steps[0].solution, 'lab'), // L84: the tables it reads and a sample of the expected result (practice, not story)
     d$.hints(tk, d$.textOf(tk, lang), false),
     lesson ? h('p', { class: 'my-2 flex flex-wrap items-center gap-2 text-body-sm' }, h('span', {}, lt('drill.lesson', { name: what })), lesson) : null,
+    d$.deepDive(d.skill ?? d.node ?? ''),
   ];
 }
 

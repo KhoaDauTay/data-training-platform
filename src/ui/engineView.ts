@@ -41,6 +41,8 @@ export interface EngineDeps {
   /** v27 (L410–L411): the glossary and interview room routes. */
   engineTermsOf: typeof Route.engineTermsOf; engineTermsHash: typeof Route.engineTermsHash;
   engineInterviewOf: typeof Route.engineInterviewOf; engineInterviewHash: typeof Route.engineInterviewHash;
+  /** v28 (L430): the "Which engine?" page. */
+  engineCompareOf: typeof Route.engineCompareOf; engineCompareHash: typeof Route.engineCompareHash;
   cls: { CARD: string; BTN_GO: string; BTN_SECONDARY: string; BTN_GHOST: string; PILL: string; DONE_PILL: string; cx: (...c: (string | false | null | undefined)[]) => string };
   /** L280: main's list rows (the Overview's chapter rows), so Engine lists look and behave like the rest of the site. */
   ui: { listRow: typeof HomeView.listRow; LIST: string; GROUP_TITLE: string; ABOVE: string };
@@ -895,8 +897,33 @@ function ivView(): IvView | 'loading' | 'failed' {
   }
   return ivMod;
 }
-const v27Here = (): boolean => d.engineTermsOf(location.hash) !== undefined || !!d.engineInterviewOf(location.hash);
+// v28 (L430): "Which engine?" (#/engine/compare), its own lazy chunk; lesson links come from this chunk's index
+type CmpView = typeof import('./engineCompare');
+let cmpMod: CmpView | 'loading' | 'failed' | undefined;
+function cmpView(): CmpView | 'loading' | 'failed' {
+  if (cmpMod === undefined) {
+    cmpMod = 'loading';
+    import('./engineCompare').then((m) => {
+      m.initCompare({ d, inline: (t) => inline(t), lesson: (id) => { const l = lessons.find((x) => x.id === id); return l && { title: l.title[lang()], hash: lessonHash(l) }; } });
+      cmpMod = m;
+    }).catch(() => { cmpMod = 'failed'; }).finally(() => d.rerender());
+  }
+  return cmpMod;
+}
+function cmpPage(): HTMLElement | undefined {
+  if (!d.engineCompareOf(location.hash)) return undefined;
+  const m = cmpView();
+  if (m === 'loading') return loadingLine();
+  if (m === 'failed') return failedBox(() => { cmpMod = undefined; d.rerender(); });
+  const page = m.comparePage();
+  page.id = 'engine-page';
+  return page;
+}
+
+const v27Here = (): boolean => d.engineTermsOf(location.hash) !== undefined || !!d.engineInterviewOf(location.hash) || d.engineCompareOf(location.hash);
 function v27Page(): HTMLElement | undefined {
+  const cmp = cmpPage();
+  if (cmp) return cmp;
   const terms = d.engineTermsOf(location.hash);
   const iv = d.engineInterviewOf(location.hash);
   if (terms === undefined && !iv) return undefined;
@@ -909,6 +936,7 @@ function v27Page(): HTMLElement | undefined {
 }
 function v27Sub(): HomeView.PageSub | undefined {
   const top = [{ href: d.hashOf('engine'), text: d.t('nav.engine') }];
+  if (d.engineCompareOf(location.hash)) return typeof cmpMod === 'object' ? cmpMod.subOf() : { title: et('v28.compare'), trail: top };
   if (d.engineTermsOf(location.hash) !== undefined) return typeof termsMod === 'object' ? termsMod.subOf() : { title: et('v27.terms'), trail: top };
   const iv = d.engineInterviewOf(location.hash);
   if (iv) return typeof ivMod === 'object' ? ivMod.subOf(iv) : { title: et('v27.interview'), trail: top };
@@ -922,11 +950,13 @@ function v27Rows(): HTMLElement {
   });
   return d.h('section', { 'aria-labelledby': 'engine-more' },
     d.h('h2', { id: 'engine-more', class: d.ui.GROUP_TITLE }, et('v27.more')),
-    d.h('ul', { class: d.ui.LIST }, row(d.engineTermsHash(), 'bookIndex', et('v27.terms'), et('v27.termsLine')),
+    d.h('ul', { class: d.ui.LIST }, row(d.engineCompareHash(), 'scale', et('v28.compare'), et('v28.compareLine')),
+      row(d.engineTermsHash(), 'bookIndex', et('v27.terms'), et('v27.termsLine')),
       row(d.engineInterviewHash(), 'secPractice', et('v27.interview'), et('v27.interviewLine'))));
 }
 function v27Side(ui: { row: (r: Row) => HTMLElement; group: (text: string) => HTMLElement }): HTMLElement[] {
   return [ui.group(et('v27.more')),
+    ui.row({ key: 'e:cmp', href: d.engineCompareHash(), lead: d.icon('scale'), label: et('v28.compare'), current: d.engineCompareOf(location.hash) }),
     ui.row({ key: 'e:terms', href: d.engineTermsHash(), lead: d.icon('bookIndex'), label: et('v27.terms'), current: d.engineTermsOf(location.hash) !== undefined }),
     ui.row({ key: 'e:iv', href: d.engineInterviewHash(), lead: d.icon('secPractice'), label: et('v27.interview'), current: !!d.engineInterviewOf(location.hash) })];
 }

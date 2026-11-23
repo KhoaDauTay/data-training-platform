@@ -194,7 +194,7 @@ function skillPage(c: LearnCtx, s: Skill): HTMLElement {
     return h('div', { class: 'space-y-4' }, slot('skill-head'),
       lessonPage(d$, full, { skill: s, drills: c.general.bySkill.get(s.id) ?? [], part: n ? { n, title: d$.moduleTitle(n, d$.getLang()) } : undefined,
         prev: order[i - 1], next: order[i + 1], level: levelLine(s.id), done: c.known.has(s.id) }),
-      slot('skill-card'));
+      d$.deepDive(s.id), slot('skill-card'));
   }
   if (full === 'loading') return h('p', { class: 'm-0 flex min-h-40 items-start gap-2 text-muted', 'aria-live': 'polite' }, d$.loader(), lt('fl.loading'));
   const lang = d$.getLang();
@@ -206,6 +206,7 @@ function skillPage(c: LearnCtx, s: Skill): HTMLElement {
     levelLine(s.id),
     slot('skill-head'),
     skillBlock(c, s),
+    d$.deepDive(s.id),
     slot('skill-card'),
     h('section', { class: 'space-y-2 rounded-(--r-card) bg-panel p-5 ring-1 ring-line', 'aria-labelledby': 'skill-card' },
       h('h2', { id: 'skill-card', class: 'm-0 text-body font-bold' }, lt('learn.card')),

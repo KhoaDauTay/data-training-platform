@@ -3,6 +3,7 @@ import type { DbClient } from '../db/client';
 import type { Drill } from '../general';
 import { knownSkills, type HomeModel } from '../home';
 import { masteryOf } from '../mastery';
+import { deepDive } from './deepDive';
 import { getLang, isMac, keyLabels, locale, t } from '../i18n';
 import { LANE_XP } from '../lanes';
 import { applyResult, isSuccess, movedToday, nextCard, pickForSkill, retryItem, seedReview, type PracticeItem } from '../practice';
@@ -154,7 +155,7 @@ const loadDrillUi = () => import('./drillBrief').then((m) => {
     lessonSeen: isSeen, knownSkills, learnSkillOf, learnAdvOf, learnModuleOf, moduleTitle, illustration, loadedGsap, loadGsap, reducedMotion, icon, skillIcon, loadTickets, CHAPTERS,
     startPlacement, announce, readJson, writeJson, readTour, boonMark, enterMark, escOwned, guideHooks, guideSlot, showPane, parseRoute, mod: keyLabels(isMac).mod, isInterviewPage,
     ROUTE_PARTS: PARTS, partOf, learnTitles, runOn, verdictText, grade, renderResult, errorView, errorText, createEditor, // v24 R0
-    masteryOf,
+    masteryOf, deepDive,
   });
   return (drillUi = m);
 });

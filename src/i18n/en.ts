@@ -122,6 +122,7 @@ export const en: Record<Key, Msg> = {
   'nav.practiceShort': 'Practise', // review v22 RC: the top bar has no room for "Practise SQL" at 1024 px in EN
   'nav.engine': 'Database Engine', // ENG-CORE (L220): a proper name in both languages (SAME_OK)
   'nav.engineShort': 'Engine', // review v22 RC (product-design-db-engine §7.2): the top-bar label; the page title stays "Database Engine" (SAME_OK)
+  'deep.title': 'Go deeper in Database Engine:',
   'engine.loading': 'Opening the Database Engine area…',
   'engine.failed': 'Could not load the Database Engine area. Check your connection, then try again.',
   'engine.switch': 'Choose what to learn',
