@@ -45,7 +45,7 @@ const TEXT = {
     summary: '{col} theo {key}: cao nhất {top} ({vt}), thấp nhất {low} ({vl}); {n} điểm.', list: 'Danh sách theo giá trị',
     place: 'Điểm', arc: 'Nét đứt: đường tượng trưng.', edge: '{p} nằm ngoài khung: mũi tên ở mép trái.',
     label: 'Bản đồ kết quả. {s}', none: 'Chưa mở bảng nào.',
-    skill: 'Câu hỏi của bản đồ ở đây cần gom nhóm theo từng điểm (GROUP BY): chúng hiện khi bạn đã học kỹ năng đó.',
+    skill: 'Câu hỏi ở đây cần GROUP BY: hiện khi bạn đã học kỹ năng này.',
   },
   en: {
     title: 'Ask the map with SQL', sub: 'Pick a point, run the sample, then change it: the result is drawn on the map.',
@@ -56,7 +56,7 @@ const TEXT = {
     summary: '{col} by {key}: highest {top} ({vt}), lowest {low} ({vl}); {n} points.', list: 'List by value',
     place: 'Point', arc: 'Dashed: a symbolic line.', edge: '{p} is outside the frame: arrow on the left edge.',
     label: 'Result map. {s}', none: 'No table open yet.',
-    skill: 'The map questions here need grouping per point (GROUP BY): they show once you have learned that skill.',
+    skill: 'The questions here need GROUP BY: they show once you have learned it.',
   },
 } as const;
 type TKey = keyof (typeof TEXT)['vi'];

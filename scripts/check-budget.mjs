@@ -57,7 +57,7 @@ const GROUPS = [
   ['pgext', /^(pageinspect|pg_visibility|amcheck|pg_walinspect|pg_buffercache|pg_freespacemap|bloom|btree_gin|btree_gist|pg_trgm|pg_stat_statements|ltree|cube|earthdistance)\.tar-.*\.gz$/, 160], // L248: + cube, earthdistance (L2 geo lesson)
   ['pgcrypto', /^pgcrypto\.tar-.*\.gz$/, 1160], // bundles OpenSSL: fetched only by a lab that names pgcrypto
   ['why', /^(why|whyView)-/, 6], // V22-B (L206): "Vì sao?" under a result row: src/ui/whyView.ts (VI/EN inside) + src/viz/why.ts (worker, beside the steps chunk), lazy on the first click
-  ['mapteach', /^mapTeach-/, 8], // V22-A (L203): src/ui/mapTeach.ts + src/viz/geo.ts + src/mapQueries.ts (result map: Map tab and Map page questions, VI/EN inside), lazy on the first Map page or Map tab
+  ['mapteach', /^mapTeach-/, 9], // L304: 8.1 KB with the beginner skill gate (main 7.8). V22-A (L203): src/ui/mapTeach.ts + src/viz/geo.ts + src/mapQueries.ts (result map: Map tab and Map page questions, VI/EN inside), lazy on the first Map page or Map tab
   ['engineVizNosql', /^engineVizNosql-/, 15], // ENG-VIZ (L236): MongoDB + DynamoDB diagrams (src/engine/viz/engineVizNosql.ts), lazy from engineViz's loadViz()
   ['engineVizPg', /^engineVizPgFlow-/, 12], // v23 PG-VIZ (L264): pg-query-path, pg-partition-prune, pg-replication (src/engine/viz/engineVizPgFlow.ts), lazy from engineViz's loadViz()
   ['engineViz', /^engineViz(Core|PlanJson)?-/, 30], // ENG-VIZ (L235/L236): diagram engine (engineVizCore-*, shared with the NoSQL chunk; engineVizPlanJson-*, EXPLAIN JSON helpers shared with engineVizPgFlow, v23 L264) + Postgres diagrams (engineViz-*), lazy; built as a second entry until ENG-CORE imports it

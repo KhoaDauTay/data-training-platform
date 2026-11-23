@@ -29,8 +29,8 @@ export const MAP_QUESTIONS: Record<DomainId, MapQuestion[]> = {
       // L304: the one sample a beginner gets before GROUP BY: one row per port already, so the map needs no grouping.
       id: 'l-transit', tables: ['ports'], needs: [],
       sql: 'SELECT code, base_transit_days\nFROM ports',
-      q: { vi: 'Theo danh mục cảng, hàng từ Việt Nam tới {p} đi mất bao nhiêu ngày?', en: 'According to the port list, how many days does cargo from Vietnam take to reach {p}?' },
-      next: { vi: 'Chỉ giữ cảng biển (thêm một điều kiện về loại cảng): sân bay nào biến khỏi bản đồ?', en: 'Keep seaports only (add a condition on the kind of port): which airports leave the map?' },
+      q: { vi: 'Từ Việt Nam tới {p} mất bao nhiêu ngày?', en: 'How many days from Vietnam to {p}?' },
+      next: { vi: 'Chỉ giữ cảng biển (điều kiện về loại cảng).', en: 'Keep seaports only (a condition on the kind of port).' },
     },
     {
       id: 'l-count', tables: ['shipments'], needs: ['group_by'],
