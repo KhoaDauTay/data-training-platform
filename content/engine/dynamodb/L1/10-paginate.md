@@ -172,7 +172,56 @@ lab:
       hint:
         vi: 'Gửi lại đúng request đó, thêm `ExclusiveStartKey` bằng `LastEvaluatedKey` (viết ở DynamoDB JSON). Lần đọc bắt đầu ngay **sau** khóa đó.'
         en: 'Send the same request again with `ExclusiveStartKey` set to `LastEvaluatedKey` (in DynamoDB JSON). The read starts right **after** that key.'
+    - task:
+        vi: 'Màn hình đổi sang "mới nhất trước", vẫn 2 đơn mỗi trang. Trang 1 của `C-03` kết thúc ở `orderId` `2026-09-28#O-111`. Lấy trang 2.'
+        en: 'The screen switches to "newest first", still 2 orders per page. Page 1 for `C-03` ended at `orderId` `2026-09-28#O-111`. Get page 2.'
+      solution: |
+        {"op": "Query", "input": {"TableName": "Orders",
+          "KeyConditionExpression": "customerId = :c",
+          "ExpressionAttributeValues": {":c": {"S": "C-03"}},
+          "ScanIndexForward": false, "Limit": 2,
+          "ExclusiveStartKey": {"customerId": {"S": "C-03"}, "orderId": {"S": "2026-09-28#O-111"}}}}
+      check: doc
+      ordered: true
+      expect: { Count: 2 }
+      hint:
+        vi: 'Giữ `ScanIndexForward` là `false` ở mọi trang; lần đọc đi tiếp **sau** khóa đó theo chiều đang đọc.'
+        en: 'Keep `ScanIndexForward` set to `false` on every page; the read carries on **after** that key in the current direction.'
+quiz:
+  - q:
+      vi: '`Query` đơn của `C-03` với `"Limit": 2` và `FilterExpression` giữ đơn `NEW`. Phản hồi chắc chắn có 2 item không?'
+      en: 'A `Query` for the orders of `C-03` with `"Limit": 2` and a `FilterExpression` that keeps `NEW` orders. Is the response sure to hold 2 items?'
+    options:
+      - vi: Có, `Limit` là số item trả về
+        en: Yes, `Limit` is the number of items returned
+      - vi: 'Không, `Limit` là số item đọc; bộ lọc có thể bỏ hết, kể cả trả 0 item'
+        en: 'No, `Limit` is the number of items read; the filter may drop them all, even down to 0 items'
+      - vi: Không, `Limit` bị bỏ qua khi có bộ lọc
+        en: No, `Limit` is ignored when there is a filter
+    answer: 1
+    trap: 0
+    why:
+      vi: 'Nghe hợp lý vì `LIMIT` của SQL đếm dòng trả về, nhưng `Limit` của DynamoDB dừng sau khi **đọc** đủ số item, rồi bộ lọc mới chạy. Hai đơn đầu của `C-03` không phải `NEW`, nên trang đầu trả 0 item và vẫn có `LastEvaluatedKey`.'
+      en: 'It sounds right because SQL `LIMIT` counts returned rows, but DynamoDB `Limit` stops after **reading** that many items, and only then the filter runs. The first two orders of `C-03` are not `NEW`, so the first page returns 0 items and still carries a `LastEvaluatedKey`.'
+  - q:
+      vi: Khi nào vòng lặp phân trang nên dừng?
+      en: When should a pagination loop stop?
+    options:
+      - vi: Khi một trang trả ít hơn `Limit` item
+        en: When a page returns fewer than `Limit` items
+      - vi: 'Khi phản hồi không còn `LastEvaluatedKey`'
+        en: 'When the response no longer has a `LastEvaluatedKey`'
+      - vi: Khi một trang trả 0 item
+        en: When a page returns 0 items
+    answer: 1
+    trap: 0
+    why:
+      vi: 'Nghe hợp lý vì trang ngắn trông như trang cuối, nhưng một trang có thể ngắn vì bộ lọc hoặc vì chạm 1 MB. Chỉ việc thiếu `LastEvaluatedKey` mới nói là đã hết.'
+      en: 'It sounds right because a short page looks like the last one, but a page can be short because of a filter or the 1 MB cap. Only a missing `LastEvaluatedKey` says you are done.'
 ---
+## Mở bài
+
+Một khách có hàng trăm đơn, nhưng màn hình chỉ hiện vài đơn mỗi trang. Bạn đọc trang đầu, rồi làm sao đọc đúng trang tiếp theo mà không lặp hay sót đơn nào?
 
 ## Ý chính
 
@@ -185,9 +234,9 @@ Nếu còn dữ liệu, phản hồi có `LastEvaluatedKey`: khóa của item cu
 
 `Limit` giới hạn số item **đọc**, không phải số item **trả về sau bộ lọc**. Với `FilterExpression`, một trang có thể trả ít hơn `Limit`, thậm chí 0 item mà vẫn còn `LastEvaluatedKey`.
 
-## Ví dụ
+Khi item cuối nằm đúng ở ranh giới, DynamoDB có thể vẫn trả `LastEvaluatedKey`, và lần gọi sau trả 0 item. Code phải chịu được trường hợp đó.
 
-Vòng lặp phân trang trong code ứng dụng:
+## Cú pháp
 
 ```text
 start = none
@@ -198,11 +247,60 @@ repeat:
 until start is none
 ```
 
+- `ExclusiveStartKey` là khóa chính đầy đủ (với bảng khóa kép: cả partition key lẫn sort key), viết ở DynamoDB JSON.
+- Mọi trang gửi cùng điều kiện, cùng `ScanIndexForward`.
+
+## Ví dụ
+
+Ba đơn đầu của `C-03`, cũ trước; phản hồi có `LastEvaluatedKey`:
+
+```json
+{"op": "Query", "input": {"TableName": "Orders", "KeyConditionExpression": "customerId = :c", "ExpressionAttributeValues": {":c": {"S": "C-03"}}, "Limit": 3}}
+```
+
+Trang tiếp theo bắt đầu ngay sau `2026-09-28#O-111`, còn một đơn:
+
+```json
+{"op": "Query", "input": {"TableName": "Orders", "KeyConditionExpression": "customerId = :c", "ExpressionAttributeValues": {":c": {"S": "C-03"}}, "Limit": 3, "ExclusiveStartKey": {"customerId": {"S": "C-03"}, "orderId": {"S": "2026-09-28#O-111"}}}}
+```
+
+## Lỗi hay gặp
+
+Chỉ đưa partition key vào `ExclusiveStartKey`:
+
+```json
+// ERROR ValidationException
+{"op": "Query", "input": {"TableName": "Orders", "KeyConditionExpression": "customerId = :c", "ExpressionAttributeValues": {":c": {"S": "C-03"}}, "Limit": 2, "ExclusiveStartKey": {"customerId": {"S": "C-03"}}}}
+```
+
+Dùng `Limit` cùng bộ lọc rồi tưởng trang rỗng là hết đơn `NEW`:
+
+```json
+// WRONG: Limit reads 2 items, the filter drops both, so the page is empty
+{"op": "Query", "input": {"TableName": "Orders", "KeyConditionExpression": "customerId = :c", "FilterExpression": "#s = :n", "ExpressionAttributeNames": {"#s": "status"}, "ExpressionAttributeValues": {":c": {"S": "C-03"}, ":n": {"S": "NEW"}}, "Limit": 2}}
+```
+
+```json
+// FIX: no Limit (or keep paging until there is no LastEvaluatedKey)
+{"op": "Query", "input": {"TableName": "Orders", "KeyConditionExpression": "customerId = :c", "FilterExpression": "#s = :n", "ExpressionAttributeNames": {"#s": "status"}, "ExpressionAttributeValues": {":c": {"S": "C-03"}, ":n": {"S": "NEW"}}}}
+```
+
 ## Thực hành
 
-`C-03` có 4 đơn, nên 2 trang là đủ. Khi item cuối nằm đúng ở ranh giới, DynamoDB có thể vẫn trả `LastEvaluatedKey`, và lần gọi sau trả 0 item. Code phải chịu được trường hợp đó.
+`C-03` có 4 đơn, nên 2 trang là đủ cho mỗi chiều đọc. Bước được chấm theo đúng thứ tự item.
+
+## Tóm tắt
+
+- Mỗi lần gọi dừng ở `Limit` item đọc hoặc 1 MB.
+- Còn dữ liệu thì có `LastEvaluatedKey`; đưa nó vào `ExclusiveStartKey`.
+- Chỉ dừng khi không còn `LastEvaluatedKey`.
+- `Limit` đếm item đọc, không đếm item sau bộ lọc.
 
 # EN
+
+## Opening
+
+A customer has hundreds of orders, but the screen shows only a few per page. You read the first page; how do you read exactly the next one, with no order repeated or missed?
 
 ## Key idea
 
@@ -215,9 +313,9 @@ If more data is left, the response carries `LastEvaluatedKey`: the key of the la
 
 `Limit` caps the items **read**, not the items **returned after the filter**. With a `FilterExpression`, a page can return fewer than `Limit` items, even 0, and still carry a `LastEvaluatedKey`.
 
-## Example
+When the last item sits exactly on the boundary, DynamoDB may still return a `LastEvaluatedKey`, and the next call returns 0 items. Your code must cope with that.
 
-The pagination loop in application code:
+## Syntax
 
 ```text
 start = none
@@ -228,6 +326,51 @@ repeat:
 until start is none
 ```
 
+- `ExclusiveStartKey` is the full primary key (for a composite key: both the partition key and the sort key), in DynamoDB JSON.
+- Every page sends the same condition and the same `ScanIndexForward`.
+
+## Example
+
+The first three orders of `C-03`, oldest first; the response carries a `LastEvaluatedKey`:
+
+```json
+{"op": "Query", "input": {"TableName": "Orders", "KeyConditionExpression": "customerId = :c", "ExpressionAttributeValues": {":c": {"S": "C-03"}}, "Limit": 3}}
+```
+
+The next page starts right after `2026-09-28#O-111`, with one order left:
+
+```json
+{"op": "Query", "input": {"TableName": "Orders", "KeyConditionExpression": "customerId = :c", "ExpressionAttributeValues": {":c": {"S": "C-03"}}, "Limit": 3, "ExclusiveStartKey": {"customerId": {"S": "C-03"}, "orderId": {"S": "2026-09-28#O-111"}}}}
+```
+
+## Common mistakes
+
+Putting only the partition key into `ExclusiveStartKey`:
+
+```json
+// ERROR ValidationException
+{"op": "Query", "input": {"TableName": "Orders", "KeyConditionExpression": "customerId = :c", "ExpressionAttributeValues": {":c": {"S": "C-03"}}, "Limit": 2, "ExclusiveStartKey": {"customerId": {"S": "C-03"}}}}
+```
+
+Using `Limit` with a filter and taking an empty page to mean there are no `NEW` orders:
+
+```json
+// WRONG: Limit reads 2 items, the filter drops both, so the page is empty
+{"op": "Query", "input": {"TableName": "Orders", "KeyConditionExpression": "customerId = :c", "FilterExpression": "#s = :n", "ExpressionAttributeNames": {"#s": "status"}, "ExpressionAttributeValues": {":c": {"S": "C-03"}, ":n": {"S": "NEW"}}, "Limit": 2}}
+```
+
+```json
+// FIX: no Limit (or keep paging until there is no LastEvaluatedKey)
+{"op": "Query", "input": {"TableName": "Orders", "KeyConditionExpression": "customerId = :c", "FilterExpression": "#s = :n", "ExpressionAttributeNames": {"#s": "status"}, "ExpressionAttributeValues": {":c": {"S": "C-03"}, ":n": {"S": "NEW"}}}}
+```
+
 ## Practice
 
-`C-03` has 4 orders, so 2 pages are enough. When the last item sits exactly on the boundary, DynamoDB may still return a `LastEvaluatedKey`, and the next call returns 0 items. Your code must cope with that.
+`C-03` has 4 orders, so 2 pages are enough in each direction. Each step is graded in item order.
+
+## Recap
+
+- Each call stops at `Limit` items read or at 1 MB.
+- More data means a `LastEvaluatedKey`; pass it as `ExclusiveStartKey`.
+- Stop only when there is no `LastEvaluatedKey`.
+- `Limit` counts items read, not items left after the filter.

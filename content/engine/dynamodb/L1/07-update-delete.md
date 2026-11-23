@@ -68,11 +68,45 @@ lab:
       hint:
         vi: '`DeleteItem` cần khóa đầy đủ, như `GetItem`.'
         en: '`DeleteItem` needs the full key, like `GetItem`.'
+quiz:
+  - q:
+      vi: 'Bạn `UpdateItem` với `SET stock = :s` lên `isbn` `978-0-99`, chưa có trong bảng. Chuyện gì xảy ra?'
+      en: 'You run `UpdateItem` with `SET stock = :s` on `isbn` `978-0-99`, which is not in the table. What happens?'
+    options:
+      - vi: 'Không có gì, giống `UPDATE … WHERE` không khớp dòng nào'
+        en: 'Nothing, like an `UPDATE … WHERE` that matches no row'
+      - vi: 'Một item mới được tạo, chỉ có `isbn` và `stock`'
+        en: 'A new item is created with only `isbn` and `stock`'
+      - vi: '`ValidationException` vì khóa không tồn tại'
+        en: 'A `ValidationException` because the key does not exist'
+    answer: 1
+    trap: 0
+    why:
+      vi: 'Nghe hợp lý vì `UPDATE` của SQL không tạo dòng, nhưng `UpdateItem` là upsert: khóa chưa có thì item được tạo với khóa đó cộng các thuộc tính trong `SET`. Muốn chặn, thêm điều kiện `attribute_exists` (L2).'
+      en: 'It sounds right because SQL `UPDATE` never creates a row, but `UpdateItem` is an upsert: a missing key creates an item with that key plus the attributes in `SET`. To prevent it, add an `attribute_exists` condition (L2).'
+  - q:
+      vi: '`DeleteItem` một khóa không tồn tại. DynamoDB trả về gì?'
+      en: '`DeleteItem` on a key that does not exist. What does DynamoDB return?'
+    options:
+      - vi: Lỗi vì không có gì để xóa
+        en: An error, because there is nothing to delete
+      - vi: Phản hồi thành công, bảng không đổi
+        en: A successful response, and the table is unchanged
+      - vi: Xóa item gần nhất theo thứ tự khóa
+        en: It deletes the closest item in key order
+    answer: 1
+    trap: 0
+    why:
+      vi: 'Nghe hợp lý vì xóa thứ không có trông như một lỗi, nhưng DynamoDB coi đó là thành công. Muốn biết item có thật bị xóa không, dùng `ReturnValues: "ALL_OLD"` hoặc một điều kiện.'
+      en: 'It sounds right because deleting something that is not there looks like a mistake, but DynamoDB treats it as a success. To know whether an item was really deleted, use `ReturnValues: "ALL_OLD"` or a condition.'
 ---
+## Mở bài
+
+Kho vừa nhập thêm hàng cho một cuốn sách, và một cuốn khác ngừng bán. Bạn chỉ muốn đổi `stock`, không ghi lại cả item. Request nào làm việc đó?
 
 ## Ý chính
 
-`UpdateItem` sửa **một phần** item qua `UpdateExpression`. Bài này dùng mệnh đề `SET`; L2 thêm `REMOVE`, `ADD`, `DELETE`.
+`UpdateItem` sửa **một phần** item qua `UpdateExpression`. Bài này dùng mệnh đề `SET`; L2 thêm `REMOVE`, `ADD`, `DELETE`. Giá trị không viết thẳng vào biểu thức mà đi qua chỗ giữ chỗ bắt đầu bằng `:`, khai trong `ExpressionAttributeValues`.
 
 Hai điều khác SQL:
 
@@ -83,23 +117,74 @@ Hai điều khác SQL:
 
 `DeleteItem` xóa một item theo khóa đầy đủ. Xóa khóa không tồn tại không phải lỗi.
 
+## Cú pháp
+
+```text
+{"op": "UpdateItem", "input": {"TableName": "<table>", "Key": {...},
+  "UpdateExpression": "SET <attr> = :v, <attr2> = :w",
+  "ExpressionAttributeValues": {":v": {...}, ":w": {...}},
+  "ReturnValues": "ALL_NEW"}}
+{"op": "DeleteItem", "input": {"TableName": "<table>", "Key": {...}, "ReturnValues": "ALL_OLD"}}
+```
+
+- `Key` là khóa đầy đủ, như `GetItem`.
+- Mỗi chỗ giữ chỗ `:x` trong biểu thức phải có trong `ExpressionAttributeValues`.
+
 ## Ví dụ
 
-Giá trị luôn đi qua chỗ giữ chỗ bắt đầu bằng `:`:
+Đổi giá và tồn kho của `978-0-01` trong một lệnh, xem bản sau khi sửa:
 
 ```json
-{"UpdateExpression": "SET price = :p, stock = :s", "ExpressionAttributeValues": {":p": {"N": "99000"}, ":s": {"N": "4"}}}
+{"op": "UpdateItem", "input": {"TableName": "Books", "Key": {"isbn": {"S": "978-0-01"}}, "UpdateExpression": "SET price = :p, stock = :s", "ExpressionAttributeValues": {":p": {"N": "99000"}, ":s": {"N": "4"}}, "ReturnValues": "ALL_NEW"}}
+```
+
+Xóa cuốn `978-0-08` và giữ lại bản đã xóa:
+
+```json
+{"op": "DeleteItem", "input": {"TableName": "Books", "Key": {"isbn": {"S": "978-0-08"}}, "ReturnValues": "ALL_OLD"}}
+```
+
+## Lỗi hay gặp
+
+Viết giá trị thẳng vào biểu thức như SQL:
+
+```json
+// ERROR ValidationException
+{"op": "UpdateItem", "input": {"TableName": "Books", "Key": {"isbn": {"S": "978-0-03"}}, "UpdateExpression": "SET stock = 25"}}
+```
+
+Gõ sai khóa: không có lỗi, mà có một item mới:
+
+```json
+// WRONG: the key 978-0-3 does not exist, so UpdateItem creates it
+{"op": "UpdateItem", "input": {"TableName": "Books", "Key": {"isbn": {"S": "978-0-3"}}, "UpdateExpression": "SET stock = :s", "ExpressionAttributeValues": {":s": {"N": "25"}}}}
+```
+
+```json
+// FIX: the exact key, so the existing book is changed
+{"op": "UpdateItem", "input": {"TableName": "Books", "Key": {"isbn": {"S": "978-0-03"}}, "UpdateExpression": "SET stock = :s", "ExpressionAttributeValues": {":s": {"N": "25"}}}}
 ```
 
 ## Thực hành
 
 Ba bước độc lập, mỗi bước chạy trên dữ liệu gốc. Bước được chấm bằng trạng thái bảng sau khi ghi.
 
+## Tóm tắt
+
+- `UpdateItem` sửa một phần item theo khóa; giá trị đi qua chỗ giữ chỗ `:x`.
+- Khóa chưa có thì `UpdateItem` tạo item mới (upsert).
+- Mỗi request sửa hoặc xóa đúng một item.
+- `DeleteItem` khóa không tồn tại không phải lỗi; `ALL_OLD` trả bản đã xóa.
+
 # EN
+
+## Opening
+
+The store just restocked one book, and another one is discontinued. You want to change only `stock`, not write the whole item again. Which request does that?
 
 ## Key idea
 
-`UpdateItem` changes **part** of an item through an `UpdateExpression`. This lesson uses the `SET` clause; L2 adds `REMOVE`, `ADD`, `DELETE`.
+`UpdateItem` changes **part** of an item through an `UpdateExpression`. This lesson uses the `SET` clause; L2 adds `REMOVE`, `ADD`, `DELETE`. Values never go straight into the expression: they go through placeholders that start with `:`, declared in `ExpressionAttributeValues`.
 
 Two differences from SQL:
 
@@ -110,14 +195,61 @@ Two differences from SQL:
 
 `DeleteItem` deletes one item by its full key. Deleting a key that does not exist is not an error.
 
+## Syntax
+
+```text
+{"op": "UpdateItem", "input": {"TableName": "<table>", "Key": {...},
+  "UpdateExpression": "SET <attr> = :v, <attr2> = :w",
+  "ExpressionAttributeValues": {":v": {...}, ":w": {...}},
+  "ReturnValues": "ALL_NEW"}}
+{"op": "DeleteItem", "input": {"TableName": "<table>", "Key": {...}, "ReturnValues": "ALL_OLD"}}
+```
+
+- `Key` is the full key, as in `GetItem`.
+- Every placeholder `:x` in the expression must be in `ExpressionAttributeValues`.
+
 ## Example
 
-Values always go through placeholders that start with `:`:
+Change the price and stock of `978-0-01` in one command and see the new image:
 
 ```json
-{"UpdateExpression": "SET price = :p, stock = :s", "ExpressionAttributeValues": {":p": {"N": "99000"}, ":s": {"N": "4"}}}
+{"op": "UpdateItem", "input": {"TableName": "Books", "Key": {"isbn": {"S": "978-0-01"}}, "UpdateExpression": "SET price = :p, stock = :s", "ExpressionAttributeValues": {":p": {"N": "99000"}, ":s": {"N": "4"}}, "ReturnValues": "ALL_NEW"}}
+```
+
+Delete book `978-0-08` and keep the deleted image:
+
+```json
+{"op": "DeleteItem", "input": {"TableName": "Books", "Key": {"isbn": {"S": "978-0-08"}}, "ReturnValues": "ALL_OLD"}}
+```
+
+## Common mistakes
+
+Writing the value straight into the expression, as in SQL:
+
+```json
+// ERROR ValidationException
+{"op": "UpdateItem", "input": {"TableName": "Books", "Key": {"isbn": {"S": "978-0-03"}}, "UpdateExpression": "SET stock = 25"}}
+```
+
+Mistyping the key: no error, but a new item:
+
+```json
+// WRONG: the key 978-0-3 does not exist, so UpdateItem creates it
+{"op": "UpdateItem", "input": {"TableName": "Books", "Key": {"isbn": {"S": "978-0-3"}}, "UpdateExpression": "SET stock = :s", "ExpressionAttributeValues": {":s": {"N": "25"}}}}
+```
+
+```json
+// FIX: the exact key, so the existing book is changed
+{"op": "UpdateItem", "input": {"TableName": "Books", "Key": {"isbn": {"S": "978-0-03"}}, "UpdateExpression": "SET stock = :s", "ExpressionAttributeValues": {":s": {"N": "25"}}}}
 ```
 
 ## Practice
 
 The three steps are independent; each runs on the original data. A step is graded by the table's state after the write.
+
+## Recap
+
+- `UpdateItem` changes part of an item by key; values go through `:x` placeholders.
+- A missing key makes `UpdateItem` create a new item (upsert).
+- Each request updates or deletes exactly one item.
+- `DeleteItem` on a missing key is no error; `ALL_OLD` returns the deleted image.

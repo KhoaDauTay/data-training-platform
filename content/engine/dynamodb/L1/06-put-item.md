@@ -53,7 +53,52 @@ lab:
       hint:
         vi: '`PutItem` chỉ nhận `ReturnValues` là `NONE` hoặc `ALL_OLD`.'
         en: '`PutItem` accepts `ReturnValues` of `NONE` or `ALL_OLD` only.'
+    - task:
+        vi: 'Thêm cuốn `978-0-11` - `title` "Hash Rings", `price` `105000` và danh sách `tags` gồm "nosql" và "scale".'
+        en: 'Add book `978-0-11` - `title` "Hash Rings", `price` `105000` and a `tags` list holding "nosql" and "scale".'
+      solution: |
+        {"op": "PutItem", "input": {"TableName": "Books", "Item": {
+          "isbn": {"S": "978-0-11"}, "title": {"S": "Hash Rings"}, "price": {"N": "105000"},
+          "tags": {"L": [{"S": "nosql"}, {"S": "scale"}]}}}}
+      check: doc
+      hint:
+        vi: 'Danh sách có nhãn `L`, mỗi phần tử lại có nhãn riêng - `{"L": [{"S": "nosql"}, …]}`.'
+        en: 'A list has the `L` tag, and each element carries its own tag - `{"L": [{"S": "nosql"}, …]}`.'
+quiz:
+  - q:
+      vi: 'Cuốn `978-0-02` có `author` và `stock`. Bạn `PutItem` lên khóa đó một item chỉ có `isbn`, `title`, `price`. Sau đó cuốn sách còn `author` không?'
+      en: 'Book `978-0-02` has `author` and `stock`. You `PutItem` an item with only `isbn`, `title`, `price` onto that key. Does the book still have `author` afterwards?'
+    options:
+      - vi: Còn, `PutItem` gộp thuộc tính mới vào item cũ
+        en: Yes, `PutItem` merges the new attributes into the old item
+      - vi: Không, item cũ bị thay toàn bộ
+        en: No, the old item is replaced entirely
+      - vi: Lệnh bị từ chối vì khóa đã có
+        en: The command is refused because the key exists
+    answer: 1
+    trap: 0
+    why:
+      vi: 'Nghe hợp lý vì nhiều API "lưu" chỉ sửa trường được gửi, nhưng `PutItem` ghi cả item: thuộc tính nào không có trong item mới thì mất. Muốn sửa một phần, dùng `UpdateItem`.'
+      en: 'It sounds right because many "save" APIs change only the fields you send, but `PutItem` writes the whole item: any attribute missing from the new item is gone. To change part of an item, use `UpdateItem`.'
+  - q:
+      vi: '`PutItem` một khóa **mới** với `"ReturnValues": "ALL_OLD"`. Phản hồi có gì?'
+      en: '`PutItem` on a **new** key with `"ReturnValues": "ALL_OLD"`. What does the response hold?'
+    options:
+      - vi: Lỗi, vì không có bản cũ để trả
+        en: An error, because there is no old image to return
+      - vi: 'Không có `Attributes`; item mới vẫn được thêm'
+        en: 'No `Attributes`; the new item is still added'
+      - vi: Item mới vừa ghi
+        en: The new item just written
+    answer: 1
+    trap: 0
+    why:
+      vi: 'Nghe hợp lý vì bạn xin một bản cũ không tồn tại, nhưng đó không phải lỗi: phản hồi chỉ thiếu `Attributes`, và item mới vẫn được ghi.'
+      en: 'It sounds right because you asked for an old image that does not exist, but that is not an error: the response simply has no `Attributes`, and the new item is still written.'
 ---
+## Mở bài
+
+Nhà phát hành gửi bản cập nhật của một cuốn sách, nhưng chỉ có tên và giá. Bạn ghi nó bằng `PutItem` lên khóa cũ. Tác giả và tồn kho của cuốn đó còn không?
 
 ## Ý chính
 
@@ -61,21 +106,70 @@ lab:
 
 Đây là chỗ khác `UPDATE` của SQL. Muốn chỉ sửa vài thuộc tính, dùng `UpdateItem` (bài sau). Muốn "chỉ thêm, không bao giờ ghi đè", thêm điều kiện `attribute_not_exists` (bài L2).
 
-`ReturnValues: "ALL_OLD"` trả về item trước khi bị thay. Khi khóa còn mới, phản hồi không có `Attributes`.
+`ReturnValues: "ALL_OLD"` trả về item trước khi bị thay. Khi khóa còn mới, phản hồi không có `Attributes`. `PutItem` chỉ nhận `NONE` hoặc `ALL_OLD`.
+
+## Cú pháp
+
+```text
+{"op": "PutItem", "input": {"TableName": "<table>",
+  "Item": {"<pk>": {"S": "<value>"}, "<attr>": {"N": "<number>"}, ...},
+  "ReturnValues": "ALL_OLD"}}
+```
+
+- `Item` phải có đủ thuộc tính khóa, cộng mọi thuộc tính muốn giữ.
+- `ReturnValues`: `NONE` (mặc định) hoặc `ALL_OLD`.
 
 ## Ví dụ
 
-Sau bước 2, cuốn `978-0-02` mất `author`, `stock` và `tags`, vì item mới không có chúng:
+Thêm một cuốn mới:
 
 ```json
-{"isbn": "978-0-02", "title": "Keys and Values", "price": 90000}
+{"op": "PutItem", "input": {"TableName": "Books", "Item": {"isbn": {"S": "978-0-12"}, "title": {"S": "Wide Rows"}, "price": {"N": "80000"}}}}
+```
+
+Ghi đè `978-0-02`: sau lệnh, cuốn đó mất `author`, `stock` và `tags`, vì item mới không có chúng. Tab Kết quả cho thấy cả bảng sau khi ghi:
+
+```json
+{"op": "PutItem", "input": {"TableName": "Books", "Item": {"isbn": {"S": "978-0-02"}, "title": {"S": "Keys and Values"}, "price": {"N": "90000"}}, "ReturnValues": "ALL_OLD"}}
+```
+
+## Lỗi hay gặp
+
+Xin bản mới từ `PutItem`:
+
+```json
+// ERROR ValidationException
+{"op": "PutItem", "input": {"TableName": "Books", "Item": {"isbn": {"S": "978-0-12"}, "title": {"S": "Wide Rows"}}, "ReturnValues": "ALL_NEW"}}
+```
+
+Dùng `PutItem` để đổi một thuộc tính:
+
+```json
+// WRONG: only the price was meant to change, but author, stock and tags are lost
+{"op": "PutItem", "input": {"TableName": "Books", "Item": {"isbn": {"S": "978-0-05"}, "price": {"N": "125000"}}}}
+```
+
+```json
+// FIX: UpdateItem changes only the attributes in SET
+{"op": "UpdateItem", "input": {"TableName": "Books", "Key": {"isbn": {"S": "978-0-05"}}, "UpdateExpression": "SET price = :p", "ExpressionAttributeValues": {":p": {"N": "125000"}}}}
 ```
 
 ## Thực hành
 
 Bước ghi được chấm bằng cách so **cả bảng** sau khi ghi với bảng sau đáp án. Mỗi bước bắt đầu lại từ dữ liệu gốc.
 
+## Tóm tắt
+
+- `PutItem` thêm item mới, hoặc thay toàn bộ item cùng khóa.
+- Thuộc tính không có trong item mới thì mất.
+- `ReturnValues` chỉ là `NONE` hoặc `ALL_OLD`; khóa mới thì không có `Attributes`.
+- Sửa một phần item thì dùng `UpdateItem`.
+
 # EN
+
+## Opening
+
+The publisher sends an update for a book, but with only the title and the price. You write it with `PutItem` onto the old key. Does the book still have its author and stock?
 
 ## Key idea
 
@@ -83,16 +177,61 @@ Bước ghi được chấm bằng cách so **cả bảng** sau khi ghi với b�
 
 This differs from SQL `UPDATE`. To change only some attributes, use `UpdateItem` (next lesson). For "insert only, never overwrite", add an `attribute_not_exists` condition (level L2).
 
-`ReturnValues: "ALL_OLD"` returns the item as it was before the replace. When the key is new, the response has no `Attributes`.
+`ReturnValues: "ALL_OLD"` returns the item as it was before the replace. When the key is new, the response has no `Attributes`. `PutItem` accepts only `NONE` or `ALL_OLD`.
+
+## Syntax
+
+```text
+{"op": "PutItem", "input": {"TableName": "<table>",
+  "Item": {"<pk>": {"S": "<value>"}, "<attr>": {"N": "<number>"}, ...},
+  "ReturnValues": "ALL_OLD"}}
+```
+
+- `Item` must hold every key attribute, plus every attribute you want to keep.
+- `ReturnValues`: `NONE` (the default) or `ALL_OLD`.
 
 ## Example
 
-After step 2, book `978-0-02` has lost `author`, `stock` and `tags`, because the new item does not have them:
+Add a new book:
 
 ```json
-{"isbn": "978-0-02", "title": "Keys and Values", "price": 90000}
+{"op": "PutItem", "input": {"TableName": "Books", "Item": {"isbn": {"S": "978-0-12"}, "title": {"S": "Wide Rows"}, "price": {"N": "80000"}}}}
+```
+
+Overwrite `978-0-02`: afterwards the book has lost `author`, `stock` and `tags`, because the new item does not have them. The Result tab shows the whole table after the write:
+
+```json
+{"op": "PutItem", "input": {"TableName": "Books", "Item": {"isbn": {"S": "978-0-02"}, "title": {"S": "Keys and Values"}, "price": {"N": "90000"}}, "ReturnValues": "ALL_OLD"}}
+```
+
+## Common mistakes
+
+Asking `PutItem` for the new image:
+
+```json
+// ERROR ValidationException
+{"op": "PutItem", "input": {"TableName": "Books", "Item": {"isbn": {"S": "978-0-12"}, "title": {"S": "Wide Rows"}}, "ReturnValues": "ALL_NEW"}}
+```
+
+Using `PutItem` to change one attribute:
+
+```json
+// WRONG: only the price was meant to change, but author, stock and tags are lost
+{"op": "PutItem", "input": {"TableName": "Books", "Item": {"isbn": {"S": "978-0-05"}, "price": {"N": "125000"}}}}
+```
+
+```json
+// FIX: UpdateItem changes only the attributes in SET
+{"op": "UpdateItem", "input": {"TableName": "Books", "Key": {"isbn": {"S": "978-0-05"}}, "UpdateExpression": "SET price = :p", "ExpressionAttributeValues": {":p": {"N": "125000"}}}}
 ```
 
 ## Practice
 
 A write step is graded by comparing the **whole table** after your write with the table after the solution. Every step starts again from the original data.
+
+## Recap
+
+- `PutItem` adds a new item, or replaces the whole item with the same key.
+- Attributes missing from the new item are gone.
+- `ReturnValues` is only `NONE` or `ALL_OLD`; a new key gives no `Attributes`.
+- To change part of an item, use `UpdateItem`.

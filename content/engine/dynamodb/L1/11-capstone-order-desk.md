@@ -221,10 +221,15 @@ quiz:
       - vi: Không, vì `Scan` không đếm được, chỉ `Query` mới có `Select`.
         en: No, because a `Scan` cannot count; only `Query` has `Select`.
     answer: 1
+    trap: 0
     why:
       vi: 'Nghe hợp lý vì kết quả trả về nhỏ thật. Nhưng giá tính theo item đã đọc: bộ lọc và `COUNT` áp sau khi đọc, nên `Scan` có `ScannedCount` là 120. `Query` đi thẳng vào item collection của `C-09`: `ScannedCount` 4. `Scan` cũng có `Select`, nó chỉ đắt hơn.'
       en: 'It sounds right because the response really is small. But you pay for items read: the filter and `COUNT` apply after the read, so the `Scan` has a `ScannedCount` of 120. The `Query` goes straight to the item collection of `C-09`: `ScannedCount` 4. A `Scan` has `Select` too; it is just more expensive.'
 ---
+
+## Mở bài
+
+Hôm nay bạn trực bàn đơn hàng, và khách `C-09` gọi tới nhiều lần. Mỗi yêu cầu phải xong bằng đúng một request theo khóa. Bạn chọn request nào cho từng việc?
 
 ## Ý chính
 
@@ -232,9 +237,20 @@ Bài kiểm tra cấp L1 gom mọi thứ của cấp này vào một ngày làm 
 
 ## Thực hành
 
-Bảng `Orders` giống các bài trước: 120 đơn, khóa (`customerId`, `orderId`), `orderId` bắt đầu bằng ngày. Mỗi bước chạy lại từ dữ liệu gốc, nên thứ tự làm không ảnh hưởng kết quả.
+Bảng `Orders` giống các bài trước: 120 đơn, khóa (`customerId`, `orderId`), `orderId` bắt đầu bằng ngày. Mỗi bước chạy lại từ dữ liệu gốc, nên thứ tự làm không ảnh hưởng kết quả. Bước 1 và bước 5 có thanh chi phí: một `Scan` cho cùng item vẫn không qua.
+
+## Tóm tắt
+
+- Có khóa đầy đủ thì `GetItem`; có partition key thì `Query`.
+- `ScanIndexForward: false` và `Limit` cho "N đơn mới nhất".
+- `UpdateItem` và `DeleteItem` đi theo khóa đầy đủ; `ReturnValues` cho thấy item trước hoặc sau.
+- Đếm bằng `Query` với `Select: "COUNT"`, không bằng `Scan`.
 
 # EN
+
+## Opening
+
+Today you are on the order desk, and customer `C-09` calls several times. Each request must be served with exactly one key-based request. Which request do you pick for each task?
 
 ## Key idea
 
@@ -242,4 +258,11 @@ The level L1 check gathers everything in this level into one working day: read b
 
 ## Practice
 
-Table `Orders` is the same as in the previous lessons: 120 orders, key (`customerId`, `orderId`), with `orderId` starting with the date. Every step runs again from the original data, so the order you work in does not change the results.
+Table `Orders` is the same as in the previous lessons: 120 orders, key (`customerId`, `orderId`), with `orderId` starting with the date. Every step runs again from the original data, so the order you work in does not change the results. Steps 1 and 5 carry a cost bar: a `Scan` that returns the same items still does not pass.
+
+## Recap
+
+- With the full key, `GetItem`; with the partition key, `Query`.
+- `ScanIndexForward: false` and `Limit` give "the N newest orders".
+- `UpdateItem` and `DeleteItem` go by the full key; `ReturnValues` shows the item before or after.
+- Count with a `Query` and `Select: "COUNT"`, not with a `Scan`.

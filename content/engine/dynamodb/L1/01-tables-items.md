@@ -33,9 +33,10 @@ quiz:
       - vi: Không, kể cả khóa chính cũng không bắt buộc.
         en: No, not even the primary key is required.
     answer: 1
+    trap: 0
     why:
-      vi: Bảng DynamoDB không có schema, trừ khóa chính. Mỗi item phải có đủ thuộc tính khóa, còn lại tùy item.
-      en: A DynamoDB table is schemaless except for the primary key. Every item must carry the key attributes, the rest is up to the item.
+      vi: Nghe hợp lý vì bảng SQL bắt mọi dòng có đủ cột, nhưng bảng DynamoDB không có schema, trừ khóa chính. Mỗi item phải có đủ thuộc tính khóa, còn lại tùy item.
+      en: It sounds right because an SQL table makes every row carry every column, but a DynamoDB table is schemaless except for the primary key. Every item must carry the key attributes, the rest is up to the item.
   - q:
       vi: Trong DynamoDB JSON, số 42 được gửi đi dưới dạng nào?
       en: In DynamoDB JSON, how is the number 42 sent?
@@ -47,10 +48,20 @@ quiz:
       - vi: '`{"S": "42"}`'
         en: '`{"S": "42"}`'
     answer: 1
+    trap: 0
     why:
-      vi: Số được gửi bằng chuỗi JSON để không mất độ chính xác (tới 38 chữ số). Nhãn `N` cho DynamoDB biết đó là số.
-      en: Numbers travel as JSON strings so no precision is lost (up to 38 digits). The `N` tag tells DynamoDB it is a number.
+      vi: Nghe hợp lý vì 42 là số trong JSON, nhưng số được gửi bằng chuỗi JSON để không mất độ chính xác (tới 38 chữ số). Nhãn `N` cho DynamoDB biết đó là số.
+      en: It sounds right because 42 is a JSON number, but numbers travel as JSON strings so no precision is lost (up to 38 digits). The `N` tag tells DynamoDB it is a number.
+demo_setup: |
+  {"tables": [{"TableName":"Books","KeySchema":[{"AttributeName":"isbn","KeyType":"HASH"}],"AttributeDefinitions":[{"AttributeName":"isbn","AttributeType":"S"}],"BillingMode":"PAY_PER_REQUEST"}],
+   "items": {"Books": [
+    {"isbn":"978-0-04","title":"Query Not Scan","price":88000,"tags":["nosql","perf"]},
+    {"isbn":"978-0-05","title":"Indexes by Hand","price":132000}
+  ]}}
 ---
+## Mở bài
+
+Bạn quen bảng SQL: khai cột trước, mỗi dòng có đủ cột. Sang DynamoDB, hai cuốn sách trong cùng một bảng lại có bộ thuộc tính khác nhau. Bảng ở đây thật sự là gì?
 
 ## Ý chính
 
@@ -60,30 +71,77 @@ Bảng không khai báo cột. Lúc tạo bảng bạn chỉ khai báo **khóa c
 
 Câu hỏi cũng đổi. Với SQL bạn hỏi "mọi dòng thỏa điều kiện X". Với DynamoDB bạn hỏi "đưa tôi item có khóa này" hoặc "mọi item có partition key (khóa phân vùng) này". Bài sau nói về khóa.
 
-## Ví dụ
-
-Mỗi giá trị trong request đi kèm một nhãn kiểu:
-
-- `S` là chuỗi: `{"S": "Hue"}`
-- `N` là số, gửi bằng chuỗi: `{"N": "120000"}`
-- `BOOL` và `NULL`: `{"BOOL": true}`, `{"NULL": true}`
-- `L` là danh sách, `M` là map lồng nhau: `{"L": [{"S": "nosql"}]}`
-- `SS`, `NS`, `BS` là tập hợp chuỗi, số, nhị phân, không trùng phần tử
-- `B` là nhị phân, gửi bằng base64
-
-Một cuốn sách trong bảng `Books`, viết bằng DynamoDB JSON:
-
-```json
-{"isbn": {"S": "978-0-04"}, "title": {"S": "Query Not Scan"}, "price": {"N": "88000"}, "tags": {"L": [{"S": "nosql"}, {"S": "perf"}]}}
-```
-
-Lồng nhau được tối đa 32 tầng. Số có tối đa 38 chữ số.
-
-## Thực hành
-
 Trong các lab, dữ liệu mẫu được ghi bằng JSON thường cho dễ đọc. Request bạn viết vẫn là DynamoDB JSON có nhãn kiểu, đúng như SDK cấp thấp gửi đi, bọc trong `{"op": …, "input": …}`.
 
+## Cú pháp
+
+```text
+{"<attribute>": {"<type tag>": <value>}, ...}
+```
+
+- `S` là chuỗi: `{"S": "Hue"}`; `N` là số, gửi bằng chuỗi: `{"N": "120000"}`.
+- `BOOL` và `NULL`: `{"BOOL": true}`, `{"NULL": true}`; `B` là nhị phân, gửi bằng base64.
+- `L` là danh sách, `M` là map lồng nhau: `{"L": [{"S": "nosql"}]}`.
+- `SS`, `NS`, `BS` là tập hợp chuỗi, số, nhị phân, không trùng phần tử.
+- Lồng nhau tối đa 32 tầng; số có tối đa 38 chữ số.
+
+## Ví dụ
+
+Bảng `Books` nhỏ có hai cuốn. Cuốn `978-0-04` có `tags`:
+
+```json
+{"op": "GetItem", "input": {"TableName": "Books", "Key": {"isbn": {"S": "978-0-04"}}}}
+```
+
+Cuốn `978-0-05` không có `tags`, và bảng không phàn nàn gì:
+
+```json
+{"op": "GetItem", "input": {"TableName": "Books", "Key": {"isbn": {"S": "978-0-05"}}}}
+```
+
+Thêm một cuốn có thuộc tính mới `pages` mà không cần sửa bảng:
+
+```json
+{"op": "PutItem", "input": {"TableName": "Books", "Item": {"isbn": {"S": "978-0-06"}, "title": {"S": "Small Items Fast"}, "pages": {"N": "212"}}}}
+```
+
+## Lỗi hay gặp
+
+Quên thuộc tính khóa, vì nghĩ bảng không có schema thì thuộc tính nào cũng tùy ý:
+
+```json
+// ERROR ValidationException
+{"op": "PutItem", "input": {"TableName": "Books", "Item": {"title": {"S": "No Key"}}}}
+```
+
+Khóa chính là phần schema duy nhất, và item nào cũng phải có nó.
+
+Ghi số bằng nhãn `S`:
+
+```json
+// WRONG: the price is stored as a string, so it no longer compares as a number
+{"op": "PutItem", "input": {"TableName": "Books", "Item": {"isbn": {"S": "978-0-07"}, "price": {"S": "160000"}}}}
+```
+
+```json
+// FIX: the N tag, with the digits inside a string
+{"op": "PutItem", "input": {"TableName": "Books", "Item": {"isbn": {"S": "978-0-07"}, "price": {"N": "160000"}}}}
+```
+
+Chuỗi `"160000"` đứng trước chuỗi `"88000"` khi so, nên lọc hay sắp theo giá sẽ sai.
+
+## Tóm tắt
+
+- Bảng chứa item, item chứa thuộc tính có tên.
+- Bảng chỉ khai khóa chính; các thuộc tính khác do từng item tự mang.
+- Mọi item phải có đủ thuộc tính khóa.
+- Request dùng DynamoDB JSON: mỗi giá trị có nhãn kiểu, số viết trong chuỗi.
+
 # EN
+
+## Opening
+
+You are used to SQL tables: declare the columns first, every row has them all. In DynamoDB, two books in the same table carry different attributes. So what is a table here?
 
 ## Key idea
 
@@ -93,25 +151,68 @@ A table declares no columns. When you create it you declare only the **primary k
 
 The question changes too. In SQL you ask "every row that matches X". In DynamoDB you ask "give me the item with this key" or "every item with this partition key". The next lesson is about keys.
 
-## Example
+In the labs the sample data is written as plain JSON so it is easy to read. The requests you write are still DynamoDB JSON with type tags, exactly what a low-level SDK sends, wrapped in `{"op": …, "input": …}`.
 
-Every value in a request carries a type tag:
+## Syntax
 
-- `S` is a string: `{"S": "Hue"}`
-- `N` is a number, sent as a string: `{"N": "120000"}`
-- `BOOL` and `NULL`: `{"BOOL": true}`, `{"NULL": true}`
-- `L` is a list, `M` a nested map: `{"L": [{"S": "nosql"}]}`
-- `SS`, `NS`, `BS` are sets of strings, numbers, binary, with no duplicates
-- `B` is binary, sent as base64
-
-One book in the `Books` table, written in DynamoDB JSON:
-
-```json
-{"isbn": {"S": "978-0-04"}, "title": {"S": "Query Not Scan"}, "price": {"N": "88000"}, "tags": {"L": [{"S": "nosql"}, {"S": "perf"}]}}
+```text
+{"<attribute>": {"<type tag>": <value>}, ...}
 ```
 
-Nesting goes at most 32 levels deep. A number holds at most 38 digits.
+- `S` is a string: `{"S": "Hue"}`; `N` is a number, sent as a string: `{"N": "120000"}`.
+- `BOOL` and `NULL`: `{"BOOL": true}`, `{"NULL": true}`; `B` is binary, sent as base64.
+- `L` is a list, `M` a nested map: `{"L": [{"S": "nosql"}]}`.
+- `SS`, `NS`, `BS` are sets of strings, numbers, binary, with no duplicates.
+- Nesting goes at most 32 levels deep; a number holds at most 38 digits.
 
-## Practice
+## Example
 
-In the labs the sample data is written as plain JSON so it is easy to read. The requests you write are still DynamoDB JSON with type tags, exactly what a low-level SDK sends, wrapped in `{"op": …, "input": …}`.
+A small `Books` table with two books. Book `978-0-04` has `tags`:
+
+```json
+{"op": "GetItem", "input": {"TableName": "Books", "Key": {"isbn": {"S": "978-0-04"}}}}
+```
+
+Book `978-0-05` has no `tags`, and the table does not mind:
+
+```json
+{"op": "GetItem", "input": {"TableName": "Books", "Key": {"isbn": {"S": "978-0-05"}}}}
+```
+
+Add a book with a new attribute `pages` without changing the table:
+
+```json
+{"op": "PutItem", "input": {"TableName": "Books", "Item": {"isbn": {"S": "978-0-06"}, "title": {"S": "Small Items Fast"}, "pages": {"N": "212"}}}}
+```
+
+## Common mistakes
+
+Leaving out the key attribute, thinking a schemaless table takes any attributes:
+
+```json
+// ERROR ValidationException
+{"op": "PutItem", "input": {"TableName": "Books", "Item": {"title": {"S": "No Key"}}}}
+```
+
+The primary key is the only schema there is, and every item must carry it.
+
+Writing a number with the `S` tag:
+
+```json
+// WRONG: the price is stored as a string, so it no longer compares as a number
+{"op": "PutItem", "input": {"TableName": "Books", "Item": {"isbn": {"S": "978-0-07"}, "price": {"S": "160000"}}}}
+```
+
+```json
+// FIX: the N tag, with the digits inside a string
+{"op": "PutItem", "input": {"TableName": "Books", "Item": {"isbn": {"S": "978-0-07"}, "price": {"N": "160000"}}}}
+```
+
+The string `"160000"` sorts before the string `"88000"`, so filtering or sorting by price goes wrong.
+
+## Recap
+
+- A table holds items, and an item holds named attributes.
+- A table declares only the primary key; every other attribute belongs to its item.
+- Every item must carry all key attributes.
+- Requests use DynamoDB JSON: every value has a type tag, numbers go inside strings.

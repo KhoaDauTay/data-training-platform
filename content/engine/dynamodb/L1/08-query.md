@@ -202,7 +202,41 @@ lab:
       hint:
         vi: Đảo thứ tự rồi giới hạn số item đọc.
         en: Reverse the order, then cap how many items are read.
+quiz:
+  - q:
+      vi: 'Bạn cần các đơn `NEW` của `C-07`. Đặt `#s = :n` (với `#s` là `status`) vào `KeyConditionExpression` được không?'
+      en: 'You need the `NEW` orders of `C-07`. Can `#s = :n` (with `#s` standing for `status`) go into the `KeyConditionExpression`?'
+    options:
+      - vi: Được, mọi thuộc tính đều lọc được trong điều kiện khóa
+        en: Yes, any attribute can be filtered in the key condition
+      - vi: 'Không, điều kiện khóa chỉ nói về partition key và sort key; `status` thuộc `FilterExpression`'
+        en: 'No, the key condition only covers the partition key and the sort key; `status` belongs in a `FilterExpression`'
+      - vi: Được, nếu thêm `Limit`
+        en: Yes, if you add `Limit`
+    answer: 1
+    trap: 0
+    why:
+      vi: 'Nghe hợp lý vì `WHERE` của SQL nhận mọi cột, nhưng `KeyConditionExpression` chỉ chọn vùng đọc theo khóa. Điều kiện trên `status` ở đó là `ValidationException`; nó thuộc `FilterExpression`, áp sau khi đọc.'
+      en: 'It sounds right because an SQL `WHERE` takes any column, but a `KeyConditionExpression` only picks the key range to read. A condition on `status` there is a `ValidationException`; it belongs in a `FilterExpression`, applied after the read.'
+  - q:
+      vi: '`Query` mọi đơn của `C-02` mà không có `ScanIndexForward`. Đơn về theo thứ tự nào?'
+      en: '`Query` every order of `C-02` without `ScanIndexForward`. In what order do the orders come back?'
+    options:
+      - vi: Theo thứ tự được ghi vào bảng
+        en: In the order they were written
+      - vi: '`orderId` tăng dần'
+        en: 'Ascending `orderId`'
+      - vi: Không có thứ tự nhất định
+        en: In no particular order
+    answer: 1
+    trap: 0
+    why:
+      vi: 'Nghe hợp lý nếu nghĩ bảng như một file ghi nối đuôi, nhưng trong một item collection DynamoDB lưu item theo sort key. `Query` đọc tăng dần theo sort key, trừ khi `ScanIndexForward` là `false`.'
+      en: 'It sounds right if a table were an append-only file, but inside an item collection DynamoDB stores items by sort key. `Query` reads in ascending sort key order unless `ScanIndexForward` is `false`.'
 ---
+## Mở bài
+
+Màn hình lịch sử đơn cần các đơn của một khách trong một khoảng ngày, mới nhất trước. Bảng `Orders` có 120 đơn. Làm sao đọc đúng những đơn đó mà không chạm tới đơn của khách khác?
 
 ## Ý chính
 
@@ -215,21 +249,72 @@ Không đặt được điều kiện lên thuộc tính thường trong `KeyCon
 
 `ScanIndexForward: false` đảo chiều đọc (mặc định tăng dần). `Limit` giới hạn số item **được đọc**.
 
-## Ví dụ
+Sort key chuỗi được so theo byte UTF-8. Nhờ đặt ngày ở đầu `orderId`, khoảng ngày trở thành khoảng sort key. Cận trên "2026-09-30" sẽ **loại** đơn `2026-09-30#O-…`, vì chuỗi dài hơn đứng sau. Dùng một cận lớn hơn như "2026-09-31" hoặc "2026-09-30~".
 
-Sort key chuỗi được so theo byte UTF-8. Nhờ đặt ngày ở đầu `orderId`, khoảng ngày trở thành khoảng sort key:
+## Cú pháp
 
-```json
-{"KeyConditionExpression": "customerId = :c AND orderId BETWEEN :a AND :b"}
+```text
+"KeyConditionExpression": "<pk> = :p"
+"KeyConditionExpression": "<pk> = :p AND <sk> BETWEEN :a AND :b"
+"KeyConditionExpression": "<pk> = :p AND begins_with(<sk>, :prefix)"
+"ScanIndexForward": false, "Limit": <n>
 ```
 
-Cận trên "2026-09-30" sẽ **loại** đơn `2026-09-30#O-…`, vì chuỗi dài hơn đứng sau. Dùng một cận lớn hơn như "2026-09-31" hoặc "2026-09-30~".
+- Đúng một điều kiện `=` trên partition key.
+- Tối đa một điều kiện trên sort key.
+
+## Ví dụ
+
+Các đơn tháng 8 của `C-03`, theo tiền tố của sort key:
+
+```json
+{"op": "Query", "input": {"TableName": "Orders", "KeyConditionExpression": "customerId = :c AND begins_with(orderId, :m)", "ExpressionAttributeValues": {":c": {"S": "C-03"}, ":m": {"S": "2026-08"}}}}
+```
+
+Hai đơn mới nhất của `C-02`:
+
+```json
+{"op": "Query", "input": {"TableName": "Orders", "KeyConditionExpression": "customerId = :c", "ExpressionAttributeValues": {":c": {"S": "C-02"}}, "ScanIndexForward": false, "Limit": 2}}
+```
+
+## Lỗi hay gặp
+
+Đặt điều kiện trên thuộc tính thường vào điều kiện khóa:
+
+```json
+// ERROR ValidationException
+{"op": "Query", "input": {"TableName": "Orders", "KeyConditionExpression": "customerId = :c AND total > :t", "ExpressionAttributeValues": {":c": {"S": "C-03"}, ":t": {"N": "500000"}}}}
+```
+
+Lấy cận trên đúng bằng ngày cuối:
+
+```json
+// WRONG: "2026-09-28" sorts before "2026-09-28#O-111", so that order is left out
+{"op": "Query", "input": {"TableName": "Orders", "KeyConditionExpression": "customerId = :c AND orderId BETWEEN :a AND :b", "ExpressionAttributeValues": {":c": {"S": "C-03"}, ":a": {"S": "2026-08-01"}, ":b": {"S": "2026-09-28"}}}}
+```
+
+```json
+// FIX: an upper bound that sorts after every order of that day
+{"op": "Query", "input": {"TableName": "Orders", "KeyConditionExpression": "customerId = :c AND orderId BETWEEN :a AND :b", "ExpressionAttributeValues": {":c": {"S": "C-03"}, ":a": {"S": "2026-08-01"}, ":b": {"S": "2026-09-28~"}}}}
+```
 
 ## Thực hành
 
 Bảng `Orders` có 120 đơn của 30 khách, mỗi khách 4 đơn từ tháng 7 tới tháng 10/2026. Kết quả Query có thứ tự, nên bước được chấm theo đúng thứ tự.
 
+## Tóm tắt
+
+- `Query` đọc một item collection, theo thứ tự sort key.
+- Partition key chỉ so `=`; sort key có `<`, `BETWEEN`, `begins_with`…
+- Thuộc tính thường không vào được `KeyConditionExpression`.
+- `ScanIndexForward: false` đảo thứ tự; `Limit` giới hạn số item đọc.
+- Cận chuỗi so theo byte: chọn cận trên lớn hơn mọi giá trị muốn lấy.
+
 # EN
+
+## Opening
+
+The order history screen needs one customer's orders in a date range, newest first. Table `Orders` holds 120 orders. How do you read exactly those orders without touching any other customer's?
 
 ## Key idea
 
@@ -242,16 +327,63 @@ You cannot put a condition on an ordinary attribute in the `KeyConditionExpressi
 
 `ScanIndexForward: false` reverses the read direction (ascending by default). `Limit` caps how many items are **read**.
 
-## Example
+String sort keys compare by UTF-8 bytes. Because the date sits at the front of `orderId`, a date range becomes a sort key range. An upper bound of "2026-09-30" would **exclude** order `2026-09-30#O-…`, because the longer string sorts after it. Use a larger bound such as "2026-09-31" or "2026-09-30~".
 
-String sort keys compare by UTF-8 bytes. Because the date sits at the front of `orderId`, a date range becomes a sort key range:
+## Syntax
 
-```json
-{"KeyConditionExpression": "customerId = :c AND orderId BETWEEN :a AND :b"}
+```text
+"KeyConditionExpression": "<pk> = :p"
+"KeyConditionExpression": "<pk> = :p AND <sk> BETWEEN :a AND :b"
+"KeyConditionExpression": "<pk> = :p AND begins_with(<sk>, :prefix)"
+"ScanIndexForward": false, "Limit": <n>
 ```
 
-An upper bound of "2026-09-30" would **exclude** order `2026-09-30#O-…`, because the longer string sorts after it. Use a larger bound such as "2026-09-31" or "2026-09-30~".
+- Exactly one `=` condition on the partition key.
+- At most one condition on the sort key.
+
+## Example
+
+The August orders of `C-03`, by a sort key prefix:
+
+```json
+{"op": "Query", "input": {"TableName": "Orders", "KeyConditionExpression": "customerId = :c AND begins_with(orderId, :m)", "ExpressionAttributeValues": {":c": {"S": "C-03"}, ":m": {"S": "2026-08"}}}}
+```
+
+The two most recent orders of `C-02`:
+
+```json
+{"op": "Query", "input": {"TableName": "Orders", "KeyConditionExpression": "customerId = :c", "ExpressionAttributeValues": {":c": {"S": "C-02"}}, "ScanIndexForward": false, "Limit": 2}}
+```
+
+## Common mistakes
+
+Putting a condition on an ordinary attribute into the key condition:
+
+```json
+// ERROR ValidationException
+{"op": "Query", "input": {"TableName": "Orders", "KeyConditionExpression": "customerId = :c AND total > :t", "ExpressionAttributeValues": {":c": {"S": "C-03"}, ":t": {"N": "500000"}}}}
+```
+
+Using the last day itself as the upper bound:
+
+```json
+// WRONG: "2026-09-28" sorts before "2026-09-28#O-111", so that order is left out
+{"op": "Query", "input": {"TableName": "Orders", "KeyConditionExpression": "customerId = :c AND orderId BETWEEN :a AND :b", "ExpressionAttributeValues": {":c": {"S": "C-03"}, ":a": {"S": "2026-08-01"}, ":b": {"S": "2026-09-28"}}}}
+```
+
+```json
+// FIX: an upper bound that sorts after every order of that day
+{"op": "Query", "input": {"TableName": "Orders", "KeyConditionExpression": "customerId = :c AND orderId BETWEEN :a AND :b", "ExpressionAttributeValues": {":c": {"S": "C-03"}, ":a": {"S": "2026-08-01"}, ":b": {"S": "2026-09-28~"}}}}
+```
 
 ## Practice
 
 Table `Orders` holds 120 orders of 30 customers, 4 orders each from July to October 2026. Query results have an order, so each step is graded in that order.
+
+## Recap
+
+- `Query` reads one item collection, in sort key order.
+- The partition key takes only `=`; the sort key takes `<`, `BETWEEN`, `begins_with`…
+- Ordinary attributes cannot go into the `KeyConditionExpression`.
+- `ScanIndexForward: false` reverses the order; `Limit` caps the items read.
+- String bounds compare by bytes: pick an upper bound above every value you want.

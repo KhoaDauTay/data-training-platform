@@ -186,7 +186,41 @@ lab:
       hint:
         vi: '`status` là từ dành riêng: viết `#s` trong biểu thức và khai `"#s": "status"` trong `ExpressionAttributeNames`. `Select` là `COUNT`.'
         en: '`status` is a reserved word: write `#s` in the expression and declare `"#s": "status"` in `ExpressionAttributeNames`. Set `Select` to `COUNT`.'
+quiz:
+  - q:
+      vi: '`Scan` có `FilterExpression` trên `customerId` trả 4 đơn của `C-12`, bảng có 120 item. Bạn trả tiền cho bao nhiêu item?'
+      en: 'A `Scan` with a `FilterExpression` on `customerId` returns the 4 orders of `C-12`, and the table holds 120 items. How many items do you pay for?'
+    options:
+      - vi: 4, số item được trả về (`Count`)
+        en: 4, the items returned (`Count`)
+      - vi: 120, số item đã đọc (`ScannedCount`)
+        en: 120, the items read (`ScannedCount`)
+      - vi: 0, vì bộ lọc chạy trước khi đọc
+        en: 0, because the filter runs before the read
+    answer: 1
+    trap: 0
+    why:
+      vi: 'Nghe hợp lý vì bạn chỉ nhận về 4 item, nhưng `Scan` đọc mọi item rồi mới áp `FilterExpression`. Giá tính theo `ScannedCount`, ở đây là 120.'
+      en: 'It sounds right because you only get 4 items back, but a `Scan` reads every item before it applies the `FilterExpression`. You pay by `ScannedCount`, here 120.'
+  - q:
+      vi: 'Thêm `"Select": "COUNT"` vào một `Scan` có lọc. Giá thay đổi thế nào?'
+      en: 'You add `"Select": "COUNT"` to a filtered `Scan`. How does the price change?'
+    options:
+      - vi: Rẻ hơn nhiều, vì chỉ trả về một con số
+        en: Much cheaper, because only one number comes back
+      - vi: Không đổi, vì mọi item vẫn phải được đọc
+        en: No change, because every item still has to be read
+      - vi: Đắt hơn, vì phải đếm thêm
+        en: More expensive, because of the extra counting
+    answer: 1
+    trap: 0
+    why:
+      vi: 'Nghe hợp lý vì phản hồi nhỏ đi, nhưng `COUNT` chỉ bỏ item khỏi phản hồi. DynamoDB vẫn đọc từng item, nên `ScannedCount` và capacity không đổi.'
+      en: 'It sounds right because the response gets smaller, but `COUNT` only drops the items from the response. DynamoDB still reads every item, so `ScannedCount` and the capacity stay the same.'
 ---
+## Mở bài
+
+Hai request cùng trả về 4 đơn của một khách. Một cái đọc 4 item, cái kia đọc 120. Làm sao biết request của bạn thuộc loại nào?
 
 ## Ý chính
 
@@ -200,22 +234,77 @@ Phản hồi cho biết hai con số:
 
 `Select: "COUNT"` chỉ trả con số, nhưng vẫn phải đọc từng item, nên giá không đổi.
 
+Bảng 120 item thì `Scan` đắt gấp 30 lần `Query` cho cùng 4 đơn. Bảng 10 triệu item thì `Scan` phải phân trang qua hàng nghìn lần gọi 1 MB. Scan vẫn có chỗ dùng: bảng nhỏ, việc chạy một lần, xuất dữ liệu. Với câu hỏi lặp lại, hãy thiết kế khóa (hoặc index (chỉ mục) ở L3) để thành `Query`.
+
+## Cú pháp
+
+```text
+{"op": "Query", "input": {..., "KeyConditionExpression": "<pk> = :p", "Select": "COUNT"}}
+{"op": "Scan",  "input": {..., "FilterExpression": "<attr> = :v", "Select": "COUNT"}}
+response: Count = items returned, ScannedCount = items read
+```
+
+- `Scan` không có `KeyConditionExpression`.
+- `FilterExpression` áp sau khi đọc, ở cả `Query` lẫn `Scan`.
+
 ## Ví dụ
 
-Cùng 4 đơn của `C-12`:
+Bốn đơn của `C-12`: `Count` 4, `ScannedCount` 4:
+
+```json
+{"op": "Query", "input": {"TableName": "Orders", "KeyConditionExpression": "customerId = :c", "ExpressionAttributeValues": {":c": {"S": "C-12"}}}}
+```
+
+Chỉ đếm, vẫn đọc 4 item:
+
+```json
+{"op": "Query", "input": {"TableName": "Orders", "KeyConditionExpression": "customerId = :c", "ExpressionAttributeValues": {":c": {"S": "C-05"}}, "Select": "COUNT"}}
+```
+
+So hai request trên cùng 4 đơn của `C-12`:
 
 ```text
 Query: Count 4, ScannedCount 4
 Scan:  Count 4, ScannedCount 120
 ```
 
-Bảng 120 item thì chênh 30 lần. Bảng 10 triệu item thì `Scan` phải phân trang qua hàng nghìn lần gọi 1 MB.
+## Lỗi hay gặp
+
+Đưa điều kiện khóa vào `Scan`:
+
+```json
+// ERROR ValidationException
+{"op": "Scan", "input": {"TableName": "Orders", "KeyConditionExpression": "customerId = :c", "ExpressionAttributeValues": {":c": {"S": "C-12"}}}}
+```
+
+Đếm đơn của một khách bằng `Scan` vì "chỉ lấy con số":
+
+```json
+// WRONG: Count 4, but ScannedCount 120
+{"op": "Scan", "input": {"TableName": "Orders", "FilterExpression": "customerId = :c", "ExpressionAttributeValues": {":c": {"S": "C-12"}}, "Select": "COUNT"}}
+```
+
+```json
+// FIX: the same count, ScannedCount 4
+{"op": "Query", "input": {"TableName": "Orders", "KeyConditionExpression": "customerId = :c", "ExpressionAttributeValues": {":c": {"S": "C-12"}}, "Select": "COUNT"}}
+```
 
 ## Thực hành
 
-Scan vẫn có chỗ dùng: bảng nhỏ, việc chạy một lần, xuất dữ liệu. Với câu hỏi lặp lại, hãy thiết kế khóa (hoặc index (chỉ mục) ở L3) để thành `Query`.
+Bảng `Orders` có 120 đơn. Mỗi bước có điều kiện về `Count` và `ScannedCount`: đọc chúng ở tab Kết quả.
+
+## Tóm tắt
+
+- `Query` đọc một item collection; `Scan` đọc cả bảng.
+- `ScannedCount` là số item đã đọc, và là số bạn trả tiền.
+- `Count` là số item còn lại sau bộ lọc.
+- `FilterExpression` và `Select: "COUNT"` không làm lần đọc rẻ hơn.
 
 # EN
+
+## Opening
+
+Two requests both return the 4 orders of one customer. One reads 4 items, the other 120. How do you tell which kind yours is?
 
 ## Key idea
 
@@ -229,17 +318,68 @@ The response carries two numbers:
 
 `Select: "COUNT"` returns only the number, but each item still has to be read, so the price is the same.
 
+With 120 items a `Scan` costs 30 times more than a `Query` for the same 4 orders. With 10 million items a `Scan` has to page through thousands of 1 MB calls. Scan still has its uses: small tables, one-off jobs, exports. For a question you ask again and again, design the key (or an index, in L3) so that it becomes a `Query`.
+
+## Syntax
+
+```text
+{"op": "Query", "input": {..., "KeyConditionExpression": "<pk> = :p", "Select": "COUNT"}}
+{"op": "Scan",  "input": {..., "FilterExpression": "<attr> = :v", "Select": "COUNT"}}
+response: Count = items returned, ScannedCount = items read
+```
+
+- `Scan` has no `KeyConditionExpression`.
+- A `FilterExpression` applies after the read, in both `Query` and `Scan`.
+
 ## Example
 
-The same 4 orders of `C-12`:
+The four orders of `C-12`: `Count` 4, `ScannedCount` 4:
+
+```json
+{"op": "Query", "input": {"TableName": "Orders", "KeyConditionExpression": "customerId = :c", "ExpressionAttributeValues": {":c": {"S": "C-12"}}}}
+```
+
+Only the count, still 4 items read:
+
+```json
+{"op": "Query", "input": {"TableName": "Orders", "KeyConditionExpression": "customerId = :c", "ExpressionAttributeValues": {":c": {"S": "C-05"}}, "Select": "COUNT"}}
+```
+
+The two requests compared on the same 4 orders of `C-12`:
 
 ```text
 Query: Count 4, ScannedCount 4
 Scan:  Count 4, ScannedCount 120
 ```
 
-With 120 items that is 30 times more. With 10 million items a `Scan` has to page through thousands of 1 MB calls.
+## Common mistakes
+
+Giving a `Scan` a key condition:
+
+```json
+// ERROR ValidationException
+{"op": "Scan", "input": {"TableName": "Orders", "KeyConditionExpression": "customerId = :c", "ExpressionAttributeValues": {":c": {"S": "C-12"}}}}
+```
+
+Counting one customer's orders with a `Scan` because "it only returns a number":
+
+```json
+// WRONG: Count 4, but ScannedCount 120
+{"op": "Scan", "input": {"TableName": "Orders", "FilterExpression": "customerId = :c", "ExpressionAttributeValues": {":c": {"S": "C-12"}}, "Select": "COUNT"}}
+```
+
+```json
+// FIX: the same count, ScannedCount 4
+{"op": "Query", "input": {"TableName": "Orders", "KeyConditionExpression": "customerId = :c", "ExpressionAttributeValues": {":c": {"S": "C-12"}}, "Select": "COUNT"}}
+```
 
 ## Practice
 
-Scan still has its uses: small tables, one-off jobs, exports. For a question you ask again and again, design the key (or an index, in L3) so that it becomes a `Query`.
+Table `Orders` holds 120 orders. Each step has conditions on `Count` and `ScannedCount`: read them in the Result tab.
+
+## Recap
+
+- `Query` reads one item collection; `Scan` reads the whole table.
+- `ScannedCount` is the number of items read, and the number you pay for.
+- `Count` is the number of items left after the filter.
+- A `FilterExpression` and `Select: "COUNT"` do not make the read cheaper.
