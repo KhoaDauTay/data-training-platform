@@ -16,9 +16,9 @@ import { resumeStep } from './overview';
 import { seedReview } from './practice';
 import { generalHash, isStory, parseSessionNote, playSchema, session, sessionNote, SESSION_KEY, today } from './session';
 import { localStore, readJson, writeJson } from './storage';
-import { domainHash, domainOfHash, drillOfHash, isInterviewId, sharedOf, type Route } from './route';
+import { domainOfHash, drillOfHash, isInterviewId, isSandboxHash, sandboxHash, sharedOf, type Route } from './route';
 import type { Ticket } from './tickets';
-import { bootGeneral, dropGeneral, initModes, interviewStep, ivPresence, onPracticeWrong, onSolved, openShared, renderLeft, renderReviewButton, reopenInterview, startDrill, startLane, startSandbox } from './ui/modes';
+import { bootGeneral, dropGeneral, initModes, interviewStep, ivPresence, onPracticeWrong, onSolved, openShared, renderLeft, renderReviewButton, reopenInterview, sandboxFromHash, startDrill, startLane } from './ui/modes';
 import './ui/mapPage'; // V22-A: the Map page section (was routesSection in ui/homeView.ts)
 import './ui/me'; // v16 (L142): #/me nav item and page section; the page itself is the lazy meView chunk
 import './ui/engine'; // ENG-CORE (L220): #/engine nav item, page, sidebar rows and #/me block; the pages are the lazy engineView chunk
@@ -147,7 +147,7 @@ if (loaded.warning?.kind === 'corrupt') app.notice = { key: 'save.corrupt' };
 /** v16 (v7 §5.3): a #/share link becomes its domain's workspace hash at once; the query waits for that route (takeShare). */
 let pendingShare = sharedOf(location.hash);
 const toShare = (): void => {
-  if (pendingShare) history.replaceState(history.state, '', `${domainHash(pendingShare.d)}/play`);
+  if (pendingShare) history.replaceState(history.state, '', sandboxHash(pendingShare.d)); // L310: the Sandbox's own hash
 };
 toShare();
 window.addEventListener('hashchange', () => { // before the router's listener, so it already sees the workspace hash
@@ -602,16 +602,15 @@ startRouter((r, initial) => {
   const d = domainOfHash(location.hash);
   if (d) openPage(r, d); // a domain page needs its data (seeded once)
   else if (r === 'play') openSchema('lab'); // v15 Q1: #/learn/play, a drill or a review of drills
-  if (d && d !== activeDomain()) void enterDomain(d).then(() => {
+  const after = (): void => {
     showRoute(r, initial);
     takeShare(r);
-  });
-  else {
-    showRoute(r, initial);
-    takeShare(r);
-  }
+    if (r === 'play' && isSandboxHash(location.hash)) sandboxFromHash(); // L310: after the domain is entered (that resets the session)
+  };
+  if (d && d !== activeDomain()) void enterDomain(d).then(after);
+  else after();
   ivPresence(r === 'play' && !document.hidden); // FIX-1: the interview clock runs only in the room
-}, generalHash, { open: openGeneral, leave: dropGeneral });
+}, () => generalHash() ?? (session.mode.kind === 'sandbox' ? sandboxHash(activeDomain()) : undefined), { open: openGeneral, leave: dropGeneral }); // L310: the Sandbox's hash too: go('play') keeps it, Back to …/play leaves it
 if (reopen && !reopened) openGeneral(reopen);
 document.addEventListener('visibilitychange', () => ivPresence(!document.hidden && currentRoute() === 'play'));
 // The Sandbox or a lane task open at the last pagehide (a reload) comes back on the same domain's workspace; the note is read once.
@@ -619,7 +618,7 @@ const note = parseSessionNote(readJson<unknown>(SESSION_KEY));
 writeJson(SESSION_KEY, null);
 if (note && !reopen && currentRoute() === 'play' && domainOfHash(location.hash) === note.domain && activeDomain() === note.domain) {
   const lane = note.kind === 'lane' ? loadLanes().tasks.find((x) => x.id === note.id) : undefined;
-  if (note.kind === 'sandbox') startSandbox();
+  if (note.kind === 'sandbox') sandboxFromHash(); // an old …/play hash (L310: a …/sandbox reload is already open)
   else if (lane) startLane(lane);
 }
 window.addEventListener('pagehide', () => writeJson(SESSION_KEY, sessionNote(session.mode, activeDomain())));

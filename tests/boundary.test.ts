@@ -145,3 +145,23 @@ describe('Q4: the Notebook never prints a raw task id', () => {
     expect(unlockNote(tickets, 'where', 'vi', true)).toContain(textOf(teaches('where'), 'vi').title);
   });
 });
+
+describe('L310: the Sandbox has its own hash, not the workspace\'s', () => {
+  it('#/d/<domain>/sandbox is the play route of that domain; Back to …/play leaves the Sandbox; old links keep working', async () => {
+    const { isSandboxHash, sandboxHash } = await import('../src/route');
+    for (const d of ['logistics', 'ecommerce', 'finance'] as const) {
+      const h = sandboxHash(d);
+      expect(h).toBe(`#/d/${d}/sandbox`);
+      expect(h).not.toBe(`#/d/${d}/play`);
+      expect(parseRoute(h)).toBe('play');
+      expect(domainOfHash(h)).toBe(d);
+      expect(isSandboxHash(h)).toBe(true);
+      expect(isSandboxHash(`#/d/${d}/play`)).toBe(false);
+      expect(generalNav(`#/d/${d}/play`, h)).toBe('leave'); // router `lab` = the open Sandbox's hash
+      expect(generalNav(h, h)).toBeUndefined();
+      expect(workspaceHash(h, undefined)).toBe(h);
+    }
+    expect(parseRoute('#/d/nowhere/sandbox')).toBe('home');
+    expect(parseRoute(canonicalHash('#/play'))).toBe('play'); // the old workspace alias still opens the workspace
+  });
+});

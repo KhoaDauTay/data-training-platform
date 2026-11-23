@@ -6,7 +6,7 @@ import { getLang, isMac, keyLabels, locale, t } from '../i18n';
 import { LANE_XP } from '../lanes';
 import { applyResult, isSuccess, movedToday, nextCard, pickForSkill, retryItem, seedReview, type PracticeItem } from '../practice';
 import { CHAPTERS, chapterTitle, moduleTitle, nextTicket, SKILLS } from '../progress';
-import { drillHash, hashOf, INTERVIEW_PAGE, isInterviewId, isInterviewPage, learnAdvOf, learnModuleOf, learnSkillOf, parseRoute, SHARE_MAX, shareHash } from '../route';
+import { drillHash, hashOf, INTERVIEW_PAGE, isInterviewId, isInterviewPage, learnAdvOf, learnModuleOf, learnSkillOf, parseRoute, sandboxHash, SHARE_MAX, shareHash } from '../route';
 import { activeDomain } from '../domains';
 import {
   activeSchema, activeStep, activeTicket, generalWork, hintsShown, interviewClosed, ivHooks, ivItemId, readDraft, isStory, markWarmupDone, practiceFinished, reviewCount, reviewedDrills, reviewToday, session, today, warmupToday, type Mode, type PracticeRun,
@@ -102,6 +102,15 @@ export function startPlacement(items: PracticeItem[]): void {
 }
 
 export const startSandbox = (): void => enter({ kind: 'sandbox' });
+/**
+ * L310: the router shows `#/d/<domain>/sandbox` (a link, Back/Forward, a reload): enter the Sandbox unless it is open. A
+ * locked Sandbox (a beginner before task 1) leaves the hash for the workspace's, without a new history entry.
+ */
+export function sandboxFromHash(): void {
+  if (session.mode.kind === 'sandbox') return;
+  if (sandboxLock()) return void history.replaceState(history.state, '', hashOf('play'));
+  startSandbox();
+}
 export const backToStory = (): void => enter({ kind: 'story' });
 /**
  * v15 Q1: leaving a drill or a review of drills goes back to the General area (the skill's or node's page, or Practise SQL),
@@ -505,7 +514,7 @@ registerNav({
   current: (r) => r === 'practice' || (r === 'play' && (session.mode.kind === 'practice' || session.mode.kind === 'drill')),
 });
 registerNav({
-  id: 'sandbox', area: 'domain', order: 30, label: 'nav.sandbox', icon: NAV_ICON.sandbox, get href() { return hashOf('play'); },
+  id: 'sandbox', area: 'domain', order: 30, label: 'nav.sandbox', icon: NAV_ICON.sandbox, get href() { return sandboxHash(activeDomain()); }, // L310: its own hash
   current: (r) => r === 'play' && session.mode.kind === 'sandbox',
   onclick: () => (session.mode.kind === 'sandbox' ? go('play') : startSandbox()),
 });

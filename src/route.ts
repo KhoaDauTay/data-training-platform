@@ -17,7 +17,12 @@ const hashTable = (): Record<Route, string> => ({
   home: '#/', learn: '#/learn', practice: '#/practice', overview: D(), play: `${D()}/play`, data: `${D()}/data`,
   dashboard: `${D()}/dashboard`, map: `${D()}/map`, me: '#/me', engine: '#/engine',
 });
-const DOMAIN_PAGE: Record<string, Route> = { '': 'overview', play: 'play', data: 'data', dashboard: 'dashboard', map: 'map' };
+// FIX-FB (L310): the Sandbox has its own hash, `#/d/<domain>/sandbox`, still the 'play' route (the same mounted workspace,
+// session mode 'sandbox'); the router enters the mode from the hash (main.ts) and go('play') picks it while the Sandbox is open.
+const DOMAIN_PAGE: Record<string, Route> = { '': 'overview', play: 'play', sandbox: 'play', data: 'data', dashboard: 'dashboard', map: 'map' };
+/** L310: the domain's Sandbox. */
+export const sandboxHash = (d: DomainId): string => `#/d/${d}/sandbox`;
+export const isSandboxHash = (hash: string): boolean => /^#\/?d\/[a-z]+\/sandbox(?=$|[/?])/.test(hash);
 
 export const hashOf = (r: Route): string => hashTable()[r];
 export const isRoute = (v: unknown): v is Route => ROUTES.includes(v as Route);
@@ -54,7 +59,7 @@ export function generalNav(hash: string, lab: string | undefined): { open: strin
   const id = drillOfHash(hash);
   if (id) return lab && drillOfHash(lab) === id ? undefined : { open: id };
   if (!lab || hash === lab) return undefined;
-  return /^#\/?(d\/[a-z]+|learn)\/play(?=$|[/?])/.test(hash) ? 'leave' : undefined;
+  return /^#\/?(d\/[a-z]+|learn)\/play(?=$|[/?])/.test(hash) ? 'leave' : undefined; // L310: also Back from the Sandbox (`lab` = its hash) to the workspace
 }
 
 /** The General workspace holding one drill: `#/learn/play/<drill id>`, so a reload reopens that drill (its draft is in the save). */
