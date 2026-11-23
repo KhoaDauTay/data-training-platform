@@ -7,8 +7,8 @@ A developer's reference for SQL, PostgreSQL, MySQL/SQLite differences, design, p
 | File | What it holds | Verified |
 |---|---|---|
 | [sql-core.md](sql-core.md) | statement families, logical SELECT order, NULL logic, joins, grouping, subqueries, CTEs, window functions, set operations, constraints, views, transactions | 37 blocks on PGlite (prose link-checked) |
-| [postgresql.md](postgresql.md) | PostgreSQL 18 specifics in the order of the PostgreSQL tutorial, then EXPLAIN, MVCC/VACUUM, JSONB, full-text, extensions, partitioning, PL/pgSQL | 44 blocks on PGlite (prose link-checked) |
-| [performance.md](performance.md) | method, sargable predicates, index shape, fan-out, pagination, statistics, maintenance | 9 blocks on PGlite (prose link-checked) |
+| [postgresql.md](postgresql.md) | PostgreSQL 18 specifics in the order of the PostgreSQL tutorial, then EXPLAIN, MVCC/VACUUM, JSONB, full-text, extensions, partitioning, PL/pgSQL | 57 blocks on PGlite (prose link-checked) |
+| [performance.md](performance.md) | method, sargable predicates, index shape, fan-out, pagination, statistics, maintenance | 11 blocks on PGlite (prose link-checked) |
 | [security.md](security.md) | injection, roles and privileges, row-level security | 9 blocks on PGlite (prose link-checked) |
 | [design-normalization.md](design-normalization.md) | ER modelling, keys, functional dependencies, normal forms | 3 blocks on PGlite; theory link-checked |
 | [dbms-theory.md](dbms-theory.md) | architecture, relational model, algebra/calculus, transactions and concurrency control, storage and indexes, query processing, recovery | 3 blocks on PGlite; theory link-checked |
@@ -31,17 +31,17 @@ Every section carries a `Status:` line (`verified`, `to-verify`, or `concept`); 
 
 ## Verification
 
-Every ```` ```sql ```` block in the PostgreSQL-dialect files runs in file order on one fresh PGlite 0.5.16 per file (`pg_trgm`, `pgcrypto`, `citext` loaded). A block with `-- expect: [[…]]` must return exactly those rows (values as strings, `null` for NULL); a block with `-- expect: error XXXXX` must fail with that SQLSTATE; other blocks are setup and must succeed. Result of the last run (2026-11-23):
+Every ```` ```sql ```` block in the PostgreSQL-dialect files runs in file order on one fresh PGlite 0.5.16 per file (`pg_trgm`, `pgcrypto`, `citext` loaded). A block with `-- expect: [[…]]` must return exactly those rows (values as strings, `null` for NULL); a block with `-- expect: error XXXXX` must fail with that SQLSTATE; other blocks are setup and must succeed. Result of the last run (2026-11-24):
 
 | File | Blocks | Asserted rows | Expected errors (SQLSTATE checked) | Failed |
 |---|---|---|---|---|
 | sql-core.md | 37 | 29 | 6 | 0 |
-| postgresql.md | 44 | 31 | 4 | 0 |
-| performance.md | 9 | 6 | 0 | 0 |
+| postgresql.md | 57 | 39 | 6 | 0 |
+| performance.md | 11 | 7 | 0 | 0 |
 | security.md | 9 | 4 | 1 | 0 |
 | design-normalization.md | 3 | 3 | 0 | 0 |
 | dbms-theory.md | 3 | 3 | 0 | 0 |
-| **Total** | **105** | **76** | **11** | **0** |
+| **Total** | **120** | **85** | **13** | **0** |
 
 Plus 8 MongoDB query/aggregation behaviours asserted on mingo 7.2.6 ([nosql-mongodb.md](nosql-mongodb.md)).
 
@@ -51,7 +51,7 @@ Not verified, and marked so where it appears: two-session behaviour (locks, isol
 
 | Level | Meaning | Where |
 |---|---|---|
-| **ran** | the statement was executed and its result or SQLSTATE asserted | the 105 PGlite blocks and 8 mingo checks above |
+| **ran** | the statement was executed and its result or SQLSTATE asserted | the 120 PGlite blocks and 8 mingo checks above |
 | **page read** | the cited primary page was fetched and read during this work (2026-11-23) | MySQL 8.4: `sql-mode`, `intersect`, `innodb-transaction-isolation-levels`, `join`, `arithmetic-functions`, `create-table-check-constraints`, `explain`, `group-by-handling`, `implicit-commit`, `datetime`, `innodb-index-types`; SQLite: `datatype3`, `lang_select` (join syntax only), `releaselog/3_39_0`, `lang_altertable`, `foreignkeys`; MongoDB: `core/map-reduce`; AWS: DynamoDB `ServiceQuotas`, `Constraints`, Data Pipeline "What is"; Microsoft: T-SQL `REGEXP_LIKE` |
 | **link-checked** | the URL answered HTTP 200 to a scripted request (dev.mysql.com and doi.org refuse scripted requests with 403, so those links were not re-checked), and the statement rests on the author's knowledge of that page | every other citation, including all postgresql.org pages: PostgreSQL prose that no example exercises (for example lock-mode tables, autovacuum behaviour) is at this level |
 
