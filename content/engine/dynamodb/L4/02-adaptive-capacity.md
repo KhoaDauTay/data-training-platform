@@ -7,7 +7,7 @@ title: "Burst, adaptive capacity và giới hạn của chúng"
 title_en: "Burst, adaptive capacity and where they stop"
 kind: concept
 runtime: docs
-minutes: 7
+minutes: 8
 objectives:
   - { vi: "Giải thích burst capacity giữ tối đa 300 giây capacity chưa dùng", en: "Explain that burst capacity keeps up to 300 seconds of unused capacity" }
   - { vi: "Giải thích adaptive capacity tăng throughput cho partition nóng ngay lập tức và cô lập item nóng", en: "Explain that adaptive capacity instantly raises throughput for a hot partition and isolates hot items" }
@@ -24,32 +24,46 @@ quiz:
       - { vi: "Không, một khóa chính tối đa nhận 1000 WCU kể cả khi được cô lập trong partition riêng", en: "No, one primary key gets at most 1000 WCU even when isolated in its own partition" }
       - { vi: "Có, nếu bảng ở chế độ on-demand", en: "Yes, if the table is in on-demand mode" }
     answer: 1
-    why: { vi: "Adaptive capacity có thể để một partition chỉ chứa đúng item nóng đó, nhưng trần vẫn là 3000 RCU và 1000 WCU cho khóa chính ấy. Một item không thể chia nhỏ hơn: phải đổi thiết kế (shard khóa).", en: "Adaptive capacity can leave that hot item alone in its own partition, but the ceiling is still 3000 RCU and 1000 WCU for that primary key. One item cannot be split further: the design has to change (shard the key)." }
+    trap: 0
+    why: { vi: "Nghe hợp lý vì adaptive capacity đúng là chia lại partition, nhưng đơn vị nhỏ nhất nó di chuyển được là một item. Item nóng có thể nằm một mình một partition, và trần vẫn là 3000 RCU và 1000 WCU cho khóa chính ấy: phải đổi thiết kế (shard khóa).", en: "It sounds right because adaptive capacity does rebalance partitions, but the smallest unit it can move is one item. The hot item can sit alone in a partition, and the ceiling is still 3000 RCU and 1000 WCU for that primary key: the design has to change (shard the key)." }
   - q: { vi: "Bảng có LSI. Một item collection rất nóng. Điều gì đúng?", en: "The table has an LSI. One item collection is very hot. What is true?" }
     options:
       - { vi: "Adaptive capacity không tách item collection qua nhiều partition khi bảng có LSI", en: "Adaptive capacity does not split an item collection over several partitions when the table has an LSI" }
       - { vi: "LSI làm collection được tách nhanh hơn", en: "The LSI makes the collection split faster" }
       - { vi: "LSI không ảnh hưởng gì tới việc tách", en: "The LSI has no effect on splitting" }
     answer: 0
-    why: { vi: "Docs chính thức của AWS nói rõ adaptive capacity không tách collection khi bảng có local secondary index. Đó là một lý do chọn GSI thay cho LSI khi tải dồn vào ít partition key.", en: "The AWS docs state that adaptive capacity does not split item collections when the table has a local secondary index. That is one reason to prefer a GSI over an LSI when load piles onto few partition keys." }
+    why: { vi: "Docs AWS nói adaptive capacity không tách item collection khi bảng có local secondary index. Đó là một lý do chọn GSI thay cho LSI khi tải dồn vào ít partition key.", en: "The AWS docs say adaptive capacity does not split item collections when the table has a local secondary index. That is one reason to prefer a GSI over an LSI when load piles onto few partition keys." }
 ---
+## Mở bài
+
+Một chương trình khuyến mãi làm 10 % sản phẩm nhận 90 % lượt xem, nhưng bảng không throttle. Tuần sau, một bộ đếm lượt thích duy nhất bị ghi 1.500 lần mỗi giây và bảng throttle liên tục. DynamoDB đỡ được tải lệch tới đâu thì dừng?
 
 ## Ý chính
 
-DynamoDB có hai cơ chế đỡ cho tải không đều. Cả hai đều có giới hạn.
+**Burst capacity**: khi bạn không dùng hết throughput, DynamoDB giữ lại tối đa 5 phút (300 giây) capacity chưa dùng để đỡ một đợt tăng ngắn. DynamoDB cũng có thể tiêu phần này cho việc bảo trì nền mà không báo trước, nên đừng tính nó vào kế hoạch.
 
-- **Burst capacity**: khi bạn không dùng hết throughput, DynamoDB giữ lại tối đa **5 phút (300 giây)** capacity chưa dùng để đỡ một đợt tăng ngắn. DynamoDB cũng có thể tiêu phần này cho việc bảo trì nền mà không báo trước, nên đừng tính nó vào kế hoạch.
-- **Adaptive capacity**: bật sẵn cho mọi bảng, không tốn thêm tiền. Khi một partition nhận nhiều tải hơn phần chia đều, DynamoDB **tăng ngay** throughput cho partition đó, miễn là không vượt tổng capacity của bảng và trần của partition.
-- **Cô lập item nóng**: nếu vài item nhận tải lệch, DynamoDB sắp xếp lại để chúng không nằm chung partition. Có thể tới mức một partition chỉ chứa một item; khi đó item ấy nhận tối đa **3000 RCU và 1000 WCU**.
-- Adaptive capacity **không tách** item collection khi bảng có **LSI**.
+**Adaptive capacity**: bật sẵn cho mọi bảng, không tốn thêm tiền. Khi một partition nhận nhiều hơn phần chia đều, DynamoDB tăng ngay throughput cho partition đó, miễn là không vượt tổng capacity của bảng và trần của partition. Nếu vài item nhận tải lệch, DynamoDB còn sắp lại để chúng không nằm chung partition, có thể tới mức một partition chỉ chứa một item. Adaptive capacity không tách item collection khi bảng có LSI.
 
-Kết luận: adaptive capacity che được tải lệch vừa phải, không che được một khóa duy nhất bị ghi quá 1000 WCU. Lúc đó phải đổi thiết kế khóa (bài 4, bài 5).
+Nhiều người nghĩ adaptive capacity xóa được mọi điểm nóng. Thật ra nó chỉ di chuyển được tới mức một item: item đó vẫn có trần 3000 RCU và 1000 WCU. Một khóa duy nhất bị ghi quá 1000 WCU thì phải đổi thiết kế khóa (bài 4, bài 5).
 
-Throttle, burst và adaptive capacity chỉ có trên DynamoDB thật, nên bài này **chưa chạy được trong trình duyệt**.
+Throttle, burst và adaptive capacity chỉ có trên DynamoDB thật, nên bài này chưa chạy được trong trình duyệt.
+
+## Cú pháp
+
+```text
+burst:     up to 300 s of unused capacity, may be spent on maintenance
+adaptive:  hot partition gets more, while table total <= table capacity
+isolation: hot items moved apart, down to 1 item per partition
+ceiling:   one primary key <= 3000 RCU and <= 1000 WCU per second
+```
+
+- Burst: đệm ngắn, không có cam kết.
+- Adaptive: tự động, tức thì, không có nút bật tắt.
+- Trần một khóa: không cơ chế nào vượt được.
 
 ## Ví dụ
 
-Ví dụ của AWS: bảng provisioned 400 WCU chia đều cho 4 partition, mỗi partition 100 WCU. Partition 1–3 nhận 50 WCU/giây, partition 4 nhận 150 WCU/giây.
+Ví dụ trong docs AWS: bảng provisioned 400 WCU chia đều cho 4 partition, mỗi partition 100 WCU. Partition 1–3 nhận 50 WCU/giây, partition 4 nhận 150 WCU/giây.
 
 ```text
 P1 50/100   P2 50/100   P3 50/100   P4 150/100  -> burst, then throttle
@@ -58,24 +72,83 @@ adaptive capacity: P4 -> 150/150                -> no throttle (table total 300 
 
 Partition 4 dùng burst trong lúc chờ, rồi adaptive capacity nâng nó lên đủ 150 WCU vì tổng của bảng (300) vẫn dưới 400.
 
+Cùng bảng, nhưng tải dồn vào một item:
+
+```text
+item LIKES#post-1: 1500 writes/s
+isolated in its own partition -> 1000 WCU accepted, 500 throttled
+```
+
+Cô lập không giúp gì thêm: một item không thể chia nhỏ hơn.
+
+## Lỗi hay gặp
+
+Dựa vào burst cho một đợt tải dài:
+
+```text
+// WRONG: a 20-minute flash sale planned on burst capacity
+burst holds at most 300 s of unused capacity, and may already be spent
+```
+
+```text
+// FIX: plan capacity for the sale (or use on-demand) and spread hot keys
+```
+
+Burst đỡ vài giây tới vài phút, không phải cả buổi khuyến mãi.
+
+Chờ adaptive capacity cứu một bộ đếm duy nhất:
+
+```text
+// WRONG: one counter item, 1500 writes/s, "adaptive capacity will handle it"
+PK = "LIKES#post-1"
+```
+
+```text
+// FIX: shard the counter and sum on read
+PK = "LIKES#post-1#" + random(0..9)
+```
+
+Mười khóa con, mỗi khóa khoảng 150 ghi mỗi giây: không khóa nào gần trần 1000 WCU.
+
+## Tóm tắt
+
+- Burst giữ tối đa 300 giây capacity chưa dùng, nhưng có thể đã bị tiêu.
+- Adaptive capacity tăng ngay throughput cho partition nóng, trong giới hạn của bảng.
+- Item nóng có thể bị cô lập tới một item một partition, rồi dừng ở đó.
+- Một khóa chính vẫn có trần 3000 RCU và 1000 WCU; LSI chặn việc tách collection.
+
 # EN
+
+## Opening
+
+A promotion makes 10% of products get 90% of the views, yet the table does not throttle. A week later, one single like counter is written 1,500 times a second and the table throttles nonstop. How much skew can DynamoDB absorb, and where does it stop?
 
 ## Key idea
 
-DynamoDB has two mechanisms that absorb uneven load. Both have limits.
+**Burst capacity**: when you do not use all of your throughput, DynamoDB keeps up to 5 minutes (300 seconds) of unused capacity to absorb a short spike. DynamoDB may also spend it on background maintenance without notice, so do not plan on it.
 
-- **Burst capacity**: when you do not use all of your throughput, DynamoDB keeps up to **5 minutes (300 seconds)** of unused capacity to absorb a short spike. DynamoDB may also spend it on background maintenance without notice, so do not plan on it.
-- **Adaptive capacity**: on for every table, at no extra cost. When one partition gets more than its even share, DynamoDB **instantly** raises that partition's throughput, as long as the table's total capacity and the partition ceiling are not exceeded.
-- **Isolating hot items**: if a few items get skewed traffic, DynamoDB rebalances so they do not share a partition. This can go as far as one partition holding one item; that item then gets at most **3000 RCU and 1000 WCU**.
-- Adaptive capacity does **not split** item collections when the table has an **LSI**.
+**Adaptive capacity**: on for every table, at no extra cost. When one partition gets more than its even share, DynamoDB instantly raises that partition's throughput, as long as the table's total capacity and the partition ceiling are not exceeded. If a few items get skewed traffic, DynamoDB also rebalances so they do not share a partition, possibly down to one item per partition. Adaptive capacity does not split item collections when the table has an LSI.
 
-Takeaway: adaptive capacity hides moderate skew, not a single key written above 1000 WCU. Then the key design has to change (lessons 4 and 5).
+Many people think adaptive capacity removes every hot spot. In fact it can only go down to one item: that item still has a ceiling of 3000 RCU and 1000 WCU. A single key written above 1000 WCU needs a new key design (lessons 4 and 5).
 
 Throttling, burst and adaptive capacity only exist on real DynamoDB, so this lesson does not run in the browser yet.
 
+## Syntax
+
+```text
+burst:     up to 300 s of unused capacity, may be spent on maintenance
+adaptive:  hot partition gets more, while table total <= table capacity
+isolation: hot items moved apart, down to 1 item per partition
+ceiling:   one primary key <= 3000 RCU and <= 1000 WCU per second
+```
+
+- Burst: a short buffer, with no promise.
+- Adaptive: automatic, instant, no switch to turn on.
+- The one-key ceiling: no mechanism goes past it.
+
 ## Example
 
-The AWS example: a provisioned table with 400 WCU spread evenly over 4 partitions, 100 WCU each. Partitions 1 to 3 receive 50 WCU per second, partition 4 receives 150 WCU per second.
+The example in the AWS docs: a provisioned table with 400 WCU spread evenly over 4 partitions, 100 WCU each. Partitions 1 to 3 receive 50 WCU per second, partition 4 receives 150 WCU per second.
 
 ```text
 P1 50/100   P2 50/100   P3 50/100   P4 150/100  -> burst, then throttle
@@ -83,3 +156,48 @@ adaptive capacity: P4 -> 150/150                -> no throttle (table total 300 
 ```
 
 Partition 4 lives on burst capacity for a while, then adaptive capacity raises it to the full 150 WCU because the table total (300) is still below 400.
+
+The same table, but the load piles onto one item:
+
+```text
+item LIKES#post-1: 1500 writes/s
+isolated in its own partition -> 1000 WCU accepted, 500 throttled
+```
+
+Isolation does not help any further: one item cannot be split smaller.
+
+## Common mistakes
+
+Relying on burst for a long load:
+
+```text
+// WRONG: a 20-minute flash sale planned on burst capacity
+burst holds at most 300 s of unused capacity, and may already be spent
+```
+
+```text
+// FIX: plan capacity for the sale (or use on-demand) and spread hot keys
+```
+
+Burst absorbs seconds to a few minutes, not a whole promotion.
+
+Waiting for adaptive capacity to save a single counter:
+
+```text
+// WRONG: one counter item, 1500 writes/s, "adaptive capacity will handle it"
+PK = "LIKES#post-1"
+```
+
+```text
+// FIX: shard the counter and sum on read
+PK = "LIKES#post-1#" + random(0..9)
+```
+
+Ten sub-keys, about 150 writes per second each: no key comes near the 1000 WCU ceiling.
+
+## Recap
+
+- Burst keeps up to 300 seconds of unused capacity, but it may already be spent.
+- Adaptive capacity instantly raises a hot partition's throughput, within the table's limits.
+- Hot items can be isolated down to one item per partition, and it stops there.
+- One primary key still has a 3000 RCU and 1000 WCU ceiling; an LSI blocks collection splits.
