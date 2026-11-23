@@ -47,7 +47,7 @@ export function learnPage(deps: DrillDeps, g: General): HTMLElement {
   const node = g.nodes.find((x) => x.id === d$.learnAdvOf(hash));
   const n = d$.learnModuleOf(hash);
   const c = ctx(g);
-  levels = d$.masteryOf(c.save, c.tickets, d$.SKILLS.map((s) => s.id), d$.today()); // v24 (L323): same tickets as `known`
+  levels = d$.masteryOf(c.save, c.tickets, d$.SKILLS.map((s) => s.id), d$.today(), g.drills.filter((x) => x.perf).map((x) => x.id)); // v24 (L323): same tickets as `known`; perf bars from the loaded General
   stamps.base(c.save, c.known); // a new save object (import) resets the baseline
   if (skill) return skillPage(c, skill);
   if (node) return advPage(c, node);

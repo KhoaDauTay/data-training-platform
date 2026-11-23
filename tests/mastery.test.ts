@@ -2,10 +2,10 @@ import { describe, expect, it } from 'vitest';
 import { parse } from 'yaml';
 import v5 from './fixtures/save-v5.json?raw';
 import sqlYml from '../content/general/sql.yml?raw';
-import { loadTickets } from '../src/content';
+import { generalNow, loadTickets } from '../src/content';
 import { knownSkills } from '../src/home';
-import { badges, BADGE_ENGINES, DRILL_KINDS, engineLevels, masteryOf, overdue, skillParts, type BadgeInput } from '../src/mastery';
-import { SKILLS } from '../src/progress';
+import { badges, BADGE_ENGINES, DRILL_KINDS, engineLevels, FAST_PART, masteryOf, overdue, perfDrills, skillParts, type BadgeInput } from '../src/mastery';
+import { PARTS, SKILLS } from '../src/progress';
 import type { Save } from '../src/save';
 
 /** v24 R0 (product-route-v24 §1.7, L323, L330–L334): skill levels and badges, derived from the Save on every draw. */
@@ -101,5 +101,17 @@ describe('engine levels and badges', () => {
     expect(b('2026-11-25')).toBe(false); // box 3 interval 4: overdue after 11-24
     const everything = { completed: ids.flatMap((s) => [`g-${s.replace(/_/g, '-')}-1`, `g-${s.replace(/_/g, '-')}-2`]), review: {} };
     expect(badges(input(everything, '2030-01-01')).find((x) => x.id === 'foundation')!.have).toBe(true);
+  });
+});
+
+describe('route.yml wiring (v24 integration, L330)', () => {
+  it('"Đúng và nhanh" reads the perf drills of route.yml Part 11; Part badges follow route.yml', () => {
+    const part = PARTS.find((p) => p.n === FAST_PART)!;
+    const fast = perfDrills(generalNow()!.drills, part.skills);
+    expect(fast.length).toBeGreaterThan(0);
+    for (const id of fast) expect(part.skills.some((s) => id.startsWith(`g-${s.replace(/_/g, '-')}-`))).toBe(true);
+    const out = badges({ parts: PARTS, levels: masteryOf(save, tickets(), ids, '2026-11-20'), foundation: ids, perf: fast, completed: new Set(save.completed), engines: {}, domains: [] });
+    expect(out.filter((b) => b.kind === 'part').map((b) => b.id)).toEqual(PARTS.map((p) => `part-${p.n}`));
+    expect(out.find((b) => b.id === 'fast')!.have).toBe(false);
   });
 });

@@ -1,5 +1,6 @@
 import { knownSkills } from './home';
 import { addDays, INTERVALS, type Card } from './practice';
+import type { Drill } from './general';
 import type { Save } from './save';
 import type { Ticket } from './tickets';
 
@@ -66,14 +67,20 @@ export function masteryOf(save: Pick<Save, 'completed' | 'review'>, tickets: Tic
 }
 
 /**
- * The learning path's Parts. Today `skills.yml` `chapter:` (11 groups, = #/learn/sql/<n>); R0's `content/general/route.yml`
- * replaces this source at integration (L330), nothing else changes.
+ * Parts grouped by `skills.yml` `chapter:` (the pre-route source, kept for tests). The skill map and the Part badges read
+ * `content/general/route.yml` (`PARTS`, src/progress.ts) since the v24 integration (L330).
  */
 export function skillParts(skills: readonly { id: string; chapter: number }[]): { n: number; skills: string[] }[] {
   const by = new Map<number, string[]>();
   for (const s of skills) by.set(s.chapter, [...(by.get(s.chapter) ?? []), s.id]);
   return [...by].sort((a, b) => a[0] - b[0]).map(([n, ids]) => ({ n, skills: ids }));
 }
+
+/** The route Part whose performance-bar drills earn "Đúng và nhanh" (L324: Part 11, Indexes and performance). */
+export const FAST_PART = 11;
+/** Drill ids with a `perf:` bar, optionally only those on `skills` (a Part's skills from route.yml). */
+export const perfDrills = (drills: readonly Pick<Drill, 'id' | 'skill' | 'perf'>[], skills?: readonly string[]): string[] =>
+  drills.filter((x) => x.perf && (!skills || (x.skill !== undefined && skills.includes(x.skill)))).map((x) => x.id);
 
 // ---------- Database Engine: per module, never decays (no review schedule) ----------
 

@@ -19,6 +19,7 @@ import type { QueryResult } from '../db/run';
 import type * as IvPrefs from '../interviewPrefs';
 import type * as Mastery from '../mastery';
 import type { Badge, SkillLevel } from '../mastery';
+import type { Drill } from '../general';
 import { meText, type MeKey } from '../i18n/me';
 import {
   calendar, dashFile, importDash as readDashFile, portfolioEntries, portfolioMd, strengths, topErrors, touchesSandbox,
@@ -51,7 +52,10 @@ export interface MeDeps {
   loadInterview: typeof Content.loadInterview; interviewPrefs: () => IvPrefs.InterviewPrefs; passedTakeHomes: typeof IvPrefs.passedTakeHomes;
   cls: { CARD: string; BTN_GO: string; BTN_SECONDARY: string; cx: (...p: (string | false | null | undefined)[]) => string };
   /** v24 (L323, L330–L334): skill map and badges (src/mastery.ts, main). */
-  mastery: Pick<typeof Mastery, 'masteryOf' | 'badges' | 'engineLevels' | 'skillParts'>; today: () => string;
+  mastery: Pick<typeof Mastery, 'masteryOf' | 'badges' | 'engineLevels' | 'perfDrills' | 'FAST_PART'>; today: () => string;
+  /** v24 integration (L330): the skill map's Parts and skills come from content/general/route.yml; perf drills from the General chunk. */
+  ROUTE_PARTS: typeof Progress.PARTS; ROUTE_SKILLS: typeof Progress.ROUTE_SKILLS;
+  generalNow: typeof Content.generalNow; loadGeneral: typeof Content.loadGeneral;
   moduleTitle: typeof Progress.moduleTitle; startToday: () => void;
   engineTrees: () => Readonly<Record<string, Parameters<typeof Mastery.engineLevels>[0]>> | undefined;
 }
@@ -223,15 +227,29 @@ function pathDrills(): string[] | undefined {
   return undefined;
 }
 
+/** General drills (for the performance bars): the chunk loads only once the player passed a General drill (else no bar is passed). */
+let generalLoading = false;
+function generalDrills(): Drill[] | undefined {
+  const g = d.generalNow();
+  if (g) return g.drills;
+  if (!generalLoading && d.app.save.completed.some((id) => id.startsWith('g-'))) {
+    generalLoading = true;
+    d.loadGeneral().then(() => d.rerender(), () => undefined).finally(() => { generalLoading = false; });
+  }
+  return undefined;
+}
+
 function measure(list: Scope[]): Measured {
-  const ids = d.SKILLS.map((s) => s.id);
+  const ids = d.ROUTE_SKILLS.map((s) => s.id);
   const trees = d.engineTrees();
   const completed = new Set(d.app.save.completed);
-  const levels = d.mastery.masteryOf(d.app.save, d.loadTickets('logistics'), ids, d.today()); // L332: the learning path's tickets
-  const parts = d.mastery.skillParts(d.SKILLS); // L330: route.yml's Parts replace this at integration
+  const parts = d.ROUTE_PARTS; // L330: the Parts of content/general/route.yml
+  const drills = generalDrills() ?? [];
+  const levels = d.mastery.masteryOf(d.app.save, d.loadTickets('logistics'), ids, d.today(), d.mastery.perfDrills(drills)); // L332: the learning path's tickets
+  const fast = d.mastery.perfDrills(drills, parts.find((p) => p.n === d.mastery.FAST_PART)?.skills ?? []);
   const engines = trees && Object.fromEntries(Object.entries(trees).map(([e, t]) => [e, d.mastery.engineLevels(t, completed)]));
   const badges = d.mastery.badges({
-    parts, levels, foundation: ids, perf: [], completed, engines: engines ?? {}, path: pathDrills(),
+    parts, levels, foundation: d.SKILLS.map((s) => s.id), perf: fast, completed, engines: engines ?? {}, path: pathDrills(),
     domains: list.filter((s) => s.scope !== 'general').map((s) => ({ id: s.scope, done: s.final })),
   });
   return { levels, parts, engines, badges };
@@ -242,7 +260,7 @@ function skillMapCard(x: Measured): HTMLElement {
   const due = [...x.levels.values()].filter((s) => s.review).length;
   const row = (id: string): HTMLElement => {
     const s = x.levels.get(id)!;
-    const label = d.SKILLS.find((k) => k.id === id)?.label[lang] ?? id;
+    const label = d.ROUTE_SKILLS.find((k) => k.id === id)?.label[lang] ?? id;
     const words = m(s.review ? 'map.dueAria' : 'map.aria', { skill: label, level: m(`lv.${s.level}` as MeKey), n: s.level });
     return d.h('li', { class: 'flex min-h-9 items-center gap-2', 'data-skill': id, 'data-level': String(s.level) },
       d.skillIcon(id, 'size-4 shrink-0 text-accent'),
