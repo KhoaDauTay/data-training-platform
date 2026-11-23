@@ -16,7 +16,7 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 30
     env:
       # Project site lives at https://<user>.github.io/<repo>/. Set repo variable PAGES_BASE=/ for a user site or custom domain.
       BASE: ${{ vars.PAGES_BASE || format('/{0}/', github.event.repository.name) }}
