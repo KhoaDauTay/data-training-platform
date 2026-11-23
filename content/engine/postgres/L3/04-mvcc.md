@@ -9,12 +9,15 @@ kind: concept
 runtime: docs
 docs_why: next
 minutes: 10
+verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-24" }
 viz: pg-mvcc-timeline
 objectives:
   - vi: Giải thích UPDATE = tuple mới + `xmax` trên tuple cũ
     en: Explain UPDATE = new tuple + `xmax` on the old tuple
   - vi: Nói vì sao người đọc không chặn người ghi
     en: Say why readers do not block writers
+  - vi: Giải thích vì sao ROLLBACK, UPDATE và DELETE đều để lại tuple chết trên trang
+    en: Explain why ROLLBACK, UPDATE and DELETE all leave dead tuples on the page
 requires: [e-pg-l3-01]
 sources:
   - https://www.postgresql.org/docs/18/mvcc-intro.html
@@ -29,6 +32,7 @@ quiz:
       - { vi: "(0,4): UPDATE ghi một tuple mới, bản cũ ở (0,2) được đánh dấu `xmax`", en: "(0,4): UPDATE writes a new tuple, the old one at (0,2) gets an `xmax`" }
       - { vi: "(1,1): bản mới luôn sang trang mới", en: "(1,1): the new version always goes to a new page" }
     answer: 1
+    trap: 0
     why:
       vi: "\"Sửa tại chỗ\" nghe tự nhiên vì câu lệnh tên là UPDATE và dòng vẫn ở cùng trang. Postgres không sửa tại chỗ. Lab kế tiếp đo đúng điều này: dòng 2 chuyển sang (0,4), còn (0,2) vẫn nằm trên trang với `t_ctid` trỏ sang (0,4). Trang còn chỗ nên bản mới ở cùng trang."
       en: "\"In place\" sounds natural because the command is called UPDATE and the row stays on the same page. Postgres never updates in place. The next lab measures exactly this: row 2 moves to (0,4), while (0,2) stays on the page with a `t_ctid` pointing to (0,4). The page has room, so the new version stays on the same page."
@@ -40,6 +44,7 @@ quiz:
       - { vi: "2.000", en: "2,000" }
       - { vi: "1.001", en: "1,001" }
     answer: 1
+    trap: 0
     why:
       vi: "Con số 1.000 nghe đúng vì bảng vẫn chỉ có 1.000 dòng khi bạn `SELECT`, nhưng đó là số phiên bản thấy được, không phải số tuple trên đĩa. Mỗi UPDATE để lại bản cũ (có `xmax`) và thêm bản mới. Bản cũ chỉ biến mất khi VACUUM dọn, và chỉ khi không còn transaction nào cần nó."
       en: "The 1,000 figure sounds right because a `SELECT` still returns 1,000 rows, but that is the number of visible versions, not the tuples on disk. Each UPDATE leaves the old version (with `xmax`) and adds a new one. The old version disappears only when VACUUM removes it, and only once no transaction still needs it."
@@ -51,59 +56,225 @@ quiz:
       - { vi: "Bản cũ, vì snapshot của A có trước khi B commit", en: "The old version, because A's snapshot predates B's commit" }
       - { vi: "A bị chặn cho tới khi B xong", en: "A is blocked until B finishes" }
     answer: 1
+    trap: 0
     why:
       vi: "Thấy bản mới của B nghe hợp lý vì B đã commit, và ở Read Committed đúng là vậy. Ở Repeatable Read, A dùng một snapshot cho cả transaction. Bản cũ vẫn còn trên trang nên A đọc nó mà không phải chờ ai. Ở Read Committed, mỗi câu lấy snapshot mới nên câu sau của A sẽ thấy bản của B."
       en: "Seeing B's new version sounds right because B has committed, and at Read Committed that would be true. At Repeatable Read, A uses one snapshot for the whole transaction. The old version is still on the page, so A reads it without waiting for anyone. At Read Committed each statement takes a new snapshot, so A's next statement would see B's version."
 ---
+## Mở bài
+
+Một phiên đang đọc báo cáo dài trên bảng `acct` thì phiên khác sửa chủ tài khoản 2. Người đọc không bị chặn, người sửa cũng không phải chờ. Postgres làm thế nào để cả hai cùng đúng?
 
 ## Ý chính
 
-UPDATE một dòng 1 lần, bảng có thêm mấy phiên bản?
+Postgres dùng MVCC (multiversion concurrency control): thay vì ghi đè, nó giữ nhiều phiên bản của một dòng. Mỗi tuple, tức một phiên bản nằm trên trang, mang hai số transaction:
 
-Postgres không ghi đè dòng. Mỗi tuple (một phiên bản của dòng nằm trên trang) mang hai số transaction:
+- `xmin`: transaction đã chèn phiên bản này;
+- `xmax`: transaction đã xóa hay thay nó, hoặc chỉ giữ row lock trên nó; bằng 0 nếu chưa ai đụng tới.
 
-- `xmin`: transaction đã chèn nó;
-- `xmax`: transaction đã xóa hay thay nó (0 nếu chưa ai).
+Nhiều người nghĩ UPDATE sửa dòng tại chỗ. Thật ra UPDATE là hai việc: chèn một tuple mới có `xmin` là transaction hiện tại, rồi ghi `xmax` lên tuple cũ và cho `t_ctid` của tuple cũ trỏ sang bản mới. DELETE chỉ làm nửa sau: ghi `xmax`. Bản cũ vẫn nằm nguyên trên trang.
 
-UPDATE = chèn tuple mới (`xmin` = transaction hiện tại) + ghi `xmax` lên tuple cũ, và `t_ctid` của tuple cũ trỏ sang bản mới. Mỗi câu đọc có một **snapshot**: danh sách transaction đã commit lúc nó bắt đầu. Nó chọn phiên bản có `xmin` nằm trong snapshot và `xmax` chưa. Vì vậy người đọc không cần lock, người ghi không phải chờ người đọc.
+Mỗi câu đọc nhìn dữ liệu qua một snapshot: danh sách transaction đã commit lúc snapshot được chụp. Một phiên bản thấy được khi `xmin` của nó đã commit trong snapshot, và `xmax` thì chưa (hoặc bằng 0, hoặc thuộc transaction bị hủy). Ở Read Committed mỗi câu chụp snapshot mới; ở Repeatable Read cả transaction dùng một snapshot. Vì bản cũ còn đó, người đọc cứ đọc bản cũ mà không cần lock, và người ghi không phải chờ ai đọc xong.
 
-Cái giá: bản cũ nằm lại trên trang cho tới khi VACUUM dọn. Đây là gốc của chuyện bảng phình.
+Cái giá là rác. ROLLBACK không xóa tuple đã chèn, nó chỉ đánh dấu transaction là hủy, nên tuple trở nên vô hình. Bản cũ của UPDATE và DELETE nằm lại cho tới khi VACUUM dọn, và chỉ khi không còn snapshot nào cần chúng. Đây là gốc của chuyện bảng phình dù số dòng không đổi.
+
+Số transaction (`xid`) chỉ dài 32 bit và quay vòng, nên Postgres không cho so lớn nhỏ giữa hai `xid`. Muốn biết một phiên bản cũ cỡ nào, dùng `age(xmin)`: đã bao nhiêu transaction trôi qua kể từ khi nó được chèn.
+
+## Cú pháp
+
+```sql
+SELECT ctid, xmin, xmax, column_name [, ...] FROM table_name;
+SELECT txid_current();
+SELECT age(xmin) FROM table_name;
+BEGIN [ ISOLATION LEVEL { READ COMMITTED | REPEATABLE READ } ];
+SELECT lp, t_xmin, t_xmax, t_ctid FROM heap_page_items(get_raw_page('table_name', block_number));
+```
+
+- `xmin`, `xmax`, `ctid`: cột hệ thống, chỉ thấy khi gọi tên.
+- `txid_current()`: số của transaction đang chạy; gọi nó cũng cấp số cho transaction.
+- `heap_page_items`: thấy cả tuple vô hình mà `SELECT` thường bỏ qua.
 
 ## Ví dụ
 
+Ba tài khoản mới chèn, cùng một transaction:
+
 ```sql
-SELECT ctid, xmin, xmax, * FROM acct;
+CREATE EXTENSION IF NOT EXISTS pageinspect;
+CREATE TABLE acct (id int PRIMARY KEY, owner text);
+INSERT INTO acct VALUES (1, 'an'), (2, 'binh'), (3, 'chi');
+SELECT ctid, xmin, xmax, id, owner FROM acct ORDER BY id;
 ```
 
-Phiên bản thấy được luôn có `xmax` = 0, hoặc `xmax` của một transaction chưa commit / đã hủy / chỉ giữ row lock trên dòng.
+Ba dòng có cùng `xmin` và `xmax` = 0. Con số `xmin` thật đổi theo máy.
 
-## Thực hành
+```sql
+UPDATE acct SET owner = 'binh moi' WHERE id = 2;
+SELECT ctid, xmin, xmax, id, owner FROM acct ORDER BY id;
+```
 
-Bấm qua sơ đồ hai làn thời gian (phiên A, phiên B). PGlite chỉ có một kết nối, nên phiên B trong sơ đồ là mô phỏng; số `xmin/xmax` lấy từ lab kế tiếp chạy thật. Học xong mô-đun này bạn giải thích được vì sao UPDATE làm bảng phình.
+Dòng 2 giờ ở (0,4) với một `xmin` mới: đó là một tuple khác, không phải tuple cũ được sửa.
+
+```sql
+SELECT lp, t_xmin, t_xmax, t_ctid
+FROM heap_page_items(get_raw_page('acct', 0));
+```
+
+Trang có 4 tuple. lp 2 vẫn giữ `'binh'`, có `t_xmax` bằng `t_xmin` của lp 4, và `t_ctid` = (0,4) trỏ sang bản mới.
+
+```sql
+BEGIN;
+INSERT INTO acct VALUES (4, 'dung');
+ROLLBACK;
+SELECT count(*) AS visible_rows,
+       (SELECT count(*) FROM heap_page_items(get_raw_page('acct', 0))) AS tuples_on_page
+FROM acct;
+```
+
+3 dòng thấy được nhưng 5 tuple trên trang: ROLLBACK để lại tuple của tài khoản 4, chỉ là không ai thấy nó.
+
+## Lỗi hay gặp
+
+So hai số transaction như so số nguyên:
+
+```sql
+-- ERROR 42883: operator does not exist: xid < xid
+SELECT id FROM acct WHERE xmin < xmax;
+```
+
+```sql
+SELECT id, age(xmin) AS tx_ago FROM acct ORDER BY id;
+```
+
+`xid` quay vòng sau khoảng 4 tỉ transaction, nên "nhỏ hơn" không có nghĩa "cũ hơn". `age()` trả số transaction đã qua, so được an toàn.
+
+Đếm dòng để đoán bảng chiếm bao nhiêu chỗ:
+
+```sql
+-- WRONG: count(*) only counts the versions this snapshot sees
+SELECT count(*) AS tuples FROM acct;
+```
+
+```sql
+-- FIX: count every tuple on the page, visible or not
+SELECT count(*) AS tuples FROM heap_page_items(get_raw_page('acct', 0));
+```
+
+Câu sai ra 3, câu đúng ra 5. Trên bảng hay UPDATE, khoảng cách này lớn dần cho tới khi VACUUM chạy.
+
+## Tóm tắt
+
+- Mỗi tuple mang `xmin` (ai chèn) và `xmax` (ai xóa, thay hoặc khóa); 0 là chưa ai.
+- UPDATE = tuple mới + `xmax` và `t_ctid` trên tuple cũ; DELETE chỉ ghi `xmax`.
+- Snapshot quyết định phiên bản nào thấy được, nên đọc không chặn ghi và ghi không chặn đọc.
+- ROLLBACK, UPDATE và DELETE đều để lại tuple chết trên trang cho tới khi VACUUM dọn.
+- `xid` quay vòng: không so lớn nhỏ, dùng `age(xmin)`.
 
 # EN
 
+## Opening
+
+One session is reading a long report on table `acct` while another changes the owner of account 2. The reader is not blocked and the writer does not wait. How does Postgres keep both right?
+
 ## Key idea
 
-UPDATE one row once: how many versions does the table now hold?
+Postgres uses MVCC (multiversion concurrency control): instead of overwriting, it keeps several versions of a row. Each tuple, that is one version stored on the page, carries two transaction numbers:
 
-Postgres never overwrites a row. Every tuple (one version of a row stored on the page) carries two transaction numbers:
+- `xmin`: the transaction that inserted this version;
+- `xmax`: the transaction that deleted or replaced it, or only holds a row lock on it; 0 if nobody touched it.
 
-- `xmin`: the transaction that inserted it;
-- `xmax`: the transaction that deleted or replaced it (0 if none).
+Many people think UPDATE changes the row in place. In fact UPDATE is two things: insert a new tuple whose `xmin` is the current transaction, then stamp `xmax` on the old tuple and make the old tuple's `t_ctid` point to the new version. DELETE does only the second half: it stamps `xmax`. The old version stays on the page untouched.
 
-UPDATE = insert a new tuple (`xmin` = current transaction) + stamp `xmax` on the old one, whose `t_ctid` now points to the new version. Each read has a **snapshot**: the set of transactions committed when it started. It picks the version whose `xmin` is in the snapshot and whose `xmax` is not. So readers take no locks, and writers never wait for readers.
+Each read sees the data through a snapshot: the set of transactions committed when the snapshot was taken. A version is visible when its `xmin` committed within the snapshot and its `xmax` did not (it is 0, or belongs to an aborted transaction). At Read Committed each statement takes a new snapshot; at Repeatable Read the whole transaction uses one. Since the old version is still there, readers simply read it without any lock, and writers never wait for readers to finish.
 
-The price: old versions stay on the page until VACUUM removes them. This is where table bloat comes from.
+The price is garbage. ROLLBACK does not remove the inserted tuples, it only marks the transaction as aborted, so its tuples become invisible. Old versions from UPDATE and DELETE stay until VACUUM removes them, and only once no snapshot needs them. This is where a table bloats while its row count stays flat.
+
+Transaction numbers (`xid`) are only 32 bits and wrap around, so Postgres does not let you compare two `xid` values for larger or smaller. To see how old a version is, use `age(xmin)`: how many transactions have passed since it was inserted.
+
+## Syntax
+
+```sql
+SELECT ctid, xmin, xmax, column_name [, ...] FROM table_name;
+SELECT txid_current();
+SELECT age(xmin) FROM table_name;
+BEGIN [ ISOLATION LEVEL { READ COMMITTED | REPEATABLE READ } ];
+SELECT lp, t_xmin, t_xmax, t_ctid FROM heap_page_items(get_raw_page('table_name', block_number));
+```
+
+- `xmin`, `xmax`, `ctid`: system columns, visible only when named.
+- `txid_current()`: the number of the running transaction; calling it also assigns one.
+- `heap_page_items`: shows the invisible tuples too, which a plain `SELECT` skips.
 
 ## Example
 
+Three new accounts, inserted by one transaction:
+
 ```sql
-SELECT ctid, xmin, xmax, * FROM acct;
+CREATE EXTENSION IF NOT EXISTS pageinspect;
+CREATE TABLE acct (id int PRIMARY KEY, owner text);
+INSERT INTO acct VALUES (1, 'an'), (2, 'binh'), (3, 'chi');
+SELECT ctid, xmin, xmax, id, owner FROM acct ORDER BY id;
 ```
 
-A visible version always has `xmax` = 0, or an `xmax` from a transaction that is uncommitted / aborted / only locking the row.
+The three rows share one `xmin` and have `xmax` = 0. The real `xmin` number differs from machine to machine.
 
-## Practice
+```sql
+UPDATE acct SET owner = 'binh moi' WHERE id = 2;
+SELECT ctid, xmin, xmax, id, owner FROM acct ORDER BY id;
+```
 
-Step through the two-lane timeline (session A, session B). PGlite has a single connection, so session B in the diagram is simulated; the `xmin/xmax` numbers come from the next lab, which runs for real. After this module you can explain why UPDATEs make a table grow.
+Row 2 now lives at (0,4) with a new `xmin`: it is a different tuple, not the old one changed.
+
+```sql
+SELECT lp, t_xmin, t_xmax, t_ctid
+FROM heap_page_items(get_raw_page('acct', 0));
+```
+
+The page holds 4 tuples. lp 2 still holds `'binh'`, its `t_xmax` equals the `t_xmin` of lp 4, and its `t_ctid` = (0,4) points to the new version.
+
+```sql
+BEGIN;
+INSERT INTO acct VALUES (4, 'dung');
+ROLLBACK;
+SELECT count(*) AS visible_rows,
+       (SELECT count(*) FROM heap_page_items(get_raw_page('acct', 0))) AS tuples_on_page
+FROM acct;
+```
+
+3 visible rows but 5 tuples on the page: the ROLLBACK left account 4's tuple behind, only nobody can see it.
+
+## Common mistakes
+
+Comparing two transaction numbers like integers:
+
+```sql
+-- ERROR 42883: operator does not exist: xid < xid
+SELECT id FROM acct WHERE xmin < xmax;
+```
+
+```sql
+SELECT id, age(xmin) AS tx_ago FROM acct ORDER BY id;
+```
+
+`xid` wraps around after about 4 billion transactions, so "smaller" does not mean "older". `age()` returns the number of transactions passed, which compares safely.
+
+Counting rows to guess how much space a table takes:
+
+```sql
+-- WRONG: count(*) only counts the versions this snapshot sees
+SELECT count(*) AS tuples FROM acct;
+```
+
+```sql
+-- FIX: count every tuple on the page, visible or not
+SELECT count(*) AS tuples FROM heap_page_items(get_raw_page('acct', 0));
+```
+
+The wrong query returns 3, the right one 5. On an update-heavy table this gap keeps growing until VACUUM runs.
+
+## Recap
+
+- Each tuple carries `xmin` (who inserted it) and `xmax` (who deleted, replaced or locked it); 0 means nobody.
+- UPDATE = a new tuple + `xmax` and `t_ctid` on the old one; DELETE only stamps `xmax`.
+- The snapshot decides which version is visible, so reads do not block writes and writes do not block reads.
+- ROLLBACK, UPDATE and DELETE all leave dead tuples on the page until VACUUM removes them.
+- `xid` wraps around: never compare for larger or smaller, use `age(xmin)`.

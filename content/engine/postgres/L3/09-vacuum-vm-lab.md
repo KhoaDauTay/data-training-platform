@@ -8,6 +8,7 @@ title_en: "Lab: what VACUUM changes on the page, the FSM and the visibility map"
 kind: lab
 runtime: browser
 minutes: 25
+verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-24" }
 viz: pg-vacuum-flow
 objectives:
   - vi: Đọc trạng thái line pointer sau VACUUM (`lp_flags` 0 unused, 1 normal, 2 redirect)
@@ -147,48 +148,204 @@ lab:
         en: "`VACUUM` does not give space back to the OS: `space_vac` is still 18 pages, the space of the 900 rows is only recorded in the FSM for new rows to reuse. `VACUUM FULL` rewrites the table: `space_full` is down to 2 pages (but it holds an `ACCESS EXCLUSIVE` lock on the table while it runs)."
         probe: SELECT t, pg_relation_size(t) / 8192, (SELECT sum(avail) FROM pg_freespace(t::regclass)) > 90000 FROM unnest(ARRAY['space_full', 'space_vac']) AS t ORDER BY t
         expect: [[space_full, 2, false], [space_vac, 18, true]]
+quiz:
+  - q:
+      vi: "Bảng 10 GB bị xóa một nửa số dòng, rồi autovacuum chạy xong. File của bảng giờ khoảng bao nhiêu?"
+      en: "Half the rows of a 10 GB table are deleted, then autovacuum finishes. About how big is the table's file now?"
+    options:
+      - { vi: "Khoảng 5 GB: VACUUM trả chỗ trống cho hệ điều hành", en: "About 5 GB: VACUUM gives the free space back to the OS" }
+      - { vi: "Vẫn khoảng 10 GB: chỗ trống được ghi vào FSM để dòng mới dùng lại", en: "Still about 10 GB: the free space is recorded in the FSM for new rows to reuse" }
+      - { vi: "0: VACUUM xóa file rồi tạo lại", en: "0: VACUUM deletes the file and creates it again" }
+    answer: 1
+    trap: 0
+    why:
+      vi: "Nghe hợp lý vì VACUUM đúng là thu hồi chỗ, nhưng chỗ đó ở lại trong file cho INSERT và UPDATE sau dùng. VACUUM thường chỉ cắt được các trang trống ở cuối file. Lab thấy `space_vac` vẫn 18 trang sau khi mất 900/1.000 dòng; chỉ `VACUUM FULL` (khóa cả bảng) mới co về 2 trang."
+      en: "It sounds right because VACUUM does reclaim space, but that space stays inside the file for later INSERTs and UPDATEs. Plain VACUUM can only cut off empty pages at the end of the file. The lab shows `space_vac` still at 18 pages after losing 900 of 1,000 rows; only `VACUUM FULL` (which locks the whole table) shrinks it to 2."
+  - q:
+      vi: "`EXPLAIN ANALYZE` ra Index Only Scan nhưng `Heap Fetches: 5000` trên 5000 dòng. Cách chữa nào đúng?"
+      en: "`EXPLAIN ANALYZE` shows an Index Only Scan but `Heap Fetches: 5000` for 5000 rows. Which fix is right?"
+    options:
+      - { vi: "Thêm một index nữa để khỏi về heap", en: "Add another index so it skips the heap" }
+      - { vi: "Cho VACUUM chạy (hoặc chỉnh autovacuum chạy thường hơn) để bật bit all-visible", en: "Let VACUUM run (or tune autovacuum to run more often) so the all-visible bits get set" }
+      - { vi: "Chạy `ANALYZE` để cập nhật thống kê", en: "Run `ANALYZE` to refresh the statistics" }
+    answer: 1
+    trap: 0
+    why:
+      vi: "Nghe hợp lý vì chậm thì hay nghĩ tới index, nhưng index đã đủ cột rồi; nó phải về heap vì trang chưa all-visible. Chỉ VACUUM bật bit đó trong visibility map; `ANALYZE` chỉ cập nhật thống kê. Lab thấy `Heap Fetches: 21` trên `reading_touched` xuống 0 sau một `VACUUM`."
+      en: "It sounds right because slowness makes people think of indexes, but the index already covers the columns; it goes to the heap because the pages are not all-visible. Only VACUUM sets that bit in the visibility map; `ANALYZE` only refreshes statistics. The lab shows `Heap Fetches: 21` on `reading_touched` dropping to 0 after one `VACUUM`."
 ---
+## Mở bài
+
+Bạn xóa 90 % dòng của một bảng, VACUUM chạy xong, mà file vẫn to như cũ. VACUUM thật ra đã làm gì?
 
 ## Ý chính
 
 Một lần VACUUM:
 
-- biến dead tuple (tuple không còn transaction nào thấy) thành line pointer **unused** (dùng lại được), hoặc **redirect** khi nó là đầu một chuỗi HOT mà index còn trỏ vào;
-- ghi chỗ trống vào **free space map** để INSERT sau tìm tới;
-- bật bit **all-visible** trong **visibility map** khi mọi tuple trên trang thấy được với mọi transaction.
+- biến tuple chết (không transaction nào còn thấy) thành line pointer unused, dùng lại được; hoặc redirect khi đó là đầu một chuỗi HOT mà index còn trỏ vào;
+- ghi chỗ trống vào free space map (FSM) để INSERT sau tìm tới;
+- bật bit all-visible trong visibility map (VM) khi mọi tuple trên trang thấy được với mọi transaction, và bit all-frozen khi đã freeze.
 
-Index-only scan chỉ bỏ qua heap ở trang all-visible. Bất kỳ thay đổi nào trên trang cũng tắt bit đó.
+Nhiều người nghĩ VACUUM làm file nhỏ lại. Thật ra chỗ thu hồi ở lại trong file cho dòng mới; chỉ `VACUUM FULL` viết lại bảng cho gọn, và nó giữ khóa `ACCESS EXCLUSIVE` suốt lúc chạy.
+
+Index-only scan chỉ bỏ qua heap ở trang all-visible. Một thay đổi bất kỳ trên trang tắt bit đó, nên bảng hay sửa mà ít VACUUM sẽ có `Heap Fetches` cao. Trên máy chủ thật, autovacuum lo việc này; khi nó không theo kịp, bạn thấy bảng phình, FSM trống và index-only scan chậm dần.
+
+## Cú pháp
+
+```sql
+VACUUM [ ( { FULL | FREEZE | VERBOSE | ANALYZE } [, ...] ) ] [ table_name ];
+SELECT all_visible, all_frozen FROM pg_visibility_map('table_name', block_number);
+SELECT all_visible, all_frozen FROM pg_visibility_map_summary('table_name');
+SELECT pg_freespace('table_name', block_number);
+```
+
+- `lp_flags`: 0 unused, 1 normal, 2 redirect, 3 dead.
+- `FREEZE`: freeze mọi tuple ngay, bật cả all-frozen.
 
 ## Ví dụ
 
 ```sql
-SELECT lp, lp_flags, lp_off FROM heap_page_items(get_raw_page('cart', 0));
-SELECT all_visible, all_frozen FROM pg_visibility_map_summary('reading_touched');
+SELECT all_visible, pg_freespace('cart_raw', 0) AS fsm_free
+FROM pg_visibility_map('cart_raw', 0);
 ```
+
+`cart_raw` chưa VACUUM: chưa all-visible, FSM ghi 0.
+
+```sql
+VACUUM cart_raw;
+SELECT all_visible, pg_freespace('cart_raw', 0) AS fsm_free
+FROM pg_visibility_map('cart_raw', 0);
+```
+
+Sau VACUUM: all-visible, FSM ghi 8064 byte trống.
+
+```sql
+VACUUM (FREEZE) cart_raw;
+SELECT all_visible, all_frozen FROM pg_visibility_map('cart_raw', 0);
+```
+
+`FREEZE` bật cả all-frozen: trang này không cần quét lại khi chống wraparound.
+
+## Lỗi hay gặp
+
+```sql
+BEGIN;
+-- ERROR 25001: VACUUM cannot run inside a transaction block
+VACUUM cart;
+```
+
+VACUUM phải chạy ngoài transaction, nên công cụ tự mở transaction sẽ gặp lỗi này; sau lỗi, `ROLLBACK`.
+
+```sql
+-- WRONG: the visibility map is stale, so the index-only scan visits the heap
+ROLLBACK;
+SELECT heap_fetches('SELECT id FROM reading_touched WHERE id <= 20') AS fetches;
+```
+
+```sql
+-- FIX: VACUUM sets the all-visible bits again
+VACUUM reading_touched;
+SELECT heap_fetches('SELECT id FROM reading_touched WHERE id <= 20') AS fetches;
+```
+
+21 lần về heap trước, 0 sau VACUUM. Thêm index không chữa được chuyện này, vì index đã đủ cột; thiếu là bit all-visible.
 
 ## Thực hành
 
-Sáu bước so bảng chưa VACUUM với bảng đã VACUUM, và `VACUUM` với `VACUUM FULL`. Sau lab này bạn chẩn đoán được bloat do VACUUM không theo kịp: trang đầy dead tuple, FSM trống, và "Index Only Scan" vẫn chậm vì `Heap Fetches` cao. Cách chữa là VACUUM thường hơn (chỉnh autovacuum), không phải thêm index.
+Sáu bước: trang chưa và đã VACUUM, visibility map, index-only scan, rồi `VACUUM` so với `VACUUM FULL`. Sau đó là hai câu hỏi.
+
+## Tóm tắt
+
+- VACUUM biến tuple chết thành unused (hoặc redirect), ghi chỗ trống vào FSM, bật bit trong VM.
+- VACUUM không trả chỗ cho hệ điều hành; `VACUUM FULL` thì có, nhưng khóa cả bảng.
+- Index-only scan chỉ bỏ qua heap ở trang all-visible; `Heap Fetches` cao nghĩa là cần VACUUM, không phải index.
+- `VACUUM (FREEZE)` bật all-frozen; VACUUM không chạy được trong transaction.
 
 # EN
+
+## Opening
+
+You delete 90% of a table's rows, VACUUM finishes, and the file is as big as before. What did VACUUM actually do?
 
 ## Key idea
 
 One VACUUM pass:
 
-- turns dead tuples into **unused** line pointers (reusable), or a **redirect** when the tuple heads a HOT chain an index still points at;
-- records the free space in the **free space map** so later INSERTs find it;
-- sets the **all-visible** bit in the **visibility map** once every tuple on the page is visible to every transaction.
+- turns dead tuples (no transaction can see them any more) into unused line pointers, ready for reuse; or into a redirect when the tuple heads a HOT chain an index still points at;
+- records the free space in the free space map (FSM) so later INSERTs find it;
+- sets the all-visible bit in the visibility map (VM) once every tuple on the page is visible to every transaction, and the all-frozen bit once they are frozen.
 
-An index-only scan skips the heap only on all-visible pages. Any change on the page clears that bit.
+Many people think VACUUM makes the file smaller. In fact the reclaimed space stays inside the file for new rows; only `VACUUM FULL` rewrites the table compactly, and it holds an `ACCESS EXCLUSIVE` lock the whole time.
+
+An index-only scan skips the heap only on all-visible pages. Any change on a page clears that bit, so a frequently changed table that is rarely vacuumed shows high `Heap Fetches`. On a real server autovacuum does this work; when it falls behind, you see the table bloat, the FSM stay empty and index-only scans slow down.
+
+## Syntax
+
+```sql
+VACUUM [ ( { FULL | FREEZE | VERBOSE | ANALYZE } [, ...] ) ] [ table_name ];
+SELECT all_visible, all_frozen FROM pg_visibility_map('table_name', block_number);
+SELECT all_visible, all_frozen FROM pg_visibility_map_summary('table_name');
+SELECT pg_freespace('table_name', block_number);
+```
+
+- `lp_flags`: 0 unused, 1 normal, 2 redirect, 3 dead.
+- `FREEZE`: freezes every tuple at once and sets all-frozen too.
 
 ## Example
 
 ```sql
-SELECT lp, lp_flags, lp_off FROM heap_page_items(get_raw_page('cart', 0));
-SELECT all_visible, all_frozen FROM pg_visibility_map_summary('reading_touched');
+SELECT all_visible, pg_freespace('cart_raw', 0) AS fsm_free
+FROM pg_visibility_map('cart_raw', 0);
 ```
+
+`cart_raw` is not vacuumed: not all-visible, the FSM says 0.
+
+```sql
+VACUUM cart_raw;
+SELECT all_visible, pg_freespace('cart_raw', 0) AS fsm_free
+FROM pg_visibility_map('cart_raw', 0);
+```
+
+After VACUUM: all-visible, and the FSM records 8064 free bytes.
+
+```sql
+VACUUM (FREEZE) cart_raw;
+SELECT all_visible, all_frozen FROM pg_visibility_map('cart_raw', 0);
+```
+
+`FREEZE` sets all-frozen as well: this page needs no rescan to protect against wraparound.
+
+## Common mistakes
+
+```sql
+BEGIN;
+-- ERROR 25001: VACUUM cannot run inside a transaction block
+VACUUM cart;
+```
+
+VACUUM must run outside a transaction, so a tool that opens one for you hits this error; after the error, `ROLLBACK`.
+
+```sql
+-- WRONG: the visibility map is stale, so the index-only scan visits the heap
+ROLLBACK;
+SELECT heap_fetches('SELECT id FROM reading_touched WHERE id <= 20') AS fetches;
+```
+
+```sql
+-- FIX: VACUUM sets the all-visible bits again
+VACUUM reading_touched;
+SELECT heap_fetches('SELECT id FROM reading_touched WHERE id <= 20') AS fetches;
+```
+
+21 heap visits before, 0 after VACUUM. Adding an index does not fix this, because the index already covers the columns; what is missing is the all-visible bit.
 
 ## Practice
 
-Six steps comparing a table that was not vacuumed with one that was, and `VACUUM` with `VACUUM FULL`. After this lab you can diagnose bloat from VACUUM falling behind: pages full of dead tuples, an empty FSM, and an "Index Only Scan" that is still slow because `Heap Fetches` is high. The fix is to vacuum more often (tune autovacuum), not to add an index.
+Six steps: pages before and after VACUUM, the visibility map, an index-only scan, then `VACUUM` against `VACUUM FULL`. Then two questions.
+
+## Recap
+
+- VACUUM turns dead tuples into unused (or redirect) line pointers, records free space in the FSM and sets bits in the VM.
+- VACUUM does not give space back to the OS; `VACUUM FULL` does, but locks the whole table.
+- An index-only scan skips the heap only on all-visible pages; high `Heap Fetches` means VACUUM is needed, not an index.
+- `VACUUM (FREEZE)` sets all-frozen; VACUUM cannot run inside a transaction.

@@ -8,16 +8,20 @@ title_en: "Predict: can fillfactor save HOT?"
 kind: predict
 runtime: browser
 minutes: 8
+verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-24" }
 viz: pg-hot-chain
 objectives:
   - vi: Đoán một UPDATE có HOT không khi trang đầy và khi trang còn chỗ
     en: Predict whether an UPDATE is HOT on a full page and on a page with room
   - vi: Đọc kết quả thật trong `pg_stat_user_tables`
     en: Read the real outcome in `pg_stat_user_tables`
+  - vi: Biết khi nào hạ `fillfactor` là đáng và vì sao đổi nó không viết lại trang cũ
+    en: Know when lowering `fillfactor` is worth it and why changing it does not rewrite old pages
 requires: [e-pg-l3-07]
 sources:
   - https://www.postgresql.org/docs/18/storage-hot.html
   - https://www.postgresql.org/docs/18/sql-createtable.html
+  - https://www.postgresql.org/docs/18/sql-altertable.html
   - https://www.postgresql.org/docs/18/monitoring-stats.html
 lab:
   setup: |
@@ -58,41 +62,68 @@ predict:
     - { vi: "Chỉ `jobs_full`: trang đầy thì Postgres prune trước", en: "Only `jobs_full`: a full page gets pruned first" }
     - { vi: "Không cái nào", en: "Neither" }
   answer: 1
+  trap: 0
   why:
     vi: "\"Cả hai\" nghe hợp lý vì `pad` không có index, điều kiện HOT người ta hay nhớ. Cột không có index mới là một nửa điều kiện. `jobs_full` xếp 58 dòng vào trang 0 và chỉ còn 48 byte trống, nên bản mới phải sang trang khác: không HOT. `jobs_room` chỉ xếp 40 dòng/trang, chừa khoảng 30 % cho UPDATE, nên bản mới ở lại trang 0: HOT."
     en: "\"Both\" sounds right because `pad` has no index, the HOT condition people usually remember. An unindexed column is only half the condition. `jobs_full` packs 58 rows into page 0 and leaves just 48 bytes free, so the new version must move to another page: not HOT. `jobs_room` puts only 40 rows per page, keeping about 30% for UPDATEs, so the new version stays on page 0: HOT."
+quiz:
+  - q:
+      vi: "Bảng `jobs` đã đầy trang, tỉ lệ HOT thấp. Bạn chạy `ALTER TABLE jobs SET (fillfactor = 70)` rồi UPDATE tiếp một dòng cũ (cột không có index). Lần này có HOT không?"
+      en: "Table `jobs` has full pages and a low HOT ratio. You run `ALTER TABLE jobs SET (fillfactor = 70)`, then UPDATE an old row again (a column with no index). Is it HOT this time?"
+    options:
+      - { vi: "Có: fillfactor mới áp ngay cho mọi trang", en: "Yes: the new fillfactor applies to every page at once" }
+      - { vi: "Không: trang cũ vẫn đầy; fillfactor chỉ áp cho trang ghi sau đó, hoặc khi bảng được viết lại", en: "No: the old pages are still full; fillfactor only applies to pages written afterwards, or when the table is rewritten" }
+      - { vi: "Không bao giờ: fillfactor chỉ có tác dụng với index", en: "Never: fillfactor only affects indexes" }
+    answer: 1
+    trap: 0
+    why:
+      vi: "Nghe hợp lý vì `ALTER TABLE` chạy xong ngay và `reloptions` đổi liền, nhưng lệnh không động vào dữ liệu đã có. Thử trên PGlite: bảng 200 dòng nạp ở fillfactor 100, đổi sang 70, UPDATE dòng 10 vẫn sang trang 3 (không HOT). Sau `VACUUM FULL` viết lại bảng, UPDATE dòng 20 ở lại trang 0 và là HOT."
+      en: "It sounds right because `ALTER TABLE` finishes at once and `reloptions` changes immediately, but the command does not touch existing data. Tried on PGlite: a 200-row table loaded at fillfactor 100, switched to 70, and the UPDATE of row 10 still moves to page 3 (not HOT). After `VACUUM FULL` rewrites the table, the UPDATE of row 20 stays on page 0 and is HOT."
 ---
+## Mở bài
+
+Bảng `jobs` chỉ bị UPDATE ở một cột không có index, vậy mà bộ đếm báo gần như không UPDATE nào là HOT. Một tham số lúc tạo bảng có thể đổi hẳn kết quả đó: đoán trước, rồi xem số thật.
 
 ## Ý chính
 
-`fillfactor` là phần trăm trang mà INSERT được lấp. Mặc định 100 cho bảng. Đặt 70 nghĩa là chừa 30 % mỗi trang cho các bản UPDATE sau này, để chúng ở lại trang cũ và được HOT.
+HOT cần hai điều kiện: không cột có index nào đổi giá trị, và trang của bản cũ còn chỗ cho bản mới. Điều kiện thứ hai do `fillfactor` quyết định: phần trăm mỗi trang mà INSERT được lấp. Mặc định của bảng là 100, nghĩa là INSERT lấp đầy trang và không chừa gì cho UPDATE.
 
-## Ví dụ
+Nhiều người nghĩ chỉ cần cột bị sửa không có index là UPDATE sẽ HOT. Thật ra trên trang đã đầy, bản mới không còn chỗ nên phải sang trang khác, và khi đã sang trang khác thì mọi index phải có mục mới. Đặt `fillfactor` = 70 chừa khoảng 30 % mỗi trang cho các bản UPDATE.
 
-```sql
-CREATE TABLE jobs_room(id int PRIMARY KEY, pad char(100)) WITH (fillfactor = 70);
-```
-
-Cái giá: bảng to hơn khoảng 40 % lúc mới nạp, và quét toàn bảng đọc nhiều trang hơn.
+Cái giá: lúc mới nạp, bảng cần khoảng 1/0,7, tức gấp 1,4 lần số trang, và quét toàn bảng đọc nhiều trang hơn. Vì vậy chỉ hạ `fillfactor` cho bảng UPDATE nhiều mà tỉ lệ HOT vẫn thấp dù cột bị sửa không có index. Đổi bằng `ALTER TABLE ... SET (fillfactor = 70)` chỉ áp cho trang ghi sau đó; trang cũ giữ nguyên tới khi bảng được viết lại.
 
 ## Thực hành
 
-Chọn đáp án trước, rồi ở bước lab bên dưới tự chạy câu đọc bộ đếm `pg_stat_user_tables` trên hai bảng do lab dựng: kết quả thật nằm ở đó. Sau bài này bạn biết khi nào hạ `fillfactor` là đáng: bảng UPDATE nhiều trên cột không có index nhưng tỉ lệ HOT vẫn thấp.
+Chọn đáp án trước, rồi bấm "Xem thật" hoặc tự chạy câu đọc bộ đếm ở bước lab bên dưới, trên hai bảng do lab dựng. Sau đó là một câu hỏi về việc đổi `fillfactor` trên bảng đã có dữ liệu.
+
+## Tóm tắt
+
+- `fillfactor` là phần trăm trang mà INSERT được lấp; mặc định 100 cho bảng.
+- Cột không có index mới là một nửa điều kiện HOT; trang đầy thì bản mới phải sang trang khác.
+- `fillfactor` = 70 chừa chỗ cho UPDATE ở lại trang cũ, đổi lại bảng to hơn khoảng 1,4 lần.
+- Đổi `fillfactor` bằng `ALTER TABLE` không viết lại trang cũ; cần `VACUUM FULL` hoặc lệnh viết lại bảng.
 
 # EN
 
+## Opening
+
+Table `jobs` is only ever updated in a column with no index, yet the counters say almost no UPDATE is HOT. One parameter set when the table is created can change that completely: guess first, then look at the real numbers.
+
 ## Key idea
 
-`fillfactor` is the percentage of a page that INSERTs may fill. The default for tables is 100. Setting 70 keeps 30% of each page for future UPDATE versions, so they stay on the old page and can be HOT.
+HOT needs two conditions: no indexed column changes value, and the old version's page has room for the new one. The second condition is decided by `fillfactor`: the percentage of each page that INSERTs may fill. The default for tables is 100, so INSERTs fill the page and leave nothing for UPDATEs.
 
-## Example
+Many people think an UPDATE will be HOT as long as the changed column has no index. In fact on a full page the new version has no room and must go to another page, and once it lands on another page every index needs a new entry. Setting `fillfactor` = 70 keeps about 30% of each page for UPDATE versions.
 
-```sql
-CREATE TABLE jobs_room(id int PRIMARY KEY, pad char(100)) WITH (fillfactor = 70);
-```
-
-The price: the table is about 40% larger right after loading, and a full scan reads more pages.
+The price: right after loading, the table needs about 1/0.7, so 1.4 times the pages, and a full scan reads more pages. So lower `fillfactor` only for an update-heavy table whose HOT ratio stays low although the changed columns have no index. Changing it with `ALTER TABLE ... SET (fillfactor = 70)` applies only to pages written afterwards; old pages stay as they are until the table is rewritten.
 
 ## Practice
 
-Pick an answer first, then in the lab step below run the counter query on `pg_stat_user_tables` yourself, on the two tables the lab builds: the real outcome is there. After this lesson you know when lowering `fillfactor` is worth it: an update-heavy table whose updated columns are not indexed, yet the HOT ratio stays low.
+Pick an answer first, then press "See it for real" or run the counter query yourself in the lab step below, on the two tables the lab builds. Then one question about changing `fillfactor` on a table that already holds data.
+
+## Recap
+
+- `fillfactor` is the percentage of a page INSERTs may fill; the default for tables is 100.
+- An unindexed column is only half of the HOT condition; on a full page the new version must move to another page.
+- `fillfactor` = 70 keeps room for UPDATEs to stay on the old page, at the cost of a table about 1.4 times bigger.
+- Changing `fillfactor` with `ALTER TABLE` does not rewrite old pages; that takes `VACUUM FULL` or another table rewrite.
