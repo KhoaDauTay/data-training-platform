@@ -13,6 +13,8 @@ objectives:
     en: Read a customer together with all of their orders with one Query on a single table.
   - vi: Chọn đúng một loại item trong collection bằng `begins_with` trên `SK`.
     en: Pick one item type inside a collection with `begins_with` on `SK`.
+  - vi: Nhận ra vì sao Scan có lọc cho cùng kết quả nhưng đọc cả bảng.
+    en: See why a filtered Scan gives the same result but reads the whole table.
 requires: [e-dy-l3-07]
 sources:
   - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-general-nosql-design.html
@@ -106,50 +108,211 @@ lab:
       hint:
         vi: Dòng hàng nằm trong item collection của chính đơn, `ORDER#…`.
         en: Order lines live in the order's own item collection, `ORDER#…`.
+quiz:
+  - q:
+      vi: "Trang khách hàng cần hồ sơ và mọi đơn của `C-02`. Một Scan có `FilterExpression` `PK = :pk` trả đúng 3 item. Có gì sai?"
+      en: "The customer page needs the profile and every order of `C-02`. A Scan with `FilterExpression` `PK = :pk` returns exactly 3 items. What is wrong?"
+    options:
+      - { vi: "Không sai gì: bộ lọc chạy trước khi đọc nên chỉ 3 item bị tính phí", en: "Nothing: the filter runs before the read, so only 3 items are charged" }
+      - { vi: "Scan đọc mọi item của bảng rồi mới lọc, nên `ScannedCount` và capacity tính trên cả bảng", en: "The Scan reads every item of the table before filtering, so `ScannedCount` and capacity count the whole table" }
+      - { vi: "Scan không trả được item có sort key", en: "A Scan cannot return items that have a sort key" }
+    answer: 1
+    trap: 0
+    why:
+      vi: "Nghe hợp lý vì trong SQL bộ lọc thu hẹp việc đọc, nhưng `FilterExpression` chạy sau khi DynamoDB đã đọc item: `Count` là 3, còn `ScannedCount` là cả bảng. Chỉ `KeyConditionExpression` của Query mới thu hẹp phần đọc."
+      en: "It sounds right because a SQL filter narrows the read, but `FilterExpression` runs after DynamoDB has read the items: `Count` is 3 while `ScannedCount` is the whole table. Only a Query's `KeyConditionExpression` narrows the read."
+  - q:
+      vi: "Sort key của đơn là `ORDER#2026-09-08#O-502`. Vì sao Query với `ScanIndexForward: false` ra đơn mới nhất trước?"
+      en: "An order's sort key is `ORDER#2026-09-08#O-502`. Why does a Query with `ScanIndexForward: false` return the newest order first?"
+    options:
+      - { vi: "DynamoDB đọc ngày trong chuỗi và sắp theo ngày", en: "DynamoDB reads the date inside the string and sorts by date" }
+      - { vi: "Sort key kiểu chuỗi sắp theo byte, và ngày dạng YYYY-MM-DD sắp theo byte cũng là sắp theo thời gian", en: "A string sort key sorts by bytes, and a YYYY-MM-DD date sorted by bytes is also sorted by time" }
+      - { vi: "Item ghi sau luôn đứng sau", en: "Items written later always come later" }
+    answer: 1
+    why:
+      vi: "DynamoDB không hiểu ngày; nó so chuỗi theo byte UTF-8. Viết ngày theo YYYY-MM-DD (cùng độ dài, năm trước) thì thứ tự byte trùng thứ tự thời gian."
+      en: "DynamoDB does not understand dates; it compares strings by UTF-8 bytes. Writing dates as YYYY-MM-DD (same length, year first) makes byte order match time order."
 ---
+## Mở bài
+
+Trong SQL, trang khách hàng nối bảng khách với bảng đơn. DynamoDB không có JOIN. Vậy làm sao lấy hồ sơ và mọi đơn của một khách chỉ bằng một request?
 
 ## Ý chính
 
-Trong bảng `Shop`, mỗi item collection là một "trang" của ứng dụng:
+Item collection là mọi item có cùng partition key. Trong bảng một-bảng `Shop`, mỗi collection được thiết kế để là một "trang" của ứng dụng: `CUST#…` giữ hồ sơ khách và các đơn của khách, `ORDER#…` giữ các dòng hàng của một đơn. Một Query trên `PK` đọc cả trang, các item nằm cạnh nhau trên cùng partition và đã sắp theo sort key.
 
-- `CUST#…`: hồ sơ khách và các đơn của khách.
-- `ORDER#…`: các dòng hàng của một đơn.
+Sort key là chuỗi, sắp theo byte. Tiền tố như `ORDER#` chọn loại item bằng `begins_with(SK, …)`, và ngày dạng `2026-09-08` đặt ngay sau tiền tố làm cho thứ tự byte trùng thứ tự thời gian. `ScanIndexForward: false` đảo chiều để lấy mới nhất trước.
 
-Query trên `PK` lấy cả trang. Thêm `begins_with(SK, …)` để chỉ lấy một loại item. Sort key sắp theo byte, nên tiền tố `ORDER#2026-…` vừa chọn loại vừa sắp theo thời gian.
+Nhiều người nghĩ một Scan có `FilterExpression` cũng tốt như Query vì nó trả cùng item. Thật ra bộ lọc chạy sau khi đọc: Scan đọc cả bảng, trả 3 item nhưng `ScannedCount` là toàn bộ bảng, và capacity tính trên phần đã đọc. Cái giá của thiết kế này là nhân bản một phần dữ liệu (ví dụ `total` lưu sẵn trên item đơn) để mỗi trang chỉ cần một request.
+
+Lab chạy bằng dynoxide trong trình duyệt; số `Count`, `ScannedCount` là số đo thật của engine này.
+
+## Cú pháp
+
+```text
+{"op": "Query", "input": {"TableName": "<table>",
+  "KeyConditionExpression": "PK = :pk [AND begins_with(SK, :prefix) | AND SK BETWEEN :a AND :b]",
+  "ExpressionAttributeValues": {":pk": {"S": "<value>"}, ...},
+  ["ScanIndexForward": false,] ["Limit": <n>]}}
+SELECT * FROM "<table>" WHERE PK = '<value>' [AND begins_with(SK, '<prefix>')]
+```
+
+- `KeyConditionExpression`: bằng trên partition key là bắt buộc; sort key được thêm một điều kiện.
+- `begins_with(SK, :p)`: chọn một loại item trong collection.
+- `ScanIndexForward: false`: đọc ngược sort key, mới nhất trước.
+- PartiQL: `WHERE` có bằng trên `PK` thì thành một Query, không có thì thành Scan.
 
 ## Ví dụ
 
-Cùng câu hỏi trong SQL cần nối hai bảng:
+Cả trang của khách `C-03`: hồ sơ và hai đơn.
 
-```text
-SQL:      SELECT ... FROM customers c JOIN orders o ON o.customer_id = c.id WHERE c.id = 'C-02'
-DynamoDB: Query PK = CUST#C-02
+```json
+{"op": "Query", "input": {"TableName": "Shop", "KeyConditionExpression": "PK = :pk", "ExpressionAttributeValues": {":pk": {"S": "CUST#C-03"}}}}
 ```
+
+Ba item, `ScannedCount` cũng là 3: Query chỉ đọc đúng collection đó. `ORDER#…` đứng trước `PROFILE` vì `O` nhỏ hơn `P` theo byte.
+
+Chỉ các đơn của `C-04`, mới nhất trước:
+
+```json
+{"op": "Query", "input": {"TableName": "Shop", "KeyConditionExpression": "PK = :pk AND begins_with(SK, :o)", "ExpressionAttributeValues": {":pk": {"S": "CUST#C-04"}, ":o": {"S": "ORDER#"}}, "ScanIndexForward": false}}
+```
+
+Đơn `O-508` (2026-09-02) ra trước `O-507` (2026-08-08), không cần sắp thêm.
+
+Cùng một trang bằng PartiQL:
+
+```partiql
+SELECT * FROM "Shop" WHERE PK = 'ORDER#O-502'
+```
+
+Ba dòng hàng của đơn `O-502`; có bằng trên `PK` nên engine đọc như một Query.
+
+## Lỗi hay gặp
+
+Dùng Scan có lọc thay cho Query:
+
+```json
+// WRONG: same 3 items, but the whole table is read
+{"op": "Scan", "input": {"TableName": "Shop", "FilterExpression": "PK = :pk", "ExpressionAttributeValues": {":pk": {"S": "CUST#C-02"}}}}
+```
+
+```json
+// FIX: a Query reads only the collection
+{"op": "Query", "input": {"TableName": "Shop", "KeyConditionExpression": "PK = :pk", "ExpressionAttributeValues": {":pk": {"S": "CUST#C-02"}}}}
+```
+
+Hai câu trả cùng 3 item, nhưng câu sai có `ScannedCount` bằng cả bảng, câu sửa chỉ 3. Bảng càng lớn, câu sai càng đắt, mà kết quả không cho thấy điều đó.
+
+Đặt điều kiện lên thuộc tính không phải khóa trong `KeyConditionExpression`:
+
+```json
+// ERROR ValidationException
+{"op": "Query", "input": {"TableName": "Shop", "KeyConditionExpression": "PK = :pk AND #t = :t", "ExpressionAttributeNames": {"#t": "type"}, "ExpressionAttributeValues": {":pk": {"S": "CUST#C-02"}, ":t": {"S": "order"}}}}
+```
+
+`type` không phải khóa nên không dùng được ở đây. Chọn loại item bằng tiền tố sort key (`begins_with(SK, :o)`), hoặc để `type` vào `FilterExpression` nếu chấp nhận đọc cả collection.
 
 ## Thực hành
 
-Thiết kế này nhân bản một phần dữ liệu (ví dụ `total` lưu sẵn trên item đơn). Đổi lại, mỗi trang chỉ cần một request.
+Ba bước trên cùng bảng `Shop`: lấy cả trang của một khách, chỉ lấy đơn mới nhất trước, rồi lấy các dòng hàng của một đơn. Bước 1 và 3 có thanh chi phí: một Scan cho cùng item vẫn không đạt.
+
+## Tóm tắt
+
+- Item collection = mọi item cùng partition key; một Query đọc cả collection.
+- Thiết kế mỗi collection thành một trang của ứng dụng để thay cho JOIN.
+- `begins_with(SK, …)` chọn loại item; sort key chuỗi sắp theo byte.
+- `FilterExpression` lọc sau khi đọc: Scan có lọc vẫn trả phí cho cả bảng.
 
 # EN
 
+## Opening
+
+In SQL, the customer page joins the customer table with the order table. DynamoDB has no JOIN. So how do you fetch a customer's profile and every order of theirs in one request?
+
 ## Key idea
 
-In table `Shop`, each item collection is one "page" of the application:
+An item collection is every item with the same partition key. In the single table `Shop`, each collection is designed to be one "page" of the application: `CUST#…` holds the customer profile and their orders, `ORDER#…` holds the lines of one order. A Query on `PK` reads the whole page; the items sit next to each other in the same partition, already sorted by sort key.
 
-- `CUST#…`: the customer profile and the customer's orders.
-- `ORDER#…`: the lines of one order.
+The sort key is a string, sorted by bytes. A prefix such as `ORDER#` picks an item type with `begins_with(SK, …)`, and a date like `2026-09-08` right after the prefix makes byte order match time order. `ScanIndexForward: false` reverses the direction to get the newest first.
 
-A Query on `PK` fetches the whole page. Add `begins_with(SK, …)` to fetch one item type. The sort key sorts by bytes, so the prefix `ORDER#2026-…` both picks the type and sorts by time.
+Many people think a Scan with a `FilterExpression` is as good as a Query because it returns the same items. In fact the filter runs after the read: the Scan reads the whole table, returns 3 items but has a `ScannedCount` of the whole table, and capacity is charged on what was read. The price of this design is duplicating some data (for example `total` stored on the order item) so each page needs only one request.
+
+The lab runs on dynoxide in the browser; `Count` and `ScannedCount` are real figures from this engine.
+
+## Syntax
+
+```text
+{"op": "Query", "input": {"TableName": "<table>",
+  "KeyConditionExpression": "PK = :pk [AND begins_with(SK, :prefix) | AND SK BETWEEN :a AND :b]",
+  "ExpressionAttributeValues": {":pk": {"S": "<value>"}, ...},
+  ["ScanIndexForward": false,] ["Limit": <n>]}}
+SELECT * FROM "<table>" WHERE PK = '<value>' [AND begins_with(SK, '<prefix>')]
+```
+
+- `KeyConditionExpression`: equality on the partition key is required; the sort key may add one condition.
+- `begins_with(SK, :p)`: picks one item type inside the collection.
+- `ScanIndexForward: false`: reads the sort key backwards, newest first.
+- PartiQL: a `WHERE` with equality on `PK` becomes a Query, without it a Scan.
 
 ## Example
 
-The same question in SQL needs to join two tables:
+The whole page of customer `C-03`: the profile and two orders.
 
-```text
-SQL:      SELECT ... FROM customers c JOIN orders o ON o.customer_id = c.id WHERE c.id = 'C-02'
-DynamoDB: Query PK = CUST#C-02
+```json
+{"op": "Query", "input": {"TableName": "Shop", "KeyConditionExpression": "PK = :pk", "ExpressionAttributeValues": {":pk": {"S": "CUST#C-03"}}}}
 ```
+
+Three items, and `ScannedCount` is 3 too: the Query reads only that collection. `ORDER#…` comes before `PROFILE` because `O` is smaller than `P` in bytes.
+
+Only the orders of `C-04`, newest first:
+
+```json
+{"op": "Query", "input": {"TableName": "Shop", "KeyConditionExpression": "PK = :pk AND begins_with(SK, :o)", "ExpressionAttributeValues": {":pk": {"S": "CUST#C-04"}, ":o": {"S": "ORDER#"}}, "ScanIndexForward": false}}
+```
+
+Order `O-508` (2026-09-02) comes before `O-507` (2026-08-08), with no extra sort.
+
+The same kind of page in PartiQL:
+
+```partiql
+SELECT * FROM "Shop" WHERE PK = 'ORDER#O-502'
+```
+
+The three lines of order `O-502`; there is an equality on `PK`, so the engine reads it like a Query.
+
+## Common mistakes
+
+Using a filtered Scan instead of a Query:
+
+```json
+// WRONG: same 3 items, but the whole table is read
+{"op": "Scan", "input": {"TableName": "Shop", "FilterExpression": "PK = :pk", "ExpressionAttributeValues": {":pk": {"S": "CUST#C-02"}}}}
+```
+
+```json
+// FIX: a Query reads only the collection
+{"op": "Query", "input": {"TableName": "Shop", "KeyConditionExpression": "PK = :pk", "ExpressionAttributeValues": {":pk": {"S": "CUST#C-02"}}}}
+```
+
+Both return the same 3 items, but the wrong one has a `ScannedCount` of the whole table, the fix only 3. The bigger the table, the dearer the wrong one, and the result never shows it.
+
+Putting a non-key attribute in the `KeyConditionExpression`:
+
+```json
+// ERROR ValidationException
+{"op": "Query", "input": {"TableName": "Shop", "KeyConditionExpression": "PK = :pk AND #t = :t", "ExpressionAttributeNames": {"#t": "type"}, "ExpressionAttributeValues": {":pk": {"S": "CUST#C-02"}, ":t": {"S": "order"}}}}
+```
+
+`type` is not a key, so it cannot be used here. Pick the item type with a sort key prefix (`begins_with(SK, :o)`), or put `type` in a `FilterExpression` if reading the whole collection is acceptable.
 
 ## Practice
 
-This design duplicates some data (for example `total` stored on the order item). In return, each page needs only one request.
+Three steps on the same `Shop` table: fetch a customer's whole page, fetch only the orders newest first, then fetch the lines of one order. Steps 1 and 3 have a cost bar: a Scan that gives the same items still does not pass.
+
+## Recap
+
+- Item collection = every item with the same partition key; one Query reads the whole collection.
+- Design each collection as one page of the application to replace a JOIN.
+- `begins_with(SK, …)` picks an item type; a string sort key sorts by bytes.
+- `FilterExpression` filters after the read: a filtered Scan still pays for the whole table.
