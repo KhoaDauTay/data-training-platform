@@ -4,7 +4,7 @@
 <desc id="d">Trang #/engine/postgres/L3: sidebar cây 256 px (engine › cấp › mô-đun, chỉ nhánh đang mở), bộ lọc chip, nhóm đã xong gập thành một hàng, bài là hàng 48 px với icon loại, số, phút và trạng thái; một nút Học tiếp.</desc>
 <!-- BoonData v24 UX mockup. Hex = tokens of src/style.css. Purple dashed + numbered circles = annotation, not UI. Icons = Phosphor duotone 2.1.1 (MIT) path data. -->
 <rect x="0" y="0" width="1720" height="1456" rx="0" fill="#ece5da"/>
-<text x="40" y="44" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="22" font-weight="800" fill="#2a2320" text-anchor="start" xml:space="preserve">02 · Trang cấp (mô-đun) · #/engine/postgres/L3 · 1280 sáng</text>
+<text x="40" y="44" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="22" font-weight="800" fill="#2a2320" text-anchor="start" xml:space="preserve">02 · Trang cấp (mô-đun) · #/engine/postgres/L3 · 1280 sáng · sidebar đang mở (mặc định là rail)</text>
 <defs><clipPath id="f6"><rect x="0" y="0" width="1280" height="1320" rx="12"/></clipPath></defs>
 <rect x="39" y="95" width="1282" height="1322" rx="13" fill="none" stroke="#cfc2b2" stroke-width="1"/>
 <g transform="translate(40,96)" clip-path="url(#f6)">
@@ -120,7 +120,7 @@
 <rect x="735.28" y="204" width="148.96" height="32" rx="16" fill="#ffffff" stroke="#cfc2b2" stroke-width="1"/>
 <text x="749.28" y="225" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="13.5" font-weight="800" fill="#2a2320" text-anchor="start" xml:space="preserve">Đoán · câu hỏi 3</text>
 <rect x="944" y="202" width="240" height="36" rx="12" fill="#ffffff" stroke="#cfc2b2" stroke-width="1"/>
-<g transform="translate(956,211) scale(0.07031)" aria-hidden="true"><path fill="#6b5f57" d="M221.9,61.38,152,136v58.65a8,8,0,0,1-3.56,6.66l-32,21.33A8,8,0,0,1,104,216V136L34.1,61.38A8,8,0,0,1,40,48H216A8,8,0,0,1,221.9,61.38Z" opacity="0.2"/><path fill="#6b5f57" d="M230.6,49.53A15.81,15.81,0,0,0,216,40H40A16,16,0,0,0,28.19,66.76l.08.09L96,139.17V216a16,16,0,0,0,24.87,13.32l32-21.34A16,16,0,0,0,160,194.66V139.17l67.74-72.32.08-.09A15.8,15.8,0,0,0,230.6,49.53ZM40,56h0Zm106.18,74.58A8,8,0,0,0,144,136v58.66L112,216V136a8,8,0,0,0-2.16-5.47L40,56H216Z"/></g>
+<g transform="translate(956,211) scale(0.07031)" aria-hidden="true"><path fill="#6b5f57" d="M216,144a32,32,0,1,1-32-32A32,32,0,0,1,216,144Z" opacity="0.2"/><path fill="#6b5f57" d="M32,64a8,8,0,0,1,8-8H216a8,8,0,0,1,0,16H40A8,8,0,0,1,32,64Zm8,72h72a8,8,0,0,0,0-16H40a8,8,0,0,0,0,16Zm88,48H40a8,8,0,0,0,0,16h88a8,8,0,0,0,0-16Zm109.66,13.66a8,8,0,0,1-11.32,0L206,177.36A40,40,0,1,1,217.36,166l20.3,20.3A8,8,0,0,1,237.66,197.66ZM184,168a24,24,0,1,0-24-24A24,24,0,0,0,184,168Z"/></g>
 <text x="982" y="225" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="14" font-weight="400" fill="#6b5f57" text-anchor="start" xml:space="preserve">Lọc theo tên bài</text>
 <circle cx="282" cy="220" r="11" fill="#ffffff" stroke="#7a2bb0" stroke-width="2"/>
 <text x="282" y="225" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="13" font-weight="800" fill="#7a2bb0" text-anchor="middle" xml:space="preserve">2</text>
@@ -254,5 +254,5 @@
 <text x="1390" y="374" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="13.5" font-weight="400" fill="#2a2320" text-anchor="start" xml:space="preserve">thứ tự, tên, loại · phút, trạng thái.</text>
 <text x="1390" y="393" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="13.5" font-weight="400" fill="#2a2320" text-anchor="start" xml:space="preserve">Một nút Học tiếp (BTN_GO) cho bài</text>
 <text x="1390" y="412" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="13.5" font-weight="400" fill="#2a2320" text-anchor="start" xml:space="preserve">kế tiếp; hàng khác cả hàng là link.</text>
-<text x="1390" y="431" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="13.5" font-weight="400" fill="#2a2320" text-anchor="start" xml:space="preserve">18 bài vừa ~1 màn rưỡi (nay ~3).</text>
+<text x="1390" y="431" font-family="Nunito, 'Segoe UI', system-ui, sans-serif" font-size="13.5" font-weight="400" fill="#2a2320" text-anchor="start" xml:space="preserve">18 bài vừa ~1,5 màn (nay ~2,5).</text>
 </svg>

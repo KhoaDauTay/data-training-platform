@@ -9,7 +9,7 @@ Người viết: UI/UX. Ngày 2026-11-23. Nhánh `design-v24`. **Chỉ là thi�
 | File | Nội dung |
 |---|---|
 | `01-track-1280-light.svg` | `#/learn`: ô tìm, thẻ Học tiếp, track dạng tab, 12 Phần mới (Product §1.1) là thẻ gọn |
-| `02-level-1280-light.svg` | `#/engine/postgres/L3` (18 bài thật): sidebar cây, chip lọc, nhóm xong gập, hàng bài 48 px |
+| `02-level-1280-light.svg` | `#/engine/postgres/L3` (18 bài thật), sidebar ở trạng thái **đang mở** (mặc định ở 1280 là rail): cây, chip lọc, nhóm xong gập, hàng bài 48 px |
 | `03-lesson-1280-light.svg` | Bài kỹ năng LEFT JOIN đủ 9 mục: mục lục dính, ví dụ chạy tại chỗ, bẫy chạy thật, Ở hệ khác, Thực hành, Câu hỏi, Tóm tắt |
 | `04-search-1280-light.svg` | Hộp thoại tìm (Ctrl K) |
 | `05-track-375-dark.svg` … `08-search-375-dark.svg` | Bốn trang trên ở 375 tối (07 có thêm bảng mục lục mở) |
@@ -51,7 +51,7 @@ Chỉ ghi những gì đã đọc hoặc chụp được hôm nay (2026-11-23).
 | NN/g, [Accordions on Desktop](https://www.nngroup.com/articles/accordions-on-desktop/) | Đừng gập khi người dùng cần hầu hết nội dung hoặc đọc liền mạch | Thân bài máy tính không là accordion; chỉ gập phần phụ (ví dụ chưa chạy, bẫy phụ) |
 | PostgreSQL docs, [2.6 Joins Between Tables](https://www.postgresql.org/docs/current/tutorial-join.html) | Số mục phân cấp (2.5 → 2.6 → 2.7), thanh Prev / Up / Home / Next ở **cả đầu và cuối** trang | Số thứ tự bài trong cấp ("06"), Bài trước / Bài tiếp có tên bài ở cuối; "Up" = link Phần/cấp trong thanh bài |
 | MDN, [position](https://developer.mozilla.org/en-US/docs/Web/CSS/position) (ảnh `ref-mdn-1280.png`, `ref-mdn-375.png`) | Ba cột: cây trái có ô Filter, nội dung, "In this article" dính phải với mục hiện tại tô nền; khối "Try it" chạy được ngay đầu bài; ở 375 đường dẫn rút còn hai cấp cuối, cây vào nút sidebar | Bố cục ba cột ở ≥ 1280; ô lọc đầu sidebar; đường dẫn rút gọn trên điện thoại |
-| Stripe docs, [Payments quickstart](https://docs.stripe.com/payments/quickstart) (ảnh `ref-stripe-1280.png`) | Cột chữ theo bước + khung code dính bên phải có tab file, số dòng; ô tìm có gợi ý phím "/" | Bố cục chia đôi đọc/code là **phương án sau** (§5.4); gợi ý phím tắt ngay trong ô tìm |
+| Stripe docs, [Payments quickstart](https://docs.stripe.com/payments/quickstart) (ảnh `ref-stripe-1280.png`) | Cột chữ theo bước + khung code bên phải có tab file (ảnh không cuộn, nên chưa xác nhận nó dính), số dòng; ô tìm có gợi ý phím "/" | Bố cục chia đôi đọc/code là **phương án sau** (§5.4); gợi ý phím tắt ngay trong ô tìm |
 | SQLBolt, [Lesson 1](https://sqlbolt.com/lesson/select_queries_introduction) (ảnh `ref-sqlbolt-*.png`) | Bài = giải thích + cú pháp + **bài tập ngay dưới** (bảng dữ liệu, editor, danh sách nhiệm vụ có "Solution"); "Solve all tasks to continue" | Thực hành đặt cuối thân bài, một editor; bảng dữ liệu cạnh bài tập ("Bảng dùng" đã có) |
 | Material for MkDocs, [Setting up navigation](https://squidfunk.github.io/mkdocs-material/setup/setting-up-navigation/) | `navigation.prune` cho site 100+ trang ("only visible navigation items"), `toc.follow` (mục lục tự cuộn để mục hiện tại luôn thấy), `navigation.path` (đường dẫn trên tiêu đề) | Cây chỉ dựng nhánh đang mở; mục lục dài tự cuộn theo mục hiện tại; đường dẫn ≤ 3 cấp |
 | Khan Academy, [mastery levels](https://support.khanacademy.org/hc/en-us/articles/115002552631) (qua kết quả tìm kiếm; trang trả 403) | Tiến độ khóa học = số kỹ năng đạt / tổng; mở rộng ra từng unit | Tiến độ Phần/cấp = bài xong / tổng, không phải % đọc |
@@ -155,7 +155,7 @@ Bài `predict`, `quiz`, `capstone` dùng tập con của Product §2.2; mục l�
 └──────────────────────────────────────────────────────────────────────┘
 ```
 
-- **Code đọc sẵn** là `<pre class="sql">` tô màu tĩnh (cùng `HighlightStyle` `--syn-*`), không phải CodeMirror. "Sửa thử" thay khối đó bằng `createEditor` tại chỗ (focus vào editor), thêm nút "Đặt lại" (icon `resetCode`). Lý do: bài 6 ví dụ + 4 bẫy không giữ 10 editor sống; v23 đã chậm ở 4.
+- **Code đọc sẵn** là `<pre class="sql">` tô màu tĩnh (cùng `HighlightStyle` `--syn-*`), không phải CodeMirror. "Sửa thử" thay khối đó bằng `createEditor` tại chỗ (focus vào editor), thêm nút "Đặt lại" (icon `resetCode`). Lý do: bài 6 ví dụ + 4 bẫy sẽ cần 10 editor sống cùng lúc; chưa đo chi phí, nhưng không có lý do dựng editor người học không dùng.
 - **Chạy** = `BTN_SECONDARY` (Nộp ở Thực hành mới là `BTN_GO`). Chạy trên `lab` / setup của bài như "Thử ngay" (`runOn`, `app.ensure('lab')`, `preview.loading` lần đầu), không đụng `app.lastRun`, draft, history, XP.
 - **Kết quả** dưới code: dòng trạng thái (icon `check` + "n dòng · ms · nhãn", `role=status`), bảng `renderResult` tối đa 5 dòng rồi "Xem n dòng" (mở thêm tại chỗ), câu "Đọc kết quả" do nội dung viết, hiện **sau** khi chạy (người học nhìn kết quả trước, đọc giải thích sau). Lỗi: `errorView(e, note, sql)`.
 - Ví dụ thứ hai trở đi hiện **đóng** dạng hàng 52 px (tên + "Chưa chạy" + Chạy) trên máy tính khi bài có > 3 ví dụ; bấm tên = mở code; bấm Chạy = mở và chạy. Đây là ngoại lệ duy nhất của nguyên tắc "không gập thân bài": ví dụ đơn giản → thật, người học thường cần ví dụ đầu và một ví dụ thật.
@@ -194,10 +194,10 @@ Bước/drill có thanh: dưới dòng trạng thái thêm một hàng hai con s
 ### 6.2 Trang Phần / cấp (`02`, `06`)
 
 - Đầu trang: đường dẫn, `h1`, câu "làm được" một dòng, thanh tiến độ + "k/n bài xong · n bài · khoảng x giờ".
-- **Chip lọc** (nút `aria-pressed`, một hàng; điện thoại cuộn ngang có vệt mờ mép phải): Tất cả · Chưa xong · theo loại (Lab, Khái niệm, Đoán · câu hỏi), mỗi chip có số. Máy tính thêm ô "Lọc theo tên bài" (lọc tại chỗ, `announce()` số kết quả).
+- **Chip lọc** (nút `aria-pressed`, một hàng; điện thoại cuộn ngang có vệt mờ mép phải): Tất cả · Chưa xong · theo loại (Lab, Khái niệm, Đoán · câu hỏi), mỗi chip có số. Máy tính thêm ô "Lọc theo tên bài" (icon `search`, lọc tại chỗ, `announce()` số kết quả).
 - **Nhóm** (mô-đun Engine; ở General mỗi Phần một nhóm): tiêu đề `GROUP_TITLE` + "k/n". Nhóm **đã xong** gập thành một hàng 52 px: `check` + tên + "3/3 xong" + "Hiện 3 bài" (nút `aria-expanded`).
 - **Hàng bài** = `listRow` dạng dày: 48 px (điện thoại 64 px hai dòng): icon loại 20 px, số thứ tự trong cấp (`06`, mono `text-muted`), tên (cắt "…" một dòng, tên đầy đủ trong `title` và tên truy cập), "Loại · phút" bên phải, icon trạng thái (`check` / `partial` / `notStarted`) ở cột cuối. Bài kế tiếp: nền `accent-soft` + vạch trái 4 px + `BTN_GO` "Học tiếp" (một mỗi trang); hàng khác cả hàng là link (`STRETCH`), không có nút "Mở".
-- Kết quả đo trên mockup: 18 bài L3 + 2 nhóm gập vừa ~1,25 màn ở 1280 (hôm nay: ~2,5 màn ước theo hàng 76 px + thẻ).
+- Kết quả đo trên mockup: 18 bài L3 + 2 nhóm gập vừa ~1,5 màn ở 1280 (hôm nay: ~2,5 màn, ước theo hàng 76 px + thẻ).
 - Danh sách không cần ảo hóa: cấp lớn nhất ~25 bài; nếu có trang "mọi bài" (không đề xuất) mới cần.
 
 ## 7. Điện thoại 375 / 320
@@ -290,9 +290,12 @@ Phosphor duotone 2.1.1 (MIT), thêm qua `scripts/icon-map.json` → `node script
 | `check`, `partial` | custom `check`, `circle-half` | xong / làm dở | trạng thái | có |
 | `notStarted` | `circle-dashed` | vòng chưa khép | trạng thái chưa làm | mới |
 | `perfBar` | `gauge` | đồng hồ đo | thanh hiệu năng | mới |
+| `run` | `play` | bấm chạy | nút Chạy của ví dụ, Chạy câu sai/sửa | mới |
+| `enterKey` | `arrow-elbow-down-left` | phím Enter | dòng đang chọn trong kết quả tìm | mới |
+| `moduleWrite` | `file-plus` | thêm vào tệp | Phần 9 Ghi dữ liệu (cho tới khi có icon kỹ năng) | mới |
 | `external`, `copy`, `inApp`, `chevronLeft/Right`, `engRelational/Document/KeyValue`, `engine` | như hiện có | | link nguồn, sao chép, chip chạy thật, bài trước/tiếp, engine | có |
 
-Icon loại bài General = `skillIcon(id)` của kỹ năng (có sẵn, 38 + 5 kỹ năng mới cần icon: `cross_join`, `any_all`, `insert_select`, `update_join`, `upsert` → đề xuất custom trong họ JOIN cho `cross_join`, Phosphor `equals`/`plus-square`/`arrows-clockwise`/`arrows-merge` cho bốn cái còn lại, chọn lúc làm R1/R2, kiểm trùng bằng `tests/icons.test.ts`). Phần 9 dùng `file-plus` (ghi thêm vào bảng) trong mockup.
+Icon loại bài General = `skillIcon(id)` của kỹ năng (có sẵn, 38 + 5 kỹ năng mới cần icon: `cross_join`, `any_all`, `insert_select`, `update_join`, `upsert` → đề xuất custom trong họ JOIN cho `cross_join`, Phosphor `equals`/`plus-square`/`arrows-clockwise`/`arrows-merge` cho bốn cái còn lại, chọn lúc làm R1/R2, kiểm trùng bằng `tests/icons.test.ts`).
 
 Quy tắc "một icon = một đích" (`NAV_ICON`) chỉ áp cho mục nav; `search` không vào nav top bar nên không đụng.
 
