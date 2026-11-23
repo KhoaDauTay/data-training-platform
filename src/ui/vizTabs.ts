@@ -162,13 +162,13 @@ function scoped(meta: ErMetadata): Scoped {
     const own = tk && session.mode.kind !== 'interview' ? tablesIn(tk.steps[0].solution, lab) : [];
     const r = relatedTables(own, lab, meta.cons, 10, false);
     if (r.tables.length === 0 || app.schemaScope === 'all') return { tables: lab, dropped: [], switchable: r.tables.length > 0 };
-    return { tables: [...r.tables].sort(), dropped: [], switchable: true };
+    return { tables: r.tables.toSorted(), dropped: [], switchable: true };
   }
   const all = { tables: visibleTables(), dropped: [], switchable: false };
   if (!tk) return all;
   const r = relatedTables(tk.tables, unlockedTables(), meta.cons, 10, showsParents(tk));
   if (r.tables.length === 0) return all; // no `tables` in the ticket: nothing to scope to
-  return app.schemaScope === 'all' ? { ...all, switchable: true } : { tables: [...r.tables].sort(), dropped: [...r.dropped].sort(), switchable: true };
+  return app.schemaScope === 'all' ? { ...all, switchable: true } : { tables: r.tables.toSorted(), dropped: r.dropped.toSorted(), switchable: true };
 }
 
 /** Switch pressed by keyboard: the redraw replaces it, so the new button takes focus back. */

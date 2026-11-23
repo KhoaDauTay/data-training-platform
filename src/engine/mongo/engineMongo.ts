@@ -153,7 +153,7 @@ export function runMongo(ds: Dataset, src: string, want: { stages?: boolean } = 
   });
   const filterArg = (i: number) => arg<MongoDoc | undefined>(m, i, isDoc, 'a filter object', true) ?? {};
   const scratch = () => docs; // already this run's own copy
-  const lastChain = (n: string) => [...cmd.chain].reverse().find((c) => c.name === n);
+  const lastChain = (n: string) => cmd.chain.toReversed().find((c) => c.name === n);
   /** An upsert's new document: the filter's equality fields, then the update applied to them. */
   const upsertDoc = (filter: MongoDoc, upd: MongoDoc | MongoDoc[], arrayFilters?: MongoDoc[]): MongoDoc => {
     let doc = upsertBase(filter);
@@ -202,7 +202,7 @@ export function runMongo(ds: Dataset, src: string, want: { stages?: boolean } = 
         argCount(m, 2);
         const field = arg<string>(m, 0, (v) => typeof v === 'string' && v !== '', 'a field name in quotes');
         const [row] = aggregate(docs, [{ $match: filterArg(1) }, { $unwind: { path: `$${field}` } }, { $group: { _id: null, v: { $addToSet: `$${field}` } } }], opts) as { v: MongoValue[] }[];
-        const values = (row?.v ?? []).slice().sort(compareValues);
+        const values = (row?.v ?? []).toSorted(compareValues);
         return out('value', [], { value: values });
       }
       case 'aggregate': {

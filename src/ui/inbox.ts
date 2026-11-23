@@ -38,7 +38,7 @@ export function renderInbox(): void {
   setActionButton(byId('inbox-btn'), t('top.inbox'), badge, t('top.inboxNew', { n: badge }));
   const lang = getLang();
   const threads = new Map<string, Ticket[]>();
-  for (const tk of [...visible].reverse()) {
+  for (const tk of visible.toReversed()) {
     const list = threads.get(tk.from.name);
     if (list) list.push(tk);
     else threads.set(tk.from.name, [tk]);

@@ -346,7 +346,7 @@ function lockedRow(locked: KpiTile[]): HTMLElement | null {
   if (!locked.length) return null;
   const lang = getLang();
   const order = (x: KpiTile): number => (x.ticket ? app.tickets.indexOf(x.ticket) : Infinity);
-  const next = [...locked].sort((a, b) => order(a) - order(b))[0];
+  const next = locked.toSorted((a, b) => order(a) - order(b))[0];
   return h('details', { class: cx(CARD, 'mt-4 px-4 py-3') },
     h('summary', { class: 'flex cursor-pointer flex-wrap items-center gap-x-3 gap-y-1' },
       h('span', { class: 'grid size-9 shrink-0 place-items-center rounded-(--r-inset) bg-code text-muted', 'aria-hidden': 'true' }, icon('lock')),

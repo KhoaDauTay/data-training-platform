@@ -34,7 +34,7 @@ define<BtreeModel>('pg-btree', { leaves: [[3, 8, 12, 15], [20, 25, 28, 29], [41,
     return out;
   };
   const K = (v: number, tone?: Tone, suffix = ''): Key => ({ v: String(v), k: `k${v}${suffix}`, tone });
-  const base = m.leaves.map((l) => [...l].sort((a, b) => a - b).map((v) => K(v)));
+  const base = m.leaves.map((l) => l.toSorted((a, b) => a - b).map((v) => K(v)));
   const target = Math.max(0, base.findIndex((l, i) => i === base.length - 1 || m.insert < Number(base[i + 1][0].v)));
   const withNew = base.map((l, i) => (i === target ? [...l, K(m.insert, 'new')].sort((a, b) => Number(a.v) - Number(b.v)) : l));
   const over = withNew[target].length > cap;
@@ -179,7 +179,7 @@ define<GistModel>('pg-gist-boxes', {
   const sy = (v: number) => 14 + (1 - v / 100) * P;
   const pts = m.points.slice(0, 12).map(([x, y], i) => ({ x, y, i }));
   const per = Math.ceil(pts.length / 3);
-  const groups = [...pts].sort((a, b) => a.x - b.x).reduce<(typeof pts)[]>((g, p, j) => { (g[Math.floor(j / per)] ??= []).push(p); return g; }, []);
+  const groups = pts.toSorted((a, b) => a.x - b.x).reduce<(typeof pts)[]>((g, p, j) => { (g[Math.floor(j / per)] ??= []).push(p); return g; }, []);
   const mbr = (g: typeof pts) => ({ x0: Math.min(...g.map((p) => p.x)), x1: Math.max(...g.map((p) => p.x)), y0: Math.min(...g.map((p) => p.y)), y1: Math.max(...g.map((p) => p.y)) });
   const boxes = groups.map(mbr);
   const [qx, qy] = m.query;

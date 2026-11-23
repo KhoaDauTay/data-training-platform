@@ -100,7 +100,7 @@ export function stamper() {
 export function placementItems(parts: readonly Part[], general: General, known: ReadonlySet<string>): PracticeItem[] {
   return parts.flatMap(({ skills: own }) => {
     if (own.every((s) => known.has(s))) return [];
-    const drill = [...own].reverse().map((s) => general.bySkill.get(s)?.find((d) => d.kind === 'open')).find((d) => d);
+    const drill = own.toReversed().map((s) => general.bySkill.get(s)?.find((d) => d.kind === 'open')).find((d) => d);
     return drill ? [{ ticketId: drill.id, variant: 0, skills: own }] : [];
   });
 }

@@ -87,7 +87,7 @@ define<EsrModel>('mg-compound-index-esr', {
   const docs = m.docs.slice(0, 12);
   const match = (d: EsrModel['docs'][number]) => d.status === m.eq && d.total > m.min;
   type Ord = 'esr' | 'ers';
-  const sorted = (o: Ord) => [...docs].sort((a, b) => a.status.localeCompare(b.status) || (o === 'esr' ? b.created - a.created || a.total - b.total : a.total - b.total || b.created - a.created));
+  const sorted = (o: Ord) => docs.toSorted((a, b) => a.status.localeCompare(b.status) || (o === 'esr' ? b.created - a.created || a.total - b.total : a.total - b.total || b.created - a.created));
   const scanned = (o: Ord) => sorted(o).filter((d) => d.status === m.eq && (o === 'esr' || d.total > m.min));
   const draw = (o: Ord | undefined, s: { scan?: boolean; result?: boolean }): Shape[] => {
     const out: Shape[] = [...box('q', 10, 4, 320, 34, `find({ status: "${m.eq}", total: { $gt: ${m.min} } })`, 'cell', '.sort({ created: -1 })')];

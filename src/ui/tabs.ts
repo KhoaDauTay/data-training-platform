@@ -60,7 +60,7 @@ export function registerTab(spec: TabSpec): void {
 
 /** ARIA tablist: buttons built once, roving tabindex, ←/→/Home/End move focus, Enter/Space opens (manual activation). */
 export function createPanel(host: HTMLElement): Panel {
-  const tabs = [...specs].sort((a, b) => GROUPS.indexOf(a.group) - GROUPS.indexOf(b.group) || a.order - b.order);
+  const tabs = specs.toSorted((a, b) => GROUPS.indexOf(a.group) - GROUPS.indexOf(b.group) || a.order - b.order);
   const body = h('div', { class: 'tab-body', role: 'tabpanel', id: 'tabpanel', tabindex: '0' });
   const buttons = tabs.map((tab, i) =>
     h('button', {
