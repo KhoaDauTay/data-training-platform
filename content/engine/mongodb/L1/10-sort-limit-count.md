@@ -64,7 +64,42 @@ lab:
       hint:
         vi: "`countDocuments` nhận một filter như `find` và trả về một số."
         en: "`countDocuments` takes a filter like `find` and returns a number."
+quiz:
+  - q:
+      vi: '`db.products.find().limit(2).sort({ price: -1 })` trả về gì?'
+      en: 'What does `db.products.find().limit(2).sort({ price: -1 })` return?'
+    options:
+      - vi: Hai tài liệu đầu tiên của collection, rồi xếp hai cái đó theo giá
+        en: The first two documents of the collection, then those two sorted by price
+      - vi: Hai sản phẩm đắt nhất, đắt nhất trước
+        en: The two most expensive products, most expensive first
+      - vi: Lỗi, vì `sort` phải viết trước `limit`
+        en: An error, because `sort` must come before `limit`
+    answer: 1
+    trap: 0
+    why:
+      vi: 'Nghe hợp lý nếu các lệnh chạy theo thứ tự viết, như một chuỗi bước. Nhưng cursor gom các tùy chọn lại, và MongoDB luôn áp `sort` trước, rồi `skip`, rồi `limit`.'
+      en: 'It sounds right if the calls run in the order written, like a chain of steps. But the cursor collects the options, and MongoDB always applies `sort` first, then `skip`, then `limit`.'
+  - q:
+      vi: 'Bạn phân trang bằng `sort({ category: 1 }).skip(2).limit(2)`, và nhiều sản phẩm cùng nhóm. Rủi ro là gì?'
+      en: 'You page with `sort({ category: 1 }).skip(2).limit(2)`, and many products share a category. What is the risk?'
+    options:
+      - vi: Không rủi ro gì, vì đã có `sort`
+        en: No risk, because there is a `sort`
+      - vi: Thứ tự giữa các sản phẩm cùng nhóm không cố định, nên một sản phẩm có thể hiện ở hai trang hoặc không trang nào
+        en: The order among products of the same category is not fixed, so a product can show on two pages or on none
+      - vi: '`skip` bị bỏ qua khi khóa sắp xếp trùng'
+        en: '`skip` is ignored when sort keys tie'
+    answer: 1
+    trap: 0
+    why:
+      vi: 'Nghe hợp lý vì đã có `sort`, nhưng `sort` chỉ hứa thứ tự giữa các khóa khác nhau. Khi hòa, thứ tự có thể khác giữa hai lần gọi. Thêm `_id` làm khóa cuối: `sort({ category: 1, _id: 1 })`.'
+      en: 'It sounds right because there is a `sort`, but `sort` only promises an order between different keys. On a tie, the order may differ from one call to the next. Add `_id` as the last key: `sort({ category: 1, _id: 1 })`.'
 ---
+## Mở bài
+
+Trang danh sách hiện 2 sản phẩm mỗi trang, xếp theo tên. Trang 1 đã xong, giờ cần trang 2, và trang chủ cần số đồ uống. Bạn ghép `sort`, `skip`, `limit` và `countDocuments` thế nào?
+
 ## Ý chính
 
 - `sort({ price: -1 })` xếp giảm dần, `1` là tăng dần. Nhiều khóa thì xếp theo khóa đầu, hòa thì xét khóa sau.
@@ -75,20 +110,76 @@ Không có `sort`, thứ tự trả về không được hứa trước. Phân t
 
 `countDocuments(filter)` đếm chính xác số tài liệu khớp.
 
+Làm được: lấy top N, lấy một trang bất kỳ của danh sách đã xếp, và đếm kết quả.
+
+## Cú pháp
+
+```text
+db.<collection>.find(<filter>, <projection>).sort({ <field>: 1 | -1, _id: 1 }).skip(<k>).limit(<n>)
+db.<collection>.countDocuments(<filter>)
+```
+
+- `1` tăng dần, `-1` giảm dần; khóa sau phá hòa của khóa trước.
+- Trang n (cỡ trang p): `skip((n - 1) * p).limit(p)`.
+- `countDocuments` trả về một số, không trả tài liệu.
+
 ## Ví dụ
 
-Làm được: lấy top N, lấy một trang bất kỳ của danh sách đã xếp, và đếm kết quả.
+Hai đồ uống tồn kho ít nhất, hòa thì theo `_id`:
 
 ```js
 db.products.find({ category: "drink" }).sort({ stock: 1, _id: 1 }).limit(2)
+```
+
+Số sản phẩm còn dưới 10 đơn vị:
+
+```js
 db.products.countDocuments({ stock: { $lt: 10 } })
+```
+
+## Lỗi hay gặp
+
+Phân trang mà không `sort`:
+
+```js
+// WRONG: no sort, so page 2 is whatever comes 3rd and 4th
+db.products.find({}, { name: 1, _id: 0 }).skip(2).limit(2)
+```
+
+```js
+// FIX: a fixed order first
+db.products.find({}, { name: 1, _id: 0 }).sort({ name: 1, _id: 1 }).skip(2).limit(2)
+```
+
+Nhầm chiều sắp xếp khi lấy top N:
+
+```js
+// WRONG: 1 is ascending, so these are the 3 cheapest
+db.products.find({}, { name: 1, price: 1, _id: 0 }).sort({ price: 1 }).limit(3)
+```
+
+```js
+// FIX: -1 puts the most expensive first
+db.products.find({}, { name: 1, price: 1, _id: 0 }).sort({ price: -1 }).limit(3)
 ```
 
 ## Thực hành
 
 Bốn bước trên `products`. Ba bước đầu chấm cả thứ tự.
 
+## Tóm tắt
+
+- `sort` nhận `1` (tăng) hoặc `-1` (giảm), khóa sau phá hòa.
+- MongoDB luôn áp `sort`, rồi `skip`, rồi `limit`, dù viết theo thứ tự nào.
+- Phân trang cần `sort` trên khóa duy nhất; thêm `_id` làm khóa cuối.
+- `skip` lớn chậm; trang sâu nên lọc theo giá trị cuối của trang trước.
+- `countDocuments(filter)` đếm chính xác.
+
 # EN
+
+## Opening
+
+The list page shows 2 products per page, sorted by name. Page 1 is done, now page 2 is needed, and the home page needs the number of drinks. How do you combine `sort`, `skip`, `limit` and `countDocuments`?
 
 ## Key idea
 
@@ -100,15 +191,67 @@ Without `sort`, the order of results is not guaranteed. Paging always needs a `s
 
 `countDocuments(filter)` counts the matching documents exactly.
 
+You can now: take a top N, fetch any page of a sorted list, and count results.
+
+## Syntax
+
+```text
+db.<collection>.find(<filter>, <projection>).sort({ <field>: 1 | -1, _id: 1 }).skip(<k>).limit(<n>)
+db.<collection>.countDocuments(<filter>)
+```
+
+- `1` ascending, `-1` descending; a later key breaks ties of the one before.
+- Page n (page size p): `skip((n - 1) * p).limit(p)`.
+- `countDocuments` returns a number, not documents.
+
 ## Example
 
-You can now: take a top N, fetch any page of a sorted list, and count results.
+The two drinks with the lowest stock, ties broken by `_id`:
 
 ```js
 db.products.find({ category: "drink" }).sort({ stock: 1, _id: 1 }).limit(2)
+```
+
+The number of products with fewer than 10 units:
+
+```js
 db.products.countDocuments({ stock: { $lt: 10 } })
+```
+
+## Common mistakes
+
+Paging without `sort`:
+
+```js
+// WRONG: no sort, so page 2 is whatever comes 3rd and 4th
+db.products.find({}, { name: 1, _id: 0 }).skip(2).limit(2)
+```
+
+```js
+// FIX: a fixed order first
+db.products.find({}, { name: 1, _id: 0 }).sort({ name: 1, _id: 1 }).skip(2).limit(2)
+```
+
+Getting the sort direction wrong for a top N:
+
+```js
+// WRONG: 1 is ascending, so these are the 3 cheapest
+db.products.find({}, { name: 1, price: 1, _id: 0 }).sort({ price: 1 }).limit(3)
+```
+
+```js
+// FIX: -1 puts the most expensive first
+db.products.find({}, { name: 1, price: 1, _id: 0 }).sort({ price: -1 }).limit(3)
 ```
 
 ## Practice
 
 Four steps on `products`. The first three are graded in order.
+
+## Recap
+
+- `sort` takes `1` (ascending) or `-1` (descending); later keys break ties.
+- MongoDB always applies `sort`, then `skip`, then `limit`, whatever the written order.
+- Paging needs a `sort` on a unique key; add `_id` as the last key.
+- A large `skip` is slow; deep pages should filter on the last value of the previous page.
+- `countDocuments(filter)` counts exactly.

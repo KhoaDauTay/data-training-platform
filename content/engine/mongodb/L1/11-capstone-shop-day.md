@@ -100,10 +100,30 @@ quiz:
       - vi: Có thể mất cả mảng `tags`
         en: It may lose the whole `tags` array
     answer: 0
+    trap: 1
     why:
-      vi: Một thao tác ghi trên một tài liệu là nguyên tử, kể cả khi nó sửa nhiều trường và tài liệu nhúng (embedded document). Cần nhiều tài liệu cùng đổi một lúc thì mới phải nghĩ tới transaction.
-      en: A write on a single document is atomic, even when it changes several fields and embedded documents. Only when several documents must change together do you need a transaction.
+      vi: Nghe hợp lý vì lệnh có hai toán tử như hai bước, nhưng một thao tác ghi trên một tài liệu là nguyên tử, kể cả khi nó sửa nhiều trường và tài liệu nhúng (embedded document). Cần nhiều tài liệu cùng đổi một lúc thì mới phải nghĩ tới transaction.
+      en: It sounds right because the command has two operators like two steps, but a write on a single document is atomic, even when it changes several fields and embedded documents. Only when several documents must change together do you need a transaction.
+  - q:
+      vi: 'Ở bước 3, vì sao dùng `"lines.qty"` mà không cần `$elemMatch`?'
+      en: 'In step 3, why is `"lines.qty"` enough, without `$elemMatch`?'
+    options:
+      - vi: Vì chỉ có một điều kiện trên mảng, nên phần tử nào thỏa cũng đúng ý
+        en: Because there is only one condition on the array, so any element that meets it is what you want
+      - vi: Vì `$elemMatch` chỉ dùng cho mảng giá trị đơn
+        en: Because `$elemMatch` only works on arrays of plain values
+      - vi: Vì dot notation luôn xét cùng một phần tử
+        en: Because dot notation always looks at the same element
+    answer: 0
+    trap: 2
+    why:
+      vi: 'Nghe hợp lý vì kết quả bước 3 đúng, nhưng dot notation không giữ các điều kiện trên cùng một phần tử. Ở đây chỉ có một điều kiện nên không sao; có hai điều kiện trên cùng một dòng thì cần `$elemMatch`.'
+      en: 'It sounds right because step 3 gives the right result, but dot notation does not keep conditions on the same element. Here there is only one condition, so it does not matter; with two conditions on the same line you need `$elemMatch`.'
 ---
+## Mở bài
+
+Một ngày ở cửa hàng: quản lý hỏi hàng sắp hết, hàng về, kho tìm đơn số lượng lớn, một khách được lên hạng, cuối ngày đếm đơn đã trả. Mỗi việc là một lệnh. Bạn làm được cả năm không?
+
 ## Ý chính
 
 Bài cuối của L1 gom mọi thứ đã học vào một ngày làm việc: tìm và chiếu trường, lọc theo khoảng và trong mảng, sắp xếp, đếm, sửa nhiều tài liệu và sửa một tài liệu bằng nhiều toán tử.
@@ -120,9 +140,20 @@ db.orders.find({ status: "shipped" }, { customer: 1, _id: 0 }).sort({ customer: 
 
 ## Thực hành
 
-Năm bước, rồi một câu hỏi kết luận. Mỗi bước chạy trên dữ liệu gốc.
+Năm bước, rồi hai câu hỏi kết luận. Mỗi bước chạy trên dữ liệu gốc.
+
+## Tóm tắt
+
+- Đọc: filter, projection, toán tử so sánh và mảng, `sort`, `countDocuments`.
+- Ghi: `updateMany` cho nhiều tài liệu, nhiều toán tử trong một `updateOne`.
+- Một lệnh ghi trên một tài liệu là nguyên tử.
+- Dot notation đủ cho một điều kiện trên mảng; nhiều điều kiện trên cùng phần tử cần `$elemMatch`.
 
 # EN
+
+## Opening
+
+A day at the shop: the manager asks what is running low, stock arrives, the warehouse looks for bulk orders, a customer moves up a tier, and at the end of the day the paid orders are counted. Each task is one command. Can you do all five?
 
 ## Key idea
 
@@ -140,4 +171,11 @@ db.orders.find({ status: "shipped" }, { customer: 1, _id: 0 }).sort({ customer: 
 
 ## Practice
 
-Five steps, then one closing question. Every step runs on the original data.
+Five steps, then two closing questions. Every step runs on the original data.
+
+## Recap
+
+- Read: filter, projection, comparison and array operators, `sort`, `countDocuments`.
+- Write: `updateMany` for many documents, several operators in one `updateOne`.
+- A write on one document is atomic.
+- Dot notation is enough for one condition on an array; several conditions on the same element need `$elemMatch`.

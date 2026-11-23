@@ -69,7 +69,40 @@ lab:
       hint:
         vi: "Thêm `$options: \"i\"` để không phân biệt hoa thường."
         en: "Add `$options: \"i\"` to ignore case."
+quiz:
+  - q:
+      vi: 'Khách `"c3"` không có trường `email`, khách `"c5"` có `email: null`. `db.customers.find({ email: null })` trả về ai?'
+      en: 'Customer `"c3"` has no `email` field, customer `"c5"` has `email: null`. Who does `db.customers.find({ email: null })` return?'
+    options:
+      - vi: 'Chỉ `"c5"`, vì chỉ `"c5"` có giá trị `null`'
+        en: 'Only `"c5"`, because only `"c5"` holds the value `null`'
+      - vi: 'Cả `"c3"` và `"c5"`'
+        en: 'Both `"c3"` and `"c5"`'
+      - vi: Không ai, vì `null` không so bằng được
+        en: Nobody, because `null` cannot be compared for equality
+    answer: 1
+    trap: 0
+    why:
+      vi: 'Nghe hợp lý vì chỉ `"c5"` thật sự lưu `null`, nhưng `{ email: null }` khớp cả trường bằng `null` lẫn trường không có. Chỉ muốn `null` thật thì dùng `{ email: { $type: "null" } }`.'
+      en: 'It sounds right because only `"c5"` really stores `null`, but `{ email: null }` matches both a field equal to `null` and a missing field. For a real `null` only, use `{ email: { $type: "null" } }`.'
+  - q:
+      vi: '`db.customers.find({ email: { $exists: true } })` có trả về `"c5"` (có `email: null`) không?'
+      en: 'Does `db.customers.find({ email: { $exists: true } })` return `"c5"` (which has `email: null`)?'
+    options:
+      - vi: Có, vì trường có mặt dù giá trị là `null`
+        en: Yes, because the field is present even though its value is `null`
+      - vi: Không, vì `null` nghĩa là không có email
+        en: No, because `null` means there is no email
+    answer: 0
+    trap: 1
+    why:
+      vi: 'Nghe hợp lý vì `null` thường được hiểu là "không có", nhưng `$exists` chỉ hỏi trường có mặt trong tài liệu hay không, không xét giá trị. Muốn email là chuỗi thật thì dùng `$type: "string"`.'
+      en: 'It sounds right because `null` is often read as "nothing", but `$exists` only asks whether the field is present in the document, not what it holds. For an email that is a real string, use `$type: "string"`.'
 ---
+## Mở bài
+
+Đội marketing cần danh sách khách không gửi email được. Có khách thiếu hẳn trường `email`, có khách lưu `email: null`. Một filter có bắt được cả hai không, và nếu chỉ muốn một trong hai thì sao?
+
 ## Ý chính
 
 MongoDB không bắt mọi tài liệu có cùng trường, nên "không có email" có hai dạng: trường thiếu hẳn, hoặc trường có mặt với giá trị `null`.
@@ -83,18 +116,81 @@ MongoDB không bắt mọi tài liệu có cùng trường, nên "không có ema
 
 Làm được: tìm đúng tài liệu thiếu dữ liệu, kiểm kiểu của một trường, và tìm theo một phần của chuỗi.
 
+## Cú pháp
+
+```text
+{ <field>: null }
+{ <field>: { $exists: <true | false> } }
+{ <field>: { $type: "<bson type>" } }
+{ <field>: { $regex: "<pattern>", $options: "i" } }
+```
+
+- `null` khớp trường bằng `null` hoặc thiếu.
+- `$exists` hỏi trường có mặt; `$type` hỏi kiểu của giá trị.
+- `$regex` khớp một phần chuỗi; `^` neo đầu chuỗi.
+
 ## Ví dụ
+
+Khách có số điện thoại nhưng không có trường `email`:
 
 ```js
 db.customers.find({ phone: { $exists: true }, email: { $exists: false } })
+```
+
+Khách có tên bắt đầu bằng `D`:
+
+```js
 db.customers.find({ name: { $regex: "^D" } })
+```
+
+Khách có `email` đúng bằng `null`, không tính khách thiếu trường:
+
+```js
+db.customers.find({ email: { $type: "null" } })
+```
+
+## Lỗi hay gặp
+
+Dùng `{ email: null }` khi chỉ muốn trường thiếu:
+
+```js
+// WRONG: c5 (email: null) comes back too
+db.customers.find({ email: null })
+```
+
+```js
+// FIX: only the documents without the field
+db.customers.find({ email: { $exists: false } })
+```
+
+Quên rằng `$regex` phân biệt hoa thường:
+
+```js
+// WRONG: "Tea set" starts with a capital T and is missed
+db.products.find({ name: { $regex: "tea" } })
+```
+
+```js
+// FIX: ignore case
+db.products.find({ name: { $regex: "tea", $options: "i" } })
 ```
 
 ## Thực hành
 
 Khách `"c3"` không có trường `email`, khách `"c5"` có `email` bằng `null`. Làm bốn bước.
 
+## Tóm tắt
+
+- "Không có giá trị" có hai dạng: trường thiếu và trường bằng `null`.
+- `{ f: null }` khớp cả hai; `$exists` và `$type: "null"` tách chúng ra.
+- `$type` kiểm kiểu BSON; `"number"` khớp mọi kiểu số.
+- `$regex` phân biệt hoa thường trừ khi có `$options: "i"`.
+
 # EN
+
+## Opening
+
+The marketing team needs the customers you cannot email. Some lack the `email` field entirely, some store `email: null`. Can one filter catch both, and what if you want only one of them?
 
 ## Key idea
 
@@ -109,13 +205,72 @@ MongoDB does not force documents to share fields, so "no email" comes in two for
 
 You can now: find documents with missing data, check a field's type, and search by part of a string.
 
+## Syntax
+
+```text
+{ <field>: null }
+{ <field>: { $exists: <true | false> } }
+{ <field>: { $type: "<bson type>" } }
+{ <field>: { $regex: "<pattern>", $options: "i" } }
+```
+
+- `null` matches a field equal to `null` or missing.
+- `$exists` asks whether the field is present; `$type` asks the value's type.
+- `$regex` matches part of a string; `^` anchors at the start.
+
 ## Example
+
+Customers with a phone number but no `email` field:
 
 ```js
 db.customers.find({ phone: { $exists: true }, email: { $exists: false } })
+```
+
+Customers whose name starts with `D`:
+
+```js
 db.customers.find({ name: { $regex: "^D" } })
+```
+
+Customers whose `email` is exactly `null`, leaving out those without the field:
+
+```js
+db.customers.find({ email: { $type: "null" } })
+```
+
+## Common mistakes
+
+Using `{ email: null }` when you want only the missing field:
+
+```js
+// WRONG: c5 (email: null) comes back too
+db.customers.find({ email: null })
+```
+
+```js
+// FIX: only the documents without the field
+db.customers.find({ email: { $exists: false } })
+```
+
+Forgetting that `$regex` is case-sensitive:
+
+```js
+// WRONG: "Tea set" starts with a capital T and is missed
+db.products.find({ name: { $regex: "tea" } })
+```
+
+```js
+// FIX: ignore case
+db.products.find({ name: { $regex: "tea", $options: "i" } })
 ```
 
 ## Practice
 
 Customer `"c3"` has no `email` field, customer `"c5"` has `email` set to `null`. Do the four steps.
+
+## Recap
+
+- "No value" comes in two forms: a missing field and a field equal to `null`.
+- `{ f: null }` matches both; `$exists` and `$type: "null"` tell them apart.
+- `$type` checks the BSON type; `"number"` matches every numeric type.
+- `$regex` is case-sensitive unless `$options: "i"` is set.

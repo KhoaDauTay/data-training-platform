@@ -31,9 +31,10 @@ predict:
     - vi: Không đơn nào
       en: No order
   answer: 1
+  trap: 0
   why:
-    vi: "Không có `$elemMatch`, mỗi điều kiện được thỏa bởi bất kỳ phần tử nào. Đơn 1 có một dòng `p4` (qty 1) và một dòng khác qty 2, nên vẫn khớp."
-    en: "Without `$elemMatch`, each condition can be met by any element. Order 1 has a `p4` line (qty 1) and a different line with qty 2, so it still matches."
+    vi: "Nghe hợp lý vì cả hai điều kiện nói về dòng hàng, nhưng không có `$elemMatch` thì mỗi điều kiện được thỏa bởi bất kỳ phần tử nào. Đơn 1 có một dòng `p4` (qty 1) và một dòng khác qty 2, nên vẫn khớp."
+    en: "It sounds right because both conditions talk about order lines, but without `$elemMatch` each condition can be met by any element. Order 1 has a `p4` line (qty 1) and a different line with qty 2, so it still matches."
 lab:
   setup: |
     {"collections": {
@@ -95,7 +96,25 @@ lab:
       hint:
         vi: "Hai điều kiện phải đúng trên cùng một dòng: gói chúng trong `$elemMatch`."
         en: "Both conditions must hold on the same line: wrap them in `$elemMatch`."
+quiz:
+  - q:
+      vi: 'Sản phẩm `"p6"` có `tags: ["hot", "gift"]`. `db.products.find({ tags: ["gift", "hot"] })` có trả về `"p6"` không?'
+      en: 'Product `"p6"` has `tags: ["hot", "gift"]`. Does `db.products.find({ tags: ["gift", "hot"] })` return `"p6"`?'
+    options:
+      - vi: Có, vì mảng có đủ hai nhãn
+        en: Yes, because the array holds both tags
+      - vi: Không, vì so bằng cả mảng cần đúng phần tử và đúng thứ tự
+        en: No, because equality on a whole array needs the same elements in the same order
+    answer: 1
+    trap: 0
+    why:
+      vi: 'Nghe hợp lý vì nhãn nào cũng có mặt, nhưng một mảng làm giá trị so bằng là so khớp chính xác, kể cả thứ tự. Không quan tâm thứ tự thì dùng `$all`.'
+      en: 'It sounds right because every tag is present, but an array used as an equality value is an exact match, order included. When order does not matter, use `$all`.'
 ---
+## Mở bài
+
+Kho hỏi: đơn nào có một dòng sản phẩm `"p4"` với số lượng từ 2 trở lên? Các dòng hàng nằm trong một mảng tài liệu. Viết hai điều kiện thế nào để chúng cùng nói về một dòng?
+
 ## Ý chính
 
 Với mảng giá trị như `tags`:
@@ -111,17 +130,81 @@ Bẫy quan trọng: nhiều điều kiện dạng dot notation trên cùng một
 
 Làm được: tìm đúng tài liệu theo nội dung mảng, kể cả mảng tài liệu nhúng (embedded document).
 
+## Cú pháp
+
+```text
+{ <array>: <value> }
+{ <array>: { $all: [ <value>, <value> ] } }
+{ <array>: { $size: <n> } }
+{ <array>: { $elemMatch: { <field>: <condition>, <field>: <condition> } } }
+```
+
+- Giá trị đơn: khớp khi có một phần tử bằng nó.
+- `$elemMatch`: mọi điều kiện bên trong phải đúng trên cùng một phần tử.
+
 ## Ví dụ
+
+Sản phẩm có nhãn `"gift"`:
+
+```js
+db.products.find({ tags: "gift" })
+```
+
+Sản phẩm có cả `"hot"` lẫn `"cold"`, thứ tự nào cũng được:
+
+```js
+db.products.find({ tags: { $all: ["cold", "hot"] } })
+```
+
+Đơn có một dòng vừa số lượng từ 5 vừa giá dưới 20000:
 
 ```js
 db.orders.find({ lines: { $elemMatch: { qty: { $gte: 5 }, price: { $lt: 20000 } } } })
+```
+
+## Lỗi hay gặp
+
+Hai điều kiện dot notation, tưởng cùng nói về một dòng:
+
+```js
+// WRONG: sku and qty may come from different lines (orders 1 and 5)
+db.orders.find({ "lines.sku": "p4", "lines.qty": { $gte: 2 } }, { _id: 1 })
+```
+
+```js
+// FIX: $elemMatch puts both conditions on one line (order 5)
+db.orders.find({ lines: { $elemMatch: { sku: "p4", qty: { $gte: 2 } } } }, { _id: 1 })
+```
+
+So bằng cả mảng khi không quan tâm thứ tự:
+
+```js
+// WRONG: an exact array, so ["hot", "gift"] does not match
+db.products.find({ tags: ["gift", "hot"] })
+```
+
+```js
+// FIX: $all ignores the order
+db.products.find({ tags: { $all: ["gift", "hot"] } })
 ```
 
 ## Thực hành
 
 Trước khi làm, đoán câu hỏi dự đoán: điều kiện dot notation không có `$elemMatch` trả về đơn nào? Rồi làm năm bước.
 
+## Tóm tắt
+
+- Giá trị đơn trên mảng khớp khi một phần tử bằng nó.
+- Mảng làm giá trị so bằng cần đúng phần tử và thứ tự; `$all` bỏ qua thứ tự.
+- `$size` so độ dài mảng bằng một số.
+- Dot notation đi xuyên qua mảng tài liệu, mỗi điều kiện có thể khớp phần tử khác.
+- `$elemMatch` bắt mọi điều kiện đúng trên cùng một phần tử.
+
 # EN
+
+## Opening
+
+The warehouse asks: which orders have one line for product `"p4"` with a quantity of 2 or more? The lines sit in an array of documents. How do you write two conditions so they talk about the same line?
 
 ## Key idea
 
@@ -138,12 +221,72 @@ The key trap: several dot-notation conditions on the same array can be met by di
 
 You can now: find the right documents by what their arrays hold, including arrays of embedded documents.
 
+## Syntax
+
+```text
+{ <array>: <value> }
+{ <array>: { $all: [ <value>, <value> ] } }
+{ <array>: { $size: <n> } }
+{ <array>: { $elemMatch: { <field>: <condition>, <field>: <condition> } } }
+```
+
+- A plain value: matches when one element equals it.
+- `$elemMatch`: every condition inside must hold on the same element.
+
 ## Example
+
+Products tagged `"gift"`:
+
+```js
+db.products.find({ tags: "gift" })
+```
+
+Products with both `"hot"` and `"cold"`, in any order:
+
+```js
+db.products.find({ tags: { $all: ["cold", "hot"] } })
+```
+
+Orders with one line that has a quantity of at least 5 and a price under 20000:
 
 ```js
 db.orders.find({ lines: { $elemMatch: { qty: { $gte: 5 }, price: { $lt: 20000 } } } })
 ```
 
+## Common mistakes
+
+Two dot-notation conditions, expected to talk about one line:
+
+```js
+// WRONG: sku and qty may come from different lines (orders 1 and 5)
+db.orders.find({ "lines.sku": "p4", "lines.qty": { $gte: 2 } }, { _id: 1 })
+```
+
+```js
+// FIX: $elemMatch puts both conditions on one line (order 5)
+db.orders.find({ lines: { $elemMatch: { sku: "p4", qty: { $gte: 2 } } } }, { _id: 1 })
+```
+
+Equality on a whole array when order does not matter:
+
+```js
+// WRONG: an exact array, so ["hot", "gift"] does not match
+db.products.find({ tags: ["gift", "hot"] })
+```
+
+```js
+// FIX: $all ignores the order
+db.products.find({ tags: { $all: ["gift", "hot"] } })
+```
+
 ## Practice
 
 Before you start, answer the prediction: which orders does the dot-notation filter without `$elemMatch` return? Then do the five steps.
+
+## Recap
+
+- A plain value on an array matches when one element equals it.
+- An array as an equality value needs the same elements in order; `$all` ignores order.
+- `$size` compares an array's length with a number.
+- Dot notation reaches through an array of documents; each condition may match a different element.
+- `$elemMatch` makes every condition hold on the same element.

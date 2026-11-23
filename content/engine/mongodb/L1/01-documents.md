@@ -17,6 +17,7 @@ objectives:
   - vi: Biết database và collection được tạo ngầm ở lần ghi đầu, cách xóa chúng, và hai loại collection đặc biệt (capped, time series).
     en: Know that databases and collections are created implicitly on the first write, how to drop them, and two special kinds of collection (capped, time series).
 requires: []
+demo_setup: '{"collections": {"items": [{"_id": 1, "sku": "A1", "price": 25000}, {"_id": 2, "sku": "A2", "price": "25000"}, {"_id": 3, "sku": "A3", "price": 40000}]}}'
 sources:
   - https://www.mongodb.com/docs/manual/core/document/
   - https://www.mongodb.com/docs/manual/reference/bson-types/
@@ -76,6 +77,7 @@ quiz:
       - vi: Chưa, database chỉ được tạo khi ghi dữ liệu lần đầu
         en: Not yet, a database is created only when data is first written
     answer: 1
+    trap: 0
     why:
       vi: "Nghe hợp lý khi nghĩ `use` giống `CREATE DATABASE`. Nhưng `use` chỉ chọn database; MongoDB tạo database và collection khi bạn ghi dữ liệu vào lần đầu, ví dụ một `insertOne`."
       en: "It sounds right to think `use` works like `CREATE DATABASE`. But `use` only selects the database; MongoDB creates the database and the collection when you first write data to them, for example with one `insertOne`."
@@ -94,6 +96,10 @@ quiz:
       vi: "Collection capped có cỡ cố định và giữ thứ tự ghi vào. Khi đầy, nó ghi đè tài liệu cũ nhất, như một bộ đệm vòng. Docs chính thức nói thường nên dùng TTL index hoặc collection time series thay cho capped, vì chúng linh hoạt hơn."
       en: "A capped collection has a fixed size and keeps insertion order. When it is full it overwrites the oldest documents, like a ring buffer. The docs say a TTL index or a time series collection is usually a better choice than capped, since they are more flexible."
 ---
+## Mở bài
+
+Một khách hàng có hai địa chỉ và năm nhãn. Trong SQL bạn sẽ cần ba bảng. Trong MongoDB, tất cả nằm trong một tài liệu; vậy tài liệu đó trông thế nào?
+
 ## Ý chính
 
 MongoDB lưu dữ liệu thành tài liệu (document): các cặp tên và giá trị, giống JSON. Các tài liệu cùng loại nằm trong một collection, tương tự một bảng nhưng không bắt mọi tài liệu có cùng các trường.
@@ -106,26 +112,25 @@ Giá trị của một trường có thể là:
 
 Trên đĩa và trên mạng, tài liệu được mã hóa thành BSON (JSON nhị phân). BSON có thêm kiểu mà JSON không có: `ObjectId` (12 byte: 4 byte thời điểm tạo, 5 byte ngẫu nhiên, 3 byte bộ đếm), `Date` (số mili giây từ 1970, UTC), `int`, `long`, `double` và `Decimal128` cho số thập phân chính xác.
 
-## Ví dụ
-
-Mọi tài liệu có trường `_id`, duy nhất trong collection. Không đặt thì MongoDB tự sinh một `ObjectId`.
-
-Hai giới hạn: một tài liệu tối đa 16 MiB, và lồng tối đa 100 tầng.
-
-Làm được: đọc một tài liệu, gọi đúng tên từng phần, và chọn kiểu BSON hợp cho tiền, ngày và mã.
+Mọi tài liệu có trường `_id`, duy nhất trong collection. Không đặt thì MongoDB tự sinh một `ObjectId`. Hai giới hạn: một tài liệu tối đa 16 MiB, và lồng tối đa 100 tầng.
 
 Database và collection không cần lệnh tạo trước: `use shop` chỉ chọn database, và lần ghi đầu (ví dụ `insertOne`) tạo cả database lẫn collection. Lệnh `drop` xóa một collection cùng mọi index của nó; `dropDatabase` xóa database đang chọn. Hai loại collection phải tạo rõ bằng `createCollection`: capped (cỡ cố định, đầy thì ghi đè tài liệu cũ nhất) và time series (cho số đo theo thời gian, xem bài L5).
 
-```javascript
-use shop
-db.orders.insertOne({ total: 120000 })   // creates shop and orders
-db.createCollection("events", { capped: true, size: 1048576, max: 1000 })
-db.createCollection("readings", { timeseries: { timeField: "ts", metaField: "sensor" } })
-db.events.drop()
-db.dropDatabase()
+## Cú pháp
+
+```text
+{ _id: <value>, <field>: <value>, <field>: { <field>: <value> }, <field>: [ <value>, <value> ] }
 ```
 
-```js
+- `{ }` là tài liệu (hay tài liệu nhúng), `[ ]` là mảng.
+- `_id` bắt buộc và duy nhất; thiếu thì MongoDB sinh `ObjectId`.
+- Kiểu của giá trị là kiểu BSON: chuỗi, số (`int`, `long`, `double`, `Decimal128`), `Date`, `ObjectId`…
+
+## Ví dụ
+
+Một khách hàng trong mongosh:
+
+```text
 {
   _id: ObjectId("6716f0a1c2b3d4e5f6a7b8c9"),
   name: "An",
@@ -138,11 +143,59 @@ db.dropDatabase()
 
 `address` là tài liệu nhúng, `tags` là mảng, `joined` là kiểu Date, `balance` là Decimal128.
 
-## Thực hành
+Tạo ngầm và tạo rõ (lệnh của máy chủ, trình duyệt không chạy):
 
-Bấm qua sơ đồ để xem từng trường được mã hóa thành kiểu BSON nào, rồi trả lời năm câu hỏi.
+```text
+use shop
+db.orders.insertOne({ total: 120000 })   // creates shop and orders
+db.createCollection("events", { capped: true, size: 1048576, max: 1000 })
+db.createCollection("readings", { timeseries: { timeField: "ts", metaField: "sensor" } })
+db.events.drop()
+db.dropDatabase()
+```
+
+Kiểu là một phần của giá trị. Collection `items` có giá lưu bằng số và một giá lưu bằng chuỗi; `$type` tìm ra giá lưu bằng chuỗi:
+
+```js
+db.items.find({ price: { $type: "string" } })
+```
+
+## Lỗi hay gặp
+
+Lưu số dưới dạng chuỗi, rồi so sánh như số:
+
+```js
+// WRONG: item A2 stores "25000" as a string, so the number comparison skips it
+db.items.find({ price: { $lt: 30000 } })
+```
+
+```js
+// FIX: find the values stored with the wrong type, then store them as numbers
+db.items.find({ price: { $type: "string" } })
+```
+
+Tự đặt `_id` trùng với tài liệu đã có:
+
+```js
+// ERROR duplicate_key
+db.items.insertOne({ _id: 1, sku: "A4", price: 52000 })
+```
+
+MongoDB thật báo lỗi khóa trùng mã 11000, vì `_id` luôn có index duy nhất.
+
+## Tóm tắt
+
+- Tài liệu là các cặp tên và giá trị; collection gom tài liệu cùng loại.
+- Giá trị có thể là giá trị đơn, tài liệu nhúng `{ }` hoặc mảng `[ ]`.
+- BSON có thêm `ObjectId`, `Date`, `Decimal128`; tiền chính xác dùng `Decimal128`.
+- Mỗi tài liệu có `_id` duy nhất và tối đa 16 MiB.
+- Database và collection được tạo ở lần ghi đầu; capped và time series tạo bằng `createCollection`.
 
 # EN
+
+## Opening
+
+A customer has two addresses and five tags. In SQL you would need three tables. In MongoDB it all sits in one document; so what does that document look like?
 
 ## Key idea
 
@@ -156,26 +209,25 @@ A field's value can be:
 
 On disk and on the wire, documents are encoded as BSON (binary JSON). BSON adds types that JSON lacks: `ObjectId` (12 bytes: 4-byte creation time, 5 random bytes, 3-byte counter), `Date` (milliseconds since 1970, UTC), `int`, `long`, `double` and `Decimal128` for exact decimals.
 
-## Example
-
-Every document has an `_id` field, unique in its collection. If you leave it out, MongoDB generates an `ObjectId`.
-
-Two limits: a document is at most 16 MiB, and nesting goes at most 100 levels deep.
-
-You can now: read a document, name each part correctly, and pick a suitable BSON type for money, dates and codes.
+Every document has an `_id` field, unique in its collection. If you leave it out, MongoDB generates an `ObjectId`. Two limits: a document is at most 16 MiB, and nesting goes at most 100 levels deep.
 
 Databases and collections need no create command first: `use shop` only selects the database, and the first write (for example `insertOne`) creates both the database and the collection. `drop` removes a collection with all its indexes; `dropDatabase` removes the selected database. Two kinds of collection must be created explicitly with `createCollection`: capped (fixed size, overwrites the oldest documents when full) and time series (for measurements over time, see the L5 lesson).
 
-```javascript
-use shop
-db.orders.insertOne({ total: 120000 })   // creates shop and orders
-db.createCollection("events", { capped: true, size: 1048576, max: 1000 })
-db.createCollection("readings", { timeseries: { timeField: "ts", metaField: "sensor" } })
-db.events.drop()
-db.dropDatabase()
+## Syntax
+
+```text
+{ _id: <value>, <field>: <value>, <field>: { <field>: <value> }, <field>: [ <value>, <value> ] }
 ```
 
-```js
+- `{ }` is a document (or an embedded document), `[ ]` is an array.
+- `_id` is required and unique; if it is missing, MongoDB generates an `ObjectId`.
+- A value's type is a BSON type: string, number (`int`, `long`, `double`, `Decimal128`), `Date`, `ObjectId`…
+
+## Example
+
+A customer in mongosh:
+
+```text
 {
   _id: ObjectId("6716f0a1c2b3d4e5f6a7b8c9"),
   name: "An",
@@ -188,6 +240,50 @@ db.dropDatabase()
 
 `address` is an embedded document, `tags` is an array, `joined` is a Date, `balance` is a Decimal128.
 
-## Practice
+Implicit and explicit creation (server commands, the browser does not run them):
 
-Step through the diagram to see which BSON type each field is encoded as, then answer the five questions.
+```text
+use shop
+db.orders.insertOne({ total: 120000 })   // creates shop and orders
+db.createCollection("events", { capped: true, size: 1048576, max: 1000 })
+db.createCollection("readings", { timeseries: { timeField: "ts", metaField: "sensor" } })
+db.events.drop()
+db.dropDatabase()
+```
+
+The type is part of the value. Collection `items` stores prices as numbers and one price as a string; `$type` finds the one stored as a string:
+
+```js
+db.items.find({ price: { $type: "string" } })
+```
+
+## Common mistakes
+
+Storing a number as a string, then comparing it as a number:
+
+```js
+// WRONG: item A2 stores "25000" as a string, so the number comparison skips it
+db.items.find({ price: { $lt: 30000 } })
+```
+
+```js
+// FIX: find the values stored with the wrong type, then store them as numbers
+db.items.find({ price: { $type: "string" } })
+```
+
+Choosing an `_id` that another document already has:
+
+```js
+// ERROR duplicate_key
+db.items.insertOne({ _id: 1, sku: "A4", price: 52000 })
+```
+
+A real MongoDB reports a duplicate key error with code 11000, because `_id` always has a unique index.
+
+## Recap
+
+- A document is name and value pairs; a collection groups documents of one kind.
+- A value can be a plain value, an embedded document `{ }` or an array `[ ]`.
+- BSON adds `ObjectId`, `Date`, `Decimal128`; exact money uses `Decimal128`.
+- Each document has a unique `_id` and is at most 16 MiB.
+- Databases and collections are created by the first write; capped and time series ones by `createCollection`.

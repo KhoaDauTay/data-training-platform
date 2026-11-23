@@ -61,7 +61,42 @@ lab:
       hint:
         vi: "Thêm đối số thứ ba `{ upsert: true }`. `$inc` trên trường chưa có sẽ đặt trường đó bằng số cộng thêm."
         en: "Add a third argument `{ upsert: true }`. `$inc` on a missing field sets it to the increment."
+quiz:
+  - q:
+      vi: 'Bạn chạy `db.products.updateOne({ _id: "p2" }, { price: 115000 })`. Chuyện gì xảy ra?'
+      en: 'You run `db.products.updateOne({ _id: "p2" }, { price: 115000 })`. What happens?'
+    options:
+      - vi: '`price` của `p2` thành 115000, các trường khác giữ nguyên'
+        en: 'The `price` of `p2` becomes 115000, other fields stay'
+      - vi: Lệnh bị từ chối vì tài liệu update thiếu toán tử như `$set`
+        en: The command is refused because the update document has no operator such as `$set`
+      - vi: 'Tài liệu `p2` bị thay bằng `{ _id: "p2", price: 115000 }`'
+        en: 'Document `p2` is replaced by `{ _id: "p2", price: 115000 }`'
+    answer: 1
+    trap: 0
+    why:
+      vi: 'Nghe hợp lý vì giống `SET price = 115000` trong SQL, nhưng `updateOne` đòi tài liệu update có toán tử (`$set`, `$inc`…). Thay cả tài liệu là việc của `replaceOne`, nên MongoDB không đoán và từ chối.'
+      en: 'It sounds right because it reads like `SET price = 115000` in SQL, but `updateOne` requires an update document with operators (`$set`, `$inc`…). Replacing a whole document is the job of `replaceOne`, so MongoDB does not guess and refuses.'
+  - q:
+      vi: 'Không có sản phẩm `"p11"`. Bạn chạy `db.products.updateOne({ _id: "p11" }, { $inc: { stock: 5 } })` (không có `upsert`). Kết quả là gì?'
+      en: 'There is no product `"p11"`. You run `db.products.updateOne({ _id: "p11" }, { $inc: { stock: 5 } })` (no `upsert`). What is the result?'
+    options:
+      - vi: 'Tài liệu `p11` được tạo với `stock` bằng 5'
+        en: 'Document `p11` is created with `stock` equal to 5'
+      - vi: 'Lệnh báo lỗi không tìm thấy'
+        en: 'The command fails with a not-found error'
+      - vi: 'Không có gì thay đổi: `matchedCount` bằng 0, không lỗi'
+        en: 'Nothing changes: `matchedCount` is 0, no error'
+    answer: 2
+    trap: 0
+    why:
+      vi: 'Nghe hợp lý vì `$inc` trên trường thiếu sẽ tạo trường, nhưng chỉ khi có tài liệu để sửa. Không khớp gì thì update không làm gì và không báo lỗi; muốn tạo mới phải thêm `{ upsert: true }`.'
+      en: 'It sounds right because `$inc` on a missing field creates the field, but only when there is a document to change. When nothing matches, the update does nothing and raises no error; to create the document you must add `{ upsert: true }`.'
 ---
+## Mở bài
+
+Giá cà phê đổi, hàng nhập thêm, một sản phẩm mới có thể đã có hoặc chưa. Ghi đè cả tài liệu cho từng thay đổi nhỏ vừa phí vừa dễ mất dữ liệu. Làm sao chỉ sửa đúng trường cần sửa?
+
 ## Ý chính
 
 `updateOne(filter, update)` sửa tài liệu khớp đầu tiên, `updateMany(filter, update)` sửa mọi tài liệu khớp. Tài liệu update dùng toán tử:
@@ -76,20 +111,81 @@ Upsert: với `{ upsert: true }`, nếu không có tài liệu nào khớp, Mong
 
 Một lệnh update trên một tài liệu luôn nguyên tử (atomic): mọi thay đổi trong lệnh cùng xảy ra hoặc không cái nào xảy ra.
 
+Làm được: sửa đúng trường trên đúng tài liệu và ghi "sửa hoặc tạo" trong một lệnh.
+
+## Cú pháp
+
+```text
+db.<collection>.updateOne(<filter>, { $set: { <field>: <value> }, $inc: { <field>: <number> }, $unset: { <field>: "" } })
+db.<collection>.updateMany(<filter>, <update>)
+db.<collection>.updateOne(<filter>, <update>, { upsert: true })
+```
+
+- Tài liệu update luôn bắt đầu bằng toán tử.
+- Mỗi trường chỉ chịu một toán tử trong một lệnh.
+- `upsert: true` tạo tài liệu khi không có gì khớp.
+
 ## Ví dụ
 
-Làm được: sửa đúng trường trên đúng tài liệu và ghi "sửa hoặc tạo" trong một lệnh.
+Đánh dấu mọi sản phẩm sắp hết:
 
 ```js
 db.products.updateMany({ stock: { $lt: 5 } }, { $set: { lowStock: true } })
+```
+
+Bán 2 hộp `"p1"`, trừ tồn kho bằng số âm:
+
+```js
 db.products.updateOne({ _id: "p1" }, { $inc: { stock: -2 } })
+```
+
+## Lỗi hay gặp
+
+Quên toán tử, như viết `SET` của SQL:
+
+```js
+// ERROR bad_update
+db.products.updateOne({ _id: "p2" }, { price: 115000 })
+```
+
+MongoDB thật cũng từ chối: tài liệu update của `updateOne` phải có toán tử.
+
+Sửa một tài liệu chưa có mà quên `upsert`:
+
+```js
+// WRONG: no product p10 exists, so nothing changes
+db.products.updateOne({ _id: "p10" }, { $set: { name: "Sesame candy", price: 20000 } })
+```
+
+```js
+// FIX: upsert creates it from the filter's _id
+db.products.updateOne({ _id: "p10" }, { $set: { name: "Sesame candy", price: 20000 } }, { upsert: true })
+```
+
+Hai toán tử trên cùng một trường:
+
+```js
+// ERROR mingo
+db.products.updateOne({ _id: "p2" }, { $set: { price: 115000 }, $inc: { price: 1000 } })
 ```
 
 ## Thực hành
 
 Bốn bước trên `products`, mỗi bước bắt đầu lại từ dữ liệu gốc.
 
+## Tóm tắt
+
+- `updateOne` sửa tài liệu khớp đầu tiên, `updateMany` sửa mọi tài liệu khớp.
+- `$set` đặt, `$inc` cộng, `$unset` xóa trường; thiếu toán tử là lỗi.
+- Không khớp gì thì update không làm gì và không báo lỗi.
+- `{ upsert: true }` tạo tài liệu mới từ điều kiện bằng của filter.
+- Một update trên một tài liệu là nguyên tử.
+
 # EN
+
+## Opening
+
+The price of coffee changes, stock arrives, and a new product may or may not exist yet. Overwriting the whole document for each small change is wasteful and can lose data. How do you change only the fields that need it?
 
 ## Key idea
 
@@ -105,15 +201,72 @@ Upsert: with `{ upsert: true }`, if no document matches, MongoDB builds a new do
 
 An update on a single document is always atomic: every change in the command happens, or none does.
 
+You can now: change the right fields on the right documents and write "update or create" as one command.
+
+## Syntax
+
+```text
+db.<collection>.updateOne(<filter>, { $set: { <field>: <value> }, $inc: { <field>: <number> }, $unset: { <field>: "" } })
+db.<collection>.updateMany(<filter>, <update>)
+db.<collection>.updateOne(<filter>, <update>, { upsert: true })
+```
+
+- An update document always starts with operators.
+- Each field takes only one operator per command.
+- `upsert: true` creates a document when nothing matches.
+
 ## Example
 
-You can now: change the right fields on the right documents and write "update or create" as one command.
+Flag every product that is running low:
 
 ```js
 db.products.updateMany({ stock: { $lt: 5 } }, { $set: { lowStock: true } })
+```
+
+Sell 2 boxes of `"p1"`, taking stock down with a negative number:
+
+```js
 db.products.updateOne({ _id: "p1" }, { $inc: { stock: -2 } })
+```
+
+## Common mistakes
+
+Leaving out the operator, as in an SQL `SET`:
+
+```js
+// ERROR bad_update
+db.products.updateOne({ _id: "p2" }, { price: 115000 })
+```
+
+A real MongoDB refuses it too: the update document of `updateOne` must hold operators.
+
+Updating a document that does not exist yet and forgetting `upsert`:
+
+```js
+// WRONG: no product p10 exists, so nothing changes
+db.products.updateOne({ _id: "p10" }, { $set: { name: "Sesame candy", price: 20000 } })
+```
+
+```js
+// FIX: upsert creates it from the filter's _id
+db.products.updateOne({ _id: "p10" }, { $set: { name: "Sesame candy", price: 20000 } }, { upsert: true })
+```
+
+Two operators on the same field:
+
+```js
+// ERROR mingo
+db.products.updateOne({ _id: "p2" }, { $set: { price: 115000 }, $inc: { price: 1000 } })
 ```
 
 ## Practice
 
 Four steps on `products`; each step starts again from the original data.
+
+## Recap
+
+- `updateOne` changes the first match, `updateMany` every match.
+- `$set` sets, `$inc` adds, `$unset` removes a field; no operator is an error.
+- When nothing matches, an update does nothing and raises no error.
+- `{ upsert: true }` builds a new document from the filter's equality conditions.
+- An update on one document is atomic.
