@@ -328,6 +328,17 @@
   after:
     vi: đọc `Gather` và `JIT:` trong kế hoạch, và biết khi nào một câu không được chạy song song
     en: read `Gather` and `JIT:` in a plan, and know when a query cannot run in parallel
+- id: analytic-plans
+  module: analytic-plans
+  level: L4
+  vi: Kế hoạch của truy vấn phân tích
+  en: Plans of analytic queries
+  title:
+    vi: Kế hoạch của truy vấn phân tích
+    en: Plans of analytic queries
+  after:
+    vi: đọc kế hoạch của câu có hàm cửa sổ, anti join hoặc CTE, chỉ ra nút sắp hay nút băm đến từ đâu, và đổi index hoặc cách viết để bỏ nó
+    en: read the plan of a query with a window function, an anti join or a CTE, say where its sort or hash comes from, and change the index or the query to remove it
 - id: capstone-l4
   module: capstone-l4
   level: L4

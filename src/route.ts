@@ -139,6 +139,9 @@ export function engineInterviewOf(hash: string): { set?: string; th?: string } |
   return /^(pg|mg|dy)-(junior|mid|senior|staff)-[1-3]$|^again$/.test(x) ? { set: x } : /^e-iv-(pg|mg|dy)-th-[1-9]$/.test(x) ? { th: x } : {};
 }
 export const engineInterviewHash = (x?: string): string => `#/engine/interview${x ? `/${x}` : ''}`;
+/** v28 (L430): `#/engine/compare` (the "Which engine?" page) → true; checked before engineRouteOf, which drops `compare`. */
+export const engineCompareOf = (hash: string): boolean => /^#\/?engine\/compare(?=$|[/?])/.test(hash);
+export const engineCompareHash = (): string => '#/engine/compare';
 /** The engine, level or lesson page's hash. */
 export const engineHash = (engine: string, level?: string, lesson?: string): string =>
   `#/engine/${engine}${level ? `/${level}${lesson ? `/${lesson}` : ''}` : ''}`;
