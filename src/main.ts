@@ -29,7 +29,7 @@ import { errorText } from './ui/feedback';
 import { leftHello, leftHome, renderHome, syncLily } from './ui/homeView';
 import { initStage, playCompletion, relabelStage } from './ui/stage';
 import { prefetchArt } from './art/load';
-import { renderInbox } from './ui/inbox';
+import { markInboxSeen, renderInbox } from './ui/inbox';
 import { createPanel, registerCoreTabs } from './ui/tabs';
 import { coachDone, initTour, refreshGuides, refreshTour } from './ui/coach';
 import { initSound, relabelSound } from './ui/sound';
@@ -511,6 +511,10 @@ Object.assign(actions, {
 });
 
 byId('inbox-btn').addEventListener('click', () => (byId('inbox-dialog') as HTMLDialogElement).showModal());
+byId('inbox-dialog').addEventListener('close', () => { // L313: what the Inbox showed is no longer new
+  markInboxSeen();
+  renderInbox();
+});
 byId('notebook-btn').addEventListener('click', () => toggleNotebook(byId('notebook-dialog') as HTMLDialogElement));
 initSound(); // ui-ux-v7 X2 (L148): the ⋯ menu's sound switch, off by default
 byId('replay-btn').addEventListener('click', () => openWelcome(true)); // v4 D-O2: the static version (V10)

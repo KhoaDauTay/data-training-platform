@@ -5,8 +5,26 @@ import { actions, app, done, unlockedTables } from '../state';
 import { cx, DEPT_CHIP, deptColor } from '../theme';
 import { textOf, type Ticket } from '../tickets';
 import { avatar } from './avatar';
+import { readJson, writeJson } from '../storage';
 import { byId, h } from './dom';
 import { noDomain, setActionButton } from './topbar';
+
+/**
+ * L313: task ids the player has seen in the Inbox (device pref, any domain, never the Save). The badge counts open tasks not
+ * seen yet, so opening and closing the Inbox clears it; a newly opened task raises it again.
+ */
+export const INBOX_SEEN_KEY = 'cargo-query/inbox-seen';
+const readSeen = (): string[] => {
+  const v = readJson<unknown>(INBOX_SEEN_KEY);
+  return Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string' && x.length <= 60).slice(-600) : [];
+};
+export const unseenCount = (fresh: readonly string[], seen: readonly string[]): number => fresh.filter((id) => !seen.includes(id)).length;
+let freshIds: string[] = [];
+/** The Inbox dialog closed: everything it listed as new has been seen. */
+export function markInboxSeen(): void {
+  const seen = readSeen();
+  writeJson(INBOX_SEEN_KEY, [...seen, ...freshIds.filter((id) => !seen.includes(id))].slice(-600));
+}
 
 /** One conversation per colleague (L18 ★1): the thread with the newest ticket first, newest ticket first inside it. */
 export function renderInbox(): void {
@@ -15,7 +33,8 @@ export function renderInbox(): void {
   const passed = passedChapters(app.tickets, d);
   const fresh = visible.filter((x) => !d.has(x.id) && !isOptional(x, d, passed)).length; // L145: optional tasks are no news
   // v15: the open domain's mail is no news to a "SQL only" player or in the General workspace (no red dot there).
-  const badge = noDomain() ? 0 : fresh;
+  freshIds = visible.filter((x) => !d.has(x.id) && !isOptional(x, d, passed)).map((x) => x.id);
+  const badge = noDomain() ? 0 : unseenCount(freshIds, readSeen());
   setActionButton(byId('inbox-btn'), t('top.inbox'), badge, t('top.inboxNew', { n: badge }));
   const lang = getLang();
   const threads = new Map<string, Ticket[]>();
