@@ -22,13 +22,21 @@ planner cost and node types, never milliseconds. Scripts (scratch worktree, not 
   p95 = 6×, p99 = 85× a full read of the biggest table the query touches. A budget of "cost ≤ max(1,000, 10 × full read of
   the biggest table touched)" fails **9 Solutions** (§4.2): ch7-04, ch7-06 s1–s3 (correlated subqueries, cost 48–55k),
   ch6-06 s2–s3, interview take-home 2 s2–s3, g-a7-2. No Solution reads a big table by Seq Scan through a selective
-  filter on an indexed column. Engine labs: max cost 3,266, so none would fail.
+  filter on an indexed column. Engine labs: max cost 3,266, so none would fail. **After S1 (ANALYZE)** real statistics
+  expose 5 more, all the "latest rate on or before the date" range join (ch8-04, ch8-06 s1–s3, ch12-01, ch12-02, ch12-06):
+  for example ch8-06 s1 goes from 1,202 to 25,015. A `LATERAL … ORDER BY rate_date DESC LIMIT 1` rewrite gives the same rows at
+  1,289 (ch8-04: 1,485 → 251).
 - **Gate (CI).** A new test `tests/perfGate.test.ts` checks two rules on every Solution: the cost budget above, and "no non-sargable
   Seq Scan". An allow-list holds what is slow on purpose, with a reason for each entry.
 - **Learner grading.** Cost ratio alone does not work: on Logistics the planner *under*-estimates `date_trunc`/`to_char`
   filters, so non-sargable rewrites score ×0.93–1.08. A weak pass needs **either** an index lost (the Solution reads table T
-  through an index and the answer Seq Scans it) **or** a cost ratio above 1.5 on `perf:` steps (3 everywhere else). Measured on
-  15 slow and 8 good rewrites: no false positive. It misses only rewrites that really cost the same, because no index exists.
+  through an index and the answer Seq Scans it; scoped to the step's named table) **or** a cost ratio above 1.5 on `perf:` steps.
+  Everywhere else the trigger is ratio > 3 **and** answer cost > 1,000. Measured on 17 slow and 8 good rewrites: no false
+  positive. Without the table scope, index loss flags one good rewrite (ch10-03 `DISTINCT ON`).
+  It misses only rewrites that really cost the same, because no index exists.
+- **Migration checked on a patched copy.** S1 ANALYZE + incoterm FK on `seed.sql`, and the §2.1 `lab` identity/CHECK/index DDL:
+  1104 + 1793 tests run (planCheck incl. SLOW, snapshot cost pin, seed md5, content, lanes, lab md5, general, lessons,
+  interviewRoom, engineContent, tryPreview, sqlWords, noDeadEnds). **0 fail.**
 
 ## 1. Schema audit (catalog, not grep)
 
@@ -95,7 +103,7 @@ Ids and values stay (Save ids untouched; md5 pins untouched). Every decision is 
 
 | Domain | Item | Decision | Later lesson it feeds |
 |---|---|---|---|
-| Logistics | ANALYZE the 14 tables (S1) | **Fix** (one line at the end of the Plan 5 block) | none; correctness of every plan |
+| Logistics | ANALYZE the 14 tables (S1) | **Fix** (one line at the end of the Plan 5 block); then decide the 5 range-join Solutions in §4.2 | none; correctness of every plan |
 | Logistics | `shipments.incoterm` FK (S5) | **Fix** (`ALTER TABLE … ADD FOREIGN KEY`, measured: 0 shipments with an incoterm missing from `incoterms`) | none |
 | Logistics | `container_events.container_id` no index | **Keep** (ch11 index lab) | ch11-04/06 |
 | Logistics | `rate_contracts` no lookup index (S8) | **Keep**, then a new ch11 or Engine-chip task: "the July margin report is slow: add the index" (measured 54,975 → 27,977; the JOIN rewrite gives 304, ×0.01) | correlated subquery vs JOIN; composite index |
@@ -113,11 +121,11 @@ Rule for any Keep: the seed header names it, and a later task that "fixes" it do
 
 | Change | Files that change | Tests and pins |
 |---|---|---|
-| lab identity + `setval` | `src/db/lab.sql` | `tests/lab.test.ts` md5 unchanged (row text equal); add a test that `INSERT INTO lab.orders (customer_id, …)` without an id succeeds |
-| lab CHECKs + indexes | `src/db/lab.sql` | the costs of every lab Solution move (indexes change plans): re-run `general.test.ts`, `lessons.test.ts`, `interviewRoom.test.ts`, and the 16 `plan:` drills (each must still read its table through an index) |
+| lab identity + `setval` | `src/db/lab.sql` | **measured**: `tests/lab.test.ts` md5 unchanged. Add a test that `INSERT INTO lab.orders (customer_id, …)` without an id succeeds |
+| lab CHECKs + 6 indexes | `src/db/lab.sql` | **measured**: every CHECK holds on the seed data; lab, general, lessons, interviewRoom, engineContent, tryPreview, sqlWords and noDeadEnds all pass (1793 tests); the 16 `plan:` drills still read through an index. The cost of 22 of 387 lab Solutions moves, and no new gate offender appears |
 | `lab.events_big` (new block) | `src/db/lab.sql`, new drills in `content/general/*.yml`, `scripts/offline.mjs` needs no change (it already hashes `lab.sql`) | new md5 entry; seed time measured (budget: total lab seed ≤ 1 s in Node) |
-| Logistics ANALYZE + incoterm FK | `src/db/seed.sql` (end of the Plan 5 block) | `tests/seed.test.ts` md5 unchanged (no data change); `tests/snapshot.test.ts` ch11 `Total Cost` pin: ch11-04 cost stays 2,168 (measured), but re-run it; `tests/planCheck.test.ts`: all 12 `plan:` steps still pass (measured), **re-run SLOW** (each must still fail) and the lab `max_cost_ratio` |
-| Engine setups | `content/engine/postgres/L1,L2,L4/*.md` (only those in §2.2) | `tests/enginePgLabs.L*.test.ts`, `enginePredict.test.ts`, `engineIntegration.test.ts` |
+| Logistics ANALYZE + incoterm FK | `src/db/seed.sql` (end of the Plan 5 block) | **measured**: `seed.test.ts` md5, the `snapshot.test.ts` ch11 `Total Cost` pin, `planCheck.test.ts` (12 `plan:` steps pass, all 6 SLOW still fail, lab `max_cost_ratio` holds), `content.test.ts` (every `wrong:` still differs) and `lanes.test.ts` all pass (1104 tests). 0 shipments have an incoterm missing from `incoterms`. Side effect: 5 range-join Solutions go over the gate budget (§4.2) |
+| Engine setups | `content/engine/postgres/L1,L2,L4/*.md` (§2.2 lists **candidates, not measured**: L4-04/05/16 carry `predict.expect` and capstone plans, and a new PK on L2-05/L4-03/L4-15 adds an index. Patch one lab at a time and re-run its shard) | `tests/enginePgLabs.L*.test.ts`, `enginePredict.test.ts`, `engineIntegration.test.ts` |
 | Snapshot | none: `__SEED_HASH__` hashes the seed files, so a changed `lab.sql`/`seed.sql` already drops old snapshots. **`SNAPSHOT_FORMAT` bump only if `ensureSchema`/`SANDBOX_SETUP_SQL` change** (not needed by this plan) | `tests/snapshot.test.ts` |
 | Save | none: no id of a ticket, drill or engine lesson changes; `completed` is untouched | fixtures v1–v5 untouched |
 
@@ -166,8 +174,9 @@ Recommended: **K = 10, FLOOR = 1,000** for tickets, lanes, drills, lessons and i
 with no norm, because catalog and function scans make norm meaningless there (max today 3,266, 0 fail).
 
 **Sargability rule:** fail when a Seq Scan reads a table of ≥ 5,000 rows, its Filter names a column that some index leads with,
-and the planner estimates that the filter keeps ≤ 5 % of the table. Today **0 Solutions** hit it. On the four `SLOW` queries
-of `tests/planCheck.test.ts` (known right-but-slow) it fires **4/4**, `booking_date::text >=` included (estimate 33 rows).
+and the planner estimates that the filter keeps ≤ 5 % of the table. Today **0 Solutions** hit it, before and after S1. On all
+six `SLOW` queries of `tests/planCheck.test.ts` (known right-but-slow) it fires **6/6**, `booking_date::text >=` (estimate 33 rows)
+and `upper(ref)` included.
 It also fires on `extract(year …)` and `to_char` rewrites of ch2-03/ch4-02. There a whole-table read is right anyway,
 which is why the learner rule (§5) compares against the Solution's plan instead.
 
@@ -180,6 +189,11 @@ which is why the learner rule (§5) compares against the Solution's plan instead
 | ch6-06 s2, s3 | 11,308 / 11,022 | `JOIN shipments ON customer_id IN (a.id, b.id)` cannot hash, and `customers` was never analysed | after S1 ANALYZE: 2,852 / 2,864 (norm 5.3): **passes** | fixed by S1 |
 | g-iv-th-2-2, 2-3 | 2,643 / 2,694 | `EXISTS` per customer over `orders` | index `orders (customer_id, order_date)` → 1,718 | allow-list now; under budget once lab gets the composite index (§2.1 could add it) |
 | g-a7-2 | 3,429 | `jsonb_array_elements_text` lateral × products | none (a function scan) | allow-list: the a7 node teaches JSON unnesting |
+| *after S1:* ch8-04, ch8-06 s1–s3, ch12-01, ch12-06 s1–s2 | 1,485 / 25,015 / 24,765 / 24,764 | `DISTINCT ON (b.id) … JOIN exchange_rates ON rate_date <= bill_date`: every earlier rate joins, then one is kept. With defaults the planner under-estimated it | `CROSS JOIN LATERAL (… ORDER BY rate_date DESC LIMIT 1)`: ch8-06 s1 25,015 → 1,289, ch8-04 1,485 → 251, same rows | rewrite the Solutions to LATERAL if ch8 may use it (check that a skill taught by then covers LATERAL), else allow-list with the LATERAL cost as a Recap note. Must be decided **before** S1 ships, or the gate goes red |
+| *after S1:* ch12-02 | 297 → 6,972 | the ch7 correlated `rate_contracts` lookup inside AVG | the S8 index | allow-list with ch7 |
+
+**Near misses:** ch10-03 sits at norm 9.9 against K = 10 (cost 18,554). Any change to statistics or PGlite can flip it. Either
+allow-list it now, or rewrite it with `DISTINCT ON` (measured: 15,208, ×0.82, same rows).
 
 ### 4.3 The test
 
@@ -200,30 +214,34 @@ Put the logic in `src/planCheck.ts` (`planFacts(json, facts)`, `overBudget`, `no
 
 ### 5.1 Two populations, measured
 
-Each rewrite gives the Solution's rows (`compareResults`, multiset). The exceptions: ch11-01/02 use my own literal instead of the
-variant's, so only their plans are compared, and the correlated `max()` of ch10-03 was not run, because execution would take minutes.
+Each rewrite gives the Solution's rows (`compareResults`, multiset), with the variant's own literals. The exception is the
+correlated `max()` of ch10-03: it was not run, because execution would take minutes. "Index lost" is computed
+(`perfVariants.test.ts`): the tables the Solution reads with Index/Index Only/Bitmap Heap Scan, minus those the rewrite
+Seq Scans (≥ 5,000 rows).
 Ratio = cost(rewrite) ÷ cost(Solution).
 
 | Solution | Rewrite | Kind | Ratio | Index lost (Solution reads T by index, rewrite Seq Scans T)? |
 |---|---|---|---|---|
 | ch11-01 | `customer_id + 0 = …` | slow | 1.52 | yes (shipments) |
 | ch11-02 | `date_trunc('week', booking_date) = …` | slow | 2.00 | yes |
+| ch11-03 | `upper(ref) = upper(…)` | slow | 39.76 | yes |
+| ch11-06 s1 | `to_char(booking_date,'YYYY-MM') = …` | slow | 1.78 | yes |
 | ch11-05 | `to_char(booking_date,'YYYY-MM') = …` | slow | 1.63 | yes |
 | ch11-06 s2 | `::text` casts | slow | 8.79 | yes |
 | ch2-03 | `extract(year …) = 2025` | slow | **0.93** | no (the Solution also Seq Scans: 50 % of rows) |
 | ch4-02 | `to_char` range | slow | **1.08** | no (same) |
-| ch10-03 | correlated `max()` per container | slow | **12,609** | n/a |
+| ch10-03 | correlated `max()` per container | slow | **12,609** | yes (containers) |
 | ecom-ch3-02 | correlated category name | slow | 3.52 | no |
 | ecom-ch3-02 | `date_trunc` | slow | 0.95 | no (no index exists) |
 | ecom-ch5-01 | `paid_at::date BETWEEN` | slow | 0.92 | no (no index) |
 | fin-ch2-02 | correlated `paid_on` ×3 | slow | **240** | no |
 | fin-ch2-02 | `to_char(due_on)` | slow | 1.04 | no (no index) |
 | fin-ch3-01 | `month_end::text`, `branch_id + 0` | slow | 0.87 | no (no usable index) |
-| g-sargable-1 | `date_trunc('week')` / `::text` | slow | 1.86 / 2.33 | no (17-page table: bitmap vs seq) |
+| g-sargable-1 | `date_trunc('week')` / `::text` | slow | 1.86 / 2.33 | no at ≥ 5,000 rows (`orders` has 1,428); yes at the lab threshold ≥ 1,000 |
 | g-correlated-value-2 | correlated + `customer_id + 0` | slow | 2.62 | no |
 | ch2-03 | `BETWEEN` | good | 1.00 | |
 | ch7-04 | JOIN instead of 2 subqueries | good | 0.01 | |
-| ch10-03 | `DISTINCT ON` | good | 0.82 | |
+| ch10-03 | `DISTINCT ON` | good | 0.82 | **yes (containers)**: false positive unless scoped |
 | ecom-ch3-02 | `IN (subquery)` | good | 1.00 | |
 | fin-ch3-01 | `EXISTS` | good | 1.00 | |
 | g-sargable-1 | `BETWEEN` | good | 1.00 | |
@@ -235,21 +253,23 @@ Findings:
 - **Cost ratio is blind to non-sargable predicates** whenever the Solution itself reads the whole table (ch2-03, ch4-02),
   or no index exists (E-com, Finance). That is right, not a miss: those rewrites really cost the same on that data. On Logistics
   the planner even estimates `date_trunc(...) = x` at 0.5 % of rows, which makes the slow plan look cheaper.
-- **Index loss** catches every non-sargable case where it matters (4/4), independent of the ratio.
+- **Index loss** catches every non-sargable case where it matters (6/6 on ch11), independent of the ratio. But it also fires on a
+  good rewrite (ch10-03 `DISTINCT ON` Seq Scans `containers`, which the Solution reads by index, and is still ×0.82 cheaper).
+  So it is scoped to the table the step names, and needs ratio > 1.
 - Correlated rewrites show up as large ratios (×3.5, ×240, ×12,609) everywhere.
 
 ### 5.2 Rule
 
 `slowVerdict(solutionPlan, answerPlan, spec)` in `src/planCheck.ts`, used only after the result is right:
 
-- **indexLost**: for a table T that the Solution reads through an index (Index, Index Only or Bitmap Heap Scan), the answer
-  Seq Scans T, and T has ≥ 5,000 rows (lab: ≥ 1,000 once `events_big` exists, since lab's current tables are smaller).
+- **indexLost**: T = the step's named table (`perf.table`, like `plan: { index: t }`). The Solution reads T through an index
+  (Index, Index Only or Bitmap Heap Scan), the answer Seq Scans T, T has ≥ 5,000 rows (lab: ≥ 1,000), **and** ratio > 1.
 - **ratio** = root cost(answer) ÷ root cost(Solution), from the same DB in the same request (as `runLab` does).
 
 | Where | Trigger | Outcome |
 |---|---|---|
 | Steps with `perf:` (General Part 11, sargable/cast/date drills, ch11, Engine `plan` steps, capstones) | `indexLost` **or** ratio > `perf.max_ratio` (default **1.5**) | **not passed** (blocks): "Đúng kết quả nhưng chậm" with `planLine()` of both plans and the trap of the skill |
-| Every other story, lane, drill and interview step | ratio > **3** (only correlated or repeated scans; measured slow ≥ 3.52, good ≤ 1.00) | **weak pass** (drills: weak like a used scaffold; story: full XP, plus Boon's note and both plan lines in the Recap). Never blocks outside `perf:` |
+| Every other story, lane, drill and interview step | ratio > **3** **and** answer cost > **1,000**, the same floor as the CI gate, so an extra sort on a 24-row table never matters (only correlated or repeated scans; measured slow catches 3,450 / 248,030 / 2.3e8; good ≤ ×1.00) | **weak pass** (drills: weak like a used scaffold; story: full XP, plus Boon's note and both plan lines in the Recap). Never blocks outside `perf:` |
 | `perf:` steps whose Solution cost < 50 (tiny tables) | none | no bar: on tables this small the planner chooses Seq Scan regardless (product §2 "small table" rule); the test refuses `perf:` there |
 
 Why not block everywhere: outside performance lessons, a learner who writes a correlated subquery where a JOIN is cheaper has
@@ -271,8 +291,9 @@ the Solution's plan can be memoised per step+variant (`memoByKey`). Explain runs
 
 ## 6. Open questions for the user
 
-1. S1 (ANALYZE the 14 Logistics tables) changes 116 plan costs, none of the 12 ch11 `plan:` results, and ch11-04's lab cost.
-   Should it ship with the gate (and drop ch6-06 from the allow-list), or wait for the next Logistics content release?
+1. S1 (ANALYZE the 14 Logistics tables) changes 116 plan costs, but none of the 12 ch11 `plan:` results and not ch11-04's lab
+   cost. It fixes ch6-06 and exposes the ch8/ch12 range join. Should it ship with the gate, together with LATERAL Solutions or
+   allow-list entries for ch8/ch12?
 2. Should ch7-04/ch7-06 stay correlated (allow-listed, JOIN cost shown in the Recap), or become a later "make this report fast"
    task (S8)?
 3. `lab.events_big`: 25k rows with a deterministic default sample, or ≥ 50k (the product doc) with `default_statistics_target = 500`
