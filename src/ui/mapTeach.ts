@@ -10,7 +10,7 @@ import type { DomainId } from '../domains';
 import type { Lang } from '../i18n';
 import { questionFor } from '../mapQueries';
 import type { Harbor } from '../scene';
-import { framesOf, geoRows, geoSpec, isCount, portOf, PORTS, step5, type GeoRow, type GeoSpec } from '../viz/geo';
+import { framesOf, geoRows, geoSpec, isCount, placeLabels, portOf, PORTS, step5, textBox, type Anchor, type Box, type GeoRow, type GeoSpec } from '../viz/geo';
 import type { Art, ArtDomain } from './domainArt';
 import type { h as H } from './dom';
 import type { s as S } from './svg';
@@ -116,13 +116,28 @@ const picked = new WeakMap<QueryResult, Pickd>();
 /** The last summary sentence drawn (announced after a Run on the Map page). */
 let lastLine = '';
 
+const SIZE = 13;
+/** The map's own text (port, city and branch names) as boxes, read from its SVG attributes; an earlier overlay is skipped. */
+function mapLabels(svg: SVGSVGElement): Box[] {
+  return [...svg.querySelectorAll('text')].filter((el) => !el.closest('[data-map-overlay]') && el.textContent?.trim()).map((el) => {
+    const size = Number(el.closest('[font-size]')?.getAttribute('font-size')) || SIZE;
+    const anchor = (el.closest('[text-anchor]')?.getAttribute('text-anchor') ?? 'start') as Anchor;
+    return textBox(Number(el.getAttribute('x')) || 0, Number(el.getAttribute('y')) || 0, anchor, el.textContent!.trim(), size);
+  });
+}
+
 /** The overlay: one symbol per row (a line for two port columns), its value next to it; `fresh` = just ran (grow once). */
 function overlay(b: Base, rows: GeoRow[], count: boolean, lo: number, hi: number, fresh: boolean, hl: number | undefined, pick: (row: number) => void): SVGGElement {
   const { s } = d$;
   const max = Math.max(Math.abs(lo), Math.abs(hi)) || 1;
   const fill = (v: number) => (count ? COUNT : STEPS[step5(v, lo, hi)]);
-  const g = s('g', { 'data-map-overlay': '', 'font-size': 13, 'font-weight': 700 });
+  const g = s('g', { 'data-map-overlay': '', 'font-size': SIZE, 'font-weight': 700 });
   const motion = fresh && !d$.reducedMotion();
+  const radius = (v: number) => (count ? 5 + 18 * Math.sqrt(Math.abs(v) / max) : 10);
+  // L311: values go where they cover neither the map's own names nor each other; the biggest values choose first.
+  const dots = rows.filter((x) => x.key2 === undefined && b.at(x.key)).sort((a, c) => Math.abs(c.v) - Math.abs(a.v));
+  const spots = placeLabels(dots.map((x) => ({ x: b.at(x.key)![0], y: b.at(x.key)![1], r: radius(x.v), text: num(x.v) })), mapLabels(b.svg), SIZE);
+  const spotOf = new Map(dots.map((x, i) => [x, spots[i]]));
   rows.forEach((x, i) => {
     const p = b.at(x.key);
     if (!p) return;
@@ -144,7 +159,7 @@ function overlay(b: Base, rows: GeoRow[], count: boolean, lo: number, hi: number
       g.append(line);
       return;
     }
-    const r = count ? 5 + 18 * Math.sqrt(Math.abs(x.v) / max) : 10;
+    const r = radius(x.v);
     if (b.edge(x.key)) g.append(s('path', { d: `M4 ${p[1]}l12 -8v16z`, fill: fill(x.v), 'aria-hidden': 'true' }));
     const dot = s('circle', {
       cx: p[0], cy: p[1], r: r.toFixed(1), fill: fill(x.v), 'fill-opacity': count ? 0.7 : 0.9, 'data-row': x.row, class: 'cursor-pointer',
@@ -156,10 +171,11 @@ function overlay(b: Base, rows: GeoRow[], count: boolean, lo: number, hi: number
       dot.style.transformOrigin = 'center';
       dot.animate([{ transform: 'scale(0)' }, { transform: 'scale(1)' }], { duration: 400, delay, easing: 'ease-out', fill: 'backwards' });
     }
-    g.append(dot, s('text', {
-      x: (p[0] + r + 3).toFixed(1), y: p[1] + 4, 'paint-order': 'stroke',
+    const at = spotOf.get(x);
+    g.append(dot, at ? s('text', {
+      x: at.x.toFixed(1), y: at.y.toFixed(1), 'text-anchor': at.anchor, 'paint-order': 'stroke',
       style: 'fill:var(--text);stroke:var(--map-halo)', 'stroke-width': 4, 'stroke-linejoin': 'round', 'aria-hidden': 'true',
-    }, num(x.v)));
+    }, num(x.v)) : '');
   });
   return g;
 }

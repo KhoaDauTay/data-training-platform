@@ -88,3 +88,30 @@ export function geoRows(r: QueryResult, s: GeoSpec, value: number, frame?: strin
 export const isCount = (r: QueryResult, value: number): boolean => r.rows.every((row) => row[value] === null || Number.isInteger(Number(row[value])));
 /** Colour step 0..4 of v between lo and hi (equal intervals). */
 export const step5 = (v: number, lo: number, hi: number): number => (hi === lo ? 4 : Math.min(4, Math.floor(((v - lo) / (hi - lo)) * 5)));
+
+/** An axis-aligned box in map units. */
+export interface Box { x: number; y: number; w: number; h: number }
+const hits = (a: Box, b: Box): boolean => a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
+export type Anchor = 'start' | 'middle' | 'end';
+/** The box of one line of SVG text at (x, baseline y). ponytail: 0.6 em per character, no font metrics; widen if a font change makes labels touch. */
+export function textBox(x: number, y: number, anchor: Anchor, text: string, size: number): Box {
+  const w = text.length * size * 0.6;
+  return { x: anchor === 'end' ? x - w : anchor === 'middle' ? x - w / 2 : x, y: y - size * 0.8, w, h: size };
+}
+/**
+ * L311: a value label beside each symbol (centre x/y, radius r) that covers neither the map's own labels (`taken`), another
+ * symbol nor another value: the first free spot of right, left, above, below, in the order given (most important first).
+ * undefined = no free spot: the value is left off the map (the list by value under it still has every row).
+ */
+export function placeLabels(items: { x: number; y: number; r: number; text: string }[], taken: Box[], size: number): ({ x: number; y: number; anchor: Anchor } | undefined)[] {
+  const busy = [...taken, ...items.map((i) => ({ x: i.x - i.r, y: i.y - i.r, w: 2 * i.r, h: 2 * i.r }))];
+  return items.map(({ x, y, r, text }) => {
+    const spots: { x: number; y: number; anchor: Anchor }[] = [
+      { x: x + r + 3, y: y + size * 0.3, anchor: 'start' }, { x: x - r - 3, y: y + size * 0.3, anchor: 'end' },
+      { x, y: y - r - 3, anchor: 'middle' }, { x, y: y + r + size, anchor: 'middle' },
+    ];
+    const spot = spots.find((s) => !busy.some((b) => hits(textBox(s.x, s.y, s.anchor, text, size), b)));
+    if (spot) busy.push(textBox(spot.x, spot.y, spot.anchor, text, size));
+    return spot;
+  });
+}
