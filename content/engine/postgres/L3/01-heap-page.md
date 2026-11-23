@@ -7,6 +7,7 @@ title: Một trang heap trông thế nào
 title_en: What a heap page looks like
 kind: concept
 runtime: docs
+docs_why: next
 minutes: 8
 viz: pg-heap-page
 objectives:

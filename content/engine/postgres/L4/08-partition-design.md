@@ -6,7 +6,7 @@ module: partitioning
 title: "Thiết kế phân vùng: khóa, ràng buộc và giới hạn"
 title_en: "Designing partitions: key, keys and limits"
 kind: quiz
-runtime: docs
+runtime: browser
 minutes: 12
 objectives:
   - { vi: "Chọn khóa phân vùng theo câu hỏi hay gặp nhất và cách xóa dữ liệu cũ", en: "Choose the partition key from the most frequent queries and the way old data is removed" }
@@ -18,6 +18,35 @@ sources:
   - https://www.postgresql.org/docs/18/ddl-partitioning.html
   - https://www.postgresql.org/docs/18/sql-createindex.html
   - https://www.postgresql.org/docs/18/sql-createtable.html
+lab:
+  setup: |
+    CREATE TABLE events (id bigint NOT NULL, created_on date NOT NULL, kind text NOT NULL) PARTITION BY RANGE (created_on);
+    CREATE TABLE events_2026_09 PARTITION OF events FOR VALUES FROM ('2026-09-01') TO ('2026-10-01');
+    CREATE TABLE events_2026_10 PARTITION OF events FOR VALUES FROM ('2026-10-01') TO ('2026-11-01');
+    INSERT INTO events SELECT g, date '2026-09-01' + (g % 61), CASE WHEN g % 3 = 0 THEN 'click' ELSE 'view' END FROM generate_series(1, 610) AS g;
+  steps:
+    - task:
+        vi: "`ALTER TABLE events ADD PRIMARY KEY (id)` bị từ chối (thử xem). Thêm khóa chính mà Postgres chấp nhận: cột `id` rồi cột khóa phân vùng."
+        en: "`ALTER TABLE events ADD PRIMARY KEY (id)` is refused (try it). Add the primary key Postgres accepts: column `id`, then the partition key column."
+      solution: ALTER TABLE events ADD PRIMARY KEY (id, created_on)
+      check: catalog
+      hint:
+        vi: "Khóa chính của bảng phân vùng phải chứa mọi cột khóa phân vùng: `PRIMARY KEY (id, created_on)`."
+        en: "A partitioned table's primary key must contain every partition key column: `PRIMARY KEY (id, created_on)`."
+    - task:
+        vi: "Mỗi dòng nằm ở phân vùng nào? Trả về tên phân vùng (`tableoid::regclass::text`) và số dòng, theo tên phân vùng."
+        en: "Which partition holds each row? Return the partition name (`tableoid::regclass::text`) and the row count, by partition name."
+      solution: SELECT tableoid::regclass::text AS part, count(*) FROM events GROUP BY 1 ORDER BY 1
+      check: rows
+      ordered: true
+      hint:
+        vi: "`tableoid` là cột hệ thống: bảng thật chứa dòng. Gom theo nó."
+        en: "`tableoid` is a system column: the real table holding the row. Group by it."
+      fact:
+        vi: "Tháng 9 có 300 dòng, tháng 10 có 310: bảng cha `events` không tự chứa dòng nào, mọi dòng nằm trong một phân vùng."
+        en: "September holds 300 rows, October 310: the parent `events` holds no rows itself, every row lives in a partition."
+        probe: SELECT tableoid::regclass::text, count(*) FROM events GROUP BY 1 ORDER BY 1
+        expect: [[events_2026_09, 300], [events_2026_10, 310]]
 quiz:
   - q: { vi: "Bảng sự kiện theo `created_on`, phân vùng theo tháng. Bạn chạy `ALTER TABLE events ADD PRIMARY KEY (id)`. Chuyện gì xảy ra?", en: "An events table is partitioned by month on `created_on`. You run `ALTER TABLE events ADD PRIMARY KEY (id)`. What happens?" }
     options:
@@ -68,7 +97,7 @@ ERROR:  unique constraint on partitioned table must include all partitioning col
 
 ## Thực hành
 
-Bốn tình huống thiết kế. Kỹ năng chuyên gia: thiết kế phân vùng từ mẫu truy vấn và quy tắc giữ dữ liệu, biết trước các giới hạn sẽ gặp.
+Lab hai bước trên một bảng phân vùng theo tháng (khóa chính, dòng nằm ở phân vùng nào), rồi bốn tình huống thiết kế. Kỹ năng chuyên gia: thiết kế phân vùng từ mẫu truy vấn và quy tắc giữ dữ liệu, biết trước các giới hạn sẽ gặp.
 
 # EN
 
@@ -91,4 +120,4 @@ ERROR:  unique constraint on partitioned table must include all partitioning col
 
 ## Practice
 
-Four design scenarios. Expert skill: design partitions from the query pattern and the retention rule, knowing the limits ahead of time.
+A two-step lab on a table partitioned by month (the primary key, which partition holds each row), then four design scenarios. Expert skill: design partitions from the query pattern and the retention rule, knowing the limits ahead of time.

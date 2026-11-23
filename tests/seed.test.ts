@@ -39,7 +39,7 @@ describe('seed', () => {
   // Plan 3 hashes before Plan 4 (HEAD 2ddc893), Plan 4 hashes before Plan 5 (HEAD 61de3a9). The chapter 11 indexes and ANALYZE change plans, never rows.
   it('bảng cũ giữ nguyên từng byte khi thêm khối seed mới', async () => {
     const before: Record<string, string> = {
-      ports: 'ec1c84dddcf5646f1e3b5fc1d57f69f7',
+      ports: 'ef3155eeeaf74d2fd8ddd6afe693576b', // L302: region = continent (was ec1c84dd… with Vietnam/South Asia)
       carriers: '2f8f365a6e8494e6e9d7131f01caa183',
       employees: 'b4d52d87c1e60bea9d7e993a622c5487',
       customers: 'd8c05c7b97d841c1090ec122fdf6093a',

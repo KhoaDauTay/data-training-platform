@@ -6,7 +6,7 @@ module: types
 title: Chọn kiểu dữ liệu
 title_en: Choosing data types
 kind: concept
-runtime: docs
+runtime: browser
 minutes: 8
 verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-20" }
 objectives:
@@ -20,6 +20,55 @@ sources:
   - https://www.postgresql.org/docs/18/datatype-numeric.html
   - https://www.postgresql.org/docs/18/datatype-character.html
   - https://www.postgresql.org/docs/18/datatype-datetime.html
+lab:
+  setup: |
+    SET TimeZone = 'Asia/Ho_Chi_Minh';
+    CREATE TABLE pay (id int, amount_f double precision, amount_n numeric(12,2));
+    INSERT INTO pay SELECT g, 0.1, 0.1 FROM generate_series(1, 10) AS g;
+    CREATE TABLE logins (id int, at_tz timestamptz, at_plain timestamp);
+    INSERT INTO logins VALUES (1, '2026-03-01 09:00+00', '2026-03-01 09:00+00');
+    CREATE TABLE names (c char(10), v varchar(10), t text);
+    INSERT INTO names VALUES ('Lan', 'Lan', 'Lan');
+  steps:
+    - task:
+        vi: "Bảng `pay` có 10 khoản 0,1 lưu hai lần: `amount_f` (`double precision`) và `amount_n` (`numeric`). Tổng của mỗi cột có đúng bằng 1 không? Trả về hai cột đúng/sai `float_is_1`, `numeric_is_1`."
+        en: "Table `pay` holds ten amounts of 0.1, stored twice: `amount_f` (`double precision`) and `amount_n` (`numeric`). Is each column's total exactly 1? Return two true/false columns `float_is_1`, `numeric_is_1`."
+      solution: SELECT sum(amount_f) = 1 AS float_is_1, sum(amount_n) = 1 AS numeric_is_1 FROM pay
+      check: rows
+      hint:
+        vi: "So `sum(amount_f) = 1` và `sum(amount_n) = 1` trong cùng một `SELECT`."
+        en: "Compare `sum(amount_f) = 1` and `sum(amount_n) = 1` in one `SELECT`."
+      fact:
+        vi: "`float_is_1` là false (tổng là 0,9999999999999999), `numeric_is_1` là true: sai số nhị phân cộng dồn qua từng dòng."
+        en: "`float_is_1` is false (the total is 0.9999999999999999), `numeric_is_1` is true: the binary error adds up row by row."
+        probe: SELECT sum(amount_f) = 1, sum(amount_n) = 1 FROM pay
+        expect: [[false, true]]
+    - task:
+        vi: "Phiên đang ở múi giờ `Asia/Ho_Chi_Minh`. Cùng một lần đăng nhập lúc 09:00 UTC được ghi vào `at_tz` (`timestamptz`) và `at_plain` (`timestamp`). Trả về hai cột đó dưới dạng chữ (`::text`)."
+        en: "The session is in time zone `Asia/Ho_Chi_Minh`. The same login at 09:00 UTC was written to `at_tz` (`timestamptz`) and `at_plain` (`timestamp`). Return both columns as text (`::text`)."
+      solution: SELECT at_tz::text, at_plain::text FROM logins
+      check: rows
+      hint:
+        vi: "Ép từng cột sang chữ bằng `::text`."
+        en: "Cast each column to text with `::text`."
+      fact:
+        vi: "`at_tz` hiện `2026-03-01 16:00:00+07` (đúng thời điểm, đổi sang giờ phiên), `at_plain` hiện `2026-03-01 09:00:00`: phần `+00` đã bị bỏ khi ghi."
+        en: "`at_tz` shows `2026-03-01 16:00:00+07` (the same instant in the session zone), `at_plain` shows `2026-03-01 09:00:00`: the `+00` was dropped on write."
+        probe: SELECT at_tz::text, at_plain::text FROM logins
+        expect: [["2026-03-01 16:00:00+07", "2026-03-01 09:00:00"]]
+    - task:
+        vi: "Chữ `Lan` được ghi vào ba cột `char(10)`, `varchar(10)` và `text` của bảng `names`. Mỗi giá trị chiếm bao nhiêu byte? Trả về `pg_column_size` của `c`, `v`, `t`."
+        en: "The word `Lan` was written to three columns of `names`: `char(10)`, `varchar(10)` and `text`. How many bytes does each value take? Return `pg_column_size` of `c`, `v`, `t`."
+      solution: SELECT pg_column_size(c), pg_column_size(v), pg_column_size(t) FROM names
+      check: rows
+      hint:
+        vi: "Gọi `pg_column_size()` cho từng cột."
+        en: "Call `pg_column_size()` on each column."
+      fact:
+        vi: "`char(10)` chiếm 11 byte vì được đệm khoảng trắng tới 10 ký tự, `varchar` và `text` cùng 4 byte: ba kiểu cùng một cách lưu, chỉ `char(n)` tốn thêm."
+        en: "`char(10)` takes 11 bytes because it is padded with blanks to 10 characters; `varchar` and `text` both take 4: the three types share one storage format, only `char(n)` costs more."
+        probe: SELECT pg_column_size(c), pg_column_size(v), pg_column_size(t) FROM names
+        expect: [[11, 4, 4]]
 quiz:
   - q:
       vi: Cột lưu số tiền đơn hàng (VND, có thể có phần lẻ) nên dùng kiểu nào?
@@ -85,7 +134,7 @@ Cùng một chuỗi: `timestamptz` hiện `16:00+07` (đã đổi sang giờ phi
 
 ## Thực hành
 
-Trả lời ba câu hỏi bên dưới. Trước đó, thử tự nghĩ: bảng hóa đơn cần cột "số tiền", "thời điểm thanh toán", "ghi chú" và "đã hoàn tiền chưa". Bạn chọn kiểu gì cho từng cột? (Gợi ý: `numeric(12,2)`, `timestamptz`, `text`, `boolean`.)
+Làm lab (ba bước: tổng tiền, thời điểm, chuỗi) rồi trả lời ba câu hỏi bên dưới. Trước đó, thử tự nghĩ: bảng hóa đơn cần cột "số tiền", "thời điểm thanh toán", "ghi chú" và "đã hoàn tiền chưa". Bạn chọn kiểu gì cho từng cột? (Gợi ý: `numeric(12,2)`, `timestamptz`, `text`, `boolean`.)
 
 # EN
 
@@ -119,4 +168,4 @@ Same literal: `timestamptz` shows `16:00+07` (converted to the session zone), wh
 
 ## Practice
 
-Answer the three questions below. First, think it through: an invoice table needs "amount", "paid at", "note" and "refunded?". Which type fits each column? (Hint: `numeric(12,2)`, `timestamptz`, `text`, `boolean`.)
+Do the lab (three steps: money totals, instants, strings), then answer the three questions below. First, think it through: an invoice table needs "amount", "paid at", "note" and "refunded?". Which type fits each column? (Hint: `numeric(12,2)`, `timestamptz`, `text`, `boolean`.)

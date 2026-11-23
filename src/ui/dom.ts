@@ -17,7 +17,7 @@ export function h<K extends keyof HTMLElementTagNameMap>(
     else if (v === true) el.setAttribute(k, '');
     else if (v !== false) el.setAttribute(k, v);
   }
-  // L320 (feedback #13): every form field has an id or a name (browsers and Lighthouse flag those with neither). Nothing is
+  // L309 (feedback #13): every form field has an id or a name (browsers and Lighthouse flag those with neither). Nothing is
   // ever submitted, so a shared generic name is enough; radios always pass their own group name.
   if ((tag === 'input' || tag === 'select' || tag === 'textarea') && !('id' in attrs) && !('name' in attrs)) el.setAttribute('name', `cq-${tag}`);
   el.append(...nodes(...children));

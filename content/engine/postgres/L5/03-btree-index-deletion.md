@@ -6,7 +6,7 @@ module: index-internals
 title: "B-tree tự dọn: simple và bottom-up deletion"
 title_en: "How B-tree indexes clean themselves: simple and bottom-up deletion"
 kind: concept
-runtime: docs
+runtime: browser
 minutes: 12
 objectives:
   - { vi: "Phân biệt ba cách dọn mục chết trong B-tree: simple deletion, bottom-up deletion, VACUUM", en: "Tell apart the three ways a B-tree drops dead items: simple deletion, bottom-up deletion and VACUUM" }
@@ -18,6 +18,48 @@ sources:
   - https://www.postgresql.org/docs/18/storage-hot.html
   - https://www.postgresql.org/docs/18/routine-vacuuming.html
 viz: pg-btree
+lab:
+  setup: |
+    CREATE EXTENSION IF NOT EXISTS pageinspect;
+    CREATE TABLE sessions (id int PRIMARY KEY, user_id int NOT NULL, last_seen timestamptz NOT NULL);
+    CREATE INDEX sessions_user_idx ON sessions (user_id);
+    CREATE INDEX sessions_seen_idx ON sessions (last_seen);
+    INSERT INTO sessions SELECT g, g % 40, timestamptz '2026-10-01 00:00+00' + g * interval '1 minute' FROM generate_series(1, 100) AS g;
+  steps:
+    - task:
+        vi: "Index `sessions_user_idx` còn nhỏ: một trang lá (khối 1). Đếm số mục trên trang đó bằng `bt_page_items`."
+        en: "Index `sessions_user_idx` is still small: one leaf page (block 1). Count the items on that page with `bt_page_items`."
+      solution: SELECT count(*) FROM bt_page_items('sessions_user_idx', 1)
+      check: rows
+      hint:
+        vi: "`bt_page_items()` nhận tên index và số khối; đếm số dòng nó trả về."
+        en: "`bt_page_items()` takes the index name and the block number; count the rows it returns."
+      fact:
+        vi: "100 mục, mỗi phiên một mục."
+        en: "100 items, one per session."
+        probe: SELECT count(*) FROM bt_page_items('sessions_user_idx', 1)
+        expect: [[100]]
+    - task:
+        vi: "Ứng dụng dời `last_seen` của mọi phiên thêm một phút (cột `user_id` không đổi). Viết câu `UPDATE` đó, trả về `id` của các dòng đã sửa (`RETURNING id`)."
+        en: "The app moves every session's `last_seen` one minute later (`user_id` does not change). Write that `UPDATE`, returning the `id` of the changed rows (`RETURNING id`)."
+      solution: UPDATE sessions SET last_seen = last_seen + interval '1 minute' RETURNING id
+      check: rows
+      hint:
+        vi: "Cộng `interval '1 minute'` vào `last_seen`, không `WHERE`, rồi `RETURNING id`."
+        en: "Add `interval '1 minute'` to `last_seen`, no `WHERE`, then `RETURNING id`."
+    - task:
+        vi: "Đếm lại số mục trên khối 1 của `sessions_user_idx`."
+        en: "Count the items on block 1 of `sessions_user_idx` again."
+      solution: SELECT count(*) FROM bt_page_items('sessions_user_idx', 1)
+      check: rows
+      hint:
+        vi: "Cùng câu với bước 1."
+        en: "The same query as step 1."
+      fact:
+        vi: "Ra 200: `last_seen` có index nên UPDATE không HOT, và index `user_id` nhận thêm 100 mục dù `user_id` không đổi (version churn). Trang chưa đầy nên chưa có bottom-up deletion; mục cũ chỉ được dọn khi trang sắp tách, hoặc khi VACUUM."
+        en: "It is 200: `last_seen` is indexed, so the UPDATE is not HOT, and the `user_id` index gets 100 more items although `user_id` did not change (version churn). The page is not full, so no bottom-up deletion yet; old items are cleared only when the page is about to split, or at VACUUM."
+        probe: SELECT count(*) FROM bt_page_items('sessions_user_idx', 1)
+        expect: [[200]]
 quiz:
   - q: { vi: "Bảng `sessions` có index trên `user_id` và `last_seen`. Ứng dụng cập nhật `last_seen` liên tục. Index `user_id` nhận gì sau mỗi UPDATE?", en: "Table `sessions` has indexes on `user_id` and `last_seen`. The app updates `last_seen` constantly. What does the `user_id` index get after each UPDATE?" }
     options:
@@ -60,7 +102,7 @@ insert u42 -> (9,8)       -- would split
 
 Lá đã tách thì không bao giờ gộp lại. Posting list của dedup giúp lá chịu được churn lâu hơn. Giảm churn từ gốc: để UPDATE thành HOT (không index cột hay đổi; `fillfactor` heap thấp hơn để còn chỗ trên trang).
 
-Bấm qua sơ đồ một lá B-tree đầy lên vì version churn, rồi hai câu hỏi. Kỹ năng chuyên gia: giải thích index phình dưới tải UPDATE và chọn cách sửa: thiết kế cho HOT, fillfactor, hay `REINDEX CONCURRENTLY` khi đã phình.
+Bấm qua sơ đồ một lá B-tree đầy lên vì version churn, đếm mục trên lá thật trong lab, rồi hai câu hỏi. Kỹ năng chuyên gia: giải thích index phình dưới tải UPDATE và chọn cách sửa: thiết kế cho HOT, fillfactor, hay `REINDEX CONCURRENTLY` khi đã phình.
 
 # EN
 
@@ -89,4 +131,4 @@ insert u42 -> (9,8)       -- would split
 
 A split leaf is never merged back. Deduplication posting lists let a leaf absorb churn longer. Reduce churn at the source: make UPDATEs HOT (do not index columns that change often; a lower heap `fillfactor` leaves room on the page).
 
-Step through the diagram of a B-tree leaf filling up with version churn, then two questions. Expert skill: explain index bloat under UPDATE load and pick the fix: design for HOT, fillfactor, or `REINDEX CONCURRENTLY` once it has bloated.
+Step through the diagram of a B-tree leaf filling up with version churn, count the items on a real leaf in the lab, then two questions. Expert skill: explain index bloat under UPDATE load and pick the fix: design for HOT, fillfactor, or `REINDEX CONCURRENTLY` once it has bloated.

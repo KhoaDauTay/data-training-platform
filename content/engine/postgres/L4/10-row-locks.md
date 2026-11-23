@@ -6,7 +6,7 @@ module: locks
 title: "Row lock: bốn mức, ghi trong tuple"
 title_en: "Row locks: four strengths, stored in the tuple"
 kind: concept
-runtime: docs
+runtime: browser
 minutes: 15
 objectives:
   - { vi: "Phân biệt `FOR UPDATE`, `FOR NO KEY UPDATE`, `FOR SHARE`, `FOR KEY SHARE` và bảng xung đột của chúng", en: "Tell apart `FOR UPDATE`, `FOR NO KEY UPDATE`, `FOR SHARE`, `FOR KEY SHARE` and their conflict table" }
@@ -18,6 +18,44 @@ sources:
   - https://www.postgresql.org/docs/18/sql-select.html
   - https://www.postgresql.org/docs/18/pageinspect.html
 viz: pg-lock-matrix
+lab:
+  setup: |
+    CREATE EXTENSION IF NOT EXISTS pageinspect;
+    CREATE TABLE acct (id int PRIMARY KEY, bal int NOT NULL);
+    INSERT INTO acct SELECT g, 100 FROM generate_series(1, 7) AS g;
+    BEGIN;
+    SELECT id FROM acct WHERE id = 3 FOR UPDATE;
+    SELECT id FROM acct WHERE id = 4 FOR SHARE;
+    SELECT id FROM acct WHERE id = 5 FOR KEY SHARE;
+    SELECT id FROM acct WHERE id = 6 FOR NO KEY UPDATE;
+  steps:
+    - task:
+        vi: "Transaction đang mở và giữ row lock trên dòng 3, 4, 5, 6 của `acct`. Đếm số dòng của `pg_locks` có `locktype = 'tuple'`."
+        en: "The open transaction holds row locks on rows 3, 4, 5, 6 of `acct`. Count the rows of `pg_locks` with `locktype = 'tuple'`."
+      solution: SELECT count(*) FROM pg_locks WHERE locktype = 'tuple'
+      check: rows
+      hint:
+        vi: "`count(*)` trên `pg_locks`, lọc theo `locktype`."
+        en: "`count(*)` over `pg_locks`, filtered on `locktype`."
+      fact:
+        vi: "Ra 0: bốn row lock không có dòng nào trong `pg_locks`. Postgres chỉ thêm lock `tuple` tạm khi có người phải chờ."
+        en: "It is 0: the four row locks have no row in `pg_locks`. Postgres adds a temporary `tuple` lock only while someone waits."
+        probe: SELECT count(*) FROM pg_locks WHERE locktype = 'tuple'
+        expect: [[0]]
+    - task:
+        vi: "Lock nằm trong header tuple. Đọc `lp`, `t_infomask`, `t_infomask2` của dòng 3 đến 7 trên trang 0 của `acct`, theo `lp`."
+        en: "The locks live in the tuple header. Read `lp`, `t_infomask`, `t_infomask2` of rows 3 to 7 on page 0 of `acct`, by `lp`."
+      solution: SELECT lp, t_infomask, t_infomask2 FROM heap_page_items(get_raw_page('acct', 0)) WHERE lp BETWEEN 3 AND 7 ORDER BY lp
+      check: rows
+      ordered: true
+      hint:
+        vi: "`heap_page_items()` đọc trang thô mà `get_raw_page()` trả về."
+        en: "`heap_page_items()` reads the raw page that `get_raw_page()` returns."
+      fact:
+        vi: "Dòng 3 (FOR UPDATE) 448 và 8194, dòng 4 (FOR SHARE) 464, dòng 5 (FOR KEY SHARE) 400, dòng 6 (FOR NO KEY UPDATE) 448 và 2, dòng 7 2048 (không lock: chỉ bit `XMAX_INVALID`): bit `LOCK_ONLY` (128) cùng bit mức lock, ghi ngay trên trang."
+        en: "Row 3 (FOR UPDATE) 448 and 8194, row 4 (FOR SHARE) 464, row 5 (FOR KEY SHARE) 400, row 6 (FOR NO KEY UPDATE) 448 and 2, row 7 2048 (no lock: only the `XMAX_INVALID` bit): the `LOCK_ONLY` bit (128) plus the strength bits, written right on the page."
+        probe: SELECT lp, t_infomask, t_infomask2 FROM heap_page_items(get_raw_page('acct', 0)) WHERE lp BETWEEN 3 AND 7 ORDER BY lp
+        expect: [[3, 448, 8194], [4, 464, 2], [5, 400, 2], [6, 448, 2], [7, 2048, 2]]
 quiz:
   - q: { vi: "Transaction A chèn đơn hàng tham chiếu khách 42 (khóa ngoại). Transaction B cùng lúc `UPDATE customers SET region = 3 WHERE id = 42` (không đổi cột khóa). B có phải chờ A không?", en: "Transaction A inserts an order that references customer 42 (foreign key). Transaction B at the same time runs `UPDATE customers SET region = 3 WHERE id = 42` (key unchanged). Must B wait for A?" }
     options:
@@ -51,7 +89,7 @@ Một job giữ row lock trên 2 triệu dòng: Postgres nhớ chúng ở đâu?
 
 Row lock nằm trong tuple, nên `pg_locks` chỉ cho thấy lock ROW SHARE trên bảng. Người chờ một dòng thì chờ trên ID transaction của người giữ (loại `transactionid`).
 
-Ghi lại trên PGlite bằng một kịch bản nhiều lệnh trong một transaction (không chạy được trong bài một câu), đọc header tuple bằng `pageinspect`:
+Chạy trên PGlite trong một transaction, đọc header tuple bằng `pageinspect` (lab bên dưới mở đúng transaction này để bạn tự đọc):
 
 ```text
 BEGIN;
@@ -65,7 +103,7 @@ SELECT lp, t_infomask, t_infomask2 FROM heap_page_items(get_raw_page('acct', 0))
   4 |        464 |           2   -- SHR_LOCK + LOCK_ONLY (FOR SHARE)
   5 |        400 |           2   -- KEYSHR_LOCK + LOCK_ONLY (FOR KEY SHARE)
   6 |        448 |           2   -- EXCL_LOCK + LOCK_ONLY (FOR NO KEY UPDATE)
-  7 |       2304 |           2   -- not locked (XMAX_INVALID)
+  7 |       2048 |           2   -- not locked (XMAX_INVALID)
 ROLLBACK;
 ```
 
@@ -73,11 +111,11 @@ Lưu ý: sau ROLLBACK, `xmax` của dòng từng bị giữ lock vẫn còn trê
 
 ## Thực hành
 
-Chạy thật cần nhiều phiên cùng lúc trên một server Postgres; PGlite chỉ có một phiên. Bài này dùng sơ đồ và kết quả ghi sẵn.
+Lab bên dưới chạy thật trong một phiên: lock được giữ và đọc ngay trên trang. Còn cảnh một phiên chờ phiên kia cần hai phiên cùng lúc, PGlite chỉ có một, nên phần đó là sơ đồ.
 
 `NOWAIT` báo lỗi ngay thay vì chờ; `SKIP LOCKED` bỏ qua dòng đang bị giữ lock, hợp cho hàng đợi việc nhiều worker.
 
-Sơ đồ là ma trận lock bảng: row lock nằm trong tuple nên không có ô riêng, và bạn thấy vì sao `pg_locks` chỉ ghi ROW SHARE trên bảng. Hai bước cuối của sơ đồ là hai row lock chờ nhau (deadlock) và Postgres hủy một bên (40P01). Rồi trả lời hai câu hỏi. Kỹ năng chuyên gia: chọn mức row lock yếu nhất đủ đúng, và giải thích vì sao khóa ngoại không làm nghẽn bảng cha.
+Sơ đồ là ma trận lock bảng: row lock nằm trong tuple nên không có ô riêng, và bạn thấy vì sao `pg_locks` chỉ ghi ROW SHARE trên bảng. Hai bước cuối của sơ đồ là hai row lock chờ nhau (deadlock) và Postgres hủy một bên (40P01). Rồi làm lab và trả lời hai câu hỏi. Kỹ năng chuyên gia: chọn mức row lock yếu nhất đủ đúng, và giải thích vì sao khóa ngoại không làm nghẽn bảng cha.
 
 # EN
 
@@ -97,7 +135,7 @@ A job holds row locks on 2 million rows: where does Postgres keep them? The four
 
 Because row locks live in the tuple, `pg_locks` only shows the ROW SHARE lock on the table. A session waiting for a row waits on the holder's transaction ID (type `transactionid`).
 
-Captured on PGlite with a multi-statement script inside one transaction (not runnable as a one-statement lesson), reading tuple headers with `pageinspect`:
+Run on PGlite inside one transaction, reading tuple headers with `pageinspect` (the lab below opens this very transaction for you to read):
 
 ```text
 BEGIN;
@@ -111,7 +149,7 @@ SELECT lp, t_infomask, t_infomask2 FROM heap_page_items(get_raw_page('acct', 0))
   4 |        464 |           2   -- SHR_LOCK + LOCK_ONLY (FOR SHARE)
   5 |        400 |           2   -- KEYSHR_LOCK + LOCK_ONLY (FOR KEY SHARE)
   6 |        448 |           2   -- EXCL_LOCK + LOCK_ONLY (FOR NO KEY UPDATE)
-  7 |       2304 |           2   -- not locked (XMAX_INVALID)
+  7 |       2048 |           2   -- not locked (XMAX_INVALID)
 ROLLBACK;
 ```
 
@@ -119,7 +157,7 @@ Note: after the ROLLBACK, the locked rows still carry an `xmax` on the page (the
 
 ## Practice
 
-A real run needs several concurrent sessions on one Postgres server; PGlite has only one session. This lesson uses diagrams and recorded output.
+The lab below runs for real in one session: the locks are held and read right on the page. One session waiting for another needs two sessions at once, and PGlite has only one, so that part is a diagram.
 
 `NOWAIT` errors at once instead of waiting; `SKIP LOCKED` skips locked rows, which suits job queues with many workers.
 

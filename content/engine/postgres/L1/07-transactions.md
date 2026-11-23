@@ -6,7 +6,7 @@ module: transactions
 title: Transaction và savepoint
 title_en: Transactions and savepoints
 kind: concept
-runtime: docs
+runtime: browser
 minutes: 10
 verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-20" }
 viz: pg-mvcc-timeline
@@ -22,6 +22,40 @@ sources:
   - https://www.postgresql.org/docs/18/sql-savepoint.html
   - https://www.postgresql.org/docs/18/mvcc-intro.html
   - https://www.postgresql.org/docs/18/transaction-iso.html
+lab:
+  setup: |
+    CREATE TABLE accounts (id int PRIMARY KEY, balance numeric NOT NULL CHECK (balance >= 0));
+    INSERT INTO accounts VALUES (1, 100), (2, 50);
+    BEGIN;
+    UPDATE accounts SET balance = balance - 30 WHERE id = 1;
+    UPDATE accounts SET balance = balance + 30 WHERE id = 2;
+    SAVEPOINT before_fee;
+  steps:
+    - task:
+        vi: "Một transaction đang mở: đã chuyển 30 từ tài khoản 1 sang 2 và đặt `SAVEPOINT before_fee`, chưa `COMMIT`. Đọc `id`, `balance` của `accounts` theo `id`."
+        en: "A transaction is open: it moved 30 from account 1 to 2 and set `SAVEPOINT before_fee`, with no `COMMIT` yet. Read `id`, `balance` from `accounts` by `id`."
+      solution: SELECT id, balance FROM accounts ORDER BY id
+      check: rows
+      ordered: true
+      hint:
+        vi: "Một `SELECT` thường, sắp theo `id`."
+        en: "A plain `SELECT`, sorted by `id`."
+      fact:
+        vi: "70 và 80: trong transaction của mình bạn thấy ngay thay đổi chưa `COMMIT`; phiên khác lúc này vẫn thấy 100 và 50."
+        en: "70 and 80: inside your own transaction you see your changes at once, before `COMMIT`; another session would still see 100 and 50."
+        probe: SELECT id, balance FROM accounts ORDER BY id
+        expect: [[1, 70], [2, 80]]
+    - task:
+        vi: "Thu phí 20 của tài khoản 2 trong cùng transaction (phí 500 sẽ vi phạm `CHECK`, thử xem). Trả về `id` và `balance` mới (`RETURNING`)."
+        en: "Charge account 2 a fee of 20 in the same transaction (a fee of 500 would break the `CHECK`, try it). Return the `id` and new `balance` (`RETURNING`)."
+      solution: UPDATE accounts SET balance = balance - 20 WHERE id = 2 RETURNING id, balance
+      check: rows
+      hint:
+        vi: "`UPDATE ... SET balance = balance - 20 WHERE id = 2` rồi thêm `RETURNING`."
+        en: "`UPDATE ... SET balance = balance - 20 WHERE id = 2`, then add `RETURNING`."
+      fact:
+        vi: "Còn 60. Nếu bạn thử phí 500 trước, câu đó lỗi 23514 và cả transaction bị hủy: mọi câu sau báo \"current transaction is aborted\" tới khi `ROLLBACK TO SAVEPOINT before_fee`."
+        en: "60 left. Had you tried the 500 fee first, that statement fails with 23514 and the whole transaction is aborted: every later statement reports \"current transaction is aborted\" until `ROLLBACK TO SAVEPOINT before_fee`."
 quiz:
   - q:
       vi: "Trong một transaction, câu thứ hai báo lỗi. Bạn gõ tiếp một `SELECT` mà chưa `ROLLBACK`. Chuyện gì xảy ra?"
@@ -88,7 +122,7 @@ Câu trừ 500 vi phạm `CHECK`. `ROLLBACK TO SAVEPOINT` bỏ riêng phần đ�
 
 ## Thực hành
 
-Sơ đồ cho thấy hai phiên trên cùng một dòng theo thời gian. Bấm qua từng bước, rồi trả lời ba câu hỏi.
+Lab bên dưới mở sẵn một transaction như ví dụ: bạn đọc và ghi bên trong nó. Sơ đồ cho thấy hai phiên trên cùng một dòng theo thời gian (phần này cần hai phiên, nên chỉ là sơ đồ). Làm lab, bấm qua sơ đồ, rồi trả lời ba câu hỏi.
 
 # EN
 
@@ -123,4 +157,4 @@ The 500 debit breaks the `CHECK`. `ROLLBACK TO SAVEPOINT` drops just that part, 
 
 ## Practice
 
-The diagram shows two sessions working on one row over time. Step through it, then answer the three questions.
+The lab below opens a transaction like the example: you read and write inside it. The diagram shows two sessions working on one row over time (that part needs two sessions, so it is a diagram only). Do the lab, step through the diagram, then answer the three questions.

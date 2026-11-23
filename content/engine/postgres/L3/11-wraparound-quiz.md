@@ -7,6 +7,7 @@ title: Rủi ro XID wraparound
 title_en: XID wraparound risk
 kind: quiz
 runtime: docs
+docs_why: scale
 minutes: 8
 objectives:
   - vi: Nói đúng các ngưỡng cảnh báo và từ chối ghi khi XID sắp quay vòng

@@ -6,7 +6,7 @@ module: constraints
 title: NULL không phải là một giá trị
 title_en: NULL is not a value
 kind: quiz
-runtime: docs
+runtime: browser
 minutes: 8
 verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-20" }
 objectives:
@@ -20,6 +20,53 @@ sources:
   - https://www.postgresql.org/docs/18/functions-aggregate.html
   - https://www.postgresql.org/docs/18/functions-subquery.html
   - https://www.postgresql.org/docs/18/ddl-constraints.html
+lab:
+  setup: |
+    CREATE TABLE staff (id int, dept_id int, bonus int);
+    INSERT INTO staff VALUES (1, 10, 100), (2, NULL, NULL), (3, 20, 50), (4, 30, NULL);
+    CREATE TABLE closed_depts (dept_id int);
+    INSERT INTO closed_depts VALUES (20), (NULL);
+  steps:
+    - task:
+        vi: "Bảng `staff` có bao nhiêu dòng, và bao nhiêu dòng có `bonus`? Trả về `all_rows` và `with_bonus`."
+        en: "How many rows does `staff` have, and how many have a `bonus`? Return `all_rows` and `with_bonus`."
+      solution: SELECT count(*) AS all_rows, count(bonus) AS with_bonus FROM staff
+      check: rows
+      hint:
+        vi: "`count(*)` đếm dòng, `count(bonus)` chỉ đếm giá trị khác NULL."
+        en: "`count(*)` counts rows, `count(bonus)` counts only non-NULL values."
+      fact:
+        vi: "4 dòng nhưng chỉ 2 có thưởng: `count(bonus)` bỏ qua NULL."
+        en: "4 rows but only 2 with a bonus: `count(bonus)` skips NULLs."
+        probe: SELECT count(*), count(bonus) FROM staff
+        expect: [[4, 2]]
+    - task:
+        vi: "Đếm nhân viên có phòng không nằm trong `closed_depts`, viết bằng `NOT IN (SELECT dept_id FROM closed_depts)`. Trả về một số đếm."
+        en: "Count the staff whose department is not in `closed_depts`, written with `NOT IN (SELECT dept_id FROM closed_depts)`. Return one count."
+      solution: SELECT count(*) FROM staff WHERE dept_id NOT IN (SELECT dept_id FROM closed_depts)
+      check: rows
+      hint:
+        vi: "`WHERE dept_id NOT IN (SELECT dept_id FROM closed_depts)` rồi `count(*)`."
+        en: "`WHERE dept_id NOT IN (SELECT dept_id FROM closed_depts)`, then `count(*)`."
+      fact:
+        vi: "Ra 0: danh sách có một NULL, nên `x NOT IN (20, NULL)` không bao giờ đúng, chỉ là false hoặc NULL. Phòng 10 và 30 cũng mất."
+        en: "It is 0: the list holds a NULL, so `x NOT IN (20, NULL)` is never true, only false or NULL. Departments 10 and 30 are lost too."
+        probe: SELECT count(*) FROM staff WHERE dept_id NOT IN (SELECT dept_id FROM closed_depts)
+        expect: [[0]]
+    - task:
+        vi: "Viết lại bằng `NOT EXISTS`: mã những nhân viên không có dòng nào trong `closed_depts` cùng `dept_id`, theo `id`."
+        en: "Rewrite it with `NOT EXISTS`: the ids of staff with no row in `closed_depts` for the same `dept_id`, by `id`."
+      solution: SELECT id FROM staff s WHERE NOT EXISTS (SELECT 1 FROM closed_depts c WHERE c.dept_id = s.dept_id) ORDER BY id
+      check: rows
+      ordered: true
+      hint:
+        vi: "Câu con trong `NOT EXISTS` nối `closed_depts` với dòng `staff` bên ngoài qua `dept_id`."
+        en: "The subquery inside `NOT EXISTS` links `closed_depts` to the outer `staff` row on `dept_id`."
+      fact:
+        vi: "Ra 1, 2, 4: `NOT EXISTS` chỉ hỏi có dòng khớp hay không, nên một NULL không làm hỏng cả câu lọc. Nhân viên 2 (không có phòng) cũng được giữ."
+        en: "It is 1, 2, 4: `NOT EXISTS` only asks whether a matching row exists, so one NULL cannot spoil the whole filter. Staff 2 (no department) is kept too."
+        probe: SELECT id FROM staff s WHERE NOT EXISTS (SELECT 1 FROM closed_depts c WHERE c.dept_id = s.dept_id) ORDER BY id
+        expect: [[1], [2], [4]]
 quiz:
   - q:
       vi: "`SELECT NULL = NULL` trả về gì?"
@@ -104,7 +151,7 @@ Kết quả: `all_rows` 3, `with_x` 2, `not_in_rows` 0, `distinct_rows` 2, `tota
 
 ## Thực hành
 
-Đoán kết quả của từng dòng trong ví dụ trên, rồi trả lời năm câu hỏi.
+Đoán kết quả của từng dòng trong ví dụ trên, kiểm lại bằng lab (ba bước), rồi trả lời năm câu hỏi.
 
 # EN
 
@@ -134,4 +181,4 @@ Result: `all_rows` 3, `with_x` 2, `not_in_rows` 0, `distinct_rows` 2, `total` 5.
 
 ## Practice
 
-Guess the result of each line in the example above, then answer the five questions.
+Guess the result of each line in the example above, check it in the lab (three steps), then answer the five questions.

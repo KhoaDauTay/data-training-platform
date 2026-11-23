@@ -7,6 +7,7 @@ title: "WAL: ghi nhật ký trước, ghi trang sau"
 title_en: "WAL: log first, pages later"
 kind: concept
 runtime: docs
+docs_why: next
 minutes: 10
 viz: pg-wal-flow
 objectives:

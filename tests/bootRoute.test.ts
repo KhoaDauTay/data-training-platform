@@ -2,8 +2,8 @@
 import html from '../index.html?raw';
 import { describe, expect, it } from 'vitest';
 
-/** L320 (feedback #13, CLS): index.html marks Home/#/me before main.ts, so the 64 px rail is never drawn and then removed. */
-const script = /<!-- L320[\s\S]*?<script>([\s\S]*?)<\/script>/.exec(html)![1];
+/** L309 (feedback #13, CLS): index.html marks Home/#/me before main.ts, so the 64 px rail is never drawn and then removed. */
+const script = /<!-- L309[\s\S]*?<script>([\s\S]*?)<\/script>/.exec(html)![1];
 const run = (hash: string, saved?: string): string | undefined => {
   localStorage.clear();
   if (saved) localStorage.setItem('cargo-query/route', JSON.stringify(saved));

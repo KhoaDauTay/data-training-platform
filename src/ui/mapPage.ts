@@ -14,6 +14,8 @@ import { laneInfo, lanePanel, wirePins } from './lanePanel';
 import type { PageState } from './mapTeach';
 import type { MapParts } from '../art/logistics';
 import { s } from './svg';
+import { cardSkills } from './dashboard';
+import { gated, readTour } from '../onboarding';
 
 /** The Map page (#/d/<domain>/map), moved out of homeView.ts (V22-A); since V22-A a "result map" (map-research.md option A). */
 let stopMap: (() => void) | undefined;
@@ -29,6 +31,7 @@ export function loadMapTeach(): Promise<typeof import('./mapTeach')> {
     m.init({
       h, s, getLang, reducedMotion, announce, errorView: (e) => errorView(e), loadArt, loadDomainArt, artState,
       harbor: () => derive(app.tickets, done()), unlocked: unlockedTables,
+      known: () => (gated(readTour()) ? cardSkills() : undefined), // L304: a beginner's samples use only skills they know
       run: (sql, d) => app.run(sql, { schema: domainSchemaId(d) }), rerender: () => actions.rerender(),
     });
     return m;

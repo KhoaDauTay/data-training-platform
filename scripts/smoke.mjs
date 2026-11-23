@@ -655,10 +655,18 @@ try {
   for (const d of ['logistics', 'ecommerce', 'finance']) {
     await step(`V22-A ${d}: map question runs and draws`, async () => {
       await go(base, `#/d/${d}/map`);
+      if (d !== 'logistics') {
+        // L304: this beginner knows no GROUP BY in E-com/Finance yet, so the map says so instead of a sample; as "I know SQL" it asks
+        await waitFor('the GROUP BY note', `/GROUP BY/.test(document.querySelector('#routes-title')?.parentElement?.parentElement?.textContent ?? '') && !document.querySelector('#home [data-map-run]')`, 90000);
+        await ev(`localStorage.setItem('cargo-query/tour', JSON.stringify({ ...JSON.parse(localStorage.getItem('cargo-query/tour') ?? '{}'), knows: true })); true`);
+        await go(base, `#/d/${d}`);
+        await go(base, `#/d/${d}/map`);
+      }
       await waitFor('the map question', `!!document.querySelector('#home [data-map-run]') && document.getElementById('notice').hidden`, 90000);
       await ev(`document.querySelector('#home [data-map-run]').click(); true`);
       await waitFor('the result on the map', `!!document.querySelector('#home [data-map-overlay] circle, #home [data-map-overlay] path') || !!document.querySelector('#home [data-map-error]')`, 60000);
       if (await ev(`!!document.querySelector('#home [data-map-error]')`)) fail('the sample SQL failed');
+      if (d !== 'logistics') await ev(`localStorage.setItem('cargo-query/tour', JSON.stringify({ ...JSON.parse(localStorage.getItem('cargo-query/tour')), knows: false })); true`);
       return ev(`document.querySelectorAll('#home [data-map-overlay] [data-row]').length`);
     });
   }

@@ -7,6 +7,7 @@ title: HOT, prune và VACUUM
 title_en: HOT, pruning and VACUUM
 kind: concept
 runtime: docs
+docs_why: next
 minutes: 10
 viz: pg-hot-chain
 objectives:

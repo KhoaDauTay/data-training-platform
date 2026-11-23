@@ -6,7 +6,7 @@ module: explain-analyze
 title: "Đọc EXPLAIN ANALYZE, và tạo index trên bảng đang chạy"
 title_en: "Reading EXPLAIN ANALYZE, and indexing a live table"
 kind: concept
-runtime: docs
+runtime: browser
 minutes: 12
 verified: { version: "PostgreSQL 18.6 (PGlite 0.5.16)", date: "2026-11-20" }
 viz: pg-lock-matrix
@@ -21,6 +21,53 @@ sources:
   - https://www.postgresql.org/docs/18/sql-explain.html
   - https://www.postgresql.org/docs/18/sql-createindex.html
   - https://www.postgresql.org/docs/18/explicit-locking.html
+lab:
+  setup: |
+    CREATE TABLE orders (id int PRIMARY KEY, status text NOT NULL);
+    INSERT INTO orders SELECT g, 'done' FROM generate_series(1, 10000) AS g;
+    ANALYZE orders;
+    INSERT INTO orders SELECT g, 'new' FROM generate_series(10001, 13000) AS g;
+  steps:
+    - task:
+        vi: "`ANALYZE` đã chạy trước khi 3000 đơn `new` được thêm. Thống kê đang nghĩ gì? Trả về `most_common_vals::text` và `most_common_freqs::text` của cột `status` trong `pg_stats`."
+        en: "`ANALYZE` ran before 3000 `new` orders were added. What do the statistics believe? Return `most_common_vals::text` and `most_common_freqs::text` of column `status` from `pg_stats`."
+      solution: SELECT most_common_vals::text, most_common_freqs::text FROM pg_stats WHERE tablename = 'orders' AND attname = 'status'
+      check: rows
+      hint:
+        vi: "Lọc `pg_stats` bằng `tablename` và `attname`."
+        en: "Filter `pg_stats` on `tablename` and `attname`."
+      fact:
+        vi: "Chỉ có `{done}` với tần suất `{1}`: thống kê không biết `new` tồn tại, nên kế hoạch cho `status = 'new'` ước lượng rất ít dòng trong khi thật có 3000."
+        en: "Only `{done}` with frequency `{1}`: the statistics do not know `new` exists, so a plan for `status = 'new'` estimates very few rows while 3000 are real."
+        probe: SELECT most_common_vals::text, most_common_freqs::text FROM pg_stats WHERE tablename = 'orders' AND attname = 'status'
+        expect: [["{done}", "{1}"]]
+    - task:
+        vi: "Đếm số đơn `new` thật, để so với số dòng ước lượng ở câu đoán."
+        en: "Count the real `new` orders, to compare with the estimate in the prediction."
+      solution: SELECT count(*) FROM orders WHERE status = 'new'
+      check: rows
+      hint:
+        vi: "`count(*)` với `WHERE status = 'new'`."
+        en: "`count(*)` with `WHERE status = 'new'`."
+      fact:
+        vi: "3000 dòng thật. Đây là cặp số `rows=` (ước lượng) và `actual rows=` mà `EXPLAIN ANALYZE` đặt cạnh nhau; lệch xa như vậy thì chạy `ANALYZE orders`."
+        en: "3000 real rows. These are the two numbers `EXPLAIN ANALYZE` puts side by side, `rows=` (estimate) and `actual rows=`; when they are this far apart, run `ANALYZE orders`."
+        probe: SELECT count(*) FROM orders WHERE status = 'new'
+        expect: [[3000]]
+predict:
+  sql: SELECT * FROM orders WHERE status = 'new'
+  expect: { node: Seq Scan, table: orders, rows: 1 }
+  q:
+    vi: "`ANALYZE` chạy khi bảng chỉ có 10.000 đơn `done`; sau đó 3000 đơn `new` được thêm. `EXPLAIN` của câu này ước lượng bao nhiêu dòng (`rows=`)?"
+    en: "`ANALYZE` ran while the table held only 10,000 `done` orders; then 3000 `new` orders were added. What does `EXPLAIN` estimate for this query (`rows=`)?"
+  options:
+    - { vi: "3000: planner đếm lại trước khi chạy", en: "3000: the planner counts again before running" }
+    - { vi: "1: thống kê chưa biết `new`, nên planner đoán gần như không có dòng nào", en: "1: the statistics do not know `new`, so the planner guesses almost no rows" }
+    - { vi: "13.000: cả bảng", en: "13,000: the whole table" }
+  answer: 1
+  why:
+    vi: "3000 nghe hợp lý vì đó là số thật, nhưng planner không đếm: nó đọc `pg_stats`, nơi `status` chỉ có `{done}` với tần suất 1. Giá trị ngoài danh sách được ước lượng gần 0, làm tròn lên 1 dòng. `EXPLAIN ANALYZE` sẽ in `rows=1` cạnh `actual rows=3000`: lệch như vậy là dấu hiệu chạy `ANALYZE`."
+    en: "3000 sounds right because it is the real count, but the planner does not count: it reads `pg_stats`, where `status` has only `{done}` with frequency 1. A value outside that list is estimated near 0, rounded up to 1 row. `EXPLAIN ANALYZE` would print `rows=1` next to `actual rows=3000`: a gap like that says run `ANALYZE`."
 quiz:
   - q:
       vi: "Một nút ghi `rows=5` (ước lượng) nhưng `actual rows=4800`. Điều đó cho biết gì?"
@@ -79,9 +126,9 @@ Kế hoạch có `Seq Scan on t`, `Rows Removed by Filter: 19800`, và dòng `Bu
 
 ## Thực hành
 
-Tạo index trên bảng đang chạy: `CREATE INDEX` thường chặn mọi lệnh ghi tới khi xong. `CREATE INDEX CONCURRENTLY` không chặn ghi nhưng cần nhiều phiên đồng thời để quan sát, nên ở đây chỉ có sơ đồ: PGlite trong trình duyệt chỉ có một phiên.
+Tạo index trên bảng đang chạy: `CREATE INDEX` thường chặn mọi lệnh ghi tới khi xong. `CREATE INDEX CONCURRENTLY` không chặn ghi nhưng cần nhiều phiên đồng thời để quan sát, nên phần đó chỉ có sơ đồ: PGlite trong trình duyệt chỉ có một phiên. Phần ước lượng và thực tế thì chạy được: lab bên dưới đọc thống kê cũ và đếm số dòng thật.
 
-Bấm qua sơ đồ lock (ai chặn ai khi tạo index), rồi trả lời ba câu hỏi.
+Bấm qua sơ đồ lock (ai chặn ai khi tạo index), làm lab, rồi trả lời ba câu hỏi.
 
 # EN
 
@@ -108,6 +155,6 @@ The plan shows `Seq Scan on t`, `Rows Removed by Filter: 19800`, and a `Buffers:
 
 ## Practice
 
-Indexing a live table: a plain `CREATE INDEX` blocks every write until it finishes. `CREATE INDEX CONCURRENTLY` does not block writes, but observing it needs several concurrent sessions, so here it is a diagram only: PGlite in the browser has a single session.
+Indexing a live table: a plain `CREATE INDEX` blocks every write until it finishes. `CREATE INDEX CONCURRENTLY` does not block writes, but observing it needs several concurrent sessions, so that part is a diagram only: PGlite in the browser has a single session. Estimates against reality do run: the lab below reads stale statistics and counts the real rows.
 
-Step through the lock diagram (who blocks whom while an index builds), then answer the three questions.
+Step through the lock diagram (who blocks whom while an index builds), do the lab, then answer the three questions.

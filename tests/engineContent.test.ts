@@ -94,6 +94,11 @@ describe('parseEngineLesson (thuần)', () => {
     ['quiz answer ngoài khoảng', FM(`${BASE}\nquiz: [{ q: { vi: a, en: a }, options: [{ vi: a, en: a }, { vi: b, en: b }], answer: 2, why: { vi: a, en: a } }]`), PATH, /answer/],
     ['check lạ', FM(`${BASE}\nlab: { steps: [{ task: { vi: a, en: a }, solution: x, check: speed, hint: { vi: a, en: a } }] }`), PATH, /check/],
     ['thiếu en', FM(BASE.replace('[{ vi: a, en: a }]', '[{ vi: a }]')), PATH, /objectives\[0\] cần vi và en/],
+    ['docs_why không có runtime: docs', FM(`${BASE}
+docs_why: sessions`), PATH, /docs_why chỉ dùng/],
+    ['docs_why lạ', FM(`${BASE}
+runtime: docs
+docs_why: slow`), PATH, /docs_why phải là/],
   ])('từ chối: %s', (_, src, path, msg) => {
     expect(() => parseEngineLesson(src, path, parse)).toThrow(msg);
   });
@@ -168,5 +173,12 @@ describe('honestOf: nhãn trung thực của mọi bài', () => {
       expect(l.runtime).toBe('docs');
       expect(k).toBe(l.viz ? 'diagram' : 'docs');
     }
+  });
+});
+
+// L305: a Postgres lesson that does not run here says why (PGlite runs one session: two sessions, a server, scale…).
+describe('Postgres runtime: docs có lý do', () => {
+  it('mọi bài Postgres runtime: docs có docs_why', () => {
+    expect(sets[0].filter((l) => l.engine === 'postgres' && l.runtime === 'docs' && !l.docsWhy).map((l) => l.id)).toEqual([]);
   });
 });

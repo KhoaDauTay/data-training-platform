@@ -41,6 +41,9 @@ export interface Predict extends Question { sql: string; expect?: PredictExpect 
 /** `browser`: runs here; `docs`: numbers come from the official docs, nothing runs (the page says so). */
 export const RUNTIMES = ['browser', 'docs'] as const;
 export type Runtime = (typeof RUNTIMES)[number];
+/** Why a `runtime: docs` lesson does not run here (L305), shown on its page: two sessions at once, a real server, billions of transactions, or a concept whose run is the next lab. */
+export const DOCS_WHY = ['sessions', 'server', 'scale', 'next'] as const;
+export type DocsWhy = (typeof DOCS_WHY)[number];
 export const SECTIONS = { idea: ['Ý chính', 'Key idea'], example: ['Ví dụ', 'Example'], practice: ['Thực hành', 'Practice'] } as const;
 export type SectionId = keyof typeof SECTIONS;
 export interface Section { id: SectionId; text: Bi }
@@ -53,6 +56,7 @@ export interface EngineLesson {
   title: Bi;
   kind: Kind;
   runtime?: Runtime;
+  docsWhy?: DocsWhy;
   minutes: number;
   objectives: Bi[];
   requires: string[];
@@ -130,6 +134,10 @@ export function parseEngineLesson(source: string | LessonSource, path: string, y
   };
   if (lesson.id !== lessonIdFor(engine, level, nn)) fail(`id phải là ${lessonIdFor(engine, level, nn)} (theo đường dẫn)`);
   if (fm.runtime !== undefined) lesson.runtime = RUNTIMES.includes(fm.runtime as Runtime) ? (fm.runtime as Runtime) : fail(`runtime phải là một trong ${RUNTIMES.join(', ')}`);
+  if (fm.docs_why !== undefined) {
+    if (lesson.runtime !== 'docs') fail('docs_why chỉ dùng với runtime: docs');
+    lesson.docsWhy = DOCS_WHY.includes(fm.docs_why as DocsWhy) ? (fm.docs_why as DocsWhy) : fail(`docs_why phải là một trong ${DOCS_WHY.join(', ')}`);
+  }
   // An index entry (no body): the header only; the lesson's own chunk is parsed in full when it opens.
   if (src.body === undefined) return lesson;
   if (!lesson.objectives.length) fail('cần ít nhất một objectives');

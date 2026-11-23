@@ -24,7 +24,7 @@ describe('#announce', () => {
   });
 });
 
-describe('L320: form fields', () => {
+describe('L309: form fields', () => {
   it('h() gives an input, select or textarea without id or name a name; its own id or name is kept', () => {
     for (const tag of ['input', 'select', 'textarea'] as const) expect(h(tag).getAttribute('name')).toBe(`cq-${tag}`);
     expect(h('input', { id: 'x' }).hasAttribute('name')).toBe(false);
