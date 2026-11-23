@@ -5,7 +5,7 @@ import { getLang, t } from '../i18n';
 import { lessonSchema, loadLessonPrefs, markLesson, type Lesson } from '../lessons';
 import { SKILLS } from '../progress';
 import { skillOfDrill } from '../home';
-import { actions as appActions, app } from '../state';
+import { actions as appActions, app, unlockedTables } from '../state';
 import { blanksIn, fillAction, firstBlank } from '../tickets';
 import { cx } from '../theme';
 import { byId, h, nodes, richText } from './dom';
@@ -19,9 +19,7 @@ import { readTour } from '../onboarding';
 import { inDomain } from '../route';
 import { currentRoute } from './router';
 import { diffView, hasDiff, runOn, tablesIn, tryPreview, verdictText } from './tryPreview';
-import { activeDomain, ECOM_TABLES, FIN_TABLES, LOGISTICS_TABLES, type DomainId } from '../domains';
 
-const DOMAIN_TABLES: Record<DomainId, readonly string[]> = { logistics: LOGISTICS_TABLES, ecommerce: ECOM_TABLES, finance: FIN_TABLES };
 
 // Session state by skill id. The brief is rebuilt on every rerender, so what the player typed or ran lives here.
 const drafts = new Map<string, string>();
@@ -252,9 +250,9 @@ function card(l: Lesson, titleId: string, actions: HTMLElement[], tour = false, 
         h('a', { href: l.docs, target: '_blank', rel: 'noopener noreferrer', class: 'inline-flex items-center gap-1.5' }, icon('external', 'size-4'), t('lesson.docs')))));
 }
 
-/** Where the lesson's data comes from (L303): the shop chain on `lab`, and which of its tables share a name with the open domain's. */
+/** Where the lesson's data comes from (L303): the shop chain on `lab`, and which of its tables share a name with a table the player has opened in this domain. */
 function labNote(l: Lesson): HTMLElement {
-  const same = tablesIn([l.example, l.mistake.sql, l.try.solution].join('\n'), DOMAIN_TABLES[activeDomain()]);
+  const same = tablesIn([l.example, l.mistake.sql, l.try.solution].join('\n'), unlockedTables());
   return h('p', { class: 'mt-0 mb-4 flex gap-2 rounded-(--r-ctl) bg-info-soft p-3 text-body-sm', 'data-lab-note': '' }, icon('info', 'size-5 shrink-0'),
     h('span', {}, t('lesson.labNote'), same.length ? ` ${t('lesson.labSame', { tables: same.join(', ') })}` : ''));
 }

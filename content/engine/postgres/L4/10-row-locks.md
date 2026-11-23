@@ -35,8 +35,8 @@ lab:
       solution: SELECT count(*) FROM pg_locks WHERE locktype = 'tuple'
       check: rows
       hint:
-        vi: "`SELECT count(*) FROM pg_locks WHERE locktype = 'tuple'`."
-        en: "`SELECT count(*) FROM pg_locks WHERE locktype = 'tuple'`."
+        vi: "`count(*)` trên `pg_locks`, lọc theo `locktype`."
+        en: "`count(*)` over `pg_locks`, filtered on `locktype`."
       fact:
         vi: "Ra 0: bốn row lock không có dòng nào trong `pg_locks`. Postgres chỉ thêm lock `tuple` tạm khi có người phải chờ."
         en: "It is 0: the four row locks have no row in `pg_locks`. Postgres adds a temporary `tuple` lock only while someone waits."
@@ -49,8 +49,8 @@ lab:
       check: rows
       ordered: true
       hint:
-        vi: "`heap_page_items(get_raw_page('acct', 0))` với `WHERE lp BETWEEN 3 AND 7`."
-        en: "`heap_page_items(get_raw_page('acct', 0))` with `WHERE lp BETWEEN 3 AND 7`."
+        vi: "`heap_page_items()` đọc trang thô mà `get_raw_page()` trả về."
+        en: "`heap_page_items()` reads the raw page that `get_raw_page()` returns."
       fact:
         vi: "Dòng 3 (FOR UPDATE) 448 và 8194, dòng 4 (FOR SHARE) 464, dòng 5 (FOR KEY SHARE) 400, dòng 6 (FOR NO KEY UPDATE) 448 và 2, dòng 7 2048 (không lock: chỉ bit `XMAX_INVALID`): bit `LOCK_ONLY` (128) cùng bit mức lock, ghi ngay trên trang."
         en: "Row 3 (FOR UPDATE) 448 and 8194, row 4 (FOR SHARE) 464, row 5 (FOR KEY SHARE) 400, row 6 (FOR NO KEY UPDATE) 448 and 2, row 7 2048 (no lock: only the `XMAX_INVALID` bit): the `LOCK_ONLY` bit (128) plus the strength bits, written right on the page."

@@ -32,8 +32,8 @@ lab:
       solution: SELECT count(*) FROM bt_page_items('sessions_user_idx', 1)
       check: rows
       hint:
-        vi: "`SELECT count(*) FROM bt_page_items('sessions_user_idx', 1)`."
-        en: "`SELECT count(*) FROM bt_page_items('sessions_user_idx', 1)`."
+        vi: "`bt_page_items()` nhận tên index và số khối; đếm số dòng nó trả về."
+        en: "`bt_page_items()` takes the index name and the block number; count the rows it returns."
       fact:
         vi: "100 mục, mỗi phiên một mục."
         en: "100 items, one per session."
@@ -45,8 +45,8 @@ lab:
       solution: UPDATE sessions SET last_seen = last_seen + interval '1 minute' RETURNING id
       check: rows
       hint:
-        vi: "`UPDATE sessions SET last_seen = last_seen + interval '1 minute' RETURNING id`."
-        en: "`UPDATE sessions SET last_seen = last_seen + interval '1 minute' RETURNING id`."
+        vi: "Cộng `interval '1 minute'` vào `last_seen`, không `WHERE`, rồi `RETURNING id`."
+        en: "Add `interval '1 minute'` to `last_seen`, no `WHERE`, then `RETURNING id`."
     - task:
         vi: "Đếm lại số mục trên khối 1 của `sessions_user_idx`."
         en: "Count the items on block 1 of `sessions_user_idx` again."

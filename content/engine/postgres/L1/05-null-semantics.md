@@ -60,8 +60,8 @@ lab:
       check: rows
       ordered: true
       hint:
-        vi: "`WHERE NOT EXISTS (SELECT 1 FROM closed_depts c WHERE c.dept_id = s.dept_id)`."
-        en: "`WHERE NOT EXISTS (SELECT 1 FROM closed_depts c WHERE c.dept_id = s.dept_id)`."
+        vi: "Câu con trong `NOT EXISTS` nối `closed_depts` với dòng `staff` bên ngoài qua `dept_id`."
+        en: "The subquery inside `NOT EXISTS` links `closed_depts` to the outer `staff` row on `dept_id`."
       fact:
         vi: "Ra 1, 2, 4: `NOT EXISTS` chỉ hỏi có dòng khớp hay không, nên một NULL không làm hỏng cả câu lọc. Nhân viên 2 (không có phòng) cũng được giữ."
         en: "It is 1, 2, 4: `NOT EXISTS` only asks whether a matching row exists, so one NULL cannot spoil the whole filter. Staff 2 (no department) is kept too."

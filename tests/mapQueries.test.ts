@@ -73,6 +73,9 @@ describe('map questions', () => {
       const USES: [RegExp, string][] = [[/\bGROUP BY\b/i, 'group_by'], [/\bFILTER\b/i, 'conditional_agg'], [/\bJOIN\b/i, 'join'], [/\bcoalesce\b/i, 'coalesce'], [/\b[a-z_]+ - [a-z_]+\b/, 'date_math']];
       for (const q of MAP_QUESTIONS[d]) {
         for (const [re, skill] of USES) if (re.test(q.sql)) expect(q.needs.some((x) => x === skill || (skill === 'join' && x === 'multi_join')), `${q.id} ${skill}`).toBe(true);
+        // every need is a skill this domain's story teaches (a typo or an untaught id would hide the question from beginners for good)
+        const taught = new Set(loadTicketTemplates(d).flatMap((tk) => tk.grants));
+        expect(q.needs.filter((x) => !taught.has(x)), q.id).toEqual([]);
       }
       const all = tablesUnlocked(12, chapterTablesOf(d));
       expect(questionFor(d, 'x', 0, all, new Set(), new Set(['group_by', 'join', 'conditional_agg', 'date_math']))).toBeDefined();

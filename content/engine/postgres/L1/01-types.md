@@ -49,8 +49,8 @@ lab:
       solution: SELECT at_tz::text, at_plain::text FROM logins
       check: rows
       hint:
-        vi: "`SELECT at_tz::text, at_plain::text FROM logins`."
-        en: "`SELECT at_tz::text, at_plain::text FROM logins`."
+        vi: "Ép từng cột sang chữ bằng `::text`."
+        en: "Cast each column to text with `::text`."
       fact:
         vi: "`at_tz` hiện `2026-03-01 16:00:00+07` (đúng thời điểm, đổi sang giờ phiên), `at_plain` hiện `2026-03-01 09:00:00`: phần `+00` đã bị bỏ khi ghi."
         en: "`at_tz` shows `2026-03-01 16:00:00+07` (the same instant in the session zone), `at_plain` shows `2026-03-01 09:00:00`: the `+00` was dropped on write."

@@ -32,16 +32,16 @@ lab:
       solution: CREATE INDEX docs_title_trgm ON docs USING gin (title gin_trgm_ops)
       check: catalog
       hint:
-        vi: "`CREATE INDEX docs_title_trgm ON docs USING gin (title gin_trgm_ops)`."
-        en: "`CREATE INDEX docs_title_trgm ON docs USING gin (title gin_trgm_ops)`."
+        vi: "`USING gin`, và opclass `gin_trgm_ops` đặt ngay sau tên cột."
+        en: "`USING gin`, with the opclass `gin_trgm_ops` right after the column name."
     - task:
         vi: "Chạy truy vấn tìm kiếm: `id` của các tiêu đề chứa `abc1`. Kế hoạch phải đọc index vừa tạo."
         en: "Run the search: the `id` of titles that contain `abc1`. The plan must read the index you just created."
       solution: SELECT id FROM docs WHERE title LIKE '%abc1%'
       check: plan
       hint:
-        vi: "`SELECT id FROM docs WHERE title LIKE '%abc1%'`."
-        en: "`SELECT id FROM docs WHERE title LIKE '%abc1%'`."
+        vi: "`LIKE` với `%` ở cả hai đầu chuỗi."
+        en: "`LIKE` with `%` at both ends of the string."
 quiz:
   - q: { vi: "Bảng log 2 tỉ dòng, chỉ chèn thêm, truy vấn luôn là \"khoảng thời gian X đến Y\". Ổ đĩa đắt. Chọn gì cho cột thời gian?", en: "A 2-billion-row append-only log table; queries are always \"time range X to Y\". Disk is expensive. What goes on the timestamp column?" }
     options:

@@ -42,8 +42,8 @@ lab:
         probe: SELECT most_common_vals::text, most_common_freqs::text FROM pg_stats WHERE tablename = 'orders' AND attname = 'status'
         expect: [["{done}", "{1}"]]
     - task:
-        vi: "Đếm số đơn `new` thật, để so với số dòng ước lượng."
-        en: "Count the real `new` orders, to compare with the estimated row count."
+        vi: "Đếm số đơn `new` thật, để so với số dòng ước lượng ở câu đoán."
+        en: "Count the real `new` orders, to compare with the estimate in the prediction."
       solution: SELECT count(*) FROM orders WHERE status = 'new'
       check: rows
       hint:
@@ -54,6 +54,20 @@ lab:
         en: "3000 real rows. These are the two numbers `EXPLAIN ANALYZE` puts side by side, `rows=` (estimate) and `actual rows=`; when they are this far apart, run `ANALYZE orders`."
         probe: SELECT count(*) FROM orders WHERE status = 'new'
         expect: [[3000]]
+predict:
+  sql: SELECT * FROM orders WHERE status = 'new'
+  expect: { node: Seq Scan, table: orders, rows: 1 }
+  q:
+    vi: "`ANALYZE` chạy khi bảng chỉ có 10.000 đơn `done`; sau đó 3000 đơn `new` được thêm. `EXPLAIN` của câu này ước lượng bao nhiêu dòng (`rows=`)?"
+    en: "`ANALYZE` ran while the table held only 10,000 `done` orders; then 3000 `new` orders were added. What does `EXPLAIN` estimate for this query (`rows=`)?"
+  options:
+    - { vi: "3000: planner đếm lại trước khi chạy", en: "3000: the planner counts again before running" }
+    - { vi: "1: thống kê chưa biết `new`, nên planner đoán gần như không có dòng nào", en: "1: the statistics do not know `new`, so the planner guesses almost no rows" }
+    - { vi: "13.000: cả bảng", en: "13,000: the whole table" }
+  answer: 1
+  why:
+    vi: "3000 nghe hợp lý vì đó là số thật, nhưng planner không đếm: nó đọc `pg_stats`, nơi `status` chỉ có `{done}` với tần suất 1. Giá trị ngoài danh sách được ước lượng gần 0, làm tròn lên 1 dòng. `EXPLAIN ANALYZE` sẽ in `rows=1` cạnh `actual rows=3000`: lệch như vậy là dấu hiệu chạy `ANALYZE`."
+    en: "3000 sounds right because it is the real count, but the planner does not count: it reads `pg_stats`, where `status` has only `{done}` with frequency 1. A value outside that list is estimated near 0, rounded up to 1 row. `EXPLAIN ANALYZE` would print `rows=1` next to `actual rows=3000`: a gap like that says run `ANALYZE`."
 quiz:
   - q:
       vi: "Một nút ghi `rows=5` (ước lượng) nhưng `actual rows=4800`. Điều đó cho biết gì?"

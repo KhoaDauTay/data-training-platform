@@ -41,8 +41,8 @@ export interface Predict extends Question { sql: string; expect?: PredictExpect 
 /** `browser`: runs here; `docs`: numbers come from the official docs, nothing runs (the page says so). */
 export const RUNTIMES = ['browser', 'docs'] as const;
 export type Runtime = (typeof RUNTIMES)[number];
-/** Why a `runtime: docs` lesson does not run here (L305), shown on its page: two sessions at once, a real server, billions of transactions, a multi-statement transaction, or a concept whose run is the next lab. */
-export const DOCS_WHY = ['sessions', 'server', 'scale', 'multi', 'next'] as const;
+/** Why a `runtime: docs` lesson does not run here (L305), shown on its page: two sessions at once, a real server, billions of transactions, or a concept whose run is the next lab. */
+export const DOCS_WHY = ['sessions', 'server', 'scale', 'next'] as const;
 export type DocsWhy = (typeof DOCS_WHY)[number];
 export const SECTIONS = { idea: ['Ý chính', 'Key idea'], example: ['Ví dụ', 'Example'], practice: ['Thực hành', 'Practice'] } as const;
 export type SectionId = keyof typeof SECTIONS;
