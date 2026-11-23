@@ -2,7 +2,7 @@
 id: e-pg-l1-06
 engine: postgres
 level: L1
-module: transactions
+module: schemas
 title: Schema và search_path
 title_en: Schemas and search_path
 kind: lab

@@ -1,5 +1,5 @@
-- id: types
-  module: types
+- id: ddl
+  module: ddl
   level: L1
   vi: Kiểu dữ liệu và bảng
   en: Data types and tables
@@ -7,8 +7,30 @@
     vi: Kiểu dữ liệu và bảng
     en: Data types and tables
   after:
-    vi: chọn kiểu cho một bảng mới, dùng khóa identity hoặc `uuidv7()`, và chỉ ra vì sao tiền không để `float8`
-    en: choose the types for a new table, use an identity or `uuidv7()` key, and explain why money never goes in `float8`
+    vi: chọn kiểu cho một bảng mới, sửa và xóa bảng an toàn, và chỉ ra vì sao kiểu sai làm câu đúng mà chậm
+    en: choose the types for a new table, alter and drop tables safely, and show why a wrong type makes a right query slow
+- id: write
+  module: write
+  level: L1
+  vi: Ghi dữ liệu
+  en: Writing data
+  title:
+    vi: Ghi dữ liệu
+    en: Writing data
+  after:
+    vi: thêm, sửa, xóa dòng có điều kiện, đọc lại bằng `RETURNING`, và ghi đè an toàn bằng `ON CONFLICT` hoặc `MERGE`
+    en: insert, update and delete rows with conditions, read them back with `RETURNING`, and upsert safely with `ON CONFLICT` or `MERGE`
+- id: schemas
+  module: schemas
+  level: L1
+  vi: Database và schema
+  en: Databases and schemas
+  title:
+    vi: Database và schema
+    en: Databases and schemas
+  after:
+    vi: phân biệt database và schema, tách bảng theo schema và gọi đúng bảng qua `search_path`
+    en: tell a database from a schema, split tables into schemas and reach the right table through `search_path`
 - id: constraints
   module: constraints
   level: L1
@@ -23,14 +45,14 @@
 - id: transactions
   module: transactions
   level: L1
-  vi: Schema và transaction
-  en: Schemas and transactions
+  vi: Transaction
+  en: Transactions
   title:
-    vi: Schema và transaction
-    en: Schemas and transactions
+    vi: Transaction
+    en: Transactions
   after:
-    vi: tách bảng theo schema, gọi đúng bảng qua `search_path`, và gói nhiều thay đổi để chúng cùng thành công hoặc cùng không xảy ra
-    en: split tables into schemas, reach the right table through `search_path`, and group changes so they all succeed or none happen
+    vi: gói nhiều thay đổi để chúng cùng thành công hoặc cùng không xảy ra
+    en: group changes so they all succeed or none happen
 - id: views
   module: views
   level: L1
@@ -64,6 +86,39 @@
   after:
     vi: đưa một bảng đang chạy về trạng thái an toàn và nhanh, chứng minh bằng EXPLAIN
     en: bring a live table to a safe and fast state, and prove it with EXPLAIN
+- id: functions
+  module: functions
+  level: L2
+  vi: Hàm và thủ tục
+  en: Functions and procedures
+  title:
+    vi: Hàm và thủ tục
+    en: Functions and procedures
+  after:
+    vi: viết hàm SQL và PL/pgSQL, thủ tục có vòng lặp, và báo lỗi có mã bằng `RAISE`
+    en: write SQL and PL/pgSQL functions, procedures with loops, and raise errors with a code using `RAISE`
+- id: roles
+  module: roles
+  level: L2
+  vi: Vai trò và quyền
+  en: Roles and privileges
+  title:
+    vi: Vai trò và quyền
+    en: Roles and privileges
+  after:
+    vi: tạo vai trò cho từng nhóm người dùng, cấp và thu hồi quyền tới từng bảng, cột và schema
+    en: create roles for each group of users, and grant and revoke privileges down to tables, columns and schemas
+- id: triggers
+  module: triggers
+  level: L2
+  vi: Trigger
+  en: Triggers
+  title:
+    vi: Trigger
+    en: Triggers
+  after:
+    vi: viết trigger ghi nhật ký thay đổi, và chọn giữa trigger, ràng buộc và cột generated
+    en: write a trigger that logs changes, and choose between a trigger, a constraint and a generated column
 - id: btree-multi
   module: btree-multi
   level: L2

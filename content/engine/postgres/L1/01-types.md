@@ -2,7 +2,7 @@
 id: e-pg-l1-01
 engine: postgres
 level: L1
-module: types
+module: ddl
 title: Chọn kiểu dữ liệu
 title_en: Choosing data types
 kind: concept

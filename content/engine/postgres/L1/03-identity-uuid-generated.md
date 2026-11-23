@@ -2,7 +2,7 @@
 id: e-pg-l1-03
 engine: postgres
 level: L1
-module: types
+module: ddl
 title: Khóa tự sinh, UUID và cột sinh
 title_en: Generated keys, UUIDs and generated columns
 kind: lab

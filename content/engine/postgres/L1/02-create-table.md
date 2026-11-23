@@ -2,7 +2,7 @@
 id: e-pg-l1-02
 engine: postgres
 level: L1
-module: types
+module: ddl
 title: Tạo bảng đầu tiên
 title_en: Creating your first table
 kind: lab
