@@ -10,6 +10,7 @@
  * Body: VI sections (## Ý chính, ## Ví dụ, ## Thực hành), then `# EN` with the same sections (## Key idea, ## Example,
  * ## Practice). Section text: paragraphs, `- ` bullet lists, inline `code` and ``` fenced blocks; nothing else.
  */
+import type { PerfSpec } from '../planCheck';
 
 export const ENGINES = ['postgres', 'mongodb', 'dynamodb'] as const;
 export type EngineId = (typeof ENGINES)[number];
@@ -29,7 +30,8 @@ export interface Bi { vi: string; en: string }
  */
 export interface Fact extends Bi { probe?: string; expect?: unknown[][] }
 /** `name` (v23 CAP, L257): a short step name for the capstone step bar; without it the bar derives one from `task`. */
-export interface LabStep { task: Bi; solution: string; check: Check; ordered: boolean; hint: Bi; expect?: Record<string, number>; fact?: Fact; target?: string; name?: Bi }
+/** `perf` / `slow` (v24, L340): a performance bar on a Postgres `rows` step, as on a General drill (src/planCheck.ts slowVerdict). */
+export interface LabStep { task: Bi; solution: string; check: Check; ordered: boolean; hint: Bi; expect?: Record<string, number>; fact?: Fact; target?: string; name?: Bi; perf?: PerfSpec; slow?: string }
 export interface Lab { setup?: string; steps: LabStep[] }
 export interface Question { q: Bi; options: Bi[]; answer: number; why: Bi }
 /**
@@ -111,6 +113,12 @@ export function parseEngineLesson(source: string | LessonSource, path: string, y
     const f = (v ?? {}) as Record<string, unknown>;
     return { ...bi(f, what), ...(typeof f.probe === 'string' ? { probe: f.probe } : {}), ...(Array.isArray(f.expect) ? { expect: f.expect as unknown[][] } : {}) };
   };
+  const perfOf = (v: unknown, slow: unknown, what: string): PerfSpec => {
+    const p = (v ?? {}) as Record<string, unknown>;
+    if (typeof p.table !== 'string' || !p.table) fail(`${what}.perf cần table`);
+    if (typeof slow !== 'string' || !slow.trim()) fail(`${what}.perf cần slow`);
+    return { table: String(p.table), ...(typeof p.max_ratio === 'number' ? { max_ratio: p.max_ratio } : {}) };
+  };
 
   const [engine, level, nn] = [where[1] as EngineId, where[2] as Level, where[3]];
   const kind = KINDS.includes(fm.kind as Kind) ? (fm.kind as Kind) : fail(`kind phải là một trong ${KINDS.join(', ')}`);
@@ -148,6 +156,8 @@ export function parseEngineLesson(source: string | LessonSource, path: string, y
         ...(s.fact !== undefined ? { fact: fact(s.fact, `lab.steps[${i}].fact`) } : {}),
         ...(typeof s.target === 'string' && s.target.trim() ? { target: s.target.trim() } : {}),
         ...(s.name !== undefined ? { name: bi(s.name, `lab.steps[${i}].name`) } : {}),
+        ...(s.perf !== undefined ? { perf: perfOf(s.perf, s.slow, `lab.steps[${i}]`) } : {}),
+        ...(typeof s.slow === 'string' ? { slow: s.slow.trim() } : {}),
       };
     });
     if (!steps.length) fail('lab cần ít nhất một bước');

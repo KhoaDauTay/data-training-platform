@@ -1,6 +1,7 @@
 import type { LessonBody, Lesson } from './lessons';
 import type { Bilingual } from './progress';
 import type { Ticket, Wrong } from './tickets';
+import type { PerfSpec } from './planCheck';
 
 /**
  * General area (Plan 8a): drills per skill (content/general/sql.yml) and the advanced DA track (content/general/adv.yml).
@@ -37,6 +38,10 @@ export interface Drill {
   hint: Bilingual;
   wrong: Wrong[];
   plan?: { index: string };
+  /** v24 (L340): a performance bar: a right answer that loses the index on `table` or costs > max_ratio × the Solution is not passed. */
+  perf?: PerfSpec;
+  /** v24: a right-but-slow answer the bar must refuse (tests/perfGate.test.ts proves it); never shown. */
+  slow?: string;
 }
 export type NodeStatus = 'in' | 'partial' | 'external';
 const STATUSES: NodeStatus[] = ['in', 'partial', 'external'];
@@ -79,6 +84,8 @@ export function parseDrill(o: Raw, origin: string, owner: { skill?: string; node
   const wrong = (Array.isArray(o.wrong) ? o.wrong : o.wrong === undefined ? [] : fail('wrong cần một danh sách')) as Raw[];
   if (kind === 'trap' && wrong.length === 0) fail('trap cần wrong');
   const plan = o.plan as Raw | undefined;
+  const perf = o.perf as Raw | undefined;
+  if (perf && o.slow === undefined) fail('perf cần slow');
   return {
     id,
     ...owner,
@@ -90,6 +97,8 @@ export function parseDrill(o: Raw, origin: string, owner: { skill?: string; node
     hint: both(o.hint, 'hint'),
     wrong: wrong.map((w) => ({ sql: text(w.sql, 'wrong.sql'), why: both(w, 'wrong') })),
     ...(plan ? { plan: { index: text(plan.index, 'plan.index') } } : {}),
+    ...(perf ? { perf: { table: text(perf.table, 'perf.table'), ...(typeof perf.max_ratio === 'number' ? { max_ratio: perf.max_ratio } : {}) } } : {}),
+    ...(o.slow !== undefined ? { slow: text(o.slow, 'slow') } : {}),
   };
 }
 
@@ -179,7 +188,7 @@ export function drillTicket(d: Drill): Ticket {
     body: '',
     task: d.task.vi,
     hints: [d.hint.vi],
-    steps: [{ title: '', prompt: '', solution: d.solution, ...(d.plan ? { plan: d.plan } : {}) }],
+    steps: [{ title: '', prompt: '', solution: d.solution, ...(d.plan ? { plan: d.plan } : {}), ...(d.perf ? { perf: d.perf } : {}) }],
     ...(d.starter !== undefined ? { starter: d.starter } : {}),
     format: d.kind === 'faded' ? 'faded' : 'open',
     wrong: d.wrong,

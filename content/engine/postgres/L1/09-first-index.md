@@ -51,10 +51,12 @@ lab:
         vi: Một điều kiện bằng trên cột đã có index là đủ. Thử thêm `EXPLAIN` phía trước để xem kế hoạch.
         en: An equality filter on the indexed column is enough. Put `EXPLAIN` in front to see the plan.
     - task:
-        vi: Đếm số đơn và tổng tiền của khách 42 (hai cột, một dòng).
-        en: Count the orders of customer 42 and sum their amounts (two columns, one row).
+        vi: "Đếm số đơn và tổng tiền của khách 42 (hai cột, một dòng). Bài chấm cả tốc độ: đúng mà không dùng được index là chưa đạt."
+        en: "Count the orders of customer 42 and sum their amounts (two columns, one row). Speed is graded too: a right answer that cannot use the index does not pass."
       solution: SELECT count(*), sum(amount) FROM orders WHERE customer_id = 42
       check: rows
+      perf: { table: orders }
+      slow: SELECT count(*), sum(amount) FROM orders WHERE customer_id + 0 = 42
       hint:
         vi: Dùng `count(*)` và `sum(amount)` với cùng điều kiện.
         en: Use `count(*)` and `sum(amount)` with the same filter.

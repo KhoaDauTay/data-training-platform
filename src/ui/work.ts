@@ -6,11 +6,11 @@ import { notePass, noteTry } from '../insights';
 import type { QueryResult } from '../db/run';
 import { compareResults, grade, type GradeResult } from '../grader';
 import { loadHistory, pushHistory, writeHistory } from '../history';
-import { checkLab, checkPlan, isCreateIndex, planLine, type LabSpec, type PlanFail } from '../planCheck';
+import { checkLab, checkPlan, isCreateIndex, planLine, slowVerdict, type LabSpec, type PlanFail, type SlowVerdict } from '../planCheck';
 import { getLang, isMac, t, type Key } from '../i18n';
 import { LANE_XP } from '../lanes';
 import { SKILLS, xpFor } from '../progress';
-import { isClosed, keepsWork, readDraft, schemaOf, workKey, writeDraft } from '../session';
+import { isClosed, keepsWork, readDraft, schemaOf, session, workKey, writeDraft } from '../session';
 import { app, done, editorSchema, initialDoc, persist, stepKey, type LastRun } from '../state';
 import { localStore } from '../storage';
 import { BTN_SECONDARY, BTN_SUBMIT, cx } from '../theme';
@@ -430,6 +430,8 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
     let tip: (() => string) | undefined;
     let planFail: PlanFail | undefined;
     let planError: unknown; // the player's EXPLAIN failed: a DB/SQL error, not a content bug
+    let slow: SlowVerdict | undefined; // v24 (L340): right but slow; blocks only on a `perf:` step
+    let plans: [unknown, unknown] | undefined;
     try {
       r = await grade((s) => (s === sql ? playerRun(s) : deps.db.run(s, { schema })), tk.steps[i].solution, sql, tk.ordered, tk.steps[i].precision);
       // Still busy: no newer Run/Submit can start before the tip is ready, so this result can never overwrite a newer one.
@@ -441,6 +443,17 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
           planFail = checkPlan((await deps.db.run(`EXPLAIN (FORMAT JSON) ${sql}`, { schema })).rows[0]?.[0], plan.index);
         } catch (e) {
           planError = e ?? new Error();
+        }
+      }
+      // v24: right but slow. Two planner-only EXPLAINs (Solution, answer) on the same DB; never milliseconds.
+      const perf = tk.steps[i].perf;
+      if (r.ok && !planFail && planError === undefined) {
+        try {
+          const explain = async (s: string) => (await deps.db.run(`EXPLAIN (FORMAT JSON) ${s.trim().replace(/;\s*$/, '')}`, { schema })).rows[0]?.[0];
+          plans = [await explain(tk.steps[i].solution), await explain(sql)];
+          slow = slowVerdict(plans[0], plans[1], perf);
+        } catch (e) {
+          if (perf) planError = e ?? new Error(); // outside `perf:` a failed EXPLAIN never blocks a pass
         }
       }
     } catch (e) {
@@ -507,8 +520,25 @@ export function mountWork(host: HTMLElement, deps: WorkDeps): WorkArea {
       deps.panel.show('explain'); // the plan that was refused
       return;
     }
+    const v = slow;
+    const lines = plans;
+    const slowView = (): HTMLElement | null => v && lines ? h('div', { class: 'mt-2' },
+      h('p', { class: 'm-0' }, t(v.indexLost ? 'perf.indexLost' : v.block ? 'perf.slow' : 'perf.weak', { cost: v.cost, sol: v.solution, ratio: v.ratio, table: v.indexLost ?? '' })),
+      h('p', { class: 'm-0 text-body-sm text-muted' }, t('perf.lines', { mine: planLine(lines[1]), want: planLine(lines[0]) }))) : null;
+    if (v?.block) {
+      // L324: on a `perf:` step right-but-slow is not passed; not a wrong submit either (the logic is right)
+      say('bad', () => slowView() ?? '', ['boon', 'think']);
+      deps.panel.show('explain');
+      return;
+    }
+    if (v && session.mode.kind === 'drill') session.mode.framed = true; // weak pass, the same rule as a used scaffold (D-H4)
     deps.panel.show('result'); // the graded run, not the Columns tab left open from before
     solved(tk, i, k, sql, story);
+    if (v && message?.kind === 'good') { // full XP; Boon's note and both plan lines under "Correct"
+      const base = message.view;
+      message.view = () => h('div', {}, base(), slowView());
+      drawMessage();
+    }
   }
 
   /** Credit for a correct step: graded SQL for the Recap, next step / conclusion / solved, message and celebration. */

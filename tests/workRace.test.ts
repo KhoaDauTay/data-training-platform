@@ -72,7 +72,7 @@ let release: () => void;
 function setup() {
   // The player's query waits until the test calls release(); the Solution answers at once.
   const db = {
-    run: vi.fn((sql: string) => (sql === 'SELECT 1 AS n'
+    run: vi.fn((sql: string) => (sql === 'SELECT 1 AS n' || sql.startsWith('EXPLAIN') // v24: the perf check's planner-only EXPLAINs answer at once
       ? Promise.resolve(result)
       : new Promise<QueryResult>((resolve) => { release = () => resolve(result); }))),
   };
@@ -287,7 +287,7 @@ describe('nộp sai: ô trống, gợi ý wrong:, kết quả cũ', () => {
   it('Run bấm khi gợi ý của lần nộp sai còn đang chạy: bị chặn, không đè kết quả', async () => {
     const pending: (() => void)[] = [];
     const db = {
-      run: vi.fn((sql: string) => (sql === 'SELECT 1 AS n'
+      run: vi.fn((sql: string) => (sql === 'SELECT 1 AS n' || sql.startsWith('EXPLAIN') // v24: the perf check's planner-only EXPLAINs answer at once
         ? Promise.resolve(result)
         : sql === 'SELECT 2'
           ? Promise.resolve({ ...result, rows: [[2]] })
@@ -452,6 +452,25 @@ describe('chương 11: chấm kế hoạch và phòng thí nghiệm chỉ mục'
     await flush();
     expect(deps.onSolved).toHaveBeenCalledOnce();
     expect(deps.db.run).toHaveBeenCalledWith('EXPLAIN (FORMAT JSON) SELECT 1  AS n', { schema: 'game' }); // Plan 8a: every workspace run names its schema
+  });
+
+  it('v24 perf: đúng mà mất chỉ mục: chưa đạt, không tính nộp sai, mở EXPLAIN; lời giải giống hệt thì qua', async () => {
+    const BMP = [{ Plan: { 'Node Type': 'Bitmap Heap Scan', 'Relation Name': 't', 'Total Cost': 20 } }];
+    const perfTicket = (): Ticket => ({ ...ticket('Q'), steps: [{ title: '', prompt: '', solution: 'SELECT 1 AS n', perf: { table: 't' } }] });
+    app.save.drafts['Q#0'] = 'SELECT 1  AS n';
+    const { work, deps } = setup11(SEQ);
+    deps.db.run.mockImplementation((sql: string) => Promise.resolve(sql.startsWith('EXPLAIN') ? { columns: ['QUERY PLAN'], types: [114], rows: [[sql.includes('1  AS') ? SEQ : BMP]] } : result));
+    open(work, perfTicket());
+    editors[0].opts.onSubmit();
+    await flush();
+    expect(deps.onWrong).not.toHaveBeenCalled();
+    expect(deps.onSolved).not.toHaveBeenCalled();
+    expect(deps.panel.show).toHaveBeenLastCalledWith('explain');
+    expect(shownText()).toContain(t('perf.indexLost', { cost: 100, sol: 20, ratio: 5, table: 't' }));
+    deps.db.run.mockImplementation((sql: string) => Promise.resolve(sql.startsWith('EXPLAIN') ? { columns: ['QUERY PLAN'], types: [114], rows: [[BMP]] } : result));
+    editors[0].opts.onSubmit();
+    await flush();
+    expect(deps.onSolved).toHaveBeenCalledOnce();
   });
 
   it('phòng thí nghiệm: chỉ mục làm kế hoạch đọc qua chỉ mục và đủ rẻ thì qua, lưu câu CREATE INDEX làm bài đã chấm', async () => {

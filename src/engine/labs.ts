@@ -1,5 +1,6 @@
 import type { QueryResult } from '../db/run';
 import type { GradeResult } from '../grader';
+import type { slowVerdict } from '../planCheck';
 import type { EngineId, EngineLesson, Lab, LabStep } from './content';
 
 /**
@@ -59,6 +60,18 @@ export interface LabEnv {
   verdict(r: Exclude<GradeResult, { ok: true }>): string;
   /** The UI language, for the few sentences a runner writes itself (timeouts, input errors). */
   lang(): 'vi' | 'en';
+  /** src/planCheck.ts slowVerdict (v24 `perf:` bar), passed in so a runner chunk never value-imports a main module. */
+  slow?: typeof slowVerdict;
+}
+
+/**
+ * v24 (L340): a right answer on a `perf:` step is still refused when slowVerdict blocks it. `plans` = EXPLAIN (FORMAT JSON) of
+ * the Solution and the answer on the same database. Undefined = passed.
+ */
+export async function perfVerdict(env: Pick<LabEnv, 'slow'>, step: LabStep, plans: () => Promise<[unknown, unknown]>): Promise<LabVerdict | undefined> {
+  if (!step.perf || !env.slow) return undefined;
+  const v = env.slow(...await plans(), step.perf);
+  return v?.block ? { ok: false, reason: 'wrong', why: v.indexLost ? 'slowIndex' : 'slow', params: { cost: v.cost, sol: v.solution, ratio: v.ratio, table: v.indexLost ?? step.perf.table } } : undefined;
 }
 
 /** EXPLAIN (FORMAT JSON) output → plan lines (the JSON is the first cell; PGlite may give it as text). */
@@ -92,7 +105,9 @@ export function pgLabRunner(env: LabEnv): LabRunner {
     check: async (lab, step, code) => {
       if (lab.setup || (step.check !== 'rows' && step.check !== 'catalog')) return { ok: false, reason: 'unsupported' };
       const r = await env.grade(env.sql, step.solution, code, step.ordered);
-      return r.ok ? r : { ok: false, reason: r.reason === 'error' ? 'error' : 'wrong', message: env.verdict(r) };
+      if (!r.ok) return { ok: false, reason: r.reason === 'error' ? 'error' : 'wrong', message: env.verdict(r) };
+      const plan = async (sql: string) => (await env.sql(explainSql(sql))).rows[0]?.[0];
+      return (await perfVerdict(env, step, async () => [await plan(step.solution), await plan(code)])) ?? r;
     },
     explain: async (_lab, sql) => planLines((await env.sql(explainSql(sql))).rows[0]?.[0]),
   };

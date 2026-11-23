@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { loadTicketTemplates } from '../src/content';
 import { runLab, runSandboxed } from '../src/db/run';
 import { compareResults } from '../src/grader';
-import { checkLab, checkPlan, isCreateIndex, planLine, planNodes } from '../src/planCheck';
+import { checkLab, checkPlan, isCreateIndex, planLine, planNodes, slowVerdict } from '../src/planCheck';
 import { explainError } from '../src/ui/sqlErrors';
 import { applyVariant, variantsOf } from '../src/variants';
 import { freshDb, seededDb } from './helpers';
@@ -127,6 +127,10 @@ describe('planCheck: chấm theo kế hoạch thực thi (chương 11)', () => {
     const db = await seededDb();
     expect(compareResults(await runSandboxed(db, step.solution), await runSandboxed(db, slow), t.ordered).ok).toBe(true);
     expect(checkPlan(await explain(slow), step.plan!.index)).toMatchObject({ reason: 'seqScan' });
+    // v24: the same slow answer under a perf: bar on that table is refused, and the Solution passes its own bar
+    const want = await explain(step.solution);
+    expect(slowVerdict(want, await explain(slow), { table: step.plan!.index })).toMatchObject({ block: true, indexLost: step.plan!.index });
+    expect(slowVerdict(want, want, { table: step.plan!.index })).toBeUndefined();
   });
 
   it('ch11-06 bước 2 ghép hai chỉ mục dựng sẵn bằng BitmapAnd (câu kết luận của cột mốc)', async () => {
@@ -156,5 +160,30 @@ describe('planCheck trên schema lab (Plan 8a)', () => {
     expect(planNodes(fast).map((n) => n['Node Type'])).toContain('Bitmap Heap Scan');
     expect(checkPlan(fast, 'orders')).toBeUndefined();
     expect(checkPlan(await plan('SELECT id FROM orders WHERE extract(month FROM order_date) = 10'), 'orders')).toEqual({ reason: 'seqScan', table: 'orders' });
+  });
+});
+
+describe('slowVerdict (v24, L340): đúng mà chậm', () => {
+  const plan = (cost: number, ...scans: [string, string][]) => [{ Plan: { 'Node Type': 'Aggregate', 'Total Cost': cost, Plans: scans.map(([n, t]) => ({ 'Node Type': n, 'Relation Name': t })) } }];
+  const sol = plan(100, ['Bitmap Heap Scan', 'orders']);
+  it('perf: mất chỉ mục trên bảng được nêu (và đắt hơn) thì chặn; bảng khác thì không', () => {
+    expect(slowVerdict(sol, plan(120, ['Seq Scan', 'orders']), { table: 'orders' })).toMatchObject({ block: true, indexLost: 'orders' });
+    expect(slowVerdict(sol, plan(90, ['Seq Scan', 'orders']), { table: 'orders' })).toBeUndefined(); // cheaper: never "slow"
+    expect(slowVerdict(sol, plan(120, ['Seq Scan', 'orders']), { table: 'stores' })).toBeUndefined();
+  });
+  it('perf: tỉ lệ > 1.5 (hoặc max_ratio) thì chặn', () => {
+    expect(slowVerdict(sol, plan(151, ['Index Scan', 'orders']), { table: 'orders' })).toMatchObject({ block: true, ratio: 1.51 });
+    expect(slowVerdict(sol, plan(150, ['Index Scan', 'orders']), { table: 'orders' })).toBeUndefined();
+    expect(slowVerdict(sol, plan(250, ['Index Scan', 'orders']), { table: 'orders', max_ratio: 3 })).toBeUndefined();
+  });
+  it('ngoài perf: chỉ yếu khi > 3 lần và > 1,000', () => {
+    expect(slowVerdict(plan(400), plan(1300))).toMatchObject({ block: false });
+    expect(slowVerdict(plan(100), plan(900))).toBeUndefined(); // ×9 but tiny
+    expect(slowVerdict(plan(1000), plan(2900))).toBeUndefined();
+  });
+  it('kế hoạch rỗng hoặc chi phí 0 (DB giả): không bao giờ chậm; JSON dạng chuỗi đọc được', () => {
+    expect(slowVerdict(undefined, plan(5000), { table: 'orders' })).toBeUndefined();
+    expect(slowVerdict(sol, undefined, { table: 'orders' })).toBeUndefined();
+    expect(slowVerdict(JSON.stringify(sol), JSON.stringify(plan(200)), { table: 'orders' })).toMatchObject({ block: true });
   });
 });

@@ -1,7 +1,7 @@
 import type { QueryResult } from '../../db/run';
 import type { GradeResult } from '../../grader';
 import type { Lab, LabStep } from '../content';
-import { planLines, type LabRunner, type LabVerdict } from '../labs';
+import { perfVerdict, planLines, type LabEnv, type LabRunner, type LabVerdict } from '../labs';
 import { PgLabClient } from './client';
 import type { PgExtension } from './script';
 
@@ -15,6 +15,7 @@ import type { PgExtension } from './script';
 interface Env {
   grade(run: (sql: string) => Promise<QueryResult>, solution: string, player: string, ordered: boolean): Promise<GradeResult>;
   verdict(r: Exclude<GradeResult, { ok: true }>): string;
+  slow?: LabEnv['slow'];
 }
 
 const KNOWN: readonly PgExtension[] = ['pageinspect', 'pg_visibility', 'amcheck', 'pg_walinspect', 'pg_buffercache', 'pg_freespacemap', 'bloom', 'btree_gin', 'btree_gist', 'pg_trgm', 'pg_stat_statements', 'ltree', 'pgcrypto', 'cube', 'earthdistance'];
@@ -99,7 +100,9 @@ export function pgScriptRunner(env: Env, client: Pick<PgLabClient, 'run' | 'rese
         return { ok: true };
       }
       const g = await env.grade((sql) => exec(lab, sql, i), step.solution, code, step.ordered);
-      return g.ok ? g : { ok: false, reason: g.reason === 'error' ? 'error' : 'wrong', message: env.verdict(g) };
+      if (!g.ok) return { ok: false, reason: g.reason === 'error' ? 'error' : 'wrong', message: env.verdict(g) };
+      const json = async (sql: string) => (await exec(lab, explainSql(sql), i)).rows[0]?.[0];
+      return (await perfVerdict(env, step, async () => [await json(step.solution), await json(code)])) ?? g;
     },
     reset: () => client.reset(),
   };

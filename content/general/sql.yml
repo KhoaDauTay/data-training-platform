@@ -1248,6 +1248,8 @@
     WHERE order_date >= '2026-10-05' AND order_date < ___
   solution: "SELECT id, store_id, order_date FROM orders WHERE order_date >= '2026-10-05' AND order_date < '2026-10-12'"
   plan: { index: orders }
+  perf: { table: orders }
+  slow: "SELECT id, store_id, order_date FROM orders WHERE order_date::text BETWEEN '2026-10-05' AND '2026-10-11'"
   hint: { vi: "Mốc trên là ngày ngay sau ngày cuối, dùng dấu nhỏ hơn.", en: "The upper bound is the day right after the last day, with less-than." }
 - id: g-sargable-2
   skill: sargable
