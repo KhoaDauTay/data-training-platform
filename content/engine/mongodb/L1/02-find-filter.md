@@ -51,7 +51,40 @@ lab:
       hint:
         vi: Hai điều kiện trong cùng một tài liệu lọc nghĩa là cả hai phải đúng (AND ngầm).
         en: Two conditions in the same filter document must both be true (an implicit AND).
+quiz:
+  - q:
+      vi: 'Khách `c2` có `address` là `{ city: "Hue", district: "Phu Hoi" }`. Lệnh `db.customers.find({ address: { district: "Phu Hoi", city: "Hue" } })` có trả về `c2` không?'
+      en: 'Customer `c2` has `address` set to `{ city: "Hue", district: "Phu Hoi" }`. Does `db.customers.find({ address: { district: "Phu Hoi", city: "Hue" } })` return `c2`?'
+    options:
+      - vi: Có, vì cùng các trường và cùng giá trị
+        en: Yes, because the fields and values are the same
+      - vi: Không, vì so bằng cả tài liệu nhúng cần đúng cả thứ tự trường
+        en: No, because equality on a whole embedded document needs the same field order too
+      - vi: Lệnh báo lỗi vì filter không được lồng tài liệu
+        en: The command fails because a filter cannot hold a nested document
+    answer: 1
+    trap: 0
+    why:
+      vi: 'Nghe hợp lý vì hai tài liệu nhúng có cùng nội dung, nhưng so bằng trên cả tài liệu nhúng là so khớp chính xác: cùng trường, cùng giá trị và cùng thứ tự. Đổi thứ tự là không khớp. Viết `{ "address.city": "Hue", "address.district": "Phu Hoi" }` thì thứ tự không còn quan trọng.'
+      en: 'It sounds right because both embedded documents hold the same content, but equality on a whole embedded document is an exact match: same fields, same values and the same order. A different order does not match. Write `{ "address.city": "Hue", "address.district": "Phu Hoi" }` and the order no longer matters.'
+  - q:
+      vi: '`db.customers.find({ tier: "gold", "address.city": "Hue" })` trả về mấy khách?'
+      en: 'How many customers does `db.customers.find({ tier: "gold", "address.city": "Hue" })` return?'
+    options:
+      - { vi: "0", en: "0" }
+      - vi: "4: hai khách gold cộng hai khách ở Hue"
+        en: "4: the two gold customers plus the two in Hue"
+      - { vi: "2", en: "2" }
+    answer: 0
+    trap: 1
+    why:
+      vi: 'Nghe hợp lý nếu mỗi điều kiện thêm kết quả, nhưng các điều kiện trong một filter được nối bằng AND. Hai khách gold ở Da Nang và Hoi An, không ai ở Hue, nên kết quả rỗng.'
+      en: 'It sounds right if each condition adds results, but the conditions in one filter are joined with AND. The two gold customers live in Da Nang and Hoi An, none in Hue, so the result is empty.'
 ---
+## Mở bài
+
+Quản lý hỏi: khách hạng vàng nào sống ở Đà Nẵng? Thành phố lại nằm trong một tài liệu nhúng của collection `customers`. Bạn viết filter thế nào?
+
 ## Ý chính
 
 `db.<collection>.find(filter)` trả về mọi tài liệu khớp `filter`. Filter rỗng `{}` (hoặc bỏ trống) lấy cả collection.
@@ -62,19 +95,78 @@ lab:
 
 So bằng trên cả tài liệu nhúng, ví dụ `{ address: { city: "Hue" } }`, chỉ khớp khi tài liệu nhúng giống hệt, cả các trường lẫn thứ tự trường. Vì vậy gần như luôn dùng dot notation.
 
+So bằng phân biệt chữ hoa chữ thường và kiểu dữ liệu: `"Hue"` khác `"hue"`, số `5` khác chuỗi `"5"`.
+
 Làm được: tìm đúng các tài liệu theo một hoặc nhiều trường, kể cả trường nằm trong tài liệu nhúng.
+
+## Cú pháp
+
+```text
+db.<collection>.find({ <field>: <value>, "<embedded>.<field>": <value> })
+```
+
+- `<field>: <value>` là một điều kiện bằng.
+- Nhiều cặp trong cùng một tài liệu lọc: AND ngầm.
+- Trường trong tài liệu nhúng: dot notation, tên đặt trong dấu nháy.
 
 ## Ví dụ
 
+Khách ở quận Sơn Trà, qua dot notation:
+
 ```js
 db.customers.find({ "address.district": "Son Tra" })
+```
+
+Khách hạng `"gold"` ở `"Hoi An"`, hai điều kiện cùng phải đúng:
+
+```js
+db.customers.find({ tier: "gold", "address.city": "Hoi An" })
+```
+
+## Lỗi hay gặp
+
+So bằng cả tài liệu nhúng khi chỉ muốn so một trường:
+
+```js
+// WRONG: matches only an address that is exactly { city: "Hue" }
+db.customers.find({ address: { city: "Hue" } })
+```
+
+```js
+// FIX: dot notation compares one field
+db.customers.find({ "address.city": "Hue" })
+```
+
+Bản sai trả về rỗng vì địa chỉ nào cũng có thêm `district`.
+
+Gõ sai chữ hoa chữ thường:
+
+```js
+// WRONG: string equality is case-sensitive
+db.customers.find({ "address.city": "da nang" })
+```
+
+```js
+// FIX: the value as it is stored
+db.customers.find({ "address.city": "Da Nang" })
 ```
 
 ## Thực hành
 
 Collection `customers` có 5 khách ở Da Nang, Hue và Hoi An. Làm ba bước.
 
+## Tóm tắt
+
+- `find(filter)` trả mọi tài liệu khớp; `{}` lấy cả collection.
+- Các điều kiện trong một filter nối bằng AND.
+- Trường lồng dùng dot notation trong dấu nháy: `"address.city"`.
+- So bằng cả tài liệu nhúng cần giống hệt, kể cả thứ tự trường.
+
 # EN
+
+## Opening
+
+The manager asks: which gold customers live in Da Nang? The city sits inside an embedded document of the `customers` collection. How do you write the filter?
 
 ## Key idea
 
@@ -86,14 +178,69 @@ Collection `customers` có 5 khách ở Da Nang, Hue và Hoi An. Làm ba bước
 
 Equality on a whole embedded document, such as `{ address: { city: "Hue" } }`, only matches when the embedded document is exactly the same, fields and field order included. That is why you almost always use dot notation.
 
+Equality is case-sensitive and type-sensitive: `"Hue"` is not `"hue"`, and the number `5` is not the string `"5"`.
+
 You can now: find the right documents by one or more fields, including fields inside embedded documents.
 
+## Syntax
+
+```text
+db.<collection>.find({ <field>: <value>, "<embedded>.<field>": <value> })
+```
+
+- `<field>: <value>` is one equality condition.
+- Several pairs in the same filter document: an implicit AND.
+- A field inside an embedded document: dot notation, with the name quoted.
+
 ## Example
+
+Customers in the Son Tra district, through dot notation:
 
 ```js
 db.customers.find({ "address.district": "Son Tra" })
 ```
 
+`"gold"` customers in `"Hoi An"`, both conditions must hold:
+
+```js
+db.customers.find({ tier: "gold", "address.city": "Hoi An" })
+```
+
+## Common mistakes
+
+Matching a whole embedded document when you meant one field:
+
+```js
+// WRONG: matches only an address that is exactly { city: "Hue" }
+db.customers.find({ address: { city: "Hue" } })
+```
+
+```js
+// FIX: dot notation compares one field
+db.customers.find({ "address.city": "Hue" })
+```
+
+The wrong version returns nothing because every address also has a `district`.
+
+Getting the case wrong:
+
+```js
+// WRONG: string equality is case-sensitive
+db.customers.find({ "address.city": "da nang" })
+```
+
+```js
+// FIX: the value as it is stored
+db.customers.find({ "address.city": "Da Nang" })
+```
+
 ## Practice
 
 Collection `customers` holds 5 customers in Da Nang, Hue and Hoi An. Do the three steps.
+
+## Recap
+
+- `find(filter)` returns every matching document; `{}` returns the whole collection.
+- The conditions in one filter are joined with AND.
+- Embedded fields use quoted dot notation: `"address.city"`.
+- Equality on a whole embedded document needs an exact copy, field order included.
