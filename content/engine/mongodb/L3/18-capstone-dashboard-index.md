@@ -101,6 +101,7 @@ quiz:
       - { vi: "Có, vì truy vấn có `.sort()`", en: "Yes, because the query has `.sort()`" }
       - { vi: "Không, thứ tự `createdAt` lấy thẳng từ index", en: "No, the `createdAt` order comes straight from the index" }
     answer: 1
+    trap: 0
     why:
       vi: "Nghe hợp lý vì có `.sort()` thì phải sắp. Nhưng khi hai trường bằng đã cố định một khối, các khóa `createdAt` trong khối đã có thứ tự; docs chính thức nói kế hoạch không có stage `SORT` nghĩa là thứ tự lấy từ index."
       en: "It sounds right that `.sort()` means sorting. But once the two equality fields fix one block, the `createdAt` keys inside it are already in order; the docs say a plan without a `SORT` stage means the order comes from the index."
@@ -116,29 +117,42 @@ quiz:
       vi: "Truy vấn được phủ trả kết quả chỉ từ index: `IXSCAN` không nằm dưới `FETCH`, nên không đọc tài liệu nào. Thiếu `_id: 0` thì MongoDB phải đọc tài liệu để lấy `_id`."
       en: "A covered query answers from the index alone: the `IXSCAN` is not under a `FETCH`, so no document is read. Without `_id: 0`, MongoDB must read the documents to get `_id`."
 ---
+## Mở bài
+
+Quản lý cửa hàng mở bảng điều khiển mỗi sáng, và mỗi lần mở là một truy vấn chạy trên cả năm đơn hàng. Bạn được giao làm nó nhanh mà vẫn đúng. Bài cuối cấp L3 ghép mọi thứ đã học: ESR, truy vấn được phủ và `$match` trước stage nặng.
 
 ## Ý chính
 
-Bài cuối cấp L3: bốn bước lab trên cùng dữ liệu đơn hàng, rồi hai câu kết luận.
-
-- Bước 1, 3 và 4 chạy thật bằng mingo trong trình duyệt và chấm theo kết quả.
-- Bước 2, 3 và 4 còn có thanh quy tắc: index theo ESR, truy vấn được phủ, `$match` trước `$lookup`. Một câu cho đúng kết quả mà sai quy tắc vẫn chưa đạt.
-- mingo không có index hay explain, nên các quy tắc được chấm theo docs chính thức của MongoDB, không đo trên `mongod`. Hai câu kết luận cũng dựa trên docs.
+Bốn bước lab trên cùng dữ liệu đơn hàng, rồi hai câu kết luận. Bước 1, 3 và 4 chạy thật bằng mingo trong trình duyệt và chấm theo kết quả. Bước 2, 3 và 4 còn có thanh quy tắc: index theo ESR, truy vấn được phủ, `$match` trước `$lookup`. Một câu cho đúng kết quả mà sai quy tắc vẫn chưa đạt. mingo không có index hay explain, nên các quy tắc được chấm theo docs chính thức của MongoDB, không đo trên `mongod`; hai câu kết luận cũng dựa trên docs.
 
 ## Thực hành
 
 Làm bốn bước theo thứ tự. Bước 2 không chạy truy vấn nào: chỉ thứ tự khóa của index được chấm. Sau đó trả lời hai câu kết luận.
 
+## Tóm tắt
+
+- Viết truy vấn đúng trước, rồi mới thiết kế index cho nó.
+- ESR: trường so bằng, rồi trường sắp, rồi trường khoảng, để không phải sắp trong bộ nhớ.
+- Truy vấn được phủ: mọi trường lọc và trả về nằm trong index, và bỏ `_id`.
+- Trong pipeline, `$match` đứng trước `$lookup`, `$unwind`, `$group`.
+
 # EN
+
+## Opening
+
+The store manager opens the dashboard every morning, and each opening is a query over a whole year of orders. Your job is to make it fast and still right. The final lesson of level L3 puts together everything so far: ESR, covered queries and `$match` before the heavy stages.
 
 ## Key idea
 
-The final lesson of level L3: four lab steps on the same order data, then two conclusion questions.
-
-- Steps 1, 3 and 4 really run on mingo in the browser and are graded by their result.
-- Steps 2, 3 and 4 also have a rule bar: an ESR index, a covered query, `$match` before `$lookup`. An answer with the right result that breaks the rule does not pass yet.
-- mingo has no indexes and no explain, so the rules are graded from the official MongoDB docs, not measured on `mongod`. The two conclusion questions also rest on the docs.
+Four lab steps on the same order data, then two conclusion questions. Steps 1, 3 and 4 really run on mingo in the browser and are graded by their result. Steps 2, 3 and 4 also have a rule bar: an ESR index, a covered query, `$match` before `$lookup`. An answer with the right result that breaks the rule does not pass yet. mingo has no indexes and no explain, so the rules are graded from the official MongoDB docs, not measured on `mongod`; the two conclusion questions also rest on the docs.
 
 ## Practice
 
 Do the four steps in order. Step 2 runs no query: only the key order of the index is graded. Then answer the two conclusion questions.
+
+## Recap
+
+- Write the right query first, then design the index for it.
+- ESR: equality fields, then sort fields, then range fields, so nothing is sorted in memory.
+- A covered query: every filtered and returned field is in the index, and `_id` is dropped.
+- In a pipeline, `$match` comes before `$lookup`, `$unwind`, `$group`.

@@ -11,6 +11,8 @@ runtime: docs
 objectives:
   - vi: "Biết khi nào index multikey phủ được truy vấn"
     en: "Know when a multikey index can cover a query"
+  - vi: "Sửa projection để truy vấn trên trường mảng được phủ"
+    en: "Fix a projection so a query on an array field is covered"
 requires: [e-mg-l3-01]
 sources:
   - https://www.mongodb.com/docs/manual/core/indexes/index-types/index-multikey/
@@ -33,44 +35,55 @@ predict:
     - vi: "Không, vì index multikey không bao giờ phủ được truy vấn"
       en: "No, because a multikey index can never cover a query"
   answer: 1
+  trap: 0
   why:
-    vi: "Theo docs chính thức, index multikey phủ được truy vấn chỉ khi truy vấn không trả về trường mảng và không dùng `$elemMatch`. Projection ở đây trả `genres`, nên không phủ. Đổi projection thành `{ _id: 0, title: 1 }` thì được phủ."
-    en: "Per the docs, a multikey index covers a query only when the query does not return the array field and does not use `$elemMatch`. This projection returns `genres`, so it is not covered. With the projection `{ _id: 0, title: 1 }` it is covered."
+    vi: "Nghe hợp lý vì đó là luật phủ chung, nhưng index multikey chỉ giữ từng phần tử, không giữ cả mảng. Theo docs chính thức, nó phủ được truy vấn chỉ khi truy vấn không trả về trường mảng và không dùng `$elemMatch`. Projection ở đây trả `genres`, nên không phủ. Đổi thành `{ _id: 0, title: 1 }` thì được phủ."
+    en: "It sounds right because that is the general covering rule, but a multikey index holds single elements, not the whole array. Per the docs, it covers a query only when the query does not return the array field and does not use `$elemMatch`. This projection returns `genres`, so it is not covered. With `{ _id: 0, title: 1 }` it is covered."
   recorded:
     tier: docs
     server: MongoDB
     version: "9.0"
     date: "2026-11-20"
     url: https://www.mongodb.com/docs/manual/core/query-optimization/
+quiz:
+  - q:
+      vi: "Cùng index `{ genres: 1, title: 1 }`. Truy vấn nào được phủ?"
+      en: "Same index `{ genres: 1, title: 1 }`. Which query is covered?"
+    options:
+      - { vi: "`find({ genres: 'Drama' }, { _id: 0, title: 1 })`", en: "`find({ genres: 'Drama' }, { _id: 0, title: 1 })`" }
+      - { vi: "`find({ genres: 'Drama' }, { title: 1 })`", en: "`find({ genres: 'Drama' }, { title: 1 })`" }
+      - { vi: "`find({ genres: { $elemMatch: { $eq: 'Drama' } } }, { _id: 0, title: 1 })`", en: "`find({ genres: { $elemMatch: { $eq: 'Drama' } } }, { _id: 0, title: 1 })`" }
+    answer: 0
+    why:
+      vi: "Câu đầu chỉ trả `title` và bỏ `_id`. Câu hai vẫn trả `_id` mặc định, mà `_id` không có trong index. Câu ba dùng `$elemMatch`, thứ làm index multikey không phủ được."
+      en: "The first returns only `title` and drops `_id`. The second still returns `_id` by default, which is not in the index. The third uses `$elemMatch`, which stops a multikey index from covering."
 ---
+## Mở bài
+
+Màn hình danh sách phim chỉ cần thể loại của năm phim chính kịch. Có index `{ genres: 1, title: 1 }` và projection chỉ chọn trường có trong index. MongoDB có trả lời mà không mở tài liệu nào không?
 
 ## Ý chính
 
-Đây là bài đoán theo docs chính thức của MongoDB (trang "Multikey Indexes", mục Covered Queries); không có `mongod` trong trình duyệt nên không có explain thật. Index (chỉ mục) multikey phủ được truy vấn khi đủ ba điều:
+Đây là bài đoán theo docs chính thức của MongoDB (trang "Multikey Indexes", mục Covered Queries); không có `mongod` trong trình duyệt nên không có explain thật. Index multikey phủ được truy vấn khi đủ ba điều:
 
 - truy vấn không trả về trường mảng (nên index phải là index kép, có thêm trường không phải mảng);
 - truy vấn không dùng `$elemMatch`;
-- thỏa các điều kiện phủ chung: mọi trường của truy vấn và của kết quả nằm trong cùng index.
+- thỏa các điều kiện phủ chung: mọi trường của truy vấn và của kết quả nằm trong cùng index, và `_id` bị bỏ nếu không có trong index.
 
-## Ví dụ
+Nhiều người nghĩ "trường nằm trong index" là đủ để phủ. Thật ra khóa multikey là từng phần tử riêng lẻ: từ index, MongoDB không dựng lại được cả mảng `genres`, nên phải mở tài liệu.
 
-Docs chính thức nêu hai truy vấn được phủ bởi `{ genres: 1, title: 1 }`:
+## Tóm tắt
 
-```javascript
-db.movies.find(
-   { genres: 'Drama' },
-   { _id: 0, title: 1 }
-).sort({ genres: 1 }).limit(5)
-
-db.movies.find(
-   { title: 'The Ace of Hearts', genres: 'Drama' },
-   { _id: 0, title: 1 }
-)
-```
-
-Đúng với docs chính thức của MongoDB hiện hành, kiểm ngày 2026-11-20.
+- Index multikey giữ từng phần tử của mảng, không giữ cả mảng.
+- Nó phủ được truy vấn chỉ khi kết quả không trả trường mảng.
+- `$elemMatch` làm truy vấn không được phủ.
+- Luật phủ chung vẫn áp dụng: bỏ `_id` khi nó không có trong index.
 
 # EN
+
+## Opening
+
+The movie list screen only needs the genres of five dramas. There is an index `{ genres: 1, title: 1 }` and the projection picks only a field in the index. Does MongoDB answer without opening any document?
 
 ## Key idea
 
@@ -78,22 +91,13 @@ This is a prediction based on the MongoDB docs (page "Multikey Indexes", section
 
 - the query does not return the array field (so the index must be compound, with a non-array field as well);
 - the query does not use `$elemMatch`;
-- the general covering rules hold: every field of the query and of the result is in the same index.
+- the general covering rules hold: every field of the query and of the result is in the same index, and `_id` is dropped unless it is in the index.
 
-## Example
+Many people think "the field is in the index" is enough to cover. In fact multikey keys are single elements: from the index, MongoDB cannot rebuild the whole `genres` array, so it must open the documents.
 
-The docs list two queries covered by `{ genres: 1, title: 1 }`:
+## Recap
 
-```javascript
-db.movies.find(
-   { genres: 'Drama' },
-   { _id: 0, title: 1 }
-).sort({ genres: 1 }).limit(5)
-
-db.movies.find(
-   { title: 'The Ace of Hearts', genres: 'Drama' },
-   { _id: 0, title: 1 }
-)
-```
-
-Matches the current MongoDB manual, checked 2026-11-20.
+- A multikey index holds single array elements, not the whole array.
+- It can cover a query only when the result does not return the array field.
+- `$elemMatch` stops the query from being covered.
+- The general covering rules still apply: drop `_id` when it is not in the index.

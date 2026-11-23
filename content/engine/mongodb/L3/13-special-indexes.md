@@ -6,7 +6,7 @@ module: special-indexes
 title: "Wildcard, text, 2dsphere và hashed: index cho dữ liệu đặc biệt"
 title_en: "Wildcard, text, 2dsphere and hashed: indexes for special data"
 kind: concept
-minutes: 12
+minutes: 14
 runtime: docs
 objectives:
   - vi: "Dùng index wildcard khi tên trường thay đổi giữa các tài liệu, và biết nó không làm được gì"
@@ -22,12 +22,9 @@ sources:
   - https://www.mongodb.com/docs/manual/core/indexes/index-types/index-wildcard/
   - https://www.mongodb.com/docs/manual/core/indexes/index-types/index-wildcard/reference/restrictions/
   - https://www.mongodb.com/docs/manual/core/indexes/index-types/index-text/
-  - https://www.mongodb.com/docs/manual/reference/operator/query/text/
   - https://www.mongodb.com/docs/manual/core/indexes/index-types/index-geospatial/
   - https://www.mongodb.com/docs/manual/reference/geojson/
   - https://www.mongodb.com/docs/manual/core/indexes/index-types/index-hashed/
-  - https://www.mongodb.com/docs/manual/core/indexes/index-types/index-hashed/create/
-  - https://www.mongodb.com/docs/manual/reference/explain-results/
 quiz:
   - q:
       vi: "Mỗi sản phẩm lưu thuộc tính riêng trong `attributes` (áo có `size`, laptop có `ram`, sách có `isbn`), và bạn cần lọc theo bất kỳ thuộc tính nào. Index nào hợp nhất?"
@@ -37,9 +34,10 @@ quiz:
       - { vi: "`createIndex({ \"attributes.$**\": 1 })`", en: "`createIndex({ \"attributes.$**\": 1 })`" }
       - { vi: "`createIndex({ attributes: \"hashed\" })`", en: "`createIndex({ attributes: \"hashed\" })`" }
     answer: 1
+    trap: 0
     why:
-      vi: "Index wildcard dành cho trường có tên không biết trước hoặc khác nhau giữa các tài liệu. Index text tìm từ trong chuỗi, không lọc theo giá trị một thuộc tính. Index hashed băm cả tài liệu nhúng (embedded document) thành một giá trị nên không lọc được từng trường con."
-      en: "A wildcard index is for fields whose names are unknown or vary between documents. A text index searches words in strings, it does not filter on one attribute's value. A hashed index hashes the whole embedded document as one value, so it cannot filter on each subfield."
+      vi: "Nghe hợp lý vì index text \"tìm được mọi thứ\", nhưng nó tìm từ trong chuỗi, không lọc theo giá trị của một thuộc tính. Index wildcard dành cho trường có tên không biết trước. Index hashed băm cả tài liệu nhúng thành một giá trị nên không lọc được từng trường con."
+      en: "It sounds right because a text index \"finds anything\", but it searches words in strings, it does not filter on one attribute's value. A wildcard index is for fields whose names are not known in advance. A hashed index hashes the whole embedded document as one value, so it cannot filter on each subfield."
   - q:
       vi: "Có index `{ customerId: \"hashed\" }` và không có index nào khác trên `customerId`. Truy vấn `{ customerId: { $gt: 1000 } }` dùng được index này không?"
       en: "There is an index `{ customerId: \"hashed\" }` and no other index on `customerId`. Can the query `{ customerId: { $gt: 1000 } }` use it?"
@@ -48,63 +46,219 @@ quiz:
       - { vi: "Không, truy vấn khoảng như `$gt` và `$lt` không dùng được index hashed", en: "No, range queries such as `$gt` and `$lt` cannot use a hashed index" }
       - { vi: "Có, nhưng chỉ khi collection đã được shard", en: "Yes, but only once the collection is sharded" }
     answer: 1
+    trap: 0
     why:
-      vi: "Hai giá trị gần nhau có hash cách xa nhau, nên index hashed không giữ thứ tự. Docs chính thức ghi rõ truy vấn khoảng không dùng được index hashed. Cần lọc khoảng thì thêm một index thường trên `customerId`."
-      en: "Two close values get far-apart hashes, so a hashed index keeps no order. The docs state that range queries cannot use a hashed index. To filter by range, add a regular index on `customerId`."
+      vi: "Nghe hợp lý vì index thường giữ thứ tự, nhưng hai giá trị gần nhau có hash cách xa nhau, nên index hashed không giữ thứ tự. Docs chính thức ghi rõ truy vấn khoảng không dùng được nó. Cần lọc khoảng thì thêm một index thường trên `customerId`."
+      en: "It sounds right because regular indexes keep order, but two close values get far-apart hashes, so a hashed index keeps no order. The docs state that range queries cannot use it. To filter by range, add a regular index on `customerId`."
 ---
+## Mở bài
+
+Danh mục có áo với `size`, laptop với `ram`, sách với `isbn`, khách muốn tìm theo chữ trong mô tả, và ứng dụng cần "cửa hàng gần tôi nhất". Index B-tree trên một trường cố định không đáp được hết. MongoDB có bốn loại index riêng cho những hình dạng dữ liệu này.
 
 ## Ý chính
 
-Bài 01 dạy multikey, partial và TTL. Bốn loại dưới đây dành cho dữ liệu có hình dạng đặc biệt. Bài này đọc theo docs chính thức của MongoDB; trình duyệt không có `mongod` nên không có index (chỉ mục) thật để chạy.
+**Wildcard** (`$**`) cho trường có tên không biết trước hoặc khác nhau giữa các tài liệu. Nó sparse: tài liệu thiếu trường thì không có khóa, nên không phục vụ truy vấn "trường không tồn tại". Nó không unique, không TTL, không làm shard key, không so bằng cả một tài liệu hay cả một mảng. Biết trước tên trường thì index thường trên trường đó tốt hơn.
 
-- **Wildcard** (`$**`): cho trường có tên không biết trước hoặc khác nhau giữa các tài liệu. Index này sparse: tài liệu thiếu trường thì không có khóa, nên nó không phục vụ truy vấn "trường không tồn tại". Nó không unique, không TTL, không làm shard key, và không so bằng cả một tài liệu hay cả một mảng. Biết trước tên trường thì index thường trên trường đó tốt hơn.
-- **Text**: tìm từ trong chuỗi bằng `$text`, và `$text` cần index này. Mỗi collection chỉ có một index text, nhưng index đó gồm được nhiều trường. Khóa là từ đã đưa về gốc (stem), từ dừng bị bỏ theo ngôn ngữ, và mặc định không phân biệt hoa thường. Index text không phủ được truy vấn, và `$text` không cho `hint()`. Trên Atlas, docs chính thức khuyên dùng MongoDB Search thay cho index text.
-- **2dsphere / 2d**: dữ liệu vị trí. `2dsphere` tính trên mặt cầu như Trái Đất, nhận GeoJSON và cặp tọa độ cũ. `2d` tính trên mặt phẳng và có thể trả sai với truy vấn trên mặt cầu. `$near`, `$nearSphere` và stage `$geoNear` bắt buộc có index không gian. Trong GeoJSON, kinh độ đứng trước, vĩ độ đứng sau.
-- **Hashed**: lưu hash của giá trị, dùng chủ yếu để shard theo hash, rải đều một trường tăng dần như ObjectId. Truy vấn khoảng (`$gt`, `$lt`) không dùng được nó. Không unique, không đặt trên mảng, không phủ truy vấn. Số thực bị cắt về số nguyên 64 bit trước khi băm, nên 2,2; 2,3 và 2,9 trùng hash. Index kép chỉ có đúng một trường `"hashed"`.
+**Text** tìm từ trong chuỗi bằng `$text`, và `$text` cần index này. Mỗi collection chỉ có một index text, nhưng index đó gồm được nhiều trường. Khóa là từ đã đưa về gốc, từ dừng bị bỏ theo ngôn ngữ, mặc định không phân biệt hoa thường. Index text không phủ được truy vấn. Trên Atlas, docs chính thức khuyên dùng MongoDB Search thay cho index text.
+
+**2dsphere / 2d** cho vị trí. `2dsphere` tính trên mặt cầu như Trái Đất và nhận GeoJSON; `2d` tính trên mặt phẳng. `$near`, `$nearSphere` và `$geoNear` bắt buộc có index không gian. Trong GeoJSON, kinh độ đứng trước, vĩ độ sau.
+
+**Hashed** lưu hash của giá trị, chủ yếu để shard theo hash, rải đều một trường tăng dần như ObjectId. Nhiều người nghĩ index hashed cũng lọc khoảng được như index thường. Thật ra hash không giữ thứ tự, nên `$gt`, `$lt` không dùng được nó; nó cũng không unique, không đặt trên mảng, không phủ truy vấn. Index kép chỉ có đúng một trường `"hashed"`.
+
+Bài đọc theo docs chính thức. Khối `javascript` chạy bằng mingo trên dữ liệu `shop`: mingo chỉ ghi lại định nghĩa index (`getIndexes`), không dựng index thật và không có explain.
+
+## Cú pháp
+
+```text
+db.<coll>.createIndex({ "<field>.$**": 1 })                 // wildcard under one field
+db.<coll>.createIndex({ <field1>: "text", <field2>: "text" }) // the one text index
+db.<coll>.createIndex({ <location>: "2dsphere" })
+db.<coll>.createIndex({ <field>: "hashed" })
+db.<coll>.find({ $text: { $search: "<words>" } })
+```
+
+- `$**`: mọi trường con dưới `<field>`, mỗi trường thành khóa riêng.
+- `"text"`: một index cho mỗi collection, gồm được nhiều trường.
+- `"2dsphere"`: GeoJSON, tọa độ `[lng, lat]` (kinh độ, vĩ độ).
+- `"hashed"`: so bằng và shard theo hash, không so khoảng.
 
 ## Ví dụ
 
+Index wildcard cho thuộc tính tự do:
+
 ```javascript
 db.products.createIndex({ "attributes.$**": 1 })
-
-db.movies.createIndex({ title: "text", fullplot: "text" })
-db.movies.find({ $text: { $search: "baseball" } })
-
-db.stores.createIndex({ location: "2dsphere" })
-db.stores.insertOne({ name: "A", location: { type: "Point", coordinates: [108.22, 16.07] } })
-
-db.orders.createIndex({ _id: "hashed" })
 ```
 
-Trong docs chính thức của MongoDB, trang "Explain Results" có stage `GEO_NEAR_2DSPHERE` (truy vấn gần nhất trên index 2dsphere) bên cạnh `IXSCAN` của index thường. Các trang về index text, 2dsphere và hashed không in explain nào, nên bài này không đưa con số.
+Kết quả là danh sách index; tên tự sinh là `attributes.$**_1`.
 
-Đúng với docs chính thức của MongoDB hiện hành, kiểm ngày 2026-11-20.
+Index text trên tên sản phẩm:
+
+```javascript
+db.products.createIndex({ name: "text" })
+```
+
+Một điểm GeoJSON đúng thứ tự, kinh độ trước:
+
+```javascript
+db.stores.insertOne({ name: "A", location: { type: "Point", coordinates: [108.22, 16.07] } })
+```
+
+Tìm theo chữ (trên `mongod`, cần index text; mingo không có `$text`):
+
+```text
+db.products.find({ $text: { $search: "tea" } })
+```
+
+## Lỗi hay gặp
+
+Ghi vĩ độ trước:
+
+```text
+// WRONG: latitude first, 108.22 lands in the latitude slot
+db.stores.insertOne({ location: { type: "Point", coordinates: [16.07, 108.22] } })
+```
+
+```text
+// FIX: longitude first
+db.stores.insertOne({ location: { type: "Point", coordinates: [108.22, 16.07] } })
+```
+
+Có index 2dsphere thì `mongod` từ chối bản ghi sai vì vĩ độ phải trong khoảng -90 đến 90; không có index thì nó vào, và mọi truy vấn gần nhất sau đó sai.
+
+Thêm index text thứ hai:
+
+```text
+// WRONG: a collection already has a text index on title
+db.articles.createIndex({ body: "text" })
+```
+
+```text
+// FIX: drop it and build one text index on both fields
+db.articles.createIndex({ title: "text", body: "text" })
+```
+
+`mongod` từ chối index text thứ hai trên cùng collection.
+
+Lọc khoảng trên index hashed:
+
+```text
+// WRONG: the only index on customerId is hashed, so this scans
+db.orders.find({ customerId: { $gt: 1000 } })
+```
+
+Hash không giữ thứ tự. Thêm index thường `{ customerId: 1 }` cho truy vấn khoảng.
+
+## Tóm tắt
+
+- Wildcard cho tên trường không biết trước; biết tên thì index thường tốt hơn.
+- Mỗi collection một index text, gồm được nhiều trường; `$text` cần nó.
+- 2dsphere nhận GeoJSON, kinh độ trước vĩ độ.
+- Hashed rải đều khi shard nhưng không phục vụ `$gt`, `$lt`.
 
 # EN
 
+## Opening
+
+The catalogue has shirts with `size`, laptops with `ram`, books with `isbn`, customers want to search words in descriptions, and the app needs "the store nearest me". A B-tree index on one fixed field cannot answer all of that. MongoDB has four index kinds for these data shapes.
+
 ## Key idea
 
-Lesson 01 covered multikey, partial and TTL. The four kinds below are for data with a special shape. This lesson follows the MongoDB docs; the browser has no `mongod`, so there is no real index to run.
+**Wildcard** (`$**`) is for fields whose names are unknown or vary between documents. It is sparse: a document without the field has no key, so it cannot serve a "field does not exist" query. It is not unique, not TTL, not a shard key, and it cannot match a whole document or a whole array by equality. When you know the field names, a regular index on them is better.
 
-- **Wildcard** (`$**`): for fields whose names are unknown or vary between documents. It is sparse: a document without the field has no key, so it cannot serve a "field does not exist" query. It is not unique, not TTL, not a shard key, and it cannot match a whole document or a whole array by equality. When you know the field names, a regular index on them is better.
-- **Text**: searches words in strings with `$text`, and `$text` needs this index. A collection has only one text index, but that index can hold several fields. Keys are stemmed words, stop words are dropped per language, and matching is case-insensitive by default. A text index cannot cover a query, and `$text` does not allow `hint()`. On Atlas, the docs recommend MongoDB Search over text indexes.
-- **2dsphere / 2d**: location data. `2dsphere` works on an earth-like sphere and takes GeoJSON and legacy coordinate pairs. `2d` works on a flat surface and can give wrong results for queries on a sphere. `$near`, `$nearSphere` and the `$geoNear` stage require a geospatial index. In GeoJSON, longitude comes first, then latitude.
-- **Hashed**: stores the hash of a value, mainly for hashed sharding, which spreads an increasing field such as an ObjectId. Range queries (`$gt`, `$lt`) cannot use it. It is not unique, not on arrays, and cannot cover a query. Floating-point values are truncated to a 64-bit integer before hashing, so 2.2, 2.3 and 2.9 share a hash. A compound index has exactly one `"hashed"` field.
+**Text** searches words in strings with `$text`, and `$text` needs this index. A collection has only one text index, but that index can hold several fields. Keys are stemmed words, stop words are dropped per language, and matching is case-insensitive by default. A text index cannot cover a query. On Atlas, the docs recommend MongoDB Search over text indexes.
+
+**2dsphere / 2d** are for locations. `2dsphere` works on an earth-like sphere and takes GeoJSON; `2d` works on a flat surface. `$near`, `$nearSphere` and `$geoNear` require a geospatial index. In GeoJSON, longitude comes first, then latitude.
+
+**Hashed** stores the hash of a value, mainly for hashed sharding, which spreads an increasing field such as an ObjectId. Many people think a hashed index can filter ranges like a regular one. In fact a hash keeps no order, so `$gt`, `$lt` cannot use it; it is also not unique, not on arrays, and cannot cover a query. A compound index has exactly one `"hashed"` field.
+
+The lesson follows the official docs. The `javascript` blocks run on mingo over the `shop` data: mingo only records the index definition (`getIndexes`), it builds no real index and has no explain.
+
+## Syntax
+
+```text
+db.<coll>.createIndex({ "<field>.$**": 1 })                 // wildcard under one field
+db.<coll>.createIndex({ <field1>: "text", <field2>: "text" }) // the one text index
+db.<coll>.createIndex({ <location>: "2dsphere" })
+db.<coll>.createIndex({ <field>: "hashed" })
+db.<coll>.find({ $text: { $search: "<words>" } })
+```
+
+- `$**`: every subfield under `<field>`, each one its own key.
+- `"text"`: one index per collection, which can hold several fields.
+- `"2dsphere"`: GeoJSON, coordinates `[lng, lat]` (longitude, latitude).
+- `"hashed"`: equality and hashed sharding, no range comparisons.
 
 ## Example
 
+A wildcard index for free-form attributes:
+
 ```javascript
 db.products.createIndex({ "attributes.$**": 1 })
-
-db.movies.createIndex({ title: "text", fullplot: "text" })
-db.movies.find({ $text: { $search: "baseball" } })
-
-db.stores.createIndex({ location: "2dsphere" })
-db.stores.insertOne({ name: "A", location: { type: "Point", coordinates: [108.22, 16.07] } })
-
-db.orders.createIndex({ _id: "hashed" })
 ```
 
-In the official MongoDB docs, the "Explain Results" page has the stage `GEO_NEAR_2DSPHERE` (a nearest query on a 2dsphere index) next to `IXSCAN` for a regular index. The pages on text, 2dsphere and hashed indexes print no explain, so this lesson gives no numbers.
+The result is the index list; the generated name is `attributes.$**_1`.
 
-Matches the current MongoDB manual, checked 2026-11-20.
+A text index on product names:
+
+```javascript
+db.products.createIndex({ name: "text" })
+```
+
+A GeoJSON point in the right order, longitude first:
+
+```javascript
+db.stores.insertOne({ name: "A", location: { type: "Point", coordinates: [108.22, 16.07] } })
+```
+
+Searching words (on `mongod` it needs the text index; mingo has no `$text`):
+
+```text
+db.products.find({ $text: { $search: "tea" } })
+```
+
+## Common mistakes
+
+Writing latitude first:
+
+```text
+// WRONG: latitude first, 108.22 lands in the latitude slot
+db.stores.insertOne({ location: { type: "Point", coordinates: [16.07, 108.22] } })
+```
+
+```text
+// FIX: longitude first
+db.stores.insertOne({ location: { type: "Point", coordinates: [108.22, 16.07] } })
+```
+
+With a 2dsphere index, `mongod` refuses the wrong document because latitude must be between -90 and 90; without the index it goes in, and every later nearest query is wrong.
+
+Adding a second text index:
+
+```text
+// WRONG: a collection already has a text index on title
+db.articles.createIndex({ body: "text" })
+```
+
+```text
+// FIX: drop it and build one text index on both fields
+db.articles.createIndex({ title: "text", body: "text" })
+```
+
+`mongod` refuses a second text index on the same collection.
+
+Range filtering on a hashed index:
+
+```text
+// WRONG: the only index on customerId is hashed, so this scans
+db.orders.find({ customerId: { $gt: 1000 } })
+```
+
+A hash keeps no order. Add a regular index `{ customerId: 1 }` for range queries.
+
+## Recap
+
+- Wildcard is for field names not known in advance; when you know them, a regular index is better.
+- One text index per collection, which can hold several fields; `$text` needs it.
+- 2dsphere takes GeoJSON, longitude before latitude.
+- Hashed spreads data for sharding but cannot serve `$gt`, `$lt`.

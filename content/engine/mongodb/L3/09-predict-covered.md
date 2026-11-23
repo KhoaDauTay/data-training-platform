@@ -35,20 +35,36 @@ predict:
     - vi: "Không, vì `$regex` không bao giờ dùng được index"
       en: "No, because `$regex` can never use an index"
   answer: 1
+  trap: 0
   why:
-    vi: "Truy vấn được phủ khi mọi trường của truy vấn và mọi trường trả về đều trong cùng index. `_id` được trả về mặc định, nên phải ghi `{ title: 1, _id: 0 }` như ví dụ trong docs chính thức. Khi đó explain có `IXSCAN` không nằm dưới `FETCH`."
-    en: "A query is covered when every queried field and every returned field is in the same index. `_id` is returned by default, so you must write `{ title: 1, _id: 0 }` as in the docs example. Then explain shows an `IXSCAN` that is not under a `FETCH`."
+    vi: "Nghe hợp lý vì projection chỉ ghi `title`, nhưng `_id` luôn được trả về trừ khi bạn ghi `_id: 0`, và `_id` không có trong index này. Phải viết `{ title: 1, _id: 0 }` như ví dụ trong docs chính thức; khi đó explain có `IXSCAN` không nằm dưới `FETCH`."
+    en: "It sounds right because the projection only names `title`, but `_id` is always returned unless you write `_id: 0`, and `_id` is not in this index. You must write `{ title: 1, _id: 0 }` as in the docs example; then explain shows an `IXSCAN` that is not under a `FETCH`."
   recorded:
     tier: docs
     server: MongoDB
     version: "9.0"
     date: "2026-11-20"
     url: https://www.mongodb.com/docs/manual/core/query-optimization/
+quiz:
+  - q:
+      vi: "Trong explain, dấu hiệu nào cho biết truy vấn được phủ?"
+      en: "In explain, which sign tells you a query is covered?"
+    options:
+      - { vi: "Có stage `IXSCAN` ở đâu đó trong kế hoạch", en: "There is an `IXSCAN` stage somewhere in the plan" }
+      - { vi: "Có `IXSCAN` không nằm dưới `FETCH`, và `totalDocsExamined` = 0", en: "There is an `IXSCAN` not under a `FETCH`, and `totalDocsExamined` = 0" }
+      - { vi: "`nReturned` bằng `totalKeysExamined`", en: "`nReturned` equals `totalKeysExamined`" }
+    answer: 1
+    why:
+      vi: "`FETCH` là stage mở tài liệu. Truy vấn được phủ trả lời chỉ từ khóa index, nên không có `FETCH` phía trên `IXSCAN` và không tài liệu nào được đọc."
+      en: "`FETCH` is the stage that opens documents. A covered query answers from index keys alone, so there is no `FETCH` above the `IXSCAN` and no document is read."
 ---
+## Mở bài
+
+Một màn hình chỉ cần tên ba phim PG bắt đầu bằng chữ T. Có index `{ rated: 1, title: 1 }` và projection chỉ ghi `title`. MongoDB có trả lời mà không mở tài liệu nào không?
 
 ## Ý chính
 
-Đây là bài đoán theo docs chính thức của MongoDB (trang "Query Optimization" và "Explain Results"); trình duyệt không có `mongod`. Index (chỉ mục) phủ truy vấn khi:
+Đây là bài đoán theo docs chính thức của MongoDB (trang "Query Optimization" và "Explain Results"); trình duyệt không có `mongod`. Index phủ truy vấn khi:
 
 - mọi trường trong truy vấn đều thuộc index;
 - mọi trường trả về đều thuộc cùng index đó;
@@ -56,20 +72,20 @@ predict:
 
 Trong explain, truy vấn được phủ có stage `IXSCAN` không phải con cháu của stage `FETCH`: MongoDB không mở tài liệu nào.
 
-## Ví dụ
+Nhiều người nghĩ projection chỉ trả những trường được ghi ra. Thật ra `_id` luôn được trả về trừ khi ghi `_id: 0`, nên `{ title: 1 }` vẫn cần `_id`, và truy vấn phải mở tài liệu để lấy nó.
 
-Ví dụ được phủ trong docs chính thức (chú ý `_id: 0`):
+## Tóm tắt
 
-```javascript
-db.movies.find(
-   { rated: "PG", title: /^T/ },
-   { title: 1, _id: 0 }
-).limit(3)
-```
-
-Đúng với docs chính thức của MongoDB hiện hành, kiểm ngày 2026-11-20.
+- Được phủ = trả lời chỉ từ index, không mở tài liệu.
+- Mọi trường lọc và trường trả về phải nằm trong cùng index.
+- `_id` được trả mặc định: ghi `_id: 0` khi nó không có trong index.
+- Explain: `IXSCAN` không dưới `FETCH`, `totalDocsExamined` = 0.
 
 # EN
+
+## Opening
+
+A screen needs only the titles of three PG movies starting with T. There is an index `{ rated: 1, title: 1 }` and the projection names only `title`. Does MongoDB answer without opening any document?
 
 ## Key idea
 
@@ -81,15 +97,11 @@ This is a prediction based on the MongoDB docs (pages "Query Optimization" and "
 
 In explain, a covered query has an `IXSCAN` stage that is not a descendant of a `FETCH` stage: MongoDB opens no document.
 
-## Example
+Many people think a projection returns only the fields it names. In fact `_id` is always returned unless you write `_id: 0`, so `{ title: 1 }` still needs `_id`, and the query must open documents to get it.
 
-The covered example from the docs (note `_id: 0`):
+## Recap
 
-```javascript
-db.movies.find(
-   { rated: "PG", title: /^T/ },
-   { title: 1, _id: 0 }
-).limit(3)
-```
-
-Matches the current MongoDB manual, checked 2026-11-20.
+- Covered = answered from the index alone, no document opened.
+- Every filtered and returned field must be in the same index.
+- `_id` is returned by default: write `_id: 0` when it is not in the index.
+- Explain: an `IXSCAN` not under a `FETCH`, `totalDocsExamined` = 0.
