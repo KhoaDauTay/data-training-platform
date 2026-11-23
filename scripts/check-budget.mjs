@@ -50,6 +50,7 @@ const GROUPS = [
   ['engineui', /^engineView-/, 20], // ENG-CORE (L220): src/ui/engineView.ts + src/engine/{content,labs,vizRegistry,inside}.ts + src/i18n/engine.ts (pages, lesson viewer, graders, VI/EN text), lazy: 9.7 KB gz at T1
   ['engineuiPath', /^enginePathView-/, 6], // L280: the NoSQL path pages (src/ui/enginePathView.ts), split out of engineView in the Engine redesign; lazy on the first #/engine/mongodb/path
   ['engineCapstone', /^engineCapstone-/, 6], // v23 CAP (L257): src/ui/engineCapstone.ts (step bar, "Chấm bằng", before/after plans), lazy from engineView on a capstone; its own group since the v22 redesign left engineui no room for it (L296): 1.9 KB gz; engineui 18.7 KB after the move
+  ['engineNosql', /^engineNosql-/, 6], // v25 (L370): src/ui/engineNosql.ts + src/i18n/engineNosql.ts (NoSQL lab tables panel moved out of engineView, MongoDB rule bar, "Pipeline từng bước", "So với SQL"), lazy from engineView on a MongoDB/DynamoDB lab
   ['enginePredict', /^enginePredict-/, 7], // v23 PRED (L256): src/ui/{enginePredict,enginePlanTree}.ts + src/engine/predict.ts ("Xem thật", the plan tree, first-pick pref), lazy from engineView on a predict, capstone or plan-diagram lesson: 3.3 KB gz; L296: + src/i18n/enginePredict.ts (the predict and capstone text, moved out of engineui): 5.3 KB gz
   // ENG-PGLAB (L230): the engine lab's own worker (src/engine/pglab/pglabWorker.ts: a second PGlite JS bundle + session +
   // checkers; the .wasm/.data are shared with the game worker) and the contrib tarballs it fetches only when a lab names
@@ -83,6 +84,10 @@ const GROUPS = [
   ['bpindex', /^bestSources-/, 14],
   ['bpsql', /^bestSql-/, 30],
   ['bppg', /^bestPg-/, 35],
+  // v25 BP-MG (L374): the 38 MongoDB cards. bpindexMg = their list fields (src/bestMongoIndex.ts, fetched beside bestSources,
+  // which keeps its 14 KB); bpmongo = the full cards (src/bestMongo.ts), fetched when a MongoDB card opens.
+  ['bpindexMg', /^bestMongoIndex-/, 8], // measured 5.8 KB gz at v25
+  ['bpmongo', /^bestMongo-/, 42], // measured 39.3 KB gz at v25 (38 cards; bppg is 33 for 30)
   ['bpui', /^(engineBest|bpPref)-/, 15],
   ['rest', /./, 1560],
 ];

@@ -14,7 +14,7 @@ const post = (m: MongoReply) => postMessage(m);
 
 onmessage = async ({ data }: MessageEvent<MongoRequest>) => {
   try {
-    const result = await (await load()).runOnDataset(data.dataset, data.src);
+    const result = await (await load()).runOnDataset(data.dataset, data.src, data.stages);
     post({ type: 'result', id: data.id, result });
   } catch (e) {
     const error: MongoErrorInfo =

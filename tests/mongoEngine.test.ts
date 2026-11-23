@@ -161,4 +161,33 @@ describe('Mongo lab engine (mingo) on the shop dataset', () => {
     expect((await once(`db.dst.find({})`)).docs).toEqual([{ _id: 1, n: 1 }, { _id: 9, n: 9 }]);
     expect(() => run(`db.orders.aggregate([{ $out: "x" }, { $match: {} }])`)).toThrow(/final stage/);
   });
+
+  it('v25: $count trên đầu vào rỗng không trả tài liệu nào, như MongoDB (mingo cho [{ n: 0 }])', () => {
+    expect(docs(`db.orders.aggregate([{ $match: { status: "nope" } }, { $count: "n" }])`)).toEqual([]);
+    expect(docs(`db.products.aggregate([{ $count: "n" }])`)).toEqual([{ n: 16 }]);
+    const [f] = docs(`db.products.aggregate([{ $facet: { none: [{ $match: { price: -1 } }, { $count: "n" }] } }])`);
+    expect(f.none).toEqual([]);
+  });
+
+  it('v25: findOneAndUpdate trả tài liệu trước/sau khi sửa; upsert tạo bộ đếm', async () => {
+    const setup = JSON.stringify({ collections: { counters: [{ _id: 'order', seq: 41 }] } });
+    const once = async (src: string) => runMongo(await loadDataset(setup), src);
+    expect((await once(`db.counters.findOneAndUpdate({ _id: "order" }, { $inc: { seq: 1 } })`)).docs).toEqual([{ _id: 'order', seq: 41 }]);
+    expect((await once(`db.counters.findOneAndUpdate({ _id: "order" }, { $inc: { seq: 1 } }, { returnDocument: "after" })`)).docs).toEqual([{ _id: 'order', seq: 42 }]);
+    expect((await once(`db.counters.findOneAndUpdate({ _id: "invoice" }, { $inc: { seq: 1 } }, { upsert: true, returnDocument: "after" })`)).docs).toEqual([{ _id: 'invoice', seq: 1 }]);
+    expect((await once(`db.counters.findOneAndUpdate({ _id: "invoice" }, { $inc: { seq: 1 } })`)).docs).toEqual([]);
+    expect((await once(`db.counters.find({})`)).docs).toEqual([{ _id: 'order', seq: 41 }]);
+    await expect(once(`db.counters.findOneAndUpdate({ _id: "order" }, { seq: 1 })`)).rejects.toThrow(/\$inc/);
+  });
+
+  it('v25: stages = số tài liệu sau mỗi tiền tố pipeline, chỉ khi được hỏi', () => {
+    const src = `db.orders.aggregate([{ $match: { status: "paid" } }, { $unwind: "$items" }, { $count: "n" }])`;
+    expect(run(src).stages).toBeUndefined();
+    const st = runMongo(ds, src, { stages: true }).stages!;
+    expect(st.map((x) => x.stage)).toEqual(['$match', '$unwind', '$count']);
+    expect(st[2].n).toBe(1);
+    expect(st[1].n).toBe(st[2].head[0].n);
+    expect(st[0].n).toBeLessThanOrEqual(st[1].n);
+    expect(st.every((x) => x.head.length <= 3)).toBe(true);
+  });
 });

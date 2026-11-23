@@ -74,6 +74,9 @@ lab:
       solution: 'db.orders.aggregate([{ $match: { status: { $ne: "cancelled" } } }, { $unwind: "$lines" }, { $lookup: { from: "products", localField: "lines.sku", foreignField: "_id", as: "product" } }, { $unwind: "$product" }, { $group: { _id: "$product.category", revenue: { $sum: { $multiply: ["$lines.qty", "$lines.price"] } } } }, { $sort: { _id: 1 } }])'
       check: doc
       ordered: true
+      rule: match-first
+      slow: 'db.orders.aggregate([{ $unwind: "$lines" }, { $lookup: { from: "products", localField: "lines.sku", foreignField: "_id", as: "product" } }, { $unwind: "$product" }, { $match: { status: { $ne: "cancelled" } } }, { $group: { _id: "$product.category", revenue: { $sum: { $multiply: ["$lines.qty", "$lines.price"] } } } }, { $sort: { _id: 1 } }])'
+      sql: "SELECT p.category AS _id, SUM(l.qty * l.price) AS revenue FROM orders o JOIN order_lines l ON l.order_id = o.id JOIN products p ON p.id = l.sku WHERE o.status <> 'cancelled' GROUP BY p.category ORDER BY p.category;"
       hint:
         vi: '`$unwind` dòng hàng, `$lookup` sản phẩm theo `"lines.sku"`, `$unwind` sản phẩm, rồi `$group` theo `"$product.category"`.'
         en: '`$unwind` the lines, `$lookup` the product by `"lines.sku"`, `$unwind` the product, then `$group` by `"$product.category"`.'

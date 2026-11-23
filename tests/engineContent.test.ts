@@ -182,3 +182,42 @@ describe('Postgres runtime: docs có lý do', () => {
     expect(sets[0].filter((l) => l.engine === 'postgres' && l.runtime === 'docs' && !l.docsWhy).map((l) => l.id)).toEqual([]);
   });
 });
+
+// v25 (roadmap "MongoDB đủ", product-route-v24 R5): MongoDB has a capstone on every level; every L3–L5 predict says where its
+// answer comes from (`recorded`, research-nosql-v25-v26 §2.3); the rule bar, "mong lỗi" and "So với SQL" fields are well formed.
+describe('MongoDB v25: capstone, recorded, thanh quy tắc', () => {
+  const mg = sets[0].filter((l) => l.engine === 'mongodb');
+  it('5/5 cấp có đúng một capstone', () => {
+    expect(['L1', 'L2', 'L3', 'L4', 'L5'].map((lv) => mg.filter((l) => l.level === lv && l.kind === 'capstone').length)).toEqual([1, 1, 1, 1, 1]);
+  });
+  it('mọi predict L3–L5 có `recorded`; tier docs có URL trang tài liệu, không có JSON explain; chỉ L3/06–07 có con số', () => {
+    const ps = mg.filter((l) => l.predict && ['L3', 'L4', 'L5'].includes(l.level));
+    expect(ps.length).toBeGreaterThanOrEqual(13);
+    for (const l of ps) {
+      const r = l.predict!.recorded;
+      expect([l.id, !!r]).toEqual([l.id, true]);
+      expect([l.id, r!.server, /^\d+\.\d+$/.test(r!.version), /^\d{4}-\d{2}-\d{2}$/.test(String(r!.date))]).toEqual([l.id, 'MongoDB', true, true]);
+      if (r!.tier === 'docs') {
+        expect([l.id, /^https:\/\/www\.mongodb\.com\/docs\//.test(r!.url ?? '')]).toEqual([l.id, true]);
+        expect([l.id, /queryPlanner|executionStats|[{"]\s*"?\w+"?\s*:/.test(r!.output?.replace(/hint \{[^}]*\}|createIndex\(\{[^}]*\}\)/g, '') ?? '')]).toEqual([l.id, false]);
+      } else {
+        expect([l.id, r!.tier, typeof r!.explainVersion]).toEqual([l.id, 'mongod', 'string']);
+      }
+      // never invented numbers: only the two lessons whose figures the docs page prints carry an output
+      expect([l.id, !!r!.output]).toEqual([l.id, ['e-mg-l3-06', 'e-mg-l3-07'].includes(l.id)]);
+    }
+  });
+  it('rule/error/sql: giá trị hợp lệ, chỉ trên MongoDB; esr có target, covered có index, mọi bước có thanh có `slow`', () => {
+    for (const l of sets[0]) for (const [i, s] of (l.lab?.steps ?? []).entries()) {
+      const at = `${l.id} s${i + 1}`;
+      if (s.rule || s.error) expect([at, l.engine]).toEqual([at, 'mongodb']);
+      if (s.rule) {
+        expect([at, ['esr', 'covered', 'match-first'].includes(s.rule)]).toEqual([at, true]);
+        expect([at, !!s.slow, s.rule !== 'esr' || !!s.target, s.rule !== 'covered' || !!s.index]).toEqual([at, true, true, true]);
+      }
+      if (s.error) expect([at, /^[a-z_]+$/.test(s.error), !!s.rule]).toEqual([at, true, false]);
+      if (s.sql) expect([at, /^(SELECT|UPDATE|INSERT|DELETE|WITH)\b[\s\S]*;$/.test(s.sql)]).toEqual([at, true]);
+    }
+    expect(mg.flatMap((l) => l.lab?.steps ?? []).filter((s) => s.rule).length).toBeGreaterThanOrEqual(6);
+  });
+});

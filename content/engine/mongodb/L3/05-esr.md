@@ -7,7 +7,7 @@ title: "Index kép và luật ESR"
 title_en: "Compound indexes and the ESR rule"
 kind: concept
 minutes: 10
-runtime: docs
+runtime: browser
 viz: mg-esr
 objectives:
   - vi: "Giải thích vì sao thứ tự trường trong index kép quyết định vùng quét"
@@ -17,6 +17,30 @@ objectives:
   - vi: "Nhận ra toán tử nào là range: $ne, $nin, $regex, $in với mảng lớn"
     en: "Recognise which operators act as a range: $ne, $nin, $regex, $in with a large array"
 requires: [e-mg-l3-01]
+lab:
+  setup: |
+    {"collections": {"movies": [
+      {"_id": 1, "title": "Blue Velvet", "directors": ["David Lynch"], "year": 1986, "runtime": 120},
+      {"_id": 2, "title": "Dune", "directors": ["David Lynch"], "year": 1984, "runtime": 137},
+      {"_id": 3, "title": "Mulholland Drive", "directors": ["David Lynch"], "year": 2001, "runtime": 147},
+      {"_id": 4, "title": "Fargo", "directors": ["Joel Coen", "Ethan Coen"], "year": 1996, "runtime": 98}
+    ]}}
+  steps:
+    - name: { vi: "Index theo ESR", en: "An ESR index" }
+      task:
+        vi: "Cửa hàng phim chạy truy vấn `db.movies.find({ directors: \"Joel Coen\", year: { $gte: 1990 } }).sort({ title: 1 })`. Viết một `createIndex` theo ESR cho nó."
+        en: "The film shop runs the query `db.movies.find({ directors: \"Joel Coen\", year: { $gte: 1990 } }).sort({ title: 1 })`. Write one `createIndex` for it that follows ESR."
+      solution: 'db.movies.createIndex({ directors: 1, title: 1, year: 1 })'
+      check: doc
+      rule: esr
+      target: 'db.movies.find({ directors: "Joel Coen", year: { $gte: 1990 } }).sort({ title: 1 })'
+      slow: 'db.movies.createIndex({ directors: 1, year: 1, title: 1 })'
+      hint:
+        vi: "`directors` so bằng, `title` là trường sắp, `year` là khoảng (`$gte`)."
+        en: "`directors` is an equality, `title` is the sort field, `year` is a range (`$gte`)."
+      fact:
+        vi: "Bước này chấm theo quy tắc ESR trong docs chính thức, không đo trên `mongod`: mingo không có index."
+        en: "This step is graded by the ESR rule in the official docs, not measured on `mongod`: mingo has no indexes."
 sources:
   - https://www.mongodb.com/docs/manual/tutorial/equality-sort-range-guideline/
   - https://www.mongodb.com/docs/manual/reference/explain-results/

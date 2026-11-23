@@ -34,6 +34,12 @@ predict:
   why:
     vi: "Lệnh 2 dùng `w: \"majority\"` nên đã nằm trong oplog của một secondary trước khi được xác nhận. Oplog áp theo thứ tự, nên secondary có lệnh 2 cũng đã có lệnh 1 đứng trước; secondary được bầu phải có optime cao nhất nên có cả 1 và 2. Lệnh 3 chỉ ở primary cũ, nên bị rollback."
     en: "Command 2 used `w: \"majority\"`, so it was in a secondary's oplog before being acknowledged. The oplog is applied in order, so a secondary holding command 2 also holds command 1 before it; the elected secondary must have the highest optime, so it has both 1 and 2. Command 3 was only on the old primary, so it is rolled back."
+  recorded:
+    tier: docs
+    server: MongoDB
+    version: "9.0"
+    date: "2026-11-20"
+    url: https://www.mongodb.com/docs/manual/reference/write-concern/
 ---
 
 ## Ý chính

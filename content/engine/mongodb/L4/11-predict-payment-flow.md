@@ -37,6 +37,12 @@ predict:
   why:
     vi: "Từ 8.0, `w: \"majority\"` xác nhận khi đa số đã ghi bền mục oplog, còn việc áp vào dữ liệu là không đồng bộ. Docs chính thức nói truy vấn trên secondary ngay sau đó có thể chưa thấy lần ghi, và khuyên dùng session nhân quả."
     en: "From 8.0, `w: \"majority\"` acknowledges once a majority has durably written the oplog entry, while applying it to the data is asynchronous. The docs say a query on a secondary right after may not see the write, and recommend a causally consistent session."
+  recorded:
+    tier: docs
+    server: MongoDB
+    version: "9.0"
+    date: "2026-11-20"
+    url: https://www.mongodb.com/docs/manual/reference/write-concern/
 ---
 
 ## Ý chính

@@ -94,6 +94,12 @@ predict:
   why:
     vi: "Theo luật ESR trong docs chính thức của MongoDB: hai trường bằng `store`, `status` trước, trường sắp `createdAt` sau, trường khoảng `total` cuối. Đặt `total` trước `createdAt` thì phải sắp trong bộ nhớ."
     en: "By the ESR rule in the MongoDB docs: the equality fields `store`, `status` first, the sort field `createdAt` next, the range field `total` last. Putting `total` before `createdAt` forces an in-memory sort."
+  recorded:
+    tier: docs
+    server: MongoDB
+    version: "9.0"
+    date: "2026-11-20"
+    url: https://www.mongodb.com/docs/manual/tutorial/equality-sort-range-guideline/
 quiz:
   - q:
       vi: "Kết luận: lần ghi thanh toán của cửa hàng chạy trên replica set P-S-S. Nó cần sống sót khi primary đổi. Write concern nào?"

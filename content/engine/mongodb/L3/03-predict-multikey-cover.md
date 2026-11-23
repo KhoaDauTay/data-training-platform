@@ -36,6 +36,12 @@ predict:
   why:
     vi: "Theo docs chính thức, index multikey phủ được truy vấn chỉ khi truy vấn không trả về trường mảng và không dùng `$elemMatch`. Projection ở đây trả `genres`, nên không phủ. Đổi projection thành `{ _id: 0, title: 1 }` thì được phủ."
     en: "Per the docs, a multikey index covers a query only when the query does not return the array field and does not use `$elemMatch`. This projection returns `genres`, so it is not covered. With the projection `{ _id: 0, title: 1 }` it is covered."
+  recorded:
+    tier: docs
+    server: MongoDB
+    version: "9.0"
+    date: "2026-11-20"
+    url: https://www.mongodb.com/docs/manual/core/query-optimization/
 ---
 
 ## Ý chính

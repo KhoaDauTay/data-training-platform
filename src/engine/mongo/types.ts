@@ -24,8 +24,11 @@ export interface MongoResult {
   truncated: boolean;
   /** The collection does not exist in the dataset (MongoDB answers with nothing, not an error). */
   unknownCollection?: boolean;
+  /** v25 "Pipeline từng bước": an aggregate's running prefixes (asked with `stages`), stage name + count + first documents. */
+  stages?: StageCount[];
   ms: number;
 }
+export interface StageCount { stage: string; n: number; head: MongoDoc[] }
 
 // Structural copies of ENG-CORE's lab contract (`src/engine/labs.ts` + `content.ts` on its branch, commit a33ae40, not
 // on main yet). Once it lands, import the real types instead; these are kept assignable to them.
@@ -90,7 +93,7 @@ export type MongoErrorInfo =
   | { type: 'syntax'; code: string; message: string; position: number; line: number; column: number }
   | { type: 'run'; code: string; message: string };
 
-export type MongoRequest = { id: number; src: string; dataset: string };
+export type MongoRequest = { id: number; src: string; dataset: string; stages?: boolean };
 export type MongoReply =
   | { type: 'ready' }
   | { type: 'result'; id: number; result: MongoResult }

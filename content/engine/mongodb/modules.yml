@@ -125,6 +125,15 @@
   after:
     vi: đọc một kịch bản failover và đoán lần ghi nào bị rollback
     en: read a failover scenario and predict which write is rolled back
+- id: operations
+  vi: Sao lưu và tệp lớn
+  en: Backups and large files
+  module: operations
+  level: L5
+  title: { vi: "Sao lưu và tệp lớn", en: "Backups and large files" }
+  after:
+    vi: chọn cách sao lưu theo cỡ hệ thống, và biết khi nào một tệp cần GridFS
+    en: choose a backup method by deployment size, and know when a file needs GridFS
 - id: sharding-ts
   vi: Sharding và time series
   en: Sharding and time series

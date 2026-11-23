@@ -33,6 +33,12 @@ predict:
   why:
     vi: "`mongos` định tuyến targeted khi truy vấn có shard key đầy đủ hoặc một tiền tố: `{ a }` hoặc `{ a, b }`. `{ b, c }` không phải tiền tố, nên truy vấn đi tới mọi shard rồi gộp lại."
     en: "`mongos` targets a query when it holds the full shard key or a prefix: `{ a }` or `{ a, b }`. `{ b, c }` is not a prefix, so the query goes to every shard and the results are merged."
+  recorded:
+    tier: docs
+    server: MongoDB
+    version: "9.0"
+    date: "2026-11-20"
+    url: https://www.mongodb.com/docs/manual/core/sharded-cluster-query-router/
 ---
 
 ## Ý chính
