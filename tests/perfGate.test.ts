@@ -24,10 +24,9 @@ export const ALLOW: Record<string, string> = {
   'ch7-06.s1': 'same correlated rate_contracts lookup as ch7-04',
   'ch7-06.s2': 'same correlated rate_contracts lookup as ch7-04',
   'ch7-06.s3': 'same correlated rate_contracts lookup as ch7-04',
-  'ch6-06.s2': 'JOIN ON customer_id IN (a.id, b.id) cannot hash and customers was never ANALYZEd: under budget once S1 (ANALYZE the 14 Logistics tables, branch v24-labdata) merges; remove then',
-  'ch6-06.s3': 'same as ch6-06.s2',
+  'ch8-04': 'ch8 teaches DISTINCT ON: the join keeps every exchange_rates row on or before the bill date, so the late-2026 variants 0-1 cost ~1.3-1.5k (> 1,226) after the R0b ANALYZE; variant 2 (April) is under budget',
   'g-a7-2': 'node a7 teaches JSON unnesting: jsonb_array_elements_text lateral over products is a function scan per row',
-  'g-iv-th-2-2': 'EXISTS per customer over orders; under budget once lab has orders (customer_id, order_date) (R0b)',
+  'g-iv-th-2-2': 'EXISTS per customer over orders: R0b indexes orders (customer_id) and (order_date) separately, still over budget without a composite (customer_id, order_date)',
   'g-iv-th-2-3': 'same as g-iv-th-2-2',
 };
 
