@@ -27,6 +27,8 @@ export interface MapDeps {
   harbor(): Harbor;
   artState(): { passed: Set<number>; done: number };
   unlocked(): string[];
+  /** Skills a beginner knows (L304); undefined = no gate ("I know SQL", or before the welcome). */
+  known(): ReadonlySet<string> | undefined;
   run(sql: string, d: DomainId): Promise<QueryResult>;
   rerender(): void;
 }
@@ -43,6 +45,7 @@ const TEXT = {
     summary: '{col} theo {key}: cao nhất {top} ({vt}), thấp nhất {low} ({vl}); {n} điểm.', list: 'Danh sách theo giá trị',
     place: 'Điểm', arc: 'Nét đứt: đường tượng trưng.', edge: '{p} nằm ngoài khung: mũi tên ở mép trái.',
     label: 'Bản đồ kết quả. {s}', none: 'Chưa mở bảng nào.',
+    skill: 'Câu hỏi của bản đồ ở đây cần gom nhóm theo từng điểm (GROUP BY): chúng hiện khi bạn đã học kỹ năng đó.',
   },
   en: {
     title: 'Ask the map with SQL', sub: 'Pick a point, run the sample, then change it: the result is drawn on the map.',
@@ -53,6 +56,7 @@ const TEXT = {
     summary: '{col} by {key}: highest {top} ({vt}), lowest {low} ({vl}); {n} points.', list: 'List by value',
     place: 'Point', arc: 'Dashed: a symbolic line.', edge: '{p} is outside the frame: arrow on the left edge.',
     label: 'Result map. {s}', none: 'No table open yet.',
+    skill: 'The map questions here need grouping per point (GROUP BY): they show once you have learned that skill.',
   },
 } as const;
 type TKey = keyof (typeof TEXT)['vi'];
@@ -267,7 +271,8 @@ export async function page(d: DomainId, st: PageState, points: { id: string; nam
   const idx = Math.max(0, pts.findIndex((p) => p.id === st.place));
   const pt = pts[idx];
   const st$ = d$.artState();
-  const q = questionFor(d, pt.id, idx, d$.unlocked(), st$.passed);
+  const known = d$.known();
+  const q = questionFor(d, pt.id, idx, d$.unlocked(), st$.passed, known);
   if (q && q.id !== st.qid) Object.assign(st, { qid: q.id, sql: undefined });
   const fresh = st.fresh === true;
   st.fresh = false;
@@ -314,7 +319,7 @@ export async function page(d: DomainId, st: PageState, points: { id: string; nam
         h('span', { class: 'text-caption text-muted' }, tx('note'))),
       st.error ? h('div', { 'data-map-error': '' }, d$.errorView(st.error)) : null,
       h('p', { class: 'm-0 text-body-sm' }, h('b', {}, tx('next')), ' ', q.next[lang]))
-    : h('p', { class: 'm-0 text-body-sm text-muted' }, tx('none'));
+    : h('p', { class: 'm-0 text-body-sm text-muted' }, tx(known && questionFor(d, pt.id, idx, d$.unlocked(), st$.passed) ? 'skill' : 'none'));
   const chooser = points ? null : h('div', {},
     h('h3', { class: 'm-0 mb-2 text-body font-bold' }, tx('pick')),
     h('ul', { class: 'm-0 grid list-none gap-1.5 p-0 text-body-sm sm:grid-cols-2' }, ...places!.map((p) => {

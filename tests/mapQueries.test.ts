@@ -69,6 +69,18 @@ describe('map questions', () => {
       }
     });
 
+    it(`${d}: a sample lists the skills it uses; a beginner gets only those they know (L304)`, () => {
+      const USES: [RegExp, string][] = [[/\bGROUP BY\b/i, 'group_by'], [/\bFILTER\b/i, 'conditional_agg'], [/\bJOIN\b/i, 'join'], [/\bcoalesce\b/i, 'coalesce'], [/\b[a-z_]+ - [a-z_]+\b/, 'date_math']];
+      for (const q of MAP_QUESTIONS[d]) {
+        for (const [re, skill] of USES) if (re.test(q.sql)) expect(q.needs.some((x) => x === skill || (skill === 'join' && x === 'multi_join')), `${q.id} ${skill}`).toBe(true);
+      }
+      const all = tablesUnlocked(12, chapterTablesOf(d));
+      expect(questionFor(d, 'x', 0, all, new Set(), new Set(['group_by', 'join', 'conditional_agg', 'date_math']))).toBeDefined();
+      const first = questionFor(d, 'x', 0, all, new Set(), new Set());
+      if (d === 'logistics') expect(first?.id).toBe('l-transit');
+      else expect(first).toBeUndefined();
+    });
+
     it(`${d}: samples run, read only their listed (existing) tables, draw on the map, and equal no Solution`, async () => {
       const run = await RUN[d]();
       const tickets = [...loadTicketTemplates(d), ...(d === 'logistics' ? loadLanes().tasks : [])];
