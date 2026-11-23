@@ -39,9 +39,26 @@ predict:
     - vi: "0"
       en: "0"
   answer: 2
+  trap: 0
   why:
     vi: 'Nhiều người nghĩ `Limit` là số item trả về sau bộ lọc, nên chọn 3 hoặc 6. Thật ra DynamoDB đọc tối đa 6 item theo sort key **rồi mới** lọc. Trong 6 đơn đầu của `C-01` chỉ có 1 đơn `DELIVERED`, nên `Count` là 1, `ScannedCount` là 6, và phản hồi có `LastEvaluatedKey` vì còn item chưa đọc. Đáp án 0 xảy ra khi trong các item đã đọc không có đơn nào `DELIVERED`, ví dụ với `Limit` 2.'
     en: 'Many people think `Limit` is the number of items returned after the filter, so they pick 3 or 6. In fact DynamoDB reads up to 6 items in sort key order **and then** filters them. Only 1 of the first 6 orders of `C-01` is `DELIVERED`, so `Count` is 1, `ScannedCount` is 6, and the response carries a `LastEvaluatedKey` because items are left unread. The answer 0 happens when none of the items read is `DELIVERED`, for example with `Limit` 2.'
+quiz:
+  - q:
+      vi: 'Một trang `Query` có bộ lọc trả `Count` 0 kèm `LastEvaluatedKey`. Khách còn đơn khớp bộ lọc không?'
+      en: 'One page of a filtered `Query` returns `Count` 0 with a `LastEvaluatedKey`. Does the customer have more matching orders?'
+    options:
+      - vi: Không, `Count` 0 nghĩa là không còn đơn nào khớp
+        en: No, `Count` 0 means no order matches
+      - vi: Chưa biết, còn item chưa đọc; đọc tiếp với `ExclusiveStartKey`
+        en: Not known yet, items are left unread; keep reading with `ExclusiveStartKey`
+      - vi: DynamoDB báo lỗi vì trang rỗng
+        en: DynamoDB raises an error because the page is empty
+    answer: 1
+    trap: 0
+    why:
+      vi: 'Nghe hợp lý vì trang không trả item nào, nhưng `Count` chỉ đếm các item vừa đọc ở trang này. `LastEvaluatedKey` nghĩa là còn item chưa đọc, và trang sau vẫn có thể có đơn khớp.'
+      en: 'It sounds right because the page returned no item, but `Count` only counts the items read on this page. A `LastEvaluatedKey` means items are left unread, and the next page can still hold matching orders.'
 lab:
   setup: |
     {"tables": [{"TableName":"Orders","KeySchema":[{"AttributeName":"customerId","KeyType":"HASH"},{"AttributeName":"orderId","KeyType":"RANGE"}],"AttributeDefinitions":[{"AttributeName":"customerId","AttributeType":"S"},{"AttributeName":"orderId","AttributeType":"S"}],"BillingMode":"PAY_PER_REQUEST"}],
@@ -115,9 +132,11 @@ lab:
         en: 'Drop `Limit`. Watch `ScannedCount`: the request still reads all 12 orders.'
 ---
 
-## Ý chính
+## Mở bài
 
 Bạn muốn 6 đơn `DELIVERED`, nên viết `Limit: 6` cùng một bộ lọc. Kết quả chỉ có 1 đơn. Vì sao?
+
+## Ý chính
 
 Một lần `Query` hoặc `Scan` làm theo thứ tự:
 
@@ -146,11 +165,20 @@ no Limit         -> ScannedCount 12, Count 3
 
 Muốn đủ N item khớp bộ lọc thì phải lặp theo `LastEvaluatedKey` cho tới khi gom đủ. Muốn rẻ hơn thì đưa điều kiện vào khóa: một GSI có partition key (khóa phân vùng) `status` chỉ đọc đúng các đơn `DELIVERED`, nên `ScannedCount` bằng `Count`.
 
+## Tóm tắt
+
+- `Limit` là số item đọc, không phải số item trả về.
+- Bộ lọc chạy sau khi đọc: `ScannedCount` là item đã đọc và tính phí, `Count` là item còn lại.
+- `LastEvaluatedKey` nghĩa là còn item chưa đọc, kể cả khi trang trả 0 item.
+- Đưa điều kiện vào khóa để `ScannedCount` bằng `Count`.
+
 # EN
 
-## Key idea
+## Opening
 
 You want 6 `DELIVERED` orders, so you write `Limit: 6` with a filter. The result holds just 1 order. Why?
+
+## Key idea
 
 One `Query` or `Scan` call works in this order:
 
@@ -178,3 +206,10 @@ no Limit         -> ScannedCount 12, Count 3
 ## Practice
 
 To get N items that match a filter, loop on `LastEvaluatedKey` until you have collected enough. To make it cheaper, move the condition into a key: a GSI with partition key `status` reads only the `DELIVERED` orders, so `ScannedCount` equals `Count`.
+
+## Recap
+
+- `Limit` is the number of items read, not the number returned.
+- The filter runs after the read: `ScannedCount` is the items read and billed, `Count` the items left.
+- A `LastEvaluatedKey` means items are left unread, even when a page returns 0 items.
+- Move the condition into a key so that `ScannedCount` equals `Count`.

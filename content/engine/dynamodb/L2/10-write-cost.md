@@ -37,9 +37,10 @@ predict:
     - vi: "8"
       en: "8"
   answer: 2
+  trap: 0
   why:
-    vi: UpdateItem tính theo bản **lớn hơn** giữa trước (3,5 KB) và sau (4,2 KB), làm tròn lên bội số 1 KB - 5 KB = 5 WCU, dù chỉ sửa một thuộc tính.
-    en: UpdateItem is charged on the **larger** of the before (3.5 KB) and after (4.2 KB) images, rounded up to a multiple of 1 KB - 5 KB = 5 WCU, even though only one attribute changed.
+    vi: Nghe hợp lý vì request chỉ gửi một thuộc tính, nhưng UpdateItem tính theo bản **lớn hơn** giữa trước (3,5 KB) và sau (4,2 KB), làm tròn lên bội số 1 KB - 5 KB = 5 WCU.
+    en: It sounds right because the request sends one attribute only, but UpdateItem is charged on the **larger** of the before (3.5 KB) and after (4.2 KB) images, rounded up to a multiple of 1 KB - 5 KB = 5 WCU.
 quiz:
   - q:
       vi: BatchWriteItem ghi hai item 500 byte và 3,5 KB. Tốn bao nhiêu WCU?
@@ -85,6 +86,10 @@ quiz:
       en: A transaction performs two underlying writes (prepare and commit), so an item up to 1 KB costs 2 WCU, even when the transaction is cancelled.
 ---
 
+## Mở bài
+
+Bạn chỉ thêm một đoạn tóm tắt ngắn vào một cuốn sách. Lần ghi đó tính tiền theo đoạn vừa thêm hay theo cả item?
+
 ## Ý chính
 
 Đơn vị ghi:
@@ -116,7 +121,18 @@ UpdateItem 3.5 -> 4.2 KB -> 5 WCU
 
 Item lớn mà hay bị sửa một phần nhỏ là dấu hiệu nên tách: phần hay đổi (tồn kho, trạng thái) để ở một item nhỏ riêng.
 
+## Tóm tắt
+
+- 1 WCU = một lần ghi item tới 1 KB, làm tròn lên bội số 1 KB.
+- `UpdateItem` và `PutItem` thay item tính theo bản lớn hơn giữa trước và sau.
+- `BatchWriteItem` làm tròn từng item rồi cộng.
+- Ghi trong transaction tốn gấp đôi; ghi không bao giờ tốn RCU.
+
 # EN
+
+## Opening
+
+You only add a short summary to a book. Is that write charged for the part you added or for the whole item?
 
 ## Key idea
 
@@ -148,3 +164,10 @@ UpdateItem 3.5 -> 4.2 KB -> 5 WCU
 ## Practice
 
 A large item that keeps getting a small part changed is a sign to split it: keep the fast-changing part (stock, status) in its own small item.
+
+## Recap
+
+- 1 WCU = one write of an item up to 1 KB, rounded up to a multiple of 1 KB.
+- `UpdateItem` and a replacing `PutItem` are charged on the larger of the before and after images.
+- `BatchWriteItem` rounds each item, then adds.
+- Transactional writes cost double; writes never consume RCU.

@@ -106,10 +106,27 @@ quiz:
       - { vi: "5 RCU: 40 KB làm tròn lên 4 KB là 10 đơn vị, nhân 0,5 như khi đọc cả item", en: "5 RCU: 40 KB rounded up to 4 KB is 10 units, times 0.5, the same as reading the items" }
       - { vi: "40 RCU: mỗi item một RCU", en: "40 RCU: one RCU per item" }
     answer: 1
+    trap: 0
     why:
       vi: 'Nghe hợp lý là đếm thì rẻ, vì không có item nào trả về. Nhưng DynamoDB vẫn phải đọc từng item để đếm, nên phí tính như đọc cả item: cộng 40 KB, làm tròn lên bội 4 KB được 10, nhân 0,5 cho đọc nhất quán cuối là 5 RCU. `COUNT` chỉ bớt dữ liệu gửi về, không bớt phí đọc.'
       en: 'Counting sounds cheap, since no item comes back. But DynamoDB still reads every item to count it, so it is charged like reading them: 40 KB added up, rounded up to a multiple of 4 KB gives 10, times 0.5 for an eventually consistent read is 5 RCU. `COUNT` only trims the data sent back, not the read charge.'
+  - q:
+      vi: '`Query` với `"KeyConditionExpression": "pk = :p"` và `"Select": "COUNT"` trên `STORE#s2` trả `Count` bao nhiêu?'
+      en: 'What `Count` does a `Query` with `"KeyConditionExpression": "pk = :p"` and `"Select": "COUNT"` on `STORE#s2` return?'
+    options:
+      - { vi: "12, số đơn của cửa hàng", en: "12, the store's order count" }
+      - { vi: "13: 12 đơn cộng item `STATS`", en: "13: 12 orders plus the `STATS` item" }
+      - { vi: "31, cả bảng", en: "31, the whole table" }
+    answer: 1
+    trap: 0
+    why:
+      vi: 'Nghe hợp lý vì cửa hàng có 12 đơn, nhưng item collection `STORE#s2` còn chứa item `STATS`. Muốn chỉ đếm đơn thì thêm `begins_with(sk, :o)` vào điều kiện khóa.'
+      en: 'It sounds right because the store has 12 orders, but the item collection `STORE#s2` also holds the `STATS` item. To count orders only, add `begins_with(sk, :o)` to the key condition.'
 ---
+
+## Mở bài
+
+Trang quản lý cần số đơn và doanh thu của mỗi cửa hàng, mỗi lần mở trang. Trong SQL đó là một `COUNT(*)` và một `SUM()`; DynamoDB không có hai thứ đó.
 
 ## Ý chính
 
@@ -124,7 +141,29 @@ Tổng tính sẵn chỉ đáng tin khi mọi lần ghi đều cập nhật nó.
 - Ghi đơn và cập nhật tổng trong **cùng một transaction** (`ExecuteTransaction` ở đây): tất cả hoặc không, giá gấp đôi.
 - Để **DynamoDB Streams** gửi mỗi thay đổi cho một hàm (ví dụ Lambda) cộng vào tổng. Ghi đơn không chậm đi, nhưng tổng trễ một chút, và hàm phải chịu được việc một bản ghi tới hai lần (bài L5/01). Streams cần AWS thật, bộ máy trong trình duyệt chưa chạy.
 
+## Cú pháp
+
+```text
+{"op": "Query", "input": {"TableName": "<t>", "KeyConditionExpression": "pk = :p AND begins_with(sk, :o)", "Select": "COUNT", ...}}
+{"op": "GetItem", "input": {"TableName": "<t>", "Key": {"pk": ..., "sk": {"S": "STATS"}}}}
+```
+
+- `Select` `COUNT`: chỉ trả `Count` và `ScannedCount`, không trả item.
+- `begins_with` trên sort key tách đơn khỏi item tổng.
+
 ## Ví dụ
+
+Tổng tính sẵn của `STORE#s1`, một `GetItem`:
+
+```json
+{"op": "GetItem", "input": {"TableName": "Shop", "Key": {"pk": {"S": "STORE#s1"}, "sk": {"S": "STATS"}}}}
+```
+
+Các đơn của `STORE#s3`, chỉ lấy `sk` và `total` (`total` là từ dành riêng nên cần `#t`):
+
+```json
+{"op": "Query", "input": {"TableName": "Shop", "KeyConditionExpression": "pk = :p AND begins_with(sk, :o)", "ExpressionAttributeValues": {":p": {"S": "STORE#s3"}, ":o": {"S": "ORDER#"}}, "ProjectionExpression": "sk, #t", "ExpressionAttributeNames": {"#t": "total"}}}
+```
 
 So ba cách hỏi "cửa hàng `s2` có bao nhiêu đơn" trên bảng `Shop` (31 item):
 
@@ -136,11 +175,48 @@ GetItem STATS                     1 item
 
 Bảng "Partition / Chi phí" dưới mỗi lần chạy cho số đo thật của từng cách.
 
+## Lỗi hay gặp
+
+Đếm bằng `Scan`:
+
+```json
+// WRONG: right number, but ScannedCount is the whole table
+{"op": "Scan", "input": {"TableName": "Shop", "FilterExpression": "pk = :p AND begins_with(sk, :o)", "ExpressionAttributeValues": {":p": {"S": "STORE#s2"}, ":o": {"S": "ORDER#"}}, "Select": "COUNT"}}
+```
+
+```json
+// FIX: Query reads only the store's item collection
+{"op": "Query", "input": {"TableName": "Shop", "KeyConditionExpression": "pk = :p AND begins_with(sk, :o)", "ExpressionAttributeValues": {":p": {"S": "STORE#s2"}, ":o": {"S": "ORDER#"}}, "Select": "COUNT"}}
+```
+
+Quên rằng item tổng nằm cùng item collection:
+
+```json
+// WRONG: Count 13, the STATS item is counted too
+{"op": "Query", "input": {"TableName": "Shop", "KeyConditionExpression": "pk = :p", "ExpressionAttributeValues": {":p": {"S": "STORE#s2"}}, "Select": "COUNT"}}
+```
+
+```json
+// FIX: Count 12, orders only
+{"op": "Query", "input": {"TableName": "Shop", "KeyConditionExpression": "pk = :p AND begins_with(sk, :o)", "ExpressionAttributeValues": {":p": {"S": "STORE#s2"}, ":o": {"S": "ORDER#"}}, "Select": "COUNT"}}
+```
+
 ## Thực hành
 
 Bước 1 và 2 có thanh chi phí: `Scan` cho đúng con số nhưng đọc cả bảng nên chưa đạt. Bước 3 ghi đơn và tổng trong một transaction; mở bảng chi phí để thấy giá gấp đôi.
 
+## Tóm tắt
+
+- `Select` `COUNT` trên `Query` không trả item nhưng tốn RCU như đọc cả item.
+- `Scan` để đếm hay cộng đọc cả bảng mỗi lần.
+- Tổng tính sẵn là một `GetItem` rẻ, bảng lớn bao nhiêu cũng vậy.
+- Giữ tổng khớp bằng transaction hoặc bằng Streams.
+
 # EN
+
+## Opening
+
+The manager page needs each store's order count and revenue every time it opens. In SQL that is one `COUNT(*)` and one `SUM()`; DynamoDB has neither.
 
 ## Key idea
 
@@ -155,7 +231,29 @@ A precomputed total can be trusted only when every write updates it. Two ways ke
 - Write the order and update the total in **one transaction** (`ExecuteTransaction` here): all or nothing, at double price.
 - Let **DynamoDB Streams** send each change to a function (for example Lambda) that adds it to the total. Order writes do not slow down, but the total lags a little, and the function must cope with one record arriving twice (lesson L5/01). Streams need real AWS; the in-browser engine does not run them yet.
 
+## Syntax
+
+```text
+{"op": "Query", "input": {"TableName": "<t>", "KeyConditionExpression": "pk = :p AND begins_with(sk, :o)", "Select": "COUNT", ...}}
+{"op": "GetItem", "input": {"TableName": "<t>", "Key": {"pk": ..., "sk": {"S": "STATS"}}}}
+```
+
+- `Select` `COUNT`: returns only `Count` and `ScannedCount`, no items.
+- `begins_with` on the sort key separates the orders from the total item.
+
 ## Example
+
+The precomputed total of `STORE#s1`, one `GetItem`:
+
+```json
+{"op": "GetItem", "input": {"TableName": "Shop", "Key": {"pk": {"S": "STORE#s1"}, "sk": {"S": "STATS"}}}}
+```
+
+The orders of `STORE#s3`, returning only `sk` and `total` (`total` is a reserved word, so it needs `#t`):
+
+```json
+{"op": "Query", "input": {"TableName": "Shop", "KeyConditionExpression": "pk = :p AND begins_with(sk, :o)", "ExpressionAttributeValues": {":p": {"S": "STORE#s3"}, ":o": {"S": "ORDER#"}}, "ProjectionExpression": "sk, #t", "ExpressionAttributeNames": {"#t": "total"}}}
+```
 
 Three ways to ask "how many orders does store `s2` have" on the `Shop` table (31 items):
 
@@ -167,6 +265,39 @@ GetItem STATS                     1 item
 
 The "Partition / Cost" panel under every run gives the real measured numbers for each way.
 
+## Common mistakes
+
+Counting with a `Scan`:
+
+```json
+// WRONG: right number, but ScannedCount is the whole table
+{"op": "Scan", "input": {"TableName": "Shop", "FilterExpression": "pk = :p AND begins_with(sk, :o)", "ExpressionAttributeValues": {":p": {"S": "STORE#s2"}, ":o": {"S": "ORDER#"}}, "Select": "COUNT"}}
+```
+
+```json
+// FIX: Query reads only the store's item collection
+{"op": "Query", "input": {"TableName": "Shop", "KeyConditionExpression": "pk = :p AND begins_with(sk, :o)", "ExpressionAttributeValues": {":p": {"S": "STORE#s2"}, ":o": {"S": "ORDER#"}}, "Select": "COUNT"}}
+```
+
+Forgetting that the total item sits in the same item collection:
+
+```json
+// WRONG: Count 13, the STATS item is counted too
+{"op": "Query", "input": {"TableName": "Shop", "KeyConditionExpression": "pk = :p", "ExpressionAttributeValues": {":p": {"S": "STORE#s2"}}, "Select": "COUNT"}}
+```
+
+```json
+// FIX: Count 12, orders only
+{"op": "Query", "input": {"TableName": "Shop", "KeyConditionExpression": "pk = :p AND begins_with(sk, :o)", "ExpressionAttributeValues": {":p": {"S": "STORE#s2"}, ":o": {"S": "ORDER#"}}, "Select": "COUNT"}}
+```
+
 ## Practice
 
 Steps 1 and 2 have a cost bar: a `Scan` gives the right number but reads the whole table, so it does not pass. Step 3 writes the order and the total in one transaction; open the cost panel to see the double price.
+
+## Recap
+
+- `Select` `COUNT` on a `Query` returns no items but costs the same RCU as reading them.
+- A `Scan` to count or sum reads the whole table every time.
+- A precomputed total is one cheap `GetItem`, however big the table.
+- Keep the total in step with a transaction or with Streams.

@@ -118,15 +118,30 @@ quiz:
       en: 'An exception sounds like a system fault, so resending is tempting. But this is optimistic locking doing its job: a false `price = :old` means a colleague changed the price. Sending the same request again is rejected again. The rejected write still consumed WCU, so it is not free either.'
 ---
 
+## Mở bài
+
+Một ca trực ở tiệm sách: sách trùng, đơn mua, đổi giá và khách hỏi ở quầy, tất cả trên cùng bảng `Books`. Mỗi việc cần một request an toàn và rẻ.
+
 ## Ý chính
 
 Bài kiểm tra cấp L2 là một ca trực: thêm sách mới mà không ghi đè, trừ kho không âm, sửa giá bằng optimistic locking, tra nhiều cuốn một lúc và kiểm lại bằng PartiQL. Mọi lần ghi đều có điều kiện; mọi lần đọc đều đi theo khóa.
 
 ## Thực hành
 
-Bảng `Books` có 8 cuốn như các bài trước. Mỗi bước chạy lại từ dữ liệu gốc. Bước ghi được chấm bằng trạng thái bảng sau khi ghi; bước đọc bằng tập item trả về.
+Bảng `Books` có 8 cuốn như các bài trước. Mỗi bước chạy lại từ dữ liệu gốc. Bước ghi được chấm bằng trạng thái bảng sau khi ghi; bước đọc bằng tập item trả về. Bước 6 có thanh chi phí: một `Scan` có lọc cho đúng cuốn sách nhưng đọc cả bảng nên chưa đạt.
+
+## Tóm tắt
+
+- Thêm mới bằng `attribute_not_exists` để không ghi đè.
+- Trừ kho và sửa giá kèm điều kiện; `ConditionalCheckFailedException` nghĩa là đọc lại rồi quyết định lại.
+- Nhiều khóa một lúc thì dùng `BatchGetItem`.
+- Có đủ khóa thì đọc bằng `GetItem`, không `Scan`.
 
 # EN
+
+## Opening
+
+One shift at the bookshop: duplicate books, an order, a price change and customers asking at the counter, all on the same `Books` table. Each task needs a request that is safe and cheap.
 
 ## Key idea
 
@@ -134,4 +149,11 @@ The level L2 check is one shift: add a new book without overwriting, take stock 
 
 ## Practice
 
-Table `Books` holds the same 8 books as before. Each step runs again from the original data. A write step is graded by the table's state after the write; a read step by the set of items returned.
+Table `Books` holds the same 8 books as before. Each step runs again from the original data. A write step is graded by the table's state after the write; a read step by the set of items returned. Step 6 has a cost bar: a filtered `Scan` finds the right book but reads the whole table, so it does not pass.
+
+## Recap
+
+- Insert with `attribute_not_exists` so nothing is overwritten.
+- Take stock and change prices with a condition; `ConditionalCheckFailedException` means read again and decide again.
+- For several keys at once, use `BatchGetItem`.
+- With the full key, read with `GetItem`, not `Scan`.

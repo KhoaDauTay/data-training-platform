@@ -87,10 +87,15 @@ quiz:
       - vi: 23 byte và 123 byte
         en: 23 bytes and 123 bytes
     answer: 2
+    trap: 1
     why:
-      vi: Mỗi item có 100 byte phụ phí, nhưng chỉ để tính tiền lưu trữ. Giới hạn 400 KB và capacity đọc ghi dùng cỡ item.
-      en: Every item carries 100 bytes of overhead, but only for storage billing. The 400 KB limit and read/write capacity use the item size.
+      vi: Nghe hợp lý vì mỗi item có thêm 100 byte phụ phí, nhưng phụ phí đó chỉ dùng để tính tiền lưu trữ. Giới hạn 400 KB và capacity đọc ghi dùng cỡ item.
+      en: It sounds right because every item carries 100 extra bytes, but that overhead is only for storage billing. The 400 KB limit and read/write capacity use the item size.
 ---
+
+## Mở bài
+
+Mỗi lần đọc hay ghi, DynamoDB tính tiền theo cỡ item. Bạn có ước được một item nặng bao nhiêu byte trước khi gửi request không?
 
 ## Ý chính
 
@@ -117,7 +122,19 @@ item                 -> 23 bytes
 
 Bài sau dùng cỡ item để tính RCU và WCU. Bộ mô phỏng trong trình duyệt chỉ ước lượng cỡ item, nên sát ranh giới 1 KB hay 4 KB con số `ConsumedCapacity` của nó có thể lệch với DynamoDB thật. Các câu ở đây làm theo luật của AWS.
 
+## Tóm tắt
+
+- Cỡ item = tổng cỡ thuộc tính, tính cả tên thuộc tính.
+- Chuỗi tính theo byte UTF-8, không theo số ký tự.
+- Số: khoảng 1 byte cho mỗi 2 chữ số có nghĩa, cộng 1.
+- List và Map thêm 3 byte, mỗi phần tử thêm 1 byte.
+- 100 byte phụ phí chỉ dùng để tính tiền lưu trữ.
+
 # EN
+
+## Opening
+
+Every read and write is billed by item size. Can you estimate how many bytes an item weighs before you send the request?
 
 ## Key idea
 
@@ -143,3 +160,11 @@ item                 -> 23 bytes
 ## Practice
 
 The next lesson uses item size to work out RCU and WCU. The in-browser emulator only estimates item size, so near a 1 KB or 4 KB boundary its `ConsumedCapacity` can differ from real DynamoDB. The questions here follow the AWS rules.
+
+## Recap
+
+- Item size = the sum of the attribute sizes, names included.
+- Strings count UTF-8 bytes, not characters.
+- Numbers: about 1 byte per 2 significant digits, plus 1.
+- Lists and Maps add 3 bytes, and 1 byte per element.
+- The 100 bytes of overhead count only for storage billing.

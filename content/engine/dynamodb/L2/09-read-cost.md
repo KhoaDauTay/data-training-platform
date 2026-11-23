@@ -36,9 +36,10 @@ predict:
     - vi: "1,5"
       en: "1.5"
   answer: 1
+  trap: 0
   why:
-    vi: BatchGetItem làm tròn **từng item** lên bội số 4 KB rồi mới cộng - 4 KB + 8 KB = 12 KB, tức 3 RCU strong (1,5 nếu eventual). Không phải 1,5 + 6,5 = 8 KB.
-    en: BatchGetItem rounds **each item** up to a multiple of 4 KB before adding - 4 KB + 8 KB = 12 KB, which is 3 RCU strong (1.5 if eventual). Not 1.5 + 6.5 = 8 KB.
+    vi: Nghe hợp lý vì 1,5 + 6,5 = 8 KB là đúng 2 RCU, nhưng BatchGetItem làm tròn **từng item** lên bội số 4 KB rồi mới cộng - 4 KB + 8 KB = 12 KB, tức 3 RCU strong (1,5 nếu eventual).
+    en: It sounds right because 1.5 + 6.5 = 8 KB is exactly 2 RCU, but BatchGetItem rounds **each item** up to a multiple of 4 KB before adding - 4 KB + 8 KB = 12 KB, which is 3 RCU strong (1.5 if eventual).
 quiz:
   - q:
       vi: Một Query trả 10 item, tổng 40,8 KB, đọc nhất quán cuối. Tốn bao nhiêu RCU?
@@ -67,9 +68,10 @@ quiz:
       - vi: "25"
         en: "25"
     answer: 1
+    trap: 0
     why:
-      vi: Scan tính theo item **đã đọc**, không theo item trả về. 1000 × 100 = 100.000 byte, khoảng 97,7 KB, làm tròn lên 100 KB = 25 RCU strong, 12,5 eventual.
-      en: A Scan is charged for items **read**, not items returned. 1,000 × 100 = 100,000 bytes, about 97.7 KB, rounded up to 100 KB = 25 RCU strong, 12.5 eventual.
+      vi: Nghe hợp lý vì chỉ 20 item về tới bạn, nhưng Scan tính theo item **đã đọc**, không theo item trả về. 1000 × 100 = 100.000 byte, khoảng 97,7 KB, làm tròn lên 100 KB = 25 RCU strong, 12,5 eventual.
+      en: It sounds right because only 20 items reach you, but a Scan is charged for items **read**, not items returned. 1,000 × 100 = 100,000 bytes, about 97.7 KB, rounded up to 100 KB = 25 RCU strong, 12.5 eventual.
   - q:
       vi: GetItem một item 3,5 KB, chỉ lấy một thuộc tính 100 byte bằng ProjectionExpression, đọc nhất quán cuối. Tốn bao nhiêu?
       en: GetItem on a 3.5 KB item, returning one 100-byte attribute with a ProjectionExpression, eventually consistent. What does it cost?
@@ -85,6 +87,10 @@ quiz:
       vi: Projection không đổi cỡ dùng để tính - 3,5 KB làm tròn lên 4 KB = 1 RCU strong, 0,5 eventual. Đọc một khóa không tồn tại cũng tốn như vậy.
       en: A projection does not change the size used for billing - 3.5 KB rounds up to 4 KB = 1 RCU strong, 0.5 eventual. Reading a key that does not exist costs the same.
 ---
+
+## Mở bài
+
+Hai cuốn sách nặng tổng cộng 8 KB. Đọc chúng bằng một `BatchGetItem` có tốn đúng 2 RCU như phép chia 8 cho 4 không?
 
 ## Ý chính
 
@@ -117,7 +123,19 @@ Không làm rẻ hơn: `ProjectionExpression`, `Select: "COUNT"`, đọc item kh
 
 Bật `"ReturnConsumedCapacity": "TOTAL"` để DynamoDB trả con số thật. Bộ mô phỏng trong trình duyệt trả số gần đúng; các đáp án ở đây theo luật của AWS.
 
+## Tóm tắt
+
+- 1 RCU = một lần đọc nhất quán mạnh item tới 4 KB; nhất quán cuối một nửa, transaction gấp đôi.
+- `GetItem` và `BatchGetItem` làm tròn từng item.
+- `Query` và `Scan` cộng mọi item đã đọc rồi làm tròn một lần.
+- Scan tính cả item bị bộ lọc bỏ.
+- Projection, `COUNT` và item không tồn tại không làm lần đọc rẻ hơn.
+
 # EN
+
+## Opening
+
+Two books weigh 8 KB in total. Does reading them with one `BatchGetItem` cost exactly 2 RCU, as 8 divided by 4 suggests?
 
 ## Key idea
 
@@ -149,3 +167,11 @@ Reading them one by one with GetItem would be 1,500 x 0.5 = 750 RCU eventual. Th
 ## Practice
 
 Turn on `"ReturnConsumedCapacity": "TOTAL"` to get the real number from DynamoDB. The in-browser emulator reports an approximate number; the answers here follow the AWS rules.
+
+## Recap
+
+- 1 RCU = one strongly consistent read of an item up to 4 KB; eventual is half, transactional is double.
+- `GetItem` and `BatchGetItem` round each item.
+- `Query` and `Scan` add every item read, then round once.
+- A Scan also pays for the items its filter drops.
+- A projection, `COUNT` and a missing item never make a read cheaper.
