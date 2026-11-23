@@ -380,9 +380,9 @@
 - id: g-date-math-4
   skill: date_math
   kind: review
-  task: { vi: "Mỗi nhân viên thuộc một cửa hàng: tên và số ngày từ lúc cửa hàng khai trương tới ngày người đó vào làm (số âm = vào làm trước khai trương).", en: "Each staff member who belongs to a store: the name and the number of days from the store's opening to the day they were hired (negative = hired before the opening)." }
-  solution: "SELECT e.name, e.hired_on - s.opened_on FROM staff e JOIN stores s ON s.id = e.store_id"
-  hint: { vi: "Hiệu hai cột kiểu `date` là một số ngày: `hired_on` trừ `opened_on`.", en: "The difference of two `date` columns is a number of days: `hired_on` minus `opened_on`." }
+  task: { vi: "Mỗi đơn kênh `ONLINE` đặt từ 2026-10-01: mã đơn và số ngày từ lúc đặt tới lúc giao (đơn chưa giao thì ô số ngày để trống).", en: "Each `ONLINE` order placed from 2026-10-01: the order id and the number of days from ordering to delivery (an order not delivered yet leaves the days empty)." }
+  solution: "SELECT id, delivered_on - order_date FROM orders WHERE channel = 'ONLINE' AND order_date >= '2026-10-01'"
+  hint: { vi: "Hiệu hai cột kiểu `date` là một số ngày: `delivered_on` trừ `order_date`; ngày trống thì hiệu cũng trống.", en: "The difference of two `date` columns is a number of days: `delivered_on` minus `order_date`; an empty date gives an empty difference." }
 
 # ---- date_bucket (ch4)
 - id: g-date-bucket-1
@@ -518,13 +518,13 @@
 - id: g-coalesce-1
   skill: coalesce
   kind: faded
-  task: { vi: "Mỗi cửa hàng: tên và mục tiêu doanh thu tháng 2026-06-01; cửa hàng chưa đặt mục tiêu thì ghi 0.", en: "Each store: name and revenue target for month 2026-06-01; a store with no target shows 0." }
+  task: { vi: "Mỗi đơn kênh `ONLINE` đặt từ 2026-10-25: mã đơn và ngày gửi hàng; đơn chưa gửi thì ghi ngày đặt.", en: "Each `ONLINE` order placed from 2026-10-25: the order id and the ship date; an order not shipped yet shows its order date." }
   starter: |-
-    SELECT s.name, COALESCE(___, ___)
-    FROM stores s
-    LEFT JOIN store_targets t ON t.store_id = s.id AND t.month = '2026-06-01'
-  solution: "SELECT s.name, COALESCE(t.target_vnd, 0) FROM stores s LEFT JOIN store_targets t ON t.store_id = s.id AND t.month = '2026-06-01'"
-  hint: { vi: "Giá trị đầu tiên không trống thắng: cột mục tiêu, rồi tới số thay thế.", en: "The first non-empty value wins: the target column, then the fallback number." }
+    SELECT id, COALESCE(___, ___)
+    FROM orders
+    WHERE channel = 'ONLINE' AND order_date >= '2026-10-25'
+  solution: "SELECT id, COALESCE(shipped_on, order_date) FROM orders WHERE channel = 'ONLINE' AND order_date >= '2026-10-25'"
+  hint: { vi: "Giá trị đầu tiên không trống thắng: ngày gửi, rồi tới ngày đặt.", en: "The first non-empty value wins: the ship date, then the order date." }
 - id: g-coalesce-2
   skill: coalesce
   kind: open
@@ -587,7 +587,7 @@
   skill: string_fn
   kind: open
   task: { vi: "Mỗi tên miền email của khách (phần sau dấu `@`): tên miền và số khách dùng, theo thứ tự đó; bỏ khách không có email (`email` trống).", en: "Each customer email domain (the part after `@`): the domain and the number of customers using it, in that order; leave out customers without an email (`email` empty)." }
-  solution: "SELECT split_part(email, '@', 2), count(*) FROM customers WHERE email IS NOT NULL GROUP BY 1"
+  solution: "SELECT split_part(email, '@', 2), count(*) FROM customers WHERE email LIKE '%@%' GROUP BY 1"
   hint: { vi: "`split_part` cắt chuỗi theo một ký tự và lấy phần thứ n.", en: "`split_part` cuts text at a character and takes the n-th piece." }
 - id: g-string-fn-3
   skill: string_fn
@@ -650,11 +650,11 @@
 - id: g-distinct-3
   skill: distinct
   kind: trap
-  task: { vi: "Trong tháng 10/2026 (đơn mọi trạng thái), mỗi danh mục bán được bao nhiêu sản phẩm khác nhau? Lấy danh mục và số sản phẩm.", en: "In October 2026 (orders of every status), how many different products did each category sell? Get the category and the product count." }
-  solution: "SELECT p.category, count(DISTINCT i.product_id) FROM order_items i JOIN orders o ON o.id = i.order_id JOIN products p ON p.id = i.product_id WHERE o.order_date >= '2026-10-01' AND o.order_date < '2026-11-01' GROUP BY p.category"
-  hint: { vi: "Một sản phẩm xuất hiện trong nhiều dòng hàng; chỉ đếm mỗi sản phẩm một lần.", en: "A product appears in many order lines; count each product once." }
+  task: { vi: "Trong tháng 10/2026 (đơn mọi trạng thái), mỗi kênh bán có bao nhiêu khách thành viên khác nhau? Lấy kênh và số khách.", en: "In October 2026 (orders of every status), how many different member customers did each sales channel have? Get the channel and the customer count." }
+  solution: "SELECT channel, count(DISTINCT customer_id) FROM orders WHERE order_date >= '2026-10-01' AND order_date < '2026-11-01' GROUP BY channel"
+  hint: { vi: "Một khách có thể đặt nhiều đơn trong tháng; chỉ đếm mỗi khách một lần.", en: "A customer can place several orders in the month; count each customer once." }
   wrong:
-    - { sql: "SELECT p.category, count(i.product_id) FROM order_items i JOIN orders o ON o.id = i.order_id JOIN products p ON p.id = i.product_id WHERE o.order_date >= '2026-10-01' AND o.order_date < '2026-11-01' GROUP BY p.category", vi: "`count(product_id)` đếm cả lần lặp, tức số dòng hàng, không phải số sản phẩm khác nhau.", en: "`count(product_id)` counts the repeats too, that is order lines, not different products." }
+    - { sql: "SELECT channel, count(customer_id) FROM orders WHERE order_date >= '2026-10-01' AND order_date < '2026-11-01' GROUP BY channel", vi: "`count(customer_id)` đếm cả lần lặp, tức số đơn có khách, không phải số khách khác nhau.", en: "`count(customer_id)` counts the repeats too, that is orders with a customer, not different customers." }
 - id: g-distinct-4
   skill: distinct
   kind: review
@@ -666,28 +666,28 @@
 - id: g-cast-1
   skill: cast
   kind: faded
-  task: { vi: "Mỗi cửa hàng: mã cửa hàng và tỉ lệ phần trăm đơn bị hủy (`CANCELLED`), làm tròn 2 chữ số.", en: "Each store: store id and the percentage of cancelled (`CANCELLED`) orders, rounded to 2 decimals." }
+  task: { vi: "Mỗi cửa hàng: mã cửa hàng và tỉ lệ phần trăm đơn của khách thành viên (`customer_id` có giá trị) trên tổng số đơn, làm tròn 2 chữ số.", en: "Each store: store id and the percentage of orders from member customers (`customer_id` filled in) out of all orders, rounded to 2 decimals." }
   starter: |-
     SELECT store_id,
-      round(count(*) FILTER (WHERE status = 'CANCELLED')::___ * 100 / count(*), 2)
+      round(count(customer_id)::___ * 100 / count(*), 2)
     FROM orders
     GROUP BY store_id
-  solution: "SELECT store_id, round(count(*) FILTER (WHERE status = 'CANCELLED')::numeric * 100 / count(*), 2) FROM orders GROUP BY store_id"
+  solution: "SELECT store_id, round(count(customer_id)::numeric * 100 / count(*), 2) FROM orders GROUP BY store_id"
   hint: { vi: "Đổi một vế sang kiểu số có phần thập phân trước khi chia.", en: "Cast one side to a decimal number type before dividing." }
 - id: g-cast-2
   skill: cast
   kind: open
-  task: { vi: "Mỗi đơn đặt ngày 2026-10-31 (mọi trạng thái): mã đơn và số lượng trung bình mỗi dòng hàng = tổng `qty` chia số dòng của đơn trong `order_items`, làm tròn 2 chữ số thập phân.", en: "Each order placed on 2026-10-31 (every status): order id and the average quantity per line = total `qty` divided by the order's number of lines in `order_items`, rounded to 2 decimals." }
-  solution: "SELECT i.order_id, round(sum(i.qty)::numeric / count(*), 2) FROM order_items i JOIN orders o ON o.id = i.order_id WHERE o.order_date = '2026-10-31' GROUP BY i.order_id"
+  task: { vi: "Mỗi đơn có mã từ 1 đến 20: mã đơn và số lượng trung bình mỗi dòng hàng = tổng `qty` chia số dòng của đơn trong `order_items`, làm tròn 2 chữ số thập phân.", en: "Each order with an id from 1 to 20: order id and the average quantity per line = total `qty` divided by the order's number of lines in `order_items`, rounded to 2 decimals." }
+  solution: "SELECT order_id, round(sum(qty)::numeric / count(*), 2) FROM order_items WHERE order_id <= 20 GROUP BY order_id"
   hint: { vi: "Tổng số lượng là số nguyên; đổi sang `numeric` trước khi chia.", en: "The total quantity is an integer; cast it to `numeric` before dividing." }
 - id: g-cast-3
   skill: cast
   kind: trap
-  task: { vi: "Mỗi cửa hàng: mã cửa hàng và tỉ lệ đơn bán qua kênh `ONLINE` trên tổng số đơn, dạng số từ 0 đến 1, làm tròn 2 chữ số.", en: "Each store: store id and the share of orders sold through the `ONLINE` channel out of all orders, as a number from 0 to 1, rounded to 2 decimals." }
-  solution: "SELECT store_id, round(count(*) FILTER (WHERE channel = 'ONLINE')::numeric / count(*), 2) FROM orders GROUP BY store_id"
+  task: { vi: "Mỗi cửa hàng: mã cửa hàng và tỉ lệ đơn đã gửi hàng (`shipped_on` có giá trị) trên tổng số đơn, dạng số từ 0 đến 1, làm tròn 2 chữ số.", en: "Each store: store id and the share of orders already shipped (`shipped_on` filled in) out of all orders, as a number from 0 to 1, rounded to 2 decimals." }
+  solution: "SELECT store_id, round(count(shipped_on)::numeric / count(*), 2) FROM orders GROUP BY store_id"
   hint: { vi: "Số nguyên chia số nguyên bỏ phần thập phân.", en: "An integer divided by an integer drops the decimals." }
   wrong:
-    - { sql: "SELECT store_id, round(count(*) FILTER (WHERE channel = 'ONLINE') / count(*), 2) FROM orders GROUP BY store_id", vi: "Hai số đếm đều là số nguyên, nên phép chia ra 0 cho mọi cửa hàng. Đổi một vế sang `numeric`.", en: "Both counts are integers, so the division gives 0 for every store. Cast one side to `numeric`." }
+    - { sql: "SELECT store_id, round(count(shipped_on) / count(*), 2) FROM orders GROUP BY store_id", vi: "Hai số đếm đều là số nguyên, nên phép chia ra 0 cho mọi cửa hàng. Đổi một vế sang `numeric`.", en: "Both counts are integers, so the division gives 0 for every store. Cast one side to `numeric`." }
 
 - id: g-cast-4
   skill: cast

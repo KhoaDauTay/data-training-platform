@@ -21,7 +21,7 @@ function state(): GuideState {
   const learn = route !== 'learn' ? undefined
     : d$.isInterviewPage(hash) ? 'interview'
     : d$.SKILLS.some((s) => s.id === d$.learnSkillOf(hash)) ? 'skill'
-      : node ? (node.status === 'external' ? 'adv-ext' : 'adv') : d$.learnModuleOf(hash) ?? 'path';
+      : node ? (node.status === 'external' ? 'adv-ext' : 'adv') : (d$.ROUTE_PARTS.find((p) => p.n === d$.learnModuleOf(hash))?.n ?? 'path');
   const m = d$.session.mode;
   const tk = m.kind === 'drill' ? m.ticket : m.kind === 'practice' ? m.run.tickets[m.run.index] : undefined;
   const lesson = d$.guideHooks.lesson;
@@ -41,7 +41,7 @@ function build(id: string, s: GuideState): Guide | undefined {
   }
   if (typeof s.learn === 'number' && id.startsWith('module')) {
     const n = s.learn;
-    const skills = d$.SKILLS.filter((x) => x.chapter === n);
+    const skills = (d$.ROUTE_PARTS.find((x) => x.n === n)?.skills ?? []).map((id) => d$.SKILLS.find((x) => x.id === id)!).filter(Boolean); // v24: Part n of route.yml
     const p = { n, k: skills.length, list: skills.map((x) => x.label[lang]).join(', ') };
     if (id !== 'module-intro') return { id, steps: [step('module-head', 'g.module.short', p)] };
     const first = skills.find((x) => d$.loadLessons().has(x.id));

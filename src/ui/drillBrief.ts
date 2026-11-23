@@ -22,6 +22,11 @@ import type * as Icons from './icons';
 import type * as LessonCard from './lessonCard';
 import type * as Modes from './modes';
 import type * as TryPreview from './tryPreview';
+import type * as HomeView from './homeView';
+import type * as Grader from '../grader';
+import type * as ResultTable from './resultTable';
+import type * as Feedback from './feedback';
+import type * as EditorMod from './editor';
 
 /**
  * Drill workspace (Plan 8a Task 7), a lazy chunk (budget group `learnui`), loaded by src/ui/modes.ts when a drill opens.
@@ -51,6 +56,12 @@ export interface DrillDeps extends GuideDeps {
   loadTickets: typeof Content.loadTickets; CHAPTERS: typeof Progress.CHAPTERS;
   // v13 guides (ui/guideList.ts)
   parseRoute: typeof Route.parseRoute; mod: string; isInterviewPage: typeof Route.isInterviewPage;
+  // v24 R0 (L335–L338): the General route's Parts, the full lesson page (ui/lessonPage.ts) and the level hook (src/mastery.ts)
+  ROUTE_PARTS: typeof Progress.PARTS; partOf: typeof Progress.partOf;
+  learnTitles: typeof HomeView.learnTitles; mastery: typeof Home.mastery;
+  runOn: typeof TryPreview.runOn; verdictText: typeof TryPreview.verdictText; grade: typeof Grader.grade;
+  renderResult: typeof ResultTable.renderResult; errorView: typeof Feedback.errorView; errorText: typeof Feedback.errorText;
+  createEditor: typeof EditorMod.createEditor; announce: typeof Dom.announce;
 }
 
 let d$: DrillDeps;

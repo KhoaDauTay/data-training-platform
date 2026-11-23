@@ -1,11 +1,11 @@
 import { generalNow, loadGeneral, loadInterview, loadLessons, loadTicketTemplates, loadTickets } from '../content';
 import type { DbClient } from '../db/client';
 import type { Drill } from '../general';
-import { knownSkills, type HomeModel } from '../home';
+import { knownSkills, mastery, type HomeModel } from '../home';
 import { getLang, isMac, keyLabels, locale, t } from '../i18n';
 import { LANE_XP } from '../lanes';
 import { applyResult, isSuccess, movedToday, nextCard, pickForSkill, retryItem, seedReview, type PracticeItem } from '../practice';
-import { CHAPTERS, chapterTitle, moduleTitle, nextTicket, SKILLS } from '../progress';
+import { CHAPTERS, chapterTitle, moduleTitle, nextTicket, PARTS, partOf, ROUTE_SKILLS, SKILLS } from '../progress';
 import { drillHash, hashOf, INTERVIEW_PAGE, isInterviewId, isInterviewPage, learnAdvOf, learnModuleOf, learnSkillOf, parseRoute, sandboxHash, SHARE_MAX, shareHash } from '../route';
 import { activeDomain } from '../domains';
 import {
@@ -24,9 +24,13 @@ import { boonMark, coachDone, enterMark, escOwned, guideHooks, guideSlot } from 
 import { showPane } from './paneTabs';
 import { readJson, writeJson } from '../storage';
 import { isSeen, openLesson } from './lessonCard';
-import { tryPreview } from './tryPreview';
+import { runOn, tryPreview, verdictText } from './tryPreview';
+import { grade } from '../grader';
+import { renderResult } from './resultTable';
+import { errorText, errorView } from './feedback';
+import { createEditor } from './editor';
 import { elapsed, INTERVIEW_KEY, parseInterviewPrefs, setPresence, TEXT_MAX } from '../interviewPrefs';
-import { homeHooks, openResume, registerHomeSection, registerMode, resumeLine, resumeName, resumeNow } from './homeView';
+import { homeHooks, learnTitles, openResume, registerHomeSection, registerMode, resumeLine, resumeName, resumeNow } from './homeView';
 import { PER_WEEK, readGoal, sessionPlan, showsSession, writeGoal, type Goal, type SessionItem } from '../goal';
 import { laneNote } from './lanePanel';
 import { go } from './router';
@@ -145,9 +149,10 @@ let drillUi: typeof import('./drillBrief') | undefined;
 const loadDrillUi = () => import('./drillBrief').then((m) => {
   if (!drillUi) m.initDrill({
     db: ctx!.db, activeSchema, h, nodes, richText, byId, loader, getLang, locale, app, actions, persist, schemaHooks, erMeta, stepKey, session, hintsShown, today,
-    isSuccess, movedToday, nextCard, SKILLS, hashOf, textOf, hints, shapeCard, tryPreview, openLesson, leave: leaveGeneral, startDrillMode, loadGeneral, generalNow, loadLessons,
+    isSuccess, movedToday, nextCard, SKILLS: ROUTE_SKILLS, hashOf, textOf, hints, shapeCard, tryPreview, openLesson, leave: leaveGeneral, startDrillMode, loadGeneral, generalNow, loadLessons,
     lessonSeen: isSeen, knownSkills, learnSkillOf, learnAdvOf, learnModuleOf, moduleTitle, illustration, loadedGsap, loadGsap, reducedMotion, icon, skillIcon, loadTickets, CHAPTERS,
     startPlacement, announce, readJson, writeJson, readTour, boonMark, enterMark, escOwned, guideHooks, guideSlot, showPane, parseRoute, mod: keyLabels(isMac).mod, isInterviewPage,
+    ROUTE_PARTS: PARTS, partOf, learnTitles, mastery, runOn, verdictText, grade, renderResult, errorView, errorText, createEditor, // v24 R0
   });
   return (drillUi = m);
 });

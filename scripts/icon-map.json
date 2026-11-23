@@ -100,6 +100,18 @@
     "external": ["arrow-square-out", "advanced node: read external docs"],
     "user": ["user-circle", "My progress page (#/me, v16 L142)"],
     "engine": ["hard-drives", "Database Engine area (#/engine, L220): the storage under the database"],
-    "image": ["image", "download a dashboard card as a PNG picture (v16 L142)"]
+    "image": ["image", "download a dashboard card as a PNG picture (v16 L142)"],
+    "secOpen": ["target", "full lesson section 1, Opening: the lesson's goal (v24 R0, ux-route-v24 §12)"],
+    "secSyntax": ["code-block", "full lesson section 3, Syntax: the statement's frame"],
+    "secRun": ["play-circle", "full lesson section 4, runnable examples: press to run"],
+    "secPitfall": ["warning-diamond", "full lesson section 5, pitfalls: a hazard sign (not the banner's warning)"],
+    "secPractice": ["pencil-simple-line", "full lesson section 6, Practice: write it yourself"],
+    "secRecap": ["bookmark-simple", "full lesson section 8, Recap: marked to remember"],
+    "toc": ["list-dashes", "a lesson's table of contents (In this lesson)"],
+    "time": ["clock", "how long a lesson takes"],
+    "editTry": ["note-pencil", "edit a read-only example in an editor (Try editing)"],
+    "resetCode": ["arrow-counter-clockwise", "put an edited example back as it was"],
+    "notStarted": ["circle-dashed", "a skill or lesson not started yet: a ring not closed"],
+    "run": ["play", "run an example or a pitfall's query"]
   }
 }

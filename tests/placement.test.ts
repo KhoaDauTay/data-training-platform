@@ -5,7 +5,7 @@ import { homeModel, kpisOf, kpiTiles, knownSkills, learnedSkills } from '../src/
 import { placementItems } from '../src/learn';
 import { pickForSkill, seedReview, reviewQueue, warmupQueue } from '../src/practice';
 import {
-  chaptersOf, chapterTablesOf, contentProblems, currentChapter, domainSkills, earlyReview, isOptional, nextTicket, passedChapters, rankOf, SKILLS, visibleTickets,
+  chaptersOf, chapterTablesOf, contentProblems, currentChapter, domainSkills, earlyReview, isOptional, nextTicket, PARTS, passedChapters, rankOf, SKILLS, visibleTickets,
 } from '../src/progress';
 import { emptySave, parseSave, serializeSave, type Known } from '../src/save';
 import { derive } from '../src/scene';
@@ -131,12 +131,11 @@ describe('Logistics: cảng và Save', () => {
 
 describe('General: kiểm tra đầu vào', () => {
   const g = generalNow()!;
-  it('mỗi Phần một bài open; đạt thì mọi kỹ năng của Phần', () => {
-    const items = placementItems(SKILLS, g, new Set());
-    const modules = [...new Set(SKILLS.map((s) => s.chapter))];
-    expect(items).toHaveLength(modules.length);
+  it('mỗi Phần một bài open; đạt thì mọi kỹ năng của Phần (v24: Phần của route.yml)', () => {
+    const items = placementItems(PARTS, g, new Set());
+    expect(items).toHaveLength(PARTS.length);
     items.forEach((item, i) => {
-      const own = SKILLS.filter((s) => s.chapter === modules[i]).map((s) => s.id);
+      const own = PARTS[i].skills;
       expect(item.skills).toEqual(own);
       const drill = g.byId.get(item.ticketId)!;
       expect(drill.kind).toBe('open');
@@ -145,9 +144,9 @@ describe('General: kiểm tra đầu vào', () => {
   });
 
   it('Phần đã học thì không hỏi lại', () => {
-    const ch1 = SKILLS.filter((s) => s.chapter === 1).map((s) => s.id);
-    const items = placementItems(SKILLS, g, new Set(ch1));
-    expect(items.some((i) => i.skills.some((s) => ch1.includes(s)))).toBe(false);
-    expect(placementItems(SKILLS, g, new Set(SKILLS.map((s) => s.id)))).toEqual([]);
+    const p1 = PARTS[0].skills;
+    const items = placementItems(PARTS, g, new Set(p1));
+    expect(items.some((i) => i.skills.some((s) => p1.includes(s)))).toBe(false);
+    expect(placementItems(PARTS, g, new Set(SKILLS.map((s) => s.id)))).toEqual([]);
   });
 });

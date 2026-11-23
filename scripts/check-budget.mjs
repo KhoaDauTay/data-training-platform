@@ -14,7 +14,7 @@ const GROUPS = [
   ['lessons', /^lessonSources-/, 35], // quick lessons (content/lessons.yml), lazy, fetched at boot beside the tickets (Plan 6): 8 KB for 11 lessons; Plan 8a: 38 lessons, ~0.75 KB each
   ['art', /^logistics-/, 20], // Plan 8b D8b-2: Tien Sa scene, route map and completion scenes, lazy (prefetched when idle after the first render): 7 KB, took 6 KB off main
   ['illustrations', /^illustrations-/, 15], // Plan 8b D8b-8: drawn illustrations (learning path, modules, empty states, Finance), lazy, fetched by the first page that shows one
-  ['css', /^index-.*\.css$/, 20],
+  ['css', /^index-.*\.css$/, 22], // v24 R0 (L338): 20 → 22; v23 shipped at 20,433 B of 20,480, the learning-path pages and the full lesson page add ~70 B (layout in plain CSS)
   // ENG-DYNAMO (L245): @dynoxide/wasm-engine 1.5.0 (DynamoDB emulator) copied as plain assets by src/engine/dynamo/worker.ts:
   // its worker script (69 KB gz -9) + dynoxide_bg.wasm (704) + sqlite3.wasm (391) = 1,170 KB gz, fetched only on the first
   // DynamoDB run (the lab worker itself, ~2 KB gz, falls in `worker`). Optional (4th field) until a page imports
@@ -29,6 +29,7 @@ const GROUPS = [
   ['generalAdv', /^generalAdvSources-/, 50], // v19 L167: advanced DA track (content/general/adv.yml), its own lazy chunk: 46 KB gz (roadmap §2.6 guessed ≤ 15; adv.yml is the bigger file)
   ['interview', /^interview(Sources|View)-/, 25], // v17 I5 (L144): 19 KB gz at T1 (content 12 + UI 7). The interview room, lazy: content/general/interview.yml + parser (interviewSources) and its UI + VI/EN text (interviewView), fetched only on #/learn/interview or a run
   ['learnui', /^(learnView|drillBrief)-/, 25], // Plan 8a D8a-12/13: General UI (drill workspace, learning path) and its VI/EN text, lazy
+  ['generalLesson', /^gl-[a-z0-9_]+-[\w-]{8}\.js$/, 8, 'each'], // v24 R0 (L337): one lazy chunk per General full lesson (content/general/lessons/<skill>.md as JSON; vite.config.ts names it gl-<skill>), fetched when its skill page opens; per file
   ['ecom', /^ecomSources-/, 50], // Plan 9: content/domains/ecom (30 tickets, chapters, people, KPIs), lazy on the first visit (D9-16); V22-E (L201): tickets of ch1–4 only
   ['ecomLate', /^ecomLateSources-/, 25], // V22-E (L201): E-com tickets of chapters 5+ (src/ecomLateSources.ts), fetched in parallel with `ecom` by loadDomain('ecommerce')
   ['ecomart', /^ecommerce-/, 10], // Plan 9: src/art/ecommerce.ts (store scene, delivery map), lazy

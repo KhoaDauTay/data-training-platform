@@ -1,5 +1,7 @@
 import chaptersSource from '../content/chapters.yml';
 import skillsSource from '../content/skills.yml';
+import routeSource from '../content/general/route.yml';
+import generalSkillsSource from '../content/general/skills-general.yml';
 import { activeDomain, type DomainId } from './domains';
 import { codeOnly } from './planCheck';
 import type { Lang, Ticket } from './tickets';
@@ -98,14 +100,16 @@ export const REST_RULE_FROM = 4;
 export const twistUsed = (skill: string, sql: string): boolean | undefined => SKILL_SQL[skill]?.test(sql);
 
 /** Throws on a broken structure. Empty card fields are reported by contentProblems instead. */
-export function parseSkills(source: unknown, origin = 'skills.yml'): Skill[] {
+/** `general`: content/general/skills-general.yml (v24, L327): no `chapter:` (no domain ticket teaches it), read as 0. */
+export function parseSkills(source: unknown, origin = 'skills.yml', general = false): Skill[] {
   const seen = new Set<string>();
   return list(source, origin).map((s, i) => {
     if (typeof s.id !== 'string' || !s.id) throw new Error(`${origin}: mục ${i} thiếu id`);
     if (seen.has(s.id)) throw new Error(`${origin}: trùng id "${s.id}"`);
     seen.add(s.id);
-    if (typeof s.chapter !== 'number') throw new Error(`${origin}: "${s.id}" thiếu chapter`);
-    return { id: s.id, chapter: s.chapter, label: bilingual(s.label), syntax: str(s.syntax), when: bilingual(s.when), trap: bilingual(s.trap) };
+    const chapter = general ? 0 : s.chapter;
+    if (typeof chapter !== 'number') throw new Error(`${origin}: "${s.id}" thiếu chapter`);
+    return { id: s.id, chapter, label: bilingual(s.label), syntax: str(s.syntax), when: bilingual(s.when), trap: bilingual(s.trap) };
   });
 }
 
@@ -129,13 +133,46 @@ export function parseChapters(source: unknown, origin = 'chapters.yml'): Chapter
 export const SKILLS: Skill[] = parseSkills(skillsSource);
 export const CHAPTERS: Chapter[] = parseChapters(chaptersSource);
 
+/** One Part ("Phần n") of the General SQL route (v24 R0, content/general/route.yml, L335): its own order, not a domain chapter. */
+export interface Part { n: number; title: Bilingual; skills: string[] }
+export function parseRoute(source: unknown, origin = 'general/route.yml'): Part[] {
+  const seen = new Set<string>();
+  return list(source, origin).map((p, i) => {
+    if (p.n !== i + 1) throw new Error(`${origin}: mục ${i} phải có n = ${i + 1}`);
+    const title = bilingualOf(p.title);
+    if (!title) throw new Error(`${origin}: Phần ${i + 1} thiếu title vi/en`);
+    const skills = strings(p.skills);
+    for (const id of skills) {
+      if (seen.has(id)) throw new Error(`${origin}: "${id}" ở hai Phần`);
+      seen.add(id);
+    }
+    return { n: i + 1, title, skills };
+  });
+}
+/** Skills only the General area teaches (content/general/skills-general.yml; empty until R1). */
+export const GENERAL_SKILLS: Skill[] = parseSkills(generalSkillsSource, 'general/skills-general.yml', true);
+/** Every skill the learning path draws: skills.yml, then the General-only ones. */
+export const ROUTE_SKILLS: Skill[] = [...SKILLS, ...GENERAL_SKILLS];
+/** Every Part as written, including skill ids that ship in a later slice (they keep review cards alive, never drawn). */
+export const ALL_PARTS: Part[] = parseRoute(routeSource);
+/** Skill ids known at boot (Known.skills, L327): a review card of any of them survives parseSave, even before its content ships. */
+export const BOOT_SKILL_IDS: readonly string[] = [...new Set([...ROUTE_SKILLS.map((s) => s.id), ...ALL_PARTS.flatMap((p) => p.skills)])];
+/** The Parts the learning path draws: only skills that exist, and a Part with none is left out (L336: Part 9 until R2). */
+export const PARTS: Part[] = ALL_PARTS
+  .map((p) => ({ ...p, skills: p.skills.filter((id) => ROUTE_SKILLS.some((s) => s.id === id)) }))
+  .filter((p) => p.skills.length > 0);
+/** The Part a skill belongs to (General pages), or undefined. */
+export const partOf = (skill: string): number | undefined => PARTS.find((p) => p.skills.includes(skill))?.n;
+/** Skills of Part n in route order. */
+export const partSkills = (n: number): Skill[] => (PARTS.find((p) => p.n === n)?.skills ?? []).map((id) => ROUTE_SKILLS.find((s) => s.id === id)!);
+
 /** `chapters`: CHAPTERS on General pages (the learning path follows Logistics, Plan 9 D9-12). */
 export function chapterTitle(chapter: number, lang: Lang, chapters: Chapter[] = chaptersOf()): string {
   return chapters.find((c) => c.chapter === chapter)?.title[lang] ?? '';
 }
-/** The General pages' name for a chapter's module (v10 critic #7): about SQL, never the logistics story. */
-export function moduleTitle(chapter: number, lang: Lang): string {
-  return CHAPTERS.find((c) => c.chapter === chapter)?.module[lang] ?? '';
+/** The General pages' name for Part n (v24: content/general/route.yml; was chapters.yml `module:`, v10 critic #7). */
+export function moduleTitle(n: number, lang: Lang): string {
+  return ALL_PARTS.find((p) => p.n === n)?.title[lang] ?? '';
 }
 
 /** Tables that appear in the schema sidebar from this chapter on (spec §4). The DB always has all of them. */

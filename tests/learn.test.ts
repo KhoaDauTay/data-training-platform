@@ -5,7 +5,7 @@ import {
   appliesIn, dependsOn, drillState, drillXp, moduleState, nodeState, skillState, type LearnCtx,
 } from '../src/learn';
 import { chapterSummary } from '../src/overview';
-import { nextTicket, rankOf, SKILLS } from '../src/progress';
+import { nextTicket, PARTS, rankOf, SKILLS } from '../src/progress';
 import { emptySave, parseSave, SAVE_VERSION, type Known, type Save } from '../src/save';
 import { derive } from '../src/scene';
 
@@ -14,7 +14,7 @@ const g = generalNow()!;
 const SKILL_IDS = SKILLS.map((s) => s.id);
 const known: Known = { ticketIds: new Set(tickets.map((t) => t.id)), laneIds: new Set(), skills: new Set(SKILL_IDS) };
 const save = (over: Partial<Save> = {}): Save => ({ ...emptySave(), ...over });
-const ctx = (s: Save, seen: string[] = []): LearnCtx => ({ save: s, tickets, skills: SKILLS, general: g, seen, known: knownSkills(s, tickets, SKILLS.map((k) => k.id)) });
+const ctx = (s: Save, seen: string[] = []): LearnCtx => ({ save: s, tickets, skills: SKILLS, parts: PARTS, general: g, seen, known: knownSkills(s, tickets, SKILLS.map((k) => k.id)) });
 
 describe('save giữ id drill g-… (không cần tải nội dung Chung)', () => {
   it('completed, nháp, graded, hintsUsed của g-… được giữ; id lạ không tiền tố vẫn bị bỏ', () => {
@@ -55,7 +55,7 @@ describe('src/learn.ts', () => {
     expect(skillState(ctx(s, ['where']), 'where')).toEqual({ lesson: true, drills: 2, total: 4, learned: true, mastered: true });
     expect(skillState(ctx(save()), 'select')).toEqual({ lesson: false, drills: 0, total: 4, learned: false, mastered: false });
     const m1 = moduleState(ctx(s), 1);
-    expect(m1.skills).toEqual(SKILLS.filter((x) => x.chapter === 1).map((x) => x.id));
+    expect(m1.skills).toEqual(['select', 'where', 'order_by', 'limit']); // v24: Part 1 of content/general/route.yml
     expect(m1.learned).toBe(1);
     expect(m1.done).toBe(false);
     const a1 = g.nodes.find((n) => n.id === 'a1')!;

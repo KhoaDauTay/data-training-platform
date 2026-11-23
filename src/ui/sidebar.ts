@@ -3,7 +3,7 @@ import { activeDomain, DOMAINS } from '../domains';
 import { knownSkills } from '../home';
 import { getLang, t, type Key } from '../i18n';
 import { earlyOffer } from './chapterView';
-import { CHAPTERS, chaptersOf, chapterTitle, currentChapter, moduleTitle, rankOf, SKILLS, visibleTickets } from '../progress';
+import { CHAPTERS, chaptersOf, chapterTitle, currentChapter, moduleTitle, PARTS, partOf, rankOf, SKILLS, visibleTickets } from '../progress';
 import { gated, navLock, readTour, sqlOnly } from '../onboarding';
 import { domainHash, hashOf, inDomain, learnModuleOf, learnSkillOf, type Route } from '../route';
 import { generalWork, isStory, reviewCount } from '../session';
@@ -77,18 +77,19 @@ function modules(): HTMLElement[] {
   const known = knownSkills(app.save, loadTickets('logistics'), SKILLS.map((s) => s.id));
   // U19 (v21): only the module that holds the open page or drill is current; the overview, advanced nodes and the interview room mark none.
   const skill = learnSkillOf(location.hash) ?? (generalWork() ? SKILLS.find((s) => app.selectedId?.startsWith(`g-${s.id}-`))?.id : undefined);
-  const open = learnModuleOf(location.hash) ?? SKILLS.find((s) => s.id === skill)?.chapter;
-  return CHAPTERS.filter((c) => SKILLS.some((s) => s.chapter === c.chapter)).map((c) => {
-    const ids = SKILLS.filter((s) => s.chapter === c.chapter).map((s) => s.id);
+  const open = learnModuleOf(location.hash) ?? (skill ? partOf(skill) : undefined);
+  // v24 (L335): the General route's Parts (content/general/route.yml), not the Logistics chapters
+  return PARTS.map((p) => {
+    const ids = p.skills;
     const k = ids.filter((id) => known.has(id)).length;
     return row({
-      key: `m${c.chapter}`,
-      href: `${hashOf('learn')}/sql/${c.chapter}`,
-      lead: k === ids.length ? icon('check', 'size-5 text-good') : h('b', { class: k ? '' : 'text-muted' }, String(c.chapter)),
-      label: moduleTitle(c.chapter, lang), // the badge already says the number (user 2026-11-20)
-      full: t('learn.module', { n: c.chapter, title: moduleTitle(c.chapter, lang) }),
+      key: `m${p.n}`,
+      href: `${hashOf('learn')}/sql/${p.n}`,
+      lead: k === ids.length ? icon('check', 'size-5 text-good') : h('b', { class: k ? '' : 'text-muted' }, String(p.n)),
+      label: moduleTitle(p.n, lang), // the badge already says the number (user 2026-11-20)
+      full: t('learn.module', { n: p.n, title: moduleTitle(p.n, lang) }),
       sub: t('side.moduleSkills', { k, m: ids.length }),
-      current: c.chapter === open,
+      current: p.n === open,
     });
   });
 }
@@ -152,9 +153,9 @@ function content(route: Route, drawer: boolean): (Node | string)[] {
     const lang = getLang();
     out.push(row({ key: 'today', href: hashOf('practice'), lead: icon(NAV_ICON.practice), label: t('side.today', { n: reviewCount() }), current: true }),
       h('p', { class: GROUP }, t('side.byModule')),
-      ...CHAPTERS.filter((c) => SKILLS.some((s) => s.chapter === c.chapter)).map((c) => row({
-        key: `p${c.chapter}`, href: hashOf('practice'), lead: h('b', {}, String(c.chapter)), label: moduleTitle(c.chapter, lang), full: t('learn.module', { n: c.chapter, title: moduleTitle(c.chapter, lang) }), current: false,
-        onclick: () => document.getElementById(`skills-ch-${c.chapter}`)?.scrollIntoView({ block: 'start' }),
+      ...PARTS.map((p) => row({
+        key: `p${p.n}`, href: hashOf('practice'), lead: h('b', {}, String(p.n)), label: moduleTitle(p.n, lang), full: t('learn.module', { n: p.n, title: moduleTitle(p.n, lang) }), current: false,
+        onclick: () => document.getElementById(`skills-ch-${p.n}`)?.scrollIntoView({ block: 'start' }),
       })));
   } else if (pageSide[route]) {
     out.push(...pageSide[route]({ row, group: (text) => h('p', { class: GROUP }, text) }));

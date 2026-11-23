@@ -54,7 +54,20 @@ describe('axe-core (v15 Q10)', () => {
       const adv = links();
       for (const a of adv) expect(a.textContent).toContain(a.title);
     }
+    // v24 R0 (L338): the full lesson page (its own lazy chunk) is drawn before axe looks at it
+    if (hash === '#/learn/skill/select') await vi.waitFor(() => expect(document.querySelector('[data-lesson-page] [data-sec=recap]')).not.toBeNull(), { timeout: 20_000 });
     expect(await problems()).toEqual([]);
+  });
+
+  it('dialog: the full lesson contents sheet (v24 R0)', async () => {
+    await visit('#/learn/skill/select');
+    await vi.waitFor(() => expect(document.querySelector('[data-fl-bar] button[aria-haspopup=dialog]')).not.toBeNull(), { timeout: 20_000 });
+    document.querySelector<HTMLElement>('[data-fl-bar] button[aria-haspopup=dialog]')!.click();
+    await new Promise((r) => setTimeout(r, 100));
+    expect(document.querySelector('#fl-toc-sheet[open]')).not.toBeNull();
+    const v = await problems();
+    byId('fl-toc-sheet').closest('dialog')!.close();
+    expect(v).toEqual([]);
   });
 
   it.each(DIALOGS)('dialog: %s', async (name, open) => {

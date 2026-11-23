@@ -1,5 +1,5 @@
 import type { AdvNode, Drill, General } from './general';
-import type { Skill } from './progress';
+import type { Part, Skill } from './progress';
 import type { PracticeItem } from './practice';
 import type { Save } from './save';
 import type { Ticket } from './tickets';
@@ -15,7 +15,7 @@ export const DRILL_XP = 10;
 export const CHALLENGE_XP = 20;
 
 /** `known` = knownSkills() of src/home.ts (main bundle; this module stays lazy-only, so the caller computes it). */
-export interface LearnCtx { save: Save; tickets: Ticket[]; skills: readonly Skill[]; general: General; /** Lessons seen (cargo-query/lessons pref). */ seen: readonly string[]; known: ReadonlySet<string> }
+export interface LearnCtx { save: Save; tickets: Ticket[]; skills: readonly Skill[]; /** v24 (L335): the General route's Parts (progress.ts PARTS). */ parts: readonly Part[]; general: General; /** Lessons seen (cargo-query/lessons pref). */ seen: readonly string[]; known: ReadonlySet<string> }
 const known = (c: LearnCtx): ReadonlySet<string> => c.known;
 
 export const drillState = (save: Save, id: string): 'todo' | 'done' => (save.completed.includes(id) ? 'done' : 'todo');
@@ -32,9 +32,9 @@ export function skillState(c: LearnCtx, skill: string): SkillState {
   };
 }
 
-/** Module n = the skills of chapter n. Done when every one is learned. */
+/** Module n = Part n of content/general/route.yml (v24; was chapter n). Done when every one of its skills is learned. */
 export function moduleState(c: LearnCtx, n: number): { skills: string[]; learned: number; done: boolean } {
-  const skills = c.skills.filter((s) => s.chapter === n).map((s) => s.id);
+  const skills = c.parts.find((p) => p.n === n)?.skills ?? [];
   const k = known(c);
   const learned = skills.filter((s) => k.has(s)).length;
   return { skills, learned, done: skills.length > 0 && learned === skills.length };
@@ -92,15 +92,13 @@ export function stamper() {
 }
 
 /**
- * v17 I4 (L145): the General entry check. One `open` drill per module (Phần n = the skills of chapter n) not learned yet:
- * the drill of the module's last skill (skills.yml order) that has one. Passing it (the practice rule `isSuccess`) seeds a
+ * v17 I4 (L145): the General entry check. One `open` drill per module (Phần n of route.yml, v24) not learned yet:
+ * the drill of the module's last skill (route order) that has one. Passing it (the practice rule `isSuccess`) seeds a
  * review card for every skill of the module, so they count as learned (D8a-11) and come back in the review; a weak pass
  * or a skipped item writes nothing. 0 XP, nothing in `completed`.
  */
-export function placementItems(skills: readonly Skill[], general: General, known: ReadonlySet<string>): PracticeItem[] {
-  const modules = [...new Set(skills.map((s) => s.chapter))].sort((a, b) => a - b);
-  return modules.flatMap((n) => {
-    const own = skills.filter((s) => s.chapter === n).map((s) => s.id);
+export function placementItems(parts: readonly Part[], general: General, known: ReadonlySet<string>): PracticeItem[] {
+  return parts.flatMap(({ skills: own }) => {
     if (own.every((s) => known.has(s))) return [];
     const drill = [...own].reverse().map((s) => general.bySkill.get(s)?.find((d) => d.kind === 'open')).find((d) => d);
     return drill ? [{ ticketId: drill.id, variant: 0, skills: own }] : [];

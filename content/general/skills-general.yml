@@ -1,0 +1,4 @@
+# Kỹ năng chỉ có ở khu General (v24, product-route-v24 §3.1.2, L327): cùng khuôn với content/skills.yml
+# (id, label, syntax, when, trap; `chapter:` không dùng). Không vào skills.yml: Lily, domain và luật một-ticket-mỗi-kỹ-năng
+# không đổi. Id của chúng phải nằm trong content/general/route.yml. Rỗng cho tới R1 (cross_join, any_all) và R2 (Phần 9).
+[]
