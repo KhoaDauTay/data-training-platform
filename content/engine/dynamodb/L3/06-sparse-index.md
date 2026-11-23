@@ -151,6 +151,9 @@ lab:
           "KeyConditionExpression": "city = :c",
           "ExpressionAttributeValues": {":c": {"S": "Hue"}}}}
       check: doc
+      perf: { table: Orders }
+      slow: |
+        {"op":"Scan","input":{"TableName":"Orders","IndexName":"openOrders","ExpressionAttributeValues":{":c":{"S":"Hue"}},"FilterExpression":"(city = :c)"}}
       ordered: true
       hint:
         vi: Partition key của index là `city`; sort key `openSince` cho thứ tự thời gian.

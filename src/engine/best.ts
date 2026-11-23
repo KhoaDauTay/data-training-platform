@@ -24,7 +24,7 @@ export const bestHash = (track?: string, id?: string): string => `#/engine/best$
 
 export const TRACKS = ['sql', 'postgres', 'mongodb', 'dynamodb'] as const;
 export type TrackId = (typeof TRACKS)[number];
-export const RELEASED: readonly TrackId[] = ['sql', 'postgres', 'mongodb'];
+export const RELEASED: readonly TrackId[] = ['sql', 'postgres', 'mongodb', 'dynamodb'];
 export const BP_LEVELS = ['L1', 'L2', 'L3', 'L4', 'L5'] as const;
 export const RUNTIMES = ['lab', 'engine', 'engine-hb', 'mingo', 'dynoxide', 'none'] as const;
 export type BpRuntime = (typeof RUNTIMES)[number];
@@ -203,6 +203,8 @@ export interface Side {
   error?: { code?: string; message: string };
   /** Scan node on `expect.table` (plan cards) or of the plan's leaf (cost cards); planner Total Cost of the root. */
   node?: string; cost?: number;
+  /** v26 (L383): a `dynoxide` side's ConsumedCapacity (RCU or WCU, the engine's own number) for `compare: rcu | wcu`. */
+  cap?: number;
 }
 /** Statements of one side to run after `setup`: the side's own (DDL/DML/read), then its EXPLAIN when the card measures a plan. */
 export const needsPlan = (p: Pair): boolean => p.check === 'plan' || p.expect?.compare === 'cost';
@@ -228,10 +230,16 @@ const key = (s: Side): string => s.rows.map((r) => r.map(cell).join('\u0001')).s
 /** Same rows (multiset, numbers to 2 decimals, column names ignored: the grader's rule, without the main module). */
 export const sameRows = (a: Side, b: Side): boolean => a.columns.length === b.columns.length && key(a) === key(b);
 
+/** v26: a DynamoDB side's columns come from its items' attribute order, which differs between a Scan and a Query: sort them by name. */
+export function byName(columns: string[], rows: unknown[][]): Pick<Side, 'columns' | 'rows'> {
+  const order = columns.map((c, i) => [c, i] as const).sort((a, b) => a[0].localeCompare(b[0]));
+  return { columns: order.map(([c]) => c), rows: rows.map((r) => order.map(([, i]) => r[i])) };
+}
+
 export type Verdict =
   | { kind: 'diff' | 'same' | 'runs'; ok: boolean }
   | { kind: 'plan' | 'cost'; ok: boolean; bad?: string | number; good?: string | number }
-  | { kind: 'size'; ok: boolean; bad?: number; good?: number }
+  | { kind: 'size' | 'cap'; ok: boolean; bad?: number; good?: number }
   | { kind: 'error'; ok: boolean; side: 'bad' | 'good'; code?: string };
 /** Does the pair show what its `check` says (§4.3)? `ok: false` on the page = an unexpected result, said as it is. */
 export function judge(p: Pair, bad: Side, good: Side): Verdict {
@@ -244,6 +252,10 @@ export function judge(p: Pair, bad: Side, good: Side): Verdict {
   }
   if (p.check === 'plan') return { kind: 'plan', bad: bad.node, good: good.node, ok: fine && bad.node === x.bad && good.node === x.good };
   if (x.compare === 'cost') return { kind: 'cost', bad: bad.cost, good: good.cost, ok: fine && good.cost! < bad.cost! };
+  if (x.compare === 'rcu' || x.compare === 'wcu') {
+    // v26: the Prefer side uses less measured capacity (a COUNT or a write shows no comparable rows, so only the number counts).
+    return { kind: 'cap', bad: bad.cap, good: good.cap, ok: fine && good.cap! < bad.cap! };
+  }
   if (x.compare === 'size') {
     const [b, g] = [Number(bad.rows[0]?.[0]), Number(good.rows[0]?.[0])];
     return { kind: 'size', bad: b, good: g, ok: fine && g < b };

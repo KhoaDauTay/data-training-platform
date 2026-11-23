@@ -38,6 +38,9 @@ lab:
       solution: |
         {"op": "GetItem", "input": {"TableName": "Books", "Key": {"isbn": {"S": "978-0-04"}}}}
       check: doc
+      perf: { table: Books }
+      slow: |
+        {"op":"Scan","input":{"TableName":"Books","FilterExpression":"#k0 = :k0","ExpressionAttributeNames":{"#k0":"isbn"},"ExpressionAttributeValues":{":k0":{"S":"978-0-04"}}}}
       hint:
         vi: '`Key` là một map từ tên thuộc tính khóa tới giá trị có nhãn kiểu, ví dụ `{"isbn": {"S": "…"}}`.'
         en: '`Key` maps each key attribute name to a typed value, for example `{"isbn": {"S": "…"}}`.'
@@ -47,6 +50,9 @@ lab:
       solution: |
         {"op": "GetItem", "input": {"TableName": "Books", "Key": {"isbn": {"S": "978-0-04"}}, "ProjectionExpression": "title, price"}}
       check: doc
+      perf: { table: Books }
+      slow: |
+        {"op":"Scan","input":{"TableName":"Books","FilterExpression":"#k0 = :k0","ExpressionAttributeNames":{"#k0":"isbn"},"ExpressionAttributeValues":{":k0":{"S":"978-0-04"}},"ProjectionExpression":"title, price"}}
       hint:
         vi: '`ProjectionExpression` là danh sách tên thuộc tính, cách nhau bằng dấu phẩy.'
         en: '`ProjectionExpression` is a comma-separated list of attribute names.'

@@ -64,12 +64,18 @@ lab:
       solution: |
         {"op": "GetItem", "input": {"TableName": "Orders", "Key": {"pk": {"S": "ORD#2026-11-20#3"}, "sk": {"S": "O-1027"}}}}
       check: doc
+      perf: { table: Orders }
+      slow: |
+        {"op":"Scan","input":{"TableName":"Orders","FilterExpression":"#k0 = :k0 AND #k1 = :k1","ExpressionAttributeNames":{"#k0":"pk","#k1":"sk"},"ExpressionAttributeValues":{":k0":{"S":"ORD#2026-11-20#3"},":k1":{"S":"O-1027"}}}}
       expect: { Count: 1 }
       hint: { vi: "1027 chia 4 dư 3.", en: "1027 modulo 4 is 3." }
     - task: { vi: "Đọc các đơn từ `O-1010` tới `O-1020` (gồm cả hai đầu) nằm trong shard 2, bằng một Query có điều kiện trên sort key.", en: "Read the orders from `O-1010` to `O-1020` (both included) that live in shard 2, with one Query that has a sort key condition." }
       solution: |
         {"op": "Query", "input": {"TableName": "Orders", "KeyConditionExpression": "pk = :p AND sk BETWEEN :a AND :b", "ExpressionAttributeValues": {":p": {"S": "ORD#2026-11-20#2"}, ":a": {"S": "O-1010"}, ":b": {"S": "O-1020"}}}}
       check: doc
+      perf: { table: Orders }
+      slow: |
+        {"op":"Scan","input":{"TableName":"Orders","ExpressionAttributeValues":{":p":{"S":"ORD#2026-11-20#2"},":a":{"S":"O-1010"},":b":{"S":"O-1020"}},"FilterExpression":"(pk = :p AND sk BETWEEN :a AND :b)"}}
       expect: { Count: 3, ScannedCount: 3 }
       hint: { vi: "`BETWEEN` trên sort key vẫn nằm trong `KeyConditionExpression`, không cần FilterExpression.", en: "`BETWEEN` on the sort key still lives in `KeyConditionExpression`, no FilterExpression needed." }
 ---

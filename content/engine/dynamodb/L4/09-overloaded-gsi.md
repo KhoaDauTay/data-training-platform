@@ -59,12 +59,18 @@ lab:
       solution: |
         {"op": "Query", "input": {"TableName": "Staff", "IndexName": "ByLookup", "KeyConditionExpression": "sk = :t AND lookup = :w", "ExpressionAttributeValues": {":t": {"S": "WAREHOUSE"}, ":w": {"S": "WH#02"}}}}
       check: doc
+      perf: { table: Staff }
+      slow: |
+        {"op":"Scan","input":{"TableName":"Staff","IndexName":"ByLookup","ExpressionAttributeValues":{":t":{"S":"WAREHOUSE"},":w":{"S":"WH#02"}},"FilterExpression":"(sk = :t AND lookup = :w)"}}
       expect: { Count: 3, ScannedCount: 3 }
       hint: { vi: "Trên GSI, `sk` chọn loại item, `lookup` chọn giá trị.", en: "On the GSI, `sk` picks the item type and `lookup` picks the value." }
     - task: { vi: "Cùng GSI đó: đọc mọi người vào làm từ 2026-01-01 tới 2026-06-30, theo thứ tự ngày vào làm.", en: "Same GSI: read everyone hired from 2026-01-01 to 2026-06-30, in hire date order." }
       solution: |
         {"op": "Query", "input": {"TableName": "Staff", "IndexName": "ByLookup", "KeyConditionExpression": "sk = :t AND lookup BETWEEN :a AND :b", "ExpressionAttributeValues": {":t": {"S": "HIRED"}, ":a": {"S": "2026-01-01"}, ":b": {"S": "2026-06-30"}}}}
       check: doc
+      perf: { table: Staff }
+      slow: |
+        {"op":"Scan","input":{"TableName":"Staff","IndexName":"ByLookup","ExpressionAttributeValues":{":t":{"S":"HIRED"},":a":{"S":"2026-01-01"},":b":{"S":"2026-06-30"}},"FilterExpression":"(sk = :t AND lookup BETWEEN :a AND :b)"}}
       ordered: true
       expect: { Count: 3, ScannedCount: 3 }
       hint: { vi: "Ngày ở dạng `YYYY-MM-DD` sắp đúng theo chuỗi, nên `BETWEEN` trên sort key dùng được.", en: "Dates in `YYYY-MM-DD` sort correctly as strings, so `BETWEEN` on the sort key works." }
@@ -72,6 +78,9 @@ lab:
       solution: |
         {"op": "Query", "input": {"TableName": "Staff", "IndexName": "ByLookup", "KeyConditionExpression": "sk = :t AND begins_with(lookup, :n)", "ExpressionAttributeValues": {":t": {"S": "PROFILE"}, ":n": {"S": "Tran"}}}}
       check: doc
+      perf: { table: Staff }
+      slow: |
+        {"op":"Scan","input":{"TableName":"Staff","IndexName":"ByLookup","ExpressionAttributeValues":{":t":{"S":"PROFILE"},":n":{"S":"Tran"}},"FilterExpression":"(sk = :t AND begins_with(lookup, :n))"}}
       expect: { Count: 2, ScannedCount: 2 }
       hint: { vi: "`begins_with` dùng được trên sort key trong `KeyConditionExpression`.", en: "`begins_with` works on the sort key inside `KeyConditionExpression`." }
 ---

@@ -2,6 +2,7 @@ import type { QueryResult } from '../db/run';
 import type { GradeResult } from '../grader';
 import type { slowVerdict } from '../planCheck';
 import type { EngineId, EngineLesson, Lab, LabStep } from './content';
+import type { Capacity, ReadMode } from './dynamo/cost';
 
 /**
  * ENG-CORE (L221): the seam every engine's lab runtime plugs into. The lesson page (src/ui/engineView.ts) calls `prepare`
@@ -28,6 +29,12 @@ export interface LabMeta {
   catalog?: unknown[][];
   /** v25 MongoDB "Pipeline từng bước": each prefix of the aggregate the player ran, its document count and first documents. */
   pipeline?: { stage: string; n: number; head: unknown[] }[];
+  /**
+   * v26 DynamoDB (L380): what the "Partition / Chi phí" panel draws. `capacity` = the engine's ConsumedCapacity (measured);
+   * `bytes` = each returned item's size by the AWS rules (for the formula); `pk` = the partition key of the table or index read;
+   * `lastKey` = LastEvaluatedKey (another page exists); `index` = IndexName.
+   */
+  dynamo?: { op: string; mode: ReadMode; write: boolean; capacity?: Capacity; bytes: number[]; pk?: string; index?: string; lastKey?: Record<string, unknown>; scanned?: number };
 }
 /** A table for the Result view (QueryResult-compatible: `types` = Postgres type OIDs, empty for a document engine) + meta. */
 export type LabOutput = QueryResult & { meta?: LabMeta };

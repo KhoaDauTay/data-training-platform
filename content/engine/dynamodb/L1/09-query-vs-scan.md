@@ -152,6 +152,9 @@ lab:
           "KeyConditionExpression": "customerId = :c",
           "ExpressionAttributeValues": {":c": {"S": "C-12"}}}}
       check: doc
+      perf: { table: Orders }
+      slow: |
+        {"op":"Scan","input":{"TableName":"Orders","ExpressionAttributeValues":{":c":{"S":"C-12"}},"FilterExpression":"(customerId = :c)"}}
       ordered: true
       expect: { Count: 4, ScannedCount: 4 }
       hint:

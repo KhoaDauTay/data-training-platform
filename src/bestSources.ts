@@ -2,7 +2,7 @@
 // scripts/contentJson.mjs), tracks.yml and the "8 habits" page. Each track's full cards are their own lazy chunk (bestSql →
 // `bpsql`, bestPg → `bppg`), fetched when a card of that track opens. Only released folders are globbed (src/engine/best.ts
 // RELEASED). v25 (L374): the MongoDB cards' index is its own chunk (src/bestMongoIndex.ts, merged by src/ui/engine.ts) and
-// their full cards `bestMongo`; v26 adds `dynamodb`. src/ui/engine.ts imports this with import().
+// their full cards `bestMongo`; v26 (L383) the same for DynamoDB (src/bestDynamoIndex.ts, bestDynamo). src/ui/engine.ts imports this with import().
 import type { CardSource, TrackId } from './engine/best';
 
 export const meta = import.meta.glob<CardSource>('../content/engine/best/{sql,postgres}/*.md', { query: '?fm&meta=id,engine,track,level,module,title,title_en,avoid,lint,skills', import: 'default', eager: true });
@@ -12,4 +12,5 @@ export const full: Partial<Record<TrackId, () => Promise<{ cards: Record<string,
   sql: () => import('./bestSql'),
   postgres: () => import('./bestPg'),
   mongodb: () => import('./bestMongo'),
+  dynamodb: () => import('./bestDynamo'),
 };

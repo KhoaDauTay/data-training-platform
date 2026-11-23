@@ -109,6 +109,9 @@ lab:
       solution: |
         {"op": "Query", "input": {"TableName": "Votes", "KeyConditionExpression": "pk = :p", "ExpressionAttributeValues": {":p": {"S": "VOTE#2026-11-20#3"}}}}
       check: doc
+      perf: { table: Votes }
+      slow: |
+        {"op":"Scan","input":{"TableName":"Votes","ExpressionAttributeValues":{":p":{"S":"VOTE#2026-11-20#3"}},"FilterExpression":"(pk = :p)"}}
       expect: { Count: 6, ScannedCount: 6 }
       hint: { vi: "Query cần đúng một giá trị partition key: ghép ngày và số shard.", en: "A Query needs exactly one partition key value: join the day and the shard number." }
     - task: { vi: "Đọc mọi phiếu của ngày 2026-11-20 trong một câu PartiQL, liệt kê đủ 8 khóa shard để câu không thành Scan.", en: "Read every vote of 2026-11-20 in one PartiQL statement, listing all 8 shard keys so the statement does not become a Scan." }

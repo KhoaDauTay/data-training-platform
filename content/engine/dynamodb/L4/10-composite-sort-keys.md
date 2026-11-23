@@ -51,24 +51,36 @@ lab:
       solution: |
         {"op": "Query", "input": {"TableName": "Places", "KeyConditionExpression": "pk = :c AND begins_with(sk, :p)", "ExpressionAttributeValues": {":c": {"S": "COUNTRY#VN"}, ":p": {"S": "DN#"}}}}
       check: doc
+      perf: { table: Places }
+      slow: |
+        {"op":"Scan","input":{"TableName":"Places","ExpressionAttributeValues":{":c":{"S":"COUNTRY#VN"},":p":{"S":"DN#"}},"FilterExpression":"(pk = :c AND begins_with(sk, :p))"}}
       expect: { Count: 6, ScannedCount: 6 }
       hint: { vi: "Giữ dấu `#` cuối tiền tố, để `DN` không khớp nhầm một thành phố bắt đầu bằng `DN` khác.", en: "Keep the trailing `#` in the prefix so `DN` cannot match another city that starts with `DN`." }
     - task: { vi: "Hạ một cấp: đọc mọi cửa hàng ở quận `SON_TRA` của thành phố `DN`.", en: "One level down: read every store in district `SON_TRA` of the city `DN`." }
       solution: |
         {"op": "Query", "input": {"TableName": "Places", "KeyConditionExpression": "pk = :c AND begins_with(sk, :p)", "ExpressionAttributeValues": {":c": {"S": "COUNTRY#VN"}, ":p": {"S": "DN#SON_TRA#"}}}}
       check: doc
+      perf: { table: Places }
+      slow: |
+        {"op":"Scan","input":{"TableName":"Places","ExpressionAttributeValues":{":c":{"S":"COUNTRY#VN"},":p":{"S":"DN#SON_TRA#"}},"FilterExpression":"(pk = :c AND begins_with(sk, :p))"}}
       expect: { Count: 3, ScannedCount: 3 }
       hint: { vi: "Cùng Query, chỉ dài tiền tố hơn.", en: "Same Query, just a longer prefix." }
     - task: { vi: "Bảng `Policies` giữ lịch sử chính sách: `v001`, `v002`… là các bản cũ, `v000` là bản sao của bản mới nhất. Đọc bản mới nhất của chính sách `POLICY#refund` bằng một GetItem.", en: "The `Policies` table keeps a policy's history: `v001`, `v002`… are past versions, `v000` is a copy of the latest. Read the latest version of policy `POLICY#refund` with one GetItem." }
       solution: |
         {"op": "GetItem", "input": {"TableName": "Policies", "Key": {"pk": {"S": "POLICY#refund"}, "sk": {"S": "v000"}}}}
       check: doc
+      perf: { table: Policies }
+      slow: |
+        {"op":"Scan","input":{"TableName":"Policies","FilterExpression":"#k0 = :k0 AND #k1 = :k1","ExpressionAttributeNames":{"#k0":"pk","#k1":"sk"},"ExpressionAttributeValues":{":k0":{"S":"POLICY#refund"},":k1":{"S":"v000"}}}}
       expect: { Count: 1 }
       hint: { vi: "Bản mới nhất luôn nằm ở sort key `v000`.", en: "The latest copy always lives at sort key `v000`." }
     - task: { vi: "Đọc toàn bộ lịch sử của `POLICY#refund` theo thứ tự phiên bản, bỏ bản sao `v000`.", en: "Read the whole history of `POLICY#refund` in version order, without the `v000` copy." }
       solution: |
         {"op": "Query", "input": {"TableName": "Policies", "KeyConditionExpression": "pk = :p AND sk > :z", "ExpressionAttributeValues": {":p": {"S": "POLICY#refund"}, ":z": {"S": "v000"}}}}
       check: doc
+      perf: { table: Policies }
+      slow: |
+        {"op":"Scan","input":{"TableName":"Policies","ExpressionAttributeValues":{":p":{"S":"POLICY#refund"},":z":{"S":"v000"}},"FilterExpression":"(pk = :p AND sk > :z)"}}
       ordered: true
       expect: { Count: 4, ScannedCount: 4 }
       hint: { vi: "Điều kiện `>` trên sort key bỏ được `v000` mà không cần FilterExpression.", en: "A `>` condition on the sort key drops `v000` without a FilterExpression." }

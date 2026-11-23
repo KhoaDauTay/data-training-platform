@@ -54,6 +54,9 @@ lab:
       solution: |
         {"op": "Query", "input": {"TableName": "FoodApp", "KeyConditionExpression": "pk = :c AND begins_with(sk, :k)", "FilterExpression": "expires_at > :now", "ExpressionAttributeValues": {":c": {"S": "CUST#c1"}, ":k": {"S": "CART#"}, ":now": {"N": "1795132800"}}}}
       check: doc
+      perf: { table: FoodApp }
+      slow: |
+        {"op":"Scan","input":{"TableName":"FoodApp","ExpressionAttributeValues":{":c":{"S":"CUST#c1"},":k":{"S":"CART#"},":now":{"N":"1795132800"}},"FilterExpression":"(pk = :c AND begins_with(sk, :k)) AND (expires_at > :now)"}}
       expect: { Count: 2, ScannedCount: 5 }
       hint: { vi: "Phần khóa chọn giỏ của khách; điều kiện thời gian không thuộc khóa nên nằm trong `FilterExpression`.", en: "The key part picks the customer's carts; the time condition is not a key, so it goes in `FilterExpression`." }
     - task: { vi: "Mẫu 2, đơn gần đây: đọc 2 đơn mới nhất của khách `CUST#c1`, mới nhất trước. Sort key của đơn là `ORDER#<time>#<order>`.", en: "Pattern 2, recent orders: read the 2 newest orders of customer `CUST#c1`, newest first. An order's sort key is `ORDER#<time>#<order>`." }
@@ -67,6 +70,9 @@ lab:
       solution: |
         {"op": "Query", "input": {"TableName": "FoodApp", "IndexName": "KitchenQueue", "KeyConditionExpression": "queue_store = :s", "ExpressionAttributeValues": {":s": {"S": "STORE#s1"}}}}
       check: doc
+      perf: { table: FoodApp }
+      slow: |
+        {"op":"Scan","input":{"TableName":"FoodApp","IndexName":"KitchenQueue","ExpressionAttributeValues":{":s":{"S":"STORE#s1"}},"FilterExpression":"(queue_store = :s)"}}
       ordered: true
       expect: { Count: 3, ScannedCount: 3 }
       hint: { vi: "Sparse GSI: Query trên index; thứ tự tăng dần của `queue_since` là mặc định.", en: "A sparse GSI: Query the index; ascending `queue_since` order is the default." }

@@ -149,6 +149,9 @@ lab:
       solution: |
         {"op": "GetItem", "input": {"TableName": "Orders", "Key": {"customerId": {"S": "C-09"}, "orderId": {"S": "2026-09-18#O-135"}}}}
       check: doc
+      perf: { table: Orders }
+      slow: |
+        {"op":"Scan","input":{"TableName":"Orders","FilterExpression":"#k0 = :k0 AND #k1 = :k1","ExpressionAttributeNames":{"#k0":"customerId","#k1":"orderId"},"ExpressionAttributeValues":{":k0":{"S":"C-09"},":k1":{"S":"2026-09-18#O-135"}}}}
       hint:
         vi: Bạn có khóa đầy đủ, nên chỉ cần một item.
         en: You have the full key, so you need just one item.
@@ -199,6 +202,9 @@ lab:
           "ExpressionAttributeValues": {":c": {"S": "C-09"}},
           "Select": "COUNT"}}
       check: doc
+      perf: { table: Orders }
+      slow: |
+        {"op":"Scan","input":{"TableName":"Orders","ExpressionAttributeValues":{":c":{"S":"C-09"}},"Select":"COUNT","FilterExpression":"(customerId = :c)"}}
       expect: { Count: 4, ScannedCount: 4 }
       hint:
         vi: '`Query` với `Select` là `COUNT`. Một `Scan` cũng đếm được, nhưng đọc cả 120 item.'

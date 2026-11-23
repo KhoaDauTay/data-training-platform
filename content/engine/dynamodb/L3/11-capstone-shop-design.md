@@ -91,6 +91,9 @@ lab:
       solution: |
         {"op": "GetItem", "input": {"TableName": "Shop", "Key": {"PK": {"S": "CUST#C-03"}, "SK": {"S": "PROFILE"}}}}
       check: doc
+      perf: { table: Shop }
+      slow: |
+        {"op":"Scan","input":{"TableName":"Shop","FilterExpression":"#k0 = :k0 AND #k1 = :k1","ExpressionAttributeNames":{"#k0":"PK","#k1":"SK"},"ExpressionAttributeValues":{":k0":{"S":"CUST#C-03"},":k1":{"S":"PROFILE"}}}}
       hint:
         vi: Khóa đầy đủ đã biết, nên chỉ cần một item.
         en: The full key is known, so you need just one item.
@@ -102,6 +105,9 @@ lab:
           "KeyConditionExpression": "PK = :pk AND begins_with(SK, :m)",
           "ExpressionAttributeValues": {":pk": {"S": "CUST#C-04"}, ":m": {"S": "ORDER#2026-09"}}}}
       check: doc
+      perf: { table: Shop }
+      slow: |
+        {"op":"Scan","input":{"TableName":"Shop","ExpressionAttributeValues":{":pk":{"S":"CUST#C-04"},":m":{"S":"ORDER#2026-09"}},"FilterExpression":"(PK = :pk AND begins_with(SK, :m))"}}
       ordered: true
       hint:
         vi: Loại item và tháng nằm chung trong một tiền tố sort key.
@@ -114,6 +120,9 @@ lab:
           "KeyConditionExpression": "PK = :pk",
           "ExpressionAttributeValues": {":pk": {"S": "ORDER#O-508"}}}}
       check: doc
+      perf: { table: Shop }
+      slow: |
+        {"op":"Scan","input":{"TableName":"Shop","ExpressionAttributeValues":{":pk":{"S":"ORDER#O-508"}},"FilterExpression":"(PK = :pk)"}}
       ordered: true
       hint:
         vi: Item collection của chính đơn đó.
@@ -126,6 +135,9 @@ lab:
           "KeyConditionExpression": "GSI1PK = :p",
           "ExpressionAttributeValues": {":p": {"S": "PRODUCT#P-01"}}}}
       check: doc
+      perf: { table: Shop }
+      slow: |
+        {"op":"Scan","input":{"TableName":"Shop","IndexName":"GSI1","ExpressionAttributeValues":{":p":{"S":"PRODUCT#P-01"}},"FilterExpression":"(GSI1PK = :p)"}}
       ordered: true
       hint:
         vi: Chiều ngược của quan hệ đơn-sản phẩm nằm trên GSI.
@@ -138,6 +150,9 @@ lab:
           "KeyConditionExpression": "PK = :pk AND begins_with(SK, :loc)",
           "ExpressionAttributeValues": {":pk": {"S": "STORE"}, ":loc": {"S": "VN#HUE#"}}}}
       check: doc
+      perf: { table: Shop }
+      slow: |
+        {"op":"Scan","input":{"TableName":"Shop","ExpressionAttributeValues":{":pk":{"S":"STORE"},":loc":{"S":"VN#HUE#"}},"FilterExpression":"(PK = :pk AND begins_with(SK, :loc))"}}
       ordered: true
       hint:
         vi: Sort key phân cấp, tiền tố kết thúc bằng `#`.

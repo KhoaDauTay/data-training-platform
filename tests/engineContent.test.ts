@@ -210,12 +210,14 @@ describe('MongoDB v25: capstone, recorded, thanh quy tắc', () => {
   it('rule/error/sql: giá trị hợp lệ, chỉ trên MongoDB; esr có target, covered có index, mọi bước có thanh có `slow`', () => {
     for (const l of sets[0]) for (const [i, s] of (l.lab?.steps ?? []).entries()) {
       const at = `${l.id} s${i + 1}`;
-      if (s.rule || s.error) expect([at, l.engine]).toEqual([at, 'mongodb']);
+      if (s.rule) expect([at, l.engine]).toEqual([at, 'mongodb']);
+      if (s.error) expect([at, l.engine === 'mongodb' || (l.engine === 'dynamodb' && /^[A-Z]\w+Exception$/.test(s.error))]).toEqual([at, true]); // v26: Dynamo "mong lỗi" names the exception
+      if (s.perf && l.engine === 'dynamodb') expect([at, !!s.slow, s.check]).toEqual([at, true, 'doc']); // v26 R5 (L381): the cost bar needs its Scan answer
       if (s.rule) {
         expect([at, ['esr', 'covered', 'match-first'].includes(s.rule)]).toEqual([at, true]);
         expect([at, !!s.slow, s.rule !== 'esr' || !!s.target, s.rule !== 'covered' || !!s.index]).toEqual([at, true, true, true]);
       }
-      if (s.error) expect([at, /^[a-z_]+$/.test(s.error), !!s.rule]).toEqual([at, true, false]);
+      if (s.error && l.engine === 'mongodb') expect([at, /^[a-z_]+$/.test(s.error), !!s.rule]).toEqual([at, true, false]);
       if (s.sql) expect([at, /^(SELECT|UPDATE|INSERT|DELETE|WITH)\b[\s\S]*;$/.test(s.sql)]).toEqual([at, true]);
     }
     expect(mg.flatMap((l) => l.lab?.steps ?? []).filter((s) => s.rule).length).toBeGreaterThanOrEqual(6);

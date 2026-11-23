@@ -6,6 +6,7 @@ import { beforeAll, describe, expect, it, vi } from 'vitest';
 import { META_KEYS, parseEngineLesson, type EngineLesson, type LessonSource } from '../src/engine/content';
 import { DynamoEngine } from '../src/engine/dynamo/engine';
 import { dynamoRunner, labOf, marshal, unmarshal } from '../src/engine/dynamo/runner';
+import { rcuOne, rcuSum } from '../src/engine/dynamo/cost';
 import type { DynamoRequest } from '../src/engine/dynamo/types';
 import { loadDataset, runMongo } from '../src/engine/mongo/engineMongo';
 import { followsEsr, isCovered } from '../src/engine/mongo/path';
@@ -166,10 +167,72 @@ describe('DynamoDB labs: every Solution passes its own check (dynoxide in Node)'
     await r.prepare(l.lab!);
     for (const [i, s] of l.lab!.steps.entries()) {
       expect(await r.check(l.lab!, s, s.solution), `step ${i + 1}`).toMatchObject({ ok: true });
+      if (s.error) { // v26 "mong lỗi": the Solution is refused with that exception, and a request that runs is not a pass
+        await expect(r.run(l.lab!, s.solution)).rejects.toMatchObject({ type: s.error });
+        expect(await r.check(l.lab!, s, l.lab!.steps[0].solution)).toMatchObject({ ok: false });
+        continue;
+      }
       const out = await r.run(l.lab!, s.solution);
       expect(out.meta?.count, `step ${i + 1} count`).toBeTypeOf('number');
     }
   }, 60_000);
+  // v26 route R5 (L381): a `perf:` step blocks the Scan answer. Its `slow:` gives the same items (it passes with the bar and
+  // `expect` stripped), and the bar alone refuses it, with the measured counts in the sentence.
+  const bars = labs.flatMap((l) => l.lab!.steps.flatMap((s, i) => (s.perf ? [[`${l.id}.s${i + 1}`, l, i] as const] : [])));
+  it('R5: thanh chi phí trên mọi bước có câu Scan thay thế (sàn của route)', () => {
+    expect(bars.length).toBeGreaterThanOrEqual(45);
+    for (const id of ['e-dy-l1-08', 'e-dy-l1-09', 'e-dy-l2-02', 'e-dy-l3-04', 'e-dy-l3-05', 'e-dy-l3-06', 'e-dy-l1-11', 'e-dy-l3-11', 'e-dy-l4-14', 'e-dy-l5-07'])
+      expect([id, bars.some(([, l]) => l.id === id)]).toEqual([id, true]);
+  });
+  it.each(bars)('%s: lời giải qua, slow: trượt vì thanh chi phí', async (_n, l, i) => {
+    const r = dynamoRunner({ lang }, client as never);
+    const s = l.lab!.steps[i];
+    expect(s.slow).toBeTruthy();
+    expect(await r.check(l.lab!, { ...s, perf: undefined, expect: undefined }, s.slow!)).toMatchObject({ ok: true });
+    const v = await r.check(l.lab!, s, s.slow!);
+    expect(v).toMatchObject({ ok: false, reason: 'wrong', why: 'slow' });
+    expect(v.ok ? '' : v.message).toMatch(/ScannedCount|RCU|Scan/);
+  }, 60_000);
+  it('thanh không phạt đọc nhất quán mạnh; ReturnConsumedCapacity NONE không né được thanh', async () => {
+    const r = dynamoRunner({ lang }, client as never);
+    let strong = 0;
+    for (const [n, l, i] of bars) {
+      const s = l.lab!.steps[i];
+      if (s.solution.trim().startsWith('{')) {
+        const j = JSON.parse(s.solution) as { op: string; input: Record<string, unknown> };
+        if (!j.input.IndexName) { // a GSI read cannot be strongly consistent
+          expect([n, await r.check(l.lab!, s, JSON.stringify({ ...j, input: { ...j.input, ConsistentRead: true } }))]).toEqual([n, expect.objectContaining({ ok: true })]);
+          strong++;
+        }
+      }
+      if (s.slow!.trim().startsWith('{')) {
+        const j = JSON.parse(s.slow!) as { op: string; input: Record<string, unknown> };
+        expect([n, await r.check(l.lab!, s, JSON.stringify({ ...j, input: { ...j.input, ReturnConsumedCapacity: 'NONE' } }))]).toEqual([n, expect.objectContaining({ ok: false, why: 'slow' })]);
+      }
+    }
+    expect(strong).toBeGreaterThan(20);
+  }, 120_000);
+  it('ghi bị từ chối: lỗi giữ tên exception, kèm ước tính có nhãn (không phải số đo)', async () => {
+    const l = lessons.find((x) => x.id === 'e-dy-l4-15')!;
+    const r = dynamoRunner({ lang }, client as never);
+    const put = JSON.stringify({ op: 'PutItem', input: { TableName: 'Wallets', Item: { pk: { S: 'WALLET#w1' }, sk: { S: 'BALANCE' }, amount: { N: '0' } }, ConditionExpression: 'attribute_not_exists(pk)' } });
+    await expect(r.run(l.lab!, put)).rejects.toMatchObject({ type: 'ConditionalCheckFailedException', message: expect.stringMatching(/about 1 WCU \(estimated by the rule.*does not report this number/) });
+    await expect(r.run(l.lab!, l.lab!.steps[2].solution)).rejects.toMatchObject({ type: 'TransactionCanceledException', message: expect.stringMatching(/2 statements at least 4 WCU \(estimated by the rule\)/) });
+  }, 60_000);
+  it('bảng chi phí: số theo luật bằng số đo trên mọi lời giải đọc mà bảng tính lại', async () => {
+    const r = dynamoRunner({ lang }, client as never);
+    let n = 0;
+    for (const l of labs) for (const s of l.lab!.steps) {
+      if (s.error) continue;
+      const out = await r.run(l.lab!, s.solution);
+      const m = out.meta?.dynamo;
+      if (!m || m.write || !m.capacity || !m.bytes.length || m.bytes.length !== out.meta?.count || (m.scanned ?? 0) > m.bytes.length) continue;
+      const rule = ['GetItem', 'BatchGetItem', 'TransactGetItems'].includes(m.op) ? m.bytes.reduce((a, b) => a + rcuOne(b, m.mode), 0) : rcuSum(m.bytes, m.mode);
+      expect([l.id, m.op, rule]).toEqual([l.id, m.op, m.capacity.total]);
+      n++;
+    }
+    expect(n).toBeGreaterThan(30);
+  }, 120_000);
   it('a Scan where the step expects a Query fails on ScannedCount (L1/09)', async () => {
     const l = lessons.find((x) => x.id === 'e-dy-l1-09')!;
     const r = dynamoRunner({ lang }, client as never);

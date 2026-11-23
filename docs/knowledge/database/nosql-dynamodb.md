@@ -1,6 +1,6 @@
 # Amazon DynamoDB
 
-Status: to-verify by execution in this folder. Limits and quotas (§1, §2, §6) come from the Constraints and Service Quotas pages, read in full on 2026-11-23; the Data Pipeline status from its page, read the same day. Other citations were link-checked (HTTP 200) and rest on the author's knowledge and on `docs/team/best-practice-catalogue.md`, whose DynamoDB examples were run (round 2). The request shapes match the ones the Engine lessons run on `@dynoxide/wasm-engine` 1.5.0 (`tests/engineIntegration.test.ts`), but the snippets below were not executed here.
+Status: to-verify by execution in this folder. Limits and quotas (§1, §2, §6) come from the Constraints and Service Quotas pages, read in full on 2026-11-23; the Data Pipeline status from its page, read the same day. Other citations were link-checked (HTTP 200) and rest on the author's knowledge and on `docs/team/best-practice-catalogue.md`, whose DynamoDB examples were run (round 2). The request shapes match the ones the Engine lessons run on `@dynoxide/wasm-engine` 1.5.0 (`tests/engineIntegration.test.ts`), but the snippets below were not executed here. The capacity rules in §6 were checked against dynoxide's `ConsumedCapacity` (25 cases in `docs/team/research-nosql-v25-v26.md` §3.2; v26 lab steps `e-dy-l4-15` assert 4 and 6 WCU for two- and three-item `ExecuteTransaction` calls).
 
 Route points: tutorialspoint DynamoDB tutorial, in its order ([tutorial-routes.md](tutorial-routes.md#dynamodb)). Deeper material: `docs/team/db-engine-knowledge.md` §5, `docs/team/best-practice-catalogue.md` (D01–D32), `content/engine/dynamodb/**`.
 
@@ -41,11 +41,11 @@ Status: to-verify (level per file header).
 
 Status: to-verify (level per file header).
 
-- `Query` reads one item collection: `KeyConditionExpression` must name the partition key with `=` and may restrict the sort key (`=`, `<`, `BETWEEN`, `begins_with`) (https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Query.html).
+- `Query` reads one item collection: `KeyConditionExpression` must name the partition key with `=` and may restrict the sort key (`=`, `<`, `<=`, `>`, `>=`, `BETWEEN`, `begins_with`) (https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Query.html).
 - `FilterExpression` runs after the read: it shrinks the response, not the capacity consumed (https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Query.FilterExpression.html).
 - `Scan` reads the whole table (or segment); avoid it on hot paths (catalogue D06).
 - Each call returns at most 1 MB; continue with `LastEvaluatedKey` → `ExclusiveStartKey`; `Limit` caps items evaluated, not returned (https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Query.Pagination.html).
-- "Aggregation" (counts, sums) is precomputed: atomic counters on write, or a Streams consumer maintaining summary items. `Select: COUNT` still reads and pays for every item.
+- "Aggregation" (counts, sums) is precomputed: atomic counters on write, a transaction that writes the item and its summary together, or a Streams consumer maintaining summary items (eventually, and it must tolerate a record delivered twice). `Select: COUNT` still reads and pays for every item it counts, and still pages at 1 MB (Engine `e-dy-l2-14`).
 - PartiQL (`ExecuteStatement`) is SQL-like syntax over the same API; a `SELECT` without a partition-key condition becomes a Scan (https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/ql-reference.select.html).
 
 ## 4. Secondary indexes
@@ -71,7 +71,11 @@ Status: to-verify (level per file header).
 
 Status: to-verify (level per file header).
 
-- 1 RCU = one strongly consistent read per second of an item up to 4 KB (or two eventually consistent reads); 1 WCU = one write per second up to 1 KB; transactional operations cost double (Constraints page).
+- 1 RCU = one strongly consistent read per second of an item up to 4 KB (or two eventually consistent reads); 1 WCU = one write per second up to 1 KB; transactional operations cost double (https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/read-write-operations.html).
+- Rounding: `GetItem` and each item of `BatchGetItem`/`TransactGetItems` round up to 4 KB per item; `Query` and `Scan` add up the sizes of every item **read** (before any filter) and round once. Writes round each item up to 1 KB, using the larger of the old and new image for an overwrite or update. Projection and `Select: COUNT` do not lower the read charge (same page).
+- Requests that fail still cost: a conditional write whose condition is false consumes write capacity (the existing item's size, at least 1 WCU; https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/WorkingWithItems.html#WorkingWithItems.ConditionalWrites.ReturnConsumedCapacity), and a cancelled transaction consumes capacity for the items it tried (https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/transaction-apis.html). The in-browser engine returns no `ConsumedCapacity` for either, so BoonData labels its number as an estimate.
+- A GSI write costs its own WCU when the base-table write touches the index; a GSI query is charged on the projected index entry size and is eventually consistent only.
+- Each partition serves at most 3,000 RCU and 1,000 WCU per second, however much the table has; burst capacity keeps up to 300 seconds of unused throughput, and adaptive capacity can isolate a hot item but not lift the per-key ceiling (https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-partition-key-design.html).
 - On-demand vs provisioned capacity; default per-table quota 40,000 read and 40,000 write units (https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/ServiceQuotas.html).
 - Reads are eventually consistent by default; `ConsistentRead: true` on table and LSI reads (https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.ReadConsistency.html).
 
@@ -80,13 +84,14 @@ Status: to-verify (level per file header).
 Status: to-verify (level per file header).
 
 - Access control is IAM: policies on tables and indexes, fine-grained conditions such as `dynamodb:LeadingKeys` to restrict a user to their own partition (https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/specifying-conditions.html; catalogue D26). Web identity federation is now usually done through Cognito.
-- Backups: on-demand backups and point-in-time recovery (35 days) (https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Point-in-time-recovery.html); deletion protection on the table.
+- Backups: on-demand backups and point-in-time recovery (a recovery period of 1 to 35 days, 35 by default, restored per second into a new table) (https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Point-in-time-recovery.html).
+- Deleting a table: `DeleteTable` removes the table, its items and indexes with no undo; with deletion protection on (`DeletionProtectionEnabled`) the call is refused until it is turned off; on-demand backups outlive the table (https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/WorkingWithTables.Basics.html).
 - Change capture: DynamoDB Streams (24 h of item-level changes) or Kinesis Data Streams; TTL deletes expired items in the background, so filter on expiry when reading (https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/TTL.html).
-- Monitoring: CloudWatch metrics (throttles, consumed capacity), Contributor Insights for hot keys; CloudTrail logs control-plane calls.
-- Errors: retry throttling and `ProvisionedThroughputExceededException` with exponential backoff and jitter (SDKs do it) (https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Programming.Errors.html).
+- Monitoring: CloudWatch metrics per table and index (`ConsumedReadCapacityUnits`, `ConsumedWriteCapacityUnits`, `ReadThrottleEvents`, `WriteThrottleEvents`, `ThrottledRequests`, `SystemErrors`), alarms on throttling, Contributor Insights for the most accessed and most throttled keys; CloudTrail logs control-plane calls, and data-plane calls when data events are turned on (https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/metrics-dimensions.html).
+- Errors: retry throttling (`ProvisionedThroughputExceededException`, `ThrottlingException`) and 5xx errors with exponential backoff and jitter (SDKs do it); fix, never resend unchanged, a `ValidationException` or a false condition (https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Programming.Errors.html).
 - AWS Data Pipeline, which older tutorials use for import/export, is closed to new customers; use export to S3 / import from S3 instead (https://docs.aws.amazon.com/datapipeline/latest/DeveloperGuide/what-is-datapipeline.html).
 
-BoonData: Engine `content/engine/dynamodb/L1` … `L5`; `TransactWriteItems`, TTL and Streams ops are refused by the in-browser engine (`unsupported`, CLAUDE.md "DynamoDB runtime"), so lessons on them are concept or PartiQL `ExecuteTransaction` based.
+BoonData: Engine `content/engine/dynamodb/L1` … `L5`; `TransactWriteItems`, TTL and Streams ops are refused by the in-browser engine (`unsupported`, CLAUDE.md "DynamoDB runtime"), so lessons on them are concept or PartiQL `ExecuteTransaction` based (`e-dy-l4-13`, `e-dy-l4-15`). IAM, CloudWatch, Contributor Insights and deletion protection are a docs-only lesson (`e-dy-l5-08`). Since v26 every lab step with a Scan alternative carries a cost bar (`perf:` + `slow:`) that refuses the Scan by the engine's own `ScannedCount`/`ConsumedCapacity`, and each run shows a "Partition / Chi phí" panel (measured, rule, illustration tiers).
 
 ## Sources
 

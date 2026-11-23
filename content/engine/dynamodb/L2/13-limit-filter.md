@@ -105,6 +105,9 @@ lab:
           "ExpressionAttributeNames": {"#s": "status"},
           "ExpressionAttributeValues": {":c": {"S": "C-01"}, ":s": {"S": "DELIVERED"}}}}
       check: doc
+      perf: { table: Orders }
+      slow: |
+        {"op":"Scan","input":{"TableName":"Orders","ExpressionAttributeNames":{"#s":"status"},"ExpressionAttributeValues":{":c":{"S":"C-01"},":s":{"S":"DELIVERED"}},"FilterExpression":"(customerId = :c) AND (#s = :s)"}}
       ordered: true
       expect: { Count: 3, ScannedCount: 12 }
       hint:

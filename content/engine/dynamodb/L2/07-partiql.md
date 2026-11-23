@@ -151,6 +151,9 @@ lab:
       solution: |
         SELECT * FROM Orders WHERE customerId = 'C-04'
       check: doc
+      perf: { table: Orders }
+      slow: |
+        SELECT * FROM Orders WHERE begins_with(customerId, 'C-04')
       ordered: true
       hint:
         vi: Chuỗi trong PartiQL dùng nháy đơn. Điều kiện bằng trên partition key biến câu này thành một Query.
@@ -161,6 +164,9 @@ lab:
       solution: |
         SELECT orderId, "total" FROM Orders WHERE customerId = 'C-15' AND begins_with(orderId, '2026-10')
       check: doc
+      perf: { table: Orders }
+      slow: |
+        SELECT orderId, "total" FROM Orders WHERE begins_with(customerId, 'C-15') AND begins_with(orderId, '2026-10')
       ordered: true
       hint:
         vi: 'Tên trùng từ dành riêng được bọc nháy kép: `"total"`. `begins_with` dùng được trong `WHERE`.'
